@@ -43549,3 +43549,137 @@ acceptance still require closure. The conservative reciprocal setup-width
 reserve remains part of the sharp uniform-estimate audit. Collect all current
 conditional-class, interior and generated-column resource work in one larger
 local checkpoint; no push and leave unrelated periodic WIP untouched.
+
+### S4 resident/indexed column resources and canonical table stock
+
+The generic Host.EmbedRightUpdatesStock lifts an arbitrary finite list of right
+bank updates through an injective register embedding, at any caller depth.
+ComponentWorkspaceStock reuses its two-port specialization. Resident and indexed
+cyclic column wrappers retain the complete generated-column execution budget;
+the retained indexed wrapper now checks too (2228.3 MiB).
+
+TableLoopFrameStock establishes exact canonical-boundary stock balance, output
+suffix preservation and a stock envelope of m*((2*W+1)*w+1) beyond an earlier
+boundary. The envelope charges packed output and retained index ticks; scan
+counter transport has no growth. Its latest guarded check passes at 2095.5 MiB.
+This is boundary accounting, not yet a resource theorem for the complete scan.
+The publication ordered move already has an allocation-free contract in
+Host.OrderedMoveStock and should be reused.
+
+Next bound the collection controller structurally, compose publication and the
+complete table scan with one shared numerical reserve, then audit the resulting
+uniform parameter estimate before propagating further wrappers. In particular,
+the quadratic reciprocal setup-width allowance remains unresolved. Original
+input production, grouped/fallback accounting and tensor/root acceptance remain
+open. No push; collect a larger coherent checkpoint and exclude periodic WIP.
+
+### S4 cyclic entry collection shares one native reserve
+
+WordCollectionScanStock lifts the existing arbitrary word-producing step
+contract to a resource-preserving counted scan. Appended words and cursor ticks
+make canonical stock nondecreasing, so Node.scanP_within_final_stock shares one
+reserve above final stock. The correctness/time theorem is reused for its exact
+endpoint and original variable per-step cost sum.
+
+CyclicColumnEntryNativeStock certifies the actual scalar-address/select/copy
+entry program with fixed native push bound eight. CyclicColumnEntryLoopStock
+instantiates the generic collection theorem: at every caller depth the actual
+loop has reserve 8*(cap+2), provided each selected entry cost is at most cap.
+No sum of entry scratch allowances is introduced. This scalar maximum premise
+still needs a uniform parameter bound; it is not the completed S4 estimate.
+
+Guarded checks pass: generic scan 1940.1 MiB, entry certificate 1970.9 MiB,
+cyclic entry loop 1983.4 MiB. Dependency integration for the two generic/native
+modules passes (9398 jobs, 2.6 GiB combined peak). No running verification
+handles remain. Next compose cursor cleanup, scaled controls, stream retirement
+and publication, then retain the complete table-column scan. No commit or push.
+
+### S4 collection controls, retirement and publication retain resources
+
+CollectCyclicColumnEntriesStock closes cursor/count cleanup around the checked
+entry loop. Its bound is relative to the caller's initial stock, charging
+L*((2*q+8)+1) for collected words and cursor ticks plus one 8*(cap+2) entry
+reserve. Native zero-push cleanup adds no allowance. Explicit scalar-only
+simplification avoids unfolding physical banks at stage boundaries.
+
+CyclicCollectionControlsStock certifies fixed native push bounds for scaled
+band controls (25) and owned cyclic-stream retirement (8).
+PreparedCyclicBandCollectionStock executes scaled controls and the restoring
+collection scan with named opaque preparedCyclicBandCollectionWorkspace.
+CollectRetireCyclicColumnStock releases both residual streams and the original
+column. PublishCyclicBandColumnStock transfers the packed column into the shared
+accumulator using Host.OrderedMoveStock, with no extra allocation allowance.
+All preserve the existing exact banks and runtime statements at arbitrary depth.
+The per-entry cap remains a scalar premise; the uniform bound is still open.
+
+Guarded checks (MiB): cleaned collection 1986.1; control certificates 1931.1;
+prepared collection 2017.0; collected/retired column 1992.5; publication 1978.3.
+Integration through publication, retained indexed producer and canonical table
+stock passes (10580 jobs, 6.0 GiB combined peak). A combined-import axiom audit
+of generic collection, publication and retained indexed generation reports only
+propext, Classical.choice and Quot.sound (7234.2 MiB temporary audit peak).
+Whitespace checks pass and verification handles are terminal.
+
+Next join physical cyclicTableColumn and its step, then the outer scan with one
+shared arithmetic reserve and retained packed output accounting. Immediately
+audit uniform parameter growth, especially the reciprocal setup reserve, before
+further wrapper propagation. Full fitting resources, original stream/header
+production, grouped/fallback accounting and tensor/root acceptance remain open.
+Collect the larger table checkpoint before committing; no push. Periodic WIP
+is unrelated and remains excluded.
+
+### S4 complete physical table column and invariant step retain resources
+
+CyclicTableColumnStock composes retained indexed generation, the native retained
+index copy and publication lifted by the generic right-update embedding.
+Its opaque cyclicTableColumnWorkspace counts the whole physical initial bank
+once and retains the original restored-bank endpoint, real/size estimates,
+decoded Schur accuracy and LengthKeyReady. The collection cap is an explicit
+scalar cost bound, not an assumed intermediate execution.
+
+CyclicTableLoopStepStock attaches the single index tick and advances the actual
+TableLoopInvariant with the same computed column. Its reserve is the complete
+column workspace plus one. No numerical accuracy or representation algorithm
+changes. Guarded checks pass at 2271.0 and 2233.8 MiB respectively. Integration
+through the step passes (10583 jobs, 2.7 GiB combined peak). Both axiom audits
+report only propext, Classical.choice and Quot.sound (7235.0 MiB temporary audit
+peak). All verification handles are terminal.
+
+Next extend the generic invariant scan resource language to existential column
+witnesses, using canonical boundary stock to share one numerical reserve across
+the outer table scan. A fixed register-sequence invariant would unnecessarily
+choose the numerical column family in advance. Then audit the complete uniform
+parameter estimates, particularly quadratic reciprocal setup, before proceeding
+to further wrappers. Full S4 gates remain open. No commit or push; keep collecting
+the coherent table checkpoint and exclude unrelated periodic WIP.
+
+### S4 complete cyclic table scan shares one arithmetic reserve
+
+ScanInvariantStock extends restoring counted scanning to arbitrary existential
+register invariants. Indexed boundary caps permit retained output to grow while
+one absolute cap and transient reserve cover the complete execution. Counter
+pop/push and final restoration preserve stock; execution uniqueness reuses the
+existing correctness trace. CyclicTableLoopStepStock additionally proves actual
+per-step growth at most (2*W+1)*w+1, using exact two-register stock equations and
+the structural folded-band length bound.
+
+CyclicTableColumnsLoopStock joins the actual complete table scan. It preserves
+the exact packed family, decoded Schur accuracy, format, restored bank and
+LengthKeyReady. Its bound is initial stock+B.card*((2*W+1)*w+1)+reserve, with one
+reserve bounding each complete column's workspace. Scalar collection-cost and
+workspace caps remain explicit hypotheses to discharge in the uniform-parameter
+audit; no intermediate execution or column family is supplied. This closes the
+local complete-table resource trace, not S4's uniform asymptotic estimate.
+
+Guarded checks pass: generic indexed invariant scan 1401.4 MiB; strengthened
+column step 2237.7 MiB; complete outer scan 2234.5 MiB. Integration through the
+complete scan passes (10586 jobs, 2.7 GiB combined peak). Generic scan and full
+table-scan axiom audits report only propext, Classical.choice and Quot.sound
+(7236.0 MiB temporary audit peak). All verification handles are terminal.
+
+Collect the resident/indexed/collection/publication/table scan work as one larger
+local checkpoint. No push. Next discharge uniform scalar caps and audit their
+parameter growth, especially the reciprocal's quadratic setup-width allowance,
+before extending further fitting wrappers. Whole fitting uniform time/space,
+original input/header production, fallback/grouped accounting and tensor/root
+acceptance remain open. Exclude unrelated periodic-recovery WIP.

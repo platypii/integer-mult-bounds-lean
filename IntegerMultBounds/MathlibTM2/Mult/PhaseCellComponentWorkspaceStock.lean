@@ -1,7 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellComponentWorkspace
-public import IntegerMultBounds.MathlibTM2.Host.EmbedStock
+public import IntegerMultBounds.MathlibTM2.Host.EmbedRightUpdatesStock
 
 /-! Lift a two-port component execution without recounting its spectator bank. -/
 @[expose] public section
@@ -23,15 +23,6 @@ theorem componentExec_twoPorts_within (p : Pr P₀ 144 Q A U) (v : HS 148 Q A U)
       (fun d z => mnSize z+d ≤ mnSize (mk v S)+0+work)
       0 (embProg componentReg id p)
       (mk v S) n (mk v'' {S with R := Function.update (Function.update S.R 110 input) 132 output}) := by
-  have hbody : ∀ p, (embTab componentReg body) (id p) = embProg componentReg id (body p) := fun _ => rfl
-  obtain ⟨v'',hv'',hu'',he''⟩ := exec_emb_ovr_within_stock componentReg (ι := id) (body' := embTab componentReg body)
-    componentReg_injective hbody he v rfl S rfl
-  refine ⟨v'',hu''.trans hu,he''.cast rfl ?_⟩
-  apply congrArg (mk v'')
-  let B := embStk componentReg S
-  let B₁ : Stacks 144 A := {B with R := Function.update B.R 110 input}
-  rw [embOvr_updR componentReg_injective B₁ S 132 output,
-    embOvr_updR componentReg_injective B S 110 input,embOvr_stk]
-  rfl
+  exact exec_emb_twoPorts_within_stock componentReg componentReg_injective 110 132 p v S v' n 0 work input output hu he
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
