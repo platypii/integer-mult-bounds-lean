@@ -10,7 +10,7 @@ Principal solutions, magnitude bounds and per-piece row errors are derived. -/
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2.Host
-  IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Fast
+  IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Fast.Main
   IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.NLogN
   IntegerMultBounds.NLogN.PhaseCellMatrix IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
 open CyclicPackedNormalizationPlacement
@@ -46,6 +46,13 @@ theorem recoveredCyclicPackedNormalization_exec (hA : 4 ≤ A)
       vf.user = v.user ∧
       steps ≤ PackedRecoveryNormalization.normalizationCost p q W a (min n (s-a)) Fs.length+
         PackedRecoveryNormalization.normalizationCost p q W 0 (n-min n (s-a)) Fs.length ∧
+      ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v E)+0+
+        (PackedRecoveryNormalization.normalizationWorkspace p q W a (min n (s-a)) Fs.length+
+          PackedRecoveryNormalization.normalizationWorkspace p q W 0 (n-min n (s-a)) Fs.length)) 0
+        cyclicPackedNormalization (mk v E) steps
+        (mk vf {E with R := (Function.update (Function.update E.R 848
+          ((Gs.map (fun D => cstream A W (packedInterval a (min n (s-a)) D))).flatten)) 849
+          ((Gs.map (fun D => cstream A W (packedInterval 0 (n-min n (s-a)) D))).flatten))}) ∧
       Exec body cyclicPackedNormalization (mk v E) steps
         (mk vf {E with R := (Function.update (Function.update E.R 848
           ((Gs.map (fun D => cstream A W (packedInterval a (min n (s-a)) D))).flatten)) 849
@@ -100,7 +107,7 @@ theorem recoveredCyclicPackedNormalization_exec (hA : 4 ≤ A)
     simpa only [Ds,List.map_reverse,List.map_ofFn,Function.comp_def,List.append_nil] using hsrcL
   have hwordsR : S.R 849 = (Ds.map (fun D => cstream A w (packedInterval 0 (n-min n (s-a)) D))).flatten++[] := by
     simpa only [Ds,List.map_reverse,List.map_ofFn,Function.comp_def,List.append_nil] using hsrcR
-  obtain ⟨vf,steps,hu,ht,hexec,_haccL,_haccR⟩ := cyclicPackedNormalization_exec (body := body) hA H K rfl rfl W
+  obtain ⟨vf,steps,hu,ht,hwNormalize,hexec,_haccL,_haccR⟩ := cyclicPackedNormalization_exec (body := body) hA H K rfl rfl W
     hdim.1 hdim.2.2 hW (haloVertices s a (a+min n (s-a))) (haloVertices s 0 (n-min n (s-a)))
     (by intro i hi; exact (mem_haloVertices _ _ i).mp hi)
     (by intro i hi hj; exact (mem_haloVertices _ _ i).mpr ⟨hi,hj⟩)
@@ -126,8 +133,9 @@ theorem recoveredCyclicPackedNormalization_exec (hA : 4 ≤ A)
     xs Ds (1/(2 : ℝ)^(target+1)) he
     (fun x hx i hi => hmag x hx i (hright i hi)) hreal hfits []
     (List.Forall₂.imp (fun x D h i hi => h i (hright i hi)) haccuracy)
-  refine ⟨xs,vf,steps,hsol,hu,?_,?_,?_,?_⟩
+  refine ⟨xs,vf,steps,hsol,hu,?_,?_,?_,?_,?_⟩
   · simpa only [hHp,hKp,hHq,hKq,hHo,hKo,hHs,hKs,hDlen] using ht
+  · simpa only [hHp,hKp,hHq,hKq,hHw,hKw,hHo,hKo,hHs,hKs,hDlen,Ds,List.append_nil] using hwNormalize
   · simpa only [hHp,hKp,hHq,hKq,hHw,hKw,hHo,hKo,hHs,hKs,Ds,List.append_nil] using hexec
   · simpa only [Ds,List.append_nil] using hsharpL
   · simpa only [Ds,List.append_nil] using hsharpR

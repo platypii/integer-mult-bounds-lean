@@ -3,7 +3,7 @@ module
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellNormalizePackedRealBatch
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellInstallRetainedRoundScalars
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReleaseScalarBank
-public import IntegerMultBounds.MathlibTM2.Mult.ChirpUnaryCopies
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetainedRoundScalarStock
 
 /-! Retained kernel length and precision generate one scalar bank for an entire
 real recovery archive. Common-width publication is followed by paid disposal. -/
@@ -11,10 +11,14 @@ real recovery archive. Common-width publication is followed by paid disposal. -/
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
   IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Host
-  IntegerMultBounds.MathlibTM2.Node IntegerMultBounds.MathlibTM2.Fast
+  IntegerMultBounds.MathlibTM2.Node IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Fast.Main
   IntegerMultBounds.MathlibTM2.Fast.TableVM IntegerMultBounds.MathlibTM2.Mult.ShortConv
   IntegerMultBounds.NLogN
 variable {T Q A : ℕ} {P U : Type} {body : P → Pr P T Q A U}
+
+def retainedNormalizePackedRealBatchWorkspace (B p q W N L : ℕ) : ℕ :=
+  (13*retainedRoundScalarSetupCost B p q+3*(6*p+11*B+7))+
+    normalizePackedBatchWorkspace B (2*q+8) q p (inverseNormalizationShift p) W N L
 
 def retainedNormalizePackedRealBatch (rg : TblR 25 → Fin T) (ports : Fin 4 → Fin T)
     (header word saved tmp carry pSrc qSrc precision wide rows replicas inputWidth count src work sp sg cy : Fin T) : Pr P T Q A U :=
@@ -62,6 +66,12 @@ theorem retainedNormalizePackedRealBatch_exec (hA : 4 ≤ A)
       n ≤ binaryHeaderQueueCost S.R B [pSrc,qSrc]+25*(4*B+4)+2*(8*B+8)+2+
         (18+(4*Nat.size (4*p)+31))*tblC B 0+
         normalizePackedBatchCost B (2*q+8) p W Ds.length L+(8*p+11*B+9)+(2*(25*B)+2*25+1) ∧
+      ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+0+
+        retainedNormalizePackedRealBatchWorkspace B p q W Ds.length L) 0
+        (retainedNormalizePackedRealBatch rg ports header word saved tmp carry pSrc qSrc
+          precision wide rows replicas inputWidth count src work sp sg cy)
+        (mk v S) n (mk v' {S with R := (Function.update S.R src
+          ((Gs.map (fun D => cstream A W (packedInterval a L D))).flatten++tail))}) ∧
       Exec body (retainedNormalizePackedRealBatch rg ports header word saved tmp carry pSrc qSrc
         precision wide rows replicas inputWidth count src work sp sg cy)
         (mk v S) n (mk v' {S with R := (Function.update S.R src
@@ -147,8 +157,26 @@ theorem retainedNormalizePackedRealBatch_exec (hA : 4 ≤ A)
         · by_cases hkp : k = precision
           · subst k; simp [G',S',‹precision ≠ src›,hprecision]
           · simpa [G',G,F',S',hk,hkp] using hframe k hoff)
+  have hmSetup : m₁ ≤ retainedRoundScalarSetupCost B p q := by
+    simpa only [binaryHeaderQueueCost_eq,List.map_cons,List.map_nil,List.sum_cons,List.sum_nil,
+      hp,hq,List.length_cons,List.length_nil,Nat.add_zero,retainedRoundScalarSetupCost] using hm₁
+  have hwSetup := mn_native_exec_within he₁ 13 (installRetainedRoundScalars_native ..) 0
+    (mnSize (mk v S)+0+13*retainedRoundScalarSetupCost B p q) (by omega)
+  have hwCopy := mn_native_exec_within hei' 3 (tblUnaryCopies_native ..) 0
+    (mnSize (mk v₁ F)+0+3*(6*p+11*B+7)) (by omega)
+  have hwPrec := mn_native_exec_within hec' 0 (by
+    simp [uclear,drainR,popDo,peekR,mnNativePushBound,mnActPush]) 0
+    (mnSize (mk vi F')+0+normalizePackedBatchWorkspace B (2*q+8) q p (inverseNormalizationShift p) W Ds.length L)
+    (by simpa only [Nat.zero_mul,Nat.add_zero] using hnormalizeWithin.final)
+  have hwRelease := mn_native_exec_within he₃ 0 (releaseScalarBank_native rg) 0 _
+    (by simpa only [Nat.zero_mul,Nat.add_zero] using hwPrec.final)
+  have hwTail := ExecWithin.seq hnormalizeWithin (ExecWithin.seq hwPrec hwRelease)
+  have hwStart := execWithin_seq_two_budget body _ _ _ _ _ _ _ 0 _ _ hwSetup hwCopy
+  have hwWhole := execWithin_seq_two_budget body _ _ _ _ _ _ _ 0 _ _ hwStart hwTail
+  have htrace := hwWhole.seq_assoc.cast
+    (Nat.add_assoc m₁ mi (m₂+((2*p+2)+(2*(25*B)+2*25+1)))) rfl
   exact ⟨v₃,m₁+(mi+(m₂+((2*p+2)+(2*(25*B)+2*25+1)))),
     hu₃.trans (huc.trans (hu₂.trans (hui.trans hu₁))),by omega,
-    Exec.seq he₁ (Exec.seq hei' (Exec.seq he₂ (Exec.seq hec' he₃))),haccuracy⟩
+    htrace,htrace.toExec,haccuracy⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

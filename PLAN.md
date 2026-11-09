@@ -45951,3 +45951,28 @@ Quot.sound (9080.7 MiB peak). Collect this normalization chunk locally; no push.
 Full S4 remains open: outer normalization controls, final core publication and
 ordinary preparation space, uniform selected-space/added-time absorption,
 class/outer integration, fallback and final acceptance.
+
+The actual recovery-through-normalization execution now has one whole-run
+space trace. `PhaseCellRetainedRoundScalarStock` supplies structural native
+bounds for retained scalar installation and generated normalization width,
+and a zero-push bound for scalar-bank release. The retained normalizer composes
+setup, the existing precision copy and packed-batch trace, then zero-growth
+precision/table cleanup. Its explicit scalar setup bound depends only on B/p/q,
+not on replica count. The physical 64-register piece executor adds width/length
+rulers and their cleanup. Placed and paired normalization reuse the existing
+embedding and frame proofs, preserving accuracy and exact final states.
+`executedCyclicPackedNormalization_spec` then lifts the proven packed-recovery
+prefix into the caller's actual state (including its already-present width
+ruler) and composes both normalization pieces. `cyclicPackedRecoveryWorkspace`
+names the preceding allowance for reuse. No supplied whole-run cap is added.
+A failed budget-expression normalization was fixed by casting only the step
+association; resource predicates remain folded and default proof limits stay
+unchanged. Final core cropping/publication and complex component assembly,
+ordinary input/factor/control preparation space, uniform selected-space and
+added-time absorption, class/outer/fallback and final S4 acceptance remain open.
+Guarded checks: scalar stock helper 2081.2 MiB, retained normalizer 3186.6 MiB,
+physical normalization piece 3189.6 MiB, complete recovery/normalization module
+3467.7 MiB. Full origin-callback integration passes (16568 jobs, 8.4 GiB aggregate
+peak). The scalar, retained, physical-piece and complete normalization theorems
+audit to only propext, Classical.choice and Quot.sound (temporary audit peak
+9654.6 MiB). Collect this whole-normalization checkpoint locally; no push.

@@ -104,7 +104,7 @@ theorem executedCyclicCorePublication_spec (hR : rpStates ≤ Q) (hQ : SS.states
   let K := axis.cyclicRightReplicaProblem cellTarget 2 a n hn Fs hF
   intro W hW wide hwide radiusWord coreWord hRword hLword buffersL buffersR v S tail pageTail
     inputsL inputsR factory h226 h229
-  obtain ⟨J,L,X,G,fields,xs,z,m,savedL,savedR,hu,hprofile,hm,h247,h547,h125,h425,controlsL,controlsR,hstreams,hsol,he,haccL,haccR⟩ :=
+  obtain ⟨J,L,X,G,fields,xs,z,m,savedL,savedR,hu,hprofile,hm,h247,h547,h125,h425,controlsL,controlsR,hstreams,hsol,hnormalizedWithin,he,haccL,haccR⟩ :=
     executedCyclicPackedNormalization_spec (body := body) hR hQ hA axis ha hn hleftRoom hrightRoom
       Fs hF W hW wide hwide buffersL buffersR (embDn cyclicCorePublicationReg v) S tail pageTail
       inputsL inputsR factory h226 h229

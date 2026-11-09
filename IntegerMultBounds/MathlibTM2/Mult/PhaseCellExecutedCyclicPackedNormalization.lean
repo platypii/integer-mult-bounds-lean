@@ -9,7 +9,7 @@ normalizations. Reference solutions and publication readiness are derived. -/
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2.Host
-  IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Fast
+  IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Fast.Main
   IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.NLogN
   IntegerMultBounds.NLogN.PhaseCellMatrix IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
 local notation "extendNormalization" => CyclicPackedNormalizationPlacement.extend
@@ -63,6 +63,22 @@ theorem executedCyclicPackedNormalization_spec (hR : rpStates ≤ Q) (hQ : SS.st
       (G.inp = S.inp ∧ G.out = S.out) ∧
       List.Forall₂ (fun rhs x => SchurDominance.Solves (realMatrix s t p u)
         (cyclicPrincipalVertices s a n) x (fun i => (value q (rhs i)).re)) Fs.reverse xs ∧
+      ExecWithin (embTab extendNormalization (embTab extendAssembly
+          (embTab extendSecond (embTab CyclicRecoveryPlacement.extend (cyclicReplicaCallerBody body)))))
+        (fun d z => mnSize z+d ≤ mnSize (mk v (cyclicPackedNormalizationInput
+          (extendStacks (by decide : 842 ≤ 850) (extendStacks (by decide : 840 ≤ 842)
+            (extendStacks (by decide : 834 ≤ 840) S))) wide))+0+
+          (cyclicPackedRecoveryWorkspace (P := P) (A := A) (U := U) H K J L hR hQ
+            p u l t a n solveTarget q w B.card Fs.length+
+              (PackedRecoveryNormalization.normalizationWorkspace p q W a (min n (s-a)) Fs.length+
+                PackedRecoveryNormalization.normalizationWorkspace p q W 0 (n-min n (s-a)) Fs.length))) 0
+        (executedCyclicPackedNormalization hR hQ)
+        (mk v (cyclicPackedNormalizationInput
+          (extendStacks (by decide : 842 ≤ 850) (extendStacks (by decide : 840 ≤ 842)
+            (extendStacks (by decide : 834 ≤ 840) S))) wide)) steps
+        (mk vf {F with R := (Function.update (Function.update F.R 848
+          ((Gs.map (fun D => cstream A W (packedInterval a (min n (s-a)) D))).flatten)) 849
+          ((Gs.map (fun D => cstream A W (packedInterval 0 (n-min n (s-a)) D))).flatten))}) ∧
       Exec (embTab extendNormalization (embTab extendAssembly
           (embTab extendSecond (embTab CyclicRecoveryPlacement.extend (cyclicReplicaCallerBody body)))))
         (executedCyclicPackedNormalization hR hQ)
@@ -102,12 +118,27 @@ theorem executedCyclicPackedNormalization_spec (hR : rpStates ≤ Q) (hQ : SS.st
     exact controlsL
   have controlsR' : ReplicaAssemblyControls K (CyclicPackedNormalizationPlacement.gather true) 838 G := by
     exact controlsR
-  obtain ⟨xs,vf,k,hsol,huf,hk,henorm,haccL,haccR⟩ := recoveredCyclicPackedNormalization_exec
+  obtain ⟨xs,vf,k,hsol,huf,hk,hnormWithin,henorm,haccL,haccR⟩ := recoveredCyclicPackedNormalization_exec
     (body := callerBody) (target := target) (by omega : 4 ≤ A) axis ha hn Fs hF fields
     (fun j => ⟨(hfields j).1,(hfields j).2.1,(hfields j).2.2.2⟩)
     W hW wide hwide vi G controlsL' controlsR' hwordsL hwordsR
+  let initial := extendStacks (by decide : 842 ≤ 850) (extendStacks (by decide : 840 ≤ 842)
+    (extendStacks (by decide : 834 ≤ 840) S))
+  have hview : embStk extendNormalization (cyclicPackedNormalizationInput initial wide) = initial := by
+    unfold cyclicPackedNormalizationInput
+    rw [embStk_updateR_off _ _ _ (by
+      intro i heq
+      have hv := congrArg Fin.val heq
+      change i.val = 906 at hv
+      omega),embStk_extendStacks]
+  have hprefix := exec_emb_within_stock_of_exec (Fin.castLE_injective _) (ι := id)
+    (body := embTab extendAssembly (embTab extendSecond
+      (embTab CyclicRecoveryPlacement.extend (cyclicReplicaCallerBody body))))
+    (body' := callerBody) (by intro f; rfl) hpackedWithin v rfl
+    (cyclicPackedNormalizationInput initial wide) hview helift
+  have hwhole := execWithin_seq_two_budget callerBody _ _ _ _ _ _ _ 0 _ _ hprefix hnormWithin
   refine ⟨J,L,X,G,fields,xs,vf,m+k,savedL,savedR,huf.trans (huser.trans hu),hprofile,
-    Nat.add_le_add hm hk,h247,h547,h125,h425,controlsL',controlsR',hstreams,hsol,?_,haccL,haccR⟩
+    Nat.add_le_add hm hk,h247,h547,h125,h425,controlsL',controlsR',hstreams,hsol,hwhole,?_,haccL,haccR⟩
   exact Exec.seq helift henorm
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

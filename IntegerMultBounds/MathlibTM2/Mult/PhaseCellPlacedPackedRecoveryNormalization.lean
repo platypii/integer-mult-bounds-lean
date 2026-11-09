@@ -1,7 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellNormalizePackedRecoveryPiece
-public import IntegerMultBounds.MathlibTM2.Host.EmbedStock
+public import IntegerMultBounds.MathlibTM2.Host.EmbedStockTrace
 
 /-! Injective placement of packed normalization changes only its borrowed source.
 The local executor has no calls, so it embeds in any caller body. -/
@@ -9,7 +9,7 @@ The local executor has no calls, so it embeds in any caller body. -/
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.PackedRecoveryNormalization
 open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
   IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Host
-  IntegerMultBounds.MathlibTM2.Node IntegerMultBounds.MathlibTM2.Fast
+  IntegerMultBounds.MathlibTM2.Node IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Fast.Main
   IntegerMultBounds.MathlibTM2.Fast.TableVM IntegerMultBounds.MathlibTM2.Mult.ShortConv
   IntegerMultBounds.NLogN
 variable {T Q A : ℕ} {P U : Type} {body : P → Pr P T Q A U}
@@ -38,6 +38,10 @@ theorem placedNormalizePiece_exec (eReg : Fin 64 → Fin T) (hReg : Function.Inj
     (hfresh : ∀ i : Fin 64, 8 ≤ i.val → S.R (eReg i) = []) :
     let Gs := Ds.map (fun D i => finalRoundWord (2*q+8) q p (inverseNormalizationShift p) (D i))
     ∃ v' n, v'.user = v.user ∧ n ≤ normalizationCost p q W a L Ds.length ∧
+      ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+0+
+        normalizationWorkspace p q W a L Ds.length) 0
+        (placedNormalizePiece eReg) (mk v S) n (mk v' {S with R := (Function.update S.R (eReg 7)
+          ((Gs.map (fun D => cstream A W (packedInterval a L D))).flatten++tail))}) ∧
       Exec body (placedNormalizePiece eReg) (mk v S) n (mk v' {S with R := (Function.update S.R (eReg 7)
         ((Gs.map (fun D => cstream A W (packedInterval a L D))).flatten++tail))}) ∧
       List.Forall₂ (fun x D => PhaseCellInterface.ErrorOn active
@@ -47,7 +51,7 @@ theorem placedNormalizePiece_exec (eReg : Fin 64 → Fin T) (hReg : Function.Inj
   dsimp only
   let Gs := Ds.map (fun D i => finalRoundWord (2*q+8) q p (inverseNormalizationShift p) (D i))
   let ys := (Gs.map (fun D => cstream A W (packedInterval a L D))).flatten++tail
-  obtain ⟨vi,n,hu,hn,hex,haccuracy⟩ := normalizePiece_exec (body := fun z : Empty => nomatch z)
+  obtain ⟨vi,n,hu,hn,hpieceWithin,hex,haccuracy⟩ := normalizePiece_exec (body := fun z : Empty => nomatch z)
     hA p q W a L hpq hsize hW hinterval active hactive hcover xs Ds e he hx hreal hfits tail hgood
     (embDn eReg v) (embStk eReg S) hP hq ha hb hvolume hreplicas hwide hsrc hfresh
   obtain ⟨v',hv,hu',hex'⟩ := exec_emb_ovr (body' := body) (e := eReg) (ι := Empty.elim)
@@ -55,6 +59,8 @@ theorem placedNormalizePiece_exec (eReg : Fin 64 → Fin T) (hReg : Function.Inj
   have hstate : embOvr eReg {embStk eReg S with R := Function.update (embStk eReg S).R 7 ys}.get S =
       {S with R := Function.update S.R (eReg 7) ys} := by
     rw [embOvr_updR hReg,embOvr_stk]
-  exact ⟨v',n,hu'.trans hu,hn,hex'.cast rfl (congrArg (mk v') hstate),haccuracy⟩
+  have hstock := exec_emb_within_stock_of_exec hReg (ι := Empty.elim) (body' := body)
+    (fun z => nomatch z) hpieceWithin v rfl S rfl hex'
+  exact ⟨v',n,hu'.trans hu,hn,hstock.cast rfl (congrArg (mk v') hstate),hex'.cast rfl (congrArg (mk v') hstate),haccuracy⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.PackedRecoveryNormalization

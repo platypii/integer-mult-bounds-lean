@@ -7,7 +7,7 @@ Both packets retain the same ordered fields and the same normalization scale. -/
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2.Host
-  IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Fast
+  IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Fast.Main
   IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.NLogN
   IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
 open CyclicPackedNormalizationPlacement
@@ -48,6 +48,13 @@ theorem cyclicPackedNormalization_exec (hA : 4 ≤ A)
     ∃ v' n, v'.user = v.user ∧
       n ≤ PackedRecoveryNormalization.normalizationCost H.p H.precision W H.origin H.span Ds.length+
         PackedRecoveryNormalization.normalizationCost K.p K.precision W K.origin K.span Ds.length ∧
+      ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v E)+0+
+        (PackedRecoveryNormalization.normalizationWorkspace H.p H.precision W H.origin H.span Ds.length+
+          PackedRecoveryNormalization.normalizationWorkspace K.p K.precision W K.origin K.span Ds.length)) 0
+        cyclicPackedNormalization (mk v E) n
+        (mk v' {E with R := (Function.update (Function.update E.R 848
+          ((Gs.map (fun D => cstream A W (packedInterval H.origin H.span D))).flatten++tailL)) 849
+          ((Gs.map (fun D => cstream A W (packedInterval K.origin K.span D))).flatten++tailR))}) ∧
       Exec body cyclicPackedNormalization (mk v E) n
         (mk v' {E with R := (Function.update (Function.update E.R 848
           ((Gs.map (fun D => cstream A W (packedInterval H.origin H.span D))).flatten++tailL)) 849
@@ -70,7 +77,7 @@ theorem cyclicPackedNormalization_exec (hA : 4 ≤ A)
       simp only [ReplicaHaloProblem.wordWidth,ReplicaHaloProblem.precision,executionWidth,executionPrecision]
       omega
     rw [hword K,hword H,hq]
-  obtain ⟨vi,m,huL,hmL,heL,haccuracyL⟩ := cyclicPackedPieceNormalization_exec (body := body)
+  obtain ⟨vi,m,huL,hmL,hwL,heL,haccuracyL⟩ := cyclicPackedPieceNormalization_exec (body := body)
     hA false H W hpq hsize hW activeL hactiveL hcoverL xs Ds hlenL e he hxL hreal hfits
     tailL wide hwide hgoodL v S 839 controlsL hsrcL
   have controlsR' : ReplicaAssemblyControls K (gather true) 838 S' := by
@@ -89,15 +96,18 @@ theorem cyclicPackedNormalization_exec (hA : 4 ≤ A)
     funext i
     by_cases h906 : i = 906 <;> by_cases h848 : i = 848 <;>
       simp [E,cyclicPackedNormalizationInput,h906,h848]
-  obtain ⟨vf,n,huR,hmR,heR,haccuracyR⟩ := cyclicPackedPieceNormalization_exec (body := body)
+  obtain ⟨vf,n,huR,hmR,hwR,heR,haccuracyR⟩ := cyclicPackedPieceNormalization_exec (body := body)
     hA true K W (by simpa only [hp,hq] using hpq) (by simpa only [hp,hq] using hsize)
     (by simpa only [hp] using hW) activeR hactiveR hcoverR xs Ds hlenR e he
     (by simpa only [hp] using hxR) hreal (by simpa only [hw] using hfits)
     tailR wide hwide (by simpa only [hq] using hgoodR) vi S' 838 controlsR'
     (by simpa [S',source] using hsrcR)
-  rw [hinput] at heR
+  rw [hinput] at heR hwR
   have h849 : extend (849 : Fin 850) = (849 : Fin 907) := by decide +kernel
-  refine ⟨vf,m+n,huR.trans huL,Nat.add_le_add hmL hmR,?_,haccuracyL,?_⟩
+  have hwWhole := execWithin_seq_two_budget body _ _ _ _ _ _ _ 0 _ _ hwL hwR
+  refine ⟨vf,m+n,huR.trans huL,Nat.add_le_add hmL hmR,?_,?_,haccuracyL,?_⟩
+  · simpa only [cyclicPackedNormalization,source,Bool.false_eq_true,ite_false,ite_true,
+      hp,hq,hw,E,Gs,wordsL,h849] using hwWhole
   · simpa only [cyclicPackedNormalization,source,Bool.false_eq_true,ite_false,ite_true,
       hp,hq,hw,E,Gs,wordsL,h849] using Exec.seq heL heR
   · simpa only [hp,hq,hw] using haccuracyR

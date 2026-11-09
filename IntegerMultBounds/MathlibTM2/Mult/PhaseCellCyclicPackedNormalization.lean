@@ -9,7 +9,7 @@ normalization of either source. Both placements reuse the same workspace. -/
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
   IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Host
-  IntegerMultBounds.MathlibTM2.Node IntegerMultBounds.MathlibTM2.Fast
+  IntegerMultBounds.MathlibTM2.Node IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Fast.Main
   IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.NLogN
   IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
 open CyclicPackedNormalizationPlacement
@@ -44,6 +44,11 @@ theorem cyclicPackedPieceNormalization_exec (hA : 4 ≤ A) (right : Bool)
     let Gs := Ds.map (fun D i => finalRoundWord H.wordWidth H.precision H.p (inverseNormalizationShift H.p) (D i))
     ∃ v' n, v'.user = v.user ∧
       n ≤ PackedRecoveryNormalization.normalizationCost H.p H.precision W H.origin H.span Ds.length ∧
+      ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v E)+0+
+        PackedRecoveryNormalization.normalizationWorkspace H.p H.precision W H.origin H.span Ds.length) 0
+        (cyclicPackedPieceNormalization right) (mk v E) n
+        (mk v' {E with R := (Function.update E.R (extend (source right))
+          ((Gs.map (fun D => cstream A W (packedInterval H.origin H.span D))).flatten++tail))}) ∧
       Exec body (cyclicPackedPieceNormalization right) (mk v E) n
         (mk v' {E with R := (Function.update E.R (extend (source right))
           ((Gs.map (fun D => cstream A W (packedInterval H.origin H.span D))).flatten++tail))}) ∧
@@ -65,7 +70,7 @@ theorem cyclicPackedPieceNormalization_exec (hA : 4 ≤ A) (right : Bool)
   have hwidth : H.wordWidth = 2*H.precision+8 := by
     simp only [ReplicaHaloProblem.wordWidth,ReplicaHaloProblem.precision,executionWidth,executionPrecision]
     omega
-  obtain ⟨vf,n,hu,hn,hexec,haccuracy⟩ := PackedRecoveryNormalization.placedNormalizePiece_exec (body := body)
+  obtain ⟨vf,n,hu,hn,hpieceWithin,hexec,haccuracy⟩ := PackedRecoveryNormalization.placedNormalizePiece_exec (body := body)
     (placement right) (placement_injective right) hA H.p H.precision W H.origin H.span hpq hsize hW
     H.span_fit active hactive hcover xs Ds e he hx hreal (by simpa only [hwidth] using hfits)
     tail hgood v E
@@ -85,6 +90,6 @@ theorem cyclicPackedPieceNormalization_exec (hA : 4 ≤ A) (right : Bool)
           omega
         simp only [E,cyclicPackedNormalizationInput,Function.update_of_ne hne]
         exact (extendStacks_fresh (by decide : 850 ≤ 907) S _ hf.1).2)
-  exact ⟨vf,n,hu,hn,by simpa only [cyclicPackedPieceNormalization,E,h7,←hwidth] using hexec,by simpa only [←hwidth] using haccuracy⟩
+  exact ⟨vf,n,hu,hn,by simpa only [cyclicPackedPieceNormalization,E,h7,←hwidth] using hpieceWithin,by simpa only [cyclicPackedPieceNormalization,E,h7,←hwidth] using hexec,by simpa only [←hwidth] using haccuracy⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

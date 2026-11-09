@@ -10,7 +10,7 @@ The generated width/length rulers and scalar bank are fully retired. -/
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.PackedRecoveryNormalization
 open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
   IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Host
-  IntegerMultBounds.MathlibTM2.Node IntegerMultBounds.MathlibTM2.Fast
+  IntegerMultBounds.MathlibTM2.Node IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Fast.Main
   IntegerMultBounds.MathlibTM2.Fast.TableVM IntegerMultBounds.MathlibTM2.Mult.ShortConv
   IntegerMultBounds.NLogN
 variable {Q A : ℕ} {P U : Type} {body : P → Pr P 64 Q A U}
@@ -29,6 +29,11 @@ def normalizationCost (p q W a L N : ℕ) : ℕ :=
       (18+(4*Nat.size (4*p)+31))*tblC B 0+
       normalizePackedBatchCost B (2*q+8) p W N L+(8*p+11*B+9)+(2*(25*B)+2*25+1))+
     (2*(L+B)+5)
+
+def normalizationWorkspace (p q W a L N : ℕ) : ℕ :=
+  let B := cyclicNormalizationWidth (2^15*p) q
+  ((13*(19*(2^15*p)+19*q+17)+2*(4*(a+L)+4))+2*(4*a+4))+
+    retainedNormalizePackedRealBatchWorkspace B p q W N L
 
 theorem normalizePiece_exec (hA : 4 ≤ A)
     (p q W a L : ℕ) (hpq : p ≤ q)
@@ -51,6 +56,10 @@ theorem normalizePiece_exec (hA : 4 ≤ A)
     (hfresh : ∀ i : Fin 64, 8 ≤ i.val → S.R i = []) :
     let Gs := Ds.map (fun D i => finalRoundWord (2*q+8) q p (inverseNormalizationShift p) (D i))
     ∃ v' n, v'.user = v.user ∧ n ≤ normalizationCost p q W a L Ds.length ∧
+      ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+0+
+        normalizationWorkspace p q W a L Ds.length) 0 normalizePiece (mk v S) n
+        (mk v' {S with R := (Function.update S.R 7
+          ((Gs.map (fun D => cstream A W (packedInterval a L D))).flatten++tail))}) ∧
       Exec body normalizePiece (mk v S) n (mk v' {S with R := (Function.update S.R 7
         ((Gs.map (fun D => cstream A W (packedInterval a L D))).flatten++tail))}) ∧
       List.Forall₂ (fun x D => PhaseCellInterface.ErrorOn active
@@ -87,7 +96,7 @@ theorem normalizePiece_exec (hA : 4 ≤ A)
       exact scalar_injective.ne hr
     exact hblank _ (scalar_range r).1 h33 (scalar_ne r 58 (by decide))
   have hroom := cyclicNormalizationWidth_room p q
-  obtain ⟨vf,m,hu,hm,hexec,haccuracy⟩ := retainedNormalizePackedRealBatch_exec (body := body) hA scalar scalar_injective
+  obtain ⟨vf,m,hu,hm,hretainedWithin,hexec,haccuracy⟩ := retainedNormalizePackedRealBatch_exec (body := body) hA scalar scalar_injective
     ports ports_injective 52 53 54 55 56 0 1 57 6 58 5 4 59 7 60 61 62 63
     (by intro r; exact scalar_ne r 52 (by decide))
     (by intro k hk
@@ -150,9 +159,26 @@ theorem normalizePiece_exec (hA : 4 ≤ A)
       simp [G',G,E,List.sum_cons,List.sum_nil]
 
     exact he'.cast hcost (congrArg (mk v') hfinal)
+  have hw₁ := mn_native_exec_within he₁ 13 (generateCyclicNormalizationWidth_native ..) 0
+    (mnSize (mk v S)+0+13*(19*(2^15*p)+19*q+17)) (by omega)
+  have hw₂ := mn_native_exec_within he₂' 2 (by
+    simp [ucopy,umulSym,scanR,drainR,popDo,keepIn,pushN,moveR,moveStep,whileR,peekR,
+      mnNativePushBound,mnActPush]) 0 (mnSize (mk v₁ E)+0+2*(4*(a+L)+4)) (by omega)
+  have hw₃ := mn_native_exec_within he₃' 2 (by
+    simp [usub,dropTop,scanR,drainR,popDo,keepIn,moveR,moveStep,whileR,peekR,
+      mnNativePushBound,mnActPush]) 0 (mnSize (mk v₂ F)+0+2*(4*a+4)) (by omega)
+  have hwClear := mn_native_exec_within he'' 0 (clearWords_native _) 0
+    (mnSize (mk v₃ G)+0+retainedNormalizePackedRealBatchWorkspace B p q W Ds.length L)
+    (by simpa only [Nat.zero_mul,Nat.add_zero] using hretainedWithin.final)
+  have hwTail := ExecWithin.seq hretainedWithin hwClear
+  have hw12 := execWithin_seq_two_budget body _ _ _ _ _ _ _ 0 _ _ hw₁ hw₂
+  have hw123 := execWithin_seq_two_budget body _ _ _ _ _ _ _ 0 _ _ hw12 hw₃
+  have hwWhole := execWithin_seq_two_budget body _ _ _ _ _ _ _ 0 _ _ hw123 hwTail
+  have htime : ((m₁+(4*(a+L)+4))+(4*a+4))+(m+(2*(L+B)+5)) =
+      m₁+((4*(a+L)+4)+((4*a+4)+(m+(2*(L+B)+5)))) := by omega
+  have htrace := hwWhole.seq_assoc.seq_assoc.cast htime rfl
   refine ⟨v',m₁+((4*(a+L)+4)+((4*a+4)+(m+(2*(L+B)+5)))),
-    hu'.trans (hu.trans (hu₃.trans (hu₂.trans hu₁))),?_,
-    Exec.seq he₁ (Exec.seq he₂' (Exec.seq he₃' (Exec.seq hexec he''))),haccuracy⟩
+    hu'.trans (hu.trans (hu₃.trans (hu₂.trans hu₁))),?_,htrace,htrace.toExec,haccuracy⟩
   rw [hc] at hm
   dsimp only [B] at hm
   dsimp only [normalizationCost,B]

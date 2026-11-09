@@ -16,6 +16,14 @@ local notation "extendAssembly" => CyclicPackedAssemblyPlacement.extend
 local notation "extendSecond" => CyclicSecondInteriorPlacement.extend
 variable {Q A : ℕ} {P U : Type} {body : P → Pr P 117 Q A U}
 
+noncomputable def cyclicPackedRecoveryWorkspace {s : ℕ} [NeZero s]
+    (H K J L : ReplicaHaloProblem s) (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q)
+    (p u l t a n target q w N replicas : ℕ) : ℕ :=
+  cyclicRecoveredInteriorWorkspace (P := P) (A := A) (U := U) H K J L hR hQ
+    p u l t a n target q w N replicas+
+      (2*retainedPackedPublicationMergeCost H.span H.wordWidth+
+        2*retainedPackedPublicationMergeCost K.span K.wordWidth)
+
 noncomputable def executedCyclicPackedRecovery (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) : Pr P 850 Q A U :=
   .seq (embProg extendAssembly id (executedCyclicSecondInterior hR hQ)) cyclicPackedAssembly
 
@@ -66,10 +74,8 @@ theorem executedCyclicPackedRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.states 
         (fun d z => mnSize z+d ≤ mnSize (mk v
           (extendStacks (by decide : 842 ≤ 850) (extendStacks (by decide : 840 ≤ 842)
             (extendStacks (by decide : 834 ≤ 840) S))))+0+
-          (cyclicRecoveredInteriorWorkspace (P := P) (A := A) (U := U) H K J L hR hQ
-            p u l t a n solveTarget q w B.card Fs.length+
-              (2*retainedPackedPublicationMergeCost H.span H.wordWidth+
-                2*retainedPackedPublicationMergeCost K.span K.wordWidth))) 0
+          cyclicPackedRecoveryWorkspace (P := P) (A := A) (U := U) H K J L hR hQ
+            p u l t a n solveTarget q w B.card Fs.length) 0
         (executedCyclicPackedRecovery hR hQ)
         (mk v (extendStacks (by decide : 842 ≤ 850) (extendStacks (by decide : 840 ≤ 842)
           (extendStacks (by decide : 834 ≤ 840) S)))) steps (mk vf G) ∧
