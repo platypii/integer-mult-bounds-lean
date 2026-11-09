@@ -1,6 +1,9 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPreparedResidualBatchWorkspace
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPreparedResidualSolveStock
+public import IntegerMultBounds.MathlibTM2.Host.EmbedStock
+public import IntegerMultBounds.MathlibTM2.Host.SequentialBudget
 
 /-! One batch step archives its borrowed RHS, solves on the shared page and archives the output in source order. -/
 
@@ -10,11 +13,31 @@ namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
 open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
   IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Host
   IntegerMultBounds.MathlibTM2.Node IntegerMultBounds.MathlibTM2.Fast
+  IntegerMultBounds.MathlibTM2.Fast.Main
   IntegerMultBounds.NLogN IntegerMultBounds.NLogN.SchurDominance
   IntegerMultBounds.NLogN.PhaseCellMatrix IntegerMultBounds.MathlibTM2.Mult.ShortConv
   IntegerMultBounds.MathlibTM2.Mult.BandFactor
 
 variable {Q A : ℕ} {P U : Type} {body : P → Pr P 224 Q A U}
+
+noncomputable def preparedResidualBatchSolveWorkspace (P : Type) (hQ : SS.states ≤ Q)
+    (q w N W : ℕ) : ℕ :=
+  preparedResidualSolveWorkspace
+    (mnProgPush (cmulBlock (rsbCr boundaryFactorReg .vk .dtab .ya)
+      (rmulOne (P := P) (Q := Q) (A := A) (U := U) boundaryFactorMulReg
+        boundaryFactorMulReg_injective (by decide) hQ (rsbCr boundaryFactorReg .vk .dtab .ya))))
+    (mnProgPush (cmulBlock (rsbCr boundaryFactorReg .dout .dtab .ya)
+      (rmulOne (P := P) (Q := Q) (A := A) (U := U) boundaryFactorMulReg
+        boundaryFactorMulReg_injective (by decide) hQ (rsbCr boundaryFactorReg .dout .dtab .ya))))
+    (mnProgPush (rmulOne (P := P) (Q := Q) (A := A) (U := U) boundaryFactorMulReg
+      boundaryFactorMulReg_injective (by decide) hQ (rsbCr boundaryFactorReg .hv .xa .hc)))
+    (mnProgPush (rmulOne (P := P) (Q := Q) (A := A) (U := U) boundaryFactorMulReg
+      boundaryFactorMulReg_injective (by decide) hQ (rsbCr boundaryFactorReg .ya .xs .pr))) q w N W
+
+noncomputable def preparedResidualBatchStepWorkspace (P : Type) (hQ : SS.states ≤ Q)
+    (q w N W : ℕ) : ℕ :=
+  3*(10*(N*w)+10)+(3*(4*(N*w)+4)+
+    (preparedResidualBatchSolveWorkspace (A := A) (U := U) P hQ q w N W+3*(4*(N*w)+4)))
 
 theorem preparedResidualBatchStep_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     (p u l target rhsExp : ℕ) {s : ℕ} [NeZero s] (B : Finset (ZMod s)) (W : ℕ)
@@ -48,7 +71,9 @@ theorem preparedResidualBatchStep_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     S.R 206 = [] → S.R 225 = [] → S.R 232 = [] → S.R 233 = [] →
     (S.R 231).length = B.card*w → S.R 226 = cstream A w b++tail →
     ∃ v' n, v'.user = v.user ∧ n ≤ preparedResidualBatchStepCost q w B.card W ∧
-      Exec (embTab preparedBoundaryBatchCoreReg (embTab preparedBoundaryCoreReg body))
+      ExecWithin (embTab preparedBoundaryBatchCoreReg (embTab preparedBoundaryCoreReg body))
+        (fun d z => mnSize z+d ≤ mnSize (mk v S)+0+
+          preparedResidualBatchStepWorkspace (A := A) (U := U) P hQ q w B.card W) 0
         (preparedResidualBatchStep hQ) (mk v S) n
         (mk v' {S with R := (Function.update (Function.update (Function.update S.R 226 tail)
           227 ((cstream A w b).reverse++S.R 227)) 228
@@ -114,8 +139,18 @@ theorem preparedResidualBatchStep_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
       change i.val = 206 at hh
       omega
     simpa [hproject,hi] using hmul i
-  obtain ⟨v₃,n₃,hu₃,hn₃,he₃⟩ := preparedResidualSolve_exec (body := body) hQ hA p u l target rhsExp B W columns hp hlen
-    hformat hstage b hb hbound (embDn preparedBoundaryBatchCoreReg v₂) T₂ hleft₂ hmul₂
+  let D := mnProgPush (cmulBlock (rsbCr boundaryFactorReg .vk .dtab .ya)
+    (rmulOne (P := P) (Q := Q) (A := A) (U := U) boundaryFactorMulReg
+      boundaryFactorMulReg_injective (by decide) hQ (rsbCr boundaryFactorReg .vk .dtab .ya)))
+  let E := mnProgPush (cmulBlock (rsbCr boundaryFactorReg .dout .dtab .ya)
+    (rmulOne (P := P) (Q := Q) (A := A) (U := U) boundaryFactorMulReg
+      boundaryFactorMulReg_injective (by decide) hQ (rsbCr boundaryFactorReg .dout .dtab .ya)))
+  let R := mnProgPush (rmulOne (P := P) (Q := Q) (A := A) (U := U) boundaryFactorMulReg
+    boundaryFactorMulReg_injective (by decide) hQ (rsbCr boundaryFactorReg .hv .xa .hc))
+  let C := mnProgPush (rmulOne (P := P) (Q := Q) (A := A) (U := U) boundaryFactorMulReg
+    boundaryFactorMulReg_injective (by decide) hQ (rsbCr boundaryFactorReg .ya .xs .pr))
+  obtain ⟨v₃,n₃,hu₃,hn₃,he₃⟩ := preparedResidualSolve_exec_within (body := body) hQ hA p u l target rhsExp B W columns hp hlen
+    D E R C (le_refl _) (le_refl _) (le_refl _) (le_refl _) hformat hstage b hb hbound (embDn preparedBoundaryBatchCoreReg v₂) T₂ hleft₂ hmul₂
     (by rw [hstate]; exact hready.update_vk raw) (by rw [hstate]; rfl)
     (by rw [hstate]; exact hbo) (by rw [hstate]; exact hhf) (by rw [hstate]; exact hdf)
     (by simpa [T₂,S₂,S₁,embStk,preparedBoundaryBatchCoreReg] using hmaster)
@@ -124,11 +159,16 @@ theorem preparedResidualBatchStep_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     (by simpa [T₂,S₂,S₁,embStk,preparedBoundaryBatchCoreReg] using h220)
     (by simpa [T₂,S₂,S₁,embStk,preparedBoundaryBatchCoreReg] using h221)
     (by simpa [T₂,S₂,S₁,embStk,preparedBoundaryBatchCoreReg] using h225)
-  obtain ⟨v₃',hv₃',hu₃',he₃'⟩ := exec_emb_ovr (ι := id) (body' := outerBody) preparedBoundaryBatchCoreReg_injective
-    (fun _ => rfl) he₃ v₂ rfl S₂ rfl
+  obtain ⟨v₃',hv₃',hu₃',he₃'⟩ := exec_emb_ovr_within_stock preparedBoundaryBatchCoreReg (ι := id) (body' := outerBody) preparedBoundaryBatchCoreReg_injective
+    (fun _ => rfl) (he₃ 0) v₂ rfl S₂ rfl
   let S₃ : Stacks 234 A := {S₂ with R := Function.update (Function.update S₂.R 206 []) 224 (ys++S₂.R 224)}
-  have he₃'' : Exec outerBody (embProg preparedBoundaryBatchCoreReg id (preparedResidualSolve hQ))
+  have hbudget : preparedResidualSolveWorkspace D E R C q w B.card W =
+      preparedResidualBatchSolveWorkspace (A := A) (U := U) P hQ q w B.card W := rfl
+  have he₃'' : ExecWithin outerBody
+      (fun d z => mnSize z+d ≤ mnSize (mk v₂ S₂)+0+
+        preparedResidualBatchSolveWorkspace (A := A) (U := U) P hQ q w B.card W) 0 (embProg preparedBoundaryBatchCoreReg id (preparedResidualSolve hQ))
       (mk v₂ S₂) n₃ (mk v₃' S₃) := by
+    rw [← hbudget]
     convert he₃' using 1
     apply congrArg (mk v₃')
     symm
@@ -141,8 +181,24 @@ theorem preparedResidualBatchStep_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
   obtain ⟨v₄,hu₄,he₄⟩ := transfer_exec (body := outerBody) (count := 231) (src := 224) (dst := 228)
     (tmp := 233) (by decide) v₃' S₃ ys (S.R 224) (by simp [S₃,S₂,S₁])
     (by simpa [S₃,S₂,S₁] using hclock.trans hysLen.symm) (by simpa [S₃,S₂,S₁] using h233)
+  have hcopy : mnNativePushBound 3 (copyPrefix (P := P) (Q := Q) (A := A) (U := U)
+      (231 : Fin 234) 226 206 232 233) := by
+    simp [copyPrefix,transfer,transferAct,scanR,drainR,popDo,keepIn,copyR,copyStep,
+      moveR,whileR,moveStep,peekR,popPush,mnNativePushBound,mnActPush]
+  have htransfer (src dst : Fin 234) : mnNativePushBound 3
+      (transfer (P := P) (Q := Q) (A := A) (U := U) 231 src dst 233) := by
+    simp [transfer,transferAct,scanR,drainR,popDo,keepIn,moveR,whileR,moveStep,peekR,
+      popPush,mnNativePushBound,mnActPush]
+  have hc := mn_native_exec_within he₁' 3 hcopy 0 _ (le_refl _)
+  have ht := mn_native_exec_within he₂ 3 (htransfer 226 227) 0 _ (le_refl _)
+  have ho := mn_native_exec_within he₄ 3 (htransfer 224 228) 0 _ (le_refl _)
+  rw [hrawLen] at hc ht
+  rw [hysLen] at ho
+  have hsolveOutput := execWithin_seq_two_budget outerBody _ _ _ _ _ _ _ 0 _ _ he₃'' ho
+  have htransferSolve := execWithin_seq_two_budget outerBody _ _ _ _ _ _ _ 0 _ _ ht hsolveOutput
+  have hwithin := execWithin_seq_two_budget outerBody _ _ _ _ _ _ _ 0 _ _ hc htransferSolve
   refine ⟨v₄,(10*raw.length+10)+((4*raw.length+4)+(n₃+(4*ys.length+4))),
-    hu₄.trans (hu₃'.trans (hu₃.trans (hu₂.trans hu₁))),?_,(Exec.seq he₁' (Exec.seq he₂ (Exec.seq he₃'' he₄))).cast rfl ?_⟩
+    hu₄.trans (hu₃'.trans (hu₃.trans (hu₂.trans hu₁))),?_,hwithin.cast (by rw [hrawLen,hysLen]) ?_⟩
   · change (10*raw.length+10)+((4*raw.length+4)+(n₃+(4*ys.length+4))) ≤ preparedResidualBatchStepCost q w B.card W
     rw [hrawLen,hysLen]
     have hn₃' : n₃ ≤ preparedResidualSolveCost q w B.card W := hn₃

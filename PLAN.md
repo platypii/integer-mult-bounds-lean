@@ -41137,6 +41137,75 @@ audit peak, not a production module). Source-integrity and whitespace checks
 pass. Collect the original producer and solved-recovery space work into one
 larger local commit, excluding periodic WIP; do not push.
 
+### S4 each shared-Schur batch step retains numerical workspace
+
+The next consumer audit found preparedResidualBatchStep_exec using the older
+preparedResidualSolve_exec despite an existing preparedResidualSolve_exec_within.
+The step now uses the space-aware solve, instantiates its four actual arithmetic
+push bounds internally, and transports it beside the outer source and archives
+with exec_emb_ovr_within_stock. Native prefix copying and the two transfers have
+small structural push certificates. The same ordinary inputs, retained factor
+page, numerical hypotheses and exact final tape state are preserved.
+
+preparedResidualBatchSolveWorkspace names the existing numerical reserve;
+preparedResidualBatchStepWorkspace adds 54*(N*w)+54 for the linear traffic.
+The step returns ExecWithin at depth zero, while the unchanged batch-loop proof
+temporarily uses toExec. It does not use elapsed triangular-solve runtime as a
+space allowance or require a resource oracle from the caller.
+
+Guarded step verification passes at 3138.1 MiB. Prepared-batch integration and
+the complete accepted-core build pass (15903 jobs; 5.9 GiB combined peak).
+The step axiom audit reports only propext, Classical.choice and Quot.sound
+(9126.0 MiB temporary audit peak, not a production module). Whitespace checks
+pass. Keep these two Lean edits for a larger shared-Schur resource checkpoint;
+no commit or push, and periodic WIP remains untouched.
+
+Next lift the per-step reserve through preparedResidualBatchLoop using the
+resource-preserving counted loop. The input stream is moved into a saved RHS
+archive, so their combined stock is constant; only the solution archive grows.
+Bound that growth separately and share one numerical solve reserve. Then retain
+batch setup/cleanup, factor construction and export space to close the consumer
+side of the cached prefix. The complete prefix/resource and full S4 gates remain
+open.
+
+### S4 the complete prepared Schur batch shares one numerical reserve
+
+preparedResidualBatchLoop_exec now retains ExecWithin through the existing
+countedLoop_exec_within_remaining_costs. The relational invariant's four changed
+ports are accounted for by mn_replace_bank_size. The remaining RHS plus saved
+RHS archive have constant combined length, and the solution archive is bounded
+by bs.length*B.card*w using the existing cstream_flatten_length and solve-length
+lemmas. Consequently the stock cap is initial bank + complete solution volume +
+one preparedResidualBatchStepWorkspace, without multiplying the numerical reserve
+by replica count. There is no replica enumeration.
+
+preparedResidualBatch_exec retains that cap through ordinary count/byte-ruler
+setup, the complete solve loop, source restoration, output publication and
+cleanup. Setup uses structural native bounds; moveR_within proves that returning
+the saved streams needs no extra space, and clearing the ruler is zero-growth.
+preparedResidualBatchWorkspace names the total allowance. The cyclic boundary
+specialization returns the same resource guarantee; the constructed cyclic residual batch
+currently uses toExec until factor construction is space-certified.
+
+Default recursion limits exposed implicit bounds searches for bs[j] after adding
+the resource facts. Writing the already-known bound explicitly as bs[j]'hj fixes
+that cost without changing the argument. Keeping the bank-balance calculation
+inside its local stock lemma also avoids carrying its intermediate terms into
+the tape-state proof. No proof limits were changed.
+
+Full accepted-core integration passes (15904 jobs; 5.9 GiB combined peak).
+Next retain the factor factory's space and the export/handoff trace, then compose
+them with this batch to close the consumer side. Whole-prefix, uniform resources
+and the remaining full S4 gates are still open. No push; periodic WIP untouched.
+
+Final checks pass: step 3138.0 MiB, loop 3168.5 MiB, prepared batch 3222.6 MiB,
+cyclic specialization 3380.8 MiB, constructed residual batch 3413.8 MiB, complete
+accepted complex caller 3450.4 MiB. The prepared/cyclic batch axiom audit reports
+only propext, Classical.choice and Quot.sound (9559.2 MiB temporary audit peak,
+not a production module). Source-integrity and whitespace scans pass. Collect
+the step/loop/setup/cleanup/cyclic specialization work as one larger local Schur
+batch checkpoint, excluding periodic WIP. Do not push.
+
 Next instantiate countedLoop at released gather clock 122. Use an arbitrary
 list of matching boundary/original-RHS pairs, with a completed/remaining split.
 Keep two input queues and two reverse completed archives explicit. Clock writes

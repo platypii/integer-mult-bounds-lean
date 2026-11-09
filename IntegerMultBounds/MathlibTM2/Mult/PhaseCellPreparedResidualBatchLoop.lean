@@ -1,6 +1,9 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPreparedResidualBatchStep
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCountedLoopWithin
+public import IntegerMultBounds.MathlibTM2.Host.BankGrowth
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPreparedBoundaryBatch
 
 /-! Reuse one prepared page across a counted list of RHS vectors, without repaying setup. -/
 
@@ -10,6 +13,7 @@ namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
 open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
   IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Host
   IntegerMultBounds.MathlibTM2.Node IntegerMultBounds.MathlibTM2.Fast
+  IntegerMultBounds.MathlibTM2.Fast.Main
   IntegerMultBounds.NLogN IntegerMultBounds.NLogN.SchurDominance
   IntegerMultBounds.NLogN.PhaseCellMatrix IntegerMultBounds.MathlibTM2.Mult.ShortConv
   IntegerMultBounds.MathlibTM2.Mult.BandFactor
@@ -50,7 +54,9 @@ theorem preparedResidualBatchLoop_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     S.R 206 = [] → S.R 225 = [] → S.R 227 = [] → S.R 228 = [] → S.R 232 = [] → S.R 233 = [] →
     (S.R 231).length = B.card*w → (S.R 230).length = bs.length → S.R 226 = cstream A w bs.flatten++tail →
     ∃ v' n, v'.user = v.user ∧ n ≤ bs.length*(preparedResidualBatchStepCost q w B.card W+3)+2 ∧
-      Exec (embTab preparedBoundaryBatchCoreReg (embTab preparedBoundaryCoreReg body))
+      ExecWithin (embTab preparedBoundaryBatchCoreReg (embTab preparedBoundaryCoreReg body))
+        (fun d z => mnSize z+d ≤ mnSize (mk v S)+bs.length*B.card*w+
+          preparedResidualBatchStepWorkspace (A := A) (U := U) P hQ q w B.card W) 0
         (countedLoop 230 (preparedResidualBatchStep hQ)) (mk v S) n
         (mk v' {S with R := (Function.update (Function.update (Function.update (Function.update S.R
           226 tail) 227 (cstream A w bs.flatten).reverse) 228 (cstream A w (bs.map solve).flatten).reverse) 230 [])}) := by
@@ -67,6 +73,20 @@ theorem preparedResidualBatchLoop_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
       (b.map (normalizeBoundaryWord q (q/2-1)))).map (unscaleBoundaryWord q)
   intro hformat hstage bs hrows hbound v S tail hleft hmul hready hbo hhf hdf hmaster h223 h184 h220 h221 h206 h225 h227 h228 h232 h233 hclock hcount hsource
   let outerBody := embTab preparedBoundaryBatchCoreReg (embTab preparedBoundaryCoreReg body)
+  let stepSpace := preparedResidualBatchStepWorkspace (A := A) (U := U) P hQ q w B.card W
+  let cap := mnSize (mk v S)+bs.length*B.card*w+stepSpace
+  let ports : Fin 4 → Fin 234 := fun i => ⟨if i.val < 3 then 226+i.val else 230,by have hi := i.isLt; split_ifs <;> omega⟩
+  have hports : Function.Injective ports := by
+    intro i j h
+    have hv := congrArg Fin.val h
+    have hi := i.isLt
+    have hj := j.isLt
+    dsimp only [ports] at hv
+    apply Fin.ext
+    split_ifs at hv <;> omega
+  have hsolveLen (b : List GaussianInt) (hb : b.length = B.card) : (solve b).length = B.card := by
+    simpa only [solve,List.length_map] using naturalLineSolve_length q K W B.card AZ
+      (b.map (normalizeBoundaryWord q (q/2-1))) (by simp [hb])
   let changed : List (Fin 234) := [226,227,228,230]
   let Inv := fun j (R : Stacks 234 A) =>
     R.inp = S.inp ∧ R.out = S.out ∧ R.L = S.L ∧
@@ -83,11 +103,11 @@ theorem preparedResidualBatchLoop_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     · simpa using hs
     · simpa using ha
     · simpa using hb
-  have hstep : ∀ j < bs.length, ∀ (v : HS 234 Q A U) R, Inv j R →
+  have hstep : ∀ j < bs.length, ∀ (v : HS 234 Q A U) R, Inv j R → (R.R 230).length = bs.length-(j+1) →
       ∃ v' R' n, v'.user = v.user ∧ n ≤ preparedResidualBatchStepCost q w B.card W ∧
-        Exec outerBody (preparedResidualBatchStep hQ) (mk v R) n (mk v' R') ∧
+        ExecWithin outerBody (fun d z => mnSize z+d ≤ cap) 0 (preparedResidualBatchStep hQ) (mk v R) n (mk v' R') ∧
         R'.R 230 = R.R 230 ∧ Inv (j+1) R' := by
-    intro j hj vi R ⟨hi,ho,hl,hf,hs,ha,hb⟩
+    intro j hj vi R ⟨hi,ho,hl,hf,hs,ha,hb⟩ hremaining
     have hcore : embStk preparedBoundaryBatchCoreReg R = embStk preparedBoundaryBatchCoreReg S := by
       refine Stacks.ext hi ho ?_ ?_
       · funext i; simp only [embStk,hl]
@@ -98,12 +118,12 @@ theorem preparedResidualBatchLoop_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
         have h228 := preparedBoundaryBatchCoreReg_off i 228 (by decide)
         have h230 := preparedBoundaryBatchCoreReg_off i 230 (by decide)
         simp [changed,h226,h227,h228,h230]
-    have hsrc : R.R 226 = cstream A w bs[j]++(cstream A w (bs.drop (j+1)).flatten++tail) := by
+    have hsrc : R.R 226 = cstream A w (bs[j]'hj)++(cstream A w (bs.drop (j+1)).flatten++tail) := by
       rw [List.drop_eq_getElem_cons hj] at hs
       simpa only [List.flatten_cons,cstream_append,List.append_assoc] using hs
-    have hmem : bs[j] ∈ bs := List.getElem_mem hj
+    have hmem : (bs[j]'hj) ∈ bs := List.getElem_mem hj
     obtain ⟨vf,n,hu,hn,he⟩ := preparedResidualBatchStep_exec (body := body) hQ hA p u l target rhsExp B W columns hp hlen
-      hformat hstage bs[j] (hrows _ hmem) (hbound _ hmem) vi R (cstream A w (bs.drop (j+1)).flatten++tail)
+      hformat hstage (bs[j]'hj) (hrows _ hmem) (hbound _ hmem) vi R (cstream A w (bs.drop (j+1)).flatten++tail)
       (by rw [hcore]; exact hleft) (by rw [hcore]; exact hmul) (by rw [hcore]; exact hready)
       (by rw [hcore]; exact hbo) (by rw [hcore]; exact hhf) (by rw [hcore]; exact hdf)
       (by rw [hf 119 (by decide)]; exact hmaster)
@@ -112,20 +132,52 @@ theorem preparedResidualBatchLoop_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
       ((hf 206 (by decide)).trans h206) ((hf 225 (by decide)).trans h225)
       ((hf 232 (by decide)).trans h232) ((hf 233 (by decide)).trans h233)
       (by rw [hf 231 (by decide)]; exact hclock) hsrc
+    have hsize : mnSize (mk vi R) ≤ mnSize (mk v S)+bs.length*B.card*w := by
+      have hstock := mn_replace_bank_size ports hports v vi S R (fun i => R.R (ports i))
+        (fun _ => rfl) (by
+          intro k hk
+          apply hf k
+          simp only [changed,List.mem_cons,List.not_mem_nil,or_false,not_or]
+          exact ⟨(hk 0).symm,(hk 1).symm,(hk 2).symm,(hk 3).symm⟩) hi ho hl
+      change mnSize (mk vi R)+((S.R 226).length+((S.R 227).length+((S.R 228).length+(S.R 230).length))) =
+        mnSize (mk v S)+((R.R 226).length+((R.R 227).length+((R.R 228).length+(R.R 230).length))) at hstock
+      rw [h227,h228,hs,ha,hb] at hstock
+      simp only [List.length_nil,List.length_append,List.length_reverse,Nat.zero_add] at hstock
+      have hsplit := congrArg (fun xs : List (List GaussianInt) => (cstream A w xs.flatten).length)
+        (List.take_append_drop j bs)
+      rw [List.flatten_append,cstream_append,List.length_append] at hsplit
+      have hsolutions : (cstream A w ((bs.take j).map solve).flatten).length =
+          (bs.take j).length*B.card*w := by
+        have hrowLengths : ∀ y ∈ (bs.take j).map solve, y.length = B.card := by
+          intro y hy
+          obtain ⟨b,hb,rfl⟩ := List.mem_map.mp hy
+          exact hsolveLen b (hrows b (List.mem_of_mem_take hb))
+        simpa only [List.length_map] using cstream_flatten_length w B.card _ hrowLengths
+      have hvolume : (bs.take j).length*B.card*w ≤ bs.length*B.card*w :=
+        Nat.mul_le_mul_right w (Nat.mul_le_mul_right B.card (by simp only [List.length_take]; exact Nat.min_le_right j bs.length))
+      rw [hsource,List.length_append] at hstock
+      rw [hsolutions] at hstock
+      simp only [w,bits] at hstock hsplit hsolutions hvolume ⊢
+      omega
+    have heRow : ExecWithin outerBody (fun d z => mnSize z+d ≤ mnSize (mk vi R)+0+stepSpace) 0
+        (preparedResidualBatchStep hQ) (mk vi R) n _ := he
+    have hlimit : mnSize (mk vi R)+0+stepSpace ≤ cap := by
+      simpa only [Nat.add_zero] using Nat.add_le_add_right hsize stepSpace
+    have heCap := heRow.mono (fun _ _ hz => hz.trans hlimit)
     let R' : Stacks 234 A := {R with R := (Function.update (Function.update (Function.update R.R
-      226 (cstream A w (bs.drop (j+1)).flatten++tail)) 227 ((cstream A w bs[j]).reverse++R.R 227))
-        228 ((cstream A w (solve bs[j])).reverse++R.R 228))}
-    refine ⟨vf,R',n,hu,hn,he,by simp [R'],hi,ho,hl,?_,?_,?_,?_⟩
+      226 (cstream A w (bs.drop (j+1)).flatten++tail)) 227 ((cstream A w (bs[j]'hj)).reverse++R.R 227))
+        228 ((cstream A w (solve (bs[j]'hj))).reverse++R.R 228))}
+    refine ⟨vf,R',n,hu,hn,heCap,by simp [R'],hi,ho,hl,?_,?_,?_,?_⟩
     · intro k hk
       have h226 : k ≠ 226 := by intro he; subst k; exact hk (by simp [changed])
       have h227 : k ≠ 227 := by intro he; subst k; exact hk (by simp [changed])
       have h228 : k ≠ 228 := by intro he; subst k; exact hk (by simp [changed])
       simpa [R',h226,h227,h228] using hf k hk
     · simp [R']
-    · change (cstream A w bs[j]).reverse++R.R 227 = (cstream A w (bs.take (j+1)).flatten).reverse
+    · change (cstream A w (bs[j]'hj)).reverse++R.R 227 = (cstream A w (bs.take (j+1)).flatten).reverse
       rw [ha,List.take_succ_eq_append_getElem hj,List.flatten_append]
       simp only [List.flatten_cons,List.flatten_nil,List.append_nil,cstream_append,List.reverse_append]
-    · change (cstream A w (solve bs[j])).reverse++R.R 228 =
+    · change (cstream A w (solve (bs[j]'hj))).reverse++R.R 228 =
         (cstream A w ((bs.take (j+1)).map solve).flatten).reverse
       rw [hb,List.take_succ_eq_append_getElem hj,List.map_append,List.flatten_append]
       simp only [List.map_cons,List.map_nil,List.flatten_cons,List.flatten_nil,List.append_nil,cstream_append,List.reverse_append]
@@ -134,10 +186,10 @@ theorem preparedResidualBatchLoop_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     · simpa using hsource
     · simpa using h227
     · simpa using h228
-  obtain ⟨v',S',n,hu,hn,he,h230,hi,ho,hl,hf,hs,ha,hb⟩ := countedLoop_exec (body := outerBody)
-    230 (preparedResidualBatchStep hQ) bs.length (preparedResidualBatchStepCost q w B.card W)
-      Inv hstable hstep v S hcount hInv
-  refine ⟨v',n,hu,hn,he.cast rfl ?_⟩
+  obtain ⟨v',S',n,hu,hn,he,h230,hi,ho,hl,hf,hs,ha,hb⟩ := countedLoop_exec_within_remaining_costs (body := outerBody)
+    230 (preparedResidualBatchStep hQ) bs.length cap (fun _ => preparedResidualBatchStepCost q w B.card W)
+      Inv hstable hstep v S hcount hInv (by dsimp only [cap]; omega)
+  refine ⟨v',n,hu,(by simpa using hn),he.cast rfl ?_⟩
   apply congrArg (mk v')
   refine Stacks.ext hi ho hl ?_
   funext k

@@ -9,6 +9,7 @@ namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
   IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Host
   IntegerMultBounds.MathlibTM2.Node IntegerMultBounds.MathlibTM2.Fast
+  IntegerMultBounds.MathlibTM2.Fast.Main
   IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.NLogN
   IntegerMultBounds.NLogN.PhaseCellMatrix IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
   IntegerMultBounds.MathlibTM2.Mult.BandFactor
@@ -48,7 +49,9 @@ theorem cyclicPreparedResidualBatch_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     S.R 232 = [] → S.R 233 = [] →
     (S.R 229).length = bs.length → S.R 226 = cstream A w bs.flatten++tail →
     ∃ v' n, v'.user = v.user ∧ n ≤ preparedResidualBatchCost q w B.card W bs.length ∧
-      Exec (embTab preparedBoundaryBatchCoreReg (embTab preparedBoundaryCoreReg body))
+      ExecWithin (embTab preparedBoundaryBatchCoreReg (embTab preparedBoundaryCoreReg body))
+        (fun d z => mnSize z+d ≤ mnSize (mk v S)+0+
+          preparedResidualBatchWorkspace (A := A) (U := U) P hQ q w B.card W bs.length) 0
         (preparedResidualBatch hQ) (mk v S) n
         (mk v' {S with R := Function.update S.R 224 (cstream A w (bs.map solve).flatten++S.R 224)}) := by
   dsimp only

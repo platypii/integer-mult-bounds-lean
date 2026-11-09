@@ -2,6 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPreparedResidualBatchLoop
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPreparedBoundaryBatch
+public import IntegerMultBounds.MathlibTM2.Host.BinArithStock
 
 /-! Generate batch controls, reuse one factor page, restore borrowed RHS bytes and publish all solutions in order. -/
 
@@ -11,11 +12,17 @@ namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
 open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
   IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Host
   IntegerMultBounds.MathlibTM2.Node IntegerMultBounds.MathlibTM2.Fast
+  IntegerMultBounds.MathlibTM2.Fast.Main
   IntegerMultBounds.NLogN IntegerMultBounds.NLogN.SchurDominance
   IntegerMultBounds.NLogN.PhaseCellMatrix IntegerMultBounds.MathlibTM2.Mult.ShortConv
   IntegerMultBounds.MathlibTM2.Mult.BandFactor
 
 variable {Q A : ℕ} {P U : Type} {body : P → Pr P 224 Q A U}
+
+noncomputable def preparedResidualBatchWorkspace (P : Type) (hQ : SS.states ≤ Q)
+    (q w N W replicas : ℕ) : ℕ :=
+  3*(N*(4*w+9)+4)+(3*(4*replicas+4)+
+    (replicas*N*w+preparedResidualBatchStepWorkspace (A := A) (U := U) P hQ q w N W))
 
 theorem preparedResidualBatch_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     (p u l target rhsExp : ℕ) {s : ℕ} [NeZero s] (B : Finset (ZMod s)) (W : ℕ)
@@ -52,7 +59,9 @@ theorem preparedResidualBatch_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     S.R 232 = [] → S.R 233 = [] →
     (S.R 229).length = bs.length → S.R 226 = cstream A w bs.flatten++tail →
     ∃ v' n, v'.user = v.user ∧ n ≤ preparedResidualBatchCost q w B.card W bs.length ∧
-      Exec (embTab preparedBoundaryBatchCoreReg (embTab preparedBoundaryCoreReg body))
+      ExecWithin (embTab preparedBoundaryBatchCoreReg (embTab preparedBoundaryCoreReg body))
+        (fun d z => mnSize z+d ≤ mnSize (mk v S)+0+
+          preparedResidualBatchWorkspace (A := A) (U := U) P hQ q w B.card W bs.length) 0
         (preparedResidualBatch hQ) (mk v S) n
         (mk v' {S with R := Function.update S.R 224 (cstream A w (bs.map solve).flatten++S.R 224)}) := by
   dsimp only
@@ -120,9 +129,36 @@ theorem preparedResidualBatch_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
   have h227Len : (S₃.R 227).length = bs.length*B.card*w := by simp [S₃,hrawLen]
   have h228Len : (S₄.R 228).length = bs.length*B.card*w := by simp [S₄,S₃,movedR,hysLen]
   have h231Len : (S₅.R 231).length = B.card*w := by simp [S₅,S₄,S₃,S₂,S₁,movedR]
+  have hproduct : mnNativePushBound 3 (unaryProduct (P := P) (Q := Q) (A := A) (U := U)
+      (192 : Fin 234) 160 231 232 233) := by
+    simp [unaryProduct,umulSym,ucopy,scanP,scanR,drainR,popDo,keepIn,pushN,
+      moveR,whileR,moveStep,peekR,popPush,mnNativePushBound,mnActPush]
+  have hcopy : mnNativePushBound 3 (ucopy (P := P) (Q := Q) (A := A) (U := U)
+      (229 : Fin 234) 230 233) := by
+    simp [ucopy,umulSym,scanP,scanR,drainR,popDo,keepIn,pushN,
+      moveR,whileR,moveStep,peekR,popPush,mnNativePushBound,mnActPush]
+  have hw₁ := mn_native_exec_within he₁' 3 hproduct 0
+    (mnSize (mk v S)+0+3*(B.card*(4*w+9)+4))
+    (Nat.add_le_add_left (Nat.mul_le_mul_left 3 hn₁') _)
+  have hw₂ := mn_native_exec_within he₂' 3 hcopy 0 _ (le_refl _)
+  let loopSpace := bs.length*B.card*w+preparedResidualBatchStepWorkspace (A := A) (U := U) P hQ q w B.card W
+  have hw₃ : ExecWithin outerBody (fun d z => mnSize z+d ≤ mnSize (mk v₂ S₂)+0+loopSpace) 0
+      (countedLoop 230 (preparedResidualBatchStep hQ)) (mk v₂ S₂) n₃ (mk v₃ S₃) := by
+    apply he₃.mono
+    intro d z hz
+    simpa only [loopSpace,Nat.add_assoc,Nat.add_zero] using hz
+  let limit := mnSize (mk v₂ S₂)+0+loopSpace
+  have hw₄ := moveR_within 227 226 id he₄ 0 limit hw₃.final
+  have hw₅ := moveR_within 228 224 id he₅ 0 limit hw₄.final
+  have hw₆ := mn_native_exec_within he₆ 0
+    (by simp [uclear,drainR,popDo,peekR,mnNativePushBound,mnActPush]) 0 limit
+    (by simpa only [Nat.zero_mul,Nat.add_zero] using hw₅.final)
+  have hrest := ExecWithin.seq hw₃ (ExecWithin.seq hw₄ (ExecWithin.seq hw₅ hw₆))
+  have hcopyRest := execWithin_seq_two_budget outerBody _ _ _ _ _ _ _ 0 _ _ hw₂ hrest
+  have hwithin := execWithin_seq_two_budget outerBody _ _ _ _ _ _ _ 0 _ _ hw₁ hcopyRest
   refine ⟨v₆,n₁+((4*bs.length+4)+(n₃+((2*(S₃.R 227).length+2)+((2*(S₄.R 228).length+2)+(2*(S₅.R 231).length+2))))),
     hu₆.trans (hu₅.trans (hu₄.trans (hu₃.trans (hu₂.trans hu₁)))),?_,
-    (Exec.seq he₁' (Exec.seq he₂' (Exec.seq he₃ (Exec.seq he₄ (Exec.seq he₅ he₆))))).cast rfl ?_⟩
+    hwithin.cast rfl ?_⟩
   · change n₁+((4*bs.length+4)+(n₃+((2*(S₃.R 227).length+2)+((2*(S₄.R 228).length+2)+(2*(S₅.R 231).length+2))))) ≤
         preparedResidualBatchCost q w B.card W bs.length
     rw [h227Len,h228Len,h231Len]

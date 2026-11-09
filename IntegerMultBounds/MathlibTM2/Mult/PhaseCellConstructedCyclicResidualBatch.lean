@@ -134,7 +134,7 @@ theorem constructedCyclicResidualBatch_spec (hR : rpStates ≤ Q) (hQ : SS.state
     (by rw [hprivate 229 (by decide)]; exact hcount)
     (by rw [hprivate 226 (by decide)]; exact hsource)
   refine ⟨v₃,page,m₁+m₃,columns,hu₃.trans (hu₂.trans hu₁),Nat.add_le_add hm₁ hm₃,
-    Exec.seq he₂ he₃,hprepared,hacc,?_,?_,?_,?_,?_,?_,hinp,hout,embOvr_left_of_eq S T₁ hL,?_,hprivate,?_⟩
+    Exec.seq he₂ he₃.toExec,hprepared,hacc,?_,?_,?_,?_,?_,?_,hinp,hout,embOvr_left_of_eq S T₁ hL,?_,hprivate,?_⟩
   · simpa only [hproj] using hsolve
   · simpa only [hproj] using hbo
   · simpa only [hproj] using hhf
