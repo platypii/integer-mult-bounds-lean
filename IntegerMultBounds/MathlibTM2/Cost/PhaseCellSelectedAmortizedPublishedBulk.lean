@@ -1,0 +1,161 @@
+module
+
+public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedAmortizedExposedFitting
+public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedAmortizedBulkArchivePublication
+public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedGatherSchedule
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellInverseMasterInput
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFittingCyclicWindow
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedNormalizedExactRows
+
+/-! Execute one fitting class with the concrete generated callback. Ordinary
+headers and blank workspace survive each iteration; numerical seeds do not. -/
+@[expose] public section
+namespace IntegerMultBounds.MathlibTM2.Cost
+open Filter IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2.Host
+  IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Node
+  IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Fast.Main
+  IntegerMultBounds.MathlibTM2.Mult IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.NLogN
+  IntegerMultBounds.NLogN.PhaseCellMatrix IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
+  IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
+  IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement CyclicComplexCallerLayout
+open IntegerMultBounds.Networks.Shared50ModularControl (prime)
+variable {t₀ cPub dPub T Q K : ℕ} {P U : Type} {body : P → Pr P T Q (prime+K) U}
+
+theorem selectedAmortizedPublishedBulk_exec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 ≤ prime+K)
+    (ct cW cV cZ cG cD : ℕ) (hcZ : 1 ≤ cZ)
+    (hstates : FixedStreamedBank.stateCount ≤ Q) :
+    let b := 8*executionPush (A := (prime+K)) (U := U) hR hQ+1
+    ∃ B₀ : ℝ, 0 ≤ B₀ ∧ ∀ᶠ m : ℕ in atTop, ∀ (_h : Sizes.Big m) (i : Fin (Sizes.d m)) [NeZero (Sizes.s m i)],
+    ∀ (ports : CyclicComplexCallerLayout T) (g : CyclicSeedLayout T)
+      (dst width origins binary work readerSaved readerTmp count saved : Fin T),
+    ports.seedL = g.left → ports.seedR = g.right →
+    (∀ r ∈ ports.fixedControls, ∀ j, g.masters j ≠ r) →
+    (∀ j, ports.bank j ≠ dst) → dst ≠ ports.archive → (∀ j, g.masters j ≠ dst) →
+    [count,saved,origins,ports.archive,dst].Nodup →
+    [width,ports.span,origins,binary,g.source 6,g.source 7,work,readerSaved,readerTmp].Nodup →
+    (∀ r, g.retained r → origins ≠ r ∧ g.source 6 ≠ r ∧ g.source 7 ≠ r) →
+    (∀ r, ports.generatedReaderProtected dst r → r ≠ origins ∧ r ≠ g.source 6 ∧ r ≠ g.source 7) →
+    (∀ r, ports.classProtected g width binary work readerSaved readerTmp r → r ≠ count ∧ r ≠ saved) →
+    (∀ r, ports.classProtected g width binary work readerSaved readerTmp r →
+      r ≠ origins ∧ r ≠ ports.archive ∧ r ≠ dst) →
+    let p := Sizes.p m
+    let s := Sizes.s m i
+    let t := Sizes.t m i
+    let l := haloInverseRingLog s t
+    ∀ (u target W V : ℕ) (α d : ℝ) (axis : RecoveryAxisBounds s t p u l α d),
+    let B := inverseCallerWordWidth p u l target s t
+    let coreWidth := amortizedCoreWidth ct p
+    let depth := localityDepth p target
+    let radius := depth*PhaseCellBand.width p u
+    let n := coreWidth+2*radius
+    let jobs := coreGatherIndices s coreWidth radius n
+    let cs := jobs.attach
+    let a := fun c : {k // k ∈ jobs} => coreStart coreWidth c.val-radius
+
+    u ≤ p → ∀ (htarget : target ≤ ct*p), p+2 ≤ target → B ≤ cZ*p → l ≤ cZ*p → target ≤ cZ*p →
+    PhaseCellBand.width p u ≤ cZ*p →
+    let boundary := fun c => cyclicPrincipalBoundary s t (PhaseCellBand.width p u) (a c) n
+    let solveTarget := boundaryRecoveryTarget p (target+1)
+    let stage := fun c => initialSchurTarget p u (boundaryTableBits p solveTarget 2 (boundary c).card) 2
+    ∀ (Fs : List (ZMod s → GaussianInt)) (hF : ∀ F ∈ Fs.reverse, ∀ j, ‖value p (F j)‖ ≤ 1),
+    2*p+13 ≤ W → (∀ c ∈ cs, executionWidth p l (stage c) 2 ≤ W) → W ≤ cW*p → V ≤ cV*p →
+    (∀ c ∈ cs, a c < 2^V) →
+    ∀ (qRef : ℕ) (Y : (ZMod s → GaussianInt) → ZMod s → ℝ), p+1 ≤ qRef →
+    (∀ F ∈ complexComponentFields Fs.reverse, SchurDominance.Solves (realMatrix s t p u) Finset.univ (Y F)
+      (fun j => (value qRef ((2 : GaussianInt)^(qRef-p-1)*F j)).re)) →
+    ∀ (J : (ZMod s → ℂ) →L[ℂ] (ZMod s → ℂ)),
+    J ∘L PhaseCellOperator.exact s t α = 1 →
+    ∀ (v : HS T Q (prime+K) U) (S : Stacks T (prime+K)) (borrowed : List (Fin (prime+K+4)))
+      (Vg replicasBits D : ℕ)
+      (gather : GeometryRealGatherData (Q := Q) Vg s coreWidth radius n W replicasBits D Fs borrowed S),
+    Vg ≤ cG*p → D ≤ cD*p →
+    D ≤ 2^replicasBits*2^Nat.clog 2 jobs.length*(n*W) →
+    Fs.length ≤ Sizes.T m →
+    gather.route (PackedTranspose.extra 1) = ports.archive →
+    ports.ClassReady g width binary work readerSaved readerTmp B p u l target s t W V Fs.length n radius (n-2*radius) S →
+    S.R count = [] → S.R saved = [] →
+    ∀ (e : Fin 117 → Fin T), Function.Injective e → e 109 = origins → e 116 = count →
+    s+coreWidth+2*radius < 2^V → n < 2^V → 0 < V →
+    (∀ j ∈ [(37 : Fin 117),32,33,34,35,36,104,106,116], e j ≠ ports.archive) →
+    (∀ j : Fin 117, j.val < 31 → e j ≠ ports.archive) →
+    (S.R (e 37)).length = V → S.R (e 32) = binSyms V s → S.R (e 33) = binSyms V coreWidth →
+    S.R (e 34) = binSyms V radius → S.R (e 35) = binSyms V n → S.R (e 36) = [] →
+    (∀ j : Fin 117, j.val < 31 → S.R (e j) = []) → S.R (e 104) = [] → S.R (e 106) = [] →
+    let proper := gatherPublicationClass s coreWidth radius n
+    let hw : 0 < coreWidth := (amortizedCoreWidth_bounds ct p u target
+      (by have := _h.thirteen_le_p; omega) htarget).1
+    ∀ (route : ArchiveTilePlan t₀ T Q cPub dPub (proper.length*W))
+      (pubDst : Fin T) (pub : PreparedPublicationPlan T route.src pubDst)
+      (clock lineRows pubCount pubSavedCount pubWidth pubArchive pubSaved pubTmp : Fin T),
+    (pub.support++[route.src,pubDst,clock,lineRows]).Nodup →
+    Fs.reverse.length = 2^dPub → proper.indices.length ≤ (2^dPub)^cPub →
+    ∀ (ambient : Fin Fs.reverse.length → List (Fin (prime+K+4))),
+      (∀ j, (ambient j).length = s*W) →
+    ∀ (outputTail pubBorrowed : List (Fin (prime+K+4))),
+    [pubCount,pubSavedCount,pubWidth,dst,pubArchive,route.src,pubSaved,pubTmp].Nodup →
+    GroupedPublication.Ready proper hw route pub clock lineRows pubCount pubSavedCount pubWidth pubArchive pubSaved pubTmp
+      Fs.reverse.length ambient outputTail pubBorrowed S →
+    (∀ r, GroupedPublication.Reads proper route pub clock lineRows pubCount pubSavedCount pubWidth pubArchive pubSaved pubTmp r → r ≠ dst) →
+    let copyBill := reverseCopyRowsCost proper.indices.length (Fs.reverse.length*(proper.length*W))
+    let bill := replicaPublicationCost Fs.reverse.length s ((2^dPub)^cPub-proper.indices.length) proper.length W+
+      37*s*W+6*Fs.reverse.length+31
+    ∃ v' F, ∃ steps pubSteps : ℕ, ∃ outputs : List (List (Fin (prime+K+4))),
+    let Sbulk := {S with R := Function.update S.R dst (outputs.reverse.flatten++S.R dst)};
+      v'.user = v.user ∧
+      ((steps+pubSteps : ℕ) : ℝ) ≤ ((coreExposureTrafficFactor cG cW+6013 : ℕ)*(Fs.length*s*W : ℕ)+
+        432*(generatedDyadicStageCoeff FixedStreamedBank.tapeCount 6 1+300)*
+          (Fs.length*s*W : ℕ)*Sizes.d m*((Sizes.ℓ m : ℝ)^Parameters.tau+1)+
+        (8*(b : ℝ)+5)*(Sizes.T m : ℝ)+B₀*(2*(Fs.length : ℝ)+1)*
+        ((t : ℝ)*(1+(PhaseCellBand.width p u : ℝ)^2/(Sizes.d m : ℝ)))*(p : ℝ)^(129/128 : ℝ))+(copyBill+(route.cost Sbulk+bill) : ℕ) ∧
+      ExecWithin body (fun z state => mnSize state+z ≤ mnSize (Host.mk v S)+0+
+        (((3*coreExposureTrafficFactor cG cW+12+
+          12*(streamedDyadicStockCoeff FixedStreamedBank.tapeCount+700))*(Fs.length*s*W)+
+          fittingCyclicWorkspaceTrafficFactor (A := (prime+K)) (U := U) hR hQ ct cW*Fs.length*t*p+47*Sizes.T m)+(2*copyBill+(route.stockAllowance+2*bill)))) 0
+        (.seq (.seq gather.program (.seq (placedCoreOrigins e)
+          (.seq (scanP count saved (ports.generatedOriginProgram g dst width origins binary work readerSaved readerTmp hR hQ))
+            (clearWords [count]))))
+          (.seq (reverseCopyRows pubCount pubSavedCount pubWidth dst pubArchive route.src pubSaved pubTmp)
+            (.seq route.program (pub.replicaProgram clock lineRows))))
+        (Host.mk v S) (steps+pubSteps) (Host.mk v' F) ∧
+      (∃ lines, F.R pubDst = lines.flatten++outputTail ∧
+        proper.BankAccurate p W (inversePublicationTargets p Fs J) lines (3/(2 : ℝ)^p)) ∧
+      F.inp = S.inp ∧ F.out = S.out ∧ F.L = S.L ∧
+      ∀ r, r ≠ dst → r ≠ pubDst → F.R r = S.R r := by
+  dsimp only
+  obtain ⟨B₀,hB₀,hbulk⟩ := selectedAmortizedExposedFittingCyclicClass_exec
+    (T := T) (U := U) (body := body) hR hQ hA ct cW cV cZ cG cD hcZ hstates
+  have hpub := selectedAmortizedBulkArchivePublication_exec (t₀ := t₀) (c := cPub) (d := dPub) body ct
+  refine ⟨B₀,hB₀,?_⟩
+  filter_upwards [hbulk,hpub] with m hbulk hpub
+  intro h i _ ports g dst width origins binary work readerSaved readerTmp count saved
+    hwireL hwireR hfixed hdst harchiveDst hmastersDst hreg hreader hretained hprotected hcounter hconsume
+    u target W V α d axis hu htarget htargetLower hB hl htargetMax hbandMax
+    Fs hF hW hWin hWmax hVmax hfit qRef Y hqRef hY J hJ
+    v S borrowed Vg replicasBits D gather hVg hD hrouteFit hreplicaVolume harchive ready hcountBlank hsaved
+    e he h109 h116 hwide hnfit hV hmetaOff htableOff h37 hs hcw hr hnSrc hz hblank h104 h106
+  intro route pubDst pub clock lineRows pubCount pubSavedCount pubWidth pubArchive pubSaved pubTmp
+    hports hreplicas hcapacity ambient hambient outputTail pubBorrowed hcopy pubReady hoff
+  obtain ⟨vBulk,steps,outputs,huBulk,htBulk,hrows,heBulk⟩ := hbulk h i ports g dst width origins binary work readerSaved readerTmp count saved
+    hwireL hwireR hfixed hdst harchiveDst hmastersDst hreg hreader hretained hprotected hcounter hconsume
+    u target W V α d axis hu htarget htargetLower hB hl htargetMax hbandMax
+    Fs hF hW hWin hWmax hVmax hfit qRef Y hqRef hY J hJ
+    v S borrowed Vg replicasBits D gather hVg hD hrouteFit hreplicaVolume harchive ready hcountBlank hsaved
+    e he h109 h116 hwide hnfit hV hmetaOff htableOff h37 hs hcw hr hnSrc hz hblank h104 h106
+  let Sbulk := {S with R := Function.update S.R dst (outputs.reverse.flatten++S.R dst)}
+  have readyBulk := pubReady.after_output dst outputs.reverse.flatten hoff
+  have hWone : 1 ≤ W := by have := h.thirteen_le_p; omega
+  obtain ⟨lines,v',F,pubSteps,hu,ht,he,hs,hd,hgood,hi,ho,hl,hframe⟩ := hpub
+    h i u target htarget W hWone (by omega) route pubDst pub clock lineRows hports
+    Fs.reverse hreplicas J outputs hrows hcapacity ambient hambient outputTail pubBorrowed
+    vBulk Sbulk pubCount pubSavedCount pubWidth dst pubArchive pubSaved pubTmp hcopy
+    (S.R dst) readyBulk (by simp only [Sbulk,Function.update_self]) 0
+  refine ⟨v',F,steps,pubSteps,outputs,hu.trans huBulk,?_,
+    execWithin_seq_two_budget body _ _ _ _ _ _ _ 0 _ _ heBulk he,?_,hi,ho,hl,?_⟩
+  · have htReal := Nat.cast_le (α := ℝ).mpr ht
+    rw [Nat.cast_add]
+    linarith
+  · exact ⟨lines,hd,by simpa only [List.reverse_reverse] using hgood⟩
+  · intro r hrd hrp
+    exact (hframe r hrp).trans (Function.update_of_ne hrd _ _)
+
+end IntegerMultBounds.MathlibTM2.Cost

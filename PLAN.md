@@ -4397,6 +4397,50 @@ archive. Ordinary initial headers, selected cost absorption, outer axes and
 final S4 gates remain open. Collect the grouped-publication work as one larger
 local checkpoint; no push.
 
+**Selected bulk output now instantiates grouped archive publication.**
+`selectedAmortizedBulkArchivePublication_exec` uses the existing
+`gatherPublicationClass` at the manuscript p^8 width and full halo length.
+The selected schedule identifies its ordered keys with `coreBulkIndices`,
+and the published row length reduces to the core width. It consumes exactly
+the existential output/row certificate returned by the selected exposed bulk
+executor and the actual `outputs.reverse.flatten` source ABI, then executes
+the checked reverse-handoff/transpose/grouped scatter without rebuilding
+numerical job metadata. Core-width and packet positivity are discharged
+internally from selected geometry. The resulting actual ambient bank carries
+the normalized exact-inverse `BankAccurate` certificate and output-only frame.
+Initial routing/copy/publication headers, power-of-two replica geometry and
+capacity remain ordinary explicit premises. The production and publication
+traces are not yet joined in one theorem: next transport these ordinary
+publication facts across the bulk output-only endpoint, compose that trace,
+and then reuse boundary completion. Selected cost absorption, header creation,
+outer axes and full S4 acceptance remain open. Single-file check peaks at
+3188.5 MiB. No push or small new commit.
+
+**Concrete bulk production and publication now execute together.**
+`GroupedPublication.Ready` bundles only ordinary transpose/copy/publication
+headers and the ambient output bank. Its `Reads` predicate excludes the
+numerical archive source, and `after_output` transports readiness over the
+bulk executor's exact append-only endpoint using one static separation fact.
+The selected archive publisher now consumes this bundle, avoiding repeated
+header/frame obligations at every call.
+`selectedAmortizedPublishedBulk_exec` calls the actual selected exposed fitting
+executor, transfers readiness from the initial state, feeds its returned output
+certificate and physical reverse archive to selected grouped publication, and
+composes the actual traces. No production, transpose, publication or computed-row
+execution supplier is assumed. The returned actual ambient bank is accurate
+on the selected full-width gather class against the normalized exact inverse.
+Time is the selected bulk bill plus the concrete publication bill; peak stock
+is the sum of the incremental allowances on that same execution. Inputs/outputs,
+left stacks and all right registers except raw archive/output destination restore.
+The theorem retains ordinary initial layout/headers, selected replica power-of-
+two geometry and capacity premises. It does not yet generate those headers or
+absorb publication costs into the final selected allowance.
+Checks peak at 3061.0 MiB (readiness/frame), 3190.0 MiB (bundled publisher) and
+3676.2 MiB (concrete production/publication). Next compose full-period seam
+execution and the checked boundary completion with this published bulk bank;
+then close header initialization, selected total-cost absorption, outer axes
+and final S4 gates. No push; retain a coherent production/publication checkpoint.
+
 **First acceptance target: one complete fitting batch.** From declared original
 complex streams and ordinary scalar headers, execute component production,
 prepare numerical data, reuse it across the batch, publish certified complex
