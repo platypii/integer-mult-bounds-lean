@@ -119,4 +119,43 @@ theorem selectedCyclicSecondInteriorProfile (ct : ℕ) {m : ℕ} (h : Sizes.Big 
   have hwidth := (selectedCyclicReplicaSizing ct h i u target a n hu htarget axis.hband).2.2.2.1
   exact ⟨hp,ht,hl,hu' ▸ hu,hw ▸ hwidth⟩
 
+/-- The actual class family supplies the input schedule's profiles, counts and
+span conservation uniformly, including a zero-length cyclic piece. -/
+theorem selectedCyclicReplicaFamily_profile {ι : Type} (ct : ℕ) {m : ℕ} (h : Sizes.Big m)
+    (i : Fin (Sizes.d m)) [NeZero (Sizes.s m i)] {u : ℕ} {α d : ℝ}
+    (axis : RecoveryAxisBounds (Sizes.s m i) (Sizes.t m i) (Sizes.p m) u
+      (haloInverseRingLog (Sizes.s m i) (Sizes.t m i)) α d)
+    (jobs : List ι) (target replicas : ℕ) (a n : ι → ℕ)
+    (H K : ι → ReplicaHaloProblem (Sizes.s m i))
+    (hu : u ≤ Sizes.p m) (htarget : target ≤ ct*Sizes.p m)
+    (hactual : ∀ j ∈ jobs, ∃ (ha : a j < Sizes.s m i) (hn : n j ≤ Sizes.s m i)
+      (Fs : List (ZMod (Sizes.s m i) → GaussianInt)),
+      let N := (cyclicPrincipalBoundary (Sizes.s m i) (Sizes.t m i)
+        (PhaseCellBand.width (Sizes.p m) u) (a j) (n j)).card
+      let stage := initialSchurTarget (Sizes.p m) u
+        (boundaryTableBits (Sizes.p m) (boundaryRecoveryTarget (Sizes.p m) (target+1)) 2 N) 2
+      ∃ hF : ∀ F ∈ Fs, ∀ k,
+        ‖value (executionPrecision (Sizes.p m) (haloInverseRingLog (Sizes.s m i) (Sizes.t m i)) stage 2) (F k)‖ ≤ (2 : ℝ)^2,
+        Fs.length = replicas ∧ H j = axis.cyclicLeftReplicaProblem stage 2 (a j) (n j) ha Fs hF ∧
+          K j = axis.cyclicRightReplicaProblem stage 2 (a j) (n j) hn Fs hF) :
+    ∀ j ∈ jobs,
+      (∀ D ∈ [H j,K j], D.p = Sizes.p m ∧ D.t = Sizes.t m i ∧ D.l ≤ 20*Sizes.p m ∧
+        D.u ≤ Sizes.p m ∧ D.wordWidth ≤ (1032+8*ct)*Sizes.p m) ∧
+      ((H j).Fs.length = replicas ∧ (K j).Fs.length = replicas) ∧
+      (H j).span+(K j).span = n j := by
+  intro j hj
+  obtain ⟨ha,hn,Fs,hF,hcount,hH,hK⟩ := hactual j hj
+  have hprofile := selectedCyclicReplicaProblems_profile ct h i axis target (a j) (n j) ha hn hu htarget Fs hF
+  have hwidth := (selectedCyclicReplicaSizing ct h i u target (a j) (n j) hu htarget axis.hband).2.2.2.1
+  refine ⟨?_,?_,?_⟩
+  · intro D hD
+    rw [hH,hK] at hD
+    obtain ⟨hp,ht,hl,hu',_,_,_,hw,_,_,hlbound,_⟩ := hprofile D hD
+    exact ⟨hp,ht,by simpa only [hp] using hlbound,hu' ▸ hu,hw ▸ hwidth⟩
+  · rw [hH,hK]
+    exact ⟨hcount,hcount⟩
+  · rw [hH,hK]
+    change min (n j) (Sizes.s m i-a j)+(n j-min (n j) (Sizes.s m i-a j)) = n j
+    omega
+
 end IntegerMultBounds.MathlibTM2.Cost

@@ -3998,7 +3998,27 @@ ledger, without a final-bank-stock supplier. This comparison is used only for
 cleanup time; the sharper selected space proof is unchanged. Retirement/factor
 schedule checks peak at 3537.9/3536.0 MiB; integration passes (16674 jobs,
 3.6 GiB aggregate). Next sum this ledger over the fitting class and combine its
-linear payload with the existing numerical fast-time theorem. Header-copy
+linear payload with the existing numerical fast-time theorem.
+`cyclicOriginScheduleTime_le_components` now sums the actual callback ledger
+structurally. `selectedCyclicOriginScheduleTime_le` discharges class-frequency
+input/factor/control setup and fixed retirement costs, leaving a fixed program
+multiple of the numerical sum plus linear replica/local-volume traffic.
+`cyclicOriginTime_fast_envelope` proves that this overhead preserves the
+numerical fast exponent once the actual core-gather geometry and numerical
+bound are supplied. The class-ledger module checks at 3550.7 MiB. Next instantiate
+this ledger on the actual core-gather family and discharge the numerical premise
+with `selectedActualFittingCyclicComplexCore_time_le`.
+This instantiation now compiles as `selectedOriginCyclicClass_time_le`: actual
+cyclic constructor witnesses discharge first-pass profiles/counts and span
+conservation via `selectedCyclicReplicaFamily_profile`; the existing numerical
+class theorem is applied verbatim. All ordinary input/factor/control setup,
+consumed payload and bank/seed retirement preserve the `p^(129/128)` bound.
+The class-time module checks at 3556.7 MiB (guarded build 16610 jobs, 3.6 GiB
+aggregate). The remaining ordinary-pilot gate is execution integration: run the
+actual class scan and apply this uniform ledger bound to its returned callback
+witnesses together with their output certificates and `44*T` space traces.
+Do not mark the pilot or full S4 complete from the conditional ledger theorem
+alone. Header-copy
 count accounting moved unchanged into the narrow `PhaseCellRecoverySeedCopyLedger`
 module so this consumer avoids importing the computed publication schedule.
 Both new input accounting and the existing computed-preparation consumer build;
