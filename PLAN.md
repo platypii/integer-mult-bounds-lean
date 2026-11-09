@@ -4652,6 +4652,58 @@ reverse-core handoff next, then construct the remaining ordinary controls/layout
 and close outer/fallback/root/compiler S4 acceptance. Full S4 remains open.
 No push; collect with the checked axis cleanup budget as a larger local chunk.
 
+**The complete retired axis now executes publication-header initialization.**
+The existing placed/reversed/bulk/axis/retired dyadic declarations now call
+`selectedAmortizedInitializedDyadicPublication_exec`; no parallel axis hierarchy
+was added. Initial publication readiness is workspace readiness plus ordinary
+unary exponent/packet masters and blank arithmetic/header slots, rather than
+three preloaded binary words. Header generation and retirement are explicit
+parts of the actual axis program, and every generated header restores before
+seam completion. The final output-only frame and final-stock equality survive.
+`dyadicPublicationHeaderCosts_le` bounds generation+retirement time and generation
+peak allowance by `(400+100*cV)*replicas*(s*W)` using disjoint core volume.
+The selected initialized publisher therefore has the same dimension-routing
+term, time coefficient `2100+100*cV` and stock coefficient `3600+100*cV`
+(before the existing fixed-bank stock coefficient). Reverse-core handoff adds
+its existing linear 35/70 coefficients. `publicationHeaderSizes` derives every
+binary conversion fit from the existing exponent/packet fit hypotheses, so no
+new independent numeric-fit premises are needed. Workspace source-frame and
+header-frame arguments are shared structurally.
+The guarded complete-axis integration build passes at 3.8 GiB peak. Next derive
+the unary exponents/packet dimensions and publication controls from ordinary
+outer inputs, using the existing counted-gather/dimension setup primitives,
+then close outer schedules/fallback/root/compiler S4 acceptance. Full S4 remains
+open. Keep this caller migration for the next larger local chunk; no push.
+
+**Publication unary exponents now come from actual retained counts.**
+`Host.unaryDyadicExponents_exec_within` proves the shared two-count algorithm
+over arbitrary distinct registers and one restored arithmetic workspace. The
+existing gather exponent theorem is now a thin instance; publication uses the
+same algorithm with its two exponent destinations exchanged. No second copy of
+the bit-length/power-exponent proof is needed. `countedPublicationHeaders_exec_within`
+composes this count-driven generation with the existing binary-header generator.
+Its frame changes precisely two unary exponent words and three binary words.
+`retireCountedPublicationHeaders_exec_within` instantiates the existing generic
+`retireHeaderFrame_pair_exec`, preserving two consumer updates while restoring
+all five initially blank header words. A generalized workspace frame lemma covers
+any subset of the five header generator ports without enumerating worker cases.
+The selected initialized publisher and the existing placement/reverse/bulk/axis/
+retired chain now use this actual count-driven lifecycle. The initial contract
+has replica count `2^b`, actual core row count and packet width; it no longer
+assumes unary exponents. The extra exponent time and peak allowance are each
+at most `120*traffic`, and the complete selected generation/retirement addition
+is at most `(520+100*cV)*traffic`. Publication time/stock linear coefficients
+are now `2220+100*cV` / `3720+100*cV`, plus the unchanged route/fixed-bank terms.
+The complete retired-axis guarded build passes at 3.8 GiB aggregate peak.
+A default-heartbeat failure in the new header composition was removed by explicit
+list membership proofs in place of context-wide `tauto`; proof limits are unchanged.
+Next generate the remaining unary sum/product/padding and publication controls
+from ordinary outer dimensions (reuse `PublicationDimensionReg`/existing setup),
+then close outer/fallback/root/compiler S4 acceptance. Full S4 remains open.
+Collect the binary/count-driven caller migration as one local checkpoint; no push.
+
+Removed superseded binary-only publication header retirement; restore from `b5824d45` if needed.
+
 **First acceptance target: one complete fitting batch.** From declared original
 complex streams and ordinary scalar headers, execute component production,
 prepare numerical data, reuse it across the batch, publish certified complex

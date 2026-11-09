@@ -46,13 +46,13 @@ private theorem padding_source_off {exponent packet pad tmp saved : Fin tapeCoun
   rcases hmem with rfl | rfl | rfl | rfl | rfl
   all_goals first | assumption | (apply Ne.symm; assumption)
 
-theorem PublicationReady.of_frame {e : Fin tapeCount → Fin T}
+theorem PublicationWorkspaceReady.of_frame {e : Fin tapeCount → Fin T}
     {exponent packet pad tmp saved : Fin tapeCount} {a b L W V : ℕ} {S F : Stacks T (prime+K)}
-    (h : PublicationReady e exponent packet pad tmp saved a b L W V S)
+    (h : PublicationWorkspaceReady e exponent packet pad tmp saved a b L W V S)
     (hreg : [exponent,packet,extra 1,pad,tmp,saved].Nodup)
     (hR : ∀ i, i ≠ extra 1 → F.R (e i) = S.R (e i))
     (hL : ∀ i, F.L (e i) = S.L (e i)) :
-    PublicationReady e exponent packet pad tmp saved a b L W V F := by
+    PublicationWorkspaceReady e exponent packet pad tmp saved a b L W V F := by
   have hp (r : Fin tapeCount) (hr : r ∈ [exponent,packet,pad,tmp,saved]) := hR r (padding_source_off hreg r hr)
   have hb (i : Fin kernelT) := hR (base i) (base_extra i 1)
   refine {
@@ -61,9 +61,6 @@ theorem PublicationReady.of_frame {e : Fin tapeCount → Fin T}
     pad := ?_
     tmp := ?_
     saved := ?_
-    a := ?_
-    b := ?_
-    seed := ?_
     zero := ?_
     width := ?_
     blank := ?_
@@ -93,8 +90,17 @@ theorem PublicationReady.of_frame {e : Fin tapeCount → Fin T}
     rw [hR i hne]
     exact h.codec i hi
 
-  · simpa only [hb] using h.a
-  · simpa only [hb] using h.b
-  · simpa only [hb] using h.seed
+
+theorem PublicationReady.of_frame {e : Fin tapeCount → Fin T}
+    {exponent packet pad tmp saved : Fin tapeCount} {a b L W V : ℕ} {S F : Stacks T (prime+K)}
+    (h : PublicationReady e exponent packet pad tmp saved a b L W V S)
+    (hreg : [exponent,packet,extra 1,pad,tmp,saved].Nodup)
+    (hR : ∀ i, i ≠ extra 1 → F.R (e i) = S.R (e i))
+    (hL : ∀ i, F.L (e i) = S.L (e i)) :
+    PublicationReady e exponent packet pad tmp saved a b L W V F := by
+  refine ⟨h.toPublicationWorkspaceReady.of_frame hreg hR hL,?_,?_,?_⟩
+  · rw [hR _ (base_extra _ _)]; exact h.a
+  · rw [hR _ (base_extra _ _)]; exact h.b
+  · rw [hR _ (base_extra _ _)]; exact h.seed
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.PackedTranspose

@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedAmortizedDyadicPublication
+public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedAmortizedInitializedDyadicPublication
 public import IntegerMultBounds.MathlibTM2.Host.EmbedRightUpdatesStock
 public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedPolynomialPublicationBudget
 public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedGatherSchedule
@@ -44,22 +44,17 @@ theorem selectedAmortizedPlacedDyadicPublication_exec (body : P → Pr P T Q (pr
     (hrows : List.Forall₂ (fun k rows => ExactCoreRows (A := (prime+K)) p W width k Fs J rows) (coreBulkIndices s width (PhaseCellBand.width p u) (localityDepth p target)) batches)
     (depth : ℕ)
     (v : HS T Q (prime+K) U) (S : Stacks T (prime+K))
-    (hexponent : ((embStk e S).R exponent).length = a+b) (hpacketWidth : ((embStk e S).R packet).length = g.length*W)
-    (hpad : (embStk e S).R pad = []) (htmp : (embStk e S).R tmp = []) (hsaved : (embStk e S).R saved = [])
-    (ha : (embStk e S).R (base (callerGenerator 97)) = binSyms V a)
-    (hb : (embStk e S).R (base (callerGenerator 98)) = binSyms V b)
-    (hseed : (embStk e S).R (base (callerGenerator 102)) = binSyms V (g.length*W))
-    (hz : (embStk e S).R (base (callerGenerator 106)) = [])
-    (hwidth : ((embStk e S).R (base (callerGenerator 115))).length = V)
-    (hblank : ∀ r, (embStk e S).R (base (callerGenerator (originReg r))) = [])
-    (hstageCount : (embStk e S).R (base (callerGenerator 116)) = []) (hL : ∀ i, (embStk e S).L i = [])
-    (hfresh : ∀ i, i ≠ workerReg (reg pay) → i ≠ FixedStreamedBank.control 7 → (embStk e S).R (base (callerWorker i)) = [])
+    (hworkspace : PublicationWorkspaceReady (fun i => i) exponent packet pad tmp saved a b g.length W V (embStk e S))
+    (hpadOff : ∀ r ∈ [exponent,packet,pad,tmp,saved], r ∉ countedPublicationHeaderRegisters)
+    (hsourceA : ((embStk e S).R replicaCount).length = 2^b)
+    (hsourceB : ((embStk e S).R realRows).length = g.indices.length)
+    (hsourceC : ((embStk e S).R packetWidth).length = g.length*W)
+    (hheaderBlank : ∀ i ∈ [(84 : Fin 117),85,97,98,102,40,41,42,43,44,45], (embStk e S).R (headerReg i) = [])
     (hsrc : (embStk e S).R (extra 1) = (batches.map (fun rows => cstream (prime+K) W rows.flatten)).flatten)
-    (hcount : (embStk e S).R (extra 4) = [])
-    (hcodec : ∀ i ∈ [planeReg false,planeReg true,extra 2,extra 3,extra 5,extra 6], (embStk e S).R i = [])
     (dst : Fin PackedTranspose.tapeCount) (pub : PreparedPublicationPlan PackedTranspose.tapeCount (extra 1) dst)
     (clock lineRows : Fin PackedTranspose.tapeCount)
     (hports : (pub.support++[extra 1,dst,clock,lineRows]).Nodup)
+    (hpubOff : ∀ r ∈ pub.support++[extra 1,dst,clock,lineRows], r ∉ countedPublicationHeaderRegisters)
     (ambient : Fin Fs.length → List (Fin (prime+K+4)))
     (hambient : ∀ j, (ambient j).length = s*W)
     (outputTail borrowed : List (Fin (prime+K+4)))
@@ -68,29 +63,28 @@ theorem selectedAmortizedPlacedDyadicPublication_exec (body : P → Pr P T Q (pr
     (hdst : (embStk e S).R dst = (List.ofFn ambient).flatten++outputTail)
     (hclock : ((embStk e S).R clock).length = Fs.length) (hline : ((embStk e S).R lineRows).length = s),
     ∃ lines : List (List (Fin (prime+K+4))), ∃ v' : HS T Q (prime+K) U, ∃ n : ℕ,
-      v'.user = v.user ∧ (n : ℝ) ≤ 2*(Sizes.T m : ℝ)+1700*(2^b*(s*W) : ℕ)+
+      v'.user = v.user ∧ (n : ℝ) ≤ 2*(Sizes.T m : ℝ)+(2220+100*cV : ℕ)*(2^b*(s*W) : ℕ)+
         108*(generatedDyadicStageCoeff FixedStreamedBank.tapeCount 6 1+300)*
           (2^b*(s*W) : ℕ)*Sizes.d m*((Sizes.ℓ m : ℝ)^Parameters.tau+1) ∧
       g.BankAccurate p W (inversePublicationTargets p Fs.reverse J) lines (3/(2 : ℝ)^p) ∧
       ExecWithin body (fun z state => mnSize state+z ≤ mnSize (Host.mk v S)+depth+
-        (2*Sizes.T m+(3200+3*(streamedDyadicStockCoeff FixedStreamedBank.tapeCount+40))*(2^b*(s*W)))) depth
-        (embProg e Empty.elim (.seq (.seq
-          (ownedPrefixPadding exponent packet (extra 1) pad tmp saved (pairSym (prime+K) false false))
-          (PackedTranspose.program hstates)) (pub.replicaProgram clock lineRows)))
+        (2*Sizes.T m+(3720+100*cV+3*(streamedDyadicStockCoeff FixedStreamedBank.tapeCount+40))*(2^b*(s*W)))) depth
+        (embProg e Empty.elim (.seq (.seq countedPublicationHeadersProgram (.seq (.seq (ownedPrefixPadding exponent packet (extra 1) pad tmp saved (pairSym (prime+K) false false))
+          (PackedTranspose.program hstates)) (pub.replicaProgram clock lineRows))) (clearWords countedPublicationHeaderRegisters)))
         (Host.mk v S) n (Host.mk v' {S with R := (Function.update
           (Function.update S.R (e (extra 1)) []) (e dst) (lines.flatten++outputTail))}) := by
   dsimp only
-  have hlocal := selectedAmortizedDyadicPublication_exec (fun f : Empty => nomatch f)
+  have hlocal := selectedAmortizedInitializedDyadicPublication_exec (fun f : Empty => nomatch f)
     hstates ct cV (U := U) (K := K)
   filter_upwards [hlocal] with m hlocal
   intro h i _ e he u target htarget W hW b V hV hreplicas hbits hfit hA exponent packet pad tmp saved hpadReg
-    Fs hFs J batches hrows depth v S hexponent hpacketWidth hpad htmp hsaved ha hb hseed hz hwidth
-    hblank hstageCount hL hfresh hsrc hcount hcodec dst pub clock lineRows hports ambient hambient
+    Fs hFs J batches hrows depth v S hworkspace hpadOff hsourceA hsourceB hsourceC hheaderBlank hsrc
+    dst pub clock lineRows hports hpubOff ambient hambient
     outputTail borrowed pubReady hdst hclock hline
   obtain ⟨lines,vm,F,n,hu,ht,hwithin,hs,hd,hgood,hi,ho,hl,hframe⟩ := hlocal
     h i u target htarget W hW b V hV hreplicas hbits hfit hA exponent packet pad tmp saved hpadReg
-    Fs hFs J batches hrows depth (embDn e v) (embStk e S) hexponent hpacketWidth hpad htmp hsaved
-    ha hb hseed hz hwidth hblank hstageCount hL hfresh hsrc hcount hcodec dst pub clock lineRows hports
+    Fs hFs J batches hrows depth (embDn e v) (embStk e S) hworkspace hpadOff hsourceA hsourceB hsourceC hheaderBlank hsrc
+    dst pub clock lineRows hports hpubOff
     ambient hambient outputTail borrowed pubReady hdst hclock hline
   have hfinal : F = {(embStk e S) with R := (Function.update
       (Function.update (embStk e S).R (extra 1) []) dst (lines.flatten++outputTail))} := by

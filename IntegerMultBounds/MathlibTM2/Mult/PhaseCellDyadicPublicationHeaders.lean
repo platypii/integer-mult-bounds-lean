@@ -23,28 +23,35 @@ def publicationHeadersState (a b C V : ℕ) (S : Stacks PackedTranspose.tapeCoun
   {S with R := Function.update (Function.update (Function.update S.R
     (headerReg 97) (binSyms V a)) (headerReg 98) (binSyms V b)) (headerReg 102) (binSyms V C)}
 
-theorem PublicationWorkspaceReady.of_header_frame
+theorem PublicationWorkspaceReady.of_generator_frame
     {e : Fin PackedTranspose.tapeCount → Fin T}
     {exponent packet pad tmp saved : Fin PackedTranspose.tapeCount} {a b L W V : ℕ}
     {S F : Stacks T (prime+K)}
     (h : PublicationWorkspaceReady e exponent packet pad tmp saved a b L W V S)
-    (hpad : ∀ r ∈ [exponent,packet,pad,tmp,saved], r ∉ publicationBinaryRegisters)
-    (hR : ∀ i, i ∉ publicationBinaryRegisters → F.R (e i) = S.R (e i))
+    (writes : List (Fin 117)) (hallowed : ∀ j ∈ writes, j ∈ [(84 : Fin 117),85,97,98,102])
+    (hpad : ∀ r ∈ [exponent,packet,pad,tmp,saved], ∀ j ∈ writes, r ≠ headerReg j)
+    (hR : ∀ i, (∀ j ∈ writes, i ≠ headerReg j) → F.R (e i) = S.R (e i))
     (hL : ∀ i, F.L (e i) = S.L (e i)) :
     PublicationWorkspaceReady e exponent packet pad tmp saved a b L W V F := by
   have hp (r) (hr : r ∈ [exponent,packet,pad,tmp,saved]) := hR r (hpad r hr)
-  have hg (i : Fin 117) (hi97 : i ≠ 97) (hi98 : i ≠ 98) (hi102 : i ≠ 102) :
-      F.R (e (headerReg i)) = S.R (e (headerReg i)) :=
-    hR _ (by simp [publicationBinaryRegisters,headerReg_injective.eq_iff,hi97,hi98,hi102])
+  have hg (i : Fin 117) (hi : i ∉ [(84 : Fin 117),85,97,98,102]) :
+      F.R (e (headerReg i)) = S.R (e (headerReg i)) := by
+    apply hR
+    intro j hj heq
+    exact hi (headerReg_injective heq ▸ hallowed j hj)
   have hw (i : Fin FixedStreamedBank.tapeCount) :
       F.R (e (base (callerWorker i))) = S.R (e (base (callerWorker i))) := by
     apply hR
-    have hoff (j : Fin 117) (hj : j ≠ 109) : base (callerWorker i) ≠ headerReg j :=
-      (base_injective.ne (TransposeRegisterPlacement.generator_off_worker _ j hj i)).symm
-    simp [publicationBinaryRegisters,hoff 97 (by decide),hoff 98 (by decide),hoff 102 (by decide)]
+    intro j hj
+    have hj' := hallowed j hj
+    have h109 : j ≠ 109 := by
+      simp only [List.mem_cons,List.not_mem_nil,or_false] at hj'
+      rcases hj' with rfl | rfl | rfl | rfl | rfl <;> decide
+    exact (base_injective.ne (TransposeRegisterPlacement.generator_off_worker _ j h109 i)).symm
   have hx (i : Fin 7) : F.R (e (extra i)) = S.R (e (extra i)) := by
     apply hR
-    simp [publicationBinaryRegisters,headerReg,Ne.symm (base_extra _ _)]
+    intro j _
+    exact (base_extra _ _).symm
   refine ⟨?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_⟩
   · rw [hp exponent (by simp)]; exact h.exponent
   · rw [hp packet (by simp)]; exact h.packet
@@ -52,17 +59,19 @@ theorem PublicationWorkspaceReady.of_header_frame
   · rw [hp tmp (by simp)]; exact h.tmp
   · rw [hp saved (by simp)]; exact h.saved
   · change F.R (e (headerReg 106)) = []
-    rw [hg 106 (by decide) (by decide) (by decide)]; exact h.zero
+    rw [hg 106 (by decide)]; exact h.zero
   · change (F.R (e (headerReg 115))).length = V
-    rw [hg 115 (by decide) (by decide) (by decide)]; exact h.width
+    rw [hg 115 (by decide)]; exact h.width
   · intro r
     have hr := originReg_range r
-    rw [show F.R (e (base (callerGenerator (originReg r)))) = S.R (e (base (callerGenerator (originReg r)))) from
-      hg _ (by intro he; rw [he] at hr; norm_num at hr)
-        (by intro he; rw [he] at hr; norm_num at hr) (by intro he; rw [he] at hr; norm_num at hr)]
+    change F.R (e (headerReg (originReg r))) = []
+    rw [hg _ (by
+      simp only [List.mem_cons,List.not_mem_nil,or_false,not_or]
+      repeat' constructor
+      all_goals intro heq; rw [heq] at hr; norm_num at hr)]
     exact h.blank r
   · change F.R (e (headerReg 116)) = []
-    rw [hg 116 (by decide) (by decide) (by decide)]; exact h.stages
+    rw [hg 116 (by decide)]; exact h.stages
   · simpa only [hL] using h.left
   · simpa only [hw] using h.fresh
   · rw [hx]; exact h.count
@@ -73,6 +82,35 @@ theorem PublicationWorkspaceReady.of_header_frame
       · exact hw _
       all_goals exact hx _
     rw [hread]; exact h.codec i hi
+
+theorem PublicationWorkspaceReady.of_header_frame
+    {e : Fin PackedTranspose.tapeCount → Fin T}
+    {exponent packet pad tmp saved : Fin PackedTranspose.tapeCount} {a b L W V : ℕ}
+    {S F : Stacks T (prime+K)}
+    (h : PublicationWorkspaceReady e exponent packet pad tmp saved a b L W V S)
+    (hpad : ∀ r ∈ [exponent,packet,pad,tmp,saved], r ∉ publicationBinaryRegisters)
+    (hR : ∀ i, i ∉ publicationBinaryRegisters → F.R (e i) = S.R (e i))
+    (hL : ∀ i, F.L (e i) = S.L (e i)) :
+    PublicationWorkspaceReady e exponent packet pad tmp saved a b L W V F := by
+  apply h.of_generator_frame [97,98,102] (by intro j hj; simp only [List.mem_cons,List.not_mem_nil,or_false] at hj; rcases hj with rfl | rfl | rfl <;> simp) ?_ ?_ hL
+  · intro r hr j hj heq
+    apply hpad r hr
+    rw [heq]
+    simp only [List.mem_cons,List.not_mem_nil,or_false] at hj
+    rcases hj with rfl | rfl | rfl <;> simp [publicationBinaryRegisters]
+  · intro i hi
+    apply hR
+    simp only [publicationBinaryRegisters,List.mem_cons,List.not_mem_nil,or_false,not_or]
+    exact ⟨hi 97 (by simp),hi 98 (by simp),hi 102 (by simp)⟩
+
+theorem publicationHeaderSizes (a b C V : ℕ) (hbits : a+b < V) (hfit : C*2^(a+b) < 2^V) :
+    Nat.size a ≤ V ∧ Nat.size b ≤ V ∧ Nat.size C ≤ V := by
+  have hV : V ≤ 2^V := Nat.lt_two_pow_self.le
+  have ha : a < V := (Nat.le_add_right a b).trans_lt hbits
+  have hb : b < V := (Nat.le_add_left b a).trans_lt hbits
+  have hC : C < 2^V :=
+    (Nat.le_mul_of_pos_right C (Nat.two_pow_pos (a+b))).trans_lt hfit
+  exact ⟨Nat.size_le.mpr (ha.trans_le hV),Nat.size_le.mpr (hb.trans_le hV),Nat.size_le.mpr hC⟩
 
 theorem publicationHeaders_exec_within
     (body : P → Pr P PackedTranspose.tapeCount Q (prime+K) U)
