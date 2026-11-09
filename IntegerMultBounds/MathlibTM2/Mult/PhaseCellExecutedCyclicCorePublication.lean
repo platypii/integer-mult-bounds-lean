@@ -49,7 +49,6 @@ theorem executedCyclicCorePublication_spec (hR : rpStates ≤ Q) (hQ : SS.states
     ∃ (J L : ReplicaHaloProblem s) (X : Stacks 840 A) (G : Stacks 850 A)
       (fields : Fin Fs.length → ZMod s → GaussianInt) (xs : List (ZMod s → ℝ))
       (vf : HS 909 Q A U) (steps : ℕ) (savedL savedR : List (Fin (A+4))),
-      let E := extendStacks (by decide : 840 ≤ 842) X
       let Gs := ((List.ofFn fields).reverse).map
         (fun D i => finalRoundWord w q p (inverseNormalizationShift p) (D i))
       let F₀ := cyclicPackedNormalizationInput G wide
@@ -58,12 +57,10 @@ theorem executedCyclicCorePublication_spec (hR : rpStates ≤ Q) (hQ : SS.states
         ((Gs.map (fun D => cstream A W (packedInterval 0 (n-min n (s-a)) D))).flatten))}
       let D := normalizedCorePublicationInput F radiusWord coreWord
       vf.user = v.user ∧
+      CyclicSecondInteriorProfile H K J L p solveTarget B.card ∧
       steps ≤ cachedCyclicReplicaBoundaryBill H K p u l t a n solveTarget q w B.card (24*band+1) Fs.length+
         solvedCyclicRecoveryCost H K Fs.length B.card n w+
-        (releaseReplicaInteriorBankCost CyclicSecondInteriorPlacement.left.plan E+H.interiorTimeBudget (boundaryHaloRecoveryTarget p solveTarget B.card)
-            (recoveryRhsExponent p 2 (stableInteriorExponent p 2) (couplingCountExponent p u))+
-          (releaseReplicaInteriorBankCost CyclicSecondInteriorPlacement.right.plan E+K.interiorTimeBudget (boundaryHaloRecoveryTarget p solveTarget B.card)
-            (recoveryRhsExponent p 2 (stableInteriorExponent p 2) (couplingCountExponent p u))))+
+        cyclicSecondInteriorTimeBudget H K p solveTarget B.card+
         ((Fs.length*(retainedPackedPublicationMergeCost H.span H.wordWidth+5)+4)+
           (Fs.length*(retainedPackedPublicationMergeCost K.span K.wordWidth+5)+4))+
         (PackedRecoveryNormalization.normalizationCost p q W a (min n (s-a)) Fs.length+
@@ -106,7 +103,7 @@ theorem executedCyclicCorePublication_spec (hR : rpStates ≤ Q) (hQ : SS.states
   let K := axis.cyclicRightReplicaProblem cellTarget 2 a n hn Fs hF
   intro W hW wide hwide radiusWord coreWord hRword hLword buffersL buffersR v S tail pageTail
     inputsL inputsR factory h226 h229
-  obtain ⟨J,L,X,G,fields,xs,z,m,savedL,savedR,hu,hm,h247,h547,h125,h425,controlsL,controlsR,hsol,he,haccL,haccR⟩ :=
+  obtain ⟨J,L,X,G,fields,xs,z,m,savedL,savedR,hu,hprofile,hm,h247,h547,h125,h425,controlsL,controlsR,hsol,he,haccL,haccR⟩ :=
     executedCyclicPackedNormalization_spec (body := body) hR hQ hA axis ha hn hleftRoom hrightRoom
       Fs hF W hW wide hwide buffersL buffersR (embDn cyclicCorePublicationReg v) S tail pageTail
       inputsL inputsR factory h226 h229
@@ -172,7 +169,7 @@ theorem executedCyclicCorePublication_spec (hR : rpStates ≤ Q) (hQ : SS.states
     simpa only [haCore,hnCore] using hacc
   obtain ⟨vf,nc,huf,hnc,hecrop,hready,haccuracy⟩ := normalizedCorePublication_exec (body := callerBody)
     p W coreWidth k radius hleft hright _ Gs _ hgood vi F radiusWord coreWord hRword hLword hsrc hw hN hfresh
-  refine ⟨J,L,X,G,fields,xs,vf,m+nc,savedL,savedR,huf.trans (huser.trans hu),?_,
+  refine ⟨J,L,X,G,fields,xs,vf,m+nc,savedL,savedR,huf.trans (huser.trans hu),hprofile,?_,
     h247,h547,h125,h425,controlsL,controlsR,?_,Exec.seq helift' hecrop,?_,?_⟩
   · simpa only [hDlen] using Nat.add_le_add hm hnc
   · simpa only [List.reverse_reverse] using List.forall₂_reverse_iff.mpr hsol

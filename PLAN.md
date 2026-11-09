@@ -45218,3 +45218,108 @@ of expanding the larger formula in the complex-core statement, then propagate
 it with these certificates. Full S4/peak-space/input/fallback/final acceptance
 remains open. Collect the verified actual sizing, second-interior schedule and
 cleanup transport as one larger local checkpoint. No push.
+
+Named `cyclicSecondInteriorTimeBudget` resolves the earlier elaboration failure.
+It contains both generated native cleanup bounds and both second-interior
+budgets, with no intermediate stack-state dependency. The executed second-
+interior endpoint now derives this allowance from the actual cleanup
+certificates (including stack-extension transport); packed recovery,
+normalization, core publication and the full complex-core execution endpoint
+all propagate it. Removed now-unused extended-state aliases from those
+statements. Full complex-core integration passes (15922 jobs); guarded final
+complex-core module check passes at 3453.2 MiB. Next bound this named allowance
+using the selected second-interior schedule and shared coupling cleanup
+absorption, then price normalization/crop/component assembly. Peak space and
+remaining full S4 gates remain open. No push.
+
+`selectedFittingCyclicSecondInteriorBudget_time_le` now prices the named executed
+second-interior allowance, including both generated erasures. It combines the
+actual second-interior numerical schedule with shared coupling setup absorption;
+`replicaNativeCleanup_le_shared` reuses the generated word-stock/header bound.
+The result is two T reserves plus one sharp repeated axis-volume fast term,
+with real schedule counts and matching second-problem target/exponent witnesses.
+Guarded check passes at 3464.7 MiB. Next instantiate those witnesses from the
+actual executed second-interior construction and combine boundary/recovery plus
+second interiors, then bound normalization/crop/component publication. Full S4
+and peak-space acceptance remain open. No push.
+
+The actual two-piece normalization has a checked affine setup/replica split.
+`cyclicNormalizationCost_le_setup_add_volume` reuses existing packed replica
+rounding/publication bounds, allowing input width to exceed final storage width
+by charging their sum. `computedFittingCyclicNormalizationSchedule_le` amortizes
+all repeated normalization traffic over the actual computed fitting class to
+600*replicas*s*(cw*p+W+1), retaining actual zero-replica setup costs. No per-core
+axis-volume multiplication or output-width-dominates-input premise is used.
+Guarded check passes at 3317.8 MiB. Next absorb zero-replica normalization setup
+and price crop/merge/component assembly, then compose the full complex-core time
+allowance. Full S4 and peak-space/input/fallback/final gates remain open. No push.
+
+Normalization setup is now absorbed, not merely left as a zero-replica sum.
+`cyclicNormalizationSetup_poly` proves a generic cubic scalar envelope;
+`cyclicNormalizationSetup_axis_poly` discharges generated scalar-bank size and
+all dimensions from linear width bounds. The actual two-piece setup sum is
+absorbed by `selectedCyclicNormalizationSetupSchedule_volume_le` at arbitrary
+fixed scale and actual list multiplicity, reusing distinct-core setup absorption.
+Guarded check passes at 3445.7 MiB. Together with the checked repeated traffic
+ledger this accounts for normalization time. Next compose its selected complete
+schedule bound and price crop/merge/component assembly before full complex-core
+time integration. Peak space and remaining S4 gates remain open. No push.
+
+`cyclicPublicationTrafficCost` collects exactly the remaining merge, crop,
+archive-retirement and component-assembly terms from the executed complex-core
+bill (normalization remains separately priced). The structural volume estimate
+`cyclicPublicationTrafficCost_le_volume` avoids tape enumeration.
+`computedFittingCyclicPublicationTraffic_sum_le` amortizes the complete native
+bill over the actual computed fitting class to
+7000*(replicas+1)*s*(cw*p+W+1), deriving core/halo geometry from membership and
+using the existing gather-volume theorem. Guarded check passes at 2095.6 MiB.
+Next combine native publication with selected normalization setup/traffic and
+both numerical phases into the full fitting complex-core time estimate. Full
+S4 and peak-space/input/fallback/final gates remain open. No push.
+
+`selectedFittingCyclicPostprocess_time_le` now composes complete two-piece
+normalization setup, repeated rounding/publication traffic, both merges, crop,
+retirement and final component assembly. Its actual computed fitting schedule
+cost is bounded by one T reserve plus
+7600*(replicas+1)*s*(cw*p+W+1). No setup, schedule-count, boundary-volume or
+per-call cost suppliers remain. Guarded check passes at 3429.5 MiB.
+Next combine all three numerical/postprocessing schedule estimates into the
+full fitting complex-core bill. The executed second-interior theorem exposes
+SameLayout/target/exponent witnesses, but later publication endpoints currently
+drop those properties; retain a compact witness contract through that chain
+(or derive it structurally) for full executed-time instantiation. Full S4 and
+peak-space/input/fallback/final gates remain open. No push.
+
+`CyclicSecondInteriorProfile` now retains the two SameLayout witnesses and both
+actual second targets/RHS exponents as one compact contract. Packed recovery
+constructs it from the executed second-interior result; normalization, core
+publication and `executedCyclicComplexCore_spec` carry it unchanged. This makes
+the full execution endpoint expose the exact witnesses required by the checked
+second-interior schedule estimate, without re-solving or comparing reference
+solutions. Full integration passes (15922 jobs); guarded complex-core check
+passes at 3452.7 MiB. Next combine the actual boundary/recovery, named second-
+interior and postprocessing estimates into one full fitting complex-core time
+bound and attach it to the actual step allowance. Full S4/peak-space/input/
+fallback/final acceptance remains open. No push.
+
+`selectedActualFittingCyclicComplexCore_time_le` now composes the complete
+selected fitting complex-core time counter: actual joint boundary/recovery,
+both named second interiors including erasure, complete normalization setup and
+replica traffic, merges, crop, archive retirement and component assembly. It
+uses actual cyclic constructor identities and the retained second-interior
+profile, with no cost, width, metadata, boundary-volume or setup suppliers.
+Its allowance has five T reserves plus explicit repeated axis-volume and linear
+encoded-axis terms; real core multiplicity is already summed.
+`cyclicComplexCoreTimeCost_eq_components` proves exact equality with the term
+order of the execution endpoint's bill. Guarded check passes at 3514.9 MiB;
+full cost/execution integration passes (16361 jobs, 3.6 GiB aggregate). Both
+cost endpoints and `executedCyclicComplexCore_spec` audit to the standard three
+axioms only.
+
+This completes selected fitting cost composition, not S4 acceptance. Next
+attach the bound to actual per-core executed steps and account for outer class/
+prefix repetition; establish execution-wide sharp peak space and original
+complex-input/component/header production/callback integration, then seam/full
+fallback, grouped exposure/metadata and final locality/tensor/support/compiler
+acceptance. Collect this verified named-budget/publication/full-time work in
+one larger local checkpoint. Nothing pushed.

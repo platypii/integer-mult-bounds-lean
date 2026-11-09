@@ -41,14 +41,11 @@ theorem executedCyclicPackedRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.states 
     S.R (CyclicReplicaPlacement.factorReg 226) = [] → S.R (CyclicReplicaPlacement.factorReg 229) = [] →
     ∃ (J L : ReplicaHaloProblem s) (X : Stacks 840 A) (vf : HS 850 Q A U) (G : Stacks 850 A)
       (fields : Fin Fs.length → ZMod s → GaussianInt) (steps : ℕ) (savedL savedR : List (Fin (A+4))),
-      let E := extendStacks (by decide : 840 ≤ 842) X
       vf.user = v.user ∧
+      CyclicSecondInteriorProfile H K J L p solveTarget B.card ∧
       steps ≤ cachedCyclicReplicaBoundaryBill H K p u l t a n solveTarget q w B.card (24*band+1) Fs.length+
         solvedCyclicRecoveryCost H K Fs.length B.card n w+
-        (releaseReplicaInteriorBankCost CyclicSecondInteriorPlacement.left.plan E+H.interiorTimeBudget (boundaryHaloRecoveryTarget p solveTarget B.card)
-            (recoveryRhsExponent p 2 (stableInteriorExponent p 2) (couplingCountExponent p u))+
-          (releaseReplicaInteriorBankCost CyclicSecondInteriorPlacement.right.plan E+K.interiorTimeBudget (boundaryHaloRecoveryTarget p solveTarget B.card)
-            (recoveryRhsExponent p 2 (stableInteriorExponent p 2) (couplingCountExponent p u))))+
+        cyclicSecondInteriorTimeBudget H K p solveTarget B.card+
         ((Fs.length*(retainedPackedPublicationMergeCost H.span H.wordWidth+5)+4)+
           (Fs.length*(retainedPackedPublicationMergeCost K.span K.wordWidth+5)+4)) ∧
       G.R 848 = (List.ofFn (fun j => cstream A w (packedInterval a (min n (s-a)) (fields j)))).reverse.flatten ∧
@@ -210,7 +207,8 @@ theorem executedCyclicPackedRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.states 
         simp only [List.mem_cons,List.not_mem_nil,or_false] at hi
         rcases hi with rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> decide +kernel
       exact (hframe _ hoff).trans (hreadAssembly _)
-  refine ⟨J,L,X,vf,G,fields,m+k,savedL,savedR,huf.trans (huser.trans hu),Nat.add_le_add hm hk',
+  refine ⟨J,L,X,vf,G,fields,m+k,savedL,savedR,huf.trans (huser.trans hu),
+    ⟨layoutL,layoutR,hJtarget,hLtarget,hJexp,hLexp⟩,Nat.add_le_add hm hk',
     hwordsL,hwordsR,h247,h547,h125,h425,?_,hcontrolsLF,hcontrolsRF,Exec.seq helift heAssembly.toExec⟩
   intro j
   exact ⟨(hgood j).2.2.1,cyclicPublicationField_im t band a n _ _ _ ,(hgood j).2.2.2.1,(hgood j).2.2.2.2⟩

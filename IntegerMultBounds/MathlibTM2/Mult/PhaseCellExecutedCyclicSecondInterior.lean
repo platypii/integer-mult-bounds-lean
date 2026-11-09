@@ -1,5 +1,7 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCyclicSecondInteriorBudget
+
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellExecutedCyclicReplicaRecovery
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCyclicRecoveryReplicaInputs
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCyclicSecondInterior
@@ -43,7 +45,6 @@ theorem executedCyclicSecondInterior_spec (hR : rpStates ≤ Q) (hQ : SS.states 
       (X : Stacks 840 A) (vf : HS 842 Q A U) (G : Stacks 842 A) (steps : ℕ)
       (savedL savedR : List (Fin (A+4))),
       let rows := cyclicBoundaryRecoveryRows B solutions Fs
-      let E := extendStacks (by decide : 840 ≤ 842) X
       solutions.length = Fs.length ∧
       (∀ solution ∈ solutions, solution.length = B.card ∧ ∀ y ∈ solution, Fits w y) ∧
       CyclicBoundaryRowsAccurate p t u a n q target Fs solutions ∧
@@ -58,10 +59,7 @@ theorem executedCyclicSecondInterior_spec (hR : rpStates ≤ Q) (hQ : SS.states 
       vf.user = v.user ∧
       steps ≤ cachedCyclicReplicaBoundaryBill H K p u l t a n target q w B.card (24*band+1) Fs.length+
         solvedCyclicRecoveryCost H K Fs.length B.card n w+
-        (releaseReplicaInteriorBankCost CyclicSecondInteriorPlacement.left.plan E+H.interiorTimeBudget (boundaryHaloRecoveryTarget p target B.card)
-            (recoveryRhsExponent p 2 (stableInteriorExponent p 2) (couplingCountExponent p u))+
-          (releaseReplicaInteriorBankCost CyclicSecondInteriorPlacement.right.plan E+K.interiorTimeBudget (boundaryHaloRecoveryTarget p target B.card)
-            (recoveryRhsExponent p 2 (stableInteriorExponent p 2) (couplingCountExponent p u)))) ∧
+        cyclicSecondInteriorTimeBudget H K p target B.card ∧
       RealReplicaHaloOutput J CyclicSecondInteriorPlacement.left.output buffersL.accumulatorTail G ∧
       RealReplicaHaloOutput L CyclicSecondInteriorPlacement.right.output buffersR.accumulatorTail G ∧
       G.R (CyclicSecondInteriorPlacement.left.plan.gather 125) = rows.reverse.flatMap (fun row => cyclicRecoveryField H row.1)++savedL ∧
@@ -106,8 +104,33 @@ theorem executedCyclicSecondInterior_spec (hR : rpStates ≤ Q) (hQ : SS.states 
   have hLayoutR : K.SameLayout L := layoutR
   rw [hLayoutL.interiorTime_eq_budget,hLayoutR.interiorTime_eq_budget,
     hJtarget,hLtarget,hJexp,hLexp] at hk
+  have hcleanupL' : releaseReplicaInteriorBankCost CyclicSecondInteriorPlacement.left.plan
+      (extendStacks (by decide : 840 ≤ 842) X) ≤
+      replicaCouplingNativeCleanupBound (2^15*H.p) H.precision H.wordWidth s H.t H.u H.band H.origin (H.origin+H.span) := by
+    have heq := releaseReplicaInteriorBankCost_eq_of_disposable_frame
+      CyclicRecoveryPlacement.leftJob.plan CyclicSecondInteriorPlacement.left.plan X
+      (extendStacks (by decide : 840 ≤ 842) X) (by
+        intro i hi
+        exact congrArg (fun T : Stacks 840 A => T.R
+          (CyclicRecoveryPlacement.leftJob.plan.solver (weightCacheCoreReg i)))
+          (embStk_extendStacks (by decide : 840 ≤ 842) X))
+    exact heq.trans_le hcleanupL
+  have hcleanupR' : releaseReplicaInteriorBankCost CyclicSecondInteriorPlacement.right.plan
+      (extendStacks (by decide : 840 ≤ 842) X) ≤
+      replicaCouplingNativeCleanupBound (2^15*K.p) K.precision K.wordWidth s K.t K.u K.band K.origin (K.origin+K.span) := by
+    have heq := releaseReplicaInteriorBankCost_eq_of_disposable_frame
+      CyclicRecoveryPlacement.rightJob.plan CyclicSecondInteriorPlacement.right.plan X
+      (extendStacks (by decide : 840 ≤ 842) X) (by
+        intro i hi
+        exact congrArg (fun T : Stacks 840 A => T.R
+          (CyclicRecoveryPlacement.rightJob.plan.solver (weightCacheCoreReg i)))
+          (embStk_extendStacks (by decide : 840 ≤ 842) X))
+    exact heq.trans_le hcleanupR
+  have hk' : k ≤ cyclicSecondInteriorTimeBudget H K p target B.card := by
+    apply hk.trans
+    exact Nat.add_le_add (Nat.add_le_add_right hcleanupL' _) (Nat.add_le_add_right hcleanupR' _)
   exact ⟨solutions,J,L,X,vf,G,m+k,savedL,savedR,hlen,hformat,haccuracy,layoutL,layoutR,hJtarget,hLtarget,hJexp,hLexp,hJFs,hLFs,
-    huf.trans (huser.trans hu),Nat.add_le_add hm hk,hfieldsL,hfieldsR,harchL.trans harchiveL,
+    huf.trans (huser.trans hu),Nat.add_le_add hm hk',hfieldsL,hfieldsR,harchL.trans harchiveL,
     harchR.trans harchiveR,hcontrolsLF,hcontrolsRF,Exec.seq helift heSecond.toExec⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
