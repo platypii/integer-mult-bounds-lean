@@ -43835,3 +43835,274 @@ derived parameter expression to S4's sharp uniform time/space requirements,
 then carry it through the factor-axis factory and complete fitting caller.
 Original complex-input/header production, grouped/fallback accounting and
 tensor/root acceptance remain open; full S4 is not complete.
+
+### S4 ordinary table controls execute around the derived shared reserve
+
+PreparedCyclicColumnsStock closes the concrete factory boundary: copy the row
+count into the scan clock, execute the complete table with its derived uniform
+reserve, and retire both clocks with zero native push. The exact restored output
+bank, accuracy, format, PreparedBoundaryColumns and LengthKeyReady are retained.
+Primitive numerical push bounds remain the ordinary fixed-program parameters;
+no supplied per-column cost/workspace cap or execution is introduced.
+
+The new proof checks at 3467.4 MiB, below the 4 GiB module target. Explicitly
+typing cleanup's scalar cap avoids recursive physical-bank comparison without
+raising limits. Integration passes (15885 jobs, 3.5 GiB combined peak). The first
+prerequisite rebuild required the larger recovery-contract closure (15740 jobs,
+31.1 GiB combined peak, 3.1 min). RecoveryAxisBounds lives in the large
+TargetOwnedRecoveryJob module, a possible future import-closure extraction;
+no such refactor is made here.
+
+The parameter audit still needs a final asymptotic theorem: geometry setup has
+a t*log(t)^2-style allowance, while the numerical shared reserve retains its
+existing named terms. Do not equate a derived index-uniform cap with S4's sharp
+uniform bound. Next compose factor-page generation and the existing checked
+factor-axis resources at this ordinary table boundary, while matching their
+complete parameter expressions to the fitting caller's resource requirements.
+Original input production, grouped/fallback accounting and tensor/root gates
+remain open. No commit/push; periodic WIP untouched.
+
+Prepared-column axiom audit reports only propext, Classical.choice and
+Quot.sound (9610.7 MiB temporary audit peak). Verification handles are terminal.
+
+### S4 factor lookup address scan shares one controller reserve
+
+Factor-page inspection found a repeated address scan beneath factorWord:
+packedSuffixAddress sums clipped packed-block sizes. Applying a whole-page
+native runtime allowance would multiply repeated lookup work into space, so
+close the address scan structurally before propagating factor-page wrappers.
+
+PackedSizeLoopStock proves the actual packedSizeStep has fixed native push bound
+two, bounds one step by 100*(start+L+W+N+1), and lifts its restoring exact-output
+contract with scanP_within_final_stock. One controller reserve covers all blocks;
+canonical stock grows only by the stored address contribution and cursor tick.
+packedBandWordCount_le proves the retained address count is at most L*(2*W+1)
+by structural induction. PackedSizeSumStock composes zero-allocation cursor and
+count retirement. Its allowance relative to initial stock is the actual packed
+word count plus L cursor ticks and one 2*(100*(start+L+W+N+1)+2) reserve.
+
+Checks pass at 2082.1 MiB (loop/count bound) and 2058.2 MiB (sum/cleanup).
+Integration passes (4410 jobs, 2.6 GiB peak). Axiom audits report only propext,
+Classical.choice and Quot.sound; the count bound uses only propext and Quot.sound
+(4143.7 MiB temporary audit peak). Handles are terminal. Next carry this through
+suffix/within address construction and lookup, then share reserves across
+factor-row/page loops. The complete factor-page resource theorem is still open;
+no sharp fitting-space or full S4 completion claim. No commit/push; retain the
+larger checkpoint and exclude periodic WIP.
+
+### S4 complete packed table address and lookup retain the shared reserve
+
+PackedSuffixAddressStock executes suffix-control generation and the checked
+restoring block-size sum. GeneratePackedAddressStock adds the within-block
+address and retains the exact original packedEntryOffset endpoint. Its scalar
+bound is N*(2*W+1)+1000*(n+m+W+N+1), so no quadratic row-count term enters this
+address reserve. The count estimate uses the structural packedBandWordCount_le.
+
+RankedBoundaryEntryStock composes actual address production, borrowed-width
+movement, packed word lookup, width restoration and zero-allocation private
+address retirement. Its workspace is the generated address reserve plus one
+word-copy allowance; exact decoded packed-table semantics and the original
+runtime/frame contract are retained. Controller scratch is shared across the
+address scan rather than multiplied by its block count.
+
+Checks pass (MiB): suffix address 2062.0; complete address/bound 2133.6;
+ranked lookup 2079.5. Integration passes (4424 jobs, 2.6 GiB peak). Address bound
+and complete lookup axiom audits report only propext, Classical.choice and
+Quot.sound, with no choice needed for the scalar bound (4146.2 MiB temporary
+audit peak). All verification handles are terminal.
+
+Next retain factor-entry feeding and zero/valid branch selection, then share
+one lookup reserve across each factor-row scan and each full page scan.
+The complete factor-page resource contract, sharp fitting asymptotic bounds
+and remaining original-input/grouped/fallback/tensor/root S4 gates stay open.
+No commit or push; collect the larger factor-page checkpoint, exclude periodic WIP.
+
+### S4 factor entry feeding and restoring unary comparison retain resources
+
+FactorEntryStock composes ranked lookup and actual word feeding into the factor
+input page. Its allowance is the shared address/lookup reserve plus linear
+feedFactorWordCost; exact restored banks, fitting real word and decoded table
+semantics remain attached to the execution. Check passes at 2079.2 MiB.
+
+UnaryIfLtStock supplies a generic resource contract for the existing restoring
+unary comparison: comparison scratch is generated, tested and retired before
+the chosen continuation executes. Branch workspace is supplied separately from
+controller time, so numerical continuation runtime is not charged as space.
+The exact original runtime bound and caller bank restoration are preserved at
+arbitrary depth. Check passes at 1950.7 MiB.
+
+Integration passes (4430 jobs, 4.2 GiB combined peak). Both axiom audits report
+only propext, Classical.choice and Quot.sound (4150.1 MiB temporary audit peak).
+Handles are terminal. Next retain unary sum comparison using this contract,
+compose factorChoice, and attach valid-entry/zero-padding branches. Then share
+lookup workspace across factor-row and page scans. The complete factor-word,
+page/factory and fitting resource contracts remain open, as do the full S4
+input-production/grouped/fallback/tensor/root gates. No commit or push; keep the
+larger factor-page checkpoint together and exclude unrelated periodic WIP.
+
+### S4 valid/zero factor-word selection and descending row step retain resources
+
+UnaryIfLeSumStock constructs its borrowed endpoint, reuses the bounded unary
+less-than controller and retires the endpoint before the selected continuation.
+FactorChoiceStock composes the four restoring rank/band tests with comparison
+setup separate from branch workspace; early exits enlarge only the scalar cap.
+Neither contract charges numerical branch execution time as required space.
+
+FactorWordStock instantiates valid packed-entry lookup/feeding and zero padding.
+The actual emitted word and original time/frame statement are retained with
+factorWordWorkspace. FactorRowStepStock adds the descending cursor operation,
+which has zero native push and requires no further workspace allowance.
+
+Checks pass (MiB): unary sum comparison 1945.8; factor selection 1948.0;
+complete factor word 2065.9; descending row step 2060.0. Integration passes
+(4440 jobs, 2.6 GiB combined peak). All four axiom audits report only propext,
+Classical.choice and Quot.sound (4152.0 MiB temporary audit peak). All handles
+are terminal. Next lift the bounded row step with the existing indexed-boundary
+scan contract, charge retained word growth once and share one lookup reserve
+across the factor row, then across the full page. Full factor-page/factory,
+sharp fitting resources and original-input/grouped/fallback/tensor/root S4
+gates remain open. No commit/push; collect the larger factor-page checkpoint
+and exclude unrelated periodic WIP.
+
+### S4 complete factor rows share one derived lookup reserve
+
+FactorRowLoopStock uses the indexed-boundary invariant scan contract to retain
+at most one output word per step while sharing one lookup reserve. Cursor drops
+cannot increase stock; two generic register-update equations bound canonical
+step growth. Exact forward word order, descending cursor, frame and original
+runtime sum are reused from the existing row-loop correctness theorem.
+
+FactorWordWorkspaceBound derives one cap for bounded column/row headers from
+packed table volume and the structural address count. FactorRowUniformStock
+removes the per-entry workspace premise entirely. FactorRowStock generates the
+fixed-width count and borrowed cursor, executes the uniform row scan and retires
+the count with zero additional allocation. The complete row requires no
+supplied cost cap or execution witness.
+
+Checks pass (MiB): bounded row loop 2091.2; uniform word reserve 2218.7;
+row loop with derived reserve 2049.8; complete row 2076.6. Integration passes
+(4448 jobs, 2.6 GiB combined peak). Uniform word bound, row scan and complete
+row axiom audits report only propext, Classical.choice and Quot.sound (4154.0 MiB
+temporary audit peak). All verification handles are terminal.
+
+Next share one row/lookup reserve across the factor-window and shifted-row
+scans, charging retained page output once, then compose full page generation
+and existing factor-axis resources. Sharp fitting uniform bounds and remaining
+original-input/grouped/fallback/tensor/root S4 gates remain open. No commit or
+push; keep the larger page checkpoint together and exclude periodic WIP.
+
+### S4 complete factor window shares reserves across both nested scans
+
+Host.CursorOutputStock factors the common cursor-consumption/packet-publication
+stock inequality over arbitrary registers and words. FactorWindowStepStock
+retains the complete checked factor-row resource trace after a zero-allocation
+row-cursor drop. FactorRowWorkspaceBound proves rank-header monotonicity once,
+so the outer window scan derives its cap without per-row supplier premises.
+
+FactorWindowLoopStock uses the existing indexed-boundary scan language and the
+generic cursor-output inequality. Retained row packets are charged once; a
+single derived row/lookup reserve covers the complete outer scan. The exact
+ascending output order and original runtime sum are retained.
+FactorWindowStock constructs its count/cursor controls, executes that bounded
+window and retires controls without another allocation allowance.
+
+Checks pass (MiB): generic cursor/output stock 1385.4; window step 2063.4;
+window-row loop 2084.4; complete window 2080.2. Integration passes (4456 jobs,
+2.6 GiB combined peak). Cursor inequality, window loop and complete-window
+axiom audits report only propext, Classical.choice and Quot.sound (4155.7 MiB
+temporary audit peak). Handles are terminal. Next close the shifted update-row
+scan, then compose both branches into factorPage and its scaled/ordinary-input
+factory wrappers. Sharp fitting asymptotic bounds and the remaining full S4
+input-production/grouped/fallback/tensor/root gates remain open. No commit or
+push; retain the larger page checkpoint and exclude unrelated periodic WIP.
+
+### S4 complete factor page retains the derived scan allowances
+
+FactorSlidingStepStock retains shifted-row execution at arbitrary depth;
+FactorInputLoopStock shares the monotone largest-rank lookup reserve over the
+outer scan and charges retained output once. FactorInputsStock constructs and
+retires its cursor/count controls around that scan. Its guarded check passes at
+2083.8 MiB; dependency integration passes (4456 jobs, 2.6 GiB combined peak).
+
+FactorPageStock composes the shifted-input and initial-window resource contracts
+using mn_seq_within_add. It preserves the original exact factor-page output,
+caller-bank frame and runtime bound, with a named sum of the two derived workspace
+allowances and no supplied resource witness. The guarded check passes at
+2068.4 MiB. Full page integration passes (4468 jobs, 2.6 GiB combined
+peak); all verification handles are terminal.
+
+Next connect the scaled/ordinary-input factory wrappers and test the resulting
+allowances against the manuscript's fitting asymptotic bounds before extending
+further caller layers. The complete fitting caller, original input production,
+grouped/fallback accounting, tensor/support and root acceptance remain open.
+No commit or push; retain the larger factory checkpoint and exclude periodic WIP.
+
+### S4 scaled factor-page factory retains workspace from ordinary readiness
+
+ScaledFactorPageStock composes constant-factor bandwidth generation, the complete
+factor page and zero-allocation bandwidth cleanup. A structural pushN induction
+bounds the variable-factor controller, while the numerical page uses its own
+shared scan allowance. The exact original factory cost and output remain attached
+at arbitrary depth; scaledGeneratedFactorPageWorkspace is derived without a
+supplier premise. Check passes at 2075.9 MiB; integration passes (4476 jobs,
+2.6 GiB combined peak).
+
+ScaledFactorPageReadyStock obtains the required controls and blank workspace from
+the existing LengthKeyReady invariant, retaining the same resource contract.
+Check passes at 2108.9 MiB. Integration passes (9875 jobs, 2.7 GiB
+combined peak); all handles are terminal. Next compose with
+PreparedCyclicColumnsStock, then connect the complete constructed factor and
+check sharp fitting asymptotic bounds. Full S4 remains open. No commit or push.
+
+### S4 generated cyclic table and complete factor page share a checked contract
+
+PreparedCyclicFactorPageStock composes PreparedCyclicColumnsStock with the
+ordinary-readiness scaled page factory. It retains the generated column family,
+accuracy and formatting, exact table/page banks and the readiness invariant after
+resetting the published page. Its allowance is the sum of table construction and
+page generation workspace; no supplied entry execution or workspace cap is added.
+
+The production module check passes at 3431.0 MiB, below the 4 GiB module target.
+Integration passes (15915 jobs, 3.5 GiB combined peak). The axiom audit reports
+only propext, Classical.choice and Quot.sound (9617.4 MiB temporary audit peak).
+All verification handles are terminal. Next preserve this contract through the
+154-to-224 register embedding and compose scaledInitializedBoundaryFactor_exec,
+which already retains ExecWithin; the current constructedCyclicFactor_spec drops
+that latter resource evidence with toExec. Then connect the prepared factory and
+validate the sharp fitting bounds. Full S4 input-production, grouped/fallback,
+tensor/support and root acceptance gates remain open. No commit or push.
+
+### S4 constructed factorization and reusable factory preserve resources
+
+ConstructedCyclicFactorStock lifts the generated table/page execution through
+boundaryFactorLegacyReg using exec_emb_ovr_within_stock, counting spectator
+storage once. It composes the existing scaledInitializedBoundaryFactor_exec
+resource trace instead of discarding it with toExec. Exact costs, accuracy,
+factorization outputs, retained headers, permanent volume and frames survive.
+constructedCyclicFactorWorkspace names the sum of page and factorization reserves.
+
+PreparedCyclicFactorFactoryStock lifts that same resource execution into the
+reusable 226-register solve layout without another allowance. Its solve-table
+semantics and two spectator registers remain attached to the bounded execution.
+
+Checks pass at 3447.4 and 3434.4 MiB respectively. Integration passes (15924 and
+15926 jobs, each 3.5 GiB combined peak). Both axiom audits report only propext,
+Classical.choice and Quot.sound (9620.0 MiB temporary audit peak). All handles
+are terminal. Next derive fitting asymptotic bounds for these actual allowances
+and connect caller/factory consumers; the sharp fitting bounds and full original
+input production, grouped/fallback accounting, tensor/support and root acceptance
+remain open. No commit or push; exclude unrelated periodic WIP from checkpoint.
+
+### S4 factor-page workspace is bounded by banded page volume
+
+FactorPageWorkspaceBound proves factorPageWorkspace q W N is at most
+20000*(N+W+1)*(W+1)*(q+1), by exposing only scalar allowances. It also bounds
+the actual scale-24 factory allowance by
+14000000*(N+band+1)*(band+1)*(q+1), including bandwidth setup. These establish
+page-volume scaling; they do not yet prove the complete constructed factor
+workspace or full S4 asymptotic requirements. Check passes at 2082.8 MiB;
+integration passes (4477 jobs, 2.6 GiB combined peak). All handles terminal.
+
+Collect the lookup/row/page/generated-factory work as one coherent local
+checkpoint. Exclude all unrelated periodic recovery WIP. No push. Next bound
+actual table/numerical-factor allowances and integrate fitting callers.
