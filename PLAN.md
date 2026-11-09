@@ -43021,3 +43021,125 @@ WIP is excluded.
 Retained-loop/shared-init/full-setup axiom audits report only propext,
 Classical.choice and Quot.sound (6998.2 MiB temporary audit peak). All verification
 handles are terminal.
+
+### S4 batch inverse replication, retirement and parser headers retain stock
+
+PrepareBatchGeneratorPageStock supplies a structural eight-push certificate for
+loadBatchHeader, generated runtime width and generator replication/packing. Its
+bounded trace retains the exact original repeated page and suffixes. The named
+workspace is affine in B: the additional cell allowance is
+8*(38*(L*(2*q+8))+43). This is native encoded traffic, with no numerical inverse
+or weight arithmetic multiplied by B.
+
+ReleaseConstructionStock retains the existing exact construction-retirement
+execution with a three-push traffic certificate and 3*releaseConstructionCost
+reserve. The linear factor-page traffic and generated counters are accounted
+separately from numerical generation. BatchSetupHeadersStock retains runtime
+width generation and inverse-parser packet preparation with eight-/two-push
+native bounds, respectively. Original exact endpoints and time bills stay.
+
+Guarded peaks: generator replication 2059.6 MiB, construction retirement
+2064.9 MiB, runtime/parser headers 1934.9 MiB. Integration passes (9663 jobs,
+4.1 GiB combined peak). Proof limits are unchanged; whitespace scan passes.
+Collect these with the next larger inverse/batch checkpoint; no commit or push,
+and leave periodic WIP untouched.
+
+The batch inverse's remaining numerical producer is headerGeneratorSetup:
+generateSetupWidth, generateCoefficientWidth, prepareCoefficientHeaders and
+numericalGeneratorSetup. The latter constructs factorFactory then
+ generatePackedGenerators. Reuse TableHostStock for coefficientHost/table
+emission and structural numerical generator reserves, instead of treating
+whole shared numerical runtime as scratch. Once retained, compose the checked
+retirement and affine replication to close batchInverseSetup, then
+batchWeightedSetup/generatedBatchSetup and stagedCell_sized_exec_within.
+The complete fitting-prefix/uniform and all broader S4 gates remain open.
+Replication, retirement and both header theorem axiom audits report only
+propext, Classical.choice and Quot.sound (6995.0 MiB temporary audit peak).
+All verification handles are terminal.
+
+### S4 numerical factor factory shares its distance-stream arithmetic reserve
+
+TableHostStock extends the generic table stream resource theorem through
+zero-growth coefficient-bank retirement. coefficientTableHost_exec_within
+retains the original exact output, empty workspace and time bill with
+3*xs.length+3*tblC V w+2 reserve. The resource composition is over abstract
+stores, with concrete bank updates instantiated last.
+
+CoefficientHostStock instantiates this directly in coefficientStreamCode_do:
+the complete pi/exponential distance stream retains 3*(L*w)+3*tblC V w+2
+symbols, independent of arithmetic atom count or distance count multiplying
+scratch. It preserves the original exact distanceFactorWords publication.
+FactorFactoryStock composes this checked numerical stream with native factor
+row/page construction and dimension-counted distance-vector release. Its
+workspace is the shared stream reserve plus separate native page-assembly and
+release traffic allowances; factorFactory_exec_within preserves the full
+constructed factor page, exact final bank, and existing time bill. Numerical
+accuracy arguments and execution programs are unchanged.
+
+Guarded checks: table-host retirement 2137.5 MiB, coefficient stream 2051.5 MiB,
+factor factory 2084.7 MiB. Integration through factor factory passes (9578 jobs,
+2.7 GiB combined peak). Proof-integrity and whitespace scans pass under default
+limits. Keep collecting the larger numerical inverse/batch checkpoint; no push,
+no changes to unrelated periodic WIP.
+
+Next lift the existing fixedPointRowCall_exec_within in IntegerRowCallStock
+through integerIteration, integerIterations, generateEncodedColumn and the
+remaining reversed-column/reciprocal/packing stages of generatePackedGenerators.
+Then join factorFactory resources in numericalGeneratorSetup, retain ordinary
+header production in headerGeneratorSetup, and compose the checked construction
+retirement/affine batch replication in batchInverseSetup. The complete batch
+setup, fitting-prefix/uniform resources, and broader S4 gates remain open.
+Table host, coefficient stream and full factor-factory axiom audits report only
+propext, Classical.choice and Quot.sound (6977.7 MiB temporary audit peak).
+All verification handles are terminal.
+
+### S4 integer generator shares numerical workspace across rows and iterations
+
+PrefixReleaseStock supplies narrow reusable native certificates for owned
+prefix/dimension retirement. The existing releaseFromDimensions_native proof
+moved out of the unfinished FactorFactoryStock into that primitive module;
+FactorFactoryStock imports it, avoiding a factor-factory dependency in row
+retirement. No statement or execution program changed.
+
+IntegerRowConsumeStock specializes fixedPointRowCall_exec_within at precision
+zero, then composes descriptor retirement over abstract stores. It retains the
+original exact arithmetic row result/time and one realWeightWorkspace reserve.
+IntegerRowFrameStock proves that consumed factor/RHS prefixes pay for the
+published result at row boundaries: RHS and result have equal encoded width,
+and the factor prefix disappears. IntegerRowsStock mirrors the original list
+induction and restores the original unary count symbols. Its complete scan
+workspace is 3*jobs.length+consumeIntegerRowWorkspace C L w+2, with no row-count
+multiplier on arithmetic scratch. IntegerStepStock instantiates the checked
+arbitrary-job theorem in generatorRowJobs, retaining the original signed-fits
+conclusion and publication order.
+
+IntegerStepPreparedStock adds native executed RHS generation; the width
+hypothesis bounds its exponent traffic in terms of w. IntegerIterationStock
+adds native factor-page borrowing, column replacement and iteration increment.
+IntegerIterationFrameStock proves exact endpoint growth of one symbol: the
+column retains its length and the iteration header increments. Finally,
+IntegerIterationsStock mirrors the original repeated scan/context proof. The
+whole M-iteration bound is 4*M+integerIterationWorkspace C L w+2. Both row count
+and iteration count share the same numerical reserve; retained factor banks,
+readiness and all spectators are paid once through initial stock.
+
+Guarded checks (MiB): primitive prefix release 1934.1; consuming row 2058.9;
+row balance 2037.6; complete row scan 2074.4; numerical row jobs 2059.5; prepared
+step 2072.1; full iteration 2071.8; iteration balance 2043.4; repeated iteration
+2090.4. Integration with factor factory and batch traffic passes (9700 jobs,
+2.7 GiB combined peak). Proof-integrity/whitespace scans pass under unchanged
+limits. Collect the accumulated factor producer, batch traffic and complete
+iteration resource language in one larger local checkpoint; no push and exclude
+all unrelated periodic WIP.
+
+Next retain prepareIntegerIterations and initial seed generation, then
+ generateIntegerColumn/generateEncodedColumn, reversed-column, reciprocal and
+packing stages of generatePackedGenerators. Join the checked factor factory
+into numericalGeneratorSetup and retain ordinary header production in
+headerGeneratorSetup. Then close batchInverseSetup using checked construction
+retirement/affine replication, batchWeightedSetup/generatedBatchSetup, and
+connect stagedCell_sized_exec_within. Full fitting-prefix/uniform resources and
+all broader S4 acceptance gates remain open.
+Consuming row, row scan, single/repeated iteration and factor-factory axiom
+audits report only propext, Classical.choice and Quot.sound (6988.6 MiB temporary
+audit peak). All verification handles are terminal.
