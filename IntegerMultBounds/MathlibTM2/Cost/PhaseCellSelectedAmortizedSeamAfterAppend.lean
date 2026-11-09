@@ -1,0 +1,91 @@
+module
+
+public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedAmortizedSeamRun
+public import IntegerMultBounds.MathlibTM2.Host.SequentialBudget
+public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedGatherSchedule
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSeamExactCoreRows
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFullLineSeamReady
+
+/-! Compose an existing output-only trace with the selected seam execution.
+Readiness is required only at the initial state and transported internally.
+The first trace remains explicit so its concrete producer can be instantiated
+without duplicating the seam argument. -/
+@[expose] public section
+namespace IntegerMultBounds.MathlibTM2.Cost
+open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2.Host
+  IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Node
+  IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Fast.TableVM IntegerMultBounds.MathlibTM2.Fast.Main
+  IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.NLogN
+  IntegerMultBounds.NLogN.PhaseCellMatrix IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
+  IntegerMultBounds.NLogN.SchurDominance IntegerMultBounds.MathlibTM2.Mult.PhaseCellInterface
+open IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz ScalarPlacement FullLineInputPlan
+open Filter IntegerMultBounds.MathlibTM2.Mult
+variable {T T' Q A : ℕ} {P U : Type} {body : P → Pr P T' Q A U}
+
+theorem selectedAmortizedSeamAfterAppend_exec (ct : ℕ) :
+    ∃ D : ℝ, 0 ≤ D ∧ ∀ᶠ m : ℕ in atTop, ∀ (h : Sizes.Big m) (i : Fin (Sizes.d m)) [NeZero (Sizes.s m i)],
+    ∀ (e : Fin T → Fin T') (he : Function.Injective e) (input : FullLineInputPlan T) (producer : PackedProducerPlan T Q)
+    (hcompat : input.Compatible producer)
+    (crops : SeamCropPlan T producer.result) (recovery : Bool) (hA : 96 ≤ A)
+    , let p := Sizes.p m
+    let s := Sizes.s m i
+    let t := Sizes.t m i
+    let l := haloInverseRingLog s t
+    ∀ (u target : ℕ) (d : ℝ),
+    let coreWidth := amortizedCoreWidth ct p
+    let ks := coreSetupGroup s coreWidth (PhaseCellBand.width p u) (localityDepth p target) (0,s)
+    u ≤ p → target ≤ ct*p →
+    ∀ (hu : 1 ≤ u) (hwidth : 8*p ≤ 2^u)
+    (hgap : (1 : ℝ)/4 ≤ d*((t : ℝ)/s-1))
+    (hbudget : (u : ℝ)*d ≤ p) (hband : PhaseCellBand.width p u ≤ s)
+    (hpad : 2*((s/(t-s)+1)-2*PhaseCellBand.width p u) ≤ 2^l+1) (htarget : p+2 ≤ target)
+    (Fs : List (ZMod s → GaussianInt)) (hFs : ∀ F ∈ Fs, ∀ i, ‖value p (F i)‖ ≤ 1)
+    (X Y : (ZMod s → GaussianInt) → ZMod s → ℝ)
+    (hX : ∀ F ∈ Fs, Solves (realMatrix s t p u) Finset.univ (X F)
+      (fun i => ((1/2 : ℂ)*value p (F i)).re))
+    (hY : ∀ F ∈ Fs, Solves (realMatrix s t p u) Finset.univ (Y F)
+      (fun i => ((1/2 : ℂ)*value p (F i)).im))
+    (J : (ZMod s → ℂ) →L[ℂ] (ZMod s → ℂ))
+    (hJ : J ∘L PhaseCellOperator.exact s t (Real.sqrt (u : ℝ)) = 1)
+    (v : HS T' Q A U) (S : Stacks T' A)
+    (ready : SeamReady input producer crops p u l target t coreWidth Fs ks (embStk e S))
+    (bulk : Pr P T' Q A U) (vBulk : HS T' Q A U)
+    (dst : Fin T') (word : List (Fin (A+4))) (bulkSteps bulkSpace : ℕ)
+    (hoff : ∀ r, seamReadPort input producer crops ks r → e r ≠ dst)
+    (huserBulk : vBulk.user = v.user)
+    (hbulk : ExecWithin body (fun d z => mnSize z+d ≤ mnSize (Host.mk v S)+0+bulkSpace) 0
+      bulk (Host.mk v S) bulkSteps
+      (Host.mk vBulk {S with R := Function.update S.R dst (word++S.R dst)})),
+    let Sbulk := {S with R := Function.update S.R dst (word++S.R dst)}
+    let C := closedGridPush (U := U) (A := A) producer recovery
+    let r := fullLineGridRecord (A := A) p u l target t Fs
+    ∃ v' : HS T' Q A U, ∃ n : ℕ, ∃ output : List (Fin (A+4)), ∃ rss : List (List (List GaussianInt)),
+      v'.user = v.user ∧ ((bulkSteps+n : ℕ) : ℝ) ≤ (bulkSteps : ℝ)+2624001*(Sizes.T m : ℝ)+
+        (Fs.length : ℝ)*D*(t : ℝ)*(1+(PhaseCellBand.width p u : ℝ)^2/Sizes.d m)*(p : ℝ)^(129/128 : ℝ)+
+        726*(Fs.length*s*p : ℕ)+455 ∧
+      ExactCoreProduced p s (fun _ => 0) (fun _ => J) r output ∧
+      List.Forall₂ (fun k rows => ExactCoreRows (A := A) p (2*p+13) coreWidth k Fs.reverse J rows) ks.reverse rss ∧
+      ExecWithin body (fun d z => mnSize z+d ≤ mnSize (Host.mk v S)+0+(bulkSpace+(((C+1)*((1312000+756)*(1032+8*ct)+504)+1440)*(Fs.length*s*p)+2*(C+1)*Sizes.T m+86))) 0
+        (.seq bulk (placedSeamProgram e input producer crops recovery ks)) (Host.mk v S) (bulkSteps+n)
+        (Host.mk v' {Sbulk with R := (Function.update Sbulk.R (e crops.dst)
+          ((rss.map (fun rs => cstream A (2*p+13) rs.flatten)).flatten++(embStk e Sbulk).R crops.dst))}) := by
+  dsimp only
+  obtain ⟨D,hD,hseam⟩ := selectedAmortizedSeamProgram_exec (T := T) (T' := T')
+    (Q := Q) (A := A) (U := U) (body := body) ct
+  refine ⟨D,hD,?_⟩
+  filter_upwards [hseam] with m hseam
+  intro h i _ e he input producer hcompat crops recovery hA u target d huUpper htargetUpper
+    hu hwidth hgap hbudget hband hpad htarget Fs hFs X Y hX hY J hJ
+    v S ready bulk vBulk dst word bulkSteps bulkSpace hoff huserBulk hbulk
+  let Sbulk := {S with R := Function.update S.R dst (word++S.R dst)}
+  have readyBulk := ready.after_output e dst word hoff
+  obtain ⟨v',n,output,rss,huser,htime,hproduced,hrows,hwithin⟩ :=
+    hseam h i e he input producer hcompat crops recovery hA u target d huUpper htargetUpper
+      hu hwidth hgap hbudget hband hpad htarget Fs hFs X Y hX hY J hJ
+      vBulk Sbulk readyBulk 0
+  refine ⟨v',n,output,rss,huser.trans huserBulk,?_,hproduced,hrows,?_⟩
+  · rw [Nat.cast_add]
+    linarith
+  · exact execWithin_seq_two_budget body _ _ _ _ _ _ _ 0 _ _ hbulk hwithin
+
+end IntegerMultBounds.MathlibTM2.Cost

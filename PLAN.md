@@ -4194,6 +4194,81 @@ interface with bulk publication (including replica order/word width), and compos
 the two physical runs using their exact output-only frames. Ordinary metadata
 initialization and outer-axis/fallback/compiler S4 gates remain open. No push.
 
+**Bulk and selected seam executions now share exact row accuracy.**
+`ExactCoreRows` is a width-explicit coefficient-row contract: row counts/lengths,
+unit-ball outputs, and error `3/2^p` against the same normalized exact inverse.
+`componentSolution_rounded` factors the existing component uniqueness argument
+out of job-specific metadata. `PackedNormalizedOutput.exact_rows` and its
+structural batch lift reuse `rounded_inverse_endpoint` and
+`inverse_core_value_spec`; the actual cyclic output bytes yield exact-inverse
+rows without another execution or numerical certificate supplier.
+The selected exposed bulk theorem now returns those exact row batches, taking
+the ordinary mathematical inverse and target lower bound explicitly. It still
+preserves its checked time/space and exact physical output frame.
+`selectedAmortizedSeamProgram_exec` instantiates the existing full-period seam
+group and derives all start bounds and the three-core limit from the selected
+schedule. Its actual returned rows satisfy the same `ExactCoreRows` interface
+at canonical width `2*p+13`. `SeamCropRows.exact_rows` also reuses existing
+lossless widening to obtain that contract at a common larger width, preserving
+replica order; a physical widening/publication step is still needed when widths
+differ. Bulk and seam both use the actual reversed input-replica order.
+Checks peak at 3465.3 MiB (bulk conversion/batch lift), 3323.7 MiB (initial seam
+conversion), and 3679.9 MiB (selected exact bulk). Combined exact-bulk/seam
+integration passes (17173 jobs, 6.1 GiB aggregate). Next compose the two physical
+runs, transport the second run's ordinary readiness across the first's exact
+output-only frame, and reuse the existing common-width publication machinery.
+Metadata initialization, axis scheduling and final S4 acceptance remain open.
+No push; accumulate a larger composition checkpoint before another commit.
+
+**Bulk-to-seam readiness transfer checked.**
+`SeamCropPlan.readPorts` records exactly the crop readiness inputs, excluding
+its append-only archive destination. `Ready.of_frame` transports crop readiness
+structurally, without repeating per-core checks. `FullLineInputPlan.SeamReady`
+bundles the ordinary preparation, numerical workspace and crop readiness.
+Its `after_output` theorem transfers all those facts across the bulk executor's
+exact append-only endpoint under static register separation; the crop archive
+may share the bulk destination when it is outside these read ports.
+`selectedAmortizedSeamProgram_exec` now consumes this bundle and retains the
+same actual execution, exact rows and selected resource bounds.
+Readiness checks at 3381.5 MiB; selected seam checks at 3412.0 MiB. Combined
+bulk/seam integration passes (17176 jobs, 3.5 GiB aggregate peak).
+Next join the bulk and seam traces, then execute existing common-width archive
+publication. This checkpoint proves readiness transfer, not the joined trace.
+Ordinary header initialization, outer scheduling and final S4 acceptance remain
+open. No push; retain for the larger physical-composition commit.
+
+**Selected seam now composes with an output-only execution.**
+`selectedAmortizedSeamAfterAppend_exec` transports ordinary readiness from the
+initial state, executes the selected seam program after the given append-only
+trace, and uses `execWithin_seq_two_budget` to bound the same combined trace.
+It returns exact seam rows, the total step bound and the nested archive-update
+endpoint, including the possibility of a shared append destination. This is a
+structural composition theorem: its first execution remains an explicit trace
+argument. Instantiating that argument with the concrete selected bulk theorem
+is still required; do not treat this as complete selected-axis execution.
+Single-file check peaks at 3421.0 MiB; dependency build passes (15710 jobs,
+3.5 GiB aggregate peak). Next instantiate the concrete bulk execution, preserve
+both bulk/seam row certificates, and execute existing width/publication code.
+No push or new small commit; full S4 remains open.
+
+**Concrete selected bulk-plus-seam execution checked.**
+`selectedAmortizedBulkSeam_exec` calls the actual selected exposed fitting
+executor, then instantiates `selectedAmortizedSeamAfterAppend_exec` with its
+returned program trace. No bulk or seam execution supplier remains in this
+composition's premises. Both actual row archives satisfy `ExactCoreRows`
+against the same inverse J and the same reversed input-replica order, at their
+respective widths. The theorem preserves both row certificates, proves the
+sum of the selected time bounds for the combined trace, and gives its exact
+nested archive-update endpoint and additive incremental peak allowance.
+Ordinary initial headers/readiness, static layout separation and mathematical
+solution/inverse facts remain explicit. The combined archive is not yet an
+assembled output axis: execute existing common-width widening/publication next,
+then construct initial headers and compose outer axes at actual setup frequency.
+Single-file check peaks at 3700.9 MiB; integration passes (17178 jobs, 3.7 GiB
+aggregate peak). Collect this and the exact-row/readiness work as one larger
+local checkpoint, excluding unrelated periodic-recovery/workspace drafts.
+No push. Full S4 remains open, including final outer/fallback/compiler gates.
+
 **First acceptance target: one complete fitting batch.** From declared original
 complex streams and ordinary scalar headers, execute component production,
 prepare numerical data, reuse it across the batch, publish certified complex

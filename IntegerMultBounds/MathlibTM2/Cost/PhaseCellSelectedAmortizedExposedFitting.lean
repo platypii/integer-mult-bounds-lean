@@ -4,6 +4,7 @@ public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedExposedFittingC
 public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedGatherSchedule
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellInverseMasterInput
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFittingCyclicWindow
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedNormalizedExactRows
 
 /-! Execute one fitting class with the concrete generated callback. Ordinary
 headers and blank workspace survive each iteration; numerical seeds do not. -/
@@ -50,7 +51,7 @@ theorem selectedAmortizedExposedFittingCyclicClass_exec (hR : rpStates ≤ Q) (h
     let cs := jobs.attach
     let a := fun c : {k // k ∈ jobs} => coreStart coreWidth c.val-radius
 
-    u ≤ p → target ≤ ct*p → B ≤ cZ*p → l ≤ cZ*p → target ≤ cZ*p →
+    u ≤ p → target ≤ ct*p → p+2 ≤ target → B ≤ cZ*p → l ≤ cZ*p → target ≤ cZ*p →
     PhaseCellBand.width p u ≤ cZ*p →
     let boundary := fun c => cyclicPrincipalBoundary s t (PhaseCellBand.width p u) (a c) n
     let solveTarget := boundaryRecoveryTarget p (target+1)
@@ -61,6 +62,8 @@ theorem selectedAmortizedExposedFittingCyclicClass_exec (hR : rpStates ≤ Q) (h
     ∀ (qRef : ℕ) (Y : (ZMod s → GaussianInt) → ZMod s → ℝ), p+1 ≤ qRef →
     (∀ F ∈ complexComponentFields Fs.reverse, SchurDominance.Solves (realMatrix s t p u) Finset.univ (Y F)
       (fun j => (value qRef ((2 : GaussianInt)^(qRef-p-1)*F j)).re)) →
+    ∀ (J : (ZMod s → ℂ) →L[ℂ] (ZMod s → ℂ)),
+    J ∘L PhaseCellOperator.exact s t α = 1 →
     ∀ (v : HS T Q (prime+K) U) (S : Stacks T (prime+K)) (borrowed : List (Fin (prime+K+4)))
       (Vg replicasBits D : ℕ)
       (gather : GeometryRealGatherData (Q := Q) Vg s coreWidth radius n W replicasBits D Fs borrowed S),
@@ -83,8 +86,9 @@ theorem selectedAmortizedExposedFittingCyclicClass_exec (hR : rpStates ≤ Q) (h
           (Fs.length*s*W : ℕ)*Sizes.d m*((Sizes.ℓ m : ℝ)^Parameters.tau+1)+
         (8*(b : ℝ)+5)*(Sizes.T m : ℝ)+B₀*(2*(Fs.length : ℝ)+1)*
         ((t : ℝ)*(1+(PhaseCellBand.width p u : ℝ)^2/(Sizes.d m : ℝ)))*(p : ℝ)^(129/128 : ℝ) ∧
-      List.Forall₂ (fun k word => PackedNormalizedOutput p W target coreWidth k target Fs.reverse Y word)
-        (coreBulkIndices s coreWidth (PhaseCellBand.width p u) depth) outputs ∧
+      (∃ batches, outputs = batches.map (fun rows => cstream (prime+K) W rows.flatten) ∧
+        List.Forall₂ (fun k rows => ExactCoreRows (A := (prime+K)) p W coreWidth k Fs.reverse J rows)
+          (coreBulkIndices s coreWidth (PhaseCellBand.width p u) depth) batches) ∧
       ExecWithin body (fun d z => mnSize z+d ≤ mnSize (Host.mk v S)+0+
         ((3*coreExposureTrafficFactor cG cW+12+
           12*(streamedDyadicStockCoeff FixedStreamedBank.tapeCount+700))*(Fs.length*s*W)+
@@ -100,8 +104,8 @@ theorem selectedAmortizedExposedFittingCyclicClass_exec (hR : rpStates ≤ Q) (h
   filter_upwards [hclass,selectedAmortizedCoreCallerGeometry ct,selectedAmortizedCoreGeometry ct, selectedAmortizedGatherSchedule ct] with m hclass hcaller hgeometry hschedule
   intro h i _ ports g dst width origins binary work readerSaved readerTmp count saved
     hwireL hwireR hfixed hdst harchiveDst hmastersDst hreg hreader hretained hprotected hcounter hconsume
-    u target W V α d axis hu htarget hB hl htargetMax hbandMax
-    Fs hF hW hWin hWmax hVmax hfit qRef Y hqRef hY
+    u target W V α d axis hu htarget htargetLower hB hl htargetMax hbandMax
+    Fs hF hW hWin hWmax hVmax hfit qRef Y hqRef hY J hJ
     v S borrowed Vg replicasBits D gather hVg hD hrouteFit hreplicaVolume harchive ready hcountBlank hsaved
     e he h109 h116 hwide hnfit hV hmetaOff htableOff h37 hs hcw hr hnSrc hz hblank h104 h106
   let p := Sizes.p m
@@ -133,7 +137,7 @@ theorem selectedAmortizedExposedFittingCyclicClass_exec (hR : rpStates ≤ Q) (h
     PhaseCellInterface.coreGather_cyclicWindow_eq coreWidth p u target n c.val c.property
   have hbulk := (hschedule h i u target htarget).2.2.2.1
   rw [hbulk]
-  exact hclass h i ports g dst width origins binary work readerSaved readerTmp count saved
+  obtain ⟨v',steps,outputs,huser,htime,hcert,hwithin⟩ := hclass h i ports g dst width origins binary work readerSaved readerTmp count saved
     hwireL hwireR hfixed hdst harchiveDst hmastersDst hreg hreader hretained hprotected hcounter hconsume
     B u target n coreWidth depth W V α d axis hn hw hwidth hguard hcell hprepare
     hu htarget hB hl htargetMax hbandMax hglobal.1 hglobal.2.1
@@ -148,5 +152,9 @@ theorem selectedAmortizedExposedFittingCyclicClass_exec (hR : rpStates ≤ Q) (h
     v S borrowed Vg replicasBits D gather hVg hD hrouteFit hreplicaVolume (by exact le_rfl) hmember
     harchive ready hcountBlank hsaved e he h109 h116 hwide hnfit hV hmetaOff htableOff
     h37 hs hcw hr hnSrc hz hblank h104 h106
+  letI : NeZero (Sizes.t m i) := ⟨by have := h.good.lt i; omega⟩
+  have hrows := packedNormalizedOutputs_exact_rows axis (by have := h.thirteen_le_p; omega)
+    htargetLower hqRef Fs.reverse hF Y hY J hJ hcert
+  exact ⟨v',steps,outputs,huser,htime,hrows,hwithin⟩
 
 end IntegerMultBounds.MathlibTM2.Cost
