@@ -3952,6 +3952,72 @@ jobs, 3.5 GiB aggregate). Next apply these to the complete callback's ledger
 and combine the existing fitting `43*T` and reader `T` bounds, then instantiate
 the class scan. These component setup bounds do not establish the scan.
 
+**Selected complete generated-origin space now checked.**
+`selectedGeneratedOriginCyclicProgram_exec` applies the fitting `43*T`, reader
+`T`, and actual generator `T` bounds to the same complete generated-origin
+execution. Its certified output, exact restoration, actual time ledger and
+produced seed/factor/profile witnesses remain in the conclusion. Peak space is
+linear complex-replica storage plus `45*T`, with ordinary scalar input readiness
+and explicit layout, geometry, word-room and selected-width assumptions. The
+guarded single-file check peaks at 3573.4 MiB; integration passes (16680 jobs,
+3.6 GiB aggregate). The first check found stale dependencies; rebuilding them
+resolved that prerequisite. No limits were raised. Next combine the existing
+class-time theorem with generated-master setup at actual frequency, then apply
+the class scan to this complete selected callback. Full S4 remains open.
+
+**Generated fitting-class time now checked.**
+`selectedGeneratedOriginCyclicClass_time_le` applies the existing ordinary
+class-time theorem verbatim to its numerical/input/factor/control ledger, then
+adds `selectedCyclicSeedScheduleTime_le` for the exact master-generation and
+retirement bill over the actual core-gather jobs. The fast exponent remains
+`p^(129/128)` with the same numerical coefficient; the shared `T` coefficient
+increases from `8*b+1` to `8*b+2`. Fitting geometry and the `2*t` call count are
+derived from the existing core-gather API. The single-file check peaks at
+3558.0 MiB; combined generated-class-time/selected-execution integration passes
+(16688 jobs, 3.6 GiB aggregate). This remains ledger accounting, not an executed
+class scan. Next normalize input/factor ledgers to scalar values independent of
+intermediate tape states (input already has `fittingCyclicInputTime_affine`),
+so the scan has a fixed per-job time function; then instantiate the existing
+`consumeTimeScan_exec` with the concrete generated callback and static-header
+invariant. Do not introduce a callback supplier as a replacement for this step.
+
+**Fixed callback time function checked.**
+`prepareCyclicBoundaryPageCost_eq` and `fittingCyclicFactorTime_eq` now remove
+intermediate tape states from factor preparation's actual bill, using only the
+three certified page-header lengths and the ten certified master lengths.
+Together with existing `fittingCyclicInputTime_affine`, they define
+`generatedOriginTimeCost` entirely from scalar dimensions and mathematical
+replica problems. `selectedGeneratedOriginCyclicProgram_exec` now bounds its
+actual execution by this fixed cost, retaining certified output and `45*T`
+selected peak space. `selectedGeneratedOriginCyclicClass_time_le` bounds sums
+of the same fixed cost without repeating the numerical proof. Guarded checks
+peak at 3530.8 MiB (factor ledger), 3574.4 MiB (selected callback), and 3565.6 MiB
+(class time before removing an unused statement-level let); combined integration
+passes (16690 jobs, 6.1 GiB aggregate). Next prove the static-header/blank-bank
+invariant and instantiate `consumeTimeScan_exec` with this fixed per-job time.
+No ordinary fitting-class scan or full S4 completion is claimed yet.
+
+**Actual fitting-class scan now executes.**
+`ClassReady` records ordinary fixed dimensions, reader inputs, blank numerical
+banks and fixed class controls. One frame theorem transports it; counter and
+queue/output updates preserve it under explicit layout separation. Numerical
+masters are absent from this invariant. `selectedGeneratedCyclicScan_exec`
+instantiates the existing `consumeTimeScan_exec` with the concrete selected
+generated-origin callback, not a callback supplier. It consumes a fitting job
+list's binary origins and packed original complex payloads, returns per-job
+certified output and the actual generated seed/factor/profile witnesses, and
+restores the exact initial state except consumed queues and accumulated output.
+Its time is the sum of the fixed `generatedOriginTimeCost` plus `5*length+4`;
+one linear replica reserve plus `45*T` covers the entire scan. Output batches
+are accumulated in reverse order, as the existing Host contract specifies.
+Individual guarded checks peak at 3539.1 MiB (invariant) and 3568.4 MiB (scan);
+combined scan/class-time integration passes (16694 jobs, 3.6 GiB aggregate).
+Next instantiate the actual core-gather class and use its returned per-job
+witnesses with `selectedGeneratedOriginCyclicClass_time_le`, paying the loop
+control overhead, then connect original-archive exposure and outer routing.
+The uniform fast-time bound and this actual scan are not yet combined into one
+acceptance theorem. Full S4 remains open; no push.
+
 **First acceptance target: one complete fitting batch.** From declared original
 complex streams and ordinary scalar headers, execute component production,
 prepare numerical data, reuse it across the batch, publish certified complex
