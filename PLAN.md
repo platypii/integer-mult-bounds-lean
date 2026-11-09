@@ -43242,3 +43242,169 @@ Depth transport, ordinary-header setup, batch inverse, affine setup estimate
 and full sized batch axiom audits use only the standard propext,
 Classical.choice and Quot.sound axioms (some use a subset); temporary audit
 peak 7056.9 MiB. All verification handles are terminal.
+
+### S4 cleaned batch accuracy and protected group solve retain resources
+
+ReleaseBatchRuntimeStock supplies a structural eight-push native certificate
+for grouped teardown. ClosedBatchExecStock composes it with the complete sized
+generated batch over abstract stores, retaining the original cleaned endpoint,
+time bill and Valid postcondition. Its named sizedClosedBatchWorkspace adds
+only the native linear release allowance to setup plus staged arithmetic.
+
+ClosedBatchSpecStock pairs that bounded trace with the existing closedBatch_spec
+by Exec.unique. It preserves all ambient-core accuracy, ErrorOn, cleaned-bank,
+and BoundedEncodedStream conclusions without repeating the accuracy argument.
+ClosedNaturalGroupStock and ClosedHaloGroupStock instantiate the same theorem
+with the existing ambient group geometry and time upper bound.
+
+ProtectedBatchSolveStock and ProtectedHaloBatchSolveStock lift these contracts
+through the existing exec_emb_within_stock. The protected 144-tape bank pays
+for the native saved-count copy plus one sizedClosedBatchWorkspace. Spectator
+storage is counted once through the surrounding initial bank, and the original
+projection/frame, accuracy and output-prefix facts are retained. The physical
+contracts are at depth zero and can be transported by mn_execWithin_add_depth
+when a caller needs another depth. No execution program or numerical algorithm
+changed, no intermediate execution witness is assumed, and primitive push
+bounds retain the established fixed-program specialization interface.
+
+Guarded peaks (MiB): native teardown 2073.5; cleaned batch 2124.9; full accuracy
+bridge 2106.0; natural group 2112.3; halo group 2110.5; protected natural/halo
+solves 2127.6 each. Integration through protected halo solve passes (9948 jobs,
+2.7 GiB combined peak). Proof-integrity/whitespace scans pass under unchanged
+limits. Collect with the next larger guarded-interior checkpoint; no commit or
+push, and leave periodic WIP untouched.
+
+Next retain native protectedControlledHaloGroupInput and finishNaturalClass
+(RHS retirement plus protected scatter), then compose
+protectedControlledHaloClass around the checked protectedHaloBatchSolve.
+Continue through conditional class preparation/execution, the halo length-key
+loop and initialized/restored interior/residual passes. The protected numerical
+solve component is closed; the complete guarded interior, fitting-prefix and
+uniform resource gates, original complex-input, fallback/grouped-cost and
+tensor/root S4 gates remain open.
+Cleaned execution/accuracy, halo group and protected halo solver axiom audits
+report only propext, Classical.choice and Quot.sound (7063.9 MiB temporary audit
+peak). All verification handles are terminal.
+
+### S4 approach review: prioritize acceptance gates over wrapper count
+
+The complete protected controlled halo-class resource contract now passes
+check-lean-safe.py (2166.6 MiB peak). HaloClassNativeStock supplies the native
+publication, gather and scatter certificates; ProtectedControlledHaloClassStock
+composes these around the protected numerical solve over abstract stores.
+This is a checked class-level milestone, not the complete interior or S4 bound.
+
+Continue using structural shared reserves, existing embedding/loop lemmas and
+Exec.unique to reuse numerical correctness. Avoid new abstractions that merely
+rename a single wrapper. Before extending the remaining wrapper chain, write
+the intended whole-interior resource inequality and check its parameter growth,
+including the conservative quadratic integerReciprocalWorkspace. A valid local
+trace bound alone does not establish the sharp uniform S4 estimate. Tighten
+that reserve if the required uniform inequality cannot absorb it.
+
+Next vertical checkpoint: conditional class preparation and execution, shared
+reserve across halo length keys, then the initialized/restored interior and
+residual caller. Validate the composed bound at that caller before proceeding
+to more factory wrappers. Count progress by discharged acceptance contracts,
+not new modules. Keep the original complex-input/header producers, seam/full
+fallback and grouped accounting, tensor/locality/support and root/compiler
+acceptance gates explicitly open. No reliable completion percentage or wall
+time estimate follows from the present module count. Collect larger coherent
+local commits; do not push without a new explicit user instruction.
+
+ConditionalHaloPreparationStock now checks (2089.7 MiB). It reuses the
+structural copyUnaryHeaders_native theorem for installation (push bound 2)
+and clearWords_native_zero for retirement. The conditional cleanup and final
+flag probe have push bound zero in both branches. The abstract-store composition
+requires 2*headerTime+controllerWorkspace, with no cleanup-time space charge.
+The geometry controller trace is still an explicit premise of this helper;
+the ordinary-input preparation resource theorem is not yet established.
+
+Reuse the existing haloLengthKeys_length_le (at most six classes) before
+investing in a stronger maximum-reserve loop invariant. A sum of at most six
+class reserves suffices whenever the per-class bound has the required uniform
+parameter growth. The intended outer bound is initial stock plus native key/
+header preparation allowances plus the sum of class workspace allowances;
+bound the setup part by six times a uniform class setup bound and amortize
+batch terms using haloLengthKeys_volume and haloLengthKeys_cell_count.
+haloLengthKeys_cost_le already combines these exact geometric identities for
+time. This removes any need to reprove grouped accounting by enumerating cases.
+The reciprocal's quadratic setup-width allowance remains an unresolved sharp
+space-estimate issue; do not equate this composition recipe with its closure.
+Integration of ConditionalHaloPreparationStock and
+ProtectedControlledHaloClassStock passes (10068 jobs, 4.4 GiB combined guarded
+build peak). The new preparation file passes whitespace and forbidden-proof
+construct scans. All verification handles are terminal. No commit or push.
+
+### S4 geometry origins retain one table reserve through ordinary header setup
+
+CountedOriginHostStock proves the resource contract for any verified table
+enumeration of a list of origins. It reuses tblCompile_runs_within and charges
+counting/publication by emitted volume. Its allowance simplifies exactly to
+B*(21*V+18)+3*tblC W V+14, independently of the scan's number of table steps.
+The original packet values, owned count, table state, ambient frame and runtime
+bound are preserved, at every caller depth. No numerical continuation changes.
+
+HaloGroupHostStock specializes this structural publisher to halo geometry.
+HaloClassControllerStock composes initialization with enumeration, and
+PreparedHaloClassStock retains the reserve through ordinary header loading
+and zero-allocation table-bank retirement. PrepareGeometryHaloClassStock then
+generates runtime/geometry widths and the actual origin packets and count from
+ordinary headers; it assumes no precomputed origin list or intermediate bank.
+
+Guarded check peaks (MiB): generic counted publisher 1966.2; class controller
+1988.4; loaded/retired class 1975.3; geometry-width preparation 2084.7. Integration
+through geometry preparation passes (9684 jobs, 2.7 GiB combined peak).
+Whitespace and forbidden-proof-construct scans pass under unchanged limits.
+
+Next retain preparedNaturalAdvanceControls and widenGeometryOrigins, compose
+completeGeometryHaloGather and its empty/nonempty probe, then discharge the
+controller premise of ConditionalHaloPreparationStock. The full conditional
+class, length-key loop, interior/residual caller and uniform/final S4 gates
+remain open. Keep these resource additions for the larger coherent checkpoint;
+no push and leave periodic WIP untouched.
+The generic publisher, class controller and geometry-preparation axiom audit
+reports only propext, Classical.choice and Quot.sound (7005.7 MiB temporary
+audit peak). All verification handles are terminal.
+
+### S4 complete geometry gather shares one advance arithmetic reserve
+
+AdvanceHostStock retains the three-instruction advance table with the compiler
+resource contract. AdvanceFrameStock proves that consumed binary packets are
+moved to their saved archive without net growth: a step adds only its unary
+advance and delimiter. AdvanceLoopStock uses this boundary stock law to share
+3*tblC W e across an arbitrary ordered origin list, rather than charging it per
+origin. Its remaining allowance is linear in W, the origin count and total
+advance volume. AdvanceControlsStock restores the borrowed origin/count banks
+and publishes controls with that same shared reserve.
+
+PreparedOriginAdvanceStock constructs and retires the small table from ordinary
+width headers and uses originAdvances_sum_le to bound total control volume by
+s*w. HaloAdvanceControlsStock specializes this generic list contract without
+case enumeration. WidenGeometryOriginsStock separately certifies linear native
+packet widening. CompleteGeometryHaloGatherStock composes advance generation,
+widening and zero-allocation width retirement, preserving the original exact
+endpoint and runtime bound at every caller depth.
+
+Host.RunWithin is the resource-preserving counterpart of the existing Runs
+exact-stack-effect language. Its frame adapter, sequential composition and
+native bridge keep time and workspace separate; the complete gather uses it
+for its three existing staged transformations instead of re-expanding banks at
+every composition. No executable program or numerical argument changes.
+
+Guarded check peaks (MiB): widening 2066.7; advance step 1961.1; boundary stock
+1941.6; shared loop 2085.2; restored controls 2084.1; ordinary prepared controls
+2099.8; RunWithin 1386.6; complete gather 2096.5. Integration through complete
+gather, geometry preparation, protected controlled class and conditional
+preparation helper passes (10087 jobs, 2.7 GiB combined peak). Axiom audit of the
+boundary law, shared loop, complete gather and RunsWithin.seq reports only
+propext, Classical.choice and Quot.sound (7008.7 MiB temporary audit peak).
+Whitespace/forbidden-proof scans pass; all verification handles are terminal.
+
+Next compose the empty/nonempty geometry probe, lift it to ordinary physical
+conditional preparation, then close conditionalHaloClass and the length-key
+loop/interior caller. Whole fitting-prefix uniform bounds, original complex
+input production, fallback/grouped accounting and tensor/root acceptance remain
+open; the conservative reciprocal setup reserve still needs its sharp uniform
+estimate resolved. Collect the accumulated batch/geometry resource work in one
+larger local checkpoint; do not push or stage unrelated periodic WIP.
