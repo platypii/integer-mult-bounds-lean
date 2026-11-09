@@ -4071,6 +4071,63 @@ the existing shared exposure producer and pay its actual axis/class frequency,
 then outer routing, seam/full fallback, tensor/locality and root/compiler S4
 acceptance. Full S4 remains open; no push.
 
+**Existing exposure and origin producers aligned with the cyclic scan.**
+The physical exposure output is replica-major, and the existing inverse archive
+transpose already produces core-major replica batches. `coreSupplierStream_flatMap`
+and `coreSupplierStream_attach` identify that output exactly with the scan's
+payload queue; `coreOriginQueue_attach` aligns the generated origins. The gather
+reverses replica order, so the scan must use `Fs.reverse`, with its corresponding
+bound and output certificates, rather than silently identifying it with `Fs`.
+`exposeCyclicClassQueue_exec` reuses `GeometryRealGatherData.exec` (ordinary
+machine data, not an execution supplier) to produce that actual queue from
+ambient fields and preserve `ClassReady` by its exact archive-only frame.
+`prepareCyclicClassOrigins_exec` executes `placedCoreOrigins`, producing the
+attached origin queue and loop count while preserving the same readiness.
+Guarded checks peak at 2068.0 MiB (list alignment), 3526.8 MiB (origin producer),
+and 3560.4 MiB (exposure); combined integration passes (16816 jobs, 5.8 GiB
+aggregate). Next compose exposure, origin preparation and the fitted scan,
+restoring the two consumed queue registers, then pay actual exposure/routing
+costs at the axis/class frequency using existing traffic estimates. These
+producer interfaces alone do not yet establish that combined execution or its
+selected resource bound. Full S4 remains open; no push.
+
+**Ambient exposure, metadata production and fitted scan now composed.**
+`selectedExposedFittingCyclicClass_exec` starts from ordinary
+`GeometryRealGatherData` and fixed scalar/geometry headers. It executes existing
+physical exposure and inverse routing, generates the origin queue and loop
+count, runs the actual fitted class over `Fs.reverse`, and retires the generated
+loop-count word. The final state is exactly the original state with certified
+output appended; ambient fields, queues, controls and scratch restore. The
+Host scan restores its input loop count rather than erasing it, so explicit
+generic one-header retirement is necessary and now included. No additional
+space reserve is charged for cleanup. The numerical fast-time envelope is
+included in the same theorem; exposure/routing time, origin-generation time,
+`2*jobs.length+3` retirement time, and their native workspace remain explicit.
+Guarded check peaks at 3645.5 MiB; integration passes (16931 jobs, 3.7 GiB
+aggregate). Next absorb these actual producer costs at the required axis/class
+frequency using existing exposure and routing traffic estimates. The ordinary
+binary metadata/scalar initialization assumptions still need connection to outer
+setup; seam/full fallback, tensor/locality and root/compiler acceptance remain
+open. Full S4 is not complete; no push.
+
+**Actual exposed-class producer costs now absorbed locally.**
+`selectedCyclicClassOriginSetup_le` reuses the established geometry setup bound
+for origin generation plus loop-count retirement (one `T`) and the producer's
+native reserve (one `T`). `selectedExposedFittingCyclicClass_bounded_exec`
+applies `selectedGeometryRealGatherCosts_le` directly to the gather data used
+by the actual composed execution. Its peak reserve is linear source traffic
+plus linear numerical replica storage plus `47*T`; there is no unbounded
+producer-workspace remainder. Time is the numerical fast envelope, linear
+source traffic, the existing sharp `dyadicRouteCharge` term, and shared
+coefficient `8*b+5`. The route width/volume premise and Vg/D selected-size
+premises remain explicit ordinary geometry conditions, not execution suppliers.
+Checks peak at 3399.4 MiB (origin setup) and 3652.0 MiB (bounded execution).
+Next sum the remaining dyadic/source charges at the actual class/axis frequency,
+using existing amortized routing and core-length-group geometry. Do not infer
+that a once-per-class `T` can be charged once across all classes. Ordinary
+metadata/scalar initialization, outer routing/fallback, tensor/locality and
+root/compiler S4 acceptance remain open. No push.
+
 **First acceptance target: one complete fitting batch.** From declared original
 complex streams and ordinary scalar headers, execute component production,
 prepare numerical data, reuse it across the batch, publish certified complex
