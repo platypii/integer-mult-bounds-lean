@@ -4986,6 +4986,107 @@ Removed unused polynomial-publication `PhaseCellSelectedAmortizedPublishedAxis`
 and `PhaseCellSelectedAmortizedRetiredAxis` wrappers (restore `3c369828`); their
 only dependency was each other, and the complete live path is dyadic.
 
+**Generate one full-crop master for both full-width boundary slots.**
+`boundaryCropLengths` identifies all three lengths as
+`[width,width,(s-1)%width+1]`, including divisible ambient lengths without a
+separate remainder branch. It uses the common quotient and division-with-
+remainder identities once. The geometry module checks at 1877.8 MiB.
+
+`BoundaryHeaderInput` now asks for an ordinary unary core-width master in source
+slot 9 and a blank owned product in slot 8; it does not assume either full-crop
+counter. `boundaryWorkingMasters` shares the generated product between working
+slots 8 and 9. `words_of_full` constructs the complete working-header contract
+from this product and the ordinary scalar inputs; slot correctness consumes the
+geometry theorem rather than duplicating per-slot arithmetic. Static source
+separation and a private destination keep all retained words and working blank
+ports intact. The last clipped-crop count is still an ordinary master input.
+
+`preparedBoundaryArchivePublication_exec` now executes the restoring unary
+product before the existing initialized load/publication/cleanup trace, then
+clears that owned product. `initializedBoundaryArchivePublication_exec` retains
+the lower consumer proof; it remains used by the generating wrapper. Generation
+and retirement add at most 40 times traffic to time/peak allowances, so the
+actual prepared boundary factor is now `340+150*cD`; the loader-only bound stays
+`300+150*cD`. The selected complete axis consumes the weaker input record and
+new actual program with unchanged numerical endpoint and final stock equality.
+Its full build passes (17399 jobs, 3.8 GiB aggregate); the generating wrapper
+checks at 3415.0 MiB. The complete axis checks at 3809.5 MiB. Crop geometry,
+working-header construction, generated publication and the complete initialized
+axis report only the standard three axioms (10026.3 MiB for the combined
+nonmodule audit).
+
+Next generate the single clipped-crop master using the existing binary boundary
+metadata arithmetic, sharing retained s/core dimensions and the narrow-width
+conversion. Then finish common scalar/master initialization, selected fitting
+allowances, and class/shared-exposure/outer/fallback/root acceptance. Full S4
+remains open. Collect this with the remaining scalar initialization; no push.
+
+**Count-only clipped-crop generation reuses the existing metadata machine.**
+`clippedCropCount_exec` executes the existing `BoundaryCropMetadata.code true`,
+exports only table variable 8 through generic `tblUnaryCopies`, then executes
+the existing `restoreCode`. Its final state is exactly the original state with
+the clipped narrow count appended at one owned destination. The entire binary
+bank, scratch, left stacks and every register outside that destination restore; no unused
+unary skip word is materialized. The exact bill is
+`16*tblC D 0 + 6*(lastLength*w) + 11*D + 7`, rather than charging an ambient-size
+export. No metadata arithmetic or restoration case proof is repeated.
+
+`preparedClippedCropCount_exec_within` composes the actual existing seed loader,
+that count-only program, and one-output input-table retirement. It starts from
+retained binary s/core/word scalars, a ruler and a blank table bank, and returns
+the exact single-counter update beside time and peak storage on the same trace.
+Its bill adds `64*D+81` for loading and `20*D+21` for table retirement. The narrow
+module checks at 2960.5 MiB; its combined build with the complete axis passes
+(17400 jobs, 3.3 GiB aggregate). Count-only arithmetic/export/restoration and
+prepared loading/table retirement pass the standard-axiom audit (5923.2 MiB
+for the nonmodule audit). Automatic implicit variables are disabled. This is
+the clipped-count component, not yet the complete axis's initializer: its
+`lastCrop` input premise remains until the ordinary narrow-width binary
+conversion and source copies are composed before boundary publication. Keep
+this with the uncommitted full-crop/master reduction for a larger initialization
+checkpoint; no push. Full S4 remains open.
+
+**Both crop masters are now generated on the complete-axis execution.**
+`boundaryLastCropMaster_exec_within` copies the retained binary s/core words and
+ruler, converts the borrowed unary narrow width with the existing shared
+`paddedHeaderList`, invokes the count-only clipped generator, and releases all
+four temporary seed words. Its exact frame changes only master 10. It checks
+at 2996.8 MiB. No unary skip is exported, and no numerical publication proof is
+repeated. Its source contract permits shared ordinary masters; privacy keeps
+those sources outside the working prefix.
+
+The ordinary scalar facts and common frame live in `BoundaryHeaderCore`.
+`BoundaryHeaderSource` requires both owned crop destinations blank;
+`BoundaryHeaderInput` represents the intermediate state with the generated
+clipped count. `with_last` transports the common scalars through that exact
+single-write frame. The live selected seam/axis family now accepts the source
+state, not a preloaded clipped count. `preparedBoundaryArchivePublication_exec`
+runs the actual clipped-master setup, then the existing generating full-master
+publisher, then clears the clipped master. Thus both full-width slots share
+one generated full product, and all crop/header/table workspace restores after
+publication. Numerical correctness, output-only endpoint and final axis stock
+equality remain on the same chronological execution.
+
+The last setup and eventual master retirement fit
+`boundaryLastCropTrafficFactor cDB = 30000*(cDB+1)^2` times ambient traffic.
+The complete boundary factor is this plus `340+150*cDB`. The quadratic table
+cost is absorbed using `p ≤ s`, derived from the existing selected
+`p^8 ≤ coreWidth` and room bounds, not a new input assumption. All new bills
+are propagated through the complete selected axis. The boundary wrapper checks
+at 3433.8 MiB, the complete-axis build passes (17401 jobs, 3.9 GiB aggregate),
+and its individual check peaks at 3809.8 MiB. Last-master construction, the
+blank-to-generated input transition, prepared publication and the complete
+initialized axis report only the standard three axioms in the final combined
+audit (10027.3 MiB for the nonmodule audit).
+
+Remaining boundary inputs are ordinary unary N/s/wide/narrow/core/ruler masters
+and the three binary s/core/wide seed words. Next generate those seeds from the
+retained unary dimensions with the existing structural header-list converter,
+then finish shared scalar initialization and complete fitting allowance
+comparison before class/shared-exposure/outer/fallback/root acceptance. Full S4
+remains open. Collect the complete crop-master initialization as one local
+checkpoint; no push.
+
 **First acceptance target: one complete fitting batch.** From declared original
 complex streams and ordinary scalar headers, execute component production,
 prepare numerical data, reuse it across the batch, publish certified complex

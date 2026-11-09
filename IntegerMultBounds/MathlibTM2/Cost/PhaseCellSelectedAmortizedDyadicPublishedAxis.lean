@@ -150,7 +150,7 @@ theorem selectedAmortizedDyadicPublishedAxis_exec (hR : rpStates ≤ Q) (hQ : SS
       (seedValue : Fin 117 → ℕ)
       (hvalues : ∀ j, seedValue (boundarySeedGlobals j) = ![s,coreWidth,W] j)
       (hseedFit : ∀ j, seedValue (boundarySeedGlobals j) < 2^DB)
-      (boundaryInput : BoundaryHeaderInput (s := s) p coreWidth W DB Fs.length masters seedValue (embStk be S)),
+      (boundaryInput : BoundaryHeaderSource (s := s) p coreWidth W DB Fs.length masters seedValue (embStk be S)),
     let C := closedGridPush (U := U) (A := (prime+K)) producer recovery
     let seamStock := (((C+1)*((1312000+756)*(1032+8*ct)+504)+1440)*(Fs.length*s*p)+2*(C+1)*Sizes.T m+86)+
       (boundaryHeaderTrafficFactor cDB*(Fs.length*(s*W))+13*boundarySeamCost Fs.length (2*p+13) DB s coreWidth W)

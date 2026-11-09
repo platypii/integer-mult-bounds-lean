@@ -57,7 +57,7 @@ theorem selectedAmortizedSeamCompletion_exec (ct cDB : ℕ) :
     (seedValue : Fin 117 → ℕ)
     (hvalues : ∀ j, seedValue (boundarySeedGlobals j) = ![s,coreWidth,W] j)
     (hfit : ∀ j, seedValue (boundarySeedGlobals j) < 2^DB)
-    (boundaryInput : BoundaryHeaderInput (s := s) p coreWidth W DB Fs.length masters seedValue (embStk be S))
+    (boundaryInput : BoundaryHeaderSource (s := s) p coreWidth W DB Fs.length masters seedValue (embStk be S))
     (ambient : List (List (Fin (A+4)))) (outputTail : List (Fin (A+4)))
     (hdst : S.R (be 96) = ambient.flatten++outputTail)
     (hgood : (gatherPublicationClass s coreWidth (localityDepth p target*PhaseCellBand.width p u)
@@ -106,15 +106,19 @@ theorem selectedAmortizedSeamCompletion_exec (ct cDB : ℕ) :
     exact Function.update_of_ne (by rw [←hsourcePort]; exact hbe.ne hj) _ _
   have hready := boundaryInput.of_frame p width W DB Fs.length masters seedValue
     (embStk be S) (embStk be M) (by intro j hj _; exact hread j hj)
-  obtain ⟨hw,_,hrw,hroom,_⟩ := hgeometry h i u target htargetUpper
+  obtain ⟨hw,hpRoom,hrw,hroom,_⟩ := hgeometry h i u target htargetUpper
   change 3*width+PhaseCellBand.width p u ≤ s at hroom
   have hbandPos := PhaseCellBand.width_pos p u
   have hp : 1 ≤ p := by have := h.thirteen_le_p; omega
   have hrad : 0 < localityDepth p target*PhaseCellBand.width p u := localityCoreWidth_pos hp u target
-  obtain ⟨lines,v',nb,hu',htb,hall,heb⟩ := preparedBoundaryArchivePublication_exec body be hbe masters hready.separated
-    p width W DB cDB (by omega) hW hw (by omega) hvolumeFit hDB seedValue hvalues hfit
+  have hps : p ≤ s := by
+    have hpPower : p ≤ p^8 := by simpa only [pow_one] using pow_le_pow_right' hp (show 1 ≤ 8 by decide)
+    change p^8 ≤ width at hpRoom
+    omega
+  obtain ⟨lines,v',nb,hu',htb,hall,heb⟩ := preparedBoundaryArchivePublication_exec body be hbe masters
+    p width W DB cDB (by omega) hW hw (by omega) hvolumeFit hDB hps seedValue hvalues hfit
     r (by simpa only [r,fullLineGridRecord] using hFsPos) (fun _ => J) (PhaseCellBand.width p u) (localityDepth p target) hrad hrw proper rfl
-    (S.R (be 95)) outputTail M hready.words hready.blank depth vm banks hbanks ambient
+    (S.R (be 95)) outputTail M hready depth vm banks hbanks ambient
     (by simpa only [r,fullLineGridRecord,seamPublicationTargets,inversePublicationTargets] using hgood)
     (by simp only [embStk,M,Function.comp_apply,hsourcePort,Function.update_self,word])
     (by rw [hread 96 (by decide)]; exact hdst)
