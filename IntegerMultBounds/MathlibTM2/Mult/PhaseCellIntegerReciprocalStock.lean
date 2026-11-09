@@ -1,7 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellIntegerReciprocal
-public import IntegerMultBounds.MathlibTM2.StackResources
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReciprocalStock
 
 /-! One scalar reciprocal reserve is shared by the complete inverse setup. -/
 @[expose] public section
@@ -14,19 +14,71 @@ open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
   IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
 variable {Q A : ℕ} {P₀ U : Type} {body : P₀ → Pr P₀ 117 Q A U}
 
-theorem generateReciprocal_native :
-    mnNativePushBound 8 (generateReciprocal (P₀ := P₀) (Q := Q) (A := A) (U := U)) := by
-  simp [generateReciprocal,generateReciprocalNumerator,divideRealWords,copyRealBits,
-    cropReciprocal,generateSeed,seedBit,bdivmod,divIter,pushBit,
-    bcopy,bzero,bclear,bshift,bpad1,bmoveLow,zipPass,zipInit,zipStep,
-    eachSym,zeroBits,
-    unaryProduct,copyPrefix,copyR,copyStep,takePrefix,transfer,transferAct,clearWords,
-    umul,uadd,ucopy,umulSym,scanP,scanR,drainR,popDo,keepIn,pushN,popPush,dropTop,
-    moveR,moveStep,whileR,peekR,uclear,mnNativePushBound,mnActPush]
+-- The former whole-program native certificate is recoverable from commit 603b2622.
+/-- Linear scalar setup storage, shared independently of row and batch counts. -/
+def integerReciprocalWorkspace (q W : ℕ) : ℕ := reciprocalWorkspace q W
 
-/-- A conservative single-division allowance, independent of row, iteration and batch counts. -/
-def integerReciprocalWorkspace (q W : ℕ) : ℕ :=
-  8*(W*(12*W+128)+6*(2*q+8)+4*q+134)
+theorem integerReciprocalWorkspace_eq (q W : ℕ) :
+    integerReciprocalWorkspace q W = 549*W+128*q+1324 := by
+  unfold integerReciprocalWorkspace reciprocalWorkspace realDivisionWorkspace
+  omega
+
+private theorem generateIntegerReciprocal_exec_within_depth {P s t u band L n q W : ℕ}
+    (hA : 4 ≤ A) (hP : 13 ≤ P) (hs : 0 < s) (hst : s ≤ t) (hu : 1 ≤ u)
+    (hL : 0 < L) (hn : 1 ≤ n) (hd : q + P * n < W) (hw : 2 * q + 8 ≤ W)
+    (v : HS 117 Q A U) (S : Stacks 117 A) (tailX tailF : List (Fin (A + 4)))
+    (hctx : IntegerGeneratorContext P s t u band L n W tailX tailF S)
+    (hq : (S.R 112).length = q) (depth : ℕ) :
+    ∃ v' m, v'.user = v.user ∧ m ≤ W * (12 * W + 128) + 6 * (2 * q + 8) + 4 * q + 134 ∧
+      ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+depth+integerReciprocalWorkspace q W)
+        depth generateReciprocal (mk v S) m
+        (mk v' { S with R := Function.update S.R 96 (csyms A (2 * q + 8) (reciprocalWord P s t u band L q n)) }) := by
+  let corner := (columnNumerators P s t u band L n).getD 0 0
+  have hc : 0 < corner := columnNumerators_corner_pos hP hs hst hu hL hn
+  let y := corner.toNat
+  have hycast : (y : ℤ) = corner := Int.toNat_of_nonneg hc.le
+  have hy0 : 0 < y := by omega
+  have hlow (k : Fin 117) (hk : k.val < 64) : S.R k = [] := by
+    have h := (hctx.row.clean ⟨k.val, hk⟩).2
+    simpa [mul] using h
+  have hfresh : ∀ k ∈ [(0 : Fin 117), 1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12,
+      96, 97, 98, 99, 104, 105, 106, 107, 115], S.R k = [] := by
+    intro k hk
+    simp only [List.mem_cons, List.not_mem_nil, or_false] at hk
+    rcases hk with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl |
+      rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
+    all_goals first
+      | exact hctx.rest
+      | exact hctx.exponent
+      | exact hlow _ (by decide)
+      | exact hctx.row.work _ (by simp [integerRowWork])
+  cases hxs : rowColumnWords P s t u band L n with
+  | nil =>
+    have hlen := hctx.row.length
+    rw [hxs] at hlen
+    simp only [List.length_nil] at hlen
+    omega
+  | cons z zs =>
+    have hz : z = (⟨corner, 0⟩ : GaussianInt) := by
+      simpa [hxs, corner] using rowColumnWords_getD P s t u band L n 0 hL
+    have hfit := (hctx.row.fits z (by simp [hxs])).1
+    have hyInt : (y : ℤ) < (2 : ℤ) ^ W := by
+      rw [hz] at hfit
+      change |corner| < (2 : ℤ) ^ (W - 1) at hfit
+      rw [hycast]
+      exact (le_abs_self corner).trans_lt (hfit.trans_le
+        (pow_le_pow_right₀ (by norm_num : (1 : ℤ) ≤ 2) (by omega)))
+    have hy : y < 2 ^ W := by exact_mod_cast hyInt
+    have hden : S.R 110 = csyms A W (⟨(y : ℤ), 0⟩ : GaussianInt) ++ (cstream A W zs ++ tailX) := by
+      rw [hctx.row.column, hxs, hz, cstream_cons, List.append_assoc, hycast]
+    obtain ⟨v', m, hu', hm, he⟩ := generateReciprocal_exec_within (body := body) hA P n q W y hn hd hw hy hy0
+      v S _ hctx.precision hctx.iteration hq hctx.row.width hden hfresh depth
+    have hword : (⟨(((2 ^ (q + P * n)) / y : ℕ) : ℤ), 0⟩ : GaussianInt) =
+        reciprocalWord P s t u band L q n := by
+      rw [← integerReciprocalWord_eq hP hs hst hu hL hn]
+      simp [integerReciprocalWord, Int.natCast_ediv, hycast, corner]
+    exact ⟨v', m, hu', hm, by simpa only [hword,integerReciprocalWorkspace] using he⟩
+
 
 theorem generateIntegerReciprocal_exec_within {P s t u band L n q W : ℕ}
     (hA : 4 ≤ A) (hP : 13 ≤ P) (hs : 0 < s) (hst : s ≤ t) (hu : 1 ≤ u)
@@ -39,12 +91,13 @@ theorem generateIntegerReciprocal_exec_within {P s t u band L n q W : ℕ}
         (fun d z => mnSize z+d ≤ mnSize (mk v S)+depth+integerReciprocalWorkspace q W)
         depth generateReciprocal (mk v S) m
         (mk v' { S with R := Function.update S.R 96 (csyms A (2 * q + 8) (reciprocalWord P s t u band L q n)) }) ) := by
-  obtain ⟨v',m,hu,hm,he⟩ := generateIntegerReciprocal_exec (body := body)
-    hA hP hs hst hu hL hn hd hw v S tailX tailF hctx hq
-  refine ⟨v',m,hu,hm,?_⟩
+  obtain ⟨v',m,huser,hm,he⟩ := generateIntegerReciprocal_exec_within_depth (body := body)
+    hA hP hs hst hu hL hn hd hw v S tailX tailF hctx hq 0
+  refine ⟨v',m,huser,hm,?_⟩
   intro depth
-  exact mn_native_exec_within he 8 generateReciprocal_native depth _ (by
-    unfold integerReciprocalWorkspace
-    omega)
+  obtain ⟨vi,mi,_,_,hi⟩ := generateIntegerReciprocal_exec_within_depth (body := body)
+    hA hP hs hst hu hL hn hd hw v S tailX tailF hctx hq depth
+  obtain ⟨hn,hz⟩ := hi.toExec.unique he.toExec
+  simpa only [hn,hz] using hi
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

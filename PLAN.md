@@ -43683,3 +43683,155 @@ parameter growth, especially the reciprocal's quadratic setup-width allowance,
 before extending further fitting wrappers. Whole fitting uniform time/space,
 original input/header production, fallback/grouped accounting and tensor/root
 acceptance remain open. Exclude unrelated periodic-recovery WIP.
+
+### S4 collection cost cap is discharged uniformly
+
+CyclicColumnEntryCostBound proves a row-independent scalar cap for the actual
+entry step. Geometry inputs a,b are bounded by s, selected coordinates by s,
+and the residual address by s+s. Monotonic polynomial arithmetic then bounds
+every clipped folded-band position without enumeration. CyclicTableEntryCostBound
+instantiates this cap in cyclicTableColumnsLoop_spec_uniform_entries: callers no
+longer supply the per-entry collection-cost premise. The complete-column
+workspace cap remains open. Guarded checks pass at 1977.5 and 2245.5 MiB.
+Dependency integration through the full scan passes (10586 jobs, 2.8 GiB peak).
+No verification process remains live.
+
+The reciprocal audit identifies the source of the quadratic workspace term:
+PhaseCellIntegerReciprocalStock directly applies mn_native_exec_within to the
+entire generateIntegerReciprocal_exec trace, using its quadratic division-time
+bound. This does not prove quadratic live storage is necessary. Next replace
+that coarse space estimate by a structural division-space contract, reusing
+restoring scan/word arithmetic patterns, before claiming sharp uniform space.
+No executable change or tightening of the existing allowance has yet been made.
+Full fitting and remaining S4 gates remain open. Collect the next larger uniform
+resource checkpoint; no commit or push this turn, periodic WIP untouched.
+
+### S4 restoring division iteration has linear reserve and exact retained growth
+
+Host.BinArithDivIterStock proves the actual divIter program has native push bound
+three and retains exactly one new quotient bit. The remainder replacement has
+the same width W, hence its stock change cancels by two generic mn_size_update
+equations. divIter_exec_within reuses existing arithmetic correctness and has
+reserve 3*(12*W+18) at arbitrary caller depth. Guarded check passes at 1394.8 MiB.
+
+This is the per-iteration building block, not yet a linear-space proof of the
+complete bdivmod or reciprocal. The existing eachSym_within requires iterations
+to preserve an absolute cap without growth, whereas division retains one bit
+per iteration. Next add the corresponding generic symbol-scan shared-reserve
+contract, use exact one-bit boundary growth, and then lift through bdivmod,
+divideRealWords and reciprocal generation. Preserve the existing runtime bound
+and tighten only the resource proof after this complete chain checks.
+
+Integration of the division-step and uniform table-entry theorems passes
+(10589 jobs, 2.7 GiB combined peak). All verification handles are terminal.
+No commit or push; the uniform-resource checkpoint is still accumulating.
+Full S4 remains open, including complete-column uniform workspace and fitting,
+input-production, grouped/fallback and tensor/root acceptance gates.
+
+### S4 symbol scans share one native iteration reserve
+
+Host.EachSymStock adds SymStockSpec, the existing SymSpec with nondecreasing
+boundary stock, and its adapter back to SymSpec. A structural symbol-list loop
+proof preserves the loaded-symbol condition and exact source/saved transport.
+eachSym_within_final_stock shares c*(cost+2) above final retained stock, without
+multiplying the transient reserve by the symbol count.
+eachSym_exec_within_final_stock produces the execution with the original exact
+frame and runtime bound, reusing eachSym_exec through the adapter and execution
+uniqueness. No intermediate trace is supplied by callers.
+
+Guarded check passes at 1401.5 MiB; integration at 2.0 GiB combined peak. The
+symbol-scan and division-step axiom audit reports only propext, Classical.choice
+and Quot.sound (2421.4 MiB). Verification handles are terminal. Next instantiate
+the actual bdivmod bit loop with divIter's one-bit stock growth, compose linear
+setup/cleanup, then tighten divideRealWords and reciprocal generation. The full
+divider/reciprocal linear-space theorem remains unproved; existing conservative
+allowances remain unchanged. No commit or push; unrelated periodic WIP excluded.
+
+### S4 complete binary and real-word division have linear workspace
+
+Host.BinArithDivStock instantiates SymStockSpec with the actual restoring
+division bit step and shares its reserve through the entire dividend scan.
+Exact four-register stock balance shows the loop retains precisely La quotient
+bits: remainder width is fixed and the dividend source/saved pair only moves.
+Setup is charged once; final movement and retirement are composed explicitly.
+bdivmod_exec_within preserves quotient, remainder, spectators and the original
+runtime bound, with additional workspace La+200*(Lb+1)+200 at arbitrary depth.
+Guarded check passes at 1501.5 MiB.
+
+PhaseCellRealDivisionStock carries this through borrowed real-word conversion,
+actual binary division, quotient encoding and cleanup. Its named opaque reserve
+is 6*(14*W+14)+(W+200*(W+1)+200), linear in W. Runtime and exact restored-bank
+endpoint are unchanged. A scalar arithmetic helper avoids recursive comparison
+of expanded physical banks during composition. Check passes at 1970.4 MiB.
+Integration passes (4004 jobs, 2.5 GiB combined peak). Both complete division
+axiom audits report only propext, Classical.choice and Quot.sound (3876.7 MiB).
+All verification handles are terminal.
+
+Next compose numerator generation and crop around this real division contract,
+then replace integerReciprocalWorkspace's coarse quadratic-time-derived
+allowance with the checked linear bound. Existing reciprocal allowance is not
+yet changed. The complete-column uniform reserve and other full S4 gates remain
+open. Keep collecting the larger uniform-resource checkpoint; no commit/push,
+and unrelated periodic WIP excluded.
+
+### S4 reciprocal quadratic workspace allowance is replaced by a checked linear bound
+
+PhaseCellReciprocalStock composes actual numerator generation, the linear-space
+real-word divider, allocation-free numerator retirement and runtime cropping.
+The original numerical output, restored bank and quadratic runtime upper bound
+are preserved at arbitrary caller depth. Zero-push retirement is normalized
+before sequential composition, avoiding comparison of expanded concrete banks.
+The complete reciprocal check passes at 1977.5 MiB.
+
+PhaseCellIntegerReciprocalStock now constructs that trace from the ordinary
+integer-generator context, including positivity and the actual retained divisor.
+Execution uniqueness reconciles the arbitrary-depth traces with one returned
+execution. integerReciprocalWorkspace_eq proves the revised allowance is
+549*W+128*q+1324. The former whole-program native certificate is unused and is
+removed with a restore-commit note. Integer reciprocal check passes at 2066.4 MiB.
+
+The linear allowance propagates through generator setup, numerical batches,
+protected halo classes, complete interior/residual execution, generated cyclic
+columns and the full table scan. Integration through uniform table-entry costs
+passes (10593 jobs, 4.3 GiB combined peak, 1.6 min). Complete reciprocal, integer
+reciprocal and full table-scan axiom audits report only propext, Classical.choice
+and Quot.sound (7238.0 MiB temporary audit peak). All handles are terminal.
+
+The specific reciprocal quadratic-space obstacle is resolved. This does not
+close the complete-column uniform reserve or the full fitting asymptotic bound.
+Next bound the remaining workspace terms uniformly and discharge the table
+scan's hworkspace premise. Whole fitting time/space, original input/header
+production, grouped/fallback accounting and tensor/root acceptance remain open.
+Keep accumulating the coherent uniform-resource checkpoint; no commit/push this
+turn and unrelated periodic work remains excluded.
+
+### S4 table entry and workspace caps are derived uniformly in the selected index
+
+OriginalColumnWorkspaceBound reuses the existing closed source/recovery-mask
+estimates to bound all endpoint-dependent setup, preserving the one numerical
+row reserve. Its original-column allowance is independent of the selected j;
+no finite maxima, enumeration or sum of numerical scratch is used.
+CyclicCollectionWorkspaceBound bounds clipped control generation by a linear
+scalar expression and uses the band-length bound for temporary collected words.
+CyclicTableWorkspaceBound combines both with index-selection overhead and the
+existing coordinate-independent guarded residual reserve.
+
+CyclicTableUniformStock now supplies both previously explicit scalar premises
+of the actual complete table scan. cyclicTableColumnsLoop_spec_uniform_workspace
+requires neither collection-cost caps nor per-column workspace caps from its
+caller. The derived bound is uniform in k and shares one arithmetic reserve
+above retained table output and index ticks. This is not yet a proof of the
+required final asymptotic estimate in all S4 parameters.
+
+Guarded checks (MiB): original-column bound 2131.0; collection bound 1990.3;
+complete column bound 2218.3; derived table trace 2215.4. Integration passes
+(10597 jobs, 2.7 GiB combined peak). Original-column and derived full-table
+axiom audits report only propext, Classical.choice and Quot.sound (7239.7 MiB
+temporary audit peak). All verification handles are terminal.
+
+Collect the linear division/reciprocal and uniform table bounds as one larger
+local checkpoint, excluding periodic WIP, without pushing. Next compare the
+derived parameter expression to S4's sharp uniform time/space requirements,
+then carry it through the factor-axis factory and complete fitting caller.
+Original complex-input/header production, grouped/fallback accounting and
+tensor/root acceptance remain open; full S4 is not complete.
