@@ -46066,3 +46066,58 @@ Combined normalization/recovery integration passes (16469 jobs, 3.5 GiB
 aggregate). The temporary audit reports only standard axioms for the affine,
 shared-worker, selected solved-recovery and complete-tail comparisons (9798.8
 MiB for the nonmodule audit).
+
+Selected bounds now cover the actual cached first passes and resumed second
+interiors. `selectedCachedReplicaPassWorkspace_le` instantiates the existing
+first-pass theorem with the actual ring, multiplication and batch push counts;
+no new numerical envelope or externally supplied push cap is added.
+`selectedCachedReplicaPassMasksWorkspace_le` composes the left and right passes
+with shared mask generation. Existing selected gathered-width bounds produce
+the metadata estimates, and the existing cyclic recovery shared-time polynomial
+bounds only the native masks. The total is `9*Sizes.T n` plus linear replica
+traffic; mask setup has no replica multiplier.
+
+For resumed interiors, the physical `SameLayout` relation identifies replica
+count, span and word width. Their workspace is a subset of the corresponding
+cached first-pass allowance: the latter also contains finishing/coupling scratch.
+`resumedReplicaInteriorWorkspace_le_cachedPass` proves that dominance directly;
+`selectedResumedReplicaInteriorWorkspace_le` then reuses the first-pass theorem.
+This avoids repeating class/key polynomial estimates for the second interiors.
+Builds pass (15959/15965 jobs, 3.5/3.4 GiB aggregate), and the selected cached-pass
+module checks at 3403.1 MiB. Keep this work for the next larger local checkpoint.
+No push. Remaining numerical selected-space comparison: actual shared factor
+page/factorization, residual solve batch, and residual export/merge traffic;
+then compose all selected comparisons onto the actual trace. Full ordinary
+callback preparation and all class/outer/fallback/final S4 gates remain open.
+The temporary audit of both selected cached-pass bounds, resumed-pass dominance
+and the selected resumed bound reports only standard axioms (9659.1 MiB for
+the nonmodule audit).
+
+The actual closed residual-solve batch now has its selected-space comparison.
+`actualBoundarySolvePushBounds` fills the existing numerical interface with the
+four actual program push counts and reflexive bound proofs. Its workspace is
+definitionally the closed batch solve's workspace. An exact affine split gives
+`batchWorkspace replicas = batchWorkspace 0 + replicas*(N*w+12)`; the existing
+`preparedResidualSolveWorkspace_poly` bounds the shared arithmetic. The selected
+comparison absorbs that polynomial into `Sizes.T n` and leaves
+`(cw+12)*replicas*t*p`. No numerical cap supplier is required. The new cached
+first-pass/mask and resumed-pass selected interfaces now instantiate this same
+actual push object internally, removing their extra push parameter.
+
+Residual export is also compared at selected sizes.
+`exportCyclicResidualRowsCost_le_linear` reuses the existing cyclic boundary
+batch cost bound. `selectedCyclicResidualExportWorkspace_le` applies it to the
+actual consumer/export workspace, absorbs shared controls into global volume,
+and retains only `(411*exportPush*(cw+1)+8)*replicas*t*p`. Widths and actual span
+bounds, rather than a supplied stock oracle, discharge the comparison.
+Builds pass: actual batch 14367 jobs/3.4 GiB aggregate; selected batch 15198/
+3.6 GiB; closed-interface integration 15971/3.5 GiB; export 15623/3.5 GiB.
+The remaining major numerical selected-space component is the shared factor
+page/factorization (plus small final merge allowances and full composition).
+Ordinary callback preparation and class/outer/fallback/final S4 gates remain
+open. Collect the cached/resumed/residual comparisons in one local checkpoint;
+no push.
+Individual checks: selected residual batch 3460.0 MiB, selected export 3363.3
+MiB. The combined audit of actual push construction, affine residual storage,
+selected residual/export and closed cached/resumed interfaces reports only
+standard axioms (9668.6 MiB for the nonmodule audit).
