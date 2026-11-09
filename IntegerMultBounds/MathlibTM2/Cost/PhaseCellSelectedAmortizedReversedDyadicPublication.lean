@@ -124,8 +124,8 @@ theorem selectedAmortizedReversedDyadicPublication_exec (body : P → Pr P T Q (
     exact (List.nodup_cons.mp htail).1 (heq ▸ (by simp : lineRows ∈ [dst,clock,lineRows]))
   obtain ⟨lines,v',n₂,hu₂,hn₂,hgood,he₂⟩ := hplaced
     h i e he u target htarget W hW b V hV hreplicas hbits hfit hA exponent packet pad tmp saved hpadReg
-    Fs hFs J batches hrows depth v₁ M ⟨readyM.exponent,readyM.packet,readyM.pad,readyM.tmp,readyM.saved,readyM.zero,readyM.width,
-      readyM.blank,readyM.stages,readyM.left,readyM.fresh,readyM.count,readyM.codec⟩ hpadOff
+    Fs hFs J batches hrows depth v₁ M ⟨⟨readyM.pad,readyM.tmp,readyM.saved,readyM.zero,readyM.width,
+      readyM.blank,readyM.stages,readyM.left,readyM.fresh,readyM.count,readyM.codec⟩,readyM.exponent,readyM.packet⟩ hpadOff
     (by change (M.R (e replicaCount)).length = _; rw [hread replicaCount (base_extra _ _)]; exact hsourceA)
     (by change (M.R (e realRows)).length = _; rw [hread realRows (base_extra _ _)]; exact hsourceB)
     (by change (M.R (e packetWidth)).length = _; rw [hread (packetWidth) (base_extra _ _)]; exact hsourceC)

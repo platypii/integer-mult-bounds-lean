@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellDyadicGatherExponents
+public import IntegerMultBounds.MathlibTM2.Host.UnaryPowerHeader
 
 /-! Execute minimal dyadic capacity generation from the derived core exponent. -/
 @[expose] public section
@@ -13,8 +14,7 @@ noncomputable section
 variable {Q K : ℕ} {P U : Type}
 
 def gatherCapacityProgram : Pr P tapeCount Q (prime+K) U :=
-  .seq (.act (.push (.rt capacityRows) (fun _ => tick) .done))
-    (upow2 (headerReg 85) capacityRows (headerReg 40) (headerReg 41))
+  unaryPowerHeader (headerReg 85) capacityRows (headerReg 40) (headerReg 41)
 
 theorem gatherCapacity_exec_within (body : P → Pr P tapeCount Q (prime+K) U)
     (b depth : ℕ) (v : HS tapeCount Q (prime+K) U) (S : Stacks tapeCount (prime+K))
@@ -25,26 +25,10 @@ theorem gatherCapacity_exec_within (body : P → Pr P tapeCount Q (prime+K) U)
       ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+depth+2*(4*2^b+9*b+5))
         depth gatherCapacityProgram (mk v S) n
         (mk v' {S with R := Function.update S.R capacityRows (List.replicate (2^b) tick)}) := by
-  have hi := headerReg_injective
-  have hcap : capacityRows = headerReg 81 := rfl
-  let M : Stacks tapeCount (prime+K) := {S with R := Function.update S.R capacityRows [tick]}
-  have hp : Exec body (.act (.push (.rt capacityRows) (fun _ => tick) .done)) (mk v S) 1 (mk v M) := by
-    simpa [M,Action.run,update_rt,hcapacity] using
-      Exec.act (body := body) (.push (.rt capacityRows) (fun _ => tick) .done) (mk v S)
-  obtain ⟨v',n,hu,hn,he⟩ := upow2_exec (body := body)
-    (a := headerReg 85) (b := capacityRows) (t₁ := headerReg 40) (t₂ := headerReg 41)
-    (by simp [hcap,List.nodup_cons,hi.eq_iff]) v M
-    (by simpa [M,hcap,hi.eq_iff] using h40) (by simpa [M,hcap,hi.eq_iff] using h41)
-  have he' : Exec body gatherCapacityProgram (mk v S) (1+n)
-      (mk v' {S with R := Function.update S.R capacityRows (List.replicate (2^b) tick)}) := by
-    simpa [gatherCapacityProgram,M,hcap,hi.eq_iff,hexponent] using Exec.seq hp he
-  have hn' : 1+n ≤ 4*2^b+9*b+5 := by
-    have h : n ≤ 4*2^b+9*b+4 := by simpa [M,hcap,hi.eq_iff,hexponent] using hn
-    omega
-  have hnative : mnNativePushBound 2 (gatherCapacityProgram (P := P) (Q := Q) (K := K) (U := U)) := by
-    simp [gatherCapacityProgram,upow2,udbl,scanP,popPush,moveR,moveStep,drainR,popDo,pushN,
-      peekR,whileR,mnNativePushBound,mnActPush]
-  exact ⟨v',1+n,hu,hn',mn_native_exec_within he' 2 hnative depth _ (by omega)⟩
+  exact unaryPowerHeader_exec_within body (headerReg 85) capacityRows (headerReg 40) (headerReg 41)
+    (by
+      change ([headerReg 85,headerReg 81,headerReg 40,headerReg 41]).Nodup
+      simp [List.nodup_cons,headerReg_injective.eq_iff]) b depth v S hexponent hcapacity h40 h41
 
 def gatherDimensionsProgram : Pr P tapeCount Q (prime+K) U :=
   .seq gatherExponentsProgram gatherCapacityProgram

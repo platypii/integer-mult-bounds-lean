@@ -4704,6 +4704,64 @@ Collect the binary/count-driven caller migration as one local checkpoint; no pus
 
 Removed superseded binary-only publication header retirement; restore from `b5824d45` if needed.
 
+**The remaining unary publication dimensions have a count-driven generator.**
+`Host.unaryPowerHeader_exec_within` factors generation of a unary power of two
+from a borrowed exponent over arbitrary distinct ports. The existing gather
+capacity theorem is now a thin instance; publication uses the same proof with
+its core-exponent source. `countedPublicationDimensions_exec_within` composes
+actual exponent generation, tight capacity `2^clog 2 rows`, and the existing
+`PublicationDimensionReg.exec_within` sum/product/padding/clock setup. Inputs
+are retained row/replica counts and core/word widths; generated dimension words
+start blank. Its exact endpoint contains only seven generated dimension words,
+with all other registers and arithmetic scratch restored.
+`retireCountedPublicationDimensions_exec_within` uses the generic two-update
+header-frame retirement theorem to restore the seven initial blanks after a
+consumer changes source/output. `countedPublicationDimensionsCosts_le` bounds
+setup plus retirement time, and setup's peak allowance, each by `600*traffic`
+using tight padding and disjoint core volume. The generation and budget builds
+pass at 3.4/3.3 GiB aggregate peak. No proof limits change.
+This generator is checked but not yet called by the selected axis: its current
+workspace contract still assumes the exponent sum and packet product before
+initialization. Next factor the kernel-only workspace from those generated
+headers, compose this dimension stage with binary-header generation and the
+actual publisher, then construct publication geometry controls and close outer/
+fallback/root/compiler S4 acceptance. Full S4 remains open; retain for a larger
+local initialization chunk. No push.
+
+**Full dimension generation now constructs kernel and sweep readiness.**
+`PublicationKernelReady` contains only padding scratch, transpose workspace,
+scalar width and codec freshness; `PublicationWorkspaceReady` adds the generated
+exponent-sum/packet lengths. Existing projections and source-frame callers are
+preserved. Its generic generator-frame theorem handles any listed generator
+ports above the scalar bank that avoid the protected zero, width, stage and
+worker-queue registers; no concrete worker cases are enumerated.
+`generatedPublicationHeaders_exec_within` executes counted dimension setup and
+binary-header generation and returns actual complete `PublicationReady` for
+exponent port 51 and packet port 82. The input has only kernel readiness,
+retained counts/core/word widths, blank generated destinations and static
+separation. Its exact frame has ten generated words. Generic two-update header
+retirement restores all ten initial blanks after a source/output consumer.
+`generatedPublicationHeadersCosts_le` bounds setup+retirement time and setup
+peak allowance by `(1000+100*cV)*traffic`, reusing the dimension and binary
+budgets rather than repricing instructions.
+`PreparedPublicationPlan.SweepReady` retains exactly count, origin advances and
+fresh sweep scratch. Its `generated` constructor derives packet, padding and
+word-width readiness from the actual generated state with ports 82/53/87;
+`generated_clock_length` supplies the actual replica clock at port 54. This
+avoids requiring preloaded values at destinations that initialization requires
+blank. The existing prepared-axis contract allowed separate preloaded sweep
+ports; the new generated layout must use this smaller initial sweep contract.
+The generated-header single-file check peaks at 3122.3 MiB; the shared
+kernel/source-frame check peaks at 3092.6 MiB. The new initialization, sweep
+constructor, budget and existing retired-axis axiom audit use only the standard
+`propext`, `Classical.choice`, and `Quot.sound`.
+Next replace the selected initialized publisher's prepared workspace/Ready
+inputs with kernel/SweepReady, consume these actual generation/cleanup traces,
+and propagate the fixed generated-port wiring through placement/bulk/axis.
+Then generate retained origin-advance controls and close outer/fallback/root/
+compiler S4 acceptance. Full S4 remains open. No push; retain with the dimension
+setup work for a larger initialization checkpoint.
+
 **First acceptance target: one complete fitting batch.** From declared original
 complex streams and ordinary scalar headers, execute component production,
 prepare numerical data, reuse it across the batch, publish certified complex

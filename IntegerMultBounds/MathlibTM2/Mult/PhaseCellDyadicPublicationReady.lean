@@ -13,10 +13,8 @@ open IntegerMultBounds.Networks.Shared50ModularControl (prime)
 open FixedStreamedBank
 variable {T Q K : ℕ}
 
-structure PublicationWorkspaceReady (e : Fin tapeCount → Fin T)
-    (exponent packet pad tmp saved : Fin tapeCount) (a b L W V : ℕ) (S : Stacks T (prime+K)) : Prop where
-  exponent : (S.R (e exponent)).length = a+b
-  packet : (S.R (e packet)).length = L*W
+structure PublicationKernelReady (e : Fin tapeCount → Fin T)
+    (pad tmp saved : Fin tapeCount) (V : ℕ) (S : Stacks T (prime+K)) : Prop where
   pad : S.R (e pad) = []
   tmp : S.R (e tmp) = []
   saved : S.R (e saved) = []
@@ -29,6 +27,12 @@ structure PublicationWorkspaceReady (e : Fin tapeCount → Fin T)
     S.R (e (base (callerWorker i))) = []
   count : S.R (e (extra 4)) = []
   codec : ∀ i ∈ [planeReg false,planeReg true,extra 2,extra 3,extra 5,extra 6], S.R (e i) = []
+
+structure PublicationWorkspaceReady (e : Fin tapeCount → Fin T)
+    (exponent packet pad tmp saved : Fin tapeCount) (a b L W V : ℕ) (S : Stacks T (prime+K)) : Prop
+    extends PublicationKernelReady e pad tmp saved V S where
+  exponent : (S.R (e exponent)).length = a+b
+  packet : (S.R (e packet)).length = L*W
 
 structure PublicationReady (e : Fin tapeCount → Fin T)
     (exponent packet pad tmp saved : Fin tapeCount) (a b L W V : ℕ) (S : Stacks T (prime+K)) : Prop
@@ -46,31 +50,16 @@ private theorem padding_source_off {exponent packet pad tmp saved : Fin tapeCoun
   rcases hmem with rfl | rfl | rfl | rfl | rfl
   all_goals first | assumption | (apply Ne.symm; assumption)
 
-theorem PublicationWorkspaceReady.of_frame {e : Fin tapeCount → Fin T}
-    {exponent packet pad tmp saved : Fin tapeCount} {a b L W V : ℕ} {S F : Stacks T (prime+K)}
-    (h : PublicationWorkspaceReady e exponent packet pad tmp saved a b L W V S)
+theorem PublicationKernelReady.of_frame {e : Fin tapeCount → Fin T}
+    {exponent packet pad tmp saved : Fin tapeCount} {V : ℕ} {S F : Stacks T (prime+K)}
+    (h : PublicationKernelReady e pad tmp saved V S)
     (hreg : [exponent,packet,extra 1,pad,tmp,saved].Nodup)
     (hR : ∀ i, i ≠ extra 1 → F.R (e i) = S.R (e i))
     (hL : ∀ i, F.L (e i) = S.L (e i)) :
-    PublicationWorkspaceReady e exponent packet pad tmp saved a b L W V F := by
+    PublicationKernelReady e pad tmp saved V F := by
   have hp (r : Fin tapeCount) (hr : r ∈ [exponent,packet,pad,tmp,saved]) := hR r (padding_source_off hreg r hr)
   have hb (i : Fin kernelT) := hR (base i) (base_extra i 1)
-  refine {
-    exponent := ?_
-    packet := ?_
-    pad := ?_
-    tmp := ?_
-    saved := ?_
-    zero := ?_
-    width := ?_
-    blank := ?_
-    stages := ?_
-    left := ?_
-    fresh := ?_
-    count := ?_
-    codec := ?_ }
-  · rw [hp exponent (by simp)]; exact h.exponent
-  · rw [hp packet (by simp)]; exact h.packet
+  refine ⟨?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_⟩
   · rw [hp pad (by simp)]; exact h.pad
   · rw [hp tmp (by simp)]; exact h.tmp
   · rw [hp saved (by simp)]; exact h.saved
@@ -89,6 +78,18 @@ theorem PublicationWorkspaceReady.of_frame {e : Fin tapeCount → Fin T}
       all_goals simp [planeReg,extra,Fin.ext_iff]
     rw [hR i hne]
     exact h.codec i hi
+
+theorem PublicationWorkspaceReady.of_frame {e : Fin tapeCount → Fin T}
+    {exponent packet pad tmp saved : Fin tapeCount} {a b L W V : ℕ} {S F : Stacks T (prime+K)}
+    (h : PublicationWorkspaceReady e exponent packet pad tmp saved a b L W V S)
+    (hreg : [exponent,packet,extra 1,pad,tmp,saved].Nodup)
+    (hR : ∀ i, i ≠ extra 1 → F.R (e i) = S.R (e i))
+    (hL : ∀ i, F.L (e i) = S.L (e i)) :
+    PublicationWorkspaceReady e exponent packet pad tmp saved a b L W V F := by
+  have hp (r : Fin tapeCount) (hr : r ∈ [exponent,packet,pad,tmp,saved]) := hR r (padding_source_off hreg r hr)
+  refine ⟨h.toPublicationKernelReady.of_frame hreg hR hL,?_,?_⟩
+  · rw [hp exponent (by simp)]; exact h.exponent
+  · rw [hp packet (by simp)]; exact h.packet
 
 
 theorem PublicationReady.of_frame {e : Fin tapeCount → Fin T}

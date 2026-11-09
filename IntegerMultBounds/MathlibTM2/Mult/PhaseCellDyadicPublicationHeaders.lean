@@ -23,55 +23,52 @@ def publicationHeadersState (a b C V : ℕ) (S : Stacks PackedTranspose.tapeCoun
   {S with R := Function.update (Function.update (Function.update S.R
     (headerReg 97) (binSyms V a)) (headerReg 98) (binSyms V b)) (headerReg 102) (binSyms V C)}
 
-theorem PublicationWorkspaceReady.of_generator_frame
+theorem PublicationKernelReady.of_generator_frame
     {e : Fin PackedTranspose.tapeCount → Fin T}
-    {exponent packet pad tmp saved : Fin PackedTranspose.tapeCount} {a b L W V : ℕ}
-    {S F : Stacks T (prime+K)}
-    (h : PublicationWorkspaceReady e exponent packet pad tmp saved a b L W V S)
-    (writes : List (Fin 117)) (hallowed : ∀ j ∈ writes, j ∈ [(84 : Fin 117),85,97,98,102])
-    (hpad : ∀ r ∈ [exponent,packet,pad,tmp,saved], ∀ j ∈ writes, r ≠ headerReg j)
+    {pad tmp saved : Fin PackedTranspose.tapeCount} {V : ℕ} {S F : Stacks T (prime+K)}
+    (h : PublicationKernelReady e pad tmp saved V S)
+    (writes : List (Fin 117))
+    (hallowed : ∀ j ∈ writes, 31 ≤ j.val ∧ j ≠ 106 ∧ j ≠ 109 ∧ j ≠ 115 ∧ j ≠ 116)
+    (hpad : ∀ r ∈ [pad,tmp,saved], ∀ j ∈ writes, r ≠ headerReg j)
     (hR : ∀ i, (∀ j ∈ writes, i ≠ headerReg j) → F.R (e i) = S.R (e i))
     (hL : ∀ i, F.L (e i) = S.L (e i)) :
-    PublicationWorkspaceReady e exponent packet pad tmp saved a b L W V F := by
-  have hp (r) (hr : r ∈ [exponent,packet,pad,tmp,saved]) := hR r (hpad r hr)
-  have hg (i : Fin 117) (hi : i ∉ [(84 : Fin 117),85,97,98,102]) :
+    PublicationKernelReady e pad tmp saved V F := by
+  have hp (r) (hr : r ∈ [pad,tmp,saved]) := hR r (hpad r hr)
+  have hg (i : Fin 117) (hi : i.val < 31 ∨ i = 106 ∨ i = 115 ∨ i = 116) :
       F.R (e (headerReg i)) = S.R (e (headerReg i)) := by
     apply hR
     intro j hj heq
-    exact hi (headerReg_injective heq ▸ hallowed j hj)
+    have hij := headerReg_injective heq
+    subst j
+    have ha := hallowed i hj
+    rcases hi with hi | rfl | rfl | rfl
+    · omega
+    · exact ha.2.1 rfl
+    · exact ha.2.2.2.1 rfl
+    · exact ha.2.2.2.2 rfl
   have hw (i : Fin FixedStreamedBank.tapeCount) :
       F.R (e (base (callerWorker i))) = S.R (e (base (callerWorker i))) := by
     apply hR
     intro j hj
-    have hj' := hallowed j hj
-    have h109 : j ≠ 109 := by
-      simp only [List.mem_cons,List.not_mem_nil,or_false] at hj'
-      rcases hj' with rfl | rfl | rfl | rfl | rfl <;> decide
-    exact (base_injective.ne (TransposeRegisterPlacement.generator_off_worker _ j h109 i)).symm
+    exact (base_injective.ne (TransposeRegisterPlacement.generator_off_worker _ j (hallowed j hj).2.2.1 i)).symm
   have hx (i : Fin 7) : F.R (e (extra i)) = S.R (e (extra i)) := by
     apply hR
     intro j _
     exact (base_extra _ _).symm
-  refine ⟨?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_⟩
-  · rw [hp exponent (by simp)]; exact h.exponent
-  · rw [hp packet (by simp)]; exact h.packet
+  refine ⟨?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_⟩
   · rw [hp pad (by simp)]; exact h.pad
   · rw [hp tmp (by simp)]; exact h.tmp
   · rw [hp saved (by simp)]; exact h.saved
   · change F.R (e (headerReg 106)) = []
-    rw [hg 106 (by decide)]; exact h.zero
+    rw [hg 106 (by simp)]; exact h.zero
   · change (F.R (e (headerReg 115))).length = V
-    rw [hg 115 (by decide)]; exact h.width
+    rw [hg 115 (by simp)]; exact h.width
   · intro r
-    have hr := originReg_range r
     change F.R (e (headerReg (originReg r))) = []
-    rw [hg _ (by
-      simp only [List.mem_cons,List.not_mem_nil,or_false,not_or]
-      repeat' constructor
-      all_goals intro heq; rw [heq] at hr; norm_num at hr)]
+    rw [hg _ (Or.inl (originReg_range r))]
     exact h.blank r
   · change F.R (e (headerReg 116)) = []
-    rw [hg 116 (by decide)]; exact h.stages
+    rw [hg 116 (by simp)]; exact h.stages
   · simpa only [hL] using h.left
   · simpa only [hw] using h.fresh
   · rw [hx]; exact h.count
@@ -82,6 +79,26 @@ theorem PublicationWorkspaceReady.of_generator_frame
       · exact hw _
       all_goals exact hx _
     rw [hread]; exact h.codec i hi
+
+theorem PublicationWorkspaceReady.of_generator_frame
+    {e : Fin PackedTranspose.tapeCount → Fin T}
+    {exponent packet pad tmp saved : Fin PackedTranspose.tapeCount} {a b L W V : ℕ}
+    {S F : Stacks T (prime+K)}
+    (h : PublicationWorkspaceReady e exponent packet pad tmp saved a b L W V S)
+    (writes : List (Fin 117)) (hallowed : ∀ j ∈ writes, j ∈ [(84 : Fin 117),85,97,98,102])
+    (hpad : ∀ r ∈ [exponent,packet,pad,tmp,saved], ∀ j ∈ writes, r ≠ headerReg j)
+    (hR : ∀ i, (∀ j ∈ writes, i ≠ headerReg j) → F.R (e i) = S.R (e i))
+    (hL : ∀ i, F.L (e i) = S.L (e i)) :
+    PublicationWorkspaceReady e exponent packet pad tmp saved a b L W V F := by
+  refine ⟨h.toPublicationKernelReady.of_generator_frame writes ?_ ?_ hR hL,?_,?_⟩
+  · intro j hj
+    have ha := hallowed j hj
+    simp only [List.mem_cons,List.not_mem_nil,or_false] at ha
+    rcases ha with rfl | rfl | rfl | rfl | rfl <;> decide
+  · intro r hr
+    exact hpad r (List.mem_cons_of_mem _ (List.mem_cons_of_mem _ hr))
+  · rw [hR exponent (hpad exponent (by simp))]; exact h.exponent
+  · rw [hR packet (hpad packet (by simp))]; exact h.packet
 
 theorem PublicationWorkspaceReady.of_header_frame
     {e : Fin PackedTranspose.tapeCount → Fin T}
