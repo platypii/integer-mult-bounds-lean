@@ -29,22 +29,4 @@ theorem dyadicPublicationHeaderCosts_le (N b s L W V p cV : ℕ)
   change _ ≤ (400+100*cV)*traffic ∧ _ ≤ (400+100*cV)*traffic
   constructor <;> nlinarith only [ha,hb,hpacket,hV',hvolume]
 
-theorem dyadicPublicationExponentCosts_le (N b s L W : ℕ)
-    (hrows : N*L ≤ s) (hL : 1 ≤ L) (hs : 1 ≤ s) (hW : 1 ≤ W) :
-    let bill := (19*2^b+10)+(19*N+9)
-    bill+2*(b+Nat.clog 2 N)+4 ≤ 120*(2^b*(s*W)) ∧
-    2*bill ≤ 120*(2^b*(s*W)) := by
-  dsimp only
-  let traffic := 2^b*(s*W)
-  have hreplicas : 1 ≤ 2^b := Nat.two_pow_pos b
-  have hvolume : 1 ≤ traffic := Nat.mul_pos hreplicas (Nat.mul_pos hs hW)
-  have hR : 2^b ≤ traffic := Nat.le_mul_of_pos_right _ (Nat.mul_pos hs hW)
-  have hN : N ≤ traffic := ((Nat.le_mul_of_pos_right N hL).trans hrows).trans
-    ((Nat.le_mul_of_pos_right s hW).trans (Nat.le_mul_of_pos_left _ hreplicas))
-  have ha : Nat.clog 2 N ≤ traffic :=
-    (Nat.clog_le_of_le_pow (Nat.lt_two_pow_self.le : N ≤ 2^N)).trans hN
-  have hb : b ≤ traffic := Nat.lt_two_pow_self.le.trans hR
-  change _ ≤ 120*traffic ∧ _ ≤ 120*traffic
-  constructor <;> omega
-
 end IntegerMultBounds.MathlibTM2.Cost

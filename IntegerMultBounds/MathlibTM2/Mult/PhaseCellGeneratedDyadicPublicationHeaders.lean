@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCountedPublicationDimensions
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellHeaderFrameRetirement
 
 /-! Build all dyadic publication dimensions and binary headers from retained
 counts and widths. Kernel workspace is independent of the generated words. -/

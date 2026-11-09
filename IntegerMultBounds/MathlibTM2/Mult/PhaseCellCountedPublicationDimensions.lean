@@ -3,7 +3,6 @@ module
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellDyadicPublicationExponents
 public import IntegerMultBounds.MathlibTM2.Host.UnaryPowerHeader
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPublicationDimensionSetup
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellHeaderFrameRetirement
 
 /-! Generate tight capacity, exponent sum, packet product, padding and replica
 clock from retained row/replica counts and core/word widths. -/
@@ -116,32 +115,6 @@ theorem countedPublicationDimensionsState_off (b N L W : ℕ) (S : Stacks tapeCo
 def countedPublicationDimensionsVolume (b N L W : ℕ) :=
   2*(Nat.clog 2 N+b)+2^Nat.clog 2 N+L*W+2^b+(2^Nat.clog 2 N-N)*L
 
-theorem retireCountedPublicationDimensions_exec_within (body : P → Pr P tapeCount Q (prime+K) U)
-    (b N L W : ℕ) (src dst : Fin tapeCount)
-    (hsrc : src ∉ countedPublicationDimensionRegisters) (hdst : dst ∉ countedPublicationDimensionRegisters)
-    (xs ys : List (Fin (prime+K+4))) (S : Stacks tapeCount (prime+K))
-    (hblank : ∀ i ∈ countedPublicationDimensionRegisters, S.R i = [])
-    (depth : ℕ) (v : HS tapeCount Q (prime+K) U) :
-    let M := countedPublicationDimensionsState b N L W S
-    let F := {M with R := (Function.update (Function.update M.R src xs) dst ys)}
-    ∃ v', v'.user = v.user ∧
-      ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v F)+depth) depth
-        (clearWords countedPublicationDimensionRegisters) (mk v F)
-        (2*countedPublicationDimensionsVolume b N L W+15)
-        (mk v' {S with R := (Function.update (Function.update S.R src xs) dst ys)}) := by
-  have he := retireHeaderFrame_pair_exec body countedPublicationDimensionRegisters
-    (by simp [countedPublicationDimensionRegisters,List.nodup_cons,headerReg_injective.eq_iff])
-    S (countedPublicationDimensionsState b N L W S) rfl rfl rfl (countedPublicationDimensionsState_off b N L W S)
-    hblank src dst hsrc hdst xs ys v depth
-  have hcap : capacityRows = headerReg 81 := rfl
-  have hcost : 2*(countedPublicationDimensionRegisters.map
-      (fun i => ((countedPublicationDimensionsState b N L W S).R i).length)).sum+
-      2*countedPublicationDimensionRegisters.length+1 = 2*countedPublicationDimensionsVolume b N L W+15 := by
-    simp [countedPublicationDimensionRegisters,countedPublicationDimensionsState,PublicationDimensionReg.loaded,
-      countedPublicationDimensionBank,countedPublicationDimensionIndex,countedPublicationCapacityState,
-      publicationExponentsState,hcap,headerReg_injective.eq_iff,countedPublicationDimensionsVolume]
-    omega
-  simpa only [hcost] using he
 
 end
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.PackedTranspose

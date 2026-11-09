@@ -19,8 +19,6 @@ def publicationExponentsProgram : Pr P tapeCount Q (prime+K) U :=
   unaryDyadicExponents replicaCount realRows (headerReg 85) (headerReg 84)
     (headerReg 40) (headerReg 41) (headerReg 42) (headerReg 43) (headerReg 44)
 
-def publicationExponentRegisters : List (Fin tapeCount) := [headerReg 85,headerReg 84]
-
 def publicationExponentsState (b N : ℕ) (S : Stacks tapeCount (prime+K)) :=
   {S with R := (Function.update (Function.update S.R (headerReg 85) (List.replicate b tick))
     (headerReg 84) (List.replicate (Nat.clog 2 N) tick))}
@@ -44,12 +42,6 @@ theorem publicationExponents_exec_within (body : P → Pr P tapeCount Q (prime+K
       intro r hr
       simp only [List.mem_cons,List.not_mem_nil,or_false] at hr
       rcases hr with rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> apply hblank <;> simp)
-
-theorem publicationExponentsState_off (b N : ℕ) (S : Stacks tapeCount (prime+K))
-    (i : Fin tapeCount) (hi : i ∉ publicationExponentRegisters) :
-    (publicationExponentsState b N S).R i = S.R i := by
-  simp only [publicationExponentRegisters,List.mem_cons,List.not_mem_nil,or_false,not_or] at hi
-  simp only [publicationExponentsState,Function.update_of_ne hi.2,Function.update_of_ne hi.1]
 
 
 end

@@ -18,6 +18,12 @@ def sweepSupport (plan : PreparedPublicationPlan T src dst) : List (Fin T) :=
   [plan.count,plan.advances,plan.savedControl,plan.savedAdvances,plan.counter,plan.zero,plan.acc,plan.control,
     plan.trash,plan.tmp,plan.retireCount,plan.gap]
 
+theorem sweepSupport_off (plan : PreparedPublicationPlan T src dst) {i : Fin T}
+    (hi : i ∈ plan.sweepSupport) : i ≠ src ∧ i ≠ dst := by
+  apply plan.support_off
+  simp only [sweepSupport,List.mem_cons,List.not_mem_nil,or_false] at hi
+  rcases hi with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> simp [support]
+
 structure SweepReady (plan : PreparedPublicationPlan T src dst) (windows : PublicationWindows s L)
     (w : ℕ) (borrowed : List (Fin (prime+K+4))) (S : Stacks T (prime+K)) : Prop where
   count : S.R plan.count = List.replicate windows.origins.length tick

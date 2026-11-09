@@ -4762,6 +4762,32 @@ Then generate retained origin-advance controls and close outer/fallback/root/
 compiler S4 acceptance. Full S4 remains open. No push; retain with the dimension
 setup work for a larger initialization checkpoint.
 
+**The actual retired axis now generates and uses every publication dimension.**
+The selected initialized publisher now consumes `PublicationKernelReady`,
+retained row/replica counts, core/word widths, blank initialization scratch and
+`PreparedPublicationPlan.SweepReady`. It executes complete dimension/header
+setup, the existing numerical publication trace and ten-word retirement. The
+sweep uses the generated packet at 82, padding at 53 and replica clock at 54;
+its retained word-width master is 87. There is no preloaded exponent sum, packet
+product, dyadic capacity, padding count or publication clock in the input.
+Static exponent/packet port equalities connect this fixed generated layout to
+the existing arbitrary placement interface. The current placed, restoring
+reverse-handoff, concrete bulk, seam-completion and retired-axis declarations
+all use this same stronger executor. Accuracy, the exact output-only endpoint,
+raw-archive suffix restoration and final machine-stock equality survive.
+The actual selected publisher's time coefficient is `2700+100*cV` and its stock
+coefficient is `4200+100*cV` plus the unchanged fixed-bank coefficient; restoring
+handoff adds the existing 35/70 traffic charges. All setup and cleanup costs
+belong to that same execution, with no intermediate execution supplier.
+The guarded complete-axis integration build passes at 3.8 GiB aggregate peak;
+the strengthened retired-axis single-file check peaks at 3832.1 MiB.
+Next generate retained sweep count/origin-advance controls and the remaining
+ordinary caller/boundary initialization, then match all axis bills to final
+S4 allowances and compose outer/fallback/root/compiler acceptance. Full S4
+remains open. No push; collect the caller migration and obsolete-path cleanup.
+
+Removed the superseded five-header path/exponent-only budget helpers (restore `e56a37b4`) and standalone seven-word cleanup (restore `6620103f`); ten-word retirement uses the generic frame theorem directly.
+
 **First acceptance target: one complete fitting batch.** From declared original
 complex streams and ordinary scalar headers, execute component production,
 prepare numerical data, reuse it across the batch, publish certified complex
