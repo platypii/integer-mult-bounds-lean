@@ -152,7 +152,7 @@ theorem generatedNormalizePackedBatch_exec (hA : 4 ≤ A)
     exact hhead i
   have hdim := inverse_round_dimensions p l target (haloBoundary s t (PhaseCellBand.width p u) a b).card
     (PhaseCellBand.width p u) j (inverseNormalizationShift_le p)
-  obtain ⟨hlen,v₂,n₂,hu₂,hn₂,he₂,haccuracy⟩ := normalizePackedBatch_exec (body := body) hA
+  obtain ⟨hlen,v₂,n₂,hu₂,hn₂,hnormalizeWithin,he₂,haccuracy⟩ := normalizePackedBatch_exec (body := body) hA
     (rg ∘ TblR.rename inverseRoundVariables) (hrg.comp (TblR.rename_injective inverseRoundVariables_injective))
     ports hports (fun i r => hsepPorts i (r.rename inverseRoundVariables)) hreg hscalar
     B w q p j W wl hwl (z.restrict inverseRoundVariables) hval

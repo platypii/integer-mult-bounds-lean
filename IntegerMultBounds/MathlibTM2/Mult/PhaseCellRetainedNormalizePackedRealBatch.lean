@@ -101,7 +101,7 @@ theorem retainedNormalizePackedRealBatch_exec (hA : 4 ≤ A)
     have hm : k ∈ [precision,wide,rows,replicas,inputWidth,count,src,work,saved,tmp,sp,sg,cy] :=
       List.mem_cons_of_mem precision hk
     simpa [F',hkprec] using hread k hm
-  obtain ⟨_,v₂,m₂,hu₂,hm₂,he₂,haccuracy⟩ := normalizePackedRealBatch_exec (body := body) hA
+  obtain ⟨_,v₂,m₂,hu₂,hm₂,hnormalizeWithin,he₂,haccuracy⟩ := normalizePackedRealBatch_exec (body := body) hA
     (rg ∘ TblR.rename inverseRoundVariables)
     (hrg.comp (TblR.rename_injective inverseRoundVariables_injective)) ports hportsInj
     (by intro i r; exact hports i _) hreg

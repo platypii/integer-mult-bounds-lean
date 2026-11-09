@@ -28,7 +28,7 @@ theorem placedInverseRound_exec (hA : 4 ≤ A) {W w q p j E : ℕ}
         (mk v S) n
         (mk v' {S with R := (Function.update S.R 132 (cstream A (p+E+5) (xs.map (finalRoundWord w q p j))))}) := by
   have hv (i : Fin 8) := congrFun hval i
-  obtain ⟨v',n,hu,hn,he,hd,ht⟩ := generatedFinalRound_list_exec (body := body)
+  obtain ⟨v',n,hu,hn,hroundWithin,he,hd,ht⟩ := generatedFinalRound_list_exec (body := body)
     (src := 132) (dst := 4) (tmp := 5) (sp := 6) (sg := 7) (cy := 8)
     (W := W) (w := w) (q := q) (p := p) (j := j) (E := E) hA
     inverseRoundScalarReg inverseRoundScalarReg_injective inverseRoundPorts inverseRoundPorts_injective

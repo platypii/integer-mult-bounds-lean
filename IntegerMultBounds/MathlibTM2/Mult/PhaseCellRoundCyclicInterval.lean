@@ -44,7 +44,7 @@ theorem roundCyclicInterval_exec (hA : 4 ≤ A)
         (cyclicIntervalRead p (p+E+5) a
           (cstream A (p+E+5) (cyclicInterval a n (fun i => finalRoundWord w q p j (D i)))++tail))
         (fun i => ((2 : ℂ)^j)⁻¹*z i) (2/(2 : ℝ)^p+e/(2 : ℝ)^j) := by
-  obtain ⟨v',m,hu,hm,hexec⟩ := roundPackedKey_exec (body := body) hA rg hrg ports hports hsep hreg hscalar
+  obtain ⟨v',m,hu,hm,hkeyWithin,hexec⟩ := roundPackedKey_exec (body := body) hA rg hrg ports hports hsep hreg hscalar
     B w q p j E n w wl hwl st hval hp hw hsize hroom hfit
     (cyclicInterval a n D) (by simp) tail v S hS hrows hwidth hsrc hblank hheaders
   refine ⟨v',m,hu,?_,?_,?_⟩

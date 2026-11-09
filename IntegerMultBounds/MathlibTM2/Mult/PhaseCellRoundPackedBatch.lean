@@ -9,7 +9,7 @@ public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedBatchInputData
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
 open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
   IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Host
-  IntegerMultBounds.MathlibTM2.Node IntegerMultBounds.MathlibTM2.Fast
+  IntegerMultBounds.MathlibTM2.Node IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Fast.Main
   IntegerMultBounds.MathlibTM2.Fast.TableVM IntegerMultBounds.MathlibTM2.Mult.ShortConv
 
 theorem packedBatch_round_source {s : ℕ} (A w q p j k a L : ℕ)
@@ -51,6 +51,11 @@ theorem roundPackedBatch_exec (hA : 4 ≤ A)
     Gs.length = Ds.length ∧
     ∃ v' n, v'.user = v.user ∧
       n ≤ roundPackedKeyCost B w (p+E+5) Ds.length (L*w) (Ds.length*L) ∧
+      ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+0+
+        roundPackedKeyWorkspace B w q p j E Ds.length (L*w)) 0
+        (roundPackedKey rg ports replicas width count src work saved tmp sp sg cy) (mk v S) n
+        (mk v' {S with R := (Function.update S.R src
+          ((Gs.map (fun D => cstream A (p+E+5) (packedInterval a L D))).flatten++tail))}) ∧
       Exec body (roundPackedKey rg ports replicas width count src work saved tmp sp sg cy) (mk v S) n
         (mk v' {S with R := (Function.update S.R src
           ((Gs.map (fun D => cstream A (p+E+5) (packedInterval a L D))).flatten++tail))}) ∧
@@ -59,12 +64,13 @@ theorem roundPackedBatch_exec (hA : 4 ≤ A)
           (2/(2 : ℝ)^p+e/(2 : ℝ)^j)) (Zs.map (fun z i => ((2 : ℂ)^j)⁻¹*z i)) Gs := by
   dsimp only
   have hlen := packedBatch_length a L Ds hinterval
-  obtain ⟨v',n,hu,hn,hexec⟩ := roundPackedKey_exec (body := body) hA rg hrg ports hports hsep hreg hscalar
+  obtain ⟨v',n,hu,hn,hkeyWithin,hexec⟩ := roundPackedKey_exec (body := body) hA rg hrg ports hports hsep hreg hscalar
     B w q p j E Ds.length (L*w) wl hwl st hval hp hw hsize hroom hfit
     (Ds.map (packedInterval a L)).flatten (by rw [hlen]; ring) tail v S hS hreplicas hwidth
     (by simpa only [cstream_flatten,List.map_map,Function.comp_def] using hsrc) hblank hheaders
-  refine ⟨List.length_map ..,v',n,hu,?_,?_,?_⟩
+  refine ⟨List.length_map ..,v',n,hu,?_,?_,?_,?_⟩
   · simpa only [hlen] using hn
+  · simpa only [packedBatch_round_source,List.map_map,Function.comp_def] using hkeyWithin
   · simpa only [packedBatch_round_source,List.map_map,Function.comp_def] using hexec
   · exact packedFinalRoundBatch_accuracy hA p q j w (p+E+5) E a L hp hw le_rfl active hinterval hactive
       Zs Ds e he hz oldTail tail hgood

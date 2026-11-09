@@ -1,14 +1,14 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedRoundList
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellTransformPrefix
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellTransformPrefixStock
 
 /-! Apply generated signed rounding to one local prefix, preserving later keys. -/
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
 open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
   IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Host
-  IntegerMultBounds.MathlibTM2.Node IntegerMultBounds.MathlibTM2.Fast
+  IntegerMultBounds.MathlibTM2.Node IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Fast.Main
   IntegerMultBounds.MathlibTM2.Fast.TableVM IntegerMultBounds.MathlibTM2.Mult.ShortConv
 
 variable {T Q A : ℕ} {P U : Type} {body : P → Pr P T Q A U}
@@ -37,6 +37,11 @@ theorem roundPackedPrefix_exec (hA : 4 ≤ A)
     (hheaders : ∀ i, S.R (ports i) = []) :
     ∃ v' n, v'.user = v.user ∧
       n ≤ 13*tblC B 0+16*w+44*B+48+xs.length*(20*w+4*(p+E+5)+23) ∧
+      ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+0+
+        ((8*(xs.length*w)+8)+generatedFinalRoundWorkspace B w q p j E)) 0
+        (roundPackedPrefix rg ports count src work saved tmp sp sg cy) (mk v S) n
+        (mk v' {S with R := (Function.update S.R src
+          (cstream A (p+E+5) (xs.map (finalRoundWord w q p j))++tail))}) ∧
       Exec body (roundPackedPrefix rg ports count src work saved tmp sp sg cy) (mk v S) n
         (mk v' {S with R := (Function.update S.R src
           (cstream A (p+E+5) (xs.map (finalRoundWord w q p j))++tail))}) := by
@@ -64,21 +69,25 @@ theorem roundPackedPrefix_exec (hA : 4 ≤ A)
   have hv (i : Fin 8) := congrFun hval i
   have hrun : ∀ v₂ : HS T Q A U, ∃ v₃ n₃, v₃.user = v₂.user ∧
       n₃ ≤ 13*tblC B 0+16*w+44*B+38+xs.length*(14*w+23) ∧
-      Exec body (generatedFinalRound rg ports work saved tmp sp sg cy) (mk v₂ S₂) n₃
+      ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v₂ S₂)+0+
+        generatedFinalRoundWorkspace B w q p j E) 0
+        (generatedFinalRound rg ports work saved tmp sp sg cy) (mk v₂ S₂) n₃
         (mk v₃ {S₂ with R := Function.update S₂.R work Y}) := by
     intro v₂
-    obtain ⟨v₃,n₃,hu₃,hn₃,he₃,_⟩ := generatedFinalRound_list_exec (body := body) hA rg hrg ports hports hsep
+    obtain ⟨v₃,n₃,hu₃,hn₃,hroundWithin,he₃,_⟩ := generatedFinalRound_list_exec (body := body) hA rg hrg ports hports hsep
       (show [work,saved,tmp,ports 0,ports 1,ports 2,ports 3,sp,sg,cy].Nodup by regs_nodup)
       (w := w) (q := q) (p := p) (j := j) (E := E) wl hwl st (hv 0) (hv 1) (hv 2) (hv 3) (hv 4) (hv 5) (hv 6) (hv 7)
       hp hw hsize hroom hfit xs v₂ S₂ htable (by simp [S₂,isolatedPrefixState,X]) hsmall hhead
-    exact ⟨v₃,n₃,hu₃,hn₃,he₃⟩
-  obtain ⟨v',n,hu,hn,he⟩ := transformPrefix_exec (body := body)
+    exact ⟨v₃,n₃,hu₃,hn₃,hroundWithin⟩
+  obtain ⟨v',n,hu,hn,he⟩ := transformPrefix_exec_within (body := body)
     (show [count,src,work,saved,tmp].Nodup by regs_nodup) _ X Y tail
-    (13*tblC B 0+16*w+44*B+38+xs.length*(14*w+23)) v S hsrc
+    (13*tblC B 0+16*w+44*B+38+xs.length*(14*w+23))
+    (generatedFinalRoundWorkspace B w q p j E) v S hsrc
     (by simpa [hX] using hcount) (hblank work (by simp)) (hblank saved (by simp))
     (hblank tmp (by simp)) hrun
-  refine ⟨v',n,hu,?_,he⟩
-  rw [hX,hY] at hn
-  nlinarith only [hn]
+  refine ⟨v',n,hu,?_,?_,he.toExec⟩
+  · rw [hX,hY] at hn
+    nlinarith only [hn]
+  · simpa only [hX,Y,roundPackedPrefix] using he
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

@@ -47,7 +47,7 @@ theorem generatedFinalRound_exec (hA : 4 ≤ A) (rg : TblR 8 → Fin T) (hrg : F
   have hread (i : ZMod s) : pairedCellRead q w (cstream A w (chirpLine s G)) i =
       value q (IntegerMultBounds.MathlibTM2.LayerMachine.symZ w (G i)) := by
     simpa only [List.append_nil] using pairedCellRead_signed (q := q) hA (show 1 ≤ w by omega) G [] i
-  obtain ⟨v',n,hu,hn,he,hd,ht⟩ := generatedFinalRound_list_exec (body := body) hA rg hrg ports hports
+  obtain ⟨v',n,hu,hn,hroundWithin,he,hd,ht⟩ := generatedFinalRound_list_exec (body := body) hA rg hrg ports hports
     hsep hreg wl hwl st h0 h1 h2 h3 h4 h5 h6 h7 hp (by omega : 1 ≤ w) hsize hroom hfit (chirpLine s G)
     v S hS hsrc hblank hheaders
   let H : ZMod s → GaussianInt := fun i => finalRoundWord w q p j (G i)

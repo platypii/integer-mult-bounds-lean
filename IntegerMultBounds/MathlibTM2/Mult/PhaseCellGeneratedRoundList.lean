@@ -2,7 +2,10 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRoundHeaderFrame
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFinalRoundList
-public import IntegerMultBounds.MathlibTM2.Mult.ShortConvSetupOps
+public import IntegerMultBounds.MathlibTM2.Mult.ShortConvSetupStock
+public import IntegerMultBounds.MathlibTM2.Mult.ChirpUnaryCopiesStock
+public import IntegerMultBounds.MathlibTM2.Fast.TableNativePush
+public import IntegerMultBounds.MathlibTM2.Host.SequentialBudget
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFinalRoundCost
 public import IntegerMultBounds.MathlibTM2.StackLifecycleResources
 
@@ -17,6 +20,14 @@ open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.NLogN
   IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.MathlibTM2.Fast.Main
 
 variable {T Q A : ℕ} {P U : Type} {body : P → Pr P T Q A U}
+
+private theorem roundHeaders_native (rg : TblR 8 → Fin T) (ports : Fin 4 → Fin T) :
+    mnNativePushBound 3 (generatedRoundHeaders (P := P) (Q := Q) (A := A) (U := U) rg ports) :=
+  ⟨⟨tblCompile_native rg _,tblUnaryCopies_native rg _⟩,tblCompile_native rg _⟩
+
+/-- Generated controls and one signed word's scratch, independent of stream length. -/
+def generatedFinalRoundWorkspace (W w q p j E : ℕ) : ℕ :=
+  3*(13*tblC W 0+12*w+44*W+25)+13*topShiftWordCost w (q-p+j) (p+E+5)
 
 def generatedFinalRound (rg : TblR 8 → Fin T) (ports : Fin 4 → Fin T)
     (src dst tmp sp sg cy : Fin T) : Pr P T Q A U :=
@@ -39,6 +50,10 @@ theorem generatedFinalRound_list_exec (hA : 4 ≤ A) (rg : TblR 8 → Fin T) (hr
     (hblank : ∀ r ∈ [dst,tmp,sp,sg,cy], S.R r = []) (hheaders : ∀ i, S.R (ports i) = []) :
     ∃ v' n, v'.user = v.user ∧
       n ≤ 13*tblC W 0+16*w+44*W+38+xs.length*(14*w+23) ∧
+      ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+0+
+        generatedFinalRoundWorkspace W w q p j E) 0
+        (generatedFinalRound rg ports src dst tmp sp sg cy) (mk v S) n
+        (mk v' {S with R := (Function.update S.R src (cstream A (p+E+5) (xs.map (finalRoundWord w q p j))))}) ∧
       Exec body (generatedFinalRound rg ports src dst tmp sp sg cy) (mk v S) n
         (mk v' {S with R := (Function.update S.R src (cstream A (p+E+5) (xs.map (finalRoundWord w q p j))))}) ∧
       (∀ z ∈ xs, value p (finalRoundWord w q p j z) = rhoC p (((2 : ℂ)^j)⁻¹*
@@ -97,6 +112,14 @@ theorem generatedFinalRound_list_exec (hA : 4 ≤ A) (rg : TblR 8 → Fin T) (hr
       · subst r; simp only [Function.update_self]
       · simp only [Function.update_of_ne he]
         exact hoff r hoffr
+  have hwHeaders := mn_native_exec_within he₁ 3 (roundHeaders_native rg ports) 0
+    (mnSize (mk v S)+0+3*(13*tblC W 0+12*w+44*W+25)) (by omega)
+  have hwClear := mn_native_exec_within he₃ 0 (clearWords_native rs) 0
+    (mnSize (mk v₁ S₁)+0+13*topShiftWordCost w (q-p+j) (p+E+5))
+    (by simpa only [Nat.zero_mul,Nat.add_zero] using hroundWithin.final)
+  have hwTail := ExecWithin.seq hroundWithin hwClear
+  have hwWhole := execWithin_seq_two_budget body _ _ _ _ _ _ _ 0 _ _ hwHeaders hwTail
+  have hwFinal := hwWhole.cast rfl (congrArg (mk v₃) hfinal)
   have he := (Exec.seq he₁ (Exec.seq he₂ he₃)).cast rfl (congrArg (mk v₃) hfinal)
   have hc : n₁+((1+(xs.length*(topShiftWordCost w (q-p+j) (p+E+5)+1)+1)+(2*(xs.length*(p+E+5))+2))+
       (2*(rs.map fun r => (S₂.R r).length).sum+2*rs.length+1)) ≤
@@ -104,6 +127,6 @@ theorem generatedFinalRound_list_exec (hA : 4 ≤ A) (rg : TblR 8 → Fin T) (hr
     simp only [hsum,rs,List.length_map,List.length_finRange]
     have hpass := finalRound_pass_cost_le hsize xs.length
     omega
-  exact ⟨v₃,_,hu₃.trans (hu₂.trans hu₁),hc,he,hd,mn_bounded_exec_certify he hc⟩
+  exact ⟨v₃,_,hu₃.trans (hu₂.trans hu₁),hc,hwFinal,he,hd,mn_bounded_exec_certify he hc⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

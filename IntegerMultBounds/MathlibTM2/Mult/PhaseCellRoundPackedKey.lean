@@ -1,13 +1,14 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRoundPackedPrefix
+public import IntegerMultBounds.MathlibTM2.Mult.ShortConvSetupOpsStock
 
 /-! Generate and release the current key's rounding prefix count. -/
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
 open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
   IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Host
-  IntegerMultBounds.MathlibTM2.Node IntegerMultBounds.MathlibTM2.Fast
+  IntegerMultBounds.MathlibTM2.Node IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Fast.Main
   IntegerMultBounds.MathlibTM2.Fast.TableVM IntegerMultBounds.MathlibTM2.Mult.ShortConv
 
 variable {T Q A : ℕ} {P U : Type} {body : P → Pr P T Q A U}
@@ -19,6 +20,9 @@ def roundPackedKey (rg : TblR 8 → Fin T) (ports : Fin 4 → Fin T)
 
 def roundPackedKeyCost (B w k N W coefficients : ℕ) : ℕ :=
   13*tblC B 0+16*w+44*B+54+N*(6*W+9)+coefficients*(20*w+4*k+23)
+
+def roundPackedKeyWorkspace (B w q p j E N W : ℕ) : ℕ :=
+  2*(N*(4*W+9)+4)+((8*(N*W)+8)+generatedFinalRoundWorkspace B w q p j E)
 
 /-- The caller provides retained dimensions, not a prepared symbol count.
 Generated count and rounding controls restore, along with all scalar state;
@@ -42,6 +46,11 @@ theorem roundPackedKey_exec (hA : 4 ≤ A)
     (hblank : ∀ r ∈ [count,work,saved,tmp,sp,sg,cy], S.R r = [])
     (hheaders : ∀ i, S.R (ports i) = []) :
     ∃ v' n, v'.user = v.user ∧ n ≤ roundPackedKeyCost B w (p+E+5) N W xs.length ∧
+      ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+0+
+        roundPackedKeyWorkspace B w q p j E N W) 0
+        (roundPackedKey rg ports replicas width count src work saved tmp sp sg cy) (mk v S) n
+        (mk v' {S with R := (Function.update S.R src
+          (cstream A (p+E+5) (xs.map (finalRoundWord w q p j))++tail))}) ∧
       Exec body (roundPackedKey rg ports replicas width count src work saved tmp sp sg cy) (mk v S) n
         (mk v' {S with R := (Function.update S.R src
           (cstream A (p+E+5) (xs.map (finalRoundWord w q p j))++tail))}) := by
@@ -65,7 +74,7 @@ theorem roundPackedKey_exec (hA : 4 ≤ A)
   have hhead : ∀ i, S₁.R (ports i) = [] := by
     intro i
     fin_cases i <;> simp [S₁,Function.update_apply, *, Ne.symm]
-  obtain ⟨v₂,n₂,hu₂,hn₂,he₂⟩ := roundPackedPrefix_exec (body := body) hA rg hrg ports hports hsep
+  obtain ⟨v₂,n₂,hu₂,hn₂,hprefixWithin,he₂⟩ := roundPackedPrefix_exec (body := body) hA rg hrg ports hports hsep
     (show [count,src,work,saved,tmp,ports 0,ports 1,ports 2,ports 3,sp,sg,cy].Nodup by regs_nodup)
     (by intro r hr; exact hscalar r (List.mem_cons_of_mem count hr))
     B w q p j E wl hwl st hval hp hw hsize hroom hfit xs tail v₁ S₁ htable
@@ -73,14 +82,17 @@ theorem roundPackedKey_exec (hA : 4 ≤ A)
   let output := cstream A (p+E+5) (xs.map (finalRoundWord w q p j))++tail
   let S₂ : Stacks T A := {S₁ with R := Function.update S₁.R src output}
   obtain ⟨v₃,hu₃,he₃⟩ := uclear_exec (body := body) count v₂ S₂
-  refine ⟨v₃,n₁+n₂+(2*(N*W)+2),hu₃.trans (hu₂.trans hu₁),?_,
-    (Exec.seq he₁' (Exec.seq he₂ he₃)).cast ?_ ?_⟩
-  · rw [hreplicas,hwidth] at hn₁
-    unfold roundPackedKeyCost
-    have hc : N*(6*W+9) = N*(4*W+9)+2*(N*W) := by ring
-    omega
-  · simp [S₂,S₁,‹count ≠ src›,Nat.add_assoc]
-  · apply congrArg (mk v₃)
+  rw [hreplicas,hwidth] at hn₁
+  have hw₁ := mn_native_exec_within he₁' 2 (unaryProduct_native ..) 0
+    (mnSize (mk v S)+0+2*(N*(4*W+9)+4)) (by omega)
+  rw [hlen] at hprefixWithin
+  have hw₃ := mn_native_exec_within he₃ 0 (by
+    simp [uclear,drainR,popDo,peekR,mnNativePushBound,mnActPush]) 0
+    (mnSize (mk v₁ S₁)+0+((8*(N*W)+8)+generatedFinalRoundWorkspace B w q p j E))
+    (by simpa only [Nat.zero_mul,Nat.add_zero] using hprefixWithin.final)
+  have hwTail := ExecWithin.seq hprefixWithin hw₃
+  have hwWhole := execWithin_seq_two_budget body _ _ _ _ _ _ _ 0 _ _ hw₁ hwTail
+  have hfinal : {S₂ with R := Function.update S₂.R count []} = {S with R := Function.update S.R src output} := by
     refine Stacks.ext rfl rfl rfl ?_
     funext i
     by_cases hic : i = count
@@ -88,5 +100,12 @@ theorem roundPackedKey_exec (hA : 4 ≤ A)
     by_cases his : i = src
     · subst i; simp [S₂,S₁,‹count ≠ src›.symm,output]
     · simp [S₂,S₁,hic,his]
+  have htime : n₁+(n₂+(2*(S₂.R count).length+2)) = n₁+n₂+(2*(N*W)+2) := by
+    simp [S₂,S₁,‹count ≠ src›,Nat.add_assoc]
+  have htrace := hwWhole.cast htime (congrArg (mk v₃) hfinal)
+  refine ⟨v₃,n₁+n₂+(2*(N*W)+2),hu₃.trans (hu₂.trans hu₁),?_,htrace,htrace.toExec⟩
+  unfold roundPackedKeyCost
+  have hc : N*(6*W+9) = N*(4*W+9)+2*(N*W) := by ring
+  omega
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

@@ -6,6 +6,12 @@ import IntegerMultBounds.MathlibTM2.Mult.PhaseCellNormalizePackedBatch
 open Lean in
 run_cmd do
   for name in #[
+      `IntegerMultBounds.MathlibTM2.Node.topPass_within,
+      `IntegerMultBounds.MathlibTM2.Mult.ShortConv.signedRound_within,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generatedFinalRound_list_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.transformPrefix_exec_within,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publishRoundedKey_native,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publishRoundedKeyCost_le,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publishRoundedBatch_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.normalizePackedBatch_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generateDoubleWidth_exec,

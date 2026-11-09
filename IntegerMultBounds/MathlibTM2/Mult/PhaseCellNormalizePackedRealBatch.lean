@@ -9,7 +9,7 @@ No numerical executor or scalar lifecycle is duplicated. -/
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
 open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
   IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Host
-  IntegerMultBounds.MathlibTM2.Node IntegerMultBounds.MathlibTM2.Fast
+  IntegerMultBounds.MathlibTM2.Node IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Fast.Main
   IntegerMultBounds.MathlibTM2.Fast.TableVM IntegerMultBounds.MathlibTM2.Mult.ShortConv
 variable {T Q A : ℕ} {P U : Type} {body : P → Pr P T Q A U}
 
@@ -43,6 +43,11 @@ theorem normalizePackedRealBatch_exec (hA : 4 ≤ A)
     let Gs := Ds.map (fun D i => finalRoundWord w q p j (D i))
     Gs.length = Ds.length ∧
     ∃ v' n, v'.user = v.user ∧ n ≤ normalizePackedBatchCost B w p W Ds.length L ∧
+      ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+0+
+        normalizePackedBatchWorkspace B w q p j W Ds.length L) 0
+        (normalizePackedBatch rg ports precision wide rows replicas inputWidth count src work saved tmp sp sg cy)
+        (mk v S) n (mk v' {S with R := (Function.update S.R src
+          ((Gs.map (fun D => cstream A W (packedInterval a L D))).flatten++tail))}) ∧
       Exec body (normalizePackedBatch rg ports precision wide rows replicas inputWidth count src work saved tmp sp sg cy)
         (mk v S) n (mk v' {S with R := (Function.update S.R src
           ((Gs.map (fun D => cstream A W (packedInterval a L D))).flatten++tail))}) ∧
@@ -57,7 +62,7 @@ theorem normalizePackedRealBatch_exec (hA : 4 ≤ A)
     simpa only [List.append_nil] using packedRealRead_accuracy hA q w a L hw
       (Ds.get ⟨i,hj⟩) (hreal _ (List.get_mem _ _)) (hfits _ (List.get_mem _ _))
       active hinterval hactive (xs.get ⟨i,hi⟩) e [] (hgood.get hi hj)
-  obtain ⟨hlen,v',n,hu,hn,hexec,haccuracy⟩ := normalizePackedBatch_exec (body := body)
+  obtain ⟨hlen,v',n,hu,hn,hnormalizeWithin,hexec,haccuracy⟩ := normalizePackedBatch_exec (body := body)
     hA rg hrg ports hports hsep hreg hscalar B w q p j W wl hwl st hval hp hw hsize hroom hfit hW
     a L hinterval active hactive hcover (xs.map (fun x i => (x i : ℂ))) Ds e he
     (by intro z hz i hi
@@ -65,7 +70,7 @@ theorem normalizePackedRealBatch_exec (hA : 4 ≤ A)
         simpa only [Complex.norm_real] using hx x hxmem i hi) [] tail
     (List.forall₂_map_left_iff.mpr (by simpa only [List.append_nil] using hread))
     v S hS hprecision hwide hrows hreplicas hinputWidth hsrc hblank hheaders
-  refine ⟨hlen,v',n,hu,hn,hexec,?_⟩
+  refine ⟨hlen,v',n,hu,hn,hnormalizeWithin,hexec,?_⟩
   exact List.forall₂_map_left_iff.mp (by simpa only [List.map_map,Function.comp_def] using haccuracy)
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

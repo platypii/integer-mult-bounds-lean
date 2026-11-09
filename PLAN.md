@@ -45922,3 +45922,32 @@ cached/recovery/interior/assembly space and reusable word-stock work into one
 larger local checkpoint, excluding unrelated periodic/workspace drafts. No
 push. Full S4 remains open: complete normalization/publication/preparation
 space and uniform absorption, then class scan/outer/fallback/final acceptance.
+
+Packed normalization now has a whole-stage structural space trace.
+`generatedFinalRound_list_exec` composes native scalar-control setup, the
+stream-length-independent word-pass trace, and zero-growth header cleanup;
+`generatedFinalRoundWorkspace` contains no coefficient count. The generic
+`transformPrefix_exec_within` composes a local trace with linear counted-prefix
+routing and existing no-growth moves. `roundPackedPrefix_exec` and
+`roundPackedKey_exec` consume it, including actual symbol-counter generation
+and retirement. Batch and real-batch rounding/normalization interfaces retain
+the resulting trace alongside the existing accuracy certificates.
+`PhaseCellPublishRoundedStock` proves a fixed native push bound for final
+common-width publication and a linear payload/counter bound
+`publishRoundedKeyCost ≤ (N+1)*(L+1)*(40*W+80)`. This is used immediately in
+`normalizePackedBatch_exec`: its workspace is the rounding-key workspace plus
+that explicit linear publication allowance. No new word-level publication
+framework or numerical time-as-space estimate is needed. Outer retained scalar
+bank setup/release still need composition around this inner normalization
+trace before the actual 64-register piece executor can expose a whole-run bound.
+The strengthened interfaces integrate through the complete concrete origin
+caller, cyclic-interval rounding and inverse-round placement (16570 jobs,
+22.3 GiB aggregate peak). Guarded checks: generated rounding 3103.0 MiB,
+prefix-routing helper 1942.1 MiB, rounding key 3123.3 MiB, publication helper
+3111.4 MiB, packed normalization 3154.9 MiB. The persistent PackedRoundCheck
+now audits the new structural/stock declarations too and passes at 3070.6 MiB;
+the temporary full audit also contains only propext, Classical.choice and
+Quot.sound (9080.7 MiB peak). Collect this normalization chunk locally; no push.
+Full S4 remains open: outer normalization controls, final core publication and
+ordinary preparation space, uniform selected-space/added-time absorption,
+class/outer integration, fallback and final acceptance.
