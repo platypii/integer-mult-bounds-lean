@@ -2,6 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedAmortizedPublishedAxis
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetireCountedLineStock
+public import IntegerMultBounds.MathlibTM2.Host.ReplaceRightStock
 public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedAmortizedSeamCompletion
 public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedAmortizedBulkArchivePublication
 public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedGatherSchedule
@@ -167,6 +168,7 @@ theorem selectedAmortizedRetiredAxis_exec (hR : rpStates ≤ Q) (hQ : SS.states 
             (embProg be Empty.elim (boundarySeamPublication (P := Empty) cropCount))))
           (retireCountedLine pubCount pubWidth dst pubSavedCount pubArchive pubTmp))
         (Host.mk v S) (steps+pubSteps+seamSteps+retireSteps) (Host.mk v' F) ∧
+      mnSize (Host.mk v' F) = mnSize (Host.mk v S) ∧
       F.inp = S.inp ∧ F.out = S.out ∧ F.L = S.L ∧
       ∀ r, r ≠ pubDst → F.R r = S.R r := by
   dsimp only
@@ -233,10 +235,16 @@ theorem selectedAmortizedRetiredAxis_exec (hR : rpStates ≤ Q) (hQ : SS.states 
         simp only [Function.update_of_ne hne.symm,Function.update_self,hout]
       · simp only [Function.update_of_ne hr,Function.update_of_ne hp]
         exact hframe r hr hp
+  have hlines : ∀ line ∈ lines, line.length = Sizes.s m i*W :=
+    (List.forall₂_and_left _ _).mp hall.flip |>.1
+  have hcountLines : lines.length = Fs.reverse.length := by
+    simpa only [inversePublicationTargets,List.length_map] using hall.length_eq.symm
+  have hstock := row_bank_replacement_stock v v' S pubDst (Sizes.s m i*W) ambient lines outputTail
+    hambient hcountLines hlines pubReady.destination
   have htotal := execWithin_seq_two_budget body _ _ _ _ _ _ _ 0 _ _ hwithin he
   have htotalFinal := htotal.cast rfl (congrArg (Host.mk v') hfinal)
   refine ⟨v',_,M,steps,pubSteps,seamSteps,nr,outputs,lines,hu.trans huser,?_,hall,rfl,?_,hvolume,
-    htotalFinal,rfl,rfl,rfl,?_⟩
+    htotalFinal,hstock,rfl,rfl,rfl,?_⟩
   ·
     have hnReal := Nat.cast_le (α := ℝ).mpr hn
     rw [Nat.cast_add]

@@ -4512,6 +4512,60 @@ compose outer tensor/locality schedules with setup at actual frequency. Final
 fallback/root/compiler acceptance remains open. Full S4 is not complete.
 Collect the lifecycle/volume work as one larger local checkpoint; no push.
 
+**Final axis stock is preserved; use independent dyadic publication sizing.**
+`row_bank_replacement_stock` proves storage equality for replacing an ambient
+bank by the same number of equal-width rows, including arbitrary suffixes and
+control state. The actual retired-axis theorem now returns
+`mnSize final = mnSize initial`, derived from its global row contract and the
+ordinary initial ambient-bank shape. This is the endpoint fact needed to reuse
+workspace across outer axes rather than summing all axis allowances.
+Sizing audit: the generic `ArchiveTilePlan` route pads core count to a power of
+the replica radix. Its current selected theorem has only a capacity lower bound;
+it does not yet ensure the tight padding needed for final S4 absorption. Keep
+that theorem as a valid conditional execution, not evidence of the desired
+selected publication cost. Prefer the already proved fixed-bank transpose with
+independent exponents `a` (cores) and `b` (replicas), selecting `a = clog 2 cores`.
+`prepare_rows_result_exec_within` exposes that actual existing transpose through
+the shared padded-row result interface. `exactDyadicGroupedPublication_exec`
+composes it directly with the exact-row publisher, with its actual time/space
+bills, output bank accuracy and scratch frame. There are no metadata job or
+intermediate execution suppliers. Existing `selectedPolynomialPublicationCosts_le`
+already bounds this independent-exponent route and should be reused.
+Checks peak at 1928.2 MiB (stock helper), 3786.0 MiB (retired-axis stock equality),
+3081.1 MiB (dyadic result interface), and 3129.0 MiB (dyadic grouped trace).
+Next substitute this dyadic stage in the selected-axis path before attempting
+publication resource absorption. Ordinary header construction and outer/fallback/
+root S4 acceptance remain open. No push or small new commit; collect with the
+selected dyadic instantiation.
+
+**Tight dyadic publication now has actual selected execution bounds.**
+`exactDyadicArchivePublication_exec` takes the actual certified batch archive,
+chooses `a = clog 2 coreCount` internally, derives its rectangular view and
+executes the existing independent-exponent transpose and exact grouped scatter.
+`exactDyadicPublicationCosts_le` bounds non-kernel time by `400*traffic+100`
+and peak allowance by `800*traffic+200`. `exactDyadicArchivePublication_bounded_exec`
+applies those bounds to that same actual trace, deriving source volume from
+exact rows instead of assuming an unrelated size certificate.
+The existing `pow_clog_two_le` and `publicationPaddedVolume_le` proofs were moved
+unchanged into a small shared module. Their names/statements remain available
+through the old imports, and the new budget proof no longer imports the entire
+old numerical publication execution just to use those geometry facts.
+`selectedAmortizedDyadicPublication_exec` instantiates the p^8 full-width gather
+class, identifies the bulk indices, derives packet positivity/preparation and
+span from selected geometry, and reuses `selectedPolynomialPublicationCosts_le`.
+Its actual time is bounded by `2*T+1700*traffic` plus the manuscript dimension/
+axis routing charge; its peak allowance is `2*T` plus linear traffic with the
+existing fixed-bank coefficient. Padding uses the independently rounded core
+count, avoiding a capacity based on powers of the replica count.
+Checks peak at 3122.2 MiB (archive instantiation), 2076.4 MiB (budget), 1949.9 MiB
+(light padding geometry), 3120.1 MiB (bounded actual trace), and 3532.8 MiB
+(selected actual trace). The full-axis theorem still uses the generic route;
+substitute this checked selected dyadic stage next, including its ordered-archive
+handoff, placement and ordinary header frames. Then generate headers, absorb
+boundary/retirement bills and compose outer axes/fallback/root S4 acceptance.
+Full S4 remains open. Collect this sizing correction and stock equality in one
+larger local checkpoint. No push.
+
 **First acceptance target: one complete fitting batch.** From declared original
 complex streams and ordinary scalar headers, execute component production,
 prepare numerical data, reuse it across the batch, publish certified complex

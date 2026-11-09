@@ -62,19 +62,6 @@ theorem publicationControlWords_length_le {A s L : ℕ} (windows : PublicationWi
   simp only [length_gatherControls,PublicationWindows.gaps_length]
   omega
 
-/-- Rounding the number of disjoint equal-length windows costs at most a
-constant factor, including the empty class. -/
-theorem publicationPaddedVolume_le {s L : ℕ} (windows : PublicationWindows s L)
-    (hL : L ≤ s) (b W : ℕ) :
-    2^Nat.clog 2 windows.origins.length*2^b*(L*W) ≤ 3*(2^b*(s*W)) := by
-  have hv := windows.gaps_volume 1
-  simp only [scatterVolume,PublicationWindows.gaps_length,Nat.mul_one] at hv
-  have hround := pow_clog_two_le windows.origins.length
-  have hrows : windows.origins.length*L ≤ s := by omega
-  have hpadded : 2^Nat.clog 2 windows.origins.length*L ≤ 3*s := by
-    nlinarith only [Nat.mul_le_mul_right L hround,hrows,hL]
-  have hh := Nat.mul_le_mul_right (2^b*W) hpadded
-  simpa only [Nat.mul_assoc,Nat.mul_comm,Nat.mul_left_comm] using hh
 
 theorem retainedPublicationCosts_le {Q K s width : ℕ} [NeZero s] {U : Type}
     (hstates : FixedStreamedBank.stateCount ≤ Q) (a b L V W N : ℕ)

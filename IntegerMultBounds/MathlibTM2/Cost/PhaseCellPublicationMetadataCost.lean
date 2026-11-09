@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPublicationMetadataVolume
+public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellPublicationPaddedVolume
 public import IntegerMultBounds.NLogN.PhaseCellCoreLocalityGeometry
 public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedSetupVolume
 
@@ -11,15 +12,6 @@ namespace IntegerMultBounds.MathlibTM2.Cost
 open Filter IntegerMultBounds IntegerMultBounds.MathlibTM2.Mult
   IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.PackedTranspose
 
-theorem pow_clog_two_le (k : ℕ) : 2^Nat.clog 2 k ≤ 2*k+1 := by
-  by_cases hk : 1 < k
-  · have ha := Nat.clog_pos (by decide : 1 < 2) hk
-    have hp := Nat.pow_pred_clog_lt_self (by decide : 1 < 2) hk
-    have he : Nat.clog 2 k = (Nat.clog 2 k).pred+1 := (Nat.succ_pred_eq_of_pos ha).symm
-    rw [he,pow_succ]
-    omega
-  · have he : k = 0 ∨ k = 1 := by omega
-    rcases he with rfl | rfl <;> norm_num
 
 private theorem metadataVolume_le {s t k b N L W V cW cV : ℕ}
     (ht : 1 ≤ t) (hs : s ≤ t) (hk : k ≤ t) (hb : 2^b = N)
