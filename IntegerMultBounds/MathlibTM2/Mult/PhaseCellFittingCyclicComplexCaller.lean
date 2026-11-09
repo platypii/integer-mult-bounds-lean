@@ -106,6 +106,8 @@ theorem program_exec (ports : CyclicComplexCallerLayout T)
     ∃ (J L : ReplicaHaloProblem s) (v' : HS T Q A U) (C F G : Stacks T A) (steps : ℕ) (word : List (Fin (A+4))),
       v'.user = v.user ∧
       CyclicFactorSeedInput p l s t u solveTarget a n [] (embStk (small ∘ CyclicReplicaPlacement.factorReg) F) ∧
+      (∀ i, (C.R (cachedFactorSeedSource (ports.small ∘ left.plan.gather) ports.span i)).length =
+        cyclicFactorMasterValues p l s t u solveTarget a n i) ∧
       CyclicSecondInteriorProfile H K J L p solveTarget B.card ∧
       steps ≤ ports.inputTimeCost H K W Fs.length S+
         (ports.factorTimeCost s t p u a n C F+((4*(W+radius+coreLength s coreWidth k)+13)+
@@ -168,6 +170,12 @@ theorem program_exec (ports : CyclicComplexCallerLayout T)
     exact Ne.symm (by assumption)
   have htmp' : C.R ports.tmp = [] :=
     (hframe _ htmpArchive (fun j => ports.tmpOff _)).2.trans htmp
+  have hfactorValues (i : Fin 10) :
+      (C.R (cachedFactorSeedSource (ports.small ∘ left.plan.gather) ports.span i)).length =
+        cyclicFactorMasterValues p l s t u solveTarget a n i := by
+    have hvalues := inputsL.headers.factorSeedSources ports.span n hspan'
+    exact (hvalues i).trans (congrFun
+      (axis.cyclicLeftReplicaProblem_factorSeedValues solveTarget a n ha Rs hRs) i)
   obtain ⟨J,L,v₂,F,G,n₂,word,hu₂,hseed,hprofile,hn₂,hfactoredWithin,he₂,hword,h848,hcert,hstreams,houtside⟩ :=
     factoredCyclicComplexCore_exec (body := body) ports.bank ports.injective hR hQ hA axis ha hn
       hleftRoom hrightRoom coreWidth k radius hleft haCore hnCore hright Fs hF W hW
@@ -176,7 +184,7 @@ theorem program_exec (ports : CyclicComplexCallerLayout T)
       ports.spanOff ports.spanTmp hfactorFresh ports.controlOff ports.controlTmp ports.tmpOff
       hcontrols' hfresh' htmp' localityTarget qRef Y hqRef hwindow hY
   have hwhole := execWithin_seq_two_budget body _ _ _ _ _ _ _ 0 _ _ hinputWithin hfactoredWithin
-  refine ⟨J,L,v₂,C,F,G,n₁+n₂,word,hu₂.trans hu₁,hseed,hprofile,Nat.add_le_add hn₁ hn₂,
+  refine ⟨J,L,v₂,C,F,G,n₁+n₂,word,hu₂.trans hu₁,hseed,hfactorValues,hprofile,Nat.add_le_add hn₁ hn₂,
     hwhole,Exec.seq he₁ he₂,hword,h848,?_,hcert,
     ⟨hstreams.1.trans inputsL.input,hstreams.2.trans inputsL.outputStream⟩,
     (houtside ports.archive (fun j => (ports.archiveOff j).symm)).1.trans hleftArchive,?_⟩

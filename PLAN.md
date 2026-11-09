@@ -3938,7 +3938,32 @@ target/RHS profiles, widths, band and normalization bounds. The origin callback
 preserves its actual second-interior profile witness. The numerical module
 checks at 3545.4 MiB; combined numerical/origin integration passes (16631 jobs,
 8.6 GiB aggregate). Next absorb ordinary input and factor setup costs and
-connect the whole selected bound to that same execution. Do not expand further wrapper families before this pilot passes.
+connect the whole selected bound to that same execution. The ordinary input
+bill is now split exactly by `fittingCyclicInputTime_affine`, reusing the
+existing normalization ledger. `fittingCyclicInputWorkspace_le` bounds its
+actual native trace by a once-per-batch scalar bill plus linear `N*t*p`
+traffic, including both component banks and archive routing. The shared bill
+now has a coarse replica-independent polynomial bound and is absorbed once
+per batch by `selectedFittingCyclicInputSharedWorkspace_le`.
+`selectedFittingCyclicInputWorkspace_le` combines this with actual seed-length
+facts to bound the exact native input reserve by linear `N*t*p` traffic plus
+`T`. The selected module checks at 3545.9 MiB. The actual boundary page
+producer now has a shared polynomial bound using one reusable boundary-order
+scan lemma for both pieces; `selectedCyclicBoundaryPageWorkspace_le` absorbs
+its native preparation reserve into `T`, deriving the geometry width directly
+from axis length. The generic page module checks at 2012.0 MiB. The remaining
+factor-setup ten-master copy is now bounded by the same structural copier's
+exact source-length bill. `selectedCyclicFactorPreparationWorkspace_le` combines
+copy and generated page into `2*T`. The fitting, retired and origin executors
+preserve the produced seed bank and its actual source-length equalities, so
+this comparison needs no new resource supplier. Factor preparation checks at
+3480.3 MiB and integration through origin passes (16571 jobs, 3.6 GiB aggregate).
+Next combine selected input, factor preparation, control installation and the
+actual numerical allowance on the same execution, then include origin reading. Header-copy
+count accounting moved unchanged into the narrow `PhaseCellRecoverySeedCopyLedger`
+module so this consumer avoids importing the computed publication schedule.
+Both new input accounting and the existing computed-preparation consumer build;
+the input ledger checks at 3547.2 MiB. Do not expand further wrapper families before this pilot passes.
 Use this acceptance checkpoint, rather than appended implementation history,
 as the current progress reference. After the pilot, actual class scan/shared
 exposure, setup multiplicity, seam/full fallback, tensor/locality composition

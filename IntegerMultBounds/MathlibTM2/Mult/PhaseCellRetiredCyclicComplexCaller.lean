@@ -57,6 +57,8 @@ theorem retiredProgram_exec (ports : CyclicComplexCallerLayout T) (dst : Fin T)
     ∃ (J L : ReplicaHaloProblem s) (vm v' : HS T Q A U) (C F R G : Stacks T A) (runSteps steps : ℕ) (word : List (Fin (A+4))),
       v'.user = v.user ∧
       CyclicFactorSeedInput p l s t u solveTarget a n [] (embStk (small ∘ CyclicReplicaPlacement.factorReg) F) ∧
+      (∀ i, (C.R (cachedFactorSeedSource (ports.small ∘ CyclicReplicaPlacement.left.plan.gather) ports.span i)).length =
+        cyclicFactorMasterValues p l s t u solveTarget a n i) ∧
       CyclicSecondInteriorProfile H K J L p solveTarget B.card ∧
       Exec body (ports.program hR hQ) (Host.mk v S) runSteps (Host.mk vm R) ∧
       steps = runSteps+exportClearRegisterBankCost ports.bank 850 dst R ∧
@@ -89,7 +91,7 @@ theorem retiredProgram_exec (ports : CyclicComplexCallerLayout T) (dst : Fin T)
   dsimp only
   intro Fs hF W hW hWin v S tail hblank hvaluesL hvaluesR hsrc hcount hspan hcontrols hsaved htmp
     localityTarget qRef Y hqRef hwindow hY
-  obtain ⟨J,L,v₁,C,F,R,n₁,word,hu₁,hseed,hprofile,hn₁,hfittingWithin,he₁,hword,h848,harchive,hcert,hstreams,hleftArchive,hframe⟩ :=
+  obtain ⟨J,L,v₁,C,F,R,n₁,word,hu₁,hseed,hfactorValues,hprofile,hn₁,hfittingWithin,he₁,hword,h848,harchive,hcert,hstreams,hleftArchive,hframe⟩ :=
     ports.program_exec (body := body) hR hQ hA axis ha hn hleftRoom hrightRoom coreWidth k radius
       hleft haCore hnCore hright Fs hF W hW hWin v S tail hblank hvaluesL hvaluesR hsrc hcount hspan
       hcontrols hsaved htmp localityTarget qRef Y hqRef hwindow hY
@@ -141,7 +143,7 @@ theorem retiredProgram_exec (ports : CyclicComplexCallerLayout T) (dst : Fin T)
   have hvolume : word.length ≤ (cstream A W (Fs.map (packedInterval a n)).flatten).length := by
     rw [length_cstream,packedBatch_length a n Fs (by omega)]
     exact hcert.length_le (by omega)
-  refine ⟨J,L,v₁,v₂,C,F,R,G,n₁,_,word,hu₂.trans hu₁,hseed,hprofile,he₁,rfl,?_,
+  refine ⟨J,L,v₁,v₂,C,F,R,G,n₁,_,word,hu₂.trans hu₁,hseed,hfactorValues,hprofile,he₁,rfl,?_,
     Nat.add_le_add hn₁ (exportClearRegisterBankCost_le ports.bank 850 dst hdst R),
     hwhole,Exec.seq he₁ he₂,?_,hclean,?_,hcert,hstreamsG,hleft,hfinal,hcert.length,hcert.length_le (by omega),hvolume,?_,?_⟩
   · intro depth

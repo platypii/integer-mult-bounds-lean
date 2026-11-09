@@ -2,6 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellComputedRecoverySharedPostprocess
 public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellRawHeaderPolynomial
+public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellRecoverySeedCopyLedger
 
 /-! Polynomial bounds for the actual ordinary master generation and sparse
 seed/header setup, before summing the class setup allowance. -/
@@ -14,13 +15,6 @@ open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2
   IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
   IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 variable {A s : ℕ} [NeZero s]
-
-private theorem recoverySeedCopyCost_zero_eq (H : ReplicaHaloProblem s) (W : ℕ) :
-    recoverySeedCopyCost H W 0 = 4*(List.ofFn (recoveryMasterValues H)).sum+4*H.p+4*W+53 := by
-  simp [recoverySeedCopyCost,recoverySeedHeaderPorts,complexRecoveryHeaderPorts,derivedRecoveryHeaderPorts,
-    recoverySeedHeader,complexRecoveryHeader,generatedRecoveryHeader,replicaFactoryHeaderValue,
-    recoveryMasterValues,masterHeaderValues,List.ofFn_succ]
-  ring
 
 private theorem recoveryMasters_sum_le (r : PackedNormalizedJob A s) (Z : ℕ)
     (hZ : 1 ≤ Z) (hp : r.p ≤ Z) (hu : r.u ≤ Z) (hl : r.l ≤ Z) (htarget : r.targetOut ≤ Z)

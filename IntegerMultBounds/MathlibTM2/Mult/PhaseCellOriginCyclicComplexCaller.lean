@@ -73,6 +73,10 @@ theorem originProgram_exec (ports : CyclicComplexCallerLayout T) (dst : Fin T)
     ∃ (J L : ReplicaHaloProblem s) (C F R : Stacks T A) (vstart vm v' : HS T Q A U) (readSteps runSteps steps : ℕ)
       (word : List (Fin (A+4))),
       v'.user = v.user ∧
+      CyclicFactorSeedInput p l s t u solveTarget a n []
+        (embStk (ports.small ∘ CyclicReplicaPlacement.factorReg) F) ∧
+      (∀ i, (C.R (cachedFactorSeedSource (ports.small ∘ CyclicReplicaPlacement.left.plan.gather) ports.span i)).length =
+        cyclicFactorMasterValues p l s t u solveTarget a n i) ∧
       CyclicSecondInteriorProfile H K J L p solveTarget B.card ∧
       Exec body (readRecoverySeedEndpoints width ports.span origins binary ports.seedL work readerSaved readerTmp)
         (Host.mk v S) readSteps (Host.mk vstart E) ∧
@@ -132,7 +136,7 @@ theorem originProgram_exec (ports : CyclicComplexCallerLayout T) (dst : Fin T)
     exact ⟨(hblank i).1,(hstable _ (.inl ⟨i,rfl⟩)).trans (hblank i).2⟩
   have hscalar (r : Fin T) (hr : r ∈ [ports.archive,ports.count,ports.span,ports.saved,ports.tmp,dst]) :
       E.R r = S.R r := hstable r (.inr (.inr (.inr hr)))
-  obtain ⟨J,L,vm,vf,C,F,R,G,runSteps,numericalSteps,word,huf,hseed,hprofile,heRun,hsteps,hcleanup,
+  obtain ⟨J,L,vm,vf,C,F,R,G,runSteps,numericalSteps,word,huf,hseed,hfactorValues,hprofile,heRun,hsteps,hcleanup,
     htime,hretiredWithin,heNumerical,hword,hclean,harchive,hcert,hstreams,hleft,hfinal,hlen,hvol,hpayload,hstock,hframe⟩ :=
     ports.retiredProgram_exec (body := body) dst hdst harchiveDst hR hQ hA axis ha hn hleftRoom hrightRoom
       coreWidth k radius hleft haCore hnCore hright Fs hF W hW hWin vi E tail hbank
@@ -184,7 +188,7 @@ theorem originProgram_exec (ports : CyclicComplexCallerLayout T) (dst : Fin T)
     simpa only [hHspan,hHorigin,E,recoverySeedEndpointState] using heRead
   have hwhole := execWithin_seq_two_budget body _ _ _ _ _ _ _ 0 _ _ hreaderWithin hretiredClear
   refine ⟨J,L,C,F,R,vi,vm,v',m,runSteps,m+(numericalSteps+(2*(a+(a+n))+5)),word,
-    hu'.trans (huf.trans hui),hprofile,hread,heRun,?_,
+    hu'.trans (huf.trans hui),hseed,hfactorValues,hprofile,hread,heRun,?_,
     hwhole,Exec.seq hread (Exec.seq heNumerical heClear.toExec),hcert,hpayload⟩
   have hm' : m ≤ readSupplierEndpointsCost V a n := by simpa only [hHspan,hHorigin] using hm
   have hb := Nat.add_le_add hm' (Nat.add_le_add_right htime (2*(a+(a+n))+5))
