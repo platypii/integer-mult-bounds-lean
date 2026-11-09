@@ -4128,6 +4128,72 @@ that a once-per-class `T` can be charged once across all classes. Ordinary
 metadata/scalar initialization, outer routing/fallback, tensor/locality and
 root/compiler S4 acceptance remain open. No push.
 
+**Free dyadic charge discharged on actual polynomial-width class execution.**
+`selectedExposedFittingCyclicClass_bounded_exec` now reuses
+`selectedPolynomialCoreRouteCharge_le` directly. It derives the replica-exponent
+bound from `gather.hreplicaPower` and `Fs.length ≤ T`, and derives the logarithmic
+quotient condition from the explicit polynomial bound on core width. Its time
+conclusion now contains the manuscript's dimension/axis charge
+`432*routeCoefficient*sourceVolume*d*(ell^tau+1)` instead of a free
+`dyadicRouteCharge`. The original generic exposure theorem retains the raw
+producer bill for frequency accounting. Final single-file check peaks at
+3658.6 MiB; integration passes (17116 jobs, 4.8 GiB aggregate).
+A possible generic two-length sum helper was checked, then removed: the existing
+`selectedAmortizedGatherSchedule` already proves the selected p^8 schedule has
+one nonempty full-width fitting class and an empty clipped class, and partitions
+the remaining work into at most three seam cores. Reuse that exact schedule
+rather than adding a new class-loop abstraction or paying two shared bills.
+Next instantiate the completed exposed fitting run at that full-width class,
+connect its ordinary setup to the outer axis schedule, and execute the existing
+full-period/seam group. Across axes, shared setup must still be charged at its
+actual frequency; the one-class result does not justify a global once-only `T`.
+Full S4 remains open; no push or small new commit.
+
+**Manuscript-selected bulk run now instantiated.**
+`selectedAmortizedExposedFittingCyclicClass_exec` fixes the p^8 amortized core
+width, actual locality depth/radius, full fitting length and standard
+`inverseCallerWordWidth`. It reuses `selectedAmortizedCoreCallerGeometry` and
+`selectedAmortizedCoreGeometry` to discharge width, cell-length, preparation,
+interval-room and fitting-length gates. `InverseMasterInput.ofCuts` supplies
+all scalar-generator binary room and eight-value fit proofs uniformly over
+actual intervals, rather than repeated metadata cases.
+`coreGather_cyclicWindow_eq` proves that the executed fitting cyclic vertices
+are exactly the locality interface's generated halo; the selected run now
+instantiates locality target `target` and discharges that equality internally.
+Its output certificate is indexed directly by `coreBulkIndices`, using the
+existing selected singleton schedule's equality. The physical exposed program,
+exact restoration, bounded routing/source time and `47*T` plus linear peak
+space remain the same. Checks peak at 1866.0 MiB (window geometry) and 3658.8 MiB
+(selected bulk run). Next connect ordinary scalar/binary metadata initialization
+and review the actual full-period lifecycle for the at-most-three seam cores;
+any remaining grid/execution suppliers in older full-line interfaces must be
+discharged, not inherited as final assumptions. Then compose the outer axis
+schedule and pay shared setup at actual frequency. Full S4 remains open;
+no push or small new commit.
+
+**Closed full-period/seam execution and selected resources checked.**
+The older full-line lifecycle already constructs its bank and executes the
+numerical dispatcher; its extra premises were generic caller/body push bounds,
+not an execution supplier. `placedSeamProgram_exec` now runs the existing solve,
+up-to-three crops and retirement with `Empty` procedures, takes the fixed closed
+program's own `closedGridPush`, and transports the exact owned-output trace
+through `exec_emb_owned_update_within`. No caller-body push certificate is
+required. The mathematical solution/inverse premises and ordinary physical
+`FullLineInputPlan.Ready`/crop readiness remain explicit.
+`selectedClosedSeamCosts_le` derives `GridDispatchReady` from ordinary scalar/RHS
+bounds through `fullLineGridRecord_ready`, reuses the existing selected lifecycle
+time/stock estimates, and adds crop traffic linearly. `selectedPlacedSeamProgram_exec`
+applies those comparisons to the same placed execution, returning exact full
+output, certified seam rows and exact scratch restoration. The fixed program
+push coefficient is explicit, independent of runtime inputs.
+Checks peak at 3383.5 MiB (closed placement), 3400.2 MiB (selected costs), and
+3400.1 MiB (selected placed execution); combined bulk/seam integration passes
+(17167 jobs, 3.5 GiB aggregate). Next instantiate seam indices with the existing
+selected at-most-three full-period group, establish the common output accuracy
+interface with bulk publication (including replica order/word width), and compose
+the two physical runs using their exact output-only frames. Ordinary metadata
+initialization and outer-axis/fallback/compiler S4 gates remain open. No push.
+
 **First acceptance target: one complete fitting batch.** From declared original
 complex streams and ordinary scalar headers, execute component production,
 prepare numerical data, reuse it across the batch, publish certified complex

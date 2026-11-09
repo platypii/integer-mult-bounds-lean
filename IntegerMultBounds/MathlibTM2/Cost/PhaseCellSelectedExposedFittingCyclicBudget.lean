@@ -3,6 +3,7 @@ module
 public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedExposedFittingCyclicClass
 public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedGeometryRealGatherBudget
 public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedCyclicClassOriginSetup
+public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedCoreWidthCharge
 
 /-! Execute one fitting class with the concrete generated callback. Ordinary
 headers and blank workspace survive each iteration; numerical seeds do not. -/
@@ -19,7 +20,7 @@ open IntegerMultBounds.Networks.Shared50ModularControl (prime)
 variable {T Q K : ℕ} {P U : Type} {body : P → Pr P T Q (prime+K) U}
 
 theorem selectedExposedFittingCyclicClass_bounded_exec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 ≤ prime+K)
-    (ct cW cV cZ cG cD : ℕ) (hcZ : 1 ≤ cZ)
+    (ct cW cV cZ cG cD cCore eCore : ℕ) (hcZ : 1 ≤ cZ)
     (hstates : FixedStreamedBank.stateCount ≤ Q) :
     let b := 8*executionPush (A := (prime+K)) (U := U) hR hQ+1
     ∃ B₀ : ℝ, 0 ≤ B₀ ∧ ∀ᶠ m : ℕ in atTop, ∀ (_h : Sizes.Big m) (i : Fin (Sizes.d m)) [NeZero (Sizes.s m i)],
@@ -74,6 +75,8 @@ theorem selectedExposedFittingCyclicClass_bounded_exec (hR : rpStates ≤ Q) (hQ
       (gather : GeometryRealGatherData (Q := Q) Vg s coreWidth radius n W replicasBits D Fs borrowed S),
     Vg ≤ cG*p → D ≤ cD*p →
     D ≤ 2^replicasBits*2^Nat.clog 2 jobs.length*(n*W) →
+    Fs.length ≤ Sizes.T m → coreWidth ≤ cCore*p^eCore →
+    n ∈ coreGatherLengths s coreWidth radius →
     gather.route (PackedTranspose.extra 1) = ports.archive →
     ports.ClassReady g width binary work readerSaved readerTmp B p u l target s t W V Fs.length n radius (n-2*radius) S →
     S.R count = [] → S.R saved = [] →
@@ -86,8 +89,8 @@ theorem selectedExposedFittingCyclicClass_bounded_exec (hR : rpStates ≤ Q) (hQ
     (∀ j : Fin 117, j.val < 31 → S.R (e j) = []) → S.R (e 104) = [] → S.R (e 106) = [] →
     ∃ v', ∃ steps : ℕ, ∃ outputs, v'.user = v.user ∧
       (steps : ℝ) ≤ (coreExposureTrafficFactor cG cW+6013 : ℕ)*(Fs.length*s*W : ℕ)+
-        24*(generatedDyadicStageCoeff FixedStreamedBank.tapeCount 6 1+300)*
-          (Fs.length*s*W : ℕ)*dyadicRouteCharge replicasBits (Nat.clog 2 jobs.length)+
+        432*(generatedDyadicStageCoeff FixedStreamedBank.tapeCount 6 1+300)*
+          (Fs.length*s*W : ℕ)*Sizes.d m*((Sizes.ℓ m : ℝ)^Parameters.tau+1)+
         (8*(b : ℝ)+5)*(Sizes.T m : ℝ)+B₀*(2*(Fs.length : ℝ)+1)*
         ((t : ℝ)*(1+(PhaseCellBand.width p u : ℝ)^2/(Sizes.d m : ℝ)))*(p : ℝ)^(129/128 : ℝ) ∧
       List.Forall₂ (fun k word => PackedNormalizedOutput p W target coreWidth k localityTarget Fs.reverse Y word) jobs outputs ∧
@@ -104,13 +107,13 @@ theorem selectedExposedFittingCyclicClass_bounded_exec (hR : rpStates ≤ Q) (hQ
     hR hQ hA ct cW cV cZ hcZ
   refine ⟨B₀,hB₀,?_⟩
   filter_upwards [hraw,selectedGeometryRealGatherCosts_le (T := T) (K := K) hstates cG cD cW,
-    selectedCyclicClassOriginSetup_le cV] with m hraw hgather horigin
+    selectedCyclicClassOriginSetup_le cV, selectedPolynomialCoreRouteCharge_le cCore eCore] with m hraw hgather horigin hrouteCharge
   intro h i _ ports g dst width origins binary work readerSaved readerTmp count saved
     hwireL hwireR hfixed hdst harchiveDst hmastersDst hreg hreader hretained hprotected hcounter hconsume
     B u target n coreWidth depth W V α d axis hn hw hwidth hguard hcell hprepare
     hu htarget hB hl htargetMax hbandMax hbandRoom hgeometryRoom hrooms hprecisionRoom hvaluesFit
     Fs hF hW hWin hWmax hVmax hfit localityTarget qRef Y hqRef hwindow hY
-    v S borrowed Vg replicasBits D gather hVg hD hrouteFit harchive ready hcountBlank hsaved
+    v S borrowed Vg replicasBits D gather hVg hD hrouteFit hreplicaVolume hcorePoly hlengthGroup harchive ready hcountBlank hsaved
     e he h109 h116 hwide hnfit hV hmetaOff htableOff h37 hs hcw hr hnSrc hz hblank h104 h106
   let p := Sizes.p m
   let s := Sizes.s m i
@@ -134,7 +137,17 @@ theorem selectedExposedFittingCyclicClass_bounded_exec (hR : rpStates ≤ Q) (hQ
       (coreExposureTrafficFactor cG cW+6013 : ℕ)*(Fs.length*s*W : ℕ)+
       24*(generatedDyadicStageCoeff FixedStreamedBank.tapeCount 6 1+300)*
         (Fs.length*s*W : ℕ)*dyadicRouteCharge replicasBits (Nat.clog 2 jobs.length) at hgTime
-    linarith only [htime,hoR,hgTime]
+    have hreplicaBits := selectedReplicaExponent_le h replicasBits
+      (by rw [←gather.hreplicaPower] ; exact hreplicaVolume)
+    have hcharge := hrouteCharge h i replicasBits coreWidth radius n
+      hreplicaBits hw hcorePoly hguard hlengthGroup
+    have hnonneg : 0 ≤ 24*(generatedDyadicStageCoeff FixedStreamedBank.tapeCount 6 1+300)*
+        (Fs.length*s*W : ℕ) := by
+      have := IntegerMultBounds.MathlibTM2.Node.swapConst_pos
+      unfold generatedDyadicStageCoeff
+      positivity
+    have hchargeBill := mul_le_mul_of_nonneg_left hcharge hnonneg
+    nlinarith only [htime,hoR,hgTime,hchargeBill]
   · have htotal : gather.stockAllowance+(3*preparedCoreOriginsCost V s coreWidth radius n+
         (fittingCyclicWorkspaceTrafficFactor (A := (prime+K)) (U := U) hR hQ ct cW*Fs.length*t*p+45*Sizes.T m)) ≤
         (3*coreExposureTrafficFactor cG cW+12+
