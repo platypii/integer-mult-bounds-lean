@@ -32,6 +32,25 @@ theorem CachedReplicaPassInput.of_reindex_view {T T' : ℕ} {H : ReplicaHaloProb
     simpa only [CachedReplicaPassPlacement.reindex,ReplicaCouplingPlacement.reindex_bank,embStk_R]
       using h.couplingWork i hi
 
+/-- Read a physical input contract back through the same placement. Together
+with `of_reindex_view`, this lets callers compose through bank views. -/
+theorem CachedReplicaPassInput.of_reindex {T T' : ℕ} {H : ReplicaHaloProblem s}
+    {job : CachedReplicaPassPlacement T} {buffers : ReplicaLoopBuffers A}
+    {e : Fin T → Fin T'} {he : Function.Injective e} {F : Stacks T' A}
+    (h : CachedReplicaPassInput H (job.reindex e he) buffers F) :
+    CachedReplicaPassInput H job buffers (embStk e F) := by
+  refine ⟨h.headers.of_gather_view rfl,h.bank,h.cache,h.solverFresh,h.input,h.outputStream,
+    h.savedGather,h.keys,h.destination,h.gatherFresh,?_,?_,?_⟩
+  · intro i hi
+    simpa only [CachedReplicaPassPlacement.reindex,ReplicaCouplingPlacement.reindex_bank,embStk_R]
+      using h.couplingBlank i hi
+  · intro i hi
+    simpa only [CachedReplicaPassPlacement.reindex,ReplicaCouplingPlacement.reindex_bank,embStk_R]
+      using h.couplingFresh i hi
+  · intro i hi
+    simpa only [CachedReplicaPassPlacement.reindex,ReplicaCouplingPlacement.reindex_bank,embStk_R]
+      using h.couplingWork i hi
+
 noncomputable def generatedCachedReplicaInput (H : ReplicaHaloProblem s)
     (inp : List (Bool ⊕ Bool)) (out : List Bool) : Stacks 300 A :=
   embStk (Fin.castLE (by decide : 300 ≤ 392)) (generatedRecoveryInput H inp out)

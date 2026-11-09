@@ -160,7 +160,9 @@ theorem prepareCyclicFactorInput_placed_exec {T p l s t u target a n : ℕ} [NeZ
       CyclicResidualBatchInput p l s t u target a n tail [] (embStk (bank ∘ CyclicReplicaPlacement.factorReg) G) ∧
       CachedReplicaPassInput H (CyclicReplicaPlacement.left.reindex bank hbank) buffersL G ∧
       CachedReplicaPassInput K (CyclicReplicaPlacement.right.reindex bank hbank) buffersR G ∧
-      (∀ k, (∀ i, bank (CyclicReplicaPlacement.factorReg i) ≠ k) → G.L k = S.L k ∧ G.R k = S.R k) := by
+      (∀ k, (∀ i, bank (CyclicReplicaPlacement.factorReg i) ≠ k) → G.L k = S.L k ∧ G.R k = S.R k) ∧
+      (∀ i : Fin 234, 154 ≤ i.val → G.R (bank (CyclicReplicaPlacement.factorReg i)) =
+        S.R (bank (CyclicReplicaPlacement.factorReg i))) := by
   let e := bank ∘ CyclicReplicaPlacement.factorReg
   obtain ⟨vf,F,m,hu,hm,hex,hinput,hI,hO,hL,hhigh⟩ := prepareCyclicFactorInput_exec
     (body := fun f : Empty => nomatch f) hst ha hn hband (embDn e v) (embStk e S) tail seed
@@ -168,7 +170,7 @@ theorem prepareCyclicFactorInput_placed_exec {T p l s t u target a n : ℕ} [NeZ
     (hbank.comp CyclicReplicaPlacement.factorReg_injective) (fun f => nomatch f) hex v rfl S rfl
   have hin : G.inp = S.inp := (congrArg (fun B : Stacks 234 A => B.inp) hview).trans hI
   have hout : G.out = S.out := (congrArg (fun B : Stacks 234 A => B.out) hview).trans hO
-  refine ⟨v',G,m,hu'.trans hu,hm,?_,?_,?_,?_,hoff⟩
+  refine ⟨v',G,m,hu'.trans hu,hm,?_,?_,?_,?_,hoff,?_⟩
   · exact hex'
   · rw [hview]; exact hinput
   · apply hleft.of_frame hin hout
@@ -197,5 +199,8 @@ theorem prepareCyclicFactorInput_placed_exec {T p l s t u target a n : ℕ} [NeZ
     change 600+i.val = 300+j.val at hv
     have := j.isLt
     omega
+
+  · intro i hi
+    exact (congrArg (fun B : Stacks 234 A => B.R i) hview).trans (hhigh i hi)
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

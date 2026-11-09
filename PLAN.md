@@ -45554,3 +45554,112 @@ Classical.choice and Quot.sound (temporary audit peak 9581.5 MiB). Collect the
 verified routed input, injected two-bank preparation, cyclic page adapter and
 retained-master seed installer in one larger local checkpoint; exclude the
 unrelated periodic-recovery and workspace drafts. Full S4 remains open.
+
+`PhaseCellPrepareCyclicFactorFromCached` composes retained-master installation
+and computed boundary-page preparation into one physical program. The seed bank
+is an output witness of the first executed stage, not a caller premise. The
+endpoint returns the complete `CyclicResidualBatchInput`, preserves both cached
+input contracts, and preserves both stack sides outside factor storage. One
+structural helper transports arbitrary cached ownership through a disjoint
+factor frame; no left/right register cases are repeated.
+
+The placed page producer additionally retains its high-register frame. The
+composed endpoint derives that factor controls 226 and 229 are empty from the
+produced seed bank, matching the existing numerical core's two extra freshness
+premises. Page construction's actual intermediate-state cost remains explicit
+for subsequent ledger composition. The full pilot still needs numerical-core
+composition (including its ordinary normalization/publication controls) and
+same-execution sharp space. Full S4 remains open; no push or new small commit.
+The strengthened placed-page producer passes at 3592.4 MiB, and the composed
+cached-to-factor module passes at 3400.1 MiB. Integration with the executed
+complex core passes (15939 jobs, 3.5 GiB aggregate peak). The composed endpoint
+audits to only propext, Classical.choice and Quot.sound (temporary audit peak
+9579.7 MiB). Keep this work for the next larger local checkpoint.
+
+`PhaseCellCyclicComplexCoreInput` gives the existing numerical endpoint one
+named entry state, proved equal to its historical extension/normalization/crop
+constructor chain. An executed three-header installer copies ordinary output
+width, crop radius and core length into physical registers 906–908, establishes
+that exact entry view, and preserves external storage. Its exact time is
+4*(W+radius+core)+13. Guarded check: 3345.6 MiB.
+
+`PhaseCellCyclicComplexCoreCaller` now executes the actual cyclic complex core
+under arbitrary injective placement in an outer caller. It returns the existing
+`PackedNormalizedOutput` certificate, the produced second-interior profile,
+published output on register 850, empty source 848, the named complete fitting
+time allowance, and both-sided framing outside the numerical bank. This reuses
+the existing manuscript/locality result and time-ledger equality, rather than
+copying their proofs or exposing internal recovery witnesses to the class loop.
+An initial definitional comparison of width ledgers hit default heartbeats;
+normalizing the explicit width equality before comparison fixes it with no
+limit changes. Guarded module check passes at 3492.9 MiB.
+
+Next compose the produced cached/factor inputs with the executed control
+installer and this placed numerical endpoint, then move the published word out
+and release private bank storage for the actual class scan. The end-to-end
+fitting pilot, same-execution sharp peak space, outer/fallback/full S4 acceptance
+remain open. Nothing pushed; collect this work in a later larger checkpoint.
+Core-caller/factor-preparation/fitting-input integration passes (16391 jobs,
+3.5 GiB aggregate peak). Both the ordinary control installer and placed
+numerical execution endpoint audit to only propext, Classical.choice and
+Quot.sound; temporary audit peak 9769.3 MiB.
+
+The generic cached-input placement language now supports reading a physical
+contract back through its bank view (`CachedReplicaPassInput.of_reindex`),
+complementing the existing forward view transport. This removes the need to
+re-prove internal cached readiness when the produced outer state enters the
+numerical kernel. Guarded check: 3307.0 MiB.
+
+`PhaseCellPreparedCyclicComplexCore` composes ordinary width/crop control
+installation with the actual placed cyclic complex-core execution. Its premises
+are the physical cached/factor contracts already returned by the preparation
+stages, ordinary scalar source headers, and fresh added workspace. It derives
+the historical kernel entry layout by executing the copier; callers no longer
+supply that canonical entry-state equality. The endpoint returns the existing
+`PackedNormalizedOutput`, actual second-interior profile, output/source port
+facts, exact three-header setup allowance plus named numerical time allowance,
+and preserved external storage. Guarded check passes at 3488.3 MiB.
+
+Next join routed cached-input and retained-master factor preparation to this
+execution, export the output word, and retire the entire private bank for class
+iteration. The existing numerical endpoint does not yet provide that whole-bank
+retirement contract. Sharp same-execution space and remaining full S4 acceptance
+remain open. Nothing pushed; retain this work for a larger local checkpoint.
+Prepared-core/factor-preparation/fitting-input integration passes (16392 jobs,
+6.0 GiB aggregate peak). The new inverse placement transport and composed
+prepared numerical execution audit to only propext, Classical.choice and
+Quot.sound (temporary audit peak 9770.5 MiB).
+
+`PhaseCellFactoredCyclicComplexCore` joins retained-master factor preparation
+to ordinary control installation and numerical execution. The actual cyclic
+constructor supplies master alignment; physical source separation is derived
+from the bank layout and an external span word. No factor seed/page, numerical
+factor input, or extra factor-control freshness is supplied. The combined bill
+retains the produced seed state for its page cost. Guarded check: 3509.6 MiB.
+
+`PhaseCellFittingCyclicComplexCaller` now joins the routed complex-input producer
+to that execution. `CyclicComplexCallerLayout` packages only fixed register
+placement and separation, independently of tape contents or analytic data; it
+has a concrete consumer immediately. The actual `program_exec` starts from one
+routed complex interval batch, ordinary seed/width/span headers and a fresh
+private 909-register bank. It produces both cached banks, factor seeds/page,
+ordinary crop controls and actual certified complex-core publication in one
+execution. It consumes exactly the class prefix, preserves the remaining class
+archive, returns `PackedNormalizedOutput` and the produced second-interior
+profile, and preserves external registers other than the consumed class source.
+Its time bill includes input movement/conversion, seed copying/page generation,
+three control words and the named complete numerical bill. Guarded check passes
+at 3522.3 MiB.
+
+This closes the functional routed-batch-to-numerical-publication connection.
+It is not yet the complete fitting-batch acceptance target: export the word and
+retire the private bank, establish sharp same-execution space and the uniform
+bound for the added preparation bill, then instantiate the actual class scan
+and shared original-archive exposure. Full S4 fallback, grouped exposure,
+locality/tensor/root/compiler gates remain open. No push.
+Routed fitting-caller/shared-exposure integration passes (16727 jobs, 3.6 GiB
+aggregate peak). The factor-to-output endpoint and complete routed-batch
+execution audit to only propext, Classical.choice and Quot.sound; temporary
+audit peak 9779.3 MiB. Collect this verified input/factor/control/numerical
+composition in one larger local checkpoint, excluding unrelated periodic and
+workspace drafts. No push; full S4 remains open.
