@@ -3901,6 +3901,57 @@ polynomials without a failed caller inequality. Keep `amortizedCoreWidth` and
 its checked geometry. Implementation has resumed; commits should be larger
 coherent checkpoints and nothing is pushed without an explicit user request.
 
+**Origin-reader integration checkpoint.**
+`PhaseCellReadCyclicSeedEndpoints` now transports the six static scalar inputs
+through one retained-register frame, and executes the existing origin reader
+into `source 6` and `source 7`. `read_endpoints_exec` returns actual time/space,
+exact queue/endpoints state, and `CyclicSeedLayout.Ready` for the generated
+callback. Its guarded single-file check passes at 3402.0 MiB. Next compose this
+reader with `generatedProgram_exec`, clear the two ordinary source endpoints,
+and transfer selected accounting before applying the class scan. This does
+not yet establish a complete origin callback or fitting-class acceptance.
+
+`PhaseCellReadRunRetire.readRunRetire_exec` now structurally composes that
+reader, an arbitrary consuming callback and generic two-header cleanup. It
+preserves the callback's actual time/reserve witnesses and a certificate that
+may relate them to numerical witnesses, rather than requiring uniform bounds
+before composition. Final state is exactly the original state with origin and
+payload queues consumed and output appended. Cleanup adds no space reserve.
+The final guarded check passes at 3410.6 MiB, with default proof limits. Next
+instantiate this combinator with `generatedProgram_exec`, preserve its numerical
+witnesses for selected comparisons, then run the actual class scan. The
+combinator alone does not discharge the numerical callback premise.
+
+**Generated origin execution now composed.**
+`generatedOriginProgram_exec` instantiates the reader/run/retirement combinator
+with the actual `generatedProgram_exec`. Its inputs are ordinary scalar headers,
+a binary origin queue, original packed complex payload, empty workspace and
+explicit geometry/layout assumptions. It produces certified output and exact
+restoration except origin/payload consumption and output append. Both numerical
+master banks and the two scalar endpoint words are retired. Actual seed/factor
+states, second-interior profiles, combined runtime and workspace are retained
+as witnesses for selected comparisons; no callback-execution supplier remains.
+The guarded single-file check passes at 3546.1 MiB; integration builds through
+the new endpoint (16582 jobs, 3.6 GiB aggregate). A temporary axiom audit reports
+only propext, Classical.choice and Quot.sound (9827.1 MiB nonmodule audit).
+Next pay per-origin master generation/retirement using the existing raw-header
+polynomial, transfer selected callback bounds, and instantiate the class scan.
+The existing preseeded `44*T` result must not be claimed for this new callback
+until its additional generation reserve is absorbed. Full S4 remains open.
+
+**Generated-master setup allowance checked.**
+`cyclicSeedCosts_poly` reuses `inverseHeaderCosts_poly` to bound the exact
+`CyclicSeedLayout.timeCost` plus ten-master retirement, and the exact generator
+workspace, by one ordinary-dimension cubic. No numerical scalar certificate
+is assumed. `selectedCyclicSeedScheduleTime_le` pays that extra time over every
+actual class callback (up to `2*t` calls) using the existing distinct-core setup
+theorem; `selectedCyclicSeedWorkspace_le` absorbs the extra callback reserve in
+one `T`, independently of replica count. Guarded individual checks peak at
+3434.1/3453.2 MiB; integration with the generated origin caller passes (16585
+jobs, 3.5 GiB aggregate). Next apply these to the complete callback's ledger
+and combine the existing fitting `43*T` and reader `T` bounds, then instantiate
+the class scan. These component setup bounds do not establish the scan.
+
 **First acceptance target: one complete fitting batch.** From declared original
 complex streams and ordinary scalar headers, execute component production,
 prepare numerical data, reuse it across the batch, publish certified complex
