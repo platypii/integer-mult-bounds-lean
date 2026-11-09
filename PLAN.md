@@ -45323,3 +45323,110 @@ complex-input/component/header production/callback integration, then seam/full
 fallback, grouped exposure/metadata and final locality/tensor/support/compiler
 acceptance. Collect this verified named-budget/publication/full-time work in
 one larger local checkpoint. Nothing pushed.
+
+The full fitting theorem now bounds actual scheduled step counts directly.
+`selectedActualFittingCyclicComplexCore_time_le` accepts each core's step
+allowance against the exact composed execution bill and concludes the same
+sharp bound for the sum of steps over the computed fitting class. The previous
+cost-only statement is generalized in place rather than duplicated; a generic
+structural list monotonicity proof transfers the verified bill equality.
+Guarded check passes at 3515.5 MiB. Next package the explicit RHS into the
+uniform bound needed for outer class/prefix scheduling and discharge those
+actual multiplicities. Execution-wide peak space, original-input production/
+callbacks, fallback/grouped exposure and final S4 acceptance remain open.
+No push.
+
+Reviewed the existing outer time estimates: their sparse numerical shape is
+axisGapVolume_le's t*(1+band^2/d), so retain that established density language.
+`cyclicComplexTimeEnvelope_le` now absorbs all explicit fitting ledger constants,
+linear precision traffic and output-width terms into one uniform coefficient.
+The actual scheduled-step theorem is simplified in place to
+5*T + A*(replicas+1)*(s+(t-s)*band^2)*p^(129/128), with A depending only on fixed
+target/storage-width constants. Its proof reuses p≤p^(129/128); no new analytic
+estimate or exponent relaxation is introduced. Removed unused exposed width
+alias. Guarded theorem check passes at 3513.4 MiB; scalar helper at 983.4 MiB.
+Next apply existing selected axis-gap density conversion and actual outer
+class/prefix accounting. Full S4/peak-space/input/fallback/final gates remain
+open. No push.
+
+The full fitting step theorem now uses the existing selected axis-gap density:
+5*T + A*(replicas+1)*t*(1+band^2/d)*p^(129/128). The conversion reuses
+axisGapVolume_le without weakening the numerical exponent. Guarded check:
+3517.4 MiB.
+`selectedActualFittingCyclicLengthClasses_time_le` sums actual steps over both
+computed proper-core length classes, deriving their count from
+coreGatherLengths_length. It charges ten T setup reserves and twice the
+numerical rate; no class count or per-class cost suppliers remain beyond the
+actual per-core execution allowances. Guarded check: 3493.5 MiB.
+Next account for actual outer prefix/axis replica multiplicities and attach
+class movement/control costs, then execution-wide sharp peak space and original
+input/callback/fallback/final S4 gates. S4 remains open. No push.
+
+Outer audit confirms `fusedAxesProgram` still has preparation/routing/tensor-
+return suppliers, and its numerical callback currently targets the older raw
+caller interface. Do not count its syntax as an execution theorem for the new
+909-tape cyclic core.
+`selectedSourceTensorLineVolume_le` now derives the actual source-line count
+(product of all other source dimensions) times target-axis length ≤ T, reusing
+mathlib product monotonicity/erase identities and selected prod_t. Source lines
+are positive from the actual source prime theorem.
+`selectedCyclicComponentLineVolume_le` accounts for both real components plus
+the fixed unit in the fitting rate by three T volumes.
+`selectedFittingCyclicTensorDensity_le` reuses the existing tensor density sum
+and band-square estimate to aggregate these real multiplicities, with shared
+setup explicitly paid per axis. Guarded check passes at 1871.0 MiB. This is
+verified cost composition conditional on axis costs, not missing routing/
+callback execution. Next connect the actual cyclic callback and ordinary input
+producers to the outer stage invariant; peak space, fallback and final S4
+acceptance remain open. No push.
+
+`generatedCachedReplicaInput_ready` now adapts the existing generated ordinary
+392-tape recovery input to the standard 300-tape cached-pass bank. It reuses
+`generatedRecoveryInput_headers` and the generic gather-view transport, deriving
+all native/extra freshness and saved-bank conditions from existing input-bank
+facts. Guarded check passes at 3301.5 MiB. This eliminates readiness suppliers
+for this explicit canonical bank; it is not yet an executed producer from a
+single original complex archive. Next transport the adapter to both physical
+cyclic placements and connect the existing complex-component/normalization and
+ordinary header producers. Outer routing/callback, peak space, fallback and
+full S4 acceptance remain open. No push.
+
+The cached input bridge now supports arbitrary injective reindexing through a
+complete stack view. `generatedCyclicReplicaInput` assembles both ordinary
+cached inputs in the physical 834-register layout beside an arbitrary factor
+bank. Structural view proofs establish left/right readiness simultaneously and
+preserve the factor bank exactly, including shared I/O; no register enumeration
+or new numerical assumptions are used. Guarded full-file check passes at
+3306.9 MiB. This is a state/readiness bridge, not an executed original-input
+producer. Existing complex expansion and precision-normalization producers use
+392-register scratch layouts (notably counter 390); their placement must not
+alias the second 300-register bank. Next reuse their execution contracts with a
+separate scratch placement or adapt their finite register support before
+composing the actual fitting input producer. Full S4 remains open. Nothing
+pushed; retain this work for a larger coherent checkpoint.
+
+`PhaseCellPrepareCachedComplexInput` now executes the missing local input
+conversion by composing the existing complex expansion and precision-normalizing
+machines, then retiring counter 390. The placed endpoint returns actual cached
+readiness, proves every conversion scratch register (indices ≥300) empty, and
+preserves both stack sides outside its placement. Explicit left/right placements
+reuse temporary factor space before factor setup and avoid the opposite cached
+bank. `ordinaryCachedComplexInput_exec` additionally composes the existing seed-
+header installer and derived-header arithmetic: its premises are ordinary seed
+scalar headers and a packed complex interval archive, not prepared component or
+derived numerical banks. It accounts for header copying, derived-header work,
+component expansion, normalization and counter cleanup in the same execution.
+The complete module passes the guarded check at 3391.4 MiB.
+
+Still required for the complete fitting pilot: produce both interval archives
+from the single original complex archive, instantiate seed-header sources for
+actual cyclic jobs, prepare the cyclic factor input after conversion scratch is
+released, and compose the cyclic execution and sharp peak-space proof. The new
+endpoint is not yet that pilot or the outer routing/tensor execution. No push.
+Integration of ordinary cached input production, the executed cyclic complex
+core, computed length-class time bounds and tensor-density arithmetic passes
+(16372 jobs, 7.5 GiB combined peak). Both new placed/ordinary input execution
+endpoints audit to only propext, Classical.choice and Quot.sound; the temporary
+proof-only audit peaks at 9547.2 MiB. Collect these verified input bridges and
+outer fitting-cost compositions in one larger local checkpoint, excluding the
+periodic-recovery and generated-workspace drafts. Full S4 remains open.

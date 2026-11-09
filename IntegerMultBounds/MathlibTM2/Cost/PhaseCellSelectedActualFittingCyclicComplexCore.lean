@@ -3,6 +3,8 @@ module
 public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedActualFittingCyclicCaller
 public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedCyclicSecondInteriorBudget
 public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedCyclicPostprocess
+public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellCyclicComplexTimeEnvelope
+public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellAxisDensity
 import Mathlib.Tactic.Linarith
 
 /-! Compose every term of the executed fitting complex-core time allowance. -/
@@ -56,9 +58,17 @@ private theorem sum_three {ι : Type} (jobs : List ι) (f g h : ι → ℕ) :
   | nil => simp
   | cons k jobs ih => simp only [List.map_cons,List.sum_cons,ih]; omega
 
+private theorem sum_steps_le {ι : Type} (jobs : List ι) (steps cost : ι → ℕ)
+    (h : ∀ k ∈ jobs, steps k ≤ cost k) : (jobs.map steps).sum ≤ (jobs.map cost).sum := by
+  induction jobs with
+  | nil => simp
+  | cons k jobs ih =>
+    have hk := h k (by simp)
+    have hs := ih (by intro x hx; exact h x (by simp [hx]))
+    simpa only [List.map_cons,List.sum_cons] using Nat.add_le_add hk hs
+
 theorem selectedActualFittingCyclicComplexCore_time_le (ct cW : ℕ) :
-    let cw := 1032+8*ct
-    ∃ E C F : ℝ, 0 ≤ E ∧ 0 ≤ C ∧ 0 ≤ F ∧ ∀ᶠ n : ℕ in atTop, ∀ (h : Sizes.Big n)
+    ∃ A : ℝ, 0 ≤ A ∧ ∀ᶠ n : ℕ in atTop, ∀ (h : Sizes.Big n)
       (i : Fin (Sizes.d n)) [NeZero (Sizes.s n i)] {u : ℕ} {α d : ℝ},
       ∀ axis : RecoveryAxisBounds (Sizes.s n i) (Sizes.t n i) (Sizes.p n) u
         (haloInverseRingLog (Sizes.s n i) (Sizes.t n i)) α d,
@@ -86,27 +96,24 @@ theorem selectedActualFittingCyclicComplexCore_time_le (ct cW : ℕ) :
         (boundaryRecoveryTarget p (target+1)) (N k)) →
       2*p+13 ≤ W → W ≤ cW*p → ∀ fields : ℕ → ℕ,
       (∀ k ∈ jobs, fields k ≤ replicas) →
-      ((jobs.map (fun k => cyclicComplexCoreTimeCost (H k) (K k) p u l (Sizes.t n i)
+      ∀ steps : ℕ → ℕ,
+      (∀ k ∈ jobs, steps k ≤ cyclicComplexCoreTimeCost (H k) (K k) p u l (Sizes.t n i)
         (origin k) L target (q k) W (depth*band) (coreLength (Sizes.s n i) width k)
-        replicas (fields k))).sum : ℝ) ≤
-      5*(Sizes.T n : ℝ)+
-      4200*replicas*(Sizes.s n i : ℝ)*(cw*Sizes.p n+1 : ℕ)+
-      2800*(replicas+1)*(Sizes.s n i : ℝ)*(cw*Sizes.p n+1 : ℕ)+
-      800*((30*cw+50 : ℕ)*(replicas+1)*(Sizes.p n : ℝ)+
-        replicas*C*(Sizes.p n : ℝ)^(129/128 : ℝ))*
-          ((Sizes.s n i+(Sizes.t n i-Sizes.s n i)*band^2 : ℕ) : ℝ)+
-      680*(E+F)*replicas*((Sizes.s n i+(Sizes.t n i-Sizes.s n i)*band^2 : ℕ) : ℝ)*
-        (Sizes.p n : ℝ)^(129/128 : ℝ)+
-      7600*(replicas+1)*(Sizes.s n i : ℝ)*(cw*Sizes.p n+W+1 : ℕ) := by
-  dsimp only
+        replicas (fields k)) →
+      ((jobs.map steps).sum : ℝ) ≤
+      5*(Sizes.T n : ℝ)+A*(replicas+1)*
+        ((Sizes.t n i : ℝ)*(1+(band : ℝ)^2/Sizes.d n))*
+        (Sizes.p n : ℝ)^(129/128 : ℝ) := by
   let cw := 1032+8*ct
   let cV := (2*(16*20+8*cw+8*2+128)+426009)*cw
   obtain ⟨E,C,hE,hC,hcaller⟩ := selectedActualFittingCyclicCaller_time_le ct
   obtain ⟨F,hF,hsecond⟩ := selectedFittingCyclicSecondInteriorBudget_time_le 20 cw 20 cV
-  refine ⟨E,C,F,hE,hC,hF,?_⟩
+  let A : ℝ := 14600*((cw : ℝ)+cW+1)+800*(30*(cw : ℝ)+50)+800*C+680*(E+F)
+  refine ⟨A,by dsimp only [A]; positivity,?_⟩
   filter_upwards [hcaller,hsecond,selectedFittingCyclicPostprocess_time_le cw cW] with n hc hs hp
   intro h i _ u α d axis width depth L replicas target W hu htarget
-  intro hw hwidth hguard hcell hprepare H K J M hactual hprofile hW hWbound fields hfields
+  dsimp only
+  intro hw hwidth hguard hcell hprepare H K J M hactual hprofile hW hWbound fields hfields steps hsteps
   let p := Sizes.p n
   let l := haloInverseRingLog (Sizes.s n i) (Sizes.t n i)
   let band := PhaseCellBand.width p u
@@ -116,6 +123,31 @@ theorem selectedActualFittingCyclicComplexCore_time_le (ct cW : ℕ) :
   let stage := fun k => initialSchurTarget p u
     (boundaryTableBits p (boundaryRecoveryTarget p (target+1)) 2 (N k)) 2
   let q := fun k => executionPrecision p l (stage k) 2
+  have hp1 : (1 : ℝ) ≤ p := by exact_mod_cast (show 1 ≤ p by have := h.thirteen_le_p; dsimp only [p]; omega)
+  have hpow := Real.self_le_rpow_of_one_le hp1 (by norm_num : (1 : ℝ) ≤ 129/128)
+  have hvolume : (Sizes.s n i : ℝ) ≤ ((Sizes.s n i+(Sizes.t n i-Sizes.s n i)*band^2 : ℕ) : ℝ) := by
+    exact_mod_cast Nat.le_add_right (Sizes.s n i) ((Sizes.t n i-Sizes.s n i)*band^2)
+  have hWcast : (W : ℝ) ≤ (cW : ℝ)*p := by exact_mod_cast hWbound
+  have henv := cyclicComplexTimeEnvelope_le E C F (p : ℝ) ((p : ℝ)^(129/128 : ℝ))
+    (Sizes.s n i : ℝ) ((Sizes.s n i+(Sizes.t n i-Sizes.s n i)*band^2 : ℕ) : ℝ)
+    replicas cw cW W hE hC hF hp1 hpow (Nat.cast_nonneg _) hvolume
+    (Nat.cast_nonneg _) (Nat.cast_nonneg _) (Nat.cast_nonneg _) (Nat.cast_nonneg _) hWcast
+  have hgap := axisGapVolume_le (band := band)
+    (by have := h.one_le_d; omega : 0 < Sizes.d n) (h.good.lt i).le (h.good.bounds i)
+  have hdensity : ((Sizes.s n i+(Sizes.t n i-Sizes.s n i)*band^2 : ℕ) : ℝ) ≤
+      (Sizes.t n i : ℝ)*(1+(band : ℝ)^2/Sizes.d n) := by
+    apply le_trans (b := ((Sizes.t n i+(Sizes.t n i-Sizes.s n i)*band^2 : ℕ) : ℝ)) ?_ hgap
+    exact_mod_cast Nat.add_le_add_right (h.good.lt i).le _
+  have hden := mul_le_mul_of_nonneg_right
+    (mul_le_mul_of_nonneg_left hdensity (by dsimp only [A]; positivity : (0 : ℝ) ≤ A*(replicas+1)))
+    (by positivity : (0 : ℝ) ≤ (p : ℝ)^(129/128 : ℝ))
+  have hsum := sum_steps_le jobs steps
+    (fun k => cyclicComplexCoreTimeCost (H k) (K k) p u l (Sizes.t n i)
+      (origin k) L target (q k) W (depth*band) (coreLength (Sizes.s n i) width k)
+      replicas (fields k)) hsteps
+  apply ((Nat.cast_le (α := ℝ)).mpr hsum).trans
+  apply le_trans ?_ (add_le_add (le_refl (5*(Sizes.T n : ℝ))) hden)
+  apply le_trans ?_ (add_le_add (le_refl (5*(Sizes.T n : ℝ))) henv)
   have heq (k : ℕ) : executionWidth p l (stage k) 2 = 2*q k+8 := by
     dsimp only [q]
     unfold executionWidth executionPrecision
