@@ -3958,8 +3958,22 @@ copy and generated page into `2*T`. The fitting, retired and origin executors
 preserve the produced seed bank and its actual source-length equalities, so
 this comparison needs no new resource supplier. Factor preparation checks at
 3480.3 MiB and integration through origin passes (16571 jobs, 3.6 GiB aggregate).
-Next combine selected input, factor preparation, control installation and the
-actual numerical allowance on the same execution, then include origin reading. Header-copy
+The fitting, retired and origin traces now share one named `ports.workspace`
+reserve. `selectedFittingCyclicWorkspace_le` combines selected input, factor
+preparation, control installation and actual numerical storage into linear
+complex-replica storage plus `43*T`, using the produced seed/source witnesses
+and actual cyclic profiles. The selected module checks at 3562.8 MiB; integration
+through origin passes (16571 jobs, 3.6 GiB aggregate).
+`selectedOriginCyclicProgram_exec` now applies the comparison to the returned
+origin execution, including publication and both bank/seed retirement. Origin
+reading is absorbed once by `selectedOriginReaderWorkspace_le`; the complete
+selected trace is bounded by linear complex-replica storage plus `44*T`.
+The theorem retains the actual time ledger and certified outputs for that same
+execution. The selected origin module checks at 3562.0 MiB; its guarded build
+passes (16669 jobs, 3.6 GiB aggregate). The temporary fitting-only execution
+wrapper was removed because the full origin endpoint subsumes it. Uniform
+selected time and full ordinary-batch acceptance remain open; do not count the
+space endpoint alone as completing the pilot. Header-copy
 count accounting moved unchanged into the narrow `PhaseCellRecoverySeedCopyLedger`
 module so this consumer avoids importing the computed publication schedule.
 Both new input accounting and the existing computed-preparation consumer build;

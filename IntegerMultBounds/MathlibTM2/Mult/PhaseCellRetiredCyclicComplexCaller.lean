@@ -71,12 +71,9 @@ theorem retiredProgram_exec (ports : CyclicComplexCallerLayout T) (dst : Fin T)
             (coreLength s coreWidth k) Rs.length Fs.length)))+
         (8*registerBankStock (embStk ports.bank R)+4*909+5) ∧
       ExecWithin body (fun d z => mnSize z+d ≤ mnSize (Host.mk v S)+0+
-        (fittingCyclicInputPush (Q := Q) (A := A) (U := U)*ports.inputTimeCost H K W Fs.length S+
-          (cyclicFactorPreparationPush (Q := Q) (A := A) (U := U)*ports.factorTimeCost s t p u a n C F+
-            (2*(4*(W+radius+coreLength s coreWidth k)+13)+
-              cyclicComplexCoreWorkspace (P := Empty) (A := A) (U := U) H K J L hR hQ
-                p u l t a n solveTarget q (executionWidth p l stage 2) W B.card
-                Rs.length Fs.length radius (coreLength s coreWidth k))))) 0
+        (ports.workspace (U := U) H K J L hR hQ p u l t a n solveTarget q
+          (executionWidth p l stage 2) W B.card Rs.length Fs.length radius
+          (coreLength s coreWidth k) S C F)) 0
         (ports.retiredProgram dst hR hQ) (Host.mk v S) steps (Host.mk v' G) ∧
       Exec body (ports.retiredProgram dst hR hQ) (Host.mk v S) steps (Host.mk v' G) ∧
       G.R dst = word++S.R dst ∧

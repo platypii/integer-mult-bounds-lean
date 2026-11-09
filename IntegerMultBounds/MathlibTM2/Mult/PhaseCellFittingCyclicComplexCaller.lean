@@ -69,6 +69,18 @@ def factorTimeCost (ports : CyclicComplexCallerLayout T) (s t p u a n : ℕ) [Ne
       (embStk (Fin.castLE (by decide : 154 ≤ 234)) (embStk (ports.small ∘ factorReg) F)).R
       s t (PhaseCellBand.width p u) a n
 
+/-- The reserve of the complete ordinary fitting execution. Intermediate seed
+states are witnesses produced by that execution, not resource suppliers. -/
+noncomputable def workspace {s : ℕ} [NeZero s] (ports : CyclicComplexCallerLayout T)
+    (H K J L : ReplicaHaloProblem s) (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q)
+    (p u l t a n target q w W N replicas complexCount radius core : ℕ)
+    (S C F : Stacks T A) : ℕ :=
+  fittingCyclicInputPush (Q := Q) (A := A) (U := U)*ports.inputTimeCost H K W complexCount S+
+    (cyclicFactorPreparationPush (Q := Q) (A := A) (U := U)*ports.factorTimeCost s t p u a n C F+
+      (2*(4*(W+radius+core)+13)+
+        cyclicComplexCoreWorkspace (P := Empty) (A := A) (U := U) H K J L hR hQ
+          p u l t a n target q w W N replicas complexCount radius core))
+
 theorem program_exec (ports : CyclicComplexCallerLayout T)
     (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     {p l s t u target a n : ℕ} [NeZero s] {α d : ℝ}
@@ -114,12 +126,9 @@ theorem program_exec (ports : CyclicComplexCallerLayout T)
           Cost.cyclicComplexCoreTimeCost H K p u l t a n target q W radius
             (coreLength s coreWidth k) Rs.length Fs.length)) ∧
       ExecWithin body (fun d z => mnSize z+d ≤ mnSize (Host.mk v S)+0+
-        (fittingCyclicInputPush (Q := Q) (A := A) (U := U)*ports.inputTimeCost H K W Fs.length S+
-          (cyclicFactorPreparationPush (Q := Q) (A := A) (U := U)*ports.factorTimeCost s t p u a n C F+
-            (2*(4*(W+radius+coreLength s coreWidth k)+13)+
-              cyclicComplexCoreWorkspace (P := Empty) (A := A) (U := U) H K J L hR hQ
-                p u l t a n solveTarget q (executionWidth p l stage 2) W B.card
-                Rs.length Fs.length radius (coreLength s coreWidth k))))) 0
+        (ports.workspace (U := U) H K J L hR hQ p u l t a n solveTarget q
+          (executionWidth p l stage 2) W B.card Rs.length Fs.length radius
+          (coreLength s coreWidth k) S C F)) 0
         (ports.program hR hQ) (Host.mk v S) steps (Host.mk v' G) ∧
       Exec body (ports.program hR hQ) (Host.mk v S) steps (Host.mk v' G) ∧
       G.R (ports.bank 850) = word ∧ G.R (ports.bank 848) = [] ∧ G.R ports.archive = tail ∧
