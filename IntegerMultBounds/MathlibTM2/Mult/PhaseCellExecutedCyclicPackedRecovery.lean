@@ -61,6 +61,7 @@ theorem executedCyclicPackedRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.states 
         (extendAssembly (extendSecond (CyclicRecoveryPlacement.bank 239))) G ∧
       ReplicaAssemblyControls K (extendAssembly ∘ CyclicSecondInteriorPlacement.right.plan.gather)
         (extendAssembly (extendSecond (CyclicRecoveryPlacement.bank 238))) G ∧
+      (G.inp = S.inp ∧ G.out = S.out) ∧
       Exec (embTab extendAssembly (embTab extendSecond (embTab CyclicRecoveryPlacement.extend (cyclicReplicaCallerBody body))))
         (executedCyclicPackedRecovery hR hQ)
         (mk v (extendStacks (by decide : 842 ≤ 850) (extendStacks (by decide : 840 ≤ 842)
@@ -87,7 +88,7 @@ theorem executedCyclicPackedRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.states 
   have hKs : K.span = n-min n (s-a) := rfl
   intro buffersL buffersR v S tail pageTail inputsL inputsR factory h226 h229
   obtain ⟨solutions,J,L,X,z,F,m,savedL,savedR,hlen,hformat,haccuracy,layoutL,layoutR,hJtarget,hLtarget,
-    hJexp,hLexp,hJFs,hLFs,hu,hm,hfieldsL,hfieldsR,harchiveL,harchiveR,hcontrolsL,hcontrolsR,he⟩ :=
+    hJexp,hLexp,hJFs,hLFs,hu,hm,hfieldsL,hfieldsR,harchiveL,harchiveR,hcontrolsL,hcontrolsR,hstreams,he⟩ :=
     executedCyclicSecondInterior_spec (body := body) hR hQ hA axis ha hn hleftRoom hrightRoom
       Fs hF buffersL buffersR (embDn extendAssembly v) S tail pageTail inputsL inputsR factory h226 h229
   obtain ⟨Ds,Es,hDlen,hElen,hencD,hencE,hgood⟩ := cyclicSecondInterior_fields_target axis ha hn target Fs hF
@@ -209,7 +210,8 @@ theorem executedCyclicPackedRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.states 
       exact (hframe _ hoff).trans (hreadAssembly _)
   refine ⟨J,L,X,vf,G,fields,m+k,savedL,savedR,huf.trans (huser.trans hu),
     ⟨layoutL,layoutR,hJtarget,hLtarget,hJexp,hLexp⟩,Nat.add_le_add hm hk',
-    hwordsL,hwordsR,h247,h547,h125,h425,?_,hcontrolsLF,hcontrolsRF,Exec.seq helift heAssembly.toExec⟩
+    hwordsL,hwordsR,h247,h547,h125,h425,?_,hcontrolsLF,hcontrolsRF,⟨hinp.trans hstreams.1,hout.trans hstreams.2⟩,
+    Exec.seq helift heAssembly.toExec⟩
   intro j
   exact ⟨(hgood j).2.2.1,cyclicPublicationField_im t band a n _ _ _ ,(hgood j).2.2.2.1,(hgood j).2.2.2.2⟩
 

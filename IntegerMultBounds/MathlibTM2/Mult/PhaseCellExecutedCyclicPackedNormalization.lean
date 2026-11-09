@@ -60,6 +60,7 @@ theorem executedCyclicPackedNormalization_spec (hR : rpStates ≤ Q) (hQ : SS.st
       G.R 125 = savedL ∧ G.R 425 = savedR ∧
       ReplicaAssemblyControls H (CyclicPackedNormalizationPlacement.gather false) 839 G ∧
       ReplicaAssemblyControls K (CyclicPackedNormalizationPlacement.gather true) 838 G ∧
+      (G.inp = S.inp ∧ G.out = S.out) ∧
       List.Forall₂ (fun rhs x => SchurDominance.Solves (realMatrix s t p u)
         (cyclicPrincipalVertices s a n) x (fun i => (value q (rhs i)).re)) Fs.reverse xs ∧
       Exec (embTab extendNormalization (embTab extendAssembly
@@ -90,7 +91,7 @@ theorem executedCyclicPackedNormalization_spec (hR : rpStates ≤ Q) (hQ : SS.st
   let H := axis.cyclicLeftReplicaProblem cellTarget 2 a n ha Fs hF
   let K := axis.cyclicRightReplicaProblem cellTarget 2 a n hn Fs hF
   intro W hW wide hwide buffersL buffersR v S tail pageTail inputsL inputsR factory h226 h229
-  obtain ⟨J,L,X,z,G,fields,m,savedL,savedR,hu,hprofile,hm,hwordsL,hwordsR,h247,h547,h125,h425,hfields,controlsL,controlsR,he⟩ :=
+  obtain ⟨J,L,X,z,G,fields,m,savedL,savedR,hu,hprofile,hm,hwordsL,hwordsR,h247,h547,h125,h425,hfields,controlsL,controlsR,hstreams,he⟩ :=
     executedCyclicPackedRecovery_spec (body := body) (target := target+1) hR hQ hA axis ha hn hleftRoom hrightRoom
       Fs hF buffersL buffersR (embDn extendNormalization v) S tail pageTail inputsL inputsR factory h226 h229
   let callerBody := embTab extendNormalization (embTab extendAssembly
@@ -106,7 +107,7 @@ theorem executedCyclicPackedNormalization_spec (hR : rpStates ≤ Q) (hQ : SS.st
     (fun j => ⟨(hfields j).1,(hfields j).2.1,(hfields j).2.2.2⟩)
     W hW wide hwide vi G controlsL' controlsR' hwordsL hwordsR
   refine ⟨J,L,X,G,fields,xs,vf,m+k,savedL,savedR,huf.trans (huser.trans hu),hprofile,
-    Nat.add_le_add hm hk,h247,h547,h125,h425,controlsL',controlsR',hsol,?_,haccL,haccR⟩
+    Nat.add_le_add hm hk,h247,h547,h125,h425,controlsL',controlsR',hstreams,hsol,?_,haccL,haccR⟩
   exact Exec.seq helift henorm
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

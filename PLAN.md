@@ -45663,3 +45663,103 @@ execution audit to only propext, Classical.choice and Quot.sound; temporary
 audit peak 9779.3 MiB. Collect this verified input/factor/control/numerical
 composition in one larger local checkpoint, excluding unrelated periodic and
 workspace drafts. No push; full S4 remains open.
+
+`ClearRegisterBankStock` proves structurally that clearing either one register
+or an arbitrary register list never increases tape stock. It reuses the existing
+left-to-right move and clear programs; the loop proof charges no allocation.
+Guarded check: 1932.4 MiB.
+`ExportClearRegisterBank` reuses the existing ordered move and clears both sides
+of an arbitrary private bank. It exports the source word in its original order,
+preserves the destination suffix and external registers, and supplies a
+zero-growth `ExecWithin` trace. Its actual cleanup bill is at most eight times
+private register stock plus 4*N+5, proved using existing `registerBankStock`
+and finite-sum monotonicity. Guarded check: 1936.4 MiB.
+
+`CyclicComplexCallerLayout.retiredProgram_exec` now executes the routed fitting
+caller, exports its certified word to a separate result register, and releases
+all 909 private registers on both sides. It preserves the remaining class
+archive, the existing output suffix and all other external registers. The
+intermediate numerical endpoint is exposed as an actual subexecution, with the
+exact decomposition of total steps and a no-growth retirement trace at any call
+depth. Thus the linear retirement bill refers to the state actually retired,
+not an unconstrained stock supplier. Guarded full module check: 3500.8 MiB.
+
+The callback's full scan invariant still needs global I/O/source-left frames
+and per-job controller updates, in addition to sharp numerical execution space
+and uniform absorption of the added preparation/retirement bills. Original
+shared exposure/class-loop integration and remaining full S4 gates remain open.
+No push; retain this work for a larger checkpoint.
+Retired-caller/shared-exposure/scan-module integration passes (16730 jobs,
+3.5 GiB aggregate peak). Structural cleanup, its linear private-stock bill and
+the retired fitting caller audit to only propext, Classical.choice and
+Quot.sound (temporary audit peak 9782.9 MiB). Changes remain uncommitted for the
+next larger local checkpoint.
+
+`PackedNormalizedOutput.length` now exposes publication volume directly from
+its accuracy certificate; the older job-level output-length theorem delegates
+to it. `PackedNormalizedOutput.length_le` derives the interval-volume bound by
+monotonicity, without constructing a descriptor job. The retired fitting caller
+now returns both exact core-output volume and nonexpansion against the actual
+encoded routed payload, discharging the generic consuming scan's volume premise.
+Guarded integration of the retired caller and normalized job passes (16398 jobs,
+5.9 GiB aggregate peak); the certificate module's guarded single-file check peaks
+at 3330.4 MiB. Global I/O/source-left frames, controller updates, sharp numerical
+space and the remaining full S4 gates remain open. No push; retain for a larger
+coherent checkpoint.
+
+Stream-frame integration: `cyclicSecondInterior_exec` now returns preservation
+of global input/output streams, composing the existing resumed-interior stream
+frames. `executedCyclicSecondInterior_spec` connects these to the original input
+through physical resume readiness and cached-input readiness. The packed-recovery,
+normalization and core-publication interfaces retain those equalities for their
+produced 850-register state; no program or numerical hypothesis changes. The
+complex-core consumer is updated, but still needs to expose this fact through
+its own final contract and the placed/prepared/fitting wrappers. This is partial
+progress toward the scan's exact state invariant, not its completion.
+The interior single-file guarded check passes at 3283.7 MiB; guarded integration
+through the retired fitting caller passes (16397 jobs, 6.0 GiB aggregate peak).
+No push; accumulate with the existing retirement and volume checkpoint.
+
+The stream-frame contract now reaches the retired fitting caller. The numerical
+complex-core theorem exposes its produced bank's stream equalities; the placed
+caller transports them through its canonical input and embedded final-state
+views. Prepared control installation, factor preparation and routed fitting
+input composition connect these to the original streams using existing control
+frames and cached-input readiness. Cleanup explicitly reduces only its state
+projection before using the equality, avoiding a default recursion-depth failure
+without changing proof limits. `retiredProgram_exec` now certifies unchanged global
+input/output streams alongside certified output, private-bank retirement and
+volume nonexpansion. Guarded retired-caller check: 3498.6 MiB; final integration
+passes (16397 jobs, 3.6 GiB aggregate peak). The archive-left/external-left frame,
+controller updates, sharp execution-wide numerical space, uniform added-cost
+absorption and full outer/fallback/S4 gates remain open. No push; changes remain
+for the next coherent local checkpoint.
+
+The routed input theorem now exposes preservation of the consumed source's left
+stack, directly from the ordinary input-preparation frame after `movePrefix`.
+The two-bank producer and fitting numerical caller retain this fact. Combining
+it with existing off-bank frames and private-bank retirement proves `G.L = S.L`
+for the retired caller. Its contract now also returns the exact whole final
+state: only the archive's right stack becomes the tail and the destination's
+right stack receives the certified output prefix. This removes the scan's global
+stream/left-stack/exact-state reconstruction gap for the fitting numerical body;
+ordinary per-job origin/controller consumption and the same-execution sharp
+space premise still need integration. Source-frame integration build passes
+(16397 jobs, 3.6 GiB aggregate peak); final exact-state theorem passes guarded
+single-file checking at 3501.1 MiB. No proof limits changed, no push. Full S4
+remains open, including numerical peak space, uniform added costs, shared outer
+exposure, fallback and final acceptance.
+
+The retired fitting callback now also proves boundary stock nonincrease, by
+instantiating the existing generic `mn_consume_appendR_size_nonincreasing` with
+its exact final state and certified payload nonexpansion. This is a boundary
+invariant, not a substitute for the missing peak-space trace. Controller review
+confirms the existing `readSupplierEndpoints`/`ComputedRecoveryPlan.coreProgram`
+pattern should be reused; its generated endpoint headers still need connection
+to the new caller's seed ports rather than a second origin reader. Integration
+with `ConsumeTimeScan`, `ComputedCoreScan`, normalized jobs and the retired caller
+passes (16487 jobs, 9.0 GiB aggregate peak). The strengthened retired theorem
+passes single-file checking at 3501.0 MiB and audits to only propext,
+Classical.choice and Quot.sound (temporary audit peak 9782.1 MiB). Collect the
+accumulated cleanup/volume/exact-frame work as one local checkpoint, excluding
+unrelated periodic-recovery/workspace drafts. No push; full S4 remains open.

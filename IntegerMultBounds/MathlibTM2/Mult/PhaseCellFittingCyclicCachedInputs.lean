@@ -65,9 +65,10 @@ theorem fittingCyclicCachedInputs_exec (bank : Fin 834 → Fin T) (hbank : Funct
       CachedReplicaPassInput K (right.reindex bank hbank) (generatedRecoveryBuffers K S.inp S.out) G ∧
       G.R src = tail ∧
       (∀ i : Fin 234, G.L (bank (factorReg i)) = [] ∧ G.R (bank (factorReg i)) = []) ∧
+      G.L src = S.L src ∧
       (∀ k, k ≠ src → (∀ i, bank i ≠ k) → G.L k = S.L k ∧ G.R k = S.R k) := by
   dsimp only
-  obtain ⟨v₁,F,n₁,hu₁,hn₁,he₁,hl,hsrc',hscratchL,hframeL⟩ := routedCachedComplexInput_exec
+  obtain ⟨v₁,F,n₁,hu₁,hn₁,he₁,hl,hsrc',hscratchL,hleftSrc,hframeL⟩ := routedCachedComplexInput_exec
     (body := body) hA H W Fs hfieldsL hpqL hWL sourceL (bank ∘ leftInputReg)
     (hbank.comp leftInputReg_injective) count src saved tmp hreg
     (fun i j => (hsourceOff i _).1) (fun i => (hsourceTmp i).1)
@@ -122,7 +123,8 @@ theorem fittingCyclicCachedInputs_exec (bank : Fin 834 → Fin T) (hbank : Funct
     rw [right,reindex_comp]
     rw [hin,hout] at hr
     exact hr
-  refine ⟨v₂,G,n₁+n₂,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,Exec.seq he₁ he₂,?_,hr',?_,?_,?_⟩
+  refine ⟨v₂,G,n₁+n₂,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,Exec.seq he₁ he₂,?_,hr',?_,?_,
+    (hframeR src (fun i => (hsrcOff _).symm)).1.trans hleftSrc,?_⟩
   · apply hl'.of_frame (hr'.input.trans hin.symm) (hr'.outputStream.trans hout.symm)
     intro k hk
     obtain ⟨i,hi⟩ := CachedReplicaPassPlacement.reindex_source _ (bank ∘ leftReg)

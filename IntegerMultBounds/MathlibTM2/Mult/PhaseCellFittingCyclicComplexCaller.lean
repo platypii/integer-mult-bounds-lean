@@ -113,6 +113,7 @@ theorem program_exec (ports : CyclicComplexCallerLayout T)
       Exec body (ports.program hR hQ) (Host.mk v S) steps (Host.mk v' G) ∧
       G.R (ports.bank 850) = word ∧ G.R (ports.bank 848) = [] ∧ G.R ports.archive = tail ∧
       PackedNormalizedOutput p W target coreWidth k localityTarget Fs Y word ∧
+      (G.inp = S.inp ∧ G.out = S.out) ∧ G.L ports.archive = S.L ports.archive ∧
       (∀ i, i ≠ ports.archive → (∀ j, ports.bank j ≠ i) → G.L i = S.L i ∧ G.R i = S.R i) := by
   dsimp only
   intro Fs hF
@@ -130,7 +131,7 @@ theorem program_exec (ports : CyclicComplexCallerLayout T)
   have hfit : a+n ≤ s := by omega
   have hspanL : H.span = n := by change min n (s-a) = n; omega
   have hspanR : K.span = 0 := by change n-min n (s-a) = 0; omega
-  obtain ⟨v₁,C,n₁,hu₁,hn₁,he₁,inputsL,inputsR,harchive,hfactorFresh,hframe⟩ := fittingCyclicCachedInputs_exec
+  obtain ⟨v₁,C,n₁,hu₁,hn₁,he₁,inputsL,inputsR,harchive,hfactorFresh,hleftArchive,hframe⟩ := fittingCyclicCachedInputs_exec
     (body := body) ports.small ports.small_injective (by omega : 4 ≤ A) H K W Fs rfl rfl
     hqp hqp hWin hWin hspanR ports.seedL ports.seedR ports.count ports.archive ports.saved ports.tmp
     ports.move (fun i j => ports.seedOff i _) ports.seedTmp (fun i => ports.tmpOff _)
@@ -158,7 +159,7 @@ theorem program_exec (ports : CyclicComplexCallerLayout T)
     exact Ne.symm (by assumption)
   have htmp' : C.R ports.tmp = [] :=
     (hframe _ htmpArchive (fun j => ports.tmpOff _)).2.trans htmp
-  obtain ⟨J,L,v₂,F,G,n₂,word,hu₂,hseed,hprofile,hn₂,he₂,hword,h848,hcert,houtside⟩ :=
+  obtain ⟨J,L,v₂,F,G,n₂,word,hu₂,hseed,hprofile,hn₂,he₂,hword,h848,hcert,hstreams,houtside⟩ :=
     factoredCyclicComplexCore_exec (body := body) ports.bank ports.injective hR hQ hA axis ha hn
       hleftRoom hrightRoom coreWidth k radius hleft haCore hnCore hright Fs hF W hW
       (generatedRecoveryBuffers H S.inp S.out) (generatedRecoveryBuffers K S.inp S.out)
@@ -166,7 +167,9 @@ theorem program_exec (ports : CyclicComplexCallerLayout T)
       ports.spanOff ports.spanTmp hfactorFresh ports.controlOff ports.controlTmp ports.tmpOff
       hcontrols' hfresh' htmp' localityTarget qRef Y hqRef hwindow hY
   refine ⟨J,L,v₂,C,F,G,n₁+n₂,word,hu₂.trans hu₁,hseed,hprofile,Nat.add_le_add hn₁ hn₂,
-    Exec.seq he₁ he₂,hword,h848,?_,hcert,?_⟩
+    Exec.seq he₁ he₂,hword,h848,?_,hcert,
+    ⟨hstreams.1.trans inputsL.input,hstreams.2.trans inputsL.outputStream⟩,
+    (houtside ports.archive (fun j => (ports.archiveOff j).symm)).1.trans hleftArchive,?_⟩
   · exact (houtside ports.archive (fun j => (ports.archiveOff j).symm)).2.trans harchive
   · intro i hi hiBank
     have hh := hframe i hi (fun j => hiBank _)

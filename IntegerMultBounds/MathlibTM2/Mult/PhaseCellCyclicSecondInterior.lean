@@ -80,6 +80,7 @@ theorem cyclicSecondInterior_exec (H K J L : ReplicaHaloProblem s)
         (cyclicSecondInterior hR hQ) (mk v E) n (mk vf G) ∧
       ReplicaAssemblyControls H left.plan.gather (extend (CyclicRecoveryPlacement.bank 239)) G ∧
       ReplicaAssemblyControls K right.plan.gather (extend (CyclicRecoveryPlacement.bank 238)) G ∧
+      (G.inp = E.inp ∧ G.out = E.out) ∧
       (∀ k, ¬left.Owns k → ¬right.Owns k → k ≠ 840 → k ≠ 841 → G.L k = E.L k ∧ G.R k = E.R k) := by
   dsimp only
   let E := extendStacks (by decide : 840 ≤ 842) S
@@ -135,7 +136,7 @@ theorem cyclicSecondInterior_exec (H K J L : ReplicaHaloProblem s)
   obtain ⟨fields,hlen,hencoded,hgood⟩ := hfieldsL
   refine ⟨vf,G,m+n,huR.trans huL,?_,⟨fields,hlen,(hleft _ .output).2.trans hencoded,hgood⟩,
     hfieldsR,((hleft _ (.gather 125)).2.trans harchL).trans (hread _),
-    (harchR.trans (hright _ (.gather 125)).2).trans (hread _),hwithin,?_,?_,?_⟩
+    (harchR.trans (hright _ (.gather 125)).2).trans (hread _),hwithin,?_,?_,⟨hstreamsR.1.trans hstreamsL.1,hstreamsR.2.trans hstreamsL.2⟩,?_⟩
   · rw [hcost] at hmR
     exact Nat.add_le_add hmL hmR
   · apply controlsL.transport (hnativeFrame 239)

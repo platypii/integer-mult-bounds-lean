@@ -68,6 +68,7 @@ theorem executedCyclicSecondInterior_spec (hR : rpStates ≤ Q) (hQ : SS.states 
         (extendRecovery (CyclicRecoveryPlacement.bank 239)) G ∧
       ReplicaAssemblyControls K CyclicSecondInteriorPlacement.right.plan.gather
         (extendRecovery (CyclicRecoveryPlacement.bank 238)) G ∧
+      (G.inp = S.inp ∧ G.out = S.out) ∧
       Exec (embTab extendRecovery (embTab CyclicRecoveryPlacement.extend (cyclicReplicaCallerBody body)))
         (executedCyclicSecondInterior hR hQ)
         (mk v (extendStacks (by decide : 840 ≤ 842) (extendStacks (by decide : 834 ≤ 840) S))) steps (mk vf G) := by
@@ -94,7 +95,7 @@ theorem executedCyclicSecondInterior_spec (hR : rpStates ≤ Q) (hQ : SS.states 
   obtain ⟨zi,hzi,huser,helift⟩ := exec_extendStacks (by decide : 840 ≤ 842) (ι := id)
     (body' := embTab extendRecovery (embTab CyclicRecoveryPlacement.extend (cyclicReplicaCallerBody body)))
     (fun _ => rfl) he v rfl
-  obtain ⟨vf,G,k,huf,hk,hfieldsL,hfieldsR,harchL,harchR,heSecond,hcontrolsLF,hcontrolsRF,hframe⟩ := cyclicSecondInterior_exec
+  obtain ⟨vf,G,k,huf,hk,hfieldsL,hfieldsR,harchL,harchR,heSecond,hcontrolsLF,hcontrolsRF,hstreams,hframe⟩ := cyclicSecondInterior_exec
     (body := embTab extendRecovery (embTab CyclicRecoveryPlacement.extend (cyclicReplicaCallerBody body)))
     H K J L layoutL layoutR hR hQ hA axis.hp axis.hpacket axis.hp axis.hpacket axis.hpad axis.hpad
     buffersL buffersR buffersL.rhsTail buffersR.rhsTail zi X hreadyL hreadyR hcontrolsL hcontrolsR
@@ -131,6 +132,9 @@ theorem executedCyclicSecondInterior_spec (hR : rpStates ≤ Q) (hQ : SS.states 
     exact Nat.add_le_add (Nat.add_le_add_right hcleanupL' _) (Nat.add_le_add_right hcleanupR' _)
   exact ⟨solutions,J,L,X,vf,G,m+k,savedL,savedR,hlen,hformat,haccuracy,layoutL,layoutR,hJtarget,hLtarget,hJexp,hLexp,hJFs,hLFs,
     huf.trans (huser.trans hu),Nat.add_le_add hm hk',hfieldsL,hfieldsR,harchL.trans harchiveL,
-    harchR.trans harchiveR,hcontrolsLF,hcontrolsRF,Exec.seq helift heSecond.toExec⟩
+    harchR.trans harchiveR,hcontrolsLF,hcontrolsRF,
+    ⟨hstreams.1.trans (hreadyL.input.trans inputsL.input.symm),
+      hstreams.2.trans (hreadyL.output.trans inputsL.outputStream.symm)⟩,
+    Exec.seq helift heSecond.toExec⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

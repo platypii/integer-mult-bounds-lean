@@ -57,6 +57,7 @@ theorem placedCyclicComplexCore_exec (bank : Fin 909 → Fin T) (hbank : Functio
       Exec body (placedCyclicComplexCore bank hR hQ) (mk v S) steps (mk v' G) ∧
       G.R (bank 850) = word ∧ G.R (bank 848) = [] ∧
       PackedNormalizedOutput p W target coreWidth k localityTarget Fs Y word ∧
+      (G.inp = S.inp ∧ G.out = S.out) ∧
       (∀ i, (∀ j, bank j ≠ i) → G.L i = S.L i ∧ G.R i = S.R i) := by
   dsimp only
   intro Fs hF
@@ -71,7 +72,7 @@ theorem placedCyclicComplexCore_exec (bank : Fin 909 → Fin T) (hbank : Functio
   let K := axis.cyclicRightReplicaProblem stage 2 a n hn Rs hRs
   intro W hW buffersL buffersR v S I inputsL inputsR factory h226 h229 hview
     localityTarget qRef Y hqRef hwindow hY
-  obtain ⟨J,L,X,R,fields,y,vf,m,savedL,savedR,hu,hprofile,hm,h247,h547,h125,h425,hlen,hsol,hex,hacc,hpacked⟩ :=
+  obtain ⟨J,L,X,R,fields,y,vf,m,savedL,savedR,hu,hprofile,hm,h247,h547,h125,h425,hlen,hstreams,hsol,hex,hacc,hpacked⟩ :=
     executedCyclicComplexCore_spec (body := fun f : Empty => nomatch f) hR hQ hA axis ha hn
       hleftRoom hrightRoom coreWidth k radius hleft haCore hnCore hright Fs hF W hW
       (List.replicate W tick) (by simp) (List.replicate radius tick)
@@ -93,11 +94,17 @@ theorem placedCyclicComplexCore_exec (bank : Fin 909 → Fin T) (hbank : Functio
     rw [hcost]
     exact hm
   have hp := hpacked localityTarget qRef Y hqRef hwindow hY
-  refine ⟨J,L,v',G,m,_,hu'.trans hu,hprofile,hm',hex',?_,?_,hp,hframe⟩
+  refine ⟨J,L,v',G,m,_,hu'.trans hu,hprofile,hm',hex',?_,?_,hp,?_,hframe⟩
   · have hh := congrArg (fun F : Stacks 909 A => F.R 850) hbankView
     simpa only [embStk_R,Function.update_self] using hh
   · have hh := congrArg (fun F : Stacks 909 A => F.R 848) hbankView
     simpa only [embStk_R,Function.update_of_ne (by decide : (848 : Fin 909) ≠ 850),
       Function.update_self] using hh
+
+  · have hin := congrArg (fun F : Stacks 909 A => F.inp) hbankView
+    have hout := congrArg (fun F : Stacks 909 A => F.out) hbankView
+    have hin₀ := congrArg (fun F : Stacks 909 A => F.inp) hview
+    have hout₀ := congrArg (fun F : Stacks 909 A => F.out) hview
+    exact ⟨hin.trans (hstreams.1.trans hin₀.symm),hout.trans (hstreams.2.trans hout₀.symm)⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

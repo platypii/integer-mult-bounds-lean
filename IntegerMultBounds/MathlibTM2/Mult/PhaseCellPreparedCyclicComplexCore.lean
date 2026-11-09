@@ -62,6 +62,7 @@ theorem preparedCyclicComplexCore_exec (bank : Fin 909 → Fin T) (hbank : Funct
       Exec body (preparedCyclicComplexCore bank source tmp hR hQ) (mk v S) steps (mk v' G) ∧
       G.R (bank 850) = word ∧ G.R (bank 848) = [] ∧
       PackedNormalizedOutput p W target coreWidth k localityTarget Fs Y word ∧
+      (G.inp = S.inp ∧ G.out = S.out) ∧
       (∀ i, (∀ j, bank j ≠ i) → G.L i = S.L i ∧ G.R i = S.R i) := by
   dsimp only
   intro Fs hF W hW buffersL buffersR v S source tmp inputsL inputsR factory h226 h229
@@ -72,12 +73,13 @@ theorem preparedCyclicComplexCore_exec (bank : Fin 909 → Fin T) (hbank : Funct
     (coreLength s coreWidth k) v S hvalues hfresh htmp
   have hcost := cyclicComplexControlCopies_cost bank source W radius (coreLength s coreWidth k) S hvalues
   rw [hcost] at he₁
-  obtain ⟨J,L,v₂,G,m,word,hu₂,hprofile,hm,he₂,hword,h848,hcert,hframe⟩ := placedCyclicComplexCore_exec
+  obtain ⟨J,L,v₂,G,m,word,hu₂,hprofile,hm,he₂,hword,h848,hcert,hstreams,hframe⟩ := placedCyclicComplexCore_exec
     (body := body) bank hbank hR hQ hA axis ha hn hleftRoom hrightRoom coreWidth k radius
     hleft haCore hnCore hright Fs hF W hW buffersL buffersR v₁ F I
     inputsL.of_reindex inputsR.of_reindex factory h226 h229 hview localityTarget qRef Y hqRef hwindow hY
   refine ⟨J,L,v₂,G,_,word,hu₂.trans hu₁,hprofile,Nat.add_le_add (le_refl _) hm,
-    Exec.seq he₁ he₂,hword,h848,hcert,?_⟩
+    Exec.seq he₁ he₂,hword,h848,hcert,
+    ⟨hstreams.1.trans hI,hstreams.2.trans hO⟩,?_⟩
   intro i hi
   exact ⟨(hframe i hi).1.trans (congrFun hL i),(hframe i hi).2.trans (hoff i hi)⟩
 

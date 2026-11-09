@@ -27,6 +27,25 @@ def PackedNormalizedOutput {A s : ℕ} [NeZero s] (p W targetOut coreWidth k loc
       ((2/(2 : ℝ)^p+(1/(2 : ℝ)^targetOut)/(2 : ℝ)^j)+
         (1/(2 : ℝ)^localityTarget+1/(2 : ℝ)^localityTarget)/(2 : ℝ)^j)) Fs Gs
 
+/-- Publication volume depends only on the replica count, owned core and word width. -/
+theorem PackedNormalizedOutput.length {A s p W targetOut coreWidth k localityTarget : ℕ}
+    [NeZero s] {Fs : List (ZMod s → GaussianInt)}
+    {Y : (ZMod s → GaussianInt) → ZMod s → ℝ} {word : List (Fin (A+4))}
+    (h : PackedNormalizedOutput p W targetOut coreWidth k localityTarget Fs Y word) :
+    word.length = Fs.length * coreLength s coreWidth k * W := by
+  obtain ⟨Gs,hGs,rfl,_⟩ := h
+  simp only [List.length_flatten,List.map_map,Function.comp_def,length_cstream,ownedCoreWords_length,
+    List.map_const',List.sum_replicate,hGs,nsmul_eq_mul,Nat.cast_id,Nat.mul_assoc]
+
+/-- A core publication fits in its enclosing routed interval. -/
+theorem PackedNormalizedOutput.length_le {A s p W targetOut coreWidth k localityTarget n : ℕ}
+    [NeZero s] {Fs : List (ZMod s → GaussianInt)}
+    {Y : (ZMod s → GaussianInt) → ZMod s → ℝ} {word : List (Fin (A+4))}
+    (h : PackedNormalizedOutput p W targetOut coreWidth k localityTarget Fs Y word)
+    (hn : coreLength s coreWidth k ≤ n) : word.length ≤ Fs.length*n*W := by
+  rw [h.length]
+  exact Nat.mul_le_mul_right W (Nat.mul_le_mul_left Fs.length hn)
+
 theorem packedNormalizedFactoryDescriptorStep_exec {T Q A p l s t u targetOut a b V : ℕ} {P U : Type} [NeZero s]
     {α gap : ℝ} {C : ZMod s → GaussianInt} (Hbase : Stacks 242 A)
     (h : PackedHaloParameterBounds (p := p) (l := l) (t := t) (u := u)

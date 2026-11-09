@@ -90,6 +90,7 @@ theorem executedCyclicComplexCore_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤
           (2*Fs.length+2)) ∧
       G.R 247 = buffersL.accumulatorTail ∧ G.R 547 = buffersR.accumulatorTail ∧
       G.R 125 = savedL ∧ G.R 425 = savedR ∧ Zs.length = Fs.length ∧
+      (G.inp = S.inp ∧ G.out = S.out) ∧
       (∀ F ∈ complexComponentFields Fs, SchurDominance.Solves (realMatrix s t p u)
         (cyclicPrincipalVertices s a n) (y F)
         (fun i => (value q ((2 : GaussianInt)^(q-p-1)*F i)).re)) ∧
@@ -127,7 +128,7 @@ theorem executedCyclicComplexCore_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤
   let K := axis.cyclicRightReplicaProblem cellTarget 2 a n hn Rs hRs
   intro W hW wide hwide radiusWord coreWord hRword hLword buffersL buffersR v S tail pageTail
     inputsL inputsR factory h226 h229
-  obtain ⟨J,L,X,G,fields,xs,vi,m,savedL,savedR,hu,hprofile,hm,h247,h547,h125,h425,controlsL,controlsR,hsol,he,hready,hacc⟩ :=
+  obtain ⟨J,L,X,G,fields,xs,vi,m,savedL,savedR,hu,hprofile,hm,h247,h547,h125,h425,controlsL,controlsR,hstreams,hsol,he,hready,hacc⟩ :=
     executedCyclicCorePublication_spec (body := body) hR hQ hA axis ha hn hleftRoom hrightRoom
       coreWidth k radius hleft haCore hnCore hright Rs hRs W hW wide hwide radiusWord coreWord hRword hLword
       buffersL buffersR v S tail pageTail inputsL inputsR factory h226 h229
@@ -169,7 +170,7 @@ theorem executedCyclicComplexCore_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤
     p q (q-p-1) (inverseNormalizationShift p) W coreWidth k target hcore (by omega) Fs y hy
     xs.reverse Ds hsol hacc [] vi V hscalar hready.2.1 hready.2.2.1 hsrc hready.2.2.2
   refine ⟨J,L,X,G,fields,y,vf,m+nc,savedL,savedR,huf.trans hu,hprofile,Nat.add_le_add hm hnc,
-    h247,h547,h125,h425,hlen,hy,?_,?_,?_⟩
+    h247,h547,h125,h425,hlen,hstreams,hy,?_,?_,?_⟩
   · simpa only [executedCyclicComplexCore,V,Function.update_idem,List.append_nil] using Exec.seq he hasm
   · simpa only [List.append_nil] using haccuracy
   · intro localityTarget qRef Y hpRef hhalo hY

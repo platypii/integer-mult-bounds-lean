@@ -71,6 +71,7 @@ theorem factoredCyclicComplexCore_exec (bank : Fin 909 → Fin T) (hbank : Funct
       Exec body (factoredCyclicComplexCore bank source span tmp hR hQ) (mk v S) steps (mk v' G) ∧
       G.R (bank 850) = word ∧ G.R (bank 848) = [] ∧
       PackedNormalizedOutput p W target coreWidth k localityTarget Fs Y word ∧
+      (G.inp = S.inp ∧ G.out = S.out) ∧
       (∀ i, (∀ j, bank j ≠ i) → G.L i = S.L i ∧ G.R i = S.R i) := by
   dsimp only
   intro Fs hF
@@ -117,13 +118,15 @@ theorem factoredCyclicComplexCore_exec (bank : Fin 909 → Fin T) (hbank : Funct
     have hh := hframe (bank i) hoff
     exact ⟨hh.1.trans (hfresh i hi).1,hh.2.trans (hfresh i hi).2⟩
   have htmp' : R.R tmp = [] := (hframe tmp (fun i => hbankTmp _)).2.trans htmp
-  obtain ⟨J,L,v₂,G,n₂,word,hu₂,hprofile,hn₂,he₂,hword,h848,hcert,houtside⟩ :=
+  obtain ⟨J,L,v₂,G,n₂,word,hu₂,hprofile,hn₂,he₂,hword,h848,hcert,hstreams,houtside⟩ :=
     preparedCyclicComplexCore_exec (body := body) bank hbank hR hQ hA axis ha hn hleftRoom hrightRoom
       coreWidth k radius hleft haCore hnCore hright Fs hF W hW buffersL buffersR v₁ R source tmp
       inputsL' inputsR' factory h226 h229 hsourceOff hsourceTmp hbankTmp hvalues' hfresh' htmp'
       localityTarget qRef Y hqRef hwindow hY
   refine ⟨J,L,v₂,F,G,n₁+n₂,word,hu₂.trans hu₁,hseed,hprofile,Nat.add_le_add hn₁ hn₂,
-    Exec.seq he₁ he₂,hword,h848,hcert,?_⟩
+    Exec.seq he₁ he₂,hword,h848,hcert,
+    ⟨hstreams.1.trans (inputsL'.input.trans inputsL.input.symm),
+      hstreams.2.trans (inputsL'.outputStream.trans inputsL.outputStream.symm)⟩,?_⟩
   intro i hi
   have hf := hframe i (fun j => hi _)
   exact ⟨(houtside i hi).1.trans hf.1,(houtside i hi).2.trans hf.2⟩

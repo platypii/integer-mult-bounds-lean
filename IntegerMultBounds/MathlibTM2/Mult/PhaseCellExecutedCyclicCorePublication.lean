@@ -73,6 +73,7 @@ theorem executedCyclicCorePublication_spec (hR : rpStates ≤ Q) (hQ : SS.states
       G.R 125 = savedL ∧ G.R 425 = savedR ∧
       ReplicaAssemblyControls H (CyclicPackedNormalizationPlacement.gather false) 839 G ∧
       ReplicaAssemblyControls K (CyclicPackedNormalizationPlacement.gather true) 838 G ∧
+      (G.inp = S.inp ∧ G.out = S.out) ∧
       List.Forall₂ (fun rhs x => SchurDominance.Solves (realMatrix s t p u)
         (cyclicPrincipalVertices s a n) x (fun i => (value q (rhs i)).re)) Fs xs.reverse ∧
       Exec (embTab cyclicCorePublicationReg (embTab extendNormalization (embTab extendAssembly
@@ -103,7 +104,7 @@ theorem executedCyclicCorePublication_spec (hR : rpStates ≤ Q) (hQ : SS.states
   let K := axis.cyclicRightReplicaProblem cellTarget 2 a n hn Fs hF
   intro W hW wide hwide radiusWord coreWord hRword hLword buffersL buffersR v S tail pageTail
     inputsL inputsR factory h226 h229
-  obtain ⟨J,L,X,G,fields,xs,z,m,savedL,savedR,hu,hprofile,hm,h247,h547,h125,h425,controlsL,controlsR,hsol,he,haccL,haccR⟩ :=
+  obtain ⟨J,L,X,G,fields,xs,z,m,savedL,savedR,hu,hprofile,hm,h247,h547,h125,h425,controlsL,controlsR,hstreams,hsol,he,haccL,haccR⟩ :=
     executedCyclicPackedNormalization_spec (body := body) hR hQ hA axis ha hn hleftRoom hrightRoom
       Fs hF W hW wide hwide buffersL buffersR (embDn cyclicCorePublicationReg v) S tail pageTail
       inputsL inputsR factory h226 h229
@@ -170,7 +171,7 @@ theorem executedCyclicCorePublication_spec (hR : rpStates ≤ Q) (hQ : SS.states
   obtain ⟨vf,nc,huf,hnc,hecrop,hready,haccuracy⟩ := normalizedCorePublication_exec (body := callerBody)
     p W coreWidth k radius hleft hright _ Gs _ hgood vi F radiusWord coreWord hRword hLword hsrc hw hN hfresh
   refine ⟨J,L,X,G,fields,xs,vf,m+nc,savedL,savedR,huf.trans (huser.trans hu),hprofile,?_,
-    h247,h547,h125,h425,controlsL,controlsR,?_,Exec.seq helift' hecrop,?_,?_⟩
+    h247,h547,h125,h425,controlsL,controlsR,hstreams,?_,Exec.seq helift' hecrop,?_,?_⟩
   · simpa only [hDlen] using Nat.add_le_add hm hnc
   · simpa only [List.reverse_reverse] using List.forall₂_reverse_iff.mpr hsol
   · simpa only [hDlen] using hready

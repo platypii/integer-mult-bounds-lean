@@ -127,9 +127,7 @@ def outputVolume (r : PackedNormalizedJob A s) : ℕ :=
 
 theorem output_length (r : PackedNormalizedJob A s) {word : List (Fin (A+4))}
     (h : r.output word) : word.length = r.outputVolume := by
-  obtain ⟨Gs,hGs,rfl,_⟩ := h
-  simp only [List.length_flatten,List.map_map,Function.comp_def,length_cstream,ownedCoreWords_length,
-    List.map_const',List.sum_replicate,hGs,outputVolume,nsmul_eq_mul,Nat.cast_id,Nat.mul_assoc]
+  exact PackedNormalizedOutput.length h
 
 theorem outputs_length {records : List (PackedNormalizedJob A s)}
     {outputs : List (List (Fin (A+4)))} (h : List.Forall₂ output records outputs) :

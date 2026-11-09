@@ -67,6 +67,7 @@ theorem routedCachedComplexInput_exec (hA : 4 ≤ A) (H : ReplicaHaloProblem s) 
         (work ∘ Fin.castLE (by decide : 300 ≤ 392)) (hwork.comp (Fin.castLE_injective _)))
         (generatedRecoveryBuffers H S.inp S.out) G ∧ G.R src = tail ∧
       (∀ i : Fin 392, 300 ≤ i.val → G.L (work i) = [] ∧ G.R (work i) = []) ∧
+      G.L src = S.L src ∧
       (∀ k, k ≠ src → (∀ i, work i ≠ k) → G.L k = S.L k ∧ G.R k = S.R k) := by
   dsimp only
   let payload := cstream A W (Fs.map (packedInterval H.origin H.span)).flatten
@@ -91,7 +92,7 @@ theorem routedCachedComplexInput_exec (hA : 4 ≤ A) (H : ReplicaHaloProblem s) 
     (by intro i hi; simp [F,Function.update_of_ne (fun he => hi (hwork he)),(hsrcOff i).symm,hblank])
     hleft (by simp [F,hblank,payload]) (by simp [F,(hworkTmp 124).symm,(show tmp ≠ src from Ne.symm (by assumption)),htmp])
   rw [hcopy] at hn₂
-  refine ⟨v₂,G,(6*payload.length+6)+n₂,hu₂.trans hu₁,?_,Exec.seq he₁ he₂,hready,?_,hscratch,?_⟩
+  refine ⟨v₂,G,(6*payload.length+6)+n₂,hu₂.trans hu₁,?_,Exec.seq he₁ he₂,hready,?_,hscratch,(hframe src (fun i => (hsrcOff i).symm)).1,?_⟩
   · rw [hlen]; exact Nat.add_le_add (le_refl _) hn₂
   · rw [(hframe src (fun i => (hsrcOff i).symm)).2]
     simp [F,(hsrcOff 124)]
