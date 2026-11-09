@@ -4441,6 +4441,51 @@ execution and the checked boundary completion with this published bulk bank;
 then close header initialization, selected total-cost absorption, outer axes
 and final S4 gates. No push; retain a coherent production/publication checkpoint.
 
+**Concrete full-period solve and boundary completion now execute together.**
+`placedExactBoundaryArchivePublication_exec` closes the existing three-slot
+publisher with `Empty` procedures and lifts it through arbitrary injective
+117-register placement. Spectator tapes are counted once in the actual caller
+stock. Its exact endpoint changes only the archive/output ports; full-axis row
+accuracy concerns precisely those output bytes.
+`selectedAmortizedSeamCompletion_exec` executes the actual selected full-period
+solve/crops and this placed publisher in one trace. Boundary readiness transfers
+from the initial state across the seam archive append, and selected geometry
+discharges width, halo-radius and room obligations. The seam archive returns
+to its initial borrowed suffix; the exact final state changes only the output
+bank. Correctness is now global over every axis coordinate, conditional on the
+initial bank's bulk-class accuracy. Time and peak space concern the same trace;
+no seam solve, crop, publisher or intermediate readiness execution is supplied.
+Checks peak at 3347.4 MiB (placed publisher). Next connect the actual published-
+bulk bank/frame to this seam-completion theorem, preserving ordinary seam and
+boundary headers across bulk production/publication. This remains the open
+one-axis composition, followed by initial header generation, final selected
+resource absorption, outer tensor/locality scheduling and complete S4 gates.
+No push or small new commit; accumulate with that one-axis composition.
+
+**One concrete selected axis now executes from bulk production to full output.**
+`selectedAmortizedPublishedAxis_exec` calls actual bulk production/publication,
+transports ordinary seam/boundary readiness across its restored frame, then
+calls concrete seam solving/cropping/boundary completion. Both branches use
+the same exact inverse targets and original replica order. The theorem proves
+global coordinatewise accuracy and unit-ball bounds for the actual written
+output bank, with the sum of actual time bills and incremental space allowances
+on the same complete axis trace. Inputs/outputs, left stacks and right registers
+outside the raw bulk archive/output destination restore. Boundary scratch and
+its temporary seam archive restore through the completion theorem.
+No bulk, numerical, transpose, seam, crop, publication or intermediate execution
+supplier remains. Initial ordinary scalar/binary headers and layouts, metadata
+fits, power-of-two replica geometry, mathematical solution/inverse facts and
+static register separation remain explicit. The raw bulk archive is still
+retained; any final lifecycle retirement must be executed and charged.
+Single-file check peaks at 3756.4 MiB, under the production-module target.
+Next acceptance gates are substantive: generate ordinary starting headers and
+layouts, absorb the complete axis publication/boundary cost and peak terms into
+the selected S4 allowances, retire retained temporary banks, and compose outer
+tensor/locality schedules with setup charged at actual frequency. Fallback and
+root/compiler acceptance also remain open. The complete axis trace is a major
+integration checkpoint, not full S4. Collect the placed boundary, seam completion
+and joined-axis work in one larger local commit. No push.
+
 **First acceptance target: one complete fitting batch.** From declared original
 complex streams and ordinary scalar headers, execute component production,
 prepare numerical data, reuse it across the batch, publish certified complex
