@@ -1,6 +1,8 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCyclicReplicaConsumerInputs
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCyclicResidualExportStock
+public import IntegerMultBounds.MathlibTM2.Host.SequentialBudget
 
 /-! The actual cached archives feed the existing row exporter. All retained
 masters are installed once; export retires its packed controls. -/
@@ -8,7 +10,7 @@ masters are installed once; export retires its packed controls. -/
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2.Host
   IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Node
-  IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Mult.ShortConv
+  IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Fast.Main IntegerMultBounds.MathlibTM2.Mult.ShortConv
   IntegerMultBounds.NLogN.PhaseCellMatrix IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
   IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
 open CyclicReplicaPlacement
@@ -67,6 +69,11 @@ theorem CyclicReplicaConsumerPost.afterExport {s : ℕ} [NeZero s]
       simpa [embStk,exportedCyclicResidualRows,cyclicResidualRowsRetired] using hh
     exact hread.trans post.replicas
 
+def cyclicReplicaConsumerExportWorkspace {s : ℕ} (H K : ReplicaHaloProblem s) (n N : ℕ) : ℕ :=
+  2*(4*(H.Fs.length+H.wordWidth+H.span*H.wordWidth+K.span*K.wordWidth)+17)+
+    cyclicResidualExportPush (Q := Q) (A := A) (U := U)*
+      exportCyclicResidualRowsCost H.Fs.length n N H.wordWidth
+
 theorem cyclicReplicaConsumerExport_exec {s t : ℕ} [NeZero s]
     (hst : s < t) (hA : 4 ≤ A) (H K : ReplicaHaloProblem s)
     (leftBuffers rightBuffers : ReplicaLoopBuffers A) (S₀ S₁ : Stacks 834 A)
@@ -93,7 +100,9 @@ theorem cyclicReplicaConsumerExport_exec {s t : ℕ} [NeZero s]
         (4*(H.Fs.length*(H.span*H.wordWidth)+K.Fs.length*(K.span*K.wordWidth))+8))+
         exportCyclicResidualRowsCost H.Fs.length n
           (cyclicPrincipalBoundary s t band a n).card H.wordWidth ∧
-      Exec body cyclicReplicaConsumerExport (mk v S) m
+      ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+0+
+        cyclicReplicaConsumerExportWorkspace (Q := Q) (A := A) (U := U) H K n
+          (cyclicPrincipalBoundary s t band a n).card) 0 cyclicReplicaConsumerExport (mk v S) m
         (mk vf (cyclicReplicaConsumerExportState S rows)) ∧
       embStk left.coupling.bank (cyclicReplicaConsumerExportState S rows) = embStk left.coupling.bank S ∧
       embStk right.coupling.bank (cyclicReplicaConsumerExportState S rows) = embStk right.coupling.bank S ∧
@@ -153,9 +162,13 @@ theorem cyclicReplicaConsumerExport_exec {s t : ℕ} [NeZero s]
     (by rw [read 176 (by decide)]; simpa [cyclicResidualRowsReg] using hfresh 176 (by simp))
     (by rw [read 177 (by decide)]; simpa [cyclicResidualRowsReg] using hfresh 177 (by simp))
     (by rw [read 178 (by decide)]; simpa [cyclicResidualRowsReg] using hfresh 178 (by simp))
-  obtain ⟨vf,_,hu₂,he₂⟩ := exec_emb_ovr (body' := body) (ι := Empty.elim)
-    factorReg_injective (fun z => nomatch z) hei v₁ rfl F rfl
-  refine ⟨vf,_,hu₂.trans (hui.trans hu₁),?_,Exec.seq he₁ he₂,
+  have hmExport : m₂ ≤ exportCyclicResidualRowsCost H.Fs.length n
+      (cyclicPrincipalBoundary s t band a n).card H.wordWidth := by
+    simpa only [hzip] using hm₂
+  have heExport := exportCyclicResidualRows_exec_within_of_exec hei hmExport 0
+  obtain ⟨vf,_,hu₂,he₂⟩ := exec_emb_ovr_within_stock factorReg (body' := body) (ι := Empty.elim)
+    factorReg_injective (fun z => nomatch z) heExport v₁ rfl F rfl
+  refine ⟨vf,_,hu₂.trans (hui.trans hu₁),?_,execWithin_seq_two_budget body _ _ _ _ _ _ _ 0 _ _ he₁ he₂,
     post.afterExport H K leftBuffers rightBuffers S Cs Ds _⟩
   exact Nat.add_le_add hm₁ (by simpa only [hzip] using hm₂)
 

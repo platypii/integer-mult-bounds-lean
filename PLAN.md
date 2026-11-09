@@ -41206,6 +41206,82 @@ not a production module). Source-integrity and whitespace scans pass. Collect
 the step/loop/setup/cleanup/cyclic specialization work as one larger local Schur
 batch checkpoint, excluding periodic WIP. Do not push.
 
+### S4 consumer handoff and residual export retain their space guarantees
+
+The factor audit reached boundary_factorPrepared_exec, which currently exposes
+an RsbRuns execution and final permanent-bank bounds rather than an intermediate
+stock certificate. Endpoint stock alone must not be used as its peak. Before
+that deeper numerical obligation, the independent consumer export path can be
+closed using its existing structural contracts.
+
+cyclicReplicaConsumerHandoff_exec now retains the zero-growth archive-handoff
+trace it previously discarded. Only the four ordinary header copies add a
+reserve, bounded using copyUnaryHeaders_native. Moving the two cached archives
+into the consumer bank adds no space regardless of their lengths.
+
+CyclicResidualExportStock uses WordCmd.empty_native for the closed residual row
+exporter. Its opaque atomic push allowance times the existing linear stream
+bill gives a reserve independent of numerical solver runtime. The allowance is
+placed with exec_emb_ovr_within_stock, so spectators are counted once.
+cyclicReplicaConsumerExport_exec composes handoff and export and returns
+ExecWithin with cyclicReplicaConsumerExportWorkspace. Input, output order,
+retained-bank and recovery-header conclusions are unchanged. The enclosing
+consumer batch currently takes toExec until factor construction is certified.
+
+Full accepted-core integration passes (15905 jobs; 5.9 GiB combined peak).
+Source-integrity and whitespace scans pass. Keep these changes for the larger
+consumer/factor-resource checkpoint; no push, periodic WIP untouched.
+
+Next: prove intermediate workspace through the allocated boundary factor kernel
+and its scaled setup, then through cyclic page construction. Compose that
+factory with the checked Schur batch and consumer export, and join the original
+producer/recovery traces. This numerical factor-space gate and the other full
+S4 requirements remain open.
+
+Export checkpoint verification: closed exporter 2066.7 MiB, handoff 3278.6 MiB,
+consumer export 3294.2 MiB, consumer batch 3423.0 MiB, complete accepted complex
+caller 3451.3 MiB. The consumer-export axiom audit reports only propext,
+Classical.choice and Quot.sound (9399.5 MiB temporary audit peak, not a production
+module). All checks finish successfully with default limits. No commit or push;
+collect with the upcoming factor-space work.
+
+### S4 factor primitives reuse stock-aware scans and backward arithmetic
+
+The deeper factor audit found the existing RsbRunsWithin and rsb_rep_runs_within
+language. ResampBFrameStock now gives RsbHolds.size_le_of_lengths: a valuation
+whose role lengths do not grow, together with its frame, cannot grow whole-host
+stock. It is generic in the role type and needs neither role enumeration nor a
+concrete arithmetic value.
+
+BandNewtonStock reuses the original Newton correctness/fit theorem and proves
+the actual step is closed native work. The single-step reserve covers its two
+primitive products and linear traffic. band_newton_runs_within uses the existing
+stock-aware repeated scan and the new frame lemma: every iteration replaces xa
+with an equal-width reciprocal and restores other workspace, so all K iterations
+share one step reserve. The copy of the initial reciprocal is charged once.
+The reserve has no K multiplier, and no numerical-fit assumptions were added.
+
+PhaseCellBandFactorRowStock proves band_facRow_runs_within by substituting the
+existing band_bwdStep_runs_within for its execution-only counterpart. The same
+row update, multiplier and exact output valuation are retained. Only linear
+movement/copying is added: its allowance is the existing backward numerical
+reserve plus 100*(B+1)*(w+1). It does not charge the whole factorization runtime
+as workspace.
+
+All three standalone modules build and pass guarded checks: frame lemma
+1910.7 MiB, Newton loop 1939.3 MiB, factor row 2081.4 MiB. The Newton/row axiom
+audit reports only propext, Classical.choice and Quot.sound (6950.1 MiB temporary
+audit peak, not a production module). These are factor-building contracts, not
+yet a resource-certified factor factory or complete S4 theorem.
+
+Next compose factor rows with aggregate input/output stock conservation (some
+individual archive roles grow), then the window step, axis loop, organization
+and transpose. Reuse the existing scan reserve rules rather than summing row
+or Newton workspace across iterations. Retain the resulting factor-space trace
+through scaled setup and the cyclic factory, then join export and Schur batch.
+Collect the checked consumer-export and factor-primitive work into one larger
+local resource checkpoint; exclude periodic WIP and do not push.
+
 Next instantiate countedLoop at released gather clock 122. Use an arbitrary
 list of matching boundary/original-RHS pairs, with a completed/remaining split.
 Keep two input queues and two reverse completed archives explicit. Clock writes

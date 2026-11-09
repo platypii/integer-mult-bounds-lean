@@ -61,7 +61,9 @@ theorem cyclicReplicaConsumerHandoff_exec {s : ℕ} [NeZero s] (H K : ReplicaHal
     ∃ vf m, vf.user = v.user ∧
       m ≤ (4*(H.Fs.length+H.wordWidth+H.span*H.wordWidth+K.span*K.wordWidth)+17)+
         (4*(H.Fs.length*(H.span*H.wordWidth)+K.Fs.length*(K.span*K.wordWidth))+8) ∧
-      Exec body cyclicReplicaConsumerHandoff (mk v S) m (mk vf F) ∧
+      ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+0+
+        2*(4*(H.Fs.length+H.wordWidth+H.span*H.wordWidth+K.span*K.wordWidth)+17)) 0
+        cyclicReplicaConsumerHandoff (mk v S) m (mk vf F) ∧
       CyclicReplicaConsumerPost H K leftBuffers rightBuffers S F Cs Ds := by
   let C := cyclicReplicaConsumerHeaderState S
   obtain ⟨v₁,hu₁,he₁⟩ := cyclicReplicaConsumerHeaders_exec (body := body) v S (hblank 175 (by simp))
@@ -91,8 +93,12 @@ theorem cyclicReplicaConsumerHandoff_exec {s : ℕ} [NeZero s] (H K : ReplicaHal
   have hlenR : (C.R (right.plan.gather 125)).length = K.Fs.length*(K.span*K.wordWidth) := by
     rw [harchR,List.length_flatMap]
     simp only [length_cstream,packedInterval_length _ K.span_fit,List.map_const',List.sum_replicate,hr.length,smul_eq_mul]
+  have heHeaders := mn_native_exec_within he₁ 2
+    (copyUnaryHeaders_native (factorReg 175) cyclicReplicaConsumerHeaderCopies) 0 _ (le_refl _)
+  rw [hcopyCost] at heHeaders
   obtain ⟨vf,hu₂,he₂⟩ := cyclicReplicaArchiveHandoff_exec_within (body := body) v₁ C htmp
-    0 (mnSize (mk v₁ C)) (by omega)
+    0 (mnSize (mk v S)+0+2*(4*(H.Fs.length+H.wordWidth+H.span*H.wordWidth+K.span*K.wordWidth)+17))
+    heHeaders.final
   have hbankL : embStk left.coupling.bank C = embStk left.coupling.bank S := by
     refine Stacks.ext rfl rfl rfl ?_
     funext i; exact (cyclicReplicaConsumerHeaders_frame S _ (Or.inl (.bank i))).2
@@ -109,12 +115,12 @@ theorem cyclicReplicaConsumerHandoff_exec {s : ℕ} [NeZero s] (H K : ReplicaHal
       (cyclicReplicaConsumerState S).R (factorReg j) = C.R (factorReg j) := by
     have hh := congrArg (fun R => R.R j) (cyclicReplicaArchiveHandoff_factor C)
     simpa only [cyclicReplicaConsumerState, C, embStk,Function.comp_apply,Function.update_of_ne hj172,Function.update_of_ne hj169] using hh
-  refine ⟨vf,_,hu₂.trans hu₁,?_,Exec.seq he₁ he₂.toExec,⟨?_,?_,?_,?_,?_,?_,
+  refine ⟨vf,_,hu₂.trans hu₁,?_,ExecWithin.seq heHeaders he₂,⟨?_,?_,?_,?_,?_,?_,
     (cyclicReplicaArchiveHandoff_banks C).1.trans hbankL,
     (cyclicReplicaArchiveHandoff_banks C).2.trans hbankR,
     (cyclicReplicaArchiveHandoff_recoveryRhs H K leftBuffers rightBuffers C hrhsL hrhsR).1,
     (cyclicReplicaArchiveHandoff_recoveryRhs H K leftBuffers rightBuffers C hrhsL hrhsR).2⟩⟩
-  · rw [hcopyCost,hlenL,hlenR]
+  · rw [hlenL,hlenR]
   · exact (hheaders 130 (by decide) (by decide)).trans hwidth
   · exact (hheaders 168 (by decide) (by decide)).trans hvolL
   · exact (hheaders 171 (by decide) (by decide)).trans hvolR

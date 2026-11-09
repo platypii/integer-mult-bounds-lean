@@ -132,7 +132,7 @@ theorem cyclicReplicaConsumerBatch_spec (hR : rpStates ≤ Q) (hQ : SS.states �
     band a n ha hn rfl rfl rfl rfl rfl rfl hblank hleftMask hrightMask hcount hwork hfresh
   have hw : H.wordWidth = w := rfl
   have he₁' : Exec native cyclicReplicaConsumerExport (mk v S) m₁ (mk v₁ E) := by
-    simpa only [cyclicReplicaBoundaryRows_stream,hw,E,rows] using he₁
+    simpa only [cyclicReplicaBoundaryRows_stream,hw,E,rows] using he₁.toExec
   have hbankL' : embStk left.coupling.bank E = embStk left.coupling.bank S := by
     simpa only [cyclicReplicaBoundaryRows_stream,hw,E,rows] using hbankL
   have hbankR' : embStk right.coupling.bank E = embStk right.coupling.bank S := by
