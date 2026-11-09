@@ -1,10 +1,9 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellHaloLengthKeyLoop
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellHaloLengthKeyStepStock
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellHaloLengthKeyLoopSharedStock
 
-/-! All runtime-selected classes retain accuracy and their summed workspace
-allowance. The geometric schedule has at most six length classes. -/
+/-! All runtime-selected classes share one maximum workspace reserve. -/
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
@@ -16,7 +15,7 @@ open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
 variable {Q A : ℕ} {P₀ U : Type} {body : P₀ → Pr P₀ 117 Q A U}
 
 def haloLengthKeyLoopWorkspace (J R K p l s t u target rhsExp V a b : ℕ) (keys : List ℕ) : ℕ :=
-  (keys.map (fun L => processHaloLengthKeyWorkspace J R K p l L s t u target rhsExp V a b)).sum
+  haloLengthKeyLoopSharedWorkspace J R K p l s t u target rhsExp V a b keys
 
 theorem haloLengthKeyLoop_spec_within (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     {l s t p u target rhsExp V a b : ℕ} [NeZero s] {α d : ℝ}
@@ -65,75 +64,8 @@ theorem haloLengthKeyLoop_spec_within (hR : rpStates ≤ Q) (hQ : SS.states ≤ 
         publishedCellRead q w (0 : ZMod s) (S'.R 132) j = publishedCellRead q w (0 : ZMod s) (S.R 132) j) ∧
       (EncodedRange A w q (interiorOutputExponent p l target rhsExp) E →
         EncodedRange A w q (interiorOutputExponent p l target rhsExp) E') := by
-  dsimp only
-  induction keys generalizing v S E with
-  | nil =>
-    have hc : S.R 127 = [] := by simpa using hcount
-    have hk : S.R 126 = keyTail := by simpa [lengthKeyPackets] using hkeys
-    refine ⟨v,S,1,E,rfl,by simp [haloLengthKeyLoopCost],
-      ExecWithin.loop_false (by change v.flag = false; simpa using hflag)
-        (by unfold haloLengthKeyLoopWorkspace; simp),rfl,rfl,rfl,hE,?_,?_,?_,?_⟩
-    · have hf : keyLoopR S.R keyTail [] (E++outputTail) = S.R := by
-        simpa only [hk,hc,hdst] using keyLoopR_self S.R
-      exact hf.symm
-    · intro L hL
-      simp at hL
-    · intro K _ n j hj
-      rfl
-    · exact fun h => h
-  | cons L keys ih =>
-    obtain ⟨hLnot,hnd⟩ := List.nodup_cons.mp hnodup
-    obtain ⟨hL,hLs,hpad,hfit⟩ := hbounds L (by simp)
-    obtain ⟨v₁,S₁,n₁,E₁,hu₁,hflag₁,hn₁,he₁,hi₁,ho₁,hl₁,hE₁,hframe₁,herror₁,hkeep₁,hbound₁⟩ :=
-      haloLengthKeyStep_spec_within (body := body) hR hQ hA hp hst hu hαu hθ hgap hbudget hband has hbs hL hLs hpad C hC x hx J R K hpushJ hpushR hpushK
-        v S borrowed E outputTail (lengthKeyPackets A V keys++keyTail) tick (List.replicate keys.length tick)
-        (by simpa [List.replicate_succ] using hcount) hfit hready.keyWidth
-        (by simpa [lengthKeyPackets,List.append_assoc] using hkeys) hE hdst hready.masters haMaster hbMaster hready.left hready.blank
-        hready.source hready.countSaved hready.headerTemp hready.wordWidth hready.fresh
-    have hready₁ := hready.of_frame (lengthKeyPackets A V keys++keyTail) (List.replicate keys.length tick)
-      (E₁++outputTail) hl₁ hframe₁
-    have hkeys₁ : S₁.R 126 = lengthKeyPackets A V keys++keyTail := by
-      simpa [keyLoopR] using congrArg (fun R => R 126) hframe₁
-    have hcount₁ : S₁.R 127 = List.replicate keys.length tick := by
-      simpa [keyLoopR] using congrArg (fun R => R 127) hframe₁
-    have hdst₁ : S₁.R 132 = E₁++outputTail := by
-      simpa [keyLoopR] using congrArg (fun R => R 132) hframe₁
-    obtain ⟨v₂,S₂,n₂,E₂,hu₂,hn₂,he₂,hi₂,ho₂,hl₂,hE₂,hframe₂,herror₂,hkeep₂,hbound₂⟩ :=
-      ih hnd (fun K hK => hbounds K (by simp [hK])) v₁ S₁ E₁ hE₁ hdst₁ hkeys₁ hcount₁ hready₁
-        (by rw [hframe₁]; simpa [keyLoopR] using haMaster)
-        (by rw [hframe₁]; simpa [keyLoopR] using hbMaster)
-        (hflag₁.trans (count_head_isSome keys))
-    refine ⟨v₂,S₂,n₁+n₂+1,E₂,hu₂.trans hu₁,?_,
-      ?_,
-      hi₂.trans hi₁,ho₂.trans ho₁,hl₂.trans hl₁,hE₂,?_,?_,?_,?_⟩
-    · dsimp only [haloLengthKeyLoopCost] at hn₂ ⊢
-      simp only [List.map_cons,List.sum_cons]
-      omega
-    · have hstock := he₁.final
-      refine ExecWithin.loop_true (by change v.flag = true; simpa using hflag)
-        (he₁.mono ?_) (he₂.mono ?_)
-      · intro d z hz
-        unfold haloLengthKeyLoopWorkspace
-        simp only [List.map_cons,List.sum_cons]
-        omega
-      · intro d z hz
-        unfold haloLengthKeyLoopWorkspace at hz ⊢
-        simp only [List.map_cons,List.sum_cons]
-        omega
-    · exact hframe₂.trans (by rw [hframe₁,keyLoopR_comp])
-    · intro K hK n
-      rcases List.mem_cons.mp hK with hEq | hK
-      · subst K
-        intro j hj
-        have heq := hkeep₂ L hLnot n j hj
-        change ‖publishedCellRead _ _ _ (S₂.R 132) j-x j‖ ≤ _
-        rw [heq]
-        exact herror₁ n j hj
-      · exact herror₂ K hK n
-    · intro K hK n j hj
-      have hKL : K ≠ L := fun he => hK (List.mem_cons.mpr (Or.inl he))
-      have hKtail : K ∉ keys := fun hk => hK (List.mem_cons.mpr (Or.inr hk))
-      exact (hkeep₂ K hKtail n j hj).trans (hkeep₁ K hKL n j hj)
-    · exact fun h => hbound₂ (hbound₁ h)
+  exact haloLengthKeyLoop_spec_shared_workspace (body := body) hR hQ hA hp hst hu hαu hθ hgap
+    hbudget hband has hbs keys hnodup hbounds C hC x hx J R K hpushJ hpushR hpushK
+    v S borrowed E outputTail keyTail hE hdst hkeys hcount hready haMaster hbMaster hflag
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

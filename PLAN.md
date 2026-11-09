@@ -44106,3 +44106,233 @@ integration passes (4477 jobs, 2.6 GiB combined peak). All handles terminal.
 Collect the lookup/row/page/generated-factory work as one coherent local
 checkpoint. Exclude all unrelated periodic recovery WIP. No push. Next bound
 actual table/numerical-factor allowances and integrate fitting callers.
+
+### S4 factor-axis allowance separates volume and one arithmetic reserve
+
+BandAxisWorkspaceBound bounds bandAxisPrepWorkspace by
+10000*(C+J+L+1)*(n+k+2)*(k+2)*(w+1) +
+2*(C+J+L+1)*rmulCost w + 4*K, where C is the native Newton-step
+push bound and J,L are multiplication push bounds. The actual
+boundaryAxisPrepWorkspace instantiation satisfies the same inequality. This
+isolates banded storage/organization from one arithmetic reserve and linear
+Newton control storage; the numerical reserve is not multiplied by K or n.
+
+Check passes at 2126.0 MiB; integration passes (9540 jobs, 2.7 GiB combined
+peak). All verification handles terminal. The rmulCost term still requires
+comparison with the final fitting allowance; this is not a proof of the full
+sharp S4 space bound. Next simplify the generated-table allowance, compare
+both against actual fitting hypotheses, and integrate the fitting caller.
+Keep this with the next larger local checkpoint; no push. Unrelated periodic
+recovery WIP is untouched.
+
+### S4 table publication and factor-page overhead have volume bounds
+
+CyclicTableVolumeBound isolates the original-column and cyclic-residual-pass
+numerical reserves. The remaining uniform column controller allowance is bounded
+by 8*cap + 100000*(B.card+s+band+1)*(V+q+1), with V the geometry word width.
+It also proves preparedCyclicFactorPageWorkspace is bounded by the single
+cyclicTableUniformWorkspace plus
+15000000*(B.card+band+1)*(band+1)*(q+1). Thus complete retained table/page
+publication introduces no boundary-count multiplier on numerical scratch.
+
+The combined production module passes at 3439.7 MiB; integration passes (15917
+jobs, 3.5 GiB combined peak). All handles terminal. These bounds deliberately
+leave actual original-column/residual numerical allowances and the collection
+entry cap visible; those must still be compared with the fitting requirements.
+The complete fitting caller and original-input/grouped/fallback/tensor/root S4
+gates remain open. Keep this with the next larger local checkpoint; no push.
+
+### S4 cyclic residual lifecycle adds linear stream volume
+
+CyclicResidualVolumeBound collapses initialization, real projection, interior
+retirement, residual archiving and endpoint-copy allowances into one bound:
+windowedSchurResidualWorkspace is at most interiorResidualWorkspace at the actual
+initialSchurTarget plus 10000*(s+a+b+1)*(q+1). For a cyclic interval with a≤s and
+n≤s, both pieces together are bounded by their two actual interior residual
+reserves plus 60000*(s+1)*(q+1). No interval enumeration is used.
+
+Check passes at 2216.5 MiB; integration passes (10504 jobs, 2.7 GiB combined
+peak). All handles terminal. The remaining numerical leaf comparison is now
+solveHaloInteriorWorkspace, coupling-header installation and feedCouplingPassWorkspace
+inside interiorResidualWorkspace; the lifecycle bound does not itself close that
+comparison or the fitting caller. Full original-input/grouped/fallback/tensor/root
+S4 gates remain open. Keep with the larger local bounds checkpoint; no push.
+
+### S4 halo length-key traversal shares its largest reserve
+
+Inspection found haloLengthKeyLoopWorkspace still sums per-key scratch reserves.
+HaloLengthKeyLoopSharedStock proves the stronger execution theorem with a
+structural foldr max 0 over those same per-key allowances. Each iteration consumes
+key/count storage and preserves output length, so keyLoop_stock_le derives a
+nonincreasing boundary stock from the exact frame. Both loop branches then use
+one maximum reserve; accuracy, untouched-core preservation, EncodedRange,
+original runtime and final bank contracts are retained.
+
+The stock proof is factored outside the numerical loop context after an initial
+in-context version hit the default heartbeat limit. No limits were raised.
+Check passes at 2207.0 MiB; integration passes (10124 jobs, 2.7 GiB combined
+peak). All handles terminal. Next wire runGeneratedHaloKeys and solveHaloInterior
+to this stronger contract before propagating it through residual/table callers.
+The existing production callers still use the older summed contract until that
+wiring is checked. Full S4 remains open. No commit or push.
+
+### S4 production interior callers adopt the maximum key reserve
+
+HaloLengthKeyLoopStock now delegates its established execution API to the checked
+shared-reserve theorem; haloLengthKeyLoopWorkspace names that maximum. This
+removes the old duplicated induction and propagates the stronger allowance
+through existing generated-key, initialized interior, residual and table callers
+without parallel wrapper copies. The public wrapper check passes at 2129.2 MiB.
+Full factor-factory and volume-bound integration passes (15930 jobs, 6.0 GiB
+combined peak, 1.2 minutes). Loop and final factory axiom audits report only
+propext, Classical.choice and Quot.sound (9620.2 MiB temporary audit peak).
+All verification handles are terminal; downstream adoption is checked.
+No commit or push; preserve unrelated periodic recovery WIP.
+
+### S4 coupling passes have one endpoint-independent reserve
+
+FeedCouplingWorkspaceBound reuses the original-column coordinate bounds for
+source-mask and guard construction, for either boundary or interior coupling.
+feedCouplingUniformWorkspace exposes their fixed setup terms, coefficient packet
+preparation, the existing shared prepared-row reserve and linear stream traffic.
+feedCouplingPassWorkspace_le_uniform requires only a≤s and b≤s; no case-indexed
+workspace supplier is introduced.
+
+interiorResidualWorkspace_le_components composes this bound with the actual
+solveHaloInteriorWorkspace and a linear retained-header allowance. This removes
+endpoint dependence from coupling scratch while leaving the numerical interior
+solver visible for the remaining fitting comparison. Check passes at 2192.7 MiB;
+integration passes (10451 jobs, 2.7 GiB combined peak). All handles terminal.
+Next bound the selected halo-class allowance in the maximum-reserve interior
+loop using its batch volume, then combine these checked components against the
+fitting hypotheses. Full S4 remains open. No commit or push.
+
+### S4 selected halo-class overhead is bounded by stream and batch volume
+
+HaloClassWorkspaceBound bounds protected class gather/publication by the selected
+sizedClosedBatchWorkspace plus 20000*(B+s+a+b+1)*(q+1). The process-key bound
+handles active and inactive classes structurally, retaining preparation, the
+selected numerical batch and linear key decoding without enumerating classes.
+
+sizedClosedBatchWorkspace_le_volume reuses generatedBatchSetupWorkspace_affine:
+its bound contains setup at replica count zero, cellArithmeticWorkspace for the
+actual batch, and 30000*(B+1)*(L+1)*(q+l+1) for added encoded storage, staging,
+publication and runtime release. Numerical setup is not repaid per replica.
+Check passes at 2154.1 MiB; integration passes (10101 jobs, 2.7 GiB combined
+peak). All handles terminal. Next compare class preparation, count-zero setup
+and cell arithmetic against fitting dimensions and precision, then cap the actual
+maximum key reserve. Full S4 remains open. No commit or push.
+
+### S4 full cell arithmetic retains setup once across replicas
+
+ArithmeticWorkspaceBound proves cellArithmeticWorkspace at replica count M is
+bounded by its value at zero replicas plus
+100000*(R+K+1)*M*(2^l+L+1)*(w+cExp+e+l+1). The proof uses the existing fixed
+convolution workspace formula, shared scalar/weight reserves and structural
+encoded traffic formulas; it does not enumerate replicas or charge repeated
+arithmetic runtime as scratch storage.
+
+HaloClassWorkspaceBound now combines that theorem with the generated-setup
+affine bound: sizedClosedBatchWorkspace_le_shared_setup contains generated setup
+and cell arithmetic at zero replicas plus explicit batch-volume terms. A small
+scalar addition lemma avoids a recursion-depth failure in the large parameter
+context; no limits were raised. Checks pass at 2178.5 MiB (arithmetic) and
+2152.2 MiB (combined class bounds). Integration passes (4474 and 10102 jobs,
+each 2.7 GiB combined peak). All handles terminal. Next bound shared setup and
+class preparation in fitting parameters and cap the actual maximum key reserve.
+Full S4 remains open. No commit or push.
+
+### S4 halo preparation has a coordinate-independent metadata bound
+
+HaloPreparationWorkspaceBound separates conditional class preparation into
+9*tblC V V and explicit header/origin/width traffic, for V=haloGeometryWidth
+and W=weightWorkspaceWidth. Its uniform theorem uses the existing
+haloLengthGroup_length_le plus a,b,L≤s to remove all selected endpoint, length
+and class-count dependence. The resulting non-table term is
+50000*(P+N+q+l+s+t+u+band+1)*(V+W+q+1).
+
+The shared tblC term is explicitly quadratic in geometry width; it is not
+silently absorbed as linear storage and still requires the fitting comparison.
+Check passes at 2212.5 MiB; integration passes (9879 jobs, 2.8 GiB combined
+peak). All handles terminal. Next combine preparation, shared batch setup and
+cell arithmetic bounds into a cap on the actual maximum key allowance, then
+compare that cap with fitting dimensions. Full S4 remains open. No commit/push.
+
+### S4 actual maximum key reserve separates shared setup and uniform overhead
+
+HaloKeyWorkspaceBound combines the checked preparation, publication and affine
+batch bounds. processHaloLengthKeyWorkspace_le_shared_setup bounds every selected
+key by haloKeySharedSetup L (generated setup and cell arithmetic at zero replicas)
+plus haloKeyAuxWorkspace, independent of endpoints, selected length and class
+count. It uses L≤s and the established group-count bound, not case enumeration.
+
+haloLengthKeyLoopWorkspace_le_shared_setup lifts this through structural list
+maximum: the whole loop is bounded by the maximum of per-length shared setups
+plus one uniform auxiliary allowance. No number-of-keys multiplier appears.
+Explicit multiplication monotonicity and small scalar composition lemmas avoid
+incorrect splitting of sums and recursion-depth failures; no limits were raised.
+Check passes at 2142.1 MiB; integration passes (10129 jobs, 2.7 GiB combined
+peak). All handles terminal. Remaining fitting comparison: bound the zero-replica
+setup across selected lengths, then the exposed geometry/precision terms. Full
+S4 caller/input-production/grouped/fallback/tensor/root gates remain open.
+No commit or push; collect the larger shared-reserve/bounds checkpoint.
+
+### S4 selected-key maximum has a derived uniform cap
+
+GeneratedBatchWorkspaceMono proves zero-replica generated setup monotone in cell
+length, using coefficient-width monotonicity and exposed scalar cost formulas.
+ArithmeticWorkspaceBound adds the corresponding zero-replica arithmetic theorem.
+Keeping Fixed.workspace opaque in the latter proof reduced peak RSS from
+4140.6 MiB to 2183.9 MiB, within the production module target.
+
+HaloKeyWorkspaceBound now proves haloKeySharedSetup_mono and
+haloLengthKeyLoopWorkspace_le_uniform: for keys bounded by s and a chosen M,
+the actual loop allowance is bounded by haloKeySharedSetup M plus one
+haloKeyAuxWorkspace. There is no remaining list maximum or per-key reserve
+premise. M is arbitrary, preserving the ability to use the manuscript's tighter
+selected-length bound instead of all of s.
+
+Checks pass at 2092.9 MiB (generated setup), 2183.9 MiB (arithmetic) and
+2142.2 MiB (uniform loop). Integration passes (10130 jobs, 2.7 GiB combined
+peak); all handles terminal. Next instantiate the actual generated halo keys'
+length bound and propagate this cap into solveHaloInteriorWorkspace, then compare
+shared setup/geometry with fitting parameters. Full S4 remains open. No push;
+collect the shared-reserve/bounds work as a larger local checkpoint.
+
+### S4 generated interior execution has an explicit selected-length cap
+
+SolveHaloInteriorWorkspaceBound instantiates the actual generated keys with the
+manuscript bound (s/(t-s)+1)-2*band, using haloLengthCandidates_uniform; the common
+length cap is not replaced by all of s. generatedHaloKeysWorkspace_le_uniform
+eliminates the list maximum and any per-key reserve premise.
+
+initializeHaloLengthKeysCost_le_volume exposes initialization as 200*tblC V V plus
+linear header/metadata volume, using the established at-most-six key count only
+for encoded initialization traffic. solveHaloInteriorWorkspace_le_components
+combines these into an explicit bound on the actual executed interior allowance:
+initialization traffic, shared setup at the selected-length cap, and one auxiliary
+allowance. Numerical scratch is not multiplied by the number of keys.
+
+Check passes at 2194.6 MiB; integration passes (10176 jobs, 2.7 GiB combined
+peak). All handles terminal. Next propagate this explicit bound through the two
+cyclic residual pieces and table construction, then compare the resulting shared
+setup/geometry expressions with fitting parameters. Full S4 remains incomplete;
+original input production, grouped/fallback, tensor/support and root gates remain
+open. No push; retain the larger shared-reserve/bounds checkpoint.
+
+### S4 uniform interior bound reaches cyclic residuals and the table reserve
+
+CyclicResidualUniformBound removes endpoint dependence from interior solve and
+coupling allowances, retaining the manuscript selected-length cap. Both cyclic
+pieces use twice the same interiorResidualUniformWorkspace plus linear archive
+traffic. CyclicTableVolumeBound substitutes this into the actual table allowance,
+leaving original-column setup, uniform interior/coupling reserve, collection cap
+and explicit controller volume as the remaining fitting-comparison terms.
+
+Checks pass at 2208.4 MiB (cyclic residuals) and 3438.7 MiB (table). Integration
+passes (15928 jobs, 3.5 GiB combined peak). Shared loop and final table-bound axiom
+audits report only propext, Classical.choice and Quot.sound (9620.9 MiB temporary
+audit peak). All verification handles terminal. Collect shared key-reserve and
+uniform volume bounds as one local checkpoint, excluding periodic recovery WIP.
+No push. Next compare shared setup/geometry terms with fitting hypotheses and
+carry the resulting allowance to the complete fitting caller. Full S4 remains open.
