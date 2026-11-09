@@ -43143,3 +43143,102 @@ all broader S4 acceptance gates remain open.
 Consuming row, row scan, single/repeated iteration and factor-factory axiom
 audits report only propext, Classical.choice and Quot.sound (6988.6 MiB temporary
 audit peak). All verification handles are terminal.
+
+### S4 complete numerical inverse setup retains shared recurrence resources
+
+IntegerIterationsSetupStock generates scalar readiness once around the checked
+repeated recurrence. IntegerColumnStock adds executed unit-seed/header
+initialization, with seed traffic bounded in terms of retained word width.
+ColumnEncodingStock proves a structural native certificate for generated
+encoding counters and the bit-slice pass. GeneratedColumnStock now retains the
+complete executed integer recurrence and runtime encoding, preserving the
+exact encoded bank, ready context and original time bound.
+
+ReversedColumnStock retains the shifted reversed runtime column with linear
+native traffic. IntegerReciprocalStock retains the exact reciprocal produced
+from the positive integer corner. Its explicitly conservative single-division
+reserve is 8*(W*(12*W+128)+6*(2*q+8)+4*q+134): quadratic in setup width, with no
+row-, recurrence- or batch-count multiplier. This is not a sharp linear-space
+division theorem; its contribution still needs inclusion in the final uniform
+resource estimate. It does not replace the recurrence's shared row reserve.
+
+GeneratorSetupStock composes encoded column, shifted reverse and reciprocal
+over abstract stores. PackedGeneratorSetupStock adds native page assembly and
+raw-column retirement. NumericalGeneratorSetupStock joins the previously
+checked factorFactory with this packed generator producer. The resulting
+numericalGeneratorSetup_exec_within constructs factor data and the complete
+inverse page from the existing numerical table headers, preserves the original
+exact endpoint/time bill, and shares numerical reserves across distances,
+rows and recurrence iterations. Ordinary unary-to-table header production
+remains outside this theorem, as in the original correctness contract.
+
+Guarded peaks (MiB): readiness wrapper 2078.4; complete integer column 2073.3;
+encoding 2051.4; encoded column 2081.5; reversal 1944.2; reciprocal 2050.7;
+generator setup 2082.3; packed setup 2078.0; complete numerical setup 2092.2.
+Final integration through numerical setup passes (9700 jobs, 2.7 GiB combined
+peak). Proof-integrity and whitespace scans pass under unchanged proof limits.
+Keep collecting the larger header/inverse/batch checkpoint; no push or periodic
+WIP changes.
+
+Next retain generateSetupWidth, generateCoefficientWidth and
+prepareCoefficientHeaders in headerGeneratorSetup, then combine numerical
+setup, checked construction retirement and affine generator replication in
+batchInverseSetup. Compose shared weight setup and runtime preparation into
+batchWeightedSetup/generatedBatchSetup, then join stagedCell_sized_exec_within.
+The fitting-prefix/uniform resource gate and all broader S4 gates remain open.
+Readiness, encoded-column, reciprocal, packed-generator and full numerical-setup
+axiom audits report only propext, Classical.choice and Quot.sound (7007.7 MiB
+temporary audit peak). All verification handles are terminal.
+
+### S4 original batch bank executes with shared setup and staged arithmetic stock
+
+CoefficientHeaderNativeStock gives reusable structural native certificates for
+setup width, coefficient width and linear unary-to-binary header loading.
+HeaderGeneratorSetupStock composes this ordinary-header production with the
+checked numerical setup over abstract stores. BatchInverseSetupStock adds
+construction retirement and generator-page replication. Its workspace is
+shared construction plus B*(8*(38*(L*(2*q+8))+43)); no numerical scratch is
+multiplied by batch count.
+
+StackDepthInvariant proves the general ExecWithin.add_depth transport, including
+calls, and its additive-stock specialization mn_execWithin_add_depth. This
+reuses depth-zero certificates under arbitrary caller depth instead of
+reproving their loop invariants. BatchWeightedSetupStock uses it to combine
+shared weight generation with shared inverse setup and the parser header.
+GeneratedBatchSetupStock adds native RHS routing/runtime headers and preserves
+the original exact generatedBatchBank. Its affine workspace theorem is
+workspace(B)=workspace(0)+B*(640*(L*(2*q+8))+60*L+569): every additional cell pays
+only encoded volume and linear native traffic.
+
+BatchInputBankStock retains the existing concrete ordinary batch-bank supplier.
+GeneratedBatchExecStock now joins it to stagedCell_sized_exec_within, matching
+that resource trace to stagedCell_sized_exec by Exec.unique to retain the old
+Valid postcondition for the same execution. The full generatedBatch theorem
+starts at batchInputBank and includes numerical setup, staged arithmetic and
+valid publication. It has the original time bound and one additive setup plus
+stagedCellWorkspace space certificate. No numerical intermediate or execution
+witness is supplied by its caller; arithmetic primitive push bounds remain the
+usual parameters to instantiate at the fixed enclosing program.
+
+Guarded peaks (MiB): depth transport 1383.2; header native 2064.3; ordinary
+header/numerical setup 2118.0; full batch inverse 2098.9; weighted setup 2111.6;
+generated setup with affine estimate 2100.4; concrete input-bank supplier 2095.6;
+full sized generated batch 2118.4. Integration through the sized generated batch
+passes (9898 jobs, 2.7 GiB combined peak). Proof-integrity/whitespace scans pass;
+proof limits unchanged. The scalar reciprocal's explicitly conservative
+quadratic-width reserve remains recorded for the final uniform estimate.
+
+Next carry generatedBatch_sized_exec_within through the older guarded-interior
+execution chain (GeneratedBatchExec/ClosedBatchExec/ClosedBatchSpec, protected
+batch/group wrappers, halo-key loop, initialized/restored interior and residual
+passes). Then combine guarded residuals with checked arbitrary original columns
+in generatedCyclicColumn and indexed/retained joint-column publication/scan.
+This closes the original batch resource component, not the full fitting-prefix
+or uniform asymptotic resource gate. Original complex input expansion,
+fallback/grouped costs and tensor/root S4 gates remain open. Collect the
+accumulated numerical producer and complete batch resources in one larger local
+checkpoint; no push and exclude all unrelated periodic WIP.
+Depth transport, ordinary-header setup, batch inverse, affine setup estimate
+and full sized batch axiom audits use only the standard propext,
+Classical.choice and Quot.sound axioms (some use a subset); temporary audit
+peak 7056.9 MiB. All verification handles are terminal.
