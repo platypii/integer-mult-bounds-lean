@@ -4018,7 +4018,37 @@ aggregate). The remaining ordinary-pilot gate is execution integration: run the
 actual class scan and apply this uniform ledger bound to its returned callback
 witnesses together with their output certificates and `44*T` space traces.
 Do not mark the pilot or full S4 complete from the conditional ledger theorem
-alone. Header-copy
+alone.
+Scan integration exposed a real metadata dependency: the working precision
+uses the boundary count, so reusing unchanged numerical seed headers across an
+entire length class is not justified by the current callback contract. Generate
+those headers per origin using the existing restored inverse-master generator,
+whose polynomial setup is already supported by the class accounting, rather
+than postulating a scan invariant. `cyclicPrincipalBoundary_of_fits` identifies
+the fitting cyclic boundary with the ordinary interval boundary;
+`fittingCyclicLeftMasterValues` identifies its exact generated master values.
+The empty right piece shares the first eight masters and uses a permanent zero
+source for both endpoints. `generateFittingCyclicSeeds_exec` now executes one
+existing restored generator and proves readiness of both seed-source banks,
+with actual time/space and exact frames (3389.7 MiB guarded check).
+`retireGeneratedHeaders_exec` now restores an arbitrary injective unary header
+bank from its values and frame, with exact cleanup time and no stock growth.
+The existing two-endpoint retirement proof reuses this generic lemma, so the
+current caller and the generated-master callback share one cleanup argument.
+The generic cleanup checks at 1927.8 MiB.
+`CyclicSeedLayout` now packages fixed scalar wiring and ordinary dimension-header
+readiness. `generatedProgram_exec` composes one concrete restored generator,
+the retired numerical caller and generic cleanup of all ten generated masters.
+It returns certified output, the actual combined time ledger, an execution-wide
+space trace, the produced seed/factor witnesses, and exact restoration except
+payload consumption and output append. No prepared numerical seed bank is an
+input. The generated callback checks at 3556.8 MiB (guarded build 16579 jobs,
+3.6 GiB aggregate after dependency rebuild). Next prepend origin parsing into
+the ordinary source endpoint slots, release those two temporary words, and apply
+the existing consuming scan. Add generation/cleanup to the selected setup
+accounting; the earlier `44*T` trace concerns the preseeded origin callback and
+has not yet been transferred to this generated callback. Reuse the established scalar setup bounds when adding generation to the
+class ledger. Header-copy
 count accounting moved unchanged into the narrow `PhaseCellRecoverySeedCopyLedger`
 module so this consumer avoids importing the computed publication schedule.
 Both new input accounting and the existing computed-preparation consumer build;

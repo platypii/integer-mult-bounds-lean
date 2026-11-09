@@ -1,7 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReadRecoverySeedEndpoints
-public import IntegerMultBounds.MathlibTM2.Mult.ShortConvSetupStock
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetireGeneratedHeaders
 
 /-! Retire the two changing seed words after the numerical callback. The base
 state may already contain the consumed queue, remaining payload and new output. -/
@@ -42,17 +42,23 @@ theorem retireRecoverySeedEndpoints_exec (source : Fin 392 → Fin T)
         (retireRecoverySeedEndpoints source) (Host.mk v E) (2*(x+y)+5) (Host.mk v' S) := by
   dsimp only
   let E := recoverySeedEndpointState source x y S
-  obtain ⟨v',hu,he⟩ := clearWords_exec (body := body) [source 111,source 113]
-    (by simp [hsep]) v E
-  have hcost : 2*(([source 111,source 113].map fun r => (E.R r).length).sum)+
-      2*([source 111,source 113] : List (Fin T)).length+1 = 2*(x+y)+5 := by
-    simp [E,recoverySeedEndpointState,hsep]
-  have hfinal : {E with R := fun k => if k ∈ [source 111,source 113] then [] else E.R k} = S := by
-    refine Stacks.ext rfl rfl rfl ?_
-    funext k
-    by_cases hka : k = source 111 <;> by_cases hkb : k = source 113 <;>
-      simp_all [E,recoverySeedEndpointState]
-  rw [hcost,hfinal] at he
-  exact ⟨v',hu,mn_native_exec_within he 0 (clearWords_native _) depth _ (by simp only [Nat.zero_mul,Nat.add_zero]; exact le_rfl)⟩
+  let ports : Fin 2 → Fin T := ![source 111,source 113]
+  let values : Fin 2 → ℕ := ![x,y]
+  have hinj : Function.Injective ports := by
+    intro i j hij
+    fin_cases i <;> fin_cases j <;> simp_all [ports]
+  have hblank (i : Fin 2) : S.R (ports i) = [] := by
+    fin_cases i
+    · exact ha
+    · exact hb
+  have hvalues (i : Fin 2) : (E.R (ports i)).length = values i := by
+    fin_cases i <;> simp [E,ports,values,recoverySeedEndpointState,hsep]
+  have hframe (k : Fin T) (hoff : ∀ i, ports i ≠ k) : E.R k = S.R k := by
+    have ha' : k ≠ source 111 := (hoff 0).symm
+    have hb' : k ≠ source 113 := (hoff 1).symm
+    simp only [E,recoverySeedEndpointState,Function.update_of_ne hb',Function.update_of_ne ha']
+  have hretire := retireGeneratedHeaders_exec (body := body) ports hinj values v S E
+    hblank hvalues rfl rfl rfl hframe depth
+  simpa [ports,values,List.ofFn_succ,retireRecoverySeedEndpoints] using hretire
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

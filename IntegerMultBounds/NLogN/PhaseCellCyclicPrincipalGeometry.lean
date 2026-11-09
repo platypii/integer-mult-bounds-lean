@@ -70,6 +70,14 @@ theorem cyclicPrincipalBoundary_eq (t band a n : ℕ) (ha : a < s) (hn : n ≤ s
       · exact disjoint_left.mp hd (hI hh) hi
       · exact hnot hh
 
+/-- A fitting cyclic window is exactly the ordinary physical interval. -/
+theorem cyclicPrincipalBoundary_of_fits (t band a n : ℕ) (ha : a < s) (hfit : a+n ≤ s) :
+    cyclicPrincipalBoundary s t band a n = haloBoundary s t band a (a+n) := by
+  rw [cyclicPrincipalBoundary_eq t band a n ha (by omega)]
+  have hmin : min n (s-a) = n := by omega
+  rw [hmin,Nat.sub_self]
+  simp [haloBoundary,haloVertices]
+
 theorem cyclicPrincipalBoundary_card (t band a n : ℕ) (hst : s < t) (ha : a < s) (hn : n ≤ s) :
     (cyclicPrincipalBoundary s t band a n).card ≤ min n (4*band*(t-s+2)) := by
   apply Nat.le_min.mpr
