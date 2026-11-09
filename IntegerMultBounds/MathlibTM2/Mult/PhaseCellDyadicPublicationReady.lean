@@ -13,16 +13,13 @@ open IntegerMultBounds.Networks.Shared50ModularControl (prime)
 open FixedStreamedBank
 variable {T Q K : ℕ}
 
-structure PublicationReady (e : Fin tapeCount → Fin T)
+structure PublicationWorkspaceReady (e : Fin tapeCount → Fin T)
     (exponent packet pad tmp saved : Fin tapeCount) (a b L W V : ℕ) (S : Stacks T (prime+K)) : Prop where
   exponent : (S.R (e exponent)).length = a+b
   packet : (S.R (e packet)).length = L*W
   pad : S.R (e pad) = []
   tmp : S.R (e tmp) = []
   saved : S.R (e saved) = []
-  a : S.R (e (base (callerGenerator 97))) = binSyms V a
-  b : S.R (e (base (callerGenerator 98))) = binSyms V b
-  seed : S.R (e (base (callerGenerator 102))) = binSyms V (L*W)
   zero : S.R (e (base (callerGenerator 106))) = []
   width : (S.R (e (base (callerGenerator 115)))).length = V
   blank : ∀ r, S.R (e (base (callerGenerator (originReg r)))) = []
@@ -32,6 +29,13 @@ structure PublicationReady (e : Fin tapeCount → Fin T)
     S.R (e (base (callerWorker i))) = []
   count : S.R (e (extra 4)) = []
   codec : ∀ i ∈ [planeReg false,planeReg true,extra 2,extra 3,extra 5,extra 6], S.R (e i) = []
+
+structure PublicationReady (e : Fin tapeCount → Fin T)
+    (exponent packet pad tmp saved : Fin tapeCount) (a b L W V : ℕ) (S : Stacks T (prime+K)) : Prop
+    extends PublicationWorkspaceReady e exponent packet pad tmp saved a b L W V S where
+  a : S.R (e (base (callerGenerator 97))) = binSyms V a
+  b : S.R (e (base (callerGenerator 98))) = binSyms V b
+  seed : S.R (e (base (callerGenerator 102))) = binSyms V (L*W)
 
 private theorem padding_source_off {exponent packet pad tmp saved : Fin tapeCount}
     (hr : [exponent,packet,extra 1,pad,tmp,saved].Nodup) :
@@ -51,15 +55,28 @@ theorem PublicationReady.of_frame {e : Fin tapeCount → Fin T}
     PublicationReady e exponent packet pad tmp saved a b L W V F := by
   have hp (r : Fin tapeCount) (hr : r ∈ [exponent,packet,pad,tmp,saved]) := hR r (padding_source_off hreg r hr)
   have hb (i : Fin kernelT) := hR (base i) (base_extra i 1)
-  refine ⟨?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_⟩
+  refine {
+    exponent := ?_
+    packet := ?_
+    pad := ?_
+    tmp := ?_
+    saved := ?_
+    a := ?_
+    b := ?_
+    seed := ?_
+    zero := ?_
+    width := ?_
+    blank := ?_
+    stages := ?_
+    left := ?_
+    fresh := ?_
+    count := ?_
+    codec := ?_ }
   · rw [hp exponent (by simp)]; exact h.exponent
   · rw [hp packet (by simp)]; exact h.packet
   · rw [hp pad (by simp)]; exact h.pad
   · rw [hp tmp (by simp)]; exact h.tmp
   · rw [hp saved (by simp)]; exact h.saved
-  · simpa only [hb] using h.a
-  · simpa only [hb] using h.b
-  · simpa only [hb] using h.seed
   · simpa only [hb] using h.zero
   · simpa only [hb] using h.width
   · simpa only [hb] using h.blank
@@ -75,5 +92,9 @@ theorem PublicationReady.of_frame {e : Fin tapeCount → Fin T}
       all_goals simp [planeReg,extra,Fin.ext_iff]
     rw [hR i hne]
     exact h.codec i hi
+
+  · simpa only [hb] using h.a
+  · simpa only [hb] using h.b
+  · simpa only [hb] using h.seed
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.PackedTranspose

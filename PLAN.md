@@ -4612,6 +4612,46 @@ fallback/root/compiler acceptance. The old conditional generic-route modules
 remain available while callers migrate; do not use them for final selected
 publication absorption. Full S4 remains open. No push.
 
+**Boundary publication and raw-prefix retirement are absorbed on the actual axis.**
+`PhaseCellAxisCleanupBudget` reuses the existing three-slot
+`boundarySeamCost_le` theorem. With `DB ≤ cDB*p`, `p ≤ s`, `p ≤ W`,
+and nonzero replica count, its cost is at most
+`boundaryPublicationTrafficFactor cDB * (replicas*(s*W))`, where the factor is
+`512*(cDB+4)^2+106*cDB+850`. Counted raw-prefix retirement is bounded by
+`21*replicas*(s*W)+12`, derived from disjoint core volume with no numerical
+coefficient certificates. The actual `selectedAmortizedDyadicRetiredAxis_exec`
+now carries these bounds in both its executed-time and simultaneous-storage
+contracts. It derives source-size/core-room facts from selected geometry and
+replica positivity from its dyadic count; only the ordinary boundary scalar
+width bound is added. Its output accuracy, exact restored frame and final-stock
+equality are unchanged. The guarded single-file check passes at 3824.6 MiB.
+Next construct ordinary starting headers/layouts, then match the complete bill
+to final S4 allowances and compose outer/fallback/root/compiler acceptance.
+Full S4 remains open. Retain this work for a larger local chunk; no push.
+
+**Publication binary headers now have an executed lifecycle from unary masters.**
+`PublicationWorkspaceReady` factors the source-independent workspace and padding
+conditions from the three binary dimension words in `PublicationReady`; existing
+readiness projections and publisher callers remain available. The new
+`publicationHeaders_exec_within` reuses `gatherHeaders_exec_within` unchanged to
+generate core exponent, replica exponent and packet width from ordinary unary
+masters. A structural frame lemma preserves workspace readiness across exactly
+those three writes. No computed binary-word supplier is assumed.
+`retirePublicationBinaryHeaders_exec_within` clears those three owned words
+for `6*V+7` steps with zero extra stock. It preserves arbitrary source/output
+updates and restores the original header blanks.
+`selectedAmortizedInitializedDyadicPublication_exec` composes actual generation,
+selected publication and this retirement in one trace. It retains selected
+publication bounds plus the explicit header generation/cleanup bill, certified
+bank accuracy and the original complete frame except source/output. It assumes
+only unary dimensions, blank header scratch, independent publication controls,
+workspace readiness and static separation of the two layouts. The guarded
+single-file check passes at 3543.2 MiB. Full-axis callers currently retain their
+older prepared-binary interface: propagate this lifecycle through placement and
+reverse-core handoff next, then construct the remaining ordinary controls/layouts
+and close outer/fallback/root/compiler S4 acceptance. Full S4 remains open.
+No push; collect with the checked axis cleanup budget as a larger local chunk.
+
 **First acceptance target: one complete fitting batch.** From declared original
 complex streams and ordinary scalar headers, execute component production,
 prepare numerical data, reuse it across the batch, publish certified complex

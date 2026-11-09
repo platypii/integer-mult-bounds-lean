@@ -3,6 +3,7 @@ module
 public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedAmortizedDyadicPublishedAxis
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetireCountedLineStock
 public import IntegerMultBounds.MathlibTM2.Host.ReplaceRightStock
+public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellAxisCleanupBudget
 public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedAmortizedSeamCompletion
 public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedGatherSchedule
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellInverseMasterInput
@@ -39,7 +40,7 @@ private theorem copy_source_off_axis {a b c d e f g h : Fin T}
   all_goals first | assumption | (apply Ne.symm; assumption)
 
 theorem selectedAmortizedDyadicRetiredAxis_exec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 ≤ prime+K)
-    (ct cW cV cZ cG cD cVPub : ℕ) (hcZ : 1 ≤ cZ)
+    (ct cW cV cZ cG cD cVPub cDB : ℕ) (hcZ : 1 ≤ cZ)
     (hstates : FixedStreamedBank.stateCount ≤ Q) :
     let b := 8*executionPush (A := (prime+K)) (U := U) hR hQ+1
     ∃ B₀ Dseam : ℝ, 0 ≤ B₀ ∧ 0 ≤ Dseam ∧ ∀ᶠ m : ℕ in atTop, ∀ (_h : Sizes.Big m) (i : Fin (Sizes.d m)) [NeZero (Sizes.s m i)],
@@ -145,7 +146,7 @@ theorem selectedAmortizedDyadicRetiredAxis_exec (hR : rpStates ≤ Q) (hQ : SS.s
         se r ≠ dst ∧ se r ≠ (pubE pubDst))
       (be : Fin 117 → Fin T) (hbe : Function.Injective be)
       (hsourcePort : be 95 = se crops.dst) (houtputPort : be 96 = (pubE pubDst))
-      (boundaryOff : ∀ j, be j ≠ dst) (DB : ℕ) (hvolumeFit : s*W < 2^DB)
+      (boundaryOff : ∀ j, be j ≠ dst) (DB : ℕ) (hvolumeFit : s*W < 2^DB) (hDB : DB ≤ cDB*p)
       (cropCount : Fin 3 → Fin 117)
       (hcropReg : ∀ slot, [cropCount slot,15,54,19,27,28,24,26].Nodup)
       (seedValue : Fin 117 → ℕ)
@@ -155,8 +156,8 @@ theorem selectedAmortizedDyadicRetiredAxis_exec (hR : rpStates ≤ Q) (hQ : SS.s
       (retireOff : ∀ r ∈ [pubCount,pubWidth,pubSavedCount,pubArchive,pubTmp], r ≠ pubE pubDst),
     let C := closedGridPush (U := U) (A := (prime+K)) producer recovery
     let seamStock := (((C+1)*((1312000+756)*(1032+8*ct)+504)+1440)*(Fs.length*s*p)+2*(C+1)*Sizes.T m+86)+
-      13*boundarySeamCost Fs.length (2*p+13) DB s coreWidth W
-    let retireBill := retireCountedLineCost proper.indices.length (Fs.reverse.length*(proper.length*W))
+      13*(boundaryPublicationTrafficFactor cDB*(Fs.length*(s*W)))
+    let retireBill := 21*(Fs.length*(s*W))+12
     ∃ v' : HS T Q (prime+K) U, ∃ F M : Stacks T (prime+K), ∃ steps pubSteps seamSteps retireSteps : ℕ,
       ∃ outputs : List (List (Fin (prime+K+4))), ∃ lines : List (List (Fin (prime+K+4))),
       v'.user = v.user ∧ ((steps+pubSteps+seamSteps+retireSteps : ℕ) : ℝ) ≤ (((coreExposureTrafficFactor cG cW+6013 : ℕ)*(Fs.length*s*W : ℕ)+
@@ -167,7 +168,7 @@ theorem selectedAmortizedDyadicRetiredAxis_exec (hR : rpStates ≤ Q) (hQ : SS.s
         108*(generatedDyadicStageCoeff FixedStreamedBank.tapeCount 6 1+300)*
           (Fs.length*s*W : ℕ)*Sizes.d m*((Sizes.ℓ m : ℝ)^Parameters.tau+1)))+(2624001*(Sizes.T m : ℝ)+(Fs.length : ℝ)*Dseam*(t : ℝ)*
         (1+(PhaseCellBand.width p u : ℝ)^2/Sizes.d m)*(p : ℝ)^(129/128 : ℝ)+
-        726*(Fs.length*s*p : ℕ)+455+(3*boundarySeamCost Fs.length (2*p+13) DB s coreWidth W+1 : ℕ))+(retireBill : ℕ) ∧
+        726*(Fs.length*s*p : ℕ)+455+(3*(boundaryPublicationTrafficFactor cDB*(Fs.length*(s*W)))+1 : ℕ))+(retireBill : ℕ) ∧
       List.Forall₂ (fun target line => line.length = s*W ∧
         (∀ j : ZMod s, ‖pairedCellRead p W line j‖ ≤ 1) ∧
         (∀ j : ZMod s, ‖pairedCellRead p W line j-target j‖ ≤ 3/(2:ℝ)^p))
@@ -197,7 +198,7 @@ theorem selectedAmortizedDyadicRetiredAxis_exec (hR : rpStates ≤ Q) (hQ : SS.s
     (Ts := Ts) (T := T) (U := U) (body := body)
     hR hQ hA ct cW cV cZ cG cD cVPub hcZ hstates
   refine ⟨B₀,Dseam,hB₀,hDseam,?_⟩
-  filter_upwards [haxis] with m haxis
+  filter_upwards [haxis,selectedAmortizedCoreGeometry ct] with m haxis hgeometry
   intro h i _ ports g dst width origins binary work readerSaved readerTmp count saved
     hwireL hwireR hfixed hdst harchiveDst hmastersDst hreg hreader hretained hprotected hcounter hconsume
     u target W V α d axis hu htarget htargetLower hB hl htargetMax hbandMax
@@ -210,7 +211,7 @@ theorem selectedAmortizedDyadicRetiredAxis_exec (hR : rpStates ≤ Q) (hQ : SS.s
     headerReady pubReady hpubDst hclock hline
   intro se hse input producer compatible crops recovery huSeam hwidthSeam hgapSeam hbudgetSeam
     hbandSeam hpadSeam Xseam Yseam hXseam hYseam hJseam seamReady seamOff
-    be hbe hsourcePort houtputPort boundaryOff DB hvolumeFit cropCount hcropReg seedValue hvalues hseedFit boundaryReady
+    be hbe hsourcePort houtputPort boundaryOff DB hvolumeFit hDB cropCount hcropReg seedValue hvalues hseedFit boundaryReady
   intro retireOff
   obtain ⟨vm,Fraw,M,steps,pubSteps,seamSteps,outputs,lines,huser,htime,hall,hFpub,hraw,hvolume,hwithin,hi,ho,hl,hframe⟩ :=
     haxis h i ports g dst width origins binary work readerSaved readerTmp count saved
@@ -263,14 +264,51 @@ theorem selectedAmortizedDyadicRetiredAxis_exec (hR : rpStates ≤ Q) (hQ : SS.s
     simpa only [inversePublicationTargets,List.length_map] using hall.length_eq.symm
   have hstock := row_bank_replacement_stock v v' S (pubE pubDst) (Sizes.s m i*W) ambient lines outputTail
     hambient hcountLines hlines hpubDst
+  obtain ⟨hwCore,hpCore,_,hroom,_⟩ := hgeometry h i u target htarget
+  have hp : 1 ≤ Sizes.p m := by have := h.thirteen_le_p; omega
+  have hps : Sizes.p m ≤ Sizes.s m i := by
+    have hpow : Sizes.p m ≤ (Sizes.p m)^8 := by
+      simpa only [pow_one] using pow_le_pow_right' hp (show 1 ≤ 8 by decide)
+    omega
+  have hroom' : 3*amortizedCoreWidth ct (Sizes.p m) < Sizes.s m i := by
+    have hb := PhaseCellBand.width_pos (Sizes.p m) u
+    omega
+  have hreplicasPos : 1 ≤ Fs.length := by
+    have hpos : 1 ≤ Fs.reverse.length := by rw [hreplicas]; exact Nat.two_pow_pos bPub
+    simpa only [List.length_reverse] using hpos
+  have hboundary := boundarySeamCost_le_traffic Fs.length (Sizes.p m) DB (Sizes.s m i)
+    (amortizedCoreWidth ct (Sizes.p m)) W cDB hp hps (by omega) hDB hreplicasPos hW hwCore hroom'
+  let proper := gatherPublicationClass (Sizes.s m i) (amortizedCoreWidth ct (Sizes.p m))
+    (localityDepth (Sizes.p m) target*PhaseCellBand.width (Sizes.p m) u)
+    (amortizedCoreWidth ct (Sizes.p m)+2*(localityDepth (Sizes.p m) target*PhaseCellBand.width (Sizes.p m) u))
+  let windows := coreSubsetPublicationWindows (Sizes.s m i) (amortizedCoreWidth ct (Sizes.p m))
+    proper.length hwCore proper.indices proper.sublist
+  have hrowsVolume : proper.indices.length*proper.length ≤ Sizes.s m i := by
+    have hv := windows.gaps_volume 1
+    simp only [windows,scatterVolume,PublicationWindows.gaps_length,coreSubsetPublicationWindows,
+      PublicationWindows.restrict,List.length_map,Nat.mul_one] at hv
+    omega
+  have hretireCost := retireCountedLineCost_le_traffic _ Fs.reverse.length (Sizes.s m i) _ W
+    hrowsVolume (by
+      change 1 ≤ amortizedCoreWidth ct (Sizes.p m)+2*(localityDepth (Sizes.p m) target*PhaseCellBand.width (Sizes.p m) u)-2*(localityDepth (Sizes.p m) target*PhaseCellBand.width (Sizes.p m) u)
+      omega) (by simpa only [List.length_reverse] using hreplicasPos) (by omega)
+  simp only [proper,List.length_reverse] at hretireCost
   have htotal := execWithin_seq_two_budget body _ _ _ _ _ _ _ 0 _ _ hwithin he
   have htotalFinal := htotal.cast rfl (congrArg (Host.mk v') hfinal)
   refine ⟨v',_,M,steps,pubSteps,seamSteps,nr,outputs,lines,hu.trans huser,?_,hall,rfl,?_,hvolume,
-    htotalFinal,hstock,rfl,rfl,rfl,?_⟩
+    htotalFinal.mono (by
+      intro z state hz
+      have hb := Nat.mul_le_mul_left 13 hboundary
+      have hr := Nat.mul_le_mul_left 3 hretireCost
+      simp only [List.length_reverse,Nat.mul_assoc] at hz hb hr ⊢
+      omega),hstock,rfl,rfl,rfl,?_⟩
   ·
     have hnReal := Nat.cast_le (α := ℝ).mpr hn
     rw [Nat.cast_add]
-    linarith only [htime,hnReal]
+    have hbReal := Nat.cast_le (α := ℝ).mpr hboundary
+    have hrReal := Nat.cast_le (α := ℝ).mpr hretireCost
+    simp only [List.length_reverse,Nat.mul_assoc,Nat.cast_add,Nat.cast_mul,Nat.cast_ofNat] at htime hnReal hbReal hrReal ⊢
+    linarith only [htime,hnReal,hbReal,hrReal]
   · exact Function.update_of_ne hne _ _
   · intro r hr
     exact Function.update_of_ne hr _ _
