@@ -4486,6 +4486,32 @@ root/compiler acceptance also remain open. The complete axis trace is a major
 integration checkpoint, not full S4. Collect the placed boundary, seam completion
 and joined-axis work in one larger local commit. No push.
 
+**Raw bulk archive retirement now closes the axis lifecycle.**
+`ExactCoreRows.word_length` and `exactCoreOutputs_volume` derive physical archive
+volume from structural row certificates, including reverse-core storage.
+The published-bulk and published-axis theorems now retain the exact raw-prefix
+bytes and this volume for their actual endpoint. No guessed coefficient bank
+or independent volume certificate is introduced.
+`retireCountedLine_exec_within` gives the existing counted prefix retirement a
+native bound of three pushes per step, preserving its borrowed suffix and all
+controls. `selectedAmortizedRetiredAxis_exec` calls the actual complete axis
+executor, reuses the restored copy count/row-width masters to retire precisely
+the raw prefix, and composes that physical cleanup trace. The final state is
+exactly the original bank with only the published output destination replaced;
+all scratch, raw-archive suffixes and other stacks restore. Full-axis accuracy
+and unit-ball guarantees survive, with cleanup time and peak allowance included
+in the same execution. Ordinary copy scratch must be separated from the output
+destination, an explicit static layout fact.
+Checks peak at 2077.4 MiB (volume), 1933.5 MiB (retirement primitive), 3678.7 MiB
+(strengthened bulk), and 3784.4 MiB (complete retired axis). A default-heartbeat
+failure was resolved by matching the resource expression's grouping and using
+endpoint casts; no proof limits changed. Debug logging was removed.
+Next generate ordinary starting headers/layouts, absorb the full route,
+publication, boundary and retirement bills into selected S4 allowances, and
+compose outer tensor/locality schedules with setup at actual frequency. Final
+fallback/root/compiler acceptance remains open. Full S4 is not complete.
+Collect the lifecycle/volume work as one larger local checkpoint; no push.
+
 **First acceptance target: one complete fitting batch.** From declared original
 complex streams and ordinary scalar headers, execute component production,
 prepare numerical data, reuse it across the batch, publish certified complex

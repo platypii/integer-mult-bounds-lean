@@ -145,6 +145,8 @@ theorem selectedAmortizedPublishedAxis_exec (hR : rpStates ≤ Q) (hQ : SS.state
         (∀ j : ZMod s, ‖pairedCellRead p W line j-target j‖ ≤ 3/(2:ℝ)^p))
         (inversePublicationTargets p Fs J) lines ∧
       F = {M with R := (Function.update M.R pubDst (lines.flatten++outputTail))} ∧
+      F.R dst = outputs.reverse.flatten++S.R dst ∧
+      outputs.reverse.flatten.length = proper.indices.length*(Fs.reverse.length*(proper.length*W)) ∧
       ExecWithin body (fun z state => mnSize state+z ≤ mnSize (Host.mk v S)+0+((((3*coreExposureTrafficFactor cG cW+12+
           12*(streamedDyadicStockCoeff FixedStreamedBank.tapeCount+700))*(Fs.length*s*W)+
           fittingCyclicWorkspaceTrafficFactor (A := (prime+K)) (U := U) hR hQ ct cW*Fs.length*t*p+47*Sizes.T m)+(2*copyBill+(route.stockAllowance+2*bill)))+seamStock)) 0
@@ -177,7 +179,7 @@ theorem selectedAmortizedPublishedAxis_exec (hR : rpStates ≤ Q) (hQ : SS.state
   intro se hse input producer compatible crops recovery huSeam hwidthSeam hgapSeam hbudgetSeam
     hbandSeam hpadSeam Xseam Yseam hXseam hYseam hJseam seamReady seamOff
     be hbe hsourcePort houtputPort boundaryOff DB hvolumeFit cropCount hcropReg seedValue hvalues hseedFit boundaryReady
-  obtain ⟨vm,M,steps,pubSteps,outputs,huser,htime,hwithin,hbank,hi,ho,hl,hframe⟩ := hbulk h i ports g dst width origins binary work readerSaved readerTmp count saved
+  obtain ⟨vm,M,steps,pubSteps,outputs,huser,htime,hwithin,hbank,hraw,hvolume,hi,ho,hl,hframe⟩ := hbulk h i ports g dst width origins binary work readerSaved readerTmp count saved
     hwireL hwireR hfixed hdst harchiveDst hmastersDst hreg hreader hretained hprotected hcounter hconsume
     u target W V α d axis hu htarget htargetLower hB hl htargetMax hbandMax
     Fs hF hW hWin hWmax hVmax hfit qRef Y hqRef hY J hJ
@@ -203,10 +205,13 @@ theorem selectedAmortizedPublishedAxis_exec (hR : rpStates ≤ Q) (hQ : SS.state
     be hbe hsourcePort DB hvolumeFit cropCount hcropReg seedValue hvalues hseedFit boundaryReadyM
     bulkLines outputTail (by rw [houtputPort]; exact houtput) hgood 0
   rw [houtputPort] at heSeam
-  refine ⟨v',_,M,steps,pubSteps,seamSteps,outputs,lines,huser'.trans huser,?_,hall,rfl,
+  refine ⟨v',_,M,steps,pubSteps,seamSteps,outputs,lines,huser'.trans huser,?_,hall,rfl,?_,hvolume,
     execWithin_seq_two_budget body _ _ _ _ _ _ _ 0 _ _ hwithin heSeam,hi,ho,hl,?_⟩
   · rw [Nat.cast_add]
     linarith
+  · exact (Function.update_of_ne (by
+      intro heq
+      exact boundaryOff 96 (houtputPort.trans heq.symm)) _ _).trans hraw
   · intro r hrd hrp
     exact (Function.update_of_ne hrp _ _).trans (hframe r hrd hrp)
 

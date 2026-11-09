@@ -2,6 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedAmortizedExposedFitting
 public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedAmortizedBulkArchivePublication
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellExactCoreArchiveVolume
 public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedGatherSchedule
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellInverseMasterInput
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFittingCyclicWindow
@@ -119,6 +120,8 @@ theorem selectedAmortizedPublishedBulk_exec (hR : rpStates ≤ Q) (hQ : SS.state
         (Host.mk v S) (steps+pubSteps) (Host.mk v' F) ∧
       (∃ lines, F.R pubDst = lines.flatten++outputTail ∧
         proper.BankAccurate p W (inversePublicationTargets p Fs J) lines (3/(2 : ℝ)^p)) ∧
+      F.R dst = outputs.reverse.flatten++S.R dst ∧
+      outputs.reverse.flatten.length = proper.indices.length*(Fs.reverse.length*(proper.length*W)) ∧
       F.inp = S.inp ∧ F.out = S.out ∧ F.L = S.L ∧
       ∀ r, r ≠ dst → r ≠ pubDst → F.R r = S.R r := by
   dsimp only
@@ -126,7 +129,7 @@ theorem selectedAmortizedPublishedBulk_exec (hR : rpStates ≤ Q) (hQ : SS.state
     (T := T) (U := U) (body := body) hR hQ hA ct cW cV cZ cG cD hcZ hstates
   have hpub := selectedAmortizedBulkArchivePublication_exec (t₀ := t₀) (c := cPub) (d := dPub) body ct
   refine ⟨B₀,hB₀,?_⟩
-  filter_upwards [hbulk,hpub] with m hbulk hpub
+  filter_upwards [hbulk,hpub,selectedAmortizedGatherSchedule ct] with m hbulk hpub hschedule
   intro h i _ ports g dst width origins binary work readerSaved readerTmp count saved
     hwireL hwireR hfixed hdst harchiveDst hmastersDst hreg hreader hretained hprotected hcounter hconsume
     u target W V α d axis hu htarget htargetLower hB hl htargetMax hbandMax
@@ -149,12 +152,21 @@ theorem selectedAmortizedPublishedBulk_exec (hR : rpStates ≤ Q) (hQ : SS.state
     Fs.reverse hreplicas J outputs hrows hcapacity ambient hambient outputTail pubBorrowed
     vBulk Sbulk pubCount pubSavedCount pubWidth dst pubArchive pubSaved pubTmp hcopy
     (S.R dst) readyBulk (by simp only [Sbulk,Function.update_self]) 0
+  let proper := gatherPublicationClass (Sizes.s m i) (amortizedCoreWidth ct (Sizes.p m))
+    (localityDepth (Sizes.p m) target*PhaseCellBand.width (Sizes.p m) u)
+    (amortizedCoreWidth ct (Sizes.p m)+2*(localityDepth (Sizes.p m) target*PhaseCellBand.width (Sizes.p m) u))
+  have hbulkKeys := (hschedule h i u target htarget).2.2.2.1
+  have hvolume := exactCoreOutputs_volume proper.indices Fs.reverse J outputs
+    (by simpa only [proper,gatherPublicationClass,hbulkKeys] using hrows)
+    (fun k hk => ((mem_corePublicationIndices _ _ _ _).mp (proper.sublist.subset hk)).2)
+  have hpubOff : pubDst ≠ dst := hoff pubDst (Or.inr (Or.inr (by simp)))
   refine ⟨v',F,steps,pubSteps,outputs,hu.trans huBulk,?_,
-    execWithin_seq_two_budget body _ _ _ _ _ _ _ 0 _ _ heBulk he,?_,hi,ho,hl,?_⟩
+    execWithin_seq_two_budget body _ _ _ _ _ _ _ 0 _ _ heBulk he,?_,?_,hvolume,hi,ho,hl,?_⟩
   · have htReal := Nat.cast_le (α := ℝ).mpr ht
     rw [Nat.cast_add]
     linarith
   · exact ⟨lines,hd,by simpa only [List.reverse_reverse] using hgood⟩
+  · simpa only [Sbulk,Function.update_self] using hframe dst hpubOff.symm
   · intro r hrd hrp
     exact (hframe r hrp).trans (Function.update_of_ne hrd _ _)
 
