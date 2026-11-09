@@ -45430,3 +45430,127 @@ endpoints audit to only propext, Classical.choice and Quot.sound; the temporary
 proof-only audit peaks at 9547.2 MiB. Collect these verified input bridges and
 outer fitting-cost compositions in one larger local checkpoint, excluding the
 periodic-recovery and generated-workspace drafts. Full S4 remains open.
+
+The original-input audit found an important reuse point: existing
+`AllocatedRealGatherData.exec` already restores the original complex archive
+and produces the entire class's contiguous `coreSupplierStream`. Do not gather
+an ambient line separately for each numerical core. `coreSupplierStream_batches`
+identifies this actual stream with a structural flatMap over the computed core
+indices. `coreGather_cyclic_partition` proves each fitting class window is wholly
+in bounds: the cyclic left span equals L and the right span is zero. Thus the
+fitting pilot needs one routed payload per core, not two ambient gathers.
+
+`routedCachedComplexInput_exec` now consumes exactly that contiguous interval
+batch through existing `movePrefix`, then executes ordinary seed/derived-header
+production, component expansion, precision conversion and counter retirement.
+It concludes physical cached readiness, exact preservation of the remaining
+class archive, scratch release, and both-sided framing elsewhere. Its time
+bill includes the actual local payload move and all preparation. Guarded check
+passes at 3385.8 MiB. Still open: instantiate this consumer and the empty right
+input for actual cyclic jobs in the class loop, generate the ordinary seed
+sources and factor input, compose complete fitting execution and prove sharp
+execution-wide space. Full S4 remains open; no push or small new commit.
+Routed-input/shared-exposure integration passes (16198 jobs, 33.2 GiB aggregate
+peak, 2.2 minutes; existing routing dependencies rebuilt). The routed execution
+endpoint uses only the standard three axioms; the stream and fitting-partition
+identities use propext and Quot.sound. Temporary audit peak: 9547.2 MiB.
+
+`PhaseCellFittingCyclicCachedInputs` now composes both physical cached inputs
+from one routed complex interval batch and ordinary seed headers. The left
+execution consumes the batch and establishes freshness of the entire right
+conversion placement, including shared scratch. The right execution uses its
+zero span (no payload movement), generates its own headers/components/precision,
+and preserves the left readiness via the existing frame contract. The composed
+`fittingCyclicCachedInputs_exec` returns both actual cached input contracts for
+the cyclic core, exact preservation of the remaining class archive, and empty
+conversion scratch. Its time bill includes both executed preparations and the
+single local payload move. Guarded full module check: 3387.1 MiB.
+
+This removes the second-bank post-stage readiness supplier; it does not yet
+instantiate scalar seed production or cyclic factor input, run the numerical
+core after these inputs, or establish sharp peak space. These are the next
+concrete fitting-pilot consumers. Keep the class exposure as one shared sweep;
+full S4 remains open. No new small commit and no push.
+Integration with the executed cyclic complex core passes (15932 jobs, 3.5 GiB
+aggregate peak). The composed fitting-input endpoint audits to only propext,
+Classical.choice and Quot.sound (temporary audit peak 9547.7 MiB). Next factor
+input composition should reuse `prepareCyclicBoundaryPage_ready_exec`, which
+already generates the boundary page, row count and split endpoints while
+preserving arithmetic readiness; do not reconstruct that geometry controller.
+
+`PhaseCellPrepareCyclicFactorInput` now adapts the existing computed cyclic
+boundary-page producer directly to the full `CyclicResidualBatchInput` contract.
+`CyclicFactorSeedInput` records only ordinary scalar/arithmetic readiness and
+fresh workspace before the boundary page or split endpoints exist; the adapter
+generates these, their row count and encoded page width by actual execution.
+The placed execution theorem runs in the 234-register factor bank of the
+834-register cyclic layout, returns the complete factory input, and preserves
+both cached-input contracts through the existing disjoint-bank frame lemma.
+No finite tape enumeration or new numerical supplier is introduced. Guarded
+module check passes at 3585.3 MiB, below the 4 GiB production target.
+
+The remaining ordinary preparation must establish this seed contract after the
+cached conversions release their scratch: populate the scalar arithmetic and
+geometry headers and retire temporary seed sources. Then compose the produced
+cached banks and factor input with the existing cyclic execution. Sharp peak
+space, class-loop/outer routing, fallback and full acceptance remain open.
+No new small commit and no push.
+Factor-input/cached-input/cyclic-core integration passes (15947 jobs, 3.7 GiB
+aggregate peak). Both factor-input execution endpoints audit to the standard
+three axioms only; temporary audit peak 9578.9 MiB. These changes remain
+uncommitted with the routed/two-bank input work for a larger checkpoint.
+
+A placement audit before scalar-seed implementation exposed a real composition
+conflict: the fixed 834-register input wrapper stored the remaining class
+archive inside factor space, which the factory subsequently reuses. The fitting
+input wrapper is now generalized in place to an arbitrary injective placement
+of the 834-register cyclic bank in its outer caller. Class source, ordinary
+seed sources and scratch controls live outside that bank. This replaces the
+fixed-layout wrappers rather than adding parallel wrapper families; two small
+reindex composition/congruence lemmas handle placement transport structurally.
+The theorem preserves the remaining class archive and both stack sides outside
+the bank (apart from the consumed source prefix). Guarded check: 3385.7 MiB.
+
+The placed factor-input producer now uses the same arbitrary outer placement
+and preserves both reindexed cached-input contracts, so its workspace can no
+longer alias the retained class archive. Guarded check: 3591.2 MiB. This is a
+necessary composition correction before seed generation: populate factor seed
+headers by copying retained cached masters into fresh factor space, rather
+than retaining seed words or class input within that space. Scalar production,
+full numerical composition, sharp space and full S4 gates remain open.
+Nothing pushed; retain the input/factor work for a larger checkpoint.
+Generalized outer-placement integration passes (15947 jobs, 5.9 GiB aggregate
+peak). Both changed endpoints audit to only propext, Classical.choice and
+Quot.sound; temporary audit peak 9583.1 MiB. No change to proof limits.
+
+`PhaseCellInstallCyclicFactorSeeds` reuses `installMasterHeaderBank_exec` and
+`masterHeaderBank_ready` rather than duplicating arithmetic-bank proofs. Its
+executed copier establishes the complete `CyclicFactorSeedInput` contract from
+ten ordinary header lengths and fresh factor storage, preserving shared I/O,
+all left stacks, and every right stack outside the factor image.
+`ReplicaLoopHeaders.factorSeedSources` derives nine source lengths from the
+retained cached headers; only the span word is external ordinary metadata.
+`installCyclicFactorSeeds_from_cached_exec` consumes those facts, and
+`cyclicLeftReplicaProblem_factorSeedValues` proves the actual joint-target left
+constructor has exactly the factor's required master parameters by reflexivity.
+Thus no separate inverse-master generation or arithmetic-readiness supplier is
+needed for this factor stage. Guarded check passes at 3417.8 MiB.
+
+Next compose this executed installer with boundary-page generation while
+preserving cached readiness, then run the numerical core. The full fitting
+input theorem must establish freshness of the whole factor bank, not merely
+conversion scratch; unused factor registers must also retain their initial
+emptiness. Sharp execution-wide space and the remaining full S4 gates remain
+open. Nothing pushed.
+The fitting-input endpoint now proves freshness of every physical factor
+register. The first 92 registers are released conversion scratch; the remaining
+142 are preserved by both conversion frames. This supplies the seed installer's
+actual freshness premise while keeping the residual class archive outside the
+cyclic bank. Guarded check passes at 3394.5 MiB.
+Factor-seed/two-bank-input/cyclic-core integration passes (15948 jobs, 6.0 GiB
+aggregate peak). The cached seed installer, actual-constructor master alignment,
+and strengthened fitting-input execution audit to only propext,
+Classical.choice and Quot.sound (temporary audit peak 9581.5 MiB). Collect the
+verified routed input, injected two-bank preparation, cyclic page adapter and
+retained-master seed installer in one larger local checkpoint; exclude the
+unrelated periodic-recovery and workspace drafts. Full S4 remains open.
