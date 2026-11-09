@@ -1,7 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryFactorPreparedRun
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellScaledFactorPrepared
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellScaledFactorSetupStock
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryUnfoldHeaderVolume
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryPermanentBound
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFactorTableVolume
@@ -14,11 +14,20 @@ namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
 open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
   IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Host
   IntegerMultBounds.MathlibTM2.Node IntegerMultBounds.MathlibTM2.Fast
+  IntegerMultBounds.MathlibTM2.Fast.Main
 
 variable {Q A : ℕ} {P U : Type} {body : P → Pr P 224 Q A U}
 
 noncomputable def scaledInitializedBoundaryFactor (scale : ℕ) (hQ : SS.states ≤ Q) : Pr P 224 Q A U :=
   .seq (scaledFactorSetup (12*scale)) (boundaryFactorPrep hQ)
+
+noncomputable def scaledInitializedBoundaryFactorWorkspace (scale : ℕ) (hQ : SS.states ≤ Q)
+    (p q band N : ℕ) : ℕ :=
+  scaledFactorSetupPush (P := P) (Q := Q) (A := A) (U := U) (12*scale) *
+    scaledFactorSetupCost (12*scale) p q band N +
+  boundaryAxisPrepWorkspace (P := P) (A := A) (U := U) boundaryFactorReg
+    boundaryFactorMulReg_injective (by decide) hQ (2*q+8) (12*(scale*band))
+    (factorNewtonSteps p q) N
 
 theorem scaledInitializedBoundaryFactor_exec (scale : ℕ) (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     (p u l target rhsExp : ℕ) {s : ℕ} [NeZero s] (B : Finset (ZMod s)) (band : ℕ)
@@ -44,7 +53,9 @@ theorem scaledInitializedBoundaryFactor_exec (scale : ℕ) (hQ : SS.states ≤ Q
     (_hsrc : S.R 140 = cstream A w ((factorWindowValues B (12*(scale*band)+1) columns).flatten++
       (factorInputValues B (12*(scale*band)+1) B.card columns).flatten)++SRC),
     ∃ v' S' n, v'.user = v.user ∧ n ≤ scaledFactorSetupCost (12*scale) p q band B.card+bandAxisPrepCost w (12*(scale*band)) K B.card ∧
-      Exec body (scaledInitializedBoundaryFactor scale hQ) (mk v S) n (mk v' S') ∧
+      ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+0+
+        scaledInitializedBoundaryFactorWorkspace (P := P) (A := A) (U := U) scale hQ p q band B.card) 0
+        (scaledInitializedBoundaryFactor scale hQ) (mk v S) n (mk v' S') ∧
       S'.inp = S.inp ∧ S'.out = S.out ∧ S'.L = S.L ∧
       (∀ i : Fin 154, i ≠ 140 → S'.R (boundaryFactorLegacyReg i) = S.R (boundaryFactorLegacyReg i)) ∧
       S'.R 184 = [] ∧ S'.R 223 = [] ∧ S'.R 220 = [] ∧ S'.R 221 = [] ∧
@@ -154,7 +165,23 @@ theorem scaledInitializedBoundaryFactor_exec (scale : ℕ) (hQ : SS.states ≤ Q
     · exact hef
     · exact hxs
     · exact hframe'
-  refine ⟨v₂,S₂,n₁+n₂,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,Exec.seq he₁ he₂,hinp,hout,hL,?_,h184',h223',h220',h221',h119,hsolve,hbo,hhf,hdf,hsrc',hm2n',hmwn',hsn,
+  have heSetup := scaledFactorSetup_exec_within_of_exec he₁ hn₁ 0
+  have he := mn_seq_within_add heSetup he₂
+  have heFactor : ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+0+
+      scaledInitializedBoundaryFactorWorkspace (P := P) (A := A) (U := U) scale hQ p q band B.card) 0
+      (scaledInitializedBoundaryFactor scale hQ) (mk v S) (n₁+n₂) (mk v₂ S₂) := by
+    apply he.mono
+    intro d z hz
+    dsimp only [scaledInitializedBoundaryFactorWorkspace]
+    change mnSize z+d ≤ mnSize (mk v S)+0+
+      (scaledFactorSetupPush (P := P) (Q := Q) (A := A) (U := U) (12*scale)*
+        scaledFactorSetupCost (12*scale) p q band B.card +
+       boundaryAxisPrepWorkspace (P := P) (A := A) (U := U) boundaryFactorReg
+         boundaryFactorMulReg_injective (by decide) hQ w (12*(scale*band))
+         (factorNewtonSteps p q) B.card) at hz
+    rw [hw] at hz
+    exact hz
+  refine ⟨v₂,S₂,n₁+n₂,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,heFactor,hinp,hout,hL,?_,h184',h223',h220',h221',h119,hsolve,hbo,hhf,hdf,hsrc',hm2n',hmwn',hsn,
     hdout,hvk,hef,hxs,hkn,hms,hm2n,hkn',hmwnControl,hready',hheaders,hperm,hframe'⟩
   intro i hi
   exact (hlegacy i hi).trans (scaledFactorSetupR_legacy (12*scale) p q S.R i)

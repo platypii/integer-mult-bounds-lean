@@ -153,7 +153,7 @@ theorem initializedBoundaryFactor_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     · exact hef
     · exact hxs
     · exact hframe'
-  refine ⟨v₂,S₂,n₁+n₂,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,Exec.seq he₁ he₂,hinp,hout,hL,?_,h184',h223',h220',h221',h119,hsolve,hbo,hhf,hdf,hsrc',hm2n',hmwn',hsn,
+  refine ⟨v₂,S₂,n₁+n₂,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,Exec.seq he₁ he₂.toExec,hinp,hout,hL,?_,h184',h223',h220',h221',h119,hsolve,hbo,hhf,hdf,hsrc',hm2n',hmwn',hsn,
     hdout,hvk,hef,hxs,hkn,hms,hm2n,hkn',hmwnControl,hready',hheaders,hperm,hframe'⟩
   intro i hi
   exact (hlegacy i hi).trans (boundaryFactorSetupR_legacy p q S.R i)

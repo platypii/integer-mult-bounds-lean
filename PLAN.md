@@ -42635,3 +42635,275 @@ combined peak across the guarded build). This validates the shared scan
 refactor against the existing accepted-core proof; the new factor-axis resource
 contract still needs the allocated/scaled factory composition above. All
 verification handles are terminal. No push.
+
+### S4 allocated and prepared factorization retain the axis workspace
+
+PhaseCellBoundaryAxisWorkspace instantiates the generic per-axis theorem at
+the actual two row multiplication programs. factorRmulPush keeps each program's
+push count opaque. boundaryAxisPrepWorkspace and band_axisPrep_actual_runs
+provide the small specialization interface consumed by the allocated theorem.
+boundary_axisPrep_allocated_runs now returns RsbRunsWithin while deriving the
+same fit and input-format hypotheses as before. boundary_factorPrepared_exec
+keeps its ExecWithin trace and all original physical bank/frame/solve-ready
+conclusions. The legacy physical executor and both initialized callers currently
+project to ordinary execution; scaled setup must gain its own resource trace
+before composing that retained prepared bound through the complete factory.
+
+Direct specialization in the large allocated declaration hit the default
+heartbeat limit, even with explicit push arguments. Moving specialization to
+the small generic module and keeping boundaryAxisPrepWorkspace irreducible
+fixed the elaboration cost: the allocated target builds in about 2.5 seconds.
+No limits were raised. The existing similarly named BoundaryFactorWorkspace
+layout module was detected and preserved; the new module is BoundaryAxisWorkspace.
+
+Allocated/prepared/initialized integration passes (14069 jobs; 5.7 GiB combined
+peak). Guarded checks: specialization 2044.4 MiB, allocated run 3093.5 MiB,
+physical compatibility executor 3092.7 MiB, prepared run 3115.2 MiB. The allocated/
+prepared axiom audit reports only propext, Classical.choice and Quot.sound
+(9113.6 MiB temporary audit peak). Source-integrity and whitespace scans pass.
+
+Next prove the structural native resource bound for scaledFactorSetup, compose
+it with prepared factorization, and retain the trace through the constructed
+cyclic factory into the consumer batch. Charge native setup's own traffic; do
+not charge the numerical factorization's full runtime as space. The complete
+prefix/uniform resource and broader input/fallback/tensor/root S4 gates remain
+open. Keep this work for a larger scaled-factory checkpoint, exclude periodic
+WIP, and do not push.
+
+Accepted-complex-core integration passes (15917 jobs; 33.0 GiB combined
+guarded-build peak). The accepted-core single-file check passes at 3452.3 MiB.
+All verification handles are terminal. These results establish compatibility
+of the stronger allocated/prepared contract; the complete scaled-factory peak
+bound remains the next open composition. No commit or push in this chunk.
+
+### S4 scaled setup and prepared factorization retain one composed space trace
+
+ScaledFactorSetupStock proves UnarySetup.program_noCalls by structural induction
+over arbitrary setup operations. The scaled setup certificate composes this
+with the existing closed embedded multiplier preparation and native seed/header
+programs. scaledFactorSetupPush is opaque; its bound multiplies only the native
+setup traffic bill. scaledFactorSetup_exec_within_of_exec reuses the actual
+setup execution and its checked cost, at arbitrary depth.
+
+scaledInitializedBoundaryFactor_exec now returns ExecWithin through setup and
+the prepared numerical factorization. scaledInitializedBoundaryFactorWorkspace
+names setup's allowance plus the checked axis reserve at the actual width,
+band, Newton count and boundary cardinality. The composition uses
+mn_seq_within_add and rewrites width only in the scalar budget inequality,
+avoiding reduction of the large execution type. All original output, legacy
+frame, permanent-bank and solve-ready facts remain. ConstructedCyclicFactor
+uses toExec until its preceding joint Schur-column/page prefix retains resources.
+
+The constructed-factor integration passes (15750 jobs; 3.5 GiB combined peak).
+Guarded checks pass: native setup stock 3093.2 MiB, scaled initialized factor
+3118.0 MiB, constructed cyclic factor 3419.9 MiB. The scaled factor axiom audit
+reports only propext, Classical.choice and Quot.sound; the setup native proof
+uses only propext and Quot.sound (9115.5 MiB temporary audit peak). Default
+proof limits are preserved; integrity and whitespace checks pass.
+
+The next factory resource gap is now explicit: preparedCyclicFactorPage_spec
+composes preparedCyclicColumns_spec (cyclicTableColumnsLoop_spec) and the native
+scaledGeneratedFactorPage. Retain a per-column numerical reserve through
+retainedIndexedCyclicColumn, its publication, the structural table scan and
+page generation, then lift beside spectators with exec_emb_ovr_within_stock.
+Do not substitute the entire joint table runtime as workspace or multiply
+a per-column transient reserve by boundary cardinality. Only then can the
+constructed factory and consumer/prefix retain the full trace. Uniform
+resources and the other full S4 gates remain open. Keep collecting the larger
+factory resource checkpoint; no push and periodic WIP untouched.
+
+The accepted-complex-core integration passes as well (15918 jobs; 5.9 GiB
+combined guarded-build peak). All verification handles are terminal. Changes
+remain uncommitted for the larger constructed-factory resource checkpoint; no
+push. This is the checked scaled-factor space milestone, not whole S4.
+
+### S4 joint-column arithmetic retains its packet-row workspace
+
+The original column path uses the older packet-based single-column executors,
+not the cached replica path whose resources are already retained. Its resource
+chain runs from generatedReadyRow through unparked/prepared arithmetic, packet
+row/mask/scan, borrowed coupling passes, original column generation and guarded
+interior residuals, then indexed/retained publication into the joint table.
+
+GeneratedReadyRowStock reuses borrowedRHSRow_exec_within and the existing
+couplingReadiness_native certificate. generatedReadyRowWorkspace charges the
+three-push native readiness traffic plus the existing realWeightWorkspace and
+linear arithmetic reserve; cleanup uses clearWords_native_zero.
+UnparkedCouplingRowStock transports this bound through the scratch-register
+permutation using exec_emb_ovr_within_stock, preserving spectators once.
+PreparedCouplingArithmeticStock specializes it to the prepared operand prefixes
+without changing their supplier or the exact endpoint.
+
+PacketSpatialCouplingRowStock composes native retained-packet coefficient
+generation, counted input preparation and prepared arithmetic. The packet
+generator's opaque push bound applies only to its native traffic bill; the
+numerical reserve comes from the structural arithmetic theorem. The resulting
+packetSpatialCouplingRow_exec_within preserves the exact updated packet, row
+output and all other tapes. No full numerical runtime is used as workspace.
+
+Integration passes (9754 jobs; 2.7 GiB combined peak). Guarded checks: generated
+readiness row 2109.2 MiB, unparked row 2050.9 MiB, prepared arithmetic 2047.3 MiB,
+packet spatial row 2109.8 MiB. The generated/packet-row axiom audit reports only
+propext, Classical.choice and Quot.sound (7015.2 MiB temporary audit peak).
+Default proof limits are unchanged; integrity and whitespace scans pass.
+All verification handles are terminal.
+
+Next retain the masked packet row (native skip branch), its discard/cursor/index
+step and the counted row loop. Use the existing counted-loop resource language
+and account for RHS-to-output replacement, source-to-saved movement, mask
+consumption and index growth together, so one numerical row reserve is shared.
+Then carry it through restoring coupling passes and the numerical column
+executors, and finally the joint column scan/publication/page prefix. The full
+constructed-factory resource gate is still open; broader S4 gates remain open.
+Collect with the ongoing larger factory checkpoint; no push, periodic WIP
+untouched.
+
+### S4 masked packet rows share one reserve through their complete counted scan
+
+MaskedPacketSpatialCouplingRowStock supplies a structural native certificate for
+the skip branch (packet advancement and RHS copying). The guarded and masked
+contracts retain a common reserve containing the skip traffic allowance plus
+the existing active-row reserve. Consuming a mask bit is native zero-growth.
+PacketSpatialCouplingRowStepStock composes that trace with native RHS discard,
+source-cursor transfer and the one-symbol coordinate increment. The exact
+original output, updated packet, guard tail, source/saved cursors and index
+are preserved.
+
+PacketSpatialCouplingRowLoopStock reuses the existing completed/remaining row
+invariant and countedLoop_exec_within_remaining_costs. Its changed-bank stock
+lemma accounts for eight ports together: consumed RHS pays for the row output,
+source-to-saved movement is balanced, mask consumption pays for index growth,
+packet length is fixed, and the remaining row clock never exceeds the initial
+clock. The bank and all framed spectators are counted once. Every row therefore
+shares packetSpatialCouplingRowStepWorkspace, with no multiplier by row count.
+Explicit getElem bounds avoid implicit proof-search recursion in the larger
+resource context. Scalar length equations use the existing coefficient-word
+length lemma instead of expanding encoded values. No proof limits were raised.
+
+Integration passes (9841 jobs; 2.7 GiB combined peak). Guarded checks: masked row
+2102.3 MiB, complete row step 2110.4 MiB, counted scan 2157.3 MiB. Masked/scan
+axiom audits report only propext, Classical.choice and Quot.sound (7044.8 MiB
+temporary audit peak). Integrity and whitespace checks pass. All verification
+handles are terminal. Existing execution programs and their time bills are
+unchanged; this is a resource-preserving specialization of their structural
+proofs, not a new numerical algorithm.
+
+Next retain runPreparedPacketCouplingRows (clock generation, shared row scan,
+source-cursor restoration, output reversal, index release), then the native
+source/packet/guard staging and restoring borrowedCouplingPass. Carry that
+through original-column and guarded-interior numerical wrappers before the
+joint column scan/page prefix. The full factory, uniform resource, and broader
+S4 gates remain open. Keep collecting the larger factory checkpoint; no commit
+or push in this step, and preserve unrelated periodic WIP.
+
+### S4 complete restoring borrowed coupling pass retains shared row workspace
+
+RunPreparedPacketCouplingRowsStock composes clock generation, the checked shared
+packet-row scan, source-cursor restoration, natural-order output reversal and
+zero-growth index release. It reuses transferCountedLine_native and proves
+reversePrefixInPlace_native structurally over arbitrary register placements.
+runPreparedPacketCouplingRowsWorkspace charges the native linear traffic bills
+plus one packetSpatialCouplingRowStepWorkspace, independent of row count.
+
+RunSpatialCouplingRowsStock adds owned guard and coefficient-packet construction
+through existing closed-program native certificates, with opaque push counts.
+Final packet release has zero growth. SpatialCouplingRowsStock retains the
+masked, cyclically padded source preparation and retirement around that run;
+these stages are native and have their own traffic allowances.
+BorrowedCouplingPassStock then composes ordinary RHS/source staging, the complete
+spatial pass and source restoration. borrowedCouplingPass_exec_within preserves
+the original exact output and unchanged physical source tapes, numerical
+program and time bound. Its transient numerical reserve is shared across every
+row; no complete numerical runtime is charged as workspace.
+
+Integration passes (9877 jobs; 2.7 GiB combined peak). Guarded checks: prepared
+packet runner 2155.7 MiB, packet/guard runner 2545.3 MiB, source-staged spatial
+pass 2113.4 MiB, restoring borrowed pass 2117.3 MiB. Prepared/restoring-pass
+axiom audits report only propext, Classical.choice and Quot.sound (7052.6 MiB
+temporary audit peak). Integrity and whitespace scans pass. Default proof
+limits are preserved; all verification handles are terminal.
+
+Next carry borrowedCouplingPass_exec_within through BorrowedCouplingPassSpec
+and OriginalColumnPass, native original-column input generation and header
+restoration, then the guarded interior/residual path and indexed retained
+column publication. Finally lift the joint column scan/page prefix beside
+spectators into the constructed factory and consumer/prefix resource theorem.
+The complete factory/uniform resource and other S4 gates remain open. Keep
+collecting the larger factory checkpoint; no push or periodic WIP changes.
+
+### S4 original-column generation retains its numerical contract and workspace
+
+BorrowedCouplingPassSpecStock combines the bounded restoring pass with the
+existing couplingPass_output_spec, preserving the ambient field, magnitude and
+error contract. OriginalColumnPassStock reuses originalColumnPass_spec for all
+numerical correctness conclusions. The new bounded coupling trace is matched
+to that same execution by Exec.unique; the accuracy proof is not duplicated.
+GeneratedOriginalColumnStock adds structural native three-push certificates for
+ordinary zero/basis input generation and owned source release, composing them
+with the bounded original-column pass. Exact publication and readiness facts
+are retained. No caller assumptions beyond the arithmetic program's push bound
+are added; later placement will instantiate the actual fixed program.
+
+Integration passes (9952 jobs; 2.7 GiB combined peak). Guarded checks: bounded
+pass spec 2112.5 MiB, original-column correctness bridge 2116.1 MiB, complete
+generated original column 2129.0 MiB. Column-pass/generation axiom audits report
+only propext, Classical.choice and Quot.sound (7069.1 MiB temporary audit peak).
+Integrity and whitespace checks pass under default proof limits.
+
+The restored-original-column header wrapper remains unfinished. Its direct
+concrete-state resource composition grew to about 24 GiB and was stopped by
+exact PID after inspecting the live process. Profiling shows the native header
+certificate completes in about 0.12 seconds. An opaque wrapper budget let a
+partially checked declaration reach about 2.15 GiB, but completing its proof
+still caused final verification to grow to about 24 GiB. Opacity alone did not
+solve the composition. Diagnostic checks/builds were each polled to terminal
+after stopping their exact identified Lean processes; no verification remains
+running. The unfinished source is preserved outside the production import
+graph at /tmp/s4-restored-original-column-stock-draft.lean. No sorry, new axiom
+or raised proof limit was used.
+
+Next factor the header-copy/generated-column/header-release resource assembly
+over abstract intermediate stores, keeping mnSize comparisons scalar, and
+instantiate concrete stores last. Reuse the checked generated column and the
+existing restoredOriginalColumn_spec for numerical and readiness conclusions.
+Then lift the restored executor through retained/arbitrary original columns
+and the guarded-interior residual path before joint column scan/publication.
+The complete factory/uniform-resource and other S4 gates remain open. Keep
+collecting the larger local checkpoint; no push, periodic WIP untouched.
+
+### S4 restored, retained and arbitrary original columns retain workspace
+
+The failed concrete restored-column draft is now superseded by the checked
+PhaseCellRestoredOriginalColumnStock. restoredOriginalColumn_trace_within proves
+the five-stage header install/index-copy/generated-column/index-clear/header-
+release composition over abstract stores. Its scalar cap hypothesis is proved
+separately, before instantiating concrete tape updates. This avoids the final
+verification expansion that reached about 24 GiB in the direct proof. The full
+restoredOriginalColumn_spec_within now checks at 2151.6 MiB under unchanged limits.
+Native header installation is bounded by eight pushes; clearing index and
+headers has zero growth. All old numerical and LengthKeyReady conclusions stay.
+
+RetainedOriginalColumnStock lifts that trace with exec_emb_ovr_within_stock, so
+component spectators are counted once. ArbitraryOriginalColumnStock uses the
+same abstract-store pattern for two window-header copies, the one-symbol end
+coordinate increment, retained generation and zero-growth header clearing. Its
+resource contract preserves the arbitrary-coordinate original-column result
+and readiness without supplying numerical intermediates or changing programs.
+The header-wrapper resource obstacle from the preceding entry is resolved.
+
+Integration passes (10081 jobs; 2.7 GiB combined peak). Guarded checks: restored
+column 2151.6 MiB, retained placement 2135.7 MiB, arbitrary original column
+2151.4 MiB. Restored/arbitrary axiom audits report only propext, Classical.choice
+and Quot.sound (7095.1 MiB temporary audit peak). Integrity and whitespace scans
+pass; all verification handles are terminal. The earlier allocated/scaled
+factor work has its recorded accepted-core integration; the new single-column
+resource modules are individually integrated through the arbitrary-column target.
+
+Next retain the older guarded-interior/residual execution chain, then combine
+it with arbitraryOriginalColumn_spec_within into generatedCyclicColumn, its
+indexed/retained caller and joint column publication/scan/page generation.
+Finally preserve resources through the constructed factory and consumer prefix.
+The complete factory/uniform resource and other S4 gates remain open. Collect
+the accumulated checked allocated/scaled-factor and original-column resource
+contracts as one larger local checkpoint; exclude all periodic WIP and do not
+push. The /tmp restored-column draft is historical and no longer needed.

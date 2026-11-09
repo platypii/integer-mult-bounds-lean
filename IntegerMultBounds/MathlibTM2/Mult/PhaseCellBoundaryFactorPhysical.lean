@@ -77,10 +77,10 @@ theorem boundary_axisPrep_physical_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     boundaryFactorReg_injective boundaryFactorReg_disjoint boundaryFactorMulReg_injective (by decide) hQ hA
     p u l target rhsExp B k columns hp hlen hformat hstage (boundaryFactorState S) hready hseed SRC
     hsrc htswn hhf hdf hdout hmsk hvk hef htb hsr hbo hhv hxa hhc hya hxs hpr hac hac2 hnv hb1 htC htA htJ htK htL hsel hsn hkn hms hm2n hmwn hsmwn hm2wn hdst
-  obtain ⟨v',S',n,hu,hn,he,hholds,hframe⟩ := hrun v S ⟨hleft,hmul⟩ (fun _ => rfl)
+  obtain ⟨v',S',n,hu,hn,hholds,hframe,he⟩ := hrun v S ⟨hleft,hmul⟩ (fun _ => rfl)
   have hstate : boundaryFactorState S' = σ' := funext hholds
   rw [←hstate] at hpost
   obtain ⟨hinp,hout,hL,hlegacy⟩ := boundaryFactorFr_legacy hframe
-  exact ⟨v',S',n,hu,hn,he,hinp,hout,hL,hlegacy,hpost⟩
+  exact ⟨v',S',n,hu,hn,(he 0).toExec,hinp,hout,hL,hlegacy,hpost⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

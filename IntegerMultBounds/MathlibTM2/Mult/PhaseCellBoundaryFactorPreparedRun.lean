@@ -11,6 +11,7 @@ namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
 open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
   IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Host
   IntegerMultBounds.MathlibTM2.Node IntegerMultBounds.MathlibTM2.Fast
+  IntegerMultBounds.MathlibTM2.Fast.Main
 
 variable {Q A : ℕ} {P U : Type} {body : P → Pr P 224 Q A U}
 
@@ -34,7 +35,10 @@ theorem boundary_factorPrepared_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     (_hsrc : (boundaryFactorState S) .src = cstream A w ((factorWindowValues B (12*band+1) columns).flatten++
       (factorInputValues B (12*band+1) B.card columns).flatten)++SRC),
     ∃ v' S' n, v'.user = v.user ∧ n ≤ bandAxisPrepCost w (12*band) K B.card ∧
-      Exec body (boundaryFactorPrep hQ) (mk v S) n (mk v' S') ∧
+      ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+0+
+        boundaryAxisPrepWorkspace (P := P) (A := A) (U := U) boundaryFactorReg
+          boundaryFactorMulReg_injective (by decide) hQ w (12*band) K B.card) 0
+        (boundaryFactorPrep hQ) (mk v S) n (mk v' S') ∧
       S'.inp = S.inp ∧ S'.out = S.out ∧ S'.L = S.L ∧
       (∀ i : Fin 154, i ≠ 140 → S'.R (boundaryFactorLegacyReg i) = S.R (boundaryFactorLegacyReg i)) ∧
       RsbFr boundaryFactorReg S S' ∧
@@ -94,11 +98,11 @@ theorem boundary_factorPrepared_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
 
   obtain ⟨hbo,hhf,hdf,hsrc',hm2n',hmwn',hsn,hdout,hvk,hef,hxs,hkn,hms,hm2n,hkn',hmwnControl,hready',hframe'⟩ := hpost
   have hsolve := boundarySolveReady_of_factor hprepared w hready' hsn hm2n' hmwn' hef hdout hxs hframe'
-  obtain ⟨v',S',n,hu,hn,he,hholds,hframe⟩ := hrun v S ⟨hleft,hmul⟩ (fun _ => rfl)
+  obtain ⟨v',S',n,hu,hn,hholds,hframe,he⟩ := hrun v S ⟨hleft,hmul⟩ (fun _ => rfl)
   have hstate : boundaryFactorState S' = σ' := funext hholds
   obtain ⟨hinp,hout,hL,hlegacy⟩ := boundaryFactorFr_legacy hframe
   rw [← hstate] at hbo hhf hdf hsrc' hm2n' hmwn' hsn hdout hvk hef hxs hkn hms hm2n hkn' hmwnControl hready' hframe' hsolve
-  exact ⟨v',S',n,hu,hn,he,hinp,hout,hL,hlegacy,hframe,hsolve,hbo,hhf,hdf,hsrc',hm2n',hmwn',hsn,
+  exact ⟨v',S',n,hu,hn,he 0,hinp,hout,hL,hlegacy,hframe,hsolve,hbo,hhf,hdf,hsrc',hm2n',hmwn',hsn,
     hdout,hvk,hef,hxs,hkn,hms,hm2n,hkn',hmwnControl,hready',hframe'⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

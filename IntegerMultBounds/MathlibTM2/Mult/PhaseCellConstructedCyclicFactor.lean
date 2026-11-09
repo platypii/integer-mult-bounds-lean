@@ -150,7 +150,7 @@ theorem constructedCyclicFactor_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q
     exact (hlegacy 139 (by decide)).trans (hh.trans (by simp [E₁,E,embStk,boundaryFactorLegacyReg,h139]))
   have hL₁ : S₁.L = S.L := funext (fun i => (hinput.left i).trans (hleft i).symm)
   refine ⟨v₃,S₃,n₁+n₃,columns,hu₃.trans (hu₂.trans hu₁),Nat.add_le_add hn₁ hn₃,
-    Exec.seq he₂' he₃,hlen,hcolumns,hformat,hprepared,hinp,hout,hL.trans hL₁,?_,hmul',h106',h139',hpost⟩
+    Exec.seq he₂' he₃.toExec,hlen,hcolumns,hformat,hprepared,hinp,hout,hL.trans hL₁,?_,hmul',h106',h139',hpost⟩
   intro i hi
   have hh := congrArg (fun X : Stacks 154 A => X.R i) hproj
   exact (hlegacy i hi).trans hh

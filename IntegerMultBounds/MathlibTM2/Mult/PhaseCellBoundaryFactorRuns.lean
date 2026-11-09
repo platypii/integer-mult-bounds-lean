@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFactorAllocatedFits
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryAxisWorkspace
 
 /-! Execute factorization and table preparation of the emitted boundary page, with all fit conditions derived. -/
 
@@ -45,7 +46,8 @@ theorem boundary_axisPrep_allocated_runs (hrg : Function.Injective rg) (hdisj : 
     (_hmwn : (σ .mwn).length = 2 * (k + 1) * w)
     (_hsmwn : (σ .smwn).length = (2 * (k + 1) + 1) * w) (_hm2wn : (σ .m2wn).length = k * w)
     (_hdst : (σ .dst).length = k),
-    ∃ σ', RsbRuns body rg ι (bandAxisPrepP rg hι hT hQ) σ σ' (bandAxisPrepCost w k K B.card) ∧
+    ∃ σ', RsbRunsWithin (body := body) (rg := rg) (ι := ι) (bandAxisPrepP rg hι hT hQ) σ σ' (bandAxisPrepCost w k K B.card)
+      (boundaryAxisPrepWorkspace (P := P) (A := A) (U := U) rg hι hT hQ w k K B.card) ∧
       σ' .bo = cstream A w ((facLf q K rows inputs B.card).map fun x => (⟨x, 0⟩ : GaussianInt)) ∧
       σ' .hf = cstream A w ((List.range B.card).reverse.map fun m =>
         colC (Mult.BandFactor.ucolZ (k + 1) (facUr q K rows inputs B.card) m)).flatten ∧
@@ -71,7 +73,7 @@ theorem boundary_axisPrep_allocated_runs (hrg : Function.Injective rg) (hdisj : 
   have hsrc' : σ .src = cstream A w ((rows.map colC).flatten++(inputs.map colC).flatten)++SRC := by
     simpa [rows,inputs,factorWindowIntegers_colC B (k+1) w columns hlen hformat,
       factorInputIntegers_colC B (k+1) w B.card columns hlen hformat] using hsrc
-  apply band_axisPrep_runs (body := body) hrg hdisj hι hT hQ hA σ hready
+  apply band_axisPrep_actual_runs (body := body) hrg hdisj hι hT hQ hA σ hready
     (by dsimp [w,executionWidth]; omega) (by dsimp [w,q,executionWidth,executionPrecision]; omega)
     rows inputs
     (by simp [rows])
