@@ -44336,3 +44336,236 @@ audit peak). All verification handles terminal. Collect shared key-reserve and
 uniform volume bounds as one local checkpoint, excluding periodic recovery WIP.
 No push. Next compare shared setup/geometry terms with fitting hypotheses and
 carry the resulting allowance to the complete fitting caller. Full S4 remains open.
+
+### S4 gap hypothesis bounds shared setup length by precision
+
+HaloLengthPrecisionBound proves directly from the manuscript gap hypothesis
+1/(4*p)≤t/s-1 that s/(t-s)≤4*p, for positive p,s and s<t. Thus the actual
+selected-length cap is at most 4*p+1. generatedHaloKeysWorkspace_le_precision
+uses the checked setup monotonicity to bound the generated loop by shared setup
+at 4*p+1 plus its single auxiliary allowance. No enumeration or fitting-volume
+supplier premise is used.
+
+Check passes at 2143.6 MiB; integration passes (10177 jobs, 2.7 GiB combined
+peak). All handles terminal. Shared numerical cell length is now precision-
+controlled; ambient geometry and encoded stream traffic remain explicit. Next
+bound shared setup evaluated at 4*p+1 and the logarithmic geometry terms under
+the full fitting sizing hypotheses, preserving their real time/space requirements.
+Full S4 remains open. No commit or push; retain the next larger checkpoint.
+
+### S4 geometry-controller bounds retain logarithmic axis dependence
+
+GeometryWorkspaceBound identifies weightWorkspaceWidth exactly as
+w+q+13*P+3*size(t)+size(u)+18. For the common encoded-header allowance
+D=P+q+w+size(t)+size(u)+size(w)+1, both halo and weight geometry widths are at
+most 20*D, and each tblC controller is at most 20000*D^2.
+
+haloPreparationWorkspace_le_headers applies these facts to the actual conditional
+preparation allowance: at runtime word width 2*q+8 it is at most
+180000*D^2+2050000*F*D, where F=P+N+q+l+s+t+u+band+1. No selected endpoint,
+length or group count remains. Axis-coordinate dependence inside D stays
+logarithmic; unary-header traffic remains explicit in F.
+
+Check passes at 2117.9 MiB; integration passes (9880 jobs, 2.7 GiB combined
+peak). All handles terminal. This exposes rather than removes the shared
+quadratic header term; comparison with the full fitting space allowance still
+remains. Next simplify shared numerical setup at precision-bounded length and
+combine with these header bounds. Full S4 remains open. No commit or push.
+
+### S4 zero-replica cell arithmetic exposes its numerical setup components
+
+cellArithmeticWorkspace_zero_le_components separates zero-replica arithmetic into
+two Fixed.workspace reserves, three K-weighted rmulCost reserves, the three
+scalar/weight-counter preparation costs, and a native traffic allowance
+10000*(K+1)*(2^l+L+1)*(w+cExp+e+l+1). Fixed.workspace remains opaque, avoiding
+large convolution-term reduction. No replica count multiplies these shared terms.
+
+Check passes at 2187.9 MiB; integration passes (4474 jobs, 2.7 GiB combined
+peak). All handles terminal. The counter setup formulas still contain
+chirpMultiplierSetupCost and width-table work; these have not yet been compared
+with the full fitting resource target. Next connect their established sizing
+bounds and the fixed convolution reserve to the precision-bounded setup. Full
+S4 remains open. No commit or push; retain the next larger checkpoint.
+
+### S4 scalar-counter setup is bounded by encoded-width arithmetic
+
+ScalarSetupCostBound evaluates the five-input scalar bank load symbolically as
+42*w+49. It bounds prepareCost for q≤w and prepareWeightsCost for q+b≤w by
+explicit width-square/logarithmic terms. Reusing Schedule.topN_facts gives the
+simplified bound 20100*(size(2*w)+1)*(w+1)^2 for each setup when 1≤w.
+No coefficient values or concrete schedule certificates are enumerated.
+
+Check passes at 2049.5 MiB; integration passes (4275 jobs, 2.6 GiB combined
+peak). All handles terminal. Next substitute these costs into the zero-replica
+arithmetic bound under its actual width hypotheses and expose the remaining
+fixed convolution setup using the existing batch/schedule sizing bounds.
+Full fitting time/space and full S4 remain open. No commit or push.
+
+### S4 shared arithmetic reduces to primitive reserves and explicit traffic
+
+ArithmeticWorkspaceBound substitutes the scalar/weight setup bounds under
+1≤w and q+(cExp+e+1)≤w. cellArithmeticWorkspace_zero_le_headers contains the
+shared convolution and multiplication reserves, an explicit
+180900*(size(2*w)+1)*(w+1)^2 header allowance and native traffic.
+
+fixedWorkspace_zero_le_components bounds the two-operand convolution wrapper by
+(R+1)*rpWorkspace q l w 0 plus 1000*(q+l+2^l+1)*(w+1).
+cellArithmeticWorkspace_zero_le_primitives combines both steps, eliminating
+opaque scalar and fixed-convolution wrapper setup costs. The only numerical
+primitive reserves left are rpWorkspace at zero replicas and rmulCost.
+
+Check passes at 2195.8 MiB; integration passes (4475 jobs, 2.7 GiB combined
+peak). All handles terminal. Small scalar composition with explicitly associated
+products avoids a recursion-depth failure without changing proof limits. Next
+apply execution_width_bound to the actual caller parameters and compare the
+remaining ring primitive/setup terms with fitting sizing. Full S4 remains open.
+No commit or push; retain the next larger checkpoint.
+
+### S4 generated arithmetic sizing discharges setup width premises
+
+SizedArithmeticWorkspaceBound instantiates the primitive arithmetic setup bound
+at executionPrecision, executionWidth, sourceExponent and the actual 8*p+1
+normalization exponent. execution_width_bound establishes the required room;
+there is no additional width, cost-cap or execution-witness premise.
+sizedArithmeticSetupWorkspace names the resulting numerical primitive, header
+and traffic allowance for the actual caller parameters.
+
+Check passes at 2062.5 MiB; integration passes (4484 jobs, 2.6 GiB combined
+peak). All handles terminal. Inspection locates the remaining ring primitive
+terms in ringCoreWorkspace: generated header/constants, ring-record allowance
+and shared bank stock. Next use their structural sizing formulas to bound the
+zero-replica ring reserve, then substitute into shared halo setup. Full S4 and
+its sharp fitting resource comparison remain open. No commit or push.
+
+### S4 ring primitive reserve exposes shared product cost and dimension volume
+
+Fast.RingWorkspaceBound bounds ringCoreWorkspace at zero input volume by one
+12*Schedule.cost(cA,cB,cC0,wOf*2^l) term plus explicit header/digit volume.
+rpWorkspace_zero_le carries this through host sealing and unsealing, retaining
+its actual initial header length. These bounds simplify the existing allowance;
+they do not establish that Schedule.cost is the sharp S4 space allowance.
+
+ringDigitWidth_le uses existing topN_facts to show wOf≤8*(p+l+w+1), and
+ringHeaderScale_le bounds its encoded scale by 12*(p+l+w+1). No schedule
+certificate or numerical data is enumerated. Check passes at 2016.6 MiB;
+integration passes (3430 jobs, 2.5 GiB combined peak). All handles terminal.
+Next combine header-length and digit bounds with the product-cost sizing theorem,
+then substitute into sizedArithmeticSetupWorkspace for the actual caller.
+Full fitting resource bounds and S4 remain open. No commit or push.
+
+### S4 ring reserve has an explicit schedule-and-dimension budget
+
+RingWorkspaceBound combines the established ring_header_length_le and digit-scale
+bounds into rpWorkspace_zero_le_dimensions. ringScheduleCost_le reuses the proved
+Schedule.cost_le at N≤8*(p+l+w+1)*2^l; ringWorkspaceBudget contains the explicit
+N log N log log N upper expression and header/digit volume, with no hidden
+ringCoreWorkspace, record-loop or header-length term.
+
+rpWorkspace_zero_le_budget proves that allowance for the actual primitive.
+SizedArithmeticWorkspaceBound substitutes it into the generated caller's setup
+allowance. Checks pass at 2020.0 MiB (ring) and 2063.1 MiB (sized arithmetic);
+integration passes (4485 jobs, 2.6 GiB combined peak). All handles terminal.
+This is an explicit bound on the current reserve, not yet the final sharp fitting
+space theorem. Next compare its encoded dimensions with the actual fitting sizing
+and connect the result to shared halo setup. Full S4 remains open. No commit/push.
+
+### S4 generated key execution reaches the explicit arithmetic budget
+
+HaloSharedSetupBudget combines actual zero-replica generated batch setup with
+the checked sized arithmetic/ring budget. haloKeySharedSetup_le_budget removes
+the opaque cell arithmetic allowance without adding width or execution premises.
+generatedHaloKeysWorkspace_le_budget connects that bound to the actual selected
+key loop under the manuscript gap hypothesis, at length 4*p+1, with one auxiliary
+allowance. The chain retains logarithmic geometry and no per-key scratch sum.
+
+Check passes at 2137.9 MiB; integration passes (10181 jobs, 2.7 GiB combined
+peak). All handles terminal. The remaining opaque setup term is the actual
+zero-replica generatedBatchSetupWorkspace (inverse generators, reciprocal and
+weight setup); its coefficient/integer widths and native construction costs need
+comparison with the fitting sizing. Full S4 remains incomplete. No commit/push;
+collect the primitive/geometry/budget work as the next larger local checkpoint.
+
+### S4 inverse-generator setup has an explicit shared numerical budget
+
+GeneratedBatchWorkspaceBound decomposes zero-replica inverse/weight setup into
+one C*rmulCost W reserve, counter setup, quadratic coefficient/weight header
+allowances, explicit header traffic and factor-page volume O((C+1)*(L+1)^2*(W+q+1)).
+It substitutes the existing linear integer reciprocal bound and topN_facts;
+iteration count does not multiply numerical scratch. generatedBatchSetupBudget
+also replaces counter preparation with its encoded-width/logarithmic bound.
+
+HaloSharedSetupBudget now uses this explicit generated budget alongside the
+explicit arithmetic/ring budget. The selected-key theorem reaches both, at
+precision-bounded length 4*p+1, without a workspace supplier premise. A small
+scalar coefficient lemma avoids recursion-depth failure; no limits were raised.
+Checks pass at 2253.8 MiB (generated setup) and 2141.0 MiB (connected halo
+budget). Integration passes (10182 jobs, 2.7 GiB combined peak). All handles
+terminal. Remaining fitting comparison is now in explicit integer/coefficient
+width, precision, metadata and padded convolution dimensions; it is not yet
+proved. Full S4 remains open. No commit or push; collect the next larger budget
+checkpoint, excluding unrelated periodic recovery WIP.
+
+### S4 generated setup widths have explicit precision growth
+
+GeneratedSetupSizing instantiates the actual integer/coefficient/weight widths.
+For E=p+l+target+rhsExp+1, integerSetupWidth at the generated iteration precision
+is at most 700000*E^2. At selected length 4*p+1, coefficientWorkspaceWidth is at
+most 2000000*E^2+size(t)+size(u)+size(band). The weight setup width is at most
+500000*E+3*size(t)+size(u). The coefficient-length size uses the structural
+Nat.size bound, with no finite cases or schedule reduction.
+
+Check passes at 2115.3 MiB; integration passes (9813 jobs, 2.7 GiB combined
+peak). All handles terminal. These bounds preserve the quadratic-versus-linear
+precision growth and logarithmic geometry terms needed for the explicit setup
+budget. Next substitute them into the generated setup allowance and compare the
+combined budget with fitting volume/precision. Full S4 remains incomplete.
+No commit or push; retain the larger primitive/setup budget checkpoint.
+
+### S4 generated setup has a mixed precision/ambient polynomial envelope
+
+Cost.PhaseCellGeneratedWorkspacePolynomial reuses the existing band_rmul_le
+rather than reproving multiplication growth. For a common bound Z on encoded
+setup quantities (P,N,q,l,L,W,V,T), generatedBatchSetupBudget is bounded by
+288*C*(ssMulConst+1)*Z^3 + 100000000*(C+1)*(Z+1)^3 +
+1000000*(s+t+u+band+1)*(Z+1). Ambient coordinate/header volume remains linear;
+it is not absorbed into the cubed precision parameter.
+
+Check passes at 3132.3 MiB, below the production module target; integration
+passes (14063 jobs, 3.4 GiB combined peak). All handles terminal. Next instantiate
+Z from GeneratedSetupSizing's quadratic precision and logarithmic geometry bounds,
+then connect the mixed bound to the fitting caller's amortized setup volume.
+Full S4 remains incomplete. No commit or push; retain the larger budget checkpoint.
+
+### S4 generated setup polynomial is instantiated without width suppliers
+
+Cost.PhaseCellGeneratedWorkspaceSizedPolynomial defines generatedSetupScale from
+3000000*(p+l+target+rhsExp+1)^2 and logarithmic t,u,band header terms. It derives
+all P,N,q,l,L,W,V,T bounds from the existing generated sizing lemmas and proves
+the mixed cubic-precision/linear-ambient envelope for generatedBatchSetupBudget.
+generatedBatchSetupWorkspace_sized_poly connects it directly to the actual
+zero-replica setup allowance at length 4*p+1; no dimension-bound premises remain.
+
+Check passes at 3118.3 MiB; integration passes (14073 jobs, 3.4 GiB combined
+peak). All handles terminal. Next combine this instantiated inverse setup bound
+with the arithmetic/ring budget in haloSharedSetupBudget, then carry the result
+through the complete fitting resource ledger. Full S4 remains incomplete;
+original-input/grouped/fallback/tensor/root gates remain open. No commit or push;
+retain the larger primitive/setup budget checkpoint.
+
+### S4 explicit shared setup envelope reaches the actual interior allowance
+
+Cost.PhaseCellHaloSharedWorkspaceEnvelope combines the instantiated inverse-setup
+polynomial and explicit arithmetic/ring budget. haloSharedSetupBudget_le_envelope
+bounds the setup at length 4*p+1; generatedHaloKeysWorkspace_le_envelope and
+solveHaloInteriorWorkspace_le_envelope connect it to the actual selected-key loop
+and initialized interior allowance under the manuscript gap hypothesis. Setup
+width suppliers, class maxima and opaque cell/ring-core reserve terms are absent
+from this envelope; initialization and auxiliary traffic remain separately priced.
+
+Check passes at 3149.7 MiB; integration passes (14441 jobs, 3.4 GiB combined
+peak). Instantiated generated setup and final interior-envelope axiom audits
+report only propext, Classical.choice and Quot.sound (9268.9 MiB temporary audit
+peak). All handles terminal. Collect the primitive/setup/geometry envelope work
+as one local checkpoint, excluding periodic recovery WIP; no push. Next compare
+the envelope and auxiliary traffic against the fitting amortized ledger, then
+propagate through cyclic table/factor caller resources. Full S4 remains open.
