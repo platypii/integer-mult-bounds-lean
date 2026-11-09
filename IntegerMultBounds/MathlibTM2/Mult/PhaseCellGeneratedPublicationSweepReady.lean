@@ -5,6 +5,8 @@ public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPreparedPublicationPlan
 
 /-! Sweep controls are retained independently of generated packet/padding/clock
 words. This is the ordinary pre-setup contract, with no virtual loaded state. -/
+set_option autoImplicit false
+
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
 open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2.Host
@@ -26,7 +28,7 @@ theorem sweepSupport_off (plan : PreparedPublicationPlan T src dst) {i : Fin T}
 
 structure SweepReady (plan : PreparedPublicationPlan T src dst) (windows : PublicationWindows s L)
     (w : ℕ) (borrowed : List (Fin (prime+K+4))) (S : Stacks T (prime+K)) : Prop where
-  count : S.R plan.count = List.replicate windows.origins.length tick
+  count : S.R plan.count = List.replicate windows.origins.length Node.tick
   advances : S.R plan.advances = gatherControls (prime+K) (originAdvances w 0 windows.origins++[0])++borrowed
   fresh : ∀ i ∈ [plan.savedControl,plan.savedAdvances,plan.counter,plan.zero,plan.acc,plan.control,
     plan.trash,plan.tmp,plan.retireCount,plan.gap], S.R i = []

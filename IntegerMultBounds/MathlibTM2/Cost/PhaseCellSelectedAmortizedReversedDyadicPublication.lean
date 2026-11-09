@@ -71,22 +71,26 @@ theorem selectedAmortizedReversedDyadicPublication_exec (body : P → Pr P T Q (
     (hwordPort : pub.wordWidth = headerReg 87)
     (ambient : Fin Fs.length → List (Fin (prime+K+4)))
     (hambient : ∀ j, (ambient j).length = s*W)
-    (outputTail borrowed : List (Fin (prime+K+4)))
-    (pubReady : pub.SweepReady (coreSubsetPublicationWindows s width g.length hw g.indices g.sublist)
-      W borrowed (embStk e S))
+    (hcountPort : pub.count = headerReg 88) (hadvancePort : pub.advances = headerReg 91)
+    (hsetupReg : [realRows,headerReg 86,headerReg 87,headerReg 90,pub.count,pub.advances,
+      pub.savedAdvances,pub.savedControl,pub.tmp].Nodup)
+    (hstrideOff : ∀ r ∈ pub.sweepSupport++[extra 1,dst,lineRows], r ≠ headerReg 90)
+    (hpadSetupOff : ∀ r ∈ [pad,tmp,saved], r ∉ [headerReg 88,headerReg 91,headerReg 90])
+    (hsetupBlank : ∀ r ∈ pub.uniformSetupHeaders (headerReg 90), S.R (e r) = [])
+    (hfresh : ∀ r ∈ [pub.savedControl,pub.savedAdvances,pub.counter,pub.zero,pub.acc,pub.control,
+      pub.trash,pub.tmp,pub.retireCount,pub.gap], S.R (e r) = [])
+    (outputTail : List (Fin (prime+K+4)))
     (hdst : (embStk e S).R dst = (List.ofFn ambient).flatten++outputTail)
     (hclock : clock = headerReg 54) (hline : ((embStk e S).R lineRows).length = s),
     ∃ lines : List (List (Fin (prime+K+4))), ∃ v' : HS T Q (prime+K) U, ∃ n : ℕ,
-      v'.user = v.user ∧ (n : ℝ) ≤ 2*(Sizes.T m : ℝ)+(2735+100*cV : ℕ)*(2^b*(s*W) : ℕ)+6+
+      v'.user = v.user ∧ (n : ℝ) ≤ 2*(Sizes.T m : ℝ)+(2855+100*cV : ℕ)*(2^b*(s*W) : ℕ)+6+
         108*(generatedDyadicStageCoeff FixedStreamedBank.tapeCount 6 1+300)*
           (2^b*(s*W) : ℕ)*Sizes.d m*((Sizes.ℓ m : ℝ)^Parameters.tau+1) ∧
       g.BankAccurate p W (inversePublicationTargets p Fs.reverse J) lines (3/(2 : ℝ)^p) ∧
       ExecWithin body (fun z state => mnSize state+z ≤ mnSize (Host.mk v S)+depth+
-        (2*Sizes.T m+(4270+100*cV+3*(streamedDyadicStockCoeff FixedStreamedBank.tapeCount+40))*(2^b*(s*W))+12)) depth
+        (2*Sizes.T m+(4390+100*cV+3*(streamedDyadicStockCoeff FixedStreamedBank.tapeCount+40))*(2^b*(s*W))+12)) depth
         (.seq (reverseCopyRows copyCount copySavedCount copyWidth source archive (e (extra 1)) copySaved copyTmp)
-          (embProg e Empty.elim (.seq (.seq generatedPublicationHeadersProgram (.seq (.seq
-            (ownedPrefixPadding exponent packet (extra 1) pad tmp saved (pairSym (prime+K) false false))
-            (PackedTranspose.program hstates)) (pub.replicaProgram clock lineRows))) (clearWords generatedPublicationHeaderRegisters))))
+          (embProg e Empty.elim (uniformDyadicPublicationProgram hstates exponent packet pad tmp saved pub clock lineRows)))
         (Host.mk v S) n (Host.mk v' {S with R := (Function.update S.R (e dst) (lines.flatten++outputTail))}) := by
   dsimp only
   have hplaced := selectedAmortizedPlacedDyadicPublication_exec (T := T) body hstates ct cV
@@ -94,7 +98,7 @@ theorem selectedAmortizedReversedDyadicPublication_exec (body : P → Pr P T Q (
   intro h i _ e he u target htarget W hW b V hV hreplicas hbits hfit hA exponent packet pad tmp saved hExponent hPacket hpadReg
     Fs hFs J batches hrows depth v S copyCount copySavedCount copyWidth source archive copySaved copyTmp
     hcopyReg hcopyCount hcopyWidth sourceTail hcopyFresh hsourceBlank ready hpadOff hsourceA hsourceB hsourceC hword hheaderBlank hsrc dst pub clock lineRows hports hpubOff hwindow hpadding hwordPort
-    ambient hambient outputTail borrowed pubReady hdst hclock hline
+    ambient hambient hcountPort hadvancePort hsetupReg hstrideOff hpadSetupOff hsetupBlank hfresh outputTail hdst hclock hline
   let p := Sizes.p m
   let s := Sizes.s m i
   let width := amortizedCoreWidth ct p
@@ -117,8 +121,24 @@ theorem selectedAmortizedReversedDyadicPublication_exec (body : P → Pr P T Q (
   have hread (j : Fin PackedTranspose.tapeCount) (hj : j ≠ extra 1) : M.R (e j) = S.R (e j) :=
     Function.update_of_ne (he.ne hj) _ _
   have readyM := ready.of_frame hpadReg hread (by intro j; rfl)
-  have pubReadyM := pubReady.of_frame (F := embStk e M)
-    (by intro j hj; exact hread j (pub.sweepSupport_off hj).1)
+  have setupBlankM : ∀ r ∈ pub.uniformSetupHeaders (headerReg 90), M.R (e r) = [] := by
+    intro r hr
+    have hne : r ≠ extra 1 := by
+      simp only [PreparedPublicationPlan.uniformSetupHeaders,List.mem_cons,List.not_mem_nil,or_false] at hr
+      rcases hr with rfl | rfl | rfl
+      · exact (pub.support_off (by simp [PreparedPublicationPlan.support])).1
+      · exact (pub.support_off (by simp [PreparedPublicationPlan.support])).1
+      · exact base_extra _ _
+    rw [hread r hne]
+    exact hsetupBlank r hr
+  have freshM : ∀ r ∈ [pub.savedControl,pub.savedAdvances,pub.counter,pub.zero,pub.acc,pub.control,
+      pub.trash,pub.tmp,pub.retireCount,pub.gap], M.R (e r) = [] := by
+    intro r hr
+    have hmem : r ∈ pub.support := by
+      simp only [List.mem_cons,List.not_mem_nil,or_false] at hr
+      rcases hr with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> simp [PreparedPublicationPlan.support]
+    rw [hread r (pub.support_off hmem).1]
+    exact hfresh r hr
   have htail : [extra 1,dst,clock,lineRows].Nodup := (List.nodup_append.mp hports).2.1
   have hlineOff : lineRows ≠ extra 1 := by
     intro heq
@@ -133,7 +153,7 @@ theorem selectedAmortizedReversedDyadicPublication_exec (body : P → Pr P T Q (
     (by change (M.R (e (headerReg 87))).length = _; rw [hread (headerReg 87) (base_extra _ _)]; exact hword)
     (by intro i hi; change M.R (e (headerReg i)) = []; rw [hread (headerReg i) (base_extra _ _)]; exact hheaderBlank i hi)
     (by simp only [embStk,M,Function.comp_apply,Function.update_self,word])
-    dst pub clock lineRows hports hpubOff hwindow hpadding hwordPort ambient hambient outputTail borrowed pubReadyM
+    dst pub clock lineRows hports hpubOff hwindow hpadding hwordPort ambient hambient hcountPort hadvancePort hsetupReg hstrideOff hpadSetupOff setupBlankM freshM outputTail
     (by change M.R (e dst) = _; rw [hread dst pub.src_ne_dst.symm]; exact hdst)
     hclock
     (by change (M.R (e lineRows)).length = _; rw [hread lineRows hlineOff]; exact hline)
@@ -160,8 +180,8 @@ theorem selectedAmortizedReversedDyadicPublication_exec (body : P → Pr P T Q (
     hrowsVolume hlength hreplicaPos hW
   rw [hFs] at hcopyBound
   have hallowance : 2*reverseCopyRowsCost g.indices.length (Fs.length*(g.length*W))+
-      (2*Sizes.T m+(4200+100*cV+3*(streamedDyadicStockCoeff FixedStreamedBank.tapeCount+40))*(2^b*(s*W))) ≤
-      2*Sizes.T m+(4270+100*cV+3*(streamedDyadicStockCoeff FixedStreamedBank.tapeCount+40))*(2^b*(s*W))+12 := by
+      (2*Sizes.T m+(4320+100*cV+3*(streamedDyadicStockCoeff FixedStreamedBank.tapeCount+40))*(2^b*(s*W))) ≤
+      2*Sizes.T m+(4390+100*cV+3*(streamedDyadicStockCoeff FixedStreamedBank.tapeCount+40))*(2^b*(s*W))+12 := by
     rw [hFs]
     nlinarith only [hcopyBound]
   refine ⟨lines,v',n₁+n₂,hu₂.trans hu₁,?_,hgood,

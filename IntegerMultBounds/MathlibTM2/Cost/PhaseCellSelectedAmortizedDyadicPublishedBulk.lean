@@ -110,7 +110,7 @@ theorem selectedAmortizedDyadicPublishedBulk_exec (hR : rpStates ≤ Q) (hQ : SS
     pub.window = PackedTranspose.headerReg 82 → pub.padRows = PackedTranspose.headerReg 53 →
     pub.wordWidth = PackedTranspose.headerReg 87 →
     ∀ (ambient : Fin Fs.reverse.length → List (Fin (prime+K+4))), (∀ j, (ambient j).length = s*W) →
-    ∀ (outputTail pubBorrowed : List (Fin (prime+K+4)))
+    ∀ (outputTail : List (Fin (prime+K+4)))
       (pubCount pubSavedCount pubWidth pubArchive pubSaved pubTmp : Fin T),
     [pubCount,pubSavedCount,pubWidth,dst,pubArchive,pubE (PackedTranspose.extra 1),pubSaved,pubTmp].Nodup →
     (S.R pubCount).length = proper.indices.length →
@@ -124,8 +124,13 @@ theorem selectedAmortizedDyadicPublishedBulk_exec (hR : rpStates ≤ Q) (hQ : SS
     (S.R (pubE (PackedTranspose.headerReg 86))).length = proper.length →
     (S.R (pubE (PackedTranspose.headerReg 87))).length = W →
     (∀ i ∈ [(84 : Fin 117),85,81,51,82,53,54,55,56,57,97,98,102,40,41,42,43,44,45], S.R (pubE (PackedTranspose.headerReg i)) = []) →
-    pub.SweepReady (coreSubsetPublicationWindows s coreWidth proper.length hw proper.indices proper.sublist)
-      W pubBorrowed (embStk pubE S) →
+    pub.count = PackedTranspose.headerReg 88 →
+    pub.advances = PackedTranspose.headerReg 91 →
+    [PackedTranspose.realRows,PackedTranspose.headerReg 86,PackedTranspose.headerReg 87,PackedTranspose.headerReg 90,pub.count,pub.advances, pub.savedAdvances,pub.savedControl,pub.tmp].Nodup →
+    (∀ r ∈ pub.sweepSupport++[PackedTranspose.extra 1,pubDst,lineRows], r ≠ PackedTranspose.headerReg 90) →
+    (∀ r ∈ [pad,tmpPub,savedPub], r ∉ [PackedTranspose.headerReg 88,PackedTranspose.headerReg 91,PackedTranspose.headerReg 90]) →
+    (∀ r ∈ pub.uniformSetupHeaders (PackedTranspose.headerReg 90), S.R (pubE r) = []) →
+    (∀ r ∈ [pub.savedControl,pub.savedAdvances,pub.counter,pub.zero,pub.acc,pub.control, pub.trash,pub.tmp,pub.retireCount,pub.gap], S.R (pubE r) = []) →
     S.R (pubE pubDst) = (List.ofFn ambient).flatten++outputTail →
     clock = PackedTranspose.headerReg 54 → (S.R (pubE lineRows)).length = s →
     ∃ v' : HS T Q (prime+K) U, ∃ steps pubSteps : ℕ, ∃ outputs : List (List (Fin (prime+K+4))),
@@ -135,21 +140,19 @@ theorem selectedAmortizedDyadicPublishedBulk_exec (hR : rpStates ≤ Q) (hQ : SS
         432*(generatedDyadicStageCoeff FixedStreamedBank.tapeCount 6 1+300)*
           (Fs.length*s*W : ℕ)*Sizes.d m*((Sizes.ℓ m : ℝ)^Parameters.tau+1)+
         (8*(b : ℝ)+5)*(Sizes.T m : ℝ)+B₀*(2*(Fs.length : ℝ)+1)*
-        ((t : ℝ)*(1+(PhaseCellBand.width p u : ℝ)^2/(Sizes.d m : ℝ)))*(p : ℝ)^(129/128 : ℝ))+(2*(Sizes.T m : ℝ)+(2735+100*cVPub : ℕ)*(Fs.length*s*W : ℕ)+6+
+        ((t : ℝ)*(1+(PhaseCellBand.width p u : ℝ)^2/(Sizes.d m : ℝ)))*(p : ℝ)^(129/128 : ℝ))+(2*(Sizes.T m : ℝ)+(2855+100*cVPub : ℕ)*(Fs.length*s*W : ℕ)+6+
         108*(generatedDyadicStageCoeff FixedStreamedBank.tapeCount 6 1+300)*
           (Fs.length*s*W : ℕ)*Sizes.d m*((Sizes.ℓ m : ℝ)^Parameters.tau+1)) ∧
       proper.BankAccurate p W (inversePublicationTargets p Fs J) lines (3/(2 : ℝ)^p) ∧
       outputs.reverse.flatten.length = proper.indices.length*(Fs.reverse.length*(proper.length*W)) ∧
       ExecWithin body (fun z state => mnSize state+z ≤ mnSize (Host.mk v S)+0+(((3*coreExposureTrafficFactor cG cW+12+
           12*(streamedDyadicStockCoeff FixedStreamedBank.tapeCount+700))*(Fs.length*s*W)+
-          fittingCyclicWorkspaceTrafficFactor (A := (prime+K)) (U := U) hR hQ ct cW*Fs.length*t*p+47*Sizes.T m)+(2*Sizes.T m+(4270+100*cVPub+3*(streamedDyadicStockCoeff FixedStreamedBank.tapeCount+40))*(Fs.length*s*W)+12))) 0
+          fittingCyclicWorkspaceTrafficFactor (A := (prime+K)) (U := U) hR hQ ct cW*Fs.length*t*p+47*Sizes.T m)+(2*Sizes.T m+(4390+100*cVPub+3*(streamedDyadicStockCoeff FixedStreamedBank.tapeCount+40))*(Fs.length*s*W)+12))) 0
         (.seq (.seq gather.program (.seq (placedCoreOrigins e)
           (.seq (scanP count saved (ports.generatedOriginProgram g dst width origins binary work readerSaved readerTmp hR hQ))
             (clearWords [count]))))
           (.seq (reverseCopyRows pubCount pubSavedCount pubWidth dst pubArchive (pubE (PackedTranspose.extra 1)) pubSaved pubTmp)
-            (embProg pubE Empty.elim (.seq (.seq PackedTranspose.generatedPublicationHeadersProgram (.seq (.seq
-              (ownedPrefixPadding exponent packet (PackedTranspose.extra 1) pad tmpPub savedPub (pairSym (prime+K) false false))
-              (PackedTranspose.program hstates)) (pub.replicaProgram clock lineRows))) (clearWords PackedTranspose.generatedPublicationHeaderRegisters)))))
+            (embProg pubE Empty.elim (PackedTranspose.uniformDyadicPublicationProgram hstates exponent packet pad tmpPub savedPub pub clock lineRows))))
         (Host.mk v S) (steps+pubSteps)
         (Host.mk v' {Sbulk with R := (Function.update Sbulk.R (pubE pubDst) (lines.flatten++outputTail))}) := by
   dsimp only
@@ -165,9 +168,9 @@ theorem selectedAmortizedDyadicPublishedBulk_exec (hR : rpStates ≤ Q) (hQ : SS
     v S borrowed Vg replicasBits D gather hVg hD hrouteFit hreplicaVolume harchive ready hcountBlank hsaved
     e he h109 h116 hwide hnfit hV hmetaOff htableOff h37 hs hcw hr hnSrc hz hblank h104 h106
   intro pubE hpubE pubImageOff bPub VPub hVPub hpubVolume hbitsPub hfitPub exponent packet pad tmpPub savedPub
-    hExponent hPacket hpadReg hreplicas pubDst pub clock lineRows hports hpubOff hwindow hpadding hwordPort ambient hambient outputTail pubBorrowed
+    hExponent hPacket hpadReg hreplicas pubDst pub clock lineRows hports hpubOff hwindow hpadding hwordPort ambient hambient outputTail
     pubCount pubSavedCount pubWidth pubArchive pubSaved pubTmp hcopy hpubCount hpubWidth hcopyFresh hsourceBlank
-    headerReady hpadOff hsourceA hsourceB hsourceC hword hheaderBlank pubReady hpubDst hclock hline
+    headerReady hpadOff hsourceA hsourceB hsourceC hword hheaderBlank hcountPort hadvancePort hsetupReg hstrideOff hpadSetupOff hsetupBlank hfresh hpubDst hclock hline
   obtain ⟨vm,steps,outputs,huser,htime,houtputs,hwithin⟩ := hbulk h i ports g dst width origins binary work readerSaved readerTmp count saved
     hwireL hwireR hfixed hdst harchiveDst hmastersDst hreg hreader hretained hprotected hcounter hconsume
     u target W V α d axis hu htarget htargetLower hB hl htargetMax hbandMax
@@ -182,7 +185,6 @@ theorem selectedAmortizedDyadicPublishedBulk_exec (hR : rpStates ≤ Q) (hQ : SS
   have hcopyRead (r : Fin T) (hr : r ∈ [pubCount,pubSavedCount,pubWidth,pubArchive,pubSaved,pubTmp]) : Sbulk.R r = S.R r :=
     Function.update_of_ne (copy_source_off hcopy r hr) _ _
   have headers := headerReady.of_frame hpadReg (by intro j _; exact hread j) (by intro j; rfl)
-  have pubReadyBulk := pubReady.of_frame (F := embStk pubE Sbulk) (by intro j _; exact hread j)
   have hWone : 1 ≤ W := by have := h.thirteen_le_p; omega
   obtain ⟨lines,v',pubSteps,huser',htime',hgood,hePub⟩ := hpub
     h i pubE hpubE u target htarget W hWone bPub VPub hVPub hpubVolume hbitsPub hfitPub (by omega)
@@ -200,7 +202,9 @@ theorem selectedAmortizedDyadicPublishedBulk_exec (hR : rpStates ≤ Q) (hQ : SS
     (by rw [hread]; exact hword)
     (by intro i hi; rw [hread]; exact hheaderBlank i hi)
     (by simp only [Sbulk,Function.update_self,hwords]) pubDst pub clock lineRows hports hpubOff hwindow hpadding hwordPort ambient hambient
-    outputTail pubBorrowed pubReadyBulk
+    hcountPort hadvancePort hsetupReg hstrideOff hpadSetupOff
+    (by intro r hr; change Sbulk.R (pubE r) = []; rw [hread]; exact hsetupBlank r hr)
+    (by intro r hr; change Sbulk.R (pubE r) = []; rw [hread]; exact hfresh r hr) outputTail
     (by change Sbulk.R (pubE pubDst) = _; rw [hread]; exact hpubDst)
     hclock
     (by change (Sbulk.R (pubE lineRows)).length = _; rw [hread]; exact hline)

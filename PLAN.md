@@ -4788,6 +4788,63 @@ remains open. No push; collect the caller migration and obsolete-path cleanup.
 
 Removed the superseded five-header path/exponent-only budget helpers (restore `e56a37b4`) and standalone seven-word cleanup (restore `6620103f`); ten-word retirement uses the generic frame theorem directly.
 
+**Consecutive-core geometry eliminates the general origin-table sweep builder.**
+`fullCoreGather_consecutive` identifies the selected fitting keys as the single
+interval `range' 1 ((s-radius)/width-1)` under the existing positive-guard,
+guard-width and core-room conditions. The proof uses mathlib's uniqueness of
+ordered lists from their members; it does not split on ambient remainders.
+`originAdvances_consecutive` proves one structural arithmetic-progression
+identity. `fullGatherPublication_advances` instantiates it for the actual bulk
+publication windows: every advance is exactly the core packet width.
+`uniformSweepControls_exec_within` reuses `repeatUnaryGatherControl_exec` and
+canonical unary copying to construct the owned count and delimited advances,
+restoring the borrowed row/packet masters and both scratch ports. It needs no
+binary origin packet, table VM, or per-origin scalar arithmetic. The ordinary
+private count and advance destinations start blank. `uniformSweep_exec_within`
+constructs the actual `SweepReady` record from this execution, and its cleanup
+uses the existing generic header-frame retirement theorem. Setup plus cleanup
+time and setup peak allowance are absorbed below together with the generated
+canonical packet master; the superseded standalone 60-traffic helper is removed.
+The constructive count proof exposed an over-strong field in `SweepReady`:
+unqualified `tick` had become an implicit field variable. It is now explicitly
+`Node.tick`, and `autoImplicit` is disabled in that readiness module. The new
+builder proves the concrete count contract for arbitrary counts, so the intended
+readiness is constructible. All affected existing axis callers rebuild after
+the correction; no proof limits change.
+The uniform lifecycle single-file check peaks at 3130.8 MiB. The constructive
+builder, consecutive-advance identity and corrected existing retired axis pass
+the standard axiom audit; the printed count projection has `Node.tick` and no
+implicit token binder. The affected axis integration build passes at 5.9 GiB
+aggregate peak.
+The uniform builder is now integrated through the complete retired-axis path.
+`uniformDyadicPublicationProgram` names the actual shared program: generate a
+canonical packet master from core/word dimensions, construct count and advances,
+run the existing initialized numerical publisher, then clear all three private
+words. `selectedAmortizedUniformDyadicPublication_exec` composes the existing
+proof rather than repeating it. Placement, reverse-copy, bulk, complete axis and
+retirement consume this constructed readiness; none assumes `SweepReady` or a
+preloaded advance page. Kernel readiness is transported by the existing generic
+generator-frame theorem. Private controls need no borrowed suffix.
+
+`uniformPublicationSetupCosts_le` absorbs the complete setup/cleanup time and
+setup peak into `120*traffic`. Publication linear coefficients are now
+`2820+100*cV` for time and `4320+100*cV` for stock, before the existing route
+stock term; restoring reverse-copy adds 35/70. The complete retired axis retains
+its output-only endpoint and final stock equality. The cleanup integration build
+passes (17386 jobs, 5.6 GiB aggregate peak); the retired-axis individual check peaks at 3836.1 MiB. The final integrated
+audit reports only `propext`, `Classical.choice`, and `Quot.sound` for generated
+setup, selected uniform publication and the complete retired axis (10022.4 MiB
+for the combined nonmodule audit). The printed count projection is concrete
+`Node.tick`, with no implicit token binder.
+
+Next discharge ordinary caller initialization, starting with copy count/width
+masters and concrete register placement, then boundary readiness. Close the
+ordinary fitting execution and compare its complete bills to the final selected
+allowance before extending outer schedules. Reuse final stock equality across
+axes; finish class/shared-exposure, fallback and root/compiler acceptance.
+Full S4 remains open. Collect this complete publication integration in one local
+checkpoint; no push.
+
 **First acceptance target: one complete fitting batch.** From declared original
 complex streams and ordinary scalar headers, execute component production,
 prepare numerical data, reuse it across the batch, publish certified complex
