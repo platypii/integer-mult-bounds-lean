@@ -42907,3 +42907,117 @@ The complete factory/uniform resource and other S4 gates remain open. Collect
 the accumulated checked allocated/scaled-factor and original-column resource
 contracts as one larger local checkpoint; exclude all periodic WIP and do not
 push. The /tmp restored-column draft is historical and no longer needed.
+
+### S4 table resource language: canonical stock and atomic reserves
+
+The guarded-interior residual path reaches sharedBatchWeightSetup before the
+joint column scan. Its retained weight loop emits many rows while reusing a
+fixed-width numerical bank. Charging its full elapsed time as workspace would
+multiply transient scratch by emitted-row count, so the next reusable resource
+boundary is the existing table compiler, not another concrete tape wrapper.
+
+Fast/TableFrameStock proves exact canonical table stock balance: all variable
+words keep their width, controls/scratch and framed spectators keep their
+volume, and only accumulator length changes. No layout injectivity assumption
+is needed for this balance. TblIns.acc_length_le and TblBig.acc_length_le prove
+retained output monotonicity structurally. tblHolds.stock_le charges just the
+accumulator difference at canonical boundaries.
+
+Fast/TableAtomStock reuses existing instruction/test correctness and the native
+push certificates to retain bounded traces with one 3*tblC W w reserve. Tests
+preserve the canonical table bank. The existing instruction/test native lemmas
+are now public for this reuse; no execution program or exposed data changes.
+Guarded checks pass: frame stock 1400.3 MiB, atomic stock 1408.7 MiB. The frame
+and native-certificate integration build passes (2089 jobs, 3.2 GiB combined).
+
+Next prove the compiler resource theorem by structural induction on TblBig,
+including the existing auxiliary loop-tail formulation. Use the final
+accumulator volume to cap canonical intermediate boundaries and share the one
+atomic reserve across sequence, branch and loop execution. Then specialize to
+retained weight rows and the shared setup, reusing stagedCell_sized_exec_within
+for the numerical batch. The full fitting-prefix/uniform resource gate remains
+open, alongside original-input, fallback/grouped-cost and tensor/root gates.
+Keep this work uncommitted until a larger coherent checkpoint; no push and no
+changes to unrelated periodic WIP.
+
+### S4 compiled tables share one reserve; retained weight init/rows are bounded
+
+Fast/TableCompileStock now proves the full resource compiler structurally over
+TblBig, mirroring the existing compiler's auxiliary already-tested loop tail.
+A generic tblStockRuns.seq composes exact bank balances, so the final accumulator
+volume bounds all canonical intermediate states. Neither instruction count nor
+loop count multiplies the transient 3*tblC W w reserve. tblCompile_runs_within
+pairs this trace with the existing runtime/correctness execution by Exec.unique,
+preserving the k*tblC W w time bound for that same final store.
+
+Fast/TableHostStock adds output publication via moveR. Its bound is three times
+emitted accumulator volume plus one arithmetic reserve and two constant symbols;
+the native transfer is charged only by output length. Numerical compilation is
+not charged by total runtime. The original publication order, canonical emptied
+accumulator, output word and frame contract are preserved.
+
+PhaseCellRetainedWeightHostStock instantiates this language in the existing
+weightStreamCode_do and weightInitCode_do proofs. The row stream retains
+6*L*w+3*tblC V w+2 extra stock; initialization retains just 3*tblC V w because
+it emits nothing. Both preserve WeightReady and the original exact endpoint,
+frame and time contracts. No arithmetic accuracy argument is duplicated.
+
+Guarded checks pass: complete compiler 1417.7 MiB, publishing host 1405.0 MiB,
+retained weight initialization/rows 1982.0 MiB. Integration through retained
+weight host stock passes (9298 jobs, 2.6 GiB combined peak). Whitespace and
+proof-integrity scans pass with unchanged proof limits. No push; retain these
+changes for the larger shared-setup checkpoint and exclude periodic WIP.
+
+Next compose native origin loading and pairLayout with the checked retained
+rows, then weight-step prefix transfers and the retained counted loop. Bound
+archive growth by emitted volume and share the row reserve across all B rows.
+Finish sharedBatchWeightSetup resources, then generated batch setup and the
+older guarded-interior/residual chain before joint column scan/publication.
+All broader S4 acceptance gates remain open.
+Compiler, publishing-host and both retained-weight theorem axiom audits report
+only propext, Classical.choice and Quot.sound (6750.9 MiB temporary audit peak).
+All verification handles are terminal.
+
+### S4 complete shared weight setup retains one table reserve across the batch
+
+RetainedWeightPageStock composes native origin load, the checked retained table
+stream and native pair layout over abstract stores. RetainedWeightStepStock
+adds the two archive prefix transfers. RetainedWeightFrameStock bounds all
+canonical states by the initial bank plus the two archive volumes: variable
+words retain their widths, the accumulator stays empty, packets/clock shrink,
+and every other register is framed. RetainedWeightLoopStock reuses the original
+completed/remaining row invariant with countedLoop_exec_within_remaining_costs.
+Its workspace is 2*(B*(L*w))+retainedWeightStepWorkspace V w L, so no arithmetic
+reserve is multiplied by B. The exact row archives, readiness and runtime
+contract are preserved.
+
+SharedWeightInitStock adds executed width generation, zero-bank allocation and
+ordinary header loading to retainedWeightInit_exec_within. Its numerical
+initialization uses 3*tblC V w; native header traffic has separate allowances.
+SharedBatchWeightSetupStock now composes initialization, row-width/clock
+allocation, the shared retained loop, zero-growth bank retirement, native batch
+packing and zero-growth final release. It retains the original exact batch page
+and original time bill. The workspace contains shared setup, archive volume,
+one table arithmetic reserve and linear batch traffic; it does not charge
+complete numerical runtime per emitted row.
+
+The reused unaryProduct_native certificate moved without changing its statement
+or proof from ChunkDimensionBankStock into narrow ShortConvSetupOpsStock. The
+old module publicly imports it. This avoids importing the full dimension-bank
+closure merely for one primitive: the full shared setup check drops from
+3123.4 MiB to 2135.1 MiB. Other guarded peaks: page 1975.9 MiB, step 1972.0 MiB,
+frame 1958.8 MiB, loop 1994.0 MiB, shared initialization 2071.2 MiB. Integration
+through setup and the moved certificate's original consumer passes (13850 jobs,
+4.9 GiB combined peak). Proof limits unchanged; integrity/whitespace scans pass.
+
+Next retain batchWeightedSetup/batchInverseSetup and generated batch setup,
+then pair with stagedCell_sized_exec_within in generatedBatch. Carry these
+through the older guarded-interior/residual chain to generatedCyclicColumn,
+indexed/retained publication, and the joint column scan/page construction.
+The fitting-prefix/uniform resource gate is still open, as are original-input,
+fallback/grouped-cost and tensor/root S4 gates. Collect the table/compiler and
+complete shared-weight work as one larger local checkpoint. No push; periodic
+WIP is excluded.
+Retained-loop/shared-init/full-setup axiom audits report only propext,
+Classical.choice and Quot.sound (6998.2 MiB temporary audit peak). All verification
+handles are terminal.

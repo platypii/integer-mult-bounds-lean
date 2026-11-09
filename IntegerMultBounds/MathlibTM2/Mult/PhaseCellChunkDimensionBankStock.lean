@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.Mult.ShortConvSetupOpsStock
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellChunkDimensionBank
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellInterchangeHeaderStock
 
@@ -12,10 +13,6 @@ open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
   IntegerMultBounds.MathlibTM2.Fast.Main IntegerMultBounds.MathlibTM2.Mult.ShortConv
 variable {T Q A : ℕ} {P U : Type}
 
-theorem unaryProduct_native (a b dst tmp saved : Fin T) :
-    mnNativePushBound 2 (unaryProduct (P := P) (Q := Q) (A := A) (U := U) a b dst tmp saved) := by
-  simp [unaryProduct,scanP,popPush,drainR,popDo,ucopy,umulSym,scanR,keepIn,pushN,
-    moveR,whileR,moveStep,peekR,mnNativePushBound,mnActPush]
 
 theorem unaryPowerChain_native (base src tmp saved : Fin T) (ds : List (Fin T)) :
     mnNativePushBound 2 (unaryPowerChain (P := P) (Q := Q) (A := A) (U := U) base src tmp saved ds) := by

@@ -12,7 +12,7 @@ open IntegerMultBounds IntegerMultBounds.MathlibTM2
   IntegerMultBounds.MathlibTM2.Fast.Main IntegerMultBounds.MathlibTM2.Node
 variable {T Q A n : ℕ} {P U : Type}
 
-private theorem tblInsProg_native (rg : TblR n → Fin T) (i : TblIns n) :
+theorem tblInsProg_native (rg : TblR n → Fin T) (i : TblIns n) :
     mnNativePushBound 3 (tblInsProg (P := P) (Q := Q) (A := A) (U := U) rg i) := by
   cases i <;>
     simp [tblInsProg,tblLoad,tblClr01,tblStoreF,tblStoreR,tblDivCore,tblEmitStep,
@@ -22,7 +22,7 @@ private theorem tblInsProg_native (rg : TblR n → Fin T) (i : TblIns n) :
       scanR,whileR,popPush,uclear,drainR,popDo,keepIn,pushN,peekR,
       mnNativePushBound,mnActPush]
 
-private theorem tblTest_native (rg : TblR n → Fin T) (a b : Fin n) :
+theorem tblTest_native (rg : TblR n → Fin T) (a b : Fin n) :
     mnNativePushBound 3 (tblTest (P := P) (Q := Q) (A := A) (U := U) rg a b) := by
   simp [tblTest,tblLoad,tblClr01,bcopy,bclear,blt,zipKeep,zipPass,zipInit,zipStep,
     moveR,moveStep,scanR,whileR,uclear,drainR,popDo,
