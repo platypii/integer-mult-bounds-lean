@@ -4566,6 +4566,52 @@ boundary/retirement bills and compose outer axes/fallback/root S4 acceptance.
 Full S4 remains open. Collect this sizing correction and stock equality in one
 larger local checkpoint. No push.
 
+**Actual bulk production now uses placed, tightly sized dyadic publication.**
+`selectedAmortizedPlacedDyadicPublication_exec` closes the checked publisher
+with Empty procedures and places its exact source/output update through any
+injective tape layout, preserving selected time/space and spectator accounting.
+`PublicationReady.of_frame` packages the ordinary dyadic headers/workspace
+independently of source bytes, reusing the restoring handoff's source-only frame.
+`selectedAmortizedReversedDyadicPublication_exec` executes reverse-core copy and
+that placed publisher in one trace. The temporary ordered source restores and
+only the published output bank changes. `reverseCopyRowsCost_le_traffic` derives
+its cost from disjoint core volume; the selected total time is `2*T+1735*traffic+6`
+plus the existing dimension/axis routing charge, and its peak is `2*T` plus the
+existing linear coefficient enlarged by 70, plus 12. No raw copy bill remains.
+`selectedAmortizedDyadicPublishedBulk_exec` now calls actual bulk numerical
+production and this selected dyadic path, transporting initial ordinary headers
+across the raw-archive append. Both actual output bytes and exact raw archive
+volume are certified, with combined resource bounds on that same execution.
+It requires only initial ordinary headers, mathematical input bounds/inverse,
+static layouts and fits; no intermediate execution or computed-row supplier.
+Checks peak at 3523.0 MiB (placement), 3086.2 MiB (header frame), 1941.7 MiB
+(handoff budget), and 3698.1 MiB (concrete dyadic published bulk).
+The previously checked full-axis/retirement theorems still use the old generic
+publication interface. Next replace those callers with this concrete dyadic
+bulk theorem and retain their seam/retirement/stock-equality proofs. Then close
+header construction, complete boundary/resource absorption, outer axes and
+fallback/root S4 acceptance. Full S4 remains open. No push; collect the dyadic
+placement/handoff/production work as one larger local checkpoint.
+
+**Tightly sized dyadic publication now reaches the complete retired axis.**
+`selectedAmortizedDyadicPublishedAxis_exec` composes the concrete dyadic bulk
+execution with the existing seam completion. Its exact two-update endpoint
+transports ordinary seam and boundary readiness structurally; no new numerical
+solver, case enumeration or execution supplier is introduced.
+`selectedAmortizedDyadicRetiredAxis_exec` then reuses counted-prefix retirement
+and equal-volume row-bank replacement. The final state changes only the ambient
+output bank; the raw archive's borrowed suffix and every other stack restore,
+and final machine stock equals initial stock. Both traces carry the tightly
+rounded independent-exponent publication bill rather than the old generic
+replica-radix capacity. Removing the unused old archive-publication import also
+narrows the build closure by 13 jobs. The guarded integration build passes at
+3.8 GiB aggregate peak; the full-axis single-file check peaks at 3785.6 MiB.
+Next close ordinary initialization/layout construction and absorb the explicit
+boundary/retirement bills, then compose outer tensor/locality schedules and
+fallback/root/compiler acceptance. The old conditional generic-route modules
+remain available while callers migrate; do not use them for final selected
+publication absorption. Full S4 remains open. No push.
+
 **First acceptance target: one complete fitting batch.** From declared original
 complex streams and ordinary scalar headers, execute component production,
 prepare numerical data, reuse it across the batch, publish certified complex
