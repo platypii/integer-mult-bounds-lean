@@ -9,7 +9,7 @@ cached readiness is read through the bank view, not supplied a second time. -/
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2.Host
   IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Node
-  IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.NLogN
+  IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Fast.Main IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.NLogN
   IntegerMultBounds.NLogN.PhaseCellMatrix IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
 variable {T Q A : ℕ} {P U : Type} {body : P → Pr P T Q A U}
 
@@ -59,6 +59,12 @@ theorem preparedCyclicComplexCore_exec (bank : Fin 909 → Fin T) (hbank : Funct
       steps ≤ (4*(W+radius+coreLength s coreWidth k)+13)+
         Cost.cyclicComplexCoreTimeCost H K p u l t a n target q W radius
           (coreLength s coreWidth k) Rs.length Fs.length ∧
+      ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+0+
+        (2*(4*(W+radius+coreLength s coreWidth k)+13)+
+          cyclicComplexCoreWorkspace (P := Empty) (A := A) (U := U) H K J L hR hQ
+            p u l t a n solveTarget q (executionWidth p l stage 2) W B.card
+            Rs.length Fs.length radius (coreLength s coreWidth k))) 0
+        (preparedCyclicComplexCore bank source tmp hR hQ) (mk v S) steps (mk v' G) ∧
       Exec body (preparedCyclicComplexCore bank source tmp hR hQ) (mk v S) steps (mk v' G) ∧
       G.R (bank 850) = word ∧ G.R (bank 848) = [] ∧
       PackedNormalizedOutput p W target coreWidth k localityTarget Fs Y word ∧
@@ -73,12 +79,15 @@ theorem preparedCyclicComplexCore_exec (bank : Fin 909 → Fin T) (hbank : Funct
     (coreLength s coreWidth k) v S hvalues hfresh htmp
   have hcost := cyclicComplexControlCopies_cost bank source W radius (coreLength s coreWidth k) S hvalues
   rw [hcost] at he₁
-  obtain ⟨J,L,v₂,G,m,word,hu₂,hprofile,hm,he₂,hword,h848,hcert,hstreams,hframe⟩ := placedCyclicComplexCore_exec
+  obtain ⟨J,L,v₂,G,m,word,hu₂,hprofile,hm,hcoreWithin,he₂,hword,h848,hcert,hstreams,hframe⟩ := placedCyclicComplexCore_exec
     (body := body) bank hbank hR hQ hA axis ha hn hleftRoom hrightRoom coreWidth k radius
     hleft haCore hnCore hright Fs hF W hW buffersL buffersR v₁ F I
     inputsL.of_reindex inputsR.of_reindex factory h226 h229 hview localityTarget qRef Y hqRef hwindow hY
+  have hcontrolsWithin := mn_native_exec_within he₁ 2
+    (copyUnaryHeaders_native tmp (cyclicComplexControlCopies bank source)) 0 _ (le_refl _)
+  have hwhole := execWithin_seq_two_budget body _ _ _ _ _ _ _ 0 _ _ hcontrolsWithin hcoreWithin
   refine ⟨J,L,v₂,G,_,word,hu₂.trans hu₁,hprofile,Nat.add_le_add (le_refl _) hm,
-    Exec.seq he₁ he₂,hword,h848,hcert,
+    hwhole,Exec.seq he₁ he₂,hword,h848,hcert,
     ⟨hstreams.1.trans hI,hstreams.2.trans hO⟩,?_⟩
   intro i hi
   exact ⟨(hframe i hi).1.trans (congrFun hL i),(hframe i hi).2.trans (hoff i hi)⟩

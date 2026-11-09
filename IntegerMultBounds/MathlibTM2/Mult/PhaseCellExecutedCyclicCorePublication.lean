@@ -8,7 +8,7 @@ publication. The existing crop machine adds no arithmetic error. -/
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2.Host
-  IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Fast
+  IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Fast.Main
   IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.NLogN
   IntegerMultBounds.NLogN.PhaseCellMatrix IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
 local notation "extendNormalization" => CyclicPackedNormalizationPlacement.extend
@@ -76,6 +76,21 @@ theorem executedCyclicCorePublication_spec (hR : rpStates ≤ Q) (hQ : SS.states
       (G.inp = S.inp ∧ G.out = S.out) ∧
       List.Forall₂ (fun rhs x => SchurDominance.Solves (realMatrix s t p u)
         (cyclicPrincipalVertices s a n) x (fun i => (value q (rhs i)).re)) Fs xs.reverse ∧
+      ExecWithin (embTab cyclicCorePublicationReg (embTab extendNormalization (embTab extendAssembly
+          (embTab extendSecond (embTab CyclicRecoveryPlacement.extend (cyclicReplicaCallerBody body))))))
+        (fun d z => mnSize z+d ≤ mnSize (mk v (normalizedCorePublicationInput
+          (cyclicPackedNormalizationInput (extendStacks (by decide : 842 ≤ 850)
+            (extendStacks (by decide : 840 ≤ 842) (extendStacks (by decide : 834 ≤ 840) S))) wide)
+          radiusWord coreWord))+0+
+          (cyclicPackedNormalizationWorkspace (P := P) (A := A) (U := U) H K J L hR hQ
+            p u l t a n solveTarget q w W B.card Fs.length+
+              normalizedCorePublicationWorkspace radius (coreLength s coreWidth k) W Fs.length)) 0
+        (executedCyclicCorePublication hR hQ)
+        (mk v (normalizedCorePublicationInput (cyclicPackedNormalizationInput
+          (extendStacks (by decide : 842 ≤ 850) (extendStacks (by decide : 840 ≤ 842)
+            (extendStacks (by decide : 834 ≤ 840) S))) wide) radiusWord coreWord)) steps
+        (mk vf {D with R := (Function.update (Function.update D.R 848 []) 850
+          ((Gs.reverse.map (fun F => cstream A W (ownedCoreWords coreWidth k F))).flatten))}) ∧
       Exec (embTab cyclicCorePublicationReg (embTab extendNormalization (embTab extendAssembly
           (embTab extendSecond (embTab CyclicRecoveryPlacement.extend (cyclicReplicaCallerBody body))))))
         (executedCyclicCorePublication hR hQ)
@@ -168,10 +183,15 @@ theorem executedCyclicCorePublication_spec (hR : rpStates ≤ Q) (hQ : SS.states
         (1/(2 : ℝ)^p+(1/(2 : ℝ)^(target+1))/(2 : ℝ)^inverseNormalizationShift p)) xs Gs := haccL
     rw [hend,hmin] at hacc
     simpa only [haCore,hnCore] using hacc
-  obtain ⟨vf,nc,huf,hnc,hecrop,hready,haccuracy⟩ := normalizedCorePublication_exec (body := callerBody)
+  obtain ⟨vf,nc,huf,hnc,hcropWithin,hecrop,hready,haccuracy⟩ := normalizedCorePublication_exec (body := callerBody)
     p W coreWidth k radius hleft hright _ Gs _ hgood vi F radiusWord coreWord hRword hLword hsrc hw hN hfresh
+  have hprefix := exec_emb_within_stock_of_exec (Fin.castLE_injective _) (ι := id)
+    (body' := callerBody) (fun _ => rfl) hnormalizedWithin v rfl V
+    (normalizedCorePublicationInput_view initial radiusWord coreWord) helift'
+  rw [hDlen] at hcropWithin
+  have hwhole := execWithin_seq_two_budget callerBody _ _ _ _ _ _ _ 0 _ _ hprefix hcropWithin
   refine ⟨J,L,X,G,fields,xs,vf,m+nc,savedL,savedR,huf.trans (huser.trans hu),hprofile,?_,
-    h247,h547,h125,h425,controlsL,controlsR,hstreams,?_,Exec.seq helift' hecrop,?_,?_⟩
+    h247,h547,h125,h425,controlsL,controlsR,hstreams,?_,hwhole,Exec.seq helift' hecrop,?_,?_⟩
   · simpa only [hDlen] using Nat.add_le_add hm hnc
   · simpa only [List.reverse_reverse] using List.forall₂_reverse_iff.mpr hsol
   · simpa only [hDlen] using hready

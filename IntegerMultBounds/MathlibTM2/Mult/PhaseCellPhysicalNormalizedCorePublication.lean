@@ -2,13 +2,14 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedCoreArchiveComplex
 public import IntegerMultBounds.MathlibTM2.Host.ExtendStacks
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCoreArchiveStock
 
 /-! Crop the actual normalized left archive to a fitting owned core. The crop
 reuses restored normalization workspace and returns forward replica order. -/
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2.Host
-  IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Fast
+  IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Fast.Main
   IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.NLogN.PhaseCellMatrix
   IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
 variable {Q A : ℕ} {P U : Type} {body : P → Pr P 909 Q A U}
@@ -85,6 +86,11 @@ theorem normalizedCorePublication_exec {s : ℕ} [NeZero s]
         (Ds.length*(packedCoreArchiveStepCost radius (coreLength s coreWidth k)
           (coreLength s coreWidth k+2*radius) W+3)+2)+
         (2*(radius*W+coreLength s coreWidth k*W+(coreLength s coreWidth k+2*radius))+7) ∧
+      ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v E)+0+
+        normalizedCorePublicationWorkspace radius (coreLength s coreWidth k) W Ds.length) 0
+        normalizedCorePublication (mk v E) n
+        (mk vf {E with R := (Function.update (Function.update E.R 848 []) 850
+          ((Ds.reverse.map (fun D => cstream A W (ownedCoreWords coreWidth k D))).flatten))}) ∧
       Exec body normalizedCorePublication (mk v E) n
         (mk vf {E with R := (Function.update (Function.update E.R 848 []) 850
           ((Ds.reverse.map (fun D => cstream A W (ownedCoreWords coreWidth k D))).flatten))}) ∧
@@ -133,7 +139,14 @@ theorem normalizedCorePublication_exec {s : ℕ} [NeZero s]
     by_cases hd' : i = 850
     · subst i; simpa only [Function.update_self,hE850,List.append_nil] using hd
     simpa only [Function.update_of_ne hd',Function.update_of_ne hs'] using hframe i hs' hd'
-  refine ⟨vf,n,hu,by simpa only [List.length_reverse] using hn,?_,?_,?_⟩
+  have hcost : n ≤ normalizedCorePublicationCost radius (coreLength s coreWidth k) W Ds.length := by
+    simpa only [List.length_reverse,normalizedCorePublicationCost] using hn
+  have htraffic := hcost.trans (normalizedCorePublicationCost_le radius (coreLength s coreWidth k) W Ds.length)
+  have hstock := mn_native_exec_within hex 13 (packedCoreArchiveFromDimensions_native ..) 0
+    (mnSize (mk v E)+0+normalizedCorePublicationWorkspace radius (coreLength s coreWidth k) W Ds.length)
+    (by unfold normalizedCorePublicationWorkspace; omega)
+  refine ⟨vf,n,hu,by simpa only [List.length_reverse] using hn,
+    hstock.cast rfl (congrArg (mk vf) hF),?_,?_,?_⟩
   · exact hex.cast rfl (congrArg (mk vf) hF)
   · refine ⟨?_,?_,?_,?_⟩
     · simpa only [Function.update_of_ne (by decide : (121 : Fin 909) ≠ 850),

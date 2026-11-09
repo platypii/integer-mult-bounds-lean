@@ -118,7 +118,7 @@ theorem factoredCyclicComplexCore_exec (bank : Fin 909 → Fin T) (hbank : Funct
     have hh := hframe (bank i) hoff
     exact ⟨hh.1.trans (hfresh i hi).1,hh.2.trans (hfresh i hi).2⟩
   have htmp' : R.R tmp = [] := (hframe tmp (fun i => hbankTmp _)).2.trans htmp
-  obtain ⟨J,L,v₂,G,n₂,word,hu₂,hprofile,hn₂,he₂,hword,h848,hcert,hstreams,houtside⟩ :=
+  obtain ⟨J,L,v₂,G,n₂,word,hu₂,hprofile,hn₂,hpreparedWithin,he₂,hword,h848,hcert,hstreams,houtside⟩ :=
     preparedCyclicComplexCore_exec (body := body) bank hbank hR hQ hA axis ha hn hleftRoom hrightRoom
       coreWidth k radius hleft haCore hnCore hright Fs hF W hW buffersL buffersR v₁ R source tmp
       inputsL' inputsR' factory h226 h229 hsourceOff hsourceTmp hbankTmp hvalues' hfresh' htmp'

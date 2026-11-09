@@ -17,6 +17,14 @@ local notation "extendAssembly" => CyclicPackedAssemblyPlacement.extend
 local notation "extendSecond" => CyclicSecondInteriorPlacement.extend
 variable {Q A : ℕ} {P U : Type} {body : P → Pr P 117 Q A U}
 
+noncomputable def cyclicPackedNormalizationWorkspace {s : ℕ} [NeZero s]
+    (H K J L : ReplicaHaloProblem s) (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q)
+    (p u l t a n target q w W N replicas : ℕ) : ℕ :=
+  cyclicPackedRecoveryWorkspace (P := P) (A := A) (U := U) H K J L hR hQ
+    p u l t a n target q w N replicas+
+      (PackedRecoveryNormalization.normalizationWorkspace p q W a (min n (s-a)) replicas+
+        PackedRecoveryNormalization.normalizationWorkspace p q W 0 (n-min n (s-a)) replicas)
+
 noncomputable def executedCyclicPackedNormalization (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) : Pr P 907 Q A U :=
   .seq (embProg extendNormalization id (executedCyclicPackedRecovery hR hQ)) cyclicPackedNormalization
 
@@ -68,10 +76,8 @@ theorem executedCyclicPackedNormalization_spec (hR : rpStates ≤ Q) (hQ : SS.st
         (fun d z => mnSize z+d ≤ mnSize (mk v (cyclicPackedNormalizationInput
           (extendStacks (by decide : 842 ≤ 850) (extendStacks (by decide : 840 ≤ 842)
             (extendStacks (by decide : 834 ≤ 840) S))) wide))+0+
-          (cyclicPackedRecoveryWorkspace (P := P) (A := A) (U := U) H K J L hR hQ
-            p u l t a n solveTarget q w B.card Fs.length+
-              (PackedRecoveryNormalization.normalizationWorkspace p q W a (min n (s-a)) Fs.length+
-                PackedRecoveryNormalization.normalizationWorkspace p q W 0 (n-min n (s-a)) Fs.length))) 0
+          cyclicPackedNormalizationWorkspace (P := P) (A := A) (U := U) H K J L hR hQ
+            p u l t a n solveTarget q w W B.card Fs.length) 0
         (executedCyclicPackedNormalization hR hQ)
         (mk v (cyclicPackedNormalizationInput
           (extendStacks (by decide : 842 ≤ 850) (extendStacks (by decide : 840 ≤ 842)

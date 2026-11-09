@@ -45976,3 +45976,36 @@ physical normalization piece 3189.6 MiB, complete recovery/normalization module
 peak). The scalar, retained, physical-piece and complete normalization theorems
 audit to only propext, Classical.choice and Quot.sound (temporary audit peak
 9654.6 MiB). Collect this whole-normalization checkpoint locally; no push.
+
+The numerical core now has a complete recovery-through-complex-publication
+space trace. `PhaseCellCoreArchiveStock` bounds actual core crop/publication
+traffic linearly; `normalizedCorePublication_exec` and the executed publication
+wrapper compose it with the preceding normalization trace.
+`PhaseCellNormalizedComponentStock` supplies the corresponding native and
+linear traffic bounds for pairing real/imaginary component streams.
+`executedCyclicComplexCore_spec` consumes both and exposes one `ExecWithin`
+certificate with the named `cyclicComplexCoreWorkspace`. Arbitrary placement
+transfers that same execution with the existing embedding theorem; ordinary
+width/crop control copies compose with it in `preparedCyclicComplexCore_exec`.
+No supplied stock cap or new arithmetic simulation is introduced.
+
+The next acceptance priority is comparison to the actual selected S4 allowance,
+before extending local resource wrappers further. The first comparison now
+passes: `selectedCyclicCorePublicationWorkspace_le` separates the final crop/
+pairing workspace into linear replica payload and shared storage; the existing
+`selectedAxisPolynomial_le_volume` absorbs the latter into `Sizes.T n`.
+The recovery/factor/normalization prefix still needs its own proved comparison;
+older selected packed-caller bounds cannot be silently substituted for this
+new actual cyclic execution. Factor/input preparation, full callback resource
+composition, uniform added-time absorption, actual class scan/shared exposure,
+outer/fallback/seam composition and final S4 acceptance remain open.
+
+Verification: component stock helper 3086.4 MiB; complete complex-core module
+3495.2 MiB. Origin callback integration passes with the strengthened numerical
+and prepared interfaces (the joint build's sole failure was a cost-lemma tactic,
+subsequently fixed and checked in its own successful guarded build). Selected
+publication workspace builds successfully (15208 jobs, 3.5 GiB aggregate peak).
+Keep this numerical-publication/space checkpoint local; no push.
+The temporary audit of the executed, placed and prepared complex-core theorems
+and selected publication bound reports only propext, Classical.choice and
+Quot.sound (9824.8 MiB for the nonmodule audit).

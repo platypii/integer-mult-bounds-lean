@@ -1,7 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellExecutedCyclicCorePublication
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellNormalizedComponentSolutions
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellNormalizedComponentStock
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPrincipalNormalizedOutput
 
 /-! Component-input banks execute the complete fitting-halo complex core trace.
@@ -10,7 +10,7 @@ from ordinary data and the executed scalar endpoint. -/
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2.Host
-  IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Fast
+  IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Fast.Main
   IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.NLogN
   IntegerMultBounds.NLogN.PhaseCellMatrix IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
 local notation "extendNormalization" => CyclicPackedNormalizationPlacement.extend
@@ -26,6 +26,14 @@ theorem shiftedComplexComponents_bound {s : ℕ} (p q : ℕ) (hpq : p+1 ≤ q)
   obtain ⟨F,hmem,rfl⟩ := List.mem_map.mp hR
   exact packedBatch_shift_bound p q 2 hpq (complexComponentFields Fs)
     (complexComponentFields_norm_le p Fs hF) F hmem i
+
+noncomputable def cyclicComplexCoreWorkspace {s : ℕ} [NeZero s]
+    (H K J L : ReplicaHaloProblem s) (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q)
+    (p u l t a n target q w W N replicas complexCount radius core : ℕ) : ℕ :=
+  (cyclicPackedNormalizationWorkspace (P := P) (A := A) (U := U) H K J L hR hQ
+    p u l t a n target q w W N replicas+
+    normalizedCorePublicationWorkspace radius core W replicas)+
+    normalizedComponentSolutionsWorkspace core W complexCount
 
 noncomputable def executedCyclicComplexCore (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) : Pr P 909 Q A U :=
   .seq (executedCyclicCorePublication hR hQ) normalizedComponentSolutionsAssembly
@@ -94,6 +102,20 @@ theorem executedCyclicComplexCore_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤
       (∀ F ∈ complexComponentFields Fs, SchurDominance.Solves (realMatrix s t p u)
         (cyclicPrincipalVertices s a n) (y F)
         (fun i => (value q ((2 : GaussianInt)^(q-p-1)*F i)).re)) ∧
+      ExecWithin (embTab cyclicCorePublicationReg (embTab extendNormalization (embTab extendAssembly
+          (embTab extendSecond (embTab CyclicRecoveryPlacement.extend (cyclicReplicaCallerBody body))))))
+        (fun d z => mnSize z+d ≤ mnSize (mk v (normalizedCorePublicationInput
+          (cyclicPackedNormalizationInput (extendStacks (by decide : 842 ≤ 850)
+            (extendStacks (by decide : 840 ≤ 842) (extendStacks (by decide : 834 ≤ 840) S))) wide)
+          radiusWord coreWord))+0+
+          cyclicComplexCoreWorkspace (P := P) (A := A) (U := U) H K J L hR hQ
+            p u l t a n solveTarget q w W B.card Rs.length Fs.length radius (coreLength s coreWidth k)) 0
+        (executedCyclicComplexCore hR hQ)
+        (mk v (normalizedCorePublicationInput (cyclicPackedNormalizationInput
+          (extendStacks (by decide : 842 ≤ 850) (extendStacks (by decide : 840 ≤ 842)
+            (extendStacks (by decide : 834 ≤ 840) S))) wide) radiusWord coreWord)) steps
+        (mk vf {D with R := (Function.update (Function.update D.R 848 []) 850
+          ((Zs.map (fun F => cstream A W (ownedCoreWords coreWidth k F))).flatten))}) ∧
       Exec (embTab cyclicCorePublicationReg (embTab extendNormalization (embTab extendAssembly
           (embTab extendSecond (embTab CyclicRecoveryPlacement.extend (cyclicReplicaCallerBody body))))))
         (executedCyclicComplexCore hR hQ)
@@ -128,7 +150,7 @@ theorem executedCyclicComplexCore_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤
   let K := axis.cyclicRightReplicaProblem cellTarget 2 a n hn Rs hRs
   intro W hW wide hwide radiusWord coreWord hRword hLword buffersL buffersR v S tail pageTail
     inputsL inputsR factory h226 h229
-  obtain ⟨J,L,X,G,fields,xs,vi,m,savedL,savedR,hu,hprofile,hm,h247,h547,h125,h425,controlsL,controlsR,hstreams,hsol,he,hready,hacc⟩ :=
+  obtain ⟨J,L,X,G,fields,xs,vi,m,savedL,savedR,hu,hprofile,hm,h247,h547,h125,h425,controlsL,controlsR,hstreams,hsol,hpublicationWithin,he,hready,hacc⟩ :=
     executedCyclicCorePublication_spec (body := body) hR hQ hA axis ha hn hleftRoom hrightRoom
       coreWidth k radius hleft haCore hnCore hright Rs hRs W hW wide hwide radiusWord coreWord hRword hLword
       buffersL buffersR v S tail pageTail inputsL inputsR factory h226 h229
@@ -169,8 +191,15 @@ theorem executedCyclicComplexCore_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤
     (by omega : 4 ≤ A) (realMatrix s t p u) (cyclicPrincipalVertices s a n) (1/(8*(p : ℝ))) hμ hdom
     p q (q-p-1) (inverseNormalizationShift p) W coreWidth k target hcore (by omega) Fs y hy
     xs.reverse Ds hsol hacc [] vi V hscalar hready.2.1 hready.2.2.1 hsrc hready.2.2.2
+  have hcost : nc ≤ normalizedComponentSolutionsCost (coreLength s coreWidth k) W Fs.length := hnc
+  have htraffic := hcost.trans (normalizedComponentSolutionsCost_le _ _ _)
+  have hasmWithin := mn_native_exec_within hasm 13 normalizedComponentSolutionsAssembly_native 0
+    (mnSize (mk vi V)+0+normalizedComponentSolutionsWorkspace (coreLength s coreWidth k) W Fs.length)
+    (by unfold normalizedComponentSolutionsWorkspace; omega)
+  have hwhole := execWithin_seq_two_budget callerBody _ _ _ _ _ _ _ 0 _ _ hpublicationWithin hasmWithin
   refine ⟨J,L,X,G,fields,y,vf,m+nc,savedL,savedR,huf.trans hu,hprofile,Nat.add_le_add hm hnc,
-    h247,h547,h125,h425,hlen,hstreams,hy,?_,?_,?_⟩
+    h247,h547,h125,h425,hlen,hstreams,hy,?_,?_,?_,?_⟩
+  · simpa only [cyclicComplexCoreWorkspace,executedCyclicComplexCore,V,Function.update_idem,List.append_nil] using hwhole
   · simpa only [executedCyclicComplexCore,V,Function.update_idem,List.append_nil] using Exec.seq he hasm
   · simpa only [List.append_nil] using haccuracy
   · intro localityTarget qRef Y hpRef hhalo hY

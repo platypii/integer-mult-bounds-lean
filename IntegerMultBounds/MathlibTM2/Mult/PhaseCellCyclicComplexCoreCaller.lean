@@ -10,7 +10,7 @@ and its named time bill under arbitrary caller placement. -/
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2.Host
   IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Node
-  IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.NLogN
+  IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Fast.Main IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.NLogN
   IntegerMultBounds.NLogN.PhaseCellMatrix IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
 variable {T Q A : ℕ} {P U : Type} {body : P → Pr P T Q A U}
 
@@ -54,6 +54,11 @@ theorem placedCyclicComplexCore_exec (bank : Fin 909 → Fin T) (hbank : Functio
       v'.user = v.user ∧ CyclicSecondInteriorProfile H K J L p solveTarget B.card ∧
       steps ≤ Cost.cyclicComplexCoreTimeCost H K p u l t a n target q W radius
         (coreLength s coreWidth k) Rs.length Fs.length ∧
+      ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+0+
+        cyclicComplexCoreWorkspace (P := Empty) (A := A) (U := U) H K J L hR hQ
+          p u l t a n solveTarget q (executionWidth p l stage 2) W B.card
+          Rs.length Fs.length radius (coreLength s coreWidth k)) 0
+        (placedCyclicComplexCore bank hR hQ) (mk v S) steps (mk v' G) ∧
       Exec body (placedCyclicComplexCore bank hR hQ) (mk v S) steps (mk v' G) ∧
       G.R (bank 850) = word ∧ G.R (bank 848) = [] ∧
       PackedNormalizedOutput p W target coreWidth k localityTarget Fs Y word ∧
@@ -72,15 +77,17 @@ theorem placedCyclicComplexCore_exec (bank : Fin 909 → Fin T) (hbank : Functio
   let K := axis.cyclicRightReplicaProblem stage 2 a n hn Rs hRs
   intro W hW buffersL buffersR v S I inputsL inputsR factory h226 h229 hview
     localityTarget qRef Y hqRef hwindow hY
-  obtain ⟨J,L,X,R,fields,y,vf,m,savedL,savedR,hu,hprofile,hm,h247,h547,h125,h425,hlen,hstreams,hsol,hex,hacc,hpacked⟩ :=
+  obtain ⟨J,L,X,R,fields,y,vf,m,savedL,savedR,hu,hprofile,hm,h247,h547,h125,h425,hlen,hstreams,hsol,hwithin,hex,hacc,hpacked⟩ :=
     executedCyclicComplexCore_spec (body := fun f : Empty => nomatch f) hR hQ hA axis ha hn
       hleftRoom hrightRoom coreWidth k radius hleft haCore hnCore hright Fs hF W hW
       (List.replicate W tick) (by simp) (List.replicate radius tick)
       (List.replicate (coreLength s coreWidth k) tick) (by simp) (by simp)
       buffersL buffersR (embDn bank v) I [] [] inputsL inputsR factory h226 h229
-  rw [←cyclicComplexCoreInput_eq] at hex
+  rw [←cyclicComplexCoreInput_eq] at hex hwithin
   obtain ⟨v',G,hex',hv,hu',hbankView,hframe⟩ := exec_emb (ι := Empty.elim) (body' := body)
     hbank (fun f => nomatch f) hex v rfl S hview
+  have hplacedWithin := exec_emb_within_stock_of_exec hbank (ι := Empty.elim)
+    (body' := body) (fun f => nomatch f) hwithin v rfl S hview hex'
   have hwidth : executionWidth p l stage 2 = 2*q+8 := by
     dsimp only [q,executionWidth,executionPrecision]
     omega
@@ -94,7 +101,7 @@ theorem placedCyclicComplexCore_exec (bank : Fin 909 → Fin T) (hbank : Functio
     rw [hcost]
     exact hm
   have hp := hpacked localityTarget qRef Y hqRef hwindow hY
-  refine ⟨J,L,v',G,m,_,hu'.trans hu,hprofile,hm',hex',?_,?_,hp,?_,hframe⟩
+  refine ⟨J,L,v',G,m,_,hu'.trans hu,hprofile,hm',hplacedWithin,hex',?_,?_,hp,?_,hframe⟩
   · have hh := congrArg (fun F : Stacks 909 A => F.R 850) hbankView
     simpa only [embStk_R,Function.update_self] using hh
   · have hh := congrArg (fun F : Stacks 909 A => F.R 848) hbankView
