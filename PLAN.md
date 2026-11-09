@@ -4329,6 +4329,74 @@ publication, then join that with the selected bulk/seam and boundary traces.
 Avoid singleton sweeps over all bulk cores. Initial headers, outer axes and
 final S4 acceptance remain open. No push; collect a larger publication commit.
 
+**Bulk publication now has its exact rectangular data and bank proof.**
+`exactCoreTileRows` views the actual returned batches as a rectangular array,
+proves the same encoded source identity, and carries their exact-row certificates.
+`exactCoreClassRows_spec` reuses `indexedCoreRows_forall` to transfer those
+certificates to ordered core keys. `exactCoreClass_output_bank` applies the
+existing grouped scatter theorem and proves `BankAccurate` against the exact
+normalized inverse targets, with no extra error or numerical solver premise.
+`exactCoreArchive_copy_exec` instantiates the existing restoring reverse-row
+scan directly from exact batch shape. It copies the physical reverse-core
+archive into increasing core order while preserving replica blocks, borrowed
+source suffix, original source and scratch; the same trace has linear row-scan
+time/space. This handles the actual bulk endpoint's `outputs.reverse.flatten`,
+not an assumed already ordered source stream.
+Checks peak at 3097.4 MiB (rectangular/class bank proof) and 2081.9 MiB (physical
+ordered handoff). Next instantiate the existing archive transpose/grouped
+publication executor with these rows and identify its endpoint with the proved
+class outputs, then join boundary completion. That executor instantiation is
+still open; the bank proof alone does not prove physical bulk publication.
+No push or new small commit. Initial headers, outer axes and full S4 gates
+remain open.
+
+**Grouped bulk transpose and publication now share a physical trace.**
+`exactCoreTilePublication_exec` derives replica records and every padding/validity
+fact from the actual `ArchiveTilePlan.Result`, runs the existing prepared
+replica sweep, and certifies `BankAccurate` on the same lines written at its
+endpoint. It consumes the padded archive and restores scratch and suffixes.
+`exactGroupedPublication_exec` executes the existing archive transpose and
+immediately instantiates that publisher with its returned rows. Publication
+readiness is transported internally over the transpose's source-only update.
+The proof supports the existing power-of-two replica geometry by a proof-only
+index cast, preserving replica order. The combined trace has the sum of the
+actual time bills and incremental stock allowances and returns the bulk-class
+bank certificate needed by boundary completion. There is no transpose,
+publication, replica-validity or computed-row execution supplier.
+Checks peak at 3092.5 MiB (publishing the actual tile) and 3134.3 MiB (combined
+transpose/publication). The input still requires ordinary routing/publication
+headers and exact core rows with the actual ordered source bytes.
+Next use the checked reverse-archive handoff and rectangular view to instantiate
+this combined executor from the selected bulk output; connect its bank
+certificate and exact boundary rows to the existing boundary completion trace.
+Initial headers, selected resource absorption, outer axes and final S4 gates
+remain open. No push or small new commit; retain for the complete publication
+composition checkpoint.
+
+**Actual reverse-core archive now feeds complete grouped publication.**
+`exactGroupedArchivePublication_exec` extracts the rectangular row view from
+certified actual batches, derives the routing source identity, and invokes the
+combined transpose/scatter executor from ordinary `BankReady` and publication
+headers. No preselected row map or separately supplied source ABI is needed.
+`ArchiveTilePlan.BankReady.with_source` proves structurally that loading the
+source preserves ordinary bank headers. `exactReversedGroupedPublication_exec`
+uses it to compose the restoring reverse-row handoff with transpose and grouped
+publication. Its premises match the actual selected bulk archive order.
+The combined trace returns `BankAccurate` on its actual ambient output, proves
+its total time and peak allowance, and restores every register except the
+publication destination. The original reverse archive and borrowed suffix
+survive; the temporary ordered source returns blank. The generic reverse-row
+scan, transpose and grouped sweep are reused without new numerical execution
+suppliers. Explicit list separation arguments replaced a context-wide `tauto`
+timeout; default proof limits remain unchanged.
+Checks peak at 3111.6 MiB (archive instantiation), 3042.6 MiB (source frame) and
+3118.4 MiB (complete reverse-archive publication).
+Next instantiate this physical publication on selected bulk rows and compose
+its output-only frame with boundary completion's readiness and exact seam
+archive. Ordinary initial headers, selected cost absorption, outer axes and
+final S4 gates remain open. Collect the grouped-publication work as one larger
+local checkpoint; no push.
+
 **First acceptance target: one complete fitting batch.** From declared original
 complex streams and ordinary scalar headers, execute component production,
 prepare numerical data, reuse it across the batch, publish certified complex
