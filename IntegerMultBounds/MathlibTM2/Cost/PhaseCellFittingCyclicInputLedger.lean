@@ -8,7 +8,7 @@ public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellRecoverySeedCopyLedger
 shared headers and per-replica conversion at their actual frequencies. -/
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Cost
-open IntegerMultBounds.MathlibTM2.Host
+open IntegerMultBounds.NLogN IntegerMultBounds.MathlibTM2.Host
   IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
   IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 variable {s T A : ℕ} [NeZero s]
@@ -117,5 +117,47 @@ theorem fittingCyclicInputSharedTime_poly (H K : ReplicaHaloProblem s) (W Z : �
   have hK := hone K (by simp)
   unfold fittingCyclicInputSharedTime
   nlinarith only [hH,hK,hZsq,hZ]
+
+/-- A reusable axis envelope for the shared bill, before any schedule is summed. -/
+theorem fittingCyclicInputSharedTime_axis (H K : ReplicaHaloProblem s) (W p t cw cW : ℕ)
+    (hst : s < t) (hp : 1 ≤ p) (hW : W ≤ cW*p)
+    (hprofile : ∀ D ∈ [H,K], D.p = p ∧ D.t = t ∧ D.l ≤ 20*p ∧ D.u ≤ p ∧ D.wordWidth ≤ cw*p) :
+    fittingCyclicInputSharedTime H K W ≤ 2000006*(cw+cW+21)^2*t^2*p^2 := by
+  let C := cw+cW+21
+  let Z := C*t*p
+  have ht : 1 ≤ t := by have := NeZero.pos s; omega
+  have hC : 21 ≤ C := by dsimp only [C]; omega
+  have htZ : t ≤ Z := by
+    have := Nat.le_mul_of_pos_left t (by omega : 1 ≤ C)
+    exact this.trans (Nat.le_mul_of_pos_right (C*t) hp)
+  have hsZ : s ≤ Z := hst.le.trans htZ
+  have hZ : 1 ≤ Z := ht.trans htZ
+  have hparam (x c : ℕ) (hx : x ≤ c*p) (hc : c ≤ C) : x ≤ Z := by
+    exact hx.trans (Nat.mul_le_mul_right p (hc.trans (Nat.le_mul_of_pos_right C ht)))
+  have hpZ : p ≤ Z := hparam p 1 (by simp) (by omega)
+  have hshared := fittingCyclicInputSharedTime_poly H K W Z hZ hsZ
+    (hparam W cW hW (by dsimp only [C]; omega)) (by
+      intro D hD
+      obtain ⟨hpD,htD,hlD,huD,hwD⟩ := hprofile D hD
+      have hwZ := hparam D.wordWidth cw hwD (by dsimp only [C]; omega)
+      have hq : D.precision ≤ D.wordWidth := by
+        unfold ReplicaHaloProblem.precision ReplicaHaloProblem.wordWidth executionPrecision executionWidth
+        omega
+      have hstage : D.stage ≤ D.wordWidth := by
+        unfold ReplicaHaloProblem.stage ReplicaHaloProblem.wordWidth executionStagePrecision executionWidth
+        omega
+      have hb : D.band ≤ 17*p := by
+        have hsqrt := Nat.sqrt_le_self (16*p/D.u)
+        have hdiv := Nat.div_le_self (16*p) D.u
+        unfold ReplicaHaloProblem.band PhaseCellBand.width
+        rw [hpD]
+        change Nat.sqrt (16*p/D.u)+1 ≤ 17*p
+        omega
+      exact ⟨hpD ▸ hpZ,hq.trans hwZ,hwZ,hstage.trans hwZ,
+        hparam _ 20 hlD (by omega),htD ▸ htZ,huD.trans hpZ,
+        hparam _ 17 hb (by omega)⟩)
+  calc
+    _ ≤ 2000006*Z^2 := hshared
+    _ = _ := by dsimp only [Z,C]; ring
 
 end IntegerMultBounds.MathlibTM2.Cost

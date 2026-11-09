@@ -25,20 +25,11 @@ theorem selectedCyclicBoundaryPageWorkspace_le :
   let push := cyclicFactorPreparationPush (Q := Q) (A := A) (U := U)
   filter_upwards [selectedAxisPolynomial_le_volume (push*300000*11^3) 0 3] with m hv
   intro h i _ R band a n hb ha hn hsSrc haSrc hnSrc
-  let t := Sizes.t m i
-  have hst : Sizes.s m i < t := h.good.lt i
-  have ht : 1 ≤ t := by have := NeZero.pos (Sizes.s m i); omega
-  have hsizeT : Nat.size t ≤ t := Nat.size_le.mpr Nat.lt_two_pow_self
-  have hsizeB : Nat.size band ≤ band := Nat.size_le.mpr Nat.lt_two_pow_self
-  have hV : publicationGeometryWidth t band ≤ 11*t := by
-    unfold publicationGeometryWidth
-    omega
-  have hpage := prepareCyclicBoundaryPageCost_poly R t band a n (11*t)
-    (by omega) (by omega) (by omega) (by omega) ha hn hV hsSrc haSrc hnSrc
-  calc
-    push*prepareCyclicBoundaryPageCost R (Sizes.s m i) t band a n ≤
-        push*(300000*(11*t)^3) := Nat.mul_le_mul_left push hpage
-    _ = (push*300000*11^3)*t^3*(Sizes.p m)^0 := by ring
-    _ ≤ Sizes.T m := hv i
+  have hpage := prepareCyclicBoundaryPageCost_axis R (Sizes.t m i) band a n
+    (h.good.lt i) hb ha hn hsSrc haSrc hnSrc
+  have hscaled := Nat.mul_le_mul_left push hpage
+  have hvolume := hv i
+  simp only [pow_zero,Nat.mul_one] at hvolume
+  nlinarith only [hscaled,hvolume]
 
 end IntegerMultBounds.MathlibTM2.Cost

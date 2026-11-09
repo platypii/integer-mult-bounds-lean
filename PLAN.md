@@ -3973,7 +3973,32 @@ execution. The selected origin module checks at 3562.0 MiB; its guarded build
 passes (16669 jobs, 3.6 GiB aggregate). The temporary fitting-only execution
 wrapper was removed because the full origin endpoint subsumes it. Uniform
 selected time and full ordinary-batch acceptance remain open; do not count the
-space endpoint alone as completing the pilot. Header-copy
+space endpoint alone as completing the pilot.
+The existing `selectedActualFittingCyclicComplexCore_time_le` already bounds
+numerical time over the computed fitting class; reuse it rather than proving a
+new numerical fast-time theorem. `PhaseCellFittingCyclicInputSchedule` now pays
+ordinary input at that same scheduling scale: one shared `T` for all actual
+preparation calls and a repeated term proportional to summed local coordinates.
+Its geometry corollary bounds those coordinates by `7*s`, using mathlib's
+`List.sum_le_length_nsmul` and existing core-gather volume/count theorems.
+The axis-polynomial input bound was factored out and reused by both callback
+space and class-time proofs. Input schedule checks at 3547.2 MiB; integration
+with selected origin execution passes (16670 jobs, 6.1 GiB aggregate). Next pay
+factor setup, control/origin reading and retirement over the actual class list,
+then combine with the existing numerical fast-time theorem.
+Factor and origin/control schedules now also have shared bounds at their actual
+call frequencies (`selectedCyclicFactorPreparationScheduleTime_le` and
+`selectedCyclicOriginControlScheduleTime_le`). Callback space proofs reuse the
+same factored axis polynomials. Retirement no longer requires summing the coarse
+per-callback workspace reserve: `registerBankStock_le_of_consume_frame` cancels
+spectator stock, and the fixed native push bound on the executed fitting program
+bounds export/erasure time by `(8*executionPush+1)*runSteps+8*payload+4*909+5`.
+The retired, origin and selected origin executors now return this actual time
+ledger, without a final-bank-stock supplier. This comparison is used only for
+cleanup time; the sharper selected space proof is unchanged. Retirement/factor
+schedule checks peak at 3537.9/3536.0 MiB; integration passes (16674 jobs,
+3.6 GiB aggregate). Next sum this ledger over the fitting class and combine its
+linear payload with the existing numerical fast-time theorem. Header-copy
 count accounting moved unchanged into the narrow `PhaseCellRecoverySeedCopyLedger`
 module so this consumer avoids importing the computed publication schedule.
 Both new input accounting and the existing computed-preparation consumer build;

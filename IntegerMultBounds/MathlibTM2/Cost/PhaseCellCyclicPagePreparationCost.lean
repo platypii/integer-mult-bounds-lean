@@ -75,4 +75,23 @@ theorem prepareCyclicBoundaryPageCost_poly {s A : ℕ} [NeZero s]
   rw [hVeq,hNeq]
   nlinarith only [hl,hr,hend,hfold,hcount,ht,hb,hZ,hZsq,hZcube]
 
+/-- The geometry format is bounded by the axis itself, independently of
+numerical precision and replica count. -/
+theorem prepareCyclicBoundaryPageCost_axis {s A : ℕ} [NeZero s]
+    (R : Regs 154 A) (t band a n : ℕ) (hst : s < t)
+    (hb : band ≤ s) (ha : a ≤ s) (hn : n ≤ s)
+    (hsSrc : (R 121).length = s) (haSrc : (R 141).length = a) (hnSrc : (R 142).length = n) :
+    prepareCyclicBoundaryPageCost R s t band a n ≤ (300000*11^3)*t^3 := by
+  have ht : 1 ≤ t := by have := NeZero.pos s; omega
+  have hsizeT : Nat.size t ≤ t := Nat.size_le.mpr Nat.lt_two_pow_self
+  have hsizeB : Nat.size band ≤ band := Nat.size_le.mpr Nat.lt_two_pow_self
+  have hV : publicationGeometryWidth t band ≤ 11*t := by
+    unfold publicationGeometryWidth
+    omega
+  have hpage := prepareCyclicBoundaryPageCost_poly R t band a n (11*t)
+    (by omega) (by omega) (by omega) (by omega) ha hn hV hsSrc haSrc hnSrc
+  calc
+    _ ≤ 300000*(11*t)^3 := hpage
+    _ = _ := by ring
+
 end IntegerMultBounds.MathlibTM2.Cost

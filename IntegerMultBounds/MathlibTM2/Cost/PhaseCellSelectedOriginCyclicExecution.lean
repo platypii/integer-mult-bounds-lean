@@ -86,11 +86,11 @@ theorem selectedOriginCyclicProgram_exec (hR : rpStates ≤ Q) (hQ : SS.states �
         (Host.mk v S) readSteps (Host.mk vstart E) ∧
       Exec body (ports.program hR hQ) (Host.mk vstart E) runSteps (Host.mk vm R) ∧
       steps ≤ readSupplierEndpointsCost V a n+
-        ((ports.inputTimeCost H K W Fs.length E+
-          (ports.factorTimeCost s t p u a n C F+((4*(W+radius+coreLength s coreWidth k)+13)+
-            Cost.cyclicComplexCoreTimeCost H K p u l t a n target q W radius
-              (coreLength s coreWidth k) Rs.length Fs.length)))+
-          (8*registerBankStock (embStk ports.bank R)+4*909+5))+(2*(a+(a+n))+5) ∧
+        CyclicComplexCallerLayout.retiredTimeCost (A := A) (U := U) hR hQ
+          (ports.inputTimeCost H K W Fs.length E+
+        (ports.factorTimeCost s t p u a n C F+((4*(W+radius+coreLength s coreWidth k)+13)+
+          Cost.cyclicComplexCoreTimeCost H K p u l t a n target q W radius
+            (coreLength s coreWidth k) Rs.length Fs.length))) (Fs.length*n*W)+(2*(a+(a+n))+5) ∧
       ExecWithin body (fun d z => mnSize z+d ≤ mnSize (Host.mk v S)+0+
         (fittingCyclicWorkspaceTrafficFactor (A := A) (U := U) hR hQ ct cW*
           Fs.length*t*p+44*Sizes.T m)) 0

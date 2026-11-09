@@ -25,46 +25,17 @@ theorem selectedFittingCyclicInputSharedWorkspace_le (cw cW : ℕ) :
   let push := fittingCyclicInputPush (Q := Q) (A := A) (U := U)
   filter_upwards [selectedAxisPolynomial_le_volume (push*2000006*C^2) 2 2] with m hv
   intro h i _ H K W hprofile hW
-  let p := Sizes.p m
-  let t := Sizes.t m i
-  let Z := C*t*p
-  have ht : 1 ≤ t := by have := h.good.lt i; dsimp only [t]; omega
-  have hp : 1 ≤ p := by have := h.thirteen_le_p; dsimp only [p]; omega
-  have hC : 21 ≤ C := by dsimp only [C]; omega
-  have htZ : t ≤ Z := by
-    have := Nat.le_mul_of_pos_left t (by omega : 1 ≤ C)
-    exact this.trans (Nat.le_mul_of_pos_right (C*t) hp)
-  have hsZ : Sizes.s m i ≤ Z := (h.good.lt i).le.trans htZ
-  have hZ : 1 ≤ Z := ht.trans htZ
-  have hparam (x c : ℕ) (hx : x ≤ c*p) (hc : c ≤ C) : x ≤ Z := by
-    exact hx.trans (Nat.mul_le_mul_right p (hc.trans (Nat.le_mul_of_pos_right C ht)))
-  have hpZ : p ≤ Z := hparam p 1 (by simp) (by omega)
+  have hp : 1 ≤ Sizes.p m := by have := h.thirteen_le_p; omega
   have hl := (haloInverseRingLog_bounds hp (h.good.lt i) (h.quarter_p_le_theta i)).1
-  have hshared := fittingCyclicInputSharedTime_poly H K W Z hZ hsZ
-    (hparam W cW hW (by dsimp only [C]; omega)) (by
+  have hshared := fittingCyclicInputSharedTime_axis H K W (Sizes.p m) (Sizes.t m i) cw cW
+    (h.good.lt i) hp hW (by
       intro D hD
       obtain ⟨hpD,htD,hlD,huD,hwD⟩ := hprofile D hD
-      have hwZ := hparam D.wordWidth cw hwD (by dsimp only [C]; omega)
-      have hq : D.precision ≤ D.wordWidth := by
-        unfold ReplicaHaloProblem.precision ReplicaHaloProblem.wordWidth executionPrecision executionWidth
-        omega
-      have hstage : D.stage ≤ D.wordWidth := by
-        unfold ReplicaHaloProblem.stage ReplicaHaloProblem.wordWidth executionStagePrecision executionWidth
-        omega
-      have hb : D.band ≤ 17*p := by
-        have hsqrt := Nat.sqrt_le_self (16*p/D.u)
-        have hdiv := Nat.div_le_self (16*p) D.u
-        unfold ReplicaHaloProblem.band PhaseCellBand.width
-        rw [hpD]
-        change Nat.sqrt (16*p/D.u)+1 ≤ 17*p
-        omega
-      exact ⟨hpD ▸ hpZ,hq.trans hwZ,hwZ,hstage.trans hwZ,
-        hlD ▸ hparam _ 20 hl (by omega),htD ▸ htZ,huD.trans hpZ,
-        hparam _ 17 hb (by omega)⟩)
-  calc
-    push*fittingCyclicInputSharedTime H K W ≤ push*(2000006*Z^2) := Nat.mul_le_mul_left push hshared
-    _ = (push*2000006*C^2)*t^2*p^2 := by dsimp only [Z]; ring
-    _ ≤ Sizes.T m := hv i
+      exact ⟨hpD,htD,hlD ▸ hl,huD,hwD⟩)
+  have hscaled := Nat.mul_le_mul_left push hshared
+  have hvolume := hv i
+  dsimp only [C] at hvolume
+  nlinarith only [hscaled,hvolume]
 
 /-- Selected accounting for the input reserve already used by the complete
 ordinary execution trace. Seed lengths describe actual supplied scalar words. -/

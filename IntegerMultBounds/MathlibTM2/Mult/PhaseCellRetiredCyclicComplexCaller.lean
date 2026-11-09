@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFittingCyclicComplexCaller
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCyclicCallerRetirementTime
 public import IntegerMultBounds.MathlibTM2.Mult.ExportClearRegisterBank
 public import IntegerMultBounds.MathlibTM2.StackInvariantShift
 public import IntegerMultBounds.MathlibTM2.Host.ConsumeRuns
@@ -65,11 +65,11 @@ theorem retiredProgram_exec (ports : CyclicComplexCallerLayout T) (dst : Fin T)
       (∀ depth, ExecWithin body (fun d z => mnSize z+d ≤ mnSize (Host.mk vm R)+depth) depth
         (exportClearRegisterBank ports.bank 850 848 dst) (Host.mk vm R)
         (exportClearRegisterBankCost ports.bank 850 dst R) (Host.mk v' G)) ∧
-      steps ≤ (ports.inputTimeCost H K W Fs.length S+
+      steps ≤ retiredTimeCost (A := A) (U := U) hR hQ
+        (ports.inputTimeCost H K W Fs.length S+
         (ports.factorTimeCost s t p u a n C F+((4*(W+radius+coreLength s coreWidth k)+13)+
           Cost.cyclicComplexCoreTimeCost H K p u l t a n target q W radius
-            (coreLength s coreWidth k) Rs.length Fs.length)))+
-        (8*registerBankStock (embStk ports.bank R)+4*909+5) ∧
+            (coreLength s coreWidth k) Rs.length Fs.length))) (Fs.length*n*W) ∧
       ExecWithin body (fun d z => mnSize z+d ≤ mnSize (Host.mk v S)+0+
         (ports.workspace (U := U) H K J L hR hQ p u l t a n solveTarget q
           (executionWidth p l stage 2) W B.card Rs.length Fs.length radius
@@ -140,8 +140,13 @@ theorem retiredProgram_exec (ports : CyclicComplexCallerLayout T) (dst : Fin T)
   have hvolume : word.length ≤ (cstream A W (Fs.map (packedInterval a n)).flatten).length := by
     rw [length_cstream,packedBatch_length a n Fs (by omega)]
     exact hcert.length_le (by omega)
+  have hretire := ports.exportClearRegisterBankCost_le_run (body := body) hR hQ dst hdst v v₁ S R n₁
+    (cstream A W (Fs.map (packedInterval a n)).flatten) tail he₁ hblank hstreams.1 hstreams.2
+    hleftArchive hsrc harchive hframe
+  rw [length_cstream,packedBatch_length a n Fs (by omega)] at hretire
+  have htime := hretire.trans (retiredTimeCost_mono (A := A) (U := U) hR hQ hn₁ (Fs.length*n*W))
   refine ⟨J,L,v₁,v₂,C,F,R,G,n₁,_,word,hu₂.trans hu₁,hseed,hfactorValues,hprofile,he₁,rfl,?_,
-    Nat.add_le_add hn₁ (exportClearRegisterBankCost_le ports.bank 850 dst hdst R),
+    htime,
     hwhole,Exec.seq he₁ he₂,?_,hclean,?_,hcert,hstreamsG,hleft,hfinal,hcert.length,hcert.length_le (by omega),hvolume,?_,?_⟩
   · intro depth
     simpa only [Nat.zero_add] using mn_exec_within_shift hw₂ depth
