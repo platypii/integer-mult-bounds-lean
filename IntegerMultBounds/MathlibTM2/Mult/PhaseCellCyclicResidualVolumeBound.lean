@@ -11,6 +11,20 @@ open IntegerMultBounds IntegerMultBounds.MathlibTM2
   IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Fast.Main
 variable {Q A : ℕ} {P₀ U : Type}
 
+/-- The window/archive lifecycle adds only linear traffic around the existing
+real residual solver. This is the time counterpart of the workspace bound. -/
+theorem windowedSchurResidualCost_le_volume
+    (p l s t u target rhsExp a b : ℕ) :
+    let q := executionPrecision p l (initialSchurTarget p u target rhsExp) rhsExp
+    windowedSchurResidualCost p l s t u target rhsExp a b ≤
+      realInteriorResidualCost p l s t u (initialSchurTarget p u target rhsExp) rhsExp a b+
+        1000*(s+a+b+1)*(q+1) := by
+  dsimp only
+  unfold windowedSchurResidualCost releasedSchurResidualCost
+    archiveResidualPrefixCost retireInitialInteriorCost
+  ring_nf
+  omega
+
 theorem windowedSchurResidualWorkspace_le_volume
     (J ringPush batchPush rowPush p l s t u target rhsExp a b : ℕ) :
     let q := executionPrecision p l (initialSchurTarget p u target rhsExp) rhsExp
