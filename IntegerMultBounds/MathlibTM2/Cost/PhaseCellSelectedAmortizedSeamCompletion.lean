@@ -1,7 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedAmortizedSeamRun
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPlacedExactBoundaryArchivePublication
+public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellPreparedBoundaryArchivePublication
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGatherPublicationClass
 public import IntegerMultBounds.MathlibTM2.Host.SequentialBudget
 public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedGatherSchedule
@@ -23,7 +23,7 @@ open IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz ScalarPlacement FullLin
 open Filter IntegerMultBounds.MathlibTM2.Mult
 variable {T T' Q A : ℕ} {P U : Type} {body : P → Pr P T' Q A U}
 
-theorem selectedAmortizedSeamCompletion_exec (ct : ℕ) :
+theorem selectedAmortizedSeamCompletion_exec (ct cDB : ℕ) :
     ∃ D : ℝ, 0 ≤ D ∧ ∀ᶠ m : ℕ in atTop, ∀ (h : Sizes.Big m) (i : Fin (Sizes.d m)) [NeZero (Sizes.s m i)],
     ∀ (e : Fin T → Fin T') (he : Function.Injective e) (input : FullLineInputPlan T) (producer : PackedProducerPlan T Q)
     (hcompat : input.Compatible producer)
@@ -40,7 +40,7 @@ theorem selectedAmortizedSeamCompletion_exec (ct : ℕ) :
     (hgap : (1 : ℝ)/4 ≤ d*((t : ℝ)/s-1))
     (hbudget : (u : ℝ)*d ≤ p) (hband : PhaseCellBand.width p u ≤ s)
     (hpad : 2*((s/(t-s)+1)-2*PhaseCellBand.width p u) ≤ 2^l+1) (htarget : p+2 ≤ target)
-    (Fs : List (ZMod s → GaussianInt)) (hFs : ∀ F ∈ Fs, ∀ i, ‖value p (F i)‖ ≤ 1)
+    (Fs : List (ZMod s → GaussianInt)) (hFs : ∀ F ∈ Fs, ∀ i, ‖value p (F i)‖ ≤ 1) (hFsPos : 1 ≤ Fs.length)
     (X Y : (ZMod s → GaussianInt) → ZMod s → ℝ)
     (hX : ∀ F ∈ Fs, Solves (realMatrix s t p u) Finset.univ (X F)
       (fun i => ((1/2 : ℂ)*value p (F i)).re))
@@ -52,13 +52,12 @@ theorem selectedAmortizedSeamCompletion_exec (ct : ℕ) :
     (ready : SeamReady input producer crops p u l target t coreWidth Fs ks (embStk e S))
     (W : ℕ) (hW : 2*p+13 ≤ W)
     (be : Fin 117 → Fin T') (hbe : Function.Injective be)
-    (hsourcePort : be 95 = e crops.dst) (DB : ℕ) (hvolumeFit : s*W < 2^DB)
-    (cropCount : Fin 3 → Fin 117)
-    (hreg : ∀ slot, [cropCount slot,15,54,19,27,28,24,26].Nodup)
+    (hsourcePort : be 95 = e crops.dst) (DB : ℕ) (hvolumeFit : s*W < 2^DB) (hDB : DB ≤ cDB*p)
+    (masters : Fin 11 → Fin 117)
     (seedValue : Fin 117 → ℕ)
     (hvalues : ∀ j, seedValue (boundarySeedGlobals j) = ![s,coreWidth,W] j)
     (hfit : ∀ j, seedValue (boundarySeedGlobals j) < 2^DB)
-    (boundaryReady : BoundarySeamReady (s := s) p coreWidth W DB Fs.length cropCount seedValue (embStk be S))
+    (boundaryInput : BoundaryHeaderInput (s := s) p coreWidth W DB Fs.length masters seedValue (embStk be S))
     (ambient : List (List (Fin (A+4)))) (outputTail : List (Fin (A+4)))
     (hdst : S.R (be 96) = ambient.flatten++outputTail)
     (hgood : (gatherPublicationClass s coreWidth (localityDepth p target*PhaseCellBand.width p u)
@@ -66,7 +65,7 @@ theorem selectedAmortizedSeamCompletion_exec (ct : ℕ) :
       (inversePublicationTargets p Fs J) ambient (3/(2:ℝ)^p))
     (depth : ℕ),
     let C := closedGridPush (U := U) (A := A) producer recovery
-    let boundaryBill := 3*boundarySeamCost Fs.length (2*p+13) DB s coreWidth W+1
+    let boundaryBill := boundaryHeaderTrafficFactor cDB*(Fs.length*(s*W))+(3*boundarySeamCost Fs.length (2*p+13) DB s coreWidth W+1)
     ∃ lines : List (List (Fin (A+4))), ∃ v' : HS T' Q A U, ∃ steps : ℕ,
       v'.user = v.user ∧ (steps : ℝ) ≤ 2624001*(Sizes.T m : ℝ)+
         (Fs.length : ℝ)*D*(t : ℝ)*(1+(PhaseCellBand.width p u : ℝ)^2/Sizes.d m)*(p : ℝ)^(129/128 : ℝ)+
@@ -77,9 +76,9 @@ theorem selectedAmortizedSeamCompletion_exec (ct : ℕ) :
         (inversePublicationTargets p Fs J) lines ∧
       ExecWithin body (fun d z => mnSize z+d ≤ mnSize (Host.mk v S)+depth+
         ((((C+1)*((1312000+756)*(1032+8*ct)+504)+1440)*(Fs.length*s*p)+2*(C+1)*Sizes.T m+86)+
-          13*boundarySeamCost Fs.length (2*p+13) DB s coreWidth W)) depth
+          (boundaryHeaderTrafficFactor cDB*(Fs.length*(s*W))+13*boundarySeamCost Fs.length (2*p+13) DB s coreWidth W))) depth
         (.seq (placedSeamProgram e input producer crops recovery ks)
-          (embProg be Empty.elim (boundarySeamPublication (P := Empty) cropCount)))
+          (preparedBoundaryArchivePublication be masters))
         (Host.mk v S) steps (Host.mk v' {S with R := (Function.update S.R (be 96) (lines.flatten++outputTail))}) := by
   dsimp only
   obtain ⟨D,hD,hseam⟩ := selectedAmortizedSeamProgram_exec (T := T) (T' := T')
@@ -87,8 +86,8 @@ theorem selectedAmortizedSeamCompletion_exec (ct : ℕ) :
   refine ⟨D,hD,?_⟩
   filter_upwards [hseam,selectedAmortizedCoreGeometry ct] with m hseam hgeometry
   intro h i _ e he input producer hcompat crops recovery hA u target d huUpper htargetUpper
-    hu hwidth hgap hbudget hband hpad htarget Fs hFs X Y hX hY J hJ v S ready
-    W hW be hbe hsourcePort DB hvolumeFit cropCount hreg seedValue hvalues hfit boundaryReady
+    hu hwidth hgap hbudget hband hpad htarget Fs hFs hFsPos X Y hX hY J hJ v S ready
+    W hW be hbe hsourcePort DB hvolumeFit hDB masters seedValue hvalues hfit boundaryInput
     ambient outputTail hdst hgood depth
   let p := Sizes.p m
   let s := Sizes.s m i
@@ -105,17 +104,17 @@ theorem selectedAmortizedSeamCompletion_exec (ct : ℕ) :
   let M : Stacks T' A := {S with R := Function.update S.R (e crops.dst) (word++S.R (e crops.dst))}
   have hread (j : Fin 117) (hj : j ≠ 95) : (embStk be M).R j = (embStk be S).R j := by
     exact Function.update_of_ne (by rw [←hsourcePort]; exact hbe.ne hj) _ _
-  have hready := boundaryReady.of_frame p width W DB Fs.length cropCount seedValue
+  have hready := boundaryInput.of_frame p width W DB Fs.length masters seedValue
     (embStk be S) (embStk be M) (by intro j hj _; exact hread j hj)
   obtain ⟨hw,_,hrw,hroom,_⟩ := hgeometry h i u target htargetUpper
   change 3*width+PhaseCellBand.width p u ≤ s at hroom
   have hbandPos := PhaseCellBand.width_pos p u
   have hp : 1 ≤ p := by have := h.thirteen_le_p; omega
   have hrad : 0 < localityDepth p target*PhaseCellBand.width p u := localityCoreWidth_pos hp u target
-  obtain ⟨lines,v',nb,hu',htb,hall,heb⟩ := placedExactBoundaryArchivePublication_exec body be hbe
-    p width W DB (by omega) hW hw (by omega) hvolumeFit cropCount hreg seedValue hvalues hfit
-    r (fun _ => J) (PhaseCellBand.width p u) (localityDepth p target) hrad hrw proper rfl
-    (S.R (be 95)) outputTail M hready depth vm banks hbanks ambient
+  obtain ⟨lines,v',nb,hu',htb,hall,heb⟩ := preparedBoundaryArchivePublication_exec body be hbe masters hready.separated
+    p width W DB cDB (by omega) hW hw (by omega) hvolumeFit hDB seedValue hvalues hfit
+    r (by simpa only [r,fullLineGridRecord] using hFsPos) (fun _ => J) (PhaseCellBand.width p u) (localityDepth p target) hrad hrw proper rfl
+    (S.R (be 95)) outputTail M hready.words hready.blank depth vm banks hbanks ambient
     (by simpa only [r,fullLineGridRecord,seamPublicationTargets,inversePublicationTargets] using hgood)
     (by simp only [embStk,M,Function.comp_apply,hsourcePort,Function.update_self,word])
     (by rw [hread 96 (by decide)]; exact hdst)

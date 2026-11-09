@@ -4952,6 +4952,40 @@ aggregate peak). Generalized boundary readiness, placed loader, volume and
 execution budgets, and the current initialized axis all pass the standard
 three-axiom audit (10025.5 MiB for the combined nonmodule audit).
 
+**The complete live axis now prepares and retires its boundary controls.**
+`preparedBoundaryArchivePublication_exec` composes the actual placed header
+loader, existing `placedExactBoundaryArchivePublication_exec`, and generic
+header-frame retirement. Cropped banks and numerical certificates already form
+the existing publisher's interface, so a separate numerical-invariant/header
+transport layer was unnecessary and its checked prototype was removed. Only
+the crop source and ambient destination change at the exact endpoint. The
+entire load/publication/cleanup trace pays one boundary-header traffic charge,
+retains the publisher's correctness result, and carries simultaneous storage.
+
+`BoundaryHeaderInput` describes ordinary retained master words, source/data
+separation and blank header destinations. Its frame lemma transports these
+ordinary inputs through previous bulk and seam output updates. The selected
+seam completion and published/retired/initialized dyadic axis now consume this
+input record instead of assuming `BoundarySeamReady`. The three crop-count
+ports use the existing standard layout; no separate crop-register supplier is
+needed. The dyadic nonempty replica identity discharges the ordinary header
+budget's positive-batch premise. `D ≤ cDB*p` and the new
+`boundaryHeaderTrafficFactor cDB` are propagated through the actual selected
+execution bills; no setup cost is hidden or treated as free. The output-only
+endpoint and final stock equality of the complete axis remain unchanged.
+
+The complete integration and final builds pass (17398 jobs, 3.8 GiB aggregate).
+The prepared boundary wrapper checks at 3389.3 MiB; the initialized complete
+axis checks at 3808.8 MiB. The input frame, prepared publication, selected seam
+completion and initialized complete axis all pass the standard-axiom audit
+(10025.4 MiB for the combined nonmodule audit). Remaining initialization is now the
+common retained scalar/master words and concrete layout, not the boundary
+working bank. Then close selected fitting allowances and class/shared-exposure,
+outer/fallback/root acceptance. Full S4 remains open; no push.
+Removed unused polynomial-publication `PhaseCellSelectedAmortizedPublishedAxis`
+and `PhaseCellSelectedAmortizedRetiredAxis` wrappers (restore `3c369828`); their
+only dependency was each other, and the complete live path is dyadic.
+
 **First acceptance target: one complete fitting batch.** From declared original
 complex streams and ordinary scalar headers, execute component production,
 prepare numerical data, reuse it across the batch, publish certified complex

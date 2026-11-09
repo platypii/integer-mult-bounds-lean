@@ -157,16 +157,15 @@ theorem selectedAmortizedInitializedDyadicRetiredAxis_exec (hR : rpStates ≤ Q)
       (initBoundaryOff : ∀ j, be j ∉ [initPacket,initWidth])
       (hsourcePort : be 95 = se crops.dst) (houtputPort : be 96 = (pubE pubDst))
       (boundaryOff : ∀ j, be j ≠ dst) (DB : ℕ) (hvolumeFit : s*W < 2^DB) (hDB : DB ≤ cDB*p)
-      (cropCount : Fin 3 → Fin 117)
-      (hcropReg : ∀ slot, [cropCount slot,15,54,19,27,28,24,26].Nodup)
+      (masters : Fin 11 → Fin 117)
       (seedValue : Fin 117 → ℕ)
       (hvalues : ∀ j, seedValue (boundarySeedGlobals j) = ![s,coreWidth,W] j)
       (hseedFit : ∀ j, seedValue (boundarySeedGlobals j) < 2^DB)
-      (boundaryReady : BoundarySeamReady (s := s) p coreWidth W DB Fs.length cropCount seedValue (embStk be S₀))
+      (boundaryInput : BoundaryHeaderInput (s := s) p coreWidth W DB Fs.length masters seedValue (embStk be S₀))
       (retireOff : ∀ r ∈ [pubCount,pubWidth,pubSavedCount,pubArchive,pubTmp], r ≠ pubE pubDst),
     let C := closedGridPush (U := U) (A := (prime+K)) producer recovery
     let seamStock := (((C+1)*((1312000+756)*(1032+8*ct)+504)+1440)*(Fs.length*s*p)+2*(C+1)*Sizes.T m+86)+
-      13*(boundaryPublicationTrafficFactor cDB*(Fs.length*(s*W)))
+      (boundaryHeaderTrafficFactor cDB*(Fs.length*(s*W))+13*(boundaryPublicationTrafficFactor cDB*(Fs.length*(s*W))))
     let retireBill := 21*(Fs.length*(s*W))+12
     let axisTime : ℝ := (((coreExposureTrafficFactor cG cW+6013 : ℕ)*(Fs.length*s*W : ℕ)+
         432*(generatedDyadicStageCoeff FixedStreamedBank.tapeCount 6 1+300)*
@@ -176,7 +175,7 @@ theorem selectedAmortizedInitializedDyadicRetiredAxis_exec (hR : rpStates ≤ Q)
         108*(generatedDyadicStageCoeff FixedStreamedBank.tapeCount 6 1+300)*
           (Fs.length*s*W : ℕ)*Sizes.d m*((Sizes.ℓ m : ℝ)^Parameters.tau+1)))+(2624001*(Sizes.T m : ℝ)+(Fs.length : ℝ)*Dseam*(t : ℝ)*
         (1+(PhaseCellBand.width p u : ℝ)^2/Sizes.d m)*(p : ℝ)^(129/128 : ℝ)+
-        726*(Fs.length*s*p : ℕ)+455+(3*(boundaryPublicationTrafficFactor cDB*(Fs.length*(s*W)))+1 : ℕ))+(retireBill : ℕ)
+        726*(Fs.length*s*p : ℕ)+455+(boundaryHeaderTrafficFactor cDB*(Fs.length*(s*W))+(3*(boundaryPublicationTrafficFactor cDB*(Fs.length*(s*W)))+1) : ℕ))+(retireBill : ℕ)
     let axisSpace : ℕ := (((3*coreExposureTrafficFactor cG cW+12+
           12*(streamedDyadicStockCoeff FixedStreamedBank.tapeCount+700))*(Fs.length*s*W)+
           fittingCyclicWorkspaceTrafficFactor (A := (prime+K)) (U := U) hR hQ ct cW*Fs.length*t*p+47*Sizes.T m)+(2*Sizes.T m+(4390+100*cVPub+3*(streamedDyadicStockCoeff FixedStreamedBank.tapeCount+40))*(Fs.length*s*W)+12)+seamStock+3*retireBill)
@@ -195,7 +194,7 @@ theorem selectedAmortizedInitializedDyadicRetiredAxis_exec (hR : rpStates ≤ Q)
           (.seq (reverseCopyRows pubCount pubSavedCount pubWidth dst pubArchive (pubE (PackedTranspose.extra 1)) pubSaved pubTmp)
             (embProg pubE Empty.elim (PackedTranspose.uniformDyadicPublicationProgram hstates exponent packet pad tmpPub savedPub pub clock lineRows))))
           (.seq (placedSeamProgram se input producer crops recovery (boundaryCropSchedule s coreWidth))
-            (embProg be Empty.elim (boundarySeamPublication (P := Empty) cropCount))))
+            (preparedBoundaryArchivePublication be masters)))
           (retireCountedLine pubCount pubWidth dst pubSavedCount pubArchive pubTmp)))
         (Host.mk v S₀) nsteps
         (Host.mk v' {S₀ with R := Function.update S₀.R (pubE pubDst) (lines.flatten++outputTail)}) ∧
@@ -220,7 +219,7 @@ theorem selectedAmortizedInitializedDyadicRetiredAxis_exec (hR : rpStates ≤ Q)
     headerReady hpadOff hsourceA hsourceB hsourceC hword hheaderBlank hcountPort hadvancePort hsetupReg hstrideOff hpadSetupOff hsetupBlank hfresh hpubDst hclock hline
   intro se hse input producer compatible crops recovery huSeam hwidthSeam hgapSeam hbudgetSeam
     hbandSeam hpadSeam Xseam Yseam hXseam hYseam hJseam seamReady initSeamOff seamOff
-    be hbe initBoundaryOff hsourcePort houtputPort boundaryOff DB hvolumeFit hDB cropCount hcropReg seedValue hvalues hseedFit boundaryReady
+    be hbe initBoundaryOff hsourcePort houtputPort boundaryOff DB hvolumeFit hDB masters seedValue hvalues hseedFit boundaryInput
   intro retireOff
   have initOutputOff := initPubOff pubDst
   let S := archiveWidthState initPacket initWidth Fs.length
@@ -279,7 +278,7 @@ theorem selectedAmortizedInitializedDyadicRetiredAxis_exec (hR : rpStates ≤ Q)
   have hpubDst := (hpub pubDst).trans hpubDst
   have hline : (S.R (pubE lineRows)).length = Sizes.s m i := by rw [hpub]; exact hline
   have seamReady := SeamReady.frame (F := embStk se S) seamReady rfl (fun r hr => hread (se r) (initSeamOff r hr))
-  have boundaryReady := BoundarySeamReady.of_frame _ _ _ _ _ _ _ (embStk be S₀) (embStk be S) boundaryReady
+  have boundaryInput := BoundaryHeaderInput.of_frame _ _ _ _ _ _ _ (embStk be S₀) (embStk be S) boundaryInput
     (fun j _ _ => hread (be j) (initBoundaryOff j))
   have hrowWidth : (S.R pubWidth).length = Fs.reverse.length*
       ((gatherPublicationClass (Sizes.s m i) (amortizedCoreWidth ct (Sizes.p m))
@@ -301,7 +300,7 @@ theorem selectedAmortizedInitializedDyadicRetiredAxis_exec (hR : rpStates ≤ Q)
       headerReady hpadOff hsourceA hsourceB hsourceC hword hheaderBlank hcountPort hadvancePort hsetupReg hstrideOff hpadSetupOff hsetupBlank hfresh hpubDst hclock hline
       se hse input producer compatible crops recovery huSeam hwidthSeam hgapSeam hbudgetSeam
       hbandSeam hpadSeam Xseam Yseam hXseam hYseam hJseam seamReady seamOff
-      be hbe hsourcePort houtputPort boundaryOff DB hvolumeFit hDB cropCount hcropReg seedValue hvalues hseedFit boundaryReady retireOff
+      be hbe hsourcePort houtputPort boundaryOff DB hvolumeFit hDB masters seedValue hvalues hseedFit boundaryInput retireOff
   -- The quantified axis execution above supplies the consumer at the setup's
   -- actual returned control state. No execution or header bank is postulated.
 
@@ -314,7 +313,7 @@ theorem selectedAmortizedInitializedDyadicRetiredAxis_exec (hR : rpStates ≤ Q)
   let L := coreWidth+2*radius-2*radius
   let C := closedGridPush (U := U) (A := (prime+K)) producer recovery
   let seamStock := (((C+1)*((1312000+756)*(1032+8*ct)+504)+1440)*(Fs.length*s*p)+2*(C+1)*Sizes.T m+86)+
-    13*(boundaryPublicationTrafficFactor cDB*(Fs.length*(s*W)))
+    (boundaryHeaderTrafficFactor cDB*(Fs.length*(s*W))+13*(boundaryPublicationTrafficFactor cDB*(Fs.length*(s*W))))
   let retireBill := 21*(Fs.length*(s*W))+12
   let axisTime : ℝ := (((coreExposureTrafficFactor cG cW+6013 : ℕ)*(Fs.length*s*W : ℕ)+
         432*(generatedDyadicStageCoeff FixedStreamedBank.tapeCount 6 1+300)*
@@ -324,7 +323,7 @@ theorem selectedAmortizedInitializedDyadicRetiredAxis_exec (hR : rpStates ≤ Q)
         108*(generatedDyadicStageCoeff FixedStreamedBank.tapeCount 6 1+300)*
           (Fs.length*s*W : ℕ)*Sizes.d m*((Sizes.ℓ m : ℝ)^Parameters.tau+1)))+(2624001*(Sizes.T m : ℝ)+(Fs.length : ℝ)*Dseam*(t : ℝ)*
         (1+(PhaseCellBand.width p u : ℝ)^2/Sizes.d m)*(p : ℝ)^(129/128 : ℝ)+
-        726*(Fs.length*s*p : ℕ)+455+(3*(boundaryPublicationTrafficFactor cDB*(Fs.length*(s*W)))+1 : ℕ))+(retireBill : ℕ)
+        726*(Fs.length*s*p : ℕ)+455+(boundaryHeaderTrafficFactor cDB*(Fs.length*(s*W))+(3*(boundaryPublicationTrafficFactor cDB*(Fs.length*(s*W)))+1) : ℕ))+(retireBill : ℕ)
   let axisSpace : ℕ := (((3*coreExposureTrafficFactor cG cW+12+
           12*(streamedDyadicStockCoeff FixedStreamedBank.tapeCount+700))*(Fs.length*s*W)+
           fittingCyclicWorkspaceTrafficFactor (A := (prime+K)) (U := U) hR hQ ct cW*Fs.length*t*p+47*Sizes.T m)+(2*Sizes.T m+(4390+100*cVPub+3*(streamedDyadicStockCoeff FixedStreamedBank.tapeCount+40))*(Fs.length*s*W)+12)+seamStock+3*retireBill)
@@ -334,7 +333,7 @@ theorem selectedAmortizedInitializedDyadicRetiredAxis_exec (hR : rpStates ≤ Q)
           (.seq (reverseCopyRows pubCount pubSavedCount pubWidth dst pubArchive (pubE (PackedTranspose.extra 1)) pubSaved pubTmp)
             (embProg pubE Empty.elim (PackedTranspose.uniformDyadicPublicationProgram hstates exponent packet pad tmpPub savedPub pub clock lineRows))))
           (.seq (placedSeamProgram se input producer crops recovery (boundaryCropSchedule s coreWidth))
-            (embProg be Empty.elim (boundarySeamPublication (P := Empty) cropCount))))
+            (preparedBoundaryArchivePublication be masters)))
           (retireCountedLine pubCount pubWidth dst pubSavedCount pubArchive pubTmp))
   let post := fun result : List (Fin (prime+K+4)) =>
     ∃ lines : List (List (Fin (prime+K+4))),

@@ -162,16 +162,15 @@ theorem selectedAmortizedDyadicRetiredAxis_exec (hR : rpStates ≤ Q) (hQ : SS.s
       (be : Fin 117 → Fin T) (hbe : Function.Injective be)
       (hsourcePort : be 95 = se crops.dst) (houtputPort : be 96 = (pubE pubDst))
       (boundaryOff : ∀ j, be j ≠ dst) (DB : ℕ) (hvolumeFit : s*W < 2^DB) (hDB : DB ≤ cDB*p)
-      (cropCount : Fin 3 → Fin 117)
-      (hcropReg : ∀ slot, [cropCount slot,15,54,19,27,28,24,26].Nodup)
+      (masters : Fin 11 → Fin 117)
       (seedValue : Fin 117 → ℕ)
       (hvalues : ∀ j, seedValue (boundarySeedGlobals j) = ![s,coreWidth,W] j)
       (hseedFit : ∀ j, seedValue (boundarySeedGlobals j) < 2^DB)
-      (boundaryReady : BoundarySeamReady (s := s) p coreWidth W DB Fs.length cropCount seedValue (embStk be S))
+      (boundaryInput : BoundaryHeaderInput (s := s) p coreWidth W DB Fs.length masters seedValue (embStk be S))
       (retireOff : ∀ r ∈ [pubCount,pubWidth,pubSavedCount,pubArchive,pubTmp], r ≠ pubE pubDst),
     let C := closedGridPush (U := U) (A := (prime+K)) producer recovery
     let seamStock := (((C+1)*((1312000+756)*(1032+8*ct)+504)+1440)*(Fs.length*s*p)+2*(C+1)*Sizes.T m+86)+
-      13*(boundaryPublicationTrafficFactor cDB*(Fs.length*(s*W)))
+      (boundaryHeaderTrafficFactor cDB*(Fs.length*(s*W))+13*(boundaryPublicationTrafficFactor cDB*(Fs.length*(s*W))))
     let retireBill := 21*(Fs.length*(s*W))+12
     ∃ v' : HS T Q (prime+K) U, ∃ F M : Stacks T (prime+K), ∃ steps pubSteps seamSteps retireSteps : ℕ,
       ∃ outputs : List (List (Fin (prime+K+4))), ∃ lines : List (List (Fin (prime+K+4))),
@@ -183,7 +182,7 @@ theorem selectedAmortizedDyadicRetiredAxis_exec (hR : rpStates ≤ Q) (hQ : SS.s
         108*(generatedDyadicStageCoeff FixedStreamedBank.tapeCount 6 1+300)*
           (Fs.length*s*W : ℕ)*Sizes.d m*((Sizes.ℓ m : ℝ)^Parameters.tau+1)))+(2624001*(Sizes.T m : ℝ)+(Fs.length : ℝ)*Dseam*(t : ℝ)*
         (1+(PhaseCellBand.width p u : ℝ)^2/Sizes.d m)*(p : ℝ)^(129/128 : ℝ)+
-        726*(Fs.length*s*p : ℕ)+455+(3*(boundaryPublicationTrafficFactor cDB*(Fs.length*(s*W)))+1 : ℕ))+(retireBill : ℕ) ∧
+        726*(Fs.length*s*p : ℕ)+455+(boundaryHeaderTrafficFactor cDB*(Fs.length*(s*W))+(3*(boundaryPublicationTrafficFactor cDB*(Fs.length*(s*W)))+1) : ℕ))+(retireBill : ℕ) ∧
       List.Forall₂ (fun target line => line.length = s*W ∧
         (∀ j : ZMod s, ‖pairedCellRead p W line j‖ ≤ 1) ∧
         (∀ j : ZMod s, ‖pairedCellRead p W line j-target j‖ ≤ 3/(2:ℝ)^p))
@@ -200,7 +199,7 @@ theorem selectedAmortizedDyadicRetiredAxis_exec (hR : rpStates ≤ Q) (hQ : SS.s
           (.seq (reverseCopyRows pubCount pubSavedCount pubWidth dst pubArchive (pubE (PackedTranspose.extra 1)) pubSaved pubTmp)
             (embProg pubE Empty.elim (PackedTranspose.uniformDyadicPublicationProgram hstates exponent packet pad tmpPub savedPub pub clock lineRows))))
           (.seq (placedSeamProgram se input producer crops recovery (boundaryCropSchedule s coreWidth))
-            (embProg be Empty.elim (boundarySeamPublication (P := Empty) cropCount))))
+            (preparedBoundaryArchivePublication be masters)))
           (retireCountedLine pubCount pubWidth dst pubSavedCount pubArchive pubTmp))
         (Host.mk v S) (steps+pubSteps+seamSteps+retireSteps) (Host.mk v' F) ∧
       mnSize (Host.mk v' F) = mnSize (Host.mk v S) ∧
@@ -209,7 +208,7 @@ theorem selectedAmortizedDyadicRetiredAxis_exec (hR : rpStates ≤ Q) (hQ : SS.s
   dsimp only
   obtain ⟨B₀,Dseam,hB₀,hDseam,haxis⟩ := selectedAmortizedDyadicPublishedAxis_exec
     (Ts := Ts) (T := T) (U := U) (body := body)
-    hR hQ hA ct cW cV cZ cG cD cVPub hcZ hstates
+    hR hQ hA ct cW cV cZ cG cD cVPub cDB hcZ hstates
   refine ⟨B₀,Dseam,hB₀,hDseam,?_⟩
   filter_upwards [haxis,selectedAmortizedCoreGeometry ct] with m haxis hgeometry
   intro h i _ ports g dst width origins binary work readerSaved readerTmp count saved
@@ -224,7 +223,7 @@ theorem selectedAmortizedDyadicRetiredAxis_exec (hR : rpStates ≤ Q) (hQ : SS.s
     headerReady hpadOff hsourceA hsourceB hsourceC hword hheaderBlank hcountPort hadvancePort hsetupReg hstrideOff hpadSetupOff hsetupBlank hfresh hpubDst hclock hline
   intro se hse input producer compatible crops recovery huSeam hwidthSeam hgapSeam hbudgetSeam
     hbandSeam hpadSeam Xseam Yseam hXseam hYseam hJseam seamReady seamOff
-    be hbe hsourcePort houtputPort boundaryOff DB hvolumeFit hDB cropCount hcropReg seedValue hvalues hseedFit boundaryReady
+    be hbe hsourcePort houtputPort boundaryOff DB hvolumeFit hDB masters seedValue hvalues hseedFit boundaryInput
   intro retireOff
   obtain ⟨vm,Fraw,M,steps,pubSteps,seamSteps,outputs,lines,huser,htime,hall,hFpub,hraw,hvolume,hwithin,hi,ho,hl,hframe⟩ :=
     haxis h i ports g dst width origins binary work readerSaved readerTmp count saved
@@ -239,7 +238,7 @@ theorem selectedAmortizedDyadicRetiredAxis_exec (hR : rpStates ≤ Q) (hQ : SS.s
     headerReady hpadOff hsourceA hsourceB hsourceC hword hheaderBlank hcountPort hadvancePort hsetupReg hstrideOff hpadSetupOff hsetupBlank hfresh hpubDst hclock hline
     se hse input producer compatible crops recovery huSeam hwidthSeam hgapSeam hbudgetSeam
     hbandSeam hpadSeam Xseam Yseam hXseam hYseam hJseam seamReady seamOff
-    be hbe hsourcePort houtputPort boundaryOff DB hvolumeFit cropCount hcropReg seedValue hvalues hseedFit boundaryReady
+    be hbe hsourcePort houtputPort boundaryOff DB hvolumeFit hDB masters seedValue hvalues hseedFit boundaryInput
   have hstable (r : Fin T) (hr : r ∈ [pubCount,pubWidth,pubSavedCount,pubArchive,pubTmp]) :
       Fraw.R r = S.R r := by
     apply hframe r ?_ (retireOff r hr)
