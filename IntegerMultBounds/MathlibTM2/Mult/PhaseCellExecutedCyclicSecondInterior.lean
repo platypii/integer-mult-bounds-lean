@@ -84,7 +84,7 @@ theorem executedCyclicSecondInterior_spec (hR : rpStates ≤ Q) (hQ : SS.states 
   let K := axis.cyclicRightReplicaProblem cellTarget 2 a n hn Fs hF
   intro buffersL buffersR v S tail pageTail inputsL inputsR factory h226 h229
   obtain ⟨solutions,z,X,m,savedL,savedR,pageL,pageR,hlen,hformat,haccuracy,hmag,hu,hm,he,hclock,
-    hsourceL,hsourceR,harchiveL,harchiveR,hcacheL,hcacheR,hheadersL,hheadersR,hreadyL,hreadyR,hcontrolsL,hcontrolsR⟩ :=
+    hsourceL,hsourceR,harchiveL,harchiveR,hcacheL,hcacheR,hheadersL,hheadersR,hreadyL,hreadyR,hcontrolsL,hcontrolsR,hcleanupL,hcleanupR⟩ :=
     executedCyclicReplicaRecovery_spec (body := body) hR hQ hA axis ha hn hleftRoom hrightRoom
       Fs hF buffersL buffersR (embDn extendRecovery v) S tail pageTail inputsL inputsR factory h226 h229
   have hfitL : a+min n (s-a) ≤ s := by omega

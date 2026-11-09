@@ -1,5 +1,7 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCyclicRecoveryCleanupFrame
+
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCachedCyclicReplicaRecovery
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedBatchInputData
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCyclicReplicaResumeReady
@@ -83,7 +85,11 @@ theorem executedCyclicReplicaRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.states
       ReplicaInteriorResumeReady H CyclicRecoveryPlacement.leftJob leftBuffers X ∧
       ReplicaInteriorResumeReady K CyclicRecoveryPlacement.rightJob rightBuffers X ∧
       ReplicaAssemblyControls H CyclicRecoveryPlacement.leftJob.plan.gather (CyclicRecoveryPlacement.bank 239) X ∧
-      ReplicaAssemblyControls K CyclicRecoveryPlacement.rightJob.plan.gather (CyclicRecoveryPlacement.bank 238) X := by
+      ReplicaAssemblyControls K CyclicRecoveryPlacement.rightJob.plan.gather (CyclicRecoveryPlacement.bank 238) X ∧
+      releaseReplicaInteriorBankCost CyclicRecoveryPlacement.leftJob.plan X ≤
+        replicaCouplingNativeCleanupBound (2^15*H.p) H.precision H.wordWidth s H.t H.u H.band H.origin (H.origin+H.span) ∧
+      releaseReplicaInteriorBankCost CyclicRecoveryPlacement.rightJob.plan X ≤
+        replicaCouplingNativeCleanupBound (2^15*K.p) K.precision K.wordWidth s K.t K.u K.band K.origin (K.origin+K.span) := by
   dsimp only
   let band := PhaseCellBand.width p u
   let B := cyclicPrincipalBoundary s t band a n
@@ -205,9 +211,28 @@ theorem executedCyclicReplicaRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.states
       Function.update_of_ne (CyclicRecoveryPlacement.bank_injective.ne (by decide : (238 : Fin 240) ≠ 224)),
       Function.update_of_ne (CyclicRecoveryPlacement.bank_injective.ne (by decide : (238 : Fin 240) ≠ 132)),
       Function.update_self] using hh
+  have hcleanup := hcursor.cleanup_from_input _ _
+  have hnativeL : releaseReplicaInteriorBankCost CyclicRecoveryPlacement.leftJob.plan extended =
+      releaseReplicaInteriorBankCost left.plan producer := by
+    apply releaseReplicaInteriorBankCost_eq_of_disposable_frame _ _ producer extended
+    intro i hi
+    change extended.R (extendCaller (left.plan.solver (weightCacheCoreReg i))) =
+      producer.R (left.plan.solver (weightCacheCoreReg i))
+    rw [hreadR]
+    have hh := congrArg (fun T : Stacks 168 A => T.R (Fin.castLE (by decide : 117 ≤ 168) i)) hbankL
+    simpa only [embStk,Function.comp_apply,ReplicaCouplingPlacement.bank_native] using hh
+  have hnativeR : releaseReplicaInteriorBankCost CyclicRecoveryPlacement.rightJob.plan extended =
+      releaseReplicaInteriorBankCost right.plan producer := by
+    apply releaseReplicaInteriorBankCost_eq_of_disposable_frame _ _ producer extended
+    intro i hi
+    change extended.R (extendCaller (right.plan.solver (weightCacheCoreReg i))) =
+      producer.R (right.plan.solver (weightCacheCoreReg i))
+    rw [hreadR]
+    have hh := congrArg (fun T : Stacks 168 A => T.R (Fin.castLE (by decide : 117 ≤ 168) i)) hbankR
+    simpa only [embStk,Function.comp_apply,ReplicaCouplingPlacement.bank_native] using hh
   refine ⟨solutions,zf,X,m,_,_,_,_,hlen,hformats,hboundary,hmag,hu,?_,he,hclock,?_,?_,hcursor.archiveL,hcursor.archiveR,
     hcursor.cacheL,hcursor.cacheR,hcursor.headersL,hcursor.headersR,hresumeX.1,hresumeX.2,
-    hresumeX.1.assembly_controls _ hmaskL,hresumeX.2.assembly_controls _ hmaskR⟩
+    hresumeX.1.assembly_controls _ hmaskL,hresumeX.2.assembly_controls _ hmaskR,?_,?_⟩
   · have hbill : m₀ ≤ cachedCyclicReplicaBoundaryBill H K p u l t a n target q w B.card W Fs.length := hm₀
     exact hm.trans (Nat.add_le_add_right hbill _)
   · have hh := hcursor.cacheL.ready.source
@@ -218,5 +243,9 @@ theorem executedCyclicReplicaRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.states
     change X.R (CyclicRecoveryPlacement.rightJob.coupling.bank 110) =
       (cyclicBoundaryRecoveryRows B solutions Fs).reverse.flatMap (cyclicRecoveryOutputR K)++rightBuffers.rhsTail at hh
     exact hh
+  · rw [hcleanup.1,hnativeL,releaseReplicaInteriorBankCost_eq_native]
+    exact postL.cleanup
+  · rw [hcleanup.2,hnativeR,releaseReplicaInteriorBankCost_eq_native]
+    exact postR.cleanup
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

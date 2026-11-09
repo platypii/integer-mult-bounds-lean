@@ -45103,3 +45103,118 @@ input production/callbacks, fitting peak space, fallback/grouped exposure and
 final locality/tensor/compiler acceptance remain open. Next instantiate the
 actual caller profiles and attach this bound to its execution witness. Collect
 the schedule work as one larger local checkpoint; no push.
+
+`selectedCyclicReplicaSizing` discharges actual joint-count stage, word width,
+metadata width and ring bounds uniformly for all selected windows. It reuses
+joint working-width sizing plus the existing gathered metadata theorem.
+`selectedCyclicReplicaProblems_profile` transfers these bounds to both concrete
+axis cyclic replica constructors, including their actual Fs, precision fields,
+target and RHS exponent. No numerical solution comparisons or separate right-
+interval precision are introduced. Guarded check passes at 3405.5 MiB.
+Next use this concrete profile at each computed fitting core to instantiate
+`selectedFittingCyclicCaller_time_le`, then attach the estimate to execution.
+Peak space and remaining full S4 acceptance gates remain open. No push; retain
+this work for the next coherent local checkpoint.
+
+`selectedActualFittingCyclicCaller_time_le` instantiates the selected fitting
+caller bound with actual joint-count precision and both concrete cyclic replica
+constructors. Target/metadata/ring/setup and word-width profile premises are
+discharged internally using selected cyclic sizing. RHS archives may vary by
+core, with the actual common replica count. The remaining construction identity
+premise identifies the caller's H/K with those constructors; no cost, width,
+metadata, target or schedule-volume suppliers remain. Guarded check passes at
+3481.2 MiB. Next attach this schedule allowance to the executed caller's step
+witness, then include full complex-core interior/assembly costs. Fitting peak
+space, original-input/callback production, fallback/grouped exposure and final
+S4 acceptance remain open. No push.
+
+Full complex-core review identifies the remaining second interiors, native-bank
+erasure, merges, normalization, crop and component assembly in the actual
+execution bill. `replicaRecoveryInterior_layout_fast_le` now generalizes the
+existing interior estimate to any `SameLayout` second problem; the supporting
+`replicaRecoveryInteriorTime_layout_affine` splits its exact bill into shared
+interior work and linear archive/projection traffic. This directly covers the
+actual cyclic joint target and avoids the old noncyclic boundary-cardinality
+premise. Existing initialized-interior numerical analysis is reused unchanged.
+Guarded check passes at 3275.2 MiB. Next apply local-volume absorption to these
+second passes and bind native-bank erasure to actual retained-state sizes,
+then compose complex-core publication. Full S4 remains open; no push.
+
+`replicaRecoveryInterior_layout_local_fast_le` now prices a SameLayout second
+interior by its actual shared setup plus 18 and one replica-count times local
+recovery-volume fast term. It absorbs archive/projection and interior-cardinality
+traffic using the same `replicaRecoveryLocalVolume` as the first pass; the
+existing computed fitting overlap theorem therefore applies unchanged. No
+noncyclic target/cardinality assumption or RHS-dependent argument is needed.
+Guarded check passes at 3373.5 MiB after rebuilding affected dependencies.
+Next sum both executed second interiors with their actual SameLayout witnesses,
+charge shared setup, and bound native-bank erasure/publication costs. Full S4
+including fitting peak space remains open. No push.
+
+`computedFittingCyclicSecondInteriorSchedule_fast_le` sums both actual second-
+interior time budgets over the computed fitting class using their SameLayout
+witnesses. Repeated work is bounded by 680*F*replicas times the axis local
+volume and p^(129/128); each call retains its actual two shared interior setup
+costs and constant overhead. The existing computed volume theorem is reused
+without any target-specific numerical argument. Guarded check passes at
+3437.4 MiB after rebuilding the resource-budget dependency. Next absorb these
+shared setup costs by transporting selected profiles through SameLayout, then
+bound native-bank erasure and normalization/publication. Full S4, including
+execution-wide peak space and input/callback/fallback/final gates, remains open.
+No push.
+
+Second-interior setup and numerical schedules are now combined.
+`selectedCyclicSecondInteriorSharedSchedule_volume_le` transports existing
+selected setup bounds through both SameLayout witnesses and absorbs both setup
+sums plus per-call constants at actual multiplicity. Guarded check: 3437.6 MiB.
+`selectedFittingCyclicSecondInterior_time_le` composes that allowance with the
+computed local-volume schedule, giving one T reserve plus the sharp repeated
+axis-volume fast term for both actual second-interior budgets. Selected gap and
+call-count premises are discharged internally. Guarded check: 3434.6 MiB.
+Next instantiate the concrete cyclic profiles and SameLayout witnesses, then
+bound native-bank erasure and publication/normalization. Full S4 and execution-
+wide peak space remain open. No push.
+
+Native erasure already has a generated-bank bound in the first-pass postcondition.
+`releaseReplicaInteriorBankCost_eq_native` identifies the second-interior eraser
+with that existing coupling-native eraser under arbitrary placement.
+`releaseReplicaInteriorBankCost_eq_of_disposable_frame` transports its charge
+through recovery using only disposable ports; payload tapes 93 and 110 may
+change. `releaseReplicaInteriorBankCost_le_of_generated` reuses the generated
+word-stock estimate without tape enumeration. Guarded check passes at
+3273.5 MiB. The actual cyclic recovery cursor still must supply the disposable
+frame from the first-pass poststate to the second-interior state; broad retained
+readiness alone does not bound every disposable port. Next prove that frame
+and retain the cleanup certificate in the executed endpoint. Publication and
+full S4/peak-space gates remain open. No push.
+
+`CyclicRecoveryCouplingCursor.disposable_left_frame` and `.disposable_right_frame`
+now prove that the actual row cursor preserves every disposable native port.
+`.cleanup_costs` transfers both second-interior erasure charges unchanged from
+its initial state. `prepareRetainedReplicaRecoveryState_disposable_frame` also
+covers actual mask preparation/RHS reversal using placement injectivity; no
+per-tape enumeration is used. Guarded check passes at 3271.8 MiB.
+Next connect preparation/projection/extension frames to the first-pass generated
+poststate, retain its existing cleanup bound at the executed endpoint, and
+compose erasure with second-interior/publication costs. Full S4 and peak-space
+acceptance remain open. No push.
+
+The actual `executedCyclicReplicaRecovery_spec` now exposes both generated
+native-cleanup bounds at its returned state. The proof reuses the complete
+cursor input-frame, actual exported coupling-bank equalities, stack-extension
+frames and first-pass postcondition cleanup bounds. The downstream second-
+interior caller accepts these added certificates. Guarded endpoint check passes
+at 3457.1 MiB; full complex-core integration passes (15921 jobs, 3.6 GiB
+aggregate). Actual fitting/second-interior cost integration also passes (16304
+jobs, 15.8 GiB aggregate), and all three audited endpoints use only the three
+standard axioms.
+
+Attempting to inline generated cleanup allowances through every downstream
+complex-core statement exposed a Lean elaboration failure (`unknown free
+variable`). That propagation was reverted; verified cleanup certificates remain
+at the executed recovery endpoint, while downstream costs still show actual
+state-dependent erasure. Next introduce a small named cost allowance instead
+of expanding the larger formula in the complex-core statement, then propagate
+it with these certificates. Full S4/peak-space/input/fallback/final acceptance
+remains open. Collect the verified actual sizing, second-interior schedule and
+cleanup transport as one larger local checkpoint. No push.
