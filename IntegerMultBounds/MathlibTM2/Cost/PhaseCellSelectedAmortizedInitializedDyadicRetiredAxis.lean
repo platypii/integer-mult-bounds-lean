@@ -2,9 +2,10 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedAmortizedDyadicRetiredAxis
 public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellArchiveWidthScopeBudget
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeometryRealGatherFrame
 
 /-! Generate the shared archive-width master once around the complete axis.
-Readiness is stated at the explicit computed setup state; no width word is supplied. -/
+Ordinary readiness is transported across setup by static read-port separation. -/
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Cost
 open Filter IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2.Host
@@ -66,30 +67,34 @@ theorem selectedAmortizedInitializedDyadicRetiredAxis_exec (hR : rpStates ≤ Q)
     ∀ (v : HS T Q (prime+K) U) (S₀ : Stacks T (prime+K))
       (initReplicas initCore initWord initPacket initWidth initSaved initTmp : Fin T),
     [initReplicas,initCore,initWord,initPacket,initWidth,initSaved,initTmp].Nodup →
-    (S₀.R initReplicas).length = Fs.length → (S₀.R initCore).length = n-2*radius →
-    (S₀.R initWord).length = W →
     (∀ r ∈ [initPacket,initWidth,initSaved,initTmp], S₀.R r = []) →
-    let S := archiveWidthState initPacket initWidth Fs.length (n-2*radius) W S₀
+    (∀ r, ports.classProtected g width binary work readerSaved readerTmp r → r ∉ [initPacket,initWidth]) →
+    (∀ r ∈ [count,saved], r ∉ [initPacket,initWidth]) →
     ∀ (borrowed : List (Fin (prime+K+4)))
       (Vg replicasBits D : ℕ)
-      (gather : GeometryRealGatherData (Q := Q) Vg s coreWidth radius n W replicasBits D Fs borrowed S),
+      (gather : GeometryRealGatherData (Q := Q) Vg s coreWidth radius n W replicasBits D Fs borrowed S₀)
+      (initGatherOff : ∀ r, gather.readPort r → r ∉ [initPacket,initWidth]),
     Vg ≤ cG*p → D ≤ cD*p →
     D ≤ 2^replicasBits*2^Nat.clog 2 jobs.length*(n*W) →
     Fs.length ≤ Sizes.T m →
     gather.route (PackedTranspose.extra 1) = ports.archive →
-    ports.ClassReady g width binary work readerSaved readerTmp B p u l target s t W V Fs.length n radius (n-2*radius) S →
-    S.R count = [] → S.R saved = [] →
-    ∀ (e : Fin 117 → Fin T), Function.Injective e → e 109 = origins → e 116 = count →
+    ports.ClassReady g width binary work readerSaved readerTmp B p u l target s t W V Fs.length n radius (n-2*radius) S₀ →
+    S₀.R count = [] → S₀.R saved = [] →
+    ∀ (e : Fin 117 → Fin T), Function.Injective e →
+    (∀ j, e j ∉ [initPacket,initWidth]) → e 109 = origins → e 116 = count →
     s+coreWidth+2*radius < 2^V → n < 2^V → 0 < V →
     (∀ j ∈ [(37 : Fin 117),32,33,34,35,36,104,106,116], e j ≠ ports.archive) →
     (∀ j : Fin 117, j.val < 31 → e j ≠ ports.archive) →
-    (S.R (e 37)).length = V → S.R (e 32) = binSyms V s → S.R (e 33) = binSyms V coreWidth →
-    S.R (e 34) = binSyms V radius → S.R (e 35) = binSyms V n → S.R (e 36) = [] →
-    (∀ j : Fin 117, j.val < 31 → S.R (e j) = []) → S.R (e 104) = [] → S.R (e 106) = [] →
+    (S₀.R (e 37)).length = V → S₀.R (e 32) = binSyms V s → S₀.R (e 33) = binSyms V coreWidth →
+    S₀.R (e 34) = binSyms V radius → S₀.R (e 35) = binSyms V n → S₀.R (e 36) = [] →
+    (∀ j : Fin 117, j.val < 31 → S₀.R (e j) = []) → S₀.R (e 104) = [] → S₀.R (e 106) = [] →
     let proper := gatherPublicationClass s coreWidth radius n
     let hw : 0 < coreWidth := (amortizedCoreWidth_bounds ct p u target
       (by have := _h.thirteen_le_p; omega) htarget).1
     ∀ (pubE : Fin PackedTranspose.tapeCount → Fin T) (hpubE : Function.Injective pubE)
+      (initPubOff : ∀ j, pubE j ∉ [initPacket,initWidth])
+      (initMasters : initReplicas = pubE PackedTranspose.replicaCount ∧
+        initCore = pubE (PackedTranspose.headerReg 86) ∧ initWord = pubE (PackedTranspose.headerReg 87))
       (pubImageOff : ∀ j, pubE j ≠ dst) (bPub VPub : ℕ),
     VPub ≤ cVPub*p → 2^bPub ≤ Sizes.T m →
     let aPub := Nat.clog 2 proper.indices.length
@@ -109,26 +114,27 @@ theorem selectedAmortizedInitializedDyadicRetiredAxis_exec (hR : rpStates ≤ Q)
     ∀ (outputTail : List (Fin (prime+K+4)))
       (pubCount pubSavedCount pubWidth pubArchive pubSaved pubTmp : Fin T),
     [pubCount,pubSavedCount,pubWidth,dst,pubArchive,pubE (PackedTranspose.extra 1),pubSaved,pubTmp].Nodup →
-    (S.R pubCount).length = proper.indices.length →
+    pubCount = pubE PackedTranspose.realRows →
     pubWidth = initWidth →
-    (∀ r ∈ [pubSavedCount,pubArchive,pubSaved,pubTmp], S.R r = []) →
-    S.R (pubE (PackedTranspose.extra 1)) = [] →
-    PackedTranspose.PublicationKernelReady pubE pad tmpPub savedPub VPub S →
+    (∀ r ∈ [pubSavedCount,pubArchive,pubSaved,pubTmp], S₀.R r = []) →
+    (∀ r ∈ [pubSavedCount,pubArchive,pubSaved,pubTmp], r ∉ [initPacket,initWidth]) →
+    S₀.R (pubE (PackedTranspose.extra 1)) = [] →
+    PackedTranspose.PublicationKernelReady pubE pad tmpPub savedPub VPub S₀ →
     (∀ r ∈ [pad,tmpPub,savedPub], r ∉ PackedTranspose.generatedPublicationHeaderRegisters) →
-    (S.R (pubE PackedTranspose.replicaCount)).length = 2^bPub →
-    (S.R (pubE PackedTranspose.realRows)).length = proper.indices.length →
-    (S.R (pubE (PackedTranspose.headerReg 86))).length = proper.length →
-    (S.R (pubE (PackedTranspose.headerReg 87))).length = W →
-    (∀ i ∈ [(84 : Fin 117),85,81,51,82,53,54,55,56,57,97,98,102,40,41,42,43,44,45], S.R (pubE (PackedTranspose.headerReg i)) = []) →
+    (S₀.R (pubE PackedTranspose.replicaCount)).length = 2^bPub →
+    (S₀.R (pubE PackedTranspose.realRows)).length = proper.indices.length →
+    (S₀.R (pubE (PackedTranspose.headerReg 86))).length = proper.length →
+    (S₀.R (pubE (PackedTranspose.headerReg 87))).length = W →
+    (∀ i ∈ [(84 : Fin 117),85,81,51,82,53,54,55,56,57,97,98,102,40,41,42,43,44,45], S₀.R (pubE (PackedTranspose.headerReg i)) = []) →
     pub.count = PackedTranspose.headerReg 88 →
     pub.advances = PackedTranspose.headerReg 91 →
     [PackedTranspose.realRows,PackedTranspose.headerReg 86,PackedTranspose.headerReg 87,PackedTranspose.headerReg 90,pub.count,pub.advances, pub.savedAdvances,pub.savedControl,pub.tmp].Nodup →
     (∀ r ∈ pub.sweepSupport++[PackedTranspose.extra 1,pubDst,lineRows], r ≠ PackedTranspose.headerReg 90) →
     (∀ r ∈ [pad,tmpPub,savedPub], r ∉ [PackedTranspose.headerReg 88,PackedTranspose.headerReg 91,PackedTranspose.headerReg 90]) →
-    (∀ r ∈ pub.uniformSetupHeaders (PackedTranspose.headerReg 90), S.R (pubE r) = []) →
-    (∀ r ∈ [pub.savedControl,pub.savedAdvances,pub.counter,pub.zero,pub.acc,pub.control, pub.trash,pub.tmp,pub.retireCount,pub.gap], S.R (pubE r) = []) →
-    S.R (pubE pubDst) = (List.ofFn ambient).flatten++outputTail →
-    clock = PackedTranspose.headerReg 54 → (S.R (pubE lineRows)).length = s →
+    (∀ r ∈ pub.uniformSetupHeaders (PackedTranspose.headerReg 90), S₀.R (pubE r) = []) →
+    (∀ r ∈ [pub.savedControl,pub.savedAdvances,pub.counter,pub.zero,pub.acc,pub.control, pub.trash,pub.tmp,pub.retireCount,pub.gap], S₀.R (pubE r) = []) →
+    S₀.R (pubE pubDst) = (List.ofFn ambient).flatten++outputTail →
+    clock = PackedTranspose.headerReg 54 → (S₀.R (pubE lineRows)).length = s →
     ∀ (se : Fin Ts → Fin T) (hse : Function.Injective se)
       (input : FullLineInputPlan Ts) (producer : PackedProducerPlan Ts Q)
       (compatible : input.Compatible producer) (crops : SeamCropPlan Ts producer.result) (recovery : Bool),
@@ -143,10 +149,12 @@ theorem selectedAmortizedInitializedDyadicRetiredAxis_exec (hR : rpStates ≤ Q)
         (fun j => ((1/2 : ℂ)*value p (F j)).im))
       (hJseam : J ∘L PhaseCellOperator.exact s t (Real.sqrt (u : ℝ)) = 1)
       (seamReady : SeamReady input producer crops p u l target t coreWidth Fs
-        (boundaryCropSchedule s coreWidth) (embStk se S))
+        (boundaryCropSchedule s coreWidth) (embStk se S₀))
+      (initSeamOff : ∀ r, seamReadPort input producer crops (boundaryCropSchedule s coreWidth) r → se r ∉ [initPacket,initWidth])
       (seamOff : ∀ r, seamReadPort input producer crops (boundaryCropSchedule s coreWidth) r →
         se r ≠ dst ∧ se r ≠ (pubE pubDst))
       (be : Fin 117 → Fin T) (hbe : Function.Injective be)
+      (initBoundaryOff : ∀ j, be j ∉ [initPacket,initWidth])
       (hsourcePort : be 95 = se crops.dst) (houtputPort : be 96 = (pubE pubDst))
       (boundaryOff : ∀ j, be j ≠ dst) (DB : ℕ) (hvolumeFit : s*W < 2^DB) (hDB : DB ≤ cDB*p)
       (cropCount : Fin 3 → Fin 117)
@@ -154,9 +162,8 @@ theorem selectedAmortizedInitializedDyadicRetiredAxis_exec (hR : rpStates ≤ Q)
       (seedValue : Fin 117 → ℕ)
       (hvalues : ∀ j, seedValue (boundarySeedGlobals j) = ![s,coreWidth,W] j)
       (hseedFit : ∀ j, seedValue (boundarySeedGlobals j) < 2^DB)
-      (boundaryReady : BoundarySeamReady (s := s) p coreWidth W DB Fs.length cropCount seedValue (embStk be S))
-      (retireOff : ∀ r ∈ [pubCount,pubWidth,pubSavedCount,pubArchive,pubTmp], r ≠ pubE pubDst)
-      (initOutputOff : pubE pubDst ∉ [initPacket,initWidth]),
+      (boundaryReady : BoundarySeamReady (s := s) p coreWidth W DB Fs.length cropCount seedValue (embStk be S₀))
+      (retireOff : ∀ r ∈ [pubCount,pubWidth,pubSavedCount,pubArchive,pubTmp], r ≠ pubE pubDst),
     let C := closedGridPush (U := U) (A := (prime+K)) producer recovery
     let seamStock := (((C+1)*((1312000+756)*(1032+8*ct)+504)+1440)*(Fs.length*s*p)+2*(C+1)*Sizes.T m+86)+
       13*(boundaryPublicationTrafficFactor cDB*(Fs.length*(s*W)))
@@ -205,19 +212,75 @@ theorem selectedAmortizedInitializedDyadicRetiredAxis_exec (hR : rpStates ≤ Q)
     u target W V α d axis hu htarget htargetLower hB hl htargetMax hbandMax
     Fs hF hW hWin hWmax hVmax hfit qRef Y hqRef hY J hJ
     v S₀ initReplicas initCore initWord initPacket initWidth initSaved initTmp
-    hinitReg hinitReplicas hinitCore hinitWord hinitBlank borrowed Vg replicasBits D gather hVg hD hrouteFit hreplicaVolume harchive ready hcountBlank hsaved
-    e he h109 h116 hwide hnfit hV hmetaOff htableOff h37 hs hcw hr hnSrc hz hblank h104 h106
-  intro pubE hpubE pubImageOff bPub VPub hVPub hpubVolume hbitsPub hfitPub exponent packet pad tmpPub savedPub
+    hinitReg hinitBlank initClassOff initCounterOff borrowed Vg replicasBits D gather initGatherOff hVg hD hrouteFit hreplicaVolume harchive ready hcountBlank hsaved
+    e he initOriginOff h109 h116 hwide hnfit hV hmetaOff htableOff h37 hs hcw hr hnSrc hz hblank h104 h106
+  intro pubE hpubE initPubOff initMasters pubImageOff bPub VPub hVPub hpubVolume hbitsPub hfitPub exponent packet pad tmpPub savedPub
     hExponent hPacket hpadReg hreplicas pubDst pub clock lineRows hports hpubOff hwindow hpadding hwordPort ambient hambient outputTail
-    pubCount pubSavedCount pubWidth pubArchive pubSaved pubTmp hcopy hpubCount hpubWidth hcopyFresh hsourceBlank
+    pubCount pubSavedCount pubWidth pubArchive pubSaved pubTmp hcopy hpubCount hpubWidth hcopyFresh initCopyOff hsourceBlank
     headerReady hpadOff hsourceA hsourceB hsourceC hword hheaderBlank hcountPort hadvancePort hsetupReg hstrideOff hpadSetupOff hsetupBlank hfresh hpubDst hclock hline
   intro se hse input producer compatible crops recovery huSeam hwidthSeam hgapSeam hbudgetSeam
-    hbandSeam hpadSeam Xseam Yseam hXseam hYseam hJseam seamReady seamOff
-    be hbe hsourcePort houtputPort boundaryOff DB hvolumeFit hDB cropCount hcropReg seedValue hvalues hseedFit boundaryReady
-  intro retireOff initOutputOff
+    hbandSeam hpadSeam Xseam Yseam hXseam hYseam hJseam seamReady initSeamOff seamOff
+    be hbe initBoundaryOff hsourcePort houtputPort boundaryOff DB hvolumeFit hDB cropCount hcropReg seedValue hvalues hseedFit boundaryReady
+  intro retireOff
+  have initOutputOff := initPubOff pubDst
   let S := archiveWidthState initPacket initWidth Fs.length
     ((amortizedCoreWidth ct (Sizes.p m)+2*(localityDepth (Sizes.p m) target*PhaseCellBand.width (Sizes.p m) u))-
       2*(localityDepth (Sizes.p m) target*PhaseCellBand.width (Sizes.p m) u)) W S₀
+  let proper := gatherPublicationClass (Sizes.s m i) (amortizedCoreWidth ct (Sizes.p m))
+    (localityDepth (Sizes.p m) target*PhaseCellBand.width (Sizes.p m) u)
+    (amortizedCoreWidth ct (Sizes.p m)+2*(localityDepth (Sizes.p m) target*PhaseCellBand.width (Sizes.p m) u))
+  have hread (r : Fin T) (hr : r ∉ [initPacket,initWidth]) : S.R r = S₀.R r := by
+    simp only [List.mem_cons,List.not_mem_nil,or_false,not_or] at hr
+    simp only [S,archiveWidthState,Function.update_of_ne hr.2,Function.update_of_ne hr.1]
+  let gatherM := gather.of_frame (fun r hr => hread r (initGatherOff r hr)) rfl
+  have ready := ClassReady.frame ports g (F := S) ready rfl (fun r hr => hread r (initClassOff r hr))
+  have hcountBlank := (hread count (initCounterOff _ (by simp))).trans hcountBlank
+  have hsaved := (hread saved (initCounterOff _ (by simp))).trans hsaved
+  have horigin (j : Fin 117) := hread (e j) (initOriginOff j)
+  have h37 : (S.R (e 37)).length = V := by rw [horigin]; exact h37
+  have hs := (horigin 32).trans hs
+  have hcw := (horigin 33).trans hcw
+  have hr := (horigin 34).trans hr
+  have hnSrc := (horigin 35).trans hnSrc
+  have hz := (horigin 36).trans hz
+  have hblank : ∀ j : Fin 117, j.val < 31 → S.R (e j) = [] := by
+    intro j hj; rw [horigin]; exact hblank j hj
+  have h104 := (horigin 104).trans h104
+  have h106 := (horigin 106).trans h106
+  have hpub (j : Fin PackedTranspose.tapeCount) := hread (pubE j) (initPubOff j)
+  have hinitReplicas : (S₀.R initReplicas).length = Fs.length := by
+    rw [initMasters.1]
+    exact hsourceA.trans (by simpa only [List.length_reverse] using hreplicas.symm)
+  have hinitCore : (S₀.R initCore).length = proper.length := by
+    rw [initMasters.2.1]
+    exact hsourceC
+  have hinitWord : (S₀.R initWord).length = W := by
+    rw [initMasters.2.2]
+    exact hword
+  have headerReady := headerReady.of_frame hpadReg (fun j _ => hpub j) (fun j => rfl)
+  have hpubCount : (S.R pubCount).length = proper.indices.length := by
+    rw [hpubCount,hpub]
+    exact hsourceB
+  have hcopyFresh : ∀ r ∈ [pubSavedCount,pubArchive,pubSaved,pubTmp], S.R r = [] := by
+    intro r hr
+    have hoff : r ∉ [initPacket,initWidth] := initCopyOff r hr
+    rw [hread r hoff]; exact hcopyFresh r hr
+  have hsourceBlank := (hpub (PackedTranspose.extra 1)).trans hsourceBlank
+  have hsourceA : (S.R (pubE PackedTranspose.replicaCount)).length = 2^bPub := by rw [hpub]; exact hsourceA
+  have hsourceB : (S.R (pubE PackedTranspose.realRows)).length = proper.indices.length := by rw [hpub]; exact hsourceB
+  have hsourceC : (S.R (pubE (PackedTranspose.headerReg 86))).length = proper.length := by rw [hpub]; exact hsourceC
+  have hword : (S.R (pubE (PackedTranspose.headerReg 87))).length = W := by rw [hpub]; exact hword
+  have hheaderBlank : ∀ j ∈ [(84 : Fin 117),85,81,51,82,53,54,55,56,57,97,98,102,40,41,42,43,44,45],
+      S.R (pubE (PackedTranspose.headerReg j)) = [] := by intro j hj; rw [hpub]; exact hheaderBlank j hj
+  have hsetupBlank : ∀ r ∈ pub.uniformSetupHeaders (PackedTranspose.headerReg 90), S.R (pubE r) = [] := by
+    intro r hr; rw [hpub]; exact hsetupBlank r hr
+  have hfresh : ∀ r ∈ [pub.savedControl,pub.savedAdvances,pub.counter,pub.zero,pub.acc,pub.control,
+      pub.trash,pub.tmp,pub.retireCount,pub.gap], S.R (pubE r) = [] := by intro r hr; rw [hpub]; exact hfresh r hr
+  have hpubDst := (hpub pubDst).trans hpubDst
+  have hline : (S.R (pubE lineRows)).length = Sizes.s m i := by rw [hpub]; exact hline
+  have seamReady := SeamReady.frame (F := embStk se S) seamReady rfl (fun r hr => hread (se r) (initSeamOff r hr))
+  have boundaryReady := BoundarySeamReady.of_frame _ _ _ _ _ _ _ (embStk be S₀) (embStk be S) boundaryReady
+    (fun j _ _ => hread (be j) (initBoundaryOff j))
   have hrowWidth : (S.R pubWidth).length = Fs.reverse.length*
       ((gatherPublicationClass (Sizes.s m i) (amortizedCoreWidth ct (Sizes.p m))
         (localityDepth (Sizes.p m) target*PhaseCellBand.width (Sizes.p m) u)
@@ -230,7 +293,7 @@ theorem selectedAmortizedInitializedDyadicRetiredAxis_exec (hR : rpStates ≤ Q)
       hwireL hwireR hfixed hdst harchiveDst hmastersDst hreg hreader hretained hprotected hcounter hconsume
       u target W V α d axis hu htarget htargetLower hB hl htargetMax hbandMax
       Fs hF hW hWin hWmax hVmax hfit qRef Y hqRef hY J hJ
-      v₁ S borrowed Vg replicasBits D gather hVg hD hrouteFit hreplicaVolume harchive ready hcountBlank hsaved
+      v₁ S borrowed Vg replicasBits D gatherM hVg hD hrouteFit hreplicaVolume harchive ready hcountBlank hsaved
       e he h109 h116 hwide hnfit hV hmetaOff htableOff h37 hs hcw hr hnSrc hz hblank h104 h106
       pubE hpubE pubImageOff bPub VPub hVPub hpubVolume hbitsPub hfitPub exponent packet pad tmpPub savedPub
       hExponent hPacket hpadReg hreplicas pubDst pub clock lineRows hports hpubOff hwindow hpadding hwordPort ambient hambient outputTail

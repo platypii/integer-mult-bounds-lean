@@ -4875,18 +4875,82 @@ at the endpoint. The old axis time bill is retained under a natural floor, with
 an additional `80*Fs.length*s*W` time/space allowance. The floor records the same
 integer execution bound; it introduces no numerical approximation assumption.
 
-Readiness predicates are explicitly at the computed setup state. They still
-need discharge from ordinary layouts; this result does not claim that final
-caller-initialization or fitting acceptance is closed. Next transport/prove
-those readiness predicates from the ordinary input, construct the remaining
-count/boundary initialization, then compare complete fitting bills before
+Readiness predicates now refer to the original input state, not the computed
+setup state. The complete axis transports them itself across the two generated
+words using static read-port separation. `RealGatherExposureData.of_frame` and
+`GeometryRealGatherData.of_frame` rebuild ordinary gather data while preserving
+all physical program fields. Existing callback, publication-kernel, seam and
+boundary frame lemmas transport the other subsystems; metadata and scratch
+facts share one two-register read frame. The actual gather program remains
+definitionally the same. No numerical bank, execution or resource supplier is
+introduced, and no per-register computation is repeated at runtime.
+
+This removes the post-setup-readiness assumption, not the remaining input
+construction gates: ordinary count/boundary headers and concrete layout still
+need construction, and complete fitting bills still need comparison before
 class/shared-exposure and outer/fallback/root acceptance. The new complete-axis
-single-file check passes at 3796.1 MiB. The guarded complete scoped build
-passes (17390 jobs, 3.8 GiB aggregate peak). Scope composition, traffic
-specialization and the actual initialized retired axis report only `propext`,
-`Classical.choice`, and `Quot.sound` in the final combined audit (10023.4 MiB
-for the nonmodule audit).
+single-file check passes at 3810.8 MiB after ordinary-input frame integration.
+The guarded complete scoped build passes (17391 jobs, 3.8 GiB aggregate peak).
+The gather-frame module checks at 3105.0 MiB. Scope composition and traffic specialization passed the earlier standard
+axiom audit. The current exposure-frame, geometry-frame and ordinary-input
+initialized-axis audit reports only `propext`, `Classical.choice`, and
+`Quot.sound` (10022.4 MiB for the combined nonmodule audit).
 Keep this with the larger initialization checkpoint; no push.
+
+**Share the retained dimension masters instead of generating duplicate controls.**
+The initialized complete axis now wires `pubCount` directly to publication's
+retained `realRows` master. Reverse-copy and raw retirement both restore their
+row counters, and the publication frame preserves this master. Its length is
+therefore derived from the existing ordinary `hsourceB`; no independent
+publication-count length assumption remains. A canonical-count scope prototype
+was checked, then removed: direct borrowing needs neither a copy nor cleanup
+nor a new traffic charge. Retaining the origin pass's transient count would
+instead have changed the bulk loop's current restored frame.
+
+The same principle removes three duplicate initialization premises. Replica,
+core and word source ports are wired to the existing publication masters;
+`hsourceA`, `hsourceC`, `hword` and the replica power identity establish the
+width generator's dimensions. Actual width construction and its existing
+80-traffic scope are unchanged. Static port equalities replace duplicated data
+assumptions, and no additional wrapper family is retained. The complete-axis
+check passes at 3809.1 MiB. The common retained row/dimension masters still need
+ordinary initialization, along with boundary headers and concrete layouts;
+this does not close fitting or full S4 acceptance. Keep this with the ordinary
+readiness-frame changes for a larger checkpoint; no push. The complete guarded
+build passes (17391 jobs, 3.8 GiB aggregate peak); the updated gather-frame/axis
+audit reports only the standard three axioms (10024.1 MiB for the combined
+nonmodule audit).
+
+**Construct the boundary control bank from retained scalar words.**
+`BoundarySeamReady.of_header_frame` generalizes the existing allocated-bank
+proof to any injective embedding. Only the active prefix below port 63 must
+start blank; the old allocated `of_loaded_headers` theorem is a direct
+specialization, so its existing callers reuse the same proof. No sixteen-field
+readiness proof is duplicated. `placedBoundaryHeaderLoad_exec_within` runs the
+existing shared `copyWordHeaders` loop for the eleven master words, constructs
+actual `BoundarySeamReady`, and returns the exact loaded ports, outside frame
+and execution-wide stock bound. Masters may share source ports; only their
+separation from destinations and scratch is required.
+
+`boundarySeamHeaderVolume_le_traffic` bounds all eleven actual ordinary words
+using existing ruler/crop/replica length facts, `coreLength ≤ s`, `2*p+13 ≤ W`
+and `D ≤ cD*p`. Mathlib's list-sum bound combines these once. The source-volume
+bill is exactly `6*volume+67`; eventual eleven-word cleanup is `2*volume+23`.
+`placedBoundaryHeaderLoad_exec_within_traffic` consumes the actual loader and
+bounds setup plus computed cleanup, and setup peak, by
+`(300+150*cD)*N*s*W`. Its individual check passes at 3392.4 MiB. Automatic
+implicit variables are disabled in the new loader and budget modules.
+
+This is boundary preparation at component level. The complete axis still
+assumes boundary readiness: next insert the loader directly before boundary
+publication, commute its header frame with the existing numerical archive
+invariant, and clear the owned headers after publication. Generate/share the
+retained scalar masters from ordinary input geometry afterward. Do not extend
+outer wrapper families before closing fitting acceptance. Full S4 remains
+open; no push. The complete checkpoint build passes (17396 jobs, 3.5 GiB
+aggregate peak). Generalized boundary readiness, placed loader, volume and
+execution budgets, and the current initialized axis all pass the standard
+three-axiom audit (10025.5 MiB for the combined nonmodule audit).
 
 **First acceptance target: one complete fitting batch.** From declared original
 complex streams and ordinary scalar headers, execute component production,

@@ -29,35 +29,33 @@ structure BoundarySeamHeaderWords (p width W D N : ℕ) (seedValue : Fin 117 →
 noncomputable section
 open PackedTranspose
 
-theorem BoundarySeamReady.of_loaded_headers (p width W D N : ℕ) (seedValue : Fin 117 → ℕ)
+theorem BoundarySeamReady.of_header_frame (p width W D N : ℕ) (seedValue : Fin 117 → ℕ)
     (words : Fin 11 → List (Fin (A+4))) (hwords : BoundarySeamHeaderWords (s := s) p width W D N seedValue words)
-    (source destination : Fin T) (hne : source ≠ destination) (S F : Stacks (T+tapeCount) A)
-    (hblank : ∀ i, i ≠ 95 → i ≠ 96 → S.R (seamRegister source destination i) = [])
-    (hloaded : ∀ i, F.R (seamRegister source destination (boundarySeamMasterRole i)) = words i)
-    (hframe : ∀ i, (∀ j, seamRegister source destination (boundarySeamMasterRole j) ≠ i) → F.R i = S.R i) :
+    (e : Fin 117 → Fin T) (hinj : Function.Injective e) (S F : Stacks T A)
+    (hblank : ∀ i, i.val < 63 → i ≠ 95 → i ≠ 96 → S.R (e i) = [])
+    (hloaded : ∀ i, F.R (e (boundarySeamMasterRole i)) = words i)
+    (hframe : ∀ i, (∀ j, e (boundarySeamMasterRole j) ≠ i) → F.R i = S.R i) :
     BoundarySeamReady (s := s) p width W D N boundarySeamCropCount seedValue
-      (embStk (seamRegister source destination) F) := by
-  let e := seamRegister source destination
-  have hinj := seamRegister_injective source destination hne
+      (embStk (e) F) := by
   have hget (i : Fin 11) : (embStk e F).R (boundarySeamMasterRole i) = words i := hloaded i
-  have hz (i : Fin 117) (hi : i ∉ List.ofFn boundarySeamMasterRole) (hs : i ≠ 95) (hd : i ≠ 96) :
+  have hz (i : Fin 117) (hi : i ∉ List.ofFn boundarySeamMasterRole) (hs : i ≠ 95) (hd : i ≠ 96) (hsmall : i.val < 63) :
       (embStk e F).R i = [] := by
     change F.R (e i) = []
     rw [hframe]
-    · exact hblank i hs hd
+    · exact hblank i hsmall hs hd
     · intro j he
       exact hi (List.mem_ofFn.mpr ⟨j,hinj he⟩)
   have hzero (i : Fin 117) (hi : i ∈ [(59:Fin 117),26,24,54,19,27,28,29,20,21,22,23]) :
       (embStk e F).R i = [] := by
     have hstatic : ∀ i ∈ [(59:Fin 117),26,24,54,19,27,28,29,20,21,22,23],
-        i ∉ List.ofFn boundarySeamMasterRole ∧ i ≠ 95 ∧ i ≠ 96 := by decide +kernel
-    exact hz i (hstatic i hi).1 (hstatic i hi).2.1 (hstatic i hi).2.2
+        i ∉ List.ofFn boundarySeamMasterRole ∧ i ≠ 95 ∧ i ≠ 96 ∧ i.val < 63 := by decide +kernel
+    exact hz i (hstatic i hi).1 (hstatic i hi).2.1 (hstatic i hi).2.2.1 (hstatic i hi).2.2.2
   refine ⟨?_,?_,hzero 59 (by simp),?_,?_,?_,?_,?_,hzero 27 (by simp),hzero 28 (by simp),
     hzero 29 (by simp),?_,?_,?_,?_,?_⟩
   · intro slot
     have := slot.isLt
     constructor <;> intro h <;> have hv := congrArg Fin.val h <;> simp [boundarySeamCropCount] at hv <;> omega
-  · simpa only [e,show boundarySeamMasterRole 7 = 58 from by decide +kernel] using (congrArg List.length (hget 7)).trans hwords.ruler
+  · simpa only [show boundarySeamMasterRole 7 = 58 from by decide +kernel] using (congrArg List.length (hget 7)).trans hwords.ruler
   · intro j
     have h := hget (boundarySeamSeedMaster j)
     have hrole : boundarySeamMasterRole (boundarySeamSeedMaster j) = boundarySeedGlobals j := by
@@ -69,7 +67,7 @@ theorem BoundarySeamReady.of_loaded_headers (p width W D N : ℕ) (seedValue : F
         i ∉ List.ofFn boundarySeamMasterRole ∧ i ≠ 95 ∧ i ≠ 96 := by decide +kernel
     have h := hstatic (boundaryCounterRegister r) (boundaryCounterRegister_bounds r).1
       (boundaryCounterRegister_bounds r).2
-    exact hz _ h.1 h.2.1 h.2.2
+    exact hz _ h.1 h.2.1 h.2.2 (lt_trans (boundaryCounterRegister_bounds r).2 (by decide))
   · exact ⟨hzero 26 (by simp),hzero 24 (by simp),hzero 54 (by simp),hzero 19 (by simp)⟩
   · intro slot
     have hrole : boundarySeamMasterRole (boundarySeamCropMaster slot) = boundarySeamCropCount slot := by
@@ -78,14 +76,25 @@ theorem BoundarySeamReady.of_loaded_headers (p width W D N : ℕ) (seedValue : F
     exact hwords.crops slot
   · intro i hi hne
     have hstatic : ∀ i ∈ standardSeamPublicationPlan.support,
-        i ∉ List.ofFn boundarySeamMasterRole ∧ i ≠ 95 ∧ i ≠ 96 := by decide +kernel
-    exact hz i (hstatic i hi).1 (hstatic i hi).2.1 (hstatic i hi).2.2
-  · simpa only [e,show boundarySeamMasterRole 2 = 17 from by decide +kernel] using (congrArg List.length (hget 2)).trans hwords.wide
-  · simpa only [e,show boundarySeamMasterRole 3 = 18 from by decide +kernel] using (congrArg List.length (hget 3)).trans hwords.word
-  · simpa only [e,show boundarySeamMasterRole 0 = 15 from by decide +kernel] using (congrArg List.length (hget 0)).trans hwords.clock
-  · simpa only [e,show boundarySeamMasterRole 1 = 16 from by decide +kernel] using (congrArg List.length (hget 1)).trans hwords.line
+        i ∉ List.ofFn boundarySeamMasterRole ∧ i ≠ 95 ∧ i ≠ 96 ∧ i.val < 63 := by decide +kernel
+    exact hz i (hstatic i hi).1 (hstatic i hi).2.1 (hstatic i hi).2.2.1 (hstatic i hi).2.2.2
+  · simpa only [show boundarySeamMasterRole 2 = 17 from by decide +kernel] using (congrArg List.length (hget 2)).trans hwords.wide
+  · simpa only [show boundarySeamMasterRole 3 = 18 from by decide +kernel] using (congrArg List.length (hget 3)).trans hwords.word
+  · simpa only [show boundarySeamMasterRole 0 = 15 from by decide +kernel] using (congrArg List.length (hget 0)).trans hwords.clock
+  · simpa only [show boundarySeamMasterRole 1 = 16 from by decide +kernel] using (congrArg List.length (hget 1)).trans hwords.line
   · intro i hi
     exact hzero i (by simp only [List.mem_cons,List.not_mem_nil,or_false] at hi ⊢; tauto)
+
+theorem BoundarySeamReady.of_loaded_headers (p width W D N : ℕ) (seedValue : Fin 117 → ℕ)
+    (words : Fin 11 → List (Fin (A+4))) (hwords : BoundarySeamHeaderWords (s := s) p width W D N seedValue words)
+    (source destination : Fin T) (hne : source ≠ destination) (S F : Stacks (T+tapeCount) A)
+    (hblank : ∀ i, i ≠ 95 → i ≠ 96 → S.R (seamRegister source destination i) = [])
+    (hloaded : ∀ i, F.R (seamRegister source destination (boundarySeamMasterRole i)) = words i)
+    (hframe : ∀ i, (∀ j, seamRegister source destination (boundarySeamMasterRole j) ≠ i) → F.R i = S.R i) :
+    BoundarySeamReady (s := s) p width W D N boundarySeamCropCount seedValue
+      (embStk (seamRegister source destination) F) := by
+  exact BoundarySeamReady.of_header_frame p width W D N seedValue words hwords
+    (seamRegister source destination) (seamRegister_injective source destination hne) S F (fun i _ hs hd => hblank i hs hd) hloaded hframe
 
 theorem boundarySeamMasterLoad_ready_exec {Q : ℕ} {P U : Type}
     (body : P → Pr P (T+tapeCount) Q A U)
