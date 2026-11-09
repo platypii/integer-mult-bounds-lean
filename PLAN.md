@@ -4018,6 +4018,59 @@ control overhead, then connect original-archive exposure and outer routing.
 The uniform fast-time bound and this actual scan are not yet combined into one
 acceptance theorem. Full S4 remains open; no push.
 
+**Scan-control time and existential execution witnesses accounted.**
+`selectedGeneratedCyclicScan_time_le` now consumes per-job existential seed,
+factor and second-interior witnesses in the exact form returned by the scan
+certificate. It selects those witnesses only for actual core-gather members,
+uses arbitrary fallbacks off the job list, and applies the existing generated
+class-time theorem. The scan's `5*length+4` overhead is absorbed into one extra
+`T` using core-gather count and the selected axis polynomial. The resulting
+shared coefficient is `8*b+3`, with the same fast exponent and numerical
+coefficient. The guarded check peaks at 3563.4 MiB; scan/time integration passes
+(16695 jobs, 3.6 GiB aggregate). This comparison consumes certificates; it does
+not itself execute the scan. Next specialize `selectedGeneratedCyclicScan_exec`
+to `(coreGatherIndices ...).attach` so origin-validity proofs exist for every
+job in the scan's type; project the returned certificates back to core indices
+and apply this time comparison. Do not require origin validity for arbitrary
+natural indices outside the actual class. Original-archive exposure, outer
+routing/fallback and full S4 acceptance remain open. No push.
+
+**Actual core-gather scan specialization checked.**
+`selectedCoreGatherCyclicScan_exec` runs the fixed program on exactly
+`(coreGatherIndices s coreWidth radius n).attach`. `coreGatherOrigin_lt` reuses
+`List.mem_filter` and `coreStart_lt_of_mem`; fitting endpoints and core lengths
+come directly from `coreGatherIndices_spec`. Origin validity and fitting geometry
+are therefore derived, not new caller premises. The actual binary-origin and
+packed-payload queues, certified output, exact restoration, fixed-cost sum and
+shared `45*T` trace are preserved. Output certificates are also projected onto
+the original natural core indices using mathlib's `attach_map_subtype_val` and
+`forall₂_map_left_iff`; attached numerical witnesses remain available.
+The final guarded check peaks at 3564.2 MiB. Next translate the attached fixed
+cost sum and witnesses to the natural-index time comparison, producing one
+actual core-gather execution with uniform fast time and selected space. The
+time comparison and this execution still need that final combination; do not
+claim full fitting acceptance from specialization alone. Full S4 remains open.
+
+**Combined actual fitting-class correctness/time/space checkpoint.**
+`selectedAttachedCyclicScan_time_le` transfers the existing comparison through
+`List.attach`, extending mathematical families only off the actual job list
+and handling the empty class explicitly. `selectedFittingCyclicClass_exec`
+now combines the actual core-gather scan and its returned numerical witnesses
+with that comparison. One execution returns certified output for the original
+core indices, the uniform `p^(129/128)` fast-time envelope (shared coefficient
+`8*b+3`), and the selected linear-replica plus `45*T` space trace. It retains
+the exact queue/output frame and the actual fixed-cost ledger. No numerical
+execution, seed-bank readiness or resource supplier is an input. Explicit
+layout, geometry, binary-room, widths, ordinary header readiness and packed
+class-queue assumptions remain.
+The guarded attached-time check peaks at 3562.4 MiB; the combined class check
+peaks at 3577.9 MiB. Integration passes (16698 jobs, 3.6 GiB aggregate). This
+closes the same-execution fitting-class gate from declared class queues; it
+does not produce those queues from the shared original archive. Next connect
+the existing shared exposure producer and pay its actual axis/class frequency,
+then outer routing, seam/full fallback, tensor/locality and root/compiler S4
+acceptance. Full S4 remains open; no push.
+
 **First acceptance target: one complete fitting batch.** From declared original
 complex streams and ordinary scalar headers, execute component production,
 prepare numerical data, reuse it across the batch, publish certified complex
