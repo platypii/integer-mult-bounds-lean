@@ -41282,6 +41282,35 @@ through scaled setup and the cyclic factory, then join export and Schur batch.
 Collect the checked consumer-export and factor-primitive work into one larger
 local resource checkpoint; exclude periodic WIP and do not push.
 
+### S4 the factor-row scan shares one arithmetic reserve
+
+RsbHolds.size_le_of_bank extends the frame language to aggregate conservation
+over an arbitrary injective finite bank of changed roles. Individual roles may
+grow; only their combined word length must not grow. All other roles and host
+spectators are framed. The proof reuses mn_replace_bank_size and does not require
+enumeration or a Fintype instance for the full role language.
+
+PhaseCellBandFactorRowsStock proves band_facRows_runs_within using the existing
+stock-aware repeated scan and band_facRow_runs_within. The five changing roles
+are the input window, reciprocal table, pivot-row table, multiplier archive and
+updated-row archive. Constant list-length profiles for original and updated rows
+prove aggregate non-growth at each iteration. The entire B-row traversal keeps
+one row's numerical/linear reserve, without a B multiplier on workspace.
+The numerical hypotheses and exact output valuation match the original theorem.
+
+The Newton/row-scan integration passes (9531 jobs; 2.6 GiB combined peak).
+Guarded checks pass: generic frame/bank language 1912.4 MiB, Newton stock
+1940.4 MiB, complete row scan 2119.3 MiB. The row-scan and aggregate-frame axiom
+audit reports only propext, Classical.choice and Quot.sound (6950.2 MiB temporary
+audit peak, not a production module). Default proof limits are preserved.
+
+Next compose the complete window step with Newton and this row scan, then the
+outer factor loop and native organization/transpose. The outer loop may grow
+retained factor archives: charge that growth explicitly rather than apply the
+inner non-growth scan premise without proof. The full factor factory, prefix
+resources and remaining S4 gates remain open. Keep these changes uncommitted for
+a larger window/axis resource checkpoint; no push, periodic WIP untouched.
+
 Next instantiate countedLoop at released gather clock 122. Use an arbitrary
 list of matching boundary/original-RHS pairs, with a completed/remaining split.
 Keep two input queues and two reverse completed archives explicit. Clock writes
@@ -42506,3 +42535,103 @@ ExecWithin trace and lift it beside spectators, then join solved recovery and
 the checked second passes. Release-time scratch accounting and uniform
 asymptotic time/space estimates remain open, as do the other full S4 gates.
 Periodic WIP remains untouched.
+
+### S4 complete factor window retains the shared numerical reserves
+
+PhaseCellBandFactorStepStock proves band_facStep_runs_within with the original
+window-step hypotheses, exact output valuation and time bill. It composes the
+checked Newton and factor-row scan contracts; only native tape bookkeeping uses
+a push-bound times its linear traffic bill. The resulting reserve is
+1000*(B+1)^2*(w+1), plus one Newton-step arithmetic reserve and the two row
+arithmetic reserves. Neither the Newton iteration count K nor the B-row count
+multiplies the numerical reserve. The active-window traffic includes the
+replicated pivot table and is allowed quadratic dependence on B.
+
+The module passes its guarded check at 2187.7 MiB. Its integration build passes
+(9532 jobs; 2.8 GiB combined peak). Scalar budget arithmetic is isolated with
+explicit polynomial nonnegativity facts, avoiding an unrestricted arithmetic
+search through the full machine-state context. No proof limits were raised.
+
+Next: a structural scan rule that permits explicitly bounded retained growth,
+then apply it to band_facLoop_runs. Do not multiply the entire window workspace
+by the outer step count. Organization/transpose, the scaled factor factory and
+whole-prefix resource composition still need their resource contracts. Full S4
+remains open. Keep these edits with the larger factor-axis checkpoint; no push.
+
+The completed window theorem axiom audit passes with only propext,
+Classical.choice and Quot.sound (6952.7 MiB temporary audit peak). Whitespace
+and source-integrity scans pass. All verification handles are terminal.
+
+### S4 outer factor scan charges retained growth and shares one window reserve
+
+ResampBScanGrowthStock generalizes counted conditional scans and repetitions to
+a fixed bound on completed-body growth. The trace cap charges the remaining
+iteration count times that growth plus one transient reserve. Pop/peek and the
+final counter restoration use their existing zero-growth contracts. The old
+ResampBScanStock lemmas now specialize this single implementation at growth zero,
+rather than maintain a second induction. RsbHolds.size_le_of_bank_growth likewise
+extends the finite changed-bank balance; its existing non-growing theorem is
+now the zero-growth specialization.
+
+PhaseCellBandFactorLoopStock proves band_facLoop_runs_within with the original
+numerical hypotheses and exact archive valuation. Fixed window shape and list
+length profiles establish that each step consumes (2*B+1)*w input words, keeps
+(2*B+1)*w pivot-row words, w reciprocal words and B*w multiplier words. Net
+retained growth is (B+1)*w. The complete s-step axis factor scan therefore uses
+s*(B+1)*w plus one checked window reserve. No numerical reserve is multiplied
+by s or by the Newton iteration count.
+
+The integration build passes (9534 jobs; 4.3 GiB combined peak). Guarded checks:
+growth scan 1942.8 MiB, zero-growth specializations 1915.7 MiB, frame/bank balance
+1912.9 MiB, outer factor loop 2146.3 MiB. The loop and growth-scan axiom audit
+reports only propext, Classical.choice and Quot.sound (6953.2 MiB temporary audit
+peak). Source-integrity and whitespace scans pass under default proof limits.
+All verification handles are terminal.
+
+Next join the factor scan with per-axis setup and native organization/transpose,
+then lift through allocated/scaled setup into the actual factor factory and
+consumer batch. Transpose runtime is quadratic in active window width per step;
+retain a shared transient window reserve rather than multiply that reserve by
+axis length. Whole-prefix uniform resources and the broader S4 input/fallback/
+tensor/root gates remain open. Collect the factor-axis work in one larger local
+checkpoint; do not push, and exclude unrelated periodic WIP.
+
+### S4 complete per-axis factor preparation retains workspace
+
+BandTransposeStock proves native push bounds for the structural transpose block
+and window step. band_tLoop_runs_within combines the original exact transpose
+semantics with the non-growing scan rule: shrinking pivot-row input pays for
+the backward-column archive, and the fixed-size window shares one native
+window reserve (2*bandTStepCost), independent of axis length.
+band_axisTr_runs_within retains this bound through zero-growth window release
+and length-independent archive moves. The reusable RsbRuns.within_moveR rule
+transports the existing moveR_within guarantee instead of charging archive size.
+
+BandAxisOrganizationStock supplies the structural two-push native certificate
+and lifts the original organization contract using its linear archive/window
+traffic bill. PhaseCellBandAxisFactorStock joins initial-window transfer, the
+checked numerical factor loop, and zero-growth final-window release.
+PhaseCellBandAxisPrepStock composes all three original axis phases with the
+exact original outputs and time bill. bandAxisPrepWorkspace names the retained
+allowance: factor archive growth plus one window numerical reserve, linear
+organization traffic, and one transpose-window reserve. The numerical and
+transpose reserves are never multiplied by axis length.
+
+Per-axis integration passes (9538 jobs; 2.7 GiB combined peak). Final guarded
+checks: transpose 1985.3 MiB, organization 1917.0 MiB, axis factor 2081.5 MiB,
+complete preparation 2106.5 MiB. The preparation/transpose axiom audit reports
+only propext, Classical.choice and Quot.sound (6952.1 MiB temporary audit peak).
+No proof limits were changed. Source-integrity and whitespace scans pass.
+
+Next specialize band_axisPrep_runs_within at the allocated boundary format,
+using actual arithmetic push counts, then preserve its trace through prepared
+and scaled setup into the factor factory and consumer batch. This closes the
+generic factor-axis resource kernel, not the complete factory/prefix or full S4.
+Collect the entire checked factor-axis kernel as one larger local commit,
+exclude periodic WIP, and do not push.
+
+The accepted-complex-core integration also passes (15916 jobs; 15.5 GiB
+combined peak across the guarded build). This validates the shared scan
+refactor against the existing accepted-core proof; the new factor-axis resource
+contract still needs the allocated/scaled factory composition above. All
+verification handles are terminal. No push.
