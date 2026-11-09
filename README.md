@@ -29,64 +29,95 @@ is more than `2^46` times the historical M2 saving `2^-66`, as an exponent impro
 This completed proof is the primary route. The [retention audit](docs/proof-retention.md)
 lists its dependencies and legacy removal candidates; the retired native controller is preserved in Git history.
 
-The next routing construction has completed R1 and R2: a concrete selective-update
-program with exact repair on every address, fully priced metadata setup, keying,
-routing, classification, sorting and cleanup, and restored borrowed registers.
-R3 now compiles framed physical source coordinates and activity into all eleven
-repair source profiles, composing classifiers, widths, headers, exact repair,
-placement and cleanup with restored borrowed tapes. This composition now accepts
-any geometry satisfying explicit guards and density bounds, allowing reservoir
-spacing. Complete directional destination maps now compose bulk and terminal
-rank permutations, with exact shear semantics and restored surrounding bits.
+The next routing construction has completed R1 and R2: 
+ - a concrete selective-update program with exact repair on every address,
+ - fully priced metadata setup,
+ - keying,
+ - routing,
+ - classification,
+ - sorting and cleanup,
+ - and restored borrowed registers.
+
+R3 now compiles 
+ - framed physical source coordinates and
+ - activity into all eleven repair source profiles,
+ - composing classifiers,
+ - widths,
+ - headers,
+ - exact repair,
+ - placement and
+ - cleanup with restored borrowed tapes.
+
+This composition now accepts any geometry satisfying explicit guards and density 
+bounds, allowing reservoir spacing. Complete directional destination maps now 
+compose bulk and terminal rank permutations, with exact shear semantics and restored 
+surrounding bits.
+
 A fixed-register schedule now executes repeated exact-repair calls from supplied
 raw configuration, including loading, cleanup and full input rewind. The full
 generated/placed price is proved independent of record order, and one complete
 generated/placed call now executes from a framed input bank with loading and
-erasure charged, using one fixed program across geometries. Repeated generated/placed
-calls now share one fixed bank and program, with composed rank semantics, summed
-prices and full input rewind. Matching-entry scanning now derives physical sources
-and activity with complete input restoration; a live residue filter gathers
-entries from a common table. Exact profile ordering and gathered-table cleanup
-now compose with full-table prefix extraction into one restoring input producer,
-with a uniform polynomial setup bound shared by every residue. These matching-produced
-calls now execute repeatedly on one fixed bank, with composed rank semantics,
-summed setup/repair/framing costs and full metadata rewind. A physical matching
+erasure charged, using one fixed program across geometries. 
+
+Repeated generated/placed calls now share one fixed bank and program, with composed 
+rank semantics, summed prices and full input rewind. Matching-entry scanning now 
+derives physical sources and activity with complete input restoration; a live residue 
+filter gathers entries from a common table. Exact profile ordering and gathered-table 
+cleanup now compose with full-table prefix extraction into one restoring input producer,
+with a uniform polynomial setup bound shared by every residue. 
+
+These matching-produced calls now execute repeatedly on one fixed bank, with composed 
+rank semantics, summed setup/repair/framing costs and full metadata rewind. A physical matching
 that fixes the chosen reservoir now yields its complete local middle-field table
 by executed placement, lookup, offset arithmetic and live counter enumeration;
 all temporary inputs are erased and every other tape is restored. Reservoir-class
 tables now also come from executed interval comparisons and a restoring scan of
-the original matching table. Both producers compose into one program that
-erases the intermediate class table. One complete generated/placed repair now
-executes from the original matching on a concrete shared-table bank, erasing
-the generated local table afterward. Such calls now repeat on one framed bank
+the original matching table.
+
+Both producers compose into one program that erases the intermediate class table. 
+One complete generated/placed repair now executes from the original matching on a 
+concrete shared-table bank, erasing the generated local table afterward. Such calls now repeat on one framed bank
 for a fixed matching, reservoir class and direction, with all setup, cleanup
-and final input rewind charged. Canonical raw and live input banks are constructed from dimensions and
+and final input rewind charged. 
+
+Canonical raw and live input banks are constructed from dimensions and
 records. Complete generated/placed inputs now follow from arithmetic bounds
 and records, with one common generated program across configurations. Explicit
 logarithmic router parameters now discharge all stage arithmetic and metadata
-symbol bounds. A concrete bulk scheduler executes any residue list for a fixed
+symbol bounds. 
+
+A concrete bulk scheduler executes any residue list for a fixed
 matching class and direction, restores its surrounding bank, and charges framing,
 repair, cleanup and input rewind. Its output permutation now has the exact
 physical bulk-shear action, with source separation and all residue compositions
-proved in common coordinates. The physical terminal suffix now also executes
+proved in common coordinates. 
+
+The physical terminal suffix now also executes
 on a fixed bank, including counter generation, compilation and cleanup, with
 exact shear semantics and a logarithmic instruction count; it currently requires
 records at least as wide as their addresses. Terminal and bulk execution now compose on one common framed bank, with a
-complete physical directional class shear and summed costs. Three directional
+complete physical directional class shear and summed costs. 
+
+Three directional
 rank permutations now implement each physical matching class; all three classes
 compose to the original coordinate involution and preserve outer record rows.
 This is rank semantics. A concrete directional call now installs terminal metadata
 and bulk input, executes both phases and erases its workspace with all costs
-charged. Three successive calls now execute a complete matching class with
+charged. 
+
+Three successive calls now execute a complete matching class with
 its exact class permutation and a reusable final bank. All three classes now
 execute as a nine-direction schedule with the original matching permutation,
-charged reloads and a reusable final bank. Intermediate records are now constructed
+charged reloads and a reusable final bank. 
+
+Intermediate records are now constructed
 automatically, and a charged final rewind restores every tape except the record
 stream. Two matching executions now implement an arbitrary coordinate permutation
 in eighteen directions, with all routing and final rewind charged and every
 other tape restored. The concrete outer input frame is still supplied;
 executed decomposition/table and frame generation, uniform pricing and
 amortization/fallback remain open.
+
 The complete router and multiplication integration remain in R3–R4; this work
 does not yet change the multiplication saving. See [the active plan](PLAN.md) and
 [the R2 audit](IntegerMultBounds/MathlibTM2/Routing/R2-AUDIT.md).
