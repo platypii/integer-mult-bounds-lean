@@ -3922,9 +3922,23 @@ The uniform halo/table comparison now compiles: complete Schur columns fit
 stated selected width/geometry conditions. The selected numerical allowance
 now composes fully to linear replica storage plus `39*T`. Factor seed/page
 preparation also has a trace, composed through the factored numerical caller.
-Next include ordinary component/header input production and retirement in the
-complete fitting callback, discharge its actual selected-profile premises,
-and connect the whole selected bound to that same execution. Do not expand further wrapper families before this pilot passes.
+Ordinary component/header production now has a native space trace. The fitting
+caller composes it with factor preparation and numerical execution; bank export
+and retirement reuse that allowance without growth. The origin callback also
+composes the binary origin reader and final seed retirement into the same
+execution-wide trace. The guarded integration build through the origin caller
+passes (16571 jobs, 3.6 GiB aggregate); individual fitting/origin checks peak at
+3564.9/3570.3 MiB. These structural traces still charge actual setup costs.
+The actual numerical profile premises are now discharged by physical format
+reuse: `CyclicSecondInteriorProfile.numerical_bounds` transfers the retained
+word-width bounds to both second passes, and
+`selectedExecutedCyclicComplexCoreWorkspace_le` instantiates the complete
+numerical allowance on the actual axis-created problems. It derives all four
+target/RHS profiles, widths, band and normalization bounds. The origin callback
+preserves its actual second-interior profile witness. The numerical module
+checks at 3545.4 MiB; combined numerical/origin integration passes (16631 jobs,
+8.6 GiB aggregate). Next absorb ordinary input and factor setup costs and
+connect the whole selected bound to that same execution. Do not expand further wrapper families before this pilot passes.
 Use this acceptance checkpoint, rather than appended implementation history,
 as the current progress reference. After the pilot, actual class scan/shared
 exposure, setup multiplicity, seam/full fallback, tensor/locality composition

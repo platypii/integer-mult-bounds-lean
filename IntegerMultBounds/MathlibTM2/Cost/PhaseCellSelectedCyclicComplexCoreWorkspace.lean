@@ -4,6 +4,7 @@ public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedCyclicNormaliza
 public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedPackedCyclicWorkspace
 public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellCyclicCorePublicationWorkspace
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellExecutedCyclicComplexCore
+public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedCyclicReplicaSizing
 
 /-! Reprice the actual numerical tail, retaining the recovery allowance verbatim.
 This isolates the remaining selected-space comparison at the recovery boundary. -/
@@ -113,5 +114,56 @@ theorem selectedCyclicComplexCoreWorkspace_total_le (hR : rpStates ≤ Q) (hQ : 
     (packedCyclicWorkspaceTrafficFactor (A := A) (U := U) hR hQ ct ce+
       (3*(32*cw+1800)+5200)*(cW+1))*replicas*t*p+39*Sizes.T m
   nlinarith only [hpacked,htail,hlinear]
+
+/-- Apply the numerical allowance to the actual executed cyclic problems.
+All four target/exponent profiles and format bounds follow from construction. -/
+theorem selectedExecutedCyclicComplexCoreWorkspace_le (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q)
+    (ct cW : ℕ) :
+    let c := 1032+8*ct
+    ∀ᶠ m : ℕ in atTop, ∀ (h : Sizes.Big m) (i : Fin (Sizes.d m)) [NeZero (Sizes.s m i)],
+      ∀ (u target a n W complexCount radius core : ℕ) (α d : ℝ),
+      let p := Sizes.p m
+      let s := Sizes.s m i
+      let t := Sizes.t m i
+      let l := haloInverseRingLog s t
+      ∀ (axis : RecoveryAxisBounds s t p u l α d) (ha : a < s) (hn : n ≤ s),
+      u ≤ p → target ≤ ct*p → a+n ≤ s → radius+core ≤ n → W ≤ cW*p → p ≤ W →
+      let N := (cyclicPrincipalBoundary s t (PhaseCellBand.width p u) a n).card
+      let solveTarget := boundaryRecoveryTarget p (target+1)
+      let stage := initialSchurTarget p u (boundaryTableBits p solveTarget 2 N) 2
+      let q := executionPrecision p l stage 2
+      let w := executionWidth p l stage 2
+      ∀ (Fs : List (ZMod s → GaussianInt))
+        (hF : ∀ F ∈ Fs, ∀ k, ‖value q (F k)‖ ≤ (2 : ℝ)^2),
+      let H := axis.cyclicLeftReplicaProblem stage 2 a n ha Fs hF
+      let K := axis.cyclicRightReplicaProblem stage 2 a n hn Fs hF
+      ∀ J L, CyclicSecondInteriorProfile H K J L p solveTarget N → complexCount ≤ Fs.length →
+        cyclicComplexCoreWorkspace (P := Empty) (A := A) (U := U) H K J L hR hQ
+          p u l t a n solveTarget q w W N Fs.length complexCount radius core ≤
+        cyclicComplexWorkspaceTrafficFactor (A := A) (U := U) hR hQ c c cW*Fs.length*t*p+39*Sizes.T m := by
+  dsimp only
+  let c := 1032+8*ct
+  filter_upwards [selectedCyclicComplexCoreWorkspace_total_le (A := A) (U := U) hR hQ c c 17 cW] with m htotal
+  intro h i _ u target a n W complexCount radius core α d axis ha hn hu htarget hfit hcore hW hpW
+  intro Fs hF J L profile hcount
+  have hprofile := selectedCyclicSecondInteriorProfile ct h i axis target a n ha hn hu htarget Fs hF J L profile
+  have hw := (selectedCyclicReplicaSizing ct h i u target a n hu htarget axis.hband).2.2.2.1
+  have hwide : executionWidth (Sizes.p m) (haloInverseRingLog (Sizes.s m i) (Sizes.t m i))
+      (initialSchurTarget (Sizes.p m) u
+        (boundaryTableBits (Sizes.p m) (boundaryRecoveryTarget (Sizes.p m) (target+1)) 2
+          (cyclicPrincipalBoundary (Sizes.s m i) (Sizes.t m i) (PhaseCellBand.width (Sizes.p m) u) a n).card) 2) 2 ≤
+      (16*20+8*c+8*c+128)*Sizes.p m :=
+    hw.trans (Nat.mul_le_mul_right _ (by dsimp only [c]; omega))
+  have hp : 1 ≤ Sizes.p m := by have := h.thirteen_le_p; omega
+  have hb : PhaseCellBand.width (Sizes.p m) u ≤ 17*Sizes.p m := by
+    have hsqrt := Nat.sqrt_le_self (16*Sizes.p m/u)
+    have hdiv := Nat.div_le_self (16*Sizes.p m) u
+    unfold PhaseCellBand.width
+    omega
+  apply htotal h i _ _ J L u _ a n Fs.length complexCount W radius core hprofile
+    profile.leftLayout profile.rightLayout rfl rfl hwide hb hu axis.hband hfit hcore hW hpW hcount
+  have hshift := inverseNormalizationShift_le (Sizes.p m)
+  unfold executionPrecision executionExponent inputExponent sourceExponent
+  omega
 
 end IntegerMultBounds.MathlibTM2.Cost

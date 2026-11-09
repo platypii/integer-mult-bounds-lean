@@ -1,6 +1,9 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRoutedCachedComplexInput
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetiringPacketWorker
+public import IntegerMultBounds.MathlibTM2.Host.ClosedProgramStock
+public import IntegerMultBounds.MathlibTM2.Host.NativePushBoundMono
 
 /-! One routed batch prepares both cyclic cached banks. The cyclic bank is
 injected into the caller so remaining class input and scalar seeds can live
@@ -9,7 +12,7 @@ outside factor space, which is reused after conversion scratch is released. -/
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2.Host
   IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Node
-  IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Mult.ShortConv
+  IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Fast.Main IntegerMultBounds.MathlibTM2.Mult.ShortConv
 open CyclicReplicaPlacement
 variable {s T Q A : ℕ} [NeZero s] {P U : Type} {body : P → Pr P T Q A U}
 
@@ -28,6 +31,40 @@ def fittingCyclicCachedInputs (bank : Fin 834 → Fin T) (sourceL sourceR : Fin 
     (count src saved tmp : Fin T) : Pr P T Q A U :=
   .seq (routedCachedComplexInput sourceL (bank ∘ leftInputReg) count src saved tmp)
     (ordinaryCachedComplexInput sourceR (bank ∘ rightInputReg) tmp)
+
+def fittingCyclicCachedInputCost (H K : ReplicaHaloProblem s) (W N copiesL copiesR : ℕ) : ℕ :=
+  ((6*(N*H.span*W)+6)+
+    (copiesL+completeComplexRecoveryHeadersCost H N+prepareCachedComplexInputCost H W N))+
+    (copiesR+completeComplexRecoveryHeadersCost K N+prepareCachedComplexInputCost K W N)
+
+@[irreducible] def fittingCyclicInputPush : ℕ :=
+  max 2 (max (mnProgPush (completeComplexRecoveryHeaders (Q := Q) (A := A) (U := U)))
+    (mnProgPush (prepareCachedComplexInput (Q := Q) (A := A) (U := U))))
+
+theorem fittingCyclicCachedInputs_native (bank : Fin 834 → Fin T) (sourceL sourceR : Fin 392 → Fin T)
+    (count src saved tmp : Fin T) :
+    mnNativePushBound (fittingCyclicInputPush (Q := Q) (A := A) (U := U))
+      (fittingCyclicCachedInputs (P := P) (Q := Q) (A := A) (U := U) bank sourceL sourceR count src saved tmp) := by
+  have hcopy : 2 ≤ fittingCyclicInputPush (Q := Q) (A := A) (U := U) := by
+    unfold fittingCyclicInputPush
+    exact Nat.le_max_left _ _
+  have hheaders : mnProgPush (completeComplexRecoveryHeaders (Q := Q) (A := A) (U := U)) ≤
+      fittingCyclicInputPush (Q := Q) (A := A) (U := U) := by
+    unfold fittingCyclicInputPush
+    exact (Nat.le_max_left _ _).trans (Nat.le_max_right _ _)
+  have hprepare : mnProgPush (prepareCachedComplexInput (Q := Q) (A := A) (U := U)) ≤
+      fittingCyclicInputPush (Q := Q) (A := A) (U := U) := by
+    unfold fittingCyclicInputPush
+    exact (Nat.le_max_right _ _).trans (Nat.le_max_right _ _)
+  have hordinary (source work : Fin 392 → Fin T) :
+      mnNativePushBound (fittingCyclicInputPush (Q := Q) (A := A) (U := U))
+        (ordinaryCachedComplexInput (P := P) (Q := Q) (A := A) (U := U) source work tmp) := by
+    unfold ordinaryCachedComplexInput prepareRecoveryHeaders installRecoverySeedHeaders
+    exact ⟨⟨mnNativePushBound_mono hcopy (copyUnaryHeaders_native _ _),
+      embProg_native _ Empty.elim _ (mnNativePushBound_mono hheaders (WordCmd.empty_native _))⟩,
+      embProg_native _ Empty.elim _ (mnNativePushBound_mono hprepare (WordCmd.empty_native _))⟩
+  unfold fittingCyclicCachedInputs routedCachedComplexInput
+  exact ⟨⟨mnNativePushBound_mono hcopy (movePrefix_native _ _ _ _ _),hordinary _ _⟩,hordinary _ _⟩
 
 /-- Both cached inputs execute from one routed complex batch and ordinary
 seed headers. The remaining class archive stays outside the cyclic bank. -/
@@ -57,9 +94,11 @@ theorem fittingCyclicCachedInputs_exec (bank : Fin 834 → Fin T) (hbank : Funct
     let copiesR := copyUnaryHeadersCost (fun k => (S.R k).length)
       (recoverySeedHeaderCopies sourceR (bank ∘ rightInputReg))
     ∃ v' G steps, v'.user = v.user ∧
-      steps ≤ ((6*(Fs.length*H.span*W)+6)+
-        (copiesL+completeComplexRecoveryHeadersCost H Fs.length+prepareCachedComplexInputCost H W Fs.length))+
-        (copiesR+completeComplexRecoveryHeadersCost K Fs.length+prepareCachedComplexInputCost K W Fs.length) ∧
+      steps ≤ fittingCyclicCachedInputCost H K W Fs.length copiesL copiesR ∧
+      ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+0+
+        fittingCyclicInputPush (Q := Q) (A := A) (U := U)*
+          fittingCyclicCachedInputCost H K W Fs.length copiesL copiesR) 0
+        (fittingCyclicCachedInputs bank sourceL sourceR count src saved tmp) (mk v S) steps (mk v' G) ∧
       Exec body (fittingCyclicCachedInputs bank sourceL sourceR count src saved tmp) (mk v S) steps (mk v' G) ∧
       CachedReplicaPassInput H (left.reindex bank hbank) (generatedRecoveryBuffers H S.inp S.out) G ∧
       CachedReplicaPassInput K (right.reindex bank hbank) (generatedRecoveryBuffers K S.inp S.out) G ∧
@@ -123,7 +162,12 @@ theorem fittingCyclicCachedInputs_exec (bank : Fin 834 → Fin T) (hbank : Funct
     rw [right,reindex_comp]
     rw [hin,hout] at hr
     exact hr
-  refine ⟨v₂,G,n₁+n₂,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,Exec.seq he₁ he₂,?_,hr',?_,?_,
+  have hsteps := Nat.add_le_add hn₁ hn₂
+  have hex := Exec.seq he₁ he₂
+  have hscaled := Nat.mul_le_mul_left (fittingCyclicInputPush (Q := Q) (A := A) (U := U)) hsteps
+  have hwithin := mn_native_exec_within hex _
+    (fittingCyclicCachedInputs_native bank sourceL sourceR count src saved tmp) 0 _ (Nat.add_le_add_left hscaled _)
+  refine ⟨v₂,G,n₁+n₂,hu₂.trans hu₁,hsteps,hwithin,hex,?_,hr',?_,?_,
     (hframeR src (fun i => (hsrcOff _).symm)).1.trans hleftSrc,?_⟩
   · apply hl'.of_frame (hr'.input.trans hin.symm) (hr'.outputStream.trans hout.symm)
     intro k hk

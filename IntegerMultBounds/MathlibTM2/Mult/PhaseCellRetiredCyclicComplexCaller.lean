@@ -68,6 +68,14 @@ theorem retiredProgram_exec (ports : CyclicComplexCallerLayout T) (dst : Fin T)
           Cost.cyclicComplexCoreTimeCost H K p u l t a n target q W radius
             (coreLength s coreWidth k) Rs.length Fs.length)))+
         (8*registerBankStock (embStk ports.bank R)+4*909+5) ∧
+      ExecWithin body (fun d z => mnSize z+d ≤ mnSize (Host.mk v S)+0+
+        (fittingCyclicInputPush (Q := Q) (A := A) (U := U)*ports.inputTimeCost H K W Fs.length S+
+          (cyclicFactorPreparationPush (Q := Q) (A := A) (U := U)*ports.factorTimeCost s t p u a n C F+
+            (2*(4*(W+radius+coreLength s coreWidth k)+13)+
+              cyclicComplexCoreWorkspace (P := Empty) (A := A) (U := U) H K J L hR hQ
+                p u l t a n solveTarget q (executionWidth p l stage 2) W B.card
+                Rs.length Fs.length radius (coreLength s coreWidth k))))) 0
+        (ports.retiredProgram dst hR hQ) (Host.mk v S) steps (Host.mk v' G) ∧
       Exec body (ports.retiredProgram dst hR hQ) (Host.mk v S) steps (Host.mk v' G) ∧
       G.R dst = word++S.R dst ∧
       (∀ i, G.L (ports.bank i) = [] ∧ G.R (ports.bank i) = []) ∧ G.R ports.archive = tail ∧
@@ -81,7 +89,7 @@ theorem retiredProgram_exec (ports : CyclicComplexCallerLayout T) (dst : Fin T)
   dsimp only
   intro Fs hF W hW hWin v S tail hblank hvaluesL hvaluesR hsrc hcount hspan hcontrols hsaved htmp
     localityTarget qRef Y hqRef hwindow hY
-  obtain ⟨J,L,v₁,C,F,R,n₁,word,hu₁,hseed,hprofile,hn₁,he₁,hword,h848,harchive,hcert,hstreams,hleftArchive,hframe⟩ :=
+  obtain ⟨J,L,v₁,C,F,R,n₁,word,hu₁,hseed,hprofile,hn₁,hfittingWithin,he₁,hword,h848,harchive,hcert,hstreams,hleftArchive,hframe⟩ :=
     ports.program_exec (body := body) hR hQ hA axis ha hn hleftRoom hrightRoom coreWidth k radius
       hleft haCore hnCore hright Fs hF W hW hWin v S tail hblank hvaluesL hvaluesR hsrc hcount hspan
       hcontrols hsaved htmp localityTarget qRef Y hqRef hwindow hY
@@ -91,6 +99,11 @@ theorem retiredProgram_exec (ports : CyclicComplexCallerLayout T) (dst : Fin T)
   change ExecWithin body (fun d z => mnSize z+d ≤ mnSize (Host.mk v₁ R)) 0
     (exportClearRegisterBank ports.bank 850 848 dst) (Host.mk v₁ R)
     (exportClearRegisterBankCost ports.bank 850 dst R) (Host.mk v₂ G) at hw₂
+  have hwhole := ExecWithin.seq hfittingWithin
+    (hw₂.mono (by
+      intro d z hz
+      have hpeak := hfittingWithin.final
+      omega))
   have he₂ := hw₂.toExec
   change Exec body (exportClearRegisterBank ports.bank 850 848 dst) (Host.mk v₁ R)
     (exportClearRegisterBankCost ports.bank 850 dst R) (Host.mk v₂ G) at he₂
@@ -130,7 +143,7 @@ theorem retiredProgram_exec (ports : CyclicComplexCallerLayout T) (dst : Fin T)
     exact hcert.length_le (by omega)
   refine ⟨J,L,v₁,v₂,C,F,R,G,n₁,_,word,hu₂.trans hu₁,hseed,hprofile,he₁,rfl,?_,
     Nat.add_le_add hn₁ (exportClearRegisterBankCost_le ports.bank 850 dst hdst R),
-    Exec.seq he₁ he₂,?_,hclean,?_,hcert,hstreamsG,hleft,hfinal,hcert.length,hcert.length_le (by omega),hvolume,?_,?_⟩
+    hwhole,Exec.seq he₁ he₂,?_,hclean,?_,hcert,hstreamsG,hleft,hfinal,hcert.length,hcert.length_le (by omega),hvolume,?_,?_⟩
   · intro depth
     simpa only [Nat.zero_add] using mn_exec_within_shift hw₂ depth
   · rw [hresult,hword,(hframe dst harchiveDst hdst).2]

@@ -3,6 +3,7 @@ module
 public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedCyclicWorkingWidth
 public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedGatheredStock
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCyclicReplicaProblems
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCyclicSecondInteriorBudget
 
 /-! Discharge the actual joint cyclic replica target and metadata dimensions.
 The two physical intervals retain the same joint boundary precision. -/
@@ -86,5 +87,36 @@ theorem selectedCyclicReplicaProblems_profile (ct : ℕ) {n : ℕ} (h : Sizes.Bi
   simp only [List.mem_cons,List.not_mem_nil,or_false] at hR
   rcases hR with rfl | rfl
   all_goals exact ⟨rfl,rfl,rfl,rfl,rfl,rfl,rfl,rfl,hs,hm,hl,hr⟩
+
+/-- The executed second-interior witnesses need no separate target or RHS
+suppliers: their retained physical formats give the entire selected profile. -/
+theorem selectedCyclicSecondInteriorProfile (ct : ℕ) {m : ℕ} (h : Sizes.Big m)
+    (i : Fin (Sizes.d m)) [NeZero (Sizes.s m i)] {u : ℕ} {α d : ℝ}
+    (axis : RecoveryAxisBounds (Sizes.s m i) (Sizes.t m i) (Sizes.p m) u
+      (haloInverseRingLog (Sizes.s m i) (Sizes.t m i)) α d)
+    (target a n : ℕ) (ha : a < Sizes.s m i) (hn : n ≤ Sizes.s m i)
+    (hu : u ≤ Sizes.p m) (htarget : target ≤ ct*Sizes.p m) :
+    let p := Sizes.p m
+    let l := haloInverseRingLog (Sizes.s m i) (Sizes.t m i)
+    let N := (cyclicPrincipalBoundary (Sizes.s m i) (Sizes.t m i)
+      (PhaseCellBand.width p u) a n).card
+    let solveTarget := boundaryRecoveryTarget p (target+1)
+    let stage := initialSchurTarget p u (boundaryTableBits p solveTarget 2 N) 2
+    let q := executionPrecision p l stage 2
+    ∀ (Fs : List (ZMod (Sizes.s m i) → GaussianInt))
+      (hF : ∀ F ∈ Fs, ∀ k, ‖value q (F k)‖ ≤ (2 : ℝ)^2),
+    let H := axis.cyclicLeftReplicaProblem stage 2 a n ha Fs hF
+    let K := axis.cyclicRightReplicaProblem stage 2 a n hn Fs hF
+    ∀ J L, CyclicSecondInteriorProfile H K J L p solveTarget N →
+      ∀ D ∈ [H,K,J,L], D.p = p ∧ D.t = Sizes.t m i ∧ D.l = l ∧ D.u ≤ p ∧
+        D.target ≤ (1032+8*ct)*p ∧ D.rhsExp ≤ (1032+8*ct)*p := by
+  dsimp only
+  intro Fs hF J L profile
+  apply profile.numerical_bounds
+  intro D hD
+  obtain ⟨hp,ht,hl,hu',_,_,_,hw,_,_,_,_⟩ :=
+    selectedCyclicReplicaProblems_profile ct h i axis target a n ha hn hu htarget Fs hF D hD
+  have hwidth := (selectedCyclicReplicaSizing ct h i u target a n hu htarget axis.hband).2.2.2.1
+  exact ⟨hp,ht,hl,hu' ▸ hu,hw ▸ hwidth⟩
 
 end IntegerMultBounds.MathlibTM2.Cost

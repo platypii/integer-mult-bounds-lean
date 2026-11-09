@@ -70,9 +70,10 @@ theorem originProgram_exec (ports : CyclicComplexCallerLayout T) (dst : Fin T)
     (∀ F ∈ complexComponentFields Fs, SchurDominance.Solves (realMatrix s t p u) Finset.univ (Y F)
       (fun i => (value qRef ((2 : GaussianInt)^(qRef-p-1)*F i)).re)) →
     let E := recoverySeedEndpointState ports.seedL a (a+n) {S with R := Function.update S.R origins originTail}
-    ∃ (C F R : Stacks T A) (vstart vm v' : HS T Q A U) (readSteps runSteps steps : ℕ)
+    ∃ (J L : ReplicaHaloProblem s) (C F R : Stacks T A) (vstart vm v' : HS T Q A U) (readSteps runSteps steps : ℕ)
       (word : List (Fin (A+4))),
       v'.user = v.user ∧
+      CyclicSecondInteriorProfile H K J L p solveTarget B.card ∧
       Exec body (readRecoverySeedEndpoints width ports.span origins binary ports.seedL work readerSaved readerTmp)
         (Host.mk v S) readSteps (Host.mk vstart E) ∧
       Exec body (ports.program hR hQ) (Host.mk vstart E) runSteps (Host.mk vm R) ∧
@@ -82,6 +83,18 @@ theorem originProgram_exec (ports : CyclicComplexCallerLayout T) (dst : Fin T)
             Cost.cyclicComplexCoreTimeCost H K p u l t a n target q W radius
               (coreLength s coreWidth k) Rs.length Fs.length)))+
           (8*registerBankStock (embStk ports.bank R)+4*909+5))+(2*(a+(a+n))+5) ∧
+      ExecWithin body (fun d z => mnSize z+d ≤ mnSize (Host.mk v S)+0+
+        (3*readSupplierEndpointsCost V a n+
+        (fittingCyclicInputPush (Q := Q) (A := A) (U := U)*ports.inputTimeCost H K W Fs.length E+
+          (cyclicFactorPreparationPush (Q := Q) (A := A) (U := U)*ports.factorTimeCost s t p u a n C F+
+            (2*(4*(W+radius+coreLength s coreWidth k)+13)+
+              cyclicComplexCoreWorkspace (P := Empty) (A := A) (U := U) H K J L hR hQ
+                p u l t a n solveTarget q (executionWidth p l stage 2) W B.card
+                Rs.length Fs.length radius (coreLength s coreWidth k)))))) 0
+        (ports.originProgram dst width origins binary work readerSaved readerTmp hR hQ)
+        (Host.mk v S) steps
+        (Host.mk v' {S with R := (Function.update (Function.update (Function.update S.R origins originTail)
+          ports.archive tail) dst (word++S.R dst))}) ∧
       Exec body (ports.originProgram dst width origins binary work readerSaved readerTmp hR hQ)
         (Host.mk v S) steps
         (Host.mk v' {S with R := (Function.update (Function.update (Function.update S.R origins originTail)
@@ -120,7 +133,7 @@ theorem originProgram_exec (ports : CyclicComplexCallerLayout T) (dst : Fin T)
   have hscalar (r : Fin T) (hr : r ∈ [ports.archive,ports.count,ports.span,ports.saved,ports.tmp,dst]) :
       E.R r = S.R r := hstable r (.inr (.inr (.inr hr)))
   obtain ⟨J,L,vm,vf,C,F,R,G,runSteps,numericalSteps,word,huf,hseed,hprofile,heRun,hsteps,hcleanup,
-    htime,heNumerical,hword,hclean,harchive,hcert,hstreams,hleft,hfinal,hlen,hvol,hpayload,hstock,hframe⟩ :=
+    htime,hretiredWithin,heNumerical,hword,hclean,harchive,hcert,hstreams,hleft,hfinal,hlen,hvol,hpayload,hstock,hframe⟩ :=
     ports.retiredProgram_exec (body := body) dst hdst harchiveDst hR hQ hA axis ha hn hleftRoom hrightRoom
       coreWidth k radius hleft haCore hnCore hright Fs hF W hW hWin vi E tail hbank
       (by simpa only [hHspan,hHorigin,E,recoverySeedEndpointState] using hheaders)
@@ -159,9 +172,20 @@ theorem originProgram_exec (ports : CyclicComplexCallerLayout T) (dst : Fin T)
   obtain ⟨v',hu',heClear⟩ := retireRecoverySeedEndpoints_exec (body := body) ports.seedL
     (by assumption) a (a+n) vf D (hDblank 111 (.inl rfl)) (hDblank 113 (.inr rfl)) 0
   rw [←hG] at heClear
-  refine ⟨C,F,R,vi,vm,v',m,runSteps,m+(numericalSteps+(2*(a+(a+n))+5)),word,
-    hu'.trans (huf.trans hui),hread,heRun,?_,
-    Exec.seq hread (Exec.seq heNumerical heClear.toExec),hcert,hpayload⟩
+  have hretiredClear := ExecWithin.seq hretiredWithin
+    (heClear.mono (by
+      intro d z hz
+      have hpeak := hretiredWithin.final
+      omega))
+  have hreaderWithin : ExecWithin body
+      (fun d z => mnSize z+d ≤ mnSize (Host.mk v S)+0+3*readSupplierEndpointsCost V a n) 0
+      (readRecoverySeedEndpoints width ports.span origins binary ports.seedL work readerSaved readerTmp)
+      (Host.mk v S) m (Host.mk vi E) := by
+    simpa only [hHspan,hHorigin,E,recoverySeedEndpointState] using heRead
+  have hwhole := execWithin_seq_two_budget body _ _ _ _ _ _ _ 0 _ _ hreaderWithin hretiredClear
+  refine ⟨J,L,C,F,R,vi,vm,v',m,runSteps,m+(numericalSteps+(2*(a+(a+n))+5)),word,
+    hu'.trans (huf.trans hui),hprofile,hread,heRun,?_,
+    hwhole,Exec.seq hread (Exec.seq heNumerical heClear.toExec),hcert,hpayload⟩
   have hm' : m ≤ readSupplierEndpointsCost V a n := by simpa only [hHspan,hHorigin] using hm
   have hb := Nat.add_le_add hm' (Nat.add_le_add_right htime (2*(a+(a+n))+5))
   simpa only [Nat.add_assoc] using hb

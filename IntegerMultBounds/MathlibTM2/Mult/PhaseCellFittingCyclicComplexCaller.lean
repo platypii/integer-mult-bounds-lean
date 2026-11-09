@@ -12,6 +12,7 @@ open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2
   IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Node
   IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.NLogN
   IntegerMultBounds.NLogN.PhaseCellMatrix IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
+open Fast.Main
 open CyclicReplicaPlacement
 
 structure CyclicComplexCallerLayout (T : ℕ) where
@@ -110,6 +111,14 @@ theorem program_exec (ports : CyclicComplexCallerLayout T)
         (ports.factorTimeCost s t p u a n C F+((4*(W+radius+coreLength s coreWidth k)+13)+
           Cost.cyclicComplexCoreTimeCost H K p u l t a n target q W radius
             (coreLength s coreWidth k) Rs.length Fs.length)) ∧
+      ExecWithin body (fun d z => mnSize z+d ≤ mnSize (Host.mk v S)+0+
+        (fittingCyclicInputPush (Q := Q) (A := A) (U := U)*ports.inputTimeCost H K W Fs.length S+
+          (cyclicFactorPreparationPush (Q := Q) (A := A) (U := U)*ports.factorTimeCost s t p u a n C F+
+            (2*(4*(W+radius+coreLength s coreWidth k)+13)+
+              cyclicComplexCoreWorkspace (P := Empty) (A := A) (U := U) H K J L hR hQ
+                p u l t a n solveTarget q (executionWidth p l stage 2) W B.card
+                Rs.length Fs.length radius (coreLength s coreWidth k))))) 0
+        (ports.program hR hQ) (Host.mk v S) steps (Host.mk v' G) ∧
       Exec body (ports.program hR hQ) (Host.mk v S) steps (Host.mk v' G) ∧
       G.R (ports.bank 850) = word ∧ G.R (ports.bank 848) = [] ∧ G.R ports.archive = tail ∧
       PackedNormalizedOutput p W target coreWidth k localityTarget Fs Y word ∧
@@ -131,7 +140,7 @@ theorem program_exec (ports : CyclicComplexCallerLayout T)
   have hfit : a+n ≤ s := by omega
   have hspanL : H.span = n := by change min n (s-a) = n; omega
   have hspanR : K.span = 0 := by change n-min n (s-a) = 0; omega
-  obtain ⟨v₁,C,n₁,hu₁,hn₁,he₁,inputsL,inputsR,harchive,hfactorFresh,hleftArchive,hframe⟩ := fittingCyclicCachedInputs_exec
+  obtain ⟨v₁,C,n₁,hu₁,hn₁,hinputWithin,he₁,inputsL,inputsR,harchive,hfactorFresh,hleftArchive,hframe⟩ := fittingCyclicCachedInputs_exec
     (body := body) ports.small ports.small_injective (by omega : 4 ≤ A) H K W Fs rfl rfl
     hqp hqp hWin hWin hspanR ports.seedL ports.seedR ports.count ports.archive ports.saved ports.tmp
     ports.move (fun i j => ports.seedOff i _) ports.seedTmp (fun i => ports.tmpOff _)
@@ -166,8 +175,9 @@ theorem program_exec (ports : CyclicComplexCallerLayout T)
       v₁ C ports.controls ports.span ports.tmp inputsL inputsR hspan'
       ports.spanOff ports.spanTmp hfactorFresh ports.controlOff ports.controlTmp ports.tmpOff
       hcontrols' hfresh' htmp' localityTarget qRef Y hqRef hwindow hY
+  have hwhole := execWithin_seq_two_budget body _ _ _ _ _ _ _ 0 _ _ hinputWithin hfactoredWithin
   refine ⟨J,L,v₂,C,F,G,n₁+n₂,word,hu₂.trans hu₁,hseed,hprofile,Nat.add_le_add hn₁ hn₂,
-    Exec.seq he₁ he₂,hword,h848,?_,hcert,
+    hwhole,Exec.seq he₁ he₂,hword,h848,?_,hcert,
     ⟨hstreams.1.trans inputsL.input,hstreams.2.trans inputsL.outputStream⟩,
     (houtside ports.archive (fun j => (ports.archiveOff j).symm)).1.trans hleftArchive,?_⟩
   · exact (houtside ports.archive (fun j => (ports.archiveOff j).symm)).2.trans harchive

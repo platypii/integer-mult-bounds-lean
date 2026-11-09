@@ -20,6 +20,37 @@ structure CyclicSecondInteriorProfile {s : ℕ} (H K J M : ReplicaHaloProblem s)
   leftExponent : J.rhsExp = recoveryRhsExponent p 2 (stableInteriorExponent p 2) (couplingCountExponent p H.u)
   rightExponent : M.rhsExp = recoveryRhsExponent p 2 (stableInteriorExponent p 2) (couplingCountExponent p H.u)
 
+/-- Physical format reuse bounds both numerical parameters, even though the
+second pass changes its target, source data and reference solution. -/
+theorem CyclicSecondInteriorProfile.numerical_bounds {s : ℕ}
+    {H K J L : ReplicaHaloProblem s} {p target N t l c : ℕ}
+    (profile : CyclicSecondInteriorProfile H K J L p target N)
+    (hbase : ∀ D ∈ [H,K], D.p = p ∧ D.t = t ∧ D.l = l ∧
+      D.u ≤ p ∧ D.wordWidth ≤ c*p) :
+    ∀ D ∈ [H,K,J,L], D.p = p ∧ D.t = t ∧ D.l = l ∧ D.u ≤ p ∧
+      D.target ≤ c*p ∧ D.rhsExp ≤ c*p := by
+  have transfer (D E : ReplicaHaloProblem s) (layout : D.SameLayout E)
+      (hD : D.p = p ∧ D.t = t ∧ D.l = l ∧ D.u ≤ p ∧ D.wordWidth ≤ c*p) :
+      E.p = p ∧ E.t = t ∧ E.l = l ∧ E.u ≤ p ∧ E.wordWidth ≤ c*p := by
+    simpa only [layout.p,layout.t,layout.l,layout.u,layout.wordWidth] using hD
+  have hH := hbase H (by simp)
+  have hK := hbase K (by simp)
+  have hJ := transfer H J profile.leftLayout hH
+  have hL := transfer K L profile.rightLayout hK
+  intro D hD
+  have hb : D.p = p ∧ D.t = t ∧ D.l = l ∧ D.u ≤ p ∧ D.wordWidth ≤ c*p := by
+    simp only [List.mem_cons,List.not_mem_nil,or_false] at hD
+    rcases hD with rfl | rfl | rfl | rfl
+    · exact hH
+    · exact hK
+    · exact hJ
+    · exact hL
+  have hparameters : D.target ≤ D.wordWidth ∧ D.rhsExp ≤ D.wordWidth := by
+    unfold ReplicaHaloProblem.wordWidth executionWidth executionExponent inputExponent sourceExponent
+    omega
+  exact ⟨hb.1,hb.2.1,hb.2.2.1,hb.2.2.2.1,
+    hparameters.1.trans hb.2.2.2.2,hparameters.2.trans hb.2.2.2.2⟩
+
 noncomputable def cyclicSecondInteriorTimeBudget {s : ℕ} [NeZero s]
     (H K : ReplicaHaloProblem s) (p target N : ℕ) : ℕ :=
   let rhsExp := recoveryRhsExponent p 2 (stableInteriorExponent p 2) (couplingCountExponent p H.u)
