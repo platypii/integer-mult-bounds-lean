@@ -46121,3 +46121,60 @@ Individual checks: selected residual batch 3460.0 MiB, selected export 3363.3
 MiB. The combined audit of actual push construction, affine residual storage,
 selected residual/export and closed cached/resumed interfaces reports only
 standard axioms (9668.6 MiB for the nonmodule audit).
+
+Numerical factorization and final factor-page publication now have selected
+space bounds. `scaledInitializedBoundaryFactorWorkspace_two_poly` reuses the
+structural `boundaryAxisPrepWorkspace_le`, scale-24 setup polynomial, multiplier
+cost bound and Newton-step bound. Its coefficient contains only the actual
+closed programs' push counts; the common physical reserve is cubic in
+`p+2*q+24*band+N+100`. Selected-axis polynomial absorption pays any fixed scale
+of this numerical workspace from `Sizes.T n`.
+
+`selectedScaledFactorPageWorkspace_le` separately reuses the existing banded
+factor-page volume bound, preserving its `O((N+band)*band*q)` structure.
+`actualCyclicFactorWorkspace_eq_page_add` connects the numerical comparison to
+the exact actual closed factory allowance. The subsequent
+`selectedActualCyclicFactorWorkspace_le_columns` consumes both comparisons:
+actual factor workspace is at most `closedCyclicFactorColumnsWorkspace+2*T`.
+The remaining factory term is therefore precisely Schur-column construction,
+not the numerical factorization or factor-page publication. Its existing
+uniform original-column and interior-residual component bounds are the next
+comparison path. No row/cell cases or new numerical simulation were added.
+Build passes (16401 jobs, 3.5 GiB aggregate); keep this work for the next larger
+local checkpoint. No push. Full selected numerical composition, ordinary
+callback preparation and class/outer/fallback/final S4 acceptance remain open.
+The selected actual-factor module checks at 3495.4 MiB. The temporary audit of
+numerical cubic workspace, selected numerical/page absorption, exact factory
+split and selected comparison to columns reports only standard axioms
+(9780.6 MiB for the nonmodule audit).
+
+Schur-column coupling now shares a single verified workspace language.
+`runPreparedPacketCouplingRowsWorkspace_poly` bounds one reusable packet-row
+reserve using existing marked-coefficient, scalar preparation and real-weight
+bounds. `feedCouplingUniformWorkspace_poly` composes native source/mask setup,
+one coefficient packet, that shared worker, and source retirement. Neither
+allowance multiplies numerical scratch by the number of source rows.
+`originalColumnUniformWorkspace_le_feed` embeds original-column workspace in
+that same uniform feed allowance plus explicit source/header traffic, so no
+second row-level polynomial proof is needed.
+
+Selected absorption reuses `selectedLiftedCoefficientWidth_le`, elementary
+geometry-width bounds and the actual fixed push constants.
+`selectedFeedCouplingUniformWorkspace_le` pays any fixed scale from selected
+whole-box volume; `selectedOriginalColumnUniformWorkspace_le` consumes it and
+pays the extra source/header reserve from another volume allowance. Original
+columns therefore have the selected `2*T` bound. The uniform halo-interior
+reserve and final table-control comparison are still needed to close the whole
+Schur-column/factory allowance, followed by complete numerical composition and
+all preparation/class/outer/fallback/final S4 acceptance gates.
+
+A first selected-feed proof passed but checked at 4570.2 MiB; profiling identified
+119 seconds in the unused-variable linter. An opaque coefficient wrapper with
+once-proved scalar/push inequalities and an underscore binder fixes the cost:
+the module now builds in 3.1 seconds and checks at 3327.7 MiB. The selected
+original-column build also passes (15372 jobs, 3.5 GiB aggregate). No proof
+limits or linter settings were changed. Collect these column results with the
+previous numerical factor/page bounds in a larger local checkpoint; no push.
+The selected original-column module checks at 3324.0 MiB. The combined temporary
+factor/column audit reports only standard axioms (9782.1 MiB for the nonmodule
+audit).
