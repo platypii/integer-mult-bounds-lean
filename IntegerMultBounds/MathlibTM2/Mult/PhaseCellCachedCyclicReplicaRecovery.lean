@@ -3,13 +3,14 @@ module
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellLiftedCyclicReplicaBatch
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCyclicBoundaryUnfoldLeft
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSolvedCyclicRecovery
+public import IntegerMultBounds.MathlibTM2.Host.EmbedStockTrace
 
 /-! Sequence the original cached caller's actual trace with solved-state
 recovery in the extended bank. No extra blank private left stacks are assumed. -/
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2.Host
-  IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Fast
+  IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Fast.Main
   IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
   IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
 local notation "recoveryBank" => CyclicRecoveryPlacement.bank
@@ -34,6 +35,10 @@ theorem cachedCyclicReplicaRecovery_exec (body : P → Pr P 117 Q A U)
     (buffersL buffersR : ReplicaLoopBuffers A) (S S₁ S₂ producer F : Stacks 834 A)
     (Cs Ds : List (ZMod s → GaussianInt)) (v vf : HS 834 Q A U) (steps : ℕ)
     (hex : Exec (cyclicReplicaCallerBody body) (cachedCyclicReplicaBatch hR hQ) (mk v S) steps (mk vf F))
+    (workspace : ℕ)
+    (hwithin : ExecWithin (cyclicReplicaCallerBody body)
+      (fun d z => mnSize z+d ≤ mnSize (mk v S)+0+workspace) 0
+      (cachedCyclicReplicaBatch hR hQ) (mk v S) steps (mk vf F))
     (hu : vf.user = v.user)
     (postL : CachedReplicaPassPost H CyclicReplicaPlacement.left buffersL S₁ producer Cs)
     (postR : CachedReplicaPassPost K CyclicReplicaPlacement.right buffersR S₂ producer Ds)
@@ -57,6 +62,10 @@ theorem cachedCyclicReplicaRecovery_exec (body : P → Pr P 117 Q A U)
     let G := prepareCyclicRecoveryCouplingState H K
       (placedNativeCyclicBoundaryBatchState M solveTail (solutions.reverse.flatMap fields))
     ∃ zf X m, zf.user = z.user ∧ m ≤ steps+solvedCyclicRecoveryCost H K Fs.length B.card n w ∧
+      ExecWithin (embTab extendCaller (cyclicReplicaCallerBody body))
+        (fun d state => mnSize state+d ≤ mnSize (mk z (extendStacks (by decide : 834 ≤ 840) S))+0+
+          (workspace+solvedCyclicRecoveryWorkspace (A := A) (U := U) H K Fs.length B.card n w hQ)) 0
+        (cachedCyclicReplicaRecovery hR hQ) (mk z (extendStacks (by decide : 834 ≤ 840) S)) m (mk zf X) ∧
       Exec (embTab extendCaller (cyclicReplicaCallerBody body)) (cachedCyclicReplicaRecovery hR hQ)
         (mk z (extendStacks (by decide : 834 ≤ 840) S)) m (mk zf X) ∧ X.R (recoveryBank 228) = [] ∧
       CyclicRecoveryCouplingCursor H K buffersL buffersR rows [] (M.R (recoveryBank 132))
@@ -93,7 +102,13 @@ theorem cachedCyclicReplicaRecovery_exec (body : P → Pr P 117 Q A U)
     ((hread 228).trans (projection.fresh 228 (by simp))) ((hread 227).trans (projection.fresh 227 (by simp)))
     (extendStacks_fresh (by decide : 834 ≤ 840) F _ (by decide)).2
     (extendStacks_fresh (by decide : 834 ≤ 840) F _ (by decide)).2
+  have hprefix := exec_emb_within_stock_of_exec (Fin.castLE_injective _) (ι := id)
+    (body := cyclicReplicaCallerBody body) (body' := embTab extendCaller (cyclicReplicaCallerBody body))
+    (by intro f; rfl) hwithin z hz (extendStacks (by decide : 834 ≤ 840) S)
+    (embStk_extendStacks (by decide : 834 ≤ 840) S) hei
+  have hwhole := execWithin_seq_two_budget (embTab extendCaller (cyclicReplicaCallerBody body))
+    _ _ _ _ _ _ _ 0 _ _ hprefix he
   have hzUser : v.user = z.user := by rw [← hz]; rfl
-  exact ⟨zf,X,steps+m,hu'.trans (hui.trans (hu.trans hzUser)),Nat.add_le_add_left hm _,Exec.seq hei he.toExec,hclockX,hcursor⟩
+  exact ⟨zf,X,steps+m,hu'.trans (hui.trans (hu.trans hzUser)),Nat.add_le_add_left hm _,hwhole,Exec.seq hei he.toExec,hclockX,hcursor⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

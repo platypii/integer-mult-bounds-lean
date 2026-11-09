@@ -1,13 +1,14 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCyclicReplicaConsumerFactoryInput
+public import IntegerMultBounds.MathlibTM2.Host.EmbedStockTrace
 
 /-! Execute one factor factory and all residual solves on the actual exported
 packet state. Factory prerequisites come from the original raw bank. -/
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2.Host
-  IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Fast
+  IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Fast.Main
   IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.MathlibTM2.Mult.BandFactor
   IntegerMultBounds.NLogN IntegerMultBounds.NLogN.PhaseCellMatrix
   IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
@@ -50,6 +51,14 @@ theorem cyclicReplicaExportedBatch_spec (hR : rpStates ≤ Q) (hQ : SS.states �
         (cstream A w (bs.map solve).flatten++page.R 224))}
       v'.user = v.user ∧ steps ≤ constructedCyclicFactorCost p u l s t a n target 2+
         preparedResidualBatchCost q w B.card W bs.length ∧
+      ExecWithin (embTab factorReg (embTab preparedBoundaryBatchCoreReg (embTab preparedBoundaryCoreReg
+        (embTab boundaryFactorLegacyReg (embTab tableReg (embTab boundaryArithmeticReg
+          (embTab componentReg (embTab groupReg body))))))))
+        (fun d z => mnSize z+d ≤ mnSize (mk v E)+0+
+          (actualCyclicFactorWorkspace (P₀ := P) (A := A) (U := U) hR hQ p u l s t a n target+
+            preparedResidualBatchWorkspace (A := A) (U := U) P hQ q w B.card W bs.length)) 0
+        (embProg factorReg id (constructedCyclicResidualBatch hR hQ)) (mk v E) steps
+        (mk v' (embOvr factorReg F.get E)) ∧
       Exec (embTab factorReg (embTab preparedBoundaryBatchCoreReg (embTab preparedBoundaryCoreReg
         (embTab boundaryFactorLegacyReg (embTab tableReg (embTab boundaryArithmeticReg
           (embTab componentReg (embTab groupReg body))))))))
@@ -106,7 +115,7 @@ theorem cyclicReplicaExportedBatch_spec (hR : rpStates ≤ Q) (hQ : SS.states �
     have hp := cyclicReplicaConsumerExportState_factor S (cstream A w bs.flatten)
     have hh := congrArg (fun R => R.R 226) hp
     simpa [exportedCyclicResidualRows,cyclicResidualRowsRetired] using hh
-  obtain ⟨vi,page,m,columns,hui,hm,hei,hprepared,hacc,hsolve,hbo,hhf,hdf,hformat,hfactor,
+  obtain ⟨vi,page,m,columns,hui,hm,heWithin,hei,hprepared,hacc,hsolve,hbo,hhf,hdf,hformat,hfactor,
     hinp,houtp,hleft,h224,hprivate,hworkspace⟩ := constructedCyclicResidualBatch_spec (body := body)
     hR hQ hA axis ha hn (embDn factorReg v) T tail pageTail
     inputs.rows inputs.pageWidth inputs.page inputs.arithmetic inputs.origin inputs.leftEnd inputs.rightEnd
@@ -122,7 +131,9 @@ theorem cyclicReplicaExportedBatch_spec (hR : rpStates ≤ Q) (hQ : SS.states �
     (inputs.privateFresh 233 (by simp)) hcounter hsource
   obtain ⟨vf,_,hu,he⟩ := exec_emb_ovr (body := native) (body' := embTab factorReg native)
     (ι := id) factorReg_injective (by intro f; rfl) hei v rfl E rfl
-  exact ⟨vf,page,m,columns,hu.trans hui,hm,he,hprepared,hacc,hsolve,hbo,hhf,hdf,hformat,
+  have hstock := exec_emb_within_stock_of_exec factorReg_injective (ι := id)
+    (body := native) (body' := embTab factorReg native) (by intro f; rfl) heWithin v rfl E rfl he
+  exact ⟨vf,page,m,columns,hu.trans hui,hm,hstock,he,hprepared,hacc,hsolve,hbo,hhf,hdf,hformat,
     hfactor,hinp,houtp,hleft,h224,hprivate,(fun _ hk => embOvr_off _ _ hk),hworkspace⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

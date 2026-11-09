@@ -12,12 +12,21 @@ The computed joint boundary rows determine the actual recovery RHS problems. -/
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2.Host
-  IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Fast
+  IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Fast.Main
   IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.NLogN
   IntegerMultBounds.NLogN.PhaseCellMatrix IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
   IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
 local notation "extendRecovery" => CyclicSecondInteriorPlacement.extend
 variable {Q A : ℕ} {P U : Type} {body : P → Pr P 117 Q A U}
+
+noncomputable def cyclicRecoveredInteriorWorkspace {s : ℕ} [NeZero s]
+    (H K J L : ReplicaHaloProblem s) (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q)
+    (p u l t a n target q w N replicas : ℕ) : ℕ :=
+  (cachedCyclicReplicaWorkspace (P := P) (A := A) (U := U) H K hR hQ
+    p u l t a n target q w N replicas+
+      solvedCyclicRecoveryWorkspace (A := A) (U := U) H K replicas N n w hQ)+
+    (resumedReplicaInteriorWorkspace (A := A) (U := U) H J hR hQ+
+      resumedReplicaInteriorWorkspace (A := A) (U := U) K L hR hQ)
 
 noncomputable def executedCyclicSecondInterior (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) : Pr P 842 Q A U :=
   .seq (embProg extendRecovery id (cachedCyclicReplicaRecovery hR hQ)) (cyclicSecondInterior hR hQ)
@@ -69,6 +78,13 @@ theorem executedCyclicSecondInterior_spec (hR : rpStates ≤ Q) (hQ : SS.states 
       ReplicaAssemblyControls K CyclicSecondInteriorPlacement.right.plan.gather
         (extendRecovery (CyclicRecoveryPlacement.bank 238)) G ∧
       (G.inp = S.inp ∧ G.out = S.out) ∧
+      ExecWithin (embTab extendRecovery (embTab CyclicRecoveryPlacement.extend (cyclicReplicaCallerBody body)))
+        (fun d z => mnSize z+d ≤ mnSize (mk v
+          (extendStacks (by decide : 840 ≤ 842) (extendStacks (by decide : 834 ≤ 840) S)))+0+
+          cyclicRecoveredInteriorWorkspace (P := P) (A := A) (U := U) H K J L hR hQ
+            p u l t a n target q w B.card Fs.length) 0
+        (executedCyclicSecondInterior hR hQ)
+        (mk v (extendStacks (by decide : 840 ≤ 842) (extendStacks (by decide : 834 ≤ 840) S))) steps (mk vf G) ∧
       Exec (embTab extendRecovery (embTab CyclicRecoveryPlacement.extend (cyclicReplicaCallerBody body)))
         (executedCyclicSecondInterior hR hQ)
         (mk v (extendStacks (by decide : 840 ≤ 842) (extendStacks (by decide : 834 ≤ 840) S))) steps (mk vf G) := by
@@ -82,7 +98,7 @@ theorem executedCyclicSecondInterior_spec (hR : rpStates ≤ Q) (hQ : SS.states 
   let H := axis.cyclicLeftReplicaProblem cellTarget 2 a n ha Fs hF
   let K := axis.cyclicRightReplicaProblem cellTarget 2 a n hn Fs hF
   intro buffersL buffersR v S tail pageTail inputsL inputsR factory h226 h229
-  obtain ⟨solutions,z,X,m,savedL,savedR,pageL,pageR,hlen,hformat,haccuracy,hmag,hu,hm,he,hclock,
+  obtain ⟨solutions,z,X,m,savedL,savedR,pageL,pageR,hlen,hformat,haccuracy,hmag,hu,hm,hrecoveryTrace,he,hclock,
     hsourceL,hsourceR,harchiveL,harchiveR,hcacheL,hcacheR,hheadersL,hheadersR,hreadyL,hreadyR,hcontrolsL,hcontrolsR,hcleanupL,hcleanupR⟩ :=
     executedCyclicReplicaRecovery_spec (body := body) hR hQ hA axis ha hn hleftRoom hrightRoom
       Fs hF buffersL buffersR (embDn extendRecovery v) S tail pageTail inputsL inputsR factory h226 h229
@@ -101,6 +117,38 @@ theorem executedCyclicSecondInterior_spec (hR : rpStates ≤ Q) (hQ : SS.states 
     buffersL buffersR buffersL.rhsTail buffersR.rhsTail zi X hreadyL hreadyR hcontrolsL hcontrolsR
     (hsourceL.trans (congrArg (fun xs => xs++buffersL.rhsTail) hJsource.symm))
     (hsourceR.trans (congrArg (fun xs => xs++buffersR.rhsTail) hLsource.symm))
+  have hprefix := exec_emb_within_stock_of_exec (Fin.castLE_injective _) (ι := id)
+    (body := embTab CyclicRecoveryPlacement.extend (cyclicReplicaCallerBody body))
+    (body' := embTab extendRecovery (embTab CyclicRecoveryPlacement.extend (cyclicReplicaCallerBody body)))
+    (by intro f; rfl) hrecoveryTrace v rfl
+    (extendStacks (by decide : 840 ≤ 842) (extendStacks (by decide : 834 ≤ 840) S))
+    (embStk_extendStacks (by decide : 840 ≤ 842) _) helift
+  let recoveryWorkspace := cachedCyclicReplicaWorkspace (P := P) (A := A) (U := U) H K hR hQ
+    p u l t a n target q w B.card Fs.length+
+      solvedCyclicRecoveryWorkspace (A := A) (U := U) H K Fs.length B.card n w hQ
+  let interiorWorkspace := resumedReplicaInteriorWorkspace (A := A) (U := U) H J hR hQ+
+    resumedReplicaInteriorWorkspace (A := A) (U := U) K L hR hQ
+  have hwhole : ExecWithin
+      (embTab extendRecovery (embTab CyclicRecoveryPlacement.extend (cyclicReplicaCallerBody body)))
+      (fun d z => mnSize z+d ≤ mnSize (mk v
+        (extendStacks (by decide : 840 ≤ 842) (extendStacks (by decide : 834 ≤ 840) S)))+0+
+          (recoveryWorkspace+interiorWorkspace)) 0 (executedCyclicSecondInterior hR hQ)
+      (mk v (extendStacks (by decide : 840 ≤ 842) (extendStacks (by decide : 834 ≤ 840) S)))
+      (m+k) (mk vf G) := by
+    have hsize := hprefix.final
+    refine .seq (hprefix.mono ?_) (heSecond.mono ?_)
+    · intro d z hz
+      change mnSize z+d ≤ mnSize (mk v
+        (extendStacks (by decide : 840 ≤ 842) (extendStacks (by decide : 834 ≤ 840) S)))+0+
+          recoveryWorkspace at hz
+      omega
+    · intro d z hz
+      change mnSize z+d ≤ mnSize (mk zi (extendStacks (by decide : 840 ≤ 842) X))+
+        interiorWorkspace at hz
+      change mnSize (mk zi (extendStacks (by decide : 840 ≤ 842) X))+0 ≤ mnSize (mk v
+        (extendStacks (by decide : 840 ≤ 842) (extendStacks (by decide : 834 ≤ 840) S)))+0+
+          recoveryWorkspace at hsize
+      omega
   have hLayoutL : H.SameLayout J := layoutL
   have hLayoutR : K.SameLayout L := layoutR
   rw [hLayoutL.interiorTime_eq_budget,hLayoutR.interiorTime_eq_budget,
@@ -135,6 +183,6 @@ theorem executedCyclicSecondInterior_spec (hR : rpStates ≤ Q) (hQ : SS.states 
     harchR.trans harchiveR,hcontrolsLF,hcontrolsRF,
     ⟨hstreams.1.trans (hreadyL.input.trans inputsL.input.symm),
       hstreams.2.trans (hreadyL.output.trans inputsL.outputStream.symm)⟩,
-    Exec.seq helift heSecond.toExec⟩
+    hwhole,Exec.seq helift heSecond.toExec⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

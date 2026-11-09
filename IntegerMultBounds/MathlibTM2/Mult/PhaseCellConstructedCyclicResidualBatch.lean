@@ -1,19 +1,34 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPreparedCyclicFactorFactory
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPreparedCyclicFactorFactoryStock
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCyclicPreparedResidualBatch
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellResidualBoundaryFormat
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellNativeBoundaryUnfoldWorkspace
+public import IntegerMultBounds.MathlibTM2.Host.SequentialBudget
 
 /-! One executed cyclic factor setup serves the whole ordered residual batch. -/
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
   IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Host
-  IntegerMultBounds.MathlibTM2.Node IntegerMultBounds.MathlibTM2.Fast
+  IntegerMultBounds.MathlibTM2.Node IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Fast.Main
   IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.MathlibTM2.Mult.BandFactor IntegerMultBounds.NLogN
   IntegerMultBounds.NLogN.PhaseCellMatrix IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
 variable {Q A : ℕ} {U P₀ : Type} {body : P₀ → Pr P₀ 117 Q A U}
+
+/-- The factory's structural workspace with the actual fixed programs' push counts. -/
+noncomputable def actualCyclicFactorWorkspace (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q)
+    (p u l s t a n target : ℕ) [NeZero s] : ℕ :=
+  let J := mnProgPush (rmulOne (P := P₀) (Q := Q) (A := A) (U := U)
+    mul mul_injective (by decide) hQ cr)
+  let ringPush := mnProgPush (rpProg (P := P₀) (Q := Q) (A := A) (U := U)
+    Fixed.ringReg Fixed.hostReg Fixed.layout.ι_inj (by decide) hR)
+  let batchPush := mnProgPush (cmulBlock cr (rmulOne (P := P₀) (Q := Q) (A := A) (U := U)
+    mul mul_injective (by decide) hQ cr))
+  let rowPush := mnProgPush (rmulOne (P := Empty) (Q := Q) (A := A) (U := U)
+    mul mul_injective (by decide) hQ cr)
+  constructedCyclicFactorWorkspace (P₀ := P₀) (Q := Q) (A := A) (U := U)
+    hQ J ringPush batchPush rowPush p u l s t a n target 2
 
 noncomputable def constructedCyclicResidualBatch (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) : Pr P₀ 234 Q A U :=
   .seq (embProg preparedBoundaryBatchCoreReg id (preparedCyclicFactorFactory hR hQ)) (preparedResidualBatch hQ)
@@ -64,6 +79,13 @@ theorem constructedCyclicResidualBatch_spec (hR : rpStates ≤ Q) (hQ : SS.state
         (cstream A w (bs.map solve).flatten++page.R 224))}
       v'.user = v.user ∧ steps ≤ constructedCyclicFactorCost p u l s t a n target 2+
         preparedResidualBatchCost q w B.card W bs.length ∧
+      ExecWithin (embTab preparedBoundaryBatchCoreReg (embTab preparedBoundaryCoreReg
+        (embTab boundaryFactorLegacyReg (embTab tableReg (embTab boundaryArithmeticReg
+          (embTab componentReg (embTab groupReg body)))))))
+        (fun d z => mnSize z+d ≤ mnSize (mk v S)+0+
+          (actualCyclicFactorWorkspace (P₀ := P₀) (A := A) (U := U) hR hQ p u l s t a n target+
+            preparedResidualBatchWorkspace (A := A) (U := U) P₀ hQ q w B.card W bs.length)) 0
+        (constructedCyclicResidualBatch hR hQ) (mk v S) steps (mk v' F) ∧
       Exec (embTab preparedBoundaryBatchCoreReg (embTab preparedBoundaryCoreReg
         (embTab boundaryFactorLegacyReg (embTab tableReg (embTab boundaryArithmeticReg
           (embTab componentReg (embTab groupReg body)))))))
@@ -95,10 +117,11 @@ theorem constructedCyclicResidualBatch_spec (hR : rpStates ≤ Q) (hQ : SS.state
   let native := embTab preparedBoundaryCoreReg coreBody
   obtain ⟨v₁,T₁,m₁,columns,hu₁,hm₁,he₁,hprepared,hacc,hsolve,hbo,hhf,hdf,hvk,hdout,
     hinp,hout,hL,htable,h224,h225',hmul,h119,h223,h184,h220,h221,h116⟩ :=
-    preparedCyclicFactorFactory_spec (body := body) (rhsExp := 2) hR hQ hA axis has hbs
+    preparedCyclicFactorFactory_spec_within (body := body) (rhsExp := 2) hR hQ hA axis has hbs
+      _ _ _ (Nat.le_refl _) (Nat.le_refl _) (Nat.le_refl _) _ (Nat.le_refl _)
       (embDn preparedBoundaryBatchCoreReg v) T tail pageTail hrows hpageWidth hpage hready
       haSrc hleftEnd hrightEnd h141 h142 h0 h139 h127 h138 h143 h147 h151 h152 h153 hleft hnew
-  obtain ⟨v₂,hv₂,hu₂,he₂⟩ := exec_emb_ovr (e := preparedBoundaryBatchCoreReg) (ι := id)
+  obtain ⟨v₂,hv₂,hu₂,he₂⟩ := exec_emb_ovr_within_stock preparedBoundaryBatchCoreReg (ι := id)
     preparedBoundaryBatchCoreReg_injective (body := native) (body' := embTab preparedBoundaryBatchCoreReg native)
     (by intro f; rfl) he₁ v rfl S rfl
   let page := embOvr preparedBoundaryBatchCoreReg T₁.get S
@@ -133,8 +156,10 @@ theorem constructedCyclicResidualBatch_spec (hR : rpStates ≤ Q) (hQ : SS.state
     (by rw [hprivate 233 (by decide)]; exact h233)
     (by rw [hprivate 229 (by decide)]; exact hcount)
     (by rw [hprivate 226 (by decide)]; exact hsource)
+  have hwithin := execWithin_seq_two_budget (embTab preparedBoundaryBatchCoreReg native)
+    _ _ _ _ _ _ _ 0 _ _ he₂ he₃
   refine ⟨v₃,page,m₁+m₃,columns,hu₃.trans (hu₂.trans hu₁),Nat.add_le_add hm₁ hm₃,
-    Exec.seq he₂ he₃.toExec,hprepared,hacc,?_,?_,?_,?_,?_,?_,hinp,hout,embOvr_left_of_eq S T₁ hL,?_,hprivate,?_⟩
+    hwithin,Exec.seq he₂.toExec he₃.toExec,hprepared,hacc,?_,?_,?_,?_,?_,?_,hinp,hout,embOvr_left_of_eq S T₁ hL,?_,hprivate,?_⟩
   · simpa only [hproj] using hsolve
   · simpa only [hproj] using hbo
   · simpa only [hproj] using hhf

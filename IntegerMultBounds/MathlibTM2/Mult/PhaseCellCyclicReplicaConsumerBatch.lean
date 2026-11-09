@@ -9,7 +9,7 @@ Both original RHS queues and cached banks survive for the recovery passes. -/
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2.Host
-  IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Node IntegerMultBounds.MathlibTM2.Fast
+  IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Node IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Fast.Main
   IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.MathlibTM2.Mult.BandFactor
   IntegerMultBounds.NLogN IntegerMultBounds.NLogN.PhaseCellMatrix
   IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
@@ -67,6 +67,14 @@ theorem cyclicReplicaConsumerBatch_spec (hR : rpStates ≤ Q) (hQ : SS.states �
         (cstream A w (rows.map solve).flatten++page.R 224))}
       v'.user = v.user ∧ steps ≤ consumerCost+(constructedCyclicFactorCost p u l s t a n target 2+
         preparedResidualBatchCost q w B.card W Fs.length) ∧
+      ExecWithin (embTab factorReg (embTab preparedBoundaryBatchCoreReg (embTab preparedBoundaryCoreReg
+        (embTab boundaryFactorLegacyReg (embTab tableReg (embTab boundaryArithmeticReg
+          (embTab componentReg (embTab groupReg body))))))))
+        (fun d z => mnSize z+d ≤ mnSize (mk v S)+0+
+          (cyclicReplicaConsumerExportWorkspace (Q := Q) (A := A) (U := U) H K n B.card+
+            (actualCyclicFactorWorkspace (P₀ := P) (A := A) (U := U) hR hQ p u l s t a n target+
+              preparedResidualBatchWorkspace (A := A) (U := U) P hQ q w B.card W Fs.length))) 0
+        (cyclicReplicaConsumerBatch hR hQ) (mk v S) steps (mk v' (embOvr factorReg F.get E)) ∧
       Exec (embTab factorReg (embTab preparedBoundaryBatchCoreReg (embTab preparedBoundaryCoreReg
         (embTab boundaryFactorLegacyReg (embTab tableReg (embTab boundaryArithmeticReg
           (embTab componentReg (embTab groupReg body))))))))
@@ -131,6 +139,10 @@ theorem cyclicReplicaConsumerBatch_spec (hR : rpStates ≤ Q) (hQ : SS.states �
     (body := native) axis.hst (by omega) H K leftBuffers rightBuffers S₀ S₁ Cs Ds v S hl hr
     band a n ha hn rfl rfl rfl rfl rfl rfl hblank hleftMask hrightMask hcount hwork hfresh
   have hw : H.wordWidth = w := rfl
+  have hw₁ : ExecWithin native (fun d z => mnSize z+d ≤ mnSize (mk v S)+0+
+      cyclicReplicaConsumerExportWorkspace (Q := Q) (A := A) (U := U) H K n B.card) 0
+      cyclicReplicaConsumerExport (mk v S) m₁ (mk v₁ E) := by
+    simpa only [cyclicReplicaBoundaryRows_stream,hw,E,rows] using he₁
   have he₁' : Exec native cyclicReplicaConsumerExport (mk v S) m₁ (mk v₁ E) := by
     simpa only [cyclicReplicaBoundaryRows_stream,hw,E,rows] using he₁.toExec
   have hbankL' : embStk left.coupling.bank E = embStk left.coupling.bank S := by
@@ -150,7 +162,7 @@ theorem cyclicReplicaConsumerBatch_spec (hR : rpStates ≤ Q) (hQ : SS.states �
   have hcounter : (S.R (left.plan.gather 121)).length = rows.length := by
     rw [hrowsLen]
     exact hl.recoveryRhs.count
-  obtain ⟨vf,page,m₂,columns,hu₂,hm₂,he₂,hprepared,hacc,hsolve,hbo,hhf,hdf,hformat,hfactor,
+  obtain ⟨vf,page,m₂,columns,hu₂,hm₂,heFactorWithin,he₂,hprepared,hacc,hsolve,hbo,hhf,hdf,hformat,hfactor,
     hinp,houtp,hleft,h224,hprivate,hframe,hworkspace⟩ := cyclicReplicaExportedBatch_spec (body := body)
     hR hQ hA axis ha hn v₁ S raw tail pageTail factory hin hout hL hRframe
     rows hrows hbound hcounter (hblank 229 (by simp))
@@ -178,7 +190,9 @@ theorem cyclicReplicaConsumerBatch_spec (hR : rpStates ≤ Q) (hQ : SS.states �
     refine Stacks.ext hinp houtp ?_ ?_
     · funext i; exact (hpass _ (Or.inr (.bank i))).1
     · funext i; exact (hpass _ (Or.inr (.bank i))).2
-  refine ⟨vf,page,m₁+m₂,columns,hu₂.trans hu₁,?_,Exec.seq he₁' he₂,
+  have hwithin := execWithin_seq_two_budget native _ _ _ _ _ _ _ 0 _ _ hw₁ heFactorWithin
+  simp only [hrowsLen] at hwithin
+  refine ⟨vf,page,m₁+m₂,columns,hu₂.trans hu₁,?_,hwithin,Exec.seq he₁' he₂,
     hprepared,hacc,hsolve,hbo,hhf,hdf,hformat,hfactor,hinp,houtp,hleft,h224,hprivate,hframe,
     hbankLG.trans hbankL',hbankRG.trans hbankR',?_,?_,hworkspace,?_,?_,?_⟩
   · exact Nat.add_le_add hm₁ (by simpa only [hrowsLen] using hm₂)

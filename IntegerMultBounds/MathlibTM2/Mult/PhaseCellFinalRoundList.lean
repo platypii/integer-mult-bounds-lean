@@ -2,7 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCanonicalOutput
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFinalRoundFits
-public import IntegerMultBounds.MathlibTM2.Mult.SignedRoundExec
+public import IntegerMultBounds.MathlibTM2.Mult.SignedRoundStock
 
 /-! One signed word pass normalizes an arbitrary batch stream. -/
 
@@ -10,7 +10,7 @@ public import IntegerMultBounds.MathlibTM2.Mult.SignedRoundExec
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
 open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
   IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Host
-  IntegerMultBounds.MathlibTM2.Node IntegerMultBounds.MathlibTM2.Fast
+  IntegerMultBounds.MathlibTM2.Node IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Fast.Main
   IntegerMultBounds.MathlibTM2.LayerMachine IntegerMultBounds.MathlibTM2.Mult.ShortConv
 
 variable {T Q A : ℕ} {P U : Type} {body : P → Pr P T Q A U}
@@ -25,6 +25,11 @@ theorem finalRound_list_exec (hA : 4 ≤ A) {src dst tmp cW cS cE cD sp sg cy : 
     (v : HS T Q A U) (S : Stacks T A) (hsrc : S.R src = cstream A w xs) (hdst : S.R dst = [])
     (hg : topShiftG tmp cW cS cE cD sp sg cy w (q-p+j) k S.R) :
     ∃ v', v'.user = v.user ∧
+      ExecWithin body (fun callDepth z => mnSize z+callDepth ≤ mnSize (mk v S)+0+
+        13*topShiftWordCost w (q-p+j) k) 0
+        (topPass src dst (topShiftWord src dst tmp cW cS cE cD sp sg cy))
+        (mk v S) (1+(xs.length*(topShiftWordCost w (q-p+j) k+1)+1)+(2*(xs.length*k)+2))
+        (mk v' {S with R := (Function.update S.R src (cstream A k (xs.map (finalRoundWord w q p j))))}) ∧
       Exec body (topPass src dst (topShiftWord src dst tmp cW cS cE cD sp sg cy))
         (mk v S) (1+(xs.length*(topShiftWordCost w (q-p+j) k+1)+1)+(2*(xs.length*k)+2))
         (mk v' {S with R := (Function.update S.R src (cstream A k (xs.map (finalRoundWord w q p j))))}) ∧
@@ -36,10 +41,16 @@ theorem finalRound_list_exec (hA : 4 ≤ A) {src dst tmp cW cS cE cD sp sg cy : 
     exact topFitsZ_symZ hw x
   obtain ⟨v',hu,he⟩ := signedRound_exec (body := body) hA hreg w (q-p+j) k hw hsize
     (xs.map (symZ w)) hfit v S (hsrc.trans (cstream_symZ A w xs).symm) hdst hg
-  refine ⟨v',hu,?_,?_⟩
-  · unfold finalRoundWord
+  have he' : Exec body (topPass src dst (topShiftWord src dst tmp cW cS cE cD sp sg cy))
+      (mk v S) (1+(xs.length*(topShiftWordCost w (q-p+j) k+1)+1)+(2*(xs.length*k)+2))
+      (mk v' {S with R := Function.update S.R src (cstream A k (xs.map (finalRoundWord w q p j)))}) := by
+    unfold finalRoundWord
     simpa only [List.length_map,List.map_map,Function.comp_def] using he
-  · intro z hz
-    exact value_finalRound q p j hp _
+  have hstock := signedRound_within hA hreg w (q-p+j) k hw hsize (xs.map (symZ w)) hfit v S
+    (hsrc.trans (cstream_symZ A w xs).symm) hg he' 0
+  refine ⟨v',hu,hstock,he',?_⟩
+  intro z hz
+  exact value_finalRound q p j hp _
+
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

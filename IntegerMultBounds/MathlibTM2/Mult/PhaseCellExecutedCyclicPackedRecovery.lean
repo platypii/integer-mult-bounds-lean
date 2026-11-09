@@ -8,7 +8,7 @@ The emitted piece streams represent the same certified full cyclic fields. -/
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2.Host
-  IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Fast
+  IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Fast.Main
   IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.NLogN
   IntegerMultBounds.NLogN.PhaseCellMatrix IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
   IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
@@ -62,6 +62,17 @@ theorem executedCyclicPackedRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.states 
       ReplicaAssemblyControls K (extendAssembly ∘ CyclicSecondInteriorPlacement.right.plan.gather)
         (extendAssembly (extendSecond (CyclicRecoveryPlacement.bank 238))) G ∧
       (G.inp = S.inp ∧ G.out = S.out) ∧
+      ExecWithin (embTab extendAssembly (embTab extendSecond (embTab CyclicRecoveryPlacement.extend (cyclicReplicaCallerBody body))))
+        (fun d z => mnSize z+d ≤ mnSize (mk v
+          (extendStacks (by decide : 842 ≤ 850) (extendStacks (by decide : 840 ≤ 842)
+            (extendStacks (by decide : 834 ≤ 840) S))))+0+
+          (cyclicRecoveredInteriorWorkspace (P := P) (A := A) (U := U) H K J L hR hQ
+            p u l t a n solveTarget q w B.card Fs.length+
+              (2*retainedPackedPublicationMergeCost H.span H.wordWidth+
+                2*retainedPackedPublicationMergeCost K.span K.wordWidth))) 0
+        (executedCyclicPackedRecovery hR hQ)
+        (mk v (extendStacks (by decide : 842 ≤ 850) (extendStacks (by decide : 840 ≤ 842)
+          (extendStacks (by decide : 834 ≤ 840) S)))) steps (mk vf G) ∧
       Exec (embTab extendAssembly (embTab extendSecond (embTab CyclicRecoveryPlacement.extend (cyclicReplicaCallerBody body))))
         (executedCyclicPackedRecovery hR hQ)
         (mk v (extendStacks (by decide : 842 ≤ 850) (extendStacks (by decide : 840 ≤ 842)
@@ -88,7 +99,7 @@ theorem executedCyclicPackedRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.states 
   have hKs : K.span = n-min n (s-a) := rfl
   intro buffersL buffersR v S tail pageTail inputsL inputsR factory h226 h229
   obtain ⟨solutions,J,L,X,z,F,m,savedL,savedR,hlen,hformat,haccuracy,layoutL,layoutR,hJtarget,hLtarget,
-    hJexp,hLexp,hJFs,hLFs,hu,hm,hfieldsL,hfieldsR,harchiveL,harchiveR,hcontrolsL,hcontrolsR,hstreams,he⟩ :=
+    hJexp,hLexp,hJFs,hLFs,hu,hm,hfieldsL,hfieldsR,harchiveL,harchiveR,hcontrolsL,hcontrolsR,hstreams,hinteriorTrace,he⟩ :=
     executedCyclicSecondInterior_spec (body := body) hR hQ hA axis ha hn hleftRoom hrightRoom
       Fs hF buffersL buffersR (embDn extendAssembly v) S tail pageTail inputsL inputsR factory h226 h229
   obtain ⟨Ds,Es,hDlen,hElen,hencD,hencE,hgood⟩ := cyclicSecondInterior_fields_target axis ha hn target Fs hF
@@ -150,6 +161,15 @@ theorem executedCyclicPackedRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.states 
       H K rowsL rowsR (by simp only [rowsL,List.length_map,List.length_finRange]; rfl)
       (by simp only [rowsR,List.length_map,List.length_finRange]; rfl) (by omega)
       buffersL.accumulatorTail savedL buffersR.accumulatorTail savedR zi F hcontrolsL hcontrolsR hXL hYL hXR hYR 0
+  have hprefix := exec_emb_within_stock_of_exec (Fin.castLE_injective _) (ι := id)
+    (body := embTab extendSecond (embTab CyclicRecoveryPlacement.extend (cyclicReplicaCallerBody body)))
+    (body' := embTab extendAssembly (embTab extendSecond (embTab CyclicRecoveryPlacement.extend (cyclicReplicaCallerBody body))))
+    (by intro f; rfl) hinteriorTrace v rfl
+    (extendStacks (by decide : 842 ≤ 850) (extendStacks (by decide : 840 ≤ 842)
+      (extendStacks (by decide : 834 ≤ 840) S))) (embStk_extendStacks (by decide : 842 ≤ 850) _) helift
+  have hwhole := execWithin_seq_two_budget
+    (embTab extendAssembly (embTab extendSecond (embTab CyclicRecoveryPlacement.extend (cyclicReplicaCallerBody body))))
+    _ _ _ _ _ _ _ 0 _ _ hprefix heAssembly
   have hmem (b N i : ℕ) (hfit : b+N ≤ s) (hi : i < N) :
       ((b+i : ℕ) : ZMod s) ∈ haloVertices s b (b+N) := by
     apply (mem_haloVertices b (b+N) _).mpr
@@ -210,7 +230,7 @@ theorem executedCyclicPackedRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.states 
       exact (hframe _ hoff).trans (hreadAssembly _)
   refine ⟨J,L,X,vf,G,fields,m+k,savedL,savedR,huf.trans (huser.trans hu),
     ⟨layoutL,layoutR,hJtarget,hLtarget,hJexp,hLexp⟩,Nat.add_le_add hm hk',
-    hwordsL,hwordsR,h247,h547,h125,h425,?_,hcontrolsLF,hcontrolsRF,⟨hinp.trans hstreams.1,hout.trans hstreams.2⟩,
+    hwordsL,hwordsR,h247,h547,h125,h425,?_,hcontrolsLF,hcontrolsRF,⟨hinp.trans hstreams.1,hout.trans hstreams.2⟩,hwhole,
     Exec.seq helift heAssembly.toExec⟩
   intro j
   exact ⟨(hgood j).2.2.1,cyclicPublicationField_im t band a n _ _ _ ,(hgood j).2.2.2.1,(hgood j).2.2.2.2⟩

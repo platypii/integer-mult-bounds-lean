@@ -45763,3 +45763,162 @@ passes single-file checking at 3501.0 MiB and audits to only propext,
 Classical.choice and Quot.sound (temporary audit peak 9782.1 MiB). Collect the
 accumulated cleanup/volume/exact-frame work as one local checkpoint, excluding
 unrelated periodic-recovery/workspace drafts. No push; full S4 remains open.
+
+`PhaseCellReadRecoverySeedEndpoints` adapts the existing origin reader directly
+to recovery seed ports 111/113, with no extra copies or new reader program.
+`recoverySeedHeader_eq_of_parameters` checks the fixed seed-port manifest and
+proves that all other seed headers depend only on shared p/l/t/u/target/RHS
+parameters, independently of interval origin/span and RHS data. The executed
+adapter uses that lemma to accept a shared reference problem's static header
+bank, consume one actual binary origin, generate both unary endpoints, and
+return the complete current problem's seed-header contract plus the existing
+reader's actual time/space trace and exact final state. This closes the local
+endpoint-to-seed interface; composition with the retired numerical caller,
+retirement of these external endpoint seeds, and the full counted class scan
+are still pending. Guarded single-file check passes at 3393.3 MiB; joint build
+with the retired caller passes (16398 jobs, 3.5 GiB aggregate peak). Keep for a
+larger checkpoint; no push. Sharp numerical peak space, uniform extra costs and
+all other open full S4 acceptance gates remain unchanged.
+
+`PhaseCellRetireRecoverySeedEndpoints` reuses `clearWords` to retire just the
+two external changing seed words. Its theorem restores an arbitrary base state
+with blank endpoints exactly, costs `2*(x+y)+5`, and supplies a no-growth trace
+at arbitrary call depth via the existing zero-push cleanup bound. The base may
+already retain numerical output and the consumed source/queue tails. The
+`recoverySeedEndpointState_updateR` frame lemma commutes arbitrary disjoint
+queue/payload/output updates past live seeds, supporting composition without
+per-register expansion. Guarded single-file check passes at 3373.6 MiB and joint
+build with the retired caller passes (16399 jobs, 3.5 GiB aggregate peak).
+These endpoint read/retire components are verified but not yet composed around
+the concrete retired numerical execution; the full class callback and scan,
+sharp numerical peak space, uniform extra-cost absorption and remaining S4
+gates remain open. No push; retain for a larger coherent checkpoint.
+
+`PhaseCellOriginCyclicComplexCaller.originProgram_exec` now composes the actual
+binary-origin reader, the concrete retired cyclic fitting numerical caller,
+and external endpoint cleanup. It starts from blank changing endpoint seeds
+and one binary origin record; static seed headers remain ordinary scalar inputs.
+The resulting execution consumes exactly that origin and routed payload,
+prepends certified output, and restores every other state component, including
+both changing endpoint seed ports. The structural `readerProtected` predicate
+packages only the fixed register-separation obligations. Header preservation is
+proved once from the reader's three changed registers; no new origin reader,
+numerical execution supplier or per-register enumeration is introduced.
+The existing seed-update commutation lemma is used directly to compose output
+publication with external endpoint retirement. Time includes the actual reader,
+existing numerical/preparation/retirement ledger, and exact two-seed cleanup.
+Reader and numerical subexecutions are exposed so intermediate stock in the bill
+is tied to an actual run. The full numerical peak-space trace is deliberately
+not supplied as an assumed bound: it remains to prove before instantiating the
+resource-bounded consuming class scan. Uniform added-cost absorption, shared
+outer exposure/fallback and full S4 acceptance also remain open.
+Guarded concrete-composition check passes at 3525.7 MiB; joint integration with
+ConsumeTimeScan passes (16402 jobs, 3.6 GiB aggregate peak). Static-header,
+endpoint-retirement and concrete origin-caller axiom audits contain only propext,
+Classical.choice and Quot.sound (temporary peak 9779.8 MiB). Keep this accumulated
+endpoint lifecycle/composition chunk uncommitted for now; nothing pushed.
+
+Sharp-space integration has begun by preserving existing traces rather than
+charging numerical time as workspace. `executedCyclicSecondInterior_spec` now
+exposes the actual recovery prefix, exact step split, and the existing
+`ExecWithin` trace for both second-interior passes. Their bound uses the named
+sum of resumed-interior workspaces and the actual intermediate 840-register
+state, not a supplied stock cap. `cachedCyclicReplicaRecovery_exec` similarly
+retains its already-proved solved recovery trace, tied to the actual lifted
+cached-boundary prefix and endpoint. `executedCyclicReplicaRecovery_spec`
+forwards that decomposition while deriving all ordinary recovery readiness.
+Consumers are updated without changing programs. These are verified execution
+segments, not yet the full numerical peak-space theorem: cached pass/factor/
+consumer composition, intermediate stock accounting, and final publication
+space still need connection. The cached producer and factor factory already
+have structural workspace theorems to reuse. Guarded second-interior check
+passes at 3437.2 MiB; integration through the complete origin callback passes
+(16400 jobs, 6.0 GiB aggregate peak). Full S4 and its other open acceptance gates
+remain active. No push; retain with the endpoint-composition work for a larger
+checkpoint.
+
+The cached-producer and consumer-export prefixes now retain their existing
+sharp traces in the public batch contracts. `cachedCyclicReplicaBatch_spec`
+returns the actual producer execution with `cachedReplicaPassMasksWorkspace`,
+its endpoint (the same producer used by the residual accuracy proof), exact
+step split and actual consumer suffix. `cyclicReplicaConsumerBatch_spec` returns
+the residual-export trace with `cyclicReplicaConsumerExportWorkspace`, its exact
+exported state and actual constructed factor/solve suffix. This preserves four
+already-verified numerical segments together with the recovery/second-interior
+work above, without new programs or elapsed-time workspace estimates.
+The remaining central segment is the constructed factor factory plus residual
+solves, followed by intermediate stock accounting. Existing
+`preparedCyclicFactorFactory_spec_within`, `cyclicPreparedResidualBatch_exec`
+and `exec_emb_within_stock_of_exec` supply the intended path: transfer local
+sharp bounds onto the already-produced placed execution using execution
+uniqueness; reuse the existing accuracy witnesses. Do not re-prove numerical
+accuracy or accept a supplied full-run stock cap. Consumer-export single-file
+check passes at 3426.0 MiB; integration through the concrete origin callback
+passes (16400 jobs, 6.1 GiB aggregate peak). Full numerical peak space and all
+other open S4 acceptance gates remain incomplete. No push; retain for a larger
+checkpoint with the endpoint/composition work.
+
+The entire cached-boundary numerical batch now has an actual `ExecWithin`
+trace. `constructedCyclicResidualBatch_spec` switches directly to the existing
+`preparedCyclicFactorFactory_spec_within`, retaining all its accuracy/format
+witnesses, embeds that trace, and composes it with the existing residual-solve
+trace. `actualCyclicFactorWorkspace` instantiates the factory's structural bound
+with the actual fixed programs' push counts, so no push/stock bound is supplied
+by the external caller. `cyclicReplicaExportedBatch_spec` transfers that bound
+onto its already-produced placed trace using `exec_emb_within_stock_of_exec`.
+`cyclicReplicaConsumerBatch_spec` composes export and factor/solve, and
+`cachedCyclicReplicaBatch_spec` composes the cached passes with that consumer.
+The earlier partial producer/export split certificates are removed: these
+stronger whole-stage traces supersede them. Mathematical accuracy witnesses and
+programs are unchanged. No numerical time bill is used as a space estimate.
+Guarded checks: constructed factor/residual batch 3439.4 MiB, consumer 3453.2 MiB,
+cached-boundary batch 3461.8 MiB. Full origin-callback integration passes (16563
+jobs, 8.5 GiB aggregate peak). Next lift this cached-boundary trace through the
+recovery wrapper and compose the already-exposed solved recovery and second
+interiors; publication and preparation traces and uniform selected workspace
+absorption still need connection. This structural bound does not yet establish
+the final sharp S4 peak-space acceptance theorem. Full S4 remains open; no push.
+
+Recovery/assembly space is now composed rather than merely exposed in segments.
+`cachedCyclicReplicaWorkspace` names the actual cached-boundary structural
+allowance. The internal `cachedCyclicReplicaRecovery_exec` accepts its prefix's
+proven trace, lifts that same execution through the existing embedding helper,
+and composes it with solved recovery. The public ordinary-input theorem
+instantiates this with `cachedCyclicReplicaBatch_spec`'s actual workspace; no
+external stock supplier is added. Both recovery wrappers now return whole-run
+`ExecWithin` traces, replacing their partial split certificates.
+`executedCyclicSecondInterior_spec` similarly lifts recovery and composes both
+second interiors. Direct monotonicity resolves an elaboration-depth failure in
+large budget matching, without changing any limits. The named
+`cyclicRecoveredInteriorWorkspace` is consumed immediately by
+`executedCyclicPackedRecovery_spec`, which composes packed piece assembly too.
+Thus cached passes, residual export, shared factor/solve, recovery coupling,
+second interiors and both piece streams share one verified structural trace.
+Remaining space gates: normalization/final publication, ordinary preparation,
+and uniform selected-space absorption into the actual S4 allowance; the full
+class scan and all other open full S4 acceptance gates remain incomplete.
+Guarded checks: second-interior composition 3474.0 MiB; packed recovery 3486.8
+MiB. Full origin-callback integration passes (16563 jobs, 6.0 GiB aggregate peak).
+No push; retain accumulated endpoint/space work for a coherent checkpoint.
+
+Normalization groundwork now reuses a structural word-pass theorem.
+`Node.TopWordStock.topWords_within` uses the existing loop-boundary invariant,
+per-word specification and execution uniqueness to charge a native word
+program once. If each output word is no longer than its input, boundary stock
+never increases; `topPass_within` adds the existing zero-growth ordered return
+move. Its scratch allowance is independent of stream length. `SignedRoundStock`
+instantiates this for the actual truncating-shift program, using representable
+signed words and its fixed push bound. `finalRound_list_exec` now returns that
+trace together with its existing accuracy result; GeneratedRoundList consumes
+the strengthened interface. This avoids bounding rounding scratch by the whole
+batch's running time. Generating and retiring rounding controls still need
+composition with this trace before normalization as a whole has a sharp bound.
+Guarded checks: generic word-pass module 1619.9 MiB; signed-round module 2024.8
+MiB. Full concrete-origin callback integration passes (16565 jobs, 22.3 GiB
+aggregate peak). Generic word pass, signed rounding and final-round executor
+audit to only propext, Classical.choice and Quot.sound (temporary audit peak
+9049.2 MiB). Collect the accumulated endpoint lifecycle, concrete callback,
+cached/recovery/interior/assembly space and reusable word-stock work into one
+larger local checkpoint, excluding unrelated periodic/workspace drafts. No
+push. Full S4 remains open: complete normalization/publication/preparation
+space and uniform absorption, then class scan/outer/fallback/final acceptance.

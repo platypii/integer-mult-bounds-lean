@@ -10,13 +10,22 @@ residual rows and share one factor factory across all boundary solves. -/
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2.Host
-  IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Fast
+  IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Fast.Main
   IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.MathlibTM2.Mult.BandFactor
   IntegerMultBounds.NLogN IntegerMultBounds.NLogN.PhaseCellMatrix
   IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
   IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
 open CyclicReplicaPlacement
 variable {Q A : ℕ} {P U : Type} {body : P → Pr P 117 Q A U}
+
+/-- Structural storage for the actual cached passes, residual export and shared factor/solve batch. -/
+noncomputable def cachedCyclicReplicaWorkspace {s : ℕ} (H K : ReplicaHaloProblem s)
+    (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q)
+    (p u l t a n target q w N replicas : ℕ) [NeZero s] : ℕ :=
+  cachedReplicaPassMasksWorkspace (A := A) (U := U) H K hR hQ+
+    (cyclicReplicaConsumerExportWorkspace (Q := Q) (A := A) (U := U) H K n N+
+      (actualCyclicFactorWorkspace (P₀ := P) (A := A) (U := U) hR hQ p u l s t a n target+
+        preparedResidualBatchWorkspace (A := A) (U := U) P hQ q w N (24*PhaseCellBand.width p u+1) replicas))
 
 noncomputable def cachedCyclicReplicaBatch (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) : Pr P 834 Q A U :=
   .seq (cachedReplicaPassMasks left right (factorReg 170) (factorReg 173) hR hQ)
@@ -65,6 +74,13 @@ theorem cachedCyclicReplicaBatch_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ 
       CachedReplicaPassPost K right rightBuffers mid producer Ds ∧
       v'.user = v.user ∧ steps ≤ producerCost+(consumerCost+(constructedCyclicFactorCost p u l s t a n target 2+
         preparedResidualBatchCost q w B.card W Fs.length)) ∧
+      ExecWithin (embTab factorReg (embTab preparedBoundaryBatchCoreReg (embTab preparedBoundaryCoreReg
+        (embTab boundaryFactorLegacyReg (embTab tableReg (embTab boundaryArithmeticReg
+          (embTab componentReg (embTab groupReg body))))))))
+        (fun d z => mnSize z+d ≤ mnSize (mk v S)+0+
+          cachedCyclicReplicaWorkspace (P := P) (A := A) (U := U) H K hR hQ
+            p u l t a n target q w B.card Fs.length) 0
+        (cachedCyclicReplicaBatch hR hQ) (mk v S) steps (mk v' (embOvr factorReg F.get E)) ∧
       Exec (embTab factorReg (embTab preparedBoundaryBatchCoreReg (embTab preparedBoundaryCoreReg
         (embTab boundaryFactorLegacyReg (embTab tableReg (embTab boundaryArithmeticReg
           (embTab componentReg (embTab groupReg body))))))))
@@ -152,13 +168,14 @@ theorem cachedCyclicReplicaBatch_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ 
     simp only [List.mem_cons,List.not_mem_nil,or_false] at hr
     rcases hr with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
     all_goals exact (hRframe _ (by decide) (by decide)).trans (hfresh _ (by simp))
-  obtain ⟨vf,page,m₂,columns,hu₂,hm₂,he₂,hprepared,hacc,hsolve,hbo,hhf,hdf,hformat,hfactor,
+  obtain ⟨vf,page,m₂,columns,hu₂,hm₂,heConsumerWithin,he₂,hprepared,hacc,hsolve,hbo,hhf,hdf,hformat,hfactor,
     hinp,houtp,hleft,h224,hprivate,hframe,hbankL,hbankR,hrhsL,hrhsR,hworkspace,hprojection,haccuracy,hresidual⟩ :=
     cyclicReplicaConsumerBatch_spec (body := body) hR hQ hA axis ha hn Fs hF
       leftBuffers rightBuffers S mid Cs Ds v₁ producer (embStk factorReg S) tail pageTail hl hr
       factory hin hout hL hRframe hblank' hmaskL hmaskR hwork' hfresh'
+  have hwithin := execWithin_seq_two_budget native _ _ _ _ _ _ _ 0 _ _ he₁ heConsumerWithin
   exact ⟨mid,producer,Cs,Ds,vf,page,m₁+m₂,columns,hl,hr,hu₂.trans hu₁,
-    Nat.add_le_add hm₁ hm₂,Exec.seq he₁.toExec he₂,hprepared,hacc,hsolve,hbo,hhf,hdf,hformat,hfactor,
+    Nat.add_le_add hm₁ hm₂,hwithin,Exec.seq he₁.toExec he₂,hprepared,hacc,hsolve,hbo,hhf,hdf,hformat,hfactor,
     hinp,houtp,hleft,h224,hprivate,hframe,hbankL,hbankR,hrhsL,hrhsR,hworkspace,hprojection,haccuracy,hresidual⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

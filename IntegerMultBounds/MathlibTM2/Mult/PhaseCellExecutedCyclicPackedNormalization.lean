@@ -91,7 +91,7 @@ theorem executedCyclicPackedNormalization_spec (hR : rpStates ≤ Q) (hQ : SS.st
   let H := axis.cyclicLeftReplicaProblem cellTarget 2 a n ha Fs hF
   let K := axis.cyclicRightReplicaProblem cellTarget 2 a n hn Fs hF
   intro W hW wide hwide buffersL buffersR v S tail pageTail inputsL inputsR factory h226 h229
-  obtain ⟨J,L,X,z,G,fields,m,savedL,savedR,hu,hprofile,hm,hwordsL,hwordsR,h247,h547,h125,h425,hfields,controlsL,controlsR,hstreams,he⟩ :=
+  obtain ⟨J,L,X,z,G,fields,m,savedL,savedR,hu,hprofile,hm,hwordsL,hwordsR,h247,h547,h125,h425,hfields,controlsL,controlsR,hstreams,hpackedWithin,he⟩ :=
     executedCyclicPackedRecovery_spec (body := body) (target := target+1) hR hQ hA axis ha hn hleftRoom hrightRoom
       Fs hF buffersL buffersR (embDn extendNormalization v) S tail pageTail inputsL inputsR factory h226 h229
   let callerBody := embTab extendNormalization (embTab extendAssembly

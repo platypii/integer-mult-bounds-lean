@@ -64,7 +64,7 @@ theorem generatedFinalRound_list_exec (hA : 4 ≤ A) (rg : TblR 8 → Fin T) (hr
     ((hfree sp (by simp)).trans (hblank sp (by simp)))
     ((hfree sg (by simp)).trans (hblank sg (by simp)))
     ((hfree cy (by simp)).trans (hblank cy (by simp)))
-  obtain ⟨v₂,hu₂,he₂,hd⟩ := finalRound_list_exec (body := body) hA hreg w q p j (p+E+5)
+  obtain ⟨v₂,hu₂,hroundWithin,he₂,hd⟩ := finalRound_list_exec (body := body) hA hreg w q p j (p+E+5)
     hp hw hsize xs v₁ S₁ ((hfree src (by simp)).trans hsrc)
     ((hfree dst (by simp)).trans (hblank dst (by simp))) hg
   let S₂ : Stacks T A := {S₁ with R := Function.update S₁.R src (cstream A (p+E+5) (xs.map (finalRoundWord w q p j)))}

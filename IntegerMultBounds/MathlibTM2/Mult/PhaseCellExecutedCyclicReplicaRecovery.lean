@@ -12,7 +12,7 @@ coupling. The caller's own solved rows supply all recovery format/control facts.
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2.Host
-  IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Fast
+  IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Fast.Main
   IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.MathlibTM2.Mult.BandFactor
   IntegerMultBounds.NLogN IntegerMultBounds.NLogN.PhaseCellMatrix IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
   IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
@@ -69,6 +69,12 @@ theorem executedCyclicReplicaRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.states
         ‖value q (solution.getD i 0)‖ ≤ (2 : ℝ)^stableInteriorExponent p 2) ∧ zf.user = z.user ∧
       steps ≤ cachedCyclicReplicaBoundaryBill H K p u l t a n target q w B.card (24*band+1) Fs.length+
         solvedCyclicRecoveryCost H K Fs.length B.card n w ∧
+      ExecWithin (embTab extendCaller (cyclicReplicaCallerBody body))
+        (fun d state => mnSize state+d ≤ mnSize (mk z (extendStacks (by decide : 834 ≤ 840) S))+0+
+          (cachedCyclicReplicaWorkspace (P := P) (A := A) (U := U) H K hR hQ
+            p u l t a n target q w B.card Fs.length+
+            solvedCyclicRecoveryWorkspace (A := A) (U := U) H K Fs.length B.card n w hQ)) 0
+        (cachedCyclicReplicaRecovery hR hQ) (mk z (extendStacks (by decide : 834 ≤ 840) S)) steps (mk zf X) ∧
       Exec (embTab extendCaller (cyclicReplicaCallerBody body)) (cachedCyclicReplicaRecovery hR hQ)
         (mk z (extendStacks (by decide : 834 ≤ 840) S)) steps (mk zf X) ∧
       X.R (CyclicRecoveryPlacement.bank 228) = [] ∧
@@ -101,7 +107,7 @@ theorem executedCyclicReplicaRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.states
   let H := axis.cyclicLeftReplicaProblem cellTarget 2 a n ha Fs hF
   let K := axis.cyclicRightReplicaProblem cellTarget 2 a n hn Fs hF
   intro leftBuffers rightBuffers z S tail pageTail inputsL inputsR factory h226 h229
-  obtain ⟨mid,producer,Cs,Ds,vf,page,m₀,columns,postL,postR,hu₀,hm₀,he₀,hprepared,hacc,hsolve,hbo,hhf,hdf,
+  obtain ⟨mid,producer,Cs,Ds,vf,page,m₀,columns,postL,postR,hu₀,hm₀,heBoundaryWithin,he₀,hprepared,hacc,hsolve,hbo,hhf,hdf,
     hformat,hfactor,hinp,houtp,hleft,h224,hprivate,hframe,hbankL,hbankR,hrhsL,hrhsR,hworkspace,hprojection,haccuracy,hresidual⟩ :=
     cachedCyclicReplicaBatch_spec (body := body) hR hQ hA axis ha hn hleftRoom hrightRoom
       Fs hF leftBuffers rightBuffers (embDn extendCaller z) S tail pageTail inputsL inputsR factory h226 h229
@@ -183,10 +189,10 @@ theorem executedCyclicReplicaRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.states
       (fun k => (value q (Fs.reverse.getD (Fs.length-1-j) (fun _ => 0) k)).re)
     have hh := (hboundary ⟨j,hjF⟩ x hx).2 i hi
     simpa only [List.getD_eq_getElem _ _ hj] using hh.2
-  obtain ⟨zf,X,m,hu,hm,he,hclock,hcursor⟩ := cachedCyclicReplicaRecovery_exec body H K t band a n q w W
+  obtain ⟨zf,X,m,hu,hm,hrecoveryTrace,he,hclock,hcursor⟩ := cachedCyclicReplicaRecovery_exec body H K t band a n q w W
     axis.hst ha hn rfl rfl rfl rfl rfl rfl rfl rfl rfl rfl solutions Fs hHF hKF hlen hformats hR hQ hA
     hleftRoom hrightRoom leftBuffers rightBuffers S S mid producer G Cs Ds (embDn extendCaller z) vf m₀
-    he₀ hu₀ postL postR hbankL hbankR hrhsL hrhsR (page.R 224)
+    he₀ _ heBoundaryWithin hu₀ postL postR hbankL hbankR hrhsL hrhsR (page.R 224)
     (by rw [hview]; exact hworkspace) hready hsource (by rw [hview]; exact hprojection) z rfl
   have hprojected := cyclicBoundaryProjection_resume H K leftBuffers rightBuffers extended (page.R 224)
     (solutions.reverse.flatMap (fun solution =>
@@ -230,7 +236,7 @@ theorem executedCyclicReplicaRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.states
     rw [hreadR]
     have hh := congrArg (fun T : Stacks 168 A => T.R (Fin.castLE (by decide : 117 ≤ 168) i)) hbankR
     simpa only [embStk,Function.comp_apply,ReplicaCouplingPlacement.bank_native] using hh
-  refine ⟨solutions,zf,X,m,_,_,_,_,hlen,hformats,hboundary,hmag,hu,?_,he,hclock,?_,?_,hcursor.archiveL,hcursor.archiveR,
+  refine ⟨solutions,zf,X,m,_,_,_,_,hlen,hformats,hboundary,hmag,hu,?_,hrecoveryTrace,he,hclock,?_,?_,hcursor.archiveL,hcursor.archiveR,
     hcursor.cacheL,hcursor.cacheR,hcursor.headersL,hcursor.headersR,hresumeX.1,hresumeX.2,
     hresumeX.1.assembly_controls _ hmaskL,hresumeX.2.assembly_controls _ hmaskR,?_,?_⟩
   · have hbill : m₀ ≤ cachedCyclicReplicaBoundaryBill H K p u l t a n target q w B.card W Fs.length := hm₀
