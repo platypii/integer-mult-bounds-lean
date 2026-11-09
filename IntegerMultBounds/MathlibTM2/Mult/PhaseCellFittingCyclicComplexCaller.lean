@@ -159,7 +159,7 @@ theorem program_exec (ports : CyclicComplexCallerLayout T)
     exact Ne.symm (by assumption)
   have htmp' : C.R ports.tmp = [] :=
     (hframe _ htmpArchive (fun j => ports.tmpOff _)).2.trans htmp
-  obtain ⟨J,L,v₂,F,G,n₂,word,hu₂,hseed,hprofile,hn₂,he₂,hword,h848,hcert,hstreams,houtside⟩ :=
+  obtain ⟨J,L,v₂,F,G,n₂,word,hu₂,hseed,hprofile,hn₂,hfactoredWithin,he₂,hword,h848,hcert,hstreams,houtside⟩ :=
     factoredCyclicComplexCore_exec (body := body) ports.bank ports.injective hR hQ hA axis ha hn
       hleftRoom hrightRoom coreWidth k radius hleft haCore hnCore hright Fs hF W hW
       (generatedRecoveryBuffers H S.inp S.out) (generatedRecoveryBuffers K S.inp S.out)

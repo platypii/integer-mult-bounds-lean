@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedScaledFactorWorkspace
+public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedCyclicColumnsWorkspace
 public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedCachedCyclicPassWorkspace
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellConstructedCyclicResidualBatch
 
@@ -98,5 +99,44 @@ theorem selectedActualCyclicFactorWorkspace_le_columns (hR : rpStates ≤ Q) (hQ
     unfold closedCyclicFactorPageWorkspace preparedCyclicFactorPageWorkspace closedCyclicFactorColumnsWorkspace
     exact Nat.add_le_add_left hpub _
   nlinarith only [hfactor,hpage]
+
+theorem selectedActualCyclicFactorWorkspace_le (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q)
+    (cw cb : ℕ) :
+    ∀ᶠ m : ℕ in atTop, ∀ (_h : Sizes.Big m) (i : Fin (Sizes.d m)) [NeZero (Sizes.s m i)],
+      ∀ u target a n : ℕ,
+      let p := Sizes.p m
+      let s := Sizes.s m i
+      let t := Sizes.t m i
+      let l := haloInverseRingLog s t
+      let B := cyclicPrincipalBoundary s t (PhaseCellBand.width p u) a n
+      let bits := boundaryTableBits p target 2 B.card
+      executionWidth p l (initialSchurTarget p u bits 2) 2 ≤ cw*p →
+      PhaseCellBand.width p u ≤ cb*p → u ≤ p → PhaseCellBand.width p u ≤ s → a ≤ s → n ≤ s →
+      actualCyclicFactorWorkspace (P₀ := Empty) (A := A) (U := U) hR hQ p u l s t a n target ≤
+        11*Sizes.T m := by
+  filter_upwards [selectedActualCyclicFactorWorkspace_le_columns (A := A) (U := U) hR hQ cw cb,
+    selectedPreparedCyclicColumnsWorkspace_le (P₀ := Empty) (Q := Q) (A := A) (U := U)
+      (cyclicRecoveryMulPush (A := A) (U := U) hQ)
+      (cyclicReplicaRingPush (A := A) (U := U) hR)
+      (cyclicReplicaBatchPush (A := A) (U := U) hQ)
+      (cyclicRecoveryMulPush (A := A) (U := U) hQ) cw] with m hf hc
+  intro h i _ u target a n
+  dsimp only
+  let p := Sizes.p m
+  let s := Sizes.s m i
+  let t := Sizes.t m i
+  let l := haloInverseRingLog s t
+  let B := cyclicPrincipalBoundary s t (PhaseCellBand.width p u) a n
+  let bits := boundaryTableBits p target 2 B.card
+  intro hw hbP hu hb ha hn
+  have hqW : executionPrecision p l (initialSchurTarget p u bits 2) 2 ≤
+      executionWidth p l (initialSchurTarget p u bits 2) 2 := by
+    dsimp only [executionPrecision,executionWidth]; omega
+  have hfactor := hf h i u l t a n target (hqW.trans hw) hbP
+  have hcolumns := hc h i u bits a n hw hu hb ha hn
+  have hcolumnsBound : closedCyclicFactorColumnsWorkspace (A := A) (U := U) hR hQ
+      p u l s t a n target ≤ 9*Sizes.T m := by
+    simpa only [closedCyclicFactorColumnsWorkspace] using hcolumns
+  nlinarith only [hfactor,hcolumnsBound]
 
 end IntegerMultBounds.MathlibTM2.Cost

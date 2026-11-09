@@ -9,7 +9,7 @@ numerical publication as one program. No factor-input supplier remains. -/
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2.Host
   IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Node
-  IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.NLogN
+  IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Fast.Main IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.NLogN
   IntegerMultBounds.NLogN.PhaseCellMatrix IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
 open CyclicReplicaPlacement
 variable {T Q A : ℕ} {P U : Type} {body : P → Pr P T Q A U}
@@ -68,6 +68,19 @@ theorem factoredCyclicComplexCore_exec (bank : Fin 909 → Fin T) (hbank : Funct
           s t (PhaseCellBand.width p u) a n)+((4*(W+radius+coreLength s coreWidth k)+13)+
         Cost.cyclicComplexCoreTimeCost H K p u l t a n target q W radius
           (coreLength s coreWidth k) Rs.length Fs.length) ∧
+      ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+0+
+        (cyclicFactorPreparationPush (Q := Q) (A := A) (U := U)*
+          (copyUnaryHeadersCost (fun k => (S.R k).length)
+            (masterHeaderCopies ((small ∘ CyclicReplicaPlacement.factorReg) ∘ Fin.castLE (by decide : 224 ≤ 234))
+              (cachedFactorSeedSource (small ∘ CyclicReplicaPlacement.left.plan.gather) span))+
+            prepareCyclicBoundaryPageCost
+              (embStk (Fin.castLE (by decide : 154 ≤ 234)) (embStk (small ∘ CyclicReplicaPlacement.factorReg) F)).R
+              s t (PhaseCellBand.width p u) a n)+
+          (2*(4*(W+radius+coreLength s coreWidth k)+13)+
+            cyclicComplexCoreWorkspace (P := Empty) (A := A) (U := U) H K J L hR hQ
+              p u l t a n solveTarget q (executionWidth p l stage 2) W B.card
+              Rs.length Fs.length radius (coreLength s coreWidth k)))) 0
+        (factoredCyclicComplexCore bank source span tmp hR hQ) (mk v S) steps (mk v' G) ∧
       Exec body (factoredCyclicComplexCore bank source span tmp hR hQ) (mk v S) steps (mk v' G) ∧
       G.R (bank 850) = word ∧ G.R (bank 848) = [] ∧
       PackedNormalizedOutput p W target coreWidth k localityTarget Fs Y word ∧
@@ -101,7 +114,7 @@ theorem factoredCyclicComplexCore_exec (bank : Fin 909 → Fin T) (hbank : Funct
   have hseedTmp (i : Fin 10) : cachedFactorSeedSource (small ∘ left.plan.gather) span i ≠ tmp := by
     fin_cases i <;> first | exact hbankTmp _ | exact hspanTmp
   have hmaster := axis.cyclicLeftReplicaProblem_factorSeedValues solveTarget a n ha Rs hRs
-  obtain ⟨v₁,F,R,n₁,hu₁,hseed,hn₁,he₁,factory,inputsL',inputsR',hframe,h226,h229⟩ :=
+  obtain ⟨v₁,F,R,n₁,hu₁,hseed,hn₁,hfactorWithin,he₁,factory,inputsL',inputsR',hframe,h226,h229⟩ :=
     prepareCyclicFactorFromCached_exec (body := body) small hsmall H.s_lt_t ha hn H.band_fit
       H K buffersL buffersR span tmp hseedOff hseedTmp (fun i => hbankTmp _) v S
       inputsL inputsR hmaster hspan (fun i => (hfactorFresh i).2) (fun i => (hfactorFresh i).1) htmp
@@ -123,8 +136,9 @@ theorem factoredCyclicComplexCore_exec (bank : Fin 909 → Fin T) (hbank : Funct
       coreWidth k radius hleft haCore hnCore hright Fs hF W hW buffersL buffersR v₁ R source tmp
       inputsL' inputsR' factory h226 h229 hsourceOff hsourceTmp hbankTmp hvalues' hfresh' htmp'
       localityTarget qRef Y hqRef hwindow hY
+  have hwhole := execWithin_seq_two_budget body _ _ _ _ _ _ _ 0 _ _ hfactorWithin hpreparedWithin
   refine ⟨J,L,v₂,F,G,n₁+n₂,word,hu₂.trans hu₁,hseed,hprofile,Nat.add_le_add hn₁ hn₂,
-    Exec.seq he₁ he₂,hword,h848,hcert,
+    hwhole,Exec.seq he₁ he₂,hword,h848,hcert,
     ⟨hstreams.1.trans (inputsL'.input.trans inputsL.input.symm),
       hstreams.2.trans (inputsL'.outputStream.trans inputsL.outputStream.symm)⟩,?_⟩
   intro i hi

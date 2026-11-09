@@ -3907,8 +3907,29 @@ prepare numerical data, reuse it across the batch, publish certified complex
 core rows in order, and release scratch. Correctness, time and peak storage
 must concern the same execution. Geometry/layout assumptions remain explicit;
 prepared numerical banks, callback execution and resource suppliers must be
-produced or discharged. The current `executedCyclicComplexCore_spec` establishes
-functional execution from component banks; it is not this acceptance target.
+produced or discharged. `executedCyclicComplexCore_spec` now supplies functional
+execution and a complete numerical `ExecWithin` trace from component banks.
+The ordinary origin callback has functional correctness and exact retirement;
+its complete selected time/space acceptance is still open.
+
+**Current review checkpoint (2026-11-09).** The committed selected comparisons
+cover cached passes/masks, solved recovery, resumed interiors, residual solves
+and export, normalization/publication, numerical factorization and factor-page
+publication. Original-column coupling also has a selected bound. These are
+component results; they do not establish a complete ordinary fitting batch.
+The uniform halo/table comparison now compiles: complete Schur columns fit
+`9*T` and the actual closed cyclic factor allowance fits `11*T`, under the
+stated selected width/geometry conditions. The selected numerical allowance
+now composes fully to linear replica storage plus `39*T`. Factor seed/page
+preparation also has a trace, composed through the factored numerical caller.
+Next include ordinary component/header input production and retirement in the
+complete fitting callback, discharge its actual selected-profile premises,
+and connect the whole selected bound to that same execution. Do not expand further wrapper families before this pilot passes.
+Use this acceptance checkpoint, rather than appended implementation history,
+as the current progress reference. After the pilot, actual class scan/shared
+exposure, setup multiplicity, seam/full fallback, tensor/locality composition
+and final root/compiler acceptance remain mandatory. No reliable percentage
+or completion date follows from the component count.
 
 Work backwards from that target in the following order:
 
@@ -46178,3 +46199,67 @@ previous numerical factor/page bounds in a larger local checkpoint; no push.
 The selected original-column module checks at 3324.0 MiB. The combined temporary
 factor/column audit reports only standard axioms (9782.1 MiB for the nonmodule
 audit).
+
+The reviewed halo/table gap is now closed at component level and consumed by
+the actual cyclic factor allowance. `solveHaloInteriorUniformWorkspace_poly`
+reuses the existing generated setup estimate and zero-replica staged arithmetic,
+with the manuscript's common cell-length bound. Its selected instantiation
+proves the generated dimensions from actual execution width and selected
+geometry; no workspace supplier or unverified sizing draft is imported.
+`selectedInteriorResidualUniformWorkspace_le` immediately composes that reserve
+with the already-proved feed reserve, yielding `3*T`.
+
+`preparedCyclicColumnsWorkspace_le_components` reuses the original-column/two-
+residual decomposition and bounds actual entry collection, counters and output
+volume cubically. `selectedPreparedCyclicColumnsWorkspace_le` consumes the
+selected original-column and residual bounds, yielding `9*T` for complete
+Schur-column construction. `selectedActualCyclicFactorWorkspace_le` then
+consumes this and the numerical/publication bounds: the exact closed factory
+workspace is at most `11*T`. All actual coefficient programs remain fixed;
+width/geometry premises are explicit. The active checkpoint above is updated:
+next compose the numerical selected bounds onto the ordinary fitting callback
+and include preparation/retirement, before extending wrapper families.
+
+A selected-envelope expansion hit default recursion/heartbeat limits. Keeping
+its scalar coefficient opaque and proving its elementary inequalities once
+resolves the expansion without changing limits. The complete actual-factor
+build passes (16426 jobs, 3.6 GiB aggregate); its individual check peaks at
+3501.2 MiB. Keep these results for the complete numerical/pilot checkpoint;
+no push. Full fitting acceptance, class/exposure multiplicity, fallback,
+tensor/locality and final S4 acceptance remain open.
+The selected uniform-halo module checks at 3347.2 MiB. The combined temporary
+audit of common/selected halo, residual, complete Schur columns and actual
+factory absorption reports only standard axioms (9788.0 MiB for the nonmodule
+audit).
+
+Selected component estimates now compose on the actual numerical allowance.
+`selectedCachedCyclicReplicaWorkspace_le` combines both cached passes/masks,
+residual export, the actual factor factory and shared residual solves: linear
+replica traffic plus `22*T`. `selectedCyclicPackedRecoveryWorkspace_le` adds
+solved recovery, both resumed interiors and actual merge reserves, using the
+executed layout/count relations: linear traffic plus `36*T`.
+`selectedCyclicComplexCoreWorkspace_total_le` consumes that result in the
+existing complex-core workspace module, adding both normalizers and final
+publication/pairing. The entire actual closed numerical allowance is bounded
+by linear replica storage plus `39*T`, under explicit selected width, geometry,
+profile and count premises. It leaves no factor/recovery/normalization workspace
+term as an unbounded remainder. These premises still need discharge for the
+ordinary fitting callback before claiming pilot acceptance.
+
+The actual factor preparation is now traced too.
+`prepareCyclicFactorFromCached_native` reuses generic call-free embedding for
+the closed page producer and the existing unary-header copy bound. Its fixed
+push coefficient prices only shared native seed/page generation.
+`prepareCyclicFactorFromCached_exec` returns its `ExecWithin` beside the same
+execution, produced seed bank and exact frame. `factoredCyclicComplexCore_exec`
+composes that trace with control installation and the existing numerical trace.
+The ordinary fitting caller consumes the strengthened interface; component/
+header input production and final full-callback space composition remain next.
+Origin-callback and selected-numerical integration passes (16630 jobs, 3.6 GiB
+aggregate). No new bank/stock supplier is introduced. Accumulate this complete
+numerical/preparation chunk locally; no push. Full S4 remains open.
+Individual checks pass: complete selected numerical workspace 3530.0 MiB;
+factored caller with preparation trace 3531.6 MiB. The combined temporary audit
+of cached/packed/complete numerical comparison, native factor preparation,
+preparation execution and factored execution reports only standard axioms
+(9855.0 MiB for the nonmodule audit).

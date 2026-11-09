@@ -1,6 +1,8 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellInstallCyclicFactorSeeds
+public import IntegerMultBounds.MathlibTM2.Host.ClosedProgramStock
+public import IntegerMultBounds.MathlibTM2.Host.NativePushBoundMono
 
 /-! Cached masters generate the factor's ordinary seeds and boundary page in
 one physical execution, preserving both numerical inputs and external storage. -/
@@ -8,7 +10,7 @@ one physical execution, preserving both numerical inputs and external storage. -
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2.Host
   IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Node
-  IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.NLogN
+  IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Fast.Main IntegerMultBounds.NLogN
   IntegerMultBounds.NLogN.PhaseCellMatrix IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
 open CyclicReplicaPlacement
 variable {T Q A : ℕ} {P U : Type} {body : P → Pr P T Q A U}
@@ -45,6 +47,24 @@ def prepareCyclicFactorFromCached (bank : Fin 834 → Fin T) (span tmp : Fin T) 
     (cachedFactorSeedSource (bank ∘ left.plan.gather) span) tmp)
     (embProg (bank ∘ factorReg) id prepareCyclicFactorInput)
 
+@[irreducible] def cyclicFactorPreparationPush : ℕ :=
+  max 2 (mnProgPush (prepareCyclicBoundaryPage (P := Empty) (Q := Q) (A := A) (U := U)))
+
+theorem prepareCyclicFactorFromCached_native (bank : Fin 834 → Fin T) (span tmp : Fin T) :
+    mnNativePushBound (cyclicFactorPreparationPush (Q := Q) (A := A) (U := U))
+      (prepareCyclicFactorFromCached (P := P) (Q := Q) (A := A) (U := U) bank span tmp) := by
+  have hcopy : 2 ≤ cyclicFactorPreparationPush (Q := Q) (A := A) (U := U) := by
+    unfold cyclicFactorPreparationPush
+    exact Nat.le_max_left _ _
+  have hpage : mnProgPush (prepareCyclicBoundaryPage (P := Empty) (Q := Q) (A := A) (U := U)) ≤
+      cyclicFactorPreparationPush (Q := Q) (A := A) (U := U) := by
+    unfold cyclicFactorPreparationPush
+    exact Nat.le_max_right _ _
+  unfold prepareCyclicFactorFromCached installCyclicFactorSeeds prepareCyclicFactorInput
+  exact ⟨mnNativePushBound_mono hcopy (copyUnaryHeaders_native _ _),
+    embProg_native _ id _ (embProg_native _ Empty.elim _
+      (mnNativePushBound_mono hpage (WordCmd.empty_native _)))⟩
+
 /-- The intermediate seed bank is produced, rather than supplied. Its actual
 page-generation cost is retained for the caller's setup ledger. -/
 theorem prepareCyclicFactorFromCached_exec {p l s t u target a n : ℕ} [NeZero s]
@@ -70,6 +90,11 @@ theorem prepareCyclicFactorFromCached_exec {p l s t u target a n : ℕ} [NeZero 
       steps ≤ copies+prepareCyclicBoundaryPageCost
         (embStk (Fin.castLE (by decide : 154 ≤ 234)) (embStk (bank ∘ factorReg) F)).R
         s t (PhaseCellBand.width p u) a n ∧
+      ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+0+
+        cyclicFactorPreparationPush (Q := Q) (A := A) (U := U)*(copies+prepareCyclicBoundaryPageCost
+          (embStk (Fin.castLE (by decide : 154 ≤ 234)) (embStk (bank ∘ factorReg) F)).R
+          s t (PhaseCellBand.width p u) a n)) 0
+        (prepareCyclicFactorFromCached bank span tmp) (mk v S) steps (mk v' G) ∧
       Exec body (prepareCyclicFactorFromCached bank span tmp) (mk v S) steps (mk v' G) ∧
       CyclicResidualBatchInput p l s t u target a n [] [] (embStk (bank ∘ factorReg) G) ∧
       CachedReplicaPassInput H (left.reindex bank hbank) buffersL G ∧
@@ -85,8 +110,16 @@ theorem prepareCyclicFactorFromCached_exec {p l s t u target a n : ℕ} [NeZero 
   have hr := cached_of_factor_frame bank hbank right (fun i => (factor_disjoint i).2) hright hI hO hL hR
   obtain ⟨v₂,G,m,hu₂,hm,he₂,hinput,hl',hr',hframe,hhigh⟩ := prepareCyclicFactorInput_placed_exec
     (outerBody := body) bank hbank hst ha hn hband H K buffersL buffersR v₁ F [] hseed hl hr
-  refine ⟨v₂,F,G,_,hu₂.trans hu₁,hseed,Nat.add_le_add (le_refl _) hm,
-    Exec.seq he₁ he₂,hinput,hl',hr',?_,?_,?_⟩
+  let copies := copyUnaryHeadersCost (fun k => (S.R k).length)
+    (masterHeaderCopies ((bank ∘ factorReg) ∘ Fin.castLE (by decide : 224 ≤ 234))
+      (cachedFactorSeedSource (bank ∘ left.plan.gather) span))
+  have hsteps := Nat.add_le_add_left hm copies
+  have hex := Exec.seq he₁ he₂
+  have hscaled := Nat.mul_le_mul_left (cyclicFactorPreparationPush (Q := Q) (A := A) (U := U)) hsteps
+  have hwithin := mn_native_exec_within hex _ (prepareCyclicFactorFromCached_native bank span tmp) 0 _
+    (Nat.add_le_add_left hscaled _)
+  refine ⟨v₂,F,G,_,hu₂.trans hu₁,hseed,hsteps,
+    hwithin,hex,hinput,hl',hr',?_,?_,?_⟩
   · intro k hk
     exact ⟨(hframe k hk).1.trans (congrFun hL k),(hframe k hk).2.trans (hR k hk)⟩
   · exact (hhigh 226 (by decide)).trans (hseed.new 226 (by decide))
