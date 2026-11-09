@@ -45023,3 +45023,83 @@ the three standard axioms. Collect the checked setup, local caller composition
 and fitting-volume work in one larger local commit. Actual caller profile
 instantiation, batch-volume summation, setup repetition, execution-wide space
 and remaining S4 acceptance gates remain open. Nothing pushed.
+
+`computedCyclicReplicaProblems_localVolume_sum_le` instantiates the fitting
+volume estimate with the actual axis cyclic replica constructors. It replaces
+separate numerical/geometry profile premises by identification with those
+constructors; guarded check passes at 3424.7 MiB.
+
+`computedFittingCyclicPreparedVolume_sum_le` now bounds the actual joint batch
+volume sum (boundary cardinality+1)*(24*band+1) over the computed fitting class
+by 800*(s+(t-s)*band^2). Class membership identifies the joint boundary with
+the existing core-halo boundary, then reuses sparse boundary-work overlap and
+core-width absorption. No supplied boundary count or batch-volume bound is
+needed. Guarded check passes at 3368.1 MiB. Next compose these two actual
+schedule volumes with the combined caller estimate and charge real shared
+setup repetition; fitting peak space and all other S4 gates remain open.
+No push; retain these additions for a later larger coherent commit.
+
+`computedFittingCyclicPreparedSchedule_fast_le` now sums actual prepared residual
+batch costs over the computed fitting class, including counter initialization
+and per-replica stream traffic. It allows precision to vary by scheduled core,
+requiring only the common linear width bound. The actual boundary-volume
+amortization supplies the numerical volume; the resulting bound has one
+axis-volume factor and the actual replica multiplicity, with no core-count
+factor. Guarded check passes at 3390.3 MiB. Next combine this batch schedule
+estimate with the local first-pass/recovery schedule and real shared setup
+frequency. Complete fitting time, execution-wide space and all remaining S4
+gates remain open. No push.
+
+`computedFittingCyclicPassSchedule_fast_le` now composes both actual cached
+first passes and solved recovery over the computed fitting class. It sums
+shared costs at their true frequency and bounds all repeated numerical work
+by 680*E*replicas*(s+(t-s)*band^2)*p^(129/128). No per-core global-axis bill
+is repeated. `computedFittingCyclicTraffic_sum_le` also bounds native traffic
+by 14*s*(cw*p+1), reusing the actual gather-volume theorem and allowing varying
+widths. Its boundary-count premise is merely N(k)≤L, ready for the actual
+joint-boundary cardinality. Guarded check passes at 3400.1 MiB. Next discharge
+that cardinality, combine pass/batch/controller schedule costs, and absorb real
+shared setup repetition. Full fitting time/space and remaining S4 gates stay
+open. No push; collect the uncommitted schedule modules in a later larger chunk.
+
+`computedFittingCyclicCaller_schedule_le` now lifts the actual complete cached
+boundary bill plus solved recovery onto the computed fitting schedule. It
+charges actual pass/recovery, factory, mask and batch sums separately, retaining
+all setup multiplicities, and absorbs all controller/export traffic into
+2800*(replicas+1)*s*(cw*p+1). The actual joint boundary cardinality ≤ L is
+proved internally from fitting membership, with no cardinality or volume
+supplier. Guarded check passes at 3469.1 MiB. This is the structural whole-caller
+schedule endpoint to which checked pass/batch/factory estimates now apply;
+shared first-pass/mask setup absorption and selected parameter instantiation
+are still required for the final fitting time theorem. Peak space and remaining
+S4 acceptance gates remain open. No push.
+
+`selectedCyclicCallerSharedSchedule_volume_le` now absorbs the complete shared
+first-pass/coupling, placed-mask and solved-recovery setup sum into one selected
+volume reserve at arbitrary fixed scale. It reuses existing shared halo,
+coupling and recovery schedule bounds, counts repeated list entries, and never
+multiplies setup by replicas. A structural sum inequality charges duplicate
+mask appearances and constant overhead to the real recovery setup allowance.
+Guarded check passes at 3454.5 MiB after rebuilding the existing dependencies.
+Factory setup already has its independent actual-schedule absorption. Next
+compose these shared reserves with the checked complete caller schedule,
+pass/local-volume and prepared-batch estimates, then discharge selected widths
+and actual problem profiles for the fitting execution. Full fitting peak space
+and the other S4 acceptance gates remain open. No push.
+
+`selectedFittingCyclicCaller_time_le` now combines the whole actual cached
+boundary bill plus solved recovery over the computed fitting class. Shared
+first-pass/mask/recovery setup and factory setup each fit one T reserve;
+prepared batches, both first passes, recovery couplings and native/controller
+traffic have explicit sharp axis-volume estimates. Widths may vary per core.
+No cost, boundary-cardinality, schedule-count or volume suppliers remain;
+actual parameter/width/setup profiles still need instantiation at the executed
+caller. Guarded single-module check passes at 3499.5 MiB; combined selected
+caller/actual-constructor integration passes (16294 jobs, 6.0 GiB aggregate).
+Both endpoints audit to propext, Classical.choice and Quot.sound only.
+This closes the selected cost-composition gap, not full S4: executed original
+complex-core integration (including additional interior/assembly traffic),
+input production/callbacks, fitting peak space, fallback/grouped exposure and
+final locality/tensor/compiler acceptance remain open. Next instantiate the
+actual caller profiles and attach this bound to its execution witness. Collect
+the schedule work as one larger local checkpoint; no push.
