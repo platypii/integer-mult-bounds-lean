@@ -43408,3 +43408,144 @@ input production, fallback/grouped accounting and tensor/root acceptance remain
 open; the conservative reciprocal setup reserve still needs its sharp uniform
 estimate resolved. Collect the accumulated batch/geometry resource work in one
 larger local checkpoint; do not push or stage unrelated periodic WIP.
+
+### S4 complete conditional classes and selected length-key execution retain resources
+
+RunsWithin.branch mirrors the existing physical count-register branch contract,
+retaining the chosen branch's exact workspace allowance. GeometryHaloGatherControlsStock
+adapts the prepared bank; ProbeGeometryHaloGatherStock composes geometry
+preparation, the actual empty/nonempty continuation and final count probe.
+Empty classes pay no numerical continuation allowance. ProbedHaloGroupInputStock
+carries this trace to the ordinary/controlled logical input-bank interface.
+
+ConditionalHaloGroupPreparationStock now discharges the previously explicit
+controller premise: install the retained ordinary headers, embed the bounded
+geometry trace with exec_emb_within_stock and compose zero-allocation cleanup.
+Its budget is relative to the whole physical bank, counting spectators once.
+ConditionalHaloClassStock joins that ordinary-input preparation with the
+protected solver/scatter contract, retaining the original BoundedEncodedStream,
+physical output frame and per-core error in both branches. Intermediate origins,
+controlled banks and executions are produced, not assumed.
+
+ProcessHaloLengthKeyStock decodes a key with a structural native certificate;
+HaloLengthKeyStepStock adds counter retirement and a flag probe with no further
+space allowance. HaloLengthKeyLoopStock proves one resource/accuracy contract
+for an arbitrary selected distinct key list. It sums class allowances: this is
+the simpler sufficient composition strategy because the geometric schedule has
+at most six keys, avoiding a stronger maximum-reserve invariant at this layer.
+RunHaloKeysStock and RunGeneratedHaloKeysStock retain the trace through loop
+entry and specialize the error contract to the entire halo interior. The latter
+still starts from the prepared selected-key bank; runtime key production and
+outer initialization/restoration remain to be joined.
+
+Guarded checks (MiB): RunsWithin branch 1391.4; prepared gather adapter 2083.4;
+geometry probe 2088.1; logical probed bank 2113.5; physical preparation 2121.6;
+conditional class 2150.0; decoded key 2158.4; counted step 2154.7; key loop 2157.0.
+Integration through the selected-key caller passes (10144 jobs, 2.7 GiB combined
+peak). Branch, physical preparation, complete class and selected-key caller
+axiom audits report only propext, Classical.choice and Quot.sound (7112.3 MiB
+temporary audit peak). Whitespace and forbidden-proof scans pass. All verification
+handles are terminal.
+
+Next retain solveHaloInterior (key generation/preparation and loop execution),
+then bounded/initialized/restored interior and residual passes, and attach these
+to the fitting factory/caller. Uniform time/space, original complex-input
+production, fallback/grouped accounting and tensor/root S4 gates remain open.
+Resolve the conservative reciprocal's quadratic setup-width reserve before
+claiming the sharp uniform bound. Keep collecting the larger interior checkpoint;
+no new commit or push; unrelated periodic WIP is unchanged.
+
+### S4 key generation, complete interior solve and residual feed retain resources
+
+HaloKeyInitializationStock reuses the existing structural certificate for the
+fixed six-candidate controller, generates its shared widths, installs the
+physical key runtime and releases private headers. Its native allowance is
+18*initializeHaloLengthKeysCost; this is setup for a fixed candidate list, with
+no per-phase scan or numerical row multiplier. Runtime width retirement has
+push bound zero. This conservative setup allowance still belongs in the final
+uniform-parameter estimate; no sharp asymptotic claim is made here.
+
+SolveHaloInteriorStock composes that actual initialization with the complete
+selected-key execution and allocation-free retirement. Ordinary retained
+parameters and RHS/output banks now suffice: the key packets and all class
+intermediates are executed rather than supplied. The exact restored-bank
+endpoint, output length, ErrorOn over the whole halo interior and bounded-range
+preservation are retained beside a named whole-execution workspace contract.
+SolveHaloInteriorBoundedStock preserves the same trace when extracting the
+bounded Gaussian integer output field and exact normalized readout.
+
+InteriorForCouplingStock carries the trace through reconstruction of coupling
+headers (native push bound eight). FeedCouplingPassStock reuses
+borrowedCouplingPass_spec_within, preserving its shared numerical row reserve
+through native residual-line feeding. InteriorResidualStock composes both
+contracts without changing the original residual field, norm bound or boundary
+error estimate. Primitive numerical push bounds remain explicit fixed-program
+parameters, including the existing Empty-procedure coupling-row specialization.
+
+Guarded check peaks (MiB): key initialization 2101.7; complete interior 2170.0;
+bounded field 2145.0; coupling handoff 2158.3; residual feed 2117.5; composed
+interior/residual 2193.2. Integration through InteriorResidualStock passes
+(10419 jobs, 2.7 GiB combined peak). Initialization, complete interior, feed and
+composed residual axiom audits report only propext, Classical.choice and
+Quot.sound (7178.4 MiB temporary audit peak). Whitespace and forbidden-proof
+construct scans pass. All verification handles are terminal.
+
+Next carry interiorResidual_spec_within through initialized/restored and real
+interior/residual passes, then retained/released/archived/windowed residual
+wrappers into the generated cyclic column and fitting caller. The original
+full S4 objective remains open: whole fitting-prefix uniform resources,
+original complex-input/header production, fallback/grouped accounting and
+tensor/root acceptance still need closure. Resolve the conservative reciprocal
+setup-width reserve as part of the sharp uniform estimate. Collect with the
+larger interior checkpoint; no commit/push this turn, and periodic WIP untouched.
+
+### S4 complete generated cyclic column retains original and guarded residual resources
+
+InitializedInteriorResidualStock retains allocation of the actual RHS output
+prefix and the existing interior/residual contract. RestoredInteriorResidualStock
+releases private coupling headers without a new space allowance.
+RealInteriorResidualStock preserves real projection, stable magnitude estimates
+and the original error statement beside that same execution trace.
+
+ComponentWorkspaceStock supplies the resource-preserving version of the
+existing componentExec_twoPorts pattern, using exec_emb_ovr_within_stock.
+It preserves the exact physical two-port endpoint and counts spectators once.
+RetainedSchurResidualStock uses it to retain the first-pass Schur RHS contract
+in the 148-tape component bank, including the derived solver and residual error.
+
+ResidualPrefixNativeStock supplies structural certificates for clock creation,
+interior retirement and residual archiving. ReleasedSchurResidualStock,
+ArchivedSchurResidualStock and WindowedSchurResidualStock compose these native
+stages around the complete retained solve. Borrowed endpoint copies pay only
+their native allowance; private window cleanup allocates no symbols. The
+original field, readout, readiness and error statements remain intact.
+
+CyclicResidualPassesStock executes both physical guarded residual intervals
+against the same retained RHS. GeneratedCyclicColumnStock joins this contract
+to the previously verified arbitraryOriginalColumn_spec_within. Thus the actual
+generatedCyclicColumn program now retains its entire original-column producer
+and both residual traces, with the established joint Schur-column accuracy.
+The numerical push bounds remain ordinary fixed-program parameters; the
+geometry, original-column words and intermediate residual fields are executed
+rather than supplied. No numerical algorithm or precision schedule changes.
+
+Guarded check peaks (MiB): initialized residual 2193.8; restored residual 2193.6;
+real residual 2198.3; two-port embedding helper 1380.1; retained Schur residual
+2200.5; native prefix certificates 2091.2; released residual 2208.1; archived
+residual 2218.4; windowed residual 2224.3; both cyclic passes 2236.6; complete
+generated column 2225.8. Integration through GeneratedCyclicColumnStock passes
+(10505 jobs, 2.7 GiB combined peak). Two-port embedding, real residual, windowed
+residual and complete generated-column axiom audits report only propext,
+Classical.choice and Quot.sound (7213.3 MiB temporary audit peak). The explicit
+29-file checkpoint manifest passes whitespace/forbidden-proof scans and
+excludes periodic WIP. All verification handles are terminal.
+
+Next retain resident/indexed cyclic columns and the generated column table
+scan, sharing transient workspace across columns while charging retained table
+output. Then join the checked factor-axis factory and the complete fitting
+caller. Full S4 remains open: fitting-prefix uniform time/space, original
+complex-input/header production, fallback/grouped accounting and tensor/root
+acceptance still require closure. The conservative reciprocal setup-width
+reserve remains part of the sharp uniform-estimate audit. Collect all current
+conditional-class, interior and generated-column resource work in one larger
+local checkpoint; no push and leave unrelated periodic WIP untouched.

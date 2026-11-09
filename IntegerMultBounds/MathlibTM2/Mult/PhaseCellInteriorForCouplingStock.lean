@@ -1,0 +1,102 @@
+module
+
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellInteriorForCoupling
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSolveHaloInteriorBoundedStock
+
+/-! The complete interior trace survives reconstruction of coupling headers. -/
+@[expose] public section
+namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
+open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
+  IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Host
+  IntegerMultBounds.MathlibTM2.Node IntegerMultBounds.MathlibTM2.Fast
+  IntegerMultBounds.MathlibTM2.Fast.Main IntegerMultBounds.MathlibTM2.Mult.ShortConv
+  IntegerMultBounds.NLogN IntegerMultBounds.NLogN.PhaseCellMatrix
+  IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
+variable {Q A : ℕ} {P₀ U : Type} {body : P₀ → Pr P₀ 117 Q A U}
+
+theorem installCouplingHeaders_native :
+    mnNativePushBound 8 (installCouplingHeaders (P₀ := P₀) (Q := Q) (A := A) (U := U)) := by
+  refine ⟨mnNativePushBound_mono (by decide) (copyUnaryHeaders_native _ _),?_⟩
+  simp [couplingHeaderWidth,generateWordWidth,ucopy,umulSym,scanR,drainR,popDo,keepIn,pushN,
+    moveR,moveStep,whileR,peekR,mnNativePushBound,mnActPush]
+
+@[irreducible] def interiorForCouplingWorkspace (J R K p l s t u target rhsExp a b : ℕ) : ℕ :=
+  solveHaloInteriorWorkspace J R K p l s t u target rhsExp a b+
+    8*installCouplingHeadersCost (2^15*p) (executionPrecision p l target rhsExp)
+      s t u (PhaseCellBand.width p u) a b
+
+theorem interiorForCoupling_spec_within (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
+    {l s t p u target rhsExp a b : ℕ} [NeZero s] {α d : ℝ}
+    (hp : 0 < p) (hst : s < t) (hu : 1 ≤ u) (hαu : α^2 = (u : ℝ))
+    (hθ : 0 < (t : ℝ)/s-1) (hgap : (1 : ℝ)/4 ≤ d*((t : ℝ)/s-1)) (hbudget : α^2*d ≤ p)
+    (hband : PhaseCellBand.width p u ≤ s) (has : a ≤ s) (hbs : b ≤ s)
+    (hpad : 2*((s/(t-s)+1)-2*PhaseCellBand.width p u) ≤ 2^l+1)
+    (C : ZMod s → GaussianInt)
+    (hC : ∀ k, ‖value (executionPrecision p l target rhsExp) (C k)‖ ≤ (2 : ℝ)^rhsExp)
+    (x : ZMod s → ℝ)
+    (hx : SchurDominance.Solves (realMatrix s t p u) (haloInterior s t (PhaseCellBand.width p u) a b) x
+      (fun k => (value (executionPrecision p l target rhsExp) (C k)).re))
+    (J R K : ℕ)
+    (hpushJ : mnProgPush (rmulOne (P := P₀) (Q := Q) (A := A) (U := U)
+      mul mul_injective (by decide) hQ cr) ≤ J)
+    (hpushR : mnProgPush (rpProg (P := P₀) (Q := Q) (A := A) (U := U)
+      Fixed.ringReg Fixed.hostReg Fixed.layout.ι_inj (by decide) hR) ≤ R)
+    (hpushK : mnProgPush (cmulBlock cr
+      (rmulOne (P := P₀) (Q := Q) (A := A) (U := U) mul mul_injective (by decide) hQ cr)) ≤ K)
+    (v : HS 144 Q A U) (S : Stacks 144 A) (borrowed outputTail : List (Fin (A+4)))
+    (E₀ : ZMod s → GaussianInt)
+    (hE₀ : ∀ k, ‖value (executionPrecision p l target rhsExp) (E₀ k)‖ ≤
+      (2 : ℝ)^interiorOutputExponent p l target rhsExp)
+    (hdst : S.R 132 = cstream A (executionWidth p l target rhsExp) (chirpLine s E₀)++outputTail)
+    (h127 : S.R 127 = []) (h138 : S.R 138 = [])
+    (haMaster : (S.R 141).length = a) (hbMaster : (S.R 142).length = b)
+    (hready : LengthKeyReady (2^15*p) (executionStagePrecision p l target rhsExp+1)
+      (executionPrecision p l target rhsExp) l s t u (PhaseCellBand.width p u) 0 0
+      (cstream A (executionWidth p l target rhsExp) (chirpLine s C)++borrowed) S) :
+    let q := executionPrecision p l target rhsExp
+    let w := executionWidth p l target rhsExp
+    let band := PhaseCellBand.width p u
+    ∃ v' n, ∃ D : ZMod s → GaussianInt, v'.user = v.user ∧
+      n ≤ interiorForCouplingCost p l s t u target rhsExp a b ∧
+      ExecWithin (embTab groupReg body)
+        (fun d z => mnSize z+d ≤ mnSize (mk v S)+0+
+          interiorForCouplingWorkspace J R K p l s t u target rhsExp a b)
+        0 (interiorForCoupling hR hQ) (mk v S) n
+        (mk v' {S with R := (couplingHeadersR (2^15*p) q s t u band a b
+          (Function.update S.R 132 (cstream A w (chirpLine s D)++outputTail)))}) ∧
+      CouplingReady (2^15*p) q w s t u band a b (cstream A w (chirpLine s C)++borrowed)
+        (embStk groupReg {S with R := (couplingHeadersR (2^15*p) q s t u band a b
+          (Function.update S.R 132 (cstream A w (chirpLine s D)++outputTail)))}) ∧
+      (∀ k, ‖value q (D k)‖ ≤ (2 : ℝ)^interiorOutputExponent p l target rhsExp) ∧
+      PhaseCellInterface.ErrorOn (haloInterior s t band a b)
+        (fun k => (value q (D k)).re) x (1/(2 : ℝ)^target) := by
+  dsimp only
+  let q := executionPrecision p l target rhsExp
+  let w := executionWidth p l target rhsExp
+  let band := PhaseCellBand.width p u
+  obtain ⟨v₁,n₁,D,hu₁,hn₁,hlen,he₁,hDnorm,herror⟩ := solveHaloInterior_bounded_spec_within (body := body)
+    hR hQ hA hp hst hu hαu hθ hgap hbudget hband has hbs hpad C hC x hx J R K hpushJ hpushR hpushK v S
+    borrowed outputTail E₀ hE₀ hdst h127 h138 haMaster hbMaster hready
+  let S₁ : Stacks 144 A := {S with R := Function.update S.R 132 (cstream A w (chirpLine s D)++outputTail)}
+  have hready₁ : LengthKeyReady (2^15*p) (executionStagePrecision p l target rhsExp+1)
+      q l s t u band 0 0 (cstream A w (chirpLine s C)++borrowed) S₁ :=
+    hready.update_output (cstream A w (chirpLine s D)++outputTail)
+  obtain ⟨v₂,hu₂,he₂,hcoupling⟩ := installCouplingHeaders_exec (body := embTab groupReg body)
+    (2^15*p) (executionStagePrecision p l target rhsExp+1) q l s t u band a b
+    (cstream A w (chirpLine s C)++borrowed) v₁ S₁ hready₁
+    (by simpa [S₁] using haMaster) (by simpa [S₁] using hbMaster)
+  have hw : 2*q+8 = w := by dsimp [q,w,executionWidth,executionPrecision]; omega
+  have hcoupling' : CouplingReady (2^15*p) q w s t u band a b
+      (cstream A w (chirpLine s C)++borrowed)
+      (embStk groupReg {S₁ with R := couplingHeadersR (2^15*p) q s t u band a b S₁.R}) := by
+    simpa only [hw] using hcoupling
+  refine ⟨v₂,n₁+installCouplingHeadersCost (2^15*p) q s t u band a b,D,hu₂.trans hu₁,
+    ?_,?_,hcoupling',hDnorm,herror⟩
+  · change n₁+installCouplingHeadersCost (2^15*p) q s t u band a b ≤
+      solveHaloInteriorCost p l s t u target rhsExp a b+installCouplingHeadersCost (2^15*p) q s t u band a b
+    exact Nat.add_le_add_right hn₁ _
+  · have ht₂ := mn_native_exec_within he₂ 8 installCouplingHeaders_native 0 _ (Nat.le_refl _)
+    unfold interiorForCouplingWorkspace
+    exact mn_seq_within_add he₁ ht₂
+
+end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

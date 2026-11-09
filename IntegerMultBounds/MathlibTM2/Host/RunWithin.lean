@@ -48,6 +48,39 @@ theorem mono {p : Pr P T Q A U} {S F : Stacks T A} {c d a b : ℕ}
   obtain ⟨v',n,hu,hn,he⟩ := h v
   exact ⟨v',n,hu,hn.trans hcd,fun depth => (he depth).mono (by intro d z hz; omega)⟩
 
+/-- Select the exact stack effect and reserve using the physical count register. -/
+theorem branch {p q : Pr P T Q A U} {S Syes Sno : Stacks T A} {c d a b : ℕ} (count : Fin T)
+    (hp : (S.R count).head?.isSome = true → RunsWithin body p S Syes c a)
+    (hq : (S.R count).head?.isSome = false → RunsWithin body q S Sno d b) :
+    RunsWithin body (.seq (.act (peekR count)) (.cond (·.flag) p q)) S
+      (if (S.R count).head?.isSome then Syes else Sno)
+      ((if (S.R count).head?.isSome then c else d)+2)
+      (if (S.R count).head?.isSome then a else b) := by
+  intro v
+  have hpeek := Exec.act (body := body) (peekR count) (mk v S)
+  rw [peekR_run] at hpeek
+  have hn : mnNativePushBound 0 (.act (peekR count) : Pr P T Q A U) := by
+    simp [peekR,mnNativePushBound,mnActPush]
+  cases hb : (S.R count).head?.isSome with
+  | false =>
+    obtain ⟨v',n,hu,hm,he⟩ := hq hb {v with flag := false}
+    refine ⟨v',1+(n+1),hu,?_,?_⟩
+    · simp only [Bool.false_eq_true,↓reduceIte]; omega
+    · intro depth
+      rw [hb] at hpeek
+      have ht := mn_native_exec_within hpeek 0 hn depth _ (Nat.le_refl _)
+      simpa only [hb,Bool.false_eq_true,↓reduceIte,Nat.zero_mul,Nat.add_zero,Nat.zero_add]
+        using mn_seq_within_add ht (ExecWithin.cond_false rfl (he depth))
+  | true =>
+    obtain ⟨v',n,hu,hm,he⟩ := hp hb {v with flag := true}
+    refine ⟨v',1+(n+1),hu,?_,?_⟩
+    · simp only [↓reduceIte]; omega
+    · intro depth
+      rw [hb] at hpeek
+      have ht := mn_native_exec_within hpeek 0 hn depth _ (Nat.le_refl _)
+      simpa only [hb,↓reduceIte,Nat.zero_mul,Nat.add_zero,Nat.zero_add]
+        using mn_seq_within_add ht (ExecWithin.cond_true rfl (he depth))
+
 end RunsWithin
 
 theorem Runs.native_within {p : Pr P T Q A U} {S F : Stacks T A} {cost K : ℕ}
