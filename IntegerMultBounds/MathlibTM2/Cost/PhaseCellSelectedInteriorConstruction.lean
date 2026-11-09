@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedInteriorWeightEnvelope
 public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellUncachedInteriorPolynomial
 public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedInteriorFast
 public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedSchurColumn
@@ -31,51 +32,10 @@ theorem selectedInteriorConstruction_weights_le (ct : ℕ) :
       let stage := initialSchurTarget p u bits 2
       solveHaloInteriorCost p l s t u stage 2 a b ≤
         familyHaloInteriorGeometryCost p l s t u stage 2 a b+K*t*p^4 := by
-  obtain ⟨c,hc,hwidths⟩ := selectedInverseBoundaryWidths_le ct
-  let cZ := 3*c+500000
-  refine ⟨10000000*cZ^4,?_⟩
+  obtain ⟨K,hK⟩ := selectedInteriorConstruction_width_weights_le (1032+8*ct)
+  refine ⟨K,?_⟩
   intro n h i _ u target a b hu htarget hband
-  dsimp only
-  obtain ⟨hpt,hN,hq,hw,hV,hW,hB⟩ := hwidths n h i u target a b htarget hband
-  let p := Sizes.p n
-  let s := Sizes.s n i
-  let t := Sizes.t n i
-  let l := haloInverseRingLog s t
-  let band := PhaseCellBand.width p u
-  let N := (haloBoundary s t band a b).card
-  let bits := boundaryTableBits p (boundaryRecoveryTarget p (target+1)) 2 N
-  let stage := initialSchurTarget p u bits 2
-  let q := executionPrecision p l stage 2
-  let w := executionWidth p l stage 2
-  let Z := cZ*p
-  have hp : 1 ≤ p := by have := h.thirteen_le_p; dsimp only [p]; omega
-  have hst : s < t := h.good.lt i
-  have hZ : 1 ≤ Z := by dsimp only [Z,cZ]; nlinarith only [hp]
-  have hparam (x d : ℕ) (hx : x ≤ d*p) (hd : d ≤ cZ) : x ≤ Z :=
-    hx.trans (Nat.mul_le_mul_right p hd)
-  have hPZ := hparam (2^15*p) (2^15) le_rfl (by dsimp only [cZ]; omega)
-  have hwZ := hparam w c hw (by dsimp only [cZ]; omega)
-  have hqZ := hparam q c hq (by dsimp only [cZ]; omega)
-  have hNZ : executionStagePrecision p l stage 2+1 ≤ Z :=
-    (show executionStagePrecision p l stage 2+1 ≤ w by dsimp only [w,executionWidth,executionStagePrecision]; omega).trans hwZ
-  obtain ⟨hl,_⟩ := haloInverseRingLog_bounds hp hst (h.quarter_p_le_theta i)
-  have hlZ := hparam l 20 hl (by dsimp only [cZ]; omega)
-  have huZ := hparam u 1 (by simpa using hu) (by dsimp only [cZ]; omega)
-  have hv := selectedWeightWorkspaceWidth_le c h i q w u hw
-    (by dsimp only [q,w,executionPrecision,executionWidth]; omega) hu
-  have hvZ := hparam _ (2*c+426009) hv (by dsimp only [cZ]; omega)
-  have hcell := phaseGap_cellLength_le hp hst (h.quarter_p_le_theta i)
-  have hkeys : ∀ L ∈ haloLengthCandidates s t band a b, L ≤ Z := by
-    intro L hL
-    have hlen := haloLengthCandidates_uniform hst band a b hL
-    apply hparam L 5 (by omega)
-    dsimp only [cZ]; omega
-  have hcost := haloInteriorCostBound_weights_poly p l u stage 2 a b Z hst hZ
-    hPZ hNZ hqZ hlZ huZ hwZ hvZ hkeys
-  have hrun := solveHaloInteriorCost_le hst p l u stage 2 a b
-  have heq : 10000000*t*Z^4 = (10000000*cZ^4)*t*p^4 := by dsimp only [Z]; ring
-  rw [heq] at hcost
-  exact hrun.trans hcost
+  exact hK n h i u _ a b hu (selectedInverseWorkingWidth_le ct h i u target a b htarget hband)
 
 theorem selectedInteriorConstruction_poly_le (ct : ℕ) :
     ∃ C : ℝ, 0 ≤ C ∧ ∀ᶠ n : ℕ in atTop, ∀ (h : Sizes.Big n) (i : Fin (Sizes.d n)), ∀ [NeZero (Sizes.s n i)],

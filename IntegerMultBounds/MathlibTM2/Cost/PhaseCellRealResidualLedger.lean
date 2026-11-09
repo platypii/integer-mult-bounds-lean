@@ -12,6 +12,22 @@ open IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
   IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
   IntegerMultBounds.NLogN
 
+/-- Uniform lifecycle overhead for bounded physical endpoints. This is the
+scalar envelope used when the working precision comes from a joint boundary. -/
+theorem residualLifecycleCost_poly (p q s t u band a b cw : ℕ)
+    (ht : 1 ≤ t) (hp : p ≤ t) (hq : q ≤ cw*t) (hs : s ≤ t)
+    (hu : u ≤ t) (hband : band ≤ t) (ha : a ≤ t) (hb : b ≤ t) :
+    10000*(2^15*p+q+s+t+u+band+a+b+1)*(q+1) ≤
+      10000*(32775+cw)*(cw+1)*t^2 := by
+  have hP := Nat.mul_le_mul_left 32768 hp
+  have hsum : 2^15*p+q+s+t+u+band+a+b+1 ≤ (32775+cw)*t := by
+    norm_num only [Nat.reducePow]
+    nlinarith only [hP,hq,hs,hu,hband,ha,hb,ht]
+  have hwidth : q+1 ≤ (cw+1)*t := by
+    nlinarith only [hq,ht]
+  have hprod := Nat.mul_le_mul hsum hwidth
+  nlinarith only [hprod]
+
 theorem realInteriorResidualCost_split (p l s t u target rhsExp a b : ℕ) :
     let q := executionPrecision p l target rhsExp
     let w := executionWidth p l target rhsExp

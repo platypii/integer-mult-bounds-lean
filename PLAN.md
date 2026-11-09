@@ -44816,3 +44816,210 @@ as one local commit with the plan, excluding periodic recovery WIP and the
 unverified workspace-sizing draft. Next instantiate constructor weight setup
 at the joint-count width, then close table-column and factory polynomials.
 The complete fitting caller and full S4 acceptance remain open. No push.
+
+`selectedInteriorConstruction_width_weights_le` generalizes selected quartic
+weight-construction overhead to any working target with a linear-width bound.
+The old selected per-window theorem now delegates to this common proof,
+removing duplicated analysis. Generalized file check passed at 3290.1 MiB;
+its build passes and the refactored consumer checks at 3285.2 MiB. Next
+instantiate it with the joint cyclic width and combine the checked geometry
+estimate. Full S4 remains open; no push.
+
+`selectedCyclicInteriorConstruction_poly_le` now closes the entire actual
+interior constructor at joint cyclic boundary precision, uniformly over
+either bounded physical piece: `C*t*p^4`, with no supplied width or cost
+premise. It composes the reused geometry and generalized weight bounds.
+Guarded check passes at 3279.7 MiB. Next transfer this bound through real
+residual/coupling lifecycle and collect the complete table scan. S4 remains open.
+
+`selectedCyclicCoupling_poly_le` now bounds either uncached coupling mask at
+the actual joint cyclic precision uniformly over either bounded piece. It
+reuses the existing selected coupling polynomial and proves working-width
+compatibility internally. Guarded check passes at 3230.8 MiB. Both numerical
+terms of the windowed residual now have applicable selected bounds; next
+combine their lifecycle allowance and assemble table columns. Full S4 open.
+
+`residualLifecycleCost_poly` bounds the complete windowed residual's scalar/
+stream remainder uniformly by a quadratic axis polynomial under bounded
+physical endpoints and linear numerical width. Guarded check passes at
+2187.6 MiB. This supplies the last nonnumerical inequality needed to combine
+the selected joint-precision interior and coupling bounds into a residual
+polynomial. Full table/factory/fitting and S4 closure remain open.
+
+`selectedCyclicWindowedResidual_poly_le` closes the complete actual windowed
+residual at joint cyclic precision by one uniform `C*t^5` allowance, including
+interior construction, uncached coupling and all lifecycle traffic. Guarded
+check passes at 3281.0 MiB. Together with original-column generation, the
+remaining table-column term is band-entry collection and its scalar controls.
+Whole table/factory and full S4 remain open; nothing pushed.
+
+`collectCyclicColumnEntriesCost_le` now bounds the actual structural entry
+scan by row count times the existing derived uniform entry price, including
+loop controls and cursor retirement. It requires only physical interval and
+clipped-range bounds, not an execution/cost supplier. Guarded check passes at
+1980.7 MiB. Next lift through clipped-band controls and selected scalar sizing
+for the full table-column allowance. S4 remains open; no push.
+
+`preparedCyclicBandCollectionCost_le_uniform` now bounds the actual clipped
+band collection using at most `2*(24*band+1)+1` entries and the existing
+row-count controller envelope. The resulting allowance is independent of
+the column index. Guarded check passes at 1997.4 MiB. Next price the derived
+entry envelope under selected dimensions and include stream retirement.
+Whole table/factory and full S4 remain open; nothing pushed.
+
+`cyclicColumnEntryCostBound_poly` now prices the derived uniform entry
+allowance quadratically in one common dimension envelope, including entry
+loop overhead. It reuses monotonicity of the explicit scalar checker; no
+row enumeration or supplied execution bound is introduced. Guarded check
+passes at 2011.1 MiB. Next combine this with the clipped-band row count and
+selected sizing for the full collection polynomial. S4 remains open.
+
+The full collection lifecycle now has cubic common-envelope bounds:
+`preparedCyclicBandCollectionCost_poly` and `collectRetireCyclicColumnCost_poly`
+include clipped-band controls, entries and stream retirement. They derive
+the entry cap internally and remain uniform in the column index. Guarded
+check passes at 2011.1 MiB. Next instantiate selected dimensions and combine
+with original-column and residual bounds into the complete table scan.
+Full S4 remains open; nothing pushed.
+
+`selectedCollectRetireCyclicColumnCost_poly_le` instantiates the collection
+envelope using selected precision-to-axis and boundary subset cardinality
+bounds. It gives a cubic axis polynomial uniform in the column index, with
+only ordinary linear q/V sizing hypotheses. Guarded check passes at
+3161.7 MiB. Next discharge these sizes for the actual joint-precision table
+and assemble all column terms into the structural scan. S4 remains open.
+
+`selectedJointCyclicCollection_poly_le` discharges precision and metadata
+width sizing for the actual joint cyclic table. The complete collect/retire
+bill is uniformly `C*t^3`, with only physical endpoints and column-cardinality
+hypotheses remaining. Guarded check passes at 3246.9 MiB. All main numerical
+and collection terms now have selected polynomial bounds; next assemble the
+column wrapper and scan, then factory setup. Full S4 remains open; no push.
+
+`cyclicTableColumnCost_le_components` now bounds the complete actual column
+wrapper by original-column generation, both windowed residual passes, full
+collection/retirement and one explicit scalar polynomial. Clipped-band
+publication uses the structural `foldedBandRows_length_le`; no enumeration
+or supplied per-column cap is needed. Guarded check passes at 2189.3 MiB.
+Next instantiate all four selected component bounds and sum the table scan.
+Full S4 remains open; no push.
+
+`selectedJointCyclicOriginalColumn_poly_le` instantiates original-column
+generation at the actual joint cyclic precision, proving the kernel width
+identity and discharging its selected linear-width premise. Guarded check
+passes at 3262.0 MiB. Original generation, both residual pieces and collection
+now have bounds at matching joint parameters; scalar wrapper sizing and
+the summed table/factory polynomial remain next. Full S4 remains open.
+
+`cyclicTableColumnControls_poly` bounds the remaining index/lookup/publication
+scalar polynomial quadratically in a common dimension envelope. Guarded
+check passes at 2195.0 MiB. This completes the generic inequalities for all
+terms in the column decomposition; selected envelope instantiation, column
+composition and table summation still need implementation. S4 remains open.
+
+`selectedCyclicColumnControls_poly_le` instantiates the wrapper's scalar
+polynomial in selected axis dimensions, yielding an explicit quadratic
+axis allowance from ordinary q/V linear sizing and physical index bounds.
+Guarded check passes at 3251.3 MiB. Next use the joint-width and publication
+width facts to discharge those last scalar sizes while combining all column
+components, then sum the table scan. Full S4 remains open; nothing pushed.
+
+`selectedCyclicTableColumnCost_poly_le` closes the complete actual cyclic
+table column at matching joint precision with one uniform `C*t^5` bound.
+Original generation, both residual passes, full collection/retirement and
+all wrapper controls are composed; physical index/window hypotheses remain,
+with no supplied cost/width bounds. Guarded check passes at 3297.6 MiB.
+Next sum the actual boundary-column scan and compose scaled factory setup.
+Full fitting/S4 gates remain open; nothing pushed.
+
+`selectedCyclicTableColumnsLoopCost_poly_le` closes actual joint-precision
+table generation with a uniform `C*t^6` allowance, summing the checked column
+price over the runtime boundary schedule and charging loop controls. It
+uses boundary subset cardinality and no supplied column-cost hypothesis.
+Guarded check passes at 3298.7 MiB. Next compose scaled page/factor preparation
+into the full cyclic factory polynomial and absorb its actual setup frequency.
+Full fitting/S4 gates remain open; nothing pushed.
+
+`constructedCyclicFactorCost_le_envelope` now composes the actual complete
+cyclic factory bill: table generation plus dimension controls, scaled-page
+quintic cost and factor-preparation sextic cost under one scalar envelope.
+The actual execution width identity is proved internally. Guarded check
+passes at 3397.8 MiB. Next discharge envelope dimensions using joint selected
+width/cardinality bounds and combine the checked table sextic estimate.
+Full fitting/S4 gates remain open; nothing pushed.
+
+`selectedConstructedCyclicFactorCost_poly_le` closes the whole actual cyclic
+factor factory with one uniform selected `C*t^6` setup bound. Joint precision,
+table generation, scale-24 page construction, header/constants setup and
+band-axis preparation are all included; no width or cost suppliers remain.
+Guarded check passes at 3466.3 MiB. Next absorb this actual shared setup over
+the executed core schedule and connect the complete fitting-caller time bill.
+Full S4 remains open; nothing pushed.
+
+`selectedCyclicFactorySchedule_volume_le` absorbs the actual cyclic factory
+setup summed over any executed call list of at most twice the axis length,
+including repeated entries, with arbitrary fixed setup scale. It reuses
+distinct-core polynomial absorption and never multiplies setup by replicas.
+Guarded check passes at 3447.8 MiB. The concrete caller must still identify
+its actual schedule and prove this count/multiplicity; time absorption is
+not a peak-space proof. Complete fitting and full S4 remain open.
+
+`selectedCyclicCoreClassFactory_volume_le` now absorbs factory setup on the
+actual computed proper-core class, with origins `coreStart-radius` and common
+halo length L. Class membership derives both fitting-window bounds and the
+call count, eliminating those supplier premises. Guarded check passes at
+3449.9 MiB. One traversal is priced; outer prefix/class repetition and full
+caller time/space still require composition. Full S4 remains open; no push.
+
+Joint cyclic factory integration is verified: the factory schedule and refactored
+selected interior construction build together (16149 jobs, 3.5 GiB aggregate
+peak). Table-loop, complete factory and computed-core-class endpoints audit to
+propext, Classical.choice and Quot.sound only.
+
+`selectedCachedCyclicBoundary_fast_le` now composes both actual cached first
+passes, the joint prepared residual batch and the structural caller ledger in
+one selected estimate. Shared first-pass setup, masks, factory setup and batch
+initialization remain explicit; numerical work is multiplied by the actual
+replica count. Guarded check passes at 3473.3 MiB. This removes individual cost
+supplier premises but deliberately preserves first-pass axis volumes: their
+amortization over the real core schedule is still unproved. Next resolve that
+volume accounting and compose solved recovery, then execution-wide peak space.
+Original input production, callbacks, fallback/grouped exposure and final S4
+acceptance remain open. No push.
+
+Caller composition now uses existing `selectedFirstCachedReplicaPass_local_fast_le`
+through a cyclic cost identity, rather than the weaker global-axis estimate.
+`selectedCachedCyclicRecovery_fast_le` replaces the intermediate boundary-only
+estimate: it prices the actual boundary bill plus solved recovery together,
+with both first passes and both recovery couplings expressed in the same local
+volumes. Prepared batch work and all shared/controller charges remain explicit.
+No new numerical proof or execution witness is introduced. The local first-pass
+integration build passes (15790 jobs, 3.5 GiB aggregate); the combined caller
+check passes at 3475.9 MiB. Next sum these local volumes over the actual caller
+schedule and absorb shared setup at its real frequency. Full S4, including peak
+space and input/callback/fallback/final acceptance gates, remains open. No push.
+
+Fitting cyclic local-volume accounting now includes the implemented empty right
+pass. `emptyReplicaRecoveryLocalVolume_le` charges its scalar preparation and
+phase-cell padding against core width; `coreEmptyReplicaRecoveryLocalVolume_sum_le`
+absorbs every such pass into 80*s using the actual core count. Combined with
+existing nonempty core overlap geometry,
+`fittingCyclicReplicaRecoveryLocalVolume_sum_le` bounds both passes by
+680*(s+(t-s)*band^2), with no extra core-count factor. Generic actual-problem
+profiles remain to be instantiated for the computed fitting class. Guarded
+check passes at 3363.8 MiB; dependency build passes at 5.8 GiB aggregate.
+Next instantiate computed cyclic profiles and use this bound in the combined
+caller schedule, including prepared-batch boundary work and shared setup.
+Full fitting time/space and S4 acceptance remain open. No push.
+
+`computedFittingCyclicRecoveryLocalVolume_sum_le` now restricts the full-core
+amortization to the actual computed fitting length class. Membership discharges
+both endpoint conversion and right-pass emptiness; duplicates are excluded by
+the computed schedule itself. It retains only the actual problem parameter
+profile, to be instantiated at caller construction. The guarded check passes
+at 3384.1 MiB. Joint caller/volume/factory/interior integration passes (16277
+jobs, 6.0 GiB aggregate); combined caller and computed-volume endpoints audit to
+the three standard axioms. Collect the checked setup, local caller composition
+and fitting-volume work in one larger local commit. Actual caller profile
+instantiation, batch-volume summation, setup repetition, execution-wide space
+and remaining S4 acceptance gates remain open. Nothing pushed.

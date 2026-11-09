@@ -2,12 +2,14 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellArbitraryColumnLedger
 public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedUncachedCoupling
+public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedCyclicWorkingWidth
 
 /-! All actual original-column work has a selected polynomial allowance,
 uniform over the physical column index, including masks and guard generation. -/
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Cost
 open IntegerMultBounds IntegerMultBounds.MathlibTM2.Mult IntegerMultBounds.NLogN
+  IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
   IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
   IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 
@@ -36,5 +38,28 @@ theorem selectedArbitraryOriginalColumnCost_poly_le (cw : ℕ) :
   rw [show (2 : ℕ)^15 = 32768 by decide] at hcost
   ring_nf at hq hwidth hvol hscaled hscaled1 hc hcost ⊢
   omega
+
+theorem selectedJointCyclicOriginalColumn_poly_le (ct : ℕ) :
+    ∃ C : ℕ, ∀ n (h : Sizes.Big n) (i : Fin (Sizes.d n)), ∀ [NeZero (Sizes.s n i)],
+      ∀ u target a span j : ℕ, u ≤ Sizes.p n → target ≤ ct*Sizes.p n →
+      j < Sizes.s n i → PhaseCellBand.width (Sizes.p n) u ≤ Sizes.s n i →
+      let p := Sizes.p n
+      let s := Sizes.s n i
+      let t := Sizes.t n i
+      let l := haloInverseRingLog s t
+      let N := (cyclicPrincipalBoundary s t (PhaseCellBand.width p u) a span).card
+      let bits := boundaryTableBits p (boundaryRecoveryTarget p (target+1)) 2 N
+      let q := executionPrecision p l (initialSchurTarget p u bits 2) 2
+      arbitraryOriginalColumnCost p q s t u j ≤ C*t^5 := by
+  obtain ⟨C,hfast⟩ := selectedArbitraryOriginalColumnCost_poly_le (1032+8*ct)
+  refine ⟨C,?_⟩
+  intro n h i _ u target a span j hu htarget hj hband
+  dsimp only
+  have hw := selectedCyclicWorkingWidth_le ct h i u target a span htarget hband
+  have heq (p l target : ℕ) : executionWidth p l target 2 = 2*executionPrecision p l target 2+8 := by
+    unfold executionWidth executionPrecision
+    omega
+  simp only [heq] at hw
+  exact hfast n h i _ u j hw hu hj hband
 
 end IntegerMultBounds.MathlibTM2.Cost
