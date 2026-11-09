@@ -4845,6 +4845,49 @@ axes; finish class/shared-exposure, fallback and root/compiler acceptance.
 Full S4 remains open. Collect this complete publication integration in one local
 checkpoint; no push.
 
+**Archive width initialization: preserve the master through raw retirement.**
+`archiveWidthSetup_exec_within` now generates canonical `L*W` and `R*(L*W)`
+masters from ordinary core, word and replica dimensions using two existing
+restoring unary products. Both source words and scratch ports restore exactly;
+only the two initially blank output ports change. The same execution carries
+explicit time and peak-stock bounds. `archiveWidthSetupCosts_le_traffic` bounds
+setup plus eventual two-word cleanup, and setup peak, by `80*R*s*W` when
+`1 ≤ L ≤ s`, `1 ≤ R`, and `1 ≤ W`.
+
+A checked reverse-copy prototype revealed that retiring these masters at the
+handoff is too early: the complete axis also uses the row-width master to
+retire its raw archive. The copy-only variants were removed instead of adding
+a second width generation or another production wrapper family. Next install
+this setup around the complete retired-axis execution and clear the two words
+after raw retirement. Its existing restoration frame supplies the lifecycle;
+this closes the preloaded row-width premise at its actual usage frequency.
+The complete caller now consumes the setup in
+`selectedAmortizedInitializedDyadicRetiredAxis_exec`. Its actual program is
+`withArchiveWidth` around the existing complete retired-axis program; width
+construction and two-word retirement belong to the same chronological trace.
+`withArchiveWidth_exec_within` is the generic restoring-consumer rule, including
+an arbitrary output postcondition. Its traffic specialization preserves final
+stock equality and charges the whole header lifecycle once. The concrete axis
+instantiates that rule with the existing proved axis, not an execution supplier;
+no numerical, seam or raw-retirement proof is repeated. Its input width ports
+start blank, the row-width word is computed, and only the ambient output changes
+at the endpoint. The old axis time bill is retained under a natural floor, with
+an additional `80*Fs.length*s*W` time/space allowance. The floor records the same
+integer execution bound; it introduces no numerical approximation assumption.
+
+Readiness predicates are explicitly at the computed setup state. They still
+need discharge from ordinary layouts; this result does not claim that final
+caller-initialization or fitting acceptance is closed. Next transport/prove
+those readiness predicates from the ordinary input, construct the remaining
+count/boundary initialization, then compare complete fitting bills before
+class/shared-exposure and outer/fallback/root acceptance. The new complete-axis
+single-file check passes at 3796.1 MiB. The guarded complete scoped build
+passes (17390 jobs, 3.8 GiB aggregate peak). Scope composition, traffic
+specialization and the actual initialized retired axis report only `propext`,
+`Classical.choice`, and `Quot.sound` in the final combined audit (10023.4 MiB
+for the nonmodule audit).
+Keep this with the larger initialization checkpoint; no push.
+
 **First acceptance target: one complete fitting batch.** From declared original
 complex streams and ordinary scalar headers, execute component production,
 prepare numerical data, reuse it across the batch, publish certified complex
