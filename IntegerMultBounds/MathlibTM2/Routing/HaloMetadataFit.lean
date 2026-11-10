@@ -80,6 +80,15 @@ theorem ready_of_geometry (axis : ι → Axis) (retained : Finset ι) (s : Stage
 /-- One encoded width covers every retained stage and packet length. -/
 def metadataWidth (T w d : ℕ) := Nat.clog 2 (8*T*w+2*d+1)
 
+/-- Reading the single axis count costs only linear archive traffic. -/
+theorem metadataStartup_le (T w d : ℕ) (hpos : 0 < T*w) (hd : d ≤ T*w) :
+    IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.readUnaryDimensionCost
+      (metadataWidth T w d) d ≤ 245*(T*w) := by
+  have hwidth : metadataWidth T w d ≤ 8*T*w+2*d+1 :=
+    Nat.clog_le_of_le_pow (HaloSetupResource.self_le_two_pow _)
+  dsimp only [IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.readUnaryDimensionCost]
+  nlinarith only [hwidth,hpos,hd]
+
 /-- A global tensor byte bound needs only four extra metadata bits. -/
 theorem metadataWidth_le (T w d n : ℕ) (hpos : 0 < T*w) (hd : d ≤ T*w)
     (hbytes : T*w ≤ 2^n) : metadataWidth T w d ≤ n+4 := by

@@ -56,6 +56,26 @@ theorem halo_room (p d : ℕ) (hp : 32 ≤ p) (hd : d ≤ p) : 64*d*halo p ≤ c
     _ = p^8 := by ring
     _ ≤ core p := (core_bounds p hp0).1
 
+/-- Retained halos require only a logarithmic local routing exponent. -/
+theorem routingExponent_le (p : ℕ) (hp : 32 ≤ p) :
+    Nat.clog 2 (core p+2*halo p) ≤ 9*(Nat.log 2 p+1) := by
+  have hpow : p ≤ 2^(Nat.log 2 p+1) :=
+    (Nat.lt_pow_succ_log_self (by decide : 1 < 2) p).le
+  have hk : Nat.clog 2 (p^8) ≤ 8*(Nat.log 2 p+1) := by
+    apply Nat.clog_le_of_le_pow
+    calc
+      p^8 ≤ (2^(Nat.log 2 p+1))^8 := Nat.pow_le_pow_left hpow 8
+      _ = 2^(8*(Nat.log 2 p+1)) := by rw [←pow_mul]; congr 1; omega
+  have hgap : 2*halo p ≤ core p := by
+    have hh := halo_room p 1 hp (by omega)
+    omega
+  have hr : Nat.clog 2 (core p+2*halo p) ≤ Nat.clog 2 (p^8)+1 := by
+    apply Nat.clog_le_of_le_pow
+    rw [pow_succ]
+    change core p+2*halo p ≤ core p*2
+    omega
+  omega
+
 /-- Both moves use least dyadic padding, hence share the return exponent.
 The coarse dimension is never padded. -/
 theorem padding_room (p : ℕ) (hp : 32 ≤ p) :

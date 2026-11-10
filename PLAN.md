@@ -47868,3 +47868,48 @@ factored caller with preparation trace 3531.6 MiB. The combined temporary audit
 of cached/packed/complete numerical comparison, native factor preparation,
 preparation execution and factored execution reports only standard axioms
 (9855.0 MiB for the nonmodule audit).
+
+
+### S4 retained-halo routing cost checkpoint (2026-11-09)
+
+The complete standalone axis is not the final tensor schedule: summing its
+per-axis dyadic exposure charge would introduce an extra dimension factor.
+Use the existing executed retained-halo traversal for shared tensor movement.
+`HaloManuscriptSizing.routingExponent_le` proves the local padded exponent is
+at most `9*(Nat.log 2 p+1)` from the manuscript core/halo choices and mathlib's
+power/log bound. `ManuscriptHaloAxes.run_exec` now consumes this result directly:
+its logarithmic recurring bill is `axes.length*((volume*w)*(8928*(log₂ p+1)+6654)+3)`.
+`Cost.precision_mul_log_le` reuses CompactLogGrowth and mathlib rpow algebra to
+absorb any nonnegative linear logarithmic bill without changing the exponent.
+`manuscriptHaloTime_le` consumes the exact traversal bill and ordinary width
+bound `w ≤ cW*p`. The public execution theorem now concludes startup plus
+`axes.length*(4577790*cW*volume*p^(129/128)+3)+2` on the same actual execution.
+The exact retained-tensor endpoint and shared stock trace are preserved. This
+is movement, not an executed numerical callback composition.
+Guarded build passes (4134 jobs, 2.5 GiB aggregate); individual traversal check
+passes at 1989.8 MiB and scalar cost check at 1392.2 MiB. Combined axiom audit
+reports only propext/Classical.choice/Quot.sound (3922.2 MiB). No proof limits
+changed. Keep this with the next coherent integration chunk; no push.
+
+Next discharge selected metadata/width premises and connect the
+numerical callback through a reusable retained-coordinate/readiness/restoration
+invariant. Do not extend standalone-axis wrappers without a concrete consumer.
+Locality/error composition, remaining regimes and final S4 resource/acceptance
+gates remain open; S4 is not complete.
+
+
+The retained-halo traversal now derives metadata width from one ordinary
+archive capacity bound, `volume*w ≤ 2^(p^2-4)`. The axis count is bounded by the
+actual byte volume using the manuscript core lower bound and mathlib's
+single-factor product inequality, including the empty-axis case.
+`HaloMetadataFit.metadataStartup_le` prices count-reader startup by 245 archive
+bytes. The public traversal theorem consumes both results: startup is at most
+`245*volume*w`, and the same execution's full shared workspace reserve is at
+most `18056*volume*w`, independent of the number of axes. Recurring routing
+retains the previously verified dimension-linear `p^(129/128)` rate.
+Guarded build passes (4134 jobs, 2.5 GiB); individual theorem check peaks at
+1992.9 MiB. This closes the metadata/startup/stock accounting for the movement
+execution, conditional on the archive capacity and linear encoding width.
+Selected tensor instantiation and the executed numerical callback connection
+remain necessary. Collect the verified routing envelope as one local chunk;
+no push, no full S4 acceptance claim.
