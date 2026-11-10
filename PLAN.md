@@ -48545,3 +48545,162 @@ ordinary headers for successive owners, and close the repeatable outer batch
 invariant with the actual archive order. Full tensor iteration, source/target
 layout restoration, selected resource absorption and seam/fallback acceptance
 remain open; S4 is not complete.
+
+
+### S4 consume the restored target batch and return reusable work banks (2026-11-09)
+
+selectedDiagonal now appends advanceRetainedBatch after publication. The new
+program reuses retireCountedLine with the retained replica ruler (aux 7) and
+restored per-replica byte-volume ruler (batch 1). retainedBatch_length derives
+the actual target prefix length from the computed tensor batch. No payload
+count is supplied: the existing unary producer creates and retires it. The
+full callback returns the next target suffix, keeps the published packet and
+old output archive, and restores count/saved/tmp. Advancement's actual time
+and workspace bills are included in the same chronological execution.
+
+Generalized the selector/count/solve batch frame once over all six batch roles:
+clock 0 is consumed to empty and every other batch role is restored. The
+post-advance frame records the target queue's new suffix and all remaining
+masters. A structural auxiliary frame replaces the archive-only argument,
+providing actual replica/volume/scratch facts for advancement. The callback
+now explicitly returns unchanged left stacks, a blank full numerical bank,
+and DiagonalFresh for the reused recovery workspace after output retirement.
+No 392/909-register enumeration or new numerical solver is involved.
+
+Integration build passes (16782 jobs, 3.7 GiB aggregate). Individual guarded
+checks: produced input record 3542.7 MiB, selector/count 3578.3 MiB, control
+retirement 3535.8 MiB, selected solve 3567.9 MiB, advancement 3545.0 MiB, full
+callback 3651.5 MiB. Combined callback/advancement/batch-length/selector axiom
+audits report only propext, Classical.choice and Quot.sound (9879.1 MiB audit).
+Default proof limits remain unchanged. Accumulate with the next actual setup
+and scan chunk before committing; no push.
+
+Next restore the consumed clock from its retained replica master using the
+existing copy operation, generate next-owner ordinary control/seed headers,
+and instantiate the outer batch traversal on these actual callbacks. The
+physical multi-replica/axis reorder, source/target layout restoration, full
+tensor error/resource absorption and seam/fallback/final S4 gates remain open.
+
+### S4 restore the replica clock after the selected callback (2026-11-09)
+
+Added restoreRetainedClock using the existing copyR program, borrowing aux 7
+and caller.tmp. Its actual endpoint restores the master and buffer and replaces
+only consumed batch clock 0 with N ticks. Time is 4*N+4; the additive stock
+allowance is 2*(4*N+4).
+
+readySelectedDiagonal now sequences the existing complete selectedDiagonal
+callback with that restoration. Its composition theorem takes the existing
+actual callback execution and a small ClockRestoreInput record (master length,
+empty clock, empty temporary buffer), and returns actual combined execution,
+the restored clock and one universal frame for every other port. This avoids
+duplicating the large numerical theorem and its packet certificates. The
+existing callback already returns the component facts needed for that record;
+the outer traversal must instantiate them, rather than supply a new readiness
+assumption without proof.
+
+Integration build passes (16784 jobs, 3.6 GiB aggregate); the ready callback
+single-file guarded check peaks at 3563.1 MiB. No proof limits changed.
+Next generate successive-owner headers and instantiate a real repeated
+traversal using the returned frames. Physical replica/core order, tensor-axis
+composition, full resource/error bounds and seam/fallback acceptance remain
+open. Keep this setup/scan chunk uncommitted; no push.
+
+### S4 derive clock readiness from the actual callback (2026-11-09)
+
+Moved ClockRestoreInput into the small restoration module and made
+selectedDiagonal_exec return it directly. Its master length follows from the
+unchanged aux 7 word, its empty clock from the universal batch frame, and its
+blank temporary buffer from actual retirement. Factored final scratch/master
+facts once in the callback proof instead of proving them again in the result
+constructor. readySelectedDiagonal_exec can now consume this produced record;
+no additional after-callback readiness supplier is required.
+
+Integration build passes (16784 jobs, 3.7 GiB aggregate), and the changed large
+callback checks at 3652.5 MiB. No proof limits changed.
+
+Inspected existing generated setup: CyclicSeedLayout.program_exec already
+produces the two seed header families from eight ordinary unary scalar inputs,
+with time, stock and a frame outside ten masters. Reuse that producer rather
+than write a second inverse-metadata evaluator. Its left/right functions are
+aliases of master ports, whereas this physical caller owns separate seedL/R
+banks; installation must therefore use the existing installRecoverySeedHeaders
+copy operation, with temporary generation workspace retired before numerical
+execution. Also reuse descriptorSolverSchedule/consume scans where their
+endpoint invariant matches; the older selectedGeneratedCyclicScan assumes a
+fixed crop width and cannot simply stand in for nonuniform floor-owned cores.
+Next settle that physical setup allocation and header lifetime before the
+owner traversal. No push; retain the larger setup/scan chunk locally.
+
+### S4 install generated seed headers in the physical banks (2026-11-09)
+
+PhaseCellRetainedSeedInstallation defines seedBank by a Boolean side and
+installRetainedSeeds via the existing installRecoverySeedHeaders program.
+One structural proof covers both physical banks. Given generated source
+lengths and a blank destination bank, the actual execution writes exactly
+the sparse recoverySeedHeader words, keeps payload port 124 empty, restores
+the temporary buffer, and preserves every port outside that destination bank.
+Left stacks and native input/output are unchanged. Time uses the existing
+copyUnaryHeadersCost; stock is twice that bill at arbitrary ambient depth.
+No register enumeration or new arithmetic evaluation is introduced.
+
+The guarded module build passes (16609 jobs, 3.6 GiB aggregate). This is the
+physical installation stage, not yet a complete ordinary-header producer:
+source masters still must be produced by CyclicSeedLayout.program_exec,
+installed on both sides and retired before the numerical callback. Ordinary
+controls and selector/diagonal headers also require their own actual setup.
+Continue toward that composed setup and the owner traversal; retain changes
+for the larger setup/scan commit and do not push.
+
+### S4 paired physical seed installation produces caller context (2026-11-09)
+
+installRetainedSeedPair now executes the two existing sparse installations in
+sequence. Its theorem produces caller.InputContext H K W N radius rows for the
+actual final state. The proof transports the second side's generated source
+lengths through the first side's universal frame, proves the right copy bill
+is unchanged, and preserves both header families without register enumeration.
+It also returns unchanged left/native tapes and a universal right-stack frame
+outside the two seed banks. Time is the sum of the two copy bills and stock
+is twice that sum, at arbitrary ambient depth.
+
+InputContext is now a produced installation result, but source master lengths
+and ordinary control lengths remain premises. The next substantive integration
+is an actual CyclicSeedLayout allocation, scalar generation from its ordinary
+dimensions, paired installation and master retirement. Do not present the
+paired installer alone as completing ordinary setup or the repeated traversal.
+The old generated scan requires fixed crop widths and uses aliased seed/master
+ports, so reuse its structural scan ideas without imposing that layout on the
+nonuniform floor-owned output.
+
+Guarded integration build passes (16610 jobs, 3.6 GiB aggregate). Single-file
+check peaks at 3551.3 MiB; git diff --check passes. Keep changes with the larger
+setup/scan chunk; no push. Full S4 obligations remain open.
+
+### S4 concrete generator allocation and local commit checkpoint (2026-11-09)
+
+seedGenerator instantiates the existing CyclicSeedLayout in the current
+retained physical layout. It borrows selector geometry: arithmetic ports
+40..79, scalar parameters 80..87, masters 0..9, word/queue/carry 88/90/89,
+zero 37, precision 31 and packet width 94; aux 7 supplies replica count and
+caller.saved/tmp are shared scratch. Structural range and injection proofs
+establish separation without enumerating the numerical or seed banks.
+seedGenerator_sources_ne supplies a universal frame fact for both generated
+source families using the existing recoverySeedSources_ne abstraction.
+
+The masters occupy the selector table and therefore MUST be retired after
+paired seed installation and before selection begins. The current checkpoint
+defines and verifies that allocation, but does not yet compose generator
+execution, paired installation and master retirement. The scalar parameter
+and precision/width inputs also still require actual outer setup. No full
+ordinary-input producer or repeated traversal is claimed.
+
+At the user's request, finish verification and collect advancement, clock
+restoration, produced readiness, paired seed installation and this allocation
+in one coherent local commit. Exclude the independent periodic-recovery and
+workspace-sizing changes. Do not push. Stop after this commit checkpoint;
+resume with the actual generated-setup lifecycle and owner traversal.
+
+Checkpoint verification: generator allocation single-file check peaks at
+3538.6 MiB. Combined callback/queue/clock/paired-installation/allocation axiom
+audit reports only propext, Classical.choice and Quot.sound (9886.4 MiB for
+the nonmodule audit). Callback and paired-installation guarded measurements
+are recorded above; no proof limits or integrity requirements were relaxed.

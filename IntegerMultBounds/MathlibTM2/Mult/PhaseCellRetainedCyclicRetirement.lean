@@ -48,7 +48,7 @@ theorem archive_not_controlWords : caller.archive ∉ controlWords := by
   simp [controlWords,geometry,caller,selector,aux,port_injective.eq_iff,
     LocalRecoveryLayout.source,LocalRecoveryLayout.geometry_injective.eq_iff]
 
-theorem queue_not_controlWords : selector (LocalRecoveryLayout.batch 2) ∉ controlWords := by
+theorem batch_not_controlWords (j : Fin 6) : selector (LocalRecoveryLayout.batch j) ∉ controlWords := by
   simp [controlWords,geometry,caller,selector,aux,port_injective.eq_iff,
     (LocalRecoveryLayout.geometry_ne_batch _ _).symm]
 

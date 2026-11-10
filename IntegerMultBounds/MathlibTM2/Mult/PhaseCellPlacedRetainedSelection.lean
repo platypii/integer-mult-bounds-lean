@@ -81,7 +81,8 @@ theorem selection_exec
       (F.R caller.archive).length = (middle.map (Routing.RetainedTensorEnumeration.width axis retained)).prod*n*w ∧
       F.R caller.span = List.replicate n tick ∧
       F.R (caller.controls 0) = S.R (caller.controls 0) ∧
-      F.R (selector (LocalRecoveryLayout.batch 2)) = S.R (selector (LocalRecoveryLayout.batch 2)) ∧
+      (∀ j : Fin 6, F.R (selector (LocalRecoveryLayout.batch j)) =
+        if j = 0 then [] else S.R (selector (LocalRecoveryLayout.batch j))) ∧
       (∀ i, F.R (selector (LocalRecoveryLayout.recovery i)) = S.R (selector (LocalRecoveryLayout.recovery i))) ∧
       F.L = S.L ∧
       (∀ j, (∀ r, selector r ≠ j) → F.L j = S.L j ∧ F.R j = S.R j) ∧
@@ -91,7 +92,7 @@ theorem selection_exec
         depth selection (mk v S) m (mk v' F) := by
   dsimp only
   let S₀ := embStk selector S
-  obtain ⟨vi,B,m,hu,hm,he,hlen,hrows,hqueueFinal,hrecovery,hscratch,hleft,hscalarFrame,hwithin⟩ :=
+  obtain ⟨vi,B,m,hu,hm,he,hlen,hrows,_hqueueFinal,hrecovery,hscratch,hleft,hscalarFrame,hwithin⟩ :=
     LocalRecoveryLayout.preparedRetainedSelection_exec (P := Empty) (body := fun z => nomatch z)
       axis retained f before middle aPrefix i hi k hH hguard hsource hn hwide hwindow hwV hspan hvol
       hVW hA hVpos tail (embDn selector v) S₀ hheaders hclock hvolume hqueue harchive hacc hdst hline
@@ -130,8 +131,17 @@ theorem selection_exec
     change K.R (LocalRecoveryLayout.geometry 94) = B.R 94 at hg
     rw [hg,hscalarFrame 94 (by decide) (by decide) (by decide)]
     rfl
-  · rw [hread]
-    exact hqueueFinal
+  · intro j
+    rw [hread]
+    by_cases hj : j = 0
+    · subst j
+      simp only [F₀,Function.update_of_ne (show LocalRecoveryLayout.batch 0 ≠ LocalRecoveryLayout.source from
+        (LocalRecoveryLayout.geometry_ne_batch 108 0).symm),Function.update_self,ite_true]
+    · simp only [hj,ite_false,F₀,
+        Function.update_of_ne (show LocalRecoveryLayout.batch j ≠ LocalRecoveryLayout.source from
+          (LocalRecoveryLayout.geometry_ne_batch 108 j).symm),
+        Function.update_of_ne (LocalRecoveryLayout.batch_injective.ne hj)]
+      exact (embOvr_off B.get S₀ (fun r => LocalRecoveryLayout.geometry_ne_batch r j)).2
   · intro i
     rw [hread]
     exact hrecovery i
@@ -176,7 +186,7 @@ theorem selectionCount_exec
         (3*LocalRecoveryLayout.preparedBulkSelectionCost W V ((axis i).L+2*(axis i).H) w n N+
           2*archiveWidthSetupCost N n w)) depth selectionCount (mk v S) m (mk v' C) := by
   dsimp only
-  obtain ⟨vi,B,m,hu,hm,he,hsrc,hlen,hrows,hwidth,hqueueRestored,hrecovery,hleft,hframe,hwithin⟩ := selection_exec (body := body)
+  obtain ⟨vi,B,m,hu,hm,he,hsrc,hlen,hrows,hwidth,hbatch,hrecovery,hleft,hframe,hwithin⟩ := selection_exec (body := body)
     axis retained f before middle aPrefix i hi k hH hguard hsource hn hwide hwindow hwV hspan hvol
     hVW hA hVpos tail v S hheaders hclock hvolume hqueue harchive hacc hdst hline
   let payload := cstream A w ((selectedRhsFields s
@@ -211,10 +221,11 @@ theorem selectionCount_exec
       exact (Nat.mul_assoc N n w).symm
     · simpa only [C,Function.update_of_ne hcs] using hrows
     · simpa only [C,Function.update_of_ne hcw] using hwidth
-    · have hne : selector (LocalRecoveryLayout.batch 2) ≠ caller.count := selector_ne_aux _ _
-      change Function.update F.R caller.count _ (selector (LocalRecoveryLayout.batch 2)) = _
+    · intro j
+      have hne : selector (LocalRecoveryLayout.batch j) ≠ caller.count := selector_ne_aux _ _
+      change Function.update F.R caller.count _ (selector (LocalRecoveryLayout.batch j)) = _
       rw [Function.update_of_ne hne]
-      exact hqueueRestored
+      exact hbatch j
     · intro i
       have hne : selector (LocalRecoveryLayout.recovery i) ≠ caller.count := selector_ne_aux _ _
       change Function.update F.R caller.count _ (selector (LocalRecoveryLayout.recovery i)) = _

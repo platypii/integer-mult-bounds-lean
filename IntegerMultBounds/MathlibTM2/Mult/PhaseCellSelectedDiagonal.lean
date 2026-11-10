@@ -3,6 +3,8 @@ module
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetainedCyclicSolve
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPlacedIntervalDiagonal
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPublishRetainedInterval
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRestoreRetainedClock
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellAdvanceRetainedBatch
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPrincipalDiagonalInput
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPrincipalDiagonalB0Budget
 
@@ -22,7 +24,7 @@ variable {ι : Type} [DecidableEq ι]
 variable {Q A s : ℕ} [NeZero s] {P U : Type} {body : P → Pr P tapes Q A U}
 
 def selectedDiagonal (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) : Pr P tapes Q A U :=
-  .seq (.seq (selectionSolve hR hQ) (placedDiagonal hQ)) publishDiagonal
+  .seq (.seq (.seq (selectionSolve hR hQ) (placedDiagonal hQ)) publishDiagonal) advanceRetainedBatch
 
 theorem selectedDiagonal_exec
     (grid : ι → Axis) (retained : Finset ι) (f : (ι → ℕ) → GaussianInt)
@@ -76,9 +78,9 @@ theorem selectedDiagonal_exec
     caller.InputContext H K w Fs.length radius coreRows S →
     LocalRecoveryLayout.DiagonalContext s t u p w Bdiag a radius coreRows Fs.length (embStk selector S) →
     S.R (selector LocalRecoveryLayout.diagonalQueue) = [] → S.R (aux 5) = [] →
-    ∃ (vp : HS tapes Q A U) (I C F G O published : Stacks tapes A) (J L : ReplicaHaloProblem s)
+    ∃ (va : HS tapes Q A U) (I C F G O published advanced : Stacks tapes A) (J L : ReplicaHaloProblem s)
       (y : (ZMod s → GaussianInt) → ZMod s → ℝ) (Ds : List (ZMod s → GaussianInt))
-      (m steps nd : ℕ) (word : List (Fin (A+4))),
+      (m steps nd na : ℕ) (word : List (Fin (A+4))),
       let Z := retiredControls G
       let M := diagonalTransferState Z
       let N := (middle.map (Routing.RetainedTensorEnumeration.width grid retained)).prod
@@ -95,15 +97,17 @@ theorem selectedDiagonal_exec
         (executionWidth p l stage 2) w B.card Rs.length Fs.length radius coreRows I C F
       let diagonalStock := 16*LocalRecoveryLayout.diagonalPreparationCost (embStk selector M) Bdiag p w u t a radius coreRows+
         (2*bulkSelectionCountsCost Fs.length coreRows w+(2*(6*(coreRows*w)+6)+realWeightWorkspace Cdiag w coreRows))
+      let advanceBill := retireCountedLineCost N (localLength grid retained i*w)
       let packet := Ds.reverse.flatMap (fun D => cstream A w
         (packedInterval (a+radius) coreRows (diagonalProduct s t alpha p D)))
-      vp.user = v.user ∧ Ds.length = Fs.length ∧
+      va.user = v.user ∧ Ds.length = Fs.length ∧
       m ≤ selectorBill ∧ steps ≤ numericBill ∧
       nd ≤ 4*word.length+4+
         LocalRecoveryLayout.completeDiagonalBatchCost (embStk selector M) Bdiag p w u t a radius coreRows Fs.length ∧
+      na ≤ advanceBill ∧
       ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+0+
-        ((selectionStock+numericStock)+diagonalStock)) 0
-        (selectedDiagonal hR hQ) (mk v S) (m+steps+retireControlsCost G+nd+(4*(Fs.length*coreRows*w)+4)) (mk vp published) ∧
+        (((selectionStock+numericStock)+diagonalStock)+3*advanceBill)) 0
+        (selectedDiagonal hR hQ) (mk v S) (m+steps+retireControlsCost G+nd+(4*(Fs.length*coreRows*w)+4)+na) (mk va advanced) ∧
       (∀ F ∈ complexComponentFields Fs, SchurDominance.Solves (realMatrix s t p u)
         (cyclicPrincipalVertices s a n) (y F) (fun i => (value q ((2 : GaussianInt)^(q-p-1)*F i)).re)) ∧
       PackedIntervalOutput p w (a+radius) coreRows
@@ -114,11 +118,21 @@ theorem selectedDiagonal_exec
       O.R (selector (LocalRecoveryLayout.diagonalRole .dst)) = packet ∧
       O = {M with R := (Function.update (Function.update M.R (selector LocalRecoveryLayout.diagonalQueue) [])
         (selector (LocalRecoveryLayout.diagonalRole .dst)) packet)} ∧
-      published.R outputArchive = packet++S.R outputArchive ∧
-      published.R (selector (LocalRecoveryLayout.diagonalRole .dst)) = [] ∧
+      advanced.R outputArchive = packet++S.R outputArchive ∧
+      advanced.R (selector (LocalRecoveryLayout.diagonalRole .dst)) = [] ∧
       published = {O with R := (Function.update
         (Function.update O.R (selector (LocalRecoveryLayout.diagonalRole .dst)) [])
         outputArchive (packet++O.R outputArchive))} ∧
+      advanced.R (selector (LocalRecoveryLayout.batch 2)) = tail ∧
+      advanced = {published with R := Function.update published.R (selector (LocalRecoveryLayout.batch 2)) tail} ∧
+      (∀ r ∈ [caller.count,caller.saved,caller.tmp], advanced.R r = []) ∧
+      advanced.R (aux 7) = S.R (aux 7) ∧
+      (∀ j : Fin 6, advanced.R (selector (LocalRecoveryLayout.batch j)) =
+        if j = 2 then tail else if j = 0 then [] else S.R (selector (LocalRecoveryLayout.batch j))) ∧
+      advanced.L = S.L ∧
+      (∀ j, advanced.L (caller.bank j) = [] ∧ advanced.R (caller.bank j) = []) ∧
+      LocalRecoveryLayout.DiagonalFresh (embStk selector advanced) ∧
+      ClockRestoreInput N advanced ∧
       word.length = Fs.length*coreRows*w ∧
       ∀ (localityTarget : ℕ), radius = localityDepth p localityTarget*PhaseCellBand.width p u →
         start = cut s t (grid i).L k → coreRows = rows s t (grid i).L k →
@@ -188,45 +202,162 @@ theorem selectedDiagonal_exec
     (packedInterval (a+radius) coreRows (diagonalProduct s t alpha p D)))
   have packetLen : packet.length = Fs.length*coreRows*w := by
     simpa only [targets,List.length_map,List.length_reverse] using hdaccuracy.length (by omega)
-  have hArchiveI : I.R outputArchive = S.R outputArchive :=
-    (hselected.outside _ (by simp [caller,aux,port_injective.eq_iff])
-      (fun r => selector_ne_aux r 8)).2
-  have hArchiveG : G.R outputArchive = S.R outputArchive := by
-    rw [hendpoint]
-    simp only [Function.update_of_ne (by simp [outputArchive,aux,port_injective.eq_iff] : outputArchive ≠ aux 5),
-      Function.update_of_ne (show outputArchive ≠ caller.archive from (selector_ne_aux LocalRecoveryLayout.source 8).symm)]
-    exact hArchiveI
-  have hArchiveZ : Z.R outputArchive = S.R outputArchive :=
-    (retiredControls_off G (by simp [outputArchive,controlWords,caller,geometry,selector,aux,port_injective.eq_iff])).trans hArchiveG
-  have hArchiveO : O.R outputArchive = S.R outputArchive := by
+  have hAuxO (j : Fin 9) (hj2 : j ≠ 2) (hj5 : j ≠ 5) : O.R (aux j) = S.R (aux j) := by
+    have hAuxI : I.R (aux j) = S.R (aux j) :=
+      (hselected.outside _ (by simp [caller,aux,port_injective.eq_iff,hj2])
+        (fun r => selector_ne_aux r j)).2
+    have hAuxG : G.R (aux j) = S.R (aux j) := by
+      rw [hendpoint]
+      simp only [Function.update_of_ne (by simp [aux,port_injective.eq_iff,hj5] : aux j ≠ aux 5),
+        Function.update_of_ne (show aux j ≠ caller.archive from (selector_ne_aux LocalRecoveryLayout.source j).symm)]
+      exact hAuxI
+    have hAuxZ : Z.R (aux j) = S.R (aux j) :=
+      (retiredControls_off G (by simp [controlWords,caller,geometry,selector,aux,port_injective.eq_iff,hj2])).trans hAuxG
     rw [hdendpoint]
-    simp only [Function.update_of_ne (show outputArchive ≠ selector (LocalRecoveryLayout.diagonalRole .dst) from
-        (selector_ne_aux _ 8).symm),
-      Function.update_of_ne (show outputArchive ≠ selector LocalRecoveryLayout.diagonalQueue from (selector_ne_aux _ 8).symm),
-      diagonalTransferState,Function.update_of_ne (by simp [outputArchive,aux,port_injective.eq_iff] : outputArchive ≠ aux 5)]
-    exact hArchiveZ
-  have htmpO : O.R caller.tmp = [] := by
+    simp only [Function.update_of_ne (selector_ne_aux (LocalRecoveryLayout.diagonalRole .dst) j).symm,
+      Function.update_of_ne (selector_ne_aux LocalRecoveryLayout.diagonalQueue j).symm,
+      diagonalTransferState,Function.update_of_ne (by simp [aux,port_injective.eq_iff,hj5] : aux j ≠ aux 5)]
+    exact hAuxZ
+  have hArchiveO : O.R outputArchive = S.R outputArchive := hAuxO 8 (by decide) (by decide)
+  have htmpO : O.R caller.tmp = [] :=
+    (hAuxO 4 (by decide) (by decide)).trans hcontext.tmp
+  have hBatchO (j : Fin 6) :
+      O.R (selector (LocalRecoveryLayout.batch j)) = if j = 0 then [] else S.R (selector (LocalRecoveryLayout.batch j)) := by
+    have hd : selector (LocalRecoveryLayout.batch j) ≠ selector (LocalRecoveryLayout.diagonalRole .dst) :=
+      selector_injective.ne (LocalRecoveryLayout.batch_ne_recovery j _)
+    have hq : selector (LocalRecoveryLayout.batch j) ≠ selector LocalRecoveryLayout.diagonalQueue :=
+      selector_injective.ne (LocalRecoveryLayout.batch_ne_recovery j _)
     rw [hdendpoint]
-    simp only [Function.update_of_ne (show caller.tmp ≠ selector (LocalRecoveryLayout.diagonalRole .dst) from
-        (selector_ne_aux _ 4).symm),
-      Function.update_of_ne (show caller.tmp ≠ selector LocalRecoveryLayout.diagonalQueue from (selector_ne_aux _ 4).symm),
-      diagonalTransferState,Function.update_of_ne (by simp [caller,aux,port_injective.eq_iff] : caller.tmp ≠ aux 5)]
-    exact htmpZ
+    simp only [Function.update_of_ne hd,Function.update_of_ne hq,diagonalTransferState,
+      Function.update_of_ne (selector_ne_aux (LocalRecoveryLayout.batch j) 5)]
+    exact hqueueOut j
+  have hCountO : O.R caller.count = [] := by
+    rw [hdendpoint]
+    simp only [Function.update_of_ne (show caller.count ≠ selector (LocalRecoveryLayout.diagonalRole .dst) from
+        (selector_ne_aux _ 2).symm),
+      Function.update_of_ne (show caller.count ≠ selector LocalRecoveryLayout.diagonalQueue from (selector_ne_aux _ 2).symm),
+      diagonalTransferState,Function.update_of_ne (by simp [caller,aux,port_injective.eq_iff] : caller.count ≠ aux 5)]
+    exact hclean _ (by simp [controlWords])
   obtain ⟨vp,hup,hpublish⟩ := publishDiagonal_exec (body := body) vd O packet hdword htmpO 0
   let published := {O with R := (Function.update
     (Function.update O.R (selector (LocalRecoveryLayout.diagonalRole .dst)) [])
     outputArchive (packet++O.R outputArchive))}
   rw [packetLen] at hpublish
-  refine ⟨vp,I,C,F,G,O,published,J,L,y,Ds,m,steps,nd,word,hup.trans (hud.trans hug),?_,hm,htime,?_,?_,hsol,hdaccuracy,
-    hauxOut,hdqueue,hdword,hdendpoint,?_,?_,rfl,hlen,?_⟩
+  have hPublishedR (r : Fin tapes) (hd : r ≠ selector (LocalRecoveryLayout.diagonalRole .dst))
+      (ha : r ≠ outputArchive) : published.R r = O.R r := by
+    change Function.update (Function.update O.R _ []) outputArchive _ r = _
+    rw [Function.update_of_ne ha,Function.update_of_ne hd]
+  have hPublishedAux (j : Fin 9) (hj2 : j ≠ 2) (hj5 : j ≠ 5) (hj8 : j ≠ 8) :
+      published.R (aux j) = S.R (aux j) :=
+    (hPublishedR _ (selector_ne_aux _ j).symm (by simp [outputArchive,aux,port_injective.eq_iff,hj8])).trans
+      (hAuxO j hj2 hj5)
+  have hPublishedBatchAll (j : Fin 6) : published.R (selector (LocalRecoveryLayout.batch j)) =
+      if j = 0 then [] else S.R (selector (LocalRecoveryLayout.batch j)) :=
+    (hPublishedR _ (selector_injective.ne (LocalRecoveryLayout.batch_ne_recovery j _))
+      (selector_ne_aux _ 8)).trans (hBatchO j)
+  have hPublishedBatch (j : Fin 6) (hj : j ≠ 0) :
+      published.R (selector (LocalRecoveryLayout.batch j)) = S.R (selector (LocalRecoveryLayout.batch j)) := by
+    simpa only [hj,ite_false] using hPublishedBatchAll j
+  have hblankPublished : ∀ r ∈ [caller.count,caller.saved,caller.tmp], published.R r = [] := by
+    intro r hr
+    simp only [List.mem_cons,List.not_mem_nil,or_false] at hr
+    rcases hr with rfl | rfl | rfl
+    · exact (hPublishedR _ (selector_ne_aux _ 2).symm
+        (by simp [outputArchive,aux,port_injective.eq_iff])).trans hCountO
+    · exact (hPublishedAux 3 (by decide) (by decide) (by decide)).trans hcontext.saved
+    · exact (hPublishedAux 4 (by decide) (by decide) (by decide)).trans hcontext.tmp
+  obtain ⟨va,na,hua,hatime,hadvance⟩ := advanceRetainedBatch_exec (body := body)
+    grid retained before middle i aPrefix k w f tail vp published
+    ((congrArg List.length (hPublishedAux 7 (by decide) (by decide) (by decide))).trans hN)
+    (by rw [hPublishedBatch 1 (by decide)]; simpa only [localLength,hi,ite_true] using hvolume)
+    ((hPublishedBatch 2 (by decide)).trans hqueue) hblankPublished 0
+  let advanced := {published with R := Function.update published.R (selector (LocalRecoveryLayout.batch 2)) tail}
+  have hFinalLeftZ : advanced.L = Z.L := by
+    change O.L = Z.L
+    rw [hdendpoint]
+    rfl
+  have hFinalLeft : advanced.L = S.L := hFinalLeftZ.trans hleft
+  have hFinalDst : advanced.R (selector (LocalRecoveryLayout.diagonalRole .dst)) = [] := by
+    change Function.update published.R (selector (LocalRecoveryLayout.batch 2)) tail
+      (selector (LocalRecoveryLayout.diagonalRole .dst)) = []
+    rw [Function.update_of_ne (show selector (LocalRecoveryLayout.diagonalRole .dst) ≠ selector (LocalRecoveryLayout.batch 2) from
+      selector_injective.ne (LocalRecoveryLayout.batch_ne_recovery 2 _).symm)]
+    simp only [published,Function.update_of_ne (show selector (LocalRecoveryLayout.diagonalRole .dst) ≠ outputArchive from
+      selector_ne_aux _ 8),Function.update_self]
+  have hFinalBatch (j : Fin 6) : advanced.R (selector (LocalRecoveryLayout.batch j)) =
+      if j = 2 then tail else if j = 0 then [] else S.R (selector (LocalRecoveryLayout.batch j)) := by
+    change Function.update published.R (selector (LocalRecoveryLayout.batch 2)) tail
+      (selector (LocalRecoveryLayout.batch j)) = _
+    by_cases hj : j = 2
+    · subst j
+      simp only [Function.update_self,ite_true]
+    · rw [Function.update_of_ne (selector_injective.ne (LocalRecoveryLayout.batch_injective.ne hj))]
+      simp only [hj,ite_false]
+      exact hPublishedBatchAll j
+  have hFinalBank : ∀ j, advanced.L (caller.bank j) = [] ∧ advanced.R (caller.bank j) = [] := by
+    intro j
+    refine ⟨(congrFun hFinalLeftZ _).trans (hbank j).1,?_⟩
+    have hq : numeric j ≠ selector (LocalRecoveryLayout.batch 2) := (selector_ne_numeric _ j).symm
+    have hd : numeric j ≠ selector (LocalRecoveryLayout.diagonalRole .dst) := (selector_ne_numeric _ j).symm
+    have hdq : numeric j ≠ selector LocalRecoveryLayout.diagonalQueue := (selector_ne_numeric _ j).symm
+    have ha : numeric j ≠ outputArchive := by simp [outputArchive,numeric,aux,port_injective.eq_iff]
+    have h5 : numeric j ≠ aux 5 := by simp [numeric,aux,port_injective.eq_iff]
+    change advanced.R (numeric j) = []
+    simp only [advanced,published,Function.update_of_ne hq,Function.update_of_ne ha,Function.update_of_ne hd]
+    rw [hdendpoint]
+    simp only [Function.update_of_ne hd,Function.update_of_ne hdq,diagonalTransferState,Function.update_of_ne h5]
+    exact (hbank j).2
+  have hFinalFresh : LocalRecoveryLayout.DiagonalFresh (embStk selector advanced) := by
+    refine ⟨fun j => (congrFun hFinalLeft (selector j)).trans (diagContext.fresh.left j),?_⟩
+    intro j
+    by_cases hd : LocalRecoveryLayout.recovery (.work j) = LocalRecoveryLayout.diagonalRole .dst
+    · change advanced.R (selector (LocalRecoveryLayout.recovery (.work j))) = []
+      rw [hd]
+      exact hFinalDst
+    · have hd' : selector (LocalRecoveryLayout.recovery (.work j)) ≠ selector (LocalRecoveryLayout.diagonalRole .dst) :=
+        selector_injective.ne hd
+      have hb : selector (LocalRecoveryLayout.recovery (.work j)) ≠ selector (LocalRecoveryLayout.batch 2) :=
+        selector_injective.ne (LocalRecoveryLayout.batch_ne_recovery 2 (.work j)).symm
+      have hq : selector (LocalRecoveryLayout.recovery (.work j)) ≠ selector LocalRecoveryLayout.diagonalQueue := by
+        simp [selector_injective.eq_iff,LocalRecoveryLayout.diagonalQueue,LocalRecoveryLayout.recovery_injective.eq_iff]
+      have ha : selector (LocalRecoveryLayout.recovery (.work j)) ≠ outputArchive := selector_ne_aux _ 8
+      have h5 : selector (LocalRecoveryLayout.recovery (.work j)) ≠ aux 5 := selector_ne_aux _ 5
+      change advanced.R (selector (LocalRecoveryLayout.recovery (.work j))) = []
+      simp only [advanced,published,Function.update_of_ne hb,Function.update_of_ne ha,Function.update_of_ne hd']
+      rw [hdendpoint]
+      simp only [Function.update_of_ne hd',Function.update_of_ne hq,diagonalTransferState,Function.update_of_ne h5]
+      exact (hrecovery (.work j)).trans (diagContext.fresh.work j)
+  have hFinalBlank : ∀ r ∈ [caller.count,caller.saved,caller.tmp], advanced.R r = [] := by
+    intro r hr
+    have hoff : r ≠ selector (LocalRecoveryLayout.batch 2) := by
+      simp only [List.mem_cons,List.not_mem_nil,or_false] at hr
+      rcases hr with rfl | rfl | rfl
+      all_goals exact (selector_ne_aux _ _).symm
+    change Function.update published.R (selector (LocalRecoveryLayout.batch 2)) tail r = []
+    rw [Function.update_of_ne hoff]
+    exact hblankPublished r hr
+  have hFinalMaster : advanced.R (aux 7) = S.R (aux 7) := by
+    change Function.update published.R (selector (LocalRecoveryLayout.batch 2)) tail (aux 7) = _
+    rw [Function.update_of_ne (selector_ne_aux _ 7).symm]
+    exact hPublishedAux 7 (by decide) (by decide) (by decide)
+  have hRestore : ClockRestoreInput
+      (middle.map (Routing.RetainedTensorEnumeration.width grid retained)).prod advanced :=
+    ⟨(congrArg List.length hFinalMaster).trans hN,
+      by simpa only [show (0 : Fin 6) ≠ 2 by decide,ite_false,ite_true] using hFinalBatch 0,
+      hFinalBlank caller.tmp (by simp)⟩
+  refine ⟨va,I,C,F,G,O,published,advanced,J,L,y,Ds,m,steps,nd,na,word,hua.trans (hup.trans (hud.trans hug)),
+    ?_,hm,htime,?_,hatime,?_,hsol,hdaccuracy,hauxOut,hdqueue,hdword,hdendpoint,?_,hFinalDst,rfl,?_,rfl,hFinalBlank,hFinalMaster,hFinalBatch,hFinalLeft,hFinalBank,hFinalFresh,hRestore,hlen,?_⟩
   · simpa only [targets,List.length_map] using hDs
   · simpa only [targets,List.length_map] using hdtime
-  · have hwhole := mn_seq_within_no_growth (mn_seq_within_add hstock hdstock) hpublish
+  · have hwhole := mn_seq_within_add
+      (mn_seq_within_no_growth (mn_seq_within_add hstock hdstock) hpublish) hadvance
     simpa only [targets,List.length_map,selectedDiagonal] using hwhole
-  · simp only [published,Function.update_self,hArchiveO]
+  · change Function.update published.R (selector (LocalRecoveryLayout.batch 2)) tail outputArchive = _
+    rw [Function.update_of_ne (show outputArchive ≠ selector (LocalRecoveryLayout.batch 2) from
+      (selector_ne_aux _ 8).symm)]
+    simp only [published,Function.update_self,hArchiveO]
     rfl
-  · simp only [published,Function.update_of_ne (show selector (LocalRecoveryLayout.diagonalRole .dst) ≠ outputArchive from
-      selector_ne_aux _ 8),Function.update_self]
+  · exact Function.update_self _ _ _
   · intro localityTarget hRadius hStart hRows hGuardL hGuardR inverse hInverse
     have hAlpha : (alpha : ℝ) = α := by
       have hNat : (u : ℝ) = (alpha : ℝ)^2 := by exact_mod_cast hsquare

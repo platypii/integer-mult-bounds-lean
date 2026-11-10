@@ -92,7 +92,8 @@ theorem selectionSolve_exec
       (retiredControls G).R caller.archive = [] ∧
       PackedPrincipalOutput (realMatrix s t p u) (cyclicPrincipalVertices s a n)
         p q w target start coreRows Fs word ∧
-      (retiredControls G).R (selector (LocalRecoveryLayout.batch 2)) = S.R (selector (LocalRecoveryLayout.batch 2)) ∧
+      (∀ j : Fin 6, (retiredControls G).R (selector (LocalRecoveryLayout.batch j)) =
+        if j = 0 then [] else S.R (selector (LocalRecoveryLayout.batch j))) ∧
       G = {I with R := Function.update (Function.update I.R caller.archive []) (aux 5) (word++I.R (aux 5))} ∧
       (∀ r ∈ controlWords, (retiredControls G).R r = []) ∧
       (retiredControls G).L = S.L ∧
@@ -119,10 +120,6 @@ theorem selectionSolve_exec
       hinput.count hinput.span hinput.controls hinput.saved hinput.tmp
   have haux : I.R (aux 5) = S.R (aux 5) :=
     (hselected.outside _ (by simp [caller,aux,port_injective.eq_iff]) (fun r => selector_ne_aux r 5)).2
-  have hqueueNe : selector (LocalRecoveryLayout.batch 2) ≠ caller.archive := by
-    exact selector_injective.ne (LocalRecoveryLayout.geometry_ne_batch 108 2).symm
-  have hqueueOut := (hframe (selector (LocalRecoveryLayout.batch 2)) hqueueNe
-    (selector_ne_aux _ _) (fun j => (selector_ne_numeric _ j).symm)).2
   obtain ⟨vg,hug,hclean⟩ := retireControls_exec (body := body) vf G 0
   have hwhole := mn_seq_within_add (hwithin 0) hstock
   refine ⟨vi,vf,vg,I,C,F,G,J,L,m,steps,word,hu,hug.trans (huf.trans hu),he,hselected,hex,
@@ -133,7 +130,12 @@ theorem selectionSolve_exec
   · intro j
     exact ⟨(hblank j).1,(retiredControls_off G (numeric_not_controlWords j)).trans (hblank j).2⟩
   · exact (retiredControls_off G archive_not_controlWords).trans harchiveOut
-  · exact (retiredControls_off G queue_not_controlWords).trans (hqueueOut.trans hselected.queue)
+  · intro j
+    rw [retiredControls_off G (batch_not_controlWords j)]
+    have harchive : selector (LocalRecoveryLayout.batch j) ≠ caller.archive :=
+      selector_injective.ne (LocalRecoveryLayout.geometry_ne_batch 108 j).symm
+    exact ((hframe _ harchive (selector_ne_aux _ _) (fun r => (selector_ne_numeric _ r).symm)).2).trans
+      (hselected.batch j)
   · intro r hr
     exact retiredControls_on G hr
   · exact hleftArchive.trans hselected.left
