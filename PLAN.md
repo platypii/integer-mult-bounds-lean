@@ -48704,3 +48704,5 @@ Checkpoint verification: generator allocation single-file check peaks at
 audit reports only propext, Classical.choice and Quot.sound (9886.4 MiB for
 the nonmodule audit). Callback and paired-installation guarded measurements
 are recorded above; no proof limits or integrity requirements were relaxed.
+
+Deferred periodic-recovery drafts, their input-bank frame, and the unused failing workspace-sizing draft are preserved at local archive commit `907adf85` (`archive/s4-periodic-recovery-drafts`); restore only when a concrete S4 fallback/resource caller needs them.
