@@ -17,6 +17,15 @@ theorem mn_seq_within_add {body : P → Prog P Γ σ} {p q : Prog P Γ σ}
   have ht := hp.final
   exact .seq (hp.mono (by intro d z hz; omega)) (hq.mono (by intro d z hz; omega))
 
+/-- A final stage that allocates no stock reuses the established allowance. -/
+theorem mn_seq_within_no_growth {body : P → Prog P Γ σ} {p q : Prog P Γ σ}
+    {s t u : Store Γ σ} {m n depth a : ℕ}
+    (hp : ExecWithin body (fun d z => mnSize z+d ≤ mnSize s+depth+a) depth p s m t)
+    (hq : ExecWithin body (fun d z => mnSize z+d ≤ mnSize t+depth) depth q t n u) :
+    ExecWithin body (fun d z => mnSize z+d ≤ mnSize s+depth+a)
+      depth (.seq p q) s (m+n) u :=
+  .seq hp (hq.mono (fun _ _ hz => hz.trans hp.final))
+
 /-- Reuse workspace across a stage whose boundary stock does not grow. -/
 theorem mn_seq_within_max {body : P → Prog P Γ σ} {p q : Prog P Γ σ}
     {s t u : Store Γ σ} {m n depth a b : ℕ} (ht : mnSize t ≤ mnSize s)

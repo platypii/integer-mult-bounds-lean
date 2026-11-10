@@ -18,6 +18,18 @@ noncomputable section
 variable {ι : Type} [DecidableEq ι]
 variable {Q A s : ℕ} [NeZero s] {P U : Type} {body : P → Pr P tapes Q A U}
 
+theorem retainedReplicaFields_bounded (axis : ι → Axis) (retained : Finset ι)
+    (f : (ι → ℕ) → GaussianInt) (before middle : List (Sum ι ι)) (a p : ℕ)
+    (j : ι)
+    (hf : ∀ x, (∀ k, x k < (axis k).N*(axis k).L) → ‖value p (f x)‖ ≤ 1) :
+    ∀ F ∈
+      ((Routing.RetainedFieldBatch.replicas axis retained before middle a).map
+        (fun c => retainedTensorLine axis retained f c j)), ∀ k, ‖value p (F k)‖ ≤ 1 := by
+  intro F hF k
+  obtain ⟨c,hc,rfl⟩ := List.mem_map.mp hF
+  exact retainedTensorLine_bounded axis retained f c j p
+    (Routing.RetainedFieldBatch.replicas_valid axis retained before middle a c hc) hf k
+
 theorem retainedReplicaRhs_bounded (axis : ι → Axis) (retained : Finset ι)
     (f : (ι → ℕ) → GaussianInt) (before middle : List (Sum ι ι)) (a p : ℕ)
     (j : ι)
@@ -26,10 +38,7 @@ theorem retainedReplicaRhs_bounded (axis : ι → Axis) (retained : Finset ι)
       ((Routing.RetainedFieldBatch.replicas axis retained before middle a).map
         (fun c => retainedTensorLine axis retained f c j)), ∀ k, ‖value p (F k)‖ ≤ 1 := by
   apply selectedRhsFields_bounded
-  intro F hF k
-  obtain ⟨c,hc,rfl⟩ := List.mem_map.mp hF
-  exact retainedTensorLine_bounded axis retained f c j p
-    (Routing.RetainedFieldBatch.replicas_valid axis retained before middle a c hc) hf k
+  exact retainedReplicaFields_bounded axis retained f before middle a p j hf
 
 theorem preparedRetainedSelection_exec
     (axis : ι → Axis) (retained : Finset ι) (f : (ι → ℕ) → GaussianInt)

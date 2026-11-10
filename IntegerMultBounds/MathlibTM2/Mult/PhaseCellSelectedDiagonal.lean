@@ -2,7 +2,9 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetainedCyclicSolve
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPlacedIntervalDiagonal
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPublishRetainedInterval
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPrincipalDiagonalInput
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPrincipalDiagonalB0Budget
 
 /-! Actual selection, principal solve, cleanup, transfer and D-prime multiplication
 on one physical state. Principal stability supplies the diagonal input radius. -/
@@ -13,13 +15,14 @@ open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
   IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Fast.Main
   IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.NLogN
   IntegerMultBounds.NLogN.PhaseCellRationalArgs IntegerMultBounds.NLogN.PhaseCellMatrix
-  IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry Routing.RetainedHaloTensor
+  IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry IntegerMultBounds.NLogN.PhaseCellTargetCoreOwnership
+  Routing.RetainedHaloTensor
 noncomputable section
 variable {ι : Type} [DecidableEq ι]
 variable {Q A s : ℕ} [NeZero s] {P U : Type} {body : P → Pr P tapes Q A U}
 
 def selectedDiagonal (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) : Pr P tapes Q A U :=
-  .seq (selectionSolve hR hQ) (placedDiagonal hQ)
+  .seq (.seq (selectionSolve hR hQ) (placedDiagonal hQ)) publishDiagonal
 
 theorem selectedDiagonal_exec
     (grid : ι → Axis) (retained : Finset ι) (f : (ι → ℕ) → GaussianInt)
@@ -55,9 +58,10 @@ theorem selectedDiagonal_exec
       LocalRecoveryLayout.diagonalMul LocalRecoveryLayout.diagonalMul_injective LocalRecoveryLayout.diagonal_tapes hQ
       (rsbCr LocalRecoveryLayout.diagonalRole .src .df .dst)) ≤ Cdiag) :
     let t := (grid i).N*(grid i).L
-    let Fs := selectedRhsFields s
-      ((Routing.RetainedFieldBatch.replicas grid retained before middle aPrefix).map
-        (fun c => retainedTensorLine grid retained f c i))
+    let _ : NeZero t := ⟨Nat.ne_of_gt (Nat.mul_pos (grid i).N_pos (grid i).L_pos)⟩
+    let fields := (Routing.RetainedFieldBatch.replicas grid retained before middle aPrefix).map
+      (fun c => retainedTensorLine grid retained f c i)
+    let Fs := selectedRhsFields s fields
     let hF := LocalRecoveryLayout.retainedReplicaRhs_bounded (s := s) grid retained f before middle aPrefix p i hf
     let B := cyclicPrincipalBoundary s t (PhaseCellBand.width p u) a n
     let solveTarget := boundaryRecoveryTarget p (target+1)
@@ -72,7 +76,7 @@ theorem selectedDiagonal_exec
     caller.InputContext H K w Fs.length radius coreRows S →
     LocalRecoveryLayout.DiagonalContext s t u p w Bdiag a radius coreRows Fs.length (embStk selector S) →
     S.R (selector LocalRecoveryLayout.diagonalQueue) = [] → S.R (aux 5) = [] →
-    ∃ (vd : HS tapes Q A U) (I C F G O : Stacks tapes A) (J L : ReplicaHaloProblem s)
+    ∃ (vp : HS tapes Q A U) (I C F G O published : Stacks tapes A) (J L : ReplicaHaloProblem s)
       (y : (ZMod s → GaussianInt) → ZMod s → ℝ) (Ds : List (ZMod s → GaussianInt))
       (m steps nd : ℕ) (word : List (Fin (A+4))),
       let Z := retiredControls G
@@ -93,13 +97,13 @@ theorem selectedDiagonal_exec
         (2*bulkSelectionCountsCost Fs.length coreRows w+(2*(6*(coreRows*w)+6)+realWeightWorkspace Cdiag w coreRows))
       let packet := Ds.reverse.flatMap (fun D => cstream A w
         (packedInterval (a+radius) coreRows (diagonalProduct s t alpha p D)))
-      vd.user = v.user ∧ Ds.length = Fs.length ∧
+      vp.user = v.user ∧ Ds.length = Fs.length ∧
       m ≤ selectorBill ∧ steps ≤ numericBill ∧
       nd ≤ 4*word.length+4+
         LocalRecoveryLayout.completeDiagonalBatchCost (embStk selector M) Bdiag p w u t a radius coreRows Fs.length ∧
       ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+0+
         ((selectionStock+numericStock)+diagonalStock)) 0
-        (selectedDiagonal hR hQ) (mk v S) (m+steps+retireControlsCost G+nd) (mk vd O) ∧
+        (selectedDiagonal hR hQ) (mk v S) (m+steps+retireControlsCost G+nd+(4*(Fs.length*coreRows*w)+4)) (mk vp published) ∧
       (∀ F ∈ complexComponentFields Fs, SchurDominance.Solves (realMatrix s t p u)
         (cyclicPrincipalVertices s a n) (y F) (fun i => (value q ((2 : GaussianInt)^(q-p-1)*F i)).re)) ∧
       PackedIntervalOutput p w (a+radius) coreRows
@@ -110,7 +114,28 @@ theorem selectedDiagonal_exec
       O.R (selector (LocalRecoveryLayout.diagonalRole .dst)) = packet ∧
       O = {M with R := (Function.update (Function.update M.R (selector LocalRecoveryLayout.diagonalQueue) [])
         (selector (LocalRecoveryLayout.diagonalRole .dst)) packet)} ∧
-      word.length = Fs.length*coreRows*w := by
+      published.R outputArchive = packet++S.R outputArchive ∧
+      published.R (selector (LocalRecoveryLayout.diagonalRole .dst)) = [] ∧
+      published = {O with R := (Function.update
+        (Function.update O.R (selector (LocalRecoveryLayout.diagonalRole .dst)) [])
+        outputArchive (packet++O.R outputArchive))} ∧
+      word.length = Fs.length*coreRows*w ∧
+      ∀ (localityTarget : ℕ), radius = localityDepth p localityTarget*PhaseCellBand.width p u →
+        start = cut s t (grid i).L k → coreRows = rows s t (grid i).L k →
+        localityDepth p localityTarget*PhaseCellBand.width p u ≤ cut s t (grid i).L k →
+        cut s t (grid i).L (k+1)+localityDepth p localityTarget*PhaseCellBand.width p u ≤ s →
+        ∀ (inverse : (ZMod s → ℂ) →L[ℂ] (ZMod s → ℂ)),
+        inverse ∘L PhaseCellOperator.exact s t (alpha : ℝ) = 1 →
+        PackedIntervalOutput p w (a+radius) coreRows
+          (fields.reverse.map (fun F i => ((2 : ℂ)^inverseNormalizationShift p)⁻¹*
+            resampB₀ s t (alpha : ℝ) inverse (fun i => value p (F i)) i))
+          ((6/(2 : ℝ)^p+(2/(2 : ℝ)^p+(1/(2 : ℝ)^target)/(2 : ℝ)^inverseNormalizationShift p))+
+            ((2/(2 : ℝ)^localityTarget)/(2 : ℝ)^inverseNormalizationShift p+
+              (((32*(p : ℝ)^2/(2 : ℝ)^(45*p))/2)/(2 : ℝ)^inverseNormalizationShift p))) packet ∧
+        (p+2 ≤ target → p+2 ≤ localityTarget →
+          PackedUnitIntervalOutput p w (a+radius) coreRows
+            (fields.reverse.map (fun F i => ((2 : ℂ)^inverseNormalizationShift p)⁻¹*
+              resampB₀ s t (alpha : ℝ) inverse (fun i => value p (F i)) i)) (9/(2 : ℝ)^p) packet) := by
   dsimp only
   intro hw hExecutionWidth hcontext diagContext hqueueBlank houtputBlank
   obtain ⟨vi,vf,vg,I,C,F,G,J,L,m,steps,word,hu,hug,heSelect,hselected,heNumeric,heWhole,hm,htime,
@@ -159,12 +184,81 @@ theorem selectedDiagonal_exec
       Cdiag hpush vg Z [] (by simpa only [targets,List.length_map] using diagZ)
       ((hrecovery (.control .cropDst)).trans hqueueBlank)
       (by simpa only [houtputBlank,List.append_nil] using hword) htmpZ
-  refine ⟨vd,I,C,F,G,O,J,L,y,Ds,m,steps,nd,word,hud.trans hug,?_,hm,htime,?_,?_,hsol,hdaccuracy,
-    hauxOut,hdqueue,hdword,hdendpoint,hlen⟩
+  let packet := Ds.reverse.flatMap (fun D => cstream A w
+    (packedInterval (a+radius) coreRows (diagonalProduct s t alpha p D)))
+  have packetLen : packet.length = Fs.length*coreRows*w := by
+    simpa only [targets,List.length_map,List.length_reverse] using hdaccuracy.length (by omega)
+  have hArchiveI : I.R outputArchive = S.R outputArchive :=
+    (hselected.outside _ (by simp [caller,aux,port_injective.eq_iff])
+      (fun r => selector_ne_aux r 8)).2
+  have hArchiveG : G.R outputArchive = S.R outputArchive := by
+    rw [hendpoint]
+    simp only [Function.update_of_ne (by simp [outputArchive,aux,port_injective.eq_iff] : outputArchive ≠ aux 5),
+      Function.update_of_ne (show outputArchive ≠ caller.archive from (selector_ne_aux LocalRecoveryLayout.source 8).symm)]
+    exact hArchiveI
+  have hArchiveZ : Z.R outputArchive = S.R outputArchive :=
+    (retiredControls_off G (by simp [outputArchive,controlWords,caller,geometry,selector,aux,port_injective.eq_iff])).trans hArchiveG
+  have hArchiveO : O.R outputArchive = S.R outputArchive := by
+    rw [hdendpoint]
+    simp only [Function.update_of_ne (show outputArchive ≠ selector (LocalRecoveryLayout.diagonalRole .dst) from
+        (selector_ne_aux _ 8).symm),
+      Function.update_of_ne (show outputArchive ≠ selector LocalRecoveryLayout.diagonalQueue from (selector_ne_aux _ 8).symm),
+      diagonalTransferState,Function.update_of_ne (by simp [outputArchive,aux,port_injective.eq_iff] : outputArchive ≠ aux 5)]
+    exact hArchiveZ
+  have htmpO : O.R caller.tmp = [] := by
+    rw [hdendpoint]
+    simp only [Function.update_of_ne (show caller.tmp ≠ selector (LocalRecoveryLayout.diagonalRole .dst) from
+        (selector_ne_aux _ 4).symm),
+      Function.update_of_ne (show caller.tmp ≠ selector LocalRecoveryLayout.diagonalQueue from (selector_ne_aux _ 4).symm),
+      diagonalTransferState,Function.update_of_ne (by simp [caller,aux,port_injective.eq_iff] : caller.tmp ≠ aux 5)]
+    exact htmpZ
+  obtain ⟨vp,hup,hpublish⟩ := publishDiagonal_exec (body := body) vd O packet hdword htmpO 0
+  let published := {O with R := (Function.update
+    (Function.update O.R (selector (LocalRecoveryLayout.diagonalRole .dst)) [])
+    outputArchive (packet++O.R outputArchive))}
+  rw [packetLen] at hpublish
+  refine ⟨vp,I,C,F,G,O,published,J,L,y,Ds,m,steps,nd,word,hup.trans (hud.trans hug),?_,hm,htime,?_,?_,hsol,hdaccuracy,
+    hauxOut,hdqueue,hdword,hdendpoint,?_,?_,rfl,hlen,?_⟩
   · simpa only [targets,List.length_map] using hDs
   · simpa only [targets,List.length_map] using hdtime
-  · have hwhole := mn_seq_within_add hstock hdstock
+  · have hwhole := mn_seq_within_no_growth (mn_seq_within_add hstock hdstock) hpublish
     simpa only [targets,List.length_map,selectedDiagonal] using hwhole
+  · simp only [published,Function.update_self,hArchiveO]
+    rfl
+  · simp only [published,Function.update_of_ne (show selector (LocalRecoveryLayout.diagonalRole .dst) ≠ outputArchive from
+      selector_ne_aux _ 8),Function.update_self]
+  · intro localityTarget hRadius hStart hRows hGuardL hGuardR inverse hInverse
+    have hAlpha : (alpha : ℝ) = α := by
+      have hNat : (u : ℝ) = (alpha : ℝ)^2 := by exact_mod_cast hsquare
+      have hAlphaPos := recovery.hα
+      have hNatPos : (0 : ℝ) < alpha := by exact_mod_cast (show 0 < alpha by omega)
+      nlinarith only [hNat,hAlphaPos,hNatPos,recovery.hαu]
+    have recoveryAlpha : RecoveryAxisBounds s t p u l (alpha : ℝ) d := by
+      simpa only [hAlpha] using recovery
+    have hOrigin : a = cut s t (grid i).L k-localityDepth p localityTarget*PhaseCellBand.width p u := by
+      rw [hRadius,hStart] at haCore
+      exact haCore
+    have hSpan : n = rows s t (grid i).L k+2*(localityDepth p localityTarget*PhaseCellBand.width p u) := by
+      rw [hRadius,hRows] at hnCore
+      exact hnCore
+    have hsolOwned := hsol
+    change ∀ F ∈ complexComponentFields Fs, SchurDominance.Solves (realMatrix s t p u)
+      (cyclicPrincipalVertices s a n) (y F) (fun i => (value q ((2 : GaussianInt)^(q-p-1)*F i)).re) at hsolOwned
+    rw [hOrigin,hSpan] at hsolOwned
+    have hpacketOwned := hdaccuracy
+    rw [hstart,hStart,hRows] at hpacketOwned
+    have hfields := LocalRecoveryLayout.retainedReplicaFields_bounded
+      grid retained f before middle aPrefix p i hf
+    have hresult := hpacketOwned.target_owned_B0 recoveryAlpha hpq (grid i).L k localityTarget
+      hGuardL hGuardR _ hfields y hsolOwned inverse hInverse
+    refine ⟨?_,?_⟩
+    · simpa only [hstart,hStart,hRows] using hresult
+    · intro htarget hlocality
+      have herror := principalDiagonalB0_error_le_nine (j := inverseNormalizationShift p)
+        (by omega : 4 ≤ p) htarget hlocality
+      have hunit := hresult.b0_unit_fields recoveryAlpha (by omega) (by omega) (by omega)
+        (by omega) _ hfields inverse hInverse herror
+      simpa only [hstart,hStart,hRows] using hunit
 
 end
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.RetainedCyclicLayout

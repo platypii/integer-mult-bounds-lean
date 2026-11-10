@@ -26,20 +26,21 @@ private theorem signed_interval_stream (D : ZMod s → GaussianInt) :
 theorem PackedIntervalOutput.signed_fields
     {targets : List (ZMod s → ℂ)} {error : ℝ} {word : List (Fin (A+4))}
     (h : PackedIntervalOutput p W start rows targets error word)
-    (hA : 4 ≤ A) (hW : p+3 ≤ W) (hfit : start+rows ≤ s) (he : error ≤ 1/2)
-    (hmag : ∀ z ∈ targets, ∀ i ∈ haloVertices s start (start+rows), ‖z i‖ ≤ (3/2 : ℝ)) :
+    (hA : 4 ≤ A) (hW : p+3 ≤ W) (hfit : start+rows ≤ s)
+    (targetRadius outputRadius : ℝ) (hsum : error+targetRadius ≤ outputRadius) (hRadius : outputRadius ≤ 2)
+    (hmag : ∀ z ∈ targets, ∀ i ∈ haloVertices s start (start+rows), ‖z i‖ ≤ targetRadius) :
     ∃ Ds : List (ZMod s → GaussianInt), Ds.length = targets.length ∧
       word = (Ds.map (fun D => cstream A W (packedInterval start rows D))).flatten ∧
       (∀ D ∈ Ds, ∀ x ∈ packedInterval start rows D, Fits W x) ∧
       List.Forall₂ (fun z D => PhaseCellInterface.ErrorOn (haloVertices s start (start+rows))
         (fun i => value p (D i)) z error ∧
-        ∀ i ∈ haloVertices s start (start+rows), ‖value p (D i)‖ ≤ 2) targets Ds := by
+        ∀ i ∈ haloVertices s start (start+rows), ‖value p (D i)‖ ≤ outputRadius) targets Ds := by
   obtain ⟨Es,hlen,hword,hgood⟩ := h
   let Ds := Es.map (fun D i => symZ W (D i))
   have hrel : List.Forall₂ (fun z D =>
       (∀ x ∈ packedInterval start rows D, Fits W x) ∧
       PhaseCellInterface.ErrorOn (haloVertices s start (start+rows)) (fun i => value p (D i)) z error ∧
-      ∀ i ∈ haloVertices s start (start+rows), ‖value p (D i)‖ ≤ 2) targets Ds := by
+      ∀ i ∈ haloVertices s start (start+rows), ‖value p (D i)‖ ≤ outputRadius) targets Ds := by
     apply List.forall₂_map_right_iff.mpr
     have hm := (List.forall₂_and_left targets Es).mpr ⟨hmag,hgood⟩
     apply List.Forall₂.imp _ hm
@@ -54,18 +55,18 @@ theorem PackedIntervalOutput.signed_fields
       simp only [List.append_nil] at hread
       rw [hread] at hh
       exact hh
-    have hnorm : ∀ i ∈ haloVertices s start (start+rows), ‖value p (symZ W (D i))‖ ≤ 2 := by
+    have hnorm : ∀ i ∈ haloVertices s start (start+rows), ‖value p (symZ W (D i))‖ ≤ outputRadius := by
       intro i hi
       have hn := norm_le_norm_sub_add (value p (symZ W (D i))) (z i)
       have hh := hvalue i hi
       have hz := hpair.1 i hi
-      linarith
+      linarith only [hn,hh,hz,hsum]
     refine ⟨?_,hvalue,hnorm⟩
     apply packedInterval_fits_of_active _ (haloVertices s start (start+rows)) hfit
       (by intro i ha hb; exact (mem_haloVertices _ _ i).mpr ⟨ha,hb⟩)
     intro i hi
     apply fits_of_value_power (e := 1) (by omega)
-    simpa only [pow_one] using hnorm i hi
+    simpa only [pow_one] using (hnorm i hi).trans hRadius
   have hsplit := (List.forall₂_and_left Ds targets).mp hrel.flip
   refine ⟨Ds,by simpa only [Ds,List.length_map] using hlen,?_,hsplit.1,hsplit.2.flip⟩
   rw [hword]
@@ -88,7 +89,7 @@ theorem PackedIntervalOutput.diagonal_fields {t α : ℕ} [NeZero t]
         (6/(2 : ℝ)^p+error)
         ((Ds.reverse.map (fun D => cstream A W
           (packedInterval start rows (diagonalProduct s t α p D)))).flatten) := by
-  obtain ⟨Ds,hlen,hword,hfits,hgood⟩ := h.signed_fields hA hW hfit he hmag
+  obtain ⟨Ds,hlen,hword,hfits,hgood⟩ := h.signed_fields hA hW hfit (3/2) 2 (by linarith) (by norm_num) hmag
   have hd := List.Forall₂.imp (fun z D hpair =>
     diagonalPacket_accuracy (A := A) (t := t) (α := α) hA hW hp hα hαp hfit
       (haloVertices s start (start+rows))

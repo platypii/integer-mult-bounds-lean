@@ -19,6 +19,17 @@ def PackedIntervalOutput {A s : ℕ} [NeZero s] (p W start rows : ℕ)
     List.Forall₂ (fun z D => PhaseCellInterface.ErrorOn (haloVertices s start (start+rows))
       (packedIntervalRead p W start (cstream A W (packedInterval start rows D))) z error) targets Ds
 
+/-- Signed field witnesses on the actual packet, suitable for reuse as unit
+inputs of a subsequent tensor axis. Their encoded coefficients fit exactly. -/
+def PackedUnitIntervalOutput {A s : ℕ} [NeZero s] (p W start rows : ℕ)
+    (targets : List (ZMod s → ℂ)) (error : ℝ) (word : List (Fin (A+4))) : Prop :=
+  ∃ Ds : List (ZMod s → GaussianInt), Ds.length = targets.length ∧
+    word = (Ds.map (fun D => cstream A W (packedInterval start rows D))).flatten ∧
+    (∀ D ∈ Ds, ∀ x ∈ packedInterval start rows D, Fits W x) ∧
+    List.Forall₂ (fun z D => PhaseCellInterface.ErrorOn (haloVertices s start (start+rows))
+      (fun i => value p (D i)) z error ∧
+      ∀ i ∈ haloVertices s start (start+rows), ‖value p (D i)‖ ≤ 1) targets Ds
+
 theorem PackedIntervalOutput.length {A s p W start rows : ℕ} [NeZero s]
     {targets : List (ZMod s → ℂ)} {error : ℝ} {word : List (Fin (A+4))}
     (h : PackedIntervalOutput p W start rows targets error word) (hfit : start+rows ≤ s) :

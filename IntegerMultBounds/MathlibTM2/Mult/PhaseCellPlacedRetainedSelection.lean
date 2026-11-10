@@ -187,7 +187,7 @@ theorem selectionCount_exec
     LocalRecoveryLayout.source payload)}
   let F := embOvr selector F₀.get S
   let N := (middle.map (Routing.RetainedTensorEnumeration.width axis retained)).prod
-  have haux (j : Fin 8) : F.R (aux j) = S.R (aux j) :=
+  have haux (j : Fin 9) : F.R (aux j) = S.R (aux j) :=
     (hframe _ (fun r => selector_ne_aux r j)).2
   obtain ⟨vf,l,huf,hl,hcount⟩ := prepareCount_exec (body := body) N n w 0 vi F
     (by rw [haux]; exact hN) (by rw [hrows]; simp)

@@ -18,18 +18,6 @@ noncomputable section
 variable {ι : Type} [DecidableEq ι]
 variable {Q A s : ℕ} [NeZero s] {P U : Type} {body : P → Pr P tapes Q A U}
 
-private theorem finishStock {T Q A : ℕ} {P U : Type} {body : P → Pr P T Q A U}
-    {p q : Pr P T Q A U} {v vi vf : HS T Q A U} {S I F : Stacks T A}
-    {m n budget : ℕ}
-    (hp : ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+0+budget)
-      0 p (mk v S) m (mk vi I))
-    (hq : ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk vi I)+0)
-      0 q (mk vi I) n (mk vf F)) :
-    ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+0+budget)
-      0 (.seq p q) (mk v S) (m+n) (mk vf F) := by
-  have h := mn_seq_within_add (b := 0) hp (by simpa only [Nat.add_zero] using hq)
-  simpa only [Nat.add_zero] using h
-
 def selectionSolve (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) : Pr P tapes Q A U :=
   .seq (.seq selectionCount (caller.retiredProgram (aux 5) hR hQ)) retireControls
 
@@ -139,7 +127,7 @@ theorem selectionSolve_exec
   have hwhole := mn_seq_within_add (hwithin 0) hstock
   refine ⟨vi,vf,vg,I,C,F,G,J,L,m,steps,word,hu,hug.trans (huf.trans hu),he,hselected,hex,
     Exec.seq (Exec.seq he hex) hclean.toExec,hm,htime,?_,?_,?_,?_,hcert,?_,hendpoint,?_,?_,?_,hlen⟩
-  · exact finishStock hwhole hclean
+  · exact mn_seq_within_no_growth hwhole hclean
   · rw [retiredControls_off G aux5_not_controlWords]
     exact hword.trans (congrArg (word ++ ·) haux)
   · intro j

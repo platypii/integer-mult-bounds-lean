@@ -13,6 +13,21 @@ open IntegerMultBounds IntegerMultBounds.MathlibTM2.Fast
   IntegerMultBounds.NLogN.PhaseCellTargetCoreOwnership
   IntegerMultBounds.MathlibTM2.Mult.PhaseCellInterface
 
+/-- A guarded floor-owned window has one nonwrapping principal interval. -/
+theorem cyclicPrincipalVertices_owned {s t : ℕ} [NeZero s] (L k radius : ℕ)
+    (ha : radius ≤ cut s t L k) (hb : cut s t L (k+1)+radius ≤ s) :
+    cyclicPrincipalVertices s (cut s t L k-radius) (rows s t L k+2*radius) =
+      haloVertices s (cut s t L k-radius) (cut s t L (k+1)+radius) := by
+  have hrows : cut s t L k+rows s t L k = cut s t L (k+1) := by
+    have hm := cut_mono s t L (show k ≤ k+1 by omega)
+    unfold rows
+    omega
+  have hmin : min (rows s t L k+2*radius) (s-(cut s t L k-radius)) =
+      rows s t L k+2*radius := min_eq_left (by omega)
+  ext i
+  simp only [cyclicPrincipalVertices,hmin,Nat.sub_self,Finset.mem_union,mem_haloVertices]
+  omega
+
 theorem PackedPrincipalOutput.target_owned {A s t p u l q qRef W target : ℕ} [NeZero s] {α d : ℝ}
     (axis : RecoveryAxisBounds s t p u l α d) (hpq : p+1 ≤ q) (hpRef : p+1 ≤ qRef)
     (L k localityTarget : ℕ)
@@ -35,20 +50,8 @@ theorem PackedPrincipalOutput.target_owned {A s t p u l q qRef W target : ℕ} [
     have hm := cut_mono s t L (show k ≤ k+1 by omega)
     unfold rows
     omega
-  have hspan : cut s t L k-localityDepth p localityTarget*PhaseCellBand.width p u+
-      (rows s t L k+2*(localityDepth p localityTarget*PhaseCellBand.width p u)) =
-      cut s t L (k+1)+localityDepth p localityTarget*PhaseCellBand.width p u := by omega
-  have hprincipal : cyclicPrincipalVertices s
-      (cut s t L k-localityDepth p localityTarget*PhaseCellBand.width p u)
-      (rows s t L k+2*(localityDepth p localityTarget*PhaseCellBand.width p u)) =
-      haloVertices s (cut s t L k-localityDepth p localityTarget*PhaseCellBand.width p u)
-        (cut s t L (k+1)+localityDepth p localityTarget*PhaseCellBand.width p u) := by
-    have hmin : min (rows s t L k+2*(localityDepth p localityTarget*PhaseCellBand.width p u))
-        (s-(cut s t L k-localityDepth p localityTarget*PhaseCellBand.width p u)) =
-        rows s t L k+2*(localityDepth p localityTarget*PhaseCellBand.width p u) := min_eq_left (by omega)
-    ext i
-    simp only [cyclicPrincipalVertices,hmin,Nat.sub_self,Finset.mem_union,mem_haloVertices]
-    omega
+  have hprincipal := cyclicPrincipalVertices_owned L k
+    (localityDepth p localityTarget*PhaseCellBand.width p u) ha hb
   rw [hprincipal] at h
   obtain ⟨y,hy,Ds,hDs,hword,haccuracy⟩ := h
   have hY' := complexComponentSolutions_changePrecision _ _ p q qRef hpq hpRef Fs hF Y hY

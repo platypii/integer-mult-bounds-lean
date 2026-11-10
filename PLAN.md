@@ -48434,3 +48434,114 @@ endpoint lemmas. Then publish/advance source intervals using floor-owned
 coverage in the outer batch invariant. Ordinary seed/control/setup production,
 full tensor iteration and selected time/space/error/seam/fallback acceptance
 remain open. S4 is not complete.
+
+
+### S4 executed diagonal packet reaches the exact global B0 target (2026-11-09)
+
+selectedDiagonal_exec now also proves the global B0 certificate for its actual
+returned packet when the crop/radius instantiate the floor-owned interval and
+locality guards. The target fields are the computed retained tensor lines, in
+the same reverse replica order as the physical diagonal output. Its error is
+the already paid arithmetic error plus scaled two-component locality and
+scaled rounded-to-exact matrix perturbation. No window/replica-count factor,
+new numerical execution or supplied solution is introduced.
+
+PackedIntervalOutput.transfer is the shared structural target-comparison
+lemma. componentSolution_target_owned_global reuses the actual principal
+equations, existing scalar locality, and the canonical global half-grid target.
+principalDiagonal_target_owned_B0_error then reuses the existing B0 inverse
+comparison and nonexpansiveness of D-prime. Packet retargeting preserves the
+word, precision, field count and physical ordering. The natural diagonal
+parameter is identified with the analytic parameter from their common square
+and positivity.
+
+Factored guarded principal geometry into cyclicPrincipalVertices_owned, reused
+by the old pre-diagonal target-owned certificate and the new post-diagonal B0
+comparison. Factored retainedReplicaFields_bounded so both RHS and global
+comparisons use the same original tensor bound.
+
+Full integration build passes (16753 jobs, 3.6 GiB aggregate). Individual
+guarded checks: packet transfer 3081.2 MiB, shared target geometry 3404.6 MiB,
+B0 comparison 3406.1 MiB, retained field bound/selection 3438.9 MiB, combined
+execution/global endpoint 3612.0 MiB. All four audited endpoint/transfer/geometry
+theorems use only propext, Classical.choice and Quot.sound (9872.4 MiB audit).
+No proof limits changed. Accumulate this global/publication work locally;
+no commit or push yet.
+
+Next publish/advance the actual floor-owned packets in a repeatable outer
+batch invariant, using targetCorePacked_concat and preserving the physical
+replica order. Close uniform error/unit-ball bounds at selected precision and
+ordinary seed/control/setup production. Full tensor iteration, selected
+time/space absorption and seam/fallback/final S4 acceptance remain open.
+
+
+### S4 uniform B0 error and reusable unit output fields (2026-11-09)
+
+selectedDiagonal_exec now returns PackedUnitIntervalOutput for its actual
+B0 packet when both arithmetic and locality targets are at least p+2. The
+certificate keeps the same bytes and reverse replica order, derives fitting
+signed integer fields, bounds their values by one on the owned interval, and
+bounds error against the exact normalized B0 target by 9/2^p. This supplies
+the output condition needed to reuse fields in a subsequent tensor axis.
+
+principalDiagonalB0_error_le_nine reuses the existing generated-core and matrix
+perturbation estimates and supports independent precision targets. Existing
+normalizedInverse_norm_le_half and D-prime nonexpansiveness give exact B0
+target norm at most 1/2. The error smallness gate then proves unit output
+without another machine rounding operation. Generalized signed_fields to
+explicit target/output radii so the diagonal radius-two and final radius-one
+certificates share the same canonical signed decoding proof. Packet.mono
+allows the established exact error expression to use the uniform allowance.
+
+The full integration build passes (16779 jobs, 13.6 GiB aggregate while
+rebuilding interfaces). Individual guarded checks remain below 4 GiB:
+packet contract 3085.6 MiB, signed/diagonal proof 3398.2 MiB, packet transfer
+3082.8 MiB, B0 budget/unit proof 3460.6 MiB, combined endpoint 3624.5 MiB.
+Combined execution, unit fields, error budget and normalized B0 norm axiom
+audits use only propext, Classical.choice and Quot.sound (9880.5 MiB audit).
+No proof limits changed. Keep the global/unit/publication chunk uncommitted
+for now; no push.
+
+Next assemble and publish disjoint floor-owned intervals in a repeatable
+outer batch invariant, preserving replica order and source coordinates.
+Ordinary seed/control/setup generation, full tensor iteration, selected
+time/space absorption and seam/fallback/final S4 acceptance remain open.
+
+
+### S4 publish certified batches to a persistent archive (2026-11-09)
+
+Added one external auxiliary role, outputArchive (aux 8), to hold completed
+batches between callbacks. selectedDiagonal now includes the actual existing
+ordered transfer from the diagonal destination through caller.tmp into that
+archive. Its theorem proves the old archive survives selection/count, numerical
+retirement, cleanup and diagonal execution; publication prepends the actual
+certified packet, preserves the borrowed suffix and clears the diagonal output.
+Publication adds exactly 4*(replicas*coreRows*w)+4 steps and no workspace. The
+returned global B0 and unit-field certificates concern this same archived word.
+Archive batches are prepended; the outer traversal/order invariant must account
+for this explicitly, as well as reversed replicas within each packet.
+
+TargetCoreAssembly uses the existing unique floor-owned partition to assemble
+different computed fields on different source cores. Its generic pointwise
+property theorem transfers accuracy, unit bounds and fits without multiplying
+errors by core count. packed_concat/cstream_concat reuse targetCorePacked_concat
+to identify the ordered crops with the assembled source field. This proves
+per-field assembly, not yet the physical multi-replica/axis reorder or outer loop.
+
+Factored no-allocation stage composition into mn_seq_within_no_growth, replacing
+the private callback helper and reusing it for publication. Adding that shared
+exported lemma caused a broad rebuild (13.5 min, 43.4 GiB aggregate under the
+80 GiB guard); its cache is now refreshed. Keep subsequent changes local where
+possible. The final publication/assembly integration build passes (16782 jobs,
+5.0 GiB aggregate). Individual checks: shared stock lemma 1386.8 MiB, extended
+layout 3541.2 MiB, selector/count 3577.5 MiB, selected solve 3567.5 MiB, publication
+3536.0 MiB, assembly 2040.4 MiB, complete published endpoint 3628.4 MiB. Combined
+execution/publication/assembly/stock axiom audits report only propext,
+Classical.choice and Quot.sound (9885.6 MiB nonmodule audit). No limits raised.
+
+Commit the accumulated global-accuracy/unit-field/publication/assembly chunk
+locally; no push. Next advance the restored target batch queue, generate the
+ordinary headers for successive owners, and close the repeatable outer batch
+invariant with the actual archive order. Full tensor iteration, source/target
+layout restoration, selected resource absorption and seam/fallback acceptance
+remain open; S4 is not complete.
