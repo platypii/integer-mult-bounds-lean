@@ -47913,3 +47913,81 @@ execution, conditional on the archive capacity and linear encoding width.
 Selected tensor instantiation and the executed numerical callback connection
 remain necessary. Collect the verified routing envelope as one local chunk;
 no push, no full S4 acceptance claim.
+
+
+### S4 selected dyadic target-grid execution (2026-11-09)
+
+`Cost/PhaseCellSelectedHaloGeometry` constructs the actual selected target axes
+as dyadic coarse/core products. `length_eq` identifies each product with
+`Sizes.t`, `coarse_room` discharges the setup requirement, and `volume_eq`
+identifies the complete source archive of this movement with `Sizes.T`.
+The core-exponent room follows eventually from the existing selected
+`eventually_clog_p_le_K` and `Big.K_succ_le_ℓ`; no new asymptotic proof is needed.
+`bytes_le` derives the global metadata capacity from selected logT/precision
+and an ordinary quadratic width bound.
+
+`Cost/PhaseCellSelectedHaloExecution.run_exec` consumes these facts in the
+existing retained-halo machine. It removes arbitrary axis geometry, volume,
+coarse-room and byte-capacity suppliers for the selected target box, returning
+its exact retained output with the verified dimension-linear time and shared
+linear workspace. It assumes the ordinary source stream/metadata/freshness,
+linear encoding width with cW≤p, p≥32, and the eventually-proved exponent room.
+The target lengths are dyadic; the source lengths are prime. This theorem does
+not conflate those grids or supply the missing numerical inverse callback.
+
+Guarded geometry build and full selected execution build pass (9309 jobs,
+2.6 GiB aggregate); individual selected execution check peaks at 1958.5 MiB.
+Keep this selected instantiation with the next callback integration chunk;
+no push. Next join target-side retained coordinates to the actual inverse
+input/output windows and prime-source publication invariant, using existing
+locality and class execution rather than a new supplier-based fused program.
+Full S4 remains open.
+
+
+### S4 retained target field to actual source-row selection (2026-11-09)
+
+`Mult/PhaseCellRetainedTensorLine` supplies the missing coordinate language for
+numerical input. `project_update_retained` preserves every spectator projection
+while replacing the selected coordinate. `retainedTensorLine_window` identifies
+the actual retained field with the original periodic target line; its nonwrap
+form removes the redundant period for guarded proper cores.
+`retainedTensorRowSelection_exec` consumes that exact field in the existing
+restoring naturalGather/C-selection program and returns the packed principal
+source-window RHS, through the original `rowIndex` map. It derives all-row
+containment from `owned_halo_contained`, and source interval fit from actual
+cut/guard bounds. No full target/source line is materialized, and no numerical
+execution or arbitrary row-containment supplier is added. The actual step bill
+and source restoration are inherited from the existing C-selection execution.
+
+Guarded individual check passes at 2055.8 MiB; selected-grid/selection integration
+build passes (9653 jobs, 2.7 GiB aggregate). The selected target geometry and
+this bridge remain accumulated for a coherent integration checkpoint; no push.
+The theorem begins with one isolated retained field on the source tape. Actual
+field extraction/regrouping from the mixed retained archive, generated selection
+controls, normalized numerical input installation and returned source-grid
+publication still need execution composition. Seam cores use the existing
+cyclic machinery and are not covered by the nonwrapping proper-core theorem.
+Full S4 remains open.
+
+
+The physical regrouping endpoint now has the callback's local-field language.
+`Routing/RetainedFieldRun.suffix_archive` factors the actual coordinate stream
+into contiguous local fields with their exact spectator enumeration.
+`expose_exec` consumes `HaloMixedOrderRun.toSuffix_exec` verbatim and identifies
+its endpoint with this archive; the existing execution, time bill and stock
+trace are preserved. It does not reprove or replace physical field movement.
+`retainedFieldArchive_cyclic` then identifies this exact physical archive with
+the batch of original cyclic target windows used by row selection.
+
+Guarded regrouping check passes at 1957.5 MiB; callback input check at 2072.0
+MiB; combined selected-grid/physical-regrouping/selection build passes (9654
+jobs, 2.6 GiB aggregate). The regrouping theorem still requires its ordinary
+FieldOrderRun headers; generating these from live dimensions is already
+available in the movement setup language and remains to be composed here.
+Next use the existing prefix copy/scan to expose one field at a time, generate
+selection controls from its coarse owner, and feed the actual normalized
+numerical caller. Returning prime-source output into the tensor invariant,
+seam/fallback, global locality/error and final acceptance remain open.
+Collect selected geometry, selected execution and the physical-to-numerical
+input bridge as one coherent local checkpoint after the combined axiom audit.
+No push; unrelated periodic-recovery work remains untouched. S4 is incomplete.
