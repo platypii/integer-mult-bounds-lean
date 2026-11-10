@@ -2,6 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPlacedRetainedSelection
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetiredCyclicComplexCaller
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetainedCyclicRetirement
 
 /-! The computed retained tensor batch is selected and solved on one physical
 bank. No intermediate execution or numerical solution is supplied. -/
@@ -17,8 +18,20 @@ noncomputable section
 variable {ι : Type} [DecidableEq ι]
 variable {Q A s : ℕ} [NeZero s] {P U : Type} {body : P → Pr P tapes Q A U}
 
+private theorem finishStock {T Q A : ℕ} {P U : Type} {body : P → Pr P T Q A U}
+    {p q : Pr P T Q A U} {v vi vf : HS T Q A U} {S I F : Stacks T A}
+    {m n budget : ℕ}
+    (hp : ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+0+budget)
+      0 p (mk v S) m (mk vi I))
+    (hq : ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk vi I)+0)
+      0 q (mk vi I) n (mk vf F)) :
+    ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+0+budget)
+      0 (.seq p q) (mk v S) (m+n) (mk vf F) := by
+  have h := mn_seq_within_add (b := 0) hp (by simpa only [Nat.add_zero] using hq)
+  simpa only [Nat.add_zero] using h
+
 def selectionSolve (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) : Pr P tapes Q A U :=
-  .seq selectionCount (caller.retiredProgram (aux 5) hR hQ)
+  .seq (.seq selectionCount (caller.retiredProgram (aux 5) hR hQ)) retireControls
 
 theorem selectionSolve_exec
     (grid : ι → Axis) (retained : Finset ι) (f : (ι → ℕ) → GaussianInt)
@@ -64,13 +77,13 @@ theorem selectionSolve_exec
     let K := recovery.cyclicRightReplicaProblem stage 2 a n (by omega) Rs hRs
     ∀ (_ : 2*p+13 ≤ w) (_ : executionWidth p l stage 2 ≤ w),
     caller.InputContext H K w Fs.length radius coreRows S →
-    ∃ (vi vf : HS tapes Q A U) (I C F G : Stacks tapes A)
+    ∃ (vi vf vg : HS tapes Q A U) (I C F G : Stacks tapes A)
       (J L : ReplicaHaloProblem s) (m steps : ℕ) (word : List (Fin (A+4))),
-      vi.user = v.user ∧ vf.user = v.user ∧
+      vi.user = v.user ∧ vg.user = v.user ∧
       Exec body selectionCount (mk v S) m (mk vi I) ∧
       SelectedInput Fs a n w S I ∧
       Exec body (caller.retiredProgram (aux 5) hR hQ) (mk vi I) steps (mk vf G) ∧
-      Exec body (selectionSolve hR hQ) (mk v S) (m+steps) (mk vf G) ∧
+      Exec body (selectionSolve hR hQ) (mk v S) (m+steps+retireControlsCost G) (mk vg (retiredControls G)) ∧
       m ≤ LocalRecoveryLayout.preparedBulkSelectionCost W V ((grid i).L+2*(grid i).H) w n
         (middle.map (Routing.RetainedTensorEnumeration.width grid retained)).prod+
         (archiveWidthSetupCost (middle.map (Routing.RetainedTensorEnumeration.width grid retained)).prod n w+2*(n*w)+3) ∧
@@ -85,14 +98,18 @@ theorem selectionSolve_exec
           2*archiveWidthSetupCost (middle.map (Routing.RetainedTensorEnumeration.width grid retained)).prod n w)+
           caller.workspace (U := U) H K J L hR hQ p u l t a n solveTarget q
             (executionWidth p l stage 2) w B.card Rs.length Fs.length radius coreRows I C F)) 0
-        (selectionSolve hR hQ) (mk v S) (m+steps) (mk vf G) ∧
-      G.R (aux 5) = word++S.R (aux 5) ∧
-      (∀ j, G.L (caller.bank j) = [] ∧ G.R (caller.bank j) = []) ∧
-      G.R caller.archive = [] ∧
+        (selectionSolve hR hQ) (mk v S) (m+steps+retireControlsCost G) (mk vg (retiredControls G)) ∧
+      (retiredControls G).R (aux 5) = word++S.R (aux 5) ∧
+      (∀ j, (retiredControls G).L (caller.bank j) = [] ∧ (retiredControls G).R (caller.bank j) = []) ∧
+      (retiredControls G).R caller.archive = [] ∧
       PackedPrincipalOutput (realMatrix s t p u) (cyclicPrincipalVertices s a n)
         p q w target start coreRows Fs word ∧
-      G.R (selector (LocalRecoveryLayout.batch 2)) = S.R (selector (LocalRecoveryLayout.batch 2)) ∧
+      (retiredControls G).R (selector (LocalRecoveryLayout.batch 2)) = S.R (selector (LocalRecoveryLayout.batch 2)) ∧
       G = {I with R := Function.update (Function.update I.R caller.archive []) (aux 5) (word++I.R (aux 5))} ∧
+      (∀ r ∈ controlWords, (retiredControls G).R r = []) ∧
+      (retiredControls G).L = S.L ∧
+      (∀ j, (retiredControls G).R (selector (LocalRecoveryLayout.recovery j)) =
+        S.R (selector (LocalRecoveryLayout.recovery j))) ∧
       word.length = Fs.length*coreRows*w := by
   dsimp only
   intro hw hExecutionWidth hcontext
@@ -118,10 +135,26 @@ theorem selectionSolve_exec
     exact selector_injective.ne (LocalRecoveryLayout.geometry_ne_batch 108 2).symm
   have hqueueOut := (hframe (selector (LocalRecoveryLayout.batch 2)) hqueueNe
     (selector_ne_aux _ _) (fun j => (selector_ne_numeric _ j).symm)).2
-  refine ⟨vi,vf,I,C,F,G,J,L,m,steps,word,hu,huf.trans hu,he,hselected,hex,
-    Exec.seq he hex,hm,htime,?_,?_,hblank,harchiveOut,hcert,hqueueOut.trans hselected.queue,hendpoint,hlen⟩
-  · exact mn_seq_within_add (hwithin 0) hstock
-  · exact hword.trans (congrArg (word ++ ·) haux)
+  obtain ⟨vg,hug,hclean⟩ := retireControls_exec (body := body) vf G 0
+  have hwhole := mn_seq_within_add (hwithin 0) hstock
+  refine ⟨vi,vf,vg,I,C,F,G,J,L,m,steps,word,hu,hug.trans (huf.trans hu),he,hselected,hex,
+    Exec.seq (Exec.seq he hex) hclean.toExec,hm,htime,?_,?_,?_,?_,hcert,?_,hendpoint,?_,?_,?_,hlen⟩
+  · exact finishStock hwhole hclean
+  · rw [retiredControls_off G aux5_not_controlWords]
+    exact hword.trans (congrArg (word ++ ·) haux)
+  · intro j
+    exact ⟨(hblank j).1,(retiredControls_off G (numeric_not_controlWords j)).trans (hblank j).2⟩
+  · exact (retiredControls_off G archive_not_controlWords).trans harchiveOut
+  · exact (retiredControls_off G queue_not_controlWords).trans (hqueueOut.trans hselected.queue)
+  · intro r hr
+    exact retiredControls_on G hr
+  · exact hleftArchive.trans hselected.left
+  · intro j
+    rw [retiredControls_off G (recovery_not_controlWords j)]
+    have harchive : selector (LocalRecoveryLayout.recovery j) ≠ caller.archive :=
+      selector_injective.ne (LocalRecoveryLayout.geometry_ne_recovery 108 j).symm
+    exact ((hframe _ harchive (selector_ne_aux _ _) (fun r => (selector_ne_numeric _ r).symm)).2).trans
+      (hselected.recovery j)
 
 end
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.RetainedCyclicLayout

@@ -20,6 +20,8 @@ structure SelectedInput (Fs : List (ZMod s → GaussianInt)) (a n W : ℕ)
   span : F.R caller.span = List.replicate n Node.tick
   word : F.R (caller.controls 0) = S.R (caller.controls 0)
   queue : F.R (selector (LocalRecoveryLayout.batch 2)) = S.R (selector (LocalRecoveryLayout.batch 2))
+  recovery : ∀ i, F.R (selector (LocalRecoveryLayout.recovery i)) = S.R (selector (LocalRecoveryLayout.recovery i))
+  left : F.L = S.L
   outside : ∀ j, j ≠ caller.count → (∀ r, selector r ≠ j) → F.L j = S.L j ∧ F.R j = S.R j
 
 private theorem contextSupport_cases (r : Fin tapes) (h : caller.contextSupport r) :

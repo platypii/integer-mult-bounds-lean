@@ -3,6 +3,7 @@ module
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPreparedRetainedSelection
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetainedCyclicInput
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetainedCyclicCount
+public import IntegerMultBounds.MathlibTM2.Host.EmbedLeftFrame
 public import IntegerMultBounds.MathlibTM2.Host.EmbedStock
 public import IntegerMultBounds.MathlibTM2.StackInvariantShift
 
@@ -30,6 +31,10 @@ private theorem shiftStock {T Q A : ℕ} {P U : Type} {body : P → Pr P T Q A U
     ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+depth+budget)
       depth p (mk v S) n (mk vf F) := by
   simpa only [Nat.zero_add,Nat.add_zero,Nat.add_right_comm] using mn_exec_within_shift h depth
+
+private theorem left_count_update {T A : ℕ} (S F : Stacks T A)
+    (count : Fin T) (word : List (Fin (A+4))) (hleft : F.L = S.L) :
+    ({F with R := Function.update F.R count word} : Stacks T A).L = S.L := hleft
 
 private theorem frame_count_update {M T A : ℕ} (e : Fin M → Fin T)
     (S F : Stacks T A) (count : Fin T) (word : List (Fin (A+4)))
@@ -77,6 +82,8 @@ theorem selection_exec
       F.R caller.span = List.replicate n tick ∧
       F.R (caller.controls 0) = S.R (caller.controls 0) ∧
       F.R (selector (LocalRecoveryLayout.batch 2)) = S.R (selector (LocalRecoveryLayout.batch 2)) ∧
+      (∀ i, F.R (selector (LocalRecoveryLayout.recovery i)) = S.R (selector (LocalRecoveryLayout.recovery i))) ∧
+      F.L = S.L ∧
       (∀ j, (∀ r, selector r ≠ j) → F.L j = S.L j ∧ F.R j = S.R j) ∧
       ∀ depth, ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+depth+
         3*LocalRecoveryLayout.preparedBulkSelectionCost W V ((axis i).L+2*(axis i).H) w n
@@ -101,7 +108,7 @@ theorem selection_exec
   have huser : vf.user = v.user := huf.trans hu
   have hread (j : Fin LocalRecoveryLayout.tapes) : F.R (selector j) = F₀.R j :=
     readPlacedR selector selector_injective F₀ S j
-  refine ⟨vf,B,m,huser,hm,hex,?_,?_,?_,?_,?_,?_,?_⟩
+  refine ⟨vf,B,m,huser,hm,hex,?_,?_,?_,?_,?_,?_,?_,?_,?_⟩
   · change F.R (selector LocalRecoveryLayout.source) = payload
     rw [hread]
     simp only [F₀,Function.update_self]
@@ -125,6 +132,11 @@ theorem selection_exec
     rfl
   · rw [hread]
     exact hqueueFinal
+  · intro i
+    rw [hread]
+    exact hrecovery i
+  · exact embOvr_left_eq selector selector_injective F₀ S
+      (embOvr_left_eq LocalRecoveryLayout.geometry LocalRecoveryLayout.geometry_injective B S₀ hleft)
   · intro j hj
     exact embOvr_off F₀.get S hj
   · intro depth
@@ -164,7 +176,7 @@ theorem selectionCount_exec
         (3*LocalRecoveryLayout.preparedBulkSelectionCost W V ((axis i).L+2*(axis i).H) w n N+
           2*archiveWidthSetupCost N n w)) depth selectionCount (mk v S) m (mk v' C) := by
   dsimp only
-  obtain ⟨vi,B,m,hu,hm,he,hsrc,hlen,hrows,hwidth,hqueueRestored,hframe,hwithin⟩ := selection_exec (body := body)
+  obtain ⟨vi,B,m,hu,hm,he,hsrc,hlen,hrows,hwidth,hqueueRestored,hrecovery,hleft,hframe,hwithin⟩ := selection_exec (body := body)
     axis retained f before middle aPrefix i hi k hH hguard hsource hn hwide hwindow hwV hspan hvol
     hVW hA hVpos tail v S hheaders hclock hvolume hqueue harchive hacc hdst hline
   let payload := cstream A w ((selectedRhsFields s
@@ -203,6 +215,12 @@ theorem selectionCount_exec
       change Function.update F.R caller.count _ (selector (LocalRecoveryLayout.batch 2)) = _
       rw [Function.update_of_ne hne]
       exact hqueueRestored
+    · intro i
+      have hne : selector (LocalRecoveryLayout.recovery i) ≠ caller.count := selector_ne_aux _ _
+      change Function.update F.R caller.count _ (selector (LocalRecoveryLayout.recovery i)) = _
+      rw [Function.update_of_ne hne]
+      exact hrecovery i
+    · exact left_count_update S F caller.count _ hleft
     · exact frame_count_update selector S F caller.count _ hframe
   · intro depth
     exact shiftStock hwhole depth

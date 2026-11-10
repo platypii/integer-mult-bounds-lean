@@ -48301,3 +48301,136 @@ the target-owned batch layout, and close the repeatable outer invariant.
 Target-owned locality applies to the actual returned principal certificate.
 Full tensor error/resource absorption, seam/fallback and final S4 acceptance
 remain open; S4 is not complete.
+
+
+### S4 retire generated controls in the actual selected solve (2026-11-09)
+
+selectionSolve now appends retireControls after the numerical caller. It clears
+selector geometry 91/109/116 and the numerical count, preserving output aux 5,
+the restored target queue, and every numerical bank tape. The integrated
+selectionSolve_exec proves all four generated words blank at the final state,
+retains the actual principal output certificate and exact output length, and
+charges cleanup by the lengths of the words actually erased. The chronological
+workspace allowance is unchanged: cleanup allocates zero symbols. A generic
+finishStock lemma composes that final stage symbolically; simplifying the full
+concrete program was unnecessarily slow and was stopped before restructuring.
+
+Guarded integrated check passes at 3567.3 MiB. Full integration build passes
+(16699 jobs, 3.6 GiB aggregate). Solve/cleanup axiom audit reports only propext,
+Classical.choice and Quot.sound (9863.4 MiB nonmodule audit). Leave this change
+uncommitted to accumulate with the next preparation/publication chunk; no push.
+Ordinary seed/control/setup production, publication into a repeatable outer
+invariant, full tensor error/resource absorption, seam/fallback and final S4
+acceptance remain open.
+
+
+### S4 reuse complete diagonal execution before tensor publication (2026-11-09)
+
+Publication review found that targetCorePacked_concat already proves ordered
+source coverage, while the B0 endpoint still requires D-prime multiplication
+after the normalized principal solve. Do not introduce a new padded tensor
+representation before connecting this existing numerical stage.
+
+PackedIntervalOutput.signed_fields replaces hidden numerator witnesses by
+the signed integers actually encoded on the tape, with exactly the same word.
+Accuracy, target norm at most 3/2 and error at most 1/2 derive magnitude at most
+2 and the existing multiplier's Fits premise. This is a structural list proof,
+not a new machine normalization pass or an extra field supplier.
+PackedIntervalOutput.diagonal_fields reuses diagonalPacket_accuracy and records
+the actual reverse replica order and added error 6/2^p.
+LocalRecoveryLayout.completeDiagonalBatch_packet_exec invokes the existing
+complete diagonal batch, including coefficient-page production and retirement,
+from that packet. The same generated integer fields give its actual tape
+endpoint, time/stock bounds and output accuracy certificate. No fit witnesses
+are supplied by the outer caller.
+
+Individual guarded checks: packet bridge 3398.7 MiB, actual diagonal invocation
+3423.8 MiB. Combined selected-solve/diagonal build passes (16737 jobs, 3.5 GiB
+aggregate); all three new theorem axiom audits report only propext,
+Classical.choice and Quot.sound (9870.9 MiB nonmodule audit). Initial old
+diagonal dependency compilation was required; it is now cached.
+
+Next connect this actual executor physically to selectionSolve, transport
+ordinary diagonal headers/freshness through the selector and retired caller,
+and carry target-owned global accuracy through the diagonal into B0. Reuse
+targetCorePacked_concat for publication; preserve the physical reverse order
+explicitly. Ordinary seed/control production, outer tensor iteration, full
+resource/error absorption and seam/fallback acceptance remain open. Accumulate
+with cleanup and physical integration before another local commit; no push.
+
+
+### S4 physical diagonal placement and inherited ordinary metadata (2026-11-09)
+
+PlacedIntervalDiagonal.placedDiagonal uses the existing ordered move from the
+selected solve's aux 5 output through caller.tmp into the already allocated
+selector/recovery diagonal queue, then embeds completeDiagonalBatch unchanged.
+placedDiagonal_exec derives all moved header facts, executes ordinary table
+production/multiplication/retirement, and returns the exact root endpoint,
+cleared aux 5, restored borrowed queue suffix, actual diagonal output packet
+and its reversed-order accuracy certificate. Transfer costs 4*word.length+4
+and allocates zero stock; the diagonal execution carries its original time
+and workspace bounds. There is no supplied intermediate execution.
+
+SelectedInput and the actual selector/count theorem now expose preservation
+of the complete recovery bank and left stacks. selectionSolve_exec carries
+these frames through numerical retirement and generated-control cleanup.
+diagonalFresh_of_recovery_frame transports initial diagonal freshness from
+these actual output facts; ordinary metadata is preserved structurally rather
+than resupplied after the solve. Small generic readback/update lemmas keep
+concrete role allocation out of kernel comparisons.
+
+Guarded checks: placed diagonal 3570.4 MiB, strengthened selected solve
+3572.7 MiB. Joint integration build passes (16738 jobs; rebuilding both modules
+peaked at 6.1 GiB aggregate). Selected solve, placed diagonal and freshness
+transport axiom audit reports only propext, Classical.choice and Quot.sound
+(9872.6 MiB nonmodule audit). No raised proof limits or new numerical program.
+
+Next close the single selected-solve/diagonal execution theorem using these
+frames, derive target magnitude/error bounds from the principal/global
+certificate rather than a new supplier, and transport target-owned locality
+through D-prime to the B0 target. Then publish/advance the outer batch using
+the existing floor-owned coverage theorem. Ordinary seed/control/setup
+production, full tensor iteration and selected resource/error/fallback gates
+remain incomplete. Keep the accumulated cleanup/diagonal chunk local and
+uncommitted until combined execution is closed; no push.
+
+
+### S4 complete selected principal solve and diagonal execution (2026-11-09)
+
+RetainedCyclicLayout.selectedDiagonal is the actual composition of
+selectionSolve and placedDiagonal. selectedDiagonal_exec invokes both proved
+executions on the same state, transports the initial ordinary DiagonalContext
+through the recovery-bank frame, derives the transfer buffer's blankness, and
+returns one chronological workspace trace. It keeps actual selector, numerical
+and diagonal bills with the original numerical workspace witnesses. Its final
+root endpoint clears aux 5, restores the borrowed diagonal queue, and stores
+the certified D-prime packet in the actual diagonal output port.
+
+The principal certificate now supplies the diagonal radius: the existing
+halfGridSolution_norm_le gives complex magnitude at most 6p, and the existing
+inverseNormalizationShift_large gives normalized magnitude at most 3/2.
+PackedPrincipalOutput.diagonal_targets retains the same solution map and its
+principal equations, packet and magnitude bound. Existing publicationError_le_half
+discharges the multiplier's error allowance. No target-magnitude, fit,
+intermediate-execution or solution supplier is assumed by the combined theorem.
+The output retains the principal solution witness for subsequent target-owned
+global/B0 comparison and explicitly reflects reverse replica order.
+
+DiagonalContext packages only ordinary scalar lengths and blank work; its
+frame theorem replaces repeated header transport. Removed the unused separate
+diagonal-freshness transport helper because context transport subsumes it.
+
+Guarded checks: combined execution 3589.2 MiB, principal magnitude/input
+3397.3 MiB, diagonal context 3423.6 MiB, physical placement 3564.5 MiB. Full
+integration build passes (16741 jobs, 3.6 GiB aggregate). Combined execution,
+principal diagonal targets and context frame axiom audits report only propext,
+Classical.choice and Quot.sound (9872.3 MiB nonmodule audit). Commit the
+accumulated cleanup/packet/diagonal/physical composition as one local chunk;
+no push.
+
+Next compare the retained principal solution witness with the global target
+and exact B0 through the already proved target-owned locality and inverse
+endpoint lemmas. Then publish/advance source intervals using floor-owned
+coverage in the outer batch invariant. Ordinary seed/control/setup production,
+full tensor iteration and selected time/space/error/seam/fallback acceptance
+remain open. S4 is not complete.
