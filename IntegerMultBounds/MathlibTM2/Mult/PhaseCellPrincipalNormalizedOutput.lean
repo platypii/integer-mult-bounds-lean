@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedNormalizedFactoryDescriptorStep
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedNormalizedOutput
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedComponentLocality
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellTargetOwnedRecoveryJob
 public import IntegerMultBounds.NLogN.PhaseCellCyclicPrincipalGeometry

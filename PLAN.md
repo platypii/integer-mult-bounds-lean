@@ -48080,3 +48080,73 @@ supply the later analytic comparison. Generated headers, scan advancement,
 returned tensor publication, seam/fallback and full S4 acceptance remain open.
 No push; collect the accumulated unconditional selection, computed batch and
 RHS-bound proofs into one local checkpoint after audits.
+
+
+### S4 arbitrary-interval normalized component assembly (2026-11-09)
+
+The source-grid regular-core restriction is now removed from the component
+pairing layer. `normalizedIntervalAssembly_exec` proves the existing physical
+pairing program over arbitrary `(start,rows)`, using packedInterval and
+haloVertices directly. The old normalizedCoreAssembly_exec is a specialization,
+so existing callers remain on the same verified code.
+`normalizedIntervalSolutions_certificate` generalizes the existing uniqueness
+argument to that interval; assembleNormalizedIntervalSolutions_exec consumes it
+in the same half-count/pair/cleanup execution. Regular-core component
+certification and execution are now corollaries. There is one substantive
+proof per layer, no new program, no precision/error relaxation and no change
+to the row-based cost/space language.
+
+Guarded checks pass: physical assembly 3075.8 MiB, interval solutions 3098.0 MiB.
+The complete existing cyclic complex core integration build passes (16101 jobs,
+3.6 GiB aggregate); combined generic/corollary/core axiom audit reports only
+propext/Classical.choice/Quot.sound (9660.7 MiB nonmodule audit).
+Accumulate these proof-language changes with the crop integration; no push.
+Next generalize the existing packedCoreArchiveLoop_exec/from-dimensions/complex
+crop contracts to arbitrary intervals, consume them in physical normalized
+publication, and lift the actual cyclic core contract. Use packedInterval_crop_error
+for generic crop accuracy; retain regular-core interfaces as corollaries.
+The solver itself already handles arbitrary principal (a,n), so it should not
+be reimplemented. Target-owned locality and global publication follow only
+after this actual execution boundary is closed. S4 remains incomplete.
+
+
+### S4 actual arbitrary-interval crop and cyclic core execution (2026-11-09)
+
+The crop chain now uses arbitrary ambient `(start,coreRows)` throughout:
+packedIntervalCoreArchiveLoop_exec, generated from-dimensions execution,
+complex crop accuracy, and normalizedIntervalPublication_exec. Each reuses
+the existing interval-copy/crop machinery; the regular-core contracts remain
+corollaries. No program, arithmetic budget or proof limit is changed.
+executedCyclicIntervalPublication_spec consumes this in the actual complete
+numerical/normalization/publication execution. executedCyclicIntervalCore_spec
+then consumes interval component assembly, returning the actual normalized
+complex packet and local principal-solution accuracy on haloVertices(start,
+start+coreRows), with the same time and workspace traces. The regular complete
+core theorem now applies its existing locality certificate as a corollary.
+This closes the executed-core crop mismatch; it does not yet lift arbitrary
+intervals through the external placed/factored/retired caller.
+
+PackedNormalizedOutput and its length facts now live in a small dedicated
+module, re-exported by the old descriptor module. PrincipalNormalizedOutput
+imports that certificate directly, avoiding a dependency on legacy factory
+execution solely to name an output type. The certificate itself is unchanged.
+
+The complete generalized-core build passes (16100 jobs, 3.6 GiB aggregate).
+The legacy descriptor and retired-caller compatibility build passes (16571
+jobs, 25.5 GiB aggregate during parallel dependency rebuilding). Individual
+checks: generated crop 2114.7 MiB, physical normalized crop 2067.1 MiB,
+executed publication 3498.4 MiB, complete interval core 3506.3 MiB. All checked
+edited modules remain below the per-module CI target. Collect this with the
+prior interval component-assembly work as one coherent local checkpoint.
+No push; unrelated periodic-recovery drafts remain untouched.
+
+Next lift the local interval execution/certificate through placement, control
+installation, factor construction, cached input and retirement. Instantiate
+start=cut(s,t,L,k), coreRows=rows(s,t,L,k), then reuse target-owned locality for
+its global error. The existing solver already handles arbitrary principal
+(a,n); do not reimplement it or assume a regular-core equality. Generated
+outer headers, batch advancement, source-grid tensor return, seam/fallback,
+and final S4 acceptance remain open.
+
+Final generic-crop/complete-core audit reports only propext, Classical.choice
+and Quot.sound (9660.4 MiB for the nonmodule audit). Whitespace checks pass.
