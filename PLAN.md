@@ -48195,3 +48195,109 @@ remain. S4 is not complete.
 Combined output/placed/prepared/factored/ordinary/retired/target-owned and
 compatibility audit reports only propext, Classical.choice and Quot.sound
 (9827.0 MiB nonmodule audit). Whitespace checks pass.
+
+
+### S4 concrete selector/cyclic layout and produced count handoff (2026-11-09)
+
+RetainedCyclicLayout gives one structural role-sum allocation for the existing
+selector, numerical bank, two seed banks and ordinary auxiliary rulers. Its
+constructed CyclicComplexCallerLayout directly shares the selector RHS tape
+and produced row ruler. Numerical and seed banks are outside the selector
+image; no numerical layout supplier remains for this allocation. The selector
+is embedded verbatim; its unused legacy role slots execute no legacy solver.
+
+Prepared selection now exposes the scalar frame already proved by controller
+preparation. Placed selection consumes that frame to prove the borrowed word
+width restores, alongside the produced RHS/span and complete external-bank
+frame. A generic readback lemma and symbolic depth-shift lemma avoid expanding
+the concrete state/program in resource proofs; default limits are unchanged.
+
+cleanArchiveWidthSetup reuses the existing two-product archive-width producer
+and retires its intermediate. RetainedCyclicLayout.prepareCount uses the
+produced span, preserved width and ordinary replica ruler. selectionCount_exec
+composes the actual embedded selector and count producer, proves the numerical
+count equals the actual packed RHS length, preserves the target queue and
+external banks, and carries one chronological time/stock trace. The RHS archive
+is shared directly with the numerical caller, with no copying adapter and no
+supplied payload count. Ordinary replica masters and selector setup/header
+premises are still explicit.
+
+The final handoff integration build passes (16690 jobs, 3.6 GiB aggregate).
+Individual checks: clean count 1938.2 MiB, layout 3540.0 MiB, concrete count
+3533.4 MiB, placed selector/count composition 3572.7 MiB. Accumulate these with
+the next complete numerical invocation rather than committing each small
+adapter; no push. Next invoke retiredProgram_interval_exec on this exact
+handoff state, derive all seed/control/blank facts from the same initial state
+and structural frame, then retire the generated count/selector controls and
+advance/publish the outer batch. Target-owned locality is already available
+for the resulting actual numerical packet. Full outer tensor composition,
+selected full resource absorption, seam/fallback and S4 acceptance remain open.
+
+
+### S4 queue restoration exposed through the placed count handoff (2026-11-09)
+
+The placed selector and composed selector/count execution now explicitly return
+restoration of the retained target queue. This was already proved by the reused
+selector but omitted from the physical execution interface; the count update
+preserves it by structural port separation. No new program or execution is
+introduced. The guarded check passes at 3573.0 MiB with default proof limits.
+The small SelectedInput.toPackedInput transport also passes at 3541.1 MiB.
+
+Next acceptance milestone remains one complete batch execution: construct
+SelectedInput from selectionCount_exec, invoke the retired interval caller on
+the same endpoint, then retire generated controls and publish the returned
+packet into a repeatable outer invariant. Do not grow independent adapter
+families before closing that composition. Full S4 remains incomplete; retain
+this work for a larger coherent local commit, with no push.
+
+
+### S4 actual selection endpoint now supplies caller readiness (2026-11-09)
+
+selectionCount_exec now returns SelectedInput for the computed retained tensor
+RHS fields on its actual final state. Its count is expressed directly as
+Fs.length*n*w, rather than requiring downstream reconstruction from an archive
+length equation. The same record carries the span, borrowed width, restored
+queue and external-bank frame. SelectedInput.toPackedInput transports the
+ordinary seed/control context to this endpoint once for numerical invocation.
+A generic frame_count_update avoids expanding the concrete role allocation;
+no raised limits or new program were needed.
+
+Guarded selector/readiness check: 3577.2 MiB. Integration build passes
+(16692 jobs, 3.6 GiB aggregate). Combined axiom audit of selectionCount_exec
+and SelectedInput.toPackedInput reports only propext, Classical.choice and
+Quot.sound (9861.5 MiB for the nonmodule audit). Full numerical composition,
+ordinary context production, cleanup/publication and the remaining full S4
+acceptance gates are still open. Accumulate locally; no push.
+
+
+### S4 computed tensor selection executes the retired numerical caller (2026-11-09)
+
+RetainedCyclicLayout.selectionSolve is the actual sequential program: existing
+selection/count production followed by caller.retiredProgram into aux 5. Its
+execution theorem derives the selected RHS unit bound from the tensor bound,
+transports ordinary initial context through the produced SelectedInput, and
+invokes the interval caller on precisely that endpoint. No intermediate
+execution, factor construction, component solution or numerical solver is
+supplied. Selection and numerical time bounds, their chronological combined
+workspace trace, the actual principal-interval output certificate, exact
+output length and endpoint, cleared numerical bank and restored target queue
+all concern this same execution.
+
+selectionCount_exec now hides its internal controller state and nested updates
+behind an existential final state plus SelectedInput. Downstream composition
+therefore uses the proof language without unfolding concrete tape allocation.
+This removed a large repeated endpoint term from selectionSolve_exec. The
+original low-level selection endpoint is still available where needed.
+
+Guarded solve check: 3569.0 MiB. Full integration build passes (16698 jobs,
+3.6 GiB aggregate). Combined selection/readiness/solve axiom audit reports
+only propext, Classical.choice and Quot.sound (9863.7 MiB nonmodule audit).
+No proof limits were raised. Collect the full physical selector/count/caller
+chunk in one local commit; no push.
+
+Next: retire generated selector controls and count, produce the still-explicit
+ordinary seed/control/setup data, publish the returned source interval into
+the target-owned batch layout, and close the repeatable outer invariant.
+Target-owned locality applies to the actual returned principal certificate.
+Full tensor error/resource absorption, seam/fallback and final S4 acceptance
+remain open; S4 is not complete.

@@ -52,6 +52,7 @@ theorem preparedBulkSelection_exec_base {W V a origin span w n : ℕ}
       (∀ i, F.R (recovery i) = S.R (recovery i)) ∧
       (∀ i, F.R (scratch i) = S.R (scratch i)) ∧
       B.L = (embStk geometry S).L ∧
+      (∀ i : Fin 117, i ≠ 91 → i ≠ 109 → i ≠ 116 → B.R i = (embStk geometry S).R i) ∧
       ∀ depth, ExecWithin body (fun j z => mnSize z+j ≤ mnSize (Host.mk v S)+depth+
         3*preparedBulkSelectionCost W V span w n Fs.length) depth preparedBulkSelection (Host.mk v S) m (Host.mk v' F) := by
   obtain ⟨v₁,B,m₁,hu₁,hm₁,he₁,_,_,hleft,hR⟩ := prepareLocalRowControls_exec
@@ -90,7 +91,7 @@ theorem preparedBulkSelection_exec_base {W V a origin span w n : ℕ}
       · exact hheaders.clean _ (by simpa only [List.mem_cons,List.not_mem_nil,or_false] using hi))
   have hm : m₁+m₃ ≤ preparedBulkSelectionCost W V span w n Fs.length := Nat.add_le_add hm₁ hm₃
   have hex := Exec.seq he₂ he₃
-  refine ⟨v₃,B,m₁+m₃,hu₃.trans (hu₂.trans hu₁),hm,hex,?_,?_,?_,?_,hleft,fun depth => ?_⟩
+  refine ⟨v₃,B,m₁+m₃,hu₃.trans (hu₂.trans hu₁),hm,hex,?_,?_,?_,?_,hleft,?_,fun depth => ?_⟩
   · change Function.update (Function.update K.R (batch 0) []) source
       (selectedWindowPayload (s := s) A w a n origin span Fs) (geometry 116) = _
     rw [Function.update_of_ne (show geometry 116 ≠ source by exact fun he => (by decide : (116 : Fin 117) ≠ 108) (geometry_injective he)),
@@ -110,6 +111,9 @@ theorem preparedBulkSelection_exec_base {W V a origin span w n : ℕ}
     simp only [Function.update_of_ne (geometry_ne_scratch 108 i).symm,
       Function.update_of_ne (scratch_ne_batch i 0)]
     exact (embOvr_off B.get S (fun j => geometry_ne_scratch j i)).2
+  · intro i hi91 hi109 hi116
+    rw [hR]
+    simp only [hi91,hi109,hi116,ite_false]
   · exact mn_native_exec_within hex 3 preparedBulkSelection_native depth _ (by omega)
 
 theorem preparedBulkSelection_exec {W V a origin span w n : ℕ}
@@ -139,7 +143,7 @@ theorem preparedBulkSelection_exec {W V a origin span w n : ℕ}
       B.L = (embStk geometry S).L ∧
       ∀ depth, ExecWithin body (fun j z => mnSize z+j ≤ mnSize (Host.mk v S)+depth+
         3*preparedBulkSelectionCost W V span w n Fs.length) depth preparedBulkSelection (Host.mk v S) m (Host.mk v' F) := by
-  obtain ⟨v',B,m,hu,hm,he,hrow,hqueue',hrecovery,hscratch,hleft,hwithin⟩ :=
+  obtain ⟨v',B,m,hu,hm,he,hrow,hqueue',hrecovery,hscratch,hleft,_hscalarFrame,hwithin⟩ :=
     preparedBulkSelection_exec_base (body := body) hn hwide hwindow hwV hspan hvol hVW hA hVpos
       Fs tail v S hheaders hclock hvolume hqueue harchive hacc hdst hline
   refine ⟨v',B,m,hu,hm,he,?_,hrow,hqueue',hrecovery,hscratch,hleft,hwithin⟩

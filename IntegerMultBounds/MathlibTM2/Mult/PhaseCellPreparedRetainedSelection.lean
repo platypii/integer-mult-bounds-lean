@@ -59,6 +59,7 @@ theorem preparedRetainedSelection_exec
       (∀ i, F.R (recovery i) = S.R (recovery i)) ∧
       (∀ i, F.R (scratch i) = S.R (scratch i)) ∧
       B.L = (embStk geometry S).L ∧
+      (∀ j : Fin 117, j ≠ 91 → j ≠ 109 → j ≠ 116 → B.R j = (embStk geometry S).R j) ∧
       ∀ depth, ExecWithin body (fun j z => mnSize z+j ≤ mnSize (Host.mk v S)+depth+
         3*preparedBulkSelectionCost W V ((axis i).L+2*(axis i).H) w n ((middle.map (Routing.RetainedTensorEnumeration.width axis retained)).prod)) depth preparedBulkSelection (Host.mk v S) m (Host.mk v' F) := by
   have hqueue' := hqueue
@@ -76,8 +77,8 @@ theorem preparedRetainedSelection_exec
   simp only [List.length_map,Routing.RetainedFieldBatch.replicas_length] at houtLen
   simp only [selectedWindowPayload_eq A w a n _ _ _ hsource hwindow,List.length_map,
     Routing.RetainedFieldBatch.replicas_length] at hex
-  obtain ⟨v',B,m,hu,hm,he,hrows,hqueueFinal,hrecovery,hscratch,hleft,hwithin⟩ := hex
-  refine ⟨v',B,m,hu,hm,he,?_,hrows,hqueueFinal,hrecovery,hscratch,hleft,hwithin⟩
+  obtain ⟨v',B,m,hu,hm,he,hrows,hqueueFinal,hrecovery,hscratch,hleft,hscalarFrame,hwithin⟩ := hex
+  refine ⟨v',B,m,hu,hm,he,?_,hrows,hqueueFinal,hrecovery,hscratch,hleft,hscalarFrame,hwithin⟩
   simpa only [Function.update_self] using houtLen
 
 end
