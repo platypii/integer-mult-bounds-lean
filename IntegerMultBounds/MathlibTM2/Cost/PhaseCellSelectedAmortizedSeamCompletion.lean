@@ -54,10 +54,7 @@ theorem selectedAmortizedSeamCompletion_exec (ct cDB : ℕ) :
     (be : Fin 117 → Fin T') (hbe : Function.Injective be)
     (hsourcePort : be 95 = e crops.dst) (DB : ℕ) (hvolumeFit : s*W < 2^DB) (hDB : DB ≤ cDB*p)
     (masters : Fin 11 → Fin 117)
-    (seedValue : Fin 117 → ℕ)
-    (hvalues : ∀ j, seedValue (boundarySeedGlobals j) = ![s,coreWidth,W] j)
-    (hfit : ∀ j, seedValue (boundarySeedGlobals j) < 2^DB)
-    (boundaryInput : BoundaryHeaderSource (s := s) p coreWidth W DB Fs.length masters seedValue (embStk be S))
+    (boundaryInput : BoundaryUnarySource (s := s) p coreWidth W DB Fs.length masters (embStk be S))
     (ambient : List (List (Fin (A+4)))) (outputTail : List (Fin (A+4)))
     (hdst : S.R (be 96) = ambient.flatten++outputTail)
     (hgood : (gatherPublicationClass s coreWidth (localityDepth p target*PhaseCellBand.width p u)
@@ -87,7 +84,7 @@ theorem selectedAmortizedSeamCompletion_exec (ct cDB : ℕ) :
   filter_upwards [hseam,selectedAmortizedCoreGeometry ct] with m hseam hgeometry
   intro h i _ e he input producer hcompat crops recovery hA u target d huUpper htargetUpper
     hu hwidth hgap hbudget hband hpad htarget Fs hFs hFsPos X Y hX hY J hJ v S ready
-    W hW be hbe hsourcePort DB hvolumeFit hDB masters seedValue hvalues hfit boundaryInput
+    W hW be hbe hsourcePort DB hvolumeFit hDB masters boundaryInput
     ambient outputTail hdst hgood depth
   let p := Sizes.p m
   let s := Sizes.s m i
@@ -104,7 +101,7 @@ theorem selectedAmortizedSeamCompletion_exec (ct cDB : ℕ) :
   let M : Stacks T' A := {S with R := Function.update S.R (e crops.dst) (word++S.R (e crops.dst))}
   have hread (j : Fin 117) (hj : j ≠ 95) : (embStk be M).R j = (embStk be S).R j := by
     exact Function.update_of_ne (by rw [←hsourcePort]; exact hbe.ne hj) _ _
-  have hready := boundaryInput.of_frame p width W DB Fs.length masters seedValue
+  have hready := boundaryInput.of_frame p width W DB Fs.length masters
     (embStk be S) (embStk be M) (by intro j hj _; exact hread j hj)
   obtain ⟨hw,hpRoom,hrw,hroom,_⟩ := hgeometry h i u target htargetUpper
   change 3*width+PhaseCellBand.width p u ≤ s at hroom
@@ -116,7 +113,7 @@ theorem selectedAmortizedSeamCompletion_exec (ct cDB : ℕ) :
     change p^8 ≤ width at hpRoom
     omega
   obtain ⟨lines,v',nb,hu',htb,hall,heb⟩ := preparedBoundaryArchivePublication_exec body be hbe masters
-    p width W DB cDB (by omega) hW hw (by omega) hvolumeFit hDB hps seedValue hvalues hfit
+    p width W DB cDB (by omega) hW hw (by omega) hvolumeFit hDB hps
     r (by simpa only [r,fullLineGridRecord] using hFsPos) (fun _ => J) (PhaseCellBand.width p u) (localityDepth p target) hrad hrw proper rfl
     (S.R (be 95)) outputTail M hready depth vm banks hbanks ambient
     (by simpa only [r,fullLineGridRecord,seamPublicationTargets,inversePublicationTargets] using hgood)

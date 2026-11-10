@@ -5087,6 +5087,66 @@ comparison before class/shared-exposure/outer/fallback/root acceptance. Full S4
 remains open. Collect the complete crop-master initialization as one local
 checkpoint; no push.
 
+**Boundary binary seeds now have one verified structural producer.**
+`BoundaryUnaryScalars` and `BoundaryHeaderLayout` separate the common unary
+facts and static placement from generated binary contents. `BoundaryUnarySource`
+starts with all three seed destinations blank; `with_seeds` recovers the existing
+`BoundaryHeaderSource` without duplicating its common frame proof.
+`boundaryBinarySeeds_exec_within` instantiates the existing `paddedHeaderList`
+once for s/core/wide. It restores unary sources and arithmetic scratch, gives
+exact generated words and an outside-seed frame, and charges
+`21*(s+width+W)+36*D+85` time and twice that allowance for peak space.
+`placedBoundaryBinarySeeds_exec_within` uses stock-aware generic embedding and
+retains the ready contract, exact outside-header frame and unchanged input,
+output and left stacks. Single-file checking passes at 3408.0 MiB with default
+limits. The producer build passes (15633 jobs, 3.5 GiB aggregate); both producer
+theorems report only the standard three axioms in the temporary audit
+(9585.6 MiB for the nonmodule audit). The earlier unary-input refactor build also passed at 3.5 GiB aggregate.
+This is not yet consumed by the complete axis: next place this producer around
+the existing prepared boundary publisher, retire all three generated seeds with
+`retireHeaderFrame_pair_exec`, and charge setup/retirement once in the common
+boundary traffic coefficient. Then migrate the selected axis input to the
+unary source contract. Keep existing numerical proofs and endpoint unchanged.
+Finish shared scalar initialization and complete fitting allowance comparison
+before extending outer wrappers. Full S4 remains open; no push or small commit.
+
+**Binary boundary initialization is now on the complete-axis execution.**
+The existing crop-master publisher is retained as
+`countedBoundaryArchivePublication`; the public prepared publisher first calls
+`placedBoundaryBinarySeeds_exec_within`, consumes the produced source contract,
+and retires the three seeds through the generic two-data-output header-frame
+lemma. Setup and retirement cost fit `(400+100*cDB)*traffic`, added once to the
+common boundary traffic factor; native setup peak fits the same allowance.
+The only final register changes remain the certified source/output updates.
+All four selected seam/publication/retirement/initialized-axis callers now
+consume `BoundaryUnarySource`, with blank seed destinations, instead of a
+preloaded binary seed bank. The complete-axis build passes (17402 jobs,
+3.8 GiB aggregate); the prepared publisher checks at 3455.8 MiB and the
+complete initialized axis at 3810.4 MiB. The integrated prepared publisher and
+complete-axis audit reports only the standard three axioms (10028.7 MiB for
+the nonmodule audit). No numerical case proof was duplicated and no proof
+limit changed.
+Next finish common ordinary scalar/master initialization and discharge the
+complete fitting caller's selected allowances; do not expand outer wrapper
+families before that acceptance. The seed-value/profile parameters still
+express pure arithmetic bounds, not physical prepared bank assumptions.
+Full S4 remains open. Keep this initialization as a larger local chunk; no push.
+
+**The ordinary boundary caller no longer supplies a binary seed profile.**
+The public prepared publisher constructs the s/core/wide profile internally and
+derives each word's width fit from the already-required `s*W < 2^DB`, positive
+word width and core-room bound. All four selected callers drop the profile,
+its value equations and its per-seed fit assumptions. These are arithmetic
+consequences, so they should not migrate through another initialization wrapper.
+The complete-axis integration rebuild passes (17402 jobs, 3.8 GiB aggregate);
+the prepared publisher checks at 3458.5 MiB and the complete initialized axis
+at 3806.4 MiB. The integrated audit reports only the standard three axioms
+(10028.5 MiB for the nonmodule audit). This closes the boundary seed input
+obligation, not common scalar production or fitting acceptance. Collect the
+verified blank-to-generated boundary initialization, contract factoring and
+caller migration in one coherent local commit; do not stage the separate
+periodic-recovery/workspace drafts and do not push.
+
 **First acceptance target: one complete fitting batch.** From declared original
 complex streams and ordinary scalar headers, execute component production,
 prepare numerical data, reuse it across the batch, publish certified complex

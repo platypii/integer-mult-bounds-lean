@@ -163,10 +163,7 @@ theorem selectedAmortizedDyadicRetiredAxis_exec (hR : rpStates ≤ Q) (hQ : SS.s
       (hsourcePort : be 95 = se crops.dst) (houtputPort : be 96 = (pubE pubDst))
       (boundaryOff : ∀ j, be j ≠ dst) (DB : ℕ) (hvolumeFit : s*W < 2^DB) (hDB : DB ≤ cDB*p)
       (masters : Fin 11 → Fin 117)
-      (seedValue : Fin 117 → ℕ)
-      (hvalues : ∀ j, seedValue (boundarySeedGlobals j) = ![s,coreWidth,W] j)
-      (hseedFit : ∀ j, seedValue (boundarySeedGlobals j) < 2^DB)
-      (boundaryInput : BoundaryHeaderSource (s := s) p coreWidth W DB Fs.length masters seedValue (embStk be S))
+      (boundaryInput : BoundaryUnarySource (s := s) p coreWidth W DB Fs.length masters (embStk be S))
       (retireOff : ∀ r ∈ [pubCount,pubWidth,pubSavedCount,pubArchive,pubTmp], r ≠ pubE pubDst),
     let C := closedGridPush (U := U) (A := (prime+K)) producer recovery
     let seamStock := (((C+1)*((1312000+756)*(1032+8*ct)+504)+1440)*(Fs.length*s*p)+2*(C+1)*Sizes.T m+86)+
@@ -223,7 +220,7 @@ theorem selectedAmortizedDyadicRetiredAxis_exec (hR : rpStates ≤ Q) (hQ : SS.s
     headerReady hpadOff hsourceA hsourceB hsourceC hword hheaderBlank hcountPort hadvancePort hsetupReg hstrideOff hpadSetupOff hsetupBlank hfresh hpubDst hclock hline
   intro se hse input producer compatible crops recovery huSeam hwidthSeam hgapSeam hbudgetSeam
     hbandSeam hpadSeam Xseam Yseam hXseam hYseam hJseam seamReady seamOff
-    be hbe hsourcePort houtputPort boundaryOff DB hvolumeFit hDB masters seedValue hvalues hseedFit boundaryInput
+    be hbe hsourcePort houtputPort boundaryOff DB hvolumeFit hDB masters boundaryInput
   intro retireOff
   obtain ⟨vm,Fraw,M,steps,pubSteps,seamSteps,outputs,lines,huser,htime,hall,hFpub,hraw,hvolume,hwithin,hi,ho,hl,hframe⟩ :=
     haxis h i ports g dst width origins binary work readerSaved readerTmp count saved
@@ -238,7 +235,7 @@ theorem selectedAmortizedDyadicRetiredAxis_exec (hR : rpStates ≤ Q) (hQ : SS.s
     headerReady hpadOff hsourceA hsourceB hsourceC hword hheaderBlank hcountPort hadvancePort hsetupReg hstrideOff hpadSetupOff hsetupBlank hfresh hpubDst hclock hline
     se hse input producer compatible crops recovery huSeam hwidthSeam hgapSeam hbudgetSeam
     hbandSeam hpadSeam Xseam Yseam hXseam hYseam hJseam seamReady seamOff
-    be hbe hsourcePort houtputPort boundaryOff DB hvolumeFit hDB masters seedValue hvalues hseedFit boundaryInput
+    be hbe hsourcePort houtputPort boundaryOff DB hvolumeFit hDB masters boundaryInput
   have hstable (r : Fin T) (hr : r ∈ [pubCount,pubWidth,pubSavedCount,pubArchive,pubTmp]) :
       Fraw.R r = S.R r := by
     apply hframe r ?_ (retireOff r hr)

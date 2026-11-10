@@ -2,6 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellBoundaryHeaderBudget
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryHeaderInput
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryBinarySeeds
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryLastCropMaster
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPlacedExactBoundaryArchivePublication
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellHeaderFrameRetirement
@@ -221,9 +222,9 @@ theorem fullBoundaryArchivePublication_exec (body : P → Pr P T Q A U)
 
 def boundaryLastCropTrafficFactor (cD : ℕ) := 30000*(cD+1)^2
 
-def boundaryHeaderTrafficFactor (cD : ℕ) := boundaryHeaderFullTrafficFactor cD+boundaryLastCropTrafficFactor cD
+def boundaryHeaderCountedTrafficFactor (cD : ℕ) := boundaryHeaderFullTrafficFactor cD+boundaryLastCropTrafficFactor cD
 
-def preparedBoundaryArchivePublication (e : Fin 117 → Fin T) (masters : Fin 11 → Fin 117) : Pr P T Q A U :=
+def countedBoundaryArchivePublication (e : Fin 117 → Fin T) (masters : Fin 11 → Fin 117) : Pr P T Q A U :=
   .seq (.seq (embProg e Empty.elim (boundaryLastCropMaster (P := Empty) masters))
     (fullBoundaryArchivePublication e masters)) (clearWords [e (masters 10)])
 
@@ -249,7 +250,7 @@ private theorem lastCropMasterCosts_le (D s width w traffic cD : ℕ)
       BoundaryCropMetadata.clippedCropCountCost,tblC,Nat.mul_zero,Nat.add_zero]
     nlinarith only [hvolume,hw,hD,hDsq,ht]
 
-theorem preparedBoundaryArchivePublication_exec (body : P → Pr P T Q A U)
+theorem countedBoundaryArchivePublication_exec (body : P → Pr P T Q A U)
     (e : Fin 117 → Fin T) (he : Function.Injective e) (masters : Fin 11 → Fin 117)
     (p width W D cD : ℕ) (hA : 4 ≤ A) (hW : 2*p+13 ≤ W)
     (hwidth : 0 < width) (hroom : 3*width < s) (hvolumeFit : s*W < 2^D) (hD : D ≤ cD*p) (hps : p ≤ s)
@@ -272,16 +273,16 @@ theorem preparedBoundaryArchivePublication_exec (body : P → Pr P T Q A U)
     (hsrc : (embStk e S).R 95 = (banks.map (fun rows => cstream A (2*p+13) rows.flatten)).flatten++sourceTail)
     (hdst : (embStk e S).R 96 = ambient.flatten++outputTail) :
     ∃ lines : List (List (Fin (A+4))), ∃ v' : HS T Q A U, ∃ steps : ℕ,
-      v'.user = v.user ∧ steps ≤ boundaryHeaderTrafficFactor cD*(r.inputs.length*(s*W))+
+      v'.user = v.user ∧ steps ≤ boundaryHeaderCountedTrafficFactor cD*(r.inputs.length*(s*W))+
         (3*boundarySeamCost r.inputs.length (2*p+13) D s width W+1) ∧
       List.Forall₂ (fun target line => line.length = s*W ∧
         (∀ i : ZMod s, ‖pairedCellRead p W line i‖ ≤ 1) ∧
         (∀ i : ZMod s, ‖pairedCellRead p W line i-target i‖ ≤ 3/(2:ℝ)^p))
         (seamPublicationTargets p r J) lines ∧
       ExecWithin body (fun z state => mnSize state+z ≤ mnSize (mk v S)+depth+
-        (boundaryHeaderTrafficFactor cD*(r.inputs.length*(s*W))+
+        (boundaryHeaderCountedTrafficFactor cD*(r.inputs.length*(s*W))+
           13*boundarySeamCost r.inputs.length (2*p+13) D s width W)) depth
-        (preparedBoundaryArchivePublication e masters) (mk v S) steps
+        (countedBoundaryArchivePublication e masters) (mk v S) steps
         (mk v' {S with R := (Function.update (Function.update S.R (e 95) sourceTail)
           (e 96) (lines.flatten++outputTail))}) := by
   let countWord := List.replicate (coreLength s width (boundaryCropIndex s width 2)*(2*p+13)) (tick : Fin (A+4))
@@ -348,6 +349,133 @@ theorem preparedBoundaryArchivePublication_exec (body : P → Pr P T Q A U)
   dsimp only [traffic] at htime hspace
   refine ⟨lines,v',n₀+n₁+(2*(coreLength s width (boundaryCropIndex s width 2)*(2*p+13))+3),
     hu₂.trans (hu₁.trans (hu₀'.trans hu₀)),?_,hall,?_⟩
+  · simp only [boundaryHeaderCountedTrafficFactor,Nat.add_mul]
+    omega
+  · have hex := mn_seq_within_add (mn_seq_within_add he₀ he₁) he₂'
+    exact hex.mono (by
+      intro z state hz
+      simp only [boundaryHeaderCountedTrafficFactor,Nat.add_mul]
+      omega)
+
+
+def boundarySeedTrafficFactor (cD : ℕ) := 400+100*cD
+
+def boundaryHeaderTrafficFactor (cD : ℕ) :=
+  boundaryHeaderCountedTrafficFactor cD+boundarySeedTrafficFactor cD
+
+def preparedBoundaryArchivePublication (e : Fin 117 → Fin T) (masters : Fin 11 → Fin 117) : Pr P T Q A U :=
+  .seq (.seq (embProg e Empty.elim (boundaryBinarySeeds (P := Empty) masters))
+    (countedBoundaryArchivePublication e masters))
+    (clearWords ((boundaryBinarySeedHeaders masters).map e))
+
+theorem preparedBoundaryArchivePublication_exec (body : P → Pr P T Q A U)
+    (e : Fin 117 → Fin T) (he : Function.Injective e) (masters : Fin 11 → Fin 117)
+    (p width W D cD : ℕ) (hA : 4 ≤ A) (hW : 2*p+13 ≤ W)
+    (hwidth : 0 < width) (hroom : 3*width < s) (hvolumeFit : s*W < 2^D) (hD : D ≤ cD*p) (hps : p ≤ s)
+    (r : FamilyDispatchInput s A) (hN : 1 ≤ r.inputs.length)
+    (J : FamilyDispatchInput s A → (ZMod s → ℂ) →L[ℂ] (ZMod s → ℂ))
+    (band n : ℕ) (hr : 0 < n*band) (hrw : n*band ≤ width)
+    (proper : CorePublicationClass s width)
+    (hproper : proper.indices = coreGatherIndices s width (n*band) (width+2*(n*band)))
+    (sourceTail outputTail : List (Fin (A+4))) (S : Stacks T A)
+    (input : BoundaryUnarySource (s := s) p width W D r.inputs.length masters (embStk e S))
+    (depth : ℕ) (v : HS T Q A U)
+    (banks : List (List (List GaussianInt)))
+    (hbanks : List.Forall₂ (fun k rows => ExactCoreRows (A := A) p (2*p+13) width k
+      r.inputs.reverse (J r) rows) (boundaryCropSchedule s width).reverse banks)
+    (ambient : List (List (Fin (A+4))))
+    (hgood : CorePublicationClass.BankAccurate proper p W (seamPublicationTargets p r J) ambient (3/(2:ℝ)^p))
+    (hsrc : (embStk e S).R 95 = (banks.map (fun rows => cstream A (2*p+13) rows.flatten)).flatten++sourceTail)
+    (hdst : (embStk e S).R 96 = ambient.flatten++outputTail) :
+    ∃ lines : List (List (Fin (A+4))), ∃ v' : HS T Q A U, ∃ steps : ℕ,
+      v'.user = v.user ∧ steps ≤ boundaryHeaderTrafficFactor cD*(r.inputs.length*(s*W))+
+        (3*boundarySeamCost r.inputs.length (2*p+13) D s width W+1) ∧
+      List.Forall₂ (fun target line => line.length = s*W ∧
+        (∀ i : ZMod s, ‖pairedCellRead p W line i‖ ≤ 1) ∧
+        (∀ i : ZMod s, ‖pairedCellRead p W line i-target i‖ ≤ 3/(2:ℝ)^p))
+        (seamPublicationTargets p r J) lines ∧
+      ExecWithin body (fun z state => mnSize state+z ≤ mnSize (mk v S)+depth+
+        (boundaryHeaderTrafficFactor cD*(r.inputs.length*(s*W))+
+          13*boundarySeamCost r.inputs.length (2*p+13) D s width W)) depth
+        (preparedBoundaryArchivePublication e masters) (mk v S) steps
+        (mk v' {S with R := (Function.update (Function.update S.R (e 95) sourceTail)
+          (e 96) (lines.flatten++outputTail))}) := by
+  let seedValue := fun i : Fin 117 => if i = 55 then s else if i = 56 then width else W
+  have hvalues : ∀ j, seedValue (boundarySeedGlobals j) = ![s,width,W] j := by
+    intro j
+    fin_cases j <;> simp [seedValue,boundarySeedGlobals]
+  have hsFit : s < 2^D :=
+    (Nat.le_mul_of_pos_right s (show 1 ≤ W by omega)).trans_lt hvolumeFit
+  have hwFit : width < 2^D := (show width ≤ s by omega).trans_lt hsFit
+  have hWFit : W < 2^D :=
+    (Nat.le_mul_of_pos_left W (show 1 ≤ s by omega)).trans_lt hvolumeFit
+  have hfit : ∀ j, seedValue (boundarySeedGlobals j) < 2^D := by
+    intro j
+    rw [hvalues j]
+    fin_cases j
+    · exact hsFit
+    · exact hwFit
+    · exact hWFit
+  let headers := (boundaryBinarySeedHeaders masters).map e
+  have hoff (k : Fin 117) (hk : ∀ j, masters (boundarySeamSeedMaster j) ≠ k) : e k ∉ headers := by
+    intro h
+    obtain ⟨i,hi,hei⟩ := List.mem_map.mp h
+    obtain ⟨j,rfl⟩ := List.mem_ofFn.mp hi
+    exact hk j (he hei)
+  have hsrcOff : e 95 ∉ headers := hoff 95 (fun j => (input.dataOff _).1)
+  have hdstOff : e 96 ∉ headers := hoff 96 (fun j => (input.dataOff _).2)
+  have hnd : headers.Nodup := by
+    apply List.Nodup.map he
+    have hr := input.seedReg
+    regs_ne hr
+    simp only [boundaryBinarySeedHeaders,List.ofFn_succ,List.ofFn_zero,List.map_cons,List.map_nil,
+      boundarySeamSeedMaster,Matrix.cons_val_zero,Matrix.cons_val_one,Matrix.cons_val_two]
+    regs_nodup
+  obtain ⟨v₀,n₀,M,hu₀,hn₀,ready,hin,hout,hleft,hframe,he₀⟩ := placedBoundaryBinarySeeds_exec_within
+    body e he masters p width W D r.inputs.length seedValue hvalues
+    (by intro j; rw [← hvalues j]; exact hfit j) v S input depth
+  obtain ⟨lines,v₁,n₁,hu₁,hn₁,hall,he₁⟩ := countedBoundaryArchivePublication_exec body e he masters
+    p width W D cD hA hW hwidth hroom hvolumeFit hD hps seedValue hvalues hfit
+    r hN J band n hr hrw proper hproper sourceTail outputTail M ready depth v₀ banks hbanks ambient hgood
+    (by change M.R (e 95) = _; rw [hframe _ hsrcOff]; exact hsrc)
+    (by change M.R (e 96) = _; rw [hframe _ hdstOff]; exact hdst)
+  obtain ⟨v',hu₂,he₂⟩ := retireHeaderFrame_pair_exec body headers hnd S M hin hout hleft hframe
+    (by intro i hi; obtain ⟨j,hj,rfl⟩ := List.mem_map.mp hi; exact input.seedsBlank j hj)
+    (e 95) (e 96) hsrcOff hdstOff sourceTail (lines.flatten++outputTail) v₁ depth
+  have hlength : (headers.map (fun i => (M.R i).length)).sum = 3*D := by
+    have hseed (j : Fin 3) : (M.R (e (masters (boundarySeamSeedMaster j)))).length = D := by
+      rw [show M.R (e (masters (boundarySeamSeedMaster j))) =
+        binSyms D (seedValue (boundarySeedGlobals j)) from ready.scalars.seeds j]
+      exact length_binSyms ..
+    change ((List.ofFn (fun j : Fin 3 => e (masters (boundarySeamSeedMaster j)))).map
+      (fun i => (M.R i).length)).sum = _
+    rw [List.map_ofFn]
+    simp only [Function.comp_apply,hseed,List.ofFn_succ,List.ofFn_zero,List.sum_cons,List.sum_nil]
+    omega
+  have hcount : headers.length = 3 := by simp [headers,boundaryBinarySeedHeaders]
+  rw [hlength,hcount] at he₂
+  have he₂' : ExecWithin body (fun z state => mnSize state+z ≤
+      mnSize (mk v₁ {M with R := (Function.update (Function.update M.R (e 95) sourceTail)
+        (e 96) (lines.flatten++outputTail))})+depth+0) depth (clearWords headers)
+      (mk v₁ {M with R := (Function.update (Function.update M.R (e 95) sourceTail)
+        (e 96) (lines.flatten++outputTail))}) (6*D+7)
+      (mk v' {S with R := (Function.update (Function.update S.R (e 95) sourceTail)
+        (e 96) (lines.flatten++outputTail))}) := by
+    simpa only [Nat.add_zero,show 2*(3*D)+2*3+1 = 6*D+7 by omega] using he₂
+  let traffic := r.inputs.length*(s*W)
+  have hs : s ≤ traffic := (Nat.le_mul_of_pos_right s (show 1 ≤ W by omega)).trans (Nat.le_mul_of_pos_left _ hN)
+  have hw : width ≤ traffic := (show width ≤ s by omega).trans hs
+  have hwide : W ≤ traffic := (Nat.le_mul_of_pos_left W (show 1 ≤ s by omega)).trans (Nat.le_mul_of_pos_left _ hN)
+  have hdc : D ≤ cD*traffic := hD.trans (Nat.mul_le_mul_left cD (hps.trans hs))
+  have ht : 1 ≤ traffic := (show 1 ≤ s by omega).trans hs
+  have htime : boundaryBinarySeedsCost D s width W+(6*D+7) ≤ boundarySeedTrafficFactor cD*traffic := by
+    unfold boundaryBinarySeedsCost boundarySeedTrafficFactor
+    nlinarith only [hs,hw,hwide,hdc,ht]
+  have hspace : 2*boundaryBinarySeedsCost D s width W ≤ boundarySeedTrafficFactor cD*traffic := by
+    unfold boundaryBinarySeedsCost boundarySeedTrafficFactor
+    nlinarith only [hs,hw,hwide,hdc,ht]
+  dsimp only [traffic] at htime hspace
+  refine ⟨lines,v',n₀+n₁+(6*D+7),hu₂.trans (hu₁.trans hu₀),?_,hall,?_⟩
   · simp only [boundaryHeaderTrafficFactor,Nat.add_mul]
     omega
   · have hex := mn_seq_within_add (mn_seq_within_add he₀ he₁) he₂'
