@@ -81,6 +81,122 @@ noncomputable def workspace {s : ℕ} [NeZero s] (ports : CyclicComplexCallerLay
         cyclicComplexCoreWorkspace (P := Empty) (A := A) (U := U) H K J L hR hQ
           p u l t a n target q w W N replicas complexCount radius core))
 
+theorem program_interval_exec (ports : CyclicComplexCallerLayout T)
+    (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
+    {p l s t u target a n : ℕ} [NeZero s] {α d : ℝ}
+    (axis : RecoveryAxisBounds s t p u l α d) (ha : a < s) (hn : n ≤ s)
+    (hleftRoom : min n (s-a)+PhaseCellBand.width p u ≤ s)
+    (hrightRoom : n-min n (s-a)+PhaseCellBand.width p u ≤ s)
+    (start coreRows radius : ℕ) (hleft : radius ≤ start)
+    (haCore : a = start-radius) (hnCore : n = coreRows+2*radius)
+    (hright : start+coreRows+radius ≤ s) :
+    let B := cyclicPrincipalBoundary s t (PhaseCellBand.width p u) a n
+    let solveTarget := boundaryRecoveryTarget p (target+1)
+    let stage := initialSchurTarget p u (boundaryTableBits p solveTarget 2 B.card) 2
+    let q := executionPrecision p l stage 2
+    let hqp : p+1 ≤ q := by dsimp only [q,executionPrecision,executionExponent,inputExponent]; omega
+    ∀ (Fs : List (ZMod s → GaussianInt)) (hF : ∀ F ∈ Fs, ∀ i, ‖value p (F i)‖ ≤ 1),
+    let Rs := (complexComponentFields Fs).map (fun F i => (2 : GaussianInt)^(q-p-1)*F i)
+    let hRs := shiftedComplexComponents_bound p q hqp Fs hF
+    let H := axis.cyclicLeftReplicaProblem stage 2 a n ha Rs hRs
+    let K := axis.cyclicRightReplicaProblem stage 2 a n hn Rs hRs
+    ∀ (W : ℕ), 2*p+13 ≤ W → executionWidth p l stage 2 ≤ W →
+    ∀ (v : HS T Q A U) (S : Stacks T A) (tail : List (Fin (A+4))),
+    let small := ports.bank ∘ Fin.castLE (by decide : 834 ≤ 909)
+    (∀ i, S.L (ports.bank i) = [] ∧ S.R (ports.bank i) = []) →
+    (∀ i ∈ recoverySeedHeaderPorts, (S.R (ports.seedL i)).length = recoverySeedHeader H W Fs.length i) →
+    (∀ i ∈ recoverySeedHeaderPorts, (S.R (ports.seedR i)).length = recoverySeedHeader K W Fs.length i) →
+    S.R ports.archive = cstream A W (Fs.map (packedInterval a n)).flatten++tail →
+    (S.R ports.count).length = Fs.length*n*W → (S.R ports.span).length = n →
+    (∀ i, (S.R (ports.controls i)).length = ![W,radius,coreRows] i) →
+    S.R ports.saved = [] → S.R ports.tmp = [] →
+    ∃ (J L : ReplicaHaloProblem s) (v' : HS T Q A U) (C F G : Stacks T A) (steps : ℕ) (word : List (Fin (A+4))),
+      v'.user = v.user ∧
+      CyclicFactorSeedInput p l s t u solveTarget a n [] (embStk (small ∘ CyclicReplicaPlacement.factorReg) F) ∧
+      (∀ i, (C.R (cachedFactorSeedSource (ports.small ∘ left.plan.gather) ports.span i)).length =
+        cyclicFactorMasterValues p l s t u solveTarget a n i) ∧
+      CyclicSecondInteriorProfile H K J L p solveTarget B.card ∧
+      steps ≤ ports.inputTimeCost H K W Fs.length S+
+        (ports.factorTimeCost s t p u a n C F+((4*(W+radius+coreRows)+13)+
+          Cost.cyclicComplexCoreTimeCost H K p u l t a n target q W radius
+            (coreRows) Rs.length Fs.length)) ∧
+      ExecWithin body (fun d z => mnSize z+d ≤ mnSize (Host.mk v S)+0+
+        (ports.workspace (U := U) H K J L hR hQ p u l t a n solveTarget q
+          (executionWidth p l stage 2) W B.card Rs.length Fs.length radius
+          (coreRows) S C F)) 0
+        (ports.program hR hQ) (Host.mk v S) steps (Host.mk v' G) ∧
+      Exec body (ports.program hR hQ) (Host.mk v S) steps (Host.mk v' G) ∧
+      G.R (ports.bank 850) = word ∧ G.R (ports.bank 848) = [] ∧ G.R ports.archive = tail ∧
+      PackedPrincipalOutput (realMatrix s t p u) (cyclicPrincipalVertices s a n)
+        p q W target start coreRows Fs word ∧
+      (G.inp = S.inp ∧ G.out = S.out) ∧ G.L ports.archive = S.L ports.archive ∧
+      (∀ i, i ≠ ports.archive → (∀ j, ports.bank j ≠ i) → G.L i = S.L i ∧ G.R i = S.R i) := by
+  dsimp only
+  intro Fs hF
+  let B := cyclicPrincipalBoundary s t (PhaseCellBand.width p u) a n
+  let solveTarget := boundaryRecoveryTarget p (target+1)
+  let stage := initialSchurTarget p u (boundaryTableBits p solveTarget 2 B.card) 2
+  let q := executionPrecision p l stage 2
+  let hqp : p+1 ≤ q := by dsimp only [q,executionPrecision,executionExponent,inputExponent]; omega
+  let Rs := (complexComponentFields Fs).map (fun F i => (2 : GaussianInt)^(q-p-1)*F i)
+  let hRs := shiftedComplexComponents_bound p q hqp Fs hF
+  let H := axis.cyclicLeftReplicaProblem stage 2 a n ha Rs hRs
+  let K := axis.cyclicRightReplicaProblem stage 2 a n hn Rs hRs
+  intro W hW hWin v S tail hblank hvaluesL hvaluesR hsrc hcount hspan hcontrols hsaved htmp
+  have hfit : a+n ≤ s := by omega
+  have hspanL : H.span = n := by change min n (s-a) = n; omega
+  have hspanR : K.span = 0 := by change n-min n (s-a) = 0; omega
+  obtain ⟨v₁,C,n₁,hu₁,hn₁,hinputWithin,he₁,inputsL,inputsR,harchive,hfactorFresh,hleftArchive,hframe⟩ := fittingCyclicCachedInputs_exec
+    (body := body) ports.small ports.small_injective (by omega : 4 ≤ A) H K W Fs rfl rfl
+    hqp hqp hWin hWin hspanR ports.seedL ports.seedR ports.count ports.archive ports.saved ports.tmp
+    ports.move (fun i j => ports.seedOff i _) ports.seedTmp (fun i => ports.tmpOff _)
+    (fun i => ports.archiveOff _) ports.seedArchive v S tail hvaluesL hvaluesR
+    (fun i => (hblank _).2) (fun i => (hblank _).1)
+    (by change S.R ports.archive = cstream A W (Fs.map (packedInterval a H.span)).flatten++tail; rwa [hspanL]) (by simpa only [hspanL] using hcount) hsaved htmp
+  have hspan' : (C.R ports.span).length = n := by
+    rw [(hframe ports.span ports.spanArchive (fun i => (ports.spanOff _).symm)).2]
+    exact hspan
+  have hcontrols' (i : Fin 3) : (C.R (ports.controls i)).length = ![W,radius,coreRows] i := by
+    rw [(hframe _ (ports.controlArchive i) (fun j => (ports.controlOff i _).symm)).2]
+    exact hcontrols i
+  have hfresh' (i : Fin 909) (hi : 834 ≤ i.val) : C.L (ports.bank i) = [] ∧ C.R (ports.bank i) = [] := by
+    have hoff : ∀ j, ports.small j ≠ ports.bank i := by
+      intro j he
+      have hv := congrArg Fin.val (ports.injective he)
+      change j.val = i.val at hv
+      have := j.isLt
+      omega
+    have hh := hframe _ (ports.archiveOff i).symm hoff
+    exact ⟨hh.1.trans (hblank i).1,hh.2.trans (hblank i).2⟩
+  have htmpArchive : ports.tmp ≠ ports.archive := by
+    have hr := ports.move
+    regs_ne hr
+    exact Ne.symm (by assumption)
+  have htmp' : C.R ports.tmp = [] :=
+    (hframe _ htmpArchive (fun j => ports.tmpOff _)).2.trans htmp
+  have hfactorValues (i : Fin 10) :
+      (C.R (cachedFactorSeedSource (ports.small ∘ left.plan.gather) ports.span i)).length =
+        cyclicFactorMasterValues p l s t u solveTarget a n i := by
+    have hvalues := inputsL.headers.factorSeedSources ports.span n hspan'
+    exact (hvalues i).trans (congrFun
+      (axis.cyclicLeftReplicaProblem_factorSeedValues solveTarget a n ha Rs hRs) i)
+  obtain ⟨J,L,v₂,F,G,n₂,word,hu₂,hseed,hprofile,hn₂,hfactoredWithin,he₂,hword,h848,hcert,hstreams,houtside⟩ :=
+    factoredCyclicIntervalCore_exec (body := body) ports.bank ports.injective hR hQ hA axis ha hn
+      hleftRoom hrightRoom start coreRows radius hleft haCore hnCore hright Fs hF W hW
+      (generatedRecoveryBuffers H S.inp S.out) (generatedRecoveryBuffers K S.inp S.out)
+      v₁ C ports.controls ports.span ports.tmp inputsL inputsR hspan'
+      ports.spanOff ports.spanTmp hfactorFresh ports.controlOff ports.controlTmp ports.tmpOff
+      hcontrols' hfresh' htmp'
+  have hwhole := execWithin_seq_two_budget body _ _ _ _ _ _ _ 0 _ _ hinputWithin hfactoredWithin
+  refine ⟨J,L,v₂,C,F,G,n₁+n₂,word,hu₂.trans hu₁,hseed,hfactorValues,hprofile,Nat.add_le_add hn₁ hn₂,
+    hwhole,Exec.seq he₁ he₂,hword,h848,?_,hcert,
+    ⟨hstreams.1.trans inputsL.input,hstreams.2.trans inputsL.outputStream⟩,
+    (houtside ports.archive (fun j => (ports.archiveOff j).symm)).1.trans hleftArchive,?_⟩
+  · exact (houtside ports.archive (fun j => (ports.archiveOff j).symm)).2.trans harchive
+  · intro i hi hiBank
+    have hh := hframe i hi (fun j => hiBank _)
+    exact ⟨(houtside i hiBank).1.trans hh.1,(houtside i hiBank).2.trans hh.2⟩
+
 theorem program_exec (ports : CyclicComplexCallerLayout T)
     (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     {p l s t u target a n : ℕ} [NeZero s] {α d : ℝ}
@@ -148,59 +264,14 @@ theorem program_exec (ports : CyclicComplexCallerLayout T)
   let K := axis.cyclicRightReplicaProblem stage 2 a n hn Rs hRs
   intro W hW hWin v S tail hblank hvaluesL hvaluesR hsrc hcount hspan hcontrols hsaved htmp
   intro localityTarget qRef Y hqRef hwindow hY
-  have hfit : a+n ≤ s := by omega
-  have hspanL : H.span = n := by change min n (s-a) = n; omega
-  have hspanR : K.span = 0 := by change n-min n (s-a) = 0; omega
-  obtain ⟨v₁,C,n₁,hu₁,hn₁,hinputWithin,he₁,inputsL,inputsR,harchive,hfactorFresh,hleftArchive,hframe⟩ := fittingCyclicCachedInputs_exec
-    (body := body) ports.small ports.small_injective (by omega : 4 ≤ A) H K W Fs rfl rfl
-    hqp hqp hWin hWin hspanR ports.seedL ports.seedR ports.count ports.archive ports.saved ports.tmp
-    ports.move (fun i j => ports.seedOff i _) ports.seedTmp (fun i => ports.tmpOff _)
-    (fun i => ports.archiveOff _) ports.seedArchive v S tail hvaluesL hvaluesR
-    (fun i => (hblank _).2) (fun i => (hblank _).1)
-    (by change S.R ports.archive = cstream A W (Fs.map (packedInterval a H.span)).flatten++tail; rwa [hspanL]) (by simpa only [hspanL] using hcount) hsaved htmp
-  have hspan' : (C.R ports.span).length = n := by
-    rw [(hframe ports.span ports.spanArchive (fun i => (ports.spanOff _).symm)).2]
-    exact hspan
-  have hcontrols' (i : Fin 3) : (C.R (ports.controls i)).length = ![W,radius,coreLength s coreWidth k] i := by
-    rw [(hframe _ (ports.controlArchive i) (fun j => (ports.controlOff i _).symm)).2]
-    exact hcontrols i
-  have hfresh' (i : Fin 909) (hi : 834 ≤ i.val) : C.L (ports.bank i) = [] ∧ C.R (ports.bank i) = [] := by
-    have hoff : ∀ j, ports.small j ≠ ports.bank i := by
-      intro j he
-      have hv := congrArg Fin.val (ports.injective he)
-      change j.val = i.val at hv
-      have := j.isLt
-      omega
-    have hh := hframe _ (ports.archiveOff i).symm hoff
-    exact ⟨hh.1.trans (hblank i).1,hh.2.trans (hblank i).2⟩
-  have htmpArchive : ports.tmp ≠ ports.archive := by
-    have hr := ports.move
-    regs_ne hr
-    exact Ne.symm (by assumption)
-  have htmp' : C.R ports.tmp = [] :=
-    (hframe _ htmpArchive (fun j => ports.tmpOff _)).2.trans htmp
-  have hfactorValues (i : Fin 10) :
-      (C.R (cachedFactorSeedSource (ports.small ∘ left.plan.gather) ports.span i)).length =
-        cyclicFactorMasterValues p l s t u solveTarget a n i := by
-    have hvalues := inputsL.headers.factorSeedSources ports.span n hspan'
-    exact (hvalues i).trans (congrFun
-      (axis.cyclicLeftReplicaProblem_factorSeedValues solveTarget a n ha Rs hRs) i)
-  obtain ⟨J,L,v₂,F,G,n₂,word,hu₂,hseed,hprofile,hn₂,hfactoredWithin,he₂,hword,h848,hcert,hstreams,houtside⟩ :=
-    factoredCyclicComplexCore_exec (body := body) ports.bank ports.injective hR hQ hA axis ha hn
-      hleftRoom hrightRoom coreWidth k radius hleft haCore hnCore hright Fs hF W hW
-      (generatedRecoveryBuffers H S.inp S.out) (generatedRecoveryBuffers K S.inp S.out)
-      v₁ C ports.controls ports.span ports.tmp inputsL inputsR hspan'
-      ports.spanOff ports.spanTmp hfactorFresh ports.controlOff ports.controlTmp ports.tmpOff
-      hcontrols' hfresh' htmp' localityTarget qRef Y hqRef hwindow hY
-  have hwhole := execWithin_seq_two_budget body _ _ _ _ _ _ _ 0 _ _ hinputWithin hfactoredWithin
-  refine ⟨J,L,v₂,C,F,G,n₁+n₂,word,hu₂.trans hu₁,hseed,hfactorValues,hprofile,Nat.add_le_add hn₁ hn₂,
-    hwhole,Exec.seq he₁ he₂,hword,h848,?_,hcert,
-    ⟨hstreams.1.trans inputsL.input,hstreams.2.trans inputsL.outputStream⟩,
-    (houtside ports.archive (fun j => (ports.archiveOff j).symm)).1.trans hleftArchive,?_⟩
-  · exact (houtside ports.archive (fun j => (ports.archiveOff j).symm)).2.trans harchive
-  · intro i hi hiBank
-    have hh := hframe i hi (fun j => hiBank _)
-    exact ⟨(houtside i hiBank).1.trans hh.1,(houtside i hiBank).2.trans hh.2⟩
+  obtain ⟨J,L,v',C,F,G,steps,word,hu,hseed,hfactorValues,hprofile,hm,hwithin,he,
+      hword,hclear,harchive,hcert,hstreams,hleft,hframe⟩ :=
+    ports.program_interval_exec (body := body) hR hQ hA axis ha hn hleftRoom hrightRoom
+      (coreStart coreWidth k) (coreLength s coreWidth k) radius hleft haCore hnCore hright
+      Fs hF W hW hWin v S tail hblank hvaluesL hvaluesR hsrc hcount hspan hcontrols hsaved htmp
+  refine ⟨J,L,v',C,F,G,steps,word,hu,hseed,hfactorValues,hprofile,hm,hwithin,he,
+    hword,hclear,harchive,?_,hstreams,hleft,hframe⟩
+  exact hcert.generated axis hqp hqRef hwindow hF Y hY
 
 end CyclicComplexCallerLayout
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

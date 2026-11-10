@@ -17,6 +17,77 @@ noncomputable def preparedCyclicComplexCore (bank : Fin 909 → Fin T) (source :
     (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) : Pr P T Q A U :=
   .seq (installCyclicComplexCoreControls bank source tmp) (placedCyclicComplexCore bank hR hQ)
 
+theorem preparedCyclicIntervalCore_exec (bank : Fin 909 → Fin T) (hbank : Function.Injective bank)
+    (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
+    {p l s t u target a n : ℕ} [NeZero s] {α d : ℝ}
+    (axis : RecoveryAxisBounds s t p u l α d) (ha : a < s) (hn : n ≤ s)
+    (hleftRoom : min n (s-a)+PhaseCellBand.width p u ≤ s)
+    (hrightRoom : n-min n (s-a)+PhaseCellBand.width p u ≤ s)
+    (start coreRows radius : ℕ) (hleft : radius ≤ start)
+    (haCore : a = start-radius) (hnCore : n = coreRows+2*radius)
+    (hright : start+coreRows+radius ≤ s) :
+    let B := cyclicPrincipalBoundary s t (PhaseCellBand.width p u) a n
+    let solveTarget := boundaryRecoveryTarget p (target+1)
+    let stage := initialSchurTarget p u (boundaryTableBits p solveTarget 2 B.card) 2
+    let q := executionPrecision p l stage 2
+    let hqp : p+1 ≤ q := by dsimp only [q,executionPrecision,executionExponent,inputExponent]; omega
+    ∀ (Fs : List (ZMod s → GaussianInt)) (hF : ∀ F ∈ Fs, ∀ i, ‖value p (F i)‖ ≤ 1),
+    let Rs := (complexComponentFields Fs).map (fun F i => (2 : GaussianInt)^(q-p-1)*F i)
+    let hRs := shiftedComplexComponents_bound p q hqp Fs hF
+    let H := axis.cyclicLeftReplicaProblem stage 2 a n ha Rs hRs
+    let K := axis.cyclicRightReplicaProblem stage 2 a n hn Rs hRs
+    ∀ (W : ℕ), 2*p+13 ≤ W →
+    ∀ (buffersL buffersR : ReplicaLoopBuffers A) (v : HS T Q A U) (S : Stacks T A)
+      (source : Fin 3 → Fin T) (tmp : Fin T),
+    let small := bank ∘ Fin.castLE (by decide : 834 ≤ 909)
+    let small_injective := hbank.comp (Fin.castLE_injective (by decide : 834 ≤ 909))
+    CachedReplicaPassInput H (CyclicReplicaPlacement.left.reindex small small_injective) buffersL S →
+    CachedReplicaPassInput K (CyclicReplicaPlacement.right.reindex small small_injective) buffersR S →
+    CyclicResidualBatchInput p l s t u solveTarget a n [] [] (embStk (small ∘ CyclicReplicaPlacement.factorReg) S) →
+    S.R (small (CyclicReplicaPlacement.factorReg 226)) = [] →
+    S.R (small (CyclicReplicaPlacement.factorReg 229)) = [] →
+    (∀ i j, source i ≠ bank j) → (∀ i, source i ≠ tmp) → (∀ i, bank i ≠ tmp) →
+    (∀ i, (S.R (source i)).length = ![W,radius,coreRows] i) →
+    (∀ i : Fin 909, 834 ≤ i.val → S.L (bank i) = [] ∧ S.R (bank i) = []) → S.R tmp = [] →
+    ∃ (J L : ReplicaHaloProblem s) (v' : HS T Q A U) (G : Stacks T A) (steps : ℕ) (word : List (Fin (A+4))),
+      v'.user = v.user ∧ CyclicSecondInteriorProfile H K J L p solveTarget B.card ∧
+      steps ≤ (4*(W+radius+coreRows)+13)+
+        Cost.cyclicComplexCoreTimeCost H K p u l t a n target q W radius
+          (coreRows) Rs.length Fs.length ∧
+      ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+0+
+        (2*(4*(W+radius+coreRows)+13)+
+          cyclicComplexCoreWorkspace (P := Empty) (A := A) (U := U) H K J L hR hQ
+            p u l t a n solveTarget q (executionWidth p l stage 2) W B.card
+            Rs.length Fs.length radius (coreRows))) 0
+        (preparedCyclicComplexCore bank source tmp hR hQ) (mk v S) steps (mk v' G) ∧
+      Exec body (preparedCyclicComplexCore bank source tmp hR hQ) (mk v S) steps (mk v' G) ∧
+      G.R (bank 850) = word ∧ G.R (bank 848) = [] ∧
+      PackedPrincipalOutput (realMatrix s t p u) (cyclicPrincipalVertices s a n)
+        p q W target start coreRows Fs word ∧
+      (G.inp = S.inp ∧ G.out = S.out) ∧
+      (∀ i, (∀ j, bank j ≠ i) → G.L i = S.L i ∧ G.R i = S.R i) := by
+  dsimp only
+  intro Fs hF W hW buffersL buffersR v S source tmp inputsL inputsR factory h226 h229
+    hsourceOff hsourceTmp hbankTmp hvalues hfresh htmp
+  let I := embStk (bank ∘ Fin.castLE (by decide : 834 ≤ 909)) S
+  obtain ⟨v₁,F,hu₁,he₁,hview,hI,hO,hL,hoff⟩ := installCyclicComplexCoreControls_exec
+    (body := body) bank hbank source tmp hsourceOff hsourceTmp hbankTmp W radius
+    (coreRows) v S hvalues hfresh htmp
+  have hcost := cyclicComplexControlCopies_cost bank source W radius (coreRows) S hvalues
+  rw [hcost] at he₁
+  obtain ⟨J,L,v₂,G,m,word,hu₂,hprofile,hm,hcoreWithin,he₂,hword,h848,hcert,hstreams,hframe⟩ := placedCyclicIntervalCore_exec
+    (body := body) bank hbank hR hQ hA axis ha hn hleftRoom hrightRoom start coreRows radius
+    hleft haCore hnCore hright Fs hF W hW buffersL buffersR v₁ F I
+    inputsL.of_reindex inputsR.of_reindex factory h226 h229 hview
+  have hcontrolsWithin := mn_native_exec_within he₁ 2
+    (copyUnaryHeaders_native tmp (cyclicComplexControlCopies bank source)) 0 _ (le_refl _)
+  have hwhole := execWithin_seq_two_budget body _ _ _ _ _ _ _ 0 _ _ hcontrolsWithin hcoreWithin
+  refine ⟨J,L,v₂,G,_,word,hu₂.trans hu₁,hprofile,Nat.add_le_add (le_refl _) hm,
+    hwhole,Exec.seq he₁ he₂,hword,h848,hcert,
+    ⟨hstreams.1.trans hI,hstreams.2.trans hO⟩,?_⟩
+  intro i hi
+  exact ⟨(hframe i hi).1.trans (congrFun hL i),(hframe i hi).2.trans (hoff i hi)⟩
+
 theorem preparedCyclicComplexCore_exec (bank : Fin 909 → Fin T) (hbank : Function.Injective bank)
     (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     {p l s t u target a n : ℕ} [NeZero s] {α d : ℝ}
@@ -73,23 +144,13 @@ theorem preparedCyclicComplexCore_exec (bank : Fin 909 → Fin T) (hbank : Funct
   dsimp only
   intro Fs hF W hW buffersL buffersR v S source tmp inputsL inputsR factory h226 h229
     hsourceOff hsourceTmp hbankTmp hvalues hfresh htmp localityTarget qRef Y hqRef hwindow hY
-  let I := embStk (bank ∘ Fin.castLE (by decide : 834 ≤ 909)) S
-  obtain ⟨v₁,F,hu₁,he₁,hview,hI,hO,hL,hoff⟩ := installCyclicComplexCoreControls_exec
-    (body := body) bank hbank source tmp hsourceOff hsourceTmp hbankTmp W radius
-    (coreLength s coreWidth k) v S hvalues hfresh htmp
-  have hcost := cyclicComplexControlCopies_cost bank source W radius (coreLength s coreWidth k) S hvalues
-  rw [hcost] at he₁
-  obtain ⟨J,L,v₂,G,m,word,hu₂,hprofile,hm,hcoreWithin,he₂,hword,h848,hcert,hstreams,hframe⟩ := placedCyclicComplexCore_exec
-    (body := body) bank hbank hR hQ hA axis ha hn hleftRoom hrightRoom coreWidth k radius
-    hleft haCore hnCore hright Fs hF W hW buffersL buffersR v₁ F I
-    inputsL.of_reindex inputsR.of_reindex factory h226 h229 hview localityTarget qRef Y hqRef hwindow hY
-  have hcontrolsWithin := mn_native_exec_within he₁ 2
-    (copyUnaryHeaders_native tmp (cyclicComplexControlCopies bank source)) 0 _ (le_refl _)
-  have hwhole := execWithin_seq_two_budget body _ _ _ _ _ _ _ 0 _ _ hcontrolsWithin hcoreWithin
-  refine ⟨J,L,v₂,G,_,word,hu₂.trans hu₁,hprofile,Nat.add_le_add (le_refl _) hm,
-    hwhole,Exec.seq he₁ he₂,hword,h848,hcert,
-    ⟨hstreams.1.trans hI,hstreams.2.trans hO⟩,?_⟩
-  intro i hi
-  exact ⟨(hframe i hi).1.trans (congrFun hL i),(hframe i hi).2.trans (hoff i hi)⟩
+  obtain ⟨J,L,v',G,steps,word,hu,hprofile,hm,hwithin,he,hword,hclear,hcert,hstreams,hframe⟩ :=
+    preparedCyclicIntervalCore_exec (body := body) bank hbank hR hQ hA axis ha hn hleftRoom hrightRoom
+      (coreStart coreWidth k) (coreLength s coreWidth k) radius hleft haCore hnCore hright
+      Fs hF W hW buffersL buffersR v S source tmp inputsL inputsR factory h226 h229
+      hsourceOff hsourceTmp hbankTmp hvalues hfresh htmp
+  refine ⟨J,L,v',G,steps,word,hu,hprofile,hm,hwithin,he,hword,hclear,?_,hstreams,hframe⟩
+  exact hcert.generated axis (by dsimp only [executionPrecision,executionExponent,inputExponent]; omega)
+    hqRef hwindow hF Y hY
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

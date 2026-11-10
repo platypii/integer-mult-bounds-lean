@@ -48150,3 +48150,48 @@ and final S4 acceptance remain open.
 
 Final generic-crop/complete-core audit reports only propext, Classical.choice
 and Quot.sound (9660.4 MiB for the nonmodule audit). Whitespace checks pass.
+
+
+### S4 interval caller through retirement and target-owned locality (2026-11-09)
+
+PackedIntervalOutput names actual interval words and their target accuracy.
+PackedPrincipalOutput packages those words with the solved principal component
+systems, independently of global locality. Its exact length and enclosing-input
+volume lemmas are shared by retirement and later tensor publication. The
+regular generated-window certificate is recovered by one common `generated`
+lemma; precision transport of component solutions is factored once too.
+
+The existing placement, control installation, factor construction and ordinary
+cached-input caller now expose interval contracts, all using this same output
+language. `CyclicComplexCallerLayout.retiredProgram_interval_exec` consumes the
+ordinary packed RHS, executes those stages, exports the actual interval result,
+and clears the full private bank. Exact endpoint, restored frame, time, complete
+workspace and output-volume bounds remain on the same execution. The existing
+regular-core interfaces are locality corollaries, not separate execution proofs.
+No numerical solver, factor program, precision budget or proof limit changed.
+
+`PackedPrincipalOutput.target_owned` now consumes this caller's CYCLIC principal
+certificate directly at start=cut(s,t,L,k), coreRows=rows(s,t,L,k). It derives
+the nonwrapping principal-set identity from the actual cut/guard bounds and
+reuses ErrorOn.target_owned_global plus normalizedPackedComponents_global_accuracy.
+It preserves the executed word and replica order while adding the two scaled
+component locality errors; no window-count factor is introduced.
+
+Final target-owned/retired-caller integration build passes (16573 jobs, 3.5 GiB
+aggregate). Individual checks: output contract 3086.4 MiB, target-owned locality
+3404.1 MiB, placed caller 3526.4 MiB, prepared caller 3522.2 MiB, factored caller
+3545.0 MiB, ordinary input caller 3570.3 MiB, retired caller 3557.2 MiB. All remain
+under the per-module CI target. Collect this complete caller/locality chunk
+locally after the combined axiom audit; no push.
+
+Next compose the computed retained-batch selector with this actual interval
+caller in one disjoint physical placement, deriving byte-count/span/crop and
+seed headers from the same ordinary descriptor dimensions. Then advance and
+restore the target batch archive and publish returned prime-source intervals
+in the outer tensor invariant. Selected full time/stock absorption, seam and
+fallback regimes, tensor/global error composition and final S4 acceptance still
+remain. S4 is not complete.
+
+Combined output/placed/prepared/factored/ordinary/retired/target-owned and
+compatibility audit reports only propext, Classical.choice and Quot.sound
+(9827.0 MiB nonmodule audit). Whitespace checks pass.
