@@ -170,6 +170,24 @@ Gaussian schedule or numerical bootstrap solely to check off a historical milest
 The older PR589 machine integration and exact M8 seven-stage/47-inequality package are
 optional alternatives, not the active critical path.
 
+**M9/M10 feasibility audit, first pass (2026-11-09).** See
+[M9/DESIGN.md](IntegerMultBounds/MathlibTM2/M9/DESIGN.md). M9 alone cannot move
+`kappa`, because the bit supplier binds every margin. M10 as specified upstream is
+the PR589 word under a `GL_N` cover and needs a class-indexed cover machine that
+this development does not have. With plain PR589 that machine would be worth about
+3.6 bits before any M9 work.
+
+**Cover machine audit (2026-11-09): go on paper.** See
+[Cover/DESIGN.md](IntegerMultBounds/MathlibTM2/Cover/DESIGN.md). Routes move label
+atoms only, so a node costs `O(V (n + w^(1-a_leaf)))`, the toll that
+`StoppedRecurrence.stopped_closed` already closes. Labels can be the full box
+`M_m(Z/q^w)` with padding at singular classes, which removes upstream's carry-aware
+routing. Three components are new and intrinsic: weighted children, coefficients
+computed from labels on tape, and the unit-pivot fallback on bad classes. The algebra
+of step 1 is checked in `Cover/Weighted.lean` (label covariance, `weighted_good_child`,
+`leaf_word`). Next: the good and fallback normal forms over a commutative ring
+(steps 2–3), then a decision on the machine work (steps 4–7).
+
 **Develop suppliers and outer execution as separate work streams.** M9 supplies the
 finite mixed-to-uniform construction shared with M10; M10 supplies the stronger ordinary
 BIT bound. M4's bounds must close for those actual templates. M5b and the adapted M7 work
@@ -3890,9 +3908,46 @@ remain available for the S2–S3 callers.
 | S1 shared short convolution | ✅ | `ShortConv.Fixed.closed_exec` executes a fixed 117-tape batch program from raw blocks and unary dimensions. Packing, one shared ring-product call, exact coefficient extraction/decoding, rounding error, costs and scratch restoration are proved. Shared by S2 and S3. | Implemented |
 | S2 fast forward map | ✅ | `closedGroup_exec`: fixed 640-tape raw-input caller, generated coefficient tables, overlapping windows, decoded error ≤4 and exact restoration except output. Uniform costs and eventual O(M(p)) per output for complete live-axis batches at executable sizes are proved. | Implemented |
 | S3 fast inverse map | ✅ | `PhaseCellS3.selectedGridFamilyDispatch_operator_spec` combines actual restored production execution, normalized exact-inverse error at most `3/2^p`, unit-ball preservation, selected `p^(129/128)` fast time and a bound on every compiled configuration for the same returned outputs. The 303-register caller generates and releases interior, coupling and computed-Schur data, shares setup across replicas and both real components, converts p-grid inputs exactly, and executes scaling/final rounding. Arbitrary cut/halo batches retain their principal-system error contract. Complete-key setup, scalar/header work, transfers and erasure are paid. `executed_dispatch_resampB₀_spec` supplies the normalized `B₀` `ApproxMap` with uniform scaled error 10 and unit-ball preservation from actual dispatcher outputs, including input quantization and proved smallness. The full real `SolveSpec` is also proved. S4 owns halo locality, exposure/publication and tensor composition. Kappa is unchanged. | Implemented |
-| S4 grouped/fused execution | ⬜ | Ordered core/halo neighborhoods, overlap/cropping, reusable setup, error composition and full-tensor support. Combine S2–S3 with R4 so exposure is not repaid per axis. Preserve reserved chunks and restore layouts before subsequent phases. | Earlier 8–16k estimate retired; no reliable forecast |
+| S4 grouped/fused execution | 🟡 parked | Ordered core/halo neighborhoods, overlap/cropping, reusable setup, error composition and full-tensor support. Combine S2–S3 with R4 so exposure is not repaid per axis. Preserve reserved chunks and restore layouts before subsequent phases. | Earlier 8–16k estimate retired; no reliable forecast |
 | S5 boundary work | ⬜ | Fast boundary matrix operations required by the new parameter regime, including numerical stability, coefficient widths and actual tape costs. Shared prepared-boundary interface pinned; implement its stability, precision, storage and paid setup/solve/release contracts. The old band solve alone does not establish it. | 4–10k |
 | S6 outer integration | ⬜ | New sizing and precision, both resampling directions, bulk CRT/exposure and every changed cost matched into the final machine. Depends on R4, S4–S5 and M4; closes M11 with M9–M10. | 3–6k |
+
+**S4 parked (2026-11-09).** Work moves to the M9/M10 feasibility audit. This
+checklist is the status reference; the dated S4 entries below and at the end
+of the file are history.
+
+Done, each on an actual execution with standard axioms and default limits:
+
+- One complete initialized axis, with `initializedAxisWorkspace_le` and
+  `initializedAxisTime_steps_le` on the same trace at `p^(129/128)`.
+- Retained tensor callback `readySelectedDiagonal_exec`: selection, interval
+  solve, diagonal, archive publication, batch advance and clock restore, with
+  the global `B₀` certificate (error `9/2^p`) and unit output fields.
+- Seed setup `generatedSeedSetup_exec` (`PhaseCellRetainedSeedSetup`): generate
+  the ten masters in the selector table, install both physical seed banks,
+  retire the masters. It returns `caller.InputContext` and changes no right
+  stack outside the two seed banks.
+
+Open gates, in order:
+
+1. Produce `seedGenerator.Ready` and the three control lengths from the outer
+   scalar inputs, then compose setup with `readySelectedDiagonal`. The setup
+   theorem is for fitting intervals (`a+n ≤ s`).
+2. Owner traversal over the nonuniform floor-owned cores. The older generated
+   scan assumes fixed crop widths and aliased seed ports and does not apply.
+3. Physical order: archive batches are prepended and replicas reversed within
+   each packet.
+4. Tensor-axis iteration and source/target layout restoration.
+5. Selected time and space on the retained path, and comparison of both paths
+   with the manuscript S4 allowance. State how the initialized-axis bounds and
+   the retained-path certificates join.
+6. Seam and full fallback (drafts at `907adf85`).
+7. R4 movement interface (R3 is 🟡, R4 ⬜).
+8. Root/compiler acceptance.
+
+Before resuming, state the S4 acceptance theorem as a `Prop` and work back
+from it. With today's bit supplier the whole S4–S6 and R3–R4 chain is capped
+near `2^-12.98`, about one bit.
 
 **S4 pivot: caller-first accounting (accepted 2026-11-09).**
 Reuse the current cyclic execution and existing Host scan/embedding contracts.
