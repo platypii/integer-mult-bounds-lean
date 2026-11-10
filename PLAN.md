@@ -185,8 +185,14 @@ atoms only, so a node costs `O(V (n + w^(1-a_leaf)))`, the toll that
 routing. Three components are new and intrinsic: weighted children, coefficients
 computed from labels on tape, and the unit-pivot fallback on bad classes. The algebra
 of step 1 is checked in `Cover/Weighted.lean` (label covariance, `weighted_good_child`,
-`leaf_word`). Next: the good and fallback normal forms over a commutative ring
-(steps 2–3), then a decision on the machine work (steps 4–7).
+`leaf_word`). Step 2 is checked in `Cover/GoodForm.lean`: elimination without pivot
+normalization over any commutative ring (`good_form`, `good_move`). Step 3a is
+checked in `Cover/Fallback.lean`: unit-pivot elimination over a local ring with exact
+operation counts (`fallback_form`). Step 3b is checked in `Cover/Fallback.lean`,
+`Cover/Itinerary.lean` and `Cover/BadClass.lean`: row operations as children, one pivot
+itinerary per residue class (`valid_congr`), and the bad-class count by Schwartz–Zippel
+(`bad_count`). The cover algebra is complete; the decision on the machine work
+(steps 4–7) is next.
 
 **Develop suppliers and outer execution as separate work streams.** M9 supplies the
 finite mixed-to-uniform construction shared with M10; M10 supplies the stronger ordinary

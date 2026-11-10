@@ -22,7 +22,8 @@ the bad-class fallback.
 | Stopped recursion, atoms `(Z/q^w)^f`, variable-rank reversed children, `F L F` wrapper | Exists (M8 stage 2) |
 | Recurrence with linear and leaf tolls, extra fallback children | Exists: `StoppedRecurrence.stopped_closed` takes any child list |
 | Leaf interchange at width `w` with prefix, gap and suffix | Exists: `BinaryInterchangeBudget.uniform_bound` |
-| Label covariance, weighted contract, weighted normal form, weighted leaf | Algebra proved in [`Weighted.lean`](Weighted.lean) |
+| Label covariance, weighted contract, weighted leaf | Proved in [`Weighted.lean`](Weighted.lean) |
+| Good normal form over the atom ring | Proved in [`GoodForm.lean`](GoodForm.lean) |
 | Label routes | New, from existing primitives (section 3) |
 | Row stock per level, label layout, good/bad split, directory | New (section 4) |
 | Coefficients and weights computed from labels on tape | New, largest item (section 5) |
@@ -158,8 +159,9 @@ Each step ends in checked Lean. Steps 1–3 are algebra and independent of the m
 | Step | Content | Size |
 | --- | --- | --- |
 | 1 | Covariance, weighted contract, pivots as child weights, leaf word, fallback count | done, [`Weighted.lean`](Weighted.lean) |
-| 2 | Good normal form over a commutative ring: unit leading minors of `P C` give `P C = L Π_r Δ R` with unit lower `L`, `R`. `ReversedPivots.exists_rev_factor` is over a field. | 1–2k lines |
-| 3 | Fallback normal form: unit-pivot elimination of an involution over a local ring, the reversal identities, the bad-class count | 2–3k |
+| 2 | Good normal form over a commutative ring: if `P` factors through `r` coordinates and its leading minors of sizes `1..r` are units, then `P C = L Δ Π_r R` with unit lower `L`, `R` (`good_form`), and the move is one weighted child (`good_move`) | done, [`GoodForm.lean`](GoodForm.lean) |
+| 3a | Unit-pivot elimination over a local ring: `n (n-1)` row additions and `n` exchanges make an invertible matrix diagonal with unit entries (`fallback_form`) | done, [`Fallback.lean`](Fallback.lean) |
+| 3b | Row operations as children (`add_conj`, `ordinary_of_reversed`); one itinerary per residue class (`itinerary_form`, `exists_itinerary`, `valid_congr`); the bad-class count (`bad_count`) | done, [`Fallback.lean`](Fallback.lean), [`Itinerary.lean`](Itinerary.lean), [`BadClass.lean`](BadClass.lean) |
 | 4 | Machine: label box and padded stock, routes on label atoms, split by class, directory | 8–15k |
 | 5 | Machine: coefficient evaluator and offset-from-tape atom passes | 15–30k |
 | 6 | Machine: weighted children and leaves, fallback schedule, node induction | 10–20k |
@@ -168,8 +170,19 @@ Each step ends in checked Lean. Steps 1–3 are algebra and independent of the m
 The sizes are rough. The stage-2 machine that steps 4–6 extend (`M8/RevMachine`,
 `M8/Stage2Machine`) is about 26k lines.
 
-Decision point after step 3: the algebra is then complete and the remaining cost is machine work
-of known kind. If steps 4–6 are judged too large, the fallbacks are those of the hole note: a bit
+The algebra of steps 1–3 is checked. Left for the machine steps, where the layout fixes them:
+
+- `Z/q^w` as a local ring with the unit-reflecting map to `F_q`, to instantiate `valid_congr`;
+- the rank factorization `P = A B` of a conjugated rational idempotent, for `good_form`;
+- the final diagonal of the fallback as `n - 1` unit pairs and a sign, and the reversal of a
+  field as one reversed child on its two halves;
+- the program on head and tail fields assembled from `Elim`, with its child count against
+  `fallback_children`.
+
+`bad_count` is stated against the whole label box, which is what the box layout needs: at most
+`r (r+1) (m+1) / (2q)` of the labels are bad for one move.
+
+Decision point: the remaining cost is machine work of known kind. If steps 4–6 are judged too large, the fallbacks are those of the hole note: a bit
 word with a port-independent line, or another cover-free supplier.
 
 ## 8. Open questions
