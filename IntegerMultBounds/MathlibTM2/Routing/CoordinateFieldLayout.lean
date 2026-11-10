@@ -39,6 +39,31 @@ def stream (width : ι → ℕ) (fields : List ι) (base : ι → ℕ) (payload 
 def coordsAt (width : ι → ℕ) (fields : List ι) (base : ι → ℕ) (n : ℕ) :=
   ((enumerate width fields base)[n]?).getD base
 
+/-- Enumeration preserves coordinate bounds, even with repeated fields. -/
+theorem enumerate_bounded (width : ι → ℕ) (fields : List ι) (base : ι → ℕ)
+    (hbase : ∀ i, base i < width i) :
+    ∀ coords ∈ enumerate width fields base, ∀ i, coords i < width i := by
+  induction fields generalizing base with
+  | nil => simpa only [enumerate,List.mem_singleton] using fun coords h => h ▸ hbase
+  | cons j fields ih =>
+    intro coords hc
+    obtain ⟨t,ht,hcoords⟩ := List.mem_flatMap.mp hc
+    apply ih _ _ coords hcoords
+    intro i
+    by_cases hi : i = j
+    · subst i; simpa only [Function.update_self] using List.mem_range.mp ht
+    · simpa only [Function.update_of_ne hi] using hbase i
+
+/-- An out-of-range lookup uses the already bounded base. -/
+theorem coordsAt_bounded (width : ι → ℕ) (fields : List ι) (base : ι → ℕ)
+    (hbase : ∀ i, base i < width i) (n : ℕ) :
+    ∀ i, coordsAt width fields base n i < width i := by
+  by_cases hn : n < (enumerate width fields base).length
+  · simp only [coordsAt,List.getElem?_eq_getElem hn,Option.getD_some]
+    exact enumerate_bounded width fields base hbase _ (List.getElem_mem hn)
+  · have he : (enumerate width fields base)[n]? = none := List.getElem?_eq_none (by omega)
+    simpa only [coordsAt,he,Option.getD_none] using hbase
+
 abbrev Block (Γ : Type) (R : ℕ) := {xs : List Γ // xs.length = R}
 
 def record (width : ι → ℕ) (suffix : List ι) (R : ℕ) (payload : (ι → ℕ) → List Γ)

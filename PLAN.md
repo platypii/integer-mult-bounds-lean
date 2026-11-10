@@ -47991,3 +47991,92 @@ seam/fallback, global locality/error and final acceptance remain open.
 Collect selected geometry, selected execution and the physical-to-numerical
 input bridge as one coherent local checkpoint after the combined axiom audit.
 No push; unrelated periodic-recovery work remains untouched. S4 is incomplete.
+
+
+### S4 reuse the existing generated-controller replica scan (2026-11-09)
+
+The controller-reusing target scan already exists as preparedBulkSelection.
+Do not implement another counted field loop. Its previous public execution
+interface unnecessarily required an old cropped-recovery readiness witness.
+Factored `bulkSelection_exec_base` and `preparedBulkSelection_exec_base` out of
+the existing proofs; these execute solely from ordinary tape/header conditions.
+The original readiness-preserving theorems remain compatibility corollaries,
+using the established frame lemmas. No numerical supplier is needed to run
+selection and no physical execution proof is duplicated.
+
+`retainedTensorBatch_window` identifies a same-owner batch of actual retained
+fields with ordinary cyclic line windows. `preparedRetainedSelection_exec`
+consumes that batch in the existing prepared program: it generates the nearest-
+row controller once, scans all spectator replicas, restores the retained queue,
+and returns packed principal RHS words. It preserves recovery/scratch banks
+as frames, without assuming their readiness or selecting an old solver. The
+same execution has the existing prepared time and stock bounds. Ordinary
+headers, field count/volume rulers, source interval fit and nearest-row support
+remain explicit; the existing owned_halo_contained theorem discharges support
+when actual source/target core geometry is instantiated.
+
+Guarded build passes (16011 jobs, 3.6 GiB aggregate). Individual checks: placed
+selection 3431.0 MiB, prepared selection 3438.8 MiB, retained batch 3431.7 MiB.
+Combined base/compatibility/retained execution axiom audit reports only
+propext/Classical.choice/Quot.sound (9641.9 MiB nonmodule audit). Accumulate with
+the next numerical handoff rather than committing every small bridge; no push.
+Next instantiate same-owner batches from the actual prefix/coarse/spectator
+layout, feed their packed RHS to the current numerical caller, and compose
+returned prime-source publication. Do not mistake this selection execution for
+a complete numerical callback or S4 tensor schedule. S4 remains open.
+
+
+### S4 actual same-owner replica enumeration (2026-11-09)
+
+`Routing/RetainedFieldBatch` computes each spectator replica list from the
+existing HaloCoordinateLayout base, with its exact product count. Its structural
+`source_batches` proof factors the real stored stream by prefix, coarse owner,
+and spectator enumeration; `exposed_batches` applies this identity to the
+actual physical regrouping endpoint. No arbitrary replica list/count remains
+at this boundary and no new physical execution is introduced.
+The prepared retained selector now consumes these computed batches directly.
+Its output additionally has exact length `spectatorCount*sourceWindowRows*w`,
+derived from the existing selected-payload length theorem and the same final
+state that carries execution/restoration/stock. This provides the numerical
+handoff's actual byte volume. The control generator is still called once per
+batch, rather than per spectator replica.
+
+Guarded strengthened selector check passes at 3437.3 MiB; complete integration
+build passes (16012 jobs, 3.5 GiB aggregate). Continue accumulating with the
+unconditional selection refactor for a larger local integration commit; no
+push. Next compose batch advancement and generated owned-window headers with
+the current numerical caller, then returned source-grid publication and the
+outer invariant. Nearest-row support and source interval fit remain ordinary
+geometry obligations at the selector interface, with existing owned-core
+lemmas available. Numerical callback composition, seam/fallback and full S4
+acceptance remain open.
+
+
+### S4 derive the numerical RHS bound and expose the crop mismatch (2026-11-09)
+
+CoordinateFieldLayout now proves bounded enumeration and bounded coordsAt once
+for arbitrary field lists, including repetitions and fallback lookups.
+RetainedFieldBatch.replicas_valid consumes these proofs to establish validity
+of every computed spectator base. retainedTensorLine_bounded transports the
+actual tensor magnitude bound through retained projection and selected-coordinate
+replacement. retainedReplicaRhs_bounded then reuses selectedRhsFields_bounded
+to derive the current numerical caller's unit-bound premise for the actual
+selected replica list. No independently bounded line/RHS supplier is needed.
+The complete integration build passes (16012 jobs, 3.5 GiB aggregate).
+
+The interface audit found a real geometric mismatch: the current cyclic
+numerical caller specializes publication to coreStart/coreLength of regular
+SOURCE-grid cores, whereas target-owned batches use floor cuts cut(s,t,L,k).
+Do not instantiate that specialization on target-owned cuts without an actual
+equality proof, and do not route through the older RawRecoveryProgramBounds
+supplier merely because its target-owned wrapper exists.
+Next expose the already-executed numerical crop/normalization contract for an
+arbitrary ambient interval (start,rows), using existing packedInterval and
+haloVertices language. Keep regular-core output certificates as corollaries.
+The solver and movement programs should remain unchanged. This is the required
+abstraction before the current concrete numerical caller can consume the
+manuscript target-owned schedule. Existing target-owned locality proofs already
+supply the later analytic comparison. Generated headers, scan advancement,
+returned tensor publication, seam/fallback and full S4 acceptance remain open.
+No push; collect the accumulated unconditional selection, computed batch and
+RHS-bound proofs into one local checkpoint after audits.

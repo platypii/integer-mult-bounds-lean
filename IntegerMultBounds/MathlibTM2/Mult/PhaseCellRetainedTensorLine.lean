@@ -20,6 +20,20 @@ def retainedTensorLine (axis : ι → Axis) (retained : Finset ι)
     ZMod ((axis i).N*(axis i).L) → GaussianInt :=
   fun j => f (Function.update (project axis retained coords) i j.val)
 
+/-- A stored tensor bound supplies each numerical line's magnitude premise. -/
+theorem retainedTensorLine_bounded (axis : ι → Axis) (retained : Finset ι)
+    (f : (ι → ℕ) → GaussianInt) (coords : ι → ℕ × ℕ) (i : ι) (p : ℕ)
+    (hc : Valid axis retained coords)
+    (hf : ∀ x, (∀ j, x j < (axis j).N*(axis j).L) → ‖value p (f x)‖ ≤ 1) :
+    ∀ j, ‖value p (retainedTensorLine axis retained f coords i j)‖ ≤ 1 := by
+  let : NeZero ((axis i).N*(axis i).L) := ⟨Nat.ne_of_gt (Nat.mul_pos (axis i).N_pos (axis i).L_pos)⟩
+  intro j
+  apply hf
+  intro x
+  by_cases hx : x = i
+  · subst x; simpa only [Function.update_self] using j.val_lt
+  · simpa only [Function.update_of_ne hx] using project_bounds axis retained coords hc x
+
 theorem project_update_retained (axis : ι → Axis) (retained : Finset ι)
     (coords : ι → ℕ × ℕ) (i : ι) (hi : i ∈ retained) (k j : ℕ) :
     project axis retained (Function.update coords i (k,j)) =
@@ -82,6 +96,20 @@ theorem retainedTensorLine_window_nonwrap (axis : ι → Axis) (retained : Finse
   rw [show (axis i).N*(axis i).L+k*(axis i).L-(axis i).H+j =
     (axis i).N*(axis i).L+(k*(axis i).L-(axis i).H+j) by omega,
     Nat.cast_add,ZMod.natCast_self,zero_add]
+
+theorem retainedTensorBatch_window (A w : ℕ) (axis : ι → Axis) (retained : Finset ι)
+    (f : (ι → ℕ) → GaussianInt) (coords : List (ι → ℕ × ℕ)) (i : ι)
+    (hi : i ∈ retained) (k : ℕ) (hH : (axis i).H ≤ (axis i).N*(axis i).L)
+    (hguard : (axis i).H ≤ k*(axis i).L) :
+    (coords.flatMap fun c => cstream A w ((List.range ((axis i).L+2*(axis i).H)).map
+      (fun j => pullback axis retained f (Function.update c i (k,j))))) =
+    (coords.map (fun c => retainedTensorLine axis retained f c i)).flatMap
+      (fun F => cstream A w (cyclicInterval (k*(axis i).L-(axis i).H)
+        ((axis i).L+2*(axis i).H) F)) := by
+  rw [List.flatMap_map]
+  apply List.flatMap_congr
+  intro c _
+  rw [retainedTensorLine_window_nonwrap axis retained f c i hi k hH hguard]
 
 open IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
   IntegerMultBounds.MathlibTM2.Host IntegerMultBounds.MathlibTM2.Stack
