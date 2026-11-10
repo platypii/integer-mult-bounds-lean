@@ -226,4 +226,27 @@ theorem BoundaryUnarySource.with_seeds {p width W D N : ℕ} {masters : Fin 11 �
     exact h.blank i hi hs hd
   · rw [hread 10 (by decide)]; exact h.lastBlank
 
+/-- Ordinary precision and a blank narrow destination. The existing unary
+contract is interpreted after installing its canonical affine width. -/
+structure BoundaryDimensionSource (p width W D N : ℕ) (masters : Fin 11 → Fin 117)
+    (S : Stacks 117 A) : Prop where
+  ready : BoundaryUnarySource (s := s) p width W D N masters
+    {S with R := Function.update S.R (masters 3) (List.replicate (2*p+13) Node.tick)}
+  precision : (S.R 116).length = p
+  narrowBlank : S.R (masters 3) = []
+  precisionOff : (116 : Fin 117) ≠ masters 3
+
+theorem BoundaryDimensionSource.of_frame (p width W D N : ℕ) (masters : Fin 11 → Fin 117)
+    (S F : Stacks 117 A) (h : BoundaryDimensionSource (s := s) p width W D N masters S)
+    (hread : ∀ i, i ≠ 95 → i ≠ 96 → F.R i = S.R i) :
+    BoundaryDimensionSource (s := s) p width W D N masters F := by
+  refine ⟨?_,?_,?_,h.precisionOff⟩
+  · apply h.ready.of_frame p width W D N masters
+    intro i hs hd
+    by_cases hi : i = masters 3
+    · subst i; simp only [Function.update_self]
+    · simp only [Function.update_of_ne hi]; exact hread i hs hd
+  · rw [hread 116 (by decide) (by decide)]; exact h.precision
+  · rw [hread _ (h.ready.dataOff 3).1 (h.ready.dataOff 3).2]; exact h.narrowBlank
+
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

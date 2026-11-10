@@ -5226,6 +5226,93 @@ origin-query words; complete fitting allowance and outer/fallback/root S4
 acceptance remain open. Accumulate this with the shared scope and structural
 bank work as one larger local checkpoint. No push.
 
+**Next scalar discharge: generate the four origin-query words outside the axis.**
+The public initialized axis still assumes binary s/core/radius/haloRows at
+origin ports 32--35. Their unary sources already exist: `g.source 4`, the
+shared core master, `ports.controls 1`, and `ports.span`. Use the existing
+`paddedHeaderList` on these sources; do not duplicate origin arithmetic or
+migrate every lower origin/publication/seam interface to another input record.
+`paddedHeaderListR_volume` now proves an arbitrary generated binary bank has
+`entryCount*wordWidth` resident symbols. `withPaddedHeaders_exec_within` combines
+the existing structural converter and owned-bank lifecycle: it preserves the
+consumer's arbitrary single-output postcondition, restores all sources/scratch,
+and retires only the generated words. Time is setup+consumer+`2*bankVolume+
+2*entryCount+1`; setup peak is twice the existing conversion cost. The scope
+build passes (3982 jobs, 2.5 GiB aggregate), checking at 1935.6 MiB; its volume
+lemma checks at 1938.8 MiB. The volume/scope axiom audit reports only standard
+axioms (3867.2 MiB for the nonmodule audit). This helper is staged groundwork and is not yet
+consumed by the complete axis; no origin input premise has been removed yet.
+Integrate it only around the current root `withAxisWidths` execution. Start
+ports 32--35 blank, infer conversion profiles/fits from ordinary class inputs
+and existing volume/room bounds, and transport the existing lower binary ABI
+from the exact generated state. Move the origin embedding binder before setup
+separation hypotheses so the existing read-port exclusions can cover the four
+additional owned headers. Keep origin scratch disjoint from the width setup's
+five writable ports. After the complete axis, retire the four binary words via
+the generic scope and retain the existing output-only endpoint/stock equality.
+Charge conversion once to ambient traffic (source dimensions are at most s;
+V is bounded by cV*p), rather than per origin or to a new execution supplier.
+Full S4, shared remaining scalar generation and fitting allowance comparison
+remain open. No commit or push; include this scope in its actual integration.
+
+**Origin-query binary inputs are now generated on the complete axis.**
+The root initialized-axis theorem starts origin ports 32--35 blank. It reuses
+the retained unary line/core/radius/halo-row dimensions through one
+`paddedHeaderList` bank. The origin embedding is quantified before setup
+separation, allowing the existing read-port exclusions to cover the four owned
+binary destinations. Static source/image separation protects the borrowed
+unary words; the origin scratch image is also disjoint from all five writable
+width-setup ports.
+`withPaddedHeaders_exec_within` encloses the existing `withAxisWidths` program.
+The exact generated bank supplies the old binary ABI to the unchanged lower
+origin/class/publication/seam/retirement proofs. After the entire axis, the
+scope clears the four binary words; the endpoint is still the single certified
+output update relative to the original ordinary input, with final stock
+equality. No generated bank or extra execution supplier is an input.
+Each source dimension is bounded by s, while V is bounded by cV*p. Conversion
+plus four-word retirement and setup peak each fit `(400+100*cV)*traffic`;
+combined with the joint width/payload-count scope, the root allowance is
+`(560+100*cV)*traffic`. Generation occurs once for the entire axis, not per
+origin. The guarded root check passes at 3970.1 MiB with default proof limits.
+The final build passes (17404 jobs, 4.0 GiB aggregate); the scope/root axiom
+audit reports only standard axioms (10029.9 MiB for the nonmodule audit).
+Next generate the narrow boundary width from the already-retained precision
+near its boundary consumer, then compare the complete fitting execution bills
+to selected S4 allowances before outer schedules/fallback/root acceptance.
+Ordinary metadata rulers are declared scalar inputs, not numerical readiness
+or execution suppliers; avoid inventing another initialization task merely to
+remove legitimate ordinary input headers. Full S4 remains open. Keep the scope and root migration together
+for a larger local checkpoint; no push.
+
+**The narrow boundary width is generated from ordinary precision at its consumer.**
+`BoundaryDimensionSource` starts with a blank narrow destination and ordinary
+unary precision at local port 116. Its remaining scalar/layout contract is the
+existing unary contract under one canonical slot substitution, avoiding a
+second copy of all scalar and frame fields. `of_frame` transports that ordinary
+input through the existing source/output updates.
+The old binary-seed initializer is retained as the consumed
+`seededBoundaryArchivePublication`. The public prepared publisher runs the
+existing `affineHeader 2 13`, consumes the physically generated width in the
+same execution, then retires that word through generic frame retirement.
+No new arithmetic loop or per-case numerical proof is introduced. Exact setup
+time is `4*p+5`, retirement `4*p+29`, setup peak `13*(4*p+5)`; both lifecycle
+time and setup peak fit `200*traffic`, added once to the common boundary factor.
+All four selected seam/publication/retirement/root callers now accept the
+ordinary dimension source instead of a preloaded narrow width. The root also
+retains the preceding blank-to-generated origin-query scope. Its output-only
+endpoint and final stock equality remain in the compiled execution statement.
+The boundary publisher checks at 3465.9 MiB; the complete initialized-axis
+build passes (17405 jobs, 4.0 GiB aggregate), with default proof limits. The
+complete root checks at 3971.0 MiB. The input-frame, prepared boundary and
+complete-axis audit reports only standard axioms (10027.8 MiB for the
+nonmodule audit).
+Next prioritize complete fitting allowance comparison and the actual closed
+seam producer/input instantiation, then class/shared exposure and outer/
+fallback/root acceptance. Do not create further scalar-preparation work merely
+to eliminate legitimate ordinary precision, dimension or ruler input headers.
+Full S4 remains open. Collect the complete origin/narrow initialization in one
+larger local checkpoint; no push.
+
 **First acceptance target: one complete fitting batch.** From declared original
 complex streams and ordinary scalar headers, execute component production,
 prepare numerical data, reuse it across the batch, publish certified complex

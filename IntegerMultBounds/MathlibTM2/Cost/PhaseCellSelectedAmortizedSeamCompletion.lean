@@ -54,7 +54,7 @@ theorem selectedAmortizedSeamCompletion_exec (ct cDB : ℕ) :
     (be : Fin 117 → Fin T') (hbe : Function.Injective be)
     (hsourcePort : be 95 = e crops.dst) (DB : ℕ) (hvolumeFit : s*W < 2^DB) (hDB : DB ≤ cDB*p)
     (masters : Fin 11 → Fin 117)
-    (boundaryInput : BoundaryUnarySource (s := s) p coreWidth W DB Fs.length masters (embStk be S))
+    (boundaryInput : BoundaryDimensionSource (s := s) p coreWidth W DB Fs.length masters (embStk be S))
     (ambient : List (List (Fin (A+4)))) (outputTail : List (Fin (A+4)))
     (hdst : S.R (be 96) = ambient.flatten++outputTail)
     (hgood : (gatherPublicationClass s coreWidth (localityDepth p target*PhaseCellBand.width p u)

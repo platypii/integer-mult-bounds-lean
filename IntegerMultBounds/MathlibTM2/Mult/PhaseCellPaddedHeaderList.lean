@@ -58,6 +58,19 @@ theorem paddedHeaderListR_get (W : ℕ) (value : Fin T → ℕ) (rs : List (Fin 
       exact Function.update_self _ _ _
     · exact ih hnd'.2 _ hr
 
+/-- Resident storage depends on the number of fixed-width headers, not their values. -/
+theorem paddedHeaderListR_volume (W : ℕ) (value : Fin T → ℕ) (rs : List (Fin T × Fin T))
+    (hnd : (rs.map Prod.snd).Nodup) (R : Regs T A) :
+    ((rs.map Prod.snd).map (fun i => (paddedHeaderListR W value rs R i).length)).sum = rs.length*W := by
+  rw [List.map_map]
+  have hmap : rs.map (fun r => (paddedHeaderListR W value rs R r.2).length) = rs.map (fun _ => W) := by
+    apply List.map_congr_left
+    intro r hr
+    rw [paddedHeaderListR_get W value rs hnd R r hr,length_binSyms]
+  change (rs.map (fun r => (paddedHeaderListR W value rs R r.2).length)).sum = _
+  rw [hmap]
+  simp
+
 /-- One structural proof composes any header list, with shared restored scratch
 and borrowed unary sources. Only the listed destinations change. -/
 theorem paddedHeaderList_exec (width a half par bits cnt saved : Fin T)
