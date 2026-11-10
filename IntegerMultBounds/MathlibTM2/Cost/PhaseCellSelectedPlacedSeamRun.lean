@@ -47,7 +47,7 @@ theorem selectedPlacedSeamProgram_exec (ct : ℕ) :
     (hstart : ∀ k ∈ ks, coreStart coreWidth k ≤ s) (hcount : ks.length ≤ 3)
     (hresult : (embStk e S).R producer.result = [])
     (depth : ℕ),
-    let C := closedGridPush (U := U) (A := A) producer recovery
+    let C := gridDispatchPush (U := U) (A := A) producer.hR producer.hQ
     let r := fullLineGridRecord (A := A) p u l target t Fs
     ∃ v' : HS T' Q A U, ∃ n : ℕ, ∃ output : List (Fin (A+4)), ∃ rss : List (List (List GaussianInt)),
       v'.user = v.user ∧ (n : ℝ) ≤ 2624001*(Sizes.T m : ℝ)+
@@ -72,7 +72,7 @@ theorem selectedPlacedSeamProgram_exec (ct : ℕ) :
     (by have := h.thirteen_le_p; omega) (h.good.lt i) hu hwidth (h.quarter_p_le_theta i)
     hgap hbudget hband hpad htarget Fs hFs X Y hX hY J hJ v S hready hblank hleft hcontrols cropReady
     hstart hcount hresult depth
-  obtain ⟨htime,hspace⟩ := hcosts h i T Q A U input producer recovery d u target Fs (embDn e v) (embStk e S)
+  obtain ⟨htime,hspace⟩ := hcosts h i T Q A U input producer d u target Fs (embDn e v) (embStk e S)
     huUpper htargetUpper hu hwidth hbudget hband hpad hFs hready
   refine ⟨v',n,output,rss,huser,((Nat.cast_le (α := ℝ)).mpr ht).trans htime,hproduced,hcrops,?_⟩
   exact hwithin.mono (by intro d z hz; exact hz.trans (Nat.add_le_add_left hspace _))

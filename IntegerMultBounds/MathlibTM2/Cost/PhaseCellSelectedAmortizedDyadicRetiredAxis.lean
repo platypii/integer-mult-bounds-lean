@@ -165,7 +165,7 @@ theorem selectedAmortizedDyadicRetiredAxis_exec (hR : rpStates ≤ Q) (hQ : SS.s
       (masters : Fin 11 → Fin 117)
       (boundaryInput : BoundaryDimensionSource (s := s) p coreWidth W DB Fs.length masters (embStk be S))
       (retireOff : ∀ r ∈ [pubCount,pubWidth,pubSavedCount,pubArchive,pubTmp], r ≠ pubE pubDst),
-    let C := closedGridPush (U := U) (A := (prime+K)) producer recovery
+    let C := gridDispatchPush (U := U) (A := (prime+K)) producer.hR producer.hQ
     let seamStock := (((C+1)*((1312000+756)*(1032+8*ct)+504)+1440)*(Fs.length*s*p)+2*(C+1)*Sizes.T m+86)+
       (boundaryHeaderTrafficFactor cDB*(Fs.length*(s*W))+13*(boundaryPublicationTrafficFactor cDB*(Fs.length*(s*W))))
     let retireBill := 21*(Fs.length*(s*W))+12

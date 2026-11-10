@@ -2,6 +2,8 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedAmortizedDyadicRetiredAxis
 public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellAxisWidthScopeBudget
+public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellInitializedAxisWorkspace
+public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellInitializedAxisTime
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPaddedHeaderScope
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeometryRealGatherFrame
 
@@ -161,30 +163,23 @@ theorem selectedAmortizedInitializedDyadicRetiredAxis_exec (hR : rpStates ≤ Q)
       (masters : Fin 11 → Fin 117)
       (boundaryInput : BoundaryDimensionSource (s := s) p coreWidth W DB Fs.length masters (embStk be S₀))
       (retireOff : ∀ r ∈ [pubCount,pubWidth,pubSavedCount,pubArchive,pubTmp], r ≠ pubE pubDst),
-    let C := closedGridPush (U := U) (A := (prime+K)) producer recovery
-    let seamStock := (((C+1)*((1312000+756)*(1032+8*ct)+504)+1440)*(Fs.length*s*p)+2*(C+1)*Sizes.T m+86)+
-      (boundaryHeaderTrafficFactor cDB*(Fs.length*(s*W))+13*(boundaryPublicationTrafficFactor cDB*(Fs.length*(s*W))))
-    let retireBill := 21*(Fs.length*(s*W))+12
-    let axisTime : ℝ := (((coreExposureTrafficFactor cG cW+6013 : ℕ)*(Fs.length*s*W : ℕ)+
-        432*(generatedDyadicStageCoeff FixedStreamedBank.tapeCount 6 1+300)*
-          (Fs.length*s*W : ℕ)*Sizes.d m*((Sizes.ℓ m : ℝ)^Parameters.tau+1)+
-        (8*(b : ℝ)+5)*(Sizes.T m : ℝ)+B₀*(2*(Fs.length : ℝ)+1)*
-        ((t : ℝ)*(1+(PhaseCellBand.width p u : ℝ)^2/(Sizes.d m : ℝ)))*(p : ℝ)^(129/128 : ℝ))+(2*(Sizes.T m : ℝ)+(2855+100*cVPub : ℕ)*(Fs.length*s*W : ℕ)+6+
-        108*(generatedDyadicStageCoeff FixedStreamedBank.tapeCount 6 1+300)*
-          (Fs.length*s*W : ℕ)*Sizes.d m*((Sizes.ℓ m : ℝ)^Parameters.tau+1)))+(2624001*(Sizes.T m : ℝ)+(Fs.length : ℝ)*Dseam*(t : ℝ)*
-        (1+(PhaseCellBand.width p u : ℝ)^2/Sizes.d m)*(p : ℝ)^(129/128 : ℝ)+
-        726*(Fs.length*s*p : ℕ)+455+(boundaryHeaderTrafficFactor cDB*(Fs.length*(s*W))+(3*(boundaryPublicationTrafficFactor cDB*(Fs.length*(s*W)))+1) : ℕ))+(retireBill : ℕ)
-    let axisSpace : ℕ := (((3*coreExposureTrafficFactor cG cW+12+
-          12*(streamedDyadicStockCoeff FixedStreamedBank.tapeCount+700))*(Fs.length*s*W)+
-          fittingCyclicWorkspaceTrafficFactor (A := (prime+K)) (U := U) hR hQ ct cW*Fs.length*t*p+47*Sizes.T m)+(2*Sizes.T m+(4390+100*cVPub+3*(streamedDyadicStockCoeff FixedStreamedBank.tapeCount+40))*(Fs.length*s*W)+12)+seamStock+3*retireBill)
+    let axisTime : ℝ := (initializedAxisTimeTrafficFactor cV cG cW cVPub cDB : ℕ)*(Fs.length*s*W : ℕ)+
+      540*(generatedDyadicStageCoeff FixedStreamedBank.tapeCount 6 1+300)*
+        (Fs.length*s*W : ℕ)*Sizes.d m*((Sizes.ℓ m : ℝ)^Parameters.tau+1)+
+      (8*(b : ℝ)+2624482)*(Sizes.T m : ℝ)+
+      (2*B₀+Dseam)*((Fs.length : ℝ)+1)*
+        ((t : ℝ)*(1+(PhaseCellBand.width p u : ℝ)^2/(Sizes.d m : ℝ)))*(p : ℝ)^(129/128 : ℝ)
+    let axisSpace := initializedAxisWorkspaceTrafficFactor (A := (prime+K)) (U := U)
+      hR hQ ct cW cV cG cVPub cDB*Fs.length*t*p+
+      initializedAxisWorkspaceVolumeFactor (A := (prime+K)) (U := U) hR hQ*Sizes.T m
     ∃ v' : HS T Q (prime+K) U, ∃ nsteps : ℕ, ∃ lines : List (List (Fin (prime+K+4))),
-      v'.user = v.user ∧ nsteps ≤ (560+100*cV)*(Fs.length*(s*W))+⌊axisTime⌋₊ ∧
+      v'.user = v.user ∧ (nsteps : ℝ) ≤ axisTime ∧
       List.Forall₂ (fun target line => line.length = s*W ∧
         (∀ j : ZMod s, ‖pairedCellRead p W line j‖ ≤ 1) ∧
         (∀ j : ZMod s, ‖pairedCellRead p W line j-target j‖ ≤ 3/(2:ℝ)^p))
         (inversePublicationTargets p Fs J) lines ∧
       ExecWithin body (fun z state => mnSize state+z ≤ mnSize (Host.mk v S₀)+0+
-        ((560+100*cV)*(Fs.length*(s*W))+axisSpace)) 0
+        axisSpace) 0
         (withPaddedHeaders (e 37) (e 19) (e 20) (e 21) (e 22) (e 23) (e 25)
           [(g.source 4,e 32),(initCore,e 33),(ports.controls 1,e 34),(ports.span,e 35)]
           (withAxisWidths initReplicas initCore ports.span initWord initPacket initWidth ports.count initSaved initTmp
@@ -368,19 +363,14 @@ theorem selectedAmortizedInitializedDyadicRetiredAxis_exec (hR : rpStates ≤ Q)
   let coreWidth := amortizedCoreWidth ct p
   let radius := localityDepth p target*PhaseCellBand.width p u
   let L := coreWidth+2*radius-2*radius
-  let C := closedGridPush (U := U) (A := (prime+K)) producer recovery
+  let C := gridDispatchPush (U := U) (A := (prime+K)) hR hQ
   let seamStock := (((C+1)*((1312000+756)*(1032+8*ct)+504)+1440)*(Fs.length*s*p)+2*(C+1)*Sizes.T m+86)+
     (boundaryHeaderTrafficFactor cDB*(Fs.length*(s*W))+13*(boundaryPublicationTrafficFactor cDB*(Fs.length*(s*W))))
   let retireBill := 21*(Fs.length*(s*W))+12
-  let axisTime : ℝ := (((coreExposureTrafficFactor cG cW+6013 : ℕ)*(Fs.length*s*W : ℕ)+
-        432*(generatedDyadicStageCoeff FixedStreamedBank.tapeCount 6 1+300)*
-          (Fs.length*s*W : ℕ)*Sizes.d m*((Sizes.ℓ m : ℝ)^Parameters.tau+1)+
-        (8*(b : ℝ)+5)*(Sizes.T m : ℝ)+B₀*(2*(Fs.length : ℝ)+1)*
-        ((t : ℝ)*(1+(PhaseCellBand.width p u : ℝ)^2/(Sizes.d m : ℝ)))*(p : ℝ)^(129/128 : ℝ))+(2*(Sizes.T m : ℝ)+(2855+100*cVPub : ℕ)*(Fs.length*s*W : ℕ)+6+
-        108*(generatedDyadicStageCoeff FixedStreamedBank.tapeCount 6 1+300)*
-          (Fs.length*s*W : ℕ)*Sizes.d m*((Sizes.ℓ m : ℝ)^Parameters.tau+1)))+(2624001*(Sizes.T m : ℝ)+(Fs.length : ℝ)*Dseam*(t : ℝ)*
-        (1+(PhaseCellBand.width p u : ℝ)^2/Sizes.d m)*(p : ℝ)^(129/128 : ℝ)+
-        726*(Fs.length*s*p : ℕ)+455+(boundaryHeaderTrafficFactor cDB*(Fs.length*(s*W))+(3*(boundaryPublicationTrafficFactor cDB*(Fs.length*(s*W)))+1) : ℕ))+(retireBill : ℕ)
+  let axisTime := initializedAxisTimeLedger cG cW cVPub cDB b Fs.length s p W (Sizes.T m)
+    B₀ Dseam (generatedDyadicStageCoeff FixedStreamedBank.tapeCount 6 1+300) t
+    (1+(PhaseCellBand.width p u : ℝ)^2/(Sizes.d m : ℝ)) ((p : ℝ)^(129/128 : ℝ))
+    (Sizes.d m) ((Sizes.ℓ m : ℝ)^Parameters.tau+1)
   let axisSpace : ℕ := (((3*coreExposureTrafficFactor cG cW+12+
           12*(streamedDyadicStockCoeff FixedStreamedBank.tapeCount+700))*(Fs.length*s*W)+
           fittingCyclicWorkspaceTrafficFactor (A := (prime+K)) (U := U) hR hQ ct cW*Fs.length*t*p+47*Sizes.T m)+(2*Sizes.T m+(4390+100*cVPub+3*(streamedDyadicStockCoeff FixedStreamedBank.tapeCount+40))*(Fs.length*s*W)+12)+seamStock+3*retireBill)
@@ -424,7 +414,7 @@ theorem selectedAmortizedInitializedDyadicRetiredAxis_exec (hR : rpStates ≤ Q)
   change 3*coreWidth+PhaseCellBand.width p u ≤ s at hroom
   have hL : 1 ≤ L := by change 1 ≤ coreWidth+2*radius-2*radius; change 0 < coreWidth at hw; omega
   have hLfit : L ≤ s := by change 3*coreWidth+_ ≤ s at hroom; dsimp only [L]; omega
-  have hR : 1 ≤ Fs.length := by
+  have hreplicasPos : 1 ≤ Fs.length := by
     have hr : 1 ≤ Fs.reverse.length := by rw [hreplicas]; exact Nat.two_pow_pos bPub
     simpa only [List.length_reverse] using hr
   have hWone : 1 ≤ W := by have := h.thirteen_le_p; omega
@@ -459,7 +449,7 @@ theorem selectedAmortizedInitializedDyadicRetiredAxis_exec (hR : rpStates ≤ Q)
     obtain ⟨v',steps,result,hu,ht,hpost,_,hex⟩ := withAxisWidths_exec_within_traffic body
       initReplicas initCore ports.span initWord initPacket initWidth ports.count initSaved initTmp (pubE pubDst)
       hinitReg hdst Fs.length s L (coreWidth+2*radius) W 0 ⌊axisTime⌋₊ axisSpace
-      hL hLfit (by omega) (by change 3*coreWidth+_ ≤ s at hroom; omega) hR hWone v₀ B
+      hL hLfit (by omega) (by change 3*coreWidth+_ ≤ s at hroom; omega) hreplicasPos hWone v₀ B
       (by rw [initMasters.1,hpubBase]; rw [←initMasters.1]; exact hinitReplicas)
       (by rw [initMasters.2.1,hpubBase]; rw [←initMasters.2.1]; exact hinitCore)
       (by rw [hspanBase]; exact hinitSpan)
@@ -529,9 +519,10 @@ theorem selectedAmortizedInitializedDyadicRetiredAxis_exec (hR : rpStates ≤ Q)
     (withAxisWidths initReplicas initCore ports.span initWord initPacket initWidth ports.count initSaved initTmp consumer)
     post hinner
   let traffic := Fs.length*(s*W)
-  have hsTraffic : s ≤ traffic := (Nat.le_mul_of_pos_right s hWone).trans (Nat.le_mul_of_pos_left _ hR)
-  have hpTraffic : Sizes.p m ≤ traffic := (show Sizes.p m ≤ W by omega).trans
-    ((Nat.le_mul_of_pos_left W (show 1 ≤ s by omega)).trans (Nat.le_mul_of_pos_left _ hR))
+  have hsTraffic : s ≤ traffic := (Nat.le_mul_of_pos_right s hWone).trans (Nat.le_mul_of_pos_left _ hreplicasPos)
+  have hpW : Sizes.p m ≤ W := by omega
+  have hpTraffic : Sizes.p m ≤ traffic := hpW.trans
+    ((Nat.le_mul_of_pos_left W (show 1 ≤ s by omega)).trans (Nat.le_mul_of_pos_left _ hreplicasPos))
   have hVtraffic : V ≤ cV*traffic := hVmax.trans (Nat.mul_le_mul_left cV hpTraffic)
   have hone : 1 ≤ traffic := (show 1 ≤ s by omega).trans hsTraffic
   have hcoreTraffic : coreWidth ≤ traffic := (show coreWidth ≤ s by omega).trans hsTraffic
@@ -551,16 +542,30 @@ theorem selectedAmortizedInitializedDyadicRetiredAxis_exec (hR : rpStates ≤ Q)
   have hpairsLen : pairs.length = 4 := rfl
   rw [hpairsLen] at hn
   dsimp only [traffic] at htime hspace
+  have haxisSpace := initializedAxisWorkspace_le (A := (prime+K)) (U := U) hR hQ
+    ct cW cV cG cVPub cDB Fs.length s t (Sizes.p m) W (Sizes.T m) (h.good.lt i).le hWmax
+    (hreplicasPos.trans hreplicaVolume)
   obtain ⟨lines,hall,rfl⟩ := hpost
   refine ⟨v',nsteps,lines,hu,?_,hall,?_,
     mnSize_replace_right_eq v v' S₀ (pubE pubDst) _ (hlength _ ⟨lines,hall,rfl⟩)⟩
-  · change nsteps ≤ (560+100*cV)*(Fs.length*(s*W))+⌊axisTime⌋₊
-    simp only [Nat.add_mul] at htime ⊢
-    omega
+  · have hnat : nsteps ≤ (560+100*cV)*(Fs.length*(s*W))+⌊axisTime⌋₊ := by
+      simp only [Nat.add_mul] at htime ⊢
+      omega
+    have hstage := add_nonneg (generatedDyadicStageCoeff_nonneg FixedStreamedBank.tapeCount 6 1)
+      (show (0 : ℝ) ≤ 300 by norm_num)
+    exact initializedAxisTime_steps_le cV cG cW cVPub cDB b Fs.length s p W (Sizes.T m) nsteps
+      B₀ Dseam (generatedDyadicStageCoeff FixedStreamedBank.tapeCount 6 1+300) t
+      (1+(PhaseCellBand.width p u : ℝ)^2/(Sizes.d m : ℝ)) ((p : ℝ)^(129/128 : ℝ))
+      (Sizes.d m) ((Sizes.ℓ m : ℝ)^Parameters.tau+1)
+      hpW (hreplicasPos.trans hreplicaVolume) hB₀ hDseam hstage
+      (Nat.cast_nonneg t) (add_nonneg zero_le_one (div_nonneg (sq_nonneg _) (Nat.cast_nonneg _)))
+      (Real.rpow_nonneg (Nat.cast_nonneg p) _) (Nat.cast_nonneg _)
+      (add_nonneg (Real.rpow_nonneg (Nat.cast_nonneg _) _) zero_le_one) hnat
   · exact hex.mono (by
       intro z state hz
-      change mnSize state+z ≤ mnSize (Host.mk v S₀)+0+((560+100*cV)*(Fs.length*(s*W))+axisSpace)
-      simp only [Nat.add_mul] at hspace ⊢
-      omega)
+      have hraw : mnSize state+z ≤ mnSize (Host.mk v S₀)+0+((560+100*cV)*(Fs.length*(s*W))+axisSpace) := by
+        simp only [Nat.add_mul] at hspace ⊢
+        omega
+      exact hraw.trans (Nat.add_le_add_left haxisSpace _))
 
 end IntegerMultBounds.MathlibTM2.Cost

@@ -61,7 +61,7 @@ theorem selectedAmortizedSeamCompletion_exec (ct cDB : ℕ) :
       (coreWidth+2*(localityDepth p target*PhaseCellBand.width p u))).BankAccurate p W
       (inversePublicationTargets p Fs J) ambient (3/(2:ℝ)^p))
     (depth : ℕ),
-    let C := closedGridPush (U := U) (A := A) producer recovery
+    let C := gridDispatchPush (U := U) (A := A) producer.hR producer.hQ
     let boundaryBill := boundaryHeaderTrafficFactor cDB*(Fs.length*(s*W))+(3*boundarySeamCost Fs.length (2*p+13) DB s coreWidth W+1)
     ∃ lines : List (List (Fin (A+4))), ∃ v' : HS T' Q A U, ∃ steps : ℕ,
       v'.user = v.user ∧ (steps : ℝ) ≤ 2624001*(Sizes.T m : ℝ)+

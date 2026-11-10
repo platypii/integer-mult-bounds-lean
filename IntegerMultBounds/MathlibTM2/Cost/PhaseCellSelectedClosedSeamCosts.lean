@@ -17,7 +17,7 @@ open Filter IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.Mat
 theorem selectedClosedSeamCosts_le (ct : ℕ) :
     ∃ D : ℝ, 0 ≤ D ∧ ∀ᶠ m : ℕ in atTop, ∀ (h : Sizes.Big m) (i : Fin (Sizes.d m)) [NeZero (Sizes.s m i)],
     ∀ (T Q A : ℕ) (U : Type) (input : FullLineInputPlan T) (producer : PackedProducerPlan T Q)
-      (recovery : Bool) (d : ℝ) (u target : ℕ) (Fs : List (ZMod (Sizes.s m i) → GaussianInt))
+      (d : ℝ) (u target : ℕ) (Fs : List (ZMod (Sizes.s m i) → GaussianInt))
       (v : HS T Q A U) (S : Stacks T A),
     u ≤ Sizes.p m → target ≤ ct*Sizes.p m → 1 ≤ u → 8*Sizes.p m ≤ 2^u →
     (u : ℝ)*d ≤ Sizes.p m → PhaseCellBand.width (Sizes.p m) u ≤ Sizes.s m i →
@@ -27,7 +27,7 @@ theorem selectedClosedSeamCosts_le (ct : ℕ) :
     let l := haloInverseRingLog s t
     2*((s/(t-s)+1)-2*PhaseCellBand.width p u) ≤ 2^l+1 →
     (∀ F ∈ Fs, ∀ j, ‖value p (F j)‖ ≤ 1) → input.Ready p u l target t Fs S →
-    let C := closedGridPush (U := U) (A := A) producer recovery
+    let C := gridDispatchPush (U := U) (A := A) producer.hR producer.hQ
     let r := fullLineGridRecord (A := A) p u l target t Fs
     let tape := descriptorScheduleTape producer.gridWork FamilyDispatchInput.words [r]
     let solveTime := setupTime p u l target s t Fs.length+
@@ -43,13 +43,13 @@ theorem selectedClosedSeamCosts_le (ct : ℕ) :
   obtain ⟨D,hD,htime⟩ := selectedFullLineLifecycleTime_fast_le ct
   refine ⟨D,hD,?_⟩
   filter_upwards [htime,selectedFullLineLifecycleStock_le ct] with m htime hstock
-  intro h i _ T Q A U input producer recovery d u target Fs v S hu htarget hu1 hwidth hbudget hband
+  intro h i _ T Q A U input producer d u target Fs v S hu htarget hu1 hwidth hbudget hband
     hpad hFs hready
   let p := Sizes.p m
   let s := Sizes.s m i
   let t := Sizes.t m i
   let l := haloInverseRingLog s t
-  let C := closedGridPush (U := U) (A := A) producer recovery
+  let C := gridDispatchPush (U := U) (A := A) producer.hR producer.hQ
   let r := fullLineGridRecord (A := A) p u l target t Fs
   let volume := r.inputs.length*s*(2*p+13)
   have hr := fullLineGridRecord_ready (A := A) p u l target t hu1 hwidth hbudget hband hpad Fs hFs

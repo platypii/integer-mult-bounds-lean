@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPreparedFullLineSeamRun
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGridDispatchPush
 public import IntegerMultBounds.MathlibTM2.Host.EmbedOwnedUpdateStock
 
 /-! Generate ordinary full-line input, solve once, archive all seam crops and
@@ -16,10 +17,7 @@ open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2
 open IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz ScalarPlacement
 variable {T T' Q A s : ℕ} [NeZero s] {P U : Type} {body : P → Pr P T' Q A U}
 
-/-- A fixed closed program's own push count; no caller-body estimate is needed. -/
-noncomputable def closedGridPush (producer : PackedProducerPlan T Q) (recovery : Bool) : ℕ :=
-  mnProgPush (producer.gridProgram (P := Empty) (U := U) (A := A) recovery)
-
+-- Producer-specific push coefficients can be restored from commit 2fbab5fe.
 noncomputable def placedSeamProgram (e : Fin T → Fin T') (input : FullLineInputPlan T)
     (producer : PackedProducerPlan T Q) (crops : SeamCropPlan T producer.result)
     (recovery : Bool) (ks : List ℕ) : Pr P T' Q A U :=
@@ -49,7 +47,7 @@ theorem placedSeamProgram_exec (e : Fin T → Fin T') (he : Function.Injective e
     (hstart : ∀ k ∈ ks, coreStart coreWidth k ≤ s) (hcount : ks.length ≤ 3)
     (hresult : (embStk e S).R producer.result = [])
     (depth : ℕ) :
-    let C := closedGridPush (U := U) (A := A) producer recovery
+    let C := gridDispatchPush (U := U) (A := A) producer.hR producer.hQ
     let r := fullLineGridRecord (A := A) p u l target t Fs
     let tape := descriptorScheduleTape producer.gridWork FamilyDispatchInput.words [r]
     let solveTime := setupTime p u l target s t Fs.length+
@@ -65,12 +63,15 @@ theorem placedSeamProgram_exec (e : Fin T → Fin T') (he : Function.Injective e
         (Host.mk v' {S with R := (Function.update S.R (e crops.dst)
           ((rss.map (fun rs => cstream A (2*p+13) rs.flatten)).flatten++(embStk e S).R crops.dst))}) := by
   dsimp only
-  let C := closedGridPush (U := U) (A := A) producer recovery
+  let C := gridDispatchPush (U := U) (A := A) producer.hR producer.hQ
   obtain ⟨vm,n,output,rss,hu,ht,hproduced,hcrops,heRun⟩ := input.runSeamCrops_exec
     (body := fun f : Empty => nomatch f) producer hcompat crops coreWidth ks recovery hA
     hp hst hu hwidth hθ hgap hbudget hband hpad htarget Fs hFs X Y hX hY J hJ
     (embDn e v) (embStk e S) hready hblank hleft hcontrols cropReady hstart hcount hresult C
-    (by exact le_rfl) (by intro f; cases f) depth
+    (by
+      exact gridFamilyDispatch_push_le producer.gridWork producer.src producer.saved producer.count producer.tmp
+        producer.spare producer.result producer.clock producer.savedClock recovery producer.hR producer.hQ)
+    (by intro f; cases f) depth
   obtain ⟨v',hu',hePlaced⟩ := exec_emb_owned_update_within e he
     (body' := body) (ι := Empty.elim) (by intro f; cases f) crops.dst
     ((rss.map (fun rs => cstream A (2*p+13) rs.flatten)).flatten++(embStk e S).R crops.dst)

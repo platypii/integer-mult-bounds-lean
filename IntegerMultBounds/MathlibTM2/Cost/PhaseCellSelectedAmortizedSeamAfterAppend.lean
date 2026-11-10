@@ -57,7 +57,7 @@ theorem selectedAmortizedSeamAfterAppend_exec (ct : ℕ) :
       bulk (Host.mk v S) bulkSteps
       (Host.mk vBulk {S with R := Function.update S.R dst (word++S.R dst)})),
     let Sbulk := {S with R := Function.update S.R dst (word++S.R dst)}
-    let C := closedGridPush (U := U) (A := A) producer recovery
+    let C := gridDispatchPush (U := U) (A := A) producer.hR producer.hQ
     let r := fullLineGridRecord (A := A) p u l target t Fs
     ∃ v' : HS T' Q A U, ∃ n : ℕ, ∃ output : List (Fin (A+4)), ∃ rss : List (List (List GaussianInt)),
       v'.user = v.user ∧ ((bulkSteps+n : ℕ) : ℝ) ≤ (bulkSteps : ℝ)+2624001*(Sizes.T m : ℝ)+

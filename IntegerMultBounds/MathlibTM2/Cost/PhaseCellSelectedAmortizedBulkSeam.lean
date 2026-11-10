@@ -98,7 +98,7 @@ theorem selectedAmortizedBulkSeam_exec (hR : rpStates ≤ Q) (hQ : SS.states ≤
       (hJseam : J ∘L PhaseCellOperator.exact s t (Real.sqrt (u : ℝ)) = 1)
       (seamReady : SeamReady input producer crops p u l target t coreWidth Fs ks (embStk se S))
       (hoff : ∀ r, seamReadPort input producer crops ks r → se r ≠ dst),
-    let C := closedGridPush (U := U) (A := (prime+K)) producer recovery
+    let C := gridDispatchPush (U := U) (A := (prime+K)) producer.hR producer.hQ
     ∃ v' : HS T Q (prime+K) U, ∃ steps seamSteps : ℕ,
       ∃ outputs : List (List (Fin (prime+K+4))), ∃ batches rss,
       v'.user = v.user ∧

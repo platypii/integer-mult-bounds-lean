@@ -48,7 +48,7 @@ theorem selectedAmortizedSeamProgram_exec (ct : ℕ) :
     (v : HS T' Q A U) (S : Stacks T' A)
     (ready : SeamReady input producer crops p u l target t coreWidth Fs ks (embStk e S))
     (depth : ℕ),
-    let C := closedGridPush (U := U) (A := A) producer recovery
+    let C := gridDispatchPush (U := U) (A := A) producer.hR producer.hQ
     let r := fullLineGridRecord (A := A) p u l target t Fs
     ∃ v' : HS T' Q A U, ∃ n : ℕ, ∃ output : List (Fin (A+4)), ∃ rss : List (List (List GaussianInt)),
       v'.user = v.user ∧ (n : ℝ) ≤ 2624001*(Sizes.T m : ℝ)+

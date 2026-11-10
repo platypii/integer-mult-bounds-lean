@@ -5313,6 +5313,71 @@ to eliminate legitimate ordinary precision, dimension or ruler input headers.
 Full S4 remains open. Collect the complete origin/narrow initialization in one
 larger local checkpoint; no push.
 
+**The complete initialized-axis workspace now has one uniform comparison.**
+`gridFamilyDispatch_push_le` proves a placement-independent push bound by
+structural descriptor loading, fixed numerical solver embedding and structural
+bank cleanup. `gridDispatchPush` is an opaque maximum of the two fixed closed
+recovery programs and the descriptor-control constant; it has no precision,
+metadata, register-layout or replica parameter. The actual seam execution now
+uses this bound directly. All selected seam/axis allowances consume it, and the
+superseded producer-specific push definition is removed (restore `2fbab5fe`).
+The scalar seam-cost comparison drops its now-unused recovery flag.
+`initializedAxisWorkspace_le` compares the actual complete axis ledger,
+including generated origin words, joint width/count setup, numerical callbacks,
+publication, seam setup/solve/crops and all retirement, against
+`initializedAxisWorkspaceTrafficFactor*replicas*t*p +
+ initializedAxisWorkspaceVolumeFactor*T`.
+The traffic factor depends only on fixed program/state parameters and the
+selected format constants. The volume factor is `183+2*(gridDispatchPush+1)`.
+The comparison uses existing `s ≤ t`, `W ≤ cW*p` and `1 ≤ T`; no resource or
+execution supplier is added. The `134` constant symbols are paid from T once.
+The public complete initialized-axis theorem now states this compact workspace
+bound on its same execution, rather than exporting an expanded ledger with a
+producer-dependent coefficient. Its internal raw ledger still composes the
+already-proved traces. Renamed the local positive replica-count fact to avoid
+shadowing the fixed state-capacity proof during budget instantiation.
+The structural push module checks at 3315.5 MiB, complete workspace comparison
+at 3613.1 MiB, and root at 3969.6 MiB with default limits. The final build
+passes (17407 jobs, 4.0 GiB aggregate); the uniform push, complete comparison
+and root axiom audit uses only standard axioms (10030.5 MiB for the nonmodule
+audit). Next simplify/compare
+the complete time ledger against the actual selected S4 allowance, then close
+the ordinary fitting/seam input and concrete layout instantiations before
+class/shared exposure, outer schedules/fallback/root acceptance. Full S4
+remains open; collect space and time acceptance work in a larger local chunk.
+No push.
+
+**The complete initialized-axis time ledger is now collected on the actual trace.**
+`initializedAxisTime_steps_le` combines the chronological phase ledger, the
+natural-floor step bound, and existing `p ≤ W` and `1 ≤ T` facts. The public
+root time bound is now the sum of: one linear traffic term; one dyadic traffic
+term with coefficient `540*(generatedDyadicStageCoeff+300)`; one shared volume
+term with coefficient `8*b+2624482`; and one numerical batch term with
+coefficient `(2*B₀+Dseam)*(replicas+1)`. The precision exponent stays `129/128`.
+The linear traffic coefficient is `initializedAxisTimeTrafficFactor`; it
+includes all origin/header generation, boundary publication and retirement.
+The `474` fixed steps are paid once from T, and narrow traffic uses `p ≤ W`.
+No prepared resource or execution supplier is added.
+`initializedAxisTimeLedger` names the exact internal raw phase expression,
+while the comparison and floor algebra live in the small time module. The
+root applies the theorem using explicit cast, square/division and real-power
+nonnegativity facts. This avoids running whole-ledger normalization/positivity
+in its large execution context, which reached the default heartbeat limit.
+No proof limit was raised. The verified root body was preserved while applying
+the budget changes; lower numerical programs and executions are unchanged.
+The common time comparison checks at 3630.3 MiB; the root checks at 3936.1 MiB.
+The final integration build passes (17408 jobs, 4.0 GiB aggregate). The joint
+time/space/uniform-push/root audit reports only standard axioms (10030.9 MiB
+for the nonmodule audit).
+These are complete one-axis time/space comparisons in traffic/shared-volume/
+numerical form, not yet the final manuscript S4 allowance. Next compare these
+terms to that allowance and instantiate ordinary fitting/seam inputs and
+concrete layout; then complete class/shared exposure, outer schedules,
+fallback and root/compiler acceptance. Do not return to isolated scalar
+polynomial cleanup without a failed caller inequality. Full S4 remains open.
+Collect the uniform closed-program coefficient and both actual-axis budget
+comparisons in one larger local commit; no push.
+
 **First acceptance target: one complete fitting batch.** From declared original
 complex streams and ordinary scalar headers, execute component production,
 prepare numerical data, reuse it across the batch, publish certified complex
