@@ -33,6 +33,42 @@ theorem install_off (entries : List (Fin T × ℕ)) (R : Regs T A) (j : Fin T)
     simp only [List.map_cons,List.mem_cons,not_or] at hj
     rw [install,ih _ hj.2,Function.update_of_ne hj.1]
 
+/-- A decoded bank is addressed by entries, independently of its concrete ports. -/
+theorem install_get (entries : List (Fin T × ℕ)) (hn : (entries.map Prod.fst).Nodup)
+    (R : Regs T A) (e : Fin T × ℕ) (he : e ∈ entries) :
+    install entries R e.1 = List.replicate e.2 tick := by
+  induction entries generalizing R with
+  | nil => simp at he
+  | cons a entries ih =>
+    have hnd := List.nodup_cons.mp hn
+    rcases List.mem_cons.mp he with rfl | he
+    · rw [install,install_off entries _ e.1 hnd.1,Function.update_self]
+    · exact ih hnd.2 _ he
+
+/-- The resident scalar volume is the sum of decoded values, counted once. -/
+theorem install_volume (entries : List (Fin T × ℕ)) (hn : (entries.map Prod.fst).Nodup)
+    (R : Regs T A) :
+    ((entries.map Prod.fst).map (fun i => (install entries R i).length)).sum =
+      (entries.map Prod.snd).sum := by
+  rw [List.map_map]
+  congr 1
+  apply List.map_congr_left
+  intro e he
+  change (install entries R e.1).length = e.2
+  rw [install_get entries hn R e he,List.length_replicate]
+
+/-- Decode traffic has one width charge per scalar and one linear output charge. -/
+theorem cost_eq (V : ℕ) (entries : List (Fin T × ℕ)) :
+    cost V entries = (19*V+24)*entries.length+12*(entries.map Prod.snd).sum+1 := by
+  induction entries with
+  | nil => simp [cost]
+  | cons e entries ih =>
+    have hstep : cost V (e::entries) = readUnaryDimensionCost V e.2+cost V entries := by
+      simp [cost,Nat.add_assoc]
+    rw [hstep,ih]
+    simp only [readUnaryDimensionCost,List.length_cons,List.map_cons,List.sum_cons,Nat.mul_add,Nat.mul_one]
+    omega
+
 theorem install_update (entries : List (Fin T × ℕ)) (R : Regs T A) (j : Fin T)
     (hj : j ∉ entries.map Prod.fst) (xs : List (Fin (A+4))) :
     install entries (Function.update R j xs) = Function.update (install entries R) j xs := by

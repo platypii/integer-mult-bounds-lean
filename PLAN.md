@@ -5147,6 +5147,85 @@ verified blank-to-generated boundary initialization, contract factoring and
 caller migration in one coherent local commit; do not stage the separate
 periodic-recovery/workspace drafts and do not push.
 
+**Shared scalar preparation now has a reusable owned-bank lifecycle.**
+Inspection found the narrow-width arithmetic already implemented by
+`affineHeader` and the caller's `seamNarrowWidthProgram`; do not duplicate it.
+`withGeneratedHeaders_exec_within` factors arbitrary header-bank setup,
+consumer execution and retirement into one chronological `ExecWithin` trace.
+It requires initially blank owned destinations and the producer's exact frame;
+its cleanup charge is twice the generated bank volume plus two per header and
+one. The consumer retains its arbitrary output postcondition. Only the owned
+headers are retired, and the final output update is relative to the original
+input state. Setup and consumer space allowances compose once.
+The existing `withArchiveWidth_exec_within` now instantiates this theorem,
+removing its duplicate composition/retirement argument. Its program, statement,
+resource bills and full-axis endpoint are unchanged. The generic module checks
+at 1933.6 MiB; its archive-width instantiation builds (3979 jobs, 2.5 GiB
+aggregate) and the complete initialized axis rebuilds (17403 jobs, 3.8 GiB). Its individual
+check peaks at 3807.8 MiB. The generic scope, archive-width instantiation and
+complete-axis audit reports only standard axioms (10028.4 MiB for the
+nonmodule audit).
+This is used infrastructure for the common scalar bank, not a claim that its
+physical sources have been generated. Next place the complete ordinary scalar
+bank around the axis through this one scope, reusing existing affine and
+structural header-list producers, rather than migrating intermediate contracts
+one scalar at a time. Common scalar production, complete fitting allowance
+comparison and all outer/fallback/root S4 gates remain open. No push; retain
+this refactor for a larger scalar-initialization checkpoint.
+
+**Scalar-bank lookup, volume and decode cost are now structural.**
+`UnaryHeaderList.install_get` proves entry lookup for an arbitrary decoded bank
+with distinct destinations; `install_volume` sums its resident unary values
+without expanding a concrete port list. `cost_eq` gives the common formula
+`(19*V+24)*entryCount+12*valueSum+1`. The existing halo-axis resource comparison
+now instantiates that formula rather than unfolding every decoder cost.
+The actual `HaloMetadataAxis.run_exec` uses `install_volume` and the shared
+`retireHeaderFrame_pair_exec` for bank retirement. The metadata queue is
+allowed to advance: the cleanup frame is based at the post-decode queue, while
+the two consumer updates retain the final metadata tail and payload stream.
+This removes the separate per-port cleanup endpoint proof and preserves the
+same program, cost, reserve and exact execution statement. All new structural
+lemmas are consumed by this existing execution/resource path.
+The structural loader checks at 1949.9 MiB and the complete metadata-axis
+execution at 2001.1 MiB. The downstream routing resource build passes (4121
+jobs, 4.1 GiB aggregate). The resource module checks at 1996.6 MiB; the
+combined structural-bank/execution audit uses only standard axioms and peaks
+at 3915.4 MiB. This is shared preparation groundwork, not closure of
+the fitting caller's ordinary scalar production. Next connect its bank to the
+complete fitting input contract through the shared owned-bank lifecycle;
+complete fitting allowance and outer/fallback/root S4 gates remain open.
+No push; keep with the larger scalar-initialization chunk.
+
+**The fitting payload count is now generated once around the complete axis.**
+`ClassInputs` contains the ordinary callback dimensions and blank workspace;
+`ClassReady` extends it with the physically installed payload-count fact. The
+input-frame theorem protects only ordinary read ports, so the count destination
+can start blank. The prepared lower axis interfaces still consume `ClassReady`.
+`axisWidthSetup_exec_within` reuses `archiveWidthSetup` twice: first produce
+`replicas*(haloRows*wordWidth)`, retire its temporary halo packet, then reuse
+that packet destination to produce the core packet and archive retirement
+width. All three generated controls survive the entire axis, not each origin.
+`withAxisWidths_exec_within_traffic` instantiates the generic owned-bank scope;
+it restores all three controls and preserves the consumer's exact output.
+Its time including cleanup and setup peak are each at most `160*traffic`, by
+two applications of the existing `80*traffic` product-lifecycle comparison.
+The public initialized retired-axis theorem now accepts `ClassInputs` and a
+blank payload-count register. It constructs the prepared readiness from the
+actual setup state, transports all other interfaces through the same frame,
+and consumes the existing lower axis execution. Its endpoint remains one
+output update with final stock equality. Static setup/source separation now
+includes the generated payload-count port. The complete initialized-axis
+single-file check passes at 3817.5 MiB; the final build passes (17403 jobs,
+3.8 GiB aggregate). The joint scope checks at 1951.1 MiB. The setup, traffic
+scope and complete-axis audit reports only standard axioms (10029.0 MiB
+for the nonmodule audit); no proof limits changed.
+Removed the now-unused archive-only scope and budget modules (restore
+`d0ad7c6e`); the reusable owned-bank scope is consumed by the new joint scope.
+Remaining scalar inputs include ordinary retained precision/geometry and
+origin-query words; complete fitting allowance and outer/fallback/root S4
+acceptance remain open. Accumulate this with the shared scope and structural
+bank work as one larger local checkpoint. No push.
+
 **First acceptance target: one complete fitting batch.** From declared original
 complex streams and ordinary scalar headers, execute component production,
 prepare numerical data, reuse it across the batch, publish certified complex

@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Routing.HaloAxisMasterSetup
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellHeaderFrameRetirement
 public import IntegerMultBounds.MathlibTM2.Routing.HaloCountedMixedAxis
 
 /-! A complete mixed-order target-halo step reads all per-axis masters and
@@ -86,35 +87,40 @@ theorem run_exec (p : Parameters) (axis : ι → Axis) (retained : Finset ι)
     (by simp [F,HaloAxisMasterSetup.result,counts,List.append_assoc]) (by rw [keep 39 (by decide)]; exact hsrc)
   let out := RetainedTensorEnumeration.stream axis (insert i retained) (left++i::right) f (csyms A p.w)++tail
   let G : Stacks 117 A := {F with R := (Function.update (Function.update F.R 72 metadataTail) 39 out)}
-  obtain ⟨vf,hu₃,he₃⟩ := clearWords_exec (body := body) HaloAxisMasterSetup.owned (by decide) v₂ G
-  have hsize : (HaloAxisMasterSetup.owned.map fun j => (G.R j).length).sum = masterSize p := by
-    simp [G,F,HaloAxisMasterSetup.result,UnaryHeaderList.install,HaloAxisMasterSetup.entries,HaloAxisMasterSetup.owned,
-      masterSize,Nat.add_assoc]
-  rw [hsize] at he₃
-  have hlen : HaloAxisMasterSetup.owned.length = 7 := by rfl
-  rw [hlen] at he₃
-  have hfinal : {G with R := fun j => if j ∈ HaloAxisMasterSetup.owned then [] else G.R j} =
-      {S with R := (Function.update (Function.update S.R 72 metadataTail) 39 out)} := by
-    refine Stacks.ext rfl rfl rfl ?_
-    funext j
-    by_cases hc : j ∈ HaloAxisMasterSetup.owned
-    · have hj39 : j ≠ 39 := by intro he; subst j; simp [HaloAxisMasterSetup.owned] at hc
-      have hj72 : j ≠ 72 := by intro he; subst j; simp [HaloAxisMasterSetup.owned] at hc
-      simp only [hc,ite_true,Function.update_of_ne hj39,Function.update_of_ne hj72]
-      exact (hb j (by simp only [blank,List.mem_append]; tauto)).symm
-    · by_cases hj39 : j = 39
-      · subst j; simp [G,hc]
-      by_cases hj72 : j = 72
-      · subst j; simp [G,hc]
-      · simp [G,hc,hj39,hj72,keep j (by simp [hj72,hc])]
+  let B : Stacks 117 A := {S with R := Function.update S.R 72 counts}
+  have hframe (j : Fin 117) (hj : j ∉ HaloAxisMasterSetup.owned) : F.R j = B.R j := by
+    by_cases h72 : j = 72
+    · subst j; simp [F,B,HaloAxisMasterSetup.result]
+    · rw [keep j (by simp [h72,hj])]
+      exact (Function.update_of_ne h72 _ _).symm
+  obtain ⟨vf,hu₃,ht₃⟩ := Mult.PhaseCellToeplitz.retireHeaderFrame_pair_exec body HaloAxisMasterSetup.owned
+    (by decide) B F rfl rfl rfl hframe
+    (by intro j hj; dsimp only [B]; rw [Function.update_of_ne (show j ≠ 72 from by
+          have ho : ∀ j ∈ HaloAxisMasterSetup.owned, j ≠ (72 : Fin 117) := by decide +kernel
+          exact ho j hj)]
+        exact hb j (List.mem_append_left _ (List.mem_append_left _ (List.mem_append_left _ hj))))
+    72 39 (by decide) (by decide) metadataTail out v₂ 0
+  have hsize : (HaloAxisMasterSetup.owned.map fun j => (F.R j).length).sum = masterSize p := by
+    have h72 : ∀ j ∈ HaloAxisMasterSetup.owned, j ≠ (72 : Fin 117) := by decide +kernel
+    have hmap : HaloAxisMasterSetup.owned.map (fun j => (F.R j).length) =
+        HaloAxisMasterSetup.owned.map (fun j => (UnaryHeaderList.install (HaloAxisMasterSetup.entries p) S.R j).length) := by
+      apply List.map_congr_left
+      intro j hj
+      simp only [F,HaloAxisMasterSetup.result,Function.update_of_ne (h72 j hj)]
+    rw [hmap]
+    change (((HaloAxisMasterSetup.entries p).map Prod.fst).map _).sum = _
+    rw [UnaryHeaderList.install_volume _ (by change HaloAxisMasterSetup.owned.Nodup; decide +kernel)]
+    simp [HaloAxisMasterSetup.entries,masterSize,Nat.add_assoc]
+  have he₃ : Exec body (clearWords HaloAxisMasterSetup.owned) (mk v₂ G)
+      (2*masterSize p+2*7+1)
+      (mk vf {S with R := (Function.update (Function.update S.R 72 metadataTail) 39 out)}) := by
+    simpa only [hsize,show HaloAxisMasterSetup.owned.length = 7 from rfl,B,Function.update_idem] using ht₃.toExec
   refine ⟨vf,n₁+(n₂+(2*masterSize p+2*7+1)),hu₃.trans (hu₂.trans hu₁),?_,
-    (Exec.seq he₁ (Exec.seq he₂ he₃)).cast rfl (congrArg (mk vf) hfinal),?_⟩
+    Exec.seq he₁ (Exec.seq he₂ he₃),?_⟩
   · dsimp only [cost]; omega
   · intro depth
     have hs₃ := mn_native_exec_within he₃ 0 (clearWords_native _) depth (mnSize (mk v₂ G)+depth+0) (by simp)
     have hs := mn_seq_within_add (hs₁ depth) (mn_seq_within_add (hs₂ depth) hs₃)
-    refine (hs.mono ?_).cast rfl (congrArg (mk vf) hfinal)
-    intro d z hh
-    dsimp only [reserve]; omega
+    exact hs.mono (by intro d z hh; dsimp only [reserve]; omega)
 
 end IntegerMultBounds.MathlibTM2.Routing.HaloMetadataAxis

@@ -174,8 +174,9 @@ theorem master_size_le : HaloMetadataAxis.masterSize p ≤ 11*(Q*p.w) := by
 theorem master_cost_le : HaloAxisMasterSetup.cost p ≤ 132*(Q*p.w)+133*p.V+169 := by
   have hh := master_size_le p T Q h
   have he : HaloAxisMasterSetup.cost p = 12*HaloMetadataAxis.masterSize p+133*p.V+169 := by
-    simp only [HaloAxisMasterSetup.cost,UnaryHeaderList.cost,HaloAxisMasterSetup.entries,List.map_cons,List.map_nil,
-      List.sum_cons,List.sum_nil,readUnaryDimensionCost,HaloMetadataAxis.masterSize]
+    rw [HaloAxisMasterSetup.cost,UnaryHeaderList.cost_eq]
+    simp only [HaloAxisMasterSetup.entries,List.length_cons,List.length_nil,List.map_cons,List.map_nil,
+      List.sum_cons,List.sum_nil,HaloMetadataAxis.masterSize]
     ring
   rw [he]; omega
 
