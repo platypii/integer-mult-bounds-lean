@@ -10,7 +10,7 @@ open Matrix GoodForm IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2.Stac
 variable {T A d W b w : ℕ} {P U α : Type} [NeZero (b^(w+1))]
 local notation "M" => b^(w+1)
 
-def coordinateSwap (ordered : Fin d → Fin d → Pr P T 217 A U) (i j : Fin d) : Pr P T 217 A U :=
+def coordinateSwap {Q : ℕ} (ordered : Fin d → Fin d → Pr P T Q A U) (i j : Fin d) : Pr P T Q A U :=
   if i < j then ordered i j else if j < i then ordered j i else .act .done
 
 theorem reverseColumn_ready [Fintype P] (k : Fin d) (rows : Fin d → Fin d)
