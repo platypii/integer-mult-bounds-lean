@@ -20,6 +20,15 @@ theorem swapHostFits : 59 ≤ N+35 := rowSwapFits.trans (Nat.le_add_right ..)
 noncomputable def completeSwap (d i j : ℕ) : Pr P (N+35) Q prime U :=
   .seq (swapSetup swapHostFits d i j) placedRowSwap
 
+noncomputable def completeSwapTime [Fintype P] (body : P → Pr P (N+35) Q prime U) (d i j w W H J : ℕ) : ℕ :=
+  let view := payloadView prime d (w+1) W
+  let cost := 3808274 * volume prime view + LeafCore.coreCost (volume prime view) (w+1)
+  let limit := dimensionTime H 1 d + (4*(d*H+1)+6) + (10*J+12) + (21*(w+1)+12) + 2 + (cost*(N+5)+6)
+  let work := swapWorkspace (N+35)
+  let push := max (mnPushC body) (mnProgPush (.seq (swapSetup swapHostFits d i j)
+      (embProg swapSimulationPort Empty.elim (foreign rowSwapBlock.program)) : Pr P (N+35) Q prime U))
+  limit + (4*work.length+1 + work.length*(6*(push*limit)))
+
 theorem completeSwap_exec [Fintype P] {d w W : ℕ} (i j : Fin d) (lt : i < j) (H J : ℕ)
     (hm : prime^(w+1) < 2^H) (hw : W < 2^J) (hW : 0 < W)
     (body : P → Pr P (N+35) Q prime U) (v : HS (N+35) Q prime U) (S : Stacks (N+35) prime) :
@@ -27,25 +36,25 @@ theorem completeSwap_exec [Fintype P] {d w W : ℕ} (i j : Fin d) (lt : i < j) (
     let r := swapSetupPorts.trans (Fin.castLEEmb swapHostFits)
     let slot := fun k : Fin 35 => (Fin.castAdd 24 k).castLE swapHostFits
     let roles : Tapes 35 prime := ⟨fun _ => 0,fun k => readAt blank (S.L (slot k)) (S.R (slot k))⟩
-    let cost := 3808274 * volume prime view + LeafCore.coreCost (volume prime view) (w+1)
-    let limit := dimensionTime H 1 d + (4*(d*H+1)+6) + (10*J+12) + (21*(w+1)+12) + 2 + (cost*(N+5)+6)
-    let work := swapWorkspace (N+35)
-    let push := max (mnPushC body) (mnProgPush (.seq (swapSetup swapHostFits d i j)
-      (embProg swapSimulationPort Empty.elim (foreign rowSwapBlock.program)) : Pr P (N+35) Q prime U))
     ∀ x : Fin (volume prime view) → ZMod 2, roles.tape 24 = sourceWord (v := view) x →
     S.R (r 0) = binSyms H (prime^(w+1)) → S.R (r 1) = binSyms 1 1 →
     S.R (r 10) = binSyms J W → (S.R (r 12)).length = w →
     (∀ k : Fin 14, 3 ≤ k → k < 9 → S.R (r k) = []) →
     (∀ k : Fin (N+35), 35 ≤ k.val → S.L k = [] ∧ S.R k = []) →
     ∃ (y : Fin (volume prime view) → ZMod 2), ∃ z F n, z.user = v.user ∧
-      n ≤ limit + (4*work.length+1 + work.length*(6*(push*limit))) ∧
+      n ≤ completeSwapTime body d i j w W H J ∧
       Exec body (completeSwap d i j) (mk v S) n (mk z F) ∧
       (∀ k : Fin (N+35), 35 ≤ k.val → F.L k = [] ∧ F.R k = []) ∧
       (∀ k : Fin 35, k ≠ 24 → F.L (slot k) = S.L (slot k) ∧ F.R (slot k) = S.R (slot k)) ∧
       (∀ pos, readAt blank (F.L (slot 24)) (F.R (slot 24)) pos = sourceWord (v := view) y pos) ∧
       ∀ (coords : Fin d → ZMod (prime^(w+1))) (k : Fin W),
         ext y (FlatCoordinateLayout.index (coords ∘ Equiv.swap i j) k).val = ext x (FlatCoordinateLayout.index coords k).val := by
-  intro view r slot roles cost limit work push x src base one width clock scratch empty
+  intro view r slot roles x src base one width clock scratch empty
+  let cost := 3808274 * volume prime view + LeafCore.coreCost (volume prime view) (w+1)
+  let limit := dimensionTime H 1 d + (4*(d*H+1)+6) + (10*J+12) + (21*(w+1)+12) + 2 + (cost*(N+5)+6)
+  let work := swapWorkspace (N+35)
+  let push := max (mnPushC body) (mnProgPush (.seq (swapSetup swapHostFits d i j)
+      (embProg swapSimulationPort Empty.elim (foreign rowSwapBlock.program)) : Pr P (N+35) Q prime U))
   obtain ⟨u,D,l,hu,hl,setup,saved,rep⟩ := swapSetup_exec swapHostFits body roles d i j w W H J hm hw v S
     base one width clock scratch (by intro k pos; simp [roles,slot])
     (fun k => empty _ (by change 35 ≤ 35+k.val; omega)) (fun k hk => empty k (by omega))
@@ -61,7 +70,8 @@ theorem completeSwap_exec [Fintype P] {d w W : ℕ} (i j : Fin d) (lt : i < j) (
     simp [e]
   simp only [init,List.map_const',List.sum_replicate_nat] at cleanup
   refine ⟨y,z,F,_,hz.trans hu,?_,Exec.seq setup finish,clean,?_,tape,effect⟩
-  · rw [← Nat.add_assoc]
+  · change _ ≤ limit + (4*work.length+1 + work.length*(6*(push*limit)))
+    rw [← Nat.add_assoc]
     apply Nat.add_le_add time
     apply cleanup.trans
     rw [Nat.mul_comm work.length 4]
