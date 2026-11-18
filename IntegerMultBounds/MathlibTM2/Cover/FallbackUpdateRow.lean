@@ -70,9 +70,36 @@ theorem updateRow_exec {M d : ℕ} [NeZero M] (body : P → Pr P T Q A U) (r : F
   have := matrixOffset_le H row j
   omega
 
+/-- Gather selected fixed-width entries into one contiguous word stream. -/
+def gatherMatrix {d n : ℕ} (row col : Fin n → Fin d) (r : Fin 7 ↪ Fin T) : Pr P T Q A U :=
+  emitBlocks (fun j : Fin n => readMatrixWord ((row j).val*d+(col j).val) r) (List.ofFn (id : Fin n → Fin n))
+
+theorem gatherMatrix_exec {M d n : ℕ} [NeZero M] (body : P → Pr P T Q A U) (r : Fin 7 ↪ Fin T)
+    (m : Matrix (Fin d) (Fin d) (ZMod M)) (row col : Fin n → Fin d) (H : ℕ)
+    (v : HS T Q A U) (S : Stacks T A) (tail : List (Fin (A+4)))
+    (matrix : S.R (r 2) = matrixWords A H m ++ tail) (width : (S.R (r 1)).length = H)
+    (free : ∀ i : Fin 7, i = 0 ∨ 4 ≤ i → S.R (r i) = []) :
+    let words := List.ofFn fun j => binSyms (A := A) H (m (row j) (col j)).val
+    ∃ z t, z.user = v.user ∧ t ≤ n*(8*(d*d*H)+14*H+22)+1 ∧ Exec body (gatherMatrix row col r) (mk v S) t
+      (mk z {S with R := Function.update S.R (r 3) (words.flatten ++ S.R (r 3))}) := by
+  let word := fun j => binSyms (A := A) H (m (row j) (col j)).val
+  let emit := fun j : Fin n => readMatrixWord (P := P) (Q := Q) (A := A) (U := U) ((row j).val*d+(col j).val) r
+  have step (j : Fin n) (u : HS T Q A U) (suffix : List (Fin (A+4))) : ∃ z n,
+      z.user = u.user ∧ n ≤ 8*(d*d*H)+14*H+22 ∧ Exec body (emit j)
+        (mk u {S with R := Function.update S.R (r 3) suffix}) n
+        (mk z {S with R := Function.update S.R (r 3) (word j ++ suffix)}) := by
+    let D : Stacks T A := {S with R := Function.update S.R (r 3) suffix}
+    have keep (i : Fin 7) (h : i ≠ 3) : D.R (r i) = S.R (r i) := Function.update_of_ne (r.injective.ne h) _ _
+    obtain ⟨z,hz,run⟩ := readMatrixWord_exec body r m (row j) (col j) H u D tail
+      ((keep 2 (by decide)).trans matrix) (by rw [keep 1 (by decide),width])
+      (fun i h => (keep i (by omega)).trans (free i h))
+    exact ⟨z,8*(((row j).val*d+(col j).val)*H)+14*H+22,hz,by have := matrixOffset_le H (row j) (col j); omega,by simpa [D,emit,word,Function.update_idem] using run⟩
+  simpa [gatherMatrix,emit,word,List.flatMap_def,List.map_ofFn] using
+    emitBlocks_exec body (r 3) emit word _ v S step (List.ofFn (id : Fin n → Fin n))
+
 /-- The pivot row is copied unchanged from its original position. -/
 def copyMatrixRow {d : ℕ} (row : Fin d) (r : Fin 7 ↪ Fin T) : Pr P T Q A U :=
-  emitBlocks (fun j : Fin d => readMatrixWord (row.val*d+j.val) r) (List.ofFn (id : Fin d → Fin d))
+  gatherMatrix (fun _ : Fin d => row) id r
 
 theorem copyMatrixRow_exec {M d : ℕ} [NeZero M] (body : P → Pr P T Q A U) (r : Fin 7 ↪ Fin T)
     (m : Matrix (Fin d) (Fin d) (ZMod M)) (row : Fin d) (H : ℕ)
@@ -82,19 +109,6 @@ theorem copyMatrixRow_exec {M d : ℕ} [NeZero M] (body : P → Pr P T Q A U) (r
     let words := List.ofFn fun j => binSyms (A := A) H (m row j).val
     ∃ z n, z.user = v.user ∧ n ≤ d*(8*(d*d*H)+14*H+22)+1 ∧ Exec body (copyMatrixRow row r) (mk v S) n
       (mk z {S with R := Function.update S.R (r 3) (words.flatten ++ S.R (r 3))}) := by
-  let word := fun j => binSyms (A := A) H (m row j).val
-  let emit := fun j : Fin d => readMatrixWord (P := P) (Q := Q) (A := A) (U := U) (row.val*d+j.val) r
-  have step (j : Fin d) (u : HS T Q A U) (suffix : List (Fin (A+4))) : ∃ z n,
-      z.user = u.user ∧ n ≤ 8*(d*d*H)+14*H+22 ∧ Exec body (emit j)
-        (mk u {S with R := Function.update S.R (r 3) suffix}) n
-        (mk z {S with R := Function.update S.R (r 3) (word j ++ suffix)}) := by
-    let D : Stacks T A := {S with R := Function.update S.R (r 3) suffix}
-    have keep (i : Fin 7) (h : i ≠ 3) : D.R (r i) = S.R (r i) := Function.update_of_ne (r.injective.ne h) _ _
-    obtain ⟨z,hz,run⟩ := readMatrixWord_exec body r m row j H u D tail
-      ((keep 2 (by decide)).trans matrix) (by rw [keep 1 (by decide),width])
-      (fun i h => (keep i (by omega)).trans (free i h))
-    exact ⟨z,8*((row.val*d+j.val)*H)+14*H+22,hz,by have := matrixOffset_le H row j; omega,by simpa [D,emit,word,Function.update_idem] using run⟩
-  simpa [copyMatrixRow,emit,word,List.flatMap_def,List.map_ofFn] using
-    emitBlocks_exec body (r 3) emit word _ v S step (List.ofFn (id : Fin d → Fin d))
+  exact gatherMatrix_exec body r m (fun _ : Fin d => row) id H v S tail matrix width free
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback

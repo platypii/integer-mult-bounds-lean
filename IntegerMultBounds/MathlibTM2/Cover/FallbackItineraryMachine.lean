@@ -12,7 +12,7 @@ def stageBank (r : Fin 23 ↪ Fin T) : ℕ → Fin 23 ↪ Fin T
   | 0 => r
   | n+1 => (Equiv.swap 15 16).toEmbedding.trans (stageBank r n)
 
-private theorem stageBank_fixed (r : Fin 23 ↪ Fin T) (n : ℕ) (i : Fin 23) (h : i ≠ 15) (h' : i ≠ 16) :
+theorem stageBank_fixed (r : Fin 23 ↪ Fin T) (n : ℕ) (i : Fin 23) (h : i ≠ 15) (h' : i ≠ 16) :
     stageBank r n i = r i := by
   induction n with
   | zero => rfl

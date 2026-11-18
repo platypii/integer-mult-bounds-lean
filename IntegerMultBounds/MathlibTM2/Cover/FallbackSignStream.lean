@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackSign
+public import IntegerMultBounds.MathlibTM2.Cover.ResiduePivots
 public import IntegerMultBounds.MathlibTM2.Cover.LabelTraversal
 
 /-! A physical stream of fallback signs, in label-record order. -/
@@ -15,12 +16,11 @@ variable {m n T Q A : ℕ} {P U : Type}
 
 /-- Choose one pivot itinerary per residue matrix. Singular padding has no pivot obligation. -/
 def classPivots (M : Matrix (Fin n) (Fin n) (ZMod prime)) : Fin n → Fin n :=
-  if h : IsUnit M.det then (Itinerary.exists_valid M h n le_rfl).choose else id
+  if M.det = 0 then id else (Itinerary.pivotStages M n).1
 
 theorem classPivots_valid (M : Matrix (Fin n) (Fin n) (ZMod prime)) (h : IsUnit M.det) :
     Itinerary.Valid (classPivots M) M n := by
-  rw [classPivots,dite_eq_left h]
-  exact (Itinerary.exists_valid M h n le_rfl).choose_spec
+  simpa [classPivots,h.ne_zero] using (Itinerary.pivotStages_spec M h n le_rfl).1
 
 def signStream (residualClass : Matrix (Fin m) (Fin m) (ZMod prime) →
     Matrix (Fin n) (Fin n) (ZMod prime)) (w N : ℕ) : List (Fin (A+4)) :=

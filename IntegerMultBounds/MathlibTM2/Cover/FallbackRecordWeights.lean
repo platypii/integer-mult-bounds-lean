@@ -1,0 +1,67 @@
+module
+
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackStreamedItinerary
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackPayloadWeights
+
+/-! Produce the payload pair weights from a physical fallback record. -/
+@[expose] public section
+namespace IntegerMultBounds.MathlibTM2.Cover.Fallback
+open IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2.Stack Host
+open IntegerMultBounds.Networks.Shared50ModularControl (prime)
+variable {T Q A n : ℕ} {P U : Type}
+local instance (w : ℕ) : NeZero (prime^w) := ⟨pow_ne_zero _ Networks.Shared50ModularControl.prime_prime.ne_zero⟩
+
+def weightReadPorts : Fin 7 ↪ Fin 23 := ⟨![0,2,15,14,3,4,5],by decide⟩
+
+noncomputable def recordWeights (n : ℕ) (r : Fin 23 ↪ Fin T) (src : Fin T) : Pr P T Q A U :=
+  .seq (streamedItinerary (n+1) prime r src (n+1))
+    (gatherMatrix (n := n) Fin.succ Fin.succ (weightReadPorts.trans (stageBank r (n+1))))
+
+theorem recordWeights_exec {m : ℕ} (body : P → Pr P T Q A U) (r : Fin 23 ↪ Fin T)
+    (src : Fin T) (apart : ∀ i, r i ≠ src) (w H : ℕ) (hm : prime^(w+1) < 2^H)
+    (table : Matrix (Fin m) (Fin m) (ZMod prime) → Matrix (Fin (n+1)) (Fin (n+1)) (ZMod prime))
+    (g : LabelPadding.Label m (w+1)) (G : Matrix (Fin (n+1)) (Fin (n+1)) (ZMod (prime^(w+1))))
+    (sign : G.det = 1 ∨ G.det = -1)
+    (lift : (LabelRing.res prime (w+1) (by omega)).mapMatrix G = table ((LabelRing.res prime (w+1) (by omega)).mapMatrix g))
+    (block N : ℕ) (index : block*(prime^(w+1))^(m*m)+(LabelAddress.address g).val < N)
+    (v : HS T Q A U) (S : Stacks T A) (tail rest : List (Fin (A+4)))
+    (matrix : S.R (r 15) = matrixWords A H G ++ tail) (modulus : S.R (r 2) = binSyms H (prime^(w+1)))
+    (one : S.R (r 20) = binSyms H (1 : ZMod (prime^(w+1))).val) (ticks : (S.R (r 22)).length = w)
+    (free : ∀ i : Fin 23, (i < 15 ∧ i ≠ 2) ∨ (17 ≤ i ∧ i ≤ 19) ∨ i = 21 → S.R (r i) = []) :
+    let j := block*(prime^(w+1))^(m*m)+(LabelAddress.address g).val
+    let code := fun t => scheduleCode (A := A) (classPivots (table (LabelStock.residue m (w+1) 1 t)))
+    let rows := classPivots (table (LabelStock.residue m (w+1) 1 j))
+    let undo := undoItinerary rows G (n+1)
+    S.R src = ((List.range N).drop j).flatMap code ++ rest →
+    ∃ z F l, ∃ weights : Fin n → (ZMod (prime^(w+1)))ˣ, ∃ negative,
+      z.user = v.user ∧ l ≤ (n+1)*(2*(n+1)+(4*w+4+columnTime (n+1) prime w H))+1 +
+        (n*(8*((n+1)*(n+1)*H)+14*H+22)+1) ∧
+      Exec body (recordWeights n r src) (mk v S) l (mk z F) ∧
+      F.R src = ((List.range N).drop (j+1)).flatMap code ++ rest ∧
+      F.R (r 14) = (List.ofFn fun i => binSyms H (weights i : ZMod (prime^(w+1))).val).flatten ∧
+      (signStream (A := A) table (w+1) N)[j]? = some (bitSymbol negative) ∧
+      ∀ b (x : Fin b → Fin (n+1) → ZMod (prime^(w+1))),
+        fallbackBank b (if negative then -1 else 1) weights undo (bankFields (List.finRange (n+1)) x) =
+          bankFields (List.finRange (n+1)) (fun k => G.mulVec (x k)) := by
+  intro j code rows undo source
+  obtain ⟨u,D,l,suffix,a,neg,hu,hl,run,remaining,packed,archive,frame,units,bit,prod,_,action⟩ :=
+    recordDiagonalize_exec body r src apart w H hm table g G sign lift block N index v S tail rest matrix modulus one ticks free source
+  let bank := stageBank r (n+1)
+  have keep (i : Fin 23) (h : i ≠ 15) (h' : i ≠ 16) : D.R (bank i) = S.R (r i) := by
+    have eq := stageBank_fixed r (n+1) i h h'
+    exact (frame _ (eq ▸ apart i) (bank.injective.ne h) (bank.injective.ne h')).trans (congrArg S.R eq)
+  have fresh : ∀ i : Fin 7, i = 0 ∨ 4 ≤ i → weightReadPorts i < 15 ∧ weightReadPorts i ≠ 2 := by decide
+  obtain ⟨z,t,weights,hz,ht,emit,effect⟩ := payloadWeights_exec body (weightReadPorts.trans bank) H a units neg prod undo G action
+    u D suffix packed (by change (D.R (bank 2)).length = H; simp [keep 2 (by decide) (by decide),modulus,length_binSyms])
+    (by intro i h; obtain ⟨lo,h2⟩ := fresh i h
+        exact (keep _ (by omega) (by omega)).trans (free _ (.inl ⟨lo,h2⟩)))
+  have slot : (weightReadPorts.trans bank) 3 = r 14 := stageBank_fixed r (n+1) 14 (by decide) (by decide)
+  have blank : D.R (r 14) = [] := by
+    simpa [bank,stageBank_fixed r (n+1) 14 (by decide) (by decide)] using
+      (keep 14 (by decide) (by decide)).trans (free 14 (by decide))
+  rw [slot,blank,List.append_nil] at emit
+  refine ⟨z,_,l+t,weights,neg,hz.trans hu,Nat.add_le_add hl ht,Exec.seq run emit,?_,?_,bit,effect⟩
+  · exact (Function.update_of_ne (apart 14).symm _ _).trans remaining
+  · exact Function.update_self ..
+
+end IntegerMultBounds.MathlibTM2.Cover.Fallback

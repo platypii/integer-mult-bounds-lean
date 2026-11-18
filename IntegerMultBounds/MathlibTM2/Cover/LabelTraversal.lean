@@ -146,6 +146,41 @@ theorem box_writes (H : ℕ) (rs : List (Pair T)) (out : Fin T) (hr : (slots rs 
   simpa only [List.map_map, Function.comp_def, ← List.map_eq_flatMap] using
     traverse_writes H rs out hr _ (fun _ _ _ _ => trivial) _ _ 1 run u S ⟨trivial, h⟩
 
+theorem recordWords_writes (m : ℕ) (f : (Fin (m*m) → ZMod prime) → List (Fin (A+4))) (rs : List (Pair T)) (hk : rs.length = m*m) (out count saved : Fin T)
+    (hr : (count :: saved :: (slots rs ++ [out])).Nodup) :
+    ∃ p : Pr P T Q A U, ∀ (v : RecursiveInterchangeLayout.Descriptor) (w B : ℕ),
+      0 < w → v.beforeH = B*prime^(m*(w*m)) →
+      Writes body (fun R => ready (prime^(w-1)) R rs ∧ R saved = [] ∧
+        (R count).length = v.beforeRows*v.rows*B) out p
+        (LabelSelectors.recordMap v m w f).flatten
+        ((v.beforeRows*v.rows*B)*(time (prime^(w-1)) (m*m) 1+5)+4) := by
+  let test := fun a : Fin rs.length → ZMod prime =>
+    f (fun i => a (Fin.cast hk.symm i))
+  refine ⟨repeatBlock count saved (traverse rs fun a => .act (pushWord out (test a) .done)), ?_⟩
+  intro v w B hw hv u S h
+  simp only [List.nodup_cons, List.mem_cons, List.mem_append, List.not_mem_nil, or_false, not_or] at hr
+  obtain ⟨⟨hcs, hc, hco⟩, ⟨hs, hso⟩, ht⟩ := hr
+  have leaf (a) : Writes body (fun _ => True) out (.act (pushWord out (test a) .done)) (test a) 1 := by
+    intro z F _
+    exact ⟨z,1,rfl,le_rfl,by simpa [pushWord_run,Action.run] using Exec.act (body := body) (pushWord out (test a) .done) (mk z F)⟩
+  have box := traverse_writes (body := body) (prime^(w-1)) rs out ht _ (fun _ _ _ _ => trivial) _ _ 1 leaf
+  have he := repeat_exec body (count := count) (saved := saved) (out := out) (by simp [hcs,hco,hso])
+    _ _ _ u S h.2.1 (fun u M hM => box u M ⟨trivial,by
+      intro r hmem
+      have same (k : Fin T) (hslot : k ∈ slots rs) : M.R k = S.R k :=
+        hM k (by rintro rfl; contradiction) (by rintro rfl; contradiction)
+          ((List.nodup_append.mp ht).2.2 k hslot out (by simp))
+      rw [same r.1 (List.mem_flatMap.mpr ⟨r,hmem,by simp⟩), same r.2 (List.mem_flatMap.mpr ⟨r,hmem,by simp⟩)]
+      exact h.1 r hmem⟩)
+  have matchBox : (LabelSelectors.classes (prime^(w-1)) rs.length).map test =
+      (LabelSelectors.classes (prime^(w-1)) (m*m)).map f := by
+    have cast_map {k n : ℕ} (e : k = n) (t : (Fin n → ZMod prime) → List (Fin (A+4))) (H : ℕ) :
+        (LabelSelectors.classes H k).map (fun a => t (fun i => a (Fin.cast e.symm i))) =
+          (LabelSelectors.classes H n).map t := by cases e; rfl
+    exact cast_map hk _ _
+  simpa only [h.2.2,List.flatMap_def,matchBox,hk,LabelSelectors.recordMap_eq v m w B hw hv f,
+    List.flatten_flatten,List.map_replicate] using he
+
 theorem recordMap_writes (m : ℕ) (f : (Fin (m*m) → ZMod prime) → Bool) (rs : List (Pair T)) (hk : rs.length = m*m) (out count saved : Fin T)
     (hr : (count :: saved :: (slots rs ++ [out])).Nodup) :
     ∃ p : Pr P T Q A U, ∀ (v : RecursiveInterchangeLayout.Descriptor) (w B : ℕ),
@@ -154,29 +189,8 @@ theorem recordMap_writes (m : ℕ) (f : (Fin (m*m) → ZMod prime) → Bool) (rs
         (R count).length = v.beforeRows*v.rows*B) out p
         ((LabelSelectors.recordMap v m w f).map bitSymbol)
         ((v.beforeRows*v.rows*B)*(time (prime^(w-1)) (m*m) 1+5)+4) := by
-  let test := fun a : Fin rs.length → ZMod prime =>
-    f (fun i => a (Fin.cast hk.symm i))
-  refine ⟨repeatBlock count saved (traverse rs fun a => emitBit out (test a)), ?_⟩
-  intro v w B hw hv u S h
-  simp only [List.nodup_cons, List.mem_cons, List.mem_append, List.not_mem_nil, or_false, not_or] at hr
-  obtain ⟨⟨hcs, hc, hco⟩, ⟨hs, hso⟩, ht⟩ := hr
-  have box := box_writes (body := body) (prime^(w-1)) rs out ht test
-  have he := repeat_exec body (count := count) (saved := saved) (out := out) (by simp [hcs,hco,hso])
-    _ _ _ u S h.2.1 (fun u M hM => box u M (by
-      intro r hmem
-      have same (k : Fin T) (hslot : k ∈ slots rs) : M.R k = S.R k :=
-        hM k (by rintro rfl; contradiction) (by rintro rfl; contradiction)
-          ((List.nodup_append.mp ht).2.2 k hslot out (by simp))
-      rw [same r.1 (List.mem_flatMap.mpr ⟨r,hmem,by simp⟩), same r.2 (List.mem_flatMap.mpr ⟨r,hmem,by simp⟩)]
-      exact h.1 r hmem))
-  have matchBox : (LabelSelectors.classes (prime^(w-1)) rs.length).map test =
-      (LabelSelectors.classes (prime^(w-1)) (m*m)).map f := by
-    have cast_map {k n : ℕ} (e : k = n) (t : (Fin n → ZMod prime) → Bool) (H : ℕ) :
-        (LabelSelectors.classes H k).map (fun a => t (fun i => a (Fin.cast e.symm i))) =
-          (LabelSelectors.classes H n).map t := by cases e; rfl
-    exact cast_map hk _ _
-  simpa only [h.2.2, matchBox, hk, LabelSelectors.recordMap_eq v m w B hw hv f,
-    List.map_flatten, List.map_replicate] using he
+  simpa [LabelSelectors.recordMap,List.map_map,Function.comp_def,← List.flatMap_def,← List.map_eq_flatMap] using
+    recordWords_writes (body := body) m (fun a => [bitSymbol (f a)]) rs hk out count saved hr
 
 /-- Emit a branch bit for each physical record by testing its residue matrix. -/
 theorem class_writes (m : ℕ) (branch : Matrix (Fin m) (Fin m) (ZMod prime) → Bool) (rs : List (Pair T)) (hk : rs.length = m*m) (out count saved : Fin T)

@@ -19,7 +19,7 @@ def pushWord (out : Fin T) : List (Fin (A+4)) → Act T Q A U → Act T Q A U
   | [], k => k
   | x :: xs, k => pushWord out xs (.push (.rt out) (fun _ => x) k)
 
-private theorem pushWord_run (out : Fin T) (word : List (Fin (A+4))) (k : Act T Q A U)
+theorem pushWord_run (out : Fin T) (word : List (Fin (A+4))) (k : Act T Q A U)
     (u : HS T Q A U) (S : Stacks T A) :
     (pushWord out word k).run (mk u S) =
       k.run (mk u {S with R := Function.update S.R out (word ++ S.R out)}) := by

@@ -32,22 +32,31 @@ private theorem swap_apply (i j : Fin n) (x : Fin n → R) :
   ext k
   simp [mulVec,dotProduct,swapMat,ite_mul]
 
+def addWord (k i : Fin n) (c : R) : List (RowOp n R) :=
+  if h : k < i then [.shear k i h c] else if h : i < k then
+    [.swap i k,.shear i k h c,.swap i k] else []
+
+theorem addWord_apply (k i : Fin n) (h : i ≠ k) (c : R) (x : Fin n → R) :
+    (addWord k i c).foldl (fun y op => op.apply y) x = Function.update x i (x i+c*x k) := by
+  rcases lt_or_gt_of_ne h with lo | lo
+  · ext j
+    by_cases a : j = i <;> by_cases b : j = k <;>
+      simp_all [addWord,RowOp.apply,Function.comp_def,Equiv.swap_apply_of_ne_of_ne,lo.not_gt]
+  · simp [addWord,lo,RowOp.apply]
+
+omit [CommRing R] in
+theorem addWord_children (k i : Fin n) (c : R) : ((addWord k i c).map RowOp.children).sum ≤ 6 := by
+  unfold addWord
+  split <;> first | simp [RowOp.children] | split <;> simp [RowOp.children]
+
 private theorem undo_add (i k : Fin n) (hik : i ≠ k) (c : R) :
     ∃ w : List (RowOp n R), (w.map RowOp.children).sum ≤ 6 ∧
       ∀ x, w.foldl (fun y op => op.apply y) ((1 + colMat k (Pi.single i c)) *ᵥ x) = x := by
-  have hki := hik.symm
-  rcases lt_or_gt_of_ne hik with h | h
-  · refine ⟨[.swap i k,.shear i k h (-c),.swap i k],by simp [RowOp.children],?_⟩
-    intro x
-    rw [add_apply]
-    ext j
-    by_cases hi : j = i <;> by_cases hk : j = k <;>
-      simp_all [RowOp.apply,Function.comp_def,Equiv.swap_apply_of_ne_of_ne,add_assoc]
-  · refine ⟨[.shear k i h (-c)],by simp [RowOp.children],?_⟩
-    intro x
-    rw [add_apply]
-    ext j
-    by_cases hi : j = i <;> simp_all [RowOp.apply,add_assoc]
+  refine ⟨addWord k i (-c),addWord_children ..,?_⟩
+  intro x
+  rw [addWord_apply k i hik,add_apply]
+  ext j
+  by_cases h : j = i <;> simp [h,hik.symm,add_assoc]
 
 /-- Starting from the diagonalized output, undo the most recent row operation first. -/
 theorem Elim.undo_word {a s : ℕ} {E : Matrix (Fin n) (Fin n) R} (h : Elim a s E) :

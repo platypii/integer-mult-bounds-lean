@@ -322,6 +322,26 @@ On a bad class some leading minor is not a unit, and reduction modulo `q` proves
 `R_w`. Upstream eliminates the full `2m × 2m` residual with unit pivots. Pivot choices depend only
 on the low class.
 
+[`Itinerary.pivotStages_spec`](ResiduePivots.lean) computes the schedule by scanning
+each residue column for its first nonzero eligible row. [`Fallback.classDiagonalize_exec`](FallbackClassMachine.lean)
+runs the same schedule on every packed lift of an invertible residue matrix. [`Fallback.pivotStream_writes`](FallbackPivotStream.lean) emits the pivot
+schedules in physical record order from the residue table. `Fallback.liveColumn_exec`
+reads one pivot from this stream and clears its column with at most `2*d` extra
+host steps. [`Fallback.recordDiagonalize_exec`](FallbackStreamedItinerary.lean) consumes a full
+physical pivot record, leaves the next record at the head, and returns a packed unit
+diagonal whose product agrees with the corresponding sign-stream bit. Its two matrix
+stacks retain every intermediate stage in alternating order.
+[`Fallback.undoItinerary_apply`](FallbackUndoItinerary.lean) gives the explicit reverse
+word from those stages. Acting on the diagonalized coordinates restores the original
+matrix action, with at most `d*(6*(d-1)+3)` children. [`Fallback.rewind_exec`](FallbackRewind.lean)
+visits the archived stages in reverse order using the live modulus width. Each callback
+receives the preceding matrix at the head of its source stack; the driver then discards
+the newer matrix. The last step restores both original matrix stacks. [Fallback.recordWeights_exec](FallbackRecordWeights.lean)
+copies the nonanchor diagonal entries to the weight stack. For every payload bank,
+the signed diagonal action using these weights followed by the reverse word acts
+by the original matrix on each vector. Executing the weighted pairs on tape and
+implementing the per-column payload callback remain open.
+
 - An upper addition is a lower addition between two exchanges; an exchange of two sub-fields of
   one bank is a reversed child between two reversals of the later field; a reversal is one
   reversed child on the two halves of a field.
