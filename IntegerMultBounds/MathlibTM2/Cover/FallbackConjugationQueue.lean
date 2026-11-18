@@ -2,8 +2,10 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackPhysicalConjugation
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackDirectoryScan
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackResidualWord
 
-/-! Generate the conjugated matrices for a physical directory in record order. -/
+/-! Generate weighted residual matrices in physical directory order.
+The conjugate-only queue can be restored from commit 2c23aa3c. -/
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Cover.Fallback.RingFormula
 open IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2.Stack Host LabelTraversal Node
@@ -12,7 +14,7 @@ variable {ι P U : Type} {T Q m D : ℕ}
 open IntegerMultBounds.Networks.Shared50ModularControl (prime prime_prime)
 local instance (w : ℕ) : NeZero (prime^w) := ⟨(pow_pos prime_prime.pos _).ne'⟩
 
-theorem physicalConjugationQueue_exec (body : P → Pr P T Q prime U)
+theorem physicalResidualQueue_exec (body : P → Pr P T Q prime U)
     (w records : ℕ)
     (mat : ℕ → ι → Matrix (Fin m) (Fin m) (ZMod (prime^(w+1)))) (b proj : ι) (label : ∀ j, mat j b = physicalLabel m (w+1) j)
     (r : Fin 16 ↪ Fin T) (clock count : Fin T) (copyPorts : [clock,count,r 2,r 3].Nodup)
@@ -32,10 +34,17 @@ theorem physicalConjugationQueue_exec (body : P → Pr P T Q prime U)
     (ancestor : ℕ → List (Fin (prime+4))) (tail padWord : List (Fin (prime+4)))
     (srcFree : ∀ a i j, j = 1 ∨ j = 13 → source a i ≠ q j)
     (scan : Fin 6 ↪ Fin T) (mask seed tmp : Fin T) (maskOff : ∀ k, mask ≠ scan k)
-    (queueIn : scan 2 = a 2) (queueOut : scan 4 = q 3) (padPorts : [seed,scan 4,scan 3,tmp].Nodup)
+    (queueIn : scan 2 = a 2) (separateOut : q 3 ≠ scan 4) (padPorts : [seed,scan 4,scan 3,tmp].Nodup)
+    {d : ℕ} (e : (Fin m ⊕ Fin m) ≃ Fin d) (weights : Fin m → Fin m → Fin 17 ↪ Fin T)
+    (inputPort : ∀ i j, weights i j 13 = q 3) (outputPort : ∀ i j, weights i j 16 = scan 4)
+    (α α' : Fin m → ZMod (prime^(w+1)))
     (workspace : Regs T prime → Prop)
     (stable : ∀ R M, workspace R → (∀ k, k ≠ mask → k ≠ scan 2 → k ≠ scan 5 → M k = R k) → workspace M)
     (padReady : ∀ R, workspace R → R seed = padWord ∧ R (scan 3) = [] ∧ R tmp = [])
+    (weightBank : ∀ R, workspace R → R (q 3) = [] ∧ ∀ i j, let s := weights i j
+      R (s 0) = binSyms H ((1 : Matrix (Fin m) (Fin m) (ZMod (prime^(w+1)))) i j).val ∧
+      R (s 2) = binSyms H (prime^(w+1)) ∧ R (s 14) = binSyms H (α i).val ∧ R (s 15) = binSyms H (α' j).val ∧
+      ∀ k : Fin 17, k = 1 ∨ 3 ≤ k ∧ k ≤ 12 → R (s k) = [])
     (ready : ∀ j < records, LabelStock.live m (w+1) 1 j = true → ∀ S, workspace S →
       (S prefixWidth).length = (ancestor j).length ∧ (S (a 1)).length = w+1 ∧
       (∀ i : Fin 7, i = 0 ∨ 3 ≤ i → S (a i) = []) ∧ (S (digits 4)).length = H ∧
@@ -60,12 +69,15 @@ theorem physicalConjugationQueue_exec (body : P → Pr P T Q prime U)
     let f := determinant (matrixInput b)
     f.depth ≤ D →
     let C := 48*H*H+152*H+66
-    let live : Pr P T Q prime U := (.seq (directoryMatrix m a digits prefixWidth zeros packed) (.seq (.seq (.seq (compile (readLeaf (leafBank source)) (registerBank pool) f 0 (r 14)) (reusablePivotInverse prime r clock count))
+    let conjugate : Pr P T Q prime U := (.seq (directoryMatrix m a digits prefixWidth zeros packed) (.seq (.seq (.seq (compile (readLeaf (leafBank source)) (registerBank pool) f 0 (r 14)) (reusablePivotInverse prime r clock count))
         (.seq (packedConjugate pool source q b proj) (.seq (bclear (r 0)) (bclear (r 14))))) (bclear packed)))
+    let live : Pr P T Q prime U := .seq conjugate (.seq (sequence (fun i => sequence
+      (fun j => blockEntry weights (e.symm i) (e.symm j)) (List.finRange d)) (List.finRange d)) (bclear (q 3)))
     let active := LabelStock.live m (w+1) 1
-    let word := fun j => if active j then matrixWords prime H (mat j b * mat j proj * (mat j b)⁻¹) else padWord
+    let word := fun j => if active j then matrixWords prime H (projectorResidual e (mat j proj) α α' (mat j b)) else padWord
     let price := fun j => if active j then ((m*(m*(12*(ancestor j).length+8*((w+1)*(m*m))+(w+1)*(7*H+prime+31)+10*H+42)+1)+1) + (time H (readTime H) f + (6*w+6+(14*H+16+(prime-2)*C+C+w*(12*H+15+prime*C))) +
-       ((m*(m*(cost+4*H+4)+1)+1) + (m*(m*(8*(m*m*H)+48*H*H+166*H+88)+1)+1) + (2*(m*m*H)+2)) + 4*H+4) + (2*(m*m*H)+2)) else 6*padWord.length+6
+       ((m*(m*(cost+4*H+4)+1)+1) + (m*(m*(8*(m*m*H)+48*H*H+166*H+88)+1)+1) + (2*(m*m*H)+2)) + 4*H+4) + (2*(m*m*H)+2)) +
+       (d*(d*(8*(m*m*H)+96*H*H+344*H+182)+1)+1)+(2*(m*m*H)+2) else 6*padWord.length+6
     let branch := fun p => Prog.seq p (.seq (moveR (scan 4) (scan 5) id) (advanceDirectory m scan))
     let words := (List.range records).flatMap word
     ∃ z F n, z.user = v.user ∧ F.R mask = [] ∧ F.R (scan 2) = tail ∧ F.R (scan 4) = words ∧
@@ -75,7 +87,7 @@ theorem physicalConjugationQueue_exec (body : P → Pr P T Q prime U)
         (4*(ancestor j).length+4+(m*m*(4*(w+1)+4)+1))+4).sum+2+(2*words.length+2) ∧
       Exec body (.seq (maskedScan mask (branch live) (branch (bcopy seed (scan 4) (scan 3) tmp)))
         (moveR (scan 5) (scan 4) id)) (mk v S) n (mk z F) := by
-  intro num cost fits f detFits C live active word price
+  intro num cost fits f detFits C conjugate live active word price
   apply directoryQueue_exec body scan mask maskOff m (w+1) records active live seed tmp padPorts padWord price
     ancestor word tail workspace stable padReady (fun j _ h => by simp [word,price,h])
     _ v S start widths width blank empty directory output bits
@@ -84,8 +96,11 @@ theorem physicalConjugationQueue_exec (body : P → Pr P T Q prime U)
   have run := physicalConjugation_writes body w j (mat j) b proj (label j) h r clock count copyPorts outside clockPivot
     H hm pool source apart q poolPivot srcPivot poolInv srcInv qPivot shared poolFree packed distinct a digits
     digitPort sep prefixWidth zeros ports external prefixAcc aOut bOut zeroPort (ancestor j) rest srcFree
-    fits detFits u B ⟨⟨by simpa [queueIn,LabelDirectory.entry,List.append_assoc] using headEq,
-      prefixLen,digitWidth,scratch,bitWidth,digitFree,zeroWord⟩,packedBlank,arith⟩
-  simpa only [word,price,h,ite_true,queueOut,live] using run
+    fits detFits
+  have finish := residualWord_writes body weights (q 3) (scan 4) separateOut inputPort outputPort e
+    (mat j proj) (mat j b) α α' H hm _ _ _ run u B
+    ⟨⟨⟨by simpa [queueIn,LabelDirectory.entry,List.append_assoc] using headEq,
+      prefixLen,digitWidth,scratch,bitWidth,digitFree,zeroWord⟩,packedBlank,arith⟩,weightBank B.R ws⟩
+  simpa only [word,price,h,ite_true,live,conjugate] using finish
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback.RingFormula
