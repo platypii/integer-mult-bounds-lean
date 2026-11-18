@@ -352,7 +352,11 @@ inverse of the selected diagonal entry and the later coordinate by that entry.
 [Fallback.diagonalRewind_exec](FallbackDiagonalRewind.lean) composes all pairs with the
 reverse traversal. Starting with the anchor already signed and the two archives populated,
 it realizes the original residual matrix on the payload and restores both matrix stacks.
-Connecting these input conditions to the record and anchor passes remains open.
+[Fallback.residualRecord_exec](FallbackResidualRecord.lean) includes forward elimination,
+reconstructs the units from the resulting matrix, and consumes one live label’s round-trip
+pivot schedule. It realizes the residual action given a payload signed according to the
+corresponding sign-stream bit. Connecting the anchor pass’s output tape to this signed
+input layout and executing the complete record loop remain open.
 
 - An upper addition is a lower addition between two exchanges; an exchange of two sub-fields of
   one bank is a reversed child between two reversals of the later field; a reversal is one
