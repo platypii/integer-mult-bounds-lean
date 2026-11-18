@@ -55,6 +55,7 @@ theorem pivotShear_exec (hk : k < t) (matrix : Matrix (Fin d) (Fin d) (ZMod M)) 
       readAt blank (S.L (bank 25)) (S.R (bank 25)) (z-q)) :
     ∃ z F n, z.user = v.user ∧ n ≤ pivotShearTime (W := W) k t b w H J ∧
       Exec body (pivotShear k t b bank) (mk v S) n (mk z F) ∧
+      F.R (bank 2) = S.R (bank 2) ∧
       PrefixCopyReady (bank 13) (bank 3) (bank 4) (bank 5) (t.val*H+1) (prefixSize (Q := M) t) F ∧
       ShearCounters (suffixSize (Q := M) (W := W) t) M (bank ∘ (Fin.castLEEmb (by decide : 29 ≤ 34)) ∘ shearTranslation) F ∧
       (∀ pos : ℤ, readAt blank (F.L (bank 24)) (F.R (bank 24)) (pos-(p+(M^d*W : ℕ))) =
@@ -83,7 +84,7 @@ theorem pivotShear_exec (hk : k < t) (matrix : Matrix (Fin d) (Fin d) (ZMod M)) 
     apply frame <;> apply bank.injective.ne
     · change ports i ≠ 30; intro eq; have e := congrArg Fin.val eq; change i.val = 30 at e; omega
     · intro eq; have e := congrArg Fin.val eq; change i.val = 33 at e; omega
-  obtain ⟨z,F,n,hz,hn,run,read⟩ := productShear_exec k t hk matrix pivot col row _
+  obtain ⟨z,F,n,hz,hn,run,modulus,read⟩ := productShear_exec k t hk matrix pivot col row _
     (Ring.mul_inverse_cancel _ unit) body (ports.trans bank) H J hm hw hW u D
     ((kept 2 (by decide)).trans base) ((kept 28 (by decide)).trans one)
     ((kept 27 (by decide)).trans width) ((kept 0 (by decide)).trans coeffBlank)
@@ -94,6 +95,6 @@ theorem pivotShear_exec (hk : k < t) (matrix : Matrix (Fin d) (Fin d) (ZMod M)) 
     (by rw [hL]; exact left) source dest p q a
     (by change ∀ j, _ = readAt blank _ (D.R (bank (ports 24))) _; rw [hL,kept 24 (by decide)]; exact src)
     (by change ∀ j, _ = readAt blank _ (D.R (bank (ports 25))) _; rw [hL,kept 25 (by decide)]; exact dst)
-  exact ⟨z,F,m+n,hz.trans hu,Nat.add_le_add hm' hn,Exec.seq invRun run,read⟩
+  exact ⟨z,F,m+n,hz.trans hu,Nat.add_le_add hm' hn,Exec.seq invRun run,modulus.trans (kept 2 (by decide)),read⟩
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback

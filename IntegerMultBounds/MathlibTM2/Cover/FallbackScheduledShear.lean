@@ -75,6 +75,7 @@ theorem scheduledShear_exec (hk : k < t) (c : ZMod M) (body : P → Pr P T 217 A
       n ≤ dimensionTime H 1 t.val + dimensionTime H 1 g + dimensionTime H J s +
         (6*N+17*L+4*V+10*H+31 + N*(L*(12*(K+H)+78)+22*K+180*H+173+48*H*H+(207*(M*B)+241)*25)+2) ∧
       Exec body (scheduledShear k t bank) (mk v S) n (mk z F) ∧
+      F.R (bank 2) = S.R (bank 2) ∧
       PrefixCopyReady (bank 13) (bank 3) (bank 4) (bank 5) (t.val*H+1) (prefixSize (Q := M) t) F ∧
       ShearCounters (suffixSize (Q := M) (W := W) t) M (bank ∘ shearTranslation) F ∧
       (∀ pos : ℤ, readAt blank (F.L (bank 24)) (F.R (bank 24)) (pos-(p+(M^d*W : ℕ))) =
@@ -130,7 +131,7 @@ theorem scheduledShear_exec (hk : k < t) (c : ZMod M) (body : P → Pr P T 217 A
         simpa [eqn] using clean (shearTranslation i) lo (by omega) a b (by omega) (by omega))
     (by change ∀ z, _ = readAt blank (S.L (bank 24)) (D.R (bank 24)) _; rw [keep 24 (by decide) (by decide) (by decide)]; exact src)
     (by change ∀ z, _ = readAt blank (S.L (bank 25)) (D.R (bank 25)) _; rw [keep 25 (by decide) (by decide) (by decide)]; exact dst)
-  exact ⟨z,F,m+n,hz.trans hu,Nat.add_le_add hcost hn,Exec.seq prep run,⟨by simpa [prefixSize] using powerFits M H t.val 1 1 hm (by decide),
+  exact ⟨z,F,m+n,hz.trans hu,Nat.add_le_add hcost hn,Exec.seq prep run,ready.modulus.trans base.symm,⟨by simpa [prefixSize] using powerFits M H t.val 1 1 hm (by decide),
     ready.counter,ready.marker,ready.empty 3 (by decide) (by decide) (by decide),
     ready.empty 4 (by decide) (by decide) (by decide),ready.empty 5 (by decide) (by decide) (by decide)⟩,result⟩
 

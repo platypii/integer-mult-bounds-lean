@@ -26,7 +26,7 @@ theorem finishShear_exec (body : P → Pr P T 217 A U) (r : Fin 29 ↪ Fin T) (t
       Exec body (finishShear r) (mk v S) n (mk u F) ∧
       (∀ z, readAt blank (F.L (r 24)) (F.R (r 24)) (z-p) = putWord source p (List.ofFn word) z) ∧
       (∀ z, readAt blank (F.L (r 25)) (F.R (r 25)) (z-q) = dest z) ∧
-      ∀ j, (∀ i, r i ≠ j) → F.R j = S.R j := by
+      ∀ j, (∀ i, r (returnPorts i) ≠ j) → F.R j = S.R j := by
   obtain ⟨bs,qs,hb,hq,cb,cq,clock,inner⟩ := counters
   obtain ⟨ps,y,cp,hp,hy,install,descriptor⟩ := installPrefixCount_exec body r v S ready
   let D : Stacks T A := {S with R := Function.update S.R (r 3) (ps.map bitSymbol)}
@@ -44,6 +44,6 @@ theorem finishShear_exec (body : P → Pr P T 217 A U) (r : Fin 29 ↪ Fin T) (t
         first | exact inner 0 z | exact inner 1 z | exact inner 2 z | exact inner 3 z | exact clock z))
   exact ⟨u,F,_,hu.trans hy,Nat.add_le_add_left hn _,Exec.seq install run,
     fun z => (rep 1 z).symm,fun z => (rep 0 z).symm,fun j hj =>
-      (frame j (fun i => hj (returnPorts i))).2.trans (Function.update_of_ne (hj 3).symm _ _)⟩
+      (frame j hj).2.trans (Function.update_of_ne (hj 7).symm _ _)⟩
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback

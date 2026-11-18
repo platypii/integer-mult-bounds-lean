@@ -38,6 +38,7 @@ theorem matrixShear_exec (hk : k < t) (matrix : Matrix (Fin d) (Fin d) (ZMod M))
     ∃ z F n, z.user = v.user ∧ n ≤ (8*((pivot.val*d+col.val)*H)+14*H+22 + (8*((row.val*d+col.val)*H)+14*H+22)) + pivotShearTime (W := W) k t b w H J ∧
       Exec body (matrixShear k t b pivot bank col row) (mk v S) n (mk z F) ∧
       F.R (bank 34) = S.R (bank 34) ∧
+      F.R (bank 2) = S.R (bank 2) ∧
       PrefixCopyReady (bank 13) (bank 3) (bank 4) (bank 5) (t.val*H+1) (prefixSize (Q := M) t) F ∧
       ShearCounters (suffixSize (Q := M) (W := W) t) M (bank ∘ (Fin.castLEEmb (by decide : 29 ≤ 35)) ∘ shearTranslation) F ∧
       (∀ pos : ℤ, readAt blank (F.L (bank 24)) (F.R (bank 24)) (pos-(p+(M^d*W : ℕ))) =
@@ -85,8 +86,8 @@ theorem matrixShear_exec (hk : k < t) (matrix : Matrix (Fin d) (Fin d) (ZMod M))
     change i.val = 34 at e
     omega
   rw [← eq] at result
-  obtain ⟨ready,other⟩ := result
+  obtain ⟨modulus,ready,other⟩ := result
   exact ⟨y,G,_,hy.trans (hz.trans hu),Nat.add_le_add_left hn _,Exec.seq read placed,
-    (frame _ outside).2.trans (keep 34 (by decide) (by decide)),⟨ready.fits,ready.count,ready.marker,ready.dest,ready.temp,ready.scratch⟩,other⟩
+    (frame _ outside).2.trans (keep 34 (by decide) (by decide)),modulus.trans (keep 2 (by decide) (by decide)),⟨ready.fits,ready.count,ready.marker,ready.dest,ready.temp,ready.scratch⟩,other⟩
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback

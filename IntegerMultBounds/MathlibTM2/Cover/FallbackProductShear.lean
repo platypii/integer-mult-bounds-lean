@@ -43,6 +43,7 @@ theorem productShear_exec (hk : k < t) (matrix : Matrix (Fin d) (Fin d) (ZMod M)
       n ≤ 48*H*H+150*H+64 + (dimensionTime H 1 t.val + dimensionTime H 1 g + dimensionTime H J s +
         (6*N+17*L+4*V+10*H+31 + N*(L*(12*(K+H)+78)+22*K+180*H+173+48*H*H+(207*(M*B)+241)*25)+2)) ∧
       Exec body (productShear k t bank) (mk v S) n (mk z F) ∧
+      F.R (bank 2) = S.R (bank 2) ∧
       PrefixCopyReady (bank 13) (bank 3) (bank 4) (bank 5) (t.val*H+1) (prefixSize (Q := M) t) F ∧
       ShearCounters (suffixSize (Q := M) (W := W) t) M (bank ∘ (Fin.castLEEmb (by decide : 29 ≤ 31)) ∘ shearTranslation) F ∧
       (∀ pos : ℤ, readAt blank (F.L (bank 24)) (F.R (bank 24)) (pos-(p+(M^d*W : ℕ))) =
@@ -73,7 +74,7 @@ theorem productShear_exec (hk : k < t) (matrix : Matrix (Fin d) (Fin d) (ZMod M)
   have keep (i : Fin 31) (h : i ≠ 0) : D.R (bank i) = S.R (bank i) :=
     Function.update_of_ne (bank.injective.ne h) _ _
   let ports : Fin 29 ↪ Fin 31 := Fin.castLEEmb (by decide)
-  obtain ⟨z,F,n,hz,hn,run,read⟩ := scheduledShear_exec k t hk c body (ports.trans bank)
+  obtain ⟨z,F,n,hz,hn,run,modulus,read⟩ := scheduledShear_exec k t hk c body (ports.trans bank)
     H J hm hw hW u D ((keep 2 (by decide)).trans base) ((keep 28 (by decide)).trans one)
     ((keep 27 (by decide)).trans width) (by change D.R (bank 0) = _; simp [D])
     (by
@@ -83,7 +84,7 @@ theorem productShear_exec (hk : k < t) (matrix : Matrix (Fin d) (Fin d) (ZMod M)
     left source dest p q a
     (by change ∀ j, _ = readAt blank _ (D.R (bank 24)) _; rw [keep 24 (by decide)]; exact src)
     (by change ∀ j, _ = readAt blank _ (D.R (bank 25)) _; rw [keep 25 (by decide)]; exact dst)
-  refine ⟨z,F,m+n,hz.trans hu,Nat.add_le_add (by nlinarith only [hm']) hn,Exec.seq mul run,?_⟩
+  refine ⟨z,F,m+n,hz.trans hu,Nat.add_le_add (by nlinarith only [hm']) hn,Exec.seq mul run,modulus.trans (keep 2 (by decide)),?_⟩
   rw [Itinerary.inverse_unique hinv]
   exact read
 
