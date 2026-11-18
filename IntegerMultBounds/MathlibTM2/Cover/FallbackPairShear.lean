@@ -14,7 +14,7 @@ def pairShearPorts (inverse : Bool) (negative : Bool := false) : Fin 29 ↪ Fin 
   (Fin.castLEEmb (by decide)).trans (Equiv.swap 0 (if negative then 29 else if inverse then 30 else 31)).toEmbedding
 
 def pairShear (b : ℕ) (i k t : Fin d) (inverse : Bool) (bank : Fin 35 ↪ Fin T) (negative : Bool := false) : Pr P T 217 A U :=
-  .seq (if negative then loadSignedPairWeights b i bank else loadPairWeights b i bank) (weightedShear k t ((pairShearPorts inverse negative).trans bank))
+  .seq (if negative then loadSignedPairWeights b i bank else loadPairWeights b i bank) (embProg ((pairShearPorts inverse negative).trans bank) Empty.elim (weightedShear k t (Function.Embedding.refl _)))
 
 theorem pairShear_exec (body : P → Pr P T 217 A U) (i k t : Fin d) (hk : k < t) (inverse : Bool)
     (bank : Fin 35 ↪ Fin T) (a : Fin d → ZMod M) (unit : IsUnit (a i)) (hb : b.Prime) (H J : ℕ)
@@ -28,6 +28,7 @@ theorem pairShear_exec (body : P → Pr P T 217 A U) (i k t : Fin d) (hk : k < t
       (6*w+6+(14*H+16+(b-2)*C+C+w*(12*H+15+b*C))) + (if negative then 8*H+8 else 0) + weightedShearTime k t M W H J ∧
       Exec body (pairShear b i k t inverse bank negative) (mk v S) n (mk z F) ∧
       F.R (bank 2) = S.R (bank 2) ∧ F.R (bank 27) = S.R (bank 27) ∧ F.R (bank 28) = S.R (bank 28) ∧
+      (∀ j : Fin 35, 32 ≤ j → F.R (bank j) = S.R (bank j)) ∧
       (∀ pos, readAt blank (F.L (bank 25)) (F.R (bank 25)) (pos-q) = RadixToBinary.binaryEncoding.encode (dest pos)) ∧
       ∃ out : Fin (M^d*W) → α, (∀ pos, readAt blank (F.L (bank 24)) (F.R (bank 24)) (pos-p) =
         RadixToBinary.binaryEncoding.encode (putWord source p (List.ofFn (sym ∘ out)) pos)) ∧
@@ -55,20 +56,33 @@ theorem pairShear_exec (body : P → Pr P T 217 A U) (i k t : Fin d) (hk : k < t
     cases negative <;> cases inverse <;> simp [D,loaded,ports,c,pairShearPorts,bank.injective.eq_iff]
   have free : ∀ j : Fin 29, 1 ≤ j → j ≤ 26 → j ≠ 2 → j ≠ 24 → j ≠ 25 → j.castLE (by decide : 29 ≤ 35) ∈ shearWork := by decide
   have left : ∀ j : Fin 12, j < 10 → shearTranslation j ≠ 0 ∧ (shearTranslation j).castLE (by decide : 29 ≤ 35) ∈ shearWork := by decide
-  obtain ⟨z,F,n,hz,hn,run,modulus,headers,clean,out,result,placed⟩ := weightedShear_exec k t hk sym c body ports H J hm hw hW u D
+  obtain ⟨z,F,n,hz,hn,run,post⟩ := weightedShear_exec k t hk sym c (P := Empty) Empty.elim (Function.Embedding.refl _) H J hm hw hW (embDn ports u) (embStk ports D)
     ((keep 2 (by decide)).trans ready.modulus) ((keep 28 (by decide)).trans ready.one)
     ((keep 27 (by decide)).trans ready.width) coef
     (fun j lo hi h2 h24 h25 => (keep j (by omega)).trans (ready.scratch _ (free j lo hi h2 h24 h25)).2)
-    (fun j hj => by simpa only [D,ports,Function.Embedding.trans_apply,fixed _ (left j hj).1] using (ready.scratch _ (left j hj).2).1)
+    (fun j hj => by simpa only [embStk_L,Function.Embedding.refl_apply,D,ports,Function.Embedding.trans_apply,fixed _ (left j hj).1] using (ready.scratch _ (left j hj).2).1)
     source dest p q word empty
-    (fun pos => by rw [keep 24 (by decide)]; simpa only [D,ports,Function.Embedding.trans_apply,fixed 24 (by decide),srcPort] using (ready.src pos).symm)
-    (fun pos => by rw [keep 25 (by decide)]; simpa only [D,ports,Function.Embedding.trans_apply,fixed 25 (by decide),dstPort] using (ready.dst pos).symm)
+    (fun pos => by change _ = readAt blank (D.L (ports 24)) (D.R (ports 24)) _; rw [keep 24 (by decide)]; simpa only [D,ports,Function.Embedding.trans_apply,fixed 24 (by decide),srcPort] using (ready.src pos).symm)
+    (fun pos => by change _ = readAt blank (D.L (ports 25)) (D.R (ports 25)) _; rw [keep 25 (by decide)]; simpa only [D,ports,Function.Embedding.trans_apply,fixed 25 (by decide),dstPort] using (ready.dst pos).symm)
+  obtain ⟨y,G,embedded,_,hy,eq,frame⟩ := exec_emb (body' := body) (ι := Empty.elim)
+    ports.injective (fun e => nomatch e) run u rfl D rfl
+  rw [← eq] at post
+  obtain ⟨modulus,headers,clean,out,result,placed⟩ := post
+  have archive (j : Fin 35) (hj : 32 ≤ j) : G.R (bank j) = S.R (bank j) := by
+    have off : ∀ i, pairShearPorts inverse negative i ≠ j := by
+      exact (by decide : ∀ x y (j : Fin 35), 32 ≤ j → ∀ i, pairShearPorts x y i ≠ j) _ _ j hj
+    have saved := (frame (bank j) (fun i => bank.injective.ne (off i))).2
+    have h29 : j ≠ 29 := by omega
+    have h30 : j ≠ 30 := by omega
+    have h31 : j ≠ 31 := by omega
+    cases negative <;> simpa [D,loaded,Function.update_of_ne (bank.injective.ne h29),
+      Function.update_of_ne (bank.injective.ne h30),Function.update_of_ne (bank.injective.ne h31)] using saved
   have portEq (j : Fin 29) (hj : j ≠ 0) : ports j = bank (j.castLE (by decide)) := congrArg bank (fixed j hj)
-  exact ⟨z,F,l+n,hz.trans hu,Nat.add_le_add hl hn,Exec.seq load run,
-    by simpa only [portEq 2 (by decide),show (2 : Fin 29).castLE (by decide : 29 ≤ 35) = 2 by decide] using modulus.trans (keep 2 (by decide)),
-    by simpa only [portEq 27 (by decide),show (27 : Fin 29).castLE (by decide : 29 ≤ 35) = 27 by decide] using (headers 27 (by decide)).trans (keep 27 (by decide)),
-    by simpa only [portEq 28 (by decide),show (28 : Fin 29).castLE (by decide : 29 ≤ 35) = 28 by decide] using (headers 28 (by decide)).trans (keep 28 (by decide)),
-    by simpa only [ports,Function.Embedding.trans_apply,fixed 25 (by decide),dstPort] using clean,out,
-    by simpa only [ports,Function.Embedding.trans_apply,fixed 24 (by decide),srcPort] using result,placed⟩
+  exact ⟨y,G,l+n,hy.trans (hz.trans hu),Nat.add_le_add hl hn,Exec.seq load embedded,
+    by simpa only [embStk_R,Function.Embedding.refl_apply,portEq 2 (by decide),show (2 : Fin 29).castLE (by decide : 29 ≤ 35) = 2 by decide] using modulus.trans (keep 2 (by decide)),
+    by simpa only [embStk_R,Function.Embedding.refl_apply,portEq 27 (by decide),show (27 : Fin 29).castLE (by decide : 29 ≤ 35) = 27 by decide] using (headers 27 (by decide)).trans (keep 27 (by decide)),
+    by simpa only [embStk_R,Function.Embedding.refl_apply,portEq 28 (by decide),show (28 : Fin 29).castLE (by decide : 29 ≤ 35) = 28 by decide] using (headers 28 (by decide)).trans (keep 28 (by decide)),archive,
+    by simpa only [embStk_L,embStk_R,Function.Embedding.refl_apply,ports,Function.Embedding.trans_apply,fixed 25 (by decide),dstPort] using clean,out,
+    by simpa only [embStk_L,embStk_R,Function.Embedding.refl_apply,ports,Function.Embedding.trans_apply,fixed 24 (by decide),srcPort] using result,placed⟩
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
