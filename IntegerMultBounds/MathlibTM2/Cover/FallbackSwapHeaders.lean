@@ -117,4 +117,43 @@ theorem markSwapHeaders_exec (fits : T+24 ≤ N) (body : P → Pr P N Q prime U)
     change (if k ∈ slots then _ else _) = [] ∧ _
     rw [ite_eq_right fresh]; exact privateTapes k hk
 
+/-- Complete the physical bank from its three runtime words. -/
+theorem finishSwapHeaders_exec (fits : T+24 ≤ N) (body : P → Pr P N Q prime U)
+    (roles : Tapes T prime) (d i j w W : ℕ) (v : HS N Q prime U) (S : Stacks N prime) :
+    let port := swapHeaderPort fits
+    let view := payloadView prime d (w+1) W
+    (∀ k pos, roles.tape k pos = readAt blank (S.L ((Fin.castAdd 24 k).castLE fits))
+      (S.R ((Fin.castAdd 24 k).castLE fits)) (pos-roles.head k)) →
+    (∀ k, S.L (port k) = []) →
+    S.R (port 5) = (FlatCoordinateSchedule.bits ((prime^(w+1))^d)).map bitSymbol →
+    S.R (port 8) = (FlatCoordinateSchedule.bits (w+1)).map bitSymbol →
+    S.R (port 14) = (FlatCoordinateSchedule.bits W).map bitSymbol →
+    (∀ k, k ≠ 5 → k ≠ 8 → k ≠ 14 → S.R (port k) = []) →
+    (∀ k : Fin N, T+24 ≤ k.val → S.L k = [] ∧ S.R k = []) →
+    ∃ F, Exec body (.seq (writeSwapConstants fits d i j) (markSwapHeaders fits)) (mk v S) 2 (mk v F) ∧
+      RepT (SharedBankStageInput.raw (LabelCall.bank roles view (LabelPrepare.input view d i j (w+1))) N) F.L F.R := by
+  intro port view role left prefixWord exponent width empty privateTapes
+  have disjoint : ∀ k ∈ fixedSlots, k ≠ 5 ∧ k ≠ 8 ∧ k ≠ 14 := by decide
+  obtain ⟨D,fill,hL,fixed,frame⟩ := writeSwapConstants_exec fits d i j (w+1) W body v S
+    (fun k hk => empty k (disjoint k hk).1 (disjoint k hk).2.1 (disjoint k hk).2.2)
+  have outside (k : Fin N) (h : k.val < T ∨ T+24 ≤ k.val) : D.R k = S.R k := by
+    apply frame
+    intro mem
+    obtain ⟨a,_,rfl⟩ := List.mem_map.mp mem
+    change T+a.val < T ∨ T+24 ≤ T+a.val at h
+    omega
+  obtain ⟨F,mark,rep⟩ := markSwapHeaders_exec fits body roles view d i j (w+1) v D
+    (by intro k pos; rw [hL,outside _ (Or.inl k.isLt)]; exact role k pos)
+    (by intro k
+        refine ⟨hL ▸ left k,?_⟩
+        by_cases hk : k ∈ fixedSlots
+        · exact fixed k hk
+        · rw [frame _ (by change port k ∉ fixedSlots.map port; simpa only [List.mem_map,port.injective.eq_iff,exists_eq_right] using hk)]
+          have power : prime^(d*(w+1)) = (prime^(w+1))^d := by rw [Nat.mul_comm,pow_mul]
+          fin_cases k <;> first | exact width | exact exponent |
+            (change S.R (port 5) = (FlatCoordinateSchedule.bits (prime^(d*(w+1)))).map bitSymbol; rw [power]; exact prefixWord) |
+            exact empty _ (by decide) (by decide) (by decide) | contradiction)
+    (by intro k hk; rw [hL,outside _ (Or.inr hk)]; exact privateTapes k hk)
+  exact ⟨F,Exec.seq fill mark,rep⟩
+
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
