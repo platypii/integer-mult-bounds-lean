@@ -64,4 +64,58 @@ theorem directoryScan_exec (body : P → Pr P T Q prime U) (r : Fin 6 ↪ Fin T)
     · simp [Function.update_of_ne (outside _)]
     · cases eq : active j <;> simpa [branch,eq] using run
 
+theorem directoryQueue_exec (body : P → Pr P T Q prime U) (r : Fin 6 ↪ Fin T) (mask : Fin T)
+    (outside : ∀ k, mask ≠ r k) (m w records : ℕ) (active : ℕ → Bool)
+    (live : Pr P T Q prime U) (seed tmp : Fin T)
+    (copyPorts : [seed,r 4,r 3,tmp].Nodup) (padWord : List (Fin (prime+4))) (cost : ℕ → ℕ)
+    (ancestor word : ℕ → List (Fin (prime+4))) (tail : List (Fin (prime+4)))
+    (workspace : Regs T prime → Prop)
+    (stable : ∀ R M, workspace R → (∀ k, k ≠ mask → k ≠ r 2 → k ≠ r 5 → M k = R k) → workspace M)
+    (padReady : ∀ R, workspace R → R seed = padWord ∧ R (r 3) = [] ∧ R tmp = [])
+    (padSpec : ∀ j < records, active j = false → word j = padWord ∧ 6*padWord.length+6 ≤ cost j)
+    (emit : ∀ j < records, active j = true → Writes body (fun R => workspace R ∧
+      ∃ rest, R (r 2) = LabelDirectory.entry ancestor m w j ++ rest) (r 4)
+      live (word j) (cost j))
+    (v : HS T Q prime U) (S : Stacks T prime) (start : workspace S.R)
+    (widths : ∀ j < records, (S.R (r 0)).length = (ancestor j).length)
+    (width : (S.R (r 1)).length = w) (blank : S.R (r 3) = []) (empty : S.R (r 4) = [])
+    (directory : S.R (r 2) = (List.range records).flatMap (LabelDirectory.entry ancestor m w) ++ tail)
+    (output : S.R (r 5) = []) (bits : S.R mask = (List.range records).map fun j => bitSymbol (active j)) :
+    let branch := fun p => Prog.seq p (.seq (moveR (r 4) (r 5) id) (advanceDirectory m r))
+    let words := (List.range records).flatMap word
+    ∃ z F n, z.user = v.user ∧ F.R mask = [] ∧ F.R (r 2) = tail ∧ F.R (r 4) = words ∧
+      F.R (r 5) = [] ∧ (∀ k, k ≠ mask → k ≠ r 2 → k ≠ r 4 → F.R k = S.R k) ∧
+      F.inp = S.inp ∧ F.out = S.out ∧ F.L = S.L ∧
+      n ≤ ((List.range records).map fun j => cost j+2*(word j).length+2+
+        (4*(ancestor j).length+4+(m*m*(4*w+4)+1))+4).sum+2+(2*words.length+2) ∧
+      Exec body (.seq (maskedScan mask (branch live) (branch (bcopy seed (r 4) (r 3) tmp)))
+        (moveR (r 5) (r 4) id)) (mk v S) n (mk z F) := by
+  intro branch words
+  have step j (hj : j < records) := emit j hj
+  obtain ⟨u,B,n,hu,maskEnd,dirEnd,rev,frame,inp,out,left,hn,scan⟩ :=
+    directoryScan_exec body r mask outside m w records active live (bcopy seed (r 4) (r 3) tmp) cost
+      ancestor word tail [] workspace stable (fun j hj => by
+        cases h : active j with
+        | true => exact step j hj h
+        | false =>
+          intro y D ready
+          obtain ⟨stored,fresh,spare⟩ := padReady D.R ready.1
+          obtain ⟨eq,bound⟩ := padSpec j hj h
+          obtain ⟨z,hz,copy⟩ := bcopy_exec body copyPorts y D fresh spare
+          rw [stored,← eq] at copy
+          exact ⟨z,_,hz,eq ▸ bound,copy⟩) v S start widths width blank empty directory output bits
+  have dst := (frame (r 4) (outside 4).symm (by simp) (by simp)).trans empty
+  have src : B.R (r 5) = words.reverse := by simpa [words] using rev
+  obtain ⟨z,hz,move⟩ := moveR_exec body (r 5) (r 4) (by simp) id u B
+  refine ⟨z,{B with R := movedR B.R (r 5) (r 4) id (B.R (r 5))},_,hz.trans hu,?_,?_,?_,?_,?_,inp,out,left,?_,Exec.seq scan move⟩
+  · simpa [movedR,Function.update_of_ne (outside _)] using maskEnd
+  · simpa [movedR] using dirEnd
+  · simp [movedR,src,dst]
+  · simp [movedR]
+  · intro k hm hd ho
+    by_cases h : k = r 5
+    · subst k; simp [movedR,output]
+    · simpa [movedR,Function.update_of_ne ho,Function.update_of_ne h] using frame k hm hd h
+  · rw [src,List.length_reverse]; exact Nat.add_le_add_right hn _
+
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
