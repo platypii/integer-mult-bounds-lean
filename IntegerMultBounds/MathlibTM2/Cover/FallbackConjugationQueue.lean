@@ -18,18 +18,15 @@ local instance (w : ℕ) : NeZero (prime^w) := ⟨(pow_pos prime_prime.pos _).ne
 theorem physicalResidualQueue_exec (body : P → Pr P T Q prime U)
     (w records : ℕ)
     (projector : Matrix (Fin m) (Fin m) (ZMod (prime^(w+1))))
-    (r : Fin 16 ↪ Fin T) (clock count : Fin T) (copyPorts : [clock,count,r 2,r 3].Nodup)
-    (outside : ∀ i, r i ≠ count) (clockPivot : clock ≠ r 14)
-    (H : ℕ) (hm : prime^(w+1) < 2^H)
-    (pool : Fin ((D+1)*13) ↪ Fin T) (bank : Fin 18 ↪ Fin T)
-    (apart : ∀ i j, bank (QueueLayout.formulaInputs i) ≠ pool j)
-    (poolPivot : ∀ k, pool k ≠ r 14) (srcPivot : ∀ i, bank (QueueLayout.formulaInputs i) ≠ r 14)
-    (poolInv : ∀ k, pool k ≠ r 0) (srcInv : ∀ i, bank (QueueLayout.formulaInputs i) ≠ r 0)
-    (poolFree : ∀ k j, j = 1 ∨ j = 13 → pool k ≠ r (QueueLayout.normalizationPorts j))
-    (archive : Fin T) (archiveOff : ∀ i, bank (QueueLayout.directoryWork i) ≠ archive)
-    (packedOff : ∀ i, r i ≠ bank 10)
+    (H : ℕ) (hm : prime^(w+1) < 2^H) (host : Fin (36+(D+1)*13) ↪ Fin T) :
+    let bank := QueueLayout.block (n := 18) 0 (by omega) host
+    let r := QueueLayout.block (n := 16) 18 (by omega) host
+    let counters := QueueLayout.block (n := 2) 34 (by omega) host
+    let clock := counters 0
+    let count := counters 1
+    let pool := QueueLayout.block (n := (D+1)*13) 36 (by omega) host
+    ∀ (archive : Fin T) (archiveOff : ∀ i, bank (QueueLayout.directoryWork i) ≠ archive)
     (ancestor : ℕ → List (Fin (prime+4))) (tail padWord : List (Fin (prime+4)))
-    (srcFree : ∀ i j, j = 1 ∨ j = 13 → bank (QueueLayout.formulaInputs i) ≠ r (QueueLayout.normalizationPorts j))
     (mask seed tmp : Fin T)
     (maskOff : ∀ k, mask ≠ QueueLayout.scanPorts (QueueLayout.directoryWork.trans bank) archive archiveOff k)
     (separateOut : r 13 ≠ archive) (padPorts : [seed,archive,bank 4,tmp].Nodup)
@@ -46,19 +43,18 @@ theorem physicalResidualQueue_exec (body : P → Pr P T Q prime U)
       (S (bank 12)).length = (ancestor j).length ∧ (S (bank 1)).length = w+1 ∧
       (∀ i : Fin 18, i ∈ [0,3,4,5,6,7,11,14,15] → S (bank i) = []) ∧ (S (bank 8)).length = H ∧
       S (bank 9) = binSyms H 0 ∧ S (bank 10) = [] ∧
-      (let R := Function.update S (bank 10) (matrixWords prime H (physicalLabel m (w+1) j))
-       (R clock).length = w ∧ R count = [] ∧ R (r 14) = [] ∧
-      R (r 15) = binSyms H (1 : ZMod (prime^(w+1))).val ∧ R (r 4) = binSyms H (prime^(w+1)) ∧
-      (∀ i : Fin 16, i ≠ 4 → i < 13 → R (r i) = []) ∧
-      (∀ k ≤ D, R (frame pool k 2) = binSyms H (prime^(w+1))) ∧
-      (∀ k ≤ D, ∀ i : Fin 13, i ≠ 2 → R (frame pool k i) = []) ∧
+       (S clock).length = w ∧ S count = [] ∧ S (r 14) = [] ∧
+      S (r 15) = binSyms H (1 : ZMod (prime^(w+1))).val ∧ S (r 4) = binSyms H (prime^(w+1)) ∧
+      (∀ i : Fin 16, i ≠ 4 → i < 13 → S (r i) = []) ∧
+      (∀ k ≤ D, S (frame pool k 2) = binSyms H (prime^(w+1))) ∧
+      (∀ k ≤ D, ∀ i : Fin 13, i ≠ 2 → S (frame pool k i) = []) ∧
       (∃ suffix, S (bank 16) = matrixWords prime H projector ++ suffix) ∧
-      S (bank 17) = binSyms H (1 : ZMod (prime^(w+1))).val))
+      S (bank 17) = binSyms H (1 : ZMod (prime^(w+1))).val)
     (v : HS T Q prime U) (S : Stacks T prime) (start : workspace S.R)
     (widths : ∀ j < records, (S.R (bank 12)).length = (ancestor j).length)
     (width : (S.R (bank 1)).length = w+1) (blank : S.R (bank 4) = []) (empty : S.R (archive) = [])
     (directory : S.R (bank 2) = (List.range records).flatMap (LabelDirectory.entry ancestor m (w+1)) ++ tail)
-    (output : S.R (bank 13) = []) (bits : S.R mask = (List.range records).map fun j => bitSymbol (LabelStock.live m (w+1) 1 j)) :
+    (output : S.R (bank 13) = []) (bits : S.R mask = (List.range records).map fun j => bitSymbol (LabelStock.live m (w+1) 1 j)),
     let inputs := QueueLayout.formulaInputs.trans bank
     let source := sourcePorts (m := m) inputs id
     let weights := fun i j => QueueLayout.residualPorts r (coeff i j) (coeffOff i j)
@@ -87,6 +83,15 @@ theorem physicalResidualQueue_exec (body : P → Pr P T Q prime U)
         (4*(ancestor j).length+4+(m*m*(4*(w+1)+4)+1))+4).sum+2+(2*words.length+2) ∧
       Exec body (.seq (maskedScan mask (branch live) (branch (bcopy seed (scan 4) (scan 3) tmp)))
         (moveR (scan 5) (scan 4) id)) (mk v S) n (mk z F) := by
+  intro bank r counters clock count pool archive archiveOff ancestor tail padWord mask seed tmp maskOff separateOut
+    padPorts d e coeff coeffOff outputPort α α' workspace stable padReady weightBank ready v S start
+    widths width blank empty directory output bits
+  have br (i j) : bank i ≠ r j := QueueLayout.block_ne _ _ host (by decide) i j
+  have bp (i j) : bank i ≠ pool j := QueueLayout.block_ne _ _ host (by decide) i j
+  have rp (i j) : r i ≠ pool j := QueueLayout.block_ne _ _ host (by decide) i j
+  have rc (i j) : r i ≠ counters j := QueueLayout.block_ne _ _ host (by decide) i j
+  have copyPorts : [clock,count,r 2,r 3].Nodup := by
+    simp [clock,count,counters.injective.eq_iff,(rc _ _).symm,r.injective.eq_iff]
   intro inputs source weights scan num cost fits f detFits C conjugate live active word price
   apply directoryQueue_exec body scan mask maskOff m (w+1) records active live seed tmp padPorts padWord price
     ancestor word tail workspace stable padReady (fun j _ h => by simp [word,price,h])
@@ -98,6 +103,10 @@ theorem physicalResidualQueue_exec (body : P → Pr P T Q prime U)
   let mat : Bool → Matrix (Fin m) (Fin m) (ZMod (prime^(w+1))) := fun k => if k then projector else physicalLabel m (w+1) j
   let R := Function.update B.R (bank 10) (matrixWords prime H (mat false))
   have keep (k : Fin 18) (hk : k ≠ 10) : R (bank k) = B.R (bank k) := Function.update_of_ne (bank.injective.ne hk) _ _
+  have keepRec (i) : R (r i) = B.R (r i) := Function.update_of_ne (br 10 i).symm _ _
+  have keepFrame (k i) : R (frame pool k i) = B.R (frame pool k i) := Function.update_of_ne (bp 10 _).symm _ _
+  have keepClock (i) : R (counters i) = B.R (counters i) :=
+    Function.update_of_ne (QueueLayout.block_ne _ _ host (by decide) (10 : Fin 18) i).symm _ _
   have matrices (k : Bool) : ∃ suffix, R (inputs (if id k then 7 else 2)) = matrixWords prime H (mat k) ++ suffix := by
     cases k
     · exact ⟨[],by simp [R,inputs,QueueLayout.formulaInputs]⟩
@@ -107,14 +116,14 @@ theorem physicalResidualQueue_exec (body : P → Pr P T Q prime U)
     ((keep 9 (by decide)).trans zeroWord) ((keep 17 (by decide)).trans inputOne) (fun i hi => by
       revert hi
       fin_cases i <;> simp <;> exact (keep _ (by decide)).trans (scratch _ (by decide)))
-  have run := physicalConjugation_writes body w j mat false true rfl h r clock count copyPorts outside clockPivot
-    H hm pool source (fun a i j => apart (sourceMap id a i) j) (QueueLayout.normalizationPorts.trans r) poolPivot (fun a i => srcPivot (sourceMap id a i)) poolInv (fun a i => srcInv (sourceMap id a i))
-    (fun j => r.injective.ne ((by decide : ∀ j, QueueLayout.normalizationPorts j ≠ 14) j)) rfl poolFree (bank 10) (packedOff 13).symm
+  have run := physicalConjugation_writes body w j mat false true rfl h r clock count copyPorts (fun i => rc i 1) (rc 14 0).symm
+    H hm pool source (fun a i j => bp _ j) (QueueLayout.normalizationPorts.trans r) (fun k => (rp 14 k).symm) (fun _ _ => br _ 14) (fun k => (rp 0 k).symm) (fun _ _ => br _ 0)
+    (fun j => r.injective.ne ((by decide : ∀ j, QueueLayout.normalizationPorts j ≠ 14) j)) rfl (fun k j _ => (rp _ k).symm) (bank 10) (br 10 13)
     (QueueLayout.readPorts.trans (QueueLayout.directoryWork.trans bank)) (QueueLayout.digitPorts.trans (QueueLayout.directoryWork.trans bank)) rfl
     (fun i j => (show ∀ i j, QueueLayout.readPorts i ≠ QueueLayout.digitPorts j ∨ i = 3 ∧ j = 0 by decide) i j |>.imp (fun h => (QueueLayout.directoryWork.trans bank).injective.ne h) id)
     (bank 12) (bank 9) (by change [bank 12,bank 0,bank 6].Nodup; simp) (by simp)
     (bank.injective.ne (by decide)) (fun i => bank.injective.ne (by revert i; decide))
-    (fun i => bank.injective.ne (by revert i; decide)) (fun i => bank.injective.ne (by revert i; decide)) (ancestor j) rest (fun a i => srcFree (sourceMap id a i))
+    (fun i => bank.injective.ne (by revert i; decide)) (fun i => bank.injective.ne (by revert i; decide)) (ancestor j) rest (fun a i j _ => br _ _)
     fits detFits
   have finish := residualWord_writes body weights (r 13) (scan 4) separateOut (fun _ _ => rfl) outputPort e
     projector (physicalLabel m (w+1) j) α α' H hm _ _ _ run u B
@@ -122,18 +131,22 @@ theorem physicalResidualQueue_exec (body : P → Pr P T Q prime U)
       prefixLen,digitWidth,fun i hi => scratch _ ((by decide : ∀ i : Fin 7, i = 0 ∨ 3 ≤ i →
         QueueLayout.directoryWork (QueueLayout.readPorts i) ∈ ([0,3,4,5,6,7,11,14,15] : List (Fin 18))) i hi),bitWidth,
       fun i hi => scratch _ ((by decide : ∀ i : Fin 6, i = 1 ∨ i = 2 ∨ i = 3 ∨ i = 5 →
-        QueueLayout.directoryWork (QueueLayout.digitPorts i) ∈ ([0,3,4,5,6,7,11,14,15] : List (Fin 18))) i hi),zeroWord⟩,packedBlank,ticks,countBlank,pivot,oneWord,modulus,free,moduli,frames,leaves,
-      modulus,free 12 (by decide) (by decide),fun k hk => free _ (scratchPort k hk).1 (scratchPort k hk).2⟩,(weightBank B.R ws).1,by
+        QueueLayout.directoryWork (QueueLayout.digitPorts i) ∈ ([0,3,4,5,6,7,11,14,15] : List (Fin 18))) i hi),zeroWord⟩,packedBlank,
+      (congrArg List.length (keepClock 0)).trans ticks,(keepClock 1).trans countBlank,(keepRec 14).trans pivot,
+      (keepRec 15).trans oneWord,(keepRec 4).trans modulus,fun i hi hl => (keepRec i).trans (free i hi hl),
+      fun k hk => (keepFrame k 2).trans (moduli k hk),fun k hk i hi => (keepFrame k i).trans (frames k hk i hi),
+      leaves,(keepRec 4).trans modulus,(keepRec 12).trans (free 12 (by decide) (by decide)),
+      fun k hk => (keepRec _).trans (free _ (scratchPort k hk).1 (scratchPort k hk).2)⟩,(weightBank B.R ws).1,by
         intro i j
         obtain ⟨identity,row,col⟩ := (weightBank B.R ws).2 i j
         refine ⟨identity,?_,row,col,?_⟩
         · change B.R (r 4) = _
-          simpa only [Function.update_of_ne (packedOff 4)] using modulus
+          exact modulus
         · intro k hk
           obtain ⟨l,hl,hlt,slot⟩ := QueueLayout.residualScratch k hk
           have port : weights i j k = r l := congrArg (Sum.elim r (coeff i j)) slot
           rw [port]
-          simpa only [Function.update_of_ne (packedOff l)] using free l hl hlt⟩
+          exact free l hl hlt⟩
   simpa only [word,price,h,ite_true,live,conjugate] using finish
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback.RingFormula

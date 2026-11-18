@@ -8,6 +8,20 @@ namespace IntegerMultBounds.MathlibTM2.Cover.Fallback.QueueLayout
 open IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2.Stack Host Node LabelTraversal
 variable {T : ℕ}
 
+/-- Place a register block at a fixed offset within the joint workspace. -/
+def block {n size : ℕ} (offset : ℕ) (fits : offset+n ≤ size) (host : Fin size ↪ Fin T) : Fin n ↪ Fin T :=
+  (⟨fun i => ⟨offset+i.val,by have := i.isLt; omega⟩,
+    fun i j h => Fin.ext (Nat.add_left_cancel (congrArg Fin.val h))⟩ : Fin n ↪ Fin size).trans host
+
+theorem block_ne {n m size : ℕ} {a b : ℕ} (ha : a+n ≤ size) (hb : b+m ≤ size)
+    (host : Fin size ↪ Fin T) (apart : a+n ≤ b) (i : Fin n) (j : Fin m) :
+    block a ha host i ≠ block b hb host j := by
+  intro h
+  have eq := congrArg Fin.val (host.injective h)
+  change a+i.val = b+j.val at eq
+  have := i.isLt
+  omega
+
 /-- The archive port may already be assigned by the signed pass. All other
 ports are addressed through a separate workspace embedding. -/
 def scanPorts (work : Fin 16 ↪ Fin T) (archive : Fin T) (apart : ∀ i, work i ≠ archive) : Fin 6 ↪ Fin T :=
