@@ -16,6 +16,13 @@ noncomputable def pairScaling (i k t : Fin d) : Pr P (N+1) columnCapacity prime 
   let swap := columnSwapProgram d k t
   .seq swap (.seq (pairExchange i k t true) (.seq swap (pairExchange i k t false)))
 
+noncomputable def pairScalingTime (U : Type) (i k t : Fin d) (w W H J : ℕ) : ℕ :=
+  let shearCost := fun useOne neg => 1+cleanPairShearTime (P := Empty) (U := U) (A := prime) Empty.elim
+      (Function.Embedding.refl _) i k t prime w W H J false neg useOne
+  let swapCost := 1+completeSwapTime (P := Empty) (U := U) Empty.elim d k t w W H J
+  let exchangeCost := fun one => 2*shearCost one false + shearCost one true + 2*swapCost
+  2*swapCost + exchangeCost true + exchangeCost false
+
 theorem pairScaling_exec (i k t : Fin d) (hk : k < t) (a : Fin d → ZMod M) (unit : IsUnit (a i))
     (H J : ℕ) (hm : M < 2^H) (hw : W < 2^J) (hW : 0 < W)
     (body : P → Pr P (N+1) columnCapacity prime U) (v : HS (N+1) columnCapacity prime U) (S : Stacks (N+1) prime)
@@ -25,14 +32,14 @@ theorem pairScaling_exec (i k t : Fin d) (hk : k < t) (a : Fin d → ZMod M) (un
     let ready := fun y (D : Stacks (N+1) prime) =>
       ColumnReady columnBank H J (Matrix.diagonal a) tail SparseRoleCircuit.encode (fun _ => blank) dest 0 q original y D ∧
       (∀ j : Fin N, 35 ≤ j.val → D.L (columnPorts j) = [] ∧ D.R (columnPorts j) = []) ∧ D.R (Fin.last N) = rest
-    let shearCost := fun useOne neg => 1+cleanPairShearTime (P := Empty) (U := U) (A := prime) Empty.elim
-      (Function.Embedding.refl _) i k t prime w W H J false neg useOne
-    let swapCost := 1+completeSwapTime (P := Empty) (U := U) Empty.elim d k t w W H J
-    let exchangeCost := fun one => 2*shearCost one false + shearCost one true + 2*swapCost
-    ready addr S → ∃ z F n, z.user = v.user ∧ n ≤ 2*swapCost + exchangeCost true + exchangeCost false ∧
+    ready addr S → ∃ z F n, z.user = v.user ∧ n ≤ pairScalingTime U i k t w W H J ∧
       Exec body (pairScaling i k t) (mk v S) n (mk z F) ∧
       ready (fun x => Function.update (Function.update (addr x) k (Ring.inverse (a i)*addr x k)) t (a i*addr x t)) F := by
-  intro ready shearCost swapCost exchangeCost before
+  intro ready before
+  let shearCost := fun useOne neg => 1+cleanPairShearTime (P := Empty) (U := U) (A := prime) Empty.elim
+      (Function.Embedding.refl _) i k t prime w W H J false neg useOne
+  let swapCost := 1+completeSwapTime (P := Empty) (U := U) Empty.elim d k t w W H J
+  let exchangeCost := fun one => 2*shearCost one false + shearCost one true + 2*swapCost
   have swap y (u : HS (N+1) columnCapacity prime U) D (ok : ready y D) :
       ∃ z F n, z.user = u.user ∧ n ≤ swapCost ∧ Exec body (columnSwapProgram d k t) (mk u D) n (mk z F) ∧
         ready (fun x => y x ∘ Equiv.swap k t) F := by
@@ -46,7 +53,8 @@ theorem pairScaling_exec (i k t : Fin d) (hk : k < t) (a : Fin d → ZMod M) (un
   change m ≤ exchangeCost true at hm'
   change p ≤ exchangeCost false at hp
   refine ⟨u',G,_,hu'.trans (hz.trans (hy.trans hu)),?_,Exec.seq r₁ (Exec.seq r₂ (Exec.seq r₃ r₄)),?_⟩
-  · omega
+  · change _ ≤ 2*swapCost + exchangeCost true + exchangeCost false
+    omega
   · convert h₄ using 2
     funext j
     by_cases hit : j = t <;> by_cases control : j = k <;>

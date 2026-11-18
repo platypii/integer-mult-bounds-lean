@@ -349,7 +349,10 @@ placed at the diagonalized addresses, it places each cell at its original matrix
 archive on the reverse loop’s physical tapes. [Fallback.pairScaling_exec](FallbackPairScaling.lean)
 executes one reciprocal pair on the payload. It multiplies the earlier coordinate by the
 inverse of the selected diagonal entry and the later coordinate by that entry.
-Composing the pairs with the anchor sign and the reverse traversal remains open.
+[Fallback.diagonalRewind_exec](FallbackDiagonalRewind.lean) composes all pairs with the
+reverse traversal. Starting with the anchor already signed and the two archives populated,
+it realizes the original residual matrix on the payload and restores both matrix stacks.
+Connecting these input conditions to the record and anchor passes remains open.
 
 - An upper addition is a lower addition between two exchanges; an exchange of two sub-fields of
   one bank is a reversed child between two reversals of the later field; a reversal is one
