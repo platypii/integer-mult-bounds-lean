@@ -17,6 +17,13 @@ noncomputable def columnProgram (k : Fin d) : Pr P (N+1) columnCapacity prime U 
   reverseColumn (Fin.last N) k (fun r i => columnAddProgram k i r)
     (coordinateSwap (fun i j => columnSwapProgram d i j) k)
 
+noncomputable def columnProgramTime (U : Type) (k r : Fin d) (w W H J : ℕ) : ℕ :=
+  let swap := fun (i j : Fin d) => 1+completeSwapTime (P := Empty) (U := U) Empty.elim d i j w W H J
+  let shear := fun a b t => 1+reverseRowTime (P := Empty) (U := U) (A := prime) Empty.elim
+      (Function.Embedding.refl _) a b k t r prime w W H J
+  let cost := fun i => if k < i then shear k i i else swap i k + shear i k i + swap i k
+  2*(r.val+1)+(d-1)*Finset.univ.sup cost+swap (min k r) (max k r)
+
 theorem columnProgram_exec (k : Fin d) (rows : Fin d → Fin d) (H J : ℕ)
     (hm : M < 2^H) (hw : W < 2^J) (hW : 0 < W)
     (body : P → Pr P (N+1) columnCapacity prime U) (v : HS (N+1) columnCapacity prime U) (S : Stacks (N+1) prime)
@@ -27,15 +34,15 @@ theorem columnProgram_exec (k : Fin d) (rows : Fin d → Fin d) (H J : ℕ)
     let r := rows k
     let ready := ColumnReady columnBank H J matrix tail SparseRoleCircuit.encode (fun _ => blank) dest 0 q original
     let clean := fun (D : Stacks (N+1) prime) => ∀ i : Fin N, 35 ≤ i.val → D.L (columnPorts i) = [] ∧ D.R (columnPorts i) = []
-    let swap := fun (i j : Fin d) => 1+completeSwapTime (P := Empty) (U := U) Empty.elim d i j w W H J
-    let shear := fun a b t => 1+reverseRowTime (P := Empty) (U := U) (A := prime) Empty.elim
-      (Function.Embedding.refl _) a b k t r prime w W H J
-    let cost := fun i => if k < i then shear k i i else swap i k + shear i k i + swap i k
     let remaining := orderedScheduleCode (((List.finRange d).take k.val).reverse) rows ++ rest
     ready (fun x => stepOp k r matrix (Ring.inverse (matrix r k)) *ᵥ addr x) S → clean S →
-    ∃ z F n, z.user = v.user ∧ n ≤ 2*(r.val+1)+(d-1)*Finset.univ.sup cost+swap (min k r) (max k r) ∧
+    ∃ z F n, z.user = v.user ∧ n ≤ columnProgramTime U k r w W H J ∧
       Exec body (columnProgram k) (mk v S) n (mk z F) ∧ ready addr F ∧ clean F ∧ F.R (Fin.last N) = remaining := by
-  intro r ready clean swap shear cost remaining initial free
+  intro r ready clean remaining initial free
+  let swap := fun (i j : Fin d) => 1+completeSwapTime (P := Empty) (U := U) Empty.elim d i j w W H J
+  let shear := fun a b t => 1+reverseRowTime (P := Empty) (U := U) (A := prime) Empty.elim
+      (Function.Embedding.refl _) a b k t r prime w W H J
+  let cost := fun i => if k < i then shear k i i else swap i k + shear i k i + swap i k
   let ok := fun y D => ready y D ∧ clean D ∧ D.R (Fin.last N) = remaining
   apply reverseColumn_exec body (Fin.last N) k rows matrix _ _ _ ok _ _ v S rest addr code
   · have outside (i : Fin N) : columnPorts i ≠ Fin.last N := fun e => i.isLt.ne (congrArg Fin.val e)
