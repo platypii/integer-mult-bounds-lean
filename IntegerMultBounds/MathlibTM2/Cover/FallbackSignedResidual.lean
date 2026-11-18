@@ -16,6 +16,12 @@ local instance : NeZero M := ⟨(pow_pos prime_prime.pos _).ne'⟩
 noncomputable def signedResidual (d : ℕ) : Pr P (N+2) columnCapacity prime U :=
   .seq (streamedItinerary (d+1) prime forwardBank (Fin.last N).castSucc (d+1)) (diagonalRewind d)
 
+noncomputable def signedResidualTime (U : Type) (rows : Fin (d+1) → Fin (d+1)) (w W H J : ℕ) : ℕ :=
+  let pairCost := ((List.finRange d).map fun i => pairScalingTime U i.succ 0 i.succ w W H J).sum
+  let stepCost := 1+Finset.univ.sup (fun k => columnProgramTime U k (rows k) w W H J)+((d+1)*(d+1)*(4*H+4)+1)
+  let forwardCost := (d+1)*(2*(d+1)+(4*w+4+columnTime (d+1) prime w H))+1
+  forwardCost + ((1+(pairCost+1))+((d+1)*stepCost+1))
+
 theorem signedResidual_exec (rows : Fin (d+1) → Fin (d+1)) (m : Matrix (Fin (d+1)) (Fin (d+1)) (ZMod M))
     (valid : Itinerary.Valid rows m (d+1)) (s : (ZMod M)ˣ)
     (sign : (Itinerary.run rows m (d+1)).det = (s : ZMod M)) (H J : ℕ) (hm : M < 2^H) (hw : W < 2^J) (hW : 0 < W)
@@ -28,14 +34,11 @@ theorem signedResidual_exec (rows : Fin (d+1) → Fin (d+1)) (m : Matrix (Fin (d
     let clean := fun (D : Stacks (N+2) prime) => ∀ i : Fin N, 35 ≤ i.val → D.L (columnPorts i).castSucc = [] ∧ D.R (columnPorts i).castSucc = []
     let anchor := fun x j => ((Fin.cons s (fun _ => 1) : Fin (d+1) → (ZMod M)ˣ) j : ZMod M) * x j
     let schedule := orderedScheduleCode (List.finRange (d+1)).reverse rows ++ rest
-    let pairCost := ((List.finRange d).map fun i => pairScalingTime U i.succ 0 i.succ w W H J).sum
-    let stepCost := 1+Finset.univ.sup (fun k => columnProgramTime U k (rows k) w W H J)+((d+1)*(d+1)*(4*H+4)+1)
-    let forwardCost := (d+1)*(2*(d+1)+(4*w+4+columnTime (d+1) prime w H))+1
     ready 0 tail anchor S → clean S → S.R (Fin.last N).castSucc = scheduleCode rows ++ schedule →
-    ∃ z F n, z.user = v.user ∧ n ≤ forwardCost + ((1+(pairCost+1))+((d+1)*stepCost+1)) ∧
+    ∃ z F n, z.user = v.user ∧ n ≤ signedResidualTime U rows w W H J ∧
       Exec body (signedResidual d) (mk v S) n (mk z F) ∧ ready 0 tail (fun x => m.mulVec x) F ∧
       clean F ∧ F.R (Fin.last N).castSucc = rest ∧ F.R (bank 1 34) = S.R (bank 1 34) := by
-  intro bank ready clean anchor schedule pairCost stepCost forwardCost before free code
+  intro bank ready clean anchor schedule before free code
   obtain ⟨u,D,l,suffix,hu,hl,forward,next,freeD,stream,archive⟩ :=
     forwardReady_exec rows H J hm body v S m valid tail schedule dest q original anchor before free code
   let finalMatrix := Itinerary.run rows m (d+1)

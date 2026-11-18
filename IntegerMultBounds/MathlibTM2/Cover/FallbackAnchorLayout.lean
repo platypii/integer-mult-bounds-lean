@@ -68,6 +68,10 @@ theorem signedPayload (negative : Bool) (a out : Array d 1 b W) (h : Correct (ne
 private theorem ofFn_cast {m n : ℕ} (h : m = n) (a : Fin n → α) :
     List.ofFn (fun i : Fin m => a (i.cast h)) = List.ofFn a := by subst n; rfl
 
+theorem payloadWord_scalarArray (a : Array d 1 b W) : payloadWord (scalarArray a) = payloadWord a := by
+  unfold payloadWord
+  rw [show List.ofFn (scalarArray a) = List.ofFn a from ofFn_cast _ a]
+
 open IntegerMultBounds.MathlibTM2.Stack Host Mult.PhaseCellToeplitz
 open IntegerMultBounds.Networks.Shared50ModularControl (prime)
 
