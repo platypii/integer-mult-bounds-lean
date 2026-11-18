@@ -167,18 +167,19 @@ def stepOp (K i₀ : Fin n) (M : Matrix (Fin n) (Fin n) R) (p' : R) : Matrix (Fi
   (1 - colMat K fun i => if i ∈ Finset.univ.erase K then M (Equiv.swap K i₀ i) K * p' else 0) *
     swapMat K i₀
 
+theorem stepOp_apply (K i₀ : Fin n) (M : Matrix (Fin n) (Fin n) R) (p' : R) (a b : Fin n) :
+      (stepOp K i₀ M p' * M) a b =
+      M (Equiv.swap K i₀ a) b -
+        (if a ∈ Finset.univ.erase K then M (Equiv.swap K i₀ a) K * p' else 0) * M i₀ b := by
+    rw [stepOp, Matrix.mul_assoc, Matrix.sub_mul, Matrix.one_mul, Matrix.sub_apply, colMat_mul,
+      swapMat_mul, swapMat_mul, Equiv.swap_apply_left]
+
 /-- One column: exchange the pivot row into place, then clear the column. -/
 theorem step (K i₀ : Fin n) (hKi : K.val ≤ i₀.val) (M : Matrix (Fin n) (Fin n) R)
     (hM : ColCleared K.val M) (p' : R) (hpp : M i₀ K * p' = 1) :
     Elim (n - 1) 1 (stepOp K i₀ M p') ∧ ColCleared (K.val + 1) (stepOp K i₀ M p' * M) ∧
       (∀ j : Fin n, j.val < K.val → (stepOp K i₀ M p' * M) j j = M j j) ∧
       (stepOp K i₀ M p' * M) K K = M i₀ K := by
-  have hent (a b : Fin n) :
-      (stepOp K i₀ M p' * M) a b =
-      M (Equiv.swap K i₀ a) b -
-        (if a ∈ Finset.univ.erase K then M (Equiv.swap K i₀ a) K * p' else 0) * M i₀ b := by
-    rw [stepOp, Matrix.mul_assoc, Matrix.sub_mul, Matrix.one_mul, Matrix.sub_apply, colMat_mul,
-      swapMat_mul, swapMat_mul, Equiv.swap_apply_left]
   have hfix (b : Fin n) (hb : b.val < K.val) : Equiv.swap K i₀ b = b :=
     Equiv.swap_apply_of_ne_of_ne (fun h => by rw [h] at hb; omega)
       (fun h => by rw [h] at hb; omega)
@@ -191,7 +192,7 @@ theorem step (K i₀ : Fin n) (hKi : K.val ≤ i₀.val) (M : Matrix (Fin n) (Fi
       Finset.card_erase_of_mem (Finset.mem_univ K), Finset.card_univ, Fintype.card_fin] at h
     exact h
   · intro a b hb hab
-    rw [hent]
+    rw [stepOp_apply]
     by_cases hbK : b.val < K.val
     · have hne : Equiv.swap K i₀ a ≠ b := fun h => hab (by
         have h2 := congrArg (Equiv.swap K i₀) h
@@ -204,8 +205,8 @@ theorem step (K i₀ : Fin n) (hKi : K.val ≤ i₀.val) (M : Matrix (Fin n) (Fi
       rw [hbe, ite_eq_left haK]
       linear_combination (-(M (Equiv.swap K i₀ a) K)) * hpp
   · intro j hj
-    rw [hent, hfix j hj, hrow j hj, mul_zero, sub_zero]
-  · rw [hent, ite_eq_right (Finset.notMem_erase K _), zero_mul, sub_zero, Equiv.swap_apply_left]
+    rw [stepOp_apply, hfix j hj, hrow j hj, mul_zero, sub_zero]
+  · rw [stepOp_apply, ite_eq_right (Finset.notMem_erase K _), zero_mul, sub_zero, Equiv.swap_apply_left]
 
 /-- Elimination of the first `k` columns. -/
 theorem stage [IsLocalRing R] (G : Matrix (Fin n) (Fin n) R) (hG : IsUnit G.det) :

@@ -128,8 +128,8 @@ theorem exists_perm (L : List (Fin m × Fin m)) (h₁ : (L.map Prod.fst).Nodup)
 
 /-- A permutation is a product of fewer exchanges than points it moves. -/
 theorem exists_swaps : ∀ (c : ℕ) (π : Equiv.Perm (Fin m)), π.support.card = c →
-    ∃ l : List (Fin m × Fin m), l.length ≤ c - 1 ∧
-      π = (l.map fun p => Equiv.swap p.1 p.2).prod := by
+    ∃ l : List {p : Fin m × Fin m // p.1 < p.2}, l.length ≤ c - 1 ∧
+      π = (l.map fun p => Equiv.swap p.val.1 p.val.2).prod := by
   intro c
   induction c using Nat.strong_induction_on with
   | _ c ih =>
@@ -143,15 +143,20 @@ theorem exists_swaps : ∀ (c : ℕ) (π : Equiv.Perm (Fin m)), π.support.card 
       have hlt := Equiv.Perm.card_support_swap_mul hx
       have h2 := Equiv.Perm.two_le_card_support_of_ne_one h1
       obtain ⟨l, hl, hprod⟩ := ih _ (hc ▸ hlt) (Equiv.swap x (π x) * π) rfl
-      refine ⟨(x, π x) :: l, ?_, ?_⟩
+      obtain ⟨p, hp⟩ : ∃ p : {p : Fin m × Fin m // p.1 < p.2},
+          Equiv.swap p.val.1 p.val.2 = Equiv.swap x (π x) := by
+        rcases lt_or_gt_of_ne hx with h | h
+        · exact ⟨⟨(π x, x), h⟩, Equiv.swap_comm _ _⟩
+        · exact ⟨⟨(x, π x), h⟩, rfl⟩
+      refine ⟨p :: l, ?_, ?_⟩
       · rw [List.length_cons]
         omega
-      · rw [List.map_cons, List.prod_cons, ← hprod, Equiv.swap_mul_self_mul]
+      · rw [List.map_cons, List.prod_cons, hp, ← hprod, Equiv.swap_mul_self_mul]
 
 /-- A column permutation is at most `m - 1` exchanges of two columns. -/
 theorem swaps_le (π : Equiv.Perm (Fin m)) :
-    ∃ l : List (Fin m × Fin m), l.length ≤ m - 1 ∧
-      π = (l.map fun p => Equiv.swap p.1 p.2).prod := by
+    ∃ l : List {p : Fin m × Fin m // p.1 < p.2}, l.length ≤ m - 1 ∧
+      π = (l.map fun p => Equiv.swap p.val.1 p.val.2).prod := by
   obtain ⟨l, hl, hprod⟩ := exists_swaps _ π rfl
   have hle : π.support.card ≤ m := by
     simpa using Finset.card_le_univ π.support

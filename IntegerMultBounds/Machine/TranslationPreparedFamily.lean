@@ -17,7 +17,7 @@ open TranslationStream (blocks fibers)
 def outputPrefix (offset : ℕ → ℕ) (Q n : ℕ) (payload : ℕ → ℕ → List (Fin 4)) : List (Fin 4) :=
   ((List.range n).map (fun i => (BlockRotationData.rotate (offset i) (blocks Q (payload i))).flatten)).flatten
 
-private theorem blocks_uniform (Q B i : ℕ) (payload : ℕ → ℕ → List (Fin 4))
+theorem blocks_uniform (Q B i : ℕ) (payload : ℕ → ℕ → List (Fin 4))
     (hwidth : ∀ i y, (payload i y).length = B) :
     BlockRotationData.Uniform B (blocks Q (payload i)) := by
   intro block hb
@@ -46,7 +46,7 @@ theorem prefix_succ (offset : ℕ → ℕ) (Q n : ℕ) (payload : ℕ → ℕ �
       (BlockRotationData.rotate (offset n) (blocks Q (payload n))).flatten := by
   simp [outputPrefix,List.range_succ,List.map_append,List.flatten_append]
 
-private theorem source_fiber (Q B n i : ℕ) (source : ℤ → Fin 4) (p : ℤ)
+theorem source_fiber (Q B n i : ℕ) (source : ℤ → Fin 4) (p : ℤ)
     (payload : ℕ → ℕ → List (Fin 4)) (hwidth : ∀ i y, (payload i y).length = B) (hi : i < n) :
     putWord (putWord source p (fibers Q n payload).flatten) (p+((i*(Q*B) : ℕ) : ℤ))
       (blocks Q (payload i)).flatten = putWord source p (fibers Q n payload).flatten := by

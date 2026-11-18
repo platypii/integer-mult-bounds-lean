@@ -67,10 +67,10 @@ def machine (s : Selection m) (act : Action t) : SharedBankSkeleton.Skeleton (co
       (SharedBankSkeleton.compose RecursiveViewFrameRoleBank.pushSkeleton (viewSkeleton s))
       (actionSkeleton act)) RecursiveViewFrameRoleBank.restoreSkeleton
 
-private theorem action_slots (act : Action t) (i : Fin (count t u)) :
+theorem action_slots (act : Action t) (i : Fin (count t u)) :
     ((actionSkeleton (u := u) act).slots i).val = i.val := by cases act <;> rfl
 
-private theorem action_hoare {v : Descriptor} (act : Action t) (hs : Fin 6 → List Bool)
+theorem action_hoare {v : Descriptor} (act : Action t) (hs : Fin 6 → List Bool)
     (st : Tapes 1 prime) (aux : Tapes u prime) (hv : RecursiveDimensionBank.Headers v hs)
     (hp : v.Positive) (data : Data t v) :
     HoareTime (actionSkeleton (u := u) act).program

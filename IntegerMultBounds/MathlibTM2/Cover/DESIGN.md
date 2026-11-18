@@ -79,7 +79,26 @@ with no carries and no class tapes:
 - each transposition exchanges two label atoms with spectators between them: one leaf
   interchange at width `w`.
 
-Singular labels hold padding. Routes preserve them, since `σ` is invertible. The stock is borrowed
+Singular labels hold zero padding. [`LabelPadding.transport`](LabelPadding.lean) proves
+that an invertible route preserves this condition on the physical bit tape in both directions.
+At every positive width, reduction to the residue field has equal-sized fibers, so
+`LabelPadding.padding_count` bounds the padded fraction of the full label box by `m/q`. [`LabelMask.pad_exec`](LabelMask.lean) expands one selector per label record across its payload,
+then spreads compact stock into the selected positions in physical order. It takes at most
+`14 V + 10 R + 14` host steps for `R` records, given the record selectors and unary payload width.
+[`LabelPadProgram.realizes`](LabelPadProgram.lean) generates the selectors and pads the stock
+in one fixed host program from unary dimensions. Its cost is at most
+`14 V + (16 + 10 m²) R + 18`. [`LabelCounts.high_exec`](LabelCounts.lean) builds the
+high-part count from the retained unary atom width. [`LabelPadSetup.realizes`](LabelPadSetup.lean) composes counter setup, selector traversal,
+and stock spreading from the six unary caller fields, the positive unary atom width,
+and a length-one seed. It preserves the compact input, retains the expanded mask,
+and prepends the padded data within `(194 + 10 m²) V` host steps. [`LabelDecode.realizes`](LabelDecode.lean) starts from the seven canonical binary words
+on host registers, creates the seed, and completes padding within `(434 + 10 m²) V` host
+steps. [LabelCallerHeaders](LabelCallerHeaders.lean) reads those words directly from the seven
+caller tapes. If their left and right stacks contain a total of `L` symbols, including blanks,
+loading adds at most `6 L + 51` host steps. [LabelSplit.realizes](LabelSplit.lean)
+generates a residue-class mask from initialized traversal counters and stably partitions
+the fixed-width records. The two gathers preserve the source and mask and together cost
+at most `2 (R (16 W + 10) + 16)` steps for `R` records of payload width `W`. The stock is borrowed
 and padded once at the outer wrapper, and the padding pass tests each label's low digits. The
 density of invertible classes is above `1 - 2/q` per level, so the padded volume grows by at most
 `e^(O(1/q))` over `O(log e)` levels. That exponent loss is below `10^-23` at `q > 2^80`; it must
@@ -91,7 +110,56 @@ coordinates of `m` atoms: right multiplication mixes whole columns with scalar c
 with `σᵀ = E₁ Π E₂` a route is the ordered program of `E₂`, a column permutation and the ordered
 program of `E₁` (`Route.route`, `Route.exists_route`), and the permutation is at most `m - 1`
 exchanges of two columns (`Route.swaps_le`). Each exchange is one call of the existing
-interchange supplier on a view of the caller's descriptor (`LabelView.swap_cols`).
+interchange supplier on a view of the caller's descriptor. The exchange list stores each pair
+with its smaller index first, as required by the view. Given the view headers,
+[`LabelExchange.realizes`](LabelExchange.lean) runs the supplier on the selected role at
+`coreCost V c` for column width `c`. Its output satisfies `LabelView.swap_cols` on the caller's
+volume. Given the parent dimensions and column counts on one descriptor bank,
+[`LabelPrepare.prepares`](LabelPrepare.lean) computes the four changing view headers in at
+most `34000 V` steps. The two row dimensions pass through unchanged. [`LabelPrepareClean.prepares`](LabelPrepareClean.lean) preserves all the input words
+and clears the arithmetic tapes. Its output adds exactly the three new dimension words;
+the width is already present. After use, `restores` erases the three words to recover the
+input bank. [`LabelCall.runs`](LabelCall.lean) reads the two caller row headers and four
+prepared slots directly, exchanges the columns on the selected role and preserves the
+descriptor bank for release. [`LabelSwap.runs`](LabelSwap.lean) composes preparation, one supplier call and release on
+a single bank, returning the staged dimensions and every other role unchanged. Its cost is
+at most `3808274 V + coreCost V c`. [`LabelSchedule.permutation_schedule`](LabelSchedule.lean) writes and erases the
+three counts for each exchange, then composes the exchanges on one common bank. Its
+postcondition records the successive descriptor swaps. [`LabelPermutation.realizes`](LabelPermutation.lean) identifies the resulting
+physical array with the column permutation on every packed matrix, spectator prefix and
+payload index. This proves the permutation part of the route.
+
+For one triangular pass, [`LabelPass.realizes`](LabelPass.lean) gives a clean tape program
+fixed by the rational matrix. On a single contiguous label box with a trailing record of width
+`W > 0`, it sends each label to its right product and preserves every record position, in time
+linear in the box volume including the records. It uses the stage-1 prime and requires the
+stage-1 coefficient certificates on the diagonal and strictly lower entries. For two selected atom positions,
+[`LabelInstruction.runs`](LabelInstruction.lean) instead runs one stage-1 shift or scale
+across the entire caller descriptor, including every outer prefix. It constructs the view
+and restores the bank within a constant times the caller volume. For at least two atoms,
+[`LabelProgram.pass_rational`](LabelProgram.lean) identifies the compiled list with the
+original rational pass, and `LabelProgram.runs` executes the list with a coefficient times
+the caller volume. [`LabelEntry.pass_runs`](LabelEntry.lean) gives the resulting right matrix product at every
+spectator prefix and payload position on that same output tape. [`LabelBits.pass_runs`](LabelBits.lean) gives the same run on the supplier's bit tape:
+every output cell is encoded because the matrix multiplier is a unit and the packed addresses
+cover the caller's volume. The one-atom case needs a separate
+scaling view.
+[`LabelTransport.triangular`](LabelTransport.lean) proves that applying its compiled array
+transform to every such prefix gives the right product on the caller addresses.
+`LabelTransport.route` composes the two triangular transports with the permutation to give
+the full right product by `σ`. [`LabelRoute.realizes`](LabelRoute.lean) executes this
+composition on the shared bit tape for supported triangular factors with unit reductions
+and at least two atoms. It chooses the exchange schedule before seeing the descriptor.
+[`LabelWidth.lean`](LabelWidth.lean) converts the width header for the middle permutation
+and restores it for the final triangular pass.
+Given an invertible rational route, a factorization of its transpose, the stage-1
+coefficient certificates and a denominator bound at the stage-1 prime,
+[`LabelFactorization.realizes`](LabelFactorization.lean) supplies one machine and
+one constant `C` for all positive widths. Its time is at most
+`C V + (m-1) coreCost V (w*m)`. The factorization determines the permutation
+before reduction at the runtime width.
+[`LabelShift.shift_index`](LabelShift.lean) gives the individual shift's address in that
+descriptor, and `LabelShift.realizes` runs it when the view headers are installed.
 
 A fixed finite label group would make labels ordinary roles and remove sections 5 and 6. I did not
 find one. With a shared basis on the common complement, two routes whose lines meet at 60° have
@@ -111,7 +179,33 @@ were not settled.
 - **Good and bad classes.** The branch depends only on the low digits of the label. Split each
   role stream into a good and a bad stream by that predicate, run one child per stream, and merge.
   The split streams are not boxes, so each carries a directory: the list of label values of its
-  prefixes. Upstream's `Δ = 1 + C H (h+1) f` symbols bounds it well below the payload.
+  prefixes. [LabelDirectory](LabelDirectory.lean) encodes the current matrix in `w m²` radix
+  digits after the inherited prefix and proves that each full matrix coefficient can be read back.
+  Given this input directory, the retained mask puts its entries in the same order as the child
+  records. [LabelDirectoryLoop](LabelDirectoryLoop.lean) generates the current label words from a
+  zero counter, restores the record count, and writes the labels in physical order. [LabelDirectoryJoin](LabelDirectoryJoin.lean) interleaves one inherited prefix per
+  record with these words, restores the record count, and leaves the input suffixes intact.
+  [LabelDirectoryInherit.directory_exec](LabelDirectoryInherit.lean) starts with one prefix per
+  parent, repeats it across the child label box, and joins the expanded stream to the generated
+  labels. Both input tapes finish at their original suffixes.
+  [LabelDirectoryBuild.split_exec](LabelDirectoryBuild.lean) composes label generation, directory
+  construction, and partition by the retained payload mask. Each complete box restores the zero
+  counter, and the join consumes the generated labels so their scratch register is restored.
+  [LabelDirectorySetup.build_from_mask](LabelDirectorySetup.lean) constructs the label width,
+  zero counter, and box count from the unary atom width and a unit seed. The retained mask
+  supplies one count symbol per child. [LabelDirectoryClasses.from_dimensions](LabelDirectoryClasses.lean)
+  derives the parent count from the descriptor and uses the residue traversal to write this mask
+  before building the directory. [LabelDirectoryCaller.realizes](LabelDirectoryCaller.lean) starts
+  with empty traversal registers, initializes them from the unary atom width, builds the directory,
+  adds the new label width to the inherited width, and partitions the complete entries by class.
+  [LabelChildStreams.realizes](LabelChildStreams.lean) partitions the payload records by the
+  same mask, preserving their alignment with the directory and retaining the unary record count
+  for each child. [LabelChildMerge.children_exec](LabelChildMerge.lean) uses the retained mask
+  to merge the two transformed child streams in physical order. It consumes one fixed-width
+  record from the indicated child at each step and preserves both unread suffixes.
+  [LabelChildDispatch.realizes](LabelChildDispatch.lean) composes the split, both host calls,
+  and the merge. Its induction hypotheses specify each child's action on its own prefix of
+  the directory and payload. The weighted recursive bodies must still establish these hypotheses. Upstream's `Δ = 1 + C H (h+1) f` symbols bounds it well below the payload.
 
 ## 5. Coefficients from labels
 
@@ -136,6 +230,91 @@ lower-triangular adapters and pivots that are rational functions of the label. T
 The evaluator is the largest new machine component. `Machine/Binary{Add,Sub,Multiply,Divide}`
 supply the arithmetic. The existing atom passes take fixed rational coefficients
 (`Coordinates.CoeffSupported`); they need a variant whose offset comes from a tape.
+For one control digit `x`, `Fallback.offset_exec` in `FallbackOffset.lean` computes the canonical bits of `c*x % M` from three preserved tape operands.
+It costs at most `48L² + 154L + 70` steps at width `L`. Given those bits on the translation machine's descriptor tape,
+`Fallback.fiber_hoare` proves that destination symbol `((y+c*x)%M)*B+j` equals source
+symbol `j` of block `y`, with the recurring tape layout restored. `Fallback.fiberInput_exec` places the arithmetic output directly on translation tape
+8 and proves that the host stacks represent the complete encoded input bank. This assumes
+the caller supplies the empty descriptor with its left separator. `Fallback.fiberProgram_exec` runs the offset computation and the placed translation as
+one host program. It returns the rotated payload with both heads advanced and preserves every
+register outside the twelve translation tapes. It clears blank padding and restores the exact empty descriptor stacks
+before returning. `Fallback.fiberStep_exec` then advances the control digit from `x` to `x+1`
+in the same register and restores the coefficient, modulus, and arithmetic scratch for the
+next call. `Fallback.fiberLoop_exec` executes all `M` iterations from the represented input bank,
+with the control digit starting at zero and a separate count register of length `M`.
+Both payload heads advance by `M²B`. The destination contains the concatenated rotated
+fibers, and `Fallback.shear_entry` identifies each symbol at its modular destination.
+The enclosing `Fallback.shear_exec` starts with empty count and digit registers. It builds
+the unary count and the fixed-width zero digit from the binary modulus in at most
+`6M + 15L + 10` additional steps. `Fallback.initializedShear_exec` initializes the translation bank and runs the shear
+from the two raw canonical header words, blank metadata workspace, and represented
+payload tapes. `Fallback.dimensionShear_exec` builds both headers from padded arithmetic registers
+holding the modulus and block width, then executes the complete shear with initially
+blank translation metadata. It takes at most `10(L+K)+24` additional host steps for
+modulus and width registers of lengths `L` and `K`. For control and target fields packed in that order, `Fallback.shear_read` reads the
+original symbol from the final destination stacks at the address given by
+`(RowOp.shear i k hik c).apply v` over `ZMod M`. `Fallback.flatShear_exec` derives all fibers from one packed flat input array,
+executes the shear, and reads the symbol at the updated row address directly from the
+final stacks. For fields in their original order, `Fallback.earlierControl_exec` extracts a control
+digit from the physical prefix using two tape divisions, preserving the prefix, stride
+and modulus. `Fallback.prefixStep_exec` uses that digit to rotate one target fiber,
+clears the digit, and increments the physical prefix counter. The other arithmetic
+registers and caller stacks outside the translation bank are restored exactly.
+`Fallback.prefixLoop_exec` runs the counted loop over all physical prefixes from
+prepared registers and a represented payload bank. For the original row-major array,
+`Fallback.prefixLoop_entry` identifies every output symbol at its updated coordinate
+address. `Fallback.prefixPass_exec` takes a binary prefix count in the digit register,
+constructs the unary countdown and zero prefix counter, then frees the digit register
+before the first rotation. Its setup costs at most `6N + 17L + 12` steps for count
+`N` of width `L`. `Fallback.prefixShear_exec` starts with unmarked translation metadata and a padded
+block width in slot 5. It trims the width in place, copies and trims the modulus in slot 7,
+installs the separators, and executes the original-order pass. `Fallback.rowShear_exec` specializes the original-order pass to an elimination row
+operation on one flat array. For control `k < t`, it uses prefix count `M^t`, stride
+`M^(t-1-k)`, and block width `M^(d-1-t)*W`. The final stacks return the input symbol
+at every transformed row address. `Fallback.dimensionPower_exec` computes the common form `M^n*b` directly in binary
+from the modulus and seed registers, clearing its temporary product after each multiplication.
+The exponent is fixed by the selected row indices. Seeds 1 and W give the three required
+dimensions, and `dimensionTime_le` bounds the construction polynomially in the bit widths
+and exponent. `Fallback.scheduledShear_exec` places these three results directly into the caller's
+extent, stride, and block-width registers and executes the row addition on the original
+array. Its inputs include a binary modulus, suffix width, and coefficient. For a forward undo addition, `Fallback.productShear_exec` computes the coefficient in
+the shear register from the pivot-swapped matrix entry and a supplied pivot reciprocal
+using modular multiplication. Its destination theorem uses the same `Ring.inverse`
+as the elimination step. For a unit pivot x modulo p^(w+1), `Fallback.pivotReciprocal_eq` proves that
+starting at x^(p-2) and repeating y ↦ y(xy)^(p-1) exactly w times yields its ring
+inverse. `Fallback.modularPower_exec` executes each fixed powering operation on
+padded binary residues, restoring all scratch at the original operand width. `Fallback.reciprocalLoop_exec` executes the width-controlled loop using the
+fixed factor x^(p-1) and accumulator update y ↦ y^p x^(p-1). It returns the exact
+pivot inverse and restores every other register except the consumed countdown.
+`Fallback.pivotInverse_exec` initializes the accumulator from the pivot and a padded one,
+multiplies the accumulator by the pivot to obtain the fixed factor, and clears the factor
+after the loop. `Fallback.pivotShear_exec` feeds the inverse directly into the product shear
+and proves its action on every array entry. `Fallback.matrixRead_exec` reads any entry of a row-major binary
+matrix while restoring the source, given a unary symbol offset and word width.
+`Fallback.readColumnPair_exec` generates both offsets from the live width, copies the pivot
+and the entry in the pivot-swapped row, and restores the matrix and scratch.
+[`Fallback.matrixShear_exec`](FallbackMatrixShear.lean) composes both reads with the shear.
+It takes the word width from the modulus register and proves the destination of every
+payload symbol for one forward undo addition with a specified unit pivot.
+[`Fallback.itineraryEntries_eq`](FallbackItineraryEntries.lean) identifies the live
+matrix at every valid itinerary stage with an entrywise recurrence. The pivot row is
+copied, and each other row subtracts a multiple of that pivot row after the exchange.
+`Fallback.subtractProduct_exec` computes each nonpivot output entry from the source
+entry, the row multiplier and the pivot-row entry, restoring its arithmetic scratch.
+`Fallback.updateEntry_exec` reads both source entries from the packed matrix and
+prepends the result to the output tape, preserving the row multiplier and restoring
+all scratch. `Fallback.updateRow_exec` emits a full nonpivot row using one shared
+multiplier, and `Fallback.copyMatrixRow_exec` copies the pivot row. Both preserve the
+existing output suffix. `Fallback.eliminateRow_exec` computes each multiplier once using the
+shared pivot reciprocal. [`Fallback.updateMatrix_exec`](FallbackUpdateMatrix.lean) emits
+the entire next matrix in row-major order and restores all workspace. [`Fallback.itineraryColumn_exec`](FallbackColumn.lean)
+reads the specified unit pivot from the packed matrix, computes its reciprocal, and
+executes the complete column pass. It preserves the width counter and changes only the
+output stack. [`Fallback.diagonalize_exec`](FallbackItineraryMachine.lean) executes every column
+of a supplied valid pivot itinerary. The two matrix stacks alternate roles and retain
+earlier stages as suffixes. After the last pass, the active stack begins with the
+packed unit diagonal obtained by the specified elimination of the original matrix.
+The total time is at most `d*(4*w+4+columnTime d p w H)+1`.
 
 ## 6. Fallback
 
@@ -178,11 +357,26 @@ The sizes are rough. The stage-2 machine that steps 4–6 extend (`M8/RevMachine
 
 The algebra of steps 1–3 is checked. Left for the machine steps, where the layout fixes them:
 
-- the rank factorization `P = A B` of a conjugated rational idempotent, for `good_form`;
-- the final diagonal of the fallback as `n - 1` unit pairs and a sign, and the reversal of a
-  field as one reversed child on its two halves;
-- the program on head and tail fields assembled from `Elim`, with its child count against
-  `fallback_children`.
+- [LabelProjector.good_move_at](LabelProjector.lean) supplies the rank factorization for a
+  reduced rational projector whose factorization denominators are below the prime. On every
+  accepted live record it gives the weighted good-child identity. The finite branch table uses
+  the rational projector reduced modulo the prime and works at every positive atom width.
+- [FallbackDiagonal](FallbackDiagonal.lean) factors the final diagonal of a positive-dimensional
+  residual of determinant ±1 into one reciprocal unit pair per non-anchor coordinate and a sign.
+  Two ordinary exchanges realize each pair, and one unweighted reversed child reverses a field
+  about its middle. [FallbackResidual](FallbackResidual.lean) identifies the weighted reversed
+  projector exchange with its block matrix. The matrix squares to the identity, so its determinant
+  is a sign over the odd prime-power label ring and the reciprocal-pair factorization applies.
+- [FallbackWord](FallbackWord.lean) undoes `Elim` on field vectors using forward shears and
+  exchanges. Starting from the diagonal output, the word computes the residual action. Charging
+  three children per exchange and six per diagonal pair gives fewer than `32 m²` children.
+  [FallbackFields](FallbackFields.lean) realizes the three-child exchange on a flat list of atoms.
+  It reverses the later field before and after the reversed exchange, preserving the intervening
+  gap and the rest of the bank. For a reciprocal diagonal pair, two reversed children suffice:
+  a plain exchange followed by a uniformly weighted one restores both field orientations.
+  The theorem `residual_word` composes the anchor sign, the ordered pairs and the row operations.
+  It computes the weighted residual for every input with fewer than `24 m²` children at these
+  charges. The tape implementation of these field operations remains open.
 
 `bad_count` is stated against the whole label box, which is what the box layout needs: at most
 `r (r+1) (m+1) / (2q)` of the labels are bad for one move.
@@ -193,8 +387,8 @@ word with a port-independent line, or another cover-free supplier.
 ## 8. Open questions
 
 1. Settled: at most `m - 1` supplier calls per route (section 3).
-2. Whether the low digits of the label must lead the address order for the class split, or a
-   split pass can test them in place.
+2. Settled: the traversal tests low digits in physical record order. The directory and payload
+   use the same mask, as proved in [LabelChildStreams](LabelChildStreams.lean).
 3. The exact moment root for the PR589 histogram, in place of upstream's `c = 17/10000`.
 4. Recompute `kappa` for cover + PR589 with full-width chunks (`Cost/CompactInterimParameters`).
    The hole note's `2^-10.8` and `2^-10.4` predate them.
