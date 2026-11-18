@@ -49,4 +49,91 @@ theorem reverseStage_exec (k : Fin d) (rows : Fin d → Fin d) (H J : ℕ)
   exact ⟨z,F,n,hz,hn,run,next,fun i hi => by simpa only [ports,archivePorts_workspace _ _ hi] using freeF i hi,
     by simpa only [ports,archivePorts_stream] using stream,(frame _ (archivePorts_other k.val)).2⟩
 
+omit [M8.Machine.Net] in
+private theorem changeArchive {T A : ℕ} (bank next : Fin 35 ↪ Fin T)
+    (fixed : ∀ i, i ≠ 34 → next i = bank i) (H J : ℕ)
+    (m a : Matrix (Fin d) (Fin d) (ZMod M)) (tail suffix : List (Fin (A+4)))
+    (sym : ZMod 2 → Fin 4) (dest : ℤ → Fin 4) (q : ℤ) (original : Fin (M^d*W) → ZMod 2)
+    (addr : (Fin d → ZMod M) → Fin d → ZMod M) (S : Stacks T A)
+    (ready : ColumnReady bank H J m tail sym (fun _ => blank) dest 0 q original addr S)
+    (packed : S.R (next 34) = matrixWords A H a ++ suffix) :
+    ColumnReady next H J a suffix sym (fun _ => blank) dest 0 q original addr S := by
+  obtain ⟨word,h,placed⟩ := ready
+  refine ⟨word,⟨?_,?_,?_,?_,?_,packed,?_,?_,?_⟩,placed⟩
+  · simpa only [fixed 2 (by decide)] using h.modulus
+  · simpa only [fixed 27 (by decide)] using h.width
+  · simpa only [fixed 28 (by decide)] using h.one
+  · simpa only [fixed 32 (by decide)] using h.padded
+  · rw [fixed 33 (by decide),h.clock]
+  · intro i hi
+    rw [fixed i (fun e => (by decide : (34 : Fin 35) ∉ shearWork) (e ▸ hi))]
+    exact h.scratch i hi
+  · simpa only [fixed 24 (by decide)] using h.src
+  · simpa only [fixed 25 (by decide)] using h.dst
+
+theorem reverseStages_exec (rows : Fin d → Fin d) (H J : ℕ)
+    (hm : M < 2^H) (hw : W < 2^J) (hW : 0 < W)
+    (body : P → Pr P (N+2) columnCapacity prime U)
+    (m : Matrix (Fin d) (Fin d) (ZMod M)) (tail destTail rest : List (Fin (prime+4)))
+    (dest : ℤ → Fin 4) (q : ℤ) (empty : ∀ z, q ≤ z → z < q+(M^d*W : ℕ) → dest z = blank)
+    (original : Fin (M^d*W) → ZMod 2) :
+    let stage := Itinerary.run rows m
+    let words := fun n => matrixWords prime H (stage n)
+    let archive := matrixArchive words (words 0 ++ tail) destTail
+    let bank := fun n => columnBank.trans (archivePorts n)
+    let ready := fun n suffix => ColumnReady (bank n) H J (stage n) suffix SparseRoleCircuit.encode (fun _ => blank)
+      dest 0 q original (fun x => stage n *ᵥ x)
+    let clean := fun (D : Stacks (N+2) prime) => ∀ i : Fin N, 35 ≤ i.val → D.L (columnPorts i).castSucc = [] ∧ D.R (columnPorts i).castSucc = []
+    let cost := 1+Finset.univ.sup (fun k => columnProgramTime U k (rows k) w W H J)+(d*d*(4*H+4)+1)
+    ∀ n, n ≤ d → Itinerary.Valid rows m n → ∀ v S suffix, ready n suffix S → clean S →
+      (S.R (bank n 34), S.R (bank (n+1) 34)) = archive n →
+      S.R (Fin.last N).castSucc = orderedScheduleCode (((List.finRange d).take n).reverse) rows ++ rest →
+      ∃ z F l, z.user = v.user ∧ l ≤ n*cost+1 ∧ Exec body (reverseStages d n) (mk v S) l (mk z F) ∧
+        ready 0 tail F ∧ clean F ∧ F.R (Fin.last N).castSucc = rest ∧ F.R (bank 1 34) = destTail := by
+  intro stage words archive bank ready clean cost n
+  induction n with
+  | zero =>
+    intro _ _ v S suffix ok free pair code
+    have packed := ok.choose_spec.1.archive
+    have same : suffix = tail := List.append_cancel_left (packed.symm.trans (congrArg Prod.fst pair))
+    subst suffix
+    exact ⟨v,S,1,rfl,by simp,Exec.act (body := body) .done _,ok,free,by simpa [orderedScheduleCode] using code,congrArg Prod.snd pair⟩
+  | succ n ih =>
+    intro hn valid v S suffix ok free pair code
+    let k : Fin d := ⟨n,hn⟩
+    have top (j : ℕ) : ∃ t, (archive j).1 = words j ++ t := by cases j <;> exact ⟨_,rfl⟩
+    obtain ⟨t,ht⟩ := top n
+    have older : S.R (bank n 34) = (archive n).1 := by
+      simpa only [bank,Function.Embedding.trans_apply,archivePorts_period] using (show S.R (bank (n+2) 34) = (archive n).1 from congrArg Prod.snd pair)
+    have colReady := changeArchive (bank (n+1)) (bank n) (fun i hi => (archivePorts_bank_fixed n i hi).symm)
+      H J _ (stage n) suffix t _ dest q original _ S ok (older.trans ht)
+    obtain ⟨u,D,l,hu,hl,col,next,freeD,stream,frame⟩ := reverseStage_exec k rows H J hm hw hW body v S m valid
+      t rest dest q empty original code colReady free
+    have packed : D.R (bank (n+1) 34) = words (n+1) ++ (archive n).2 := frame.trans (congrArg Prod.fst pair)
+    obtain ⟨y,hy,drop⟩ := dropWords_exec body ((archivePorts_other n (columnBank 2)))
+      ((bank n).injective.ne (by decide : (2 : Fin 35) ≠ 0)) (archivePorts_other n (columnBank 0)).symm
+      (d*d) H u D (by exact (congrArg List.length next.choose_spec.1.modulus).trans (length_binSyms ..)) (next.choose_spec.1.scratch 0 (by decide)).2
+    let E := {D with R := Function.update D.R (bank (n+1) 34) ((archive n).2)}
+    have cut : (D.R (bank (n+1) 34)).drop (d*d*H) = (archive n).2 := by
+      rw [packed,← length_matrixWords prime H (stage (n+1)),List.drop_left]
+    change Exec body _ _ _ (mk y {D with R := Function.update D.R (bank (n+1) 34) ((D.R (bank (n+1) 34)).drop (d*d*H))}) at drop
+    rw [cut] at drop
+    have keep (i) : E.R (archivePorts n i) = D.R (archivePorts n i) := Function.update_of_ne (archivePorts_other n i) _ _
+    have okE : ready n t E := by
+      obtain ⟨word,h,p⟩ := next
+      refine ⟨word,?_,p⟩
+      rcases h with ⟨modulus,width,one,padded,clock,coeff,scratch,src,dst⟩
+      constructor <;> simp only [bank,Function.Embedding.trans_apply,keep] <;> assumption
+    obtain ⟨z,F,a,hz,ha,run,done⟩ := ih (by omega) ((Itinerary.valid_succ ..).mp valid).1 y E t okE
+      (fun i hi => ⟨(freeD i hi).1,by rw [← archivePorts_workspace n i hi,keep,archivePorts_workspace n i hi]; exact (freeD i hi).2⟩)
+      (Prod.ext ((keep _).trans (next.choose_spec.1.archive.trans ht.symm)) (Function.update_self ..))
+      (by rw [← archivePorts_stream n,keep,archivePorts_stream]; exact stream)
+    have bound := Finset.le_sup (f := fun k => columnProgramTime U k (rows k) w W H J) (Finset.mem_univ k)
+    refine ⟨z,F,l+((d*d*(4*H+4)+1)+a),hz.trans (hy.trans hu),?_,?_,done⟩
+    · rw [Nat.succ_mul n cost]
+      dsimp only [cost] at ha ⊢
+      omega
+    · rw [reverseStages,dite_eq_left (show n < d from hn)]
+      exact Exec.seq col (Exec.seq drop run)
+
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
