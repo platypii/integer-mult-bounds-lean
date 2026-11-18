@@ -361,7 +361,7 @@ on the residual input tape. [Fallback.queuedAnchorRecord_exec](FallbackQueuedAnc
 and residual program on one host and advances both queues to the next record. [Fallback.collectAnchorRecord_exec](FallbackCollectRecord.lean) appends the transformed
 word in reverse order to the output accumulator and restores the blank payload workspace.
 [Fallback.nextRecord_exec](FallbackNextRecord.lean) advances the packed matrix tape to
-the next record. [Fallback.paddingRecord_exec](FallbackPaddingRecord.lean) consumes both pivot schedules and transfers the padded payload unchanged. [Fallback.maskedScan_exec](FallbackMaskedScan.lean) scans the live-bit tape, dispatching to the corresponding branch with four control steps per record and two for the scan. Instantiating its tape invariant with the live and padding programs remains open.
+the next record. [Fallback.paddingRecord_exec](FallbackPaddingRecord.lean) consumes both pivot schedules and transfers the padded payload unchanged. [Fallback.maskedScan_exec](FallbackMaskedScan.lean) scans the live-bit tape, dispatching to the corresponding branch with four control steps per record and two for the scan. The [full residual scan](FallbackScan.lean) now runs both branches over the physical record range. From a prepared tape bank and signed input queue it consumes the mask, advances the matrix and pivot streams, and leaves the transformed output prefix in reverse order. Assembly with the stream producers and the caller remains open.
 
 - An upper addition is a lower addition between two exchanges; an exchange of two sub-fields of
   one bank is a reversed child between two reversals of the later field; a reversal is one
