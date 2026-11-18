@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackSwapSetup
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackShearCleanup
 
 /-! Generate the headers and exchange two coordinates on row payload tape 24. -/
 @[expose] public section
@@ -23,6 +24,11 @@ theorem rowSwapFits : 59 ≤ rowSwapBlock.tapes := by
 noncomputable def rowSwap (d i j : ℕ) : Pr P rowSwapBlock.tapes rowSwapBlock.states prime U :=
   .seq (swapSetup rowSwapFits d i j) (foreign rowSwapBlock.program)
 
+def swapWorkspace (N : ℕ) : List (Fin N) := (List.finRange N).filter fun i => 35 ≤ i.val
+
+noncomputable def cleanRowSwap (d i j : ℕ) : Pr P rowSwapBlock.tapes rowSwapBlock.states prime U :=
+  .seq (rowSwap d i j) (clearWorkTapes (swapWorkspace rowSwapBlock.tapes))
+
 theorem rowSwap_exec {d : ℕ} (i j : Fin d) (lt : i < j) (w W H J : ℕ)
     (hm : prime^(w+1) < 2^H) (hw : W < 2^J) (hW : 0 < W)
     (body : P → Pr P rowSwapBlock.tapes rowSwapBlock.states prime U)
@@ -42,9 +48,13 @@ theorem rowSwap_exec {d : ℕ} (i j : Fin d) (lt : i < j) (w W H J : ℕ)
     ∃ (y : Fin (volume prime view) → ZMod 2), ∃ z F n, z.user = v.user ∧
       n ≤ dimensionTime H 1 d + (4*(d*H+1)+6) + (10*J+12) + (21*(w+1)+12) + 2 + (cost*(rowSwapBlock.tapes+5)+6) ∧
       Exec body (rowSwap d i j) (mk v S) n (mk z F) ∧
-      RepT (SharedBankStageInput.raw (LabelCall.bank (SharedPlacementAlphabet.setTape roles 24 (sourceWord (v := view) y) 0)
-        view (LabelPrepare.input view d i j (w+1))) rowSwapBlock.tapes) F.L F.R ∧
-      (∀ pos, readAt blank (F.L (slot 24)) (F.R (slot 24)) pos = sourceWord (v := view) y pos) ∧
+      ∃ u G, u.user = v.user ∧
+        Exec body (cleanRowSwap d i j) (mk v S)
+          (n+(((swapWorkspace rowSwapBlock.tapes).map fun k => 4*(F.L k).length+2*(F.R k).length+4).sum+1)) (mk u G) ∧
+        (∀ k : Fin rowSwapBlock.tapes, 35 ≤ k.val → G.L k = [] ∧ G.R k = []) ∧
+        (∀ k : Fin 35, ∀ pos, readAt blank (G.L (slot k)) (G.R (slot k)) pos =
+          (SharedPlacementAlphabet.setTape roles 24 (sourceWord (v := view) y) 0).tape k pos) ∧
+      (∀ pos, readAt blank (G.L (slot 24)) (G.R (slot 24)) pos = sourceWord (v := view) y pos) ∧
       ∀ (coords : Fin d → ZMod (prime^(w+1))) (k : Fin W),
         ext y (FlatCoordinateLayout.index (coords ∘ Equiv.swap i j) k).val = ext x (FlatCoordinateLayout.index coords k).val := by
   intro view r port slot roles cost x src base one width clock scratch headers privateTapes
@@ -59,6 +69,18 @@ theorem rowSwap_exec {d : ℕ} (i j : Fin d) (lt : i < j) (w W H J : ℕ)
     rw [rowSwapBlock.eq_def]
     rfl
   rw [position] at tape
-  exact ⟨y,z,F,l+n,hz.trans hu,Nat.add_le_add hl hn,Exec.seq setup run,rep,tape,effect⟩
+  let work := swapWorkspace rowSwapBlock.tapes
+  obtain ⟨u',hu',clear⟩ := clearWorkTapes_exec body work ((List.nodup_finRange _).filter _) z F
+  have outside (k : Fin 35) : slot k ∉ work := by simp [work,swapWorkspace,slot,k.isLt]
+  have whole := Exec.seq setup run
+  refine ⟨y,z,F,l+n,hz.trans hu,Nat.add_le_add hl hn,whole,u',_,hu'.trans (hz.trans hu),Exec.seq whole clear,?_,?_,?_,effect⟩
+  · intro k hk
+    simp [work,swapWorkspace,hk]
+  · intro k pos
+    simp only [ite_eq_right (outside k)]
+    have cell := swap_role_read _ view _ F rep k (slot k) rfl pos
+    simpa [roles,SharedPlacementAlphabet.setTape,Function.update_apply] using cell
+  · intro pos
+    simpa only [ite_eq_right (outside 24),swap_source_word] using tape pos
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
