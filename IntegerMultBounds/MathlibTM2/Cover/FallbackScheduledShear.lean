@@ -18,6 +18,32 @@ def shearArithmetic : Fin 15 ↪ Fin 29 := Fin.castLEEmb (by decide)
 def shearTranslation : Fin 12 ↪ Fin 29 := ⟨![15,16,17,18,19,20,21,22,3,23,24,25],by decide⟩
 def shearDimensions : Fin 13 ↪ Fin 29 := ⟨![2,28,1,4,5,6,7,8,9,10,14,27,20],by decide⟩
 
+structure PrefixCopyReady (src dst tmp work : Fin T) (L extent : ℕ) (S : Stacks T A) : Prop where
+  fits : extent < 2^L
+  count : S.R src = binSyms L extent
+  marker : S.L dst = [separator]
+  dest : S.R dst = []
+  temp : S.R tmp = []
+  scratch : S.R work = []
+
+/-- Install the final loop count as a canonical descriptor on the retained separator. -/
+theorem installPrefixCount_exec {L extent : ℕ} (body : P → Pr P T 217 A U) (r : Fin 29 ↪ Fin T)
+    (v : HS T 217 A U) (S : Stacks T A)
+    (ready : PrefixCopyReady (r 13) (r 3) (r 4) (r 5) L extent S) :
+    ∃ ps z, GrowingCounterData.Canonical ps ∧ Counter.value ps = extent ∧ z.user = v.user ∧
+      let F : Stacks T A := {S with R := Function.update S.R (r 3) (ps.map bitSymbol)}
+      Exec body (Routing.binaryCanonicalCopyProgram (r 13) (r 3) (r 4) (r 5))
+        (mk v S) (10*L+12) (mk z F) ∧
+      ∀ pos, CountedLoopReuseAlphabet.binary ps pos =
+        readAt blank (F.L (r 3)) (F.R (r 3)) (pos-1) := by
+  obtain ⟨ps,z,canon,value,_,hz,run⟩ := Routing.binaryCanonicalCopy_exec body _ _ _ _
+    (by simp [List.nodup_cons,r.injective.eq_iff]) L extent ready.fits v S ready.count ready.dest ready.temp ready.scratch
+  refine ⟨ps,z,canon,value,hz,run,?_⟩
+  intro pos
+  simp only [ready.marker,Function.update_self,readAt_single]
+  rw [← CountedLoopReuseAlphabet.encoding_binary]
+  exact congrFun (encodedBinary_eq ps) pos
+
 def scheduledShear (bank : Fin 29 ↪ Fin T) : Pr P T 217 A U :=
   .seq (rowDimensions k t (shearDimensions.trans bank))
     (prefixShear (shearArithmetic.trans bank) (shearTranslation.trans bank) (bank 26))
@@ -49,6 +75,13 @@ theorem scheduledShear_exec (hk : k < t) (c : ZMod M) (body : P → Pr P T 217 A
       n ≤ dimensionTime H 1 t.val + dimensionTime H 1 g + dimensionTime H J s +
         (6*N+17*L+4*V+10*H+31 + N*(L*(12*(K+H)+78)+22*K+180*H+173+48*H*H+(207*(M*B)+241)*25)+2) ∧
       Exec body (scheduledShear k t bank) (mk v S) n (mk z F) ∧
+      PrefixCopyReady (bank 13) (bank 3) (bank 4) (bank 5) (t.val*H+1) (prefixSize (Q := M) t) F ∧
+      ShearCounters (suffixSize (Q := M) (W := W) t) M (bank ∘ shearTranslation) F ∧
+      (∀ pos : ℤ, readAt blank (F.L (bank 24)) (F.R (bank 24)) (pos-(p+(M^d*W : ℕ))) =
+        RadixToBinary.binaryEncoding.encode (putWord source p (List.ofFn a) pos)) ∧
+      (∀ pos : ℤ, pos < q ∨ q+(M^d*W : ℕ) ≤ pos →
+        readAt blank (F.L (bank 25)) (F.R (bank 25)) (pos-(q+(M^d*W : ℕ))) =
+          RadixToBinary.binaryEncoding.encode (dest pos)) ∧
       ∀ (x : Fin d → ZMod M) (j : Fin W),
         let y := (RowOp.shear k t hk c).apply x
         readAt blank (F.L (bank 25)) (F.R (bank 25)) (((index y j).val : ℤ) - (M^d*W : ℕ)) =
@@ -71,7 +104,7 @@ theorem scheduledShear_exec (hk : k < t) (c : ZMod M) (body : P → Pr P T 217 A
   have ar : ∀ i : Fin 15, 3 ≤ i → i ≤ 12 → 3 ≤ shearArithmetic i ∧ shearArithmetic i ≤ 12 := by decide
   have tr : ∀ i : Fin 12, i < 10 → i ≠ 5 →
       3 ≤ shearTranslation i ∧ shearTranslation i ≤ 23 ∧ shearTranslation i ≠ 14 ∧ shearTranslation i ≠ 20 := by decide
-  obtain ⟨z,F,n,hz,hn,run,_,_,result⟩ := rowShear_exec k t hk c body (shearArithmetic.trans bank)
+  obtain ⟨z,F,n,hz,hn,run,_,ready,result⟩ := rowShear_exec k t hk c body (shearArithmetic.trans bank)
     (shearTranslation.trans bank) rfl
     (fun i hi j => bank.injective.ne ((by decide : ∀ i : Fin 15, i ≠ 3 → ∀ j, shearTranslation j ≠ shearArithmetic i) i hi j))
     (bank 26) (fun i => bank.injective.ne ((by decide : ∀ i, shearArithmetic i ≠ 26) i))
@@ -97,6 +130,8 @@ theorem scheduledShear_exec (hk : k < t) (c : ZMod M) (body : P → Pr P T 217 A
         simpa [eqn] using clean (shearTranslation i) lo (by omega) a b (by omega) (by omega))
     (by change ∀ z, _ = readAt blank (S.L (bank 24)) (D.R (bank 24)) _; rw [keep 24 (by decide) (by decide) (by decide)]; exact src)
     (by change ∀ z, _ = readAt blank (S.L (bank 25)) (D.R (bank 25)) _; rw [keep 25 (by decide) (by decide) (by decide)]; exact dst)
-  exact ⟨z,F,m+n,hz.trans hu,Nat.add_le_add hcost hn,Exec.seq prep run,result⟩
+  exact ⟨z,F,m+n,hz.trans hu,Nat.add_le_add hcost hn,Exec.seq prep run,⟨by simpa [prefixSize] using powerFits M H t.val 1 1 hm (by decide),
+    ready.counter,ready.marker,ready.empty 3 (by decide) (by decide) (by decide),
+    ready.empty 4 (by decide) (by decide) (by decide),ready.empty 5 (by decide) (by decide) (by decide)⟩,result⟩
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback

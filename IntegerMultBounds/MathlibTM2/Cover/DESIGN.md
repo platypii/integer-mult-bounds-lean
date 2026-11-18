@@ -328,7 +328,7 @@ runs the same schedule on every packed lift of an invertible residue matrix. [`F
 schedules in physical record order from the residue table. `Fallback.liveColumn_exec`
 reads one pivot from this stream and clears its column with at most `2*d` extra
 host steps. [`Fallback.recordDiagonalize_exec`](FallbackStreamedItinerary.lean) consumes a full
-physical pivot record, leaves the next record at the head, and returns a packed unit
+forward pivot schedule. [Fallback.pivotRoundTrip_writes](FallbackPivotStream.lean) places the same pivots in reverse order immediately afterward, so the rewind can read them before advancing to the next label. The forward pass returns a packed unit
 diagonal whose product agrees with the corresponding sign-stream bit. Its two matrix
 stacks retain every intermediate stage in alternating order.
 [`Fallback.undoItinerary_apply`](FallbackUndoItinerary.lean) gives the explicit reverse
@@ -339,7 +339,9 @@ receives the preceding matrix at the head of its source stack; the driver then d
 the newer matrix. The last step restores both original matrix stacks. [Fallback.recordWeights_exec](FallbackRecordWeights.lean)
 copies the nonanchor diagonal entries to the weight stack. For every payload bank,
 the signed diagonal action using these weights followed by the reverse word acts
-by the original matrix on each vector. Executing the weighted pairs on tape and
+by the original matrix on each vector. [Fallback.reverseMatrixShear_exec](FallbackReverseShear.lean)
+executes one lower shear from the reverse pivot stream, copies the result to the original
+payload tape and returns both heads to their origins. Executing the weighted pairs on tape and
 implementing the per-column payload callback remain open.
 
 - An upper addition is a lower addition between two exchanges; an exchange of two sub-fields of

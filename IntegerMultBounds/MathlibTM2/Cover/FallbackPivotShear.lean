@@ -36,14 +36,14 @@ def pivotShearTime (H J : ℕ) : ℕ :=
   let pass := 6*N+17*L+4*V+10*H+31 + N*(L*(12*(K+H)+78)+22*K+180*H+173+48*H*H+(207*(M*B)+241)*25)
   inverse + (48*H*H+150*H+64 + (dimensions + (pass+2)))
 
-theorem pivotShear_exec (hk : k < t) (matrix : Matrix (Fin d) (Fin d) (ZMod M)) (pivot : Fin d)
-    (hb : b.Prime) (unit : IsUnit (matrix pivot k)) (body : P → Pr P T 217 A U)
+theorem pivotShear_exec (hk : k < t) (matrix : Matrix (Fin d) (Fin d) (ZMod M)) (pivot col row : Fin d)
+    (hb : b.Prime) (unit : IsUnit (matrix pivot col)) (body : P → Pr P T 217 A U)
     (bank : Fin 34 ↪ Fin T) (H J : ℕ) (hm : M < 2^H) (hw : W < 2^J) (hW : 0 < W)
     (v : HS T 217 A U) (S : Stacks T A)
     (base : S.R (bank 2) = binSyms H M) (one : S.R (bank 28) = binSyms 1 1)
     (width : S.R (bank 27) = binSyms J W) (coeffBlank : S.R (bank 0) = [])
-    (entry : S.R (bank 29) = binSyms H (matrix (Equiv.swap k pivot t) k).val)
-    (pivotWord : S.R (bank 31) = binSyms H (matrix pivot k).val)
+    (entry : S.R (bank 29) = binSyms H (matrix row col).val)
+    (pivotWord : S.R (bank 31) = binSyms H (matrix pivot col).val)
     (paddedOne : S.R (bank 32) = binSyms H (1 : ZMod M).val)
     (ticks : (S.R (bank 33)).length = w) (blankInv : S.R (bank 30) = [])
     (free : ∀ i : Fin 34, 1 ≤ i → i ≤ 26 → i ≠ 2 → i ≠ 24 → i ≠ 25 → S.R (bank i) = [])
@@ -55,8 +55,15 @@ theorem pivotShear_exec (hk : k < t) (matrix : Matrix (Fin d) (Fin d) (ZMod M)) 
       readAt blank (S.L (bank 25)) (S.R (bank 25)) (z-q)) :
     ∃ z F n, z.user = v.user ∧ n ≤ pivotShearTime (W := W) k t b w H J ∧
       Exec body (pivotShear k t b bank) (mk v S) n (mk z F) ∧
+      PrefixCopyReady (bank 13) (bank 3) (bank 4) (bank 5) (t.val*H+1) (prefixSize (Q := M) t) F ∧
+      ShearCounters (suffixSize (Q := M) (W := W) t) M (bank ∘ (Fin.castLEEmb (by decide : 29 ≤ 34)) ∘ shearTranslation) F ∧
+      (∀ pos : ℤ, readAt blank (F.L (bank 24)) (F.R (bank 24)) (pos-(p+(M^d*W : ℕ))) =
+        RadixToBinary.binaryEncoding.encode (putWord source p (List.ofFn a) pos)) ∧
+      (∀ pos : ℤ, pos < q ∨ q+(M^d*W : ℕ) ≤ pos →
+        readAt blank (F.L (bank 25)) (F.R (bank 25)) (pos-(q+(M^d*W : ℕ))) =
+          RadixToBinary.binaryEncoding.encode (dest pos)) ∧
       ∀ (x : Fin d → ZMod M) (j : Fin W),
-        let y := (RowOp.shear k t hk (matrix (Equiv.swap k pivot t) k * Ring.inverse (matrix pivot k))).apply x
+        let y := (RowOp.shear k t hk (matrix row col * Ring.inverse (matrix pivot col))).apply x
         readAt blank (F.L (bank 25)) (F.R (bank 25)) (((index y j).val : ℤ) - (M^d*W : ℕ)) =
           RadixToBinary.binaryEncoding.encode (a (index x j)) := by
   let ports : Fin 31 ↪ Fin 34 := Fin.castLEEmb (by decide)
@@ -65,7 +72,7 @@ theorem pivotShear_exec (hk : k < t) (matrix : Matrix (Fin d) (Fin d) (ZMod M)) 
       1 ≤ inverseShearPorts i ∧ inverseShearPorts i ≤ 26 ∧ inverseShearPorts i ≠ 2 ∧
       inverseShearPorts i ≠ 24 ∧ inverseShearPorts i ≠ 25 := by decide
   obtain ⟨u,D,m,hu,hm',invRun,_,invWord,hL,_,_,frame⟩ := pivotInverse_exec body b w hb
-    (matrix pivot k) unit (inverseShearPorts.trans bank) (bank 33)
+    (matrix pivot col) unit (inverseShearPorts.trans bank) (bank 33)
     (fun i => bank.injective.ne (disjoint i)) H hm v S ticks pivotWord paddedOne base (by
       intro i hi hj
       by_cases h : i = 0
@@ -76,7 +83,7 @@ theorem pivotShear_exec (hk : k < t) (matrix : Matrix (Fin d) (Fin d) (ZMod M)) 
     apply frame <;> apply bank.injective.ne
     · change ports i ≠ 30; intro eq; have e := congrArg Fin.val eq; change i.val = 30 at e; omega
     · intro eq; have e := congrArg Fin.val eq; change i.val = 33 at e; omega
-  obtain ⟨z,F,n,hz,hn,run,read⟩ := productShear_exec k t hk matrix pivot _
+  obtain ⟨z,F,n,hz,hn,run,read⟩ := productShear_exec k t hk matrix pivot col row _
     (Ring.mul_inverse_cancel _ unit) body (ports.trans bank) H J hm hw hW u D
     ((kept 2 (by decide)).trans base) ((kept 28 (by decide)).trans one)
     ((kept 27 (by decide)).trans width) ((kept 0 (by decide)).trans coeffBlank)

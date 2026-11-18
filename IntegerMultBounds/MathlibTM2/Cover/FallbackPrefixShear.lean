@@ -33,7 +33,7 @@ theorem prefixShear_exec (body : P → Pr P T 217 A U) (r : Fin 15 ↪ Fin T)
         readAt blank (S.L (call 10)) (S.R (call 10)) (k-p))
     (dst : ∀ k, RadixToBinary.binaryEncoding.encode (dest k) =
         readAt blank (S.L (call 11)) (S.R (call 11)) (k-q)) :
-    ∃ bs ms z F n, Counter.value bs = B ∧ Counter.value ms = M ∧ z.user = v.user ∧ n ≤ 6*N+17*L+4*W+10*H+31 + N*(L*(12*(K+H)+78)+22*K+180*H+173+48*H*H+(207*(M*B)+241)*25)+2 ∧
+    ∃ bs ms z F n, Counter.value bs = B ∧ Counter.value ms = M ∧ GrowingCounterData.Canonical bs ∧ GrowingCounterData.Canonical ms ∧ z.user = v.user ∧ n ≤ 6*N+17*L+4*W+10*H+31 + N*(L*(12*(K+H)+78)+22*K+180*H+173+48*H*H+(207*(M*B)+241)*25)+2 ∧
       Exec body (prefixShear r call count) (mk v S) n (mk z F) ∧
       F.R count = [] ∧ PrefixReady r L K H stride c M N F ∧
       RepT (Alphabet.mapTapes RadixToBinary.binaryEncoding
@@ -70,7 +70,7 @@ theorem prefixShear_exec (body : P → Pr P T 217 A U) (r : Fin 15 ↪ Fin T)
     source dest p q payload hw bs ms hb hm cb cm
     (by simpa [hR,E,D,Function.update_of_ne (ht 5).symm,Function.update_of_ne (ht 7).symm] using empty)
     (by simpa [prefixBank,TranslationPreparedFamily.outputPrefix,putWord] using rep)
-  exact ⟨bs,ms,z,F,_,hb,hm,hz.trans (hw'.trans hu),by omega,
+  exact ⟨bs,ms,z,F,_,hb,hm,cb,cm,hz.trans (hw'.trans hu),by omega,
     Exec.seq width (Exec.seq mod (Exec.seq init run)),rest,ready,final⟩
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback

@@ -150,6 +150,75 @@ theorem rank_update_balance (x : Fin d → ZMod Q) (t : Fin d) (z : ZMod Q) :
   simp only [Finset.sdiff_singleton_eq_erase,Fin.rev_rev,rev_val,finEquiv_symm_val]
   omega
 
+/-- Exchanging two coordinates interchanges their two place values in the packed rank. -/
+theorem rank_swap_balance (x : Fin d → ZMod Q) (i j : Fin d) :
+    (rank (x ∘ Equiv.swap i j)).val + (x i).val * Q^suffixFields i + (x j).val * Q^suffixFields j =
+      (rank x).val + (x j).val * Q^suffixFields i + (x i).val * Q^suffixFields j := by
+  by_cases h : i = j
+  · subst j; simp
+  let y := Function.update x i (x j)
+  have swap : x ∘ Equiv.swap i j = Function.update y j (x i) := by
+    funext k
+    by_cases hi : k = i
+    · subst k; simp [y,h]
+    by_cases hj : k = j
+    · subst k; simp
+    simp [Equiv.swap_apply_of_ne_of_ne hi hj, y, hi, hj]
+  have first := rank_update_balance x i (x j)
+  have second := rank_update_balance y j (x i)
+  have keep : y j = x j := Function.update_of_ne (Ne.symm h) _ _
+  rw [keep] at second
+  change (rank y).val + _ = _ at first
+  rw [swap]
+  omega
+
+/-- Split a rank at any two distinct digits in significance order. -/
+theorem rank_split_pair (x : Fin d → ZMod Q) (i j : Fin d) (h : i < j) :
+    ∃ pre < Q^i.val, ∃ mid < Q^(j.val-i.val-1), ∃ post < Q^suffixFields j,
+      (rank x).val = (((pre*Q+(x i).val)*Q^(j.val-i.val-1)+mid)*Q+(x j).val)*Q^suffixFields j+post := by
+  let gap := Q^(j.val-i.val-1)
+  let u := prefixIndex x j
+  have pos : 0 < gap := pow_pos (NeZero.pos Q) _
+  have digit : u/gap%Q = (x i).val := by
+    simpa only [u,gap,Nat.sub_sub,Nat.add_comm 1 i.val] using earlier_control x j i h
+  have digits := Nat.mod_add_div (u/gap) Q
+  rw [digit] at digits
+  have pre_lt : u/gap/Q < Q^i.val := by
+    rw [Nat.div_div_eq_div_mul]
+    apply (Nat.div_lt_iff_lt_mul (Nat.mul_pos pos (NeZero.pos Q))).2
+    have size : j.val = i.val+(j.val-i.val-1)+1 := by change i.val < j.val at h; omega
+    have bound := prefix_lt x j
+    change u < Q^j.val at bound
+    conv at bound => rhs; rw [size,pow_succ,pow_add]
+    simpa only [gap,Nat.mul_assoc] using bound
+  refine ⟨_,pre_lt,_,Nat.mod_lt u pos,_,Nat.mod_lt (rank x).val (pow_pos (NeZero.pos Q) _),?_⟩
+  have parts : (u/gap/Q*Q+(x i).val)*gap+u%gap = u := by
+    rw [Nat.mul_comm (u/gap/Q),Nat.add_comm _ (x i).val,digits,Nat.mul_comm,Nat.add_comm,Nat.mod_add_div]
+  change (rank x).val = (((u/gap/Q*Q+(x i).val)*gap+u%gap)*Q+(x j).val)*_+_
+  rw [parts]
+  exact (rank_decompose x j).trans (by dsimp [u]; ring)
+
+/-- A split address keeps its prefix, intervening digits, suffix and trailing payload
+when the selected digits are exchanged. -/
+theorem index_swap (x : Fin d → ZMod Q) (i j : Fin d) (h : i < j) (payload : Fin W)
+    (pre mid post : ℕ)
+    (packed : (rank x).val =
+      (((pre*Q+(x i).val)*Q^(j.val-i.val-1)+mid)*Q+(x j).val)*Q^suffixFields j+post) :
+    (index (x ∘ Equiv.swap i j) payload).val =
+      ((((pre*Q+(x j).val)*Q^(j.val-i.val-1)+mid)*Q+(x i).val)*Q^suffixFields j+post)*W+
+        payload.val := by
+  have exp : suffixFields i = (j.val-i.val-1)+1+suffixFields j := by
+    unfold suffixFields
+    have := j.isLt
+    change i.val < j.val at h
+    omega
+  have balance := rank_swap_balance x i j
+  rw [exp, pow_add, pow_succ, packed] at balance
+  rw [index_val]
+  congr 1
+  congr 1
+  nlinarith only [balance]
+
 /-- The same prefix and complete suffix surround the updated target. -/
 theorem index_update (x : Fin d → ZMod Q) (t : Fin d) (z : ZMod Q) (j : Fin W) :
     (index (Function.update x t z) j).val = prefixIndex x t*(Q*suffixSize (Q := Q) (W := W) t)+

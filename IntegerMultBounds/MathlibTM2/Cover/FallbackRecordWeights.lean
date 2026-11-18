@@ -29,7 +29,9 @@ theorem recordWeights_exec {m : ℕ} (body : P → Pr P T Q A U) (r : Fin 23 ↪
     (one : S.R (r 20) = binSyms H (1 : ZMod (prime^(w+1))).val) (ticks : (S.R (r 22)).length = w)
     (free : ∀ i : Fin 23, (i < 15 ∧ i ≠ 2) ∨ (17 ≤ i ∧ i ≤ 19) ∨ i = 21 → S.R (r i) = []) :
     let j := block*(prime^(w+1))^(m*m)+(LabelAddress.address g).val
-    let code := fun t => scheduleCode (A := A) (classPivots (table (LabelStock.residue m (w+1) 1 t)))
+    let code := fun t =>
+      let pivots := classPivots (table (LabelStock.residue m (w+1) 1 t))
+      scheduleCode (A := A) pivots ++ orderedScheduleCode (List.finRange (n+1)).reverse pivots
     let rows := classPivots (table (LabelStock.residue m (w+1) 1 j))
     let undo := undoItinerary rows G (n+1)
     S.R src = ((List.range N).drop j).flatMap code ++ rest →
@@ -37,14 +39,18 @@ theorem recordWeights_exec {m : ℕ} (body : P → Pr P T Q A U) (r : Fin 23 ↪
       z.user = v.user ∧ l ≤ (n+1)*(2*(n+1)+(4*w+4+columnTime (n+1) prime w H))+1 +
         (n*(8*((n+1)*(n+1)*H)+14*H+22)+1) ∧
       Exec body (recordWeights n r src) (mk v S) l (mk z F) ∧
-      F.R src = ((List.range N).drop (j+1)).flatMap code ++ rest ∧
+      F.R src = orderedScheduleCode (List.finRange (n+1)).reverse rows ++ (((List.range N).drop (j+1)).flatMap code ++ rest) ∧
       F.R (r 14) = (List.ofFn fun i => binSyms H (weights i : ZMod (prime^(w+1))).val).flatten ∧
+      (F.R (stageBank r (n+1) 15), F.R (stageBank r (n+1) 16)) =
+        matrixArchive (fun k => matrixWords A H (Itinerary.run rows G k)) (S.R (r 15)) (S.R (r 16)) (n+1) ∧
+      (∀ i, i ≠ src → i ≠ r 14 → i ≠ stageBank r (n+1) 15 → i ≠ stageBank r (n+1) 16 → F.R i = S.R i) ∧
+      (undo.map RowOp.children).sum ≤ (n+1)*(6*n+3) ∧
       (signStream (A := A) table (w+1) N)[j]? = some (bitSymbol negative) ∧
       ∀ b (x : Fin b → Fin (n+1) → ZMod (prime^(w+1))),
         fallbackBank b (if negative then -1 else 1) weights undo (bankFields (List.finRange (n+1)) x) =
           bankFields (List.finRange (n+1)) (fun k => G.mulVec (x k)) := by
   intro j code rows undo source
-  obtain ⟨u,D,l,suffix,a,neg,hu,hl,run,remaining,packed,archive,frame,units,bit,prod,_,action⟩ :=
+  obtain ⟨u,D,l,suffix,a,neg,hu,hl,run,remaining,packed,archive,frame,units,bit,prod,children,action⟩ :=
     recordDiagonalize_exec body r src apart w H hm table g G sign lift block N index v S tail rest matrix modulus one ticks free source
   let bank := stageBank r (n+1)
   have keep (i : Fin 23) (h : i ≠ 15) (h' : i ≠ 16) : D.R (bank i) = S.R (r i) := by
@@ -60,8 +66,15 @@ theorem recordWeights_exec {m : ℕ} (body : P → Pr P T Q A U) (r : Fin 23 ↪
     simpa [bank,stageBank_fixed r (n+1) 14 (by decide) (by decide)] using
       (keep 14 (by decide) (by decide)).trans (free 14 (by decide))
   rw [slot,blank,List.append_nil] at emit
-  refine ⟨z,_,l+t,weights,neg,hz.trans hu,Nat.add_le_add hl ht,Exec.seq run emit,?_,?_,bit,effect⟩
+  refine ⟨z,_,l+t,weights,neg,hz.trans hu,Nat.add_le_add hl ht,Exec.seq run emit,?_,?_,?_,?_,by simpa using children,bit,effect⟩
   · exact (Function.update_of_ne (apart 14).symm _ _).trans remaining
   · exact Function.update_self ..
+  · have mid : bank 14 = r 14 := slot
+    have h15 : bank 15 ≠ r 14 := mid ▸ bank.injective.ne (by decide)
+    have h16 : bank 16 ≠ r 14 := mid ▸ bank.injective.ne (by decide)
+    change (Function.update D.R (r 14) _ (bank 15), Function.update D.R (r 14) _ (bank 16)) = _
+    rwa [Function.update_of_ne h15, Function.update_of_ne h16]
+  · intro i hs hw ha hb
+    exact (Function.update_of_ne hw _ _).trans (frame i hs ha hb)
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback

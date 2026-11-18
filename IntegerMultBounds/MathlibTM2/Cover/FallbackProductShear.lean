@@ -19,13 +19,13 @@ def productShear (bank : Fin 31 ↪ Fin T) : Pr P T 217 A U :=
     (bank 7) (bank 8) (bank 9) (bank 10) (bank 11) (bank 12))
     (scheduledShear k t ((Fin.castLEEmb (by decide)).trans bank))
 
-theorem productShear_exec (hk : k < t) (matrix : Matrix (Fin d) (Fin d) (ZMod M)) (pivot : Fin d)
-    (inv : ZMod M) (hinv : matrix pivot k * inv = 1) (body : P → Pr P T 217 A U)
+theorem productShear_exec (hk : k < t) (matrix : Matrix (Fin d) (Fin d) (ZMod M)) (pivot col row : Fin d)
+    (inv : ZMod M) (hinv : matrix pivot col * inv = 1) (body : P → Pr P T 217 A U)
     (bank : Fin 31 ↪ Fin T) (H J : ℕ) (hm : M < 2^H) (hw : W < 2^J) (hW : 0 < W)
     (v : HS T 217 A U) (S : Stacks T A)
     (base : S.R (bank 2) = binSyms H M) (one : S.R (bank 28) = binSyms 1 1)
     (width : S.R (bank 27) = binSyms J W) (coeffBlank : S.R (bank 0) = [])
-    (entry : S.R (bank 29) = binSyms H (matrix (Equiv.swap k pivot t) k).val)
+    (entry : S.R (bank 29) = binSyms H (matrix row col).val)
     (reciprocal : S.R (bank 30) = binSyms H inv.val)
     (free : ∀ i : Fin 31, 1 ≤ i → i ≤ 26 → i ≠ 2 → i ≠ 24 → i ≠ 25 → S.R (bank i) = [])
     (left : ∀ i : Fin 12, i < 10 → S.L (bank ((Fin.castLEEmb (by decide : 29 ≤ 31)) (shearTranslation i))) = [])
@@ -43,11 +43,18 @@ theorem productShear_exec (hk : k < t) (matrix : Matrix (Fin d) (Fin d) (ZMod M)
       n ≤ 48*H*H+150*H+64 + (dimensionTime H 1 t.val + dimensionTime H 1 g + dimensionTime H J s +
         (6*N+17*L+4*V+10*H+31 + N*(L*(12*(K+H)+78)+22*K+180*H+173+48*H*H+(207*(M*B)+241)*25)+2)) ∧
       Exec body (productShear k t bank) (mk v S) n (mk z F) ∧
+      PrefixCopyReady (bank 13) (bank 3) (bank 4) (bank 5) (t.val*H+1) (prefixSize (Q := M) t) F ∧
+      ShearCounters (suffixSize (Q := M) (W := W) t) M (bank ∘ (Fin.castLEEmb (by decide : 29 ≤ 31)) ∘ shearTranslation) F ∧
+      (∀ pos : ℤ, readAt blank (F.L (bank 24)) (F.R (bank 24)) (pos-(p+(M^d*W : ℕ))) =
+        RadixToBinary.binaryEncoding.encode (putWord source p (List.ofFn a) pos)) ∧
+      (∀ pos : ℤ, pos < q ∨ q+(M^d*W : ℕ) ≤ pos →
+        readAt blank (F.L (bank 25)) (F.R (bank 25)) (pos-(q+(M^d*W : ℕ))) =
+          RadixToBinary.binaryEncoding.encode (dest pos)) ∧
       ∀ (x : Fin d → ZMod M) (j : Fin W),
-        let y := (RowOp.shear k t hk (matrix (Equiv.swap k pivot t) k * Ring.inverse (matrix pivot k))).apply x
+        let y := (RowOp.shear k t hk (matrix row col * Ring.inverse (matrix pivot col))).apply x
         readAt blank (F.L (bank 25)) (F.R (bank 25)) (((index y j).val : ℤ) - (M^d*W : ℕ)) =
           RadixToBinary.binaryEncoding.encode (a (index x j)) := by
-  let a₀ := matrix (Equiv.swap k pivot t) k
+  let a₀ := matrix row col
   let c := a₀*inv
   have zero (i : Fin 31) (h : 4 ≤ i) (h' : i ≤ 11) :=
     free i (by omega) (by omega) (by omega) (by omega) (by omega)

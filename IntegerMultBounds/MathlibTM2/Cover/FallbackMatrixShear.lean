@@ -12,12 +12,13 @@ local notation "M" => b^(w+1)
 
 def matrixReadPorts : Fin 8 ↪ Fin 35 := ⟨![0,2,34,31,4,5,6,29],by decide⟩
 
-def matrixShear (pivot : Fin d) (bank : Fin 35 ↪ Fin T) : Pr P T 217 A U :=
-  .seq (readColumnPair k (Equiv.swap k pivot t) pivot (matrixReadPorts.trans bank))
+def matrixShear (pivot : Fin d) (bank : Fin 35 ↪ Fin T)
+    (col : Fin d := k) (row : Fin d := Equiv.swap k pivot t) : Pr P T 217 A U :=
+  .seq (readColumnPair col row pivot (matrixReadPorts.trans bank))
     (pivotShear k t b ((Fin.castLEEmb (by decide)).trans bank))
 
-theorem matrixShear_exec (hk : k < t) (matrix : Matrix (Fin d) (Fin d) (ZMod M)) (pivot : Fin d)
-    (hb : b.Prime) (unit : IsUnit (matrix pivot k)) (body : P → Pr P T 217 A U)
+theorem matrixShear_exec (hk : k < t) (matrix : Matrix (Fin d) (Fin d) (ZMod M)) (pivot col row : Fin d)
+    (hb : b.Prime) (unit : IsUnit (matrix pivot col)) (body : P → Pr P T 217 A U)
     (bank : Fin 35 ↪ Fin T) (H J : ℕ) (hm : M < 2^H) (hw : W < 2^J) (hW : 0 < W)
     (v : HS T 217 A U) (S : Stacks T A)
     (base : S.R (bank 2) = binSyms H M) (one : S.R (bank 28) = binSyms 1 1)
@@ -33,23 +34,30 @@ theorem matrixShear_exec (hk : k < t) (matrix : Matrix (Fin d) (Fin d) (ZMod M))
       readAt blank (S.L (bank 24)) (S.R (bank 24)) (z-p))
     (dst : ∀ z, RadixToBinary.binaryEncoding.encode (dest z) =
       readAt blank (S.L (bank 25)) (S.R (bank 25)) (z-q)) :
-    ∃ z F n, z.user = v.user ∧ n ≤ (8*((pivot.val*d+k.val)*H)+14*H+22 + (8*(((Equiv.swap k pivot t).val*d+k.val)*H)+14*H+22)) + pivotShearTime (W := W) k t b w H J ∧
-      Exec body (matrixShear k t b pivot bank) (mk v S) n (mk z F) ∧
+    ∃ z F n, z.user = v.user ∧ n ≤ (8*((pivot.val*d+col.val)*H)+14*H+22 + (8*((row.val*d+col.val)*H)+14*H+22)) + pivotShearTime (W := W) k t b w H J ∧
+      Exec body (matrixShear k t b pivot bank col row) (mk v S) n (mk z F) ∧
+      PrefixCopyReady (bank 13) (bank 3) (bank 4) (bank 5) (t.val*H+1) (prefixSize (Q := M) t) F ∧
+      ShearCounters (suffixSize (Q := M) (W := W) t) M (bank ∘ (Fin.castLEEmb (by decide : 29 ≤ 35)) ∘ shearTranslation) F ∧
+      (∀ pos : ℤ, readAt blank (F.L (bank 24)) (F.R (bank 24)) (pos-(p+(M^d*W : ℕ))) =
+        RadixToBinary.binaryEncoding.encode (putWord source p (List.ofFn a) pos)) ∧
+      (∀ pos : ℤ, pos < q ∨ q+(M^d*W : ℕ) ≤ pos →
+        readAt blank (F.L (bank 25)) (F.R (bank 25)) (pos-(q+(M^d*W : ℕ))) =
+          RadixToBinary.binaryEncoding.encode (dest pos)) ∧
       ∀ (x : Fin d → ZMod M) (j : Fin W),
-        let y := (RowOp.shear k t hk (matrix (Equiv.swap k pivot t) k * Ring.inverse (matrix pivot k))).apply x
+        let y := (RowOp.shear k t hk (matrix row col * Ring.inverse (matrix pivot col))).apply x
         readAt blank (F.L (bank 25)) (F.R (bank 25)) (((index y j).val : ℤ) - (M^d*W : ℕ)) =
           RadixToBinary.binaryEncoding.encode (a (index x j)) := by
   have fresh (i : Fin 8) (h1 : i ≠ 1) (h2 : i ≠ 2) : S.R (bank (matrixReadPorts i)) = [] := by
     fin_cases i <;> first | contradiction | exact coeffBlank | exact pivotBlank | exact entryBlank |
       exact free _ (by decide) (by decide) (by decide) (by decide) (by decide)
-  obtain ⟨u,hu,read⟩ := readColumnPair_exec body (matrixReadPorts.trans bank) matrix k (Equiv.swap k pivot t) pivot H v S
+  obtain ⟨u,hu,read⟩ := readColumnPair_exec body (matrixReadPorts.trans bank) matrix col row pivot H v S
     tail packed (by change (S.R (bank 2)).length = H; simp [base,length_binSyms]) fresh
   let D : Stacks T A := {S with R := Function.update (Function.update S.R (bank 31)
-    (binSyms H (matrix pivot k).val)) (bank 29) (binSyms H (matrix (Equiv.swap k pivot t) k).val)}
+    (binSyms H (matrix pivot col).val)) (bank 29) (binSyms H (matrix row col).val)}
   have keep (i : Fin 35) (h : i ≠ 29) (h' : i ≠ 31) : D.R (bank i) = S.R (bank i) :=
     (Function.update_of_ne (bank.injective.ne h) _ _).trans (Function.update_of_ne (bank.injective.ne h') _ _)
   let ports : Fin 34 ↪ Fin 35 := Fin.castLEEmb (by decide)
-  obtain ⟨z,F,n,hz,hn,run,result⟩ := pivotShear_exec k t b w hk matrix pivot hb unit body (ports.trans bank)
+  obtain ⟨z,F,n,hz,hn,run,result⟩ := pivotShear_exec k t b w hk matrix pivot col row hb unit body (ports.trans bank)
     H J hm hw hW u D ((keep 2 (by decide) (by decide)).trans base)
     ((keep 28 (by decide) (by decide)).trans one) ((keep 27 (by decide) (by decide)).trans width)
     ((keep 0 (by decide) (by decide)).trans coeffBlank)

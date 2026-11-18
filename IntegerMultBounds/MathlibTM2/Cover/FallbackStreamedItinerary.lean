@@ -91,13 +91,15 @@ theorem recordDiagonalize_exec {m : ℕ} (body : P → Pr P T Q A U) (r : Fin 23
     (one : S.R (r 20) = binSyms H (1 : ZMod (prime^(w+1))).val) (ticks : (S.R (r 22)).length = w)
     (free : ∀ i : Fin 23, (i < 15 ∧ i ≠ 2) ∨ (17 ≤ i ∧ i ≤ 19) ∨ i = 21 → S.R (r i) = []) :
     let j := block*(prime^(w+1))^(m*m)+(LabelAddress.address g).val
-    let code := fun t => scheduleCode (A := A) (classPivots (table (LabelStock.residue m (w+1) 1 t)))
+    let code := fun t =>
+      let pivots := classPivots (table (LabelStock.residue m (w+1) 1 t))
+      scheduleCode (A := A) pivots ++ orderedScheduleCode (List.finRange d).reverse pivots
     let rows := classPivots (table (LabelStock.residue m (w+1) 1 j))
     let undo := undoItinerary rows G d
     S.R src = ((List.range N).drop j).flatMap code ++ rest →
     ∃ z F l suffix, ∃ a : Fin d → ZMod (prime^(w+1)), ∃ negative, z.user = v.user ∧ l ≤ d*(2*d+(4*w+4+columnTime d prime w H))+1 ∧
       Exec body (streamedItinerary d prime r src d) (mk v S) l (mk z F) ∧
-      F.R src = ((List.range N).drop (j+1)).flatMap code ++ rest ∧
+      F.R src = orderedScheduleCode (List.finRange d).reverse rows ++ (((List.range N).drop (j+1)).flatMap code ++ rest) ∧
       F.R (stageBank r d 15) = matrixWords A H (Matrix.diagonal a) ++ suffix ∧
       (F.R (stageBank r d 15),F.R (stageBank r d 16)) =
         matrixArchive (fun n => matrixWords A H (Itinerary.run rows G n)) (S.R (r 15)) (S.R (r 16)) d ∧
@@ -115,8 +117,9 @@ theorem recordDiagonalize_exec {m : ℕ} (body : P → Pr P T Q A U) (r : Fin 23
   rw [head,List.flatMap_cons,List.append_assoc] at source
   have addr := LabelStock.residue_at (by omega : 0 < w+1) block 1 0 (by decide) g
   simp only [Nat.mul_one,Nat.add_zero] at addr
-  have first : code j = scheduleCode (A := A) pivots := by simp only [code,j,addr,pivots]
-  rw [first] at source
+  have first : code j = scheduleCode (A := A) pivots ++ orderedScheduleCode (List.finRange d).reverse rows := by
+    simp only [code,rows,j,addr,pivots]
+  rw [first,List.append_assoc] at source
   obtain ⟨z,F,l,suffix,hz,hl,run,packed,archive,remaining,_,_,_,frame⟩ := streamedItinerary_exec body r src apart prime w H
     prime_prime G pivots hm v S tail matrix modulus one ticks free d le_rfl valid _ (by rw [List.take_of_length_le (by simp)]; exact source)
   obtain ⟨_,_,_,clear,units⟩ := Itinerary.run_spec pivots G d le_rfl valid

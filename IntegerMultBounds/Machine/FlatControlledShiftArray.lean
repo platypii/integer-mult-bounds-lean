@@ -11,7 +11,7 @@ without copying the tape or attaching explicit address keys. -/
 namespace IntegerMultBounds.Machine.FlatControlledShiftArray
 variable {radix c B : ℕ} [Fact radix.Prime]
 
-private theorem overwrite {k : ℕ} (f : ℤ → Fin (k+4)) (p : ℤ)
+theorem overwrite {k : ℕ} (f : ℤ → Fin (k+4)) (p : ℤ)
     (xs ys : List (Fin (k+4))) (hlen : xs.length = ys.length) :
     putWord (putWord f p xs) p ys = putWord f p ys := by
   funext z

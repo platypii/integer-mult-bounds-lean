@@ -12,10 +12,28 @@ variable {T Q A d m : ℕ} {P U : Type}
 def pivotCode (i : ℕ) : List (Fin (A+4)) :=
   List.replicate i (bitSymbol true) ++ [bitSymbol false]
 
+def orderedScheduleCode (order : List (Fin d)) (rows : Fin d → Fin d) : List (Fin (A+4)) :=
+  order.flatMap fun k => pivotCode (rows k).val
+
 def scheduleCode (rows : Fin d → Fin d) : List (Fin (A+4)) :=
-  (List.finRange d).flatMap fun k => pivotCode (rows k).val
+  orderedScheduleCode (List.finRange d) rows
 
 /-- Compile the residue table once; the generated program writes one entire schedule per label. -/
+theorem orderedPivotStream_writes (order : List (Fin d)) (body : P → Pr P T Q A U)
+    (table : Matrix (Fin m) (Fin m) (ZMod prime) → Matrix (Fin d) (Fin d) (ZMod prime))
+    (rs : List (Pair T)) (hk : rs.length = m*m) (out count saved : Fin T)
+    (hr : (count :: saved :: (slots rs ++ [out])).Nodup) :
+    ∃ p : Pr P T Q A U, ∀ (v : RecursiveInterchangeLayout.Descriptor) (w B : ℕ),
+      0 < w → v.beforeH = B*prime^(m*(w*m)) →
+      Writes body (fun R => ready (prime^(w-1)) R rs ∧ R saved = [] ∧
+        (R count).length = v.beforeRows*v.rows*B) out p
+        ((List.range (LabelMask.records v)).flatMap fun j =>
+          orderedScheduleCode order (classPivots (table (LabelStock.residue m w 1 j))))
+        ((v.beforeRows*v.rows*B)*(time (prime^(w-1)) (m*m) 1+5)+4) := by
+  simpa only [LabelSelectors.recordMap,LabelSelectors.residue_eq,List.flatMap_def] using
+    recordWords_writes (body := body) m (fun a => orderedScheduleCode order (classPivots (table (LabelSelectors.matrix m a))))
+      rs hk out count saved hr
+
 theorem pivotStream_writes (body : P → Pr P T Q A U)
     (table : Matrix (Fin m) (Fin m) (ZMod prime) → Matrix (Fin d) (Fin d) (ZMod prime))
     (rs : List (Pair T)) (hk : rs.length = m*m) (out count saved : Fin T)
@@ -26,10 +44,24 @@ theorem pivotStream_writes (body : P → Pr P T Q A U)
         (R count).length = v.beforeRows*v.rows*B) out p
         ((List.range (LabelMask.records v)).flatMap fun j =>
           scheduleCode (classPivots (table (LabelStock.residue m w 1 j))))
+        ((v.beforeRows*v.rows*B)*(time (prime^(w-1)) (m*m) 1+5)+4) :=
+  orderedPivotStream_writes (List.finRange d) body table rs hk out count saved hr
+
+/-- Place the return pivots immediately after the forward record, in rewind order. -/
+theorem pivotRoundTrip_writes (body : P → Pr P T Q A U)
+    (table : Matrix (Fin m) (Fin m) (ZMod prime) → Matrix (Fin d) (Fin d) (ZMod prime))
+    (rs : List (Pair T)) (hk : rs.length = m*m) (out count saved : Fin T)
+    (hr : (count :: saved :: (slots rs ++ [out])).Nodup) :
+    ∃ p : Pr P T Q A U, ∀ (v : RecursiveInterchangeLayout.Descriptor) (w B : ℕ),
+      0 < w → v.beforeH = B*prime^(m*(w*m)) →
+      Writes body (fun R => ready (prime^(w-1)) R rs ∧ R saved = [] ∧
+        (R count).length = v.beforeRows*v.rows*B) out p
+        ((List.range (LabelMask.records v)).flatMap fun j =>
+          let rows := classPivots (table (LabelStock.residue m w 1 j))
+          scheduleCode rows ++ orderedScheduleCode (List.finRange d).reverse rows)
         ((v.beforeRows*v.rows*B)*(time (prime^(w-1)) (m*m) 1+5)+4) := by
-  simpa only [LabelSelectors.recordMap,LabelSelectors.residue_eq,List.flatMap_def] using
-    recordWords_writes (body := body) m (fun a => scheduleCode (classPivots (table (LabelSelectors.matrix m a))))
-      rs hk out count saved hr
+  simpa only [scheduleCode, orderedScheduleCode, List.flatMap_append] using
+    orderedPivotStream_writes (List.finRange d ++ (List.finRange d).reverse) body table rs hk out count saved hr
 
 def nextPivotBit (src : Fin T) : Act T Q A U :=
   .pop (.rt src) (fun v o => {v with flag := symBit (o.getD blank)}) .done
@@ -58,6 +90,35 @@ theorem selectPivot_exec {ι : Type} (body : P → Pr P T Q A U) (src : Fin T)
     have run := ih {v with flag := true} D (by simp [D,rest]) (by simpa [D,Function.update_idem] using branch)
     exact (Exec.seq rd (Exec.cond_true (by rfl) run)).cast (by simp; omega) rfl
 
+theorem selectPivot_fin_exec (body : P → Pr P T Q A U) (src : Fin T)
+    (f : Fin d → Pr P T Q A U) (pivot : Fin d)
+    (v : HS T Q A U) (S : Stacks T A) (rest : List (Fin (A+4)))
+    (code : S.R src = pivotCode pivot.val ++ rest) {z l}
+    (branch : Exec body (f pivot) (mk {v with flag := false} {S with R := Function.update S.R src rest}) l z) :
+    Exec body (selectPivot src f (List.finRange d)) (mk v S) (2*(pivot.val+1)+l) z := by
+  let xs := List.finRange d
+  have lt : pivot.val < xs.length := by simp [xs]
+  have len : (xs.take pivot.val).length = pivot.val := by simp [List.length_take,Nat.min_eq_left lt.le]
+  have split : xs.take pivot.val ++ pivot :: xs.drop (pivot.val+1) = xs := by
+    have h := List.getElem_cons_drop lt
+    rw [show pivot :: xs.drop (pivot.val+1) = xs.drop pivot.val by simpa [xs] using h]
+    exact List.take_append_drop ..
+  obtain select := selectPivot_exec body src f (xs.take pivot.val)
+    pivot (xs.drop (pivot.val+1)) v S rest (by rw [len]; exact code) branch
+  rw [split,len] at select
+  exact select
+
+/-- Dispatch a rewind callback from the unconsumed reverse prefix of the record. -/
+theorem reversePivot_exec (body : P → Pr P T Q A U) (src : Fin T)
+    (f : Fin d → Pr P T Q A U) (rows : Fin d → Fin d) (k : Fin d)
+    (v : HS T Q A U) (S : Stacks T A) (rest : List (Fin (A+4)))
+    (code : S.R src = orderedScheduleCode (((List.finRange d).take (k.val+1)).reverse) rows ++ rest)
+    {z l} (branch : Exec body (f (rows k)) (mk {v with flag := false} {S with R := Function.update S.R src (orderedScheduleCode (((List.finRange d).take k.val).reverse) rows ++ rest)}) l z) :
+    Exec body (selectPivot src f (List.finRange d)) (mk v S) (2*((rows k).val+1)+l) z := by
+  apply selectPivot_fin_exec body src f (rows k) v S _ _ branch
+  have lt : k.val < (List.finRange d).length := by simp
+  simpa [List.take_succ_eq_append_getElem lt, orderedScheduleCode, List.append_assoc] using code
+
 /-- The column number is fixed by the loop; its pivot row comes from the record. -/
 def liveColumn (p : ℕ) (k : Fin d) (r : Fin 23 ↪ Fin T) (src : Fin T) : Pr P T Q A U :=
   selectPivot src (fun i => itineraryColumn p k i r) (List.finRange d)
@@ -78,16 +139,7 @@ theorem liveColumn_exec (body : P → Pr P T Q A U) (r : Fin 23 ↪ Fin T) (src 
     ((keep 15).trans matrix) ((keep 2).trans modulus) ((keep 20).trans one)
     (by rw [keep,ticks]) (fun i h => (keep i).trans (free i h))
   rw [keep 16] at run
-  let xs := List.finRange d
-  have lt : pivot.val < xs.length := by simp [xs]
-  have len : (xs.take pivot.val).length = pivot.val := by simp [List.length_take,Nat.min_eq_left lt.le]
-  have split : xs.take pivot.val ++ pivot :: xs.drop (pivot.val+1) = xs := by
-    have h := List.getElem_cons_drop lt
-    rw [show pivot :: xs.drop (pivot.val+1) = xs.drop pivot.val by simpa [xs] using h]
-    exact List.take_append_drop ..
-  obtain select := selectPivot_exec body src (fun i => itineraryColumn p k i r) (xs.take pivot.val)
-    pivot (xs.drop (pivot.val+1)) v S rest (by rw [len]; exact code) run
-  rw [split,len] at select
+  have select := selectPivot_fin_exec body src (fun i => itineraryColumn p k i r) pivot v S rest code run
   exact ⟨z,_,hz,by have := pivot.isLt; omega,select⟩
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
