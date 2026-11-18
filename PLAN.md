@@ -191,8 +191,12 @@ checked in `Cover/Fallback.lean`: unit-pivot elimination over a local ring with 
 operation counts (`fallback_form`). Step 3b is checked in `Cover/Fallback.lean`,
 `Cover/Itinerary.lean` and `Cover/BadClass.lean`: row operations as children, one pivot
 itinerary per residue class (`valid_congr`), and the bad-class count by Schwartz–Zippel
-(`bad_count`). The cover algebra is complete; the decision on the machine work
-(steps 4–7) is next.
+(`bad_count`). The cover algebra is complete. Step 4a (2026-11-10) is checked in
+`Cover/Route.lean`, `Cover/LabelRing.lean` and `Cover/LabelView.lean`: a route is two
+ordered passes on label columns and at most `m - 1` column exchanges, each one call
+of the existing supplier on a descriptor view; the branch reads only the low digits
+of the label. Step 4b, the machine wiring of routes, stock, class split and
+directory, is next.
 
 **Develop suppliers and outer execution as separate work streams.** M9 supplies the
 finite mixed-to-uniform construction shared with M10; M10 supplies the stronger ordinary

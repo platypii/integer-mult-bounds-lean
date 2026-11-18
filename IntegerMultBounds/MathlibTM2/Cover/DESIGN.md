@@ -86,7 +86,12 @@ density of invertible classes is above `1 - 2/q` per level, so the padded volume
 be carried in the cost statement.
 
 Upstream counts at most 3,520 leaf calls per data route and 1,664 per hosted route with its
-carry scheme. The count for the box layout has not been made.
+carry scheme. In the box layout the count is at most `m - 1`. Lay the box out by columns, `m`
+coordinates of `m` atoms: right multiplication mixes whole columns with scalar coefficients, so
+with `σᵀ = E₁ Π E₂` a route is the ordered program of `E₂`, a column permutation and the ordered
+program of `E₁` (`Route.route`, `Route.exists_route`), and the permutation is at most `m - 1`
+exchanges of two columns (`Route.swaps_le`). Each exchange is one call of the existing
+interchange supplier on a view of the caller's descriptor (`LabelView.swap_cols`).
 
 A fixed finite label group would make labels ordinary roles and remove sections 5 and 6. I did not
 find one. With a shared basis on the common complement, two routes whose lines meet at 60° have
@@ -162,7 +167,8 @@ Each step ends in checked Lean. Steps 1–3 are algebra and independent of the m
 | 2 | Good normal form over a commutative ring: if `P` factors through `r` coordinates and its leading minors of sizes `1..r` are units, then `P C = L Δ Π_r R` with unit lower `L`, `R` (`good_form`), and the move is one weighted child (`good_move`) | done, [`GoodForm.lean`](GoodForm.lean) |
 | 3a | Unit-pivot elimination over a local ring: `n (n-1)` row additions and `n` exchanges make an invertible matrix diagonal with unit entries (`fallback_form`) | done, [`Fallback.lean`](Fallback.lean) |
 | 3b | Row operations as children (`add_conj`, `ordinary_of_reversed`); one itinerary per residue class (`itinerary_form`, `exists_itinerary`, `valid_congr`); the bad-class count (`bad_count`) | done, [`Fallback.lean`](Fallback.lean), [`Itinerary.lean`](Itinerary.lean), [`BadClass.lean`](BadClass.lean) |
-| 4 | Machine: label box and padded stock, routes on label atoms, split by class, directory | 8–15k |
+| 4a | Route and label semantics: routes as atom programs on label columns (`route`, `exists_route`, `swaps_le`); `Z/q^w` local, branch and itinerary read only the class (`isLocalRing`, `good_congr`, `valid_res`); column exchange as a descriptor view (`swap_cols`); padding at most `m/q` of the box (`singular_count`) | done, [`Route.lean`](Route.lean), [`LabelRing.lean`](LabelRing.lean), [`LabelView.lean`](LabelView.lean), [`BadClass.lean`](BadClass.lean) |
+| 4b | Machine: ordered passes on label columns (stage 1's viewed scalar actions with the payload as suffix), supplier call per column exchange, padded stock, split by class, directory | 8–15k |
 | 5 | Machine: coefficient evaluator and offset-from-tape atom passes | 15–30k |
 | 6 | Machine: weighted children and leaves, fallback schedule, node induction | 10–20k |
 | 7 | PR589 as a cover network from the role-level node of `M6/Bit*`; histogram and moment certificate at `1 - c`; wrapper at atom exponent `c`; seam and retune | 5–10k |
@@ -172,7 +178,6 @@ The sizes are rough. The stage-2 machine that steps 4–6 extend (`M8/RevMachine
 
 The algebra of steps 1–3 is checked. Left for the machine steps, where the layout fixes them:
 
-- `Z/q^w` as a local ring with the unit-reflecting map to `F_q`, to instantiate `valid_congr`;
 - the rank factorization `P = A B` of a conjugated rational idempotent, for `good_form`;
 - the final diagonal of the fallback as `n - 1` unit pairs and a sign, and the reversal of a
   field as one reversed child on its two halves;
@@ -187,7 +192,7 @@ word with a port-independent line, or another cover-free supplier.
 
 ## 8. Open questions
 
-1. Leaf-call count per route in the box layout, and the resulting constant.
+1. Settled: at most `m - 1` supplier calls per route (section 3).
 2. Whether the low digits of the label must lead the address order for the class split, or a
    split pass can test them in place.
 3. The exact moment root for the PR589 histogram, in place of upstream's `c = 17/10000`.

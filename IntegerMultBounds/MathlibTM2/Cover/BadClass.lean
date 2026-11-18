@@ -13,6 +13,8 @@ the rank vanishes in the residue field. `bad_count`: over a finite field with `q
 one label is good, the number of bad invertible labels times `q` is at most
 `(∑_{k ≤ r} k (m + 1)) q^(m²)`. So the bad fraction of the label box is at most
 `r (r + 1) (m + 1) / (2 q)`.
+`singular_count`: at most `m q^(m² - 1)` labels are singular, so the padding of the label box
+is a fraction `m / q` of it.
 
 Each minor of `X P adj(X)`, for the matrix of variables `X`, is a polynomial of total degree at
 most `k (m + 1)` (`totalDegree_minorPoly`). It is nonzero because it does not vanish at the good
@@ -214,6 +216,29 @@ theorem bad_count [Fintype F] (P : Matrix (Fin m) (Fin m) F) (r : ℕ) (hr : r �
           Finset _) * Fintype.card F := Finset.sum_mul _ _ _
     _ ≤ ∑ k ∈ range r, (k + 1) * (m + 1) * Fintype.card F ^ (m * m) := Finset.sum_le_sum hone
     _ = _ := (Finset.sum_mul _ _ _).symm
+
+open scoped Classical in
+/-- **The padding is thin.** At most `m q^(m² - 1)` labels of the box are singular. -/
+theorem singular_count [Fintype F] :
+    #{g : Matrix (Fin m) (Fin m) F | g.det = 0} * Fintype.card F ≤
+      m * Fintype.card F ^ (m * m) := by
+  have hne : (X F m).det ≠ 0 := det_mvPolynomialX_ne_zero (Fin m) F
+  have he (g : Matrix (Fin m) (Fin m) F) : eval (point g) (X F m).det = g.det := by
+    rw [RingHom.map_det]
+    exact congrArg det (mvPolynomialX_mapMatrix_eval g)
+  have hcard : #({g : Matrix (Fin m) (Fin m) F | g.det = 0} : Finset _) =
+      #{x : Var m → F | eval x (X F m).det = 0} :=
+    Finset.card_equiv (Equiv.curry (Fin m) (Fin m) F).symm fun g => by
+      simp only [mem_filter, mem_univ, true_and]
+      rw [← he g]
+      rfl
+  have hv : Fintype.card (Var m) = m * m := by simp
+  have hdeg : (X F m).det.totalDegree ≤ m * 1 :=
+    totalDegree_det_le (X F m) 1 totalDegree_X_entry
+  rw [hcard]
+  refine (card_zeros_le _ hne).trans ?_
+  rw [hv]
+  exact Nat.mul_le_mul_right _ (by omega)
 
 end
 
