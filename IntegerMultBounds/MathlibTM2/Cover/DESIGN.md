@@ -346,8 +346,10 @@ payload tape and returns both heads to their origins.
 the reverse pivot schedule and restoring the original matrix stacks. Given a payload already
 placed at the diagonalized addresses, it places each cell at its original matrix image.
 [Fallback.forwardStages_exec](FallbackForwardStages.lean) constructs that alternating matrix
-archive on the reverse loop’s physical tapes. Executing the weighted pairs on the payload
-between the forward and reverse passes remains open.
+archive on the reverse loop’s physical tapes. [Fallback.pairScaling_exec](FallbackPairScaling.lean)
+executes one reciprocal pair on the payload. It multiplies the earlier coordinate by the
+inverse of the selected diagonal entry and the later coordinate by that entry.
+Composing the pairs with the anchor sign and the reverse traversal remains open.
 
 - An upper addition is a lower addition between two exchanges; an exchange of two sub-fields of
   one bank is a reversed child between two reversals of the later field; a reversal is one

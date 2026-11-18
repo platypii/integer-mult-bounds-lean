@@ -57,25 +57,54 @@ theorem loadPairWeights_exec (body : P → Pr P T Q A U) (i : Fin d) (bank : Fin
   rw [eq] at invert
   exact ⟨z,_,hz.trans hu,Nat.add_le_add_left hn _,Exec.seq read invert⟩
 
+def loadOnePair (bank : Fin 35 ↪ Fin T) : Pr P T Q A U :=
+  .seq (bcopy (bank 32) (bank 31) (bank 4) (bank 5)) (bcopy (bank 32) (bank 30) (bank 4) (bank 5))
+
+omit [NeZero M] in
+theorem loadOnePair_exec (body : P → Pr P T Q A U) (bank : Fin 35 ↪ Fin T)
+    (H : ℕ) (v : HS T Q A U) (S : Stacks T A) (one : S.R (bank 32) = binSyms H (1 : ZMod M).val)
+    (free : ∀ i ∈ shearWork, S.R (bank i) = []) :
+    ∃ z, z.user = v.user ∧ Exec body (loadOnePair bank) (mk v S) (2*(6*H+6))
+      (mk z {S with R := Function.update (Function.update S.R (bank 31) (binSyms H (1 : ZMod M).val)) (bank 30) (binSyms H (1 : ZMod M).val)}) := by
+  obtain ⟨u,hu,copy⟩ := bcopy_exec body (a := bank 32) (c := bank 31) (t₁ := bank 4) (t₂ := bank 5)
+    (by simp [List.nodup_cons,bank.injective.eq_iff]) v S (free 4 (by decide)) (free 5 (by decide))
+  rw [one,length_binSyms,free 31 (by decide),List.append_nil] at copy
+  let D := {S with R := Function.update S.R (bank 31) (binSyms H (1 : ZMod M).val)}
+  have keep (j : Fin 35) (hj : j ≠ 31) : D.R (bank j) = S.R (bank j) := Function.update_of_ne (bank.injective.ne hj) _ _
+  obtain ⟨z,hz,again⟩ := bcopy_exec body (a := bank 32) (c := bank 30) (t₁ := bank 4) (t₂ := bank 5)
+    (by simp [List.nodup_cons,bank.injective.eq_iff]) u D ((keep 4 (by decide)).trans (free 4 (by decide)))
+      ((keep 5 (by decide)).trans (free 5 (by decide)))
+  rw [keep 32 (by decide),one,length_binSyms,keep 30 (by decide),free 30 (by decide),List.append_nil] at again
+  exact ⟨z,hz.trans hu,by rw [two_mul]; exact Exec.seq copy again⟩
+
 /-- For a nonzero residue the representative of its negative is the modulus
 minus its representative. Both operands already have the same tape width. -/
-def loadSignedPairWeights (b : ℕ) (i : Fin d) (bank : Fin 35 ↪ Fin T) : Pr P T Q A U :=
-  .seq (loadPairWeights b i bank) (bsub (bank 2) (bank 30) (bank 29) (bank 4) (bank 5) (bank 6) (bank 7))
+def loadSignedPairWeights (b : ℕ) (i : Fin d) (bank : Fin 35 ↪ Fin T) (useOne : Bool := false) : Pr P T Q A U :=
+  .seq (if useOne then loadOnePair bank else loadPairWeights b i bank) (bsub (bank 2) (bank 30) (bank 29) (bank 4) (bank 5) (bank 6) (bank 7))
 
 theorem loadSignedPairWeights_exec (body : P → Pr P T Q A U) (i : Fin d) (bank : Fin 35 ↪ Fin T)
     (a : Fin d → ZMod M) (unit : IsUnit (a i)) (hb : b.Prime) (H J : ℕ) (hm : M < 2^H)
     (v : HS T Q A U) (S : Stacks T A) (tail : List (Fin (A+4))) (sym : α → Fin 4)
     (source dest : ℤ → Fin 4) (p q : ℤ) (word : Fin (M^d*W) → α)
-    (ready : ShearReady bank H J (Matrix.diagonal a) tail sym source dest p q word S) :
+    (ready : ShearReady bank H J (Matrix.diagonal a) tail sym source dest p q word S) (useOne : Bool := false) :
     let C := 48*H*H+152*H+66
-    let inv := Ring.inverse (a i)
-    let loaded := Function.update (Function.update S.R (bank 31) (binSyms H (a i).val)) (bank 30) (binSyms H inv.val)
+    let weight := if useOne then 1 else a i
+    let inv := Ring.inverse weight
+    let loaded := Function.update (Function.update S.R (bank 31) (binSyms H weight.val)) (bank 30) (binSyms H inv.val)
     ∃ z n, z.user = v.user ∧ n ≤ (8*((i.val*d+i.val)*H)+14*H+22) +
       (6*w+6+(14*H+16+(b-2)*C+C+w*(12*H+15+b*C))) + (8*H+8) ∧
-      Exec body (loadSignedPairWeights b i bank) (mk v S) n
+      Exec body (loadSignedPairWeights b i bank useOne) (mk v S) n
         (mk z {S with R := Function.update loaded (bank 29) (binSyms H (-inv).val)}) := by
-  intro C inv loaded
-  obtain ⟨u,l,hu,hl,load⟩ := loadPairWeights_exec body i bank a unit hb H J hm v S tail sym source dest p q word ready
+  intro C weight inv loaded
+  have loadRun : ∃ u l, u.user = v.user ∧ l ≤ (8*((i.val*d+i.val)*H)+14*H+22) +
+      (6*w+6+(14*H+16+(b-2)*C+C+w*(12*H+15+b*C))) ∧
+      Exec body (if useOne then loadOnePair bank else loadPairWeights b i bank) (mk v S) l (mk u {S with R := loaded}) := by
+    cases useOne
+    · exact loadPairWeights_exec body i bank a unit hb H J hm v S tail sym source dest p q word ready
+    · obtain ⟨u,hu,run⟩ := loadOnePair_exec body bank H v S ready.padded (fun j hj => (ready.scratch j hj).2)
+      exact ⟨u,2*(6*H+6),hu,by omega,by simpa [loaded,inv,weight] using run⟩
+  obtain ⟨u,l,hu,hl,load⟩ := loadRun
+  have unitWeight : IsUnit weight := by cases useOne <;> simp_all [weight]
   let D := {S with R := loaded}
   have keep (j : Fin 35) (h : j ≠ 30) (h' : j ≠ 31) : D.R (bank j) = S.R (bank j) :=
     (Function.update_of_ne (bank.injective.ne h) _ _).trans (Function.update_of_ne (bank.injective.ne h') _ _)
@@ -87,7 +116,7 @@ theorem loadSignedPairWeights_exec (body : P → Pr P T Q A U) (i : Fin d) (bank
     (free 4 (by decide) (by decide) (by decide)) (free 5 (by decide) (by decide) (by decide))
     (free 6 (by decide) (by decide) (by decide))
   have : Fact (1 < M) := ⟨one_lt_pow₀ hb.one_lt (by omega)⟩
-  have ne : inv.val ≠ 0 := fun eq => (Ring.isUnit_iff_inverse_ne_zero.mp unit) (by apply ZMod.val_injective; simpa using eq)
+  have ne : inv.val ≠ 0 := fun eq => (Ring.isUnit_iff_inverse_ne_zero.mp unitWeight) (by apply ZMod.val_injective; simpa using eq)
   have bound := inv.val_lt
   have neg : (M+2^H-inv.val)%2^H = (-inv).val := by
     rw [ZMod.neg_val',Nat.mod_eq_of_lt (show M-inv.val < M by omega),
