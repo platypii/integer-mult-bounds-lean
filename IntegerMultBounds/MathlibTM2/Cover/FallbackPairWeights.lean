@@ -57,4 +57,42 @@ theorem loadPairWeights_exec (body : P → Pr P T Q A U) (i : Fin d) (bank : Fin
   rw [eq] at invert
   exact ⟨z,_,hz.trans hu,Nat.add_le_add_left hn _,Exec.seq read invert⟩
 
+/-- For a nonzero residue the representative of its negative is the modulus
+minus its representative. Both operands already have the same tape width. -/
+def loadSignedPairWeights (b : ℕ) (i : Fin d) (bank : Fin 35 ↪ Fin T) : Pr P T Q A U :=
+  .seq (loadPairWeights b i bank) (bsub (bank 2) (bank 30) (bank 29) (bank 4) (bank 5) (bank 6) (bank 7))
+
+theorem loadSignedPairWeights_exec (body : P → Pr P T Q A U) (i : Fin d) (bank : Fin 35 ↪ Fin T)
+    (a : Fin d → ZMod M) (unit : IsUnit (a i)) (hb : b.Prime) (H J : ℕ) (hm : M < 2^H)
+    (v : HS T Q A U) (S : Stacks T A) (tail : List (Fin (A+4))) (sym : α → Fin 4)
+    (source dest : ℤ → Fin 4) (p q : ℤ) (word : Fin (M^d*W) → α)
+    (ready : ShearReady bank H J (Matrix.diagonal a) tail sym source dest p q word S) :
+    let C := 48*H*H+152*H+66
+    let inv := Ring.inverse (a i)
+    let loaded := Function.update (Function.update S.R (bank 31) (binSyms H (a i).val)) (bank 30) (binSyms H inv.val)
+    ∃ z n, z.user = v.user ∧ n ≤ (8*((i.val*d+i.val)*H)+14*H+22) +
+      (6*w+6+(14*H+16+(b-2)*C+C+w*(12*H+15+b*C))) + (8*H+8) ∧
+      Exec body (loadSignedPairWeights b i bank) (mk v S) n
+        (mk z {S with R := Function.update loaded (bank 29) (binSyms H (-inv).val)}) := by
+  intro C inv loaded
+  obtain ⟨u,l,hu,hl,load⟩ := loadPairWeights_exec body i bank a unit hb H J hm v S tail sym source dest p q word ready
+  let D := {S with R := loaded}
+  have keep (j : Fin 35) (h : j ≠ 30) (h' : j ≠ 31) : D.R (bank j) = S.R (bank j) :=
+    (Function.update_of_ne (bank.injective.ne h) _ _).trans (Function.update_of_ne (bank.injective.ne h') _ _)
+  have free (j : Fin 35) (h : j ≠ 30) (h' : j ≠ 31) (hj : j ∈ shearWork) := (keep j h h').trans (ready.scratch j hj).2
+  obtain ⟨z,hz,_,_,sub⟩ := bsub_exec body (a := bank 2) (b := bank 30) (c := bank 29)
+    (tx := bank 4) (ty := bank 5) (tz := bank 6) (cy := bank 7)
+    (by simp [List.nodup_cons,bank.injective.eq_iff]) (bank.injective.ne (by decide)) (bank.injective.ne (by decide))
+    hm (inv.val_lt.trans hm) u D ((keep 2 (by decide) (by decide)).trans ready.modulus) (Function.update_self ..)
+    (free 4 (by decide) (by decide) (by decide)) (free 5 (by decide) (by decide) (by decide))
+    (free 6 (by decide) (by decide) (by decide))
+  have : Fact (1 < M) := ⟨one_lt_pow₀ hb.one_lt (by omega)⟩
+  have ne : inv.val ≠ 0 := fun eq => (Ring.isUnit_iff_inverse_ne_zero.mp unit) (by apply ZMod.val_injective; simpa using eq)
+  have bound := inv.val_lt
+  have neg : (M+2^H-inv.val)%2^H = (-inv).val := by
+    rw [ZMod.neg_val',Nat.mod_eq_of_lt (show M-inv.val < M by omega),
+      show M+2^H-inv.val = M-inv.val+2^H by omega,Nat.add_mod_right,Nat.mod_eq_of_lt (by omega)]
+  rw [neg,free 29 (by decide) (by decide) (by decide),List.append_nil] at sub
+  exact ⟨z,_,hz.trans hu,Nat.add_le_add_right hl _,Exec.seq load sub⟩
+
 end IntegerMultBounds.MathlibTM2.Cover.Fallback

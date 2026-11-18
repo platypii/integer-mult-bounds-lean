@@ -10,41 +10,49 @@ open IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2.Stack Host FlatCoord
 variable {P U α : Type} {T A d W b w : ℕ} [NeZero (b^(w+1))]
 local notation "M" => b^(w+1)
 
-def pairShearPorts (inverse : Bool) : Fin 29 ↪ Fin 35 :=
-  (Fin.castLEEmb (by decide)).trans (Equiv.swap 0 (if inverse then 30 else 31)).toEmbedding
+def pairShearPorts (inverse : Bool) (negative : Bool := false) : Fin 29 ↪ Fin 35 :=
+  (Fin.castLEEmb (by decide)).trans (Equiv.swap 0 (if negative then 29 else if inverse then 30 else 31)).toEmbedding
 
-def pairShear (b : ℕ) (i k t : Fin d) (inverse : Bool) (bank : Fin 35 ↪ Fin T) : Pr P T 217 A U :=
-  .seq (loadPairWeights b i bank) (weightedShear k t ((pairShearPorts inverse).trans bank))
+def pairShear (b : ℕ) (i k t : Fin d) (inverse : Bool) (bank : Fin 35 ↪ Fin T) (negative : Bool := false) : Pr P T 217 A U :=
+  .seq (if negative then loadSignedPairWeights b i bank else loadPairWeights b i bank) (weightedShear k t ((pairShearPorts inverse negative).trans bank))
 
 theorem pairShear_exec (body : P → Pr P T 217 A U) (i k t : Fin d) (hk : k < t) (inverse : Bool)
     (bank : Fin 35 ↪ Fin T) (a : Fin d → ZMod M) (unit : IsUnit (a i)) (hb : b.Prime) (H J : ℕ)
     (hm : M < 2^H) (hw : W < 2^J) (hW : 0 < W) (v : HS T 217 A U) (S : Stacks T A)
     (tail : List (Fin (A+4))) (sym : α → Fin 4) (source dest : ℤ → Fin 4) (p q : ℤ)
     (word : Fin (M^d*W) → α) (empty : ∀ z, q ≤ z → z < q+(M^d*W : ℕ) → dest z = blank)
-    (ready : ShearReady bank H J (Matrix.diagonal a) tail sym source dest p q word S) :
-    let c := if inverse then Ring.inverse (a i) else a i
+    (ready : ShearReady bank H J (Matrix.diagonal a) tail sym source dest p q word S) (negative : Bool := false) :
+    let c := if negative then -Ring.inverse (a i) else if inverse then Ring.inverse (a i) else a i
     let C := 48*H*H+152*H+66
     ∃ z F n, z.user = v.user ∧ n ≤ (8*((i.val*d+i.val)*H)+14*H+22) +
-      (6*w+6+(14*H+16+(b-2)*C+C+w*(12*H+15+b*C))) + weightedShearTime k t M W H J ∧
-      Exec body (pairShear b i k t inverse bank) (mk v S) n (mk z F) ∧
+      (6*w+6+(14*H+16+(b-2)*C+C+w*(12*H+15+b*C))) + (if negative then 8*H+8 else 0) + weightedShearTime k t M W H J ∧
+      Exec body (pairShear b i k t inverse bank negative) (mk v S) n (mk z F) ∧
       F.R (bank 2) = S.R (bank 2) ∧ F.R (bank 27) = S.R (bank 27) ∧ F.R (bank 28) = S.R (bank 28) ∧
       (∀ pos, readAt blank (F.L (bank 25)) (F.R (bank 25)) (pos-q) = RadixToBinary.binaryEncoding.encode (dest pos)) ∧
       ∃ out : Fin (M^d*W) → α, (∀ pos, readAt blank (F.L (bank 24)) (F.R (bank 24)) (pos-p) =
         RadixToBinary.binaryEncoding.encode (putWord source p (List.ofFn (sym ∘ out)) pos)) ∧
         ∀ x j, out (index ((RowOp.shear k t hk c).apply x) j) = word (index x j) := by
   intro c C
-  obtain ⟨u,l,hu,hl,load⟩ := loadPairWeights_exec body i bank a unit hb H J hm v S tail sym source dest p q word ready
-  let D := {S with R := Function.update (Function.update S.R (bank 31) (binSyms H (a i).val)) (bank 30) (binSyms H (Ring.inverse (a i)).val)}
-  let ports := (pairShearPorts inverse).trans bank
-  have fixed : ∀ j : Fin 29, j ≠ 0 → pairShearPorts inverse j = j.castLE (by decide) := by cases inverse <;> decide
+  let loaded := Function.update (Function.update S.R (bank 31) (binSyms H (a i).val)) (bank 30) (binSyms H (Ring.inverse (a i)).val)
+  let D := {S with R := if negative then Function.update loaded (bank 29) (binSyms H (-Ring.inverse (a i)).val) else loaded}
+  have loadRun : ∃ u l, u.user = v.user ∧ l ≤ (8*((i.val*d+i.val)*H)+14*H+22) +
+      (6*w+6+(14*H+16+(b-2)*C+C+w*(12*H+15+b*C))) + (if negative then 8*H+8 else 0) ∧
+      Exec body (if negative then loadSignedPairWeights b i bank else loadPairWeights b i bank) (mk v S) l (mk u D) := by
+    cases negative
+    · simpa [D,loaded,C] using loadPairWeights_exec body i bank a unit hb H J hm v S tail sym source dest p q word ready
+    · exact loadSignedPairWeights_exec body i bank a unit hb H J hm v S tail sym source dest p q word ready
+  obtain ⟨u,l,hu,hl,load⟩ := loadRun
+  let ports := (pairShearPorts inverse negative).trans bank
+  have fixed : ∀ j : Fin 29, j ≠ 0 → pairShearPorts inverse negative j = j.castLE (by decide) := by cases negative <;> cases inverse <;> decide
   have keep (j : Fin 29) (hj : j ≠ 0) : D.R (ports j) = S.R (bank (j.castLE (by decide))) := by
     have off : ∀ j : Fin 29, j.castLE (by decide : 29 ≤ 35) ≠ 30 ∧ j.castLE (by decide : 29 ≤ 35) ≠ 31 := by decide
-    simp only [D,ports,Function.Embedding.trans_apply,fixed j hj,Function.update_of_ne (bank.injective.ne (off j).1),
+    have off29 : ∀ j : Fin 29, j.castLE (by decide : 29 ≤ 35) ≠ 29 := by decide
+    cases negative <;> simp only [D,loaded,ite_true,ite_false,Bool.false_eq_true,Function.update_of_ne (bank.injective.ne (off29 j)),ports,Function.Embedding.trans_apply,fixed j hj,Function.update_of_ne (bank.injective.ne (off j).1),
       Function.update_of_ne (bank.injective.ne (off j).2)]
   have srcPort : (24 : Fin 29).castLE (by decide : 29 ≤ 35) = 24 := by decide
   have dstPort : (25 : Fin 29).castLE (by decide : 29 ≤ 35) = 25 := by decide
   have coef : D.R (ports 0) = binSyms H c.val := by
-    cases inverse <;> simp [D,ports,c,pairShearPorts,bank.injective.eq_iff]
+    cases negative <;> cases inverse <;> simp [D,loaded,ports,c,pairShearPorts,bank.injective.eq_iff]
   have free : ∀ j : Fin 29, 1 ≤ j → j ≤ 26 → j ≠ 2 → j ≠ 24 → j ≠ 25 → j.castLE (by decide : 29 ≤ 35) ∈ shearWork := by decide
   have left : ∀ j : Fin 12, j < 10 → shearTranslation j ≠ 0 ∧ (shearTranslation j).castLE (by decide : 29 ≤ 35) ∈ shearWork := by decide
   obtain ⟨z,F,n,hz,hn,run,modulus,headers,clean,out,result,placed⟩ := weightedShear_exec k t hk sym c body ports H J hm hw hW u D
