@@ -85,4 +85,37 @@ theorem swapExponent_exec (body : P → Pr P T Q A U) (r : Fin 8 ↪ Fin T)
   simpa [E,D,Node.dropTop,Action.run,update_rt,Function.update_comm (r.injective.ne (by decide : (0 : Fin 8) ≠ 1)),
     r.injective.eq_iff,count,restore] using pop
 
+def swapExponentPorts : Fin 8 ↪ Fin 14 := ⟨![12,13,3,4,5,6,7,8],by decide⟩
+
+def swapRuntimeHeaders (r : Fin 14 ↪ Fin T) (d : ℕ) : Pr P T Q A U :=
+  .seq (swapPrefix ((Fin.castLEEmb (by decide)).trans r) d)
+    (.seq (Routing.binaryCanonicalCopyProgram (r 10) (r 11) (r 3) (r 4))
+      (swapExponent (swapExponentPorts.trans r)))
+
+theorem swapRuntimeHeaders_exec (body : P → Pr P T Q A U) (r : Fin 14 ↪ Fin T)
+    (d H J M W w : ℕ) (hm : M < 2^H) (hw : W < 2^J) (v : HS T Q A U) (S : Stacks T A)
+    (base : S.R (r 0) = binSyms H M) (one : S.R (r 1) = binSyms 1 1)
+    (width : S.R (r 10) = binSyms J W) (clock : (S.R (r 12)).length = w)
+    (free : ∀ i : Fin 14, (2 ≤ i ∧ i < 9) ∨ i = 11 ∨ i = 13 → S.R (r i) = []) :
+    ∃ z n, z.user = v.user ∧ n ≤ dimensionTime H 1 d + (4*(d*H+1)+6) + (10*J+12) + (21*(w+1)+12) ∧
+      Exec body (swapRuntimeHeaders r d) (mk v S) n (mk z {S with R := (Function.update
+        (Function.update (Function.update S.R (r 2) ((bits (M^d)).map bitSymbol))
+          (r 11) ((bits W).map bitSymbol)) (r 13) ((bits (w+1)).map bitSymbol))}) := by
+  let ports : Fin 10 ↪ Fin 14 := Fin.castLEEmb (by decide)
+  obtain ⟨u,n,hu,hn,prefixRun⟩ := swapPrefix_exec body (ports.trans r) d H M hm v S base one
+    (fun i lo hi => free (ports i) (Or.inl ⟨lo,hi⟩))
+  let D : Stacks T A := {S with R := Function.update S.R (r 2) ((bits (M^d)).map bitSymbol)}
+  have keep (i : Fin 14) (hi : i ≠ 2) : D.R (r i) = S.R (r i) := Function.update_of_ne (r.injective.ne hi) _ _
+  obtain ⟨y,hy,widthRun⟩ := swapWidth_exec body (r 10) (r 11) (r 3) (r 4)
+    (by simp [List.nodup_cons,r.injective.eq_iff]) J W hw u D ((keep 10 (by decide)).trans width)
+    ((keep 11 (by decide)).trans (free _ (by decide))) ((keep 3 (by decide)).trans (free _ (by decide)))
+    ((keep 4 (by decide)).trans (free _ (by decide)))
+  let E : Stacks T A := {D with R := Function.update D.R (r 11) ((bits W).map bitSymbol)}
+  have kept (i : Fin 14) (h : i ≠ 11) (h' : i ≠ 2) : E.R (r i) = S.R (r i) :=
+    (Function.update_of_ne (r.injective.ne h) _ _).trans (keep i h')
+  obtain ⟨z,m,hz,hm',exponentRun⟩ := swapExponent_exec body (swapExponentPorts.trans r) w y E
+    ((congrArg List.length (kept 12 (by decide) (by decide))).trans clock)
+    (by intro i hi; fin_cases i <;> first | contradiction | exact (kept _ (by decide) (by decide)).trans (free _ (by decide)))
+  exact ⟨z,n+((10*J+12)+m),hz.trans (hy.trans hu),by omega,Exec.seq prefixRun (Exec.seq widthRun exponentRun)⟩
+
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
