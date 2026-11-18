@@ -44,9 +44,15 @@ theorem installPrefixCount_exec {L extent : ℕ} (body : P → Pr P T 217 A U) (
   rw [← CountedLoopReuseAlphabet.encoding_binary]
   exact congrFun (encodedBinary_eq ps) pos
 
+def rowArithmeticPorts : Fin 15 ↪ Fin 27 := Fin.castLEEmb (by decide)
+def rowTranslationPorts : Fin 12 ↪ Fin 27 :=
+  ⟨fun i => ⟨(shearTranslation i).val,(by decide : ∀ i, (shearTranslation i).val < 27) i⟩,
+    fun i j h => shearTranslation.injective (Fin.ext (congrArg (Fin.val (n := 27)) h))⟩
+
 def scheduledShear (bank : Fin 29 ↪ Fin T) : Pr P T 217 A U :=
   .seq (rowDimensions k t (shearDimensions.trans bank))
-    (prefixShear (shearArithmetic.trans bank) (shearTranslation.trans bank) (bank 26))
+    (embProg ((Fin.castLEEmb (by decide : 27 ≤ 29)).trans bank) Empty.elim
+      (prefixShear rowArithmeticPorts rowTranslationPorts 26))
 
 private theorem powerFits (M H n b J : ℕ) (hm : M < 2^H) (hb : b < 2^J) :
     M^n*b < 2^(n*H+J) := by
@@ -76,6 +82,7 @@ theorem scheduledShear_exec (hk : k < t) (c : ZMod M) (body : P → Pr P T 217 A
         (6*N+17*L+4*V+10*H+31 + N*(L*(12*(K+H)+78)+22*K+180*H+173+48*H*H+(207*(M*B)+241)*25)+2) ∧
       Exec body (scheduledShear k t bank) (mk v S) n (mk z F) ∧
       F.R (bank 2) = S.R (bank 2) ∧
+      (∀ i : Fin 29, 27 ≤ i → F.R (bank i) = S.R (bank i)) ∧
       PrefixCopyReady (bank 13) (bank 3) (bank 4) (bank 5) (t.val*H+1) (prefixSize (Q := M) t) F ∧
       ShearCounters (suffixSize (Q := M) (W := W) t) M (bank ∘ shearTranslation) F ∧
       (∀ pos : ℤ, readAt blank (F.L (bank 24)) (F.R (bank 24)) (pos-(p+(M^d*W : ℕ))) =
@@ -105,13 +112,12 @@ theorem scheduledShear_exec (hk : k < t) (c : ZMod M) (body : P → Pr P T 217 A
   have ar : ∀ i : Fin 15, 3 ≤ i → i ≤ 12 → 3 ≤ shearArithmetic i ∧ shearArithmetic i ≤ 12 := by decide
   have tr : ∀ i : Fin 12, i < 10 → i ≠ 5 →
       3 ≤ shearTranslation i ∧ shearTranslation i ≤ 23 ∧ shearTranslation i ≠ 14 ∧ shearTranslation i ≠ 20 := by decide
-  obtain ⟨z,F,n,hz,hn,run,_,ready,result⟩ := rowShear_exec k t hk c body (shearArithmetic.trans bank)
-    (shearTranslation.trans bank) rfl
-    (fun i hi j => bank.injective.ne ((by decide : ∀ i : Fin 15, i ≠ 3 → ∀ j, shearTranslation j ≠ shearArithmetic i) i hi j))
-    (bank 26) (fun i => bank.injective.ne ((by decide : ∀ i, shearArithmetic i ≠ 26) i))
-    (fun i => bank.injective.ne ((by decide : ∀ i, shearTranslation i ≠ 26) i))
+  let ports : Fin 27 ↪ Fin 29 := Fin.castLEEmb (by decide)
+  let work := ports.trans bank
+  obtain ⟨z,F,n,hz,hn,run,_,ready,result⟩ := rowShear_exec k t hk c (P := Empty) Empty.elim rowArithmeticPorts
+    rowTranslationPorts rfl (by decide) 26 (by decide) (by decide)
     _ _ H _ (by simpa [prefixSize] using powerFits M H t.val 1 1 hm (by decide))
-    (by simpa using powerFits M H g 1 1 hm (by decide)) hm (powerFits M H s W J hm hw) hW u D
+    (by simpa using powerFits M H g 1 1 hm (by decide)) hm (powerFits M H s W J hm hw) hW (embDn work u) (embStk work D)
     (by change D.R (bank 1) = _; simp [D,bank.injective.eq_iff])
     ((keep 13 (by decide) (by decide) (by decide)).trans (free _ (by decide) (by decide) (by decide) (by decide) (by decide)))
     (by change D.R (bank 14) = _; simp [D,bank.injective.eq_iff])
@@ -128,11 +134,23 @@ theorem scheduledShear_exec (hk : k < t) (c : ZMod M) (body : P → Pr P T 217 A
       by_cases eqn : i = 5
       · subst i; change D.R (bank 20) = _; simp [D]
       · obtain ⟨lo,up,a,b⟩ := tr i hi eqn
-        simpa [eqn] using clean (shearTranslation i) lo (by omega) a b (by omega) (by omega))
+        simp only [if_neg eqn]; change D.R (bank (shearTranslation i)) = []; exact clean (shearTranslation i) lo (by omega) a b (by omega) (by omega))
     (by change ∀ z, _ = readAt blank (S.L (bank 24)) (D.R (bank 24)) _; rw [keep 24 (by decide) (by decide) (by decide)]; exact src)
     (by change ∀ z, _ = readAt blank (S.L (bank 25)) (D.R (bank 25)) _; rw [keep 25 (by decide) (by decide) (by decide)]; exact dst)
-  exact ⟨z,F,m+n,hz.trans hu,Nat.add_le_add hcost hn,Exec.seq prep run,ready.modulus.trans base.symm,⟨by simpa [prefixSize] using powerFits M H t.val 1 1 hm (by decide),
+  obtain ⟨y,G,placed,_,hy,eq,frame⟩ := exec_emb (body' := body) (ι := Empty.elim)
+    work.injective (fun e => nomatch e) run u rfl D rfl
+  rw [← eq] at ready result
+  refine ⟨y,G,m+n,hy.trans (hz.trans hu),Nat.add_le_add hcost hn,Exec.seq prep placed,ready.modulus.trans base.symm,?_,⟨by simpa [prefixSize] using powerFits M H t.val 1 1 hm (by decide),
     ready.counter,ready.marker,ready.empty 3 (by decide) (by decide) (by decide),
     ready.empty 4 (by decide) (by decide) (by decide),ready.empty 5 (by decide) (by decide) (by decide)⟩,result⟩
+
+  intro i hi
+  apply (frame _ _).2.trans (keep i (by omega) (by omega) (by omega))
+  intro j
+  apply bank.injective.ne
+  intro h
+  have e := congrArg Fin.val h
+  change j.val = i.val at e
+  omega
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback

@@ -57,6 +57,7 @@ theorem pivotShear_exec (hk : k < t) (matrix : Matrix (Fin d) (Fin d) (ZMod M)) 
     ∃ z F n, z.user = v.user ∧ n ≤ pivotShearTime (W := W) k t b w H J ∧
       Exec body (pivotShear k t b bank) (mk v S) n (mk z F) ∧
       (∀ i : Fin 34, 32 ≤ i → i ≤ 33 → F.R (bank i) = S.R (bank i)) ∧
+      (∀ i : Fin 34, 27 ≤ i → i ≤ 28 → F.R (bank i) = S.R (bank i)) ∧
       F.R (bank 2) = S.R (bank 2) ∧
       PrefixCopyReady (bank 13) (bank 3) (bank 4) (bank 5) (t.val*H+1) (prefixSize (Q := M) t) F ∧
       ShearCounters (suffixSize (Q := M) (W := W) t) M (bank ∘ (Fin.castLEEmb (by decide : 29 ≤ 34)) ∘ shearTranslation) F ∧
@@ -102,16 +103,19 @@ theorem pivotShear_exec (hk : k < t) (matrix : Matrix (Fin d) (Fin d) (ZMod M)) 
   obtain ⟨y,G,placed,_,hy,eq,untouched⟩ := exec_emb (body' := body) (ι := Empty.elim)
     work.injective (fun e => nomatch e) run u rfl D rfl
   rw [← eq] at result
-  obtain ⟨modulus,ready,read⟩ := result
-  refine ⟨y,G,m+n,hy.trans (hz.trans hu),Nat.add_le_add hm' hn,Exec.seq invRun placed,?_,
+  obtain ⟨widthFrame,modulus,ready,read⟩ := result
+  refine ⟨y,G,m+n,hy.trans (hz.trans hu),Nat.add_le_add hm' hn,Exec.seq invRun placed,?_,?_,
     modulus.trans (kept 2 (by decide)),⟨ready.fits,ready.count,ready.marker,ready.dest,ready.temp,ready.scratch⟩,read⟩
-  intro i lo hi
-  apply (untouched _ _).2.trans (frame _ (bank.injective.ne (by change i ≠ 30; omega)))
-  intro j
-  apply bank.injective.ne
-  intro e
-  have h := congrArg Fin.val e
-  change j.val = i.val at h
-  omega
+  · intro i lo hi
+    apply (untouched _ _).2.trans (frame _ (bank.injective.ne (by change i ≠ 30; omega)))
+    intro j
+    apply bank.injective.ne
+    intro e
+    have h := congrArg Fin.val e
+    change j.val = i.val at h
+    omega
+  · intro i lo hi
+    let j : Fin 31 := ⟨i.val,by omega⟩
+    exact (widthFrame j lo hi).trans (kept j (by change i.val < 30; omega))
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
