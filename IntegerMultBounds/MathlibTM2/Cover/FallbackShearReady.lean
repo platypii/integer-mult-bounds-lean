@@ -24,6 +24,14 @@ structure ShearReady (bank : Fin 35 ↪ Fin T) (H J : ℕ) (matrix : Matrix (Fin
   dst : ∀ z, readAt blank (S.L (bank 25)) (S.R (bank 25)) (z-q) =
     RadixToBinary.binaryEncoding.encode (dest z)
 
+noncomputable def reverseRowTime [Fintype P] (body : P → Pr P T 217 A U) (bank : Fin 35 ↪ Fin T)
+    (k t col target pivot : Fin d) (b w W H J : ℕ) : ℕ :=
+  let row := Equiv.swap col pivot target
+  let readTime := fun i : Fin d => 8*((i.val*d+col.val)*H)+14*H+22
+  let limit : ℕ := readTime pivot + readTime row + pivotShearTime (W := W) k t b w H J +
+      (10*(t.val*H+1)+12+((327*((b^(w+1))^d*W)+2)*13+6))
+  4*shearWork.length+1+(1+6*shearWork.length*shearPushBound d b bank body)*limit
+
 theorem reverseMatrixShear_ready [Fintype P] (k t col target pivot : Fin d) (hk : k < t)
     (matrix : Matrix (Fin d) (Fin d) (ZMod M)) (hb : b.Prime) (unit : IsUnit (matrix pivot col))
     (body : P → Pr P T 217 A U) (bank : Fin 35 ↪ Fin T) (H J : ℕ)
@@ -31,17 +39,12 @@ theorem reverseMatrixShear_ready [Fintype P] (k t col target pivot : Fin d) (hk 
     (tail : List (Fin (A+4))) (sym : α → Fin 4) (source dest : ℤ → Fin 4) (p q : ℤ)
     (empty : ∀ z, q ≤ z → z < q+(M^d*W : ℕ) → dest z = blank) (a : Fin (M^d*W) → α)
     (ready : ShearReady bank H J matrix tail sym source dest p q a S) :
-    let row := Equiv.swap col pivot target
-    let readTime := fun i : Fin d => 8*((i.val*d+col.val)*H)+14*H+22
-    let limit := readTime pivot + readTime row + pivotShearTime (W := W) k t b w H J +
-      (10*(t.val*H+1)+12+((327*(M^d*W)+2)*13+6))
     ∃ z F n word, z.user = v.user ∧
-      n ≤ 4*shearWork.length+1+(1+6*shearWork.length*shearPushBound d b bank body)*limit ∧
+      n ≤ reverseRowTime body bank k t col target pivot b w W H J ∧
       Exec body (reverseMatrixShear k t b col target pivot bank) (mk v S) n (mk z F) ∧
       ShearReady bank H J matrix tail sym source dest p q word F ∧
-      ∀ x j, word (index ((RowOp.shear k t hk (matrix row col * Ring.inverse (matrix pivot col))).apply x) j) =
+      ∀ x j, word (index ((RowOp.shear k t hk (matrix (Equiv.swap col pivot target) col * Ring.inverse (matrix pivot col))).apply x) j) =
         a (index x j) := by
-  intro row readTime limit
   have work : ∀ i : Fin 35, i ∈ shearWork ↔
       (i ≤ 26 ∧ i ≠ 2 ∧ i ≠ 24 ∧ i ≠ 25) ∨ (29 ≤ i ∧ i ≤ 31) := by decide
   have bankSize : 29 ≤ 35 := by decide
@@ -62,5 +65,30 @@ theorem reverseMatrixShear_ready [Fintype P] (k t col target pivot : Fin d) (hk 
   intro j hj
   obtain ⟨i,hi,rfl⟩ := List.mem_map.mp hj
   exact ready.scratch i hi
+
+/-- All original payload cells are tracked through one shared machine execution. -/
+def ColumnReady (bank : Fin 35 ↪ Fin T) (H J : ℕ) (matrix : Matrix (Fin d) (Fin d) (ZMod M))
+    (tail : List (Fin (A+4))) (sym : α → Fin 4) (source dest : ℤ → Fin 4) (p q : ℤ)
+    (original : Fin (M^d*W) → α) (addr : (Fin d → ZMod M) → Fin d → ZMod M) (S : Stacks T A) : Prop :=
+  ∃ word, ShearReady bank H J matrix tail sym source dest p q word S ∧
+    ∀ x j, word (index (addr x) j) = original (index x j)
+
+theorem columnReady_lower [Fintype P] (k t pivot : Fin d) (hk : k < t)
+    (matrix : Matrix (Fin d) (Fin d) (ZMod M)) (hb : b.Prime) (unit : IsUnit (matrix pivot k))
+    (body : P → Pr P T 217 A U) (bank : Fin 35 ↪ Fin T) (H J : ℕ)
+    (hm : M < 2^H) (hw : W < 2^J) (hW : 0 < W) (v : HS T 217 A U) (S : Stacks T A)
+    (tail : List (Fin (A+4))) (sym : α → Fin 4) (source dest : ℤ → Fin 4) (p q : ℤ)
+    (empty : ∀ z, q ≤ z → z < q+(M^d*W : ℕ) → dest z = blank) (original : Fin (M^d*W) → α)
+    (addr : (Fin d → ZMod M) → Fin d → ZMod M)
+    (ready : ColumnReady bank H J matrix tail sym source dest p q original addr S) :
+    let c := matrix (Equiv.swap k pivot t) k * Ring.inverse (matrix pivot k)
+    ∃ z F n, z.user = v.user ∧ n ≤ reverseRowTime body bank k t k t pivot b w W H J ∧
+      Exec body (reverseMatrixShear k t b k t pivot bank) (mk v S) n (mk z F) ∧
+      ColumnReady bank H J matrix tail sym source dest p q original
+        (fun x => Function.update (addr x) t (addr x t + c * addr x k)) F := by
+  obtain ⟨a,layout,placed⟩ := ready
+  obtain ⟨z,F,n,word,hz,time,run,next,effect⟩ := reverseMatrixShear_ready k t k t pivot hk
+    matrix hb unit body bank H J hm hw hW v S tail sym source dest p q empty a layout
+  exact ⟨z,F,n,hz,time,run,word,next,fun x j => (effect (addr x) j).trans (placed x j)⟩
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
