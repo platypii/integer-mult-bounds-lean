@@ -2,6 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackSwapMachine
 public import IntegerMultBounds.MathlibTM2.Host.Foreign
+import IntegerMultBounds.MathlibTM2.Host.ChunkSwap
 
 /-! Execute the prepared coordinate swap on host stacks representing its tape bank. -/
 @[expose] public section
@@ -34,6 +35,50 @@ theorem swap_role_read {T N : ℕ} (roles : Tapes T prime)
   rw [eq] at cell
   simp only [LabelCall.bank,Tapes.append,Fin.addCases_left] at cell
   exact cell.symm
+
+/-- Assemble the simulator input from the role tapes, optional binary descriptors,
+and blank private tapes. Each present descriptor has its separator on the left. -/
+theorem swap_bank_rep {T N : ℕ} (fits : T+24 ≤ N) (roles : Tapes T prime)
+    (view : RecursiveInterchangeLayout.Descriptor) (headers : Fin 22 → Option (List Bool))
+    (S : Stacks N prime) :
+    let slot := fun i : Fin (T+24) => i.castLE fits
+    let words : Fin (2+22) → Option (List Bool) := Fin.addCases (fun i : Fin 2 => some (Routines.hdr view ((Fin.castLEEmb (by decide : 2 ≤ 6)) i))) headers
+    (∀ i pos, roles.tape i pos = readAt blank (S.L (slot (Fin.castAdd 24 i)))
+      (S.R (slot (Fin.castAdd 24 i))) (pos-roles.head i)) →
+    (∀ i : Fin 24, let j := slot (Fin.natAdd T i)
+      S.L j = (words i).toList.map (fun _ => separator) ∧
+      S.R j = ((words i).getD []).map bitSymbol) →
+    (∀ i : Fin N, T+24 ≤ i.val → S.L i = [] ∧ S.R i = []) →
+    RepT (raw (LabelCall.bank roles view headers) N) S.L S.R := by
+  intro slot words role hdr privateTapes i pos
+  by_cases small : i.val < T+24
+  · let j : Fin (T+24) := ⟨i.val,small⟩
+    have eq : i = slot j := rfl
+    rw [eq]
+    have lt : (slot j).val < T+(2+22) := small
+    simp only [raw,dite_eq_left lt]
+    change (LabelCall.bank roles view headers).tape j pos =
+      readAt blank (S.L (slot j)) (S.R (slot j)) (pos-(LabelCall.bank roles view headers).head j)
+    induction j using Fin.addCases with
+    | left k => simpa only [LabelCall.bank,Tapes.append,Fin.addCases_left] using role k pos
+    | right k =>
+      obtain ⟨left,right⟩ := hdr k
+      rw [left,right]
+      change Fin (2+22) at k
+      induction k using Fin.addCases with
+      | left k =>
+        simp only [LabelCall.bank,Tapes.append,Fin.addCases_right,Fin.addCases_left,words]
+        fin_cases k <;> change RadixZeroFill.encodedBinary _ pos = readAt blank [separator] _ (pos-1) <;>
+          rw [encodedBinary_eq,readAt_single] <;> rfl
+      | right k =>
+        simp only [words,LabelCall.bank,Headers.bank,Tapes.append,Fin.addCases_right]
+        cases h : headers k with
+        | none => simp [CounterDimensions.descriptorTape,CounterDimensions.descriptorHead,readAt_nil_left,wordTape_nil]
+        | some xs => change RadixZeroFill.encodedBinary xs pos = readAt blank [separator] _ (pos-1)
+                     rw [encodedBinary_eq,readAt_single]
+                     rfl
+  · obtain ⟨left,right⟩ := privateTapes i (by omega)
+    simp [raw,small,left,right,readAt_nil_left,wordTape_nil]
 
 theorem swapPayload_exec [M8.Machine.Net] {T d w W : ℕ} {P U : Type}
     (i j : Fin d) (h : i < j) (hw : 0 < w) (hW : 0 < W)
