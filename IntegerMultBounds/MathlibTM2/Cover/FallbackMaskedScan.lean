@@ -51,4 +51,46 @@ theorem maskedScan_exec (body : P → Pr P T Q A U) (mask : Fin T)
     (by cases is <;> rfl)
   exact ⟨z,F,_,hz,done,empty,by omega,.seq peek more⟩
 
+/-- Index the tape invariant by the number of records already consumed. The branch
+sees the remaining mask after dispatch and must retain it for the next iteration. -/
+theorem maskedRange_exec (body : P → Pr P T Q A U) (mask : Fin T) (live padding : Pr P T Q A U)
+    (records : ℕ) (active : ℕ → Bool) (cost : ℕ → ℕ) (ready : ℕ → Stacks T A → Prop)
+    (release : ∀ j S bits, ready j S → ready j {S with R := Function.update S.R mask bits})
+    (step : ∀ j, j < records → ∀ (v : HS T Q A U) (S : Stacks T A), ready j S →
+      ∃ z F n, z.user = v.user ∧ ready (j+1) F ∧ F.R mask = S.R mask ∧ n ≤ cost j ∧
+        Exec body (if active j then live else padding) (mk v S) n (mk z F))
+    (v : HS T Q A U) (S : Stacks T A) (start : ready 0 S)
+    (bits : S.R mask = (List.range records).map fun j => bitSymbol (active j)) :
+    ∃ z F n, z.user = v.user ∧ ready records F ∧ F.R mask = [] ∧
+      n ≤ ((List.range records).map fun j => cost j + 4).sum + 2 ∧
+      Exec body (maskedScan mask live padding) (mk v S) n (mk z F) := by
+  let inv := fun (is : List ℕ) (D : Stacks T A) =>
+    ∃ j ≤ records, is = (List.range records).drop j ∧ ready j D
+  have advance (i : ℕ) (is : List ℕ) (u : HS T Q A U) (D : Stacks T A) (h : inv (i :: is) D)
+      (_ : D.R mask = ((i :: is).map fun j => bitSymbol (active j))) :
+      ∃ z F n, z.user = u.user ∧ inv is F ∧ F.R mask = (is.map fun j => bitSymbol (active j)) ∧ n ≤ cost i ∧
+        Exec body (if active i then live else padding)
+          (mk {u with flag := active i} {D with R := Function.update D.R mask (is.map fun j => bitSymbol (active j))})
+          n (mk z F) := by
+    obtain ⟨j,hj,eq,current⟩ := h
+    have len := congrArg List.length eq
+    simp only [List.length_cons,List.length_drop,List.length_range] at len
+    have inside : j < records := by omega
+    have lo : j < (List.range records).length := by simpa using inside
+    have split := eq.trans (List.getElem_cons_drop lo).symm
+    simp only [List.getElem_range,List.cons.injEq] at split
+    obtain ⟨rfl,suffix⟩ := split
+    let tail := is.map fun k => bitSymbol (a := A) (active k)
+    obtain ⟨z,F,n,hz,next,keep,hn,run⟩ := step i inside {u with flag := active i}
+      {D with R := Function.update D.R mask tail} (release i D tail current)
+    have done : inv is F := ⟨i+1,inside,suffix,next⟩
+    exact ⟨z,F,n,hz,done,keep.trans (Function.update_self ..),hn,run⟩
+  obtain ⟨z,F,n,hz,⟨j,hj,eq,done⟩,empty,hn,run⟩ :=
+    maskedScan_exec body mask live padding active cost inv advance (List.range records) v S
+      ⟨0,Nat.zero_le _,by simp,start⟩ bits
+  have len := congrArg List.length eq
+  simp only [List.length_nil,List.length_drop,List.length_range] at len
+  obtain rfl : j = records := by omega
+  exact ⟨z,F,n,hz,done,empty,hn,run⟩
+
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
