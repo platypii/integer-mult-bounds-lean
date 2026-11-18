@@ -1,12 +1,12 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.Cover.FallbackPivotStream
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackMatrixShear
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackShearCleanup
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackShearReturn
 import IntegerMultBounds.Machine.RowPaddingConstructedAlphabet
 import IntegerMultBounds.Machine.BinaryDivide
 
-/-! Read the reverse pivot from tape and apply its lower shear to the payload. -/
+/-! Apply a selected pivot shear and return the word to its original role tape. -/
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Cover.Fallback
 open IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2.Stack Host FlatCoordinateLayout
@@ -40,14 +40,61 @@ private theorem shear_output_word {α β : Type*} (encode : α → β) {m : ℕ}
   rw [eq,atIndex]
   simpa only [restore] using cells (undo (coordinates r)) j
 
+def shearAndReturn (col target pivot : Fin d) (bank : Fin 35 ↪ Fin T) : Pr P T 217 A U :=
+  .seq (matrixShear k t b pivot bank col (Equiv.swap col pivot target))
+    (finishShear ((Fin.castLEEmb (by decide)).trans bank))
+
+/-- A single push bound for all physical row shears in the fixed dimension.
+The compiled instructions are independent of the modulus precision and payload width. -/
+noncomputable def shearPushBound [Fintype P] (d b : ℕ) (bank : Fin 35 ↪ Fin T)
+    (body : P → Pr P T 217 A U) : ℕ :=
+  max (Fast.Main.mnPushC body) (Finset.univ.sup fun ix : Fin 5 → Fin d =>
+    Fast.Main.mnProgPush (shearAndReturn (P := P) (A := A) (U := U) (ix 0) (ix 1) b (ix 2) (ix 3) (ix 4) bank))
+
+theorem shear_cleanup_time [Fintype P] (col target pivot : Fin d) (bank : Fin 35 ↪ Fin T)
+    (body : P → Pr P T 217 A U) {v u : HS T 217 A U} {S G : Stacks T A} {n : ℕ}
+    (run : Exec body (shearAndReturn k t b col target pivot bank) (mk v S) n (mk u G)) :
+    let tapes := shearWork.map bank
+    n+((tapes.map fun i => 4*(G.L i).length+2*(G.R i).length+4).sum+1) ≤
+      (tapes.map fun i => 4*(S.L i).length+2*(S.R i).length+4).sum+1+
+        (1+6*shearWork.length*shearPushBound d b bank body)*n := by
+  intro tapes
+  let push := shearPushBound d b bank body
+  have prog : Fast.Main.mnProgPush (shearAndReturn k t b col target pivot bank : Pr P T 217 A U) ≤ push :=
+    (Finset.le_sup (f := fun ix : Fin 5 → Fin d =>
+      Fast.Main.mnProgPush (shearAndReturn (P := P) (A := A) (U := U) (ix 0) (ix 1) b (ix 2) (ix 3) (ix 4) bank))
+      (Finset.mem_univ ![k,t,col,target,pivot])).trans (le_max_right ..)
+  have bound := cleanup_cost_le tapes run prog (fun f => (Fast.Main.mn_progPush_le_pushC body f).trans (le_max_left ..))
+  rw [show tapes.length = shearWork.length by simp [tapes]] at bound
+  change _ ≤ _ + (1+6*shearWork.length*push)*n
+  nlinarith only [bound]
+
+/-- After the preceding row has cleared its work tapes, no previous row contributes
+to the running time of this one. -/
+theorem shear_cleanup_time_of_empty [Fintype P] (col target pivot : Fin d) (bank : Fin 35 ↪ Fin T)
+    (body : P → Pr P T 217 A U) {v u : HS T 217 A U} {S G : Stacks T A} {n limit : ℕ}
+    (run : Exec body (shearAndReturn k t b col target pivot bank) (mk v S) n (mk u G))
+    (time : n ≤ limit) (empty : ∀ i ∈ shearWork.map bank, S.L i = [] ∧ S.R i = []) :
+    n+(((shearWork.map bank).map fun i => 4*(G.L i).length+2*(G.R i).length+4).sum+1) ≤
+      4*shearWork.length+1+(1+6*shearWork.length*shearPushBound d b bank body)*limit := by
+  have cost := shear_cleanup_time k t b col target pivot bank body run
+  have init : ((shearWork.map bank).map fun i => 4*(S.L i).length+2*(S.R i).length+4) =
+      (shearWork.map bank).map (fun _ => 4) := by
+    apply List.map_congr_left
+    intro i hi
+    simp [(empty i hi).1,(empty i hi).2]
+  simp only [init,List.map_const',List.length_map,List.sum_replicate_nat] at cost
+  exact cost.trans (by rw [Nat.mul_comm 4 shearWork.length]; gcongr)
+
+def reverseMatrixShear (col target pivot : Fin d) (bank : Fin 35 ↪ Fin T) : Pr P T 217 A U :=
+  .seq (shearAndReturn k t b col target pivot bank) (clearWorkTapes (shearWork.map bank))
+
 /-- For an upper addition the caller exchanges the two fields before and after the shear.
 The archived coefficient always comes from the original elimination column. -/
-theorem reverseMatrixShear_exec {α : Type*} (sym : α → Fin 4) (col target : Fin d) (hk : k < t) (matrix : Matrix (Fin d) (Fin d) (ZMod M)) (rows : Fin d → Fin d)
-    (hb : b.Prime) (unit : IsUnit (matrix (rows col) col)) (body : P → Pr P T 217 A U)
-    (bank : Fin 35 ↪ Fin T) (stream : Fin T) (apart : ∀ i, bank i ≠ stream) (H J : ℕ) (hm : M < 2^H) (hw : W < 2^J) (hW : 0 < W)
+theorem reverseMatrixShear_exec {α : Type*} (sym : α → Fin 4) (col target : Fin d) (hk : k < t) (matrix : Matrix (Fin d) (Fin d) (ZMod M)) (pivot : Fin d)
+    (hb : b.Prime) (unit : IsUnit (matrix pivot col)) (body : P → Pr P T 217 A U)
+    (bank : Fin 35 ↪ Fin T) (H J : ℕ) (hm : M < 2^H) (hw : W < 2^J) (hW : 0 < W)
     (v : HS T 217 A U) (S : Stacks T A)
-    (rest : List (Fin (A+4)))
-    (code : S.R stream = orderedScheduleCode (((List.finRange d).take (col.val+1)).reverse) rows ++ rest)
     (base : S.R (bank 2) = binSyms H M) (one : S.R (bank 28) = binSyms 1 1)
     (width : S.R (bank 27) = binSyms J W) (coeffBlank : S.R (bank 0) = [])
     (tail : List (Fin (A+4))) (packed : S.R (bank 34) = matrixWords A H matrix ++ tail)
@@ -62,28 +109,26 @@ theorem reverseMatrixShear_exec {α : Type*} (sym : α → Fin 4) (col target : 
       readAt blank (S.L (bank 24)) (S.R (bank 24)) (z-p))
     (dst : ∀ z, RadixToBinary.binaryEncoding.encode (dest z) =
       readAt blank (S.L (bank 25)) (S.R (bank 25)) (z-q)) :
-    ∃ z F n, z.user = v.user ∧ n ≤ (2*((rows col).val+1) + ((8*(((rows col).val*d+col.val)*H)+14*H+22 + (8*(((Equiv.swap col (rows col) target).val*d+col.val)*H)+14*H+22)) + pivotShearTime (W := W) k t b w H J)) + (10*(t.val*H+1)+12+((327*(M^d*W)+2)*13+6)) ∧
-      Exec body (.seq (selectPivot stream (fun i => matrixShear k t b i bank col (Equiv.swap col i target)) (List.finRange d))
-        (finishShear ((Fin.castLEEmb (by decide)).trans bank))) (mk v S) n (mk z F) ∧
+    ∃ u G n z F, z.user = v.user ∧ n ≤ ((8*((pivot.val*d+col.val)*H)+14*H+22 + (8*(((Equiv.swap col pivot target).val*d+col.val)*H)+14*H+22)) + pivotShearTime (W := W) k t b w H J) + (10*(t.val*H+1)+12+((327*(M^d*W)+2)*13+6)) ∧
+      Exec body (shearAndReturn k t b col target pivot bank) (mk v S) n (mk u G) ∧
+      Exec body (reverseMatrixShear k t b col target pivot bank) (mk v S)
+        (n+(((shearWork.map bank).map fun i => 4*(G.L i).length+2*(G.R i).length+4).sum+1)) (mk z F) ∧
+      F.R (bank 34) = S.R (bank 34) ∧
+      (∀ i : Fin 35, (i ≤ 26 ∧ i ≠ 2 ∧ i ≠ 24 ∧ i ≠ 25) ∨ (29 ≤ i ∧ i ≤ 31) →
+        F.L (bank i) = [] ∧ F.R (bank i) = []) ∧
       (∀ pos, readAt blank (F.L (bank 25)) (F.R (bank 25)) (pos-q) = RadixToBinary.binaryEncoding.encode (dest pos)) ∧
       ∃ word : Fin (M^d*W) → α,
         (∀ pos, readAt blank (F.L (bank 24)) (F.R (bank 24)) (pos-p) =
           RadixToBinary.binaryEncoding.encode (putWord source p (List.ofFn (sym ∘ word)) pos)) ∧
         ∀ (x : Fin d → ZMod M) (j : Fin W),
-          let y := (RowOp.shear k t hk (matrix (Equiv.swap col (rows col) target) col * Ring.inverse (matrix (rows col) col))).apply x
+          let y := (RowOp.shear k t hk (matrix (Equiv.swap col pivot target) col * Ring.inverse (matrix pivot col))).apply x
           word (index y j) = a (index x j) := by
-  let D : Stacks T A := {S with R := Function.update S.R stream (orderedScheduleCode (((List.finRange d).take col.val).reverse) rows ++ rest)}
-  have keep (i) : D.R (bank i) = S.R (bank i) := Function.update_of_ne (apart i) _ _
-  obtain ⟨z,F,n,hz,hn,run,prefixReady,counters,sourceTape,frame,effect⟩ := matrixShear_exec k t b w hk matrix (rows col) col (Equiv.swap col (rows col) target) hb unit body bank H J hm hw hW
-    {v with flag := false} D (by rwa [keep]) (by rwa [keep]) (by rwa [keep]) (by rwa [keep]) tail
-    (by rwa [keep]) (by rwa [keep]) (by rwa [keep]) (by rwa [keep]) (by rwa [keep]) (by rwa [keep])
-    (fun i a c e f g => (keep i).trans (free i a c e f g)) left source dest p q (sym ∘ a)
-    (by simpa only [keep] using src) (by simpa only [keep] using dst)
+  obtain ⟨z,F,n,hz,hn,run,archive,prefixReady,counters,sourceTape,frame,effect⟩ := matrixShear_exec k t b w hk matrix pivot col (Equiv.swap col pivot target) hb unit body bank H J hm hw hW
+    v S base one width coeffBlank tail packed entryBlank pivotBlank paddedOne ticks blankInv free left
+    source dest p q (sym ∘ a) src dst
   obtain ⟨word,cells,perm⟩ := shear_output_word k t (RadixToBinary.binaryEncoding.encode ∘ sym) hk
-    (matrix (Equiv.swap col (rows col) target) col * Ring.inverse (matrix (rows col) col)) a
+    (matrix (Equiv.swap col pivot target) col * Ring.inverse (matrix pivot col)) a
     (fun n => readAt blank (F.L (bank 25)) (F.R (bank 25)) ((n.val : ℤ) - (M^d*W : ℕ))) effect
-  have dispatch := reversePivot_exec body stream (fun i => matrixShear k t b i bank col (Equiv.swap col i target))
-    rows col v S rest code run
   have out (pos : ℤ) : readAt blank (F.L (bank 25)) (F.R (bank 25)) (pos-(q+(M^d*W : ℕ))) =
       RadixToBinary.binaryEncoding.encode (putWord dest q (List.ofFn (sym ∘ word)) pos) := by
     by_cases outsideWord : pos < q ∨ q+(M^d*W : ℕ) ≤ pos
@@ -95,13 +140,33 @@ theorem reverseMatrixShear_exec {α : Type*} (sym : α → Fin 4) (col target : 
       simpa only [Function.comp_apply,add_sub_add_left_eq_sub] using cells i
   let ports : Fin 29 ↪ Fin T := (Fin.castLEEmb (by decide : 29 ≤ 35)).trans bank
   open RowPaddingConstructedAlphabet in
-  obtain ⟨u,G,l,hu,hl,finish,result,clean⟩ := finishShear_exec body ports t hW
+  obtain ⟨u,G,l,hu,hl,finish,result,clean,retFrame⟩ := finishShear_exec body ports t hW
     (mapTape source) (mapTape dest) p q (mapArray (sym ∘ a)) (mapArray (sym ∘ word))
     (by intro pos lo hi; change RadixToBinary.binaryEncoding.encode (dest pos) = _; rw [empty pos lo hi]; rfl)
     _ z F prefixReady counters
     (fun pos => (out pos).trans (congrFun (map_array_word dest q (sym ∘ word)) pos))
     (fun pos => (sourceTape pos).trans (congrFun (map_array_word source p (sym ∘ a)) pos))
-  exact ⟨u,G,_,hu.trans hz,Nat.add_le_add (Nat.add_le_add_left hn _) hl,Exec.seq dispatch finish,
-    clean,word,fun pos => (result pos).trans (congrFun (RowPaddingConstructedAlphabet.map_array_word source p (sym ∘ word)) pos).symm,perm⟩
+  obtain ⟨y,D,hy,clear,freeD,frameD⟩ := clearShear_exec body bank u G
+  have keep (i : Fin 35) (hi : i ∉ shearWork) := frameD (bank i) (by
+    simpa only [List.mem_map,bank.injective.eq_iff,exists_eq_right] using hi)
+  have srcKeep := keep 24 (by decide)
+  have dstKeep := keep 25 (by decide)
+  refine ⟨u,G,_,y,D,hy.trans (hu.trans hz),Nat.add_le_add hn hl,Exec.seq run finish,
+    Exec.seq (Exec.seq run finish) clear,?_,freeD,?_,word,?_,perm⟩
+  · apply (keep 34 (by decide)).2.trans
+    apply Eq.trans _ archive
+    apply retFrame
+    intro i
+    apply bank.injective.ne
+    intro h
+    have e := congrArg Fin.val h
+    change i.val = 34 at e
+    omega
+  · intro pos
+    rw [dstKeep.1,dstKeep.2]
+    exact clean pos
+  · intro pos
+    rw [srcKeep.1,srcKeep.2]
+    exact (result pos).trans (congrFun (RowPaddingConstructedAlphabet.map_array_word source p (sym ∘ word)) pos).symm
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback

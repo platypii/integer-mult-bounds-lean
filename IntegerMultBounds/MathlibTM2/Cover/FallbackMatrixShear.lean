@@ -15,7 +15,8 @@ def matrixReadPorts : Fin 8 ↪ Fin 35 := ⟨![0,2,34,31,4,5,6,29],by decide⟩
 def matrixShear (pivot : Fin d) (bank : Fin 35 ↪ Fin T)
     (col : Fin d := k) (row : Fin d := Equiv.swap k pivot t) : Pr P T 217 A U :=
   .seq (readColumnPair col row pivot (matrixReadPorts.trans bank))
-    (pivotShear k t b ((Fin.castLEEmb (by decide)).trans bank))
+    (embProg ((Fin.castLEEmb (by decide : 34 ≤ 35)).trans bank) Empty.elim
+      (pivotShear k t b (Function.Embedding.refl _)))
 
 theorem matrixShear_exec (hk : k < t) (matrix : Matrix (Fin d) (Fin d) (ZMod M)) (pivot col row : Fin d)
     (hb : b.Prime) (unit : IsUnit (matrix pivot col)) (body : P → Pr P T 217 A U)
@@ -36,6 +37,7 @@ theorem matrixShear_exec (hk : k < t) (matrix : Matrix (Fin d) (Fin d) (ZMod M))
       readAt blank (S.L (bank 25)) (S.R (bank 25)) (z-q)) :
     ∃ z F n, z.user = v.user ∧ n ≤ (8*((pivot.val*d+col.val)*H)+14*H+22 + (8*((row.val*d+col.val)*H)+14*H+22)) + pivotShearTime (W := W) k t b w H J ∧
       Exec body (matrixShear k t b pivot bank col row) (mk v S) n (mk z F) ∧
+      F.R (bank 34) = S.R (bank 34) ∧
       PrefixCopyReady (bank 13) (bank 3) (bank 4) (bank 5) (t.val*H+1) (prefixSize (Q := M) t) F ∧
       ShearCounters (suffixSize (Q := M) (W := W) t) M (bank ∘ (Fin.castLEEmb (by decide : 29 ≤ 35)) ∘ shearTranslation) F ∧
       (∀ pos : ℤ, readAt blank (F.L (bank 24)) (F.R (bank 24)) (pos-(p+(M^d*W : ℕ))) =
@@ -57,8 +59,9 @@ theorem matrixShear_exec (hk : k < t) (matrix : Matrix (Fin d) (Fin d) (ZMod M))
   have keep (i : Fin 35) (h : i ≠ 29) (h' : i ≠ 31) : D.R (bank i) = S.R (bank i) :=
     (Function.update_of_ne (bank.injective.ne h) _ _).trans (Function.update_of_ne (bank.injective.ne h') _ _)
   let ports : Fin 34 ↪ Fin 35 := Fin.castLEEmb (by decide)
-  obtain ⟨z,F,n,hz,hn,run,result⟩ := pivotShear_exec k t b w hk matrix pivot col row hb unit body (ports.trans bank)
-    H J hm hw hW u D ((keep 2 (by decide) (by decide)).trans base)
+  let work := ports.trans bank
+  obtain ⟨z,F,n,hz,hn,run,result⟩ := pivotShear_exec k t b w hk matrix pivot col row hb unit (P := Empty) Empty.elim (Function.Embedding.refl _)
+    H J hm hw hW (embDn work u) (embStk work D) ((keep 2 (by decide) (by decide)).trans base)
     ((keep 28 (by decide) (by decide)).trans one) ((keep 27 (by decide) (by decide)).trans width)
     ((keep 0 (by decide) (by decide)).trans coeffBlank)
     (by change D.R (bank 29) = _; simp [D]) (by change D.R (bank 31) = _; simp [D,bank.injective.eq_iff])
@@ -73,6 +76,17 @@ theorem matrixShear_exec (hk : k < t) (matrix : Matrix (Fin d) (Fin d) (ZMod M))
     left source dest p q a
     (by change ∀ j, _ = readAt blank _ (D.R (bank 24)) _; rw [keep 24 (by decide) (by decide)]; exact src)
     (by change ∀ j, _ = readAt blank _ (D.R (bank 25)) _; rw [keep 25 (by decide) (by decide)]; exact dst)
-  exact ⟨z,F,_,hz.trans hu,Nat.add_le_add_left hn _,Exec.seq read run,result⟩
+  obtain ⟨y,G,placed,_,hy,eq,frame⟩ := exec_emb (body' := body) (ι := Empty.elim)
+    work.injective (fun e => nomatch e) run u rfl D rfl
+  have outside (i : Fin 34) : work i ≠ bank 34 := by
+    apply bank.injective.ne
+    intro h
+    have e := congrArg Fin.val h
+    change i.val = 34 at e
+    omega
+  rw [← eq] at result
+  obtain ⟨ready,other⟩ := result
+  exact ⟨y,G,_,hy.trans (hz.trans hu),Nat.add_le_add_left hn _,Exec.seq read placed,
+    (frame _ outside).2.trans (keep 34 (by decide) (by decide)),⟨ready.fits,ready.count,ready.marker,ready.dest,ready.temp,ready.scratch⟩,other⟩
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
