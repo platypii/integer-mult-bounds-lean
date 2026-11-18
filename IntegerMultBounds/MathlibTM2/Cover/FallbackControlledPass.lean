@@ -15,7 +15,7 @@ local instance : NeZero M := ⟨(pow_pos prime_prime.pos _).ne'⟩
 
 open LabelTraversal
 
-theorem controlledPass_exec (body : P → Pr P T columnCapacity prime U)
+theorem controlledPass_exec {Q : ℕ} (body : P → Pr P T Q prime U) (capacity : columnCapacity ≤ Q)
     (ports : Fin (N+2) ↪ Fin T) (ext : Fin 6 ↪ Fin T) (off : ∀ i k, ports i ≠ ext k)
     (table : Matrix (Fin r) (Fin r) (ZMod prime) → Matrix (Fin (d+1)) (Fin (d+1)) (ZMod prime))
     (rs : List (Pair T)) (size : rs.length = r*r) (parents saved : Fin T)
@@ -32,7 +32,7 @@ theorem controlledPass_exec (body : P → Pr P T columnCapacity prime U)
     (padding : ∀ j < a.records, LabelStock.live r (w+1) 1 j = false →
       ∃ symbol, Record.scalarArray (inputs j) = fun _ => symbol)
     (hm : M < 2^a.H) (hw : W < 2^a.J) (hW : 0 < W)
-    (u : HS T columnCapacity prime U) (S : Stacks T prime)
+    (u : HS T Q prime U) (S : Stacks T prime)
     (radix : ready (prime^w) S.R rs) (free : S.R saved = []) (count : (S.R parents).length = v.beforeRows*v.rows*B)
     (empty : S.R (ext 0) = []) (fresh : a.outputTail = [])
     (start : ScanReady a ports ext 0 {S with R := Function.update S.R (ports (Fin.last N).castSucc) ((List.range a.records).flatMap a.pivotWord ++ S.R (ports (Fin.last N).castSucc))}),
@@ -40,11 +40,13 @@ theorem controlledPass_exec (body : P → Pr P T columnCapacity prime U)
     ∃ z F n, z.user = u.user ∧ F.R (ext 2) = output ++ a.inputTail ∧ F.R (ext 5) = [] ∧
       F.R (ext 0) = [] ∧ F.R (ports (Fin.last N).castSucc) = a.pivotTail ∧
       F.R (ports (archivePorts 0 (columnBank 34))) = a.matrixTail ∧
-      n ≤ 2*((v.beforeRows*v.rows*B)*(time (prime^w) (r*r) 1+5)+4) + (((List.range a.records).map fun j => a.recordTime U j + 4).sum + 2 + (2*(a.records*(M^(d+1)*W))+2)) ∧
+      n ≤ 2*((v.beforeRows*v.rows*B)*(time (prime^w) (r*r) 1+5)+4) + (1+(((List.range a.records).map fun j => a.recordTime U j + 4).sum + 2 + (2*(a.records*(M^(d+1)*W))+2))) ∧
       Exec body prog (mk u S) n (mk z F) := by
   obtain ⟨writer,emit⟩ := controlStreams_exec body table rs size (ext 0) (ports (Fin.last N).castSucc)
     parents saved maskRegs pivotRegs
-  refine ⟨.seq writer (residualPass ports ext d),?_⟩
+  have positive : 0 < columnCapacity := lt_of_lt_of_le (by decide : 0 < 217) (le_max_left ..)
+  let pass := residualPass (P := Empty) (U := U) ports ext d
+  refine ⟨.seq writer (.seq (stateLiftNormalize capacity positive) (stateLiftPr capacity positive Empty.elim pass)),?_⟩
   intro v B a records tables layout inputs encoded signed liveSpec padding hm hw hW u S radix free count empty fresh start output
   subst table
   obtain ⟨y,l,hy,hl,write⟩ := emit v (w+1) B (by omega) layout u S (by simpa using radix) free count
@@ -59,8 +61,10 @@ theorem controlledPass_exec (body : P → Pr P T columnCapacity prime U)
     simpa [F,D,bits,pivot,← records,ScanData.pivotWord,ScanData.pivots,empty,off,
       Function.update_comm (off (Fin.last N).castSucc 0)] using write
   obtain ⟨z,G,n,hz,queue,acc,mask,pivots,archive,hn,run⟩ :=
-    residualPass_exec a ports ext off inputs encoded signed liveSpec padding hm hw hW body y F fresh
+    residualPass_exec a ports ext off inputs encoded signed liveSpec padding hm hw hW Empty.elim (stateLiftDown positive y) F fresh
       (start.mask (fun i => off i 0) bits) (Function.update_self ..)
-  exact ⟨z,G,l+n,hz.trans hy,queue,acc,mask,pivots,archive,Nat.add_le_add (by simpa using hl) hn,.seq gen run⟩
+  have lifted := stateLift_exec_normalized capacity positive Empty.elim (body' := body) (fun e => nomatch e) y run
+  exact ⟨_,G,_,hz.trans hy,queue,acc,mask,pivots,archive,
+    Nat.add_le_add (by simpa using hl) (Nat.add_le_add_left hn 1),.seq gen lifted⟩
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
