@@ -14,7 +14,7 @@ def pushMarkers : List (Fin T) → Act T Q A U
   | [] => .done
   | i :: is => .push (.lt i) (fun _ => separator) (pushMarkers is)
 
-private theorem pushMarkers_run (is : List (Fin T)) (nd : is.Nodup) (v : HS T Q A U) (S : Stacks T A) :
+theorem pushMarkers_run (is : List (Fin T)) (nd : is.Nodup) (v : HS T Q A U) (S : Stacks T A) :
     (pushMarkers is).run (mk v S) =
       mk v {S with L := fun i => if i ∈ is then separator :: S.L i else S.L i} := by
   induction is generalizing S with
