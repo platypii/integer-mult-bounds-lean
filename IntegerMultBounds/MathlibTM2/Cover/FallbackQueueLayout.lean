@@ -15,6 +15,12 @@ def scanPorts (work : Fin 16 ↪ Fin T) (archive : Fin T) (apart : ∀ i, work i
     intro i j h
     fin_cases i <;> fin_cases j <;> simp_all [Matrix.cons_val,work.injective.eq_iff]⟩
 
+/-- The reader uses the freshly packed label in slot 10 and the retained projector in slot 16.
+Slot 17 supplies one. The zero, width, and scratch tapes come from directory conversion. -/
+def formulaInputs : Fin 10 ↪ Fin 18 := ⟨![0,8,10,3,4,5,6,16,9,17],by decide⟩
+
+def directoryWork : Fin 16 ↪ Fin 18 := Fin.castLEEmb (by decide)
+
 def readPorts : Fin 7 ↪ Fin 16 := Fin.castLEEmb (by decide)
 def digitPorts : Fin 6 ↪ Fin 16 := ⟨![3,11,7,14,8,15],by decide⟩
 
