@@ -79,22 +79,19 @@ variable {m : ℕ} [NeZero M] {P U : Type} {Q : ℕ}
 def leafBank (source : Leaf (Entry ι m) → Fin 7 ↪ Fin T) (a : Leaf (Entry ι m)) (dst : Fin T) : Fin 7 ↪ Fin T :=
   (source a).trans (Equiv.swap (source a 3) dst).toEmbedding
 
-theorem allocated_writes (body : P → Pr P T Q A U) (pool : Fin ((D+1)*13) ↪ Fin T)
+theorem allocated_prepared (pool : Fin ((D+1)*13) ↪ Fin T)
     (source : Leaf (Entry ι m) → Fin 7 ↪ Fin T) (apart : ∀ a i j, source a i ≠ pool j)
-    (mat : ι → Matrix (Fin m) (Fin m) (ZMod M)) (H : ℕ) (hm : M < 2^H) (f : RingFormula (Entry ι m))
-    (fits : f.depth ≤ D) (out : Fin T) (outside : ∀ j, pool j ≠ out) (dest : ∀ a i, source a i ≠ out) :
-    Writes body (fun R => R out = [] ∧ (∀ k ≤ D, R (frame pool k 2) = binSyms H M) ∧
-      (∀ k ≤ D, ∀ i : Fin 13, i ≠ 2 → R (frame pool k i) = []) ∧
-      ∀ a, leafReady (fun b _ => source b) mat H a (source a 3) R)
-      out (compile (readLeaf (leafBank source)) (registerBank pool) f 0 out)
-      (binSyms H (eval (entryValue mat) f).val) (time H (readTime H) f) := by
-  intro v S ⟨empty,modulus,free,inputs⟩
-  apply compile_from_matrices body _ _ mat H hm f out v S
+    (mat : ι → Matrix (Fin m) (Fin m) (ZMod M)) (H : ℕ) (f : RingFormula (Entry ι m))
+    (fits : f.depth ≤ D) (out : Fin T) (outside : ∀ j, pool j ≠ out) (dest : ∀ a i, source a i ≠ out) (R : Regs T A)
+    (empty : R out = []) (modulus : ∀ k ≤ D, R (frame pool k 2) = binSyms H M)
+    (free : ∀ k ≤ D, ∀ i : Fin 13, i ≠ 2 → R (frame pool k i) = [])
+    (inputs : ∀ a, leafReady (fun b _ => source b) mat H a (source a 3) R) :
+    prepared (registerBank pool) (entryValue mat) H (leafReady (leafBank source) mat H) f 0 out R := by
   let allowed := fun dst => ∀ a i, source a i ≠ dst
   have slot (a) (dst) (hd : allowed dst) (i : Fin 7) (hi : i ≠ 3) :
       leafBank source a dst i = source a i :=
     Equiv.swap_apply_of_ne_of_ne ((source a).injective.ne hi) (hd a i)
-  apply layout_prepared pool _ H _ S.R f 0 out (by simpa using fits) empty
+  apply layout_prepared pool _ H _ R f 0 out (by simpa using fits) empty
     (fun _ _ _ _ => outside _) (fun k _ => modulus k) (fun k _ => free k) allowed dest
     (fun _ _ _ _ a i => apart a i _)
   · intro a dst hd
@@ -122,5 +119,18 @@ theorem allocated_writes (body : P → Pr P T Q A U) (pool : Fin ((D+1)*13) ↪ 
     | zero | one =>
       obtain ⟨_,h,w,s⟩ := h
       exact ⟨(keep 2 (by decide)).trans h,(keep 4 (by decide)).trans w,(keep 5 (by decide)).trans s⟩
+
+theorem allocated_writes (body : P → Pr P T Q A U) (pool : Fin ((D+1)*13) ↪ Fin T)
+    (source : Leaf (Entry ι m) → Fin 7 ↪ Fin T) (apart : ∀ a i j, source a i ≠ pool j)
+    (mat : ι → Matrix (Fin m) (Fin m) (ZMod M)) (H : ℕ) (hm : M < 2^H) (f : RingFormula (Entry ι m))
+    (fits : f.depth ≤ D) (out : Fin T) (outside : ∀ j, pool j ≠ out) (dest : ∀ a i, source a i ≠ out) :
+    Writes body (fun R => R out = [] ∧ (∀ k ≤ D, R (frame pool k 2) = binSyms H M) ∧
+      (∀ k ≤ D, ∀ i : Fin 13, i ≠ 2 → R (frame pool k i) = []) ∧
+      ∀ a, leafReady (fun b _ => source b) mat H a (source a 3) R)
+      out (compile (readLeaf (leafBank source)) (registerBank pool) f 0 out)
+      (binSyms H (eval (entryValue mat) f).val) (time H (readTime H) f) := by
+  intro v S ⟨empty,modulus,free,inputs⟩
+  apply compile_from_matrices body _ _ mat H hm f out v S
+  exact allocated_prepared pool source apart mat H f fits out outside dest S.R empty modulus free inputs
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback.RingFormula
