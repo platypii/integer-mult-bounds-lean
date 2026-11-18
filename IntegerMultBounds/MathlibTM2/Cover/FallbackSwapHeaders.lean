@@ -88,34 +88,31 @@ theorem markSwapHeaders_exec (fits : T+24 ≤ N) (body : P → Pr P N Q prime U)
     (∀ k, S.L (port k) = [] ∧ S.R (port k) = ((words k).getD []).map bitSymbol) →
     (∀ k : Fin N, T+24 ≤ k.val → S.L k = [] ∧ S.R k = []) →
     ∃ F, Exec body (markSwapHeaders fits) (mk v S) 1 (mk v F) ∧
+      (∀ k : Fin N, k.val < T ∨ T+24 ≤ k.val → F.L k = S.L k ∧ F.R k = S.R k) ∧
       RepT (SharedBankStageInput.raw (LabelCall.bank roles view hdr) N) F.L F.R := by
   intro hdr words port role header privateTapes
   let slots := swapHeaderSlots.map port
   have run := Exec.act (body := body) (pushMarkers slots) (mk v S)
   rw [pushMarkers_run _ ((by decide : swapHeaderSlots.Nodup).map port.injective)] at run
-  refine ⟨_,run,swap_bank_rep fits roles view hdr _ ?_ ?_ ?_⟩
+  have fresh (k : Fin N) (hk : k.val < T ∨ T+24 ≤ k.val) : k ∉ slots := by
+    intro mem
+    obtain ⟨a,_,rfl⟩ := List.mem_map.mp mem
+    change T+a.val < T ∨ T+24 ≤ T+a.val at hk
+    omega
+  refine ⟨_,run,?_,swap_bank_rep fits roles view hdr _ ?_ ?_ ?_⟩
+  · intro k hk
+    exact ⟨ite_eq_right (fresh k hk),rfl⟩
   · intro k pos
-    have fresh : (Fin.castAdd 24 k).castLE fits ∉ slots := by
-      rintro h
-      obtain ⟨a,_,eq⟩ := List.mem_map.mp h
-      have e := congrArg Fin.val eq
-      change T+a.val = k.val at e
-      omega
     change _ = readAt blank (if _ ∈ slots then _ else _) _ _
-    rw [ite_eq_right fresh]; exact role k pos
+    rw [ite_eq_right (fresh _ (Or.inl k.isLt))]; exact role k pos
   · intro k
     change (if port k ∈ slots then separator :: S.L (port k) else S.L (port k)) = _ ∧ _
     refine ⟨?_,(header k).2⟩
     simp only [slots,List.mem_map,port.injective.eq_iff,exists_eq_right,(header k).1]
     fin_cases k <;> rfl
   · intro k hk
-    have fresh : k ∉ slots := by
-      rintro h
-      obtain ⟨a,_,rfl⟩ := List.mem_map.mp h
-      change T+24 ≤ T+a.val at hk
-      omega
     change (if k ∈ slots then _ else _) = [] ∧ _
-    rw [ite_eq_right fresh]; exact privateTapes k hk
+    rw [ite_eq_right (fresh _ (Or.inr hk))]; exact privateTapes k hk
 
 /-- Complete the physical bank from its three runtime words. -/
 theorem finishSwapHeaders_exec (fits : T+24 ≤ N) (body : P → Pr P N Q prime U)
@@ -131,6 +128,7 @@ theorem finishSwapHeaders_exec (fits : T+24 ≤ N) (body : P → Pr P N Q prime 
     (∀ k, k ≠ 5 → k ≠ 8 → k ≠ 14 → S.R (port k) = []) →
     (∀ k : Fin N, T+24 ≤ k.val → S.L k = [] ∧ S.R k = []) →
     ∃ F, Exec body (.seq (writeSwapConstants fits d i j) (markSwapHeaders fits)) (mk v S) 2 (mk v F) ∧
+      (∀ k : Fin N, k.val < T ∨ T+24 ≤ k.val → F.L k = S.L k ∧ F.R k = S.R k) ∧
       RepT (SharedBankStageInput.raw (LabelCall.bank roles view (LabelPrepare.input view d i j (w+1))) N) F.L F.R := by
   intro port view role left prefixWord exponent width empty privateTapes
   have disjoint : ∀ k ∈ fixedSlots, k ≠ 5 ∧ k ≠ 8 ∧ k ≠ 14 := by decide
@@ -142,7 +140,7 @@ theorem finishSwapHeaders_exec (fits : T+24 ≤ N) (body : P → Pr P N Q prime 
     obtain ⟨a,_,rfl⟩ := List.mem_map.mp mem
     change T+a.val < T ∨ T+24 ≤ T+a.val at h
     omega
-  obtain ⟨F,mark,rep⟩ := markSwapHeaders_exec fits body roles view d i j (w+1) v D
+  obtain ⟨F,mark,keep,rep⟩ := markSwapHeaders_exec fits body roles view d i j (w+1) v D
     (by intro k pos; rw [hL,outside _ (Or.inl k.isLt)]; exact role k pos)
     (by intro k
         refine ⟨hL ▸ left k,?_⟩
@@ -154,6 +152,8 @@ theorem finishSwapHeaders_exec (fits : T+24 ≤ N) (body : P → Pr P N Q prime 
             (change S.R (port 5) = (FlatCoordinateSchedule.bits (prime^(d*(w+1)))).map bitSymbol; rw [power]; exact prefixWord) |
             exact empty _ (by decide) (by decide) (by decide) | contradiction)
     (by intro k hk; rw [hL,outside _ (Or.inr hk)]; exact privateTapes k hk)
-  exact ⟨F,Exec.seq fill mark,rep⟩
+  refine ⟨F,Exec.seq fill mark,?_,rep⟩
+  intro k hk
+  exact ⟨(keep k hk).1.trans (congrFun hL k),(keep k hk).2.trans (outside k hk)⟩
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback

@@ -58,7 +58,7 @@ theorem rowSwap_exec {d : ℕ} (i j : Fin d) (lt : i < j) (w W H J : ℕ)
       ∀ (coords : Fin d → ZMod (prime^(w+1))) (k : Fin W),
         ext y (FlatCoordinateLayout.index (coords ∘ Equiv.swap i j) k).val = ext x (FlatCoordinateLayout.index coords k).val := by
   intro view r port slot roles cost x src base one width clock scratch headers privateTapes
-  obtain ⟨u,D,l,hu,hl,setup,ready⟩ := swapSetup_exec rowSwapFits body roles d i j w W H J hm hw v S
+  obtain ⟨u,D,l,hu,hl,setup,_,ready⟩ := swapSetup_exec rowSwapFits body roles d i j w W H J hm hw v S
     base one width clock scratch (by intro k pos; simp [roles,slot]) headers privateTapes
   have swap := swapPayload_exec (P := P) (U := U) i j lt (Nat.succ_pos w) hW roles 24 x rfl src
   rw [← rowSwapBlock.eq_def] at swap
