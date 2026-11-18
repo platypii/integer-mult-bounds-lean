@@ -73,22 +73,60 @@ def ColumnReady (bank : Fin 35 ↪ Fin T) (H J : ℕ) (matrix : Matrix (Fin d) (
   ∃ word, ShearReady bank H J matrix tail sym source dest p q word S ∧
     ∀ x j, word (index (addr x) j) = original (index x j)
 
-theorem columnReady_lower [Fintype P] (k t pivot : Fin d) (hk : k < t)
-    (matrix : Matrix (Fin d) (Fin d) (ZMod M)) (hb : b.Prime) (unit : IsUnit (matrix pivot k))
+theorem columnReady_shear [Fintype P] (k t col target pivot : Fin d) (hk : k < t)
+    (matrix : Matrix (Fin d) (Fin d) (ZMod M)) (hb : b.Prime) (unit : IsUnit (matrix pivot col))
     (body : P → Pr P T 217 A U) (bank : Fin 35 ↪ Fin T) (H J : ℕ)
     (hm : M < 2^H) (hw : W < 2^J) (hW : 0 < W) (v : HS T 217 A U) (S : Stacks T A)
     (tail : List (Fin (A+4))) (sym : α → Fin 4) (source dest : ℤ → Fin 4) (p q : ℤ)
     (empty : ∀ z, q ≤ z → z < q+(M^d*W : ℕ) → dest z = blank) (original : Fin (M^d*W) → α)
     (addr : (Fin d → ZMod M) → Fin d → ZMod M)
     (ready : ColumnReady bank H J matrix tail sym source dest p q original addr S) :
-    let c := matrix (Equiv.swap k pivot t) k * Ring.inverse (matrix pivot k)
-    ∃ z F n, z.user = v.user ∧ n ≤ reverseRowTime body bank k t k t pivot b w W H J ∧
-      Exec body (reverseMatrixShear k t b k t pivot bank) (mk v S) n (mk z F) ∧
+    let c := matrix (Equiv.swap col pivot target) col * Ring.inverse (matrix pivot col)
+    ∃ z F n, z.user = v.user ∧ n ≤ reverseRowTime body bank k t col target pivot b w W H J ∧
+      Exec body (reverseMatrixShear k t b col target pivot bank) (mk v S) n (mk z F) ∧
       ColumnReady bank H J matrix tail sym source dest p q original
         (fun x => Function.update (addr x) t (addr x t + c * addr x k)) F := by
   obtain ⟨a,layout,placed⟩ := ready
-  obtain ⟨z,F,n,word,hz,time,run,next,effect⟩ := reverseMatrixShear_ready k t k t pivot hk
+  obtain ⟨z,F,n,word,hz,time,run,next,effect⟩ := reverseMatrixShear_ready k t col target pivot hk
     matrix hb unit body bank H J hm hw hW v S tail sym source dest p q empty a layout
   exact ⟨z,F,n,hz,time,run,word,next,fun x j => (effect (addr x) j).trans (placed x j)⟩
+
+def reverseRowAdd (k t pivot : Fin d) (b : ℕ) (bank : Fin 35 ↪ Fin T) (swap : Pr P T 217 A U) : Pr P T 217 A U :=
+  if k < t then reverseMatrixShear k t b k t pivot bank else
+    .seq swap (.seq (reverseMatrixShear t k b k t pivot bank) swap)
+
+theorem columnReady_add [Fintype P] (k t pivot : Fin d) (ne : t ≠ k)
+    (matrix : Matrix (Fin d) (Fin d) (ZMod M)) (hb : b.Prime) (unit : IsUnit (matrix pivot k))
+    (body : P → Pr P T 217 A U) (bank : Fin 35 ↪ Fin T) (H J : ℕ)
+    (hm : M < 2^H) (hw : W < 2^J) (hW : 0 < W) (v : HS T 217 A U) (S : Stacks T A)
+    (tail : List (Fin (A+4))) (sym : α → Fin 4) (source dest : ℤ → Fin 4) (p q : ℤ)
+    (empty : ∀ z, q ≤ z → z < q+(M^d*W : ℕ) → dest z = blank) (original : Fin (M^d*W) → α)
+    (swap : Pr P T 217 A U) (swapTime : ℕ)
+    (exchange : ∀ addr v D, ColumnReady bank H J matrix tail sym source dest p q original addr D →
+      ∃ z F n, z.user = v.user ∧ n ≤ swapTime ∧ Exec body swap (mk v D) n (mk z F) ∧
+        ColumnReady bank H J matrix tail sym source dest p q original (fun x => addr x ∘ Equiv.swap t k) F)
+    (addr : (Fin d → ZMod M) → Fin d → ZMod M)
+    (ready : ColumnReady bank H J matrix tail sym source dest p q original addr S) :
+    let c := matrix (Equiv.swap k pivot t) k * Ring.inverse (matrix pivot k)
+    ∃ z F n, z.user = v.user ∧ n ≤ (if k < t then reverseRowTime body bank k t k t pivot b w W H J
+      else swapTime + reverseRowTime body bank t k k t pivot b w W H J + swapTime) ∧
+      Exec body (reverseRowAdd k t pivot b bank swap) (mk v S) n (mk z F) ∧
+      ColumnReady bank H J matrix tail sym source dest p q original
+        (fun x => Function.update (addr x) t (addr x t + c * addr x k)) F := by
+  intro c
+  by_cases hk : k < t
+  · simpa only [reverseRowAdd,ite_eq_left hk] using columnReady_shear k t k t pivot hk matrix hb unit
+      body bank H J hm hw hW v S tail sym source dest p q empty original addr ready
+  have ht : t < k := lt_of_le_of_ne (le_of_not_gt hk) ne
+  obtain ⟨u,D,l,hu,hl,first,next⟩ := exchange addr v S ready
+  obtain ⟨y,E,m,hy,hm',middle,afterAdd⟩ := columnReady_shear t k k t pivot ht matrix hb unit
+    body bank H J hm hw hW u D tail sym source dest p q empty original _ next
+  obtain ⟨z,F,n,hz,hn,last,afterSwap⟩ := exchange _ y E afterAdd
+  simp only [reverseRowAdd,ite_eq_right hk]
+  refine ⟨z,F,l+(m+n),hz.trans (hy.trans hu),by omega,Exec.seq first (Exec.seq middle last),?_⟩
+  convert afterSwap using 2
+  funext i
+  by_cases hit : i = t <;> by_cases control : i = k <;>
+    simp_all [Function.comp_def,Equiv.swap_apply_of_ne_of_ne,c]
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
