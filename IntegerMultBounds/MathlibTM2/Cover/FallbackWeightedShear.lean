@@ -14,6 +14,16 @@ local notation "B" => suffixSize (Q := M) (W := W) t
 def weightedShear (bank : Fin 29 ↪ Fin T) : Pr P T 217 A U :=
   .seq (scheduledShear k t bank) (finishShear bank)
 
+def weightedShearTime (M W H J : ℕ) : ℕ :=
+    let g := t.val-1-k.val
+    let s := d-1-t.val
+    let L := t.val*H+1
+    let K := g*H+1
+    let V := s*H+J
+    dimensionTime H 1 t.val + dimensionTime H 1 g + dimensionTime H J s +
+        (6*prefixSize (Q := M) t+17*L+4*V+10*H+31 + prefixSize (Q := M) t*(L*(12*(K+H)+78)+22*K+180*H+173+48*H*H+(207*(M*suffixSize (Q := M) (W := W) t)+241)*25)+2) +
+        (10*(t.val*H+1)+12+((327*(M^d*W)+2)*13+6))
+
 theorem weightedShear_exec (hk : k < t) {α : Type*} (sym : α → Fin 4) (c : ZMod M) (body : P → Pr P T 217 A U)
     (bank : Fin 29 ↪ Fin T) (H J : ℕ) (hm : M < 2^H) (hw : W < 2^J) (hW : 0 < W)
     (v : HS T 217 A U) (S : Stacks T A)
@@ -27,15 +37,7 @@ theorem weightedShear_exec (hk : k < t) {α : Type*} (sym : α → Fin 4) (c : Z
       readAt blank (S.L (bank 24)) (S.R (bank 24)) (z-p))
     (dst : ∀ z, RadixToBinary.binaryEncoding.encode (dest z) =
       readAt blank (S.L (bank 25)) (S.R (bank 25)) (z-q)) :
-    let g := t.val-1-k.val
-    let s := d-1-t.val
-    let L := t.val*H+1
-    let K := g*H+1
-    let V := s*H+J
-    ∃ z F n, z.user = v.user ∧
-      n ≤ dimensionTime H 1 t.val + dimensionTime H 1 g + dimensionTime H J s +
-        (6*N+17*L+4*V+10*H+31 + N*(L*(12*(K+H)+78)+22*K+180*H+173+48*H*H+(207*(M*B)+241)*25)+2) +
-        (10*(t.val*H+1)+12+((327*(M^d*W)+2)*13+6)) ∧
+    ∃ z F n, z.user = v.user ∧ n ≤ weightedShearTime k t M W H J ∧
       Exec body (weightedShear k t bank) (mk v S) n (mk z F) ∧
       F.R (bank 2) = S.R (bank 2) ∧ (∀ i : Fin 29, 27 ≤ i → F.R (bank i) = S.R (bank i)) ∧
       (∀ pos, readAt blank (F.L (bank 25)) (F.R (bank 25)) (pos-q) = RadixToBinary.binaryEncoding.encode (dest pos)) ∧
