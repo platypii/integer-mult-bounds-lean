@@ -341,8 +341,13 @@ copies the nonanchor diagonal entries to the weight stack. For every payload ban
 the signed diagonal action using these weights followed by the reverse word acts
 by the original matrix on each vector. [Fallback.reverseMatrixShear_exec](FallbackReverseShear.lean)
 executes one lower shear from the reverse pivot stream, copies the result to the original
-payload tape and returns both heads to their origins. Executing the weighted pairs on tape and
-implementing the per-column payload callback remain open.
+payload tape and returns both heads to their origins.
+[Fallback.reverseStages_exec](FallbackReverseStages.lean) executes all reverse columns, consuming
+the reverse pivot schedule and restoring the original matrix stacks. Given a payload already
+placed at the diagonalized addresses, it places each cell at its original matrix image.
+[Fallback.forwardStages_exec](FallbackForwardStages.lean) constructs that alternating matrix
+archive on the reverse loop’s physical tapes. Executing the weighted pairs on the payload
+between the forward and reverse passes remains open.
 
 - An upper addition is a lower addition between two exchanges; an exchange of two sub-fields of
   one bank is a reversed child between two reversals of the later field; a reversal is one
