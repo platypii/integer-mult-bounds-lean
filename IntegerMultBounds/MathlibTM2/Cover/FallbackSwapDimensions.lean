@@ -3,6 +3,7 @@ module
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackDimension
 public import IntegerMultBounds.MathlibTM2.Routing.BinaryCanonicalCopy
 public import IntegerMultBounds.Machine.FlatCoordinateSchedule
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCanonicalUnaryHeader
 import IntegerMultBounds.Machine.BinaryCanonicalData
 
 /-! Generate the swap prefix and payload width from the row machine's binary dimensions. -/
@@ -44,5 +45,44 @@ theorem swapWidth_exec (body : P → Pr P T Q A U) (src dst tmp work : Fin T)
     J W hw v S width hd ht hs
   have eq := BinaryCanonicalData.value_injective cs (bits W) hc (bits_canonical _) (hv.trans (bits_value _).symm)
   exact ⟨z,hz,eq ▸ run⟩
+
+/-- Temporarily add one tick before converting the clock to the swap exponent. -/
+def swapExponent (r : Fin 8 ↪ Fin T) : Pr P T Q A U :=
+  .seq (.act (.push (.rt (r 0)) (fun _ => Node.tick) .done))
+    (.seq (unaryBinary (r 0) (r 1) (r 2) (r 3) (r 4) (r 5) (r 6) (r 7))
+      (.act (Node.dropTop (r 0) .done)))
+
+theorem swapExponent_exec (body : P → Pr P T Q A U) (r : Fin 8 ↪ Fin T)
+    (w : ℕ) (v : HS T Q A U) (S : Stacks T A) (clock : (S.R (r 0)).length = w)
+    (empty : ∀ i : Fin 8, i ≠ 0 → S.R (r i) = []) :
+    ∃ z n, z.user = v.user ∧ n ≤ 21*(w+1)+12 ∧ Exec body (swapExponent r) (mk v S) n
+      (mk z {S with R := Function.update S.R (r 1) ((bits (w+1)).map bitSymbol)}) := by
+  let D : Stacks T A := {S with R := Function.update S.R (r 0) (Node.tick :: S.R (r 0))}
+  have push : Exec body (.act (.push (.rt (r 0)) (fun _ => Node.tick) .done)) (mk v S) 1 (mk v D) := by
+    simpa [D,Action.run,update_rt] using Exec.act (body := body)
+      (.push (.rt (r 0)) (fun _ => Node.tick) .done) (mk v S)
+  have free (i : Fin 8) (hi : i ≠ 0) : D.R (r i) = [] :=
+    (Function.update_of_ne (r.injective.ne hi) _ _).trans (empty i hi)
+  obtain ⟨z,n,hz,hn,convertClock⟩ := unaryBinary_exec (body := body)
+    (src := r 0) (dst := r 1) (a := r 2) (h := r 3) (par := r 4) (bits := r 5) (cnt := r 6) (saved := r 7)
+    (by simp [List.nodup_cons,r.injective.eq_iff]) (w+1) v D (by simp [D,clock])
+    (by intro k hk; simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
+        rcases hk with h|h|h|h|h|h|h <;> subst k <;> apply free <;> decide)
+  let count := w+1
+  have canon := Mult.PhaseCellToeplitz.binBits_size_canonical count
+  have value := Routing.binaryCanonical_value_binBits _ _ (Nat.lt_size_self count)
+  have eq := BinaryCanonicalData.value_injective _ _ canon (bits_canonical count) (value.trans (bits_value count).symm)
+  have word : binSyms (A := A) (Nat.size count) count = (bits count).map bitSymbol := by
+    simpa [binSyms,binBits,List.map_ofFn,Function.comp_def] using congrArg (List.map (bitSymbol (a := A))) eq
+  change Exec body _ _ _ (mk z {D with R := Function.update D.R (r 1) (binSyms (Nat.size count) count)}) at convertClock
+  rw [word] at convertClock
+  let E := {D with R := Function.update D.R (r 1) ((bits count).map (bitSymbol (a := A)))}
+  have pop := Exec.act (body := body) (Node.dropTop (r 0) .done) (mk z E)
+  refine ⟨z,1+(n+1),hz,by omega,Exec.seq push (Exec.seq convertClock ?_)⟩
+  have restore (word : List (Fin (A+4))) : Function.update (Function.update S.R (r 1) word) (r 0) (S.R (r 0)) = Function.update S.R (r 1) word := by
+    funext i
+    by_cases h : i = r 0 <;> simp [h,r.injective.eq_iff]
+  simpa [E,D,Node.dropTop,Action.run,update_rt,Function.update_comm (r.injective.ne (by decide : (0 : Fin 8) ≠ 1)),
+    r.injective.eq_iff,count,restore] using pop
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
