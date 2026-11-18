@@ -40,6 +40,30 @@ private theorem shear_output_word {α β : Type*} (encode : α → β) {m : ℕ}
   rw [eq,atIndex]
   simpa only [restore] using cells (undo (coordinates r)) j
 
+theorem shear_output_tape {α : Type*} {m : ℕ} [NeZero m] (sym : α → Fin 4)
+    (hk : k < t) (c : ZMod m) (a : Fin (m^d*W) → α) (dest : ℤ → Fin 4) (q : ℤ)
+    (left right : List (Fin (A+4)))
+    (frame : ∀ pos : ℤ, pos < q ∨ q+(m^d*W : ℕ) ≤ pos →
+      readAt blank left right (pos-(q+(m^d*W : ℕ))) = RadixToBinary.binaryEncoding.encode (dest pos))
+    (effect : ∀ x j, readAt blank left right (((index ((RowOp.shear k t hk c).apply x) j).val : ℤ) - (m^d*W : ℕ)) =
+      RadixToBinary.binaryEncoding.encode (sym (a (index x j)))) :
+    ∃ word : Fin (m^d*W) → α, (∀ pos : ℤ, readAt blank left right (pos-(q+(m^d*W : ℕ))) =
+      RadixToBinary.binaryEncoding.encode (putWord dest q (List.ofFn (sym ∘ word)) pos)) ∧
+      ∀ x j, word (index ((RowOp.shear k t hk c).apply x) j) = a (index x j) := by
+  obtain ⟨word,cells,perm⟩ := shear_output_word k t (RadixToBinary.binaryEncoding.encode ∘ sym) hk
+    c a
+    (fun n => readAt blank left right ((n.val : ℤ) - (m^d*W : ℕ))) effect
+  have out (pos : ℤ) : readAt blank left right (pos-(q+(m^d*W : ℕ))) =
+      RadixToBinary.binaryEncoding.encode (putWord dest q (List.ofFn (sym ∘ word)) pos) := by
+    by_cases outsideWord : pos < q ∨ q+(m^d*W : ℕ) ≤ pos
+    · rw [putWord_outside _ _ _ _ (by simpa using outsideWord)]
+      exact frame pos outsideWord
+    · let i : Fin (m^d*W) := ⟨(pos-q).toNat,by omega⟩
+      have addr : pos = q+i.val := by dsimp [i]; omega
+      rw [addr,BinaryDivide.putWord_getElem _ _ _ i.val (by simp),List.getElem_ofFn]
+      simpa only [Function.comp_apply,add_sub_add_left_eq_sub] using cells i
+  exact ⟨word,out,perm⟩
+
 def shearAndReturn (col target pivot : Fin d) (bank : Fin 35 ↪ Fin T) : Pr P T 217 A U :=
   .seq (matrixShear k t b pivot bank col (Equiv.swap col pivot target))
     (finishShear ((Fin.castLEEmb (by decide)).trans bank))
@@ -129,18 +153,7 @@ theorem reverseMatrixShear_exec {α : Type*} (sym : α → Fin 4) (col target : 
   obtain ⟨z,F,n,hz,hn,run,archive,headers,widthFrame,modulus,prefixReady,counters,sourceTape,frame,effect⟩ := matrixShear_exec k t b w hk matrix pivot col (Equiv.swap col pivot target) hb unit body bank H J hm hw hW
     v S base one width coeffBlank tail packed entryBlank pivotBlank paddedOne ticks blankInv free left
     source dest p q (sym ∘ a) src dst
-  obtain ⟨word,cells,perm⟩ := shear_output_word k t (RadixToBinary.binaryEncoding.encode ∘ sym) hk
-    (matrix (Equiv.swap col pivot target) col * Ring.inverse (matrix pivot col)) a
-    (fun n => readAt blank (F.L (bank 25)) (F.R (bank 25)) ((n.val : ℤ) - (M^d*W : ℕ))) effect
-  have out (pos : ℤ) : readAt blank (F.L (bank 25)) (F.R (bank 25)) (pos-(q+(M^d*W : ℕ))) =
-      RadixToBinary.binaryEncoding.encode (putWord dest q (List.ofFn (sym ∘ word)) pos) := by
-    by_cases outsideWord : pos < q ∨ q+(M^d*W : ℕ) ≤ pos
-    · rw [putWord_outside _ _ _ _ (by simpa using outsideWord)]
-      exact frame pos outsideWord
-    · let i : Fin (M^d*W) := ⟨(pos-q).toNat,by omega⟩
-      have addr : pos = q+i.val := by dsimp [i]; omega
-      rw [addr,BinaryDivide.putWord_getElem _ _ _ i.val (by simp),List.getElem_ofFn]
-      simpa only [Function.comp_apply,add_sub_add_left_eq_sub] using cells i
+  obtain ⟨word,out,perm⟩ := shear_output_tape k t sym hk (matrix (Equiv.swap col pivot target) col * Ring.inverse (matrix pivot col)) a dest q _ _ frame effect
   let ports : Fin 29 ↪ Fin T := (Fin.castLEEmb (by decide : 29 ≤ 35)).trans bank
   open RowPaddingConstructedAlphabet in
   obtain ⟨u,G,l,hu,hl,finish,result,clean,retFrame⟩ := finishShear_exec body ports t hW
