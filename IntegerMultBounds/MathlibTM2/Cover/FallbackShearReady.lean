@@ -1,0 +1,66 @@
+module
+
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackReverseShear
+
+/-! A reverse row addition returns the same physical layout for its successor. -/
+@[expose] public section
+namespace IntegerMultBounds.MathlibTM2.Cover.Fallback
+open IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2.Stack Host FlatCoordinateLayout
+variable {T A d W b w : ℕ} {P U α : Type} [NeZero (b^(w+1))]
+local notation "M" => b^(w+1)
+
+structure ShearReady (bank : Fin 35 ↪ Fin T) (H J : ℕ) (matrix : Matrix (Fin d) (Fin d) (ZMod M))
+    (tail : List (Fin (A+4))) (sym : α → Fin 4) (source dest : ℤ → Fin 4) (p q : ℤ)
+    (a : Fin (M^d*W) → α) (S : Stacks T A) : Prop where
+  modulus : S.R (bank 2) = binSyms H M
+  width : S.R (bank 27) = binSyms J W
+  one : S.R (bank 28) = binSyms 1 1
+  padded : S.R (bank 32) = binSyms H (1 : ZMod M).val
+  clock : (S.R (bank 33)).length = w
+  archive : S.R (bank 34) = matrixWords A H matrix ++ tail
+  scratch : ∀ i ∈ shearWork, S.L (bank i) = [] ∧ S.R (bank i) = []
+  src : ∀ z, readAt blank (S.L (bank 24)) (S.R (bank 24)) (z-p) =
+    RadixToBinary.binaryEncoding.encode (putWord source p (List.ofFn (sym ∘ a)) z)
+  dst : ∀ z, readAt blank (S.L (bank 25)) (S.R (bank 25)) (z-q) =
+    RadixToBinary.binaryEncoding.encode (dest z)
+
+theorem reverseMatrixShear_ready [Fintype P] (k t col target pivot : Fin d) (hk : k < t)
+    (matrix : Matrix (Fin d) (Fin d) (ZMod M)) (hb : b.Prime) (unit : IsUnit (matrix pivot col))
+    (body : P → Pr P T 217 A U) (bank : Fin 35 ↪ Fin T) (H J : ℕ)
+    (hm : M < 2^H) (hw : W < 2^J) (hW : 0 < W) (v : HS T 217 A U) (S : Stacks T A)
+    (tail : List (Fin (A+4))) (sym : α → Fin 4) (source dest : ℤ → Fin 4) (p q : ℤ)
+    (empty : ∀ z, q ≤ z → z < q+(M^d*W : ℕ) → dest z = blank) (a : Fin (M^d*W) → α)
+    (ready : ShearReady bank H J matrix tail sym source dest p q a S) :
+    let row := Equiv.swap col pivot target
+    let readTime := fun i : Fin d => 8*((i.val*d+col.val)*H)+14*H+22
+    let limit := readTime pivot + readTime row + pivotShearTime (W := W) k t b w H J +
+      (10*(t.val*H+1)+12+((327*(M^d*W)+2)*13+6))
+    ∃ z F n word, z.user = v.user ∧
+      n ≤ 4*shearWork.length+1+(1+6*shearWork.length*shearPushBound d b bank body)*limit ∧
+      Exec body (reverseMatrixShear k t b col target pivot bank) (mk v S) n (mk z F) ∧
+      ShearReady bank H J matrix tail sym source dest p q word F ∧
+      ∀ x j, word (index ((RowOp.shear k t hk (matrix row col * Ring.inverse (matrix pivot col))).apply x) j) =
+        a (index x j) := by
+  intro row readTime limit
+  have work : ∀ i : Fin 35, i ∈ shearWork ↔
+      (i ≤ 26 ∧ i ≠ 2 ∧ i ≠ 24 ∧ i ≠ 25) ∨ (29 ≤ i ∧ i ≤ 31) := by decide
+  have bankSize : 29 ≤ 35 := by decide
+  obtain ⟨u,G,n,z,F,hz,time,run,finish,archive,headers,widthFrame,modulus,free,dst,word,src,effect⟩ :=
+    reverseMatrixShear_exec k t b w sym col target hk matrix pivot hb unit body bank H J hm hw hW v S
+      ready.modulus ready.one ready.width (ready.scratch 0 (by decide)).2 tail ready.archive
+      (ready.scratch 29 (by decide)).2 (ready.scratch 31 (by decide)).2 ready.padded ready.clock
+      (ready.scratch 30 (by decide)).2
+      (fun i _ hi h2 h24 h25 => (ready.scratch i ((work i).2 (Or.inl ⟨hi,h2,h24,h25⟩))).2)
+      (fun i hi => (ready.scratch _ ((by decide +revert : ∀ i : Fin 12, i < 10 →
+        (shearTranslation i).castLE bankSize ∈ shearWork) i hi)).1)
+      source dest p q a empty (fun z => (ready.src z).symm) (fun z => (ready.dst z).symm)
+  refine ⟨z,F,_,word,hz,shear_cleanup_time_of_empty k t b col target pivot bank body run time ?_,finish,
+    ⟨modulus.trans ready.modulus,(widthFrame 27 (by decide) (by decide)).trans ready.width,
+     (widthFrame 28 (by decide) (by decide)).trans ready.one,(headers 32 (by decide) (by decide)).trans ready.padded,
+     (congrArg List.length (headers 33 (by decide) (by decide))).trans ready.clock,archive.trans ready.archive,
+     fun i hi => free i ((work i).1 hi),src,dst⟩,effect⟩
+  intro j hj
+  obtain ⟨i,hi,rfl⟩ := List.mem_map.mp hj
+  exact ready.scratch i hi
+
+end IntegerMultBounds.MathlibTM2.Cover.Fallback
