@@ -21,7 +21,7 @@ def frame (pool : Fin ((D+1)*13) ↪ Fin T) (l : ℕ) : Fin 13 ↪ Fin T :=
 def registerBank (pool : Fin ((D+1)*13) ↪ Fin T) (l : ℕ) (out : Fin T) : Fin 13 ↪ Fin T :=
   (frame pool l).trans (Equiv.swap (frame pool l 3) out).toEmbedding
 
-private theorem separate (pool : Fin ((D+1)*13) ↪ Fin T) {l k : ℕ} (hl : l < k) (hk : k ≤ D)
+theorem separate (pool : Fin ((D+1)*13) ↪ Fin T) {l k : ℕ} (hl : l < k) (hk : k ≤ D)
     (i j : Fin 13) : frame pool k i ≠ frame pool l j := by
   intro h
   have eq := congrArg (fun t : Fin (D+1) × Fin 13 => t.1.val) (finProdFinEquiv.injective (pool.injective h))
