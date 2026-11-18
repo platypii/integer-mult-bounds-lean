@@ -21,7 +21,7 @@ def inverseShearPorts : Fin 16 ↪ Fin 34 :=
   ⟨![30,1,3,4,2,5,6,7,8,9,10,11,12,13,31,32],by decide⟩
 
 def pivotShear (bank : Fin 34 ↪ Fin T) : Pr P T 217 A U :=
-  .seq (pivotInverse b (inverseShearPorts.trans bank) (bank 33))
+  .seq (reusablePivotInverse b (inverseShearPorts.trans bank) (bank 33) (bank 26))
     (productShear k t ((Fin.castLEEmb (by decide)).trans bank))
 
 def pivotShearTime (H J : ℕ) : ℕ :=
@@ -31,7 +31,7 @@ def pivotShearTime (H J : ℕ) : ℕ :=
   let K := g*H+1
   let V := s*H+J
   let product := 48*H*H+152*H+66
-  let inverse := 14*H+16+(b-2)*product+product+w*(12*H+15+b*product)
+  let inverse := 6*w+6+(14*H+16+(b-2)*product+product+w*(12*H+15+b*product))
   let dimensions := dimensionTime H 1 t.val + dimensionTime H 1 g + dimensionTime H J s
   let pass := 6*N+17*L+4*V+10*H+31 + N*(L*(12*(K+H)+78)+22*K+180*H+173+48*H*H+(207*(M*B)+241)*25)
   inverse + (48*H*H+150*H+64 + (dimensions + (pass+2)))
@@ -68,22 +68,23 @@ theorem pivotShear_exec (hk : k < t) (matrix : Matrix (Fin d) (Fin d) (ZMod M)) 
         readAt blank (F.L (bank 25)) (F.R (bank 25)) (((index y j).val : ℤ) - (M^d*W : ℕ)) =
           RadixToBinary.binaryEncoding.encode (a (index x j)) := by
   let ports : Fin 31 ↪ Fin 34 := Fin.castLEEmb (by decide)
-  have disjoint : ∀ i, inverseShearPorts i ≠ 33 := by decide
+  have disjoint : ∀ i, inverseShearPorts i ≠ 26 := by decide
   have scratch : ∀ i : Fin 16, i ≠ 0 → i ≠ 4 → i < 13 →
       1 ≤ inverseShearPorts i ∧ inverseShearPorts i ≤ 26 ∧ inverseShearPorts i ≠ 2 ∧
       inverseShearPorts i ≠ 24 ∧ inverseShearPorts i ≠ 25 := by decide
-  obtain ⟨u,D,m,hu,hm',invRun,_,invWord,hL,_,_,frame⟩ := pivotInverse_exec body b w hb
-    (matrix pivot col) unit (inverseShearPorts.trans bank) (bank 33)
-    (fun i => bank.injective.ne (disjoint i)) H hm v S ticks pivotWord paddedOne base (by
+  obtain ⟨u,D,m,hu,hm',invRun,_,invWord,hL,_,_,frame⟩ := reusablePivotInverse_exec body b w hb
+    (matrix pivot col) unit (inverseShearPorts.trans bank) (bank 33) (bank 26)
+    (by simp [List.nodup_cons,bank.injective.eq_iff,Function.Embedding.trans_apply]; decide)
+    (fun i => bank.injective.ne (disjoint i)) H hm v S ticks (free 26 (by decide) (by decide) (by decide) (by decide) (by decide)) pivotWord paddedOne base (by
       intro i hi hj
       by_cases h : i = 0
       · subst i; exact blankInv
       · obtain ⟨a,c,e,f,g⟩ := scratch i h hi hj
         exact free _ a c e f g)
   have kept (i : Fin 31) (h : i < 30) : D.R (bank (ports i)) = S.R (bank (ports i)) := by
-    apply frame <;> apply bank.injective.ne
+    apply frame
+    apply bank.injective.ne
     · change ports i ≠ 30; intro eq; have e := congrArg Fin.val eq; change i.val = 30 at e; omega
-    · intro eq; have e := congrArg Fin.val eq; change i.val = 33 at e; omega
   obtain ⟨z,F,n,hz,hn,run,modulus,read⟩ := productShear_exec k t hk matrix pivot col row _
     (Ring.mul_inverse_cancel _ unit) body (ports.trans bank) H J hm hw hW u D
     ((kept 2 (by decide)).trans base) ((kept 28 (by decide)).trans one)

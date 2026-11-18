@@ -77,4 +77,37 @@ theorem pivotInverse_exec (body : P → Pr P T Q A U) (p w : ℕ) (hp : p.Prime)
     · subst i; simp [free 1 (by decide) (by decide)]
     · simpa [D,E,Function.update_of_ne h,Function.update_of_ne hi] using frame i hi hc
 
+/-- Run the reciprocal loop on a copy so subsequent rows can reuse the clock. -/
+def reusablePivotInverse (p : ℕ) (r : Fin 16 ↪ Fin T) (clock count : Fin T) : Pr P T Q A U :=
+  .seq (bcopy clock count (r 2) (r 3)) (pivotInverse p r count)
+
+theorem reusablePivotInverse_exec (body : P → Pr P T Q A U) (p w : ℕ) (hp : p.Prime)
+    [NeZero (p^(w+1))] (x : ZMod (p^(w+1))) (hx : IsUnit x) (r : Fin 16 ↪ Fin T)
+    (clock count : Fin T) (copyPorts : [clock, count, r 2, r 3].Nodup)
+    (outside : ∀ i, r i ≠ count) (H : ℕ) (hm : p^(w+1) < 2^H)
+    (v : HS T Q A U) (S : Stacks T A) (ticks : (S.R clock).length = w) (empty : S.R count = [])
+    (pivot : S.R (r 14) = binSyms H x.val)
+    (one : S.R (r 15) = binSyms H (1 : ZMod (p^(w+1))).val)
+    (modulus : S.R (r 4) = binSyms H (p^(w+1)))
+    (free : ∀ i : Fin 16, i ≠ 4 → i < 13 → S.R (r i) = []) :
+    let C := 48*H*H+152*H+66
+    ∃ z F t, z.user = v.user ∧ t ≤ 6*w+6+(14*H+16+(p-2)*C+C+w*(12*H+15+p*C)) ∧
+      Exec body (reusablePivotInverse p r clock count) (mk v S) t (mk z F) ∧
+      F.R count = [] ∧ F.R (r 0) = binSyms H (Ring.inverse x).val ∧
+      F.L = S.L ∧ F.inp = S.inp ∧ F.out = S.out ∧
+      ∀ i, i ≠ r 0 → F.R i = S.R i := by
+  obtain ⟨u,hu,copy⟩ := bcopy_exec body copyPorts v S
+    (free 2 (by decide) (by decide)) (free 3 (by decide) (by decide))
+  rw [empty,List.append_nil,ticks] at copy
+  let D : Stacks T A := {S with R := Function.update S.R count (S.R clock)}
+  have keep (i : Fin 16) : D.R (r i) = S.R (r i) := Function.update_of_ne (outside i) _ _
+  obtain ⟨z,F,n,hz,hn,run,cleared,result,left,inp,out,frame⟩ := pivotInverse_exec body p w hp x hx r count outside H hm u D
+    (by simpa [D] using ticks) ((keep 14).trans pivot) ((keep 15).trans one) ((keep 4).trans modulus)
+    (fun i hi hj => (keep i).trans (free i hi hj))
+  refine ⟨z,F,_,hz.trans hu,Nat.add_le_add_left hn _,Exec.seq copy run,cleared,result,left,inp,out,?_⟩
+  intro i hi
+  by_cases eq : i = count
+  · subst i; exact cleared.trans empty.symm
+  · exact (frame i hi eq).trans (Function.update_of_ne eq _ _)
+
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
