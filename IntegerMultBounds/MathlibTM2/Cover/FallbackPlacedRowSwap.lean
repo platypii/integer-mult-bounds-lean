@@ -15,6 +15,40 @@ local notation "N" => rowSwapBlock.tapes
 local notation "Q" => rowSwapBlock.states
 local instance (w : ℕ) : NeZero (prime^(w+1)) := ⟨(pow_pos prime_prime.pos _).ne'⟩
 
+/-- In the simulated bank only the payload role is shared. All other simulated roles
+read their private stacks at the original role head. -/
+noncomputable def simulationRoles {n : ℕ} (roles : Tapes 35 prime) (S : Stacks (n+35) prime) : Tapes 35 prime :=
+  ⟨roles.head,fun k pos => if k = 24 then roles.tape k pos else
+    readAt blank (S.L (Fin.natAdd n k)) (S.R (Fin.natAdd n k)) (pos-roles.head k)⟩
+
+omit [M8.Machine.Net] in
+theorem preparedSwap_rep {n : ℕ} (roles : Tapes 35 prime)
+    (view : RecursiveInterchangeLayout.Descriptor) (headers : Fin 22 → Option (List Bool))
+    (S : Stacks (n+35) prime)
+    (rep : RepT (SharedBankStageInput.raw (LabelCall.bank roles view headers) (n+35)) S.L S.R) :
+    RepT (SharedBankStageInput.raw (LabelCall.bank (simulationRoles roles S) view headers) n)
+      (S.L ∘ swapSimulationPort) (S.R ∘ swapSimulationPort) := by
+  intro i pos
+  have cell := rep (Fin.castAdd 35 i) pos
+  by_cases row : i.val < 35
+  · let k : Fin 35 := ⟨i.val,row⟩
+    have inside : i.val < 35+(2+22) := by omega
+    have idx : (⟨i.val,inside⟩ : Fin (35+24)) = Fin.castAdd 24 k := rfl
+    simp only [SharedBankStageInput.raw,Fin.val_castAdd,dite_eq_left inside,idx,LabelCall.bank,Tapes.append,
+      Fin.addCases_left] at cell ⊢
+    by_cases pay : k = 24
+    · have val : i.val = 24 := congrArg Fin.val pay
+      simpa [simulationRoles,pay,swapSimulationPort,val] using cell
+    · have ne : i.val ≠ 24 := fun h => pay (Fin.ext h)
+      simp [simulationRoles,pay,swapSimulationPort,row,ne,k]
+  · simp only [Function.comp_apply,swapSimulationPort,row,false_and,dite_false]
+    by_cases inside : i.val < 35+(2+22)
+    · let k : Fin 24 := ⟨i.val-35,by omega⟩
+      have idx : (⟨i.val,inside⟩ : Fin (35+24)) = Fin.natAdd 35 k := Fin.ext (by change i.val = 35+(i.val-35); omega)
+      simpa only [SharedBankStageInput.raw,Fin.val_castAdd,dite_eq_left inside,idx,LabelCall.bank,
+        Tapes.append,Fin.addCases_right] using cell
+    · simpa only [SharedBankStageInput.raw,Fin.val_castAdd,dite_eq_right inside] using cell
+
 noncomputable def placedRowSwap : Pr P (N+35) Q prime U :=
   .seq (embProg swapSimulationPort Empty.elim (foreign rowSwapBlock.program))
     (clearWorkTapes (swapWorkspace (N+35)))
@@ -27,8 +61,7 @@ theorem placedRowSwap_exec {d w W : ℕ} (i j : Fin d) (lt : i < j) (hW : 0 < W)
     let cost := 3808274 * volume prime view + LeafCore.coreCost (volume prime view) (w+1)
     let slot := fun k : Fin 35 => Fin.castAdd 35 ((Fin.castAdd 24 k).castLE rowSwapFits)
     ∀ x : Fin (volume prime view) → ZMod 2, roles.head 24 = 0 → roles.tape 24 = sourceWord (v := view) x →
-    RepT (SharedBankStageInput.raw (LabelCall.bank roles view headers) N)
-      (S.L ∘ swapSimulationPort) (S.R ∘ swapSimulationPort) →
+    RepT (SharedBankStageInput.raw (LabelCall.bank roles view headers) (N+35)) S.L S.R →
     ∃ (y : Fin (volume prime view) → ZMod 2), ∃ z F n, ∃ u, ∃ G : Stacks (N+35) prime,
       z.user = v.user ∧ n ≤ cost*(N+5)+6 ∧
       Exec body (embProg swapSimulationPort Empty.elim (foreign rowSwapBlock.program)) (mk v S) n (mk u G) ∧
@@ -40,9 +73,9 @@ theorem placedRowSwap_exec {d w W : ℕ} (i j : Fin d) (lt : i < j) (hW : 0 < W)
       ∀ (coords : Fin d → ZMod (prime^(w+1))) (k : Fin W),
         ext y (FlatCoordinateLayout.index (coords ∘ Equiv.swap i j) k).val = ext x (FlatCoordinateLayout.index coords k).val := by
   intro view headers cost slot x hh hx ready
-  have swap := swapPayload_exec (P := Empty) (U := U) i j lt (Nat.succ_pos w) hW roles 24 x hh hx
+  have swap := swapPayload_exec (P := Empty) (U := U) i j lt (Nat.succ_pos w) hW (simulationRoles roles S) 24 x hh (by simpa [simulationRoles] using hx)
   rw [← rowSwapBlock.eq_def] at swap
-  obtain ⟨y,u,D,n,hu,hn,run,_,tape,effect⟩ := swap Empty.elim (embDn swapSimulationPort v) (embStk swapSimulationPort S) ready
+  obtain ⟨y,u,D,n,hu,hn,run,_,tape,effect⟩ := swap Empty.elim (embDn swapSimulationPort v) (embStk swapSimulationPort S) (preparedSwap_rep roles view headers S ready)
   obtain ⟨u',G,placed,user,eq,frame⟩ := swapPlaced_exec body v S run
   rw [← eq] at tape
   have pos : (rowSwapBlock.slots (Fin.castAdd 24 (24 : Fin 35))).val = 24 := by rw [rowSwapBlock.eq_def]; rfl
