@@ -22,7 +22,8 @@ def inverseShearPorts : Fin 16 ↪ Fin 34 :=
 
 def pivotShear (bank : Fin 34 ↪ Fin T) : Pr P T 217 A U :=
   .seq (reusablePivotInverse b (inverseShearPorts.trans bank) (bank 33) (bank 26))
-    (productShear k t ((Fin.castLEEmb (by decide)).trans bank))
+    (embProg ((Fin.castLEEmb (by decide : 31 ≤ 34)).trans bank) Empty.elim
+      (productShear k t (Function.Embedding.refl _)))
 
 def pivotShearTime (H J : ℕ) : ℕ :=
   let g := t.val-1-k.val
@@ -55,6 +56,7 @@ theorem pivotShear_exec (hk : k < t) (matrix : Matrix (Fin d) (Fin d) (ZMod M)) 
       readAt blank (S.L (bank 25)) (S.R (bank 25)) (z-q)) :
     ∃ z F n, z.user = v.user ∧ n ≤ pivotShearTime (W := W) k t b w H J ∧
       Exec body (pivotShear k t b bank) (mk v S) n (mk z F) ∧
+      (∀ i : Fin 34, 32 ≤ i → i ≤ 33 → F.R (bank i) = S.R (bank i)) ∧
       F.R (bank 2) = S.R (bank 2) ∧
       PrefixCopyReady (bank 13) (bank 3) (bank 4) (bank 5) (t.val*H+1) (prefixSize (Q := M) t) F ∧
       ShearCounters (suffixSize (Q := M) (W := W) t) M (bank ∘ (Fin.castLEEmb (by decide : 29 ≤ 34)) ∘ shearTranslation) F ∧
@@ -85,17 +87,31 @@ theorem pivotShear_exec (hk : k < t) (matrix : Matrix (Fin d) (Fin d) (ZMod M)) 
     apply frame
     apply bank.injective.ne
     · change ports i ≠ 30; intro eq; have e := congrArg Fin.val eq; change i.val = 30 at e; omega
-  obtain ⟨z,F,n,hz,hn,run,modulus,read⟩ := productShear_exec k t hk matrix pivot col row _
-    (Ring.mul_inverse_cancel _ unit) body (ports.trans bank) H J hm hw hW u D
+  let work := ports.trans bank
+  obtain ⟨z,F,n,hz,hn,run,result⟩ := productShear_exec k t hk matrix pivot col row _
+    (Ring.mul_inverse_cancel _ unit) (P := Empty) Empty.elim (Function.Embedding.refl _) H J hm hw hW (embDn work u) (embStk work D)
     ((kept 2 (by decide)).trans base) ((kept 28 (by decide)).trans one)
     ((kept 27 (by decide)).trans width) ((kept 0 (by decide)).trans coeffBlank)
     ((kept 29 (by decide)).trans entry) invWord
     (fun i lo hi h2 h24 h25 => (kept i (by omega)).trans (free _ lo hi
       (fun h => h2 (ports.injective h)) (fun h => h24 (ports.injective h))
       (fun h => h25 (ports.injective h))))
-    (by rw [hL]; exact left) source dest p q a
-    (by change ∀ j, _ = readAt blank _ (D.R (bank (ports 24))) _; rw [hL,kept 24 (by decide)]; exact src)
-    (by change ∀ j, _ = readAt blank _ (D.R (bank (ports 25))) _; rw [hL,kept 25 (by decide)]; exact dst)
-  exact ⟨z,F,m+n,hz.trans hu,Nat.add_le_add hm' hn,Exec.seq invRun run,modulus.trans (kept 2 (by decide)),read⟩
+    (by intro i hi; change D.L _ = []; rw [hL]; exact left i hi) source dest p q a
+    (by change ∀ j, _ = readAt blank (D.L (bank (ports 24))) (D.R (bank (ports 24))) _; rw [hL,kept 24 (by decide)]; exact src)
+    (by change ∀ j, _ = readAt blank (D.L (bank (ports 25))) (D.R (bank (ports 25))) _; rw [hL,kept 25 (by decide)]; exact dst)
+  obtain ⟨y,G,placed,_,hy,eq,untouched⟩ := exec_emb (body' := body) (ι := Empty.elim)
+    work.injective (fun e => nomatch e) run u rfl D rfl
+  rw [← eq] at result
+  obtain ⟨modulus,ready,read⟩ := result
+  refine ⟨y,G,m+n,hy.trans (hz.trans hu),Nat.add_le_add hm' hn,Exec.seq invRun placed,?_,
+    modulus.trans (kept 2 (by decide)),⟨ready.fits,ready.count,ready.marker,ready.dest,ready.temp,ready.scratch⟩,read⟩
+  intro i lo hi
+  apply (untouched _ _).2.trans (frame _ (bank.injective.ne (by change i ≠ 30; omega)))
+  intro j
+  apply bank.injective.ne
+  intro e
+  have h := congrArg Fin.val e
+  change j.val = i.val at h
+  omega
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback

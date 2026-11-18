@@ -114,6 +114,7 @@ theorem reverseMatrixShear_exec {α : Type*} (sym : α → Fin 4) (col target : 
       Exec body (reverseMatrixShear k t b col target pivot bank) (mk v S)
         (n+(((shearWork.map bank).map fun i => 4*(G.L i).length+2*(G.R i).length+4).sum+1)) (mk z F) ∧
       F.R (bank 34) = S.R (bank 34) ∧
+      (∀ i : Fin 35, 32 ≤ i → i ≤ 33 → F.R (bank i) = S.R (bank i)) ∧
       F.R (bank 2) = S.R (bank 2) ∧
       (∀ i : Fin 35, (i ≤ 26 ∧ i ≠ 2 ∧ i ≠ 24 ∧ i ≠ 25) ∨ (29 ≤ i ∧ i ≤ 31) →
         F.L (bank i) = [] ∧ F.R (bank i) = []) ∧
@@ -124,7 +125,7 @@ theorem reverseMatrixShear_exec {α : Type*} (sym : α → Fin 4) (col target : 
         ∀ (x : Fin d → ZMod M) (j : Fin W),
           let y := (RowOp.shear k t hk (matrix (Equiv.swap col pivot target) col * Ring.inverse (matrix pivot col))).apply x
           word (index y j) = a (index x j) := by
-  obtain ⟨z,F,n,hz,hn,run,archive,modulus,prefixReady,counters,sourceTape,frame,effect⟩ := matrixShear_exec k t b w hk matrix pivot col (Equiv.swap col pivot target) hb unit body bank H J hm hw hW
+  obtain ⟨z,F,n,hz,hn,run,archive,headers,modulus,prefixReady,counters,sourceTape,frame,effect⟩ := matrixShear_exec k t b w hk matrix pivot col (Equiv.swap col pivot target) hb unit body bank H J hm hw hW
     v S base one width coeffBlank tail packed entryBlank pivotBlank paddedOne ticks blankInv free left
     source dest p q (sym ∘ a) src dst
   obtain ⟨word,cells,perm⟩ := shear_output_word k t (RadixToBinary.binaryEncoding.encode ∘ sym) hk
@@ -153,7 +154,7 @@ theorem reverseMatrixShear_exec {α : Type*} (sym : α → Fin 4) (col target : 
   have srcKeep := keep 24 (by decide)
   have dstKeep := keep 25 (by decide)
   refine ⟨u,G,_,y,D,hy.trans (hu.trans hz),Nat.add_le_add hn hl,Exec.seq run finish,
-    Exec.seq (Exec.seq run finish) clear,?_,?_,freeD,?_,word,?_,perm⟩
+    Exec.seq (Exec.seq run finish) clear,?_,?_,?_,freeD,?_,word,?_,perm⟩
   · apply (keep 34 (by decide)).2.trans
     apply Eq.trans _ archive
     apply retFrame
@@ -162,6 +163,17 @@ theorem reverseMatrixShear_exec {α : Type*} (sym : α → Fin 4) (col target : 
     intro h
     have e := congrArg Fin.val h
     change (returnPorts i).val = 34 at e
+    omega
+  · intro j lo hi
+    have fresh : ∀ j : Fin 35, 32 ≤ j → j ≤ 33 → j ∉ shearWork := by decide
+    apply (keep j (fresh j lo hi)).2.trans
+    apply Eq.trans _ (headers j lo hi)
+    apply retFrame
+    intro i
+    apply bank.injective.ne
+    intro eq
+    have h := congrArg Fin.val eq
+    change (returnPorts i).val = j.val at h
     omega
   · apply (keep 2 (by decide)).2.trans
     apply Eq.trans _ modulus
