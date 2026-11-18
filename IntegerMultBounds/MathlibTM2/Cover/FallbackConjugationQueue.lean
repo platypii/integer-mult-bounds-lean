@@ -2,6 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackPhysicalConjugation
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackQueueLayout
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackFormulaSources
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackResidualWord
 
 /-! Generate weighted residual matrices in physical directory order.
@@ -20,15 +21,15 @@ theorem physicalResidualQueue_exec (body : P → Pr P T Q prime U)
     (r : Fin 16 ↪ Fin T) (clock count : Fin T) (copyPorts : [clock,count,r 2,r 3].Nodup)
     (outside : ∀ i, r i ≠ count) (clockPivot : clock ≠ r 14)
     (H : ℕ) (hm : prime^(w+1) < 2^H)
-    (pool : Fin ((D+1)*13) ↪ Fin T) (source : Leaf (Entry ι m) → Fin 7 ↪ Fin T)
-    (apart : ∀ a i j, source a i ≠ pool j)
-    (poolPivot : ∀ k, pool k ≠ r 14) (srcPivot : ∀ a i, source a i ≠ r 14)
-    (poolInv : ∀ k, pool k ≠ r 0) (srcInv : ∀ a i, source a i ≠ r 0)
+    (pool : Fin ((D+1)*13) ↪ Fin T) (inputs : Fin 10 ↪ Fin T) (matrixSlot : ι → Bool)
+    (apart : ∀ i j, inputs i ≠ pool j)
+    (poolPivot : ∀ k, pool k ≠ r 14) (srcPivot : ∀ i, inputs i ≠ r 14)
+    (poolInv : ∀ k, pool k ≠ r 0) (srcInv : ∀ i, inputs i ≠ r 0)
     (poolFree : ∀ k j, j = 1 ∨ j = 13 → pool k ≠ r (QueueLayout.normalizationPorts j))
     (work : Fin 16 ↪ Fin T) (archive : Fin T) (archiveOff : ∀ i, work i ≠ archive)
     (packedOff : ∀ i, r i ≠ work 10)
     (ancestor : ℕ → List (Fin (prime+4))) (tail padWord : List (Fin (prime+4)))
-    (srcFree : ∀ a i j, j = 1 ∨ j = 13 → source a i ≠ r (QueueLayout.normalizationPorts j))
+    (srcFree : ∀ i j, j = 1 ∨ j = 13 → inputs i ≠ r (QueueLayout.normalizationPorts j))
     (mask seed tmp : Fin T)
     (maskOff : ∀ k, mask ≠ QueueLayout.scanPorts work archive archiveOff k)
     (separateOut : r 13 ≠ archive) (padPorts : [seed,archive,work 4,tmp].Nodup)
@@ -51,12 +52,15 @@ theorem physicalResidualQueue_exec (body : P → Pr P T Q prime U)
       (∀ i : Fin 16, i ≠ 4 → i < 13 → R (r i) = []) ∧
       (∀ k ≤ D, R (frame pool k 2) = binSyms H (prime^(w+1))) ∧
       (∀ k ≤ D, ∀ i : Fin 13, i ≠ 2 → R (frame pool k i) = []) ∧
-      (∀ a, leafReady (fun c _ => source c) (mat j) H a (source a 3) R)))
+      (∀ k, ∃ suffix, R (inputs (if matrixSlot k then 7 else 2)) = matrixWords prime H (mat j k) ++ suffix) ∧
+      (R (inputs 1)).length = H ∧ R (inputs 8) = binSyms H 0 ∧ R (inputs 9) = binSyms H (1 : ZMod (prime^(w+1))).val ∧
+      ∀ i : Fin 10, i ∈ [0,4,5,6] → R (inputs i) = []))
     (v : HS T Q prime U) (S : Stacks T prime) (start : workspace S.R)
     (widths : ∀ j < records, (S.R (work 12)).length = (ancestor j).length)
     (width : (S.R (work 1)).length = w+1) (blank : S.R (work 4) = []) (empty : S.R (archive) = [])
     (directory : S.R (work 2) = (List.range records).flatMap (LabelDirectory.entry ancestor m (w+1)) ++ tail)
     (output : S.R (work 13) = []) (bits : S.R mask = (List.range records).map fun j => bitSymbol (LabelStock.live m (w+1) 1 j)) :
+    let source := sourcePorts (m := m) inputs matrixSlot
     let weights := fun i j => QueueLayout.residualPorts r (coeff i j) (coeffOff i j)
     let scan := QueueLayout.scanPorts work archive archiveOff
     let num := fun i j : Fin m => numerator (matrixInput b) (matrixInput proj) i j
@@ -83,22 +87,22 @@ theorem physicalResidualQueue_exec (body : P → Pr P T Q prime U)
         (4*(ancestor j).length+4+(m*m*(4*(w+1)+4)+1))+4).sum+2+(2*words.length+2) ∧
       Exec body (.seq (maskedScan mask (branch live) (branch (bcopy seed (scan 4) (scan 3) tmp)))
         (moveR (scan 5) (scan 4) id)) (mk v S) n (mk z F) := by
-  intro weights scan num cost fits f detFits C conjugate live active word price
+  intro source weights scan num cost fits f detFits C conjugate live active word price
   apply directoryQueue_exec body scan mask maskOff m (w+1) records active live seed tmp padPorts padWord price
     ancestor word tail workspace stable padReady (fun j _ h => by simp [word,price,h])
     _ v S start widths width blank empty directory output bits
   intro j hj h u B ⟨ws,rest,headEq⟩
-  obtain ⟨prefixLen,digitWidth,scratch,bitWidth,zeroWord,packedBlank,ticks,countBlank,pivot,oneWord,modulus,free,moduli,frames,leaves⟩ := ready j hj h B.R ws
+  obtain ⟨prefixLen,digitWidth,scratch,bitWidth,zeroWord,packedBlank,ticks,countBlank,pivot,oneWord,modulus,free,moduli,frames,matrices,inputWidth,inputZero,inputOne,inputFree⟩ := ready j hj h B.R ws
   have scratchPort : ∀ k : Fin 14, k = 1 ∨ 4 ≤ k ∧ k < 12 →
       QueueLayout.normalizationPorts k ≠ 4 ∧ QueueLayout.normalizationPorts k < 13 := by decide
   have run := physicalConjugation_writes body w j (mat j) b proj (label j) h r clock count copyPorts outside clockPivot
-    H hm pool source apart (QueueLayout.normalizationPorts.trans r) poolPivot srcPivot poolInv srcInv
+    H hm pool source (fun a i j => apart (sourceMap matrixSlot a i) j) (QueueLayout.normalizationPorts.trans r) poolPivot (fun a i => srcPivot (sourceMap matrixSlot a i)) poolInv (fun a i => srcInv (sourceMap matrixSlot a i))
     (fun j => r.injective.ne ((by decide : ∀ j, QueueLayout.normalizationPorts j ≠ 14) j)) rfl poolFree (work 10) (packedOff 13).symm
     (QueueLayout.readPorts.trans work) (QueueLayout.digitPorts.trans work) rfl
     (fun i j => (show ∀ i j, QueueLayout.readPorts i ≠ QueueLayout.digitPorts j ∨ i = 3 ∧ j = 0 by decide) i j |>.imp (fun h => work.injective.ne h) id)
     (work 12) (work 9) (by change [work 12,work 0,work 6].Nodup; simp) (by simp)
     (work.injective.ne (by decide)) (fun i => work.injective.ne (by revert i; decide))
-    (fun i => work.injective.ne (by revert i; decide)) (fun i => work.injective.ne (by revert i; decide)) (ancestor j) rest srcFree
+    (fun i => work.injective.ne (by revert i; decide)) (fun i => work.injective.ne (by revert i; decide)) (ancestor j) rest (fun a i => srcFree (sourceMap matrixSlot a i))
     fits detFits
   have finish := residualWord_writes body weights (r 13) (scan 4) separateOut (fun _ _ => rfl) outputPort e
     (mat j proj) (mat j b) α α' H hm _ _ _ run u B
@@ -106,7 +110,7 @@ theorem physicalResidualQueue_exec (body : P → Pr P T Q prime U)
       prefixLen,digitWidth,fun i hi => scratch _ ((by decide : ∀ i : Fin 7, i = 0 ∨ 3 ≤ i →
         QueueLayout.readPorts i ∈ ([0,3,4,5,6,7,11,14,15] : List (Fin 16))) i hi),bitWidth,
       fun i hi => scratch _ ((by decide : ∀ i : Fin 6, i = 1 ∨ i = 2 ∨ i = 3 ∨ i = 5 →
-        QueueLayout.digitPorts i ∈ ([0,3,4,5,6,7,11,14,15] : List (Fin 16))) i hi),zeroWord⟩,packedBlank,ticks,countBlank,pivot,oneWord,modulus,free,moduli,frames,leaves,
+        QueueLayout.digitPorts i ∈ ([0,3,4,5,6,7,11,14,15] : List (Fin 16))) i hi),zeroWord⟩,packedBlank,ticks,countBlank,pivot,oneWord,modulus,free,moduli,frames,sourcePorts_ready inputs matrixSlot (mat j) H _ matrices inputWidth inputZero inputOne inputFree,
       modulus,free 12 (by decide) (by decide),fun k hk => free _ (scratchPort k hk).1 (scratchPort k hk).2⟩,(weightBank B.R ws).1,by
         intro i j
         obtain ⟨identity,row,col⟩ := (weightBank B.R ws).2 i j
