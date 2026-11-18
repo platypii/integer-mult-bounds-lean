@@ -358,8 +358,10 @@ pivot schedule. It realizes the residual action given a payload signed according
 corresponding sign-stream bit. For single-atom coordinates, [Fallback.Record.loadAnchorRecord_exec](FallbackAnchorLayout.lean)
 takes one live record from the anchor output queue and proves its exact signed addresses
 on the residual input tape. [Fallback.queuedAnchorRecord_exec](FallbackQueuedAnchorRecord.lean) composes the loader
-and residual program on one host and advances both queues to the next record. Collecting
-the transformed records and executing the complete record loop remain open.
+and residual program on one host and advances both queues to the next record. [Fallback.collectAnchorRecord_exec](FallbackCollectRecord.lean) appends the transformed
+word in reverse order to the output accumulator and restores the blank payload workspace.
+[Fallback.nextRecord_exec](FallbackNextRecord.lean) advances the packed matrix tape to
+the next record. Iterating these operations over the complete record stream remains open.
 
 - An upper addition is a lower addition between two exchanges; an exchange of two sub-fields of
   one bank is a reversed child between two reversals of the later field; a reversal is one
