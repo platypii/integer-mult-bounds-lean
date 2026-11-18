@@ -29,6 +29,13 @@ private theorem refine_scalar (x : Fin (d+1) → ZMod M) (j : Fin W) :
 noncomputable def signedAddress (negative : Bool) (x : Fin (d+1) → ZMod M) (j : Fin (d+1)) : ZMod M :=
   ((Fin.cons (if negative then -1 else 1) (fun _ => 1) : Fin (d+1) → (ZMod M)ˣ) j : ZMod M) * x j
 
+theorem signedAddress_involutive (negative : Bool) (x : Fin (d+1) → ZMod M) :
+    signedAddress negative (signedAddress negative x) = x := by
+  funext i
+  cases i using Fin.cases with
+  | zero => cases negative <;> simp [signedAddress]
+  | succ i => simp [signedAddress]
+
 theorem correct_scalar (negative : Bool) (a out : Array d 1 b W) (h : Correct (negative,a) out)
     (x : Fin (d+1) → ZMod M) (j : Fin W) :
     scalarArray out (index (signedAddress negative x) j) = scalarArray a (index x j) := by
@@ -48,22 +55,17 @@ theorem signedPayload (negative : Bool) (a out : Array d 1 b W) (h : Correct (ne
     (original : Fin (M^(d+1)*W) → ZMod 2) (input : scalarArray a = SparseRoleCircuit.encode ∘ original) :
     ∃ word : Fin (M^(d+1)*W) → ZMod 2, scalarArray out = SparseRoleCircuit.encode ∘ word ∧
       ∀ x j, word (index (signedAddress negative x) j) = original (index x j) := by
-  have cancel (x : Fin (d+1) → ZMod M) : signedAddress negative (signedAddress negative x) = x := by
-    funext i
-    cases i using Fin.cases with
-    | zero => cases negative <;> simp [signedAddress]
-    | succ i => simp [signedAddress]
   let word := fun n : Fin (M^(d+1)*W) =>
     let part := finProdFinEquiv.symm n
     original (index (signedAddress negative (coordinates part.1)) part.2)
   have eval (x : Fin (d+1) → ZMod M) (j : Fin W) : word (index x j) = original (index (signedAddress negative x) j) := by
     simp only [word,index,Equiv.symm_apply_apply,coordinates_rank]
-  refine ⟨word,?_,fun x j => by rw [eval,cancel]⟩
+  refine ⟨word,?_,fun x j => by rw [eval,signedAddress_involutive]⟩
   funext n
   obtain ⟨⟨r,j⟩,rfl⟩ := finProdFinEquiv.surjective n
   rw [show finProdFinEquiv (r,j) = index (coordinates r : Fin (d+1) → ZMod M) j by simp [index]]
   simp only [Function.comp_apply,eval]
-  simpa only [cancel,input,Function.comp_apply] using correct_scalar negative a out h (signedAddress negative (coordinates r)) j
+  simpa only [signedAddress_involutive,input,Function.comp_apply] using correct_scalar negative a out h (signedAddress negative (coordinates r)) j
 
 private theorem ofFn_cast {m n : ℕ} (h : m = n) (a : Fin n → α) :
     List.ofFn (fun i : Fin m => a (i.cast h)) = List.ofFn a := by subst n; rfl
