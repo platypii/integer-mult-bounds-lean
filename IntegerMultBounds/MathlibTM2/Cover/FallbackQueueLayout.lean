@@ -18,4 +18,8 @@ def scanPorts (work : Fin 16 ↪ Fin T) (archive : Fin T) (apart : ∀ i, work i
 def readPorts : Fin 7 ↪ Fin 16 := Fin.castLEEmb (by decide)
 def digitPorts : Fin 6 ↪ Fin 16 := ⟨![3,11,7,14,8,15],by decide⟩
 
+/-- Reuse the reciprocal, modulus, and scratch registers in the normalization pass.
+The conjugated matrix is accumulated in slot 13, clear of the determinant in slot 14. -/
+def normalizationPorts : Fin 14 ↪ Fin 16 := ⟨![0,1,4,13,2,3,5,6,7,8,9,10,11,12],by decide⟩
+
 end IntegerMultBounds.MathlibTM2.Cover.Fallback.QueueLayout
