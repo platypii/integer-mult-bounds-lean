@@ -829,6 +829,48 @@ theorem liveRecordCost_width (r d w H width numTime detTime : ℕ) :
   unfold liveRecordCost
   ring
 
+omit [M8.Machine.Net] in
+private theorem packedPayload (records width : ℕ) (word : ℕ → Fin width → Fin 4) :
+    let packed := fun z : Fin (records*width) =>
+      word (finProdFinEquiv.symm z).1 (finProdFinEquiv.symm z).2
+    (List.range records).flatMap (fun j => payloadWord (word j)) = payloadWord packed := by
+  intro packed
+  have rows : List.ofFn packed = (List.ofFn fun i : Fin records => List.ofFn (word i)).flatten := by
+    have split : List.ofFn packed =
+        (List.ofFn fun i : Fin records => List.ofFn fun k : Fin width => packed (finProdFinEquiv (i,k))).flatten := by
+      simpa only [finProdFinEquiv,Equiv.coe_fn_mk,Nat.add_comm,Nat.mul_comm] using List.ofFn_mul packed
+    simpa only [packed,Equiv.symm_apply_apply] using split
+  unfold payloadWord
+  rw [rows,List.map_flatten,List.ofFn_eq_map]
+  simp [List.flatMap_def,List.map_map,Function.comp_def]
+  rw [← List.map_coe_finRange_eq_range,List.map_map]
+  rfl
+
+omit [M8.Machine.Net] in
+private theorem returnedPayload_reads {volume : ℕ} (out : Fin volume → Fin 4)
+    (source : ℤ → Fin 4) (p : ℤ) (left tail : List (Fin (prime+4)))
+    (outside : ∀ k, k < p ∨ p+volume ≤ k →
+      RadixToBinary.binaryEncoding.encode (source k) =
+        readAt blank left (List.replicate volume blank ++ tail) (k-p)) (k : ℤ) :
+    RadixToBinary.binaryEncoding.encode (putWord source p (List.ofFn out) k) =
+      readAt blank left (payloadWord out ++ tail) (k-p) := by
+  by_cases before : k < p
+  · rw [putWord_outside _ _ _ _ (.inl before),outside k (.inl before)]
+    simp only [readAt,ite_eq_right (show ¬ 0 ≤ k-p by omega)]
+  · let i := (k-p).toNat
+    have offset : k-p = (i : ℤ) := by dsimp [i]; omega
+    by_cases inside : i < volume
+    · have atCell := BinaryDivide.putWord_getElem source p (List.ofFn out) i (by simpa using inside)
+      rw [show p+(i : ℤ) = k by omega] at atCell
+      rw [atCell,offset,readAt_nonneg,List.getElem?_append_left (by simpa [payloadWord] using inside)]
+      simp [payloadWord,inside]
+    · have after : p+volume ≤ k := by omega
+      rw [putWord_outside _ _ _ _ (.inr (by simpa using after)),outside k (.inr after),offset]
+      simp only [readAt_nonneg]
+      rw [List.getElem?_append_right (by simpa using Nat.le_of_not_gt inside),
+        List.getElem?_append_right (by simpa [payloadWord] using Nat.le_of_not_gt inside)]
+      simp [payloadWord]
+
 def SignedPassBound (regs : Fin 6 ↪ Fin T) (anchor : Fin (size d+T) ↪ Fin K)
     (ports : Fin (N+2) ↪ Fin K) (ext : Fin 6 ↪ Fin K) (v : Descriptor) (B : ℕ)
     (a : ScanData r d w W) (payload : ℕ → Record.Array d 1 (w+1) W)
@@ -970,13 +1012,20 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     SignedPassBound regs anchor ports ext v B a payload rs parents saved body
       (.seq (LabelSpectators.program r br rows bh atom (dir 2) (dir 9) (dir 3) (dir 5)) (.seq (.seq (LabelDirectorySetup.setup r dir atom one) (.seq (expandMask (dir 9) (dir 4) (dir 2) (dir 3) (dir 5) (dir 12) (fun _ => false)) (LabelDirectoryBuild.program dir))) (.seq (.seq (LabelCounts.highCount one atom (dir 7) (dir 2) (dir 3) (dir 5))
         (scanR (dir 7) (dir 2) (LabelCountBank.pushAll (cs.map Prod.fst)))) (.seq writeMask (.seq (.seq (bcopy (recip 15) (bank 17) (bank 4) tmp) (.seq (.seq (umulSym 1 (bitSymbol false) (bank 8) (bank 9) (bank 4)) (withIdentitySeed (d+1) (bank 9) (bank 17) seed (bank 4) tmp generate)) (bclear (bank 9)))) (bclear (bank 17))))))) pass
-      (signedPassTime U r d T v w W a.H a.J B width rate) u raw input (fun F => proj = 1 → ∀ (j : Fin base.records)
-        (x : Fin (d+1) → ZMod M) (k : Fin W),
-        let child := Weighted.child r α α' (x ∘ e ∘ Sum.inl, x ∘ e ∘ Sum.inr)
-        let address := if LabelStock.live r (w+1) 1 j then Sum.elim child.1 child.2 ∘ e.symm else x
-        (F.R (ext 2))[j.val*(M^(d+1)*W)+(FlatCoordinateLayout.index address k).val]? =
-          some (RadixToBinary.binaryEncoding.encode (SparseRoleCircuit.encode
-            (base.input j (FlatCoordinateLayout.index x k))))) := by
+      (signedPassTime U r d T v w W a.H a.J B width rate) u raw input (fun F => proj = 1 →
+        ∃ out : Fin (base.records*(M^(d+1)*W)) → Fin 4,
+          F.R (ext 2) = payloadWord out ++ base.inputTail ∧
+          (∀ (source : ℤ → Fin 4) (p : ℤ),
+            (∀ k, k < p ∨ p+(base.records*(M^(d+1)*W) : ℕ) ≤ k →
+              RadixToBinary.binaryEncoding.encode (source k) = readAt blank (F.L (ext 2))
+                (List.replicate (base.records*(M^(d+1)*W) : ℕ) blank ++ base.inputTail) (k-p)) →
+            ∀ k, RadixToBinary.binaryEncoding.encode (putWord source p (List.ofFn out) k) =
+              readAt blank (F.L (ext 2)) (F.R (ext 2)) (k-p)) ∧
+          ∀ (j : Fin base.records) (x : Fin (d+1) → ZMod M) (k : Fin W),
+            let child := Weighted.child r α α' (x ∘ e ∘ Sum.inl, x ∘ e ∘ Sum.inr)
+            let address := Sum.elim child.1 child.2 ∘ e.symm
+            out (finProdFinEquiv (j,FlatCoordinateLayout.index address k)) =
+              SparseRoleCircuit.encode (base.input j (FlatCoordinateLayout.index x k))) := by
   intro swaps shears rate
   obtain ⟨pass,run⟩ := physicalSignedResidualPass (w := w) (W := W) regs anchor ports ext off banks external shared
     capacity e proj idempotent admissible α α' inverse body rs hk parents saved layout cap cs sizeC
@@ -1332,11 +1381,31 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
   refine ⟨z,E,_,hz.trans (finishUser.trans (releaseUser.trans (cleanUser.trans (hy.trans (preparedUser.trans (zeroUser.trans (copyUser.trans (hUser.trans (counterUser.trans (buildUser.trans parentUser)))))))))),queue,acc,maskDone,pivots,archiveDone,?_,
     Exec.seq (Exec.seq parentRun (Exec.seq buildRun (Exec.seq counterRun (Exec.seq emit (Exec.seq (Exec.seq copyRun (Exec.seq (Exec.seq zeroRun (Exec.seq (Exec.seq initRun generateRun) clearRun)) releaseRun)) finishRun))))) exec,?_⟩
   swap
-  ·
-    intro identity j x k
-    rw [queue]
+  · intro identity
     subst proj
-    exact base.physicalIdentity_queue e α α' inverse j x k
+    let out := fun j => SparseRoleCircuit.encode (a := 0) ∘
+      (if active j then imageWord (a.matrix j) (base.input j) else base.input j)
+    have returned := queue.trans (congrArg (· ++ base.inputTail) (packedPayload base.records _ out))
+    refine ⟨_,returned,?_,?_⟩
+    · intro source p outside k
+      rw [returned]
+      exact returnedPayload_reads _ source p _ _ outside k
+    intro j x k
+    simp only [Equiv.symm_apply_apply]
+    let child := Weighted.child r α α' (x ∘ e ∘ Sum.inl, x ∘ e ∘ Sum.inr)
+    let address := Sum.elim child.1 child.2 ∘ e.symm
+    cases live : active j with
+    | true =>
+      have cell := base.physicalIdentity_bit e α α' inverse j live x k
+      exact (show out j (FlatCoordinateLayout.index address k) = _ by
+        simp only [out,live,ite_true,Function.comp_apply]; rw [cell])
+    | false =>
+      obtain ⟨symbol,constant⟩ := padding j j.isLt live
+      have same := (encoded j j.isLt).symm.trans constant
+      have atAddress := congrFun same (FlatCoordinateLayout.index address k)
+      have atInput := congrFun same (FlatCoordinateLayout.index x k)
+      simp only [out,live,Bool.false_eq_true,ite_false,Function.comp_apply]
+      exact atAddress.trans atInput.symm
   change _ ≤ (v.beforeRows*v.rows*B)*perParent + passPreparationCost v r (d+1) w B parentWidth base.H +
     (anchorVolumeRate d T+4)*totalVolume + (6+rate)*min liveVolume (((prime-1)*totalVolume)/prime)
   rw [min_eq_left liveBound]
