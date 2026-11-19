@@ -40,6 +40,45 @@ theorem bit_split_budget (n : ℕ)
     add_zero, Nat.cast_one, Nat.cast_ofNat, Nat.cast_mul] at bad power ⊢
   linarith only [bad, nr, mul_le_mul_of_nonneg_left power (Nat.cast_nonneg n)]
 
+/-- Replacing positive-rank children by unit children of equal total rank
+bounds both the concave moment and the number of calls charged a surcharge. -/
+theorem unit_children_bound (hist : List (ℕ × ℕ)) (m σ : ℝ) (hm : 0 < m) (hs : σ ≤ 1)
+    (positive : ∀ e ∈ hist, 0 < e.1) :
+    let mass : ℕ := (hist.map fun e => e.1 * e.2).sum
+    histMoment hist m σ ≤ (mass : ℝ) * (1 / m) ^ σ ∧ callCount hist ≤ mass := by
+  induction hist with
+  | nil => simp [histMoment, callCount]
+  | cons e rest ih =>
+    obtain ⟨moment, calls⟩ := ih (fun k hk => positive k (List.mem_cons_of_mem _ hk))
+    have rank := positive e List.mem_cons_self
+    have one : (1 : ℝ) ≤ e.1 := by exact_mod_cast rank
+    have bound : ((e.1 : ℝ) / m) ^ σ ≤ e.1 * (1 / m) ^ σ := by
+      rw [← mul_one_div (e.1 : ℝ) m, Real.mul_rpow (by positivity) (by positivity)]
+      exact mul_le_mul_of_nonneg_right (Real.rpow_le_self_of_one_le one hs) (by positivity)
+    simp only [histMoment, callCount, List.map_cons, List.sum_cons, Nat.cast_add, Nat.cast_mul,
+      add_mul] at *
+    constructor
+    · apply add_le_add _ moment
+      calc _ ≤ (e.2 : ℝ) * (e.1 * (1 / m) ^ σ) :=
+              mul_le_mul_of_nonneg_left bound (Nat.cast_nonneg _)
+           _ = _ := by ring
+    · exact Nat.add_le_add (by simpa using Nat.mul_le_mul_right e.2 rank) calls
+
+/-- The same one-thousandth saving holds for any grouping of positive child
+ranks within the fully split budget. -/
+theorem bit_grouped_budget (hist : List (ℕ × ℕ)) (positive : ∀ e ∈ hist, 0 < e.1)
+    (budget : (hist.map (fun e => e.1 * e.2)).sum ≤
+      (bitHistogram.map (fun e => e.1 * e.2)).sum + 9 * 32 * 9) :
+    histMoment hist 64 (1 - 1 / 1000) + surcharge hist 64 (1 - 1 / 1000) < 28416 := by
+  let mass : ℕ := (hist.map fun e => e.1 * e.2).sum
+  obtain ⟨moment, calls⟩ := unit_children_bound hist 64 (1 - 1 / 1000) (by norm_num) (by norm_num) positive
+  apply lt_of_le_of_lt _ (bit_split_budget mass budget)
+  apply add_le_add
+  · simpa [histMoment, mass] using moment
+  · simp only [surcharge, callCount, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil, add_zero]
+    change 32 * 64 ^ 2 * (callCount hist : ℝ) * _ / _ ≤ 32 * 64 ^ 2 * (mass : ℝ) * _ / _
+    gcongr
+
 private def lowerOk (e : ℕ × ℕ × ℕ) : Bool :=
   decide (0 < e.1 ∧ 0 < e.2.2 - 1 ∧
     e.1 ^ 10 * (e.2.2 - 1) ^ 5769 ≤ 64 ^ 10 * (10 ^ 10) ^ 5769)
