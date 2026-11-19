@@ -74,7 +74,7 @@ def SignedPassBound (regs : Fin 6 ↪ Fin T) (anchor : Fin (size d+T) ↪ Fin K)
 structure SeededQueueReady (w H records : ℕ) (proj : Matrix (Fin r) (Fin r) ℚ)
     (α α' : Fin r → ZMod M) (initial S : Stacks K prime) (bank : Fin 18 ↪ Fin K)
     (recip : Fin 16 ↪ Fin K) (pool : Fin ((conjugationDepth r+1)*13) ↪ Fin K)
-    (coeff : Fin r → Fin r → Fin 4 ↪ Fin K) (clock count mask seed tmp archive : Fin K)
+    (coeff : Fin r → Fin r → Fin 4 ↪ Fin K) (clock count seed tmp archive : Fin K)
     (ancestor : ℕ → List (Fin (prime+4))) (tail : List (Fin (prime+4))) : Prop where
   seedBlank : initial.R seed = []
   tmpBlank : S.R tmp = []
@@ -95,37 +95,6 @@ structure SeededQueueReady (w H records : ℕ) (proj : Matrix (Fin r) (Fin r) �
   empty : S.R (archive) = []
   directory : S.R (bank 2) = (List.range records).flatMap (LabelDirectory.entry ancestor r (w+1)) ++ tail
   output : S.R (bank 13) = []
-  bits : S.R mask = (List.range records).map fun j => bitSymbol (LabelStock.live r (w+1) 1 j)
-
-omit [M8.Machine.Net] in
-/-- Generate the directory scan's selector tape from the label counters. The
-scan consumes the selectors, so its queue endpoint agrees with the endpoint
-computed directly from the initial stacks. -/
-theorem generateMaskAndQueue (body : P → Pr P K Q prime U) (rs : List (Pair K))
-    (hk : rs.length = r*r) (mask parents saved : Fin K)
-    (layout : (parents :: saved :: (slots rs ++ [mask])).Nodup) :
-    ∃ writeMask, ∀ (v : Descriptor) (w B : ℕ), v.beforeH = B*prime^(r*((w+1)*r)) →
-      ∀ (u : HS K Q prime U) (S : Stacks K prime), ready (prime^w) S.R rs →
-      S.R saved = [] → (S.R parents).length = v.beforeRows*v.rows*B → S.R mask = [] →
-      let bits := (List.range (LabelMask.records v)).map fun j => bitSymbol (LabelStock.live r (w+1) 1 j)
-      let filled := {S with R := Function.update S.R mask bits}
-      ∀ (queue : Pr P K Q prime U) (dir archive : Fin K) (tail words : List (Fin (prime+4))) (cost : ℕ),
-      (∀ (y : HS K Q prime U), ∃ (z : HS K Q prime U) (n : ℕ), z.user = y.user ∧ n ≤ cost ∧
-        Exec body queue (mk y filled) n (mk z (queueResult filled mask dir archive tail words))) →
-      ∃ (z : HS K Q prime U) (n : ℕ), z.user = u.user ∧ n ≤ (v.beforeRows*v.rows*B)*(LabelTraversal.time (prime^w) (r*r) 1+5)+4+cost ∧
-        Exec body (.seq writeMask queue) (mk u S) n (mk z (queueResult S mask dir archive tail words)) := by
-  obtain ⟨writeMask,run⟩ := record_writes (body := body) r rs hk mask parents saved layout
-  refine ⟨writeMask,?_⟩
-  intro v w B shape u S radix free count blank bits filled queue dir archive tail words cost consume
-  obtain ⟨y,t,hy,ht,emit⟩ := run v (w+1) B (by omega) shape u S ⟨radix,free,count⟩
-  rw [blank,List.append_nil] at emit
-  simp only [LabelMask.selectors,List.map_map,Function.comp_def] at emit
-  change Exec body writeMask (mk u S) t (mk y filled) at emit
-  obtain ⟨z,n,hz,hn,scan⟩ := consume y
-  have endpoint : queueResult filled mask dir archive tail words = queueResult S mask dir archive tail words := by
-    simp [queueResult,filled,Function.update_idem]
-  rw [endpoint] at scan
-  exact ⟨z,t+n,hz.trans hy,Nat.add_le_add ht hn,.seq emit scan⟩
 
 theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size d+T) ↪ Fin K)
     (ports : Fin (N+2) ↪ Fin K) (ext : Fin 6 ↪ Fin K) (off : ∀ i k, ports i ≠ ext k)
@@ -167,13 +136,18 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
       have eq := congrArg Fin.val (host.injective h)
       change 18+k.val = (coefficientSlots (extra := (conjugationDepth r+1)*13) i j l).val at eq
       fin_cases l <;> simp [coefficientSlots, Matrix.cons_val] at eq <;> (try split_ifs at *) <;> omega
-    ∀ (ancestor : ℕ → List (Fin (prime+4))) (tail : List (Fin (prime+4)))
+    ∀ (maskLayout : (parentsC :: savedC :: (slots cs ++ [mask])).Nodup),
+    ∃ writeMask : Pr P K Q prime U, ∀ (ancestor : ℕ → List (Fin (prime+4))) (tail : List (Fin (prime+4)))
       (v : Descriptor) (B : ℕ) (base : ScanData r d w W) (payload : ℕ → Record.Array d 1 (w+1) W)
-      (u : HS K Q prime U) (initial : Stacks K prime),
+      (u : HS K Q prime U) (input : Stacks K prime),
+    ready (prime^w) input.R cs → input.R savedC = [] →
+    (input.R parentsC).length = v.beforeRows*v.rows*B → input.R mask = [] →
+    let bits := (LabelMask.selectors r (w+1) base.records).map (bitSymbol (a := prime))
+    let initial := {input with R := Function.update input.R mask bits}
     let padWord := matrixWords prime base.H (1 : Matrix (Fin (d+1)) (Fin (d+1)) (ZMod M))
     let S := {initial with R := Function.update initial.R seed padWord}
     SeededQueueReady w base.H base.records proj α α' initial S bank recip pool coeff clock count
-      mask seed tmp archive ancestor tail →
+      seed tmp archive ancestor tail →
     let scan := QueueLayout.scanPorts (QueueLayout.directoryWork.trans bank) archive archiveOff
     let active := LabelStock.live r (w+1) 1
     let livePrice := liveRecordCost r (d+1) w base.H (S.R (bank 12)).length
@@ -187,16 +161,19 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     let a := base.physical e proj α α'
     let G := queueResult initial mask (scan 2) archive tail (a.matrices 0)
     SignedPassBound regs anchor ports ext v B a payload rs parents saved cs parentsC savedC body
-      (withIdentitySeed (d+1) (bank 9) (bank 17) seed (bank 4) tmp generate) pass
-      (seededSetupCost (d+1) base.H setupCost) u initial G := by
+      (.seq writeMask (withIdentitySeed (d+1) (bank 9) (bank 17) seed (bank 4) tmp generate)) pass
+      ((v.beforeRows*v.rows*B)*(LabelTraversal.time (prime^w) (r*r) 1+5)+4 + seededSetupCost (d+1) base.H setupCost) u input G := by
   obtain ⟨pass,run⟩ := physicalSignedResidualPass (w := w) (W := W) regs anchor ports ext off banks external shared
     capacity e proj idempotent admissible α α' inverse body rs hk parents saved layout cap cs sizeC
     parentsC savedC maskRegs pivotRegs separate
   refine ⟨pass,?_⟩
   intro placement size archiveSlot registers host control mask seed tmp bank recip counters clock count pool coeff archive archiveOff
-    coeffOff ancestor tail v B base payload u initial padWord S queueInputs scan active livePrice generate setupCost a G shape records hW D
+    coeffOff maskLayout
+  obtain ⟨writeMask,write⟩ := record_writes (body := body) r cs sizeC mask parentsC savedC maskLayout
+  refine ⟨writeMask,?_⟩
+  intro ancestor tail v B base payload u input counterReady savedBlank parentCount maskBlank bits initial padWord S queueInputs scan active livePrice generate setupCost a G shape records hW D
     neutral radix free count width unsigned clean start hm hw fresh maskEmpty radixC freeC countC encoded padding
-  obtain ⟨seedBlank,tmpBlank,weightBank,queueReady,widths,width0,empty,directory,output,bits⟩ := queueInputs
+  obtain ⟨seedBlank,tmpBlank,weightBank,queueReady,widths,width0,empty,directory,output⟩ := queueInputs
   have blank := queueReady.1 4 (by decide)
   have sharedArchive : archive = ports (archivePorts 0 (columnBank 34)) := by
     change Equiv.swap (placement archiveSlot) _ (placement _) = _
@@ -212,16 +189,26 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
   have bankKeep (k : Fin 18) : S.R (bank k) = initial.R (bank k) :=
     Function.update_of_ne (apart _ 1) _ _
   have tmpKeep : S.R tmp = initial.R tmp := Function.update_of_ne (control.injective.ne (by decide : (2 : Fin 3) ≠ 1)) _ _
+  obtain ⟨writer,tMask,hUser,hTime,emit⟩ := write v (w+1) B (by omega) shape u input
+    ⟨counterReady,savedBlank,parentCount⟩
+  change base.records = LabelMask.records v at records
+  rw [← records,maskBlank,List.append_nil] at emit
+  have maskBits : S.R mask = (List.range base.records).map fun j => bitSymbol (LabelStock.live r (w+1) 1 j) := by
+    change Function.update initial.R seed padWord mask = _
+    rw [Function.update_of_ne (control.injective.ne (by decide : (0 : Fin 3) ≠ 1))]
+    change Function.update input.R mask bits mask = _
+    rw [Function.update_self]
+    simp [bits,LabelMask.selectors,List.map_map,Function.comp_def]
   obtain ⟨prepared,steps,preparedUser,initCost,initRun⟩ := identitySeed_writes («M» := M) body
     (d+1) base.H (bank 9) (bank 17) seed (bank 4) tmp (copyPorts 9 (by decide))
-    (copyPorts 17 (by decide)) u initial ⟨(bankKeep 9).symm.trans queueReady.2.2.1,
+    (copyPorts 17 (by decide)) writer initial ⟨(bankKeep 9).symm.trans queueReady.2.2.1,
       (bankKeep 17).symm.trans (by obtain ⟨_,_,_,_,_,_,_,_,_,_,_,_,_,oneWord⟩ := queueReady; exact oneWord),
       (bankKeep 4).symm.trans blank,tmpKeep.symm.trans tmpBlank⟩
   rw [seedBlank,List.append_nil] at initRun
   have seedWord : S.R seed = padWord := Function.update_self ..
   obtain ⟨_,y,t,hy,ht,generateRun⟩ := physicalResidualQueue_exec body w base.records
     (IntegerMultBounds.Swap.Modular.reduce M proj) base.H hm registers ancestor tail e α α' prepared S
-    seedWord tmpBlank weightBank queueReady widths width0 blank empty directory output bits
+    seedWord tmpBlank weightBank queueReady widths width0 blank empty directory output maskBits
   let words := (List.range base.records).flatMap fun j => if active j then matrixWords prime base.H
     (projectorResidual e (IntegerMultBounds.Swap.Modular.reduce M proj) α α' (physicalLabel r (w+1) j)) else padWord
   change Exec body generate (mk prepared S) t (mk y (queueResult S mask (scan 2) archive tail words)) at generateRun
@@ -240,7 +227,7 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
         rw [← sharedArchive,prep]
         exact start)
       hm hw fresh maskEmpty radixC freeC countC encoded padding
-  exact ⟨z,E,_,hz.trans (cleanUser.trans (hy.trans preparedUser)),queue,acc,maskDone,pivots,archiveDone,Nat.add_le_add (Nat.add_le_add (Nat.add_le_add initCost ht) (Nat.le_of_eq (congrArg (fun n => 2*n+2) padLen))) hn,
-    Exec.seq (Exec.seq (Exec.seq initRun generateRun) clearRun) exec⟩
+  exact ⟨z,E,_,hz.trans (cleanUser.trans (hy.trans (preparedUser.trans hUser))),queue,acc,maskDone,pivots,archiveDone,Nat.add_le_add (Nat.add_le_add hTime (Nat.add_le_add (Nat.add_le_add initCost ht) (Nat.le_of_eq (congrArg (fun n => 2*n+2) padLen)))) hn,
+    Exec.seq (Exec.seq emit (Exec.seq (Exec.seq initRun generateRun) clearRun)) exec⟩
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
