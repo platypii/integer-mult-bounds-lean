@@ -251,7 +251,7 @@ def check_port_swap_distance(port_moves):
           "minimum of nine swaps on each port MOVE pattern.")
 
 
-def layout_components(register_count, cuts, gates, scatter_start, scatter_end, *, share_temps=False, transitions=None):
+def layout_components(register_count, cuts, gates, scatter_start, scatter_end, *, share_temps=False, transitions=None, free_moves=()):
     """Return the equality classes at port boundaries when layouts can change at cuts."""
     current = list(range(register_count))
     parent = current.copy()
@@ -277,7 +277,8 @@ def layout_components(register_count, cuts, gates, scatter_start, scatter_end, *
             continue
         for register in [target, *sources]:
             if (step, register) in cuts:
-                links.append((current[register], len(parent), "MOVE"))
+                if (step, register) not in free_moves:
+                    links.append((current[register], len(parent), "MOVE"))
                 current[register] = len(parent)
                 parent.append(len(parent))
         # Each nonzero XOR coefficient requires the same extra layout as the target.
@@ -367,6 +368,7 @@ def main():
     refs = word["start"].copy()
     moves = 0
     port_moves = [[] for _ in range(222)]
+    move_intervals = {}
     move_widths = {}
     width_six_moves = {}
     intervals = [set() for _ in refs]
@@ -396,6 +398,7 @@ def main():
                     intervals[register].add(interval)
                     if register < len(port_moves):
                         port_moves[register].append(interval)
+                    move_intervals[len(gates), register] = interval
                     move_widths[len(gates), register] = interval[1] - interval[0]
                     if interval[1] - interval[0] == 6:
                         width_six_moves[len(gates), register] = (section, gate_index, ranks[old], ranks[frame])
@@ -462,6 +465,30 @@ def main():
     print("With layout changes available only at positive MOVEs and scatter COPYs, "
           "separating the source inputs and target outputs requires 661 MOVE changes "
           "even if every COPY layout change is free.")
+    # Swapping a coordinate pair in both halves can be absorbed by crossing
+    # the two paid partners exactly when the MOVE contains both coordinates.
+    pair_costs = {}
+    for a in range(7):
+        for b in range(a + 1, 8):
+            for lo, hi in set(move_intervals.values()):
+                perm = list(range(16))
+                for k in range(lo, hi):
+                    perm[k], perm[k + 8] = perm[k + 8], perm[k]
+                for base in (0, 8):
+                    x, y = base + a, base + b
+                    perm[x], perm[y] = perm[y], perm[x]
+                extra = 16 - len(cycle_lengths(perm)) - (hi - lo)
+                assert extra == (0 if lo <= a and b < hi else 2)
+            free_moves = {key for key, (lo, hi) in move_intervals.items() if lo <= a and b < hi}
+            links = []
+            ports = layout_components(len(refs), move_widths, gates, scatter_start, scatter_end,
+                                      share_temps=True, transitions=links, free_moves=free_moves)
+            changes, _ = minimum_layout_changes(ports, links, copy_cost=0)
+            pair_costs[a, b] = 2 * changes
+    assert {pair for pair, cost in pair_costs.items() if cost == 0} == {(2, 3), (4, 5)}
+    assert pair_costs[0, 7] == 1322
+    print("With free scatter COPYs, only pairs (2,3) and (4,5) can change across "
+          "the whole stage at zero extra swaps. Pair (0,7) requires 1322.")
     assert max_relation_denominator <= 2 ** 100
     print(f"Verified {relations} integral generator relations; maximum denominator: {max_relation_denominator}.")
     print("Verified nine rank-seven COPY prefixes and 527 zero-frame ADD targets.")
