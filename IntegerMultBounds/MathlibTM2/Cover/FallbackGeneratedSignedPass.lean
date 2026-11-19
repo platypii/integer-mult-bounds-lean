@@ -756,22 +756,27 @@ theorem passPreparationCost_volume_le (v : Descriptor) (positive : v.Positive)
   simpa only [passPreparationCost, Nat.mul_add, Nat.add_mul] using
     Nat.add_le_add (Nat.add_le_add queue dir) pad
 
-/-- The generated pass budget at binary field and spectator widths. -/
-noncomputable def generatedSignedPassCost (U : Type) (r d T : ℕ) (v : Descriptor)
-    (w suffix B width rate : ℕ) : ℕ :=
-  let W := prime^(2*suffix)*v.between*v.afterD
-  let H := Nat.size (prime^(w+1))
+/-- Time budget of the generated program with its supplied field and payload counters. -/
+noncomputable def signedPassTime (U : Type) (r d T : ℕ) (v : Descriptor)
+    (w W H J B width rate : ℕ) : ℕ :=
   let parents := v.beforeRows*v.rows*B
   let units := ∏ i : Fin r, (prime^r-prime^i.val)
   let classes := prime^(r*r)
   let lifts := (prime^w)^(r*r)
   let perParent := lifts*signedClassSetup U d T w H classes units +
-    lifts*units*residualCounterRate U d H*Nat.size W
+    lifts*units*residualCounterRate U d H*J
   let recordVolume := (prime^(w+1))^(d+1)*W
   let total := LabelMask.records v*recordVolume
   let live := parents*(units*lifts)*recordVolume
   parents*perParent + passPreparationCost v r (d+1) w B width H +
     (anchorVolumeRate d T+4)*total + (6+rate)*min live (((prime-1)*total)/prime)
+
+/-- Specialization to the binary counters and spectator payload of a descriptor. -/
+noncomputable def generatedSignedPassCost (U : Type) (r d T : ℕ) (v : Descriptor)
+    (w suffix B width rate : ℕ) : ℕ :=
+  let W := prime^(2*suffix)*v.between*v.afterD
+  let H := Nat.size (prime^(w+1))
+  signedPassTime U r d T v w W H (Nat.size W) B width rate
 
 /-- In descriptor units the complete binary-width pass budget consists of a
 linear term and the residual rate on the invertible fraction of the volume. -/
@@ -786,7 +791,7 @@ theorem generatedSignedPass_cost_le (U : Type) (r d T : ℕ)
     (16*r*r+19*r+344) + paddingSetupCost (d+1) 1
   refine ⟨c+prep+(anchorVolumeRate d T+4), ?_⟩
   intro v w suffix B width rate positive splitWidth shape hw
-  unfold generatedSignedPassCost
+  unfold generatedSignedPassCost signedPassTime
   extract_lets W H parents units classes lifts perParent recordVolume total live
   have rankPos : 0 < r := by
     have dim := Fintype.card_congr e
@@ -985,20 +990,11 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
       seed tmp archive →
     let scan := QueueLayout.scanPorts (QueueLayout.directoryWork.trans bank) archive archiveOff
     let generate : Pr P K Q prime U := seededQueueBody r d e bank recip clock count pool coeff coeffOff scan mask seed tmp
-    let units := ∏ i : Fin r, (prime^r-prime^i.val)
-    let classes := prime^(r*r)
-    let lifts := (prime^w)^(r*r)
     let a := base.physical e proj α α'
-    let perParent := lifts*signedClassSetup U d T w a.H classes units +
-      lifts*units*residualCounterRate U d a.H*a.J
-    let recordVolume := M^(d+1)*W
-    let totalVolume := LabelMask.records v*recordVolume
-    let liveVolume := (v.beforeRows*v.rows*B)*(units*lifts)*recordVolume
     SignedPassBound regs anchor ports ext v B a payload rs parents saved body
       (.seq (LabelSpectators.program r br rows bh atom (dir 2) (dir 9) (dir 3) (dir 5)) (.seq (.seq (LabelDirectorySetup.setup r dir atom one) (.seq (expandMask (dir 9) (dir 4) (dir 2) (dir 3) (dir 5) (dir 12) (fun _ => false)) (LabelDirectoryBuild.program dir))) (.seq (.seq (LabelCounts.highCount one atom (dir 7) (dir 2) (dir 3) (dir 5))
         (scanR (dir 7) (dir 2) (LabelCountBank.pushAll (cs.map Prod.fst)))) (.seq writeMask (.seq (.seq (bcopy (recip 15) (bank 17) (bank 4) tmp) (.seq (.seq (umulSym 1 (bitSymbol false) (bank 8) (bank 9) (bank 4)) (withIdentitySeed (d+1) (bank 9) (bank 17) seed (bank 4) tmp generate)) (bclear (bank 9)))) (bclear (bank 17))))))) pass
-      ((v.beforeRows*v.rows*B)*perParent + passPreparationCost v r (d+1) w B width base.H +
-        (anchorVolumeRate d T + 4)*totalVolume + (6+rate)*min liveVolume (((prime-1)*totalVolume)/prime)) u raw input := by
+      (signedPassTime U r d T v w W a.H a.J B width rate) u raw input := by
   intro swaps shears rate
   obtain ⟨pass,run⟩ := physicalSignedResidualPass (w := w) (W := W) regs anchor ports ext off banks external shared
     capacity e proj idempotent admissible α α' inverse body rs hk parents saved layout cap cs sizeC
@@ -1008,8 +1004,16 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     coeffOff maskLayout retained anchorDirectory portDirectory extDirectory
   obtain ⟨writeMask,write⟩ := record_writes (body := body) r cs sizeC mask parentsC savedC maskLayout
   refine ⟨writeMask,?_⟩
-  intro directoryPorts directorySlot dir parentWidthPort parentWidthOff atom one atomOff oneOff highLayout highSlots br rows bh dimensions word parentTail v B base payload u raw positiveDescriptor beforeRows rowsSize beforeH parentBlank source n box parentWidth digits ancestor tail entries counted builtState input atomWord oneWidth parentsWord wordWidth scratch counterEmpty savedBlank maskBlank bits selected oneBlank unitWord masked zeroBlank initial padWord S queueInputs scan generate units classes lifts a perParent recordVolume totalVolume liveVolume shape records hW D
+  intro directoryPorts directorySlot dir parentWidthPort parentWidthOff atom one atomOff oneOff highLayout highSlots br rows bh dimensions word parentTail v B base payload u raw positiveDescriptor beforeRows rowsSize beforeH parentBlank source n box parentWidth digits ancestor tail entries counted builtState input atomWord oneWidth parentsWord wordWidth scratch counterEmpty savedBlank maskBlank bits selected oneBlank unitWord masked zeroBlank initial padWord S queueInputs scan generate a shape records hW D
     neutral radix free count width unsigned clean start hm hw fresh maskEmpty encoded padding
+  let units := ∏ i : Fin r, (prime^r-prime^i.val)
+  let classes := prime^(r*r)
+  let lifts := (prime^w)^(r*r)
+  let perParent := lifts*signedClassSetup U d T w a.H classes units +
+      lifts*units*residualCounterRate U d a.H*a.J
+  let recordVolume := M^(d+1)*W
+  let totalVolume := LabelMask.records v*recordVolume
+  let liveVolume := (v.beforeRows*v.rows*B)*(units*lifts)*recordVolume
   let liveBase := matrixBuildCost r (d+1) 1 1 * (w+1)*(base.H+1)^2
   let queuePerParent := lifts * (units*liveBase + classes*(10*((d+1)*(d+1)*base.H)+6))
   let fixedCost := paddingSetupCost (d+1) base.H
@@ -1345,6 +1349,8 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     (Nat.add_le_add counterCost (Nat.add_le_add hTime paid)))) passBound
   refine ⟨z,E,_,hz.trans (finishUser.trans (releaseUser.trans (cleanUser.trans (hy.trans (preparedUser.trans (zeroUser.trans (copyUser.trans (hUser.trans (counterUser.trans (buildUser.trans parentUser)))))))))),queue,acc,maskDone,pivots,archiveDone,?_,
     Exec.seq (Exec.seq parentRun (Exec.seq buildRun (Exec.seq counterRun (Exec.seq emit (Exec.seq (Exec.seq copyRun (Exec.seq (Exec.seq zeroRun (Exec.seq (Exec.seq initRun generateRun) clearRun)) releaseRun)) finishRun))))) exec⟩
+  change _ ≤ (v.beforeRows*v.rows*B)*perParent + passPreparationCost v r (d+1) w B parentWidth base.H +
+    (anchorVolumeRate d T+4)*totalVolume + (6+rate)*min liveVolume (((prime-1)*totalVolume)/prime)
   rw [min_eq_left liveBound]
   have traversal : LabelTraversal.time (prime^w) (r*r) 1 + 5 ≤ 11*box := by
     have bound := LabelTraversal.time_add_ten_le (pow_pos IntegerMultBounds.Networks.Shared50ModularControl.prime_prime.pos w) (r*r) 1
