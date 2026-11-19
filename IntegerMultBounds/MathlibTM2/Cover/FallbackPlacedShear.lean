@@ -10,13 +10,20 @@ open IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2.Stack Host
 variable {T Q A d W b w : ℕ} {P U α : Type} [NeZero (b^(w+1))]
 local notation "M" => b^(w+1)
 
+theorem columnRecordReady_project (bank : Fin 35 ↪ Fin T) (H J : ℕ)
+    (record : List (Fin (A+4))) (sym : α → Fin 4) (source dest : ℤ → Fin 4) (p q : ℤ)
+    (original : Fin (M^d*W) → α) (addr : (Fin d → ZMod M) → Fin d → ZMod M) (S : Stacks T A) :
+    ColumnRecordReady bank H J record sym source dest p q original addr S ↔
+      ColumnRecordReady (Function.Embedding.refl _) H J record sym source dest p q original addr (embStk bank S) := by
+  constructor <;> rintro ⟨a,layout,placed⟩ <;> exact ⟨a,⟨layout.modulus,layout.width,layout.one,layout.padded,
+    layout.clock,layout.archive,layout.scratch,layout.src,layout.dst⟩,placed⟩
+
 theorem columnReady_project (bank : Fin 35 ↪ Fin T) (H J : ℕ) (matrix : Matrix (Fin d) (Fin d) (ZMod M))
     (tail : List (Fin (A+4))) (sym : α → Fin 4) (source dest : ℤ → Fin 4) (p q : ℤ)
     (original : Fin (M^d*W) → α) (addr : (Fin d → ZMod M) → Fin d → ZMod M) (S : Stacks T A) :
     ColumnReady bank H J matrix tail sym source dest p q original addr S ↔
-      ColumnReady (Function.Embedding.refl _) H J matrix tail sym source dest p q original addr (embStk bank S) := by
-  constructor <;> rintro ⟨a,layout,placed⟩ <;> exact ⟨a,⟨layout.modulus,layout.width,layout.one,layout.padded,
-    layout.clock,layout.archive,layout.scratch,layout.src,layout.dst⟩,placed⟩
+      ColumnReady (Function.Embedding.refl _) H J matrix tail sym source dest p q original addr (embStk bank S) :=
+  columnRecordReady_project ..
 
 def placedShear (bank : Fin 35 ↪ Fin T) (capacity : 217 ≤ Q) (k t col target pivot : Fin d) (b : ℕ) :
     Pr P T Q A U := statePlacedNormalized bank capacity (by decide) Empty.elim

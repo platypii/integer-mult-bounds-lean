@@ -19,14 +19,14 @@ omit [M8.Machine.Net] in
 private theorem ofFn_cast {a b : ℕ} {α : Type*} (h : a = b) (f : Fin b → α) :
     List.ofFn (fun i => f (Fin.cast h i)) = List.ofFn f := by subst b; rfl
 
-theorem columnReady_swap [Fintype P] {d w W : ℕ} (i j : Fin d) (lt : i < j) (H J : ℕ)
+theorem columnRecord_swap [Fintype P] {d w W : ℕ} (i j : Fin d) (lt : i < j) (H J : ℕ)
     (hm : prime^(w+1) < 2^H) (hw : W < 2^J) (hW : 0 < W)
     (body : P → Pr P (N+35) Q prime U) (v : HS (N+35) Q prime U) (S : Stacks (N+35) prime)
-    (matrix : Matrix (Fin d) (Fin d) (ZMod (prime^(w+1)))) (tail : List (Fin (prime+4)))
+    (record : List (Fin (prime+4)))
     (dest : ℤ → Fin 4) (q : ℤ) (original : Fin ((prime^(w+1))^d*W) → ZMod 2)
     (addr : (Fin d → ZMod (prime^(w+1))) → Fin d → ZMod (prime^(w+1))) :
     let bank : Fin 35 ↪ Fin (N+35) := (Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)
-    let ready := ColumnReady bank H J matrix tail SparseRoleCircuit.encode (fun _ => blank) dest 0 q original
+    let ready := ColumnRecordReady bank H J record SparseRoleCircuit.encode (fun _ => blank) dest 0 q original
     ready addr S → (∀ k : Fin (N+35), 35 ≤ k.val → S.L k = [] ∧ S.R k = []) →
     ∃ z F n, z.user = v.user ∧ n ≤ completeSwapTime body d i j w W H J ∧
       Exec body (completeSwap d i j) (mk v S) n (mk z F) ∧
@@ -65,5 +65,20 @@ theorem columnReady_swap [Fintype P] {d w W : ℕ} (i j : Fin d) (lt : i < j) (H
     change ext y _ = ext (V := volume prime view) x _ at e
     rw [ext,dite_eq_left (inside _),ext,dite_eq_left (inside _)] at e
     exact e.trans (placed coords k)
+
+theorem columnReady_swap [Fintype P] {d w W : ℕ} (i j : Fin d) (lt : i < j) (H J : ℕ)
+    (hm : prime^(w+1) < 2^H) (hw : W < 2^J) (hW : 0 < W)
+    (body : P → Pr P (N+35) Q prime U) (v : HS (N+35) Q prime U) (S : Stacks (N+35) prime)
+    (matrix : Matrix (Fin d) (Fin d) (ZMod (prime^(w+1)))) (tail : List (Fin (prime+4)))
+    (dest : ℤ → Fin 4) (q : ℤ) (original : Fin ((prime^(w+1))^d*W) → ZMod 2)
+    (addr : (Fin d → ZMod (prime^(w+1))) → Fin d → ZMod (prime^(w+1))) :
+    let bank : Fin 35 ↪ Fin (N+35) := (Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)
+    let ready := ColumnReady bank H J matrix tail SparseRoleCircuit.encode (fun _ => blank) dest 0 q original
+    ready addr S → (∀ k : Fin (N+35), 35 ≤ k.val → S.L k = [] ∧ S.R k = []) →
+    ∃ z F n, z.user = v.user ∧ n ≤ completeSwapTime body d i j w W H J ∧
+      Exec body (completeSwap d i j) (mk v S) n (mk z F) ∧
+      ready (fun x => addr x ∘ Equiv.swap i j) F ∧
+      ∀ k : Fin (N+35), 35 ≤ k.val → F.L k = [] ∧ F.R k = [] :=
+  columnRecord_swap i j lt H J hm hw hW body v S (matrixWords prime H matrix ++ tail) dest q original addr
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback

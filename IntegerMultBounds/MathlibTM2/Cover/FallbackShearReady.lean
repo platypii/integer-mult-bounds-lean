@@ -10,20 +10,25 @@ open IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2.Stack Host FlatCoord
 variable {T A d W b w : ℕ} {P U α : Type} [NeZero (b^(w+1))]
 local notation "M" => b^(w+1)
 
-structure ShearReady (bank : Fin 35 ↪ Fin T) (H J : ℕ) (matrix : Matrix (Fin d) (Fin d) (ZMod M))
-    (tail : List (Fin (A+4))) (sym : α → Fin 4) (source dest : ℤ → Fin 4) (p q : ℤ)
+structure RecordReady (bank : Fin 35 ↪ Fin T) (H J : ℕ)
+    (record : List (Fin (A+4))) (sym : α → Fin 4) (source dest : ℤ → Fin 4) (p q : ℤ)
     (a : Fin (M^d*W) → α) (S : Stacks T A) : Prop where
   modulus : S.R (bank 2) = binSyms H M
   width : S.R (bank 27) = binSyms J W
   one : S.R (bank 28) = binSyms 1 1
   padded : S.R (bank 32) = binSyms H (1 : ZMod M).val
   clock : (S.R (bank 33)).length = w
-  archive : S.R (bank 34) = matrixWords A H matrix ++ tail
+  archive : S.R (bank 34) = record
   scratch : ∀ i ∈ shearWork, S.L (bank i) = [] ∧ S.R (bank i) = []
   src : ∀ z, readAt blank (S.L (bank 24)) (S.R (bank 24)) (z-p) =
     RadixToBinary.binaryEncoding.encode (putWord source p (List.ofFn (sym ∘ a)) z)
   dst : ∀ z, readAt blank (S.L (bank 25)) (S.R (bank 25)) (z-q) =
     RadixToBinary.binaryEncoding.encode (dest z)
+
+abbrev ShearReady (bank : Fin 35 ↪ Fin T) (H J : ℕ) (matrix : Matrix (Fin d) (Fin d) (ZMod M))
+    (tail : List (Fin (A+4))) (sym : α → Fin 4) (source dest : ℤ → Fin 4) (p q : ℤ)
+    (a : Fin (M^d*W) → α) (S : Stacks T A) :=
+  RecordReady (d := d) bank H J (matrixWords A H matrix ++ tail) sym source dest p q a S
 
 noncomputable def reverseRowTime [Fintype P] (body : P → Pr P T 217 A U) (bank : Fin 35 ↪ Fin T)
     (k t col target pivot : Fin d) (b w W H J : ℕ) : ℕ :=
@@ -117,11 +122,16 @@ theorem reverseMatrixShear_ready [Fintype P] (k t col target pivot : Fin d) (hk 
   exact ready.scratch i hi
 
 /-- All original payload cells are tracked through one shared machine execution. -/
+def ColumnRecordReady (bank : Fin 35 ↪ Fin T) (H J : ℕ)
+    (record : List (Fin (A+4))) (sym : α → Fin 4) (source dest : ℤ → Fin 4) (p q : ℤ)
+    (original : Fin (M^d*W) → α) (addr : (Fin d → ZMod M) → Fin d → ZMod M) (S : Stacks T A) : Prop :=
+  ∃ word, RecordReady (d := d) bank H J record sym source dest p q word S ∧
+    ∀ x j, word (index (addr x) j) = original (index x j)
+
 def ColumnReady (bank : Fin 35 ↪ Fin T) (H J : ℕ) (matrix : Matrix (Fin d) (Fin d) (ZMod M))
     (tail : List (Fin (A+4))) (sym : α → Fin 4) (source dest : ℤ → Fin 4) (p q : ℤ)
     (original : Fin (M^d*W) → α) (addr : (Fin d → ZMod M) → Fin d → ZMod M) (S : Stacks T A) : Prop :=
-  ∃ word, ShearReady bank H J matrix tail sym source dest p q word S ∧
-    ∀ x j, word (index (addr x) j) = original (index x j)
+  ColumnRecordReady bank H J (matrixWords A H matrix ++ tail) sym source dest p q original addr S
 
 theorem columnReady_shear [Fintype P] (k t col target pivot : Fin d) (hk : k < t)
     (matrix : Matrix (Fin d) (Fin d) (ZMod M)) (hb : b.Prime) (unit : IsUnit (matrix pivot col))
