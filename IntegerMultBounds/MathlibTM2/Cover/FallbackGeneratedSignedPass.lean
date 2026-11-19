@@ -138,7 +138,8 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     ∀ (maskLayout : (parentsC :: savedC :: (slots cs ++ [mask])).Nodup),
     (∀ k ∈ parentsC :: savedC :: slots cs, k ≠ bank 2 ∧ k ≠ archive) →
     (∀ i, anchor i ≠ bank 2) → (∀ i, ports i ≠ bank 2) → (∀ i, ext i ≠ bank 2) →
-    ∃ writeMask : Pr P K Q prime U, ∀ (dir : Fin 15 ↪ Fin K), dir 14 = bank 2 →
+    ∃ writeMask : Pr P K Q prime U, ∀ (directoryPorts : Fin 15 ↪ Fin K), directoryPorts 14 = bank 2 →
+    let dir := directoryPorts.trans (Equiv.swap (directoryPorts 9) parentsC).toEmbedding
     ∀ (atom one : Fin K), (∀ i, atom ≠ dir i) → (∀ i, one ≠ dir i) → ∀ (word : ℕ → List (Fin (prime+4))) (parentTail : List (Fin (prime+4)))
       (v : Descriptor) (B : ℕ) (base : ScanData r d w W) (payload : ℕ → Record.Array d 1 (w+1) W)
       (u : HS K Q prime U) (source : Stacks K prime),
@@ -152,14 +153,14 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     let counted := Function.update (LabelDirectorySetup.prepared source.R dir digits) (dir 12)
       (expandedMask box (fun _ => false) (source.R (dir 9)))
     let input := {source with R := Function.update (Function.update counted (dir 0) parentTail) (dir 14) (entries ++ tail)}
-    0 < digits → (source.R atom).length = w+1 → (source.R one).length = 1 →
+    (source.R atom).length = w+1 → (source.R one).length = 1 →
     source.R (dir 0) = (List.range n).flatMap word ++ parentTail → (∀ j < n, (word j).length = width) →
     (∀ i ∈ ([2,3,4,5,6,7,10,11,12,13] : List (Fin 15)), source.R (dir i) = []) →
-    base.records = n*box →
+    n = v.beforeRows*v.rows*B →
     let dirCost := 8*(w+1)+8+22*box + (n*(6*box+10)+6 + (n*box*(9*digits+15)+6 + (n*(box*(8*width+11)+6*width+15)+6 + n*box*(6*(width+digits)+13)+6)))
 
     ready (prime^w) input.R cs → input.R savedC = [] →
-    (input.R parentsC).length = v.beforeRows*v.rows*B → input.R mask = [] →
+    input.R mask = [] →
     let bits := (LabelMask.selectors r (w+1) base.records).map (bitSymbol (a := prime))
     let initial := {input with R := Function.update input.R mask bits}
     let padWord := matrixWords prime base.H (1 : Matrix (Fin (d+1)) (Fin (d+1)) (ZMod M))
@@ -188,7 +189,7 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     coeffOff maskLayout retained anchorDirectory portDirectory extDirectory
   obtain ⟨writeMask,write⟩ := record_writes (body := body) r cs sizeC mask parentsC savedC maskLayout
   refine ⟨writeMask,?_⟩
-  intro dir dirSlot atom one atomOff oneOff word parentTail v B base payload u source n box parentWidth digits ancestor tail entries counted input positive atomWidth oneWidth parentsWord wordWidth scratch recordCount dirCost counterReady savedBlank parentCount maskBlank bits initial padWord S queueInputs scan active livePrice generate setupCost a shape records hW D
+  intro directoryPorts directorySlot dir atom one atomOff oneOff word parentTail v B base payload u source n box parentWidth digits ancestor tail entries counted input atomWidth oneWidth parentsWord wordWidth scratch parentSize dirCost counterReady savedBlank maskBlank bits initial padWord S queueInputs scan active livePrice generate setupCost a shape records hW D
     neutral radix free count width unsigned clean start hm hw fresh maskEmpty encoded padding
   obtain ⟨seedBlank,tmpBlank,weightBank,queueReady,parentWidthEq,width0,empty,output⟩ := queueInputs
   have blank := queueReady.1 4 (by decide)
@@ -206,6 +207,24 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
   have bankKeep (k : Fin 18) : S.R (bank k) = initial.R (bank k) :=
     Function.update_of_ne (apart _ 1) _ _
   have tmpKeep : S.R tmp = initial.R tmp := Function.update_of_ne (control.injective.ne (by decide : (2 : Fin 3) ≠ 1)) _ _
+  have parentPort : dir 9 = parentsC := Equiv.swap_apply_left ..
+  have dirSlot : dir 14 = bank 2 := by
+    change Equiv.swap (directoryPorts 9) parentsC (directoryPorts 14) = _
+    rw [Equiv.swap_apply_of_ne_of_ne (directoryPorts.injective.ne (by decide : (14 : Fin 15) ≠ 9))
+      (directorySlot ▸ (retained parentsC (by simp)).1.symm),directorySlot]
+  have parentCount : (input.R parentsC).length = v.beforeRows*v.rows*B := by
+    rw [← parentPort]
+    simpa [input,counted,LabelDirectorySetup.prepared,n] using parentSize
+  have rankPos : 0 < r := by
+    obtain i | i := e.symm 0 <;> exact Nat.zero_lt_of_lt i.isLt
+  have positive : 0 < digits := Nat.mul_pos (Nat.succ_pos _) (Nat.mul_pos rankPos rankPos)
+  change base.records = LabelMask.records v at records
+  have recordCount : base.records = n*box := by
+    rw [records,LabelMask.records,shape,parentSize]
+    dsimp only [box]
+    rw [← pow_mul]
+    rw [show r*((w+1)*r) = (w+1)*(r*r) by ring]
+    simp only [Nat.mul_assoc]
   have build := LabelDirectorySetup.build_from_parents (body := body) r dir atom one atomOff oneOff
     u source word parentTail oneWidth scratch
   simp only [atomWidth,pow_mul prime (w+1) (r*r)] at build
