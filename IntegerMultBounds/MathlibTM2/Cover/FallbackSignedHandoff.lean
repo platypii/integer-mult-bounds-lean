@@ -61,7 +61,7 @@ theorem anchorHandoff (regs : Fin 6 ↪ Fin T) (anchor : Fin (size d+T) ↪ Fin 
     (table : Matrix (Fin r) (Fin r) (ZMod prime) → Matrix (Fin (d+1)) (Fin (d+1)) (ZMod prime))
     (body : P → Pr P K Q prime U) (rs : List (Pair (size d+T))) (hk : rs.length = r*r)
     (parents saved : Fin (size d+T)) (layout : (parents :: saved :: (slots rs ++ [port d regs 4])).Nodup) :
-    ∃ prog, ∀ (v : Descriptor) (B : ℕ) (a : ScanData r d w W) (inputs : ℕ → Record.Array d 1 (w+1) W)
+    ∃ prog, ∀ {w W : ℕ} (v : Descriptor) (B : ℕ) (a : ScanData r d w W) (inputs : ℕ → Record.Array d 1 (w+1) W)
       (u : HS K Q prime U) (S : Stacks K prime), v.beforeH = B*prime^(r*((w+1)*r)) →
       a.records = LabelMask.records v → 0 < W →
       let D := embStk anchor S
@@ -80,7 +80,7 @@ theorem anchorHandoff (regs : Fin 6 ↪ Fin T) (anchor : Fin (size d+T) ↪ Fin 
           (2*(a.records*(ActualAffineScaling.modulus (w+1)^((d+1)*1)*W))+2)) := by
   obtain ⟨prog,run⟩ := placedAnchorPass regs anchor capacity table body rs hk parents saved layout
   refine ⟨prog,?_⟩
-  intro v B a inputs u S shape records hW D neutral radix free count width unsigned clean start ins
+  intro w W v B a inputs u S shape records hW D neutral radix free count width unsigned clean start ins
   have srcOff : ports (Fin.last N).castSucc ≠ ext 2 := off _ _
   have queue := start.queue
   simp only [preparedPivots,Function.update_of_ne srcOff.symm,List.drop_zero,unsigned] at queue

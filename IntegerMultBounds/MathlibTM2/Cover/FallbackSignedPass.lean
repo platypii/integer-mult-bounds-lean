@@ -54,7 +54,7 @@ theorem signedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size d+T) ↪
           ((ins.map (fun x => cost d T 1 (w+1) W x.1 + 2)).sum + 2) +
           (2*(a.records*(ActualAffineScaling.modulus (w+1)^((d+1)*1)*W))+2))) + (2*((v.beforeRows*v.rows*B)*(time (prime^w) (r*r) 1+5)+4) + (1+(((List.range a.records).map fun j => a.recordTime U j + 4).sum + 2 + (2*(a.records*(M^(d+1)*W))+2)))) ∧
       Exec body prog (mk u S) n (mk z F) := by
-  obtain ⟨sign,signRun⟩ := anchorHandoff (w := w) (W := W) regs anchor ports ext off banks external shared
+  obtain ⟨sign,signRun⟩ := anchorHandoff regs anchor ports ext off banks external shared
     capacity table body rs hk parents saved layout
   obtain ⟨pass,passRun⟩ := controlledPass_exec (w := w) (W := W) body cap ports ext off table cs sizeC
     parentsC savedC maskRegs pivotRegs

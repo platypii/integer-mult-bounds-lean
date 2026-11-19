@@ -11,24 +11,13 @@ namespace IntegerMultBounds.MathlibTM2.Cover.Fallback.Record
 open IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2.Stack Host Mult.PhaseCellToeplitz
 open M8 ActualAffineScaling FlatCoordinateLayout LabelTraversal
 open IntegerMultBounds.Networks.Shared50ModularControl (prime prime_prime)
-variable [M8.Machine.Net] {P U : Type} {d w W : ℕ}
+variable [M8.Machine.Net] {P U : Type} {d : ℕ}
 local notation "N" => rowSwapBlock.tapes+35
-local notation "M" => prime^(w+1)
-local instance : NeZero M := ⟨(pow_pos prime_prime.pos _).ne'⟩
+local instance (w : ℕ) : NeZero (prime^(w+1)) := ⟨(pow_pos prime_prime.pos _).ne'⟩
 
-theorem preparedPass_exec {Q T r A : ℕ} (a : ScanData r d w W) (parent : Fin d → (ZMod M)ˣ)
-    (capacity : columnCapacity ≤ Q) (signCapacity : (fieldSignProgram (0 : Fin (d+1)) true).1 ≤ Q)
-    (inputs : ℕ → Array d 1 (w+1) W)
-    (encoded : ∀ j < a.records, scalarArray (inputs j) = SparseRoleCircuit.encode ∘ a.input j)
-    (unsigned : a.signed = (List.range a.records).map inputs)
-    (liveSpec : ∀ j < a.records, LabelStock.live r (w+1) 1 j = true →
-      ((a.matrix j).det = 1 ∨ (a.matrix j).det = -1) ∧
-      (LabelRing.res prime (w+1) (by omega)).mapMatrix (a.matrix j) = a.table (LabelStock.residue r (w+1) 1 j))
-    (padding : ∀ j < a.records, LabelStock.live r (w+1) 1 j = false →
-      ∃ symbol, scalarArray (inputs j) = fun _ => symbol)
-    (hm : M < 2^a.H) (hw : W < 2^a.J) (hW : 0 < W) :
-    let H := a.H
-    let J := a.J
+/-- A fixed program signs and transforms every compatible queue, across precisions and payload widths. -/
+theorem preparedPass_exec {Q T r A : ℕ} (table : Matrix (Fin r) (Fin r) (ZMod prime) → Matrix (Fin (d+1)) (Fin (d+1)) (ZMod prime))
+    (capacity : columnCapacity ≤ Q) (signCapacity : (fieldSignProgram (0 : Fin (d+1)) true).1 ≤ Q) :
     let rows := List.finRange d
     let reads := pivotReads rows
     let n := reads.length
@@ -48,12 +37,6 @@ theorem preparedPass_exec {Q T r A : ℕ} (a : ScanData r d w W) (parent : Fin d
         (.seq (statePlacedNormalized host capacity columnCapacity_pos Empty.elim (childExchange (j a).val (i a).val (k a) (t a)))
           (.seq (installFieldHeaders ((installerPorts _).trans sign))
             (placedFieldNeg (k a) ((signPorts _).trans sign) signCapacity)))
-    let cost := fun a =>
-      let shear := fun neg => 1+cleanChildShearTime (P := Empty) (U := U) (A := prime) Empty.elim
-        (Function.Embedding.refl _) prime (j a).val (i a).val (k a) (t a) neg w W H J
-      let swap := 1+completeSwapTime (P := Empty) (U := U) Empty.elim (d+1) (k a) (t a) w W H J
-      1+(1+(2*shear false+shear true+2*swap)+((10*J+12)+(21*(w+1)+12)+1+
-        (1+(AtomSegment.chainConst (fieldSignOps (k a) true)*(M^(d+1)*W)*(width a+5)+6))))
     let spare := Fin.last ((N+1)+total)
     let off : ∀ h, shared h ≠ spare := shared_ne_last (t := total)
     let reverseHost := rewindPorts (d+1) shared spare off
@@ -63,42 +46,15 @@ theorem preparedPass_exec {Q T r A : ℕ} (a : ScanData r d w W) (parent : Fin d
       (dropWords (active 2) (Fin.last N).castSucc (active 0) d)
     let rewind : Pr Empty (((N+1)+total)+1) Q prime U := statePlacedNormalized reverseHost capacity columnCapacity_pos Empty.elim
       (.seq pop (reverseStages (d+1) (d+1)))
-    let stageCost := fun idx => 1+Finset.univ.sup (fun k => columnProgramTime U k (a.pivots idx k) w W H J)+((d+1)*(d+1)*(4*H+4)+1)
-    let rewindCost := fun idx => 1+(((d+1)*(4*H+4)+1+(d*(4*H+4)+1))+((d+1)*stageCost idx+1))
     let residual := .seq ((List.finRange n).foldr (fun a rest => .seq (program a) rest) (.act .done)) rewind
     let privateBank := (Fin.natAddEmb (m := total) (N+1)).trans ports
-    let bound := fun idx => ((List.finRange n).map cost).sum+1+rewindCost idx
-    let cleanBound := fun idx => bound idx+(total*4+1+total*(6*(Fast.Main.mnProgPush residual*bound idx)))
-    let positive := lt_of_lt_of_le columnCapacity_pos capacity
     ∀ (host : Fin (((N+1)+total)+1) ↪ Fin T) (ext : Fin 6 ↪ Fin T) (outside : ∀ i k, host i ≠ ext k)
       (parentTape : Fin T) (parentOff : ∀ i, host i ≠ parentTape) (parentExt : ∀ i, ext i ≠ parentTape)
       (body : P → Pr P T Q prime U),
       let scanPorts := reverseHost.trans host
-      let cols := shared.trans host
-      let prep := forwardBank.trans (rewindPorts (d+1) cols (host spare) (fun i => host.injective.ne (off i)))
-      let stream := cols (Fin.last N)
       let tapes := (reverseBank 0).trans scanPorts
-      let count := ext 1
       let src := ext 2
-      let saved := ext 3
-      let tmp := ext 4
       let acc := ext 5
-      let dst := cols (columnBank 24)
-      let prepare := Prog.seq (.seq (.seq (recordWeights d prep stream) (copyWordHeader (prep 20) (prep 14) (prep 3) (prep 4)))
-          (moveRightOrdered (prep 14) (prep 3) (stageBank prep (d+1) 15))) (copyWordHeader parentTape stream (prep 3) (prep 4))
-      let compute := Prog.seq (movePrefix count src dst saved tmp) (statePlacedNormalized host le_rfl positive Empty.elim
-        (.seq residual (clearWorkTapes ((List.finRange total).map privateBank))))
-      let advance := dropWords (tapes 2) (tapes 34) (tapes 0) ((d+1)*(d+1))
-      let live := Prog.seq (.seq (.seq prepare compute) (Mult.ShortConv.transfer count (tapes 24) acc tmp)) advance
-      let pad := Prog.seq (paddingRecord (d+1) (scanPorts (Fin.last N).castSucc) count src acc tmp) advance
-      let volume := M^(d+1)*W
-      let prepTime := (d+1)*(2*(d+1)+(4*w+4+columnTime (d+1) prime w H))+1 +
-        (d*(8*((d+1)*(d+1)*H)+14*H+22)+1)+(6*H+6)+(4*((d+1)*H)+4)+(6*(d*H)+6)
-      let stepTime := fun idx => (if LabelStock.live r (w+1) 1 idx then prepTime+((6*volume+6)+(1+cleanBound idx))
-        else 4*(d+1)*(d+1)+1)+(4*volume+4)+((d+1)*(d+1)*(4*H+4)+1)
-      let invariant := fun outs idx (D : Stacks T prime) => ScanReady {a with signed := outs} scanPorts ext idx D ∧
-        D.R parentTape = (List.ofFn fun j => binSyms H (parent j : ZMod M).val).flatten ∧
-        ∀ h, D.L (host (privateBank h)) = [] ∧ D.R (host (privateBank h)) = []
       let pivot := scanPorts (Fin.last N).castSucc
       ∀ (rs : List (Pair T)) (_ : rs.length = r*r) (parents scratch : Fin T),
       (parents :: scratch :: (slots rs ++ [ext 0])).Nodup →
@@ -109,7 +65,37 @@ theorem preparedPass_exec {Q T r A : ℕ} (a : ScanData r d w W) (parent : Fin d
       (ap :: asaved :: (slots ars ++ [port d regs 4])).Nodup →
       (∀ i j, anchor i ≠ host j) → (∀ i k, k ≠ 2 → anchor i ≠ ext k) → anchor (port d regs 1) = src →
       (∀ i, anchor i ≠ parentTape) → (∀ k ∈ parents :: scratch :: slots rs, ∀ i, anchor i ≠ k) →
-      ∃ controls : Pr P T Q prime U, ∀ (desc : RecursiveInterchangeLayout.Descriptor) (B : ℕ) (v : HS T Q prime U) (S : Stacks T prime),
+      ∃ prog : Pr P T Q prime U, ∀ {w W : ℕ} (a : ScanData r d w W) (parent : Fin d → (ZMod (prime^(w+1)))ˣ), a.table = table →
+      ∀ (inputs : ℕ → Array d 1 (w+1) W),
+      (∀ j < a.records, scalarArray (inputs j) = SparseRoleCircuit.encode ∘ a.input j) →
+      a.signed = (List.range a.records).map inputs →
+      (∀ j < a.records, LabelStock.live r (w+1) 1 j = true →
+        ((a.matrix j).det = 1 ∨ (a.matrix j).det = -1) ∧
+        (LabelRing.res prime (w+1) (by omega)).mapMatrix (a.matrix j) = a.table (LabelStock.residue r (w+1) 1 j)) →
+      (∀ j < a.records, LabelStock.live r (w+1) 1 j = false →
+        ∃ symbol, scalarArray (inputs j) = fun _ => symbol) →
+      (prime^(w+1)) < 2^a.H → W < 2^a.J → 0 < W →
+      let H := a.H
+      let J := a.J
+      let cost := fun a =>
+        let shear := fun neg => 1+cleanChildShearTime (P := Empty) (U := U) (A := prime) Empty.elim
+          (Function.Embedding.refl _) prime (j a).val (i a).val (k a) (t a) neg w W H J
+        let swap := 1+completeSwapTime (P := Empty) (U := U) Empty.elim (d+1) (k a) (t a) w W H J
+        1+(1+(2*shear false+shear true+2*swap)+((10*J+12)+(21*(w+1)+12)+1+
+          (1+(AtomSegment.chainConst (fieldSignOps (k a) true)*((prime^(w+1))^(d+1)*W)*(width a+5)+6))))
+      let stageCost := fun idx => 1+Finset.univ.sup (fun k => columnProgramTime U k (a.pivots idx k) w W H J)+((d+1)*(d+1)*(4*H+4)+1)
+      let rewindCost := fun idx => 1+(((d+1)*(4*H+4)+1+(d*(4*H+4)+1))+((d+1)*stageCost idx+1))
+      let bound := fun idx => ((List.finRange n).map cost).sum+1+rewindCost idx
+      let cleanBound := fun idx => bound idx+(total*4+1+total*(6*(Fast.Main.mnProgPush residual*bound idx)))
+      let volume := (prime^(w+1))^(d+1)*W
+      let prepTime := (d+1)*(2*(d+1)+(4*w+4+columnTime (d+1) prime w H))+1 +
+        (d*(8*((d+1)*(d+1)*H)+14*H+22)+1)+(6*H+6)+(4*((d+1)*H)+4)+(6*(d*H)+6)
+      let stepTime := fun idx => (if LabelStock.live r (w+1) 1 idx then prepTime+((6*volume+6)+(1+cleanBound idx))
+        else 4*(d+1)*(d+1)+1)+(4*volume+4)+((d+1)*(d+1)*(4*H+4)+1)
+      let invariant := fun outs idx (D : Stacks T prime) => ScanReady {a with signed := outs} scanPorts ext idx D ∧
+        D.R parentTape = (List.ofFn fun j => binSyms H (parent j : ZMod (prime^(w+1))).val).flatten ∧
+        ∀ h, D.L (host (privateBank h)) = [] ∧ D.R (host (privateBank h)) = []
+      ∀ (desc : RecursiveInterchangeLayout.Descriptor) (B : ℕ) (v : HS T Q prime U) (S : Stacks T prime),
       a.records = LabelMask.records desc → desc.beforeH = B*prime^(r*((w+1)*r)) →
       LabelTraversal.ready (prime^w) S.R rs → S.R scratch = [] → (S.R parents).length = desc.beforeRows*desc.rows*B →
       a.outputTail = [] → S.R (ext 0) = [] →
@@ -126,8 +112,23 @@ theorem preparedPass_exec {Q T r A : ℕ} (a : ScanData r d w W) (parent : Fin d
         l ≤ (1+((desc.beforeRows*desc.rows*B)*(time (prime^w) (r*r) 1+5)+4 +
           (((signedInputs a.table (w+1) a.records inputs).map (fun x => Record.cost d A 1 (w+1) W x.1 + 2)).sum + 2) +
           (2*(a.records*(ActualAffineScaling.modulus (w+1)^((d+1)*1)*W))+2))) + 2*((desc.beforeRows*desc.rows*B)*(time (prime^w) (r*r) 1+5)+4) + (((List.range a.records).map fun idx => stepTime idx+4).sum+2+(2*(a.records*volume)+2)) ∧
-        Exec body (.seq controls (.seq (maskedScan (ext 0) live pad) (moveR acc src id))) (mk v S) l (mk z F) := by
-  intro H J rows reads n k j t i width total ports shared bank program cost spare off reverseHost reverseBank active pop rewind stageCost rewindCost residual privateBank bound cleanBound positive host ext outside parentTape parentOff parentExt body scanPorts cols prep stream tapes count src saved tmp acc dst prepare compute advance live pad volume prepTime stepTime invariant pivot rs sizeRs parents scratch maskRegs pivotRegs regs anchor ars ap asaved acap asize alayout banks external sharedSrc anchorParent counters
+        Exec body prog (mk v S) l (mk z F) := by
+  intro rows reads n k j t i width total ports shared bank program spare off reverseHost reverseBank active pop rewind residual privateBank host ext outside parentTape parentOff parentExt body scanPorts tapes src acc pivot rs sizeRs parents scratch maskRegs pivotRegs regs anchor ars ap asaved acap asize alayout banks external sharedSrc anchorParent counters
+  let positive := lt_of_lt_of_le columnCapacity_pos capacity
+  let cols := shared.trans host
+  let prep := forwardBank.trans (rewindPorts (d+1) cols (host spare) (fun i => host.injective.ne (off i)))
+  let stream := cols (Fin.last N)
+  let count := ext 1
+  let saved := ext 3
+  let tmp := ext 4
+  let dst := cols (columnBank 24)
+  let prepare : Pr P T Q prime U := Prog.seq (.seq (.seq (recordWeights d prep stream) (copyWordHeader (prep 20) (prep 14) (prep 3) (prep 4)))
+      (moveRightOrdered (prep 14) (prep 3) (stageBank prep (d+1) 15))) (copyWordHeader parentTape stream (prep 3) (prep 4))
+  let compute : Pr P T Q prime U := Prog.seq (movePrefix count src dst saved tmp) (statePlacedNormalized host le_rfl positive Empty.elim
+    (.seq residual (clearWorkTapes ((List.finRange total).map privateBank))))
+  let advance : Pr P T Q prime U := dropWords (tapes 2) (tapes 34) (tapes 0) ((d+1)*(d+1))
+  let live : Pr P T Q prime U := Prog.seq (.seq (.seq prepare compute) (Mult.ShortConv.transfer count (tapes 24) acc tmp)) advance
+  let pad : Pr P T Q prime U := Prog.seq (paddingRecord (d+1) (scanPorts (Fin.last N).castSucc) count src acc tmp) advance
   have offExt (i : Fin (N+2)) (k : Fin 6) : scanPorts i ≠ ext k := outside _ _
   have streamEq : scanPorts (Fin.last N).castSucc = stream := by
     have eq := DFunLike.congr_fun (rewindPorts_active (d+1) shared spare off) (Fin.last N)
@@ -135,10 +136,12 @@ theorem preparedPass_exec {Q T r A : ℕ} (a : ScanData r d w W) (parent : Fin d
   have prepOff (i : Fin 23) : prep i ≠ parentTape := by
     have eq := DFunLike.congr_fun (rewindPorts_trans (d+1) shared spare off host) (forwardBank i)
     exact eq ▸ parentOff _
-  obtain ⟨writer,emit⟩ := controlStreams_exec body a.table rs sizeRs (ext 0) pivot parents scratch maskRegs pivotRegs
-  obtain ⟨sign,signRun⟩ := anchorHandoff (w := w) (W := W) regs anchor scanPorts ext offExt
-    (fun i j => banks i _) external sharedSrc acap a.table body ars asize ap asaved alayout
-  refine ⟨.seq sign writer,?_⟩
+  obtain ⟨writer,emit⟩ := controlStreams_exec body table rs sizeRs (ext 0) pivot parents scratch maskRegs pivotRegs
+  obtain ⟨sign,signRun⟩ := anchorHandoff regs anchor scanPorts ext offExt
+    (fun i j => banks i _) external sharedSrc acap table body ars asize ap asaved alayout
+  refine ⟨.seq (.seq sign writer) (.seq (maskedScan (ext 0) live pad) (moveR acc src id)),?_⟩
+  intro w W a parent tables inputs encoded unsigned liveSpec padding hm hw hW H J cost stageCost rewindCost bound cleanBound volume prepTime stepTime invariant
+  subst table
   intro desc B first init records shape radixInit scratchInit countInit fresh emptyInit anchorView neutral aradix afree acount awidth clean initialInv output
   obtain ⟨outs,initial,base,signTime,signed,signUser,signExec,scanStart,signFrame,signBound⟩ :=
     signRun desc B a inputs first init shape records hW neutral aradix afree acount awidth unsigned clean initialInv.1
