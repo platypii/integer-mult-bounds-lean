@@ -97,43 +97,61 @@ def negationProductPorts : Fin 9 ↪ Fin 17 := ⟨![7,4,5,1,2,3,6,9,11],by decid
 
 /-- The three computed headers occupy their final sign-loop slots. Gap and
 inner width lie outside the sign bank; the modulus stays on its return port. -/
-theorem negationDimensions_exec (body : F → Pr F 17 Q A U) (G M B : ℕ)
+theorem negationDimensions_exec (body : F → Pr F 17 Q A U) (P G M B : ℕ)
     (hg : 0 < G) (hm : 0 < M) (hb : 0 < B) (odd : Odd M)
     (u : HS 17 Q A U) (S : Stacks 17 A)
+    (prefixCount : S.R 8 = binSyms P.size P)
     (gap : S.R 15 = binSyms G.size G) (radix : S.R 12 = binSyms M.size M)
     (width : S.R 16 = binSyms B.size B)
-    (free : ∀ i : Fin 17, i ∈ [1,2,3,4,5,6,7,9,11] → S.R i = []) :
+    (free : ∀ i : Fin 17, i ∈ [1,2,3,4,5,6,7,9,10,11,14] → S.R i = []) :
     let suffix := G*(M*B)
     let count := M-1
     let L := count.size+suffix.size
     let tail := (bcopy 12 7 1 2).seq (.seq (.act (clearLowBit 7)) (Routing.binaryCanonicalProgram 7 1))
     let product := (bmul 7 4 5 1 2 3 6 9 11).seq (Routing.binaryCanonicalProgram 5 1)
     let prog := (middleRowDescriptor negationSuffixPorts).seq (tail.seq product)
+    let publish := (bcopy 4 10 1 2).seq (bcopy 8 14 1 2)
     let headers := Function.update (Function.update (Function.update S.R 4 (binSyms suffix.size suffix))
       7 (binSyms count.size count)) 5 (binSyms (count*suffix).size (count*suffix))
     ∃ z n, z.user = u.user ∧ n ≤ 432*suffix+((6*M.size+6)+(1+(4*M.size+6))+
-      (count.size*(12*L+20)+16*L+24+(4*L+6))) ∧
-      Exec body prog (mk u S) n (mk z {S with R := headers}) := by
-  intro suffix count L tail product prog headers
+      (count.size*(12*L+20)+16*L+24+(4*L+6))) + (6*suffix.size+6+(6*P.size+6)) ∧
+      Exec body (prog.seq publish) (mk u S) n (mk z {S with R := Function.update (Function.update headers 10 (binSyms suffix.size suffix)) 14 (binSyms P.size P)}) := by
+  intro suffix count L tail product prog publish headers
   obtain ⟨v,n,hv,hn,first⟩ := negationSuffix_exec body negationSuffixPorts G M B hg hm hb u S gap radix width
     (fun i lo hi => free _ ((by decide : ∀ j : Fin 11, 3 ≤ j → j < 10 →
-      negationSuffixPorts j ∈ [1,2,3,4,5,6,7,9,11]) i lo hi))
+      negationSuffixPorts j ∈ [1,2,3,4,5,6,7,9,10,11,14]) i lo hi))
   let D : Stacks 17 A := {S with R := Function.update S.R 4 (binSyms suffix.size suffix)}
   obtain ⟨w,hw,predRun⟩ := negationTailCount_exec body negationCountPorts M odd v D
     (by change D.R 12 = _; simpa [D] using radix)
     (by intro i hi
         have facts := (by decide : ∀ j : Fin 4, j ≠ 0 → negationCountPorts j ≠ 4 ∧
-          negationCountPorts j ∈ [1,2,3,4,5,6,7,9,11]) i hi
+          negationCountPorts j ∈ [1,2,3,4,5,6,7,9,10,11,14]) i hi
         exact (Function.update_of_ne facts.1 _ _).trans (free _ facts.2))
   let E : Stacks 17 A := {D with R := Function.update D.R 7 (binSyms count.size count)}
   obtain ⟨z,m,hz,hmul,last⟩ := negationTailWidth_exec body negationProductPorts count suffix w E
     (by change E.R 7 = _; simp [E]) (by change E.R 4 = _; simp [E,D])
     (by intro i lo hi
         have facts := (by decide : ∀ j : Fin 9, 2 ≤ j → j < 8 → negationProductPorts j ≠ 7 ∧
-          negationProductPorts j ≠ 4 ∧ negationProductPorts j ∈ [1,2,3,4,5,6,7,9,11]) i lo hi
+          negationProductPorts j ≠ 4 ∧ negationProductPorts j ∈ [1,2,3,4,5,6,7,9,10,11,14]) i lo hi
         exact (Function.update_of_ne facts.1 _ D.R).trans
           ((Function.update_of_ne facts.2.1 _ S.R).trans (free _ facts.2.2)))
-  exact ⟨z,_,hz.trans (hw.trans hv),Nat.add_le_add hn (Nat.add_le_add_left hmul _),
-    Exec.seq first (Exec.seq predRun last)⟩
+  let H : Stacks 17 A := {S with R := headers}
+  have copyHeader (a c : Fin 17) (regs : [a,c,1,2].Nodup) (x : ℕ)
+      (v : HS 17 Q A U) (I : Stacks 17 A) (src : I.R a = binSyms x.size x)
+      (dst : I.R c = []) (tmp : I.R 1 = []) (work : I.R 2 = []) :
+      ∃ w, w.user = v.user ∧ Exec body (bcopy a c 1 2) (mk v I) (6*x.size+6)
+        (mk w {I with R := Function.update I.R c (binSyms x.size x)}) := by
+    obtain ⟨w,hu,run⟩ := bcopy_exec body regs v I tmp work
+    exact ⟨w,hu,by simpa only [src,dst,length_binSyms,List.append_nil] using run⟩
+  obtain ⟨y,hy,copyWidth⟩ := copyHeader 4 10 (by decide) suffix z H
+    (by simp [H,headers]) (by simp [H,headers,free 10 (by decide)])
+    (by simp [H,headers,free 1 (by decide)]) (by simp [H,headers,free 2 (by decide)])
+  let I : Stacks 17 A := {H with R := Function.update H.R 10 (binSyms suffix.size suffix)}
+  obtain ⟨f,hf,copyCount⟩ := copyHeader 8 14 (by decide) P y I
+    (by simp [I,H,headers,prefixCount]) (by simp [I,H,headers,free 14 (by decide)])
+    (by simp [I,H,headers,free 1 (by decide)]) (by simp [I,H,headers,free 2 (by decide)])
+  exact ⟨f,_,hf.trans (hy.trans (hz.trans (hw.trans hv))),
+    Nat.add_le_add_right (Nat.add_le_add hn (Nat.add_le_add_left hmul _)) _,
+    Exec.seq (Exec.seq first (Exec.seq predRun last)) (Exec.seq copyWidth copyCount)⟩
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
