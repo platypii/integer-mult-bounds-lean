@@ -29,8 +29,11 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     (maskRegs : (parentsC :: savedC :: (slots cs ++ [ext 0])).Nodup)
     (pivotRegs : (parentsC :: savedC :: (slots cs ++ [ports (Fin.last N).castSucc])).Nodup)
     (separate : ∀ k ∈ parentsC :: savedC :: slots cs, ∀ i, anchor i ≠ k) :
-    ∃ pass, ∀ (registers : Fin ((36+2*r+1+(conjugationDepth r+1)*13)+3) ↪ Fin K),
+    ∃ pass, ∀ (placement : Fin ((36+2*r+1+(conjugationDepth r+1)*13)+3) ↪ Fin K),
     let size := 36+2*r+1+(conjugationDepth r+1)*13
+    let archiveSlot : Fin (size+3) := ⟨36+2*r, by dsimp [size]; omega⟩
+    let registers := placement.trans (Equiv.swap (placement archiveSlot)
+      (ports (archivePorts 0 (columnBank 34)))).toEmbedding
     let host := QueueLayout.block (n := size) 0 (by dsimp [size]; omega) registers
     let control := QueueLayout.block (n := 3) size (Nat.le_refl _) registers
     let mask := control 0
@@ -52,8 +55,7 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
       have eq := congrArg Fin.val (host.injective h)
       change 18+k.val = (coefficientSlots (extra := (conjugationDepth r+1)*13) i j l).val at eq
       fin_cases l <;> simp [coefficientSlots, Matrix.cons_val] at eq <;> (try split_ifs at *) <;> omega
-    ∀ (_sharedArchive : archive = ports (archivePorts 0 (columnBank 34)))
-      (ancestor : ℕ → List (Fin (prime+4))) (tail : List (Fin (prime+4)))
+    ∀ (ancestor : ℕ → List (Fin (prime+4))) (tail : List (Fin (prime+4)))
       (v : Descriptor) (B : ℕ) (base : ScanData r d w W) (payload : ℕ → Record.Array d 1 (w+1) W)
       (u : HS K Q prime U) (S : Stacks K prime),
     let padWord := matrixWords prime base.H (1 : Matrix (Fin (d+1)) (Fin (d+1)) (ZMod M))
@@ -124,11 +126,17 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     capacity e proj idempotent admissible α α' inverse body rs hk parents saved layout cap cs sizeC
     parentsC savedC maskRegs pivotRegs separate
   refine ⟨pass,?_⟩
-  intro registers size host control mask seed tmp bank recip counters clock count pool coeff archive archiveOff
-    coeffOff sharedArchive ancestor tail v B base payload u S padWord seedWord tmpBlank weightBank queueReady
+  intro placement size archiveSlot registers host control mask seed tmp bank recip counters clock count pool coeff archive archiveOff
+    coeffOff ancestor tail v B base payload u S padWord seedWord tmpBlank weightBank queueReady
     widths width0 blank empty directory output bits inputs source weights scan num cost f conjugate live
     active livePrice branch generate setupCost a G shape records hW D
     neutral radix free count width unsigned clean start hm hw fresh maskEmpty radixC freeC countC encoded padding
+  have sharedArchive : archive = ports (archivePorts 0 (columnBank 34)) := by
+    change Equiv.swap (placement archiveSlot) _ (placement _) = _
+    have slot : (⟨0+(36+2*r), by dsimp [size]; omega⟩ : Fin (size+3)) = archiveSlot :=
+      Fin.ext (Nat.zero_add _)
+    exact (congrArg (fun k => Equiv.swap (placement archiveSlot) _ (placement k)) slot).trans
+      (Equiv.swap_apply_left ..)
   obtain ⟨_,y,t,hy,ht,generateRun⟩ := physicalResidualQueue_exec body w base.records
     (IntegerMultBounds.Swap.Modular.reduce M proj) base.H hm registers ancestor tail e α α' u S
     seedWord tmpBlank weightBank queueReady widths width0 blank empty directory output bits
