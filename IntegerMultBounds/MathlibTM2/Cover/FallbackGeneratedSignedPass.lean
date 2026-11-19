@@ -390,7 +390,7 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
       (.seq (LabelSpectators.program r br rows bh atom (dir 2) (dir 9) (dir 3) (dir 5)) (.seq (.seq (LabelDirectorySetup.setup r dir atom one) (.seq (expandMask (dir 9) (dir 4) (dir 2) (dir 3) (dir 5) (dir 12) (fun _ => false)) (LabelDirectoryBuild.program dir))) (.seq (.seq (LabelCounts.highCount one atom (dir 7) (dir 2) (dir 3) (dir 5))
         (scanR (dir 7) (dir 2) (LabelCountBank.pushAll (cs.map Prod.fst)))) (.seq writeMask (.seq (.seq (bcopy (recip 15) (bank 17) (bank 4) tmp) (.seq (.seq (umulSym 1 (bitSymbol false) (bank 8) (bank 9) (bank 4)) (withIdentitySeed (d+1) (bank 9) (bank 17) seed (bank 4) tmp generate)) (bclear (bank 9)))) (bclear (bank 17))))))) pass
       ((v.beforeRows*v.rows*B)*(perParent + width*perDigit) + fixedCost +
-        (anchorVolumeRate d T + 4)*totalVolume + (6+rate)*liveVolume) u raw input := by
+        (anchorVolumeRate d T + 4)*totalVolume + (6+rate)*min liveVolume (((prime-1)*totalVolume)/prime)) u raw input := by
   intro swaps shears rate
   obtain ⟨pass,run⟩ := physicalSignedResidualPass (w := w) (W := W) regs anchor ports ext off banks external shared
     capacity e proj idempotent admissible α α' inverse body rs hk parents saved layout cap cs sizeC
@@ -579,6 +579,18 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
   have boxSize : box = classes*lifts := by
     dsimp only [box,classes,lifts]
     rw [pow_succ',mul_pow]
+  have rankPos : 0 < r := by
+    have dim := Fintype.card_congr e
+    simp only [Fintype.card_sum, Fintype.card_fin] at dim
+    omega
+  have density := liveClassVolume_le r (n*lifts*recordVolume) rankPos
+  rw [liveClasses_eq_product] at density
+  have liveBound : liveVolume ≤ ((prime-1)*totalVolume)/prime := by
+    apply (Nat.le_div_iff_mul_le IntegerMultBounds.Networks.Shared50ModularControl.prime_prime.pos).2
+    dsimp only [liveVolume, totalVolume]
+    rw [show a.records = n*box from recordCount, ← parentSize, boxSize]
+    dsimp only [units, classes]
+    convert density using 1 <;> ring
   have remaining : (List.range box).countP (fun j => !active j) = (classes-units)*lifts := by
     rw [Nat.sub_mul,← boxSize,← cardinality]
     omega
@@ -711,6 +723,7 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     (Nat.add_le_add counterCost (Nat.add_le_add hTime paid)))) passBound
   refine ⟨z,E,_,hz.trans (finishUser.trans (releaseUser.trans (cleanUser.trans (hy.trans (preparedUser.trans (zeroUser.trans (copyUser.trans (hUser.trans (counterUser.trans (buildUser.trans parentUser)))))))))),queue,acc,maskDone,pivots,archiveDone,?_,
     Exec.seq (Exec.seq parentRun (Exec.seq buildRun (Exec.seq counterRun (Exec.seq emit (Exec.seq (Exec.seq copyRun (Exec.seq (Exec.seq zeroRun (Exec.seq (Exec.seq initRun generateRun) clearRun)) releaseRun)) finishRun))))) exec⟩
+  rw [min_eq_left liveBound]
   apply total.trans_eq
   dsimp only [dirCost,setupCost,perDigit,perParent,recordVolume,totalVolume,liveVolume,fixedCost,signedPassWork,Nat.add_one_sub_one]
   change a.records = LabelMask.records v at records
