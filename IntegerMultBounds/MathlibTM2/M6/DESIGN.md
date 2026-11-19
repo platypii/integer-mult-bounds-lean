@@ -529,6 +529,17 @@ directly:
   The resulting group sizes are `8,8,6,8,7,8,8,8,6,6,4,6,7,8,6,3,4`.
   This groups port endpoints only. Internal word frames, cross-group transitions and
   executing each basis change on tape still need accounting.
+  A fixed permutation of the eight word coordinates also leaves scattered internal pivots.
+  An exhaustive exact-integer calculation on the pinned word found 1053 scattered MOVEs
+  in the natural order. The minimum over all 40320 orders is 630, attained at
+  `(3,0,2,4,6,5,7,1)` (zero-based). To reproduce, replay the D/A/B/C frame incidences
+  as in `generate_pr589_moves.py`, counting all 2911 positive-rank phase MOVEs with
+  multiplicity. For each label precompute the rational rank of its generators restricted
+  to each of the 256 coordinate subsets. Along the prefixes of an order, mark a pivot
+  wherever this rank increases. For each nested pair, take the symmetric difference of
+  the pivot sets and count the MOVE once if its difference has two or more runs in that
+  order. This excludes a single coordinate permutation as a way to make every MOVE one
+  consecutive child. It leaves open bases that mix coordinates or change between MOVEs.
 - **Routes and charts are coordinate permutations.** The stage routes `ρ` and the helper charts
   are orthogonal and not triangular; in Bruhat form each route contains 7 sub-field
   transpositions per field, for all 111 ports. On a tape they move data from less significant
