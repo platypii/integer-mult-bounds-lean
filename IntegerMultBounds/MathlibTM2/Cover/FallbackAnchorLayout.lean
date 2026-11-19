@@ -196,6 +196,58 @@ theorem installFieldFrame_exec {T Q slots w : ℕ} {P U : Type} (body : P → Pr
     simp only [fieldMarkers,List.mem_cons,List.not_mem_nil,or_false,not_or] at off
     simp [fieldMarkers,off]
 
+/-- The correction uses private auxiliary tapes and shares the column payload at slot 24. -/
+def signPorts (slots : ℕ) : Fin (22+slots) ↪ Fin (35+(22+slots)) :=
+  (Fin.natAddEmb 35).trans (Equiv.swap 24 (Fin.natAdd 35 (17 : Fin (22+slots)))).toEmbedding
+
+def installerSlots : Fin 17 ↪ Fin 57 :=
+  ⟨![0,1,2,3,4,5,6,7,8,9,27,39,33,38,53,54,55],by decide⟩
+
+def installerPorts (slots : ℕ) : Fin 17 ↪ Fin (35+(22+slots)) :=
+  installerSlots.trans (Fin.castLEEmb (by omega))
+
+theorem signPorts_payload (slots : ℕ) : signPorts slots 17 = 24 := by
+  simp [signPorts]
+
+theorem signPorts_aux {slots : ℕ} (k : Fin (22+slots)) (hk : k.val ≠ 17) :
+    signPorts slots k = Fin.natAdd 35 k := by
+  have h : Fin.natAdd 35 k ≠ (24 : Fin (35+(22+slots))) := by
+    intro e; have v := congrArg Fin.val e
+    change 35+k.val = 24 % (35+(22+slots)) at v
+    rw [Nat.mod_eq_of_lt (by omega)] at v; omega
+  have ne : Fin.natAdd 35 k ≠ Fin.natAdd 35 (17 : Fin (22+slots)) := by
+    intro e
+    apply hk
+    have v := congrArg Fin.val e
+    change 35+k.val = 35+(17%(22+slots)) at v
+    rw [Nat.mod_eq_of_lt (by omega)] at v; omega
+  simp [signPorts,Equiv.swap_apply_of_ne_of_ne h ne]
+
+theorem installSignPorts_exec {T Q slots w : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
+    (bank : Fin (35+(22+slots)) ↪ Fin T) (J : ℕ) (hw : W < 2^J) (v : HS T Q prime U) (S : Stacks T prime)
+    (width : S.R (bank 27) = binSyms J W) (clock : (S.R (bank 33)).length = w)
+    (scratch : ∀ j : Fin 17, 3 ≤ j → j < 9 → S.R (bank (installerPorts slots j)) = [])
+    (blankAux : ∀ k : Fin (22+slots), k.val ≠ 17 → S.L (bank (Fin.natAdd 35 k)) = [] ∧ S.R (bank (Fin.natAdd 35 k)) = []) :
+    let r := (installerPorts slots).trans bank
+    let ports := (signPorts slots).trans bank
+    ∃ z F l, z.user = v.user ∧ l ≤ (10*J+12)+(21*(w+1)+12)+1 ∧
+      Exec body (installFieldHeaders r) (mk v S) l (mk z F) ∧
+      (let base := AtomBank.outer slots (AtomSegment.neutral (w+1) W) (fun _ => blank) 1
+       ∀ k, k.val ≠ 17 → ∀ pos, base.tape k pos = readAt blank (F.L (ports k)) (F.R (ports k)) (pos-base.head k)) ∧
+      ∀ h, h ∉ fieldMarkers r → F.L h = S.L h ∧ F.R h = S.R h := by
+  intro r ports
+  have val (n : ℕ) (h : n ≤ 33) : (OfNat.ofNat n : Fin (35+(22+slots))).val = n := Nat.mod_eq_of_lt (by omega)
+  have small (n : ℕ) (h : n ≤ 20) : (OfNat.ofNat n : Fin (22+slots)).val = n := Nat.mod_eq_of_lt (by omega)
+  apply installFieldFrame_exec body r ports _ _ _ _ _ J hw v S _ _ scratch
+  · intro k hk; simpa only [ports,Function.Embedding.trans_apply,signPorts_aux k hk] using blankAux k hk
+  all_goals simp only [r,ports,Function.Embedding.trans_apply]
+  all_goals first
+    | rw [signPorts_aux _ (by rw [small _ (by decide)]; decide)]
+      apply congrArg bank; apply Fin.ext
+      change _ = 35 + _; rw [small _ (by decide)]; rfl
+    | exact (show installerPorts slots 10 = 27 from Fin.ext (val 27 (by decide)).symm) ▸ width
+    | exact (show installerPorts slots 12 = 33 from Fin.ext (val 33 (by decide)).symm) ▸ clock
+
 /-- A column payload can serve directly as the sign machine's array tape. -/
 theorem column_field_input {T w : ℕ} (bank : Fin 35 ↪ Fin T) (i : Fin (d+1))
     (ports : Fin (22+fieldSignSlots i) ↪ Fin T) (payload : ports 17 = bank 24)
