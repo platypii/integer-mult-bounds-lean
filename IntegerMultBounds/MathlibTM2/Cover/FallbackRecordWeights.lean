@@ -168,6 +168,9 @@ theorem preparedRecordWeights_exec {m : ℕ} (body : P → Pr P T Q A U) (r : Fi
     (lift : (LabelRing.res prime (w+1) (by omega)).mapMatrix G = table ((LabelRing.res prime (w+1) (by omega)).mapMatrix g))
     (block N : ℕ) (index : block*(prime^(w+1))^(m*m)+(LabelAddress.address g).val < N)
     (v : HS T Q A U) (S : Stacks T A) (tail rest : List (Fin (A+4)))
+    (parentTape : Fin T) (parent : Fin n → (ZMod (prime^(w+1)))ˣ)
+    (outside : ∀ i, r i ≠ parentTape) (separate : parentTape ≠ src)
+    (parents : S.R parentTape = (List.ofFn fun i => binSyms H (parent i : ZMod (prime^(w+1))).val).flatten)
     (matrix : S.R (r 15) = matrixWords A H G ++ tail) (modulus : S.R (r 2) = binSyms H (prime^(w+1)))
     (one : S.R (r 20) = binSyms H (1 : ZMod (prime^(w+1))).val) (ticks : (S.R (r 22)).length = w)
     (free : ∀ i : Fin 23, (i < 15 ∧ i ≠ 2) ∨ (17 ≤ i ∧ i ≤ 19) ∨ i = 21 → S.R (r i) = []) :
@@ -181,10 +184,10 @@ theorem preparedRecordWeights_exec {m : ℕ} (body : P → Pr P T Q A U) (r : Fi
     S.R src = ((List.range N).drop j).flatMap code ++ rest →
     ∃ z F l, ∃ weights : Fin n → (ZMod (prime^(w+1)))ˣ, ∃ negative,
       z.user = v.user ∧ l ≤ (n+1)*(2*(n+1)+(4*w+4+columnTime (n+1) prime w H))+1 +
-        (n*(8*((n+1)*(n+1)*H)+14*H+22)+1) + (6*H+6) + (6*((n+1)*H)+6) ∧
-      Exec body (.seq (.seq (recordWeights n r src) (Mult.PhaseCellToeplitz.copyWordHeader (r 20) (r 14) (r 3) (r 4)))
-        (Mult.PhaseCellToeplitz.copyWordHeader (r 14) active (r 3) (r 4))) (mk v S) l (mk z F) ∧
-      F.R src = orderedScheduleCode (List.finRange (n+1)).reverse rows ++ (((List.range N).drop (j+1)).flatMap code ++ rest) ∧
+        (n*(8*((n+1)*(n+1)*H)+14*H+22)+1) + (6*H+6) + (6*((n+1)*H)+6) + (6*(n*H)+6) ∧
+      Exec body (.seq (.seq (.seq (recordWeights n r src) (Mult.PhaseCellToeplitz.copyWordHeader (r 20) (r 14) (r 3) (r 4)))
+        (Mult.PhaseCellToeplitz.copyWordHeader (r 14) active (r 3) (r 4))) (Mult.PhaseCellToeplitz.copyWordHeader parentTape src (r 3) (r 4))) (mk v S) l (mk z F) ∧
+      F.R src = S.R parentTape ++ (orderedScheduleCode (List.finRange (n+1)).reverse rows ++ (((List.range N).drop (j+1)).flatMap code ++ rest)) ∧
       F.R (r 14) = (List.ofFn fun i => binSyms H ((Fin.cons 1 (fun j => (weights j : ZMod (prime^(w+1)))) : Fin (n+1) → ZMod (prime^(w+1))) i).val).flatten ∧
       (∃ archive, F.R active = F.R (r 14) ++ archive ∧ (archive, F.R (stageBank r (n+1) 16)) =
         matrixArchive (fun k => matrixWords A H (Itinerary.run rows G k)) (S.R (r 15)) (S.R (r 16)) (n+1)) ∧
@@ -231,16 +234,45 @@ theorem preparedRecordWeights_exec {m : ℕ} (body : P → Pr P T Q A U) (r : Fi
   have kept (i : Fin T) (hi : i ≠ active) (hj : i ≠ r 14) :
       Function.update E.R active (pivotWord ++ E.R active) i = D.R i :=
     (Function.update_of_ne hi _ _).trans (Function.update_of_ne hj _ _)
-  refine ⟨y,_,_,weights,neg,hy.trans (hz.trans hu),Nat.add_le_add_right (Nat.add_le_add_right hl _) _,
-    Exec.seq (Exec.seq run copy) install,(kept src (srcOff (n+1) 15).symm (apart 14).symm).trans schedule,
-    (Function.update_of_ne (distinct 14 (by decide) (by decide)) _ _).trans atSlot,?_,?_,children,bit,units,effect⟩
+  let F := {E with R := Function.update E.R active (pivotWord ++ E.R active)}
+  have parentOff (k : ℕ) (i : Fin 23) : stageBank r k i ≠ parentTape := by
+    induction k generalizing i with
+    | zero => exact outside i
+    | succ k ih => exact ih _
+  have parentEq : F.R parentTape = S.R parentTape :=
+    (kept _ (parentOff _ _).symm (outside 14).symm).trans
+      (frame _ separate (outside 14).symm (parentOff _ _).symm (parentOff _ _).symm)
+  have clean (i : Fin 23) (hi : i < 14) (h2 : i ≠ 2) : F.R (r i) = [] := by
+    rw [show F.R (r i) = D.R (r i) from kept _ (distinct i (by omega) (by omega)) (r.injective.ne (by omega)),
+      keep i (by omega) (by omega) (by omega)]
+    exact free i (.inl ⟨by omega,h2⟩)
+  obtain ⟨x,hx,attach⟩ := Mult.PhaseCellToeplitz.copyWordHeader_exec (body := body) parentTape src (r 3) (r 4)
+    (by simp [separate,(outside _).symm,(apart _).symm,r.injective.eq_iff]) y F
+    (clean 3 (by decide) (by decide)) (clean 4 (by decide) (by decide))
+  have plen : (F.R parentTape).length = n*H := by
+    rw [parentEq,parents]
+    simp [List.length_flatten,List.map_ofFn,Function.comp_def,length_binSyms,List.ofFn_const]
+  rw [plen,parentEq] at attach
+  let result := Function.update F.R src (S.R parentTape ++ F.R src)
+  have unaffected (i : Fin T) (ne : i ≠ src) : result i = F.R i := Function.update_of_ne ne _ _
+  have slot : F.R (r 14) = pivotWord := (Function.update_of_ne (distinct 14 (by decide) (by decide)) _ _).trans atSlot
+  refine ⟨x,_,_,weights,neg,hx.trans (hy.trans (hz.trans hu)),Nat.add_le_add_right (Nat.add_le_add_right (Nat.add_le_add_right hl _) _) _,
+    Exec.seq (Exec.seq (Exec.seq run copy) install) attach,?_,(unaffected _ (apart 14)).trans slot,?_,?_,children,bit,units,effect⟩
+  · change result src = _
+    simp only [result,Function.update_self]
+    exact congrArg (S.R parentTape ++ ·) ((kept src (srcOff (n+1) 15).symm (apart 14).symm).trans schedule)
   · refine ⟨D.R active,?_,?_⟩
-    · simp [E,Function.update_of_ne (distinct 14 (by decide) (by decide)),Function.update_of_ne (distinct 14 (by decide) (by decide)).symm]
-    · change (D.R active,Function.update E.R active (pivotWord ++ E.R active) _) = _
-      rw [kept _ ((stageBank r (n+1)).injective.ne (by decide : (16 : Fin 23) ≠ 15))
-        (off 14 16 (by decide) (by decide) (by decide)).symm]
+    · change result active = result (r 14) ++ _
+      rw [unaffected _ (srcOff _ _),unaffected _ (apart 14),slot]
+      change Function.update E.R active (pivotWord ++ E.R active) active = _
+      rw [Function.update_self]
+      exact congrArg (pivotWord ++ ·) (Function.update_of_ne (distinct 14 (by decide) (by decide)).symm _ _)
+    · change (D.R active,result _) = _
+      rw [unaffected _ (srcOff _ _),show F.R (stageBank r (n+1) 16) = D.R _ from
+        kept _ ((stageBank r (n+1)).injective.ne (by decide : (16 : Fin 23) ≠ 15))
+          (off 14 16 (by decide) (by decide) (by decide)).symm]
       exact archive
   · intro i hs hw ha hb
-    exact (kept i ha hw).trans (frame i hs hw ha hb)
+    exact (unaffected i hs).trans ((kept i ha hw).trans (frame i hs hw ha hb))
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
