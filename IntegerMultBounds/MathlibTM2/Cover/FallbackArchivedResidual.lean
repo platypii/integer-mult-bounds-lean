@@ -234,7 +234,7 @@ theorem archivedResidual_exec {Q T r records : ℕ} (parent : Fin d → (ZMod M)
     exact (Function.update_of_ne (offHost _).symm _ _).trans (Function.update_of_ne ne _ _)
 
 omit [M8.Machine.Net] in
-private theorem putWord_blanks (n : ℕ) (p : ℤ) : putWord (fun _ => (blank : Fin 4)) p (List.replicate n blank) = fun _ => blank := by
+theorem putWord_blanks (n : ℕ) (p : ℤ) : putWord (fun _ => (blank : Fin 4)) p (List.replicate n blank) = fun _ => blank := by
   induction n generalizing p with
   | zero => rfl
   | succ n ih => simp [List.replicate_succ,putWord,ih]

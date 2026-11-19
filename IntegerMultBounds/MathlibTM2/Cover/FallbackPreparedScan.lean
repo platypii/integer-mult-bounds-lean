@@ -92,9 +92,6 @@ theorem preparedPass_exec {Q T r A : ℕ} (table : Matrix (Fin r) (Fin r) (ZMod 
         (d*(8*((d+1)*(d+1)*H)+14*H+22)+1)+(6*H+6)+(4*((d+1)*H)+4)+(6*(d*H)+6)
       let stepTime := fun idx => (if LabelStock.live r (w+1) 1 idx then prepTime+((6*volume+6)+(1+cleanBound idx))
         else 4*(d+1)*(d+1)+1)+(4*volume+4)+((d+1)*(d+1)*(4*H+4)+1)
-      let invariant := fun outs idx (D : Stacks T prime) => ScanReady {a with signed := outs} scanPorts ext idx D ∧
-        D.R parentTape = (List.ofFn fun j => binSyms H (parent j : ZMod (prime^(w+1))).val).flatten ∧
-        ∀ h, D.L (host (privateBank h)) = [] ∧ D.R (host (privateBank h)) = []
       ∀ (desc : RecursiveInterchangeLayout.Descriptor) (B : ℕ) (v : HS T Q prime U) (S : Stacks T prime),
       a.records = LabelMask.records desc → desc.beforeH = B*prime^(r*((w+1)*r)) →
       LabelTraversal.ready (prime^w) S.R rs → S.R scratch = [] → (S.R parents).length = desc.beforeRows*desc.rows*B →
@@ -104,7 +101,17 @@ theorem preparedPass_exec {Q T r A : ℕ} (table : Matrix (Fin r) (Fin r) (ZMod 
       (D.R ap).length = desc.beforeRows*desc.rows*B →
       (D.R (port d regs 0)).length = ActualAffineScaling.modulus (w+1)^((d+1)*1)*W →
       (∀ i ∈ ([2,3,4,5] : List (Fin 6)), D.R (port d regs i) = []) →
-      invariant a.signed 0 {S with R := Function.update S.R pivot ((List.range a.records).flatMap a.pivotWord ++ S.R pivot)} →
+      S.R src = ((List.range a.records).map inputs).flatMap payloadWord ++ a.inputTail →
+      (S.R (ext 1)).length = volume → S.R (ext 3) = [] → S.R (ext 4) = [] → S.R acc = [] →
+      S.R pivot = a.pivotTail → S.R (tapes 34) = a.matrices 0 →
+      S.R (tapes 2) = binSyms H (prime^(w+1)) → S.R (tapes 27) = binSyms J W →
+      S.R (tapes 28) = binSyms 1 1 → S.R (tapes 32) = binSyms H (1 : ZMod (prime^(w+1))).val →
+      (S.R (tapes 33)).length = w →
+      (∀ i ∈ shearWork, S.L (tapes i) = [] ∧ S.R (tapes i) = []) →
+      (∀ i : Fin 35, i = 24 ∨ i = 25 → ∀ z, readAt blank (S.L (tapes i)) (S.R (tapes i)) z = blank) →
+      (∀ i : Fin N, 35 ≤ i.val → S.L (scanPorts (columnPorts i).castSucc) = [] ∧ S.R (scanPorts (columnPorts i).castSucc) = []) →
+      S.R parentTape = (List.ofFn fun j => binSyms H (parent j : ZMod (prime^(w+1))).val).flatten →
+      (∀ i, S.L (host (privateBank i)) = [] ∧ S.R (host (privateBank i)) = []) →
       let output := (List.range a.records).flatMap (outputRecord (LabelStock.live r (w+1) 1) a.matrix a.input)
       ∃ z F l, z.user = v.user ∧ F.R src = output ++ a.inputTail ∧ F.R acc = [] ∧ F.R (ext 0) = [] ∧
         F.R (scanPorts (Fin.last N).castSucc) = a.pivotTail ∧ F.R (tapes 34) = a.matrixTail ∧
@@ -140,9 +147,54 @@ theorem preparedPass_exec {Q T r A : ℕ} (table : Matrix (Fin r) (Fin r) (ZMod 
   obtain ⟨sign,signRun⟩ := anchorHandoff regs anchor scanPorts ext offExt
     (fun i j => banks i _) external sharedSrc acap table body ars asize ap asaved alayout
   refine ⟨.seq (.seq sign writer) (.seq (maskedScan (ext 0) live pad) (moveR acc src id)),?_⟩
-  intro w W a parent tables inputs encoded unsigned liveSpec padding hm hw hW H J cost stageCost rewindCost bound cleanBound volume prepTime stepTime invariant
+  intro w W a parent tables inputs encoded unsigned liveSpec padding hm hw hW H J cost stageCost rewindCost bound cleanBound volume prepTime stepTime
   subst table
-  intro desc B first init records shape radixInit scratchInit countInit fresh emptyInit anchorView neutral aradix afree acount awidth clean initialInv output
+  intro desc B first init records shape radixInit scratchInit countInit fresh emptyInit anchorView neutral aradix afree acount awidth clean queueInit extCount savedEmpty tmpEmpty accEmpty pivotTail archive modWord widthWord one padded ticks scratchFree payloadBlank sharedFree parentWord privateFree output
+
+  let invariant := fun outs idx (D : Stacks T prime) => ScanReady {a with signed := outs} scanPorts ext idx D ∧
+    D.R parentTape = (List.ofFn fun j => binSyms H (parent j : ZMod (prime^(w+1))).val).flatten ∧
+    ∀ h, D.L (host (privateBank h)) = [] ∧ D.R (host (privateBank h)) = []
+  let installed := preparedPivots a pivot init
+  have laneOff (i : Fin 35) : tapes i ≠ pivot := by
+    apply scanPorts.injective.ne
+    rw [← archivePorts_stream 0]
+    apply (archivePorts 0).injective.ne
+    intro eq
+    have e := congrArg Fin.val eq
+    change i.val = N at e
+    omega
+  have laneR (i : Fin 35) : installed.R (tapes i) = init.R (tapes i) := Function.update_of_ne (laneOff i) _ _
+  have extR (i : Fin 6) : installed.R (ext i) = init.R (ext i) := Function.update_of_ne (offExt _ i).symm _ _
+  have initialInv : invariant a.signed 0 installed := by
+    refine ⟨⟨?_,(congrArg List.length (extR 1)).trans extCount,(extR 3).trans savedEmpty,(extR 4).trans tmpEmpty,
+      ?_,?_,(laneR 34).trans archive,?_,?_,?_⟩,(Function.update_of_ne (parentOff _).symm _ _).trans parentWord,?_⟩
+    · simpa only [List.drop_zero,unsigned] using (extR 2).trans queueInit
+    · simpa [outputPrefix,fresh] using (extR 5).trans accEmpty
+    · change installed.R pivot = _
+      rw [show installed.R pivot = (List.range a.records).flatMap a.pivotWord ++ init.R pivot from Function.update_self ..,
+        pivotTail,List.drop_zero]
+    · intro i hi
+      have ne : scanPorts (columnPorts i).castSucc ≠ pivot := scanPorts.injective.ne (fun eq => i.isLt.ne (congrArg Fin.val eq))
+      exact ⟨(sharedFree i hi).1,(Function.update_of_ne ne _ _).trans (sharedFree i hi).2⟩
+    · intro z
+      change readAt blank (init.L (tapes 24)) (installed.R (tapes 24)) z = blank
+      rw [laneR]; exact payloadBlank 24 (Or.inl rfl) z
+    · intro inside
+      refine ⟨(laneR 2).trans modWord,(laneR 27).trans widthWord,(laneR 28).trans one,(laneR 32).trans padded,
+        (congrArg List.length (laneR 33)).trans ticks,((laneR 34).trans archive).trans (a.matrices_succ inside),
+        fun i hi => ⟨(scratchFree i hi).1,(laneR i).trans (scratchFree i hi).2⟩,?_,?_⟩
+      · intro z
+        change readAt blank (init.L (tapes 24)) (installed.R (tapes 24)) (z-0) = _
+        rw [laneR,sub_zero,payloadBlank 24 (Or.inl rfl)]
+        simp only [Function.comp_def,List.ofFn_const,putWord_blanks]
+        rfl
+      · intro z
+        change readAt blank (init.L (tapes 25)) (installed.R (tapes 25)) (z-0) = _
+        rw [laneR,sub_zero,payloadBlank 25 (Or.inr rfl)]
+        rfl
+    · intro i
+      have ne := host.injective.ne (private_ne_rewind (d+1) i (Fin.last N).castSucc)
+      exact ⟨(privateFree i).1,(Function.update_of_ne ne _ _).trans (privateFree i).2⟩
   obtain ⟨outs,initial,base,signTime,signed,signUser,signExec,scanStart,signFrame,signBound⟩ :=
     signRun desc B a inputs first init shape records hW neutral aradix afree acount awidth unsigned clean initialInv.1
   let scanData := {a with signed := outs}
