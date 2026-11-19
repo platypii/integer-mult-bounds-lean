@@ -507,6 +507,36 @@ theorem signedClassSetup_volume_le (U : Type) (d : ℕ) :
       have pos := Nat.mul_pos prefixPos (pow_pos Networks.Shared50ModularControl.prime_prime.pos (w+1))
       nlinarith
 
+/-- Across the parent boxes and their lifts, one address coordinate pays the
+baseline per class. Only live records pay the full residual setup. -/
+theorem signedClassSetup_total_le (U : Type) (d T : ℕ) :
+    ∃ baseline residual : ℕ, ∀ w parents lifts classes live,
+      parents*(lifts*signedClassSetup U d T w (Nat.size (prime^(w+1))) classes live) ≤
+        baseline*(parents*lifts*classes)*prime^(w+1) +
+        residual*(parents*lifts*live)*(prime^(w+1))^(d+1) := by
+  obtain ⟨c,hc⟩ := signedClassSetup_volume_le U d
+  let n := (d+1)*(d+1)
+  refine ⟨size d+3*T+34+8*n+(4*n+1), c, ?_⟩
+  intro w parents lifts classes live
+  let q := prime^(w+1)
+  have bits : Nat.size q ≤ q := Nat.size_le.mpr Nat.lt_two_pow_self
+  have positive : 1 ≤ q := pow_pos Networks.Shared50ModularControl.prime_prime.pos _
+  have base : size d+3*T+34+n*(4*(Nat.size q)+4)+(4*n+1) ≤
+      (size d+3*T+34+8*n+(4*n+1))*q := by
+    grw [bits]
+    obtain ⟨k,hk⟩ := Nat.exists_eq_add_of_le positive
+    rw [hk]
+    ring_nf
+    omega
+  have setup := hc T w classes live
+  simp only [Nat.mul_assoc 4 (d+1) (d+1)] at setup
+  grw [setup]
+  change parents*(lifts*(classes*(size d+3*T+34+n*(4*(Nat.size q)+4)+(4*n+1)) +
+    live*(c*q^(d+1)))) ≤ _
+  grw [base]
+  dsimp only [q]
+  exact le_of_eq (by ring)
+
 private theorem classSetup_sum_le (table : Matrix (Fin r) (Fin r) (ZMod prime) →
     Matrix (Fin (d+1)) (Fin (d+1)) (ZMod prime)) (U : Type) (T w H : ℕ) :
     ((LabelSelectors.classes 1 (r*r)).map (classResidualCost table T w 0 H 0 U)).sum ≤
