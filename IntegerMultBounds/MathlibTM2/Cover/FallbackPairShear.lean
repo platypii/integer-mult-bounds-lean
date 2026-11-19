@@ -89,4 +89,75 @@ theorem pairShear_exec (body : P → Pr P T 217 A U) (i k t : Fin d) (hk : k < t
     by simpa only [embStk_L,embStk_R,Function.Embedding.refl_apply,ports,Function.Embedding.trans_apply,fixed 25 (by decide),dstPort] using clean,out,
     by simpa only [embStk_L,embStk_R,Function.Embedding.refl_apply,ports,Function.Embedding.trans_apply,fixed 24 (by decide),srcPort] using result,placed⟩
 
+def childLoadPorts : Fin 20 ↪ Fin 36 := ⟨![30,1,3,4,2,5,6,7,8,9,10,11,29,13,31,32,33,17,34,35],by decide⟩
+
+def childShearPorts (negative : Bool) : Fin 29 ↪ Fin 36 :=
+  (Fin.castLEEmb (by decide)).trans (Equiv.swap 0 (if negative then 29 else 31)).toEmbedding
+
+def childShear {m : ℕ} (p parentIndex index : ℕ) (k t : Fin m) (negative : Bool) (bank : Fin 36 ↪ Fin T) : Pr P T 217 A U :=
+  .seq (signedChildPair p parentIndex index (childLoadPorts.trans bank))
+    (weightedShear k t ((childShearPorts negative).trans bank))
+
+theorem childShear_exec {n m : ℕ} (k t : Fin m) (hk : k < t) (negative : Bool) (body : P → Pr P T 217 A U) (bank : Fin 36 ↪ Fin T)
+    (parent : Fin n → ZMod M) (j : Fin n) (inv : ZMod M) (reciprocal : parent j * inv = 1)
+    (pivot : Fin d → ZMod M) (i : Fin d) (unit : IsUnit (pivot i)) (hb : b.Prime)
+    (H : ℕ) (hm : M < 2^H) (v : HS T 217 A U) (S : Stacks T A) (tail rest : List (Fin (A+4)))
+    (weights : S.R (bank 35) = (List.ofFn fun k => binSyms H (parent k).val).flatten ++ rest)
+    (record : S.R (bank 34) = (List.ofFn fun k => binSyms H (pivot k).val).flatten ++ tail)
+    (modulus : S.R (bank 2) = binSyms H M) (one : S.R (bank 32) = binSyms H (1 : ZMod M).val)
+    (clock : (S.R (bank 33)).length = w)
+    (J : ℕ) (hw : W < 2^J) (hW : 0 < W) (width : S.R (bank 27) = binSyms J W)
+    (single : S.R (bank 28) = binSyms 1 1)
+    (free : ∀ i : Fin 36, (i ≤ 26 ∧ i ≠ 2 ∧ i ≠ 24 ∧ i ≠ 25) ∨ (29 ≤ i ∧ i ≤ 31) → S.R (bank i) = [])
+    (left : ∀ i : Fin 12, i < 10 → S.L (bank ((shearTranslation i).castLE (by decide))) = [])
+    (sym : α → Fin 4) (source dest : ℤ → Fin 4) (p q : ℤ) (a : Fin (M^m*W) → α)
+    (empty : ∀ z, q ≤ z → z < q+(M^m*W : ℕ) → dest z = blank)
+    (src : ∀ z, RadixToBinary.binaryEncoding.encode (putWord source p (List.ofFn (sym ∘ a)) z) =
+      readAt blank (S.L (bank 24)) (S.R (bank 24)) (z-p))
+    (dst : ∀ z, RadixToBinary.binaryEncoding.encode (dest z) =
+      readAt blank (S.L (bank 25)) (S.R (bank 25)) (z-q)) :
+    let C := 48*H*H+152*H+66
+    let c := if negative then -(inv * Ring.inverse (pivot i)) else parent j * pivot i
+    ∃ z F l, z.user = v.user ∧ l ≤ (8*(j.val*H)+14*H+22) +
+      ((8*(i.val*H)+48*H*H+166*H+88)+(6*w+6+(14*H+16+(b-2)*C+C+w*(12*H+15+b*C)))) +
+      (2*H+2) + (8*H+8) + weightedShearTime k t M W H J ∧
+      Exec body (childShear b j.val i.val k t negative bank) (mk v S) l (mk z F) ∧
+      (∀ z, readAt blank (F.L (bank 25)) (F.R (bank 25)) (z-q) = RadixToBinary.binaryEncoding.encode (dest z)) ∧
+      ∃ out : Fin (M^m*W) → α, (∀ z, readAt blank (F.L (bank 24)) (F.R (bank 24)) (z-p) =
+        RadixToBinary.binaryEncoding.encode (putWord source p (List.ofFn (sym ∘ out)) z)) ∧
+        ∀ x h, out (index ((RowOp.shear k t hk c).apply x) h) = a (index x h) := by
+  intro C c
+  have scratch : ∀ i : Fin 20, (i ≤ 14 ∧ i ≠ 4) ∨ i = 17 →
+      let k := childLoadPorts i
+      (k ≤ 26 ∧ k ≠ 2 ∧ k ≠ 24 ∧ k ≠ 25) ∨ (29 ≤ k ∧ k ≤ 31) := by decide
+  obtain ⟨u,D,l,hu,hl,load,fw,_,neg,hL,_,_,frame⟩ := signedChildPair_exec body (childLoadPorts.trans bank)
+    parent j inv reciprocal pivot i unit hb H hm v S tail rest weights record modulus one clock
+    (fun i h => free _ (scratch i h))
+  let ports := (childShearPorts negative).trans bank
+  have fixed : ∀ h : Fin 29, h ≠ 0 → childShearPorts negative h = h.castLE (by decide) := by cases negative <;> decide
+  have keep (h : Fin 29) (hn : h ≠ 0) : D.R (ports h) = S.R (bank (h.castLE (by decide))) := by
+    change D.R (bank (childShearPorts negative h)) = _
+    rw [fixed h hn]
+    have off : ∀ h : Fin 29, let k : Fin 36 := h.castLE (by decide)
+        k ≠ 30 ∧ k ≠ 31 ∧ k ≠ 29 := by decide
+    exact frame _ (bank.injective.ne (off h).1) (bank.injective.ne (off h).2.1) (bank.injective.ne (off h).2.2)
+  have srcPort : (24 : Fin 29).castLE (by decide : 29 ≤ 36) = 24 := by decide
+  have dstPort : (25 : Fin 29).castLE (by decide : 29 ≤ 36) = 25 := by decide
+  have coef : D.R (ports 0) = binSyms H c.val := by cases negative <;> first | exact fw | exact neg
+  have leftPort : ∀ i : Fin 12, i < 10 → shearTranslation i ≠ 0 := by decide
+  have size : 29 ≤ 36 := by decide
+  obtain ⟨z,F,n,hz,hn,run,_,_,clean,out,result,action⟩ := weightedShear_exec k t hk sym c body ports H J hm hw hW u D
+    ((keep 2 (by decide)).trans modulus) ((keep 28 (by decide)).trans single) ((keep 27 (by decide)).trans width) coef
+    (fun i lo hi h2 h24 h25 => (keep i (by omega)).trans (free _ (.inl
+      ((by decide +revert : ∀ i : Fin 29, i ≤ 26 → i ≠ 2 → i ≠ 24 → i ≠ 25 →
+        let k := i.castLE size
+        k ≤ 26 ∧ k ≠ 2 ∧ k ≠ 24 ∧ k ≠ 25) i hi h2 h24 h25))))
+    (fun i hi => by simpa only [ports,Function.Embedding.trans_apply,fixed _ (leftPort i hi),hL] using left i hi)
+    source dest p q a empty
+    (fun z => by rw [keep 24 (by decide),hL]; simpa only [ports,Function.Embedding.trans_apply,fixed 24 (by decide),srcPort] using src z)
+    (fun z => by rw [keep 25 (by decide),hL]; simpa only [ports,Function.Embedding.trans_apply,fixed 25 (by decide),dstPort] using dst z)
+  exact ⟨z,F,l+n,hz.trans hu,Nat.add_le_add hl hn,Exec.seq load run,
+    by simpa only [ports,Function.Embedding.trans_apply,fixed 25 (by decide),dstPort] using clean,out,
+    by simpa only [ports,Function.Embedding.trans_apply,fixed 24 (by decide),srcPort] using result,action⟩
+
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
