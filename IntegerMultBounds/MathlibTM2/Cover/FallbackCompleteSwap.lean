@@ -46,6 +46,21 @@ theorem swapVolumeRate_le (w : ℕ) :
   push_cast
   linarith
 
+/-- In caller-width units, splitting into `r` whole atoms saves a factor
+of `r ^ tau` in the width-dependent per-symbol charge. -/
+theorem swapVolumeRate_div_width_le (L r : ℕ) (rankPos : 0 < r) (fits : r ≤ L) :
+    (swapVolumeRate (L/r-1) : ℝ) ≤ (3808275 + LeafCore.C) *
+      ((L : ℝ) ^ M8.Machine.BudgetBound.tau / (r : ℝ) ^ M8.Machine.BudgetBound.tau) := by
+  have atom := Nat.sub_add_cancel (Nat.div_pos fits rankPos)
+  have bound := swapVolumeRate_le (L/r-1)
+  rw [atom] at bound
+  apply bound.trans
+  rw [← Real.div_rpow (Nat.cast_nonneg L) (Nat.cast_nonneg r)]
+  have pos : 0 < LeafCore.C :=
+    (Classical.choose_spec M8.Machine.ArbitraryWidthOriginalTotalRun.uniform_bound).1
+  exact mul_le_mul_of_nonneg_left (Real.rpow_le_rpow (Nat.cast_nonneg _) Nat.cast_div_le
+    M8.Machine.BudgetBound.exponent_range.1.le) (by positivity)
+
 /-- A swap pays setup once and a width-dependent charge per payload symbol. -/
 theorem completeSwapTime_le_setup_add_volume [Fintype P] (body : P → Pr P (N+35) Q prime U)
     (d i j w W H J : ℕ) :
