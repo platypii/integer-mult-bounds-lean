@@ -494,6 +494,16 @@ directly:
   each frame change a legal conjugate of the swap of its new pivot coordinates, of the same rank.
   Those coordinates are in general not consecutive sub-fields, and `childR` and the recursion's
   layout need consecutive ones.
+  There is also an endpoint obstruction for complementary oblique frames.
+  At a port with line projector `P`, the word requires the source line and its orthogonal
+  target hyperplane (`Nine.projector_target_final`). If `U` fixes the source line
+  and `1 - U` fixes the target hyperplane, then `U P = P` and
+  `(1 - U)(1 - P) = 1 - P`, hence `U = P`. For a line with two nonzero coordinates,
+  `P` has an entry above the diagonal (`PortCertificate.incompatible_port_frames`).
+  In the pinned `Nine/PortData.lean`, 103 of the 111 lines have four nonzero coordinates.
+  Thus `oblique_stage_route` proves boundaries for a changed target hyperplane at those
+  ports. Using that route requires a word or a separately costed change of frame that
+  realizes the changed target.
 - **Routes and charts are coordinate permutations.** The stage routes `ρ` and the helper charts
   are orthogonal and not triangular; in Bruhat form each route contains 7 sub-field
   transpositions per field, for all 111 ports. On a tape they move data from less significant

@@ -125,6 +125,22 @@ theorem exists_triangular_lineProj (h : c.Checked) :
   · intro i
     by_cases hi : i = p <;> simp [U, hi, hpq]
 
+/-- Preserving the target hyperplane as well as the source line forces the original
+projector. A port with two nonzero coordinates therefore has no triangular replacement
+that preserves both images via complementary frames. -/
+theorem incompatible_port_frames {i j : Fin 8} (hij : i < j)
+    (hi : c.line i ≠ 0) (hj : c.line j ≠ 0) (U : Matrix (Fin 8) (Fin 8) ℚ)
+    (lower : U.IsLowerTriangular) (source : U * c.lineProj = c.lineProj) :
+    (1 - U) * (1 - c.lineProj) ≠ 1 - c.lineProj := by
+  intro target
+  rw [mul_sub, mul_one, sub_mul, one_mul, source, sub_self, sub_zero] at target
+  have eq : U = c.lineProj := sub_right_inj.mp target
+  have zero := lower (i := i) (j := j) hij
+  rw [eq] at zero
+  have nz : (c.line i : ℚ) * c.line j / 4 ≠ 0 := by
+    exact div_ne_zero (mul_ne_zero (by exact_mod_cast hi) (by exact_mod_cast hj)) (by norm_num)
+  exact nz zero
+
 theorem lineProj_transpose : c.lineProjᵀ = c.lineProj := by
   ext i j
   simp only [transpose_apply, lineProj, of_apply]
