@@ -16,6 +16,38 @@ noncomputable def residualPass (ports : Fin (N+2) ↪ Fin T) (ext : Fin 6 ↪ Fi
     Pr P T columnCapacity prime U :=
   .seq (residualScan ports (ext 0) (ext 1) (ext 2) (ext 3) (ext 4) (ext 5) d) (moveR (ext 5) (ext 2) id)
 
+/-- Return a completed scan's accumulator to its input tape in forward order. -/
+theorem finishScan_exec {Q : ℕ} (a : ScanData r d w W) (ports : Fin (N+2) ↪ Fin T) (ext : Fin 6 ↪ Fin T)
+    (off : ∀ i k, ports i ≠ ext k) (body : P → Pr P T Q prime U)
+    (u : HS T Q prime U) (D : Stacks T prime) (ready : ScanReady a ports ext a.records D)
+    (fresh : a.outputTail = []) (len : a.signed.length = a.records) (empty : D.R (ext 0) = []) :
+    let output := (List.range a.records).flatMap (outputRecord (LabelStock.live r (w+1) 1) a.matrix a.input)
+    ∃ z F, z.user = u.user ∧ F.R (ext 2) = output ++ a.inputTail ∧ F.R (ext 5) = [] ∧
+      F.R (ext 0) = [] ∧ F.R (ports (Fin.last N).castSucc) = a.pivotTail ∧
+      F.R (ports (archivePorts 0 (columnBank 34))) = a.matrixTail ∧
+      (∀ h, h ≠ ext 2 → h ≠ ext 5 → F.L h = D.L h ∧ F.R h = D.R h) ∧
+      Exec body (moveR (ext 5) (ext 2) id) (mk u D) (2*(a.records*(M^(d+1)*W))+2) (mk z F) := by
+  intro output
+  have acc : D.R (ext 5) = output.reverse := by simpa [outputPrefix,fresh] using ready.acc
+  have queue : D.R (ext 2) = a.inputTail := by simpa [← len] using ready.queue
+  have volume (is : List ℕ) : (is.flatMap (outputRecord (LabelStock.live r (w+1) 1) a.matrix a.input)).length =
+      is.length*(M^(d+1)*W) := by
+    induction is with
+    | nil => simp
+    | cons i is ih => simp [ih,outputRecord,payloadWord,Nat.succ_mul,Nat.add_comm]
+  have width : (D.R (ext 5)).length = a.records*(M^(d+1)*W) := by simp [acc,output,volume]
+  obtain ⟨z,hz,move⟩ := moveR_exec body (ext 5) (ext 2) (ext.injective.ne (by decide)) id u D
+  have finish : (List.range a.records).drop a.records = [] := List.drop_eq_nil_of_le (by simp)
+  rw [width] at move
+  refine ⟨z,_,hz,?_,?_,?_,?_,?_,?_,move⟩
+  · simp [movedR,acc,queue]
+  · simp [movedR,ext.injective.eq_iff]
+  · simp [movedR,ext.injective.eq_iff,empty]
+  · simpa [movedR,off,finish] using ready.pivots
+  · simpa [movedR,off,ScanData.matrices,finish] using ready.archive
+  · intro h hs ha
+    simp [movedR,hs,ha]
+
 theorem residualPass_exec (a : ScanData r d w W) (ports : Fin (N+2) ↪ Fin T) (ext : Fin 6 ↪ Fin T)
     (off : ∀ i k, ports i ≠ ext k) (inputs : ℕ → Record.Array d 1 (w+1) W)
     (encoded : ∀ j < a.records, Record.scalarArray (inputs j) = SparseRoleCircuit.encode ∘ a.input j)
@@ -38,22 +70,8 @@ theorem residualPass_exec (a : ScanData r d w W) (ports : Fin (N+2) ↪ Fin T) (
   intro output
   obtain ⟨u,D,l,hu,ready,empty,hl,scan⟩ := residualScan_exec a ports ext off inputs encoded signed liveSpec padding
     hm hw hW body v S start mask
-  have acc : D.R (ext 5) = output.reverse := by simpa [outputPrefix,fresh] using ready.acc
-  have len : a.signed.length = a.records := by simpa [Record.signedInputs] using signed.length_eq.symm
-  have queue : D.R (ext 2) = a.inputTail := by simpa [← len] using ready.queue
-  have volume (is : List ℕ) : (is.flatMap (outputRecord (LabelStock.live r (w+1) 1) a.matrix a.input)).length =
-      is.length*(M^(d+1)*W) := by
-    induction is with
-    | nil => simp
-    | cons i is ih => simp [ih,outputRecord,payloadWord,Nat.succ_mul,Nat.add_comm]
-  have width : (D.R (ext 5)).length = a.records*(M^(d+1)*W) := by simp [acc,output,volume]
-  obtain ⟨z,hz,move⟩ := moveR_exec body (ext 5) (ext 2) (ext.injective.ne (by decide)) id u D
-  have finish : (List.range a.records).drop a.records = [] := List.drop_eq_nil_of_le (by simp)
-  refine ⟨z,_,_,hz.trans hu,?_,?_,?_,?_,?_,by rw [width]; omega,.seq scan move⟩
-  · simp [movedR,acc,queue]
-  · simp [movedR,ext.injective.eq_iff]
-  · simp [movedR,ext.injective.eq_iff,empty]
-  · simpa [movedR,off,finish] using ready.pivots
-  · simpa [movedR,off,ScanData.matrices,finish] using ready.archive
+  obtain ⟨z,F,hz,queue,acc,maskEnd,pivots,archive,_,move⟩ := finishScan_exec a ports ext off body u D ready
+    fresh (by simpa [Record.signedInputs] using signed.length_eq.symm) empty
+  exact ⟨z,F,_,hz.trans hu,queue,acc,maskEnd,pivots,archive,Nat.add_le_add_right hl _,.seq scan move⟩
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback

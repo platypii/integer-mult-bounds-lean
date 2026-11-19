@@ -1,20 +1,21 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.Cover.FallbackScanPadding
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackResidualPass
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackControlStreams
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackArchivedResidual
 
 /-! Scan physical records with the prepared residual machine, reusing its exchange and parent tapes. -/
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Cover.Fallback.Record
 open IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2.Stack Host Mult.PhaseCellToeplitz
-open M8 ActualAffineScaling FlatCoordinateLayout
+open M8 ActualAffineScaling FlatCoordinateLayout LabelTraversal
 open IntegerMultBounds.Networks.Shared50ModularControl (prime prime_prime)
 variable [M8.Machine.Net] {P U : Type} {d w W : ℕ}
 local notation "N" => rowSwapBlock.tapes+35
 local notation "M" => prime^(w+1)
 local instance : NeZero M := ⟨(pow_pos prime_prime.pos _).ne'⟩
 
-theorem preparedScan_exec {Q T r : ℕ} (a : ScanData r d w W) (parent : Fin d → (ZMod M)ˣ)
+theorem preparedPass_exec {Q T r : ℕ} (a : ScanData r d w W) (parent : Fin d → (ZMod M)ˣ)
     (capacity : columnCapacity ≤ Q) (signCapacity : (fieldSignProgram (0 : Fin (d+1)) true).1 ≤ Q)
     (inputs : ℕ → Array d 1 (w+1) W)
     (encoded : ∀ j < a.records, scalarArray (inputs j) = SparseRoleCircuit.encode ∘ a.input j)
@@ -70,7 +71,7 @@ theorem preparedScan_exec {Q T r : ℕ} (a : ScanData r d w W) (parent : Fin d �
     let positive := lt_of_lt_of_le columnCapacity_pos capacity
     ∀ (host : Fin (((N+1)+total)+1) ↪ Fin T) (ext : Fin 6 ↪ Fin T) (outside : ∀ i k, host i ≠ ext k)
       (parentTape : Fin T) (parentOff : ∀ i, host i ≠ parentTape) (parentExt : ∀ i, ext i ≠ parentTape)
-      (body : P → Pr P T Q prime U) v S,
+      (body : P → Pr P T Q prime U),
       let scanPorts := reverseHost.trans host
       let cols := shared.trans host
       let prep := forwardBank.trans (rewindPorts (d+1) cols (host spare) (fun i => host.injective.ne (off i)))
@@ -97,11 +98,22 @@ theorem preparedScan_exec {Q T r : ℕ} (a : ScanData r d w W) (parent : Fin d �
       let ready := fun idx (D : Stacks T prime) => ScanReady a scanPorts ext idx D ∧
         D.R parentTape = (List.ofFn fun j => binSyms H (parent j : ZMod M).val).flatten ∧
         ∀ h, D.L (host (privateBank h)) = [] ∧ D.R (host (privateBank h)) = []
-      ready 0 S → S.R (ext 0) = (LabelMask.selectors r (w+1) a.records).map bitSymbol →
-      ∃ z F l, z.user = v.user ∧ ready a.records F ∧ F.R (ext 0) = [] ∧
-        l ≤ ((List.range a.records).map fun idx => stepTime idx+4).sum+2 ∧
-        Exec body (maskedScan (ext 0) live pad) (mk v S) l (mk z F) := by
-  intro H J rows reads n k j t i width total ports shared bank program cost spare off reverseHost reverseBank active pop rewind stageCost rewindCost residual privateBank bound cleanBound positive host ext outside parentTape parentOff parentExt body v S scanPorts cols prep stream tapes count src saved tmp acc dst prepare compute advance live pad volume prepTime stepTime ready start mask
+      let pivot := scanPorts (Fin.last N).castSucc
+      ∀ (rs : List (Pair T)) (_ : rs.length = r*r) (parents scratch : Fin T),
+      (parents :: scratch :: (slots rs ++ [ext 0])).Nodup →
+      (parents :: scratch :: (slots rs ++ [pivot])).Nodup →
+      ∃ writer : Pr P T Q prime U, ∀ (desc : RecursiveInterchangeLayout.Descriptor) (B : ℕ) (v : HS T Q prime U) (S : Stacks T prime),
+      a.records = LabelMask.records desc → desc.beforeH = B*prime^(r*((w+1)*r)) →
+      LabelTraversal.ready (prime^w) S.R rs → S.R scratch = [] → (S.R parents).length = desc.beforeRows*desc.rows*B →
+      a.outputTail = [] → S.R (ext 0) = [] →
+      ready 0 {S with R := Function.update S.R pivot ((List.range a.records).flatMap a.pivotWord ++ S.R pivot)} →
+      let output := (List.range a.records).flatMap (outputRecord (LabelStock.live r (w+1) 1) a.matrix a.input)
+      ∃ z F l, z.user = v.user ∧ F.R src = output ++ a.inputTail ∧ F.R acc = [] ∧ F.R (ext 0) = [] ∧
+        F.R (scanPorts (Fin.last N).castSucc) = a.pivotTail ∧ F.R (tapes 34) = a.matrixTail ∧
+        F.R parentTape = S.R parentTape ∧ (∀ h, F.L (host (privateBank h)) = [] ∧ F.R (host (privateBank h)) = []) ∧
+        l ≤ 2*((desc.beforeRows*desc.rows*B)*(time (prime^w) (r*r) 1+5)+4) + (((List.range a.records).map fun idx => stepTime idx+4).sum+2+(2*(a.records*volume)+2)) ∧
+        Exec body (.seq writer (.seq (maskedScan (ext 0) live pad) (moveR acc src id))) (mk v S) l (mk z F) := by
+  intro H J rows reads n k j t i width total ports shared bank program cost spare off reverseHost reverseBank active pop rewind stageCost rewindCost residual privateBank bound cleanBound positive host ext outside parentTape parentOff parentExt body scanPorts cols prep stream tapes count src saved tmp acc dst prepare compute advance live pad volume prepTime stepTime ready pivot rs size parents scratch maskRegs pivotRegs
   have offExt (i : Fin (N+2)) (k : Fin 6) : scanPorts i ≠ ext k := outside _ _
   have streamEq : scanPorts (Fin.last N).castSucc = stream := by
     have eq := DFunLike.congr_fun (rewindPorts_active (d+1) shared spare off) (Fin.last N)
@@ -109,53 +121,81 @@ theorem preparedScan_exec {Q T r : ℕ} (a : ScanData r d w W) (parent : Fin d �
   have prepOff (i : Fin 23) : prep i ≠ parentTape := by
     have eq := DFunLike.congr_fun (rewindPorts_trans (d+1) shared spare off host) (forwardBank i)
     exact eq ▸ parentOff _
-  apply maskedRange_exec body (ext 0) live pad a.records (LabelStock.live r (w+1) 1) stepTime ready ?_ ?_ v S start
-    (by simpa [LabelMask.selectors,List.map_map,Function.comp_def] using mask)
-  · intro idx D bits h
-    exact ⟨h.1.mask (fun i => offExt i 0) bits,(Function.update_of_ne (parentExt 0).symm _ _).trans h.2.1,
-      fun i => ⟨(h.2.2 i).1,(Function.update_of_ne (outside _ 0) _ _).trans (h.2.2 i).2⟩⟩
-  intro idx inside u D current
-  obtain ⟨before,parents,free⟩ := current
-  cases bit : LabelStock.live r (w+1) 1 idx with
-  | false =>
-    obtain ⟨symbol,constant⟩ := padding idx inside bit
-    obtain ⟨z,F,l,hz,next,left,frame,hn,run⟩ := before.padding a scanPorts ext offExt idx inside bit inputs
-      (encoded idx inside) symbol constant signed body u D
-    refine ⟨z,F,l,hz,⟨next,(frame _ (parentExt 2).symm (parentExt 5).symm (fun i => parentOff _)).trans parents,?_⟩,
-      frame _ (ext.injective.ne (by decide)) (ext.injective.ne (by decide)) (fun i => offExt i 0),
-      by simpa only [stepTime,bit,Bool.false_eq_true,ite_false] using hn,by simpa only [bit,Bool.false_eq_true,ite_false] using run⟩
-    intro h
-    exact ⟨(congrFun left _).trans (free h).1,(frame _ (outside _ 2) (outside _ 5)
-      (fun i => host.injective.ne (private_ne_rewind (d+1) h i).symm)).trans (free h).2⟩
-  | true =>
-    obtain ⟨det,lift⟩ := liveSpec idx inside bit
-    have addr := physicalLabel_index (m := r) (w := w+1) idx
-    have res := physicalLabel_residue (m := r) (w := w+1) (by omega) idx
-    have step := preparedResidual_exec parent capacity signCapacity H J hm hw hW a.table (physicalLabel r (w+1) idx)
-      (a.matrix idx) det (lift.trans (congrArg a.table res)) _ (addr.symm ▸ inside) inputs a.signed signed
-      (a.matrices (idx+1)) a.pivotTail (fun _ => blank) 0 (by simp) (a.input idx) host body u D
-      count src saved tmp (fun i => outside i 2) a.inputTail parentTape prepOff (parentOff _).symm parents
-      (by obtain h := before.bank inside; exact ⟨h.modulus,h.width,h.one,h.padded,h.clock,h.archive,h.scratch,h.src,h.dst⟩)
-      (by rw [addr]; exact (congrArg D.R streamEq.symm).trans before.pivots)
-    simp only [addr,← res] at step
-    have sep (i k : Fin 6) (h : i ≠ k) := ext.injective.ne h
-    obtain ⟨z,F,l,word,hz,hn,run,effect,out,blanked,archive,next,reset,clean,pivots,_,queue,frame⟩ :=
-      step acc (fun i => outside i 1) (fun i => outside i 4) (fun i => outside i 5) (sep 5 2 (by decide))
-        (by simp [count,acc,tmp,ext.injective.eq_iff,outside,Ne.symm (outside _ _)])
-        ⟨(outside _ 3).symm,(outside _ 3).symm,(outside _ 3).symm⟩
-        (by simp [count,src,saved,tmp,ext.injective.eq_iff,outside,Ne.symm (outside _ _)])
-        before.count before.saved before.tmp (encoded idx inside) before.queue before.free free
-    have same (h : Fin 6) (hs : h ≠ 2) (ha : h ≠ 5) := (frame (ext h) (sep _ _ hs) (sep _ _ ha) (fun i => outside i h)).2
-    have unit : IsUnit (a.matrix idx).det := by rcases det with h | h <;> simp [h]
-    refine ⟨z,F,l,hz,⟨⟨queue,(congrArg List.length (same 1 (by decide) (by decide))).trans before.count,
-      (same 3 (by decide) (by decide)).trans before.saved,(same 4 (by decide) (by decide)).trans before.tmp,
-      ?_,pivots,archive,clean,blanked,fun hj => by
-        obtain h := next _ _ (a.input (idx+1)) (a.matrices_succ hj)
-        exact ⟨h.modulus,h.width,h.one,h.padded,h.clock,h.archive,h.scratch,h.src,h.dst⟩⟩,
-      (frame parentTape (parentExt 2).symm (parentExt 5).symm parentOff).2.trans parents,reset⟩,
-      same 0 (by decide) (by decide),by simp only [stepTime,bit,ite_true]; exact hn,
-      by simp only [ite_true]; exact run⟩
-    rw [outputPrefix_succ,outputRecord_live _ _ _ bit unit word effect,← before.acc]
-    exact out
+  obtain ⟨writer,emit⟩ := controlStreams_exec body a.table rs size (ext 0) pivot parents scratch maskRegs pivotRegs
+  refine ⟨writer,?_⟩
+  intro desc B initial base records shape radix scratchEmpty countLen fresh maskEmpty initialReady output
+  obtain ⟨v,t,hv,ht,write⟩ := emit desc (w+1) B (by omega) shape initial base (by simpa using radix) scratchEmpty countLen
+  let bits := (LabelMask.selectors r (w+1) a.records).map (bitSymbol (a := prime))
+  let prepared := {base with R := Function.update base.R pivot ((List.range a.records).flatMap a.pivotWord ++ base.R pivot)}
+  let S := {prepared with R := Function.update prepared.R (ext 0) bits}
+  have gen : Exec body writer (mk initial base) t (mk v S) := by
+    have code : a.pivotWord = fun j => scheduleCode (a.pivots j) ++ orderedScheduleCode (List.finRange (d+1)).reverse (a.pivots j) := rfl
+    simpa [S,prepared,bits,pivot,← records,code,ScanData.pivotWord,ScanData.pivots,maskEmpty,offExt,
+      Function.update_comm (offExt (Fin.last N).castSucc 0)] using write
+  have start : ready 0 S := ⟨initialReady.1.mask (fun i => offExt i 0) bits,
+    (Function.update_of_ne (parentExt 0).symm _ _).trans initialReady.2.1,
+    fun h => ⟨(initialReady.2.2 h).1,(Function.update_of_ne (outside _ 0) _ _).trans (initialReady.2.2 h).2⟩⟩
+  have mask : S.R (ext 0) = bits := Function.update_self ..
+  have scanned : ∃ z F l, z.user = v.user ∧ ready a.records F ∧ F.R (ext 0) = [] ∧
+        l ≤ ((List.range a.records).map fun idx => stepTime idx+4).sum+2 ∧
+        Exec body (maskedScan (ext 0) live pad) (mk v S) l (mk z F) := by
+    apply maskedRange_exec body (ext 0) live pad a.records (LabelStock.live r (w+1) 1) stepTime ready ?_ ?_ v S start
+      (by simpa [bits,LabelMask.selectors,List.map_map,Function.comp_def] using mask)
+    · intro idx D bits h
+      exact ⟨h.1.mask (fun i => offExt i 0) bits,(Function.update_of_ne (parentExt 0).symm _ _).trans h.2.1,
+        fun i => ⟨(h.2.2 i).1,(Function.update_of_ne (outside _ 0) _ _).trans (h.2.2 i).2⟩⟩
+    intro idx inside u D current
+    obtain ⟨before,parents,free⟩ := current
+    cases bit : LabelStock.live r (w+1) 1 idx with
+    | false =>
+      obtain ⟨symbol,constant⟩ := padding idx inside bit
+      obtain ⟨z,F,l,hz,next,left,frame,hn,run⟩ := before.padding a scanPorts ext offExt idx inside bit inputs
+        (encoded idx inside) symbol constant signed body u D
+      refine ⟨z,F,l,hz,⟨next,(frame _ (parentExt 2).symm (parentExt 5).symm (fun i => parentOff _)).trans parents,?_⟩,
+        frame _ (ext.injective.ne (by decide)) (ext.injective.ne (by decide)) (fun i => offExt i 0),
+        by simpa only [stepTime,bit,Bool.false_eq_true,ite_false] using hn,by simpa only [bit,Bool.false_eq_true,ite_false] using run⟩
+      intro h
+      exact ⟨(congrFun left _).trans (free h).1,(frame _ (outside _ 2) (outside _ 5)
+        (fun i => host.injective.ne (private_ne_rewind (d+1) h i).symm)).trans (free h).2⟩
+    | true =>
+      obtain ⟨det,lift⟩ := liveSpec idx inside bit
+      have addr := physicalLabel_index (m := r) (w := w+1) idx
+      have res := physicalLabel_residue (m := r) (w := w+1) (by omega) idx
+      have step := preparedResidual_exec parent capacity signCapacity H J hm hw hW a.table (physicalLabel r (w+1) idx)
+        (a.matrix idx) det (lift.trans (congrArg a.table res)) _ (addr.symm ▸ inside) inputs a.signed signed
+        (a.matrices (idx+1)) a.pivotTail (fun _ => blank) 0 (by simp) (a.input idx) host body u D
+        count src saved tmp (fun i => outside i 2) a.inputTail parentTape prepOff (parentOff _).symm parents
+        (by obtain h := before.bank inside; exact ⟨h.modulus,h.width,h.one,h.padded,h.clock,h.archive,h.scratch,h.src,h.dst⟩)
+        (by rw [addr]; exact (congrArg D.R streamEq.symm).trans before.pivots)
+      simp only [addr,← res] at step
+      have sep (i k : Fin 6) (h : i ≠ k) := ext.injective.ne h
+      obtain ⟨z,F,l,word,hz,hn,run,effect,out,blanked,archive,next,reset,clean,pivots,_,queue,frame⟩ :=
+        step acc (fun i => outside i 1) (fun i => outside i 4) (fun i => outside i 5) (sep 5 2 (by decide))
+          (by simp [count,acc,tmp,ext.injective.eq_iff,outside,Ne.symm (outside _ _)])
+          ⟨(outside _ 3).symm,(outside _ 3).symm,(outside _ 3).symm⟩
+          (by simp [count,src,saved,tmp,ext.injective.eq_iff,outside,Ne.symm (outside _ _)])
+          before.count before.saved before.tmp (encoded idx inside) before.queue before.free free
+      have same (h : Fin 6) (hs : h ≠ 2) (ha : h ≠ 5) := (frame (ext h) (sep _ _ hs) (sep _ _ ha) (fun i => outside i h)).2
+      have unit : IsUnit (a.matrix idx).det := by rcases det with h | h <;> simp [h]
+      refine ⟨z,F,l,hz,⟨⟨queue,(congrArg List.length (same 1 (by decide) (by decide))).trans before.count,
+        (same 3 (by decide) (by decide)).trans before.saved,(same 4 (by decide) (by decide)).trans before.tmp,
+        ?_,pivots,archive,clean,blanked,fun hj => by
+          obtain h := next _ _ (a.input (idx+1)) (a.matrices_succ hj)
+          exact ⟨h.modulus,h.width,h.one,h.padded,h.clock,h.archive,h.scratch,h.src,h.dst⟩⟩,
+        (frame parentTape (parentExt 2).symm (parentExt 5).symm parentOff).2.trans parents,reset⟩,
+        same 0 (by decide) (by decide),by simp only [stepTime,bit,ite_true]; exact hn,
+        by simp only [ite_true]; exact run⟩
+      rw [outputPrefix_succ,outputRecord_live _ _ _ bit unit word effect,← before.acc]
+      exact out
+  obtain ⟨u,D,l,hu,⟨done,parents,free⟩,empty,time,run⟩ := scanned
+  obtain ⟨z,F,hz,queue,accEnd,maskEnd,pivots,archive,frame,move⟩ := finishScan_exec a scanPorts ext offExt body
+    u D done fresh (by simpa [signedInputs] using signed.length_eq.symm) empty
+  refine ⟨z,F,_,hz.trans (hu.trans hv),queue,accEnd,maskEnd,pivots,archive,
+    (frame _ (parentExt 2).symm (parentExt 5).symm).2.trans (parents.trans (initialReady.2.1.symm.trans (Function.update_of_ne (parentOff _).symm _ _))),?_,
+    Nat.add_le_add (by simpa using ht) (Nat.add_le_add_right time _),Exec.seq gen (Exec.seq run move)⟩
+  intro h
+  have keep := frame _ (outside (privateBank h) 2) (outside (privateBank h) 5)
+  exact ⟨keep.1.trans (free h).1,keep.2.trans (free h).2⟩
+
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback.Record
