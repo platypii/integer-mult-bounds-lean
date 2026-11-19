@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.Routing.BlockExchange
 public import IntegerMultBounds.Networks.Certificates.PR589.Nine.PortFrame
 
 /-! Reconciling the complement of a prefix line with a prefix hyperplane at a port. -/
@@ -8,38 +9,49 @@ namespace IntegerMultBounds.MathlibTM2.M6
 
 open Matrix IntegerMultBounds.Networks.Certificates.PR589.Nine
 
-/-- The cyclic coordinate shift moves the seven trailing positions to the seven leading ones. -/
-def portRotation {R : Type*} [CommRing R] : Matrix (Fin 8) (Fin 8) R :=
-  of fun i j => if j = i + 1 then 1 else 0
+/-- Swapping just the endpoints moves the trailing seven positions to the leading seven. -/
+def portSwap {R : Type*} [CommRing R] : Matrix (Fin 8) (Fin 8) R :=
+  of fun i j => if j = Equiv.swap (0 : Fin 8) 7 i then 1 else 0
 
-theorem portRotation_isUnit {R : Type*} [CommRing R] : IsUnit (portRotation (R := R)) := by
-  have inverse : (portRotation : Matrix (Fin 8) (Fin 8) R) * portRotationᵀ = 1 := by
+theorem portSwap_isUnit {R : Type*} [CommRing R] : IsUnit (portSwap (R := R)) := by
+  have inverse : (portSwap : Matrix (Fin 8) (Fin 8) R) * portSwapᵀ = 1 := by
     ext i j
-    simp [Matrix.mul_apply, portRotation, Matrix.one_apply, eq_comm]
+    simp [Matrix.mul_apply, portSwap, Matrix.one_apply, eq_comm]
   exact (Matrix.isUnit_iff_isUnit_det _).mpr (Matrix.isUnit_det_of_right_inverse inverse)
 
-private theorem rotate_complement {R : Type*} [CommRing R] :
+/-- In a packed address this port permutation is one exchange of two atoms of
+width `w`, at any base offset. Every bit within an atom keeps its offset. -/
+theorem portSwap_blockExchange (base w : ℕ) (k : Fin 8) (r : ℕ) (hr : r < w) :
+    Routing.blockExchange base (base + 7 * w) w (base + k.val * w + r) =
+      base + (Equiv.swap (0 : Fin 8) 7 k).val * w + r := by
+  fin_cases k <;> simp [Routing.blockExchange, Equiv.swap_apply_def] <;> (try split_ifs) <;> omega
+
+theorem portSwap_mulVec {R : Type*} [CommRing R] (x : Fin 8 → R) (i : Fin 8) :
+    (portSwap *ᵥ x) i = x (Equiv.swap 0 7 i) := by
+  simp [portSwap, mulVec, dotProduct]
+
+private theorem swap_complement {R : Type*} [CommRing R] :
     let L : Matrix (Fin 8) (Fin 8) R := diagonal fun i => if i.val < 1 then 1 else 0
     let H : Matrix (Fin 8) (Fin 8) R := diagonal fun i => if i.val < 7 then 1 else 0
-    portRotation * (1 - L) = H * portRotation := by
+    portSwap * (1 - L) = H * portSwap := by
   intro L H
   ext i j
-  simp only [L, H, mul_sub, mul_one, Matrix.sub_apply, mul_diagonal, diagonal_mul, portRotation, of_apply]
-  have h : ∀ k : Fin 8, (k + 1).val < 1 ↔ ¬ k.val < 7 := by decide
-  by_cases eq : j = i + 1
+  simp only [L, H, mul_sub, mul_one, Matrix.sub_apply, mul_diagonal, diagonal_mul, portSwap, of_apply]
+  have h : ∀ k : Fin 8, (Equiv.swap (0 : Fin 8) 7 k).val < 1 ↔ ¬ k.val < 7 := by decide
+  by_cases eq : j = Equiv.swap (0 : Fin 8) 7 i
   · subst j
     by_cases hi : i.val < 7 <;> simp [h, hi]
   · simp [eq]
 
 /-- For any modular line and hyperplane with the certified prefix pivots, triangular
-basis changes on either side of the same cyclic shift reconcile the two port frames. -/
+basis changes on either side of the same endpoint swap reconcile the two port frames. -/
 theorem port_complement_route {R : Type*} [CommRing R] (L H : Matrix (Fin 8) (Fin 8) R)
     (ltL : L.IsLowerTriangular) (ltH : H.IsLowerTriangular)
     (idemL : L * L = L) (idemH : H * H = H)
     (line : ∀ i : Fin 8, L i i = if i.val < 1 then 1 else 0)
     (hyper : ∀ i : Fin 8, H i i = if i.val < 7 then 1 else 0) :
     ∃ A B : Matrix (Fin 8) (Fin 8) R, A.IsLowerTriangular ∧ B.IsLowerTriangular ∧
-      IsUnit A ∧ IsUnit B ∧ (B * portRotation * A) * (1 - L) = H * (B * portRotation * A) := by
+      IsUnit A ∧ IsUnit B ∧ (B * portSwap * A) * (1 - L) = H * (B * portSwap * A) := by
   obtain ⟨C, tri, _, unit, lc⟩ := triangular_projector_basis L ltL idemL
     (fun i => by rw [line]; split <;> simp)
   obtain ⟨B, tb, _, ub, hb⟩ := triangular_projector_basis H ltH idemH
@@ -55,10 +67,10 @@ theorem port_complement_route {R : Type*} [CommRing R] (L H : Matrix (Fin 8) (Fi
   refine ⟨C⁻¹, B, blockTriangular_inv_of_blockTriangular tri, tb,
     Matrix.isUnit_nonsing_inv_iff.mpr ((Matrix.isUnit_iff_isUnit_det _).mpr unit),
     (Matrix.isUnit_iff_isUnit_det _).mpr ub, ?_⟩
-  have complement := rotate_complement (R := R)
+  have complement := swap_complement (R := R)
   simp only [mul_sub, mul_one] at complement
   simp only [mul_sub, mul_one, Matrix.mul_assoc]
-  rw [← il, ← Matrix.mul_assoc portRotation, ← mul_sub, ← sub_mul, complement]
+  rw [← il, ← Matrix.mul_assoc portSwap, ← mul_sub, ← sub_mul, complement]
   rw [← Matrix.mul_assoc H B, ← hb]
   simp only [Matrix.mul_assoc]
 

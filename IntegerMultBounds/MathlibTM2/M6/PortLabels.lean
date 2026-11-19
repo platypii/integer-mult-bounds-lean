@@ -1,10 +1,10 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.M6.PortRotation
+public import IntegerMultBounds.MathlibTM2.M6.PortSwap
 public import IntegerMultBounds.MathlibTM2.Cover.Weighted
 public import IntegerMultBounds.MathlibTM2.M6.PrefixLabel
 
-/-! The port rotation reconciles the literal source and target boundary labels. -/
+/-! The port swap reconciles the literal source and target boundary labels. -/
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.M6
 
@@ -26,15 +26,15 @@ private theorem port_dimensions : ∀ t : Fin 111,
     Geometry.Dimensions.value (portLineLabel t).val = 1 ∧
     Geometry.Dimensions.value (portHyperplaneLabel t).val = 7 := by decide +kernel
 
-/-- Every port of the literal word uses the same cyclic permutation. Only the
+/-- Every port of the literal word uses the same endpoint swap. Only the
 two triangular factors depend on the port and the coefficient ring. -/
 theorem port_label_routes {R : Type*} [CommRing R] (P : Fin 636 → Matrix (Fin 8) (Fin 8) R)
     (lower : ∀ l i j, i < j → P l i j = 0)
     (diag : ∀ l (i : Fin 8), P l i i = if i.val < Geometry.Dimensions.value l.val then 1 else 0)
     (idem : ∀ l, P l * P l = P l) (t : Fin 111) :
     ∃ A B : Matrix (Fin 8) (Fin 8) R, A.IsLowerTriangular ∧ B.IsLowerTriangular ∧
-      IsUnit A ∧ IsUnit B ∧ (B * portRotation * A) * (1 - P (portLineLabel t)) =
-        P (portHyperplaneLabel t) * (B * portRotation * A) := by
+      IsUnit A ∧ IsUnit B ∧ (B * portSwap * A) * (1 - P (portLineLabel t)) =
+        P (portHyperplaneLabel t) * (B * portSwap * A) := by
   apply port_complement_route (P (portLineLabel t)) (P (portHyperplaneLabel t)) (fun {_ _} h => lower _ _ _ h)
     (fun {_ _} h => lower _ _ _ h) (idem _) (idem _)
   · intro i
@@ -79,7 +79,7 @@ theorem port_exchange_route {R : Type*} [CommRing R] (P : Fin 636 → Matrix (Fi
     (idem : ∀ l, P l * P l = P l) (t : Fin 111) :
     ∃ A B : Matrix (Fin 8) (Fin 8) R, A.IsLowerTriangular ∧ B.IsLowerTriangular ∧
       IsUnit A ∧ IsUnit B ∧
-      let G := B * portRotation * A
+      let G := B * portSwap * A
       ∀ s, transform G G (exchange (P (portFullLabel t))
           (exchange (P (portLineLabel t)) (transform G⁻¹ G⁻¹ s))) =
         exchange (P (portHyperplaneLabel t)) (exchange (P (portEmptyLabel t)) s) := by
@@ -87,7 +87,7 @@ theorem port_exchange_route {R : Type*} [CommRing R] (P : Fin 636 → Matrix (Fi
   obtain ⟨full, empty⟩ := port_full_empty P lower diag idem t
   refine ⟨A, B, ta, tb, ua, ub, ?_⟩
   intro G s
-  have unit : IsUnit G := (ub.mul portRotation_isUnit).mul ua
+  have unit : IsUnit G := (ub.mul portSwap_isUnit).mul ua
   have inv := G.mul_nonsing_inv ((Matrix.isUnit_iff_isUnit_det G).mp unit)
   change G * (1 - P (portLineLabel t)) = P (portHyperplaneLabel t) * G at route
   rw [full, empty]
