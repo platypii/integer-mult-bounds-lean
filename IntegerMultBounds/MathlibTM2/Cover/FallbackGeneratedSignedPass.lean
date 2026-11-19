@@ -48,7 +48,7 @@ def SignedPassBound (regs : Fin 6 ↪ Fin T) (anchor : Fin (size d+T) ↪ Fin K)
     (initial G : Stacks K prime) : Prop :=
     v.beforeH = B*prime^(r*((w+1)*r)) →
       a.records = LabelMask.records v → 0 < W →
-      let D := embStk anchor G
+      let D := embStk anchor initial
       Ready d 1 (w+1) W D → ready (prime^w) D.R rs → D.R saved = [] →
       (D.R parents).length = v.beforeRows*v.rows*B →
       (D.R (port d regs 0)).length = ActualAffineScaling.modulus (w+1)^((d+1)*1)*W →
@@ -137,6 +137,7 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
       fin_cases l <;> simp [coefficientSlots, Matrix.cons_val] at eq <;> (try split_ifs at *) <;> omega
     ∀ (maskLayout : (parentsC :: savedC :: (slots cs ++ [mask])).Nodup),
     (∀ k ∈ parentsC :: savedC :: slots cs, k ≠ bank 2 ∧ k ≠ archive) →
+    (∀ i, anchor i ≠ bank 2) →
     ∃ writeMask : Pr P K Q prime U, ∀ (ancestor : ℕ → List (Fin (prime+4))) (tail : List (Fin (prime+4)))
       (v : Descriptor) (B : ℕ) (base : ScanData r d w W) (payload : ℕ → Record.Array d 1 (w+1) W)
       (u : HS K Q prime U) (input : Stacks K prime),
@@ -168,7 +169,7 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     parentsC savedC maskRegs pivotRegs separate
   refine ⟨pass,?_⟩
   intro placement size archiveSlot registers host control mask seed tmp bank recip counters clock count pool coeff archive archiveOff
-    coeffOff maskLayout retained
+    coeffOff maskLayout retained anchorDirectory
   obtain ⟨writeMask,write⟩ := record_writes (body := body) r cs sizeC mask parentsC savedC maskLayout
   refine ⟨writeMask,?_⟩
   intro ancestor tail v B base payload u input counterReady savedBlank parentCount maskBlank bits initial padWord S queueInputs scan active livePrice generate setupCost a G shape records hW D
@@ -223,13 +224,22 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
   have padLen : padWord.length = (d+1)*(d+1)*base.H := length_matrixWords ..
   have installed : G.R archive = a.matrices 0 := Function.update_self ..
   have prep : Function.update G.R archive (a.matrices 0) = G.R := by rw [← installed,Function.update_eq_self]
-  have kept (k : Fin K) (hk : k ∈ parentsC :: savedC :: slots cs) : G.R k = input.R k := by
-    obtain ⟨dirOff,archiveOff⟩ := retained k hk
+  have outside (k : Fin K) (dirOff : k ≠ bank 2) (archiveOff : k ≠ archive) : G.R k = input.R k := by
     change Function.update (Function.update (Function.update input.R mask [])
       (scan 2) tail) archive (a.matrices 0) k = _
     change k ≠ scan 2 at dirOff
     rw [Function.update_of_ne archiveOff,Function.update_of_ne dirOff,
       ← maskBlank,Function.update_eq_self]
+  have kept (k : Fin K) (hk : k ∈ parentsC :: savedC :: slots cs) : G.R k = input.R k :=
+    outside k (retained k hk).1 (retained k hk).2
+  have anchorState : embStk anchor G = D := by
+    have tapes : G.R ∘ anchor = input.R ∘ anchor := funext fun i =>
+      outside _ (anchorDirectory i) (sharedArchive ▸ banks i _)
+    unfold embStk
+    dsimp only [D,embStk]
+    rw [tapes]
+    rfl
+  rw [← anchorState] at neutral radix free count width clean
   have radixC : ready (prime^w) G.R cs := by
     intro pair member
     have left : pair.1 ∈ slots cs := List.mem_flatMap.mpr ⟨pair,member,by simp⟩
