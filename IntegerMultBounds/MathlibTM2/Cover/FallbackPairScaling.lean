@@ -59,6 +59,30 @@ theorem pairScalingTime_le_setup_add_volume (U : Type) (i k t : Fin d) (w : ℕ)
   obtain ⟨swaps, shears, bound⟩ := pairScalingTime_le_setup_add_width_volume U i k t
   exact ⟨_, bound w⟩
 
+/-- At fixed field width the counter charge is the same at every payload and atom width. -/
+theorem pairScalingTime_eq_setup_add_counter (U : Type) (i k t : Fin d) (H : ℕ) :
+    ∃ rate : ℕ, ∀ w W J, pairScalingTime U i k t w W H J =
+      pairScalingTime U i k t w W H 0 + rate * J := by
+  let shear := fun neg one w W J => cleanPairShearTime (P := Empty) (U := U) (A := prime)
+    Empty.elim (Function.Embedding.refl _) i k t prime w W H J false neg one
+  let swap := fun w W J => completeSwapTime (P := Empty) (U := U) Empty.elim d k t w W H J
+  have shearRate (neg one : Bool) : ∃ r : ℕ, ∀ w W J, shear neg one w W J =
+      shear neg one w W 0 + r * J :=
+    ⟨_, fun w W J => cleanPairShearTime_eq_setup_add_counter _ _ i k t prime w W H J false neg one⟩
+  have swapRate : ∃ s : ℕ, ∀ w W J, swap w W J = swap w W 0 + s * J :=
+    ⟨_, fun w W J => completeSwapTime_eq_setup_add_counter _ d k t w W H J⟩
+  choose r hr using shearRate
+  obtain ⟨s, hs⟩ := swapRate
+  refine ⟨6*s + 2*r false true + r true true + 2*r false false + r true false, ?_⟩
+  intro w W J
+  unfold pairScalingTime
+  change 2*(1+swap w W J) + (2*(1+shear false true w W J) + (1+shear true true w W J) +
+    2*(1+swap w W J)) + (2*(1+shear false false w W J) + (1+shear true false w W J) +
+    2*(1+swap w W J)) = _
+  rw [hs w W J, hr false true w W J, hr true true w W J, hr false false w W J, hr true false w W J]
+  dsimp only [shear, swap]
+  ring
+
 theorem pairScaling_exec (i k t : Fin d) (hk : k < t) (a : Fin d → ZMod M) (unit : IsUnit (a i))
     (H J : ℕ) (hm : M < 2^H) (hw : W < 2^J) (hW : 0 < W)
     (body : P → Pr P (N+1) columnCapacity prime U) (v : HS (N+1) columnCapacity prime U) (S : Stacks (N+1) prime)
