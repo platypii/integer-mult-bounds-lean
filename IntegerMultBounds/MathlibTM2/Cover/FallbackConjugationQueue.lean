@@ -21,29 +21,48 @@ noncomputable def conjugationDepth (m : ℕ) : ℕ :=
     (Finset.univ.sup fun ij : Fin m × Fin m =>
       (numerator (matrixInput false) (matrixInput true) ij.1 ij.2).depth)
 
+/-- The entry reader shares the directory's constants and indexes one tape per
+row weight and column weight. All entries append to the same archive. -/
+def coefficientSlots {m extra : ℕ} (i j : Fin m) :
+    Fin 4 ↪ Fin (36+2*m+1+extra) :=
+  let slots : Fin 4 → Fin (36+2*m+1+extra) := ![
+    ⟨if i = j then 17 else 9, by split <;> omega⟩,
+    ⟨36+i.val, by omega⟩, ⟨36+m+j.val, by omega⟩, ⟨36+2*m, by omega⟩]
+  ⟨slots, by
+    intro x y eq
+    have h := congrArg Fin.val eq
+    fin_cases x <;> fin_cases y <;> simp_all [slots, Matrix.cons_val] <;> (try split_ifs at *) <;> omega⟩
+
 theorem physicalResidualQueue_exec (body : P → Pr P T Q prime U)
     (w records : ℕ)
     (projector : Matrix (Fin m) (Fin m) (ZMod (prime^(w+1))))
-    (H : ℕ) (hm : prime^(w+1) < 2^H) (host : Fin (36+(conjugationDepth m+1)*13) ↪ Fin T) :
+    (H : ℕ) (hm : prime^(w+1) < 2^H) (host : Fin (36+2*m+1+(conjugationDepth m+1)*13) ↪ Fin T) :
     let bank := QueueLayout.block (n := 18) 0 (by omega) host
     let r := QueueLayout.block (n := 16) 18 (by omega) host
     let counters := QueueLayout.block (n := 2) 34 (by omega) host
     let clock := counters 0
     let count := counters 1
-    let pool := QueueLayout.block (n := (conjugationDepth m+1)*13) 36 (by omega) host
-    ∀ (archive : Fin T) (archiveOff : ∀ i, bank (QueueLayout.directoryWork i) ≠ archive)
-    (ancestor : ℕ → List (Fin (prime+4))) (tail padWord : List (Fin (prime+4)))
+    let pool := QueueLayout.block (n := (conjugationDepth m+1)*13) (36+2*m+1) (by omega) host
+    let coeff := fun i j : Fin m => (coefficientSlots i j).trans host
+    let archive := host ⟨36+2*m, by omega⟩
+    have archiveOff : ∀ i, bank (QueueLayout.directoryWork i) ≠ archive := fun i h => by
+      have eq := congrArg Fin.val (host.injective h)
+      change 0 + i.val = 36+2*m at eq
+      omega
+    have coeffOff : ∀ i j k l, r k ≠ coeff i j l := fun i j k l h => by
+      have eq := congrArg Fin.val (host.injective h)
+      change 18+k.val = (coefficientSlots (extra := (conjugationDepth m+1)*13) i j l).val at eq
+      fin_cases l <;> simp [coefficientSlots, Matrix.cons_val] at eq <;> (try split_ifs at *) <;> omega
+    ∀ (ancestor : ℕ → List (Fin (prime+4))) (tail padWord : List (Fin (prime+4)))
     (mask seed tmp : Fin T)
     (maskOff : ∀ k, mask ≠ QueueLayout.scanPorts (QueueLayout.directoryWork.trans bank) archive archiveOff k)
-    (separateOut : r 13 ≠ archive) (padPorts : [seed,archive,bank 4,tmp].Nodup)
-    {d : ℕ} (e : (Fin m ⊕ Fin m) ≃ Fin d) (coeff : Fin m → Fin m → Fin 4 ↪ Fin T)
-    (coeffOff : ∀ i j k l, r k ≠ coeff i j l) (outputPort : ∀ i j, coeff i j 3 = archive)
+    (padPorts : [seed,archive,bank 4,tmp].Nodup)
+    {d : ℕ} (e : (Fin m ⊕ Fin m) ≃ Fin d)
     (α α' : Fin m → ZMod (prime^(w+1)))
     (workspace : Regs T prime → Prop)
     (stable : ∀ R M, workspace R → (∀ k, k ≠ mask → k ≠ bank 2 → k ≠ bank 13 → M k = R k) → workspace M)
     (padReady : ∀ R, workspace R → R seed = padWord ∧ R (bank 4) = [] ∧ R tmp = [])
     (weightBank : ∀ R, workspace R → R (r 13) = [] ∧ ∀ i j, let s := coeff i j
-      R (s 0) = binSyms H ((1 : Matrix (Fin m) (Fin m) (ZMod (prime^(w+1)))) i j).val ∧
       R (s 1) = binSyms H (α i).val ∧ R (s 2) = binSyms H (α' j).val)
     (ready : ∀ j < records, LabelStock.live m (w+1) 1 j = true → ∀ S, workspace S →
       (S (bank 12)).length = (ancestor j).length ∧ (S (bank 1)).length = w+1 ∧
@@ -87,12 +106,12 @@ theorem physicalResidualQueue_exec (body : P → Pr P T Q prime U)
         (4*(ancestor j).length+4+(m*m*(4*(w+1)+4)+1))+4).sum+2+(2*words.length+2) ∧
       Exec body (.seq (maskedScan mask (branch live) (branch (bcopy seed (scan 4) (scan 3) tmp)))
         (moveR (scan 5) (scan 4) id)) (mk v S) n (mk z F) := by
-  intro bank r counters clock count pool archive archiveOff ancestor tail padWord mask seed tmp maskOff separateOut
-    padPorts d e coeff coeffOff outputPort α α' workspace stable padReady weightBank ready v S start
+  intro bank r counters clock count pool coeff archive archiveOff coeffOff ancestor tail padWord mask seed tmp maskOff
+    padPorts d e α α' workspace stable padReady weightBank ready v S start
     widths width blank empty directory output bits
   have br (i j) : bank i ≠ r j := QueueLayout.block_ne _ _ host (by decide) i j
-  have bp (i j) : bank i ≠ pool j := QueueLayout.block_ne _ _ host (by decide) i j
-  have rp (i j) : r i ≠ pool j := QueueLayout.block_ne _ _ host (by decide) i j
+  have bp (i j) : bank i ≠ pool j := QueueLayout.block_ne _ _ host (by omega) i j
+  have rp (i j) : r i ≠ pool j := QueueLayout.block_ne _ _ host (by omega) i j
   have rc (i j) : r i ≠ counters j := QueueLayout.block_ne _ _ host (by decide) i j
   have copyPorts : [clock,count,r 2,r 3].Nodup := by
     simp [clock,count,counters.injective.eq_iff,(rc _ _).symm,r.injective.eq_iff]
@@ -133,7 +152,12 @@ theorem physicalResidualQueue_exec (body : P → Pr P T Q prime U)
     (bank.injective.ne (by decide)) (fun i => bank.injective.ne (by revert i; decide))
     (fun i => bank.injective.ne (by revert i; decide)) (fun i => bank.injective.ne (by revert i; decide)) (ancestor j) rest (fun a i j _ => br _ _)
     fits detFits
-  have finish := residualWord_writes body weights (r 13) (scan 4) separateOut (fun _ _ => rfl) outputPort e
+  have separateOut : r 13 ≠ archive := by
+    intro h
+    have eq := congrArg Fin.val (host.injective h)
+    change 18+13 = 36+2*m at eq
+    omega
+  have finish := residualWord_writes body weights (r 13) (scan 4) separateOut (fun _ _ => rfl) (fun _ _ => rfl) e
     projector (physicalLabel m (w+1) j) α α' H hm _ _ _ run u B
     ⟨⟨⟨by simpa [scan,QueueLayout.scanPorts,QueueLayout.readPorts,LabelDirectory.entry,List.append_assoc] using headEq,
       prefixLen,digitWidth,fun i hi => scratch _ ((by decide : ∀ i : Fin 7, i = 0 ∨ 3 ≤ i →
@@ -146,8 +170,14 @@ theorem physicalResidualQueue_exec (body : P → Pr P T Q prime U)
       leaves,(keepRec 4).trans modulus,(keepRec 12).trans (free 12 (by decide) (by decide)),
       fun k hk => (keepRec _).trans (free _ (scratchPort k hk).1 (scratchPort k hk).2)⟩,(weightBank B.R ws).1,by
         intro i j
-        obtain ⟨identity,row,col⟩ := (weightBank B.R ws).2 i j
-        refine ⟨identity,?_,row,col,?_⟩
+        obtain ⟨row,col⟩ := (weightBank B.R ws).2 i j
+        refine ⟨?_,?_,row,col,?_⟩
+        · by_cases h : i = j
+          · subst j
+            simpa [weights,QueueLayout.residualPorts,QueueLayout.residualSlots,coeff,
+              coefficientSlots,Matrix.cons_val,Matrix.one_apply,bank,QueueLayout.block] using inputOne
+          · simpa [weights,QueueLayout.residualPorts,QueueLayout.residualSlots,coeff,
+              coefficientSlots,Matrix.cons_val,Matrix.one_apply,h,bank,QueueLayout.block] using zeroWord
         · change B.R (r 4) = _
           exact modulus
         · intro k hk
