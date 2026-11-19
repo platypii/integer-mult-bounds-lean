@@ -150,6 +150,65 @@ theorem column_field_input {T w : ℕ} (bank : Fin 35 ↪ Fin T) (i : Fin (d+1))
       embStk,payload] using tape
   · simpa [AtomBank.outer,h,embStk] using frame k h z
 
+theorem column_field_neg_exec {P U : Type} {T Q w : ℕ} (bank : Fin 35 ↪ Fin T) (i : Fin (d+1))
+    (ports : Fin (22+fieldSignSlots i) ↪ Fin T) (payload : ports 17 = bank 24)
+    (H J : ℕ) (record : List (Fin (prime+4))) (dest : ℤ → Fin 4) (q : ℤ)
+    (original : Fin ((prime^(w+1))^(d+1)*W) → ZMod 2)
+    (addr : (Fin (d+1) → ZMod (prime^(w+1))) → Fin (d+1) → ZMod (prime^(w+1))) (S : Stacks T prime)
+    (capacity : (fieldSignProgram i true).1 ≤ Q) (hW : 0 < W)
+    (body : P → Pr P T Q prime U) (v : HS T Q prime U)
+    (apart : ∀ h : Fin 35, h ≠ 24 → ∀ k, ports k ≠ bank h)
+    (ready : ColumnRecordReady bank H J record SparseRoleCircuit.encode (fun _ => blank) dest 0 q original addr S)
+    (frame : let base := AtomBank.outer (fieldSignSlots i) (AtomSegment.neutral (w+1) W) (fun _ => blank) 1
+      ∀ k, k.val ≠ 17 → ∀ z, base.tape k z = readAt blank (S.L (ports k)) (S.R (ports k)) (z-base.head k)) :
+    ∃ z F l, z.user = v.user ∧
+      l ≤ 1 + (AtomSegment.chainConst (fieldSignOps i true) * ((prime^(w+1))^(d+1)*W) * (22+fieldSignSlots i+5)+6) ∧
+      Exec body (placedFieldNeg i ports capacity) (mk v S) l (mk z F) ∧
+      ColumnRecordReady bank H J record SparseRoleCircuit.encode (fun _ => blank) dest 0 q original
+        (fun x => Function.update (addr x) i (-addr x i)) F ∧
+      (let base := AtomBank.outer (fieldSignSlots i) (AtomSegment.neutral (w+1) W) (fun _ => blank) 1
+       ∀ k, k.val ≠ 17 → ∀ z, base.tape k z = readAt blank (F.L (ports k)) (F.R (ports k)) (z-base.head k)) ∧
+      ∀ h, (∀ k, ports k ≠ h) → F.L h = S.L h ∧ F.R h = S.R h := by
+  obtain ⟨word,layout,atAddr⟩ := ready
+  obtain ⟨a,rep,input⟩ := column_field_input bank i ports payload H J record dest q word id S
+    ⟨word,layout,fun _ _ => rfl⟩ frame
+  obtain ⟨out,z,F,l,hz,hl,run,after,off,act⟩ := correctFieldPayload_exec i ports capacity
+    (Nat.zero_lt_succ w) hW a body v S rep word id input
+  let flip := fun x : Fin (d+1) → ZMod (prime^(w+1)) => Function.update x i (-x i)
+  have twice (x) : flip (flip x) = x := by funext k; by_cases e : k = i <;> simp [flip,e]
+  let next := fun h : Fin ((prime^(w+1))^(d+1)*W) =>
+    let p := finProdFinEquiv.symm h
+    word (index (flip (coordinates p.1)) p.2)
+  have eval x j : next (index x j) = word (index (flip x) j) := by simp only [next,index,Equiv.symm_apply_apply,coordinates_rank]
+  have encoded : scalarArray out = SparseRoleCircuit.encode ∘ next := by
+    funext h
+    obtain ⟨⟨r,j⟩,rfl⟩ := finProdFinEquiv.surjective h
+    rw [show finProdFinEquiv (r,j) = index (coordinates r : Fin (d+1) → ZMod (prime^(w+1))) j by unfold index; rw [@FlatCoordinateLayout.rank_coordinates (d+1) (prime^(w+1)) _ r]; rfl]
+    simp only [Function.comp_apply,eval]
+    have h := act (flip (coordinates r)) j
+    change scalarArray out (index (flip (flip (coordinates r))) j) = _ at h
+    rwa [twice] at h
+  have words : List.ofFn out = List.ofFn (SparseRoleCircuit.encode ∘ next) := by
+    rw [← encoded]; exact (ofFn_cast _ out).symm
+  have keep (h : Fin 35) (hh : h ≠ 24) := off _ (apart h hh)
+  refine ⟨z,F,l,hz,hl,run,⟨next,?_,?_⟩,?_,off⟩
+  · refine ⟨(keep 2 (by decide)).2.trans layout.modulus,(keep 27 (by decide)).2.trans layout.width,
+      (keep 28 (by decide)).2.trans layout.one,(keep 32 (by decide)).2.trans layout.padded,
+      (congrArg List.length (keep 33 (by decide)).2).trans layout.clock,(keep 34 (by decide)).2.trans layout.archive,
+      ?_,?_,?_⟩
+    · intro k hk
+      have eq := keep k (fun e => (by decide : (24 : Fin 35) ∉ shearWork) (e ▸ hk))
+      rw [eq.1,eq.2]; exact layout.scratch k hk
+    · intro pos
+      have h := after (17 : Fin (22+fieldSignSlots i)) pos
+      change AtomBank.arrTape out pos = readAt blank (F.L (ports 17)) (F.R (ports 17)) (pos-0) at h
+      simpa only [AtomBank.arrTape,words,payload] using h.symm
+    · intro pos; rw [(keep 25 (by decide)).1,(keep 25 (by decide)).2]; exact layout.dst pos
+  · intro x j
+    exact (eval (flip (addr x)) j).trans (by rw [twice]; exact atAddr x j)
+  · intro base k hk pos
+    simpa [base,AtomBank.outer,hk,embStk] using after k pos
+
 /-- Load one live signed record, preserving the remaining queue and identifying the
 sign and pivots of the corresponding residual matrix. -/
 theorem loadAnchorRecord_exec {r w records T Q : ℕ} {P U : Type}
