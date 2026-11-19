@@ -22,6 +22,38 @@ noncomputable def signedResidualTime (U : Type) (rows : Fin (d+1) → Fin (d+1))
   let forwardCost := (d+1)*(2*(d+1)+(4*w+4+columnTime (d+1) prime w H))+1
   forwardCost + ((1+(pairCost+1))+((d+1)*stepCost+1))
 
+/-- Apart from the largest pivot-column cost, the payload charge of the
+whole residual schedule has one rate shared by every pivot itinerary. -/
+theorem signedResidualTime_le_setup_add_columns (U : Type) (d w : ℕ) :
+    ∃ rate : ℕ, ∀ (rows : Fin (d+1) → Fin (d+1)) W H J,
+      let columns := fun x => Finset.univ.sup (fun k => columnProgramTime U k (rows k) w x H J)
+      signedResidualTime U rows w W H J ≤ signedResidualTime U rows w 0 H J +
+        rate * ((prime^(w+1))^(d+1) * W) + (d+1) * (columns W - columns 0) := by
+  choose r hr using fun i : Fin d => pairScalingTime_le_setup_add_volume U i.succ 0 i.succ w
+  refine ⟨((List.finRange d).map r).sum, ?_⟩
+  intro rows W H J columns
+  let V := (prime^(w+1))^(d+1) * W
+  have pairs (xs : List (Fin d)) :
+      (xs.map fun i => pairScalingTime U i.succ 0 i.succ w W H J).sum ≤
+        (xs.map fun i => pairScalingTime U i.succ 0 i.succ w 0 H J).sum + (xs.map r).sum * V := by
+    induction xs with
+    | nil => simp
+    | cons i xs ih =>
+      simp only [List.map_cons, List.sum_cons, Nat.add_mul]
+      have hi := hr i W H J
+      change _ ≤ _ + r i * V at hi
+      omega
+  have col : columns W ≤ columns 0 + (columns W - columns 0) := by omega
+  have steps := Nat.mul_le_mul_left (d+1) col
+  rw [Nat.mul_add] at steps
+  unfold signedResidualTime
+  dsimp only
+  have hp := pairs (List.finRange d)
+  dsimp [V] at hp
+  dsimp [columns] at steps ⊢
+  simp only [Nat.mul_add] at *
+  omega
+
 theorem signedResidual_exec (rows : Fin (d+1) → Fin (d+1)) (m : Matrix (Fin (d+1)) (Fin (d+1)) (ZMod M))
     (valid : Itinerary.Valid rows m (d+1)) (s : (ZMod M)ˣ)
     (sign : (Itinerary.run rows m (d+1)).det = (s : ZMod M)) (H J : ℕ) (hm : M < 2^H) (hw : W < 2^J) (hW : 0 < W)
