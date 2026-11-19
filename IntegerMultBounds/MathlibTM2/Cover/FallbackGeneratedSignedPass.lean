@@ -284,6 +284,35 @@ theorem queueArchive_binaryWidth (v : Descriptor) (positive : v.Positive)
     exact (Nat.pow_le_pow_right Networks.Shared50ModularControl.prime_prime.pos fits).trans_lt
       Nat.lt_two_pow_self
 
+omit [M8.Machine.Net] in
+/-- The one-time padding setup is absorbed by a single address coordinate. -/
+theorem paddingSetupCost_volume_le (v : Descriptor) (positive : v.Positive) (n atom : ℕ)
+    (fits : atom ≤ v.width) :
+    prime^v.width * paddingSetupCost n (Nat.size (prime^atom)) ≤
+      paddingSetupCost n 1 * volume prime v := by
+  let q := prime^v.width
+  have power : 1 ≤ q := pow_pos Networks.Shared50ModularControl.prime_prime.pos _
+  have bits : Nat.size (prime^atom) ≤ q := Nat.size_le.mpr
+    ((Nat.pow_le_pow_right Networks.Shared50ModularControl.prime_prime.pos fits).trans_lt
+      Nat.lt_two_pow_self)
+  have setup : paddingSetupCost n (Nat.size (prime^atom)) ≤ paddingSetupCost n 1 * q := by
+    unfold paddingSetupCost
+    grw [bits]
+    have hn := Nat.mul_le_mul_left n power
+    have hnn := Nat.mul_le_mul_left (n*n) power
+    ring_nf at hn hnn ⊢
+    omega
+  have room : q*q ≤ volume prime v := by
+    obtain ⟨br, rows, bh, middle, suffix⟩ := positive
+    unfold volume
+    calc
+      q*q = 1*1*1*q*1*q*1 := by ring
+      _ ≤ _ := by gcongr <;> omega
+  calc
+    _ ≤ q*(paddingSetupCost n 1*q) := Nat.mul_le_mul_left q setup
+    _ = paddingSetupCost n 1*(q*q) := by ring
+    _ ≤ _ := Nat.mul_le_mul_left _ room
+
 /-- The live part of the generated pass pays the density factor on both swaps
 and shears, and the quotient-width factor on swaps. -/
 theorem signedPassResidualCharge_le (L r swaps shears live V : ℕ) (rankPos : 0 < r)
