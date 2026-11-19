@@ -12,6 +12,15 @@ open Geometry.Moves
 open IntegerMultBounds.Networks.Shared50ModularControl
 open M8.Exchange (exchange)
 
+/-- Address changes on the retained sources when forming the scatter temporaries. -/
+def retainedCopyEdges : List (ℕ × ℕ) :=
+  (Frames.retained.map Frames.beforeScatter).map fun label => (label, 0)
+
+private theorem retainedCopy_checked : (∀ p ∈ retainedCopyEdges, CheckedPair p) ∧
+    retainedCopyEdges.map value = List.replicate 9 7 := by
+  rw [retainedCopyEdges, Frames.retained_frames]
+  decide +kernel
+
 /-- Choose the modular program once per certified pair. Looking up the programs in
 execution order reproduces the full phase profile and the zero final-alignment bill. -/
 theorem modular_move_profile (w : ℕ) :
@@ -22,7 +31,12 @@ theorem modular_move_profile (w : ℕ) :
         ∀ s, AffineFieldProgram.run (word p) s =
           exchange (P ⟨p.2, h.2.1⟩) (exchange (P ⟨p.1, h.1⟩) s)) ∧
       (phaseEdges.map word).map AffineFieldProgram.interchanges = phaseValues ∧
-      (Frames.finalEdges.map word).map AffineFieldProgram.interchanges = List.replicate 661 0 := by
+      (Frames.finalEdges.map word).map AffineFieldProgram.interchanges = List.replicate 661 0 ∧
+      let phase := (phaseEdges.map word).map AffineFieldProgram.interchanges
+      let copies := (retainedCopyEdges.map word).map AffineFieldProgram.interchanges
+      copies = List.replicate 9 7 ∧
+        (List.range 9).map (((phase.filter (· ≠ 0)) ++ copies).count) =
+          [0, 1323, 1342, 79, 44, 102, 11, 19, 0] := by
   intro R
   classical
   obtain ⟨P, _, programs⟩ := checked_move_programs w
@@ -40,7 +54,12 @@ theorem modular_move_profile (w : ℕ) :
         edges.map (fun p => Geometry.moveRank p.1 p.2) := by
     rw [List.map_map]
     exact List.map_congr_left fun p hp => (spec p (checked p hp)).2.1
-  exact ⟨P, word, fun p h => ⟨(spec p h).1, (spec p h).2.2⟩,
-    (counts _ phase_checked).trans phase_ranks, (counts _ final_checked.1).trans final_ranks⟩
+  have phase := (counts _ phase_checked).trans phase_ranks
+  have copies := (counts _ retainedCopy_checked.1).trans
+    ((profile _ retainedCopy_checked.1).trans retainedCopy_checked.2)
+  refine ⟨P, word, fun p h => ⟨(spec p h).1, (spec p h).2.2⟩, phase,
+    (counts _ final_checked.1).trans final_ranks, copies, ?_⟩
+  rw [phase, copies, ← phase_ranks, ← copyRanks_eq]
+  exact localPaid_histogram
 
 end IntegerMultBounds.MathlibTM2.M6
