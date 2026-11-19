@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackWeightedShear
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackReverseShear
 
 /-! A reverse row addition returns the same physical layout for its successor. -/
@@ -31,6 +32,31 @@ noncomputable def reverseRowTime [Fintype P] (body : P → Pr P T 217 A U) (bank
   let limit : ℕ := readTime pivot + readTime row + pivotShearTime (W := W) k t b w H J +
       (10*(t.val*H+1)+12+((327*((b^(w+1))^d*W)+2)*13+6))
   4*shearWork.length+1+(1+6*shearWork.length*shearPushBound d b bank body)*limit
+
+/-- Reading the two pivot entries and computing the inverse add only polynomial
+setup to the weighted shear. -/
+theorem reverseRowTime_setup_le [Fintype P] (body : P → Pr P T 217 A U)
+    (bank : Fin 35 ↪ Fin T) (k t col target pivot : Fin d) (b : ℕ) (positive : 0 < b) :
+    ∃ C : ℕ, ∀ w H, reverseRowTime body bank k t col target pivot b w 0 H 0 ≤
+      C*(w+1+(b^(w+1))^(d-1))*(H+1)^2 := by
+  let factor := 1+6*shearWork.length*shearPushBound d b bank body
+  refine ⟨4*shearWork.length+1+factor*(8000*(b+1)*(d+1)^2), ?_⟩
+  intro w H
+  let readTime := fun i : Fin d => 8*((i.val*d+col.val)*H)+14*H+22
+  let product := 48*H*H+152*H+66
+  let inverse := 6*w+6+(14*H+16+(b-2)*product+product+w*(12*H+15+b*product))
+  have cost : reverseRowTime body bank k t col target pivot b w 0 H 0 =
+      4*shearWork.length+1+factor*(readTime pivot + readTime (Equiv.swap col pivot target) +
+        inverse + (48*H*H+150*H+64) + weightedShearTime k t (b^(w+1)) 0 H 0) := by
+    apply congrArg (fun n => 4*shearWork.length+1+factor*n)
+    simp only [pivotShearTime, weightedShearTime, readTime, inverse, product, Nat.add_assoc]
+  rw [cost]
+  grw [weightedShearTime_setup_le_width k t _ H (pow_pos positive _)]
+  dsimp only [readTime, inverse, product]
+  grw [pivot.isLt.le, (Equiv.swap col pivot target).isLt.le, col.isLt.le, Nat.sub_le b 2]
+  generalize (b^(w+1))^(d-1) = prefixes
+  ring_nf
+  omega
 
 /-- The pivot lookup changes setup time only. Every reverse row has the
 same volume coefficient, including the cost of cleaning its work tapes. -/
