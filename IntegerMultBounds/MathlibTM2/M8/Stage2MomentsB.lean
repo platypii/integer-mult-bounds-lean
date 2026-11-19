@@ -17,7 +17,7 @@ the rational sum `tauBoundAt a` (`moment_le_at`).
 
 The design-B histogram (`histogramB`, from the actual signed geometry in `scripts/pr97/stage2framebank.py` and `stage2cert.py`)
 has the same linear moment `q₁` and the same rank mass as the plain one, and its `τ*`-moment at
-`τ* = 1 - 1240/10⁷` stays below `q_τ = 1 - 1/10⁸`. Its whole-projector saving is
+`τ* = 1 - 12402/10⁸` stays below `q_τ = 1 - 1/10⁸`. Its whole-projector saving is
 `a* ≈ 1.24086·10⁻⁴`.
 -/
 
@@ -94,7 +94,7 @@ theorem moment_le_at {a : ℚ} (ha : 0 < a) : ∀ {rows : List Row}, rows.all (r
     nlinarith
 
 /-- The design-B saving `a = 1 - τ*`. -/
-def savingB : ℚ := 1240 / 10 ^ 7
+def savingB : ℚ := 12402 / 10 ^ 8
 
 /-- The design-B `τ*`-moment gap. -/
 def qτB : ℚ := 1 - 1 / 10 ^ 8

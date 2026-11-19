@@ -49,11 +49,11 @@ theorem linear_premiseB :
   rw [linear_momentB] at h
   exact_mod_cast h
 
-/-- The actual node has the design-B stopped moment gap at saving `1240/10^7`. -/
+/-- The actual node has the design-B stopped moment gap at saving `12402/10^8`. -/
 theorem tau_premiseB :
     Global.edgeMoment (fun r => ((r : ℝ) / 529)^(1 - (savingB : ℝ)) / roleCount)
       Global.DesignB.framedNode < qτB := by
-  have hs : (savingB : ℝ) = 1240 / 10^7 := by norm_num [savingB]
+  have hs : (savingB : ℝ) = 12402 / 10^8 := by norm_num [savingB]
   have h := edgeMomentB_rpow_le (τ := 1 - (savingB : ℝ)) (by rw [hs]; norm_num) (by rw [hs]; norm_num)
   exact h.trans_lt tau_momentB
 

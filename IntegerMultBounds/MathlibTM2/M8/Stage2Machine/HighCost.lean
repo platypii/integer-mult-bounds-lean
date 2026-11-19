@@ -39,7 +39,7 @@ abbrev K : ℕ := 1000
 /-- **The exponents at the PR97 exponent.** -/
 theorem exponents [M8.Machine.Net] (h : M8.Machine.BudgetBound.tau = M8.Global.Branching97.tau) :
     Exponents K := by
-  have hs : Cost.tauS = 1 - 1240 / 10 ^ 7 := by
+  have hs : Cost.tauS = 1 - 12402 / 10 ^ 8 := by
     simp only [Cost.tauS, Stage2Moments.savingB]; push_cast; ring
   have ht : M8.Machine.BudgetBound.tau = 1 - 3734039 / 10 ^ 12 := by
     rw [h]; simp only [M8.Global.Branching97.tau, M8.Global.Branching97.saving]

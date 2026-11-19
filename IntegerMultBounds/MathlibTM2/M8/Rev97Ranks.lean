@@ -22,7 +22,7 @@ gaps at the design-B saving.
 
 `rev97_closed` and `rev97_contract`: with the leaf bound below `529` and the node recurrence
 over `ranks97` on `W` roles, the reversed family costs at most
-`C/(1-q₁) n + C/(1-q_τ) n^τ* L`, at `τ* = 1 - 1240/10⁷`.
+`C/(1-q₁) n + C/(1-q_τ) n^τ* L`, at `τ* = 1 - 12402/10⁸`.
 -/
 
 @[expose] public section
@@ -125,7 +125,7 @@ theorem moment₁_ranks97 :
   rw [hf, sum_ranks97 _ (by simp)]
   exact linear_premiseB
 
-/-- The `τ*`-moment gap of the children, at `τ* = 1 - 1240/10⁷`. -/
+/-- The `τ*`-moment gap of the children, at `τ* = 1 - 12402/10⁸`. -/
 theorem momentτ_ranks97 :
     (ranks97.map fun r : ℕ =>
       (1 / ((roleCount : ℕ) : ℝ)) * ((r : ℝ) / ((529 : ℕ) : ℝ)) ^ (1 - (savingB : ℝ))).sum ≤ qτB := by

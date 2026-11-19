@@ -13,7 +13,7 @@ rational `L_r > log(m/r)`, at 10⁻⁹ above, certified by an exponential series
 `IntegerMultBounds/MathlibTM2/M8/Stage2Histogram.lean`, which `Stage2Moments.lean` checks.
 
 With `--designb`, HIST_JSON is `stage2designb.py`'s output (the design-B histogram, on
-`deferred_23.json.gz`), the certificate runs at `a = 1240/10^7` below `q_τ = 1 - 1/10^8`, and the
+`deferred_23.json.gz`), the certificate runs at `a = 12402/10^8` below `q_τ = 1 - 1/10^8`, and the
 rows go to `Stage2HistogramB.lean` (`histogramB`), which `Stage2MomentsB.lean` checks.
 """
 import json
@@ -25,7 +25,7 @@ from math import factorial
 
 PLAIN = (Fraction(969, 10 ** 7), 1 - Fraction(2, 10 ** 8), 'Stage2Histogram', 'histogram',
          'plain-frame', 'witness_23.json.gz')
-DESIGNB = (Fraction(1240, 10 ** 7), 1 - Fraction(1, 10 ** 8), 'Stage2HistogramB', 'histogramB',
+DESIGNB = (Fraction(12402, 10 ** 8), 1 - Fraction(1, 10 ** 8), 'Stage2HistogramB', 'histogramB',
            'design-B', 'deferred_23.json.gz')
 UPSTREAM = '463113d675af7410ac91d53a4fed51ec6494eb9a'
 
