@@ -494,6 +494,14 @@ private theorem collectPassCost (parents traversal lifts volume : ℕ) (xs : Lis
   ring
 
 omit [M8.Machine.Net] in
+theorem liveRecordCost_le_width_budget (r d w H numTime detTime : ℕ) :
+    liveRecordCost r d w H 0 (numTime*(H+1)^2) (detTime*(H+1)^2) ≤
+      liveRecordCost r d 1 1 0 numTime detTime * (w+1)*(H+1)^2 := by
+  unfold liveRecordCost
+  ring_nf
+  omega
+
+omit [M8.Machine.Net] in
 private theorem liveRecordCost_width (r d w H width numTime detTime : ℕ) :
     liveRecordCost r d w H width numTime detTime =
       liveRecordCost r d w H 0 numTime detTime + 12*r*r*width := by

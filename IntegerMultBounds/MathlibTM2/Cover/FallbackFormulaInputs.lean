@@ -24,6 +24,26 @@ def readTime (H : ℕ) : Leaf (Entry ι m) → ℕ
   | .input (_,i,j) => 8*((i.val*m+j.val)*H)+14*H+22
   | .zero | .one => 6*H+6
 
+/-- Every fixed matrix formula has a quadratic field-width budget. Its
+coefficient is obtained by evaluating the same cost expression at width one. -/
+theorem time_readTime_le (f : RingFormula (Entry ι m)) (H : ℕ) :
+    time H (readTime H) f ≤ time 1 (readTime 1) f * (H+1)^2 := by
+  induction f with
+  | input a =>
+    obtain ⟨b,i,j⟩ := a
+    simp only [time, readTime]
+    ring_nf
+    omega
+  | zero | one =>
+    simp only [time, readTime]
+    ring_nf
+    omega
+  | sub x y hx hy | mul x y hx hy =>
+    simp only [time, Gate.time]
+    grw [hx, hy]
+    ring_nf
+    omega
+
 def leafReady (ports : Leaf (Entry ι m) → Fin T → Fin 7 ↪ Fin T)
     (mat : ι → Matrix (Fin m) (Fin m) (ZMod M)) (H : ℕ)
     (a : Leaf (Entry ι m)) (out : Fin T) (R : Regs T A) :=
