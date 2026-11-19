@@ -45,7 +45,7 @@ noncomputable def withIdentitySeed (d : ℕ) (zero one seed tmp saved : Fin K) (
 def paddingSetupCost (d H : ℕ) : ℕ := d*d*(8*H+6)+d+14*H+17
 
 omit [M8.Machine.Net] in
-private theorem paddingSetupCost_eq (d H cost : ℕ) :
+theorem paddingSetupCost_eq (d H cost : ℕ) :
     6*H+6+(4*H+4+(d*(d*(6*H+6)+1)+1+cost+(2*(d*d*H)+2))+(2*H+2))+(2*H+2) =
       cost + paddingSetupCost d H := by unfold paddingSetupCost; ring
 
@@ -847,7 +847,7 @@ theorem generatedSignedPass_quotient_cost_le (U : Type) (r d T : ℕ)
   exact (Nat.cast_le.mpr cost).trans (by push_cast; exact add_le_add le_rfl (by simpa [w] using residual))
 
 omit [M8.Machine.Net] in
-private theorem liveRecordCost_width (r d w H width numTime detTime : ℕ) :
+theorem liveRecordCost_width (r d w H width numTime detTime : ℕ) :
     liveRecordCost r d w H width numTime detTime =
       liveRecordCost r d w H 0 numTime detTime + 12*r*r*width := by
   unfold liveRecordCost

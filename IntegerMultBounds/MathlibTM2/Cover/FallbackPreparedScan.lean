@@ -319,6 +319,23 @@ theorem archivedPass_exec {Q T r A : ℕ} (table : Matrix (Fin r) (Fin r) (ZMod 
   exact ⟨keep.1.trans (free h).1,keep.2.trans (free h).2⟩
 
 
+omit [M8.Machine.Net] in
+/-- Count both branches of a residual scan using the invertible labels in one box. -/
+theorem residualBranchCounts (r w parents records : ℕ) (rows : records = parents*((prime^(w+1))^(r*r))) :
+    let live := LabelStock.live r (w+1) 1
+    let count := parents*((∏ i : Fin r, (prime^r-prime^i.val))*(prime^w)^(r*r))
+    (List.range records).countP live = count ∧
+      (List.range records).countP (fun j => !live j) = records-count := by
+  intro live count
+  have oneBox := (liveLabelCount (m := r) (by omega : 0 < w+1)).trans (LabelPadding.unit_count w)
+  rw [liveClasses_eq_product] at oneBox
+  have selected : (List.range records).countP live = count := by
+    rw [rows]
+    exact (LabelStock.count_boxes r (w+1) parents id).trans (congrArg (parents*·) oneBox)
+  have partition := List.length_eq_countP_add_countP live (l := List.range records)
+  simp only [List.length_range,decide_not,Bool.decide_eq_true,selected] at partition
+  exact ⟨selected,by omega⟩
+
 /-- One program generates the physical matrix archive, signs the payloads and applies the residual pass. -/
 theorem preparedPass_exec {Q T r A : ℕ} (table : Matrix (Fin r) (Fin r) (ZMod prime) → Matrix (Fin (d+1)) (Fin (d+1)) (ZMod prime))
     (capacity : columnCapacity ≤ Q) (signCapacity : (fieldSignProgram (0 : Fin (d+1)) true).1 ≤ Q) :
@@ -504,14 +521,12 @@ theorem preparedPass_exec {Q T r A : ℕ} (table : Matrix (Fin r) (Fin r) (ZMod 
       ∃ z F l, z.user = v.user ∧ F.R src = output ++ a.inputTail ∧ F.R acc = [] ∧ F.R (ext 0) = [] ∧
         F.R (scanPorts (Fin.last N).castSucc) = a.pivotTail ∧ F.R (tapes 34) = a.matrixTail ∧
         F.R parentTape = raw.R parentTape ∧ (∀ h, F.L (host (privateBank h)) = [] ∧ F.R (host (privateBank h)) = []) ∧
-        let num := fun i j : Fin r => numerator (matrixInput false) (matrixInput true) i j
-        let numTime := Finset.univ.sup fun ij : Fin r × Fin r => RingFormula.time H (readTime H) (num ij.1 ij.2)
-        let price := liveRecordCost r (d+1) w H (seeded.R (generatorBank 12)).length numTime (RingFormula.time H (readTime H) (determinant (matrixInput (m := r) false)))
-        let active := LabelStock.live r (w+1) 1
-        let generateTime := (List.range a.records).countP active * (price+4*((d+1)*(d+1)*H)) +
-          (List.range a.records).countP (fun j => !active j) * (10*((d+1)*(d+1)*H)+6) +
-          a.records * (4*(seeded.R (generatorBank 12)).length+4+(r*r*(4*(w+1)+4)+1)+6)+4
-        l ≤ (44*LabelMask.records desc+13*(w+1)+14 + directoryTime + (26*prime^w+6)) + (((desc.beforeRows*desc.rows*B)*(LabelTraversal.time (prime^w) (r*r) 1+5)+4 + ((6*H+6 + ((4*H+4 + (((d+1)*((d+1)*(6*H+6)+1)+1 + generateTime) + (2*padWord.length+2))) + (2*H+2))) + (2*H+2))) + ((1+((desc.beforeRows*desc.rows*B)*(LabelTraversal.time (prime^w) (r*r) 1+5)+4 +
+        let price := matrixBuildCost r (d+1) w H + 12*r*r*prefixWidth
+        let liveRecords := boxes*((∏ i : Fin r, (prime^r-prime^i.val))*(prime^w)^(r*r))
+        let generateTime := liveRecords * (price+4*((d+1)*(d+1)*H)) +
+          (a.records-liveRecords) * (10*((d+1)*(d+1)*H)+6) +
+          a.records * (4*prefixWidth+4+(r*r*(4*(w+1)+4)+1)+6)+4
+        l ≤ (44*LabelMask.records desc+13*(w+1)+14 + directoryTime + (26*prime^w+6)) + (((desc.beforeRows*desc.rows*B)*(LabelTraversal.time (prime^w) (r*r) 1+5)+4 + (generateTime + paddingSetupCost (d+1) H)) + ((1+((desc.beforeRows*desc.rows*B)*(LabelTraversal.time (prime^w) (r*r) 1+5)+4 +
           (((signedInputs a.table (w+1) a.records inputs).map (fun x => Record.cost d A 1 (w+1) W x.1 + 2)).sum + 2) +
           (2*(a.records*(ActualAffineScaling.modulus (w+1)^((d+1)*1)*W))+2))) + 2*((desc.beforeRows*desc.rows*B)*(LabelTraversal.time (prime^w) (r*r) 1+5)+4) + (((List.range a.records).map fun idx => stepTime idx+4).sum+2+(2*(a.records*volume)+2)))) ∧
         Exec body prog (mk v raw) l (mk z F) := by
@@ -664,6 +679,29 @@ theorem preparedPass_exec {Q T r A : ℕ} (table : Matrix (Fin r) (Fin r) (ZMod 
         obtain ⟨_,_,p,c,t,h,o,m,f,ms,fs,pr⟩ := generatorReady
         exact ⟨p,c,t,h,o,m,f,ms,fs,pr,unitDest⟩)⟩ widths width0 genBlank
       archiveEmpty ((kept 2).trans ((unchanged 2 (by decide)).trans ((beforeCopy 2 (by decide)).trans directory))) genOutput (maskKept.trans genMask)
+  obtain ⟨liveCount,paddingCount⟩ := residualBranchCounts r w boxes a.records rowCount
+  rw [liveCount,paddingCount] at genBound
+  let liveRecords := boxes*((∏ i : Fin r, (prime^r-prime^i.val))*(prime^w)^(r*r))
+  let price := matrixBuildCost r (d+1) w H + 12*r*r*prefixWidth
+  let archiveTime := liveRecords*(price+4*((d+1)*(d+1)*H)) +
+    (a.records-liveRecords)*(10*((d+1)*(d+1)*H)+6) +
+    a.records*(4*prefixWidth+4+(r*r*(4*(w+1)+4)+1)+6)+4
+  have archiveBound : genSteps ≤ archiveTime := by
+    by_cases inside : 0 < a.records
+    · rw [parentWidth inside,liveRecordCost_width] at genBound
+      exact genBound
+    · have empty := Nat.eq_zero_of_not_pos inside
+      have noLive : liveRecords = 0 := by
+        rw [empty] at liveCount
+        exact liveCount.symm
+      change boxes*_ = 0 at noLive
+      simpa only [archiveTime,liveRecords,noLive,empty,Nat.zero_sub,Nat.zero_mul,Nat.zero_add] using genBound
+  have padLen : padWord.length = (d+1)*(d+1)*H := length_matrixWords ..
+  have cost := Nat.add_le_add (Nat.add_le_add seedBound archiveBound)
+    (Nat.le_of_eq (congrArg (fun n => 2*n+2) padLen))
+  have paid := Nat.add_le_add_right (Nat.add_le_add_left (Nat.add_le_add_right
+    (Nat.add_le_add_left cost (4*H+4)) (2*H+2)) (6*H+6)) (2*H+2)
+  rw [paddingSetupCost_eq] at paid
   have matrixWord := baseData.physical_archive e proj α α'
   let filled := queueResult seeded generatorMask (scan 2) (tapes 34) (inputState.R (dir 14)) (a.matrices 0)
   have genRun : Exec body generate (mk prepared seeded) genSteps (mk generatedUser filled) := by
@@ -720,8 +758,7 @@ theorem preparedPass_exec {Q T r A : ℕ} (table : Matrix (Fin r) (Fin r) (ZMod 
   exact ⟨z,F,_,hz.trans (finishUser.trans (releaseUser.trans (clearUser.trans (genUser.trans (seedUser.trans
       (zeroUser.trans (copyUser.trans (maskUser.trans (initUser.trans (dirUser.trans parentUser)))))))))),queue,accEnd,maskEnd,pivots,finalArchive,
     parentEnd.trans (parentKept.trans (Function.update_of_ne countOffParent.symm _ _)),free,Nat.add_le_add (Nat.add_le_add (Nat.add_le_add parentBound dirBound) initBound) (Nat.add_le_add (Nat.add_le_add (by simpa using maskBound)
-      (Nat.add_le_add_right (Nat.add_le_add_left (Nat.add_le_add_right (Nat.add_le_add_left (Nat.add_le_add_right
-        (Nat.add_le_add seedBound genBound) _) _) _) _) _)) time),
+      paid) time),
     Exec.seq (Exec.seq (Exec.seq parentRun dirRun) initializeRun) (Exec.seq (Exec.seq maskRun (Exec.seq (Exec.seq copyRun (Exec.seq (Exec.seq zeroRun
       (Exec.seq (Exec.seq seedRun genRun) clearRun)) releaseRun)) finishRun)) run)⟩
 
