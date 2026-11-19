@@ -9,8 +9,37 @@ namespace IntegerMultBounds.MathlibTM2.Cover.Fallback
 open IntegerMultBounds.Machine FlatCoordinateLayout
 variable {r g M W : ℕ} [NeZero M]
 
+/-- A nested good child keeps the inherited middle field between the two
+new gaps. The before-row, row, prefix and trailing ranges are inherited. -/
+def rankDescriptor (M r g : ℕ) (v : RecursiveInterchangeLayout.Descriptor) :
+    RecursiveInterchangeLayout.Descriptor :=
+  {v with width := r, between := M^g * v.between * M^g}
+
+omit [NeZero M] in
+theorem rankDescriptor_index (v : RecursiveInterchangeLayout.Descriptor)
+    (width : v.width = r+g) (a row before h hg middle tg t suffix : ℕ) :
+    RecursiveInterchangeLayout.index M (rankDescriptor M r g v) a row before h
+        ((hg*v.between+middle)*M^g+tg) t suffix =
+      RecursiveInterchangeLayout.index M v a row before (h*M^g+hg) middle
+        (tg*M^r+t) suffix := by
+  simp only [RecursiveInterchangeLayout.index,rankDescriptor,width,pow_add]
+  ring
+
+omit [NeZero M] in
+theorem rankDescriptor_volume (v : RecursiveInterchangeLayout.Descriptor) (width : v.width = r+g) :
+    RecursiveInterchangeLayout.volume M (rankDescriptor M r g v) =
+      RecursiveInterchangeLayout.volume M v := by
+  simp only [RecursiveInterchangeLayout.volume,rankDescriptor,width,pow_add]
+  ring
+
 def goodChildDescriptor (M r g W : ℕ) : RecursiveInterchangeLayout.Descriptor :=
   ⟨1,1,1,r,M^(g+g),W⟩
+
+omit [NeZero M] in
+/-- The first call has an empty inherited middle field. -/
+theorem rankDescriptor_goodChild :
+    rankDescriptor M r g ⟨1,1,1,r+g,1,W⟩ = goodChildDescriptor M r g W := by
+  simp [rankDescriptor,goodChildDescriptor,pow_add]
 
 theorem goodChildVolume (M r g W : ℕ) :
     RecursiveInterchangeLayout.volume M (goodChildDescriptor M r g W) = M^((r+g)+(r+g))*W := by

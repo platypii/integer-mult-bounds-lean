@@ -53,17 +53,17 @@ theorem prepareGoodChild_exec (body : P → Pr P T Q A U) (host : Fin 57 ↪ Fin
   simpa only [pos,reciprocal,List.flatMap_def,List.ofFn_eq_map,show bank 20 = host 55 from rfl,show bank 21 = host 56 from rfl] using run
 
 /-- The two inactive slices form one spectator field. Compute its size from
-the live modulus and the one-bit seed while preserving the packed child weights. -/
+the live modulus and the inherited middle size while preserving the packed child weights. -/
 theorem goodChildMiddle_exec {N : ℕ} (body : P → Pr P T Q A U) (host : Fin 58 ↪ Fin T)
-    (r g W H : ℕ) (hm : N < 2^H) (v : HS T Q A U) (S : Stacks T A)
-    (base : S.R (host 2) = binSyms H N) (one : S.R (host 28) = binSyms 1 1)
+    (parent : RecursiveInterchangeLayout.Descriptor) (r g H J : ℕ) (hm : N < 2^H) (fits : parent.between < 2^J) (v : HS T Q A U) (S : Stacks T A)
+    (base : S.R (host 2) = binSyms H N) (seed : S.R (host 28) = binSyms J parent.between)
     (free : S.R (host 57) = [])
     (scratch : ∀ j ∈ headShearWork, S.R (host (GoodChildLayout.parentWithWeights
       (GoodChildLayout.parent (adapterBank (entry j))))) = []) :
-    let desc := goodChildDescriptor N r g W
-    ∃ z t, z.user = v.user ∧ t ≤ dimensionTime H 1 (g+g) ∧
+    let desc := rankDescriptor N r g parent
+    ∃ z t, z.user = v.user ∧ t ≤ dimensionTime H J (g+g) ∧
       Exec body (dimensionPower (GoodChildLayout.middlePorts.trans host) (g+g)) (mk v S) t
-        (mk z {S with R := Function.update S.R (host 57) (binSyms ((g+g)*H+1) desc.between)}) := by
+        (mk z {S with R := Function.update S.R (host 57) (binSyms ((g+g)*H+J) desc.between)}) := by
   intro desc
   have work : ∀ i : Fin 10, 2 ≤ i → i < 9 → S.R (host (GoodChildLayout.middlePorts i)) = [] := by
     intro i lo hi
@@ -75,7 +75,9 @@ theorem goodChildMiddle_exec {N : ℕ} (body : P → Pr P T Q A U) (host : Fin 5
       rw [same]
       exact scratch j hj
   obtain ⟨z,t,hz,ht,run⟩ := dimensionPower_exec body (g+g) (GoodChildLayout.middlePorts.trans host)
-    H 1 N 1 hm (by decide) v S base one work
-  exact ⟨z,t,hz,ht,by simpa only [Nat.mul_one,desc,goodChildDescriptor,show (GoodChildLayout.middlePorts.trans host) 2 = host 57 from rfl] using run⟩
+    H J N parent.between hm fits v S base seed work
+  have size : N^(g+g)*parent.between = desc.between := by
+    dsimp [desc,rankDescriptor]; rw [pow_add]; ring
+  exact ⟨z,t,hz,ht,by simpa only [size,show (GoodChildLayout.middlePorts.trans host) 2 = host 57 from rfl] using run⟩
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback

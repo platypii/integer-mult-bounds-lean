@@ -58,10 +58,11 @@ theorem goodChildPayload_exec (body : P → Pr P T Q A U) (f : P) (host : Fin 58
   have apart : s 24 ∉ outputs := by
     change host 24 ∉ [host 55,host 56,host 57]
     simp [host.injective.eq_iff]
-  obtain ⟨z,F,n,hz,⟨out,act,saved,src⟩,hn,run⟩ := goodChildCall_exec body f host G hr g W minor
+  obtain ⟨z,F,n,hz,⟨out,act,saved,src⟩,hn,run⟩ := goodChildCall_exec body f host G hr g ⟨1,1,1,r+g,1,W⟩ 1 (by decide : 1 < 2^1) minor
     weight inv inverse hb H hm v S tail rest budget post initial.weights pivots initial.modulus one clock scratch
     initial.base initial.one (fun j hj => (initial.scratch j hj).2) fresh (by
       intro u hu
+      rw [rankDescriptor_goodChild]
       obtain ⟨z,F,n,out,hz,hn,run,act,saved,src⟩ := childRun u hu
       exact ⟨z,F,n,hz,hn,run,⟨out,act,saved,src⟩,fun j hj => (saved j (fun eq => apart (eq ▸ hj))).2⟩)
   let D := {F with R := fun j => if j ∈ outputs then [] else F.R j}
