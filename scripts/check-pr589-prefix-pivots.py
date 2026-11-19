@@ -3,7 +3,9 @@
 import gzip
 import hashlib
 import json
+from collections import Counter
 from fractions import Fraction
+from itertools import permutations
 from math import comb, gcd, lcm
 from pathlib import Path
 
@@ -93,8 +95,26 @@ def check_helper_windows(endpoint_positions, gates):
     print(f"All {windows} helper windows import and export scalar data between endpoint MOVEs.")
 
 
+def cycle_lengths(permutation):
+    visited = set()
+    lengths = []
+    for start in range(len(permutation)):
+        if start in visited:
+            continue
+        k = start
+        length = 0
+        while k not in visited:
+            visited.add(k)
+            length += 1
+            k = permutation[k]
+        assert k == start
+        lengths.append(length)
+    return sorted(lengths)
+
+
 def check_port_swap_distance(port_moves):
     """Compare the paid widths with the exact transposition distance in the swap-only model."""
+    patterns = set()
     for register, moves in enumerate(port_moves):
         # Track which input atom each output reads. Interior MOVE swaps commute
         # here because the scalar gates and triangular adapters are omitted.
@@ -104,27 +124,29 @@ def check_port_swap_distance(port_moves):
             paid += hi - lo
             for k in range(lo, hi):
                 permutation[k], permutation[8 + k] = permutation[8 + k], permutation[k]
+        patterns.add(tuple(permutation))
         for a, b in [(0, 7), (8, 15)]:
             permutation[a], permutation[b] = permutation[b], permutation[a]
-
-        visited = set()
-        cycles = []
-        for k in range(16):
-            if k in visited:
-                continue
-            cycle = []
-            while k not in visited:
-                visited.add(k)
-                cycle.append(k)
-                k = permutation[k]
-            assert k == cycle[0]
-            cycles.append(len(cycle))
+        cycles = cycle_lengths(permutation)
         # Each transposition changes the cycle count by one, and a cycle
         # of length n is a product of n-1 transpositions.
-        assert sorted(cycles) == [2] * 6 + [4], register
+        assert cycles == [2] * 6 + [4], register
         assert paid == 7 and 16 - len(cycles) == 9, register
     print("On every source and target register the seven paid atom swaps plus the port "
           "permutation have exact transposition distance nine.")
+
+    # A coordinate permutation carries the trailing seven-dimensional support
+    # onto the leading seven-dimensional support iff output 7 reads input 0.
+    assert len(patterns) == 2
+    for move in patterns:
+        distances = Counter()
+        for leading in permutations(range(1, 8)):
+            chart = (*leading, 0)
+            routed = [move[base + k] for base in (0, 8) for k in chart]
+            distances[16 - len(cycle_lengths(routed))] += 1
+        assert distances == {9: 232, 11: 1540, 13: 2548, 15: 720}
+    print("Among all 5040 compatible common coordinate permutations, 232 achieve the "
+          "minimum of nine swaps on each port MOVE pattern.")
 
 
 def layout_components(register_count, cuts, gates, scatter_start, scatter_end, *, share_temps=False):
