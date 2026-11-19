@@ -84,6 +84,26 @@ theorem signedResidualTime_le_setup_add_volume (U : Type) (d w : ℕ) :
   obtain ⟨swaps, shears, bound⟩ := signedResidualTime_le_setup_add_width_volume U d
   exact ⟨_, fun rows => bound rows w⟩
 
+/-- The forward scan contributes no counter-width charge. The reverse schedule
+pays the sum of the pair charges and one uniform charge per column. -/
+theorem signedResidualTime_le_setup_add_counter (U : Type) (d H : ℕ) :
+    ∃ rate : ℕ, ∀ (rows : Fin (d+1) → Fin (d+1)) w W J,
+      signedResidualTime U rows w W H J ≤ signedResidualTime U rows w W H 0 + rate * J := by
+  choose r hr using fun i : Fin d => pairScalingTime_eq_setup_add_counter U i.succ 0 i.succ H
+  obtain ⟨c, hc⟩ := columnProgramTime_le_setup_add_counter U (d+1) H
+  refine ⟨((List.finRange d).map r).sum + (d+1)*c, fun rows w W J => ?_⟩
+  let columns := fun x => Finset.univ.sup (fun k => columnProgramTime U k (rows k) w W H x)
+  have col : columns J ≤ columns 0 + c*J := by
+    apply Finset.sup_le
+    intro k hk
+    exact (hc k (rows k) w W J).trans (Nat.add_le_add_right
+      (Finset.le_sup (f := fun i => columnProgramTime U i (rows i) w W H 0) hk) _)
+  have steps := Nat.mul_le_mul_left (d+1) col
+  dsimp [columns] at steps
+  simp only [signedResidualTime, hr _ w W J, List.sum_map_add, List.sum_map_mul_right,
+    Nat.mul_add, Nat.add_mul, Nat.mul_assoc] at steps ⊢
+  omega
+
 theorem signedResidual_exec (rows : Fin (d+1) → Fin (d+1)) (m : Matrix (Fin (d+1)) (Fin (d+1)) (ZMod M))
     (valid : Itinerary.Valid rows m (d+1)) (s : (ZMod M)ˣ)
     (sign : (Itinerary.run rows m (d+1)).det = (s : ZMod M)) (H J : ℕ) (hm : M < 2^H) (hw : W < 2^J) (hW : 0 < W)
