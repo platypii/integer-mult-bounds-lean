@@ -38,20 +38,82 @@ theorem physicalLabel_live (hw : 0 < w) (j : ℕ) :
   simp only [LabelStock.live,decide_eq_true_eq,physicalLabel_residue hw]
   exact (not_congr (LabelPadding.singular_iff hw _)).symm.trans (by simp)
 
+theorem physicalLabel_address (g : LabelPadding.Label m w) : physicalLabel m w (LabelAddress.address g).val = g := by
+  funext r c
+  simp only [physicalLabel,Nat.mod_eq_of_lt (LabelAddress.address g).isLt,Fin.eta]
+  simp [LabelAddress.address,M8.AtomOps.refine,Route.cols]
+
+open Finset in
+/-- A request predicate on labels selects the same number of records in each
+physical box, including when the boxes have spectator prefixes. -/
+theorem physicalLabel_count (m w parents : ℕ) (keep : LabelPadding.Label m w → Bool) :
+    let box := (prime^w)^(m*m)
+    (List.range (parents*box)).countP (fun j => keep (physicalLabel m w j)) =
+      parents*(univ.filter fun g => keep g = true).card := by
+  classical
+  intro box
+  let selected := fun j => keep (physicalLabel m w j)
+  have single : (List.range box).countP selected = (univ.filter fun g => keep g = true).card := by
+    have counted := (List.nodup_range (n := box)).card_eq_countP (P := fun j => selected j = true)
+    have rangeSet : (List.range box).toFinset = Finset.range box := by ext; simp
+    rw [rangeSet] at counted
+    apply (show (List.range box).countP selected = ((Finset.range box).filter fun j => selected j = true).card
+      by simpa using counted.symm).trans
+    apply Finset.card_bij (fun j _ => physicalLabel m w j)
+    · intro j hj
+      exact mem_filter.mpr ⟨mem_univ _, (mem_filter.mp hj).2⟩
+    · intro i hi j hj same
+      have index (k : ℕ) (hk : k < box) : (LabelAddress.address (physicalLabel m w k)).val = k := by
+        change k < (prime^w)^(m*m) at hk
+        simpa only [Nat.div_eq_of_lt hk,Nat.zero_mul,Nat.zero_add] using
+          (physicalLabel_index (m := m) (w := w) k)
+      simpa only [index i (mem_range.mp (mem_filter.mp hi).1), index j (mem_range.mp (mem_filter.mp hj).1)]
+        using congrArg (fun g => (LabelAddress.address g).val) same
+    · intro g hg
+      exact ⟨(LabelAddress.address g).val, mem_filter.mpr ⟨mem_range.mpr (LabelAddress.address g).isLt,
+        by simpa [selected,physicalLabel_address] using (mem_filter.mp hg).2⟩, physicalLabel_address g⟩
+  have periodic (p j : ℕ) : selected (p*box+j) = selected j := by simp [selected,physicalLabel,box,Nat.add_mod]
+  change (List.range (parents*box)).countP selected = _
+  induction parents with
+  | zero => simp
+  | succ p ih =>
+    rw [Nat.succ_mul,List.range_add,List.countP_append,List.countP_map,ih,Nat.succ_mul]
+    simp only [Function.comp_def,periodic,single]
+
+open GoodForm Finset in
+open scoped Classical in
+/-- The minor-degree fallback bound holds on the actual record range of the
+pass, with every spectator box included. -/
+theorem fallbackRecordCount (w r parents : ℕ) (hr : r ≤ m) (P : LabelPadding.Label m (w+1))
+    (g₀ : Matrix (Fin m) (Fin m) (ZMod prime)) (unit : g₀.det ≠ 0)
+    (good : ∀ k (hk : k < r), (lead (k+1) (lt_of_lt_of_le hk hr)
+      (g₀ * (LabelRing.res prime (w+1) (by omega)).mapMatrix P * g₀⁻¹)).det ≠ 0) :
+    let box := (prime^(w+1))^(m*m)
+    let fallback := fun g : LabelPadding.Label m (w+1) => decide (IsUnit g ∧ ∃ k, ∃ hk : k < r,
+      ¬IsUnit (lead (k+1) (lt_of_lt_of_le hk hr) (g*P*g⁻¹)).det)
+    (List.range (parents*box)).countP (fun j => fallback (physicalLabel m (w+1) j)) * prime ≤
+      (∑ k ∈ range r, (k+1)*(m+1)) * (parents*box) := by
+  classical
+  intro box fallback
+  rw [physicalLabel_count m (w+1) parents fallback, Nat.mul_assoc]
+  have bound := LabelPadding.fallback_count w r hr P g₀ unit good
+  have card : Fintype.card (LabelPadding.Label m (w+1)) = box := by
+    change Fintype.card (Fin m → Fin m → ZMod (prime^(w+1))) = _
+    simp [box, ← pow_mul, Nat.mul_assoc]
+  rw [card] at bound
+  simp only [fallback,decide_eq_true_eq]
+  exact (Nat.mul_le_mul_left parents bound).trans_eq (by ring)
+
 /-- The live addresses of one complete box enumerate the invertible matrices exactly once. -/
 theorem liveLabelCount (hw : 0 < w) :
     (List.range (M^(m*m))).countP (LabelStock.live m w 1) = Nat.card (LabelPadding.Label m w)ˣ := by
   classical
   let box := M^(m*m)
   let live := (Finset.range box).filter fun j => LabelStock.live m w 1 j = true
-  have decode (g : LabelPadding.Label m w) : physicalLabel m w (LabelAddress.address g).val = g := by
-    funext r c
-    simp only [physicalLabel,Nat.mod_eq_of_lt (LabelAddress.address g).isLt,Fin.eta]
-    simp [LabelAddress.address,M8.AtomOps.refine,Route.cols]
   have bounds (j : live) : j.val < box := Finset.mem_range.mp (Finset.mem_filter.mp j.property).1
   let encode (g : (LabelPadding.Label m w)ˣ) : live := ⟨(LabelAddress.address g.val).val,
     Finset.mem_filter.mpr ⟨Finset.mem_range.mpr (LabelAddress.address g.val).isLt,
-      (physicalLabel_live hw _).mpr (by rw [decode]; exact g.isUnit)⟩⟩
+      (physicalLabel_live hw _).mpr (by rw [physicalLabel_address]; exact g.isUnit)⟩⟩
   let e : live ≃ (LabelPadding.Label m w)ˣ := {
     toFun := fun j => ((physicalLabel_live hw _).mp (Finset.mem_filter.mp j.property).2).unit
     invFun := encode
@@ -61,7 +123,7 @@ theorem liveLabelCount (hw : 0 < w) :
       change (LabelAddress.address (physicalLabel m w j.val)).val = j.val
       simpa only [Nat.div_eq_of_lt (show j.val < M^(m*m) from bounds j),Nat.zero_mul,Nat.zero_add] using
         (physicalLabel_index (m := m) (w := w) j.val)
-    right_inv := fun g => Units.ext (decode g.val) }
+    right_inv := fun g => Units.ext (physicalLabel_address g.val) }
   have counted := (List.nodup_range (n := box)).card_eq_countP (P := fun j => LabelStock.live m w 1 j = true)
   have rangeSet : (List.range box).toFinset = Finset.range box := by ext; simp
   rw [rangeSet] at counted
