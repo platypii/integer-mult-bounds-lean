@@ -25,8 +25,7 @@ theorem goodWeights_exec {d : ℕ} (body : P → Pr P T Q A U) (r : Fin 23 ↪ F
     (one : S.R (r 20) = binSyms H (1 : ZMod (p^(w+1))).val) (ticks : (S.R (r 22)).length = w)
     (free : ∀ i : Fin 23, (i < 15 ∧ i ≠ 2) ∨ (17 ≤ i ∧ i ≤ 19) ∨ i = 21 → S.R (r i) = [])
     (ranks : ℕ) (hr : ranks ≤ d)
-    (minor : ∀ k (hk : k < ranks), IsUnit (GoodForm.lead (k+1) (lt_of_lt_of_le hk hr) m).det)
-    :
+    (minor : ∀ k (hk : k < ranks), IsUnit (GoodForm.lead (k+1) (lt_of_lt_of_le hk hr) m).det) :
     let stage := GoodForm.stageAt m ranks hr minor ranks le_rfl
     let weights := List.ofFn fun i : Fin ranks => binSyms (A := A) H
       (stage.M (i.castLE hr) (i.castLE hr)).val
@@ -34,9 +33,15 @@ theorem goodWeights_exec {d : ℕ} (body : P → Pr P T Q A U) (r : Fin 23 ↪ F
       (ranks*(8*(d*d*H)+14*H+22)+1) ∧
       Exec body (goodWeights p ranks hr r) (mk v S) l (mk z F) ∧
       F.R (r 14) = weights.flatten ∧
-      ∀ i : Fin ranks, IsUnit (stage.M (i.castLE hr) (i.castLE hr)) := by
+      (∀ i : Fin ranks, IsUnit (stage.M (i.castLE hr) (i.castLE hr))) ∧
+      (F.R (stageBank r ranks 15), F.R (stageBank r ranks 16)) =
+        matrixArchive (fun j => if hj : j ≤ ranks then
+          matrixWords A H (GoodForm.stageAt m ranks hr minor j hj).M else [])
+          (S.R (r 15)) (S.R (r 16)) ranks ∧
+      F.L = S.L ∧ F.inp = S.inp ∧ F.out = S.out ∧
+      ∀ i, i ≠ r 14 → i ≠ stageBank r ranks 15 → i ≠ stageBank r ranks 16 → F.R i = S.R i := by
   intro stage weights
-  obtain ⟨u,D,l,suffix,hu,hl,run,packed,_,_,_,_,frame⟩ := goodProgram_exec body r p w H hp m hm v S tail
+  obtain ⟨u,D,l,suffix,hu,hl,run,packed,archive,hL,hin,hout,frame⟩ := goodProgram_exec body r p w H hp m hm v S tail
     matrix modulus one ticks free ranks hr minor ranks le_rfl
   let bank := stageBank r ranks
   have keep (i : Fin 23) (h : i ≠ 15) (h' : i ≠ 16) : D.R (bank i) = S.R (r i) :=
@@ -52,8 +57,15 @@ theorem goodWeights_exec {d : ℕ} (body : P → Pr P T Q A U) (r : Fin 23 ↪ F
   rw [blank,List.append_nil] at emit
   have slot : (weightReadPorts.trans bank) 3 = r 14 := stageBank_fixed r ranks 14 (by decide) (by decide)
   rw [slot] at emit
-  exact ⟨z,_,l+t,hz.trans hu,Nat.add_le_add hl ht,Exec.seq run emit,Function.update_self ..,
-    fun i => stage.unit _ i.isLt⟩
+  refine ⟨z,_,l+t,hz.trans hu,Nat.add_le_add hl ht,Exec.seq run emit,Function.update_self ..,
+    fun i => stage.unit _ i.isLt,?_,hL,hin,hout,?_⟩
+  · have mid : bank 14 = r 14 := slot
+    have h15 : bank 15 ≠ r 14 := mid ▸ bank.injective.ne (by decide)
+    have h16 : bank 16 ≠ r 14 := mid ▸ bank.injective.ne (by decide)
+    change (Function.update D.R (r 14) _ (bank 15), Function.update D.R (r 14) _ (bank 16)) = _
+    rwa [Function.update_of_ne h15, Function.update_of_ne h16]
+  · intro i hw ha hb
+    exact (Function.update_of_ne hw _ _).trans (frame i ha hb)
 
 noncomputable def recordWeights (n : ℕ) (r : Fin 23 ↪ Fin T) (src : Fin T) : Pr P T Q A U :=
   .seq (streamedItinerary (n+1) prime r src (n+1))
