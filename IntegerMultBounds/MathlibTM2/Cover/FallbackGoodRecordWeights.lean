@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackGoodAdapter
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackPhysicalLabel
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackPairWeights
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackRecordWeights
@@ -66,10 +67,14 @@ theorem goodRecordWeights_exec (body : P → Pr P T Q A U) (ports : Fin 24 ↪ F
           D.R (child 0) = binSyms H (α' (i.castLE fits) * δ' (i.castLE fits)).val ∧
           D.L = F.L ∧ D.inp = F.inp ∧ D.out = F.out ∧
           ∀ k, k ≠ child 0 → k ≠ child 14 → D.R k = F.R k) ∧
-      (∀ i, δ i * δ' i = 1) ∧ ∀ s : State (Fin m) (ZMod M),
-        transform (diagonal α * stage.L * diagonal α') R'
-          (cross (-K) (Weighted.child proj.rank (fun i => α i * δ i) (fun i => α' i * δ' i)
-            (cross K (transform (diagonal α * stage.L' * diagonal α') R s)))) =
+      (∀ i, δ i * δ' i = 1) ∧
+      let head := goodHeadWord G proj.rank fits minor α α' proj.rank le_rfl
+      head.length ≤ proj.rank*m ∧ (head.map RowOp.children).sum = 0 ∧ ((inverseWord head).map RowOp.children).sum = 0 ∧
+      ∀ s : State (Fin m) (ZMod M),
+        let before := (head.foldl (fun x op => op.apply x) s.1, R.mulVec s.2)
+        let after := cross (-K) (Weighted.child proj.rank (fun i => α i * δ i) (fun i => α' i * δ' i)
+          (cross K before))
+        ((inverseWord head).foldl (fun x op => op.apply x) after.1, R'.mulVec after.2) =
           transform (diagonal α) 1 (revExchangeOf (rev m) G (transform (diagonal α') 1 s)) := by
   classical
   intro bank child g G clear matrix modulus one ticks free
@@ -93,7 +98,8 @@ theorem goodRecordWeights_exec (body : P → Pr P T Q A U) (ports : Fin 24 ↪ F
       _ = g*(reduce M proj*(g⁻¹*g)*reduce M proj)*g⁻¹ := by simp only [Matrix.mul_assoc]
       _ = _ := by rw [Matrix.nonsing_inv_mul g ((Matrix.isUnit_iff_isUnit_det g).mp unit),Matrix.mul_one,square]
   obtain ⟨_,_,_,_,units,_⟩ := stage.normalForm fits a b factor
-  refine ⟨z,F,l,user,time,run,?_,archive,left,inp,out,frame,?_,units,stage.goodMove fits a b factor idempotent α α' inv⟩
+  have zero := goodHeadWord_children G proj.rank fits minor α α' proj.rank le_rfl
+  refine ⟨z,F,l,user,time,run,?_,archive,left,inp,out,frame,?_,units,goodHeadWord_length ..,zero,(inverseWord_children _).trans zero,?_⟩
   · simpa only [δ,Fin.val_castLE,Fin.isLt,ite_true] using words
   · intro i rest parent C
     have unchanged (k : Fin 23) (a : k ≠ 14) (b : k ≠ 15) (c : k ≠ 16) :
@@ -126,5 +132,9 @@ theorem goodRecordWeights_exec (body : P → Pr P T Q A U) (ports : Fin 24 ↪ F
       ((congrArg List.length (unchanged 22 (by decide) (by decide) (by decide))).trans ticks) scratch
     exact ⟨u,D,t,hu.trans user,ht,run,by simpa only [δ,Fin.val_castLE,Fin.isLt,ite_true] using pair,
       by simpa only [δ',Fin.val_castLE,Fin.isLt,ite_true] using inverse,hL,hin,hout,kept⟩
+  · intro s
+    dsimp only
+    rw [goodHeadWord_inverse_apply _ _ _ _ _ _ inv,goodHeadWord_apply _ _ _ _ _ _ inv]
+    exact stage.goodMove fits a b factor idempotent α α' inv s
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback

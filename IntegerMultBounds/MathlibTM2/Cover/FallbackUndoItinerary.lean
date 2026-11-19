@@ -9,7 +9,7 @@ namespace IntegerMultBounds.MathlibTM2.Cover.Fallback
 open Matrix GoodForm
 variable {R : Type*} [CommRing R] {d : ℕ}
 
-private theorem addRows_apply (k : Fin d) (rows : List (Fin d)) (hd : rows.Nodup)
+theorem addRows_apply (k : Fin d) (rows : List (Fin d)) (hd : rows.Nodup)
     (hk : k ∉ rows) (c : Fin d → R) (x : Fin d → R) (j : Fin d) :
     (rows.flatMap (fun i => addWord k i (c i))).foldl (fun y op => op.apply y) x j =
       if j ∈ rows then x j+c j*x k else x j := by
