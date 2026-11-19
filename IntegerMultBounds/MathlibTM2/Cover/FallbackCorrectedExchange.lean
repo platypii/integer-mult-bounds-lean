@@ -211,4 +211,68 @@ theorem exchangeSchedule_exec {ι X : Type*} {K Q : ℕ}
     have rest := frame h (fun j hj => outside j (List.mem_cons_of_mem _ hj))
     exact ⟨rest.1.trans first.1,rest.2.trans first.2⟩
 
+/-- Execute each weighted exchange in occurrence order using a common pivot and parent archive. -/
+theorem correctedSchedule_exec {m r n Q : ℕ} (k t : Fin n → Fin (d+1)) (lt : ∀ a, k a < t a)
+    (capacity : columnCapacity ≤ Q) (signCapacity : ∀ a, (fieldSignProgram (k a) true).1 ≤ Q)
+    (parent : Fin m → ZMod M) (j : Fin n → Fin m) (inv : Fin n → ZMod M)
+    (reciprocal : ∀ a, parent (j a) * inv a = 1) (pivot : Fin r → ZMod M) (i : Fin n → Fin r)
+    (unit : ∀ a, IsUnit (pivot (i a))) (H J : ℕ) (hm : M < 2^H) (hw : W < 2^J) (hW : 0 < W)
+    (tail rest : List (Fin (prime+4))) (dest : ℤ → Fin 4) (q : ℤ)
+    (empty : ∀ z, q ≤ z → z < q+(M^(d+1)*W : ℕ) → dest z = blank)
+    (original : Fin (M^(d+1)*W) → ZMod 2) (addr : (Fin (d+1) → ZMod M) → Fin (d+1) → ZMod M) :
+    let width := fun a => 22+fieldSignSlots (k a)
+    let total := Fintype.card (Σ a, Fin (width a))
+    let shared := Fin.castAddEmb (n := N+1) total
+    let bank := exchangeBank (N+1) width
+    let move := fun (y : (Fin (d+1) → ZMod M) → Fin (d+1) → ZMod M) a x =>
+      Function.update (Function.update (y x) (k a) ((inv a * Ring.inverse (pivot (i a)))*y x (t a)))
+        (t a) ((parent (j a)*pivot (i a))*y x (k a))
+    let record := (List.ofFn fun h => binSyms (A := prime) H (pivot h).val).flatten ++ tail
+    let weights := (List.ofFn fun h => binSyms (A := prime) H (parent h).val).flatten ++ rest
+    let ready := fun y (D : Stacks ((N+1)+total) prime) =>
+      ColumnRecordReady (columnBank.trans shared) H J record SparseRoleCircuit.encode (fun _ => blank) dest 0 q original y D ∧
+      (∀ h : Fin N, 35 ≤ h.val → D.L (shared (columnPorts h)) = [] ∧ D.R (shared (columnPorts h)) = []) ∧
+      D.R (shared (Fin.last N)) = weights
+    let program := fun a =>
+      let host := Fin.castAddEmb (n := N+1) (width a)
+      let sign := extendSignBank columnBank (fieldSignSlots (k a))
+      statePlacedNormalized (bank a) (le_refl Q) (lt_of_lt_of_le columnCapacity_pos capacity) Empty.elim
+        (.seq (statePlacedNormalized host capacity columnCapacity_pos Empty.elim (childExchange (j a).val (i a).val (k a) (t a)))
+          (.seq (installFieldHeaders ((installerPorts _).trans sign))
+            (placedFieldNeg (k a) ((signPorts _).trans sign) (signCapacity a))))
+    let cost := fun a =>
+      let shear := fun neg => 1+cleanChildShearTime (P := Empty) (U := U) (A := prime) Empty.elim
+        (Function.Embedding.refl _) prime (j a).val (i a).val (k a) (t a) neg w W H J
+      let swap := 1+completeSwapTime (P := Empty) (U := U) Empty.elim (d+1) (k a) (t a) w W H J
+      1+(1+(2*shear false+shear true+2*swap)+((10*J+12)+(21*(w+1)+12)+1+
+        (1+(AtomSegment.chainConst (fieldSignOps (k a) true)*(M^(d+1)*W)*(width a+5)+6))))
+    ∀ (body : P → Pr P ((N+1)+total) Q prime U) v S, ready addr S →
+      (∀ h : Fin total, S.L (Fin.natAdd (N+1) h) = [] ∧ S.R (Fin.natAdd (N+1) h) = []) →
+      ∃ z F l, z.user = v.user ∧ l ≤ ((List.finRange n).map cost).sum+1 ∧
+        Exec body ((List.finRange n).foldr (fun a rest => .seq (program a) rest) (.act .done))
+          (mk v S) l (mk z F) ∧ ready ((List.finRange n).foldl move addr) F := by
+  intro width total shared bank move record weights ready program cost body v S before aux
+  have run := exchangeSchedule_exec body program move cost ready _ _ ?_ (List.finRange n)
+    (exchangeBanks_pairwise (N+1) width) addr v S before (by
+      rintro a _ h ⟨b,rfl⟩
+      exact aux _)
+  · obtain ⟨z,F,l,hz,hl,exec,next,_⟩ := run
+    exact ⟨z,F,l,hz,hl,exec,next⟩
+  · intro a y u D ok free
+    let host := Fin.castAddEmb (n := N+1) (width a)
+    have eq (h : Fin (N+1)) : bank a (host h) = shared h := exchangeBank_shared ..
+    have columns : (columnBank.trans host).trans (bank a) = columnBank.trans shared :=
+      Function.Embedding.ext fun h => eq (columnBank h)
+    have step := placedCorrectedChildExchange_exec (k a) (t a) (bank a) capacity (signCapacity a)
+      (lt a) parent (j a) (inv a) (reciprocal a) pivot (i a) (unit a) H J hm hw hW body u D tail rest dest q
+      empty original y
+    dsimp only at step
+    dsimp only [host,width] at columns eq
+    simp only [columns,eq] at step
+    obtain ⟨z,F,l,hz,hl,exec,next,saved⟩ := step ok (by
+      intro b _
+      apply free
+      exact ⟨b,exchangeBank_private ..⟩)
+    exact ⟨z,F,l,hz,hl,exec,next,fun h off => saved h (fun b eq => off ⟨b,eq⟩)⟩
+
 end IntegerMultBounds.MathlibTM2.Cover.Fallback.Record
