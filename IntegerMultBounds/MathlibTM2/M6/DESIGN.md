@@ -562,7 +562,10 @@ directly:
   `8! · 1344^8 < 2^100` by the determinant expansion. The machine prime exceeds this
   bound. `M6.prefix_minor_unit` proves in Lean that every such nonsingular integer
   matrix is invertible over every machine prime-power radix; `M6.translated_prefix_unit`
-  specializes this to minors of the actual lines, with nonsingularity as its premise. The normalized graph rows `[I | A]` computed by exact
+  specializes this to minors of the actual lines. `M6.prefix_witness` in
+  `PrefixWitnesses/All.lean` discharges nonsingularity and generator membership for all
+  636 labels, at their certified dimensions. The integer dual witnesses for ranks four,
+  six and seven multiply each selected prefix matrix to a diagonal with no zero entry. The normalized graph rows `[I | A]` computed by exact
   elimination have denominators at most 1799432 across all labels. The two
   port endpoints present a remaining mismatch: the line gets pivot 0 and the target
   hyperplane gets pivots 0 through 6, whereas the complement of the line projector
