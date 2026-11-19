@@ -2,6 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackPhysicalSignedPass
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackConjugationQueue
+public import IntegerMultBounds.MathlibTM2.Cover.LabelSpectators
 public import IntegerMultBounds.MathlibTM2.Cover.LabelDirectorySetup
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackIdentitySeed
 
@@ -140,9 +141,13 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     (∀ i, anchor i ≠ bank 2) → (∀ i, ports i ≠ bank 2) → (∀ i, ext i ≠ bank 2) →
     ∃ writeMask : Pr P K Q prime U, ∀ (directoryPorts : Fin 15 ↪ Fin K), directoryPorts 14 = bank 2 →
     let dir := directoryPorts.trans (Equiv.swap (directoryPorts 9) parentsC).toEmbedding
-    ∀ (atom one : Fin K), (∀ i, atom ≠ dir i) → (∀ i, one ≠ dir i) → ∀ (word : ℕ → List (Fin (prime+4))) (parentTail : List (Fin (prime+4)))
+    ∀ (atom one : Fin K), (∀ i, atom ≠ dir i) → (∀ i, one ≠ dir i) →
+    ∀ (br rows bh : Fin K), [br,rows,bh,atom,dir 2,dir 9,dir 3,dir 5].Nodup → ∀ (word : ℕ → List (Fin (prime+4))) (parentTail : List (Fin (prime+4)))
       (v : Descriptor) (B : ℕ) (base : ScanData r d w W) (payload : ℕ → Record.Array d 1 (w+1) W)
-      (u : HS K Q prime U) (source : Stacks K prime),
+      (u : HS K Q prime U) (raw : Stacks K prime),
+    v.Positive → (raw.R br).length = v.beforeRows → (raw.R rows).length = v.rows →
+    (raw.R bh).length = v.beforeH → raw.R (dir 9) = [] →
+    let source := {raw with R := Function.update raw.R (dir 9) (List.replicate (v.beforeRows*v.rows*B) tick)}
     let n := (source.R (dir 9)).length
     let box := M^(r*r)
     let width := (source.R (dir 1)).length
@@ -156,7 +161,6 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     (source.R atom).length = w+1 → (source.R one).length = 1 →
     source.R (dir 0) = (List.range n).flatMap word ++ parentTail → (∀ j < n, (word j).length = width) →
     (∀ i ∈ ([2,3,4,5,6,7,10,11,12,13] : List (Fin 15)), source.R (dir i) = []) →
-    n = v.beforeRows*v.rows*B →
     let dirCost := 8*(w+1)+8+22*box + (n*(6*box+10)+6 + (n*box*(9*digits+15)+6 + (n*(box*(8*width+11)+6*width+15)+6 + n*box*(6*(width+digits)+13)+6)))
 
     ready (prime^w) input.R cs → input.R savedC = [] →
@@ -179,8 +183,8 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
         base.records * (4*(S.R (bank 12)).length+4+(r*r*(4*(w+1)+4)+1)+6) + 4
     let a := base.physical e proj α α'
     SignedPassBound regs anchor ports ext v B a payload rs parents saved body
-      (.seq (.seq (LabelDirectorySetup.setup r dir atom one) (.seq (expandMask (dir 9) (dir 4) (dir 2) (dir 3) (dir 5) (dir 12) (fun _ => false)) (LabelDirectoryBuild.program dir))) (.seq writeMask (withIdentitySeed (d+1) (bank 9) (bank 17) seed (bank 4) tmp generate))) pass
-      (dirCost + ((v.beforeRows*v.rows*B)*(LabelTraversal.time (prime^w) (r*r) 1+5)+4 + seededSetupCost (d+1) base.H setupCost)) u source input := by
+      (.seq (LabelSpectators.program r br rows bh atom (dir 2) (dir 9) (dir 3) (dir 5)) (.seq (.seq (LabelDirectorySetup.setup r dir atom one) (.seq (expandMask (dir 9) (dir 4) (dir 2) (dir 3) (dir 5) (dir 12) (fun _ => false)) (LabelDirectoryBuild.program dir))) (.seq writeMask (withIdentitySeed (d+1) (bank 9) (bank 17) seed (bank 4) tmp generate)))) pass
+      (44*LabelMask.records v+13*(w+1)+14 + (dirCost + ((v.beforeRows*v.rows*B)*(LabelTraversal.time (prime^w) (r*r) 1+5)+4 + seededSetupCost (d+1) base.H setupCost))) u raw input := by
   obtain ⟨pass,run⟩ := physicalSignedResidualPass (w := w) (W := W) regs anchor ports ext off banks external shared
     capacity e proj idempotent admissible α α' inverse body rs hk parents saved layout cap cs sizeC
     parentsC savedC maskRegs pivotRegs separate
@@ -189,7 +193,7 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     coeffOff maskLayout retained anchorDirectory portDirectory extDirectory
   obtain ⟨writeMask,write⟩ := record_writes (body := body) r cs sizeC mask parentsC savedC maskLayout
   refine ⟨writeMask,?_⟩
-  intro directoryPorts directorySlot dir atom one atomOff oneOff word parentTail v B base payload u source n box parentWidth digits ancestor tail entries counted input atomWidth oneWidth parentsWord wordWidth scratch parentSize dirCost counterReady savedBlank maskBlank bits initial padWord S queueInputs scan active livePrice generate setupCost a shape records hW D
+  intro directoryPorts directorySlot dir atom one atomOff oneOff br rows bh dimensions word parentTail v B base payload u raw positiveDescriptor beforeRows rowsSize beforeH parentBlank source n box parentWidth digits ancestor tail entries counted input atomWidth oneWidth parentsWord wordWidth scratch dirCost counterReady savedBlank maskBlank bits initial padWord S queueInputs scan active livePrice generate setupCost a shape records hW D
     neutral radix free count width unsigned clean start hm hw fresh maskEmpty encoded padding
   obtain ⟨seedBlank,tmpBlank,weightBank,queueReady,parentWidthEq,width0,empty,output⟩ := queueInputs
   have blank := queueReady.1 4 (by decide)
@@ -212,6 +216,7 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     change Equiv.swap (directoryPorts 9) parentsC (directoryPorts 14) = _
     rw [Equiv.swap_apply_of_ne_of_ne (directoryPorts.injective.ne (by decide : (14 : Fin 15) ≠ 9))
       (directorySlot ▸ (retained parentsC (by simp)).1.symm),directorySlot]
+  have parentSize : n = v.beforeRows*v.rows*B := by simp [n,source]
   have parentCount : (input.R parentsC).length = v.beforeRows*v.rows*B := by
     rw [← parentPort]
     simpa [input,counted,LabelDirectorySetup.prepared,n] using parentSize
@@ -225,8 +230,19 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     rw [← pow_mul]
     rw [show r*((w+1)*r) = (w+1)*(r*r) by ring]
     simp only [Nat.mul_assoc]
+  have rawWidth : (raw.R atom).length = w+1 := by simpa [source,atomOff] using atomWidth
+  obtain ⟨parentsUser,parentSteps,parentUser,parentCost,parentRun⟩ := LabelSpectators.runs body r rankPos
+    br rows bh atom (dir 2) (dir 9) (dir 3) (dir 5) dimensions v positiveDescriptor (w+1) B shape
+    u raw beforeRows rowsSize beforeH rawWidth (by
+      intro k hk
+      simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
+      rcases hk with rfl | rfl | rfl | rfl
+      · simpa [source] using scratch 2 (by decide)
+      · exact parentBlank
+      · simpa [source] using scratch 3 (by decide)
+      · simpa [source] using scratch 5 (by decide))
   have build := LabelDirectorySetup.build_from_parents (body := body) r dir atom one atomOff oneOff
-    u source word parentTail oneWidth scratch
+    parentsUser source word parentTail oneWidth scratch
   simp only [atomWidth,pow_mul prime (w+1) (r*r)] at build
   obtain ⟨built,buildSteps,buildUser,buildCost,buildRun⟩ := build positive parentsWord wordWidth
   have widths (j) (hj : j < base.records) : (S.R (bank 12)).length = (ancestor j).length := by
@@ -323,7 +339,7 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
         rw [← sharedArchive,prep]
         exact scanStart)
       hm hw fresh emptyMask radixC freeC countC encoded padding
-  exact ⟨z,E,_,hz.trans (cleanUser.trans (hy.trans (preparedUser.trans (hUser.trans buildUser)))),queue,acc,maskDone,pivots,archiveDone,Nat.add_le_add (Nat.add_le_add buildCost (Nat.add_le_add hTime (Nat.add_le_add (Nat.add_le_add initCost ht) (Nat.le_of_eq (congrArg (fun n => 2*n+2) padLen))))) hn,
-    Exec.seq (Exec.seq buildRun (Exec.seq emit (Exec.seq (Exec.seq initRun generateRun) clearRun))) exec⟩
+  exact ⟨z,E,_,hz.trans (cleanUser.trans (hy.trans (preparedUser.trans (hUser.trans (buildUser.trans parentUser))))),queue,acc,maskDone,pivots,archiveDone,Nat.add_le_add (Nat.add_le_add parentCost (Nat.add_le_add buildCost (Nat.add_le_add hTime (Nat.add_le_add (Nat.add_le_add initCost ht) (Nat.le_of_eq (congrArg (fun n => 2*n+2) padLen)))))) hn,
+    Exec.seq (Exec.seq parentRun (Exec.seq buildRun (Exec.seq emit (Exec.seq (Exec.seq initRun generateRun) clearRun)))) exec⟩
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
