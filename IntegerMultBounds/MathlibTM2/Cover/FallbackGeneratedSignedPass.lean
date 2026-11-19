@@ -101,12 +101,23 @@ noncomputable def signedPassWork (table : Matrix (Fin r) (Fin r) (ZMod prime) �
   3*parents*(LabelTraversal.time (prime^w) (r*r) 1+5) +
     parents*(prime^w)^(r*r)*perClass + 4*records*((prime^(w+1))^(d+1)*W)
 
+omit [M8.Machine.Net] in
+private theorem invertibleClassCount (r : ℕ) :
+    (LabelSelectors.classes 1 (r*r)).countP (LabelSelectors.accept r) =
+      ∏ i : Fin r, (prime^r - prime^i.val) := by
+  rw [LabelSelectors.classes_eq, one_mul, List.countP_map, ← liveClasses_eq_product]
+  have count := liveLabelCount (m := r) (w := 1) (by decide)
+  have units := LabelPadding.unit_count (m := r) 0
+  rw [show LabelStock.live r 1 1 = fun j => decide ((LabelStock.residue r 1 1 j).det ≠ 0) from rfl] at count
+  simpa only [LabelSelectors.residue_eq, pow_one, LabelSelectors.accept,
+    Function.comp_def, pow_zero, one_pow, mul_one] using count.trans units
+
 /-- Only invertible classes pay the residual volume charge in the physical pass. -/
 theorem signedPassWork_le_setup_add_volume (U : Type) (d w : ℕ) :
     ∃ rate : ℕ, ∀ {r : ℕ} (table : Matrix (Fin r) (Fin r) (ZMod prime) →
       Matrix (Fin (d+1)) (Fin (d+1)) (ZMod prime)) T parents records W H J,
       let xs := LabelSelectors.classes 1 (r*r)
-      let live := xs.countP fun x => decide ((LabelSelectors.matrix r x).det ≠ 0)
+      let live := ∏ i : Fin r, (prime^r - prime^i.val)
       signedPassWork table T parents records w W H J U ≤
         signedPassWork table T parents records w 0 H J U +
           (parents*(prime^w)^(r*r)*((xs.map (classVolumeRate table T)).sum + live*rate) +
@@ -130,6 +141,8 @@ theorem signedPassWork_le_setup_add_volume (U : Type) (d w : ℕ) :
         omega
   unfold signedPassWork
   dsimp only [xs, live, V] at *
+  rw [← invertibleClassCount]
+  unfold LabelSelectors.accept
   simp only [Nat.mul_zero, Nat.zero_mul, Nat.zero_add, Nat.add_zero]
   grw [classes]
   exact le_of_eq (by ring)
