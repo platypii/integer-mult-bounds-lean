@@ -23,6 +23,23 @@ theorem bit_separate_port_swap_budget (saved : ℕ) :
   change 1808352 + 63936 < 1818624 + saved ↔ 53665 ≤ saved
   omega
 
+/-- At a primitive saving of one thousandth, even splitting every selected
+child into rank-one children leaves room for nine more per stage and replica.
+The bill includes the increased bad-residue surcharge on all split calls. -/
+theorem bit_split_budget (n : ℕ)
+    (hn : n ≤ (bitHistogram.map (fun e => e.1 * e.2)).sum + 9 * 32 * 9) :
+    histMoment [(1, n)] 64 (1 - 1 / 1000) + surcharge [(1, n)] 64 (1 - 1 / 1000) < 28416 := by
+  change n ≤ 1810944 at hn
+  have cert : 64 ^ 1 * 10 ^ (6 * 1000) ≤ 1004168 ^ 1000 * 1 ^ 1 := by decide +kernel
+  have power := child_power_le (r := 1) (m := 64) (p := 1) (q := 1000) (D := 6)
+    Nat.one_pos (by decide) (by decide) cert
+  have bad := surcharge_le [(1, n)] (m := 64) (p := 1) (q := 1000) (D := 6)
+    (by decide) (by decide) cert
+  have nr : (n : ℝ) ≤ 1810944 := by exact_mod_cast hn
+  simp only [histMoment, callCount, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil,
+    add_zero, Nat.cast_one, Nat.cast_ofNat, Nat.cast_mul] at bad power ⊢
+  linarith only [bad, nr, mul_le_mul_of_nonneg_left power (Nat.cast_nonneg n)]
+
 private def lowerOk (e : ℕ × ℕ × ℕ) : Bool :=
   decide (0 < e.1 ∧ 0 < e.2.2 - 1 ∧
     e.1 ^ 10 * (e.2.2 - 1) ^ 5769 ≤ 64 ^ 10 * (10 ^ 10) ^ 5769)
