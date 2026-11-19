@@ -1,7 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackCorrectedExchange
-public import IntegerMultBounds.MathlibTM2.Cover.Weighted
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackGoodPayload
 
 /-! The corrected exchange schedule on the two packed fields of a stopped leaf. -/
 @[expose] public section
@@ -60,9 +60,48 @@ theorem leafSchedule_action {X : Type*} (rank : ℕ) (w inv : Fin d → R)
     _ = coords.foldl step (start x) := by rw [← List.foldl_map,List.map_get_finRange]
     _ = _ := leafSchedule_packed rank w inv unit (s x)
 
+/-- Inactive coordinates carry the identity weight in the semantic address map. -/
+def extendLeafWeight {rank n : ℕ} (a : Fin rank → R) (j : Fin n) : R :=
+  if h : j.val < rank then a ⟨j.val,h⟩ else 1
+
+theorem packedLeaf_childFields {r g : ℕ} (weight inv : Fin r → R)
+    (hg tg : Fin g → R) (s : State (Fin r) R) :
+    Weighted.child r (extendLeafWeight weight) (extendLeafWeight inv) (childFields hg tg s) =
+      childFields hg tg (Weighted.child r weight inv s) := by
+  rw [childFields_apply]
+  simp [extendLeafWeight]
+
+/-- View the serialized head and tail coordinates in place. -/
+def leafFields {n : ℕ} {R : Type*} (x : Fin (n+n) → R) : State (Fin n) R :=
+  (fun i => x (i.castAdd n),fun i => x (i.natAdd n))
+
+theorem leafFields_append {n : ℕ} {R : Type*} (s : State (Fin n) R) :
+    leafFields (Fin.append s.1 s.2) = s := by
+  apply Prod.ext <;> funext i <;> simp only [leafFields,Fin.append_left,Fin.append_right]
+
 open IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2.Stack Host
 open Mult.PhaseCellToeplitz M8 ActualAffineScaling FlatCoordinateLayout
 open IntegerMultBounds.Networks.Shared50ModularControl (prime prime_prime)
+/-- Read the returned payload on the caller's tape, including every spectator slice. -/
+theorem packedLeaf_return {A T b w r g W : ℕ} [NeZero (b^(w+1))] {α : Type}
+    (weight inv : Fin r → ZMod (b^(w+1))) (bank : Fin 35 ↪ Fin T) (H J : ℕ)
+    (archive : List (Fin (A+4))) (sym : α → Fin 4) (source dest : ℤ → Fin 4) (p q : ℤ)
+    (original : Fin ((b^(w+1))^((r+g)+(r+g))*W) → α) (S : Stacks T A) :
+    ColumnRecordReady bank H J archive sym source dest p q original
+      (fun x => let z := Weighted.child r (extendLeafWeight weight) (extendLeafWeight inv)
+                  (leafFields (n := r+g) x)
+                Fin.append z.1 z.2) S →
+    ∃ out : Fin ((b^(w+1))^((r+g)+(r+g))*W) → α, RecordReady (d := (r+g)+(r+g)) (b := b) (w := w) (W := W) bank H J archive sym source dest p q out S ∧
+      ∀ (hg tg : Fin g → ZMod (b^(w+1))) (x : State (Fin r) (ZMod (b^(w+1)))) (j : Fin W),
+        let addr := fun y => let z := childFields hg tg y; index (Fin.append z.1 z.2) j
+        out (addr (Weighted.child r weight inv x)) = original (addr x) := by
+  rintro ⟨out,ready,action⟩
+  refine ⟨out,ready,?_⟩
+  intro hg tg x j
+  let z := childFields hg tg x
+  have result := action (Fin.append z.1 z.2) j
+  simpa only [leafFields_append,z,packedLeaf_childFields] using result
+
 variable [M8.Machine.Net] {P U : Type} {w W Q : ℕ}
 local notation "M" => prime^(w+1)
 local notation "fields" => d+1
@@ -70,33 +109,44 @@ local instance : NeZero M := ⟨(pow_pos prime_prime.pos _).ne'⟩
 
 /-- Run a stopped leaf on the packed column. The reciprocal archive supplies
 the outer shear and a single unit pivot serves every pair. -/
-theorem packedLeaf_exec (rank : ℕ) (weight inv : Fin fields → ZMod M)
+theorem packedLeaf_exec (rank : ℕ) (weight inv : Fin rank → ZMod M)
     (unit : ∀ i, weight i * inv i = 1) (H J : ℕ) (hm : M < 2^H) (hw : W < 2^J) (hW : 0 < W)
     (tail rest : List (Fin (prime+4))) (dest : ℤ → Fin 4) (q : ℤ)
     (empty : ∀ z, q ≤ z → z < q+(M^(fields+fields)*W : ℕ) → dest z = blank)
-    (original : Fin (M^(fields+fields)*W) → ZMod 2) (state : (Fin (fields+fields) → ZMod M) → State (Fin fields) (ZMod M)) :
+    (original : Fin (M^(fields+fields)*W) → ZMod 2) :
     let coords := (List.finRange fields).filter (fun i => i.val < rank)
+    let read := fun a : Fin coords.length => (⟨(coords.get a).val,
+      of_decide_eq_true (List.mem_filter.mp (coords.get_mem a)).2⟩ : Fin rank)
     let k : Fin coords.length → Fin ((fields+d)+1) := fun a => (coords.get a).castAdd fields
     let t : Fin coords.length → Fin ((fields+d)+1) := fun a => (coords.get a).rev.natAdd fields
     ∀ (capacity : columnCapacity ≤ Q) (signCapacity : ∀ a : Fin coords.length, (fieldSignProgram (n := (fields+d)+1) (k a) true).1 ≤ Q),
-    CorrectedScheduleRuns (P := P) (U := U) (d := fields+d) (n := coords.length) (Q := Q) (w := w) (W := W) k t capacity signCapacity inv coords.get
+    CorrectedScheduleRuns (P := P) (U := U) (d := fields+d) (n := coords.length) (Q := Q) (w := w) (W := W) k t capacity signCapacity inv read
       (fun _ : Fin 1 => (1 : ZMod M)) (fun _ => 0) H J tail rest dest q original
-      (fun x => Fin.append (m := fields) (n := fields) (state x).1 (state x).2)
-      (fun x => let z := Weighted.child rank weight inv (state x); Fin.append (m := fields) (n := fields) z.1 z.2) := by
-  intro coords k t capacity signCapacity
+      id
+      (fun x => let z := Weighted.child rank (extendLeafWeight weight) (extendLeafWeight inv) (leafFields x); Fin.append (m := fields) (n := fields) z.1 z.2) := by
+  intro coords read k t capacity signCapacity
   have lt (a) : k a < t a := by
     change (coords.get a).val < fields + (coords.get a).rev.val
     have := (coords.get a).isLt
     omega
-  have run := correctedSchedule_exec (P := P) (U := U) (d := fields+d) (n := coords.length) (Q := Q) (w := w) (W := W) k t lt capacity signCapacity inv coords.get
-    (fun a => weight (coords.get a)) (fun a => (mul_comm ..).trans (unit _))
+  have run := correctedSchedule_exec (P := P) (U := U) (d := fields+d) (n := coords.length) (Q := Q) (w := w) (W := W) k t lt capacity signCapacity inv read
+    (fun a => weight (read a)) (fun a => (mul_comm ..).trans (unit _))
     (fun _ : Fin 1 => (1 : ZMod M)) (fun _ => 0) (fun _ => isUnit_one)
-    H J hm hw hW tail rest dest q empty original (fun x => Fin.append (m := fields) (n := fields) (state x).1 (state x).2)
-  have act := leafSchedule_action rank weight inv unit state
+    H J hm hw hW tail rest dest q empty original (fun x => Fin.append (m := fields) (n := fields) (leafFields x).1 (leafFields x).2)
+  have units (j : Fin fields) : extendLeafWeight weight j * extendLeafWeight inv j = 1 := by
+    by_cases h : j.val < rank <;> simp [extendLeafWeight,h,unit]
+  have inRange (a : Fin coords.length) : (coords.get a).val < rank := (read a).isLt
+  have act := leafSchedule_action rank (extendLeafWeight weight) (extendLeafWeight inv) units (leafFields (n := fields))
   dsimp only at act
+  rw [show (id : (Fin (fields+fields) → ZMod M) → _) =
+    (fun x => Fin.append (m := fields) (n := fields) (leafFields x).1 (leafFields x).2) by
+      funext x; exact Fin.append_castAdd_natAdd.symm]
   apply (congrArg (fun out => CorrectedScheduleRuns (P := P) (U := U) (d := fields+d) k t
-    capacity signCapacity inv coords.get (fun _ : Fin 1 => (1 : ZMod M)) (fun _ => 0) H J tail rest dest q original
-    (fun x => Fin.append (m := fields) (n := fields) (state x).1 (state x).2) out) act).mp
-  simpa only [Ring.inverse_one,mul_one,k,t,coords,Nat.add_one,Nat.add_succ] using run
+    capacity signCapacity inv read (fun _ : Fin 1 => (1 : ZMod M)) (fun _ => 0) H J tail rest dest q original
+    (fun x => Fin.append (m := fields) (n := fields) (leafFields x).1 (leafFields x).2) out) act).mp
+  have atCoord (a : Fin coords.length) (f : Fin rank → ZMod M) :
+      extendLeafWeight f (coords.get a) = f (read a) := dite_eq_left (inRange a)
+  dsimp only [coords] at atCoord
+  simpa only [Ring.inverse_one,mul_one,k,t,coords,atCoord,Nat.add_one,Nat.add_succ] using run
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback.Record
