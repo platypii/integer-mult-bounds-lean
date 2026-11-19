@@ -34,11 +34,8 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
       (u : HS K Q prime U) (S : Stacks K prime),
       let a := base.physical e proj α α'
       let archive := ports (archivePorts 0 (columnBank 34))
-      (∃ y F t, y.user = u.user ∧ t ≤ setupCost ∧ Exec body generate (mk u S) t (mk y F) ∧
-        F.R mask = [] ∧ F.R directory = tail ∧ F.R archive = a.matrices 0 ∧
-        (∀ k, k ≠ mask → k ≠ directory → k ≠ archive → F.R k = S.R k) ∧
-        F.inp = S.inp ∧ F.out = S.out ∧ F.L = S.L) →
-      let G := {S with R := Function.update (Function.update (Function.update S.R mask []) directory tail) archive (a.matrices 0)}
+      let G := queueResult S mask directory archive tail (a.matrices 0)
+      (∃ y t, y.user = u.user ∧ t ≤ setupCost ∧ Exec body generate (mk u S) t (mk y G)) →
       v.beforeH = B*prime^(r*((w+1)*r)) →
       a.records = LabelMask.records v → 0 < W →
       let D := embStk anchor G
@@ -67,20 +64,9 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     capacity e proj idempotent admissible α α' inverse body rs hk parents saved layout cap cs sizeC
     parentsC savedC maskRegs pivotRegs separate
   refine ⟨pass,?_⟩
-  intro generate mask directory tail setupCost v B base inputs u S a archive made G shape records hW D
+  intro generate mask directory tail setupCost v B base inputs u S a archive G made shape records hW D
     neutral radix free count width unsigned clean start hm hw fresh empty radixC freeC countC encoded padding
-  obtain ⟨y,F,t,hy,ht,generateRun,maskEnd,dirEnd,archiveEnd,keep,inp,out,left⟩ := made
-  have state : F = G := by
-    refine Stacks.ext inp out left ?_
-    funext k
-    by_cases ha : k = archive
-    · subst k; simpa [G] using archiveEnd
-    by_cases hd : k = directory
-    · subst k; simpa [G,Function.update_of_ne ha] using dirEnd
-    by_cases hmask : k = mask
-    · subst k; simpa [G,Function.update_of_ne ha,Function.update_of_ne hd] using maskEnd
-    simpa [G,Function.update_of_ne ha,Function.update_of_ne hd,Function.update_of_ne hmask] using keep k hmask hd ha
-  rw [state] at generateRun
+  obtain ⟨y,t,hy,ht,generateRun⟩ := made
   have installed : G.R archive = a.matrices 0 := Function.update_self ..
   have prep : Function.update G.R archive (a.matrices 0) = G.R := by rw [← installed,Function.update_eq_self]
   obtain ⟨z,E,n,hz,queue,acc,maskDone,pivots,archiveDone,hn,exec⟩ :=

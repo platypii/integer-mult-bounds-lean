@@ -64,6 +64,10 @@ theorem directoryScan_exec (body : P → Pr P T Q prime U) (r : Fin 6 ↪ Fin T)
     · simp [Function.update_of_ne (outside _)]
     · cases eq : active j <;> simpa [branch,eq] using run
 
+def queueResult {A : ℕ} (S : Stacks T A) (mask directory archive : Fin T)
+    (tail words : List (Fin (A+4))) : Stacks T A :=
+  {S with R := Function.update (Function.update (Function.update S.R mask []) directory tail) archive words}
+
 theorem directoryQueue_exec (body : P → Pr P T Q prime U) (r : Fin 6 ↪ Fin T) (mask : Fin T)
     (outside : ∀ k, mask ≠ r k) (m w records : ℕ) (active : ℕ → Bool)
     (live : Pr P T Q prime U) (seed tmp : Fin T)
@@ -83,13 +87,11 @@ theorem directoryQueue_exec (body : P → Pr P T Q prime U) (r : Fin 6 ↪ Fin T
     (output : S.R (r 5) = []) (bits : S.R mask = (List.range records).map fun j => bitSymbol (active j)) :
     let branch := fun p => Prog.seq p (.seq (moveR (r 4) (r 5) id) (advanceDirectory m r))
     let words := (List.range records).flatMap word
-    ∃ z F n, z.user = v.user ∧ F.R mask = [] ∧ F.R (r 2) = tail ∧ F.R (r 4) = words ∧
-      F.R (r 5) = [] ∧ (∀ k, k ≠ mask → k ≠ r 2 → k ≠ r 4 → F.R k = S.R k) ∧
-      F.inp = S.inp ∧ F.out = S.out ∧ F.L = S.L ∧
+    ∃ z n, z.user = v.user ∧
       n ≤ ((List.range records).map fun j => cost j+2*(word j).length+2+
         (4*(ancestor j).length+4+(m*m*(4*w+4)+1))+4).sum+2+(2*words.length+2) ∧
       Exec body (.seq (maskedScan mask (branch live) (branch (bcopy seed (r 4) (r 3) tmp)))
-        (moveR (r 5) (r 4) id)) (mk v S) n (mk z F) := by
+        (moveR (r 5) (r 4) id)) (mk v S) n (mk z (queueResult S mask (r 2) (r 4) tail words)) := by
   intro branch words
   have step j (hj : j < records) := emit j hj
   obtain ⟨u,B,n,hu,maskEnd,dirEnd,rev,frame,inp,out,left,hn,scan⟩ :=
@@ -107,15 +109,25 @@ theorem directoryQueue_exec (body : P → Pr P T Q prime U) (r : Fin 6 ↪ Fin T
   have dst := (frame (r 4) (outside 4).symm (by simp) (by simp)).trans empty
   have src : B.R (r 5) = words.reverse := by simpa [words] using rev
   obtain ⟨z,hz,move⟩ := moveR_exec body (r 5) (r 4) (by simp) id u B
-  refine ⟨z,{B with R := movedR B.R (r 5) (r 4) id (B.R (r 5))},_,hz.trans hu,?_,?_,?_,?_,?_,inp,out,left,?_,Exec.seq scan move⟩
-  · simpa [movedR,Function.update_of_ne (outside _)] using maskEnd
-  · simpa [movedR] using dirEnd
-  · simp [movedR,src,dst]
-  · simp [movedR]
-  · intro k hm hd ho
-    by_cases h : k = r 5
-    · subst k; simp [movedR,output]
-    · simpa [movedR,Function.update_of_ne ho,Function.update_of_ne h] using frame k hm hd h
-  · rw [src,List.length_reverse]; exact Nat.add_le_add_right hn _
+  have state : {B with R := movedR B.R (r 5) (r 4) id (B.R (r 5))} =
+      queueResult S mask (r 2) (r 4) tail words := by
+    apply Stacks.ext
+    · exact inp
+    · exact out
+    · exact left
+    funext k
+    by_cases ha : k = r 4
+    · subst k; simp [queueResult,movedR,src,dst]
+    by_cases hd : k = r 2
+    · subst k; simpa [queueResult,movedR] using dirEnd
+    by_cases hm : k = mask
+    · subst k; simpa [queueResult,movedR,Function.update_of_ne (outside _)] using maskEnd
+    by_cases hs : k = r 5
+    · subst k; simp [queueResult,movedR,Function.update_of_ne hm,output]
+    simpa [queueResult,movedR,Function.update_of_ne ha,Function.update_of_ne hd,
+      Function.update_of_ne hm,Function.update_of_ne hs] using frame k hm hd hs
+  rw [state] at move
+  refine ⟨z,_,hz.trans hu,?_,Exec.seq scan move⟩
+  rw [src,List.length_reverse]; exact Nat.add_le_add_right hn _
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback

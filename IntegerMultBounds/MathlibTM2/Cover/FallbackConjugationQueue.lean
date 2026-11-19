@@ -101,14 +101,12 @@ theorem physicalResidualQueue_exec (body : P → Pr P T Q prime U)
     let branch := fun p => Prog.seq p (.seq (moveR (scan 4) (scan 5) id) (advanceDirectory m scan))
     let words := (List.range records).flatMap word
     words.length = records*(d*d*H) ∧
-    ∃ (z : HS T Q prime U) (F : Stacks T prime) (n : ℕ), z.user = v.user ∧ F.R mask = [] ∧ F.R (scan 2) = tail ∧ F.R (scan 4) = words ∧
-      F.R (scan 5) = [] ∧ (∀ k, k ≠ mask → k ≠ scan 2 → k ≠ scan 4 → F.R k = S.R k) ∧
-      F.inp = S.inp ∧ F.out = S.out ∧ F.L = S.L ∧
+    ∃ (z : HS T Q prime U) (n : ℕ), z.user = v.user ∧
       n ≤ (List.range records).countP active * (livePrice + 4*(d*d*H)) +
         (List.range records).countP (fun j => !active j) * (10*(d*d*H)+6) +
         records * (4*(S.R (bank 12)).length+4+(m*m*(4*(w+1)+4)+1)+6) + 4 ∧
       Exec body (.seq (maskedScan mask (branch live) (branch (bcopy seed (scan 4) (scan 3) tmp)))
-        (moveR (scan 5) (scan 4) id)) (mk v S) n (mk z F) := by
+        (moveR (scan 5) (scan 4) id)) (mk v S) n (mk z (queueResult S mask (scan 2) (scan 4) tail words)) := by
   intro size host control mask seed tmp bank r counters clock count pool coeff archive archiveOff coeffOff ancestor tail
     d e α α' padWord v S seedWord tmpBlank weightBank ready
     widths width blank empty directory output bits
