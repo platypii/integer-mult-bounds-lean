@@ -371,6 +371,43 @@ theorem leaf_word (a a' : R) (h : a * a' = 1) (p : R × R) :
   · dsimp only [shear, Prod.swap]
     linear_combination y * h
 
+/-- Apply the stopped leaf word to one head coordinate and its reversed tail partner. -/
+def leafAt {m : ℕ} (ω ω' : Fin m → R) (s : State (Fin m) R) (i : Fin m) : State (Fin m) R :=
+  let p := (s.1 i, s.2 i.rev)
+  let q := (shear (ω i) ((shear (-ω' i) ((shear (ω i) p.swap).swap)).swap)).swap
+  (Function.update s.1 i q.1, Function.update s.2 i.rev (-q.2))
+
+/-- In any order, the leaf words on distinct coordinates implement their weighted exchanges. -/
+theorem fold_leafAt {m : ℕ} (ω ω' : Fin m → R) (coords : List (Fin m)) (distinct : coords.Nodup)
+    (units : ∀ i ∈ coords, ω i * ω' i = 1) (s : State (Fin m) R) :
+    coords.foldl (leafAt ω ω') s =
+      (fun i => if i ∈ coords then ω i * s.2 i.rev else s.1 i,
+       fun j => if j.rev ∈ coords then ω' j.rev * s.1 j.rev else s.2 j) := by
+  induction coords generalizing s with
+  | nil => simp
+  | cons i rest ih =>
+    obtain ⟨absent,tail⟩ := List.nodup_cons.mp distinct
+    rw [List.foldl_cons, ih tail (fun j hj => units j (List.mem_cons_of_mem _ hj))]
+    have word := leaf_word (ω i) (ω' i) (units i (by simp)) (s.1 i,s.2 i.rev)
+    have head := congrArg Prod.fst word
+    have last := congrArg Prod.snd word
+    apply Prod.ext <;> funext j
+    · by_cases eq : j = i
+      · subst j; simpa [leafAt,absent] using head
+      · have rev : j.rev ≠ i.rev := fun h => eq (Fin.rev_injective h)
+        simp [leafAt,eq,rev]
+    · by_cases eq : j.rev = i
+      · have hj : j = i.rev := by simpa using congrArg Fin.rev eq
+        subst j; simpa [leafAt,absent] using last
+      · have rev : j ≠ i.rev := fun h => eq (by simp [h])
+        simp [leafAt,eq,rev]
+
+theorem child_leafWords {m : ℕ} (r : ℕ) (ω ω' : Fin m → R)
+    (units : ∀ i : Fin m, i.val < r → ω i * ω' i = 1) (s : State (Fin m) R) :
+    ((List.finRange m).filter (fun i => i.val < r)).foldl (leafAt ω ω') s = child r ω ω' s := by
+  rw [fold_leafAt _ _ _ ((List.nodup_finRange m).filter _) (fun i hi => units i (by simpa using hi))]
+  simp [child]
+
 /-- Unit-pivot elimination of an invertible matrix on `2m` coordinates uses at most
 `2m (2m - 1)` additions, `2m` exchanges and `2m - 1` diagonal pairs. With six children per addition
 and per diagonal pair and three per exchange, a fallback has fewer than `32 m²` children. -/
