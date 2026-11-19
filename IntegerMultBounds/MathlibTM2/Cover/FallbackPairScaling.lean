@@ -23,32 +23,41 @@ noncomputable def pairScalingTime (U : Type) (i k t : Fin d) (w W H J : ℕ) : �
   let exchangeCost := fun one => 2*shearCost one false + shearCost one true + 2*swapCost
   2*swapCost + exchangeCost true + exchangeCost false
 
+/-- Only the six swaps contribute the width-dependent factor. Both coefficients
+are uniform across atom widths and counter widths. -/
+theorem pairScalingTime_le_setup_add_width_volume (U : Type) (i k t : Fin d) :
+    ∃ swaps shears : ℕ, ∀ w W H J, pairScalingTime U i k t w W H J ≤
+      pairScalingTime U i k t w 0 H J +
+        (swaps * swapVolumeRate w + shears) * ((prime^(w+1))^d * W) := by
+  let shear := fun neg one w W H J => cleanPairShearTime (P := Empty) (U := U) (A := prime)
+    Empty.elim (Function.Embedding.refl _) i k t prime w W H J false neg one
+  let swap := fun w W H J => completeSwapTime (P := Empty) (U := U) Empty.elim d k t w W H J
+  have shearRate (neg one : Bool) : ∃ r : ℕ, ∀ w W H J, shear neg one w W H J =
+      shear neg one w 0 H J + r * ((prime^(w+1))^d * W) :=
+    ⟨_, fun w W H J => cleanPairShearTime_eq_setup_add_volume _ _ i k t prime w W H J false neg one⟩
+  have swapRate : ∃ r : ℕ, ∀ w W H J, swap w W H J ≤
+      swap w 0 H J + r * swapVolumeRate w * ((prime^(w+1))^d * W) :=
+    ⟨_, fun w W H J => completeSwapTime_le_setup_add_volume _ d k t w W H J⟩
+  choose r hr using shearRate
+  obtain ⟨s, hs⟩ := swapRate
+  refine ⟨6*s, 2*r false true + r true true + 2*r false false + r true false, ?_⟩
+  intro w W H J
+  unfold pairScalingTime
+  change 2*(1+swap w W H J) + (2*(1+shear false true w W H J) + (1+shear true true w W H J) +
+    2*(1+swap w W H J)) + (2*(1+shear false false w W H J) + (1+shear true false w W H J) +
+    2*(1+swap w W H J)) ≤ _
+  rw [hr false true w W, hr true true w W, hr false false w W, hr true false w W]
+  grw [hs w W H J]
+  dsimp only [shear, swap]
+  exact le_of_eq (by ring)
+
 /-- At fixed atom width, the whole reciprocal scaling has a per-symbol rate
 independent of payload width and of the two counter widths. -/
 theorem pairScalingTime_le_setup_add_volume (U : Type) (i k t : Fin d) (w : ℕ) :
     ∃ rate : ℕ, ∀ W H J, pairScalingTime U i k t w W H J ≤
       pairScalingTime U i k t w 0 H J + rate * ((prime^(w+1))^d * W) := by
-  let shear := fun neg one W H J => cleanPairShearTime (P := Empty) (U := U) (A := prime)
-    Empty.elim (Function.Embedding.refl _) i k t prime w W H J false neg one
-  let swap := fun W H J => completeSwapTime (P := Empty) (U := U) Empty.elim d k t w W H J
-  have shearRate (neg one : Bool) : ∃ r : ℕ, ∀ W H J, shear neg one W H J =
-      shear neg one 0 H J + r * ((prime^(w+1))^d * W) :=
-    ⟨_, fun W H J => cleanPairShearTime_eq_setup_add_volume _ _ i k t prime w W H J false neg one⟩
-  have swapRate : ∃ r : ℕ, ∀ W H J, swap W H J ≤
-      swap 0 H J + r * ((prime^(w+1))^d * W) :=
-    ⟨_, fun W H J => completeSwapTime_le_setup_add_volume _ d k t w W H J⟩
-  choose r hr using shearRate
-  obtain ⟨s, hs⟩ := swapRate
-  refine ⟨6*s + 2*r false true + r true true + 2*r false false + r true false, ?_⟩
-  intro W H J
-  unfold pairScalingTime
-  change 2*(1+swap W H J) + (2*(1+shear false true W H J) + (1+shear true true W H J) +
-    2*(1+swap W H J)) + (2*(1+shear false false W H J) + (1+shear true false W H J) +
-    2*(1+swap W H J)) ≤ _
-  rw [hr false true W, hr true true W, hr false false W, hr true false W]
-  grw [hs W H J]
-  dsimp only [shear, swap]
-  exact le_of_eq (by ring)
+  obtain ⟨swaps, shears, bound⟩ := pairScalingTime_le_setup_add_width_volume U i k t
+  exact ⟨_, bound w⟩
 
 theorem pairScaling_exec (i k t : Fin d) (hk : k < t) (a : Fin d → ZMod M) (unit : IsUnit (a i))
     (H J : ℕ) (hm : M < 2^H) (hw : W < 2^J) (hW : 0 < W)
