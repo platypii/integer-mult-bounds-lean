@@ -41,13 +41,13 @@ theorem leafHeaderCopy_cost (lengthAt : Fin 58 → ℕ) (H J w rank : ℕ)
   rw [base,width,unitLen,padded,clockLen,archive]
   omega
 
-def copyLeafHeaders (src dst : Fin 7 → Fin T) (tmp aux : Fin T) : List (Fin 7) → Pr P T Q A U
+def copyLeafHeaders {k : ℕ} (src dst : Fin k → Fin T) (tmp aux : Fin T) : List (Fin k) → Pr P T Q A U
   | [] => .act .done
   | i :: is => .seq (bcopy (src i) (dst i) tmp aux) (copyLeafHeaders src dst tmp aux is)
 
-theorem copyLeafHeaders_exec (body : P → Pr P T Q A U) (src : Fin 7 → Fin T) (dst : Fin 7 ↪ Fin T)
+theorem copyLeafHeaders_exec {k : ℕ} (body : P → Pr P T Q A U) (src : Fin k → Fin T) (dst : Fin k ↪ Fin T)
     (tmp aux : Fin T) (apart : ∀ i j, src i ≠ dst j)
-    (ports : ∀ i, [src i,dst i,tmp,aux].Nodup) (xs : List (Fin 7)) (unique : xs.Nodup)
+    (ports : ∀ i, [src i,dst i,tmp,aux].Nodup) (xs : List (Fin k)) (unique : xs.Nodup)
     (v : HS T Q A U) (S : Stacks T A) (ht : S.R tmp = []) (ha : S.R aux = [])
     (empty : ∀ i ∈ xs, S.R (dst i) = []) :
     ∃ z F, z.user = v.user ∧
