@@ -329,6 +329,43 @@ theorem translated_map {α β : Type*} (encode : α → β) (word : Fin (P*(M*B)
     List.map_ofFn,List.map_drop,List.map_take,Function.comp_def]
 
 open M8.RevMachine RecursiveInterchangeLayout SharedBankStageInput in
+/-- Replace a single represented role after an in-place tape operation. -/
+theorem leafBank_writeRole [M8.Machine.Net] (v : Descriptor) (io : Fin T) (roles : Tapes T prime)
+    (f : ℤ → Fin (prime+4)) (p : ℤ) (node scalar : Tapes 1 prime)
+    (ctr : Fin CommonBank.K → Option ℕ) (st : Tapes 2 prime) (tape : ℤ → Fin (prime+4)) :
+    let block := LeafCore.core io
+    let bank := fun t => raw (CommonBank.bank (SharedPlacementAlphabet.setTape roles io t 0)
+      (Routines.hdr v) f p node scalar ctr st) block.tapes
+    ∀ {K : ℕ} (ports : Fin block.tapes ↪ Fin K) (S E : Stacks K prime) (slot : Fin block.tapes),
+      slot.val = io.val →
+      RepT (raw (CommonBank.bank roles (Routines.hdr v) f p node scalar ctr st) block.tapes) (S.L ∘ ports) (S.R ∘ ports) →
+      (∀ i, i ≠ slot → E.L (ports i) = S.L (ports i) ∧ E.R (ports i) = S.R (ports i)) →
+      (∀ x, readAt blank (E.L (ports slot)) (E.R (ports slot)) x = tape x) →
+      RepT (bank tape) (E.L ∘ ports) (E.R ∘ ports) := by
+  intro block bank K ports S E slot leading initial frame payload
+  have view (tape : ℤ → Fin (prime+4)) : (bank tape).head slot = 0 ∧ (bank tape).tape slot = tape := by
+    have lt : slot.val < CommonBank.count T := leading ▸ (LeafCore.roleSlot io).isLt
+    have eq : (⟨slot.val,lt⟩ : Fin (CommonBank.count T)) = LeafCore.roleSlot io := Fin.ext leading
+    have h := LeafCore.bank_role (SharedPlacementAlphabet.setTape roles io tape 0) (Routines.hdr v)
+      f p node scalar ctr st io
+    simpa only [bank,raw,dite_eq_left lt,eq,SharedPlacementAlphabet.setTape,Function.update_self] using h
+  intro i x
+  by_cases h : i = slot
+  · subst i
+    rw [(view _).1,(view _).2,sub_zero]
+    exact (payload x).symm
+  · simp only [Function.comp_apply]
+    rw [(frame i h).1,(frame i h).2]
+    have cell := initial i x
+    by_cases inside : i.val < CommonBank.count T
+    · have different : (⟨i.val,inside⟩ : Fin (CommonBank.count T)) ≠ LeafCore.roleSlot io :=
+        fun eq => h (Fin.ext ((congrArg Fin.val eq).trans leading.symm))
+      obtain ⟨hh,ht⟩ := LeafCore.bank_set roles (Routines.hdr v) f p node scalar ctr st io
+        tape _ different
+      simpa only [embStk,Function.comp_apply,bank,raw,dite_eq_left inside,hh,ht] using cell
+    · simpa only [embStk,Function.comp_apply,bank,raw,dite_eq_right inside] using cell
+
+open M8.RevMachine RecursiveInterchangeLayout SharedBankStageInput in
 /-- Execute the ordinary swap on host stacks after a shear. The selected role
 comes from the returned stack read; the caller supplies the other tape views. -/
 theorem swapReturnedShear_exec [M8.Machine.Net] (v : Descriptor) (positive : v.Positive)
@@ -360,22 +397,8 @@ theorem swapReturnedShear_exec [M8.Machine.Net] (v : Descriptor) (positive : v.P
     have h := LeafCore.bank_role (SharedPlacementAlphabet.setTape roles io tape 0) (Routines.hdr v)
       f p node scalar ctr st io
     simpa only [bank,raw,dite_eq_left lt,eq,SharedPlacementAlphabet.setTape,Function.update_self] using h
-  have ready : RepT (bank (leafBitTape xs)) (E.L ∘ ports) (E.R ∘ ports) := by
-    intro i x
-    by_cases h : i = slot
-    · subst i
-      rw [(view _).1,(view _).2,sub_zero]
-      simpa only [embStk,Function.comp_apply,xs,leafBitTape,translated_map] using (payload x).symm
-    · simp only [Function.comp_apply]
-      rw [(frame i h).1,(frame i h).2]
-      have cell := initial i x
-      by_cases inside : i.val < CommonBank.count T
-      · have different : (⟨i.val,inside⟩ : Fin (CommonBank.count T)) ≠ LeafCore.roleSlot io :=
-          fun eq => h (Fin.ext ((congrArg Fin.val eq).trans leading.symm))
-        obtain ⟨hh,ht⟩ := LeafCore.bank_set roles (Routines.hdr v) f p node scalar ctr st io
-          (leafBitTape xs) _ different
-        simpa only [embStk,Function.comp_apply,bank,raw,dite_eq_left inside,hh,ht] using cell
-      · simpa only [embStk,Function.comp_apply,bank,raw,dite_eq_right inside] using cell
+  have ready := leafBank_writeRole v io roles f p node scalar ctr st (leafBitTape xs) ports S E slot
+    leading initial frame (by intro x; simpa only [xs,leafBitTape,translated_map] using payload x)
   have run := swapLeafList_runs v positive size xs (FiberLayoutData.translated_length ..) io
     (SharedPlacementAlphabet.setTape roles io (leafBitTape xs) 0) (by simp [SharedPlacementAlphabet.setTape])
     (by simp [SharedPlacementAlphabet.setTape]) f p node scalar ctr st

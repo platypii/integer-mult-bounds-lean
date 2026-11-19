@@ -536,18 +536,25 @@ theorem threeMiddleShears_exec [M8.Machine.Net] (v : Descriptor) (positive : v.P
         RepT (raw (CommonBank.bank roles (Routines.hdr v) f p node scalar ctr st) block.tapes) (S.L ∘ ports) (S.R ∘ ports) →
         ∃ z D n, z.user = u.user ∧ n ≤ middleShearsCost P M G B (volume prime v) v.width block.tapes push ∧
           Exec body (((stage false).seq (stage true)).seq (lastProg.seq (clearWorkTapes work))) (mk u S) n (mk z D) ∧
+          RepT (raw (CommonBank.bank (SharedPlacementAlphabet.setTape roles io
+            (leafBitTape (FiberLayoutData.translated y (fun i => (c false).val*(i.val/G%M)%M))) 0)
+            (Routines.hdr v) f p node scalar ctr st) block.tapes) (D.L ∘ ports) (D.R ∘ ports) ∧
           (∀ x, readAt blank (D.L (ports slot)) (D.R (ports slot)) x = leafBitTape (FiberLayoutData.translated y (fun i => (c false).val*(i.val/G%M)%M)) x) ∧
           (∀ j : Fin 31, D.L (j.natAdd K) = [] ∧ D.R (j.natAdd K) = []) ∧
           ∀ j : Fin K, (∀ i, sim i ≠ j) →
             D.L (j.castAdd 31) = S.L (j.castAdd 31) ∧ D.R (j.castAdd 31) = S.R (j.castAdd 31) := by
   intro block K sim src apart slot leading capacity ports shear prog lastProg work stage result y body u S push hp hl hb free headers initial
-  obtain ⟨b,H,n,hu,hn,run,_,read,clean,keep⟩ := twoMiddleSwaps_exec v positive size w radix c hP hG hB
+  obtain ⟨b,H,n,hu,hn,run,rep,read,clean,keep⟩ := twoMiddleSwaps_exec v positive size w radix c hP hG hB
     word io roles head input f p node scalar ctr st sim src (apart true) slot leading capacity body u S push hp hb free headers initial
   obtain ⟨z,D,m,hz,hm,last,out,empty,preserved⟩ := loadedMiddleShear_exec (sim slot) capacity w _ radix
     (c false).isLt hP hG hB y (src false) body b H push hl hb clean
     (fun i => ((keep _ (fun j => apart false j i)).2).trans (headers false i))
     (by simpa only [Function.Embedding.trans_apply, Fin.castAddEmb_apply] using read)
-  refine ⟨z,D,n+m,hz.trans hu,(by dsimp only [middleShearsCost,block]; exact Nat.add_le_add hn hm),Exec.seq run last,?_,empty,?_⟩
+  refine ⟨z,D,n+m,hz.trans hu,(by dsimp only [middleShearsCost,block]; exact Nat.add_le_add hn hm),Exec.seq run last,?_,?_,empty,?_⟩
+  · have updated := leafBank_writeRole v io (SharedPlacementAlphabet.setTape roles io (leafBitTape (List.ofFn y)) 0)
+        f p node scalar ctr st _ ports H D slot leading rep
+        (fun i hi => preserved (sim i) (sim.injective.ne hi)) out
+    simpa only [SharedPlacementAlphabet.setTape,Function.update_idem] using updated
   · simpa only [ports,Function.Embedding.trans_apply,Fin.castAddEmb_apply] using out
   · intro j hj
     have same := preserved j (hj slot).symm

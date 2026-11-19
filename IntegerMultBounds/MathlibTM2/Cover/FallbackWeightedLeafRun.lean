@@ -77,13 +77,17 @@ private theorem signReleaseCost (N push : ℕ) (pos : 0 < N) :
     12000*N+(125+31*(6*(push*(12000*N)))) ≤ (12000*(1+186*push)+125)*N := by
   nlinarith only [pos]
 
-theorem signedMiddleShears_exec [M8.Machine.Net] (v : Descriptor) (positive : v.Positive)
-    (size : (P*M*G)*(M*B) = volume prime v) (w : ℕ) (radix : M = prime^(w+1))
-    (odd : Odd M) (c : Bool → Fin M) (hP : 0 < P) (hG : 0 < G) (hB : 0 < B)
-    (word : Fin ((P*M*G)*(M*B)) → ZMod 2) (io : Fin T) (roles : Tapes T prime)
-    (head : roles.head io = 0) (input : roles.tape io = leafBitTape (List.ofFn word))
+theorem weightedLeaf_exec [M8.Machine.Net] [NeZero M] (v : Descriptor) (positive : v.Positive)
+    (w : ℕ) (width : v.width = w+1) (radix : prime^v.width = M)
+    (weight inv : ZMod M) (unit : weight*inv = 1) (io : Fin T) (roles : Tapes T prime)
     (f : ℤ → Fin (prime+4)) (p : ℤ) (node scalar : Tapes 1 prime)
     (ctr : Fin CommonBank.K → Option ℕ) (st : Tapes 2 prime) :
+    let P := v.beforeRows*v.rows*v.beforeH
+    let G := v.between
+    let B := v.afterD
+    let size : (P*M*G)*(M*B) = volume prime v := by simp [P,G,B,volume,radix,Nat.mul_assoc]
+    let c := fun b : Bool => if b then (⟨(-weight).val,(-weight).val_lt⟩ : Fin M) else ⟨inv.val,inv.val_lt⟩
+    ∀ (word : Fin ((P*M*G)*(M*B)) → ZMod 2), roles.head io = 0 → roles.tape io = leafBitTape (List.ofFn word) →
     let block := LeafCore.core io
     ∀ {K : ℕ} (sim : Fin block.tapes ↪ Fin K) (src : Bool → Fin 6 → Fin K)
       (_apart : ∀ b i j, sim i ≠ src b j) (slot : Fin block.tapes) (_leading : slot.val = io.val)
@@ -119,25 +123,30 @@ theorem signedMiddleShears_exec [M8.Machine.Net] (v : Descriptor) (positive : v.
         RepT (raw (CommonBank.bank roles (Routines.hdr v) f p node scalar ctr st) block.tapes) (S.L ∘ ports) (S.R ∘ ports) →
         ∃ z D n, z.user = u.user ∧ n ≤ weightedLeafCost (volume prime v) v.width block.tapes push ∧
           Exec body ((((stage false).seq (stage true)).seq (lastProg.seq (clearWorkTapes work))).seq (sign.seq (clearWorkTapes work))) (mk u S) n (mk z D) ∧
+          RepT (raw (CommonBank.bank (SharedPlacementAlphabet.setTape roles io (leafBitTape (negateLeafHead signWord)) 0)
+            (Routines.hdr v) f p node scalar ctr st) block.tapes) (D.L ∘ ports) (D.R ∘ ports) ∧
           (∀ x, readAt blank (D.L (ports slot)) (D.R (ports slot)) x = leafBitTape (negateLeafHead signWord) x) ∧
-          (∀ [NeZero M], P = v.beforeRows*v.rows*v.beforeH → G = v.between → B = v.afterD →
-            ∀ (_radixWidth : prime^v.width = M) (weight inv : ZMod M), weight*inv = 1 →
-            (c false).val = inv.val → (c true).val = (-weight).val →
-            ∀ (a : Fin v.beforeRows) (row : Fin v.rows) (pre : Fin v.beforeH)
+          (∀ (a : Fin v.beforeRows) (row : Fin v.rows) (pre : Fin v.beforeH)
               (mid : Fin v.between) (post : Fin v.afterD) (h t : ZMod M),
               (negateLeafHead signWord)[index prime v a row pre (weight*t).val mid (inv*h).val post]? =
                 (List.ofFn word)[index prime v a row pre h.val mid t.val post]?) ∧
           (∀ j : Fin 31, D.L (j.natAdd K) = [] ∧ D.R (j.natAdd K) = []) ∧
           ∀ j : Fin K, (∀ i, sim i ≠ j) →
             D.L (j.castAdd 31) = S.L (j.castAdd 31) ∧ D.R (j.castAdd 31) = S.R (j.castAdd 31) := by
-  intro block K sim src apart slot leading capacity ports shear prog lastProg work stage result y xs len signWord signSrc load bank child sign body u S push hp hl hsign hb free headers initial
-  obtain ⟨b,H,n,hu,hn,run,read,clean,keep⟩ := threeMiddleShears_exec v positive size w radix c hP hG hB
+  intro P G B size c word head input block K sim src apart slot leading capacity ports shear prog lastProg work stage result y xs len signWord signSrc load bank child sign body u S push hp hl hsign hb free headers initial
+  have hP := Nat.mul_pos (Nat.mul_pos positive.1 positive.2.1) positive.2.2.1
+  have hG := positive.2.2.2.1
+  have hB := positive.2.2.2.2
+  have radixPower : M = prime^(w+1) := radix.symm.trans (congrArg (prime^·) width)
+  have odd : Odd M := radix ▸ (IntegerMultBounds.Networks.Shared50ModularControl.prime_prime.odd_of_ne_two
+    (by have := IntegerMultBounds.Networks.Shared50ModularControl.prime_odd; omega)).pow
+  obtain ⟨b,H,n,hu,hn,run,rep,read,clean,keep⟩ := threeMiddleShears_exec v positive size w radixPower c hP hG hB
     word io roles head input f p node scalar ctr st sim src apart slot leading capacity body u S push hp hl hb free headers initial
   have data : List.ofFn signWord = xs := by
     apply List.ext_getElem
     · simpa only [List.length_ofFn] using len.symm
     · intros; simp [signWord]
-  have hM : 0 < M := radix ▸ pow_pos IntegerMultBounds.Networks.Shared50ModularControl.prime_prime.pos _
+  have hM : 0 < M := radixPower ▸ pow_pos IntegerMultBounds.Networks.Shared50ModularControl.prime_prime.pos _
   obtain ⟨z,D,m,hz,hm,last,out,frame⟩ := loadedLeafSign_exec (sim slot) capacity hP hG hM hB odd signWord signSrc
     body b H (by simpa only [data,Function.Embedding.trans_apply,Fin.castAddEmb_apply] using read)
     (by intro i
@@ -146,22 +155,21 @@ theorem signedMiddleShears_exec [M8.Machine.Net] (v : Descriptor) (positive : v.
   have signBound := hm.trans (loadedLeafSign_cost_le P G M B hP hG hM hB)
   obtain ⟨z',J,k,hz',hk,release,preserved,empty⟩ := releaseMiddleWork body sign last signBound hsign hb clean
   have pos := Nat.mul_pos hP (Nat.mul_pos hM (Nat.mul_pos hG (Nat.mul_pos hM hB)))
-  refine ⟨z',J,n+k,hz'.trans (hz.trans hu),?_,Exec.seq run release,?_,?_,empty,?_⟩
+  refine ⟨z',J,n+k,hz'.trans (hz.trans hu),?_,Exec.seq run release,?_,?_,?_,empty,?_⟩
   · exact weightedLeafTime hP hM hG hB size (hk.trans (signReleaseCost _ push pos)) hn
+  · have updated := leafBank_writeRole v io (SharedPlacementAlphabet.setTape roles io (leafBitTape xs) 0)
+        f p node scalar ctr st (leafBitTape (negateLeafHead signWord)) ports H J slot leading rep
+        (fun i hi => ⟨(preserved (sim i)).1.trans (frame _ (sim.injective.ne hi)).1,
+          (preserved (sim i)).2.trans (frame _ (sim.injective.ne hi)).2⟩) (by
+          intro x
+          change readAt blank (J.L ((sim slot).castAdd 31)) (J.R ((sim slot).castAdd 31)) x = _
+          rw [(preserved (sim slot)).1,(preserved (sim slot)).2]; exact out x)
+    simpa only [SharedPlacementAlphabet.setTape,Function.update_idem] using updated
   · intro x
     change readAt blank (J.L ((sim slot).castAdd 31)) (J.R ((sim slot).castAdd 31)) x = _
     rw [(preserved (sim slot)).1,(preserved (sim slot)).2]
     exact out x
-  · intro inst prefixEq gapEq widthEq radixWidth weight inv unit firstCoeff middleCoeff
-    subst P; subst G; subst B
-    have coeff : c = fun b => if b then ⟨(-weight).val,(-weight).val_lt⟩ else ⟨inv.val,inv.val_lt⟩ := by
-      funext b
-      cases b
-      · exact Fin.ext firstCoeff
-      · exact Fin.ext middleCoeff
-    subst c
-    exact
-      weightedLeafOutput_entry v radixWidth weight inv unit word
+  · exact weightedLeafOutput_entry v radix weight inv unit word
   · intro j hj
     have same := frame j (hj slot).symm
     exact ⟨(preserved j).1.trans (same.1.trans (keep j hj).1),(preserved j).2.trans (same.2.trans (keep j hj).2)⟩
