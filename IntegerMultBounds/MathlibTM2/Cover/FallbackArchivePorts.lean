@@ -13,6 +13,23 @@ noncomputable def archivePorts (n : ℕ) : Fin (N+1) ↪ Fin (N+2) :=
   let ports := Fin.castLEEmb (Nat.le_succ (N+1))
   if Even n then ports else ports.trans (Equiv.swap (ports archive) (Fin.last (N+1))).toEmbedding
 
+/-- Place the reverse machine around a fixed column bank, adjoining a single spare
+archive tape. Parity decides which physical archive is active at entry. -/
+noncomputable def rewindPorts {T : ℕ} (n : ℕ) (bank : Fin (N+1) ↪ Fin T) (spare : Fin T)
+    (off : ∀ i, bank i ≠ spare) : Fin (N+2) ↪ Fin T :=
+  let extend : Fin (N+2) ↪ Fin T := ⟨Fin.lastCases spare bank, by
+    intro i j
+    induction i using Fin.lastCases <;> induction j using Fin.lastCases <;>
+      simp [off,Ne.symm (off _),bank.injective.eq_iff]⟩
+  if Even n then extend else
+    (Equiv.swap (columnBank 34).castSucc (Fin.last (N+1))).toEmbedding.trans extend
+
+theorem rewindPorts_active {T : ℕ} (n : ℕ) (bank : Fin (N+1) ↪ Fin T) (spare : Fin T)
+    (off : ∀ i, bank i ≠ spare) : (archivePorts n).trans (rewindPorts n bank spare off) = bank := by
+  ext i
+  have cast (a : Fin (N+1)) : Fin.castLE (Nat.le_succ _) a = a.castSucc := rfl
+  by_cases parity : Even n <;> simp [archivePorts,rewindPorts,parity,Fin.castLEEmb,cast]
+
 theorem archivePorts_fixed (n : ℕ) (i : Fin (N+1)) (hi : i ≠ archive) :
     archivePorts n i = i.castSucc := by
   let ports := Fin.castLEEmb (Nat.le_succ (N+1))
