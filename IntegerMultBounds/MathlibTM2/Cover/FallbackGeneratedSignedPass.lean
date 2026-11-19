@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackPrefixVolume
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackPhysicalSignedPass
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackConjugationQueue
 public import IntegerMultBounds.MathlibTM2.Cover.LabelClassCost
@@ -456,43 +457,6 @@ noncomputable def signedClassSetup (U : Type) (d T w H classes live : ℕ) :=
   let padding := 4*(d+1)*(d+1)+1
   let kernel := Finset.univ.sup fun r => signedResidualTime U (fun _ : Fin (d+1) => r) w 0 H 0
   classes*(size d+3*T+34+(d+1)*(d+1)*(4*H+4)+padding) + live*(7+kernel-padding)
-
-omit [M8.Machine.Net] in
-private theorem cube_le_three_pow (a : ℕ) : a^3 ≤ 3^a := by
-  induction a with
-  | zero => decide
-  | succ a ih =>
-    match a with
-    | 0 | 1 | 2 => decide
-    | n+3 =>
-      rw [pow_succ 3]
-      apply le_trans _ (Nat.mul_le_mul_right 3 ih)
-      ring_nf
-      omega
-
-omit [M8.Machine.Net] in
-/-- At binary field width, one remaining coordinate pays for the quadratic
-bit-width overhead and the linear atom-width overhead of prefix enumeration. -/
-theorem prefixSetup_volume_le (w d : ℕ) :
-    let q := prime^(w+1)
-    let H := Nat.size q
-    (w+1+q^d)*(H+1)^2 ≤ (2*(Nat.size prime+1)^2)*q^(d+1) := by
-  intro q H
-  have bits : H ≤ (w+1)*Nat.size prime := by
-    apply Nat.size_le.mpr
-    rw [Nat.mul_comm, pow_mul]
-    exact Nat.pow_lt_pow_left (Nat.size_le.mp (le_refl (Nat.size prime))) (by omega)
-  have field : H+1 ≤ (w+1)*(Nat.size prime+1) := by rw [Nat.mul_add, Nat.mul_one]; omega
-  have cube : (w+1)^3 ≤ prime^(w+1) := (cube_le_three_pow _).trans
-    (Nat.pow_le_pow_left Networks.Shared50ModularControl.prime_odd _)
-  have prefixPos : 1 ≤ (prime^(w+1))^d := pow_pos (pow_pos Networks.Shared50ModularControl.prime_prime.pos _) _
-  have factor : w+1+(prime^(w+1))^d ≤ 2*(w+1)*(prime^(w+1))^d := by
-    nlinarith [Nat.mul_le_mul_left (w+1) prefixPos]
-  change (w+1+(prime^(w+1))^d)*(H+1)^2 ≤ _
-  grw [factor,field]
-  calc
-    _ = 2*(Nat.size prime+1)^2*q^d*(w+1)^3 := by dsimp only [q]; ring
-    _ ≤ _ := by grw [cube]; rw [pow_succ q d]; dsimp only [q]; exact le_of_eq (by ring)
 
 /-- With the binary modulus width, the extra setup for each live class
 fits in one record of unit payload. -/

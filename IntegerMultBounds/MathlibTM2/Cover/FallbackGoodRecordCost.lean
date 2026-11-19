@@ -115,75 +115,117 @@ theorem goodRecordTime_volume [Fintype P] (body : P → Pr P T 217 A U) (machine
   rw [ha w W H J,hz w W H J]
   ring
 
-private theorem headerShear {n : ℕ} (k t : Fin n) (b H offset : ℕ) :
-    VolumeCost (fun _ J => J) (fun w J _ _ => weightedShearTime k t (b^(w+1)) 0 H (offset+J)) := by
-  refine ⟨10+(n-1-t.val)*(12*H+18),fun w J _ _ => ?_⟩
+private def HeaderCost (f : ℕ → ℕ → ℕ → ℕ) :=
+  ∃ a b : ℕ, ∀ w H J, f w H J = f w H 0 + (a+b*H)*J
+
+private theorem fixedHeader (k : ℕ → ℕ → ℕ) : HeaderCost (fun w H _ => k w H) :=
+  ⟨0,0,by simp⟩
+
+private theorem addHeader {f g} (hf : HeaderCost f) (hg : HeaderCost g) :
+    HeaderCost (fun w H J => f w H J + g w H J) := by
+  obtain ⟨a,b,ha⟩ := hf
+  obtain ⟨c,e,hc⟩ := hg
+  exact ⟨a+c,b+e,fun w H J => by dsimp only; rw [ha w H J,hc w H J]; ring⟩
+
+private theorem scaleHeader {f} (n : ℕ) (hf : HeaderCost f) :
+    HeaderCost (fun w H J => n*f w H J) := by
+  obtain ⟨a,b,ha⟩ := hf
+  exact ⟨n*a,n*b,fun w H J => by dsimp only; rw [ha w H J]; ring⟩
+
+private theorem sumHeader {ι : Type*} (xs : List ι) (f : ι → ℕ → ℕ → ℕ → ℕ)
+    (hf : ∀ i, HeaderCost (f i)) :
+    HeaderCost (fun w H J => (xs.map fun i => f i w H J).sum) := by
+  induction xs with
+  | nil => exact fixedHeader (fun _ _ => 0)
+  | cons i xs ih => exact addHeader (hf i) ih
+
+private theorem headerShear {n : ℕ} (k t : Fin n) (b : ℕ) (offset : ℕ → ℕ) :
+    HeaderCost (fun w H J => weightedShearTime k t (b^(w+1)) 0 H (offset H +J)) := by
+  refine ⟨10+(n-1-t.val)*18,(n-1-t.val)*12,fun w H J => ?_⟩
   dsimp only
-  rw [weightedShearTime_eq_setup_add_width_volume k t _ 0 H (offset+J),
-    weightedShearTime_eq_setup_add_width_volume k t _ 0 H (offset+0)]
+  rw [weightedShearTime_eq_setup_add_width_volume k t _ 0 H (offset H +J),
+    weightedShearTime_eq_setup_add_width_volume k t _ 0 H (offset H +0)]
   ring
 
-private theorem headerDimension (H d : ℕ) :
-    VolumeCost (fun _ J => J) (fun _ J _ _ => dimensionTime H J d) :=
-  ⟨_,fun _ J _ _ => dimensionTime_eq_setup_add_width H J d⟩
+private theorem headerDimension (d : ℕ) :
+    HeaderCost (fun _ H J => dimensionTime H J d) :=
+  ⟨6+d*18,d*12,fun _ H J => by dsimp only; rw [dimensionTime_eq_setup_add_width H J d]; ring⟩
 
-private theorem headerCleanup (H d : ℕ) :
-    VolumeCost (fun _ J => J) (fun _ J _ _ => 2*(d*H+J)+2) :=
-  ⟨2,fun _ J _ _ => by dsimp only; ring⟩
+private theorem headerCleanup (d : ℕ) :
+    HeaderCost (fun _ H J => 2*(d*H+J)+2) :=
+  ⟨2,0,fun _ H J => by dsimp only; ring⟩
 
 private theorem headHeader [Fintype P] (body : P → Pr P T 217 A U) (h : Fin 17 ↪ Fin T)
-    (s : Fin 29 ↪ Fin T) (k i : Fin d) (b H : ℕ) :
-    VolumeCost (fun _ J => J) (fun w J _ _ =>
+    (s : Fin 29 ↪ Fin T) (k i : Fin d) (b : ℕ) :
+    HeaderCost (fun w H J =>
       headRowTime body h s k (b^(w+1)) 0 H (d*H+J) i) := by
   unfold headRowTime
-  apply addCost (fixedCost _ _)
-  apply scaleCost
-  apply addCost (fixedCost _ _)
-  exact headerShear k i b H (d*H)
+  apply addHeader (fixedHeader _)
+  apply scaleHeader
+  apply addHeader (fixedHeader _)
+  exact headerShear k i b (fun H => d*H)
 
 private theorem tailHeader [Fintype P] (body : P → Pr P T 217 A U) (h : Fin 17 ↪ Fin T)
-    (s : Fin 29 ↪ Fin T) (k i : Fin d) (b H : ℕ) :
-    VolumeCost (fun _ J => J) (fun w J _ _ =>
+    (s : Fin 29 ↪ Fin T) (k i : Fin d) (b : ℕ) :
+    HeaderCost (fun w H J =>
       tailEntryTimeAt body h s (Fin.natAdd d) k (b^(w+1)) 0 H J i) := by
   unfold tailEntryTimeAt
-  apply addCost (fixedCost _ _)
-  apply scaleCost
-  apply addCost (fixedCost _ _)
-  simpa only [Nat.zero_add] using headerShear (Fin.natAdd d i.rev) (Fin.natAdd d k.rev) b H 0
+  apply addHeader (fixedHeader _)
+  apply scaleHeader
+  apply addHeader (fixedHeader _)
+  simpa only [Nat.zero_add] using headerShear (Fin.natAdd d i.rev) (Fin.natAdd d k.rev) b (fun _ => 0)
 
 private theorem crossHeader [Fintype P] (body : P → Pr P T 217 A U) (h : Fin 17 ↪ Fin T)
-    (s : Fin 29 ↪ Fin T) (i j : Fin d) (b H : ℕ) :
-    VolumeCost (fun _ J => J) (fun w J _ _ =>
+    (s : Fin 29 ↪ Fin T) (i j : Fin d) (b : ℕ) :
+    HeaderCost (fun w H J =>
       crossShearTime body h s i j (b^(w+1)) 0 H J) := by
   unfold crossShearTime
-  apply addCost (fixedCost _ _)
-  apply scaleCost
-  apply addCost (fixedCost _ _)
-  simpa only [Nat.zero_add] using headerShear (j.castAdd d) (i.natAdd d) b H 0
+  apply addHeader (fixedHeader _)
+  apply scaleHeader
+  apply addHeader (fixedHeader _)
+  simpa only [Nat.zero_add] using headerShear (j.castAdd d) (i.natAdd d) b (fun _ => 0)
 
 local syntax "header_cost" : tactic
 macro_rules | `(tactic| header_cost) => `(tactic|
   first
-  | with_reducible apply fixedCost
+  | with_reducible apply fixedHeader
   | with_reducible apply headerDimension
   | with_reducible apply headerCleanup
   | with_reducible apply headHeader
   | with_reducible apply tailHeader
   | with_reducible apply crossHeader
-  | with_reducible apply addCost <;> header_cost
-  | with_reducible apply sumCost; intro; header_cost)
+  | with_reducible apply addHeader <;> header_cost
+  | with_reducible apply sumHeader; intro; header_cost)
 
 private theorem incomingHeader [Fintype P] (body : P → Pr P T 217 A U) (machine : Fin 55 ↪ Fin T)
-    (b H rank : ℕ) (hr : rank ≤ d) :
-    VolumeCost (fun _ J => J) (fun w J _ _ => goodIncomingTime body machine b w 0 H J rank hr) := by
+    (b rank : ℕ) (hr : rank ≤ d) :
+    HeaderCost (fun w H J => goodIncomingTime body machine b w 0 H J rank hr) := by
   simp only [goodIncomingTime,Nat.mul_zero]
   header_cost
 
 private theorem outgoingHeader [Fintype P] (body : P → Pr P T 217 A U) (machine : Fin 55 ↪ Fin T)
-    (b H rank : ℕ) (hr : rank ≤ d) :
-    VolumeCost (fun _ J => J) (fun w J _ _ => goodOutgoingTime body machine b w 0 H J rank hr) := by
+    (b rank : ℕ) (hr : rank ≤ d) :
+    HeaderCost (fun w H J => goodOutgoingTime body machine b w 0 H J rank hr) := by
   simp only [goodOutgoingTime,Nat.mul_zero]
   header_cost
+
+theorem goodRecordTime_affine_header_volume [Fintype P] (body : P → Pr P T 217 A U) (machine : Fin 55 ↪ Fin T)
+    (b rank : ℕ) (hr : rank ≤ d) :
+    ∃ v h k : ℕ, ∀ w W H J childTime,
+      goodIncomingTime body machine b w W H J rank hr + childTime + goodOutgoingTime body machine b w W H J rank hr =
+      goodIncomingTime body machine b w 0 H 0 rank hr + childTime + goodOutgoingTime body machine b w 0 H 0 rank hr +
+        (h+k*H)*J + v*((b^(w+1))^(d+d)*W) := by
+  obtain ⟨v,hv⟩ := goodRecordTime_volume body machine b rank hr
+  obtain ⟨a,k,ha⟩ := incomingHeader body machine b rank hr
+  obtain ⟨z,m,hz⟩ := outgoingHeader body machine b rank hr
+  refine ⟨v,a+z,k+m,fun w W H J childTime => ?_⟩
+  rw [hv w W H J childTime]
+  have inc := ha w H J
+  have out := hz w H J
+  dsimp only at inc out
+  rw [inc,out]
+  ring
+
 
 theorem goodRecordTime_header_volume [Fintype P] (body : P → Pr P T 217 A U) (machine : Fin 55 ↪ Fin T)
     (b rank : ℕ) (hr : rank ≤ d) :
@@ -191,16 +233,7 @@ theorem goodRecordTime_header_volume [Fintype P] (body : P → Pr P T 217 A U) (
       goodIncomingTime body machine b w W H J rank hr + childTime + goodOutgoingTime body machine b w W H J rank hr =
       goodIncomingTime body machine b w 0 H 0 rank hr + childTime + goodOutgoingTime body machine b w 0 H 0 rank hr +
         h*J + v*((b^(w+1))^(d+d)*W) := by
-  obtain ⟨v,hv⟩ := goodRecordTime_volume body machine b rank hr
-  refine ⟨v,fun H => ?_⟩
-  obtain ⟨a,ha⟩ := incomingHeader body machine b H rank hr
-  obtain ⟨z,hz⟩ := outgoingHeader body machine b H rank hr
-  refine ⟨a+z,fun w W J childTime => ?_⟩
-  rw [hv w W H J childTime]
-  have inc := ha w J 0 0
-  have out := hz w J 0 0
-  dsimp only at inc out
-  rw [inc,out]
-  ring
+  obtain ⟨v,h,k,bound⟩ := goodRecordTime_affine_header_volume body machine b rank hr
+  exact ⟨v,fun H => ⟨h+k*H,fun w W J => bound w W H J⟩⟩
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
