@@ -109,6 +109,32 @@ theorem signedPassCounter_binaryWidth (v : Descriptor) {r : ℕ} (rankPos : 0 < 
     (by positivity)
 
 omit [M8.Machine.Net] in
+/-- Spectator field lengths are absorbed by the two spectator factors in the
+descriptor volume, even when their binary widths exceed the address width. -/
+theorem signedPassCounter_volume_le (v : Descriptor) (positive : v.Positive)
+    {r : ℕ} (rankPos : 0 < r) (live charge : ℕ) (count : live ≤ LabelMask.records v) :
+    let W := prime^(2*(v.width % r))*v.between*v.afterD
+    prime^(2*v.width)*(live*charge*Nat.size W) ≤
+      charge*(2*(r-1)*Nat.size prime+2)*volume prime v := by
+  intro W
+  let allowance := 2*(r-1)*Nat.size prime
+  have middle := positive.2.2.2.1
+  have suffix := positive.2.2.2.2
+  have bits (x : ℕ) : Nat.size x ≤ x := Nat.size_le.mpr Nat.lt_two_pow_self
+  have between := (bits v.between).trans (Nat.le_mul_of_pos_right v.between suffix)
+  have afterD := (bits v.afterD).trans (Nat.le_mul_of_pos_left v.afterD middle)
+  have base := Nat.le_mul_of_pos_right allowance (Nat.mul_pos middle suffix)
+  have width := (signedPassCounter_binaryWidth v rankPos).2
+  change Nat.size W ≤ allowance + Nat.size v.between + Nat.size v.afterD at width
+  have budget : Nat.size W ≤ (allowance+2)*(v.between*v.afterD) := by
+    rw [Nat.add_mul]
+    omega
+  grw [budget, count]
+  unfold allowance LabelMask.records volume
+  rw [two_mul v.width, pow_add]
+  exact le_of_eq (by ring)
+
+omit [M8.Machine.Net] in
 /-- The directory's per-record digit scan consumes an exponentially decreasing
 fraction of descriptor volume as the address width grows. -/
 theorem directoryDigits_volume_le (v : Descriptor) (positive : v.Positive)
