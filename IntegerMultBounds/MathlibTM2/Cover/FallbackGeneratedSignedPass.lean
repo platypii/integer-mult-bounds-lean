@@ -521,6 +521,42 @@ theorem matrixBuildCost_le (r d w H : ℕ) :
   all_goals first | exact entries | exact time_readTime_le _ H
 
 omit [M8.Machine.Net] in
+theorem matrixBuildCost_volume_le (v : Descriptor) (positive : v.Positive)
+    (r d w live : ℕ) (fits : w+1 ≤ v.width) (count : live ≤ LabelMask.records v) :
+    let H := Nat.size (prime^(w+1))
+    prime^v.width * (live * (matrixBuildCost r d 1 1 * (w+1)*(H+1)^2)) ≤
+      matrixBuildCost r d 1 1 * (Nat.size prime+1)^2 * volume prime v := by
+  intro H
+  have cubic (a : ℕ) : a^3 ≤ 3^a := by
+    induction a with
+    | zero => decide
+    | succ a ih =>
+      match a with
+      | 0 | 1 | 2 => decide
+      | n+3 =>
+        rw [pow_succ 3]
+        apply le_trans _ (Nat.mul_le_mul_right 3 ih)
+        ring_nf
+        omega
+  have power : (w+1)^3 ≤ prime^v.width :=
+    (cubic _).trans ((Nat.pow_le_pow_left Networks.Shared50ModularControl.prime_odd _).trans
+      (Nat.pow_le_pow_right Networks.Shared50ModularControl.prime_prime.pos fits))
+  have bits := (queueArchive_binaryWidth v positive d (w+1) (by omega) fits).2.1
+  have field : H+1 ≤ (w+1)*(Nat.size prime+1) := by
+    change H ≤ _ at bits
+    rw [Nat.mul_add, Nat.mul_one]
+    omega
+  grw [field, count]
+  unfold LabelMask.records volume
+  calc
+    _ = matrixBuildCost r d 1 1 * (Nat.size prime+1)^2 *
+      (v.beforeRows*v.rows*v.beforeH*prime^v.width*1*(w+1)^3*1) := by ring
+    _ ≤ _ := by
+      have middle := positive.2.2.2.1
+      have suffix := positive.2.2.2.2
+      gcongr <;> omega
+
+omit [M8.Machine.Net] in
 private theorem liveRecordCost_width (r d w H width numTime detTime : ℕ) :
     liveRecordCost r d w H width numTime detTime =
       liveRecordCost r d w H 0 numTime detTime + 12*r*r*width := by
