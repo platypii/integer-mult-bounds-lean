@@ -85,4 +85,41 @@ theorem goodChildOverhead_volume_le (r g : ℕ) (dim : 0 < r+g) :
   grw [bits,vol]
   exact le_of_eq (by ring)
 
+open IntegerMultBounds.Networks.Shared50ModularControl (prime prime_prime) in
+/-- Each inherited spectator digit contributes one modulus-width block to the
+middle header. Reading and clearing these blocks still costs at most one
+constant times the active payload volume. -/
+theorem nestedChildOverhead_volume_le (r g digits : ℕ) (dim : 0 < r+g) :
+    ∃ C : ℕ, ∀ w W budget, 0 < W →
+      let q := prime^(w+1)
+      let H := Nat.size q
+      let K := digits*H+1
+      (((List.finRange r).map fun i => childWeightTime prime w H i.val).sum+1 + dimensionTime H K (g+g)) +
+        (budget+2+(2*(r*H+r*H+((g+g)*H+K))+7)) ≤ budget + C*(q^((r+g)+(r+g))*W) := by
+  obtain ⟨c,base⟩ := goodChildOverhead_volume_le r g dim
+  let a := digits*(8+(g+g)*30)
+  let b := 2*(Nat.size prime+1)^2
+  refine ⟨c+a*b,fun w W budget pos => ?_⟩
+  intro q H K
+  have vol : q ≤ q^((r+g)+(r+g))*W := calc
+    q = q^1 := (pow_one _).symm
+    _ ≤ _ := Nat.pow_le_pow_right (pow_pos prime_prime.pos _) (by omega)
+    _ ≤ _ := Nat.le_mul_of_pos_right _ pos
+  have field := prefixSetup_volume_le w 0
+  change (w+1+q^0)*(H+1)^2 ≤ b*q^(0+1) at field
+  simp only [pow_zero,Nat.zero_add,pow_one] at field
+  have square : (H+1)^2 ≤ b*(q^((r+g)+(r+g))*W) :=
+    ((Nat.le_mul_of_pos_left _ (by omega)).trans field).trans (Nat.mul_le_mul_left b vol)
+  have extra : (8+(g+g)*(12*H+18))*(digits*H) ≤ a*(H+1)^2 := by
+    dsimp only [a]
+    ring_nf
+    omega
+  have paid := extra.trans (Nat.mul_le_mul_left a square)
+  have old := base w W budget pos
+  change _ + dimensionTime H 1 (g+g) + _ ≤ budget + c*(q^((r+g)+(r+g))*W) at old
+  rw [dimensionTime_eq_setup_add_width H 1] at old
+  rw [dimensionTime_eq_setup_add_width H K]
+  dsimp only [K]
+  convert Nat.add_le_add old paid using 1 <;> ring
+
 end IntegerMultBounds.MathlibTM2.Cover.Fallback

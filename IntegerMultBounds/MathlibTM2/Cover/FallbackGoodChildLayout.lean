@@ -75,6 +75,16 @@ def rankDescriptor (M r g : ℕ) (v : RecursiveInterchangeLayout.Descriptor) :
   {v with width := r, between := M^g * v.between * M^g}
 
 omit [NeZero M] in
+theorem rankDescriptor_fits (v : RecursiveInterchangeLayout.Descriptor) {H K : ℕ}
+    (base : M < 2^H) (seed : v.between < 2^K) :
+    (rankDescriptor M r g v).between < 2^((g+g)*H+K) := by
+  calc
+    _ = M^(g+g)*v.between := by simp only [rankDescriptor,pow_add]; ring
+    _ ≤ (2^H)^(g+g)*v.between := Nat.mul_le_mul_right _ (Nat.pow_le_pow_left base.le _)
+    _ < (2^H)^(g+g)*2^K := Nat.mul_lt_mul_of_pos_left seed (by positivity)
+    _ = _ := by rw [← pow_mul,Nat.mul_comm H,pow_add]
+
+omit [NeZero M] in
 theorem rankDescriptor_index (v : RecursiveInterchangeLayout.Descriptor)
     (width : v.width = r+g) (a row before h hg middle tg t suffix : ℕ) :
     RecursiveInterchangeLayout.index M (rankDescriptor M r g v) a row before h

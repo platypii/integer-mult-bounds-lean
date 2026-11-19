@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackDiagonal
 public import Mathlib.LinearAlgebra.Matrix.GeneralLinearGroup.Card
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackClass
 
@@ -108,6 +109,23 @@ theorem fallbackBit_eq (hw : 0 < w) {r : ℕ} (hr : r ≤ m) (proj : LabelPaddin
     rfl
   · have dead : LabelStock.live m w 1 j = false := Bool.eq_false_iff.mpr (fun h => unit (live.mp h))
     simp [fallbackBit, dead, show ¬IsUnit (physicalLabel m w j) from unit]
+
+open Matrix in
+/-- On any live physical label, the identity request in scan coordinates
+returns the weighted child, independently of the label's good/fallback bit. -/
+theorem physicalIdentity_address (hw : 0 < w) (e : (Fin m ⊕ Fin m) ≃ Fin n)
+    (j : ℕ) (live : LabelStock.live m w 1 j = true) (α inv : Fin m → ZMod M) (x : Fin n → ZMod M) :
+    let banks := (x ∘ e ∘ Sum.inl, x ∘ e ∘ Sum.inr)
+    let result := Weighted.child m α inv banks
+    (projectorResidual e (reduce M 1) α inv (physicalLabel m w j)).mulVec x =
+      Sum.elim result.1 result.2 ∘ e.symm := by
+  intro banks result
+  have det := (Matrix.isUnit_iff_isUnit_det _).mp ((physicalLabel_live hw j).mp live)
+  rw [IntegerMultBounds.Swap.Modular.reduce_one]
+  change (residual _ _ _ (_ * 1 * _)).submatrix e.symm e.symm *ᵥ x = _
+  rw [Matrix.mul_one,Matrix.mul_nonsing_inv _ det,submatrix_mulVec_equiv]
+  have split : x ∘ e = Sum.elim banks.1 banks.2 := by funext i; cases i <;> rfl
+  rw [show x ∘ e.symm.symm = Sum.elim banks.1 banks.2 from split,residual_mulVec,fullProjector_child]
 
 open Matrix Finset IntegerMultBounds.Swap.LowerTriangular IntegerMultBounds.Swap.Modular
   IntegerMultBounds.Swap.Shear M8.Exchange M8.ReversedExchange in

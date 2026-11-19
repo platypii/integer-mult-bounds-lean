@@ -293,6 +293,7 @@ theorem hostedGoodRecord_exec {Q : ℕ} (cap : 217 ≤ Q) (body : P → Pr P T Q
         D.R (full 2) = binSyms H M → D.R (full 53) = binSyms J W →
         D.R (full 28) = binSyms 1 1 →
         D.R (full 55) = (List.ofFn fun i => binSyms H (childWeight i).val).flatten →
+        (rankDescriptor M rank g desc).between < 2^((g+g)*H+K) →
         D.R (full 57) = binSyms ((g+g)*H+K) (rankDescriptor M rank g desc).between →
         D.R (full 56) = (List.ofFn fun i => binSyms H (childInv i).val).flatten →
         D.R (full 44) = binSyms H (1 : ZMod M).val → (D.R (full 45)).length = w →
@@ -370,7 +371,7 @@ theorem hostedGoodRecord_exec {Q : ℕ} (cap : 217 ≤ Q) (body : P → Pr P T Q
         (fun k => by rw [header 24 (by decide)]; exact (mid.src k).symm)
         ((header 2 (by decide)).trans mid.base) ((header 53 (by decide)).trans mid.width)
         ((header 28 (by decide)).trans mid.one)
-        (by simp [prepared,full.injective.eq_iff]) (by simp [prepared,goodChildDescriptor])
+        (by simp [prepared,full.injective.eq_iff]) (rankDescriptor_fits desc hm fits) (by simp [prepared,goodChildDescriptor])
         (by simp [prepared,full.injective.eq_iff])
         ((header 44 (by decide)).trans ((ck 15).trans one))
         ((congrArg List.length ((header 45 (by decide)).trans (ck 16))).trans clock)

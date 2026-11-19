@@ -78,6 +78,31 @@ theorem rev_mulVec (x : Fin n → R) : M8.ReversedExchange.rev n *ᵥ x = fun i 
   funext i
   simp [mulVec,dotProduct,M8.ReversedExchange.rev,ite_mul]
 
+/-- The identity projector gives exactly the full weighted child action
+requested by the enclosing record. -/
+theorem fullProjector_child (w inv : Fin n → R) (s : IntegerMultBounds.Swap.Shear.State (Fin n) R) :
+    M8.Exchange.transform (diagonal w) 1 (M8.ReversedExchange.revExchangeOf (M8.ReversedExchange.rev n) 1
+      (M8.Exchange.transform (diagonal inv) 1 s)) = Weighted.child n w inv s := by
+  apply Prod.ext <;> funext i <;>
+    simp [M8.ReversedExchange.revExchangeOf,M8.Exchange.exchange,M8.Exchange.transform,
+      Weighted.child,rev_mulVec,mulVec_diagonal]
+  rw [← mulVec_mulVec,rev_mulVec]
+  simp [mulVec_diagonal,i.pos]
+
+open M8.Exchange M8.ReversedExchange in
+/-- The completed exchange at each cover label gives the same weighted child
+after returning from that label's reversed frame. -/
+theorem fullProjector_child_at_label (label inverse : Matrix (Fin n) (Fin n) R)
+    (cancel : label * inverse = 1) (w inv : Fin n → R)
+    (s : IntegerMultBounds.Swap.Shear.State (Fin n) R) :
+    let C := rev n
+    transform (diagonal w) 1 (transform label (C * label * C)
+      (revExchangeOf C 1 (transform inverse (C * inverse * C) (transform (diagonal inv) 1 s)))) =
+      Weighted.child n w inv s := by
+  intro C
+  rw [Weighted.revExchangeOf_one_conj C rev_mul_rev label inverse cancel]
+  exact fullProjector_child w inv s
+
 theorem reversed_word (x : Fin n → R) :
     List.ofFn (M8.ReversedExchange.rev n *ᵥ x) = (List.ofFn x).reverse := by
   apply List.ext_getElem

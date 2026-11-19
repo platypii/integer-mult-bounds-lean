@@ -835,7 +835,7 @@ def SignedPassBound (regs : Fin 6 ↪ Fin T) (anchor : Fin (size d+T) ↪ Fin K)
     (rs : List (Pair (size d+T))) (parents saved : Fin (size d+T))
     (body : P → Pr P K Q prime U)
     (setup pass : Pr P K Q prime U) (cost : ℕ) (u : HS K Q prime U)
-    (source initial : Stacks K prime) : Prop :=
+    (source initial : Stacks K prime) (returned : Stacks K prime → Prop) : Prop :=
     v.beforeH = B*prime^(r*((w+1)*r)) →
       a.records = LabelMask.records v → 0 < W →
       let D := embStk anchor initial
@@ -855,7 +855,7 @@ def SignedPassBound (regs : Fin 6 ↪ Fin T) (anchor : Fin (size d+T) ↪ Fin K)
       F.R (ext 0) = [] ∧ F.R (ports (Fin.last N).castSucc) = a.pivotTail ∧
       F.R (ports (archivePorts 0 (columnBank 34))) = a.matrixTail ∧
       n ≤ cost ∧
-      Exec body (.seq setup pass) (mk u source) n (mk z F)
+      Exec body (.seq setup pass) (mk u source) n (mk z F) ∧ returned F
 
 structure SeededQueueReady (w H : ℕ) (proj : Matrix (Fin r) (Fin r) ℚ)
     (α α' : Fin r → ZMod M) (initial S : Stacks K prime) (bank : Fin 18 ↪ Fin K)
@@ -970,7 +970,13 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     SignedPassBound regs anchor ports ext v B a payload rs parents saved body
       (.seq (LabelSpectators.program r br rows bh atom (dir 2) (dir 9) (dir 3) (dir 5)) (.seq (.seq (LabelDirectorySetup.setup r dir atom one) (.seq (expandMask (dir 9) (dir 4) (dir 2) (dir 3) (dir 5) (dir 12) (fun _ => false)) (LabelDirectoryBuild.program dir))) (.seq (.seq (LabelCounts.highCount one atom (dir 7) (dir 2) (dir 3) (dir 5))
         (scanR (dir 7) (dir 2) (LabelCountBank.pushAll (cs.map Prod.fst)))) (.seq writeMask (.seq (.seq (bcopy (recip 15) (bank 17) (bank 4) tmp) (.seq (.seq (umulSym 1 (bitSymbol false) (bank 8) (bank 9) (bank 4)) (withIdentitySeed (d+1) (bank 9) (bank 17) seed (bank 4) tmp generate)) (bclear (bank 9)))) (bclear (bank 17))))))) pass
-      (signedPassTime U r d T v w W a.H a.J B width rate) u raw input := by
+      (signedPassTime U r d T v w W a.H a.J B width rate) u raw input (fun F => proj = 1 → ∀ (j : Fin base.records)
+        (x : Fin (d+1) → ZMod M) (k : Fin W),
+        let child := Weighted.child r α α' (x ∘ e ∘ Sum.inl, x ∘ e ∘ Sum.inr)
+        let address := if LabelStock.live r (w+1) 1 j then Sum.elim child.1 child.2 ∘ e.symm else x
+        (F.R (ext 2))[j.val*(M^(d+1)*W)+(FlatCoordinateLayout.index address k).val]? =
+          some (RadixToBinary.binaryEncoding.encode (SparseRoleCircuit.encode
+            (base.input j (FlatCoordinateLayout.index x k))))) := by
   intro swaps shears rate
   obtain ⟨pass,run⟩ := physicalSignedResidualPass (w := w) (W := W) regs anchor ports ext off banks external shared
     capacity e proj idempotent admissible α α' inverse body rs hk parents saved layout cap cs sizeC
@@ -1324,7 +1330,13 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
   have total := Nat.add_le_add (Nat.add_le_add parentCost (Nat.add_le_add directoryCost
     (Nat.add_le_add counterCost (Nat.add_le_add hTime paid)))) passBound
   refine ⟨z,E,_,hz.trans (finishUser.trans (releaseUser.trans (cleanUser.trans (hy.trans (preparedUser.trans (zeroUser.trans (copyUser.trans (hUser.trans (counterUser.trans (buildUser.trans parentUser)))))))))),queue,acc,maskDone,pivots,archiveDone,?_,
-    Exec.seq (Exec.seq parentRun (Exec.seq buildRun (Exec.seq counterRun (Exec.seq emit (Exec.seq (Exec.seq copyRun (Exec.seq (Exec.seq zeroRun (Exec.seq (Exec.seq initRun generateRun) clearRun)) releaseRun)) finishRun))))) exec⟩
+    Exec.seq (Exec.seq parentRun (Exec.seq buildRun (Exec.seq counterRun (Exec.seq emit (Exec.seq (Exec.seq copyRun (Exec.seq (Exec.seq zeroRun (Exec.seq (Exec.seq initRun generateRun) clearRun)) releaseRun)) finishRun))))) exec,?_⟩
+  swap
+  ·
+    intro identity j x k
+    rw [queue]
+    subst proj
+    exact base.physicalIdentity_queue e α α' inverse j x k
   change _ ≤ (v.beforeRows*v.rows*B)*perParent + passPreparationCost v r (d+1) w B parentWidth base.H +
     (anchorVolumeRate d T+4)*totalVolume + (6+rate)*min liveVolume (((prime-1)*totalVolume)/prime)
   rw [min_eq_left liveBound]

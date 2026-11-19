@@ -16,13 +16,14 @@ variable [M8.Machine.Net] {U : Type} {n d Q : ℕ}
 local notation "fields" => d+1
 
 theorem stoppedGoodRecord_exec (cap : 217 ≤ Q) (fits : leafCapacity ((fields+d)+1) ≤ Q)
-    (rank g : ℕ) (dim : fields = rank+g) (hr : rank ≤ fields) (caller : Fin 58 ↪ Fin n) :
+    (rank g : ℕ) (dim : fields = rank+g) (hr : rank ≤ fields) (caller seedHost : Fin 58 ↪ Fin n)
+    (shared : ∀ j : Fin 58, j ≠ 28 → seedHost j = caller j) (digits : ℕ) :
     ∃ T, ∃ body : Unit → Pr Unit (n+T) Q prime U, ∃ C : ℝ, ∃ overhead : ℕ,
     ∀ w W H J, let M := prime^(w+1)
     letI : NeZero M := ⟨(pow_pos prime_prime.pos _).ne'⟩
     ∃ budget : ℕ, (H = Nat.size M → J = Nat.size W → 0 < W →
       (budget : ℝ) ≤ C*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau*(M^(fields+fields)*W : ℕ)) ∧
-    ∀ (G : Matrix (Fin fields) (Fin fields) (ZMod M))
+    ∀ (desc : RecursiveInterchangeLayout.Descriptor) (_ : desc.between < 2^(digits*H+1)) (G : Matrix (Fin fields) (Fin fields) (ZMod M))
       (minor : ∀ j (hj : j < rank), IsUnit (lead (j+1) (lt_of_lt_of_le hj hr) G).det)
       (_ : G*G = G) (L : Matrix (Fin fields) (Fin rank) (ZMod M)) (R : Matrix (Fin rank) (Fin fields) (ZMod M))
       (_ : G = L*R) (weights inv : Fin fields → ZMod M) (_ : ∀ i, weights i * inv i = 1)
@@ -30,6 +31,8 @@ theorem stoppedGoodRecord_exec (cap : 217 ≤ Q) (fits : leafCapacity ((fields+d
       (tail dest rest invRest pivotTail : List (Fin (prime+4))) (target : ℤ → Fin 4) (q : ℤ)
       (_ : ∀ z, q ≤ z → z < q+(M^(fields+fields)*W : ℕ) → target z = blank),
     let full := caller.trans (Fin.castAddEmb T)
+    let middleHost := seedHost.trans (Fin.castAddEmb T)
+    let K := digits*H+1
     let machine := parent.trans (parentWithWeights.trans full)
     let bank := adapterBank.trans machine
     let host := head.trans bank
@@ -44,8 +47,8 @@ theorem stoppedGoodRecord_exec (cap : 217 ≤ Q) (fits : leafCapacity ((fields+d
     let ready := HeadColumnReady (d := fields+fields) (W := W) h (entry.trans bank) H J [] parent [] SparseRoleCircuit.encode (fun _ => blank) target 0 q
     let ordinary := ordinaryHead.trans bank
     let ts := shear.trans ordinary
-    let middleCost := (((List.finRange rank).map fun i => childWeightTime prime w H i.val).sum+1 + dimensionTime H 1 (g+g)) +
-        (budget+2+(2*(rank*H+rank*H+((g+g)*H+1))+7))
+    let middleCost := (((List.finRange rank).map fun i => childWeightTime prime w H i.val).sum+1 + dimensionTime H K (g+g)) +
+        (budget+2+(2*(rank*H+rank*H+((g+g)*H+K))+7))
     ∀ v S (word : Fin (M^(fields+fields)*W) → ZMod 2),
       ready word S →
       S.R (bank 27) = [] → S.R (machine 54) = (List.ofFn fun j => binSyms H (inv j).val).flatten ++ invRest →
@@ -54,12 +57,14 @@ theorem stoppedGoodRecord_exec (cap : 217 ≤ Q) (fits : leafCapacity ((fields+d
       S.R (c 15) = binSyms H (1 : ZMod M).val → (S.R (c 16)).length = w →
       (∀ j : Fin 20, (j ≤ 14 ∧ j ≠ 4) ∨ j = 17 → S.R (c j) = []) →
       (∀ k ∈ [full 55,full 56,full 57], S.R k = []) →
+      ((middleHost 28 = full 28 ∧ binSyms (A := prime) K desc.between = binSyms 1 1) ∨
+        ((∀ i, full i ≠ middleHost 28) ∧ S.R (middleHost 28) = binSyms K desc.between)) →
       (∀ j : Fin (n+T), n ≤ j.val → S.L j = [] ∧ S.R j = []) →
       ∃ z F n out, z.user = v.user ∧
         n ≤ 1 + goodIncomingTime (P := Empty) (U := U) (A := prime) Empty.elim machine prime w W H J rank hr + middleCost + (1 + goodOutgoingTime (P := Empty) (U := U) (A := prime) Empty.elim machine prime w W H J rank hr) ∧
         (H = Nat.size M → J = Nat.size W → n ≤ budget + overhead*(M^(fields+fields)*W) ∧
           (n : ℝ) ≤ (C+overhead)*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau*(M^(fields+fields)*W : ℕ)) ∧
-        Exec body (hostedGoodRecord cap full () prime rank g hr) (mk v S) n (mk z F) ∧ ready out F ∧ F.R (bank 27) = [] ∧
+        Exec body (hostedGoodRecordAt cap full middleHost () prime rank g hr) (mk v S) n (mk z F) ∧ ready out F ∧ F.R (bank 27) = [] ∧
         (∀ j, (∀ i, s i ≠ j) → (∀ i, ts i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j) ∧
         ∀ x j, let y := transform (diagonal weights) 1 (revExchangeOf (rev fields) G (transform (diagonal inv) 1 x))
                out (index (Fin.append y.1 y.2) j) = word (index (Fin.append x.1 x.2) j) := by
@@ -68,21 +73,21 @@ theorem stoppedGoodRecord_exec (cap : 217 ≤ Q) (fits : leafCapacity ((fields+d
   obtain ⟨C,charge⟩ := child body (Fast.Main.mnProgPush prog) (fun _ => le_rfl)
   let ports := parent.trans (parentWithWeights.trans (caller.trans (Fin.castAddEmb T)))
   obtain ⟨overhead,parentBound⟩ := goodRecordTime_volume_le (P := Empty) (A := prime) (U := U)
-    Empty.elim ports rank g dim (Nat.succ_pos d) hr
+    Empty.elim ports rank g digits dim (Nat.succ_pos d) hr
   refine ⟨T,body,C,overhead,?_⟩
   intro w W H J M
   let : NeZero (prime^(w+1)) := ⟨(pow_pos prime_prime.pos _).ne'⟩
   obtain ⟨budget,rate,leaf⟩ := charge w W H J
   refine ⟨budget,rate,?_⟩
-  intro G minor idem L R factor weights inv inverse hm hw hW tail dest rest invRest pivotTail target q empty
-    full machine bank host c h s words pair stage piv parent ready ordinary ts middleCost
-    v S word initial free stored packed count pivots one clock scratch fresh privateFree
-  have parentRun := hostedGoodRecord_exec cap body full full (fun _ _ => rfl)
-    ⟨1,1,1,fields,1,W⟩ 1 (by decide : 1 < 2^1) () budget G g dim hr minor idem L R factor weights inv inverse
+  intro desc fitsMiddle G minor idem L R factor weights inv inverse hm hw hW tail dest rest invRest pivotTail target q empty
+    full middleHost K machine bank host c h s words pair stage piv parent ready ordinary ts middleCost
+    v S word initial free stored packed count pivots one clock scratch fresh seed privateFree
+  have parentRun := hostedGoodRecord_exec cap body full middleHost (fun j hj => congrArg (Fin.castAdd T) (shared j hj))
+    desc K fitsMiddle () budget G g dim hr minor idem L R factor weights inv inverse
     prime_prime H J hm hw hW tail dest rest invRest pivotTail SparseRoleCircuit.encode (fun _ => blank)
-    target 0 q empty v S word initial free stored packed count pivots one clock scratch fresh (Or.inl ⟨rfl,rfl⟩)
+    target 0 q empty v S word initial free stored packed count pivots one clock scratch fresh seed
   obtain ⟨z,F,l,out,hz,hl,run,readyOut,clean,frame,effect⟩ := parentRun (by
-    intro _ units u D before payload base widthWord unitWord _ _ archive padded clockLen off
+    intro _ units u D before payload base widthWord unitWord _ _ _ archive padded clockLen off
     apply leaf _ _ units hm hw hW u D before payload base widthWord unitWord archive padded clockLen
     intro j hj
     have kept := off j (fun i eq => by
