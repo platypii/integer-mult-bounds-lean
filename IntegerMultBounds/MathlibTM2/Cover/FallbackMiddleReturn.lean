@@ -2,6 +2,9 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackMiddleShear
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackDimension
+public import IntegerMultBounds.MathlibTM2.Cover.LabelExchange
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackGoodChildLayout
+public import IntegerMultBounds.Machine.BlockNegationData
 import IntegerMultBounds.MathlibTM2.Host.ChunkSwap
 
 /-! Install the row descriptor, shear the payload and return it to its original port. -/
@@ -71,5 +74,218 @@ theorem returnedMiddleShear_exec (body : F → Pr F T 217 A U) (r : Fin 31 ↪ F
   have rows : P*M*G ≤ N := Nat.le_mul_of_pos_right _ (Nat.mul_pos hM hB)
   exact ⟨z,D,n+m,hz.trans hu,by nlinarith only [hn,ht,rows],Exec.seq setup run,
     fun x => (tapes 1 x).symm,fun x => (tapes 0 x).symm⟩
+
+/-- At a leaf descriptor's physical address, the returned word adds the
+weighted head digit to the tail digit while retaining every spectator. -/
+theorem middleShear_leaf_entry {α : Type*} (v : RecursiveInterchangeLayout.Descriptor) (q : ℕ)
+    [NeZero M] (radix : q^v.width = M) (c h t : ZMod M)
+    (a : Fin v.beforeRows) (row : Fin v.rows) (pre : Fin v.beforeH)
+    (mid : Fin v.between) (post : Fin v.afterD)
+    (word : Fin ((((v.beforeRows*v.rows*v.beforeH)*M)*v.between)*(M*v.afterD)) → α) :
+    let out := FiberLayoutData.translated word (fun i => c.val*(i.val/v.between%M)%M)
+    out[RecursiveInterchangeLayout.index q v a row pre h.val mid (t+c*h).val post]? =
+      (List.ofFn word)[RecursiveInterchangeLayout.index q v a row pre h.val mid t.val post]? := by
+  intro out
+  let prefixRow := finProdFinEquiv (finProdFinEquiv (a,row),pre)
+  let h' : Fin M := ⟨h.val,h.val_lt⟩
+  let t' : Fin M := ⟨t.val,t.val_lt⟩
+  let src := FiberLayoutData.index (finProdFinEquiv (finProdFinEquiv (prefixRow,h'),mid)) t' post
+  have addr : RecursiveInterchangeLayout.index q v a row pre h.val mid t.val post = src.val := by
+    simp [RecursiveInterchangeLayout.index,src,prefixRow,h',t',finProdFinEquiv,radix]
+    ring
+  rw [addr,List.getElem?_eq_getElem (l := List.ofFn word) (by simp : src.val < (List.ofFn word).length),List.getElem_ofFn]
+  let fiber := finProdFinEquiv (finProdFinEquiv (prefixRow,h'),mid)
+  have control : fiber.val/v.between%M = h.val := by
+    simp [fiber,finProdFinEquiv,Nat.add_mul_div_left,Nat.div_eq_of_lt mid.isLt,
+      Nat.zero_lt_of_lt mid.isLt,Nat.mod_eq_of_lt h.val_lt,h']
+  have step := FiberLayoutData.translated_entry word
+    (fun i => c.val*(i.val/v.between%M)%M) fiber t' post
+  simp only [control,Nat.add_mod_mod] at step
+  have digit : (t+c*h).val = (t.val+c.val*h.val)%M := by
+    simp [ZMod.val_add,ZMod.val_mul,Nat.add_mod_mod]
+  have target : RecursiveInterchangeLayout.index q v a row pre h.val mid (t+c*h).val post =
+      (finProdFinEquiv (finProdFinEquiv (prefixRow,h'),mid)).val*(M*v.afterD) +
+        ((t'.val+c.val*h'.val)%M)*v.afterD+post.val := by
+    simp [RecursiveInterchangeLayout.index,radix,digit,prefixRow,h',t',finProdFinEquiv]
+    ring
+  rw [target]
+  exact step
+
+/-- On the parent word the same shear updates just the reversed tail
+partner of the selected rank coordinate. -/
+theorem middleShear_rank_entry {α : Type*} {r : ℕ} (v : RecursiveInterchangeLayout.Descriptor) (width : v.width = r)
+    [NeZero M] (q w : ℕ) (radix : M = q^w) (i : Fin r) (c : ZMod M)
+    (x y : Fin r → ZMod M) (a : Fin v.beforeRows) (row : Fin v.rows)
+    (before : Fin v.beforeH) (middle : Fin v.between) (after : Fin v.afterD) :
+    let view := {(RecursiveInterchangeLayout.child M 1 1 v i i.rev) with width := w}
+    ∀ word : Fin ((((view.beforeRows*view.rows*view.beforeH)*M)*view.between)*(M*view.afterD)) → α,
+      let out := FiberLayoutData.translated word (fun j => c.val*(j.val/view.between%M)%M)
+      out[RecursiveInterchangeLayout.index M v a row before (FlatCoordinateLayout.rank x).val middle
+        (FlatCoordinateLayout.rank (Function.update y i.rev (y i.rev+c*x i))).val after]? =
+      (List.ofFn word)[RecursiveInterchangeLayout.index M v a row before (FlatCoordinateLayout.rank x).val
+        middle (FlatCoordinateLayout.rank y).val after]? := by
+  intro view word out
+  have step := leafPair_apply v width q w radix i (fun p => (p.1,p.2+c*p.1))
+    (fun j => (List.ofFn word)[j]?) (fun j => out[j]?) x y a row before middle after
+    before.isLt middle.isLt after.isLt (by
+      intro pre hp mid hm post he h t
+      exact middleShear_leaf_entry view q radix.symm c h t a
+        ⟨row.val,by simp [view,RecursiveInterchangeLayout.child]⟩
+        ⟨pre,hp⟩ ⟨mid,hm⟩ ⟨post,he⟩ word)
+  simpa using step
+
+/-- The two ordinary exchanges and the sign correction connect the three
+translated words at the same physical leaf descriptor. -/
+theorem middleShears_weighted_entry {α : Type*} (v : RecursiveInterchangeLayout.Descriptor) (q : ℕ)
+    [NeZero M] (radix : q^v.width = M) (weight inv : ZMod M) (unit : weight*inv = 1)
+    (a : Fin v.beforeRows) (row : Fin v.rows) (pre : Fin v.beforeH)
+    (mid : Fin v.between) (post : Fin v.afterD) :
+    let N := (((v.beforeRows*v.rows*v.beforeH)*M)*v.between)*(M*v.afterD)
+    let pos := fun p : ZMod M × ZMod M =>
+      RecursiveInterchangeLayout.index q v a row pre p.1.val mid p.2.val post
+    let shifted := fun (c : ZMod M) (word : Fin N → α) =>
+      FiberLayoutData.translated word (fun i => c.val*(i.val/v.between%M)%M)
+    ∀ (input swapped swappedBack : Fin N → α) (output : List α),
+      (∀ p, (List.ofFn swapped)[pos p.swap]? = (shifted inv input)[pos p]?) →
+      (∀ p, (List.ofFn swappedBack)[pos p.swap]? = (shifted (-weight) swapped)[pos p]?) →
+      (∀ p : ZMod M × ZMod M, output[pos (-p.1,p.2)]? = (shifted inv swappedBack)[pos p]?) →
+      ∀ h t, output[pos (weight*t,inv*h)]? = (List.ofFn input)[pos (h,t)]? := by
+  intro N pos shifted input swapped swappedBack output swap undo sign h t
+  let shear := Weighted.shear (R := ZMod M)
+  let x := shear inv (h,t)
+  let y := shear (-weight) x.swap
+  let z := shear inv y.swap
+  have step (c : ZMod M) (p : ZMod M × ZMod M) (word : Fin N → α) :
+      (shifted c word)[pos (shear c p)]? = (List.ofFn word)[pos p]? :=
+    middleShear_leaf_entry v q radix c p.1 p.2 a row pre mid post word
+  have result := (sign z).trans ((step inv y.swap swappedBack).trans ((undo y).trans
+    ((step (-weight) x.swap swapped).trans ((swap x).trans (step inv (h,t) input)))))
+  have action : (-z.1,z.2) = (weight*t,inv*h) := Weighted.leaf_word weight inv unit (h,t)
+  rwa [action] at result
+
+open M8.RevMachine RecursiveInterchangeLayout in
+/-- Feed the translated bit list directly to the ordinary leaf interchange.
+Its output is indexed at the shear's original volume. -/
+noncomputable def swapLeafList (v : Descriptor) {N : ℕ} (size : N = volume prime v)
+    (xs : List (ZMod 2)) (length : xs.length = N) : Fin N → ZMod 2 :=
+  fun j => RevSemantics.leafOut (v := v) v rfl
+    (fun i => xs.get (i.cast (length.trans size).symm)) (j.cast size)
+
+open M8.RevMachine RecursiveInterchangeLayout in
+theorem swapLeafList_entry (v : Descriptor) {N : ℕ} (size : N = volume prime v)
+    (xs : List (ZMod 2)) (length : xs.length = N)
+    (a : Fin v.beforeRows) (row : Fin v.rows) (pre : Fin v.beforeH)
+    (mid : Fin v.between) (post : Fin v.afterD) (h t : Fin (prime^v.width)) :
+    (List.ofFn (swapLeafList v size xs length))[index prime v a row pre t mid h post]? =
+      xs[index prime v a row pre h mid t post]? := by
+  let input := fun i : Fin (volume prime v) => xs.get (i.cast (length.trans size).symm)
+  have bounds (i j : Fin (prime^v.width)) := RevSemantics.index_lt a.isLt row.isLt pre.isLt
+    i.isLt mid.isLt j.isLt post.isLt
+  have swapped := LabelExchange.leafOut_swapped (u := v) (v := v) rfl input
+    a a.isLt row row.isLt pre pre.isLt t t.isLt mid mid.isLt h h.isLt post post.isLt
+  simp only [ext,dite_eq_left (bounds t h),dite_eq_left (bounds h t)] at swapped
+  have left : index prime v a row pre t mid h post < (List.ofFn (swapLeafList v size xs length)).length :=
+    by simpa only [List.length_ofFn,size] using bounds t h
+  have right : index prime v a row pre h mid t post < xs.length := by simpa only [length,size] using bounds h t
+  rw [List.getElem?_eq_getElem left,List.getElem?_eq_getElem right,List.getElem_ofFn]
+  exact congrArg some swapped
+
+open RecursiveInterchangeLayout in
+theorem weightedLeafSwaps_entry (v : Descriptor) [NeZero M] (radix : prime^v.width = M)
+    (weight inv : ZMod M) (unit : weight*inv = 1) :
+    let N := (((v.beforeRows*v.rows*v.beforeH)*M)*v.between)*(M*v.afterD)
+    let size : N = volume prime v := by simp [N,volume,radix,Nat.mul_assoc]
+    let shifted := fun (c : ZMod M) (word : Fin N → ZMod 2) =>
+      FiberLayoutData.translated word (fun i => c.val*(i.val/v.between%M)%M)
+    let swap := fun c word => swapLeafList v size (shifted c word) (FiberLayoutData.translated_length ..)
+    ∀ input (output : List (ZMod 2)) (a : Fin v.beforeRows) (row : Fin v.rows) (pre : Fin v.beforeH)
+      (mid : Fin v.between) (post : Fin v.afterD),
+      let pos := fun p : ZMod M × ZMod M => index prime v a row pre p.1.val mid p.2.val post
+      (∀ p : ZMod M × ZMod M, output[pos (-p.1,p.2)]? =
+        (shifted inv (swap (-weight) (swap inv input)))[pos p]?) →
+      ∀ h t, output[pos (weight*t,inv*h)]? = (List.ofFn input)[pos (h,t)]? := by
+  intro N size shifted swap input output a row pre mid post pos sign
+  apply middleShears_weighted_entry v prime radix weight inv unit a row pre mid post
+    input (swap inv input) (swap (-weight) (swap inv input)) output _ _ sign
+  all_goals
+    intro p
+    exact swapLeafList_entry v size _ _ a row pre mid post
+      ⟨p.1.val,radix.symm ▸ p.1.val_lt⟩ ⟨p.2.val,radix.symm ▸ p.2.val_lt⟩
+
+/-- Negate the head atom on each prefix fiber, retaining the whole suffix
+as one block for the block-negation program. -/
+def negateLeafHead {α : Type*} {P M B : ℕ} (word : Fin (P*(M*B)) → α) : List α :=
+  (List.ofFn (fun p : Fin P => (BlockNegationData.negate (FiberLayoutData.fiber word p)).flatten)).flatten
+
+theorem negateLeafHead_entry {α : Type*} {P M B : ℕ} [NeZero M] (word : Fin (P*(M*B)) → α)
+    (p : Fin P) (h : ZMod M) (j : Fin B) :
+    (negateLeafHead word)[p.val*(M*B)+((-h).val*B+j.val)]? =
+      (List.ofFn word)[p.val*(M*B)+(h.val*B+j.val)]? := by
+  have uniform (i : Fin P) := FiberLayoutData.fiber_uniform word i
+  have len (i : Fin P) : (FiberLayoutData.fiber word i).flatten.length = M*B := by
+    rw [BlockRotationData.uniform_volume B _ (uniform i),FiberLayoutData.fiber_length]
+  have inside (x : ZMod M) : x.val*B+j.val < M*B := by
+    have bound := Nat.mul_le_mul_right B (Nat.succ_le_of_lt x.val_lt)
+    nlinarith only [bound,j.isLt]
+  unfold negateLeafHead
+  rw [BlockRotationData.flatten_index (M*B) _ (by
+    intro b hb
+    obtain ⟨i,rfl⟩ := List.mem_ofFn.mp hb
+    simpa only [BlockNegationData.payload_length] using len i) p.val _ (by simp) (inside (-h))]
+  rw [← FiberLayoutData.flatten_fibers,BlockRotationData.flatten_index (M*B) _ (by
+    intro b hb
+    obtain ⟨blocks,member,rfl⟩ := List.mem_map.mp hb
+    obtain ⟨i,rfl⟩ := List.mem_ofFn.mp member
+    exact len i) p.val _ (by simp [FiberLayoutData.fibers]) (inside h)]
+  simp only [FiberLayoutData.fibers,List.getElem_map,List.getElem_ofFn,Fin.eta]
+  have neg : (-h).val = (M-h.val)%M := by
+    by_cases zero : h = 0
+    · simp [zero]
+    · have : NeZero h := ⟨zero⟩
+      rw [ZMod.val_neg_of_ne_zero,Nat.mod_eq_of_lt]
+      have pos : 0 < h.val := Nat.pos_of_ne_zero (fun eq => zero (ZMod.val_injective M (by simpa using eq)))
+      have := h.val_lt
+      omega
+  rw [neg]
+  simpa only [FiberLayoutData.fiber_length] using BlockNegationData.payload_destination B
+    (FiberLayoutData.fiber word p) (uniform p) h.val j.val (by simpa using h.val_lt) j.isLt
+
+open RecursiveInterchangeLayout in
+theorem weightedLeafOutput_entry (v : Descriptor) [NeZero M] (radix : prime^v.width = M)
+    (weight inv : ZMod M) (unit : weight*inv = 1) :
+    let N := (((v.beforeRows*v.rows*v.beforeH)*M)*v.between)*(M*v.afterD)
+    let size : N = volume prime v := by simp [N,volume,radix,Nat.mul_assoc]
+    let shifted := fun (c : ZMod M) (word : Fin N → ZMod 2) =>
+      FiberLayoutData.translated word (fun i => c.val*(i.val/v.between%M)%M)
+    let swap := fun c word => swapLeafList v size (shifted c word) (FiberLayoutData.translated_length ..)
+    ∀ input,
+      let xs := shifted inv (swap (-weight) (swap inv input))
+      let prefixCount := v.beforeRows*v.rows*v.beforeH
+      let suffix := v.between*(M*v.afterD)
+      let length : xs.length = prefixCount*(M*suffix) := by
+        rw [FiberLayoutData.translated_length]; simp [prefixCount,suffix,Nat.mul_assoc]
+      let output := negateLeafHead (P := prefixCount) (M := M) (B := suffix)
+        (fun j => xs.get (j.cast length.symm))
+      ∀ (a : Fin v.beforeRows) (row : Fin v.rows) (pre : Fin v.beforeH)
+        (mid : Fin v.between) (post : Fin v.afterD) (h t : ZMod M),
+        output[index prime v a row pre (weight*t).val mid (inv*h).val post]? =
+          (List.ofFn input)[index prime v a row pre h.val mid t.val post]? := by
+  intro N size shifted swap input xs prefixCount suffix length output a row pre mid post h t
+  apply weightedLeafSwaps_entry v radix weight inv unit input output a row pre mid post _ h t
+  intro p
+  let pref := finProdFinEquiv (finProdFinEquiv (a,row),pre)
+  let tail := finProdFinEquiv (mid,finProdFinEquiv ((⟨p.2.val,p.2.val_lt⟩ : Fin M),post))
+  have addr (x : ZMod M) : index prime v a row pre x.val mid p.2.val post =
+      pref.val*(M*suffix)+(x.val*suffix+tail.val) := by
+    simp [index,radix,pref,tail,suffix,finProdFinEquiv]; ring
+  change output[index prime v a row pre (-p.1).val mid p.2.val post]? =
+    xs[index prime v a row pre p.1.val mid p.2.val post]?
+  rw [addr,addr]
+  have data : List.ofFn (fun j : Fin (prefixCount*(M*suffix)) => xs.get (j.cast length.symm)) = xs := by
+    apply List.ext_getElem
+    · simpa only [List.length_ofFn] using length.symm
+    · intros; simp
+  rw [← data] -- Read the same suffix position in the unmodified word.
+  exact negateLeafHead_entry _ pref p.1 tail
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
