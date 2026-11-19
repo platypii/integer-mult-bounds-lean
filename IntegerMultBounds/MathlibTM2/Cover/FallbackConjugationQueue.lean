@@ -59,14 +59,15 @@ theorem physicalResidualQueue_exec (body : P → Pr P T Q prime U)
       have eq := congrArg Fin.val (host.injective h)
       change 18+k.val = (coefficientSlots (extra := (conjugationDepth m+1)*13) i j l).val at eq
       fin_cases l <;> simp [coefficientSlots, Matrix.cons_val] at eq <;> (try split_ifs at *) <;> omega
-    ∀ (ancestor : ℕ → List (Fin (prime+4))) (tail padWord : List (Fin (prime+4)))
+    ∀ (ancestor : ℕ → List (Fin (prime+4))) (tail : List (Fin (prime+4)))
     {d : ℕ} (e : (Fin m ⊕ Fin m) ≃ Fin d)
-    (α α' : Fin m → ZMod (prime^(w+1)))
-    (v : HS T Q prime U) (S : Stacks T prime)
-    (seedWord : S.R seed = padWord) (tmpBlank : S.R tmp = [])
-    (weightBank : S.R (r 13) = [] ∧ ∀ i j, let s := coeff i j
+    (α α' : Fin m → ZMod (prime^(w+1))),
+    let padWord := matrixWords prime H (1 : Matrix (Fin d) (Fin d) (ZMod (prime^(w+1))))
+    ∀ (v : HS T Q prime U) (S : Stacks T prime)
+    (_seedWord : S.R seed = padWord) (_tmpBlank : S.R tmp = [])
+    (_weightBank : S.R (r 13) = [] ∧ ∀ i j, let s := coeff i j
       S.R (s 1) = binSyms H (α i).val ∧ S.R (s 2) = binSyms H (α' j).val)
-    (ready :
+    (_ready :
       (∀ i : Fin 18, i ∈ [0,3,4,5,6,7,11,14,15] → S.R (bank i) = []) ∧ (S.R (bank 8)).length = H ∧
       S.R (bank 9) = binSyms H 0 ∧ S.R (bank 10) = [] ∧
        (S.R clock).length = w ∧ S.R count = [] ∧ S.R (r 14) = [] ∧
@@ -76,10 +77,10 @@ theorem physicalResidualQueue_exec (body : P → Pr P T Q prime U)
       (∀ k ≤ conjugationDepth m, ∀ i : Fin 13, i ≠ 2 → S.R (frame pool k i) = []) ∧
       (∃ suffix, S.R (bank 16) = matrixWords prime H projector ++ suffix) ∧
       S.R (bank 17) = binSyms H (1 : ZMod (prime^(w+1))).val)
-    (widths : ∀ j < records, (S.R (bank 12)).length = (ancestor j).length)
-    (width : (S.R (bank 1)).length = w+1) (blank : S.R (bank 4) = []) (empty : S.R (archive) = [])
-    (directory : S.R (bank 2) = (List.range records).flatMap (LabelDirectory.entry ancestor m (w+1)) ++ tail)
-    (output : S.R (bank 13) = []) (bits : S.R mask = (List.range records).map fun j => bitSymbol (LabelStock.live m (w+1) 1 j)),
+    (_widths : ∀ j < records, (S.R (bank 12)).length = (ancestor j).length)
+    (_width : (S.R (bank 1)).length = w+1) (_blank : S.R (bank 4) = []) (_empty : S.R (archive) = [])
+    (_directory : S.R (bank 2) = (List.range records).flatMap (LabelDirectory.entry ancestor m (w+1)) ++ tail)
+    (_output : S.R (bank 13) = []) (_bits : S.R mask = (List.range records).map fun j => bitSymbol (LabelStock.live m (w+1) 1 j)),
     let inputs := QueueLayout.formulaInputs.trans bank
     let source := sourcePorts (m := m) inputs id
     let weights := fun i j => QueueLayout.residualPorts r (coeff i j) (coeffOff i j)
@@ -99,16 +100,17 @@ theorem physicalResidualQueue_exec (body : P → Pr P T Q prime U)
        (d*(d*(8*(m*m*H)+96*H*H+344*H+182)+1)+1)+(2*(m*m*H)+2)
     let branch := fun p => Prog.seq p (.seq (moveR (scan 4) (scan 5) id) (advanceDirectory m scan))
     let words := (List.range records).flatMap word
-    ∃ z F n, z.user = v.user ∧ F.R mask = [] ∧ F.R (scan 2) = tail ∧ F.R (scan 4) = words ∧
+    words.length = records*(d*d*H) ∧
+    ∃ (z : HS T Q prime U) (F : Stacks T prime) (n : ℕ), z.user = v.user ∧ F.R mask = [] ∧ F.R (scan 2) = tail ∧ F.R (scan 4) = words ∧
       F.R (scan 5) = [] ∧ (∀ k, k ≠ mask → k ≠ scan 2 → k ≠ scan 4 → F.R k = S.R k) ∧
       F.inp = S.inp ∧ F.out = S.out ∧ F.L = S.L ∧
       n ≤ (List.range records).countP active * (livePrice + 4*(d*d*H)) +
-        (List.range records).countP (fun j => !active j) * (10*padWord.length+6) +
+        (List.range records).countP (fun j => !active j) * (10*(d*d*H)+6) +
         records * (4*(S.R (bank 12)).length+4+(m*m*(4*(w+1)+4)+1)+6) + 4 ∧
       Exec body (.seq (maskedScan mask (branch live) (branch (bcopy seed (scan 4) (scan 3) tmp)))
         (moveR (scan 5) (scan 4) id)) (mk v S) n (mk z F) := by
-  intro size host control mask seed tmp bank r counters clock count pool coeff archive archiveOff coeffOff ancestor tail padWord
-    d e α α' v S seedWord tmpBlank weightBank ready
+  intro size host control mask seed tmp bank r counters clock count pool coeff archive archiveOff coeffOff ancestor tail
+    d e α α' padWord v S seedWord tmpBlank weightBank ready
     widths width blank empty directory output bits
   have br (i j) : bank i ≠ r j := QueueLayout.block_ne _ _ host (by decide) i j
   have bp (i j) : bank i ≠ pool j := QueueLayout.block_ne _ _ host (by omega) i j
@@ -142,13 +144,20 @@ theorem physicalResidualQueue_exec (body : P → Pr P T Q prime U)
     exact ⟨(keep 1 (by decide)).trans seedWord,(keepBank ws 4 (by decide) (by decide)).trans blank,
       (keep 2 (by decide)).trans tmpBlank⟩
   let price := fun j => if active j then livePrice else 6*padWord.length+6
-  have wordLen (j) : (word j).length = (if active j then d*d*H else padWord.length) := by
-    cases h : active j <;> simp [word,h,length_matrixWords]
+  have padLen : padWord.length = d*d*H := length_matrixWords ..
+  have wordLen (j) : (word j).length = d*d*H := by
+    cases h : active j <;> simp [word,h,length_matrixWords,padLen]
+  constructor
+  · have len (ids : List ℕ) : (ids.flatMap word).length = ids.length*(d*d*H) := by
+      induction ids with
+      | nil => simp
+      | cons j ids ih => simp [wordLen,ih,Nat.add_mul,Nat.add_comm]
+    simpa using len (List.range records)
   have ledger (ids : List ℕ) (valid : ∀ j ∈ ids, j < records) :
       (ids.map (fun j => price j+2*(word j).length+2+
         (4*(ancestor j).length+4+(m*m*(4*(w+1)+4)+1))+4)).sum + 2*(ids.flatMap word).length =
       ids.countP active * (livePrice+4*(d*d*H)) +
-        ids.countP (fun j => !active j) * (10*padWord.length+6) +
+        ids.countP (fun j => !active j) * (10*(d*d*H)+6) +
         ids.length * (4*(S.R (bank 12)).length+4+(m*m*(4*(w+1)+4)+1)+6) := by
     induction ids with
     | nil => simp
@@ -157,7 +166,7 @@ theorem physicalResidualQueue_exec (body : P → Pr P T Q prime U)
       have widthEq := widths j (valid j List.mem_cons_self)
       cases h : active j <;>
         simp only [List.map_cons,List.sum_cons,List.flatMap_cons,List.length_append,List.length_cons,
-          List.countP_cons, h, Bool.not_true, Bool.not_false, price, wordLen, Bool.false_eq_true,
+          List.countP_cons, h, Bool.not_true, Bool.not_false, price, wordLen, padLen, Bool.false_eq_true,
           ite_true, ite_false, Nat.add_mul, Nat.mul_add, Nat.one_mul] at * <;> omega
   have total := ledger (List.range records) (fun _ => List.mem_range.mp)
   rw [List.length_range] at total
