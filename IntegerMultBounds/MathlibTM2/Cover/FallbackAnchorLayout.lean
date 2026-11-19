@@ -67,6 +67,16 @@ theorem signedPayload (negative : Bool) (a out : Array d 1 b W) (h : Correct (ne
   simp only [Function.comp_apply,eval]
   simpa only [signedAddress_involutive,input,Function.comp_apply] using correct_scalar negative a out h (signedAddress negative (coordinates r)) j
 
+/-- A record program reading the signed queue first undoes the anchor on
+addresses, then applies its move. Its output is the move on the original input. -/
+theorem move_signedPayload (negative : Bool) (move : (Fin (d+1) → ZMod M) → (Fin (d+1) → ZMod M))
+    (original signed output : Fin (M^(d+1)*W) → ZMod 2)
+    (anchor : ∀ x j, signed (index (signedAddress negative x) j) = original (index x j))
+    (run : ∀ x j, output (index (move (signedAddress negative x)) j) = signed (index x j)) :
+    ∀ x j, output (index (move x) j) = original (index x j) := by
+  intro x j
+  simpa only [signedAddress_involutive] using (run (signedAddress negative x) j).trans (anchor x j)
+
 private theorem ofFn_cast {m n : ℕ} (h : m = n) (a : Fin n → α) :
     List.ofFn (fun i : Fin m => a (i.cast h)) = List.ofFn a := by subst n; rfl
 

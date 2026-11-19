@@ -136,6 +136,35 @@ theorem goodMove_of_fallbackBit_false (hw : 0 < w) (P : Matrix (Fin m) (Fin m) �
   rw [show j/(prime^w)^(m*m)*(prime^w)^(m*m)+(LabelAddress.address g).val = j from physicalLabel_index j]
   simpa using clear
 
+open Matrix Finset IntegerMultBounds.Swap.LowerTriangular IntegerMultBounds.Swap.Modular
+  IntegerMultBounds.Swap.Shear M8.Exchange in
+/-- In the scan's coordinate order, the one-child good move sends each packed
+address to precisely the address specified by the residual matrix. -/
+theorem goodRecord_address (hw : 0 < w) (e : (Fin m ⊕ Fin m) ≃ Fin n)
+    (P : Matrix (Fin m) (Fin m) ℚ) (idempotent : P*P = P) (f : Factorization univ univ P)
+    (hd : ∀ d ∈ factorizationDenominators f, d < prime) (hr : P.rank ≤ m)
+    (j : ℕ) (live : LabelStock.live m w 1 j = true)
+    (clear : fallbackBit hr (reduce M P) (physicalLabel m w j) = false)
+    (α α' : Fin m → ZMod M) (inverse : ∀ i, α i * α' i = 1) :
+    ∃ (L L' R R' K : LabelPadding.Label m w) (δ δ' : Fin m → ZMod M),
+      GoodForm.UnitLower L ∧ GoodForm.UnitLower L' ∧ GoodForm.UnitLower R ∧ GoodForm.UnitLower R' ∧
+      (∀ i, δ i * δ' i = 1) ∧ ∀ x : Fin n → ZMod M,
+        let banks := (x ∘ e ∘ Sum.inl, x ∘ e ∘ Sum.inr)
+        let result := transform (diagonal α * L * diagonal α') R'
+          (cross (-K) (Weighted.child P.rank (fun i => α i * δ i) (fun i => α' i * δ' i)
+            (cross K (transform (diagonal α * L' * diagonal α') R banks))))
+        (projectorResidual e (reduce M P) α α' (physicalLabel m w j)).mulVec x =
+          Sum.elim result.1 result.2 ∘ e.symm := by
+  obtain ⟨L,L',R,R',K,δ,δ',hL,hL',hR,hR',units,move⟩ :=
+    goodMove_of_fallbackBit_false hw P idempotent f hd hr j live clear α α' inverse
+  refine ⟨L,L',R,R',K,δ,δ',hL,hL',hR,hR',units, ?_⟩
+  intro x banks result
+  rw [show result = _ from move banks]
+  change (residual _ _ _ _).submatrix e.symm e.symm *ᵥ x = _
+  rw [submatrix_mulVec_equiv]
+  have split : x ∘ e = Sum.elim banks.1 banks.2 := by funext i; cases i <;> rfl
+  rw [show x ∘ e.symm.symm = Sum.elim banks.1 banks.2 from split, residual_mulVec]
+
 open IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2.Stack Host LabelTraversal LabelCycle GoodForm in
 open scoped Classical in
 /-- One residue-table program emits the fallback bit for each physical record,
