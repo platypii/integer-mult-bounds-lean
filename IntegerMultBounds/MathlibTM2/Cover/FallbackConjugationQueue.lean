@@ -10,21 +10,27 @@ The conjugate-only queue can be restored from commit 2c23aa3c. -/
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Cover.Fallback.RingFormula
 open IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2.Stack Host LabelTraversal Node
-variable {P U : Type} {T Q m D : ℕ}
+variable {P U : Type} {T Q m : ℕ}
 
 open IntegerMultBounds.Networks.Shared50ModularControl (prime prime_prime)
 local instance (w : ℕ) : NeZero (prime^w) := ⟨(pow_pos prime_prime.pos _).ne'⟩
 
+/-- Maximum frame depth needed to evaluate a conjugate in dimension `m`. -/
+noncomputable def conjugationDepth (m : ℕ) : ℕ :=
+  max (determinant (matrixInput (m := m) false)).depth
+    (Finset.univ.sup fun ij : Fin m × Fin m =>
+      (numerator (matrixInput false) (matrixInput true) ij.1 ij.2).depth)
+
 theorem physicalResidualQueue_exec (body : P → Pr P T Q prime U)
     (w records : ℕ)
     (projector : Matrix (Fin m) (Fin m) (ZMod (prime^(w+1))))
-    (H : ℕ) (hm : prime^(w+1) < 2^H) (host : Fin (36+(D+1)*13) ↪ Fin T) :
+    (H : ℕ) (hm : prime^(w+1) < 2^H) (host : Fin (36+(conjugationDepth m+1)*13) ↪ Fin T) :
     let bank := QueueLayout.block (n := 18) 0 (by omega) host
     let r := QueueLayout.block (n := 16) 18 (by omega) host
     let counters := QueueLayout.block (n := 2) 34 (by omega) host
     let clock := counters 0
     let count := counters 1
-    let pool := QueueLayout.block (n := (D+1)*13) 36 (by omega) host
+    let pool := QueueLayout.block (n := (conjugationDepth m+1)*13) 36 (by omega) host
     ∀ (archive : Fin T) (archiveOff : ∀ i, bank (QueueLayout.directoryWork i) ≠ archive)
     (ancestor : ℕ → List (Fin (prime+4))) (tail padWord : List (Fin (prime+4)))
     (mask seed tmp : Fin T)
@@ -46,8 +52,8 @@ theorem physicalResidualQueue_exec (body : P → Pr P T Q prime U)
        (S clock).length = w ∧ S count = [] ∧ S (r 14) = [] ∧
       S (r 15) = binSyms H (1 : ZMod (prime^(w+1))).val ∧ S (r 4) = binSyms H (prime^(w+1)) ∧
       (∀ i : Fin 16, i ≠ 4 → i < 13 → S (r i) = []) ∧
-      (∀ k ≤ D, S (frame pool k 2) = binSyms H (prime^(w+1))) ∧
-      (∀ k ≤ D, ∀ i : Fin 13, i ≠ 2 → S (frame pool k i) = []) ∧
+      (∀ k ≤ conjugationDepth m, S (frame pool k 2) = binSyms H (prime^(w+1))) ∧
+      (∀ k ≤ conjugationDepth m, ∀ i : Fin 13, i ≠ 2 → S (frame pool k i) = []) ∧
       (∃ suffix, S (bank 16) = matrixWords prime H projector ++ suffix) ∧
       S (bank 17) = binSyms H (1 : ZMod (prime^(w+1))).val)
     (v : HS T Q prime U) (S : Stacks T prime) (start : workspace S.R)
@@ -61,9 +67,7 @@ theorem physicalResidualQueue_exec (body : P → Pr P T Q prime U)
     let scan := QueueLayout.scanPorts (QueueLayout.directoryWork.trans bank) archive archiveOff
     let num := fun i j : Fin m => numerator (matrixInput false) (matrixInput true) i j
     let cost := Finset.univ.sup fun ij : Fin m × Fin m => time H (readTime H) (num ij.1 ij.2)
-    (∀ i j, (num i j).depth ≤ D) →
     let f := determinant (matrixInput false)
-    f.depth ≤ D →
     let C := 48*H*H+152*H+66
     let conjugate : Pr P T Q prime U := (.seq (directoryMatrix m (QueueLayout.readPorts.trans (QueueLayout.directoryWork.trans bank)) (QueueLayout.digitPorts.trans (QueueLayout.directoryWork.trans bank)) (bank 12) (bank 9) (bank 10)) (.seq (.seq (.seq (compile (readLeaf (leafBank source)) (registerBank pool) f 0 (r 14)) (reusablePivotInverse prime r clock count))
         (.seq (packedConjugate pool source (QueueLayout.normalizationPorts.trans r) false true) (.seq (bclear (r 0)) (bclear (r 14))))) (bclear (bank 10))))
@@ -92,7 +96,11 @@ theorem physicalResidualQueue_exec (body : P → Pr P T Q prime U)
   have rc (i j) : r i ≠ counters j := QueueLayout.block_ne _ _ host (by decide) i j
   have copyPorts : [clock,count,r 2,r 3].Nodup := by
     simp [clock,count,counters.injective.eq_iff,(rc _ _).symm,r.injective.eq_iff]
-  intro inputs source weights scan num cost fits f detFits C conjugate live active word price
+  intro inputs source weights scan num cost f C conjugate live active word price
+  have detFits : f.depth ≤ conjugationDepth m := Nat.le_max_left _ _
+  have fits (i j : Fin m) : (num i j).depth ≤ conjugationDepth m :=
+    le_trans (Finset.le_sup (f := fun ij : Fin m × Fin m => (num ij.1 ij.2).depth)
+      (Finset.mem_univ (i,j))) (Nat.le_max_right _ _)
   apply directoryQueue_exec body scan mask maskOff m (w+1) records active live seed tmp padPorts padWord price
     ancestor word tail workspace stable padReady (fun j _ h => by simp [word,price,h])
     _ v S start widths width blank empty directory output bits
