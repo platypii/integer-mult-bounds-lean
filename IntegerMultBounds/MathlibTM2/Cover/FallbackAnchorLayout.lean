@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackSwapDimensions
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackShearReady
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackAnchorPass
 public import IntegerMultBounds.Machine.SparseRoleCircuit
@@ -157,6 +158,43 @@ theorem fieldHeader_rep {T slots : ℕ} (ports : Fin (22+slots) ↪ Fin T) (S : 
   · have outside : ¬ (18 ≤ k.val ∧ k.val ≤ 20) := by omega
     simpa [base,AtomBank.outer,fieldHeader,h,hk,h18,h19,h20,outside,CounterDimensions.descriptorTape,
       CounterDimensions.descriptorHead] using repr none
+
+/-- Installing the live size words and fixed controls establishes the sign frame while
+preserving the payload and every tape outside the five header slots. -/
+theorem installFieldFrame_exec {T Q slots w : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
+    (r : Fin 17 ↪ Fin T) (ports : Fin (22+slots) ↪ Fin T)
+    (exponent : r 13 = ports 3) (size : r 11 = ports 4) (stop : r 14 = ports 18)
+    (count : r 15 = ports 19) (one : r 16 = ports 20)
+    (J : ℕ) (hw : W < 2^J) (v : HS T Q prime U) (S : Stacks T prime)
+    (width : S.R (r 10) = binSyms J W) (clock : (S.R (r 12)).length = w)
+    (scratch : ∀ j : Fin 17, 3 ≤ j → j < 9 → S.R (r j) = [])
+    (blankAux : ∀ k, k.val ≠ 17 → S.L (ports k) = [] ∧ S.R (ports k) = []) :
+    ∃ z F l, z.user = v.user ∧ l ≤ (10*J+12)+(21*(w+1)+12)+1 ∧
+      Exec body (installFieldHeaders r) (mk v S) l (mk z F) ∧
+      (let base := AtomBank.outer slots (AtomSegment.neutral (w+1) W) (fun _ => blank) 1
+       ∀ k, k.val ≠ 17 → ∀ pos, base.tape k pos = readAt blank (F.L (ports k)) (F.R (ports k)) (pos-base.head k)) ∧
+      ∀ h, h ∉ fieldMarkers r → F.L h = S.L h ∧ F.R h = S.R h := by
+  have val (n : ℕ) (hn : n ≤ 20) : ((OfNat.ofNat n : Fin (22+slots))).val = n :=
+    Nat.mod_eq_of_lt (by omega)
+  obtain ⟨z,l,hz,hl,run⟩ := installFieldHeaders_exec body r J W w hw v S width clock (by
+    intro j hj
+    rcases hj with h | rfl | rfl
+    · exact scratch j h.1 h.2
+    · rw [size]; exact (blankAux _ (by rw [val 4 (by decide)]; decide)).2
+    · rw [exponent]; exact (blankAux _ (by rw [val 3 (by decide)]; decide)).2)
+  refine ⟨z,_,l,hz,hl,run,fieldHeader_rep ports _ ?_,?_⟩
+  · intro k hk
+    have blank := blankAux k hk
+    have num (n : ℕ) (hn : n ≤ 20) : k = (OfNat.ofNat n : Fin (22+slots)) ↔ k.val = n := by
+      rw [Fin.ext_iff,val n hn]
+    simp only [fieldMarkers,exponent,size,stop,count,one,List.mem_cons,List.not_mem_nil,or_false,
+      Function.update_apply,ports.injective.eq_iff,num 3 (by decide),num 4 (by decide),num 18 (by decide),
+      num 19 (by decide),num 20 (by decide),fieldHeader,AtomSegment.neutral,blank.1,blank.2]
+    have empty20 := (blankAux 20 (by rw [val 20 (by decide)]; decide)).2
+    split_ifs <;> first | omega | simp_all [FlatCoordinateSchedule.bits,GrowingCounterData.advance]
+  · intro h off
+    simp only [fieldMarkers,List.mem_cons,List.not_mem_nil,or_false,not_or] at off
+    simp [fieldMarkers,off]
 
 /-- A column payload can serve directly as the sign machine's array tape. -/
 theorem column_field_input {T w : ℕ} (bank : Fin 35 ↪ Fin T) (i : Fin (d+1))
