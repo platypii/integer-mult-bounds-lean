@@ -225,6 +225,13 @@ private theorem swapAtomAt_prefix {α : Type*} (pre xs : List α) (i : ℕ) :
   | nil => simp
   | cons x pre ih => simp [Nat.succ_add,swapAtomAt,ih]
 
+theorem fold_swapAtomAt_prefix {α : Type*} (pre : List α) (is : List ℕ) (xs : List α) :
+    is.foldl (fun ys i => swapAtomAt (pre.length+i) ys) (pre++xs) =
+      pre++is.foldl (fun ys i => swapAtomAt i ys) xs := by
+  induction is generalizing xs with
+  | nil => rfl
+  | cons i is ih => simp only [List.foldl_cons,swapAtomAt_prefix,ih]
+
 private theorem slideAtom {α : Type*} (mid : List α) (x : α) (rest : List α) :
     (List.range mid.length).reverse.foldl (fun xs i => swapAtomAt i xs) (mid++x::rest) =
       x::(mid++rest) := by
@@ -248,13 +255,7 @@ theorem middleTailSchedule_packs {α : Type*} (mid tail suffix : List α) :
     simp only [middleTailSchedule,List.append_assoc] at first
     simp only [List.append_assoc,List.cons_append,List.nil_append]
     rw [first]
-    have slide (is : List ℕ) (xs : List α) :
-        is.foldl (fun ys j => swapAtomAt (tail.length+j) ys) (tail++xs) =
-        tail++is.foldl (fun ys j => swapAtomAt j ys) xs := by
-      induction is generalizing xs with
-      | nil => rfl
-      | cons j js ih => simp only [List.foldl_cons,swapAtomAt_prefix,ih]
-    rw [slide,slideAtom]
+    rw [fold_swapAtomAt_prefix,slideAtom]
 
 /-- Move the inherited middle field past the active tail. The signed scan
 stores the head and tail consecutively and carries the middle in its suffix. -/
