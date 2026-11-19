@@ -128,6 +128,24 @@ def ColumnRecordReady (bank : Fin 35 ↪ Fin T) (H J : ℕ)
   ∃ word, RecordReady (d := d) bank H J record sym source dest p q word S ∧
     ∀ x j, word (index (addr x) j) = original (index x j)
 
+/-- A prepared archive can replace the old record without reloading the signed payload. -/
+theorem ColumnRecordReady.replaceArchive {S F : Stacks T A} {bank : Fin 35 ↪ Fin T}
+    {H J : ℕ} {record next : List (Fin (A+4))} {sym : α → Fin 4} {source dest : ℤ → Fin 4} {p q : ℤ}
+    {original : Fin (M^d*W) → α} {addr : (Fin d → ZMod M) → Fin d → ZMod M}
+    (before : ColumnRecordReady bank H J record sym source dest p q original addr S)
+    (left : F.L = S.L) (keep : ∀ i : Fin 35, i ≠ 34 → F.R (bank i) = S.R (bank i))
+    (archive : F.R (bank 34) = next) :
+    ColumnRecordReady bank H J next sym source dest p q original addr F := by
+  obtain ⟨word,layout,placed⟩ := before
+  refine ⟨word,⟨(keep 2 (by decide)).trans layout.modulus,(keep 27 (by decide)).trans layout.width,
+    (keep 28 (by decide)).trans layout.one,(keep 32 (by decide)).trans layout.padded,
+    (congrArg List.length (keep 33 (by decide))).trans layout.clock,archive,?_,?_,?_⟩,placed⟩
+  · intro i hi
+    rw [left,keep i (fun eq => (by decide : (34 : Fin 35) ∉ shearWork) (eq ▸ hi))]
+    exact layout.scratch i hi
+  · intro z; rw [left,keep 24 (by decide)]; exact layout.src z
+  · intro z; rw [left,keep 25 (by decide)]; exact layout.dst z
+
 def ColumnReady (bank : Fin 35 ↪ Fin T) (H J : ℕ) (matrix : Matrix (Fin d) (Fin d) (ZMod M))
     (tail : List (Fin (A+4))) (sym : α → Fin 4) (source dest : ℤ → Fin 4) (p q : ℤ)
     (original : Fin (M^d*W) → α) (addr : (Fin d → ZMod M) → Fin d → ZMod M) (S : Stacks T A) : Prop :=

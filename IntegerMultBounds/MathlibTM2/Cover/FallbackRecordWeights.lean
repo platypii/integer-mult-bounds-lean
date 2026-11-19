@@ -99,7 +99,7 @@ theorem recordWeights_exec {m : ℕ} (body : P → Pr P T Q A U) (r : Fin 23 ↪
       F.R (r 14) = (List.ofFn fun i => binSyms H (weights i : ZMod (prime^(w+1))).val).flatten ∧
       (F.R (stageBank r (n+1) 15), F.R (stageBank r (n+1) 16)) =
         matrixArchive (fun k => matrixWords A H (Itinerary.run rows G k)) (S.R (r 15)) (S.R (r 16)) (n+1) ∧
-      (∀ i, i ≠ src → i ≠ r 14 → i ≠ stageBank r (n+1) 15 → i ≠ stageBank r (n+1) 16 → F.R i = S.R i) ∧
+      F.L = S.L ∧ (∀ i, i ≠ src → i ≠ r 14 → i ≠ stageBank r (n+1) 15 → i ≠ stageBank r (n+1) 16 → F.R i = S.R i) ∧
       (undo.map RowOp.children).sum ≤ (n+1)*(6*n+3) ∧
       (signStream (A := A) table (w+1) N)[j]? = some (bitSymbol negative) ∧
       (∃ a : Fin (n+1) → (ZMod (prime^(w+1)))ˣ, Itinerary.Valid rows G (n+1) ∧
@@ -109,7 +109,7 @@ theorem recordWeights_exec {m : ℕ} (body : P → Pr P T Q A U) (r : Fin 23 ↪
         fallbackBank b (if negative then -1 else 1) weights undo (bankFields (List.finRange (n+1)) x) =
           bankFields (List.finRange (n+1)) (fun k => G.mulVec (x k)) := by
   intro j code rows undo source
-  obtain ⟨u,D,l,suffix,a,neg,hu,hl,run,remaining,packed,archive,frame,valid,diag,units,bit,prod,children,action⟩ :=
+  obtain ⟨u,D,l,suffix,a,neg,hu,hl,run,remaining,packed,archive,left,frame,valid,diag,units,bit,prod,children,action⟩ :=
     recordDiagonalize_exec body r src apart w H hm table g G sign lift block N index v S tail rest matrix modulus one ticks free source
   let bank := stageBank r (n+1)
   have keep (i : Fin 23) (h : i ≠ 15) (h' : i ≠ 16) : D.R (bank i) = S.R (r i) := by
@@ -125,7 +125,7 @@ theorem recordWeights_exec {m : ℕ} (body : P → Pr P T Q A U) (r : Fin 23 ↪
     simpa [bank,stageBank_fixed r (n+1) 14 (by decide) (by decide)] using
       (keep 14 (by decide) (by decide)).trans (free 14 (by decide))
   rw [slot,blank,List.append_nil] at emit
-  refine ⟨z,_,l+t,weights,neg,hz.trans hu,Nat.add_le_add hl ht,Exec.seq run emit,?_,?_,?_,?_,by simpa using children,bit,?_,effect⟩
+  refine ⟨z,_,l+t,weights,neg,hz.trans hu,Nat.add_le_add hl ht,Exec.seq run emit,?_,?_,?_,left,?_,by simpa using children,bit,?_,effect⟩
   · exact (Function.update_of_ne (apart 14).symm _ _).trans remaining
   · exact Function.update_self ..
   · have mid : bank 14 = r 14 := slot
@@ -191,7 +191,7 @@ theorem preparedRecordWeights_exec {m : ℕ} (body : P → Pr P T Q A U) (r : Fi
       F.R (r 14) = (List.ofFn fun i => binSyms H ((Fin.cons 1 (fun j => (weights j : ZMod (prime^(w+1)))) : Fin (n+1) → ZMod (prime^(w+1))) i).val).flatten ∧
       (∃ archive, F.R active = F.R (r 14) ++ archive ∧ (archive, F.R (stageBank r (n+1) 16)) =
         matrixArchive (fun k => matrixWords A H (Itinerary.run rows G k)) (S.R (r 15)) (S.R (r 16)) (n+1)) ∧
-      (∀ i, i ≠ src → i ≠ r 14 → i ≠ stageBank r (n+1) 15 → i ≠ stageBank r (n+1) 16 → F.R i = S.R i) ∧
+      F.L = S.L ∧ (∀ i, i ≠ src → i ≠ r 14 → i ≠ stageBank r (n+1) 15 → i ≠ stageBank r (n+1) 16 → F.R i = S.R i) ∧
       (undo.map RowOp.children).sum ≤ (n+1)*(6*n+3) ∧
       (signStream (A := A) table (w+1) N)[j]? = some (bitSymbol negative) ∧
       (∃ a : Fin (n+1) → (ZMod (prime^(w+1)))ˣ, Itinerary.Valid rows G (n+1) ∧
@@ -201,7 +201,7 @@ theorem preparedRecordWeights_exec {m : ℕ} (body : P → Pr P T Q A U) (r : Fi
         fallbackBank b (if negative then -1 else 1) weights undo (bankFields (List.finRange (n+1)) x) =
           bankFields (List.finRange (n+1)) (fun k => G.mulVec (x k)) := by
   intro j code rows active undo source
-  obtain ⟨u,D,l,weights,neg,hu,hl,run,schedule,packed,archive,frame,children,bit,units,effect⟩ :=
+  obtain ⟨u,D,l,weights,neg,hu,hl,run,schedule,packed,archive,left,frame,children,bit,units,effect⟩ :=
     recordWeights_exec body r src apart w H hm table g G sign lift block N index v S tail rest matrix modulus one ticks free source
   have off (i k : Fin 23) (hi : i ≠ 15) (hj : i ≠ 16) (ne : i ≠ k) : r i ≠ stageBank r (n+1) k := by
     rw [← stageBank_fixed r (n+1) i hi hj]
@@ -257,7 +257,7 @@ theorem preparedRecordWeights_exec {m : ℕ} (body : P → Pr P T Q A U) (r : Fi
   have unaffected (i : Fin T) (ne : i ≠ src) : result i = F.R i := Function.update_of_ne ne _ _
   have slot : F.R (r 14) = pivotWord := (Function.update_of_ne (distinct 14 (by decide) (by decide)) _ _).trans atSlot
   refine ⟨x,_,_,weights,neg,hx.trans (hy.trans (hz.trans hu)),Nat.add_le_add_right (Nat.add_le_add_right (Nat.add_le_add_right hl _) _) _,
-    Exec.seq (Exec.seq (Exec.seq run copy) install) attach,?_,(unaffected _ (apart 14)).trans slot,?_,?_,children,bit,units,effect⟩
+    Exec.seq (Exec.seq (Exec.seq run copy) install) attach,?_,(unaffected _ (apart 14)).trans slot,?_,left,?_,children,bit,units,effect⟩
   · change result src = _
     simp only [result,Function.update_self]
     exact congrArg (S.R parentTape ++ ·) ((kept src (srcOff (n+1) 15).symm (apart 14).symm).trans schedule)

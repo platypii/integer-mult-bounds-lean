@@ -95,7 +95,7 @@ theorem recordDiagonalize_exec {m : ℕ} (body : P → Pr P T Q A U) (r : Fin 23
       F.R (stageBank r d 15) = matrixWords A H (Matrix.diagonal a) ++ suffix ∧
       (F.R (stageBank r d 15),F.R (stageBank r d 16)) =
         matrixArchive (fun n => matrixWords A H (Itinerary.run rows G n)) (S.R (r 15)) (S.R (r 16)) d ∧
-      (∀ i, i ≠ src → i ≠ stageBank r d 15 → i ≠ stageBank r d 16 → F.R i = S.R i) ∧
+      F.L = S.L ∧ (∀ i, i ≠ src → i ≠ stageBank r d 15 → i ≠ stageBank r d 16 → F.R i = S.R i) ∧
       Itinerary.Valid rows G d ∧ Itinerary.run rows G d = Matrix.diagonal a ∧
       (∀ i, IsUnit (a i)) ∧ (signStream (A := A) table (w+1) N)[j]? = some (bitSymbol negative) ∧
       (∏ i, a i) = (if negative then -1 else 1) ∧
@@ -113,7 +113,7 @@ theorem recordDiagonalize_exec {m : ℕ} (body : P → Pr P T Q A U) (r : Fin 23
   have first : code j = scheduleCode (A := A) pivots ++ orderedScheduleCode (List.finRange d).reverse rows := by
     simp only [code,rows,j,addr,pivots]
   rw [first,List.append_assoc] at source
-  obtain ⟨z,F,l,suffix,hz,hl,run,packed,archive,remaining,_,_,_,frame⟩ := streamedItinerary_exec body r src apart prime w H
+  obtain ⟨z,F,l,suffix,hz,hl,run,packed,archive,remaining,left,_,_,frame⟩ := streamedItinerary_exec body r src apart prime w H
     prime_prime G pivots hm v S tail matrix modulus one ticks free d le_rfl valid _ (by rw [List.take_of_length_le (by simp)]; exact source)
   obtain ⟨_,_,_,clear,units⟩ := Itinerary.run_spec pivots G d le_rfl valid
   let a := fun i => Itinerary.run pivots G d i i
@@ -122,7 +122,7 @@ theorem recordDiagonalize_exec {m : ℕ} (body : P → Pr P T Q A U) (r : Fin 23
     by_cases h : i = k
     · subst k; simp [a]
     · rw [Matrix.diagonal_apply_ne _ h]; exact clear i k k.isLt h
-  refine ⟨z,F,l,suffix,a,neg,hz,hl,run,remaining,diag ▸ packed,?_,frame,?_,?_,fun i => units i i.isLt,bit,?_,undoItinerary_children ..,?_⟩
+  refine ⟨z,F,l,suffix,a,neg,hz,hl,run,remaining,diag ▸ packed,?_,left,frame,?_,?_,fun i => units i i.isLt,bit,?_,undoItinerary_children ..,?_⟩
   · simpa only [rows,j,addr,pivots] using archive
   · simpa only [rows,j,addr,pivots] using valid
   · simpa only [rows,j,addr,pivots] using diag
