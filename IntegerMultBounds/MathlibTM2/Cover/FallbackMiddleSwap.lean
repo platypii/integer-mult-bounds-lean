@@ -496,6 +496,13 @@ theorem twoMiddleSwaps_exec [M8.Machine.Net] (v : Descriptor) (positive : v.Posi
   · intro j hj
     exact ⟨(preserved j hj).1.trans (keep j hj).1,(preserved j hj).2.trans (keep j hj).2⟩
 
+noncomputable def middleShearsCost [M8.Machine.Net] (P M G B V width tapes push : ℕ) : ℕ :=
+  let budget := (6*(P.size+G.size+3*M.size+B.size)+37)+((6*M.size+9)+
+        (210*(2*(Nat.size prime+1)^2)+16120)*((P*M*G)*(M*B))+(LeafCore.coreCost V width*(tapes+5)+6))
+  let lastBudget := (6*(P.size+G.size+3*M.size+B.size)+37)+((6*M.size+9)+
+        (210*(2*(Nat.size prime+1)^2)+16120)*((P*M*G)*(M*B)))
+  2*(budget+(125+31*(6*(push*budget)))) + (lastBudget+(125+31*(6*(push*lastBudget))))
+
 theorem threeMiddleShears_exec [M8.Machine.Net] (v : Descriptor) (positive : v.Positive)
     (size : (P*M*G)*(M*B) = volume prime v) (w : ℕ) (radix : M = prime^(w+1))
     (c : Bool → Fin M) (hP : 0 < P) (hG : 0 < G) (hB : 0 < B)
@@ -520,10 +527,6 @@ theorem threeMiddleShears_exec [M8.Machine.Net] (v : Descriptor) (positive : v.P
       let result := fun b x => swapLeafList v size (FiberLayoutData.translated x
         (fun i => (c b).val*(i.val/G%M)%M)) (FiberLayoutData.translated_length ..)
       let y := result true (result false word)
-      let budget := (6*(P.size+G.size+3*M.size+B.size)+37)+((6*M.size+9)+
-        (210*(2*(Nat.size prime+1)^2)+16120)*((P*M*G)*(M*B))+(LeafCore.coreCost (volume prime v) v.width*(block.tapes+5)+6))
-      let lastBudget := (6*(P.size+G.size+3*M.size+B.size)+37)+((6*M.size+9)+
-        (210*(2*(Nat.size prime+1)^2)+16120)*((P*M*G)*(M*B)))
       ∀ (body : F → Pr F (K+31) block.states prime U) (u : HS (K+31) block.states prime U)
         (S : Stacks (K+31) prime) push, (∀ b, Fast.Main.mnProgPush (prog b) ≤ push) →
         Fast.Main.mnProgPush lastProg ≤ push → (∀ f, Fast.Main.mnProgPush (body f) ≤ push) →
@@ -531,20 +534,20 @@ theorem threeMiddleShears_exec [M8.Machine.Net] (v : Descriptor) (positive : v.P
         (∀ b i, S.R ((src b i).castAdd 31) = (![binSyms P.size P,binSyms G.size G,binSyms M.size (c b).val,
           binSyms M.size 0,binSyms B.size B,binSyms M.size M] i)) →
         RepT (raw (CommonBank.bank roles (Routines.hdr v) f p node scalar ctr st) block.tapes) (S.L ∘ ports) (S.R ∘ ports) →
-        ∃ z D n, z.user = u.user ∧ n ≤ 2*(budget+(125+31*(6*(push*budget)))) + (lastBudget+(125+31*(6*(push*lastBudget)))) ∧
+        ∃ z D n, z.user = u.user ∧ n ≤ middleShearsCost P M G B (volume prime v) v.width block.tapes push ∧
           Exec body (((stage false).seq (stage true)).seq (lastProg.seq (clearWorkTapes work))) (mk u S) n (mk z D) ∧
           (∀ x, readAt blank (D.L (ports slot)) (D.R (ports slot)) x = leafBitTape (FiberLayoutData.translated y (fun i => (c false).val*(i.val/G%M)%M)) x) ∧
           (∀ j : Fin 31, D.L (j.natAdd K) = [] ∧ D.R (j.natAdd K) = []) ∧
           ∀ j : Fin K, (∀ i, sim i ≠ j) →
             D.L (j.castAdd 31) = S.L (j.castAdd 31) ∧ D.R (j.castAdd 31) = S.R (j.castAdd 31) := by
-  intro block K sim src apart slot leading capacity ports shear prog lastProg work stage result y budget lastBudget body u S push hp hl hb free headers initial
+  intro block K sim src apart slot leading capacity ports shear prog lastProg work stage result y body u S push hp hl hb free headers initial
   obtain ⟨b,H,n,hu,hn,run,_,read,clean,keep⟩ := twoMiddleSwaps_exec v positive size w radix c hP hG hB
     word io roles head input f p node scalar ctr st sim src (apart true) slot leading capacity body u S push hp hb free headers initial
   obtain ⟨z,D,m,hz,hm,last,out,empty,preserved⟩ := loadedMiddleShear_exec (sim slot) capacity w _ radix
     (c false).isLt hP hG hB y (src false) body b H push hl hb clean
     (fun i => ((keep _ (fun j => apart false j i)).2).trans (headers false i))
     (by simpa only [Function.Embedding.trans_apply, Fin.castAddEmb_apply] using read)
-  refine ⟨z,D,n+m,hz.trans hu,Nat.add_le_add hn hm,Exec.seq run last,?_,empty,?_⟩
+  refine ⟨z,D,n+m,hz.trans hu,(by dsimp only [middleShearsCost,block]; exact Nat.add_le_add hn hm),Exec.seq run last,?_,empty,?_⟩
   · simpa only [ports,Function.Embedding.trans_apply,Fin.castAddEmb_apply] using out
   · intro j hj
     have same := preserved j (hj slot).symm

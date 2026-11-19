@@ -29,6 +29,32 @@ def leafSignCost (P G M B : ℕ) : ℕ :=
     (count.size*(12*L+20)+16*L+24+(4*L+6)))+(6*suffix.size+6+(6*P.size+6))
   setup+(2+(1+(P*(210*(M*suffix)+219)+6*P+2*P.size+2)*14+6)+((327*(P*(M*suffix))+2)*13+6))
 
+/-- Loading the four dimensions, running the sign pass, and returning its
+output together cost a constant number of host steps per leaf entry. -/
+theorem loadedLeafSign_cost_le (P G M B : ℕ) (hp : 0 < P) (hg : 0 < G) (hm : 0 < M) (hb : 0 < B) :
+    (6*(P.size+G.size+M.size+B.size)+25)+(1+leafSignCost P G M B) ≤
+      12000*(P*(M*(G*(M*B)))) := by
+  let suffix := G*(M*B)
+  let N := P*(M*suffix)
+  have hs : 0 < suffix := Nat.mul_pos hg (Nat.mul_pos hm hb)
+  have ms : M ≤ suffix := (Nat.le_mul_of_pos_right M hb).trans (Nat.le_mul_of_pos_left _ hg)
+  have bs : B ≤ suffix := (Nat.le_mul_of_pos_left B hm).trans (Nat.le_mul_of_pos_left _ hg)
+  have gs : G ≤ suffix := Nat.le_mul_of_pos_right G (Nat.mul_pos hm hb)
+  have mn : M*suffix ≤ N := Nat.le_mul_of_pos_left _ hp
+  have sn : suffix ≤ N := (Nat.le_mul_of_pos_left suffix hm).trans mn
+  have pn : P ≤ N := Nat.le_mul_of_pos_right P (Nat.mul_pos hm hs)
+  have bits (x : ℕ) : x.size ≤ x := Nat.size_le.mpr Nat.lt_two_pow_self
+  have count : (M-1).size ≤ M := (bits _).trans (Nat.sub_le ..)
+  have tail : (M-1).size*((M-1).size+suffix.size) ≤ 2*N := calc
+    _ ≤ M*(suffix+suffix) := Nat.mul_le_mul count (Nat.add_le_add (count.trans ms) (bits suffix))
+    _ ≤ 2*N := by rw [Nat.mul_add]; omega
+  have volume : P*(210*(M*suffix)+219) = 210*N+219*P := by dsimp [N]; ring
+  change _ + (1 + _) ≤ 12000*N
+  dsimp only [leafSignCost]
+  rw [show G*(M*B) = suffix from rfl,volume,show P*(M*suffix) = N from rfl]
+  nlinarith only [tail, count.trans (ms.trans sn), bits P, bits G, bits M, bits B, bits suffix,
+    gs.trans sn, ms.trans sn, bs.trans sn, sn, pn, hp]
+
 theorem leafSignRun_exec (body : F → Pr F 17 217 prime U) (P G M B : ℕ)
     (hp : 0 < P) (hg : 0 < G) (hm : 0 < M) (hb : 0 < B) (odd : Odd M)
     (word : Fin (P*(M*(G*(M*B)))) → ZMod 2) (u : HS 17 217 prime U) (S : Stacks 17 prime)
