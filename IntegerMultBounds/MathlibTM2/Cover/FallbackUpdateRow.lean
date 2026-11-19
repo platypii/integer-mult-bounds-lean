@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackUpdateEntry
+public import IntegerMultBounds.MathlibTM2.Cover.GoodForm
 
 /-! Emit an elimination row into the output stack in row-major order. -/
 @[expose] public section
@@ -110,5 +111,74 @@ theorem copyMatrixRow_exec {M d : ℕ} [NeZero M] (body : P → Pr P T Q A U) (r
     ∃ z n, z.user = v.user ∧ n ≤ d*(8*(d*d*H)+14*H+22)+1 ∧ Exec body (copyMatrixRow row r) (mk v S) n
       (mk z {S with R := Function.update S.R (r 3) (words.flatten ++ S.R (r 3))}) := by
   exact gatherMatrix_exec body r m (fun _ : Fin d => row) id H v S tail matrix width free
+
+/-- Off the pivot row, the existing row writer emits the good-form elimination
+row, including the zero in the pivot column. -/
+theorem goodRow_exec {M d : ℕ} [NeZero M] (body : P → Pr P T Q A U) (r : Fin 17 ↪ Fin T)
+    (matrix : Matrix (Fin d) (Fin d) (ZMod M)) (row pivot : Fin d) (different : row ≠ pivot)
+    (unit : IsUnit (matrix pivot pivot)) (H : ℕ) (hm : M < 2^H)
+    (v : HS T Q A U) (S : Stacks T A) (tail : List (Fin (A+4)))
+    (source : S.R (r 15) = matrixWords A H matrix ++ tail) (modulus : S.R (r 2) = binSyms H M)
+    (coeff : S.R (r 0) = binSyms H (GoodForm.elimL pivot matrix (Ring.inverse (matrix pivot pivot)) row).val)
+    (free : ∀ i : Fin 17, 0 < i → i ≠ 2 → i < 15 → S.R (r i) = []) :
+    let next := GoodForm.elimM pivot matrix (Ring.inverse (matrix pivot pivot))
+    let words := List.ofFn fun j => binSyms (A := A) H (next row j).val
+    ∃ z n, z.user = v.user ∧ n ≤ d*entryTime d H+1 ∧ Exec body (updateRow row pivot r) (mk v S) n
+      (mk z {S with R := Function.update S.R (r 16) (words.flatten ++ S.R (r 16))}) := by
+  have entry (j : Fin d) : GoodForm.elimM pivot matrix (Ring.inverse (matrix pivot pivot)) row j =
+      matrix row j - GoodForm.elimL pivot matrix (Ring.inverse (matrix pivot pivot)) row * matrix pivot j := by
+    by_cases h : j = pivot
+    · subst j
+      simp [GoodForm.elimM, GoodForm.elimL, different, mul_assoc, Ring.inverse_mul_cancel _ unit]
+    · simp [GoodForm.elimM, GoodForm.elimL, different, h]
+  simpa only [entry] using updateRow_exec body r matrix row pivot _ H hm v S tail source modulus coeff free
+
+def goodPivotReadPorts : Fin 7 ↪ Fin 17 := ⟨![1,2,15,16,4,5,6], by decide⟩
+
+/-- Keep the pivot and clear the rest of its row by subtracting each entry
+from itself. The same scratch bank serves both cases. -/
+def goodPivotRow {d : ℕ} (pivot : Fin d) (r : Fin 17 ↪ Fin T) : Pr P T Q A U :=
+  emitBlocks (fun j => if j = pivot then readMatrixWord (pivot.val*d+pivot.val) (goodPivotReadPorts.trans r)
+    else updateEntry j pivot pivot r) (List.ofFn (id : Fin d → Fin d))
+
+theorem goodPivotRow_exec {M d : ℕ} [NeZero M] (body : P → Pr P T Q A U) (r : Fin 17 ↪ Fin T)
+    (matrix : Matrix (Fin d) (Fin d) (ZMod M)) (pivot : Fin d) (H : ℕ) (hm : M < 2^H)
+    (v : HS T Q A U) (S : Stacks T A) (tail : List (Fin (A+4)))
+    (source : S.R (r 15) = matrixWords A H matrix ++ tail) (modulus : S.R (r 2) = binSyms H M)
+    (one : S.R (r 0) = binSyms H (1 : ZMod M).val)
+    (free : ∀ i : Fin 17, 0 < i → i ≠ 2 → i < 15 → S.R (r i) = []) :
+    let next := GoodForm.elimM pivot matrix (Ring.inverse (matrix pivot pivot))
+    let words := List.ofFn fun j => binSyms (A := A) H (next pivot j).val
+    ∃ z n, z.user = v.user ∧ n ≤ d*entryTime d H+1 ∧ Exec body (goodPivotRow pivot r) (mk v S) n
+      (mk z {S with R := Function.update S.R (r 16) (words.flatten ++ S.R (r 16))}) := by
+  intro next words
+  let word := fun j => binSyms (A := A) H (next pivot j).val
+  let emit := fun j => if j = pivot then readMatrixWord (pivot.val*d+pivot.val) (goodPivotReadPorts.trans r)
+    else updateEntry (P := P) (Q := Q) (A := A) (U := U) j pivot pivot r
+  suffices step : ∀ j (u : HS T Q A U) (suffix : List (Fin (A+4))), ∃ z n, z.user = u.user ∧
+      n ≤ entryTime d H ∧ Exec body (emit j) (mk u {S with R := Function.update S.R (r 16) suffix}) n
+        (mk z {S with R := Function.update S.R (r 16) (word j ++ suffix)}) by
+    simpa [goodPivotRow,emit,word,words,List.flatMap_def,List.map_ofFn] using
+      emitBlocks_exec body (r 16) emit word (entryTime d H) v S step (List.ofFn (id : Fin d → Fin d))
+  intro j u suffix
+  let D := {S with R := Function.update S.R (r 16) suffix}
+  have keep (i : Fin 17) (h : i ≠ 16) : D.R (r i) = S.R (r i) := Function.update_of_ne (r.injective.ne h) _ _
+  have offset := matrixOffset_le H pivot j
+  unfold emit
+  split
+  · rename_i eq
+    subst j
+    obtain ⟨z,hz,run⟩ := readMatrixWord_exec body (goodPivotReadPorts.trans r) matrix pivot pivot H u D tail
+      ((keep 15 (by decide)).trans source) (by change (D.R (r 2)).length = H; rw [keep 2 (by decide),modulus,length_binSyms])
+      (fun k hk => by
+        have bounds := (by decide : ∀ k : Fin 7, k = 0 ∨ 4 ≤ k →
+          0 < goodPivotReadPorts k ∧ goodPivotReadPorts k ≠ 2 ∧ goodPivotReadPorts k < 15) k hk
+        exact (keep _ (by omega)).trans (free _ bounds.1 bounds.2.1 bounds.2.2))
+    exact ⟨z,8*((pivot.val*d+pivot.val)*H)+14*H+22,hz,by dsimp [entryTime]; omega,by simpa [D,word,next,GoodForm.elimM,goodPivotReadPorts,Function.update_idem] using run⟩
+  · rename_i ne
+    obtain ⟨z,n,hz,hn,run⟩ := updateEntry_exec body r matrix j pivot pivot 1 H hm u D tail
+      ((keep 15 (by decide)).trans source) ((keep 2 (by decide)).trans modulus) ((keep 0 (by decide)).trans one)
+      (fun i lo h hi => (keep i (by omega)).trans (free i lo h hi))
+    exact ⟨z,n,hz,by dsimp [entryTime]; omega,by simpa [D,word,next,GoodForm.elimM,Ne.symm ne,Function.update_idem] using run⟩
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
