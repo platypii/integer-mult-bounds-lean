@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackGoodPayload
+import IntegerMultBounds.Machine.RecursiveInterchangeVolume
 
 /-! The rank child reads both active fields in place, with the inactive digits
 packed into the middle field of the recursive interchange descriptor. -/
@@ -161,6 +162,36 @@ theorem rankDescriptor_goodChild :
     rankDescriptor M r g ⟨1,1,1,r+g,1,W⟩ = goodChildDescriptor M r g W := by
   simp [rankDescriptor,goodChildDescriptor,pow_add]
 
+omit [NeZero M] in
+/-- An inherited middle made of whole atoms stays atom-aligned down the
+entire chain. Outer record axes and the suffix keep their original ranges. -/
+theorem rankDescriptor_chain_atoms (v : RecursiveInterchangeLayout.Descriptor)
+    (middle : ℕ) (aligned : v.between = M^middle) (gaps : List ℕ) :
+    gaps.foldl (fun u g => rankDescriptor M (u.width-g) g u) v =
+      {v with width := v.width-gaps.sum, between := M^(gaps.sum+middle+gaps.sum)} := by
+  rw [rankDescriptor_chain]
+  simp only [rankDescriptor,aligned,pow_add]
+
+omit [NeZero M] in
+/-- At entry from a physical child path, separate the arbitrary root radix
+from the atoms introduced by both kinds of descent. -/
+theorem rankDescriptor_path_middle {roles m n atoms width : ℕ}
+    {root v : RecursiveInterchangeLayout.Descriptor}
+    (path : RecursiveInterchangeVolume.Path M roles m root n v)
+    (split : v.width = atoms*width) (gaps : List ℕ) :
+    let child := gaps.foldl (fun u g => rankDescriptor (M^width) (u.width-g) g u)
+      {v with width := atoms}
+    ∃ k : ℕ, child.between = root.between*(M^width)^(gaps.sum+atoms*k+gaps.sum) ∧
+      k+2 ≤ 2*m^n := by
+  intro child
+  obtain ⟨k,mid,bound⟩ := path.middle_blocks
+  refine ⟨k,?_,bound⟩
+  dsimp only [child]
+  rw [rankDescriptor_chain]
+  simp only [rankDescriptor,mid,split,pow_add,← pow_mul]
+  rw [show atoms*width*k = width*(atoms*k) by ring]
+  ring
+
 theorem goodChildVolume (M r g W : ℕ) :
     RecursiveInterchangeLayout.volume M (goodChildDescriptor M r g W) = M^((r+g)+(r+g))*W := by
   simp only [RecursiveInterchangeLayout.volume,goodChildDescriptor,one_mul,pow_add]
@@ -275,6 +306,47 @@ theorem packMiddleTail_index {heads middle tails suffix : ℕ} (h : Fin heads) (
       (finProdFinEquiv (h,finProdFinEquiv (m,finProdFinEquiv (t,j)))) =
       finProdFinEquiv (h,finProdFinEquiv (t,finProdFinEquiv (m,j))) := by
   simp [packMiddleTail]
+
+omit [NeZero M] in
+/-- Packing a descriptor preserves its outer record number. Its entire middle
+field, including any inherited spectator, becomes the high part of the suffix. -/
+theorem descriptor_packed_index (v : RecursiveInterchangeLayout.Descriptor)
+    (a : Fin v.beforeRows) (row : Fin v.rows) (b : Fin v.beforeH)
+    (h t : Fin (M^v.width)) (m : Fin v.between) (j : Fin v.afterD) :
+    let records := v.beforeRows*v.rows*v.beforeH
+    let outer : Fin records := finProdFinEquiv (finProdFinEquiv (a,row),b)
+    let head := finProdFinEquiv (outer,h)
+    let src := finProdFinEquiv (head,finProdFinEquiv (m,finProdFinEquiv (t,j)))
+    let dst := packMiddleTail (records*M^v.width) v.between (M^v.width) v.afterD src
+    src.val = RecursiveInterchangeLayout.index M v a row b h m t j ∧
+      dst.val = (finProdFinEquiv (outer,finProdFinEquiv (finProdFinEquiv (h,t),finProdFinEquiv (m,j))) :
+        Fin (records*((M^v.width*M^v.width)*(v.between*v.afterD)))).val := by
+  intro records outer head src dst
+  constructor
+  · simp only [src,head,outer,finProdFinEquiv,Equiv.coe_fn_mk,RecursiveInterchangeLayout.index]
+    ring
+  · dsimp only [dst,src]
+    rw [packMiddleTail_index]
+    simp only [head,finProdFinEquiv,Equiv.coe_fn_mk]
+    ring
+
+/-- At atom rank the packed address is precisely the signed pass's outer
+record, flat coordinate index, and unchanged inherited suffix. -/
+theorem descriptor_signed_index (v : RecursiveInterchangeLayout.Descriptor) (width : v.width = r)
+    (a : Fin v.beforeRows) (row : Fin v.rows) (b : Fin v.beforeH)
+    (x y : Fin r → ZMod M) (m : Fin v.between) (j : Fin v.afterD) :
+    let outer := finProdFinEquiv (finProdFinEquiv (a,row),b)
+    let head := finProdFinEquiv (outer,rank x)
+    let src := finProdFinEquiv (head,finProdFinEquiv (m,finProdFinEquiv (rank y,j)))
+    let dst := packMiddleTail ((v.beforeRows*v.rows*v.beforeH)*M^r) v.between (M^r) v.afterD src
+    src.val = RecursiveInterchangeLayout.index M v a row b (rank x) m (rank y) j ∧
+      dst.val = (finProdFinEquiv (outer,index (Fin.append x y) (finProdFinEquiv (m,j)))).val := by
+  subst r
+  intro outer head src dst
+  obtain ⟨source,target⟩ := descriptor_packed_index v a row b (rank x) (rank y) m j
+  refine ⟨source,target.trans ?_⟩
+  simp only [outer,index,finProdFinEquiv,Equiv.coe_fn_mk,rank_join,pow_add]
+  ring
 
 /-- In the parent record this is one rectangular transpose for each head.
 Both inactive digit slices form a single middle index. -/

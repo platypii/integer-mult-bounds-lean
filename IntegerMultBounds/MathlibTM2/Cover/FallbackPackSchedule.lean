@@ -94,15 +94,28 @@ theorem goodChildPackSchedule_inside {r g i : ℕ} (used : i ∈ goodChildPackSc
   omega
 
 omit [M8.Machine.Net] in
+theorem packMiddleTail_fields {α : Type*} {d : ℕ}
+    (x : Fin d → α) (head mid tail : List α) (layout : List.ofFn x = head++mid++tail) :
+    List.ofFn (((middleTailSchedule mid.length tail.length).map (head.length+·)).foldl adjacentFields x) =
+      head++tail++mid := by
+  have dim := congrArg List.length layout
+  simp only [List.length_ofFn,List.length_append] at dim
+  rw [fold_adjacentFields,layout]
+  · simp only [List.foldl_map,List.append_assoc]
+    rw [fold_swapAtomAt_prefix]
+    simpa using congrArg (head++·) (middleTailSchedule_packs mid tail [])
+  · intro i used
+    obtain ⟨j,hj,rfl⟩ := List.mem_map.mp used
+    have := middleTailSchedule_inside hj
+    omega
+
+omit [M8.Machine.Net] in
 theorem goodChildPackSchedule_fields {α : Type*} {r g : ℕ}
     (x : Fin ((r+g)+(r+g)) → α) (head mid tail : List α)
     (hr : head.length = r) (hm : mid.length = g+g) (ht : tail.length = r)
     (layout : List.ofFn x = head++mid++tail) :
     List.ofFn ((goodChildPackSchedule r g).foldl adjacentFields x) = head++tail++mid := by
-  rw [fold_adjacentFields _ _ (fun _ => goodChildPackSchedule_inside),layout]
-  simp only [goodChildPackSchedule,List.foldl_map,List.append_assoc]
-  rw [← hr,fold_swapAtomAt_prefix,hr,← hm,← ht]
-  simpa using congrArg (head++·) (middleTailSchedule_packs mid tail [])
+  simpa only [goodChildPackSchedule,hr,hm,ht] using packMiddleTail_fields x head mid tail layout
 
 open FlatCoordinateLayout in
 omit [M8.Machine.Net] in

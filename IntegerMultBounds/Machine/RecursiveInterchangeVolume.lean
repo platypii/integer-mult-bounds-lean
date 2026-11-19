@@ -78,6 +78,27 @@ theorem Path.width_mul {q roles m n : ℕ} {root v : Descriptor}
       _ = (m*b)*m^n := by ring
       _ = _ := by rw [← hw]; exact ih
 
+/-- The inherited middle consists of the original radix and whole blocks
+at the current width. Their count is bounded by the two original fields. -/
+theorem Path.middle_blocks {q roles m n : ℕ} {root v : Descriptor}
+    (path : Path q roles m root n v) :
+    ∃ k : ℕ, v.between = root.between*(q^v.width)^k ∧ k+2 ≤ 2*m^n := by
+  induction path with
+  | start => exact ⟨0,by simp,by simp⟩
+  | @descend n v prior b i j hw _ ih =>
+    obtain ⟨k,mid,count⟩ := ih
+    refine ⟨(m-1-i.val)+m*k+j.val,?_,?_⟩
+    · change q^((m-1-i.val)*b)*v.between*q^(j.val*b) = _
+      rw [mid,hw]
+      simp only [child,pow_add,← pow_mul]
+      rw [Nat.mul_comm (m-1-i.val) b,Nat.mul_comm j.val b,
+        show m*b*k = b*(m*k) by ring]
+      ring
+    · have slots : (m-1-i.val)+j.val+2 ≤ 2*m := by have := j.isLt; omega
+      have scale := Nat.mul_le_mul_right m count
+      rw [pow_succ]
+      nlinarith only [scale,slots]
+
 /-- For a power-width root, an actual child path cannot exceed its root depth. -/
 theorem Path.depth_bound {q roles m n k : ℕ} {root v : Descriptor}
     (path : Path q roles m root n v) (hm : 1 < m) (hw : root.width = m^k) : n ≤ k := by
