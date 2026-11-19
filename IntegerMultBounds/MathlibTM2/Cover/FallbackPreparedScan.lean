@@ -18,6 +18,9 @@ local instance (w : ℕ) : NeZero (prime^(w+1)) := ⟨(pow_pos prime_prime.pos _
 
 open RingFormula Node
 
+def installMask {T : ℕ} (S : Stacks T prime) (mask : Fin T) (bits : List (Fin (prime+4))) : Stacks T prime :=
+  {S with R := Function.update S.R mask bits}
+
 /-- One program generates the physical matrix archive, signs the payloads and applies the residual pass. -/
 theorem preparedPass_exec {Q T r A : ℕ} (table : Matrix (Fin r) (Fin r) (ZMod prime) → Matrix (Fin (d+1)) (Fin (d+1)) (ZMod prime))
     (capacity : columnCapacity ≤ Q) (signCapacity : (fieldSignProgram (0 : Fin (d+1)) true).1 ≤ Q) :
@@ -94,6 +97,7 @@ theorem preparedPass_exec {Q T r A : ℕ} (table : Matrix (Fin r) (Fin r) (ZMod 
         fin_cases l <;> simp [coefficientSlots, Matrix.cons_val] at eq <;> (try split_ifs at *) <;> omega
       let scan := QueueLayout.scanPorts (QueueLayout.directoryWork.trans generatorBank) generatorArchive archiveOff
       scan 4 = tapes 34 → generatorMask ≠ parentTape → scan 2 ≠ parentTape →
+      (parents :: scratch :: (slots rs ++ [generatorMask])).Nodup →
       ∃ prog : Pr P T Q prime U, ∀ {w W : ℕ} (baseData : ScanData r d w W) (parent : Fin d → (ZMod (prime^(w+1)))ˣ)
         (proj : Matrix (Fin r) (Fin r) ℚ) (α α' : Fin r → ZMod (prime^(w+1))),
       proj*proj = proj → IntegerMultBounds.Swap.Modular.Admissible prime proj → (∀ i, α i * α' i = 1) →
@@ -126,24 +130,29 @@ theorem preparedPass_exec {Q T r A : ℕ} (table : Matrix (Fin r) (Fin r) (ZMod 
         (desc : RecursiveInterchangeLayout.Descriptor) (B : ℕ) (v : HS T Q prime U) (originalState : Stacks T prime),
       let projector := IntegerMultBounds.Swap.Modular.reduce (prime^(w+1)) proj
       let padWord := matrixWords prime H (1 : Matrix (Fin (d+1)) (Fin (d+1)) (ZMod (prime^(w+1))))
-      ∀ (_seedWord : originalState.R seed = padWord) (_tmpBlank : originalState.R generatorTmp = [])
-      (_weightBank : originalState.R (recip 13) = [] ∧ ∀ i j, let s := coeff i j
-        originalState.R (s 1) = binSyms H (α i).val ∧ originalState.R (s 2) = binSyms H (α' j).val)
+      originalState.R generatorMask = [] →
+      LabelTraversal.ready (prime^w) originalState.R rs → originalState.R scratch = [] →
+      (originalState.R parents).length = desc.beforeRows*desc.rows*B →
+      let bits := (LabelMask.selectors r (w+1) a.records).map (bitSymbol (a := prime))
+      let maskedState := installMask originalState generatorMask bits
+      ∀ (_seedWord : maskedState.R seed = padWord) (_tmpBlank : maskedState.R generatorTmp = [])
+      (_weightBank : maskedState.R (recip 13) = [] ∧ ∀ i j, let s := coeff i j
+        maskedState.R (s 1) = binSyms H (α i).val ∧ maskedState.R (s 2) = binSyms H (α' j).val)
       (_ready :
-        (∀ i : Fin 18, i ∈ [0,3,4,5,6,7,11,14,15] → originalState.R (generatorBank i) = []) ∧ (originalState.R (generatorBank 8)).length = H ∧
-        originalState.R (generatorBank 9) = binSyms H 0 ∧ originalState.R (generatorBank 10) = [] ∧
-         (originalState.R clock).length = w ∧ originalState.R generatorCount = [] ∧ originalState.R (recip 14) = [] ∧
-        originalState.R (recip 15) = binSyms H (1 : ZMod (prime^(w+1))).val ∧ originalState.R (recip 4) = binSyms H (prime^(w+1)) ∧
-        (∀ i : Fin 16, i ≠ 4 → i < 13 → originalState.R (recip i) = []) ∧
-        (∀ k ≤ conjugationDepth r, originalState.R (frame pool k 2) = binSyms H (prime^(w+1))) ∧
-        (∀ k ≤ conjugationDepth r, ∀ i : Fin 13, i ≠ 2 → originalState.R (frame pool k i) = []) ∧
-        (∃ suffix, originalState.R (generatorBank 16) = matrixWords prime H projector ++ suffix) ∧
-        originalState.R (generatorBank 17) = binSyms H (1 : ZMod (prime^(w+1))).val)
-      (_widths : ∀ j < a.records, (originalState.R (generatorBank 12)).length = (ancestor j).length)
-      (_width : (originalState.R (generatorBank 1)).length = w+1) (_blank : originalState.R (generatorBank 4) = []) (_empty : originalState.R (generatorArchive) = [])
-      (_directory : originalState.R (generatorBank 2) = (List.range a.records).flatMap (LabelDirectory.entry ancestor r (w+1)) ++ tail)
-      (_output : originalState.R (generatorBank 13) = []) (_bits : originalState.R generatorMask = (List.range a.records).map fun j => bitSymbol (LabelStock.live r (w+1) 1 j)),
-      let S := queueResult originalState generatorMask (scan 2) (tapes 34) tail (a.matrices 0)
+        (∀ i : Fin 18, i ∈ [0,3,4,5,6,7,11,14,15] → maskedState.R (generatorBank i) = []) ∧ (maskedState.R (generatorBank 8)).length = H ∧
+        maskedState.R (generatorBank 9) = binSyms H 0 ∧ maskedState.R (generatorBank 10) = [] ∧
+         (maskedState.R clock).length = w ∧ maskedState.R generatorCount = [] ∧ maskedState.R (recip 14) = [] ∧
+        maskedState.R (recip 15) = binSyms H (1 : ZMod (prime^(w+1))).val ∧ maskedState.R (recip 4) = binSyms H (prime^(w+1)) ∧
+        (∀ i : Fin 16, i ≠ 4 → i < 13 → maskedState.R (recip i) = []) ∧
+        (∀ k ≤ conjugationDepth r, maskedState.R (frame pool k 2) = binSyms H (prime^(w+1))) ∧
+        (∀ k ≤ conjugationDepth r, ∀ i : Fin 13, i ≠ 2 → maskedState.R (frame pool k i) = []) ∧
+        (∃ suffix, maskedState.R (generatorBank 16) = matrixWords prime H projector ++ suffix) ∧
+        maskedState.R (generatorBank 17) = binSyms H (1 : ZMod (prime^(w+1))).val)
+      (_widths : ∀ j < a.records, (maskedState.R (generatorBank 12)).length = (ancestor j).length)
+      (_width : (maskedState.R (generatorBank 1)).length = w+1) (_blank : maskedState.R (generatorBank 4) = []) (_empty : maskedState.R (generatorArchive) = [])
+      (_directory : maskedState.R (generatorBank 2) = (List.range a.records).flatMap (LabelDirectory.entry ancestor r (w+1)) ++ tail)
+      (_output : maskedState.R (generatorBank 13) = []),
+      let S := queueResult maskedState generatorMask (scan 2) (tapes 34) tail (a.matrices 0)
       a.records = LabelMask.records desc → desc.beforeH = B*prime^(r*((w+1)*r)) →
       LabelTraversal.ready (prime^w) S.R rs → S.R scratch = [] → (S.R parents).length = desc.beforeRows*desc.rows*B →
       a.outputTail = [] → S.R (ext 0) = [] →
@@ -169,16 +178,16 @@ theorem preparedPass_exec {Q T r A : ℕ} (table : Matrix (Fin r) (Fin r) (ZMod 
         F.R parentTape = originalState.R parentTape ∧ (∀ h, F.L (host (privateBank h)) = [] ∧ F.R (host (privateBank h)) = []) ∧
         let num := fun i j : Fin r => numerator (matrixInput false) (matrixInput true) i j
         let numTime := Finset.univ.sup fun ij : Fin r × Fin r => RingFormula.time H (readTime H) (num ij.1 ij.2)
-        let price := liveRecordCost r (d+1) w H (originalState.R (generatorBank 12)).length numTime (RingFormula.time H (readTime H) (determinant (matrixInput (m := r) false)))
+        let price := liveRecordCost r (d+1) w H (maskedState.R (generatorBank 12)).length numTime (RingFormula.time H (readTime H) (determinant (matrixInput (m := r) false)))
         let active := LabelStock.live r (w+1) 1
         let generateTime := (List.range a.records).countP active * (price+4*((d+1)*(d+1)*H)) +
           (List.range a.records).countP (fun j => !active j) * (10*((d+1)*(d+1)*H)+6) +
-          a.records * (4*(originalState.R (generatorBank 12)).length+4+(r*r*(4*(w+1)+4)+1)+6)+4
-        l ≤ generateTime + ((1+((desc.beforeRows*desc.rows*B)*(LabelTraversal.time (prime^w) (r*r) 1+5)+4 +
+          a.records * (4*(maskedState.R (generatorBank 12)).length+4+(r*r*(4*(w+1)+4)+1)+6)+4
+        l ≤ ((desc.beforeRows*desc.rows*B)*(LabelTraversal.time (prime^w) (r*r) 1+5)+4 + generateTime) + ((1+((desc.beforeRows*desc.rows*B)*(LabelTraversal.time (prime^w) (r*r) 1+5)+4 +
           (((signedInputs a.table (w+1) a.records inputs).map (fun x => Record.cost d A 1 (w+1) W x.1 + 2)).sum + 2) +
           (2*(a.records*(ActualAffineScaling.modulus (w+1)^((d+1)*1)*W))+2))) + 2*((desc.beforeRows*desc.rows*B)*(LabelTraversal.time (prime^w) (r*r) 1+5)+4) + (((List.range a.records).map fun idx => stepTime idx+4).sum+2+(2*(a.records*volume)+2))) ∧
         Exec body prog (mk v originalState) l (mk z F) := by
-  intro rows reads n k j t i width total ports shared bank program spare off reverseHost reverseBank active pop rewind residual privateBank host ext outside parentTape parentOff parentExt body scanPorts tapes src acc pivot rs sizeRs parents scratch maskRegs pivotRegs regs anchor ars ap asaved acap asize alayout banks external sharedSrc anchorParent counters registers e generatorSize generatorHost control generatorMask seed generatorTmp generatorBank recip generatorCounters clock generatorCount pool coeff generatorArchive archiveOff coeffOff scan aligned maskOffParent directoryOffParent
+  intro rows reads n k j t i width total ports shared bank program spare off reverseHost reverseBank active pop rewind residual privateBank host ext outside parentTape parentOff parentExt body scanPorts tapes src acc pivot rs sizeRs parents scratch maskRegs pivotRegs regs anchor ars ap asaved acap asize alayout banks external sharedSrc anchorParent counters registers e generatorSize generatorHost control generatorMask seed generatorTmp generatorBank recip generatorCounters clock generatorCount pool coeff generatorArchive archiveOff coeffOff scan aligned maskOffParent directoryOffParent genMaskRegs
   let positive := lt_of_lt_of_le columnCapacity_pos capacity
   let cols := shared.trans host
   let prep := forwardBank.trans (rewindPorts (d+1) cols (host spare) (fun i => host.injective.ne (off i)))
@@ -205,22 +214,30 @@ theorem preparedPass_exec {Q T r A : ℕ} (table : Matrix (Fin r) (Fin r) (ZMod 
   obtain ⟨sign,signRun⟩ := anchorHandoff regs anchor scanPorts ext offExt
     (fun i j => banks i _) external sharedSrc acap table body ars asize ap asaved alayout
   let generate : Pr P T Q prime U := seededQueueBody r d e generatorBank recip clock generatorCount pool coeff coeffOff scan generatorMask seed generatorTmp
-  refine ⟨.seq generate (.seq (.seq sign writer) (.seq (maskedScan (ext 0) live pad) (moveR acc src id))),?_⟩
+  obtain ⟨maskWriter,writeMask⟩ := record_writes (body := body) r rs sizeRs generatorMask parents scratch genMaskRegs
+  refine ⟨.seq (.seq maskWriter generate) (.seq (.seq sign writer) (.seq (maskedScan (ext 0) live pad) (moveR acc src id))),?_⟩
   intro w W baseData parent proj α α' idem adm inverse a tables inputs encoded unsigned padding hm hw hW H J cost stageCost rewindCost bound cleanBound volume prepTime stepTime
   subst table
   have liveSpec := fun j (_ : j < a.records) => baseData.physical_live e proj idem adm α α' inverse j
-  intro ancestor tail desc B original originalState projector padWord seedWord tmpBlank weightBank generatorReady widths width0 genBlank archiveEmpty directory genOutput genMask init records shape radixInit scratchInit countInit fresh emptyInit anchorView neutral aradix afree acount awidth clean queueInit extCount savedEmpty tmpEmpty accEmpty pivotTail modWord widthWord one padded ticks scratchFree payloadBlank sharedFree parentWord privateFree output
+  intro ancestor tail desc B original originalState projector padWord maskBlank maskRadix maskScratch maskCount genBits maskedState seedWord tmpBlank weightBank generatorReady widths width0 genBlank archiveEmpty directory genOutput init records shape radixInit scratchInit countInit fresh emptyInit anchorView neutral aradix afree acount awidth clean queueInit extCount savedEmpty tmpEmpty accEmpty pivotTail modWord widthWord one padded ticks scratchFree payloadBlank sharedFree parentWord privateFree output
 
+  obtain ⟨masked,maskSteps,maskUser,maskBound,maskExec⟩ :=
+    writeMask desc (w+1) B (by omega) shape original originalState ⟨by simpa using maskRadix,maskScratch,maskCount⟩
+  have maskRun : Exec body maskWriter (mk original originalState) maskSteps (mk masked maskedState) := by
+    simpa only [maskedState,installMask,genBits,← records,maskBlank,List.append_nil] using maskExec
+  have genMask : maskedState.R generatorMask = (List.range a.records).map fun j => bitSymbol (LabelStock.live r (w+1) 1 j) := by
+    simpa only [genBits,LabelMask.selectors,List.map_map,Function.comp_def] using
+      (show maskedState.R generatorMask = genBits from Function.update_self ..)
   obtain ⟨_,first,genSteps,genUser,genBound,generated⟩ := physicalResidualQueue_exec body w a.records projector H hm
-    registers ancestor tail e α α' original originalState seedWord tmpBlank weightBank generatorReady widths width0 genBlank
+    registers ancestor tail e α α' masked maskedState seedWord tmpBlank weightBank generatorReady widths width0 genBlank
       archiveEmpty directory genOutput genMask
   have matrixWord := baseData.physical_archive e proj α α'
-  have genRun : Exec body generate (mk original originalState) genSteps (mk first init) := by
-    change Exec body generate _ _ (mk first (queueResult originalState generatorMask (scan 2) (tapes 34) tail (a.matrices 0)))
+  have genRun : Exec body generate (mk masked maskedState) genSteps (mk first init) := by
+    change Exec body generate _ _ (mk first (queueResult maskedState generatorMask (scan 2) (tapes 34) tail (a.matrices 0)))
     rw [← aligned,matrixWord]
     exact generated
   have parentKept : init.R parentTape = originalState.R parentTape := by
-    simp [init,queueResult,Function.update_of_ne,(parentOff _).symm,maskOffParent.symm,directoryOffParent.symm,tapes,scanPorts]
+    simp [init,maskedState,installMask,queueResult,Function.update_of_ne,(parentOff _).symm,maskOffParent.symm,directoryOffParent.symm,tapes,scanPorts]
   have archive : init.R (tapes 34) = a.matrices 0 := Function.update_self ..
 
   let invariant := fun outs idx (D : Stacks T prime) => ScanReady {a with signed := outs} scanPorts ext idx D ∧
@@ -356,9 +373,9 @@ theorem preparedPass_exec {Q T r A : ℕ} (table : Matrix (Fin r) (Fin r) (ZMod 
   obtain ⟨u,D,l,hu,⟨done,parents,free⟩,empty,time,run⟩ := scanned
   obtain ⟨z,F,hz,queue,accEnd,maskEnd,pivots,archive,frame,move⟩ := finishScan_exec scanData scanPorts ext offExt body
     u D done fresh (by simpa [signedInputs] using signed.length_eq.symm) empty
-  refine ⟨z,F,_,hz.trans (hu.trans (hv.trans (signUser.trans genUser))),queue,accEnd,maskEnd,pivots,archive,
+  refine ⟨z,F,_,hz.trans (hu.trans (hv.trans (signUser.trans (genUser.trans maskUser)))),queue,accEnd,maskEnd,pivots,archive,
     (frame _ (parentExt 2).symm (parentExt 5).symm).2.trans (parents.trans (initialReady.2.1.symm.trans ((Function.update_of_ne (parentOff _).symm _ _).trans ((signFrame _ anchorParent).2.trans parentKept)))),?_,
-    Nat.add_le_add genBound (Nat.add_le_add (Nat.add_le_add signBound (by simpa using ht)) (Nat.add_le_add_right time _)),Exec.seq genRun (Exec.seq (Exec.seq signExec gen) (Exec.seq run move))⟩
+    Nat.add_le_add (Nat.add_le_add (by simpa using maskBound) genBound) (Nat.add_le_add (Nat.add_le_add signBound (by simpa using ht)) (Nat.add_le_add_right time _)),Exec.seq (Exec.seq maskRun genRun) (Exec.seq (Exec.seq signExec gen) (Exec.seq run move))⟩
   intro h
   have keep := frame _ (outside (privateBank h) 2) (outside (privateBank h) 5)
   exact ⟨keep.1.trans (free h).1,keep.2.trans (free h).2⟩
