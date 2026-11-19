@@ -155,6 +155,18 @@ theorem signedPassResidualCharge_le (L r swaps shears live V : ℕ) (rankPos : 0
     (by have pos : 0 < M8.RevMachine.LeafCore.C := (Classical.choose_spec M8.Machine.ArbitraryWidthOriginalTotalRun.uniform_bound).1
         positivity)
 
+omit [M8.Machine.Net] in
+private theorem fixedBoxCost_le (r w : ℕ) (rankPos : 0 < r) :
+    22*(prime^(w+1))^(r*r) + 21*(w+1) + 26*prime^w + 82 ≤
+      151*(prime^(w+1))^(r*r) := by
+  have primeLarge := IntegerMultBounds.Networks.Shared50ModularControl.prime_prime.one_lt
+  have box : prime^(w+1) ≤ (prime^(w+1))^(r*r) := by
+    simpa using Nat.pow_le_pow_right (pow_pos (by omega : 0 < prime) (w+1))
+      (Nat.mul_pos rankPos rankPos : 1 ≤ r*r)
+  have atom := (Nat.lt_pow_self (n := w+1) primeLarge).le.trans box
+  have high := (Nat.pow_le_pow_right (by omega : 0 < prime) (Nat.le_succ w)).trans box
+  omega
+
 noncomputable def anchorClassCost (table : Matrix (Fin r) (Fin r) (ZMod prime) → Matrix (Fin (d+1)) (Fin (d+1)) (ZMod prime))
     (T w W : ℕ) (digits : Fin (r*r) → ZMod prime) :=
   let m := table (LabelSelectors.matrix r digits)
@@ -490,7 +502,7 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     let recordVolume := M^(d+1)*W
     let totalVolume := LabelMask.records v*recordVolume
     let liveVolume := (v.beforeRows*v.rows*B)*(units*lifts)*recordVolume
-    let fixedCost := 22*box + 21*(w+1) + 26*prime^w + paddingSetupCost (d+1) base.H + 82
+    let fixedCost := 151*box + paddingSetupCost (d+1) base.H
     SignedPassBound regs anchor ports ext v B a payload rs parents saved body
       (.seq (LabelSpectators.program r br rows bh atom (dir 2) (dir 9) (dir 3) (dir 5)) (.seq (.seq (LabelDirectorySetup.setup r dir atom one) (.seq (expandMask (dir 9) (dir 4) (dir 2) (dir 3) (dir 5) (dir 12) (fun _ => false)) (LabelDirectoryBuild.program dir))) (.seq (.seq (LabelCounts.highCount one atom (dir 7) (dir 2) (dir 3) (dir 5))
         (scanR (dir 7) (dir 2) (LabelCountBank.pushAll (cs.map Prod.fst)))) (.seq writeMask (.seq (.seq (bcopy (recip 15) (bank 17) (bank 4) tmp) (.seq (.seq (umulSym 1 (bitSymbol false) (bank 8) (bank 9) (bank 4)) (withIdentitySeed (d+1) (bank 9) (bank 17) seed (bank 4) tmp generate)) (bclear (bank 9)))) (bclear (bank 17))))))) pass
@@ -835,6 +847,10 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     change _ ≤ 11*(prime^(w+1))^(r*r)
     rw [pow_succ]
     omega
+  have fixed := fixedBoxCost_le r w rankPos
+  change 22*box + 21*(w+1) + 26*prime^w + 82 ≤ 151*box at fixed
+  apply le_trans _ (Nat.add_le_add_right (Nat.add_le_add_right (Nat.add_le_add_left
+    (Nat.add_le_add_right fixed (paddingSetupCost (d+1) base.H)) _) _) _)
   apply total.trans
   dsimp only [dirCost,setupCost,inheritedLabelCost,perParent,recordVolume,totalVolume,liveVolume,fixedCost,signedPassWork,Nat.add_one_sub_one]
   grw [traversal]
