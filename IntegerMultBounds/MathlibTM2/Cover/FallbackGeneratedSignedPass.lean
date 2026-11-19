@@ -557,6 +557,36 @@ theorem matrixBuildCost_volume_le (v : Descriptor) (positive : v.Positive)
       gcongr <;> omega
 
 omit [M8.Machine.Net] in
+/-- Matrix generation and archive copies over all parent boxes share one
+volume budget. The descriptor shape fixes both multiplicities. -/
+theorem physicalQueueSetup_volume_le (v : Descriptor) (positive : v.Positive)
+    (r d w B : ℕ) (shape : v.beforeH = B*prime^(r*((w+1)*r))) (fits : w+1 ≤ v.width) :
+    let H := Nat.size (prime^(w+1))
+    let parents := v.beforeRows*v.rows*B
+    let lifts := (prime^w)^(r*r)
+    let units := ∏ i : Fin r, (prime^r-prime^i.val)
+    let build := matrixBuildCost r d 1 1 * (w+1)*(H+1)^2
+    prime^v.width * (parents * (lifts*(units*build + prime^(r*r)*(10*(d*d*H)+6)))) ≤
+      (matrixBuildCost r d 1 1 * (Nat.size prime+1)^2 + (10*(d*d)+6))*volume prime v := by
+  intro H parents lifts units build
+  have records : LabelMask.records v = parents*(prime^(r*r)*lifts) := by
+    simp only [LabelMask.records, shape, parents, lifts, ← pow_mul, ← pow_add]
+    ring_nf
+  have unitsLe : units ≤ prime^(r*r) := by
+    calc
+      _ ≤ ∏ _ : Fin r, prime^r := Finset.prod_le_prod fun i _ => Nat.sub_le _ _
+      _ = _ := by simp [← pow_mul]
+  have live : parents*(units*lifts) ≤ LabelMask.records v := by
+    rw [records]
+    gcongr
+  have matrix := matrixBuildCost_volume_le v positive r d w _ fits live
+  have archive := (queueArchive_binaryWidth v positive d (w+1) (by omega) fits).2.2
+  change _ * (parents*(units*lifts)*build) ≤ _ at matrix
+  change _ * (LabelMask.records v*(10*(d*d*H)+6)) ≤ _ at archive
+  rw [records] at archive
+  convert Nat.add_le_add matrix archive using 1 <;> ring
+
+omit [M8.Machine.Net] in
 private theorem liveRecordCost_width (r d w H width numTime detTime : ℕ) :
     liveRecordCost r d w H width numTime detTime =
       liveRecordCost r d w H 0 numTime detTime + 12*r*r*width := by
