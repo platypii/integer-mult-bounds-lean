@@ -1,6 +1,6 @@
 module
 
-public import Mathlib.Data.Matrix.Block
+public import Mathlib.LinearAlgebra.Matrix.Block
 public import Mathlib.Algebra.BigOperators.Fin
 public import Mathlib.Algebra.Field.Rat
 public import Mathlib.Tactic.Ring
@@ -104,7 +104,7 @@ theorem complement_mul_transpose (h : c.Checked) :
   ext i j
   have hij := congrArg (Int.cast : ℤ → ℚ) (h.2.2.1 i j)
   push_cast at hij
-  simp only [mul_apply, transpose_apply, complement, of_apply, sub_apply, one_apply, lineProj]
+  simp only [mul_apply, transpose_apply, complement, of_apply, Matrix.sub_apply, one_apply, lineProj]
   have hs : ∑ k, (c.twiceComplement i k : ℚ) / 2 * ((c.twiceComplement j k : ℚ) / 2) =
       1 / 4 * ∑ k, (c.twiceComplement i k : ℚ) * c.twiceComplement j k := by
     rw [Finset.mul_sum]
@@ -116,7 +116,7 @@ theorem lineProj_mul_complement (h : c.Checked) : c.lineProj * c.complement = 0 
   ext i k
   have hk := congrArg (Int.cast : ℤ → ℚ) (h.2.2.2 k)
   push_cast at hk
-  simp only [mul_apply, lineProj, complement, of_apply, zero_apply]
+  simp only [mul_apply, lineProj, complement, of_apply, Matrix.zero_apply]
   calc ∑ j, (c.line i : ℚ) * c.line j / 4 * ((c.twiceComplement j k : ℚ) / 2)
       = (c.line i : ℚ) / 8 * ∑ j, (c.line j : ℚ) * c.twiceComplement j k := by
         rw [Finset.mul_sum]
@@ -215,6 +215,43 @@ theorem exchange_conj (R S U : Matrix ι ι ℚ) (h : R * S = 1) :
     fromBlocks R 0 0 R * exchange U * fromBlocks S 0 0 S = exchange (R * U * S) := by
   simp only [exchange, fromBlocks_multiply, mul_sub, sub_mul, mul_one, h, Matrix.mul_zero,
     Matrix.zero_mul, add_zero, zero_add, sub_self]
+
+/-- A lower triangular projector with a zero-one diagonal exchanges its pivot coordinates
+after a lower triangular change of basis on each address half. -/
+theorem exchange_pivot_coordinates {n : ℕ} (U : Matrix (Fin n) (Fin n) ℚ)
+    (lower : U.IsLowerTriangular) (idem : U * U = U)
+    (bits : ∀ i, U i i = 0 ∨ U i i = 1) :
+    let E := diagonal fun i => U i i
+    ∃ C : Matrix (Fin n) (Fin n) ℚ, C.IsLowerTriangular ∧ C⁻¹.IsLowerTriangular ∧
+      C * C⁻¹ = 1 ∧ fromBlocks C 0 0 C * exchange E * fromBlocks C⁻¹ 0 0 C⁻¹ = exchange U := by
+  intro E
+  let C := U * E + (1 - U) * (1 - E)
+  have entry (i j) : C i j = U i j * U j j +
+      ((1 : Matrix (Fin n) (Fin n) ℚ) i j - U i j) * (1 - U j j) := by
+    simp only [C, E, mul_sub, mul_one, Matrix.add_apply, Matrix.sub_apply, mul_diagonal]
+  have triangular : C.IsLowerTriangular := by
+    intro i j hij
+    have h : i < j := hij
+    simp [entry, lower hij, one_apply_ne h.ne]
+  have diag (i) : C i i = 1 := by
+    rcases bits i with h | h <;> simp [entry, h]
+  have unit : IsUnit C.det := by simp [C.det_of_isLowerTriangular triangular, diag]
+  let := C.invertibleOfIsUnitDet unit
+  have eIdem : E * E = E := by
+    ext i j
+    rw [show E = diagonal (fun i => U i i) from rfl, diagonal_mul_diagonal]
+    by_cases h : i = j
+    · subst j
+      rcases bits i with h | h <;> simp [h]
+    · simp [diagonal_apply_ne _ h]
+  have intertwine : C * E = U * C := by
+    dsimp only [C]
+    have hE : (1 - E) * E = 0 := by rw [sub_mul, one_mul, eIdem, sub_self]
+    have hU : U * (1 - U) = 0 := by rw [mul_sub, mul_one, idem, sub_self]
+    rw [add_mul, Matrix.mul_assoc U E E, eIdem, Matrix.mul_assoc, hE, Matrix.mul_zero,
+      mul_add, ← Matrix.mul_assoc, idem, ← Matrix.mul_assoc, hU, Matrix.zero_mul]
+  refine ⟨C, triangular, blockTriangular_inv_of_blockTriangular triangular, C.mul_nonsing_inv unit, ?_⟩
+  rw [exchange_conj _ _ _ (C.mul_nonsing_inv unit), intertwine, Matrix.mul_assoc, C.mul_nonsing_inv unit, mul_one]
 
 end Exchange
 
