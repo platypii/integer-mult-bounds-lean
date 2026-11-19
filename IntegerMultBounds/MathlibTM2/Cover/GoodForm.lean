@@ -336,9 +336,10 @@ theorem pivot_isUnit {P : Matrix (Fin m) (Fin m) R} {k : ℕ} (S : Stage P k) (h
   exact IsUnit.prod_iff.mp hminor (Fin.last k) (Finset.mem_univ _)
 
 /-- One elimination step. -/
-theorem next {P : Matrix (Fin m) (Fin m) R} {k : ℕ} (S : Stage P k) (hk : k < m)
-    (hu : IsUnit (S.M ⟨k, hk⟩ ⟨k, hk⟩)) : Nonempty (Stage P (k + 1)) := by
-  obtain ⟨p', hp⟩ := hu.exists_right_inv
+noncomputable def advance {P : Matrix (Fin m) (Fin m) R} {k : ℕ} (S : Stage P k) (hk : k < m)
+    (hu : IsUnit (S.M ⟨k, hk⟩ ⟨k, hk⟩)) : Stage P (k + 1) := by
+  let p' := Ring.inverse (S.M ⟨k, hk⟩ ⟨k, hk⟩)
+  have hp := Ring.mul_inverse_cancel _ hu
   have hcl : Cleared (⟨k, hk⟩ : Fin m).val S.M := S.cleared
   have hnL := elimL_zero ⟨k, hk⟩ hcl p'
   have hnU := elimU_zero ⟨k, hk⟩ hcl p'
@@ -346,7 +347,7 @@ theorem next {P : Matrix (Fin m) (Fin m) R} {k : ℕ} (S : Stage P k) (hk : k < 
     (colMat_mul_colMat ⟨k, hk⟩ (elimL ⟨k, hk⟩ S.M p') (elimL ⟨k, hk⟩ S.M p') (hnL _ le_rfl))
   obtain ⟨hr, hr'⟩ := add_mul_sub
     (rowMat_mul_rowMat ⟨k, hk⟩ (elimU ⟨k, hk⟩ S.M p') (elimU ⟨k, hk⟩ S.M p') (hnU _ le_rfl))
-  refine ⟨{
+  refine {
     L := S.L * (1 + colMat ⟨k, hk⟩ (elimL ⟨k, hk⟩ S.M p'))
     L' := (1 - colMat ⟨k, hk⟩ (elimL ⟨k, hk⟩ S.M p')) * S.L'
     U := (1 + rowMat ⟨k, hk⟩ (elimU ⟨k, hk⟩ S.M p')) * S.U
@@ -362,7 +363,7 @@ theorem next {P : Matrix (Fin m) (Fin m) R} {k : ℕ} (S : Stage P k) (hk : k < 
     right' := ?_
     eq := ?_
     cleared := elim_cleared ⟨k, hk⟩ hcl p'
-    unit := fun i hi => ?_ }⟩
+    unit := fun i hi => ?_ }
   · rw [Matrix.mul_assoc, ← Matrix.mul_assoc (1 + colMat _ _), hc, Matrix.one_mul, S.left]
   · rw [Matrix.mul_assoc, ← Matrix.mul_assoc S.L', S.left', Matrix.one_mul, hc']
   · rw [Matrix.mul_assoc, ← Matrix.mul_assoc S.U, S.right, Matrix.one_mul, hr]
@@ -377,15 +378,19 @@ theorem next {P : Matrix (Fin m) (Fin m) R} {k : ℕ} (S : Stage P k) (hk : k < 
       rw [hi']
       exact hu
 
+theorem next {P : Matrix (Fin m) (Fin m) R} {k : ℕ} (S : Stage P k) (hk : k < m)
+    (hu : IsUnit (S.M ⟨k,hk⟩ ⟨k,hk⟩)) : Nonempty (Stage P (k+1)) :=
+  ⟨advance S hk hu⟩
+
 /-- Elimination runs for `r` steps when the leading minors of sizes `1..r` are units. -/
-theorem stage (P : Matrix (Fin m) (Fin m) R) (r : ℕ) (hr : r ≤ m)
+noncomputable def stageAt (P : Matrix (Fin m) (Fin m) R) (r : ℕ) (hr : r ≤ m)
     (hminor : ∀ k (hk : k < r), IsUnit (lead (k + 1) (lt_of_lt_of_le hk hr) P).det) :
-    ∀ k, k ≤ r → Nonempty (Stage P k) := by
+    ∀ k, k ≤ r → Stage P k := by
   intro k
   induction k with
   | zero =>
     intro _
-    exact ⟨{
+    exact {
       L := 1, L' := 1, U := 1, U' := 1, M := P
       lower := unitLower_one, lower' := unitLower_one
       upper := unitUpper_one, upper' := unitUpper_one
@@ -393,11 +398,15 @@ theorem stage (P : Matrix (Fin m) (Fin m) R) (r : ℕ) (hr : r ≤ m)
       right := Matrix.one_mul 1, right' := Matrix.one_mul 1
       eq := by rw [Matrix.one_mul, Matrix.mul_one]
       cleared := fun i j h => absurd h (by omega)
-      unit := fun i h => absurd h (Nat.not_lt_zero _) }⟩
+      unit := fun i h => absurd h (Nat.not_lt_zero _) }
   | succ k ih =>
     intro hk
-    obtain ⟨S⟩ := ih (by omega)
-    exact next S (lt_of_lt_of_le hk hr) (pivot_isUnit S _ (hminor k hk))
+    let S := ih (by omega)
+    exact advance S (lt_of_lt_of_le hk hr) (pivot_isUnit S _ (hminor k hk))
+
+theorem stage (P : Matrix (Fin m) (Fin m) R) (r : ℕ) (hr : r ≤ m)
+    (hminor : ∀ k (hk : k < r), IsUnit (lead (k+1) (lt_of_lt_of_le hk hr) P).det)
+    (k : ℕ) (hk : k ≤ r) : Nonempty (Stage P k) := ⟨stageAt P r hr hminor k hk⟩
 
 /-- After `r` steps, a factorization of `P` through `r` coordinates leaves nothing in the rows
 from `r` on. -/
@@ -488,17 +497,16 @@ theorem unitLower_rev_conj {U : Matrix (Fin m) (Fin m) R} (hU : UnitUpper U) :
     rw [mul_rev_apply, rev_mul_apply]
     exact hU.2 i.rev
 
-/-- **The good normal form.** If `P` factors through `r` coordinates and its leading principal
-minors of sizes `1..r` are units, then `P C = L Δ Π_r R` with unit lower-triangular `L`, `R`,
-their inverses, and unit pivots `Δ`. -/
-theorem good_form (P : Matrix (Fin m) (Fin m) R) (r : ℕ) (hr : r ≤ m)
-    (A : Matrix (Fin m) (Fin r) R) (B : Matrix (Fin r) (Fin m) R) (hP : P = A * B)
-    (hminor : ∀ k (hk : k < r), IsUnit (lead (k + 1) (lt_of_lt_of_le hk hr) P).det) :
-    ∃ (L L' R' R'' : Matrix (Fin m) (Fin m) R) (δ δ' : Fin m → R),
-      UnitLower L ∧ UnitLower L' ∧ UnitLower R' ∧ UnitLower R'' ∧
-      L * L' = 1 ∧ L' * L = 1 ∧ R' * R'' = 1 ∧ R'' * R' = 1 ∧ (∀ i, δ i * δ' i = 1) ∧
-      P * rev m = L * diagonal δ * pivotMatrix (revPivots m r) * R' := by
-  obtain ⟨S⟩ := stage P r hr hminor r le_rfl
+/-- The last elimination stage gives the actual adapters and pivot weights. -/
+theorem Stage.normalForm {P : Matrix (Fin m) (Fin m) R} {r : ℕ} (S : Stage P r) (hr : r ≤ m)
+    (A : Matrix (Fin m) (Fin r) R) (B : Matrix (Fin r) (Fin m) R) (hP : P = A*B) :
+    let δ := fun i : Fin m => if i.val < r then S.M i i else 1
+    let δ' := fun i : Fin m => if i.val < r then Ring.inverse (S.M i i) else 1
+    let R' := rev m * S.U * rev m
+    let R'' := rev m * S.U' * rev m
+    UnitLower R' ∧ UnitLower R'' ∧ R' * R'' = 1 ∧ R'' * R' = 1 ∧ (∀ i, δ i * δ' i = 1) ∧
+      P * rev m = S.L * diagonal δ * pivotMatrix (revPivots m r) * R' := by
+  dsimp only
   have hnodup : (revPivots m r).Nodup := (revPivots_fst m r).of_map _
   have hMdiag : S.M = diagonal fun i => if i.val < r then S.M i i else 0 := by
     ext i j
@@ -525,11 +533,7 @@ theorem good_form (P : Matrix (Fin m) (Fin m) R) (r : ℕ) (hr : r ≤ m)
   have hRR' : rev m * S.U' * rev m * (rev m * S.U * rev m) = 1 := by
     simp only [Matrix.mul_assoc]
     rw [rev_mul_rev_mul, ← Matrix.mul_assoc S.U', S.right', Matrix.one_mul, rev_mul_rev]
-  refine ⟨S.L, S.L', rev m * S.U * rev m, rev m * S.U' * rev m,
-    fun i => if i.val < r then S.M i i else 1,
-    fun i => if i.val < r then Ring.inverse (S.M i i) else 1,
-    S.lower, S.lower', unitLower_rev_conj S.upper, unitLower_rev_conj S.upper',
-    S.left, S.left', hRR, hRR', ?_, ?_⟩
+  refine ⟨unitLower_rev_conj S.upper, unitLower_rev_conj S.upper', hRR, hRR', ?_, ?_⟩
   · intro i
     by_cases hi : i.val < r
     · simp only [hi, ↓reduceIte]
@@ -544,6 +548,20 @@ theorem good_form (P : Matrix (Fin m) (Fin m) R) (r : ℕ) (hr : r ≤ m)
       (congrArg (fun X => X * rev m) hMdiag).trans hkey
     rw [hPe, hsplit, hSM]
     simp only [Matrix.mul_assoc]
+
+/-- **The good normal form.** If `P` factors through `r` coordinates and its leading principal
+minors of sizes `1..r` are units, then `P C = L Δ Π_r R` with unit lower-triangular `L`, `R`,
+their inverses, and unit pivots `Δ`. -/
+theorem good_form (P : Matrix (Fin m) (Fin m) R) (r : ℕ) (hr : r ≤ m)
+    (A : Matrix (Fin m) (Fin r) R) (B : Matrix (Fin r) (Fin m) R) (hP : P = A * B)
+    (hminor : ∀ k (hk : k < r), IsUnit (lead (k + 1) (lt_of_lt_of_le hk hr) P).det) :
+    ∃ (L L' R' R'' : Matrix (Fin m) (Fin m) R) (δ δ' : Fin m → R),
+      UnitLower L ∧ UnitLower L' ∧ UnitLower R' ∧ UnitLower R'' ∧
+      L * L' = 1 ∧ L' * L = 1 ∧ R' * R'' = 1 ∧ R'' * R' = 1 ∧ (∀ i, δ i * δ' i = 1) ∧
+      P * rev m = L * diagonal δ * pivotMatrix (revPivots m r) * R' := by
+  let S := stageAt P r hr hminor r le_rfl
+  obtain ⟨rightLower,rightInvLower,right,rightInv,weights,factor⟩ := S.normalForm hr A B hP
+  exact ⟨S.L,S.L',_,_,_,_,S.lower,S.lower',rightLower,rightInvLower,S.left,S.left',right,rightInv,weights,factor⟩
 
 /-- **A good move.** Let `P` be an idempotent that factors through `r` coordinates, with unit
 leading principal minors of sizes `1..r`. Under incoming weights `α`, its reversed exchange is
