@@ -54,6 +54,7 @@ def translate(row):
 
 def check_helper_windows(endpoint_positions, gates):
     """Check scalar dependence across each potential same-helper crossing window."""
+    group_sizes = []
     windows = 0
     for helper, positions in enumerate(endpoint_positions[222:], start=222):
         for start in positions.get((0, 1), []):
@@ -69,7 +70,25 @@ def check_helper_windows(endpoint_positions, gates):
                     rows[target] ^= delta
                 assert rows[helper] & ~(1 << helper)
                 assert any(row & (1 << helper) for i, row in enumerate(rows) if i != helper)
+                # A common reindexing on a fixed set of registers commutes with this
+                # scalar map precisely when no nonzero coefficient crosses its boundary.
+                group = 1 << helper
+                while True:
+                    expanded = group
+                    for i, row in enumerate(rows):
+                        if group & (1 << i) or group & row:
+                            expanded |= row | (1 << i)
+                    if expanded == group:
+                        break
+                    group = expanded
+                ports = (1 << 111) - 1
+                group_sizes.append(group.bit_count())
+                assert group & ports == ports
+                assert (group >> 111) & ports == ports
                 windows += 1
+    assert (min(group_sizes), max(group_sizes)) == (477, 661)
+    print("Each helper crossing requires all 222 ports in its fixed scalar reindexing group; "
+          "the smallest such groups range from 477 to 661 registers.")
     assert windows == 179
     print(f"All {windows} helper windows import and export scalar data between endpoint MOVEs.")
 
