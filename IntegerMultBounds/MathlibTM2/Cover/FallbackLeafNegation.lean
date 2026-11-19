@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.Host.StatePlacement
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackMiddleReturn
 public import IntegerMultBounds.Machine.FiberShift
 public import IntegerMultBounds.Machine.BlockNegationReuse
@@ -132,6 +133,7 @@ theorem negateLeafStream_exec {P M B A : ℕ} {U F : Type} (hM : 0 < M) (hB : 0 
     RepT (Alphabet.mapTapes enc (CountedLoop.bank (bank (fun _ => blank) 0 0) clock (bits P))) S.L S.R →
     ∃ z D n, z.user = u.user ∧ n ≤ cost*14+6 ∧
       Exec body (foreign (Alphabet.program enc (CountedLoop.program BlockNegationReuse.program))) (mk u S) n (mk z D) ∧
+      (∀ x, readAt blank (D.L 0) (D.R 0) (x-((P*(M*B) : ℕ) : ℤ)) = enc.encode (source x)) ∧
       ∀ x, readAt blank (D.L 1) (D.R 1) (x-((P*(M*B) : ℕ) : ℤ)) =
         enc.encode (putWord (fun _ => blank) 0 ((negateLeafHead word).map SparseRoleCircuit.encode) x) := by
   intro bits enc source bank cost rep
@@ -149,7 +151,122 @@ theorem negateLeafStream_exec {P M B A : ℕ} {U F : Type} (hM : 0 < M) (hB : 0 
     · rintro _ rfl; exact ⟨_,rfl,rfl⟩
     · rintro _ ⟨_,rfl,rfl⟩; rfl
   obtain ⟨z,D,_,rfl,result,hu,_,_,_,n,hn,exec⟩ := foreign_exec body _ run u S _ rfl rep
-  refine ⟨z,D,n,hu,hn,exec,fun x => ?_⟩
+  refine ⟨z,D,n,hu,hn,exec,fun x => (result 0 x).symm,fun x => ?_⟩
   exact (result 1 x).symm
+
+open Host IntegerMultBounds.Networks.Shared50ModularControl in
+theorem initializedNegateLeaf_exec {P M B : ℕ} {U F : Type} (hM : 0 < M) (hB : 0 < B)
+    (word : Fin (P*(M*B)) → ZMod 2) (body : F → Pr F 9 207 prime U)
+    (u : HS 9 207 prime U) (S : Stacks 9 prime)
+    (payload : ∀ x, readAt blank (S.L 0) (S.R 0) x = leafBitTape (List.ofFn word) x)
+    (left : ∀ i : Fin 9, i ≠ 0 → S.L i = [])
+    (right : ∀ i : Fin 9, i ≠ 0 → S.R i =
+      if i = 4 then binSyms B.size B else if i = 5 then binSyms ((M-1)*B).size ((M-1)*B)
+      else if i = 7 then binSyms (M-1).size (M-1) else if i = 8 then binSyms P.size P else []) :
+    let marks : List (Fin 9) := [3,4,5,6,7,8]
+    let prog := foreign (Alphabet.program RadixToBinary.binaryEncoding (CountedLoop.program BlockNegationReuse.program))
+    ∃ z D n, z.user = u.user ∧ n ≤ 1+(P*(210*(M*B)+219)+6*P+2*P.size+2)*14+6 ∧
+      Exec body (.seq (.act (pushMarkers marks)) prog) (mk u S) n (mk z D) ∧
+      (∀ x, readAt blank (D.L 0) (D.R 0) (x-((P*(M*B) : ℕ) : ℤ)) = leafBitTape (List.ofFn word) x) ∧
+      ∀ x, readAt blank (D.L 1) (D.R 1) (x-((P*(M*B) : ℕ) : ℤ)) = leafBitTape (negateLeafHead word) x := by
+  intro marks prog
+  let H : Stacks 9 prime := {S with L := fun i => if i ∈ marks then separator :: S.L i else S.L i}
+  have setup := Exec.act (body := body) (pushMarkers marks) (mk u S)
+  rw [pushMarkers_run _ (by decide)] at setup
+  obtain ⟨z,D,n,hu,hn,run,src,out⟩ := negateLeafStream_exec hM hB word CountedCopyReuse.empty
+    (by simp [CountedCopyReuse.empty]) (by simp [CountedCopyReuse.empty]; omega) body u H (by
+      intro i k
+      have header (xs : List Bool) : RadixZeroFill.encodedBinary (q := prime) xs k =
+          readAt blank [separator] (xs.map bitSymbol) (k-1) := by rw [encodedBinary_eq,readAt_single]
+      have empty : (blank : Fin (prime+4)) = readAt blank [] [] (k-0) := by rw [readAt_nil_left,wordTape_nil]
+      fin_cases i <;> simp [H,marks,left,right,binSyms_eq] <;>
+        first | exact header [] | exact header _ | exact empty | change RadixToBinary.binaryEncoding.encode (putWord (fun _ => blank) 0 (List.ofFn (SparseRoleCircuit.encode ∘ word)) k) = readAt blank (S.L 0) (S.R 0) (k-0); simpa only [leafBitTape,List.map_ofFn,sub_zero] using (payload k).symm)
+  refine ⟨z,D,1+n,hu,?_,Exec.seq setup run,?_,out⟩
+  · rw [length_binBits] at hn
+    omega
+  · simpa only [leafBitTape,List.map_ofFn] using src
+
+open Host IntegerMultBounds.Networks.Shared50ModularControl in
+theorem returnLeafBits_exec {P M B T : ℕ} {F U : Type} (hP : 0 < P) (hM : 0 < M) (hB : 0 < B)
+    (body : F → Pr F T 217 prime U) (r : Fin 8 ↪ Fin T) (v : HS T 217 prime U) (S : Stacks T prime)
+    (a xs : List (ZMod 2)) (ha : a.length = P*(M*B)) (hx : xs.length = P*(M*B))
+    (dst : ∀ z, readAt blank (S.L (r 0)) (S.R (r 0)) (z-((P*(M*B) : ℕ) : ℤ)) = leafBitTape xs z)
+    (src : ∀ z, readAt blank (S.L (r 1)) (S.R (r 1)) (z-((P*(M*B) : ℕ) : ℤ)) = leafBitTape a z)
+    (controls : ∀ (i : Fin 6) z, CountedLoopReuseAlphabet.binary
+      (![[],binBits B.size B,[],binBits M.size M,[],binBits P.size P] i) z =
+      readAt blank (S.L (r (Fin.natAdd 2 i))) (S.R (r (Fin.natAdd 2 i))) (z-1)) :
+    ∃ u D n, u.user = v.user ∧ n ≤ (327*(P*(M*B))+2)*13+6 ∧
+      Exec body (returnWord r) (mk v S) n (mk u D) ∧
+      (∀ z, readAt blank (D.L (r 1)) (D.R (r 1)) z = leafBitTape xs z) ∧
+      ∀ j, (∀ i, r i ≠ j) → D.L j = S.L j ∧ D.R j = S.R j := by
+  let encoded := fun ys : List (ZMod 2) => (ys.map (SparseRoleCircuit.encode (a := 0))).map
+    (RadixToBinary.binaryEncoding (q := prime)).encode
+  have tape (ys : List (ZMod 2)) : leafBitTape ys = putWord (fun _ => blank) 0 (encoded ys) := by
+    change RowPaddingConstructedAlphabet.mapTape (putWord (fun _ => blank) 0 _) = _
+    rw [RowPaddingConstructedAlphabet.map_putWord]
+    rfl
+  have ready := returnWord_ready r S _ _ _ _ _ _ _ dst src controls
+  rw [tape xs,tape a] at ready
+  obtain ⟨u,D,n,hu,hn,run,rep,off⟩ := returnPackedList_exec body r rfl hP hM hB
+    (fun _ => blank) (fun _ => blank) 0 0 (encoded a) (encoded xs) (by simpa [encoded] using ha)
+    (by simpa [encoded] using hx) _ _ _
+    (Routing.binaryCanonical_value_binBits _ _ (Nat.lt_size_self _))
+    (Routing.binaryCanonical_value_binBits _ _ (Nat.lt_size_self _))
+    (Routing.binaryCanonical_value_binBits _ _ (Nat.lt_size_self _))
+    (Mult.PhaseCellToeplitz.binBits_size_canonical _) (Mult.PhaseCellToeplitz.binBits_size_canonical _)
+    (Mult.PhaseCellToeplitz.binBits_size_canonical _) (fun _ _ _ => rfl) v S (by simpa only [zero_add] using ready)
+  refine ⟨u,D,n,hu,hn,run,?_,off⟩
+  intro z
+  rw [tape]
+  have read := (rep 1 z).symm
+  change readAt blank (D.L (r 1)) (D.R (r 1)) (z-0) = putWord (fun _ => blank) 0 (encoded xs) z at read
+  simpa only [sub_zero] using read
+
+def negationReturnPorts : Fin 8 ↪ Fin 15 := ⟨![1,0,9,10,11,12,13,14], by decide⟩
+
+open Host IntegerMultBounds.Networks.Shared50ModularControl in
+theorem negateAndReturn_exec {P M B : ℕ} {F U : Type} (hP : 0 < P) (hM : 0 < M) (hB : 0 < B)
+    (word : Fin (P*(M*B)) → ZMod 2) (body : F → Pr F 15 217 prime U)
+    (u : HS 15 217 prime U) (S : Stacks 15 prime)
+    (payload : ∀ x, readAt blank (S.L 0) (S.R 0) x = leafBitTape (List.ofFn word) x)
+    (left : ∀ i : Fin 9, i ≠ 0 → S.L (i.castAdd 6) = [])
+    (right : ∀ i : Fin 9, i ≠ 0 → S.R (i.castAdd 6) =
+      if i = 4 then binSyms B.size B else if i = 5 then binSyms ((M-1)*B).size ((M-1)*B)
+      else if i = 7 then binSyms (M-1).size (M-1) else if i = 8 then binSyms P.size P else [])
+    (controls : ∀ (i : Fin 6) z, CountedLoopReuseAlphabet.binary
+      (![[],binBits B.size B,[],binBits M.size M,[],binBits P.size P] i) z =
+      readAt blank (S.L (i.natAdd 9)) (S.R (i.natAdd 9)) (z-1)) :
+    let bank := Fin.castAddEmb (n := 9) 6
+    let child : Pr Empty 9 207 prime U := .seq (.act (pushMarkers [3,4,5,6,7,8]))
+      (foreign (Alphabet.program RadixToBinary.binaryEncoding (CountedLoop.program BlockNegationReuse.program)))
+    let sign := statePlacedNormalized bank (by decide : 207 ≤ 217) (by decide) Empty.elim child
+    let N := P*(M*B)
+    ∃ z D n, z.user = u.user ∧ n ≤ 1+(1+(P*(210*(M*B)+219)+6*P+2*P.size+2)*14+6)+((327*N+2)*13+6) ∧
+      Exec body (sign.seq (returnWord negationReturnPorts)) (mk u S) n (mk z D) ∧
+      ∀ x, readAt blank (D.L 0) (D.R 0) x = leafBitTape (negateLeafHead word) x := by
+  intro bank child sign N
+  obtain ⟨a,H,n,ha,hn,run,src,dst⟩ := initializedNegateLeaf_exec hM hB word (F := Empty) Empty.elim
+    (stateLiftDown (by decide : 0 < 207) (embDn bank u)) (embStk bank S) payload left right
+  obtain ⟨b,_,hb,placed⟩ := statePlaced_exec_normalized bank bank.injective (by decide : 207 ≤ 217)
+    (by decide) Empty.elim (body' := body) (fun e => nomatch e) u S run
+  let J := embOvr bank H.get S
+  have eq : embStk bank J = H := embStk_ovr bank.injective _ _
+  rw [← eq] at src dst
+  have length : (negateLeafHead word).length = N := by
+    unfold negateLeafHead
+    rw [BlockRotationData.uniform_volume (M*B) _ (by
+      intro xs hx
+      obtain ⟨i,rfl⟩ := List.mem_ofFn.mp hx
+      rw [BlockNegationData.payload_length,BlockRotationData.uniform_volume B _ (FiberLayoutData.fiber_uniform word i),
+        FiberLayoutData.fiber_length]),List.length_ofFn]
+  obtain ⟨z,D,m,hz,hm,ret,out,_⟩ := returnLeafBits_exec hP hM hB body negationReturnPorts b J
+    (List.ofFn word) (negateLeafHead word) List.length_ofFn length dst src (by
+      intro i x
+      have same := embOvr_off H.get S (j := i.natAdd 9) (e := bank)
+        (by intro j; exact (by decide : ∀ (k : Fin 9) (l : Fin 6), k.castAdd 6 ≠ l.natAdd 9) j i)
+      have port : negationReturnPorts (Fin.natAdd 2 i) = i.natAdd 9 := (by decide : ∀ j, negationReturnPorts (Fin.natAdd 2 j) = j.natAdd 9) i
+      rw [port,same.1,same.2]
+      exact controls i x)
+  exact ⟨z,D,_,hz.trans (hb.trans ha),Nat.add_le_add (Nat.add_le_add_left hn 1) hm,Exec.seq placed ret,out⟩
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
