@@ -101,6 +101,39 @@ noncomputable def signedPassWork (table : Matrix (Fin r) (Fin r) (ZMod prime) �
   3*parents*(LabelTraversal.time (prime^w) (r*r) 1+5) +
     parents*(prime^w)^(r*r)*perClass + 4*records*((prime^(w+1))^(d+1)*W)
 
+/-- Only invertible classes pay the residual volume charge in the physical pass. -/
+theorem signedPassWork_le_setup_add_volume (U : Type) (d w : ℕ) :
+    ∃ rate : ℕ, ∀ {r : ℕ} (table : Matrix (Fin r) (Fin r) (ZMod prime) →
+      Matrix (Fin (d+1)) (Fin (d+1)) (ZMod prime)) T parents records W H J,
+      let xs := LabelSelectors.classes 1 (r*r)
+      let live := xs.countP fun x => decide ((LabelSelectors.matrix r x).det ≠ 0)
+      signedPassWork table T parents records w W H J U ≤
+        signedPassWork table T parents records w 0 H J U +
+          (parents*(prime^w)^(r*r)*((xs.map (classVolumeRate table T)).sum + live*rate) +
+            4*records) * ((prime^(w+1))^(d+1)*W) := by
+  obtain ⟨rate, kernel⟩ := signedResidualTime_le_setup_add_volume U d w
+  refine ⟨rate, ?_⟩
+  intro r table T parents records W H J xs live
+  let V := (prime^(w+1))^(d+1)*W
+  have classes (ys : List (Fin (r*r) → ZMod prime)) :
+      (ys.map (classResidualCost table T w W H J U)).sum ≤
+        (ys.map (classResidualCost table T w 0 H J U)).sum +
+        (ys.countP fun x => decide ((LabelSelectors.matrix r x).det ≠ 0)) * rate * V := by
+    induction ys with
+    | nil => simp
+    | cons x ys ih =>
+      have h := kernel (classPivots (table (LabelSelectors.matrix r x))) W H J
+      by_cases zero : (LabelSelectors.matrix r x).det = 0
+      all_goals
+        simp [classResidualCost, zero, Nat.add_mul] at *
+        dsimp [V] at *
+        omega
+  unfold signedPassWork
+  dsimp only [xs, live, V] at *
+  simp only [Nat.mul_zero, Nat.zero_mul, Nat.zero_add, Nat.add_zero]
+  grw [classes]
+  exact le_of_eq (by ring)
+
 omit [M8.Machine.Net] in
 private theorem collectPassCost (parents traversal lifts volume : ℕ) (xs : List α) (anchor scan : α → ℕ) :
     (1+(parents*traversal+4 + (parents*lifts*(xs.map anchor).sum+2) + (2*volume+2))) +
