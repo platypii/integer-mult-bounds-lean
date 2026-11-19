@@ -847,6 +847,18 @@ private theorem packedPayload (records width : ℕ) (word : ℕ → Fin width �
   rfl
 
 omit [M8.Machine.Net] in
+private theorem payload_eq_of_reads {volume : ℕ} (before packed : Fin volume → Fin 4)
+    (source : ℤ → Fin 4) (p : ℤ) (left tail : List (Fin (prime+4)))
+    (reads : ∀ k, RadixToBinary.binaryEncoding.encode (putWord source p (List.ofFn before) k) =
+      readAt blank left (payloadWord packed ++ tail) (k-p)) : before = packed := by
+  funext i
+  have cell := reads (p+i.val)
+  rw [BinaryDivide.putWord_getElem _ _ _ _ (by simpa using i.isLt),add_sub_cancel_left,
+    readAt_nonneg,List.getElem?_append_left (by simpa [payloadWord] using i.isLt)] at cell
+  apply Fin.ext
+  simpa [payloadWord,i.isLt,RadixToBinary.binaryEncoding] using congrArg Fin.val cell
+
+omit [M8.Machine.Net] in
 private theorem returnedPayload_reads {volume : ℕ} (out : Fin volume → Fin 4)
     (source : ℤ → Fin 4) (p : ℤ) (left old tail : List (Fin (prime+4))) (len : old.length = volume)
     (outside : ∀ k, k < p ∨ p+volume ≤ k →
@@ -920,6 +932,22 @@ structure SeededQueueReady (w H : ℕ) (proj : Matrix (Fin r) (Fin r) ℚ)
   empty : S.R (archive) = []
   output : S.R (bank 13) = []
 
+/-- Directory entries use the generator's width and queue and the label counter's
+parent tape. The other twelve registers belong to the directory. -/
+def directorySlots : Fin 15 ↪ Fin 12 ⊕ Fin 3 :=
+  ⟨![.inl 0,.inr 0,.inl 1,.inl 2,.inl 3,.inl 4,.inl 5,.inl 6,
+     .inl 7,.inr 1,.inl 8,.inl 9,.inl 10,.inl 11,.inr 2],by decide⟩
+
+def placedDirectory (work : Fin 12 ↪ Fin K) (shared : Fin 3 ↪ Fin K)
+    (apart : ∀ i j, work i ≠ shared j) : Fin 15 ↪ Fin K :=
+  directorySlots.trans ⟨Sum.elim work shared,by
+    intro x y h
+    cases x <;> cases y
+    · exact congrArg Sum.inl (work.injective h)
+    · exact False.elim (apart _ _ h)
+    · exact False.elim (apart _ _ h.symm)
+    · exact congrArg Sum.inr (shared.injective h)⟩
+
 theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size d+T) ↪ Fin K)
     (ports : Fin (N+2) ↪ Fin K) (ext : Fin 6 ↪ Fin K) (off : ∀ i k, ports i ≠ ext k)
     (banks : ∀ i k, anchor i ≠ ports k) (external : ∀ i k, k ≠ 2 → anchor i ≠ ext k)
@@ -964,11 +992,19 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
       change 18+k.val = (coefficientSlots (extra := (conjugationDepth r+1)*13) i j l).val at eq
       fin_cases l <;> simp [coefficientSlots, Matrix.cons_val] at eq <;> (try split_ifs at *) <;> omega
     ∀ (maskLayout : (parentsC :: savedC :: (slots cs ++ [mask])).Nodup),
-    (∀ k ∈ parentsC :: savedC :: slots cs, k ≠ bank 2 ∧ k ≠ archive) →
+    ∀ (retained : ∀ k ∈ parentsC :: savedC :: slots cs, k ≠ bank 2 ∧ k ≠ archive),
     (∀ i, anchor i ≠ bank 2) → (∀ i, ports i ≠ bank 2) → (∀ i, ext i ≠ bank 2) →
-    ∃ writeMask : Pr P K Q prime U, ∀ (directoryPorts : Fin 15 ↪ Fin K), directoryPorts 14 = bank 2 →
-    let dir := directoryPorts.trans (Equiv.swap (directoryPorts 9) parentsC).toEmbedding
-    dir 1 = bank 12 → dir 1 ∉ slots cs →
+    ∃ writeMask : Pr P K Q prime U, ∀ (work : Fin 12 ↪ Fin K)
+      (widthOff : bank 12 ≠ parentsC),
+    let sharedPorts : Fin 3 ↪ Fin K := ⟨![bank 12,parentsC,bank 2],by
+      have parentOff := (retained parentsC (by simp)).1
+      have parentWidth := widthOff.symm
+      have queueParent := parentOff.symm
+      intro i j h
+      fin_cases i <;> fin_cases j <;> simp_all [Matrix.cons_val,bank.injective.eq_iff]⟩
+    ∀ (apart : ∀ i j, work i ≠ sharedPorts j), (∀ i, work i ≠ ext 2) →
+    let dir := placedDirectory work sharedPorts apart
+    bank 12 ∉ slots cs →
     let atom := bank 1
     ∀ (one : Fin K), (∀ i, atom ≠ dir i) → (∀ i, one ≠ dir i) →
     [one,atom,dir 7,dir 2,dir 3,dir 5].Nodup → (dir 7 :: dir 2 :: slots cs).Nodup →
@@ -1015,17 +1051,16 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
       (signedPassTime U r d T v w W a.H a.J B width rate) u raw input (fun F => proj = 1 →
         ∃ out : Fin (base.records*(M^(d+1)*W)) → Fin 4,
           F.R (ext 2) = payloadWord out ++ base.inputTail ∧
-          (∀ (source : ℤ → Fin 4) (p : ℤ),
-            (∀ k, k < p ∨ p+(base.records*(M^(d+1)*W) : ℕ) ≤ k →
-              RadixToBinary.binaryEncoding.encode (source k) = readAt blank (raw.L (ext 2))
-                (input.R (ext 2)) (k-p)) →
-            ∀ k, RadixToBinary.binaryEncoding.encode (putWord source p (List.ofFn out) k) =
+          ∀ (source : ℤ → Fin 4) (p : ℤ) (before : Fin (base.records*(M^(d+1)*W)) → Fin 4),
+            (∀ k, RadixToBinary.binaryEncoding.encode (putWord source p (List.ofFn before) k) =
+              readAt blank (raw.L (ext 2)) (raw.R (ext 2)) (k-p)) →
+            (∀ k, RadixToBinary.binaryEncoding.encode (putWord source p (List.ofFn out) k) =
               readAt blank (F.L (ext 2)) (F.R (ext 2)) (k-p)) ∧
           ∀ (j : Fin base.records) (x : Fin (d+1) → ZMod M) (k : Fin W),
             let child := Weighted.child r α α' (x ∘ e ∘ Sum.inl, x ∘ e ∘ Sum.inr)
             let address := Sum.elim child.1 child.2 ∘ e.symm
             out (finProdFinEquiv (j,FlatCoordinateLayout.index address k)) =
-              SparseRoleCircuit.encode (base.input j (FlatCoordinateLayout.index x k))) := by
+              before (finProdFinEquiv (j,FlatCoordinateLayout.index x k))) := by
   intro swaps shears rate
   obtain ⟨pass,run⟩ := physicalSignedResidualPass (w := w) (W := W) regs anchor ports ext off banks external shared
     capacity e proj idempotent admissible α α' inverse body rs hk parents saved layout cap cs sizeC
@@ -1035,7 +1070,7 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     coeffOff maskLayout retained anchorDirectory portDirectory extDirectory
   obtain ⟨writeMask,write⟩ := record_writes (body := body) r cs sizeC mask parentsC savedC maskLayout
   refine ⟨writeMask,?_⟩
-  intro directoryPorts directorySlot dir parentWidthPort parentWidthOff atom one atomOff oneOff highLayout highSlots br rows bh dimensions word parentTail v B base payload u raw positiveDescriptor beforeRows rowsSize beforeH parentBlank source n box parentWidth digits ancestor tail entries counted builtState input atomWord oneWidth parentsWord wordWidth scratch counterEmpty savedBlank maskBlank bits selected oneBlank unitWord masked zeroBlank initial padWord S queueInputs scan generate a shape records hW D
+  intro work widthOff sharedPorts apartDir payloadApart dir parentWidthOff atom one atomOff oneOff highLayout highSlots br rows bh dimensions word parentTail v B base payload u raw positiveDescriptor beforeRows rowsSize beforeH parentBlank source n box parentWidth digits ancestor tail entries counted builtState input atomWord oneWidth parentsWord wordWidth scratch counterEmpty savedBlank maskBlank bits selected oneBlank unitWord masked zeroBlank initial padWord S queueInputs scan generate a shape records hW D
     neutral radix free count width unsigned clean start hm hw fresh maskEmpty encoded padding
   let units := ∏ i : Fin r, (prime^r-prime^i.val)
   let classes := prime^(r*r)
@@ -1065,11 +1100,26 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
   have bankKeep (k : Fin 18) : S.R (bank k) = initial.R (bank k) :=
     Function.update_of_ne (apart _ 1) _ _
   have tmpKeep : S.R tmp = initial.R tmp := Function.update_of_ne (control.injective.ne (by decide : (2 : Fin 3) ≠ 1)) _ _
-  have parentPort : dir 9 = parentsC := Equiv.swap_apply_left ..
-  have dirSlot : dir 14 = bank 2 := by
-    change Equiv.swap (directoryPorts 9) parentsC (directoryPorts 14) = _
-    rw [Equiv.swap_apply_of_ne_of_ne (directoryPorts.injective.ne (by decide : (14 : Fin 15) ≠ 9))
-      (directorySlot ▸ (retained parentsC (by simp)).1.symm),directorySlot]
+  have parentPort : dir 9 = parentsC := rfl
+  have dirSlot : dir 14 = bank 2 := rfl
+  have parentWidthPort : dir 1 = bank 12 := rfl
+  have payloadOff (i : Fin 15) (hi : i ∈ ([0,4,7,10,11,12] : List (Fin 15))) : ext 2 ≠ dir i := by
+    obtain ⟨k,hk⟩ := (by decide : ∀ i ∈ ([0,4,7,10,11,12] : List (Fin 15)),
+      ∃ k, directorySlots i = Sum.inl k) i hi
+    exact (show dir i = work k from congrArg (Sum.elim work sharedPorts) hk) ▸ (payloadApart k).symm
+  have payloadCounter : ext 2 ∉ cs.map Prod.fst := by
+    intro mem
+    obtain ⟨pair,hp,eq⟩ := List.mem_map.mp mem
+    have slot : ext 2 ∈ slots cs := eq ▸ List.mem_flatMap.mpr ⟨pair,hp,by simp⟩
+    exact separate _ (by simp [slot]) _ shared
+  have payloadParent : ext 2 ≠ dir 9 := by
+    rw [parentPort]
+    exact (shared ▸ separate parentsC (by simp) (port d regs 1))
+  have payloadDirectory : ext 2 ≠ dir 14 := dirSlot ▸ extDirectory 2
+  have payloadFrame : input.R (ext 2) = raw.R (ext 2) := by
+    simp [input,LabelCountBank.fill,payloadCounter,builtState,counted,LabelDirectorySetup.prepared,
+      source,payloadParent,payloadDirectory,payloadOff 0 (by decide),payloadOff 4 (by decide),
+      payloadOff 7 (by decide),payloadOff 10 (by decide),payloadOff 11 (by decide),payloadOff 12 (by decide)]
   have parentSize : n = v.beforeRows*v.rows*B := by simp [n,source]
   have fillKeep (i : Fin 15) (hi : i ≠ 7) (off : dir i ∉ slots cs) : input.R (dir i) = builtState.R (dir i) := by
     have outside : dir i ∉ cs.map Prod.fst := by
@@ -1386,32 +1436,39 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     let out := fun j => SparseRoleCircuit.encode (a := 0) ∘
       (if active j then imageWord (a.matrix j) (base.input j) else base.input j)
     have returned := queue.trans (congrArg (· ++ base.inputTail) (packedPayload base.records _ out))
-    refine ⟨_,returned,?_,?_⟩
-    · intro source p outside k
-      rw [returned,left]
-      have inputQueue : input.R (ext 2) = a.signed.flatMap payloadWord ++ a.inputTail := by
+    refine ⟨_,returned,?_⟩
+    intro source p before reads
+    let row := fun j => Record.scalarArray (payload j)
+    let packed := fun z : Fin (base.records*(M^(d+1)*W)) =>
+      row (finProdFinEquiv.symm z).1 (finProdFinEquiv.symm z).2
+    have inputQueue : raw.R (ext 2) = payloadWord packed ++ base.inputTail := by
+      rw [← payloadFrame]
+      have inputQ : input.R (ext 2) = a.signed.flatMap payloadWord ++ a.inputTail := by
         simpa only [installedInput,Function.update_of_ne (extArchive 2)] using queueInput
-      have length (words : List (Record.Array d 1 (w+1) W)) :
-          (words.flatMap payloadWord).length = words.length*(M^(d+1)*W) := by
-        induction words with
-        | nil => simp
-        | cons word words ih =>
-          have wordSize : (payloadWord word).length = M^(d+1)*W := by simp [payloadWord,ActualAffineScaling.modulus]
-          simp only [List.flatMap_cons,List.length_append,ih,wordSize,List.length_cons,Nat.add_mul,one_mul]
-          omega
-      have size := length a.signed
-      rw [show a.signed.length = a.records by rw [unsigned,List.length_map,List.length_range]] at size
-      rw [inputQueue] at outside
-      exact returnedPayload_reads _ source p _ _ _ size outside k
+      rw [inputQ,unsigned,List.flatMap_map]
+      apply congrArg (· ++ base.inputTail)
+      exact (show _ = (List.range base.records).flatMap (fun j => payloadWord (row j)) by
+        simp only [row,Record.payloadWord_scalarArray]; rfl).trans (packedPayload _ _ row)
+    rw [inputQueue] at reads
+    have same := payload_eq_of_reads before packed source p _ _ reads
+    constructor
+    · intro k
+      rw [returned,left]
+      refine returnedPayload_reads _ source p _ (payloadWord packed) _ (by simp [payloadWord]) ?_ k
+      intro j outside
+      have cell := reads j
+      rw [putWord_outside _ _ _ _ (by simpa only [List.length_ofFn] using outside)] at cell
+      exact cell
+    rw [same]
     intro j x k
-    simp only [Equiv.symm_apply_apply]
+    simp only [packed,row,Equiv.symm_apply_apply,encoded j j.isLt,Function.comp_apply]
     let child := Weighted.child r α α' (x ∘ e ∘ Sum.inl, x ∘ e ∘ Sum.inr)
     let address := Sum.elim child.1 child.2 ∘ e.symm
     cases live : active j with
     | true =>
       have cell := base.physicalIdentity_bit e α α' inverse j live x k
       exact (show out j (FlatCoordinateLayout.index address k) = _ by
-        simp only [out,live,ite_true,Function.comp_apply]; rw [cell])
+        simp only [out,live,ite_true,Function.comp_apply]; rw [cell]; rfl)
     | false =>
       obtain ⟨symbol,constant⟩ := padding j j.isLt live
       have same := (encoded j j.isLt).symm.trans constant
