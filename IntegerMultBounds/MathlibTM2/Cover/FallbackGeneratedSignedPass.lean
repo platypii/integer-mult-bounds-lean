@@ -457,6 +457,56 @@ noncomputable def signedClassSetup (U : Type) (d T w H classes live : ℕ) :=
   let kernel := Finset.univ.sup fun r => signedResidualTime U (fun _ : Fin (d+1) => r) w 0 H 0
   classes*(size d+3*T+34+(d+1)*(d+1)*(4*H+4)+padding) + live*(7+kernel-padding)
 
+omit [M8.Machine.Net] in
+private theorem cube_le_three_pow (a : ℕ) : a^3 ≤ 3^a := by
+  induction a with
+  | zero => decide
+  | succ a ih =>
+    match a with
+    | 0 | 1 | 2 => decide
+    | n+3 =>
+      rw [pow_succ 3]
+      apply le_trans _ (Nat.mul_le_mul_right 3 ih)
+      ring_nf
+      omega
+
+/-- With the binary modulus width, the extra setup for each live class
+fits in one record of unit payload. -/
+theorem signedClassSetup_volume_le (U : Type) (d : ℕ) :
+    ∃ C : ℕ, ∀ T w classes live,
+      let H := Nat.size (prime^(w+1))
+      signedClassSetup U d T w H classes live ≤
+        classes*(size d+3*T+34+(d+1)*(d+1)*(4*H+4)+(4*(d+1)*(d+1)+1)) +
+          live*(C*(prime^(w+1))^(d+1)) := by
+  obtain ⟨c,hc⟩ := signedResidualTime_setup_le U d
+  refine ⟨7+2*c*(Nat.size prime+1)^2, ?_⟩
+  intro T w classes live H
+  have bits : H ≤ (w+1)*Nat.size prime := by
+    apply Nat.size_le.mpr
+    rw [Nat.mul_comm, pow_mul]
+    exact Nat.pow_lt_pow_left (Nat.size_le.mp (le_refl (Nat.size prime))) (by omega)
+  have field : H+1 ≤ (w+1)*(Nat.size prime+1) := by rw [Nat.mul_add, Nat.mul_one]; omega
+  have cube : (w+1)^3 ≤ prime^(w+1) := (cube_le_three_pow _).trans
+    (Nat.pow_le_pow_left Networks.Shared50ModularControl.prime_odd _)
+  have prefixPos : 1 ≤ (prime^(w+1))^d := pow_pos (pow_pos Networks.Shared50ModularControl.prime_prime.pos _) _
+  have kernel := Finset.sup_le (s := Finset.univ) (f := fun r =>
+    signedResidualTime U (fun _ : Fin (d+1) => r) w 0 H 0) (fun r _ => hc (fun _ => r) w H)
+  unfold signedClassSetup
+  apply Nat.add_le_add_left
+  apply Nat.mul_le_mul_left
+  apply (Nat.sub_le _ _).trans
+  grw [kernel, field]
+  rw [pow_succ (prime^(w+1)) d]
+  have factor : w+1+(prime^(w+1))^d ≤ 2*(w+1)*(prime^(w+1))^d := by
+    nlinarith [Nat.mul_le_mul_left (w+1) prefixPos]
+  grw [factor]
+  calc
+    _ = 7 + 2*c*(Nat.size prime+1)^2*(prime^(w+1))^d*(w+1)^3 := by ring
+    _ ≤ _ := by
+      grw [cube]
+      have pos := Nat.mul_pos prefixPos (pow_pos Networks.Shared50ModularControl.prime_prime.pos (w+1))
+      nlinarith
+
 private theorem classSetup_sum_le (table : Matrix (Fin r) (Fin r) (ZMod prime) →
     Matrix (Fin (d+1)) (Fin (d+1)) (ZMod prime)) (U : Type) (T w H : ℕ) :
     ((LabelSelectors.classes 1 (r*r)).map (classResidualCost table T w 0 H 0 U)).sum ≤
@@ -556,19 +606,8 @@ theorem matrixBuildCost_volume_le (v : Descriptor) (positive : v.Positive)
     prime^v.width * (live * (matrixBuildCost r d 1 1 * (w+1)*(H+1)^2)) ≤
       matrixBuildCost r d 1 1 * (Nat.size prime+1)^2 * volume prime v := by
   intro H
-  have cubic (a : ℕ) : a^3 ≤ 3^a := by
-    induction a with
-    | zero => decide
-    | succ a ih =>
-      match a with
-      | 0 | 1 | 2 => decide
-      | n+3 =>
-        rw [pow_succ 3]
-        apply le_trans _ (Nat.mul_le_mul_right 3 ih)
-        ring_nf
-        omega
   have power : (w+1)^3 ≤ prime^v.width :=
-    (cubic _).trans ((Nat.pow_le_pow_left Networks.Shared50ModularControl.prime_odd _).trans
+    (cube_le_three_pow _).trans ((Nat.pow_le_pow_left Networks.Shared50ModularControl.prime_odd _).trans
       (Nat.pow_le_pow_right Networks.Shared50ModularControl.prime_prime.pos fits))
   have bits := (queueArchive_binaryWidth v positive d (w+1) (by omega) fits).2.1
   have field : H+1 ≤ (w+1)*(Nat.size prime+1) := by
