@@ -51,18 +51,18 @@ theorem scaleEntry_writes (body : P → Pr P T Q A U) (r : Fin 13 ↪ Fin T)
 def weightedEntry (offset : ℕ) (r : Fin 14 ↪ Fin T) : Pr P T Q A U :=
   scaleEntry (readMatrixWord offset (weightedReadPorts.trans r)) ((Fin.castLEEmb (by decide)).trans r)
 
-theorem weightedEntry_writes (body : P → Pr P T Q A U) (r : Fin 14 ↪ Fin T)
-    (B : Matrix (Fin d) (Fin d) (ZMod M)) (i j : Fin d) (weight : ZMod M) (H : ℕ) (hm : M < 2^H)
+theorem weightedEntry_writes {e : ℕ} (body : P → Pr P T Q A U) (r : Fin 14 ↪ Fin T)
+    (B : Matrix (Fin d) (Fin e) (ZMod M)) (i : Fin d) (j : Fin e) (weight : ZMod M) (H : ℕ) (hm : M < 2^H)
     (tail : List (Fin (A+4))) :
     Writes body (fun R => R (r 13) = matrixWords A H B ++ tail ∧ R (r 0) = binSyms H weight.val ∧
       R (r 2) = binSyms H M ∧ ∀ k : Fin 14, k = 1 ∨ 4 ≤ k ∧ k < 12 → R (r k) = [])
-      (r 3) (weightedEntry (i.val*d+j.val) r) (binSyms H (weight * B i j).val)
-      (8*((i.val*d+j.val)*H)+48*H*H+166*H+88) := by
+      (r 3) (weightedEntry (i.val*e+j.val) r) (binSyms H (weight * B i j).val)
+      (8*((i.val*e+j.val)*H)+48*H*H+166*H+88) := by
   intro v S ⟨matrix,coeff,modulus,free⟩
   have scratch : ∀ k : Fin 7, k = 0 ∨ 4 ≤ k → 4 ≤ weightedReadPorts k ∧ weightedReadPorts k < 12 := by decide
   let bank : Fin 13 ↪ Fin T := (Fin.castLEEmb (by decide)).trans r
-  let cost := 8*((i.val*d+j.val)*H)+14*H+22
-  have emit : Writes body (fun R => R = S.R) (bank 1) (readMatrixWord (i.val*d+j.val) (weightedReadPorts.trans r))
+  let cost := 8*((i.val*e+j.val)*H)+14*H+22
+  have emit : Writes body (fun R => R = S.R) (bank 1) (readMatrixWord (i.val*e+j.val) (weightedReadPorts.trans r))
       (binSyms H (B i j).val) cost := by
     intro z F eq
     obtain ⟨y,hy,run⟩ := readMatrixWord_exec body (weightedReadPorts.trans r) B i j H z F tail (eq ▸ matrix)
@@ -75,5 +75,18 @@ theorem weightedEntry_writes (body : P → Pr P T Q A U) (r : Fin 14 ↪ Fin T)
       · subst k; decide
       · exact .inr ⟨h.1,h.2⟩)⟩
   exact ⟨z,n,hz,by dsimp [cost] at hn; omega,run⟩
+
+/-- Multiply the incoming weight by the selected pivot in the packed child record. -/
+theorem childWeight_writes (body : P → Pr P T Q A U) (r : Fin 14 ↪ Fin T)
+    (pivot : Fin d → ZMod M) (i : Fin d) (weight : ZMod M) (H : ℕ) (hm : M < 2^H)
+    (tail : List (Fin (A+4))) :
+    Writes body (fun R => R (r 13) = (List.ofFn fun j => binSyms H (pivot j).val).flatten ++ tail ∧
+      R (r 0) = binSyms H weight.val ∧ R (r 2) = binSyms H M ∧
+      ∀ k : Fin 14, k = 1 ∨ 4 ≤ k ∧ k < 12 → R (r k) = [])
+      (r 3) (weightedEntry i.val r) (binSyms H (weight * pivot i).val)
+      (8*(i.val*H)+48*H*H+166*H+88) := by
+  let row : Matrix (Fin 1) (Fin d) (ZMod M) := fun _ j => pivot j
+  simpa [matrixWords, List.ofFn_succ, row] using
+    weightedEntry_writes body r row 0 i weight H hm tail
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback

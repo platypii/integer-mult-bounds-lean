@@ -23,27 +23,27 @@ private theorem splitBlocks {α : Type} {d H : ℕ} (f : Fin d → List α)
       exact ⟨f 0 ++ pre,post,by simp [h,List.append_assoc],
         by simp [width,len,Nat.succ_mul,Nat.add_comm]⟩
 
-def matrixWords {d M : ℕ} [NeZero M] (A H : ℕ) (m : Matrix (Fin d) (Fin d) (ZMod M)) :=
+def matrixWords {d e M : ℕ} [NeZero M] (A H : ℕ) (m : Matrix (Fin d) (Fin e) (ZMod M)) :=
   (List.ofFn fun i => (List.ofFn fun j => binSyms (A := A) H (m i j).val).flatten).flatten
 
-theorem matrixRead_exec {T Q A d M : ℕ} [NeZero M] {P U : Type} (body : P → Pr P T Q A U)
+theorem matrixRead_exec {T Q A d e M : ℕ} [NeZero M] {P U : Type} (body : P → Pr P T Q A U)
     {skip width src dst savedPrefix savedWord tmp : Fin T}
     (regs : [skip,width,src,dst,savedPrefix,savedWord,tmp].Nodup)
-    (m : Matrix (Fin d) (Fin d) (ZMod M)) (i j : Fin d) (H : ℕ)
+    (m : Matrix (Fin d) (Fin e) (ZMod M)) (i : Fin d) (j : Fin e) (H : ℕ)
     (v : HS T Q A U) (S : Stacks T A) (tail : List (Fin (A+4)))
     (matrix : S.R src = matrixWords A H m ++ tail)
-    (offset : (S.R skip).length = (i.val*d+j.val)*H) (hw : (S.R width).length = H)
+    (offset : (S.R skip).length = (i.val*e+j.val)*H) (hw : (S.R width).length = H)
     (hp : S.R savedPrefix = []) (hs : S.R savedWord = []) (ht : S.R tmp = []) :
     ∃ z, z.user = v.user ∧
       Exec body (copyAfterPrefix skip width src dst savedPrefix savedWord tmp) (mk v S)
-        (6*((i.val*d+j.val)*H)+10*H+16)
+        (6*((i.val*e+j.val)*H)+10*H+16)
         (mk z {S with R := Function.update S.R dst (binSyms H (m i j).val ++ S.R dst)}) := by
   let word := fun a b => binSyms (A := A) H (m a b).val
   let row := fun a => (List.ofFn (word a)).flatten
-  have rowLen (a) : (row a).length = d*H := by simp [row,word,List.length_flatten,List.map_ofFn,Function.comp_def,length_binSyms,List.ofFn_const]
+  have rowLen (a) : (row a).length = e*H := by simp [row,word,List.length_flatten,List.map_ofFn,Function.comp_def,length_binSyms,List.ofFn_const]
   obtain ⟨rows,rest,hr,lr⟩ := splitBlocks row rowLen i
   obtain ⟨cols,last,hc,lc⟩ := splitBlocks (word i) (fun _ => length_binSyms ..) j
-  have len : (rows ++ cols).length = (i.val*d+j.val)*H := by
+  have len : (rows ++ cols).length = (i.val*e+j.val)*H := by
     simp [lr,lc,Nat.add_mul,Nat.mul_assoc]
   change S.R src = (List.ofFn row).flatten ++ tail at matrix
   change row i = _ at hc
@@ -59,20 +59,20 @@ def readMatrixWord (index : ℕ) (r : Fin 7 ↪ Fin T) : Pr P T Q A U :=
   .seq (umul index (r 1) (r 0) (r 6))
     (.seq (copyAfterPrefix (r 0) (r 1) (r 2) (r 3) (r 4) (r 5) (r 6)) (uclear (r 0)))
 
-theorem readMatrixWord_exec {d M : ℕ} [NeZero M] (body : P → Pr P T Q A U)
-    (r : Fin 7 ↪ Fin T) (m : Matrix (Fin d) (Fin d) (ZMod M)) (i j : Fin d) (H : ℕ)
+theorem readMatrixWord_exec {d e M : ℕ} [NeZero M] (body : P → Pr P T Q A U)
+    (r : Fin 7 ↪ Fin T) (m : Matrix (Fin d) (Fin e) (ZMod M)) (i : Fin d) (j : Fin e) (H : ℕ)
     (v : HS T Q A U) (S : Stacks T A) (tail : List (Fin (A+4)))
     (matrix : S.R (r 2) = matrixWords A H m ++ tail) (hw : (S.R (r 1)).length = H)
     (fresh : ∀ k : Fin 7, k = 0 ∨ 4 ≤ k → S.R (r k) = []) :
     ∃ z, z.user = v.user ∧
-      Exec body (readMatrixWord (i.val*d+j.val) r) (mk v S)
-        (8*((i.val*d+j.val)*H)+14*H+22)
+      Exec body (readMatrixWord (i.val*e+j.val) r) (mk v S)
+        (8*((i.val*e+j.val)*H)+14*H+22)
         (mk z {S with R := Function.update S.R (r 3) (binSyms H (m i j).val ++ S.R (r 3))}) := by
-  let n := (i.val*d+j.val)*H
+  let n := (i.val*e+j.val)*H
   let D : Stacks T A := {S with R := Function.update S.R (r 0) (List.replicate n tick)}
   have keep (k : Fin 7) (h : k ≠ 0) : D.R (r k) = S.R (r k) :=
     Function.update_of_ne (r.injective.ne h) _ _
-  obtain ⟨u,hu,setup⟩ := umul_exec body (i.val*d+j.val) (a := r 1) (b := r 0) (t := r 6)
+  obtain ⟨u,hu,setup⟩ := umul_exec body (i.val*e+j.val) (a := r 1) (b := r 0) (t := r 6)
     (r.injective.ne (by decide)) (r.injective.ne (by decide)) (r.injective.ne (by decide))
     v S (fresh 6 (by decide))
   rw [hw,fresh 0 (by decide),List.append_nil] at setup
