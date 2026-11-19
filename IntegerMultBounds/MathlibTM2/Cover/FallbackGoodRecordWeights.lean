@@ -1,0 +1,130 @@
+module
+
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackPhysicalLabel
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackPairWeights
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackRecordWeights
+
+/-! The physical good branch uses the elimination pivots as child weights. -/
+@[expose] public section
+namespace IntegerMultBounds.MathlibTM2.Cover.Fallback
+open IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2.Stack Host
+open IntegerMultBounds.Networks.Shared50ModularControl (prime prime_prime)
+open Matrix Finset IntegerMultBounds.Swap.LowerTriangular IntegerMultBounds.Swap.Modular
+  IntegerMultBounds.Swap.Shear M8.Exchange M8.ReversedExchange
+variable {m T Q A w : ℕ} {P U : Type}
+local notation "M" => prime^(w+1)
+local instance : NeZero M := ⟨(pow_pos prime_prime.pos _).ne'⟩
+
+def goodChildPorts : Fin 20 ↪ Fin 24 :=
+  ⟨![0,1,3,4,2,5,6,7,8,9,10,11,12,13,17,20,22,21,14,23],by decide⟩
+
+/-- On a good record the words emitted by elimination are precisely the
+diagonal corrections in the one-child move. Each active child coordinate can
+then read its product weight and reciprocal from the parent and pivot tapes. Tapes outside the pivot
+archive and weight output are preserved. -/
+theorem goodRecordWeights_exec (body : P → Pr P T Q A U) (ports : Fin 24 ↪ Fin T)
+    (proj : Matrix (Fin m) (Fin m) ℚ) (idem : proj*proj = proj)
+    (f : Factorization univ univ proj) (hd : ∀ d ∈ factorizationDenominators f, d < prime)
+    (fits : proj.rank ≤ m) (j H : ℕ) (hm : M < 2^H)
+    (live : LabelStock.live m (w+1) 1 j = true)
+    (α α' : Fin m → ZMod M) (inv : ∀ i, α i * α' i = 1)
+    (v : HS T Q A U) (S : Stacks T A) (tail : List (Fin (A+4))) :
+    let bank := (Fin.castLEEmb (by decide : 23 ≤ 24)).trans ports
+    let child := goodChildPorts.trans ports
+    let g := physicalLabel m (w+1) j
+    let G := g*reduce M proj*g⁻¹
+    fallbackBit fits (reduce M proj) g = false →
+    S.R (bank 15) = matrixWords A H G ++ tail → S.R (bank 2) = binSyms H M →
+    S.R (bank 20) = binSyms H (1 : ZMod M).val → (S.R (bank 22)).length = w →
+    (∀ i : Fin 23, (i < 15 ∧ i ≠ 2) ∨ (17 ≤ i ∧ i ≤ 19) ∨ i = 21 → S.R (bank i) = []) →
+    ∃ minor : ∀ k (hk : k < proj.rank), IsUnit (GoodForm.lead (k+1) (lt_of_lt_of_le hk fits) G).det,
+    let stage := GoodForm.stageAt G proj.rank fits minor proj.rank le_rfl
+    let δ := fun i : Fin m => if i.val < proj.rank then stage.M i i else 1
+    let δ' := fun i : Fin m => if i.val < proj.rank then Ring.inverse (stage.M i i) else 1
+    let R := rev m * stage.U * rev m
+    let R' := rev m * stage.U' * rev m
+    let K := kMat (pivotMatrix (revPivots m proj.rank)) (R * rev m * (stage.L * diagonal δ)) *
+      diagonal fun i => α' i * δ' i
+    ∃ z F l,
+      z.user = v.user ∧ l ≤ proj.rank*(4*w+4+columnTime m prime w H)+1 +
+        (proj.rank*(8*(m*m*H)+14*H+22)+1) ∧
+      Exec body (goodWeights prime proj.rank fits bank) (mk v S) l (mk z F) ∧
+      F.R (bank 14) = (List.ofFn fun i : Fin proj.rank => binSyms H (δ (i.castLE fits)).val).flatten ∧
+      (F.R (stageBank bank proj.rank 15), F.R (stageBank bank proj.rank 16)) =
+        matrixArchive (fun k => if hk : k ≤ proj.rank then
+          matrixWords A H (GoodForm.stageAt G proj.rank fits minor k hk).M else [])
+          (S.R (bank 15)) (S.R (bank 16)) proj.rank ∧
+      F.L = S.L ∧ F.inp = S.inp ∧ F.out = S.out ∧
+      (∀ i, i ≠ bank 14 → i ≠ stageBank bank proj.rank 15 → i ≠ stageBank bank proj.rank 16 → F.R i = S.R i) ∧
+      (∀ i : Fin proj.rank, ∀ rest : List (Fin (A+4)),
+        S.R (ports 23) = (List.ofFn fun k => binSyms H (α k).val).flatten ++ rest →
+        let C := 48*H*H+152*H+66
+        ∃ u D t, u.user = v.user ∧ t ≤ (8*(i.val*H)+14*H+22) +
+          ((8*(i.val*H)+48*H*H+166*H+88)+(6*w+6+(14*H+16+(prime-2)*C+C+w*(12*H+15+prime*C)))) +
+          (2*H+2) ∧ Exec body (packedChildPair prime i.val i.val child) (mk z F) t (mk u D) ∧
+          D.R (child 14) = binSyms H (α (i.castLE fits) * δ (i.castLE fits)).val ∧
+          D.R (child 0) = binSyms H (α' (i.castLE fits) * δ' (i.castLE fits)).val ∧
+          D.L = F.L ∧ D.inp = F.inp ∧ D.out = F.out ∧
+          ∀ k, k ≠ child 0 → k ≠ child 14 → D.R k = F.R k) ∧
+      (∀ i, δ i * δ' i = 1) ∧ ∀ s : State (Fin m) (ZMod M),
+        transform (diagonal α * stage.L * diagonal α') R'
+          (cross (-K) (Weighted.child proj.rank (fun i => α i * δ i) (fun i => α' i * δ' i)
+            (cross K (transform (diagonal α * stage.L' * diagonal α') R s)))) =
+          transform (diagonal α) 1 (revExchangeOf (rev m) G (transform (diagonal α') 1 s)) := by
+  classical
+  intro bank child g G clear matrix modulus one ticks free
+  have unit : IsUnit g := (physicalLabel_live (by omega) j).mp live
+  have minor (k) (hk : k < proj.rank) : IsUnit (GoodForm.lead (k+1) (lt_of_lt_of_le hk fits) G).det := by
+    by_contra bad
+    have selected : fallbackBit fits (reduce M proj) g = true :=
+      decide_eq_true ⟨unit,k,hk,bad⟩
+    simp [clear] at selected
+  refine ⟨minor,?_⟩
+  intro stage δ δ' R R' K
+  obtain ⟨z,F,l,user,time,run,words,_,archive,left,inp,out,frame⟩ := goodWeights_exec body bank prime w H
+    prime_prime G hm v S tail matrix modulus one ticks free proj.rank fits minor
+  obtain ⟨a,b,factor⟩ := LabelProjector.rank_factors proj f prime_prime hd (w+1) g
+  have adm : Admissible M proj := admissible_of_lt prime_prime
+    (fun d h => hd d (by simp [factorizationDenominators,h])) _
+  have square : reduce M proj * reduce M proj = reduce M proj := by rw [← reduce_mul _ adm adm,idem]
+  have idempotent : G*G = G := by
+    change (g*_ * g⁻¹)*(g*_ * g⁻¹) = _
+    calc
+      _ = g*(reduce M proj*(g⁻¹*g)*reduce M proj)*g⁻¹ := by simp only [Matrix.mul_assoc]
+      _ = _ := by rw [Matrix.nonsing_inv_mul g ((Matrix.isUnit_iff_isUnit_det g).mp unit),Matrix.mul_one,square]
+  obtain ⟨_,_,_,_,units,_⟩ := stage.normalForm fits a b factor
+  refine ⟨z,F,l,user,time,run,?_,archive,left,inp,out,frame,?_,units,stage.goodMove fits a b factor idempotent α α' inv⟩
+  · simpa only [δ,Fin.val_castLE,Fin.isLt,ite_true] using words
+  · intro i rest parent C
+    have unchanged (k : Fin 23) (a : k ≠ 14) (b : k ≠ 15) (c : k ≠ 16) :
+        F.R (bank k) = S.R (bank k) := by
+      have stable := stageBank_fixed bank proj.rank k b c
+      exact frame _ (bank.injective.ne a) (stable ▸ (stageBank bank proj.rank).injective.ne b)
+        (stable ▸ (stageBank bank proj.rank).injective.ne c)
+    have outside (k : Fin 23) : ports 23 ≠ bank k :=
+      ports.injective.ne ((by decide : ∀ j : Fin 23, (23 : Fin 24) ≠ j.castLE (Nat.le_succ 23)) k)
+    have apart (n : ℕ) (k : Fin 23) : ports 23 ≠ stageBank bank n k := by
+      induction n generalizing k with
+      | zero => exact outside k
+      | succ n ih => exact ih ((Equiv.swap 15 16) k)
+    have parentWord : F.R (child 19) = _ := (frame _ (outside 14) (apart _ 15) (apart _ 16)).trans parent
+    let pivot := fun k : Fin proj.rank => stage.M (k.castLE fits) (k.castLE fits)
+    have pivots : F.R (child 18) = (List.ofFn fun k => binSyms H (pivot k).val).flatten ++ [] := by
+      rw [show child 18 = bank 14 from rfl,List.append_nil]
+      exact words
+    have scratch (k : Fin 20) (hk : (k ≤ 14 ∧ k ≠ 4) ∨ k = 17) :
+        F.R (child k) = [] := by
+      have slots : ∀ k : Fin 20, (k ≤ 14 ∧ k ≠ 4) ∨ k = 17 →
+          ∃ j : Fin 23, goodChildPorts k = j.castLE (by decide) ∧ j ≠ 14 ∧ j ≠ 15 ∧ j ≠ 16 ∧
+            ((j < 15 ∧ j ≠ 2) ∨ (17 ≤ j ∧ j ≤ 19) ∨ j = 21) := by decide
+      obtain ⟨j,eq,h14,h15,h16,hfree⟩ := slots k hk
+      exact (congrArg (fun x => F.R (ports x)) eq).trans ((unchanged j h14 h15 h16).trans (free j hfree))
+    obtain ⟨u,D,t,hu,ht,run,pair,inverse,hL,hin,hout,kept⟩ := packedChildPair_exec body child α
+      (i.castLE fits) _ (inv _) pivot i (stage.unit _ i.isLt) prime_prime H hm z F [] rest parentWord pivots
+      ((unchanged 2 (by decide) (by decide) (by decide)).trans modulus)
+      ((unchanged 20 (by decide) (by decide) (by decide)).trans one)
+      ((congrArg List.length (unchanged 22 (by decide) (by decide) (by decide))).trans ticks) scratch
+    exact ⟨u,D,t,hu.trans user,ht,run,by simpa only [δ,Fin.val_castLE,Fin.isLt,ite_true] using pair,
+      by simpa only [δ',Fin.val_castLE,Fin.isLt,ite_true] using inverse,hL,hin,hout,kept⟩
+
+end IntegerMultBounds.MathlibTM2.Cover.Fallback
