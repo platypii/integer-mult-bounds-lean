@@ -3,7 +3,7 @@
 import gzip
 import hashlib
 import json
-from collections import Counter
+from collections import Counter, deque
 from functools import lru_cache
 from fractions import Fraction
 from itertools import permutations
@@ -251,7 +251,7 @@ def check_port_swap_distance(port_moves):
           "minimum of nine swaps on each port MOVE pattern.")
 
 
-def layout_components(register_count, cuts, gates, scatter_start, scatter_end, *, share_temps=False):
+def layout_components(register_count, cuts, gates, scatter_start, scatter_end, *, share_temps=False, transitions=None):
     """Return the equality classes at port boundaries when layouts can change at cuts."""
     current = list(range(register_count))
     parent = current.copy()
@@ -262,6 +262,7 @@ def layout_components(register_count, cuts, gates, scatter_start, scatter_end, *
             node = parent[node]
         return node
 
+    links = []
     temp_targets = {}
     for step, (target, sources) in enumerate(gates):
         if scatter_start <= step < scatter_end:
@@ -269,11 +270,14 @@ def layout_components(register_count, cuts, gates, scatter_start, scatter_end, *
             # Reusing that temporary requires all targets in its fanout to agree.
             if share_temps:
                 for source in sources:
+                    if source not in temp_targets:
+                        links.append((current[source], current[target], "COPY"))
                     first = temp_targets.setdefault(source, current[target])
                     parent[root(current[target])] = root(first)
             continue
         for register in [target, *sources]:
             if (step, register) in cuts:
+                links.append((current[register], len(parent), "MOVE"))
                 current[register] = len(parent)
                 parent.append(len(parent))
         # Each nonzero XOR coefficient requires the same extra layout as the target.
@@ -281,7 +285,49 @@ def layout_components(register_count, cuts, gates, scatter_start, scatter_end, *
             if sources.count(source) % 2:
                 parent[root(current[source])] = root(current[target])
 
+    if transitions is not None:
+        transitions.extend((root(i), root(j), kind) for i, j, kind in links)
     return [(root(r), root(current[r])) for r in range(222)]
+
+
+def minimum_layout_changes(boundary, transitions, copy_cost):
+    """Minimum count for two layouts; phase XOR equalities are already contracted."""
+    graph = {}
+
+    def edge(i, j, cap):
+        graph.setdefault(i, Counter())[j] += cap
+        graph.setdefault(j, Counter())[i] += cap
+
+    for i, j, kind in transitions:
+        if i != j:
+            edge(i, j, copy_cost if kind == "COPY" else 1)
+    source, sink = -1, -2
+    pin = len(transitions) + 1
+    for i, _ in boundary[:111]:
+        edge(source, i, pin)
+    for _, j in boundary[111:]:
+        edge(j, sink, pin)
+    flow = 0
+    while True:
+        parent = {source: source}
+        queue = deque([source])
+        while queue and sink not in parent:
+            i = queue.popleft()
+            for j, cap in graph[i].items():
+                if cap and j not in parent:
+                    parent[j] = i
+                    queue.append(j)
+        if sink not in parent:
+            cut = Counter(kind for i, j, kind in transitions if (i in parent) != (j in parent))
+            assert cut["MOVE"] + copy_cost * cut["COPY"] == flow
+            return flow, cut
+        j = sink
+        while j != source:
+            i = parent[j]
+            graph[i][j] -= 1
+            graph[j][i] += 1
+            j = i
+        flow += 1
 
 
 def main():
@@ -406,6 +452,16 @@ def main():
     print("The ten mandatory width-six cuts are 1-to-7 phase B MOVEs on target registers "
           + ", ".join(map(str, target_registers)) + ".")
     assert separates((cuts - six) | set(necessary))
+    transitions = []
+    boundary = layout_components(len(refs), move_widths, gates, scatter_start, scatter_end,
+                                 share_temps=True, transitions=transitions)
+    free_cost, free_cut = minimum_layout_changes(boundary, transitions, copy_cost=0)
+    paid_cost, paid_cut = minimum_layout_changes(boundary, transitions, copy_cost=1)
+    assert free_cost == paid_cost == 661
+    assert free_cut["MOVE"] == paid_cut["MOVE"] == 661 and paid_cut["COPY"] == 0
+    print("With layout changes available only at positive MOVEs and scatter COPYs, "
+          "separating the source inputs and target outputs requires 661 MOVE changes "
+          "even if every COPY layout change is free.")
     assert max_relation_denominator <= 2 ** 100
     print(f"Verified {relations} integral generator relations; maximum denominator: {max_relation_denominator}.")
     print("Verified nine rank-seven COPY prefixes and 527 zero-frame ADD targets.")
