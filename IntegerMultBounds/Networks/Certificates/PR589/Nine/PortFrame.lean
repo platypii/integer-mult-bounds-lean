@@ -73,6 +73,58 @@ def rho (c : PortCertificate) : Matrix (Fin 8 ⊕ Fin 7) (Fin 8 ⊕ Fin 7) ℚ :
 
 variable {c : PortCertificate}
 
+/-- Project onto the certified port line along the coordinate hyperplane at its first pivot.
+The two absorption identities identify the image with the original port projector's image. -/
+theorem exists_triangular_lineProj (h : c.Checked) :
+    ∃ (p : Fin 8) (U : Matrix (Fin 8) (Fin 8) ℚ), U.IsLowerTriangular ∧
+      U * c.lineProj = c.lineProj ∧ c.lineProj * U = U ∧ U * U = U ∧
+      ∀ i, U i i = if i = p then 1 else 0 := by
+  let support := Finset.univ.filter fun i => c.line i ≠ 0
+  have nonempty : support.Nonempty := by
+    by_contra hn
+    have zero (i) : c.line i = 0 := by
+      by_contra hi
+      exact hn ⟨i, Finset.mem_filter.mpr ⟨Finset.mem_univ _, hi⟩⟩
+    simpa [zero] using h.1
+  let p := support.min' nonempty
+  have hp : c.line p ≠ 0 := (Finset.mem_filter.mp (support.min'_mem nonempty)).2
+  have hpq : (c.line p : ℚ) ≠ 0 := by exact_mod_cast hp
+  let U : Matrix (Fin 8) (Fin 8) ℚ := of fun i j => if j = p then c.line i / (c.line p : ℚ) else 0
+  have project (M : Matrix (Fin 8) (Fin 8) ℚ) (i j) :
+      (U * M) i j = (c.line i / (c.line p : ℚ)) * M p j := by
+    simp [mul_apply, U, ite_mul]
+  refine ⟨p, U, ?_, ?_, ?_, ?_, ?_⟩
+  · intro i j hij
+    change i < j at hij
+    by_cases hj : j = p
+    · subst j
+      have hi : c.line i = 0 := by
+        by_contra nz
+        exact hij.not_ge (support.min'_le i (Finset.mem_filter.mpr ⟨Finset.mem_univ _, nz⟩))
+      simp [U, hi]
+    · simp [U, hj]
+  · ext i j
+    rw [project]
+    simp only [lineProj, of_apply]
+    field_simp
+  · ext i j
+    by_cases hj : j = p
+    · subst j
+      have norm := congrArg (Int.cast : ℤ → ℚ) h.1
+      push_cast at norm
+      simp only [mul_apply, lineProj, U, of_apply, ite_true, eq_self]
+      calc ∑ k, (c.line i : ℚ) * c.line k / 4 * (c.line k / c.line p) =
+          (c.line i / (4 * (c.line p : ℚ))) * ∑ k, (c.line k : ℚ) * c.line k := by
+            rw [Finset.mul_sum]
+            exact Finset.sum_congr rfl fun _ _ => by ring
+        _ = _ := by rw [norm]; ring
+    · simp [mul_apply, U, hj]
+  · ext i j
+    rw [project]
+    by_cases hj : j = p <;> simp [U, hj, hpq]
+  · intro i
+    by_cases hi : i = p <;> simp [U, hi, hpq]
+
 theorem lineProj_transpose : c.lineProjᵀ = c.lineProj := by
   ext i j
   simp only [transpose_apply, lineProj, of_apply]
