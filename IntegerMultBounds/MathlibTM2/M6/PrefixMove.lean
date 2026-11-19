@@ -3,6 +3,7 @@ module
 public import IntegerMultBounds.MathlibTM2.M6.PrefixLabel
 public import IntegerMultBounds.Networks.Certificates.PR589.Nine.PortFrame
 public import IntegerMultBounds.MathlibTM2.Cover.Weighted
+public import IntegerMultBounds.MathlibTM2.Routing.BlockExchangeIndex
 
 /-! A nested PR589 MOVE exchanges a single interval in triangular coordinates. -/
 @[expose] public section
@@ -54,6 +55,67 @@ theorem intervalSwaps_interchanges {R : Type*} (d e : ℕ) (hd : d ≤ 8) (he : 
       a.val ≤ k.val ∧ k.val < b.val).length = b.val - a.val := by decide +kernel
   simpa [intervalSwaps, coordinateSwaps, interchanges, Op.isInterchange, List.filter_map]
     using count ⟨d, by omega⟩ ⟨e, by omega⟩
+
+/-- With two consecutive eight-atom address halves, one block exchange performs
+all the interval swaps. Each atom occupies `w` consecutive positions, and `r`
+tracks a position within the atom on either half. -/
+theorem intervalSwaps_blockExchange (d e w : ℕ) (de : d ≤ e) (he : e ≤ 8)
+    (k : Fin 8) (r : ℕ) (hr : r < w) :
+    let width := (e - d) * w
+    let pos := k.val * w + r
+    let move := Routing.blockExchange (d * w) ((8 + d) * w) width
+    move pos = (if d ≤ k.val ∧ k.val < e then 8 * w + pos else pos) ∧
+    move (8 * w + pos) = (if d ≤ k.val ∧ k.val < e then pos else 8 * w + pos) := by
+  intro width pos move
+  have endLeft : d * w + width = e * w := by
+    dsimp [width]
+    rw [← Nat.add_mul, Nat.add_sub_of_le de]
+  have low (a : ℕ) (h : a ≤ k.val) : a * w ≤ pos :=
+    (Nat.mul_le_mul_right w h).trans (Nat.le_add_right _ _)
+  have high (a : ℕ) (h : k.val < a) : pos < a * w := by
+    calc pos < k.val * w + w := Nat.add_lt_add_left hr _
+         _ = (k.val + 1) * w := (Nat.succ_mul _ _).symm
+         _ ≤ a * w := Nat.mul_le_mul_right w h
+  have top := high 8 k.isLt
+  have last := Nat.mul_le_mul_right w he
+  simp only [move, Routing.blockExchange, endLeft, Nat.add_mul]
+  by_cases h : d ≤ k.val ∧ k.val < e
+  · have := low d h.1
+    have := high e h.2
+    split_ifs <;> omega
+  · have outside : pos < d * w ∨ e * w ≤ pos := by
+      by_cases hk : k.val < d
+      · exact Or.inl (high _ hk)
+      · exact Or.inr (low _ (by omega))
+    split_ifs <;> omega
+
+/-- Bit action of the rectangular record permutation used by the host exchange
+on the two address halves. The child width is the dimension gain times the atom width. -/
+theorem prefixMoveRank_bits (d e w R : ℕ) (de : d ≤ e) (he : e ≤ 8)
+    (k : Fin 8) (r : ℕ) (hr : r < w) (i : Fin (R * 2 ^ (16 * w))) :
+    let width := (e - d) * w
+    let pos := k.val * w + r
+    ∃ (sep : d * w + width ≤ (8 + d) * w) (bound : (8 + d) * w + width ≤ 16 * w),
+      let j := Routing.blockExchangeRank (16 * w) (d * w) ((8 + d) * w) width R sep bound i
+      (j.val.testBit pos = i.val.testBit (if d ≤ k.val ∧ k.val < e then 8 * w + pos else pos)) ∧
+      (j.val.testBit (8 * w + pos) = i.val.testBit (if d ≤ k.val ∧ k.val < e then pos else 8 * w + pos)) := by
+  intro width pos
+  have ends : d * w + width = e * w := by
+    dsimp [width]
+    rw [← Nat.add_mul, Nat.add_sub_of_le de]
+  have last := Nat.mul_le_mul_right w he
+  have sep : d * w + width ≤ (8 + d) * w := by rw [Nat.add_mul]; omega
+  have bound : (8 + d) * w + width ≤ 16 * w := by rw [Nat.add_mul]; omega
+  refine ⟨sep, bound, ?_⟩
+  intro j
+  have top : pos < 8 * w := by
+    calc pos < k.val * w + w := Nat.add_lt_add_left hr _
+         _ = (k.val + 1) * w := (Nat.succ_mul _ _).symm
+         _ ≤ 8 * w := Nat.mul_le_mul_right w k.isLt
+  have bits (q : ℕ) (hq : q < 16 * w) := Routing.blockExchangeRank_bit _ _ _ _ R sep bound i ⟨q, hq⟩
+  obtain ⟨left, right⟩ := intervalSwaps_blockExchange d e w de he k r hr
+  exact ⟨(bits pos (by omega)).trans (congrArg i.val.testBit left),
+    (bits (8 * w + pos) (by omega)).trans (congrArg i.val.testBit right)⟩
 
 /-- Conjugate the interval swaps by a change of basis on each address half. -/
 noncomputable def prefixMoveProgram {R : Type*} [CommRing R] (d e : ℕ)
