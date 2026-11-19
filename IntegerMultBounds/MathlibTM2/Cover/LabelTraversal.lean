@@ -98,6 +98,19 @@ theorem time_le {H : ℕ} (hH : 0 < H) (k c : ℕ) :
     have hk := Nat.le_mul_of_pos_right k (Nat.mul_pos hH hp)
     nlinarith
 
+/-- Ten units of slack per subtree pay all internal traversal nodes,
+uniformly in the number of digits. -/
+theorem time_add_ten_le {H : ℕ} (hH : 0 < H) (k c : ℕ) :
+    time H k c + 10 ≤ (c+10)*(H*prime)^k := by
+  induction k generalizing c with
+  | zero => simp [time]
+  | succ k ih =>
+    apply (ih (H*(prime*c+6)+4)).trans
+    rw [pow_succ, ← Nat.mul_assoc, Nat.mul_right_comm (c+10)]
+    apply Nat.mul_le_mul_right
+    have two := Nat.mul_le_mul_left H IntegerMultBounds.Networks.Shared50ModularControl.prime_prime.two_le
+    nlinarith
+
 theorem traverse_writes (H : ℕ) (rs : List (Pair T)) (out : Fin T)
     (hr : (slots rs ++ [out]).Nodup) (ok : Regs T A → Prop)
     (frame : ∀ R M : Regs T A, ok R → (∀ k, k ∉ slots rs → k ≠ out → M k = R k) → ok M)

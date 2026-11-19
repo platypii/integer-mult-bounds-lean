@@ -92,8 +92,8 @@ omit [M8.Machine.Net] in
 fraction of descriptor volume as the address width grows. -/
 theorem directoryDigits_volume_le (v : Descriptor) (positive : v.Positive)
     (r atom : ℕ) (fits : r*atom ≤ v.width) :
-    prime^v.width * (LabelMask.records v * (15*(atom*(r*r))+89)) ≤
-      (15*r+89)*volume prime v := by
+    prime^v.width * (LabelMask.records v * (15*(atom*(r*r))+133)) ≤
+      (15*r+133)*volume prime v := by
   have width : v.width ≤ prime^v.width :=
     (Nat.lt_pow_self (IntegerMultBounds.Networks.Shared50ModularControl.prime_prime.one_lt)).le
   have power : 1 ≤ prime^v.width := Nat.one_le_pow _ _ (by
@@ -101,15 +101,15 @@ theorem directoryDigits_volume_le (v : Descriptor) (positive : v.Positive)
   have digits : atom*(r*r) ≤ r*prime^v.width := by
     simpa only [Nat.mul_left_comm, Nat.mul_assoc, Nat.mul_comm] using
       Nat.mul_le_mul_left r (fits.trans width)
-  have scan : 15*(atom*(r*r))+89 ≤ (15*r+89)*prime^v.width := by
+  have scan : 15*(atom*(r*r))+133 ≤ (15*r+133)*prime^v.width := by
     rw [Nat.add_mul, Nat.mul_assoc]
-    exact Nat.add_le_add (Nat.mul_le_mul_left _ digits) (by simpa using Nat.mul_le_mul_left 89 power)
+    exact Nat.add_le_add (Nat.mul_le_mul_left _ digits) (by simpa using Nat.mul_le_mul_left 133 power)
   have middle := positive.2.2.2.1
   have suffix := positive.2.2.2.2
   grw [scan]
   unfold LabelMask.records volume
   calc
-    _ = (15*r+89)*(v.beforeRows*v.rows*v.beforeH*prime^v.width*1*prime^v.width*1) := by ring
+    _ = (15*r+133)*(v.beforeRows*v.rows*v.beforeH*prime^v.width*1*prime^v.width*1) := by ring
     _ ≤ _ := by gcongr <;> omega
 
 /-- The live part of the generated pass pays the density factor on both swaps
@@ -465,8 +465,8 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
         classes * (4+(r*r*(4*(w+1)+4)+1)+6))
     let a := base.physical e proj α α'
     let perDigit := 18*box+6+12*r*r*units*lifts
-    let perParent := box*(15*digits+89) + 25 +
-      4*(LabelTraversal.time (prime^w) (r*r) 1+5) + queuePerParent + lifts*signedClassSetup U d T w a.H classes units +
+    let perParent := box*(15*digits+133) + 25 +
+      queuePerParent + lifts*signedClassSetup U d T w a.H classes units +
       lifts*units*(signedResidualTime_le_setup_add_counter U d a.H).choose*a.J
     let recordVolume := M^(d+1)*W
     let totalVolume := LabelMask.records v*recordVolume
@@ -810,10 +810,16 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
   refine ⟨z,E,_,hz.trans (finishUser.trans (releaseUser.trans (cleanUser.trans (hy.trans (preparedUser.trans (zeroUser.trans (copyUser.trans (hUser.trans (counterUser.trans (buildUser.trans parentUser)))))))))),queue,acc,maskDone,pivots,archiveDone,?_,
     Exec.seq (Exec.seq parentRun (Exec.seq buildRun (Exec.seq counterRun (Exec.seq emit (Exec.seq (Exec.seq copyRun (Exec.seq (Exec.seq zeroRun (Exec.seq (Exec.seq initRun generateRun) clearRun)) releaseRun)) finishRun))))) exec⟩
   rw [min_eq_left liveBound]
-  apply total.trans_eq
+  have traversal : LabelTraversal.time (prime^w) (r*r) 1 + 5 ≤ 11*box := by
+    have bound := LabelTraversal.time_add_ten_le (pow_pos IntegerMultBounds.Networks.Shared50ModularControl.prime_prime.pos w) (r*r) 1
+    change _ ≤ 11*(prime^(w+1))^(r*r)
+    rw [pow_succ]
+    omega
+  apply total.trans
   dsimp only [dirCost,setupCost,perDigit,perParent,recordVolume,totalVolume,liveVolume,fixedCost,signedPassWork,Nat.add_one_sub_one]
+  grw [traversal]
   change a.records = LabelMask.records v at records
   rw [← records,show a.records = n*box from recordCount,recordCount,← parentSize,boxSize]
-  ring
+  exact le_of_eq (by ring)
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
