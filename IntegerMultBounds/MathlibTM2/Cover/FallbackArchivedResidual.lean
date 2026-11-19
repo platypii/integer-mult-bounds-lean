@@ -55,7 +55,7 @@ theorem shared_ne_last {c t : ℕ} (i : Fin c) :
     ((Fin.castAddEmb (n := c) t).trans (Fin.castAddEmb 1)) i ≠ Fin.last (c+t) :=
   fun eq => (i.castAdd t).isLt.ne (congrArg Fin.val eq)
 
-/-- Run the signed residual diagonal and undo elimination on the same physical payload. -/
+/-- Load a queued payload, run the signed residual diagonal, and undo elimination while preserving the queue tail. -/
 theorem archivedResidual_exec {Q T : ℕ} (parent : Fin d → (ZMod M)ˣ) (a : Fin (d+1) → (ZMod M)ˣ)
     (negative : Bool) (signValue : ∏ j, a j = if negative then -1 else 1)
     (capacity : columnCapacity ≤ Q) (signCapacity : (fieldSignProgram (0 : Fin (d+1)) true).1 ≤ Q)
@@ -85,10 +85,6 @@ theorem archivedResidual_exec {Q T : ℕ} (parent : Fin d → (ZMod M)ˣ) (a : F
     let bank := fun a => (exchangeBank (N+1) width a).trans ports
     let record := (List.ofFn fun h => binSyms (A := prime) H (pivot h).val).flatten ++ (words (d+1) ++ suffix)
     let weights := (List.ofFn fun h => binSyms (A := prime) H (parent h : ZMod M).val).flatten ++ code
-    let ready := fun y (D : Stacks (((N+1)+total)+1) prime) =>
-      ColumnRecordReady (columnBank.trans shared) H J record SparseRoleCircuit.encode (fun _ => blank) dest 0 q original y D ∧
-      (∀ h : Fin N, 35 ≤ h.val → D.L (shared (columnPorts h)) = [] ∧ D.R (shared (columnPorts h)) = []) ∧
-      D.R (shared (Fin.last N)) = weights
     let program : Fin n → Pr Empty (((N+1)+total)+1) Q prime U := fun a =>
       let host := Fin.castAddEmb (n := N+1) (width a)
       let sign := extendSignBank columnBank (fieldSignSlots (k a))
@@ -115,34 +111,73 @@ theorem archivedResidual_exec {Q T : ℕ} (parent : Fin d → (ZMod M)ˣ) (a : F
     let rewindCost := 1+(((d+1)*(4*H+4)+1+(d*(4*H+4)+1))+((d+1)*stageCost+1))
     let residual := .seq ((List.finRange n).foldr (fun a rest => .seq (program a) rest) (.act .done)) rewind
     let positive := lt_of_lt_of_le columnCapacity_pos capacity
-    ∀ (host : Fin (((N+1)+total)+1) ↪ Fin T) (body : P → Pr P T Q prime U) v S,
-      ready addr (embStk host S) →
+    ∀ (host : Fin (((N+1)+total)+1) ↪ Fin T) (body : P → Pr P T Q prime U) v S
+      (count src saved tmp : Fin T) (_outside : ∀ i, host i ≠ src) (queueTail : List (Fin (prime+4))),
+      let dst := host (shared (columnBank 24))
+      (∃ u D payload, u.user = v.user ∧
+        Exec body (movePrefix count src dst saved tmp) (mk v S) (6*(M^(d+1)*W)+6) (mk u D) ∧
+        D = {S with R := Function.update (Function.update S.R src queueTail) dst (payload ++ S.R dst)} ∧
+        ColumnRecordReady ((columnBank.trans shared).trans host) H J record SparseRoleCircuit.encode
+          (fun _ => blank) dest 0 q original addr D) →
+      (∀ h : Fin N, 35 ≤ h.val → S.L (host (shared (columnPorts h))) = [] ∧ S.R (host (shared (columnPorts h))) = []) →
+      S.R (host (shared (Fin.last N))) = weights →
       (∀ h : Fin total, S.L (host (ports (Fin.natAdd (N+1) h))) = [] ∧ S.R (host (ports (Fin.natAdd (N+1) h))) = []) →
       (words (d+1) ++ suffix,S.R (host spare)) = matrixArchive words (words 0 ++ tail) destTail (d+1) →
-      ∃ z F l, z.user = v.user ∧ l ≤ 1+(((List.finRange n).map cost).sum+1+rewindCost) ∧
-        Exec body (statePlacedNormalized host le_rfl positive Empty.elim residual) (mk v S) l (mk z F) ∧
+      ∃ z F l, z.user = v.user ∧ l ≤ (6*(M^(d+1)*W)+6)+(1+(((List.finRange n).map cost).sum+1+rewindCost)) ∧
+        Exec body (.seq (movePrefix count src dst saved tmp) (statePlacedNormalized host le_rfl positive Empty.elim residual)) (mk v S) l (mk z F) ∧
         ColumnReady ((reverseBank 0).trans reverseHost) H J m tail SparseRoleCircuit.encode
           (fun _ => blank) dest 0 q original m.mulVec (embStk host F) ∧
         F.R (host (reverseHost (Fin.last N).castSucc)) = rest ∧
         F.R (host (reverseHost (reverseBank 1 34))) = destTail ∧
-        ∀ j, (∀ i, host i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
-  intro words code rows weightsAt addr reads n k j t i pivot width total ports shared bank record weights ready program cost spare off reverseHost reverseBank active pop rewind stageCost rewindCost residual positive host body v S before aux archive
-  let start := stateLiftDown positive (embDn host v)
+        F.R src = queueTail ∧ ∀ j, j ≠ src → (∀ i, host i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  intro words code rows weightsAt addr reads n k j t i pivot width total ports shared bank record weights program cost spare off reverseHost reverseBank active pop rewind stageCost rewindCost residual positive host body v S count src saved tmp outside queueTail dst loaded free headers aux archive
+  obtain ⟨v₁,S₁,payload,user₁,load,state,layout⟩ := loaded
+  have keep (h) (ne : h ≠ shared (columnBank 24)) : S₁.R (host h) = S.R (host h) := by
+    rw [state]
+    exact (Function.update_of_ne (host.injective.ne ne) _ _).trans (Function.update_of_ne (outside h) _ _)
+  have left : S₁.L = S.L := state ▸ rfl
+  let ready := fun y (D : Stacks (((N+1)+total)+1) prime) =>
+      ColumnRecordReady (columnBank.trans shared) H J record SparseRoleCircuit.encode (fun _ => blank) dest 0 q original y D ∧
+      (∀ h : Fin N, 35 ≤ h.val → D.L (shared (columnPorts h)) = [] ∧ D.R (shared (columnPorts h)) = []) ∧
+      D.R (shared (Fin.last N)) = weights
+  have before : ready addr (embStk host S₁) := by
+    refine ⟨?_,?_,?_⟩
+    · obtain ⟨word,lane,action⟩ := layout
+      exact ⟨word,⟨lane.modulus,lane.width,lane.one,lane.padded,lane.clock,lane.archive,lane.scratch,lane.src,lane.dst⟩,action⟩
+    · intro h hh
+      refine ⟨(congrFun left _).trans (free h hh).1,(keep _ (shared.injective.ne ?_)).trans (free h hh).2⟩
+      intro eq
+      have e := congrArg Fin.val eq
+      change h.val = 24 at e
+      omega
+    · exact (keep _ (shared.injective.ne (by intro eq; have e := congrArg Fin.val eq; change rowSwapBlock.tapes+35 = 24 at e; omega))).trans headers
+  have aux₁ (h : Fin total) := And.intro ((congrFun left _).trans (aux h).1)
+    ((keep _ (ports.injective.ne (by intro eq; have e := congrArg Fin.val eq; change (N+1)+h.val = 24 at e; omega))).trans (aux h).2)
+  have archive₁ : (words (d+1) ++ suffix,S₁.R (host spare)) = _ :=
+    (congrArg (fun x => (words (d+1) ++ suffix,x)) (keep _ (off _).symm)).trans archive
+  let start := stateLiftDown positive (embDn host v₁)
   obtain ⟨u,D,l,hu,hl,scale,next,kept⟩ := archivedDiagonal_exec parent a negative signValue capacity signCapacity
-    H J hm hw hW (words (d+1) ++ suffix) code dest q empty original (P := Empty) Empty.elim start (embStk host S) before aux
+    H J hm hw hW (words (d+1) ++ suffix) code dest q empty original (P := Empty) Empty.elim start (embStk host S₁) before aux₁
   have action : (Itinerary.run pivots m (d+1)).mulVec = (Matrix.diagonal fun j => (a j : ZMod M)).mulVec :=
     congrArg Matrix.mulVec diag
   have finish := finishArchivedResidual_exec shared spare off capacity pivot (fun j => (parent j : ZMod M))
-    pivots m valid H J hm hw hW (P := Empty) Empty.elim start (embStk host S) tail destTail suffix rest dest q empty original
+    pivots m valid H J hm hw hW (P := Empty) Empty.elim start (embStk host S₁) tail destTail suffix rest dest q empty original
     ((List.finRange n).foldr (fun a rest => .seq (program a) rest) (.act .done)) (((List.finRange n).map cost).sum+1)
   obtain ⟨z,F,l',hz,hl',exec,result,_,stream,other⟩ := finish
-    ⟨u,D,l,hu,hl,scale,action.symm ▸ next.1,next.2.1,next.2.2,kept⟩ archive
+    ⟨u,D,l,hu,hl,scale,action.symm ▸ next.1,next.2.1,next.2.2,kept⟩ archive₁
   obtain ⟨out,_,user,placed⟩ := statePlaced_exec_normalized host host.injective le_rfl positive Empty.elim
-    (body' := body) (fun e => nomatch e) v S exec
-  let final := embOvr host F.get S
+    (body' := body) (fun e => nomatch e) v₁ S₁ exec
+  let final := embOvr host F.get S₁
   have view : embStk host final = F := embStk_ovr host.injective _ _
   rw [← view] at result stream other
-  exact ⟨out,final,_,user.trans hz,Nat.add_le_add_left hl' 1,placed,result,stream,other,
-    fun _ offHost => embOvr_off F.get S offHost⟩
+  refine ⟨out,final,_,user.trans (hz.trans user₁),Nat.add_le_add_left (Nat.add_le_add_left hl' 1) _,
+    Exec.seq load placed,result,stream,other,(embOvr_off F.get S₁ outside).2.trans ?_,?_⟩
+  · rw [state]
+    exact (Function.update_of_ne (outside _).symm _ _).trans (Function.update_self ..)
+  · intro j ne offHost
+    obtain ⟨hl,hr⟩ := embOvr_off F.get S₁ offHost
+    refine ⟨hl.trans (congrFun left _),hr.trans ?_⟩
+    rw [state]
+    exact (Function.update_of_ne (offHost _).symm _ _).trans (Function.update_of_ne ne _ _)
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback.Record
