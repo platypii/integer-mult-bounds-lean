@@ -337,6 +337,26 @@ theorem column_field_neg_exec {P U : Type} {T Q w : ℕ} (bank : Fin 35 ↪ Fin 
   · intro base k hk pos
     simpa [base,AtomBank.outer,hk,embStk] using after k pos
 
+/-- Extend a column host with private sign tapes, retaining its original column bank. -/
+def extendSignBank {T : ℕ} (bank : Fin 35 ↪ Fin T) (slots : ℕ) :
+    Fin (35+(22+slots)) ↪ Fin (T+(22+slots)) :=
+  (finSumFinEquiv.symm.toEmbedding.trans (bank.sumMap (Function.Embedding.refl _))).trans
+    finSumFinEquiv.toEmbedding
+
+theorem extendSignBank_column {T : ℕ} (bank : Fin 35 ↪ Fin T) (slots : ℕ) :
+    (Fin.castAddEmb (22+slots)).trans (extendSignBank bank slots) =
+      bank.trans (Fin.castAddEmb (22+slots)) := by
+  ext j
+  change (finSumFinEquiv (Sum.map bank id (finSumFinEquiv.symm (j.castAdd (22+slots))))).val = _
+  rw [finSumFinEquiv_symm_apply_castAdd]
+  rfl
+
+theorem extendSignBank_private {T slots : ℕ} (bank : Fin 35 ↪ Fin T) (k : Fin (22+slots)) :
+    extendSignBank bank slots (Fin.natAdd 35 k) = Fin.natAdd T k := by
+  change finSumFinEquiv (Sum.map bank id (finSumFinEquiv.symm (Fin.natAdd 35 k))) = _
+  rw [finSumFinEquiv_symm_apply_natAdd]
+  rfl
+
 /-- Initialize a private sign bank and negate one column coordinate in place. -/
 theorem initializeFieldNeg_exec {P U : Type} {T Q w : ℕ} (i : Fin (d+1))
     (host : Fin (35+(22+fieldSignSlots i)) ↪ Fin T) (capacity : (fieldSignProgram i true).1 ≤ Q)
