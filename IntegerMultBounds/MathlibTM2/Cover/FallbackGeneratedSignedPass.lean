@@ -87,6 +87,31 @@ theorem signedPassVolume_div_width (v : Descriptor) (e : (Fin r ⊕ Fin r) ≃ F
     have := Nat.mod_lt v.width rankPos
     omega
 
+omit [M8.Machine.Net] in
+/-- The directory's per-record digit scan consumes an exponentially decreasing
+fraction of descriptor volume as the address width grows. -/
+theorem directoryDigits_volume_le (v : Descriptor) (positive : v.Positive)
+    (r atom : ℕ) (fits : r*atom ≤ v.width) :
+    prime^v.width * (LabelMask.records v * (15*(atom*(r*r))+89)) ≤
+      (15*r+89)*volume prime v := by
+  have width : v.width ≤ prime^v.width :=
+    (Nat.lt_pow_self (IntegerMultBounds.Networks.Shared50ModularControl.prime_prime.one_lt)).le
+  have power : 1 ≤ prime^v.width := Nat.one_le_pow _ _ (by
+    exact IntegerMultBounds.Networks.Shared50ModularControl.prime_prime.pos)
+  have digits : atom*(r*r) ≤ r*prime^v.width := by
+    simpa only [Nat.mul_left_comm, Nat.mul_assoc, Nat.mul_comm] using
+      Nat.mul_le_mul_left r (fits.trans width)
+  have scan : 15*(atom*(r*r))+89 ≤ (15*r+89)*prime^v.width := by
+    rw [Nat.add_mul, Nat.mul_assoc]
+    exact Nat.add_le_add (Nat.mul_le_mul_left _ digits) (by simpa using Nat.mul_le_mul_left 89 power)
+  have middle := positive.2.2.2.1
+  have suffix := positive.2.2.2.2
+  grw [scan]
+  unfold LabelMask.records volume
+  calc
+    _ = (15*r+89)*(v.beforeRows*v.rows*v.beforeH*prime^v.width*1*prime^v.width*1) := by ring
+    _ ≤ _ := by gcongr <;> omega
+
 /-- The live part of the generated pass pays the density factor on both swaps
 and shears, and the quotient-width factor on swaps. -/
 theorem signedPassResidualCharge_le (L r swaps shears live V : ℕ) (rankPos : 0 < r)
