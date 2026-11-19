@@ -88,6 +88,7 @@ def main():
     labels = [set(frame) for frame in word["frames"]]
     refs = word["start"].copy()
     moves = 0
+    intervals = [set() for _ in refs]
     # The scatter COPY windows have a separate rank bill. This is the phase replay
     # in generate_pr589_moves.py, whose scatter boundary preserves the phase refs.
     for section in "DABC":
@@ -103,9 +104,25 @@ def main():
             for register in [target, *sources]:
                 old = refs[register]
                 assert labels[old] <= labels[frame] or labels[frame] <= labels[old]
-                moves += ranks[old] != ranks[frame]
+                if ranks[old] != ranks[frame]:
+                    intervals[register].add(tuple(sorted((ranks[old], ranks[frame]))))
+                    moves += 1
                 refs[register] = frame
     assert (len(ranks), moves) == (636, 2911)
+    # An endpoint crossing on one register needs both endpoint coordinates.
+    # Count wider MOVEs too, to distinguish missing coordinates from batching.
+    source_intervals, target_intervals = intervals[:111], intervals[111:222]
+    assert all(not any(a == 0 for a, b in source) and any(b == 8 for a, b in source)
+               for source in source_intervals)
+    assert all(any(a == 0 for a, b in target) and not any(b == 8 for a, b in target)
+               for target in target_intervals)
+    source_singletons = sum((7, 8) in source for source in source_intervals)
+    target_singletons = sum((0, 1) in target for target in target_intervals)
+    helper_pairs = sum({(0, 1), (7, 8)} <= helper for helper in intervals[222:])
+    assert (source_singletons, target_singletons, helper_pairs) == (108, 10, 179)
+    print(f"Phase endpoint singleton MOVEs: coordinate 7 on {source_singletons} source registers, "
+          f"coordinate 0 on {target_singletons} target registers, both on {helper_pairs} helpers.")
+    print("No source phase MOVE touches coordinate 0; no target phase MOVE touches coordinate 7.")
     assert max_relation_denominator <= 2 ** 100
     print(f"Verified {relations} integral generator relations; maximum denominator: {max_relation_denominator}.")
     print("Verified nine rank-seven COPY prefixes and 527 zero-frame ADD targets.")
