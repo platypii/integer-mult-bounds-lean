@@ -17,6 +17,7 @@ edge runs in its recorded orientation and uses exactly the rational MOVE rank. -
 theorem checked_move_programs (w : ℕ) :
     let R := ZMod (prime ^ w)
     ∃ P : Fin 636 → Matrix (Fin 8) (Fin 8) R,
+      (∀ l, P l * P l = P l) ∧
       (∀ l k, P l k k = if k.val < Geometry.Dimensions.value l.val then 1 else 0) ∧
       ∀ (i j : Fin 636), Geometry.Moves.CheckedPair (i.val, j.val) →
         ∃ q : List (AffineFieldProgram.Op (Fin 8) R),
@@ -25,7 +26,7 @@ theorem checked_move_programs (w : ℕ) :
           ∀ s, AffineFieldProgram.run q s = exchange (P j) (exchange (P i) s) := by
   intro R
   obtain ⟨P, lower, diag, nested⟩ := compatible_label_projectors w
-  refine ⟨P, diag, ?_⟩
+  refine ⟨P, fun l => (nested l l (fun _ h => h)).1, diag, ?_⟩
   let dim := fun i : Fin 636 => Geometry.Dimensions.value i.val
   have bounded : ∀ i : Fin 636, dim i ≤ 8 := by decide +kernel
   have oriented (a b : Fin 636) (inc : ∀ k ∈ Frames.labels a.val, k ∈ Frames.labels b.val) :
