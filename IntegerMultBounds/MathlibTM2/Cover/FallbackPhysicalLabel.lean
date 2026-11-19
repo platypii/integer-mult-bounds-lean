@@ -79,6 +79,26 @@ theorem liveClasses_eq_product (m : ℕ) :
     congrArg (fun q => Nat.card (Matrix (Fin m) (Fin m) (ZMod q))ˣ) (pow_one prime)]
   simpa only [ZMod.card] using Matrix.card_GL_field (𝔽 := ZMod prime) m
 
+/-- The last column must avoid a hyperplane. Thus at most a fraction
+`(prime-1)/prime` of the payload lies in invertible classes at positive rank. -/
+theorem liveClassVolume_le (m copies : ℕ) (positive : 0 < m) :
+    prime * (LabelPadding.liveClasses m * copies) ≤
+      (prime-1) * (prime^(m*m) * copies) := by
+  obtain ⟨n, rfl⟩ := Nat.exists_eq_succ_of_ne_zero positive.ne'
+  rw [liveClasses_eq_product, Fin.prod_univ_castSucc]
+  let q := prime^(n+1)
+  have firstColumns : (∏ i : Fin n, (q - prime^i.val)) ≤ q^n := by
+    calc
+      _ ≤ ∏ _ : Fin n, q := Finset.prod_le_prod fun i _ => Nat.sub_le _ _
+      _ = _ := by simp
+  have last : q - prime^n = prime^n*(prime-1) := by
+    simp only [q, pow_succ, Nat.mul_sub, Nat.mul_one]
+  change prime * (((∏ i : Fin n, (q - prime^i.val)) * (q-prime^n)) * copies) ≤ _
+  grw [firstColumns, last]
+  rw [show prime^((n+1)*(n+1)) = q^n * (prime^n*prime) by
+    rw [pow_mul, pow_succ (prime^(n+1)) n]; rfl]
+  exact le_of_eq (by ring)
+
 theorem physicalProjector_spec (hw : 0 < w) (j : ℕ) (live : LabelStock.live m w 1 j = true)
     (e : (Fin m ⊕ Fin m) ≃ Fin n) (P : Matrix (Fin m) (Fin m) ℚ) (hp : P*P = P)
     (adm : Admissible prime P) (α α' : Fin m → ZMod M) (ha : ∀ i, α i * α' i = 1) :
