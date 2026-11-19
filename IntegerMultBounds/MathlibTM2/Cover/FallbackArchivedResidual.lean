@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.Cover.FallbackReverseStages
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackForwardStages
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackCorrectedExchange
 
 /-! Execute the archived residual diagonal and the reverse elimination on one host. -/
@@ -199,5 +199,139 @@ theorem archivedResidual_exec {Q T r records : ℕ} (parent : Fin d → (ZMod M)
     refine ⟨hl.trans (congrFun left _),hr.trans ?_⟩
     rw [state]
     exact (Function.update_of_ne (offHost _).symm _ _).trans (Function.update_of_ne ne _ _)
+
+/-- Prepare both archives, consume the signed payload, and rewind one live record. -/
+theorem preparedResidual_exec {Q T r records : ℕ} (parent : Fin d → (ZMod M)ˣ)
+    (capacity : columnCapacity ≤ Q) (signCapacity : (fieldSignProgram (0 : Fin (d+1)) true).1 ≤ Q)
+    (H J : ℕ) (hm : M < 2^H) (hw : W < 2^J) (hW : 0 < W)
+    (table : Matrix (Fin r) (Fin r) (ZMod prime) → Matrix (Fin (d+1)) (Fin (d+1)) (ZMod prime))
+    (g : LabelPadding.Label r (w+1)) (m : Matrix (Fin (d+1)) (Fin (d+1)) (ZMod M))
+    (det : m.det = 1 ∨ m.det = -1)
+    (lift : (LabelRing.res prime (w+1) (by omega)).mapMatrix m = table ((LabelRing.res prime (w+1) (by omega)).mapMatrix g))
+    (block : ℕ) (live : block*M^(r*r)+(LabelAddress.address g).val < records)
+    (inputs : ℕ → Array d 1 (w+1) W) (outs : List (Array d 1 (w+1) W))
+    (result : (signedInputs table (w+1) records inputs).Forall₂ Correct outs)
+    (tail rest : List (Fin (prime+4))) (dest : ℤ → Fin 4) (q : ℤ)
+    (empty : ∀ z, q ≤ z → z < q+(M^(d+1)*W : ℕ) → dest z = blank)
+    (original : Fin (M^(d+1)*W) → ZMod 2) :
+    let entry := block*M^(r*r)+(LabelAddress.address g).val
+    let pivots := classPivots (table ((LabelRing.res prime (w+1) (by omega)).mapMatrix g))
+    let rows := List.finRange d
+    let reads := pivotReads rows
+    let n := reads.length
+    let k := fun _ : Fin n => (0 : Fin (d+1))
+    let j := fun a => (reads.get a).1
+    let t := fun a => (j a).succ
+    let i := fun a => (reads.get a).2
+    let width := fun a => 22+fieldSignSlots (k a)
+    let total := Fintype.card (Σ a, Fin (width a))
+    let ports := Fin.castAddEmb (n := (N+1)+total) 1
+    let shared := (Fin.castAddEmb (n := N+1) total).trans ports
+    let bank := fun a => (exchangeBank (N+1) width a).trans ports
+    let program : Fin n → Pr Empty (((N+1)+total)+1) Q prime U := fun a =>
+      let host := Fin.castAddEmb (n := N+1) (width a)
+      let sign := extendSignBank columnBank (fieldSignSlots (k a))
+      statePlacedNormalized (bank a) (le_refl Q) (lt_of_lt_of_le columnCapacity_pos capacity) Empty.elim
+        (.seq (statePlacedNormalized host capacity columnCapacity_pos Empty.elim (childExchange (j a).val (i a).val (k a) (t a)))
+          (.seq (installFieldHeaders ((installerPorts _).trans sign))
+            (placedFieldNeg (k a) ((signPorts _).trans sign) signCapacity)))
+    let cost := fun a =>
+      let shear := fun neg => 1+cleanChildShearTime (P := Empty) (U := U) (A := prime) Empty.elim
+        (Function.Embedding.refl _) prime (j a).val (i a).val (k a) (t a) neg w W H J
+      let swap := 1+completeSwapTime (P := Empty) (U := U) Empty.elim (d+1) (k a) (t a) w W H J
+      1+(1+(2*shear false+shear true+2*swap)+((10*J+12)+(21*(w+1)+12)+1+
+        (1+(AtomSegment.chainConst (fieldSignOps (k a) true)*(M^(d+1)*W)*(width a+5)+6))))
+    let spare := Fin.last ((N+1)+total)
+    let off : ∀ h, shared h ≠ spare := shared_ne_last (t := total)
+    let reverseHost := rewindPorts (d+1) shared spare off
+    let reverseBank := fun n => columnBank.trans (archivePorts n)
+    let active := reverseBank (d+1)
+    let pop : Pr Empty (N+2) columnCapacity prime U := .seq (dropWords (active 2) (active 34) (active 0) (d+1))
+      (dropWords (active 2) (Fin.last N).castSucc (active 0) d)
+    let rewind : Pr Empty (((N+1)+total)+1) Q prime U := statePlacedNormalized reverseHost capacity columnCapacity_pos Empty.elim
+      (.seq pop (reverseStages (d+1) (d+1)))
+    let stageCost := 1+Finset.univ.sup (fun k => columnProgramTime U k (pivots k) w W H J)+((d+1)*(d+1)*(4*H+4)+1)
+    let rewindCost := 1+(((d+1)*(4*H+4)+1+(d*(4*H+4)+1))+((d+1)*stageCost+1))
+    let residual := .seq ((List.finRange n).foldr (fun a rest => .seq (program a) rest) (.act .done)) rewind
+    let positive := lt_of_lt_of_le columnCapacity_pos capacity
+    ∀ (host : Fin (((N+1)+total)+1) ↪ Fin T) (body : P → Pr P T Q prime U) v S
+      (count src saved tmp : Fin T) (_outside : ∀ i, host i ≠ src) (tailWords : List (Fin (prime+4))),
+      let queueTail := (outs.drop (entry+1)).flatMap payloadWord ++ tailWords
+      let lane := (columnBank.trans shared).trans host
+      let dst := lane 24
+      let cols := shared.trans host
+      let away : ∀ i, cols i ≠ host spare := fun i => host.injective.ne (off i)
+      let prep := forwardBank.trans (rewindPorts (d+1) cols (host spare) away)
+      let stream := cols (Fin.last N)
+      let schedule := fun j =>
+        let rows := classPivots (table (LabelStock.residue r (w+1) 1 j))
+        scheduleCode (A := prime) rows ++ orderedScheduleCode (List.finRange (d+1)).reverse rows
+      ∀ (parentTape : Fin T), (∀ i, prep i ≠ parentTape) → parentTape ≠ stream →
+      S.R parentTape = (List.ofFn fun i => binSyms H (parent i : ZMod M).val).flatten →
+      S.R (prep 15) = matrixWords prime H m ++ tail → S.R (prep 2) = binSyms H M →
+      S.R (prep 20) = binSyms H (1 : ZMod M).val → (S.R (prep 22)).length = w →
+      (∀ i : Fin 23, (i < 15 ∧ i ≠ 2) ∨ (17 ≤ i ∧ i ≤ 19) ∨ i = 21 → S.R (prep i) = []) →
+      S.R stream = ((List.range records).drop entry).flatMap schedule ++ rest →
+      let stable := fun i => i ≠ stream ∧ i ≠ lane 34 ∧ i ≠ host spare
+      stable count → stable saved → stable tmp →
+      (S.R (lane 33)).length = w →
+      [count,src,dst,saved,tmp].Nodup →
+      (S.R count).length = M^(d+1)*W →
+      S.R (lane 2) = binSyms H M → S.R (lane 27) = binSyms J W →
+      S.R (lane 28) = binSyms 1 1 → S.R (lane 32) = binSyms H (1 : ZMod M).val →
+      (∀ i ∈ shearWork, S.L (lane i) = [] ∧ S.R (lane i) = []) →
+      (∀ z, readAt blank (S.L (lane 25)) (S.R (lane 25)) (z-q) = RadixToBinary.binaryEncoding.encode (dest z)) →
+      (∀ z, readAt blank (S.L dst) (S.R dst) z = blank) → S.R saved = [] → S.R tmp = [] →
+      scalarArray (inputs entry) = SparseRoleCircuit.encode ∘ original →
+      S.R src = (outs.drop entry).flatMap payloadWord ++ tailWords →
+      (∀ h : Fin N, 35 ≤ h.val → S.L (host (shared (columnPorts h))) = [] ∧ S.R (host (shared (columnPorts h))) = []) →
+      (∀ h : Fin total, S.L (host (ports (Fin.natAdd (N+1) h))) = [] ∧ S.R (host (ports (Fin.natAdd (N+1) h))) = []) →
+      ∃ z F l, z.user = v.user ∧ l ≤ ((d+1)*(2*(d+1)+(4*w+4+columnTime (d+1) prime w H))+1 +
+        (d*(8*((d+1)*(d+1)*H)+14*H+22)+1)+(6*H+6)+(4*((d+1)*H)+4)+(6*(d*H)+6)) + ((6*(M^(d+1)*W)+6)+(1+(((List.finRange n).map cost).sum+1+rewindCost))) ∧
+        Exec body (.seq (.seq (.seq (.seq (recordWeights d prep stream) (copyWordHeader (prep 20) (prep 14) (prep 3) (prep 4)))
+          (moveRightOrdered (prep 14) (prep 3) (stageBank prep (d+1) 15))) (copyWordHeader parentTape stream (prep 3) (prep 4)))
+          (.seq (movePrefix count src dst saved tmp) (statePlacedNormalized host le_rfl positive Empty.elim residual))) (mk v S) l (mk z F) ∧
+        ColumnReady ((reverseBank 0).trans reverseHost) H J m tail SparseRoleCircuit.encode
+          (fun _ => blank) dest 0 q original m.mulVec (embStk host F) ∧
+        F.R (host (reverseHost (Fin.last N).castSucc)) = ((List.range records).drop (entry+1)).flatMap schedule ++ rest ∧
+        F.R (host (reverseHost (reverseBank 1 34))) = S.R (prep 16) ∧
+        F.R src = queueTail ∧ ∀ j, j ≠ src → (∀ i, host i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  intro entry pivots rows reads n k j t i width total ports shared bank program cost spare off reverseHost reverseBank active pop rewind stageCost rewindCost residual positive host body v S count src saved tmp outside tailWords queueTail lane dst cols away prep stream schedule parentTape outsideParent separate parents matrix modulus one ticks prepFree code stable sc ss st clock distinct countLen modWord widthWord binaryOne padded scratch destination blankDst hs ht input queue free aux
+  obtain ⟨u,D,l,a,neg,hu,hl,prepare,headers,⟨suffix,recordWord,archive⟩,left,keep,bit,diag⟩ :=
+    prepareResidualArchives_exec body cols (host spare) away w H hm table g m det lift block records live v S tail rest
+      parentTape parent outsideParent separate parents matrix modulus one ticks prepFree code
+  have same {h} (ok : stable h) := keep h ok.1 ok.2.1 ok.2.2
+  have laneKeep (h : Fin 35) (ne : h ≠ 34) : D.R (lane h) = S.R (lane h) := by
+    apply same
+    refine ⟨cols.injective.ne ?_,lane.injective.ne ne,away _⟩
+    intro eq
+    have e := congrArg Fin.val eq
+    change h.val = N at e
+    omega
+  have srcKeep := same (h := src) ⟨(outside _).symm,(outside _).symm,(outside _).symm⟩
+  rw [parents] at headers
+  obtain ⟨z,F,l',hz,hl',run,ready,streamEnd,spareEnd,queueEnd,frame⟩ :=
+    archivedResidual_exec parent a neg capacity signCapacity H J hm hw hW table g m det lift block live inputs outs result
+      tail (S.R (prep 16)) suffix _ dest q empty original diag host body u D count src saved tmp outside tailWords distinct
+      ((congrArg List.length (same sc)).trans countLen) ((laneKeep 2 (by decide)).trans modWord)
+      ((laneKeep 27 (by decide)).trans widthWord) ((laneKeep 28 (by decide)).trans binaryOne)
+      ((laneKeep 32 (by decide)).trans padded) ((congrArg List.length (laneKeep 33 (by decide))).trans clock)
+      recordWord (fun h hh => ⟨(congrFun left _).trans (scratch h hh).1,
+        (laneKeep h (fun eq => (by decide : (34 : Fin 35) ∉ shearWork) (eq ▸ hh))).trans (scratch h hh).2⟩)
+      (by change ∀ z, readAt blank (D.L (lane 25)) (D.R (lane 25)) (z-q) = _
+          simpa only [left,laneKeep 25 (by decide)] using destination)
+      (by change ∀ z, readAt blank (D.L (lane 24)) (D.R (lane 24)) z = blank
+          simpa only [left,laneKeep 24 (by decide)] using blankDst)
+      ((same ss).trans hs) ((same st).trans ht) bit input (srcKeep.trans queue)
+      (fun h hh => ⟨(congrFun left _).trans (free h hh).1,(keep _ (cols.injective.ne (fun eq => h.isLt.ne (congrArg Fin.val eq)))
+        (cols.injective.ne (by intro eq; have e := congrArg Fin.val eq; change h.val = 34 at e; omega)) (away _)).trans (free h hh).2⟩)
+      headers (fun h => ⟨(congrFun left _).trans (aux h).1,(keep _ (host.injective.ne (ports.injective.ne (by
+        intro eq; have e := congrArg Fin.val eq; change (N+1)+h.val = N at e; omega)))
+        (host.injective.ne (ports.injective.ne (by intro eq; have e := congrArg Fin.val eq; change (N+1)+h.val = 34 at e; omega)))
+        (host.injective.ne (fun eq => (Fin.natAdd (N+1) h).isLt.ne (congrArg Fin.val eq)))).trans (aux h).2⟩) archive
+  refine ⟨z,F,_,hz.trans hu,Nat.add_le_add hl hl',Exec.seq prepare run,ready,streamEnd,spareEnd,queueEnd,?_⟩
+  intro h ne beyond
+  exact ⟨(frame h ne beyond).1.trans (congrFun left _),(frame h ne beyond).2.trans (keep h
+    (beyond _).symm (beyond _).symm (beyond _).symm)⟩
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback.Record
