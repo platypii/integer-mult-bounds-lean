@@ -503,7 +503,12 @@ directly:
   In the pinned `Nine/PortData.lean`, 103 of the 111 lines have four nonzero coordinates.
   Thus `oblique_stage_route` proves boundaries for a changed target hyperplane at those
   ports. Using that route requires a word or a separately costed change of frame that
-  realizes the changed target.
+  realizes the changed target. The explicit correction `target_frame_correction` is a
+  shear of rank at most one. Charging one extra unit-rank child per affected target per
+  invocation already costs `103 · 9 · 32 = 29664` in the single-class profile. At exponent
+  one the spare rank mass is only `64 · 28416 - 1808352 = 10272`, enough for 35 such
+  children per invocation (`M6.bit_extra_rank_budget`). A correction charged
+  independently at every affected port therefore exhausts the saving even before routing.
 - **Routes and charts are coordinate permutations.** The stage routes `ρ` and the helper charts
   are orthogonal and not triangular; in Bruhat form each route contains 7 sub-field
   transpositions per field, for all 111 ports. On a tape they move data from less significant
