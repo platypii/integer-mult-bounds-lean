@@ -43,7 +43,7 @@ def SignedPassBound (regs : Fin 6 ↪ Fin T) (anchor : Fin (size d+T) ↪ Fin K)
     (ports : Fin (N+2) ↪ Fin K) (ext : Fin 6 ↪ Fin K) (v : Descriptor) (B : ℕ)
     (a : ScanData r d w W) (payload : ℕ → Record.Array d 1 (w+1) W)
     (rs : List (Pair (size d+T))) (parents saved : Fin (size d+T))
-    (cs : List (Pair K)) (parentsC savedC : Fin K) (body : P → Pr P K Q prime U)
+    (body : P → Pr P K Q prime U)
     (setup pass : Pr P K Q prime U) (setupCost : ℕ) (u : HS K Q prime U)
     (initial G : Stacks K prime) : Prop :=
     v.beforeH = B*prime^(r*((w+1)*r)) →
@@ -57,7 +57,6 @@ def SignedPassBound (regs : Fin 6 ↪ Fin T) (anchor : Fin (size d+T) ↪ Fin K)
       ScanReady a ports ext 0 (preparedPivots a (ports (Fin.last N).castSucc)
         G) →
       M < 2^a.H → W < 2^a.J → a.outputTail = [] → G.R (ext 0) = [] →
-      ready (prime^w) G.R cs → G.R savedC = [] → (G.R parentsC).length = v.beforeRows*v.rows*B →
       (∀ j < a.records, Record.scalarArray (payload j) = SparseRoleCircuit.encode ∘ a.input j) →
       (∀ j < a.records, LabelStock.live r (w+1) 1 j = false →
       ∃ symbol, Record.scalarArray (payload j) = fun _ => symbol) →
@@ -137,6 +136,7 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
       change 18+k.val = (coefficientSlots (extra := (conjugationDepth r+1)*13) i j l).val at eq
       fin_cases l <;> simp [coefficientSlots, Matrix.cons_val] at eq <;> (try split_ifs at *) <;> omega
     ∀ (maskLayout : (parentsC :: savedC :: (slots cs ++ [mask])).Nodup),
+    (∀ k ∈ parentsC :: savedC :: slots cs, k ≠ bank 2 ∧ k ≠ archive) →
     ∃ writeMask : Pr P K Q prime U, ∀ (ancestor : ℕ → List (Fin (prime+4))) (tail : List (Fin (prime+4)))
       (v : Descriptor) (B : ℕ) (base : ScanData r d w W) (payload : ℕ → Record.Array d 1 (w+1) W)
       (u : HS K Q prime U) (input : Stacks K prime),
@@ -159,8 +159,8 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
         (List.range base.records).countP (fun j => !active j) * (10*((d+1)*(d+1)*base.H)+6) +
         base.records * (4*(S.R (bank 12)).length+4+(r*r*(4*(w+1)+4)+1)+6) + 4
     let a := base.physical e proj α α'
-    let G := queueResult initial mask (scan 2) archive tail (a.matrices 0)
-    SignedPassBound regs anchor ports ext v B a payload rs parents saved cs parentsC savedC body
+    let G := queueResult input mask (scan 2) archive tail (a.matrices 0)
+    SignedPassBound regs anchor ports ext v B a payload rs parents saved body
       (.seq writeMask (withIdentitySeed (d+1) (bank 9) (bank 17) seed (bank 4) tmp generate)) pass
       ((v.beforeRows*v.rows*B)*(LabelTraversal.time (prime^w) (r*r) 1+5)+4 + seededSetupCost (d+1) base.H setupCost) u input G := by
   obtain ⟨pass,run⟩ := physicalSignedResidualPass (w := w) (W := W) regs anchor ports ext off banks external shared
@@ -168,11 +168,11 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     parentsC savedC maskRegs pivotRegs separate
   refine ⟨pass,?_⟩
   intro placement size archiveSlot registers host control mask seed tmp bank recip counters clock count pool coeff archive archiveOff
-    coeffOff maskLayout
+    coeffOff maskLayout retained
   obtain ⟨writeMask,write⟩ := record_writes (body := body) r cs sizeC mask parentsC savedC maskLayout
   refine ⟨writeMask,?_⟩
   intro ancestor tail v B base payload u input counterReady savedBlank parentCount maskBlank bits initial padWord S queueInputs scan active livePrice generate setupCost a G shape records hW D
-    neutral radix free count width unsigned clean start hm hw fresh maskEmpty radixC freeC countC encoded padding
+    neutral radix free count width unsigned clean start hm hw fresh maskEmpty encoded padding
   obtain ⟨seedBlank,tmpBlank,weightBank,queueReady,widths,width0,empty,directory,output⟩ := queueInputs
   have blank := queueReady.1 4 (by decide)
   have sharedArchive : archive = ports (archivePorts 0 (columnBank 34)) := by
@@ -217,9 +217,27 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
   obtain ⟨cleaned,cleanUser,clearRun⟩ := clearQueueSeed_exec body seed mask (scan 2) archive
     (control.injective.ne (by decide : (1 : Fin 3) ≠ 0)) (apart _ 1).symm (apart _ 1).symm
     padWord tail (a.matrices 0) y initial seedBlank
+  have restored : queueResult initial mask (scan 2) archive tail (a.matrices 0) = G := by
+    simp only [G,initial,queueResult,Function.update_idem]
+  rw [restored] at clearRun
   have padLen : padWord.length = (d+1)*(d+1)*base.H := length_matrixWords ..
   have installed : G.R archive = a.matrices 0 := Function.update_self ..
   have prep : Function.update G.R archive (a.matrices 0) = G.R := by rw [← installed,Function.update_eq_self]
+  have kept (k : Fin K) (hk : k ∈ parentsC :: savedC :: slots cs) : G.R k = input.R k := by
+    obtain ⟨dirOff,archiveOff⟩ := retained k hk
+    change Function.update (Function.update (Function.update input.R mask [])
+      (scan 2) tail) archive (a.matrices 0) k = _
+    change k ≠ scan 2 at dirOff
+    rw [Function.update_of_ne archiveOff,Function.update_of_ne dirOff,
+      ← maskBlank,Function.update_eq_self]
+  have radixC : ready (prime^w) G.R cs := by
+    intro pair member
+    have left : pair.1 ∈ slots cs := List.mem_flatMap.mpr ⟨pair,member,by simp⟩
+    have right : pair.2 ∈ slots cs := List.mem_flatMap.mpr ⟨pair,member,by simp⟩
+    simpa only [kept pair.1 (by simp [left]),kept pair.2 (by simp [right])] using
+      counterReady pair member
+  have freeC := (kept savedC (by simp)).trans savedBlank
+  have countC := (congrArg List.length (kept parentsC (by simp))).trans parentCount
   obtain ⟨z,E,n,hz,queue,acc,maskDone,pivots,archiveDone,hn,exec⟩ :=
     run v B base payload cleaned G shape records hW neutral radix free count width unsigned clean
       (sharedArchive ▸ installed.trans (base.physical_archive e proj α α')) (by
