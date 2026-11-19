@@ -2,6 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackPhysicalSignedPass
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackConjugationQueue
+public import IntegerMultBounds.MathlibTM2.Cover.LabelClassCost
 public import IntegerMultBounds.MathlibTM2.Cover.LabelCountBank
 public import IntegerMultBounds.MathlibTM2.Cover.LabelSpectators
 public import IntegerMultBounds.MathlibTM2.Cover.LabelDirectorySetup
@@ -48,6 +49,18 @@ private theorem paddingSetupCost_eq (d H cost : ℕ) :
     6*H+6+(4*H+4+(d*(d*(6*H+6)+1)+1+cost+(2*(d*d*H)+2))+(2*H+2))+(2*H+2) =
       cost + paddingSetupCost d H := by unfold paddingSetupCost; ring
 
+noncomputable def anchorClassCost (a : ScanData r d w W) (T : ℕ) (digits : Fin (r*r) → ZMod prime) :=
+  let m := a.table (LabelSelectors.matrix r digits)
+  Record.cost d T 1 (w+1) W (negativeAnchor (classPivots m) m) + 2
+
+noncomputable def scanClassCost (a : ScanData r d w W) (U : Type) (digits : Fin (r*r) → ZMod prime) :=
+  let m := LabelSelectors.matrix r digits
+  let volume := M^(d+1)*W
+  let branch := if m.det ≠ 0 then
+    6*volume+6+(1+signedResidualTime U (classPivots (a.table m)) w W a.H a.J)
+    else 4*(d+1)*(d+1)+1
+  branch+(4*volume+4)+((d+1)*(d+1)*(4*a.H+4)+1)+4
+
 def SignedPassBound (regs : Fin 6 ↪ Fin T) (anchor : Fin (size d+T) ↪ Fin K)
     (ports : Fin (N+2) ↪ Fin K) (ext : Fin 6 ↪ Fin K) (v : Descriptor) (B : ℕ)
     (a : ScanData r d w W) (payload : ℕ → Record.Array d 1 (w+1) W)
@@ -69,14 +82,13 @@ def SignedPassBound (regs : Fin 6 ↪ Fin T) (anchor : Fin (size d+T) ↪ Fin K)
       (∀ j < a.records, Record.scalarArray (payload j) = SparseRoleCircuit.encode ∘ a.input j) →
       (∀ j < a.records, LabelStock.live r (w+1) 1 j = false →
       ∃ symbol, Record.scalarArray (payload j) = fun _ => symbol) →
-      let ins := signedInputs a.table (w+1) a.records payload
     let output := (List.range a.records).flatMap (outputRecord (LabelStock.live r (w+1) 1) a.matrix a.input)
     ∃ (z : HS K Q prime U) (F : Stacks K prime) (n : ℕ), z.user = u.user ∧ F.R (ext 2) = output ++ a.inputTail ∧ F.R (ext 5) = [] ∧
       F.R (ext 0) = [] ∧ F.R (ports (Fin.last N).castSucc) = a.pivotTail ∧
       F.R (ports (archivePorts 0 (columnBank 34))) = a.matrixTail ∧
       n ≤ setupCost + ((1+((v.beforeRows*v.rows*B)*(LabelTraversal.time (prime^w) (r*r) 1+5)+4 +
-          ((ins.map (fun x => Record.cost d T 1 (w+1) W x.1 + 2)).sum + 2) +
-          (2*(a.records*(ActualAffineScaling.modulus (w+1)^((d+1)*1)*W))+2))) + (2*((v.beforeRows*v.rows*B)*(LabelTraversal.time (prime^w) (r*r) 1+5)+4) + (1+(((List.range a.records).map fun j => a.recordTime U j + 4).sum + 2 + (2*(a.records*(M^(d+1)*W))+2))))) ∧
+          ((v.beforeRows*v.rows*B)*(prime^w)^(r*r)*((LabelSelectors.classes 1 (r*r)).map (anchorClassCost a T)).sum + 2) +
+          (2*(a.records*(ActualAffineScaling.modulus (w+1)^((d+1)*1)*W))+2))) + (2*((v.beforeRows*v.rows*B)*(LabelTraversal.time (prime^w) (r*r) 1+5)+4) + (1+((v.beforeRows*v.rows*B)*(prime^w)^(r*r)*((LabelSelectors.classes 1 (r*r)).map (scanClassCost a U)).sum + 2 + (2*(a.records*(M^(d+1)*W))+2))))) ∧
       Exec body (.seq setup pass) (mk u source) n (mk z F)
 
 structure SeededQueueReady (w H : ℕ) (proj : Matrix (Fin r) (Fin r) ℚ)
@@ -474,6 +486,19 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
         rw [← sharedArchive,prep]
         exact scanStart)
       hm hw fresh emptyMask radixC freeC countC encoded padding
+  have anchorCost : (((signedInputs a.table (w+1) a.records payload).map
+      (fun x => Record.cost d T 1 (w+1) W x.1 + 2)).sum) =
+      (v.beforeRows*v.rows*B)*(prime^w)^(r*r)*((LabelSelectors.classes 1 (r*r)).map (anchorClassCost a T)).sum := by
+    have countEq : a.records = LabelMask.records v := records
+    simpa only [signedInputs,List.map_map,Function.comp_def,countEq,LabelSelectors.residue_eq,
+      LabelSelectors.recordMap,anchorClassCost] using LabelSelectors.recordMap_sum v r w B shape (anchorClassCost a T)
+  have scanCost : ((List.range a.records).map fun j => a.recordTime U j + 4).sum =
+      (v.beforeRows*v.rows*B)*(prime^w)^(r*r)*((LabelSelectors.classes 1 (r*r)).map (scanClassCost a U)).sum := by
+    have countEq : a.records = LabelMask.records v := records
+    simpa only [countEq,ScanData.recordTime,ScanData.pivots,LabelStock.live,decide_eq_true_eq,
+      LabelSelectors.residue_eq,LabelSelectors.recordMap,scanClassCost] using
+      LabelSelectors.recordMap_sum v r w B shape (scanClassCost a U)
+  rw [anchorCost,scanCost] at hn
   have queueCost := Nat.add_le_add (Nat.add_le_add initCost generateCost)
     (Nat.le_of_eq (congrArg (fun n => 2*n+2) padLen))
   have paid := Nat.add_le_add_right (Nat.add_le_add_left
