@@ -337,6 +337,72 @@ theorem column_field_neg_exec {P U : Type} {T Q w : ℕ} (bank : Fin 35 ↪ Fin 
   · intro base k hk pos
     simpa [base,AtomBank.outer,hk,embStk] using after k pos
 
+/-- Initialize a private sign bank and negate one column coordinate in place. -/
+theorem initializeFieldNeg_exec {P U : Type} {T Q w : ℕ} (i : Fin (d+1))
+    (host : Fin (35+(22+fieldSignSlots i)) ↪ Fin T) (capacity : (fieldSignProgram i true).1 ≤ Q)
+    (H J : ℕ) (hw : W < 2^J) (hW : 0 < W) (record : List (Fin (prime+4))) (dest : ℤ → Fin 4) (q : ℤ)
+    (original : Fin ((prime^(w+1))^(d+1)*W) → ZMod 2)
+    (addr : (Fin (d+1) → ZMod (prime^(w+1))) → Fin (d+1) → ZMod (prime^(w+1)))
+    (body : P → Pr P T Q prime U) (v : HS T Q prime U) (S : Stacks T prime) :
+    let slots := fieldSignSlots i
+    let bank := (Fin.castAddEmb (22+slots)).trans host
+    let ports := (signPorts slots).trans host
+    let r := (installerPorts slots).trans host
+    let ready := ColumnRecordReady bank H J record SparseRoleCircuit.encode (fun _ => blank) dest 0 q original
+    ready addr S →
+    (∀ k : Fin (22+slots), k.val ≠ 17 → S.L (host (Fin.natAdd 35 k)) = [] ∧ S.R (host (Fin.natAdd 35 k)) = []) →
+    ∃ z F l, z.user = v.user ∧ l ≤ (10*J+12)+(21*(w+1)+12)+1 +
+        (1+(AtomSegment.chainConst (fieldSignOps i true)*((prime^(w+1))^(d+1)*W)*(22+slots+5)+6)) ∧
+      Exec body (.seq (installFieldHeaders r) (placedFieldNeg i ports capacity)) (mk v S) l (mk z F) ∧
+      ready (fun x => Function.update (addr x) i (-addr x i)) F ∧
+      ∀ h, (∀ k, host k ≠ h) → F.L h = S.L h ∧ F.R h = S.R h := by
+  intro slots bank ports r ready before blankAux
+  obtain ⟨word,layout,action⟩ := before
+  have width : S.R (host 27) = binSyms J W := layout.width
+  have clock : (S.R (host 33)).length = w := layout.clock
+  obtain ⟨u,D,l,hu,hl,install,frame,saved⟩ := installSignPorts_exec body host J hw v S width clock
+    (by intro j lo hi; fin_cases j <;> first | contradiction | exact (layout.scratch 3 (by decide)).2 | exact (layout.scratch 4 (by decide)).2 | exact (layout.scratch 5 (by decide)).2 | exact (layout.scratch 6 (by decide)).2 | exact (layout.scratch 7 (by decide)).2 | exact (layout.scratch 8 (by decide)).2) blankAux
+  have high (a : Fin 35) (b : Fin 17) (hb : b ∈ ([13,11,14,15,16] : List (Fin 17))) :
+      bank a ≠ r b := by
+    intro eq
+    have val := congrArg Fin.val (host.injective eq)
+    change a.val = (installerSlots b).val at val
+    have : ∀ b ∈ ([13,11,14,15,16] : List (Fin 17)), 35 ≤ (installerSlots b).val := by decide
+    have := this b hb
+    omega
+  have keep (a : Fin 35) := saved (bank a) (by change bank a ∉ fieldMarkers r; simp [fieldMarkers,high a 13 (by decide),high a 11 (by decide),high a 14 (by decide),high a 15 (by decide),high a 16 (by decide)])
+  have next : ready addr D := by
+    refine ⟨word,?_,action⟩
+    constructor <;> first
+      | exact (keep _).2.trans layout.modulus
+      | exact (keep _).2.trans layout.width
+      | exact (keep _).2.trans layout.one
+      | exact (keep _).2.trans layout.padded
+      | exact (congrArg List.length (keep _).2).trans layout.clock
+      | exact (keep _).2.trans layout.archive
+      | intro k hk; rw [(keep k).1,(keep k).2]; exact layout.scratch k hk
+      | intro z; rw [(keep _).1,(keep _).2]; exact layout.src z
+      | intro z; rw [(keep _).1,(keep _).2]; exact layout.dst z
+  have payload : ports 17 = bank 24 := congrArg host (signPorts_payload slots)
+  have apart (h : Fin 35) (hh : h ≠ 24) (k : Fin (22+slots)) : ports k ≠ bank h := by
+    by_cases e : k.val = 17
+    · have eq : k = 17 := Fin.ext (e.trans (Nat.mod_eq_of_lt (by omega : 17 < 22+slots)).symm)
+      subst k; rw [payload]; exact bank.injective.ne hh.symm
+    · intro eq
+      have v := host.injective eq
+      change signPorts slots k = h.castAdd _ at v
+      rw [signPorts_aux k e] at v
+      have u := congrArg Fin.val v
+      change 35+k.val = h.val at u
+      omega
+  obtain ⟨z,F,n,hz,hn,neg,correct,_,outside⟩ := column_field_neg_exec bank i ports payload H J record dest q
+    original addr D capacity hW body u apart next frame
+  refine ⟨z,F,_,hz.trans hu,Nat.add_le_add hl hn,Exec.seq install neg,correct,?_⟩
+  intro h off
+  have post := outside h (fun k => off _)
+  have pre := saved h (by simp [fieldMarkers,Ne.symm (off _) ])
+  exact ⟨post.1.trans pre.1,post.2.trans pre.2⟩
+
 /-- Load one live signed record, preserving the remaining queue and identifying the
 sign and pivots of the corresponding residual matrix. -/
 theorem loadAnchorRecord_exec {r w records T Q : ℕ} {P U : Type}
