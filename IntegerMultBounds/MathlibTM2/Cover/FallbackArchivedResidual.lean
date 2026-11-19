@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackNextRecord
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackForwardStages
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackCorrectedExchange
 
@@ -289,23 +290,26 @@ theorem preparedResidual_exec {Q T r records : ℕ} (parent : Fin d → (ZMod M)
       S.R src = (outs.drop entry).flatMap payloadWord ++ tailWords →
       (∀ h : Fin N, 35 ≤ h.val → S.L (host (shared (columnPorts h))) = [] ∧ S.R (host (shared (columnPorts h))) = []) →
       (∀ h : Fin total, S.L (host (ports (Fin.natAdd (N+1) h))) = [] ∧ S.R (host (ports (Fin.natAdd (N+1) h))) = []) →
+      let tapes := ((reverseBank 0).trans reverseHost).trans host
       ∃ z F l word, z.user = v.user ∧ l ≤ ((d+1)*(2*(d+1)+(4*w+4+columnTime (d+1) prime w H))+1 +
-        (d*(8*((d+1)*(d+1)*H)+14*H+22)+1)+(6*H+6)+(4*((d+1)*H)+4)+(6*(d*H)+6)) + ((6*(M^(d+1)*W)+6)+(1+(((List.finRange n).map cost).sum+1+rewindCost))) + (4*(M^(d+1)*W)+4) ∧
-        Exec body (.seq (.seq (.seq (.seq (.seq (recordWeights d prep stream) (copyWordHeader (prep 20) (prep 14) (prep 3) (prep 4)))
+        (d*(8*((d+1)*(d+1)*H)+14*H+22)+1)+(6*H+6)+(4*((d+1)*H)+4)+(6*(d*H)+6)) + ((6*(M^(d+1)*W)+6)+(1+(((List.finRange n).map cost).sum+1+rewindCost))) + (4*(M^(d+1)*W)+4) + ((d+1)*(d+1)*(4*H+4)+1) ∧
+        Exec body (.seq (.seq (.seq (.seq (.seq (.seq (recordWeights d prep stream) (copyWordHeader (prep 20) (prep 14) (prep 3) (prep 4)))
           (moveRightOrdered (prep 14) (prep 3) (stageBank prep (d+1) 15))) (copyWordHeader parentTape stream (prep 3) (prep 4)))
           (.seq (movePrefix count src dst saved tmp) (statePlacedNormalized host le_rfl positive Empty.elim residual)))
-          (Mult.ShortConv.transfer count (host (reverseHost (reverseBank 0 24))) acc tmp)) (mk v S) l (mk z F) ∧
+          (Mult.ShortConv.transfer count (host (reverseHost (reverseBank 0 24))) acc tmp)) (dropWords (tapes 2) (tapes 34) (tapes 0) ((d+1)*(d+1)))) (mk v S) l (mk z F) ∧
         (∀ x k, word (index (m.mulVec x) k) = original (index x k)) ∧
         F.R acc = (payloadWord (SparseRoleCircuit.encode ∘ word)).reverse ++ S.R acc ∧
         (∀ z, readAt blank (F.L (host (reverseHost (reverseBank 0 24)))) (F.R (host (reverseHost (reverseBank 0 24)))) z = blank) ∧
-        ShearReady ((reverseBank 0).trans reverseHost) H J m tail (fun _ : ZMod 2 => blank)
-          (fun _ => blank) dest 0 q original (embStk host F) ∧
+        F.R (tapes 34) = tail ∧
+        (∀ next rest (input : Fin (M^(d+1)*W) → ZMod 2), tail = matrixWords prime H next ++ rest →
+          ShearReady ((reverseBank 0).trans reverseHost) H J next rest (fun _ : ZMod 2 => blank)
+            (fun _ => blank) dest 0 q input (embStk host F)) ∧
         (∀ h : Fin N, 35 ≤ h.val → F.L (host (reverseHost (columnPorts h).castSucc)) = [] ∧
           F.R (host (reverseHost (columnPorts h).castSucc)) = []) ∧
         F.R (host (reverseHost (Fin.last N).castSucc)) = ((List.range records).drop (entry+1)).flatMap schedule ++ rest ∧
         F.R (host (reverseHost (reverseBank 1 34))) = S.R (prep 16) ∧
         F.R src = queueTail ∧ ∀ j, j ≠ src → j ≠ acc → (∀ i, host i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
-  intro entry pivots rows reads n k j t i width total ports shared bank program cost spare off reverseHost reverseBank active pop rewind stageCost rewindCost residual positive host body v S count src saved tmp outside tailWords queueTail lane dst cols away prep stream schedule parentTape outsideParent separate parents matrix modulus one ticks prepFree code stable acc countOff tmpOff accOff accSrc collectPorts ss clock distinct countLen modWord widthWord binaryOne padded scratch destination blankDst hs ht input queue free aux
+  intro entry pivots rows reads n k j t i width total ports shared bank program cost spare off reverseHost reverseBank active pop rewind stageCost rewindCost residual positive host body v S count src saved tmp outside tailWords queueTail lane dst cols away prep stream schedule parentTape outsideParent separate parents matrix modulus one ticks prepFree code stable acc countOff tmpOff accOff accSrc collectPorts ss clock distinct countLen modWord widthWord binaryOne padded scratch destination blankDst hs ht input queue free aux tapes
   obtain ⟨u,D,l,a,neg,hu,hl,prepare,headers,⟨suffix,recordWord,archive⟩,left,keep,bit,diag⟩ :=
     prepareResidualArchives_exec body cols (host spare) away w H hm table g m det lift block records live v S tail rest
       parentTape parent outsideParent separate parents matrix modulus one ticks prepFree code
@@ -354,12 +358,9 @@ theorem preparedResidual_exec {Q T r records : ℕ} (parent : Fin d → (ZMod M)
     (Function.update_of_ne ha _ _).trans (Function.update_of_ne hi _ _)
   have bankKeep (h : Fin (N+2)) (ne : h ≠ reverseBank 0 24) :=
     unchanged (host (reverseHost h)) (accOff _) (host.injective.ne (reverseHost.injective.ne ne))
-  refine ⟨y,G,_,word,hy.trans (hz.trans hu),Nat.add_le_add_right (Nat.add_le_add hl hl') _,
-    Exec.seq (Exec.seq prepare run) collect,effect,(Function.update_self ..).trans (congrArg _ (kept acc accSrc accOff)),
-    blanked,?_,?_,
-    (bankKeep _ ?_).trans streamEnd,(bankKeep _ ?_).trans spareEnd,
-    (unchanged src accSrc.symm (outside _).symm).trans queueEnd,?_⟩
-  · have field (i : Fin 35) (hi : i ≠ 24) := bankKeep _ ((reverseBank 0).injective.ne hi)
+  have readyG : ShearReady ((reverseBank 0).trans reverseHost) H J m tail (fun _ : ZMod 2 => blank)
+          (fun _ => blank) dest 0 q original (embStk host G) := by
+    have field (i : Fin 35) (hi : i ≠ 24) := bankKeep _ ((reverseBank 0).injective.ne hi)
     refine ⟨(field 2 (by decide)).trans layout.modulus,(field 27 (by decide)).trans layout.width,
       (field 28 (by decide)).trans layout.one,(field 32 (by decide)).trans layout.padded,
       (congrArg List.length (field 33 (by decide))).trans layout.clock,(field 34 (by decide)).trans layout.archive,
@@ -375,22 +376,43 @@ theorem preparedResidual_exec {Q T r records : ℕ} (parent : Fin d → (ZMod M)
       change readAt blank (F.L _) (G.R (host (reverseHost (reverseBank 0 25)))) _ = _
       rw [field 25 (by decide)]
       exact layout.dst pos
+  obtain ⟨z',hz',advance⟩ := consumeMatrix_exec tapes body y G H m tail readyG.archive
+    ((congrArg List.length readyG.modulus).trans (length_binSyms ..)) (readyG.scratch 0 (by decide)).2
+  let final := {G with R := Function.update G.R (tapes 34) tail}
+  have preserve (h : Fin T) (ne : h ≠ tapes 34) : final.R h = G.R h := Function.update_of_ne ne _ _
+  have keepPort (h : Fin (N+2)) (ne : h ≠ reverseBank 0 34) :=
+    preserve _ (host.injective.ne (reverseHost.injective.ne ne))
+  have keptBank (h : Fin 35) (ne : h ≠ 34) := preserve _ (tapes.injective.ne ne)
+  refine ⟨z',final,_,word,hz'.trans (hy.trans (hz.trans hu)),Nat.add_le_add_right (Nat.add_le_add_right (Nat.add_le_add hl hl') _) _,
+    Exec.seq (Exec.seq (Exec.seq prepare run) collect) advance,effect,
+    (preserve _ (accOff _).symm).trans ((Function.update_self ..).trans (congrArg _ (kept acc accSrc accOff))),
+    ?_,Function.update_self ..,?_,?_,?_,?_,(preserve _ (outside _).symm).trans ((unchanged src accSrc.symm (outside _).symm).trans queueEnd),?_⟩
+  · intro pos
+    change readAt blank (G.L _) (final.R (tapes 24)) pos = blank
+    rw [keptBank 24 (by decide)]
+    exact blanked pos
+  · intro next rest input eq
+    exact readyG.next ((Function.update_self ..).trans eq) (fun _ => rfl) keptBank rfl
   · intro h hh
-    refine ⟨(clean h hh).1,(bankKeep _ ?_).trans (clean h hh).2⟩
-    rw [← archivePorts_workspace 0 h hh]
-    apply (archivePorts 0).injective.ne
-    intro eq
-    have val := congrArg Fin.val eq
-    change h.val = 24 at val
-    omega
-  · rw [← archivePorts_stream 0]
-    apply (archivePorts 0).injective.ne
-    intro eq
-    have e := congrArg Fin.val eq
-    change N = 24 at e
-    omega
-  · exact (archivePorts_other 0 _).symm
+    have distinct (i : Fin 35) : (columnPorts h).castSucc ≠ reverseBank 0 i := by
+      rw [← archivePorts_workspace 0 h hh]
+      apply (archivePorts 0).injective.ne
+      intro eq
+      have e := congrArg Fin.val eq
+      change h.val = i.val at e
+      omega
+    exact ⟨(clean h hh).1,(keepPort _ (distinct 34)).trans ((bankKeep _ (distinct 24)).trans (clean h hh).2)⟩
+  · have distinct (i : Fin 35) : (Fin.last N).castSucc ≠ reverseBank 0 i := by
+      rw [← archivePorts_stream 0]
+      apply (archivePorts 0).injective.ne
+      intro eq
+      have e := congrArg Fin.val eq
+      change N = i.val at e
+      omega
+    exact (keepPort _ (distinct 34)).trans ((bankKeep _ (distinct 24)).trans streamEnd)
+  · exact (keepPort _ (archivePorts_other 0 _).symm).trans ((bankKeep _ (archivePorts_other 0 _).symm).trans spareEnd)
   · intro h ne ha beyond
-    exact ⟨(frame h ne beyond).1.trans (congrFun left _),(unchanged h ha (beyond _).symm).trans (kept h ne beyond)⟩
+    exact ⟨(frame h ne beyond).1.trans (congrFun left _),
+      (preserve h (beyond _).symm).trans ((unchanged h ha (beyond _).symm).trans (kept h ne beyond))⟩
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback.Record
