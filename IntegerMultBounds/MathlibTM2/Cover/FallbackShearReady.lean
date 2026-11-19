@@ -25,6 +25,30 @@ structure RecordReady (bank : Fin 35 ↪ Fin T) (H J : ℕ)
   dst : ∀ z, readAt blank (S.L (bank 25)) (S.R (bank 25)) (z-q) =
     RadixToBinary.binaryEncoding.encode (dest z)
 
+omit [NeZero (b^(w+1))] in
+/-- A child sharing the payload port can replace the word in place.
+The positioned read on that port and preservation of the other bank
+registers suffice to resume operations using the same headers. -/
+theorem RecordReady.returnPayload {bank : Fin 35 ↪ Fin T} {H J : ℕ}
+    {record : List (Fin (A+4))} {sym : α → Fin 4} {source dest : ℤ → Fin 4} {p q : ℤ}
+    {input output : Fin (M^d*W) → α} {S F : Stacks T A}
+    (start : RecordReady bank H J record sym source dest p q input S)
+    (keep : ∀ i : Fin 35, i ≠ 24 → F.L (bank i) = S.L (bank i) ∧ F.R (bank i) = S.R (bank i))
+    (returned : ∀ z, RadixToBinary.binaryEncoding.encode (putWord source p (List.ofFn (sym ∘ output)) z) =
+      readAt blank (F.L (bank 24)) (F.R (bank 24)) (z-p)) :
+    RecordReady bank H J record sym source dest p q output F := by
+  refine ⟨(keep 2 (by decide)).2.trans start.modulus,(keep 27 (by decide)).2.trans start.width,
+    (keep 28 (by decide)).2.trans start.one,(keep 32 (by decide)).2.trans start.padded,
+    (congrArg List.length (keep 33 (by decide)).2).trans start.clock,
+    (keep 34 (by decide)).2.trans start.archive,?_,fun z => (returned z).symm,?_⟩
+  · intro i hi
+    have ne : i ≠ 24 := fun eq => (by decide : (24 : Fin 35) ∉ shearWork) (eq ▸ hi)
+    rw [(keep i ne).1,(keep i ne).2]
+    exact start.scratch i hi
+  · intro z
+    rw [(keep 25 (by decide)).1,(keep 25 (by decide)).2]
+    exact start.dst z
+
 abbrev ShearReady (bank : Fin 35 ↪ Fin T) (H J : ℕ) (matrix : Matrix (Fin d) (Fin d) (ZMod M))
     (tail : List (Fin (A+4))) (sym : α → Fin 4) (source dest : ℤ → Fin 4) (p q : ℤ)
     (a : Fin (M^d*W) → α) (S : Stacks T A) :=
@@ -127,6 +151,26 @@ def ColumnRecordReady (bank : Fin 35 ↪ Fin T) (H J : ℕ)
     (original : Fin (M^d*W) → α) (addr : (Fin d → ZMod M) → Fin d → ZMod M) (S : Stacks T A) : Prop :=
   ∃ word, RecordReady (d := d) bank H J record sym source dest p q word S ∧
     ∀ x j, word (index (addr x) j) = original (index x j)
+
+/-- Reuse the caller's positioned input read when a shared-port pass returns
+its output read. Its per-cell result identifies the new logical payload. -/
+theorem ColumnRecordReady.returnPayload {bank : Fin 35 ↪ Fin T} {H J : ℕ}
+    {record : List (Fin (A+4))} {sym : α → Fin 4} {source dest : ℤ → Fin 4} {p q : ℤ}
+    {input output : Fin (M^d*W) → α} {S F : Stacks T A} {addr : (Fin d → ZMod M) → Fin d → ZMod M}
+    (start : ColumnRecordReady bank H J record sym source dest p q input addr S)
+    (keep : ∀ i : Fin 35, i ≠ 24 → F.L (bank i) = S.L (bank i) ∧ F.R (bank i) = S.R (bank i))
+    (pass : ∀ before : Fin (M^d*W) → α,
+      (∀ z, RadixToBinary.binaryEncoding.encode (putWord source p (List.ofFn (sym ∘ before)) z) =
+        readAt blank (S.L (bank 24)) (S.R (bank 24)) (z-p)) →
+      (∀ x j, before (index (addr x) j) = input (index x j)) →
+      ∃ after : Fin (M^d*W) → α,
+        (∀ z, RadixToBinary.binaryEncoding.encode (putWord source p (List.ofFn (sym ∘ after)) z) =
+          readAt blank (F.L (bank 24)) (F.R (bank 24)) (z-p)) ∧
+        ∀ x j, after (index (addr x) j) = output (index x j)) :
+    ColumnRecordReady bank H J record sym source dest p q output addr F := by
+  obtain ⟨before,layout,placed⟩ := start
+  obtain ⟨after,returned,cells⟩ := pass before (fun z => (layout.src z).symm) placed
+  exact ⟨after,layout.returnPayload keep returned,cells⟩
 
 /-- A prepared archive can replace the old record without reloading the signed payload. -/
 theorem ColumnRecordReady.replaceArchive {S F : Stacks T A} {bank : Fin 35 ↪ Fin T}
