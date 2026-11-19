@@ -112,6 +112,26 @@ theorem directoryDigits_volume_le (v : Descriptor) (positive : v.Positive)
     _ = (15*r+133)*(v.beforeRows*v.rows*v.beforeH*prime^v.width*1*prime^v.width*1) := by ring
     _ ≤ _ := by gcongr <;> omega
 
+/-- Reading inherited labels pays once per parent, per record, and per live record. -/
+def inheritedLabelCost (r width parents records live : ℕ) :=
+  width * (6*parents + 18*records + 12*r*r*live)
+
+omit [M8.Machine.Net] in
+theorem inheritedLabelCost_le_volume (v : Descriptor) (positive : v.Positive)
+    (r width parents live : ℕ) (hp : parents ≤ LabelMask.records v)
+    (hl : live ≤ LabelMask.records v) (hw : width ≤ prime^v.width) :
+    prime^v.width * inheritedLabelCost r width parents (LabelMask.records v) live ≤
+      (24+12*r*r)*volume prime v := by
+  unfold inheritedLabelCost
+  grw [hp, hl, hw]
+  unfold LabelMask.records volume
+  calc
+    _ = (24+12*r*r)*(v.beforeRows*v.rows*v.beforeH*prime^v.width*1*prime^v.width*1) := by ring
+    _ ≤ _ := by
+      have middle := positive.2.2.2.1
+      have suffix := positive.2.2.2.2
+      gcongr <;> omega
+
 /-- The live part of the generated pass pays the density factor on both swaps
 and shears, and the quotient-width factor on swaps. -/
 theorem signedPassResidualCharge_le (L r swaps shears live V : ℕ) (rankPos : 0 < r)
@@ -464,7 +484,6 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
         (classes-units) * (10*((d+1)*(d+1)*base.H)+6) +
         classes * (4+(r*r*(4*(w+1)+4)+1)+6))
     let a := base.physical e proj α α'
-    let perDigit := 18*box+6+12*r*r*units*lifts
     let perParent := box*(15*digits+133) + 25 +
       queuePerParent + lifts*signedClassSetup U d T w a.H classes units +
       lifts*units*(signedResidualTime_le_setup_add_counter U d a.H).choose*a.J
@@ -475,7 +494,8 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     SignedPassBound regs anchor ports ext v B a payload rs parents saved body
       (.seq (LabelSpectators.program r br rows bh atom (dir 2) (dir 9) (dir 3) (dir 5)) (.seq (.seq (LabelDirectorySetup.setup r dir atom one) (.seq (expandMask (dir 9) (dir 4) (dir 2) (dir 3) (dir 5) (dir 12) (fun _ => false)) (LabelDirectoryBuild.program dir))) (.seq (.seq (LabelCounts.highCount one atom (dir 7) (dir 2) (dir 3) (dir 5))
         (scanR (dir 7) (dir 2) (LabelCountBank.pushAll (cs.map Prod.fst)))) (.seq writeMask (.seq (.seq (bcopy (recip 15) (bank 17) (bank 4) tmp) (.seq (.seq (umulSym 1 (bitSymbol false) (bank 8) (bank 9) (bank 4)) (withIdentitySeed (d+1) (bank 9) (bank 17) seed (bank 4) tmp generate)) (bclear (bank 9)))) (bclear (bank 17))))))) pass
-      ((v.beforeRows*v.rows*B)*(perParent + width*perDigit) + fixedCost +
+      ((v.beforeRows*v.rows*B)*perParent + inheritedLabelCost r width (v.beforeRows*v.rows*B)
+        (LabelMask.records v) ((v.beforeRows*v.rows*B)*(units*lifts)) + fixedCost +
         (anchorVolumeRate d T + 4)*totalVolume + (6+rate)*min liveVolume (((prime-1)*totalVolume)/prime)) u raw input := by
   intro swaps shears rate
   obtain ⟨pass,run⟩ := physicalSignedResidualPass (w := w) (W := W) regs anchor ports ext off banks external shared
@@ -486,7 +506,7 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     coeffOff maskLayout retained anchorDirectory portDirectory extDirectory
   obtain ⟨writeMask,write⟩ := record_writes (body := body) r cs sizeC mask parentsC savedC maskLayout
   refine ⟨writeMask,?_⟩
-  intro directoryPorts directorySlot dir parentWidthPort parentWidthOff atom one atomOff oneOff highLayout highSlots br rows bh dimensions word parentTail v B base payload u raw positiveDescriptor beforeRows rowsSize beforeH parentBlank source n box parentWidth digits ancestor tail entries counted builtState input atomWord oneWidth parentsWord wordWidth scratch counterEmpty savedBlank maskBlank bits selected oneBlank unitWord masked zeroBlank initial padWord S queueInputs scan liveBase generate units classes lifts queuePerParent a perDigit perParent recordVolume totalVolume liveVolume fixedCost shape records hW D
+  intro directoryPorts directorySlot dir parentWidthPort parentWidthOff atom one atomOff oneOff highLayout highSlots br rows bh dimensions word parentTail v B base payload u raw positiveDescriptor beforeRows rowsSize beforeH parentBlank source n box parentWidth digits ancestor tail entries counted builtState input atomWord oneWidth parentsWord wordWidth scratch counterEmpty savedBlank maskBlank bits selected oneBlank unitWord masked zeroBlank initial padWord S queueInputs scan liveBase generate units classes lifts queuePerParent a perParent recordVolume totalVolume liveVolume fixedCost shape records hW D
     neutral radix free count width unsigned clean start hm hw fresh maskEmpty encoded padding
   let active := LabelStock.live r (w+1) 1
   obtain ⟨seedBlank,tmpBlank,weightBank,queueReady,empty,output⟩ := queueInputs
@@ -816,7 +836,7 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     rw [pow_succ]
     omega
   apply total.trans
-  dsimp only [dirCost,setupCost,perDigit,perParent,recordVolume,totalVolume,liveVolume,fixedCost,signedPassWork,Nat.add_one_sub_one]
+  dsimp only [dirCost,setupCost,inheritedLabelCost,perParent,recordVolume,totalVolume,liveVolume,fixedCost,signedPassWork,Nat.add_one_sub_one]
   grw [traversal]
   change a.records = LabelMask.records v at records
   rw [← records,show a.records = n*box from recordCount,recordCount,← parentSize,boxSize]
