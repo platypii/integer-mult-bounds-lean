@@ -93,4 +93,57 @@ theorem maskedRange_exec (body : P → Pr P T Q A U) (mask : Fin T) (live paddin
   obtain rfl : j = records := by omega
   exact ⟨z,F,n,hz,done,empty,hn,run⟩
 
+/-- Consume one fallback bit even on padding, so both selector tapes advance
+in physical record order. -/
+def classifiedScan (liveMask fallbackMask : Fin T) (good fallback padding : Pr P T Q A U) :
+    Pr P T Q A U :=
+  maskedScan liveMask (.seq (.act (nextPivotBit fallbackMask)) (.cond (·.flag) fallback good))
+    (.seq (.act (nextPivotBit fallbackMask)) padding)
+
+/-- The three record programs share a tape invariant. Dispatch adds at most
+six steps per record and leaves both selector tapes empty. -/
+theorem classifiedScan_exec (body : P → Pr P T Q A U) (liveMask fallbackMask : Fin T)
+    (apart : liveMask ≠ fallbackMask) (good fallback padding : Pr P T Q A U)
+    (records : ℕ) (live bad : ℕ → Bool) (cost : ℕ → ℕ) (ready : ℕ → Stacks T A → Prop)
+    (release : ∀ j S k bits, k = liveMask ∨ k = fallbackMask → ready j S →
+      ready j {S with R := Function.update S.R k bits})
+    (step : ∀ j, j < records → ∀ (v : HS T Q A U) (S : Stacks T A), ready j S →
+      ∃ z F n, z.user = v.user ∧ ready (j+1) F ∧ F.R liveMask = S.R liveMask ∧
+        F.R fallbackMask = S.R fallbackMask ∧ n ≤ cost j ∧
+        Exec body (if live j then (if bad j then fallback else good) else padding)
+          (mk v S) n (mk z F))
+    (v : HS T Q A U) (S : Stacks T A) (start : ready 0 S)
+    (liveBits : S.R liveMask = (List.range records).map fun j => bitSymbol (live j))
+    (badBits : S.R fallbackMask = (List.range records).map fun j => bitSymbol (bad j)) :
+    ∃ z F n, z.user = v.user ∧ ready records F ∧ F.R liveMask = [] ∧ F.R fallbackMask = [] ∧
+      n ≤ ((List.range records).map fun j => (cost j+2)+4).sum + 2 ∧
+      Exec body (classifiedScan liveMask fallbackMask good fallback padding) (mk v S) n (mk z F) := by
+  let bits := fun j => ((List.range records).drop j).map fun i => bitSymbol (a := A) (bad i)
+  let inv := fun j (D : Stacks T A) => ready j D ∧ D.R fallbackMask = bits j
+  have keep j D word (h : inv j D) : inv j {D with R := Function.update D.R liveMask word} :=
+    ⟨release j D _ word (Or.inl rfl) h.1, (Function.update_of_ne apart.symm ..).trans h.2⟩
+  apply Exists.elim (maskedRange_exec body liveMask _ _ records live (fun j => cost j+2) inv keep ?_
+    v S ⟨start, by simpa [bits] using badBits⟩ liveBits)
+  · rintro z ⟨F,n,hz,done,empty,time,run⟩
+    exact ⟨z,F,n,hz,done.1,empty,by simpa only [bits, List.drop_of_length_le (List.length_range.le), List.map_nil] using done.2,time,run⟩
+  intro j hj u D current
+  have head : D.R fallbackMask = bitSymbol (bad j) :: bits (j+1) := by
+    rw [current.2]
+    dsimp only [bits]
+    rw [← List.getElem_cons_drop (show j < (List.range records).length by simpa using hj)]
+    simp
+  let E := {D with R := Function.update D.R fallbackMask (bits (j+1))}
+  obtain ⟨z,F,n,hz,next,outer,inner,time,run⟩ := step j hj {u with flag := bad j} E
+    (release j D _ _ (Or.inr rfl) current.1)
+  have pop := Exec.act (body := body) (nextPivotBit fallbackMask) (mk u D)
+  have effects : inv (j+1) F := ⟨next, inner.trans (Function.update_self ..)⟩
+  have untouched : F.R liveMask = D.R liveMask := outer.trans (Function.update_of_ne apart ..)
+  cases h : live j <;> cases b : bad j <;>
+    simp [nextPivotBit,Action.run,head,b,update_rt] at pop <;>
+    simp only [h,b,Bool.false_eq_true,ite_false,ite_true,E] at run ⊢ <;>
+    first
+    | exact ⟨z,F,1+n,hz,effects,untouched,by omega,.seq pop run⟩
+    | exact ⟨z,F,1+(n+1),hz,effects,untouched,by omega,.seq pop (.cond_false rfl run)⟩
+    | exact ⟨z,F,1+(n+1),hz,effects,untouched,by omega,.seq pop (.cond_true rfl run)⟩
+
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
