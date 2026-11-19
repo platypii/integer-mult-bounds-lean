@@ -16,6 +16,88 @@ open Record RecursiveInterchangeLayout RingFormula Node
 local notation "M" => prime^(w+1)
 local instance : NeZero M := ⟨pow_ne_zero _ Networks.Shared50ModularControl.prime_prime.ne_zero⟩
 
+noncomputable def seededQueueBody (r d : ℕ) (e : (Fin r ⊕ Fin r) ≃ Fin (d+1))
+    (bank : Fin 18 ↪ Fin K) (recip : Fin 16 ↪ Fin K) (clock count : Fin K)
+    (pool : Fin ((conjugationDepth r+1)*13) ↪ Fin K) (coeff : Fin r → Fin r → Fin 4 ↪ Fin K)
+    (coeffOff : ∀ i j k l, recip k ≠ coeff i j l) (scan : Fin 6 ↪ Fin K)
+    (mask seed tmp : Fin K) : Pr P K Q prime U :=
+  let inputs := QueueLayout.formulaInputs.trans bank
+  let source := sourcePorts (m := r) inputs id
+  let weights := fun i j => QueueLayout.residualPorts recip (coeff i j) (coeffOff i j)
+  let f := determinant (matrixInput false)
+  let conjugate : Pr P K Q prime U := (.seq (directoryMatrix r (QueueLayout.readPorts.trans (QueueLayout.directoryWork.trans bank)) (QueueLayout.digitPorts.trans (QueueLayout.directoryWork.trans bank)) (bank 12) (bank 9) (bank 10)) (.seq (.seq (.seq (compile (readLeaf (leafBank source)) (registerBank pool) f 0 (recip 14)) (reusablePivotInverse prime recip clock count))
+        (.seq (packedConjugate pool source (QueueLayout.normalizationPorts.trans recip) false true) (.seq (bclear (recip 0)) (bclear (recip 14))))) (bclear (bank 10))))
+  let live : Pr P K Q prime U := .seq conjugate (.seq (sequence (fun i => sequence
+      (fun j => blockEntry weights (e.symm i) (e.symm j)) (List.finRange (d+1))) (List.finRange (d+1))) (bclear (recip 13)))
+  let branch := fun p => Prog.seq p (.seq (moveR (scan 4) (scan 5) id) (advanceDirectory r scan))
+  (.seq (maskedScan mask (branch live) (branch (bcopy seed (scan 4) (scan 3) tmp)))
+        (moveR (scan 5) (scan 4) id))
+
+noncomputable def withIdentitySeed (d : ℕ) (zero one seed tmp saved : Fin K) (generate : Pr P K Q prime U) :
+    Pr P K Q prime U :=
+  .seq (.seq (identitySeed d zero one seed tmp saved) generate) (bclear seed)
+
+def seededSetupCost (d H cost : ℕ) : ℕ := d*(d*(6*H+6)+1)+1+cost+(2*(d*d*H)+2)
+
+def SignedPassBound (regs : Fin 6 ↪ Fin T) (anchor : Fin (size d+T) ↪ Fin K)
+    (ports : Fin (N+2) ↪ Fin K) (ext : Fin 6 ↪ Fin K) (v : Descriptor) (B : ℕ)
+    (a : ScanData r d w W) (payload : ℕ → Record.Array d 1 (w+1) W)
+    (rs : List (Pair (size d+T))) (parents saved : Fin (size d+T))
+    (cs : List (Pair K)) (parentsC savedC : Fin K) (body : P → Pr P K Q prime U)
+    (setup pass : Pr P K Q prime U) (setupCost : ℕ) (u : HS K Q prime U)
+    (initial G : Stacks K prime) : Prop :=
+    v.beforeH = B*prime^(r*((w+1)*r)) →
+      a.records = LabelMask.records v → 0 < W →
+      let D := embStk anchor G
+      Ready d 1 (w+1) W D → ready (prime^w) D.R rs → D.R saved = [] →
+      (D.R parents).length = v.beforeRows*v.rows*B →
+      (D.R (port d regs 0)).length = ActualAffineScaling.modulus (w+1)^((d+1)*1)*W →
+      a.signed = (List.range a.records).map payload →
+      (∀ i ∈ ([2,3,4,5] : List (Fin 6)), D.R (port d regs i) = []) →
+      ScanReady a ports ext 0 (preparedPivots a (ports (Fin.last N).castSucc)
+        G) →
+      M < 2^a.H → W < 2^a.J → a.outputTail = [] → G.R (ext 0) = [] →
+      ready (prime^w) G.R cs → G.R savedC = [] → (G.R parentsC).length = v.beforeRows*v.rows*B →
+      (∀ j < a.records, Record.scalarArray (payload j) = SparseRoleCircuit.encode ∘ a.input j) →
+      (∀ j < a.records, LabelStock.live r (w+1) 1 j = false →
+      ∃ symbol, Record.scalarArray (payload j) = fun _ => symbol) →
+      let ins := signedInputs a.table (w+1) a.records payload
+    let output := (List.range a.records).flatMap (outputRecord (LabelStock.live r (w+1) 1) a.matrix a.input)
+    ∃ (z : HS K Q prime U) (F : Stacks K prime) (n : ℕ), z.user = u.user ∧ F.R (ext 2) = output ++ a.inputTail ∧ F.R (ext 5) = [] ∧
+      F.R (ext 0) = [] ∧ F.R (ports (Fin.last N).castSucc) = a.pivotTail ∧
+      F.R (ports (archivePorts 0 (columnBank 34))) = a.matrixTail ∧
+      n ≤ setupCost + ((1+((v.beforeRows*v.rows*B)*(LabelTraversal.time (prime^w) (r*r) 1+5)+4 +
+          ((ins.map (fun x => Record.cost d T 1 (w+1) W x.1 + 2)).sum + 2) +
+          (2*(a.records*(ActualAffineScaling.modulus (w+1)^((d+1)*1)*W))+2))) + (2*((v.beforeRows*v.rows*B)*(LabelTraversal.time (prime^w) (r*r) 1+5)+4) + (1+(((List.range a.records).map fun j => a.recordTime U j + 4).sum + 2 + (2*(a.records*(M^(d+1)*W))+2))))) ∧
+      Exec body (.seq setup pass) (mk u initial) n (mk z F)
+
+structure SeededQueueReady (w H records : ℕ) (proj : Matrix (Fin r) (Fin r) ℚ)
+    (α α' : Fin r → ZMod M) (initial S : Stacks K prime) (bank : Fin 18 ↪ Fin K)
+    (recip : Fin 16 ↪ Fin K) (pool : Fin ((conjugationDepth r+1)*13) ↪ Fin K)
+    (coeff : Fin r → Fin r → Fin 4 ↪ Fin K) (clock count mask seed tmp archive : Fin K)
+    (ancestor : ℕ → List (Fin (prime+4))) (tail : List (Fin (prime+4))) : Prop where
+  seedBlank : initial.R seed = []
+  tmpBlank : S.R tmp = []
+  weightBank : S.R (recip 13) = [] ∧ ∀ i j, let s := coeff i j
+      S.R (s 1) = binSyms H (α i).val ∧ S.R (s 2) = binSyms H (α' j).val
+  ready :
+      (∀ i : Fin 18, i ∈ [0,3,4,5,6,7,11,14,15] → S.R (bank i) = []) ∧ (S.R (bank 8)).length = H ∧
+      S.R (bank 9) = binSyms H 0 ∧ S.R (bank 10) = [] ∧
+       (S.R clock).length = w ∧ S.R count = [] ∧ S.R (recip 14) = [] ∧
+      S.R (recip 15) = binSyms H (1 : ZMod (prime^(w+1))).val ∧ S.R (recip 4) = binSyms H (prime^(w+1)) ∧
+      (∀ i : Fin 16, i ≠ 4 → i < 13 → S.R (recip i) = []) ∧
+      (∀ k ≤ conjugationDepth r, S.R (frame pool k 2) = binSyms H (prime^(w+1))) ∧
+      (∀ k ≤ conjugationDepth r, ∀ i : Fin 13, i ≠ 2 → S.R (frame pool k i) = []) ∧
+      (∃ suffix, S.R (bank 16) = matrixWords prime H (IntegerMultBounds.Swap.Modular.reduce M proj) ++ suffix) ∧
+      S.R (bank 17) = binSyms H (1 : ZMod (prime^(w+1))).val
+  widths : ∀ j < records, (S.R (bank 12)).length = (ancestor j).length
+  width : (S.R (bank 1)).length = w+1
+  blank : S.R (bank 4) = []
+  empty : S.R (archive) = []
+  directory : S.R (bank 2) = (List.range records).flatMap (LabelDirectory.entry ancestor r (w+1)) ++ tail
+  output : S.R (bank 13) = []
+  bits : S.R mask = (List.range records).map fun j => bitSymbol (LabelStock.live r (w+1) 1 j)
+
 theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size d+T) ↪ Fin K)
     (ports : Fin (N+2) ↪ Fin K) (ext : Fin 6 ↪ Fin K) (off : ∀ i k, ports i ≠ ext k)
     (banks : ∀ i k, anchor i ≠ ports k) (external : ∀ i k, k ≠ 2 → anchor i ≠ ext k)
@@ -61,78 +143,31 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
       (u : HS K Q prime U) (initial : Stacks K prime),
     let padWord := matrixWords prime base.H (1 : Matrix (Fin (d+1)) (Fin (d+1)) (ZMod M))
     let S := {initial with R := Function.update initial.R seed padWord}
-    ∀
-    (_seedBlank : initial.R seed = []) (_tmpBlank : S.R tmp = [])
-    (_weightBank : S.R (recip 13) = [] ∧ ∀ i j, let s := coeff i j
-      S.R (s 1) = binSyms base.H (α i).val ∧ S.R (s 2) = binSyms base.H (α' j).val)
-    (_ready :
-      (∀ i : Fin 18, i ∈ [0,3,4,5,6,7,11,14,15] → S.R (bank i) = []) ∧ (S.R (bank 8)).length = base.H ∧
-      S.R (bank 9) = binSyms base.H 0 ∧ S.R (bank 10) = [] ∧
-       (S.R clock).length = w ∧ S.R count = [] ∧ S.R (recip 14) = [] ∧
-      S.R (recip 15) = binSyms base.H (1 : ZMod (prime^(w+1))).val ∧ S.R (recip 4) = binSyms base.H (prime^(w+1)) ∧
-      (∀ i : Fin 16, i ≠ 4 → i < 13 → S.R (recip i) = []) ∧
-      (∀ k ≤ conjugationDepth r, S.R (frame pool k 2) = binSyms base.H (prime^(w+1))) ∧
-      (∀ k ≤ conjugationDepth r, ∀ i : Fin 13, i ≠ 2 → S.R (frame pool k i) = []) ∧
-      (∃ suffix, S.R (bank 16) = matrixWords prime base.H (IntegerMultBounds.Swap.Modular.reduce M proj) ++ suffix) ∧
-      S.R (bank 17) = binSyms base.H (1 : ZMod (prime^(w+1))).val)
-    (_widths : ∀ j < base.records, (S.R (bank 12)).length = (ancestor j).length)
-    (_width : (S.R (bank 1)).length = w+1) (_blank : S.R (bank 4) = []) (_empty : S.R (archive) = [])
-    (_directory : S.R (bank 2) = (List.range base.records).flatMap (LabelDirectory.entry ancestor r (w+1)) ++ tail)
-    (_output : S.R (bank 13) = []) (_bits : S.R mask = (List.range base.records).map fun j => bitSymbol (LabelStock.live r (w+1) 1 j)),
-    let inputs := QueueLayout.formulaInputs.trans bank
-    let source := sourcePorts (m := r) inputs id
-    let weights := fun i j => QueueLayout.residualPorts recip (coeff i j) (coeffOff i j)
+    SeededQueueReady w base.H base.records proj α α' initial S bank recip pool coeff clock count
+      mask seed tmp archive ancestor tail →
     let scan := QueueLayout.scanPorts (QueueLayout.directoryWork.trans bank) archive archiveOff
-    let num := fun i j : Fin r => numerator (matrixInput false) (matrixInput true) i j
-    let cost := Finset.univ.sup fun ij : Fin r × Fin r => RingFormula.time base.H (readTime base.H) (num ij.1 ij.2)
-    let f := determinant (matrixInput false)
-    let conjugate : Pr P K Q prime U := (.seq (directoryMatrix r (QueueLayout.readPorts.trans (QueueLayout.directoryWork.trans bank)) (QueueLayout.digitPorts.trans (QueueLayout.directoryWork.trans bank)) (bank 12) (bank 9) (bank 10)) (.seq (.seq (.seq (compile (readLeaf (leafBank source)) (registerBank pool) f 0 (recip 14)) (reusablePivotInverse prime recip clock count))
-        (.seq (packedConjugate pool source (QueueLayout.normalizationPorts.trans recip) false true) (.seq (bclear (recip 0)) (bclear (recip 14))))) (bclear (bank 10))))
-    let live : Pr P K Q prime U := .seq conjugate (.seq (sequence (fun i => sequence
-      (fun j => blockEntry weights (e.symm i) (e.symm j)) (List.finRange (d+1))) (List.finRange (d+1))) (bclear (recip 13)))
     let active := LabelStock.live r (w+1) 1
-    let livePrice := liveRecordCost r (d+1) w base.H (S.R (bank 12)).length cost (RingFormula.time base.H (readTime base.H) f)
-    let branch := fun p => Prog.seq p (.seq (moveR (scan 4) (scan 5) id) (advanceDirectory r scan))
-    let generate : Pr P K Q prime U := (.seq (maskedScan mask (branch live) (branch (bcopy seed (scan 4) (scan 3) tmp)))
-        (moveR (scan 5) (scan 4) id))
+    let livePrice := liveRecordCost r (d+1) w base.H (S.R (bank 12)).length
+      (Finset.univ.sup fun ij : Fin r × Fin r => RingFormula.time base.H (readTime base.H)
+        (numerator (matrixInput false) (matrixInput true) ij.1 ij.2))
+      (RingFormula.time base.H (readTime base.H) (determinant (matrixInput (m := r) false)))
+    let generate : Pr P K Q prime U := seededQueueBody r d e bank recip clock count pool coeff coeffOff scan mask seed tmp
     let setupCost := (List.range base.records).countP active * (livePrice + 4*((d+1)*(d+1)*base.H)) +
         (List.range base.records).countP (fun j => !active j) * (10*((d+1)*(d+1)*base.H)+6) +
         base.records * (4*(S.R (bank 12)).length+4+(r*r*(4*(w+1)+4)+1)+6) + 4
     let a := base.physical e proj α α'
-    let G := queueResult S mask (scan 2) archive tail (a.matrices 0)
-    v.beforeH = B*prime^(r*((w+1)*r)) →
-      a.records = LabelMask.records v → 0 < W →
-      let D := embStk anchor G
-      Ready d 1 (w+1) W D → ready (prime^w) D.R rs → D.R saved = [] →
-      (D.R parents).length = v.beforeRows*v.rows*B →
-      (D.R (port d regs 0)).length = ActualAffineScaling.modulus (w+1)^((d+1)*1)*W →
-      a.signed = (List.range a.records).map payload →
-      (∀ i ∈ ([2,3,4,5] : List (Fin 6)), D.R (port d regs i) = []) →
-      ScanReady a ports ext 0 (preparedPivots a (ports (Fin.last N).castSucc)
-        G) →
-      M < 2^a.H → W < 2^a.J → a.outputTail = [] → G.R (ext 0) = [] →
-      ready (prime^w) G.R cs → G.R savedC = [] → (G.R parentsC).length = v.beforeRows*v.rows*B →
-      (∀ j < a.records, Record.scalarArray (payload j) = SparseRoleCircuit.encode ∘ a.input j) →
-      (∀ j < a.records, LabelStock.live r (w+1) 1 j = false →
-      ∃ symbol, Record.scalarArray (payload j) = fun _ => symbol) →
-      let ins := signedInputs a.table (w+1) a.records payload
-    let output := (List.range a.records).flatMap (outputRecord (LabelStock.live r (w+1) 1) a.matrix a.input)
-    ∃ z F n, z.user = u.user ∧ F.R (ext 2) = output ++ a.inputTail ∧ F.R (ext 5) = [] ∧
-      F.R (ext 0) = [] ∧ F.R (ports (Fin.last N).castSucc) = a.pivotTail ∧
-      F.R (ports (archivePorts 0 (columnBank 34))) = a.matrixTail ∧
-      n ≤ ((d+1)*((d+1)*(6*base.H+6)+1)+1 + setupCost) + ((1+((v.beforeRows*v.rows*B)*(LabelTraversal.time (prime^w) (r*r) 1+5)+4 +
-          ((ins.map (fun x => Record.cost d T 1 (w+1) W x.1 + 2)).sum + 2) +
-          (2*(a.records*(ActualAffineScaling.modulus (w+1)^((d+1)*1)*W))+2))) + (2*((v.beforeRows*v.rows*B)*(LabelTraversal.time (prime^w) (r*r) 1+5)+4) + (1+(((List.range a.records).map fun j => a.recordTime U j + 4).sum + 2 + (2*(a.records*(M^(d+1)*W))+2))))) ∧
-      Exec body (.seq (.seq (identitySeed (d+1) (bank 9) (bank 17) seed (bank 4) tmp) generate) pass) (mk u initial) n (mk z F) := by
+    let G := queueResult initial mask (scan 2) archive tail (a.matrices 0)
+    SignedPassBound regs anchor ports ext v B a payload rs parents saved cs parentsC savedC body
+      (withIdentitySeed (d+1) (bank 9) (bank 17) seed (bank 4) tmp generate) pass
+      (seededSetupCost (d+1) base.H setupCost) u initial G := by
   obtain ⟨pass,run⟩ := physicalSignedResidualPass (w := w) (W := W) regs anchor ports ext off banks external shared
     capacity e proj idempotent admissible α α' inverse body rs hk parents saved layout cap cs sizeC
     parentsC savedC maskRegs pivotRegs separate
   refine ⟨pass,?_⟩
   intro placement size archiveSlot registers host control mask seed tmp bank recip counters clock count pool coeff archive archiveOff
-    coeffOff ancestor tail v B base payload u initial padWord S seedBlank tmpBlank weightBank queueReady
-    widths width0 blank empty directory output bits inputs source weights scan num cost f conjugate live
-    active livePrice branch generate setupCost a G shape records hW D
+    coeffOff ancestor tail v B base payload u initial padWord S queueInputs scan active livePrice generate setupCost a G shape records hW D
     neutral radix free count width unsigned clean start hm hw fresh maskEmpty radixC freeC countC encoded padding
+  obtain ⟨seedBlank,tmpBlank,weightBank,queueReady,widths,width0,blank,empty,directory,output,bits⟩ := queueInputs
   have sharedArchive : archive = ports (archivePorts 0 (columnBank 34)) := by
     change Equiv.swap (placement archiveSlot) _ (placement _) = _
     have slot : (⟨0+(36+2*r), by dsimp [size]; omega⟩ : Fin (size+3)) = archiveSlot :=
@@ -162,15 +197,20 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
   change Exec body generate (mk prepared S) t (mk y (queueResult S mask (scan 2) archive tail words)) at generateRun
   have archiveEq : words = a.matrices 0 := (base.physical_archive e proj α α').symm
   rw [archiveEq] at generateRun
+  obtain ⟨cleaned,cleanUser,clearRun⟩ := clearQueueSeed_exec body seed mask (scan 2) archive
+    (control.injective.ne (by decide : (1 : Fin 3) ≠ 0)) (apart _ 1).symm (apart _ 1).symm
+    padWord tail (a.matrices 0) y initial seedBlank
+  have padLen : padWord.length = (d+1)*(d+1)*base.H := length_matrixWords ..
   have installed : G.R archive = a.matrices 0 := Function.update_self ..
   have prep : Function.update G.R archive (a.matrices 0) = G.R := by rw [← installed,Function.update_eq_self]
   obtain ⟨z,E,n,hz,queue,acc,maskDone,pivots,archiveDone,hn,exec⟩ :=
-    run v B base payload y G shape records hW neutral radix free count width unsigned clean
+    run v B base payload cleaned G shape records hW neutral radix free count width unsigned clean
       (sharedArchive ▸ installed.trans (base.physical_archive e proj α α')) (by
         change ScanReady a ports ext 0 (preparedPivots a _ {G with R := Function.update G.R (ports (archivePorts 0 (columnBank 34))) (a.matrices 0)})
         rw [← sharedArchive,prep]
         exact start)
       hm hw fresh maskEmpty radixC freeC countC encoded padding
-  exact ⟨z,E,_,hz.trans (hy.trans preparedUser),queue,acc,maskDone,pivots,archiveDone,Nat.add_le_add (Nat.add_le_add initCost ht) hn,Exec.seq (Exec.seq initRun generateRun) exec⟩
+  exact ⟨z,E,_,hz.trans (cleanUser.trans (hy.trans preparedUser)),queue,acc,maskDone,pivots,archiveDone,Nat.add_le_add (Nat.add_le_add (Nat.add_le_add initCost ht) (Nat.le_of_eq (congrArg (fun n => 2*n+2) padLen))) hn,
+    Exec.seq (Exec.seq (Exec.seq initRun generateRun) clearRun) exec⟩
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback

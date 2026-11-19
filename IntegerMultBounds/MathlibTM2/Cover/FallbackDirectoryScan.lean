@@ -68,6 +68,27 @@ def queueResult {A : ℕ} (S : Stacks T A) (mask directory archive : Fin T)
     (tail words : List (Fin (A+4))) : Stacks T A :=
   {S with R := Function.update (Function.update (Function.update S.R mask []) directory tail) archive words}
 
+/-- Release a temporary word after the queue has been installed. The three
+queue updates survive and the temporary returns to its initial blank state. -/
+theorem clearQueueSeed_exec (body : P → Pr P T Q prime U) (seed mask dir archive : Fin T)
+    (hm : seed ≠ mask) (hd : seed ≠ dir) (ha : seed ≠ archive)
+    (word tail words : List (Fin (prime+4))) (v : HS T Q prime U) (S : Stacks T prime)
+    (blank : S.R seed = []) :
+    let filled := queueResult {S with R := Function.update S.R seed word} mask dir archive tail words
+    ∃ z, z.user = v.user ∧ Exec body (bclear seed) (mk v filled) (2*word.length+2)
+      (mk z (queueResult S mask dir archive tail words)) := by
+  intro filled
+  obtain ⟨z,user,_,run⟩ := bclear_exec body seed v filled
+  have len : filled.R seed = word := by
+    simp [filled,queueResult,Function.update_of_ne hm,Function.update_of_ne hd,Function.update_of_ne ha]
+  have state : {filled with R := Function.update filled.R seed []} = queueResult S mask dir archive tail words := by
+    apply Stacks.ext <;> try rfl
+    dsimp only [filled,queueResult]
+    rw [Function.update_comm ha.symm,Function.update_comm hd.symm,Function.update_comm hm.symm,
+      Function.update_idem,← blank,Function.update_eq_self]
+  rw [state,len] at run
+  exact ⟨z,user,run⟩
+
 theorem directoryQueue_exec (body : P → Pr P T Q prime U) (r : Fin 6 ↪ Fin T) (mask : Fin T)
     (outside : ∀ k, mask ≠ r k) (m w records : ℕ) (active : ℕ → Bool)
     (live : Pr P T Q prime U) (seed tmp : Fin T)
