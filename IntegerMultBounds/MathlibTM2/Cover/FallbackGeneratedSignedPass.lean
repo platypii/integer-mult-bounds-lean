@@ -756,6 +756,58 @@ theorem passPreparationCost_volume_le (v : Descriptor) (positive : v.Positive)
   simpa only [passPreparationCost, Nat.mul_add, Nat.add_mul] using
     Nat.add_le_add (Nat.add_le_add queue dir) pad
 
+/-- In descriptor units the complete binary-width pass budget consists of a
+linear term and the residual rate on the invertible fraction of the volume. -/
+theorem generatedSignedPass_cost_le (U : Type) (r d T : ℕ)
+    (e : (Fin r ⊕ Fin r) ≃ Fin (d+1)) :
+    ∃ C : ℕ, ∀ (v : Descriptor) w suffix B width rate, v.Positive →
+      v.width = r*(w+1)+suffix → v.beforeH = B*prime^(r*((w+1)*r)) → width ≤ prime^v.width →
+      let W := prime^(2*suffix)*v.between*v.afterD
+      let H := Nat.size (prime^(w+1))
+      let parents := v.beforeRows*v.rows*B
+      let units := ∏ i : Fin r, (prime^r-prime^i.val)
+      let classes := prime^(r*r)
+      let lifts := (prime^w)^(r*r)
+      let perParent := lifts*signedClassSetup U d T w H classes units +
+        lifts*units*residualCounterRate U d H*Nat.size W
+      let recordVolume := (prime^(w+1))^(d+1)*W
+      let total := LabelMask.records v*recordVolume
+      let live := parents*(units*lifts)*recordVolume
+      parents*perParent + passPreparationCost v r (d+1) w B width H +
+        (anchorVolumeRate d T+4)*total + (6+rate)*min live (((prime-1)*total)/prime) ≤
+        C*volume prime v + (6+rate)*(((prime-1)*volume prime v)/prime) := by
+  obtain ⟨c,hc⟩ := signedPass_parentSetup_volume_le U d T
+  let prep := matrixBuildCost r (d+1) 1 1*(Nat.size prime+1)^2 + (10*((d+1)*(d+1))+6) +
+    (16*r*r+19*r+344) + paddingSetupCost (d+1) 1
+  refine ⟨c+prep+(anchorVolumeRate d T+4), ?_⟩
+  intro v w suffix B width rate positive splitWidth shape hw W H parents units classes lifts perParent recordVolume total live
+  have rankPos : 0 < r := by
+    have dim := Fintype.card_congr e
+    simp only [Fintype.card_sum, Fintype.card_fin] at dim
+    omega
+  have volumeEq : total = volume prime v := signedPassVolume_eq_descriptor v e w suffix splitWidth
+  have records : parents*lifts*classes = LabelMask.records v := by
+    simp only [LabelMask.records, shape, parents, classes, lifts, ← pow_mul]
+    ring_nf
+  have unitsLe : units ≤ classes := by
+    calc
+      _ ≤ ∏ _ : Fin r, prime^r := Finset.prod_le_prod fun i _ => Nat.sub_le _ _
+      _ = _ := by simp [classes, ← pow_mul]
+  have widthPos : 0 < W := Nat.mul_pos (Nat.mul_pos (pow_pos Networks.Shared50ModularControl.prime_prime.pos _)
+    positive.2.2.2.1) positive.2.2.2.2
+  have parent := hc w W parents lifts classes units widthPos unitsLe
+  change parents*perParent ≤ c*(parents*lifts*classes)*recordVolume at parent
+  rw [records, Nat.mul_assoc c] at parent
+  change parents*perParent ≤ c*total at parent
+  rw [volumeEq] at parent
+  have preparation := passPreparationCost_volume_le v positive r (d+1) w B width rankPos shape (by omega) hw
+  have cheap := Nat.le_mul_of_pos_left (passPreparationCost v r (d+1) w B width H)
+    (pow_pos Networks.Shared50ModularControl.prime_prime.pos v.width)
+  have setup : passPreparationCost v r (d+1) w B width H ≤ prep*volume prime v := cheap.trans preparation
+  rw [volumeEq]
+  grw [parent, setup, min_le_right]
+  exact le_of_eq (by ring)
+
 omit [M8.Machine.Net] in
 private theorem liveRecordCost_width (r d w H width numTime detTime : ℕ) :
     liveRecordCost r d w H width numTime detTime =
