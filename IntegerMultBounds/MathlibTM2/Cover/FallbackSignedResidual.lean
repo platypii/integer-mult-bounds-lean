@@ -22,6 +22,35 @@ noncomputable def signedResidualTime (U : Type) (rows : Fin (d+1) → Fin (d+1))
   let forwardCost := (d+1)*(2*(d+1)+(4*w+4+columnTime (d+1) prime w H))+1
   forwardCost + ((1+(pairCost+1))+((d+1)*stepCost+1))
 
+/-- For a residual matrix of dimension `d+1`, setup enumerates at most
+`d` coordinates. The constant works for every pivot itinerary. -/
+theorem signedResidualTime_setup_le (U : Type) (d : ℕ) :
+    ∃ C : ℕ, ∀ (rows : Fin (d+1) → Fin (d+1)) w H,
+      signedResidualTime U rows w 0 H 0 ≤ C*(w+1+(prime^(w+1))^d)*(H+1)^2 := by
+  choose c hc using fun i : Fin d => pairScalingTime_setup_le U i.succ 0 i.succ
+  obtain ⟨s,hs⟩ := columnProgramTime_setup_le U (d+1)
+  refine ⟨((List.finRange d).map c).sum + (d+1)*s + 1000*(prime+1)*(d+2)^5, ?_⟩
+  intro rows w H
+  let size := (w+1+(prime^(w+1))^d)*(H+1)^2
+  have pairs (xs : List (Fin d)) :
+      (xs.map fun i => pairScalingTime U i.succ 0 i.succ w 0 H 0).sum ≤ (xs.map c).sum*size := by
+    induction xs with
+    | nil => simp
+    | cons i xs ih =>
+      simp only [List.map_cons, List.sum_cons, Nat.add_mul]
+      exact Nat.add_le_add (by simpa only [size, Nat.add_one_sub_one, Nat.mul_assoc] using hc i w H) ih
+  have columns : Finset.univ.sup (fun k => columnProgramTime U k (rows k) w 0 H 0) ≤ s*size :=
+    Finset.sup_le fun k _ => by simpa only [size, Nat.add_one_sub_one, Nat.mul_assoc] using hs k (rows k) w H
+  simp only [signedResidualTime]
+  grw [pairs, columns]
+  simp only [columnTime, entryTime, size]
+  grw [Nat.sub_le prime 2]
+  generalize (prime^(w+1))^d = prefixes
+  generalize ((List.finRange d).map c).sum = total
+  generalize prime = p
+  ring_nf
+  omega
+
 /-- Apart from the largest pivot-column cost, the payload charge of the
 whole residual schedule has one rate shared by every pivot itinerary. -/
 theorem signedResidualTime_le_setup_add_columns (U : Type) (d : ℕ) :
