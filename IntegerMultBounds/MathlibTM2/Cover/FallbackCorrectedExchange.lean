@@ -240,6 +240,37 @@ theorem exchangeAddress_pairs {R : Type*} [CommRing R] (weight : Fin d → Rˣ)
     rw [exchangeAddress_pair,ih]
     rfl
 
+omit [M8.Machine.Net] in
+/-- Two exchanges using archived units scale by the quotient of their weights. -/
+theorem archivedExchange_pair {R : Type*} [CommRing R] (i : Fin d) (u v : Rˣ) (x : Fin (d+1) → R) :
+    exchangeAddress 0 i.succ (↑v⁻¹ : R) v (exchangeAddress 0 i.succ (↑u⁻¹ : R) u x) =
+      fun j => (pair i (v * u⁻¹) j : R) * x j := by
+  funext j
+  cases j using Fin.cases with
+  | zero => simp [exchangeAddress,pair,(Fin.succ_ne_zero i).symm,mul_assoc,mul_left_comm]
+  | succ j => by_cases h : j = i <;>
+      simp [exchangeAddress,pair,h,Fin.succ_ne_zero,(Fin.succ_ne_zero i).symm,mul_assoc]
+
+omit [M8.Machine.Net] in
+/-- Reading the same parent for both exchanges cancels its weight. The unit pivot
+in the first exchange leaves the second pivot as the residual diagonal entry. -/
+theorem archivedExchange_pairs {R : Type*} [CommRing R] (parent pivot : Fin d → Rˣ)
+    (rows : List (Fin d)) (x : Fin (d+1) → R) :
+    (rows.flatMap fun i => [(i,(1 : Rˣ)),(i,pivot i)]).foldl
+      (fun y (op : Fin d × Rˣ) => exchangeAddress 0 op.1.succ
+        ((↑(parent op.1)⁻¹ : R) * Ring.inverse (op.2 : R)) ((parent op.1 : R) * op.2) y) x =
+      applyPairs pivot rows x := by
+  induction rows generalizing x with
+  | nil => rfl
+  | cons i rows ih =>
+    simp only [List.flatMap_cons,List.cons_append,List.nil_append,List.foldl_cons,Ring.inverse_unit,
+      inv_one,Units.val_one,mul_one]
+    simp only [Ring.inverse_unit] at ih
+    have pairAction := archivedExchange_pair i (parent i) (parent i * pivot i) x
+    simp only [mul_inv_rev,Units.val_mul] at pairAction
+    rw [mul_comm (↑(parent i)⁻¹ : R) (↑(pivot i)⁻¹ : R),pairAction,ih]
+    simp [applyPairs]
+
 /-- Execute each weighted exchange in occurrence order using a common pivot and parent archive. -/
 theorem correctedSchedule_exec {m r n Q : ℕ} (k t : Fin n → Fin (d+1)) (lt : ∀ a, k a < t a)
     (capacity : columnCapacity ≤ Q) (signCapacity : ∀ a, (fieldSignProgram (k a) true).1 ≤ Q)
