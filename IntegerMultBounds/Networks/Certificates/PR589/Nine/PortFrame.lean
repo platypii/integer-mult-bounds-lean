@@ -1,5 +1,6 @@
 module
 
+public import Mathlib.LinearAlgebra.Matrix.Rank
 public import Mathlib.LinearAlgebra.Matrix.Block
 public import Mathlib.Algebra.BigOperators.Fin
 public import Mathlib.Algebra.Field.Rat
@@ -222,7 +223,8 @@ theorem exchange_pivot_coordinates {n : ℕ} (U : Matrix (Fin n) (Fin n) ℚ)
     (lower : U.IsLowerTriangular) (idem : U * U = U) :
     let E := diagonal fun i => U i i
     ∃ C : Matrix (Fin n) (Fin n) ℚ, C.IsLowerTriangular ∧ C⁻¹.IsLowerTriangular ∧
-      C * C⁻¹ = 1 ∧ fromBlocks C 0 0 C * exchange E * fromBlocks C⁻¹ 0 0 C⁻¹ = exchange U := by
+      C * C⁻¹ = 1 ∧ U.rank = Fintype.card {i // U i i ≠ 0} ∧
+      fromBlocks C 0 0 C * exchange E * fromBlocks C⁻¹ 0 0 C⁻¹ = exchange U := by
   intro E
   have bits (i) : U i i = 0 ∨ U i i = 1 := by
     have h := congrArg (fun M : Matrix (Fin n) (Fin n) ℚ => M i i) idem
@@ -260,7 +262,10 @@ theorem exchange_pivot_coordinates {n : ℕ} (U : Matrix (Fin n) (Fin n) ℚ)
     have hU : U * (1 - U) = 0 := by rw [mul_sub, mul_one, idem, sub_self]
     rw [add_mul, Matrix.mul_assoc U E E, eIdem, Matrix.mul_assoc, hE, Matrix.mul_zero,
       mul_add, ← Matrix.mul_assoc, idem, ← Matrix.mul_assoc, hU, Matrix.zero_mul]
-  refine ⟨C, triangular, blockTriangular_inv_of_blockTriangular triangular, C.mul_nonsing_inv unit, ?_⟩
+  refine ⟨C, triangular, blockTriangular_inv_of_blockTriangular triangular, C.mul_nonsing_inv unit, ?_, ?_⟩
+  · have ranks := congrArg Matrix.rank intertwine
+    rw [rank_mul_eq_right_of_isUnit_det C E unit, rank_mul_eq_left_of_isUnit_det C U unit] at ranks
+    exact ranks.symm.trans (rank_diagonal _)
   rw [exchange_conj _ _ _ (C.mul_nonsing_inv unit), intertwine, Matrix.mul_assoc, C.mul_nonsing_inv unit, mul_one]
 
 /-- Moving between nested triangular frames swaps the coordinates gained by the larger frame. -/
@@ -269,7 +274,7 @@ theorem nested_exchange_pivot_coordinates {n : ℕ} (U V : Matrix (Fin n) (Fin n
     (idemU : U * U = U) (idemV : V * V = V) (uv : U * V = U) (vu : V * U = U) :
     let E := diagonal fun i => V i i - U i i
     ∃ C : Matrix (Fin n) (Fin n) ℚ, C.IsLowerTriangular ∧ C⁻¹.IsLowerTriangular ∧
-      C * C⁻¹ = 1 ∧
+      C * C⁻¹ = 1 ∧ (V - U).rank = Fintype.card {i // V i i - U i i ≠ 0} ∧
       fromBlocks C 0 0 C * exchange E * fromBlocks C⁻¹ 0 0 C⁻¹ = exchange U * exchange V := by
   rw [exchange_change idemU uv]
   apply exchange_pivot_coordinates (V - U)
