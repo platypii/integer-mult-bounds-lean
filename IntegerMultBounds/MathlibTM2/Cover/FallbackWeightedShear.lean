@@ -33,6 +33,16 @@ theorem weightedShearTime_eq_setup_add_volume (M W H J : ℕ) :
   rw [volume]
   ring
 
+/-- Counter initialization and payload movement contribute separately to shear time. -/
+theorem weightedShearTime_eq_setup_add_width_volume (M W H J : ℕ) :
+    weightedShearTime k t M W H J = weightedShearTime k t M 0 H 0 +
+      (10 + (d-1-t.val)*(12*H+18))*J + 9426*(M^d*W) := by
+  rw [weightedShearTime_eq_setup_add_volume k t M W H J]
+  congr 1
+  simp only [weightedShearTime]
+  rw [dimensionTime_eq_setup_add_width H J (d-1-t.val)]
+  ring
+
 theorem weightedShear_exec (hk : k < t) {α : Type*} (sym : α → Fin 4) (c : ZMod M) (body : P → Pr P T 217 A U)
     (bank : Fin 29 ↪ Fin T) (H J : ℕ) (hm : M < 2^H) (hw : W < 2^J) (hW : 0 < W)
     (v : HS T 217 A U) (S : Stacks T A)

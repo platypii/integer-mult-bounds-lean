@@ -19,6 +19,14 @@ def dimensionTime (H W : ℕ) : ℕ → ℕ
   | n+1 => let w := n*H+W
     dimensionTime H W n + H*(12*(H+w)+20)+16*(H+w)+2*w+26
 
+theorem dimensionTime_eq_setup_add_width (H W n : ℕ) :
+    dimensionTime H W n = dimensionTime H 0 n + (6 + n*(12*H+18))*W := by
+  induction n with
+  | zero => simp [dimensionTime, Nat.add_comm]
+  | succ n ih =>
+    simp only [dimensionTime, ih, Nat.add_zero]
+    ring
+
 theorem dimensionTime_le (H W n : ℕ) :
     dimensionTime H W n ≤ 6*W+6 + n*((12*H+18)*(n*H+W)+20*H+26) := by
   induction n with
