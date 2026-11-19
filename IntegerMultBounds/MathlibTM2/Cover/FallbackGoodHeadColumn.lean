@@ -32,6 +32,13 @@ structure HeadColumnReady (coeff : Fin 17 ↪ Fin T) (bank : Fin 29 ↪ Fin T)
   dst : ∀ z, RadixToBinary.binaryEncoding.encode (dest z) =
       readAt blank (S.L (bank 25)) (S.R (bank 25)) (z-q)
 
+noncomputable def headRowTime [Fintype P] (body : P → Pr P T 217 A U)
+    (coeff : Fin 17 ↪ Fin T) (bank : Fin 29 ↪ Fin T) (k : Fin d) (M W H J : ℕ) (i : Fin d) : ℕ :=
+      let push := max (Fast.Main.mnProgPush (goodHeadShear k i coeff bank : Pr P T 217 A U)) (Fast.Main.mnPushC body)
+      4*headShearWork.length+1+(1+6*headShearWork.length*push)*
+        ((8*(i.val*H)+14*H+22+(8*((i.val*d+k.val)*H)+96*H*H+318*H+154)+(2*H+2)) +
+          weightedShearTime k i M W H J)
+
 theorem headColumnRun_exec [Fintype P] (body : P → Pr P T 217 A U)
     (G : Matrix (Fin d) (Fin d) (ZMod M)) (rank : ℕ) (hr : rank ≤ d)
     (minor : ∀ n (hn : n < rank), IsUnit (lead (n+1) (lt_of_lt_of_le hn hr) G).det)
@@ -49,11 +56,7 @@ theorem headColumnRun_exec [Fintype P] (body : P → Pr P T 217 A U)
     let ready := HeadColumnReady coeff bank H J (matrixWords A H stage ++ tail)
       ((List.ofFn fun j => binSyms H (weights j).val).flatten ++ rest)
       (binSyms H (if negative then -childInv else childInv).val) sym source dest p q (M := M) (d := d) (W := W)
-    let cost := fun (i : Fin d) =>
-      let push := max (Fast.Main.mnProgPush (goodHeadShear k i coeff bank : Pr P T 217 A U)) (Fast.Main.mnPushC body)
-      4*headShearWork.length+1+(1+6*headShearWork.length*push)*
-        ((8*(i.val*H)+14*H+22+(8*((i.val*d+k.val)*H)+96*H*H+318*H+154)+(2*H+2)) +
-          weightedShearTime k i M W H J)
+    let cost := headRowTime body coeff bank k M W H J
     ∀ rows : List (Fin d), (∀ i ∈ rows, k < i) → ∀ v S word, ready word S →
       ∃ z F n out, z.user = v.user ∧ n ≤ (rows.map cost).sum+1 ∧
         Exec body (headColumnRun k coeff bank rows) (mk v S) n (mk z F) ∧ ready out F ∧
