@@ -370,13 +370,30 @@ theorem correctedSchedule_exec {m r n Q : ℕ} (k t : Fin n → Fin (d+1)) (lt :
       exact ⟨b,exchangeBank_private ..⟩)
     exact ⟨z,F,l,hz,hl,exec,next,fun h off => saved h (fun b eq => off ⟨b,eq⟩)⟩
 
+omit [M8.Machine.Net] in
+theorem signedPairs_diagonal (a : Fin (d+1) → (ZMod M)ˣ) (negative : Bool)
+    (sign : ∏ j, a j = if negative then -1 else 1) (x : Fin (d+1) → ZMod M) :
+    applyPairs (fun i => a i.succ) (List.finRange d) (signedAddress (b := w+1) negative x) =
+      (Matrix.diagonal (fun j => (a j : ZMod M))).mulVec x := by
+  unfold signedAddress modulus
+  funext j
+  have coord := congrFun (unit_pairs a) j
+  rw [sign] at coord
+  simp only [applyPairs_eq,Matrix.mulVec_diagonal,← List.ofFn_eq_map,List.prod_ofFn]
+  rw [coord]
+  simp [Pi.mul_apply,Finset.prod_apply,Units.coe_prod,mul_left_comm,mul_assoc]
+
 /-- Run the paired residual diagonal directly from the unit-prefixed pivot archive. -/
-theorem archivedDiagonal_exec {Q : ℕ} (rows : List (Fin d)) (parent weightsAt : Fin d → (ZMod M)ˣ)
+theorem archivedDiagonal_exec {Q : ℕ} (parent : Fin d → (ZMod M)ˣ) (a : Fin (d+1) → (ZMod M)ˣ)
+    (negative : Bool) (signValue : ∏ j, a j = if negative then -1 else 1)
     (capacity : columnCapacity ≤ Q) (signCapacity : (fieldSignProgram (0 : Fin (d+1)) true).1 ≤ Q)
     (H J : ℕ) (hm : M < 2^H) (hw : W < 2^J) (hW : 0 < W)
     (tail rest : List (Fin (prime+4))) (dest : ℤ → Fin 4) (q : ℤ)
     (empty : ∀ z, q ≤ z → z < q+(M^(d+1)*W : ℕ) → dest z = blank)
-    (original : Fin (M^(d+1)*W) → ZMod 2) (addr : (Fin (d+1) → ZMod M) → Fin (d+1) → ZMod M) :
+    (original : Fin (M^(d+1)*W) → ZMod 2) :
+    let rows := List.finRange d
+    let weightsAt := fun i : Fin d => a i.succ
+    let addr := signedAddress (b := w+1) negative (d := d)
     let reads := pivotReads rows
     let n := reads.length
     let k := fun _ : Fin n => (0 : Fin (d+1))
@@ -411,8 +428,8 @@ theorem archivedDiagonal_exec {Q : ℕ} (rows : List (Fin d)) (parent weightsAt 
       (∀ h : Fin total, S.L (Fin.natAdd (N+1) h) = [] ∧ S.R (Fin.natAdd (N+1) h) = []) →
       ∃ z F l, z.user = v.user ∧ l ≤ ((List.finRange n).map cost).sum+1 ∧
         Exec body ((List.finRange n).foldr (fun a rest => .seq (program a) rest) (.act .done))
-          (mk v S) l (mk z F) ∧ ready (fun x => applyPairs weightsAt rows (addr x)) F := by
-  intro reads n k j t i pivot width total shared bank record weights ready program cost body v S before aux
+          (mk v S) l (mk z F) ∧ ready (Matrix.diagonal fun j => (a j : ZMod M)).mulVec F := by
+  intro rows weightsAt addr reads n k j t i pivot width total shared bank record weights ready program cost body v S before aux
   have units (a : Fin n) : IsUnit (pivot (i a)) := by
     cases i a using Fin.cases with
     | zero => exact isUnit_one
@@ -420,6 +437,8 @@ theorem archivedDiagonal_exec {Q : ℕ} (rows : List (Fin d)) (parent weightsAt 
   obtain ⟨z,F,l,hz,hl,exec,next⟩ := correctedSchedule_exec k t (fun a => Fin.succ_pos (j a))
     capacity (fun _ => signCapacity) (fun h => (parent h : ZMod M)) j (fun a => (↑(parent (j a))⁻¹ : ZMod M))
     (fun a => (parent (j a)).mul_inv) pivot i units H J hm hw hW tail rest dest q empty original addr body v S before aux
-  exact ⟨z,F,l,hz,hl,exec,(pivotReads_action parent weightsAt rows addr) ▸ next⟩
+  have scaled : ready (fun x => applyPairs weightsAt rows (addr x)) F :=
+    (pivotReads_action parent weightsAt rows addr) ▸ next
+  exact ⟨z,F,l,hz,hl,exec,(funext (signedPairs_diagonal a negative signValue)) ▸ scaled⟩
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback.Record
