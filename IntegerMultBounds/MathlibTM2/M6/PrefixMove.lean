@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.Networks.AffineFieldProgram
 public import IntegerMultBounds.MathlibTM2.M6.PrefixLabel
 public import IntegerMultBounds.Networks.Certificates.PR589.Nine.PortFrame
 public import IntegerMultBounds.MathlibTM2.Cover.Weighted
@@ -127,6 +128,48 @@ theorem prefixMoveProgram_interchanges {R : Type*} [CommRing R] (d e : ℕ)
     interchanges (prefixMoveProgram d e C) = e - d := by
   simpa [prefixMoveProgram, interchanges, Op.isInterchange] using
     intervalSwaps_interchanges (R := R) d e hd he
+
+open IntegerMultBounds.Networks
+
+/-- Each eight-coordinate triangular pass costs eight scalar scalings and
+twenty-eight controlled shifts, independent of the tape radix. -/
+theorem prefixAdapter_length {R : Type*} (C : Matrix (Fin 8) (Fin 8) R) :
+    (OrderedAffine.program C).length = 36 := by
+  have row (i : Fin 8) : (OrderedAffine.row C i).length = i.val + 1 := by
+    simp only [OrderedAffine.row, List.length_cons, List.length_map, OrderedAffine.earlier,
+      Finset.length_toList]
+    rw [show Finset.univ.filter (· < i) = Finset.Iio i by ext; simp]
+    rw [Fin.card_Iio]
+  simp only [OrderedAffine.program, List.length_flatMap, row, IntegerMultBounds.Swap.Shear.descending, Fin.sort_univ]
+  decide +kernel
+
+/-- Expand both basis changes into legal scalar operations. This introduces no
+additional interchanges and implements the same MOVE on arbitrary field states. -/
+theorem compile_prefixMove {R : Type*} [CommRing R] (d e : ℕ) (hd : d ≤ 8) (he : e ≤ 8)
+    (C : Matrix (Fin 8) (Fin 8) R) (lower : C.IsLowerTriangular) (unit : IsUnit C) :
+    let p := prefixMoveProgram d e C
+    let q := AffineFieldProgram.compile p
+    (∀ op ∈ q, AffineFieldProgram.Legal op) ∧
+      AffineFieldProgram.interchanges q = e - d ∧
+      ∀ s, AffineFieldProgram.run q s = run p s := by
+  intro p q
+  have invUnit := Matrix.isUnit_nonsing_inv_iff.mpr unit
+  let := C.invertibleOfIsUnitDet ((Matrix.isUnit_iff_isUnit_det _).mp unit)
+  have invLower := blockTriangular_inv_of_blockTriangular lower
+  have valid : ∀ op ∈ p, AffineFieldProgram.Valid op := by
+    intro op mem
+    simp only [p, prefixMoveProgram, List.mem_append, List.mem_cons, List.not_mem_nil,
+      or_false] at mem
+    rcases mem with ((rfl | rfl) | swap) | (rfl | rfl)
+    · exact ⟨fun _ _ h => invLower h, invUnit⟩
+    · exact ⟨fun _ _ h => invLower h, invUnit⟩
+    · obtain ⟨k, _, rfl⟩ := List.mem_map.mp swap
+      trivial
+    · exact ⟨fun _ _ h => lower h, unit⟩
+    · exact ⟨fun _ _ h => lower h, unit⟩
+  exact ⟨AffineFieldProgram.compile_legal _ valid,
+    (AffineFieldProgram.compile_interchanges p).trans (prefixMoveProgram_interchanges _ _ hd he C),
+    AffineFieldProgram.compile_run _ (fun op h => (valid op h).triangular)⟩
 
 /-- One family of tape-ring frames serves every nested pair. In coordinates given by
 a unitriangular adapter, its MOVE exchanges precisely the newly gained prefix positions. -/
