@@ -128,23 +128,23 @@ theorem columnProgramTime_le_setup_add_volume (U : Type) (d w : ℕ) :
   obtain ⟨swaps, shears, bound⟩ := columnProgramTime_le_setup_add_width_volume U d
   exact ⟨_, fun k r => bound k r w⟩
 
-/-- At a fixed field width one counter charge bounds every column and pivot. -/
-theorem columnProgramTime_le_setup_add_counter (U : Type) (d H : ℕ) :
-    ∃ rate : ℕ, ∀ (k r : Fin d) w W J, columnProgramTime U k r w W H J ≤
-      columnProgramTime U k r w W H 0 + rate * J := by
-  let swap := fun (i j : Fin d) w W J =>
+/-- The per-bit counter charge grows at most linearly in field width, uniformly over pivots. -/
+theorem columnProgramTime_le_setup_add_linear_counter (U : Type) (d : ℕ) :
+    ∃ rate : ℕ, ∀ (k r : Fin d) w W H J, columnProgramTime U k r w W H J ≤
+      columnProgramTime U k r w W H 0 + rate * (H+1) * J := by
+  let swap := fun (i j : Fin d) w W H J =>
     1 + completeSwapTime (P := Empty) (U := U) Empty.elim d i j w W H J
-  let shear := fun (a b k t r : Fin d) w W J =>
+  let shear := fun (a b k t r : Fin d) w W H J =>
     1 + reverseRowTime (P := Empty) (U := U) (A := prime) Empty.elim
       (Function.Embedding.refl _) a b k t r prime w W H J
-  have swaps (i j : Fin d) : ∃ s : ℕ, ∀ w W J, swap i j w W J = swap i j w W 0 + s*J := by
-    refine ⟨?_, fun w W J => ?_⟩
+  have swaps (i j : Fin d) : ∃ s : ℕ, ∀ w W H J, swap i j w W H J = swap i j w W H 0 + s*J := by
+    refine ⟨?_, fun w W H J => ?_⟩
     rotate_left
     simpa only [swap, Nat.add_assoc] using congrArg (1 + ·)
       (completeSwapTime_eq_setup_add_counter (P := Empty) (U := U) Empty.elim d i j w W H J)
-  have shears (b : Fin d) : ∃ c : ℕ, ∀ a k t r w W J, shear a b k t r w W J =
-      shear a b k t r w W 0 + c*J := by
-    refine ⟨?_, fun a k t r w W J => ?_⟩
+  have shears (b : Fin d) : ∃ c : ℕ, ∀ a k t r w W H J, shear a b k t r w W H J =
+      shear a b k t r w W H 0 + c*(10+(d-1-b.val)*(12*H+18))*J := by
+    refine ⟨?_, fun a k t r w W H J => ?_⟩
     rotate_left
     simpa only [shear, Nat.add_assoc] using congrArg (1 + ·)
       (reverseRowTime_eq_setup_add_counter (P := Empty) (U := U) (A := prime) Empty.elim
@@ -152,27 +152,39 @@ theorem columnProgramTime_le_setup_add_counter (U : Type) (d H : ℕ) :
   choose s hs using swaps
   choose c hc using shears
   let S := Finset.univ.sup fun i => Finset.univ.sup (s i)
-  let C := Finset.univ.sup c
-  refine ⟨(d-1)*(S+C+S)+S, fun k r w W J => ?_⟩
+  let C := (Finset.univ.sup c)*(10+18*d)
+  refine ⟨(d-1)*(S+C+S)+S, fun k r w W H J => ?_⟩
   have swapBound (i j : Fin d) : s i j * J ≤ S*J := Nat.mul_le_mul_right _ <|
     (Finset.le_sup (f := s i) (Finset.mem_univ j)).trans
       (Finset.le_sup (f := fun a => Finset.univ.sup (s a)) (Finset.mem_univ i))
-  have shearBound (b : Fin d) : c b * J ≤ C*J :=
-    Nat.mul_le_mul_right _ (Finset.le_sup (f := c) (Finset.mem_univ b))
-  let cost := fun x (i : Fin d) => if k < i then shear k i k i r w W x else
-    swap i k w W x + shear i k k i r w W x + swap i k w W x
-  have rows : Finset.univ.sup (cost J) ≤ Finset.univ.sup (cost 0) + (S+C+S)*J := by
+  have shearBound (b : Fin d) : c b*(10+(d-1-b.val)*(12*H+18))*J ≤ C*(H+1)*J := by
+    apply Nat.mul_le_mul_right
+    dsimp only [C]
+    grw [Finset.le_sup (f := c) (Finset.mem_univ b), show d-1-b.val ≤ d by omega]
+    ring_nf
+    omega
+  let cost := fun x (i : Fin d) => if k < i then shear k i k i r w W H x else
+    swap i k w W H x + shear i k k i r w W H x + swap i k w W H x
+  have rows : Finset.univ.sup (cost J) ≤ Finset.univ.sup (cost 0) + (S+C*(H+1)+S)*J := by
     apply Finset.sup_le
     intro i hi
     apply le_trans _ (Nat.add_le_add_right (Finset.le_sup (f := cost 0) hi) _)
     simp only [cost, Nat.add_mul]
-    split <;> simp only [hc _ _ _ _ _ w W J, hs _ _ w W J] <;>
+    split <;> simp only [hc _ _ _ _ _ w W H J, hs _ _ w W H J] <;>
       have := swapBound i k <;> have := shearBound k <;> have := shearBound i <;> omega
-  change 2*(r.val+1)+(d-1)*Finset.univ.sup (cost J)+swap _ _ w W J ≤
-    2*(r.val+1)+(d-1)*Finset.univ.sup (cost 0)+swap _ _ w W 0+_ * J
-  rw [hs _ _ w W J]
+  change 2*(r.val+1)+(d-1)*Finset.univ.sup (cost J)+swap _ _ w W H J ≤
+    2*(r.val+1)+(d-1)*Finset.univ.sup (cost 0)+swap _ _ w W H 0+_ * (H+1) * J
+  rw [hs _ _ w W H J]
   grw [rows, swapBound]
-  exact le_of_eq (by ring)
+  ring_nf
+  omega
+
+/-- At a fixed field width one counter charge bounds every column and pivot. -/
+theorem columnProgramTime_le_setup_add_counter (U : Type) (d H : ℕ) :
+    ∃ rate : ℕ, ∀ (k r : Fin d) w W J, columnProgramTime U k r w W H J ≤
+      columnProgramTime U k r w W H 0 + rate * J := by
+  obtain ⟨c, bound⟩ := columnProgramTime_le_setup_add_linear_counter U d
+  exact ⟨c*(H+1), fun k r w W J => bound k r w W H J⟩
 
 theorem columnProgram_exec (k : Fin d) (rows : Fin d → Fin d) (H J : ℕ)
     (hm : M < 2^H) (hw : W < 2^J) (hW : 0 < W)

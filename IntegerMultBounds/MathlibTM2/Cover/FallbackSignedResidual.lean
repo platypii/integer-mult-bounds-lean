@@ -150,6 +150,41 @@ theorem residualCounterRate_le (U : Type) (d H rate : ℕ)
   classical
   exact Nat.find_min' (signedResidualTime_le_setup_add_counter U d H) bound
 
+/-- At every field width the whole residual pass pays at most a linear rate
+per payload-counter bit. -/
+theorem residualCounterRate_linear (U : Type) (d : ℕ) :
+    ∃ C : ℕ, ∀ H, residualCounterRate U d H ≤ C*(H+1) := by
+  choose fixed shear cost using fun i : Fin d =>
+    pairScalingTime_eq_setup_add_affine_counter U i.succ 0 i.succ
+  let rate := fun i => fixed i + shear i*(10+18*d)
+  obtain ⟨c,hc⟩ := columnProgramTime_le_setup_add_linear_counter U (d+1)
+  refine ⟨((List.finRange d).map rate).sum + (d+1)*c, fun H => ?_⟩
+  apply residualCounterRate_le
+  intro rows w W J
+  have pairs (xs : List (Fin d)) :
+      (xs.map fun i => pairScalingTime U i.succ 0 i.succ w W H J).sum ≤
+      (xs.map fun i => pairScalingTime U i.succ 0 i.succ w W H 0).sum +
+        (xs.map rate).sum*(H+1)*J := by
+    induction xs with
+    | nil => simp
+    | cons i xs ih =>
+      have factor : fixed i + shear i*(10+(d+1-1-i.succ.val)*(12*H+18)) ≤ rate i*(H+1) := by
+        dsimp only [rate]
+        grw [show d+1-1-i.succ.val ≤ d by omega]
+        ring_nf
+        omega
+      simp only [List.map_cons, List.sum_cons, Nat.add_mul]
+      rw [cost i w W H J]
+      have := Nat.mul_le_mul_right J factor
+      omega
+  have columns : Finset.univ.sup (fun k => columnProgramTime U k (rows k) w W H J) ≤
+      Finset.univ.sup (fun k => columnProgramTime U k (rows k) w W H 0) + c*(H+1)*J :=
+    Finset.sup_le fun k hk => (hc k (rows k) w W H J).trans (Nat.add_le_add_right
+      (Finset.le_sup (f := fun i => columnProgramTime U i (rows i) w W H 0) hk) _)
+  simp only [signedResidualTime]
+  grw [pairs (List.finRange d), columns]
+  exact le_of_eq (by ring)
+
 theorem signedResidual_exec (rows : Fin (d+1) → Fin (d+1)) (m : Matrix (Fin (d+1)) (Fin (d+1)) (ZMod M))
     (valid : Itinerary.Valid rows m (d+1)) (s : (ZMod M)ˣ)
     (sign : (Itinerary.run rows m (d+1)).det = (s : ZMod M)) (H J : ℕ) (hm : M < 2^H) (hw : W < 2^J) (hW : 0 < W)
