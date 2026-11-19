@@ -93,6 +93,40 @@ def check_helper_windows(endpoint_positions, gates):
     print(f"All {windows} helper windows import and export scalar data between endpoint MOVEs.")
 
 
+def check_port_swap_distance(port_moves):
+    """Compare the paid widths with the exact transposition distance in the swap-only model."""
+    for register, moves in enumerate(port_moves):
+        # Track which input atom each output reads. Interior MOVE swaps commute
+        # here because the scalar gates and triangular adapters are omitted.
+        permutation = list(range(16))
+        paid = 0
+        for lo, hi in moves:
+            paid += hi - lo
+            for k in range(lo, hi):
+                permutation[k], permutation[8 + k] = permutation[8 + k], permutation[k]
+        for a, b in [(0, 7), (8, 15)]:
+            permutation[a], permutation[b] = permutation[b], permutation[a]
+
+        visited = set()
+        cycles = []
+        for k in range(16):
+            if k in visited:
+                continue
+            cycle = []
+            while k not in visited:
+                visited.add(k)
+                cycle.append(k)
+                k = permutation[k]
+            assert k == cycle[0]
+            cycles.append(len(cycle))
+        # Each transposition changes the cycle count by one, and a cycle
+        # of length n is a product of n-1 transpositions.
+        assert sorted(cycles) == [2] * 6 + [4], register
+        assert paid == 7 and 16 - len(cycles) == 9, register
+    print("On every source and target register the seven paid atom swaps plus the port "
+          "permutation have exact transposition distance nine.")
+
+
 def layout_components(register_count, cuts, gates, scatter_start, scatter_end, *, share_temps=False):
     """Return the equality classes at port boundaries when layouts can change at cuts."""
     current = list(range(register_count))
@@ -162,6 +196,7 @@ def main():
     labels = [set(frame) for frame in word["frames"]]
     refs = word["start"].copy()
     moves = 0
+    port_moves = [[] for _ in range(222)]
     move_widths = {}
     width_six_moves = {}
     intervals = [set() for _ in refs]
@@ -189,6 +224,8 @@ def main():
                 if ranks[old] != ranks[frame]:
                     interval = tuple(sorted((ranks[old], ranks[frame])))
                     intervals[register].add(interval)
+                    if register < len(port_moves):
+                        port_moves[register].append(interval)
                     move_widths[len(gates), register] = interval[1] - interval[0]
                     if interval[1] - interval[0] == 6:
                         width_six_moves[len(gates), register] = (section, gate_index, ranks[old], ranks[frame])
@@ -212,6 +249,7 @@ def main():
     print(f"Phase endpoint singleton MOVEs: coordinate 7 on {source_singletons} source registers, "
           f"coordinate 0 on {target_singletons} target registers, both on {helper_pairs} helpers.")
     print("No source phase MOVE touches coordinate 0; no target phase MOVE touches coordinate 7.")
+    check_port_swap_distance(port_moves)
     check_helper_windows(endpoint_positions, gates)
     endpoint_cuts = {(step, register) for register, endpoints in enumerate(endpoint_positions)
                      for steps in endpoints.values() for step in steps}
