@@ -112,6 +112,41 @@ def cycle_lengths(permutation):
     return sorted(lengths)
 
 
+def block_placements(width):
+    for a in range(17 - 2 * width):
+        for b in range(a + width, 17 - width):
+            perm = list(range(16))
+            perm[a:a+width], perm[b:b+width] = perm[b:b+width], perm[a:a+width]
+            yield perm
+
+
+def check_two_child_ranks(widths, routed):
+    """Test necessary submatrix ranks over the residue field, allowing triangular adapters."""
+    # Invertible lower triangular multiplication on either outside preserves the
+    # rank on each prefix of rows and suffix of columns. For S2 * L * S1 that
+    # rectangle selects rows of L through S2 and columns through S1.
+    required = [(i, j, sum(k >= j for k in routed[:i]))
+                for i in range(1, 16) for j in range(1, 16)]
+    for first in block_placements(widths[0]):
+        for last in block_placements(widths[1]):
+            for i, j, rank in required:
+                rows = sorted(last[:i])
+                cols = sorted(first[j:])
+                # Common indices give an invertible triangular principal minor.
+                if len(set(rows).intersection(cols)) > rank:
+                    break
+                # Every nonzero minor needs a matching with column <= row.
+                # Greedily match the smallest available column to the earliest eligible row.
+                matches = 0
+                for row in rows:
+                    if matches < len(cols) and cols[matches] <= row:
+                        matches += 1
+                if matches < rank:
+                    break
+            else:
+                raise AssertionError(f"Rank bounds admit placements {first}, {last} for {widths}")
+
+
 def check_port_swap_distance(port_moves):
     """Compare the paid widths with the exact transposition distance in the swap-only model."""
     target_profiles = Counter(tuple(hi - lo for lo, hi in moves) for moves in port_moves[111:])
@@ -136,6 +171,16 @@ def check_port_swap_distance(port_moves):
         # of length n is a product of n-1 transpositions.
         assert cycles == [2] * 6 + [4], register
         assert paid == 7 and 16 - len(cycles) == 9, register
+    target = list(range(16))
+    for k in range(7):
+        target[k], target[k + 8] = target[k + 8], target[k]
+    for k in (0, 8):
+        target[k], target[k + 7] = target[k + 7], target[k]
+    for widths in target_profiles:
+        if len(widths) == 2:
+            check_two_child_ranks(widths, target)
+    print("Neither two-child target profile realizes its port-swapped prefix with "
+          "invertible lower triangular passes before, between, and after its children.")
     print("On every source and target register the seven paid atom swaps plus the port "
           "permutation have exact transposition distance nine.")
 
