@@ -49,25 +49,14 @@ noncomputable def initializedMiddleShear : Pr Empty 31 217 prime U :=
   .seq (bcopy 20 2 4 5) (.seq (.act (.push (.lt 30) (fun _ => separator) .done)) (.seq (initializeBank (middleTranslation.trans middleWork))
     (returnedMiddleShear (Function.Embedding.refl _))))
 
-theorem middleSwap_exec [M8.Machine.Net] (v : Descriptor) (positive : v.Positive)
-    (size : (P*M*G)*(M*B) = volume prime v) (w c : ℕ) (radix : M = prime^(w+1))
-    (hc : c < M) (hP : 0 < P) (hG : 0 < G) (hB : 0 < B)
-    (word : Fin ((P*M*G)*(M*B)) → ZMod 2) (io : Fin T) (roles : Tapes T prime)
-    (head : roles.head io = 0) (input : roles.tape io = leafBitTape (List.ofFn word))
-    (f : ℤ → Fin (prime+4)) (p : ℤ) (node scalar : Tapes 1 prime)
-    (ctr : Fin CommonBank.K → Option ℕ) (st : Tapes 2 prime) :
-    let block := LeafCore.core io
-    ∀ {K : ℕ} (sim : Fin block.tapes ↪ Fin K),
-    let ports := sim.trans (Fin.castAddEmb 31)
-    ∀ (slot : Fin block.tapes) (capacity : 217 ≤ block.states), slot.val = io.val →
-      let bank := Record.payloadBank (sim slot) (22 : Fin 31)
-      let shear := statePlacedNormalized bank capacity (by decide : 0 < 217) Empty.elim
-        initializedMiddleShear
-      let N := (P*M*G)*(M*B)
-      let xs := FiberLayoutData.translated word (fun i => c*(i.val/G%M)%M)
-      let y := swapLeafList v size xs (FiberLayoutData.translated_length ..)
-      ∀ (body : F → Pr F (K+31) block.states prime U)
-        (u : HS (K+31) block.states prime U) (S : Stacks (K+31) prime),
+/-- A shear on a shared role returns its bit word in place and preserves
+both stacks of every other caller tape. -/
+theorem placedMiddleShear_exec {K Q : ℕ} (slot : Fin K) (capacity : 217 ≤ Q)
+    (w c : ℕ) (radix : M = prime^(w+1)) (hc : c < M) (hP : 0 < P) (hG : 0 < G) (hB : 0 < B)
+    (word : Fin ((P*M*G)*(M*B)) → ZMod 2) :
+    let bank := Record.payloadBank slot (22 : Fin 31)
+    let shear := statePlacedNormalized bank capacity (by decide : 0 < 217) Empty.elim initializedMiddleShear
+    ∀ (body : F → Pr F (K+31) Q prime U) (u : HS (K+31) Q prime U) (S : Stacks (K+31) prime),
         let E := embStk bank S
         E.R 28 = binSyms P.size P → E.R 29 = binSyms G.size G →
           (∀ i : Fin 30, 24 ≤ i → i ≤ 27 → E.R (middleWork i) = []) →
@@ -78,34 +67,26 @@ theorem middleSwap_exec [M8.Machine.Net] (v : Descriptor) (positive : v.Positive
           (∀ i : Fin 12, i < 10 → E.R (middleWork (middleTranslation i)) =
             if i = 5 then binSyms B.size B else if i = 7 then binSyms M.size M else []) →
           E.L 23 = [] → E.R 23 = [] →
-          RepT (raw (CommonBank.bank roles (Routines.hdr v) f p node scalar ctr st) block.tapes) (S.L ∘ ports) (S.R ∘ ports) →
-          ∃ z D n, z.user = u.user ∧
-            n ≤ (6*M.size+9)+(210*(2*(Nat.size prime+1)^2)+16120)*N+(LeafCore.coreCost (volume prime v) v.width*(block.tapes+5)+6) ∧
-            Exec body (.seq shear (embProg ports Empty.elim (foreign block.program))) (mk u S) n (mk z D) ∧
-            RepT (raw (CommonBank.bank (SharedPlacementAlphabet.setTape roles io (leafBitTape (List.ofFn y)) 0)
-              (Routines.hdr v) f p node scalar ctr st) block.tapes) (D.L ∘ ports) (D.R ∘ ports) ∧
-            (∀ x, readAt blank (D.L (ports slot)) (D.R (ports slot)) x = leafBitTape (List.ofFn y) x) ∧
-            ∀ j : Fin K, (∀ i, sim i ≠ j) →
-              D.L (j.castAdd 31) = S.L (j.castAdd 31) ∧ D.R (j.castAdd 31) = S.R (j.castAdd 31) := by
-  intro block K sim ports slot capacity leading bank shear N xs y body u S E heads ticks free coef digit modulus scratch marker fresh left right dl dr initial
+          (∀ x, readAt blank (S.L (slot.castAdd 31)) (S.R (slot.castAdd 31)) x = leafBitTape (List.ofFn word) x) →
+          ∃ z D n, z.user = u.user ∧ n ≤ (6*M.size+9)+(210*(2*(Nat.size prime+1)^2)+16120)*((P*M*G)*(M*B)) ∧
+            Exec body shear (mk u S) n (mk z D) ∧
+            (∀ x, readAt blank (D.L (slot.castAdd 31)) (D.R (slot.castAdd 31)) x =
+              leafBitTape (FiberLayoutData.translated word (fun i => c*(i.val/G%M)%M)) x) ∧
+            ∀ j : Fin K, j ≠ slot → D.L (j.castAdd 31) = S.L (j.castAdd 31) ∧ D.R (j.castAdd 31) = S.R (j.castAdd 31) := by
+  intro bank shear body u S E heads ticks free coef digit modulus scratch marker fresh left right dl dr input
   let bs := binBits B.size B
   let ms := binBits M.size M
   have hb := Routing.binaryCanonical_value_binBits _ _ (Nat.lt_size_self B)
   have hm := Routing.binaryCanonical_value_binBits _ _ (Nat.lt_size_self M)
   have cb := Mult.PhaseCellToeplitz.binBits_size_canonical B
   have cm := Mult.PhaseCellToeplitz.binBits_size_canonical M
-  have shared : bank 22 = ports slot := Record.payloadBank_shared (sim slot) 22
-  have cell := initial slot
-  have inside : slot.val < CommonBank.count T := leading ▸ (LeafCore.roleSlot io).isLt
-  have same : (⟨slot.val,inside⟩ : Fin (CommonBank.count T)) = LeafCore.roleSlot io := Fin.ext leading
-  obtain ⟨hh,ht⟩ := LeafCore.bank_role roles (Routines.hdr v) f p node scalar ctr st io
+  have shared : bank 22 = slot.castAdd 31 := Record.payloadBank_shared slot 22
   have src (x : ℤ) : RadixToBinary.binaryEncoding.encode
       (putWord (fun _ => blank) 0 (List.ofFn (SparseRoleCircuit.encode ∘ word)) x) =
       readAt blank (E.L 22) (E.R 22) x := by
     change _ = readAt blank (S.L (bank 22)) (S.R (bank 22)) x
     rw [shared]
-    simpa only [raw,dite_eq_left inside,same,hh,ht,head,input,leafBitTape,List.map_ofFn,sub_zero,
-      Function.comp_apply] using cell x
+    simpa only [leafBitTape,List.map_ofFn] using (input x).symm
   let u₀ := stateLiftDown (by decide : 0 < 217) (embDn bank u)
   have modHeader : E.R 20 = binSyms M.size M := by change E.R (middleWork (middleTranslation 7)) = _; simpa using right 7 (by decide)
   obtain ⟨u₁,hcopy,copy⟩ := bcopy_exec (body := (Empty.elim : Empty → Pr Empty 31 217 prime U))
@@ -150,19 +131,69 @@ theorem middleSwap_exec [M8.Machine.Net] (v : Descriptor) (positive : v.Positive
     (by intro i lo hi; rw [rs]; apply Eq.trans (sameR _ _) (free i lo hi)
         intro eq; have h := congrArg Fin.val eq; change i.val = 2 at h; omega) ready
     ((keep 30 (by decide)).trans (by simp [markedE])) (rs ▸ (sameR 30 (by decide)).trans fresh) rep (fun _ _ _ => rfl)
-  obtain ⟨b,H,hb',placed,eq,frame⟩ := Record.payloadFrame_exec capacity (sim slot) (22 : Fin 31) (by decide)
+  obtain ⟨b,H,hb',placed,eq,frame⟩ := Record.payloadFrame_exec capacity slot (22 : Fin 31) (by decide)
     body initializedMiddleShear u S a D ((6*M.size+6)+(1+(1+n))) (Exec.seq copy (Exec.seq install (Exec.seq init run)))
 
   have read := payload
   rw [← eq] at read
   change ∀ x, readAt blank (H.L (bank 22)) (H.R (bank 22)) (x-0) = _ at read
   rw [shared] at read
+  refine ⟨b,H,_,hb'.trans (ha.trans hcopy),?_,placed,?_,frame⟩
+  · rw [show 1+((6*M.size+6)+(1+(1+n))) = (6*M.size+9)+n by omega]
+    exact Nat.add_le_add_left hn _
+  · simpa only [leafBitTape,translated_map,sub_zero] using read
+
+theorem middleSwap_exec [M8.Machine.Net] (v : Descriptor) (positive : v.Positive)
+    (size : (P*M*G)*(M*B) = volume prime v) (w c : ℕ) (radix : M = prime^(w+1))
+    (hc : c < M) (hP : 0 < P) (hG : 0 < G) (hB : 0 < B)
+    (word : Fin ((P*M*G)*(M*B)) → ZMod 2) (io : Fin T) (roles : Tapes T prime)
+    (head : roles.head io = 0) (input : roles.tape io = leafBitTape (List.ofFn word))
+    (f : ℤ → Fin (prime+4)) (p : ℤ) (node scalar : Tapes 1 prime)
+    (ctr : Fin CommonBank.K → Option ℕ) (st : Tapes 2 prime) :
+    let block := LeafCore.core io
+    ∀ {K : ℕ} (sim : Fin block.tapes ↪ Fin K),
+    let ports := sim.trans (Fin.castAddEmb 31)
+    ∀ (slot : Fin block.tapes) (capacity : 217 ≤ block.states), slot.val = io.val →
+      let bank := Record.payloadBank (sim slot) (22 : Fin 31)
+      let shear := statePlacedNormalized bank capacity (by decide : 0 < 217) Empty.elim
+        initializedMiddleShear
+      let N := (P*M*G)*(M*B)
+      let xs := FiberLayoutData.translated word (fun i => c*(i.val/G%M)%M)
+      let y := swapLeafList v size xs (FiberLayoutData.translated_length ..)
+      ∀ (body : F → Pr F (K+31) block.states prime U)
+        (u : HS (K+31) block.states prime U) (S : Stacks (K+31) prime),
+        let E := embStk bank S
+        E.R 28 = binSyms P.size P → E.R 29 = binSyms G.size G →
+          (∀ i : Fin 30, 24 ≤ i → i ≤ 27 → E.R (middleWork i) = []) →
+          E.R 0 = binSyms M.size c → E.R 1 = binSyms M.size 0 → E.R 2 = [] →
+          (∀ i : Fin 13, 3 ≤ i → i < 12 → E.R (middleWork (middleArithmetic i)) = []) →
+          E.L 30 = [] → E.R 30 = [] →
+          (∀ i : Fin 12, i < 10 → E.L (middleWork (middleTranslation i)) = []) →
+          (∀ i : Fin 12, i < 10 → E.R (middleWork (middleTranslation i)) =
+            if i = 5 then binSyms B.size B else if i = 7 then binSyms M.size M else []) →
+          E.L 23 = [] → E.R 23 = [] →
+          RepT (raw (CommonBank.bank roles (Routines.hdr v) f p node scalar ctr st) block.tapes) (S.L ∘ ports) (S.R ∘ ports) →
+          ∃ z D n, z.user = u.user ∧
+            n ≤ (6*M.size+9)+(210*(2*(Nat.size prime+1)^2)+16120)*N+(LeafCore.coreCost (volume prime v) v.width*(block.tapes+5)+6) ∧
+            Exec body (.seq shear (embProg ports Empty.elim (foreign block.program))) (mk u S) n (mk z D) ∧
+            RepT (raw (CommonBank.bank (SharedPlacementAlphabet.setTape roles io (leafBitTape (List.ofFn y)) 0)
+              (Routines.hdr v) f p node scalar ctr st) block.tapes) (D.L ∘ ports) (D.R ∘ ports) ∧
+            (∀ x, readAt blank (D.L (ports slot)) (D.R (ports slot)) x = leafBitTape (List.ofFn y) x) ∧
+            ∀ j : Fin K, (∀ i, sim i ≠ j) →
+              D.L (j.castAdd 31) = S.L (j.castAdd 31) ∧ D.R (j.castAdd 31) = S.R (j.castAdd 31) := by
+  intro block K sim ports slot capacity leading bank shear N xs y body u S E heads ticks free coef digit modulus scratch marker fresh left right dl dr initial
+  have cell := initial slot
+  have inside : slot.val < CommonBank.count T := leading ▸ (LeafCore.roleSlot io).isLt
+  have same : (⟨slot.val,inside⟩ : Fin (CommonBank.count T)) = LeafCore.roleSlot io := Fin.ext leading
+  obtain ⟨hh,ht⟩ := LeafCore.bank_role roles (Routines.hdr v) f p node scalar ctr st io
+  obtain ⟨b,H,n,hu,hn,placed,read,frame⟩ := placedMiddleShear_exec (sim slot) capacity w c radix hc hP hG hB
+    word body u S heads ticks free coef digit modulus scratch marker fresh left right dl dr (by
+      intro x
+      simpa only [ports,Function.Embedding.trans_apply,Fin.castAddEmb_apply,raw,dite_eq_left inside,same,hh,ht,head,input,sub_zero,Function.comp_apply] using (cell x).symm)
   obtain ⟨z,J,k,hz,hk,exec,result,out,unchanged⟩ := swapReturnedShear_exec v positive size word
-    (fun i => c*(i.val/G%M)%M) io roles f p node scalar ctr st ports body shear u b S H slot (1+((6*M.size+6)+(1+(1+n))))
-    leading initial placed (hb'.trans (ha.trans hcopy)) (fun i hi => frame (sim i) (sim.injective.ne hi)) (by simpa only [sub_zero] using read)
-  have bound := Nat.add_le_add_right (Nat.add_le_add_left hn (6*M.size+9)) (LeafCore.coreCost (volume prime v) v.width*(block.tapes+5)+6)
-  have steps : 1+((6*M.size+6)+(1+(1+n))) = (6*M.size+9)+n := by omega
-  rw [steps] at hk
+    (fun i => c*(i.val/G%M)%M) io roles f p node scalar ctr st ports body shear u b S H slot n
+    leading initial placed hu (fun i hi => frame (sim i) (sim.injective.ne hi)) (by simpa only [ports,Function.Embedding.trans_apply,Fin.castAddEmb_apply,leafBitTape,translated_map] using read)
+  have bound := Nat.add_le_add_right hn (LeafCore.coreCost (volume prime v) v.width*(block.tapes+5)+6)
   refine ⟨z,J,k,hz,hk.trans bound,exec,result,out,?_⟩
   intro j off
   have untouched := unchanged (j.castAdd 31) (fun i => (Fin.castAddEmb 31).injective.ne (off i))
@@ -204,6 +235,18 @@ private theorem releaseMiddleWork {k Q A : ℕ} (body : F → Pr F (k+31) Q A U)
   · intro j
     have hit : j.natAdd k ∈ work := List.mem_map.mpr ⟨j,List.mem_finRange j,rfl⟩
     simp [hit]
+
+private theorem middleHeaderCost {k : ℕ} (S : Stacks k prime) (fromTape : Fin 6 → Fin k)
+    (headers : ∀ i, S.R (fromTape i) = (![binSyms P.size P,binSyms G.size G,binSyms M.size c,
+      binSyms M.size 0,binSyms B.size B,binSyms M.size M] i)) : ((List.finRange 6).map fun i => 6*(S.R (fromTape i)).length+6).sum+1 =
+      6*(P.size+G.size+3*M.size+B.size)+37 := by
+    change (6*(S.R (fromTape 0)).length+6 + (6*(S.R (fromTape 1)).length+6 +
+      (6*(S.R (fromTape 2)).length+6 + (6*(S.R (fromTape 3)).length+6 +
+      (6*(S.R (fromTape 4)).length+6 + (6*(S.R (fromTape 5)).length+6 + 0))))))+1 = _
+    rw [headers 0,headers 1,headers 2,headers 3,headers 4,headers 5]
+    change 6*(binSyms (A := prime) P.size P).length+6 + _ + 1 = _
+    simp [length_binSyms]
+    ring
 
 theorem loadedMiddleSwap_exec [M8.Machine.Net] (v : Descriptor) (positive : v.Positive)
     (size : (P*M*G)*(M*B) = volume prime v) (w c : ℕ) (radix : M = prime^(w+1))
@@ -288,18 +331,9 @@ theorem loadedMiddleSwap_exec [M8.Machine.Net] (v : Descriptor) (positive : v.Po
         change _ = readAt blank (H.L ((sim i).castAdd 31)) (H.R ((sim i).castAdd 31)) _
         rw [left,caller (sim i)]
         exact initial i x)
-  have cost : ((List.finRange 6).map fun i => 6*(S.R (fromTape i)).length+6).sum+1 =
-      6*(P.size+G.size+3*M.size+B.size)+37 := by
-    change (6*(S.R (fromTape 0)).length+6 + (6*(S.R (fromTape 1)).length+6 +
-      (6*(S.R (fromTape 2)).length+6 + (6*(S.R (fromTape 3)).length+6 +
-      (6*(S.R (fromTape 4)).length+6 + (6*(S.R (fromTape 5)).length+6 + 0))))))+1 = _
-    rw [headers 0,headers 1,headers 2,headers 3,headers 4,headers 5]
-    change 6*(binSyms (A := prime) P.size P).length+6 + _ + 1 = _
-    simp [length_binSyms]
-    ring
   have full := Exec.seq copy run
   change Exec body prog (mk u S) (((List.finRange 6).map fun i => 6*(S.R (fromTape i)).length+6).sum+1+n) (mk z D) at full
-  rw [cost] at full
+  rw [middleHeaderCost S fromTape headers] at full
   let steps := (6*(P.size+G.size+3*M.size+B.size)+37)+n
   have completed : Exec body prog (mk u S) steps (mk z D) := full
   have time : steps ≤ budget := Nat.add_le_add_left hn _
@@ -312,6 +346,92 @@ theorem loadedMiddleSwap_exec [M8.Machine.Net] (v : Descriptor) (positive : v.Po
   · intro x
     change readAt blank (J.L ((sim slot).castAdd 31)) (J.R ((sim slot).castAdd 31)) _ = _
     rw [(keep (sim slot)).1,(keep (sim slot)).2]
+    exact out x
+  · intro j hj
+    have preserved := off j hj
+    rw [(keep j).1,(keep j).2,preserved.1,preserved.2,left,caller j]
+    exact ⟨rfl,rfl⟩
+
+theorem loadedMiddleShear_exec {K Q : ℕ} (slot : Fin K) (capacity : 217 ≤ Q)
+    (w c : ℕ) (radix : M = prime^(w+1)) (hc : c < M) (hP : 0 < P) (hG : 0 < G) (hB : 0 < B)
+    (word : Fin ((P*M*G)*(M*B)) → ZMod 2) (src : Fin 6 → Fin K) :
+      let bank := Record.payloadBank slot (22 : Fin 31)
+      let shear := statePlacedNormalized bank capacity (by decide : 0 < 217) Empty.elim
+        initializedMiddleShear
+      let N := (P*M*G)*(M*B)
+      let xs := FiberLayoutData.translated word (fun i => c*(i.val/G%M)%M)
+      ∀ (body : F → Pr F (K+31) Q prime U)
+        (u : HS (K+31) Q prime U) (S : Stacks (K+31) prime),
+        let fromTape := fun i => (src i).castAdd 31
+        let targets := middleHeaderTargets.trans (Fin.natAddEmb K)
+        let setup : Pr F (K+31) Q prime U := Record.copyLeafHeaders fromTape targets ((4 : Fin 31).natAdd K)
+          ((5 : Fin 31).natAdd K) (List.finRange 6)
+        let prog := setup.seq shear
+        let work := (List.finRange 31).map (Fin.natAddEmb K)
+        let budget := (6*(P.size+G.size+3*M.size+B.size)+37)+((6*M.size+9)+
+          (210*(2*(Nat.size prime+1)^2)+16120)*N)
+        ∀ push, Fast.Main.mnProgPush prog ≤ push → (∀ f, Fast.Main.mnProgPush (body f) ≤ push) →
+        (∀ j : Fin 31, S.L (j.natAdd K) = [] ∧ S.R (j.natAdd K) = []) →
+        (∀ i, S.R (fromTape i) = (![binSyms P.size P,binSyms G.size G,binSyms M.size c,
+          binSyms M.size 0,binSyms B.size B,binSyms M.size M] i)) →
+          (∀ x, readAt blank (S.L (slot.castAdd 31)) (S.R (slot.castAdd 31)) x = leafBitTape (List.ofFn word) x) →
+          ∃ z D n, z.user = u.user ∧
+            n ≤ budget+(125+31*(6*(push*budget))) ∧
+            Exec body (prog.seq (clearWorkTapes work)) (mk u S) n (mk z D) ∧
+            (∀ x, readAt blank (D.L (slot.castAdd 31)) (D.R (slot.castAdd 31)) x = leafBitTape xs x) ∧
+            (∀ j : Fin 31, D.L (j.natAdd K) = [] ∧ D.R (j.natAdd K) = []) ∧
+            ∀ j : Fin K, j ≠ slot →
+              D.L (j.castAdd 31) = S.L (j.castAdd 31) ∧ D.R (j.castAdd 31) = S.R (j.castAdd 31) := by
+  intro bank shear N xs body u S fromTape targets setup prog work budget push hp hbody free headers initial
+  obtain ⟨b,H,hb,copy,left,loaded,caller,unused⟩ := copyMiddleHeaders_exec body src u S (fun j => (free j).2)
+  let E := embStk bank H
+  have entry (i : Fin 6) : E.R (middleHeaderTargets i) =
+      (![binSyms P.size P,binSyms G.size G,binSyms M.size c,binSyms M.size 0,binSyms B.size B,binSyms M.size M] i) :=
+    calc E.R (middleHeaderTargets i) = H.R (targets i) := by
+           change H.R (bank _) = _
+           rw [show bank (middleHeaderTargets i) = (middleHeaderTargets i).natAdd K from
+             Record.payloadBank_private slot 22 _ ((by decide : ∀ j, middleHeaderTargets j ≠ 22) i)]
+           rfl
+         _ = _ := (loaded i).trans (headers i)
+  have right (j : Fin 31) (privateSlot : j ≠ 22) (off : ∀ i, middleHeaderTargets i ≠ j) : E.R j = [] := by
+    change H.R (Record.payloadBank slot 22 j) = []
+    rw [Record.payloadBank_private _ _ _ privateSlot]
+    exact unused j off
+  have blankL (j : Fin 31) (privateSlot : j ≠ 22) : E.L j = [] := by
+    change H.L (Record.payloadBank slot 22 j) = []
+    rw [left,Record.payloadBank_private _ _ _ privateSlot]
+    exact (free j).1
+  obtain ⟨z,D,n,hz,hn,run,out,off⟩ := placedMiddleShear_exec slot capacity w c radix hc hP hG hB
+    word body b H (entry 0) (entry 1)
+    (fun i lo hi => right _ ((by decide : ∀ j : Fin 30, 24 ≤ j → j ≤ 27 → middleWork j ≠ 22) i lo hi)
+      ((by decide : ∀ j : Fin 30, 24 ≤ j → j ≤ 27 → ∀ k, middleHeaderTargets k ≠ middleWork j) i lo hi))
+    (entry 2) (entry 3) (right 2 (by decide) (by decide))
+    (fun i lo hi => right _ ((by decide : ∀ j : Fin 13, middleWork (middleArithmetic j) ≠ 22) i)
+      ((by decide : ∀ j : Fin 13, 3 ≤ j → j < 12 → ∀ k, middleHeaderTargets k ≠ middleWork (middleArithmetic j)) i lo hi))
+    (blankL 30 (by decide)) (right 30 (by decide) (by decide))
+    (fun i hi => blankL _ ((by decide : ∀ j : Fin 12, j < 10 → middleWork (middleTranslation j) ≠ 22) i hi))
+    (by intro i hi
+        by_cases width : i = 5
+        · subst i; exact entry 4
+        by_cases modulus : i = 7
+        · subst i; exact entry 5
+        simp only [ite_eq_right width,ite_eq_right modulus]
+        exact right _ ((by decide : ∀ j : Fin 12, j < 10 → middleWork (middleTranslation j) ≠ 22) i hi)
+          ((by decide : ∀ j : Fin 12, j < 10 → j ≠ 5 → j ≠ 7 → ∀ k, middleHeaderTargets k ≠ middleWork (middleTranslation j)) i hi width modulus))
+    (blankL 23 (by decide)) (right 23 (by decide) (by decide))
+    (by intro x
+        rw [left,caller slot]
+        exact initial x)
+  have full := Exec.seq copy run
+  change Exec body prog (mk u S) (((List.finRange 6).map fun i => 6*(S.R (fromTape i)).length+6).sum+1+n) (mk z D) at full
+  rw [middleHeaderCost S fromTape headers] at full
+  let steps := (6*(P.size+G.size+3*M.size+B.size)+37)+n
+  have completed : Exec body prog (mk u S) steps (mk z D) := full
+  have time : steps ≤ budget := Nat.add_le_add_left hn _
+  obtain ⟨z',J,k,hu,bound,finished,keep,empty⟩ := releaseMiddleWork body prog completed time hp hbody free
+  refine ⟨z',J,k,hu.trans (hz.trans hb),bound,finished,?_,empty,?_⟩
+  · intro x
+    rw [(keep slot).1,(keep slot).2]
     exact out x
   · intro j hj
     have preserved := off j hj
@@ -375,5 +495,59 @@ theorem twoMiddleSwaps_exec [M8.Machine.Net] (v : Descriptor) (positive : v.Posi
   · simpa only [roles',SharedPlacementAlphabet.setTape,Function.update_idem] using out
   · intro j hj
     exact ⟨(preserved j hj).1.trans (keep j hj).1,(preserved j hj).2.trans (keep j hj).2⟩
+
+theorem threeMiddleShears_exec [M8.Machine.Net] (v : Descriptor) (positive : v.Positive)
+    (size : (P*M*G)*(M*B) = volume prime v) (w : ℕ) (radix : M = prime^(w+1))
+    (c : Bool → Fin M) (hP : 0 < P) (hG : 0 < G) (hB : 0 < B)
+    (word : Fin ((P*M*G)*(M*B)) → ZMod 2) (io : Fin T) (roles : Tapes T prime)
+    (head : roles.head io = 0) (input : roles.tape io = leafBitTape (List.ofFn word))
+    (f : ℤ → Fin (prime+4)) (p : ℤ) (node scalar : Tapes 1 prime)
+    (ctr : Fin CommonBank.K → Option ℕ) (st : Tapes 2 prime) :
+    let block := LeafCore.core io
+    ∀ {K : ℕ} (sim : Fin block.tapes ↪ Fin K) (src : Bool → Fin 6 → Fin K)
+      (_apart : ∀ b i j, sim i ≠ src b j) (slot : Fin block.tapes) (_leading : slot.val = io.val)
+      (capacity : 217 ≤ block.states),
+      let ports := sim.trans (Fin.castAddEmb 31)
+      let shear := statePlacedNormalized (Record.payloadBank (sim slot) (22 : Fin 31)) capacity
+        (by decide : 0 < 217) Empty.elim initializedMiddleShear
+      let prog := fun b => (Record.copyLeafHeaders (fun i => (src b i).castAdd 31)
+        (middleHeaderTargets.trans (Fin.natAddEmb K)) ((4 : Fin 31).natAdd K) ((5 : Fin 31).natAdd K) (List.finRange 6)).seq
+        (.seq shear (embProg ports Empty.elim (foreign block.program)))
+      let lastProg := (Record.copyLeafHeaders (fun i => (src false i).castAdd 31)
+        (middleHeaderTargets.trans (Fin.natAddEmb K)) ((4 : Fin 31).natAdd K) ((5 : Fin 31).natAdd K) (List.finRange 6)).seq shear
+      let work := (List.finRange 31).map (Fin.natAddEmb K)
+      let stage := fun b => (prog b).seq (clearWorkTapes work)
+      let result := fun b x => swapLeafList v size (FiberLayoutData.translated x
+        (fun i => (c b).val*(i.val/G%M)%M)) (FiberLayoutData.translated_length ..)
+      let y := result true (result false word)
+      let budget := (6*(P.size+G.size+3*M.size+B.size)+37)+((6*M.size+9)+
+        (210*(2*(Nat.size prime+1)^2)+16120)*((P*M*G)*(M*B))+(LeafCore.coreCost (volume prime v) v.width*(block.tapes+5)+6))
+      let lastBudget := (6*(P.size+G.size+3*M.size+B.size)+37)+((6*M.size+9)+
+        (210*(2*(Nat.size prime+1)^2)+16120)*((P*M*G)*(M*B)))
+      ∀ (body : F → Pr F (K+31) block.states prime U) (u : HS (K+31) block.states prime U)
+        (S : Stacks (K+31) prime) push, (∀ b, Fast.Main.mnProgPush (prog b) ≤ push) →
+        Fast.Main.mnProgPush lastProg ≤ push → (∀ f, Fast.Main.mnProgPush (body f) ≤ push) →
+        (∀ j : Fin 31, S.L (j.natAdd K) = [] ∧ S.R (j.natAdd K) = []) →
+        (∀ b i, S.R ((src b i).castAdd 31) = (![binSyms P.size P,binSyms G.size G,binSyms M.size (c b).val,
+          binSyms M.size 0,binSyms B.size B,binSyms M.size M] i)) →
+        RepT (raw (CommonBank.bank roles (Routines.hdr v) f p node scalar ctr st) block.tapes) (S.L ∘ ports) (S.R ∘ ports) →
+        ∃ z D n, z.user = u.user ∧ n ≤ 2*(budget+(125+31*(6*(push*budget)))) + (lastBudget+(125+31*(6*(push*lastBudget)))) ∧
+          Exec body (((stage false).seq (stage true)).seq (lastProg.seq (clearWorkTapes work))) (mk u S) n (mk z D) ∧
+          (∀ x, readAt blank (D.L (ports slot)) (D.R (ports slot)) x = leafBitTape (FiberLayoutData.translated y (fun i => (c false).val*(i.val/G%M)%M)) x) ∧
+          (∀ j : Fin 31, D.L (j.natAdd K) = [] ∧ D.R (j.natAdd K) = []) ∧
+          ∀ j : Fin K, (∀ i, sim i ≠ j) →
+            D.L (j.castAdd 31) = S.L (j.castAdd 31) ∧ D.R (j.castAdd 31) = S.R (j.castAdd 31) := by
+  intro block K sim src apart slot leading capacity ports shear prog lastProg work stage result y budget lastBudget body u S push hp hl hb free headers initial
+  obtain ⟨b,H,n,hu,hn,run,_,read,clean,keep⟩ := twoMiddleSwaps_exec v positive size w radix c hP hG hB
+    word io roles head input f p node scalar ctr st sim src (apart true) slot leading capacity body u S push hp hb free headers initial
+  obtain ⟨z,D,m,hz,hm,last,out,empty,preserved⟩ := loadedMiddleShear_exec (sim slot) capacity w _ radix
+    (c false).isLt hP hG hB y (src false) body b H push hl hb clean
+    (fun i => ((keep _ (fun j => apart false j i)).2).trans (headers false i))
+    (by simpa only [Function.Embedding.trans_apply, Fin.castAddEmb_apply] using read)
+  refine ⟨z,D,n+m,hz.trans hu,Nat.add_le_add hn hm,Exec.seq run last,?_,empty,?_⟩
+  · simpa only [ports,Function.Embedding.trans_apply,Fin.castAddEmb_apply] using out
+  · intro j hj
+    have same := preserved j (hj slot).symm
+    exact ⟨same.1.trans (keep j hj).1,same.2.trans (keep j hj).2⟩
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
