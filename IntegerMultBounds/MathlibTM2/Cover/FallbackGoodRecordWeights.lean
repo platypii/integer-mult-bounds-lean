@@ -29,7 +29,7 @@ theorem goodRecordWeights_exec (body : P → Pr P T Q A U) (ports : Fin 24 ↪ F
     (fits : proj.rank ≤ m) (j H : ℕ) (hm : M < 2^H)
     (live : LabelStock.live m (w+1) 1 j = true)
     (α α' : Fin m → ZMod M) (inv : ∀ i, α i * α' i = 1)
-    (v : HS T Q A U) (S : Stacks T A) (tail : List (Fin (A+4))) :
+    (v : HS T Q A U) (S : Stacks T A) (tail : List (Fin (A+4))) (negateForward : Bool := false) :
     let bank := (Fin.castLEEmb (by decide : 23 ≤ 24)).trans ports
     let child := goodChildPorts.trans ports
     let g := physicalLabel m (w+1) j
@@ -62,10 +62,10 @@ theorem goodRecordWeights_exec (body : P → Pr P T Q A U) (ports : Fin 24 ↪ F
         let C := 48*H*H+152*H+66
         ∃ u D t, u.user = v.user ∧ t ≤ (8*(i.val*H)+14*H+22) +
           ((8*(i.val*H)+48*H*H+166*H+88)+(6*w+6+(14*H+16+(prime-2)*C+C+w*(12*H+15+prime*C)))) +
-          (2*H+2)+(8*H+8) ∧ Exec body (signedChildPair prime i.val i.val child) (mk z F) t (mk u D) ∧
+          (2*H+2)+(8*H+8) ∧ Exec body (signedChildPair prime i.val i.val child negateForward) (mk z F) t (mk u D) ∧
           D.R (child 14) = binSyms H (α (i.castLE fits) * δ (i.castLE fits)).val ∧
           D.R (child 0) = binSyms H (α' (i.castLE fits) * δ' (i.castLE fits)).val ∧
-          D.R (child 12) = binSyms H (-(α' (i.castLE fits) * δ' (i.castLE fits))).val ∧
+          D.R (child 12) = binSyms H (-(if negateForward then α (i.castLE fits) * δ (i.castLE fits) else α' (i.castLE fits) * δ' (i.castLE fits))).val ∧
           D.L = F.L ∧ D.inp = F.inp ∧ D.out = F.out ∧
           ∀ k, k ≠ child 0 → k ≠ child 14 → k ≠ child 12 → D.R k = F.R k) ∧
       (∀ i, δ i * δ' i = 1) ∧
@@ -130,10 +130,10 @@ theorem goodRecordWeights_exec (body : P → Pr P T Q A U) (ports : Fin 24 ↪ F
       (i.castLE fits) _ (inv _) pivot i (stage.unit _ i.isLt) prime_prime H hm z F [] rest parentWord pivots
       ((unchanged 2 (by decide) (by decide) (by decide)).trans modulus)
       ((unchanged 20 (by decide) (by decide) (by decide)).trans one)
-      ((congrArg List.length (unchanged 22 (by decide) (by decide) (by decide))).trans ticks) scratch
+      ((congrArg List.length (unchanged 22 (by decide) (by decide) (by decide))).trans ticks) scratch negateForward
     exact ⟨u,D,t,hu.trans user,ht,run,by simpa only [δ,Fin.val_castLE,Fin.isLt,ite_true] using pair,
       by simpa only [δ',Fin.val_castLE,Fin.isLt,ite_true] using inverse,
-      by simpa only [δ',Fin.val_castLE,Fin.isLt,ite_true] using negative,hL,hin,hout,kept⟩
+      by simpa only [δ,δ',Fin.val_castLE,Fin.isLt,ite_true] using negative,hL,hin,hout,kept⟩
   · intro s
     dsimp only
     rw [goodHeadWord_inverse_apply _ _ _ _ _ _ inv,goodHeadWord_apply _ _ _ _ _ _ inv]

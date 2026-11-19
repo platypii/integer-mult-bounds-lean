@@ -89,9 +89,10 @@ theorem weightedLeaf_exec [M8.Machine.Net] [NeZero M] (v : Descriptor) (positive
     let c := fun b : Bool => if b then (⟨(-weight).val,(-weight).val_lt⟩ : Fin M) else ⟨inv.val,inv.val_lt⟩
     ∀ (word : Fin ((P*M*G)*(M*B)) → ZMod 2), roles.head io = 0 → roles.tape io = leafBitTape (List.ofFn word) →
     let block := LeafCore.core io
-    ∀ {K : ℕ} (sim : Fin block.tapes ↪ Fin K) (src : Bool → Fin 6 → Fin K)
-      (_apart : ∀ b i j, sim i ≠ src b j) (slot : Fin block.tapes) (_leading : slot.val = io.val)
+    ∀ {K : ℕ} (sim : Fin block.tapes ↪ Fin K) (pair : Fin 20 ↪ Fin K) (dims : Fin 4 → Fin K)
+      (_pairOff : ∀ i j, j ∈ [0,4,12] → sim i ≠ pair j) (_dimsOff : ∀ i j, sim i ≠ dims j) (slot : Fin block.tapes) (_leading : slot.val = io.val)
       (capacity : 217 ≤ block.states),
+      let src := fun b : Bool => ![dims 0,dims 1,if b then pair 12 else pair 0,dims 2,dims 3,pair 4]
       let ports := sim.trans (Fin.castAddEmb 31)
       let shear := statePlacedNormalized (Record.payloadBank (sim slot) (22 : Fin 31)) capacity
         (by decide : 0 < 217) Empty.elim initializedMiddleShear
@@ -118,8 +119,11 @@ theorem weightedLeaf_exec [M8.Machine.Net] [NeZero M] (v : Descriptor) (positive
         (S : Stacks (K+31) prime) push, (∀ b, Fast.Main.mnProgPush (prog b) ≤ push) →
         Fast.Main.mnProgPush lastProg ≤ push → Fast.Main.mnProgPush sign ≤ push → (∀ f, Fast.Main.mnProgPush (body f) ≤ push) →
         (∀ j : Fin 31, S.L (j.natAdd K) = [] ∧ S.R (j.natAdd K) = []) →
-        (∀ b i, S.R ((src b i).castAdd 31) = (![binSyms P.size P,binSyms G.size G,binSyms M.size (c b).val,
-          binSyms M.size 0,binSyms B.size B,binSyms M.size M] i)) →
+        (∀ i, S.R ((dims i).castAdd 31) =
+          (![binSyms P.size P,binSyms G.size G,binSyms M.size 0,binSyms B.size B] i)) →
+        S.R ((pair 4).castAdd 31) = binSyms M.size M →
+        S.R ((pair 0).castAdd 31) = binSyms M.size inv.val →
+        S.R ((pair 12).castAdd 31) = binSyms M.size (-weight).val →
         RepT (raw (CommonBank.bank roles (Routines.hdr v) f p node scalar ctr st) block.tapes) (S.L ∘ ports) (S.R ∘ ports) →
         ∃ z D n, z.user = u.user ∧ n ≤ weightedLeafCost (volume prime v) v.width block.tapes push ∧
           Exec body ((((stage false).seq (stage true)).seq (lastProg.seq (clearWorkTapes work))).seq (sign.seq (clearWorkTapes work))) (mk u S) n (mk z D) ∧
@@ -133,13 +137,21 @@ theorem weightedLeaf_exec [M8.Machine.Net] [NeZero M] (v : Descriptor) (positive
           (∀ j : Fin 31, D.L (j.natAdd K) = [] ∧ D.R (j.natAdd K) = []) ∧
           ∀ j : Fin K, (∀ i, sim i ≠ j) →
             D.L (j.castAdd 31) = S.L (j.castAdd 31) ∧ D.R (j.castAdd 31) = S.R (j.castAdd 31) := by
-  intro P G B size c word head input block K sim src apart slot leading capacity ports shear prog lastProg work stage result y xs len signWord signSrc load bank child sign body u S push hp hl hsign hb free headers initial
+  intro P G B size c word head input block K sim pair dims pairOff dimsOff slot leading capacity src ports shear prog lastProg work stage result y xs len signWord signSrc load bank child sign body u S push hp hl hsign hb free dimensions modulus inverse negative initial
   have hP := Nat.mul_pos (Nat.mul_pos positive.1 positive.2.1) positive.2.2.1
   have hG := positive.2.2.2.1
   have hB := positive.2.2.2.2
   have radixPower : M = prime^(w+1) := radix.symm.trans (congrArg (prime^·) width)
   have odd : Odd M := radix ▸ (IntegerMultBounds.Networks.Shared50ModularControl.prime_prime.odd_of_ne_two
     (by have := IntegerMultBounds.Networks.Shared50ModularControl.prime_odd; omega)).pow
+  have apart (b : Bool) (i : Fin block.tapes) (j : Fin 6) : sim i ≠ src b j := by
+    cases b <;> fin_cases j <;> first | exact dimsOff i _ | exact pairOff i _ (by decide)
+  have headers (b : Bool) (i : Fin 6) : S.R ((src b i).castAdd 31) =
+      (![binSyms P.size P,binSyms G.size G,binSyms M.size (c b).val,binSyms M.size 0,
+        binSyms B.size B,binSyms M.size M] i) := by
+    cases b <;> fin_cases i <;> first
+      | exact dimensions 0 | exact dimensions 1 | exact dimensions 2 | exact dimensions 3
+      | exact modulus | exact inverse | exact negative
   obtain ⟨b,H,n,hu,hn,run,rep,read,clean,keep⟩ := threeMiddleShears_exec v positive size w radixPower c hP hG hB
     word io roles head input f p node scalar ctr st sim src apart slot leading capacity body u S push hp hl hb free headers initial
   have data : List.ofFn signWord = xs := by
