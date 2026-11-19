@@ -2,7 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackPhysicalSignedPass
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackConjugationQueue
-public import IntegerMultBounds.MathlibTM2.Cover.LabelDirectoryBuild
+public import IntegerMultBounds.MathlibTM2.Cover.LabelDirectorySetup
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackIdentitySeed
 
 /-! Compose residual queue generation and the signed pass on their shared archive register. -/
@@ -138,7 +138,8 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     ∀ (maskLayout : (parentsC :: savedC :: (slots cs ++ [mask])).Nodup),
     (∀ k ∈ parentsC :: savedC :: slots cs, k ≠ bank 2 ∧ k ≠ archive) →
     (∀ i, anchor i ≠ bank 2) → (∀ i, ports i ≠ bank 2) → (∀ i, ext i ≠ bank 2) →
-    ∃ writeMask : Pr P K Q prime U, ∀ (dir : Fin 15 ↪ Fin K), dir 14 = bank 2 → ∀ (word : ℕ → List (Fin (prime+4))) (parentTail : List (Fin (prime+4)))
+    ∃ writeMask : Pr P K Q prime U, ∀ (dir : Fin 15 ↪ Fin K), dir 14 = bank 2 →
+    ∀ (atom one : Fin K), (∀ i, atom ≠ dir i) → (∀ i, one ≠ dir i) → ∀ (word : ℕ → List (Fin (prime+4))) (parentTail : List (Fin (prime+4)))
       (v : Descriptor) (B : ℕ) (base : ScanData r d w W) (payload : ℕ → Record.Array d 1 (w+1) W)
       (u : HS K Q prime U) (source : Stacks K prime),
     let n := (source.R (dir 9)).length
@@ -148,13 +149,12 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     let ancestor := fun k => word (k/box)
     let tail := source.R (dir 14)
     let entries := (List.range (n*box)).flatMap (LabelDirectory.entry ancestor r (w+1))
-    let input := {source with R := Function.update (Function.update source.R (dir 0) parentTail) (dir 14) (entries ++ tail)}
-    0 < digits → (source.R (dir 4)).length = box → (source.R (dir 12)).length = n*box →
+    let input := {source with R := Function.update (Function.update (LabelDirectorySetup.prepared source.R dir digits) (dir 0) parentTail) (dir 14) (entries ++ tail)}
+    0 < digits → (source.R atom).length = w+1 → (source.R one).length = 1 → (source.R (dir 12)).length = n*box →
     source.R (dir 0) = (List.range n).flatMap word ++ parentTail → (∀ j < n, (word j).length = width) →
-    source.R (dir 10) = (RadixCounterData.zeros Networks.Shared50ModularControl.prime_prime.two_le digits).map RadixDigits.digitSymbol →
-    (source.R (dir 11)).length = digits → (∀ i ∈ ([2,3,5,6,7,13] : List (Fin 15)), source.R (dir i) = []) →
+    (∀ i ∈ ([2,3,4,5,6,7,10,11,13] : List (Fin 15)), source.R (dir i) = []) →
     base.records = n*box →
-    let dirCost := n*box*(9*digits+15)+6 + (n*(box*(8*width+11)+6*width+15)+6 + n*box*(6*(width+digits)+13)+6)
+    let dirCost := 8*(w+1)+8+22*box + (n*box*(9*digits+15)+6 + (n*(box*(8*width+11)+6*width+15)+6 + n*box*(6*(width+digits)+13)+6))
 
     ready (prime^w) input.R cs → input.R savedC = [] →
     (input.R parentsC).length = v.beforeRows*v.rows*B → input.R mask = [] →
@@ -176,7 +176,7 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
         base.records * (4*(S.R (bank 12)).length+4+(r*r*(4*(w+1)+4)+1)+6) + 4
     let a := base.physical e proj α α'
     SignedPassBound regs anchor ports ext v B a payload rs parents saved body
-      (.seq (LabelDirectoryBuild.program dir) (.seq writeMask (withIdentitySeed (d+1) (bank 9) (bank 17) seed (bank 4) tmp generate))) pass
+      (.seq (.seq (LabelDirectorySetup.setup r dir atom one) (LabelDirectoryBuild.program dir)) (.seq writeMask (withIdentitySeed (d+1) (bank 9) (bank 17) seed (bank 4) tmp generate))) pass
       (dirCost + ((v.beforeRows*v.rows*B)*(LabelTraversal.time (prime^w) (r*r) 1+5)+4 + seededSetupCost (d+1) base.H setupCost)) u source input := by
   obtain ⟨pass,run⟩ := physicalSignedResidualPass (w := w) (W := W) regs anchor ports ext off banks external shared
     capacity e proj idempotent admissible α α' inverse body rs hk parents saved layout cap cs sizeC
@@ -186,7 +186,7 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     coeffOff maskLayout retained anchorDirectory portDirectory extDirectory
   obtain ⟨writeMask,write⟩ := record_writes (body := body) r cs sizeC mask parentsC savedC maskLayout
   refine ⟨writeMask,?_⟩
-  intro dir dirSlot word parentTail v B base payload u source n box parentWidth digits ancestor tail entries input positive boxWidth countWidth parentsWord wordWidth zeros digitWidth scratch recordCount dirCost counterReady savedBlank parentCount maskBlank bits initial padWord S queueInputs scan active livePrice generate setupCost a shape records hW D
+  intro dir dirSlot atom one atomOff oneOff word parentTail v B base payload u source n box parentWidth digits ancestor tail entries input positive atomWidth oneWidth countWidth parentsWord wordWidth scratch recordCount dirCost counterReady savedBlank parentCount maskBlank bits initial padWord S queueInputs scan active livePrice generate setupCost a shape records hW D
     neutral radix free count width unsigned clean start hm hw fresh maskEmpty encoded padding
   obtain ⟨seedBlank,tmpBlank,weightBank,queueReady,parentWidthEq,width0,empty,output⟩ := queueInputs
   have blank := queueReady.1 4 (by decide)
@@ -204,8 +204,10 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
   have bankKeep (k : Fin 18) : S.R (bank k) = initial.R (bank k) :=
     Function.update_of_ne (apart _ 1) _ _
   have tmpKeep : S.R tmp = initial.R tmp := Function.update_of_ne (control.injective.ne (by decide : (2 : Fin 3) ≠ 1)) _ _
-  obtain ⟨built,buildSteps,buildUser,buildCost,buildRun⟩ := LabelDirectoryBuild.build_exec
-    (body := body) dir r (w+1) word parentTail u source positive boxWidth countWidth parentsWord wordWidth zeros digitWidth scratch
+  have build := LabelDirectorySetup.build_from_count (body := body) r dir atom one atomOff oneOff
+    u source word parentTail oneWidth scratch
+  simp only [atomWidth,pow_mul prime (w+1) (r*r)] at build
+  obtain ⟨built,buildSteps,buildUser,buildCost,buildRun⟩ := build positive countWidth parentsWord wordWidth
   have widths (j) (hj : j < base.records) : (S.R (bank 12)).length = (ancestor j).length := by
     have boxPos : 0 < box := pow_pos (pow_pos Networks.Shared50ModularControl.prime_prime.pos _) _
     rw [recordCount] at hj

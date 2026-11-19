@@ -54,6 +54,44 @@ theorem setup_exec (m : ℕ) (r : Fin 15 ↪ Fin T) (atom one : Fin T)
   rw [len] at run hn
   exact ⟨u'',_,hu''.trans (hu'.trans hu),by dsimp [w]; omega,Exec.seq he (Exec.seq he' run)⟩
 
+/-- Initialize the directory builder from unary widths and a child count. -/
+theorem build_from_count (m : ℕ) (r : Fin 15 ↪ Fin T) (atom one : Fin T)
+    (ha : ∀ i, atom ≠ r i) (ho : ∀ i, one ≠ r i) (v : HS T Q prime U) (S : Stacks T prime)
+    (word : ℕ → List (Fin (prime+4))) (tail : List (Fin (prime+4)))
+    (h1 : (S.R one).length = 1)
+    (fresh : ∀ i ∈ ([2,3,4,5,6,7,10,11,13] : List (Fin 15)), S.R (r i) = []) :
+    let w := (S.R atom).length
+    let L := w*(m*m)
+    let B := prime^L
+    let N := (S.R (r 9)).length
+    let W := (S.R (r 1)).length
+    0 < L → (S.R (r 12)).length = N*B →
+    S.R (r 0) = (List.range N).flatMap word ++ tail → (∀ i < N, (word i).length = W) →
+    ∃ u n, u.user = v.user ∧ n ≤ 8*w+8+22*B + (N*B*(9*L+15)+6 +
+      (N*(B*(8*W+11)+6*W+15)+6 + N*B*(6*(W+L)+13)+6)) ∧
+      Exec body (.seq (setup m r atom one) (LabelDirectoryBuild.program r)) (mk v S) n
+        (mk u {S with R := Function.update (Function.update (prepared S.R r L) (r 0) tail) (r 14) ((List.range (N*B)).flatMap (LabelDirectory.entry (fun k => word (k/B)) m w) ++ S.R (r 14))}) := by
+  intro w L B N W pos count hs hw
+  obtain ⟨u,n,hu,hn,he⟩ := setup_exec (body := body) m r atom one ha ho v S h1 (by
+    intro i hi; apply fresh; simp only [List.mem_cons,List.not_mem_nil,or_false] at hi ⊢; tauto)
+  let M : Stacks T prime := {S with R := prepared S.R r L}
+  have box : (prime^w)^(m*m) = B := (pow_mul prime w (m*m)).symm
+  have children : (M.R (r 12)).length = N*B := by simpa [M,prepared] using count
+  obtain ⟨u',t,hu',ht,run⟩ := LabelDirectoryBuild.build_exec (body := body) r m w word tail u M pos
+    (by simp [M,prepared,box,B]) (by simpa [M,prepared,box,N] using children)
+    (by simpa [M,prepared,N] using hs) (by simpa [M,prepared,N,W] using hw)
+    (by simp [M,prepared,L]) (by simp [M,prepared,L]) (by
+      intro i hi
+      have ne : i ≠ 4 ∧ i ≠ 10 ∧ i ≠ 11 := by
+        simp only [List.mem_cons,List.not_mem_nil,or_false] at hi
+        rcases hi with rfl | rfl | rfl | rfl | rfl | rfl <;> decide
+      simp only [M,prepared,Function.update_of_ne (r.injective.ne ne.1),
+        Function.update_of_ne (r.injective.ne ne.2.1),Function.update_of_ne (r.injective.ne ne.2.2)]
+      apply fresh
+      simp only [List.mem_cons,List.not_mem_nil,or_false] at hi ⊢; tauto)
+  refine ⟨u',n+t,hu'.trans hu,Nat.add_le_add hn (by simpa [M,prepared,box,N,W,L] using ht),?_⟩
+  simpa [M,prepared,box,N,L] using Exec.seq he run
+
 /-- Use the retained class mask itself to count the child records. -/
 theorem build_from_mask (m : ℕ) (r : Fin 15 ↪ Fin T) (atom one : Fin T)
     (ha : ∀ i, atom ≠ r i) (ho : ∀ i, one ≠ r i) (v : HS T Q prime U) (S : Stacks T prime)
@@ -72,25 +110,8 @@ theorem build_from_mask (m : ℕ) (r : Fin 15 ↪ Fin T) (atom one : Fin T)
       Exec body (.seq (setup m r atom one) (LabelDirectoryBuild.program r)) (mk v S) n
         (mk u {S with R := Function.update (Function.update (prepared S.R r L) (r 0) tail) (r 14) ((List.range (N*B)).flatMap (LabelDirectory.entry (fun k => word (k/B)) m w) ++ S.R (r 14))}) := by
   intro w L B N W pos mask hs hw
-  obtain ⟨u,n,hu,hn,he⟩ := setup_exec (body := body) m r atom one ha ho v S h1 (by
-    intro i hi; apply fresh; simp only [List.mem_cons,List.not_mem_nil,or_false] at hi ⊢; tauto)
-  let M : Stacks T prime := {S with R := prepared S.R r L}
-  have box : (prime^w)^(m*m) = B := (pow_mul prime w (m*m)).symm
-  have children : (M.R (r 12)).length = N*B := by simp [M,prepared,mask]
-  obtain ⟨u',t,hu',ht,run⟩ := LabelDirectoryBuild.build_exec (body := body) r m w word tail u M pos
-    (by simp [M,prepared,box,B]) (by simpa [M,prepared,box,N] using children)
-    (by simpa [M,prepared,N] using hs) (by simpa [M,prepared,N,W] using hw)
-    (by simp [M,prepared,L]) (by simp [M,prepared,L]) (by
-      intro i hi
-      have ne : i ≠ 4 ∧ i ≠ 10 ∧ i ≠ 11 := by
-        simp only [List.mem_cons,List.not_mem_nil,or_false] at hi
-        rcases hi with rfl | rfl | rfl | rfl | rfl | rfl <;> decide
-      simp only [M,prepared,Function.update_of_ne (r.injective.ne ne.1),
-        Function.update_of_ne (r.injective.ne ne.2.1),Function.update_of_ne (r.injective.ne ne.2.2)]
-      apply fresh
-      simp only [List.mem_cons,List.not_mem_nil,or_false] at hi ⊢; tauto)
-  refine ⟨u',n+t,hu'.trans hu,Nat.add_le_add hn (by simpa [M,prepared,box,N,W,L] using ht),?_⟩
-  simpa [M,prepared,box,N,L] using Exec.seq he run
+  exact build_from_count m r atom one ha ho v S word tail h1 fresh pos
+    (by simp [mask,N,B,L,w]) hs hw
 
 end
 end IntegerMultBounds.MathlibTM2.Cover.LabelDirectorySetup
