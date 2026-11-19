@@ -56,21 +56,27 @@ theorem shared_ne_last {c t : ℕ} (i : Fin c) :
   fun eq => (i.castAdd t).isLt.ne (congrArg Fin.val eq)
 
 /-- Load a queued payload, run the signed residual diagonal, and undo elimination while preserving the queue tail. -/
-theorem archivedResidual_exec {Q T : ℕ} (parent : Fin d → (ZMod M)ˣ) (a : Fin (d+1) → (ZMod M)ˣ)
-    (negative : Bool) (signValue : ∏ j, a j = if negative then -1 else 1)
+theorem archivedResidual_exec {Q T r records : ℕ} (parent : Fin d → (ZMod M)ˣ) (a : Fin (d+1) → (ZMod M)ˣ)
+    (negative : Bool)
     (capacity : columnCapacity ≤ Q) (signCapacity : (fieldSignProgram (0 : Fin (d+1)) true).1 ≤ Q)
     (H J : ℕ) (hm : M < 2^H) (hw : W < 2^J) (hW : 0 < W)
-    (pivots : Fin (d+1) → Fin (d+1)) (m : Matrix (Fin (d+1)) (Fin (d+1)) (ZMod M))
-    (valid : Itinerary.Valid pivots m (d+1))
-    (diag : Itinerary.run pivots m (d+1) = Matrix.diagonal fun j => (a j : ZMod M))
+    (table : Matrix (Fin r) (Fin r) (ZMod prime) → Matrix (Fin (d+1)) (Fin (d+1)) (ZMod prime))
+    (g : LabelPadding.Label r (w+1)) (m : Matrix (Fin (d+1)) (Fin (d+1)) (ZMod M))
+    (det : m.det = 1 ∨ m.det = -1)
+    (lift : (LabelRing.res prime (w+1) (by omega)).mapMatrix m = table ((LabelRing.res prime (w+1) (by omega)).mapMatrix g))
+    (block : ℕ) (live : block*M^(r*r)+(LabelAddress.address g).val < records)
+    (inputs : ℕ → Array d 1 (w+1) W) (outs : List (Array d 1 (w+1) W))
+    (result : (signedInputs table (w+1) records inputs).Forall₂ Correct outs)
     (tail destTail suffix rest : List (Fin (prime+4))) (dest : ℤ → Fin 4) (q : ℤ)
     (empty : ∀ z, q ≤ z → z < q+(M^(d+1)*W : ℕ) → dest z = blank)
     (original : Fin (M^(d+1)*W) → ZMod 2) :
+    let entry := block*M^(r*r)+(LabelAddress.address g).val
+    let pivots := classPivots (table ((LabelRing.res prime (w+1) (by omega)).mapMatrix g))
+    Itinerary.run pivots m (d+1) = Matrix.diagonal (fun j => (a j : ZMod M)) →
     let words := fun n => matrixWords prime H (Itinerary.run pivots m n)
     let code := orderedScheduleCode (List.finRange (d+1)).reverse pivots ++ rest
     let rows := List.finRange d
     let weightsAt := fun i : Fin d => a i.succ
-    let addr := signedAddress (b := w+1) negative (d := d)
     let reads := pivotReads rows
     let n := reads.length
     let k := fun _ : Fin n => (0 : Fin (d+1))
@@ -112,13 +118,21 @@ theorem archivedResidual_exec {Q T : ℕ} (parent : Fin d → (ZMod M)ˣ) (a : F
     let residual := .seq ((List.finRange n).foldr (fun a rest => .seq (program a) rest) (.act .done)) rewind
     let positive := lt_of_lt_of_le columnCapacity_pos capacity
     ∀ (host : Fin (((N+1)+total)+1) ↪ Fin T) (body : P → Pr P T Q prime U) v S
-      (count src saved tmp : Fin T) (_outside : ∀ i, host i ≠ src) (queueTail : List (Fin (prime+4))),
-      let dst := host (shared (columnBank 24))
-      (∃ u D payload, u.user = v.user ∧
-        Exec body (movePrefix count src dst saved tmp) (mk v S) (6*(M^(d+1)*W)+6) (mk u D) ∧
-        D = {S with R := Function.update (Function.update S.R src queueTail) dst (payload ++ S.R dst)} ∧
-        ColumnRecordReady ((columnBank.trans shared).trans host) H J record SparseRoleCircuit.encode
-          (fun _ => blank) dest 0 q original addr D) →
+      (count src saved tmp : Fin T) (_outside : ∀ i, host i ≠ src) (tailWords : List (Fin (prime+4))),
+      let queueTail := (outs.drop (entry+1)).flatMap payloadWord ++ tailWords
+      let lane := (columnBank.trans shared).trans host
+      let dst := lane 24
+      [count,src,dst,saved,tmp].Nodup →
+      (S.R count).length = M^(d+1)*W →
+      S.R (lane 2) = binSyms H M → S.R (lane 27) = binSyms J W →
+      S.R (lane 28) = binSyms 1 1 → S.R (lane 32) = binSyms H (1 : ZMod M).val →
+      (S.R (lane 33)).length = w → S.R (lane 34) = record →
+      (∀ i ∈ shearWork, S.L (lane i) = [] ∧ S.R (lane i) = []) →
+      (∀ z, readAt blank (S.L (lane 25)) (S.R (lane 25)) (z-q) = RadixToBinary.binaryEncoding.encode (dest z)) →
+      (∀ z, readAt blank (S.L dst) (S.R dst) z = blank) → S.R saved = [] → S.R tmp = [] →
+      (signStream (A := prime) table (w+1) records)[entry]? = some (bitSymbol negative) →
+      scalarArray (inputs entry) = SparseRoleCircuit.encode ∘ original →
+      S.R src = (outs.drop entry).flatMap payloadWord ++ tailWords →
       (∀ h : Fin N, 35 ≤ h.val → S.L (host (shared (columnPorts h))) = [] ∧ S.R (host (shared (columnPorts h))) = []) →
       S.R (host (shared (Fin.last N))) = weights →
       (∀ h : Fin total, S.L (host (ports (Fin.natAdd (N+1) h))) = [] ∧ S.R (host (ports (Fin.natAdd (N+1) h))) = []) →
@@ -130,8 +144,14 @@ theorem archivedResidual_exec {Q T : ℕ} (parent : Fin d → (ZMod M)ˣ) (a : F
         F.R (host (reverseHost (Fin.last N).castSucc)) = rest ∧
         F.R (host (reverseHost (reverseBank 1 34))) = destTail ∧
         F.R src = queueTail ∧ ∀ j, j ≠ src → (∀ i, host i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
-  intro words code rows weightsAt addr reads n k j t i pivot width total ports shared bank record weights program cost spare off reverseHost reverseBank active pop rewind stageCost rewindCost residual positive host body v S count src saved tmp outside queueTail dst loaded free headers aux archive
-  obtain ⟨v₁,S₁,payload,user₁,load,state,layout⟩ := loaded
+  intro entry pivots diag words code rows weightsAt reads n k j t i pivot width total ports shared bank record weights program cost spare off reverseHost reverseBank active pop rewind stageCost rewindCost residual positive host body v S count src saved tmp outside tailWords queueTail lane dst distinct countLen modWord widthWord one padded clock recordWord scratch destination blankDst hs ht recorded input queue free headers aux archive
+  obtain ⟨v₁,S₁,word,valid,sign,user₁,load,_,state,layout⟩ := loadAnchorRecord_exec table g m det lift block negative live
+    inputs outs result body distinct v S tailWords original countLen lane rfl (fun i => outside _) H J record dest q
+    modWord widthWord one padded clock recordWord scratch destination blankDst hs ht recorded input queue
+  have signValue : ∏ j, a j = if negative then -1 else 1 := by
+    apply Units.ext
+    rw [Units.coe_prod,← Matrix.det_diagonal,← diag,sign]
+    cases negative <;> rfl
   have keep (h) (ne : h ≠ shared (columnBank 24)) : S₁.R (host h) = S.R (host h) := by
     rw [state]
     exact (Function.update_of_ne (host.injective.ne ne) _ _).trans (Function.update_of_ne (outside h) _ _)
@@ -140,7 +160,7 @@ theorem archivedResidual_exec {Q T : ℕ} (parent : Fin d → (ZMod M)ˣ) (a : F
       ColumnRecordReady (columnBank.trans shared) H J record SparseRoleCircuit.encode (fun _ => blank) dest 0 q original y D ∧
       (∀ h : Fin N, 35 ≤ h.val → D.L (shared (columnPorts h)) = [] ∧ D.R (shared (columnPorts h)) = []) ∧
       D.R (shared (Fin.last N)) = weights
-  have before : ready addr (embStk host S₁) := by
+  have before : ready (signedAddress negative) (embStk host S₁) := by
     refine ⟨?_,?_,?_⟩
     · obtain ⟨word,lane,action⟩ := layout
       exact ⟨word,⟨lane.modulus,lane.width,lane.one,lane.padded,lane.clock,lane.archive,lane.scratch,lane.src,lane.dst⟩,action⟩
