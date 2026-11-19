@@ -270,6 +270,42 @@ theorem oblique_line_route (h : c.Checked) (U : Matrix (Fin 8) (Fin 8) ℚ)
   simp [R, fromBlocks_multiply, Matrix.mul_sub, idem, ub, annihilate, leftInv, rightInv,
     ← fromBlocks_one]
 
+/-- The shear carrying the word's target hyperplane to the oblique target changes
+at most one coordinate direction. Its inverse subtracts the same square-zero map. -/
+theorem target_frame_correction (h : c.Checked) (U : Matrix (Fin 8) (Fin 8) ℚ)
+    (up : U * c.lineProj = c.lineProj) (pu : c.lineProj * U = U) :
+    let N := c.lineProj - U
+    N.rank ≤ 1 ∧ N * N = 0 ∧ (1 + N) * (1 - N) = 1 ∧
+      (1 + N) * (1 - c.lineProj) * (1 - N) = 1 - U := by
+  intro N
+  have fixed : c.lineProj * N = N := by
+    dsimp [N]
+    rw [mul_sub, lineProj_mul_self h, pu]
+  have kills : N * c.lineProj = 0 := by
+    dsimp [N]
+    rw [sub_mul, lineProj_mul_self h, up, sub_self]
+  have square : N * N = 0 := by
+    calc N * N = N * (c.lineProj * N) := by rw [fixed]
+         _ = 0 := by rw [← Matrix.mul_assoc, kills, Matrix.zero_mul]
+  have rankP : c.lineProj.rank ≤ 1 := by
+    have outer : c.lineProj = vecMulVec (fun i => (c.line i : ℚ))
+        (fun j => (c.line j : ℚ) / 4) := by
+      ext i j
+      simp only [lineProj, of_apply, vecMulVec_apply]
+      ring
+    rw [outer]
+    exact rank_vecMulVec_le _ _
+  have inverse : (1 + N) * (1 - N) = 1 := by
+    rw [mul_sub, mul_one, add_mul, one_mul, square, add_zero, add_sub_cancel_right]
+  refine ⟨?_, square, inverse, ?_⟩
+  · calc N.rank = (c.lineProj * N).rank := by rw [fixed]
+         _ ≤ c.lineProj.rank := rank_mul_le_left _ _
+         _ ≤ 1 := rankP
+  · rw [mul_sub (1 + N) 1 c.lineProj, mul_one, sub_mul, inverse, add_mul, one_mul, kills, add_zero,
+      mul_sub, mul_one, fixed]
+    dsimp [N]
+    abel
+
 end PortCertificate
 
 /-! ### The bit address operators -/
