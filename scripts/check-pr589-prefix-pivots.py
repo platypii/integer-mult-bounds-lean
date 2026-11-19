@@ -52,6 +52,28 @@ def translate(row):
             for j in range(8)]
 
 
+def check_helper_windows(endpoint_positions, gates):
+    """Check scalar dependence across each potential same-helper crossing window."""
+    windows = 0
+    for helper, positions in enumerate(endpoint_positions[222:], start=222):
+        for start in positions.get((0, 1), []):
+            for stop in positions.get((7, 8), []):
+                assert start < stop
+                # MOVEs precede their gate: include the opening gate, exclude the closing gate.
+                # One bit per input register tracks exact XOR cancellation.
+                rows = [1 << i for i in range(len(endpoint_positions))]
+                for target, sources in gates[start:stop]:
+                    delta = 0
+                    for source in sources:
+                        delta ^= rows[source]
+                    rows[target] ^= delta
+                assert rows[helper] & ~(1 << helper)
+                assert any(row & (1 << helper) for i, row in enumerate(rows) if i != helper)
+                windows += 1
+    assert windows == 179
+    print(f"All {windows} helper windows import and export scalar data between endpoint MOVEs.")
+
+
 def main():
     raw = WORD.read_bytes()
     assert hashlib.sha256(raw).hexdigest() == SHA256
@@ -89,6 +111,8 @@ def main():
     refs = word["start"].copy()
     moves = 0
     intervals = [set() for _ in refs]
+    endpoint_positions = [{} for _ in refs]
+    gates = []
     # The scatter COPY windows have a separate rank bill. This is the phase replay
     # in generate_pr589_moves.py, whose scatter boundary preserves the phase refs.
     for section in "DABC":
@@ -100,14 +124,20 @@ def main():
             assert len(adds) == 527
             assert all(refs[t] == 0 and 0 <= k < len(copy_frames) for t, k in adds)
             assert ranks[0] == 0
+            gates.extend((111 + t, [word["ret"][k] for k in indices])
+                         for t, indices in enumerate(word["scatter"]))
         for frame, target, sources in word[section]:
             for register in [target, *sources]:
                 old = refs[register]
                 assert labels[old] <= labels[frame] or labels[frame] <= labels[old]
                 if ranks[old] != ranks[frame]:
-                    intervals[register].add(tuple(sorted((ranks[old], ranks[frame]))))
+                    interval = tuple(sorted((ranks[old], ranks[frame])))
+                    intervals[register].add(interval)
+                    if interval in ((0, 1), (7, 8)):
+                        endpoint_positions[register].setdefault(interval, []).append(len(gates))
                     moves += 1
                 refs[register] = frame
+            gates.append((target, sources))
     assert (len(ranks), moves) == (636, 2911)
     # An endpoint crossing on one register needs both endpoint coordinates.
     # Count wider MOVEs too, to distinguish missing coordinates from batching.
@@ -123,6 +153,7 @@ def main():
     print(f"Phase endpoint singleton MOVEs: coordinate 7 on {source_singletons} source registers, "
           f"coordinate 0 on {target_singletons} target registers, both on {helper_pairs} helpers.")
     print("No source phase MOVE touches coordinate 0; no target phase MOVE touches coordinate 7.")
+    check_helper_windows(endpoint_positions, gates)
     assert max_relation_denominator <= 2 ** 100
     print(f"Verified {relations} integral generator relations; maximum denominator: {max_relation_denominator}.")
     print("Verified nine rank-seven COPY prefixes and 527 zero-frame ADD targets.")
