@@ -501,6 +501,25 @@ theorem liveRecordCost_le_width_budget (r d w H numTime detTime : ℕ) :
   ring_nf
   omega
 
+noncomputable def matrixBuildCost (r d w H : ℕ) := liveRecordCost r d w H 0
+  (Finset.univ.sup fun ij : Fin r × Fin r => RingFormula.time H (readTime H)
+    (numerator (matrixInput false) (matrixInput true) ij.1 ij.2))
+  (RingFormula.time H (readTime H) (determinant (matrixInput (m := r) false)))
+
+omit [M8.Machine.Net] in
+theorem matrixBuildCost_le (r d w H : ℕ) :
+    matrixBuildCost r d w H ≤ matrixBuildCost r d 1 1 * (w+1)*(H+1)^2 := by
+  let num := fun h (ij : Fin r × Fin r) => RingFormula.time h (readTime h)
+    (numerator (matrixInput false) (matrixInput true) ij.1 ij.2)
+  have entries : Finset.univ.sup (num H) ≤ Finset.univ.sup (num 1)*(H+1)^2 := by
+    apply Finset.sup_le
+    intro ij hi
+    exact (time_readTime_le _ H).trans (Nat.mul_le_mul_right _ (Finset.le_sup (f := num 1) hi))
+  apply le_trans _ (liveRecordCost_le_width_budget r d w H _ _)
+  simp only [matrixBuildCost, liveRecordCost]
+  gcongr
+  all_goals first | exact entries | exact time_readTime_le _ H
+
 omit [M8.Machine.Net] in
 private theorem liveRecordCost_width (r d w H width numTime detTime : ℕ) :
     liveRecordCost r d w H width numTime detTime =
@@ -644,10 +663,7 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     SeededQueueReady w base.H proj α α' initial S bank recip pool coeff clock count
       seed tmp archive →
     let scan := QueueLayout.scanPorts (QueueLayout.directoryWork.trans bank) archive archiveOff
-    let liveBase := liveRecordCost r (d+1) w base.H 0
-      (Finset.univ.sup fun ij : Fin r × Fin r => RingFormula.time base.H (readTime base.H)
-        (numerator (matrixInput false) (matrixInput true) ij.1 ij.2))
-      (RingFormula.time base.H (readTime base.H) (determinant (matrixInput (m := r) false)))
+    let liveBase := matrixBuildCost r (d+1) 1 1 * (w+1)*(base.H+1)^2
     let generate : Pr P K Q prime U := seededQueueBody r d e bank recip clock count pool coeff coeffOff scan mask seed tmp
     let units := ∏ i : Fin r, (prime^r-prime^i.val)
     let classes := prime^(r*r)
@@ -882,8 +898,10 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     rw [liveCount,paddingCount,cardinality,remaining,recordCount,boxSize]
     rw [parentWidthEq,liveRecordCost_width r (d+1) w base.H parentWidth]
     dsimp only [setupCost,queuePerParent,liveBase]
-    have archive := queueArchive_le classes units ((d+1)*(d+1)*base.H) liveBase unitsLe
-    dsimp only [liveBase] at archive
+    have archive := queueArchive_le classes units ((d+1)*(d+1)*base.H) (matrixBuildCost r (d+1) w base.H) unitsLe
+    have archive := archive.trans (Nat.add_le_add_right (Nat.mul_le_mul_left units
+      (matrixBuildCost_le r (d+1) w base.H)) _)
+    unfold matrixBuildCost at archive
     apply le_trans _ (Nat.add_le_add_right (Nat.mul_le_mul_left n
       (Nat.add_le_add_right (Nat.add_le_add_right (Nat.mul_le_mul_left lifts archive) _) _)) 4)
     exact le_of_eq (by ring)
