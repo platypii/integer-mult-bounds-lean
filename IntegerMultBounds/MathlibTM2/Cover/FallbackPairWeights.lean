@@ -118,6 +118,64 @@ theorem packedChildPair_exec {n : ℕ} (body : P → Pr P T Q A U) (bank : Fin 2
     · subst k; exact (Function.update_self ..).trans (free 13 (by decide)).symm
     · exact (Function.update_of_ne h _ _).trans ((frame k h0 h14).trans (Function.update_of_ne h _ _))
 
+private theorem negWordValue {N H : ℕ} [NeZero N] (x : ZMod N) (ne : x.val ≠ 0) (hm : N < 2^H) :
+    (N+2^H-x.val)%2^H = (-x).val := by
+  have bound := x.val_lt
+  rw [ZMod.neg_val',Nat.mod_eq_of_lt (show N-x.val < N by omega),
+    show N+2^H-x.val = N-x.val+2^H by omega,Nat.add_mod_right,Nat.mod_eq_of_lt (by omega)]
+
+def signedChildPair (p parentIndex index : ℕ) (bank : Fin 20 ↪ Fin T) : Pr P T Q A U :=
+  .seq (packedChildPair p parentIndex index bank)
+    (bsub (bank 4) (bank 0) (bank 12) (bank 1) (bank 2) (bank 3) (bank 5))
+
+/-- Prepare the forward and negative reciprocal coefficients for the three leaf shears. -/
+theorem signedChildPair_exec {n : ℕ} (body : P → Pr P T Q A U) (bank : Fin 20 ↪ Fin T)
+    (parent : Fin n → ZMod M) (j : Fin n) (inv : ZMod M) (reciprocal : parent j * inv = 1)
+    (pivot : Fin d → ZMod M) (i : Fin d) (unit : IsUnit (pivot i)) (hb : b.Prime)
+    (H : ℕ) (hm : M < 2^H) (v : HS T Q A U) (S : Stacks T A) (tail rest : List (Fin (A+4)))
+    (weights : S.R (bank 19) = (List.ofFn fun k => binSyms H (parent k).val).flatten ++ rest)
+    (record : S.R (bank 18) = (List.ofFn fun k => binSyms H (pivot k).val).flatten ++ tail)
+    (modulus : S.R (bank 4) = binSyms H M) (one : S.R (bank 15) = binSyms H (1 : ZMod M).val)
+    (clock : (S.R (bank 16)).length = w)
+    (free : ∀ k : Fin 20, (k ≤ 14 ∧ k ≠ 4) ∨ k = 17 → S.R (bank k) = []) :
+    let C := 48*H*H+152*H+66
+    ∃ z F t, z.user = v.user ∧ t ≤ (8*(j.val*H)+14*H+22) +
+      ((8*(i.val*H)+48*H*H+166*H+88)+(6*w+6+(14*H+16+(b-2)*C+C+w*(12*H+15+b*C)))) +
+      (2*H+2) + (8*H+8) ∧ Exec body (signedChildPair b j.val i.val bank) (mk v S) t (mk z F) ∧
+      F.R (bank 14) = binSyms H (parent j * pivot i).val ∧
+      F.R (bank 0) = binSyms H (inv * Ring.inverse (pivot i)).val ∧
+      F.R (bank 12) = binSyms H (-(inv * Ring.inverse (pivot i))).val ∧
+      F.L = S.L ∧ F.inp = S.inp ∧ F.out = S.out ∧
+      ∀ k, k ≠ bank 0 → k ≠ bank 14 → k ≠ bank 12 → F.R k = S.R k := by
+  intro C
+  obtain ⟨u,D,l,hu,hl,load,forward,inverse,left,input,output,frame⟩ := packedChildPair_exec body bank
+    parent j inv reciprocal pivot i unit hb H hm v S tail rest weights record modulus one clock free
+  let x := inv * Ring.inverse (pivot i)
+  have keep (k : Fin 20) (h : k ≠ 0) (h' : k ≠ 14) :=
+    frame _ (bank.injective.ne h) (bank.injective.ne h')
+  have fresh (k : Fin 20) (h : k ≠ 0) (h' : k < 14) (h4 : k ≠ 4) :=
+    (keep k h (by omega)).trans (free k (.inl ⟨h'.le,h4⟩))
+  obtain ⟨z,hz,_,_,sub⟩ := bsub_exec body (a := bank 4) (b := bank 0) (c := bank 12)
+    (tx := bank 1) (ty := bank 2) (tz := bank 3) (cy := bank 5)
+    (by simp [List.nodup_cons,bank.injective.eq_iff]) (bank.injective.ne (by decide)) (bank.injective.ne (by decide))
+    hm (x.val_lt.trans hm) u D ((keep 4 (by decide) (by decide)).trans modulus) inverse
+    (fresh 1 (by decide) (by decide) (by decide)) (fresh 2 (by decide) (by decide) (by decide))
+    (fresh 3 (by decide) (by decide) (by decide))
+  have : Fact (1 < M) := ⟨one_lt_pow₀ hb.one_lt (by omega)⟩
+  have cancels : (parent j * pivot i) * x = 1 := by
+    dsimp only [x]
+    rw [mul_mul_mul_comm,reciprocal,Ring.mul_inverse_cancel _ unit,one_mul]
+  have ne : x.val ≠ 0 := by
+    intro h
+    have zero : x = 0 := by simpa using h
+    simp [zero] at cancels
+  rw [negWordValue x ne hm,fresh 12 (by decide) (by decide) (by decide),List.append_nil] at sub
+  exact ⟨z,_,_,hz.trans hu,Nat.add_le_add_right hl _,Exec.seq load sub,
+    (Function.update_of_ne (bank.injective.ne (by decide : (14 : Fin 20) ≠ 12)) _ _).trans forward,
+    (Function.update_of_ne (bank.injective.ne (by decide : (0 : Fin 20) ≠ 12)) _ _).trans inverse,
+    Function.update_self ..,left,input,output,fun k h0 h14 h12 =>
+      (Function.update_of_ne h12 _ _).trans (frame k h0 h14)⟩
+
 def pairReadPorts : Fin 7 ↪ Fin 35 := (Fin.castLEEmb (by decide : 7 ≤ 8)).trans matrixReadPorts
 
 def pairInversePorts : Fin 16 ↪ Fin 35 := inverseShearPorts.trans (Fin.castLEEmb (by decide))
@@ -226,11 +284,7 @@ theorem loadSignedPairWeights_exec (body : P → Pr P T Q A U) (i : Fin d) (bank
     (free 6 (by decide) (by decide) (by decide))
   have : Fact (1 < M) := ⟨one_lt_pow₀ hb.one_lt (by omega)⟩
   have ne : inv.val ≠ 0 := fun eq => (Ring.isUnit_iff_inverse_ne_zero.mp unitWeight) (by apply ZMod.val_injective; simpa using eq)
-  have bound := inv.val_lt
-  have neg : (M+2^H-inv.val)%2^H = (-inv).val := by
-    rw [ZMod.neg_val',Nat.mod_eq_of_lt (show M-inv.val < M by omega),
-      show M+2^H-inv.val = M-inv.val+2^H by omega,Nat.add_mod_right,Nat.mod_eq_of_lt (by omega)]
-  rw [neg,free 29 (by decide) (by decide) (by decide),List.append_nil] at sub
+  rw [negWordValue inv ne hm,free 29 (by decide) (by decide) (by decide),List.append_nil] at sub
   exact ⟨z,_,hz.trans hu,Nat.add_le_add_right hl _,Exec.seq load sub⟩
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
