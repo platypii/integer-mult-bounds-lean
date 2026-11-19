@@ -121,6 +121,27 @@ def block_placements(width):
             yield perm
 
 
+def pivot_order_reachable(first, last, routed):
+    """Necessary joint rank test for a lower triangular matrix between two exchanges."""
+    # Strip the outer triangular factors: the matrix last * L * first has
+    # the northeast rank profile of routed. Undo first by adjacent column swaps.
+    # Only the suffix separating the two columns changes in each swap. Hence
+    # the two pivot rows recorded at those columns either exchange or stay;
+    # after all swaps the profile must be that of last * L, namely last.
+    columns = [first.index(k) for k in range(16)]
+    order = [last[routed.index(k)] for k in range(16)]
+    while columns != sorted(columns):
+        for i in range(15):
+            if columns[i] > columns[i + 1]:
+                columns[i], columns[i + 1] = columns[i + 1], columns[i]
+                # Relax to an optional swap. Sorting each compared pair puts
+                # the most small entries into every prefix at every threshold.
+                # If even that path fails to sort, no optional path can sort.
+                if order[i] > order[i + 1]:
+                    order[i], order[i + 1] = order[i + 1], order[i]
+    return order == sorted(order)
+
+
 def check_two_child_ranks(widths, prefix_masks):
     """Filter all charts simultaneously by necessary submatrix ranks over the residue field."""
     @lru_cache(maxsize=None)
@@ -157,6 +178,12 @@ def check_two_child_ranks(widths, prefix_masks):
             if possible and example is None:
                 example = ((possible & -possible).bit_length() - 1, first, last)
             survivors |= possible
+            while possible:
+                bit = possible & -possible
+                masks = prefix_masks[bit.bit_length() - 1]
+                routed = [(a ^ b).bit_length() - 1 for a, b in zip(masks, masks[1:])]
+                assert not pivot_order_reachable(first, last, routed), (first, last, routed)
+                possible -= bit
     return survivors, example
 
 
@@ -206,7 +233,7 @@ def check_port_swap_distance(port_moves):
                 assert charts[index] == (3, 4, 5, 6, 7, 1, 2, 0)
                 assert first[0:2] == [14, 15] and last[0:5] == [11, 12, 13, 14, 15]
     print("With triangular adapters the rectangle-rank test admits 192 common charts "
-          "for widths (2, 5) and none for (1, 6).")
+          "for widths (2, 5) and none for (1, 6); none survive the joint pivot-order test.")
     print("On every source and target register the seven paid atom swaps plus the port "
           "permutation have exact transposition distance nine.")
 
