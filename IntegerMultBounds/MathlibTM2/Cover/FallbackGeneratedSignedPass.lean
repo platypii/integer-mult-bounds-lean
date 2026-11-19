@@ -401,7 +401,7 @@ noncomputable def signedPassWork (table : Matrix (Fin r) (Fin r) (ZMod prime) �
     parents*(prime^w)^(r*r)*perClass + 4*records*((prime^(w+1))^(d+1)*W)
 
 omit [M8.Machine.Net] in
-private theorem invertibleClassCount (r : ℕ) :
+theorem invertibleClassCount (r : ℕ) :
     (LabelSelectors.classes 1 (r*r)).countP (LabelSelectors.accept r) =
       ∏ i : Fin r, (prime^r - prime^i.val) := by
   rw [LabelSelectors.classes_eq, one_mul, List.countP_map, ← liveClasses_eq_product]
