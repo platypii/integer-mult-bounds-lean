@@ -28,6 +28,7 @@ theorem modular_move_profile (w : ℕ) :
     ∃ (P : Fin 636 → Matrix (Fin 8) (Fin 8) R)
       (word : ℕ × ℕ → List (AffineFieldProgram.Op (Fin 8) R)),
       (∀ l, P l * P l = P l) ∧
+      (∀ i j : Fin 636, CheckedPair (i.val, j.val) → P i * P j = P j * P i) ∧
       (∀ p (h : CheckedPair p), (∀ op ∈ word p, AffineFieldProgram.Legal op) ∧
         ∀ s, AffineFieldProgram.run (word p) s =
           exchange (P ⟨p.2, h.2.1⟩) (exchange (P ⟨p.1, h.1⟩) s)) ∧
@@ -40,7 +41,7 @@ theorem modular_move_profile (w : ℕ) :
           [0, 1323, 1342, 79, 44, 102, 11, 19, 0] := by
   intro R
   classical
-  obtain ⟨P, idem, _, programs⟩ := checked_move_programs w
+  obtain ⟨P, idem, commute, _, programs⟩ := checked_move_programs w
   have existsWord (p : ℕ × ℕ) (h : CheckedPair p) :=
     programs ⟨p.1, h.1⟩ ⟨p.2, h.2.1⟩ h
   let word := fun p => if h : CheckedPair p then (existsWord p h).choose else []
@@ -58,7 +59,7 @@ theorem modular_move_profile (w : ℕ) :
   have phase := (counts _ phase_checked).trans phase_ranks
   have copies := (counts _ retainedCopy_checked.1).trans
     ((profile _ retainedCopy_checked.1).trans retainedCopy_checked.2)
-  refine ⟨P, word, idem, fun p h => ⟨(spec p h).1, (spec p h).2.2⟩, phase,
+  refine ⟨P, word, idem, commute, fun p h => ⟨(spec p h).1, (spec p h).2.2⟩, phase,
     (counts _ final_checked.1).trans final_ranks, copies, ?_⟩
   rw [phase, copies, ← phase_ranks, ← copyRanks_eq]
   exact localPaid_histogram
