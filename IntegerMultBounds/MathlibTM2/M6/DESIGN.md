@@ -509,6 +509,10 @@ directly:
   one the spare rank mass is only `64 · 28416 - 1808352 = 10272`, enough for 35 such
   children per invocation (`M6.bit_extra_rank_budget`). A correction charged
   independently at every affected port therefore exhausts the saving even before routing.
+  At the selected saving `10/5769`, one additional rank-one child in the entire single-class
+  profile already takes the moment above one, even with zero bad-residue surcharge
+  (`M6.bit_one_extra_child_over_budget`). Retaining that exponent requires paying for the
+  correction inside existing charges, reducing another charge, or changing the profile.
 - **Routes and charts are coordinate permutations.** The stage routes `ρ` and the helper charts
   are orthogonal and not triangular; in Bruhat form each route contains 7 sub-field
   transpositions per field, for all 111 ports. On a tape they move data from less significant
