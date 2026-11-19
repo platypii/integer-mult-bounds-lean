@@ -2,6 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackPhysicalSignedPass
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackConjugationQueue
+public import IntegerMultBounds.MathlibTM2.Cover.LabelCountBank
 public import IntegerMultBounds.MathlibTM2.Cover.LabelSpectators
 public import IntegerMultBounds.MathlibTM2.Cover.LabelDirectorySetup
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackIdentitySeed
@@ -142,6 +143,7 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     ∃ writeMask : Pr P K Q prime U, ∀ (directoryPorts : Fin 15 ↪ Fin K), directoryPorts 14 = bank 2 →
     let dir := directoryPorts.trans (Equiv.swap (directoryPorts 9) parentsC).toEmbedding
     ∀ (atom one : Fin K), (∀ i, atom ≠ dir i) → (∀ i, one ≠ dir i) →
+    [one,atom,dir 7,dir 2,dir 3,dir 5].Nodup → (dir 7 :: dir 2 :: slots cs).Nodup →
     ∀ (br rows bh : Fin K), [br,rows,bh,atom,dir 2,dir 9,dir 3,dir 5].Nodup → ∀ (word : ℕ → List (Fin (prime+4))) (parentTail : List (Fin (prime+4)))
       (v : Descriptor) (B : ℕ) (base : ScanData r d w W) (payload : ℕ → Record.Array d 1 (w+1) W)
       (u : HS K Q prime U) (raw : Stacks K prime),
@@ -157,13 +159,14 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     let entries := (List.range (n*box)).flatMap (LabelDirectory.entry ancestor r (w+1))
     let counted := Function.update (LabelDirectorySetup.prepared source.R dir digits) (dir 12)
       (expandedMask box (fun _ => false) (source.R (dir 9)))
-    let input := {source with R := Function.update (Function.update counted (dir 0) parentTail) (dir 14) (entries ++ tail)}
-    (source.R atom).length = w+1 → (source.R one).length = 1 →
+    let builtState := {source with R := Function.update (Function.update counted (dir 0) parentTail) (dir 14) (entries ++ tail)}
+    let input := {builtState with R := LabelCountBank.fill (cs.map Prod.fst) (prime^w) (Function.update builtState.R (dir 7) (List.replicate (prime^w) tick))}
+    source.R atom = List.replicate (w+1) tick → (source.R one).length = 1 →
     source.R (dir 0) = (List.range n).flatMap word ++ parentTail → (∀ j < n, (word j).length = width) →
     (∀ i ∈ ([2,3,4,5,6,7,10,11,12,13] : List (Fin 15)), source.R (dir i) = []) →
     let dirCost := 8*(w+1)+8+22*box + (n*(6*box+10)+6 + (n*box*(9*digits+15)+6 + (n*(box*(8*width+11)+6*width+15)+6 + n*box*(6*(width+digits)+13)+6)))
 
-    ready (prime^w) input.R cs → input.R savedC = [] →
+    (∀ k ∈ slots cs, builtState.R k = []) → input.R savedC = [] →
     input.R mask = [] →
     let bits := (LabelMask.selectors r (w+1) base.records).map (bitSymbol (a := prime))
     let initial := {input with R := Function.update input.R mask bits}
@@ -183,8 +186,9 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
         base.records * (4*(S.R (bank 12)).length+4+(r*r*(4*(w+1)+4)+1)+6) + 4
     let a := base.physical e proj α α'
     SignedPassBound regs anchor ports ext v B a payload rs parents saved body
-      (.seq (LabelSpectators.program r br rows bh atom (dir 2) (dir 9) (dir 3) (dir 5)) (.seq (.seq (LabelDirectorySetup.setup r dir atom one) (.seq (expandMask (dir 9) (dir 4) (dir 2) (dir 3) (dir 5) (dir 12) (fun _ => false)) (LabelDirectoryBuild.program dir))) (.seq writeMask (withIdentitySeed (d+1) (bank 9) (bank 17) seed (bank 4) tmp generate)))) pass
-      (44*LabelMask.records v+13*(w+1)+14 + (dirCost + ((v.beforeRows*v.rows*B)*(LabelTraversal.time (prime^w) (r*r) 1+5)+4 + seededSetupCost (d+1) base.H setupCost))) u raw input := by
+      (.seq (LabelSpectators.program r br rows bh atom (dir 2) (dir 9) (dir 3) (dir 5)) (.seq (.seq (LabelDirectorySetup.setup r dir atom one) (.seq (expandMask (dir 9) (dir 4) (dir 2) (dir 3) (dir 5) (dir 12) (fun _ => false)) (LabelDirectoryBuild.program dir))) (.seq (.seq (LabelCounts.highCount one atom (dir 7) (dir 2) (dir 3) (dir 5))
+        (scanR (dir 7) (dir 2) (LabelCountBank.pushAll (cs.map Prod.fst)))) (.seq writeMask (withIdentitySeed (d+1) (bank 9) (bank 17) seed (bank 4) tmp generate))))) pass
+      (44*LabelMask.records v+13*(w+1)+14 + (dirCost + (26*prime^w+6 + ((v.beforeRows*v.rows*B)*(LabelTraversal.time (prime^w) (r*r) 1+5)+4 + seededSetupCost (d+1) base.H setupCost)))) u raw input := by
   obtain ⟨pass,run⟩ := physicalSignedResidualPass (w := w) (W := W) regs anchor ports ext off banks external shared
     capacity e proj idempotent admissible α α' inverse body rs hk parents saved layout cap cs sizeC
     parentsC savedC maskRegs pivotRegs separate
@@ -193,7 +197,7 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     coeffOff maskLayout retained anchorDirectory portDirectory extDirectory
   obtain ⟨writeMask,write⟩ := record_writes (body := body) r cs sizeC mask parentsC savedC maskLayout
   refine ⟨writeMask,?_⟩
-  intro directoryPorts directorySlot dir atom one atomOff oneOff br rows bh dimensions word parentTail v B base payload u raw positiveDescriptor beforeRows rowsSize beforeH parentBlank source n box parentWidth digits ancestor tail entries counted input atomWidth oneWidth parentsWord wordWidth scratch dirCost counterReady savedBlank maskBlank bits initial padWord S queueInputs scan active livePrice generate setupCost a shape records hW D
+  intro directoryPorts directorySlot dir atom one atomOff oneOff highLayout highSlots br rows bh dimensions word parentTail v B base payload u raw positiveDescriptor beforeRows rowsSize beforeH parentBlank source n box parentWidth digits ancestor tail entries counted builtState input atomWord oneWidth parentsWord wordWidth scratch dirCost counterEmpty savedBlank maskBlank bits initial padWord S queueInputs scan active livePrice generate setupCost a shape records hW D
     neutral radix free count width unsigned clean start hm hw fresh maskEmpty encoded padding
   obtain ⟨seedBlank,tmpBlank,weightBank,queueReady,parentWidthEq,width0,empty,output⟩ := queueInputs
   have blank := queueReady.1 4 (by decide)
@@ -217,9 +221,23 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     rw [Equiv.swap_apply_of_ne_of_ne (directoryPorts.injective.ne (by decide : (14 : Fin 15) ≠ 9))
       (directorySlot ▸ (retained parentsC (by simp)).1.symm),directorySlot]
   have parentSize : n = v.beforeRows*v.rows*B := by simp [n,source]
+  have fillKeep (i : Fin 15) (hi : i ≠ 7) (off : dir i ∉ slots cs) : input.R (dir i) = builtState.R (dir i) := by
+    have outside : dir i ∉ cs.map Prod.fst := by
+      intro mem
+      obtain ⟨pair,hp,eq⟩ := List.mem_map.mp mem
+      exact off (eq ▸ List.mem_flatMap.mpr ⟨pair,hp,by simp⟩)
+    simp [input,LabelCountBank.fill,outside,hi]
+  have parentOff : dir 9 ∉ slots cs := by
+    rw [parentPort]
+    intro h
+    exact maskLayout.notMem (by simp [h])
+  have directoryOff : dir 14 ∉ slots cs := by
+    intro h
+    exact (retained _ (List.mem_cons_of_mem _ (List.mem_cons_of_mem _ h))).1 dirSlot
+  have atomWidth : (source.R atom).length = w+1 := by simp [atomWord]
   have parentCount : (input.R parentsC).length = v.beforeRows*v.rows*B := by
-    rw [← parentPort]
-    simpa [input,counted,LabelDirectorySetup.prepared,n] using parentSize
+    rw [← parentPort,fillKeep 9 (by decide) parentOff]
+    simpa [builtState,counted,LabelDirectorySetup.prepared,n] using parentSize
   have rankPos : 0 < r := by
     obtain i | i := e.symm 0 <;> exact Nat.zero_lt_of_lt i.isLt
   have positive : 0 < digits := Nat.mul_pos (Nat.succ_pos _) (Nat.mul_pos rankPos rankPos)
@@ -245,6 +263,16 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     parentsUser source word parentTail oneWidth scratch
   simp only [atomWidth,pow_mul prime (w+1) (r*r)] at build
   obtain ⟨built,buildSteps,buildUser,buildCost,buildRun⟩ := build positive parentsWord wordWidth
+  obtain ⟨counterReady,initialized,counterSteps,counterUser,counterCost,counterRun⟩ :=
+    LabelCountBank.prepare_exec body cs one atom (dir 7) (dir 2) (dir 3) (dir 5) highLayout highSlots
+      built builtState (w+1) (by omega) (by simpa [builtState,counted,LabelDirectorySetup.prepared,atomOff] using atomWord)
+      (by simpa [builtState,counted,LabelDirectorySetup.prepared,oneOff] using oneWidth) (by
+        intro k hk
+        rcases List.mem_append.mp hk with h | h
+        · simp only [List.mem_cons,List.not_mem_nil,or_false] at h
+          rcases h with rfl | rfl | rfl | rfl <;> simp [builtState,counted,LabelDirectorySetup.prepared,scratch]
+        · exact counterEmpty _ h)
+  change ready (prime^w) input.R cs at counterReady
   have widths (j) (hj : j < base.records) : (S.R (bank 12)).length = (ancestor j).length := by
     have boxPos : 0 < box := pow_pos (pow_pos Networks.Shared50ModularControl.prime_prime.pos _) _
     rw [recordCount] at hj
@@ -252,9 +280,9 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
   have directory : S.R (bank 2) = (List.range base.records).flatMap (LabelDirectory.entry ancestor r (w+1)) ++ tail := by
     rw [bankKeep,recordCount]
     change Function.update input.R mask bits (bank 2) = _
-    rw [Function.update_of_ne (show bank 2 ≠ mask from apart _ 0),← dirSlot]
+    rw [Function.update_of_ne (show bank 2 ≠ mask from apart _ 0),← dirSlot,fillKeep 14 (by decide) directoryOff]
     exact Function.update_self ..
-  obtain ⟨writer,tMask,hUser,hTime,emit⟩ := write v (w+1) B (by omega) shape built input
+  obtain ⟨writer,tMask,hUser,hTime,emit⟩ := write v (w+1) B (by omega) shape initialized input
     ⟨counterReady,savedBlank,parentCount⟩
   change base.records = LabelMask.records v at records
   rw [← records,maskBlank,List.append_nil] at emit
@@ -339,7 +367,7 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
         rw [← sharedArchive,prep]
         exact scanStart)
       hm hw fresh emptyMask radixC freeC countC encoded padding
-  exact ⟨z,E,_,hz.trans (cleanUser.trans (hy.trans (preparedUser.trans (hUser.trans (buildUser.trans parentUser))))),queue,acc,maskDone,pivots,archiveDone,Nat.add_le_add (Nat.add_le_add parentCost (Nat.add_le_add buildCost (Nat.add_le_add hTime (Nat.add_le_add (Nat.add_le_add initCost ht) (Nat.le_of_eq (congrArg (fun n => 2*n+2) padLen)))))) hn,
-    Exec.seq (Exec.seq parentRun (Exec.seq buildRun (Exec.seq emit (Exec.seq (Exec.seq initRun generateRun) clearRun)))) exec⟩
+  exact ⟨z,E,_,hz.trans (cleanUser.trans (hy.trans (preparedUser.trans (hUser.trans (counterUser.trans (buildUser.trans parentUser)))))),queue,acc,maskDone,pivots,archiveDone,Nat.add_le_add (Nat.add_le_add parentCost (Nat.add_le_add buildCost (Nat.add_le_add counterCost (Nat.add_le_add hTime (Nat.add_le_add (Nat.add_le_add initCost ht) (Nat.le_of_eq (congrArg (fun n => 2*n+2) padLen))))))) hn,
+    Exec.seq (Exec.seq parentRun (Exec.seq buildRun (Exec.seq counterRun (Exec.seq emit (Exec.seq (Exec.seq initRun generateRun) clearRun))))) exec⟩
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
