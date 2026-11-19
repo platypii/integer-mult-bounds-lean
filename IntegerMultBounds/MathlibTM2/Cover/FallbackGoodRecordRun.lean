@@ -1,4 +1,5 @@
 module
+public import IntegerMultBounds.MathlibTM2.Host.StateLift
 
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackGoodChildPayload
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackGoodOutgoing
@@ -228,6 +229,162 @@ theorem goodRecord_exec [Fintype P] (body : P → Pr P T 217 A U) (full : Fin 58
   rw [coeq] at done
   exact ⟨z,F,_,out,hz.trans (hy.trans hu),Nat.add_le_add (Nat.add_le_add hl ht) hn,
     by simpa only [goodRecord,ite_eq_right zero,goodIncoming,goodOutgoing,machine] using Exec.seq (Exec.seq first call) last,done,blank,
+    fun j hs ht => ⟨(outer j hs ht).1.trans ((saved j (ht 24).symm).1.trans (frame j hs ht).1),
+      (outer j hs ht).2.trans ((saved j (ht 24).symm).2.trans (frame j hs ht).2)⟩,
+    goodRecord_effect stage L R factor idem weights inv inverse word before after out inc (fun hg tg x j => by
+      simpa only [childWeight,childInv,piv,stage,Fin.castLE,Fin.castAdd] using act hg tg x j) outgoing⟩
+
+/-- Run the closed parent stages in their original control states while the child
+call uses the full host state space. Each parent stage starts by normalizing once. -/
+def hostedGoodRecord {Q : ℕ} (cap : 217 ≤ Q) (full : Fin 58 ↪ Fin T) (f : P)
+    (b rank g : ℕ) (hr : rank ≤ d) : Pr P T Q A U :=
+  let machine := parent.trans (parentWithWeights.trans full)
+  let lift := fun p : Pr Empty T 217 A U =>
+    (stateLiftNormalize cap (by decide)).seq (stateLiftPr cap (by decide) Empty.elim p)
+  if rank = 0 then .act .done else
+    .seq (.seq (lift (goodIncoming b rank hr machine)) (goodChildCall f full b rank g))
+      (lift (goodOutgoing b rank hr machine))
+
+theorem hostedGoodRecord_exec {Q : ℕ} (cap : 217 ≤ Q) (body : P → Pr P T Q A U) (full : Fin 58 ↪ Fin T) (f : P) (budget : ℕ)
+    {rank : ℕ} (G : Matrix (Fin d) (Fin d) (ZMod M)) (g : ℕ) (dim : d = rank+g) (hr : rank ≤ d)
+    (minor : ∀ j (hj : j < rank), IsUnit (lead (j+1) (lt_of_lt_of_le hj hr) G).det)
+    (idem : G*G = G) (L : Matrix (Fin d) (Fin rank) (ZMod M)) (R : Matrix (Fin rank) (Fin d) (ZMod M))
+    (factor : G = L*R) (weights inv : Fin d → ZMod M) (inverse : ∀ i, weights i * inv i = 1)
+    (hb : b.Prime) (H J : ℕ) (hm : M < 2^H) (hw : W < 2^J) (hW : 0 < W)
+    (tail dest rest invRest pivotTail : List (Fin (A+4))) (sym : α → Fin 4) (source target : ℤ → Fin 4) (p q : ℤ)
+    (empty : ∀ z, q ≤ z → z < q+(M^(d+d)*W : ℕ) → target z = blank) :
+    let machine := parent.trans (parentWithWeights.trans full)
+    let bank := adapterBank.trans machine
+    let host := head.trans bank
+    let c := child.trans host
+    let h := (coeff true).trans host
+    let s := shear.trans host
+    let words := fun j => if hj : j ≤ rank then matrixWords A H (stageAt G rank hr minor j hj).M else []
+    let pair := matrixArchive words (words 0 ++ tail) dest rank
+    let stage := stageAt G rank hr minor rank le_rfl
+    let piv := fun j : Fin rank => stage.M (j.castLE hr) (j.castLE hr)
+    let parent := (List.ofFn fun i => binSyms H (weights i).val).flatten ++ rest
+    let ready := HeadColumnReady (d := d+d) (W := W) h (entry.trans bank) H J [] parent [] sym source target p q
+    let ordinary := ordinaryHead.trans bank
+    let ts := shear.trans ordinary
+    let childWeight := fun i : Fin rank => weights (i.castLE hr) * piv i
+    let childInv := fun i : Fin rank => inv (i.castLE hr) * Ring.inverse (piv i)
+    let middleCost := (((List.finRange rank).map fun i => childWeightTime b w H i.val).sum+1 + dimensionTime H 1 (g+g)) +
+        (budget+2+(2*(rank*H+rank*H+((g+g)*H+1))+7))
+    ∀ v S (word : Fin (M^(d+d)*W) → α),
+      ready word S →
+      S.R (bank 27) = [] → S.R (machine 54) = (List.ofFn fun j => binSyms H (inv j).val).flatten ++ invRest →
+      (S.R (host 49),S.R (host 50)) = pair → (S.R (host 51)).length = d*d*H →
+      S.R (c 18) = (List.ofFn fun j => binSyms H (piv j).val).flatten ++ pivotTail →
+      S.R (c 15) = binSyms H (1 : ZMod M).val → (S.R (c 16)).length = w →
+      (∀ j : Fin 20, (j ≤ 14 ∧ j ≠ 4) ∨ j = 17 → S.R (c j) = []) →
+      (∀ k ∈ [full 55,full 56,full 57], S.R k = []) →
+      (0 < rank → (∀ i, childWeight i * childInv i = 1) → ∀ (u : HS T Q A U) (D : Stacks T A) (before : Fin (M^(d+d)*W) → α),
+        (∀ k, readAt blank (D.L (full 24)) (D.R (full 24)) (k-p) =
+          RadixToBinary.binaryEncoding.encode (putWord source p (List.ofFn (sym ∘ before)) k)) →
+        D.R (full 2) = binSyms H M → D.R (full 53) = binSyms J W →
+        D.R (full 28) = binSyms 1 1 →
+        D.R (full 56) = (List.ofFn fun i => binSyms H (childInv i).val).flatten →
+        D.R (full 44) = binSyms H (1 : ZMod M).val → (D.R (full 45)).length = w →
+        (∀ j, (∀ i, full i ≠ j) → D.L j = S.L j ∧ D.R j = S.R j) →
+        ∃ z F n after, z.user = u.user ∧ n ≤ budget ∧ Exec body (body f) (mk u D) n (mk z F) ∧
+          (∀ (hg tg : Fin g → ZMod M) (x : State (Fin rank) (ZMod M)) j,
+            let addr := fun y => let t := childFields hg tg y
+                                 index (Fin.append (fun i : Fin d => t.1 (i.cast dim)) (fun i : Fin d => t.2 (i.cast dim))) j
+            after (addr (Weighted.child rank childWeight childInv x)) = before (addr x)) ∧
+          (∀ k, k ≠ ts 24 → F.L k = D.L k ∧ F.R k = D.R k) ∧
+          ∀ k, RadixToBinary.binaryEncoding.encode (putWord source p (List.ofFn (sym ∘ after)) k) =
+            readAt blank (F.L (ts 24)) (F.R (ts 24)) (k-p)) →
+      ∃ z F n out, z.user = v.user ∧
+        n ≤ 1 + goodIncomingTime (P := Empty) (U := U) (A := A) Empty.elim machine b w W H J rank hr + middleCost + (1 + goodOutgoingTime (P := Empty) (U := U) (A := A) Empty.elim machine b w W H J rank hr) ∧
+        Exec body (hostedGoodRecord cap full f b rank g hr) (mk v S) n (mk z F) ∧ ready out F ∧ F.R (bank 27) = [] ∧
+        (∀ j, (∀ i, s i ≠ j) → (∀ i, ts i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j) ∧
+        ∀ x j, let y := transform (diagonal weights) 1 (revExchangeOf (rev d) G (transform (diagonal inv) 1 x))
+               out (index (Fin.append y.1 y.2) j) = word (index (Fin.append x.1 x.2) j) := by
+  subst d
+  intro machine bank host c h s words pair stage piv parent ready ordinary ts childWeight childInv
+    middleCost v S word initial free stored packed count pivots one clock scratch fresh recursive
+  let prepared := fun S : Stacks T A => {S with R := Function.update (Function.update (Function.update S.R
+    (full 55) (List.ofFn fun i => binSyms H (childWeight i).val).flatten) (full 56)
+    (List.ofFn fun i => binSyms H (childInv i).val).flatten) (full 57) (binSyms ((g+g)*H+1) (M^(g+g)))}
+  by_cases zero : rank = 0
+  · subst rank
+    refine ⟨v,S,1,word,rfl,?_,?_,initial,free,fun _ _ _ => ⟨rfl,rfl⟩,?_⟩
+    · dsimp only [middleCost]
+      omega
+    · exact Exec.act _ _
+    · intro x j
+      rw [zeroRank_exchange G L R factor weights inv inverse x]
+  have positive : 0 < rank := Nat.pos_of_ne_zero zero
+  obtain ⟨u,D,l,before,hu,hl,first,mid,unused,frame,inc⟩ := goodIncoming_exec (P := Empty) Empty.elim machine G rank hr minor
+    idem L R factor weights inv inverse hb H J hm hw hW tail dest rest invRest pivotTail sym source target p q empty
+    (stateLiftDown (by decide : 0 < 217) v) S word initial free stored packed count pivots one clock scratch
+  have keep (j : Fin 58) (hj : 29 ≤ j ∧ j ≠ 53) : D.R (full j) = S.R (full j) :=
+    (frame _ (fun i => full.injective.ne ((by decide : ∀ i (j : Fin 58), 29 ≤ j → j ≠ 53 →
+      parentWithWeights (GoodChildLayout.parent (adapterBank (head (shear i)))) ≠ j) i j hj.1 hj.2))
+      (fun i => full.injective.ne ((by decide : ∀ i (j : Fin 58), 29 ≤ j → j ≠ 53 →
+      parentWithWeights (GoodChildLayout.parent (adapterBank (entry i))) ≠ j) i j hj.1 hj.2))).2
+  have ck (j : Fin 20) : D.R (c j) = S.R (c j) :=
+    keep _ ((by decide : ∀ i, let k := parentWithWeights (GoodChildLayout.parent (adapterBank (head (child i))))
+                              29 ≤ k ∧ k ≠ 53) j)
+  have coeq (sign : Bool) : (coeff sign).trans ordinary = (coeff sign).trans host :=
+    congrArg (fun e => e.trans bank) (ordinary_coeff sign)
+  let effect := fun after : Fin (M^((rank+g)+(rank+g))*W) → α =>
+    ∀ (hg tg : Fin g → ZMod M) (x : State (Fin rank) (ZMod M)) (j : Fin W),
+      let addr := fun y => let t := childFields hg tg y; index (Fin.append t.1 t.2) j
+      after (addr (Weighted.child rank childWeight childInv x)) = before (addr x)
+  have childInverse (i : Fin rank) : childWeight i * childInv i = 1 := by
+    change (weights _ * piv i) * (inv _ * Ring.inverse (piv i)) = 1
+    rw [mul_mul_mul_comm, inverse, one_mul]
+    exact Ring.mul_inverse_cancel _ (stage.unit _ i.isLt)
+  have mid' := mid
+  rw [coeq] at mid'
+  obtain ⟨y,E,t,after,hy,act,next,saved,ht,call⟩ := goodChildPayload_exec body f full G hr g W minor
+    weights inv inverse hb H hm (stateLiftUp cap u) D pivotTail rest budget J sym source target p q before effect mid'
+    ((ck 18).trans pivots) ((ck 15).trans one) ((congrArg List.length (ck 16)).trans clock)
+    (fun j hj => (ck j).trans (scratch j hj)) (by
+      intro j hj
+      simp only [List.mem_cons,List.not_mem_nil,or_false] at hj
+      rcases hj with rfl | rfl | rfl
+      all_goals exact (keep _ (by decide)).trans (fresh _ (by simp)))
+    (by
+      intro v _
+      have unchanged (j : Fin T) (h55 : j ≠ full 55) (h56 : j ≠ full 56) (h57 : j ≠ full 57) :
+          (prepared D).R j = D.R j := by simp [prepared,Function.update_of_ne,h55,h56,h57]
+      have header (j : Fin 58) (hj : j < 55) : (prepared D).R (full j) = D.R (full j) :=
+        unchanged _ (full.injective.ne (by omega)) (full.injective.ne (by omega)) (full.injective.ne (by omega))
+      obtain ⟨z,F,n,out,hz,hn,run,act,saved,src⟩ := recursive positive childInverse v (prepared D) before
+        (fun k => by rw [header 24 (by decide)]; exact (mid.src k).symm)
+        ((header 2 (by decide)).trans mid.base) ((header 53 (by decide)).trans mid.width)
+        ((header 28 (by decide)).trans mid.one) (by simp [prepared,full.injective.eq_iff])
+        ((header 44 (by decide)).trans ((ck 15).trans one))
+        ((congrArg List.length ((header 45 (by decide)).trans (ck 16))).trans clock)
+        (fun j off => by
+          have preserved := frame j (fun i => off _) (fun i => off _)
+          exact ⟨preserved.1,(unchanged j (off 55).symm (off 56).symm (off 57).symm).trans preserved.2⟩)
+      refine ⟨z,F,n,out,hz,hn,?_,?_,?_,src⟩
+      · simpa only [prepared,childWeight,childInv,piv,stage,goodChildDescriptor] using run
+      · intro hg tg x j
+        simpa only [Fin.cast_refl,id_eq] using act hg tg x j
+      · intro k hk; exact saved k hk)
+  have archive (j : Fin 58) (hj : 29 ≤ j ∧ j ≠ 53) : E.R (full j) = S.R (full j) :=
+    (saved _ (full.injective.ne (by change j ≠ 24; omega))).2.trans (keep j hj)
+  have childArchive (j : Fin 20) : E.R (c j) = S.R (c j) :=
+    archive _ ((by decide : ∀ i, let k := parentWithWeights (GoodChildLayout.parent (adapterBank (head (child i))))
+                                29 ≤ k ∧ k ≠ 53) j)
+  obtain ⟨z,F,n,out,hz,hn,last,done,blank,outer,outgoing⟩ := goodOutgoing_exec (P := Empty) Empty.elim machine G rank hr minor idem L R factor
+    weights inv inverse hb H J hm hw hW tail dest rest invRest pivotTail sym source target p q empty (stateLiftDown (by decide : 0 < 217) y) E after next
+    ((saved _ (full.injective.ne (by decide : (27 : Fin 58) ≠ 24))).2.trans unused)
+    ((archive 54 (by decide)).trans stored)
+    (by change (E.R (full 49),E.R (full 50)) = pair; rw [archive 49 (by decide),archive 50 (by decide)]; exact packed)
+    ((congrArg List.length (archive 51 (by decide))).trans count) ((childArchive 18).trans pivots)
+    ((childArchive 15).trans one) ((congrArg List.length (childArchive 16)).trans clock)
+    (fun j hj => (childArchive j).trans (scratch j hj))
+  rw [coeq] at done
+  have first' := stateLift_exec_normalized cap (by decide) Empty.elim (body' := body) (fun f => nomatch f) v first
+  have last' := stateLift_exec_normalized cap (by decide) Empty.elim (body' := body) (fun f => nomatch f) y last
+  refine ⟨stateLiftUp cap z,F,_,out,hz.trans (hy.trans hu),Nat.add_le_add (Nat.add_le_add (Nat.add_le_add_left hl 1) ht) (Nat.add_le_add_left hn 1),
+    by simpa only [hostedGoodRecord,ite_eq_right zero,goodIncoming,goodOutgoing,machine] using Exec.seq (Exec.seq first' call) last',done,blank,
     fun j hs ht => ⟨(outer j hs ht).1.trans ((saved j (ht 24).symm).1.trans (frame j hs ht).1),
       (outer j hs ht).2.trans ((saved j (ht 24).symm).2.trans (frame j hs ht).2)⟩,
     goodRecord_effect stage L R factor idem weights inv inverse word before after out inc (fun hg tg x j => by

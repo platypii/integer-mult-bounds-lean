@@ -58,15 +58,60 @@ theorem leafScheduleTime_le (U : Type) {d n : ℕ} (j i : Fin n → ℕ)
   have paid : 0 < bill := by dsimp [bill,M]; positivity
   simpa only [bill,M,Nat.add_mul,Nat.one_mul,Nat.mul_assoc] using Nat.add_le_add (sum xs) paid
 
-/-- In real-valued recurrence form, the leaf toll has the interchange exponent. -/
-theorem leafScheduleTime_rpow (U : Type) {d n : ℕ} (j i : Fin n → ℕ)
-    (k t : Fin n → Fin (d+1)) (width : Fin n → ℕ) (xs : List (Fin n)) :
+/-- Loading the headers, placing the schedule, dropping the pivot and clearing the
+private tapes preserve the interchange rate for each fixed caller program. -/
+theorem callerLeafTime_le (U : Type) {d n : ℕ} (j i : Fin n → ℕ)
+    (k t : Fin n → Fin (d+1)) (width : Fin n → ℕ) (xs : List (Fin n)) (rank work push : ℕ) :
+    ∃ C : ℕ, ∀ w W, 0 < W →
+      let M := prime^(w+1)
+      let H := Nat.size M
+      let J := Nat.size W
+      let cost := (xs.map fun a => exchangeTime U (j a) (i a) (k a) (t a) (width a) w W H J).sum
+      let ticks := 6*(3*H+J+1+w+rank*H)+43+(1+(1+cost+1+(4*H+4)))
+      ticks+(4*work+1+work*(6*(push*ticks))) ≤ C*((1+swapVolumeRate w)*(M^(d+1)*W)) := by
+  obtain ⟨c,hc⟩ := leafScheduleTime_le U j i k t width xs
+  let a := 6*(6+rank)+c+53
+  refine ⟨a+(4*work+1)+work*(6*(push*a)),fun w W pos => ?_⟩
+  intro M H J cost ticks
+  let bill := (1+swapVolumeRate w)*(M^(d+1)*W)
+  have pm : 0 < M := pow_pos IntegerMultBounds.Networks.Shared50ModularControl.prime_prime.pos _
+  have vol : M^(d+1)*W ≤ bill := Nat.le_mul_of_pos_left _ (by omega)
+  have m : M ≤ bill := calc
+    M ≤ M^d*M := Nat.le_mul_of_pos_left _ (pow_pos pm _)
+    _ ≤ M^(d+1)*W := by rw [← pow_succ]; exact Nat.le_mul_of_pos_right _ pos
+    _ ≤ bill := vol
+  have h : H ≤ bill := (Nat.size_le.mpr Nat.lt_two_pow_self).trans m
+  have u : J ≤ bill := (Nat.size_le.mpr Nat.lt_two_pow_self).trans
+    ((Nat.le_mul_of_pos_left _ (pow_pos pm _)).trans vol)
+  have wle : w ≤ bill := (Nat.lt_two_pow_self (n := w)).le.trans
+    ((Nat.pow_le_pow_left IntegerMultBounds.Networks.Shared50ModularControl.prime_prime.two_le w).trans
+      ((Nat.pow_le_pow_right IntegerMultBounds.Networks.Shared50ModularControl.prime_prime.pos (Nat.le_succ w)).trans m))
+  have unit : 1 ≤ bill := pm.trans_le m
+  have scheduled : cost+1 ≤ c*bill := by simpa only [Nat.mul_assoc] using hc w W pos
+  have time : ticks ≤ a*bill := by
+    dsimp only [ticks,a]
+    have scaled := Nat.mul_le_mul_left rank h
+    simp only [Nat.add_mul,Nat.mul_add,Nat.mul_assoc] at *
+    omega
+  change _ ≤ _*bill
+  rw [Nat.add_mul,Nat.add_mul]
+  have overhead : 4*work+1 ≤ (4*work+1)*bill := Nat.le_mul_of_pos_right _ unit
+  grw [time,overhead]
+  exact le_of_eq (by ring)
+
+/-- The complete caller execution pays the interchange exponent in the recurrence.
+The schedule-only statement is available at 7351c0cd. -/
+theorem callerLeafTime_rpow (U : Type) {d n : ℕ} (j i : Fin n → ℕ)
+    (k t : Fin n → Fin (d+1)) (width : Fin n → ℕ) (xs : List (Fin n)) (rank work push : ℕ) :
     ∃ C : ℝ, ∀ w W, 0 < W →
       let M := prime^(w+1)
-      (((xs.map fun a => exchangeTime U (j a) (i a) (k a) (t a) (width a) w W
-        (Nat.size M) (Nat.size W)).sum+1 : ℕ) : ℝ) ≤
+      let H := Nat.size M
+      let J := Nat.size W
+      let cost := (xs.map fun a => exchangeTime U (j a) (i a) (k a) (t a) (width a) w W H J).sum
+      let ticks := 6*(3*H+J+1+w+rank*H)+43+(1+(1+cost+1+(4*H+4)))
+      ((ticks+(4*work+1+work*(6*(push*ticks))) : ℕ) : ℝ) ≤
         C*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau*(M^(d+1)*W : ℕ) := by
-  obtain ⟨c,hc⟩ := leafScheduleTime_le U j i k t width xs
+  obtain ⟨c,hc⟩ := callerLeafTime_le U j i k t width xs rank work push
   refine ⟨c*(3808276+M8.RevMachine.LeafCore.C),fun w W pos => ?_⟩
   have rate := swapVolumeRate_le w
   have one : (1 : ℝ) ≤ ((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau :=
@@ -76,7 +121,7 @@ theorem leafScheduleTime_rpow (U : Type) {d n : ℕ} (j i : Fin n → ℕ)
     simp only [Nat.cast_add,Nat.cast_one] at rate one ⊢
     linarith
   have steps := Nat.cast_le (α := ℝ).mpr (hc w W pos)
-  simp only [Nat.cast_mul] at steps ⊢
+  simp only [Nat.cast_mul,← mul_assoc] at steps ⊢
   apply steps.trans
   rw [mul_assoc (c : ℝ) (3808276+M8.RevMachine.LeafCore.C)]
   gcongr
