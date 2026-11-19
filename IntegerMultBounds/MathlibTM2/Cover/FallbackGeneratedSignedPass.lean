@@ -756,31 +756,38 @@ theorem passPreparationCost_volume_le (v : Descriptor) (positive : v.Positive)
   simpa only [passPreparationCost, Nat.mul_add, Nat.add_mul] using
     Nat.add_le_add (Nat.add_le_add queue dir) pad
 
+/-- The generated pass budget at binary field and spectator widths. -/
+noncomputable def generatedSignedPassCost (U : Type) (r d T : ℕ) (v : Descriptor)
+    (w suffix B width rate : ℕ) : ℕ :=
+  let W := prime^(2*suffix)*v.between*v.afterD
+  let H := Nat.size (prime^(w+1))
+  let parents := v.beforeRows*v.rows*B
+  let units := ∏ i : Fin r, (prime^r-prime^i.val)
+  let classes := prime^(r*r)
+  let lifts := (prime^w)^(r*r)
+  let perParent := lifts*signedClassSetup U d T w H classes units +
+    lifts*units*residualCounterRate U d H*Nat.size W
+  let recordVolume := (prime^(w+1))^(d+1)*W
+  let total := LabelMask.records v*recordVolume
+  let live := parents*(units*lifts)*recordVolume
+  parents*perParent + passPreparationCost v r (d+1) w B width H +
+    (anchorVolumeRate d T+4)*total + (6+rate)*min live (((prime-1)*total)/prime)
+
 /-- In descriptor units the complete binary-width pass budget consists of a
 linear term and the residual rate on the invertible fraction of the volume. -/
 theorem generatedSignedPass_cost_le (U : Type) (r d T : ℕ)
     (e : (Fin r ⊕ Fin r) ≃ Fin (d+1)) :
     ∃ C : ℕ, ∀ (v : Descriptor) w suffix B width rate, v.Positive →
       v.width = r*(w+1)+suffix → v.beforeH = B*prime^(r*((w+1)*r)) → width ≤ prime^v.width →
-      let W := prime^(2*suffix)*v.between*v.afterD
-      let H := Nat.size (prime^(w+1))
-      let parents := v.beforeRows*v.rows*B
-      let units := ∏ i : Fin r, (prime^r-prime^i.val)
-      let classes := prime^(r*r)
-      let lifts := (prime^w)^(r*r)
-      let perParent := lifts*signedClassSetup U d T w H classes units +
-        lifts*units*residualCounterRate U d H*Nat.size W
-      let recordVolume := (prime^(w+1))^(d+1)*W
-      let total := LabelMask.records v*recordVolume
-      let live := parents*(units*lifts)*recordVolume
-      parents*perParent + passPreparationCost v r (d+1) w B width H +
-        (anchorVolumeRate d T+4)*total + (6+rate)*min live (((prime-1)*total)/prime) ≤
+      generatedSignedPassCost U r d T v w suffix B width rate ≤
         C*volume prime v + (6+rate)*(((prime-1)*volume prime v)/prime) := by
   obtain ⟨c,hc⟩ := signedPass_parentSetup_volume_le U d T
   let prep := matrixBuildCost r (d+1) 1 1*(Nat.size prime+1)^2 + (10*((d+1)*(d+1))+6) +
     (16*r*r+19*r+344) + paddingSetupCost (d+1) 1
   refine ⟨c+prep+(anchorVolumeRate d T+4), ?_⟩
-  intro v w suffix B width rate positive splitWidth shape hw W H parents units classes lifts perParent recordVolume total live
+  intro v w suffix B width rate positive splitWidth shape hw
+  unfold generatedSignedPassCost
+  extract_lets W H parents units classes lifts perParent recordVolume total live
   have rankPos : 0 < r := by
     have dim := Fintype.card_congr e
     simp only [Fintype.card_sum, Fintype.card_fin] at dim
@@ -807,6 +814,32 @@ theorem generatedSignedPass_cost_le (U : Type) (r d T : ℕ)
   rw [volumeEq]
   grw [parent, setup, min_le_right]
   exact le_of_eq (by ring)
+
+/-- At quotient atom width the full budget retains both the invertible density
+and the rank divisor on its width-dependent swap term. -/
+theorem generatedSignedPass_quotient_cost_le (U : Type) (r d T : ℕ)
+    (e : (Fin r ⊕ Fin r) ≃ Fin (d+1)) :
+    ∃ C : ℕ, ∀ (v : Descriptor) B width swaps shears, v.Positive → r ≤ v.width →
+      let w := v.width/r-1
+      let V := volume prime v
+      v.beforeH = B*prime^(r*((w+1)*r)) → width ≤ prime^v.width →
+      (generatedSignedPassCost U r d T v w (v.width%r) B width
+        (swaps*swapVolumeRate w+shears) : ℝ) ≤
+        C*(V : ℝ) + (6 + ((swaps : ℝ)*((3808275 + M8.RevMachine.LeafCore.C) *
+          ((v.width : ℝ)^M8.Machine.BudgetBound.tau / (r : ℝ)^M8.Machine.BudgetBound.tau)) + shears)) *
+          (((prime-1 : ℕ) : ℝ)/prime*V) := by
+  obtain ⟨C,bound⟩ := generatedSignedPass_cost_le U r d T e
+  refine ⟨C, ?_⟩
+  intro v B width swaps shears positive fits w V shape hw
+  have dim := Fintype.card_congr e
+  simp only [Fintype.card_sum, Fintype.card_fin] at dim
+  have rankPos : 0 < r := by omega
+  have atom : w+1 = v.width/r := Nat.sub_add_cancel (Nat.div_pos fits rankPos)
+  have splitWidth : v.width = r*(w+1)+v.width%r := by rw [atom, Nat.div_add_mod]
+  have cost := bound v w (v.width%r) B width (swaps*swapVolumeRate w+shears) positive splitWidth shape hw
+  have residual := signedPassResidualCharge_le v.width r swaps shears (((prime-1)*V)/prime) V rankPos fits
+  rw [min_self] at residual
+  exact (Nat.cast_le.mpr cost).trans (by push_cast; exact add_le_add le_rfl (by simpa [w] using residual))
 
 omit [M8.Machine.Net] in
 private theorem liveRecordCost_width (r d w H width numTime detTime : ℕ) :
