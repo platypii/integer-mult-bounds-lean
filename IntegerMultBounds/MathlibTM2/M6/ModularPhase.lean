@@ -68,14 +68,14 @@ theorem runSelected_endpoint (w : ℕ) :
     let R := ZMod (prime ^ w)
     ∃ (frame : ℕ → FramedCircuit.Frame (ZMod 2) (AddressStream R))
       (word : ℕ × ℕ → List (AffineFieldProgram.Op (Fin 8) R)),
-      ∀ stored : Fin 661 → AddressStream R,
+      LocalMoveProfile word ∧ ∀ stored : Fin 661 → AddressStream R,
         runSelected frame word (FramedCircuit.encode (fun i => frame (Frames.snapshot initialRefs i))
           (Copy.extendStored stored)) =
         FramedCircuit.encode (fun i => frame (Frames.snapshot finalRefs i))
           (FramedCircuit.moduleRun (program.map RawGate.toCircuit) (Copy.extendStored stored)) := by
   intro R
-  obtain ⟨frame, word, read, _, scatter, _⟩ := modular_scatter w
-  refine ⟨frame, word, ?_⟩
+  obtain ⟨frame, word, read, profile, scatter, _⟩ := modular_scatter w
+  refine ⟨frame, word, profile, ?_⟩
   intro stored
   have checked := phase_checked
   rw [phaseEdges, List.forall_mem_append] at checked

@@ -38,7 +38,7 @@ theorem modular_scatter (w : ℕ) :
       (word : ℕ × ℕ → List (AffineFieldProgram.Op (Fin 8) R)),
       (∀ p, Geometry.Moves.CheckedPair p → ∀ f : E,
         (fun x => f (AffineFieldProgram.run (word p) x)) = frame p.2 ((frame p.1).symm f)) ∧
-      (retainedCopyEdges.map word).map AffineFieldProgram.interchanges = List.replicate 9 7 ∧
+      LocalMoveProfile word ∧
       (∀ bank : ℕ → E, Copy.lifecycles.foldl (fun b l => scatterWindow word l b) bank =
         Copy.run frame Copy.lifecycles bank) ∧
       ∀ stored : Fin 661 → E,
@@ -47,7 +47,7 @@ theorem modular_scatter (w : ℕ) :
         output 661 = 0 ∧ ∀ i : Fin 661, output i.val = frame (Frames.beforeScatter i.val)
           (FramedCircuit.moduleRun (sectionscatter.map RawGate.toCircuit) (Copy.extendStored stored) i.val) := by
   intro R E
-  obtain ⟨P, word, idem, commute, spec, _, _, count, _⟩ := modular_move_profile w
+  obtain ⟨P, word, idem, commute, spec, profile⟩ := modular_move_profile w
   let frame := streamFrame P idem
   have read (p : ℕ × ℕ) (h : Geometry.Moves.CheckedPair p) (f : E) :
       (fun x => f (AffineFieldProgram.run (word p) x)) = frame p.2 ((frame p.1).symm f) := by
@@ -56,7 +56,7 @@ theorem modular_scatter (w : ℕ) :
     have index (k : Fin 636) : (⟨k.val % 636, Nat.mod_lt _ (by decide)⟩ : Fin 636) = k :=
       Fin.ext (Nat.mod_eq_of_lt k.isLt)
     funext x
-    rw [(spec p h).2]
+    rw [spec p h]
     change f (exchange (P j) (exchange (P i) x)) =
       f (exchange (P ⟨i.val % 636, _⟩) (exchange (P ⟨j.val % 636, _⟩) x))
     rw [index i, index j, M8.Global.exchange_exchange, M8.Global.exchange_exchange,
@@ -72,7 +72,7 @@ theorem modular_scatter (w : ℕ) :
     | cons l ls ih =>
       rw [List.foldl_cons, step l (hl _ List.mem_cons_self), Copy.run]
       exact ih (fun k hk => hl _ (List.mem_cons_of_mem _ hk)) _
-  refine ⟨frame, word, read, count, fold _ (fun _ h => h), ?_⟩
+  refine ⟨frame, word, read, profile, fold _ (fun _ h => h), ?_⟩
   intro stored input output
   dsimp only [output]
   rw [fold _ (fun _ h => h)]
