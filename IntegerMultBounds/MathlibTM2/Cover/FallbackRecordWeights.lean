@@ -3,6 +3,7 @@ module
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackStreamedItinerary
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackPayloadWeights
 
+public import IntegerMultBounds.MathlibTM2.Host.OrderedMove
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCopyWordHeaders
 
 /-! Produce the payload pair weights from a physical fallback record. -/
@@ -184,14 +185,13 @@ theorem preparedRecordWeights_exec {m : ℕ} (body : P → Pr P T Q A U) (r : Fi
     S.R src = ((List.range N).drop j).flatMap code ++ rest →
     ∃ z F l, ∃ weights : Fin n → (ZMod (prime^(w+1)))ˣ, ∃ negative,
       z.user = v.user ∧ l ≤ (n+1)*(2*(n+1)+(4*w+4+columnTime (n+1) prime w H))+1 +
-        (n*(8*((n+1)*(n+1)*H)+14*H+22)+1) + (6*H+6) + (6*((n+1)*H)+6) + (6*(n*H)+6) ∧
+        (n*(8*((n+1)*(n+1)*H)+14*H+22)+1) + (6*H+6) + (4*((n+1)*H)+4) + (6*(n*H)+6) ∧
       Exec body (.seq (.seq (.seq (recordWeights n r src) (Mult.PhaseCellToeplitz.copyWordHeader (r 20) (r 14) (r 3) (r 4)))
-        (Mult.PhaseCellToeplitz.copyWordHeader (r 14) active (r 3) (r 4))) (Mult.PhaseCellToeplitz.copyWordHeader parentTape src (r 3) (r 4))) (mk v S) l (mk z F) ∧
+        (moveRightOrdered (r 14) (r 3) active)) (Mult.PhaseCellToeplitz.copyWordHeader parentTape src (r 3) (r 4))) (mk v S) l (mk z F) ∧
       F.R src = S.R parentTape ++ (orderedScheduleCode (List.finRange (n+1)).reverse rows ++ (((List.range N).drop (j+1)).flatMap code ++ rest)) ∧
-      F.R (r 14) = (List.ofFn fun i => binSyms H ((Fin.cons 1 (fun j => (weights j : ZMod (prime^(w+1)))) : Fin (n+1) → ZMod (prime^(w+1))) i).val).flatten ∧
-      (∃ archive, F.R active = F.R (r 14) ++ archive ∧ (archive, F.R (stageBank r (n+1) 16)) =
+      (∃ archive, F.R active = (List.ofFn fun i => binSyms H ((Fin.cons 1 (fun j => (weights j : ZMod (prime^(w+1)))) : Fin (n+1) → ZMod (prime^(w+1))) i).val).flatten ++ archive ∧ (archive, F.R (stageBank r (n+1) 16)) =
         matrixArchive (fun k => matrixWords A H (Itinerary.run rows G k)) (S.R (r 15)) (S.R (r 16)) (n+1)) ∧
-      F.L = S.L ∧ (∀ i, i ≠ src → i ≠ r 14 → i ≠ stageBank r (n+1) 15 → i ≠ stageBank r (n+1) 16 → F.R i = S.R i) ∧
+      F.L = S.L ∧ (∀ i, i ≠ src → i ≠ stageBank r (n+1) 15 → i ≠ stageBank r (n+1) 16 → F.R i = S.R i) ∧
       (undo.map RowOp.children).sum ≤ (n+1)*(6*n+3) ∧
       (signStream (A := A) table (w+1) N)[j]? = some (bitSymbol negative) ∧
       (∃ a : Fin (n+1) → (ZMod (prime^(w+1)))ˣ, Itinerary.Valid rows G (n+1) ∧
@@ -217,12 +217,9 @@ theorem preparedRecordWeights_exec {m : ℕ} (body : P → Pr P T Q A U) (r : Fi
   let pivotWord := (List.ofFn fun i => binSyms (A := A) H (pivot i).val).flatten
   let E := {D with R := Function.update D.R (r 14) pivotWord}
   have distinct (i : Fin 23) (hi : i ≠ 15) (hj : i ≠ 16) : r i ≠ active := off i 15 hi hj hi
-  have regs : [r 14,active,r 3,r 4].Nodup := by
-    simp [r.injective.eq_iff,distinct 14 (by decide) (by decide),
-      (distinct 3 (by decide) (by decide)).symm,(distinct 4 (by decide) (by decide)).symm]
-  obtain ⟨y,hy,install⟩ := Mult.PhaseCellToeplitz.copyWordHeader_exec (body := body) _ _ _ _ regs z E
+  obtain ⟨y,hy,install⟩ := moveRightOrdered_exec (body := body) (r 14) (r 3) active
+    (r.injective.ne (by decide)) (distinct 14 (by decide) (by decide)) (distinct 3 (by decide) (by decide)) z E
     (by simp [E,r.injective.eq_iff,keep 3 (by decide) (by decide) (by decide),free 3 (by decide)])
-    (by simp [E,r.injective.eq_iff,keep 4 (by decide) (by decide) (by decide),free 4 (by decide)])
   have atSlot : E.R (r 14) = pivotWord := Function.update_self ..
   have len : pivotWord.length = (n+1)*H := by
     simp [pivotWord,List.length_flatten,List.map_ofFn,Function.comp_def,length_binSyms,List.ofFn_const,Nat.add_mul,Nat.add_comm]
@@ -232,9 +229,9 @@ theorem preparedRecordWeights_exec {m : ℕ} (body : P → Pr P T Q A U) (r : Fi
     | zero => exact apart i
     | succ k ih => exact ih _
   have kept (i : Fin T) (hi : i ≠ active) (hj : i ≠ r 14) :
-      Function.update E.R active (pivotWord ++ E.R active) i = D.R i :=
-    (Function.update_of_ne hi _ _).trans (Function.update_of_ne hj _ _)
-  let F := {E with R := Function.update E.R active (pivotWord ++ E.R active)}
+      Function.update (Function.update E.R (r 14) []) active (pivotWord ++ E.R active) i = D.R i :=
+    (Function.update_of_ne hi _ _).trans ((Function.update_of_ne hj _ _).trans (Function.update_of_ne hj _ _))
+  let F := {E with R := Function.update (Function.update E.R (r 14) []) active (pivotWord ++ E.R active)}
   have parentOff (k : ℕ) (i : Fin 23) : stageBank r k i ≠ parentTape := by
     induction k generalizing i with
     | zero => exact outside i
@@ -255,16 +252,15 @@ theorem preparedRecordWeights_exec {m : ℕ} (body : P → Pr P T Q A U) (r : Fi
   rw [plen,parentEq] at attach
   let result := Function.update F.R src (S.R parentTape ++ F.R src)
   have unaffected (i : Fin T) (ne : i ≠ src) : result i = F.R i := Function.update_of_ne ne _ _
-  have slot : F.R (r 14) = pivotWord := (Function.update_of_ne (distinct 14 (by decide) (by decide)) _ _).trans atSlot
   refine ⟨x,_,_,weights,neg,hx.trans (hy.trans (hz.trans hu)),Nat.add_le_add_right (Nat.add_le_add_right (Nat.add_le_add_right hl _) _) _,
-    Exec.seq (Exec.seq (Exec.seq run copy) install) attach,?_,(unaffected _ (apart 14)).trans slot,?_,left,?_,children,bit,units,effect⟩
+    Exec.seq (Exec.seq (Exec.seq run copy) install) attach,?_,?_,left,?_,children,bit,units,effect⟩
   · change result src = _
     simp only [result,Function.update_self]
     exact congrArg (S.R parentTape ++ ·) ((kept src (srcOff (n+1) 15).symm (apart 14).symm).trans schedule)
   · refine ⟨D.R active,?_,?_⟩
-    · change result active = result (r 14) ++ _
-      rw [unaffected _ (srcOff _ _),unaffected _ (apart 14),slot]
-      change Function.update E.R active (pivotWord ++ E.R active) active = _
+    · change result active = pivotWord ++ _
+      rw [unaffected _ (srcOff _ _)]
+      change Function.update (Function.update E.R (r 14) []) active (pivotWord ++ E.R active) active = _
       rw [Function.update_self]
       exact congrArg (pivotWord ++ ·) (Function.update_of_ne (distinct 14 (by decide) (by decide)).symm _ _)
     · change (D.R active,result _) = _
@@ -272,7 +268,11 @@ theorem preparedRecordWeights_exec {m : ℕ} (body : P → Pr P T Q A U) (r : Fi
         kept _ ((stageBank r (n+1)).injective.ne (by decide : (16 : Fin 23) ≠ 15))
           (off 14 16 (by decide) (by decide) (by decide)).symm]
       exact archive
-  · intro i hs hw ha hb
+  · intro i hs ha hb
+    by_cases hw : i = r 14
+    · subst i
+      rw [show S.R (r 14) = [] from free 14 (by decide)]
+      exact (unaffected _ (apart 14)).trans ((Function.update_of_ne (distinct 14 (by decide) (by decide)) _ _).trans (Function.update_self ..))
     exact (unaffected i hs).trans ((kept i ha hw).trans (frame i hs hw ha hb))
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback

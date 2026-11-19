@@ -44,6 +44,39 @@ theorem forwardBank_stream (i : Fin 23) : forwardBank i ≠ (Fin.last N).castSuc
     have := (forwardSlots i).isLt
     omega
 
+/-- Installing a record on the alternating forward archives preserves the signed column payload. -/
+theorem preparedColumnReady {T W n : ℕ} (host : Fin (N+2) ↪ Fin T) (H J : ℕ)
+    (record next : List (Fin (prime+4))) (dest : ℤ → Fin 4) (q : ℤ)
+    (original : Fin (M^d*W) → ZMod 2) (addr : (Fin d → ZMod M) → Fin d → ZMod M)
+    (S F : Stacks T prime) :
+    let bank := (columnBank.trans (archivePorts n)).trans host
+    let prep := forwardBank.trans host
+    ColumnRecordReady bank H J record SparseRoleCircuit.encode (fun _ => blank) dest 0 q original addr S →
+    F.L = S.L →
+    (∀ h, h ≠ host (Fin.last N).castSucc → h ≠ stageBank prep n 15 → h ≠ stageBank prep n 16 → F.R h = S.R h) →
+    F.R (stageBank prep n 15) = next →
+    ColumnRecordReady bank H J next SparseRoleCircuit.encode (fun _ => blank) dest 0 q original addr F := by
+  intro bank prep ready left keep archive
+  have ports (k : ℕ) (i : Fin 23) : stageBank prep k i = host (stageBank forwardBank k i) := by
+    induction k generalizing i with
+    | zero => rfl
+    | succ k ih => exact ih _
+  rw [ports,(forwardBank_archives n).1] at archive
+  apply ready.replaceArchive left _ archive
+  intro i hi
+  apply keep
+  · rw [← archivePorts_stream n]
+    apply host.injective.ne
+    apply (archivePorts n).injective.ne
+    intro eq
+    have val := congrArg Fin.val eq
+    change i.val = N at val
+    omega
+  · rw [ports,(forwardBank_archives n).1]
+    exact bank.injective.ne hi
+  · rw [ports,(forwardBank_archives n).2]
+    exact host.injective.ne (archivePorts_other n _)
+
 theorem forwardStages_exec (rows : Fin d → Fin d) (H : ℕ) (hm : M < 2^H)
     (body : P → Pr P (N+2) columnCapacity prime U) (v : HS (N+2) columnCapacity prime U) (S : Stacks (N+2) prime)
     (m : Matrix (Fin d) (Fin d) (ZMod M)) (valid : Itinerary.Valid rows m d)
