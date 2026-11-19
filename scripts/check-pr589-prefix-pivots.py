@@ -93,6 +93,33 @@ def check_helper_windows(endpoint_positions, gates):
     print(f"All {windows} helper windows import and export scalar data between endpoint MOVEs.")
 
 
+def layout_components(register_count, cuts, gates, scatter_start, scatter_end):
+    """Return the equality classes at port boundaries when layouts can change at cuts."""
+    current = list(range(register_count))
+    parent = current.copy()
+
+    def root(node):
+        while node != parent[node]:
+            parent[node] = parent[parent[node]]
+            node = parent[node]
+        return node
+
+    for step, (target, sources) in enumerate(gates):
+        if scatter_start <= step < scatter_end:
+            # Scatter reads through a temporary in its own frame. Omit its operand constraints.
+            continue
+        for register in [target, *sources]:
+            if (step, register) in cuts:
+                current[register] = len(parent)
+                parent.append(len(parent))
+        # Each nonzero XOR coefficient requires the same extra layout as the target.
+        for source in set(sources):
+            if sources.count(source) % 2:
+                parent[root(current[source])] = root(current[target])
+
+    return [(root(r), root(current[r])) for r in range(222)]
+
+
 def main():
     raw = WORD.read_bytes()
     assert hashlib.sha256(raw).hexdigest() == SHA256
@@ -129,6 +156,7 @@ def main():
     labels = [set(frame) for frame in word["frames"]]
     refs = word["start"].copy()
     moves = 0
+    move_widths = {}
     intervals = [set() for _ in refs]
     endpoint_positions = [{} for _ in refs]
     gates = []
@@ -143,8 +171,10 @@ def main():
             assert len(adds) == 527
             assert all(refs[t] == 0 and 0 <= k < len(copy_frames) for t, k in adds)
             assert ranks[0] == 0
+            scatter_start = len(gates)
             gates.extend((111 + t, [word["ret"][k] for k in indices])
                          for t, indices in enumerate(word["scatter"]))
+            scatter_end = len(gates)
         for frame, target, sources in word[section]:
             for register in [target, *sources]:
                 old = refs[register]
@@ -152,6 +182,7 @@ def main():
                 if ranks[old] != ranks[frame]:
                     interval = tuple(sorted((ranks[old], ranks[frame])))
                     intervals[register].add(interval)
+                    move_widths[len(gates), register] = interval[1] - interval[0]
                     if interval in ((0, 1), (7, 8)):
                         endpoint_positions[register].setdefault(interval, []).append(len(gates))
                     moves += 1
@@ -173,6 +204,21 @@ def main():
           f"coordinate 0 on {target_singletons} target registers, both on {helper_pairs} helpers.")
     print("No source phase MOVE touches coordinate 0; no target phase MOVE touches coordinate 7.")
     check_helper_windows(endpoint_positions, gates)
+    endpoint_cuts = {(step, register) for register, endpoints in enumerate(endpoint_positions)
+                     for steps in endpoints.values() for step in steps}
+    boundary = layout_components(len(refs), endpoint_cuts, gates, scatter_start, scatter_end)
+    assert len({label for pair in boundary for label in pair}) == 1
+    conflicts = []
+    for width in range(1, 8):
+        cuts = {key for key, size in move_widths.items() if size <= width}
+        boundary = layout_components(len(refs), cuts, gates, scatter_start, scatter_end)
+        source_inputs = {x for x, _ in boundary[:111]}
+        target_outputs = {y for _, y in boundary[111:]}
+        conflicts.append(len(source_inputs & target_outputs))
+    assert conflicts == [1, 1, 10, 10, 10, 0, 0]
+    print("Endpoint singleton cuts force a common layout on all port boundaries. "
+          "Allowing arbitrary layout changes at MOVEs of width up to six first separates "
+          "all source inputs from all target outputs in the phase XOR constraints.")
     assert max_relation_denominator <= 2 ** 100
     print(f"Verified {relations} integral generator relations; maximum denominator: {max_relation_denominator}.")
     print("Verified nine rank-seven COPY prefixes and 527 zero-frame ADD targets.")
