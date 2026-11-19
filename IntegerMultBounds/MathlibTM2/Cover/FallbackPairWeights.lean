@@ -118,7 +118,7 @@ theorem packedChildPair_exec {n : ℕ} (body : P → Pr P T Q A U) (bank : Fin 2
     · subst k; exact (Function.update_self ..).trans (free 13 (by decide)).symm
     · exact (Function.update_of_ne h _ _).trans ((frame k h0 h14).trans (Function.update_of_ne h _ _))
 
-private theorem negWordValue {N H : ℕ} [NeZero N] (x : ZMod N) (ne : x.val ≠ 0) (hm : N < 2^H) :
+theorem negWordValue {N H : ℕ} [NeZero N] (x : ZMod N) (ne : x.val ≠ 0) (hm : N < 2^H) :
     (N+2^H-x.val)%2^H = (-x).val := by
   have bound := x.val_lt
   rw [ZMod.neg_val',Nat.mod_eq_of_lt (show N-x.val < N by omega),

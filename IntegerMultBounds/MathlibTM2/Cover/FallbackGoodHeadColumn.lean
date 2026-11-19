@@ -79,7 +79,7 @@ theorem headColumnRun_exec [Fintype P] (body : P → Pr P T 217 A U)
         (fun j _ hi n2 n24 n25 => (scratch j ⟨hi,n2,n24,n25⟩).2)
         (fun j hj => (h.scratch _ ((by decide : ∀ j : Fin 12, j < 10 → shearTranslation j ∈ headShearWork) j hj)).1)
         sym source dest p q word empty h.src h.dst h.stage h.weights h.reciprocal
-    obtain ⟨y,E,t,hy,ht,clean,free,keep⟩ := cleanGoodHeadShear_of_exec body k i coeff bank run
+    obtain ⟨y,E,t,hy,ht,clean,free,keep⟩ := cleanShear_of_exec body _ bank run
       (le_max_left _ (Fast.Main.mnPushC body)) (fun f => (Fast.Main.mn_progPush_le_pushC body f).trans (le_max_right ..)) h.scratch
     have coeffKeep (j : Fin 17) (ne : j ≠ 15) : E.R (coeff j) = S.R (coeff j) := by
       have outside := apart j ne

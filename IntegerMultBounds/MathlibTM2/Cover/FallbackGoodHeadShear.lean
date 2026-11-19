@@ -232,16 +232,16 @@ def cleanGoodHeadShear (k i : Fin d) (coeff : Fin 17 ↪ Fin T) (bank : Fin 29 �
 
 /-- Restore both stacks of every scratch tape. The cleanup charge depends only on
 the shear time and the host push bound, so archived words incur no cleanup charge. -/
-theorem cleanGoodHeadShear_of_exec (body : P → Pr P T 217 A U)
-    (k i : Fin d) (coeff : Fin 17 ↪ Fin T) (bank : Fin 29 ↪ Fin T)
+theorem cleanShear_of_exec (body : P → Pr P T 217 A U)
+    (prog : Pr P T 217 A U) (bank : Fin 29 ↪ Fin T)
     {v u : HS T 217 A U} {S D : Stacks T A} {n push : ℕ}
-    (run : Exec body (goodHeadShear k i coeff bank) (mk v S) n (mk u D))
-    (hp : Fast.Main.mnProgPush (goodHeadShear k i coeff bank : Pr P T 217 A U) ≤ push)
+    (run : Exec body prog (mk v S) n (mk u D))
+    (hp : Fast.Main.mnProgPush prog ≤ push)
     (hb : ∀ f, Fast.Main.mnProgPush (body f) ≤ push)
     (empty : ∀ j ∈ headShearWork, S.L (bank j) = [] ∧ S.R (bank j) = []) :
     let tapes := headShearWork.map bank
     ∃ z F t, z.user = u.user ∧ t ≤ 4*tapes.length+1+(1+6*tapes.length*push)*n ∧
-      Exec body (cleanGoodHeadShear k i coeff bank) (mk v S) t (mk z F) ∧
+      Exec body (.seq prog (clearWorkTapes tapes)) (mk v S) t (mk z F) ∧
       (∀ j ∈ headShearWork, F.L (bank j) = [] ∧ F.R (bank j) = []) ∧
       ∀ j, j ∉ tapes → F.L j = D.L j ∧ F.R j = D.R j := by
   intro tapes
