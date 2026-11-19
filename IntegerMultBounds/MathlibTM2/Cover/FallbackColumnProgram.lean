@@ -24,6 +24,57 @@ noncomputable def columnProgramTime (U : Type) (k r : Fin d) (w W H J : ℕ) : �
   let cost := fun i => if k < i then shear k i i else swap i k + shear i k i + swap i k
   2*(r.val+1)+(d-1)*Finset.univ.sup cost+swap (min k r) (max k r)
 
+/-- The finite row sweep preserves the one-coordinate saving in setup time. -/
+theorem columnProgramTime_setup_le (U : Type) (d : ℕ) :
+    ∃ C : ℕ, ∀ (k r : Fin d) w H, columnProgramTime U k r w 0 H 0 ≤
+      C*(w+1+(prime^(w+1))^(d-1))*(H+1)^2 := by
+  let size := fun w H : ℕ => (w+1+(prime^(w+1))^(d-1))*(H+1)^2
+  let swap := fun (i j : Fin d) w H =>
+    1+completeSwapTime (P := Empty) (U := U) Empty.elim d i j w 0 H 0
+  have swaps (i j : Fin d) : ∃ c : ℕ, ∀ w H, swap i j w H ≤ c*size w H := by
+    obtain ⟨c,h⟩ := completeSwapTime_setup_le (P := Empty) (U := U) Empty.elim d i j
+    refine ⟨2*c+1, fun w H => ?_⟩
+    dsimp only [swap, size]
+    grw [h w H]
+    generalize (prime^(w+1))^(d-1) = prefixes
+    ring_nf
+    omega
+  have columns (kr : Fin d × Fin d) : ∃ c : ℕ, ∀ w H,
+      columnProgramTime U kr.1 kr.2 w 0 H 0 ≤ c*size w H := by
+    obtain ⟨k,r⟩ := kr
+    let shear := fun (a b i : Fin d) w H => 1+reverseRowTime (P := Empty) (U := U)
+      (A := prime) Empty.elim (Function.Embedding.refl _) a b k i r prime w 0 H 0
+    let cost := fun w H (i : Fin d) => if k < i then shear k i i w H else
+      swap i k w H + shear i k i w H + swap i k w H
+    have one (w H : ℕ) : 1 ≤ size w H := Nat.mul_pos (by omega) (pow_pos (by omega) _)
+    have rows (i : Fin d) : ∃ c : ℕ, ∀ w H, cost w H i ≤ c*size w H := by
+      obtain ⟨s,hs⟩ := swaps i k
+      by_cases h : k < i
+      · obtain ⟨c,hc⟩ := reverseRowTime_setup_le (P := Empty) (U := U) (A := prime)
+          Empty.elim (Function.Embedding.refl _) k i k i r prime prime_prime.pos
+        refine ⟨1+c, fun w H => ?_⟩
+        simp only [cost, h, ↓reduceIte, shear, Nat.add_mul, one_mul]
+        exact Nat.add_le_add (one w H) (by simpa only [size, Nat.mul_assoc] using hc w H)
+      · obtain ⟨c,hc⟩ := reverseRowTime_setup_le (P := Empty) (U := U) (A := prime)
+          Empty.elim (Function.Embedding.refl _) i k k i r prime prime_prime.pos
+        refine ⟨s+(1+c)+s, fun w H => ?_⟩
+        simp only [cost, h, ↓reduceIte, shear, Nat.add_mul, one_mul]
+        exact Nat.add_le_add (Nat.add_le_add (hs w H) (Nat.add_le_add (one w H)
+          (by simpa only [size, Nat.mul_assoc] using hc w H))) (hs w H)
+    choose c hc using rows
+    obtain ⟨s,hs⟩ := swaps (min k r) (max k r)
+    refine ⟨2*(r.val+1)+(d-1)*Finset.univ.sup c+s, fun w H => ?_⟩
+    change 2*(r.val+1)+(d-1)*Finset.univ.sup (cost w H)+swap _ _ w H ≤ _
+    have bound : Finset.univ.sup (cost w H) ≤ Finset.univ.sup c * size w H :=
+      Finset.sup_le fun i hi => (hc i w H).trans (Nat.mul_le_mul_right _ (Finset.le_sup hi))
+    rw [Nat.add_mul, Nat.add_mul, Nat.mul_assoc (d-1)]
+    exact Nat.add_le_add (Nat.add_le_add (Nat.le_mul_of_pos_right _ (one w H))
+      (Nat.mul_le_mul_left _ bound)) (hs w H)
+  choose c hc using columns
+  refine ⟨Finset.univ.sup c, fun k r w H => ?_⟩
+  rw [Nat.mul_assoc]
+  exact (hc (k,r) w H).trans (Nat.mul_le_mul_right _ (Finset.le_sup (Finset.mem_univ (k,r))))
+
 /-- Only swaps incur the width-dependent rate, uniformly over columns and pivots. -/
 theorem columnProgramTime_le_setup_add_width_volume (U : Type) (d : ℕ) :
     ∃ swaps shears : ℕ, ∀ (k r : Fin d) w W H J, columnProgramTime U k r w W H J ≤
