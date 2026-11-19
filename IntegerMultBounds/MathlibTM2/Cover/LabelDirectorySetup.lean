@@ -92,6 +92,57 @@ theorem build_from_count (m : ℕ) (r : Fin 15 ↪ Fin T) (atom one : Fin T)
   refine ⟨u',n+t,hu'.trans hu,Nat.add_le_add hn (by simpa [M,prepared,box,N,W,L] using ht),?_⟩
   simpa [M,prepared,box,N,L] using Exec.seq he run
 
+/-- Expand the parent count by the label-box size before writing the child directory. -/
+theorem build_from_parents (m : ℕ) (r : Fin 15 ↪ Fin T) (atom one : Fin T)
+    (ha : ∀ i, atom ≠ r i) (ho : ∀ i, one ≠ r i) (v : HS T Q prime U) (S : Stacks T prime)
+    (word : ℕ → List (Fin (prime+4))) (tail : List (Fin (prime+4)))
+    (h1 : (S.R one).length = 1)
+    (fresh : ∀ i ∈ ([2,3,4,5,6,7,10,11,12,13] : List (Fin 15)), S.R (r i) = []) :
+    let w := (S.R atom).length
+    let L := w*(m*m)
+    let B := prime^L
+    let N := (S.R (r 9)).length
+    let W := (S.R (r 1)).length
+    0 < L →
+    S.R (r 0) = (List.range N).flatMap word ++ tail → (∀ i < N, (word i).length = W) →
+    ∃ u n, u.user = v.user ∧ n ≤ 8*w+8+22*B + (N*(6*B+10)+6 + (N*B*(9*L+15)+6 +
+      (N*(B*(8*W+11)+6*W+15)+6 + N*B*(6*(W+L)+13)+6))) ∧
+      Exec body (.seq (setup m r atom one) (.seq (expandMask (r 9) (r 4) (r 2) (r 3) (r 5) (r 12) (fun _ => false)) (LabelDirectoryBuild.program r))) (mk v S) n
+        (mk u {S with R := Function.update (Function.update (Function.update (prepared S.R r L) (r 12) (expandedMask B (fun _ => false) (S.R (r 9)))) (r 0) tail) (r 14) ((List.range (N*B)).flatMap (LabelDirectory.entry (fun k => word (k/B)) m w) ++ S.R (r 14))}) := by
+  intro w L B N W pos hs hw
+  obtain ⟨u,n,hu,hn,he⟩ := setup_exec (body := body) m r atom one ha ho v S h1 (by
+    intro i hi; apply fresh; simp only [List.mem_cons,List.not_mem_nil,or_false] at hi
+    rcases hi with rfl | rfl | rfl | rfl | rfl | rfl <;> decide)
+  let M : Stacks T prime := {S with R := prepared S.R r L}
+  have box : (prime^w)^(m*m) = B := (pow_mul prime w (m*m)).symm
+  have blank (i : Fin 15) (hi : i ∈ [2,3,5,12]) : M.R (r i) = [] := by
+    simp only [List.mem_cons,List.not_mem_nil,or_false] at hi
+    rcases hi with rfl | rfl | rfl | rfl <;> simp [M,prepared,fresh]
+  obtain ⟨y,c,hy,hc,countRun⟩ := expandMask_exec (body := body) (mask := r 9) (width := r 4)
+    (saved := r 2) (tmp := r 3) (acc := r 5) (out := r 12) (by simp) B (fun _ => false) u M
+    (by simp [M,prepared,B]) (by
+      intro k hk
+      simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
+      rcases hk with rfl | rfl | rfl <;> apply blank <;> decide)
+  simp only [blank 12 (by decide),List.append_nil] at countRun
+  let C : Stacks T prime := {M with R := Function.update M.R (r 12) (expandedMask B (fun _ => false) (M.R (r 9)))}
+  have children : (C.R (r 12)).length = N*B := by simp [C,M,prepared,N,expandedMask_length]
+  obtain ⟨u',t,hu',ht,run⟩ := LabelDirectoryBuild.build_exec (body := body) r m w word tail y C pos
+    (by simp [C,M,prepared,box,B]) (by simpa [C,M,prepared,box,N] using children)
+    (by simpa [C,M,prepared,N] using hs) (by simpa [C,M,prepared,N,W] using hw)
+    (by simp [C,M,prepared,L]) (by simp [C,M,prepared,L]) (by
+      intro i hi
+      have ne : i ≠ 12 ∧ i ≠ 4 ∧ i ≠ 10 ∧ i ≠ 11 := by
+        simp only [List.mem_cons,List.not_mem_nil,or_false] at hi
+        rcases hi with rfl | rfl | rfl | rfl | rfl | rfl <;> decide
+      simp only [C,M,prepared,Function.update_of_ne (r.injective.ne ne.1),
+        Function.update_of_ne (r.injective.ne ne.2.1),Function.update_of_ne (r.injective.ne ne.2.2.1),Function.update_of_ne (r.injective.ne ne.2.2.2)]
+      apply fresh
+      simp only [List.mem_cons,List.not_mem_nil,or_false] at hi
+      rcases hi with rfl | rfl | rfl | rfl | rfl | rfl <;> decide)
+  refine ⟨u',n+(c+t),hu'.trans (hy.trans hu),Nat.add_le_add hn (Nat.add_le_add (by simpa [M,prepared,N] using hc) (by simpa [C,M,prepared,box,N,W,L] using ht)),?_⟩
+  simpa [C,M,prepared,box,N,L] using Exec.seq he (Exec.seq countRun run)
+
 /-- Use the retained class mask itself to count the child records. -/
 theorem build_from_mask (m : ℕ) (r : Fin 15 ↪ Fin T) (atom one : Fin T)
     (ha : ∀ i, atom ≠ r i) (ho : ∀ i, one ≠ r i) (v : HS T Q prime U) (S : Stacks T prime)
