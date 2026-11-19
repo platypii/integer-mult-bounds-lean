@@ -88,6 +88,27 @@ theorem signedPassVolume_div_width (v : Descriptor) (e : (Fin r ⊕ Fin r) ≃ F
     omega
 
 omit [M8.Machine.Net] in
+/-- The spectator counter needs only the bits of the two descriptor fields
+and a remainder allowance bounded by the rank. -/
+theorem signedPassCounter_binaryWidth (v : Descriptor) {r : ℕ} (rankPos : 0 < r) :
+    let W := prime^(2*(v.width % r))*v.between*v.afterD
+    W < 2^Nat.size W ∧ Nat.size W ≤
+      2*(r-1)*Nat.size prime + Nat.size v.between + Nat.size v.afterD := by
+  intro W
+  refine ⟨Nat.lt_size_self _, Nat.size_le.mpr ?_⟩
+  have remainder := Nat.mod_lt v.width rankPos
+  have field : prime^(2*(v.width % r)) ≤ (2^Nat.size prime)^(2*(r-1)) := by
+    gcongr
+    · exact Nat.one_le_two_pow
+    · exact (Nat.lt_size_self prime).le
+    · omega
+  dsimp only [W]
+  rw [pow_add, pow_add, Nat.mul_comm (2*(r-1)), pow_mul 2]
+  exact Nat.mul_lt_mul_of_le_of_lt
+    (Nat.mul_le_mul field (Nat.lt_size_self v.between).le) (Nat.lt_size_self v.afterD)
+    (by positivity)
+
+omit [M8.Machine.Net] in
 /-- The directory's per-record digit scan consumes an exponentially decreasing
 fraction of descriptor volume as the address width grows. -/
 theorem directoryDigits_volume_le (v : Descriptor) (positive : v.Positive)
