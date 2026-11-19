@@ -3,6 +3,7 @@ module
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackShearReady
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackAnchorPass
 public import IntegerMultBounds.Machine.SparseRoleCircuit
+import IntegerMultBounds.MathlibTM2.Host.ChunkSwap
 
 /-! Interpret a signed single-atom record in the residual machine's coordinate layout. -/
 @[expose] public section
@@ -119,6 +120,43 @@ theorem correctFieldPayload_exec {P U : Type} {T Q : ℕ} (i : Fin (d+1))
     by_cases e : k = i <;> simp [e]
   rw [eq,refine_scalar,refine_scalar] at h
   exact h.trans (placed x j)
+
+/-- The sign bank has two size descriptors and three loop controls. -/
+def fieldHeader {slots : ℕ} (b W : ℕ) (k : Fin (22+slots)) : Option (List Bool) :=
+  if h : k.val < 17 then AtomSegment.neutral b W ⟨k.val,h⟩ else
+    if k.val = 18 then some [] else if k.val = 19 then some (FlatCoordinateSchedule.bits 0) else
+    if k.val = 20 then some (FlatCoordinateSchedule.bits 1) else none
+
+theorem fieldHeader_rep {T slots : ℕ} (ports : Fin (22+slots) ↪ Fin T) (S : Stacks T prime)
+    (headers : ∀ k, k.val ≠ 17 →
+      S.L (ports k) = (fieldHeader b W k).toList.map (fun _ => separator) ∧
+      S.R (ports k) = ((fieldHeader b W k).getD []).map bitSymbol) :
+    let base := AtomBank.outer slots (AtomSegment.neutral b W) (fun _ => blank) 1
+    ∀ k, k.val ≠ 17 → ∀ z, base.tape k z = readAt blank (S.L (ports k)) (S.R (ports k)) (z-base.head k) := by
+  intro base k hk z
+  obtain ⟨left,right⟩ := headers k hk
+  rw [left,right]
+  have repr (o : Option (List Bool)) : CounterDimensions.descriptorTape prime o z =
+      readAt blank (o.toList.map (fun _ => separator)) ((o.getD []).map bitSymbol)
+        (z-CounterDimensions.descriptorHead o) := by
+    cases o with
+    | none => simp [CounterDimensions.descriptorTape,CounterDimensions.descriptorHead,readAt_nil_left,wordTape_nil]
+    | some xs => change RadixZeroFill.encodedBinary xs z = readAt blank [separator] _ (z-1)
+                 rw [encodedBinary_eq,readAt_single]; rfl
+  by_cases h : k.val < 17
+  · simpa [base,AtomBank.outer,fieldHeader,h] using repr (AtomSegment.neutral b W ⟨k.val,h⟩)
+  by_cases h18 : k.val = 18
+  · simpa [base,AtomBank.outer,fieldHeader,h,hk,h18,CounterDimensions.descriptorTape,
+      CounterDimensions.descriptorHead,← CounterAdvance.binary_encoded,CountedLoopReuseAlphabet.binary,CountedLoopAlphabet.putBits] using repr (some [])
+  by_cases h19 : k.val = 19
+  · simpa [base,AtomBank.outer,fieldHeader,h,hk,h18,h19,CounterDimensions.descriptorTape,
+      CounterDimensions.descriptorHead,← CounterAdvance.binary_encoded] using repr (some (FlatCoordinateSchedule.bits 0))
+  by_cases h20 : k.val = 20
+  · simpa [base,AtomBank.outer,fieldHeader,h,hk,h18,h19,h20,CounterDimensions.descriptorTape,
+      CounterDimensions.descriptorHead,← CounterAdvance.binary_encoded] using repr (some (FlatCoordinateSchedule.bits 1))
+  · have outside : ¬ (18 ≤ k.val ∧ k.val ≤ 20) := by omega
+    simpa [base,AtomBank.outer,fieldHeader,h,hk,h18,h19,h20,outside,CounterDimensions.descriptorTape,
+      CounterDimensions.descriptorHead] using repr none
 
 /-- A column payload can serve directly as the sign machine's array tape. -/
 theorem column_field_input {T w : ℕ} (bank : Fin 35 ↪ Fin T) (i : Fin (d+1))
