@@ -45,6 +45,17 @@ theorem reverseRowTime_eq_setup_add_volume [Fintype P] (body : P → Pr P T 217 
   rw [volume]
   ring
 
+/-- Only the suffix dimensions and their scan depend on the payload-counter width. -/
+theorem reverseRowTime_eq_setup_add_counter [Fintype P] (body : P → Pr P T 217 A U)
+    (bank : Fin 35 ↪ Fin T) (k t col target pivot : Fin d) (b w W H J : ℕ) :
+    reverseRowTime body bank k t col target pivot b w W H J =
+      reverseRowTime body bank k t col target pivot b w W H 0 +
+        ((1 + 6 * shearWork.length * shearPushBound d b bank body) *
+          (10 + (d-1-t.val)*(12*H+18))) * J := by
+  simp only [reverseRowTime, pivotShearTime]
+  rw [dimensionTime_eq_setup_add_width H J (d-1-t.val)]
+  ring
+
 theorem reverseMatrixShear_ready [Fintype P] (k t col target pivot : Fin d) (hk : k < t)
     (matrix : Matrix (Fin d) (Fin d) (ZMod M)) (hb : b.Prime) (unit : IsUnit (matrix pivot col))
     (body : P → Pr P T 217 A U) (bank : Fin 35 ↪ Fin T) (H J : ℕ)
