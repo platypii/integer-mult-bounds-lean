@@ -219,6 +219,24 @@ theorem queueArchive_volume_le (v : Descriptor) (positive : v.Positive) (n H : �
       have suffix := positive.2.2.2.2
       gcongr <;> omega
 
+omit [M8.Machine.Net] in
+/-- Binary modulus width meets the machine's strict radix bound and makes
+archive copying affordable directly from the descriptor width. -/
+theorem queueArchive_binaryWidth (v : Descriptor) (positive : v.Positive)
+    (n atom : ℕ) (atomPos : 0 < atom) (fits : atom ≤ v.width) :
+    let H := Nat.size (prime^atom)
+    prime^atom < 2^H ∧ H ≤ atom * Nat.size prime ∧
+      prime^v.width * (LabelMask.records v*(10*(n*n*H)+6)) ≤
+        (10*(n*n)+6)*volume prime v := by
+  intro H
+  have radix : prime < 2^Nat.size prime := Nat.size_le.mp le_rfl
+  refine ⟨Nat.size_le.mp le_rfl, Nat.size_le.mpr ?_, queueArchive_volume_le v positive n H ?_⟩
+  · rw [Nat.mul_comm, pow_mul]
+    exact Nat.pow_lt_pow_left radix atomPos.ne'
+  · apply Nat.size_le.mpr
+    exact (Nat.pow_le_pow_right Networks.Shared50ModularControl.prime_prime.pos fits).trans_lt
+      Nat.lt_two_pow_self
+
 /-- The live part of the generated pass pays the density factor on both swaps
 and shears, and the quotient-width factor on swaps. -/
 theorem signedPassResidualCharge_le (L r swaps shears live V : ℕ) (rankPos : 0 < r)
