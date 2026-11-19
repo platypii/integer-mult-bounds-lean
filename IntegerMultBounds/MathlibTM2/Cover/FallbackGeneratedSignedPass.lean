@@ -92,11 +92,40 @@ structure SeededQueueReady (w H records : ℕ) (proj : Matrix (Fin r) (Fin r) �
       S.R (bank 17) = binSyms H (1 : ZMod (prime^(w+1))).val
   widths : ∀ j < records, (S.R (bank 12)).length = (ancestor j).length
   width : (S.R (bank 1)).length = w+1
-  blank : S.R (bank 4) = []
   empty : S.R (archive) = []
   directory : S.R (bank 2) = (List.range records).flatMap (LabelDirectory.entry ancestor r (w+1)) ++ tail
   output : S.R (bank 13) = []
   bits : S.R mask = (List.range records).map fun j => bitSymbol (LabelStock.live r (w+1) 1 j)
+
+omit [M8.Machine.Net] in
+/-- Generate the directory scan's selector tape from the label counters. The
+scan consumes the selectors, so its queue endpoint agrees with the endpoint
+computed directly from the initial stacks. -/
+theorem generateMaskAndQueue (body : P → Pr P K Q prime U) (rs : List (Pair K))
+    (hk : rs.length = r*r) (mask parents saved : Fin K)
+    (layout : (parents :: saved :: (slots rs ++ [mask])).Nodup) :
+    ∃ writeMask, ∀ (v : Descriptor) (w B : ℕ), v.beforeH = B*prime^(r*((w+1)*r)) →
+      ∀ (u : HS K Q prime U) (S : Stacks K prime), ready (prime^w) S.R rs →
+      S.R saved = [] → (S.R parents).length = v.beforeRows*v.rows*B → S.R mask = [] →
+      let bits := (List.range (LabelMask.records v)).map fun j => bitSymbol (LabelStock.live r (w+1) 1 j)
+      let filled := {S with R := Function.update S.R mask bits}
+      ∀ (queue : Pr P K Q prime U) (dir archive : Fin K) (tail words : List (Fin (prime+4))) (cost : ℕ),
+      (∀ (y : HS K Q prime U), ∃ (z : HS K Q prime U) (n : ℕ), z.user = y.user ∧ n ≤ cost ∧
+        Exec body queue (mk y filled) n (mk z (queueResult filled mask dir archive tail words))) →
+      ∃ (z : HS K Q prime U) (n : ℕ), z.user = u.user ∧ n ≤ (v.beforeRows*v.rows*B)*(LabelTraversal.time (prime^w) (r*r) 1+5)+4+cost ∧
+        Exec body (.seq writeMask queue) (mk u S) n (mk z (queueResult S mask dir archive tail words)) := by
+  obtain ⟨writeMask,run⟩ := record_writes (body := body) r rs hk mask parents saved layout
+  refine ⟨writeMask,?_⟩
+  intro v w B shape u S radix free count blank bits filled queue dir archive tail words cost consume
+  obtain ⟨y,t,hy,ht,emit⟩ := run v (w+1) B (by omega) shape u S ⟨radix,free,count⟩
+  rw [blank,List.append_nil] at emit
+  simp only [LabelMask.selectors,List.map_map,Function.comp_def] at emit
+  change Exec body writeMask (mk u S) t (mk y filled) at emit
+  obtain ⟨z,n,hz,hn,scan⟩ := consume y
+  have endpoint : queueResult filled mask dir archive tail words = queueResult S mask dir archive tail words := by
+    simp [queueResult,filled,Function.update_idem]
+  rw [endpoint] at scan
+  exact ⟨z,t+n,hz.trans hy,Nat.add_le_add ht hn,.seq emit scan⟩
 
 theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size d+T) ↪ Fin K)
     (ports : Fin (N+2) ↪ Fin K) (ext : Fin 6 ↪ Fin K) (off : ∀ i k, ports i ≠ ext k)
@@ -167,7 +196,8 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
   intro placement size archiveSlot registers host control mask seed tmp bank recip counters clock count pool coeff archive archiveOff
     coeffOff ancestor tail v B base payload u initial padWord S queueInputs scan active livePrice generate setupCost a G shape records hW D
     neutral radix free count width unsigned clean start hm hw fresh maskEmpty radixC freeC countC encoded padding
-  obtain ⟨seedBlank,tmpBlank,weightBank,queueReady,widths,width0,blank,empty,directory,output,bits⟩ := queueInputs
+  obtain ⟨seedBlank,tmpBlank,weightBank,queueReady,widths,width0,empty,directory,output,bits⟩ := queueInputs
+  have blank := queueReady.1 4 (by decide)
   have sharedArchive : archive = ports (archivePorts 0 (columnBank 34)) := by
     change Equiv.swap (placement archiveSlot) _ (placement _) = _
     have slot : (⟨0+(36+2*r), by dsimp [size]; omega⟩ : Fin (size+3)) = archiveSlot :=
