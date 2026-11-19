@@ -24,6 +24,33 @@ def weightedShearTime (M W H J : ℕ) : ℕ :=
         (6*prefixSize (Q := M) t+17*L+4*V+10*H+31 + prefixSize (Q := M) t*(L*(12*(K+H)+78)+22*K+180*H+173+48*H*H+(207*(M*suffixSize (Q := M) (W := W) t)+241)*25)+2) +
         (10*(t.val*H+1)+12+((327*(M^d*W)+2)*13+6))
 
+/-- At zero payload, only the prefix enumeration depends on the modulus.
+Its length is at most one coordinate power below the full record size. -/
+theorem weightedShearTime_setup_le (M H : ℕ) (positive : 0 < M) :
+    weightedShearTime k t M 0 H 0 ≤ M^(d-1) * weightedShearTime k t 1 0 H 0 := by
+  have prefixPos : 1 ≤ M^t.val := pow_pos positive _
+  have prefixBound : M^t.val ≤ M^(d-1) :=
+    Nat.pow_le_pow_right positive (by have := t.isLt; omega)
+  apply le_trans _ (Nat.mul_le_mul_right _ prefixBound)
+  simp only [weightedShearTime, prefixSize, suffixSize, Nat.mul_zero, one_pow]
+  generalize M^t.val = count at prefixPos ⊢
+  obtain ⟨extra, rfl⟩ := Nat.exists_eq_add_of_le prefixPos
+  ring_nf
+  omega
+
+theorem weightedShearTime_setup_le_width (M H : ℕ) (positive : 0 < M) :
+    weightedShearTime k t M 0 H 0 ≤ M^(d-1) * (7000*(d+1)^2*(H+1)^2) := by
+  apply (weightedShearTime_setup_le k t M H positive).trans
+  apply Nat.mul_le_mul_left
+  simp only [weightedShearTime, prefixSize, suffixSize, Nat.mul_zero, one_pow]
+  grw [dimensionTime_le H 1 t.val, dimensionTime_le H 1 (t.val-1-k.val),
+    dimensionTime_le H 0 (d-1-t.val)]
+  have gap : t.val-1-k.val ≤ d := by have := t.isLt; omega
+  have tail : d-1-t.val ≤ d := by omega
+  grw [gap, tail, t.isLt.le]
+  ring_nf
+  omega
+
 /-- Each payload symbol contributes the same shear cost at every coordinate. -/
 theorem weightedShearTime_eq_setup_add_volume (M W H J : ℕ) :
     weightedShearTime k t M W H J =
