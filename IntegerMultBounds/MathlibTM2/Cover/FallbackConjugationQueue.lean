@@ -94,16 +94,17 @@ theorem physicalResidualQueue_exec (body : P → Pr P T Q prime U)
       (fun j => blockEntry weights (e.symm i) (e.symm j)) (List.finRange d)) (List.finRange d)) (bclear (r 13)))
     let active := LabelStock.live m (w+1) 1
     let word := fun j => if active j then matrixWords prime H (projectorResidual e projector α α' (physicalLabel m (w+1) j)) else padWord
-    let price := fun j => if active j then ((m*(m*(12*(ancestor j).length+8*((w+1)*(m*m))+(w+1)*(7*H+prime+31)+10*H+42)+1)+1) + (time H (readTime H) f + (6*w+6+(14*H+16+(prime-2)*C+C+w*(12*H+15+prime*C))) +
+    let livePrice := ((m*(m*(12*(S.R (bank 12)).length+8*((w+1)*(m*m))+(w+1)*(7*H+prime+31)+10*H+42)+1)+1) + (time H (readTime H) f + (6*w+6+(14*H+16+(prime-2)*C+C+w*(12*H+15+prime*C))) +
        ((m*(m*(cost+4*H+4)+1)+1) + (m*(m*(8*(m*m*H)+48*H*H+166*H+88)+1)+1) + (2*(m*m*H)+2)) + 4*H+4) + (2*(m*m*H)+2)) +
-       (d*(d*(8*(m*m*H)+96*H*H+344*H+182)+1)+1)+(2*(m*m*H)+2) else 6*padWord.length+6
+       (d*(d*(8*(m*m*H)+96*H*H+344*H+182)+1)+1)+(2*(m*m*H)+2)
     let branch := fun p => Prog.seq p (.seq (moveR (scan 4) (scan 5) id) (advanceDirectory m scan))
     let words := (List.range records).flatMap word
     ∃ z F n, z.user = v.user ∧ F.R mask = [] ∧ F.R (scan 2) = tail ∧ F.R (scan 4) = words ∧
       F.R (scan 5) = [] ∧ (∀ k, k ≠ mask → k ≠ scan 2 → k ≠ scan 4 → F.R k = S.R k) ∧
       F.inp = S.inp ∧ F.out = S.out ∧ F.L = S.L ∧
-      n ≤ ((List.range records).map fun j => price j+2*(word j).length+2+
-        (4*(ancestor j).length+4+(m*m*(4*(w+1)+4)+1))+4).sum+2+(2*words.length+2) ∧
+      n ≤ (List.range records).countP active * (livePrice + 4*(d*d*H)) +
+        (List.range records).countP (fun j => !active j) * (10*padWord.length+6) +
+        records * (4*(S.R (bank 12)).length+4+(m*m*(4*(w+1)+4)+1)+6) + 4 ∧
       Exec body (.seq (maskedScan mask (branch live) (branch (bcopy seed (scan 4) (scan 3) tmp)))
         (moveR (scan 5) (scan 4) id)) (mk v S) n (mk z F) := by
   intro size host control mask seed tmp bank r counters clock count pool coeff archive archiveOff coeffOff ancestor tail padWord
@@ -115,7 +116,7 @@ theorem physicalResidualQueue_exec (body : P → Pr P T Q prime U)
   have rc (i j) : r i ≠ counters j := QueueLayout.block_ne _ _ host (by decide) i j
   have copyPorts : [clock,count,r 2,r 3].Nodup := by
     simp [clock,count,counters.injective.eq_iff,(rc _ _).symm,r.injective.eq_iff]
-  intro inputs source weights scan num cost f C conjugate live active word price
+  intro inputs source weights scan num cost f C conjugate live active word livePrice
   have apart (i j) : host i ≠ control j := QueueLayout.block_ne _ _ registers (by omega) i j
   have maskOff (k) : mask ≠ scan k := by
     fin_cases k <;> exact (apart _ 0).symm
@@ -140,6 +141,30 @@ theorem physicalResidualQueue_exec (body : P → Pr P T Q prime U)
       ws (control k) (control.injective.ne hk) (apart _ k).symm (apart _ k).symm
     exact ⟨(keep 1 (by decide)).trans seedWord,(keepBank ws 4 (by decide) (by decide)).trans blank,
       (keep 2 (by decide)).trans tmpBlank⟩
+  let price := fun j => if active j then livePrice else 6*padWord.length+6
+  have wordLen (j) : (word j).length = (if active j then d*d*H else padWord.length) := by
+    cases h : active j <;> simp [word,h,length_matrixWords]
+  have ledger (ids : List ℕ) (valid : ∀ j ∈ ids, j < records) :
+      (ids.map (fun j => price j+2*(word j).length+2+
+        (4*(ancestor j).length+4+(m*m*(4*(w+1)+4)+1))+4)).sum + 2*(ids.flatMap word).length =
+      ids.countP active * (livePrice+4*(d*d*H)) +
+        ids.countP (fun j => !active j) * (10*padWord.length+6) +
+        ids.length * (4*(S.R (bank 12)).length+4+(m*m*(4*(w+1)+4)+1)+6) := by
+    induction ids with
+    | nil => simp
+    | cons j ids ih =>
+      have bound := ih (fun k hk => valid k (List.mem_cons_of_mem _ hk))
+      have widthEq := widths j (valid j List.mem_cons_self)
+      cases h : active j <;>
+        simp only [List.map_cons,List.sum_cons,List.flatMap_cons,List.length_append,List.length_cons,
+          List.countP_cons, h, Bool.not_true, Bool.not_false, price, wordLen, Bool.false_eq_true,
+          ite_true, ite_false, Nat.add_mul, Nat.mul_add, Nat.one_mul] at * <;> omega
+  have total := ledger (List.range records) (fun _ => List.mem_range.mp)
+  rw [List.length_range] at total
+  have eqCost : ((List.range records).map (fun j => price j+2*(word j).length+2+
+      (4*(ancestor j).length+4+(m*m*(4*(w+1)+4)+1))+4)).sum+2+(2*((List.range records).flatMap word).length+2) = _ :=
+    (show _ = _ + 4 by omega).trans (congrArg (· + 4) total)
+  rw [← eqCost]
   apply directoryQueue_exec body scan mask maskOff m (w+1) records active live seed tmp padPorts padWord price
     ancestor word tail workspace stable padReady (fun j _ h => by simp [word,price,h])
     _ v S (fun _ _ _ _ => rfl) widths width blank empty directory output bits
@@ -222,6 +247,6 @@ theorem physicalResidualQueue_exec (body : P → Pr P T Q prime U)
           have port : weights i j k = r l := congrArg (Sum.elim r (coeff i j)) slot
           rw [port]
           exact (kr l).trans (free l hl hlt)⟩
-  simpa only [word,price,h,ite_true,live,conjugate] using finish
+  simpa only [word,price,livePrice,← widths j hj,h,ite_true,live,conjugate] using finish
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback.RingFormula
