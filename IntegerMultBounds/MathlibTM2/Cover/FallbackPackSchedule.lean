@@ -72,6 +72,16 @@ theorem fold_adjacentFields {α : Type*} {d : ℕ} (is : List ℕ) (x : Fin d �
     simp [adjacentFields,hi,Equiv.swap_apply_def,Function.comp_apply, Fin.ext_iff]
     split_ifs <;> rfl
 
+omit [M8.Machine.Net] in
+theorem reverse_adjacentFields {α : Type*} {d : ℕ} (is : List ℕ) (x : Fin d → α) :
+    is.reverse.foldl adjacentFields (is.foldl adjacentFields x) = x := by
+  induction is generalizing x with
+  | nil => rfl
+  | cons i is ih =>
+    simp only [List.reverse_cons,List.foldl_append,List.foldl_cons,List.foldl_nil,ih]
+    unfold adjacentFields
+    split <;> funext j <;> simp [Function.comp_apply]
+
 /-- Keep the active head in place while moving the active tail over both gap slices. -/
 def goodChildPackSchedule (r g : ℕ) : List ℕ :=
   (middleTailSchedule (g+g) r).map (r+·)
@@ -93,6 +103,88 @@ theorem goodChildPackSchedule_fields {α : Type*} {r g : ℕ}
   simp only [goodChildPackSchedule,List.foldl_map,List.append_assoc]
   rw [← hr,fold_swapAtomAt_prefix,hr,← hm,← ht]
   simpa using congrArg (head++·) (middleTailSchedule_packs mid tail [])
+
+open FlatCoordinateLayout in
+omit [M8.Machine.Net] in
+/-- In the packed word the signed child sees the active pair as its record
+index and both spectator slices followed by the old suffix as its payload. -/
+theorem goodChildPackSchedule_index {M r g W : ℕ} [NeZero M]
+    (hg tg : Fin g → ZMod M) (s : (Fin r → ZMod M) × (Fin r → ZMod M)) (j : Fin W) :
+    let t := childFields hg tg s
+    let packed := (goodChildPackSchedule r g).foldl adjacentFields (Fin.append t.1 t.2)
+    (index packed j).val =
+      (rank (Fin.append s.1 s.2)).val * (M^(g+g)*W) +
+      (rank (Fin.append hg tg)).val * W + j.val := by
+  intro t packed
+  let eqn : (r+g)+(r+g) = (r+r)+(g+g) := by omega
+  let fields := Fin.append (Fin.append s.1 s.2) (Fin.append hg tg)
+  have castList {a b : ℕ} (h : a = b) (x : Fin b → ZMod M) :
+      List.ofFn (fun i => x (Fin.cast h i)) = List.ofFn x := by subst b; rfl
+  have order : packed = fun i => fields (i.cast eqn) := by
+    apply List.ofFn_injective
+    rw [castList]
+    dsimp only [packed,t]
+    apply (goodChildPackSchedule_fields _ (List.ofFn s.1) (List.ofFn (Fin.append hg tg))
+      (List.ofFn s.2) (by simp) (by simp) (by simp) ?_).trans
+    · simp [fields,List.ofFn_fin_append]
+    · simp only [childFields,List.ofFn_fin_append,castList,List.append_assoc]
+  rw [order,index_val]
+  have castRank {a b : ℕ} (h : a = b) (x : Fin b → ZMod M) :
+      (rank (fun i => x (Fin.cast h i))).val = (rank x).val := by subst b; rfl
+  rw [castRank,show (rank fields).val = _ from ArbitraryWidthSliceTranspose.rank_append (Fin.append s.1 s.2) (Fin.append hg tg)]
+  ring
+
+open FlatCoordinateLayout in
+omit [M8.Machine.Net] in
+/-- Read the child's contiguous record directly from the tape invariant
+returned by the packer, for every active pair and inherited suffix. -/
+theorem goodChildPackedRecord {b w r g W T A H J : ℕ} [NeZero (b^(w+1))] {α : Type}
+    (bank : Fin 35 ↪ Fin T) (record : List (Fin (A+4))) (sym : α → Fin 4)
+    (src dst : ℤ → Fin 4) (p q : ℤ) (S : Stacks T A)
+    (original : Fin ((b^(w+1))^((r+g)+(r+g))*W) → α)
+    (placed : ColumnRecordReady bank H J record sym src dst p q original
+      (fun x => (goodChildPackSchedule r g).foldl adjacentFields x) S) :
+    ∃ word : Fin ((b^(w+1))^((r+g)+(r+g))*W) → α, RecordReady (b := b) (w := w) (W := W) (d := (r+g)+(r+g)) bank H J record sym src dst p q word S ∧
+      ∀ (hg tg : Fin g → ZMod (b^(w+1))) (s : (Fin r → ZMod (b^(w+1))) × (Fin r → ZMod (b^(w+1)))) (j : Fin W),
+        let t := childFields hg tg s
+        let pos := (rank (Fin.append s.1 s.2)).val*((b^(w+1))^(g+g)*W) +
+          (rank (Fin.append hg tg)).val*W+j.val
+        ∃ k : Fin ((b^(w+1))^((r+g)+(r+g))*W), k.val = pos ∧ word k = original (index (Fin.append t.1 t.2) j) := by
+  obtain ⟨word,layout,reads⟩ := placed
+  refine ⟨word,layout,?_⟩
+  intro hg tg s j t pos
+  exact ⟨_,goodChildPackSchedule_index hg tg s j,reads (Fin.append t.1 t.2) j⟩
+
+open FlatCoordinateLayout in
+omit [M8.Machine.Net] in
+/-- A child output specified on contiguous records supplies the full address
+invariant for the reverse packing program, including every spectator value. -/
+theorem goodChildPackedOutput {b w r g W T A H J : ℕ} [NeZero (b^(w+1))] {α : Type}
+    (bank : Fin 35 ↪ Fin T) (record : List (Fin (A+4))) (sym : α → Fin 4)
+    (src dst : ℤ → Fin 4) (p q : ℤ) (S : Stacks T A)
+    (output word : Fin ((b^(w+1))^((r+g)+(r+g))*W) → α)
+    (layout : RecordReady (b := b) (w := w) (W := W) (d := (r+g)+(r+g))
+      bank H J record sym src dst p q word S)
+    (reads : ∀ (hg tg : Fin g → ZMod (b^(w+1))) (s : (Fin r → ZMod (b^(w+1))) ×
+      (Fin r → ZMod (b^(w+1)))) (j : Fin W) k,
+      k.val = (rank (Fin.append s.1 s.2)).val*((b^(w+1))^(g+g)*W) +
+        (rank (Fin.append hg tg)).val*W+j.val →
+      let t := childFields hg tg s
+      word k = output (index (Fin.append t.1 t.2) j)) :
+    ColumnRecordReady bank H J record sym src dst p q output
+      (fun x => (goodChildPackSchedule r g).foldl adjacentFields x) S := by
+  refine ⟨word,layout,?_⟩
+  intro x j
+  let n := r+g
+  let h := fun i : Fin n => x (i.castAdd n)
+  let t := fun i : Fin n => x (i.natAdd n)
+  have split : Fin.append h t = x := by
+    funext i
+    induction i using Fin.addCases <;> simp only [Fin.append_left, Fin.append_right] <;> rfl
+  obtain ⟨hg,tg,s,hs⟩ := childFields_surjective (r := r) (g := g) h t
+  have addr : Fin.append (childFields hg tg s).1 (childFields hg tg s).2 = x := by rw [hs,split]
+  have cell := reads hg tg s j _ (goodChildPackSchedule_index hg tg s j)
+  simpa only [addr] using cell
 
 /-- Generating and retiring the headers costs a quadratic field-width term
 and a linear suffix-counter term for each fixed packing schedule. -/
@@ -231,5 +323,64 @@ theorem goodChildPack_exec [Fintype P] (body : P → Pr P (N+35) Q prime U)
     (Nat.size_le.mp le_rfl) (Nat.size_le.mp le_rfl) hW body v S record dest q original addr start free
   exact ⟨z,F,n,_,user,cost.trans (bound w W hW),run,placed,clear,
     fun x => goodChildPackSchedule_fields (addr x)⟩
+
+/-- After the child supplies its output in packed order, running the same
+swaps backwards restores the caller's addresses for that output. -/
+theorem unpackSchedule_exec [Fintype P] {d w W : ℕ} (is : List ℕ) (fits : ∀ i ∈ is, i+1 < d)
+    (H J : ℕ) (hm : prime^(w+1) < 2^H) (hw : W < 2^J) (hW : 0 < W)
+    (body : P → Pr P (N+35) Q prime U) (v : HS (N+35) Q prime U) (S : Stacks (N+35) prime)
+    (record : List (Fin (prime+4))) (dest : ℤ → Fin 4) (q : ℤ)
+    (output : Fin ((prime^(w+1))^d*W) → ZMod 2)
+    (addr : (Fin d → ZMod (prime^(w+1))) → Fin d → ZMod (prime^(w+1))) :
+    let bank := (Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)
+    let ready := ColumnRecordReady bank H J record SparseRoleCircuit.encode (fun _ => blank) dest 0 q output
+    let clean := fun (D : Stacks (N+35) prime) => ∀ k : Fin (N+35), 35 ≤ k.val → D.L k = [] ∧ D.R k = []
+    ready (fun x => is.foldl adjacentFields (addr x)) S → clean S → ∃ z F n, z.user = v.user ∧
+      n ≤ (is.map (fun i => completeSwapTime body d i (i+1) w W H J)).sum+1 ∧
+      Exec body (packSchedule d is.reverse) (mk v S) n (mk z F) ∧ ready addr F ∧ clean F := by
+  intro bank ready clean start free
+  obtain ⟨z,F,n,user,cost,run,placed,clear⟩ := packSchedule_exec is.reverse
+    (fun i hi => fits i (List.mem_reverse.mp hi)) H J hm hw hW body v S record dest q output
+    (fun x => is.foldl adjacentFields (addr x)) start free
+  exact ⟨z,F,n,user,by simpa [List.map_reverse] using cost,run,
+    by simpa only [reverse_adjacentFields] using placed,clear⟩
+
+/-- Run a child on packed fields and return its changed payload in the
+caller's order. Both layout changes use the same schedule budget. -/
+theorem withGoodChildPacking_exec [Fintype P] (body : P → Pr P (N+35) Q prime U)
+    (r g : ℕ) (positive : 0 < r+g) :
+    ∃ setup swaps : ℕ, ∀ w W, 0 < W →
+      let d := (r+g)+(r+g)
+      let M := prime^(w+1)
+      let is := goodChildPackSchedule r g
+      let bank := (Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)
+      let clean := fun (S : Stacks (N+35) prime) => ∀ k : Fin (N+35), 35 ≤ k.val → S.L k = [] ∧ S.R k = []
+      ∀ (v : HS (N+35) Q prime U) (S : Stacks (N+35) prime)
+        (record : List (Fin (prime+4))) (dest : ℤ → Fin 4) (q : ℤ)
+        (input output : Fin (M^d*W) → ZMod 2) (addr : (Fin d → ZMod M) → Fin d → ZMod M)
+        (child : Pr P (N+35) Q prime U) (budget : ℕ),
+      let ready := ColumnRecordReady bank (Nat.size M) (Nat.size W) record SparseRoleCircuit.encode
+        (fun _ => blank) dest 0 q
+      let packed := fun x => is.foldl adjacentFields (addr x)
+      (∀ u D, ready input packed D → clean D → ∃ y G t, y.user = u.user ∧ t ≤ budget ∧
+        Exec body child (mk u D) t (mk y G) ∧ ready output packed G ∧ clean G) →
+      ready input addr S → clean S → ∃ z F n, z.user = v.user ∧
+        n ≤ budget + 2*((setup+swaps*swapVolumeRate w)*(M^d*W)) ∧
+        Exec body (.seq (packSchedule d is) (.seq child (packSchedule d is.reverse)))
+          (mk v S) n (mk z F) ∧ ready output addr F ∧ clean F := by
+  obtain ⟨setup,swaps,bound⟩ := goodChildPackTime_le body r g positive
+  refine ⟨setup,swaps,?_⟩
+  intro w W hW d M is bank clean v S record dest q input output addr child budget ready packed call start free
+  have fits : ∀ i ∈ is, i+1 < d := fun _ => goodChildPackSchedule_inside
+  have hm : M < 2^Nat.size M := Nat.size_le.mp le_rfl
+  have hw : W < 2^Nat.size W := Nat.size_le.mp le_rfl
+  obtain ⟨u,D,t,hu,ht,pack,placed,clear⟩ := packSchedule_exec is fits _ _ hm hw hW body v S
+    record dest q input addr start free
+  obtain ⟨y,G,k,hy,hk,run,changed,available⟩ := call u D placed clear
+  obtain ⟨z,F,n,hz,hn,unpack,done,empty⟩ := unpackSchedule_exec is fits _ _ hm hw hW body y G
+    record dest q output addr changed available
+  have left := ht.trans (bound w W hW)
+  have right := hn.trans (bound w W hW)
+  exact ⟨z,F,t+(k+n),hz.trans (hy.trans hu),by dsimp only [M,d]; omega,.seq pack (.seq run unpack),done,empty⟩
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
