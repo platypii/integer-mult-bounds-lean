@@ -11,7 +11,7 @@ open HeadPivotLayout HeadWidthLayout M8.ReversedExchange
 variable {P U α : Type} {T A d W b w : ℕ} [NeZero (b^(w+1))]
 local notation "M" => b^(w+1)
 
-private theorem tailReady {N : ℕ} (bank : Fin 54 ↪ Fin T) (negative : Bool) (H J : ℕ)
+theorem tailReady {N : ℕ} (bank : Fin 54 ↪ Fin T) (negative : Bool) (H J : ℕ)
     (parent : List (Fin (A+4))) (sym : α → Fin 4) (source target : ℤ → Fin 4) (p q : ℤ)
     (out : Fin (N^(d+d)*W) → α) (D : Stacks T A) :
     let h := (coeff negative).trans (head.trans bank)
