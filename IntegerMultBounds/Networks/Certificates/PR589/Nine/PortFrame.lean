@@ -351,6 +351,41 @@ theorem exchange_conj (R S U : Matrix ι ι ℚ) (h : R * S = 1) :
   simp only [exchange, fromBlocks_multiply, mul_sub, sub_mul, mul_one, h, Matrix.mul_zero,
     Matrix.zero_mul, add_zero, zero_add, sub_self]
 
+/-- A triangular projector with Boolean diagonal admits a unitriangular eigenbasis
+over any commutative ring, including the modular tape registers. -/
+theorem triangular_projector_basis {R : Type*} [CommRing R] {n : ℕ}
+    (U : Matrix (Fin n) (Fin n) R) (lower : U.IsLowerTriangular)
+    (idem : U * U = U) (bits : ∀ i, U i i = 0 ∨ U i i = 1) :
+    let E := diagonal fun i => U i i
+    ∃ C : Matrix (Fin n) (Fin n) R, C.IsLowerTriangular ∧
+      (∀ i, C i i = 1) ∧ IsUnit C.det ∧ C * E = U * C := by
+  intro E
+  let C := U * E + (1 - U) * (1 - E)
+  have entry (i j) : C i j = U i j * U j j +
+      ((1 : Matrix (Fin n) (Fin n) R) i j - U i j) * (1 - U j j) := by
+    simp only [C, E, mul_sub, mul_one, Matrix.add_apply, Matrix.sub_apply, mul_diagonal]
+  have triangular : C.IsLowerTriangular := by
+    intro i j hij
+    have h : i < j := hij
+    simp [entry, lower hij, one_apply_ne h.ne]
+  have diag (i) : C i i = 1 := by
+    rcases bits i with h | h <;> simp [entry, h]
+  have unit : IsUnit C.det := by simp [C.det_of_isLowerTriangular triangular, diag]
+  have eIdem : E * E = E := by
+    ext i j
+    rw [show E = diagonal (fun i => U i i) from rfl, diagonal_mul_diagonal]
+    by_cases h : i = j
+    · subst j
+      rcases bits i with h | h <;> simp [h]
+    · simp [diagonal_apply_ne _ h]
+  have intertwine : C * E = U * C := by
+    dsimp only [C]
+    have hE : (1 - E) * E = 0 := by rw [sub_mul, one_mul, eIdem, sub_self]
+    have hU : U * (1 - U) = 0 := by rw [mul_sub, mul_one, idem, sub_self]
+    rw [add_mul, Matrix.mul_assoc U E E, eIdem, Matrix.mul_assoc, hE, Matrix.mul_zero,
+      mul_add, ← Matrix.mul_assoc, idem, ← Matrix.mul_assoc, hU, Matrix.zero_mul]
+  exact ⟨C, triangular, diag, unit, intertwine⟩
+
 /-- A lower triangular projector exchanges its pivot coordinates
 after a lower triangular change of basis on each address half. -/
 theorem exchange_pivot_coordinates {n : ℕ} (U : Matrix (Fin n) (Fin n) ℚ)
@@ -371,31 +406,9 @@ theorem exchange_pivot_coordinates {n : ℕ} (U : Matrix (Fin n) (Fin n) ℚ)
       · rw [lower (i := j) (j := i) lt, mul_zero]
       · rw [lower (i := i) (j := j) gt, zero_mul]
     · simp
-  let C := U * E + (1 - U) * (1 - E)
-  have entry (i j) : C i j = U i j * U j j +
-      ((1 : Matrix (Fin n) (Fin n) ℚ) i j - U i j) * (1 - U j j) := by
-    simp only [C, E, mul_sub, mul_one, Matrix.add_apply, Matrix.sub_apply, mul_diagonal]
-  have triangular : C.IsLowerTriangular := by
-    intro i j hij
-    have h : i < j := hij
-    simp [entry, lower hij, one_apply_ne h.ne]
-  have diag (i) : C i i = 1 := by
-    rcases bits i with h | h <;> simp [entry, h]
-  have unit : IsUnit C.det := by simp [C.det_of_isLowerTriangular triangular, diag]
+  obtain ⟨C, triangular, _, unit, intertwine⟩ := triangular_projector_basis U lower idem bits
+  change C * E = U * C at intertwine
   let := C.invertibleOfIsUnitDet unit
-  have eIdem : E * E = E := by
-    ext i j
-    rw [show E = diagonal (fun i => U i i) from rfl, diagonal_mul_diagonal]
-    by_cases h : i = j
-    · subst j
-      rcases bits i with h | h <;> simp [h]
-    · simp [diagonal_apply_ne _ h]
-  have intertwine : C * E = U * C := by
-    dsimp only [C]
-    have hE : (1 - E) * E = 0 := by rw [sub_mul, one_mul, eIdem, sub_self]
-    have hU : U * (1 - U) = 0 := by rw [mul_sub, mul_one, idem, sub_self]
-    rw [add_mul, Matrix.mul_assoc U E E, eIdem, Matrix.mul_assoc, hE, Matrix.mul_zero,
-      mul_add, ← Matrix.mul_assoc, idem, ← Matrix.mul_assoc, hU, Matrix.zero_mul]
   refine ⟨C, triangular, blockTriangular_inv_of_blockTriangular triangular, C.mul_nonsing_inv unit, ?_, ?_⟩
   · have ranks := congrArg Matrix.rank intertwine
     rw [rank_mul_eq_right_of_isUnit_det C E unit, rank_mul_eq_left_of_isUnit_det C U unit] at ranks
