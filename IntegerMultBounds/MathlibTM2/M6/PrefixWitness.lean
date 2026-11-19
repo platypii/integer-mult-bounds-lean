@@ -3,7 +3,7 @@ module
 public import IntegerMultBounds.MathlibTM2.M6.TranslatedLines
 public import IntegerMultBounds.Networks.Certificates.PR589.Geometry.Dimensions.Data
 
-/-! Prefix minor witnesses for the low-dimensional PR589 frame labels. -/
+/-! Prefix minor witnesses for PR589 frame labels. -/
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.M6
 
@@ -45,5 +45,27 @@ theorem small_prefix_witness (label : ℕ) (live : label < 636) {d : ℕ}
       · exact ok.1
       · exact ok.2.1
     · simpa [Matrix.det_fin_two] using ok.2.2
+
+/-- The eight coordinate generators in the full label translate to a triangular
+matrix with diagonal two. -/
+theorem full_prefix_witness (label : ℕ) (live : label < 636)
+    (dim : Geometry.Dimensions.value label = 8) :
+    ∃ lines : Fin 8 → Fin 111, (∀ i, (lines i).val ∈ Frames.labels label) ∧
+      ∀ w : ℕ, IsUnit ((Matrix.of fun i (j : Fin 8) => translatedEntry (lines i) j.val).map
+        (Int.castRingHom (ZMod (prime ^ w)))) := by
+  have unique : ∀ i : Fin 636, Geometry.Dimensions.value i.val = 8 → i.val = 1 := by
+    decide +kernel
+  obtain rfl := unique ⟨label, live⟩ dim
+  let lines (i : Fin 8) : Fin 111 := i.castLE (by decide)
+  let A := Matrix.of fun i (j : Fin 8) => translatedEntry (lines i) j.val
+  have members : ∀ i, (lines i).val ∈ Frames.labels 1 := by decide +kernel
+  have above : ∀ i j : Fin 8, i < j → A i j = 0 := by
+    intro i j
+    fin_cases i <;> fin_cases j <;> decide +kernel
+  have diag : ∀ i : Fin 8, A i i = 2 := by decide +kernel
+  refine ⟨lines, members, translated_prefix_unit (by decide) lines ?_⟩
+  change A.det ≠ 0
+  rw [A.det_of_isLowerTriangular (fun i j hij => above i j hij)]
+  simp [diag]
 
 end IntegerMultBounds.MathlibTM2.M6
