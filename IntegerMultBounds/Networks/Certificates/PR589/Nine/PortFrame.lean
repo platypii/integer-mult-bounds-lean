@@ -224,6 +224,36 @@ theorem rho_conj_complement (h : c.Checked) :
   simp [Matrix.mul_sub, lineProj_mul_self h, transpose_complement_mul_lineProj h,
     complement_orthonormal h]
 
+/-- Adapt the complement columns to an oblique projector onto the certified line.
+The resulting stage route is an involution and sends the line plus exterior frame
+to the full local frame. -/
+theorem oblique_line_route (h : c.Checked) (U : Matrix (Fin 8) (Fin 8) ℚ)
+    (up : U * c.lineProj = c.lineProj) (pu : c.lineProj * U = U) :
+    let B := (1 - U) * c.complement
+    let R := fromBlocks U B c.complementᵀ 0
+    R * R = 1 ∧ R * fromBlocks U 0 0 1 * R = fromBlocks 1 0 0 0 ∧
+      R * fromBlocks 0 0 0 1 * R = fromBlocks (1 - U) 0 0 0 ∧
+      R * fromBlocks (1 - U) 0 0 1 * R = fromBlocks (1 - U) 0 0 1 := by
+  intro B R
+  have idem : U * U = U := by
+    calc U * U = U * (c.lineProj * U) := by rw [pu]
+      _ = U := by rw [← Matrix.mul_assoc, up, pu]
+  have annihilate : c.complementᵀ * U = 0 := by
+    calc _ = c.complementᵀ * (c.lineProj * U) := by rw [pu]
+         _ = 0 := by rw [← Matrix.mul_assoc, transpose_complement_mul_lineProj h, Matrix.zero_mul]
+  have ub : U * B = 0 := by
+    dsimp [B]
+    rw [← Matrix.mul_assoc, mul_sub, mul_one, idem, sub_self, Matrix.zero_mul]
+  have leftInv : c.complementᵀ * B = 1 := by
+    dsimp [B]
+    rw [← Matrix.mul_assoc, Matrix.mul_sub, Matrix.mul_one, annihilate, sub_zero, complement_orthonormal h]
+  have rightInv : B * c.complementᵀ = 1 - U := by
+    dsimp [B]
+    rw [Matrix.mul_assoc, complement_mul_transpose h, mul_sub, mul_one, sub_mul, one_mul,
+      up, sub_self, sub_zero]
+  simp [R, fromBlocks_multiply, Matrix.mul_sub, idem, ub, annihilate, leftInv, rightInv,
+    ← fromBlocks_one]
+
 end PortCertificate
 
 /-! ### The bit address operators -/
