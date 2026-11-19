@@ -550,7 +550,18 @@ directly:
   `python3 scripts/check-pr589-prefix-pivots.py`. Thus for each of the 2911 positive-rank
   nested phase MOVEs the changed pivots form a single interval of the billed width.
   This is a rational calculation for the canonical oblique projectors in the translated
-  coordinates. It covers D/A/B/C. COPY windows have separate edges and costs. The two
+  coordinates. At the scatter boundary the checker also reads all nine retained sources:
+  labels 510–518 have the same seven pivot positions 0 through 6, and all 527 target
+  incidences are in the zero frame. Thus each COPY has a contiguous seven-coordinate
+  exchange in the local geometry. Its physical temporary and its reverse erase still
+  need the machine semantics.
+
+  For modular reduction, the largest translated generator entry has magnitude 1344.
+  A nonzero leading minor witnessing rank `d ≤ 8` has magnitude at most
+  `8! · 1344^8 < 2^100` by the determinant expansion. The machine prime exceeds this
+  bound (`Shared50ModularControl.coefficientBound_lt_prime`), so that minor is a unit
+  at every prime-power radix. The normalized graph rows `[I | A]` computed by exact
+  elimination have denominators at most 1799432 across all labels. The two
   port endpoints present a remaining mismatch: the line gets pivot 0 and the target
   hyperplane gets pivots 0 through 6, whereas the complement of the line projector
   has diagonal support 1 through 7. Closing the stage boundary and pricing its route

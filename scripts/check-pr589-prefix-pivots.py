@@ -3,6 +3,7 @@
 import gzip
 import hashlib
 import json
+from fractions import Fraction
 from math import comb, gcd
 from pathlib import Path
 
@@ -31,6 +32,20 @@ def pivots(rows):
     return set(basis)
 
 
+def graph_rows(rows, rank):
+    """Recover the prefix graph [I | A] by reducing the integral generators."""
+    rows = [list(map(Fraction, row)) for row in rows]
+    for j in range(rank):
+        pivot = next(i for i in range(j, len(rows)) if rows[i][j])
+        rows[j], rows[pivot] = rows[pivot], rows[j]
+        rows[j] = [x / rows[j][j] for x in rows[j]]
+        for i, row in enumerate(rows):
+            if i != j and row[j]:
+                rows[i] = [x - row[j] * y for x, y in zip(row, rows[j])]
+    assert all(not any(row) for row in rows[rank:])
+    return rows[:rank]
+
+
 def translate(row):
     return [sum(row[k] * comb(k, j) * 2 ** (k - j) for k in range(j, 8))
             for j in range(8)]
@@ -42,10 +57,14 @@ def main():
     word = json.loads(gzip.decompress(raw))
     lines = word["lines"]
     shifted = [translate(row) for row in lines]
+    max_entry = max(abs(x) for row in shifted for x in row)
     ranks = []
+    max_denominator = 1
     for i, frame in enumerate(word["frames"]):
         rank = len(pivots(lines[j] for j in frame))
         assert pivots(shifted[j] for j in frame) == set(range(rank)), i
+        graph = graph_rows((shifted[j] for j in frame), rank)
+        max_denominator = max([max_denominator] + [x.denominator for row in graph for x in row])
         ranks.append(rank)
 
     labels = [set(frame) for frame in word["frames"]]
@@ -54,6 +73,14 @@ def main():
     # The scatter COPY windows have a separate rank bill. This is the phase replay
     # in generate_pr589_moves.py, whose scatter boundary preserves the phase refs.
     for section in "DABC":
+        if section == "B":
+            copy_frames = [refs[source] for source in word["ret"]]
+            assert copy_frames == list(range(510, 519))
+            assert all(ranks[f] == 7 for f in copy_frames)
+            adds = [(111 + t, k) for t, indices in enumerate(word["scatter"]) for k in indices]
+            assert len(adds) == 527
+            assert all(refs[t] == 0 and 0 <= k < len(copy_frames) for t, k in adds)
+            assert ranks[0] == 0
         for frame, target, sources in word[section]:
             for register in [target, *sources]:
                 old = refs[register]
@@ -61,6 +88,8 @@ def main():
                 moves += ranks[old] != ranks[frame]
                 refs[register] = frame
     assert (len(ranks), moves) == (636, 2911)
+    print("Verified nine rank-seven COPY prefixes and 527 zero-frame ADD targets.")
+    print(f"Maximum translated entry magnitude: {max_entry}. Maximum graph denominator: {max_denominator}.")
     print(f"Verified prefix pivots for {len(ranks)} labels and consecutive pivots for {moves} positive-rank phase MOVEs.")
 
 
