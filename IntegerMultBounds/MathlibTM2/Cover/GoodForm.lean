@@ -566,6 +566,27 @@ theorem good_form (P : Matrix (Fin m) (Fin m) R) (r : ℕ) (hr : r ≤ m)
   obtain ⟨rightLower,rightInvLower,right,rightInv,weights,factor⟩ := S.normalForm hr A B hP
   exact ⟨S.L,S.L',_,_,_,_,S.lower,S.lower',rightLower,rightInvLower,S.left,S.left',right,rightInv,weights,factor⟩
 
+/-- The adapters, shear and child weights obtained from this particular elimination stage. -/
+theorem Stage.goodMove {P : Matrix (Fin m) (Fin m) R} {r : ℕ} (S : Stage P r)
+    (hr : r ≤ m) (A : Matrix (Fin m) (Fin r) R) (B : Matrix (Fin r) (Fin m) R)
+    (factor : P = A * B) (hidem : P * P = P) (α α' : Fin m → R) (hα : ∀ i, α i * α' i = 1) :
+    let δ := fun i : Fin m => if i.val < r then S.M i i else 1
+    let δ' := fun i : Fin m => if i.val < r then Ring.inverse (S.M i i) else 1
+    let right := rev m * S.U * rev m
+    let rightInv := rev m * S.U' * rev m
+    let pivots := pivotMatrix (revPivots m r)
+    let K := kMat pivots (right * rev m * (S.L * diagonal δ)) *
+      diagonal fun i => α' i * δ' i
+    ∀ s : State (Fin m) R,
+      transform (diagonal α * S.L * diagonal α') rightInv
+        (cross (-K) (Weighted.child r (fun i => α i * δ i) (fun i => α' i * δ' i)
+          (cross K (transform (diagonal α * S.L' * diagonal α') right s)))) =
+        transform (diagonal α) 1 (revExchangeOf (rev m) P (transform (diagonal α') 1 s)) := by
+  intro δ δ' right rightInv pivots K s
+  obtain ⟨_,_,inv,inv',units,form⟩ := S.normalForm hr A B factor
+  exact Weighted.weighted_good_child r α α' δ δ' hα units S.L S.L' right rightInv
+    S.left S.left' inv inv' P form hidem s
+
 /-- **A good move.** Let `P` be an idempotent that factors through `r` coordinates, with unit
 leading principal minors of sizes `1..r`. Under incoming weights `α`, its reversed exchange is
 the adapters `α L α⁻¹` and `R`, the shears by `K`, and one weighted reversed child on the first
@@ -582,9 +603,8 @@ theorem good_move (P : Matrix (Fin m) (Fin m) R) (hidem : P * P = P) (r : ℕ) (
             (cross K (transform (diagonal α * L' * diagonal α') R' s)))) =
           transform (diagonal α) 1
             (revExchangeOf (rev m) P (transform (diagonal α') 1 s)) := by
-  obtain ⟨L, L', R', R'', δ, δ', hL, hL', hR, hR', hLL, hLL', hRR, hRR', hδ, hPC⟩ :=
-    good_form P r hr A B hP hminor
-  exact ⟨L, L', R', R'', _, δ, δ', hL, hL', hR, hR', hδ, fun s =>
-    Weighted.weighted_good_child r α α' δ δ' hα hδ L L' R' R'' hLL hLL' hRR hRR' P hPC hidem s⟩
+  let S := stageAt P r hr hminor r le_rfl
+  obtain ⟨lower,lower',_,_,units,_⟩ := S.normalForm hr A B hP
+  exact ⟨S.L,S.L',_,_,_,_,_,S.lower,S.lower',lower,lower',units,S.goodMove hr A B hP hidem α α' hα⟩
 
 end IntegerMultBounds.MathlibTM2.Cover.GoodForm
