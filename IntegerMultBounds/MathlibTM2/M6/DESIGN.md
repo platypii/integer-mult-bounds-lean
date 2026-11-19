@@ -559,8 +559,8 @@ directly:
   For modular reduction, the largest translated generator entry has magnitude 1344.
   A nonzero leading minor witnessing rank `d ≤ 8` has magnitude at most
   `8! · 1344^8 < 2^100` by the determinant expansion. The machine prime exceeds this
-  bound (`Shared50ModularControl.coefficientBound_lt_prime`), so that minor is a unit
-  at every prime-power radix. The normalized graph rows `[I | A]` computed by exact
+  bound. `M6.prefix_minor_unit` proves in Lean that every such nonsingular integer
+  matrix reduces to a unit matrix over every machine prime-power radix. The normalized graph rows `[I | A]` computed by exact
   elimination have denominators at most 1799432 across all labels. The two
   port endpoints present a remaining mismatch: the line gets pivot 0 and the target
   hyperplane gets pivots 0 through 6, whereas the complement of the line projector
