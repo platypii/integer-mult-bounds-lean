@@ -271,6 +271,42 @@ theorem archivedExchange_pairs {R : Type*} [CommRing R] (parent pivot : Fin d �
     rw [mul_comm (↑(parent i)⁻¹ : R) (↑(pivot i)⁻¹ : R),pairAction,ih]
     simp [applyPairs]
 
+/-- Parent row and pivot-archive index for each exchange, in execution order. -/
+def pivotReads (rows : List (Fin d)) : List (Fin d × Fin (d+1)) :=
+  rows.flatMap fun i => [(i,0),(i,i.succ)]
+
+omit [M8.Machine.Net] in
+theorem pivotReads_action {R X : Type*} [CommRing R] (parent weights : Fin d → Rˣ)
+    (rows : List (Fin d)) (addr : X → Fin (d+1) → R) :
+    let reads := pivotReads rows
+    let pivot : Fin (d+1) → R := Fin.cons 1 (fun i => (weights i : R))
+    let move := fun (y : X → Fin (d+1) → R) a x =>
+      let op := reads.get a
+      exchangeAddress 0 op.1.succ ((↑(parent op.1)⁻¹ : R) * Ring.inverse (pivot op.2))
+        ((parent op.1 : R) * pivot op.2) (y x)
+    (List.finRange reads.length).foldl move addr = fun x => applyPairs weights rows (addr x) := by
+  intro reads pivot move
+  let step := fun (y : Fin (d+1) → R) (op : Fin d × Fin (d+1)) =>
+    exchangeAddress 0 op.1.succ ((↑(parent op.1)⁻¹ : R) * Ring.inverse (pivot op.2))
+      ((parent op.1 : R) * pivot op.2) y
+  funext x
+  calc
+    _ = (List.finRange reads.length).foldl (fun y a => step y (reads.get a)) (addr x) :=
+      (List.foldl_hom (fun y : X → Fin (d+1) → R => y x) (g₁ := move) (fun _ _ => rfl)).symm
+    _ = reads.foldl step (addr x) := by rw [← List.foldl_map,List.map_get_finRange]
+    _ = _ := by
+      have aux (rs : List (Fin d)) (y : Fin (d+1) → R) :
+          (pivotReads rs).foldl step y = applyPairs weights rs y := by
+        induction rs generalizing y with
+        | nil => rfl
+        | cons i rs ih =>
+          change (pivotReads rs).foldl step (step (step y (i,0)) (i,i.succ)) = _
+          rw [ih]
+          have action := archivedExchange_pair i (parent i) (parent i * weights i) y
+          simpa [step,pivot,Ring.inverse_unit,mul_inv_rev,mul_comm,applyPairs] using
+            congrArg (applyPairs weights rs) action
+      exact aux rows (addr x)
+
 /-- Execute each weighted exchange in occurrence order using a common pivot and parent archive. -/
 theorem correctedSchedule_exec {m r n Q : ℕ} (k t : Fin n → Fin (d+1)) (lt : ∀ a, k a < t a)
     (capacity : columnCapacity ≤ Q) (signCapacity : ∀ a, (fieldSignProgram (k a) true).1 ≤ Q)
@@ -333,5 +369,57 @@ theorem correctedSchedule_exec {m r n Q : ℕ} (k t : Fin n → Fin (d+1)) (lt :
       apply free
       exact ⟨b,exchangeBank_private ..⟩)
     exact ⟨z,F,l,hz,hl,exec,next,fun h off => saved h (fun b eq => off ⟨b,eq⟩)⟩
+
+/-- Run the paired residual diagonal directly from the unit-prefixed pivot archive. -/
+theorem archivedDiagonal_exec {Q : ℕ} (rows : List (Fin d)) (parent weightsAt : Fin d → (ZMod M)ˣ)
+    (capacity : columnCapacity ≤ Q) (signCapacity : (fieldSignProgram (0 : Fin (d+1)) true).1 ≤ Q)
+    (H J : ℕ) (hm : M < 2^H) (hw : W < 2^J) (hW : 0 < W)
+    (tail rest : List (Fin (prime+4))) (dest : ℤ → Fin 4) (q : ℤ)
+    (empty : ∀ z, q ≤ z → z < q+(M^(d+1)*W : ℕ) → dest z = blank)
+    (original : Fin (M^(d+1)*W) → ZMod 2) (addr : (Fin (d+1) → ZMod M) → Fin (d+1) → ZMod M) :
+    let reads := pivotReads rows
+    let n := reads.length
+    let k := fun _ : Fin n => (0 : Fin (d+1))
+    let j := fun a => (reads.get a).1
+    let t := fun a => (j a).succ
+    let i := fun a => (reads.get a).2
+    let pivot : Fin (d+1) → ZMod M := Fin.cons 1 (fun h => (weightsAt h : ZMod M))
+    let width := fun a => 22+fieldSignSlots (k a)
+    let total := Fintype.card (Σ a, Fin (width a))
+    let shared := Fin.castAddEmb (n := N+1) total
+    let bank := exchangeBank (N+1) width
+    let record := (List.ofFn fun h => binSyms (A := prime) H (pivot h).val).flatten ++ tail
+    let weights := (List.ofFn fun h => binSyms (A := prime) H (parent h : ZMod M).val).flatten ++ rest
+    let ready := fun y (D : Stacks ((N+1)+total) prime) =>
+      ColumnRecordReady (columnBank.trans shared) H J record SparseRoleCircuit.encode (fun _ => blank) dest 0 q original y D ∧
+      (∀ h : Fin N, 35 ≤ h.val → D.L (shared (columnPorts h)) = [] ∧ D.R (shared (columnPorts h)) = []) ∧
+      D.R (shared (Fin.last N)) = weights
+    let program := fun a =>
+      let host := Fin.castAddEmb (n := N+1) (width a)
+      let sign := extendSignBank columnBank (fieldSignSlots (k a))
+      statePlacedNormalized (bank a) (le_refl Q) (lt_of_lt_of_le columnCapacity_pos capacity) Empty.elim
+        (.seq (statePlacedNormalized host capacity columnCapacity_pos Empty.elim (childExchange (j a).val (i a).val (k a) (t a)))
+          (.seq (installFieldHeaders ((installerPorts _).trans sign))
+            (placedFieldNeg (k a) ((signPorts _).trans sign) signCapacity)))
+    let cost := fun a =>
+      let shear := fun neg => 1+cleanChildShearTime (P := Empty) (U := U) (A := prime) Empty.elim
+        (Function.Embedding.refl _) prime (j a).val (i a).val (k a) (t a) neg w W H J
+      let swap := 1+completeSwapTime (P := Empty) (U := U) Empty.elim (d+1) (k a) (t a) w W H J
+      1+(1+(2*shear false+shear true+2*swap)+((10*J+12)+(21*(w+1)+12)+1+
+        (1+(AtomSegment.chainConst (fieldSignOps (k a) true)*(M^(d+1)*W)*(width a+5)+6))))
+    ∀ (body : P → Pr P ((N+1)+total) Q prime U) v S, ready addr S →
+      (∀ h : Fin total, S.L (Fin.natAdd (N+1) h) = [] ∧ S.R (Fin.natAdd (N+1) h) = []) →
+      ∃ z F l, z.user = v.user ∧ l ≤ ((List.finRange n).map cost).sum+1 ∧
+        Exec body ((List.finRange n).foldr (fun a rest => .seq (program a) rest) (.act .done))
+          (mk v S) l (mk z F) ∧ ready (fun x => applyPairs weightsAt rows (addr x)) F := by
+  intro reads n k j t i pivot width total shared bank record weights ready program cost body v S before aux
+  have units (a : Fin n) : IsUnit (pivot (i a)) := by
+    cases i a using Fin.cases with
+    | zero => exact isUnit_one
+    | succ h => exact (weightsAt h).isUnit
+  obtain ⟨z,F,l,hz,hl,exec,next⟩ := correctedSchedule_exec k t (fun a => Fin.succ_pos (j a))
+    capacity (fun _ => signCapacity) (fun h => (parent h : ZMod M)) j (fun a => (↑(parent (j a))⁻¹ : ZMod M))
+    (fun a => (parent (j a)).mul_inv) pivot i units H J hm hw hW tail rest dest q empty original addr body v S before aux
+  exact ⟨z,F,l,hz,hl,exec,(pivotReads_action parent weightsAt rows addr) ▸ next⟩
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback.Record
