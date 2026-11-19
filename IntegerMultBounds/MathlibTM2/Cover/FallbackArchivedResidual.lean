@@ -56,7 +56,7 @@ theorem shared_ne_last {c t : ℕ} (i : Fin c) :
   fun eq => (i.castAdd t).isLt.ne (congrArg Fin.val eq)
 
 /-- Run the signed residual diagonal and undo elimination on the same physical payload. -/
-theorem archivedResidual_exec {Q : ℕ} (parent : Fin d → (ZMod M)ˣ) (a : Fin (d+1) → (ZMod M)ˣ)
+theorem archivedResidual_exec {Q T : ℕ} (parent : Fin d → (ZMod M)ˣ) (a : Fin (d+1) → (ZMod M)ˣ)
     (negative : Bool) (signValue : ∏ j, a j = if negative then -1 else 1)
     (capacity : columnCapacity ≤ Q) (signCapacity : (fieldSignProgram (0 : Fin (d+1)) true).1 ≤ Q)
     (H J : ℕ) (hm : M < 2^H) (hw : W < 2^J) (hW : 0 < W)
@@ -89,7 +89,7 @@ theorem archivedResidual_exec {Q : ℕ} (parent : Fin d → (ZMod M)ˣ) (a : Fin
       ColumnRecordReady (columnBank.trans shared) H J record SparseRoleCircuit.encode (fun _ => blank) dest 0 q original y D ∧
       (∀ h : Fin N, 35 ≤ h.val → D.L (shared (columnPorts h)) = [] ∧ D.R (shared (columnPorts h)) = []) ∧
       D.R (shared (Fin.last N)) = weights
-    let program : Fin n → Pr P (((N+1)+total)+1) Q prime U := fun a =>
+    let program : Fin n → Pr Empty (((N+1)+total)+1) Q prime U := fun a =>
       let host := Fin.castAddEmb (n := N+1) (width a)
       let sign := extendSignBank columnBank (fieldSignSlots (k a))
       statePlacedNormalized (bank a) (le_refl Q) (lt_of_lt_of_le columnCapacity_pos capacity) Empty.elim
@@ -109,28 +109,40 @@ theorem archivedResidual_exec {Q : ℕ} (parent : Fin d → (ZMod M)ˣ) (a : Fin
     let active := reverseBank (d+1)
     let pop : Pr Empty (N+2) columnCapacity prime U := .seq (dropWords (active 2) (active 34) (active 0) (d+1))
       (dropWords (active 2) (Fin.last N).castSucc (active 0) d)
-    let rewind : Pr P (((N+1)+total)+1) Q prime U := statePlacedNormalized reverseHost capacity columnCapacity_pos Empty.elim
+    let rewind : Pr Empty (((N+1)+total)+1) Q prime U := statePlacedNormalized reverseHost capacity columnCapacity_pos Empty.elim
       (.seq pop (reverseStages (d+1) (d+1)))
     let stageCost := 1+Finset.univ.sup (fun k => columnProgramTime U k (pivots k) w W H J)+((d+1)*(d+1)*(4*H+4)+1)
     let rewindCost := 1+(((d+1)*(4*H+4)+1+(d*(4*H+4)+1))+((d+1)*stageCost+1))
-    ∀ (body : P → Pr P (((N+1)+total)+1) Q prime U) v S, ready addr S →
-      (∀ h : Fin total, S.L (ports (Fin.natAdd (N+1) h)) = [] ∧ S.R (ports (Fin.natAdd (N+1) h)) = []) →
-      (words (d+1) ++ suffix,S.R spare) = matrixArchive words (words 0 ++ tail) destTail (d+1) →
-      ∃ z F l, z.user = v.user ∧ l ≤ ((List.finRange n).map cost).sum+1+rewindCost ∧
-        Exec body (.seq ((List.finRange n).foldr (fun a rest => .seq (program a) rest) (.act .done)) rewind)
-          (mk v S) l (mk z F) ∧ ColumnReady ((reverseBank 0).trans reverseHost) H J m tail SparseRoleCircuit.encode
-            (fun _ => blank) dest 0 q original m.mulVec F ∧ F.R (reverseHost (Fin.last N).castSucc) = rest ∧
-            F.R (reverseHost (reverseBank 1 34)) = destTail := by
-  intro words code rows weightsAt addr reads n k j t i pivot width total ports shared bank record weights ready program cost spare off reverseHost reverseBank active pop rewind stageCost rewindCost body v S before aux archive
+    let residual := .seq ((List.finRange n).foldr (fun a rest => .seq (program a) rest) (.act .done)) rewind
+    let positive := lt_of_lt_of_le columnCapacity_pos capacity
+    ∀ (host : Fin (((N+1)+total)+1) ↪ Fin T) (body : P → Pr P T Q prime U) v S,
+      ready addr (embStk host S) →
+      (∀ h : Fin total, S.L (host (ports (Fin.natAdd (N+1) h))) = [] ∧ S.R (host (ports (Fin.natAdd (N+1) h))) = []) →
+      (words (d+1) ++ suffix,S.R (host spare)) = matrixArchive words (words 0 ++ tail) destTail (d+1) →
+      ∃ z F l, z.user = v.user ∧ l ≤ 1+(((List.finRange n).map cost).sum+1+rewindCost) ∧
+        Exec body (statePlacedNormalized host le_rfl positive Empty.elim residual) (mk v S) l (mk z F) ∧
+        ColumnReady ((reverseBank 0).trans reverseHost) H J m tail SparseRoleCircuit.encode
+          (fun _ => blank) dest 0 q original m.mulVec (embStk host F) ∧
+        F.R (host (reverseHost (Fin.last N).castSucc)) = rest ∧
+        F.R (host (reverseHost (reverseBank 1 34))) = destTail ∧
+        ∀ j, (∀ i, host i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  intro words code rows weightsAt addr reads n k j t i pivot width total ports shared bank record weights ready program cost spare off reverseHost reverseBank active pop rewind stageCost rewindCost residual positive host body v S before aux archive
+  let start := stateLiftDown positive (embDn host v)
   obtain ⟨u,D,l,hu,hl,scale,next,kept⟩ := archivedDiagonal_exec parent a negative signValue capacity signCapacity
-    H J hm hw hW (words (d+1) ++ suffix) code dest q empty original body v S before aux
+    H J hm hw hW (words (d+1) ++ suffix) code dest q empty original (P := Empty) Empty.elim start (embStk host S) before aux
   have action : (Itinerary.run pivots m (d+1)).mulVec = (Matrix.diagonal fun j => (a j : ZMod M)).mulVec :=
     congrArg Matrix.mulVec diag
   have finish := finishArchivedResidual_exec shared spare off capacity pivot (fun j => (parent j : ZMod M))
-    pivots m valid H J hm hw hW body v S tail destTail suffix rest dest q empty original
+    pivots m valid H J hm hw hW (P := Empty) Empty.elim start (embStk host S) tail destTail suffix rest dest q empty original
     ((List.finRange n).foldr (fun a rest => .seq (program a) rest) (.act .done)) (((List.finRange n).map cost).sum+1)
   obtain ⟨z,F,l',hz,hl',exec,result,_,stream,other⟩ := finish
     ⟨u,D,l,hu,hl,scale,action.symm ▸ next.1,next.2.1,next.2.2,kept⟩ archive
-  exact ⟨z,F,l',hz,hl',exec,result,stream,other⟩
+  obtain ⟨out,_,user,placed⟩ := statePlaced_exec_normalized host host.injective le_rfl positive Empty.elim
+    (body' := body) (fun e => nomatch e) v S exec
+  let final := embOvr host F.get S
+  have view : embStk host final = F := embStk_ovr host.injective _ _
+  rw [← view] at result stream other
+  exact ⟨out,final,_,user.trans hz,Nat.add_le_add_left hl' 1,placed,result,stream,other,
+    fun _ offHost => embOvr_off F.get S offHost⟩
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback.Record
