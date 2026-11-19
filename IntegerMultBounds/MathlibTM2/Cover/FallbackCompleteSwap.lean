@@ -29,15 +29,32 @@ noncomputable def completeSwapTime [Fintype P] (body : P → Pr P (N+35) Q prime
       (embProg swapSimulationPort Empty.elim (foreign rowSwapBlock.program)) : Pr P (N+35) Q prime U))
   limit + (4*work.length+1 + work.length*(6*(push*limit)))
 
+/-- The row-swap charge per symbol before embedding and tape cleanup. -/
+noncomputable def swapVolumeRate (w : ℕ) : ℕ :=
+  3808274 + ⌈LeafCore.C * ((w+1 : ℕ) : ℝ) ^ M8.Machine.BudgetBound.tau⌉₊
+
+theorem swapVolumeRate_le (w : ℕ) :
+    (swapVolumeRate w : ℝ) ≤ (3808275 + LeafCore.C) *
+      ((w+1 : ℕ) : ℝ) ^ M8.Machine.BudgetBound.tau := by
+  let power := ((w+1 : ℕ) : ℝ) ^ M8.Machine.BudgetBound.tau
+  have width : 1 ≤ power := Real.one_le_rpow (by exact_mod_cast Nat.le_add_left 1 w)
+    M8.Machine.BudgetBound.exponent_range.1.le
+  have pos : 0 < LeafCore.C :=
+    (Classical.choose_spec M8.Machine.ArbitraryWidthOriginalTotalRun.uniform_bound).1
+  have rounded := Nat.ceil_lt_add_one (mul_nonneg pos.le (zero_le_one.trans width))
+  change ((3808274 + ⌈LeafCore.C * power⌉₊ : ℕ) : ℝ) ≤ (3808275 + LeafCore.C) * power
+  push_cast
+  linarith
+
 /-- A swap pays setup once and a width-dependent charge per payload symbol. -/
 theorem completeSwapTime_le_setup_add_volume [Fintype P] (body : P → Pr P (N+35) Q prime U)
     (d i j w W H J : ℕ) :
     let push := max (mnPushC body) (mnProgPush (.seq (swapSetup swapHostFits d i j)
       (embProg swapSimulationPort Empty.elim (foreign rowSwapBlock.program)) : Pr P (N+35) Q prime U))
-    let rate := ⌈LeafCore.C * ((w+1 : ℕ) : ℝ) ^ M8.Machine.BudgetBound.tau⌉₊
     completeSwapTime body d i j w W H J ≤ completeSwapTime body d i j w 0 H J +
       (1 + (swapWorkspace (N+35)).length * 6 * push) * (N+5) *
-        (3808274 + rate) * ((prime^(w+1))^d * W) := by
+        swapVolumeRate w * ((prime^(w+1))^d * W) := by
+  unfold swapVolumeRate
   let V := (prime^(w+1))^d * W
   have size (x : ℕ) : volume prime (payloadView prime d (w+1) x) = (prime^(w+1))^d*x := by
     simp [payloadView, volume, ← pow_mul, Nat.mul_comm d]
