@@ -822,6 +822,50 @@ theorem generatedSignedPass_quotient_cost_le (U : Type) (r d T : ℕ)
   rw [min_self] at residual
   exact (Nat.cast_le.mpr cost).trans (by push_cast; exact add_le_add le_rfl (by simpa [w] using residual))
 
+/-- Charge the same observed step count both at its supplied counter widths and
+at the quotient widths used in the recursive descriptor. -/
+structure SignedPassCharge (U : Type) (r d T : ℕ) (v : Descriptor)
+    (w W H J B width swaps shears C steps : ℕ) : Prop where
+  time : steps ≤ signedPassTime U r d T v w W H J B width (swaps*swapVolumeRate w+shears)
+  quotient : ∀ suffix, v.width = r*(w+1)+suffix → suffix < r →
+    LabelMask.records v*((prime^(w+1))^(d+1)*W) = volume prime v →
+    H = Nat.size (prime^(w+1)) → J = Nat.size W → width ≤ prime^v.width →
+    let V := volume prime v
+    (steps : ℝ) ≤ C*(V : ℝ) +
+      (6 + ((swaps : ℝ)*((3808275 + M8.RevMachine.LeafCore.C) *
+        ((v.width : ℝ)^M8.Machine.BudgetBound.tau / (r : ℝ)^M8.Machine.BudgetBound.tau)) + shears)) *
+        (((prime-1 : ℕ) : ℝ)/prime*V)
+
+theorem signedPassCharge_of_time (U : Type) (r d T : ℕ) (e : (Fin r ⊕ Fin r) ≃ Fin (d+1)) :
+    ∃ C, ∀ (v : Descriptor) w W H J B width swaps shears steps, v.Positive →
+      v.beforeH = B*prime^(r*((w+1)*r)) →
+      steps ≤ signedPassTime U r d T v w W H J B width (swaps*swapVolumeRate w+shears) →
+      SignedPassCharge U r d T v w W H J B width swaps shears C steps := by
+  obtain ⟨C,charge⟩ := generatedSignedPass_quotient_cost_le U r d T e
+  refine ⟨C,?_⟩
+  intro v w W H J B width swaps shears steps pos shape time
+  refine ⟨time,?_⟩
+  intro suffix splitWidth short payloadVolume modulus counter widthBound
+  have fits : r ≤ v.width := by
+    rw [splitWidth,Nat.mul_succ]
+    omega
+  have quotient : v.width/r = w+1 := by
+    rw [splitWidth,Nat.mul_add_div (by omega : 0 < r),Nat.div_eq_of_lt short,Nat.add_zero]
+  have remainder : v.width%r = suffix := by
+    rw [splitWidth,Nat.mul_add_mod_self_left,Nat.mod_eq_of_lt short]
+  have sameVolume := payloadVolume.trans (signedPassVolume_eq_descriptor v e w suffix splitWidth).symm
+  have recordPos : 0 < LabelMask.records v := by
+    exact Nat.mul_pos (Nat.mul_pos pos.1 pos.2.1) pos.2.2.1
+  have spectator := Nat.eq_of_mul_eq_mul_left (pow_pos (pow_pos Networks.Shared50ModularControl.prime_prime.pos _) _)
+    (Nat.eq_of_mul_eq_mul_left recordPos sameVolume)
+  have atom : v.width/r-1 = w := by omega
+  have bound := charge v B width swaps shears pos fits
+  dsimp only at bound
+  rw [atom,remainder] at bound
+  subst H J
+  rw [spectator] at time
+  exact (Nat.cast_le.mpr time).trans (bound shape widthBound)
+
 omit [M8.Machine.Net] in
 theorem liveRecordCost_width (r d w H width numTime detTime : ℕ) :
     liveRecordCost r d w H width numTime detTime =
@@ -888,7 +932,7 @@ def SignedPassBound (regs : Fin 6 ↪ Fin T) (anchor : Fin (size d+T) ↪ Fin K)
     (a : ScanData r d w W) (payload : ℕ → Record.Array d 1 (w+1) W)
     (rs : List (Pair (size d+T))) (parents saved : Fin (size d+T))
     (body : P → Pr P K Q prime U)
-    (setup pass : Pr P K Q prime U) (cost : ℕ) (u : HS K Q prime U)
+    (setup pass : Pr P K Q prime U) (charge : ℕ → Prop) (u : HS K Q prime U)
     (source initial : Stacks K prime) (returned : Stacks K prime → Prop) : Prop :=
     v.beforeH = B*prime^(r*((w+1)*r)) →
       a.records = LabelMask.records v → 0 < W →
@@ -908,7 +952,7 @@ def SignedPassBound (regs : Fin 6 ↪ Fin T) (anchor : Fin (size d+T) ↪ Fin K)
     ∃ (z : HS K Q prime U) (F : Stacks K prime) (n : ℕ), z.user = u.user ∧ F.R (ext 2) = output ++ a.inputTail ∧ F.R (ext 5) = [] ∧
       F.R (ext 0) = [] ∧ F.R (ports (Fin.last N).castSucc) = a.pivotTail ∧
       F.R (ports (archivePorts 0 (columnBank 34))) = a.matrixTail ∧
-      n ≤ cost ∧
+      charge n ∧
       Exec body (.seq setup pass) (mk u source) n (mk z F) ∧ returned F
 
 structure SeededQueueReady (w H : ℕ) (proj : Matrix (Fin r) (Fin r) ℚ)
@@ -1061,8 +1105,7 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     (separate : ∀ k ∈ parentsC :: savedC :: slots cs, ∀ i, anchor i ≠ k) :
     let swaps := (signedPassWork_le_setup_add_volume U d).choose
     let shears := (signedPassWork_le_setup_add_volume U d).choose_spec.choose
-    let rate := swaps * swapVolumeRate w + shears
-    ∃ pass, ∀ (joint : Fin ((36+2*r+1+(conjugationDepth r+1)*13)+17) ↪ Fin K),
+    ∃ C pass, ∀ (joint : Fin ((36+2*r+1+(conjugationDepth r+1)*13)+17) ↪ Fin K),
     let size := 36+2*r+1+(conjugationDepth r+1)*13
     let registers := (Fin.castLEEmb (show size+3 ≤ size+17 by omega)).trans joint
     let host := QueueLayout.block (n := size) 0 (by dsimp [size]; omega) registers
@@ -1147,7 +1190,7 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     SignedPassBound regs anchor ports ext v B a payload rs parents saved body
       (.seq (LabelSpectators.program r br rows bh atom (dir 2) (dir 9) (dir 3) (dir 5)) (.seq (.seq (LabelDirectorySetup.setup r dir atom one) (.seq (expandMask (dir 9) (dir 4) (dir 2) (dir 3) (dir 5) (dir 12) (fun _ => false)) (LabelDirectoryBuild.program dir))) (.seq (.seq (LabelCounts.highCount one atom (dir 7) (dir 2) (dir 3) (dir 5))
         (scanR (dir 7) (dir 2) (LabelCountBank.pushAll (cs.map Prod.fst)))) (.seq writeMask (.seq (.seq (bcopy (recip 15) (bank 17) (bank 4) tmp) (.seq (.seq (umulSym 1 (bitSymbol false) (bank 8) (bank 9) (bank 4)) (withIdentitySeed (d+1) (bank 9) (bank 17) seed (bank 4) tmp generate)) (bclear (bank 9)))) (bclear (bank 17))))))) pass
-      (signedPassTime U r d T v w W a.H a.J B width rate) u raw input (fun F => proj = 1 →
+      (SignedPassCharge U r d T v w W a.H a.J B width swaps shears C) u raw input (fun F => proj = 1 →
         ∃ out : Fin (base.records*(M^(d+1)*W)) → Fin 4,
           F.R (ext 2) = payloadWord out ++ base.inputTail ∧
           ∀ (source : ℤ → Fin 4) (p : ℤ) (before : Fin (base.records*(M^(d+1)*W)) → Fin 4),
@@ -1160,11 +1203,13 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
             let address := Sum.elim child.1 child.2 ∘ e.symm
             out (finProdFinEquiv (j,FlatCoordinateLayout.index address k)) =
               before (finProdFinEquiv (j,FlatCoordinateLayout.index x k))) := by
-  intro swaps shears rate
+  intro swaps shears
+  let rate := swaps * swapVolumeRate w + shears
   obtain ⟨pass,run⟩ := physicalSignedResidualPass (w := w) (W := W) regs anchor ports ext off banks external shared
     capacity e proj idempotent admissible α α' inverse body rs hk parents saved layout cap cs sizeC
     parentsC savedC maskRegs pivotRegs separate
-  refine ⟨pass,?_⟩
+  obtain ⟨C,charge⟩ := signedPassCharge_of_time U r d T e
+  refine ⟨C,pass,?_⟩
   intro joint size registers host control mask seed tmp bank recip counters clock count pool coeff archive archiveOff
     coeffOff maskLayout retained anchorDirectory portDirectory extDirectory
   obtain ⟨writeMask,write⟩ := record_writes (body := body) r cs sizeC mask parentsC savedC maskLayout
@@ -1569,6 +1614,7 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
       have atInput := congrFun same (FlatCoordinateLayout.index x k)
       simp only [out,live,Bool.false_eq_true,ite_false,Function.comp_apply]
       exact atAddress.trans atInput.symm
+  apply charge v w W a.H a.J B parentWidth swaps shears _ positiveDescriptor shape
   change _ ≤ (v.beforeRows*v.rows*B)*perParent + passPreparationCost v r (d+1) w B parentWidth base.H +
     (anchorVolumeRate d T+4)*totalVolume + (6+rate)*min liveVolume (((prime-1)*totalVolume)/prime)
   rw [min_eq_left liveBound]
