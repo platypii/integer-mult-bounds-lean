@@ -45,7 +45,7 @@ def SignedPassBound (regs : Fin 6 ↪ Fin T) (anchor : Fin (size d+T) ↪ Fin K)
     (rs : List (Pair (size d+T))) (parents saved : Fin (size d+T))
     (body : P → Pr P K Q prime U)
     (setup pass : Pr P K Q prime U) (setupCost : ℕ) (u : HS K Q prime U)
-    (initial G : Stacks K prime) : Prop :=
+    (initial : Stacks K prime) : Prop :=
     v.beforeH = B*prime^(r*((w+1)*r)) →
       a.records = LabelMask.records v → 0 < W →
       let D := embStk anchor initial
@@ -55,8 +55,8 @@ def SignedPassBound (regs : Fin 6 ↪ Fin T) (anchor : Fin (size d+T) ↪ Fin K)
       a.signed = (List.range a.records).map payload →
       (∀ i ∈ ([2,3,4,5] : List (Fin 6)), D.R (port d regs i) = []) →
       ScanReady a ports ext 0 (preparedPivots a (ports (Fin.last N).castSucc)
-        G) →
-      M < 2^a.H → W < 2^a.J → a.outputTail = [] → G.R (ext 0) = [] →
+        {initial with R := Function.update initial.R (ports (archivePorts 0 (columnBank 34))) (a.matrices 0)}) →
+      M < 2^a.H → W < 2^a.J → a.outputTail = [] → initial.R (ext 0) = [] →
       (∀ j < a.records, Record.scalarArray (payload j) = SparseRoleCircuit.encode ∘ a.input j) →
       (∀ j < a.records, LabelStock.live r (w+1) 1 j = false →
       ∃ symbol, Record.scalarArray (payload j) = fun _ => symbol) →
@@ -137,7 +137,7 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
       fin_cases l <;> simp [coefficientSlots, Matrix.cons_val] at eq <;> (try split_ifs at *) <;> omega
     ∀ (maskLayout : (parentsC :: savedC :: (slots cs ++ [mask])).Nodup),
     (∀ k ∈ parentsC :: savedC :: slots cs, k ≠ bank 2 ∧ k ≠ archive) →
-    (∀ i, anchor i ≠ bank 2) →
+    (∀ i, anchor i ≠ bank 2) → (∀ i, ports i ≠ bank 2) → (∀ i, ext i ≠ bank 2) →
     ∃ writeMask : Pr P K Q prime U, ∀ (ancestor : ℕ → List (Fin (prime+4))) (tail : List (Fin (prime+4)))
       (v : Descriptor) (B : ℕ) (base : ScanData r d w W) (payload : ℕ → Record.Array d 1 (w+1) W)
       (u : HS K Q prime U) (input : Stacks K prime),
@@ -160,19 +160,18 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
         (List.range base.records).countP (fun j => !active j) * (10*((d+1)*(d+1)*base.H)+6) +
         base.records * (4*(S.R (bank 12)).length+4+(r*r*(4*(w+1)+4)+1)+6) + 4
     let a := base.physical e proj α α'
-    let G := queueResult input mask (scan 2) archive tail (a.matrices 0)
     SignedPassBound regs anchor ports ext v B a payload rs parents saved body
       (.seq writeMask (withIdentitySeed (d+1) (bank 9) (bank 17) seed (bank 4) tmp generate)) pass
-      ((v.beforeRows*v.rows*B)*(LabelTraversal.time (prime^w) (r*r) 1+5)+4 + seededSetupCost (d+1) base.H setupCost) u input G := by
+      ((v.beforeRows*v.rows*B)*(LabelTraversal.time (prime^w) (r*r) 1+5)+4 + seededSetupCost (d+1) base.H setupCost) u input := by
   obtain ⟨pass,run⟩ := physicalSignedResidualPass (w := w) (W := W) regs anchor ports ext off banks external shared
     capacity e proj idempotent admissible α α' inverse body rs hk parents saved layout cap cs sizeC
     parentsC savedC maskRegs pivotRegs separate
   refine ⟨pass,?_⟩
   intro placement size archiveSlot registers host control mask seed tmp bank recip counters clock count pool coeff archive archiveOff
-    coeffOff maskLayout retained anchorDirectory
+    coeffOff maskLayout retained anchorDirectory portDirectory extDirectory
   obtain ⟨writeMask,write⟩ := record_writes (body := body) r cs sizeC mask parentsC savedC maskLayout
   refine ⟨writeMask,?_⟩
-  intro ancestor tail v B base payload u input counterReady savedBlank parentCount maskBlank bits initial padWord S queueInputs scan active livePrice generate setupCost a G shape records hW D
+  intro ancestor tail v B base payload u input counterReady savedBlank parentCount maskBlank bits initial padWord S queueInputs scan active livePrice generate setupCost a shape records hW D
     neutral radix free count width unsigned clean start hm hw fresh maskEmpty encoded padding
   obtain ⟨seedBlank,tmpBlank,weightBank,queueReady,widths,width0,empty,directory,output⟩ := queueInputs
   have blank := queueReady.1 4 (by decide)
@@ -218,6 +217,7 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
   obtain ⟨cleaned,cleanUser,clearRun⟩ := clearQueueSeed_exec body seed mask (scan 2) archive
     (control.injective.ne (by decide : (1 : Fin 3) ≠ 0)) (apart _ 1).symm (apart _ 1).symm
     padWord tail (a.matrices 0) y initial seedBlank
+  let G := queueResult input mask (scan 2) archive tail (a.matrices 0)
   have restored : queueResult initial mask (scan 2) archive tail (a.matrices 0) = G := by
     simp only [G,initial,queueResult,Function.update_idem]
   rw [restored] at clearRun
@@ -248,13 +248,32 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
       counterReady pair member
   have freeC := (kept savedC (by simp)).trans savedBlank
   have countC := (congrArg List.length (kept parentsC (by simp))).trans parentCount
+  let installedInput := {input with R := Function.update input.R archive (a.matrices 0)}
+  rw [← sharedArchive] at start
+  change ScanReady a ports ext 0 (preparedPivots a _ installedInput) at start
+  have internal (i) : G.R (ports i) = installedInput.R (ports i) := by
+    by_cases h : ports i = archive
+    · simpa only [h,installedInput,Function.update_self] using installed
+    · simpa only [installedInput,Function.update_of_ne h] using outside _ (portDirectory i) h
+  have bankState : embStk ports G = embStk ports installedInput := by
+    unfold embStk
+    congr 1
+    exact funext internal
+  have extArchive (i) : ext i ≠ archive := sharedArchive ▸ (off _ i).symm
+  have extState (i) : G.R (ext i) = installedInput.R (ext i) := by
+    simpa only [installedInput,Function.update_of_ne (extArchive i)] using outside _ (extDirectory i) (extArchive i)
+  have queueInput := start.queue
+  simp only [preparedPivots,Function.update_of_ne (off _ 2).symm,List.drop_zero] at queueInput
+  have scanStart := start.signedHandoff a ports ext off installedInput G a.signed bankState
+    (fun i _ => extState i) ((extState 2).trans queueInput)
+  have emptyMask := (outside _ (extDirectory 0) (extArchive 0)).trans maskEmpty
   obtain ⟨z,E,n,hz,queue,acc,maskDone,pivots,archiveDone,hn,exec⟩ :=
     run v B base payload cleaned G shape records hW neutral radix free count width unsigned clean
       (sharedArchive ▸ installed.trans (base.physical_archive e proj α α')) (by
         change ScanReady a ports ext 0 (preparedPivots a _ {G with R := Function.update G.R (ports (archivePorts 0 (columnBank 34))) (a.matrices 0)})
         rw [← sharedArchive,prep]
-        exact start)
-      hm hw fresh maskEmpty radixC freeC countC encoded padding
+        exact scanStart)
+      hm hw fresh emptyMask radixC freeC countC encoded padding
   exact ⟨z,E,_,hz.trans (cleanUser.trans (hy.trans (preparedUser.trans hUser))),queue,acc,maskDone,pivots,archiveDone,Nat.add_le_add (Nat.add_le_add hTime (Nat.add_le_add (Nat.add_le_add initCost ht) (Nat.le_of_eq (congrArg (fun n => 2*n+2) padLen)))) hn,
     Exec.seq (Exec.seq emit (Exec.seq (Exec.seq initRun generateRun) clearRun)) exec⟩
 
