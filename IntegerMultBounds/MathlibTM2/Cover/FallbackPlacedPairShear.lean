@@ -41,4 +41,47 @@ theorem placedPairShear_exec (bank : Fin 35 ↪ Fin T) (capacity : 217 ≤ Q) (i
   rw [embStk_ovr bank.injective]
   exact ⟨out,next,fun x j => (effect (addr x) j).trans (atAddr x j)⟩
 
+def childHeaderPorts : Fin 35 ↪ Fin 36 := Fin.castLEEmb (by decide)
+
+def placedChildShear {m : ℕ} (bank : Fin 36 ↪ Fin T) (capacity : 217 ≤ Q)
+    (b j i : ℕ) (k t : Fin m) (negative : Bool) : Pr P T Q A U :=
+  statePlacedNormalized bank capacity (by decide) Empty.elim
+    (cleanChildShear b j i k t negative (Function.Embedding.refl _))
+
+theorem placedChildShear_exec {m n : ℕ} (bank : Fin 36 ↪ Fin T) (capacity : 217 ≤ Q)
+    (k t : Fin m) (hk : k < t) (negative : Bool) (parent : Fin n → ZMod M) (j : Fin n) (inv : ZMod M)
+    (reciprocal : parent j * inv = 1) (pivot : Fin d → ZMod M) (i : Fin d) (unit : IsUnit (pivot i))
+    (hb : b.Prime) (body : P → Pr P T Q A U) (H J : ℕ) (hm : M < 2^H) (hw : W < 2^J) (hW : 0 < W)
+    (v : HS T Q A U) (S : Stacks T A) (tail rest : List (Fin (A+4))) (sym : α → Fin 4)
+    (source dest : ℤ → Fin 4) (p q : ℤ) (empty : ∀ z, q ≤ z → z < q+(M^m*W : ℕ) → dest z = blank)
+    (original : Fin (M^m*W) → α) (addr : (Fin m → ZMod M) → Fin m → ZMod M)
+    (weights : S.R (bank 35) = (List.ofFn fun h => binSyms H (parent h).val).flatten ++ rest) :
+    let record := (List.ofFn fun h => binSyms (A := A) H (pivot h).val).flatten ++ tail
+    let ready := ColumnRecordReady (childHeaderPorts.trans bank) H J record sym source dest p q original
+    let c := if negative then -(inv * Ring.inverse (pivot i)) else parent j * pivot i
+    ready addr S → ∃ z F l, z.user = v.user ∧ l ≤ 1 + cleanChildShearTime (P := Empty) (U := U)
+      (A := A) Empty.elim (Function.Embedding.refl _) b j.val i.val k t negative w W H J ∧
+      Exec body (placedChildShear bank capacity b j.val i.val k t negative) (mk v S) l (mk z F) ∧
+      ready (fun x => Function.update (addr x) t (addr x t+c*addr x k)) F ∧ F.R (bank 35) = S.R (bank 35) ∧
+      ∀ h, (∀ a, bank a ≠ h) → F.L h = S.L h ∧ F.R h = S.R h := by
+  intro record ready c ⟨word,layout,atAddr⟩
+  have work : childWork = shearWork.map childHeaderPorts := by decide
+  obtain ⟨u,D,l,hu,hl,run,clean,keep,dst,out,src,effect⟩ := cleanChildShear_exec k t hk negative
+    (P := Empty) Empty.elim (Function.Embedding.refl _) parent j inv reciprocal pivot i unit hb H hm
+    (stateLiftDown (by decide : 0 < 217) (embDn bank v)) (embStk bank S) tail rest weights layout.archive
+    layout.modulus layout.padded layout.clock J hw hW layout.width layout.one
+    (by intro h hh; rw [work,List.mem_map] at hh; obtain ⟨a,ha,rfl⟩ := hh; exact layout.scratch a ha)
+    sym source dest p q word empty (fun z => (layout.src z).symm) (fun z => (layout.dst z).symm)
+  obtain ⟨z,_,hz,placed⟩ := statePlaced_exec_normalized bank bank.injective capacity (by decide) Empty.elim
+    (body' := body) (fun e => nomatch e) v S run
+  let F := embOvr bank D.get S
+  have eq : embStk bank F = D := embStk_ovr bank.injective _ _
+  rw [← eq] at keep clean dst src
+  refine ⟨z,F,_,hz.trans hu,Nat.add_le_add_left hl 1,placed,⟨out,?_,fun x h => (effect (addr x) h).trans (atAddr x h)⟩,
+    keep 35 (by decide),fun h off => embOvr_off _ _ off⟩
+  exact ⟨(keep 2 (by decide)).trans layout.modulus,(keep 27 (by decide)).trans layout.width,
+    (keep 28 (by decide)).trans layout.one,(keep 32 (by decide)).trans layout.padded,
+    (congrArg List.length (keep 33 (by decide))).trans layout.clock,(keep 34 (by decide)).trans layout.archive,
+    fun a ha => clean (childHeaderPorts a) (work ▸ List.mem_map.mpr ⟨a,ha,rfl⟩),src,dst⟩
+
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
