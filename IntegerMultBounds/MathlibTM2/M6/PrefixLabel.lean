@@ -123,6 +123,58 @@ theorem nested_prefix_interpolation {d e : ℕ} (de : d ≤ e) (he : e ≤ 8) (w
     exact congrArg (fun y : Fin d → R => y ᵥ* (C * G))
       (congrArg (fun y : Fin e → R => y ∘ Fin.castLE de) prefixEq)
 
+/-- Matrix of interpolation from the first `d` coordinates, acting on column vectors. -/
+def prefixProjector {R : Type*} [CommRing R] {d : ℕ} (hd : d ≤ 8)
+    (B : Matrix (Fin d) (Fin 8) R) : Matrix (Fin 8) (Fin 8) R :=
+  Bᵀ * (1 : Matrix (Fin 8) (Fin 8) R).submatrix (Fin.castLE hd) id
+
+theorem prefixProjector_mulVec {R : Type*} [CommRing R] {d : ℕ} (hd : d ≤ 8)
+    (B : Matrix (Fin d) (Fin 8) R) (x : Fin 8 → R) :
+    prefixProjector hd B *ᵥ x = (x ∘ Fin.castLE hd) ᵥ* B := by
+  rw [prefixProjector, ← mulVec_mulVec, mulVec_transpose]
+  congr 1
+  exact congrArg (fun y : Fin 8 → R => y ∘ Fin.castLE hd) (one_mulVec x)
+
+theorem prefixProjector_entry {R : Type*} [CommRing R] {d : ℕ} (hd : d ≤ 8)
+    (B : Matrix (Fin d) (Fin 8) R) (i j : Fin 8) :
+    prefixProjector hd B i j = if h : j.val < d then B ⟨j.val, h⟩ i else 0 := by
+  classical
+  simp only [prefixProjector, Matrix.mul_apply, transpose_apply, submatrix_apply]
+  split
+  next h =>
+    let k : Fin d := ⟨j.val, h⟩
+    rw [Finset.sum_eq_single k]
+    · simp [k, Matrix.one_apply]
+    · intro l _ ne
+      have diff : l.castLE hd ≠ j := fun eq => ne (Fin.ext (congrArg (fun t : Fin 8 => t.val) eq))
+      exact (congrArg (fun a : R => B l i * a) (Matrix.one_apply_ne (α := R) diff)).trans (mul_zero _)
+    · simp
+  next h =>
+    apply Finset.sum_eq_zero
+    intro l _
+    have diff : l.castLE hd ≠ j := fun eq => h (congrArg Fin.val eq ▸ l.isLt)
+    exact (congrArg (fun a : R => B l i * a) (Matrix.one_apply_ne (α := R) diff)).trans (mul_zero _)
+
+theorem prefixProjector_shape {R : Type*} [CommRing R] {d : ℕ} (hd : d ≤ 8)
+    (B : Matrix (Fin d) (Fin 8) R) (normalized : B.submatrix id (Fin.castLE hd) = 1) :
+    (∀ i j, i < j → prefixProjector hd B i j = 0) ∧
+    ∀ i, prefixProjector hd B i i = if i.val < d then 1 else 0 := by
+  have entry (k l : Fin d) : B k (l.castLE hd) = (1 : Matrix (Fin d) (Fin d) R) k l :=
+    congrFun (congrFun normalized k) l
+  constructor
+  · intro i j lt
+    rw [prefixProjector_entry]
+    split
+    next h =>
+      let l : Fin d := ⟨i.val, lt_trans lt h⟩
+      exact (entry ⟨j.val, h⟩ l).trans (Matrix.one_apply_ne (fun eq => lt.ne (Fin.ext (congrArg Fin.val eq).symm)))
+    next => rfl
+  · intro i
+    rw [prefixProjector_entry]
+    split
+    next h => simpa [h] using entry ⟨i.val, h⟩ ⟨i.val, h⟩
+    next h => simp
+
 /-- One choice of modular frames for the entire word respects every inclusion of
 generator lists, so the choice at a label is independent of the incoming MOVE. -/
 theorem compatible_label_frames (w : ℕ) :
@@ -149,5 +201,25 @@ theorem compatible_label_frames (w : ℕ) :
   have h := nested_prefix_interpolation de (bound j) w lines C (B j) (norm j)
     (fun k => fixes j (lines k) (incl _ (members k))) x
   simpa only [eq] using h
+
+/-- All modular labels admit lower triangular projectors in the same coordinates.
+Both products for a nested pair equal its smaller projector. -/
+theorem compatible_label_projectors (w : ℕ) :
+    let R := ZMod (prime ^ w)
+    ∃ P : Fin 636 → Matrix (Fin 8) (Fin 8) R,
+      (∀ l i j, i < j → P l i j = 0) ∧
+      (∀ l i, P l i i = if i.val < Geometry.Dimensions.value l.val then 1 else 0) ∧
+      ∀ i j : Fin 636, (∀ k ∈ Frames.labels i.val, k ∈ Frames.labels j.val) →
+        P j * P i = P i ∧ P i * P j = P i := by
+  intro R
+  obtain ⟨B, bound, norm, nested⟩ := compatible_label_frames w
+  refine ⟨fun i => prefixProjector (bound i) (B i),
+    fun i => (prefixProjector_shape _ _ (norm i)).1,
+    fun i => (prefixProjector_shape _ _ (norm i)).2, ?_⟩
+  intro i j incl
+  constructor <;> apply Matrix.ext_iff_mulVec.mpr <;> intro x <;>
+    simp only [← mulVec_mulVec, prefixProjector_mulVec]
+  · exact (nested i j incl x).1
+  · exact (nested i j incl x).2
 
 end IntegerMultBounds.MathlibTM2.M6
