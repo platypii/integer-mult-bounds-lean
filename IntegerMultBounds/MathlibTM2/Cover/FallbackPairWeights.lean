@@ -62,6 +62,62 @@ theorem childWeightPair_exec (body : P → Pr P T Q A U) (bank : Fin 19 ↪ Fin 
     (frame _ (bank.injective.ne (by decide : (14 : Fin 19) ≠ 0))).trans (Function.update_self ..),
     word,left,input,output,fun j h k => (frame j h).trans (Function.update_of_ne k _ _)⟩
 
+def parentWeightPorts : Fin 7 ↪ Fin 20 := ⟨![1,4,19,13,2,3,5],by decide⟩
+
+def packedChildPair (p parentIndex index : ℕ) (bank : Fin 20 ↪ Fin T) : Pr P T Q A U :=
+  .seq (readMatrixWord parentIndex (parentWeightPorts.trans bank))
+    (.seq (childWeightPair p index ((Fin.castLEEmb (by decide)).trans bank)) (bclear (bank 13)))
+
+/-- Read the parent and pivot coordinates independently and restore both packed records. -/
+theorem packedChildPair_exec {n : ℕ} (body : P → Pr P T Q A U) (bank : Fin 20 ↪ Fin T)
+    (parent : Fin n → ZMod M) (j : Fin n) (inv : ZMod M) (reciprocal : parent j * inv = 1)
+    (pivot : Fin d → ZMod M) (i : Fin d) (unit : IsUnit (pivot i)) (hb : b.Prime)
+    (H : ℕ) (hm : M < 2^H) (v : HS T Q A U) (S : Stacks T A) (tail rest : List (Fin (A+4)))
+    (weights : S.R (bank 19) = (List.ofFn fun k => binSyms H (parent k).val).flatten ++ rest)
+    (record : S.R (bank 18) = (List.ofFn fun k => binSyms H (pivot k).val).flatten ++ tail)
+    (modulus : S.R (bank 4) = binSyms H M) (one : S.R (bank 15) = binSyms H (1 : ZMod M).val)
+    (clock : (S.R (bank 16)).length = w)
+    (free : ∀ k : Fin 20, (k ≤ 14 ∧ k ≠ 4) ∨ k = 17 → S.R (bank k) = []) :
+    let C := 48*H*H+152*H+66
+    ∃ z F t, z.user = v.user ∧ t ≤ (8*(j.val*H)+14*H+22) +
+      ((8*(i.val*H)+48*H*H+166*H+88)+(6*w+6+(14*H+16+(b-2)*C+C+w*(12*H+15+b*C)))) +
+      (2*H+2) ∧ Exec body (packedChildPair b j.val i.val bank) (mk v S) t (mk z F) ∧
+      F.R (bank 14) = binSyms H (parent j * pivot i).val ∧
+      F.R (bank 0) = binSyms H (inv * Ring.inverse (pivot i)).val ∧
+      F.L = S.L ∧ F.inp = S.inp ∧ F.out = S.out ∧
+      ∀ k, k ≠ bank 0 → k ≠ bank 14 → F.R k = S.R k := by
+  intro C
+  let row : Matrix (Fin 1) (Fin n) (ZMod M) := fun _ k => parent k
+  have fresh : ∀ k : Fin 7, k = 0 ∨ 4 ≤ k → parentWeightPorts k ≤ 14 ∧ parentWeightPorts k ≠ 4 := by decide
+  obtain ⟨u,hu,read⟩ := readMatrixWord_exec body (parentWeightPorts.trans bank) row 0 j H v S rest
+    (by change S.R (bank 19) = matrixWords A H row ++ rest; simpa [row,matrixWords,List.ofFn_succ] using weights)
+    ((congrArg List.length modulus).trans (length_binSyms ..)) (fun k h => free _ (.inl (fresh k h)))
+  change Exec _ (readMatrixWord (0*n+j.val) _) _ (8*((0*n+j.val)*H)+14*H+22)
+    (mk u {S with R := Function.update S.R (bank 13) (binSyms H (parent j).val ++ S.R (bank 13))}) at read
+  simp only [Nat.zero_mul,Nat.zero_add,free 13 (by decide),List.append_nil] at read
+  let D := {S with R := Function.update S.R (bank 13) (binSyms H (parent j).val)}
+  have keep (k : Fin 20) (h : k ≠ 13) : D.R (bank k) = S.R (bank k) := Function.update_of_ne (bank.injective.ne h) _ _
+  let ports : Fin 19 ↪ Fin 20 := Fin.castLEEmb (by decide)
+  have scratch : ∀ k : Fin 19, (k < 13 ∧ k ≠ 4) ∨ k = 14 ∨ k = 17 →
+      ports k ≠ 13 ∧ ((ports k ≤ 14 ∧ ports k ≠ 4) ∨ ports k = 17) := by decide
+  obtain ⟨y,F,l,hy,hl,run,product,inverse,left,input,output,frame⟩ :=
+    childWeightPair_exec body (ports.trans bank) pivot i unit (parent j) inv reciprocal hb H hm u D tail
+      ((keep 18 (by decide)).trans record) (Function.update_self ..) ((keep 4 (by decide)).trans modulus)
+      ((keep 15 (by decide)).trans one) (by change (D.R (bank 16)).length = w; rw [keep 16 (by decide),clock])
+      (fun k h => (keep _ (scratch k h).1).trans (free _ (scratch k h).2))
+  have saved : F.R (bank 13) = binSyms H (parent j).val :=
+    (frame _ (bank.injective.ne (by decide : (13 : Fin 20) ≠ 0)) (bank.injective.ne (by decide : (13 : Fin 20) ≠ 14))).trans (Function.update_self ..)
+  obtain ⟨z,hz,_,clear⟩ := bclear_exec body (bank 13) y F
+  rw [saved,length_binSyms] at clear
+  refine ⟨z,_,_,hz.trans (hy.trans hu),?_,Exec.seq read (Exec.seq run clear),?_,?_,left,input,output,?_⟩
+  · dsimp [C]; omega
+  · exact (Function.update_of_ne (bank.injective.ne (by decide : (14 : Fin 20) ≠ 13)) _ _).trans product
+  · exact (Function.update_of_ne (bank.injective.ne (by decide : (0 : Fin 20) ≠ 13)) _ _).trans inverse
+  · intro k h0 h14
+    by_cases h : k = bank 13
+    · subst k; exact (Function.update_self ..).trans (free 13 (by decide)).symm
+    · exact (Function.update_of_ne h _ _).trans ((frame k h0 h14).trans (Function.update_of_ne h _ _))
+
 def pairReadPorts : Fin 7 ↪ Fin 35 := (Fin.castLEEmb (by decide : 7 ≤ 8)).trans matrixReadPorts
 
 def pairInversePorts : Fin 16 ↪ Fin 35 := inverseShearPorts.trans (Fin.castLEEmb (by decide))
