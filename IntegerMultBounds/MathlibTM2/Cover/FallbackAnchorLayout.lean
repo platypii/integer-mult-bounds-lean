@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackShearReady
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackAnchorPass
 public import IntegerMultBounds.Machine.SparseRoleCircuit
 
@@ -118,6 +119,36 @@ theorem correctFieldPayload_exec {P U : Type} {T Q : ℕ} (i : Fin (d+1))
     by_cases e : k = i <;> simp [e]
   rw [eq,refine_scalar,refine_scalar] at h
   exact h.trans (placed x j)
+
+/-- A column payload can serve directly as the sign machine's array tape. -/
+theorem column_field_input {T w : ℕ} (bank : Fin 35 ↪ Fin T) (i : Fin (d+1))
+    (ports : Fin (22+fieldSignSlots i) ↪ Fin T) (payload : ports 17 = bank 24)
+    (H J : ℕ) (record : List (Fin (prime+4))) (dest : ℤ → Fin 4) (q : ℤ)
+    (original : Fin ((prime^(w+1))^(d+1)*W) → ZMod 2)
+    (addr : (Fin (d+1) → ZMod (prime^(w+1))) → Fin (d+1) → ZMod (prime^(w+1))) (S : Stacks T prime)
+    (ready : ColumnRecordReady bank H J record SparseRoleCircuit.encode (fun _ => blank) dest 0 q original addr S)
+    (frame : let base := AtomBank.outer (fieldSignSlots i) (AtomSegment.neutral (w+1) W) (fun _ => blank) 1
+      ∀ k, k.val ≠ 17 → ∀ z, base.tape k z = readAt blank (S.L (ports k)) (S.R (ports k)) (z-base.head k)) :
+    ∃ a : Array d 1 (w+1) W,
+      RepT (AtomBank.outer (fieldSignSlots i) (AtomSegment.neutral (w+1) W) (AtomBank.arrTape a) 1)
+        (embStk ports S).L (embStk ports S).R ∧
+      ∀ x j, scalarArray a (index (addr x) j) = SparseRoleCircuit.encode (original (index x j)) := by
+  obtain ⟨word,layout,action⟩ := ready
+  let a : Array d 1 (w+1) W := fun h => SparseRoleCircuit.encode (word (h.cast (by simp [modulus])))
+  have words : List.ofFn a = List.ofFn (SparseRoleCircuit.encode ∘ word) :=
+    ofFn_cast (by simp [modulus]) (SparseRoleCircuit.encode ∘ word)
+  refine ⟨a,?_,fun x j => congrArg SparseRoleCircuit.encode (action x j)⟩
+  intro k z
+  by_cases h : k.val = 17
+  · have e : k = 17 := Fin.ext (by simpa [Fin.val_ofNat,Nat.mod_eq_of_lt (show 17 < 22+fieldSignSlots i by omega)] using h)
+    subst k
+    have tape : AtomBank.arrTape a z = readAt blank (S.L (bank 24)) (S.R (bank 24)) z := by
+      unfold AtomBank.arrTape
+      rw [words]
+      simpa only [sub_zero] using (layout.src z).symm
+    simpa [AtomBank.outer,Fin.val_ofNat,Nat.mod_eq_of_lt (show 17 < 22+fieldSignSlots i by omega),
+      embStk,payload] using tape
+  · simpa [AtomBank.outer,h,embStk] using frame k h z
 
 /-- Load one live signed record, preserving the remaining queue and identifying the
 sign and pivots of the corresponding residual matrix. -/
