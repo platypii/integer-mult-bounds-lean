@@ -49,17 +49,36 @@ private theorem paddingSetupCost_eq (d H cost : ℕ) :
     6*H+6+(4*H+4+(d*(d*(6*H+6)+1)+1+cost+(2*(d*d*H)+2))+(2*H+2))+(2*H+2) =
       cost + paddingSetupCost d H := by unfold paddingSetupCost; ring
 
-noncomputable def anchorClassCost (a : ScanData r d w W) (T : ℕ) (digits : Fin (r*r) → ZMod prime) :=
-  let m := a.table (LabelSelectors.matrix r digits)
+noncomputable def anchorClassCost (table : Matrix (Fin r) (Fin r) (ZMod prime) → Matrix (Fin (d+1)) (Fin (d+1)) (ZMod prime))
+    (T w W : ℕ) (digits : Fin (r*r) → ZMod prime) :=
+  let m := table (LabelSelectors.matrix r digits)
   Record.cost d T 1 (w+1) W (negativeAnchor (classPivots m) m) + 2
 
-noncomputable def scanClassCost (a : ScanData r d w W) (U : Type) (digits : Fin (r*r) → ZMod prime) :=
+noncomputable def scanClassCost (table : Matrix (Fin r) (Fin r) (ZMod prime) → Matrix (Fin (d+1)) (Fin (d+1)) (ZMod prime))
+    (w W H J : ℕ) (U : Type) (digits : Fin (r*r) → ZMod prime) :=
   let m := LabelSelectors.matrix r digits
-  let volume := M^(d+1)*W
+  let volume := (prime^(w+1))^(d+1)*W
   let branch := if m.det ≠ 0 then
-    6*volume+6+(1+signedResidualTime U (classPivots (a.table m)) w W a.H a.J)
+    6*volume+6+(1+signedResidualTime U (classPivots (table m)) w W H J)
     else 4*(d+1)*(d+1)+1
-  branch+(4*volume+4)+((d+1)*(d+1)*(4*a.H+4)+1)+4
+  branch+(4*volume+4)+((d+1)*(d+1)*(4*H+4)+1)+4
+
+/-- Three label traversals and two round trips over the record volume accompany
+the anchor and residual operations on each residue class. -/
+noncomputable def signedPassCost (table : Matrix (Fin r) (Fin r) (ZMod prime) → Matrix (Fin (d+1)) (Fin (d+1)) (ZMod prime))
+    (T parents records w W H J : ℕ) (U : Type) :=
+  let perClass := ((LabelSelectors.classes 1 (r*r)).map fun x =>
+    anchorClassCost table T w W x + scanClassCost table w W H J U x).sum
+  3*parents*(LabelTraversal.time (prime^w) (r*r) 1+5) +
+    parents*(prime^w)^(r*r)*perClass + 4*records*((prime^(w+1))^(d+1)*W) + 22
+
+omit [M8.Machine.Net] in
+private theorem collectPassCost (parents traversal lifts volume : ℕ) (xs : List α) (anchor scan : α → ℕ) :
+    (1+(parents*traversal+4 + (parents*lifts*(xs.map anchor).sum+2) + (2*volume+2))) +
+      (2*(parents*traversal+4) + (1+(parents*lifts*(xs.map scan).sum+2+(2*volume+2)))) =
+    3*parents*traversal + parents*lifts*(xs.map fun x => anchor x + scan x).sum + 4*volume+22 := by
+  rw [List.sum_map_add]
+  ring
 
 def SignedPassBound (regs : Fin 6 ↪ Fin T) (anchor : Fin (size d+T) ↪ Fin K)
     (ports : Fin (N+2) ↪ Fin K) (ext : Fin 6 ↪ Fin K) (v : Descriptor) (B : ℕ)
@@ -86,9 +105,7 @@ def SignedPassBound (regs : Fin 6 ↪ Fin T) (anchor : Fin (size d+T) ↪ Fin K)
     ∃ (z : HS K Q prime U) (F : Stacks K prime) (n : ℕ), z.user = u.user ∧ F.R (ext 2) = output ++ a.inputTail ∧ F.R (ext 5) = [] ∧
       F.R (ext 0) = [] ∧ F.R (ports (Fin.last N).castSucc) = a.pivotTail ∧
       F.R (ports (archivePorts 0 (columnBank 34))) = a.matrixTail ∧
-      n ≤ setupCost + ((1+((v.beforeRows*v.rows*B)*(LabelTraversal.time (prime^w) (r*r) 1+5)+4 +
-          ((v.beforeRows*v.rows*B)*(prime^w)^(r*r)*((LabelSelectors.classes 1 (r*r)).map (anchorClassCost a T)).sum + 2) +
-          (2*(a.records*(ActualAffineScaling.modulus (w+1)^((d+1)*1)*W))+2))) + (2*((v.beforeRows*v.rows*B)*(LabelTraversal.time (prime^w) (r*r) 1+5)+4) + (1+((v.beforeRows*v.rows*B)*(prime^w)^(r*r)*((LabelSelectors.classes 1 (r*r)).map (scanClassCost a U)).sum + 2 + (2*(a.records*(M^(d+1)*W))+2))))) ∧
+      n ≤ setupCost + signedPassCost a.table T (v.beforeRows*v.rows*B) a.records w W a.H a.J U ∧
       Exec body (.seq setup pass) (mk u source) n (mk z F)
 
 structure SeededQueueReady (w H : ℕ) (proj : Matrix (Fin r) (Fin r) ℚ)
@@ -488,24 +505,30 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
       hm hw fresh emptyMask radixC freeC countC encoded padding
   have anchorCost : (((signedInputs a.table (w+1) a.records payload).map
       (fun x => Record.cost d T 1 (w+1) W x.1 + 2)).sum) =
-      (v.beforeRows*v.rows*B)*(prime^w)^(r*r)*((LabelSelectors.classes 1 (r*r)).map (anchorClassCost a T)).sum := by
+      (v.beforeRows*v.rows*B)*(prime^w)^(r*r)*((LabelSelectors.classes 1 (r*r)).map (anchorClassCost a.table T w W)).sum := by
     have countEq : a.records = LabelMask.records v := records
     simpa only [signedInputs,List.map_map,Function.comp_def,countEq,LabelSelectors.residue_eq,
-      LabelSelectors.recordMap,anchorClassCost] using LabelSelectors.recordMap_sum v r w B shape (anchorClassCost a T)
+      LabelSelectors.recordMap,anchorClassCost] using LabelSelectors.recordMap_sum v r w B shape (anchorClassCost a.table T w W)
   have scanCost : ((List.range a.records).map fun j => a.recordTime U j + 4).sum =
-      (v.beforeRows*v.rows*B)*(prime^w)^(r*r)*((LabelSelectors.classes 1 (r*r)).map (scanClassCost a U)).sum := by
+      (v.beforeRows*v.rows*B)*(prime^w)^(r*r)*((LabelSelectors.classes 1 (r*r)).map (scanClassCost a.table w W a.H a.J U)).sum := by
     have countEq : a.records = LabelMask.records v := records
     simpa only [countEq,ScanData.recordTime,ScanData.pivots,LabelStock.live,decide_eq_true_eq,
       LabelSelectors.residue_eq,LabelSelectors.recordMap,scanClassCost] using
-      LabelSelectors.recordMap_sum v r w B shape (scanClassCost a U)
+      LabelSelectors.recordMap_sum v r w B shape (scanClassCost a.table w W a.H a.J U)
   rw [anchorCost,scanCost] at hn
+  have passCost : n ≤ signedPassCost a.table T (v.beforeRows*v.rows*B) a.records w W a.H a.J U := by
+    apply hn.trans_eq
+    simpa only [signedPassCost,ActualAffineScaling.modulus,Nat.mul_one,Nat.mul_assoc] using
+      collectPassCost (v.beforeRows*v.rows*B) (LabelTraversal.time (prime^w) (r*r) 1+5)
+        ((prime^w)^(r*r)) (a.records*(M^(d+1)*W)) (LabelSelectors.classes 1 (r*r))
+        (anchorClassCost a.table T w W) (scanClassCost a.table w W a.H a.J U)
   have queueCost := Nat.add_le_add (Nat.add_le_add initCost generateCost)
     (Nat.le_of_eq (congrArg (fun n => 2*n+2) padLen))
   have paid := Nat.add_le_add_right (Nat.add_le_add_left
     (Nat.add_le_add_right (Nat.add_le_add_left queueCost (4*base.H+4)) (2*base.H+2))
     (6*base.H+6)) (2*base.H+2)
   rw [paddingSetupCost_eq] at paid
-  exact ⟨z,E,_,hz.trans (finishUser.trans (releaseUser.trans (cleanUser.trans (hy.trans (preparedUser.trans (zeroUser.trans (copyUser.trans (hUser.trans (counterUser.trans (buildUser.trans parentUser)))))))))),queue,acc,maskDone,pivots,archiveDone,Nat.add_le_add (Nat.add_le_add parentCost (Nat.add_le_add directoryCost (Nat.add_le_add counterCost (Nat.add_le_add hTime paid)))) hn,
+  exact ⟨z,E,_,hz.trans (finishUser.trans (releaseUser.trans (cleanUser.trans (hy.trans (preparedUser.trans (zeroUser.trans (copyUser.trans (hUser.trans (counterUser.trans (buildUser.trans parentUser)))))))))),queue,acc,maskDone,pivots,archiveDone,Nat.add_le_add (Nat.add_le_add parentCost (Nat.add_le_add directoryCost (Nat.add_le_add counterCost (Nat.add_le_add hTime paid)))) passCost,
     Exec.seq (Exec.seq parentRun (Exec.seq buildRun (Exec.seq counterRun (Exec.seq emit (Exec.seq (Exec.seq copyRun (Exec.seq (Exec.seq zeroRun (Exec.seq (Exec.seq initRun generateRun) clearRun)) releaseRun)) finishRun))))) exec⟩
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
