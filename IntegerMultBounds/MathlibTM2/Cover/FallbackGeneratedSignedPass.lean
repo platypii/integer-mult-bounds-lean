@@ -537,6 +537,54 @@ theorem signedClassSetup_total_le (U : Type) (d T : ℕ) :
   dsimp only [q]
   exact le_of_eq (by ring)
 
+/-- At binary field and payload widths the counter scans charge one address
+coordinate per live payload symbol, in addition to the class setup. -/
+theorem signedPass_parentSetup_le (U : Type) (d T : ℕ) :
+    ∃ baseline residual counter : ℕ, ∀ w W parents lifts classes live,
+      let q := prime^(w+1)
+      let H := Nat.size q
+      parents*(lifts*signedClassSetup U d T w H classes live +
+        lifts*live*residualCounterRate U d H*Nat.size W) ≤
+        baseline*(parents*lifts*classes)*q + residual*(parents*lifts*live)*q^(d+1) +
+          counter*(parents*lifts*live)*q*W := by
+  obtain ⟨baseline,residual,setup⟩ := signedClassSetup_total_le U d T
+  obtain ⟨c,rate⟩ := residualCounterRate_linear U d
+  refine ⟨baseline,residual,2*c, ?_⟩
+  intro w W parents lifts classes live q H
+  have bits : H ≤ q := Nat.size_le.mpr Nat.lt_two_pow_self
+  have positive : 1 ≤ q := pow_pos Networks.Shared50ModularControl.prime_prime.pos _
+  have width : H+1 ≤ 2*q := by omega
+  rw [Nat.mul_add]
+  apply Nat.add_le_add (setup w parents lifts classes live)
+  grw [rate H, width, show Nat.size W ≤ W from Nat.size_le.mpr Nat.lt_two_pow_self]
+  exact le_of_eq (by ring)
+
+/-- At binary widths, setup and payload-counter scans together take linear
+time in the total volume represented by the parent boxes. -/
+theorem signedPass_parentSetup_volume_le (U : Type) (d T : ℕ) :
+    ∃ C : ℕ, ∀ w W parents lifts classes live, 0 < W → live ≤ classes →
+      let q := prime^(w+1)
+      let H := Nat.size q
+      parents*(lifts*signedClassSetup U d T w H classes live +
+        lifts*live*residualCounterRate U d H*Nat.size W) ≤
+        C*(parents*lifts*classes)*(q^(d+1)*W) := by
+  obtain ⟨b,r,c,cost⟩ := signedPass_parentSetup_le U d T
+  refine ⟨b+r+c, ?_⟩
+  intro w W parents lifts classes live width count q H
+  apply (cost w W parents lifts classes live).trans
+  have power : q ≤ q^(d+1) := by
+    simpa using Nat.pow_le_pow_right (pow_pos Networks.Shared50ModularControl.prime_prime.pos (w+1))
+      (show 1 ≤ d+1 by omega)
+  have record : q^(d+1) ≤ q^(d+1)*W := Nat.le_mul_of_pos_right _ width
+  change b*(parents*lifts*classes)*q + r*(parents*lifts*live)*q^(d+1) +
+    c*(parents*lifts*live)*q*W ≤ _
+  calc
+    _ ≤ b*(parents*lifts*classes)*(q^(d+1)*W) + r*(parents*lifts*classes)*(q^(d+1)*W) +
+        c*(parents*lifts*classes)*q^(d+1)*W := by
+      gcongr
+      exact power.trans record
+    _ = _ := by ring
+
 private theorem classSetup_sum_le (table : Matrix (Fin r) (Fin r) (ZMod prime) →
     Matrix (Fin (d+1)) (Fin (d+1)) (ZMod prime)) (U : Type) (T w H : ℕ) :
     ((LabelSelectors.classes 1 (r*r)).map (classResidualCost table T w 0 H 0 U)).sum ≤
