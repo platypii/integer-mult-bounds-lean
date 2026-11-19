@@ -497,6 +497,22 @@ theorem unitLower_rev_conj {U : Matrix (Fin m) (Fin m) R} (hU : UnitUpper U) :
     rw [mul_rev_apply, rev_mul_apply]
     exact hU.2 i.rev
 
+theorem Stage.diagonal_eq {P : Matrix (Fin m) (Fin m) R} {r : ℕ} (S : Stage P r) (hr : r ≤ m)
+    (A : Matrix (Fin m) (Fin r) R) (B : Matrix (Fin r) (Fin m) R) (hP : P = A*B) :
+    S.M = diagonal fun i => if i.val < r then S.M i i else 0 := by
+  ext i j
+  by_cases hij : i = j
+  · subst hij
+    rw [diagonal_apply_eq]
+    by_cases hi : i.val < r
+    · rw [ite_eq_left hi]
+    · rw [ite_eq_right hi]
+      exact rest_zero S hr A B hP i i (not_lt.mp hi)
+  · rw [diagonal_apply_ne _ hij]
+    by_cases hi : i.val < r
+    · exact S.cleared i j (Or.inl hi) hij
+    · exact rest_zero S hr A B hP i j (not_lt.mp hi)
+
 /-- The last elimination stage gives the actual adapters and pivot weights. -/
 theorem Stage.normalForm {P : Matrix (Fin m) (Fin m) R} {r : ℕ} (S : Stage P r) (hr : r ≤ m)
     (A : Matrix (Fin m) (Fin r) R) (B : Matrix (Fin r) (Fin m) R) (hP : P = A*B) :
@@ -508,19 +524,6 @@ theorem Stage.normalForm {P : Matrix (Fin m) (Fin m) R} {r : ℕ} (S : Stage P r
       P * rev m = S.L * diagonal δ * pivotMatrix (revPivots m r) * R' := by
   dsimp only
   have hnodup : (revPivots m r).Nodup := (revPivots_fst m r).of_map _
-  have hMdiag : S.M = diagonal fun i => if i.val < r then S.M i i else 0 := by
-    ext i j
-    by_cases hij : i = j
-    · subst hij
-      rw [diagonal_apply_eq]
-      by_cases hi : i.val < r
-      · rw [ite_eq_left hi]
-      · rw [ite_eq_right hi]
-        exact rest_zero S hr A B hP i i (not_lt.mp hi)
-    · rw [diagonal_apply_ne _ hij]
-      by_cases hi : i.val < r
-      · exact S.cleared i j (Or.inl hi) hij
-      · exact rest_zero S hr A B hP i j (not_lt.mp hi)
   have hkey : (diagonal fun i => if i.val < r then S.M i i else 0) * rev m =
       diagonal (fun i => if i.val < r then S.M i i else 1) * pivotMatrix (revPivots m r) := by
     ext i j
@@ -545,7 +548,7 @@ theorem Stage.normalForm {P : Matrix (Fin m) (Fin m) R} {r : ℕ} (S : Stage P r
       rw [rev_mul_rev_mul]
     have hSM : S.M * rev m =
         diagonal (fun i => if i.val < r then S.M i i else 1) * pivotMatrix (revPivots m r) :=
-      (congrArg (fun X => X * rev m) hMdiag).trans hkey
+      (congrArg (fun X => X * rev m) (S.diagonal_eq hr A B hP)).trans hkey
     rw [hPe, hsplit, hSM]
     simp only [Matrix.mul_assoc]
 

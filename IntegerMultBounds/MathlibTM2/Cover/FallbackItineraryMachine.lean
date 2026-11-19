@@ -146,4 +146,26 @@ theorem goodProgram_exec (body : P → Pr P T Q A U) (r : Fin 23 ↪ Fin T) (p w
       rw [dst] at hj
       exact (Function.update_of_ne hi _ _).trans (frame _ hj hi)
 
+/-- The completed good run exposes all active pivot weights on its output tape. -/
+theorem goodDiagonal_exec (body : P → Pr P T Q A U) (r : Fin 23 ↪ Fin T) (p w H : ℕ) (hp : p.Prime)
+    [NeZero (p^(w+1))] (m : Matrix (Fin d) (Fin d) (ZMod (p^(w+1))))
+    (hm : p^(w+1) < 2^H) (v : HS T Q A U) (S : Stacks T A) (tail : List (Fin (A+4)))
+    (matrix : S.R (r 15) = matrixWords A H m ++ tail) (modulus : S.R (r 2) = binSyms H (p^(w+1)))
+    (one : S.R (r 20) = binSyms H (1 : ZMod (p^(w+1))).val) (ticks : (S.R (r 22)).length = w)
+    (free : ∀ i : Fin 23, (i < 15 ∧ i ≠ 2) ∨ (17 ≤ i ∧ i ≤ 19) ∨ i = 21 → S.R (r i) = [])
+    (ranks : ℕ) (hr : ranks ≤ d)
+    (minor : ∀ k (hk : k < ranks), IsUnit (GoodForm.lead (k+1) (lt_of_lt_of_le hk hr) m).det)
+    (left : Matrix (Fin d) (Fin ranks) (ZMod (p^(w+1))))
+    (right : Matrix (Fin ranks) (Fin d) (ZMod (p^(w+1)))) (factor : m = left * right) :
+    let stage := GoodForm.stageAt m ranks hr minor ranks le_rfl
+    ∃ z F l suffix, z.user = v.user ∧ l ≤ ranks*(4*w+4+columnTime d p w H)+1 ∧
+      Exec body (goodProgram (d := d) p r ranks) (mk v S) l (mk z F) ∧
+      F.R (stageBank r ranks 15) = matrixWords A H
+        (Matrix.diagonal fun i => if i.val < ranks then stage.M i i else 0) ++ suffix ∧
+      ∀ i : Fin d, i.val < ranks → IsUnit (stage.M i i) := by
+  intro stage
+  obtain ⟨z,F,l,suffix,hz,hl,run,packed,_⟩ := goodProgram_exec body r p w H hp m hm v S tail
+    matrix modulus one ticks free ranks hr minor ranks le_rfl
+  exact ⟨z,F,l,suffix,hz,hl,run,(stage.diagonal_eq hr left right factor) ▸ packed,stage.unit⟩
+
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
