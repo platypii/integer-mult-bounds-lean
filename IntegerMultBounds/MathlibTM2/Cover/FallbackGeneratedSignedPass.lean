@@ -65,12 +65,12 @@ noncomputable def scanClassCost (table : Matrix (Fin r) (Fin r) (ZMod prime) →
 
 /-- Three label traversals and two round trips over the record volume accompany
 the anchor and residual operations on each residue class. -/
-noncomputable def signedPassCost (table : Matrix (Fin r) (Fin r) (ZMod prime) → Matrix (Fin (d+1)) (Fin (d+1)) (ZMod prime))
+noncomputable def signedPassWork (table : Matrix (Fin r) (Fin r) (ZMod prime) → Matrix (Fin (d+1)) (Fin (d+1)) (ZMod prime))
     (T parents records w W H J : ℕ) (U : Type) :=
   let perClass := ((LabelSelectors.classes 1 (r*r)).map fun x =>
     anchorClassCost table T w W x + scanClassCost table w W H J U x).sum
   3*parents*(LabelTraversal.time (prime^w) (r*r) 1+5) +
-    parents*(prime^w)^(r*r)*perClass + 4*records*((prime^(w+1))^(d+1)*W) + 22
+    parents*(prime^w)^(r*r)*perClass + 4*records*((prime^(w+1))^(d+1)*W)
 
 omit [M8.Machine.Net] in
 private theorem collectPassCost (parents traversal lifts volume : ℕ) (xs : List α) (anchor scan : α → ℕ) :
@@ -85,7 +85,7 @@ def SignedPassBound (regs : Fin 6 ↪ Fin T) (anchor : Fin (size d+T) ↪ Fin K)
     (a : ScanData r d w W) (payload : ℕ → Record.Array d 1 (w+1) W)
     (rs : List (Pair (size d+T))) (parents saved : Fin (size d+T))
     (body : P → Pr P K Q prime U)
-    (setup pass : Pr P K Q prime U) (setupCost : ℕ) (u : HS K Q prime U)
+    (setup pass : Pr P K Q prime U) (cost : ℕ) (u : HS K Q prime U)
     (source initial : Stacks K prime) : Prop :=
     v.beforeH = B*prime^(r*((w+1)*r)) →
       a.records = LabelMask.records v → 0 < W →
@@ -105,7 +105,7 @@ def SignedPassBound (regs : Fin 6 ↪ Fin T) (anchor : Fin (size d+T) ↪ Fin K)
     ∃ (z : HS K Q prime U) (F : Stacks K prime) (n : ℕ), z.user = u.user ∧ F.R (ext 2) = output ++ a.inputTail ∧ F.R (ext 5) = [] ∧
       F.R (ext 0) = [] ∧ F.R (ports (Fin.last N).castSucc) = a.pivotTail ∧
       F.R (ports (archivePorts 0 (columnBank 34))) = a.matrixTail ∧
-      n ≤ setupCost + signedPassCost a.table T (v.beforeRows*v.rows*B) a.records w W a.H a.J U ∧
+      n ≤ cost ∧
       Exec body (.seq setup pass) (mk u source) n (mk z F)
 
 structure SeededQueueReady (w H : ℕ) (proj : Matrix (Fin r) (Fin r) ℚ)
@@ -198,7 +198,6 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     source.R atom = List.replicate (w+1) tick → (source.R one).length = 1 →
     source.R (dir 0) = (List.range n).flatMap word ++ parentTail → (∀ j < n, (word j).length = width) →
     (∀ i ∈ ([2,3,4,5,6,7,10,11,12,13] : List (Fin 15)), source.R (dir i) = []) →
-    let dirCost := base.records*(15*digits+14*width+45) + n*(6*width+25) + 22*box + 8*(w+1)+32
 
     (∀ k ∈ slots cs, builtState.R k = []) → input.R savedC = [] →
     input.R mask = [] →
@@ -222,14 +221,18 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     let units := ∏ i : Fin r, (prime^r-prime^i.val)
     let classes := prime^(r*r)
     let lifts := (prime^w)^(r*r)
-    let setupCost := n*lifts * (units * (livePrice + 4*((d+1)*(d+1)*base.H)) +
+    let queuePerParent := lifts * (units * (livePrice + 4*((d+1)*(d+1)*base.H)) +
         (classes-units) * (10*((d+1)*(d+1)*base.H)+6) +
-        classes * (4*width+4+(r*r*(4*(w+1)+4)+1)+6)) + 4
+        classes * (4*width+4+(r*r*(4*(w+1)+4)+1)+6))
     let a := base.physical e proj α α'
+    let perParent := box*(15*digits+14*width+89) + 6*width+25 +
+      (LabelTraversal.time (prime^w) (r*r) 1+5) + queuePerParent +
+      signedPassWork a.table T 1 box w W a.H a.J U
+    let fixedCost := 22*box + 21*(w+1) + 26*prime^w + paddingSetupCost (d+1) base.H + 82
     SignedPassBound regs anchor ports ext v B a payload rs parents saved body
       (.seq (LabelSpectators.program r br rows bh atom (dir 2) (dir 9) (dir 3) (dir 5)) (.seq (.seq (LabelDirectorySetup.setup r dir atom one) (.seq (expandMask (dir 9) (dir 4) (dir 2) (dir 3) (dir 5) (dir 12) (fun _ => false)) (LabelDirectoryBuild.program dir))) (.seq (.seq (LabelCounts.highCount one atom (dir 7) (dir 2) (dir 3) (dir 5))
         (scanR (dir 7) (dir 2) (LabelCountBank.pushAll (cs.map Prod.fst)))) (.seq writeMask (.seq (.seq (bcopy (recip 15) (bank 17) (bank 4) tmp) (.seq (.seq (umulSym 1 (bitSymbol false) (bank 8) (bank 9) (bank 4)) (withIdentitySeed (d+1) (bank 9) (bank 17) seed (bank 4) tmp generate)) (bclear (bank 9)))) (bclear (bank 17))))))) pass
-      (44*LabelMask.records v+13*(w+1)+14 + (dirCost + (26*prime^w+6 + ((v.beforeRows*v.rows*B)*(LabelTraversal.time (prime^w) (r*r) 1+5)+4 + (setupCost + paddingSetupCost (d+1) base.H))))) u raw input := by
+      ((v.beforeRows*v.rows*B)*perParent + fixedCost) u raw input := by
   obtain ⟨pass,run⟩ := physicalSignedResidualPass (w := w) (W := W) regs anchor ports ext off banks external shared
     capacity e proj idempotent admissible α α' inverse body rs hk parents saved layout cap cs sizeC
     parentsC savedC maskRegs pivotRegs separate
@@ -238,7 +241,7 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     coeffOff maskLayout retained anchorDirectory portDirectory extDirectory
   obtain ⟨writeMask,write⟩ := record_writes (body := body) r cs sizeC mask parentsC savedC maskLayout
   refine ⟨writeMask,?_⟩
-  intro directoryPorts directorySlot dir parentWidthPort parentWidthOff atom one atomOff oneOff highLayout highSlots br rows bh dimensions word parentTail v B base payload u raw positiveDescriptor beforeRows rowsSize beforeH parentBlank source n box parentWidth digits ancestor tail entries counted builtState input atomWord oneWidth parentsWord wordWidth scratch dirCost counterEmpty savedBlank maskBlank bits selected oneBlank unitWord masked zeroBlank initial padWord S queueInputs scan livePrice generate units classes lifts setupCost a shape records hW D
+  intro directoryPorts directorySlot dir parentWidthPort parentWidthOff atom one atomOff oneOff highLayout highSlots br rows bh dimensions word parentTail v B base payload u raw positiveDescriptor beforeRows rowsSize beforeH parentBlank source n box parentWidth digits ancestor tail entries counted builtState input atomWord oneWidth parentsWord wordWidth scratch counterEmpty savedBlank maskBlank bits selected oneBlank unitWord masked zeroBlank initial padWord S queueInputs scan livePrice generate units classes lifts queuePerParent a perParent fixedCost shape records hW D
     neutral radix free count width unsigned clean start hm hw fresh maskEmpty encoded padding
   let active := LabelStock.live r (w+1) 1
   obtain ⟨seedBlank,tmpBlank,weightBank,queueReady,empty,output⟩ := queueInputs
@@ -305,6 +308,7 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     parentsUser source word parentTail oneWidth scratch
   simp only [atomWidth,pow_mul prime (w+1) (r*r)] at build
   obtain ⟨built,buildSteps,buildUser,buildCost,buildRun⟩ := build positive parentsWord wordWidth
+  let dirCost := base.records*(15*digits+14*parentWidth+45) + n*(6*parentWidth+25) + 22*box + 8*(w+1)+32
   have directoryCost : buildSteps ≤ dirCost := by
     apply buildCost.trans
     change 8*(w+1)+8+22*box + (n*(6*box+10)+6 + (n*box*(9*digits+15)+6 +
@@ -419,12 +423,13 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
   have remaining : (List.range box).countP (fun j => !active j) = (classes-units)*lifts := by
     rw [Nat.sub_mul,← boxSize,← cardinality]
     omega
+  let setupCost := n*queuePerParent+4
   have generateCost : t ≤ setupCost := by
     apply ht.trans
     change (List.range base.records).countP active * _ +
       (List.range base.records).countP (fun j => !active j) * _ + base.records * _ + 4 ≤ _
     rw [liveCount,paddingCount,cardinality,remaining,recordCount,boxSize]
-    dsimp only [setupCost,livePrice]
+    dsimp only [setupCost,queuePerParent,livePrice]
     rw [← parentWidthEq]
     exact Nat.le_of_eq (by ring)
   let words := (List.range base.records).flatMap fun j => if active j then matrixWords prime base.H
@@ -496,7 +501,7 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
   have scanStart := start.signedHandoff a ports ext off installedInput G a.signed bankState
     (fun i _ => extState i) ((extState 2).trans queueInput)
   have emptyMask := (outside _ (extDirectory 0) (extArchive 0)).trans maskEmpty
-  obtain ⟨z,E,n,hz,queue,acc,maskDone,pivots,archiveDone,hn,exec⟩ :=
+  obtain ⟨z,E,passSteps,hz,queue,acc,maskDone,pivots,archiveDone,hn,exec⟩ :=
     run v B base payload finished G shape records hW neutral radix free count width unsigned clean
       (sharedArchive ▸ installed.trans (base.physical_archive e proj α α')) (by
         change ScanReady a ports ext 0 (preparedPivots a _ {G with R := Function.update G.R (ports (archivePorts 0 (columnBank 34))) (a.matrices 0)})
@@ -516,9 +521,9 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
       LabelSelectors.residue_eq,LabelSelectors.recordMap,scanClassCost] using
       LabelSelectors.recordMap_sum v r w B shape (scanClassCost a.table w W a.H a.J U)
   rw [anchorCost,scanCost] at hn
-  have passCost : n ≤ signedPassCost a.table T (v.beforeRows*v.rows*B) a.records w W a.H a.J U := by
+  have passCost : passSteps ≤ signedPassWork a.table T (v.beforeRows*v.rows*B) a.records w W a.H a.J U + 22 := by
     apply hn.trans_eq
-    simpa only [signedPassCost,ActualAffineScaling.modulus,Nat.mul_one,Nat.mul_assoc] using
+    simpa only [signedPassWork,ActualAffineScaling.modulus,Nat.mul_one,Nat.mul_assoc] using
       collectPassCost (v.beforeRows*v.rows*B) (LabelTraversal.time (prime^w) (r*r) 1+5)
         ((prime^w)^(r*r)) (a.records*(M^(d+1)*W)) (LabelSelectors.classes 1 (r*r))
         (anchorClassCost a.table T w W) (scanClassCost a.table w W a.H a.J U)
@@ -528,7 +533,14 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     (Nat.add_le_add_right (Nat.add_le_add_left queueCost (4*base.H+4)) (2*base.H+2))
     (6*base.H+6)) (2*base.H+2)
   rw [paddingSetupCost_eq] at paid
-  exact ⟨z,E,_,hz.trans (finishUser.trans (releaseUser.trans (cleanUser.trans (hy.trans (preparedUser.trans (zeroUser.trans (copyUser.trans (hUser.trans (counterUser.trans (buildUser.trans parentUser)))))))))),queue,acc,maskDone,pivots,archiveDone,Nat.add_le_add (Nat.add_le_add parentCost (Nat.add_le_add directoryCost (Nat.add_le_add counterCost (Nat.add_le_add hTime paid)))) passCost,
+  have total := Nat.add_le_add (Nat.add_le_add parentCost (Nat.add_le_add directoryCost
+    (Nat.add_le_add counterCost (Nat.add_le_add hTime paid)))) passCost
+  refine ⟨z,E,_,hz.trans (finishUser.trans (releaseUser.trans (cleanUser.trans (hy.trans (preparedUser.trans (zeroUser.trans (copyUser.trans (hUser.trans (counterUser.trans (buildUser.trans parentUser)))))))))),queue,acc,maskDone,pivots,archiveDone,?_,
     Exec.seq (Exec.seq parentRun (Exec.seq buildRun (Exec.seq counterRun (Exec.seq emit (Exec.seq (Exec.seq copyRun (Exec.seq (Exec.seq zeroRun (Exec.seq (Exec.seq initRun generateRun) clearRun)) releaseRun)) finishRun))))) exec⟩
+  apply total.trans_eq
+  dsimp only [dirCost,setupCost,perParent,fixedCost,signedPassWork,Nat.add_one_sub_one]
+  change a.records = LabelMask.records v at records
+  rw [← records,show a.records = n*box from recordCount,recordCount,← parentSize]
+  ring
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
