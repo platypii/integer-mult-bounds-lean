@@ -102,6 +102,33 @@ theorem clearWorkTapes_exec (body : P → Pr P T Q A U) (is : List (Fin T)) (dis
     · rw [cost]; simp; omega
     · congr 2 <;> funext j <;> by_cases h : j = i <;> simp [D,h]
 
+/-- Clear a closed program's initially empty private tapes. Its step bound controls
+the cleanup even when the shared tapes carry arbitrarily long queues. -/
+theorem clearPrivate_exec {K : ℕ} (bank : Fin K ↪ Fin T) (prog : Pr Empty T Q A U)
+    (v z : HS T Q A U) (S F : Stacks T A) (n budget : ℕ)
+    (run : Exec Empty.elim prog (mk v S) n (mk z F)) (time : n ≤ budget)
+    (empty : ∀ i, S.L (bank i) = [] ∧ S.R (bank i) = []) :
+    let tapes := (List.finRange K).map bank
+    ∃ u D l, u.user = z.user ∧ l ≤ budget + (K*4+1+K*(6*(mnProgPush prog*budget))) ∧
+      Exec Empty.elim (.seq prog (clearWorkTapes tapes)) (mk v S) l (mk u D) ∧
+      (∀ i, D.L (bank i) = [] ∧ D.R (bank i) = []) ∧
+      ∀ h, (∀ i, bank i ≠ h) → D.L h = F.L h ∧ D.R h = F.R h := by
+  intro tapes
+  obtain ⟨u,hu,clear⟩ := clearWorkTapes_exec Empty.elim tapes ((List.nodup_finRange _).map bank.injective) z F
+  have charge := cleanup_cost_le tapes run le_rfl (fun e => nomatch e)
+  have init : (tapes.map fun h => 4*(S.L h).length+2*(S.R h).length+4) = tapes.map (fun _ => 4) := by
+    apply List.map_congr_left
+    intro h mem
+    obtain ⟨i,_,rfl⟩ := List.mem_map.mp mem
+    simp [(empty i).1,(empty i).2]
+  simp only [init,List.map_const',List.sum_replicate_nat,show tapes.length = K by simp [tapes]] at charge
+  refine ⟨u,_,_,hu,Nat.add_le_add time (charge.trans (by gcongr)),Exec.seq run clear,?_,?_⟩
+  · intro i
+    simp [tapes,List.mem_map]
+  · intro h off
+    have absent : h ∉ tapes := fun mem => by obtain ⟨i,_,eq⟩ := List.mem_map.mp mem; exact off i eq
+    simp [absent]
+
 def shearWork : List (Fin 35) :=
   (List.finRange 35).filter fun i => decide (i ≤ 26 ∧ i ≠ 2 ∧ i ≠ 24 ∧ i ≠ 25 ∨ 29 ≤ i ∧ i ≤ 31)
 
