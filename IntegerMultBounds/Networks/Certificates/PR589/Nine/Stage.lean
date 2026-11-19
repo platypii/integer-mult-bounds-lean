@@ -182,12 +182,12 @@ theorem transpose_spread_mul_spread (h : c.Checked) (s : Fin 8) :
 
 theorem spread_mul_avoid (s : Fin 8) : c.spread s * avoid s = 0 := by
   ext i x
-  simp only [avoid, mul_diagonal, spread, of_apply, zero_apply]
+  simp only [avoid, mul_diagonal, spread, of_apply, Matrix.zero_apply]
   split_ifs <;> simp
 
 theorem avoid_mul_transpose_spread (s : Fin 8) : avoid s * (c.spread s)ᵀ = 0 := by
   ext x i
-  simp only [avoid, diagonal_mul, transpose_apply, spread, of_apply, zero_apply]
+  simp only [avoid, diagonal_mul, transpose_apply, spread, of_apply, Matrix.zero_apply]
   split_ifs <;> simp
 
 theorem spread_mul_lower (s : Fin 8) : c.spread s * lower (s.val + 1) = c.spread s := by
@@ -204,6 +204,42 @@ theorem lower_mul_transpose_spread (s : Fin 8) :
   by_cases hx : x.1 = s
   · simp [hx]
   · simp [hx]
+
+/-- The oblique port route on the full stage window, including the inactive exterior blocks. -/
+theorem oblique_stage_route (h : c.Checked) (s : Fin 8) (U : Matrix (Fin 8) (Fin 8) ℚ)
+    (up : U * c.lineProj = c.lineProj) (pu : c.lineProj * U = U) :
+    let B := (1 - U) * c.spread s
+    let R := fromBlocks U B (c.spread s)ᵀ (avoid s)
+    let liftFrame := fun X => R * fromBlocks X 0 0 (lower (s.val + 1)) * R
+    R * R = 1 ∧ liftFrame U = fromBlocks 1 0 0 (lower s.val) ∧
+      liftFrame 1 = fromBlocks 1 0 0 (lower (s.val + 1)) ∧
+      liftFrame 0 = fromBlocks (1 - U) 0 0 (lower s.val) ∧
+      liftFrame (1 - U) = fromBlocks (1 - U) 0 0 (lower (s.val + 1)) := by
+  intro B R liftFrame
+  have idem : U * U = U := by calc
+    U * U = U * (c.lineProj * U) := by rw [pu]
+    _ = U := by rw [← Matrix.mul_assoc, up, pu]
+  have annihilate : (c.spread s)ᵀ * U = 0 := by
+    calc _ = (c.spread s)ᵀ * (c.lineProj * U) := by rw [pu]
+         _ = 0 := by rw [← Matrix.mul_assoc, transpose_spread_mul_lineProj h, Matrix.zero_mul]
+  have ub : U * B = 0 := by
+    dsimp [B]
+    rw [← Matrix.mul_assoc, mul_sub, mul_one, idem, sub_self, Matrix.zero_mul]
+  have leftInv : (c.spread s)ᵀ * B = block s := by
+    dsimp [B]
+    rw [← Matrix.mul_assoc, Matrix.mul_sub, Matrix.mul_one, annihilate, sub_zero,
+      transpose_spread_mul_spread h]
+  have rightInv : B * (c.spread s)ᵀ = 1 - U := by
+    dsimp [B]
+    rw [Matrix.mul_assoc, spread_mul_transpose h, mul_sub, mul_one, sub_mul, one_mul,
+      up, sub_self, sub_zero]
+  have avoidB : B * avoid s = 0 := by simp [B, Matrix.mul_assoc, spread_mul_avoid]
+  have lowerB : B * lower (s.val + 1) = B := by simp [B, Matrix.mul_assoc, spread_mul_lower]
+  have off : avoid s * lower (s.val + 1) * (c.spread s)ᵀ = 0 := by
+    rw [Matrix.mul_assoc, lower_mul_transpose_spread, avoid_mul_transpose_spread]
+  simp [liftFrame, R, fromBlocks_multiply, Matrix.mul_sub, idem, ub, annihilate, leftInv,
+    rightInv, avoidB, lowerB, off, avoid_mul_transpose_spread, avoid_mul_self,
+    avoid_mul_lower_mul_avoid, block_add_lower, block_add_avoid, ← fromBlocks_one]
 
 theorem route_transpose (s : Fin 8) : (c.route s)ᵀ = c.route s := by
   rw [route, fromBlocks_transpose, transpose_transpose, lineProj_transpose, avoid,
