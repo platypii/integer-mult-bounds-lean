@@ -3,6 +3,7 @@ module
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackAnchor
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackClass
 public import IntegerMultBounds.MathlibTM2.Host.Placed
+public import IntegerMultBounds.MathlibTM2.Host.StatePlacement
 
 /-! Run the anchor machine on the host, reading the sign stream at the current record. -/
 @[expose] public section
@@ -14,6 +15,34 @@ open M8 AtomSegment AtomBank ActualAffineScaling
 variable {T n b f W : ℕ}
 local instance : NeZero (modulus b) := ⟨(modulus_pos b).ne'⟩
 local instance (w : ℕ) : NeZero (prime^w) := ⟨pow_ne_zero _ Networks.Shared50ModularControl.prime_prime.ne_zero⟩
+
+/-- Place the fixed sign correction on the payload and its work tapes. -/
+def placedFieldNeg {P U : Type} {Q : ℕ} (i : Fin n) (ports : Fin (22+fieldSignSlots i) ↪ Fin T)
+    (capacity : (fieldSignProgram i true).1 ≤ Q) : Pr P T Q prime U :=
+  statePlacedNormalized ports capacity (Nat.zero_lt_of_lt (fieldSignProgram i true).2.start.isLt)
+    Empty.elim (foreign (fieldSignProgram i true).2)
+
+theorem placedFieldNeg_exec {P U : Type} {Q : ℕ} (i : Fin n) (ports : Fin (22+fieldSignSlots i) ↪ Fin T)
+    (capacity : (fieldSignProgram i true).1 ≤ Q) (hf : 0 < f) (hb : 0 < b) (hW : 0 < W)
+    (a : FlatCoordinateStages.Array (n*f) b W) (body : P → Pr P T Q prime U)
+    (v : HS T Q prime U) (S : Stacks T prime)
+    (rep : RepT (outer (fieldSignSlots i) (neutral b W) (arrTape a) f) (embStk ports S).L (embStk ports S).R) :
+    ∃ a' : FlatCoordinateStages.Array (n*f) b W, ∃ z F t, z.user = v.user ∧
+      t ≤ 1 + (chainConst (fieldSignOps i true) * f * ((modulus b)^(n*f)*W) * (22+fieldSignSlots i+5)+6) ∧
+      Exec body (placedFieldNeg i ports capacity) (mk v S) t (mk z F) ∧
+      RepT (outer (fieldSignSlots i) (neutral b W) (arrTape a') f) (embStk ports F).L (embStk ports F).R ∧
+      (∀ h, (∀ j, ports j ≠ h) → F.L h = S.L h ∧ F.R h = S.R h) ∧
+      ∀ (x : Fin n → Fin f → ZMod (modulus b)) (j : Fin W),
+        a' (FlatCoordinateLayout.index (AtomOps.refine (Function.update x i (fun k => -x i k))) j) =
+          a (FlatCoordinateLayout.index (AtomOps.refine x) j) := by
+  obtain ⟨a',correct,action⟩ := fieldSignProgram_runs i true hf hb hW a
+  have pos := Nat.zero_lt_of_lt (fieldSignProgram i true).2.start.isLt
+  obtain ⟨u,D,_,rfl,next,hu,_,_,_,l,hl,run⟩ := foreign_exec (P := Empty) Empty.elim _ correct
+    (stateLiftDown pos (embDn ports v)) (embStk ports S) _ rfl rep
+  obtain ⟨z,_,hz,placed⟩ := statePlaced_exec_normalized ports ports.injective capacity pos Empty.elim
+    (body' := body) (fun e => nomatch e) v S run
+  exact ⟨a',z,_,_,hz.trans hu,Nat.add_le_add_left hl 1,placed,
+    by rwa [embStk_ovr ports.injective],fun h off => embOvr_off _ _ off,action⟩
 
 /-- After the preceding records have been consumed, the emitted symbol under the
 head selects the anchor sign of this label's full-width itinerary. -/
