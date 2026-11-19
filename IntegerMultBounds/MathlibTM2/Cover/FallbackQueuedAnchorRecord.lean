@@ -49,7 +49,7 @@ theorem queuedAnchorRecord_exec {r records T : ℕ} (ports : Fin (N+2) ↪ Fin T
       F.R (ports (archivePorts 1 (columnBank 34))) = S.R (ports (archivePorts 1 (columnBank 34))) ∧
       ∀ j, j ≠ src → (∀ i, ports i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
   intro bank dst j rows code clean layout free input queue width blankDst savedFree tmpFree schedule
-  obtain ⟨neg,out,entry,correct,valid,sign⟩ := Record.output_at (by omega) table g m det lift inputs outs result block live
+  obtain ⟨neg,out,entry,correct,_,valid,sign⟩ := Record.output_at (by omega) table g m det lift inputs outs result block live
   obtain ⟨word,encoded,placed⟩ := Record.signedPayload neg (inputs j) out correct original input
   have same : payloadWord out = payloadWord (SparseRoleCircuit.encode ∘ word) := by
     rw [← encoded,Record.payloadWord_scalarArray]

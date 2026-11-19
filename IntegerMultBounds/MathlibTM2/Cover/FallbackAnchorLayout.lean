@@ -478,7 +478,7 @@ theorem loadAnchorRecord_exec {r w records T Q : ℕ} {P U : Type}
     (g : LabelPadding.Label r (w+1)) (G : Matrix (Fin (d+1)) (Fin (d+1)) (ZMod (prime^(w+1))))
     (det : G.det = 1 ∨ G.det = -1)
     (lift : (LabelRing.res prime (w+1) (by omega)).mapMatrix G = table ((LabelRing.res prime (w+1) (by omega)).mapMatrix g))
-    (block : ℕ) (live : block*(prime^(w+1))^(r*r)+(LabelAddress.address g).val < records)
+    (block : ℕ) (negative : Bool) (live : block*(prime^(w+1))^(r*r)+(LabelAddress.address g).val < records)
     (inputs : ℕ → Array d 1 (w+1) W) (outs : List (Array d 1 (w+1) W))
     (result : (signedInputs table (w+1) records inputs).Forall₂ Correct outs)
     (body : P → Pr P T Q prime U) {count src dst saved tmp : Fin T} (ports : [count,src,dst,saved,tmp].Nodup)
@@ -489,26 +489,31 @@ theorem loadAnchorRecord_exec {r w records T Q : ℕ} {P U : Type}
     let j := block*(prime^(w+1))^(r*r)+(LabelAddress.address g).val
     let rows := classPivots (table ((LabelRing.res prime (w+1) (by omega)).mapMatrix g))
     let next := (outs.drop (j+1)).flatMap payloadWord ++ tail
+    (signStream (A := prime) table (w+1) records)[j]? = some (bitSymbol negative) →
     scalarArray (inputs j) = SparseRoleCircuit.encode ∘ original →
     S.R src = (outs.drop j).flatMap payloadWord ++ tail →
-    ∃ neg u F word, Itinerary.Valid rows G (d+1) ∧ (Itinerary.run rows G (d+1)).det = (if neg then -1 else 1) ∧
+    ∃ u F word,
+      Itinerary.Valid rows G (d+1) ∧ (Itinerary.run rows G (d+1)).det = (if negative then -1 else 1) ∧
       u.user = v.user ∧ Exec body (movePrefix count src dst saved tmp) (mk v S) (6*((modulus (w+1))^(d+1)*W)+6) (mk u F) ∧
       S.R src = payloadWord (SparseRoleCircuit.encode ∘ word) ++ next ∧
       F = {S with R := Function.update (Function.update S.R src next) dst (payloadWord (SparseRoleCircuit.encode ∘ word) ++ S.R dst)} ∧
       (∀ z, readAt blank (F.L dst) (F.R dst) z = RadixToBinary.binaryEncoding.encode
         (putWord (fun _ => blank) 0 (List.ofFn (SparseRoleCircuit.encode ∘ word)) z)) ∧
-      ∀ x k, word (index (signedAddress neg x) k) = original (index x k) := by
-  intro j rows next input queue
-  obtain ⟨neg,out,entry,correct,valid,sign⟩ := output_at (by omega) table g G det lift inputs outs result block live
+      ∀ x k, word (index (signedAddress negative x) k) = original (index x k) := by
+  intro j rows next recorded input queue
+  obtain ⟨neg,out,entry,correct,bit,valid,sign⟩ := output_at (by omega) table g G det lift inputs outs result block live
+  have eq := congrArg (Option.map symBit) (bit.symm.trans recorded)
+  have sameSign : neg = negative := by simpa using eq
+  subst neg
   obtain ⟨inside,eq⟩ := List.getElem?_eq_some_iff.mp entry
   have split : outs.drop j = out :: outs.drop (j+1) := eq ▸ (List.getElem_cons_drop inside).symm
   rw [split,List.flatMap_cons,List.append_assoc] at queue
-  obtain ⟨word,encoded,placed⟩ := signedPayload neg (inputs j) out correct original input
+  obtain ⟨word,encoded,placed⟩ := signedPayload negative (inputs j) out correct original input
   have same : payloadWord out = payloadWord (SparseRoleCircuit.encode ∘ word) := by
     unfold payloadWord
     rw [← encoded,show List.ofFn (scalarArray out) = List.ofFn out from ofFn_cast _ out]
   obtain ⟨u,F,hu,run,stacksEq,tape⟩ := loadPayload_exec body ports out next v S queue (by simpa using width) empty hs ht
-  refine ⟨neg,u,F,word,valid,sign,hu,by simpa using run,by rwa [← same],by rwa [← same],?_,placed⟩
+  refine ⟨u,F,word,valid,sign,hu,by simpa using run,by rwa [← same],by rwa [← same],?_,placed⟩
   intro z
   rw [← encoded,show List.ofFn (scalarArray out) = List.ofFn out from ofFn_cast _ out]
   exact (tape z).symm

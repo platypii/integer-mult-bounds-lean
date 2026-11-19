@@ -180,27 +180,28 @@ theorem preparedRecordWeights_exec {m : ℕ} (body : P → Pr P T Q A U) (r : Fi
       let pivots := classPivots (table (LabelStock.residue m (w+1) 1 t))
       scheduleCode (A := A) pivots ++ orderedScheduleCode (List.finRange (n+1)).reverse pivots
     let rows := classPivots (table (LabelStock.residue m (w+1) 1 j))
+    let words := fun k => matrixWords A H (Itinerary.run rows G k)
     let active := stageBank r (n+1) 15
     let undo := undoItinerary rows G (n+1)
     S.R src = ((List.range N).drop j).flatMap code ++ rest →
-    ∃ z F l, ∃ weights : Fin n → (ZMod (prime^(w+1)))ˣ, ∃ negative,
+    ∃ z F l, ∃ a : Fin (n+1) → (ZMod (prime^(w+1)))ˣ, ∃ negative,
       z.user = v.user ∧ l ≤ (n+1)*(2*(n+1)+(4*w+4+columnTime (n+1) prime w H))+1 +
         (n*(8*((n+1)*(n+1)*H)+14*H+22)+1) + (6*H+6) + (4*((n+1)*H)+4) + (6*(n*H)+6) ∧
       Exec body (.seq (.seq (.seq (recordWeights n r src) (Mult.PhaseCellToeplitz.copyWordHeader (r 20) (r 14) (r 3) (r 4)))
         (moveRightOrdered (r 14) (r 3) active)) (Mult.PhaseCellToeplitz.copyWordHeader parentTape src (r 3) (r 4))) (mk v S) l (mk z F) ∧
       F.R src = S.R parentTape ++ (orderedScheduleCode (List.finRange (n+1)).reverse rows ++ (((List.range N).drop (j+1)).flatMap code ++ rest)) ∧
-      (∃ archive, F.R active = (List.ofFn fun i => binSyms H ((Fin.cons 1 (fun j => (weights j : ZMod (prime^(w+1)))) : Fin (n+1) → ZMod (prime^(w+1))) i).val).flatten ++ archive ∧ (archive, F.R (stageBank r (n+1) 16)) =
-        matrixArchive (fun k => matrixWords A H (Itinerary.run rows G k)) (S.R (r 15)) (S.R (r 16)) (n+1)) ∧
+      (∃ suffix, F.R active = (List.ofFn fun i => binSyms H ((Fin.cons 1 (fun j => (a j.succ : ZMod (prime^(w+1)))) : Fin (n+1) → ZMod (prime^(w+1))) i).val).flatten ++ (words (n+1) ++ suffix) ∧ (words (n+1) ++ suffix, F.R (stageBank r (n+1) 16)) =
+        matrixArchive words (words 0 ++ tail) (S.R (r 16)) (n+1)) ∧
       F.L = S.L ∧ (∀ i, i ≠ src → i ≠ stageBank r (n+1) 15 → i ≠ stageBank r (n+1) 16 → F.R i = S.R i) ∧
       (undo.map RowOp.children).sum ≤ (n+1)*(6*n+3) ∧
       (signStream (A := A) table (w+1) N)[j]? = some (bitSymbol negative) ∧
-      (∃ a : Fin (n+1) → (ZMod (prime^(w+1)))ˣ, Itinerary.Valid rows G (n+1) ∧
+      Itinerary.Valid rows G (n+1) ∧
         Itinerary.run rows G (n+1) = Matrix.diagonal (fun i => (a i : ZMod (prime^(w+1)))) ∧
-        (∏ i, a i) = (if negative then -1 else 1) ∧ ∀ i, weights i = a i.succ) ∧
+        (∏ i, a i) = (if negative then -1 else 1) ∧
       ∀ b (x : Fin b → Fin (n+1) → ZMod (prime^(w+1))),
-        fallbackBank b (if negative then -1 else 1) weights undo (bankFields (List.finRange (n+1)) x) =
+        fallbackBank b (if negative then -1 else 1) (fun i => a i.succ) undo (bankFields (List.finRange (n+1)) x) =
           bankFields (List.finRange (n+1)) (fun k => G.mulVec (x k)) := by
-  intro j code rows active undo source
+  intro j code rows words active undo source
   obtain ⟨u,D,l,weights,neg,hu,hl,run,schedule,packed,archive,left,frame,children,bit,units,effect⟩ :=
     recordWeights_exec body r src apart w H hm table g G sign lift block N index v S tail rest matrix modulus one ticks free source
   have off (i k : Fin 23) (hi : i ≠ 15) (hj : i ≠ 16) (ne : i ≠ k) : r i ≠ stageBank r (n+1) k := by
@@ -213,7 +214,10 @@ theorem preparedRecordWeights_exec {m : ℕ} (body : P → Pr P T Q A U) (r : Fi
     ((keep 3 (by decide) (by decide) (by decide)).trans (free 3 (by decide)))
     ((keep 4 (by decide) (by decide) (by decide)).trans (free 4 (by decide)))
   simp only [List.append_nil] at copy
-  let pivot : Fin (n+1) → ZMod (prime^(w+1)) := Fin.cons 1 (fun j => (weights j : ZMod (prime^(w+1))))
+  obtain ⟨a,valid,diag,prod,entries⟩ := units
+  have eqWeights : weights = fun i => a i.succ := funext entries
+  subst weights
+  let pivot : Fin (n+1) → ZMod (prime^(w+1)) := Fin.cons 1 (fun j => (a j.succ : ZMod (prime^(w+1))))
   let pivotWord := (List.ofFn fun i => binSyms (A := A) H (pivot i).val).flatten
   let E := {D with R := Function.update D.R (r 14) pivotWord}
   have distinct (i : Fin 23) (hi : i ≠ 15) (hj : i ≠ 16) : r i ≠ active := off i 15 hi hj hi
@@ -252,22 +256,25 @@ theorem preparedRecordWeights_exec {m : ℕ} (body : P → Pr P T Q A U) (r : Fi
   rw [plen,parentEq] at attach
   let result := Function.update F.R src (S.R parentTape ++ F.R src)
   have unaffected (i : Fin T) (ne : i ≠ src) : result i = F.R i := Function.update_of_ne ne _ _
-  refine ⟨x,_,_,weights,neg,hx.trans (hy.trans (hz.trans hu)),Nat.add_le_add_right (Nat.add_le_add_right (Nat.add_le_add_right hl _) _) _,
-    Exec.seq (Exec.seq (Exec.seq run copy) install) attach,?_,?_,left,?_,children,bit,units,effect⟩
+  refine ⟨x,_,_,a,neg,hx.trans (hy.trans (hz.trans hu)),Nat.add_le_add_right (Nat.add_le_add_right (Nat.add_le_add_right hl _) _) _,
+    Exec.seq (Exec.seq (Exec.seq run copy) install) attach,?_,?_,left,?_,children,bit,valid,diag,prod,effect⟩
   · change result src = _
     simp only [result,Function.update_self]
     exact congrArg (S.R parentTape ++ ·) ((kept src (srcOff (n+1) 15).symm (apart 14).symm).trans schedule)
-  · refine ⟨D.R active,?_,?_⟩
+  · let suffix := (matrixArchive words (S.R (r 15)) (S.R (r 16)) n).2
+    have top : D.R active = words (n+1) ++ suffix := congrArg Prod.fst archive
+    refine ⟨suffix,?_,?_⟩
     · change result active = pivotWord ++ _
       rw [unaffected _ (srcOff _ _)]
       change Function.update (Function.update E.R (r 14) []) active (pivotWord ++ E.R active) active = _
       rw [Function.update_self]
-      exact congrArg (pivotWord ++ ·) (Function.update_of_ne (distinct 14 (by decide) (by decide)).symm _ _)
-    · change (D.R active,result _) = _
+      exact congrArg (pivotWord ++ ·) ((Function.update_of_ne (distinct 14 (by decide) (by decide)).symm _ _).trans top)
+    · rw [← top]
+      change (D.R active,result _) = _
       rw [unaffected _ (srcOff _ _),show F.R (stageBank r (n+1) 16) = D.R _ from
         kept _ ((stageBank r (n+1)).injective.ne (by decide : (16 : Fin 23) ≠ 15))
           (off 14 16 (by decide) (by decide) (by decide)).symm]
-      exact archive
+      simpa only [matrix,words,Itinerary.run] using archive
   · intro i hs ha hb
     by_cases hw : i = r 14
     · subst i

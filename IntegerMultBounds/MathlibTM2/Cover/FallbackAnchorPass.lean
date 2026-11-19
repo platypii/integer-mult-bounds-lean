@@ -93,12 +93,13 @@ theorem output_at {w N : ℕ} (hw : 0 < w)
     let j := p*(prime^w)^(m*m)+(LabelAddress.address g).val
     let pivots := classPivots (table ((LabelRing.res prime w hw).mapMatrix g))
     ∃ negative out, outs[j]? = some out ∧ Correct (negative,a j) out ∧
+      (signStream (A := prime) table w N)[j]? = some (bitSymbol negative) ∧
       Itinerary.Valid pivots G (n+1) ∧ (Itinerary.run pivots G (n+1)).det = if negative then -1 else 1 := by
   let j := p*(prime^w)^(m*m)+(LabelAddress.address g).val
   have lo : j < (signedInputs table w N a).length := by simpa [signedInputs,j] using index
   have hi : j < outs.length := result.length_eq ▸ lo
   obtain ⟨negative,bit,valid,det⟩ := signStream_at (A := prime) table hw g G p N hg lift index
-  refine ⟨negative,outs[j],List.getElem?_eq_getElem hi,?_,valid,det⟩
+  refine ⟨negative,outs[j],List.getElem?_eq_getElem hi,?_,bit,valid,det⟩
   have bitEq := congrArg (Option.map symBit) bit
   simp [signStream,index] at bitEq
   simpa [signedInputs,List.get_eq_getElem,j,bitEq] using result.get lo hi
