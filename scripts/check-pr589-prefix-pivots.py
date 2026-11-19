@@ -341,23 +341,99 @@ def earliest_gate_frames(word, ranks, labels, shifted):
         assert columns == set(range(len(columns)))
         return len(columns)
 
+    gates = []
+    moves = {}
+    lower_before = {}
+
+    def align(reg, lines):
+        old = current[reg]
+        assert old <= lines
+        lo, hi = rank(old), rank(lines)
+        lower_before[len(gates), reg] = lo
+        if lo < hi:
+            moves[len(gates), reg] = (lo, hi)
+        current[reg] = lines
+
     reductions = Counter()
     for section in "DABC":
         if section == "B":
             # Preserve the original COPY windows and their frame-zero targets.
             for k, reg in enumerate(word["ret"]):
                 frame = labels[510 + k]
-                assert current[reg] <= frame
-                current[reg] = frozenset(frame)
+                align(reg, frozenset(frame))
+                gates.append((reg, []))
             assert all(not lines for lines in current[111:222])
+            scatter_start = len(gates)
+            gates.extend((111 + t, [word["ret"][k] for k in indices])
+                         for t, indices in enumerate(word["scatter"]))
+            scatter_end = len(gates)
         for f, target, sources in word[section]:
             regs = {target, *sources}
             lines = frozenset().union(*(current[i] for i in regs))
             assert lines <= labels[f]
             reductions[ranks[f] - rank(lines)] += 1
             for i in regs:
-                current[i] = lines
-    assert all(lines <= labels[f] for lines, f in zip(current, word["final"], strict=True))
+                align(i, lines)
+            gates.append((target, sources))
+    for reg, f in enumerate(word["final"]):
+        align(reg, frozenset(labels[f]))
+        gates.append((reg, []))
+    mass = sum(hi - lo for lo, hi in moves.values())
+    assert mass == sum(ranks[f] for f in word["final"]) - sum(ranks[f] for f in word["start"])
+    def prefix_bound(intervals):
+        links = []
+        free = {key for key, (lo, hi) in intervals.items() if lo < 2 < hi}
+        ports = layout_components(len(current), intervals, gates, scatter_start, scatter_end,
+                                  share_temps=True, transitions=links, free_moves=free)
+        changes, _ = minimum_layout_changes(ports, links, copy_cost=0)
+        return 2 * changes
+
+    earliest_bound = prefix_bound(moves)
+    assert (mass, earliest_bound) == (5066, 1102)
+    print("Minimal-frame MOVE mass and two-coordinate prefix lower bound:", mass, earliest_bound)
+    # In reverse order the intersection of all required successor frames
+    # bounds each gate from above. Represent intersections by accumulating
+    # equations: the codimension is the rank of their combined normals.
+    @lru_cache(None)
+    def equations(f):
+        r = ranks[f]
+        basis = graph_rows((shifted[j] for j in labels[f]), r)
+        normals = []
+        for k in range(r, 8):
+            row = [-v[k] for v in basis] + [int(j == k) for j in range(r, 8)]
+            den = lcm(*(x.denominator for x in row))
+            normals.append(tuple(int(x * den) for x in row))
+        return frozenset(normals)
+
+    @lru_cache(None)
+    def dimension(normals):
+        return 8 - len(pivots(normals))
+
+    constraints = [equations(f) for f in word["final"]]
+    possible = {}
+    for step in reversed(range(len(gates))):
+        target, sources = gates[step]
+        if scatter_start <= step < scatter_end:
+            constraints[target] = equations(0)
+            continue
+        if scatter_start - 9 <= step < scatter_start:
+            constraints[target] = equations(510 + step - (scatter_start - 9))
+        regs = {target, *sources}
+        normals = frozenset().union(*(constraints[i] for i in regs))
+        hi = dimension(normals)
+        for i in regs:
+            lo = lower_before[step, i]
+            assert lo <= hi
+            if lo < hi:
+                possible[step, i] = (lo, hi)
+            constraints[i] = normals
+    # Permit all possible changes simultaneously, even when the respective
+    # extremal ranks cannot coexist in one schedule. This relaxes the cut.
+    assert all(key in possible and possible[key][0] <= lo and hi <= possible[key][1]
+               for key, (lo, hi) in moves.items())
+    uniform_bound = prefix_bound(possible)
+    assert uniform_bound == 918
+    print("Uniform prefix lower bound over monotone prefix-frame schedules:", uniform_bound)
     return reductions
 
 
