@@ -556,11 +556,13 @@ directly:
   exchange in the local geometry. Its physical temporary and its reverse erase still
   need the machine semantics.
 
-  For modular reduction, the largest translated generator entry has magnitude 1344.
+  For modular reduction, Lean checks the bound 1344 on all 888 entries directly from
+  the pinned line table (`M6.translatedEntry_bound`).
   A nonzero leading minor witnessing rank `d ≤ 8` has magnitude at most
   `8! · 1344^8 < 2^100` by the determinant expansion. The machine prime exceeds this
   bound. `M6.prefix_minor_unit` proves in Lean that every such nonsingular integer
-  matrix reduces to a unit matrix over every machine prime-power radix. The normalized graph rows `[I | A]` computed by exact
+  matrix is invertible over every machine prime-power radix; `M6.translated_prefix_unit`
+  specializes this to minors of the actual lines, with nonsingularity as its premise. The normalized graph rows `[I | A]` computed by exact
   elimination have denominators at most 1799432 across all labels. The two
   port endpoints present a remaining mismatch: the line gets pivot 0 and the target
   hyperplane gets pivots 0 through 6, whereas the complement of the line projector
