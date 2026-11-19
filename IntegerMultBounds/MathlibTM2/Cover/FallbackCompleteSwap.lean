@@ -29,6 +29,23 @@ noncomputable def completeSwapTime [Fintype P] (body : P → Pr P (N+35) Q prime
       (embProg swapSimulationPort Empty.elim (foreign rowSwapBlock.program)) : Pr P (N+35) Q prime U))
   limit + (4*work.length+1 + work.length*(6*(push*limit)))
 
+/-- With empty payload only the descriptor arithmetic and tape cleanup remain. -/
+theorem completeSwapTime_setup_le [Fintype P] (body : P → Pr P (N+35) Q prime U) (d i j : ℕ) :
+    ∃ C : ℕ, ∀ w H, completeSwapTime body d i j w 0 H 0 ≤ C*(w+1+(H+1)^2) := by
+  let push := max (mnPushC body) (mnProgPush (.seq (swapSetup swapHostFits d i j)
+    (embProg swapSimulationPort Empty.elim (foreign rowSwapBlock.program)) : Pr P (N+35) Q prime U))
+  let count := (swapWorkspace (N+35)).length
+  refine ⟨4*count+1+(1+6*count*push)*(128*(d+1)^2), fun w H => ?_⟩
+  have empty : volume prime (payloadView prime d (w+1) 0) = 0 := by simp [payloadView, volume]
+  have leaf : LeafCore.coreCost 0 (w+1) = 0 := by simp [LeafCore.coreCost]
+  simp only [completeSwapTime, empty, leaf, Nat.mul_zero, Nat.zero_mul, Nat.zero_add]
+  grw [dimensionTime_le H 1 d]
+  dsimp only [count, push]
+  generalize (max _ _ : ℕ) = calls
+  generalize (swapWorkspace (N+35)).length = tapes
+  ring_nf
+  omega
+
 /-- The row-swap charge per symbol before embedding and tape cleanup. -/
 noncomputable def swapVolumeRate (w : ℕ) : ℕ :=
   3808274 + ⌈LeafCore.C * ((w+1 : ℕ) : ℝ) ^ M8.Machine.BudgetBound.tau⌉₊

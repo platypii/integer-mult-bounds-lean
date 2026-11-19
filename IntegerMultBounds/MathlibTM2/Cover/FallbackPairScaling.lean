@@ -23,6 +23,21 @@ noncomputable def pairScalingTime (U : Type) (i k t : Fin d) (w W H J : ℕ) : �
   let exchangeCost := fun one => 2*shearCost one false + shearCost one true + 2*swapCost
   2*swapCost + exchangeCost true + exchangeCost false
 
+/-- Setup for a reciprocal scaling enumerates at most a coordinate prefix. -/
+theorem pairScalingTime_setup_le (U : Type) (i k t : Fin d) :
+    ∃ C : ℕ, ∀ w H, pairScalingTime U i k t w 0 H 0 ≤
+      C*(w+1+(prime^(w+1))^(d-1))*(H+1)^2 := by
+  choose r hr using fun neg one => cleanPairShearTime_setup_le (P := Empty) (U := U)
+    (A := prime) Empty.elim (Function.Embedding.refl _) i k t prime prime_prime.pos false neg one
+  obtain ⟨s, hs⟩ := completeSwapTime_setup_le (P := Empty) (U := U) Empty.elim d k t
+  refine ⟨12 + 12*s + 2*r false true + r true true + 2*r false false + r true false, ?_⟩
+  intro w H
+  simp only [pairScalingTime]
+  grw [hs w H, hr false true w H, hr true true w H, hr false false w H, hr true false w H]
+  generalize (prime^(w+1))^(d-1) = prefixes
+  ring_nf
+  omega
+
 /-- Only the six swaps contribute the width-dependent factor. Both coefficients
 are uniform across atom widths and counter widths. -/
 theorem pairScalingTime_le_setup_add_width_volume (U : Type) (i k t : Fin d) :
