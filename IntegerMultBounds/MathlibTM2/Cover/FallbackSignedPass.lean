@@ -63,7 +63,7 @@ theorem signedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size d+T) ↪
     fresh empty radixC freeC countC encoded liveSpec padding ins output
   obtain ⟨outs,y,F,t,correct,hy,exec,prepared,frame,ht⟩ :=
     signRun v B a inputs u S shape records hW neutral radix free count width unsigned clean start
-  have keep (k) (h : k ∈ parentsC :: savedC :: slots cs) := frame k (separate k h)
+  have keep (k) (h : k ∈ parentsC :: savedC :: slots cs) := (frame k (separate k h)).2
   have counters : ready (prime^w) F.R cs := by
     intro pair h
     have member (k) (hk : k ∈ slots cs) : F.R k = S.R k := keep k (by simp [hk])
@@ -72,7 +72,7 @@ theorem signedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size d+T) ↪
   obtain ⟨z,G,n,hz,queue,acc,mask,pivots,archive,hn,run⟩ :=
     passRun v B {a with signed := outs} records tables shape inputs encoded correct liveSpec padding hm hw hW y F
       counters ((keep _ (by simp)).trans freeC) ((congrArg List.length (keep _ (by simp))).trans countC)
-      ((frame _ (fun i => external i 0 (by decide))).trans empty) fresh prepared
+      ((frame _ (fun i => external i 0 (by decide))).2.trans empty) fresh prepared
   exact ⟨z,G,t+n,hz.trans hy,queue,acc,mask,pivots,archive,Nat.add_le_add ht hn,.seq exec run⟩
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback

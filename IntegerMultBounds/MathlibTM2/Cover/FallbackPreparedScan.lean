@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackSignedHandoff
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackResidualPass
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackControlStreams
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackArchivedResidual
@@ -15,11 +16,11 @@ local notation "N" => rowSwapBlock.tapes+35
 local notation "M" => prime^(w+1)
 local instance : NeZero M := ⟨(pow_pos prime_prime.pos _).ne'⟩
 
-theorem preparedPass_exec {Q T r : ℕ} (a : ScanData r d w W) (parent : Fin d → (ZMod M)ˣ)
+theorem preparedPass_exec {Q T r A : ℕ} (a : ScanData r d w W) (parent : Fin d → (ZMod M)ˣ)
     (capacity : columnCapacity ≤ Q) (signCapacity : (fieldSignProgram (0 : Fin (d+1)) true).1 ≤ Q)
     (inputs : ℕ → Array d 1 (w+1) W)
     (encoded : ∀ j < a.records, scalarArray (inputs j) = SparseRoleCircuit.encode ∘ a.input j)
-    (signed : (signedInputs a.table (w+1) a.records inputs).Forall₂ Correct a.signed)
+    (unsigned : a.signed = (List.range a.records).map inputs)
     (liveSpec : ∀ j < a.records, LabelStock.live r (w+1) 1 j = true →
       ((a.matrix j).det = 1 ∨ (a.matrix j).det = -1) ∧
       (LabelRing.res prime (w+1) (by omega)).mapMatrix (a.matrix j) = a.table (LabelStock.residue r (w+1) 1 j))
@@ -95,25 +96,38 @@ theorem preparedPass_exec {Q T r : ℕ} (a : ScanData r d w W) (parent : Fin d �
         (d*(8*((d+1)*(d+1)*H)+14*H+22)+1)+(6*H+6)+(4*((d+1)*H)+4)+(6*(d*H)+6)
       let stepTime := fun idx => (if LabelStock.live r (w+1) 1 idx then prepTime+((6*volume+6)+(1+cleanBound idx))
         else 4*(d+1)*(d+1)+1)+(4*volume+4)+((d+1)*(d+1)*(4*H+4)+1)
-      let ready := fun idx (D : Stacks T prime) => ScanReady a scanPorts ext idx D ∧
+      let invariant := fun outs idx (D : Stacks T prime) => ScanReady {a with signed := outs} scanPorts ext idx D ∧
         D.R parentTape = (List.ofFn fun j => binSyms H (parent j : ZMod M).val).flatten ∧
         ∀ h, D.L (host (privateBank h)) = [] ∧ D.R (host (privateBank h)) = []
       let pivot := scanPorts (Fin.last N).castSucc
       ∀ (rs : List (Pair T)) (_ : rs.length = r*r) (parents scratch : Fin T),
       (parents :: scratch :: (slots rs ++ [ext 0])).Nodup →
       (parents :: scratch :: (slots rs ++ [pivot])).Nodup →
-      ∃ writer : Pr P T Q prime U, ∀ (desc : RecursiveInterchangeLayout.Descriptor) (B : ℕ) (v : HS T Q prime U) (S : Stacks T prime),
+      ∀ (regs : Fin 6 ↪ Fin A) (anchor : Fin (size d+A) ↪ Fin T)
+        (ars : List (Pair (size d+A))) (ap asaved : Fin (size d+A)),
+      (anchorProgram d true).1+(anchorProgram d false).1+1 ≤ Q → ars.length = r*r →
+      (ap :: asaved :: (slots ars ++ [port d regs 4])).Nodup →
+      (∀ i j, anchor i ≠ host j) → (∀ i k, k ≠ 2 → anchor i ≠ ext k) → anchor (port d regs 1) = src →
+      (∀ i, anchor i ≠ parentTape) → (∀ k ∈ parents :: scratch :: slots rs, ∀ i, anchor i ≠ k) →
+      ∃ controls : Pr P T Q prime U, ∀ (desc : RecursiveInterchangeLayout.Descriptor) (B : ℕ) (v : HS T Q prime U) (S : Stacks T prime),
       a.records = LabelMask.records desc → desc.beforeH = B*prime^(r*((w+1)*r)) →
       LabelTraversal.ready (prime^w) S.R rs → S.R scratch = [] → (S.R parents).length = desc.beforeRows*desc.rows*B →
       a.outputTail = [] → S.R (ext 0) = [] →
-      ready 0 {S with R := Function.update S.R pivot ((List.range a.records).flatMap a.pivotWord ++ S.R pivot)} →
+      let D := embStk anchor S
+      Ready d 1 (w+1) W D → LabelTraversal.ready (prime^w) D.R ars → D.R asaved = [] →
+      (D.R ap).length = desc.beforeRows*desc.rows*B →
+      (D.R (port d regs 0)).length = ActualAffineScaling.modulus (w+1)^((d+1)*1)*W →
+      (∀ i ∈ ([2,3,4,5] : List (Fin 6)), D.R (port d regs i) = []) →
+      invariant a.signed 0 {S with R := Function.update S.R pivot ((List.range a.records).flatMap a.pivotWord ++ S.R pivot)} →
       let output := (List.range a.records).flatMap (outputRecord (LabelStock.live r (w+1) 1) a.matrix a.input)
       ∃ z F l, z.user = v.user ∧ F.R src = output ++ a.inputTail ∧ F.R acc = [] ∧ F.R (ext 0) = [] ∧
         F.R (scanPorts (Fin.last N).castSucc) = a.pivotTail ∧ F.R (tapes 34) = a.matrixTail ∧
         F.R parentTape = S.R parentTape ∧ (∀ h, F.L (host (privateBank h)) = [] ∧ F.R (host (privateBank h)) = []) ∧
-        l ≤ 2*((desc.beforeRows*desc.rows*B)*(time (prime^w) (r*r) 1+5)+4) + (((List.range a.records).map fun idx => stepTime idx+4).sum+2+(2*(a.records*volume)+2)) ∧
-        Exec body (.seq writer (.seq (maskedScan (ext 0) live pad) (moveR acc src id))) (mk v S) l (mk z F) := by
-  intro H J rows reads n k j t i width total ports shared bank program cost spare off reverseHost reverseBank active pop rewind stageCost rewindCost residual privateBank bound cleanBound positive host ext outside parentTape parentOff parentExt body scanPorts cols prep stream tapes count src saved tmp acc dst prepare compute advance live pad volume prepTime stepTime ready pivot rs size parents scratch maskRegs pivotRegs
+        l ≤ (1+((desc.beforeRows*desc.rows*B)*(time (prime^w) (r*r) 1+5)+4 +
+          (((signedInputs a.table (w+1) a.records inputs).map (fun x => Record.cost d A 1 (w+1) W x.1 + 2)).sum + 2) +
+          (2*(a.records*(ActualAffineScaling.modulus (w+1)^((d+1)*1)*W))+2))) + 2*((desc.beforeRows*desc.rows*B)*(time (prime^w) (r*r) 1+5)+4) + (((List.range a.records).map fun idx => stepTime idx+4).sum+2+(2*(a.records*volume)+2)) ∧
+        Exec body (.seq controls (.seq (maskedScan (ext 0) live pad) (moveR acc src id))) (mk v S) l (mk z F) := by
+  intro H J rows reads n k j t i width total ports shared bank program cost spare off reverseHost reverseBank active pop rewind stageCost rewindCost residual privateBank bound cleanBound positive host ext outside parentTape parentOff parentExt body scanPorts cols prep stream tapes count src saved tmp acc dst prepare compute advance live pad volume prepTime stepTime invariant pivot rs sizeRs parents scratch maskRegs pivotRegs regs anchor ars ap asaved acap asize alayout banks external sharedSrc anchorParent counters
   have offExt (i : Fin (N+2)) (k : Fin 6) : scanPorts i ≠ ext k := outside _ _
   have streamEq : scanPorts (Fin.last N).castSucc = stream := by
     have eq := DFunLike.congr_fun (rewindPorts_active (d+1) shared spare off) (Fin.last N)
@@ -121,9 +135,32 @@ theorem preparedPass_exec {Q T r : ℕ} (a : ScanData r d w W) (parent : Fin d �
   have prepOff (i : Fin 23) : prep i ≠ parentTape := by
     have eq := DFunLike.congr_fun (rewindPorts_trans (d+1) shared spare off host) (forwardBank i)
     exact eq ▸ parentOff _
-  obtain ⟨writer,emit⟩ := controlStreams_exec body a.table rs size (ext 0) pivot parents scratch maskRegs pivotRegs
-  refine ⟨writer,?_⟩
-  intro desc B initial base records shape radix scratchEmpty countLen fresh maskEmpty initialReady output
+  obtain ⟨writer,emit⟩ := controlStreams_exec body a.table rs sizeRs (ext 0) pivot parents scratch maskRegs pivotRegs
+  obtain ⟨sign,signRun⟩ := anchorHandoff (w := w) (W := W) regs anchor scanPorts ext offExt
+    (fun i j => banks i _) external sharedSrc acap a.table body ars asize ap asaved alayout
+  refine ⟨.seq sign writer,?_⟩
+  intro desc B first init records shape radixInit scratchInit countInit fresh emptyInit anchorView neutral aradix afree acount awidth clean initialInv output
+  obtain ⟨outs,initial,base,signTime,signed,signUser,signExec,scanStart,signFrame,signBound⟩ :=
+    signRun desc B a inputs first init shape records hW neutral aradix afree acount awidth unsigned clean initialInv.1
+  let scanData := {a with signed := outs}
+  let ready := invariant outs
+  have scratchEmpty := (signFrame scratch (counters scratch (by simp))).2.trans scratchInit
+  have countLen := (congrArg List.length (signFrame parents (counters parents (by simp))).2).trans countInit
+  have maskEmpty := (signFrame _ (fun i => external i 0 (by decide))).2.trans emptyInit
+  have radix : LabelTraversal.ready (prime^w) base.R rs := by
+    intro pair hp
+    have eq (k) (hk : k ∈ slots rs) := (signFrame k (counters k (by simp [hk]))).2
+    rw [eq _ (List.mem_flatMap.mpr ⟨pair,hp,by simp⟩),eq _ (List.mem_flatMap.mpr ⟨pair,hp,by simp⟩)]
+    exact radixInit pair hp
+  have initialReady : ready 0 (preparedPivots scanData pivot base) := by
+    refine ⟨scanStart,?_,?_⟩
+    · exact ((Function.update_of_ne (parentOff _).symm _ _).trans (signFrame _ anchorParent).2).trans
+        ((Function.update_of_ne (parentOff _).symm _ _).symm.trans initialInv.2.1)
+    · intro h
+      have separate := host.injective.ne (private_ne_rewind (d+1) h (Fin.last N).castSucc)
+      have kept := signFrame _ (fun i => banks i (privateBank h))
+      exact ⟨kept.1.trans (initialInv.2.2 h).1,((Function.update_of_ne separate _ _).trans kept.2).trans
+        ((Function.update_of_ne separate _ _).symm.trans (initialInv.2.2 h).2)⟩
   obtain ⟨v,t,hv,ht,write⟩ := emit desc (w+1) B (by omega) shape initial base (by simpa using radix) scratchEmpty countLen
   let bits := (LabelMask.selectors r (w+1) a.records).map (bitSymbol (a := prime))
   let prepared := {base with R := Function.update base.R pivot ((List.range a.records).flatMap a.pivotWord ++ base.R pivot)}
@@ -149,7 +186,7 @@ theorem preparedPass_exec {Q T r : ℕ} (a : ScanData r d w W) (parent : Fin d �
     cases bit : LabelStock.live r (w+1) 1 idx with
     | false =>
       obtain ⟨symbol,constant⟩ := padding idx inside bit
-      obtain ⟨z,F,l,hz,next,left,frame,hn,run⟩ := before.padding a scanPorts ext offExt idx inside bit inputs
+      obtain ⟨z,F,l,hz,next,left,frame,hn,run⟩ := before.padding scanData scanPorts ext offExt idx inside bit inputs
         (encoded idx inside) symbol constant signed body u D
       refine ⟨z,F,l,hz,⟨next,(frame _ (parentExt 2).symm (parentExt 5).symm (fun i => parentOff _)).trans parents,?_⟩,
         frame _ (ext.injective.ne (by decide)) (ext.injective.ne (by decide)) (fun i => offExt i 0),
@@ -162,7 +199,7 @@ theorem preparedPass_exec {Q T r : ℕ} (a : ScanData r d w W) (parent : Fin d �
       have addr := physicalLabel_index (m := r) (w := w+1) idx
       have res := physicalLabel_residue (m := r) (w := w+1) (by omega) idx
       have step := preparedResidual_exec parent capacity signCapacity H J hm hw hW a.table (physicalLabel r (w+1) idx)
-        (a.matrix idx) det (lift.trans (congrArg a.table res)) _ (addr.symm ▸ inside) inputs a.signed signed
+        (a.matrix idx) det (lift.trans (congrArg a.table res)) _ (addr.symm ▸ inside) inputs outs signed
         (a.matrices (idx+1)) a.pivotTail (fun _ => blank) 0 (by simp) (a.input idx) host body u D
         count src saved tmp (fun i => outside i 2) a.inputTail parentTape prepOff (parentOff _).symm parents
         (by obtain h := before.bank inside; exact ⟨h.modulus,h.width,h.one,h.padded,h.clock,h.archive,h.scratch,h.src,h.dst⟩)
@@ -188,11 +225,11 @@ theorem preparedPass_exec {Q T r : ℕ} (a : ScanData r d w W) (parent : Fin d �
       rw [outputPrefix_succ,outputRecord_live _ _ _ bit unit word effect,← before.acc]
       exact out
   obtain ⟨u,D,l,hu,⟨done,parents,free⟩,empty,time,run⟩ := scanned
-  obtain ⟨z,F,hz,queue,accEnd,maskEnd,pivots,archive,frame,move⟩ := finishScan_exec a scanPorts ext offExt body
+  obtain ⟨z,F,hz,queue,accEnd,maskEnd,pivots,archive,frame,move⟩ := finishScan_exec scanData scanPorts ext offExt body
     u D done fresh (by simpa [signedInputs] using signed.length_eq.symm) empty
-  refine ⟨z,F,_,hz.trans (hu.trans hv),queue,accEnd,maskEnd,pivots,archive,
-    (frame _ (parentExt 2).symm (parentExt 5).symm).2.trans (parents.trans (initialReady.2.1.symm.trans (Function.update_of_ne (parentOff _).symm _ _))),?_,
-    Nat.add_le_add (by simpa using ht) (Nat.add_le_add_right time _),Exec.seq gen (Exec.seq run move)⟩
+  refine ⟨z,F,_,hz.trans (hu.trans (hv.trans signUser)),queue,accEnd,maskEnd,pivots,archive,
+    (frame _ (parentExt 2).symm (parentExt 5).symm).2.trans (parents.trans (initialReady.2.1.symm.trans ((Function.update_of_ne (parentOff _).symm _ _).trans (signFrame _ anchorParent).2))),?_,
+    Nat.add_le_add (Nat.add_le_add signBound (by simpa using ht)) (Nat.add_le_add_right time _),Exec.seq (Exec.seq signExec gen) (Exec.seq run move)⟩
   intro h
   have keep := frame _ (outside (privateBank h) 2) (outside (privateBank h) 5)
   exact ⟨keep.1.trans (free h).1,keep.2.trans (free h).2⟩
