@@ -29,6 +29,31 @@ noncomputable def completeSwapTime [Fintype P] (body : P → Pr P (N+35) Q prime
       (embProg swapSimulationPort Empty.elim (foreign rowSwapBlock.program)) : Pr P (N+35) Q prime U))
   limit + (4*work.length+1 + work.length*(6*(push*limit)))
 
+/-- A swap pays setup once and a width-dependent charge per payload symbol. -/
+theorem completeSwapTime_le_setup_add_volume [Fintype P] (body : P → Pr P (N+35) Q prime U)
+    (d i j w W H J : ℕ) :
+    let push := max (mnPushC body) (mnProgPush (.seq (swapSetup swapHostFits d i j)
+      (embProg swapSimulationPort Empty.elim (foreign rowSwapBlock.program)) : Pr P (N+35) Q prime U))
+    let rate := ⌈LeafCore.C * ((w+1 : ℕ) : ℝ) ^ M8.Machine.BudgetBound.tau⌉₊
+    completeSwapTime body d i j w W H J ≤ completeSwapTime body d i j w 0 H J +
+      (1 + (swapWorkspace (N+35)).length * 6 * push) * (N+5) *
+        (3808274 + rate) * ((prime^(w+1))^d * W) := by
+  let V := (prime^(w+1))^d * W
+  have size (x : ℕ) : volume prime (payloadView prime d (w+1) x) = (prime^(w+1))^d*x := by
+    simp [payloadView, volume, ← pow_mul, Nat.mul_comm d]
+  have bound : LeafCore.coreCost V (w+1) ≤
+      ⌈LeafCore.C * ((w+1 : ℕ) : ℝ) ^ M8.Machine.BudgetBound.tau⌉₊ * V := by
+    apply Nat.floor_le_of_le
+    simp only [Nat.max_eq_right (by omega : 1 ≤ w+1), Nat.cast_mul]
+    rw [mul_right_comm]
+    exact mul_le_mul_of_nonneg_right (Nat.le_ceil _) (Nat.cast_nonneg V)
+  unfold completeSwapTime
+  have empty : LeafCore.coreCost 0 (w+1) = 0 := by simp [LeafCore.coreCost]
+  simp only [size, Nat.mul_zero, empty, Nat.add_zero, Nat.zero_add, Nat.zero_mul]
+  dsimp [V] at bound
+  grw [bound]
+  exact le_of_eq (by ring)
+
 theorem completeSwap_exec [Fintype P] {d w W : ℕ} (i j : Fin d) (lt : i < j) (H J : ℕ)
     (hm : prime^(w+1) < 2^H) (hw : W < 2^J) (hW : 0 < W)
     (body : P → Pr P (N+35) Q prime U) (v : HS (N+35) Q prime U) (S : Stacks (N+35) prime) :
