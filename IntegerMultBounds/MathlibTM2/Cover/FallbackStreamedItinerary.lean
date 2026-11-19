@@ -14,14 +14,6 @@ def streamedItinerary (d p : ℕ) (r : Fin 23 ↪ Fin T) (src : Fin T) : ℕ →
   | n+1 => if h : n < d then .seq (streamedItinerary d p r src n)
       (liveColumn p (⟨n,h⟩ : Fin d) (stageBank r n) src) else streamedItinerary d p r src n
 
-/-- The two stacks retain alternate stages. Removing the latest matrix and exchanging
-the stacks recovers the preceding pair, including the caller's original suffixes. -/
-def matrixArchive {α : Type} (stage : ℕ → List α) (source dest : List α) : ℕ → List α × List α
-  | 0 => (source,dest)
-  | n+1 =>
-    let prev := matrixArchive stage source dest n
-    (stage (n+1) ++ prev.2, prev.1)
-
 theorem streamedItinerary_exec (body : P → Pr P T Q A U) (r : Fin 23 ↪ Fin T) (src : Fin T) (apart : ∀ i, r i ≠ src) (p w H : ℕ) (hp : p.Prime)
     [NeZero (p^(w+1))] (m : Matrix (Fin d) (Fin d) (ZMod (p^(w+1)))) (pivot : Fin d → Fin d)
     (hm : p^(w+1) < 2^H) (v : HS T Q A U) (S : Stacks T A) (tail : List (Fin (A+4)))

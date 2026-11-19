@@ -86,6 +86,14 @@ theorem diagonalize_exec (body : P → Pr P T Q A U) (r : Fin 23 ↪ Fin T) (p w
     · rw [Matrix.diagonal_apply_ne _ h]; exact cleared i j j.isLt h
   exact ⟨z,F,l,suffix,E,a,hz,hl,run,diagonal ▸ packed,elim,product.trans diagonal,fun i => units i i.isLt⟩
 
+/-- The two stacks retain alternate stages. Removing the latest matrix and exchanging
+the stacks recovers the preceding pair, including the caller's original suffixes. -/
+def matrixArchive {α : Type} (stage : ℕ → List α) (source dest : List α) : ℕ → List α × List α
+  | 0 => (source,dest)
+  | n+1 =>
+    let prev := matrixArchive stage source dest n
+    (stage (n+1) ++ prev.2, prev.1)
+
 def goodProgram {d : ℕ} (p : ℕ) (r : Fin 23 ↪ Fin T) : ℕ → Pr P T Q A U
   | 0 => .act .done
   | n+1 => if h : n < d then .seq (goodProgram (d := d) p r n)
@@ -103,17 +111,20 @@ theorem goodProgram_exec (body : P → Pr P T Q A U) (r : Fin 23 ↪ Fin T) (p w
     ∃ z F l suffix, z.user = v.user ∧ l ≤ n*(4*w+4+columnTime d p w H)+1 ∧
       Exec body (goodProgram (d := d) p r n) (mk v S) l (mk z F) ∧
       F.R (stageBank r n 15) = matrixWords A H (GoodForm.stageAt m ranks hr minor n hn).M ++ suffix ∧
+      (F.R (stageBank r n 15), F.R (stageBank r n 16)) =
+        matrixArchive (fun j => if hj : j ≤ ranks then
+          matrixWords A H (GoodForm.stageAt m ranks hr minor j hj).M else []) (S.R (r 15)) (S.R (r 16)) n ∧
       F.L = S.L ∧ F.inp = S.inp ∧ F.out = S.out ∧
       ∀ i, i ≠ stageBank r n 15 → i ≠ stageBank r n 16 → F.R i = S.R i := by
   induction n with
-  | zero => exact ⟨v,S,1,tail,rfl,by simp,Exec.act (body := body) .done _,matrix,rfl,rfl,rfl,fun _ _ _ => rfl⟩
+  | zero => exact ⟨v,S,1,tail,rfl,by simp,Exec.act (body := body) .done _,matrix,rfl,rfl,rfl,rfl,fun _ _ _ => rfl⟩
   | succ n ih =>
     have h : n < d := lt_of_lt_of_le hn hr
     let k : Fin d := ⟨n,h⟩
     let b := stageBank r n
     let stage := GoodForm.stageAt m ranks hr minor n (by omega)
     have unit := GoodForm.pivot_isUnit stage h (minor n hn)
-    obtain ⟨u,D,l,suffix,hu,hl,run,packed,hL,hin,hout,frame⟩ := ih (by omega)
+    obtain ⟨u,D,l,suffix,hu,hl,run,packed,archive,hL,hin,hout,frame⟩ := ih (by omega)
     have keep (i : Fin 23) (hi : i ≠ 15) (hj : i ≠ 16) : D.R (b i) = S.R (r i) :=
       (frame _ (b.injective.ne hi) (b.injective.ne hj)).trans (congrArg S.R (stageBank_fixed r n i hi hj))
     obtain ⟨z,t,hz,ht,col⟩ := borrowGoodColumn_exec body b p w H hp stage.M k unit hm u D suffix packed ((keep 2 (by decide) (by decide)).trans modulus)
@@ -124,10 +135,12 @@ theorem goodProgram_exec (body : P → Pr P T Q A U) (r : Fin 23 ↪ Fin T) (p w
     rw [next] at col
     have src : stageBank r (n+1) 15 = b 16 := by simp [stageBank,b]
     have dst : stageBank r (n+1) 16 = b 15 := by simp [stageBank,b]
-    refine ⟨z,{D with R := Function.update D.R (b 16) (matrixWords A H (GoodForm.stageAt m ranks hr minor (n+1) hn).M ++ D.R (b 16))},l+t,D.R (b 16),hz.trans hu,?_,?_,?_,hL,hin,hout,?_⟩
+    refine ⟨z,{D with R := Function.update D.R (b 16) (matrixWords A H (GoodForm.stageAt m ranks hr minor (n+1) hn).M ++ D.R (b 16))},l+t,D.R (b 16),hz.trans hu,?_,?_,?_,?_,hL,hin,hout,?_⟩
     · rw [Nat.succ_mul]; omega
     · simpa only [goodProgram,dite_eq_left h] using Exec.seq run col
     · simp [src]
+    · rw [matrixArchive, ← archive, src, dst]
+      simp [hn, b.injective.eq_iff, b]
     · intro i hi hj
       rw [src] at hi
       rw [dst] at hj
