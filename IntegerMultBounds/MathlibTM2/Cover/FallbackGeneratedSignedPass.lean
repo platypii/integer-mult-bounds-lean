@@ -380,15 +380,17 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     let a := base.physical e proj α α'
     let perDigit := 18*box+6+12*r*r*units*lifts
     let perParent := box*(15*digits+89) + 25 +
-      (LabelTraversal.time (prime^w) (r*r) 1+5) + queuePerParent +
-      3*(LabelTraversal.time (prime^w) (r*r) 1+5) + lifts*signedClassSetup U d T w a.H classes units +
-      lifts*units*(signedResidualTime_le_setup_add_counter U d a.H).choose*a.J +
-      (lifts * (classes*anchorVolumeRate d T + units*6 + units*rate) + 4*box) * (M^(d+1)*W)
+      4*(LabelTraversal.time (prime^w) (r*r) 1+5) + queuePerParent + lifts*signedClassSetup U d T w a.H classes units +
+      lifts*units*(signedResidualTime_le_setup_add_counter U d a.H).choose*a.J
+    let recordVolume := M^(d+1)*W
+    let totalVolume := a.records*recordVolume
+    let liveVolume := (v.beforeRows*v.rows*B)*(units*lifts)*recordVolume
     let fixedCost := 22*box + 21*(w+1) + 26*prime^w + paddingSetupCost (d+1) base.H + 82
     SignedPassBound regs anchor ports ext v B a payload rs parents saved body
       (.seq (LabelSpectators.program r br rows bh atom (dir 2) (dir 9) (dir 3) (dir 5)) (.seq (.seq (LabelDirectorySetup.setup r dir atom one) (.seq (expandMask (dir 9) (dir 4) (dir 2) (dir 3) (dir 5) (dir 12) (fun _ => false)) (LabelDirectoryBuild.program dir))) (.seq (.seq (LabelCounts.highCount one atom (dir 7) (dir 2) (dir 3) (dir 5))
         (scanR (dir 7) (dir 2) (LabelCountBank.pushAll (cs.map Prod.fst)))) (.seq writeMask (.seq (.seq (bcopy (recip 15) (bank 17) (bank 4) tmp) (.seq (.seq (umulSym 1 (bitSymbol false) (bank 8) (bank 9) (bank 4)) (withIdentitySeed (d+1) (bank 9) (bank 17) seed (bank 4) tmp generate)) (bclear (bank 9)))) (bclear (bank 17))))))) pass
-      ((v.beforeRows*v.rows*B)*(perParent + width*perDigit) + fixedCost) u raw input := by
+      ((v.beforeRows*v.rows*B)*(perParent + width*perDigit) + fixedCost +
+        (anchorVolumeRate d T + 4)*totalVolume + (6+rate)*liveVolume) u raw input := by
   intro swaps shears rate
   obtain ⟨pass,run⟩ := physicalSignedResidualPass (w := w) (W := W) regs anchor ports ext off banks external shared
     capacity e proj idempotent admissible α α' inverse body rs hk parents saved layout cap cs sizeC
@@ -398,7 +400,7 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     coeffOff maskLayout retained anchorDirectory portDirectory extDirectory
   obtain ⟨writeMask,write⟩ := record_writes (body := body) r cs sizeC mask parentsC savedC maskLayout
   refine ⟨writeMask,?_⟩
-  intro directoryPorts directorySlot dir parentWidthPort parentWidthOff atom one atomOff oneOff highLayout highSlots br rows bh dimensions word parentTail v B base payload u raw positiveDescriptor beforeRows rowsSize beforeH parentBlank source n box parentWidth digits ancestor tail entries counted builtState input atomWord oneWidth parentsWord wordWidth scratch counterEmpty savedBlank maskBlank bits selected oneBlank unitWord masked zeroBlank initial padWord S queueInputs scan liveBase generate units classes lifts queuePerParent a perDigit perParent fixedCost shape records hW D
+  intro directoryPorts directorySlot dir parentWidthPort parentWidthOff atom one atomOff oneOff highLayout highSlots br rows bh dimensions word parentTail v B base payload u raw positiveDescriptor beforeRows rowsSize beforeH parentBlank source n box parentWidth digits ancestor tail entries counted builtState input atomWord oneWidth parentsWord wordWidth scratch counterEmpty savedBlank maskBlank bits selected oneBlank unitWord masked zeroBlank initial padWord S queueInputs scan liveBase generate units classes lifts queuePerParent a perDigit perParent recordVolume totalVolume liveVolume fixedCost shape records hW D
     neutral radix free count width unsigned clean start hm hw fresh maskEmpty encoded padding
   let active := LabelStock.live r (w+1) 1
   obtain ⟨seedBlank,tmpBlank,weightBank,queueReady,empty,output⟩ := queueInputs
@@ -710,7 +712,7 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
   refine ⟨z,E,_,hz.trans (finishUser.trans (releaseUser.trans (cleanUser.trans (hy.trans (preparedUser.trans (zeroUser.trans (copyUser.trans (hUser.trans (counterUser.trans (buildUser.trans parentUser)))))))))),queue,acc,maskDone,pivots,archiveDone,?_,
     Exec.seq (Exec.seq parentRun (Exec.seq buildRun (Exec.seq counterRun (Exec.seq emit (Exec.seq (Exec.seq copyRun (Exec.seq (Exec.seq zeroRun (Exec.seq (Exec.seq initRun generateRun) clearRun)) releaseRun)) finishRun))))) exec⟩
   apply total.trans_eq
-  dsimp only [dirCost,setupCost,perDigit,perParent,fixedCost,signedPassWork,Nat.add_one_sub_one]
+  dsimp only [dirCost,setupCost,perDigit,perParent,recordVolume,totalVolume,liveVolume,fixedCost,signedPassWork,Nat.add_one_sub_one]
   change a.records = LabelMask.records v at records
   rw [← records,show a.records = n*box from recordCount,recordCount,← parentSize,boxSize]
   ring
