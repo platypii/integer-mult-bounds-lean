@@ -566,7 +566,11 @@ directly:
   `PrefixWitnesses/All.lean` discharges nonsingularity and generator membership for all
   636 labels, at their certified dimensions. The integer dual witnesses for ranks four,
   six and seven multiply each selected prefix matrix to a diagonal with no zero entry. The normalized graph rows `[I | A]` computed by exact
-  elimination have denominators at most 1799432 across all labels. The two
+  elimination have denominators at most 1799432 across all labels. `M6.label_interpolation`
+  proves that at every machine radix the first `d` coordinates reconstruct every translated
+  generator of each label of dimension `d`. The selected rows are independent on their
+  prefix, so the certified dimension gives rational spanning; the adjugate clears
+  denominators for modular reconstruction. The two
   port endpoints present a remaining mismatch: the line gets pivot 0 and the target
   hyperplane gets pivots 0 through 6, whereas the complement of the line projector
   has diagonal support 1 through 7. Closing the stage boundary and pricing its route
