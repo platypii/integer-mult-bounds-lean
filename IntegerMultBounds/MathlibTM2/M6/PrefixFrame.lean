@@ -76,4 +76,45 @@ theorem prefix_fixed_of_scaled_relation {d : ℕ} (hd : d ≤ 8)
   funext j
   exact (prefix_denominator_unit den nz bound w).mul_right_inj.mp (congrFun identity j)
 
+/-- Cramer's identity clears every rational row relation with the same integer,
+the determinant of the prefix minor. -/
+theorem prefix_integral_relation {d : ℕ} (hd : d ≤ 8) (G : Matrix (Fin d) (Fin 8) ℤ)
+    (x : Fin 8 → ℤ) (a : Fin d → ℚ)
+    (span : a ᵥ* G.map (Int.castRingHom ℚ) = fun j => (x j : ℚ)) :
+    let A := G.submatrix id (Fin.castLE hd)
+    ∃ b : Fin d → ℤ, ∀ j, A.det * x j = ∑ i, b i * G i j := by
+  intro A
+  let f := Int.castRingHom ℚ
+  let u := x ∘ Fin.castLE hd
+  let b := u ᵥ* A.adjugate
+  have part : a ᵥ* A.map f = f ∘ u :=
+    congrArg (fun v : Fin 8 → ℚ => v ∘ Fin.castLE hd) span
+  have adj : (A.adjugate.map f) = (A.map f).adjugate := f.map_adjugate A
+  have coeff : f ∘ b = (f A.det) • a := by
+    calc f ∘ b = (f ∘ u) ᵥ* A.adjugate.map f := funext (f.map_vecMul A.adjugate u)
+         _ = _ := by
+           rw [← part, adj, vecMul_vecMul, mul_adjugate, vecMul_smul, vecMul_one]
+           rw [show (A.map f).det = f A.det from (f.map_det A).symm]
+  refine ⟨b, fun j => Int.cast_injective (α := ℚ) ?_⟩
+  change f (A.det * x j) = f ((b ᵥ* G) j)
+  rw [map_mul, f.map_vecMul, coeff, smul_vecMul, span]
+  rfl
+
+/-- Rational span membership suffices to recover a generator over every prime-power
+radix. Only the selected prefix determinant enters the denominator bound. -/
+theorem prefix_fixed_of_rational_span {d : ℕ} (hd : d ≤ 8) (G : Matrix (Fin d) (Fin 8) ℤ)
+    (entries : ∀ i j, (G i j).natAbs ≤ 1344) (x : Fin 8 → ℤ)
+    (span : ∃ a : Fin d → ℚ, a ᵥ* G.map (Int.castRingHom ℚ) = fun j => (x j : ℚ))
+    (w : ℕ) (B : Matrix (Fin d) (Fin 8) (ZMod (prime ^ w))) :
+    let A := G.submatrix id (Fin.castLE hd)
+    A.det ≠ 0 → A.map (Int.castRingHom (ZMod (prime ^ w))) * B =
+      G.map (Int.castRingHom (ZMod (prime ^ w))) →
+    (fun i : Fin d => (x (i.castLE hd) : ZMod (prime ^ w))) ᵥ* B =
+      fun j => (x j : ZMod (prime ^ w)) := by
+  intro A nz reconstruct
+  obtain ⟨a, ha⟩ := span
+  obtain ⟨b, relation⟩ := prefix_integral_relation hd G x a ha
+  apply prefix_fixed_of_scaled_relation hd G x b A.det relation nz _ w B reconstruct
+  exact prefix_det_bound hd A fun i j => entries i (j.castLE hd)
+
 end IntegerMultBounds.MathlibTM2.M6

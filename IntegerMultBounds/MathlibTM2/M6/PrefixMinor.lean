@@ -24,19 +24,22 @@ theorem prefix_denominator_unit (den : ℤ) (nz : den ≠ 0) (bound : den.natAbs
   exact (ZMod.coe_int_isUnit_iff_isCoprime _ _).mpr
     (Int.isCoprime_iff_nat_coprime.mpr (by simpa using (coprime.pow_right w).symm))
 
+theorem prefix_det_bound {d : ℕ} (dim : d ≤ 8) (A : Matrix (Fin d) (Fin d) ℤ)
+    (entries : ∀ i j, (A i j).natAbs ≤ 1344) : A.det.natAbs ≤ 2 ^ 100 := by
+  calc
+    A.det.natAbs ≤ d.factorial * 1344 ^ d := M8.Rev.natAbs_det_le entries
+    _ ≤ Nat.factorial 8 * 1344 ^ 8 :=
+      Nat.mul_le_mul (Nat.factorial_le dim) (Nat.pow_le_pow_right (by decide) dim)
+    _ ≤ 2 ^ 100 := by decide
+
 /-- The translated generators have entries of magnitude at most 1344. A nonsingular
 prefix minor of these generators supplies an invertible matrix at every width. -/
 theorem prefix_minor_unit {d : ℕ} (dim : d ≤ 8) (A : Matrix (Fin d) (Fin d) ℤ)
     (entries : ∀ i j, (A i j).natAbs ≤ 1344) (nonsingular : A.det ≠ 0) (w : ℕ) :
     IsUnit (A.map (Int.castRingHom (ZMod (prime ^ w)))) := by
-  have bound : A.det.natAbs ≤ 2 ^ 100 := calc
-    A.det.natAbs ≤ d.factorial * 1344 ^ d := M8.Rev.natAbs_det_le entries
-    _ ≤ Nat.factorial 8 * 1344 ^ 8 :=
-      Nat.mul_le_mul (Nat.factorial_le dim) (Nat.pow_le_pow_right (by decide) dim)
-    _ ≤ 2 ^ 100 := by decide
   rw [Matrix.isUnit_iff_isUnit_det]
   change IsUnit (((Int.castRingHom (ZMod (prime ^ w))).mapMatrix A).det)
   rw [← RingHom.map_det]
-  exact prefix_denominator_unit A.det nonsingular bound w
+  exact prefix_denominator_unit A.det nonsingular (prefix_det_bound dim A entries) w
 
 end IntegerMultBounds.MathlibTM2.M6
