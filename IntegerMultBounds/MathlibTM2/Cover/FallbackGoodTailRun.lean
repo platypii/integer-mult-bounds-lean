@@ -10,13 +10,17 @@ open HeadPivotLayout
 variable {P U α : Type} {T A d W b w : ℕ} [NeZero (b^(w+1))]
 local notation "M" => b^(w+1)
 
-def tailStages (b rank : ℕ) (hr : rank ≤ d) (negative : Bool) (host : Fin 53 ↪ Fin T) :
+def tailStagesAt {dim : ℕ} (port : Fin d → Fin dim) (b rank : ℕ) (hr : rank ≤ d) (negative : Bool) (host : Fin 53 ↪ Fin T) :
     List (Fin rank) → Pr P T 217 A U
   | [] => .act .done
   | a :: as =>
     let k := a.castLE hr
-    .seq (tailStage b rank k negative host ((List.finRange d).filter (k < ·)))
-      (tailStages b rank hr negative host as)
+    .seq (tailStageAt port b rank k negative host ((List.finRange d).filter (k < ·)))
+      (tailStagesAt port b rank hr negative host as)
+
+abbrev tailStages (b rank : ℕ) (hr : rank ≤ d) (negative : Bool) (host : Fin 53 ↪ Fin T) :
+    List (Fin rank) → Pr P T 217 A U :=
+  tailStagesAt id b rank hr negative host
 
 noncomputable def tailStageWord {R : Type*} [CommRing R] (G : Matrix (Fin d) (Fin d) R)
     (rank : ℕ) (hr : rank ≤ d)
@@ -26,6 +30,74 @@ noncomputable def tailStageWord {R : Type*} [CommRing R] (G : Matrix (Fin d) (Fi
   let stage := (stageAt G rank hr minor a.val a.isLt.le).M
   goodTailRow k (fun i => let x := elimU k stage (Ring.inverse (stage k k)) i
                           if negative then -x else x) ((List.finRange d).filter (k < ·))
+
+theorem tailStagesAt_exec [Fintype P] (body : P → Pr P T 217 A U) (host : Fin 53 ↪ Fin T)
+    {dim : ℕ} (port : Fin d → Fin dim) (mono : StrictMono port)
+    {β : Type*} (embed : β → (Fin d → ZMod M) → Fin dim → ZMod M)
+    (liftShear : ∀ i k (lt : i < k) c u x,
+      (RowOp.shear (port i) (port k) (mono lt) c).apply (embed u x) =
+        embed u ((RowOp.shear i k lt c).apply x))
+    (G : Matrix (Fin d) (Fin d) (ZMod M)) (rank : ℕ) (hr : rank ≤ d)
+    (minor : ∀ j (hj : j < rank), IsUnit (lead (j+1) (lt_of_lt_of_le hj hr) G).det)
+    (hb : b.Prime) (negative : Bool) (H J : ℕ) (hm : M < 2^H) (hw : W < 2^J) (hW : 0 < W)
+    (tail dest parent pivotTail : List (Fin (A+4))) (sym : α → Fin 4) (source target : ℤ → Fin 4) (p q : ℤ)
+    (empty : ∀ z, q ≤ z → z < q+(M^dim*W : ℕ) → target z = blank) :
+    let c := child.trans host
+    let h := (coeff negative).trans host
+    let s := shear.trans host
+    let words := fun j => if hj : j ≤ rank then matrixWords A H (stageAt G rank hr minor j hj).M else []
+    let pair := matrixArchive words (words 0 ++ tail) dest rank
+    let piv := fun j : Fin rank => (stageAt G rank hr minor rank le_rfl).M (j.castLE hr) (j.castLE hr)
+    let ready : (Fin (M^dim*W) → α) → Stacks T A → Prop := HeadColumnReady (d := dim) (W := W) h s H J [] parent [] sym source target p q
+    let cost := fun a : Fin rank =>
+      let k := a.castLE hr
+      (8*((rank-a.val)/2*(d*d*H))+14*(d*d*H)+22 + tailPivotTime b w H a.val) +
+        ((((List.finRange d).filter (k < ·)).map (tailEntryTimeAt body h s port k M W H J)).sum+1+(2*(d*d*H+3*H)+9))
+    ∀ as : List (Fin rank), ∀ v S word, ready word S →
+      (S.R (host 49),S.R (host 50)) = pair → (S.R (host 51)).length = d*d*H →
+      S.R (c 18) = (List.ofFn fun j => binSyms H (piv j).val).flatten ++ pivotTail →
+      S.R (c 15) = binSyms H (1 : ZMod M).val → (S.R (c 16)).length = w →
+      (∀ j : Fin 20, (j ≤ 14 ∧ j ≠ 4) ∨ j = 17 → S.R (c j) = []) →
+      ∃ z F n out, z.user = v.user ∧ n ≤ (as.map cost).sum+1 ∧
+        Exec body (tailStagesAt port b rank hr negative host as) (mk v S) n (mk z F) ∧ ready out F ∧
+        (∀ j, (∀ i, s i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j) ∧
+        ∀ u x j, out (index (embed u ((as.flatMap (tailStageWord G rank hr minor negative)).foldl
+          (fun y op => op.apply y) x)) j) = word (index (embed u x) j) := by
+  intro c h s words pair piv ready cost as
+  induction as with
+  | nil =>
+    intro v S word initial _ _ _ _ _ _
+    exact ⟨v,S,1,word,rfl,by simp,Exec.act _ _,initial,fun _ _ => ⟨rfl,rfl⟩,fun _ _ _ => rfl⟩
+  | cons a as ih =>
+    intro v S word initial packed count pivots one clock scratch
+    let odd := decide ((rank-a.val)%2 ≠ 0)
+    let r := (reader odd).trans host
+    have select : S.R (r 2) = if (rank-a.val)%2 = 0 then pair.1 else pair.2 := by
+      by_cases even : (rank-a.val)%2 = 0
+      · simpa [r,odd,even,reader] using congrArg Prod.fst packed
+      · simpa [r,odd,even,reader] using congrArg Prod.snd packed
+    have width : (S.R (r 1)).length = d*d*H := by cases eq : odd <;> simpa [r,eq,reader] using count
+    let k := a.castLE hr
+    obtain ⟨u,D,t,out,hu,ht,step,next,frame,effect⟩ := tailStageAt_exec body host port mono embed liftShear G rank hr minor a
+      hb negative H J hm hw hW v S tail dest parent pivotTail sym source target p q word empty
+      ((List.finRange d).filter (k < ·)) select width pivots one clock scratch initial
+      (fun i hi => of_decide_eq_true (List.mem_filter.mp hi).2)
+    have childKeep (j : Fin 20) : D.R (c j) = S.R (c j) :=
+      (frame _ (fun i => host.injective.ne ((by decide : ∀ i j, shear i ≠ child j) i j))).2
+    have keep (j : Fin 53) (hj : 49 ≤ j) := (frame (host j)
+      (fun i => host.injective.ne ((by decide : ∀ i j, 49 ≤ j → shear i ≠ j) i j hj))).2
+    obtain ⟨z,F,n,result,hz,hn,more,done,saved,act⟩ := ih u D out next
+      (by rwa [keep 49 (by decide),keep 50 (by decide)]) (by rwa [keep 51 (by decide)])
+      ((childKeep 18).trans pivots) ((childKeep 15).trans one) (by rwa [childKeep])
+      (fun j hj => (childKeep j).trans (scratch j hj))
+    refine ⟨z,F,t+n,result,hz.trans hu,?_,Exec.seq step more,done,?_,?_⟩
+    · have bound : t ≤ cost a := ht
+      simpa [Nat.add_assoc] using Nat.add_le_add bound hn
+    · intro j outside
+      exact ⟨(saved j outside).1.trans (frame j outside).1,(saved j outside).2.trans (frame j outside).2⟩
+    · intro u x j
+      rw [List.flatMap_cons,List.foldl_append]
+      exact (act u _ j).trans (effect u x j)
 
 theorem tailStages_exec [Fintype P] (body : P → Pr P T 217 A U) (host : Fin 53 ↪ Fin T)
     (G : Matrix (Fin d) (Fin d) (ZMod M)) (rank : ℕ) (hr : rank ≤ d)
@@ -54,41 +126,11 @@ theorem tailStages_exec [Fintype P] (body : P → Pr P T 217 A U) (host : Fin 53
         (∀ j, (∀ i, s i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j) ∧
         ∀ x j, out (index ((as.flatMap (tailStageWord G rank hr minor negative)).foldl
           (fun y op => op.apply y) x) j) = word (index x j) := by
-  intro c h s words pair piv ready cost as
-  induction as with
-  | nil =>
-    intro v S word initial _ _ _ _ _ _
-    exact ⟨v,S,1,word,rfl,by simp,Exec.act _ _,initial,fun _ _ => ⟨rfl,rfl⟩,fun _ _ => rfl⟩
-  | cons a as ih =>
-    intro v S word initial packed count pivots one clock scratch
-    let odd := decide ((rank-a.val)%2 ≠ 0)
-    let r := (reader odd).trans host
-    have select : S.R (r 2) = if (rank-a.val)%2 = 0 then pair.1 else pair.2 := by
-      by_cases even : (rank-a.val)%2 = 0
-      · simpa [r,odd,even,reader] using congrArg Prod.fst packed
-      · simpa [r,odd,even,reader] using congrArg Prod.snd packed
-    have width : (S.R (r 1)).length = d*d*H := by cases eq : odd <;> simpa [r,eq,reader] using count
-    let k := a.castLE hr
-    obtain ⟨u,D,t,out,hu,ht,step,next,frame,effect⟩ := tailStage_exec body host G rank hr minor a
-      hb negative H J hm hw hW v S tail dest parent pivotTail sym source target p q word empty
-      ((List.finRange d).filter (k < ·)) select width pivots one clock scratch initial
-      (fun i hi => of_decide_eq_true (List.mem_filter.mp hi).2)
-    have childKeep (j : Fin 20) : D.R (c j) = S.R (c j) :=
-      (frame _ (fun i => host.injective.ne ((by decide : ∀ i j, shear i ≠ child j) i j))).2
-    have keep (j : Fin 53) (hj : 49 ≤ j) := (frame (host j)
-      (fun i => host.injective.ne ((by decide : ∀ i j, 49 ≤ j → shear i ≠ j) i j hj))).2
-    obtain ⟨z,F,n,result,hz,hn,more,done,saved,act⟩ := ih u D out next
-      (by rwa [keep 49 (by decide),keep 50 (by decide)]) (by rwa [keep 51 (by decide)])
-      ((childKeep 18).trans pivots) ((childKeep 15).trans one) (by rwa [childKeep])
-      (fun j hj => (childKeep j).trans (scratch j hj))
-    refine ⟨z,F,t+n,result,hz.trans hu,?_,Exec.seq step more,done,?_,?_⟩
-    · have bound : t ≤ cost a := ht
-      simpa [Nat.add_assoc] using Nat.add_le_add bound hn
-    · intro j outside
-      exact ⟨(saved j outside).1.trans (frame j outside).1,(saved j outside).2.trans (frame j outside).2⟩
-    · intro x j
-      rw [List.flatMap_cons,List.foldl_append]
-      exact (act _ j).trans (effect x j)
+  intro c h s words pair piv ready cost as v S word initial packed count pivots one clock scratch
+  obtain ⟨z,F,n,out,hz,hn,run,done,frame,effect⟩ := tailStagesAt_exec body host id strictMono_id
+    (fun (_ : Unit) x => x) (fun _ _ _ _ _ _ => rfl) G rank hr minor hb negative H J hm hw hW
+    tail dest parent pivotTail sym source target p q empty as v S word initial packed count pivots one clock scratch
+  exact ⟨z,F,n,out,hz,hn,run,done,frame,effect ()⟩
 
 section
 variable {R : Type*} [CommRing R] (G : Matrix (Fin d) (Fin d) R) (rank : ℕ) (hr : rank ≤ d)
@@ -175,5 +217,47 @@ theorem tailStages_matrix (negative : Bool) (x : Fin d → R) :
     rwa [cancel] at undo
 
 end
+
+open M8.ReversedExchange in
+theorem fullTail_exec [Fintype P] (body : P → Pr P T 217 A U) (host : Fin 53 ↪ Fin T)
+    (G : Matrix (Fin d) (Fin d) (ZMod M)) (rank : ℕ) (hr : rank ≤ d)
+    (minor : ∀ j (hj : j < rank), IsUnit (lead (j+1) (lt_of_lt_of_le hj hr) G).det)
+    (hb : b.Prime) (negative : Bool) (H J : ℕ) (hm : M < 2^H) (hw : W < 2^J) (hW : 0 < W)
+    (tail dest parent pivotTail : List (Fin (A+4))) (sym : α → Fin 4) (source target : ℤ → Fin 4) (p q : ℤ)
+    (empty : ∀ z, q ≤ z → z < q+(M^(d+d)*W : ℕ) → target z = blank) :
+    let c := child.trans host
+    let h := (coeff negative).trans host
+    let s := shear.trans host
+    let words := fun j => if hj : j ≤ rank then matrixWords A H (stageAt G rank hr minor j hj).M else []
+    let pair := matrixArchive words (words 0 ++ tail) dest rank
+    let piv := fun j : Fin rank => (stageAt G rank hr minor rank le_rfl).M (j.castLE hr) (j.castLE hr)
+    let ready : (Fin (M^(d+d)*W) → α) → Stacks T A → Prop := HeadColumnReady (d := d+d) (W := W) h s H J [] parent [] sym source target p q
+    let cost := fun a : Fin rank =>
+      let k := a.castLE hr
+      (8*((rank-a.val)/2*(d*d*H))+14*(d*d*H)+22 + tailPivotTime b w H a.val) +
+        ((((List.finRange d).filter (k < ·)).map (tailEntryTimeAt body h s (Fin.natAdd d) k M W H J)).sum+1+(2*(d*d*H+3*H)+9))
+    let as := if negative then (List.finRange rank).reverse else List.finRange rank
+    ∀ v S word, ready word S →
+      (S.R (host 49),S.R (host 50)) = pair → (S.R (host 51)).length = d*d*H →
+      S.R (c 18) = (List.ofFn fun j => binSyms H (piv j).val).flatten ++ pivotTail →
+      S.R (c 15) = binSyms H (1 : ZMod M).val → (S.R (c 16)).length = w →
+      (∀ j : Fin 20, (j ≤ 14 ∧ j ≠ 4) ∨ j = 17 → S.R (c j) = []) →
+      ∃ z F n out, z.user = v.user ∧ n ≤ (as.map cost).sum+1 ∧
+        Exec body (tailStagesAt (Fin.natAdd d) b rank hr negative host as) (mk v S) n (mk z F) ∧ ready out F ∧
+        (∀ j, (∀ i, s i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j) ∧
+        let stage := stageAt G rank hr minor rank le_rfl
+        let action := rev d * (if negative then stage.U' else stage.U) * rev d
+        ∀ x y j, out (index (Fin.append x (action.mulVec y)) j) = word (index (Fin.append x y) j) := by
+  intro c h s words pair piv ready cost as v S word initial packed count pivots one clock scratch
+  obtain ⟨z,F,n,out,hz,hn,run,done,frame,effect⟩ := tailStagesAt_exec body host (Fin.natAdd d)
+    (fun _ _ lt => by simpa using lt) Fin.append (fun i k lt c x y => tailShear_append i k lt c x y)
+    G rank hr minor hb negative H J hm hw hW tail dest parent pivotTail sym source target p q empty
+    as v S word initial packed count pivots one clock scratch
+  refine ⟨z,F,n,out,hz,hn,run,done,frame,?_⟩
+  intro stage action x y j
+  have result := effect x y j
+  dsimp only [as] at result
+  rw [tailStages_matrix G rank hr minor negative y] at result
+  exact result
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
