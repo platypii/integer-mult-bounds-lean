@@ -28,6 +28,28 @@ noncomputable def cleanPairShearTime [Fintype P] (body : P → Pr P T 217 A U) (
   let push := max (Fast.Main.mnPushC body) (Fast.Main.mnProgPush (pairShear (P := P) (A := A) (U := U) b i k t inverse bank negative useOne))
   4*shearWork.length+1+(1+6*shearWork.length*push)*limit
 
+/-- Coefficient preparation costs linearly in the atom width. The shear
+enumerates at most a prefix of length `d-1`, including work-tape restoration. -/
+theorem cleanPairShearTime_setup_le [Fintype P] (body : P → Pr P T 217 A U)
+    (bank : Fin 35 ↪ Fin T) (i k t : Fin d) (b : ℕ) (positive : 0 < b)
+    (inverse negative useOne : Bool) :
+    ∃ C : ℕ, ∀ w H, cleanPairShearTime body bank i k t b w 0 H 0 inverse negative useOne ≤
+      C * (w+1+(b^(w+1))^(d-1)) * (H+1)^2 := by
+  let push := max (Fast.Main.mnPushC body) (Fast.Main.mnProgPush
+    (pairShear (P := P) (A := A) (U := U) b i k t inverse bank negative useOne))
+  refine ⟨4*shearWork.length+1+(1+6*shearWork.length*push)*(8000*(b+1)*(d+1)^2), ?_⟩
+  intro w H
+  simp only [cleanPairShearTime]
+  grw [weightedShearTime_setup_le_width k t _ H (pow_pos positive _),
+    Nat.sub_le b 2, i.isLt.le]
+  have sign : (if negative then 8*H+8 else 0) ≤ 8*H+8 := by split <;> omega
+  grw [sign]
+  dsimp [push]
+  generalize (max _ _ : ℕ) = calls
+  generalize (b^(w+1))^(d-1) = prefixes
+  ring_nf
+  omega
+
 /-- Restoring the work tapes multiplies the volume charge by a program-dependent constant. -/
 theorem cleanPairShearTime_eq_setup_add_volume [Fintype P]
     (body : P → Pr P T 217 A U) (bank : Fin 35 ↪ Fin T) (i k t : Fin d)
