@@ -4,6 +4,7 @@ import gzip
 import hashlib
 import json
 from collections import Counter
+from functools import lru_cache
 from fractions import Fraction
 from itertools import permutations
 from math import comb, gcd, lcm
@@ -120,31 +121,43 @@ def block_placements(width):
             yield perm
 
 
-def check_two_child_ranks(widths, routed):
-    """Test necessary submatrix ranks over the residue field, allowing triangular adapters."""
-    # Invertible lower triangular multiplication on either outside preserves the
-    # rank on each prefix of rows and suffix of columns. For S2 * L * S1 that
-    # rectangle selects rows of L through S2 and columns through S1.
-    required = [(i, j, sum(k >= j for k in routed[:i]))
-                for i in range(1, 16) for j in range(1, 16)]
+def check_two_child_ranks(widths, prefix_masks):
+    """Filter all charts simultaneously by necessary submatrix ranks over the residue field."""
+    @lru_cache(maxsize=None)
+    def allowed(i, j, low, high):
+        # One bit per chart; pack once per distinct rectangle constraint.
+        bits = bytearray((len(prefix_masks) + 7) // 8)
+        for chart, masks in enumerate(prefix_masks):
+            if low <= (masks[i] >> j).bit_count() <= high:
+                bits[chart // 8] |= 1 << (chart % 8)
+        return int.from_bytes(bits, "little")
+
+    survivors = 0
+    example = None
     for first in block_placements(widths[0]):
         for last in block_placements(widths[1]):
-            for i, j, rank in required:
+            possible = (1 << len(prefix_masks)) - 1
+            for i in range(1, 16):
                 rows = sorted(last[:i])
-                cols = sorted(first[j:])
-                # Common indices give an invertible triangular principal minor.
-                if len(set(rows).intersection(cols)) > rank:
+                for j in range(1, 16):
+                    cols = sorted(first[j:])
+                    # Outer triangular factors preserve northeast rectangle ranks.
+                    # In the middle triangular factor common indices force a
+                    # nonsingular principal minor; matching bounds every nonzero minor.
+                    low = len(set(rows).intersection(cols))
+                    high = 0
+                    for row in rows:
+                        if high < len(cols) and cols[high] <= row:
+                            high += 1
+                    possible &= allowed(i, j, low, high)
+                    if not possible:
+                        break
+                if not possible:
                     break
-                # Every nonzero minor needs a matching with column <= row.
-                # Greedily match the smallest available column to the earliest eligible row.
-                matches = 0
-                for row in rows:
-                    if matches < len(cols) and cols[matches] <= row:
-                        matches += 1
-                if matches < rank:
-                    break
-            else:
-                raise AssertionError(f"Rank bounds admit placements {first}, {last} for {widths}")
+            if possible and example is None:
+                example = ((possible & -possible).bit_length() - 1, first, last)
+            survivors |= possible
+    return survivors, example
 
 
 def check_port_swap_distance(port_moves):
@@ -174,13 +187,26 @@ def check_port_swap_distance(port_moves):
     target = list(range(16))
     for k in range(7):
         target[k], target[k + 8] = target[k + 8], target[k]
-    for k in (0, 8):
-        target[k], target[k + 7] = target[k + 7], target[k]
+    prefix_masks = []
+    charts = [(*leading, 0) for leading in permutations(range(1, 8))]
+    for chart in charts:
+        masks = [0]
+        for base in (0, 8):
+            for k in chart:
+                masks.append(masks[-1] | (1 << target[base + k]))
+        prefix_masks.append(masks)
     for widths in target_profiles:
         if len(widths) == 2:
-            check_two_child_ranks(widths, target)
-    print("Neither two-child target profile realizes its port-swapped prefix with "
-          "invertible lower triangular passes before, between, and after its children.")
+            survivors, example = check_two_child_ranks(widths, prefix_masks)
+            assert survivors.bit_count() == {(2, 5): 192, (1, 6): 0}[widths]
+            endpoint_swap = (7, 1, 2, 3, 4, 5, 6, 0)
+            assert not (survivors >> charts.index(endpoint_swap)) & 1
+            if example is not None:
+                index, first, last = example
+                assert charts[index] == (3, 4, 5, 6, 7, 1, 2, 0)
+                assert first[0:2] == [14, 15] and last[0:5] == [11, 12, 13, 14, 15]
+    print("With triangular adapters the rectangle-rank test admits 192 common charts "
+          "for widths (2, 5) and none for (1, 6).")
     print("On every source and target register the seven paid atom swaps plus the port "
           "permutation have exact transposition distance nine.")
 
