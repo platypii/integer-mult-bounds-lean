@@ -65,9 +65,9 @@ The Files column counts the components listed in that detail file; the full
 transitive proof dependency set is larger, as recorded by the
 [retention audit](docs/proof-retention.md).
 
-The retuned public theorem and its `CompletedProofCheck` axiom check pass at `4223103985/2^46`.
-At the previous saving of `4222422970/2^46` the checks passed: `CompletedProofCheck` (only `propext`, `Classical.choice` and
-`Quot.sound`), `AxiomAudit` (340777 declarations) and `CompactControlCheck` (521 contracts).
+The full guarded build passed at `4223103985/2^46` (15,532 jobs). `CompletedProofCheck`
+verified the public theorem with only `propext`, `Classical.choice` and `Quot.sound`.
+`AxiomAudit` passed for 353,722 declarations and `CompactControlCheck` passed for 521 contracts.
 The native-machine bridge and its `MathlibTM2Check`/`FastPathCheck` audits were removed
 2026-10-18 (restore from 5e12c129).
 
@@ -159,7 +159,7 @@ owned temporaries. Its actual signed-chain histogram, arbitrary-ring/reversed
 execution and strict block-child ranks are proved. The stopped saving is
 `12402/10^8`, and the ordinary supplier exponent is `1-123899714039/10^15`.
 The retuned end-to-end machine proves `4223103985/2^46 ≈ 0.00006001392`, about
-27.99% more saving (0.35599 bits) than the plain-frame result. The preceding design-B checkpoint passed the full guarded build and all three audits.
+27.99% more saving (0.35599 bits) than the plain-frame result.
 No further design-B-specific optimization is planned. Its generic compiler/frame
 proofs survive a future supplier replacement; M9–M11 remain the next direction.
 
