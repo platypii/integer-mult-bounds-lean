@@ -62,6 +62,31 @@ theorem signedPassVolume_eq_descriptor (v : Descriptor) (e : (Fin r ⊕ Fin r) �
     Nat.mul_comm r (w+1), two_mul suffix]
   ring
 
+omit [M8.Machine.Net] in
+/-- At the largest whole atom width fitting the rank, the spectator factor
+is bounded independently of the address width. -/
+theorem signedPassVolume_div_width (v : Descriptor) (e : (Fin r ⊕ Fin r) ≃ Fin (d+1))
+    (fits : r ≤ v.width) :
+    let atom := v.width / r
+    let spectators := prime^(2*(v.width % r))*v.between*v.afterD
+    0 < atom ∧ LabelMask.records v * ((prime^atom)^(d+1)*spectators) = volume prime v ∧
+      spectators ≤ prime^(2*(r-1))*v.between*v.afterD := by
+  have dim := Fintype.card_congr e
+  simp only [Fintype.card_sum, Fintype.card_fin] at dim
+  have rankPos : 0 < r := by omega
+  have atomPos := Nat.div_pos fits rankPos
+  refine ⟨atomPos, ?_, ?_⟩
+  · have split := Nat.div_add_mod v.width r
+    have atom := Nat.sub_add_cancel (show 1 ≤ v.width / r from atomPos)
+    simpa only [atom] using signedPassVolume_eq_descriptor v e (v.width/r-1) (v.width%r)
+      (by rw [atom]; exact split.symm)
+  · apply Nat.mul_le_mul_right
+    apply Nat.mul_le_mul_right
+    apply Nat.pow_le_pow_right IntegerMultBounds.Networks.Shared50ModularControl.prime_prime.pos
+    apply Nat.mul_le_mul_left
+    have := Nat.mod_lt v.width rankPos
+    omega
+
 noncomputable def anchorClassCost (table : Matrix (Fin r) (Fin r) (ZMod prime) → Matrix (Fin (d+1)) (Fin (d+1)) (ZMod prime))
     (T w W : ℕ) (digits : Fin (r*r) → ZMod prime) :=
   let m := table (LabelSelectors.matrix r digits)
