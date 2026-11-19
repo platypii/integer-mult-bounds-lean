@@ -239,7 +239,7 @@ theorem physicalDirectorySetupCost_le_volume (v : Descriptor) (positive : v.Posi
     exact Nat.le_mul_of_pos_left _ parentsPos
 
 omit [M8.Machine.Net] in
-private theorem queueArchive_le (classes live words build : ℕ) (count : live ≤ classes) :
+theorem queueArchive_le (classes live words build : ℕ) (count : live ≤ classes) :
     live*(build + 4*words) + (classes-live)*(10*words+6) ≤
       live*build + classes*(10*words+6) := by
   have copy : 4*words ≤ 10*words+6 := by omega
@@ -337,7 +337,7 @@ theorem signedPassResidualCharge_le (L r swaps shears live V : ℕ) (rankPos : 0
         positivity)
 
 omit [M8.Machine.Net] in
-private theorem fixedBoxCost_le (r w : ℕ) (rankPos : 0 < r) :
+theorem fixedBoxCost_le (r w : ℕ) (rankPos : 0 < r) :
     22*(prime^(w+1))^(r*r) + 21*(w+1) + 26*prime^w + 82 ≤
       151*(prime^(w+1))^(r*r) := by
   have primeLarge := IntegerMultBounds.Networks.Shared50ModularControl.prime_prime.one_lt
