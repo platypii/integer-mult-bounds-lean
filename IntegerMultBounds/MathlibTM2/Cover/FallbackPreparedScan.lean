@@ -389,15 +389,7 @@ theorem residualClassSum_le {α : Type} (accept : α → Bool) (cost : α → �
     have hx := bound x
     cases h : accept x <;> simp [h,Nat.add_mul] at hx ⊢ <;> omega
 
-omit [M8.Machine.Net] in
-theorem constantPivotBound {d : ℕ} (column : Fin (d+1) → Fin (d+1) → ℕ)
-    (cost : ℕ → ℕ) (mono : Monotone cost) (p : Fin (d+1) → Fin (d+1)) :
-    cost (Finset.univ.sup fun i => column i (p i)) ≤ Finset.univ.sup (fun j => cost (Finset.univ.sup fun i => column i j)) := by
-  obtain ⟨k,_,worst⟩ := Finset.exists_mem_eq_sup Finset.univ Finset.univ_nonempty (fun i => column i (p i))
-  rw [worst]
-  exact (mono (Finset.le_sup (f := fun i => column i (p k)) (Finset.mem_univ k))).trans
-    (Finset.le_sup (f := fun j => cost (Finset.univ.sup fun i => column i j)) (Finset.mem_univ (p k)))
-
+-- The earlier constant-pivot bound is preserved in d993aa31.
 omit [M8.Machine.Net] in
 theorem signedClassTime (count traversal copies volume : ℕ) (classes : List α) (anchor scan : α → ℕ) :
     (1+(count*traversal+4 + (copies*(classes.map anchor).sum+2) + (2*volume+2))) +
@@ -445,14 +437,14 @@ theorem uniformResidualClassBound {r w W A H : ℕ}
 
 omit [M8.Machine.Net] in
 /-- Count the shared work once per record and the live payload moves only on invertible records. -/
-theorem physicalPayloadBill (r copies volume common live pad records : ℕ)
+theorem physicalPayloadBill (r copies volume common live pad rate records : ℕ)
     (rankPos : 0 < r) (rowCount : records = copies*prime^(r*r)) :
     let units := ∏ i : Fin r, (prime^r-prime^i.val)
     let active := copies*units
     let totalVolume := records*volume
-    copies*(units*((common+4*volume)+(live+6*volume)) + (prime^(r*r)-units)*((common+4*volume)+pad)) + 4*totalVolume =
+    copies*(units*((common+4*volume)+(live+rate*volume)) + (prime^(r*r)-units)*((common+4*volume)+pad)) + 4*totalVolume =
       records*common + active*live + (records-active)*pad + 8*totalVolume +
-        6*min (active*volume) (((prime-1)*totalVolume)/prime) := by
+        rate*min (active*volume) (((prime-1)*totalVolume)/prime) := by
   intro units active totalVolume
   have unitsLe : units ≤ prime^(r*r) := by
     calc
@@ -492,11 +484,52 @@ theorem anchorPayloadCost (d A w W H records : ℕ) :
     ring
 
 omit [M8.Machine.Net] in
+theorem cleanupColumn_add (d H steps total push x y : ℕ) :
+    let stage := fun c => 1+c+((d+1)*(d+1)*(4*H+4)+1)
+    let rewind := fun c => 1+(((d+1)*(4*H+4)+1+(d*(4*H+4)+1))+((d+1)*stage c+1))
+    let bound := fun c => steps+1+rewind c
+    let clean := fun c => bound c+(total*4+1+total*(6*(push*bound c)))
+    clean (x+y) = clean x + ((d+1)*(1+6*total*push))*y := by
+  dsimp
+  ring
+
+noncomputable def columnPayloadRate (U : Type) (d w : ℕ) : ℕ :=
+  (columnProgramTime_le_setup_add_volume U d w).choose
+
+theorem columnPayloadRate_spec (U : Type) (d w : ℕ) (i j : Fin d) (W H J : ℕ) :
+    columnProgramTime U i j w W H J ≤ columnProgramTime U i j w 0 H J +
+      columnPayloadRate U d w*((prime^(w+1))^d*W) :=
+  (columnProgramTime_le_setup_add_volume U d w).choose_spec i j W H J
+
+theorem columnPayloadBound (U : Type) (d w W H J : ℕ) (cost : ℕ → ℕ) (slope : ℕ)
+    (linear : ∀ x y, cost (x+y) = cost x + slope*y)
+    (pivots : Fin (d+1) → Fin (d+1)) :
+    let rate := columnPayloadRate U (d+1) w
+    let largest := Finset.univ.sup fun j : Fin (d+1) => Finset.univ.sup fun i => columnProgramTime U i j w 0 H J
+    cost (Finset.univ.sup fun i => columnProgramTime U i (pivots i) w W H J) ≤
+      cost largest + (slope*rate)*((prime^(w+1))^(d+1)*W) := by
+  intro rate largest
+  rw [Nat.mul_assoc,← linear]
+  have mono : Monotone cost := by
+    intro x z h
+    obtain ⟨y,rfl⟩ := Nat.exists_eq_add_of_le h
+    rw [linear]
+    exact Nat.le_add_right ..
+  apply mono
+  apply Finset.sup_le
+  intro i _
+  apply (columnPayloadRate_spec U (d+1) w i (pivots i) W H J).trans
+  apply Nat.add_le_add_right
+  exact (Finset.le_sup (f := fun k => columnProgramTime U k (pivots i) w 0 H J) (Finset.mem_univ i)).trans
+    (Finset.le_sup (f := fun j => Finset.univ.sup fun k => columnProgramTime U k j w 0 H J) (Finset.mem_univ (pivots i)))
+
+omit [M8.Machine.Net] in
 theorem physicalScanTime_le {r w W A H : ℕ} (desc : RecursiveInterchangeLayout.Descriptor) (B numRecords : ℕ)
     (shape : desc.beforeH = B*prime^(r*((w+1)*r))) (records : numRecords = LabelMask.records desc)
     (table : Matrix (Fin r) (Fin r) (ZMod prime) → Matrix (Fin (d+1)) (Fin (d+1)) (ZMod prime))
     (inputs : ℕ → Array d 1 (w+1) W) (cleanBound : (Fin (d+1) → Fin (d+1)) → ℕ)
-    (kernel prepTime l : ℕ) (rankPos : 0 < r) (kernelBound : ∀ p, cleanBound p ≤ kernel) :
+    (kernel rate prepTime l : ℕ) (rankPos : 0 < r)
+    (kernelBound : ∀ p, cleanBound p ≤ kernel + rate*((prime^(w+1))^(d+1)*W)) :
     let volume := (prime^(w+1))^(d+1)*W
     let stepTime := fun (m : Matrix (Fin r) (Fin r) (ZMod prime)) =>
       (if decide (m.det ≠ 0) then prepTime+((6*volume+6)+(1+cleanBound (classPivots (table m))))
@@ -514,7 +547,7 @@ theorem physicalScanTime_le {r w W A H : ℕ} (desc : RecursiveInterchangeLayout
     let active := count*(prime^w)^(r*r)*units
     let payload := numRecords*volume
     l ≤ 3*count*traversal + (numRecords*common + active*live + (numRecords-active)*pad + (anchorVolumeRate d A+4)*payload +
-      6*min (active*volume) (((prime-1)*payload)/prime))+21 := by
+      (6+rate)*min (active*volume) (((prime-1)*payload)/prime))+21 := by
   intro volume stepTime count traversal time
   let copies := (desc.beforeRows*desc.rows*B)*(prime^w)^(r*r)
   let classes := LabelSelectors.classes 1 (r*r)
@@ -535,7 +568,7 @@ theorem physicalScanTime_le {r w W A H : ℕ} (desc : RecursiveInterchangeLayout
       4*(numRecords*volume)+21 := by
     apply time.trans_eq
     exact signedClassTime count traversal copies (numRecords*volume) classes anchorCost scanCost
-  have classBound := uniformResidualClassBound (w := w) (W := W) (A := A) (H := H) table cleanBound kernel volume prepTime
+  have classBound := uniformResidualClassBound (w := w) (W := W) (A := A) (H := H) table cleanBound (kernel+rate*volume) volume prepTime
     kernelBound
   have scanTotal := scanPaid.trans (Nat.add_le_add_right (Nat.add_le_add_right
     (Nat.add_le_add_left (Nat.mul_le_mul_left _ classBound) _) _) _)
@@ -549,17 +582,21 @@ theorem physicalScanTime_le {r w W A H : ℕ} (desc : RecursiveInterchangeLayout
   let live := prepTime + 6 + (1+kernel)
   let pad := 4*(d+1)*(d+1)+1
   have commonEq : anchor + (4*volume+4) + ((d+1)*(d+1)*(4*H+4)+1) + 4 = common+4*volume := by unfold common; omega
-  have liveEq : prepTime+((6*volume+6)+(1+kernel)) = live+6*volume := by unfold live; omega
+  have liveEq : prepTime+((6*volume+6)+(1+(kernel+rate*volume))) = live+(6+rate)*volume := by unfold live; ring
   rw [commonEq,liveEq,Nat.add_assoc (3*_*_) (_*_) (4*_),
-    physicalPayloadBill r copies volume common live pad numRecords rankPos rowsEq] at scanTotal
+    physicalPayloadBill r copies volume common live pad (6+rate) numRecords rankPos rowsEq] at scanTotal
   have movement := anchorPayloadCost d A w W H numRecords
   change numRecords*common + 8*(numRecords*volume) = _ at movement
   let active := copies*(∏ i : Fin r, (prime^r-prime^i.val))
   apply scanTotal.trans_eq
   calc
     _ = 3*count*traversal + ((numRecords*common + 8*(numRecords*volume)) +
-        active*live + (numRecords-active)*pad + 6*min (active*volume) (((prime-1)*(numRecords*volume))/prime)) + 21 := by dsimp only [active,copies,count]; ac_rfl
-    _ = _ := by rw [movement]; dsimp only [active,copies,count,volume,live,pad]; ac_rfl
+        active*live + (numRecords-active)*pad + (6+rate)*min (active*volume) (((prime-1)*(numRecords*volume))/prime)) + 21 := by
+          dsimp only [active,copies,count]; ac_rfl
+    _ = _ := by
+      rw [movement]
+      dsimp only [active,copies,count,volume,live,pad]
+      ac_rfl
 
 /-- One program generates the physical matrix archive, signs the payloads and applies the residual pass. -/
 theorem preparedPass_exec {Q T r A : ℕ} (table : Matrix (Fin r) (Fin r) (ZMod prime) → Matrix (Fin (d+1)) (Fin (d+1)) (ZMod prime))
@@ -745,14 +782,16 @@ theorem preparedPass_exec {Q T r A : ℕ} (table : Matrix (Fin r) (Fin r) (ZMod 
         let units := ∏ i : Fin r, (prime^r-prime^i.val)
         let active := boxes*(prime^w)^(r*r)*units
         let payload := a.records*volume
-        let kernel := Finset.univ.sup (fun j : Fin (d+1) => cleanBound (Finset.univ.sup fun i => columnProgramTime U i j w W H J))
+        let kernel := cleanBound (Finset.univ.sup fun j : Fin (d+1) => Finset.univ.sup fun i => columnProgramTime U i j w 0 H J)
+        let slope := (d+1)*(1+6*total*Fast.Main.mnProgPush residual)
+        let rate := slope*columnPayloadRate U (d+1) w
         let common := size d+3*A+34+(d+1)*(d+1)*(4*H+4)
         let live := prepTime + 6 + (1+kernel)
         let pad := 4*(d+1)*(d+1)+1
         l ≤ passPreparationCost desc r (d+1) w B prefixWidth H +
           (3*boxes*(LabelTraversal.time (prime^w) (r*r) 1+5) +
             (a.records*common + active*live + (a.records-active)*pad + (anchorVolumeRate d A+4)*payload +
-              6*min (active*volume) (((prime-1)*payload)/prime))+21) ∧
+              (6+rate)*min (active*volume) (((prime-1)*payload)/prime))+21) ∧
         Exec body prog (mk v raw) l (mk z F) := by
   intro rows reads n k j t i width total ports shared bank program spare off reverseHost reverseBank active pop rewind residual privateBank host ext outside parentTape parentOff parentExt body scanPorts tapes src acc pivot rs sizeRs parents scratch maskRegs pivotRegs regs anchor ars ap asaved acap asize alayout banks external sharedSrc anchorParent counters registers e generatorSize generatorHost control generatorMask seed generatorTmp generatorBank recip generatorCounters clock generatorCount pool coeff generatorArchive archiveOff coeffOff scan aligned maskOffParent directoryOffParent genMaskRegs dir dirOut dirSrcParent dirOutParent maskOffDir parentPort parentArchive countParent atom unit atomOff unitApart highLayout highSlots traversalOff parentOutside highParent beforeRows rowsTape beforeH dimensions countOffParent
   obtain ⟨pass,runPass⟩ := archivedPass_exec (U := U) table capacity signCapacity host ext outside parentTape parentOff parentExt body
@@ -921,10 +960,10 @@ theorem preparedPass_exec {Q T r A : ℕ} (table : Matrix (Fin r) (Fin r) (ZMod 
       change boxes*_ = 0 at noLive
       simpa only [archiveTime,liveRecords,noLive,empty,Nat.zero_sub,Nat.zero_mul,Nat.zero_add] using genBound
   have padLen : padWord.length = (d+1)*(d+1)*H := length_matrixWords ..
-  have cost := Nat.add_le_add (Nat.add_le_add seedBound archiveBound)
+  have seedAndArchive := Nat.add_le_add (Nat.add_le_add seedBound archiveBound)
     (Nat.le_of_eq (congrArg (fun n => 2*n+2) padLen))
   have paid := Nat.add_le_add_right (Nat.add_le_add_left (Nat.add_le_add_right
-    (Nat.add_le_add_left cost (4*H+4)) (2*H+2)) (6*H+6)) (2*H+2)
+    (Nat.add_le_add_left seedAndArchive (4*H+4)) (2*H+2)) (6*H+6)) (2*H+2)
   rw [paddingSetupCost_eq] at paid
   have matrixWord := baseData.physical_archive e proj α α'
   let filled := queueResult seeded generatorMask (scan 2) (tapes 34) (inputState.R (dir 14)) (a.matrices 0)
@@ -979,15 +1018,15 @@ theorem preparedPass_exec {Q T r A : ℕ} (table : Matrix (Fin r) (Fin r) (ZMod 
     runPass a parent rfl inputs encoded unsigned liveSpec padding hm hw hW desc B first init records shape radixInit
       scratchInit countInit fresh emptyInit neutral aradix afree acount awidth clean queueInit extCount savedEmpty tmpEmpty
       accEmpty pivotTail archive modWord widthWord one padded ticks scratchFree payloadBlank sharedFree parentWord privateFree
-  let kernel := Finset.univ.sup (fun j : Fin (d+1) => cleanBound (Finset.univ.sup fun i => columnProgramTime U i j w W H J))
+  let kernel := cleanBound (Finset.univ.sup fun j : Fin (d+1) => Finset.univ.sup fun i => columnProgramTime U i j w 0 H J)
+  let slope := (d+1)*(1+6*total*Fast.Main.mnProgPush residual)
+  let rate := slope*columnPayloadRate U (d+1) w
   let column := fun (i j : Fin (d+1)) => columnProgramTime U i j w W H J
   let pivotCost := fun (p : Fin (d+1) → Fin (d+1)) => cleanBound (Finset.univ.sup fun i => column i (p i))
-  have monotone : Monotone cleanBound := by
-    intro x y h
-    dsimp only [cleanBound,bound,rewindCost,stageCost]
-    gcongr
+  have linear (x y : ℕ) : cleanBound (x+y) = cleanBound x + slope*y :=
+    cleanupColumn_add d H ((List.finRange n).map cost).sum total (Fast.Main.mnProgPush residual) x y
   have scanTotal := physicalScanTime_le (A := A) (H := H) desc B a.records shape records a.table inputs pivotCost
-    kernel prepTime l rankPos (constantPivotBound column cleanBound monotone) time
+    kernel rate prepTime l rankPos (columnPayloadBound U d w W H J cleanBound slope linear) time
   have prep := residualPreparation_le desc r (d+1) w B prefixWidth H rankPos
     (records ▸ parentSize ▸ rowCount)
   have setupBound := Nat.add_le_add (Nat.add_le_add (Nat.add_le_add parentBound dirBound) initBound)
