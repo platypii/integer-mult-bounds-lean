@@ -133,6 +133,23 @@ theorem signedResidualTime_le_setup_add_counter (U : Type) (d H : ℕ) :
     Nat.mul_add, Nat.add_mul, Nat.mul_assoc] at steps ⊢
   omega
 
+/-- Least uniform cost per payload-counter bit over all pivot itineraries. -/
+noncomputable def residualCounterRate (U : Type) (d H : ℕ) : ℕ := by
+  classical
+  exact Nat.find (signedResidualTime_le_setup_add_counter U d H)
+
+theorem residualCounterRate_spec (U : Type) (d H : ℕ) (rows : Fin (d+1) → Fin (d+1))
+    (w W J : ℕ) : signedResidualTime U rows w W H J ≤
+      signedResidualTime U rows w W H 0 + residualCounterRate U d H * J := by
+  classical
+  exact Nat.find_spec (signedResidualTime_le_setup_add_counter U d H) rows w W J
+
+theorem residualCounterRate_le (U : Type) (d H rate : ℕ)
+    (bound : ∀ (rows : Fin (d+1) → Fin (d+1)) w W J, signedResidualTime U rows w W H J ≤
+      signedResidualTime U rows w W H 0 + rate * J) : residualCounterRate U d H ≤ rate := by
+  classical
+  exact Nat.find_min' (signedResidualTime_le_setup_add_counter U d H) bound
+
 theorem signedResidual_exec (rows : Fin (d+1) → Fin (d+1)) (m : Matrix (Fin (d+1)) (Fin (d+1)) (ZMod M))
     (valid : Itinerary.Valid rows m (d+1)) (s : (ZMod M)ˣ)
     (sign : (Itinerary.run rows m (d+1)).det = (s : ZMod M)) (H J : ℕ) (hm : M < 2^H) (hw : W < 2^J) (hW : 0 < W)

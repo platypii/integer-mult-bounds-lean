@@ -563,7 +563,7 @@ theorem signedPassWork_le_setup_add_volume (U : Type) (d : ℕ) :
       let live := ∏ i : Fin r, (prime^r - prime^i.val)
       signedPassWork table T parents records w W H J U ≤
         signedPassWork table T parents records w 0 H 0 U +
-          parents*(prime^w)^(r*r)*live*(signedResidualTime_le_setup_add_counter U d H).choose*J +
+          parents*(prime^w)^(r*r)*live*residualCounterRate U d H*J +
           (parents*(prime^w)^(r*r)*((xs.map (classVolumeRate table T)).sum + live*(swaps * swapVolumeRate w + shears)) +
             4*records) * ((prime^(w+1))^(d+1)*W) := by
   obtain ⟨swaps, shears, kernel⟩ := signedResidualTime_le_setup_add_width_volume U d
@@ -574,12 +574,12 @@ theorem signedPassWork_le_setup_add_volume (U : Type) (d : ℕ) :
       (ys.map (classResidualCost table T w W H J U)).sum ≤
         (ys.map (classResidualCost table T w 0 H 0 U)).sum +
         (ys.countP fun x => decide ((LabelSelectors.matrix r x).det ≠ 0)) * ((swaps * swapVolumeRate w + shears) * V +
-          (signedResidualTime_le_setup_add_counter U d H).choose * J) := by
+          residualCounterRate U d H * J) := by
     induction ys with
     | nil => simp
     | cons x ys ih =>
       have h := kernel (classPivots (table (LabelSelectors.matrix r x))) w W H J
-      have counter := (signedResidualTime_le_setup_add_counter U d H).choose_spec
+      have counter := residualCounterRate_spec U d H
         (classPivots (table (LabelSelectors.matrix r x))) w 0 J
       by_cases zero : (LabelSelectors.matrix r x).det = 0
       all_goals
@@ -857,7 +857,7 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     let lifts := (prime^w)^(r*r)
     let a := base.physical e proj α α'
     let perParent := lifts*signedClassSetup U d T w a.H classes units +
-      lifts*units*(signedResidualTime_le_setup_add_counter U d a.H).choose*a.J
+      lifts*units*residualCounterRate U d a.H*a.J
     let recordVolume := M^(d+1)*W
     let totalVolume := LabelMask.records v*recordVolume
     let liveVolume := (v.beforeRows*v.rows*B)*(units*lifts)*recordVolume
@@ -1196,7 +1196,7 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
   have volumeBound := (signedPassWork_le_setup_add_volume U d).choose_spec.choose_spec w a.table T
     (v.beforeRows*v.rows*B) a.records W a.H a.J
   change signedPassWork _ _ _ _ _ _ _ _ _ ≤ signedPassWork _ _ _ _ _ 0 _ 0 _ +
-    (v.beforeRows*v.rows*B)*lifts*units*(signedResidualTime_le_setup_add_counter U d a.H).choose*a.J +
+    (v.beforeRows*v.rows*B)*lifts*units*residualCounterRate U d a.H*a.J +
     ((v.beforeRows*v.rows*B)*lifts*(((LabelSelectors.classes 1 (r*r)).map
       (classVolumeRate a.table T)).sum + units*rate) + 4*a.records)*(M^(d+1)*W) at volumeBound
   have movement := classVolumeRate_sum_le a.table T
