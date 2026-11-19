@@ -87,6 +87,29 @@ theorem signedPassVolume_div_width (v : Descriptor) (e : (Fin r ⊕ Fin r) ≃ F
     have := Nat.mod_lt v.width rankPos
     omega
 
+/-- The live part of the generated pass pays the density factor on both swaps
+and shears, and the quotient-width factor on swaps. -/
+theorem signedPassResidualCharge_le (L r swaps shears live V : ℕ) (rankPos : 0 < r)
+    (fits : r ≤ L) :
+    (((6 + (swaps * swapVolumeRate (L/r-1) + shears)) *
+      min live (((prime-1)*V)/prime) : ℕ) : ℝ) ≤
+      (6 + ((swaps : ℝ) * ((3808275 + M8.RevMachine.LeafCore.C) *
+        ((L : ℝ)^M8.Machine.BudgetBound.tau / (r : ℝ)^M8.Machine.BudgetBound.tau)) + shears)) *
+        (((prime-1 : ℕ) : ℝ) / prime * V) := by
+  have volumeBound : ((min live (((prime-1)*V)/prime) : ℕ) : ℝ) ≤
+      ((prime-1 : ℕ) : ℝ) / prime * V := by
+    calc
+      _ ≤ ((((prime-1)*V)/prime : ℕ) : ℝ) := by exact_mod_cast min_le_right _ _
+      _ ≤ _ := by
+        apply (Nat.cast_div_le (α := ℝ) (m := (prime-1)*V) (n := prime)).trans_eq
+        rw [Nat.cast_mul]
+        ring
+  push_cast
+  exact mul_le_mul (by gcongr; exact swapVolumeRate_div_width_le L r rankPos fits)
+    (by simpa using volumeBound) (by positivity)
+    (by have pos : 0 < M8.RevMachine.LeafCore.C := (Classical.choose_spec M8.Machine.ArbitraryWidthOriginalTotalRun.uniform_bound).1
+        positivity)
+
 noncomputable def anchorClassCost (table : Matrix (Fin r) (Fin r) (ZMod prime) → Matrix (Fin (d+1)) (Fin (d+1)) (ZMod prime))
     (T w W : ℕ) (digits : Fin (r*r) → ZMod prime) :=
   let m := table (LabelSelectors.matrix r digits)
