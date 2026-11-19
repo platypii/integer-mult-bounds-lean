@@ -33,6 +33,13 @@ def coefficientSlots {m extra : ℕ} (i j : Fin m) :
     have h := congrArg Fin.val eq
     fin_cases x <;> fin_cases y <;> simp_all [slots, Matrix.cons_val] <;> (try split_ifs at *) <;> omega⟩
 
+/-- Steps for one live record, including its determinant, conjugation, and residual entries. -/
+noncomputable def liveRecordCost (m d w H ancestorWidth numTime detTime : ℕ) : ℕ :=
+  let C := 48*H*H+152*H+66
+  ((m*(m*(12*ancestorWidth+8*((w+1)*(m*m))+(w+1)*(7*H+prime+31)+10*H+42)+1)+1) + (detTime + (6*w+6+(14*H+16+(prime-2)*C+C+w*(12*H+15+prime*C))) +
+       ((m*(m*(numTime+4*H+4)+1)+1) + (m*(m*(8*(m*m*H)+48*H*H+166*H+88)+1)+1) + (2*(m*m*H)+2)) + 4*H+4) + (2*(m*m*H)+2)) +
+       (d*(d*(8*(m*m*H)+96*H*H+344*H+182)+1)+1)+(2*(m*m*H)+2)
+
 theorem physicalResidualQueue_exec (body : P → Pr P T Q prime U)
     (w records : ℕ)
     (projector : Matrix (Fin m) (Fin m) (ZMod (prime^(w+1))))
@@ -88,16 +95,13 @@ theorem physicalResidualQueue_exec (body : P → Pr P T Q prime U)
     let num := fun i j : Fin m => numerator (matrixInput false) (matrixInput true) i j
     let cost := Finset.univ.sup fun ij : Fin m × Fin m => time H (readTime H) (num ij.1 ij.2)
     let f := determinant (matrixInput false)
-    let C := 48*H*H+152*H+66
     let conjugate : Pr P T Q prime U := (.seq (directoryMatrix m (QueueLayout.readPorts.trans (QueueLayout.directoryWork.trans bank)) (QueueLayout.digitPorts.trans (QueueLayout.directoryWork.trans bank)) (bank 12) (bank 9) (bank 10)) (.seq (.seq (.seq (compile (readLeaf (leafBank source)) (registerBank pool) f 0 (r 14)) (reusablePivotInverse prime r clock count))
         (.seq (packedConjugate pool source (QueueLayout.normalizationPorts.trans r) false true) (.seq (bclear (r 0)) (bclear (r 14))))) (bclear (bank 10))))
     let live : Pr P T Q prime U := .seq conjugate (.seq (sequence (fun i => sequence
       (fun j => blockEntry weights (e.symm i) (e.symm j)) (List.finRange d)) (List.finRange d)) (bclear (r 13)))
     let active := LabelStock.live m (w+1) 1
     let word := fun j => if active j then matrixWords prime H (projectorResidual e projector α α' (physicalLabel m (w+1) j)) else padWord
-    let livePrice := ((m*(m*(12*(S.R (bank 12)).length+8*((w+1)*(m*m))+(w+1)*(7*H+prime+31)+10*H+42)+1)+1) + (time H (readTime H) f + (6*w+6+(14*H+16+(prime-2)*C+C+w*(12*H+15+prime*C))) +
-       ((m*(m*(cost+4*H+4)+1)+1) + (m*(m*(8*(m*m*H)+48*H*H+166*H+88)+1)+1) + (2*(m*m*H)+2)) + 4*H+4) + (2*(m*m*H)+2)) +
-       (d*(d*(8*(m*m*H)+96*H*H+344*H+182)+1)+1)+(2*(m*m*H)+2)
+    let livePrice := liveRecordCost m d w H (S.R (bank 12)).length cost (time H (readTime H) f)
     let branch := fun p => Prog.seq p (.seq (moveR (scan 4) (scan 5) id) (advanceDirectory m scan))
     let words := (List.range records).flatMap word
     words.length = records*(d*d*H) ∧
@@ -116,7 +120,7 @@ theorem physicalResidualQueue_exec (body : P → Pr P T Q prime U)
   have rc (i j) : r i ≠ counters j := QueueLayout.block_ne _ _ host (by decide) i j
   have copyPorts : [clock,count,r 2,r 3].Nodup := by
     simp [clock,count,counters.injective.eq_iff,(rc _ _).symm,r.injective.eq_iff]
-  intro inputs source weights scan num cost f C conjugate live active word livePrice
+  intro inputs source weights scan num cost f conjugate live active word livePrice
   have apart (i j) : host i ≠ control j := QueueLayout.block_ne _ _ registers (by omega) i j
   have maskOff (k) : mask ≠ scan k := by
     fin_cases k <;> exact (apart _ 0).symm
@@ -254,6 +258,6 @@ theorem physicalResidualQueue_exec (body : P → Pr P T Q prime U)
           have port : weights i j k = r l := congrArg (Sum.elim r (coeff i j)) slot
           rw [port]
           exact (kr l).trans (free l hl hlt)⟩
-  simpa only [word,price,livePrice,← widths j hj,h,ite_true,live,conjugate] using finish
+  simpa only [word,price,livePrice,liveRecordCost,← widths j hj,h,ite_true,live,conjugate] using finish
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback.RingFormula
