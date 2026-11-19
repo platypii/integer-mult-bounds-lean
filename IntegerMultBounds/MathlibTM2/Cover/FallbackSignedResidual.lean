@@ -54,6 +54,27 @@ theorem signedResidualTime_le_setup_add_columns (U : Type) (d w : ℕ) :
   simp only [Nat.mul_add] at *
   omega
 
+/-- The residual execution bound is affine in volume, uniformly over pivot itineraries. -/
+theorem signedResidualTime_le_setup_add_volume (U : Type) (d w : ℕ) :
+    ∃ rate : ℕ, ∀ (rows : Fin (d+1) → Fin (d+1)) W H J,
+      signedResidualTime U rows w W H J ≤ signedResidualTime U rows w 0 H J +
+        rate * ((prime^(w+1))^(d+1) * W) := by
+  obtain ⟨p, hp⟩ := signedResidualTime_le_setup_add_columns U d w
+  obtain ⟨c, hc⟩ := columnProgramTime_le_setup_add_volume U (d+1) w
+  refine ⟨p + (d+1)*c, fun rows W H J => ?_⟩
+  let columns := fun x => Finset.univ.sup (fun k => columnProgramTime U k (rows k) w x H J)
+  let V := (prime^(w+1))^(d+1) * W
+  have bound : columns W ≤ columns 0 + c*V := by
+    apply Finset.sup_le
+    intro k hk
+    exact (hc k (rows k) W H J).trans (Nat.add_le_add_right
+      (Finset.le_sup (f := fun i => columnProgramTime U i (rows i) w 0 H J) hk) _)
+  have delta : columns W - columns 0 ≤ c*V := by omega
+  apply (hp rows W H J).trans
+  change _ + p*V + (d+1)*(columns W - columns 0) ≤ _ + _*V
+  grw [delta]
+  exact le_of_eq (by ring)
+
 theorem signedResidual_exec (rows : Fin (d+1) → Fin (d+1)) (m : Matrix (Fin (d+1)) (Fin (d+1)) (ZMod M))
     (valid : Itinerary.Valid rows m (d+1)) (s : (ZMod M)ˣ)
     (sign : (Itinerary.run rows m (d+1)).det = (s : ZMod M)) (H J : ℕ) (hm : M < 2^H) (hw : W < 2^J) (hW : 0 < W)

@@ -24,6 +24,51 @@ noncomputable def columnProgramTime (U : Type) (k r : Fin d) (w W H J : ℕ) : �
   let cost := fun i => if k < i then shear k i i else swap i k + shear i k i + swap i k
   2*(r.val+1)+(d-1)*Finset.univ.sup cost+swap (min k r) (max k r)
 
+/-- A single volume rate works for all columns and pivot choices at fixed atom width. -/
+theorem columnProgramTime_le_setup_add_volume (U : Type) (d w : ℕ) :
+    ∃ rate : ℕ, ∀ (k r : Fin d) W H J, columnProgramTime U k r w W H J ≤
+      columnProgramTime U k r w 0 H J + rate * ((prime^(w+1))^d * W) := by
+  let swap := fun (i j : Fin d) W H J =>
+    1 + completeSwapTime (P := Empty) (U := U) Empty.elim d i j w W H J
+  let shear := fun (a b k t r : Fin d) W H J =>
+    1 + reverseRowTime (P := Empty) (U := U) (A := prime) Empty.elim
+      (Function.Embedding.refl _) a b k t r prime w W H J
+  have swaps (i j : Fin d) : ∃ s : ℕ, ∀ W H J, swap i j W H J ≤
+      swap i j 0 H J + s * ((prime^(w+1))^d * W) := by
+    refine ⟨?_, fun W H J => ?_⟩
+    rotate_left
+    simpa only [swap, Nat.add_assoc] using Nat.add_le_add_left
+      (completeSwapTime_le_setup_add_volume (P := Empty) (U := U) Empty.elim d i j w W H J) 1
+  choose s hs using swaps
+  let S := Finset.univ.sup fun i => Finset.univ.sup (s i)
+  have shears : ∃ c : ℕ, ∀ a b k t r W H J, shear a b k t r W H J =
+      shear a b k t r 0 H J + c * ((prime^(w+1))^d * W) := by
+    refine ⟨?_, fun a b k t r W H J => ?_⟩
+    rotate_left
+    simpa only [shear, Nat.add_assoc] using congrArg (1 + ·)
+      (reverseRowTime_eq_setup_add_volume (P := Empty) (U := U) (A := prime) Empty.elim
+        (Function.Embedding.refl _) a b k t r prime w W H J)
+  obtain ⟨c, hc⟩ := shears
+  refine ⟨(d-1)*(S+c+S)+S, fun k r W H J => ?_⟩
+  let V := (prime^(w+1))^d * W
+  have swapBound (i j : Fin d) : swap i j W H J ≤ swap i j 0 H J + S*V := by
+    have h : s i j ≤ S := (Finset.le_sup (f := s i) (Finset.mem_univ j)).trans
+      (Finset.le_sup (f := fun a => Finset.univ.sup (s a)) (Finset.mem_univ i))
+    exact (hs i j W H J).trans (Nat.add_le_add_left (Nat.mul_le_mul_right _ h) _)
+  let cost := fun x (i : Fin d) => if k < i then shear k i k i r x H J else
+    swap i k x H J + shear i k k i r x H J + swap i k x H J
+  have rows : Finset.univ.sup (cost W) ≤ Finset.univ.sup (cost 0) + (S+c+S)*V := by
+    apply Finset.sup_le
+    intro i hi
+    have base := Finset.le_sup (f := cost 0) hi
+    apply le_trans _ (Nat.add_le_add_right base _)
+    simp only [cost, Nat.add_mul]
+    split <;> rw [hc] <;> have h := swapBound i k <;> dsimp [V] at * <;> omega
+  change 2*(r.val+1)+(d-1)*Finset.univ.sup (cost W)+swap _ _ W H J ≤
+    2*(r.val+1)+(d-1)*Finset.univ.sup (cost 0)+swap _ _ 0 H J+_ * V
+  grw [rows, swapBound]
+  exact le_of_eq (by ring)
+
 theorem columnProgram_exec (k : Fin d) (rows : Fin d → Fin d) (H J : ℕ)
     (hm : M < 2^H) (hw : W < 2^J) (hW : 0 < W)
     (body : P → Pr P (N+1) columnCapacity prime U) (v : HS (N+1) columnCapacity prime U) (S : Stacks (N+1) prime)
