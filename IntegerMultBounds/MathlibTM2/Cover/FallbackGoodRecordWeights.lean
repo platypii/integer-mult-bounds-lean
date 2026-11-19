@@ -62,11 +62,12 @@ theorem goodRecordWeights_exec (body : P → Pr P T Q A U) (ports : Fin 24 ↪ F
         let C := 48*H*H+152*H+66
         ∃ u D t, u.user = v.user ∧ t ≤ (8*(i.val*H)+14*H+22) +
           ((8*(i.val*H)+48*H*H+166*H+88)+(6*w+6+(14*H+16+(prime-2)*C+C+w*(12*H+15+prime*C)))) +
-          (2*H+2) ∧ Exec body (packedChildPair prime i.val i.val child) (mk z F) t (mk u D) ∧
+          (2*H+2)+(8*H+8) ∧ Exec body (signedChildPair prime i.val i.val child) (mk z F) t (mk u D) ∧
           D.R (child 14) = binSyms H (α (i.castLE fits) * δ (i.castLE fits)).val ∧
           D.R (child 0) = binSyms H (α' (i.castLE fits) * δ' (i.castLE fits)).val ∧
+          D.R (child 12) = binSyms H (-(α' (i.castLE fits) * δ' (i.castLE fits))).val ∧
           D.L = F.L ∧ D.inp = F.inp ∧ D.out = F.out ∧
-          ∀ k, k ≠ child 0 → k ≠ child 14 → D.R k = F.R k) ∧
+          ∀ k, k ≠ child 0 → k ≠ child 14 → k ≠ child 12 → D.R k = F.R k) ∧
       (∀ i, δ i * δ' i = 1) ∧
       let head := goodHeadWord G proj.rank fits minor α α' proj.rank le_rfl
       head.length ≤ proj.rank*m ∧ (head.map RowOp.children).sum = 0 ∧ ((inverseWord head).map RowOp.children).sum = 0 ∧
@@ -125,13 +126,14 @@ theorem goodRecordWeights_exec (body : P → Pr P T Q A U) (ports : Fin 24 ↪ F
             ((j < 15 ∧ j ≠ 2) ∨ (17 ≤ j ∧ j ≤ 19) ∨ j = 21) := by decide
       obtain ⟨j,eq,h14,h15,h16,hfree⟩ := slots k hk
       exact (congrArg (fun x => F.R (ports x)) eq).trans ((unchanged j h14 h15 h16).trans (free j hfree))
-    obtain ⟨u,D,t,hu,ht,run,pair,inverse,hL,hin,hout,kept⟩ := packedChildPair_exec body child α
+    obtain ⟨u,D,t,hu,ht,run,pair,inverse,negative,hL,hin,hout,kept⟩ := signedChildPair_exec body child α
       (i.castLE fits) _ (inv _) pivot i (stage.unit _ i.isLt) prime_prime H hm z F [] rest parentWord pivots
       ((unchanged 2 (by decide) (by decide) (by decide)).trans modulus)
       ((unchanged 20 (by decide) (by decide) (by decide)).trans one)
       ((congrArg List.length (unchanged 22 (by decide) (by decide) (by decide))).trans ticks) scratch
     exact ⟨u,D,t,hu.trans user,ht,run,by simpa only [δ,Fin.val_castLE,Fin.isLt,ite_true] using pair,
-      by simpa only [δ',Fin.val_castLE,Fin.isLt,ite_true] using inverse,hL,hin,hout,kept⟩
+      by simpa only [δ',Fin.val_castLE,Fin.isLt,ite_true] using inverse,
+      by simpa only [δ',Fin.val_castLE,Fin.isLt,ite_true] using negative,hL,hin,hout,kept⟩
   · intro s
     dsimp only
     rw [goodHeadWord_inverse_apply _ _ _ _ _ _ inv,goodHeadWord_apply _ _ _ _ _ _ inv]
