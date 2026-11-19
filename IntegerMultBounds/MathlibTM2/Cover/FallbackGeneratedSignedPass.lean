@@ -191,6 +191,34 @@ theorem physicalDirectorySetupCost_le_volume (v : Descriptor) (positive : v.Posi
   · rw [count]
     exact Nat.le_mul_of_pos_left _ parentsPos
 
+omit [M8.Machine.Net] in
+private theorem queueArchive_le (classes live words build : ℕ) (count : live ≤ classes) :
+    live*(build + 4*words) + (classes-live)*(10*words+6) ≤
+      live*build + classes*(10*words+6) := by
+  have copy : 4*words ≤ 10*words+6 := by omega
+  grw [copy]
+  rw [← Nat.sub_add_cancel count]
+  simp only [Nat.add_sub_cancel_right]
+  exact le_of_eq (by ring)
+
+omit [M8.Machine.Net] in
+theorem queueArchive_volume_le (v : Descriptor) (positive : v.Positive) (n H : ℕ)
+    (width : H ≤ prime^v.width) :
+    prime^v.width * (LabelMask.records v*(10*(n*n*H)+6)) ≤
+      (10*(n*n)+6)*volume prime v := by
+  have power := pow_pos Networks.Shared50ModularControl.prime_prime.pos v.width
+  have frame : 10*(n*n*H)+6 ≤ (10*(n*n)+6)*prime^v.width := by
+    rw [Nat.add_mul, Nat.mul_assoc 10]
+    exact Nat.add_le_add (Nat.mul_le_mul_left _ (Nat.mul_le_mul_left _ width)) (by omega)
+  grw [frame]
+  unfold LabelMask.records volume
+  calc
+    _ = (10*(n*n)+6)*(v.beforeRows*v.rows*v.beforeH*prime^v.width*1*prime^v.width*1) := by ring
+    _ ≤ _ := by
+      have middle := positive.2.2.2.1
+      have suffix := positive.2.2.2.2
+      gcongr <;> omega
+
 /-- The live part of the generated pass pays the density factor on both swaps
 and shears, and the quotient-width factor on swaps. -/
 theorem signedPassResidualCharge_le (L r swaps shears live V : ℕ) (rankPos : 0 < r)
@@ -551,8 +579,7 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     let units := ∏ i : Fin r, (prime^r-prime^i.val)
     let classes := prime^(r*r)
     let lifts := (prime^w)^(r*r)
-    let queuePerParent := lifts * (units * (liveBase + 4*((d+1)*(d+1)*base.H)) +
-        (classes-units) * (10*((d+1)*(d+1)*base.H)+6))
+    let queuePerParent := lifts * (units*liveBase + classes*(10*((d+1)*(d+1)*base.H)+6))
     let a := base.physical e proj α α'
     let perParent := queuePerParent + lifts*signedClassSetup U d T w a.H classes units +
       lifts*units*(signedResidualTime_le_setup_add_counter U d a.H).choose*a.J
@@ -770,6 +797,11 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     rw [Nat.sub_mul,← boxSize,← cardinality]
     omega
   let setupCost := n*(queuePerParent + classes*lifts*(4+(r*r*(4*(w+1)+4)+1)+6) + parentWidth*lifts*(12*r*r*units+4*classes))+4
+  have unitsLe : units ≤ classes := by
+    dsimp only [units, classes]
+    calc
+      _ ≤ ∏ _ : Fin r, prime^r := Finset.prod_le_prod fun i _ => Nat.sub_le _ _
+      _ = _ := by simp [← pow_mul]
   have generateCost : t ≤ setupCost := by
     apply ht.trans
     change (List.range base.records).countP active * _ +
@@ -777,7 +809,11 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     rw [liveCount,paddingCount,cardinality,remaining,recordCount,boxSize]
     rw [parentWidthEq,liveRecordCost_width r (d+1) w base.H parentWidth]
     dsimp only [setupCost,queuePerParent,liveBase]
-    exact Nat.le_of_eq (by ring)
+    have archive := queueArchive_le classes units ((d+1)*(d+1)*base.H) liveBase unitsLe
+    dsimp only [liveBase] at archive
+    apply le_trans _ (Nat.add_le_add_right (Nat.mul_le_mul_left n
+      (Nat.add_le_add_right (Nat.add_le_add_right (Nat.mul_le_mul_left lifts archive) _) _)) 4)
+    exact le_of_eq (by ring)
   let words := (List.range base.records).flatMap fun j => if active j then matrixWords prime base.H
     (projectorResidual e (IntegerMultBounds.Swap.Modular.reduce M proj) α α' (physicalLabel r (w+1) j)) else padWord
   change Exec body generate (mk prepared S) t (mk y (queueResult S mask (scan 2) archive tail words)) at generateRun
