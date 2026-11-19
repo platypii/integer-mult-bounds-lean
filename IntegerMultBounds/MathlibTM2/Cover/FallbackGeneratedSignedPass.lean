@@ -160,6 +160,37 @@ theorem directorySetupCost_le_volume (v : Descriptor) (positive : v.Positive)
   grw [records]
   exact le_of_eq (by ring)
 
+omit [M8.Machine.Net] in
+/-- A shaped descriptor supplies all three record-count bounds for directory setup. -/
+theorem physicalDirectorySetupCost_le_volume (v : Descriptor) (positive : v.Positive)
+    (r w B width : ℕ) (shape : v.beforeH = B*prime^(r*((w+1)*r)))
+    (fits : r*(w+1) ≤ v.width) (hw : width ≤ prime^v.width) :
+    let box := (prime^(w+1))^(r*r)
+    let parents := v.beforeRows*v.rows*B
+    let live := (∏ i : Fin r, (prime^r-prime^i.val))*(prime^w)^(r*r)
+    prime^v.width * directorySetupCost r (w+1) width parents (LabelMask.records v)
+      (parents*live) box ≤ (12*r*r+15*r+333)*volume prime v := by
+  intro box parents live
+  have count : LabelMask.records v = parents*box := by
+    simp only [LabelMask.records, parents, box, shape, ← pow_mul]
+    ring_nf
+  have boxPos : 0 < box := pow_pos (pow_pos Networks.Shared50ModularControl.prime_prime.pos _) _
+  have parentsPos : 0 < parents := by
+    have before := positive.2.2.1
+    rw [shape] at before
+    exact Nat.mul_pos (Nat.mul_pos positive.1 positive.2.1) (Nat.pos_of_mul_pos_right before)
+  have liveBound : live ≤ box := by
+    have countLive := (liveLabelCount (m := r) (by omega : 0 < w+1)).trans (LabelPadding.unit_count w)
+    have length := List.countP_le_length (p := LabelStock.live r (w+1) 1) (l := List.range box)
+    simpa only [box, live, countLive, liveClasses_eq_product, List.length_range] using length
+  apply directorySetupCost_le_volume v positive _ _ _ _ _ _ fits _ _ _ hw
+  · rw [count]
+    exact Nat.le_mul_of_pos_right _ boxPos
+  · rw [count]
+    exact Nat.mul_le_mul_left _ liveBound
+  · rw [count]
+    exact Nat.le_mul_of_pos_left _ parentsPos
+
 /-- The live part of the generated pass pays the density factor on both swaps
 and shears, and the quotient-width factor on swaps. -/
 theorem signedPassResidualCharge_le (L r swaps shears live V : ℕ) (rankPos : 0 < r)
