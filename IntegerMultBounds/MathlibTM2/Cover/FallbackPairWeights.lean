@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackWeightedEntry
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackShearReady
 
 /-! Load a reciprocal pair directly from the active diagonal archive. -/
@@ -8,6 +9,58 @@ namespace IntegerMultBounds.MathlibTM2.Cover.Fallback
 open IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2.Stack Host
 variable {P U α : Type} {T Q A d W b w : ℕ} [NeZero (b^(w+1))]
 local notation "M" => b^(w+1)
+
+def childProductPorts : Fin 14 ↪ Fin 19 := ⟨![13,1,4,14,2,3,5,6,7,8,9,10,11,18],by decide⟩
+
+def childWeightPair (p index : ℕ) (bank : Fin 19 ↪ Fin T) : Pr P T Q A U :=
+  .seq (weightedEntry index (childProductPorts.trans bank))
+    (reusablePivotInverse p ((Fin.castLEEmb (by decide)).trans bank) (bank 16) (bank 17))
+
+/-- Form both child weights from the packed pivots and one incoming weight. -/
+theorem childWeightPair_exec (body : P → Pr P T Q A U) (bank : Fin 19 ↪ Fin T)
+    (pivot : Fin d → ZMod M) (i : Fin d) (unit : IsUnit (pivot i)) (weight inv : ZMod M)
+    (reciprocal : weight * inv = 1) (hb : b.Prime) (H : ℕ) (hm : M < 2^H)
+    (v : HS T Q A U) (S : Stacks T A) (tail : List (Fin (A+4)))
+    (record : S.R (bank 18) = (List.ofFn fun j => binSyms H (pivot j).val).flatten ++ tail)
+    (incoming : S.R (bank 13) = binSyms H weight.val) (modulus : S.R (bank 4) = binSyms H M)
+    (one : S.R (bank 15) = binSyms H (1 : ZMod M).val) (clock : (S.R (bank 16)).length = w)
+    (free : ∀ j : Fin 19, (j < 13 ∧ j ≠ 4) ∨ j = 14 ∨ j = 17 → S.R (bank j) = []) :
+    let C := 48*H*H+152*H+66
+    ∃ z F t, z.user = v.user ∧ t ≤ (8*(i.val*H)+48*H*H+166*H+88) +
+      (6*w+6+(14*H+16+(b-2)*C+C+w*(12*H+15+b*C))) ∧
+      Exec body (childWeightPair b i.val bank) (mk v S) t (mk z F) ∧
+      F.R (bank 14) = binSyms H (weight * pivot i).val ∧
+      F.R (bank 0) = binSyms H (inv * Ring.inverse (pivot i)).val ∧
+      F.L = S.L ∧ F.inp = S.inp ∧ F.out = S.out ∧
+      ∀ j, j ≠ bank 0 → j ≠ bank 14 → F.R j = S.R j := by
+  intro C
+  have fresh : ∀ k : Fin 14, k = 1 ∨ 4 ≤ k ∧ k < 12 → childProductPorts k < 13 ∧ childProductPorts k ≠ 4 := by decide
+  obtain ⟨u,l,hu,hl,prod⟩ := childWeight_writes body (childProductPorts.trans bank) pivot i weight H hm tail v S
+    ⟨record,incoming,modulus,fun k h => free _ (.inl (fresh k h))⟩
+  change Exec _ _ _ _ (mk u {S with R := Function.update S.R (bank 14) (_ ++ S.R (bank 14))}) at prod
+  rw [free 14 (by decide),List.append_nil] at prod
+  let D := {S with R := Function.update S.R (bank 14) (binSyms H (weight * pivot i).val)}
+  have keep (j : Fin 19) (h : j ≠ 14) : D.R (bank j) = S.R (bank j) :=
+    Function.update_of_ne (bank.injective.ne h) _ _
+  have cancels : (weight * pivot i) * (inv * Ring.inverse (pivot i)) = 1 := by
+    rw [mul_mul_mul_comm,reciprocal,Ring.mul_inverse_cancel _ unit,one_mul]
+  have productUnit : IsUnit (weight * pivot i) := isUnit_iff_exists_inv.mpr ⟨_,cancels⟩
+  let r : Fin 16 ↪ Fin T := (Fin.castLEEmb (by decide : 16 ≤ 19)).trans bank
+  have apart : ∀ j : Fin 16, (Fin.castLEEmb (by decide : 16 ≤ 19)) j ≠ 17 := by decide
+  have scratch : ∀ j : Fin 16, j ≠ 4 → j < 13 →
+      let k := (Fin.castLEEmb (by decide : 16 ≤ 19)) j
+      k ≠ 14 ∧ k < 13 ∧ k ≠ 4 := by decide
+  obtain ⟨z,F,n,hz,hn,run,_,word,left,input,output,frame⟩ := reusablePivotInverse_exec body b w hb _ productUnit
+    r (bank 16) (bank 17) (by simp [r,List.nodup_cons,bank.injective.eq_iff])
+    (fun j => bank.injective.ne (apart j)) H hm u D
+    (by rw [keep 16 (by decide),clock]) ((keep 17 (by decide)).trans (free 17 (by decide)))
+    (Function.update_self ..) ((keep 15 (by decide)).trans one) ((keep 4 (by decide)).trans modulus)
+    (fun j hj h => (keep _ (scratch j hj h).1).trans
+      (free _ (.inl (scratch j hj h).2)))
+  rw [Itinerary.inverse_unique cancels] at word
+  exact ⟨z,F,l+n,hz.trans hu,Nat.add_le_add hl hn,Exec.seq prod run,
+    (frame _ (bank.injective.ne (by decide : (14 : Fin 19) ≠ 0))).trans (Function.update_self ..),
+    word,left,input,output,fun j h k => (frame j h).trans (Function.update_of_ne k _ _)⟩
 
 def pairReadPorts : Fin 7 ↪ Fin 35 := (Fin.castLEEmb (by decide : 7 ≤ 8)).trans matrixReadPorts
 
