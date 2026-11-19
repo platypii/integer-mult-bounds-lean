@@ -63,12 +63,41 @@ noncomputable def scanClassCost (table : Matrix (Fin r) (Fin r) (ZMod prime) →
     else 4*(d+1)*(d+1)+1
   branch+(4*volume+4)+((d+1)*(d+1)*(4*H+4)+1)+4
 
+/-- Payload moves outside the residual kernel are proportional to record volume. -/
+noncomputable def classVolumeRate (table : Matrix (Fin r) (Fin r) (ZMod prime) → Matrix (Fin (d+1)) (Fin (d+1)) (ZMod prime))
+    (T : ℕ) (digits : Fin (r*r) → ZMod prime) :=
+  let c := LabelSelectors.matrix r digits
+  let m := table c
+  14 + M8.AtomSegment.chainConst (anchorOps d (negativeAnchor (classPivots m) m))*(size d+T+5) +
+    (if c.det ≠ 0 then 6 else 0)
+
+noncomputable def classResidualCost (table : Matrix (Fin r) (Fin r) (ZMod prime) → Matrix (Fin (d+1)) (Fin (d+1)) (ZMod prime))
+    (T w W H J : ℕ) (U : Type) (digits : Fin (r*r) → ZMod prime) :=
+  let c := LabelSelectors.matrix r digits
+  let branch := if c.det ≠ 0 then 7+signedResidualTime U (classPivots (table c)) w W H J
+    else 4*(d+1)*(d+1)+1
+  size d+3*T+34+(d+1)*(d+1)*(4*H+4)+branch
+
+private theorem splitClassCost (table : Matrix (Fin r) (Fin r) (ZMod prime) → Matrix (Fin (d+1)) (Fin (d+1)) (ZMod prime))
+    (T w W H J : ℕ) (U : Type) (xs : List (Fin (r*r) → ZMod prime)) :
+    (xs.map fun x => anchorClassCost table T w W x + scanClassCost table w W H J U x).sum =
+      ((prime^(w+1))^(d+1)*W)*(xs.map (classVolumeRate table T)).sum +
+      (xs.map (classResidualCost table T w W H J U)).sum := by
+  rw [← List.sum_map_mul_left,← List.sum_map_add]
+  apply congrArg List.sum
+  apply List.map_congr_left
+  intro x _
+  unfold anchorClassCost scanClassCost classVolumeRate classResidualCost Record.cost
+  simp only [ActualAffineScaling.modulus,Nat.mul_one]
+  split <;> ring
+
 /-- Three label traversals and two round trips over the record volume accompany
 the anchor and residual operations on each residue class. -/
 noncomputable def signedPassWork (table : Matrix (Fin r) (Fin r) (ZMod prime) → Matrix (Fin (d+1)) (Fin (d+1)) (ZMod prime))
     (T parents records w W H J : ℕ) (U : Type) :=
-  let perClass := ((LabelSelectors.classes 1 (r*r)).map fun x =>
-    anchorClassCost table T w W x + scanClassCost table w W H J U x).sum
+  let classes := LabelSelectors.classes 1 (r*r)
+  let perClass := ((prime^(w+1))^(d+1)*W)*(classes.map (classVolumeRate table T)).sum +
+    (classes.map (classResidualCost table T w W H J U)).sum
   3*parents*(LabelTraversal.time (prime^w) (r*r) 1+5) +
     parents*(prime^w)^(r*r)*perClass + 4*records*((prime^(w+1))^(d+1)*W)
 
@@ -531,7 +560,7 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
   rw [anchorCost,scanCost] at hn
   have passCost : passSteps ≤ signedPassWork a.table T (v.beforeRows*v.rows*B) a.records w W a.H a.J U + 22 := by
     apply hn.trans_eq
-    simpa only [signedPassWork,ActualAffineScaling.modulus,Nat.mul_one,Nat.mul_assoc] using
+    simpa only [signedPassWork,splitClassCost,ActualAffineScaling.modulus,Nat.mul_one,Nat.mul_assoc] using
       collectPassCost (v.beforeRows*v.rows*B) (LabelTraversal.time (prime^w) (r*r) 1+5)
         ((prime^w)^(r*r)) (a.records*(M^(d+1)*W)) (LabelSelectors.classes 1 (r*r))
         (anchorClassCost a.table T w W) (scanClassCost a.table w W a.H a.J U)
