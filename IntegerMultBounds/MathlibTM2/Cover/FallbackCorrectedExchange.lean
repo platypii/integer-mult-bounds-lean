@@ -123,6 +123,60 @@ theorem placedCorrectedChildExchange_exec {m r Q K : ℕ} (k t : Fin (d+1)) (ban
     rw [← eq] at h
     exact h
 
+/-- Number the private tapes by exchange occurrence and local slot. -/
+noncomputable def exchangeScratch {n : ℕ} (width : Fin n → ℕ) (i : Fin n) :
+    Fin (width i) ↪ Fin (Fintype.card (Σ j, Fin (width j))) :=
+  (Function.Embedding.sigmaMk (β := fun j => Fin (width j)) i).trans (Fintype.equivFin _).toEmbedding
+
+/-- Each occurrence sees the common prefix followed by just its own scratch tapes. -/
+noncomputable def exchangeBank {n : ℕ} (shared : ℕ) (width : Fin n → ℕ) (i : Fin n) :
+    Fin (shared + width i) ↪ Fin (shared + Fintype.card (Σ j, Fin (width j))) :=
+  (finSumFinEquiv.symm.toEmbedding.trans
+    ((Function.Embedding.refl (Fin shared)).sumMap (exchangeScratch width i))).trans finSumFinEquiv.toEmbedding
+
+omit [M8.Machine.Net] in
+theorem exchangeBank_shared {n : ℕ} (shared : ℕ) (width : Fin n → ℕ) (i : Fin n) (a : Fin shared) :
+    exchangeBank shared width i (a.castAdd _) = a.castAdd _ := by
+  change finSumFinEquiv (Sum.map id _ (finSumFinEquiv.symm (a.castAdd _))) = _
+  rw [finSumFinEquiv_symm_apply_castAdd]
+  rfl
+
+omit [M8.Machine.Net] in
+theorem exchangeBank_private {n : ℕ} (shared : ℕ) (width : Fin n → ℕ) (i : Fin n) (a : Fin (width i)) :
+    exchangeBank shared width i (Fin.natAdd shared a) = Fin.natAdd shared (exchangeScratch width i a) := by
+  change finSumFinEquiv (Sum.map id _ (finSumFinEquiv.symm (Fin.natAdd shared a))) = _
+  rw [finSumFinEquiv_symm_apply_natAdd]
+  rfl
+
+omit [M8.Machine.Net] in
+theorem exchangeBank_avoids {n : ℕ} (shared : ℕ) (width : Fin n → ℕ) {i j : Fin n} (ne : i ≠ j)
+    (k : Fin (shared + width i)) (a : Fin (width j)) :
+    exchangeBank shared width i k ≠ Fin.natAdd shared (exchangeScratch width j a) := by
+  induction k using Fin.addCases with
+  | left k =>
+    rw [exchangeBank_shared]
+    intro eq
+    have val := congrArg Fin.val eq
+    change k.val = shared + _ at val
+    omega
+  | right k =>
+    rw [exchangeBank_private]
+    intro eq
+    have same := (Fin.natAddEmb shared).injective eq
+    have pair := (Fintype.equivFin (Σ j, Fin (width j))).injective same
+    exact ne (congrArg Sigma.fst pair)
+
+omit [M8.Machine.Net] in
+theorem exchangeBanks_pairwise {n : ℕ} (shared : ℕ) (width : Fin n → ℕ) :
+    (List.finRange n).Pairwise fun i j => ∀ h,
+      (∃ a, h = Fin.natAdd shared (exchangeScratch width j a)) →
+      ¬ ∃ k, exchangeBank shared width i k = h := by
+  apply (List.nodup_finRange n).imp
+  intro i j ne h scratch used
+  obtain ⟨a,rfl⟩ := scratch
+  obtain ⟨k,hit⟩ := used
+  exact exchangeBank_avoids shared width ne k a hit
+
 omit [M8.Machine.Net] in
 /-- Execute a list of coordinate exchanges, consuming each exchange's private scratch once. -/
 theorem exchangeSchedule_exec {ι X : Type*} {K Q : ℕ}
