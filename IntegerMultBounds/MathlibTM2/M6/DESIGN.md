@@ -539,7 +539,23 @@ directly:
   wherever this rank increases. For each nested pair, take the symmetric difference of
   the pivot sets and count the MOVE once if its difference has two or more runs in that
   order. This excludes a single coordinate permutation as a way to make every MOVE one
-  consecutive child. It leaves open bases that mix coordinates or change between MOVEs.
+  consecutive child.
+
+  **One mixed basis gives consecutive pivots on every phase MOVE.** Regard the eight
+  coordinates as coefficients of a polynomial of degree at most seven, constant term
+  first. Use the coefficients of `f(x + 2)` as coordinates. The binomial theorem gives
+  an integral triangular change of coordinates with diagonal one and inverse translation
+  by `-2`. Exact rational elimination on the pinned generators gives pivots
+  `0, …, d-1` for every one of the 636 labels of dimension `d`; reproduce with
+  `python3 scripts/check-pr589-prefix-pivots.py`. Thus for each of the 2911 positive-rank
+  nested phase MOVEs the changed pivots form a single interval of the billed width.
+  This is a rational calculation for the canonical oblique projectors in the translated
+  coordinates. It covers D/A/B/C. COPY windows have separate edges and costs. The two
+  port endpoints present a remaining mismatch: the line gets pivot 0 and the target
+  hyperplane gets pivots 0 through 6, whereas the complement of the line projector
+  has diagonal support 1 through 7. Closing the stage boundary and pricing its route
+  still require a construction. The calculation also needs a Lean link to the physical
+  modular implementation.
 - **Routes and charts are coordinate permutations.** The stage routes `ρ` and the helper charts
   are orthogonal and not triangular; in Bruhat form each route contains 7 sub-field
   transpositions per field, for all 111 ports. On a tape they move data from less significant
