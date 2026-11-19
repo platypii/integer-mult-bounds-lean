@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Host.BinArithMul
+public import IntegerMultBounds.MathlibTM2.Routing.BinaryCanonicalExec
 
 /-! Binary dimensions of a scheduled row shear, from a live modulus and suffix width. -/
 @[expose] public section
@@ -89,5 +90,129 @@ theorem dimensionPower_exec (body : P → Pr P T Q A U) (n : ℕ) (r : Fin 10 �
     unfold dimensionTime
     dsimp only [w] at *
     omega
+
+/-- Compute the row extent of a mixed-radix shear from its three binary headers.
+Registers 3 and 4 receive the partial and full products respectively. -/
+def middleRowCount (r : Fin 11 ↪ Fin T) : Pr P T Q A U :=
+  .seq (bmul (r 0) (r 1) (r 3) (r 5) (r 6) (r 7) (r 8) (r 9) (r 10))
+    (bmul (r 2) (r 3) (r 4) (r 5) (r 6) (r 7) (r 8) (r 9) (r 10))
+
+theorem middleRowCount_exec (body : P → Pr P T Q A U) (r : Fin 11 ↪ Fin T)
+    (pre M G : ℕ) (v : HS T Q A U) (S : Stacks T A)
+    (prefixHeader : S.R (r 0) = binSyms pre.size pre) (radix : S.R (r 1) = binSyms M.size M)
+    (gap : S.R (r 2) = binSyms G.size G) (free : ∀ i : Fin 11, 3 ≤ i → i < 10 → S.R (r i) = []) :
+    let W := pre.size + M.size
+    let D := Function.update S.R (r 3) (binSyms W (pre*M))
+    ∃ z n, z.user = v.user ∧ n ≤ pre.size*(12*W+20)+16*W+24 +
+      (G.size*(12*(G.size+W)+20)+16*(G.size+W)+24) ∧
+      Exec body (middleRowCount r) (mk v S) n
+        (mk z {S with R := Function.update D (r 4) (binSyms (G.size+W) (pre*M*G))}) := by
+  intro W D
+  obtain ⟨u,n,hu,hn,part⟩ := bmul_exec body (a := r 0) (b := r 1) (c := r 3)
+    (s := r 5) (t := r 6) (tx := r 7) (ty := r 8) (tz := r 9) (cy := r 10)
+    (by simp [List.nodup_cons,r.injective.eq_iff]) (r.injective.ne (by decide)) (r.injective.ne (by decide))
+    (Nat.lt_size_self pre) (Nat.lt_size_self M) v S prefixHeader radix
+    (free 3 (by decide) (by decide)) (free 5 (by decide) (by decide)) (free 6 (by decide) (by decide))
+    (free 7 (by decide) (by decide)) (free 8 (by decide) (by decide)) (free 9 (by decide) (by decide))
+  have keep (i : Fin 11) (hi : i ≠ 3) : D (r i) = S.R (r i) := Function.update_of_ne (r.injective.ne hi) _ _
+  have scratch (i : Fin 11) (hi : 4 ≤ i) (hj : i < 10) : D (r i) = [] :=
+    (keep i (by omega)).trans (free i (by omega) hj)
+  have fits : pre*M < 2^W := by
+    rw [show W = pre.size+M.size from rfl,pow_add]
+    exact Nat.mul_lt_mul_of_lt_of_le (Nat.lt_size_self pre) (Nat.lt_size_self M).le (by positivity)
+  obtain ⟨z,m,hz,hm,full⟩ := bmul_exec body (a := r 2) (b := r 3) (c := r 4)
+    (s := r 5) (t := r 6) (tx := r 7) (ty := r 8) (tz := r 9) (cy := r 10)
+    (by simp [List.nodup_cons,r.injective.eq_iff]) (r.injective.ne (by decide)) (r.injective.ne (by decide))
+    (Nat.lt_size_self G) fits u {S with R := D} ((keep 2 (by decide)).trans gap) (Function.update_self ..)
+    (scratch 4 (by decide) (by decide)) (scratch 5 (by decide) (by decide)) (scratch 6 (by decide) (by decide))
+    (scratch 7 (by decide) (by decide)) (scratch 8 (by decide) (by decide)) (scratch 9 (by decide) (by decide))
+  rw [Nat.mul_comm G] at full
+  exact ⟨z,n+m,hz.trans hu,Nat.add_le_add hn hm,Exec.seq part full⟩
+
+def middleRowDescriptor (r : Fin 11 ↪ Fin T) : Pr P T Q A U :=
+  .seq (middleRowCount r) (.seq (Routing.binaryCanonicalProgram (r 4) (r 5)) (bclear (r 3)))
+
+private theorem size_square_le (x : ℕ) (hx : 0 < x) : x.size^2 ≤ 4*x := by
+  have square (k : ℕ) : k^2 ≤ 2*2^k := by
+    induction k with
+    | zero => decide
+    | succ k ih =>
+      by_cases hk : k < 3
+      · rcases (show k = 0 ∨ k = 1 ∨ k = 2 by omega) with rfl | rfl | rfl <;> decide
+      · rw [pow_succ 2]
+        nlinarith only [ih, Nat.mul_le_mul_left k (show 3 ≤ k by omega), hk]
+  obtain ⟨k,hk⟩ := Nat.exists_eq_succ_of_ne_zero (show x.size ≠ 0 by
+    intro eq
+    have h := Nat.lt_size_self x
+    rw [eq] at h
+    simp at h
+    omega)
+  have lower : 2^k ≤ x := Nat.lt_size.mp (by omega)
+  have bound := square x.size
+  rw [hk,pow_succ 2] at bound
+  rw [hk]
+  omega
+
+/-- Computing and cleaning the row descriptor costs at most a constant per row,
+even when the three header widths differ. -/
+private theorem middleRowDescriptor_time_le (pre M G : ℕ) (hp : 0 < pre) (hm : 0 < M) (hg : 0 < G) :
+    let W := pre.size + M.size
+    let L := G.size + W
+    pre.size*(12*W+20)+16*W+24+(G.size*(12*L+20)+16*L+24)+(4*L+6+(2*W+2)) ≤
+      432*(pre*M*G) := by
+  intro W L
+  let R := pre*M*G
+  have pos : 0 < R := Nat.mul_pos (Nat.mul_pos hp hm) hg
+  have pm := Nat.le_mul_of_pos_right (pre*M) hg
+  have monotone {x : ℕ} (h : x ≤ R) : x.size ≤ R.size :=
+    Nat.size_le.mpr (h.trans_lt (Nat.lt_size_self R))
+  have p := monotone ((Nat.le_mul_of_pos_right pre hm).trans pm)
+  have m := monotone ((Nat.le_mul_of_pos_left M hp).trans pm)
+  have g := monotone (Nat.le_mul_of_pos_left G (Nat.mul_pos hp hm))
+  have lin : R.size ≤ R := Nat.size_le.mpr Nat.lt_two_pow_self
+  have sq := size_square_le R pos
+  calc
+    _ ≤ R.size*(12*(R.size+R.size)+20)+16*(R.size+R.size)+24+
+        (R.size*(12*(R.size+(R.size+R.size))+20)+16*(R.size+(R.size+R.size))+24)+
+        (4*(R.size+(R.size+R.size))+6+(2*(R.size+R.size)+2)) := by
+          dsimp only [L,W]
+          gcongr
+    _ ≤ 432*R := by nlinarith only [sq,lin,pos]
+
+/-- Install the canonical row count in place and release the partial product.
+All other stacks, including those of the three input headers, are restored. -/
+theorem middleRowDescriptor_exec (body : P → Pr P T Q A U) (r : Fin 11 ↪ Fin T)
+    (pre M G : ℕ) (hp : 0 < pre) (hm : 0 < M) (hg : 0 < G)
+    (v : HS T Q A U) (S : Stacks T A)
+    (prefixHeader : S.R (r 0) = binSyms pre.size pre) (radix : S.R (r 1) = binSyms M.size M)
+    (gap : S.R (r 2) = binSyms G.size G) (free : ∀ i : Fin 11, 3 ≤ i → i < 10 → S.R (r i) = []) :
+    ∃ bs z n, GrowingCounterData.Canonical bs ∧ Counter.value bs = pre*M*G ∧ z.user = v.user ∧
+      n ≤ 432*(pre*M*G) ∧
+      Exec body (middleRowDescriptor r) (mk v S) n
+        (mk z {S with R := Function.update S.R (r 4) (bs.map bitSymbol)}) := by
+  let W := pre.size + M.size
+  let L := G.size + W
+  obtain ⟨u,n,hu,hn,product⟩ := middleRowCount_exec body r pre M G v S prefixHeader radix gap free
+  let D := Function.update S.R (r 3) (binSyms W (pre*M))
+  let E := Function.update D (r 4) (binSyms L (pre*M*G))
+  have fits : pre*M*G < 2^L := by
+    simp only [L,W,pow_add]
+    rw [Nat.mul_comm (2^G.size)]
+    apply Nat.mul_lt_mul_of_lt_of_le _ (Nat.lt_size_self G).le (by positivity)
+    exact Nat.mul_lt_mul_of_lt_of_le (Nat.lt_size_self pre) (Nat.lt_size_self M).le (by positivity)
+  obtain ⟨bs,y,cb,hb,_,hy,canon⟩ := Routing.binaryCanonical_exec body (r 4) (r 5)
+    (r.injective.ne (by decide)) L (pre*M*G) fits u {S with R := E} (Function.update_self ..)
+    (by simp [E,D,r.injective.eq_iff,free 5 (by decide) (by decide)])
+  let F := Function.update E (r 4) (bs.map (bitSymbol (a := A)))
+  obtain ⟨z,hz,_,clear⟩ := bclear_exec body (r 3) y {S with R := F}
+  have len : (F (r 3)).length = W := by simp [F,E,D,r.injective.eq_iff,length_binSyms]
+  have restored : Function.update F (r 3) [] = Function.update S.R (r 4) (bs.map bitSymbol) := by
+    funext j
+    by_cases h : j = r 3 <;> by_cases k : j = r 4 <;>
+      simp_all [F,E,D,free 3 (by decide) (by decide)]
+  change Exec body _ _ (2*(F (r 3)).length+2) (mk z {S with R := Function.update F (r 3) []}) at clear
+  rw [len,restored] at clear
+  exact ⟨bs,z,_,cb,hb,hz.trans (hy.trans hu),(Nat.add_le_add_right hn _).trans (middleRowDescriptor_time_le pre M G hp hm hg),
+    Exec.seq product (Exec.seq canon clear)⟩
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
