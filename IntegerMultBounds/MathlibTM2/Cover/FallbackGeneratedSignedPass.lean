@@ -470,6 +470,30 @@ private theorem cube_le_three_pow (a : ℕ) : a^3 ≤ 3^a := by
       ring_nf
       omega
 
+omit [M8.Machine.Net] in
+/-- At binary field width, one remaining coordinate pays for the quadratic
+bit-width overhead and the linear atom-width overhead of prefix enumeration. -/
+theorem prefixSetup_volume_le (w d : ℕ) :
+    let q := prime^(w+1)
+    let H := Nat.size q
+    (w+1+q^d)*(H+1)^2 ≤ (2*(Nat.size prime+1)^2)*q^(d+1) := by
+  intro q H
+  have bits : H ≤ (w+1)*Nat.size prime := by
+    apply Nat.size_le.mpr
+    rw [Nat.mul_comm, pow_mul]
+    exact Nat.pow_lt_pow_left (Nat.size_le.mp (le_refl (Nat.size prime))) (by omega)
+  have field : H+1 ≤ (w+1)*(Nat.size prime+1) := by rw [Nat.mul_add, Nat.mul_one]; omega
+  have cube : (w+1)^3 ≤ prime^(w+1) := (cube_le_three_pow _).trans
+    (Nat.pow_le_pow_left Networks.Shared50ModularControl.prime_odd _)
+  have prefixPos : 1 ≤ (prime^(w+1))^d := pow_pos (pow_pos Networks.Shared50ModularControl.prime_prime.pos _) _
+  have factor : w+1+(prime^(w+1))^d ≤ 2*(w+1)*(prime^(w+1))^d := by
+    nlinarith [Nat.mul_le_mul_left (w+1) prefixPos]
+  change (w+1+(prime^(w+1))^d)*(H+1)^2 ≤ _
+  grw [factor,field]
+  calc
+    _ = 2*(Nat.size prime+1)^2*q^d*(w+1)^3 := by dsimp only [q]; ring
+    _ ≤ _ := by grw [cube]; rw [pow_succ q d]; dsimp only [q]; exact le_of_eq (by ring)
+
 /-- With the binary modulus width, the extra setup for each live class
 fits in one record of unit payload. -/
 theorem signedClassSetup_volume_le (U : Type) (d : ℕ) :
@@ -481,31 +505,19 @@ theorem signedClassSetup_volume_le (U : Type) (d : ℕ) :
   obtain ⟨c,hc⟩ := signedResidualTime_setup_le U d
   refine ⟨7+2*c*(Nat.size prime+1)^2, ?_⟩
   intro T w classes live H
-  have bits : H ≤ (w+1)*Nat.size prime := by
-    apply Nat.size_le.mpr
-    rw [Nat.mul_comm, pow_mul]
-    exact Nat.pow_lt_pow_left (Nat.size_le.mp (le_refl (Nat.size prime))) (by omega)
-  have field : H+1 ≤ (w+1)*(Nat.size prime+1) := by rw [Nat.mul_add, Nat.mul_one]; omega
-  have cube : (w+1)^3 ≤ prime^(w+1) := (cube_le_three_pow _).trans
-    (Nat.pow_le_pow_left Networks.Shared50ModularControl.prime_odd _)
-  have prefixPos : 1 ≤ (prime^(w+1))^d := pow_pos (pow_pos Networks.Shared50ModularControl.prime_prime.pos _) _
   have kernel := Finset.sup_le (s := Finset.univ) (f := fun r =>
     signedResidualTime U (fun _ : Fin (d+1) => r) w 0 H 0) (fun r _ => hc (fun _ => r) w H)
   unfold signedClassSetup
   apply Nat.add_le_add_left
   apply Nat.mul_le_mul_left
   apply (Nat.sub_le _ _).trans
-  grw [kernel, field]
-  rw [pow_succ (prime^(w+1)) d]
-  have factor : w+1+(prime^(w+1))^d ≤ 2*(w+1)*(prime^(w+1))^d := by
-    nlinarith [Nat.mul_le_mul_left (w+1) prefixPos]
+  grw [kernel]
+  rw [Nat.mul_assoc c]
+  have factor := prefixSetup_volume_le w d
+  dsimp only at factor
   grw [factor]
-  calc
-    _ = 7 + 2*c*(Nat.size prime+1)^2*(prime^(w+1))^d*(w+1)^3 := by ring
-    _ ≤ _ := by
-      grw [cube]
-      have pos := Nat.mul_pos prefixPos (pow_pos Networks.Shared50ModularControl.prime_prime.pos (w+1))
-      nlinarith
+  have pos : 0 < (prime^(w+1))^(d+1) := pow_pos (pow_pos Networks.Shared50ModularControl.prime_prime.pos _) _
+  nlinarith
 
 /-- Across the parent boxes and their lifts, one address coordinate pays the
 baseline per class. Only live records pay the full residual setup. -/

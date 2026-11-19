@@ -537,6 +537,13 @@ def cleanupTime (d H total push steps column : ℕ) : ℕ :=
   let bound := steps+1+rewind
   bound+(total*4+1+total*(6*(push*bound)))
 
+noncomputable def preparedSetupTime (U : Type) {n d : ℕ} (xs : List (Fin n))
+    (j i : Fin n → ℕ) (k t : Fin n → Fin (d+1)) (width : Fin n → ℕ) (total push w H J : ℕ) :=
+  let steps := (xs.map fun a => exchangeTime U (j a) (i a) (k a) (t a) (width a) w 0 H J).sum
+  let largest := Finset.univ.sup fun q : Fin (d+1) =>
+    Finset.univ.sup fun p => columnProgramTime U p q w 0 H J
+  cleanupTime d H total push steps largest
+
 omit [M8.Machine.Net] in
 theorem cleanupTime_le (d H total push steps column setup largest forward reverse volume : ℕ)
     (hs : steps ≤ setup+forward*volume) (hc : column ≤ largest+reverse*volume) :
@@ -742,8 +749,6 @@ theorem preparedPass_exec {Q T r A : ℕ} (table : Matrix (Fin r) (Fin r) (ZMod 
       (prime^(w+1)) < 2^a.H → W < 2^a.J → 0 < W →
       let H := a.H
       let J := a.J
-      let cost := fun x a => exchangeTime U (j a).val (i a).val (k a) (t a) (width a) w x H J
-      let steps := fun x => ((List.finRange n).map (cost x)).sum
       let push := Fast.Main.mnProgPush residual
       let forward := ((List.finRange n).map fun a => exchangePayloadRate U (j a).val (i a).val (k a) (t a) (width a) w).sum
       let volume := (prime^(w+1))^(d+1)*W
@@ -822,8 +827,8 @@ theorem preparedPass_exec {Q T r A : ℕ} (table : Matrix (Fin r) (Fin r) (ZMod 
         let units := ∏ i : Fin r, (prime^r-prime^i.val)
         let active := boxes*(prime^w)^(r*r)*units
         let payload := a.records*volume
-        let largest := Finset.univ.sup fun j : Fin (d+1) => Finset.univ.sup fun i => columnProgramTime U i j w 0 H J
-        let kernel := cleanupTime d H total push (steps 0) largest
+        let kernel := preparedSetupTime U (List.finRange n) (fun a => (j a).val) (fun a => (i a).val)
+          k t width total push w H J
         let rate := (1+6*total*push)*(forward+(d+1)*columnPayloadRate U (d+1) w)
         let common := size d+3*A+34+(d+1)*(d+1)*(4*H+4)
         let live := prepTime + 6 + (1+kernel)
@@ -850,7 +855,7 @@ theorem preparedPass_exec {Q T r A : ℕ} (table : Matrix (Fin r) (Fin r) (ZMod 
   let prepareCounters : Pr P T Q prime U := .seq (LabelCounts.highCount unit atom (dir 7) (dir 2) (dir 3) (dir 5))
     (scanR (dir 7) (dir 2) (LabelCountBank.pushAll (rs.map Prod.fst)))
   refine ⟨.seq (.seq (.seq countBoxes buildDirectory) prepareCounters) (.seq (.seq maskWriter (.seq (.seq copyOne (.seq (.seq writeZero (.seq (.seq writeSeed generate) (bclear seed))) (bclear (generatorBank 9)))) (bclear (generatorBank 17)))) pass),?_⟩
-  intro w W baseData parent proj α α' idem adm inverse a tables inputs encoded unsigned padding hm hw hW H J cost steps push forward volume prepTime
+  intro w W baseData parent proj α α' idem adm inverse a tables inputs encoded unsigned padding hm hw hW H J push forward volume prepTime
   subst table
   have liveSpec := fun j (_ : j < a.records) => baseData.physical_live e proj idem adm α α' inverse j
   intro word tail desc B rawUser raw positiveDescriptor beforeRowsSize rowsSize beforeHSize parentBlank inputState boxes box labelWidth prefixWidth atomWidth unitWidth parentQueue prefixLen dirFree counted ancestor directoryWord built projector padWord emptySlots originalState maskBlank maskScratch genBits maskedState oneBlank unitWord unitState zeroBlank zeroState seedBlank seeded tmpBlank weightBank generatorReady parentWidth width0 archiveEmpty genOutput init records shape fresh emptyInit anchorView neutral aradix afree acount awidth clean queueInit extCount savedEmpty tmpEmpty accEmpty pivotTail modWord widthWord one padded ticks scratchFree payloadBlank sharedFree parentWord privateFree output
@@ -1058,11 +1063,12 @@ theorem preparedPass_exec {Q T r A : ℕ} (table : Matrix (Fin r) (Fin r) (ZMod 
     runPass a parent rfl inputs encoded unsigned liveSpec padding hm hw hW desc B first init records shape radixInit
       scratchInit countInit fresh emptyInit neutral aradix afree acount awidth clean queueInit extCount savedEmpty tmpEmpty
       accEmpty pivotTail archive modWord widthWord one padded ticks scratchFree payloadBlank sharedFree parentWord privateFree
-  let largest := Finset.univ.sup fun j : Fin (d+1) => Finset.univ.sup fun i => columnProgramTime U i j w 0 H J
-  let kernel := cleanupTime d H total push (steps 0) largest
+  let kernel := preparedSetupTime U (List.finRange n) (fun a => (j a).val) (fun a => (i a).val)
+    k t width total push w H J
   let rate := (1+6*total*push)*(forward+(d+1)*columnPayloadRate U (d+1) w)
   let column := fun (i j : Fin (d+1)) => columnProgramTime U i j w W H J
-  let pivotCost := fun (p : Fin (d+1) → Fin (d+1)) => cleanupTime d H total push (steps W) (Finset.univ.sup fun i => column i (p i))
+  let steps := ((List.finRange n).map fun a => exchangeTime U (j a).val (i a).val (k a) (t a) (width a) w W H J).sum
+  let pivotCost := fun (p : Fin (d+1) → Fin (d+1)) => cleanupTime d H total push steps (Finset.univ.sup fun i => column i (p i))
   have schedule := exchangeScheduleBound U (fun a => (j a).val) (fun a => (i a).val) k t width w W H J (List.finRange n)
   have scanTotal := physicalScanTime_le (A := A) (H := H) desc B a.records shape records a.table inputs pivotCost
     kernel rate prepTime l rankPos (fun p => cleanupTime_le d H total push _ _ _ _ _ _ volume schedule
