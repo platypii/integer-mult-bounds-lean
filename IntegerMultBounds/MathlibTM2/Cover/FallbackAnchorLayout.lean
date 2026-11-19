@@ -485,6 +485,13 @@ theorem loadAnchorRecord_exec {r w records T Q : ℕ} {P U : Type}
     (v : HS T Q prime U) (S : Stacks T prime) (tail : List (Fin (prime+4)))
     (original : Fin ((modulus (w+1))^(d+1)*W) → ZMod 2)
     (width : (S.R count).length = (modulus (w+1))^(d+1)*W)
+    (bank : Fin 35 ↪ Fin T) (payload : dst = bank 24) (outside : ∀ i, bank i ≠ src)
+    (H J : ℕ) (record : List (Fin (prime+4))) (dest : ℤ → Fin 4) (q : ℤ)
+    (modWord : S.R (bank 2) = binSyms H (prime^(w+1))) (widthWord : S.R (bank 27) = binSyms J W)
+    (one : S.R (bank 28) = binSyms 1 1) (padded : S.R (bank 32) = binSyms H (1 : ZMod (prime^(w+1))).val)
+    (clock : (S.R (bank 33)).length = w) (archive : S.R (bank 34) = record)
+    (scratch : ∀ i ∈ shearWork, S.L (bank i) = [] ∧ S.R (bank i) = [])
+    (destination : ∀ z, readAt blank (S.L (bank 25)) (S.R (bank 25)) (z-q) = RadixToBinary.binaryEncoding.encode (dest z))
     (empty : ∀ z, readAt blank (S.L dst) (S.R dst) z = blank) (hs : S.R saved = []) (ht : S.R tmp = []) :
     let j := block*(prime^(w+1))^(r*r)+(LabelAddress.address g).val
     let rows := classPivots (table ((LabelRing.res prime (w+1) (by omega)).mapMatrix g))
@@ -492,14 +499,12 @@ theorem loadAnchorRecord_exec {r w records T Q : ℕ} {P U : Type}
     (signStream (A := prime) table (w+1) records)[j]? = some (bitSymbol negative) →
     scalarArray (inputs j) = SparseRoleCircuit.encode ∘ original →
     S.R src = (outs.drop j).flatMap payloadWord ++ tail →
-    ∃ u F word,
+    ∃ u F, ∃ word : Fin ((modulus (w+1))^(d+1)*W) → ZMod 2,
       Itinerary.Valid rows G (d+1) ∧ (Itinerary.run rows G (d+1)).det = (if negative then -1 else 1) ∧
       u.user = v.user ∧ Exec body (movePrefix count src dst saved tmp) (mk v S) (6*((modulus (w+1))^(d+1)*W)+6) (mk u F) ∧
       S.R src = payloadWord (SparseRoleCircuit.encode ∘ word) ++ next ∧
       F = {S with R := Function.update (Function.update S.R src next) dst (payloadWord (SparseRoleCircuit.encode ∘ word) ++ S.R dst)} ∧
-      (∀ z, readAt blank (F.L dst) (F.R dst) z = RadixToBinary.binaryEncoding.encode
-        (putWord (fun _ => blank) 0 (List.ofFn (SparseRoleCircuit.encode ∘ word)) z)) ∧
-      ∀ x k, word (index (signedAddress negative x) k) = original (index x k) := by
+      ColumnRecordReady bank H J record SparseRoleCircuit.encode (fun _ => blank) dest 0 q original (signedAddress negative) F := by
   intro j rows next recorded input queue
   obtain ⟨neg,out,entry,correct,bit,valid,sign⟩ := output_at (by omega) table g G det lift inputs outs result block live
   have eq := congrArg (Option.map symBit) (bit.symm.trans recorded)
@@ -513,9 +518,27 @@ theorem loadAnchorRecord_exec {r w records T Q : ℕ} {P U : Type}
     unfold payloadWord
     rw [← encoded,show List.ofFn (scalarArray out) = List.ofFn out from ofFn_cast _ out]
   obtain ⟨u,F,hu,run,stacksEq,tape⟩ := loadPayload_exec body ports out next v S queue (by simpa using width) empty hs ht
-  refine ⟨u,F,word,valid,sign,hu,by simpa using run,by rwa [← same],by rwa [← same],?_,placed⟩
-  intro z
-  rw [← encoded,show List.ofFn (scalarArray out) = List.ofFn out from ofFn_cast _ out]
-  exact (tape z).symm
+  have state : F = {S with R := Function.update (Function.update S.R src next) dst (payloadWord (SparseRoleCircuit.encode ∘ word) ++ S.R dst)} := by rwa [← same]
+  have keep (i : Fin 35) (hi : i ≠ 24) : F.R (bank i) = S.R (bank i) := by
+    rw [state]
+    exact (Function.update_of_ne (payload ▸ bank.injective.ne hi) _ _).trans (Function.update_of_ne (outside i) _ _)
+  have left : F.L = S.L := state ▸ rfl
+  have source (z : ℤ) : readAt blank (F.L dst) (F.R dst) z = RadixToBinary.binaryEncoding.encode
+      (putWord (fun _ => blank) 0 (List.ofFn (SparseRoleCircuit.encode ∘ word)) z) := by
+    rw [← encoded,show List.ofFn (scalarArray out) = List.ofFn out from ofFn_cast _ out]
+    exact (tape z).symm
+  refine ⟨u,F,word,valid,sign,hu,by simpa using run,by rwa [← same],state,word,?_,placed⟩
+  refine ⟨(keep 2 (by decide)).trans modWord,(keep 27 (by decide)).trans widthWord,
+    (keep 28 (by decide)).trans one,(keep 32 (by decide)).trans padded,
+    (congrArg List.length (keep 33 (by decide))).trans clock,(keep 34 (by decide)).trans archive,?_,?_,?_⟩
+  · intro i hi
+    rw [left,keep i (fun e => (by decide : (24 : Fin 35) ∉ shearWork) (e ▸ hi))]
+    exact scratch i hi
+  · intro z
+    rw [← payload,sub_zero]
+    exact source z
+  · intro z
+    rw [left,keep 25 (by decide)]
+    exact destination z
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback.Record
