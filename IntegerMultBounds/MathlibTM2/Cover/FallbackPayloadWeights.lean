@@ -42,13 +42,14 @@ theorem payloadWeights_exec (body : P → Pr P T Q A U) (r : Fin 7 ↪ Fin T) (H
     ∃ z t, ∃ weights : Fin n → (ZMod M)ˣ, z.user = v.user ∧ t ≤ n*(8*((n+1)*(n+1)*H)+14*H+22)+1 ∧
       Exec body (gatherMatrix (n := n) Fin.succ Fin.succ r) (mk v S) t
         (mk z {S with R := Function.update S.R (r 3) ((List.ofFn fun i => binSyms H (weights i : ZMod M).val).flatten ++ S.R (r 3))}) ∧
+      (∀ i, (weights i : ZMod M) = a i.succ) ∧
       ∀ b (x : Fin b → Fin (n+1) → ZMod M),
         fallbackBank b (if negative then -1 else 1) weights ops (bankFields (List.finRange (n+1)) x) =
           bankFields (List.finRange (n+1)) (fun k => G.mulVec (x k)) := by
   let u := fun i => (unit i).unit
   have val (i) : (u i : ZMod M) = a i := (unit i).unit_spec
   obtain ⟨z,t,hz,ht,run⟩ := gatherMatrix_exec body r (diagonal a) Fin.succ Fin.succ H v S tail matrix width free
-  refine ⟨z,t,fun i => u i.succ,hz,ht,by simpa [val] using run,?_⟩
+  refine ⟨z,t,fun i => u i.succ,hz,ht,by simpa [val] using run,fun i => val i.succ,?_⟩
   apply diagonalBank
   · apply Units.ext
     cases negative <;> simpa [Units.coe_prod,val] using sign

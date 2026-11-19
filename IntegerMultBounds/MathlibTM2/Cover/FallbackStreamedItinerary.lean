@@ -96,6 +96,7 @@ theorem recordDiagonalize_exec {m : ℕ} (body : P → Pr P T Q A U) (r : Fin 23
       (F.R (stageBank r d 15),F.R (stageBank r d 16)) =
         matrixArchive (fun n => matrixWords A H (Itinerary.run rows G n)) (S.R (r 15)) (S.R (r 16)) d ∧
       (∀ i, i ≠ src → i ≠ stageBank r d 15 → i ≠ stageBank r d 16 → F.R i = S.R i) ∧
+      Itinerary.Valid rows G d ∧ Itinerary.run rows G d = Matrix.diagonal a ∧
       (∀ i, IsUnit (a i)) ∧ (signStream (A := A) table (w+1) N)[j]? = some (bitSymbol negative) ∧
       (∏ i, a i) = (if negative then -1 else 1) ∧
       (undo.map RowOp.children).sum ≤ d*(6*(d-1)+3) ∧
@@ -121,8 +122,10 @@ theorem recordDiagonalize_exec {m : ℕ} (body : P → Pr P T Q A U) (r : Fin 23
     by_cases h : i = k
     · subst k; simp [a]
     · rw [Matrix.diagonal_apply_ne _ h]; exact clear i k k.isLt h
-  refine ⟨z,F,l,suffix,a,neg,hz,hl,run,remaining,diag ▸ packed,?_,frame,fun i => units i i.isLt,bit,?_,undoItinerary_children ..,?_⟩
+  refine ⟨z,F,l,suffix,a,neg,hz,hl,run,remaining,diag ▸ packed,?_,frame,?_,?_,fun i => units i i.isLt,bit,?_,undoItinerary_children ..,?_⟩
   · simpa only [rows,j,addr,pivots] using archive
+  · simpa only [rows,j,addr,pivots] using valid
+  · simpa only [rows,j,addr,pivots] using diag
   · simpa only [← Matrix.det_diagonal,← diag] using det
   · intro x
     simpa only [undo,rows,j,addr,← diag,pivots] using undoItinerary_apply pivots G d x
