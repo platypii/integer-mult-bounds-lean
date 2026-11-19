@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackRecordWeights
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackReverseStages
 
 /-! Diagonalize on the same two archive tapes read by reverse elimination. -/
@@ -76,6 +77,66 @@ theorem preparedColumnReady {T W n : ℕ} (host : Fin (N+2) ↪ Fin T) (H J : �
     exact bank.injective.ne hi
   · rw [ports,(forwardBank_archives n).2]
     exact host.injective.ne (archivePorts_other n _)
+
+/-- Prepare the signed record directly on the active and spare residual archives. -/
+theorem prepareResidualArchives_exec {m n T Q : ℕ} (body : P → Pr P T Q prime U)
+    (columns : Fin (N+1) ↪ Fin T) (spare : Fin T) (off : ∀ i, columns i ≠ spare) (w H : ℕ) (hm : prime^(w+1) < 2^H)
+    (table : Matrix (Fin m) (Fin m) (ZMod prime) → Matrix (Fin (n+1)) (Fin (n+1)) (ZMod prime))
+    (g : LabelPadding.Label m (w+1)) (G : Matrix (Fin (n+1)) (Fin (n+1)) (ZMod (prime^(w+1))))
+    (sign : G.det = 1 ∨ G.det = -1)
+    (lift : (LabelRing.res prime (w+1) (by omega)).mapMatrix G = table ((LabelRing.res prime (w+1) (by omega)).mapMatrix g))
+    (block records : ℕ) (index : block*(prime^(w+1))^(m*m)+(LabelAddress.address g).val < records)
+    (v : HS T Q prime U) (S : Stacks T prime) (tail rest : List (Fin (prime+4)))
+    (parentTape : Fin T) (parent : Fin n → (ZMod (prime^(w+1)))ˣ)
+    :
+    let host := rewindPorts (n+1) columns spare off
+    let r := forwardBank.trans host
+    let src := columns (Fin.last N)
+    ∀ (outside : ∀ i, r i ≠ parentTape) (separate : parentTape ≠ src)
+    (parents : S.R parentTape = (List.ofFn fun i => binSyms H (parent i : ZMod (prime^(w+1))).val).flatten)
+    (matrix : S.R (r 15) = matrixWords prime H G ++ tail) (modulus : S.R (r 2) = binSyms H (prime^(w+1)))
+    (one : S.R (r 20) = binSyms H (1 : ZMod (prime^(w+1))).val) (ticks : (S.R (r 22)).length = w)
+    (free : ∀ i : Fin 23, (i < 15 ∧ i ≠ 2) ∨ (17 ≤ i ∧ i ≤ 19) ∨ i = 21 → S.R (r i) = []),
+    let j := block*(prime^(w+1))^(m*m)+(LabelAddress.address g).val
+    let code := fun t =>
+      let pivots := classPivots (table (LabelStock.residue m (w+1) 1 t))
+      scheduleCode (A := prime) pivots ++ orderedScheduleCode (List.finRange (n+1)).reverse pivots
+    let rows := classPivots (table ((LabelRing.res prime (w+1) (by omega)).mapMatrix g))
+    let words := fun k => matrixWords prime H (Itinerary.run rows G k)
+    let active := stageBank r (n+1) 15
+    S.R src = ((List.range records).drop j).flatMap code ++ rest →
+    ∃ z F l, ∃ a : Fin (n+1) → (ZMod (prime^(w+1)))ˣ, ∃ negative,
+      z.user = v.user ∧ l ≤ (n+1)*(2*(n+1)+(4*w+4+columnTime (n+1) prime w H))+1 +
+        (n*(8*((n+1)*(n+1)*H)+14*H+22)+1) + (6*H+6) + (4*((n+1)*H)+4) + (6*(n*H)+6) ∧
+      Exec body (.seq (.seq (.seq (recordWeights n r src) (Mult.PhaseCellToeplitz.copyWordHeader (r 20) (r 14) (r 3) (r 4)))
+        (moveRightOrdered (r 14) (r 3) active)) (Mult.PhaseCellToeplitz.copyWordHeader parentTape src (r 3) (r 4))) (mk v S) l (mk z F) ∧
+      F.R src = S.R parentTape ++ (orderedScheduleCode (List.finRange (n+1)).reverse rows ++ (((List.range records).drop (j+1)).flatMap code ++ rest)) ∧
+      (∃ suffix, F.R (columns (columnBank 34)) = (List.ofFn fun i => binSyms H ((Fin.cons 1 (fun j => (a j.succ : ZMod (prime^(w+1)))) : Fin (n+1) → ZMod (prime^(w+1))) i).val).flatten ++ (words (n+1) ++ suffix) ∧ (words (n+1) ++ suffix, F.R spare) =
+        matrixArchive words (words 0 ++ tail) (S.R (r 16)) (n+1)) ∧
+      F.L = S.L ∧ (∀ i, i ≠ src → i ≠ columns (columnBank 34) → i ≠ spare → F.R i = S.R i) ∧
+      (signStream (A := prime) table (w+1) records)[j]? = some (bitSymbol negative) ∧
+      Itinerary.run rows G (n+1) = Matrix.diagonal (fun i => (a i : ZMod (prime^(w+1)))) := by
+  intro host r src outside separate parents matrix modulus one ticks free j code rows words active source
+  have align (i : Fin (N+1)) := DFunLike.congr_fun (rewindPorts_active (n+1) columns spare off) i
+  have stream : src = host (Fin.last N).castSucc := by
+    simpa only [Function.Embedding.trans_apply,archivePorts_stream] using (align (Fin.last N)).symm
+  have apart (i : Fin 23) : r i ≠ src := stream ▸ host.injective.ne (forwardBank_stream i)
+  have placed (k : ℕ) (i : Fin 23) : stageBank r k i = host (stageBank forwardBank k i) := by
+    induction k generalizing i with
+    | zero => rfl
+    | succ k ih => exact ih _
+  have top : active = columns (columnBank 34) := (placed _ _).trans
+    ((congrArg host (forwardBank_archives (n+1)).1).trans (align _))
+  have other : stageBank r (n+1) 16 = spare := (placed _ _).trans
+    ((congrArg host (forwardBank_archives (n+1)).2).trans (rewindPorts_spare _ _ _ _))
+  obtain ⟨z,F,l,a,neg,user,time,run,headers,archive,left,keep,_,bit,_,diag,_,_⟩ :=
+    preparedRecordWeights_exec body r src apart w H hm table g G sign lift block records index v S tail rest
+      parentTape parent outside separate parents matrix modulus one ticks free source
+  have residue := LabelStock.residue_at (by omega : 0 < w+1) block 1 0 (by decide) g
+  simp only [Nat.mul_one,Nat.add_zero] at residue
+  rw [residue] at headers archive diag
+  rw [← top,← other]
+  exact ⟨z,F,l,a,neg,user,time,run,headers,archive,left,keep,bit,diag⟩
 
 theorem forwardStages_exec (rows : Fin d → Fin d) (H : ℕ) (hm : M < 2^H)
     (body : P → Pr P (N+2) columnCapacity prime U) (v : HS (N+2) columnCapacity prime U) (S : Stacks (N+2) prime)
