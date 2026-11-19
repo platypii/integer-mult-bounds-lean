@@ -128,6 +128,50 @@ theorem packedHeadCoefficient_writes (body : P → Pr P T Q A U) (bank : Fin 17 
     omega
   · rw [← finish]
 
+/-- Run an archived coefficient reader followed by a physical payload shear. -/
+theorem loadedShear_exec (body : P → Pr P T 217 A U) (k i : Fin d) (lt : k < i)
+    (c : ZMod M) (bank : Fin 29 ↪ Fin T) (reader : Pr P T 217 A U) (cost : ℕ)
+    (H J : ℕ) (hm : M < 2^H) (hw : W < 2^J) (hW : 0 < W)
+    (v : HS T 217 A U) (S : Stacks T A)
+    (loadWord : ∃ u l, u.user = v.user ∧ l ≤ cost ∧ Exec body reader (mk v S) l
+      (mk u {S with R := Function.update S.R (bank 0) (binSyms H c.val)}))
+    (base : S.R (bank 2) = binSyms H M)
+    (one : S.R (bank 28) = binSyms 1 1) (width : S.R (bank 27) = binSyms J W)
+    (free : ∀ j : Fin 29, 1 ≤ j → j ≤ 26 → j ≠ 2 → j ≠ 24 → j ≠ 25 → S.R (bank j) = [])
+    (left : ∀ j : Fin 12, j < 10 → S.L (bank (shearTranslation j)) = [])
+    (sym : α → Fin 4) (source dest : ℤ → Fin 4) (p q : ℤ) (word : Fin (M^d*W) → α)
+    (empty : ∀ z, q ≤ z → z < q+(M^d*W : ℕ) → dest z = blank)
+    (src : ∀ z, RadixToBinary.binaryEncoding.encode (putWord source p (List.ofFn (sym ∘ word)) z) =
+      readAt blank (S.L (bank 24)) (S.R (bank 24)) (z-p))
+    (dst : ∀ z, RadixToBinary.binaryEncoding.encode (dest z) =
+      readAt blank (S.L (bank 25)) (S.R (bank 25)) (z-q)) :
+    ∃ z F n, z.user = v.user ∧ n ≤ cost + weightedShearTime k i M W H J ∧
+      Exec body (.seq reader (embProg bank Empty.elim (weightedShear k i (Function.Embedding.refl _)))) (mk v S) n (mk z F) ∧
+      (∀ j, (∀ a, bank a ≠ j) → F.L j = S.L j ∧ F.R j = S.R j) ∧
+      F.R (bank 2) = S.R (bank 2) ∧ (∀ j : Fin 29, 27 ≤ j → F.R (bank j) = S.R (bank j)) ∧
+      (∀ pos, readAt blank (F.L (bank 25)) (F.R (bank 25)) (pos-q) = RadixToBinary.binaryEncoding.encode (dest pos)) ∧
+      ∃ out : Fin (M^d*W) → α, (∀ pos, readAt blank (F.L (bank 24)) (F.R (bank 24)) (pos-p) =
+        RadixToBinary.binaryEncoding.encode (putWord source p (List.ofFn (sym ∘ out)) pos)) ∧
+        ∀ x j, out (index ((RowOp.shear k i lt c).apply x) j) = word (index x j) := by
+  obtain ⟨u,l,hu,ht,load⟩ := loadWord
+  let D := {S with R := Function.update S.R (bank 0) (binSyms H c.val)}
+  have keep (j : Fin 29) (h : j ≠ 0) : D.R (bank j) = S.R (bank j) :=
+    Function.update_of_ne (bank.injective.ne h) _ _
+  obtain ⟨z,F,t,hz,time,run,post⟩ := weightedShear_exec k i lt sym c (P := Empty) Empty.elim
+    (Function.Embedding.refl _) H J hm hw hW (embDn bank u) (embStk bank D)
+    ((keep 2 (by decide)).trans base) ((keep 28 (by decide)).trans one) ((keep 27 (by decide)).trans width)
+    (Function.update_self ..) (fun j lo hi ne a b => (keep j (by omega)).trans (free j lo hi ne a b))
+    left source dest p q word empty (by simpa only [embStk_L,embStk_R,Function.Embedding.refl_apply,keep 24 (by decide)] using src)
+    (by simpa only [embStk_L,embStk_R,Function.Embedding.refl_apply,keep 25 (by decide)] using dst)
+  obtain ⟨y,E,placed,_,hy,eq,frame⟩ := exec_emb (body' := body) (ι := Empty.elim)
+    bank.injective (fun e => nomatch e) run u rfl D rfl
+  rw [← eq] at post
+  obtain ⟨modWord,headers,clean,out⟩ := post
+  refine ⟨y,E,l+t,hy.trans (hz.trans hu),Nat.add_le_add ht time,Exec.seq load placed,?_,modWord.trans (keep 2 (by decide)),
+    fun j h => (headers j h).trans (keep j (by omega)),clean,out⟩
+  intro j outside
+  exact ⟨(frame j outside).1,(frame j outside).2.trans (Function.update_of_ne (outside 0).symm _ _)⟩
+
 def goodHeadShear (k i : Fin d) (coeff : Fin 17 ↪ Fin T) (bank : Fin 29 ↪ Fin T) : Pr P T 217 A U :=
   .seq (packedHeadCoefficient i.val (i.val*d+k.val) coeff) (embProg bank Empty.elim (weightedShear k i (Function.Embedding.refl _)))
 
@@ -175,23 +219,8 @@ theorem goodHeadShear_exec (body : P → Pr P T 217 A U) (G : Matrix (Fin d) (Fi
   obtain ⟨u,l,hu,ht,load⟩ := packedHeadCoefficient_writes body coeff stage k i αw reciprocal H hm tail rest v S
     ⟨matrix,row,pivot,modulus,work⟩
   rw [shared,fresh,List.append_nil,coefficient] at load
-  let D := {S with R := Function.update S.R (bank 0) (binSyms H c.val)}
-  have keep (j : Fin 29) (h : j ≠ 0) : D.R (bank j) = S.R (bank j) :=
-    Function.update_of_ne (bank.injective.ne h) _ _
-  obtain ⟨z,F,t,hz,time,run,post⟩ := weightedShear_exec k i lt sym c (P := Empty) Empty.elim
-    (Function.Embedding.refl _) H J hm hw hW (embDn bank u) (embStk bank D)
-    ((keep 2 (by decide)).trans base) ((keep 28 (by decide)).trans one) ((keep 27 (by decide)).trans width)
-    (Function.update_self ..) (fun j lo hi ne a b => (keep j (by omega)).trans (free j lo hi ne a b))
-    left source dest p q word empty (by simpa only [embStk_L,embStk_R,Function.Embedding.refl_apply,keep 24 (by decide)] using src)
-    (by simpa only [embStk_L,embStk_R,Function.Embedding.refl_apply,keep 25 (by decide)] using dst)
-  obtain ⟨y,E,placed,_,hy,eq,frame⟩ := exec_emb (body' := body) (ι := Empty.elim)
-    bank.injective (fun e => nomatch e) run u rfl D rfl
-  rw [← eq] at post
-  obtain ⟨modWord,headers,clean,out⟩ := post
-  refine ⟨y,E,l+t,hy.trans (hz.trans hu),Nat.add_le_add ht time,Exec.seq load placed,?_,modWord.trans (keep 2 (by decide)),
-    fun j h => (headers j h).trans (keep j (by omega)),clean,out⟩
-  intro j outside
-  exact ⟨(frame j outside).1,(frame j outside).2.trans (Function.update_of_ne (outside 0).symm _ _)⟩
+  exact loadedShear_exec body k i lt c bank _ _ H J hm hw hW v S ⟨u,l,hu,ht,load⟩
+    base one width free left sym source dest p q word empty src dst
 
 /-- The two payload tapes and three read-only headers survive between shears. -/
 def headShearWork : List (Fin 29) :=
