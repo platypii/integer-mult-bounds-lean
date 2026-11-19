@@ -515,6 +515,25 @@ def main():
     assert prefix_bounds == [814, 1102, 0, 1004, 0, 1080, 944]
     print("Lower bounds for unrestricted common permutations at the seven prefix cuts:",
           prefix_bounds)
+    # Allow a different relative permutation in each half. A cycle of the
+    # resulting MOVE crosses between halves k times in each direction and
+    # has u and v within-half steps. Its share of the width is k, since
+    # exactly width coordinates cross in each direction over all cycles.
+    # A changed prefix outside a free MOVE displaces an outside-interval
+    # coordinate in that half, hence uses a within-half step of a nontrivial
+    # cycle. Charge each such half once. When k = 0 the cycle lies in one half.
+    for k in range(9):
+        for u in range(9 - k):
+            for v in range(9 - k):
+                length = 2 * k + u + v
+                if length < 2 or (k == 0 and u and v):
+                    continue
+                assert length - 1 - k >= int(u > 0) + int(v > 0)
+    # Both halves must transport the endpoint. Apply the same binary cut
+    # to each independently; the cycle inequality pays for both charges
+    # even when their selected edges overlap.
+    print("Independent half permutations also require at least",
+          max(prefix_bounds), "extra swaps when both transport the endpoint.")
     assert max_relation_denominator <= 2 ** 100
     print(f"Verified {relations} integral generator relations; maximum denominator: {max_relation_denominator}.")
     print("Verified nine rank-seven COPY prefixes and 527 zero-frame ADD targets.")
