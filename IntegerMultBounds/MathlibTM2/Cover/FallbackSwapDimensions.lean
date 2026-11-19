@@ -87,10 +87,31 @@ theorem swapExponent_exec (body : P → Pr P T Q A U) (r : Fin 8 ↪ Fin T)
 
 def swapExponentPorts : Fin 8 ↪ Fin 14 := ⟨![12,13,3,4,5,6,7,8],by decide⟩
 
+/-- Write the two size descriptors shared by the swap and the field sign correction. -/
+def fieldDimensions (r : Fin 14 ↪ Fin T) : Pr P T Q A U :=
+  .seq (Routing.binaryCanonicalCopyProgram (r 10) (r 11) (r 3) (r 4))
+    (swapExponent (swapExponentPorts.trans r))
+
+theorem fieldDimensions_exec (body : P → Pr P T Q A U) (r : Fin 14 ↪ Fin T) (J W w : ℕ)
+    (hw : W < 2^J) (v : HS T Q A U) (S : Stacks T A)
+    (width : S.R (r 10) = binSyms J W) (clock : (S.R (r 12)).length = w)
+    (free : ∀ i : Fin 14, (3 ≤ i ∧ i < 9) ∨ i = 11 ∨ i = 13 → S.R (r i) = []) :
+    ∃ z n, z.user = v.user ∧ n ≤ (10*J+12)+(21*(w+1)+12) ∧
+      Exec body (fieldDimensions r) (mk v S) n (mk z {S with R := (Function.update
+        (Function.update S.R (r 11) ((bits W).map bitSymbol)) (r 13) ((bits (w+1)).map bitSymbol))}) := by
+  obtain ⟨y,hy,copy⟩ := swapWidth_exec body (r 10) (r 11) (r 3) (r 4)
+    (by simp [List.nodup_cons,r.injective.eq_iff]) J W hw v S width
+    (free _ (by decide)) (free _ (by decide)) (free _ (by decide))
+  let D := {S with R := Function.update S.R (r 11) ((bits W).map bitSymbol)}
+  have keep (i : Fin 14) (h : i ≠ 11) : D.R (r i) = S.R (r i) := Function.update_of_ne (r.injective.ne h) _ _
+  obtain ⟨z,n,hz,hn,convert⟩ := swapExponent_exec body (swapExponentPorts.trans r) w y D
+    ((congrArg List.length (keep 12 (by decide))).trans clock)
+    (by intro i hi; fin_cases i <;> first | contradiction | exact (keep _ (by decide)).trans (free _ (by decide)))
+  exact ⟨z,_,hz.trans hy,Nat.add_le_add_left hn _,Exec.seq copy convert⟩
+
 def swapRuntimeHeaders (r : Fin 14 ↪ Fin T) (d : ℕ) : Pr P T Q A U :=
   .seq (swapPrefix ((Fin.castLEEmb (by decide)).trans r) d)
-    (.seq (Routing.binaryCanonicalCopyProgram (r 10) (r 11) (r 3) (r 4))
-      (swapExponent (swapExponentPorts.trans r)))
+    (fieldDimensions r)
 
 theorem swapRuntimeHeaders_exec (body : P → Pr P T Q A U) (r : Fin 14 ↪ Fin T)
     (d H J M W w : ℕ) (hm : M < 2^H) (hw : W < 2^J) (v : HS T Q A U) (S : Stacks T A)
@@ -106,16 +127,13 @@ theorem swapRuntimeHeaders_exec (body : P → Pr P T Q A U) (r : Fin 14 ↪ Fin 
     (fun i lo hi => free (ports i) (Or.inl ⟨lo,hi⟩))
   let D : Stacks T A := {S with R := Function.update S.R (r 2) ((bits (M^d)).map bitSymbol)}
   have keep (i : Fin 14) (hi : i ≠ 2) : D.R (r i) = S.R (r i) := Function.update_of_ne (r.injective.ne hi) _ _
-  obtain ⟨y,hy,widthRun⟩ := swapWidth_exec body (r 10) (r 11) (r 3) (r 4)
-    (by simp [List.nodup_cons,r.injective.eq_iff]) J W hw u D ((keep 10 (by decide)).trans width)
-    ((keep 11 (by decide)).trans (free _ (by decide))) ((keep 3 (by decide)).trans (free _ (by decide)))
-    ((keep 4 (by decide)).trans (free _ (by decide)))
-  let E : Stacks T A := {D with R := Function.update D.R (r 11) ((bits W).map bitSymbol)}
-  have kept (i : Fin 14) (h : i ≠ 11) (h' : i ≠ 2) : E.R (r i) = S.R (r i) :=
-    (Function.update_of_ne (r.injective.ne h) _ _).trans (keep i h')
-  obtain ⟨z,m,hz,hm',exponentRun⟩ := swapExponent_exec body (swapExponentPorts.trans r) w y E
-    ((congrArg List.length (kept 12 (by decide) (by decide))).trans clock)
-    (by intro i hi; fin_cases i <;> first | contradiction | exact (kept _ (by decide) (by decide)).trans (free _ (by decide)))
-  exact ⟨z,n+((10*J+12)+m),hz.trans (hy.trans hu),by omega,Exec.seq prefixRun (Exec.seq widthRun exponentRun)⟩
+  obtain ⟨z,m,hz,hm',headers⟩ := fieldDimensions_exec body r J W w hw u D
+    ((keep 10 (by decide)).trans width) ((congrArg List.length (keep 12 (by decide))).trans clock)
+    (fun i hi => (keep i (by rcases hi with h|h|h <;> omega)).trans (free i (by
+      rcases hi with h|h|h
+      · exact .inl ⟨by omega,h.2⟩
+      · exact .inr (.inl h)
+      · exact .inr (.inr h))))
+  exact ⟨z,_,hz.trans hu,by omega,Exec.seq prefixRun headers⟩
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
