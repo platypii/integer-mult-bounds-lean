@@ -211,6 +211,35 @@ theorem exchangeSchedule_exec {ι X : Type*} {K Q : ℕ}
     have rest := frame h (fun j hj => outside j (List.mem_cons_of_mem _ hj))
     exact ⟨rest.1.trans first.1,rest.2.trans first.2⟩
 
+/-- The first coordinate receives the inverse weight and the second receives the forward weight. -/
+def exchangeAddress {R : Type*} [Mul R] {n : ℕ} (k t : Fin n) (inv weight : R) (x : Fin n → R) :=
+  Function.update (Function.update x k (inv*x t)) t (weight*x k)
+
+omit [M8.Machine.Net] in
+/-- The unweighted exchange followed by the weighted exchange realizes the reciprocal pair
+in the residual diagonal, with coordinate zero as anchor. -/
+theorem exchangeAddress_pair {R : Type*} [CommRing R] (i : Fin d) (u : Rˣ) (x : Fin (d+1) → R) :
+    exchangeAddress 0 i.succ (↑u⁻¹ : R) u (exchangeAddress 0 i.succ 1 1 x) =
+      fun j => (pair i u j : R) * x j := by
+  funext j
+  cases j using Fin.cases with
+  | zero => simp [exchangeAddress,pair,(Fin.succ_ne_zero i).symm]
+  | succ j => by_cases h : j = i <;> simp [exchangeAddress,pair,h,Fin.succ_ne_zero,(Fin.succ_ne_zero i).symm]
+
+omit [M8.Machine.Net] in
+/-- Expanding every diagonal pair into its two exchanges gives the residual word's action. -/
+theorem exchangeAddress_pairs {R : Type*} [CommRing R] (weight : Fin d → Rˣ)
+    (rows : List (Fin d)) (x : Fin (d+1) → R) :
+    (rows.flatMap fun i => [(i,(1 : Rˣ)),(i,weight i)]).foldl
+      (fun y (op : Fin d × Rˣ) => exchangeAddress 0 op.1.succ (↑op.2⁻¹ : R) op.2 y) x =
+      applyPairs weight rows x := by
+  induction rows generalizing x with
+  | nil => rfl
+  | cons i rows ih =>
+    simp only [List.flatMap_cons,List.cons_append,List.nil_append,List.foldl_cons,inv_one,Units.val_one]
+    rw [exchangeAddress_pair,ih]
+    rfl
+
 /-- Execute each weighted exchange in occurrence order using a common pivot and parent archive. -/
 theorem correctedSchedule_exec {m r n Q : ℕ} (k t : Fin n → Fin (d+1)) (lt : ∀ a, k a < t a)
     (capacity : columnCapacity ≤ Q) (signCapacity : ∀ a, (fieldSignProgram (k a) true).1 ≤ Q)
@@ -225,8 +254,7 @@ theorem correctedSchedule_exec {m r n Q : ℕ} (k t : Fin n → Fin (d+1)) (lt :
     let shared := Fin.castAddEmb (n := N+1) total
     let bank := exchangeBank (N+1) width
     let move := fun (y : (Fin (d+1) → ZMod M) → Fin (d+1) → ZMod M) a x =>
-      Function.update (Function.update (y x) (k a) ((inv a * Ring.inverse (pivot (i a)))*y x (t a)))
-        (t a) ((parent (j a)*pivot (i a))*y x (k a))
+      exchangeAddress (k a) (t a) (inv a * Ring.inverse (pivot (i a))) (parent (j a)*pivot (i a)) (y x)
     let record := (List.ofFn fun h => binSyms (A := prime) H (pivot h).val).flatten ++ tail
     let weights := (List.ofFn fun h => binSyms (A := prime) H (parent h).val).flatten ++ rest
     let ready := fun y (D : Stacks ((N+1)+total) prime) =>
