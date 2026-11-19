@@ -123,4 +123,38 @@ theorem placedCorrectedChildExchange_exec {m r Q K : ℕ} (k t : Fin (d+1)) (ban
     rw [← eq] at h
     exact h
 
+omit [M8.Machine.Net] in
+/-- Execute a list of coordinate exchanges, consuming each exchange's private scratch once. -/
+theorem exchangeSchedule_exec {ι X : Type*} {K Q : ℕ}
+    (body : P → Pr P K Q prime U) (program : ι → Pr P K Q prime U)
+    (move : X → ι → X) (cost : ι → ℕ) (ready : X → Stacks K prime → Prop)
+    (scratch : ι → Fin K → Prop) (used : ι → Fin K → Prop)
+    (step : ∀ i y (u : HS K Q prime U) D, ready y D →
+      (∀ h, scratch i h → D.L h = [] ∧ D.R h = []) →
+      ∃ z F n, z.user = u.user ∧ n ≤ cost i ∧ Exec body (program i) (mk u D) n (mk z F) ∧
+        ready (move y i) F ∧ ∀ h, ¬ used i h → F.L h = D.L h ∧ F.R h = D.R h)
+    (is : List ι) (apart : is.Pairwise fun i j => ∀ h, scratch j h → ¬ used i h)
+    (addr : X) (v : HS K Q prime U) (S : Stacks K prime) (before : ready addr S)
+    (blankAux : ∀ i ∈ is, ∀ h, scratch i h → S.L h = [] ∧ S.R h = []) :
+    ∃ z F n, z.user = v.user ∧ n ≤ (is.map cost).sum+1 ∧
+      Exec body (is.foldr (fun i rest => .seq (program i) rest) (.act .done)) (mk v S) n (mk z F) ∧
+      ready (is.foldl move addr) F ∧
+      ∀ h, (∀ i ∈ is, ¬ used i h) → F.L h = S.L h ∧ F.R h = S.R h := by
+  induction is generalizing addr v S with
+  | nil => exact ⟨v,S,1,rfl,by simp,Exec.act (body := body) .done _,before,by simp⟩
+  | cons i is ih =>
+    obtain ⟨off,tail⟩ := List.pairwise_cons.mp apart
+    obtain ⟨u,D,l,hu,hl,run,next,saved⟩ := step i addr v S before (blankAux i (by simp))
+    obtain ⟨z,F,n,hz,hn,finish,result,frame⟩ := ih tail _ u D next (by
+      intro j hj h hh
+      have keep := saved h (off j hj h hh)
+      have empty := blankAux j (List.mem_cons_of_mem _ hj) h hh
+      exact ⟨keep.1.trans empty.1,keep.2.trans empty.2⟩)
+    refine ⟨z,F,l+n,hz.trans hu,by simp only [List.map_cons,List.sum_cons]; omega,
+      Exec.seq run finish,result,?_⟩
+    intro h outside
+    have first := saved h (outside i (by simp))
+    have rest := frame h (fun j hj => outside j (List.mem_cons_of_mem _ hj))
+    exact ⟨rest.1.trans first.1,rest.2.trans first.2⟩
+
 end IntegerMultBounds.MathlibTM2.Cover.Fallback.Record
