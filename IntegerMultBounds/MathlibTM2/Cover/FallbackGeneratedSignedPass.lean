@@ -140,11 +140,22 @@ private theorem classVolumeRate_sum_le (table : Matrix (Fin r) (Fin r) (ZMod pri
     simp [LabelSelectors.classes_eq]
   simpa only [length, invertibleClassCount] using bound (LabelSelectors.classes 1 (r*r))
 
+/-- The most expensive column of an itinerary also occurs in a constant itinerary. -/
+private theorem residualSetup_le_constant_sup (U : Type) (rows : Fin (d+1) → Fin (d+1))
+    (w H : ℕ) : signedResidualTime U rows w 0 H 0 ≤
+      Finset.univ.sup (fun r => signedResidualTime U (fun _ : Fin (d+1) => r) w 0 H 0) := by
+  obtain ⟨k, hk, worst⟩ := Finset.exists_mem_eq_sup Finset.univ Finset.univ_nonempty
+    (fun i => columnProgramTime U i (rows i) w 0 H 0)
+  apply le_trans _ (Finset.le_sup (f := fun r => signedResidualTime U (fun _ => r) w 0 H 0)
+    (Finset.mem_univ (rows k)))
+  simp only [signedResidualTime, worst]
+  gcongr
+  exact Finset.le_sup (f := fun i => columnProgramTime U i (rows k) w 0 H 0) hk
+
 /-- Baseline per class, with the excess residual setup paid only on live classes. -/
 noncomputable def signedClassSetup (U : Type) (d T w H classes live : ℕ) :=
   let padding := 4*(d+1)*(d+1)+1
-  let kernel := Finset.univ.sup fun rows : Fin (d+1) → Fin (d+1) =>
-    signedResidualTime U rows w 0 H 0
+  let kernel := Finset.univ.sup fun r => signedResidualTime U (fun _ : Fin (d+1) => r) w 0 H 0
   classes*(size d+3*T+34+(d+1)*(d+1)*(4*H+4)+padding) + live*(7+kernel-padding)
 
 private theorem classSetup_sum_le (table : Matrix (Fin r) (Fin r) (ZMod prime) →
@@ -157,8 +168,7 @@ private theorem classSetup_sum_le (table : Matrix (Fin r) (Fin r) (ZMod prime) �
     induction xs with
     | nil => simp [signedClassSetup]
     | cons x xs ih =>
-      have kernel := Finset.le_sup (f := fun rows => signedResidualTime U rows w 0 H 0)
-        (Finset.mem_univ (classPivots (table (LabelSelectors.matrix r x))))
+      have kernel := residualSetup_le_constant_sup U (classPivots (table (LabelSelectors.matrix r x))) w H
       by_cases zero : (LabelSelectors.matrix r x).det = 0 <;>
         simp [signedClassSetup, classResidualCost, LabelSelectors.accept, zero, Nat.add_mul] at ih ⊢ <;>
         omega
