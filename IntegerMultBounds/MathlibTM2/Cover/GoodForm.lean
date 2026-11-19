@@ -343,9 +343,9 @@ noncomputable def advance {P : Matrix (Fin m) (Fin m) R} {k : ℕ} (S : Stage P 
   have hcl : Cleared (⟨k, hk⟩ : Fin m).val S.M := S.cleared
   have hnL := elimL_zero ⟨k, hk⟩ hcl p'
   have hnU := elimU_zero ⟨k, hk⟩ hcl p'
-  obtain ⟨hc, hc'⟩ := add_mul_sub
+  have hc := add_mul_sub
     (colMat_mul_colMat ⟨k, hk⟩ (elimL ⟨k, hk⟩ S.M p') (elimL ⟨k, hk⟩ S.M p') (hnL _ le_rfl))
-  obtain ⟨hr, hr'⟩ := add_mul_sub
+  have hr := add_mul_sub
     (rowMat_mul_rowMat ⟨k, hk⟩ (elimU ⟨k, hk⟩ S.M p') (elimU ⟨k, hk⟩ S.M p') (hnU _ le_rfl))
   refine {
     L := S.L * (1 + colMat ⟨k, hk⟩ (elimL ⟨k, hk⟩ S.M p'))
@@ -364,10 +364,10 @@ noncomputable def advance {P : Matrix (Fin m) (Fin m) R} {k : ℕ} (S : Stage P 
     eq := ?_
     cleared := elim_cleared ⟨k, hk⟩ hcl p'
     unit := fun i hi => ?_ }
-  · rw [Matrix.mul_assoc, ← Matrix.mul_assoc (1 + colMat _ _), hc, Matrix.one_mul, S.left]
-  · rw [Matrix.mul_assoc, ← Matrix.mul_assoc S.L', S.left', Matrix.one_mul, hc']
-  · rw [Matrix.mul_assoc, ← Matrix.mul_assoc S.U, S.right, Matrix.one_mul, hr]
-  · rw [Matrix.mul_assoc, ← Matrix.mul_assoc (1 - rowMat _ _), hr', Matrix.one_mul, S.right']
+  · rw [Matrix.mul_assoc, ← Matrix.mul_assoc (1 + colMat _ _), hc.1, Matrix.one_mul, S.left]
+  · rw [Matrix.mul_assoc, ← Matrix.mul_assoc S.L', S.left', Matrix.one_mul, hc.2]
+  · rw [Matrix.mul_assoc, ← Matrix.mul_assoc S.U, S.right, Matrix.one_mul, hr.1]
+  · rw [Matrix.mul_assoc, ← Matrix.mul_assoc (1 - rowMat _ _), hr.2, Matrix.one_mul, S.right']
   · have h := S.eq
     rw [← elim_eq ⟨k, hk⟩ S.M p' hp] at h
     exact h.trans (by simp only [Matrix.mul_assoc])
