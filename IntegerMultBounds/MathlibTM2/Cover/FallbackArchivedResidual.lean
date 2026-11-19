@@ -233,6 +233,12 @@ theorem archivedResidual_exec {Q T r records : ℕ} (parent : Fin d → (ZMod M)
     rw [state]
     exact (Function.update_of_ne (offHost _).symm _ _).trans (Function.update_of_ne ne _ _)
 
+omit [M8.Machine.Net] in
+private theorem putWord_blanks (n : ℕ) (p : ℤ) : putWord (fun _ => (blank : Fin 4)) p (List.replicate n blank) = fun _ => blank := by
+  induction n generalizing p with
+  | zero => rfl
+  | succ n ih => simp [List.replicate_succ,putWord,ih]
+
 /-- Prepare both archives, apply the live residual matrix, and collect the transformed payload. -/
 theorem preparedResidual_exec {Q T r records : ℕ} (parent : Fin d → (ZMod M)ˣ)
     (capacity : columnCapacity ≤ Q) (signCapacity : (fieldSignProgram (0 : Fin (d+1)) true).1 ≤ Q)
@@ -304,24 +310,18 @@ theorem preparedResidual_exec {Q T r records : ℕ} (parent : Fin d → (ZMod M)
         scheduleCode (A := prime) rows ++ orderedScheduleCode (List.finRange (d+1)).reverse rows
       ∀ (parentTape : Fin T), (∀ i, prep i ≠ parentTape) → parentTape ≠ stream →
       S.R parentTape = (List.ofFn fun i => binSyms H (parent i : ZMod M).val).flatten →
-      S.R (prep 15) = matrixWords prime H m ++ tail → S.R (prep 2) = binSyms H M →
-      S.R (prep 20) = binSyms H (1 : ZMod M).val → (S.R (prep 22)).length = w →
-      (∀ i : Fin 23, (i < 15 ∧ i ≠ 2) ∨ (17 ≤ i ∧ i ≤ 19) ∨ i = 21 → S.R (prep i) = []) →
+      ShearReady ((reverseBank 0).trans reverseHost) H J m tail (fun _ : ZMod 2 => blank)
+        (fun _ => blank) dest 0 q original (embStk host S) →
       S.R stream = ((List.range records).drop entry).flatMap schedule ++ rest →
       let stable := fun i => i ≠ stream ∧ i ≠ lane 34 ∧ i ≠ host spare
       ∀ (acc : Fin T), (∀ i, host i ≠ count) → (∀ i, host i ≠ tmp) → (∀ i, host i ≠ acc) →
       acc ≠ src → [count,host (reverseHost (reverseBank 0 24)),acc,tmp].Nodup → stable saved →
-      (S.R (lane 33)).length = w →
       [count,src,dst,saved,tmp].Nodup →
       (S.R count).length = M^(d+1)*W →
-      S.R (lane 2) = binSyms H M → S.R (lane 27) = binSyms J W →
-      S.R (lane 28) = binSyms 1 1 → S.R (lane 32) = binSyms H (1 : ZMod M).val →
-      (∀ i ∈ shearWork, S.L (lane i) = [] ∧ S.R (lane i) = []) →
-      (∀ z, readAt blank (S.L (lane 25)) (S.R (lane 25)) (z-q) = RadixToBinary.binaryEncoding.encode (dest z)) →
-      (∀ z, readAt blank (S.L dst) (S.R dst) z = blank) → S.R saved = [] → S.R tmp = [] →
+      S.R saved = [] → S.R tmp = [] →
       scalarArray (inputs entry) = SparseRoleCircuit.encode ∘ original →
       S.R src = (outs.drop entry).flatMap payloadWord ++ tailWords →
-      (∀ h : Fin N, 35 ≤ h.val → S.L (host (shared (columnPorts h))) = [] ∧ S.R (host (shared (columnPorts h))) = []) →
+      (∀ h : Fin N, 35 ≤ h.val → S.L (host (reverseHost (columnPorts h).castSucc)) = [] ∧ S.R (host (reverseHost (columnPorts h).castSucc)) = []) →
       (∀ h : Fin total, S.L (host (ports (Fin.natAdd (N+1) h))) = [] ∧ S.R (host (ports (Fin.natAdd (N+1) h))) = []) →
       let tapes := ((reverseBank 0).trans reverseHost).trans host
       ∃ z F l word, z.user = v.user ∧ l ≤ ((d+1)*(2*(d+1)+(4*w+4+columnTime (d+1) prime w H))+1 +
@@ -343,10 +343,41 @@ theorem preparedResidual_exec {Q T r records : ℕ} (parent : Fin d → (ZMod M)
         F.R (host (reverseHost (Fin.last N).castSucc)) = ((List.range records).drop (entry+1)).flatMap schedule ++ rest ∧
         F.R (host (reverseHost (reverseBank 1 34))) = S.R (prep 16) ∧
         F.R src = queueTail ∧ ∀ j, j ≠ src → j ≠ acc → (∀ i, host i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
-  intro entry pivots rows reads n k j t i width total ports shared bank program cost spare off reverseHost reverseBank active pop rewind stageCost rewindCost residual privateBank bound cleanBound positive host body v S count src saved tmp outside tailWords queueTail lane dst cols away prep stream schedule parentTape outsideParent separate parents matrix modulus one ticks prepFree code stable acc countOff tmpOff accOff accSrc collectPorts ss clock distinct countLen modWord widthWord binaryOne padded scratch destination blankDst hs ht input queue free aux tapes
+  intro entry pivots rows reads n k j t i width total ports shared bank program cost spare off reverseHost reverseBank active pop rewind stageCost rewindCost residual privateBank bound cleanBound positive host body v S count src saved tmp outside tailWords queueTail lane dst cols away prep stream schedule parentTape outsideParent separate parents initial code stable acc countOff tmpOff accOff accSrc collectPorts ss distinct countLen hs ht input queue cleanStart aux tapes
+  have placed (i : Fin (N+2)) : rewindPorts (d+1) cols (host spare) away i = host (reverseHost i) :=
+    (DFunLike.congr_fun (rewindPorts_trans (d+1) shared spare off host) i).symm
+  have prepEq (i : Fin 23) (hi : i ≠ 16) : prep i = tapes (forwardSlots i) := by
+    change rewindPorts (d+1) cols (host spare) away (forwardBank i) = _
+    rw [placed]
+    simp only [forwardBank,Function.Embedding.coeFn_mk,ite_eq_right hi]
+    rfl
+  have fixed (i : Fin 35) (hi : i ≠ 34) : lane i = tapes i := by
+    have same := DFunLike.congr_fun (rewindPorts_active (d+1) shared spare off) (columnBank i)
+    simp only [Function.Embedding.trans_apply,archivePorts_fixed _ _ (columnBank.injective.ne hi)] at same
+    change host (shared (columnBank i)) = host (reverseHost (archivePorts 0 (columnBank i)))
+    rw [archivePorts_fixed _ _ (columnBank.injective.ne hi),same]
+  have blankDst (z : ℤ) : readAt blank (S.L (lane 24)) (S.R (lane 24)) z = blank := by
+    rw [fixed 24 (by decide)]
+    have cell := initial.src z
+    simp only [sub_zero,Function.comp_def,List.ofFn_const,putWord_blanks] at cell
+    exact cell.trans (by rfl)
+  have free (h : Fin N) (hh : 35 ≤ h.val) := by
+    have eq := DFunLike.congr_fun (rewindPorts_active (d+1) shared spare off) (columnPorts h)
+    simp only [Function.Embedding.trans_apply,archivePorts_workspace _ h hh] at eq
+    exact eq ▸ cleanStart h hh
+  have scratch (i : Fin 35) (hi : i ∈ shearWork) : S.L (lane i) = [] ∧ S.R (lane i) = [] := by
+    rw [fixed i (fun eq => (by decide : (34 : Fin 35) ∉ shearWork) (eq ▸ hi))]
+    exact initial.scratch i hi
+  have prepFree (i : Fin 23) (hi : (i < 15 ∧ i ≠ 2) ∨ (17 ≤ i ∧ i ≤ 19) ∨ i = 21) : S.R (prep i) = [] := by
+    have spec : ∀ i : Fin 23, (i < 15 ∧ i ≠ 2) ∨ (17 ≤ i ∧ i ≤ 19) ∨ i = 21 →
+        i ≠ 16 ∧ forwardSlots i ∈ shearWork := by decide
+    rw [prepEq i (spec i hi).1]
+    exact (initial.scratch _ (spec i hi).2).2
   obtain ⟨u,D,l,a,neg,hu,hl,prepare,headers,⟨suffix,recordWord,archive⟩,left,keep,bit,diag⟩ :=
     prepareResidualArchives_exec body cols (host spare) away w H hm table g m det lift block records live v S tail rest
-      parentTape parent outsideParent separate parents matrix modulus one ticks prepFree code
+      parentTape parent outsideParent separate parents (by rw [prepEq 15 (by decide)]; exact initial.archive)
+      (by rw [prepEq 2 (by decide)]; exact initial.modulus) (by rw [prepEq 20 (by decide)]; exact initial.padded)
+      (by rw [prepEq 22 (by decide)]; exact initial.clock) prepFree code
   have same {h} (ok : stable h) := keep h ok.1 ok.2.1 ok.2.2
   have laneKeep (h : Fin 35) (ne : h ≠ 34) : D.R (lane h) = S.R (lane h) := by
     apply same
@@ -362,13 +393,14 @@ theorem preparedResidual_exec {Q T r records : ℕ} (parent : Fin d → (ZMod M)
   obtain ⟨z,F,l',hz,hl',run,ready,reset,clean,streamEnd,spareEnd,queueEnd,frame⟩ :=
     archivedResidual_exec parent a neg capacity signCapacity H J hm hw hW table g m det lift block live inputs outs result
       tail (S.R (prep 16)) suffix _ dest q empty original diag host body u D count src saved tmp outside tailWords distinct
-      ((congrArg List.length (same sc)).trans countLen) ((laneKeep 2 (by decide)).trans modWord)
-      ((laneKeep 27 (by decide)).trans widthWord) ((laneKeep 28 (by decide)).trans binaryOne)
-      ((laneKeep 32 (by decide)).trans padded) ((congrArg List.length (laneKeep 33 (by decide))).trans clock)
+      ((congrArg List.length (same sc)).trans countLen) ((laneKeep 2 (by decide)).trans (by rw [fixed 2 (by decide)]; exact initial.modulus))
+      ((laneKeep 27 (by decide)).trans (by rw [fixed 27 (by decide)]; exact initial.width)) ((laneKeep 28 (by decide)).trans (by rw [fixed 28 (by decide)]; exact initial.one))
+      ((laneKeep 32 (by decide)).trans (by rw [fixed 32 (by decide)]; exact initial.padded)) ((congrArg List.length (laneKeep 33 (by decide))).trans (by rw [fixed 33 (by decide)]; exact initial.clock))
       recordWord (fun h hh => ⟨(congrFun left _).trans (scratch h hh).1,
         (laneKeep h (fun eq => (by decide : (34 : Fin 35) ∉ shearWork) (eq ▸ hh))).trans (scratch h hh).2⟩)
       (by change ∀ z, readAt blank (D.L (lane 25)) (D.R (lane 25)) (z-q) = _
-          simpa only [left,laneKeep 25 (by decide)] using destination)
+          rw [left,laneKeep 25 (by decide),fixed 25 (by decide)]
+          exact initial.dst)
       (by change ∀ z, readAt blank (D.L (lane 24)) (D.R (lane 24)) z = blank
           simpa only [left,laneKeep 24 (by decide)] using blankDst)
       ((same ss).trans hs) ((same st).trans ht) bit input (srcKeep.trans queue)
@@ -400,11 +432,7 @@ theorem preparedResidual_exec {Q T r records : ℕ} (parent : Fin d → (ZMod M)
       (congrArg List.length (field 33 (by decide))).trans layout.clock,(field 34 (by decide)).trans layout.archive,
       fun i hi => ⟨(layout.scratch i hi).1,(field i (fun e => (by decide : (24 : Fin 35) ∉ shearWork) (e ▸ hi))).trans (layout.scratch i hi).2⟩,?_,?_⟩
     · intro pos
-      have uniform (n : ℕ) (p : ℤ) : putWord (fun _ => (blank : Fin 4)) p (List.replicate n blank) = fun _ => blank := by
-        induction n generalizing p with
-        | zero => rfl
-        | succ n ih => simp [List.replicate_succ,putWord,ih]
-      simp only [sub_zero,Function.comp_def,List.ofFn_const,uniform]
+      simp only [sub_zero,Function.comp_def,List.ofFn_const,putWord_blanks]
       exact (blanked pos).trans (by rfl)
     · intro pos
       change readAt blank (F.L _) (G.R (host (reverseHost (reverseBank 0 25)))) _ = _

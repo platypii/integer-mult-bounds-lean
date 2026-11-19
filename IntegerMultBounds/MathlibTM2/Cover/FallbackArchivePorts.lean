@@ -24,6 +24,18 @@ noncomputable def rewindPorts {T : ℕ} (n : ℕ) (bank : Fin (N+1) ↪ Fin T) (
   if Even n then extend else
     (Equiv.swap (columnBank 34).castSucc (Fin.last (N+1))).toEmbedding.trans extend
 
+theorem rewindPorts_trans {T K : ℕ} (n : ℕ) (bank : Fin (N+1) ↪ Fin T) (spare : Fin T)
+    (off : ∀ i, bank i ≠ spare) (host : Fin T ↪ Fin K) :
+    (rewindPorts n bank spare off).trans host =
+      rewindPorts n (bank.trans host) (host spare) (fun i => host.injective.ne (off i)) := by
+  have extend (j : Fin (N+2)) : host (Fin.lastCases spare bank j) =
+      Fin.lastCases (host spare) (bank.trans host) j := by
+    induction j using Fin.lastCases <;> simp
+  apply Function.Embedding.ext
+  intro i
+  unfold rewindPorts
+  split <;> exact extend _
+
 theorem rewindPorts_avoids {T : ℕ} (n : ℕ) (bank : Fin (N+1) ↪ Fin T) (spare : Fin T)
     (off : ∀ i, bank i ≠ spare) {h : Fin T} (columns : ∀ i, bank i ≠ h) (other : spare ≠ h)
     (i : Fin (N+2)) : rewindPorts n bank spare off i ≠ h := by
