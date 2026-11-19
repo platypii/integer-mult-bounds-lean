@@ -30,6 +30,12 @@ theorem rewindPorts_active {T : ℕ} (n : ℕ) (bank : Fin (N+1) ↪ Fin T) (spa
   have cast (a : Fin (N+1)) : Fin.castLE (Nat.le_succ _) a = a.castSucc := rfl
   by_cases parity : Even n <;> simp [archivePorts,rewindPorts,parity,Fin.castLEEmb,cast]
 
+theorem rewindPorts_spare {T : ℕ} (n : ℕ) (bank : Fin (N+1) ↪ Fin T) (spare : Fin T)
+    (off : ∀ i, bank i ≠ spare) :
+    rewindPorts n bank spare off (archivePorts (n+1) (columnBank 34)) = spare := by
+  have cast (a : Fin (N+1)) : Fin.castLE (Nat.le_succ _) a = a.castSucc := rfl
+  by_cases parity : Even n <;> simp [archivePorts,rewindPorts,Nat.even_add_one,parity,Fin.castLEEmb,cast]
+
 theorem archivePorts_fixed (n : ℕ) (i : Fin (N+1)) (hi : i ≠ archive) :
     archivePorts n i = i.castSucc := by
   let ports := Fin.castLEEmb (Nat.le_succ (N+1))

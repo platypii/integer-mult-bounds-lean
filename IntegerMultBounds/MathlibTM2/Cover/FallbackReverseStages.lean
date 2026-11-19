@@ -194,12 +194,14 @@ theorem weightedRewind_exec {r b : ℕ} (pivot : Fin r → ZMod M) (parent : Fin
   exact ⟨z,F,_,hz.trans hu,Nat.add_le_add_left hl _,Exec.seq prep run,result⟩
 
 /-- Run the archive rewind within a larger tape and state space. -/
-theorem placedWeightedRewind_exec {r b T Q : ℕ} (host : Fin (N+2) ↪ Fin T) (capacity : columnCapacity ≤ Q) (pivot : Fin r → ZMod M) (parent : Fin b → ZMod M)
+theorem placedWeightedRewind_exec {r b T Q : ℕ} (columns : Fin (N+1) ↪ Fin T)
+    (spare : Fin T) (off : ∀ i, columns i ≠ spare) (capacity : columnCapacity ≤ Q) (pivot : Fin r → ZMod M) (parent : Fin b → ZMod M)
     (rows : Fin d → Fin d) (m : Matrix (Fin d) (Fin d) (ZMod M)) (valid : Itinerary.Valid rows m d)
     (H J : ℕ) (hm : M < 2^H) (hw : W < 2^J) (hW : 0 < W)
     (body : P → Pr P T Q prime U) (v : HS T Q prime U) (S : Stacks T prime)
     (tail destTail suffix rest : List (Fin (prime+4))) (dest : ℤ → Fin 4) (q : ℤ)
     (empty : ∀ z, q ≤ z → z < q+(M^d*W : ℕ) → dest z = blank) (original : Fin (M^d*W) → ZMod 2) :
+    let host := rewindPorts d columns spare off
     let stage := Itinerary.run rows m
     let words := fun n => matrixWords prime H (stage n)
     let bank := fun n => columnBank.trans (archivePorts n)
@@ -210,21 +212,35 @@ theorem placedWeightedRewind_exec {r b T Q : ℕ} (host : Fin (N+2) ↪ Fin T) (
       D.L (columnPorts j).castSucc = [] ∧ D.R (columnPorts j).castSucc = []
     let pop := .seq (dropWords (bank d 2) (bank d 34) (bank d 0) r) (dropWords (bank d 2) stream (bank d 0) b)
     let cost := 1+Finset.univ.sup (fun k => columnProgramTime U k (rows k) w W H J)+(d*d*(4*H+4)+1)
-    ColumnRecordReady ((bank d).trans host) H J (pack pivot ++ (words d ++ suffix)) SparseRoleCircuit.encode
-      (fun _ => blank) dest 0 q original (stage d).mulVec S → clean (embStk host S) → S.R (host stream) = pack parent ++ code →
-    (words d ++ suffix,S.R (host (bank (d+1) 34))) = matrixArchive words (words 0 ++ tail) destTail d →
+    ColumnRecordReady (columnBank.trans columns) H J (pack pivot ++ (words d ++ suffix)) SparseRoleCircuit.encode
+      (fun _ => blank) dest 0 q original (stage d).mulVec S →
+    (∀ j : Fin N, 35 ≤ j.val → S.L (columns (columnPorts j)) = [] ∧ S.R (columns (columnPorts j)) = []) →
+    S.R (columns (Fin.last N)) = pack parent ++ code →
+    (words d ++ suffix,S.R spare) = matrixArchive words (words 0 ++ tail) destTail d →
     ∃ z F l, z.user = v.user ∧ l ≤ 1+(((r*(4*H+4)+1)+(b*(4*H+4)+1))+(d*cost+1)) ∧
       Exec body (statePlacedNormalized host capacity (lt_of_lt_of_le (by decide : 0 < 217) (le_max_left ..)) Empty.elim (.seq pop (reverseStages d d))) (mk v S) l (mk z F) ∧
       ColumnReady ((bank 0).trans host) H J m tail SparseRoleCircuit.encode (fun _ => blank) dest 0 q original m.mulVec F ∧
       clean (embStk host F) ∧ F.R (host stream) = rest ∧ F.R (host (bank 1 34)) = destTail ∧
       ∀ h, (∀ i, host i ≠ h) → F.L h = S.L h ∧ F.R h = S.R h := by
-  intro stage words bank stream code pack clean pop cost before free schedule archive
+  intro host stage words bank stream code pack clean pop cost before free schedule archive
   have positive : 0 < columnCapacity := lt_of_lt_of_le (by decide : 0 < 217) (le_max_left ..)
-  have projected := (columnRecordReady_project ..).mp before
+  have active (i : Fin (N+1)) : host (archivePorts d i) = columns i :=
+    DFunLike.congr_fun (rewindPorts_active d columns spare off) i
+  have same : (bank d).trans host = columnBank.trans columns :=
+    Function.Embedding.ext fun i => active (columnBank i)
+  rw [← same] at before
+  have workspace (j : Fin N) (hj : 35 ≤ j.val) : host (columnPorts j).castSucc = columns (columnPorts j) := by
+    rw [← archivePorts_workspace d j hj,active]
+  have projected : ((embStk host S).R stream) = pack parent ++ code := by
+    change S.R (host (Fin.last N).castSucc) = _
+    rwa [← archivePorts_stream d,active]
+  have alternate : host (bank (d+1) 34) = spare := rewindPorts_spare d columns spare off
+  have layoutIn := (columnRecordReady_project ..).mp before
   obtain ⟨u,D,n,hu,hn,run,next,cleanD,remaining,other⟩ := weightedRewind_exec pivot parent rows m valid
     H J hm hw hW (P := Empty) Empty.elim (stateLiftDown positive (embDn host v)) (embStk host S)
-    tail destTail suffix rest dest q empty original ((columnRecordReady_project (bank d) ..).mpr projected)
-    free schedule archive
+    tail destTail suffix rest dest q empty original ((columnRecordReady_project (bank d) ..).mpr layoutIn)
+    (fun j hj => by simpa only [embStk,Function.comp_apply,workspace j hj] using free j hj) projected
+    (by change (words d ++ suffix,S.R (host (bank (d+1) 34))) = _; rwa [alternate])
   obtain ⟨z,_,hz,placed⟩ := statePlaced_exec_normalized host host.injective capacity positive Empty.elim
     (body' := body) (fun e => nomatch e) v S run
   let F := embOvr host D.get S
