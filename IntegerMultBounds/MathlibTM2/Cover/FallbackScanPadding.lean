@@ -21,7 +21,7 @@ theorem ScanReady.padding (a : ScanData r d w W) (ports : Fin (N+2) ↪ Fin T) (
     (ready : ScanReady a ports ext j S) :
     let bank := (columnBank.trans (archivePorts 0)).trans ports
     let pivot := ports (Fin.last N).castSucc
-    ∃ z F n, z.user = v.user ∧ ScanReady a ports ext (j+1) F ∧ F.R (ext 0) = S.R (ext 0) ∧
+    ∃ z F n, z.user = v.user ∧ ScanReady a ports ext (j+1) F ∧ (∀ k, k ≠ ext 2 → k ≠ ext 5 → (∀ i, ports i ≠ k) → F.R k = S.R k) ∧
       n ≤ 4*(d+1)*(d+1)+1+(4*(M^(d+1)*W)+4)+((d+1)*(d+1)*(4*a.H+4)+1) ∧
       Exec body (.seq (paddingRecord (d+1) pivot (ext 1) (ext 2) (ext 5) (ext 4))
         (dropWords (bank 2) (bank 34) (bank 0) ((d+1)*(d+1)))) (Host.mk v S) n (Host.mk z F) := by
@@ -57,7 +57,8 @@ theorem ScanReady.padding (a : ScanData r d w W) (ports : Fin (N+2) ↪ Fin T) (
   have archive : F.R (bank 34) = a.matrices (j+1) := Function.update_self ..
   refine ⟨z,F,n,hz,⟨?_,(congrArg List.length (external 1 (by decide) (by decide))).trans ready.count,
     (external 3 (by decide) (by decide)).trans ready.saved,(external 4 (by decide) (by decide)).trans ready.tmp,
-    ?_,?_,archive,?_,?_,?_⟩,external 0 (by decide) (by decide),by simpa [len] using hn,run⟩
+    ?_,?_,archive,?_,?_,?_⟩,(fun k hs ha outside => by simp [F, Function.update_of_ne, hs, ha,
+      show k ≠ pivot from (outside _).symm, show k ≠ bank 34 from (outside _).symm]),by simpa [len] using hn,run⟩
   · simp [F,queue,(be 34 2).symm,ext.injective.eq_iff]
   · have out : outputRecord (LabelStock.live r (w+1) 1) a.matrix a.input j = word := by
       exact outputRecord_padding (b := w+1) _ pad a.matrix a.input (inputs j) encoded

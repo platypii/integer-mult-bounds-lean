@@ -61,11 +61,11 @@ structure ScanReady (a : ScanData r d w W) (ports : Fin (N+2) ↪ Fin T) (ext : 
   bank : j < a.records → ShearReady (columnBank.trans (archivePorts 0)) a.H a.J (a.matrix j)
     (a.matrices (j+1)) (fun _ : ZMod 2 => blank) (fun _ => blank) (fun _ => blank) 0 0 (a.input j) (embStk ports S)
 
-theorem ScanReady.mask {a : ScanData r d w W} {ports : Fin (N+2) ↪ Fin T} {ext : Fin 6 ↪ Fin T}
-    (off : ∀ i, ports i ≠ ext 0) {j S} (ready : ScanReady a ports ext j S) (bits : List (Fin (prime+4))) :
-    ScanReady a ports ext j {S with R := Function.update S.R (ext 0) bits} := by
-  let F := {S with R := Function.update S.R (ext 0) bits}
-  have keep (i : Fin 6) (h : i ≠ 0) : F.R (ext i) = S.R (ext i) := Function.update_of_ne (ext.injective.ne h) _ _
+theorem ScanReady.selector {a : ScanData r d w W} {ports : Fin (N+2) ↪ Fin T} {ext : Fin 6 ↪ Fin T}
+    (slot : Fin T) (off : ∀ i, ports i ≠ slot) (outside : ∀ i : Fin 6, i ≠ 0 → ext i ≠ slot) {j S} (ready : ScanReady a ports ext j S) (bits : List (Fin (prime+4))) :
+    ScanReady a ports ext j {S with R := Function.update S.R slot bits} := by
+  let F := {S with R := Function.update S.R slot bits}
+  have keep (i : Fin 6) (h : i ≠ 0) : F.R (ext i) = S.R (ext i) := Function.update_of_ne (outside i h) _ _
   have internal (i) : F.R (ports i) = S.R (ports i) := Function.update_of_ne (off i) _ _
   have bank : embStk ports F = embStk ports S := by
     unfold embStk
@@ -77,6 +77,11 @@ theorem ScanReady.mask {a : ScanData r d w W} {ports : Fin (N+2) ↪ Fin T} {ext
     fun i hi => ⟨(ready.free i hi).1,(internal _).trans (ready.free i hi).2⟩,
     fun z => by change readAt blank _ (F.R _) z = _; rw [internal]; exact ready.blankSrc z,
     fun h => bank.symm ▸ ready.bank h⟩
+
+theorem ScanReady.mask {a : ScanData r d w W} {ports : Fin (N+2) ↪ Fin T} {ext : Fin 6 ↪ Fin T}
+    (off : ∀ i, ports i ≠ ext 0) {j S} (ready : ScanReady a ports ext j S) (bits : List (Fin (prime+4))) :
+    ScanReady a ports ext j {S with R := Function.update S.R (ext 0) bits} :=
+  ready.selector (ext 0) off (fun _ h => ext.injective.ne h) bits
 
 end
 end IntegerMultBounds.MathlibTM2.Cover.Fallback

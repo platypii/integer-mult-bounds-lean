@@ -22,7 +22,7 @@ theorem ScanReady.live (a : ScanData r d w W) (ports : Fin (N+2) ↪ Fin T) (ext
     (body : P → Pr P T columnCapacity prime U) (v : HS T columnCapacity prime U) (S : Stacks T prime)
     (ready : ScanReady a ports ext j S) :
     let bank := (columnBank.trans (archivePorts 0)).trans ports
-    ∃ z F n, z.user = v.user ∧ ScanReady a ports ext (j+1) F ∧ F.R (ext 0) = S.R (ext 0) ∧
+    ∃ z F n, z.user = v.user ∧ ScanReady a ports ext (j+1) F ∧ (∀ k, k ≠ ext 2 → k ≠ ext 5 → (∀ i, ports i ≠ k) → F.R k = S.R k) ∧
       n ≤ 6*(M^(d+1)*W)+6+(1+signedResidualTime U (a.pivots j) w W a.H a.J)+(4*(M^(d+1)*W)+4)+((d+1)*(d+1)*(4*a.H+4)+1) ∧
       Exec body (.seq (collectAnchorRecord ports (ext 1) (ext 2) (ext 3) (ext 4) (ext 5) d)
         (dropWords (bank 2) (bank 34) (bank 0) ((d+1)*(d+1)))) (Host.mk v S) n (Host.mk z F) := by
@@ -44,7 +44,7 @@ theorem ScanReady.live (a : ScanData r d w W) (ports : Fin (N+2) ↪ Fin T) (ext
   have unit : IsUnit (a.matrix j).det := by rcases det with h | h <;> simp [h]
   refine ⟨z,F,n,hz,⟨queue,(congrArg List.length (same 1 (by decide) (by decide))).trans ready.count,
     (same 3 (by decide) (by decide)).trans ready.saved,(same 4 (by decide) (by decide)).trans ready.tmp,
-    ?_,pivots,archive,free,blanked,fun hj => next _ _ _ (a.matrices_succ hj)⟩,same 0 (by decide) (by decide),hn,exec⟩
+    ?_,pivots,archive,free,blanked,fun hj => next _ _ _ (a.matrices_succ hj)⟩,fun k hs ha offMask => (frame k hs ha offMask).2,hn,exec⟩
   rw [outputPrefix_succ,outputRecord_live _ _ _ live unit word effect,← ready.acc]
   exact acc
 
