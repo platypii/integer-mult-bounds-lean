@@ -288,4 +288,106 @@ theorem weightedLeafOutput_entry (v : Descriptor) [NeZero M] (radix : prime^v.wi
   rw [← data] -- Read the same suffix position in the unmodified word.
   exact negateLeafHead_entry _ pref p.1 tail
 
+/-- Literal role tape used by both the returned shear and the leaf interchange. -/
+noncomputable def leafBitTape (xs : List (ZMod 2)) : ℤ → Fin (prime+4) := fun z =>
+  RadixToBinary.binaryEncoding.encode (putWord (fun _ => blank) 0 (xs.map SparseRoleCircuit.encode) z)
+
+open M8.Machine.ArbitraryWidthHighExchangeShared RecursiveInterchangeLayout in
+private theorem sourceWord_leafBitTape (v : Descriptor) (word : Fin (volume prime v) → ZMod 2) :
+    sourceWord word = leafBitTape (List.ofFn word) := by
+  unfold leafBitTape
+  rw [List.map_ofFn]
+  rfl
+
+open M8.RevMachine RecursiveInterchangeLayout in
+theorem swapLeafList_runs [M8.Machine.Net] (v : Descriptor) (positive : v.Positive)
+    {N : ℕ} (size : N = volume prime v) (xs : List (ZMod 2)) (length : xs.length = N)
+    (io : Fin T) (roles : Tapes T prime) (head : roles.head io = 0) (payload : roles.tape io = leafBitTape xs)
+    (f : ℤ → Fin (prime+4)) (p : ℤ) (node scalar : Tapes 1 prime)
+    (ctr : Fin CommonBank.K → Option ℕ) (st : Tapes 2 prime) :
+    GraphContract.Runs (LeafCore.core io)
+      (CommonBank.bank roles (Routines.hdr v) f p node scalar ctr st)
+      (CommonBank.bank (SharedPlacementAlphabet.setTape roles io
+        (leafBitTape (List.ofFn (swapLeafList v size xs length))) 0)
+        (Routines.hdr v) f p node scalar ctr st)
+      (LeafCore.coreCost (volume prime v) v.width) := by
+  subst N
+  let word := fun j : Fin (volume prime v) => xs.get (j.cast length.symm)
+  have input : List.ofFn word = xs := by
+    apply List.ext_getElem
+    · simpa only [List.length_ofFn] using length.symm
+    · intros; simp [word]
+  have run := LabelExchange.leafOut_runs (u := v) rfl positive io roles word head
+    (by rwa [sourceWord_leafBitTape,input]) f p node scalar ctr st
+  dsimp only at run
+  rw [sourceWord_leafBitTape] at run
+  exact run
+
+theorem translated_map {α β : Type*} (encode : α → β) (word : Fin (P*(M*B)) → α) (offset : Fin P → ℕ) :
+    (FiberLayoutData.translated word offset).map encode = FiberLayoutData.translated (encode ∘ word) offset := by
+  simp [FiberLayoutData.translated,FiberLayoutData.fiber,BlockRotationData.rotate,List.map_flatten,
+    List.map_ofFn,List.map_drop,List.map_take,Function.comp_def]
+
+open M8.RevMachine RecursiveInterchangeLayout SharedBankStageInput in
+/-- Execute the ordinary swap on host stacks after a shear. The selected role
+comes from the returned stack read; the caller supplies the other tape views. -/
+theorem swapReturnedShear_exec [M8.Machine.Net] (v : Descriptor) (positive : v.Positive)
+    (size : P*(M*B) = volume prime v) (word : Fin (P*(M*B)) → ZMod 2) (offset : Fin P → ℕ)
+    (io : Fin T) (roles : Tapes T prime) (f : ℤ → Fin (prime+4)) (p : ℤ) (node scalar : Tapes 1 prime)
+    (ctr : Fin CommonBank.K → Option ℕ) (st : Tapes 2 prime) :
+    let block := LeafCore.core io
+    let xs := FiberLayoutData.translated word offset
+    let y := swapLeafList v size xs (FiberLayoutData.translated_length ..)
+    let bank := fun tape => raw (CommonBank.bank (SharedPlacementAlphabet.setTape roles io tape 0)
+      (Routines.hdr v) f p node scalar ctr st) block.tapes
+    ∀ {K : ℕ} (ports : Fin block.tapes ↪ Fin K) (body : F → Pr F K block.states prime U) (shear : Pr F K block.states prime U)
+      (u y' : HS K block.states prime U) (S E : Stacks K prime)
+      (slot : Fin block.tapes) (steps : ℕ), slot.val = io.val →
+      RepT (raw (CommonBank.bank roles (Routines.hdr v) f p node scalar ctr st) block.tapes) (S.L ∘ ports) (S.R ∘ ports) →
+      Exec body shear (mk u S) steps (mk y' E) → y'.user = u.user →
+      (∀ i, i ≠ slot → E.L (ports i) = S.L (ports i) ∧ E.R (ports i) = S.R (ports i)) →
+      (∀ z, readAt blank (E.L (ports slot)) (E.R (ports slot)) z = RadixToBinary.binaryEncoding.encode
+        (putWord (fun _ => blank) 0 (FiberLayoutData.translated (SparseRoleCircuit.encode ∘ word) offset) z)) →
+      ∃ z D n, z.user = u.user ∧ n ≤ steps+(LeafCore.coreCost (volume prime v) v.width*(block.tapes+5)+6) ∧
+        Exec body (.seq shear (embProg ports Empty.elim (foreign block.program))) (mk u S) n (mk z D) ∧
+        RepT (bank (leafBitTape (List.ofFn y))) (D.L ∘ ports) (D.R ∘ ports) ∧
+        (∀ x, readAt blank (D.L (ports slot)) (D.R (ports slot)) x = leafBitTape (List.ofFn y) x) ∧
+        ∀ j, (∀ i, ports i ≠ j) → D.L j = E.L j ∧ D.R j = E.R j := by
+  intro block xs y bank K ports body shear u y' S E slot steps leading initial firstRun user frame payload
+  have view (tape : ℤ → Fin (prime+4)) : (bank tape).head slot = 0 ∧ (bank tape).tape slot = tape := by
+    have lt : slot.val < CommonBank.count T := leading ▸ (LeafCore.roleSlot io).isLt
+    have eq : (⟨slot.val,lt⟩ : Fin (CommonBank.count T)) = LeafCore.roleSlot io := Fin.ext leading
+    have h := LeafCore.bank_role (SharedPlacementAlphabet.setTape roles io tape 0) (Routines.hdr v)
+      f p node scalar ctr st io
+    simpa only [bank,raw,dite_eq_left lt,eq,SharedPlacementAlphabet.setTape,Function.update_self] using h
+  have ready : RepT (bank (leafBitTape xs)) (E.L ∘ ports) (E.R ∘ ports) := by
+    intro i x
+    by_cases h : i = slot
+    · subst i
+      rw [(view _).1,(view _).2,sub_zero]
+      simpa only [embStk,Function.comp_apply,xs,leafBitTape,translated_map] using (payload x).symm
+    · simp only [Function.comp_apply]
+      rw [(frame i h).1,(frame i h).2]
+      have cell := initial i x
+      by_cases inside : i.val < CommonBank.count T
+      · have different : (⟨i.val,inside⟩ : Fin (CommonBank.count T)) ≠ LeafCore.roleSlot io :=
+          fun eq => h (Fin.ext ((congrArg Fin.val eq).trans leading.symm))
+        obtain ⟨hh,ht⟩ := LeafCore.bank_set roles (Routines.hdr v) f p node scalar ctr st io
+          (leafBitTape xs) _ different
+        simpa only [embStk,Function.comp_apply,bank,raw,dite_eq_left inside,hh,ht] using cell
+      · simpa only [embStk,Function.comp_apply,bank,raw,dite_eq_right inside] using cell
+  have run := swapLeafList_runs v positive size xs (FiberLayoutData.translated_length ..) io
+    (SharedPlacementAlphabet.setTape roles io (leafBitTape xs) 0) (by simp [SharedPlacementAlphabet.setTape])
+    (by simp [SharedPlacementAlphabet.setTape]) f p node scalar ctr st
+  obtain ⟨z,D,_,rfl,rep,hu,_,_,_,n,hn,exec⟩ := foreign_exec (P := Empty) Empty.elim block.program run
+    (embDn ports y') (embStk ports E) _ rfl ready
+  obtain ⟨u',D',placed,_,user',eq,keep⟩ := exec_emb (body' := body) (ι := Empty.elim)
+    ports.injective (fun e => nomatch e) exec y' rfl E rfl
+  rw [← eq] at rep
+  have result : RepT (bank (leafBitTape (List.ofFn y))) (D'.L ∘ ports) (D'.R ∘ ports) := by
+    simpa only [embStk,Function.comp_apply,bank,y,SharedPlacementAlphabet.setTape,Function.update_idem] using rep
+  refine ⟨u',D',steps+n,user'.trans (hu.trans user),Nat.add_le_add_left hn _,Exec.seq firstRun placed,result,?_,keep⟩
+  intro x
+  simpa only [embStk,Function.comp_apply,(view _).1,(view _).2,sub_zero] using (result slot x).symm
+
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
