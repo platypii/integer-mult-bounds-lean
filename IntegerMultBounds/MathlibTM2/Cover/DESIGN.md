@@ -216,7 +216,9 @@ lower-triangular adapters and pivots that are rational functions of the label. T
   the prefix has no bounded streaming form. The pivots are passed to the child as weights. The
   child contract is `F_A (h, d) = (A C d, C A⁻¹ h)` (`weighted`, `weighted_eq`), and one move is
   conjugated adapters around one weighted child with weights `α δ` (`weighted_good_child`). Weights are
-  paid at the stopped leaves, four leaf interchanges and three shears per atom pair (`leaf_word`).
+  paid at the stopped leaves, two leaf interchanges, three shears and one sign change per atom pair (`leaf_word`).
+  For weight `a`, the outer shears use its reciprocal and the middle shear uses `-a`.
+  This is the order of [the signed exchange](FallbackPairExchange.lean), followed by negation of the head atom.
 - **Adapters.** A weighted adapter coefficient is `α_i L_ik α_k⁻¹`; it stays lower triangular
   (`lower_diag_conj`). The streaming pass is the existing ordered shift with an offset computed
   per prefix block.

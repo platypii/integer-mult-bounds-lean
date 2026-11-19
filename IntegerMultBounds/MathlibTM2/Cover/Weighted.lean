@@ -30,7 +30,7 @@ of `M8.ReversedExchange`. All of it holds over every commutative ring.
   triangular.
 * `weighted_good`, `weighted_good_child`: if `P C = L Δ Π R` with unit pivots `Δ`, the pivots
   join the incoming weights, and one good move is one weighted child with weights `α δ`.
-* `leaf_word`: a weighted exchange of two atoms is four ordinary exchanges, three shears and one
+* `leaf_word`: a weighted exchange of two atoms is two ordinary exchanges, three shears and one
   sign.
 * `fallback_children`: the elimination fallback on `2m` coordinates uses fewer than `32 m²`
   children.
@@ -359,23 +359,27 @@ theorem weighted_good_child {m : ℕ} (r : ℕ) (α α' δ δ' : Fin m → R)
 /-- The shear `d ← d + c h` of two atoms. -/
 def shear (c : R) (p : R × R) : R × R := (p.1, p.2 + c * p.1)
 
-/-- **The weighted leaf.** Four exchanges, three shears and one sign give `(h, d) ↦ (a d, a⁻¹ h)`.
+/-- The signed exchange uses the reciprocal weight for the two outer shears. -/
+def leafPair (a a' : R) (p : R × R) : R × R :=
+  let q := shear a' (shear (-a) (shear a' p).swap).swap
+  (-q.1,q.2)
+
+/-- **The weighted leaf.** Two exchanges, three shears and one sign give `(h, d) ↦ (a d, a⁻¹ h)`.
 Every shear adds a multiple of the earlier atom to the later one. -/
 theorem leaf_word (a a' : R) (h : a * a' = 1) (p : R × R) :
-    (fun q : R × R => (q.1, -q.2))
-      ((shear a ((shear (-a') ((shear a p.swap).swap)).swap)).swap) = (a * p.2, a' * p.1) := by
+    leafPair a a' p = (a * p.2, a' * p.1) := by
   obtain ⟨x, y⟩ := p
   refine Prod.ext ?_ ?_
-  · dsimp only [shear, Prod.swap]
-    linear_combination (-(x + a * y)) * h
-  · dsimp only [shear, Prod.swap]
-    linear_combination y * h
+  · dsimp only [leafPair, shear, Prod.swap]
+    linear_combination x * h
+  · dsimp only [leafPair, shear, Prod.swap]
+    linear_combination -(y + a' * x) * h
 
 /-- Apply the stopped leaf word to one head coordinate and its reversed tail partner. -/
 def leafAt {m : ℕ} (ω ω' : Fin m → R) (s : State (Fin m) R) (i : Fin m) : State (Fin m) R :=
   let p := (s.1 i, s.2 i.rev)
-  let q := (shear (ω i) ((shear (-ω' i) ((shear (ω i) p.swap).swap)).swap)).swap
-  (Function.update s.1 i q.1, Function.update s.2 i.rev (-q.2))
+  let q := leafPair (ω i) (ω' i) p
+  (Function.update s.1 i q.1, Function.update s.2 i.rev q.2)
 
 /-- In any order, the leaf words on distinct coordinates implement their weighted exchanges. -/
 theorem fold_leafAt {m : ℕ} (ω ω' : Fin m → R) (coords : List (Fin m)) (distinct : coords.Nodup)
