@@ -233,23 +233,40 @@ theorem negateAndReturn_exec {P M B : ℕ} {F U : Type} (hP : 0 < P) (hM : 0 < M
     (right : ∀ i : Fin 9, i ≠ 0 → S.R (i.castAdd 6) =
       if i = 4 then binSyms B.size B else if i = 5 then binSyms ((M-1)*B).size ((M-1)*B)
       else if i = 7 then binSyms (M-1).size (M-1) else if i = 8 then binSyms P.size P else [])
-    (controls : ∀ (i : Fin 6) z, CountedLoopReuseAlphabet.binary
-      (![[],binBits B.size B,[],binBits M.size M,[],binBits P.size P] i) z =
-      readAt blank (S.L (i.natAdd 9)) (S.R (i.natAdd 9)) (z-1)) :
+    (returnLeft : ∀ i : Fin 6, S.L (i.natAdd 9) = [])
+    (returnRight : ∀ i : Fin 6, S.R (i.natAdd 9) =
+      (![[],binSyms B.size B,[],binSyms M.size M,[],binSyms P.size P] i)) :
+    let marks := (List.finRange 6).map (Fin.natAddEmb 9)
     let bank := Fin.castAddEmb (n := 9) 6
     let child : Pr Empty 9 207 prime U := .seq (.act (pushMarkers [3,4,5,6,7,8]))
       (foreign (Alphabet.program RadixToBinary.binaryEncoding (CountedLoop.program BlockNegationReuse.program)))
     let sign := statePlacedNormalized bank (by decide : 207 ≤ 217) (by decide) Empty.elim child
     let N := P*(M*B)
-    ∃ z D n, z.user = u.user ∧ n ≤ 1+(1+(P*(210*(M*B)+219)+6*P+2*P.size+2)*14+6)+((327*N+2)*13+6) ∧
-      Exec body (sign.seq (returnWord negationReturnPorts)) (mk u S) n (mk z D) ∧
+    ∃ z D n, z.user = u.user ∧ n ≤ 2+(1+(P*(210*(M*B)+219)+6*P+2*P.size+2)*14+6)+((327*N+2)*13+6) ∧
+      Exec body (.seq (.act (pushMarkers marks)) (sign.seq (returnWord negationReturnPorts))) (mk u S) n (mk z D) ∧
       ∀ x, readAt blank (D.L 0) (D.R 0) x = leafBitTape (negateLeafHead word) x := by
-  intro bank child sign N
+  intro marks bank child sign N
+  let I : Stacks 15 prime := {S with L := fun j => if j ∈ marks then separator :: S.L j else S.L j}
+  have mark := Exec.act (body := body) (pushMarkers marks) (mk u S)
+  rw [pushMarkers_run _ ((List.nodup_finRange 6).map (Fin.natAddEmb 9).injective)] at mark
+  have keep (i : Fin 9) : I.L (i.castAdd 6) = S.L (i.castAdd 6) := by
+    have off := (by decide : ∀ j : Fin 9, j.castAdd 6 ∉ (List.finRange 6).map (Fin.natAddEmb 9)) i
+    simp [I,marks,off]
+  have controls (i : Fin 6) (z : ℤ) : CountedLoopReuseAlphabet.binary
+      (![[],binBits B.size B,[],binBits M.size M,[],binBits P.size P] i) z =
+      readAt blank (I.L (i.natAdd 9)) (I.R (i.natAdd 9)) (z-1) := by
+    have on := (by decide : ∀ j : Fin 6, j.natAdd 9 ∈ (List.finRange 6).map (Fin.natAddEmb 9)) i
+    simp only [I,marks,ite_eq_left on,returnLeft,returnRight]
+    fin_cases i <;> rw [← CountedLoopReuseAlphabet.encoding_binary] <;>
+      change RadixZeroFill.encodedBinary _ z = _ <;> rw [encodedBinary_eq,readAt_single] <;> simp only [binSyms_eq] <;> rfl
   obtain ⟨a,H,n,ha,hn,run,src,dst⟩ := initializedNegateLeaf_exec hM hB word (F := Empty) Empty.elim
-    (stateLiftDown (by decide : 0 < 207) (embDn bank u)) (embStk bank S) payload left right
+    (stateLiftDown (by decide : 0 < 207) (embDn bank u)) (embStk bank I) (by
+      intro x
+      change readAt blank (I.L ((0 : Fin 9).castAdd 6)) _ _ = _
+      rw [keep]; exact payload x) (fun i hi => (keep i).trans (left i hi)) right
   obtain ⟨b,_,hb,placed⟩ := statePlaced_exec_normalized bank bank.injective (by decide : 207 ≤ 217)
-    (by decide) Empty.elim (body' := body) (fun e => nomatch e) u S run
-  let J := embOvr bank H.get S
+    (by decide) Empty.elim (body' := body) (fun e => nomatch e) u I run
+  let J := embOvr bank H.get I
   have eq : embStk bank J = H := embStk_ovr bank.injective _ _
   rw [← eq] at src dst
   have length : (negateLeafHead word).length = N := by
@@ -262,11 +279,12 @@ theorem negateAndReturn_exec {P M B : ℕ} {F U : Type} (hP : 0 < P) (hM : 0 < M
   obtain ⟨z,D,m,hz,hm,ret,out,_⟩ := returnLeafBits_exec hP hM hB body negationReturnPorts b J
     (List.ofFn word) (negateLeafHead word) List.length_ofFn length dst src (by
       intro i x
-      have same := embOvr_off H.get S (j := i.natAdd 9) (e := bank)
+      have same := embOvr_off H.get I (j := i.natAdd 9) (e := bank)
         (by intro j; exact (by decide : ∀ (k : Fin 9) (l : Fin 6), k.castAdd 6 ≠ l.natAdd 9) j i)
       have port : negationReturnPorts (Fin.natAdd 2 i) = i.natAdd 9 := (by decide : ∀ j, negationReturnPorts (Fin.natAdd 2 j) = j.natAdd 9) i
       rw [port,same.1,same.2]
       exact controls i x)
-  exact ⟨z,D,_,hz.trans (hb.trans ha),Nat.add_le_add (Nat.add_le_add_left hn 1) hm,Exec.seq placed ret,out⟩
+  refine ⟨z,D,_,hz.trans (hb.trans ha),?_,Exec.seq mark (Exec.seq placed ret),out⟩
+  omega
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
