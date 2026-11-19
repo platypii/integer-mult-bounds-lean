@@ -80,6 +80,62 @@ theorem physicalLabel_count (m w parents : ℕ) (keep : LabelPadding.Label m w �
     rw [Nat.succ_mul,List.range_add,List.countP_append,List.countP_map,ih,Nat.succ_mul]
     simp only [Function.comp_def,periodic,single]
 
+open GoodForm in
+open scoped Classical in
+def fallbackBit {r : ℕ} (hr : r ≤ m) (proj g : LabelPadding.Label m w) : Bool :=
+  decide (IsUnit g ∧ ∃ k, ∃ hk : k < r, ¬IsUnit (lead (k+1) (lt_of_lt_of_le hk hr) (g*proj*g⁻¹)).det)
+
+/-- On the scan tapes, fallback is exactly the live bit with the good-move
+test cleared. Singular padding is excluded even at rank zero. -/
+theorem fallbackBit_eq (hw : 0 < w) {r : ℕ} (hr : r ≤ m) (proj : LabelPadding.Label m w) (j : ℕ) :
+    fallbackBit hr proj (physicalLabel m w j) =
+      (LabelStock.live m w 1 j && !LabelProjector.good ((LabelRing.res prime w hw).mapMatrix proj) r hr
+        (LabelStock.residue m w 1 j)) := by
+  classical
+  let g := physicalLabel m w j
+  have live := physicalLabel_live (m := m) hw j
+  by_cases unit : IsUnit g
+  · have test := LabelProjector.good_at hw proj g ((Matrix.isUnit_iff_isUnit_det g).mp unit)
+      r hr (j/(prime^w)^(m*m))
+    rw [show j/(prime^w)^(m*m)*(prime^w)^(m*m)+(LabelAddress.address g).val = j from physicalLabel_index j] at test
+    rw [live.mpr unit, Bool.true_and]
+    apply Bool.eq_iff_iff.mpr
+    simp only [fallbackBit, decide_eq_true_eq, Bool.not_eq_true']
+    change (IsUnit g ∧ _) ↔ _
+    simp only [unit, true_and]
+    rw [← Bool.not_eq_true, test]
+    push Not
+    rfl
+  · have dead : LabelStock.live m w 1 j = false := Bool.eq_false_iff.mpr (fun h => unit (live.mp h))
+    simp [fallbackBit, dead, show ¬IsUnit (physicalLabel m w j) from unit]
+
+open Matrix Finset IntegerMultBounds.Swap.LowerTriangular IntegerMultBounds.Swap.Modular
+  IntegerMultBounds.Swap.Shear M8.Exchange M8.ReversedExchange in
+/-- A live record whose fallback bit is clear has the one-child weighted move. -/
+theorem goodMove_of_fallbackBit_false (hw : 0 < w) (P : Matrix (Fin m) (Fin m) ℚ)
+    (idempotent : P*P = P) (f : Factorization univ univ P)
+    (hd : ∀ d ∈ factorizationDenominators f, d < prime) (hr : P.rank ≤ m)
+    (j : ℕ) (live : LabelStock.live m w 1 j = true)
+    (clear : fallbackBit hr (reduce (prime^w) P) (physicalLabel m w j) = false)
+    (α α' : Fin m → ZMod (prime^w)) (hα : ∀ i, α i * α' i = 1) :
+    let g := physicalLabel m w j
+    ∃ (L L' R R' K : LabelPadding.Label m w) (δ δ' : Fin m → ZMod (prime^w)),
+      GoodForm.UnitLower L ∧ GoodForm.UnitLower L' ∧ GoodForm.UnitLower R ∧ GoodForm.UnitLower R' ∧
+      (∀ i, δ i * δ' i = 1) ∧ ∀ s : State (Fin m) (ZMod (prime^w)),
+        transform (diagonal α * L * diagonal α') R'
+          (cross (-K) (Weighted.child P.rank (fun i => α i * δ i) (fun i => α' i * δ' i)
+            (cross K (transform (diagonal α * L' * diagonal α') R s)))) =
+          transform (diagonal α) 1 (revExchangeOf (rev m) (g * reduce (prime^w) P * g⁻¹) (transform (diagonal α') 1 s)) := by
+  intro g
+  have unit := (physicalLabel_live hw j).mp live
+  have adm : Admissible (prime^1) P := admissible_of_lt prime_prime (fun d h => hd d (by simp [factorizationDenominators,h])) 1
+  have residue := LabelProjector.residue_reduce hw P (by simpa using adm)
+  rw [fallbackBit_eq hw, live, Bool.true_and, residue] at clear
+  apply LabelProjector.good_move_at hw P idempotent f hd hr g ((Matrix.isUnit_iff_isUnit_det g).mp unit)
+    (j/(prime^w)^(m*m)) α α' hα
+  rw [show j/(prime^w)^(m*m)*(prime^w)^(m*m)+(LabelAddress.address g).val = j from physicalLabel_index j]
+  simpa using clear
+
 open IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2.Stack Host LabelTraversal LabelCycle GoodForm in
 open scoped Classical in
 /-- One residue-table program emits the fallback bit for each physical record,
@@ -91,23 +147,19 @@ theorem fallbackMask_writes {T Q A : ℕ} {P U : Type} (body : P → Pr P T Q A 
     ∃ program : Pr P T Q A U, ∀ (v : RecursiveInterchangeLayout.Descriptor) (w B : ℕ)
       (proj : LabelPadding.Label m (w+1)), (LabelRing.res prime (w+1) (by omega)).mapMatrix proj = request →
       v.beforeH = B*prime^(m*((w+1)*m)) →
-      let fallback := fun j =>
-        let g := physicalLabel m (w+1) j
-        decide (IsUnit g ∧ ∃ k, ∃ hk : k < r, ¬IsUnit (lead (k+1) (lt_of_lt_of_le hk hr) (g*proj*g⁻¹)).det)
+      let fallback := fun j => fallbackBit hr proj (physicalLabel m (w+1) j)
       Writes body (fun R => ready (prime^w) R rs ∧ R saved = [] ∧
         (R count).length = v.beforeRows*v.rows*B) out program
         (((List.range (LabelMask.records v)).map fallback).map bitSymbol)
         ((v.beforeRows*v.rows*B)*(time (prime^w) (m*m) 1+5)+4) := by
   classical
-  let branch := fun g : Matrix (Fin m) (Fin m) (ZMod prime) => decide (g.det ≠ 0 ∧
-    ∃ k, ∃ hk : k < r, (lead (k+1) (lt_of_lt_of_le hk hr) (g*request*g⁻¹)).det = 0)
+  let branch := fun g : Matrix (Fin m) (Fin m) (ZMod prime) =>
+    decide (g.det ≠ 0) && !LabelProjector.good request r hr g
   obtain ⟨program,run⟩ := class_writes (body := body) m branch rs hk out count saved regs
   refine ⟨program, ?_⟩
   intro v w B proj reduction shape fallback
   have bits (j : ℕ) : branch (LabelStock.residue m (w+1) 1 j) = fallback j := by
-    simp only [branch, fallback, physicalLabel_residue (by omega : 0 < w+1), ← reduction]
-    apply Bool.eq_iff_iff.mpr
-    simpa only [decide_eq_true_eq] using LabelPadding.fallback_iff_res w r hr proj (physicalLabel m (w+1) j)
+    simp only [fallback, fallbackBit_eq (by omega : 0 < w+1), reduction, branch, LabelStock.live]
   simpa only [bits,Nat.add_one_sub_one] using run v (w+1) B (by omega) shape
 
 open GoodForm Finset in
@@ -119,8 +171,7 @@ theorem fallbackRecordCount (w r parents : ℕ) (hr : r ≤ m) (P : LabelPadding
     (good : ∀ k (hk : k < r), (lead (k+1) (lt_of_lt_of_le hk hr)
       (g₀ * (LabelRing.res prime (w+1) (by omega)).mapMatrix P * g₀⁻¹)).det ≠ 0) :
     let box := (prime^(w+1))^(m*m)
-    let fallback := fun g : LabelPadding.Label m (w+1) => decide (IsUnit g ∧ ∃ k, ∃ hk : k < r,
-      ¬IsUnit (lead (k+1) (lt_of_lt_of_le hk hr) (g*P*g⁻¹)).det)
+    let fallback := fallbackBit hr P
     (List.range (parents*box)).countP (fun j => fallback (physicalLabel m (w+1) j)) * prime ≤
       (∑ k ∈ range r, (k+1)*(m+1)) * (parents*box) := by
   classical
@@ -131,7 +182,7 @@ theorem fallbackRecordCount (w r parents : ℕ) (hr : r ≤ m) (P : LabelPadding
     change Fintype.card (Fin m → Fin m → ZMod (prime^(w+1))) = _
     simp [box, ← pow_mul, Nat.mul_assoc]
   rw [card] at bound
-  simp only [fallback,decide_eq_true_eq]
+  simp only [fallback,fallbackBit,decide_eq_true_eq]
   exact (Nat.mul_le_mul_left parents bound).trans_eq (by ring)
 
 /-- The live addresses of one complete box enumerate the invertible matrices exactly once. -/
