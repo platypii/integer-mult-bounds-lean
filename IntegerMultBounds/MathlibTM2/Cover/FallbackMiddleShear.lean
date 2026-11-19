@@ -2,6 +2,8 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackPrefixShear
 import IntegerMultBounds.Machine.FlatControlledShift
+import IntegerMultBounds.Machine.RowPaddingConstructedAlphabet
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackReturnWord
 import IntegerMultBounds.Machine.BinaryDivide
 import IntegerMultBounds.MathlibTM2.Cover.FallbackPrefixVolume
 
@@ -502,5 +504,291 @@ theorem middlePrefixes_exec (body : F → Pr F T 217 A U) (r : Fin 13 ↪ Fin T)
       _ _ _ _ (payload i) (hw i) bs ms hb hmod cb cm u D (by rw [keep,ticks]) clear blank layout (start.symm ▸ read)
     exact ⟨z,E,n,user,time,run,frame prefixClock kp.symm cp.symm (rp 1).symm tp,next,savedEq.trans keep,emptyE,done,
       by dsimp only [bank]; rw [← finish]; exact placed⟩
+
+def middleShearFromHeaders (r : Fin 13 ↪ Fin T) (call : Fin 12 ↪ Fin T)
+    (pre gap saved count clock prefixClock : Fin T) : Pr F T 217 A U :=
+  .seq (toUnary pre prefixClock (r 4) (r 5) (r 6))
+    (.seq (toUnary gap saved (r 4) (r 5) (r 6))
+      (.seq (countedLoop prefixClock (middleSweep r call saved count clock)) (bclear saved)))
+
+theorem middleShearFromHeaders_exec (body : F → Pr F T 217 A U) (r : Fin 13 ↪ Fin T)
+    (call : Fin 12 ↪ Fin T) (slot : call 8 = r 3)
+    (outside : ∀ i : Fin 13, i ≠ 3 → ∀ j, call j ≠ r i)
+    (saved count clock : Fin T) (apart : saved ≠ count) (sc : saved ≠ clock) (cc : count ≠ clock)
+    (rs : ∀ i, r i ≠ saved) (rc : ∀ i, r i ≠ count) (rk : ∀ i, r i ≠ clock)
+    (ts : ∀ i, call i ≠ saved) (tc : ∀ i, call i ≠ count) (tk : ∀ i, call i ≠ clock)
+    (prefixClock : Fin T) (rp : ∀ i, r i ≠ prefixClock) (tp : ∀ i, call i ≠ prefixClock)
+    (sp : saved ≠ prefixClock) (cp : count ≠ prefixClock) (kp : clock ≠ prefixClock)
+    (pre gap : Fin T) (L K : ℕ)
+    (preWork : [pre,prefixClock,r 4,r 5,r 6].Nodup) (gapWork : [gap,saved,r 4,r 5,r 6].Nodup)
+    (gapOff : gap ≠ prefixClock) (hP : P < 2^L) (hG : G < 2^K)
+    (H c : ℕ) (hc : c < M) (hm : M < 2^H) (hB : 0 < B)
+    (source dest : ℤ → Fin 4) (p q : ℤ) (payload : ℕ → ℕ → ℕ → ℕ → List (Fin 4))
+    (hw : ∀ j h i y, (payload j h i y).length = B) (bs ms : List Bool)
+    (hb : Counter.value bs = B) (hmod : Counter.value ms = M)
+    (cb : GrowingCounterData.Canonical bs) (cm : GrowingCounterData.Canonical ms)
+    (v : HS T 217 A U) (S : Stacks T A) (heads : S.R pre = binSyms L P) (ticks : S.R gap = binSyms K G)
+    (prefixEmpty : S.R prefixClock = []) (savedEmpty : S.R saved = [])
+    (clockEmpty : S.R clock = []) (empty : S.R count = []) (ready : MiddleGroupReady r H c 0 M S) :
+    let bank := middlePrefixBank P M G B c source dest p q payload bs ms
+    let group := 6*G+6+(G*(48*H*H+158*H+85+(207*(M*B)+241)*25+3)+2)+(4*H+5)
+    let sweep := (6*M+11*H+6)+(M*(group+3)+2+(6*H+6))
+    RepT (Alphabet.mapTapes RadixToBinary.binaryEncoding (bank 0)) (S.L ∘ call) (S.R ∘ call) →
+    ∃ z D n, z.user = v.user ∧ n ≤ (6*P+11*L+6)+(6*G+11*K+6)+(P*(sweep+3)+2)+(2*G+2) ∧
+      Exec body (middleShearFromHeaders r call pre gap saved count clock prefixClock) (mk v S) n (mk z D) ∧
+      D.R prefixClock = [] ∧ MiddleGroupReady r H c 0 M D ∧ D.R saved = [] ∧
+      D.R count = [] ∧ D.R clock = [] ∧
+      RepT (Alphabet.mapTapes RadixToBinary.binaryEncoding (bank P)) (D.L ∘ call) (D.R ∘ call) := by
+  intro bank group sweep rep
+  obtain ⟨u,m,hu,hm',prep⟩ := toUnary_exec_linear body preWork hP v S heads
+    (ready.2.2.2.1 4 (by decide) (by decide)) (ready.2.2.2.1 5 (by decide) (by decide))
+    (ready.2.2.2.1 6 (by decide) (by decide))
+  let E := {S with R := Function.update S.R prefixClock (List.replicate P Node.tick ++ S.R prefixClock)}
+  have unchanged (j : Fin T) (hj : j ≠ prefixClock) : E.R j = S.R j := Function.update_of_ne hj ..
+  obtain ⟨y,k,hy,hk,generate⟩ := toUnary_exec_linear body gapWork hG u E ((unchanged _ gapOff).trans ticks)
+    ((unchanged _ (rp 4)).trans (ready.2.2.2.1 4 (by decide) (by decide)))
+    ((unchanged _ (rp 5)).trans (ready.2.2.2.1 5 (by decide) (by decide)))
+    ((unchanged _ (rp 6)).trans (ready.2.2.2.1 6 (by decide) (by decide)))
+  let I := {E with R := Function.update E.R saved (List.replicate G Node.tick ++ E.R saved)}
+  have keep (j : Fin T) (hs : j ≠ saved) (hp : j ≠ prefixClock) : I.R j = S.R j :=
+    (Function.update_of_ne hs ..).trans (unchanged _ hp)
+  have readyI : MiddleGroupReady r H c 0 M I :=
+    ⟨(keep _ (rs 0) (rp 0)).trans ready.1,(keep _ (rs 1) (rp 1)).trans ready.2.1,
+      (keep _ (rs 2) (rp 2)).trans ready.2.2.1,fun j lo hi => (keep _ (rs j) (rp j)).trans
+        (ready.2.2.2.1 j lo hi),ready.2.2.2.2⟩
+  have stock : (I.R saved).length = G := by simp [I,unchanged _ sp,savedEmpty]
+  obtain ⟨z,D,n,hz,time,run,finished,next,retained,countDone,clockDone,read⟩ := middlePrefixes_exec (P := P)
+    body r call slot outside saved count clock apart sc cc rs rc rk ts tc tk prefixClock rp tp sp cp kp
+    H c hc hm hB source dest p q payload hw bs ms hb hmod cb cm y I
+    (by simp [I,E,Function.update_of_ne sp.symm,prefixEmpty]) stock
+    ((keep _ sc.symm kp).trans clockEmpty) ((keep _ apart.symm cp).trans empty) readyI
+    (fun i k => by simpa only [Function.comp_apply,keep _ (ts i) (tp i)] using rep i k)
+  obtain ⟨z',user,_,clear⟩ := bclear_exec body saved z D
+  rw [retained,stock] at clear
+  refine ⟨z',_,_,user.trans (hz.trans (hy.trans hu)),by dsimp only [sweep,group]; omega,
+    .seq prep (.seq generate (.seq run clear)),?_,?_,Function.update_self ..,?_,?_,?_⟩
+  · simpa [Function.update_of_ne sp.symm] using finished
+  · exact ⟨(Function.update_of_ne (rs 0) ..).trans next.1,(Function.update_of_ne (rs 1) ..).trans next.2.1,
+      (Function.update_of_ne (rs 2) ..).trans next.2.2.1,fun j lo hi =>
+      (Function.update_of_ne (rs j) ..).trans (next.2.2.2.1 j lo hi),next.2.2.2.2⟩
+  · simpa [Function.update_of_ne apart.symm] using countDone
+  · simpa [Function.update_of_ne sc.symm] using clockDone
+  · intro i k
+    simpa only [Function.comp_apply,Function.update_of_ne (ts i)] using read i k
+
+open IntegerMultBounds.Networks.Shared50ModularControl (prime prime_prime) in
+/-- Binary clock preparation and final disposal fit the same linear-volume
+bound as the payload sweep, including for an arbitrary middle radix. -/
+theorem middleShearFromHeaders_volume_le (w P G B : ℕ) (hP : 0 < P) (hG : 0 < G) (hB : 0 < B) :
+    let M := prime^(w+1)
+    let H := Nat.size M
+    let group := 6*G+6+(G*(48*H*H+158*H+85+(207*(M*B)+241)*25+3)+2)+(4*H+5)
+    let sweep := (6*M+11*H+6)+(M*(group+3)+2+(6*H+6))
+    (6*P+11*Nat.size P+6)+(6*G+11*Nat.size G+6)+(P*(sweep+3)+2)+(2*G+2) ≤
+      (210*(2*(Nat.size prime+1)^2)+11405)*(P*(M*(G*(M*B)))) := by
+  intro M H group sweep
+  let C := 210*(2*(Nat.size prime+1)^2)+11350
+  let V := M*(G*(M*B))
+  have run : sweep ≤ C*V := middleSweep_volume_le w G B hG hB
+  have pos : 0 < M := pow_pos prime_prime.pos _
+  have inner : 0 < M*B := Nat.mul_pos pos hB
+  have vol : 0 < V := Nat.mul_pos pos (Nat.mul_pos hG inner)
+  have outer := Nat.le_mul_of_pos_right P vol
+  have gap : G ≤ P*V := ((Nat.le_mul_of_pos_right G inner).trans
+    (Nat.le_mul_of_pos_left _ pos)).trans (Nat.le_mul_of_pos_left V hP)
+  have plen : Nat.size P ≤ P := Nat.size_le.mpr Nat.lt_two_pow_self
+  have glen : Nat.size G ≤ G := Nat.size_le.mpr Nat.lt_two_pow_self
+  have total := Nat.mul_le_mul_left P run
+  change _ ≤ (C+55)*(P*V)
+  nlinarith only [outer,gap,plen,glen,total,hP]
+
+private theorem flatMap_range_mul {α : Type*} (n k : ℕ) (f : ℕ → List α) :
+    (List.range (n*k)).flatMap f =
+      (List.range n).flatMap (fun j => (List.range k).flatMap (fun i => f (j*k+i))) := by
+  induction n with
+  | zero => simp
+  | succ n ih => simp only [Nat.succ_mul,List.range_add,List.flatMap_append,ih,List.range_succ,
+      List.flatMap_singleton,List.flatMap_map]
+
+def middlePayload (word : Fin ((P*M*G)*(M*B)) → Fin 4) (j h i : ℕ) :=
+  FlatControlledShift.payload word ((j*M+h)*G+i)
+
+theorem middlePayload_input (word : Fin ((P*M*G)*(M*B)) → Fin 4) :
+    (List.range P).flatMap (fun j => (List.range M).flatMap (fun h =>
+      (fibers M G (middlePayload word j h)).flatten)) = List.ofFn word := by
+  rw [← FlatControlledShift.source_eq]
+  simp only [fibers,← List.flatMap_def,middlePayload,flatMap_range_mul]
+
+theorem middlePayload_output (word : Fin ((P*M*G)*(M*B)) → Fin 4) (c : ℕ) :
+    (List.range P).flatMap (fun j => (List.range M).flatMap (fun h =>
+      outputPrefix (fun _ => c*h%M) M G (middlePayload word j h))) =
+    outputPrefix (fun i => c*(i/G%M)%M) M (P*M*G) (FlatControlledShift.payload word) := by
+  simp only [outputPrefix,← List.flatMap_def,flatMap_range_mul,middlePayload]
+  refine List.flatMap_congr fun j _ => List.flatMap_congr fun h hh => List.flatMap_congr fun i hi => ?_
+  have hM := List.mem_range.mp hh
+  have hG := List.mem_range.mp hi
+  have digit : (((j*M+h)*G+i)/G)%M = h := by
+    rw [Nat.add_comm ((j*M+h)*G) i,Nat.mul_comm (j*M+h) G,Nat.add_mul_div_left _ _ (Nat.zero_lt_of_lt hG),
+      Nat.div_eq_of_lt hG,Nat.zero_add,Nat.add_comm (j*M) h,Nat.add_mul_mod_self_right,Nat.mod_eq_of_lt hM]
+  rw [digit]
+
+theorem middlePayload_initial (word : Fin ((P*M*G)*(M*B)) → Fin 4) (c : ℕ)
+    (source dest : ℤ → Fin 4) (p q : ℤ) (bs ms : List Bool) :
+    middlePrefixBank P M G B c source dest p q (middlePayload word) bs ms 0 =
+      TranslationExecutionReuse.bank (putWord source p (List.ofFn word)) dest p q bs ms [] := by
+  simp only [middlePrefixBank,List.range_zero,List.flatMap_nil,putWord,
+    Nat.zero_mul,Nat.cast_zero,add_zero]
+  rw [middlePayload_input word]
+
+/-- Both tapes at the entrance to the return scan, including cells outside the word. -/
+theorem middlePayload_final (word : Fin ((P*M*G)*(M*B)) → Fin 4) (c : ℕ)
+    (source dest : ℤ → Fin 4) (p q : ℤ) (bs ms : List Bool) :
+    middlePrefixBank P M G B c source dest p q (middlePayload word) bs ms P =
+      TranslationExecutionReuse.bank (putWord source p (List.ofFn word))
+        (putWord dest q (FiberLayoutData.translated word (fun i => c*(i.val/G%M)%M)))
+        (p+(((P*M*G)*(M*B) : ℕ) : ℤ)) (q+(((P*M*G)*(M*B) : ℕ) : ℤ)) bs ms [] := by
+  simp only [middlePrefixBank,middlePayload_input word,middlePayload_output word c,FlatControlledShift.output_eq]
+  simp only [Nat.mul_assoc]
+
+/-- The return scan reuses the two payload heads and five control tapes
+of the translation. Its last tape supplies the total number of rows. -/
+theorem middleReturn_ready (word : Fin ((P*M*G)*(M*B)) → Fin 4) (c : ℕ)
+    (source dest : ℤ → Fin 4) (p q : ℤ) (bs ms ps : List Bool)
+    (call : Fin 12 ↪ Fin T) (ports : Fin 8 ↪ Fin T)
+    (shared : ∀ i : Fin 7, ports i.castSucc = call (![11,10,4,5,6,7,1] i))
+    (S : Stacks T A)
+    (rep : RepT (Alphabet.mapTapes RadixToBinary.binaryEncoding
+      (middlePrefixBank P M G B c source dest p q (middlePayload word) bs ms P)) (S.L ∘ call) (S.R ∘ call))
+    (rows : ∀ z, CountedLoopReuseAlphabet.binary ps z =
+      readAt blank (S.L (ports 7)) (S.R (ports 7)) (z-1)) :
+    let N := (P*M*G)*(M*B)
+    let out := FiberLayoutData.translated word (fun i => c*(i.val/G%M)%M)
+    RepT (FlatArrayNormalize.bank
+      (fun z => RadixToBinary.binaryEncoding.encode (putWord dest q out z))
+      (fun z => RadixToBinary.binaryEncoding.encode (putWord source p (List.ofFn word) z))
+      (q+(N : ℕ)) (p+(N : ℕ)) bs ms ps) (S.L ∘ ports) (S.R ∘ ports) := by
+  rw [middlePayload_final] at rep
+  apply returnWord_ready
+  · intro z
+    rw [show ports 0 = call 11 from shared 0]
+    exact (rep 11 z).symm
+  · intro z
+    rw [show ports 1 = call 10 from shared 1]
+    exact (rep 10 z).symm
+  intro i z
+  fin_cases i
+  · change _ = readAt blank (S.L (ports 2)) (S.R (ports 2)) _
+    rw [show ports 2 = call 4 from shared 2,← CountedLoopReuseAlphabet.encoding_binary]
+    exact rep 4 z
+  · change _ = readAt blank (S.L (ports 3)) (S.R (ports 3)) _
+    rw [show ports 3 = call 5 from shared 3,← CountedLoopReuseAlphabet.encoding_binary]
+    exact rep 5 z
+  · change _ = readAt blank (S.L (ports 4)) (S.R (ports 4)) _
+    rw [show ports 4 = call 6 from shared 4,← CountedLoopReuseAlphabet.encoding_binary]
+    exact rep 6 z
+  · change _ = readAt blank (S.L (ports 5)) (S.R (ports 5)) _
+    rw [show ports 5 = call 7 from shared 5,← CountedLoopReuseAlphabet.encoding_binary]
+    exact rep 7 z
+  · change _ = readAt blank (S.L (ports 6)) (S.R (ports 6)) _
+    rw [show ports 6 = call 1 from shared 6,← CountedLoopReuseAlphabet.encoding_binary]
+    exact rep 1 z
+  · exact rows z
+
+theorem middleReturn_exec (body : F → Pr F T 217 A U) (word : Fin ((P*M*G)*(M*B)) → Fin 4) (c : ℕ)
+    (source dest : ℤ → Fin 4) (p q : ℤ) (bs ms ps : List Bool)
+    (call : Fin 12 ↪ Fin T) (ports : Fin 8 ↪ Fin T)
+    (shared : ∀ i : Fin 7, ports i.castSucc = call (![11,10,4,5,6,7,1] i))
+    (v : HS T 217 A U) (S : Stacks T A)
+    (rep : RepT (Alphabet.mapTapes RadixToBinary.binaryEncoding
+      (middlePrefixBank P M G B c source dest p q (middlePayload word) bs ms P)) (S.L ∘ call) (S.R ∘ call))
+    (rows : ∀ z, CountedLoopReuseAlphabet.binary ps z =
+      readAt blank (S.L (ports 7)) (S.R (ports 7)) (z-1))
+    (hb : Counter.value bs = B) (hm : Counter.value ms = M) (hp : Counter.value ps = P*M*G)
+    (cb : GrowingCounterData.Canonical bs) (cm : GrowingCounterData.Canonical ms)
+    (cp : GrowingCounterData.Canonical ps) (hP : 0 < P) (hM : 0 < M) (hG : 0 < G) (hB : 0 < B)
+    (empty : ∀ z, q ≤ z → z < q+((P*M*G)*(M*B) : ℕ) → dest z = blank) :
+    let N := (P*M*G)*(M*B)
+    let out := FiberLayoutData.translated word (fun i => c*(i.val/G%M)%M)
+    ∃ u D n, u.user = v.user ∧ n ≤ (327*N+2)*13+6 ∧
+      Exec body (returnWord ports) (mk v S) n (mk u D) ∧
+      RepT (FlatArrayNormalize.bank (fun z => RadixToBinary.binaryEncoding.encode (dest z))
+        (fun z => RadixToBinary.binaryEncoding.encode (putWord source p out z)) q p bs ms ps)
+        (D.L ∘ ports) (D.R ∘ ports) ∧
+      ∀ j, (∀ i, ports i ≠ j) → D.L j = S.L j ∧ D.R j = S.R j := by
+  intro N out
+  have ready := middleReturn_ready word c source dest p q bs ms ps call ports shared S rep rows
+  change RepT (FlatArrayNormalize.bank (RowPaddingConstructedAlphabet.mapTape (putWord dest q out))
+    (RowPaddingConstructedAlphabet.mapTape (putWord source p (List.ofFn word)))
+    (q+(N : ℕ)) (p+(N : ℕ)) bs ms ps) _ _ at ready
+  rw [RowPaddingConstructedAlphabet.map_putWord,RowPaddingConstructedAlphabet.map_putWord] at ready
+  change ∃ u D n, _ ∧ _ ∧ _ ∧ RepT (FlatArrayNormalize.bank (RowPaddingConstructedAlphabet.mapTape dest)
+    (RowPaddingConstructedAlphabet.mapTape (putWord source p out)) q p bs ms ps) _ _ ∧ _
+  rw [RowPaddingConstructedAlphabet.map_putWord]
+  apply returnPackedList_exec body ports rfl (Nat.mul_pos (Nat.mul_pos hP hM) hG) hM hB
+    _ _ _ _ _ _ (by simp) (by simp only [List.length_map,out,FiberLayoutData.translated_length])
+    bs ms ps hb hm hp cb cm cp _ v S ready
+  intro z lo hi
+  change RadixToBinary.binaryEncoding.encode (dest z) = _
+  rw [empty z lo hi]
+  rfl
+
+/-- Read the shifted cell on the actual destination tape after the nested scan. -/
+theorem middlePayload_read (word : Fin ((P*M*G)*(M*B)) → Fin 4) (c : ℕ)
+    (source dest : ℤ → Fin 4) (p q : ℤ) (bs ms : List Bool) (call : Fin 12 ↪ Fin T) (D : Stacks T A)
+    (read : RepT (Alphabet.mapTapes RadixToBinary.binaryEncoding
+      (middlePrefixBank P M G B c source dest p q (middlePayload word) bs ms P)) (D.L ∘ call) (D.R ∘ call))
+    (pre : Fin P) (h : Fin M) (mid : Fin G) (t : Fin M) (j : Fin B) :
+    let row := finProdFinEquiv (finProdFinEquiv (pre,h),mid)
+    let pos := row.val*(M*B)+((t.val+c*h.val)%M)*B+j.val
+    readAt blank (D.L (call 11)) (D.R (call 11)) ((pos : ℤ)-(P*(M*(G*(M*B))) : ℕ)) =
+      RadixToBinary.binaryEncoding.encode (word (FiberLayoutData.index row t j)) := by
+  intro row pos
+  obtain ⟨inside,entry⟩ := List.getElem?_eq_some_iff.mp (middleShear_entry word c pre h mid t j)
+  have tape := read 11 (q+pos)
+  change RadixToBinary.binaryEncoding.encode (putWord dest q
+    ((List.range P).flatMap (fun j => (List.range M).flatMap (fun h =>
+      outputPrefix (fun _ => c*h%M) M G (middlePayload word j h)))) (q+pos)) =
+    readAt blank (D.L (call 11)) (D.R (call 11)) ((q+pos)-(q+(P*(M*(G*(M*B))) : ℕ))) at tape
+  rw [middlePayload_output,BinaryDivide.putWord_getElem dest q _ pos inside,entry] at tape
+  simpa only [add_sub_add_left_eq_sub] using tape.symm
+
+open IntegerMultBounds.Networks.Shared50ModularControl (prime) in
+theorem middlePackedShear_exec (body : F → Pr F T 217 A U) (r : Fin 13 ↪ Fin T)
+    (call : Fin 12 ↪ Fin T) (slot : call 8 = r 3)
+    (outside : ∀ i : Fin 13, i ≠ 3 → ∀ j, call j ≠ r i)
+    (saved count clock : Fin T) (apart : saved ≠ count) (sc : saved ≠ clock) (cc : count ≠ clock)
+    (rs : ∀ i, r i ≠ saved) (rc : ∀ i, r i ≠ count) (rk : ∀ i, r i ≠ clock)
+    (ts : ∀ i, call i ≠ saved) (tc : ∀ i, call i ≠ count) (tk : ∀ i, call i ≠ clock)
+    (prefixClock : Fin T) (rp : ∀ i, r i ≠ prefixClock) (tp : ∀ i, call i ≠ prefixClock)
+    (sp : saved ≠ prefixClock) (cp : count ≠ prefixClock) (kp : clock ≠ prefixClock)
+    (pre gap : Fin T) (w : ℕ) (radix : M = prime^(w+1))
+    (preWork : [pre,prefixClock,r 4,r 5,r 6].Nodup) (gapWork : [gap,saved,r 4,r 5,r 6].Nodup)
+    (gapOff : gap ≠ prefixClock) (hP : 0 < P) (hG : 0 < G)
+    (c : ℕ) (hc : c < M) (hB : 0 < B)
+    (source dest : ℤ → Fin 4) (p q : ℤ) (word : Fin ((P*M*G)*(M*B)) → Fin 4)
+    (bs ms : List Bool)
+    (hb : Counter.value bs = B) (hmod : Counter.value ms = M)
+    (cb : GrowingCounterData.Canonical bs) (cm : GrowingCounterData.Canonical ms)
+    (v : HS T 217 A U) (S : Stacks T A) (heads : S.R pre = binSyms (Nat.size P) P) (ticks : S.R gap = binSyms (Nat.size G) G)
+    (prefixEmpty : S.R prefixClock = []) (savedEmpty : S.R saved = [])
+    (clockEmpty : S.R clock = []) (empty : S.R count = []) (ready : MiddleGroupReady r (Nat.size M) c 0 M S)
+    (rep : RepT (Alphabet.mapTapes RadixToBinary.binaryEncoding
+      (TranslationExecutionReuse.bank (putWord source p (List.ofFn word)) dest p q bs ms []))
+      (S.L ∘ call) (S.R ∘ call)) :
+    ∃ z D n, z.user = v.user ∧ n ≤ (210*(2*(Nat.size prime+1)^2)+11405)*(P*(M*(G*(M*B)))) ∧
+      Exec body (middleShearFromHeaders r call pre gap saved count clock prefixClock) (mk v S) n (mk z D) ∧
+      D.R prefixClock = [] ∧ MiddleGroupReady r (Nat.size M) c 0 M D ∧ D.R saved = [] ∧
+      D.R count = [] ∧ D.R clock = [] ∧
+      RepT (Alphabet.mapTapes RadixToBinary.binaryEncoding
+        (middlePrefixBank P M G B c source dest p q (middlePayload word) bs ms P)) (D.L ∘ call) (D.R ∘ call) := by
+  subst M
+  rw [← middlePayload_initial word c] at rep
+  obtain ⟨z,D,n,user,time,run,frame⟩ := middleShearFromHeaders_exec body r call slot outside
+    saved count clock apart sc cc rs rc rk ts tc tk prefixClock rp tp sp cp kp pre gap _ _
+    preWork gapWork gapOff (Nat.lt_size_self P) (Nat.lt_size_self G) _ c hc
+    (Nat.lt_size_self _) hB source dest p q (middlePayload word)
+    (fun j h i => FlatControlledShift.payload_length word _) bs ms hb hmod cb cm v S heads ticks
+    prefixEmpty savedEmpty clockEmpty empty ready rep
+  exact ⟨z,D,n,user,time.trans (middleShearFromHeaders_volume_le w P G B hP hG hB),run,frame⟩
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
