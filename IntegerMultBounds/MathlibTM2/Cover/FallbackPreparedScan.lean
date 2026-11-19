@@ -44,6 +44,40 @@ theorem unitCopy_exec {T Q A : ℕ} (body : P → Pr P T Q A U) (bank : Fin 18 �
     (by simp [srcOff,tmpOff,apart]) v S work saved
   exact ⟨u,hu,by simpa only [source,dest,List.append_nil] using run⟩
 
+noncomputable def exchangeTime (U : Type) {m : ℕ} (j i : ℕ) (k t : Fin m)
+    (width w W H J : ℕ) : ℕ :=
+  let shear := fun neg => 1+cleanChildShearTime (P := Empty) (U := U) (A := prime) Empty.elim
+    (Function.Embedding.refl _) prime j i k t neg w W H J
+  let swap := 1+completeSwapTime (P := Empty) (U := U) Empty.elim m k t w W H J
+  1+(1+(2*shear false+shear true+2*swap)+((10*J+12)+(21*(w+1)+12)+1+
+    (1+(AtomSegment.chainConst (fieldSignOps k true)*((prime^(w+1))^m*W)*(width+5)+6))))
+
+theorem exchangeTime_le_setup_add_width_volume (U : Type) {m : ℕ} (j i : ℕ)
+    (k t : Fin m) (width : ℕ) :
+    ∃ swaps shears : ℕ, ∀ w W H J, exchangeTime U j i k t width w W H J ≤
+      exchangeTime U j i k t width w 0 H J +
+        (swaps*swapVolumeRate w+shears)*((prime^(w+1))^m*W) := by
+  let shear := fun neg w W H J => cleanChildShearTime (P := Empty) (U := U) (A := prime)
+    Empty.elim (Function.Embedding.refl _) prime j i k t neg w W H J
+  have shearRate (neg : Bool) : ∃ c : ℕ, ∀ w W H J, shear neg w W H J =
+      shear neg w 0 H J + c*((prime^(w+1))^m*W) :=
+    ⟨_,fun w W H J => cleanChildShearTime_eq_setup_add_volume _ _ prime j i k t neg w W H J⟩
+  let swap := fun w W H J => completeSwapTime (P := Empty) (U := U) Empty.elim m k t w W H J
+  have swapRate : ∃ c : ℕ, ∀ w W H J, swap w W H J ≤
+      swap w 0 H J + c*swapVolumeRate w*((prime^(w+1))^m*W) :=
+    ⟨_,fun w W H J => completeSwapTime_le_setup_add_volume _ m k t w W H J⟩
+  choose c hc using shearRate
+  obtain ⟨s,hs⟩ := swapRate
+  refine ⟨2*s,2*c false+c true+AtomSegment.chainConst (fieldSignOps k true)*(width+5),?_⟩
+  intro w W H J
+  unfold exchangeTime
+  change 1+(1+(2*(1+shear false w W H J)+(1+shear true w W H J)+2*(1+swap w W H J))+
+    ((10*J+12)+(21*(w+1)+12)+1+(1+(AtomSegment.chainConst (fieldSignOps k true)*((prime^(w+1))^m*W)*(width+5)+6)))) ≤ _
+  rw [hc false w W H J,hc true w W H J]
+  grw [hs w W H J]
+  simp only [Nat.mul_zero,Nat.zero_mul]
+  exact le_of_eq (by ring)
+
 /-- A fixed program signs and transforms every compatible queue, across precisions and payload widths. -/
 theorem archivedPass_exec {Q T r A : ℕ} (table : Matrix (Fin r) (Fin r) (ZMod prime) → Matrix (Fin (d+1)) (Fin (d+1)) (ZMod prime))
     (capacity : columnCapacity ≤ Q) (signCapacity : (fieldSignProgram (0 : Fin (d+1)) true).1 ≤ Q) :
@@ -106,12 +140,7 @@ theorem archivedPass_exec {Q T r A : ℕ} (table : Matrix (Fin r) (Fin r) (ZMod 
       (prime^(w+1)) < 2^a.H → W < 2^a.J → 0 < W →
       let H := a.H
       let J := a.J
-      let cost := fun a =>
-        let shear := fun neg => 1+cleanChildShearTime (P := Empty) (U := U) (A := prime) Empty.elim
-          (Function.Embedding.refl _) prime (j a).val (i a).val (k a) (t a) neg w W H J
-        let swap := 1+completeSwapTime (P := Empty) (U := U) Empty.elim (d+1) (k a) (t a) w W H J
-        1+(1+(2*shear false+shear true+2*swap)+((10*J+12)+(21*(w+1)+12)+1+
-          (1+(AtomSegment.chainConst (fieldSignOps (k a) true)*((prime^(w+1))^(d+1)*W)*(width a+5)+6))))
+      let cost := fun a => exchangeTime U (j a).val (i a).val (k a) (t a) (width a) w W H J
       let stageCost := fun idx => 1+Finset.univ.sup (fun k => columnProgramTime U k (a.pivots idx k) w W H J)+((d+1)*(d+1)*(4*H+4)+1)
       let rewindCost := fun idx => 1+(((d+1)*(4*H+4)+1+(d*(4*H+4)+1))+((d+1)*stageCost idx+1))
       let bound := fun idx => ((List.finRange n).map cost).sum+1+rewindCost idx
@@ -483,39 +512,56 @@ theorem anchorPayloadCost (d A w W H records : ℕ) :
   · rw [max_eq_left h,max_eq_left (by gcongr)]
     ring
 
+noncomputable def exchangePayloadRate (U : Type) {m : ℕ} (j i : ℕ) (k t : Fin m)
+    (width w : ℕ) : ℕ :=
+  let rates := exchangeTime_le_setup_add_width_volume U j i k t width
+  rates.choose*swapVolumeRate w+rates.choose_spec.choose
+
+theorem exchangeScheduleBound (U : Type) {m n : ℕ} (js is : Fin n → ℕ) (ks ts : Fin n → Fin m)
+    (width : Fin n → ℕ) (w W H J : ℕ) (xs : List (Fin n)) :
+    let cost := fun x a => exchangeTime U (js a) (is a) (ks a) (ts a) (width a) w x H J
+    let rate := fun a => exchangePayloadRate U (js a) (is a) (ks a) (ts a) (width a) w
+    (xs.map (cost W)).sum ≤ (xs.map (cost 0)).sum+(xs.map rate).sum*((prime^(w+1))^m*W) := by
+  intro cost rate
+  induction xs with
+  | nil => simp
+  | cons a xs ih =>
+    have h := (exchangeTime_le_setup_add_width_volume U (js a) (is a) (ks a) (ts a) (width a)).choose_spec.choose_spec w W H J
+    change cost W a ≤ cost 0 a + rate a*((prime^(w+1))^m*W) at h
+    simp only [List.map_cons,List.sum_cons,Nat.add_mul]
+    omega
+
+def cleanupTime (d H total push steps column : ℕ) : ℕ :=
+  let stage := 1+column+((d+1)*(d+1)*(4*H+4)+1)
+  let rewind := 1+(((d+1)*(4*H+4)+1+(d*(4*H+4)+1))+((d+1)*stage+1))
+  let bound := steps+1+rewind
+  bound+(total*4+1+total*(6*(push*bound)))
+
 omit [M8.Machine.Net] in
-theorem cleanupColumn_add (d H steps total push x y : ℕ) :
-    let stage := fun c => 1+c+((d+1)*(d+1)*(4*H+4)+1)
-    let rewind := fun c => 1+(((d+1)*(4*H+4)+1+(d*(4*H+4)+1))+((d+1)*stage c+1))
-    let bound := fun c => steps+1+rewind c
-    let clean := fun c => bound c+(total*4+1+total*(6*(push*bound c)))
-    clean (x+y) = clean x + ((d+1)*(1+6*total*push))*y := by
-  dsimp
-  ring
+theorem cleanupTime_le (d H total push steps column setup largest forward reverse volume : ℕ)
+    (hs : steps ≤ setup+forward*volume) (hc : column ≤ largest+reverse*volume) :
+    cleanupTime d H total push steps column ≤ cleanupTime d H total push setup largest +
+      ((1+6*total*push)*(forward+(d+1)*reverse))*volume := by
+  calc
+    _ ≤ cleanupTime d H total push (setup+forward*volume) (largest+reverse*volume) := by
+      dsimp only [cleanupTime]
+      gcongr
+    _ = _ := by dsimp only [cleanupTime]; ring
 
 noncomputable def columnPayloadRate (U : Type) (d w : ℕ) : ℕ :=
-  (columnProgramTime_le_setup_add_volume U d w).choose
+  let rates := columnProgramTime_le_setup_add_width_volume U d
+  rates.choose*swapVolumeRate w+rates.choose_spec.choose
 
 theorem columnPayloadRate_spec (U : Type) (d w : ℕ) (i j : Fin d) (W H J : ℕ) :
     columnProgramTime U i j w W H J ≤ columnProgramTime U i j w 0 H J +
       columnPayloadRate U d w*((prime^(w+1))^d*W) :=
-  (columnProgramTime_le_setup_add_volume U d w).choose_spec i j W H J
+  (columnProgramTime_le_setup_add_width_volume U d).choose_spec.choose_spec i j w W H J
 
-theorem columnPayloadBound (U : Type) (d w W H J : ℕ) (cost : ℕ → ℕ) (slope : ℕ)
-    (linear : ∀ x y, cost (x+y) = cost x + slope*y)
-    (pivots : Fin (d+1) → Fin (d+1)) :
-    let rate := columnPayloadRate U (d+1) w
+theorem columnPayloadBound (U : Type) (d w W H J : ℕ) (pivots : Fin (d+1) → Fin (d+1)) :
     let largest := Finset.univ.sup fun j : Fin (d+1) => Finset.univ.sup fun i => columnProgramTime U i j w 0 H J
-    cost (Finset.univ.sup fun i => columnProgramTime U i (pivots i) w W H J) ≤
-      cost largest + (slope*rate)*((prime^(w+1))^(d+1)*W) := by
-  intro rate largest
-  rw [Nat.mul_assoc,← linear]
-  have mono : Monotone cost := by
-    intro x z h
-    obtain ⟨y,rfl⟩ := Nat.exists_eq_add_of_le h
-    rw [linear]
-    exact Nat.le_add_right ..
-  apply mono
+    (Finset.univ.sup fun i => columnProgramTime U i (pivots i) w W H J) ≤
+      largest + columnPayloadRate U (d+1) w*((prime^(w+1))^(d+1)*W) := by
+  intro largest
   apply Finset.sup_le
   intro i _
   apply (columnPayloadRate_spec U (d+1) w i (pivots i) W H J).trans
@@ -696,16 +742,10 @@ theorem preparedPass_exec {Q T r A : ℕ} (table : Matrix (Fin r) (Fin r) (ZMod 
       (prime^(w+1)) < 2^a.H → W < 2^a.J → 0 < W →
       let H := a.H
       let J := a.J
-      let cost := fun a =>
-        let shear := fun neg => 1+cleanChildShearTime (P := Empty) (U := U) (A := prime) Empty.elim
-          (Function.Embedding.refl _) prime (j a).val (i a).val (k a) (t a) neg w W H J
-        let swap := 1+completeSwapTime (P := Empty) (U := U) Empty.elim (d+1) (k a) (t a) w W H J
-        1+(1+(2*shear false+shear true+2*swap)+((10*J+12)+(21*(w+1)+12)+1+
-          (1+(AtomSegment.chainConst (fieldSignOps (k a) true)*((prime^(w+1))^(d+1)*W)*(width a+5)+6))))
-      let stageCost := fun (column : ℕ) => 1+column+((d+1)*(d+1)*(4*H+4)+1)
-      let rewindCost := fun idx => 1+(((d+1)*(4*H+4)+1+(d*(4*H+4)+1))+((d+1)*stageCost idx+1))
-      let bound := fun idx => ((List.finRange n).map cost).sum+1+rewindCost idx
-      let cleanBound := fun idx => bound idx+(total*4+1+total*(6*(Fast.Main.mnProgPush residual*bound idx)))
+      let cost := fun x a => exchangeTime U (j a).val (i a).val (k a) (t a) (width a) w x H J
+      let steps := fun x => ((List.finRange n).map (cost x)).sum
+      let push := Fast.Main.mnProgPush residual
+      let forward := ((List.finRange n).map fun a => exchangePayloadRate U (j a).val (i a).val (k a) (t a) (width a) w).sum
       let volume := (prime^(w+1))^(d+1)*W
       let prepTime := (d+1)*(2*(d+1)+(4*w+4+columnTime (d+1) prime w H))+1 +
         (d*(8*((d+1)*(d+1)*H)+14*H+22)+1)+(6*H+6)+(4*((d+1)*H)+4)+(6*(d*H)+6)
@@ -782,9 +822,9 @@ theorem preparedPass_exec {Q T r A : ℕ} (table : Matrix (Fin r) (Fin r) (ZMod 
         let units := ∏ i : Fin r, (prime^r-prime^i.val)
         let active := boxes*(prime^w)^(r*r)*units
         let payload := a.records*volume
-        let kernel := cleanBound (Finset.univ.sup fun j : Fin (d+1) => Finset.univ.sup fun i => columnProgramTime U i j w 0 H J)
-        let slope := (d+1)*(1+6*total*Fast.Main.mnProgPush residual)
-        let rate := slope*columnPayloadRate U (d+1) w
+        let largest := Finset.univ.sup fun j : Fin (d+1) => Finset.univ.sup fun i => columnProgramTime U i j w 0 H J
+        let kernel := cleanupTime d H total push (steps 0) largest
+        let rate := (1+6*total*push)*(forward+(d+1)*columnPayloadRate U (d+1) w)
         let common := size d+3*A+34+(d+1)*(d+1)*(4*H+4)
         let live := prepTime + 6 + (1+kernel)
         let pad := 4*(d+1)*(d+1)+1
@@ -810,7 +850,7 @@ theorem preparedPass_exec {Q T r A : ℕ} (table : Matrix (Fin r) (Fin r) (ZMod 
   let prepareCounters : Pr P T Q prime U := .seq (LabelCounts.highCount unit atom (dir 7) (dir 2) (dir 3) (dir 5))
     (scanR (dir 7) (dir 2) (LabelCountBank.pushAll (rs.map Prod.fst)))
   refine ⟨.seq (.seq (.seq countBoxes buildDirectory) prepareCounters) (.seq (.seq maskWriter (.seq (.seq copyOne (.seq (.seq writeZero (.seq (.seq writeSeed generate) (bclear seed))) (bclear (generatorBank 9)))) (bclear (generatorBank 17)))) pass),?_⟩
-  intro w W baseData parent proj α α' idem adm inverse a tables inputs encoded unsigned padding hm hw hW H J cost stageCost rewindCost bound cleanBound volume prepTime
+  intro w W baseData parent proj α α' idem adm inverse a tables inputs encoded unsigned padding hm hw hW H J cost steps push forward volume prepTime
   subst table
   have liveSpec := fun j (_ : j < a.records) => baseData.physical_live e proj idem adm α α' inverse j
   intro word tail desc B rawUser raw positiveDescriptor beforeRowsSize rowsSize beforeHSize parentBlank inputState boxes box labelWidth prefixWidth atomWidth unitWidth parentQueue prefixLen dirFree counted ancestor directoryWord built projector padWord emptySlots originalState maskBlank maskScratch genBits maskedState oneBlank unitWord unitState zeroBlank zeroState seedBlank seeded tmpBlank weightBank generatorReady parentWidth width0 archiveEmpty genOutput init records shape fresh emptyInit anchorView neutral aradix afree acount awidth clean queueInit extCount savedEmpty tmpEmpty accEmpty pivotTail modWord widthWord one padded ticks scratchFree payloadBlank sharedFree parentWord privateFree output
@@ -1018,15 +1058,15 @@ theorem preparedPass_exec {Q T r A : ℕ} (table : Matrix (Fin r) (Fin r) (ZMod 
     runPass a parent rfl inputs encoded unsigned liveSpec padding hm hw hW desc B first init records shape radixInit
       scratchInit countInit fresh emptyInit neutral aradix afree acount awidth clean queueInit extCount savedEmpty tmpEmpty
       accEmpty pivotTail archive modWord widthWord one padded ticks scratchFree payloadBlank sharedFree parentWord privateFree
-  let kernel := cleanBound (Finset.univ.sup fun j : Fin (d+1) => Finset.univ.sup fun i => columnProgramTime U i j w 0 H J)
-  let slope := (d+1)*(1+6*total*Fast.Main.mnProgPush residual)
-  let rate := slope*columnPayloadRate U (d+1) w
+  let largest := Finset.univ.sup fun j : Fin (d+1) => Finset.univ.sup fun i => columnProgramTime U i j w 0 H J
+  let kernel := cleanupTime d H total push (steps 0) largest
+  let rate := (1+6*total*push)*(forward+(d+1)*columnPayloadRate U (d+1) w)
   let column := fun (i j : Fin (d+1)) => columnProgramTime U i j w W H J
-  let pivotCost := fun (p : Fin (d+1) → Fin (d+1)) => cleanBound (Finset.univ.sup fun i => column i (p i))
-  have linear (x y : ℕ) : cleanBound (x+y) = cleanBound x + slope*y :=
-    cleanupColumn_add d H ((List.finRange n).map cost).sum total (Fast.Main.mnProgPush residual) x y
+  let pivotCost := fun (p : Fin (d+1) → Fin (d+1)) => cleanupTime d H total push (steps W) (Finset.univ.sup fun i => column i (p i))
+  have schedule := exchangeScheduleBound U (fun a => (j a).val) (fun a => (i a).val) k t width w W H J (List.finRange n)
   have scanTotal := physicalScanTime_le (A := A) (H := H) desc B a.records shape records a.table inputs pivotCost
-    kernel rate prepTime l rankPos (columnPayloadBound U d w W H J cleanBound slope linear) time
+    kernel rate prepTime l rankPos (fun p => cleanupTime_le d H total push _ _ _ _ _ _ volume schedule
+      (columnPayloadBound U d w W H J p)) time
   have prep := residualPreparation_le desc r (d+1) w B prefixWidth H rankPos
     (records ▸ parentSize ▸ rowCount)
   have setupBound := Nat.add_le_add (Nat.add_le_add (Nat.add_le_add parentBound dirBound) initBound)

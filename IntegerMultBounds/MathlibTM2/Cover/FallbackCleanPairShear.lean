@@ -131,6 +131,19 @@ noncomputable def cleanChildShearTime [Fintype P] {m : ℕ} (body : P → Pr P T
   let push := max (Fast.Main.mnPushC body) (Fast.Main.mnProgPush (childShear (P := P) (A := A) (U := U) b j i k t negative bank))
   4*childWork.length+1+(1+6*childWork.length*push)*limit
 
+/-- Fetching the parent coefficient costs the same at every payload volume. -/
+theorem cleanChildShearTime_eq_setup_add_volume [Fintype P] {m : ℕ}
+    (body : P → Pr P T 217 A U) (bank : Fin 36 ↪ Fin T) (b j i : ℕ)
+    (k t : Fin m) (negative : Bool) (w W H J : ℕ) :
+    let push := max (Fast.Main.mnPushC body) (Fast.Main.mnProgPush
+      (childShear (P := P) (A := A) (U := U) b j i k t negative bank))
+    cleanChildShearTime body bank b j i k t negative w W H J =
+      cleanChildShearTime body bank b j i k t negative w 0 H J +
+        ((1+6*childWork.length*push)*9426)*((b^(w+1))^m*W) := by
+  unfold cleanChildShearTime
+  rw [weightedShearTime_eq_setup_add_volume k t (b^(w+1)) W H J]
+  simp only [Nat.add_assoc, Nat.mul_add, Nat.mul_assoc]
+
 theorem cleanChildShear_exec [Fintype P] {n m : ℕ} (k t : Fin m) (hk : k < t) (negative : Bool) (body : P → Pr P T 217 A U) (bank : Fin 36 ↪ Fin T)
     (parent : Fin n → ZMod M) (j : Fin n) (inv : ZMod M) (reciprocal : parent j * inv = 1)
     (pivot : Fin d → ZMod M) (i : Fin d) (unit : IsUnit (pivot i)) (hb : b.Prime)
