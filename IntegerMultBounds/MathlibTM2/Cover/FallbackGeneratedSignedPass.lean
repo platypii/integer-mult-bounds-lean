@@ -948,6 +948,103 @@ def placedDirectory (work : Fin 12 ↪ Fin K) (shared : Fin 3 ↪ Fin K)
     · exact False.elim (apart _ _ h.symm)
     · exact congrArg Sum.inr (shared.injective h)⟩
 
+/-- Attach the three shared slots to existing caller tapes. Every other slot
+stays in the private prefix, disjoint from the entire caller bank. -/
+def callerPlacement {n : ℕ} (slot : Fin 3 ↪ Fin n) (port : Fin 3 ↪ Fin K) :
+    Fin n ↪ Fin (n+K) := by
+  let base := Fin.castAddEmb K (n := n)
+  let target := port.trans (Fin.natAddEmb n)
+  exact ((base.trans (Equiv.swap (base (slot 0)) (target 0)).toEmbedding).trans
+    (Equiv.swap (base (slot 1)) (target 1)).toEmbedding).trans
+    (Equiv.swap (base (slot 2)) (target 2)).toEmbedding
+
+omit [M8.Machine.Net] in
+theorem callerPlacement_spec {n : ℕ} (slot : Fin 3 ↪ Fin n) (port : Fin 3 ↪ Fin K) :
+    (∀ i, callerPlacement slot port (slot i) = Fin.natAdd n (port i)) ∧
+    (∀ j, (∀ i, j ≠ slot i) → callerPlacement slot port j = Fin.castAdd K j) := by
+  have sep (i : Fin n) (j : Fin K) : Fin.castAdd K i ≠ Fin.natAdd n j := by
+    intro h
+    have eq := congrArg Fin.val h
+    simp at eq
+    omega
+  have move (i : Fin n) (k : Fin 3) (h : i ≠ slot k) :
+      Equiv.swap (Fin.castAdd K (slot k)) (Fin.natAdd n (port k)) (Fin.castAdd K i) = Fin.castAdd K i :=
+    Equiv.swap_apply_of_ne_of_ne ((Fin.castAddEmb K).injective.ne h) (sep i (port k))
+  have keep (i j : Fin 3) (h : i ≠ j) :
+      Equiv.swap (Fin.castAdd K (slot j)) (Fin.natAdd n (port j)) (Fin.natAdd n (port i)) = Fin.natAdd n (port i) :=
+    Equiv.swap_apply_of_ne_of_ne (sep (slot j) (port i)).symm ((Fin.natAddEmb n).injective.ne (port.injective.ne h))
+  constructor
+  · intro i
+    fin_cases i <;>
+      simp [callerPlacement,Equiv.swap_apply_left,move,keep,slot.injective.ne]
+  · intro j disjoint
+    simp [callerPlacement,move _ _ (disjoint _)]
+
+/-- Archive, parent counter and payload slots of the signed pass, in that order. -/
+noncomputable def signedPassSlots (r : ℕ) :
+    Fin 3 ↪ Fin ((36+2*r+1+(conjugationDepth r+1)*13)+17) := by
+  let size := 36+2*r+1+(conjugationDepth r+1)*13
+  let archive : Fin (size+17) := ⟨36+2*r,by dsimp [size]; omega⟩
+  let parent : Fin (size+17) := ⟨size+15,by omega⟩
+  let payload : Fin (size+17) := ⟨size+16,by omega⟩
+  refine ⟨![archive,parent,payload],?_⟩
+  intro i j eq
+  have ap : archive ≠ parent := fun h => by
+    have pos := congrArg Fin.val h
+    change 36+2*r = size+15 at pos
+    dsimp [size] at pos
+    omega
+  have aq : archive ≠ payload := fun h => by
+    have pos := congrArg Fin.val h
+    change 36+2*r = size+16 at pos
+    dsimp [size] at pos
+    omega
+  have pq : parent ≠ payload := fun h => by
+    have pos := congrArg Fin.val h
+    change size+15 = size+16 at pos
+    omega
+  fin_cases i <;> fin_cases j <;> first | rfl | exact (ap eq).elim | exact (ap eq.symm).elim | exact (aq eq).elim | exact (aq eq.symm).elim | exact (pq eq).elim | exact (pq eq.symm).elim
+
+omit [M8.Machine.Net] in
+theorem signedPassPlacement (r : ℕ) (port : Fin 3 ↪ Fin K) :
+    let size := 36+2*r+1+(conjugationDepth r+1)*13
+    let joint := callerPlacement (signedPassSlots r) port
+    let caller := QueueLayout.block (n := 2) (size+15) (by omega) joint
+    joint ⟨36+2*r,by omega⟩ = Fin.natAdd (size+17) (port 0) ∧
+    caller 0 = Fin.natAdd (size+17) (port 1) ∧ caller 1 = Fin.natAdd (size+17) (port 2) ∧
+    ∀ j, (∀ i, j ≠ signedPassSlots r i) → joint j = Fin.castAdd K j := by
+  intro size joint caller
+  obtain ⟨shared,privateSlots⟩ := callerPlacement_spec (signedPassSlots r) port
+  refine ⟨shared 0,?_,?_,privateSlots⟩
+  · exact shared 1
+  · exact shared 2
+
+def directoryShared (bank : Fin 18 ↪ Fin K) (parent : Fin K) (apart : ∀ i, bank i ≠ parent) :
+    Fin 3 ↪ Fin K :=
+  ⟨![bank 12,parent,bank 2],by
+    intro i j h
+    fin_cases i <;> fin_cases j <;> simp_all [Matrix.cons_val,bank.injective.eq_iff,
+      (apart 12).symm,(apart 2).symm]⟩
+
+omit [M8.Machine.Net] in
+/-- The generator prefix, directory scratch, and the two caller endpoints share one
+embedding. Its block boundaries give all directory separation facts. -/
+theorem directoryPlacement {size : ℕ} (joint : Fin (size+17) ↪ Fin K)
+    (bank : Fin 18 ↪ Fin size) (parents payload : Fin K)
+    (parentSlot : QueueLayout.block (n := 2) (size+15) (by omega) joint 0 = parents)
+    (payloadSlot : QueueLayout.block (n := 2) (size+15) (by omega) joint 1 = payload) :
+    let host := QueueLayout.block (n := size) 0 (by omega) joint
+    let work := QueueLayout.block (n := 12) (size+3) (by omega) joint
+    (∀ i, host (bank i) ≠ parents) ∧
+      (∀ i, work i ≠ host (bank 12) ∧ work i ≠ parents ∧ work i ≠ host (bank 2) ∧ work i ≠ payload) := by
+  intro host work
+  let caller := QueueLayout.block (n := 2) (size+15) (by omega) joint
+  have hostCaller : ∀ i j, host i ≠ caller j := QueueLayout.block_ne _ _ joint (by omega)
+  have hostWork : ∀ i j, host i ≠ work j := QueueLayout.block_ne _ _ joint (by omega)
+  have workCaller : ∀ i j, work i ≠ caller j := QueueLayout.block_ne _ _ joint (by omega)
+  exact ⟨fun i => parentSlot ▸ hostCaller (bank i) 0, fun i =>
+    ⟨(hostWork _ _).symm,parentSlot ▸ workCaller i 0,(hostWork _ _).symm,payloadSlot ▸ workCaller i 1⟩⟩
+
 theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size d+T) ↪ Fin K)
     (ports : Fin (N+2) ↪ Fin K) (ext : Fin 6 ↪ Fin K) (off : ∀ i k, ports i ≠ ext k)
     (banks : ∀ i k, anchor i ≠ ports k) (external : ∀ i k, k ≠ 2 → anchor i ≠ ext k)
@@ -965,11 +1062,9 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     let swaps := (signedPassWork_le_setup_add_volume U d).choose
     let shears := (signedPassWork_le_setup_add_volume U d).choose_spec.choose
     let rate := swaps * swapVolumeRate w + shears
-    ∃ pass, ∀ (placement : Fin ((36+2*r+1+(conjugationDepth r+1)*13)+3) ↪ Fin K),
+    ∃ pass, ∀ (joint : Fin ((36+2*r+1+(conjugationDepth r+1)*13)+17) ↪ Fin K),
     let size := 36+2*r+1+(conjugationDepth r+1)*13
-    let archiveSlot : Fin (size+3) := ⟨36+2*r, by dsimp [size]; omega⟩
-    let registers := placement.trans (Equiv.swap (placement archiveSlot)
-      (ports (archivePorts 0 (columnBank 34)))).toEmbedding
+    let registers := (Fin.castLEEmb (show size+3 ≤ size+17 by omega)).trans joint
     let host := QueueLayout.block (n := size) 0 (by dsimp [size]; omega) registers
     let control := QueueLayout.block (n := 3) size (Nat.le_refl _) registers
     let mask := control 0
@@ -994,15 +1089,19 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     ∀ (maskLayout : (parentsC :: savedC :: (slots cs ++ [mask])).Nodup),
     ∀ (retained : ∀ k ∈ parentsC :: savedC :: slots cs, k ≠ bank 2 ∧ k ≠ archive),
     (∀ i, anchor i ≠ bank 2) → (∀ i, ports i ≠ bank 2) → (∀ i, ext i ≠ bank 2) →
-    ∃ writeMask : Pr P K Q prime U, ∀ (work : Fin 12 ↪ Fin K)
-      (widthOff : bank 12 ≠ parentsC),
-    let sharedPorts : Fin 3 ↪ Fin K := ⟨![bank 12,parentsC,bank 2],by
-      have parentOff := (retained parentsC (by simp)).1
-      have parentWidth := widthOff.symm
-      have queueParent := parentOff.symm
-      intro i j h
-      fin_cases i <;> fin_cases j <;> simp_all [Matrix.cons_val,bank.injective.eq_iff]⟩
-    ∀ (apart : ∀ i j, work i ≠ sharedPorts j), (∀ i, work i ≠ ext 2) →
+    ∃ writeMask : Pr P K Q prime U,
+    archive = ports (archivePorts 0 (columnBank 34)) →
+    let work := QueueLayout.block (n := 12) (size+3) (by omega) joint
+    let caller := QueueLayout.block (n := 2) (size+15) (by omega) joint
+    ∀ (parentSlot : caller 0 = parentsC) (payloadSlot : caller 1 = ext 2),
+    have placed := directoryPlacement joint (QueueLayout.block (n := 18) 0 (by omega) (Function.Embedding.refl (Fin size)))
+      parentsC (ext 2) parentSlot payloadSlot
+    let sharedPorts : Fin 3 ↪ Fin K := directoryShared bank parentsC placed.1
+    have apart : ∀ i j, work i ≠ sharedPorts j := fun i j => by
+      fin_cases j
+      · exact (placed.2 i).1
+      · exact (placed.2 i).2.1
+      · exact (placed.2 i).2.2.1
     let dir := placedDirectory work sharedPorts apart
     bank 12 ∉ slots cs →
     let atom := bank 1
@@ -1066,11 +1165,11 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     capacity e proj idempotent admissible α α' inverse body rs hk parents saved layout cap cs sizeC
     parentsC savedC maskRegs pivotRegs separate
   refine ⟨pass,?_⟩
-  intro placement size archiveSlot registers host control mask seed tmp bank recip counters clock count pool coeff archive archiveOff
+  intro joint size registers host control mask seed tmp bank recip counters clock count pool coeff archive archiveOff
     coeffOff maskLayout retained anchorDirectory portDirectory extDirectory
   obtain ⟨writeMask,write⟩ := record_writes (body := body) r cs sizeC mask parentsC savedC maskLayout
   refine ⟨writeMask,?_⟩
-  intro work widthOff sharedPorts apartDir payloadApart dir parentWidthOff atom one atomOff oneOff highLayout highSlots br rows bh dimensions word parentTail v B base payload u raw positiveDescriptor beforeRows rowsSize beforeH parentBlank source n box parentWidth digits ancestor tail entries counted builtState input atomWord oneWidth parentsWord wordWidth scratch counterEmpty savedBlank maskBlank bits selected oneBlank unitWord masked zeroBlank initial padWord S queueInputs scan generate a shape records hW D
+  intro sharedArchive work caller parentSlot payloadSlot placed sharedPorts apartDir dir parentWidthOff atom one atomOff oneOff highLayout highSlots br rows bh dimensions word parentTail v B base payload u raw positiveDescriptor beforeRows rowsSize beforeH parentBlank source n box parentWidth digits ancestor tail entries counted builtState input atomWord oneWidth parentsWord wordWidth scratch counterEmpty savedBlank maskBlank bits selected oneBlank unitWord masked zeroBlank initial padWord S queueInputs scan generate a shape records hW D
     neutral radix free count width unsigned clean start hm hw fresh maskEmpty encoded padding
   let units := ∏ i : Fin r, (prime^r-prime^i.val)
   let classes := prime^(r*r)
@@ -1086,12 +1185,6 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
   let active := LabelStock.live r (w+1) 1
   obtain ⟨seedBlank,tmpBlank,weightBank,queueReady,empty,output⟩ := queueInputs
   have blank := queueReady.1 4 (by decide)
-  have sharedArchive : archive = ports (archivePorts 0 (columnBank 34)) := by
-    change Equiv.swap (placement archiveSlot) _ (placement _) = _
-    have slot : (⟨0+(36+2*r), by dsimp [size]; omega⟩ : Fin (size+3)) = archiveSlot :=
-      Fin.ext (Nat.zero_add _)
-    exact (congrArg (fun k => Equiv.swap (placement archiveSlot) _ (placement k)) slot).trans
-      (Equiv.swap_apply_left ..)
   have apart (i j) : host i ≠ control j := QueueLayout.block_ne _ _ registers (by omega) i j
   have copyPorts (k : Fin 18) (hk : k ≠ 4) : [bank k,seed,bank 4,tmp].Nodup := by
     simp [seed,tmp,bank.injective.eq_iff,control.injective.eq_iff,hk,
@@ -1106,7 +1199,7 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
   have payloadOff (i : Fin 15) (hi : i ∈ ([0,4,7,10,11,12] : List (Fin 15))) : ext 2 ≠ dir i := by
     obtain ⟨k,hk⟩ := (by decide : ∀ i ∈ ([0,4,7,10,11,12] : List (Fin 15)),
       ∃ k, directorySlots i = Sum.inl k) i hi
-    exact (show dir i = work k from congrArg (Sum.elim work sharedPorts) hk) ▸ (payloadApart k).symm
+    exact (show dir i = work k from congrArg (Sum.elim work sharedPorts) hk) ▸ (placed.2 k).2.2.2.symm
   have payloadCounter : ext 2 ∉ cs.map Prod.fst := by
     intro mem
     obtain ⟨pair,hp,eq⟩ := List.mem_map.mp mem
