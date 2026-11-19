@@ -475,6 +475,23 @@ theorem physicalPayloadBill (r copies volume common live pad records : ℕ)
   ring
 
 omit [M8.Machine.Net] in
+theorem anchorPayloadCost (d A w W H records : ℕ) :
+    let volume := (prime^(w+1))^(d+1)*W
+    let anchor := max (Record.cost d A 1 (w+1) W false) (Record.cost d A 1 (w+1) W true) + 2
+    let common := anchor + 4 + ((d+1)*(d+1)*(4*H+4)+1) + 4
+    records*common + 8*(records*volume) =
+      records*(size d+3*A+34+(d+1)*(d+1)*(4*H+4)) + (anchorVolumeRate d A+4)*(records*volume) := by
+  intro volume anchor common
+  unfold common anchor Record.cost anchorVolumeRate
+  simp only [ActualAffineScaling.modulus,Nat.mul_one]
+  dsimp only [volume]
+  rcases le_total (AtomSegment.chainConst (anchorOps d false)) (AtomSegment.chainConst (anchorOps d true)) with h | h
+  · rw [max_eq_right h,max_eq_right (by gcongr)]
+    ring
+  · rw [max_eq_left h,max_eq_left (by gcongr)]
+    ring
+
+omit [M8.Machine.Net] in
 theorem physicalScanTime_le {r w W A H : ℕ} (desc : RecursiveInterchangeLayout.Descriptor) (B numRecords : ℕ)
     (shape : desc.beforeH = B*prime^(r*((w+1)*r))) (records : numRecords = LabelMask.records desc)
     (table : Matrix (Fin r) (Fin r) (ZMod prime) → Matrix (Fin (d+1)) (Fin (d+1)) (ZMod prime))
@@ -491,13 +508,12 @@ theorem physicalScanTime_le {r w W A H : ℕ} (desc : RecursiveInterchangeLayout
       (2*(numRecords*(ActualAffineScaling.modulus (w+1)^((d+1)*1)*W))+2))) + 2*(count*traversal+4) +
       (((List.range numRecords).map fun j => stepTime (LabelStock.residue r (w+1) 1 j)+4).sum+2+(2*(numRecords*volume)+2)) →
     let units := ∏ i : Fin r, (prime^r-prime^i.val)
-    let anchor := max (Record.cost d A 1 (w+1) W false) (Record.cost d A 1 (w+1) W true) + 2
-    let common := anchor + 4 + ((d+1)*(d+1)*(4*H+4)+1) + 4
+    let common := size d+3*A+34+(d+1)*(d+1)*(4*H+4)
     let live := prepTime + 6 + (1+kernel)
     let pad := 4*(d+1)*(d+1)+1
     let active := count*(prime^w)^(r*r)*units
     let payload := numRecords*volume
-    l ≤ 3*count*traversal + (numRecords*common + active*live + (numRecords-active)*pad + 8*payload +
+    l ≤ 3*count*traversal + (numRecords*common + active*live + (numRecords-active)*pad + (anchorVolumeRate d A+4)*payload +
       6*min (active*volume) (((prime-1)*payload)/prime))+21 := by
   intro volume stepTime count traversal time
   let copies := (desc.beforeRows*desc.rows*B)*(prime^w)^(r*r)
@@ -536,7 +552,14 @@ theorem physicalScanTime_le {r w W A H : ℕ} (desc : RecursiveInterchangeLayout
   have liveEq : prepTime+((6*volume+6)+(1+kernel)) = live+6*volume := by unfold live; omega
   rw [commonEq,liveEq,Nat.add_assoc (3*_*_) (_*_) (4*_),
     physicalPayloadBill r copies volume common live pad numRecords rankPos rowsEq] at scanTotal
-  exact scanTotal
+  have movement := anchorPayloadCost d A w W H numRecords
+  change numRecords*common + 8*(numRecords*volume) = _ at movement
+  let active := copies*(∏ i : Fin r, (prime^r-prime^i.val))
+  apply scanTotal.trans_eq
+  calc
+    _ = 3*count*traversal + ((numRecords*common + 8*(numRecords*volume)) +
+        active*live + (numRecords-active)*pad + 6*min (active*volume) (((prime-1)*(numRecords*volume))/prime)) + 21 := by dsimp only [active,copies,count]; ac_rfl
+    _ = _ := by rw [movement]; dsimp only [active,copies,count,volume,live,pad]; ac_rfl
 
 /-- One program generates the physical matrix archive, signs the payloads and applies the residual pass. -/
 theorem preparedPass_exec {Q T r A : ℕ} (table : Matrix (Fin r) (Fin r) (ZMod prime) → Matrix (Fin (d+1)) (Fin (d+1)) (ZMod prime))
@@ -723,13 +746,12 @@ theorem preparedPass_exec {Q T r A : ℕ} (table : Matrix (Fin r) (Fin r) (ZMod 
         let active := boxes*(prime^w)^(r*r)*units
         let payload := a.records*volume
         let kernel := Finset.univ.sup (fun j : Fin (d+1) => cleanBound (Finset.univ.sup fun i => columnProgramTime U i j w W H J))
-        let anchor := max (Record.cost d A 1 (w+1) W false) (Record.cost d A 1 (w+1) W true) + 2
-        let common := anchor + 4 + ((d+1)*(d+1)*(4*H+4)+1) + 4
+        let common := size d+3*A+34+(d+1)*(d+1)*(4*H+4)
         let live := prepTime + 6 + (1+kernel)
         let pad := 4*(d+1)*(d+1)+1
         l ≤ passPreparationCost desc r (d+1) w B prefixWidth H +
           (3*boxes*(LabelTraversal.time (prime^w) (r*r) 1+5) +
-            (a.records*common + active*live + (a.records-active)*pad + 8*payload +
+            (a.records*common + active*live + (a.records-active)*pad + (anchorVolumeRate d A+4)*payload +
               6*min (active*volume) (((prime-1)*payload)/prime))+21) ∧
         Exec body prog (mk v raw) l (mk z F) := by
   intro rows reads n k j t i width total ports shared bank program spare off reverseHost reverseBank active pop rewind residual privateBank host ext outside parentTape parentOff parentExt body scanPorts tapes src acc pivot rs sizeRs parents scratch maskRegs pivotRegs regs anchor ars ap asaved acap asize alayout banks external sharedSrc anchorParent counters registers e generatorSize generatorHost control generatorMask seed generatorTmp generatorBank recip generatorCounters clock generatorCount pool coeff generatorArchive archiveOff coeffOff scan aligned maskOffParent directoryOffParent genMaskRegs dir dirOut dirSrcParent dirOutParent maskOffDir parentPort parentArchive countParent atom unit atomOff unitApart highLayout highSlots traversalOff parentOutside highParent beforeRows rowsTape beforeH dimensions countOffParent
