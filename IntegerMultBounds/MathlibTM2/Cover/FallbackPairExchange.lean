@@ -13,10 +13,42 @@ local notation "N" => rowSwapBlock.tapes+35
 local notation "M" => prime^(w+1)
 local instance : NeZero M := ⟨(pow_pos prime_prime.pos _).ne'⟩
 
+def signedExchange {T Q A : ℕ} (shear : Bool → Pr P T Q A U) (swap : Pr P T Q A U) : Pr P T Q A U :=
+  .seq (shear false) (.seq swap (.seq (shear true) (.seq swap (shear false))))
+
+/-- Three shears and two coordinate swaps exchange a pair with reciprocal weights and one sign. -/
+theorem signedExchange_exec {T Q A : ℕ} {R X : Type*} [CommRing R] (body : P → Pr P T Q A U)
+    (k t : Fin d) (hk : k ≠ t) (weight inv : R) (mulInv : weight * inv = 1)
+    (shearProg : Bool → Pr P T Q A U) (swapProg : Pr P T Q A U)
+    (ready : (X → Fin d → R) → Stacks T A → Prop) (shearCost : Bool → ℕ) (swapCost : ℕ)
+    (shear : ∀ neg y (u : HS T Q A U) D, ready y D →
+      ∃ z F n, z.user = u.user ∧ n ≤ shearCost neg ∧ Exec body (shearProg neg) (mk u D) n (mk z F) ∧
+        ready (fun x => Function.update (y x) t (y x t+(if neg then -inv else weight)*y x k)) F)
+    (swap : ∀ y (u : HS T Q A U) D, ready y D →
+      ∃ z F n, z.user = u.user ∧ n ≤ swapCost ∧ Exec body swapProg (mk u D) n (mk z F) ∧
+        ready (fun x => y x ∘ Equiv.swap k t) F)
+    (addr : X → Fin d → R) (v : HS T Q A U) (S : Stacks T A) (before : ready addr S) :
+    ∃ z F n, z.user = v.user ∧ n ≤ 2*shearCost false + shearCost true + 2*swapCost ∧
+      Exec body (signedExchange shearProg swapProg) (mk v S) n (mk z F) ∧
+      ready (fun x => Function.update (Function.update (addr x) k (-inv*addr x t)) t (weight*addr x k)) F := by
+  have invMul : inv * weight = 1 := (mul_comm ..).trans mulInv
+  obtain ⟨u,D,l,hu,hl,r₁,h₁⟩ := shear false addr v S before
+  obtain ⟨y,E,m,hy,hm',r₂,h₂⟩ := swap _ u D h₁
+  obtain ⟨z,F,n,hz,hn,r₃,h₃⟩ := shear true _ y E h₂
+  obtain ⟨u',G,p,hu',hp,r₄,h₄⟩ := swap _ z F h₃
+  obtain ⟨z',K,s,hz',hs,r₅,h₅⟩ := shear false _ u' G h₄
+  refine ⟨z',K,_,hz'.trans (hu'.trans (hz.trans (hy.trans hu))),?_,Exec.seq r₁ (Exec.seq r₂ (Exec.seq r₃ (Exec.seq r₄ r₅))),?_⟩
+  · omega
+  · convert h₅ using 2
+    funext j
+    by_cases hit : j = t <;> by_cases control : j = k <;>
+      simp_all [Function.comp_def,Equiv.swap_apply_of_ne_of_ne,hk,mul_add,← mul_assoc,
+        invMul,mulInv]
+
 noncomputable def pairExchange (i k t : Fin d) (useOne : Bool := false) : Pr P (N+1) columnCapacity prime U :=
   let shear := fun neg => placedPairShear columnBank (le_max_left ..) prime i k t false neg useOne
   let swap := columnSwapProgram d k t
-  .seq (shear false) (.seq swap (.seq (shear true) (.seq swap (shear false))))
+  signedExchange shear swap
 
 theorem pairExchange_exec (i k t : Fin d) (hk : k < t) (a : Fin d → ZMod M) (unit : IsUnit (a i))
     (H J : ℕ) (hm : M < 2^H) (hw : W < 2^J) (hW : 0 < W)
@@ -56,17 +88,7 @@ theorem pairExchange_exec (i k t : Fin d) (hk : k < t) (a : Fin d → ZMod M) (u
       body u D (Matrix.diagonal a) tail dest q original y ok.1 ok.2.1
     exact ⟨z,F,n,hz,hn,run,next,clean,stream.trans ok.2.2⟩
   have weightUnit : IsUnit weight := by cases useOne <;> simp_all [weight]
-  obtain ⟨u,D,l,hu,hl,r₁,h₁⟩ := shear false addr v S before
-  obtain ⟨y,E,m,hy,hm',r₂,h₂⟩ := swap _ u D h₁
-  obtain ⟨z,F,n,hz,hn,r₃,h₃⟩ := shear true _ y E h₂
-  obtain ⟨u',G,p,hu',hp,r₄,h₄⟩ := swap _ z F h₃
-  obtain ⟨z',K,s,hz',hs,r₅,h₅⟩ := shear false _ u' G h₄
-  refine ⟨z',K,_,hz'.trans (hu'.trans (hz.trans (hy.trans hu))),?_,Exec.seq r₁ (Exec.seq r₂ (Exec.seq r₃ (Exec.seq r₄ r₅))),?_⟩
-  · omega
-  · convert h₅ using 2
-    funext j
-    by_cases hit : j = t <;> by_cases control : j = k <;>
-      simp_all [Function.comp_def,Equiv.swap_apply_of_ne_of_ne,hk.ne,mul_add,← mul_assoc,
-        Ring.inverse_mul_cancel _ weightUnit,Ring.mul_inverse_cancel _ weightUnit]
+  exact signedExchange_exec body k t hk.ne weight (Ring.inverse weight) (Ring.mul_inverse_cancel _ weightUnit)
+    _ _ ready shearCost swapCost shear swap addr v S before
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
