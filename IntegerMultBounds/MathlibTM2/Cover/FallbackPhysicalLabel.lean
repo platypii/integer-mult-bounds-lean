@@ -1,5 +1,6 @@
 module
 
+public import Mathlib.LinearAlgebra.Matrix.GeneralLinearGroup.Card
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackClass
 
 /-! Recover the projector and its residue-table entry at a physical record index. -/
@@ -67,6 +68,16 @@ theorem liveLabelCount (hw : 0 < w) :
   calc
     _ = live.card := by simpa [live,box] using counted.symm
     _ = _ := by simpa only [Nat.card_eq_fintype_card,Fintype.card_coe] using Nat.card_congr e
+
+/-- The finite-field factor counts independent choices for successive columns. -/
+theorem liveClasses_eq_product (m : ℕ) :
+    LabelPadding.liveClasses m = ∏ i : Fin m, (prime^m - prime^i.val) := by
+  let : Fact prime.Prime := ⟨prime_prime⟩
+  have units := LabelPadding.unit_count (m := m) 0
+  simp only [pow_zero,one_pow,mul_one] at units
+  rw [← units,show Nat.card (LabelPadding.Label m (0+1))ˣ = Nat.card (Matrix (Fin m) (Fin m) (ZMod prime))ˣ from
+    congrArg (fun q => Nat.card (Matrix (Fin m) (Fin m) (ZMod q))ˣ) (pow_one prime)]
+  simpa only [ZMod.card] using Matrix.card_GL_field (𝔽 := ZMod prime) m
 
 theorem physicalProjector_spec (hw : 0 < w) (j : ℕ) (live : LabelStock.live m w 1 j = true)
     (e : (Fin m ⊕ Fin m) ≃ Fin n) (P : Matrix (Fin m) (Fin m) ℚ) (hp : P*P = P)

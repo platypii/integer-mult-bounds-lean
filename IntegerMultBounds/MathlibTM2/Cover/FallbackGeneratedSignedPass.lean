@@ -190,7 +190,7 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
         (numerator (matrixInput false) (matrixInput true) ij.1 ij.2))
       (RingFormula.time base.H (readTime base.H) (determinant (matrixInput (m := r) false)))
     let generate : Pr P K Q prime U := seededQueueBody r d e bank recip clock count pool coeff coeffOff scan mask seed tmp
-    let liveLabels := Nat.card (LabelPadding.Label r (w+1))ˣ
+    let liveLabels := (∏ i : Fin r, (prime^r-prime^i.val)) * (prime^w)^(r*r)
     let setupCost := (n*liveLabels) * (livePrice + 4*((d+1)*(d+1)*base.H)) +
         (n*(box-liveLabels)) * (10*((d+1)*(d+1)*base.H)+6) +
         base.records * (4*width+4+(r*r*(4*(w+1)+4)+1)+6) + 4
@@ -377,7 +377,9 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
   have liveCount := boxCount id
   have paddingCount := boxCount Bool.not
   change (List.range base.records).countP active = n*(List.range box).countP active at liveCount
-  have cardinality : (List.range box).countP active = liveLabels := liveLabelCount (by omega : 0 < w+1)
+  have cardinality : (List.range box).countP active = liveLabels := by
+    simpa only [liveLabels,liveClasses_eq_product] using
+      (liveLabelCount (m := r) (by omega : 0 < w+1)).trans (LabelPadding.unit_count w)
   have partition := List.length_eq_countP_add_countP active (l := List.range box)
   simp only [List.length_range,decide_not,Bool.decide_eq_true] at partition
   have remaining : box-liveLabels = (List.range box).countP (fun j => !active j) := by
