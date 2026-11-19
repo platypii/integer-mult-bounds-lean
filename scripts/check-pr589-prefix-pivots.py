@@ -331,6 +331,36 @@ def minimum_layout_changes(boundary, transitions, copy_cost):
         flow += 1
 
 
+def earliest_gate_frames(word, ranks, labels, shifted):
+    """Propagate the smallest rational subspaces compatible with monotone MOVEs."""
+    current = [frozenset(labels[f]) for f in word["start"]]
+
+    @lru_cache(None)
+    def rank(lines):
+        columns = pivots(shifted[j] for j in lines)
+        assert columns == set(range(len(columns)))
+        return len(columns)
+
+    reductions = Counter()
+    for section in "DABC":
+        if section == "B":
+            # Preserve the original COPY windows and their frame-zero targets.
+            for k, reg in enumerate(word["ret"]):
+                frame = labels[510 + k]
+                assert current[reg] <= frame
+                current[reg] = frozenset(frame)
+            assert all(not lines for lines in current[111:222])
+        for f, target, sources in word[section]:
+            regs = {target, *sources}
+            lines = frozenset().union(*(current[i] for i in regs))
+            assert lines <= labels[f]
+            reductions[ranks[f] - rank(lines)] += 1
+            for i in regs:
+                current[i] = lines
+    assert all(lines <= labels[f] for lines, f in zip(current, word["final"], strict=True))
+    return reductions
+
+
 def main():
     raw = WORD.read_bytes()
     assert hashlib.sha256(raw).hexdigest() == SHA256
@@ -365,6 +395,9 @@ def main():
         ranks.append(rank)
 
     labels = [set(frame) for frame in word["frames"]]
+    reductions = earliest_gate_frames(word, ranks, labels, shifted)
+    assert reductions == {0: 5421, 1: 51}
+    print("Minimal monotone gate frames lower 51 gate ranks by one; all retain prefix pivots.")
     refs = word["start"].copy()
     moves = 0
     port_moves = [[] for _ in range(222)]
