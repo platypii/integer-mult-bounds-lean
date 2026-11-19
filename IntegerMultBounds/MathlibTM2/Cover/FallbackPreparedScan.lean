@@ -44,14 +44,6 @@ theorem unitCopy_exec {T Q A : ℕ} (body : P → Pr P T Q A U) (bank : Fin 18 �
     (by simp [srcOff,tmpOff,apart]) v S work saved
   exact ⟨u,hu,by simpa only [source,dest,List.append_nil] using run⟩
 
-noncomputable def exchangeTime (U : Type) {m : ℕ} (j i : ℕ) (k t : Fin m)
-    (width w W H J : ℕ) : ℕ :=
-  let shear := fun neg => 1+cleanChildShearTime (P := Empty) (U := U) (A := prime) Empty.elim
-    (Function.Embedding.refl _) prime j i k t neg w W H J
-  let swap := 1+completeSwapTime (P := Empty) (U := U) Empty.elim m k t w W H J
-  1+(1+(2*shear false+shear true+2*swap)+((10*J+12)+(21*(w+1)+12)+1+
-    (1+(AtomSegment.chainConst (fieldSignOps k true)*((prime^(w+1))^m*W)*(width+5)+6))))
-
 theorem exchangeTime_le_setup_add_width_volume (U : Type) {m : ℕ} (j i : ℕ)
     (k t : Fin m) (width : ℕ) :
     ∃ swaps shears : ℕ, ∀ w W H J, exchangeTime U j i k t width w W H J ≤

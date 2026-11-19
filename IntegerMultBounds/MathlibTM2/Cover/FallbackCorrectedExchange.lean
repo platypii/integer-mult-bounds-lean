@@ -307,22 +307,27 @@ theorem pivotReads_action {R X : Type*} [CommRing R] (parent weights : Fin d →
             congrArg (applyPairs weights rs) action
       exact aux rows (addr x)
 
+noncomputable def exchangeTime (U : Type) {m : ℕ} (j i : ℕ) (k t : Fin m)
+    (width w W H J : ℕ) : ℕ :=
+  let shear := fun neg => 1+cleanChildShearTime (P := Empty) (U := U) (A := prime) Empty.elim
+    (Function.Embedding.refl _) prime j i k t neg w W H J
+  let swap := 1+completeSwapTime (P := Empty) (U := U) Empty.elim m k t w W H J
+  1+(1+(2*shear false+shear true+2*swap)+((10*J+12)+(21*(w+1)+12)+1+
+    (1+(AtomSegment.chainConst (fieldSignOps k true)*((prime^(w+1))^m*W)*(width+5)+6))))
+
 /-- Execute each weighted exchange in occurrence order using a common pivot and parent archive. -/
-theorem correctedSchedule_exec {m r n Q : ℕ} (k t : Fin n → Fin (d+1)) (lt : ∀ a, k a < t a)
+def CorrectedScheduleRuns {m r n Q : ℕ} (k t : Fin n → Fin (d+1))
     (capacity : columnCapacity ≤ Q) (signCapacity : ∀ a, (fieldSignProgram (k a) true).1 ≤ Q)
-    (parent : Fin m → ZMod M) (j : Fin n → Fin m) (inv : Fin n → ZMod M)
-    (reciprocal : ∀ a, parent (j a) * inv a = 1) (pivot : Fin r → ZMod M) (i : Fin n → Fin r)
-    (unit : ∀ a, IsUnit (pivot (i a))) (H J : ℕ) (hm : M < 2^H) (hw : W < 2^J) (hW : 0 < W)
+    (parent : Fin m → ZMod M) (j : Fin n → Fin m)
+    (pivot : Fin r → ZMod M) (i : Fin n → Fin r)
+    (H J : ℕ)
     (tail rest : List (Fin (prime+4))) (dest : ℤ → Fin 4) (q : ℤ)
-    (empty : ∀ z, q ≤ z → z < q+(M^(d+1)*W : ℕ) → dest z = blank)
-    (original : Fin (M^(d+1)*W) → ZMod 2) (addr : (Fin (d+1) → ZMod M) → Fin (d+1) → ZMod M) :
+    (original : Fin (M^(d+1)*W) → ZMod 2) (addr out : (Fin (d+1) → ZMod M) → Fin (d+1) → ZMod M)  : Prop :=
     let width := fun a => 22+fieldSignSlots (k a)
     let total := Fintype.card (Σ a, Fin (width a))
     let ports := Fin.castAddEmb (n := (N+1)+total) 1
     let shared := (Fin.castAddEmb (n := N+1) total).trans ports
     let bank := fun a => (exchangeBank (N+1) width a).trans ports
-    let move := fun (y : (Fin (d+1) → ZMod M) → Fin (d+1) → ZMod M) a x =>
-      exchangeAddress (k a) (t a) (inv a * Ring.inverse (pivot (i a))) (parent (j a)*pivot (i a)) (y x)
     let record := (List.ofFn fun h => binSyms (A := prime) H (pivot h).val).flatten ++ tail
     let weights := (List.ofFn fun h => binSyms (A := prime) H (parent h).val).flatten ++ rest
     let ready := fun y (D : Stacks (((N+1)+total)+1) prime) =>
@@ -336,19 +341,29 @@ theorem correctedSchedule_exec {m r n Q : ℕ} (k t : Fin n → Fin (d+1)) (lt :
         (.seq (statePlacedNormalized host capacity columnCapacity_pos Empty.elim (childExchange (j a).val (i a).val (k a) (t a)))
           (.seq (installFieldHeaders ((installerPorts _).trans sign))
             (placedFieldNeg (k a) ((signPorts _).trans sign) (signCapacity a))))
-    let cost := fun a =>
-      let shear := fun neg => 1+cleanChildShearTime (P := Empty) (U := U) (A := prime) Empty.elim
-        (Function.Embedding.refl _) prime (j a).val (i a).val (k a) (t a) neg w W H J
-      let swap := 1+completeSwapTime (P := Empty) (U := U) Empty.elim (d+1) (k a) (t a) w W H J
-      1+(1+(2*shear false+shear true+2*swap)+((10*J+12)+(21*(w+1)+12)+1+
-        (1+(AtomSegment.chainConst (fieldSignOps (k a) true)*(M^(d+1)*W)*(width a+5)+6))))
+    let cost := fun a => exchangeTime U (j a).val (i a).val (k a) (t a) (width a) w W H J
     ∀ (body : P → Pr P (((N+1)+total)+1) Q prime U) v S, ready addr S →
       (∀ h : Fin total, S.L (ports (Fin.natAdd (N+1) h)) = [] ∧ S.R (ports (Fin.natAdd (N+1) h)) = []) →
       ∃ z F l, z.user = v.user ∧ l ≤ ((List.finRange n).map cost).sum+1 ∧
         Exec body ((List.finRange n).foldr (fun a rest => .seq (program a) rest) (.act .done))
-          (mk v S) l (mk z F) ∧ ready ((List.finRange n).foldl move addr) F ∧
-          F.R (Fin.last ((N+1)+total)) = S.R (Fin.last ((N+1)+total)) := by
-  intro width total ports shared bank move record weights ready program cost body v S before aux
+          (mk v S) l (mk z F) ∧ ready out F ∧
+          F.R (Fin.last ((N+1)+total)) = S.R (Fin.last ((N+1)+total))
+
+theorem correctedSchedule_exec {m r n Q : ℕ} (k t : Fin n → Fin (d+1)) (lt : ∀ a, k a < t a)
+    (capacity : columnCapacity ≤ Q) (signCapacity : ∀ a, (fieldSignProgram (k a) true).1 ≤ Q)
+    (parent : Fin m → ZMod M) (j : Fin n → Fin m) (inv : Fin n → ZMod M)
+    (reciprocal : ∀ a, parent (j a) * inv a = 1) (pivot : Fin r → ZMod M) (i : Fin n → Fin r)
+    (unit : ∀ a, IsUnit (pivot (i a))) (H J : ℕ) (hm : M < 2^H) (hw : W < 2^J) (hW : 0 < W)
+    (tail rest : List (Fin (prime+4))) (dest : ℤ → Fin 4) (q : ℤ)
+    (empty : ∀ z, q ≤ z → z < q+(M^(d+1)*W : ℕ) → dest z = blank)
+    (original : Fin (M^(d+1)*W) → ZMod 2) (addr : (Fin (d+1) → ZMod M) → Fin (d+1) → ZMod M) :
+    let move := fun (y : (Fin (d+1) → ZMod M) → Fin (d+1) → ZMod M) a x =>
+      exchangeAddress (k a) (t a) (inv a * Ring.inverse (pivot (i a))) (parent (j a)*pivot (i a)) (y x)
+    CorrectedScheduleRuns (P := P) (U := U) k t capacity signCapacity parent j pivot i H J tail rest dest q original addr
+      ((List.finRange n).foldl move addr) := by
+  intro move
+  unfold CorrectedScheduleRuns
+  intro width total ports shared bank record weights ready program cost body v S before aux
   let scratch := fun a h => ∃ b, h = ports (Fin.natAdd (N+1) (exchangeScratch width a b))
   let used := fun a h => ∃ b, bank a b = h
   have apart : (List.finRange n).Pairwise fun i j => ∀ h, scratch j h → ¬ used i h := by
