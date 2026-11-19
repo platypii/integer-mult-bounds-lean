@@ -136,4 +136,61 @@ theorem reverseStages_exec (rows : Fin d → Fin d) (H J : ℕ)
     · rw [reverseStages,dite_eq_left (show n < d from hn)]
       exact Exec.seq col (Exec.seq drop run)
 
+/-- Remove both weight prefixes and run the complete reverse itinerary on its saved matrices. -/
+theorem weightedRewind_exec {r b : ℕ} (pivot : Fin r → ZMod M) (parent : Fin b → ZMod M)
+    (rows : Fin d → Fin d) (m : Matrix (Fin d) (Fin d) (ZMod M)) (valid : Itinerary.Valid rows m d)
+    (H J : ℕ) (hm : M < 2^H) (hw : W < 2^J) (hW : 0 < W)
+    (body : P → Pr P (N+2) columnCapacity prime U) (v : HS (N+2) columnCapacity prime U) (S : Stacks (N+2) prime)
+    (tail destTail suffix rest : List (Fin (prime+4))) (dest : ℤ → Fin 4) (q : ℤ)
+    (empty : ∀ z, q ≤ z → z < q+(M^d*W : ℕ) → dest z = blank) (original : Fin (M^d*W) → ZMod 2) :
+    let stage := Itinerary.run rows m
+    let words := fun n => matrixWords prime H (stage n)
+    let bank := fun n => columnBank.trans (archivePorts n)
+    let stream := (Fin.last N).castSucc
+    let code := orderedScheduleCode (List.finRange d).reverse rows ++ rest
+    let pack := fun {k : ℕ} (a : Fin k → ZMod M) => (List.ofFn fun j => binSyms (A := prime) H (a j).val).flatten
+    let clean := fun (D : Stacks (N+2) prime) => ∀ j : Fin N, 35 ≤ j.val →
+      D.L (columnPorts j).castSucc = [] ∧ D.R (columnPorts j).castSucc = []
+    let pop := .seq (dropWords (bank d 2) (bank d 34) (bank d 0) r) (dropWords (bank d 2) stream (bank d 0) b)
+    let cost := 1+Finset.univ.sup (fun k => columnProgramTime U k (rows k) w W H J)+(d*d*(4*H+4)+1)
+    ColumnRecordReady (bank d) H J (pack pivot ++ (words d ++ suffix)) SparseRoleCircuit.encode
+      (fun _ => blank) dest 0 q original (stage d).mulVec S → clean S → S.R stream = pack parent ++ code →
+    (words d ++ suffix,S.R (bank (d+1) 34)) = matrixArchive words (words 0 ++ tail) destTail d →
+    ∃ z F l, z.user = v.user ∧ l ≤ ((r*(4*H+4)+1)+(b*(4*H+4)+1))+(d*cost+1) ∧
+      Exec body (.seq pop (reverseStages d d)) (mk v S) l (mk z F) ∧
+      ColumnReady (bank 0) H J m tail SparseRoleCircuit.encode (fun _ => blank) dest 0 q original m.mulVec F ∧
+      clean F ∧ F.R stream = rest ∧ F.R (bank 1 34) = destTail := by
+  intro stage words bank stream code pack clean pop cost before free schedule archive
+  have off (n : ℕ) (i : Fin 35) : bank n i ≠ stream := by
+    rw [show stream = archivePorts n (Fin.last N) from (archivePorts_stream n).symm]
+    apply (archivePorts n).injective.ne
+    intro e
+    have val := congrArg Fin.val e
+    change i.val = N at val
+    omega
+  obtain ⟨u,hu,prep,ready⟩ := exposeReverseArchives_exec (bank d) stream (off d) body v S H J pivot parent
+    (stage d) suffix code SparseRoleCircuit.encode (fun _ => blank) dest 0 q original (stage d).mulVec before schedule
+  let D := {S with R := Function.update (Function.update S.R (bank d 34) (words d ++ suffix)) stream code}
+  have work : clean D := by
+    intro j hj
+    have away : (columnPorts j).castSucc ≠ bank d 34 := by
+      rw [← archivePorts_workspace d j hj]
+      apply (archivePorts d).injective.ne
+      intro e
+      have val := congrArg Fin.val e
+      change j.val = 34 at val
+      omega
+    have ns : (columnPorts j).castSucc ≠ stream := by
+      intro e
+      have val := congrArg Fin.val e
+      change j.val = N at val
+      omega
+    simpa [D,away,ns] using free j hj
+  have packed : (D.R (bank d 34),D.R (bank (d+1) 34)) = matrixArchive words (words 0 ++ tail) destTail d := by
+    have apart : bank (d+1) 34 ≠ bank d 34 := (archivePorts_other d (columnBank 34)).symm
+    simpa [D,off,apart] using archive
+  obtain ⟨z,F,l,hz,hl,run,result⟩ := reverseStages_exec rows H J hm hw hW body m tail destTail rest dest q empty
+    original d le_rfl valid u D suffix ready work packed (by rw [List.take_of_length_le (by simp)]; exact Function.update_self ..)
+  exact ⟨z,F,_,hz.trans hu,Nat.add_le_add_left hl _,Exec.seq prep run,result⟩
+
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
