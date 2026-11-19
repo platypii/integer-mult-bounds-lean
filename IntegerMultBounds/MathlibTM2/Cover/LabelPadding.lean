@@ -120,6 +120,44 @@ theorem padding_count (hw : 0 < w) :
     _ ≤ (m * prime^(m*m)) * (prime^k)^(m*m) := Nat.mul_le_mul_right _ bound
     _ = _ := by ring
 
+open Finset GoodForm in
+open scoped Classical in
+/-- For each request, the fraction of physical labels needing fallback obeys
+the residue-field minor bound at every positive atom width. -/
+theorem fallback_count (w r : ℕ) (hr : r ≤ m) (P : Label m (w+1))
+    (g₀ : Matrix (Fin m) (Fin m) (ZMod prime)) (unit : g₀.det ≠ 0)
+    (good : ∀ k (hk : k < r), (lead (k+1) (lt_of_lt_of_le hk hr)
+      (g₀ * (LabelRing.res prime (w+1) (by omega)).mapMatrix P * g₀⁻¹)).det ≠ 0) :
+    #{g : Label m (w+1) | IsUnit g ∧ ∃ k, ∃ hk : k < r,
+      ¬IsUnit (lead (k+1) (lt_of_lt_of_le hk hr) (g*P*g⁻¹)).det} * prime ≤
+      (∑ k ∈ range r, (k+1)*(m+1)) * Fintype.card (Label m (w+1)) := by
+  classical
+  let res := LabelRing.res prime (w+1) (by omega)
+  let bad : Finset (Matrix (Fin m) (Fin m) (ZMod prime)) := {g : Matrix (Fin m) (Fin m) (ZMod prime) | g.det ≠ 0 ∧
+    ∃ k, ∃ hk : k < r, (lead (k+1) (lt_of_lt_of_le hk hr) (g * res.mapMatrix P * g⁻¹)).det = 0}
+  have fibers := count_lifts w bad
+  have same (g : Label m (w+1)) : res.mapMatrix g ∈ bad ↔ IsUnit g ∧
+      ∃ k, ∃ hk : k < r, ¬IsUnit (lead (k+1) (lt_of_lt_of_le hk hr) (g*P*g⁻¹)).det := by
+    simp only [bad, mem_filter, mem_univ, true_and]
+    have invertible : IsUnit g ↔ (res.mapMatrix g).det ≠ 0 := by
+      simpa only [not_not] using not_congr (singular_iff (by omega : 0 < w+1) g)
+    rw [← invertible]
+    apply and_congr_right
+    intro hg
+    simp only [LabelRing.lead_unit_iff prime (w+1) (by omega),
+      LabelRing.res_conj prime (w+1) (by omega) g P ((Matrix.isUnit_iff_isUnit_det g).mp hg), not_not, res]
+  change #{g : Label m (w+1) | res.mapMatrix g ∈ bad} = _ at fibers
+  simp only [same] at fibers
+  have low := BadClass.bad_count (res.mapMatrix P) r hr g₀ unit good
+  rw [ZMod.card] at low
+  have bound : bad.card * prime ≤ (∑ k ∈ range r, (k+1)*(m+1))*prime^(m*m) := by
+    convert low using 2
+    congr 1
+    ext g
+    simp [bad]
+  rw [fibers, matrix_card, pow_succ, mul_pow, Nat.mul_right_comm]
+  exact (Nat.mul_le_mul_right ((prime^w)^(m*m)) bound).trans_eq (by ring)
+
 /-- A route preserves zero padding in both directions, at every spectator and payload position. -/
 theorem transport {x y : ℕ → ZMod 2} {σ : Label m w} (hu : IsUnit σ)
     (hr : LabelPermutation.Transport v B w (fun g => g * σ) x y) :
