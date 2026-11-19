@@ -44,7 +44,7 @@ theorem residualScan_exec (a : ScanData r d w W) (ports : Fin (N+2) ↪ Fin T) (
   cases h : LabelStock.live r (w+1) 1 j with
   | false =>
     obtain ⟨symbol,constant⟩ := padding j inside h
-    obtain ⟨z,F,n,hz,next,frame,hn,run⟩ := ready.padding a ports ext off j inside h inputs (encoded j inside)
+    obtain ⟨z,F,n,hz,next,_,frame,hn,run⟩ := ready.padding a ports ext off j inside h inputs (encoded j inside)
       symbol constant signed body u D
     exact ⟨z,F,n,hz,next,frame _ (ext.injective.ne (by decide)) (ext.injective.ne (by decide))
       (fun i => off i 0),by simpa [ScanData.recordTime,h] using hn,run⟩
@@ -100,7 +100,7 @@ theorem classifiedResidualScan_exec (a : ScanData r d w W) (ports : Fin (N+2) �
   cases h : LabelStock.live r (w+1) 1 j with
   | false =>
     obtain ⟨symbol,constant⟩ := padding j inside h
-    obtain ⟨z,F,n,hz,next,frame,hn,run⟩ := ready.padding a ports ext off j inside h inputs
+    obtain ⟨z,F,n,hz,next,_,frame,hn,run⟩ := ready.padding a ports ext off j inside h inputs
       (encoded j inside) symbol constant signed body u D
     exact ⟨z,F,n,hz,next,frame _ (ext.injective.ne (by decide)) (ext.injective.ne (by decide))
       (fun i => off i 0),frame _ (separate 2).symm (separate 5).symm outside,

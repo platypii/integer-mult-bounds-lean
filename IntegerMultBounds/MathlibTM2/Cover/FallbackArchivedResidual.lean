@@ -56,7 +56,7 @@ theorem shared_ne_last {c t : ℕ} (i : Fin c) :
     ((Fin.castAddEmb (n := c) t).trans (Fin.castAddEmb 1)) i ≠ Fin.last (c+t) :=
   fun eq => (i.castAdd t).isLt.ne (congrArg Fin.val eq)
 
-private theorem private_ne_rewind {c : ℕ} (n : ℕ) (a : Fin c) (j : Fin (N+2)) :
+theorem private_ne_rewind {c : ℕ} (n : ℕ) (a : Fin c) (j : Fin (N+2)) :
     let ports := Fin.castAddEmb (n := (N+1)+c) 1
     let shared := (Fin.castAddEmb (n := N+1) c).trans ports
     ports (Fin.natAdd (N+1) a) ≠ rewindPorts n shared (Fin.last ((N+1)+c)) (shared_ne_last (t := c)) j := by
