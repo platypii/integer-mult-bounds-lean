@@ -36,7 +36,13 @@ def coefficientSlots {m extra : ℕ} (i j : Fin m) :
 theorem physicalResidualQueue_exec (body : P → Pr P T Q prime U)
     (w records : ℕ)
     (projector : Matrix (Fin m) (Fin m) (ZMod (prime^(w+1))))
-    (H : ℕ) (hm : prime^(w+1) < 2^H) (host : Fin (36+2*m+1+(conjugationDepth m+1)*13) ↪ Fin T) :
+    (H : ℕ) (hm : prime^(w+1) < 2^H) (registers : Fin ((36+2*m+1+(conjugationDepth m+1)*13)+3) ↪ Fin T) :
+    let size := 36+2*m+1+(conjugationDepth m+1)*13
+    let host := QueueLayout.block (n := size) 0 (by dsimp [size]; omega) registers
+    let control := QueueLayout.block (n := 3) size (Nat.le_refl _) registers
+    let mask := control 0
+    let seed := control 1
+    let tmp := control 2
     let bank := QueueLayout.block (n := 18) 0 (by omega) host
     let r := QueueLayout.block (n := 16) 18 (by omega) host
     let counters := QueueLayout.block (n := 2) 34 (by omega) host
@@ -54,9 +60,6 @@ theorem physicalResidualQueue_exec (body : P → Pr P T Q prime U)
       change 18+k.val = (coefficientSlots (extra := (conjugationDepth m+1)*13) i j l).val at eq
       fin_cases l <;> simp [coefficientSlots, Matrix.cons_val] at eq <;> (try split_ifs at *) <;> omega
     ∀ (ancestor : ℕ → List (Fin (prime+4))) (tail padWord : List (Fin (prime+4)))
-    (mask seed tmp : Fin T)
-    (maskOff : ∀ k, mask ≠ QueueLayout.scanPorts (QueueLayout.directoryWork.trans bank) archive archiveOff k)
-    (padPorts : [seed,archive,bank 4,tmp].Nodup)
     {d : ℕ} (e : (Fin m ⊕ Fin m) ≃ Fin d)
     (α α' : Fin m → ZMod (prime^(w+1)))
     (workspace : Regs T prime → Prop)
@@ -106,8 +109,8 @@ theorem physicalResidualQueue_exec (body : P → Pr P T Q prime U)
         (4*(ancestor j).length+4+(m*m*(4*(w+1)+4)+1))+4).sum+2+(2*words.length+2) ∧
       Exec body (.seq (maskedScan mask (branch live) (branch (bcopy seed (scan 4) (scan 3) tmp)))
         (moveR (scan 5) (scan 4) id)) (mk v S) n (mk z F) := by
-  intro bank r counters clock count pool coeff archive archiveOff coeffOff ancestor tail padWord mask seed tmp maskOff
-    padPorts d e α α' workspace stable padReady weightBank ready v S start
+  intro size host control mask seed tmp bank r counters clock count pool coeff archive archiveOff coeffOff ancestor tail padWord
+    d e α α' workspace stable padReady weightBank ready v S start
     widths width blank empty directory output bits
   have br (i j) : bank i ≠ r j := QueueLayout.block_ne _ _ host (by decide) i j
   have bp (i j) : bank i ≠ pool j := QueueLayout.block_ne _ _ host (by omega) i j
@@ -116,6 +119,14 @@ theorem physicalResidualQueue_exec (body : P → Pr P T Q prime U)
   have copyPorts : [clock,count,r 2,r 3].Nodup := by
     simp [clock,count,counters.injective.eq_iff,(rc _ _).symm,r.injective.eq_iff]
   intro inputs source weights scan num cost f C conjugate live active word price
+  have apart (i j) : host i ≠ control j := QueueLayout.block_ne _ _ registers (by omega) i j
+  have maskOff (k) : mask ≠ scan k := by
+    fin_cases k <;> exact (apart _ 0).symm
+  have padPorts : [seed,archive,bank 4,tmp].Nodup := by
+    have ab : archive ≠ bank 4 := fun h => archiveOff 4 h.symm
+    simp [seed,tmp,ab,control.injective.eq_iff,show control 1 ≠ archive from (apart _ _).symm,
+      show control 1 ≠ bank 4 from (apart _ _).symm,
+      show archive ≠ control 2 from apart _ _,show bank 4 ≠ control 2 from apart _ _]
   have detFits : f.depth ≤ conjugationDepth m := Nat.le_max_left _ _
   have fits (i j : Fin m) : (num i j).depth ≤ conjugationDepth m :=
     le_trans (Finset.le_sup (f := fun ij : Fin m × Fin m => (num ij.1 ij.2).depth)
