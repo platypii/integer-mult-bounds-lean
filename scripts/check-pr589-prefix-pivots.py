@@ -489,6 +489,32 @@ def main():
     assert pair_costs[0, 7] == 1322
     print("With free scatter COPYs, only pairs (2,3) and (4,5) can change across "
           "the whole stage at zero extra swaps. Pair (0,7) requires 1322.")
+    # A cycle of the relative layout permutation lifts to two cycles on
+    # the two halves, or one when it meets the MOVE interval an odd number
+    # of times. Subtract its share of the original MOVE's swap bill.
+    for length in range(1, 9):
+        for inside in range(length + 1):
+            extra = 2 * length - 2 + inside % 2 - inside
+            assert extra >= 0
+            if length >= 2 and inside < length:
+                assert extra >= 2
+
+    # Track the image of each prefix of canonical coordinates. Every layout
+    # taking coordinate 0 to 7 changes all seven prefix images relative to
+    # identity. Give away every MOVE straddling the prefix boundary. At
+    # every other MOVE a changed image forces a mixed cycle containing a
+    # coordinate outside the interval, hence at least two extra swaps.
+    prefix_bounds = []
+    for split in range(1, 8):
+        free_moves = {key for key, (lo, hi) in move_intervals.items() if lo < split < hi}
+        links = []
+        ports = layout_components(len(refs), move_widths, gates, scatter_start, scatter_end,
+                                  share_temps=True, transitions=links, free_moves=free_moves)
+        changes, _ = minimum_layout_changes(ports, links, copy_cost=0)
+        prefix_bounds.append(2 * changes)
+    assert prefix_bounds == [814, 1102, 0, 1004, 0, 1080, 944]
+    print("Lower bounds for unrestricted common permutations at the seven prefix cuts:",
+          prefix_bounds)
     assert max_relation_denominator <= 2 ** 100
     print(f"Verified {relations} integral generator relations; maximum denominator: {max_relation_denominator}.")
     print("Verified nine rank-seven COPY prefixes and 527 zero-frame ADD targets.")
