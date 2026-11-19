@@ -241,6 +241,46 @@ theorem oblique_stage_route (h : c.Checked) (s : Fin 8) (U : Matrix (Fin 8) (Fin
     rightInv, avoidB, lowerB, off, avoid_mul_transpose_spread, avoid_mul_self,
     avoid_mul_lower_mul_avoid, block_add_lower, block_add_avoid, ← fromBlocks_one]
 
+/-- The port shear can be moved through the stage route. Applying it on the local axes
+before the oblique route equals applying it after the word's original route. -/
+theorem oblique_route_intertwines (h : c.Checked) (s : Fin 8) (U : Matrix (Fin 8) (Fin 8) ℚ)
+    (up : U * c.lineProj = c.lineProj) (pu : c.lineProj * U = U) :
+    let S := 1 + (c.lineProj - U)
+    let G : Matrix Axis Axis ℚ := fromBlocks S 0 0 1
+    let R := fromBlocks U ((1 - U) * c.spread s) (c.spread s)ᵀ (avoid s)
+    R * G = G * c.route s := by
+  intro S G R
+  have idem : U * U = U := by
+    calc U * U = U * (c.lineProj * U) := by rw [pu]
+         _ = U := by rw [← Matrix.mul_assoc, up, pu]
+  have annihilate : (c.spread s)ᵀ * U = 0 := by
+    calc _ = (c.spread s)ᵀ * (c.lineProj * U) := by rw [pu]
+         _ = 0 := by rw [← Matrix.mul_assoc, transpose_spread_mul_lineProj h, Matrix.zero_mul]
+  simp only [G, R, route, S, fromBlocks_multiply, Matrix.mul_zero, Matrix.zero_mul,
+    Matrix.one_mul, Matrix.mul_one, add_zero, zero_add, Matrix.mul_add, Matrix.add_mul,
+    Matrix.mul_sub, Matrix.sub_mul, up, idem, lineProj_mul_self h, lineProj_mul_spread h,
+    transpose_spread_mul_lineProj h, annihilate]
+  congr 1 <;> abel
+
+/-- For every internal word frame, applying the port shear before lifting agrees with
+applying it after lifting. The same exterior prefix is used on both sides. -/
+theorem oblique_lift_intertwines (h : c.Checked) (s : Fin 8) (U X Y : Matrix (Fin 8) (Fin 8) ℚ)
+    (up : U * c.lineProj = c.lineProj) (pu : c.lineProj * U = U) :
+    let S := 1 + (c.lineProj - U)
+    let G : Matrix Axis Axis ℚ := fromBlocks S 0 0 1
+    let R := fromBlocks U ((1 - U) * c.spread s) (c.spread s)ᵀ (avoid s)
+    Y * S = S * X → R * fromBlocks Y 0 0 (lower (s.val + 1)) * R * G = G * c.lift s X := by
+  intro S G R frame
+  have routeEq : R * G = G * c.route s := oblique_route_intertwines h s U up pu
+  let extend (A : Matrix (Fin 8) (Fin 8) ℚ) : Matrix Axis Axis ℚ :=
+    fromBlocks A 0 0 (lower (s.val + 1))
+  have frameEq : extend Y * G = G * extend X := by
+    simp [extend, G, fromBlocks_multiply, frame]
+  change R * extend Y * R * G = G * (c.route s * extend X * c.route s)
+  rw [Matrix.mul_assoc _ R G, routeEq, Matrix.mul_assoc R, ← Matrix.mul_assoc (extend Y),
+    frameEq, ← Matrix.mul_assoc G, ← Matrix.mul_assoc R, ← Matrix.mul_assoc R G, routeEq]
+  simp only [Matrix.mul_assoc]
+
 theorem route_transpose (s : Fin 8) : (c.route s)ᵀ = c.route s := by
   rw [route, fromBlocks_transpose, transpose_transpose, lineProj_transpose, avoid,
     diagonal_transpose]
