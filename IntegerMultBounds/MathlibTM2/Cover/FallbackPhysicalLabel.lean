@@ -80,6 +80,36 @@ theorem physicalLabel_count (m w parents : ℕ) (keep : LabelPadding.Label m w �
     rw [Nat.succ_mul,List.range_add,List.countP_append,List.countP_map,ih,Nat.succ_mul]
     simp only [Function.comp_def,periodic,single]
 
+open IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2.Stack Host LabelTraversal LabelCycle GoodForm in
+open scoped Classical in
+/-- One residue-table program emits the fallback bit for each physical record,
+uniformly over all widths and lifts of the request matrix. -/
+theorem fallbackMask_writes {T Q A : ℕ} {P U : Type} (body : P → Pr P T Q A U)
+    (r : ℕ) (hr : r ≤ m) (request : Matrix (Fin m) (Fin m) (ZMod prime))
+    (rs : List (Pair T)) (hk : rs.length = m*m) (out count saved : Fin T)
+    (regs : (count :: saved :: (slots rs ++ [out])).Nodup) :
+    ∃ program : Pr P T Q A U, ∀ (v : RecursiveInterchangeLayout.Descriptor) (w B : ℕ)
+      (proj : LabelPadding.Label m (w+1)), (LabelRing.res prime (w+1) (by omega)).mapMatrix proj = request →
+      v.beforeH = B*prime^(m*((w+1)*m)) →
+      let fallback := fun j =>
+        let g := physicalLabel m (w+1) j
+        decide (IsUnit g ∧ ∃ k, ∃ hk : k < r, ¬IsUnit (lead (k+1) (lt_of_lt_of_le hk hr) (g*proj*g⁻¹)).det)
+      Writes body (fun R => ready (prime^w) R rs ∧ R saved = [] ∧
+        (R count).length = v.beforeRows*v.rows*B) out program
+        (((List.range (LabelMask.records v)).map fallback).map bitSymbol)
+        ((v.beforeRows*v.rows*B)*(time (prime^w) (m*m) 1+5)+4) := by
+  classical
+  let branch := fun g : Matrix (Fin m) (Fin m) (ZMod prime) => decide (g.det ≠ 0 ∧
+    ∃ k, ∃ hk : k < r, (lead (k+1) (lt_of_lt_of_le hk hr) (g*request*g⁻¹)).det = 0)
+  obtain ⟨program,run⟩ := class_writes (body := body) m branch rs hk out count saved regs
+  refine ⟨program, ?_⟩
+  intro v w B proj reduction shape fallback
+  have bits (j : ℕ) : branch (LabelStock.residue m (w+1) 1 j) = fallback j := by
+    simp only [branch, fallback, physicalLabel_residue (by omega : 0 < w+1), ← reduction]
+    apply Bool.eq_iff_iff.mpr
+    simpa only [decide_eq_true_eq] using LabelPadding.fallback_iff_res w r hr proj (physicalLabel m (w+1) j)
+  simpa only [bits,Nat.add_one_sub_one] using run v (w+1) B (by omega) shape
+
 open GoodForm Finset in
 open scoped Classical in
 /-- The minor-degree fallback bound holds on the actual record range of the

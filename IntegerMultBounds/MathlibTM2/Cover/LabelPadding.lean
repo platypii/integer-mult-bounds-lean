@@ -120,6 +120,22 @@ theorem padding_count (hw : 0 < w) :
     _ ≤ (m * prime^(m*m)) * (prime^k)^(m*m) := Nat.mul_le_mul_right _ bound
     _ = _ := by ring
 
+open GoodForm in
+theorem fallback_iff_res (w r : ℕ) (hr : r ≤ m) (P g : Label m (w+1)) :
+    let res := LabelRing.res prime (w+1) (by omega)
+    ((res.mapMatrix g).det ≠ 0 ∧ ∃ k, ∃ hk : k < r, (lead (k+1) (lt_of_lt_of_le hk hr)
+      (res.mapMatrix g * res.mapMatrix P * (res.mapMatrix g)⁻¹)).det = 0) ↔
+      IsUnit g ∧ ∃ k, ∃ hk : k < r, ¬IsUnit (lead (k+1) (lt_of_lt_of_le hk hr) (g*P*g⁻¹)).det := by
+  classical
+  intro res
+  have invertible : IsUnit g ↔ (res.mapMatrix g).det ≠ 0 := by
+    simpa only [not_not] using not_congr (singular_iff (by omega : 0 < w+1) g)
+  rw [← invertible]
+  apply and_congr_right
+  intro hg
+  simp only [LabelRing.lead_unit_iff prime (w+1) (by omega),
+    LabelRing.res_conj prime (w+1) (by omega) g P ((Matrix.isUnit_iff_isUnit_det g).mp hg), not_not, res]
+
 open Finset GoodForm in
 open scoped Classical in
 /-- For each request, the fraction of physical labels needing fallback obeys
@@ -139,13 +155,7 @@ theorem fallback_count (w r : ℕ) (hr : r ≤ m) (P : Label m (w+1))
   have same (g : Label m (w+1)) : res.mapMatrix g ∈ bad ↔ IsUnit g ∧
       ∃ k, ∃ hk : k < r, ¬IsUnit (lead (k+1) (lt_of_lt_of_le hk hr) (g*P*g⁻¹)).det := by
     simp only [bad, mem_filter, mem_univ, true_and]
-    have invertible : IsUnit g ↔ (res.mapMatrix g).det ≠ 0 := by
-      simpa only [not_not] using not_congr (singular_iff (by omega : 0 < w+1) g)
-    rw [← invertible]
-    apply and_congr_right
-    intro hg
-    simp only [LabelRing.lead_unit_iff prime (w+1) (by omega),
-      LabelRing.res_conj prime (w+1) (by omega) g P ((Matrix.isUnit_iff_isUnit_det g).mp hg), not_not, res]
+    exact fallback_iff_res w r hr P g
   change #{g : Label m (w+1) | res.mapMatrix g ∈ bad} = _ at fibers
   simp only [same] at fibers
   have low := BadClass.bad_count (res.mapMatrix P) r hr g₀ unit good
