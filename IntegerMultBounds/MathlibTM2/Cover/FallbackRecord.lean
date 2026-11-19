@@ -43,6 +43,7 @@ theorem runs (r : Fin 6 ↪ Fin T) (negative : Bool) (hf : 0 < f) (hb : 0 < b) (
     ∃ a' : FlatCoordinateStages.Array ((n+1)*f) b W, ∃ z F t,
       Exec body (program n r) (mk u S) t (mk z F) ∧ Ready n f b W F ∧
       z.user = u.user ∧ F.inp = S.inp ∧ F.out = S.out ∧
+      F.L (port n r 1) = S.L (port n r 1) ∧
       t ≤ 10*K+10+(chainConst (anchorOps n negative)*f*K+1)*(size n+T+5)+2*T+8 ∧
       (∀ j : Fin T, F.R (Fin.natAdd (size n) j) =
         if j = r 5 then (payloadWord a').reverse ++ S.R (port n r 5)
@@ -75,7 +76,7 @@ theorem runs (r : Fin 6 ↪ Fin T) (negative : Bool) (hf : 0 < f) (hb : 0 < b) (
     a' z G (by simpa [port,eqB,arraySlot,(separate _ _).symm,r.injective.eq_iff] using (congrArg List.length (cr 0)).trans (by simpa [eqB,port,arraySlot,(separate _ _).symm,r.injective.eq_iff] using count))
     (by simpa [eqB,port,arraySlot,(separate _ _).symm,r.injective.eq_iff,tmp] using cr 3)
     (fun j => by simpa [outer,Fin.val_ofNat,mod17,size] using bank 17 j)
-  refine ⟨a',y,_,_,Exec.seq load (Exec.seq dispatch collect),?_,yu.trans (zu.trans vu),?_,?_,by unfold size; omega,?_,act⟩
+  refine ⟨a',y,_,_,Exec.seq load (Exec.seq dispatch collect),?_,yu.trans (zu.trans vu),?_,?_,?_,by unfold size; omega,?_,act⟩
   · intro i j
     by_cases h : i.val = 17
     · have e : i = 17 := Fin.ext (by change i.val = 17 % size n; rwa [mod17])
@@ -85,6 +86,7 @@ theorem runs (r : Fin 6 ↪ Fin T) (negative : Bool) (hf : 0 < f) (hb : 0 < b) (
         show i ≠ 17 by intro e; subst i; simp [mod17] at h] using bank i j
   · simpa [eqB] using zi
   · simpa [eqB] using zo
+  · simpa only [eqB] using (caller (r 1)).1
   · intro j
     have cj := (caller j).2
     by_cases h : j = r 5 <;> simp_all [port,arraySlot,(separate _ _).symm,r.injective.eq_iff,Function.update_apply]

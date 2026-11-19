@@ -75,6 +75,7 @@ theorem anchorHandoff (regs : Fin 6 ↪ Fin T) (anchor : Fin (size d+T) ↪ Fin 
       ∃ outs z F t, ins.Forall₂ Correct outs ∧ z.user = u.user ∧ Exec body prog (mk u S) t (mk z F) ∧
         ScanReady {a with signed := outs} ports ext 0 (preparedPivots a (ports (Fin.last N).castSucc) F) ∧
         (∀ j, (∀ i, anchor i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j) ∧
+        F.L (ext 2) = S.L (ext 2) ∧
         t ≤ 1+((v.beforeRows*v.rows*B)*(time (prime^w) (r*r) 1+5)+4 +
           ((ins.map (fun x => cost d T 1 (w+1) W x.1 + 2)).sum + 2) +
           (2*(a.records*(ActualAffineScaling.modulus (w+1)^((d+1)*1)*W))+2)) := by
@@ -87,7 +88,7 @@ theorem anchorHandoff (regs : Fin 6 ↪ Fin T) (anchor : Fin (size d+T) ↪ Fin 
   have packed : D.R (port d regs 1) = ((signedInputs table (w+1) (LabelMask.records v) inputs).flatMap
       (fun x => payloadWord x.2)) ++ a.inputTail := by
     simpa [D,embStk_R,shared,signedInputs,← records,List.flatMap_map,Function.comp_def] using queue
-  obtain ⟨outs,z,F,t,correct,exec,ht,_,hz,hi,ho,frame,untouched⟩ :=
+  obtain ⟨outs,z,F,t,correct,exec,ht,_,hz,hi,ho,left,frame,untouched⟩ :=
     run v (w+1) B (by omega) shape 1 (w+1) W (by decide) (by omega) hW inputs u S a.inputTail
       neutral (by simpa using radix) free count width packed clean
   have bank : embStk ports F = embStk ports S := by
@@ -101,6 +102,6 @@ theorem anchorHandoff (regs : Fin 6 ↪ Fin T) (anchor : Fin (size d+T) ↪ Fin 
     simpa [port] using output
   exact ⟨outs,z,F,t,by simpa [ins,records] using correct,hz,exec,
     start.signedHandoff a ports ext off S F outs bank (fun i h => (untouched _ (fun k => external k i h)).2) out,
-    untouched,by simpa [ins,records] using ht⟩
+    untouched,shared ▸ left,by simpa [ins,records] using ht⟩
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback

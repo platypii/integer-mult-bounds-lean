@@ -46,6 +46,7 @@ theorem queuedResidual_exec {T : ℕ} (ports : Fin (N+2) ↪ Fin T) {count src s
       ColumnReady bank H J m tail SparseRoleCircuit.encode (fun _ => blank) dest 0 q original (fun x => m.mulVec x) (embStk ports F) ∧
       clean F ∧ F.R (ports (Fin.last N).castSucc) = rest ∧ F.R src = queueTail ∧
       F.R (ports (archivePorts 1 (columnBank 34))) = S.R (ports (archivePorts 1 (columnBank 34))) ∧
+      F.L src = S.L src ∧
       ∀ j, j ≠ src → (∀ i, ports i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
   intro bank dst anchor clean layout free placed queue width blankDst savedFree tmpFree code
   obtain ⟨u,D,hu,load,stateEq,tape⟩ := loadPayload_exec body separate (SparseRoleCircuit.encode ∘ word)
@@ -91,7 +92,7 @@ theorem queuedResidual_exec {T : ℕ} (ports : Fin (N+2) ↪ Fin T) {count src s
   have eq : embStk ports F = E := embStk_ovr ports.injective _ _
   rw [← eq] at next freeE endStream archive
   refine ⟨z,F,_,hz.trans (hy.trans hu),Nat.add_le_add_left (Nat.add_le_add_left hn 1) _,Exec.seq load finish,
-    next,freeE,endStream,(embOvr_off _ D outside).2.trans ?_,archive.trans (keep _ ?_),?_⟩
+    next,freeE,endStream,(embOvr_off _ D outside).2.trans ?_,archive.trans (keep _ ?_),(embOvr_off _ D outside).1.trans (congrFun left src),?_⟩
   · rw [stateEq]; exact (Function.update_of_ne (outside (bank 24)).symm _ _).trans (Function.update_self ..)
   · exact (archivePorts_other 0 (columnBank 24)).symm
   · intro j hsrc off

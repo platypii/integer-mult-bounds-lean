@@ -848,10 +848,10 @@ private theorem packedPayload (records width : ℕ) (word : ℕ → Fin width �
 
 omit [M8.Machine.Net] in
 private theorem returnedPayload_reads {volume : ℕ} (out : Fin volume → Fin 4)
-    (source : ℤ → Fin 4) (p : ℤ) (left tail : List (Fin (prime+4)))
+    (source : ℤ → Fin 4) (p : ℤ) (left old tail : List (Fin (prime+4))) (len : old.length = volume)
     (outside : ∀ k, k < p ∨ p+volume ≤ k →
       RadixToBinary.binaryEncoding.encode (source k) =
-        readAt blank left (List.replicate volume blank ++ tail) (k-p)) (k : ℤ) :
+        readAt blank left (old ++ tail) (k-p)) (k : ℤ) :
     RadixToBinary.binaryEncoding.encode (putWord source p (List.ofFn out) k) =
       readAt blank left (payloadWord out ++ tail) (k-p) := by
   by_cases before : k < p
@@ -867,9 +867,9 @@ private theorem returnedPayload_reads {volume : ℕ} (out : Fin volume → Fin 4
     · have after : p+volume ≤ k := by omega
       rw [putWord_outside _ _ _ _ (.inr (by simpa using after)),outside k (.inr after),offset]
       simp only [readAt_nonneg]
-      rw [List.getElem?_append_right (by simpa using Nat.le_of_not_gt inside),
+      rw [List.getElem?_append_right (by simpa [len] using Nat.le_of_not_gt inside),
         List.getElem?_append_right (by simpa [payloadWord] using Nat.le_of_not_gt inside)]
-      simp [payloadWord]
+      simp [payloadWord,len]
 
 def SignedPassBound (regs : Fin 6 ↪ Fin T) (anchor : Fin (size d+T) ↪ Fin K)
     (ports : Fin (N+2) ↪ Fin K) (ext : Fin 6 ↪ Fin K) (v : Descriptor) (B : ℕ)
@@ -1017,8 +1017,8 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
           F.R (ext 2) = payloadWord out ++ base.inputTail ∧
           (∀ (source : ℤ → Fin 4) (p : ℤ),
             (∀ k, k < p ∨ p+(base.records*(M^(d+1)*W) : ℕ) ≤ k →
-              RadixToBinary.binaryEncoding.encode (source k) = readAt blank (F.L (ext 2))
-                (List.replicate (base.records*(M^(d+1)*W) : ℕ) blank ++ base.inputTail) (k-p)) →
+              RadixToBinary.binaryEncoding.encode (source k) = readAt blank (raw.L (ext 2))
+                (input.R (ext 2)) (k-p)) →
             ∀ k, RadixToBinary.binaryEncoding.encode (putWord source p (List.ofFn out) k) =
               readAt blank (F.L (ext 2)) (F.R (ext 2)) (k-p)) ∧
           ∀ (j : Fin base.records) (x : Fin (d+1) → ZMod M) (k : Fin W),
@@ -1329,7 +1329,7 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
   have scanStart := start.signedHandoff a ports ext off installedInput G a.signed bankState
     (fun i _ => extState i) ((extState 2).trans queueInput)
   have emptyMask := (outside _ (extDirectory 0) (extArchive 0)).trans maskEmpty
-  obtain ⟨z,E,passSteps,hz,queue,acc,maskDone,pivots,archiveDone,hn,exec⟩ :=
+  obtain ⟨z,E,passSteps,hz,queue,acc,maskDone,pivots,archiveDone,left,hn,exec⟩ :=
     run v B base payload finished G shape records hW neutral radix free count width unsigned clean
       (sharedArchive ▸ installed.trans (base.physical_archive e proj α α')) (by
         change ScanReady a ports ext 0 (preparedPivots a _ {G with R := Function.update G.R (ports (archivePorts 0 (columnBank 34))) (a.matrices 0)})
@@ -1388,8 +1388,21 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     have returned := queue.trans (congrArg (· ++ base.inputTail) (packedPayload base.records _ out))
     refine ⟨_,returned,?_,?_⟩
     · intro source p outside k
-      rw [returned]
-      exact returnedPayload_reads _ source p _ _ outside k
+      rw [returned,left]
+      have inputQueue : input.R (ext 2) = a.signed.flatMap payloadWord ++ a.inputTail := by
+        simpa only [installedInput,Function.update_of_ne (extArchive 2)] using queueInput
+      have length (words : List (Record.Array d 1 (w+1) W)) :
+          (words.flatMap payloadWord).length = words.length*(M^(d+1)*W) := by
+        induction words with
+        | nil => simp
+        | cons word words ih =>
+          have wordSize : (payloadWord word).length = M^(d+1)*W := by simp [payloadWord,ActualAffineScaling.modulus]
+          simp only [List.flatMap_cons,List.length_append,ih,wordSize,List.length_cons,Nat.add_mul,one_mul]
+          omega
+      have size := length a.signed
+      rw [show a.signed.length = a.records by rw [unsigned,List.length_map,List.length_range]] at size
+      rw [inputQueue] at outside
+      exact returnedPayload_reads _ source p _ _ _ size outside k
     intro j x k
     simp only [Equiv.symm_apply_apply]
     let child := Weighted.child r α α' (x ∘ e ∘ Sum.inl, x ∘ e ∘ Sum.inr)

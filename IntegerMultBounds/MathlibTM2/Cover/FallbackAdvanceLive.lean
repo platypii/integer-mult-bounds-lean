@@ -67,9 +67,10 @@ theorem advanceLive_exec {r records T : ℕ} (ports : Fin (N+2) ↪ Fin T) {coun
       clean F ∧ F.R (ports (Fin.last N).castSucc) = ((List.range records).drop (j+1)).flatMap code ++ rest ∧
       F.R src = (outs.drop (j+1)).flatMap payloadWord ++ queueTail ∧
       F.R (ports (archivePorts 1 (columnBank 34))) = S.R (ports (archivePorts 1 (columnBank 34))) ∧
+      F.L src = S.L src ∧
       ∀ j, j ≠ src → j ≠ acc → (∀ i, ports i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
   intro bank dst j rows code clean layout free input queue width blankDst savedFree tmpFree schedule
-  obtain ⟨u,D,l,word,hu,hl,run,act,output,blanked,ready,cleanD,pivots,words,archive,frame⟩ :=
+  obtain ⟨u,D,l,word,hu,hl,run,act,output,blanked,ready,cleanD,pivots,words,archive,left,frame⟩ :=
     collectAnchorRecord_exec ports outside separate collectPorts buffer countOff tmpOff accSrc table g m det lift block live
       inputs outs result H J hm hw hW body v S tail rest queueTail dest q empty original layout free input queue width
       blankDst savedFree tmpFree schedule
@@ -79,7 +80,7 @@ theorem advanceLive_exec {r records T : ℕ} (ports : Fin (N+2) ↪ Fin T) {coun
   let F := {D with R := Function.update D.R (tapes 34) tail}
   have keep (i : Fin T) (hi : i ≠ tapes 34) : F.R i = D.R i := Function.update_of_ne hi _ _
   refine ⟨z,F,_,word,hz.trans hu,Nat.add_le_add_right hl _,.seq run advance,act,
-    (keep _ (buffer _).symm).trans output,?_,Function.update_self ..,?_,?_,?_,(keep _ (outside _).symm).trans words,?_,?_⟩
+    (keep _ (buffer _).symm).trans output,?_,Function.update_self ..,?_,?_,?_,(keep _ (outside _).symm).trans words,?_,left,?_⟩
   · simpa only [show F.R dst = D.R dst from keep _ (tapes.injective.ne (by decide : (24 : Fin 35) ≠ 34))] using blanked
   · intro next rest input eq
     have h : F.R (tapes 34) = tail := Function.update_self ..

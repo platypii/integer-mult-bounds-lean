@@ -58,9 +58,10 @@ theorem collectAnchorRecord_exec {r records T : ℕ} (ports : Fin (N+2) ↪ Fin 
       clean F ∧ F.R (ports (Fin.last N).castSucc) = ((List.range records).drop (j+1)).flatMap code ++ rest ∧
       F.R src = (outs.drop (j+1)).flatMap payloadWord ++ queueTail ∧
       F.R (ports (archivePorts 1 (columnBank 34))) = S.R (ports (archivePorts 1 (columnBank 34))) ∧
+      F.L src = S.L src ∧
       ∀ j, j ≠ src → j ≠ acc → (∀ i, ports i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
   intro bank dst j rows code clean layout free input queue width blankDst savedFree tmpFree schedule
-  obtain ⟨u,D,l,hu,hl,run,⟨word,after,effect⟩,freeD,stream,inputD,archive,frame⟩ :=
+  obtain ⟨u,D,l,hu,hl,run,⟨word,after,effect⟩,freeD,stream,inputD,archive,left,frame⟩ :=
     queuedAnchorRecord_exec ports outside separate table g m det lift block live inputs outs result H J hm hw hW
       body v S tail rest queueTail dest q empty original layout free input queue width blankDst savedFree tmpFree schedule
   have neq := separate
@@ -73,7 +74,7 @@ theorem collectAnchorRecord_exec {r records T : ℕ} (ports : Fin (N+2) ↪ Fin 
     (Function.update_of_ne ha _ _).trans (Function.update_of_ne hd _ _)
   have bankKeep (i : Fin 35) (hi : i ≠ 24) := keep (ports (bank i)) (buffer _) (ports.injective.ne (bank.injective.ne hi))
   refine ⟨z,F,_,word,hz.trans hu,Nat.add_le_add_right hl _,Exec.seq run collect,effect,
-    (Function.update_self ..).trans (congrArg _ (frame acc accSrc buffer).2),blanked,?_,?_,?_,?_,?_,?_⟩
+    (Function.update_self ..).trans (congrArg _ (frame acc accSrc buffer).2),blanked,?_,?_,?_,?_,?_,left,?_⟩
   · refine ⟨(bankKeep 2 (by decide)).trans after.modulus,(bankKeep 27 (by decide)).trans after.width,
       (bankKeep 28 (by decide)).trans after.one,(bankKeep 32 (by decide)).trans after.padded,
       (congrArg List.length (bankKeep 33 (by decide))).trans after.clock,(bankKeep 34 (by decide)).trans after.archive,

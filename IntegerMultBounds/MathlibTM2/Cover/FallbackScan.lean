@@ -33,26 +33,26 @@ theorem residualScan_exec (a : ScanData r d w W) (ports : Fin (N+2) ↪ Fin T) (
     (body : P → Pr P T columnCapacity prime U) (v : HS T columnCapacity prime U) (S : Stacks T prime)
     (start : ScanReady a ports ext 0 S)
     (mask : S.R (ext 0) = (LabelMask.selectors r (w+1) a.records).map bitSymbol) :
-    ∃ z F n, z.user = v.user ∧ ScanReady a ports ext a.records F ∧ F.R (ext 0) = [] ∧
+    ∃ z F n, z.user = v.user ∧ (ScanReady a ports ext a.records F ∧ F.L (ext 2) = S.L (ext 2)) ∧ F.R (ext 0) = [] ∧
       n ≤ ((List.range a.records).map fun j => a.recordTime U j + 4).sum + 2 ∧
       Exec body (residualScan ports (ext 0) (ext 1) (ext 2) (ext 3) (ext 4) (ext 5) d) (mk v S) n (mk z F) := by
   unfold residualScan
-  apply maskedRange_exec body _ _ _ a.records (LabelStock.live r (w+1) 1) (a.recordTime U) (ScanReady a ports ext)
-    (fun _ _ bits h => h.mask (fun i => off i 0) bits) _ v S start
+  apply maskedRange_exec body _ _ _ a.records (LabelStock.live r (w+1) 1) (a.recordTime U) (fun j D => ScanReady a ports ext j D ∧ D.L (ext 2) = S.L (ext 2))
+    (fun _ _ bits h => ⟨h.1.mask (fun i => off i 0) bits,h.2⟩) _ v S ⟨start,rfl⟩
     (by simpa [LabelMask.selectors,List.map_map,Function.comp_def] using mask)
-  intro j inside u D ready
+  intro j inside u D ⟨ready,prior⟩
   cases h : LabelStock.live r (w+1) 1 j with
   | false =>
     obtain ⟨symbol,constant⟩ := padding j inside h
-    obtain ⟨z,F,n,hz,next,_,frame,hn,run⟩ := ready.padding a ports ext off j inside h inputs (encoded j inside)
+    obtain ⟨z,F,n,hz,next,left,frame,hn,run⟩ := ready.padding a ports ext off j inside h inputs (encoded j inside)
       symbol constant signed body u D
-    exact ⟨z,F,n,hz,next,frame _ (ext.injective.ne (by decide)) (ext.injective.ne (by decide))
+    exact ⟨z,F,n,hz,⟨next,(congrFun left (ext 2)).trans prior⟩,frame _ (ext.injective.ne (by decide)) (ext.injective.ne (by decide))
       (fun i => off i 0),by simpa [ScanData.recordTime,h] using hn,run⟩
   | true =>
     obtain ⟨det,lift⟩ := liveSpec j inside h
-    obtain ⟨z,F,n,hz,next,frame,hn,run⟩ := ready.live a ports ext off j inside h det lift inputs (encoded j inside)
+    obtain ⟨z,F,n,hz,next,left,frame,hn,run⟩ := ready.live a ports ext off j inside h det lift inputs (encoded j inside)
       signed hm hw hW body u D
-    exact ⟨z,F,n,hz,next,frame _ (ext.injective.ne (by decide)) (ext.injective.ne (by decide))
+    exact ⟨z,F,n,hz,⟨next,left.trans prior⟩,frame _ (ext.injective.ne (by decide)) (ext.injective.ne (by decide))
       (fun i => off i 0),by simpa [ScanData.recordTime,h] using hn,run⟩
 
 /-- Dispatch the concrete residual and padding programs around a good-record program
@@ -110,7 +110,7 @@ theorem classifiedResidualScan_exec (a : ScanData r d w W) (ports : Fin (N+2) �
     | false => simpa [h,b,cost] using goodStep j inside h b u D ready
     | true =>
       obtain ⟨det,lift⟩ := liveSpec j inside h
-      obtain ⟨z,F,n,hz,next,frame,hn,run⟩ := ready.live a ports ext off j inside h det lift inputs
+      obtain ⟨z,F,n,hz,next,_,frame,hn,run⟩ := ready.live a ports ext off j inside h det lift inputs
         (encoded j inside) signed hm hw hW body u D
       exact ⟨z,F,n,hz,next,frame _ (ext.injective.ne (by decide)) (ext.injective.ne (by decide))
         (fun i => off i 0),frame _ (separate 2).symm (separate 5).symm outside,

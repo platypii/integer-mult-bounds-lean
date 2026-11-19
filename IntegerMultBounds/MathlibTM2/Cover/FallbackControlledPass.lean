@@ -40,6 +40,7 @@ theorem controlledPass_exec {Q : ℕ} (body : P → Pr P T Q prime U) (capacity 
     ∃ z F n, z.user = u.user ∧ F.R (ext 2) = output ++ a.inputTail ∧ F.R (ext 5) = [] ∧
       F.R (ext 0) = [] ∧ F.R (ports (Fin.last N).castSucc) = a.pivotTail ∧
       F.R (ports (archivePorts 0 (columnBank 34))) = a.matrixTail ∧
+      F.L (ext 2) = S.L (ext 2) ∧
       n ≤ 2*((v.beforeRows*v.rows*B)*(time (prime^w) (r*r) 1+5)+4) + (1+(((List.range a.records).map fun j => a.recordTime U j + 4).sum + 2 + (2*(a.records*(M^(d+1)*W))+2))) ∧
       Exec body prog (mk u S) n (mk z F) := by
   obtain ⟨writer,emit⟩ := controlStreams_exec body table rs size (ext 0) (ports (Fin.last N).castSucc)
@@ -60,11 +61,11 @@ theorem controlledPass_exec {Q : ℕ} (body : P → Pr P T Q prime U) (capacity 
     rw [code]
     simpa [F,D,bits,pivot,← records,ScanData.pivotWord,ScanData.pivots,empty,off,
       Function.update_comm (off (Fin.last N).castSucc 0)] using write
-  obtain ⟨z,G,n,hz,queue,acc,mask,pivots,archive,hn,run⟩ :=
+  obtain ⟨z,G,n,hz,queue,acc,mask,pivots,archive,left,hn,run⟩ :=
     residualPass_exec a ports ext off inputs encoded signed liveSpec padding hm hw hW Empty.elim (stateLiftDown positive y) F fresh
       (start.mask (fun i => off i 0) bits) (Function.update_self ..)
   have lifted := stateLift_exec_normalized capacity positive Empty.elim (body' := body) (fun e => nomatch e) y run
-  exact ⟨_,G,_,hz.trans hy,queue,acc,mask,pivots,archive,
+  exact ⟨_,G,_,hz.trans hy,queue,acc,mask,pivots,archive,left,
     Nat.add_le_add (by simpa using hl) (Nat.add_le_add_left hn 1),.seq gen lifted⟩
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback

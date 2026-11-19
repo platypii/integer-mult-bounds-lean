@@ -38,7 +38,7 @@ theorem anchorPass (r : Fin 6 ↪ Fin T)
         t ≤ (v.beforeRows*v.rows*B)*(time (prime^(w-1)) (m*m) 1+5)+4 +
           ((inputs.map (fun a => cost n T f b W a.1 + 2)).sum + 2) +
           (2*(LabelMask.records v*((modulus b)^((n+1)*f)*W))+2) ∧
-        Ready n f b W F ∧ z.user = u.user ∧ F.inp = S.inp ∧ F.out = S.out ∧
+        Ready n f b W F ∧ z.user = u.user ∧ F.inp = S.inp ∧ F.out = S.out ∧ F.L (port n r 1) = S.L (port n r 1) ∧
         ∀ j : Fin T, F.R (Fin.natAdd (size n) j) =
           if j = r 1 then outs.flatMap payloadWord ++ tail else S.R (Fin.natAdd (size n) j) := by
   obtain ⟨writer,write⟩ := signStream_writes body table rs hk (port n r 4) parents saved layout
@@ -52,7 +52,7 @@ theorem anchorPass (r : Fin 6 ↪ Fin T)
     have e := congrArg Fin.val h
     simp at e
     omega
-  obtain ⟨outs,z,F,t,hout,run,ht,readyF,zu,zi,zo,frame⟩ := scan_runs r hf hb hW body inputs u' M tail
+  obtain ⟨outs,z,F,t,hout,run,ht,readyF,zu,zi,zo,left,frame⟩ := scan_runs r hf hb hW body inputs u' M tail
     (by simpa [Ready,M,port,disjoint] using neutral)
     (by simpa [M,port,r.injective.eq_iff] using width)
     (by simpa [M,port,r.injective.eq_iff] using queue)
@@ -64,7 +64,7 @@ theorem anchorPass (r : Fin 6 ↪ Fin T)
   have archive : F.R (port n r 5) = (outs.flatMap payloadWord).reverse := by
     simpa [M,port,r.injective.eq_iff,show S.R (Fin.natAdd (size n) (r 5)) = [] from cleared 5 (by decide)] using frame (r 5)
   have suffix : F.R (port n r 1) = tail := by simpa [r.injective.eq_iff] using frame (r 1)
-  refine ⟨outs,y,_,_,hout,.seq emit (.seq run restore),?_,?_,yu.trans (zu.trans hu),zi,zo,?_⟩
+  refine ⟨outs,y,_,_,hout,.seq emit (.seq run restore),?_,?_,yu.trans (zu.trans hu),zi,zo,left,?_⟩
   · have volume (l : List (Array n f b W)) :
         (l.flatMap payloadWord).length = l.length * ((modulus b)^((n+1)*f)*W) := by
       induction l with

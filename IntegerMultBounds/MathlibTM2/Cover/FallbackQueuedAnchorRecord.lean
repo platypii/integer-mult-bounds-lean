@@ -47,6 +47,7 @@ theorem queuedAnchorRecord_exec {r records T : ℕ} (ports : Fin (N+2) ↪ Fin T
       clean F ∧ F.R (ports (Fin.last N).castSucc) = ((List.range records).drop (j+1)).flatMap code ++ rest ∧
       F.R src = (outs.drop (j+1)).flatMap payloadWord ++ queueTail ∧
       F.R (ports (archivePorts 1 (columnBank 34))) = S.R (ports (archivePorts 1 (columnBank 34))) ∧
+      F.L src = S.L src ∧
       ∀ j, j ≠ src → (∀ i, ports i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
   intro bank dst j rows code clean layout free input queue width blankDst savedFree tmpFree schedule
   obtain ⟨neg,out,entry,correct,_,valid,sign⟩ := Record.output_at (by omega) table g m det lift inputs outs result block live

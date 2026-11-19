@@ -50,6 +50,7 @@ theorem signedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size d+T) ↪
     ∃ z F n, z.user = u.user ∧ F.R (ext 2) = output ++ a.inputTail ∧ F.R (ext 5) = [] ∧
       F.R (ext 0) = [] ∧ F.R (ports (Fin.last N).castSucc) = a.pivotTail ∧
       F.R (ports (archivePorts 0 (columnBank 34))) = a.matrixTail ∧
+      F.L (ext 2) = S.L (ext 2) ∧
       n ≤ (1+((v.beforeRows*v.rows*B)*(time (prime^w) (r*r) 1+5)+4 +
           ((ins.map (fun x => cost d T 1 (w+1) W x.1 + 2)).sum + 2) +
           (2*(a.records*(ActualAffineScaling.modulus (w+1)^((d+1)*1)*W))+2))) + (2*((v.beforeRows*v.rows*B)*(time (prime^w) (r*r) 1+5)+4) + (1+(((List.range a.records).map fun j => a.recordTime U j + 4).sum + 2 + (2*(a.records*(M^(d+1)*W))+2)))) ∧
@@ -61,7 +62,7 @@ theorem signedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size d+T) ↪
   refine ⟨.seq sign pass,?_⟩
   intro v B a inputs u S shape records hW D neutral radix free count width unsigned clean start tables hm hw
     fresh empty radixC freeC countC encoded liveSpec padding ins output
-  obtain ⟨outs,y,F,t,correct,hy,exec,prepared,frame,ht⟩ :=
+  obtain ⟨outs,y,F,t,correct,hy,exec,prepared,frame,signLeft,ht⟩ :=
     signRun v B a inputs u S shape records hW neutral radix free count width unsigned clean start
   have keep (k) (h : k ∈ parentsC :: savedC :: slots cs) := (frame k (separate k h)).2
   have counters : ready (prime^w) F.R cs := by
@@ -69,10 +70,10 @@ theorem signedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size d+T) ↪
     have member (k) (hk : k ∈ slots cs) : F.R k = S.R k := keep k (by simp [hk])
     rw [member _ (List.mem_flatMap.mpr ⟨pair,h,by simp⟩),member _ (List.mem_flatMap.mpr ⟨pair,h,by simp⟩)]
     exact radixC pair h
-  obtain ⟨z,G,n,hz,queue,acc,mask,pivots,archive,hn,run⟩ :=
+  obtain ⟨z,G,n,hz,queue,acc,mask,pivots,archive,left,hn,run⟩ :=
     passRun v B {a with signed := outs} records tables shape inputs encoded correct liveSpec padding hm hw hW y F
       counters ((keep _ (by simp)).trans freeC) ((congrArg List.length (keep _ (by simp))).trans countC)
       ((frame _ (fun i => external i 0 (by decide))).2.trans empty) fresh prepared
-  exact ⟨z,G,t+n,hz.trans hy,queue,acc,mask,pivots,archive,Nat.add_le_add ht hn,.seq exec run⟩
+  exact ⟨z,G,t+n,hz.trans hy,queue,acc,mask,pivots,archive,left.trans signLeft,Nat.add_le_add ht hn,.seq exec run⟩
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback

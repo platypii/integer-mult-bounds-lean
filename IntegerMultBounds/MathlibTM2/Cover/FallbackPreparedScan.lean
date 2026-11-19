@@ -245,7 +245,7 @@ theorem archivedPass_exec {Q T r A : ℕ} (table : Matrix (Fin r) (Fin r) (ZMod 
     · intro i
       have ne := host.injective.ne (private_ne_rewind (d+1) i (Fin.last N).castSucc)
       exact ⟨(privateFree i).1,(Function.update_of_ne ne _ _).trans (privateFree i).2⟩
-  obtain ⟨outs,initial,base,signTime,signed,signUser,signExec,scanStart,signFrame,signBound⟩ :=
+  obtain ⟨outs,initial,base,signTime,signed,signUser,signExec,scanStart,signFrame,_,signBound⟩ :=
     signRun desc B a inputs first init shape records hW neutral aradix afree acount awidth unsigned clean initialInv.1
   let scanData := {a with signed := outs}
   let ready := invariant outs
@@ -330,7 +330,7 @@ theorem archivedPass_exec {Q T r A : ℕ} (table : Matrix (Fin r) (Fin r) (ZMod 
       rw [outputPrefix_succ,outputRecord_live _ _ _ bit unit word effect,← before.acc]
       exact out
   obtain ⟨u,D,l,hu,⟨done,parents,free⟩,empty,time,run⟩ := scanned
-  obtain ⟨z,F,hz,queue,accEnd,maskEnd,pivots,archive,frame,move⟩ := finishScan_exec scanData scanPorts ext offExt body
+  obtain ⟨z,F,hz,queue,accEnd,maskEnd,pivots,archive,_,frame,move⟩ := finishScan_exec scanData scanPorts ext offExt body
     u D done fresh (by simpa [signedInputs] using signed.length_eq.symm) empty
   refine ⟨z,F,_,hz.trans (hu.trans (hv.trans signUser)),queue,accEnd,maskEnd,pivots,archive,
     (frame _ (parentExt 2).symm (parentExt 5).symm).2.trans (parents.trans (initialReady.2.1.symm.trans ((Function.update_of_ne (parentOff _).symm _ _).trans (signFrame _ anchorParent).2))),?_,

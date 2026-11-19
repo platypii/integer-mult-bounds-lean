@@ -25,6 +25,7 @@ theorem finishScan_exec {Q : ℕ} (a : ScanData r d w W) (ports : Fin (N+2) ↪ 
     ∃ z F, z.user = u.user ∧ F.R (ext 2) = output ++ a.inputTail ∧ F.R (ext 5) = [] ∧
       F.R (ext 0) = [] ∧ F.R (ports (Fin.last N).castSucc) = a.pivotTail ∧
       F.R (ports (archivePorts 0 (columnBank 34))) = a.matrixTail ∧
+      F.L = D.L ∧
       (∀ h, h ≠ ext 2 → h ≠ ext 5 → F.L h = D.L h ∧ F.R h = D.R h) ∧
       Exec body (moveR (ext 5) (ext 2) id) (mk u D) (2*(a.records*(M^(d+1)*W))+2) (mk z F) := by
   intro output
@@ -39,12 +40,13 @@ theorem finishScan_exec {Q : ℕ} (a : ScanData r d w W) (ports : Fin (N+2) ↪ 
   obtain ⟨z,hz,move⟩ := moveR_exec body (ext 5) (ext 2) (ext.injective.ne (by decide)) id u D
   have finish : (List.range a.records).drop a.records = [] := List.drop_eq_nil_of_le (by simp)
   rw [width] at move
-  refine ⟨z,_,hz,?_,?_,?_,?_,?_,?_,move⟩
+  refine ⟨z,_,hz,?_,?_,?_,?_,?_,?_,?_,move⟩
   · simp [movedR,acc,queue]
   · simp [movedR,ext.injective.eq_iff]
   · simp [movedR,ext.injective.eq_iff,empty]
   · simpa [movedR,off,finish] using ready.pivots
   · simpa [movedR,off,ScanData.matrices,finish] using ready.archive
+  · rfl
   · intro h hs ha
     simp [movedR,hs,ha]
 
@@ -65,13 +67,14 @@ theorem residualPass_exec (a : ScanData r d w W) (ports : Fin (N+2) ↪ Fin T) (
     ∃ z F n, z.user = v.user ∧ F.R (ext 2) = output ++ a.inputTail ∧ F.R (ext 5) = [] ∧
       F.R (ext 0) = [] ∧ F.R (ports (Fin.last N).castSucc) = a.pivotTail ∧
       F.R (ports (archivePorts 0 (columnBank 34))) = a.matrixTail ∧
+      F.L (ext 2) = S.L (ext 2) ∧
       n ≤ ((List.range a.records).map fun j => a.recordTime U j + 4).sum + 2 + (2*(a.records*(M^(d+1)*W))+2) ∧
       Exec body (residualPass ports ext d) (mk v S) n (mk z F) := by
   intro output
-  obtain ⟨u,D,l,hu,ready,empty,hl,scan⟩ := residualScan_exec a ports ext off inputs encoded signed liveSpec padding
+  obtain ⟨u,D,l,hu,⟨ready,left⟩,empty,hl,scan⟩ := residualScan_exec a ports ext off inputs encoded signed liveSpec padding
     hm hw hW body v S start mask
-  obtain ⟨z,F,hz,queue,acc,maskEnd,pivots,archive,_,move⟩ := finishScan_exec a ports ext off body u D ready
+  obtain ⟨z,F,hz,queue,acc,maskEnd,pivots,archive,finishLeft,_,move⟩ := finishScan_exec a ports ext off body u D ready
     fresh (by simpa [Record.signedInputs] using signed.length_eq.symm) empty
-  exact ⟨z,F,_,hz.trans hu,queue,acc,maskEnd,pivots,archive,Nat.add_le_add_right hl _,.seq scan move⟩
+  exact ⟨z,F,_,hz.trans hu,queue,acc,maskEnd,pivots,archive,(congrFun finishLeft _).trans left,Nat.add_le_add_right hl _,.seq scan move⟩
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback

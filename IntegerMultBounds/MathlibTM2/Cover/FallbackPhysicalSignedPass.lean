@@ -57,6 +57,7 @@ theorem physicalSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size 
     ∃ z F n, z.user = u.user ∧ F.R (ext 2) = output ++ a.inputTail ∧ F.R (ext 5) = [] ∧
       F.R (ext 0) = [] ∧ F.R (ports (Fin.last N).castSucc) = a.pivotTail ∧
       F.R (ports (archivePorts 0 (columnBank 34))) = a.matrixTail ∧
+      F.L (ext 2) = S.L (ext 2) ∧
       n ≤ (1+((v.beforeRows*v.rows*B)*(time (prime^w) (r*r) 1+5)+4 +
           ((ins.map (fun x => cost d T 1 (w+1) W x.1 + 2)).sum + 2) +
           (2*(a.records*(ActualAffineScaling.modulus (w+1)^((d+1)*1)*W))+2))) + (2*((v.beforeRows*v.rows*B)*(time (prime^w) (r*r) 1+5)+4) + (1+(((List.range a.records).map fun j => a.recordTime U j + 4).sum + 2 + (2*(a.records*(M^(d+1)*W))+2)))) ∧
