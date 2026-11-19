@@ -12,25 +12,41 @@ variable {T Q A d : ℕ} {P U : Type}
 def columnReadPorts : Fin 7 ↪ Fin 22 := ⟨![3,2,15,19,4,5,6],by decide⟩
 def columnInversePorts : Fin 16 ↪ Fin 22 := ⟨![17,1,0,3,2,5,6,7,8,9,10,11,12,13,19,20],by decide⟩
 
-def column (p : ℕ) (k pivot : Fin d) (r : Fin 22 ↪ Fin T) : Pr P T Q A U :=
+def withColumnInverse (p : ℕ) (k pivot : Fin d) (r : Fin 22 ↪ Fin T) (update : Pr P T Q A U) : Pr P T Q A U :=
   .seq (readMatrixWord (pivot.val*d+k.val) (columnReadPorts.trans r))
     (.seq (pivotInverse p (columnInversePorts.trans r) (r 21))
-      (.seq (updateMatrix k pivot ((Fin.castLEEmb (by decide)).trans r)) (clearWords [r 17,r 19])))
+      (.seq update (clearWords [r 17,r 19])))
+
+def column (p : ℕ) (k pivot : Fin d) (r : Fin 22 ↪ Fin T) : Pr P T Q A U :=
+  withColumnInverse p k pivot r (updateMatrix k pivot ((Fin.castLEEmb (by decide)).trans r))
+
+def goodMatrixPorts : Fin 20 ↪ Fin 22 :=
+  ⟨![0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,20], by decide⟩
+
+def goodColumn (p : ℕ) (k : Fin d) (r : Fin 22 ↪ Fin T) : Pr P T Q A U :=
+  withColumnInverse p k k r (goodMatrix k (goodMatrixPorts.trans r))
 
 def columnTime (d p w H : ℕ) :=
   let C := 48*H*H+152*H+66
   8*(d*d*H)+32*H+44+(p-2)*C+C+w*(12*H+15+p*C)+d*((d+1)*entryTime d H)
 
-theorem column_exec (body : P → Pr P T Q A U) (r : Fin 22 ↪ Fin T) (p w H : ℕ) (hp : p.Prime)
+private theorem withColumnInverse_exec (body : P → Pr P T Q A U) (r : Fin 22 ↪ Fin T) (p w H : ℕ) (hp : p.Prime)
     [NeZero (p^(w+1))] (m : Matrix (Fin d) (Fin d) (ZMod (p^(w+1)))) (k pivot : Fin d)
     (unit : IsUnit (m pivot k)) (hm : p^(w+1) < 2^H) (v : HS T Q A U) (S : Stacks T A)
     (tail : List (Fin (A+4))) (matrix : S.R (r 15) = matrixWords A H m ++ tail)
     (modulus : S.R (r 2) = binSyms H (p^(w+1)))
     (one : S.R (r 20) = binSyms H (1 : ZMod (p^(w+1))).val) (ticks : (S.R (r 21)).length = w)
     (free : ∀ i : Fin 22, (i < 15 ∧ i ≠ 2) ∨ (17 ≤ i ∧ i ≤ 19) → S.R (r i) = []) :
-    let output := matrixWords A H (clearColumn p w k pivot m) ++ S.R (r 16)
-    ∃ z n, z.user = v.user ∧ n ≤ columnTime d p w H ∧ Exec body (column p k pivot r) (mk v S) n
+    ∀ (next : Matrix (Fin d) (Fin d) (ZMod (p^(w+1)))) (update : Pr P T Q A U),
+    (∀ (y : HS T Q A U) (F : Stacks T A), F.R (r 15) = matrixWords A H m ++ tail → F.R (r 2) = binSyms H (p^(w+1)) →
+      F.R (r 17) = binSyms H (Ring.inverse (m pivot k)).val → F.R (r 20) = binSyms H (1 : ZMod (p^(w+1))).val →
+      (∀ i : Fin 22, (i < 15 ∧ i ≠ 2) ∨ i = 18 → F.R (r i) = []) →
+      ∃ z n, z.user = y.user ∧ n ≤ d*((d+1)*entryTime d H)+1 ∧ Exec body update (mk y F) n
+        (mk z {F with R := Function.update F.R (r 16) (matrixWords A H next ++ F.R (r 16))})) →
+    let output := matrixWords A H next ++ S.R (r 16)
+    ∃ z n, z.user = v.user ∧ n ≤ columnTime d p w H ∧ Exec body (withColumnInverse p k pivot r update) (mk v S) n
       (mk z {S with R := Function.update (Function.update S.R (r 21) []) (r 16) output}) := by
+  intro next update emit
   have rp : ∀ i : Fin 7, i = 0 ∨ 4 ≤ i → columnReadPorts i < 15 ∧ columnReadPorts i ≠ 2 := by decide
   obtain ⟨u,hu,read⟩ := readMatrixWord_exec body (columnReadPorts.trans r) m pivot k H v S tail matrix
     (by change (S.R (r 2)).length = H; simp [modulus,length_binSyms]) (fun i h => free _ (.inl (rp i h)))
@@ -48,29 +64,21 @@ theorem column_exec (body : P → Pr P T Q A U) (r : Fin 22 ↪ Fin T) (p w H : 
     (fun i h j => (keep _ (ip i h j).1).trans (free _ (ip i h j).2))
   have kept (i : Fin 22) (h : i ≠ 17) (h' : i ≠ 21) : F.R (r i) = D.R (r i) :=
     frame _ (r.injective.ne h) (r.injective.ne h')
-  let bank : Fin 19 ↪ Fin 22 := Fin.castLEEmb (by decide)
-  obtain ⟨z,n,hz,hn,update⟩ := updateMatrix_exec body (bank.trans r) p w m k pivot H hm y F tail
-    ((kept 15 (by decide) (by decide)).trans ((keep 15 (by decide)).trans matrix))
-    ((kept 2 (by decide) (by decide)).trans ((keep 2 (by decide)).trans modulus))
-    (by rw [pivotReciprocal_eq hp w _ unit]; exact word) (by
-      intro i h
-      have hi : (bank i).val = i.val := rfl
-      have a : bank i ≠ 17 ∧ bank i ≠ 21 ∧ bank i ≠ 19 := by
-        refine ⟨?_,?_,?_⟩ <;> intro e <;> have q := congrArg Fin.val e <;> simp [bank] at q <;> omega
-      exact (kept _ a.1 a.2.1).trans ((keep _ a.2.2).trans (free _ (by
-        rcases h with ⟨lo,h2⟩ | eq
-        · exact .inl ⟨lo,fun e => h2 (bank.injective e)⟩
-        · subst i; decide))))
-  let output := matrixWords A H (clearColumn p w k pivot m) ++ S.R (r 16)
+  have preserved (i : Fin 22) (h : i ≠ 17 ∧ i ≠ 19 ∧ i ≠ 21) : F.R (r i) = S.R (r i) :=
+    (kept i h.1 h.2.2).trans (keep i h.2.1)
+  obtain ⟨z,n,hz,hn,updateRun⟩ := emit y F ((preserved 15 (by decide)).trans matrix)
+    ((preserved 2 (by decide)).trans modulus) word ((preserved 20 (by decide)).trans one)
+    (fun i h => (preserved i (by omega)).trans (free i (by omega)))
+  let output := matrixWords A H next ++ S.R (r 16)
   have outReg := (kept 16 (by decide) (by decide)).trans (keep 16 (by decide))
-  change Exec _ _ _ _ (mk z {F with R := Function.update F.R (r 16) (_ ++ F.R (r 16))}) at update
-  rw [outReg] at update
+  change Exec _ _ _ _ (mk z {F with R := Function.update F.R (r 16) (_ ++ F.R (r 16))}) at updateRun
+  rw [outReg] at updateRun
   let E : Stacks T A := {F with R := Function.update F.R (r 16) output}
   obtain ⟨z',hz',clear⟩ := clearWords_exec (body := body) [r 17,r 19] (by simp [r.injective.eq_iff]) z E
   have pivotWord : F.R (r 19) = binSyms H (m pivot k).val := (kept 19 (by decide) (by decide)).trans (by simp [D])
   change F.R (r 17) = _ at word
   simp [E,r.injective.eq_iff,word,pivotWord,length_binSyms] at clear
-  refine ⟨z',_,hz'.trans (hz.trans (hy.trans hu)),?_,(Exec.seq read (Exec.seq inv (Exec.seq update clear))).cast rfl ?_⟩
+  refine ⟨z',_,hz'.trans (hz.trans (hy.trans hu)),?_,(Exec.seq read (Exec.seq inv (Exec.seq updateRun clear))).cast rfl ?_⟩
   · have := matrixOffset_le H pivot k
     dsimp [columnTime]
     omega
@@ -86,6 +94,44 @@ theorem column_exec (body : P → Pr P T Q A U) (r : Fin 22 ↪ Fin T) (p w H : 
     by_cases e : i = r 19
     · subst i; simp [free 19 (by decide),r.injective.eq_iff]
     simp [a,b,c,e,frame i c b,D]
+
+theorem column_exec (body : P → Pr P T Q A U) (r : Fin 22 ↪ Fin T) (p w H : ℕ) (hp : p.Prime)
+    [NeZero (p^(w+1))] (m : Matrix (Fin d) (Fin d) (ZMod (p^(w+1)))) (k pivot : Fin d)
+    (unit : IsUnit (m pivot k)) (hm : p^(w+1) < 2^H) (v : HS T Q A U) (S : Stacks T A)
+    (tail : List (Fin (A+4))) (matrix : S.R (r 15) = matrixWords A H m ++ tail)
+    (modulus : S.R (r 2) = binSyms H (p^(w+1)))
+    (one : S.R (r 20) = binSyms H (1 : ZMod (p^(w+1))).val) (ticks : (S.R (r 21)).length = w)
+    (free : ∀ i : Fin 22, (i < 15 ∧ i ≠ 2) ∨ (17 ≤ i ∧ i ≤ 19) → S.R (r i) = []) :
+    let output := matrixWords A H (clearColumn p w k pivot m) ++ S.R (r 16)
+    ∃ z n, z.user = v.user ∧ n ≤ columnTime d p w H ∧ Exec body (column p k pivot r) (mk v S) n
+      (mk z {S with R := Function.update (Function.update S.R (r 21) []) (r 16) output}) := by
+  apply withColumnInverse_exec body r p w H hp m k pivot unit hm v S tail matrix modulus one ticks free
+  intro y F src mod inv _ fresh
+  apply updateMatrix_exec body _ p w m k pivot H hm y F tail src mod
+  · rw [pivotReciprocal_eq hp w _ unit]
+    exact inv
+  · intro i hi
+    rcases hi with ⟨lo,h2⟩ | rfl
+    · exact fresh _ (.inl ⟨lo,fun h => h2 ((Fin.castLEEmb (by decide : 19 ≤ 22)).injective h)⟩)
+    · exact fresh _ (.inr rfl)
+
+/-- Read a unit diagonal pivot, compute its inverse, and emit the entire next good matrix. -/
+theorem goodColumn_exec (body : P → Pr P T Q A U) (r : Fin 22 ↪ Fin T) (p w H : ℕ) (hp : p.Prime)
+    [NeZero (p^(w+1))] (m : Matrix (Fin d) (Fin d) (ZMod (p^(w+1)))) (k : Fin d)
+    (unit : IsUnit (m k k)) (hm : p^(w+1) < 2^H) (v : HS T Q A U) (S : Stacks T A)
+    (tail : List (Fin (A+4))) (matrix : S.R (r 15) = matrixWords A H m ++ tail)
+    (modulus : S.R (r 2) = binSyms H (p^(w+1)))
+    (one : S.R (r 20) = binSyms H (1 : ZMod (p^(w+1))).val) (ticks : (S.R (r 21)).length = w)
+    (free : ∀ i : Fin 22, (i < 15 ∧ i ≠ 2) ∨ (17 ≤ i ∧ i ≤ 19) → S.R (r i) = []) :
+    let output := matrixWords A H (GoodForm.elimM k m (Ring.inverse (m k k))) ++ S.R (r 16)
+    ∃ z n, z.user = v.user ∧ n ≤ columnTime d p w H ∧ Exec body (goodColumn p k r) (mk v S) n
+      (mk z {S with R := Function.update (Function.update S.R (r 21) []) (r 16) output}) := by
+  apply withColumnInverse_exec body r p w H hp m k k unit hm v S tail matrix modulus one ticks free
+  intro y F src mod inv oneWord fresh
+  apply goodMatrix_exec body (goodMatrixPorts.trans r) m k unit H hm y F tail src mod inv oneWord
+  intro i hi
+  exact fresh _ ((by decide : ∀ i : Fin 20, (i < 15 ∧ i ≠ 2) ∨ i = 18 →
+    (goodMatrixPorts i < 15 ∧ goodMatrixPorts i ≠ 2) ∨ goodMatrixPorts i = 18) i hi)
 
 open Node
 
