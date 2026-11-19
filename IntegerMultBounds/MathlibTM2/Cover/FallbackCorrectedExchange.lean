@@ -318,13 +318,14 @@ theorem correctedSchedule_exec {m r n Q : ℕ} (k t : Fin n → Fin (d+1)) (lt :
     (original : Fin (M^(d+1)*W) → ZMod 2) (addr : (Fin (d+1) → ZMod M) → Fin (d+1) → ZMod M) :
     let width := fun a => 22+fieldSignSlots (k a)
     let total := Fintype.card (Σ a, Fin (width a))
-    let shared := Fin.castAddEmb (n := N+1) total
-    let bank := exchangeBank (N+1) width
+    let ports := Fin.castAddEmb (n := (N+1)+total) 1
+    let shared := (Fin.castAddEmb (n := N+1) total).trans ports
+    let bank := fun a => (exchangeBank (N+1) width a).trans ports
     let move := fun (y : (Fin (d+1) → ZMod M) → Fin (d+1) → ZMod M) a x =>
       exchangeAddress (k a) (t a) (inv a * Ring.inverse (pivot (i a))) (parent (j a)*pivot (i a)) (y x)
     let record := (List.ofFn fun h => binSyms (A := prime) H (pivot h).val).flatten ++ tail
     let weights := (List.ofFn fun h => binSyms (A := prime) H (parent h).val).flatten ++ rest
-    let ready := fun y (D : Stacks ((N+1)+total) prime) =>
+    let ready := fun y (D : Stacks (((N+1)+total)+1) prime) =>
       ColumnRecordReady (columnBank.trans shared) H J record SparseRoleCircuit.encode (fun _ => blank) dest 0 q original y D ∧
       (∀ h : Fin N, 35 ≤ h.val → D.L (shared (columnPorts h)) = [] ∧ D.R (shared (columnPorts h)) = []) ∧
       D.R (shared (Fin.last N)) = weights
@@ -341,21 +342,30 @@ theorem correctedSchedule_exec {m r n Q : ℕ} (k t : Fin n → Fin (d+1)) (lt :
       let swap := 1+completeSwapTime (P := Empty) (U := U) Empty.elim (d+1) (k a) (t a) w W H J
       1+(1+(2*shear false+shear true+2*swap)+((10*J+12)+(21*(w+1)+12)+1+
         (1+(AtomSegment.chainConst (fieldSignOps (k a) true)*(M^(d+1)*W)*(width a+5)+6))))
-    ∀ (body : P → Pr P ((N+1)+total) Q prime U) v S, ready addr S →
-      (∀ h : Fin total, S.L (Fin.natAdd (N+1) h) = [] ∧ S.R (Fin.natAdd (N+1) h) = []) →
+    ∀ (body : P → Pr P (((N+1)+total)+1) Q prime U) v S, ready addr S →
+      (∀ h : Fin total, S.L (ports (Fin.natAdd (N+1) h)) = [] ∧ S.R (ports (Fin.natAdd (N+1) h)) = []) →
       ∃ z F l, z.user = v.user ∧ l ≤ ((List.finRange n).map cost).sum+1 ∧
         Exec body ((List.finRange n).foldr (fun a rest => .seq (program a) rest) (.act .done))
-          (mk v S) l (mk z F) ∧ ready ((List.finRange n).foldl move addr) F := by
-  intro width total shared bank move record weights ready program cost body v S before aux
-  have run := exchangeSchedule_exec body program move cost ready _ _ ?_ (List.finRange n)
-    (exchangeBanks_pairwise (N+1) width) addr v S before (by
+          (mk v S) l (mk z F) ∧ ready ((List.finRange n).foldl move addr) F ∧
+          F.R (Fin.last ((N+1)+total)) = S.R (Fin.last ((N+1)+total)) := by
+  intro width total ports shared bank move record weights ready program cost body v S before aux
+  let scratch := fun a h => ∃ b, h = ports (Fin.natAdd (N+1) (exchangeScratch width a b))
+  let used := fun a h => ∃ b, bank a b = h
+  have apart : (List.finRange n).Pairwise fun i j => ∀ h, scratch j h → ¬ used i h := by
+    apply (List.nodup_finRange n).imp
+    rintro i j ne h ⟨b,rfl⟩ ⟨c,eq⟩
+    exact exchangeBank_avoids (N+1) width ne c b (ports.injective eq)
+  have run := exchangeSchedule_exec body program move cost ready scratch used ?_ (List.finRange n)
+    apart addr v S before (by
       rintro a _ h ⟨b,rfl⟩
       exact aux _)
-  · obtain ⟨z,F,l,hz,hl,exec,next,_⟩ := run
-    exact ⟨z,F,l,hz,hl,exec,next⟩
+  · obtain ⟨z,F,l,hz,hl,exec,next,frame⟩ := run
+    refine ⟨z,F,l,hz,hl,exec,next,(frame _ ?_).2⟩
+    rintro a _ ⟨b,eq⟩
+    exact (exchangeBank (N+1) width a b).isLt.ne (congrArg Fin.val eq)
   · intro a y u D ok free
     let host := Fin.castAddEmb (n := N+1) (width a)
-    have eq (h : Fin (N+1)) : bank a (host h) = shared h := exchangeBank_shared ..
+    have eq (h : Fin (N+1)) : bank a (host h) = shared h := congrArg ports (exchangeBank_shared ..)
     have columns : (columnBank.trans host).trans (bank a) = columnBank.trans shared :=
       Function.Embedding.ext fun h => eq (columnBank h)
     have step := placedCorrectedChildExchange_exec (k a) (t a) (bank a) capacity (signCapacity a)
@@ -367,7 +377,7 @@ theorem correctedSchedule_exec {m r n Q : ℕ} (k t : Fin n → Fin (d+1)) (lt :
     obtain ⟨z,F,l,hz,hl,exec,next,saved⟩ := step ok (by
       intro b _
       apply free
-      exact ⟨b,exchangeBank_private ..⟩)
+      exact ⟨b,congrArg ports (exchangeBank_private ..)⟩)
     exact ⟨z,F,l,hz,hl,exec,next,fun h off => saved h (fun b eq => off ⟨b,eq⟩)⟩
 
 omit [M8.Machine.Net] in
@@ -403,11 +413,12 @@ theorem archivedDiagonal_exec {Q : ℕ} (parent : Fin d → (ZMod M)ˣ) (a : Fin
     let pivot : Fin (d+1) → ZMod M := Fin.cons 1 (fun h => (weightsAt h : ZMod M))
     let width := fun a => 22+fieldSignSlots (k a)
     let total := Fintype.card (Σ a, Fin (width a))
-    let shared := Fin.castAddEmb (n := N+1) total
-    let bank := exchangeBank (N+1) width
+    let ports := Fin.castAddEmb (n := (N+1)+total) 1
+    let shared := (Fin.castAddEmb (n := N+1) total).trans ports
+    let bank := fun a => (exchangeBank (N+1) width a).trans ports
     let record := (List.ofFn fun h => binSyms (A := prime) H (pivot h).val).flatten ++ tail
     let weights := (List.ofFn fun h => binSyms (A := prime) H (parent h : ZMod M).val).flatten ++ rest
-    let ready := fun y (D : Stacks ((N+1)+total) prime) =>
+    let ready := fun y (D : Stacks (((N+1)+total)+1) prime) =>
       ColumnRecordReady (columnBank.trans shared) H J record SparseRoleCircuit.encode (fun _ => blank) dest 0 q original y D ∧
       (∀ h : Fin N, 35 ≤ h.val → D.L (shared (columnPorts h)) = [] ∧ D.R (shared (columnPorts h)) = []) ∧
       D.R (shared (Fin.last N)) = weights
@@ -424,21 +435,22 @@ theorem archivedDiagonal_exec {Q : ℕ} (parent : Fin d → (ZMod M)ˣ) (a : Fin
       let swap := 1+completeSwapTime (P := Empty) (U := U) Empty.elim (d+1) (k a) (t a) w W H J
       1+(1+(2*shear false+shear true+2*swap)+((10*J+12)+(21*(w+1)+12)+1+
         (1+(AtomSegment.chainConst (fieldSignOps (k a) true)*(M^(d+1)*W)*(width a+5)+6))))
-    ∀ (body : P → Pr P ((N+1)+total) Q prime U) v S, ready addr S →
-      (∀ h : Fin total, S.L (Fin.natAdd (N+1) h) = [] ∧ S.R (Fin.natAdd (N+1) h) = []) →
+    ∀ (body : P → Pr P (((N+1)+total)+1) Q prime U) v S, ready addr S →
+      (∀ h : Fin total, S.L (ports (Fin.natAdd (N+1) h)) = [] ∧ S.R (ports (Fin.natAdd (N+1) h)) = []) →
       ∃ z F l, z.user = v.user ∧ l ≤ ((List.finRange n).map cost).sum+1 ∧
         Exec body ((List.finRange n).foldr (fun a rest => .seq (program a) rest) (.act .done))
-          (mk v S) l (mk z F) ∧ ready (Matrix.diagonal fun j => (a j : ZMod M)).mulVec F := by
-  intro rows weightsAt addr reads n k j t i pivot width total shared bank record weights ready program cost body v S before aux
+          (mk v S) l (mk z F) ∧ ready (Matrix.diagonal fun j => (a j : ZMod M)).mulVec F ∧
+          F.R (Fin.last ((N+1)+total)) = S.R (Fin.last ((N+1)+total)) := by
+  intro rows weightsAt addr reads n k j t i pivot width total ports shared bank record weights ready program cost body v S before aux
   have units (a : Fin n) : IsUnit (pivot (i a)) := by
     cases i a using Fin.cases with
     | zero => exact isUnit_one
     | succ h => exact (weightsAt h).isUnit
-  obtain ⟨z,F,l,hz,hl,exec,next⟩ := correctedSchedule_exec k t (fun a => Fin.succ_pos (j a))
+  obtain ⟨z,F,l,hz,hl,exec,next,spare⟩ := correctedSchedule_exec k t (fun a => Fin.succ_pos (j a))
     capacity (fun _ => signCapacity) (fun h => (parent h : ZMod M)) j (fun a => (↑(parent (j a))⁻¹ : ZMod M))
     (fun a => (parent (j a)).mul_inv) pivot i units H J hm hw hW tail rest dest q empty original addr body v S before aux
   have scaled : ready (fun x => applyPairs weightsAt rows (addr x)) F :=
     (pivotReads_action parent weightsAt rows addr) ▸ next
-  exact ⟨z,F,l,hz,hl,exec,(funext (signedPairs_diagonal a negative signValue)) ▸ scaled⟩
+  exact ⟨z,F,l,hz,hl,exec,(funext (signedPairs_diagonal a negative signValue)) ▸ scaled,spare⟩
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback.Record
