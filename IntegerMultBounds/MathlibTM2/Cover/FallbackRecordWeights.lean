@@ -3,6 +3,8 @@ module
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackStreamedItinerary
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackPayloadWeights
 
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCopyWordHeaders
+
 /-! Produce the payload pair weights from a physical fallback record. -/
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Cover.Fallback
@@ -130,5 +132,23 @@ theorem recordWeights_exec {m : ℕ} (body : P → Pr P T Q A U) (r : Fin 23 ↪
     rwa [Function.update_of_ne h15, Function.update_of_ne h16]
   · intro i hs hw ha hb
     exact (Function.update_of_ne hw _ _).trans (frame i hs ha hb)
+
+/-- Copy the resident padded one ahead of the extracted pivots. The ordinary exchange reads
+entry zero, and the weighted exchange for row `i` reads entry `i.succ`. -/
+theorem prependPivotOne_exec (body : P → Pr P T Q A U) (r : Fin 23 ↪ Fin T) (w H : ℕ)
+    (weights : Fin n → (ZMod (prime^(w+1)))ˣ) (tail : List (Fin (A+4)))
+    (v : HS T Q A U) (S : Stacks T A)
+    (one : S.R (r 20) = binSyms H (1 : ZMod (prime^(w+1))).val)
+    (packed : S.R (r 14) = (List.ofFn fun i => binSyms H (weights i : ZMod (prime^(w+1))).val).flatten ++ tail)
+    (tmp : S.R (r 3) = []) (saved : S.R (r 4) = []) :
+    let pivot : Fin (n+1) → ZMod (prime^(w+1)) := Fin.cons (1 : ZMod (prime^(w+1))) (fun i => (weights i : ZMod (prime^(w+1))))
+    ∃ z, z.user = v.user ∧ Exec body (Mult.PhaseCellToeplitz.copyWordHeader (r 20) (r 14) (r 3) (r 4))
+      (mk v S) (6*H+6) (mk z {S with R := Function.update S.R (r 14) ((List.ofFn fun i => binSyms H (pivot i).val).flatten ++ tail)}) := by
+  intro pivot
+  obtain ⟨z,hz,run⟩ := Mult.PhaseCellToeplitz.copyWordHeader_exec (body := body) (r 20) (r 14) (r 3) (r 4)
+    (by simp [r.injective.eq_iff]) v S tmp saved
+  refine ⟨z,hz,?_⟩
+  rw [one,packed] at run
+  simpa [pivot,List.ofFn_succ,List.append_assoc,length_binSyms] using run
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
