@@ -89,6 +89,36 @@ open IntegerMultBounds.Networks.Shared50ModularControl (prime)
 
 local instance (w : ℕ) : NeZero (prime^w) := ⟨pow_ne_zero _ Networks.Shared50ModularControl.prime_prime.ne_zero⟩
 
+/-- On single-atom fields the placed correction acts directly on the indexed payload.
+The incoming address can already include the signed exchange. -/
+theorem correctFieldPayload_exec {P U : Type} {T Q : ℕ} (i : Fin (d+1))
+    (ports : Fin (22+fieldSignSlots i) ↪ Fin T) (capacity : (fieldSignProgram i true).1 ≤ Q)
+    (hb : 0 < b) (hW : 0 < W) (a : Array d 1 b W) (body : P → Pr P T Q prime U)
+    (v : HS T Q prime U) (S : Stacks T prime)
+    (rep : RepT (AtomBank.outer (fieldSignSlots i) (AtomSegment.neutral b W) (AtomBank.arrTape a) 1)
+      (embStk ports S).L (embStk ports S).R)
+    (original : Fin (M^(d+1)*W) → ZMod 2) (addr : (Fin (d+1) → ZMod M) → Fin (d+1) → ZMod M)
+    (placed : ∀ x j, scalarArray a (index (addr x) j) = SparseRoleCircuit.encode (original (index x j))) :
+    ∃ out : Array d 1 b W, ∃ z F t, z.user = v.user ∧
+      t ≤ 1 + (AtomSegment.chainConst (fieldSignOps i true) * (M^(d+1)*W) * (22+fieldSignSlots i+5)+6) ∧
+      Exec body (placedFieldNeg i ports capacity) (mk v S) t (mk z F) ∧
+      RepT (AtomBank.outer (fieldSignSlots i) (AtomSegment.neutral b W) (AtomBank.arrTape out) 1)
+        (embStk ports F).L (embStk ports F).R ∧
+      (∀ h, (∀ k, ports k ≠ h) → F.L h = S.L h ∧ F.R h = S.R h) ∧
+      ∀ x j, scalarArray out (index (Function.update (addr x) i (-addr x i)) j) =
+        SparseRoleCircuit.encode (original (index x j)) := by
+  obtain ⟨out,z,F,t,hz,ht,run,after,frame,act⟩ := placedFieldNeg_exec i ports capacity
+    (by decide : 0 < 1) hb hW a body v S rep
+  refine ⟨out,z,F,t,hz,by simpa using ht,run,after,frame,?_⟩
+  intro x j
+  have h := act (fun k _ => addr x k) j
+  have eq : Function.update (fun k (_ : Fin 1) => addr x k) i (fun _ => -addr x i) =
+      fun k (_ : Fin 1) => Function.update (addr x) i (-addr x i) k := by
+    funext k u
+    by_cases e : k = i <;> simp [e]
+  rw [eq,refine_scalar,refine_scalar] at h
+  exact h.trans (placed x j)
+
 /-- Load one live signed record, preserving the remaining queue and identifying the
 sign and pivots of the corresponding residual matrix. -/
 theorem loadAnchorRecord_exec {r w records T Q : ℕ} {P U : Type}
