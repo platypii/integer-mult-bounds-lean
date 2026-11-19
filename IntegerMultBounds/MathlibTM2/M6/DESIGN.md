@@ -513,6 +513,22 @@ directly:
   profile already takes the moment above one, even with zero bad-residue surcharge
   (`M6.bit_one_extra_child_over_budget`). Retaining that exponent requires paying for the
   correction inside existing charges, reducing another charge, or changing the profile.
+  A common basis change for the original line projectors cannot remove all port dependence.
+  For two unit-line projectors `P,Q`, write `a = tr(PQ)`, the squared normalized inner
+  product. Since `PQP = aP` and `QPQ = aQ`, cyclicity of trace gives
+  `tr((PQ-QP)²) = 2a(a-1)`. Two lower triangular matrices have a strictly lower triangular
+  commutator, so simultaneous triangularization forces this trace to vanish. Distinct
+  rational port lines can therefore share a triangularizing basis only when orthogonal.
+  Ports 1 and 8 (zero-based) have `a = 1/4`, giving trace `-3/8`.
+
+  Orthogonal groups do admit shared bases: extend their line vectors to an orthogonal
+  basis over the rationals. In dimension eight each group has at most eight ports, so
+  covering the 111 distinct lines takes at least 14 bases. A constructive upper bound
+  is 17: traverse the pinned ports in order and assign each to the first group in which
+  it is orthogonal to every previous member, starting a new group when necessary.
+  The resulting group sizes are `8,8,6,8,7,8,8,8,6,6,4,6,7,8,6,3,4`.
+  This groups port endpoints only. Internal word frames, cross-group transitions and
+  executing each basis change on tape still need accounting.
 - **Routes and charts are coordinate permutations.** The stage routes `ρ` and the helper charts
   are orthogonal and not triangular; in Bruhat form each route contains 7 sub-field
   transpositions per field, for all 111 ports. On a tape they move data from less significant
