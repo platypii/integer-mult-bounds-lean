@@ -92,8 +92,8 @@ omit [M8.Machine.Net] in
 fraction of descriptor volume as the address width grows. -/
 theorem directoryDigits_volume_le (v : Descriptor) (positive : v.Positive)
     (r atom : ℕ) (fits : r*atom ≤ v.width) :
-    prime^v.width * (LabelMask.records v * (15*(atom*(r*r))+133)) ≤
-      (15*r+133)*volume prime v := by
+    prime^v.width * (LabelMask.records v * (19*(atom*(r*r))+(4*r*r+144))) ≤
+      (19*r+(4*r*r+144))*volume prime v := by
   have width : v.width ≤ prime^v.width :=
     (Nat.lt_pow_self (IntegerMultBounds.Networks.Shared50ModularControl.prime_prime.one_lt)).le
   have power : 1 ≤ prime^v.width := Nat.one_le_pow _ _ (by
@@ -101,15 +101,15 @@ theorem directoryDigits_volume_le (v : Descriptor) (positive : v.Positive)
   have digits : atom*(r*r) ≤ r*prime^v.width := by
     simpa only [Nat.mul_left_comm, Nat.mul_assoc, Nat.mul_comm] using
       Nat.mul_le_mul_left r (fits.trans width)
-  have scan : 15*(atom*(r*r))+133 ≤ (15*r+133)*prime^v.width := by
-    rw [Nat.add_mul, Nat.mul_assoc]
-    exact Nat.add_le_add (Nat.mul_le_mul_left _ digits) (by simpa using Nat.mul_le_mul_left 133 power)
+  have scan : 19*(atom*(r*r))+(4*r*r+144) ≤ (19*r+(4*r*r+144))*prime^v.width := by
+    rw [Nat.add_mul, Nat.mul_assoc 19 r]
+    exact Nat.add_le_add (Nat.mul_le_mul_left _ digits) (by simpa using Nat.mul_le_mul_left (4*r*r+144) power)
   have middle := positive.2.2.2.1
   have suffix := positive.2.2.2.2
   grw [scan]
   unfold LabelMask.records volume
   calc
-    _ = (15*r+133)*(v.beforeRows*v.rows*v.beforeH*prime^v.width*1*prime^v.width*1) := by ring
+    _ = (19*r+(4*r*r+144))*(v.beforeRows*v.rows*v.beforeH*prime^v.width*1*prime^v.width*1) := by ring
     _ ≤ _ := by gcongr <;> omega
 
 /-- Reading inherited labels pays once per parent, per record, and per live record. -/
@@ -133,7 +133,7 @@ theorem inheritedLabelCost_le_volume (v : Descriptor) (positive : v.Positive)
       gcongr <;> omega
 
 def directorySetupCost (r atom width parents records live box : ℕ) :=
-  records*(15*(atom*(r*r))+133) + inheritedLabelCost r width parents records live +
+  records*(19*(atom*(r*r))+(4*r*r+144)) + inheritedLabelCost r width parents records live +
     25*parents + 151*box
 
 omit [M8.Machine.Net] in
@@ -142,7 +142,7 @@ theorem directorySetupCost_le_volume (v : Descriptor) (positive : v.Positive)
     (hp : parents ≤ LabelMask.records v) (hl : live ≤ LabelMask.records v)
     (hb : box ≤ LabelMask.records v) (hw : width ≤ prime^v.width) :
     prime^v.width * directorySetupCost r atom width parents (LabelMask.records v) live box ≤
-      (12*r*r + 15*r + 333)*volume prime v := by
+      (16*r*r + 19*r + 344)*volume prime v := by
   have digits := directoryDigits_volume_le v positive r atom fits
   have labels := inheritedLabelCost_le_volume v positive r width parents live hp hl hw
   have records : prime^v.width * LabelMask.records v ≤ volume prime v := by
@@ -169,7 +169,7 @@ theorem physicalDirectorySetupCost_le_volume (v : Descriptor) (positive : v.Posi
     let parents := v.beforeRows*v.rows*B
     let live := (∏ i : Fin r, (prime^r-prime^i.val))*(prime^w)^(r*r)
     prime^v.width * directorySetupCost r (w+1) width parents (LabelMask.records v)
-      (parents*live) box ≤ (12*r*r+15*r+333)*volume prime v := by
+      (parents*live) box ≤ (16*r*r+19*r+344)*volume prime v := by
   intro box parents live
   have count : LabelMask.records v = parents*box := by
     simp only [LabelMask.records, parents, box, shape, ← pow_mul]
@@ -552,8 +552,7 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     let classes := prime^(r*r)
     let lifts := (prime^w)^(r*r)
     let queuePerParent := lifts * (units * (liveBase + 4*((d+1)*(d+1)*base.H)) +
-        (classes-units) * (10*((d+1)*(d+1)*base.H)+6) +
-        classes * (4+(r*r*(4*(w+1)+4)+1)+6))
+        (classes-units) * (10*((d+1)*(d+1)*base.H)+6))
     let a := base.physical e proj α α'
     let perParent := queuePerParent + lifts*signedClassSetup U d T w a.H classes units +
       lifts*units*(signedResidualTime_le_setup_add_counter U d a.H).choose*a.J
@@ -770,7 +769,7 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
   have remaining : (List.range box).countP (fun j => !active j) = (classes-units)*lifts := by
     rw [Nat.sub_mul,← boxSize,← cardinality]
     omega
-  let setupCost := n*(queuePerParent + parentWidth*lifts*(12*r*r*units+4*classes))+4
+  let setupCost := n*(queuePerParent + classes*lifts*(4+(r*r*(4*(w+1)+4)+1)+6) + parentWidth*lifts*(12*r*r*units+4*classes))+4
   have generateCost : t ≤ setupCost := by
     apply ht.trans
     change (List.range base.records).countP active * _ +
