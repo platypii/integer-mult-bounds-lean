@@ -615,6 +615,30 @@ theorem physicalQueueSetup_volume_le (v : Descriptor) (positive : v.Positive)
   rw [records] at archive
   convert Nat.add_le_add matrix archive using 1 <;> ring
 
+/-- Cost of preparing the directory, generating the matrix archive, and initializing padding. -/
+noncomputable def passPreparationCost (v : Descriptor) (r d w B width H : ℕ) :=
+  let parents := v.beforeRows*v.rows*B
+  let units := ∏ i : Fin r, (prime^r-prime^i.val)
+  let lifts := (prime^w)^(r*r)
+  let build := matrixBuildCost r d 1 1 * (w+1)*(H+1)^2
+  parents*(lifts*(units*build + prime^(r*r)*(10*(d*d*H)+6))) +
+    directorySetupCost r (w+1) width parents (LabelMask.records v)
+      (parents*(units*lifts)) ((prime^(w+1))^(r*r)) + paddingSetupCost d H
+
+omit [M8.Machine.Net] in
+theorem passPreparationCost_volume_le (v : Descriptor) (positive : v.Positive)
+    (r d w B width : ℕ) (rankPos : 0 < r) (shape : v.beforeH = B*prime^(r*((w+1)*r)))
+    (fits : r*(w+1) ≤ v.width) (hw : width ≤ prime^v.width) :
+    prime^v.width * passPreparationCost v r d w B width (Nat.size (prime^(w+1))) ≤
+      (matrixBuildCost r d 1 1*(Nat.size prime+1)^2 + (10*(d*d)+6) +
+        (16*r*r+19*r+344) + paddingSetupCost d 1)*volume prime v := by
+  have atom := (Nat.le_mul_of_pos_left (w+1) rankPos).trans fits
+  have queue := physicalQueueSetup_volume_le v positive r d w B shape atom
+  have dir := physicalDirectorySetupCost_le_volume v positive r w B width shape fits hw
+  have pad := paddingSetupCost_volume_le v positive d (w+1) atom
+  simpa only [passPreparationCost, Nat.mul_add, Nat.add_mul] using
+    Nat.add_le_add (Nat.add_le_add queue dir) pad
+
 omit [M8.Machine.Net] in
 private theorem liveRecordCost_width (r d w H width numTime detTime : ℕ) :
     liveRecordCost r d w H width numTime detTime =
@@ -758,24 +782,20 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     SeededQueueReady w base.H proj α α' initial S bank recip pool coeff clock count
       seed tmp archive →
     let scan := QueueLayout.scanPorts (QueueLayout.directoryWork.trans bank) archive archiveOff
-    let liveBase := matrixBuildCost r (d+1) 1 1 * (w+1)*(base.H+1)^2
     let generate : Pr P K Q prime U := seededQueueBody r d e bank recip clock count pool coeff coeffOff scan mask seed tmp
     let units := ∏ i : Fin r, (prime^r-prime^i.val)
     let classes := prime^(r*r)
     let lifts := (prime^w)^(r*r)
-    let queuePerParent := lifts * (units*liveBase + classes*(10*((d+1)*(d+1)*base.H)+6))
     let a := base.physical e proj α α'
-    let perParent := queuePerParent + lifts*signedClassSetup U d T w a.H classes units +
+    let perParent := lifts*signedClassSetup U d T w a.H classes units +
       lifts*units*(signedResidualTime_le_setup_add_counter U d a.H).choose*a.J
     let recordVolume := M^(d+1)*W
     let totalVolume := LabelMask.records v*recordVolume
     let liveVolume := (v.beforeRows*v.rows*B)*(units*lifts)*recordVolume
-    let fixedCost := paddingSetupCost (d+1) base.H
     SignedPassBound regs anchor ports ext v B a payload rs parents saved body
       (.seq (LabelSpectators.program r br rows bh atom (dir 2) (dir 9) (dir 3) (dir 5)) (.seq (.seq (LabelDirectorySetup.setup r dir atom one) (.seq (expandMask (dir 9) (dir 4) (dir 2) (dir 3) (dir 5) (dir 12) (fun _ => false)) (LabelDirectoryBuild.program dir))) (.seq (.seq (LabelCounts.highCount one atom (dir 7) (dir 2) (dir 3) (dir 5))
         (scanR (dir 7) (dir 2) (LabelCountBank.pushAll (cs.map Prod.fst)))) (.seq writeMask (.seq (.seq (bcopy (recip 15) (bank 17) (bank 4) tmp) (.seq (.seq (umulSym 1 (bitSymbol false) (bank 8) (bank 9) (bank 4)) (withIdentitySeed (d+1) (bank 9) (bank 17) seed (bank 4) tmp generate)) (bclear (bank 9)))) (bclear (bank 17))))))) pass
-      ((v.beforeRows*v.rows*B)*perParent + directorySetupCost r (w+1) width (v.beforeRows*v.rows*B)
-        (LabelMask.records v) ((v.beforeRows*v.rows*B)*(units*lifts)) box + fixedCost +
+      ((v.beforeRows*v.rows*B)*perParent + passPreparationCost v r (d+1) w B width base.H +
         (anchorVolumeRate d T + 4)*totalVolume + (6+rate)*min liveVolume (((prime-1)*totalVolume)/prime)) u raw input := by
   intro swaps shears rate
   obtain ⟨pass,run⟩ := physicalSignedResidualPass (w := w) (W := W) regs anchor ports ext off banks external shared
@@ -786,8 +806,11 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     coeffOff maskLayout retained anchorDirectory portDirectory extDirectory
   obtain ⟨writeMask,write⟩ := record_writes (body := body) r cs sizeC mask parentsC savedC maskLayout
   refine ⟨writeMask,?_⟩
-  intro directoryPorts directorySlot dir parentWidthPort parentWidthOff atom one atomOff oneOff highLayout highSlots br rows bh dimensions word parentTail v B base payload u raw positiveDescriptor beforeRows rowsSize beforeH parentBlank source n box parentWidth digits ancestor tail entries counted builtState input atomWord oneWidth parentsWord wordWidth scratch counterEmpty savedBlank maskBlank bits selected oneBlank unitWord masked zeroBlank initial padWord S queueInputs scan liveBase generate units classes lifts queuePerParent a perParent recordVolume totalVolume liveVolume fixedCost shape records hW D
+  intro directoryPorts directorySlot dir parentWidthPort parentWidthOff atom one atomOff oneOff highLayout highSlots br rows bh dimensions word parentTail v B base payload u raw positiveDescriptor beforeRows rowsSize beforeH parentBlank source n box parentWidth digits ancestor tail entries counted builtState input atomWord oneWidth parentsWord wordWidth scratch counterEmpty savedBlank maskBlank bits selected oneBlank unitWord masked zeroBlank initial padWord S queueInputs scan generate units classes lifts a perParent recordVolume totalVolume liveVolume shape records hW D
     neutral radix free count width unsigned clean start hm hw fresh maskEmpty encoded padding
+  let liveBase := matrixBuildCost r (d+1) 1 1 * (w+1)*(base.H+1)^2
+  let queuePerParent := lifts * (units*liveBase + classes*(10*((d+1)*(d+1)*base.H)+6))
+  let fixedCost := paddingSetupCost (d+1) base.H
   let active := LabelStock.live r (w+1) 1
   obtain ⟨seedBlank,tmpBlank,weightBank,queueReady,empty,output⟩ := queueInputs
   have blank := queueReady.1 4 (by decide)
@@ -1128,8 +1151,13 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     omega
   have fixed := fixedBoxCost_le r w rankPos
   change 22*box + 21*(w+1) + 26*prime^w + 82 ≤ 151*box at fixed
+  rw [show passPreparationCost v r (d+1) w B parentWidth base.H =
+    (v.beforeRows*v.rows*B)*queuePerParent + directorySetupCost r (w+1) parentWidth
+      (v.beforeRows*v.rows*B) (LabelMask.records v) ((v.beforeRows*v.rows*B)*(units*lifts)) box +
+      fixedCost from rfl]
   unfold directorySetupCost
   rw [show ∀ x y f : ℕ, x + (y + 151*box) + f = (x+y) + (151*box+f) by intros; ring]
+  rw [← Nat.add_assoc (_*perParent) _ (151*box+fixedCost)]
   apply le_trans _ (Nat.add_le_add_right (Nat.add_le_add_right (Nat.add_le_add_left
     (Nat.add_le_add_right fixed (paddingSetupCost (d+1) base.H)) _) _) _)
   apply total.trans
