@@ -49,6 +49,19 @@ private theorem paddingSetupCost_eq (d H cost : ℕ) :
     6*H+6+(4*H+4+(d*(d*(6*H+6)+1)+1+cost+(2*(d*d*H)+2))+(2*H+2))+(2*H+2) =
       cost + paddingSetupCost d H := by unfold paddingSetupCost; ring
 
+omit [M8.Machine.Net] in
+/-- Splitting both address coordinates into field atoms and a spectator suffix
+preserves the descriptor volume represented by all records of the pass. -/
+theorem signedPassVolume_eq_descriptor (v : Descriptor) (e : (Fin r ⊕ Fin r) ≃ Fin (d+1))
+    (w suffix : ℕ) (width : v.width = r*(w+1) + suffix) :
+    LabelMask.records v * ((prime^(w+1))^(d+1) *
+      (prime^(2*suffix)*v.between*v.afterD)) = volume prime v := by
+  have dim := Fintype.card_congr e
+  simp only [Fintype.card_sum, Fintype.card_fin] at dim
+  simp only [LabelMask.records, volume, width, ← dim, pow_add, pow_mul,
+    Nat.mul_comm r (w+1), two_mul suffix]
+  ring
+
 noncomputable def anchorClassCost (table : Matrix (Fin r) (Fin r) (ZMod prime) → Matrix (Fin (d+1)) (Fin (d+1)) (ZMod prime))
     (T w W : ℕ) (digits : Fin (r*r) → ZMod prime) :=
   let m := table (LabelSelectors.matrix r digits)
@@ -383,7 +396,7 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
       4*(LabelTraversal.time (prime^w) (r*r) 1+5) + queuePerParent + lifts*signedClassSetup U d T w a.H classes units +
       lifts*units*(signedResidualTime_le_setup_add_counter U d a.H).choose*a.J
     let recordVolume := M^(d+1)*W
-    let totalVolume := a.records*recordVolume
+    let totalVolume := LabelMask.records v*recordVolume
     let liveVolume := (v.beforeRows*v.rows*B)*(units*lifts)*recordVolume
     let fixedCost := 22*box + 21*(w+1) + 26*prime^w + paddingSetupCost (d+1) base.H + 82
     SignedPassBound regs anchor ports ext v B a payload rs parents saved body
@@ -588,7 +601,7 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
   have liveBound : liveVolume ≤ ((prime-1)*totalVolume)/prime := by
     apply (Nat.le_div_iff_mul_le IntegerMultBounds.Networks.Shared50ModularControl.prime_prime.pos).2
     dsimp only [liveVolume, totalVolume]
-    rw [show a.records = n*box from recordCount, ← parentSize, boxSize]
+    rw [← records, recordCount, ← parentSize, boxSize]
     dsimp only [units, classes]
     convert density using 1 <;> ring
   have remaining : (List.range box).countP (fun j => !active j) = (classes-units)*lifts := by
