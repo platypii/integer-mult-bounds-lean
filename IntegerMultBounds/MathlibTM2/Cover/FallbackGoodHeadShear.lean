@@ -88,33 +88,33 @@ def packedHeadCoefficient (row offset : ℕ) (bank : Fin 17 ↪ Fin T) : Pr P T 
 
 theorem packedHeadCoefficient_writes (body : P → Pr P T Q A U) (bank : Fin 17 ↪ Fin T)
     (G : Matrix (Fin d) (Fin d) (ZMod M)) (k i : Fin d) (weights : Fin d → ZMod M)
-    (pivotInv : ZMod M) (H : ℕ) (hm : M < 2^H) (tail rest : List (Fin (A+4))) :
+    (pivotInv : ZMod M) (H : ℕ) (hm : M < 2^H) (tail rest : List (Fin (A+4))) (weightIndex : Fin d := i) :
     Writes body (fun R => R (bank 13) = matrixWords A H G ++ tail ∧
       R (bank 16) = (List.ofFn fun j => binSyms H (weights j).val).flatten ++ rest ∧
       R (bank 14) = binSyms H pivotInv.val ∧ R (bank 2) = binSyms H M ∧
       ∀ j : Fin 17, j ≤ 1 ∨ 3 ≤ j ∧ j ≤ 11 → R (bank j) = [])
-      (bank 15) (packedHeadCoefficient i.val (i.val*d+k.val) bank) (binSyms H (weights i*G i k*pivotInv).val)
-      (8*(i.val*H)+14*H+22+(8*((i.val*d+k.val)*H)+96*H*H+318*H+154)+(2*H+2)) := by
+      (bank 15) (packedHeadCoefficient weightIndex.val (i.val*d+k.val) bank) (binSyms H (weights weightIndex*G i k*pivotInv).val)
+      (8*(weightIndex.val*H)+14*H+22+(8*((i.val*d+k.val)*H)+96*H*H+318*H+154)+(2*H+2)) := by
   intro v S ⟨matrix,parent,pivot,modulus,free⟩
   let row : Matrix (Fin 1) (Fin d) (ZMod M) := fun _ j => weights j
   have small : ∀ j : Fin 7, j = 0 ∨ 4 ≤ j → headParentRead j ≤ 1 ∨ 3 ≤ headParentRead j ∧ headParentRead j ≤ 11 := by decide
-  obtain ⟨u,hu,read⟩ := readMatrixWord_exec body (headParentRead.trans bank) row 0 i H v S rest
+  obtain ⟨u,hu,read⟩ := readMatrixWord_exec body (headParentRead.trans bank) row 0 weightIndex H v S rest
     (by change S.R (bank 16) = matrixWords A H row ++ rest; simpa only [matrixWords,row,List.ofFn_succ,List.ofFn_zero,List.flatten_cons,List.flatten_nil,List.append_nil] using parent)
     ((congrArg List.length modulus).trans (length_binSyms ..)) (fun j h => free _ (small j h))
   simp only [Fin.val_zero,Nat.zero_mul,Nat.zero_add] at read
   change Exec _ _ _ _ (mk u {S with R := Function.update S.R (bank 0) (_ ++ S.R (bank 0))}) at read
   rw [free 0 (by decide),List.append_nil] at read
-  let D := {S with R := Function.update S.R (bank 0) (binSyms H (weights i).val)}
+  let D := {S with R := Function.update S.R (bank 0) (binSyms H (weights weightIndex).val)}
   have keep (j : Fin 17) (h : j ≠ 0) : D.R (bank j) = S.R (bank j) :=
     Function.update_of_ne (bank.injective.ne h) _ _
   have valid : ∀ j : Fin 16, j = 1 ∨ 3 ≤ j ∧ j ≤ 11 →
       let k := j.castLE (by decide : 16 ≤ 17)
       k ≠ 0 ∧ (k ≤ 1 ∨ 3 ≤ k ∧ k ≤ 11) := by decide
   obtain ⟨y,n,hy,ht,emit⟩ := headCoefficient_writes body ((Fin.castLEEmb (by decide)).trans bank) G k i
-    (weights i) pivotInv H hm tail u D ⟨(keep 13 (by decide)).trans matrix,Function.update_self ..,
+    (weights weightIndex) pivotInv H hm tail u D ⟨(keep 13 (by decide)).trans matrix,Function.update_self ..,
       (keep 14 (by decide)).trans pivot,(keep 2 (by decide)).trans modulus,
       fun j h => (keep _ (valid j h).1).trans (free _ (valid j h).2)⟩
-  let word := binSyms (A := A) H (weights i*G i k*pivotInv).val ++ S.R (bank 15)
+  let word := binSyms (A := A) H (weights weightIndex*G i k*pivotInv).val ++ S.R (bank 15)
   let E := {D with R := Function.update D.R (bank 15) word}
   change Exec _ _ _ _ (mk y {D with R := Function.update D.R (bank 15) (_ ++ D.R (bank 15))}) at emit
   rw [keep 15 (by decide)] at emit
@@ -216,7 +216,7 @@ theorem goodHeadShear_exec (body : P → Pr P T 217 A U) (G : Matrix (Fin d) (Fi
   intro k stage finalPivot childInv reciprocal matrix row pivot product c
   have coefficient : αw i * stage i k * reciprocal = c :=
     goodHeadCoefficient_eq G rank hr minor pivotIndex i αw αw' negative
-  obtain ⟨u,l,hu,ht,load⟩ := packedHeadCoefficient_writes body coeff stage k i αw reciprocal H hm tail rest v S
+  obtain ⟨u,l,hu,ht,load⟩ := packedHeadCoefficient_writes body coeff stage k i αw reciprocal H hm tail rest i v S
     ⟨matrix,row,pivot,modulus,work⟩
   rw [shared,fresh,List.append_nil,coefficient] at load
   exact loadedShear_exec body k i lt c bank _ _ H J hm hw hW v S ⟨u,l,hu,ht,load⟩
