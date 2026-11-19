@@ -40,7 +40,13 @@ noncomputable def withIdentitySeed (d : ℕ) (zero one seed tmp saved : Fin K) (
     Pr P K Q prime U :=
   .seq (.seq (identitySeed d zero one seed tmp saved) generate) (bclear seed)
 
-def seededSetupCost (d H cost : ℕ) : ℕ := d*(d*(6*H+6)+1)+1+cost+(2*(d*d*H)+2)
+/-- Write and release the binary constants and the square identity padding. -/
+def paddingSetupCost (d H : ℕ) : ℕ := d*d*(8*H+6)+d+14*H+17
+
+omit [M8.Machine.Net] in
+private theorem paddingSetupCost_eq (d H cost : ℕ) :
+    6*H+6+(4*H+4+(d*(d*(6*H+6)+1)+1+cost+(2*(d*d*H)+2))+(2*H+2))+(2*H+2) =
+      cost + paddingSetupCost d H := by unfold paddingSetupCost; ring
 
 def SignedPassBound (regs : Fin 6 ↪ Fin T) (anchor : Fin (size d+T) ↪ Fin K)
     (ports : Fin (N+2) ↪ Fin K) (ext : Fin 6 ↪ Fin K) (v : Descriptor) (B : ℕ)
@@ -163,7 +169,7 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     source.R atom = List.replicate (w+1) tick → (source.R one).length = 1 →
     source.R (dir 0) = (List.range n).flatMap word ++ parentTail → (∀ j < n, (word j).length = width) →
     (∀ i ∈ ([2,3,4,5,6,7,10,11,12,13] : List (Fin 15)), source.R (dir i) = []) →
-    let dirCost := 8*(w+1)+8+22*box + (n*(6*box+10)+6 + (n*box*(9*digits+15)+6 + (n*(box*(8*width+11)+6*width+15)+6 + n*box*(6*(width+digits)+13)+6)))
+    let dirCost := base.records*(15*digits+14*width+45) + n*(6*width+25) + 22*box + 8*(w+1)+32
 
     (∀ k ∈ slots cs, builtState.R k = []) → input.R savedC = [] →
     input.R mask = [] →
@@ -192,7 +198,7 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     SignedPassBound regs anchor ports ext v B a payload rs parents saved body
       (.seq (LabelSpectators.program r br rows bh atom (dir 2) (dir 9) (dir 3) (dir 5)) (.seq (.seq (LabelDirectorySetup.setup r dir atom one) (.seq (expandMask (dir 9) (dir 4) (dir 2) (dir 3) (dir 5) (dir 12) (fun _ => false)) (LabelDirectoryBuild.program dir))) (.seq (.seq (LabelCounts.highCount one atom (dir 7) (dir 2) (dir 3) (dir 5))
         (scanR (dir 7) (dir 2) (LabelCountBank.pushAll (cs.map Prod.fst)))) (.seq writeMask (.seq (.seq (bcopy (recip 15) (bank 17) (bank 4) tmp) (.seq (.seq (umulSym 1 (bitSymbol false) (bank 8) (bank 9) (bank 4)) (withIdentitySeed (d+1) (bank 9) (bank 17) seed (bank 4) tmp generate)) (bclear (bank 9)))) (bclear (bank 17))))))) pass
-      (44*LabelMask.records v+13*(w+1)+14 + (dirCost + (26*prime^w+6 + ((v.beforeRows*v.rows*B)*(LabelTraversal.time (prime^w) (r*r) 1+5)+4 + (6*base.H+6 + (4*base.H+4 + seededSetupCost (d+1) base.H setupCost + (2*base.H+2)) + (2*base.H+2)))))) u raw input := by
+      (44*LabelMask.records v+13*(w+1)+14 + (dirCost + (26*prime^w+6 + ((v.beforeRows*v.rows*B)*(LabelTraversal.time (prime^w) (r*r) 1+5)+4 + (setupCost + paddingSetupCost (d+1) base.H))))) u raw input := by
   obtain ⟨pass,run⟩ := physicalSignedResidualPass (w := w) (W := W) regs anchor ports ext off banks external shared
     capacity e proj idempotent admissible α α' inverse body rs hk parents saved layout cap cs sizeC
     parentsC savedC maskRegs pivotRegs separate
@@ -267,6 +273,13 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     parentsUser source word parentTail oneWidth scratch
   simp only [atomWidth,pow_mul prime (w+1) (r*r)] at build
   obtain ⟨built,buildSteps,buildUser,buildCost,buildRun⟩ := build positive parentsWord wordWidth
+  have directoryCost : buildSteps ≤ dirCost := by
+    apply buildCost.trans
+    change 8*(w+1)+8+22*box + (n*(6*box+10)+6 + (n*box*(9*digits+15)+6 +
+      (n*(box*(8*parentWidth+11)+6*parentWidth+15)+6+n*box*(6*(parentWidth+digits)+13)+6))) ≤ _
+    unfold dirCost
+    rw [recordCount]
+    exact Nat.le_of_eq (by ring)
   obtain ⟨counterReady,initialized,counterSteps,counterUser,counterCost,counterRun⟩ :=
     LabelCountBank.prepare_exec body cs one atom (dir 7) (dir 2) (dir 3) (dir 5) highLayout highSlots
       built builtState (w+1) (by omega) (by simpa [builtState,counted,LabelDirectorySetup.prepared,atomOff] using atomWord)
@@ -434,7 +447,13 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
         rw [← sharedArchive,prep]
         exact scanStart)
       hm hw fresh emptyMask radixC freeC countC encoded padding
-  exact ⟨z,E,_,hz.trans (finishUser.trans (releaseUser.trans (cleanUser.trans (hy.trans (preparedUser.trans (zeroUser.trans (copyUser.trans (hUser.trans (counterUser.trans (buildUser.trans parentUser)))))))))),queue,acc,maskDone,pivots,archiveDone,Nat.add_le_add (Nat.add_le_add parentCost (Nat.add_le_add buildCost (Nat.add_le_add counterCost (Nat.add_le_add hTime (Nat.add_le_add_right (Nat.add_le_add_left (Nat.add_le_add_right (Nat.add_le_add_left (Nat.add_le_add (Nat.add_le_add initCost generateCost) (Nat.le_of_eq (congrArg (fun n => 2*n+2) padLen))) _) _) _) _))))) hn,
+  have queueCost := Nat.add_le_add (Nat.add_le_add initCost generateCost)
+    (Nat.le_of_eq (congrArg (fun n => 2*n+2) padLen))
+  have paid := Nat.add_le_add_right (Nat.add_le_add_left
+    (Nat.add_le_add_right (Nat.add_le_add_left queueCost (4*base.H+4)) (2*base.H+2))
+    (6*base.H+6)) (2*base.H+2)
+  rw [paddingSetupCost_eq] at paid
+  exact ⟨z,E,_,hz.trans (finishUser.trans (releaseUser.trans (cleanUser.trans (hy.trans (preparedUser.trans (zeroUser.trans (copyUser.trans (hUser.trans (counterUser.trans (buildUser.trans parentUser)))))))))),queue,acc,maskDone,pivots,archiveDone,Nat.add_le_add (Nat.add_le_add parentCost (Nat.add_le_add directoryCost (Nat.add_le_add counterCost (Nat.add_le_add hTime paid)))) hn,
     Exec.seq (Exec.seq parentRun (Exec.seq buildRun (Exec.seq counterRun (Exec.seq emit (Exec.seq (Exec.seq copyRun (Exec.seq (Exec.seq zeroRun (Exec.seq (Exec.seq initRun generateRun) clearRun)) releaseRun)) finishRun))))) exec⟩
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
