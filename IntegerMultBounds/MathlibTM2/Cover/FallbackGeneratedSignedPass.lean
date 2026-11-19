@@ -132,6 +132,34 @@ theorem inheritedLabelCost_le_volume (v : Descriptor) (positive : v.Positive)
       have suffix := positive.2.2.2.2
       gcongr <;> omega
 
+def directorySetupCost (r atom width parents records live box : ℕ) :=
+  records*(15*(atom*(r*r))+133) + inheritedLabelCost r width parents records live +
+    25*parents + 151*box
+
+omit [M8.Machine.Net] in
+theorem directorySetupCost_le_volume (v : Descriptor) (positive : v.Positive)
+    (r atom width parents live box : ℕ) (fits : r*atom ≤ v.width)
+    (hp : parents ≤ LabelMask.records v) (hl : live ≤ LabelMask.records v)
+    (hb : box ≤ LabelMask.records v) (hw : width ≤ prime^v.width) :
+    prime^v.width * directorySetupCost r atom width parents (LabelMask.records v) live box ≤
+      (12*r*r + 15*r + 333)*volume prime v := by
+  have digits := directoryDigits_volume_le v positive r atom fits
+  have labels := inheritedLabelCost_le_volume v positive r width parents live hp hl hw
+  have records : prime^v.width * LabelMask.records v ≤ volume prime v := by
+    have power := pow_pos IntegerMultBounds.Networks.Shared50ModularControl.prime_prime.pos v.width
+    have middle := positive.2.2.2.1
+    have suffix := positive.2.2.2.2
+    unfold LabelMask.records volume
+    calc
+      _ = v.beforeRows*v.rows*v.beforeH*prime^v.width*1*1*1 := by ring
+      _ ≤ _ := by gcongr <;> omega
+  unfold directorySetupCost
+  rw [Nat.mul_add, Nat.mul_add, Nat.mul_add]
+  grw [digits, labels, hp, hb]
+  rw [Nat.mul_left_comm _ 25, Nat.mul_left_comm _ 151]
+  grw [records]
+  exact le_of_eq (by ring)
+
 /-- The live part of the generated pass pays the density factor on both swaps
 and shears, and the quotient-width factor on swaps. -/
 theorem signedPassResidualCharge_le (L r swaps shears live V : ℕ) (rankPos : 0 < r)
@@ -496,18 +524,17 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
         (classes-units) * (10*((d+1)*(d+1)*base.H)+6) +
         classes * (4+(r*r*(4*(w+1)+4)+1)+6))
     let a := base.physical e proj α α'
-    let perParent := box*(15*digits+133) + 25 +
-      queuePerParent + lifts*signedClassSetup U d T w a.H classes units +
+    let perParent := queuePerParent + lifts*signedClassSetup U d T w a.H classes units +
       lifts*units*(signedResidualTime_le_setup_add_counter U d a.H).choose*a.J
     let recordVolume := M^(d+1)*W
     let totalVolume := LabelMask.records v*recordVolume
     let liveVolume := (v.beforeRows*v.rows*B)*(units*lifts)*recordVolume
-    let fixedCost := 151*box + paddingSetupCost (d+1) base.H
+    let fixedCost := paddingSetupCost (d+1) base.H
     SignedPassBound regs anchor ports ext v B a payload rs parents saved body
       (.seq (LabelSpectators.program r br rows bh atom (dir 2) (dir 9) (dir 3) (dir 5)) (.seq (.seq (LabelDirectorySetup.setup r dir atom one) (.seq (expandMask (dir 9) (dir 4) (dir 2) (dir 3) (dir 5) (dir 12) (fun _ => false)) (LabelDirectoryBuild.program dir))) (.seq (.seq (LabelCounts.highCount one atom (dir 7) (dir 2) (dir 3) (dir 5))
         (scanR (dir 7) (dir 2) (LabelCountBank.pushAll (cs.map Prod.fst)))) (.seq writeMask (.seq (.seq (bcopy (recip 15) (bank 17) (bank 4) tmp) (.seq (.seq (umulSym 1 (bitSymbol false) (bank 8) (bank 9) (bank 4)) (withIdentitySeed (d+1) (bank 9) (bank 17) seed (bank 4) tmp generate)) (bclear (bank 9)))) (bclear (bank 17))))))) pass
-      ((v.beforeRows*v.rows*B)*perParent + inheritedLabelCost r width (v.beforeRows*v.rows*B)
-        (LabelMask.records v) ((v.beforeRows*v.rows*B)*(units*lifts)) + fixedCost +
+      ((v.beforeRows*v.rows*B)*perParent + directorySetupCost r (w+1) width (v.beforeRows*v.rows*B)
+        (LabelMask.records v) ((v.beforeRows*v.rows*B)*(units*lifts)) box + fixedCost +
         (anchorVolumeRate d T + 4)*totalVolume + (6+rate)*min liveVolume (((prime-1)*totalVolume)/prime)) u raw input := by
   intro swaps shears rate
   obtain ⟨pass,run⟩ := physicalSignedResidualPass (w := w) (W := W) regs anchor ports ext off banks external shared
@@ -849,10 +876,12 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     omega
   have fixed := fixedBoxCost_le r w rankPos
   change 22*box + 21*(w+1) + 26*prime^w + 82 ≤ 151*box at fixed
+  unfold directorySetupCost
+  rw [show ∀ x y f : ℕ, x + (y + 151*box) + f = (x+y) + (151*box+f) by intros; ring]
   apply le_trans _ (Nat.add_le_add_right (Nat.add_le_add_right (Nat.add_le_add_left
     (Nat.add_le_add_right fixed (paddingSetupCost (d+1) base.H)) _) _) _)
   apply total.trans
-  dsimp only [dirCost,setupCost,inheritedLabelCost,perParent,recordVolume,totalVolume,liveVolume,fixedCost,signedPassWork,Nat.add_one_sub_one]
+  dsimp only [dirCost,setupCost,digits,inheritedLabelCost,perParent,recordVolume,totalVolume,liveVolume,fixedCost,signedPassWork,Nat.add_one_sub_one]
   grw [traversal]
   change a.records = LabelMask.records v at records
   rw [← records,show a.records = n*box from recordCount,recordCount,← parentSize,boxSize]
