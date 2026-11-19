@@ -37,6 +37,37 @@ theorem physicalLabel_live (hw : 0 < w) (j : ℕ) :
   simp only [LabelStock.live,decide_eq_true_eq,physicalLabel_residue hw]
   exact (not_congr (LabelPadding.singular_iff hw _)).symm.trans (by simp)
 
+/-- The live addresses of one complete box enumerate the invertible matrices exactly once. -/
+theorem liveLabelCount (hw : 0 < w) :
+    (List.range (M^(m*m))).countP (LabelStock.live m w 1) = Nat.card (LabelPadding.Label m w)ˣ := by
+  classical
+  let box := M^(m*m)
+  let live := (Finset.range box).filter fun j => LabelStock.live m w 1 j = true
+  have decode (g : LabelPadding.Label m w) : physicalLabel m w (LabelAddress.address g).val = g := by
+    funext r c
+    simp only [physicalLabel,Nat.mod_eq_of_lt (LabelAddress.address g).isLt,Fin.eta]
+    simp [LabelAddress.address,M8.AtomOps.refine,Route.cols]
+  have bounds (j : live) : j.val < box := Finset.mem_range.mp (Finset.mem_filter.mp j.property).1
+  let encode (g : (LabelPadding.Label m w)ˣ) : live := ⟨(LabelAddress.address g.val).val,
+    Finset.mem_filter.mpr ⟨Finset.mem_range.mpr (LabelAddress.address g.val).isLt,
+      (physicalLabel_live hw _).mpr (by rw [decode]; exact g.isUnit)⟩⟩
+  let e : live ≃ (LabelPadding.Label m w)ˣ := {
+    toFun := fun j => ((physicalLabel_live hw _).mp (Finset.mem_filter.mp j.property).2).unit
+    invFun := encode
+    left_inv := by
+      intro j
+      apply Subtype.ext
+      change (LabelAddress.address (physicalLabel m w j.val)).val = j.val
+      simpa only [Nat.div_eq_of_lt (show j.val < M^(m*m) from bounds j),Nat.zero_mul,Nat.zero_add] using
+        (physicalLabel_index (m := m) (w := w) j.val)
+    right_inv := fun g => Units.ext (decode g.val) }
+  have counted := (List.nodup_range (n := box)).card_eq_countP (P := fun j => LabelStock.live m w 1 j = true)
+  have rangeSet : (List.range box).toFinset = Finset.range box := by ext; simp
+  rw [rangeSet] at counted
+  calc
+    _ = live.card := by simpa [live,box] using counted.symm
+    _ = _ := by simpa only [Nat.card_eq_fintype_card,Fintype.card_coe] using Nat.card_congr e
+
 theorem physicalProjector_spec (hw : 0 < w) (j : ℕ) (live : LabelStock.live m w 1 j = true)
     (e : (Fin m ⊕ Fin m) ≃ Fin n) (P : Matrix (Fin m) (Fin m) ℚ) (hp : P*P = P)
     (adm : Admissible prime P) (α α' : Fin m → ZMod M) (ha : ∀ i, α i * α' i = 1) :
