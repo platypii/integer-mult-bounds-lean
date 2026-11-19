@@ -40,4 +40,14 @@ theorem crossed_port_window_count {R : Type*} (mid : List (Op (Fin 8) R)) :
   change 1 + (interchanges mid + 1) = _
   omega
 
+/-- For a dimension-one to dimension-seven MOVE, the six exchanged positions
+are exactly the interior of each half. Adding the port swap moves all sixteen
+positions; no single plain six-atom block exchange has that action. -/
+theorem interior_move_with_port_swap :
+    let move := Routing.blockExchange 1 9 6
+    let port := fun k => Routing.blockExchange 8 15 1 (Routing.blockExchange 0 7 1 k)
+    ∀ a b : Fin 16, a.val + 6 ≤ b.val → b.val + 6 ≤ 16 →
+      ∃ k : Fin 16, Routing.blockExchange a.val b.val 6 k.val ≠ port (move k.val) := by
+  decide +kernel
+
 end IntegerMultBounds.MathlibTM2.M6
