@@ -71,6 +71,15 @@ theorem completeSwapTime_le_setup_add_volume [Fintype P] (body : P → Pr P (N+3
   grw [bound]
   exact le_of_eq (by ring)
 
+theorem completeSwapTime_eq_setup_add_counter [Fintype P] (body : P → Pr P (N+35) Q prime U)
+    (d i j w W H J : ℕ) :
+    let push := max (mnPushC body) (mnProgPush (.seq (swapSetup swapHostFits d i j)
+      (embProg swapSimulationPort Empty.elim (foreign rowSwapBlock.program)) : Pr P (N+35) Q prime U))
+    completeSwapTime body d i j w W H J = completeSwapTime body d i j w W H 0 +
+      (1 + (swapWorkspace (N+35)).length * 6 * push) * 10 * J := by
+  simp only [completeSwapTime]
+  ring
+
 theorem completeSwap_exec [Fintype P] {d w W : ℕ} (i j : Fin d) (lt : i < j) (H J : ℕ)
     (hm : prime^(w+1) < 2^H) (hw : W < 2^J) (hW : 0 < W)
     (body : P → Pr P (N+35) Q prime U) (v : HS (N+35) Q prime U) (S : Stacks (N+35) prime) :

@@ -42,6 +42,19 @@ theorem cleanPairShearTime_eq_setup_add_volume [Fintype P]
   simp only [Nat.add_assoc, Nat.mul_add, Nat.mul_assoc]
 
 
+theorem cleanPairShearTime_eq_setup_add_counter [Fintype P]
+    (body : P → Pr P T 217 A U) (bank : Fin 35 ↪ Fin T) (i k t : Fin d)
+    (b w W H J : ℕ) (inverse negative useOne : Bool) :
+    let push := max (Fast.Main.mnPushC body) (Fast.Main.mnProgPush
+      (pairShear (P := P) (A := A) (U := U) b i k t inverse bank negative useOne))
+    cleanPairShearTime body bank i k t b w W H J inverse negative useOne =
+      cleanPairShearTime body bank i k t b w W H 0 inverse negative useOne +
+        ((1 + 6 * shearWork.length * push) * (10 + (d-1-t.val)*(12*H+18))) * J := by
+  unfold cleanPairShearTime
+  rw [weightedShearTime_eq_setup_add_width_volume k t (b^(w+1)) W H J,
+    weightedShearTime_eq_setup_add_width_volume k t (b^(w+1)) W H 0]
+  ring
+
 theorem cleanPairShear_exec [Fintype P] (body : P → Pr P T 217 A U) (i k t : Fin d) (hk : k < t) (inverse : Bool)
     (bank : Fin 35 ↪ Fin T) (a : Fin d → ZMod M) (unit : IsUnit (a i)) (hb : b.Prime) (H J : ℕ)
     (hm : M < 2^H) (hw : W < 2^J) (hW : 0 < W) (v : HS T 217 A U) (S : Stacks T A)
