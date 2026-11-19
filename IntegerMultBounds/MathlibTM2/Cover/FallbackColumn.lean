@@ -139,6 +139,44 @@ open Node
 def itineraryColumn (p : ℕ) (k pivot : Fin d) (r : Fin 23 ↪ Fin T) : Pr P T Q A U :=
   .seq (ucopy (r 22) (r 21) (r 0)) (column p k pivot ((Fin.castLEEmb (by decide)).trans r))
 
+def borrowGoodColumn (p : ℕ) (k : Fin d) (r : Fin 23 ↪ Fin T) : Pr P T Q A U :=
+  .seq (ucopy (r 22) (r 21) (r 0)) (goodColumn p k ((Fin.castLEEmb (by decide)).trans r))
+
+private theorem borrowedColumn_exec (body : P → Pr P T Q A U) (r : Fin 23 ↪ Fin T) (p w H : ℕ)
+    [NeZero (p^(w+1))] (m : Matrix (Fin d) (Fin d) (ZMod (p^(w+1)))) (next : Matrix (Fin d) (Fin d) (ZMod (p^(w+1))))
+    (step : Pr P T Q A U) (v : HS T Q A U) (S : Stacks T A)
+    (tail : List (Fin (A+4))) (matrix : S.R (r 15) = matrixWords A H m ++ tail)
+    (modulus : S.R (r 2) = binSyms H (p^(w+1)))
+    (one : S.R (r 20) = binSyms H (1 : ZMod (p^(w+1))).val) (ticks : (S.R (r 22)).length = w)
+    (free : ∀ i : Fin 23, (i < 15 ∧ i ≠ 2) ∨ (17 ≤ i ∧ i ≤ 19) ∨ i = 21 → S.R (r i) = [])
+    (runStep : ∀ (v : HS T Q A U) (S : Stacks T A), S.R (r 15) = matrixWords A H m ++ tail →
+      S.R (r 2) = binSyms H (p^(w+1)) → S.R (r 20) = binSyms H (1 : ZMod (p^(w+1))).val →
+      (S.R (r 21)).length = w →
+      (∀ i : Fin 22, (i < 15 ∧ i ≠ 2) ∨ (17 ≤ i ∧ i ≤ 19) → S.R (r ((Fin.castLEEmb (by decide)) i)) = []) →
+    let output := matrixWords A H next ++ S.R (r 16)
+    ∃ z n, z.user = v.user ∧ n ≤ columnTime d p w H ∧ Exec body step (mk v S) n
+      (mk z {S with R := Function.update (Function.update S.R (r 21) []) (r 16) output})) :
+    ∃ z n, z.user = v.user ∧ n ≤ 4*w+4+columnTime d p w H ∧ Exec body (.seq (ucopy (r 22) (r 21) (r 0)) step) (mk v S) n
+      (mk z {S with R := Function.update S.R (r 16) (matrixWords A H next ++ S.R (r 16))}) := by
+  obtain ⟨u,hu,copy⟩ := ucopy_exec body (a := r 22) (b := r 21) (t := r 0)
+    (r.injective.ne (by decide)) (r.injective.ne (by decide)) (r.injective.ne (by decide)) v S (free 0 (by decide))
+  rw [ticks,free 21 (by decide),List.append_nil] at copy
+  let D : Stacks T A := {S with R := Function.update S.R (r 21) (List.replicate w tick)}
+  have keep (i : Fin 23) (hi : i ≠ 21) : D.R (r i) = S.R (r i) := Function.update_of_ne (r.injective.ne hi) _ _
+  let bank : Fin 22 ↪ Fin 23 := Fin.castLEEmb (by decide)
+  obtain ⟨z,n,hz,hn,run⟩ := runStep u D
+    ((keep 15 (by decide)).trans matrix) ((keep 2 (by decide)).trans modulus) ((keep 20 (by decide)).trans one)
+    (by simp [D]) (by
+      intro i h
+      apply (keep (bank i) _).trans (free _ _)
+      · intro e; have q := congrArg Fin.val e; change i.val = 21 at q; omega
+      · rcases h with ⟨lo,h2⟩ | h
+        · exact .inl ⟨lo,fun e => h2 (bank.injective e)⟩
+        · exact .inr (.inl h))
+  refine ⟨z,_,hz.trans hu,Nat.add_le_add_left hn _,(Exec.seq copy run).cast rfl ?_⟩
+  rw [keep 16 (by decide)]
+  simp [D,Function.update_idem,← free 21 (by decide)]
+
 theorem itineraryColumn_exec (body : P → Pr P T Q A U) (r : Fin 23 ↪ Fin T) (p w H : ℕ) (hp : p.Prime)
     [NeZero (p^(w+1))] (m : Matrix (Fin d) (Fin d) (ZMod (p^(w+1)))) (k pivot : Fin d)
     (unit : IsUnit (m pivot k)) (hm : p^(w+1) < 2^H) (v : HS T Q A U) (S : Stacks T A)
@@ -148,24 +186,21 @@ theorem itineraryColumn_exec (body : P → Pr P T Q A U) (r : Fin 23 ↪ Fin T) 
     (free : ∀ i : Fin 23, (i < 15 ∧ i ≠ 2) ∨ (17 ≤ i ∧ i ≤ 19) ∨ i = 21 → S.R (r i) = []) :
     ∃ z n, z.user = v.user ∧ n ≤ 4*w+4+columnTime d p w H ∧ Exec body (itineraryColumn p k pivot r) (mk v S) n
       (mk z {S with R := Function.update S.R (r 16) (matrixWords A H (clearColumn p w k pivot m) ++ S.R (r 16))}) := by
-  obtain ⟨u,hu,copy⟩ := ucopy_exec body (a := r 22) (b := r 21) (t := r 0)
-    (r.injective.ne (by decide)) (r.injective.ne (by decide)) (r.injective.ne (by decide)) v S (free 0 (by decide))
-  rw [ticks,free 21 (by decide),List.append_nil] at copy
-  let D : Stacks T A := {S with R := Function.update S.R (r 21) (List.replicate w tick)}
-  have keep (i : Fin 23) (hi : i ≠ 21) : D.R (r i) = S.R (r i) := Function.update_of_ne (r.injective.ne hi) _ _
-  let bank : Fin 22 ↪ Fin 23 := Fin.castLEEmb (by decide)
-  obtain ⟨z,n,hz,hn,run⟩ := column_exec body (bank.trans r) p w H hp m k pivot unit hm u D tail
-    ((keep 15 (by decide)).trans matrix) ((keep 2 (by decide)).trans modulus) ((keep 20 (by decide)).trans one)
-    (by change (D.R (r 21)).length = w; simp [D]) (by
-      intro i h
-      apply (keep (bank i) _).trans (free _ _)
-      · intro e; have q := congrArg Fin.val e; change i.val = 21 at q; omega
-      · rcases h with ⟨lo,h2⟩ | h
-        · exact .inl ⟨lo,fun e => h2 (bank.injective e)⟩
-        · exact .inr (.inl h))
-  refine ⟨z,_,hz.trans hu,Nat.add_le_add_left hn _,(Exec.seq copy run).cast rfl ?_⟩
-  change mk z {D with R := Function.update (Function.update D.R (r 21) []) (r 16) (_ ++ D.R (r 16))} = _
-  rw [keep 16 (by decide)]
-  simp [D,Function.update_idem,← free 21 (by decide)]
+  apply borrowedColumn_exec body r p w H m _ _ v S tail matrix modulus one ticks free
+  intro u D
+  exact column_exec body ((Fin.castLEEmb (by decide)).trans r) p w H hp m k pivot unit hm u D tail
+
+theorem borrowGoodColumn_exec (body : P → Pr P T Q A U) (r : Fin 23 ↪ Fin T) (p w H : ℕ) (hp : p.Prime)
+    [NeZero (p^(w+1))] (m : Matrix (Fin d) (Fin d) (ZMod (p^(w+1)))) (k : Fin d)
+    (unit : IsUnit (m k k)) (hm : p^(w+1) < 2^H) (v : HS T Q A U) (S : Stacks T A)
+    (tail : List (Fin (A+4))) (matrix : S.R (r 15) = matrixWords A H m ++ tail)
+    (modulus : S.R (r 2) = binSyms H (p^(w+1)))
+    (one : S.R (r 20) = binSyms H (1 : ZMod (p^(w+1))).val) (ticks : (S.R (r 22)).length = w)
+    (free : ∀ i : Fin 23, (i < 15 ∧ i ≠ 2) ∨ (17 ≤ i ∧ i ≤ 19) ∨ i = 21 → S.R (r i) = []) :
+    ∃ z n, z.user = v.user ∧ n ≤ 4*w+4+columnTime d p w H ∧ Exec body (borrowGoodColumn p k r) (mk v S) n
+      (mk z {S with R := Function.update S.R (r 16) (matrixWords A H (GoodForm.elimM k m (Ring.inverse (m k k))) ++ S.R (r 16))}) := by
+  apply borrowedColumn_exec body r p w H m _ _ v S tail matrix modulus one ticks free
+  intro u D
+  exact goodColumn_exec body ((Fin.castLEEmb (by decide)).trans r) p w H hp m k unit hm u D tail
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
