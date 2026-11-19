@@ -22,6 +22,25 @@ theorem weightPort (i : Fin 20) :
     weights (i.castLE (by decide)) = parent (adapterBank (head (child i))) := by revert i; decide
 def parentWithWeights : Fin 57 ↪ Fin 58 := Fin.castLEEmb (by decide)
 def middlePorts : Fin 10 ↪ Fin 58 := ⟨![2,28,57,0,1,3,4,5,6,7],by decide⟩
+
+/-- A nested middle-field operation reads its seed from its parent's output.
+The child writes the new size into its own private slot 57. -/
+def nestedMiddleHost {n : ℕ} (caller : Fin 58 ↪ Fin n) : Fin 58 ↪ Fin (n+58) :=
+  (Fin.natAddEmb n).trans
+    (Equiv.swap ((28 : Fin 58).natAdd n) ((caller 57).castAdd 58)).toEmbedding
+
+theorem nestedMiddleHost_seed {n : ℕ} (caller : Fin 58 ↪ Fin n) :
+    nestedMiddleHost caller 28 = (caller 57).castAdd 58 := by simp [nestedMiddleHost]
+
+theorem nestedMiddleHost_shared {n : ℕ} (caller : Fin 58 ↪ Fin n) (j : Fin 58) (ne : j ≠ 28) :
+    nestedMiddleHost caller j = j.natAdd n := by
+  apply Equiv.swap_apply_of_ne_of_ne ((Fin.natAddEmb n).injective.ne ne)
+  intro eq
+  have h := congrArg Fin.val eq
+  change n+j.val = (caller 57).val at h
+  have := (caller 57).isLt
+  omega
+
 end GoodChildLayout
 
 theorem prepareGoodChild_exec (body : P → Pr P T Q A U) (host : Fin 57 ↪ Fin T)
@@ -52,6 +71,41 @@ theorem prepareGoodChild_exec (body : P → Pr P T Q A U) (host : Fin 57 ↪ Fin
   refine ⟨z,t,hz,ht,?_⟩
   simpa only [pos,reciprocal,List.flatMap_def,List.ofFn_eq_map,show bank 20 = host 55 from rfl,show bank 21 = host 56 from rfl] using run
 
+/-- A recursive frame may keep its inherited middle size on a separate tape
+from the unit used by the ordinary column. Only the destination is modified. -/
+theorem rankDescriptorMiddle_exec {N : ℕ} (body : P → Pr P T Q A U) (ports : Fin 10 ↪ Fin T)
+    (parent : RecursiveInterchangeLayout.Descriptor) (r g H J : ℕ) (hm : N < 2^H)
+    (fits : parent.between < 2^J) (v : HS T Q A U) (S : Stacks T A)
+    (base : S.R (ports 0) = binSyms H N) (seed : S.R (ports 1) = binSyms J parent.between)
+    (work : ∀ i : Fin 10, 2 ≤ i → i < 9 → S.R (ports i) = []) :
+    ∃ z t, z.user = v.user ∧ t ≤ dimensionTime H J (g+g) ∧
+      Exec body (dimensionPower ports (g+g)) (mk v S) t (mk z {S with R := Function.update S.R (ports 2) (binSyms ((g+g)*H+J) (rankDescriptor N r g parent).between)}) := by
+  obtain ⟨z,t,hz,ht,run⟩ := dimensionPower_exec body (g+g) ports H J N parent.between hm fits v S base seed work
+  have size : N^(g+g)*parent.between = (rankDescriptor N r g parent).between := by
+    simp only [rankDescriptor,pow_add]; ring
+  exact ⟨z,t,hz,ht,size ▸ run⟩
+
+/-- Read the inherited size in place and leave every parent and child tape
+unchanged except the new child descriptor word. -/
+theorem nestedMiddle_exec {n N : ℕ} (caller : Fin 58 ↪ Fin n) (body : P → Pr P (n+58) Q A U)
+    (parent : RecursiveInterchangeLayout.Descriptor) (r g H J : ℕ) (hm : N < 2^H)
+    (fits : parent.between < 2^J) (v : HS (n+58) Q A U) (S : Stacks (n+58) A)
+    (base : S.R ((2 : Fin 58).natAdd n) = binSyms H N)
+    (seed : S.R ((caller 57).castAdd 58) = binSyms J parent.between)
+    (free : ∀ i : Fin 10, 2 ≤ i → i < 9 → S.R ((GoodChildLayout.middlePorts i).natAdd n) = []) :
+    let ports := GoodChildLayout.middlePorts.trans (GoodChildLayout.nestedMiddleHost caller)
+    ∃ z t, z.user = v.user ∧ t ≤ dimensionTime H J (g+g) ∧
+      Exec body (dimensionPower ports (g+g)) (mk v S) t
+        (mk z {S with R := Function.update S.R ((57 : Fin 58).natAdd n) (binSyms ((g+g)*H+J) (rankDescriptor N r g parent).between)}) := by
+  intro ports
+  have shared (i : Fin 10) (ne : GoodChildLayout.middlePorts i ≠ 28) :
+      ports i = (GoodChildLayout.middlePorts i).natAdd n := GoodChildLayout.nestedMiddleHost_shared caller _ ne
+  have run := rankDescriptorMiddle_exec body ports parent r g H J hm fits v S
+    (by rw [shared 0 (by decide)]; exact base)
+    (by change S.R (GoodChildLayout.nestedMiddleHost caller 28) = _; rw [GoodChildLayout.nestedMiddleHost_seed]; exact seed)
+    (fun i lo hi => by rw [shared i ((by decide : ∀ i : Fin 10, 2 ≤ i → GoodChildLayout.middlePorts i ≠ 28) i lo)]; exact free i lo hi)
+  simpa only [shared 2 (by decide),show GoodChildLayout.middlePorts 2 = 57 from rfl] using run
+
 /-- The two inactive slices form one spectator field. Compute its size from
 the live modulus and the inherited middle size while preserving the packed child weights. -/
 theorem goodChildMiddle_exec {N : ℕ} (body : P → Pr P T Q A U) (host : Fin 58 ↪ Fin T)
@@ -74,10 +128,6 @@ theorem goodChildMiddle_exec {N : ℕ} (body : P → Pr P T Q A U) (host : Fin 5
             (GoodChildLayout.parent (adapterBank (entry j)))) i (by omega) hi
       rw [same]
       exact scratch j hj
-  obtain ⟨z,t,hz,ht,run⟩ := dimensionPower_exec body (g+g) (GoodChildLayout.middlePorts.trans host)
-    H J N parent.between hm fits v S base seed work
-  have size : N^(g+g)*parent.between = desc.between := by
-    dsimp [desc,rankDescriptor]; rw [pow_add]; ring
-  exact ⟨z,t,hz,ht,by simpa only [size,show (GoodChildLayout.middlePorts.trans host) 2 = host 57 from rfl] using run⟩
+  exact rankDescriptorMiddle_exec body (GoodChildLayout.middlePorts.trans host) parent r g H J hm fits v S base seed work
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback

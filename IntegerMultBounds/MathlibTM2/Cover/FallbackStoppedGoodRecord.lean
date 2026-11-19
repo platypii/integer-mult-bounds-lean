@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackGoodParentSetup
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackGoodRecordRun
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackCallerLeaf
 
@@ -16,7 +17,7 @@ local notation "fields" => d+1
 
 theorem stoppedGoodRecord_exec (cap : 217 ≤ Q) (fits : leafCapacity ((fields+d)+1) ≤ Q)
     (rank g : ℕ) (dim : fields = rank+g) (hr : rank ≤ fields) (caller : Fin 58 ↪ Fin n) :
-    ∃ T, ∃ body : Unit → Pr Unit (n+T) Q prime U, ∃ C : ℝ,
+    ∃ T, ∃ body : Unit → Pr Unit (n+T) Q prime U, ∃ C : ℝ, ∃ overhead : ℕ,
     ∀ w W H J, let M := prime^(w+1)
     letI : NeZero M := ⟨(pow_pos prime_prime.pos _).ne'⟩
     ∃ budget : ℕ, (H = Nat.size M → J = Nat.size W → 0 < W →
@@ -56,6 +57,8 @@ theorem stoppedGoodRecord_exec (cap : 217 ≤ Q) (fits : leafCapacity ((fields+d
       (∀ j : Fin (n+T), n ≤ j.val → S.L j = [] ∧ S.R j = []) →
       ∃ z F n out, z.user = v.user ∧
         n ≤ 1 + goodIncomingTime (P := Empty) (U := U) (A := prime) Empty.elim machine prime w W H J rank hr + middleCost + (1 + goodOutgoingTime (P := Empty) (U := U) (A := prime) Empty.elim machine prime w W H J rank hr) ∧
+        (H = Nat.size M → J = Nat.size W → n ≤ budget + overhead*(M^(fields+fields)*W) ∧
+          (n : ℝ) ≤ (C+overhead)*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau*(M^(fields+fields)*W : ℕ)) ∧
         Exec body (hostedGoodRecord cap full () prime rank g hr) (mk v S) n (mk z F) ∧ ready out F ∧ F.R (bank 27) = [] ∧
         (∀ j, (∀ i, s i ≠ j) → (∀ i, ts i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j) ∧
         ∀ x j, let y := transform (diagonal weights) 1 (revExchangeOf (rev fields) G (transform (diagonal inv) 1 x))
@@ -63,7 +66,10 @@ theorem stoppedGoodRecord_exec (cap : 217 ≤ Q) (fits : leafCapacity ((fields+d
   obtain ⟨T,prog,child⟩ := stoppedChild_program (P := Unit) (U := U) fits rank g dim caller
   let body := fun _ : Unit => prog
   obtain ⟨C,charge⟩ := child body (Fast.Main.mnProgPush prog) (fun _ => le_rfl)
-  refine ⟨T,body,C,?_⟩
+  let ports := parent.trans (parentWithWeights.trans (caller.trans (Fin.castAddEmb T)))
+  obtain ⟨overhead,parentBound⟩ := goodRecordTime_volume_le (P := Empty) (A := prime) (U := U)
+    Empty.elim ports rank g dim (Nat.succ_pos d) hr
+  refine ⟨T,body,C,overhead,?_⟩
   intro w W H J M
   let : NeZero (prime^(w+1)) := ⟨(pow_pos prime_prime.pos _).ne'⟩
   obtain ⟨budget,rate,leaf⟩ := charge w W H J
@@ -71,17 +77,33 @@ theorem stoppedGoodRecord_exec (cap : 217 ≤ Q) (fits : leafCapacity ((fields+d
   intro G minor idem L R factor weights inv inverse hm hw hW tail dest rest invRest pivotTail target q empty
     full machine bank host c h s words pair stage piv parent ready ordinary ts middleCost
     v S word initial free stored packed count pivots one clock scratch fresh privateFree
-  apply hostedGoodRecord_exec cap body full () budget G g dim hr minor idem L R factor weights inv inverse
+  have parentRun := hostedGoodRecord_exec cap body full full (fun _ _ => rfl)
+    ⟨1,1,1,fields,1,W⟩ 1 (by decide : 1 < 2^1) () budget G g dim hr minor idem L R factor weights inv inverse
     prime_prime H J hm hw hW tail dest rest invRest pivotTail SparseRoleCircuit.encode (fun _ => blank)
-    target 0 q empty v S word initial free stored packed count pivots one clock scratch fresh
-  intro _ units u D before payload base widthWord unitWord archive padded clockLen off
-  apply leaf _ _ units hm hw hW u D before payload base widthWord unitWord archive padded clockLen
-  intro j hj
-  have kept := off j (fun i eq => by
-    have h := congrArg Fin.val eq
-    change (caller i).val = j.val at h
-    have := (caller i).isLt
-    omega)
-  exact ⟨kept.1.trans (privateFree j hj).1,kept.2.trans (privateFree j hj).2⟩
+    target 0 q empty v S word initial free stored packed count pivots one clock scratch fresh (Or.inl ⟨rfl,rfl⟩)
+  obtain ⟨z,F,l,out,hz,hl,run,readyOut,clean,frame,effect⟩ := parentRun (by
+    intro _ units u D before payload base widthWord unitWord _ _ archive padded clockLen off
+    apply leaf _ _ units hm hw hW u D before payload base widthWord unitWord archive padded clockLen
+    intro j hj
+    have kept := off j (fun i eq => by
+      have h := congrArg Fin.val eq
+      change (caller i).val = j.val at h
+      have := (caller i).isLt
+      omega)
+    exact ⟨kept.1.trans (privateFree j hj).1,kept.2.trans (privateFree j hj).2⟩)
+  refine ⟨z,F,l,out,hz,hl,?_,run,readyOut,clean,frame,effect⟩
+  rintro rfl rfl
+  have total := hl.trans (parentBound w W budget hW)
+  refine ⟨total,?_⟩
+  let V := M^(fields+fields)*W
+  let scale := ((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau
+  have scale_ge : 1 ≤ scale :=
+    Real.one_le_rpow (by exact_mod_cast Nat.le_add_left 1 w) M8.Machine.BudgetBound.exponent_range.1.le
+  have parentCost : (overhead : ℝ)*V ≤ overhead*scale*V := by
+    apply mul_le_mul_of_nonneg_right _ (Nat.cast_nonneg V)
+    simpa using mul_le_mul_of_nonneg_left scale_ge (Nat.cast_nonneg overhead)
+  have childCost : (budget : ℝ) ≤ C*scale*V := rate rfl rfl hW
+  have steps : (l : ℝ) ≤ budget + (overhead : ℝ)*V := by exact_mod_cast total
+  exact steps.trans ((add_le_add childCost parentCost).trans_eq (by ring))
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback.Record

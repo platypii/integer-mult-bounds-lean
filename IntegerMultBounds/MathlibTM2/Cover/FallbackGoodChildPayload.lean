@@ -12,7 +12,9 @@ open HeadPivotLayout HeadWidthLayout CrossWeightLayout GoodChildLayout
 variable {P U α : Type} {T Q A d r g W b w : ℕ} [NeZero (b^(w+1))]
 local notation "M" => b^(w+1)
 
-theorem goodChildPayload_exec (body : P → Pr P T Q A U) (f : P) (host : Fin 58 ↪ Fin T)
+theorem goodChildPayload_exec (body : P → Pr P T Q A U) (f : P) (host middleHost : Fin 58 ↪ Fin T)
+    (shared : ∀ j : Fin 58, j ≠ 28 → middleHost j = host j)
+    (parentDesc : RecursiveInterchangeLayout.Descriptor) (K : ℕ) (fits : parentDesc.between < 2^K)
     (G : Matrix (Fin d) (Fin d) (ZMod M)) (hr : r ≤ d) (g W : ℕ)
     (minor : ∀ j (hj : j < r), IsUnit (lead (j+1) (lt_of_lt_of_le hj hr) G).det)
     (weight inv : Fin d → ZMod M) (inverse : ∀ j, weight j * inv j = 1)
@@ -28,13 +30,13 @@ theorem goodChildPayload_exec (body : P → Pr P T Q A U) (f : P) (host : Fin 58
     let pivot := fun i : Fin r => stage.M (i.castLE hr) (i.castLE hr)
     let pos := (List.ofFn fun i : Fin r => binSyms H (weight (i.castLE hr) * pivot i).val).flatten
     let reciprocalWords := (List.ofFn fun i : Fin r => binSyms H (inv (i.castLE hr) * Ring.inverse (pivot i)).val).flatten
-    let middle := binSyms ((g+g)*H+1) (goodChildDescriptor M r g W).between
+    let middle := binSyms ((g+g)*H+K) (rankDescriptor M r g parentDesc).between
     let outputs := [host 55,host 56,host 57]
     let prepared := {S with R := Function.update (Function.update (Function.update S.R (host 55) pos) (host 56) reciprocalWords) (host 57) middle}
     let h := (coeff false).trans (head.trans (adapterBank.trans machine))
     let parentWords := (List.ofFn fun j => binSyms H (weight j).val).flatten ++ rest
     let ready := HeadColumnReady (d := d+d) (W := W) h s H J [] parentWords [] sym source target p q
-    ready word S →
+    ready word S → S.R (middleHost 28) = binSyms K parentDesc.between →
     S.R (c 18) = (List.ofFn fun i => binSyms H (pivot i).val).flatten ++ tail →
     S.R (c 15) = binSyms H (1 : ZMod M).val → (S.R (c 16)).length = w →
     (∀ k : Fin 20, (k ≤ 14 ∧ k ≠ 4) ∨ k = 17 → S.R (c k) = []) →
@@ -46,10 +48,10 @@ theorem goodChildPayload_exec (body : P → Pr P T Q A U) (f : P) (host : Fin 58
         readAt blank (F.L (s 24)) (F.R (s 24)) (k-p)) →
     ∃ z F n out, z.user = v.user ∧ effect out ∧ ready out F ∧
       (∀ k, k ≠ s 24 → F.L k = S.L k ∧ F.R k = S.R k) ∧
-      n ≤ (((List.finRange r).map fun i => childWeightTime b w H i.val).sum+1 + dimensionTime H 1 (g+g)) +
-        (budget+2+(2*(r*H+r*H+((g+g)*H+1))+7)) ∧
-      Exec body (goodChildCall f host b r g) (mk v S) n (mk z F) := by
-  intro bank machine c s stage pivot pos reciprocal middle outputs prepared h parentWords ready initial
+      n ≤ (((List.finRange r).map fun i => childWeightTime b w H i.val).sum+1 + dimensionTime H K (g+g)) +
+        (budget+2+(2*(r*H+r*H+((g+g)*H+K))+7)) ∧
+      Exec body (goodChildCallAt f host middleHost b r g) (mk v S) n (mk z F) := by
+  intro bank machine c s stage pivot pos reciprocal middle outputs prepared h parentWords ready initial seed
     pivots one clock scratch fresh childRun
   let post := fun F : Stacks T A => ∃ out, effect out ∧
     (∀ k, k ≠ s 24 → F.L k = prepared.L k ∧ F.R k = prepared.R k) ∧
@@ -58,11 +60,10 @@ theorem goodChildPayload_exec (body : P → Pr P T Q A U) (f : P) (host : Fin 58
   have apart : s 24 ∉ outputs := by
     change host 24 ∉ [host 55,host 56,host 57]
     simp [host.injective.eq_iff]
-  obtain ⟨z,F,n,hz,⟨out,act,saved,src⟩,hn,run⟩ := goodChildCall_exec body f host G hr g ⟨1,1,1,r+g,1,W⟩ 1 (by decide : 1 < 2^1) minor
+  obtain ⟨z,F,n,hz,⟨out,act,saved,src⟩,hn,run⟩ := goodChildCall_exec body f host middleHost shared G hr g parentDesc K fits minor
     weight inv inverse hb H hm v S tail rest budget post initial.weights pivots initial.modulus one clock scratch
-    initial.base initial.one (fun j hj => (initial.scratch j hj).2) fresh (by
+    initial.base seed (fun j hj => (initial.scratch j hj).2) fresh (by
       intro u hu
-      rw [rankDescriptor_goodChild]
       obtain ⟨z,F,n,out,hz,hn,run,act,saved,src⟩ := childRun u hu
       exact ⟨z,F,n,hz,hn,run,⟨out,act,saved,src⟩,fun j hj => (saved j (fun eq => apart (eq ▸ hj))).2⟩)
   let D := {F with R := fun j => if j ∈ outputs then [] else F.R j}

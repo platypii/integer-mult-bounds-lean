@@ -168,21 +168,28 @@ theorem goodParentTime_volume_le [Fintype P] (body : P → Pr P T 217 A U) (mach
 
 open IntegerMultBounds.Networks.Shared50ModularControl (prime) in
 theorem goodRecordTime_volume_le [Fintype P] (body : P → Pr P T 217 A U) (machine : Fin 55 ↪ Fin T)
-    (r g : ℕ) (dim : 0 < r+g) :
+    (r g : ℕ) (dim : d = r+g) (positive : 0 < d) (hr : r ≤ d) :
     ∃ C : ℕ, ∀ w W budget, 0 < W →
       let q := prime^(w+1)
       let H := Nat.size q
       let J := Nat.size W
-      let hr := Nat.le_add_right r g
       let childTime := (((List.finRange r).map fun i => childWeightTime prime w H i.val).sum+1 + dimensionTime H 1 (g+g)) +
         (budget+2+(2*(r*H+r*H+((g+g)*H+1))+7))
-      goodIncomingTime body machine prime w W H J r hr + childTime + goodOutgoingTime body machine prime w W H J r hr ≤
-        budget + C*(q^((r+g)+(r+g))*W) := by
-  obtain ⟨a,outer⟩ := goodParentTime_volume_le body machine r (Nat.le_add_right r g) dim
-  obtain ⟨z,inner⟩ := goodChildOverhead_volume_le r g dim
-  refine ⟨z+a,fun w W budget width => ?_⟩
-  intro q H J hr childTime
-  apply (outer w W childTime width).trans
-  exact (Nat.add_le_add_right (inner w W budget width) _).trans_eq (by ring)
+      1 + goodIncomingTime body machine prime w W H J r hr + childTime + (1 + goodOutgoingTime body machine prime w W H J r hr) ≤
+        budget + C*(q^(d+d)*W) := by
+  subst d
+  obtain ⟨a,outer⟩ := goodParentTime_volume_le body machine r hr positive
+  obtain ⟨z,inner⟩ := goodChildOverhead_volume_le r g positive
+  refine ⟨z+a+2,fun w W budget width => ?_⟩
+  intro q H J childTime
+  have stages := outer w W childTime width
+  have setup := inner w W budget width
+  change childTime ≤ _ at setup
+  have vol : 0 < q^((r+g)+(r+g))*W :=
+    Nat.mul_pos (pow_pos (pow_pos IntegerMultBounds.Networks.Shared50ModularControl.prime_prime.pos _) _) width
+  dsimp only at stages setup
+  simp only [Nat.add_mul]
+  dsimp only [H,J,q,childTime] at *
+  omega
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback

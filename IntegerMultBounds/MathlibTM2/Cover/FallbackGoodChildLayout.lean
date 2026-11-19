@@ -91,6 +91,57 @@ theorem rankDescriptor_volume (v : RecursiveInterchangeLayout.Descriptor) (width
   simp only [RecursiveInterchangeLayout.volume,rankDescriptor,width,pow_add]
   ring
 
+omit [NeZero M] in
+/-- Along a chain of recursive calls the gaps accumulate on both sides of the
+same inherited middle field. -/
+theorem rankDescriptor_chain (v : RecursiveInterchangeLayout.Descriptor) (gaps : List ℕ) :
+    gaps.foldl (fun u g => rankDescriptor M (u.width-g) g u) v =
+      rankDescriptor M (v.width-gaps.sum) gaps.sum v := by
+  induction gaps generalizing v with
+  | nil => cases v; simp [rankDescriptor]
+  | cons g gs ih =>
+    rw [List.foldl_cons,ih,List.sum_cons]
+    cases v
+    simp [rankDescriptor,Nat.sub_sub,pow_add,Nat.mul_assoc,Nat.mul_comm,Nat.mul_left_comm]
+
+omit [NeZero M] in
+theorem rankDescriptor_chain_volume (v : RecursiveInterchangeLayout.Descriptor)
+    (gaps : List ℕ) (fits : gaps.sum ≤ v.width) :
+    RecursiveInterchangeLayout.volume M
+      (gaps.foldl (fun u g => rankDescriptor M (u.width-g) g u) v) =
+      RecursiveInterchangeLayout.volume M v := by
+  rw [rankDescriptor_chain]
+  exact rankDescriptor_volume v (Nat.sub_add_cancel fits).symm
+
+omit [NeZero M] in
+/-- A parent pays its child's time once. The terminal bill is evaluated on
+the final descriptor, and every record overhead uses the original volume. -/
+theorem rankDescriptor_chain_time {ι : Type*} (gap overhead : ι → ℕ)
+    (time : List ι → RecursiveInterchangeLayout.Descriptor → ℕ)
+    (step : ∀ i is v, gap i ≤ v.width → time (i :: is) v ≤
+      time is (rankDescriptor M (v.width-gap i) (gap i) v) + overhead i * RecursiveInterchangeLayout.volume M v)
+    (records : List ι) (v : RecursiveInterchangeLayout.Descriptor)
+    (fits : (records.map gap).sum ≤ v.width) :
+    time records v ≤ time [] (rankDescriptor M (v.width-(records.map gap).sum) (records.map gap).sum v) +
+      (records.map overhead).sum * RecursiveInterchangeLayout.volume M v := by
+  rw [← rankDescriptor_chain]
+  induction records generalizing v with
+  | nil => simp
+  | cons i is ih =>
+    simp only [List.map_cons,List.sum_cons] at fits ⊢
+    have headFits : gap i ≤ v.width := by omega
+    let child := rankDescriptor M (v.width-gap i) (gap i) v
+    have tailFits : (is.map gap).sum ≤ child.width := by
+      change _ ≤ v.width-gap i
+      omega
+    have tail := ih child tailFits
+    have vol : RecursiveInterchangeLayout.volume M child = RecursiveInterchangeLayout.volume M v :=
+      rankDescriptor_volume v (Nat.sub_add_cancel headFits).symm
+    rw [vol] at tail
+    exact (step i is v headFits).trans ((Nat.add_le_add_right tail _).trans_eq (by
+      simp only [List.foldl_cons,Nat.add_mul,child]
+      omega))
+
 def goodChildDescriptor (M r g W : ℕ) : RecursiveInterchangeLayout.Descriptor :=
   ⟨1,1,1,r,M^(g+g),W⟩
 
@@ -111,6 +162,18 @@ private theorem rank_join {a b : ℕ} (x : Fin a → ZMod M) (y : Fin b → ZMod
 
 private theorem rank_cast {a b : ℕ} (h : a = b) (x : Fin b → ZMod M) :
     (rank (fun i : Fin a => x (i.cast h))).val = (rank x).val := by subst b; rfl
+
+/-- The physical address is preserved when a nested call moves its two
+spectator slices into an already occupied middle field. -/
+theorem rankDescriptor_childFields_index (v : RecursiveInterchangeLayout.Descriptor)
+    (width : v.width = r+g) (hg tg : Fin g → ZMod M)
+    (s : (Fin r → ZMod M) × (Fin r → ZMod M)) (a row before middle suffix : ℕ) :
+    let t := childFields hg tg s
+    RecursiveInterchangeLayout.index M v a row before (rank t.1).val middle (rank t.2).val suffix =
+      RecursiveInterchangeLayout.index M (rankDescriptor M r g v) a row before (rank s.1).val
+        (((rank hg).val*v.between+middle)*M^g+(rank tg).val) (rank s.2).val suffix := by
+  dsimp only [childFields]
+  rw [rank_join,rank_cast,rank_join,rankDescriptor_index v width]
 
 theorem goodChildIndex (hg tg : Fin g → ZMod M) (s : (Fin r → ZMod M) × (Fin r → ZMod M)) (j : Fin W) :
     let t := childFields hg tg s
@@ -137,6 +200,31 @@ theorem childFields_surjective {R : Type*} (x y : Fin (r+g) → R) :
     dsimp only [childFields]
     rw [split z]
     rfl
+
+/-- A child run on every valid middle-field value acts on the parent's active
+coordinates while preserving its inherited spectator digits. -/
+theorem rankDescriptor_child_effect {α : Type*} (v : RecursiveInterchangeLayout.Descriptor)
+    (width : v.width = r+g) (w inv : Fin (r+g) → ZMod M) (word out : ℕ → α)
+    (a row before suffix : ℕ)
+    (run : ∀ mid < (rankDescriptor M r g v).between, ∀ s : (Fin r → ZMod M) × (Fin r → ZMod M),
+      let addr := fun u : (Fin r → ZMod M) × (Fin r → ZMod M) =>
+        RecursiveInterchangeLayout.index M (rankDescriptor M r g v) a row before
+          (rank u.1).val mid (rank u.2).val suffix
+      out (addr (Weighted.child r (fun i => w (i.castAdd g)) (fun i => inv (i.castAdd g)) s)) = word (addr s))
+    (x y : Fin (r+g) → ZMod M) (middle : ℕ) (hm : middle < v.between) :
+    let t := Weighted.child r w inv (x,y)
+    out (RecursiveInterchangeLayout.index M v a row before (rank t.1).val middle (rank t.2).val suffix) =
+      word (RecursiveInterchangeLayout.index M v a row before (rank x).val middle (rank y).val suffix) := by
+  obtain ⟨hg,tg,s,eq⟩ := childFields_surjective x y
+  have digit {i n j b : ℕ} (hi : i < n) (hj : j < b) : i*b+j < n*b := calc
+    i*b+j < i*b+b := Nat.add_lt_add_left hj _
+    _ = (i+1)*b := (Nat.succ_mul ..).symm
+    _ ≤ n*b := Nat.mul_le_mul_right _ hi
+  have action := run _ (digit (digit (rank hg).isLt hm) (rank tg).isLt) s
+  dsimp only at action ⊢
+  rw [← rankDescriptor_childFields_index v width hg tg,← rankDescriptor_childFields_index v width hg tg] at action
+  rw [← childFields_apply w inv hg tg s,eq] at action
+  exact action
 
 /-- A recursive action on the two rank fields induces the parent action at every
 serialized address, including both spectator fields and every trailing symbol. -/

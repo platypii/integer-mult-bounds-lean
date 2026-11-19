@@ -11,12 +11,16 @@ open HeadPivotLayout HeadWidthLayout CrossWeightLayout GoodChildLayout
 variable {P U : Type} {T Q A d r g W b w : ℕ} [NeZero (b^(w+1))]
 local notation "M" => b^(w+1)
 
-def goodChildCall (f : P) (host : Fin 58 ↪ Fin T) (b r g : ℕ) : Pr P T Q A U :=
+def goodChildCallAt (f : P) (host middleHost : Fin 58 ↪ Fin T) (b r g : ℕ) : Pr P T Q A U :=
   .seq (.seq (childWeightList b (weights.trans (parentWithWeights.trans host)) (List.finRange r))
-    (dimensionPower (middlePorts.trans host) (g+g)))
+    (dimensionPower (middlePorts.trans middleHost) (g+g)))
     (.seq (.call f) (Mult.ShortConv.clearWords [host 55,host 56,host 57]))
 
-theorem goodChildCall_exec (body : P → Pr P T Q A U) (f : P) (host : Fin 58 ↪ Fin T)
+abbrev goodChildCall (f : P) (host : Fin 58 ↪ Fin T) (b r g : ℕ) : Pr P T Q A U :=
+  goodChildCallAt f host host b r g
+
+theorem goodChildCall_exec (body : P → Pr P T Q A U) (f : P) (host middleHost : Fin 58 ↪ Fin T)
+    (shared : ∀ j : Fin 58, j ≠ 28 → middleHost j = host j)
     (G : Matrix (Fin d) (Fin d) (ZMod M)) (hr : r ≤ d) (g : ℕ) (parentDesc : RecursiveInterchangeLayout.Descriptor) (J : ℕ) (fits : parentDesc.between < 2^J)
     (minor : ∀ j (hj : j < r), IsUnit (lead (j+1) (lt_of_lt_of_le hj hr) G).det)
     (weight inv : Fin d → ZMod M) (inverse : ∀ j, weight j * inv j = 1)
@@ -37,7 +41,7 @@ theorem goodChildCall_exec (body : P → Pr P T Q A U) (f : P) (host : Fin 58 �
     S.R (c 18) = (List.ofFn fun i => binSyms H (pivot i).val).flatten ++ tail →
     S.R (c 4) = binSyms H M → S.R (c 15) = binSyms H (1 : ZMod M).val → (S.R (c 16)).length = w →
     (∀ k : Fin 20, (k ≤ 14 ∧ k ≠ 4) ∨ k = 17 → S.R (c k) = []) →
-    S.R (s 2) = binSyms H M → S.R (s 28) = binSyms J parentDesc.between → (∀ j ∈ headShearWork, S.R (s j) = []) →
+    S.R (s 2) = binSyms H M → S.R (middleHost 28) = binSyms J parentDesc.between → (∀ j ∈ headShearWork, S.R (s j) = []) →
     (∀ j ∈ outputs, S.R j = []) →
     (∀ u : HS T Q A U, u.user = v.user → ∃ z F n, z.user = u.user ∧ n ≤ budget ∧
       Exec body (body f) (mk u prepared) n (mk z F) ∧ post F ∧
@@ -45,7 +49,7 @@ theorem goodChildCall_exec (body : P → Pr P T Q A U) (f : P) (host : Fin 58 �
     ∃ z F n, z.user = v.user ∧ post F ∧
       n ≤ (((List.finRange r).map fun i => childWeightTime b w H i.val).sum+1 + dimensionTime H J (g+g)) +
         (budget+2+(2*(r*H+r*H+((g+g)*H+J))+7)) ∧
-      Exec body (goodChildCall f host b r g) (mk v S) n
+      Exec body (goodChildCallAt f host middleHost b r g) (mk v S) n
         (mk z {F with R := fun j => if j ∈ outputs then [] else F.R j}) := by
   intro bank machine c s stage pivot pos reciprocal middle outputs prepared packed pivots modulus one clock free
     base seed scratch fresh call
@@ -59,9 +63,16 @@ theorem goodChildCall_exec (body : P → Pr P T Q A U) (f : P) (host : Fin 58 �
   rw [f55,f56,List.append_nil,List.append_nil] at pack
   have keep (j : Fin 58) (hj : j ≠ 55 ∧ j ≠ 56) : D.R (host j) = S.R (host j) := by
     simp [D,Function.update_of_ne (host.injective.ne hj.1),Function.update_of_ne (host.injective.ne hj.2)]
-  obtain ⟨y,t,hy,ht,install⟩ := goodChildMiddle_exec body host parentDesc r g H J hm fits u D
-    ((keep 2 (by decide)).trans base) ((keep 28 (by decide)).trans seed) ((keep 57 (by decide)).trans f57)
-    (fun j hj => (keep _ ((by decide : ∀ i, let k := parentWithWeights (parent (adapterBank (entry i))); k ≠ 55 ∧ k ≠ 56) j)).trans (scratch j hj))
+  have seedKeep (j : Fin 58) (ne : j ≠ 28) : middleHost 28 ≠ host j :=
+    (shared j ne) ▸ middleHost.injective.ne ne.symm
+  obtain ⟨y,t,hy,ht,install⟩ := goodChildMiddle_exec body middleHost parentDesc r g H J hm fits u D
+    (by rw [shared 2 (by decide)]; exact (keep 2 (by decide)).trans base)
+    (by simpa [D,Function.update_of_ne (seedKeep 55 (by decide)),Function.update_of_ne (seedKeep 56 (by decide))] using seed)
+    (by rw [shared 57 (by decide)]; exact (keep 57 (by decide)).trans f57)
+    (fun j hj => by
+      rw [shared _ ((by decide : ∀ i ∈ headShearWork, parentWithWeights (parent (adapterBank (entry i))) ≠ 28) j hj)]
+      exact (keep _ ((by decide : ∀ i, let k := parentWithWeights (parent (adapterBank (entry i))); k ≠ 55 ∧ k ≠ 56) j)).trans (scratch j hj))
+  rw [shared 57 (by decide)] at install
   obtain ⟨z,F,n,hz,hn,run,done,stored⟩ := call y (hy.trans hu)
   obtain ⟨a,ha,clear⟩ := Mult.ShortConv.clearWords_exec (body := body) outputs
     (by simp [outputs,host.injective.eq_iff]) z F
