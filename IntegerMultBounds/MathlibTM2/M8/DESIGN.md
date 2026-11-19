@@ -630,11 +630,14 @@ the stage-2 supplier, `Stage2Machine.Total`, in place of `ArbitraryWidthOriginal
 
 ## 16. Design-B frames
 
-**Complete and selected (2026-10-22).** The fixed Mathlib multiplier now runs this
-supplier and proves `kappa = 4222422970/2^46 ≈ 2^-14.0246`. The compiler, complete
+**Complete and selected (2026-10-22).** At selection the fixed Mathlib multiplier ran this
+supplier and proved `kappa = 4222422970/2^46 ≈ 2^-14.0246`. The compiler, complete
 frame traces, actual signed histogram, reversed programs, strict ranks and stopped
 recurrence are connected to `Stage2Machine.Total`; the full build and all proof
 and control audits pass. The milestone notes below record the implementation.
+
+The November retune uses the same 46 histogram rows at `a = 12402/10⁸`.
+The rational upper bound lies 2.43e-09 below the same `q_τ`.
 
 **Numbers** (`scripts/pr97/stage2framebank.py` and `designbhist.py`, on the pinned upstream inputs):
 - The design-B word changes no slot count and no rank mass: `R = 28866`, `W = 108516254`,

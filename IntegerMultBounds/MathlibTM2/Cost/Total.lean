@@ -28,9 +28,9 @@ count `m (log m + 1)(log log m + 1)` of `Host/SSMul` by `262144 m^{1+δ}`.
 | `T p` | F2 tables | |
 | `n + B^C` | F2 parameter machine | |
 
-Exponents: `τ = 1 - 123879734039/10¹⁵`, `σ = 1 - 418/10¹²` (`IntegerMultBounds.Parameters`), `β = 1/2`,
+Exponents: `τ = 1 - 123899714039/10¹⁵`, `σ = 1 - 418/10¹²` (`IntegerMultBounds.Parameters`), `β = 1/2`,
 `λ = 1 - 3/10¹⁰` (`totLam`), `λ' = 1 - 1/10¹¹` (`totLam'`), and
-`κ = ε c (1 - τ) = 3840271755209 / (10¹⁵ · 2³⁸)` (`totKappa`, `tot_kappa_eq`). The ring-product factor is
+`κ = ε c (1 - τ) = 3840891135209 / (10¹⁵ · 2³⁸)` (`totKappa`, `tot_kappa_eq`). The ring-product factor is
 `grLogLog X = (log₂ X + 1)(log₂ (log₂ X + 1) + 1)` (`Cost/Growth`); `gr_ringBound_le` bounds the
 packed ring product `rpRingBound N` of `Fast/RingProd` on `N ≤ A r p` bits by a constant times
 `r p · grLogLog (r p)`.
@@ -83,7 +83,7 @@ noncomputable def totLam' : ℝ := 1 - 1 / 10 ^ 11
 /-- `κ = ε c (1 - τ)`. -/
 noncomputable def totKappa : ℝ := epsilon * cParam * (1 - Parameters.tau)
 
-theorem tot_kappa_eq : totKappa = 3840271755209 / (10 ^ 15 * 2 ^ 38) := by
+theorem tot_kappa_eq : totKappa = 3840891135209 / (10 ^ 15 * 2 ^ 38) := by
   rw [totKappa, epsilon_eq, cParam_eq, Parameters.tau]; norm_num
 
 theorem tot_kappa_pos : 0 < totKappa := by rw [tot_kappa_eq]; norm_num

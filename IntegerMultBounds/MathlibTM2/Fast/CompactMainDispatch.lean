@@ -32,7 +32,7 @@ theorem compactMulInTime_of_main_exec
     (hexec : ∀ᶠ n in atTop, ∀ x y, (pairEnc (x, y)).length = n →
       HostMulWithin body pm v₀
         (compactMainTime D (fun n => compactMainRuns D cF cO n + extra) H c) x y) :
-    MulInTime (4222422970 / 2 ^ 46 : ℝ) := by
+    MulInTime (4223103985 / 2 ^ 46 : ℝ) := by
   obtain ⟨n₀, hn₀⟩ := eventually_atTop.1 hexec
   have hfast : ∀ x y, n₀ ≤ (pairEnc (x, y)).length →
       HostMulWithin body pm v₀

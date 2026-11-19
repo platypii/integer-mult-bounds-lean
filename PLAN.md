@@ -3,7 +3,7 @@
 ✅ Complete · 🟡 In progress / partially complete · ⬜ Not started.
 
 **Bound improvement progress:** M1 ✅ · M2 ✅ · M3 🟡 · M4 ⬜ · M5 🟡 · M6 🟡 · M7 🟡 · M8 ⬜ (legacy route deferred) · M9 ⬜ · M10 ⬜ · M11 ⬜.
-The completed compact multiplier proves saving `4222422970/2^46 ≈ 2^-14.0246`.
+The completed compact multiplier proves saving `4223103985/2^46 ≈ 2^-14.0243`.
 With today's bit supplier (PR97 stage 2 on design-B frames), the ceiling in this
 outer plan is about `2^-12.98`; going further needs a better bit supplier.
 The long-term target is **unconditional `kappa = 0.0023`**, with smaller checked
@@ -16,7 +16,8 @@ time `O(n (log n)^(1-kappa))`. Larger saving means a smaller time exponent.
 
 | Bound | Exponent saving `kappa` | Proved (UTC) | Status |
 | --- | --- | --- | --- |
-| **Current unconditional result** | **`4222422970/2^46 ≈ 2^-14.0246`** | 2026-10-22 09:33 | ✅ PR97 design-B frames run in the existing reversed supplier and fixed Mathlib machine. The actual signed histogram proves the stopped moment gap at `tau* = 1-1240/10^7`; the F L F wrapper uses `theta = 1/1000`, giving `tau = 1-123879734039/10^15`. `lambda = 1-12387973/10^11`, `lambda' = 1-12387972/10^11`; the binding layer margin is rounded down to `2^-46`. About 27.97% more saving, or 0.35576 bits, than the plain-frame result. |
+| **Current unconditional result** | **`4223103985/2^46 ≈ 2^-14.0243`** | 2026-11-19 | ✅ PR97 design-B frames run in the existing reversed supplier and fixed Mathlib machine. The actual signed histogram proves the stopped moment gap at `tau* = 1-12402/10^8`; the F L F wrapper uses `theta = 1/1000`, giving `tau = 1-123899714039/10^15`. `lambda = 1-12389971/10^11`, `lambda' = 1-12389970/10^11`; the binding layer margin is rounded down to `2^-46`. About 27.99% more saving, or 0.35599 bits, than the plain-frame result. |
+| Previous design-B certificate | `4222422970/2^46 ≈ 2^-14.0246` | 2026-10-22 09:33 | The same network used the smaller stopped saving `1240/10^7`. The stronger moment certificate increases the public saving by 0.0161%. |
 | **Previous plain-frame result** | **`3299646951/2^46 ≈ 2^-14.3803`** | 2026-10-21 10:10 | ✅ Superseded; PR97 stage 2: the bit interchange's root runs the stage-2 supplier (`M8/Stage2Machine/Total`): the reversed family over atoms with variable-rank block children (#104's opposite-bank compiler on plain frames, stopped recursion at `tau* = 1-969/10^7`) inside the F L F wrapper, width `theta = 1/1000`. `tau = 1-96806834039/10^15` replaces `1-3734039/10^12`, about `26` times the saving. `lambda = 1-9680683/10^11`, `lambda' = 1-9680682/10^11` sit just above `tau`; the layer margin `epsilon (1-lambda')` binds, rounded down to `2^-46`. |
 | **Previous full-width result** | `127238784/2^46 ≈ 2^-19.0770` | 2026-10-19 06:54 | ✅ Superseded; full-width chunks: the chunk root is `Kroot = ⌈d/2⌉` (`c = 1`), so the layout margin is `epsilon (1-tau)`. The direct-round log factor is bounded by the legacy `2^-32` chunk, so it no longer caps `c`. `lambda = 1-3734/10^9`, `lambda' = 1-3733/10^9` sit just above `tau`; the layer margin `epsilon (1-lambda')` binds, rounded down to `2^-46`. |
 | **Previous PR97 seven-eighths result** | `111364923/2^46 ≈ 2^-19.2693` | 2026-10-19 01:42 | ✅ Superseded; PR 6: the bit interchange runs PR97's two-stage partial-swap word with rank-one children on the recursive interchange machine, made generic in the bit network (`MathlibTM2/M8/`). The word needs no routes, charts, cover classes or helper hosting. `tau = 1-3734039/10^12` replaces Shared50's `1-296/10^11`, about `1261` times the saving. `lambda = 1-35/10^7`, `lambda' = 1-33/10^7`; the layout margin `epsilon c (1-tau)` binds, rounded down to `2^-46` ([note](docs/pr97-stage1/pr97-stage1.pdf)). |
@@ -48,7 +49,7 @@ certificate alone does not improve the proved multiplication bound.
 `IntegerMultBounds.MathlibTM2.statement` constructs a fixed finite Mathlib
 machine that multiplies every input pair correctly in worst-case time
 `O(n (log n)^(1-kappa))`, with positive saving
-`kappa = 4222422970/2^46`. No algorithmic or runtime assumption remains.
+`kappa = 4223103985/2^46`. No algorithmic or runtime assumption remains.
 
 ## Completed proof
 
@@ -64,31 +65,32 @@ The Files column counts the components listed in that detail file; the full
 transitive proof dependency set is larger, as recorded by the
 [retention audit](docs/proof-retention.md).
 
-At `4222422970/2^46` the checks pass: `CompletedProofCheck` (only `propext`, `Classical.choice` and
+The retuned public theorem and its `CompletedProofCheck` axiom check pass at `4223103985/2^46`.
+At the previous saving of `4222422970/2^46` the checks passed: `CompletedProofCheck` (only `propext`, `Classical.choice` and
 `Quot.sound`), `AxiomAudit` (340777 declarations) and `CompactControlCheck` (521 contracts).
 The native-machine bridge and its `MathlibTM2Check`/`FastPathCheck` audits were removed
 2026-10-18 (restore from 5e12c129).
 
-**Corollary.** `MathlibTM2.DFT.dftInTime : DFTInTime (4222422970/2^46)`: one fixed finite machine
+**Corollary.** `MathlibTM2.DFT.dftInTime : DFTInTime (4223103985/2^46)`: one fixed finite machine
 computes the discrete Fourier transform over every prime field `F_p`, at every length with a
 primitive root of unity, in time `O(N (log N)^(1-kappa))` (`docs/dft/dft.pdf`).
 
 ## Where the bound stands
 
 Parameters (`Cost/CompactInterimParameters.lean`): `epsilon = 31/64`, chunk root `⌈d/2⌉` (`c = 1`),
-`tau = 1-123879734039/10^15` (`Parameters.tau`, the selected bit supplier's exponent),
-`lambda = 1-12387973/10^11`, `lambda' = 1-12387972/10^11`, `delta = 2^-7`.
+`tau = 1-123899714039/10^15` (`Parameters.tau`, the selected bit supplier's exponent),
+`lambda = 1-12389971/10^11`, `lambda' = 1-12389970/10^11`, `delta = 2^-7`.
 
 | Stage margin | Formula | Value |
 | --- | --- | --- |
-| Compact layer (binding) | `epsilon (1-lambda')` | `6.0004e-5 ≈ 2^-14.025`, rounded down to `kappa` |
-| Chunk-exchange layout | `epsilon (1-tau)` | `6.0004e-5 ≈ 2^-14.025` |
-| CRT and resampling exposure | `(1-epsilon)(1-tau)` | `6.3875e-5 ≈ 2^-13.934` |
+| Compact layer (binding) | `epsilon (1-lambda')` | `6.0014e-5 ≈ 2^-14.024`, rounded down to `kappa` |
+| Chunk-exchange layout | `epsilon (1-tau)` | `6.0014e-5 ≈ 2^-14.024` |
+| CRT and resampling exposure | `(1-epsilon)(1-tau)` | `6.3886e-5 ≈ 2^-13.934` |
 | Gaussian resampling | `1/2 - delta - epsilon(1+2^-33)` | `2^-7 - 31/2^39 ≈ 2^-7.0` |
 | Direct rounds | `epsilon (1-2^-32)` | `0.484` |
 | Prefix (M5a) | `1-epsilon` | `0.516` |
 
-**The `tau` ceiling.** `1-tau = 1.2388e-4 ≈ 2^-12.98` is the saving of the bit interchange. Every
+**The `tau` ceiling.** `1-tau = 1.2390e-4 ≈ 2^-12.98` is the saving of the bit interchange. Every
 margin near the top of the table carries it. The layer margin carries it too, because
 `lambda' > lambda > tau`.
 
@@ -111,7 +113,7 @@ Section numbers are the [original manuscript](plan/D-sharper-bound.md)'s printed
 | Manuscript section | Progress | What limits our bound | Improvement needed |
 | --- | --- | --- | --- |
 | §2 Machine model and streams | 🟡 | Every new algorithm needs actual finite-machine costs and clean returned state. | Price new schedules with the existing host primitives. |
-| §3 Finite networks | 🟡 | Bit saving `1-tau = 1.2388e-4` (PR97 stage 2, design-B frames) caps every margin. Complex: T16 at `log_73 (F/NW) < 999/1000`, in the proof. | Design-B completed (M6); next productive complex jobs and delayed-cover BIT (M9–M10). |
+| §3 Finite networks | 🟡 | Bit saving `1-tau = 1.2390e-4` (PR97 stage 2, design-B frames) caps every margin. Complex: T16 at `log_73 (F/NW) < 999/1000`, in the proof. | Design-B completed (M6); next productive complex jobs and delayed-cover BIT (M9–M10). |
 | §4 Address interchange | 🟡 | Field moves inherit `tau`; the CRT uses linear direct routing. | Arbitrary-source coordinate routing (M5b). |
 | §5 Butterfly layers; Appendix A | 🟡 | The T16 node takes the layer margin off the critical path. | General supplier closure, stopped recursion, precision and recursive stock (M3, M4), instantiated for M9. |
 | **§6 Synthetic transforms/layout** | 🟡 | **The layout margin `epsilon (1-tau)` and the layer margin `epsilon (1-lambda')` bind together.** The balanced prefix (M5a) and full-width chunks are done. | M5b with `epsilon → 1` lifts the layout margin to `1-tau`. |
@@ -155,10 +157,9 @@ Current details are in [M8/DESIGN.md §16](IntegerMultBounds/MathlibTM2/M8/DESIG
 gauged design-B node, including source/target paths, exteriors, connectors and all
 owned temporaries. Its actual signed-chain histogram, arbitrary-ring/reversed
 execution and strict block-child ranks are proved. The stopped saving is
-`1240/10^7`, and the ordinary supplier exponent is `1-123879734039/10^15`.
-The retuned end-to-end machine proves `4222422970/2^46 ≈ 0.00006000424`, about
-27.97% more saving (0.35576 bits) than the plain-frame result. The full guarded
-build, completed-proof audit, root axiom audit and compact-control audit pass.
+`12402/10^8`, and the ordinary supplier exponent is `1-123899714039/10^15`.
+The retuned end-to-end machine proves `4223103985/2^46 ≈ 0.00006001392`, about
+27.99% more saving (0.35599 bits) than the plain-frame result. The preceding design-B checkpoint passed the full guarded build and all three audits.
 No further design-B-specific optimization is planned. Its generic compiler/frame
 proofs survive a future supplier replacement; M9–M11 remain the next direction.
 

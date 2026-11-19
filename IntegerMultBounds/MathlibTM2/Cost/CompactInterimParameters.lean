@@ -13,13 +13,13 @@ noncomputable section
 def epsilon : ℝ := 31 / (2^6:ℝ)
 /-- The layer exponent of the T16 node: above `τ` and above `log_m (F / NW) < 999/1000`
 (`Cost.br_branching_999`). -/
-def lam : ℝ := 1-12387973/(10^11:ℝ)
+def lam : ℝ := 1-12389971/(10^11:ℝ)
 /-- Absorb the full-depth compact recurrence and all polylogarithmic factors. -/
-def lam' : ℝ := 1-12387972/(10^11:ℝ)
+def lam' : ℝ := 1-12389970/(10^11:ℝ)
 /-- Dyadic allowance for the unchanged quasi-linear multiplier. -/
 def delta : ℝ := (2^7:ℝ)⁻¹
 /-- The public saving: the layer margin `ε (1-λ')` rounded down to `2^-46`, about `2^-14.02`. -/
-def kappa : ℝ := 4222422970/(2^46:ℝ)
+def kappa : ℝ := 4223103985/(2^46:ℝ)
 
 /-- The compact recurrence and reserved axes fit strictly below the target
 layer exponent; this does not assert the old full-width recurrence condition. -/

@@ -11,7 +11,7 @@ On the supplier's network (`BinaryRadixEqualShared.supplierNet`, the PR97 node),
 is the PR97 exponent `τ₁ = 1 - 3734039/10¹²` (`tau_eq`), so the core's exponents hold at `θ = 1/1000`
 (`HighCost.exponents`), and the reversed family's data semantics is `Spec.familySpec`. The stage-2
 supplier then transposes every positive descriptor within `C V max(1,e)^τ₂` with
-`τ₂ = 1 - 123879734039/10¹⁵` (`tau₂_eq`), a saving of about `2^-12.98` (`uniform_bound`).
+`τ₂ = 1 - 123899714039/10¹⁵` (`tau₂_eq`), a saving of about `2^-12.98` (`uniform_bound`).
 -/
 
 @[expose] public section
@@ -39,7 +39,7 @@ theorem tau_eq : M8.Machine.BudgetBound.tau = M8.Global.Branching97.tau := by
   exact M8.Global.pr97_tau
 
 /-- **The stage-2 exponent.** -/
-theorem tau₂_eq : tau₂ HighCost.K = 1 - 123879734039 / 10 ^ 15 := by
+theorem tau₂_eq : tau₂ HighCost.K = 1 - 123899714039 / 10 ^ 15 := by
   simp only [tau₂, Stage2Width.tau2, Cost.tauS, Stage2Moments.savingB, tau_eq, M8.Global.Branching97.tau,
     M8.Global.Branching97.saving]
   push_cast
@@ -53,7 +53,7 @@ theorem uniform_bound :
       (d : Descriptor) (hs : Fin 6 → List Bool), d.Positive → RecursiveDimensionBank.Headers d hs →
       (∀ i, caller.tape (headers i) = RadixZeroFill.encodedBinary (hs i)) → (∀ i, caller.head (headers i) = 1) →
       ∀ x : Fin (volume prime d) → ZMod 2, caller.tape source = sourceWord x → caller.head source = 0 →
-      ∃ c : ℕ, (c : ℝ) ≤ C * volume prime d * ((max 1 d.width : ℕ) : ℝ) ^ (1 - 123879734039 / 10 ^ 15 : ℝ) ∧
+      ∃ c : ℕ, (c : ℝ) ≤ C * volume prime d * ((max 1 d.width : ℕ) : ℝ) ^ (1 - 123899714039 / 10 ^ 15 : ℝ) ∧
         HoareTime (Supplier.program capacity97 headers source) (fun z => z = Supplier.input capacity97 caller)
           (fun z => z = Supplier.input capacity97 (setTape caller source
             (sourceWord (Shared50RecursiveNodeRows.transpose (one_dvd d.rows) x)) 0)) c := by

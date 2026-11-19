@@ -137,7 +137,7 @@ theorem compactCompletedR_mulInTime
       ∃ m v S, m ≤ compactRetunedPreTimeR extra n ∧
         Exec (compactCompletedTableR p) p (Store.only compactMainV₀ .inp (pairEnc (x,y))) m (mk v S) ∧
         S.inp=[] ∧ S.out=encodingNatBool.encode (x*y) ∧ ∀ k,S.L k=[]) :
-    MulInTime (4222422970/2^46:ℝ) := by
+    MulInTime (4223103985/2^46:ℝ) := by
   obtain ⟨Cs, hCs⟩ := hcost
   apply compactMulInTime_of_main_exec (compactCompletedTableR p) (compactMainOldProc .main)
     compactMainV₀ compactRetunedDist compactRetunedCFR compactRetunedCOR (compactCompletedPushR p)
@@ -207,13 +207,13 @@ cost bound of the rounded transforms. -/
 theorem compactR_mulInTime
     (hcost : ∃ C : ℝ, ∀ᶠ n in atTop,
       ((compactRetunedCFR n + compactRetunedCOR n : ℕ) : ℝ) ≤ C * CompactTotal.conv n) :
-    MulInTime (4222422970/2^46:ℝ) :=
+    MulInTime (4223103985/2^46:ℝ) :=
   compactCompletedR_mulInTime hcost compactRetunedPrefixR 16 compactRetunedPrefixR_exec
 
 /-- **The rounded compact multiplier**, with no remaining hypothesis: one fixed finite Mathlib
 machine with the rounded synthetic transforms multiplies every pair in worst-case time
 `O(n (log n)^(1-κ))`. -/
-theorem compactR_mulInTime_final : MulInTime (4222422970/2^46:ℝ) :=
+theorem compactR_mulInTime_final : MulInTime (4223103985/2^46:ℝ) :=
   compactR_mulInTime compactRetunedR_transform_cost_le
 
 end

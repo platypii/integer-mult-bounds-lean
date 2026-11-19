@@ -9,7 +9,7 @@ public import IntegerMultBounds.MathlibTM2.M8.Stage2Machine.Padded
 The binary wrappers of the cost chain run their root descriptor through one fixed machine with a
 paid time budget. Here that machine is the stage-2 supplier (`Supplier.runs`). Its run time is at
 most `C V max(1,e)^τ₂`, so the budget `cost d` is that bound rounded down (`runs`); it is uniformly
-`O(V max(1,e)^τ₂)` (`uniform_bound`), with `τ₂ = 1 - 123879734039/10¹⁵` (`tau`).
+`O(V max(1,e)^τ₂)` (`uniform_bound`), with `τ₂ = 1 - 123899714039/10¹⁵` (`tau`).
 
 The family's program counters take a width `Capacity` (an instance at the seam). The supplier's
 tape and state counts are sealed (`count`, `states`): they are large closed numbers, and a
@@ -34,7 +34,7 @@ open RevMachine
 variable {t : ℕ}
 
 /-- **The stage-2 exponent** `τ₂`. -/
-def tau : ℝ := 1 - 123879734039 / 10 ^ 15
+def tau : ℝ := 1 - 123899714039 / 10 ^ 15
 
 theorem tau_range : 0 < tau ∧ tau < 1 := by norm_num [tau]
 

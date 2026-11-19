@@ -9,7 +9,7 @@ public import IntegerMultBounds.MathlibTM2.M8.Global.SupplierNet
 
 The cost chain uses the supplier's equal-width radix interchange under these names. The supplier
 is the stage-2 supplier on the PR97 node (`M8.Global.pr97`, `M8.Stage2Machine.Total`); its exponent
-`τ₂ = 1 - 123879734039/10¹⁵` is the exponent `Parameters.tau` of the cost chain (`supplier_tau`), at
+`τ₂ = 1 - 123899714039/10¹⁵` is the exponent `Parameters.tau` of the cost chain (`supplier_tau`), at
 which `uniform_bound` is stated.
 -/
 

@@ -9,12 +9,12 @@ import IntegerMultBounds.MathlibTM2.Fast.CompactMainRunsTime
 # The prime-field DFT below `n log n`
 
 `finalHostMultiplier`: the rounded compact multiplier of `Fast/CompactFinalR.lean` as a
-`HostMultiplier (4222422970 / 2 ^ 46)`: its host table on the inputs of length at least `n₀`
+`HostMultiplier (4223103985 / 2 ^ 46)`: its host table on the inputs of length at least `n₀`
 (`compactRetunedPrefixR_exec`, `compactCompletedR_hostMul`), extended to every input by
 `dispatch` (`dispatch_exec`), with `time = O(n (log n) ^ (1 - κ))`
 (`compactMain_runs_time_isBigO`, `isBigO_dispatchTime`).
 
-`dftInTime : DFTInTime (4222422970 / 2 ^ 46)` follows from `HostMultiplier.dftInTime`, and
+`dftInTime : DFTInTime (4223103985 / 2 ^ 46)` follows from `HostMultiplier.dftInTime`, and
 `dft_in_time : DFTStatement` from `dftInTime`.
 -/
 
@@ -26,7 +26,7 @@ open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2
 namespace IntegerMultBounds.MathlibTM2.DFT
 
 /-- The final multiplier as a subroutine of the transform. -/
-theorem finalHostMultiplier : Nonempty (HostMultiplier (4222422970 / 2 ^ 46 : ℝ)) := by
+theorem finalHostMultiplier : Nonempty (HostMultiplier (4223103985 / 2 ^ 46 : ℝ)) := by
   obtain ⟨Cs, hCs⟩ := Cost.compactRetunedR_transform_cost_le
   have hexec : ∀ᶠ n in atTop, ∀ x y, (pairEnc (x, y)).length = n →
       HostMulWithin (compactCompletedTableR compactRetunedPrefixR) (compactMainOldProc .main)
@@ -40,7 +40,7 @@ theorem finalHostMultiplier : Nonempty (HostMultiplier (4222422970 / 2 ^ 46 : �
         compactMainV₀ (compactRetunedTimeR (compactCompletedPushR compactRetunedPrefixR) 16) x y :=
     fun x y hn => hn₀ _ hn x y rfl
   have htime : (fun n => (compactRetunedTimeR (compactCompletedPushR compactRetunedPrefixR) 16 n :
-      ℝ)) =O[atTop] fun n : ℕ => (n : ℝ) * Real.log n ^ (1 - (4222422970 / 2 ^ 46 : ℝ)) :=
+      ℝ)) =O[atTop] fun n : ℕ => (n : ℝ) * Real.log n ^ (1 - (4223103985 / 2 ^ 46 : ℝ)) :=
     compactMain_runs_time_isBigO compactRetunedDist compactRetunedCFR compactRetunedCOR compactMnT
       (compactCompletedPushR compactRetunedPrefixR) 16 hCs
   have hpos : ∀ᶠ n in atTop, 1 ≤ compactRetunedTimeR (compactCompletedPushR compactRetunedPrefixR)
@@ -59,14 +59,14 @@ theorem finalHostMultiplier : Nonempty (HostMultiplier (4222422970 / 2 ^ 46 : �
 
 /-- **The prime-field DFT below `n log n`** with the explicit saving: one fixed finite Mathlib
 machine computes the transform of every instance in worst-case time `O(N (log N) ^ (1 - κ))`,
-`N` the input length, for `κ = 4222422970 / 2 ^ 46`. -/
-theorem dftInTime : DFTInTime (4222422970 / 2 ^ 46 : ℝ) := by
+`N` the input length, for `κ = 4223103985 / 2 ^ 46`. -/
+theorem dftInTime : DFTInTime (4223103985 / 2 ^ 46 : ℝ) := by
   obtain ⟨M⟩ := finalHostMultiplier
   exact M.dftInTime (by norm_num)
 
 /-- The statement of `Statement.lean`. -/
 theorem dft_in_time : DFTStatement :=
-  ⟨4222422970 / 2 ^ 46, by norm_num, dftInTime⟩
+  ⟨4223103985 / 2 ^ 46, by norm_num, dftInTime⟩
 
 end IntegerMultBounds.MathlibTM2.DFT
 
