@@ -791,4 +791,59 @@ theorem middlePackedShear_exec (body : F → Pr F T 217 A U) (r : Fin 13 ↪ Fin
     prefixEmpty savedEmpty clockEmpty empty ready rep
   exact ⟨z,D,n,user,time.trans (middleShearFromHeaders_volume_le w P G B hP hG hB),run,frame⟩
 
+def middleArithmetic : Fin 13 ↪ Fin 30 := Fin.castLEEmb (by decide)
+def middleTranslation : Fin 12 ↪ Fin 30 := ⟨![13,14,15,16,17,18,19,20,3,21,22,23],by decide⟩
+
+def middleShearAndReturn (bank : Fin 30 ↪ Fin T) (ports : Fin 8 ↪ Fin T) : Pr F T 217 A U :=
+  .seq (embProg bank Empty.elim (middleShearFromHeaders middleArithmetic middleTranslation 28 29 24 25 26 27))
+    (returnWord ports)
+
+open IntegerMultBounds.Networks.Shared50ModularControl (prime prime_prime) in
+theorem middleShearAndReturn_exec (body : F → Pr F T 217 A U)
+    (bank : Fin 30 ↪ Fin T) (ports : Fin 8 ↪ Fin T)
+    (shared : ∀ i : Fin 7, ports i.castSucc = bank (middleTranslation (![11,10,4,5,6,7,1] i)))
+    (parked : ∀ i, bank i ≠ ports 7)
+    (w c : ℕ) (radix : M = prime^(w+1)) (hc : c < M) (hP : 0 < P) (hG : 0 < G) (hB : 0 < B)
+    (source dest : ℤ → Fin 4) (p q : ℤ) (word : Fin ((P*M*G)*(M*B)) → Fin 4)
+    (bs ms ps : List Bool) (hb : Counter.value bs = B) (hm : Counter.value ms = M)
+    (hp : Counter.value ps = P*M*G) (cb : GrowingCounterData.Canonical bs)
+    (cm : GrowingCounterData.Canonical ms) (cp : GrowingCounterData.Canonical ps)
+    (v : HS T 217 A U) (S : Stacks T A)
+    (heads : S.R (bank 28) = binSyms P.size P) (ticks : S.R (bank 29) = binSyms G.size G)
+    (free : ∀ i : Fin 30, 24 ≤ i → i ≤ 27 → S.R (bank i) = [])
+    (ready : MiddleGroupReady middleArithmetic M.size c 0 M (embStk bank S))
+    (rep : RepT (Alphabet.mapTapes RadixToBinary.binaryEncoding
+      (TranslationExecutionReuse.bank (putWord source p (List.ofFn word)) dest p q bs ms []))
+      (S.L ∘ bank ∘ middleTranslation) (S.R ∘ bank ∘ middleTranslation))
+    (rows : ∀ z, CountedLoopReuseAlphabet.binary ps z = readAt blank (S.L (ports 7)) (S.R (ports 7)) (z-1))
+    (empty : ∀ z, q ≤ z → z < q+((P*M*G)*(M*B) : ℕ) → dest z = blank) :
+    let N := (P*M*G)*(M*B)
+    let out := FiberLayoutData.translated word (fun i => c*(i.val/G%M)%M)
+    ∃ u D n, u.user = v.user ∧ n ≤ (210*(2*(Nat.size prime+1)^2)+15688)*N ∧
+      Exec body (middleShearAndReturn bank ports) (mk v S) n (mk u D) ∧
+      RepT (FlatArrayNormalize.bank (fun z => RadixToBinary.binaryEncoding.encode (dest z))
+        (fun z => RadixToBinary.binaryEncoding.encode (putWord source p out z)) q p bs ms ps)
+        (D.L ∘ ports) (D.R ∘ ports) := by
+  intro N out
+  obtain ⟨u,D,n,hu,hn,shear,_,_,_,_,_,tapes⟩ := middlePackedShear_exec
+    (F := Empty) Empty.elim middleArithmetic middleTranslation (by decide) (by decide)
+    24 25 26 (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)
+    (by decide) (by decide) (by decide) 27 (by decide) (by decide) (by decide) (by decide) (by decide)
+    28 29 w radix (by decide) (by decide) (by decide) hP hG c hc hB source dest p q word bs ms
+    hb hm cb cm (embDn bank v) (embStk bank S) heads ticks (free 27 (by decide) (by decide))
+    (free 24 (by decide) (by decide)) (free 26 (by decide) (by decide)) (free 25 (by decide) (by decide)) ready rep
+  obtain ⟨y,E,run,_,hy,eq,keep⟩ := exec_emb (body' := body) (ι := Empty.elim)
+    bank.injective (fun e => nomatch e) shear v rfl S rfl
+  rw [← eq] at tapes
+  obtain ⟨left,right⟩ := keep _ parked
+  have hM : 0 < M := radix ▸ pow_pos prime_prime.pos _
+  obtain ⟨z,D,m,hz,ht,ret,result,_⟩ := middleReturn_exec body word c source dest p q bs ms ps
+    (middleTranslation.trans bank) ports shared y E tapes (by simpa only [left,right] using rows)
+    hb hm hp cb cm cp hP hM hG hB empty
+  have pos : 0 < N := Nat.mul_pos (Nat.mul_pos (Nat.mul_pos hP hM) hG) (Nat.mul_pos hM hB)
+  have span : P*(M*(G*(M*B))) = N := by simp [N,Nat.mul_assoc]
+  rw [span] at hn
+  change m ≤ (327*N+2)*13+6 at ht
+  exact ⟨z,D,n+m,hz.trans (hy.trans hu),by nlinarith only [hn,ht,pos],Exec.seq run ret,result⟩
+
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
