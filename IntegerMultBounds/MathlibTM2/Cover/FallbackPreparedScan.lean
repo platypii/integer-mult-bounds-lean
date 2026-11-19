@@ -483,14 +483,14 @@ theorem preparedPass_exec {Q T r A : ℕ} (table : Matrix (Fin r) (Fin r) (ZMod 
         let swap := 1+completeSwapTime (P := Empty) (U := U) Empty.elim (d+1) (k a) (t a) w W H J
         1+(1+(2*shear false+shear true+2*swap)+((10*J+12)+(21*(w+1)+12)+1+
           (1+(AtomSegment.chainConst (fieldSignOps (k a) true)*((prime^(w+1))^(d+1)*W)*(width a+5)+6))))
-      let stageCost := fun idx => 1+Finset.univ.sup (fun k => columnProgramTime U k (a.pivots idx k) w W H J)+((d+1)*(d+1)*(4*H+4)+1)
+      let stageCost := fun (m : Matrix (Fin r) (Fin r) (ZMod prime)) => 1+Finset.univ.sup (fun k => columnProgramTime U k (classPivots (a.table m) k) w W H J)+((d+1)*(d+1)*(4*H+4)+1)
       let rewindCost := fun idx => 1+(((d+1)*(4*H+4)+1+(d*(4*H+4)+1))+((d+1)*stageCost idx+1))
       let bound := fun idx => ((List.finRange n).map cost).sum+1+rewindCost idx
       let cleanBound := fun idx => bound idx+(total*4+1+total*(6*(Fast.Main.mnProgPush residual*bound idx)))
       let volume := (prime^(w+1))^(d+1)*W
       let prepTime := (d+1)*(2*(d+1)+(4*w+4+columnTime (d+1) prime w H))+1 +
         (d*(8*((d+1)*(d+1)*H)+14*H+22)+1)+(6*H+6)+(4*((d+1)*H)+4)+(6*(d*H)+6)
-      let stepTime := fun idx => (if LabelStock.live r (w+1) 1 idx then prepTime+((6*volume+6)+(1+cleanBound idx))
+      let stepTime := fun (m : Matrix (Fin r) (Fin r) (ZMod prime)) => (if decide (m.det ≠ 0) then prepTime+((6*volume+6)+(1+cleanBound m))
         else 4*(d+1)*(d+1)+1)+(4*volume+4)+((d+1)*(d+1)*(4*H+4)+1)
       ∀ (word : ℕ → List (Fin (prime+4))) (tail : List (Fin (prime+4)))
         (desc : RecursiveInterchangeLayout.Descriptor) (B : ℕ) (v : HS T Q prime U) (raw : Stacks T prime),
@@ -562,9 +562,11 @@ theorem preparedPass_exec {Q T r A : ℕ} (table : Matrix (Fin r) (Fin r) (ZMod 
       ∃ z F l, z.user = v.user ∧ F.R src = output ++ a.inputTail ∧ F.R acc = [] ∧ F.R (ext 0) = [] ∧
         F.R (scanPorts (Fin.last N).castSucc) = a.pivotTail ∧ F.R (tapes 34) = a.matrixTail ∧
         F.R parentTape = raw.R parentTape ∧ (∀ h, F.L (host (privateBank h)) = [] ∧ F.R (host (privateBank h)) = []) ∧
-        l ≤ passPreparationCost desc r (d+1) w B prefixWidth H + ((1+((desc.beforeRows*desc.rows*B)*(LabelTraversal.time (prime^w) (r*r) 1+5)+4 +
-          (((signedInputs a.table (w+1) a.records inputs).map (fun x => Record.cost d A 1 (w+1) W x.1 + 2)).sum + 2) +
-          (2*(a.records*(ActualAffineScaling.modulus (w+1)^((d+1)*1)*W))+2))) + 2*((desc.beforeRows*desc.rows*B)*(LabelTraversal.time (prime^w) (r*r) 1+5)+4) + (((List.range a.records).map fun idx => stepTime idx+4).sum+2+(2*(a.records*volume)+2))) ∧
+        let classes := LabelSelectors.classes 1 (r*r)
+        let perClass := fun x => anchorClassCost a.table A w W x + (stepTime (LabelSelectors.matrix r x)+4)
+        l ≤ passPreparationCost desc r (d+1) w B prefixWidth H +
+          (3*boxes*(LabelTraversal.time (prime^w) (r*r) 1+5) +
+            boxes*(prime^w)^(r*r)*(classes.map perClass).sum + 4*(a.records*volume)+21) ∧
         Exec body prog (mk v raw) l (mk z F) := by
   intro rows reads n k j t i width total ports shared bank program spare off reverseHost reverseBank active pop rewind residual privateBank host ext outside parentTape parentOff parentExt body scanPorts tapes src acc pivot rs sizeRs parents scratch maskRegs pivotRegs regs anchor ars ap asaved acap asize alayout banks external sharedSrc anchorParent counters registers e generatorSize generatorHost control generatorMask seed generatorTmp generatorBank recip generatorCounters clock generatorCount pool coeff generatorArchive archiveOff coeffOff scan aligned maskOffParent directoryOffParent genMaskRegs dir dirOut dirSrcParent dirOutParent maskOffDir parentPort parentArchive countParent atom unit atomOff unitApart highLayout highSlots traversalOff parentOutside highParent beforeRows rowsTape beforeH dimensions countOffParent
   obtain ⟨pass,runPass⟩ := archivedPass_exec (U := U) table capacity signCapacity host ext outside parentTape parentOff parentExt body
@@ -791,13 +793,41 @@ theorem preparedPass_exec {Q T r A : ℕ} (table : Matrix (Fin r) (Fin r) (ZMod 
     runPass a parent rfl inputs encoded unsigned liveSpec padding hm hw hW desc B first init records shape radixInit
       scratchInit countInit fresh emptyInit neutral aradix afree acount awidth clean queueInit extCount savedEmpty tmpEmpty
       accEmpty pivotTail archive modWord widthWord one padded ticks scratchFree payloadBlank sharedFree parentWord privateFree
+  let copies := (desc.beforeRows*desc.rows*B)*(prime^w)^(r*r)
+  let classes := LabelSelectors.classes 1 (r*r)
+  let anchorCost := anchorClassCost a.table A w W
+  let scanCost := fun x => stepTime (LabelSelectors.matrix r x)+4
+  have anchors : ((signedInputs a.table (w+1) a.records inputs).map (fun x => Record.cost d A 1 (w+1) W x.1+2)).sum =
+      copies*(classes.map anchorCost).sum := by
+    simpa only [copies,classes,anchorCost,signedInputs,List.map_map,Function.comp_def,records,
+      LabelSelectors.residue_eq,LabelSelectors.recordMap,anchorClassCost] using
+      LabelSelectors.recordMap_sum desc r w B shape anchorCost
+  have scans : ((List.range a.records).map fun j => stepTime (LabelStock.residue r (w+1) 1 j)+4).sum =
+      copies*(classes.map scanCost).sum := by
+    simpa only [copies,classes,scanCost,records,LabelSelectors.residue_eq,LabelSelectors.recordMap] using
+      LabelSelectors.recordMap_sum desc r w B shape scanCost
+  let traversal := LabelTraversal.time (prime^w) (r*r) 1+5
+  let count := desc.beforeRows*desc.rows*B
+  have rawTime : l ≤ (1+(count*traversal+4 +
+      (((signedInputs a.table (w+1) a.records inputs).map (fun x => Record.cost d A 1 (w+1) W x.1+2)).sum+2) +
+      (2*(a.records*(ActualAffineScaling.modulus (w+1)^((d+1)*1)*W))+2))) + 2*(count*traversal+4) +
+      (((List.range a.records).map fun j => stepTime (LabelStock.residue r (w+1) 1 j)+4).sum+2+(2*(a.records*volume)+2)) := time
+  rw [Nat.mul_one (d+1)] at rawTime
+  rw [anchors,scans] at rawTime
+  have scanPaid : l ≤ 3*boxes*traversal + boxes*(prime^w)^(r*r)*(classes.map fun x => anchorCost x + scanCost x).sum +
+      4*(a.records*volume)+21 := by
+    apply rawTime.trans_eq
+    have addClasses : (classes.map fun x => anchorCost x + scanCost x).sum = (classes.map anchorCost).sum + (classes.map scanCost).sum := by rw [List.sum_map_add]
+    rw [addClasses,parentSize]
+    dsimp only [count,copies,volume,ActualAffineScaling.modulus]
+    ring
   have prep := residualPreparation_le desc r (d+1) w B prefixWidth H rankPos
     (records ▸ parentSize ▸ rowCount)
   have setupBound := Nat.add_le_add (Nat.add_le_add (Nat.add_le_add parentBound dirBound) initBound)
     (Nat.add_le_add maskBound paid)
   have setupPaid := setupBound.trans (show _ ≤ passPreparationCost desc r (d+1) w B prefixWidth H from by
     simpa only [archiveTime,price,liveRecords,labelWidth,parentSize,records,Nat.add_one_sub_one] using prep)
-  have totalBound := Nat.add_le_add setupPaid time
+  have totalBound := Nat.add_le_add setupPaid scanPaid
   rw [Nat.add_assoc (parentSteps+dirSteps+initSteps) _ l] at totalBound
   exact ⟨z,F,_,hz.trans (finishUser.trans (releaseUser.trans (clearUser.trans (genUser.trans (seedUser.trans
       (zeroUser.trans (copyUser.trans (maskUser.trans (initUser.trans (dirUser.trans parentUser)))))))))),queue,accEnd,maskEnd,pivots,finalArchive,
