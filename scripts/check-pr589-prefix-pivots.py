@@ -4,10 +4,11 @@ import gzip
 import hashlib
 import json
 from fractions import Fraction
-from math import comb, gcd
+from math import comb, gcd, lcm
 from pathlib import Path
 
 from generate_pr589_moves import SHA256
+from generate_pr589_copy_ranks import inverse
 
 WORD = (Path(__file__).resolve().parents[1] / "integer-mult-bounds/research/"
         "e8-bit-p111-tuned/tune/bitE8mut-p111-tuned.json.gz")
@@ -60,10 +61,27 @@ def main():
     max_entry = max(abs(x) for row in shifted for x in row)
     ranks = []
     max_denominator = 1
+    max_relation_denominator = 1
+    relations = 0
     for i, frame in enumerate(word["frames"]):
         rank = len(pivots(lines[j] for j in frame))
         assert pivots(shifted[j] for j in frame) == set(range(rank)), i
         graph = graph_rows((shifted[j] for j in frame), rank)
+        basis = []
+        for j in frame:
+            row = shifted[j]
+            if len(pivots([*basis, row])) > len(basis):
+                basis.append(row)
+        assert len(basis) == rank
+        dual = inverse([row[:rank] for row in basis]) if rank else []
+        for j in frame:
+            row = shifted[j]
+            coefficients = [sum(x * y for x, y in zip(row[:rank], column)) for column in zip(*dual)]
+            den = lcm(*(x.denominator for x in coefficients))
+            weights = [int(den * x) for x in coefficients]
+            assert all(den * row[k] == sum(a * b[k] for a, b in zip(weights, basis)) for k in range(8))
+            max_relation_denominator = max(max_relation_denominator, den)
+            relations += 1
         max_denominator = max([max_denominator] + [x.denominator for row in graph for x in row])
         ranks.append(rank)
 
@@ -88,6 +106,8 @@ def main():
                 moves += ranks[old] != ranks[frame]
                 refs[register] = frame
     assert (len(ranks), moves) == (636, 2911)
+    assert max_relation_denominator <= 2 ** 100
+    print(f"Verified {relations} integral generator relations; maximum denominator: {max_relation_denominator}.")
     print("Verified nine rank-seven COPY prefixes and 527 zero-frame ADD targets.")
     print(f"Maximum translated entry magnitude: {max_entry}. Maximum graph denominator: {max_denominator}.")
     print(f"Verified prefix pivots for {len(ranks)} labels and consecutive pivots for {moves} positive-rank phase MOVEs.")

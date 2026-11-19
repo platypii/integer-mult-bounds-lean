@@ -50,4 +50,30 @@ theorem prefix_interpolation {R : Type*} [CommRing R] {d : ℕ} (hd : d ≤ 8)
   change (a ᵥ* G.submatrix id (Fin.castLE hd)) ᵥ* B = a ᵥ* G
   rw [vecMul_vecMul, reconstruct]
 
+/-- An integral generator relation remains valid on the tape after cancellation of a
+unit denominator. Hence the prefix interpolator fixes the additional generator. -/
+theorem prefix_fixed_of_scaled_relation {d : ℕ} (hd : d ≤ 8)
+    (G : Matrix (Fin d) (Fin 8) ℤ) (x : Fin 8 → ℤ) (a : Fin d → ℤ) (den : ℤ)
+    (relation : ∀ j, den * x j = ∑ i, a i * G i j)
+    (nz : den ≠ 0) (bound : den.natAbs ≤ 2 ^ 100) (w : ℕ)
+    (B : Matrix (Fin d) (Fin 8) (ZMod (prime ^ w)))
+    (reconstruct : (G.map (Int.castRingHom (ZMod (prime ^ w)))).submatrix id (Fin.castLE hd) * B =
+      G.map (Int.castRingHom (ZMod (prime ^ w)))) :
+    (fun i : Fin d => (x (i.castLE hd) : ZMod (prime ^ w))) ᵥ* B =
+      fun j => (x j : ZMod (prime ^ w)) := by
+  let R := ZMod (prime ^ w)
+  let M := G.map (Int.castRingHom R)
+  let v (j) : R := x j
+  let coeff (i) : R := a i
+  have scaled : (den : R) • v = coeff ᵥ* M := by
+    funext j
+    have h := congrArg (Int.castRingHom R) (relation j)
+    simpa [v, coeff, M, vecMul, dotProduct, Pi.smul_apply, smul_eq_mul] using h
+  have part : (den : R) • (v ∘ Fin.castLE hd) = coeff ᵥ* M.submatrix id (Fin.castLE hd) :=
+    congrArg (fun y : Fin 8 → R => y ∘ Fin.castLE hd) scaled
+  have identity : (den : R) • ((v ∘ Fin.castLE hd) ᵥ* B) = (den : R) • v := by
+    rw [← smul_vecMul, part, vecMul_vecMul, reconstruct, scaled]
+  funext j
+  exact (prefix_denominator_unit den nz bound w).mul_right_inj.mp (congrFun identity j)
+
 end IntegerMultBounds.MathlibTM2.M6
