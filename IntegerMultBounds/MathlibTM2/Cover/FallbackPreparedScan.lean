@@ -444,11 +444,42 @@ theorem uniformResidualClassBound {r w W A H : ℕ}
   simpa only [selected,other] using classBound
 
 omit [M8.Machine.Net] in
+/-- Count the shared work once per record and the live payload moves only on invertible records. -/
+theorem physicalPayloadBill (r copies volume common live pad records : ℕ)
+    (rankPos : 0 < r) (rowCount : records = copies*prime^(r*r)) :
+    let units := ∏ i : Fin r, (prime^r-prime^i.val)
+    let active := copies*units
+    let totalVolume := records*volume
+    copies*(units*((common+4*volume)+(live+6*volume)) + (prime^(r*r)-units)*((common+4*volume)+pad)) + 4*totalVolume =
+      records*common + active*live + (records-active)*pad + 8*totalVolume +
+        6*min (active*volume) (((prime-1)*totalVolume)/prime) := by
+  intro units active totalVolume
+  have unitsLe : units ≤ prime^(r*r) := by
+    calc
+      _ ≤ ∏ _ : Fin r, prime^r := Finset.prod_le_prod fun i _ => Nat.sub_le _ _
+      _ = _ := by simp [← pow_mul]
+  have density := liveClassVolume_le r (copies*volume) rankPos
+  rw [liveClasses_eq_product] at density
+  have payload : active*volume ≤ ((prime-1)*totalVolume)/prime := by
+    apply (Nat.le_div_iff_mul_le prime_prime.pos).2
+    dsimp only [active,totalVolume,units]
+    rw [rowCount]
+    convert density using 1 <;> ring
+  rw [min_eq_left payload]
+  dsimp only [active,totalVolume]
+  rw [rowCount,← Nat.mul_sub]
+  generalize h : prime^(r*r)-units = padding
+  have classes := Nat.sub_add_cancel unitsLe
+  rw [h] at classes
+  rw [← classes]
+  ring
+
+omit [M8.Machine.Net] in
 theorem physicalScanTime_le {r w W A H : ℕ} (desc : RecursiveInterchangeLayout.Descriptor) (B numRecords : ℕ)
     (shape : desc.beforeH = B*prime^(r*((w+1)*r))) (records : numRecords = LabelMask.records desc)
     (table : Matrix (Fin r) (Fin r) (ZMod prime) → Matrix (Fin (d+1)) (Fin (d+1)) (ZMod prime))
     (inputs : ℕ → Array d 1 (w+1) W) (cleanBound : (Fin (d+1) → Fin (d+1)) → ℕ)
-    (kernel prepTime l : ℕ) (kernelBound : ∀ p, cleanBound p ≤ kernel) :
+    (kernel prepTime l : ℕ) (rankPos : 0 < r) (kernelBound : ∀ p, cleanBound p ≤ kernel) :
     let volume := (prime^(w+1))^(d+1)*W
     let stepTime := fun (m : Matrix (Fin r) (Fin r) (ZMod prime)) =>
       (if decide (m.det ≠ 0) then prepTime+((6*volume+6)+(1+cleanBound (classPivots (table m))))
@@ -461,9 +492,13 @@ theorem physicalScanTime_le {r w W A H : ℕ} (desc : RecursiveInterchangeLayout
       (((List.range numRecords).map fun j => stepTime (LabelStock.residue r (w+1) 1 j)+4).sum+2+(2*(numRecords*volume)+2)) →
     let units := ∏ i : Fin r, (prime^r-prime^i.val)
     let anchor := max (Record.cost d A 1 (w+1) W false) (Record.cost d A 1 (w+1) W true) + 2
-    let common := anchor + (4*volume+4) + ((d+1)*(d+1)*(4*H+4)+1) + 4
-    l ≤ 3*count*traversal + count*(prime^w)^(r*r)*(units*(common+(prepTime+((6*volume+6)+(1+kernel)))) +
-      (prime^(r*r)-units)*(common+(4*(d+1)*(d+1)+1))) + 4*(numRecords*volume)+21 := by
+    let common := anchor + 4 + ((d+1)*(d+1)*(4*H+4)+1) + 4
+    let live := prepTime + 6 + (1+kernel)
+    let pad := 4*(d+1)*(d+1)+1
+    let active := count*(prime^w)^(r*r)*units
+    let payload := numRecords*volume
+    l ≤ 3*count*traversal + (numRecords*common + active*live + (numRecords-active)*pad + 8*payload +
+      6*min (active*volume) (((prime-1)*payload)/prime))+21 := by
   intro volume stepTime count traversal time
   let copies := (desc.beforeRows*desc.rows*B)*(prime^w)^(r*r)
   let classes := LabelSelectors.classes 1 (r*r)
@@ -486,8 +521,22 @@ theorem physicalScanTime_le {r w W A H : ℕ} (desc : RecursiveInterchangeLayout
     exact signedClassTime count traversal copies (numRecords*volume) classes anchorCost scanCost
   have classBound := uniformResidualClassBound (w := w) (W := W) (A := A) (H := H) table cleanBound kernel volume prepTime
     kernelBound
-  exact scanPaid.trans (Nat.add_le_add_right (Nat.add_le_add_right
+  have scanTotal := scanPaid.trans (Nat.add_le_add_right (Nat.add_le_add_right
     (Nat.add_le_add_left (Nat.mul_le_mul_left _ classBound) _) _) _)
+  have rowsEq : numRecords = copies*prime^(r*r) := by
+    rw [records,LabelMask.records,shape]
+    dsimp only [copies]
+    rw [show r*((w+1)*r) = (w+1)*(r*r) by ring,pow_mul,pow_succ',mul_pow]
+    ring
+  let anchor := max (Record.cost d A 1 (w+1) W false) (Record.cost d A 1 (w+1) W true) + 2
+  let common := anchor + 4 + ((d+1)*(d+1)*(4*H+4)+1) + 4
+  let live := prepTime + 6 + (1+kernel)
+  let pad := 4*(d+1)*(d+1)+1
+  have commonEq : anchor + (4*volume+4) + ((d+1)*(d+1)*(4*H+4)+1) + 4 = common+4*volume := by unfold common; omega
+  have liveEq : prepTime+((6*volume+6)+(1+kernel)) = live+6*volume := by unfold live; omega
+  rw [commonEq,liveEq,Nat.add_assoc (3*_*_) (_*_) (4*_),
+    physicalPayloadBill r copies volume common live pad numRecords rankPos rowsEq] at scanTotal
+  exact scanTotal
 
 /-- One program generates the physical matrix archive, signs the payloads and applies the residual pass. -/
 theorem preparedPass_exec {Q T r A : ℕ} (table : Matrix (Fin r) (Fin r) (ZMod prime) → Matrix (Fin (d+1)) (Fin (d+1)) (ZMod prime))
@@ -671,15 +720,17 @@ theorem preparedPass_exec {Q T r A : ℕ} (table : Matrix (Fin r) (Fin r) (ZMod 
         F.R (scanPorts (Fin.last N).castSucc) = a.pivotTail ∧ F.R (tapes 34) = a.matrixTail ∧
         F.R parentTape = raw.R parentTape ∧ (∀ h, F.L (host (privateBank h)) = [] ∧ F.R (host (privateBank h)) = []) ∧
         let units := ∏ i : Fin r, (prime^r-prime^i.val)
-        let classes := prime^(r*r)
+        let active := boxes*(prime^w)^(r*r)*units
+        let payload := a.records*volume
         let kernel := Finset.univ.sup (fun j : Fin (d+1) => cleanBound (Finset.univ.sup fun i => columnProgramTime U i j w W H J))
         let anchor := max (Record.cost d A 1 (w+1) W false) (Record.cost d A 1 (w+1) W true) + 2
-        let common := anchor + (4*volume+4) + ((d+1)*(d+1)*(4*H+4)+1) + 4
-        let live := prepTime + ((6*volume+6)+(1+kernel))
+        let common := anchor + 4 + ((d+1)*(d+1)*(4*H+4)+1) + 4
+        let live := prepTime + 6 + (1+kernel)
         let pad := 4*(d+1)*(d+1)+1
         l ≤ passPreparationCost desc r (d+1) w B prefixWidth H +
           (3*boxes*(LabelTraversal.time (prime^w) (r*r) 1+5) +
-            boxes*(prime^w)^(r*r)*(units*(common+live) + (classes-units)*(common+pad)) + 4*(a.records*volume)+21) ∧
+            (a.records*common + active*live + (a.records-active)*pad + 8*payload +
+              6*min (active*volume) (((prime-1)*payload)/prime))+21) ∧
         Exec body prog (mk v raw) l (mk z F) := by
   intro rows reads n k j t i width total ports shared bank program spare off reverseHost reverseBank active pop rewind residual privateBank host ext outside parentTape parentOff parentExt body scanPorts tapes src acc pivot rs sizeRs parents scratch maskRegs pivotRegs regs anchor ars ap asaved acap asize alayout banks external sharedSrc anchorParent counters registers e generatorSize generatorHost control generatorMask seed generatorTmp generatorBank recip generatorCounters clock generatorCount pool coeff generatorArchive archiveOff coeffOff scan aligned maskOffParent directoryOffParent genMaskRegs dir dirOut dirSrcParent dirOutParent maskOffDir parentPort parentArchive countParent atom unit atomOff unitApart highLayout highSlots traversalOff parentOutside highParent beforeRows rowsTape beforeH dimensions countOffParent
   obtain ⟨pass,runPass⟩ := archivedPass_exec (U := U) table capacity signCapacity host ext outside parentTape parentOff parentExt body
@@ -914,7 +965,7 @@ theorem preparedPass_exec {Q T r A : ℕ} (table : Matrix (Fin r) (Fin r) (ZMod 
     dsimp only [cleanBound,bound,rewindCost,stageCost]
     gcongr
   have scanTotal := physicalScanTime_le (A := A) (H := H) desc B a.records shape records a.table inputs pivotCost
-    kernel prepTime l (constantPivotBound column cleanBound monotone) time
+    kernel prepTime l rankPos (constantPivotBound column cleanBound monotone) time
   have prep := residualPreparation_le desc r (d+1) w B prefixWidth H rankPos
     (records ▸ parentSize ▸ rowCount)
   have setupBound := Nat.add_le_add (Nat.add_le_add (Nat.add_le_add parentBound dirBound) initBound)
