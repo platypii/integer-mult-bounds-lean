@@ -195,6 +195,103 @@ theorem goodChildIndex (hg tg : Fin g → ZMod M) (s : (Fin r → ZMod M) × (Fi
   simp only [RecursiveInterchangeLayout.index,goodChildDescriptor,Nat.zero_mul,Nat.zero_add,pow_add]
   ring
 
+/-- Positions of the adjacent atom exchanges packing a tail after the head.
+Each successive tail atom crosses the middle, starting at its right edge. -/
+def middleTailSchedule (middle tail : ℕ) : List ℕ :=
+  (List.range tail).flatMap fun t => (List.range middle).reverse.map (t+·)
+
+theorem middleTailSchedule_length (middle tail : ℕ) :
+    (middleTailSchedule middle tail).length = tail*middle := by
+  induction tail with
+  | zero => simp [middleTailSchedule]
+  | succ t ih => simpa [middleTailSchedule,List.range_succ,Nat.succ_mul] using ih
+
+theorem middleTailSchedule_inside {middle tail i : ℕ} (used : i ∈ middleTailSchedule middle tail) :
+    i+1 < middle+tail := by
+  obtain ⟨t,ht,slot⟩ := List.mem_flatMap.mp used
+  obtain ⟨j,hj,rfl⟩ := List.mem_map.mp slot
+  simp only [List.mem_reverse,List.mem_range] at ht hj
+  omega
+
+/-- A schedule entry is measured from the first atom after the unchanged head. -/
+def swapAtomAt {α : Type*} : ℕ → List α → List α
+  | 0,x::y::xs => y::x::xs
+  | n+1,x::xs => x::swapAtomAt n xs
+  | _,xs => xs
+
+private theorem swapAtomAt_prefix {α : Type*} (pre xs : List α) (i : ℕ) :
+    swapAtomAt (pre.length+i) (pre++xs) = pre++swapAtomAt i xs := by
+  induction pre with
+  | nil => simp
+  | cons x pre ih => simp [Nat.succ_add,swapAtomAt,ih]
+
+private theorem slideAtom {α : Type*} (mid : List α) (x : α) (rest : List α) :
+    (List.range mid.length).reverse.foldl (fun xs i => swapAtomAt i xs) (mid++x::rest) =
+      x::(mid++rest) := by
+  induction mid using List.reverseRecOn generalizing x rest with
+  | nil => rfl
+  | append_singleton mid y ih =>
+    simp only [List.length_append,List.length_singleton,List.range_succ,List.reverse_append,
+      List.reverse_singleton,List.singleton_append,List.foldl_cons,List.append_assoc,List.cons_append,List.nil_append]
+    rw [← Nat.add_zero mid.length,swapAtomAt_prefix]
+    simpa [swapAtomAt] using ih x (y::rest)
+
+theorem middleTailSchedule_packs {α : Type*} (mid tail suffix : List α) :
+    (middleTailSchedule mid.length tail.length).foldl (fun xs i => swapAtomAt i xs)
+      (mid++tail++suffix) = tail++mid++suffix := by
+  induction tail using List.reverseRecOn generalizing suffix with
+  | nil => simp [middleTailSchedule]
+  | append_singleton tail x ih =>
+    simp only [List.length_append,List.length_singleton,middleTailSchedule,List.range_succ,
+      List.flatMap_append,List.flatMap_singleton,List.foldl_append,List.foldl_map]
+    have first := ih (x::suffix)
+    simp only [middleTailSchedule,List.append_assoc] at first
+    simp only [List.append_assoc,List.cons_append,List.nil_append]
+    rw [first]
+    have slide (is : List ℕ) (xs : List α) :
+        is.foldl (fun ys j => swapAtomAt (tail.length+j) ys) (tail++xs) =
+        tail++is.foldl (fun ys j => swapAtomAt j ys) xs := by
+      induction is generalizing xs with
+      | nil => rfl
+      | cons j js ih => simp only [List.foldl_cons,swapAtomAt_prefix,ih]
+    rw [slide,slideAtom]
+
+/-- Move the inherited middle field past the active tail. The signed scan
+stores the head and tail consecutively and carries the middle in its suffix. -/
+def packMiddleTail (heads middle tails suffix : ℕ) :
+    Fin (heads*(middle*(tails*suffix))) ≃ Fin (heads*(tails*(middle*suffix))) :=
+  let exchange : Fin middle × Fin tails × Fin suffix ≃ Fin tails × Fin middle × Fin suffix :=
+    ⟨fun (m,t,j) => (t,m,j),fun (t,m,j) => (m,t,j),fun _ => rfl,fun _ => rfl⟩
+  let swap := finProdFinEquiv.symm.trans
+    ((Equiv.prodCongr (Equiv.refl (Fin middle)) finProdFinEquiv.symm).trans
+      (exchange.trans
+        ((Equiv.prodCongr (Equiv.refl (Fin tails)) finProdFinEquiv).trans finProdFinEquiv)))
+  finProdFinEquiv.symm.trans ((Equiv.prodCongr (Equiv.refl (Fin heads)) swap).trans finProdFinEquiv)
+
+theorem packMiddleTail_index {heads middle tails suffix : ℕ} (h : Fin heads) (m : Fin middle)
+    (t : Fin tails) (j : Fin suffix) :
+    packMiddleTail heads middle tails suffix
+      (finProdFinEquiv (h,finProdFinEquiv (m,finProdFinEquiv (t,j)))) =
+      finProdFinEquiv (h,finProdFinEquiv (t,finProdFinEquiv (m,j))) := by
+  simp [packMiddleTail]
+
+/-- In the parent record this is one rectangular transpose for each head.
+Both inactive digit slices form a single middle index. -/
+theorem goodChild_packed_index (hg tg : Fin g → ZMod M)
+    (s : (Fin r → ZMod M) × (Fin r → ZMod M)) (j : Fin W) :
+    let middle := rank (Fin.append hg tg)
+    let addr := index (Fin.append (childFields hg tg s).1 (childFields hg tg s).2) j
+    let size : M^((r+g)+(r+g))*W = M^r*(M^(g+g)*(M^r*W)) := by simp only [pow_add]; ring
+    packMiddleTail (M^r) (M^(g+g)) (M^r) W (addr.cast size) =
+      finProdFinEquiv (rank s.1,finProdFinEquiv (rank s.2,finProdFinEquiv (middle,j))) := by
+  intro middle addr size
+  rw [← packMiddleTail_index]
+  apply congrArg
+  apply Fin.ext
+  simp only [Fin.val_cast,addr,goodChildIndex,RecursiveInterchangeLayout.index,goodChildDescriptor,
+    Nat.zero_mul,Nat.zero_add,finProdFinEquiv,Equiv.coe_fn_mk,middle]
+  ring
+
 theorem childFields_surjective {R : Type*} (x y : Fin (r+g) → R) :
     ∃ hg tg s, childFields hg tg s = (x,y) := by
   let z := fun i : Fin (g+r) => y (i.cast (Nat.add_comm g r))
