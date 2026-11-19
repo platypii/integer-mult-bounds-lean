@@ -200,7 +200,7 @@ theorem middleSwap_exec [M8.Machine.Net] (v : Descriptor) (positive : v.Positive
   have kept := frame j (off slot).symm
   exact ⟨untouched.1.trans kept.1,untouched.2.trans kept.2⟩
 
-private theorem releaseMiddleWork {k Q A : ℕ} (body : F → Pr F (k+31) Q A U)
+theorem releaseMiddleWork {k Q A : ℕ} (body : F → Pr F (k+31) Q A U)
     (prog : Pr F (k+31) Q A U) {u z : HS (k+31) Q A U} {S D : Stacks (k+31) A}
     {steps budget push : ℕ} (completed : Exec body prog (mk u S) steps (mk z D)) (time : steps ≤ budget)
     (hp : Fast.Main.mnProgPush prog ≤ push) (hbody : ∀ f, Fast.Main.mnProgPush (body f) ≤ push)

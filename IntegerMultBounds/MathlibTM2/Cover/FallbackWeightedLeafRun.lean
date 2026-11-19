@@ -15,7 +15,7 @@ variable {T P M G B : ℕ} {F U : Type}
 The cleanup multiplier depends only on the host program's push bound. -/
 noncomputable def weightedLeafCost [M8.Machine.Net] (N width tapes push : ℕ) : ℕ :=
   (1+186*push)*((3*(210*(2*(Nat.size prime+1)^2)+16120+100)+387)*N+
-    2*(LeafCore.coreCost N width*(tapes+5)))+12000*N
+    2*(LeafCore.coreCost N width*(tapes+5)))+(12000*(1+186*push)+125)*N
 
 private theorem shearHeaders_le (P M G B : ℕ) (hp : 0 < P) (hm : 0 < M) (hg : 0 < G) (hb : 0 < B) :
     6*(P.size+G.size+3*M.size+B.size)+37+(6*M.size+9) ≤ 100*((P*M*G)*(M*B)) := by
@@ -46,7 +46,7 @@ private theorem threeStageCharge (base exchange push rate N : ℕ) (pos : 0 < N)
 
 private theorem weightedLeafTime [M8.Machine.Net] {P M G B V width tapes push n m : ℕ}
     (hP : 0 < P) (hM : 0 < M) (hG : 0 < G) (hB : 0 < B) (size : (P*M*G)*(M*B) = V)
-    (signBound : m ≤ 12000*(P*(M*(G*(M*B))))) :
+    (signBound : m ≤ (12000*(1+186*push)+125)*(P*(M*(G*(M*B))))) :
     n ≤ middleShearsCost P M G B V width tapes push → n+m ≤ weightedLeafCost V width tapes push := by
   intro hn
   let N := (P*M*G)*(M*B)
@@ -72,6 +72,10 @@ private theorem weightedLeafTime [M8.Machine.Net] {P M G B V width tapes push n 
   dsimp only [exchange,shearRate,N] at cost
   rw [size] at cost
   exact cost
+
+private theorem signReleaseCost (N push : ℕ) (pos : 0 < N) :
+    12000*N+(125+31*(6*(push*(12000*N)))) ≤ (12000*(1+186*push)+125)*N := by
+  nlinarith only [pos]
 
 theorem signedMiddleShears_exec [M8.Machine.Net] (v : Descriptor) (positive : v.Positive)
     (size : (P*M*G)*(M*B) = volume prime v) (w : ℕ) (radix : M = prime^(w+1))
@@ -108,13 +112,13 @@ theorem signedMiddleShears_exec [M8.Machine.Net] (v : Descriptor) (positive : v.
       let sign := load.seq (statePlacedNormalized bank capacity (by decide) Empty.elim child)
       ∀ (body : F → Pr F (K+31) block.states prime U) (u : HS (K+31) block.states prime U)
         (S : Stacks (K+31) prime) push, (∀ b, Fast.Main.mnProgPush (prog b) ≤ push) →
-        Fast.Main.mnProgPush lastProg ≤ push → (∀ f, Fast.Main.mnProgPush (body f) ≤ push) →
+        Fast.Main.mnProgPush lastProg ≤ push → Fast.Main.mnProgPush sign ≤ push → (∀ f, Fast.Main.mnProgPush (body f) ≤ push) →
         (∀ j : Fin 31, S.L (j.natAdd K) = [] ∧ S.R (j.natAdd K) = []) →
         (∀ b i, S.R ((src b i).castAdd 31) = (![binSyms P.size P,binSyms G.size G,binSyms M.size (c b).val,
           binSyms M.size 0,binSyms B.size B,binSyms M.size M] i)) →
         RepT (raw (CommonBank.bank roles (Routines.hdr v) f p node scalar ctr st) block.tapes) (S.L ∘ ports) (S.R ∘ ports) →
         ∃ z D n, z.user = u.user ∧ n ≤ weightedLeafCost (volume prime v) v.width block.tapes push ∧
-          Exec body ((((stage false).seq (stage true)).seq (lastProg.seq (clearWorkTapes work))).seq sign) (mk u S) n (mk z D) ∧
+          Exec body ((((stage false).seq (stage true)).seq (lastProg.seq (clearWorkTapes work))).seq (sign.seq (clearWorkTapes work))) (mk u S) n (mk z D) ∧
           (∀ x, readAt blank (D.L (ports slot)) (D.R (ports slot)) x = leafBitTape (negateLeafHead signWord) x) ∧
           (∀ [NeZero M], P = v.beforeRows*v.rows*v.beforeH → G = v.between → B = v.afterD →
             ∀ (_radixWidth : prime^v.width = M) (weight inv : ZMod M), weight*inv = 1 →
@@ -123,9 +127,10 @@ theorem signedMiddleShears_exec [M8.Machine.Net] (v : Descriptor) (positive : v.
               (mid : Fin v.between) (post : Fin v.afterD) (h t : ZMod M),
               (negateLeafHead signWord)[index prime v a row pre (weight*t).val mid (inv*h).val post]? =
                 (List.ofFn word)[index prime v a row pre h.val mid t.val post]?) ∧
+          (∀ j : Fin 31, D.L (j.natAdd K) = [] ∧ D.R (j.natAdd K) = []) ∧
           ∀ j : Fin K, (∀ i, sim i ≠ j) →
             D.L (j.castAdd 31) = S.L (j.castAdd 31) ∧ D.R (j.castAdd 31) = S.R (j.castAdd 31) := by
-  intro block K sim src apart slot leading capacity ports shear prog lastProg work stage result y xs len signWord signSrc load bank child sign body u S push hp hl hb free headers initial
+  intro block K sim src apart slot leading capacity ports shear prog lastProg work stage result y xs len signWord signSrc load bank child sign body u S push hp hl hsign hb free headers initial
   obtain ⟨b,H,n,hu,hn,run,read,clean,keep⟩ := threeMiddleShears_exec v positive size w radix c hP hG hB
     word io roles head input f p node scalar ctr st sim src apart slot leading capacity body u S push hp hl hb free headers initial
   have data : List.ofFn signWord = xs := by
@@ -139,9 +144,14 @@ theorem signedMiddleShears_exec [M8.Machine.Net] (v : Descriptor) (positive : v.
         rw [(keep _ (fun j => apart false j (![0,1,5,4] i))).2]
         fin_cases i <;> first | exact headers false 0 | exact headers false 1 | exact headers false 5 | exact headers false 4) clean
   have signBound := hm.trans (loadedLeafSign_cost_le P G M B hP hG hM hB)
-  refine ⟨z,D,n+m,hz.trans hu,?_,Exec.seq run last,?_,?_,?_⟩
-  · exact weightedLeafTime hP hM hG hB size signBound hn
-  · simpa only [ports,Function.Embedding.trans_apply,Fin.castAddEmb_apply] using out
+  obtain ⟨z',J,k,hz',hk,release,preserved,empty⟩ := releaseMiddleWork body sign last signBound hsign hb clean
+  have pos := Nat.mul_pos hP (Nat.mul_pos hM (Nat.mul_pos hG (Nat.mul_pos hM hB)))
+  refine ⟨z',J,n+k,hz'.trans (hz.trans hu),?_,Exec.seq run release,?_,?_,empty,?_⟩
+  · exact weightedLeafTime hP hM hG hB size (hk.trans (signReleaseCost _ push pos)) hn
+  · intro x
+    change readAt blank (J.L ((sim slot).castAdd 31)) (J.R ((sim slot).castAdd 31)) x = _
+    rw [(preserved (sim slot)).1,(preserved (sim slot)).2]
+    exact out x
   · intro inst prefixEq gapEq widthEq radixWidth weight inv unit firstCoeff middleCoeff
     subst P; subst G; subst B
     have coeff : c = fun b => if b then ⟨(-weight).val,(-weight).val_lt⟩ else ⟨inv.val,inv.val_lt⟩ := by
@@ -154,6 +164,6 @@ theorem signedMiddleShears_exec [M8.Machine.Net] (v : Descriptor) (positive : v.
       weightedLeafOutput_entry v radixWidth weight inv unit word
   · intro j hj
     have same := frame j (hj slot).symm
-    exact ⟨same.1.trans (keep j hj).1,same.2.trans (keep j hj).2⟩
+    exact ⟨(preserved j).1.trans (same.1.trans (keep j hj).1),(preserved j).2.trans (same.2.trans (keep j hj).2)⟩
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
