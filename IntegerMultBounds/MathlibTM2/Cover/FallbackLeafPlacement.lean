@@ -11,7 +11,7 @@ variable [M8.Machine.Net] {A b w d W : ℕ} {α : Type} [NeZero (b^(w+1))]
 local notation "N" => rowSwapBlock.tapes+35
 local notation "M" => b^(w+1)
 
-private theorem schedule_column (total : ℕ) (fits : 35 ≤ N) :
+theorem leafSchedule_column (total : ℕ) (fits : 35 ≤ N) :
     let host := ((Fin.castAddEmb (n := 62) (N-35)).trans (Fin.castAddEmb total)).trans (Fin.castAddEmb 1)
     let shared := (Fin.castAddEmb (n := N+1) total).trans (Fin.castAddEmb 1)
     (columnBank.trans shared).trans (leafScheduleBank N total fits) = leafColumn.trans host := by
@@ -42,7 +42,7 @@ theorem leafSchedule_ready (total H J : ℕ) (record weights : List (Fin (A+4)))
         placed.R ((j.natAdd (N+1)).castAdd 1) = [] := by
   intro fits host shared placed ready archive free
   let bank := leafScheduleBank N total fits
-  have eq := schedule_column total fits
+  have eq := leafSchedule_column total fits
   refine ⟨?_,?_,?_,?_⟩
   · rw [← eq] at ready
     have projected := (columnRecordReady_project ((columnBank.trans shared).trans bank) ..).mp ready
@@ -92,7 +92,7 @@ theorem leafSchedule_place_exec {P U : Type} {Q Q' : ℕ} (total : ℕ)
   let F := embOvr bank D.get S
   have same : embStk bank F = D := embStk_ovr bank.injective _ _
   refine ⟨z,F,hz,placed,?_,same,fun h off => embOvr_off _ _ off⟩
-  rw [← schedule_column total fits]
+  rw [← leafSchedule_column total fits]
   have projected := (columnRecordReady_project (columnBank.trans shared) ..).mp ready
   rw [← same] at projected
   exact (columnRecordReady_project ((columnBank.trans shared).trans bank) ..).mpr projected

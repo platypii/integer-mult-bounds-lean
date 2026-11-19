@@ -83,24 +83,26 @@ open IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2.Stack Host
 open Mult.PhaseCellToeplitz M8 ActualAffineScaling FlatCoordinateLayout
 open IntegerMultBounds.Networks.Shared50ModularControl (prime prime_prime)
 /-- Read the returned payload on the caller's tape, including every spectator slice. -/
-theorem packedLeaf_return {A T b w r g W : ℕ} [NeZero (b^(w+1))] {α : Type}
-    (weight inv : Fin r → ZMod (b^(w+1))) (bank : Fin 35 ↪ Fin T) (H J : ℕ)
+theorem packedLeaf_return {A T b w r g n W : ℕ} [NeZero (b^(w+1))] {α : Type}
+    (dim : n = r+g) (weight inv : Fin r → ZMod (b^(w+1))) (bank : Fin 35 ↪ Fin T) (H J : ℕ)
     (archive : List (Fin (A+4))) (sym : α → Fin 4) (source dest : ℤ → Fin 4) (p q : ℤ)
-    (original : Fin ((b^(w+1))^((r+g)+(r+g))*W) → α) (S : Stacks T A) :
+    (original : Fin ((b^(w+1))^(n+n)*W) → α) (S : Stacks T A) :
     ColumnRecordReady bank H J archive sym source dest p q original
       (fun x => let z := Weighted.child r (extendLeafWeight weight) (extendLeafWeight inv)
-                  (leafFields (n := r+g) x)
+                  (leafFields (n := n) x)
                 Fin.append z.1 z.2) S →
-    ∃ out : Fin ((b^(w+1))^((r+g)+(r+g))*W) → α, RecordReady (d := (r+g)+(r+g)) (b := b) (w := w) (W := W) bank H J archive sym source dest p q out S ∧
+    ∃ out : Fin ((b^(w+1))^(n+n)*W) → α, RecordReady (d := n+n) (b := b) (w := w) (W := W) bank H J archive sym source dest p q out S ∧
       ∀ (hg tg : Fin g → ZMod (b^(w+1))) (x : State (Fin r) (ZMod (b^(w+1)))) (j : Fin W),
-        let addr := fun y => let z := childFields hg tg y; index (Fin.append z.1 z.2) j
+        let addr := fun y => let z := childFields hg tg y
+                             index (Fin.append (fun i : Fin n => z.1 (i.cast dim)) (fun i : Fin n => z.2 (i.cast dim))) j
         out (addr (Weighted.child r weight inv x)) = original (addr x) := by
+  subst n
   rintro ⟨out,ready,action⟩
   refine ⟨out,ready,?_⟩
   intro hg tg x j
   let z := childFields hg tg x
   have result := action (Fin.append z.1 z.2) j
-  simpa only [leafFields_append,z,packedLeaf_childFields] using result
+  simpa only [leafFields_append,z,packedLeaf_childFields,Fin.cast_refl,Function.id_def] using result
 
 variable [M8.Machine.Net] {P U : Type} {w W Q : ℕ}
 local notation "M" => prime^(w+1)
