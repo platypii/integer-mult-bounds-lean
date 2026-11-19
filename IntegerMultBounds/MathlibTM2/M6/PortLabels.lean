@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.M6.PortRotation
+public import IntegerMultBounds.MathlibTM2.Cover.Weighted
 public import IntegerMultBounds.MathlibTM2.M6.PrefixLabel
 
 /-! The port rotation reconciles the literal source and target boundary labels. -/
@@ -67,5 +68,33 @@ theorem port_full_empty {R : Type*} [CommRing R] (P : Fin 636 → Matrix (Fin 8)
     have square : (1 - A) * (1 - A) = 1 - A := by
       rw [sub_mul, one_mul, mul_sub, mul_one, show A * A = A from idem _, sub_self, sub_zero]
     exact sub_eq_self.mp (full _ tri ones square)
+
+open M8.Exchange (exchange transform)
+
+/-- The source's line-to-full change and the target's empty-to-hyperplane change
+are the same address operation in the two port coordinate systems. -/
+theorem port_exchange_route {R : Type*} [CommRing R] (P : Fin 636 → Matrix (Fin 8) (Fin 8) R)
+    (lower : ∀ l i j, i < j → P l i j = 0)
+    (diag : ∀ l (i : Fin 8), P l i i = if i.val < Geometry.Dimensions.value l.val then 1 else 0)
+    (idem : ∀ l, P l * P l = P l) (t : Fin 111) :
+    ∃ A B : Matrix (Fin 8) (Fin 8) R, A.IsLowerTriangular ∧ B.IsLowerTriangular ∧
+      IsUnit A ∧ IsUnit B ∧
+      let G := B * portRotation * A
+      ∀ s, transform G G (exchange (P (portFullLabel t))
+          (exchange (P (portLineLabel t)) (transform G⁻¹ G⁻¹ s))) =
+        exchange (P (portHyperplaneLabel t)) (exchange (P (portEmptyLabel t)) s) := by
+  obtain ⟨A, B, ta, tb, ua, ub, route⟩ := port_label_routes P lower diag idem t
+  obtain ⟨full, empty⟩ := port_full_empty P lower diag idem t
+  refine ⟨A, B, ta, tb, ua, ub, ?_⟩
+  intro G s
+  have unit : IsUnit G := (ub.mul portRotation_isUnit).mul ua
+  have inv := G.mul_nonsing_inv ((Matrix.isUnit_iff_isUnit_det G).mp unit)
+  change G * (1 - P (portLineLabel t)) = P (portHyperplaneLabel t) * G at route
+  rw [full, empty]
+  have swap (L : Matrix (Fin 8) (Fin 8) R) (x : Swap.Shear.State (Fin 8) R) :
+      exchange 1 (exchange L x) = exchange (1 - L) x := by
+    simp [exchange, add_comm]
+  rw [swap, Cover.Weighted.exchange_conj _ _ _ inv, route, Matrix.mul_assoc, inv, Matrix.mul_one]
+  simp [exchange]
 
 end IntegerMultBounds.MathlibTM2.M6
