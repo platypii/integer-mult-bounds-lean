@@ -225,6 +225,7 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     (maskRegs : (parentsC :: savedC :: (slots cs ++ [ext 0])).Nodup)
     (pivotRegs : (parentsC :: savedC :: (slots cs ++ [ports (Fin.last N).castSucc])).Nodup)
     (separate : ∀ k ∈ parentsC :: savedC :: slots cs, ∀ i, anchor i ≠ k) :
+    let rate := (signedPassWork_le_setup_add_volume U d w).choose
     ∃ pass, ∀ (placement : Fin ((36+2*r+1+(conjugationDepth r+1)*13)+3) ↪ Fin K),
     let size := 36+2*r+1+(conjugationDepth r+1)*13
     let archiveSlot : Fin (size+3) := ⟨36+2*r, by dsimp [size]; omega⟩
@@ -310,12 +311,15 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     let perDigit := 18*box+6+12*r*r*units*lifts
     let perParent := box*(15*digits+89) + 25 +
       (LabelTraversal.time (prime^w) (r*r) 1+5) + queuePerParent +
-      signedPassWork a.table T 1 box w W a.H a.J U
+      signedPassWork a.table T 1 box w 0 a.H a.J U +
+      (lifts * (((LabelSelectors.classes 1 (r*r)).map (classVolumeRate a.table T)).sum +
+        units*rate) + 4*box) * (M^(d+1)*W)
     let fixedCost := 22*box + 21*(w+1) + 26*prime^w + paddingSetupCost (d+1) base.H + 82
     SignedPassBound regs anchor ports ext v B a payload rs parents saved body
       (.seq (LabelSpectators.program r br rows bh atom (dir 2) (dir 9) (dir 3) (dir 5)) (.seq (.seq (LabelDirectorySetup.setup r dir atom one) (.seq (expandMask (dir 9) (dir 4) (dir 2) (dir 3) (dir 5) (dir 12) (fun _ => false)) (LabelDirectoryBuild.program dir))) (.seq (.seq (LabelCounts.highCount one atom (dir 7) (dir 2) (dir 3) (dir 5))
         (scanR (dir 7) (dir 2) (LabelCountBank.pushAll (cs.map Prod.fst)))) (.seq writeMask (.seq (.seq (bcopy (recip 15) (bank 17) (bank 4) tmp) (.seq (.seq (umulSym 1 (bitSymbol false) (bank 8) (bank 9) (bank 4)) (withIdentitySeed (d+1) (bank 9) (bank 17) seed (bank 4) tmp generate)) (bclear (bank 9)))) (bclear (bank 17))))))) pass
       ((v.beforeRows*v.rows*B)*(perParent + width*perDigit) + fixedCost) u raw input := by
+  intro rate
   obtain ⟨pass,run⟩ := physicalSignedResidualPass (w := w) (W := W) regs anchor ports ext off banks external shared
     capacity e proj idempotent admissible α α' inverse body rs hk parents saved layout cap cs sizeC
     parentsC savedC maskRegs pivotRegs separate
@@ -616,8 +620,14 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     (Nat.add_le_add_right (Nat.add_le_add_left queueCost (4*base.H+4)) (2*base.H+2))
     (6*base.H+6)) (2*base.H+2)
   rw [paddingSetupCost_eq] at paid
+  have volumeBound := (signedPassWork_le_setup_add_volume U d w).choose_spec a.table T
+    (v.beforeRows*v.rows*B) a.records W a.H a.J
+  change signedPassWork _ _ _ _ _ _ _ _ _ ≤ signedPassWork _ _ _ _ _ 0 _ _ _ +
+    ((v.beforeRows*v.rows*B)*lifts*(((LabelSelectors.classes 1 (r*r)).map
+      (classVolumeRate a.table T)).sum + units*rate) + 4*a.records)*(M^(d+1)*W) at volumeBound
+  have passBound := passCost.trans (Nat.add_le_add_right volumeBound 22)
   have total := Nat.add_le_add (Nat.add_le_add parentCost (Nat.add_le_add directoryCost
-    (Nat.add_le_add counterCost (Nat.add_le_add hTime paid)))) passCost
+    (Nat.add_le_add counterCost (Nat.add_le_add hTime paid)))) passBound
   refine ⟨z,E,_,hz.trans (finishUser.trans (releaseUser.trans (cleanUser.trans (hy.trans (preparedUser.trans (zeroUser.trans (copyUser.trans (hUser.trans (counterUser.trans (buildUser.trans parentUser)))))))))),queue,acc,maskDone,pivots,archiveDone,?_,
     Exec.seq (Exec.seq parentRun (Exec.seq buildRun (Exec.seq counterRun (Exec.seq emit (Exec.seq (Exec.seq copyRun (Exec.seq (Exec.seq zeroRun (Exec.seq (Exec.seq initRun generateRun) clearRun)) releaseRun)) finishRun))))) exec⟩
   apply total.trans_eq
