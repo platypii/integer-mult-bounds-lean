@@ -32,6 +32,19 @@ noncomputable def reverseRowTime [Fintype P] (body : P → Pr P T 217 A U) (bank
       (10*(t.val*H+1)+12+((327*((b^(w+1))^d*W)+2)*13+6))
   4*shearWork.length+1+(1+6*shearWork.length*shearPushBound d b bank body)*limit
 
+/-- The pivot lookup changes setup time only. Every reverse row has the
+same volume coefficient, including the cost of cleaning its work tapes. -/
+theorem reverseRowTime_eq_setup_add_volume [Fintype P] (body : P → Pr P T 217 A U)
+    (bank : Fin 35 ↪ Fin T) (k t col target pivot : Fin d) (b w W H J : ℕ) :
+    reverseRowTime body bank k t col target pivot b w W H J =
+      reverseRowTime body bank k t col target pivot b w 0 H J +
+        ((1 + 6 * shearWork.length * shearPushBound d b bank body) * 9426) *
+          ((b^(w+1))^d * W) := by
+  have volume := split_volume (Q := b^(w+1)) (W := W) t
+  simp only [reverseRowTime, pivotShearTime, suffixSize, Nat.mul_zero] at *
+  rw [volume]
+  ring
+
 theorem reverseMatrixShear_ready [Fintype P] (k t col target pivot : Fin d) (hk : k < t)
     (matrix : Matrix (Fin d) (Fin d) (ZMod M)) (hb : b.Prime) (unit : IsUnit (matrix pivot col))
     (body : P → Pr P T 217 A U) (bank : Fin 35 ↪ Fin T) (H J : ℕ)
