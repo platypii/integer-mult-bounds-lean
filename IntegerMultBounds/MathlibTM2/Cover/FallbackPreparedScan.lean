@@ -3,7 +3,7 @@ module
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackGeneratedSignedPass
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackSignedHandoff
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackResidualPass
-public import IntegerMultBounds.MathlibTM2.Cover.LabelDirectoryBuild
+public import IntegerMultBounds.MathlibTM2.Cover.LabelDirectorySetup
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackControlStreams
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackArchivedResidual
 
@@ -397,6 +397,8 @@ theorem preparedPass_exec {Q T r A : ℕ} (table : Matrix (Fin r) (Fin r) (ZMod 
       (parents :: scratch :: (slots rs ++ [generatorMask])).Nodup →
       ∀ (dir : Fin 15 ↪ Fin T), dir 14 = generatorBank 2 → dir 0 ≠ parentTape → dir 14 ≠ parentTape →
       generatorMask ≠ dir 14 →
+      (∀ i ∈ ([4,10,11,12] : List (Fin 15)), dir i ≠ parentTape) →
+      ∀ (atom unit : Fin T), (∀ i, atom ≠ dir i) → (∀ i, unit ≠ dir i) →
       ∃ prog : Pr P T Q prime U, ∀ {w W : ℕ} (baseData : ScanData r d w W) (parent : Fin d → (ZMod (prime^(w+1)))ˣ)
         (proj : Matrix (Fin r) (Fin r) ℚ) (α α' : Fin r → ZMod (prime^(w+1))),
       proj*proj = proj → IntegerMultBounds.Swap.Modular.Admissible prime proj → (∀ i, α i * α' i = 1) →
@@ -431,18 +433,16 @@ theorem preparedPass_exec {Q T r A : ℕ} (table : Matrix (Fin r) (Fin r) (ZMod 
       let box := (prime^(w+1))^(r*r)
       let labelWidth := (w+1)*(r*r)
       let prefixWidth := (inputState.R (dir 1)).length
-      a.records = boxes*box → 0 < labelWidth → (inputState.R (dir 4)).length = box →
-      (inputState.R (dir 12)).length = a.records →
+      a.records = boxes*box → (inputState.R atom).length = w+1 → (inputState.R unit).length = 1 →
       inputState.R (dir 0) = (List.range boxes).flatMap word ++ tail →
       (∀ i < boxes, (word i).length = prefixWidth) →
-      inputState.R (dir 10) = (RadixCounterData.zeros prime_prime.two_le labelWidth).map RadixDigits.digitSymbol →
-      (inputState.R (dir 11)).length = labelWidth →
-      (∀ i ∈ ([2,3,5,6,7,13] : List (Fin 15)), inputState.R (dir i) = []) →
+      (∀ i ∈ ([2,3,4,5,6,7,10,11,12,13] : List (Fin 15)), inputState.R (dir i) = []) →
+      let counted := {inputState with R := Function.update (LabelDirectorySetup.prepared inputState.R dir labelWidth) (dir 12) (expandedMask box (fun _ => false) (inputState.R (dir 9)))}
       let ancestor := fun k => word (k/box)
       let directoryWord := (List.range a.records).flatMap (LabelDirectory.entry ancestor r (w+1))
-      let originalState := installMask (installMask inputState (dir 0) tail) (dir 14) (directoryWord ++ inputState.R (dir 14))
-      let directoryTime := boxes*box*(9*labelWidth+15)+6 +
-        (boxes*(box*(8*prefixWidth+11)+6*prefixWidth+15)+6 + boxes*box*(6*(prefixWidth+labelWidth)+13)+6)
+      let originalState := installMask (installMask counted (dir 0) tail) (dir 14) (directoryWord ++ inputState.R (dir 14))
+      let directoryTime := 8*(w+1)+8+22*box + (boxes*(6*box+10)+6 + (boxes*box*(9*labelWidth+15)+6 +
+        (boxes*(box*(8*prefixWidth+11)+6*prefixWidth+15)+6 + boxes*box*(6*(prefixWidth+labelWidth)+13)+6)))
       let projector := IntegerMultBounds.Swap.Modular.reduce (prime^(w+1)) proj
       let padWord := matrixWords prime H (1 : Matrix (Fin (d+1)) (Fin (d+1)) (ZMod (prime^(w+1))))
       originalState.R generatorMask = [] →
@@ -469,8 +469,8 @@ theorem preparedPass_exec {Q T r A : ℕ} (table : Matrix (Fin r) (Fin r) (ZMod 
         (∀ k ≤ conjugationDepth r, seeded.R (frame pool k 2) = binSyms H (prime^(w+1))) ∧
         (∀ k ≤ conjugationDepth r, ∀ i : Fin 13, i ≠ 2 → seeded.R (frame pool k i) = []) ∧
         (∃ suffix, seeded.R (generatorBank 16) = matrixWords prime H projector ++ suffix))
-      (_widths : ∀ j < a.records, (seeded.R (generatorBank 12)).length = (ancestor j).length)
-      (_width : (seeded.R (generatorBank 1)).length = w+1) (_blank : seeded.R (generatorBank 4) = []) (_empty : seeded.R (generatorArchive) = [])
+      (_prefixWidth : 0 < a.records → (seeded.R (generatorBank 12)).length = prefixWidth)
+      (_width : (seeded.R (generatorBank 1)).length = w+1) (_empty : seeded.R (generatorArchive) = [])
       (_output : seeded.R (generatorBank 13) = []),
       let S := queueResult maskedState generatorMask (scan 2) (tapes 34) (inputState.R (dir 14)) (a.matrices 0)
       a.records = LabelMask.records desc → desc.beforeH = B*prime^(r*((w+1)*r)) →
@@ -507,7 +507,7 @@ theorem preparedPass_exec {Q T r A : ℕ} (table : Matrix (Fin r) (Fin r) (ZMod 
           (((signedInputs a.table (w+1) a.records inputs).map (fun x => Record.cost d A 1 (w+1) W x.1 + 2)).sum + 2) +
           (2*(a.records*(ActualAffineScaling.modulus (w+1)^((d+1)*1)*W))+2))) + 2*((desc.beforeRows*desc.rows*B)*(LabelTraversal.time (prime^w) (r*r) 1+5)+4) + (((List.range a.records).map fun idx => stepTime idx+4).sum+2+(2*(a.records*volume)+2)))) ∧
         Exec body prog (mk v inputState) l (mk z F) := by
-  intro rows reads n k j t i width total ports shared bank program spare off reverseHost reverseBank active pop rewind residual privateBank host ext outside parentTape parentOff parentExt body scanPorts tapes src acc pivot rs sizeRs parents scratch maskRegs pivotRegs regs anchor ars ap asaved acap asize alayout banks external sharedSrc anchorParent counters registers e generatorSize generatorHost control generatorMask seed generatorTmp generatorBank recip generatorCounters clock generatorCount pool coeff generatorArchive archiveOff coeffOff scan aligned maskOffParent directoryOffParent genMaskRegs dir dirOut dirSrcParent dirOutParent maskOffDir
+  intro rows reads n k j t i width total ports shared bank program spare off reverseHost reverseBank active pop rewind residual privateBank host ext outside parentTape parentOff parentExt body scanPorts tapes src acc pivot rs sizeRs parents scratch maskRegs pivotRegs regs anchor ars ap asaved acap asize alayout banks external sharedSrc anchorParent counters registers e generatorSize generatorHost control generatorMask seed generatorTmp generatorBank recip generatorCounters clock generatorCount pool coeff generatorArchive archiveOff coeffOff scan aligned maskOffParent directoryOffParent genMaskRegs dir dirOut dirSrcParent dirOutParent maskOffDir countParent atom unit atomOff unitApart
   obtain ⟨pass,runPass⟩ := archivedPass_exec (U := U) table capacity signCapacity host ext outside parentTape parentOff parentExt body
     rs sizeRs parents scratch maskRegs pivotRegs regs anchor ars ap asaved acap asize alayout banks external sharedSrc anchorParent counters
   let generate : Pr P T Q prime U := seededQueueBody r d e generatorBank recip clock generatorCount pool coeff coeffOff scan generatorMask seed generatorTmp
@@ -518,16 +518,33 @@ theorem preparedPass_exec {Q T r A : ℕ} (table : Matrix (Fin r) (Fin r) (ZMod 
   have apart (i j) : generatorHost i ≠ control j := QueueLayout.block_ne _ _ registers (by omega) i j
   have copyPorts (k : Fin 18) (hk : k ≠ 4) : [generatorBank k,seed,generatorBank 4,generatorTmp].Nodup :=
     seedCopyPorts generatorBank control (fun _ _ => apart _ _) k hk
-  refine ⟨.seq (LabelDirectoryBuild.program dir) (.seq (.seq maskWriter (.seq (.seq copyOne (.seq (.seq writeZero (.seq (.seq writeSeed generate) (bclear seed))) (bclear (generatorBank 9)))) (bclear (generatorBank 17)))) pass),?_⟩
+  let buildDirectory : Pr P T Q prime U := .seq (LabelDirectorySetup.setup r dir atom unit)
+    (.seq (expandMask (dir 9) (dir 4) (dir 2) (dir 3) (dir 5) (dir 12) (fun _ => false)) (LabelDirectoryBuild.program dir))
+  refine ⟨.seq buildDirectory (.seq (.seq maskWriter (.seq (.seq copyOne (.seq (.seq writeZero (.seq (.seq writeSeed generate) (bclear seed))) (bclear (generatorBank 9)))) (bclear (generatorBank 17)))) pass),?_⟩
   intro w W baseData parent proj α α' idem adm inverse a tables inputs encoded unsigned padding hm hw hW H J cost stageCost rewindCost bound cleanBound volume prepTime stepTime
   subst table
   have liveSpec := fun j (_ : j < a.records) => baseData.physical_live e proj idem adm α α' inverse j
-  intro word tail desc B inputUser inputState boxes box labelWidth prefixWidth rowCount pos boxLen rowsLen parentQueue prefixLen zeroDigits digitLen dirFree ancestor directoryWord originalState directoryTime projector padWord maskBlank maskRadix maskScratch maskCount genBits maskedState oneBlank unitWord unitState zeroBlank zeroState seedBlank seeded tmpBlank weightBank generatorReady widths width0 genBlank archiveEmpty genOutput init records shape radixInit scratchInit countInit fresh emptyInit anchorView neutral aradix afree acount awidth clean queueInit extCount savedEmpty tmpEmpty accEmpty pivotTail modWord widthWord one padded ticks scratchFree payloadBlank sharedFree parentWord privateFree output
+  intro word tail desc B inputUser inputState boxes box labelWidth prefixWidth rowCount atomWidth unitWidth parentQueue prefixLen dirFree counted ancestor directoryWord originalState directoryTime projector padWord maskBlank maskRadix maskScratch maskCount genBits maskedState oneBlank unitWord unitState zeroBlank zeroState seedBlank seeded tmpBlank weightBank generatorReady parentWidth width0 archiveEmpty genOutput init records shape radixInit scratchInit countInit fresh emptyInit anchorView neutral aradix afree acount awidth clean queueInit extCount savedEmpty tmpEmpty accEmpty pivotTail modWord widthWord one padded ticks scratchFree payloadBlank sharedFree parentWord privateFree output
 
-  obtain ⟨original,dirSteps,dirUser,dirBound,dirExec⟩ := LabelDirectoryBuild.build_exec (body := body)
-    dir r (w+1) word tail inputUser inputState pos boxLen (rowsLen.trans rowCount) parentQueue prefixLen zeroDigits digitLen dirFree
-  have dirRun : Exec body (LabelDirectoryBuild.program dir) (mk inputUser inputState) dirSteps (mk original originalState) := by
-    simpa only [originalState,installMask,directoryWord,ancestor,rowCount,box,boxes] using dirExec
+  have rankPos : 0 < r := by
+    rcases e.symm 0 with i | i <;> exact Nat.zero_lt_of_lt i.isLt
+  have pos : 0 < labelWidth := Nat.mul_pos (Nat.succ_pos _) (Nat.mul_pos rankPos rankPos)
+  have widths (j : ℕ) (inside : j < a.records) : (seeded.R (generatorBank 12)).length = (ancestor j).length := by
+    have parentInside : j / box < boxes := (Nat.div_lt_iff_lt_mul (pow_pos (pow_pos prime_prime.pos _) _)).mpr
+      (rowCount ▸ inside)
+    exact (parentWidth (Nat.zero_lt_of_lt inside)).trans (prefixLen _ parentInside).symm
+  have genBlank := generatorReady.1 4 (by simp)
+  obtain ⟨original,dirSteps,dirUser,dirBound,dirExec⟩ := LabelDirectorySetup.build_from_parents (body := body)
+    r dir atom unit atomOff unitApart inputUser inputState word tail unitWidth dirFree
+      (by simpa only [atomWidth] using pos) parentQueue prefixLen
+  have boxSize : prime^labelWidth = box := pow_mul ..
+  rw [atomWidth] at dirBound dirExec
+  change dirSteps ≤ 8*(w+1)+8+22*(prime^labelWidth) + (boxes*(6*(prime^labelWidth)+10)+6 +
+    (boxes*(prime^labelWidth)*(9*labelWidth+15)+6 + (boxes*((prime^labelWidth)*(8*prefixWidth+11)+6*prefixWidth+15)+6 +
+      boxes*(prime^labelWidth)*(6*(prefixWidth+labelWidth)+13)+6))) at dirBound
+  rw [boxSize] at dirBound
+  have dirRun : Exec body buildDirectory (mk inputUser inputState) dirSteps (mk original originalState) := by
+    simpa only [originalState,counted,installMask,directoryWord,ancestor,rowCount,← boxSize,labelWidth,boxes] using dirExec
   have directory : maskedState.R (generatorBank 2) = directoryWord ++ inputState.R (dir 14) := by
     rw [← dirOut]
     exact (Function.update_of_ne maskOffDir.symm _ _).trans (Function.update_self ..)
@@ -603,11 +620,15 @@ theorem preparedPass_exec {Q T r A : ℕ} (table : Matrix (Fin r) (Fin r) (ZMod 
     (apart _ 0) (generatorBank.injective.ne (by decide : (17 : Fin 18) ≠ 2))
     (aligned ▸ unitOff) unitWord (inputState.R (dir 14)) (a.matrices 0) released maskedState oneBlank
   rw [unitLen] at finishRun
+  have countedParent : counted.R parentTape = inputState.R parentTape := by
+    simp only [counted,LabelDirectorySetup.prepared,Function.update_of_ne (countParent 12 (by decide)).symm,
+      Function.update_of_ne (countParent 4 (by decide)).symm,Function.update_of_ne (countParent 10 (by decide)).symm,
+      Function.update_of_ne (countParent 11 (by decide)).symm]
   have parentKept : init.R parentTape = inputState.R parentTape := by
     exact (Function.update_of_ne (parentOff _).symm _ _).trans
       ((Function.update_of_ne directoryOffParent.symm _ _).trans ((Function.update_of_ne maskOffParent.symm _ _).trans
         ((Function.update_of_ne maskOffParent.symm _ _).trans ((Function.update_of_ne dirOutParent.symm _ _).trans
-          (Function.update_of_ne dirSrcParent.symm _ _)))))
+          ((Function.update_of_ne dirSrcParent.symm _ _).trans countedParent)))))
   have archive : init.R (tapes 34) = a.matrices 0 := Function.update_self ..
 
   obtain ⟨z,F,l,hz,queue,accEnd,maskEnd,pivots,finalArchive,parentEnd,free,time,run⟩ :=
