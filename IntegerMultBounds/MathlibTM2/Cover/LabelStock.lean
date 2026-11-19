@@ -49,6 +49,34 @@ theorem residue_at (hw : 0 < w) (p W j : ℕ) (hj : j < W) (g : LabelPadding.Lab
 
 def live (m w W i : ℕ) : Bool := decide ((residue m w W i).det ≠ 0)
 
+/-- Each spectator prefix has the same live and padding labels. -/
+theorem count_boxes (m w n : ℕ) (select : Bool → Bool) :
+    let box := (prime^w)^(m*m)
+    let keep := fun j => select (live m w 1 j)
+    (List.range (n*box)).countP keep = n*(List.range box).countP keep := by
+  intro box keep
+  have periodic (p j : ℕ) : keep (p*box+j) = keep j := by
+    suffices h : residue m w 1 (p*box+j) = residue m w 1 j by simp [keep,live,h]
+    funext r c
+    let e := FlatCoordinateLayout.suffixFields (finProdFinEquiv (c,r))
+    have he : e < m*m := by
+      have bound := (finProdFinEquiv (c,r)).isLt
+      dsimp [e,FlatCoordinateLayout.suffixFields]
+      omega
+    have factor : box = ((prime^w)^(m*m-e-1)*(prime^w)) * (prime^w)^e := by
+      rw [← pow_succ, ← pow_add]
+      exact congrArg ((prime^w)^·) (by omega)
+    unfold residue
+    simp only [Nat.div_one]
+    change (((p*box+j)/(prime^w)^e%(prime^w) : ℕ) : ZMod prime) = _
+    rw [factor,← Nat.mul_assoc,Nat.mul_comm _ ((prime^w)^e),Nat.mul_add_div (pow_pos (pow_pos prime_prime.pos w) e)]
+    simp [← Nat.mul_assoc,Nat.add_mod,e]
+  induction n with
+  | zero => simp
+  | succ n ih =>
+    rw [Nat.succ_mul,List.range_add,List.countP_append,List.countP_map,ih,Nat.succ_mul]
+    simp only [Function.comp_def,periodic]
+
 theorem live_at {v : Descriptor} {B : ℕ} (hw : 0 < w)
     (hv : v.beforeH = B*prime^(m*(w*m))) (g : LabelPadding.Label m w) (z : LabelEntry.Cell v B) :
     live m w (payload v) (RecursiveInterchangeLayout.index prime v z.a z.row

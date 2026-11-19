@@ -191,8 +191,9 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
         (numerator (matrixInput false) (matrixInput true) ij.1 ij.2))
       (RingFormula.time base.H (readTime base.H) (determinant (matrixInput (m := r) false)))
     let generate : Pr P K Q prime U := seededQueueBody r d e bank recip clock count pool coeff coeffOff scan mask seed tmp
-    let setupCost := (List.range base.records).countP active * (livePrice + 4*((d+1)*(d+1)*base.H)) +
-        (List.range base.records).countP (fun j => !active j) * (10*((d+1)*(d+1)*base.H)+6) +
+    let liveLabels := (List.range box).countP active
+    let setupCost := (n*liveLabels) * (livePrice + 4*((d+1)*(d+1)*base.H)) +
+        (n*(box-liveLabels)) * (10*((d+1)*(d+1)*base.H)+6) +
         base.records * (4*width+4+(r*r*(4*(w+1)+4)+1)+6) + 4
     let a := base.physical e proj α α'
     SignedPassBound regs anchor ports ext v B a payload rs parents saved body
@@ -207,7 +208,7 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     coeffOff maskLayout retained anchorDirectory portDirectory extDirectory
   obtain ⟨writeMask,write⟩ := record_writes (body := body) r cs sizeC mask parentsC savedC maskLayout
   refine ⟨writeMask,?_⟩
-  intro directoryPorts directorySlot dir parentWidthPort parentWidthOff atom one atomOff oneOff highLayout highSlots br rows bh dimensions word parentTail v B base payload u raw positiveDescriptor beforeRows rowsSize beforeH parentBlank source n box parentWidth digits ancestor tail entries counted builtState input atomWord oneWidth parentsWord wordWidth scratch dirCost counterEmpty savedBlank maskBlank bits selected oneBlank unitWord masked zeroBlank initial padWord S queueInputs scan active livePrice generate setupCost a shape records hW D
+  intro directoryPorts directorySlot dir parentWidthPort parentWidthOff atom one atomOff oneOff highLayout highSlots br rows bh dimensions word parentTail v B base payload u raw positiveDescriptor beforeRows rowsSize beforeH parentBlank source n box parentWidth digits ancestor tail entries counted builtState input atomWord oneWidth parentsWord wordWidth scratch dirCost counterEmpty savedBlank maskBlank bits selected oneBlank unitWord masked zeroBlank initial padWord S queueInputs scan active livePrice generate liveLabels setupCost a shape records hW D
     neutral radix free count width unsigned clean start hm hw fresh maskEmpty encoded padding
   obtain ⟨seedBlank,tmpBlank,weightBank,queueReady,empty,output⟩ := queueInputs
   have blank := queueReady.1 4 (by decide)
@@ -369,8 +370,20 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     seedWord tmpBlank weightBank ⟨queueReady.1,queueReady.2.1,zeroWord,by
       obtain ⟨_,_,p,c,t,h,o,m,f,ms,fs,pr⟩ := queueReady
       exact ⟨p,c,t,h,o,m,f,ms,fs,pr,unitDest⟩⟩ widths width0 blank empty directory output maskBits
+  have boxCount (select : Bool → Bool) : (List.range base.records).countP (fun j => select (active j)) =
+      n*(List.range box).countP (fun j => select (active j)) := by
+    rw [recordCount]
+    exact LabelStock.count_boxes r (w+1) n select
+  have liveCount := boxCount id
+  have paddingCount := boxCount Bool.not
+  change (List.range base.records).countP active = n*(List.range box).countP active at liveCount
+  have partition := List.length_eq_countP_add_countP active (l := List.range box)
+  simp only [List.length_range,decide_not,Bool.decide_eq_true] at partition
+  have remaining : box-liveLabels = (List.range box).countP (fun j => !active j) := by
+    unfold liveLabels
+    omega
   have generateCost : t ≤ setupCost := by
-    simpa only [setupCost,livePrice,← parentWidthEq] using ht
+    simpa only [setupCost,remaining,liveLabels,livePrice,← parentWidthEq,← liveCount,← paddingCount] using ht
   let words := (List.range base.records).flatMap fun j => if active j then matrixWords prime base.H
     (projectorResidual e (IntegerMultBounds.Swap.Modular.reduce M proj) α α' (physicalLabel r (w+1) j)) else padWord
   change Exec body generate (mk prepared S) t (mk y (queueResult S mask (scan 2) archive tail words)) at generateRun
