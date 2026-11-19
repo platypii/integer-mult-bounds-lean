@@ -1,6 +1,8 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackDimension
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackFiberBank
+public import IntegerMultBounds.MathlibTM2.Cover.LabelCycle
 public import IntegerMultBounds.MathlibTM2.Routing.BinaryCanonicalCopy
 public import IntegerMultBounds.Machine.FlatCoordinateSchedule
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCanonicalUnaryHeader
@@ -108,6 +110,36 @@ theorem fieldDimensions_exec (body : P → Pr P T Q A U) (r : Fin 14 ↪ Fin T) 
     ((congrArg List.length (keep 12 (by decide))).trans clock)
     (by intro i hi; fin_cases i <;> first | contradiction | exact (keep _ (by decide)).trans (free _ (by decide)))
   exact ⟨z,_,hz.trans hy,Nat.add_le_add_left hn _,Exec.seq copy convert⟩
+
+/-- The two sizes and three controls of the scalar sign machine all start after a separator. -/
+def fieldMarkers (r : Fin 17 ↪ Fin T) : List (Fin T) := [r 13,r 11,r 14,r 15,r 16]
+
+def installFieldHeaders (r : Fin 17 ↪ Fin T) : Pr P T Q A U :=
+  .seq (fieldDimensions ((Fin.castLEEmb (by decide)).trans r))
+    (.act (LabelCycle.pushWord (r 16) ((bits 1).map bitSymbol) (pushMarkers (fieldMarkers r))))
+
+theorem installFieldHeaders_exec (body : P → Pr P T Q A U) (r : Fin 17 ↪ Fin T) (J W w : ℕ)
+    (hw : W < 2^J) (v : HS T Q A U) (S : Stacks T A)
+    (width : S.R (r 10) = binSyms J W) (clock : (S.R (r 12)).length = w)
+    (free : ∀ i : Fin 17, (3 ≤ i ∧ i < 9) ∨ i = 11 ∨ i = 13 → S.R (r i) = []) :
+    let words := Function.update (Function.update S.R (r 11) ((bits W).map bitSymbol)) (r 13) ((bits (w+1)).map bitSymbol)
+    ∃ z n, z.user = v.user ∧ n ≤ (10*J+12)+(21*(w+1)+12)+1 ∧
+      Exec body (installFieldHeaders r) (mk v S) n (mk z {S with
+        L := fun i => if i ∈ fieldMarkers r then separator :: S.L i else S.L i
+        R := Function.update words (r 16) (((bits 1).map bitSymbol) ++ S.R (r 16))}) := by
+  intro words
+  let small : Fin 14 ↪ Fin 17 := Fin.castLEEmb (by decide)
+  have scratch : ∀ i : Fin 14, (3 ≤ i ∧ i < 9) ∨ i = 11 ∨ i = 13 →
+      (3 ≤ small i ∧ small i < 9) ∨ small i = 11 ∨ small i = 13 := by decide
+  obtain ⟨u,l,hu,hl,run⟩ := fieldDimensions_exec body (small.trans r) J W w hw v S width clock
+    (fun i h => free _ (scratch i h))
+  let D := {S with R := words}
+  have mark := Exec.act (body := body)
+    (LabelCycle.pushWord (r 16) ((bits 1).map bitSymbol) (pushMarkers (fieldMarkers r))) (mk u D)
+  rw [LabelCycle.pushWord_run,pushMarkers_run _ (by simp [fieldMarkers,List.nodup_cons,r.injective.eq_iff])] at mark
+  have keep : D.R (r 16) = S.R (r 16) := by simp [D,words,r.injective.eq_iff]
+  rw [keep] at mark
+  exact ⟨u,_,hu,Nat.add_le_add_right hl 1,Exec.seq run mark⟩
 
 def swapRuntimeHeaders (r : Fin 14 ↪ Fin T) (d : ℕ) : Pr P T Q A U :=
   .seq (swapPrefix ((Fin.castLEEmb (by decide)).trans r) d)
