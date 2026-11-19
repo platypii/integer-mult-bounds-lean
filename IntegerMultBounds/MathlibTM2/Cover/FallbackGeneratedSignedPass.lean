@@ -190,10 +190,12 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
         (numerator (matrixInput false) (matrixInput true) ij.1 ij.2))
       (RingFormula.time base.H (readTime base.H) (determinant (matrixInput (m := r) false)))
     let generate : Pr P K Q prime U := seededQueueBody r d e bank recip clock count pool coeff coeffOff scan mask seed tmp
-    let liveLabels := (∏ i : Fin r, (prime^r-prime^i.val)) * (prime^w)^(r*r)
-    let setupCost := (n*liveLabels) * (livePrice + 4*((d+1)*(d+1)*base.H)) +
-        (n*(box-liveLabels)) * (10*((d+1)*(d+1)*base.H)+6) +
-        base.records * (4*width+4+(r*r*(4*(w+1)+4)+1)+6) + 4
+    let units := ∏ i : Fin r, (prime^r-prime^i.val)
+    let classes := prime^(r*r)
+    let lifts := (prime^w)^(r*r)
+    let setupCost := n*lifts * (units * (livePrice + 4*((d+1)*(d+1)*base.H)) +
+        (classes-units) * (10*((d+1)*(d+1)*base.H)+6) +
+        classes * (4*width+4+(r*r*(4*(w+1)+4)+1)+6)) + 4
     let a := base.physical e proj α α'
     SignedPassBound regs anchor ports ext v B a payload rs parents saved body
       (.seq (LabelSpectators.program r br rows bh atom (dir 2) (dir 9) (dir 3) (dir 5)) (.seq (.seq (LabelDirectorySetup.setup r dir atom one) (.seq (expandMask (dir 9) (dir 4) (dir 2) (dir 3) (dir 5) (dir 12) (fun _ => false)) (LabelDirectoryBuild.program dir))) (.seq (.seq (LabelCounts.highCount one atom (dir 7) (dir 2) (dir 3) (dir 5))
@@ -207,7 +209,7 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     coeffOff maskLayout retained anchorDirectory portDirectory extDirectory
   obtain ⟨writeMask,write⟩ := record_writes (body := body) r cs sizeC mask parentsC savedC maskLayout
   refine ⟨writeMask,?_⟩
-  intro directoryPorts directorySlot dir parentWidthPort parentWidthOff atom one atomOff oneOff highLayout highSlots br rows bh dimensions word parentTail v B base payload u raw positiveDescriptor beforeRows rowsSize beforeH parentBlank source n box parentWidth digits ancestor tail entries counted builtState input atomWord oneWidth parentsWord wordWidth scratch dirCost counterEmpty savedBlank maskBlank bits selected oneBlank unitWord masked zeroBlank initial padWord S queueInputs scan livePrice generate liveLabels setupCost a shape records hW D
+  intro directoryPorts directorySlot dir parentWidthPort parentWidthOff atom one atomOff oneOff highLayout highSlots br rows bh dimensions word parentTail v B base payload u raw positiveDescriptor beforeRows rowsSize beforeH parentBlank source n box parentWidth digits ancestor tail entries counted builtState input atomWord oneWidth parentsWord wordWidth scratch dirCost counterEmpty savedBlank maskBlank bits selected oneBlank unitWord masked zeroBlank initial padWord S queueInputs scan livePrice generate units classes lifts setupCost a shape records hW D
     neutral radix free count width unsigned clean start hm hw fresh maskEmpty encoded padding
   let active := LabelStock.live r (w+1) 1
   obtain ⟨seedBlank,tmpBlank,weightBank,queueReady,empty,output⟩ := queueInputs
@@ -377,17 +379,25 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
   have liveCount := boxCount id
   have paddingCount := boxCount Bool.not
   change (List.range base.records).countP active = n*(List.range box).countP active at liveCount
-  have cardinality : (List.range box).countP active = liveLabels := by
-    simpa only [liveLabels,liveClasses_eq_product] using
+  have cardinality : (List.range box).countP active = units*lifts := by
+    simpa only [units,lifts,liveClasses_eq_product] using
       (liveLabelCount (m := r) (by omega : 0 < w+1)).trans (LabelPadding.unit_count w)
   have partition := List.length_eq_countP_add_countP active (l := List.range box)
   simp only [List.length_range,decide_not,Bool.decide_eq_true] at partition
-  have remaining : box-liveLabels = (List.range box).countP (fun j => !active j) := by
+  have boxSize : box = classes*lifts := by
+    dsimp only [box,classes,lifts]
+    rw [pow_succ',mul_pow]
+  have remaining : (List.range box).countP (fun j => !active j) = (classes-units)*lifts := by
+    rw [Nat.sub_mul,← boxSize,← cardinality]
     omega
   have generateCost : t ≤ setupCost := by
-    unfold setupCost
-    rw [remaining,← cardinality]
-    simpa only [livePrice,← parentWidthEq,← liveCount,← paddingCount] using ht
+    apply ht.trans
+    change (List.range base.records).countP active * _ +
+      (List.range base.records).countP (fun j => !active j) * _ + base.records * _ + 4 ≤ _
+    rw [liveCount,paddingCount,cardinality,remaining,recordCount,boxSize]
+    dsimp only [setupCost,livePrice]
+    rw [← parentWidthEq]
+    exact Nat.le_of_eq (by ring)
   let words := (List.range base.records).flatMap fun j => if active j then matrixWords prime base.H
     (projectorResidual e (IntegerMultBounds.Swap.Modular.reduce M proj) α α' (physicalLabel r (w+1) j)) else padWord
   change Exec body generate (mk prepared S) t (mk y (queueResult S mask (scan 2) archive tail words)) at generateRun
