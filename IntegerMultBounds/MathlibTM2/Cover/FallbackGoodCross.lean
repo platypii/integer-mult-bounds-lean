@@ -17,7 +17,7 @@ def crossRowWord (K : Matrix (Fin d) (Fin d) R) (i : Fin d) :=
 
 def crossWord (K : Matrix (Fin d) (Fin d) R) := (List.finRange d).flatMap (crossRowWord K)
 
-private theorem crossRow_apply (K : Matrix (Fin d) (Fin d) R) (i : Fin d) (js : List (Fin d))
+theorem crossRow_apply (K : Matrix (Fin d) (Fin d) R) (i : Fin d) (js : List (Fin d))
     (x y : Fin d → R) :
     (js.map (crossEntryShear K i)).foldl (fun z op => op.apply z) (Fin.append x y) =
       Fin.append x (Function.update y i (y i+(js.map fun j => K i j*x j).sum)) := by
