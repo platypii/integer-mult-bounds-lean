@@ -140,6 +140,32 @@ private theorem classVolumeRate_sum_le (table : Matrix (Fin r) (Fin r) (ZMod pri
     simp [LabelSelectors.classes_eq]
   simpa only [length, invertibleClassCount] using bound (LabelSelectors.classes 1 (r*r))
 
+/-- Baseline per class, with the excess residual setup paid only on live classes. -/
+noncomputable def signedClassSetup (U : Type) (d T w H classes live : ℕ) :=
+  let padding := 4*(d+1)*(d+1)+1
+  let kernel := Finset.univ.sup fun rows : Fin (d+1) → Fin (d+1) =>
+    signedResidualTime U rows w 0 H 0
+  classes*(size d+3*T+34+(d+1)*(d+1)*(4*H+4)+padding) + live*(7+kernel-padding)
+
+private theorem classSetup_sum_le (table : Matrix (Fin r) (Fin r) (ZMod prime) →
+    Matrix (Fin (d+1)) (Fin (d+1)) (ZMod prime)) (U : Type) (T w H : ℕ) :
+    ((LabelSelectors.classes 1 (r*r)).map (classResidualCost table T w 0 H 0 U)).sum ≤
+      signedClassSetup U d T w H (prime^(r*r)) (∏ i : Fin r, (prime^r-prime^i.val)) := by
+  have bound (xs : List (Fin (r*r) → ZMod prime)) :
+      (xs.map (classResidualCost table T w 0 H 0 U)).sum ≤
+        signedClassSetup U d T w H xs.length (xs.countP (LabelSelectors.accept r)) := by
+    induction xs with
+    | nil => simp [signedClassSetup]
+    | cons x xs ih =>
+      have kernel := Finset.le_sup (f := fun rows => signedResidualTime U rows w 0 H 0)
+        (Finset.mem_univ (classPivots (table (LabelSelectors.matrix r x))))
+      by_cases zero : (LabelSelectors.matrix r x).det = 0 <;>
+        simp [signedClassSetup, classResidualCost, LabelSelectors.accept, zero, Nat.add_mul] at ih ⊢ <;>
+        omega
+  have length : (LabelSelectors.classes 1 (r*r)).length = prime^(r*r) := by
+    simp [LabelSelectors.classes_eq]
+  simpa only [length, invertibleClassCount] using bound (LabelSelectors.classes 1 (r*r))
+
 /-- Only invertible classes pay the residual volume charge in the physical pass. -/
 theorem signedPassWork_le_setup_add_volume (U : Type) (d : ℕ) :
     ∃ swaps shears : ℕ, ∀ w {r : ℕ} (table : Matrix (Fin r) (Fin r) (ZMod prime) →
@@ -345,7 +371,7 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     let perDigit := 18*box+6+12*r*r*units*lifts
     let perParent := box*(15*digits+89) + 25 +
       (LabelTraversal.time (prime^w) (r*r) 1+5) + queuePerParent +
-      signedPassWork a.table T 1 box w 0 a.H 0 U +
+      3*(LabelTraversal.time (prime^w) (r*r) 1+5) + lifts*signedClassSetup U d T w a.H classes units +
       lifts*units*(signedResidualTime_le_setup_add_counter U d a.H).choose*a.J +
       (lifts * (classes*anchorVolumeRate d T + units*6 + units*rate) + 4*box) * (M^(d+1)*W)
     let fixedCost := 22*box + 21*(w+1) + 26*prime^w + paddingSetupCost (d+1) base.H + 82
@@ -663,6 +689,11 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
   have movement := classVolumeRate_sum_le a.table T
   change _ ≤ classes*anchorVolumeRate d T + units*6 at movement
   grw [movement] at volumeBound
+  have setup := classSetup_sum_le a.table U T w a.H
+  change _ ≤ signedClassSetup U d T w a.H classes units at setup
+  unfold signedPassWork at volumeBound
+  simp only [Nat.mul_zero, Nat.zero_mul, Nat.zero_add, Nat.add_zero] at volumeBound
+  grw [setup] at volumeBound
   have passBound := passCost.trans (Nat.add_le_add_right volumeBound 22)
   have total := Nat.add_le_add (Nat.add_le_add parentCost (Nat.add_le_add directoryCost
     (Nat.add_le_add counterCost (Nat.add_le_add hTime paid)))) passBound
