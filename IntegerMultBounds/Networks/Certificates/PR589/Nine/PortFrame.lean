@@ -216,15 +216,25 @@ theorem exchange_conj (R S U : Matrix ι ι ℚ) (h : R * S = 1) :
   simp only [exchange, fromBlocks_multiply, mul_sub, sub_mul, mul_one, h, Matrix.mul_zero,
     Matrix.zero_mul, add_zero, zero_add, sub_self]
 
-/-- A lower triangular projector with a zero-one diagonal exchanges its pivot coordinates
+/-- A lower triangular projector exchanges its pivot coordinates
 after a lower triangular change of basis on each address half. -/
 theorem exchange_pivot_coordinates {n : ℕ} (U : Matrix (Fin n) (Fin n) ℚ)
-    (lower : U.IsLowerTriangular) (idem : U * U = U)
-    (bits : ∀ i, U i i = 0 ∨ U i i = 1) :
+    (lower : U.IsLowerTriangular) (idem : U * U = U) :
     let E := diagonal fun i => U i i
     ∃ C : Matrix (Fin n) (Fin n) ℚ, C.IsLowerTriangular ∧ C⁻¹.IsLowerTriangular ∧
       C * C⁻¹ = 1 ∧ fromBlocks C 0 0 C * exchange E * fromBlocks C⁻¹ 0 0 C⁻¹ = exchange U := by
   intro E
+  have bits (i) : U i i = 0 ∨ U i i = 1 := by
+    have h := congrArg (fun M : Matrix (Fin n) (Fin n) ℚ => M i i) idem
+    change (∑ k, U i k * U k i) = U i i at h
+    rw [Finset.sum_eq_single i] at h
+    · have hz : U i i * (U i i - 1) = 0 := by rw [mul_sub, h, mul_one, sub_self]
+      exact (mul_eq_zero.mp hz).imp_right sub_eq_zero.mp
+    · intro j _ ne
+      rcases lt_or_gt_of_ne ne with lt | gt
+      · rw [lower (i := j) (j := i) lt, mul_zero]
+      · rw [lower (i := i) (j := j) gt, zero_mul]
+    · simp
   let C := U * E + (1 - U) * (1 - E)
   have entry (i j) : C i j = U i j * U j j +
       ((1 : Matrix (Fin n) (Fin n) ℚ) i j - U i j) * (1 - U j j) := by
@@ -252,6 +262,20 @@ theorem exchange_pivot_coordinates {n : ℕ} (U : Matrix (Fin n) (Fin n) ℚ)
       mul_add, ← Matrix.mul_assoc, idem, ← Matrix.mul_assoc, hU, Matrix.zero_mul]
   refine ⟨C, triangular, blockTriangular_inv_of_blockTriangular triangular, C.mul_nonsing_inv unit, ?_⟩
   rw [exchange_conj _ _ _ (C.mul_nonsing_inv unit), intertwine, Matrix.mul_assoc, C.mul_nonsing_inv unit, mul_one]
+
+/-- Moving between nested triangular frames swaps the coordinates gained by the larger frame. -/
+theorem nested_exchange_pivot_coordinates {n : ℕ} (U V : Matrix (Fin n) (Fin n) ℚ)
+    (lowerU : U.IsLowerTriangular) (lowerV : V.IsLowerTriangular)
+    (idemU : U * U = U) (idemV : V * V = V) (uv : U * V = U) (vu : V * U = U) :
+    let E := diagonal fun i => V i i - U i i
+    ∃ C : Matrix (Fin n) (Fin n) ℚ, C.IsLowerTriangular ∧ C⁻¹.IsLowerTriangular ∧
+      C * C⁻¹ = 1 ∧
+      fromBlocks C 0 0 C * exchange E * fromBlocks C⁻¹ 0 0 C⁻¹ = exchange U * exchange V := by
+  rw [exchange_change idemU uv]
+  apply exchange_pivot_coordinates (V - U)
+  · intro i j hij
+    simp [Matrix.sub_apply, lowerU hij, lowerV hij]
+  · rw [sub_mul, mul_sub, mul_sub, idemV, vu, uv, idemU, sub_self, sub_zero]
 
 end Exchange
 
