@@ -83,19 +83,19 @@ private theorem prefix_reach {R : Type*} [CommRing R] [Nontrivial R]
   rw [← Matrix.mul_assoc, eq] at zero
   simp [addressMatrix, j] at zero
 
-/-- Even invertible triangular passes around one width-six child cannot realize
-the interior MOVE with an endpoint swap in both halves, in the flat address order. -/
+/-- Even invertible triangular passes around one width-six or width-seven child cannot realize
+the MOVE ending at coordinate seven with an endpoint swap in both halves, in the flat address order. -/
 theorem interior_move_triangular_obstruction {R : Type*} [CommRing R] [Nontrivial R]
-    (a b : Fin 16) (sep : a.val + 6 ≤ b.val) (bound : b.val + 6 ≤ 16)
+    (n : Fin 2) (a b : Fin 16) (sep : a.val + (6 + n.val) ≤ b.val) (bound : b.val + (6 + n.val) ≤ 16)
     (A B : Matrix (Fin 16) (Fin 16) R) (la : A.IsLowerTriangular) (lb : B.IsLowerTriangular)
     (ua : IsUnit A) (ub : IsUnit B) :
-    let p := fun i : Fin 16 => Routing.blockExchange a.val b.val 6 i.val
-    let q := fun i : Fin 16 => Routing.blockExchange 8 15 1
-      (Routing.blockExchange 0 7 1 (Routing.blockExchange 1 9 6 i.val))
+    let p := fun i : Fin 16 => Routing.blockExchange a.val b.val (6 + n.val) i.val
+    let q := fun i : Fin 16 => Routing.blockExchange (1 - n.val) (9 - n.val) (6 + n.val)
+      (Routing.blockExchange 8 15 1 (Routing.blockExchange 0 7 1 i.val))
     A * addressMatrix (R := R) p * B ≠ addressMatrix (R := R) q := by
   intro p q eq
-  have pb (i : Fin 16) := Routing.blockExchange_lt 16 a.val b.val 6 i.val sep bound i.isLt
-  have qb : ∀ i, q i < 16 := by decide
+  have pb (i : Fin 16) := Routing.blockExchange_lt 16 a.val b.val (6 + n.val) i.val sep bound i.isLt
+  have qb : ∀ i, q i < 16 := by fin_cases n <;> decide
   have fwd := prefix_reach p q qb A B la lb eq
   have da := (Matrix.isUnit_iff_isUnit_det _).mp ua
   have db := (Matrix.isUnit_iff_isUnit_det _).mp ub
@@ -106,10 +106,10 @@ theorem interior_move_triangular_obstruction {R : Type*} [CommRing R] [Nontrivia
       Matrix.one_mul, Matrix.mul_assoc, B.mul_nonsing_inv db, Matrix.mul_one]
   have back := prefix_reach q p pb _ _ (blockTriangular_inv_of_blockTriangular la)
     (blockTriangular_inv_of_blockTriangular lb) rev
-  have exclude : ∀ x y : Fin 16, x.val + 6 ≤ y.val → y.val + 6 ≤ 16 →
-      let u := fun i : Fin 16 => Routing.blockExchange x.val y.val 6 i.val
+  have exclude : ∀ x y : Fin 16, x.val + (6 + n.val) ≤ y.val → y.val + (6 + n.val) ≤ 16 →
+      let u := fun i : Fin 16 => Routing.blockExchange x.val y.val (6 + n.val) i.val
       ¬ ((∃ k ≤ (0 : Fin 16), q 0 ≤ u k) ∧ (∃ k ≤ (0 : Fin 16), u 0 ≤ q k) ∧
-        (∃ k ≤ (8 : Fin 16), q 8 ≤ u k)) := by decide +kernel
+        (∃ k ≤ (8 : Fin 16), q 8 ≤ u k)) := by fin_cases n <;> decide +kernel
   exact exclude a b sep bound ⟨fwd 0, back 0, fwd 8⟩
 
 end IntegerMultBounds.MathlibTM2.M6

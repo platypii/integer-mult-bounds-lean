@@ -114,6 +114,10 @@ def cycle_lengths(permutation):
 
 def check_port_swap_distance(port_moves):
     """Compare the paid widths with the exact transposition distance in the swap-only model."""
+    target_profiles = Counter(tuple(hi - lo for lo, hi in moves) for moves in port_moves[111:])
+    assert target_profiles == {(2, 5): 92, (1, 6): 10, (7,): 9}
+    assert all(moves == [(0, 7)] for moves in port_moves[111:] if len(moves) == 1)
+    print("Nine targets have only one paid MOVE, exchanging the full seven-coordinate prefix.")
     patterns = set()
     for register, moves in enumerate(port_moves):
         # Track which input atom each output reads. Interior MOVE swaps commute
