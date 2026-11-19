@@ -39,6 +39,8 @@ theorem modular_scatter (w : ℕ) :
       (∀ p, Geometry.Moves.CheckedPair p → ∀ f : E,
         (fun x => f (AffineFieldProgram.run (word p) x)) = frame p.2 ((frame p.1).symm f)) ∧
       (retainedCopyEdges.map word).map AffineFieldProgram.interchanges = List.replicate 9 7 ∧
+      (∀ bank : ℕ → E, Copy.lifecycles.foldl (fun b l => scatterWindow word l b) bank =
+        Copy.run frame Copy.lifecycles bank) ∧
       ∀ stored : Fin 661 → E,
         let input := FramedCircuit.encode (fun j => frame (Frames.beforeScatter j)) (Copy.extendStored stored)
         let output := Copy.lifecycles.foldl (fun bank life => scatterWindow word life bank) input
@@ -70,7 +72,7 @@ theorem modular_scatter (w : ℕ) :
     | cons l ls ih =>
       rw [List.foldl_cons, step l (hl _ List.mem_cons_self), Copy.run]
       exact ih (fun k hk => hl _ (List.mem_cons_of_mem _ hk)) _
-  refine ⟨frame, word, read, count, ?_⟩
+  refine ⟨frame, word, read, count, fold _ (fun _ h => h), ?_⟩
   intro stored input output
   dsimp only [output]
   rw [fold _ (fun _ h => h)]
