@@ -423,6 +423,54 @@ theorem initializeFieldNeg_exec {P U : Type} {T Q w : ℕ} (i : Fin (d+1))
   have pre := saved h (by simp [fieldMarkers,Ne.symm (off _) ])
   exact ⟨post.1.trans pre.1,post.2.trans pre.2⟩
 
+/-- Sign correction preserves the child host outside its column tapes. -/
+theorem extendedFieldNeg_exec {P U : Type} {T Q w : ℕ} (i : Fin (d+1))
+    (columns : Fin 35 ↪ Fin T) (capacity : (fieldSignProgram i true).1 ≤ Q)
+    (H J : ℕ) (hw : W < 2^J) (hW : 0 < W) (record : List (Fin (prime+4))) (dest : ℤ → Fin 4) (q : ℤ)
+    (original : Fin ((prime^(w+1))^(d+1)*W) → ZMod 2)
+    (addr : (Fin (d+1) → ZMod (prime^(w+1))) → Fin (d+1) → ZMod (prime^(w+1)))
+    (body : P → Pr P (T+(22+fieldSignSlots i)) Q prime U)
+    (v : HS (T+(22+fieldSignSlots i)) Q prime U) (S : Stacks (T+(22+fieldSignSlots i)) prime) :
+    let slots := fieldSignSlots i
+    let host := extendSignBank columns slots
+    let bank := columns.trans (Fin.castAddEmb (22+slots))
+    let ports := (signPorts slots).trans host
+    let r := (installerPorts slots).trans host
+    let ready := ColumnRecordReady bank H J record SparseRoleCircuit.encode (fun _ => blank) dest 0 q original
+    ready addr S →
+    (∀ k : Fin (22+slots), k.val ≠ 17 → S.L (Fin.natAdd T k) = [] ∧ S.R (Fin.natAdd T k) = []) →
+    ∃ z F l, z.user = v.user ∧ l ≤ (10*J+12)+(21*(w+1)+12)+1 +
+        (1+(AtomSegment.chainConst (fieldSignOps i true)*((prime^(w+1))^(d+1)*W)*(22+slots+5)+6)) ∧
+      Exec body (.seq (installFieldHeaders r) (placedFieldNeg i ports capacity)) (mk v S) l (mk z F) ∧
+      ready (fun x => Function.update (addr x) i (-addr x i)) F ∧
+      ∀ h, (∀ k, columns k ≠ h) →
+        F.L (Fin.castAdd (22+slots) h) = S.L (Fin.castAdd (22+slots) h) ∧
+        F.R (Fin.castAdd (22+slots) h) = S.R (Fin.castAdd (22+slots) h) := by
+  intro slots host bank ports r ready before aux
+  have run := initializeFieldNeg_exec i host capacity H J hw hW record dest q original addr body v S
+  dsimp only at run
+  rw [show (Fin.castAddEmb (22+fieldSignSlots i)).trans host = bank from
+    extendSignBank_column columns slots] at run
+  obtain ⟨z,F,l,hz,hl,exec,next,saved⟩ := run before (by
+    intro k hk
+    simpa only [host,extendSignBank_private] using aux k hk)
+  refine ⟨z,F,l,hz,hl,exec,next,?_⟩
+  intro h off
+  apply saved
+  intro k
+  induction k using Fin.addCases with
+  | left k =>
+    have e := DFunLike.congr_fun (extendSignBank_column columns slots) k
+    change host (Fin.castAdd (22+slots) k) = Fin.castAdd (22+slots) (columns k) at e
+    rw [e]
+    exact (Fin.castAddEmb _).injective.ne (off k)
+  | right k =>
+    rw [show host (Fin.natAdd 35 k) = Fin.natAdd T k from extendSignBank_private columns k]
+    intro eq
+    have val := congrArg Fin.val eq
+    change T+k.val = h.val at val
+    omega
+
 /-- Load one live signed record, preserving the remaining queue and identifying the
 sign and pivots of the corresponding residual matrix. -/
 theorem loadAnchorRecord_exec {r w records T Q : ℕ} {P U : Type}
