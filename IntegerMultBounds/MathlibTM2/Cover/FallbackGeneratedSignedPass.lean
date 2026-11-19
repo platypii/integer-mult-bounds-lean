@@ -112,6 +112,34 @@ private theorem invertibleClassCount (r : ℕ) :
   simpa only [LabelSelectors.residue_eq, pow_one, LabelSelectors.accept,
     Function.comp_def, pow_zero, one_pow, mul_one] using count.trans units
 
+/-- The two possible signs give one anchor budget independent of the residue table. -/
+def anchorVolumeRate (d T : ℕ) :=
+  14 + max (M8.AtomSegment.chainConst (anchorOps d false))
+    (M8.AtomSegment.chainConst (anchorOps d true)) * (size d+T+5)
+
+omit [M8.Machine.Net] in
+private theorem classVolumeRate_sum_le (table : Matrix (Fin r) (Fin r) (ZMod prime) →
+    Matrix (Fin (d+1)) (Fin (d+1)) (ZMod prime)) (T : ℕ) :
+    ((LabelSelectors.classes 1 (r*r)).map (classVolumeRate table T)).sum ≤
+      prime^(r*r)*anchorVolumeRate d T + (∏ i : Fin r, (prime^r-prime^i.val))*6 := by
+  have bound (xs : List (Fin (r*r) → ZMod prime)) :
+      (xs.map (classVolumeRate table T)).sum ≤ xs.length*anchorVolumeRate d T +
+        xs.countP (LabelSelectors.accept r)*6 := by
+    induction xs with
+    | nil => simp
+    | cons x xs ih =>
+      let m := table (LabelSelectors.matrix r x)
+      have sign : M8.AtomSegment.chainConst (anchorOps d (negativeAnchor (classPivots m) m)) ≤
+          max (M8.AtomSegment.chainConst (anchorOps d false)) (M8.AtomSegment.chainConst (anchorOps d true)) := by
+        cases negativeAnchor (classPivots m) m <;> simp
+      have cost := Nat.mul_le_mul_right (size d+T+5) sign
+      dsimp [m] at cost
+      by_cases live : (LabelSelectors.matrix r x).det = 0 <;>
+        simp [classVolumeRate, LabelSelectors.accept, live, Nat.add_mul, anchorVolumeRate] at ih ⊢ <;> omega
+  have length : (LabelSelectors.classes 1 (r*r)).length = prime^(r*r) := by
+    simp [LabelSelectors.classes_eq]
+  simpa only [length, invertibleClassCount] using bound (LabelSelectors.classes 1 (r*r))
+
 /-- Only invertible classes pay the residual volume charge in the physical pass. -/
 theorem signedPassWork_le_setup_add_volume (U : Type) (d : ℕ) :
     ∃ swaps shears : ℕ, ∀ w {r : ℕ} (table : Matrix (Fin r) (Fin r) (ZMod prime) →
@@ -319,8 +347,7 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
       (LabelTraversal.time (prime^w) (r*r) 1+5) + queuePerParent +
       signedPassWork a.table T 1 box w 0 a.H 0 U +
       lifts*units*(signedResidualTime_le_setup_add_counter U d a.H).choose*a.J +
-      (lifts * (((LabelSelectors.classes 1 (r*r)).map (classVolumeRate a.table T)).sum +
-        units*rate) + 4*box) * (M^(d+1)*W)
+      (lifts * (classes*anchorVolumeRate d T + units*6 + units*rate) + 4*box) * (M^(d+1)*W)
     let fixedCost := 22*box + 21*(w+1) + 26*prime^w + paddingSetupCost (d+1) base.H + 82
     SignedPassBound regs anchor ports ext v B a payload rs parents saved body
       (.seq (LabelSpectators.program r br rows bh atom (dir 2) (dir 9) (dir 3) (dir 5)) (.seq (.seq (LabelDirectorySetup.setup r dir atom one) (.seq (expandMask (dir 9) (dir 4) (dir 2) (dir 3) (dir 5) (dir 12) (fun _ => false)) (LabelDirectoryBuild.program dir))) (.seq (.seq (LabelCounts.highCount one atom (dir 7) (dir 2) (dir 3) (dir 5))
@@ -633,6 +660,9 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     (v.beforeRows*v.rows*B)*lifts*units*(signedResidualTime_le_setup_add_counter U d a.H).choose*a.J +
     ((v.beforeRows*v.rows*B)*lifts*(((LabelSelectors.classes 1 (r*r)).map
       (classVolumeRate a.table T)).sum + units*rate) + 4*a.records)*(M^(d+1)*W) at volumeBound
+  have movement := classVolumeRate_sum_le a.table T
+  change _ ≤ classes*anchorVolumeRate d T + units*6 at movement
+  grw [movement] at volumeBound
   have passBound := passCost.trans (Nat.add_le_add_right volumeBound 22)
   have total := Nat.add_le_add (Nat.add_le_add parentCost (Nat.add_le_add directoryCost
     (Nat.add_le_add counterCost (Nat.add_le_add hTime paid)))) passBound
