@@ -73,7 +73,7 @@ def SignedPassBound (regs : Fin 6 ↪ Fin T) (anchor : Fin (size d+T) ↪ Fin K)
           (2*(a.records*(ActualAffineScaling.modulus (w+1)^((d+1)*1)*W))+2))) + (2*((v.beforeRows*v.rows*B)*(LabelTraversal.time (prime^w) (r*r) 1+5)+4) + (1+(((List.range a.records).map fun j => a.recordTime U j + 4).sum + 2 + (2*(a.records*(M^(d+1)*W))+2))))) ∧
       Exec body (.seq setup pass) (mk u source) n (mk z F)
 
-structure SeededQueueReady (w H parentWidth : ℕ) (proj : Matrix (Fin r) (Fin r) ℚ)
+structure SeededQueueReady (w H : ℕ) (proj : Matrix (Fin r) (Fin r) ℚ)
     (α α' : Fin r → ZMod M) (initial S : Stacks K prime) (bank : Fin 18 ↪ Fin K)
     (recip : Fin 16 ↪ Fin K) (pool : Fin ((conjugationDepth r+1)*13) ↪ Fin K)
     (coeff : Fin r → Fin r → Fin 4 ↪ Fin K) (clock count seed tmp archive : Fin K)
@@ -92,8 +92,6 @@ structure SeededQueueReady (w H parentWidth : ℕ) (proj : Matrix (Fin r) (Fin r
       (∀ k ≤ conjugationDepth r, ∀ i : Fin 13, i ≠ 2 → S.R (frame pool k i) = []) ∧
       (∃ suffix, S.R (bank 16) = matrixWords prime H (IntegerMultBounds.Swap.Modular.reduce M proj) ++ suffix) ∧
       S.R (bank 17) = binSyms H (1 : ZMod (prime^(w+1))).val
-  parentWidth_eq : (S.R (bank 12)).length = parentWidth
-  width : (S.R (bank 1)).length = w+1
   empty : S.R (archive) = []
   output : S.R (bank 13) = []
 
@@ -142,7 +140,9 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     (∀ i, anchor i ≠ bank 2) → (∀ i, ports i ≠ bank 2) → (∀ i, ext i ≠ bank 2) →
     ∃ writeMask : Pr P K Q prime U, ∀ (directoryPorts : Fin 15 ↪ Fin K), directoryPorts 14 = bank 2 →
     let dir := directoryPorts.trans (Equiv.swap (directoryPorts 9) parentsC).toEmbedding
-    ∀ (atom one : Fin K), (∀ i, atom ≠ dir i) → (∀ i, one ≠ dir i) →
+    dir 1 = bank 12 → dir 1 ∉ slots cs →
+    let atom := bank 1
+    ∀ (one : Fin K), (∀ i, atom ≠ dir i) → (∀ i, one ≠ dir i) →
     [one,atom,dir 7,dir 2,dir 3,dir 5].Nodup → (dir 7 :: dir 2 :: slots cs).Nodup →
     ∀ (br rows bh : Fin K), [br,rows,bh,atom,dir 2,dir 9,dir 3,dir 5].Nodup → ∀ (word : ℕ → List (Fin (prime+4))) (parentTail : List (Fin (prime+4)))
       (v : Descriptor) (B : ℕ) (base : ScanData r d w W) (payload : ℕ → Record.Array d 1 (w+1) W)
@@ -172,18 +172,18 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     let initial := {input with R := Function.update input.R mask bits}
     let padWord := matrixWords prime base.H (1 : Matrix (Fin (d+1)) (Fin (d+1)) (ZMod M))
     let S := {initial with R := Function.update initial.R seed padWord}
-    SeededQueueReady w base.H width proj α α' initial S bank recip pool coeff clock count
+    SeededQueueReady w base.H proj α α' initial S bank recip pool coeff clock count
       seed tmp archive →
     let scan := QueueLayout.scanPorts (QueueLayout.directoryWork.trans bank) archive archiveOff
     let active := LabelStock.live r (w+1) 1
-    let livePrice := liveRecordCost r (d+1) w base.H (S.R (bank 12)).length
+    let livePrice := liveRecordCost r (d+1) w base.H width
       (Finset.univ.sup fun ij : Fin r × Fin r => RingFormula.time base.H (readTime base.H)
         (numerator (matrixInput false) (matrixInput true) ij.1 ij.2))
       (RingFormula.time base.H (readTime base.H) (determinant (matrixInput (m := r) false)))
     let generate : Pr P K Q prime U := seededQueueBody r d e bank recip clock count pool coeff coeffOff scan mask seed tmp
     let setupCost := (List.range base.records).countP active * (livePrice + 4*((d+1)*(d+1)*base.H)) +
         (List.range base.records).countP (fun j => !active j) * (10*((d+1)*(d+1)*base.H)+6) +
-        base.records * (4*(S.R (bank 12)).length+4+(r*r*(4*(w+1)+4)+1)+6) + 4
+        base.records * (4*width+4+(r*r*(4*(w+1)+4)+1)+6) + 4
     let a := base.physical e proj α α'
     SignedPassBound regs anchor ports ext v B a payload rs parents saved body
       (.seq (LabelSpectators.program r br rows bh atom (dir 2) (dir 9) (dir 3) (dir 5)) (.seq (.seq (LabelDirectorySetup.setup r dir atom one) (.seq (expandMask (dir 9) (dir 4) (dir 2) (dir 3) (dir 5) (dir 12) (fun _ => false)) (LabelDirectoryBuild.program dir))) (.seq (.seq (LabelCounts.highCount one atom (dir 7) (dir 2) (dir 3) (dir 5))
@@ -197,9 +197,9 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     coeffOff maskLayout retained anchorDirectory portDirectory extDirectory
   obtain ⟨writeMask,write⟩ := record_writes (body := body) r cs sizeC mask parentsC savedC maskLayout
   refine ⟨writeMask,?_⟩
-  intro directoryPorts directorySlot dir atom one atomOff oneOff highLayout highSlots br rows bh dimensions word parentTail v B base payload u raw positiveDescriptor beforeRows rowsSize beforeH parentBlank source n box parentWidth digits ancestor tail entries counted builtState input atomWord oneWidth parentsWord wordWidth scratch dirCost counterEmpty savedBlank maskBlank bits initial padWord S queueInputs scan active livePrice generate setupCost a shape records hW D
+  intro directoryPorts directorySlot dir parentWidthPort parentWidthOff atom one atomOff oneOff highLayout highSlots br rows bh dimensions word parentTail v B base payload u raw positiveDescriptor beforeRows rowsSize beforeH parentBlank source n box parentWidth digits ancestor tail entries counted builtState input atomWord oneWidth parentsWord wordWidth scratch dirCost counterEmpty savedBlank maskBlank bits initial padWord S queueInputs scan active livePrice generate setupCost a shape records hW D
     neutral radix free count width unsigned clean start hm hw fresh maskEmpty encoded padding
-  obtain ⟨seedBlank,tmpBlank,weightBank,queueReady,parentWidthEq,width0,empty,output⟩ := queueInputs
+  obtain ⟨seedBlank,tmpBlank,weightBank,queueReady,empty,output⟩ := queueInputs
   have blank := queueReady.1 4 (by decide)
   have sharedArchive : archive = ports (archivePorts 0 (columnBank 34)) := by
     change Equiv.swap (placement archiveSlot) _ (placement _) = _
@@ -273,6 +273,23 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
           rcases h with rfl | rfl | rfl | rfl <;> simp [builtState,counted,LabelDirectorySetup.prepared,scratch]
         · exact counterEmpty _ h)
   change ready (prime^w) input.R cs at counterReady
+  have bankInput (k : Fin 18) : S.R (bank k) = input.R (bank k) :=
+    (bankKeep k).trans (Function.update_of_ne (show bank k ≠ mask from apart _ 0) _ _)
+  have parentWidthEq : (S.R (bank 12)).length = parentWidth := by
+    rw [bankInput,← parentWidthPort,fillKeep 1 (by decide) parentWidthOff]
+    simp [builtState,counted,LabelDirectorySetup.prepared,parentWidth]
+  have retainedAtom : builtState.R atom = List.replicate (w+1) tick := by
+    simpa [builtState,counted,LabelDirectorySetup.prepared,atomOff] using atomWord
+  have atomOutside : atom ∉ cs.map Prod.fst := by
+    intro mem
+    obtain ⟨pair,hp,eq⟩ := List.mem_map.mp mem
+    have emptyAtom := counterEmpty atom (eq ▸ List.mem_flatMap.mpr ⟨pair,hp,by simp⟩)
+    rw [retainedAtom] at emptyAtom
+    simp at emptyAtom
+  have width0 : (S.R (bank 1)).length = w+1 := by
+    rw [bankInput]
+    change (input.R atom).length = _
+    simp [input,LabelCountBank.fill,atomOutside,atomOff,retainedAtom]
   have widths (j) (hj : j < base.records) : (S.R (bank 12)).length = (ancestor j).length := by
     have boxPos : 0 < box := pow_pos (pow_pos Networks.Shared50ModularControl.prime_prime.pos _) _
     rw [recordCount] at hj
@@ -302,6 +319,8 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
   obtain ⟨_,y,t,hy,ht,generateRun⟩ := physicalResidualQueue_exec body w base.records
     (IntegerMultBounds.Swap.Modular.reduce M proj) base.H hm registers ancestor tail e α α' prepared S
     seedWord tmpBlank weightBank queueReady widths width0 blank empty directory output maskBits
+  have generateCost : t ≤ setupCost := by
+    simpa only [setupCost,livePrice,← parentWidthEq] using ht
   let words := (List.range base.records).flatMap fun j => if active j then matrixWords prime base.H
     (projectorResidual e (IntegerMultBounds.Swap.Modular.reduce M proj) α α' (physicalLabel r (w+1) j)) else padWord
   change Exec body generate (mk prepared S) t (mk y (queueResult S mask (scan 2) archive tail words)) at generateRun
@@ -367,7 +386,7 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
         rw [← sharedArchive,prep]
         exact scanStart)
       hm hw fresh emptyMask radixC freeC countC encoded padding
-  exact ⟨z,E,_,hz.trans (cleanUser.trans (hy.trans (preparedUser.trans (hUser.trans (counterUser.trans (buildUser.trans parentUser)))))),queue,acc,maskDone,pivots,archiveDone,Nat.add_le_add (Nat.add_le_add parentCost (Nat.add_le_add buildCost (Nat.add_le_add counterCost (Nat.add_le_add hTime (Nat.add_le_add (Nat.add_le_add initCost ht) (Nat.le_of_eq (congrArg (fun n => 2*n+2) padLen))))))) hn,
+  exact ⟨z,E,_,hz.trans (cleanUser.trans (hy.trans (preparedUser.trans (hUser.trans (counterUser.trans (buildUser.trans parentUser)))))),queue,acc,maskDone,pivots,archiveDone,Nat.add_le_add (Nat.add_le_add parentCost (Nat.add_le_add buildCost (Nat.add_le_add counterCost (Nat.add_le_add hTime (Nat.add_le_add (Nat.add_le_add initCost generateCost) (Nat.le_of_eq (congrArg (fun n => 2*n+2) padLen))))))) hn,
     Exec.seq (Exec.seq parentRun (Exec.seq buildRun (Exec.seq counterRun (Exec.seq emit (Exec.seq (Exec.seq initRun generateRun) clearRun))))) exec⟩
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
