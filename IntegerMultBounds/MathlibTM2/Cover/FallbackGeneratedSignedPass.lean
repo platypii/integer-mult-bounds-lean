@@ -113,27 +113,27 @@ private theorem invertibleClassCount (r : ℕ) :
     Function.comp_def, pow_zero, one_pow, mul_one] using count.trans units
 
 /-- Only invertible classes pay the residual volume charge in the physical pass. -/
-theorem signedPassWork_le_setup_add_volume (U : Type) (d w : ℕ) :
-    ∃ rate : ℕ, ∀ {r : ℕ} (table : Matrix (Fin r) (Fin r) (ZMod prime) →
+theorem signedPassWork_le_setup_add_volume (U : Type) (d : ℕ) :
+    ∃ swaps shears : ℕ, ∀ w {r : ℕ} (table : Matrix (Fin r) (Fin r) (ZMod prime) →
       Matrix (Fin (d+1)) (Fin (d+1)) (ZMod prime)) T parents records W H J,
       let xs := LabelSelectors.classes 1 (r*r)
       let live := ∏ i : Fin r, (prime^r - prime^i.val)
       signedPassWork table T parents records w W H J U ≤
         signedPassWork table T parents records w 0 H J U +
-          (parents*(prime^w)^(r*r)*((xs.map (classVolumeRate table T)).sum + live*rate) +
+          (parents*(prime^w)^(r*r)*((xs.map (classVolumeRate table T)).sum + live*(swaps * swapVolumeRate w + shears)) +
             4*records) * ((prime^(w+1))^(d+1)*W) := by
-  obtain ⟨rate, kernel⟩ := signedResidualTime_le_setup_add_volume U d w
-  refine ⟨rate, ?_⟩
-  intro r table T parents records W H J xs live
+  obtain ⟨swaps, shears, kernel⟩ := signedResidualTime_le_setup_add_width_volume U d
+  refine ⟨swaps, shears, ?_⟩
+  intro w r table T parents records W H J xs live
   let V := (prime^(w+1))^(d+1)*W
   have classes (ys : List (Fin (r*r) → ZMod prime)) :
       (ys.map (classResidualCost table T w W H J U)).sum ≤
         (ys.map (classResidualCost table T w 0 H J U)).sum +
-        (ys.countP fun x => decide ((LabelSelectors.matrix r x).det ≠ 0)) * rate * V := by
+        (ys.countP fun x => decide ((LabelSelectors.matrix r x).det ≠ 0)) * (swaps * swapVolumeRate w + shears) * V := by
     induction ys with
     | nil => simp
     | cons x ys ih =>
-      have h := kernel (classPivots (table (LabelSelectors.matrix r x))) W H J
+      have h := kernel (classPivots (table (LabelSelectors.matrix r x))) w W H J
       by_cases zero : (LabelSelectors.matrix r x).det = 0
       all_goals
         simp [classResidualCost, zero, Nat.add_mul] at *
@@ -225,7 +225,9 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     (maskRegs : (parentsC :: savedC :: (slots cs ++ [ext 0])).Nodup)
     (pivotRegs : (parentsC :: savedC :: (slots cs ++ [ports (Fin.last N).castSucc])).Nodup)
     (separate : ∀ k ∈ parentsC :: savedC :: slots cs, ∀ i, anchor i ≠ k) :
-    let rate := (signedPassWork_le_setup_add_volume U d w).choose
+    let swaps := (signedPassWork_le_setup_add_volume U d).choose
+    let shears := (signedPassWork_le_setup_add_volume U d).choose_spec.choose
+    let rate := swaps * swapVolumeRate w + shears
     ∃ pass, ∀ (placement : Fin ((36+2*r+1+(conjugationDepth r+1)*13)+3) ↪ Fin K),
     let size := 36+2*r+1+(conjugationDepth r+1)*13
     let archiveSlot : Fin (size+3) := ⟨36+2*r, by dsimp [size]; omega⟩
@@ -319,7 +321,7 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
       (.seq (LabelSpectators.program r br rows bh atom (dir 2) (dir 9) (dir 3) (dir 5)) (.seq (.seq (LabelDirectorySetup.setup r dir atom one) (.seq (expandMask (dir 9) (dir 4) (dir 2) (dir 3) (dir 5) (dir 12) (fun _ => false)) (LabelDirectoryBuild.program dir))) (.seq (.seq (LabelCounts.highCount one atom (dir 7) (dir 2) (dir 3) (dir 5))
         (scanR (dir 7) (dir 2) (LabelCountBank.pushAll (cs.map Prod.fst)))) (.seq writeMask (.seq (.seq (bcopy (recip 15) (bank 17) (bank 4) tmp) (.seq (.seq (umulSym 1 (bitSymbol false) (bank 8) (bank 9) (bank 4)) (withIdentitySeed (d+1) (bank 9) (bank 17) seed (bank 4) tmp generate)) (bclear (bank 9)))) (bclear (bank 17))))))) pass
       ((v.beforeRows*v.rows*B)*(perParent + width*perDigit) + fixedCost) u raw input := by
-  intro rate
+  intro swaps shears rate
   obtain ⟨pass,run⟩ := physicalSignedResidualPass (w := w) (W := W) regs anchor ports ext off banks external shared
     capacity e proj idempotent admissible α α' inverse body rs hk parents saved layout cap cs sizeC
     parentsC savedC maskRegs pivotRegs separate
@@ -620,7 +622,7 @@ theorem generatedSignedResidualPass (regs : Fin 6 ↪ Fin T) (anchor : Fin (size
     (Nat.add_le_add_right (Nat.add_le_add_left queueCost (4*base.H+4)) (2*base.H+2))
     (6*base.H+6)) (2*base.H+2)
   rw [paddingSetupCost_eq] at paid
-  have volumeBound := (signedPassWork_le_setup_add_volume U d w).choose_spec a.table T
+  have volumeBound := (signedPassWork_le_setup_add_volume U d).choose_spec.choose_spec w a.table T
     (v.beforeRows*v.rows*B) a.records W a.H a.J
   change signedPassWork _ _ _ _ _ _ _ _ _ ≤ signedPassWork _ _ _ _ _ 0 _ _ _ +
     ((v.beforeRows*v.rows*B)*lifts*(((LabelSelectors.classes 1 (r*r)).map

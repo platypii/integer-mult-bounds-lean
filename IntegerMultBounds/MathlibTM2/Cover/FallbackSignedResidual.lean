@@ -24,24 +24,25 @@ noncomputable def signedResidualTime (U : Type) (rows : Fin (d+1) → Fin (d+1))
 
 /-- Apart from the largest pivot-column cost, the payload charge of the
 whole residual schedule has one rate shared by every pivot itinerary. -/
-theorem signedResidualTime_le_setup_add_columns (U : Type) (d w : ℕ) :
-    ∃ rate : ℕ, ∀ (rows : Fin (d+1) → Fin (d+1)) W H J,
+theorem signedResidualTime_le_setup_add_columns (U : Type) (d : ℕ) :
+    ∃ swaps shears : ℕ, ∀ (rows : Fin (d+1) → Fin (d+1)) w W H J,
       let columns := fun x => Finset.univ.sup (fun k => columnProgramTime U k (rows k) w x H J)
       signedResidualTime U rows w W H J ≤ signedResidualTime U rows w 0 H J +
-        rate * ((prime^(w+1))^(d+1) * W) + (d+1) * (columns W - columns 0) := by
-  choose r hr using fun i : Fin d => pairScalingTime_le_setup_add_volume U i.succ 0 i.succ w
-  refine ⟨((List.finRange d).map r).sum, ?_⟩
-  intro rows W H J columns
+        (swaps * swapVolumeRate w + shears) * ((prime^(w+1))^(d+1) * W) + (d+1) * (columns W - columns 0) := by
+  choose s h hr using fun i : Fin d => pairScalingTime_le_setup_add_width_volume U i.succ 0 i.succ
+  refine ⟨((List.finRange d).map s).sum, ((List.finRange d).map h).sum, ?_⟩
+  intro rows w W H J columns
   let V := (prime^(w+1))^(d+1) * W
   have pairs (xs : List (Fin d)) :
       (xs.map fun i => pairScalingTime U i.succ 0 i.succ w W H J).sum ≤
-        (xs.map fun i => pairScalingTime U i.succ 0 i.succ w 0 H J).sum + (xs.map r).sum * V := by
+        (xs.map fun i => pairScalingTime U i.succ 0 i.succ w 0 H J).sum + ((xs.map s).sum * swapVolumeRate w + (xs.map h).sum) * V := by
     induction xs with
     | nil => simp
     | cons i xs ih =>
       simp only [List.map_cons, List.sum_cons, Nat.add_mul]
-      have hi := hr i W H J
-      change _ ≤ _ + r i * V at hi
+      have hi := hr i w W H J
+      change _ ≤ _ + (s i * swapVolumeRate w + h i) * V at hi
+      simp only [Nat.add_mul] at ih hi ⊢
       omega
   have col : columns W ≤ columns 0 + (columns W - columns 0) := by omega
   have steps := Nat.mul_le_mul_left (d+1) col
@@ -55,25 +56,33 @@ theorem signedResidualTime_le_setup_add_columns (U : Type) (d w : ℕ) :
   omega
 
 /-- The residual execution bound is affine in volume, uniformly over pivot itineraries. -/
+theorem signedResidualTime_le_setup_add_width_volume (U : Type) (d : ℕ) :
+    ∃ swaps shears : ℕ, ∀ (rows : Fin (d+1) → Fin (d+1)) w W H J,
+      signedResidualTime U rows w W H J ≤ signedResidualTime U rows w 0 H J +
+        (swaps * swapVolumeRate w + shears) * ((prime^(w+1))^(d+1) * W) := by
+  obtain ⟨ps, ph, hp⟩ := signedResidualTime_le_setup_add_columns U d
+  obtain ⟨cs, ch, hc⟩ := columnProgramTime_le_setup_add_width_volume U (d+1)
+  refine ⟨ps + (d+1)*cs, ph + (d+1)*ch, fun rows w W H J => ?_⟩
+  let columns := fun x => Finset.univ.sup (fun k => columnProgramTime U k (rows k) w x H J)
+  let V := (prime^(w+1))^(d+1) * W
+  have bound : columns W ≤ columns 0 + (cs * swapVolumeRate w + ch)*V := by
+    apply Finset.sup_le
+    intro k hk
+    exact (hc k (rows k) w W H J).trans (Nat.add_le_add_right
+      (Finset.le_sup (f := fun i => columnProgramTime U i (rows i) w 0 H J) hk) _)
+  have delta : columns W - columns 0 ≤ (cs * swapVolumeRate w + ch)*V := by omega
+  apply (hp rows w W H J).trans
+  change _ + (ps * swapVolumeRate w + ph)*V + (d+1)*(columns W - columns 0) ≤ _ + _*V
+  grw [delta]
+  exact le_of_eq (by ring)
+
+/-- The residual execution bound is affine in volume, uniformly over pivot itineraries. -/
 theorem signedResidualTime_le_setup_add_volume (U : Type) (d w : ℕ) :
     ∃ rate : ℕ, ∀ (rows : Fin (d+1) → Fin (d+1)) W H J,
       signedResidualTime U rows w W H J ≤ signedResidualTime U rows w 0 H J +
         rate * ((prime^(w+1))^(d+1) * W) := by
-  obtain ⟨p, hp⟩ := signedResidualTime_le_setup_add_columns U d w
-  obtain ⟨c, hc⟩ := columnProgramTime_le_setup_add_volume U (d+1) w
-  refine ⟨p + (d+1)*c, fun rows W H J => ?_⟩
-  let columns := fun x => Finset.univ.sup (fun k => columnProgramTime U k (rows k) w x H J)
-  let V := (prime^(w+1))^(d+1) * W
-  have bound : columns W ≤ columns 0 + c*V := by
-    apply Finset.sup_le
-    intro k hk
-    exact (hc k (rows k) W H J).trans (Nat.add_le_add_right
-      (Finset.le_sup (f := fun i => columnProgramTime U i (rows i) w 0 H J) hk) _)
-  have delta : columns W - columns 0 ≤ c*V := by omega
-  apply (hp rows W H J).trans
-  change _ + p*V + (d+1)*(columns W - columns 0) ≤ _ + _*V
-  grw [delta]
-  exact le_of_eq (by ring)
+  obtain ⟨swaps, shears, bound⟩ := signedResidualTime_le_setup_add_width_volume U d
+  exact ⟨_, fun rows => bound rows w⟩
 
 theorem signedResidual_exec (rows : Fin (d+1) → Fin (d+1)) (m : Matrix (Fin (d+1)) (Fin (d+1)) (ZMod M))
     (valid : Itinerary.Valid rows m (d+1)) (s : (ZMod M)ˣ)
