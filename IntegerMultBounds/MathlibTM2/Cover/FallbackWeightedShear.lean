@@ -24,6 +24,15 @@ def weightedShearTime (M W H J : ℕ) : ℕ :=
         (6*prefixSize (Q := M) t+17*L+4*V+10*H+31 + prefixSize (Q := M) t*(L*(12*(K+H)+78)+22*K+180*H+173+48*H*H+(207*(M*suffixSize (Q := M) (W := W) t)+241)*25)+2) +
         (10*(t.val*H+1)+12+((327*(M^d*W)+2)*13+6))
 
+/-- Each payload symbol contributes the same shear cost at every coordinate. -/
+theorem weightedShearTime_eq_setup_add_volume (M W H J : ℕ) :
+    weightedShearTime k t M W H J =
+      weightedShearTime k t M 0 H J + 9426 * (M^d * W) := by
+  have volume := split_volume (Q := M) (W := W) t
+  simp only [weightedShearTime, suffixSize, Nat.mul_zero] at *
+  rw [volume]
+  ring
+
 theorem weightedShear_exec (hk : k < t) {α : Type*} (sym : α → Fin 4) (c : ZMod M) (body : P → Pr P T 217 A U)
     (bank : Fin 29 ↪ Fin T) (H J : ℕ) (hm : M < 2^H) (hw : W < 2^J) (hW : 0 < W)
     (v : HS T 217 A U) (S : Stacks T A)
