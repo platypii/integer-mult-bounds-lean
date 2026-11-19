@@ -96,7 +96,7 @@ def childShearPorts (negative : Bool) : Fin 29 ↪ Fin 36 :=
 
 def childShear {m : ℕ} (p parentIndex index : ℕ) (k t : Fin m) (negative : Bool) (bank : Fin 36 ↪ Fin T) : Pr P T 217 A U :=
   .seq (signedChildPair p parentIndex index (childLoadPorts.trans bank))
-    (weightedShear k t ((childShearPorts negative).trans bank))
+    (embProg ((childShearPorts negative).trans bank) Empty.elim (weightedShear k t (Function.Embedding.refl _)))
 
 theorem childShear_exec {n m : ℕ} (k t : Fin m) (hk : k < t) (negative : Bool) (body : P → Pr P T 217 A U) (bank : Fin 36 ↪ Fin T)
     (parent : Fin n → ZMod M) (j : Fin n) (inv : ZMod M) (reciprocal : parent j * inv = 1)
@@ -122,6 +122,7 @@ theorem childShear_exec {n m : ℕ} (k t : Fin m) (hk : k < t) (negative : Bool)
       ((8*(i.val*H)+48*H*H+166*H+88)+(6*w+6+(14*H+16+(b-2)*C+C+w*(12*H+15+b*C)))) +
       (2*H+2) + (8*H+8) + weightedShearTime k t M W H J ∧
       Exec body (childShear b j.val i.val k t negative bank) (mk v S) l (mk z F) ∧
+      (∀ j : Fin 36, j = 2 ∨ j = 27 ∨ j = 28 ∨ 32 ≤ j → F.R (bank j) = S.R (bank j)) ∧
       (∀ z, readAt blank (F.L (bank 25)) (F.R (bank 25)) (z-q) = RadixToBinary.binaryEncoding.encode (dest z)) ∧
       ∃ out : Fin (M^m*W) → α, (∀ z, readAt blank (F.L (bank 24)) (F.R (bank 24)) (z-p) =
         RadixToBinary.binaryEncoding.encode (putWord source p (List.ofFn (sym ∘ out)) z)) ∧
@@ -146,18 +147,36 @@ theorem childShear_exec {n m : ℕ} (k t : Fin m) (hk : k < t) (negative : Bool)
   have coef : D.R (ports 0) = binSyms H c.val := by cases negative <;> first | exact fw | exact neg
   have leftPort : ∀ i : Fin 12, i < 10 → shearTranslation i ≠ 0 := by decide
   have size : 29 ≤ 36 := by decide
-  obtain ⟨z,F,n,hz,hn,run,_,_,clean,out,result,action⟩ := weightedShear_exec k t hk sym c body ports H J hm hw hW u D
+  obtain ⟨z,F,n,hz,hn,run,post⟩ := weightedShear_exec k t hk sym c (P := Empty) Empty.elim
+    (Function.Embedding.refl _) H J hm hw hW (embDn ports u) (embStk ports D)
     ((keep 2 (by decide)).trans modulus) ((keep 28 (by decide)).trans single) ((keep 27 (by decide)).trans width) coef
     (fun i lo hi h2 h24 h25 => (keep i (by omega)).trans (free _ (.inl
       ((by decide +revert : ∀ i : Fin 29, i ≤ 26 → i ≠ 2 → i ≠ 24 → i ≠ 25 →
         let k := i.castLE size
         k ≤ 26 ∧ k ≠ 2 ∧ k ≠ 24 ∧ k ≠ 25) i hi h2 h24 h25))))
-    (fun i hi => by simpa only [ports,Function.Embedding.trans_apply,fixed _ (leftPort i hi),hL] using left i hi)
+    (fun i hi => by simpa only [embStk_L,Function.Embedding.refl_apply,ports,Function.Embedding.trans_apply,fixed _ (leftPort i hi),hL] using left i hi)
     source dest p q a empty
-    (fun z => by rw [keep 24 (by decide),hL]; simpa only [ports,Function.Embedding.trans_apply,fixed 24 (by decide),srcPort] using src z)
-    (fun z => by rw [keep 25 (by decide),hL]; simpa only [ports,Function.Embedding.trans_apply,fixed 25 (by decide),dstPort] using dst z)
-  exact ⟨z,F,l+n,hz.trans hu,Nat.add_le_add hl hn,Exec.seq load run,
-    by simpa only [ports,Function.Embedding.trans_apply,fixed 25 (by decide),dstPort] using clean,out,
-    by simpa only [ports,Function.Embedding.trans_apply,fixed 24 (by decide),srcPort] using result,action⟩
+    (fun z => by change _ = readAt blank (D.L (ports 24)) (D.R (ports 24)) _; rw [keep 24 (by decide),hL]; simpa only [ports,Function.Embedding.trans_apply,fixed 24 (by decide),srcPort] using src z)
+    (fun z => by change _ = readAt blank (D.L (ports 25)) (D.R (ports 25)) _; rw [keep 25 (by decide),hL]; simpa only [ports,Function.Embedding.trans_apply,fixed 25 (by decide),dstPort] using dst z)
+  obtain ⟨y,G,embedded,_,hy,eq,outside⟩ := exec_emb (body' := body) (ι := Empty.elim)
+    ports.injective (fun e => nomatch e) run u rfl D rfl
+  rw [← eq] at post
+  obtain ⟨base,headers,clean,out,result,action⟩ := post
+  have atPort (j : Fin 29) (h : j ≠ 0) : ports j = bank (j.castLE size) := congrArg bank (fixed j h)
+  have saved (j : Fin 36) (hj : j = 2 ∨ j = 27 ∨ j = 28 ∨ 32 ≤ j) : G.R (bank j) = S.R (bank j) := by
+    rcases hj with rfl | rfl | rfl | high
+    · simpa only [embStk_R,Function.Embedding.refl_apply,atPort 2 (by decide),
+        show (2 : Fin 29).castLE size = 2 by rfl] using base.trans (keep 2 (by decide))
+    · simpa only [embStk_R,Function.Embedding.refl_apply,atPort 27 (by decide),
+        show (27 : Fin 29).castLE size = 27 by rfl] using (headers 27 (by decide)).trans (keep 27 (by decide))
+    · simpa only [embStk_R,Function.Embedding.refl_apply,atPort 28 (by decide),
+        show (28 : Fin 29).castLE size = 28 by rfl] using (headers 28 (by decide)).trans (keep 28 (by decide))
+    · have off : ∀ b (j : Fin 36), 32 ≤ j → ∀ k, childShearPorts b k ≠ j := by decide
+      exact (outside _ (fun k => bank.injective.ne (off negative j high k))).2.trans
+        (frame _ (bank.injective.ne (show j ≠ 30 by omega)) (bank.injective.ne (show j ≠ 31 by omega))
+          (bank.injective.ne (show j ≠ 29 by omega)))
+  exact ⟨y,G,l+n,hy.trans (hz.trans hu),Nat.add_le_add hl hn,Exec.seq load embedded,saved,
+    by simpa only [embStk_R,embStk_L,Function.Embedding.refl_apply,ports,Function.Embedding.trans_apply,fixed 25 (by decide),dstPort] using clean,out,
+    by simpa only [embStk_R,embStk_L,Function.Embedding.refl_apply,ports,Function.Embedding.trans_apply,fixed 24 (by decide),srcPort] using result,action⟩
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
