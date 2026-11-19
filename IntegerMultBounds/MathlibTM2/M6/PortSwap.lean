@@ -43,6 +43,28 @@ private theorem swap_complement {R : Type*} [CommRing R] :
     by_cases hi : i.val < 7 <;> simp [h, hi]
   · simp [eq]
 
+/-- The port permutation cannot be absorbed into lower triangular passes on an
+isolated address half. The first row of any triangular intertwiner would vanish. -/
+theorem port_route_not_triangular {R : Type*} [CommRing R] [Nontrivial R]
+    (L H G : Matrix (Fin 8) (Fin 8) R) (lowerH : H.IsLowerTriangular)
+    (line : L 0 0 = 1) (hyper : H 0 0 = 1) (unit : IsUnit G)
+    (route : G * (1 - L) = H * G) : ¬ G.IsLowerTriangular := by
+  intro lowerG
+  have row (A : Matrix (Fin 8) (Fin 8) R) (tri : A.IsLowerTriangular)
+      (B : Matrix (Fin 8) (Fin 8) R) : (A * B) 0 0 = A 0 0 * B 0 0 := by
+    rw [Matrix.mul_apply, Finset.sum_eq_single 0]
+    · intro k _ hk
+      have pos : (0 : Fin 8) < k := Fin.pos_iff_ne_zero.mpr hk
+      rw [tri (i := 0) (j := k) pos, zero_mul]
+    · simp
+  have h := congrArg (fun M : Matrix (Fin 8) (Fin 8) R => M 0 0) route
+  simp only [row G lowerG, row H lowerH, Matrix.sub_apply, Matrix.one_apply_eq, line,
+    hyper, sub_self, mul_zero, one_mul] at h
+  have detZero : G.det = 0 := by
+    rw [G.det_of_isLowerTriangular lowerG]
+    exact Finset.prod_eq_zero (Finset.mem_univ 0) h.symm
+  exact ((Matrix.isUnit_iff_isUnit_det _).mp unit).ne_zero detZero
+
 /-- For any modular line and hyperplane with the certified prefix pivots, triangular
 basis changes on either side of the same endpoint swap reconcile the two port frames. -/
 theorem port_complement_route {R : Type*} [CommRing R] (L H : Matrix (Fin 8) (Fin 8) R)

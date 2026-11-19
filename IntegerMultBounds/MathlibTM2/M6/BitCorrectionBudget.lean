@@ -14,6 +14,15 @@ theorem bit_extra_rank_budget (k : ℕ) :
   change 1808352 + 288 * k < 1818624 ↔ k ≤ 35
   omega
 
+/-- Charging the endpoint swap separately on both address halves at every port
+costs 222 unit children per invocation. Even at exponent one, such a schedule
+needs to save at least 53,665 units of rank elsewhere in the single-class profile. -/
+theorem bit_separate_port_swap_budget (saved : ℕ) :
+    (bitHistogram.map (fun e => e.1 * e.2)).sum + 9 * 32 * 111 * 2 <
+      64 * 28416 + saved ↔ 53665 ≤ saved := by
+  change 1808352 + 63936 < 1818624 + saved ↔ 53665 ≤ saved
+  omega
+
 private def lowerOk (e : ℕ × ℕ × ℕ) : Bool :=
   decide (0 < e.1 ∧ 0 < e.2.2 - 1 ∧
     e.1 ^ 10 * (e.2.2 - 1) ^ 5769 ≤ 64 ^ 10 * (10 ^ 10) ^ 5769)
