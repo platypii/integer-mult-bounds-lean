@@ -164,6 +164,25 @@ private theorem recordRadix_le_volume (v : Descriptor) (positive : v.Positive) (
         ((Nat.le_mul_of_pos_left _ pre).trans ((Nat.le_mul_of_pos_right _ positive.2.2.2.1).trans
           ((Nat.le_mul_of_pos_right _ (pow_pos hp _)).trans (Nat.le_mul_of_pos_right _ positive.2.2.2.2))))
 
+private theorem generatedCharge_binary_le (m w d W prefixWidth raw budget clear push H J : ℕ)
+    (v : Descriptor) (positive : v.Positive) (width : v.width = d*(w+1))
+    (active : 0 < d ∧ H = (prime^(w+1)).size ∧ J = W.size) :
+    let V := volume prime v
+    let trip := if 0 < d ∧ H = (prime^(w+1)).size ∧ J = W.size then
+      min raw (budget + recordRoundTripRate m*V) else raw
+    let cost := generatedRecordTime m w H prefixWidth (descriptorHeaderCost v) trip
+    let binary := budget + recordRoundTripRate m*V + (12*m*m+4)*prefixWidth + generatedRecordRate m*V
+    cost + (clear + 6*(push*cost)) ≤ binary + (clear + 6*(push*binary)) := by
+  intro V trip cost binary
+  have tripBound : trip ≤ budget + recordRoundTripRate m*V := by
+    simpa only [trip,if_pos active] using min_le_right raw (budget + recordRoundTripRate m*V)
+  have bound : cost ≤ binary := by
+    dsimp only [cost,binary]
+    rw [active.2.1]
+    exact (generatedRecordTime_binary_le m w _ _ v positive (recordRadix_le_volume v positive w d width active.1)).trans
+      (Nat.add_le_add_right (Nat.add_le_add_right tripBound _) _)
+  exact Nat.add_le_add bound (Nat.add_le_add_left (Nat.mul_le_mul_left 6 (Nat.mul_le_mul_left push bound)) clear)
+
 /-- Caller tapes shared by the generated good, padding and exceptional records. -/
 def DirectoryReady {m K : ℕ} (v : Descriptor) (proj : Matrix (Fin m) (Fin m) ℚ)
     (w W H J : ℕ) (parent : Fin m → ZMod (prime^(w+1)))
@@ -352,6 +371,17 @@ theorem DirectoryReady.runExceptional [M8.Machine.Net] {m d K w W J N : ℕ} {P 
     dir pivots clean kept,tail,effect,(recordPayload_ordinaryBank room source head next D).2 output,kept 57 (by decide) (by decide) (by decide),
     kept 56 (by decide) (by decide) (by decide)⟩
 
+/-- Uniform exceptional charge per payload symbol for a fixed machine layout. -/
+noncomputable def exceptionalVolumeRate [M8.Machine.Net] (U : Type) (d m tapes push w : ℕ) : ℕ :=
+  let coefficients := exceptionalRecordTime_binary_le U d m tapes push
+  coefficients.choose + coefficients.choose_spec.choose * swapVolumeRate w
+
+private theorem exceptionalVolumeRate_bound [M8.Machine.Net] (U : Type) (d m tapes push w W prefixWidth : ℕ)
+    (rows : Fin (d+1) → Fin (d+1)) (negative : Bool) (positive : 0 < W) :
+    exceptionalRecordTime U rows negative m w W (prime^(w+1)).size W.size tapes push prefixWidth ≤
+      exceptionalVolumeRate U d m tapes push w * ((prime^(w+1))^(d+1)*W) + 4*prefixWidth :=
+  (exceptionalRecordTime_binary_le U d m tapes push).choose_spec.choose_spec rows negative w W prefixWidth positive
+
 open IntegerMultBounds.MathlibTM2.Fast.Main in
 /-- Endpoint and time bound for the generated three-branch directory program. -/
 def ArchiveRun [M8.Machine.Net] {m d K w W J N : ℕ} {P U : Type}
@@ -364,7 +394,7 @@ def ArchiveRun [M8.Machine.Net] {m d K w W J N : ℕ} {P U : Type}
     (prefixes : ℕ → List (Fin (prime+4))) (archiveTail : List (Fin (prime+4)))
     (rankFits : proj.rank ≤ m)
     (source : ℤ → Fin 4) (head : ℤ) (length : N = (prime^(w+1))^m*((prime^(w+1))^m*W)) (original : Fin N → ZMod 2)
-    (good skip : Pr P (66+K) columnCapacity prime U) (ordinaryCost : ℕ → ℕ)
+    (good skip : Pr P (66+K) columnCapacity prime U) (ordinaryCost : ℕ → ℕ) (ordinaryCeiling : ℕ)
     (ordinaryEffect : ℕ → (Fin N → ZMod 2) → (Fin N → ZMod 2) → Prop)
     (u : HS (66+(K+1)) columnCapacity prime U) (S : Stacks (66+(K+1)) prime) : Prop :=
     let e := finSumFinEquiv.trans (finCongr dimension)
@@ -406,10 +436,16 @@ def ArchiveRun [M8.Machine.Net] {m d K w W J N : ℕ} {P U : Type}
         (data.H = Nat.size (prime^(w+1)) ∧ 0 < W ∧ ordinaryCost j + (prime^(w+1))^(d+1)*W ≤ baseline)) →
       (0 < exceptionalCount → ∀ j < data.records, live j = true → bad j = true →
         costBad j ≤ baseline+(budget-ordinaryTime)/exceptionalCount) → n ≤ budget
+    let scratch := (List.finRange (66+(K+1))).filter fun i => decide (58 ≤ i.val ∧ i ≠ directoryMatrixTape room)
+    let push := max (mnProgPush (directoryExceptionalCore (P := P) (U := U) d room capacity)) c
+    let binaryTime := fun n => ∀ parents baseline, data.records = parents*(prime^(w+1))^(m*m) →
+      data.H = (prime^(w+1)).size → J = W.size →
+      ordinaryCeiling + N ≤ baseline →
+      n ≤ data.records*(baseline+6)+2 + exceptionalCount*(exceptionalVolumeRate U d m scratch.length push w*N)
     ∃ z B n next, z.user = u.user ∧ frame data.records next (embStk placement B) ∧
       (List.range data.records).foldl (fun possible j y => ∃ x, possible x ∧ effect j x y) (· = original) next ∧
       B.R (directoryMatrixTape room) = [] ∧ B.R (placement (caller 57)) = [] ∧ B.R (placement (caller 56)) = [] ∧
-      priced n ∧ n ≤ ((List.range data.records).map fun j => cost j+2+4).sum+2 ∧
+      priced n ∧ binaryTime n ∧ n ≤ ((List.range data.records).map fun j => cost j+2+4).sum+2 ∧
       Exec body (classifiedScan (placement (caller 57)) (placement (caller 56)) ((embProg placement id good).seq advance)
         (directoryExceptionalProgram m d room capacity) ((embProg placement id skip).seq advance)) (mk u S) n (mk z B)
 
@@ -450,21 +486,23 @@ theorem DirectoryReady.runArchive [M8.Machine.Net] {m d K w W J N : ℕ} {P U : 
         (max (mnProgPush (directoryExceptionalCore (P := P) (U := U) d room capacity)) c) (prefixes j).length
     ∀ (localBody : P → Pr P (66+K) columnCapacity prime U)
       (calls : ∀ f, body f = embProg placement id (localBody f))
-      (good skip : Pr P (66+K) columnCapacity prime U) (ordinaryCost : ℕ → ℕ)
+      (good skip : Pr P (66+K) columnCapacity prime U) (ordinaryCost : ℕ → ℕ) (ordinaryCeiling : ℕ)
       (ordinaryEffect : ℕ → (Fin N → ZMod 2) → (Fin N → ZMod 2) → Prop),
     let effect := fun j (x y : Fin N → ZMod 2) => if live j && bad j then
       ∀ a k, y ((FlatCoordinateLayout.index ((projectorResidual e (reduce (prime^(w+1)) proj) parent inv
         (physicalLabel m (w+1) j)).mulVec a) k).cast (directoryPayloadLength e length)) =
         x ((FlatCoordinateLayout.index a k).cast (directoryPayloadLength e length))
       else ordinaryEffect j x y
+    (∀ j, (prefixes j).length = (prefixes 0).length →
+      max (4*(prefixes j).length) (ordinaryCost j) ≤ ordinaryCeiling) →
     (∀ j labels word v S, ¬ (live j = true ∧ bad j = true) → ready S (j :: labels) → payload word S →
       ∃ z D n next, z.user = v.user ∧ n ≤ ordinaryCost j ∧
         Exec localBody (if live j then good else skip) (mk v S) n (mk z D) ∧ ready D labels ∧
         ordinaryEffect j word next ∧ payload next D ∧ D.R (caller 57) = S.R (caller 57) ∧ D.R (caller 56) = S.R (caller 56)) →
     ArchiveRun (J := J) dimension vDescriptor proj parent inv data room capacity body c prefixes archiveTail
-      rankFits source head length original good skip ordinaryCost ordinaryEffect u S := by
+      rankFits source head length original good skip ordinaryCost ordinaryCeiling ordinaryEffect u S := by
   intro e physical φ live bad code schedule ready placement caller payload pending frame costBad localBody calls
-    good skip ordinaryCost ordinaryEffect effect ordinary
+    good skip ordinaryCost ordinaryCeiling ordinaryEffect effect ceiling ordinary
   unfold ArchiveRun
   dsimp only
   intro start queue liveBits badBits
@@ -501,7 +539,38 @@ theorem DirectoryReady.runArchive [M8.Machine.Net] {m d K w W J N : ℕ} {P U : 
           by rw [directoryOrdinaryBank_caller]; exact mask,
           by rw [directoryOrdinaryBank_caller]; exact mode,time,run⟩)
       u S start queue liveBits badBits
-  exact ⟨z,B,n,next,user,done,history,tail,mask,mode,bound,time,run⟩
+  refine ⟨z,B,n,next,user,done,history,tail,mask,mode,bound,?_,time,run⟩
+  intro parents baseline shape hWidth jWidth fits
+  let scratch := (List.finRange (66+(K+1))).filter fun i => decide (58 ≤ i.val ∧ i ≠ directoryMatrixTape room)
+  let push := max (mnProgPush (directoryExceptionalCore (P := P) (U := U) d room capacity)) c
+  let extra := exceptionalVolumeRate U d m scratch.length push w*N
+  let count := ((∑ k ∈ Finset.range proj.rank, (k+1)*(m+1))*data.records)/prime
+  have volumeEq := directoryPayloadLength e length
+  have localPrice (j : ℕ) (inside : j < data.records) :
+      max (4*(prefixes j).length) (ordinaryCost j) ≤ ordinaryCeiling := by
+    have widths := start.1.2.1
+    simp only [List.drop_zero,List.mem_range] at widths
+    exact ceiling j ((widths j inside).symm.trans (widths 0 (by omega)))
+  apply bound parents baseline (data.records*(baseline+6)+2+count*extra) shape (Nat.le_add_right ..)
+  · intro j hj no
+    exact Or.inr ⟨hWidth,positive,volumeEq ▸ (Nat.add_le_add_right ((Nat.le_max_right ..).trans (localPrice j hj)) N).trans fits⟩
+  · intro pos j hj _ _
+    change 0 < count at pos
+    change costBad j ≤ baseline + (data.records*(baseline+6)+2+count*extra-(data.records*(baseline+6)+2))/count
+    rw [Nat.add_sub_cancel_left,Nat.mul_div_cancel_left _ pos]
+    have prefixBound : 4*(prefixes j).length ≤ baseline :=
+      ((Nat.le_max_left ..).trans (localPrice j hj)).trans ((Nat.le_add_right ..).trans fits)
+    let C := physical.table (LabelStock.residue m (w+1) 1 j)
+    have price := exceptionalVolumeRate_bound U d m scratch.length push w W (prefixes j).length
+      (classPivots C) (negativeAnchor (classPivots C) C) positive
+    change exceptionalRecordTime U (classPivots C) _ m w W data.H J scratch.length push _ ≤ _
+    rw [hWidth,jWidth]
+    exact price.trans ((Nat.add_le_add_left prefixBound _).trans_eq (by rw [volumeEq,Nat.add_comm]))
+
+private theorem ordinaryCharge_le {width padding good ceiling : ℕ} (live : Bool)
+    (prefixBound : 4*width ≤ padding) (cheap : padding ≤ good) (same : good = ceiling) :
+    max (4*width) (if live then good else padding) ≤ ceiling := by
+  cases live <;> simp only [Bool.false_eq_true,ite_false,ite_true,max_le_iff] <;> omega
 
 private theorem classifiedStep {α β : Type*} (ok : ℕ → α → β → Prop) (live bad : Bool)
     (gc bc pc : ℕ) (g b p : α) (ge be pe : β)
@@ -636,6 +705,8 @@ def GeneratedRecordSpec [M8.Machine.Net] {T m work Q fields H J W : ℕ} {F U : 
       let initialClear := privateTapes.length*4+1
       ∀ c, (∀ f, mnProgPush (body f) ≤ c) →
       let charge := fun label => runCost label + (initialClear + 6*(max (mnProgPush recordProgram) c * runCost label))
+      let binaryRun := budget + recordRoundTripRate m*N + (12*m*m+4)*(prefixes 0).length + generatedRecordRate m*N
+      let binaryCharge := binaryRun + (initialClear + 6*(max (mnProgPush recordProgram) c * binaryRun))
       let mask := caller 57
       let mode := caller 56
       let modes := fun (js : List ℕ) => js.map (fun i => bitSymbol (a := prime) (badBit i))
@@ -677,6 +748,7 @@ def GeneratedRecordSpec [M8.Machine.Net] {T m work Q fields H J W : ℕ} {F U : 
           ArchiveRun (J := J) shape v proj parent parentInv data room anchor outer push prefixes archiveTail rankFits
             source head (fieldsEq ▸ length) word (states ▸ recordProgram.seq (clearWorkTapes privateTapes))
             (states ▸ skip) (fun j => if liveBit j then charge j else skipCost j)
+            (if 0 < d ∧ H = M.size ∧ J = W.size then min (charge 0) binaryCharge else charge 0)
             (fun j => if liveBit j then effect j else Eq) u S
       else
       ∀ (fallback : Pr F K Q prime U) (badCost : ℕ → ℕ) (badEffect : ℕ → (Fin N → ZMod 2) → (Fin N → ZMod 2) → Prop),
@@ -703,8 +775,6 @@ def GeneratedRecordSpec [M8.Machine.Net] {T m work Q fields H J W : ℕ} {F U : 
         ((privateTapes.map fun i => 4*(whole.L i).length).sum + privateTapes.length*(2*high+4)+1)
       let branchCost := fun i => if liveBit i then (if badBit i then badCost i else charge i) else skipCost i
       let action := fun i => if liveBit i then (if badBit i then badEffect i else effect i) else Eq
-      let binaryRun := budget + recordRoundTripRate m*N + (12*m*m+4)*(prefixes 0).length + generatedRecordRate m*N
-      let binaryCharge := binaryRun + (initialClear + 6*(max (mnProgPush recordProgram) c * binaryRun))
       let exceptional := ((∑ k ∈ Finset.range d, (k+1)*(m+1))*labels.length)/prime
       let priced := fun n => ∀ baseline parentBudget : ℕ,
         (charge 0 ≤ baseline ∨ (0 < d ∧ H = M.size ∧ J = W.size ∧ binaryCharge ≤ baseline)) →
@@ -737,7 +807,7 @@ theorem generatedOrdinaryRecord_exec [M8.Machine.Net] {T m work Q fields H J W :
     body initialUser initialState poolFits directory prefixes archiveTail allLabels slots headers scanCaller scan joined dirSlots dir pool pivot counters inputs ports a digits prefixWidth zeros
     packedLabel clock count formula detFormula generationBill generate withZero field slot r src dst gs matrices liveBit badBit φ table fallbackCode schedules ready payload
     call cost budget coordinate effects reverse transfer marks loading conversion headerCost raw tripCost runBills prepareCounters prepareHeaders recordProgram
-    privateTapes initialClear c bodyBound charge mask mode modes skip skipCost ordinaryStep
+    privateTapes initialClear c bodyBound charge binaryRun binaryCharge mask mode modes skip skipCost ordinaryStep
   have clockSlot : headers 0 = 45 := rfl
   have widthSlot : headers 2 = 2 := rfl
   have unitSlot : headers 5 = 44 := rfl
@@ -769,9 +839,19 @@ theorem generatedOrdinaryRecord_exec [M8.Machine.Net] {T m work Q fields H J W :
       apply DirectoryReady.runArchive shape v proj idem (by
         simpa using admissible_of_lt Networks.Shared50ModularControl.prime_prime (fun k (h : k ∈ denominators proj) => hd k (by simp [factorizationDenominators,h])) 1) parent parentInv reciprocal data hm hw hW room anchor outer push bounded prefixes archiveTail
         factor hd rankFits source head length initialWord u S body calls (recordProgram.seq (clearWorkTapes privateTapes))
-        skip (fun j => if liveBit j then charge j else skipCost j) (fun j => if liveBit j then effects j else Eq)
-      have port : r 0 = caller 24 := recordRoundTripPorts_other slot 0 (by decide)
-      simpa only [ordinaryStep,payload,port] using step
+        skip (fun j => if liveBit j then charge j else skipCost j) _ (fun j => if liveBit j then effects j else Eq)
+      · intro j widthEq
+        have same : charge j = charge 0 := by simp only [charge,runBills,widthEq]
+        have cheap : skipCost j ≤ charge j := (Nat.le_add_left _ _).trans (Nat.le_add_right (runBills j) _)
+        have prefixBound : 4*(prefixes j).length ≤ skipCost j := by dsimp only [skipCost]; omega
+        apply (ordinaryCharge_le (liveBit j) prefixBound cheap same).trans
+        split
+        · next active =>
+            exact le_min le_rfl (generatedCharge_binary_le m w d W _ raw budget initialClear
+              (max (mnProgPush recordProgram) c) data.H J v positive width active)
+        · exact le_rfl
+      · have port : r 0 = caller 24 := recordRoundTripPorts_other slot 0 (by decide)
+        simpa only [ordinaryStep,payload,port] using step
   intro label labels word u whole ordinary start input
   by_cases live : liveBit label = true
   case neg =>
@@ -1241,11 +1321,11 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
     body initialUser initialState poolFits directory prefixes archiveTail allLabels slots headers scanCaller scan joined dirSlots dir pool pivot counters inputs ports a digits prefixWidth zeros
     packedLabel clock count formula detFormula generationBill generate withZero field slot r src dst gs matrices liveBit badBit φ table fallbackCode schedules ready payload
     call cost budget coordinate effects reverse transfer marks loading conversion headerCost raw tripCost runBills prepareCounters prepareHeaders recordProgram
-    privateTapes initialClear c bodyBound charge mask mode modes skip skipCost ordinaryStep
+    privateTapes initialClear c bodyBound charge binaryRun binaryCharge mask mode modes skip skipCost ordinaryStep
   have step : ordinaryStep := (generatedOrdinaryRecord_exec v positive w proj width idem factor hd rankFits
     parent parentInv reciprocal io arity hm hw hW length capacity source head fits cap ef xf eqs xqs
     initialWord body initialUser initialState poolFits directory prefixes archiveTail c bodyBound).1
-  intro fallback badCost badEffect bad room Bcount rs parents shape freePrivate dirPositive brSize rowsSize beforeHSize parentsFree freeMask freeMode freeQueue high initCounters clean initialReady initialPayload setupCost branchCost action binaryRun binaryCharge exceptional priced
+  intro fallback badCost badEffect bad room Bcount rs parents shape freePrivate dirPositive brSize rowsSize beforeHSize parentsFree freeMask freeMode freeQueue high initCounters clean initialReady initialPayload setupCost branchCost action exceptional priced
   have release (port : Fin 66) (lo : 56 ≤ port.val) (hi : port.val ≤ 57)
       (is : List ℕ) (word : Fin N → ZMod 2) (S : Stacks K prime) (xs : List (Fin (prime+4)))
       (h : ready S is) (p : payload word S) :
@@ -1368,18 +1448,8 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
     have base : charge 0 ≤ baseline := by
       rcases choice with direct | ⟨active,binary,trailingBits,limit⟩
       · exact direct
-      have radix := recordRadix_le_volume v positive w d width active
-      have trip : tripCost ≤ budget + recordRoundTripRate m*N := by
-        dsimp only [tripCost]
-        simp only [active,binary,trailingBits,and_self,ite_true]
-        exact min_le_right _ _
-      have runBound : runBills 0 ≤ binaryRun := by
-        dsimp only [runBills,headerCost,binaryRun]
-        rw [binary]
-        exact (generatedRecordTime_binary_le m w _ _ v positive radix).trans
-          (Nat.add_le_add_right (Nat.add_le_add_right trip _) _)
-      exact (Nat.add_le_add runBound (Nat.add_le_add_left
-        (Nat.mul_le_mul_left 6 (Nat.mul_le_mul_left _ runBound)) initialClear)).trans limit
+      exact (generatedCharge_binary_le m w d W _ raw budget initialClear (max (mnProgPush recordProgram) c)
+        H J v positive width ⟨active,binary,trailingBits⟩).trans limit
     have sameWidth (j : ℕ) (hj : j ∈ allLabels) : (prefixes j).length = (prefixes 0).length := by
       have first : 0 ∈ allLabels := List.mem_range.mpr (Nat.zero_lt_of_lt (List.mem_range.mp hj))
       exact (initialReady.2.1 j hj).symm.trans (initialReady.2.1 0 first)
