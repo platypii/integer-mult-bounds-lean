@@ -222,4 +222,158 @@ theorem copyPack_exec [M8.Machine.Net] {P U : Type} [Fintype P] (body : P → Pr
     fun x head mid tail h m t layout => by
       simpa only [copyPackSchedule,h,m,t] using packMiddleTail_fields (addr x) head mid tail layout⟩
 
+open FlatCoordinateLayout (rank) in
+private theorem rankAppend {M a b : ℕ} [NeZero M] (x : Fin a → ZMod M) (y : Fin b → ZMod M) :
+    (rank (Fin.append x y)).val = (rank x).val*M^b+(rank y).val :=
+  ArbitraryWidthSliceTranspose.rank_append x y
+
+open FlatCoordinateLayout (rank) in
+/-- Treating the final low atom as part of the suffix leaves the caller's input
+at exactly the original COPY tape position. -/
+theorem copyPackingInput_index {w W : ℕ} (h d : Fin 7 → ZMod (prime^(w+1)))
+    (u v : Fin 1 → ZMod (prime^(w+1))) (j : Fin W) :
+    let suffix := finProdFinEquiv ((rank v).cast (pow_one _),j)
+    (FlatCoordinateLayout.index (Fin.append (Fin.append h u) d) suffix).val =
+      (index (copyChildAddress h d u v j)).val := by
+  intro suffix
+  rw [FlatCoordinateLayout.index_val,rankAppend,rankAppend,RecursiveInterchangeScaling.index_val]
+  simp only [copyChildAddress,copyChild,RecursiveInterchangeLayout.index,suffix,Fin.val_cast,
+    Fin.val_zero,zero_mul,zero_add,pow_one,finProdFinEquiv,Equiv.coe_fn_mk]
+  rw [show prime^(7*(w+1)) = (prime^(w+1))^7 by rw [← pow_mul,Nat.mul_comm]]
+
+open FlatCoordinateLayout (rank) in
+/-- The packed host record and the active-first descriptor address name the same tape cell. -/
+theorem copyPacked_index {w W : ℕ} (h d : Fin 7 → ZMod (prime^(w+1)))
+    (u v : Fin 1 → ZMod (prime^(w+1))) (j : Fin W) :
+    let suffix := finProdFinEquiv ((rank v).cast (pow_one _), j)
+    (FlatCoordinateLayout.index (Fin.append (Fin.append h d) u) suffix).val =
+      (packActive (copyChild (w+1) W) (index (copyChildAddress h d u v j))).val := by
+  intro suffix
+  rw [packActive_index, FlatCoordinateLayout.index_val, rankAppend, rankAppend]
+  let M := prime^(w+1)
+  change _ = (j.val + W*(rank v).val + (M*W)*((rank u).val + M*(0+0+0))) +
+    (1*1*1*M*(M*W))*((rank d).val + prime^(7*(w+1))*(rank h).val)
+  dsimp only [M,suffix,finProdFinEquiv,Equiv.coe_fn_mk,Fin.val_cast]
+  rw [show prime^(7*(w+1)) = (prime^(w+1))^7 by rw [← pow_mul, Nat.mul_comm]]
+  ring
+
+/-- The prepared output of the seven exchanges contains the incoming COPY bit
+at its active-first descriptor position, including the final untouched atom. -/
+theorem copyPacked_read {w W T H J : ℕ}
+    (bank : Fin 35 ↪ Fin T) (record : List (Fin (prime+4))) (dest : ℤ → Fin 4) (q : ℤ)
+    (S : Stacks T prime) (original : Fin ((prime^(w+1))^15*(prime^(w+1)*W)) → ZMod 2)
+    (packed : (Fin 15 → ZMod (prime^(w+1))) → Fin 15 → ZMod (prime^(w+1)))
+    (ready : ColumnRecordReady bank H J record SparseRoleCircuit.encode (fun _ => blank) dest 0 q original packed S)
+    (order : ∀ x (head mid tail : List (ZMod (prime^(w+1)))), head.length = 7 → mid.length = 1 →
+      tail.length = 7 → List.ofFn x = head++mid++tail → List.ofFn (packed x) = head++tail++mid) :
+    ∃ word, RecordReady (b := prime) (w := w) (W := prime^(w+1)*W) (d := 15)
+      bank H J record SparseRoleCircuit.encode (fun _ => blank) dest 0 q word S ∧
+      ∀ (h d : Fin 7 → ZMod (prime^(w+1))) (u v : Fin 1 → ZMod (prime^(w+1))) (j : Fin W),
+        let suffix := finProdFinEquiv ((FlatCoordinateLayout.rank v).cast (pow_one _), j)
+        ∃ k, k.val = (packActive (copyChild (w+1) W) (index (copyChildAddress h d u v j))).val ∧
+          word k = original (FlatCoordinateLayout.index (Fin.append (Fin.append h u) d) suffix) := by
+  obtain ⟨word, stored, reads⟩ := ready
+  refine ⟨word, stored, ?_⟩
+  intro h d u v j suffix
+  let x := Fin.append (Fin.append h u) d
+  have moved : packed x = Fin.append (Fin.append h d) u := by
+    apply List.ofFn_injective
+    simpa only [List.ofFn_fin_append] using order x (List.ofFn h) (List.ofFn u) (List.ofFn d)
+      (by simp) (by simp) (by simp) (by change List.ofFn (Fin.append (Fin.append h u) d) = _; rw [List.ofFn_fin_append, List.ofFn_fin_append])
+  refine ⟨_, copyPacked_index h d u v j, ?_⟩
+  simpa only [moved] using reads x suffix
+
+private theorem copyPack_fields {α : Type} (h d : Fin 7 → α) (u : Fin 1 → α) :
+    copyPackSchedule.foldl adjacentFields (Fin.append (Fin.append h u) d) = Fin.append (Fin.append h d) u := by
+  apply List.ofFn_injective
+  have layout := packMiddleTail_fields (Fin.append (Fin.append h u) d)
+    (List.ofFn h) (List.ofFn u) (List.ofFn d) (by rw [List.ofFn_fin_append,List.ofFn_fin_append])
+  simpa only [List.length_ofFn,copyPackSchedule,List.ofFn_fin_append] using layout
+
+/-- The descriptor transpose satisfies the logical output equation of the
+host wrapper at every suffix position. -/
+theorem copyPacking_transpose {w W : ℕ}
+    (input : Fin (volume prime (copyChild (w+1) W)) → ZMod 2) :
+    let M := prime^(w+1)
+    let size : M^15*(M*W) = volume prime (copyChild (w+1) W) := by
+      rw [copyChild_volume]; change M^15*(M*W) = M^16*W; ring
+    ∀ (h d : Fin 7 → ZMod M) (u : Fin 1 → ZMod M) (j : Fin (M*W)),
+      Shared50RecursiveNodeRows.transpose (one_dvd _) input
+        ((FlatCoordinateLayout.index (Fin.append (Fin.append d u) h) j).cast size) =
+        input ((FlatCoordinateLayout.index (Fin.append (Fin.append h u) d) j).cast size) := by
+  intro M size h d u j
+  obtain ⟨⟨low,j⟩,rfl⟩ := finProdFinEquiv.surjective j
+  let v := (FlatCoordinateLayout.rankEquiv : (Fin 1 → ZMod M) ≃ Fin (M^1)).symm
+    (low.cast (pow_one M).symm)
+  have digit : (FlatCoordinateLayout.rank v).cast (pow_one M) = low := by
+    change ((FlatCoordinateLayout.rankEquiv _) : Fin (M^1)).cast _ = _
+    simp [v]
+  have addr (h d : Fin 7 → ZMod M) : (FlatCoordinateLayout.index (Fin.append (Fin.append h u) d)
+      (finProdFinEquiv (low,j))).cast size = index (copyChildAddress h d u v j) := by
+    apply Fin.ext
+    simpa only [Fin.val_cast,digit] using copyPackingInput_index h d u v j
+  rw [addr,addr]
+  exact Shared50RecursiveNodeTranspose.transpose_all (by decide : 0 < 1) (one_dvd _) input (copyChildAddress h d u v j)
+
+open FlatCoordinateLayout (index) in
+/-- A child that swaps the two contiguous seven-atom fields suffices for COPY on
+a prepared record. The reverse passes carry its changed word back to caller order. -/
+theorem withCopyTranspose_exec [M8.Machine.Net] {P U : Type} [Fintype P]
+    (body : P → Pr P (N+35) Q prime U) :
+    ∃ setup swaps : ℕ, ∀ w W, 0 < W →
+      let M := prime^(w+1)
+      let suffix := M*W
+      let size : M^15*suffix = volume prime (copyChild (w+1) W) := by
+        rw [copyChild_volume]; change M^15*(M*W) = M^16*W; ring
+      let bank : Fin 35 ↪ Fin (N+35) := (Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)
+      let clean := fun (D : Stacks (N+35) prime) => ∀ k : Fin (N+35), 35 ≤ k.val → D.L k = [] ∧ D.R k = []
+      ∀ (v : HS (N+35) Q prime U) (S : Stacks (N+35) prime)
+        (record : List (Fin (prime+4))) (dest : ℤ → Fin 4) (q : ℤ)
+        (x : Fin (volume prime (copyChild (w+1) W)) → ZMod 2) (child : Pr P (N+35) Q prime U) (budget : ℕ),
+      let input := fun i => x (Fin.cast size i)
+      let output := fun i => Shared50RecursiveNodeRows.transpose (one_dvd _) x (Fin.cast size i)
+      let stored := RecordReady (b := prime) (w := w) (d := 15) (W := suffix)
+        bank (Nat.size M) (Nat.size suffix) record SparseRoleCircuit.encode (fun _ => blank) dest 0 q
+      (∀ v D word, stored word D → clean D → ∃ z F n changed, z.user = v.user ∧ n ≤ budget ∧
+        Exec body child (mk v D) n (mk z F) ∧ stored changed F ∧ clean F ∧
+        ∀ (h d : Fin 7 → ZMod M) (u : Fin 1 → ZMod M) (j : Fin suffix),
+          changed (FlatCoordinateLayout.index (Fin.append (Fin.append d h) u) j) =
+          word (FlatCoordinateLayout.index (Fin.append (Fin.append h d) u) j)) →
+      stored input S → clean S → ∃ z F n, z.user = v.user ∧
+        n ≤ budget + 2*((setup+swaps*swapVolumeRate w)*(M^15*suffix)) ∧
+        Exec body (.seq (packSchedule 15 copyPackSchedule) (.seq child (packSchedule 15 copyPackSchedule.reverse)))
+          (mk v S) n (mk z F) ∧ stored output F ∧ clean F := by
+  obtain ⟨setup,swaps,run⟩ := withPacking_exec body 15 copyPackSchedule (by decide) (by decide +kernel)
+  refine ⟨setup,swaps,?_⟩
+  intro w W hW M suffix size bank clean v S record dest q x child budget input output stored call start free
+  have logical := copyPacking_transpose x
+  have positive : 0 < suffix := Nat.mul_pos (pow_pos Shared50ModularControl.prime_prime.pos _) hW
+  have step := run w suffix positive v S record dest q input output id child budget
+  obtain ⟨z,F,n,user,bound,exec,⟨out,layout,reads⟩,clear⟩ := step (by
+    intro v D prepared available
+    obtain ⟨word,hw,read⟩ := prepared
+    obtain ⟨z,F,n,changed,hz,hn,exec,placed,clear,swap⟩ := call v D word hw available
+    refine ⟨z,F,n,hz,hn,exec,⟨changed,placed,?_⟩,clear⟩
+    intro x j
+    let pre := fun i : Fin 8 => x (i.castAdd 7)
+    let h := fun i : Fin 7 => pre (i.castAdd 1)
+    let u := fun i : Fin 1 => pre (i.natAdd 7)
+    let d := fun i : Fin 7 => x (i.natAdd 8)
+    have split : Fin.append (Fin.append h u) d = x := by
+      rw [show Fin.append h u = pre from Fin.append_castAdd_natAdd (m := 7) (n := 1)]
+      exact Fin.append_castAdd_natAdd (m := 8) (n := 7)
+    rw [← split]
+    change changed (FlatCoordinateLayout.index (copyPackSchedule.foldl adjacentFields _) j) = _
+    simp only [id_eq]
+    rw [copyPack_fields h d u,swap d h u j]
+    apply Eq.trans _ (logical d h u j).symm
+    simpa only [id_eq,copyPack_fields] using read (Fin.append (Fin.append d u) h) j
+    ) ⟨input,start,fun _ _ => rfl⟩ free
+  have same : out = output := by
+    funext i
+    obtain ⟨⟨k,j⟩,rfl⟩ := finProdFinEquiv.surjective i
+    obtain ⟨x,rfl⟩ := (FlatCoordinateLayout.rankEquiv : (Fin 15 → ZMod M) ≃ Fin (M^15)).surjective k
+    exact reads x j
+  exact ⟨z,F,n,user,bound,exec,same ▸ layout,clear⟩
+
 end IntegerMultBounds.MathlibTM2.M6.BitNode

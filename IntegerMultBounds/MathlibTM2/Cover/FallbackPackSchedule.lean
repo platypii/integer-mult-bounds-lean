@@ -369,6 +369,39 @@ theorem unpackSchedule_exec [Fintype P] {d w W : ℕ} (is : List ℕ) (fits : �
 
 /-- Run a child on packed fields and return its changed payload in the
 caller's order. Both layout changes use the same schedule budget. -/
+theorem withPacking_exec [Fintype P] (body : P → Pr P (N+35) Q prime U)
+    (d : ℕ) (is : List ℕ) (positive : 0 < d) (fits : ∀ i ∈ is, i+1 < d) :
+    ∃ setup swaps : ℕ, ∀ w W, 0 < W →
+      let M := prime^(w+1)
+      let bank := (Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)
+      let clean := fun (S : Stacks (N+35) prime) => ∀ k : Fin (N+35), 35 ≤ k.val → S.L k = [] ∧ S.R k = []
+      ∀ (v : HS (N+35) Q prime U) (S : Stacks (N+35) prime)
+        (record : List (Fin (prime+4))) (dest : ℤ → Fin 4) (q : ℤ)
+        (input output : Fin (M^d*W) → ZMod 2) (addr : (Fin d → ZMod M) → Fin d → ZMod M)
+        (child : Pr P (N+35) Q prime U) (budget : ℕ),
+      let ready := ColumnRecordReady bank (Nat.size M) (Nat.size W) record SparseRoleCircuit.encode
+        (fun _ => blank) dest 0 q
+      let packed := fun x => is.foldl adjacentFields (addr x)
+      (∀ u D, ready input packed D → clean D → ∃ y G t, y.user = u.user ∧ t ≤ budget ∧
+        Exec body child (mk u D) t (mk y G) ∧ ready output packed G ∧ clean G) →
+      ready input addr S → clean S → ∃ z F n, z.user = v.user ∧
+        n ≤ budget + 2*((setup+swaps*swapVolumeRate w)*(M^d*W)) ∧
+        Exec body (.seq (packSchedule d is) (.seq child (packSchedule d is.reverse)))
+          (mk v S) n (mk z F) ∧ ready output addr F ∧ clean F := by
+  obtain ⟨setup,swaps,bound⟩ := packTime_le body d is positive
+  refine ⟨setup,swaps,?_⟩
+  intro w W hW M bank clean v S record dest q input output addr child budget ready packed call start free
+  have hm : M < 2^Nat.size M := Nat.size_le.mp le_rfl
+  have hw : W < 2^Nat.size W := Nat.size_le.mp le_rfl
+  obtain ⟨u,D,t,hu,ht,pack,placed,clear⟩ := packSchedule_exec is fits _ _ hm hw hW body v S
+    record dest q input addr start free
+  obtain ⟨y,G,k,hy,hk,run,changed,available⟩ := call u D placed clear
+  obtain ⟨z,F,n,hz,hn,unpack,done,empty⟩ := unpackSchedule_exec is fits _ _ hm hw hW body y G
+    record dest q output addr changed available
+  have left := ht.trans (bound w W hW)
+  have right := hn.trans (bound w W hW)
+  exact ⟨z,F,t+(k+n),hz.trans (hy.trans hu),by dsimp only [M]; omega,.seq pack (.seq run unpack),done,empty⟩
+
 theorem withGoodChildPacking_exec [Fintype P] (body : P → Pr P (N+35) Q prime U)
     (r g : ℕ) (positive : 0 < r+g) :
     ∃ setup swaps : ℕ, ∀ w W, 0 < W →
@@ -389,20 +422,7 @@ theorem withGoodChildPacking_exec [Fintype P] (body : P → Pr P (N+35) Q prime 
       ready input addr S → clean S → ∃ z F n, z.user = v.user ∧
         n ≤ budget + 2*((setup+swaps*swapVolumeRate w)*(M^d*W)) ∧
         Exec body (.seq (packSchedule d is) (.seq child (packSchedule d is.reverse)))
-          (mk v S) n (mk z F) ∧ ready output addr F ∧ clean F := by
-  obtain ⟨setup,swaps,bound⟩ := goodChildPackTime_le body r g positive
-  refine ⟨setup,swaps,?_⟩
-  intro w W hW d M is bank clean v S record dest q input output addr child budget ready packed call start free
-  have fits : ∀ i ∈ is, i+1 < d := fun _ => goodChildPackSchedule_inside
-  have hm : M < 2^Nat.size M := Nat.size_le.mp le_rfl
-  have hw : W < 2^Nat.size W := Nat.size_le.mp le_rfl
-  obtain ⟨u,D,t,hu,ht,pack,placed,clear⟩ := packSchedule_exec is fits _ _ hm hw hW body v S
-    record dest q input addr start free
-  obtain ⟨y,G,k,hy,hk,run,changed,available⟩ := call u D placed clear
-  obtain ⟨z,F,n,hz,hn,unpack,done,empty⟩ := unpackSchedule_exec is fits _ _ hm hw hW body y G
-    record dest q output addr changed available
-  have left := ht.trans (bound w W hW)
-  have right := hn.trans (bound w W hW)
-  exact ⟨z,F,t+(k+n),hz.trans (hy.trans hu),by dsimp only [M,d]; omega,.seq pack (.seq run unpack),done,empty⟩
+          (mk v S) n (mk z F) ∧ ready output addr F ∧ clean F :=
+  withPacking_exec body _ _ (by omega) (fun _ => goodChildPackSchedule_inside)
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
