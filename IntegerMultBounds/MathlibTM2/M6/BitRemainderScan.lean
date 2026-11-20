@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.M6.BitRemainderRecordLayout
 public import IntegerMultBounds.MathlibTM2.M6.BitRemainderDirectory
 public import IntegerMultBounds.MathlibTM2.M6.BitRemainderRun
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackGoodChildPrepare
@@ -100,11 +101,11 @@ theorem remainderRecord_volume (v : Descriptor) (w rows : ℕ) (e : ℕ × ℕ)
     (he : e ∈ BitHosting.remainderIntervals) (width : v.width = 64*(w+1))
     (split : v.rows = 142080*rows) :
     let directory := role v 142080
-    let child := phaseIntervalChild e.1 e.2 (w+1) (v.between*v.afterD) 64
+    let child := remainderRecordChild e.1 e.2 (w+1) (v.between*v.afterD)
     LabelMask.records directory * volume prime child * 142080 = volume prime v := by
   intro directory child
   obtain ⟨ordered,upper,_⟩ := BitHosting.remainder_counts e he
-  rw [intervalChild_volume ordered (show e.2 ≤ 64 by omega)]
+  rw [remainderRecordChild_volume _ _ _ _ (by omega)]
   simp only [LabelMask.records,directory,role,volume,width,split,
     Nat.mul_div_cancel_left _ (by decide : 0 < 142080),show 64*(w+1) = (w+1)*64 by omega,
     pow_mul,pow_add]
@@ -1519,14 +1520,14 @@ theorem remainderOwnerDirectory_exec [M8.Machine.Net] {T : ℕ} {F U : Type}
     let m := 64
     let dim := 127
     let J := W.size
-    let v := phaseIntervalChild interval.1 interval.2 (w+1) W m
+    let v := remainderRecordChild interval.1 interval.2 (w+1) W
     let proj : Matrix (Fin m) (Fin m) ℚ := Matrix.diagonal fun i =>
       if interval.1 ≤ i.val ∧ i.val < interval.2 then 1 else 0
     let rankFits : proj.rank ≤ m := proj.rank_le_height
     let dimension : m+m = dim+1 := by decide
     let length : volume prime v = (prime^(w+1))^m*((prime^(w+1))^m*W) := by
       obtain ⟨ordered,upper,_⟩ := BitHosting.remainder_counts interval member
-      rw [intervalChild_volume ordered (show interval.2 ≤ m by dsimp [m]; omega),pow_add,Nat.mul_assoc]
+      exact remainderRecordChild_volume _ _ _ _ (by omega)
     let roleLength : LabelMask.records (role layout 142080)*volume prime v = volume prime (role layout 142080) := by
       have packed := remainderRecord_volume layout w rows interval member layoutWidth split
       have total := role_volume_mul prime 142080 layout ⟨rows,split⟩
@@ -1579,7 +1580,7 @@ theorem remainderOwnerDirectory_exec [M8.Machine.Net] {T : ℕ} {F U : Type}
   have width : v.width = proj.rank*(w+1) := by rw [rank]; rfl
   have pos : 0 < prime^(w+1) := pow_pos Shared50ModularControl.prime_prime.pos _
   have hW : 0 < W := Nat.mul_pos positiveLayout.2.2.2.1 positiveLayout.2.2.2.2
-  have positive : v.Positive := ⟨Nat.zero_lt_one,Nat.zero_lt_one,pow_pos pos _,pow_pos pos _,Nat.mul_pos (pow_pos pos _) hW⟩
+  have positive : v.Positive := ⟨Nat.zero_lt_one,Nat.zero_lt_one,Nat.zero_lt_one,pow_pos pos _,hW⟩
   have idem := intervalDiagonal_idem m interval.1 interval.2
   let factor := intervalFactor m interval.1 interval.2
   have hd := intervalFactor_denominators m interval.1 interval.2
@@ -1674,7 +1675,7 @@ theorem remainderRecord_scan [M8.Machine.Net] {T work Q : ℕ} {F U : Type}
     (io : Fin T) (arity : ℕ) (source : ℤ → Fin 4) (head : ℤ)
     (capacity : 217 ≤ Q) (fits : LeafCore.small ≤ work) (cap : (LeafCore.core io).states ≤ Q) (single : Bool := false) :
     let M := prime^(w+1)
-    let child := phaseIntervalChild e.1 e.2 (w+1) W 64
+    let child := remainderRecordChild e.1 e.2 (w+1) W
     let D : Matrix (Fin 64) (Fin 64) ℚ := Matrix.diagonal fun i =>
       if e.1 ≤ i.val ∧ i.val < e.2 then 1 else 0
     ∃ (positive : child.Positive) (width : child.width = D.rank*(w+1))
@@ -1691,9 +1692,9 @@ theorem remainderRecord_scan [M8.Machine.Net] {T work Q : ℕ} {F U : Type}
   have width : child.width = D.rank*(w+1) := by rw [rank]; rfl
   have pos : 0 < M := pow_pos Shared50ModularControl.prime_prime.pos _
   have positive : child.Positive :=
-    ⟨Nat.zero_lt_one,Nat.zero_lt_one,pow_pos pos _,pow_pos pos _,Nat.mul_pos (pow_pos pos _) hW⟩
+    ⟨Nat.zero_lt_one,Nat.zero_lt_one,Nat.zero_lt_one,pow_pos pos _,hW⟩
   have length : volume prime child = M^64*(M^64*W) := by
-    rw [intervalChild_volume ordered bounded, pow_add, Nat.mul_assoc]
+    exact remainderRecordChild_volume _ _ _ _ bounded
   refine ⟨positive,width,rankFits,length,?_⟩
   cases single with
   | false =>

@@ -3,7 +3,7 @@ module
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackRecordVolumeHeaders
 public import IntegerMultBounds.MathlibTM2.Cover.LabelTraversal
 
-/-! Compute the six canonical dimension words of a PR589 interval child. -/
+/-! Compute the six dimension words for the normalized rank child of a PR589 idle record. -/
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.M6.BitNode.IntervalDescriptor
 open IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2.Stack Host Cover Cover.Fallback
@@ -87,18 +87,18 @@ private theorem intervalWidth_exec (body : P → Pr P T Q prime U) (r : Fin 9 �
 
 noncomputable def fieldPrograms (bank : Fin 72 ↪ Fin T) (lo hi : ℕ) : Fin 6 → Pr P T Q prime U :=
   ![.act (pushBit (bank 33) true),.act (pushBit (bank 34) true),
-    swapPrefix ((powerPorts 0).trans bank) lo,intervalWidth (widthPorts.trans bank) (hi-lo),
-    swapPrefix ((powerPorts 1).trans bank) (64-hi+lo),swapPrefix ((powerPorts 2).trans bank) (64-hi)]
+    .act (pushBit (bank 35) true),intervalWidth (widthPorts.trans bank) (hi-lo),
+    swapPrefix ((powerPorts 1).trans bank) (2*(64-(hi-lo))),swapPrefix ((powerPorts 2).trans bank) 0]
 
 noncomputable def intervalHeaders (bank : Fin 72 ↪ Fin T) (lo hi : ℕ) : Pr P T Q prime U :=
   LabelTraversal.sequence (fieldPrograms bank lo hi) (List.finRange 6)
 
 def intervalValues (lo hi a M W : ℕ) : Fin 6 → ℕ :=
-  ![1,1,M^lo,(hi-lo)*a,M^(64-hi+lo),M^(64-hi)*W]
+  ![1,1,1,(hi-lo)*a,M^(2*(64-(hi-lo))),W]
 
 def intervalHeaderCosts (lo hi a H J : ℕ) : Fin 6 → ℕ :=
   let power := fun d B => dimensionTime H B d + (4*(d*H+B)+6)
-  ![1,1,power lo 1,4*a+4+(21*((hi-lo)*a)+10+(2*((hi-lo)*a)+2)),power (64-hi+lo) 1,power (64-hi) J]
+  ![1,1,1,4*a+4+(21*((hi-lo)*a)+10+(2*((hi-lo)*a)+2)),power (2*(64-(hi-lo))) 1,power 0 J]
 
 /-- Generate every descriptor field from the modulus, suffix and atom width.
 The indexed program depends only on the selected interval. -/
@@ -148,19 +148,19 @@ theorem intervalHeaders_exec (body : P → Pr P T Q prime U) (bank : Fin 72 ↪ 
     fin_cases i
     · exact ⟨y,1,rfl,le_rfl,short _ fresh⟩
     · exact ⟨y,1,rfl,le_rfl,short _ fresh⟩
-    · have run := power 0 lo 1 1 (by decide) one fresh
-      rw [Nat.mul_one] at run
-      exact run
+    · exact ⟨y,1,rfl,le_rfl,short _ fresh⟩
     · apply intervalWidth_exec body (widthPorts.trans bank) (hi-lo) a y B clock
       intro j ne
       by_cases atOut : j = 1
       · exact atOut ▸ fresh
       · have limits := (by decide : ∀ j, j ≠ 0 → j ≠ 1 → 59 ≤ (widthPorts j).val ∧ (widthPorts j).val ≤ 65) j ne atOut
         exact work _ limits.1 limits.2
-    · have run := power 1 (64-hi+lo) 1 1 (by decide) one fresh
+    · have run := power 1 (2*(64-(hi-lo))) 1 1 (by decide) one fresh
       rw [Nat.mul_one] at run
       exact run
-    · exact power 2 (64-hi) J W hw trailing fresh
+    · have run := power 2 0 J W hw trailing fresh
+      rw [pow_zero,one_mul] at run
+      exact run
   obtain ⟨z,D,t,user,time,run,left,done,frame⟩ := sequenceHeaders_exec body _ dst _ _ ok stable step
     (List.finRange 6) (List.nodup_finRange _) u S ⟨base,unit,suffix,atom,scratch⟩ (fun i _ => empty i)
   exact ⟨z,D,t,user,time,run,left,fun i => done i (List.mem_finRange _),fun k off => frame k (fun j _ => off j)⟩
@@ -188,14 +188,13 @@ theorem intervalHeaderCost_le (lo hi a H J M W : ℕ) (ordered : lo ≤ hi) (fit
   have unit : 1 ≤ W := positive
   have power (d : ℕ) (degree : d ≤ 128) (B : ℕ) (h : B ≤ W) :=
     powerHeaderCost_le d H B M W degree width h (by omega) positive
-  have p := power lo (by omega) 1 unit
-  have q := power (64-hi+lo) (by omega) 1 unit
-  have r := power (64-hi) (by omega) J seed
+  have q := power (2*(64-(hi-lo))) (by omega) 1 unit
+  have r := power 0 (by omega) J seed
   have rank : (hi-lo)*a ≤ 64*M := Nat.mul_le_mul (by omega) atom
-  change 1+(1+((dimensionTime H 1 lo+(4*(lo*H+1)+6))+
+  change 1+(1+(1+
     ((4*a+4+(21*((hi-lo)*a)+10+(2*((hi-lo)*a)+2)))+
-    ((dimensionTime H 1 (64-hi+lo)+(4*((64-hi+lo)*H+1)+6))+
-    ((dimensionTime H J (64-hi)+(4*((64-hi)*H+J)+6))+0)))))+1 ≤ _
+    ((dimensionTime H 1 (2*(64-(hi-lo)))+(4*((2*(64-(hi-lo)))*H+1)+6))+
+    ((dimensionTime H J 0+(4*(0*H+J)+6))+0)))))+1 ≤ _
   calc
     _ ≤ 4194304*C := by dsimp only [C] at *; omega
     _ ≤ (M^22)*(M*M*W) := Nat.mul_le_mul_right _ (show 2^22 ≤ M^22 from Nat.pow_le_pow_left radix _)
