@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackGoodCoordinates
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackRecordVolumeHeaders
 
 /-! Stage the caller word, run the weighted coordinate loop, and return the result. -/
 @[expose] public section
@@ -11,7 +12,7 @@ open M8.RevMachine RecursiveInterchangeLayout Matrix Finset IntegerMultBounds.Sw
   IntegerMultBounds.Swap.Modular
 local instance (w : ℕ) : NeZero (prime^(w+1)) := ⟨pow_ne_zero _ Networks.Shared50ModularControl.prime_prime.ne_zero⟩
 
-theorem goodRecordRoundTrip_exec [M8.Machine.Net] {T m work Q K P H B : ℕ} {F U : Type}
+theorem goodRecordRoundTrip_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ} {F U : Type}
     (v : Descriptor) (positive : v.Positive) (w : ℕ) (proj : Matrix (Fin m) (Fin m) ℚ)
     (width : v.width = proj.rank*(w+1)) (idem : proj*proj = proj)
     (factor : Factorization univ univ proj) (hd : ∀ a ∈ factorizationDenominators factor, a < prime)
@@ -21,7 +22,8 @@ theorem goodRecordRoundTrip_exec [M8.Machine.Net] {T m work Q K P H B : ℕ} {F 
     (io : Fin T) (roles : Tapes T prime)
     (f : ℤ → Fin (prime+4)) (p : ℤ) (node scalar : Tapes 1 prime)
     (arity : ℕ) (st : Tapes 2 prime) (freeNode : Family.NodeFree node)
-    (hP : 0 < P) (hH : 0 < H) (hB : 0 < B) (length : volume prime v = P*(H*B))
+    (hm : prime^(w+1) < 2^H) (hw : W < 2^J) (hW : 0 < W)
+    (length : volume prime v = (prime^(w+1))^fields*((prime^(w+1))^fields*W))
     (capacity : 217 ≤ Q) (source : ℤ → Fin 4) (head : ℤ)
     (fits : LeafCore.small ≤ work) (cap : (LeafCore.core io).states ≤ Q) :
     let d := proj.rank
@@ -44,18 +46,21 @@ theorem goodRecordRoundTrip_exec [M8.Machine.Net] {T m work Q K P H B : ℕ} {F 
     let logical := {v with width := d}
     let addr := fun a row pre mid post (x : IntegerMultBounds.Swap.Shear.State (Fin d) (ZMod M)) =>
       index M logical a row pre (FlatCoordinateLayout.rank x.1).val mid (FlatCoordinateLayout.rank x.2).val post
+    let inner := Fin.natAddEmb 66 (m := (host+31)+work)
+    let caller := Fin.castAddEmb (n := 66) ((host+31)+work)
+    let K := 66+((host+31)+work)
     ∀ (ef : entry.tapes ≤ common+work) (xf : leave.tapes ≤ common+work)
       (eqs : entry.states ≤ Q) (xqs : leave.states ≤ Q) (word : Fin N → ZMod 2) (body : F → Pr F K Q prime U)
-      (inner : Fin ((host+31)+work) ↪ Fin K) (r : Fin 8 ↪ Fin K)
       (u : HS _ Q prime U) (whole : Stacks K prime) (tail parentTail : List (Fin (prime+4))),
       let slot := (((LeafCore.roleSlot io).castAdd 24).castAdd 31).castAdd work
+      let r := recordRoundTripPorts slot
       let S := embStk inner whole
-      inner slot = r 1 → (∀ i j, j ≠ 1 → inner i ≠ r j) →
+      whole.R (caller 2) = binSyms H M → whole.R (caller 28) = binSyms 1 1 →
+      whole.R (caller 53) = binSyms J W →
+      (∀ i : Fin 66, 58 ≤ i.val → whole.L (caller i) = [] ∧ whole.R (caller i) = []) →
       (∀ z, readAt blank (whole.L (r 0)) (whole.R (r 0)) (z-head) =
         RadixToBinary.binaryEncoding.encode (putWord source head ((List.ofFn word).map SparseRoleCircuit.encode) z)) →
       (∀ z, readAt blank (whole.L (r 1)) (whole.R (r 1)) z = blank) →
-      (∀ i : Fin 6, whole.L (r (Fin.natAdd 2 i)) = [] ∧ whole.R (r (Fin.natAdd 2 i)) =
-        ![[],binSyms B.size B,[],binSyms H.size H,[],binSyms P.size P] i) →
       rep d roles S → clean S →
       (∀ k : Fin 31, S.L ((k.natAdd host).castAdd work) = [] ∧ S.R ((k.natAdd host).castAdd work) = []) →
       fallbackBit rankFits (reduce M proj) g = false →
@@ -81,22 +86,48 @@ theorem goodRecordRoundTrip_exec [M8.Machine.Net] {T m work Q K P H B : ℕ} {F 
       let transfer := fun ports : Fin 8 ↪ Fin K => (stateLiftNormalize capacity (by decide)).seq
         (stateLiftPr capacity (by decide) Empty.elim (returnFromOrigin (P := Empty) ports))
       let marks := ([2,3,4,5,6,7] : List (Fin 8)).map r
-      ∃ z D t ys, z.user = u.user ∧ t ≤ budget+2*((218*N+1)*13+6)+3 ∧
-        Exec body ((.act (pushMarkers marks) : Pr F K Q prime U).seq
-          ((transfer r).seq ((embProg inner Empty.elim coordinate).seq (transfer reverse)))) (mk u whole) t (mk z D) ∧
+      ∃ z D t ys, z.user = u.user ∧ t ≤ (dimensionTime H 1 fields+(4*(fields*H+1)+6)+(10*J+12)+(6*(M^fields).size+6)) +
+        (budget+2*((218*N+1)*13+6)+3) ∧
+        Exec body ((recordCounterSetup caller fields).seq ((.act (pushMarkers marks) : Pr F K Q prime U).seq
+          ((transfer r).seq ((embProg inner Empty.elim coordinate).seq (transfer reverse))))) (mk u whole) t (mk z D) ∧
         effect ys ∧ ∀ k, readAt blank (D.L (r 0)) (D.R (r 0)) (k-head) =
           RadixToBinary.binaryEncoding.encode (putWord source head (ys.map SparseRoleCircuit.encode) k) := by
-  intro d common host M N entry leave record bank g G rep clean logical addr ef xf eqs xqs word body inner r
-    u whole tail parentTail slot S shared apart input blank raw initial free empty good matrix modulus one ticks
-    scratch archive call cost budget coordinate effect reverse transfer marks
-  have run := stagedLeafRoundTrip_exec hP hH hB capacity body r (embProg inner Empty.elim coordinate)
-    u whole source head (List.ofFn word) (List.length_ofFn.trans length) effect budget input blank raw
-  apply (by simpa only [← length] using run : _ → _)
-  apply stagedCoordinateChild_exec body inner r slot shared apart coordinate whole (List.ofFn word) effect budget
+  intro d common host M N entry leave record bank g G rep clean logical addr inner caller K ef xf eqs xqs word
+    body u whole tail parentTail slot r S base unit trailing spare input blank initial free empty good matrix modulus
+    one ticks scratch archive call cost budget coordinate effect reverse transfer marks
+  obtain ⟨a,A,c,ha,hc,setup,left,controls,off⟩ := recordCounterSetup_exec body caller fields H J M W
+    hm hw u whole base unit trailing spare
+  have disjoint (i : Fin 66) (j) : caller i ≠ inner j := by
+    intro eq
+    have h := congrArg Fin.val eq
+    change i.val = 66+j.val at h
+    omega
+  have kept (i) := off (inner i) (disjoint 59 i) (disjoint 61 i) (disjoint 63 i)
+  have raw (i : Fin 6) := controls i
+  have port (i : Fin 6) : r (Fin.natAdd 2 i) = caller ((i.natAdd 58).castAdd 2) := by
+    rw [recordRoundTripPorts_other slot _ ((by decide : ∀ j : Fin 6, Fin.natAdd 2 j ≠ (1 : Fin 8)) i)]
+    exact congrArg caller ((by decide : ∀ j : Fin 6,
+      (![24,0,58,59,60,61,62,63] (Fin.natAdd 2 j) : Fin 66) = (j.natAdd 58).castAdd 2) i)
+  have first : r 0 = caller 24 := recordRoundTripPorts_other slot 0 (by decide)
+  have shared : inner slot = r 1 := (recordRoundTripPorts_shared slot).symm
+  have volumeEq : N = M^fields*(M^fields*W) := length
+  have pos : 0 < M^fields := pow_pos (pow_pos Networks.Shared50ModularControl.prime_prime.pos _) _
+  have transferRun := stagedLeafRoundTrip_exec pos pos hW capacity body r (embProg inner Empty.elim coordinate)
+    a A source head (List.ofFn word) (List.length_ofFn.trans length) effect budget
+    (by rw [first,left,off _ (caller.injective.ne (by decide)) (caller.injective.ne (by decide))
+          (caller.injective.ne (by decide))]; simpa only [first] using input)
+    (by rw [← shared,left,kept]; simpa only [← shared] using blank)
+    (by intro i; rw [port]; exact raw i)
+  suffices process : _ by
+    obtain ⟨z,D,t,ys,hz,ht,run,act,read⟩ := transferRun process
+    exact ⟨z,D,_,ys,hz.trans ha,Nat.add_le_add hc (by simpa only [← volumeEq] using ht),Exec.seq setup run,act,read⟩
+  apply stagedCoordinateChild_exec body inner r slot shared (recordRoundTripPorts_apart slot) coordinate A
+    (List.ofFn word) effect budget
   intro y E read frame
+  have original (i) (ne : i ≠ slot) := And.intro ((frame i ne).1.trans (congrFun left _)) ((frame i ne).2.trans (kept i))
   obtain ⟨z,D,t,user,time,exec,minor,next,_,_,_,out,_,action⟩ := stagedGoodRecordCoordinates_exec
     v positive w proj width idem factor hd label live rankFits parent parentInv reciprocal io roles f p node scalar
-    arity st freeNode fits cap ef xf eqs xqs word Empty.elim y S E tail parentTail initial frame read free empty
+    arity st freeNode fits cap ef xf eqs xqs word Empty.elim y S E tail parentTail initial original read free empty
     good matrix modulus one ticks scratch archive
   exact ⟨z,D,t,List.ofFn next,user,time,exec,by simp [N],⟨minor,next,rfl,action⟩,out⟩
 

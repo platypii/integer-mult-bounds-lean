@@ -31,6 +31,77 @@ theorem recordVolumeHeaders_exec {T Q A : ℕ} {F U : Type}
   refine ⟨z,_,hz.trans user,Nat.add_le_add_right time _,?_⟩
   simpa only [D,canonical] using Exec.seq power copy
 
+/-- The first 58 slots are the recursive caller bank. The following eight
+slots hold the six loop controls and two temporary words. -/
+def recordDimensionPorts : Fin 10 ↪ Fin 66 := ⟨![2,28,61,58,60,62,63,64,65,59],by decide⟩
+
+/-- Port zero is the caller's payload. Port one selects the private coordinate
+role, and the remaining ports are the six controls produced below. -/
+def recordRoundTripPorts {K : ℕ} (slot : Fin K) : Fin 8 ↪ Fin (66+K) :=
+  let positions : Fin 8 ↪ Fin 66 := ⟨![24,0,58,59,60,61,62,63],by decide⟩
+  (positions.trans (Fin.castAddEmb K)).trans (Equiv.swap ((0 : Fin 66).castAdd K) (slot.natAdd 66)).toEmbedding
+
+theorem recordRoundTripPorts_shared {K : ℕ} (slot : Fin K) :
+    recordRoundTripPorts slot 1 = slot.natAdd 66 := by
+  change Equiv.swap ((0 : Fin 66).castAdd K) (slot.natAdd 66) ((0 : Fin 66).castAdd K) = _
+  exact Equiv.swap_apply_left _ _
+
+theorem recordRoundTripPorts_other {K : ℕ} (slot : Fin K) (j : Fin 8) (ne : j ≠ 1) :
+    recordRoundTripPorts slot j = ((![24,0,58,59,60,61,62,63] j : Fin 66).castAdd K) := by
+  apply Equiv.swap_apply_of_ne_of_ne
+  · exact (Fin.castAddEmb K).injective.ne ((by decide : ∀ j : Fin 8, j ≠ 1 →
+      (![24,0,58,59,60,61,62,63] j : Fin 66) ≠ 0) j ne)
+  · intro eq
+    have h := congrArg Fin.val eq
+    change (![24,0,58,59,60,61,62,63] j : Fin 66).val = 66+slot.val at h
+    have := (![24,0,58,59,60,61,62,63] j : Fin 66).isLt
+    omega
+
+theorem recordRoundTripPorts_apart {K : ℕ} (slot i : Fin K) (j : Fin 8) (ne : j ≠ 1) :
+    i.natAdd 66 ≠ recordRoundTripPorts slot j := by
+  rw [recordRoundTripPorts_other slot j ne]
+  intro eq
+  have h := congrArg Fin.val eq
+  change 66+i.val = (![24,0,58,59,60,61,62,63] j : Fin 66).val at h
+  have := (![24,0,58,59,60,61,62,63] j : Fin 66).isLt
+  omega
+
+def recordCounterSetup {F U : Type} {T Q A : ℕ} (host : Fin 66 ↪ Fin T) (d : ℕ) : Pr F T Q A U :=
+  let dim := recordDimensionPorts.trans host
+  ((swapPrefix dim d).seq (Routing.binaryCanonicalCopyProgram (host 53) (dim 9) (dim 3) (dim 4))).seq
+    (bcopy (host 61) (host 63) (host 64) (host 65))
+
+theorem recordCounterSetup_exec {T Q A : ℕ} {F U : Type} (body : F → Pr F T Q A U)
+    (host : Fin 66 ↪ Fin T) (d H J M W : ℕ) (hm : M < 2^H) (hw : W < 2^J)
+    (u : HS T Q A U) (S : Stacks T A) (base : S.R (host 2) = binSyms H M)
+    (one : S.R (host 28) = binSyms 1 1) (width : S.R (host 53) = binSyms J W)
+    (empty : ∀ i : Fin 66, 58 ≤ i.val → S.L (host i) = [] ∧ S.R (host i) = []) :
+    ∃ z D n, z.user = u.user ∧ n ≤ dimensionTime H 1 d + (4*(d*H+1)+6) + (10*J+12) + (6*(M^d).size+6) ∧
+      Exec body (recordCounterSetup host d) (mk u S) n (mk z D) ∧ D.L = S.L ∧
+      (∀ i : Fin 6, let j := host ((i.natAdd 58).castAdd 2)
+        D.L j = [] ∧ D.R j = ![[],binSyms W.size W,[],binSyms (M^d).size (M^d),[],binSyms (M^d).size (M^d)] i) ∧
+      ∀ j, host 59 ≠ j → host 61 ≠ j → host 63 ≠ j → D.R j = S.R j := by
+  let dim := recordDimensionPorts.trans host
+  have apart (i) : host 53 ≠ dim i :=
+    host.injective.ne ((by decide : ∀ i, 53 ≠ recordDimensionPorts i) i)
+  obtain ⟨v,t,user,time,run⟩ := recordVolumeHeaders_exec body dim (host 53) apart d H J M W hm hw u S base one width
+    (fun i hi => (empty _ ((by decide : ∀ i : Fin 10, 2 ≤ i → 58 ≤ (recordDimensionPorts i).val) i hi)).2)
+  let E : Stacks T A := {S with R := Function.update (Function.update S.R (host 61) (binSyms (M^d).size (M^d))) (host 59) (binSyms W.size W)}
+  have spare (i : Fin 66) (h : 58 ≤ i.val) (a : i ≠ 59) (b : i ≠ 61) : E.R (host i) = [] := by
+    simp [E,host.injective.eq_iff,a,b,(empty i h).2]
+  have regs := ((by decide : ([61,63,64,65] : List (Fin 66)).Nodup).map host.injective)
+  obtain ⟨z,hz,copy⟩ := bcopy_exec body regs v E (spare 64 (by decide) (by decide) (by decide))
+    (spare 65 (by decide) (by decide) (by decide))
+  have power : E.R (host 61) = binSyms (M^d).size (M^d) := by simp [E,host.injective.eq_iff]
+  rw [power,spare 63 (by decide) (by decide) (by decide),List.append_nil,length_binSyms] at copy
+  refine ⟨z,_,_,hz.trans user,Nat.add_le_add_right time _,Exec.seq run copy,rfl,?_,?_⟩
+  · intro i
+    constructor
+    · exact (empty _ ((by decide : ∀ i : Fin 6, 58 ≤ ((i.natAdd 58).castAdd 2).val) i)).1
+    · fin_cases i <;> simp [E,host.injective.eq_iff,Fin.natAdd,Fin.castAdd,empty]
+  · intro j a b c
+    simp [E,Function.update_of_ne a.symm,Function.update_of_ne b.symm,Function.update_of_ne c.symm]
+
 open IntegerMultBounds.Networks.Shared50ModularControl (prime) in
 theorem recordPayloadReturn_exec {T Q : ℕ} {F U : Type} (capacity : 217 ≤ Q)
     (body : F → Pr F T Q prime U) (dim ret : Fin 10 ↪ Fin T) (width : Fin T)
