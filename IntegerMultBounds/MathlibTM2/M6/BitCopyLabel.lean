@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.M6.BitCopyRun
+public import IntegerMultBounds.MathlibTM2.M6.BitCopyRecordSetup
 public import IntegerMultBounds.MathlibTM2.M6.BitRouteRun
 
 /-! Physical cover-label reads of the pointwise COPY window. -/
@@ -632,5 +632,35 @@ theorem routedCopy_parent [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5) 
   exact (Nat.cast_le.mpr bill).trans (by
     simpa only [Nat.cast_add, Nat.cast_mul, Nat.cast_ofNat] using
       add_le_add (add_le_add power (le_refl ((9 : ℝ)*engine.time child hs))) (le_refl (9 : ℝ)))
+
+open M8.RevMachine M8.Machine.ArbitraryWidthOriginalRun in
+/-- Charge each of the nine COPY wrappers to the local routing cost and
+retain one recursive child budget per window. -/
+theorem routedCopy_recursiveCost [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5) (engine : CopyTranspose)
+    (setup swaps : ℕ) :
+    ∃ C : ℝ, ∀ (v : Descriptor) (w B rows : ℕ), v.Positive → 0 < w → 0 < B →
+      v.width = 64*w → v.rows = 142080*rows → v.beforeH = B*prime^(64*(w*64)) →
+      let K := (prime^w)^112 * (v.beforeRows*rows*v.between*v.afterD)
+      let W := B*prime^(64*(w*64))*K
+      let child := copyChild w W
+      let hs := fun i => FlatCoordinateSchedule.bits (RecursiveDimensionBank.values child i)
+      ∀ budget : ℕ, engine.time child hs ≤ budget +
+        2*((setup+swaps*Fallback.swapVolumeRate (w-1))*volume prime child) →
+      ∃ stage : SharedBankStage.Stage _ 142081 prime (copyOwners (v := copyLabelLayout w B K)),
+        (∀ x, CopyScheduleEffect n r d w B K Copy.lifecycles x (stage.transform x)) ∧
+        child.width*64 = 7*v.width ∧ volume prime child*142080 = volume prime v ∧
+        (stage.cost : ℝ) ≤ C*volume prime child*(w : ℝ)^M8.Machine.BudgetBound.tau + 9*budget + 9 := by
+  obtain ⟨route,run⟩ := routedCopy_parent n r d engine
+  obtain ⟨wrap,_,paid⟩ := copyReturn_parentCost setup swaps
+  refine ⟨route+9*wrap,?_⟩
+  intro v w B rows pos hw hB width splitRows label K W child hs budget engineTime
+  obtain ⟨stage,effect,rank,vol,time⟩ := run v w B rows pos hw hB width splitRows label
+  refine ⟨stage,effect,rank,vol,time.trans ?_⟩
+  have bill := paid (w-1) (volume prime child) budget (engine.time child hs) engineTime
+  rw [Nat.sub_add_cancel hw] at bill
+  change route*volume prime child*(w : ℝ)^M8.Machine.BudgetBound.tau + 9*engine.time child hs + 9 ≤ _
+  linarith only [bill,show (route+9*wrap)*volume prime child*(w : ℝ)^M8.Machine.BudgetBound.tau =
+    route*volume prime child*(w : ℝ)^M8.Machine.BudgetBound.tau +
+      9*(wrap*volume prime child*(w : ℝ)^M8.Machine.BudgetBound.tau) by ring]
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
