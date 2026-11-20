@@ -271,7 +271,6 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
       whole.R parents = [] →
       whole.R mask = [] → whole.R mode = [] →
       let high := prime^w
-      let R := LabelCountBank.fill (rs.map Prod.fst) high (Function.update whole.R (caller 58) (List.replicate high Node.tick))
       let initCounters : Pr F K Q prime U := (Node.expProg 0 prime (caller 28) (caller 45) (caller 58) (caller 59) (caller 60) (caller 61)).seq
         (Node.scanR (caller 58) (caller 59) (LabelCountBank.pushAll (rs.map Prod.fst)))
       let clean := {whole with L := fun i => if i ∈ privateTapes then [] else whole.L i,
@@ -279,14 +278,12 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
       ready clean labels → payload word clean →
       let setupCost := (26*high+4) + ((44*labels.length+13*(w+1)+16) + 2*((6+10*(m*m))*labels.length+4) +
         (2*(directory.beforeRows*directory.rows*B)+2)) +
-        ((privateTapes.map fun i => 4*(whole.L i).length+2*(R i).length+4).sum+1)
+        ((privateTapes.map fun i => 4*(whole.L i).length).sum + privateTapes.length*(2*high+4)+1)
       let branchCost := fun i => if liveBit i then (if badBit i then badCost i else charge i) else skipCost i
       let action := fun i => if liveBit i then (if badBit i then badEffect i else effect i) else Eq
-      let priced := fun n => ∀ (baseline extra : ℕ),
-        (∀ j ∈ labels, liveBit j = true → badBit j = false → charge j ≤ baseline) →
-        (∀ j ∈ labels, liveBit j = false → skipCost j ≤ baseline) →
-        (∀ j ∈ labels, liveBit j = true → badBit j = true → badCost j ≤ baseline+extra) →
-        n ≤ setupCost + (labels.length*(baseline+6) +
+      let priced := fun n => ∀ extra : ℕ,
+        (∀ j ∈ labels, liveBit j = true → badBit j = true → badCost j ≤ charge 0+extra) →
+        n ≤ setupCost + (labels.length*(charge 0+6) +
           (((∑ k ∈ Finset.range d, (k+1)*(m+1))*labels.length)/prime)*extra+2)
       ∃ writer : Pr F K Q prime U, ∃ z D n next, z.user = u.user ∧ n ≤ setupCost + ((labels.map fun i => branchCost i + 2 + 4).sum + 2) ∧
         priced n ∧ Exec body (((initCounters.seq writer).seq (clearWorkTapes privateTapes)).seq (classifiedScan mask mode (recordProgram.seq (clearWorkTapes privateTapes)) fallback skip)) (mk u whole) n (mk z D) ∧
@@ -296,7 +293,7 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
     body initialUser initialState poolFits directory prefixes archiveTail allLabels slots headers scanCaller scan joined dirSlots dir pool pivot counters inputs ports a digits prefixWidth zeros
     packedLabel clock count formula formulaCost detFormula C readBill generationBill generate withZero field slot r src dst ready payload gs matrices liveBit badBit
     call cost budget coordinate effects reverse transfer marks packed loading conversions headerCost runBills prepareCounters prepareHeaders recordProgram
-    privateTapes initialClear c bodyBound charge mask mode modes skip skipCost fallback badCost badEffect bad room Bcount rs parents shape freePrivate dirPositive brSize rowsSize beforeHSize parentsFree freeMask freeMode high R initCounters clean initialReady initialPayload setupCost branchCost action priced
+    privateTapes initialClear c bodyBound charge mask mode modes skip skipCost fallback badCost badEffect bad room Bcount rs parents shape freePrivate dirPositive brSize rowsSize beforeHSize parentsFree freeMask freeMode high initCounters clean initialReady initialPayload setupCost branchCost action priced
   have clockSlot : headers 0 = 45 := rfl
   have widthSlot : headers 2 = 2 := rfl
   have unitSlot : headers 5 = 44 := rfl
@@ -340,6 +337,25 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
       caller.injective.eq_iff,hp.symm,hs.symm]
   have maskRegs := layout 57 (by decide) (by decide)
   have modeRegs := layout 56 (by decide) (by decide)
+  let R := LabelCountBank.fill (rs.map Prod.fst) high
+    (Function.update initialState.R (caller 58) (List.replicate high Node.tick))
+  have cleanup : (privateTapes.map fun i => 4*(initialState.L i).length+2*(R i).length+4).sum ≤
+      (privateTapes.map fun i => 4*(initialState.L i).length).sum + privateTapes.length*(2*high+4) := by
+    have bound (i) (hi : i ∈ privateTapes) : (R i).length ≤ high := by
+      have blank := freePrivate i (by simpa [privateTapes] using hi)
+      by_cases eq : i = caller 58
+      · subst i
+        have off : caller 58 ∉ rs.map Prod.fst := by
+          intro h
+          obtain ⟨p,hp,h⟩ := List.mem_map.mp h
+          exact callerOutside 58 (List.mem_flatMap.mpr ⟨p,hp,by simp [← h]⟩)
+        simp [R,LabelCountBank.fill,off]
+      · simp [R,LabelCountBank.fill,Function.update_of_ne eq,blank]
+        split <;> simp
+    calc
+      _ ≤ (privateTapes.map fun i => 4*(initialState.L i).length+(2*high+4)).sum :=
+        List.sum_le_sum fun i hi => by have := bound i hi; omega
+      _ = _ := by simp [List.sum_map_add, List.map_const']
   have fillKeep (i) (outside : i ∉ LabelTraversal.slots rs) (off : i ≠ caller 58) : R i = initialState.R i := by
     have nf : i ∉ rs.map Prod.fst := by
       intro h; obtain ⟨p,hp,rfl⟩ := List.mem_map.mp h
@@ -410,13 +426,22 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
         (mk z startState) n (mk finish D) ∧ (ready D [] ∧ D.R mode = modes []) ∧ D.R mask = [] ∧ payload next D ∧
       allLabels.foldr (fun i rest x => ∃ y, action i x y ∧ rest y) (· = next) initialWord by
     obtain ⟨finish,D,n,next,user,time,run,post⟩ := scanRun
-    refine ⟨writer,finish,D,_,next,user.trans (hz.trans (hy.trans user₀)),Nat.add_le_add (Nat.add_le_add_right (Nat.add_le_add time₀ hl) _) time,?_,
+    refine ⟨writer,finish,D,_,next,user.trans (hz.trans (hy.trans user₀)),Nat.add_le_add (Nat.add_le_add (Nat.add_le_add time₀ hl) (Nat.add_le_add_right cleanup 1)) time,?_,
       Exec.seq (Exec.seq (Exec.seq prepare write) clearMasks) run,post⟩
-    intro baseline extra hg hp hf
+    intro extra hf
+    have sameWidth (j : ℕ) (hj : j ∈ allLabels) : (prefixes j).length = (prefixes 0).length := by
+      have first : 0 ∈ allLabels := List.mem_range.mpr (Nat.zero_lt_of_lt (List.mem_range.mp hj))
+      exact (initialReady.2.1 j hj).symm.trans (initialReady.2.1 0 first)
+    have sameCharge (j : ℕ) (hj : j ∈ allLabels) : charge j = charge 0 := by
+      simp only [charge,runBills,generationBill,readBill,conversions,length_matrixWords,sameWidth j hj]
+    have skipBound (j : ℕ) (hj : j ∈ allLabels) : skipCost j ≤ charge 0 := by
+      rw [← sameCharge j hj]
+      exact (Nat.le_add_left _ _).trans (Nat.le_add_right (runBills j) _)
+
     obtain ⟨g₀,unit,generic⟩ := LabelProjector.residue_witness (w := w+1) (by omega) proj idem factor hd rankFits
-    exact Nat.add_le_add (Nat.add_le_add_right (Nat.add_le_add time₀ hl) _)
+    exact Nat.add_le_add (Nat.add_le_add (Nat.add_le_add time₀ hl) (Nat.add_le_add_right cleanup 1))
       (time.trans (directoryDispatchCost_le w d Bcount rankFits (reduce M proj) directory shape charge skipCost badCost
-        baseline extra g₀ unit generic hg hp hf))
+        (charge 0) extra g₀ unit generic (fun j hj _ _ => (sameCharge j hj).le) (fun j hj _ => skipBound j hj) hf))
   apply classifiedPayloadScan_exec body mask mode (caller.injective.ne (by decide)) _ fallback skip liveBit badBit
     branchCost (fun is D => ready D is) payload action _ _ allLabels initialWord z startState
     r₂ p₂ bits initialModes
