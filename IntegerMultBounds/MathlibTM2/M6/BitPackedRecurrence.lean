@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.M6.BitDescriptorRecurrence
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackGoodParentSetup
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackGoodRecordRoundTrip
 
 /-! PR589 root cost with the stopped packed coordinate budget at each leaf. -/
@@ -38,6 +39,90 @@ theorem scheduledPacked_exec [M8.Machine.Net] {T work Q : ℕ} {F U : Type}
   exact packedCoordinates_exec _ (LeafCore.positive_of_volume
     (Nat.pos_of_mul_pos_right (measures.2.symm ▸ positive))) w rfl _ parent parentInv
     reciprocal pivot unit io roles f p node scalar arity st free fits cap
+
+open IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Host in
+noncomputable def scheduledAdapterTime {P U : Type} [Fintype P] {T A : ℕ}
+    (body : P → Pr P T 217 A U) (machine : Fin 55 ↪ Fin T) (digits : ℕ)
+    (v : Descriptor) (w : ℕ) (i : Fin nodeChildren5.length) (budget : ℕ) : ℕ :=
+  let parent := role v 142080
+  let r := nodeChildren5[i.val]
+  let g := 64-r
+  let hr := (nodeChildren5_le i).trans (by decide : 42 ≤ 64)
+  let H := (prime^(w+1)).size
+  let W := parent.beforeRows*parent.rows*parent.beforeH*parent.between*parent.afterD
+  let K := digits*H+1
+  let middle := (((List.finRange r).map fun j => childWeightTime prime w H j.val).sum+1 +
+    dimensionTime H K (g+g)) + (budget+2+(2*(r*H+r*H+((g+g)*H+K))+7))
+  1 + goodIncomingTime body machine prime w W H W.size r hr + middle +
+    (1 + goodOutgoingTime body machine prime w W H W.size r hr)
+
+open IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Host in
+/-- Every selected rank admits the same adapter rate per child-volume symbol.
+The recursive budget is passed through once, including for repeated ranks. -/
+theorem scheduledAdapter_time {P U : Type} [Fintype P] {T A : ℕ}
+    (body : P → Pr P T 217 A U) (machine : Fin 55 ↪ Fin T) (digits : ℕ) :
+    ∃ C : ℕ, ∀ (v : Descriptor) w (i : Fin nodeChildren5.length) budget,
+      v.width = 64*(w+1) → 0 < volume prime (role v 142080) →
+      scheduledAdapterTime body machine digits v w i budget ≤
+        budget + C * volume prime (scheduledChild prime v i) := by
+  classical
+  have bounds (j : Fin 65) := goodRecordTime_volume_le body machine j.val (64-j.val) digits
+    (show 64 = j.val+(64-j.val) by omega) (by decide) (by omega)
+  choose rate priced using bounds
+  refine ⟨∑ j, rate j,?_⟩
+  intro v w i budget split pos
+  unfold scheduledAdapterTime
+  dsimp only
+  let parent := role v 142080
+  let r := nodeChildren5[i.val]
+  have hr : r ≤ 64 := (nodeChildren5_le i).trans (by decide : 42 ≤ 64)
+  let W := parent.beforeRows*parent.rows*parent.beforeH*parent.between*parent.afterD
+  let j : Fin 65 := ⟨r,by omega⟩
+  have positive : 0 < W := by
+    dsimp only [W]
+    change 0 < volume prime parent at pos
+    simp only [volume, Nat.pos_iff_ne_zero, mul_ne_zero_iff] at pos ⊢
+    tauto
+  have cost := priced j w W budget positive
+  have same : volume prime (scheduledChild prime v i) = volume prime parent := by
+    simp only [scheduledChild,split,Nat.mul_div_cancel_left _ (by decide : 0 < 64)]
+    apply rankDescriptor_volume
+    change v.width = _
+    rw [split,← Nat.add_mul,Nat.add_sub_of_le hr]
+  have size : (prime^(w+1))^(64+64)*W = volume prime parent := by
+    change _ = parent.beforeRows*parent.rows*parent.beforeH*prime^v.width*parent.between*prime^v.width*parent.afterD
+    rw [split,pow_add, Nat.mul_comm 64 (w+1),pow_mul]
+    dsimp only [W]
+    ring
+  exact cost.trans (Nat.add_le_add_left ((Nat.mul_le_mul_right _
+    (Finset.single_le_sum (fun k _ => Nat.zero_le (rate k)) (Finset.mem_univ j))).trans_eq
+    (by rw [size,same])) _)
+
+open IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Host in
+/-- Sum the hosted adapter bills for the selected PR589 schedule in parent
+volume units, keeping each recursive budget at its own occurrence. -/
+theorem scheduledAdapters_node_time {P U : Type} [Fintype P] {T A : ℕ}
+    (body : P → Pr P T 217 A U) (machine : Fin 55 ↪ Fin T) (digits : ℕ) :
+    ∃ C : ℕ, ∀ (v : Descriptor) w (budget : Fin nodeChildren5.length → ℕ),
+      v.width = 64*(w+1) → 142080 ∣ v.rows → 0 < volume prime v →
+      (∑ i, scheduledAdapterTime body machine digits v w i (budget i)) * 142080 ≤
+        (∑ i, budget i) * 142080 + nodeChildren5.length * C * volume prime v := by
+  obtain ⟨C,priced⟩ := scheduledAdapter_time body machine digits
+  refine ⟨C,?_⟩
+  intro v w budget width rows pos
+  have parent := role_volume_mul prime 142080 v rows
+  have live := Nat.pos_of_mul_pos_right (parent.symm ▸ pos)
+  have cost (i : Fin nodeChildren5.length) := Nat.mul_le_mul_right 142080
+    (priced v w i (budget i) width live)
+  have piece (i : Fin nodeChildren5.length) := (rankDescriptor_role_size (M := prime)
+    v 142080 64 (w+1) width ((nodeChildren5_le i).trans (by decide : 42 ≤ 64)) rows).2
+  have child (i : Fin nodeChildren5.length) :
+      volume prime (scheduledChild prime v i)*142080 = volume prime v := by
+    simpa only [scheduledChild,width,Nat.mul_div_cancel_left _ (by decide : 0 < 64)] using piece i
+  simp only [Nat.add_mul,Nat.mul_assoc,child] at cost
+  rw [Finset.sum_mul,Finset.sum_mul]
+  simpa only [Finset.sum_add_distrib,Finset.sum_const,Finset.card_univ,Fintype.card_fin,
+    nsmul_eq_mul,Nat.cast_id,Nat.mul_assoc] using Finset.sum_le_sum (s := Finset.univ) (fun i _ => cost i)
 
 theorem five_packed_root_closed [M8.Machine.Net] {Node : Type*} (layout : Node → Descriptor)
     (child : Node → Fin nodeChildren5.length → Node) (steps : Node → ℕ)
