@@ -2,6 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Cover.LabelRoute
 import IntegerMultBounds.MathlibTM2.M8.RevMachine.RevBudget
+public import IntegerMultBounds.MathlibTM2.M8.ExchangeBound
 
 /-! One circuit for a rational label route at every positive width. -/
 
@@ -99,6 +100,37 @@ theorem realizes (hk : 2 ≤ m*m) (io : Fin T) (σ : Matrix (Fin m) (Fin m) ℚ)
           (width : ℝ)^M8.Machine.BudgetBound.tau) := add_le_add (le_refl _)
             (mul_le_mul_of_nonneg_left sized (Nat.cast_nonneg _))
       _ = _ := by ring
+
+omit [M8.Machine.Net] in
+/-- Bounded rational input entries suffice for the compiler's denominator
+and scalar-instruction checks on both triangular factors. -/
+theorem boundedFactors (U : Matrix (Fin m) (Fin m) ℚ) (pos : 1 ≤ m) (size : m ≤ 529)
+    (bound : ∀ i j, (U i j).num.natAbs ≤ 10^10000 ∧ (U i j).den ≤ 10^10000) :
+    let F := M8.Exchange.factors U
+    (∀ d ∈ factorizationDenominators F, d < prime) ∧
+      (∀ op ∈ LabelAddress.pass F.E₁, FlatCoordinateSchedule.Supported op) ∧
+      (∀ op ∈ LabelAddress.pass F.E₂, FlatCoordinateSchedule.Supported op) := by
+  intro F
+  have small := M8.Exchange.numbersE_le U (by simpa using pos) (by simpa using size) bound
+  have ceiling := (M8.Exchange.le_coefficientBound small)
+  have numbers := M8.Exchange.numbers_le_coefficientBound U (by simpa using pos) (by simpa using size) bound
+  have support (E : Matrix (Fin m) (Fin m) ℚ) (lower : IntegerMultBounds.Swap.Shear.LowerTriangular E)
+      (unit : IsUnit E) (entries : M8.Height.Bounded E (2^M8.Exchange.facE U)) :
+      ∀ op ∈ LabelAddress.pass E, FlatCoordinateSchedule.Supported op := by
+    have height (i j) := (M8.Exchange.ht_le_of_bounded entries (M8.Exchange.facE_le_numbersE U) i j).trans ceiling
+    apply LabelPass.supported
+    · intro i
+      exact Or.inr ⟨(OrderedAffine.diagonal_unit lower unit i).ne_zero,
+        (M8.Height.num_le_ht _).trans (height i i),(M8.Height.den_le_ht _).trans (height i i)⟩
+    · intro i j _
+      exact Or.inr ⟨(M8.Height.num_le_ht _).trans (height i j),(M8.Height.den_le_ht _).trans (height i j)⟩
+  obtain ⟨h₁,_,h₂,_⟩ := M8.Exchange.factors_bounded U
+  refine ⟨?_,support _ F.lower₁ (isUnit_iff_exists.mpr ⟨_,F.inv₁,F.inv₁'⟩) h₁,
+    support _ F.lower₂ (isUnit_iff_exists.mpr ⟨_,F.inv₂,F.inv₂'⟩) h₂⟩
+  intro d hd
+  apply lt_of_le_of_lt (numbers d ?_) Shared50ModularControl.coefficientBound_lt_prime
+  simp only [M8.Exchange.numbers,Finset.mem_union]
+  exact Or.inl (Or.inl (Or.inl (Or.inl hd)))
 
 end
 end IntegerMultBounds.MathlibTM2.Cover.LabelFactorization

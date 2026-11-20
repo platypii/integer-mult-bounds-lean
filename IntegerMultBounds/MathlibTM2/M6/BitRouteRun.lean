@@ -161,49 +161,40 @@ theorem dataPort_call [M8.Machine.Net] {T : ℕ} (io : Fin T) (n : Fin 9) (j : F
   rw [← move _ _ xy g,back]
   exact action _
 
-/-- Run a helper basis change followed by the slot permutation. The basis
-block is shared by all slots of the port; the permutation uses at most 63
-column exchanges. -/
-theorem helperSlot_runs [M8.Machine.Net] {T : ℕ} (io : Fin T) (c : PortCertificate)
-    (slot : ℕ) (fits : slot ≤ 55) (basis : Graph.Block (T+24) prime) (leading : Blocks.Leading basis) :
+-- The separate basis and slot-permutation construction is in 34789f13.
+/-- Compile the full helper chart, including its slot permutation, in either
+direction. The chart's bounded rational entries suffice for every atom width. -/
+theorem helperChart_runs [M8.Machine.Net] {T : ℕ} (io : Fin T) (c : PortCertificate)
+    (checked : c.Checked) (slot : ℕ) (fits : slot ≤ 55) (inverse : Bool) :
+    let H := (c.helperChart slot fits).submatrix stageAxis.symm stageAxis.symm
+    let σ := if inverse then H.transpose else H
     ∃ (program : Graph.Block (T+24) prime) (C : ℕ), Blocks.Leading program ∧
-      ∀ (v : Descriptor) (w B budget : ℕ), 0 < w → 0 < B →
+      ∀ (v : Descriptor) (w B : ℕ), 0 < w → 0 < B →
       v.beforeH = B*prime^(64*(w*64)) → v.Positive →
-      let coords := fun E : Matrix Axis Axis ℚ => (reduce (prime^w) E).submatrix stageAxis.symm stageAxis.symm
-      let d := words (LabelSchedule.base v w)
       ∀ (roles : Tapes T prime) (x : Fin (volume prime v) → ZMod 2),
-      (∃ y : Fin (volume prime v) → ZMod 2,
-        LabelPermutation.Transport v B w (fun g => g * coords (helperBasis c)) (ext x) (ext y) ∧
-        GraphContract.Runs basis (LabelCall.bank roles v d)
-          (LabelCall.bank (setTape roles io (sourceWord y) 0) v d) budget) →
-      ∃ out : Fin (volume prime v) → ZMod 2,
-        LabelPermutation.Transport v B w (fun g => g * coords (c.helperChart slot fits)) (ext x) (ext out) ∧
-        GraphContract.Runs program (LabelCall.bank roles v d)
-          (LabelCall.bank (setTape roles io (sourceWord out) 0) v d)
-          (budget + C*volume prime v + 63*LeafCore.coreCost (volume prime v) (w*64)) := by
-  obtain ⟨π,chart⟩ := helperChart_blocks c slot fits
-  let perm := (stageAxis.symm.trans π).trans stageAxis
-  obtain ⟨ps,len,run⟩ := LabelRoute.pivot_runs perm io
-  obtain ⟨C,cost⟩ := LabelFactorization.overhead ps
-  refine ⟨Blocks.seqB basis (LabelRoute.pivot io ps),C,Blocks.seq_leading _ _,?_⟩
-  intro v w B budget hw hb shape pos coords d roles x input
-  obtain ⟨y,xy,r₁⟩ := input
-  obtain ⟨out,yo,r₂⟩ := run v w B (Nat.mul_pos hw (by decide)) hb shape pos
-    (setTape roles io (sourceWord y) 0) y (by simp [setTape]) (by simp [setTape])
-  simp only [SharedPlacementAlphabet.setTape_setTape] at r₂
-  refine ⟨out,?_,Blocks.runs_mono (Blocks.seq_runs leading (Blocks.seq_leading _ _) r₁ r₂) ?_⟩
-  · intro g a ha row hr b hB h hh mid hm k hk t ht
-    let f := g * coords (helperBasis c)
-    have columns : (fun i j => f i (perm j)) = g * coords (c.helperChart slot fits) := by
-      funext i j
-      simp only [f,Matrix.mul_apply,coords,perm,Equiv.trans_apply,Equiv.symm_apply_apply,
-        chart,Matrix.submatrix_apply,reduce,Matrix.map_apply,id_eq]
-    let read := fun label : Matrix (Fin 64) (Fin 64) (ZMod (prime^w)) => ext out
-      (RecursiveInterchangeLayout.index prime v a row (b*prime^(64*(w*64))+(LabelAddress.address label).val) h mid k t)
-    exact (congrArg read columns.symm).trans ((yo f a ha row hr b hB h hh mid hm k hk t ht).trans
-      (xy g a ha row hr b hB h hh mid hm k hk t ht))
-  · have priced := cost v w B (by decide) hw hb shape pos
-    change LabelRoute.pivotCost v w ps + 2 ≤ C*volume prime v + 63*_ at priced
-    omega
+        roles.head io = 0 → roles.tape io = sourceWord x →
+        let d := words (LabelSchedule.base v w)
+        ∃ y : Fin (volume prime v) → ZMod 2,
+          LabelPermutation.Transport v B w (fun g => g * reduce (modulus w) σ) (ext x) (ext y) ∧
+          let cost := C*volume prime v + 63*LeafCore.coreCost (volume prime v) (w*64)
+          GraphContract.Runs program (LabelCall.bank roles v d)
+            (LabelCall.bank (setTape roles io (sourceWord y) 0) v d) cost ∧
+          ∀ width : ℕ, w*64 ≤ width → (cost : ℝ) ≤
+            ((C : ℝ) + 63 * |LeafCore.C| * (width : ℝ)^M8.Machine.BudgetBound.tau)*volume prime v := by
+  intro H σ
+  have inv : H.transpose * H = 1 := by
+    change ((c.helperChart slot fits).transpose.submatrix stageAxis.symm stageAxis.symm) * _ = _
+    rw [submatrix_mul_equiv,c.helperChart_orthonormal checked,submatrix_one_equiv]
+  have unit : IsUnit H := isUnit_iff_exists.mpr ⟨H.transpose,mul_eq_one_comm.mp inv,inv⟩
+  have bound (i j) := helperChart_entry c checked slot fits (stageAxis.symm i) (stageAxis.symm j)
+  have ten : 2 ≤ (10:ℕ)^10000 := (by decide : 2 ≤ 10).trans
+    (by simpa only [pow_one] using (pow_le_pow_right₀ (by decide : 1 ≤ (10:ℕ)) (by decide : 1 ≤ 10000)))
+  have entries (i j) : (σ.transpose i j).num.natAbs ≤ 10^10000 ∧ (σ.transpose i j).den ≤ 10^10000 := by
+    cases inverse
+    · exact ⟨(bound j i).1.trans ten,(bound j i).2.trans ten⟩
+    · exact ⟨(bound i j).1.trans ten,(bound i j).2.trans ten⟩
+  obtain ⟨hd,h₁,h₂⟩ := LabelFactorization.boundedFactors σ.transpose (by decide) (by decide) entries
+  exact LabelFactorization.realizes (by decide) io σ (by cases inverse <;> first | exact unit | exact H.isUnit_transpose.mpr unit)
+    (M8.Exchange.factors σ.transpose) hd h₁ h₂
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode

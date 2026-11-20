@@ -111,54 +111,34 @@ theorem stageFactor_reduce (c : PortCertificate) (checked : c.Checked) (s : Fin 
 /-- A helper chart consists of the half-line, the seven complement columns,
 and exterior coordinate columns, permuted into the slot order. -/
 theorem helperChart_entry (c : PortCertificate) (checked : c.Checked) (x : ℕ) (hx : x ≤ 55)
-    (a b : Axis) : Occurs (c.helperChart x hx a b) := by
-  change Occurs (c.fullChart a (slotPerm x hx b))
+    (a b : Axis) :
+    (c.helperChart x hx a b).num.natAbs ≤ 2 ∧ (c.helperChart x hx a b).den ≤ 2 := by
+  let small := fun q : ℚ => q.num.natAbs ≤ 2 ∧ q.den ≤ 2
+  have half {z : ℤ} (lo : -2 ≤ z) (hi : z ≤ 2) : small ((z : ℚ)/2) := by
+    interval_cases z <;> decide +kernel
+  change small (c.fullChart a (slotPerm x hx b))
   generalize slotPerm x hx b = k
-  have zero : Occurs 0 := by simpa using half_occurs (z := 0) (by decide) (by decide)
-  have one : Occurs 1 := scale_occurs (sign_scale (Or.inl rfl))
+  have zero : small 0 := by decide
+  have one : small 1 := by decide
   rcases k with l | (k | y) <;> rcases a with i | z
-  · change Occurs ((c.line i : ℚ)/2)
+  · change small ((c.line i : ℚ)/2)
     have sq := Finset.single_le_sum (f := fun j => c.line j * c.line j)
       (fun j _ => mul_self_nonneg _) (Finset.mem_univ i)
     rw [checked.1] at sq
-    apply half_occurs <;> nlinarith
+    apply half <;> nlinarith
   · exact zero
   · obtain ⟨n,lo,hi,eq⟩ := c.spread_entry checked 0 i (0,k)
-    change Occurs (c.complement i k)
+    change small (c.complement i k)
     simp only [PortCertificate.spread,Matrix.of_apply,ite_true,eq_self] at eq
     rw [eq]
-    exact half_occurs lo hi
+    exact half lo hi
   · exact zero
   · exact zero
-  · change Occurs ((1 : Matrix Exterior Exterior ℚ) z y)
+  · change small ((1 : Matrix Exterior Exterior ℚ) z y)
     rw [one_apply]
     split <;> assumption
 
-/-- Number the line and its seven complement columns in the local eight-axis
-block, leaving the exterior axes in place. -/
-def helperAxis : ChartAxis ≃ Axis :=
-  (Equiv.sumAssoc (Fin 1) (Fin 7) Exterior).symm.trans
-    (Equiv.sumCongr finSumFinEquiv (Equiv.refl Exterior))
-
-def helperBasis (c : PortCertificate) : Matrix Axis Axis ℚ :=
-  let basis : Matrix (Fin 8) (Fin 8) ℚ := fun i j =>
-    Sum.elim (fun _ => (c.line i : ℚ)/2) (c.complement i) (finSumFinEquiv.symm j : Fin 1 ⊕ Fin 7)
-  fromBlocks basis 0 0 1
-
-/-- The slot selects a permutation of one fixed port basis. Only its eight
-local axes require a basis change. -/
-theorem helperChart_blocks (c : PortCertificate) (x : ℕ) (hx : x ≤ 55) :
-    ∃ π : Equiv.Perm Axis, c.helperChart x hx = (helperBasis c).submatrix id π := by
-  let perm := fun a => helperAxis (slotPerm x hx a)
-  let π := Equiv.ofBijective perm (Finite.injective_iff_bijective.mp
-    (helperAxis.injective.comp (slotPerm_injective x hx)))
-  refine ⟨π,?_⟩
-  ext a b
-  change c.fullChart a (slotPerm x hx b) =
-    helperBasis c a (helperAxis (slotPerm x hx b))
-  generalize slotPerm x hx b = k
-  rcases k with l | (j | y) <;> cases a <;>
-    simp [fromBlocks,helperAxis,helperBasis,PortCertificate.fullChart,PortCertificate.halfLine,PortCertificate.flag]
+-- The explicit slot permutation and eight-axis basis decomposition are in 34789f13.
 
 /-- Over every prime-power width the helper chart's transpose undoes the
 chart in either order, and its eight local columns are the selected slot. -/
@@ -169,8 +149,7 @@ theorem helperChart_reduce (c : PortCertificate) (checked : c.Checked) (x : ℕ)
       H * reduce (prime^w) PortCertificate.localChart = reduce (prime^w) (c.slotChart x) := by
   intro H
   have adm : Admissible (prime^w) (c.helperChart x hx) := fun i j =>
-    Nat.Coprime.pow_right w ((Nat.coprime_of_lt_prime (c.helperChart x hx i j).den_pos.ne' (denominator_bound
-      (helperChart_entry c checked x hx i j)) prime_prime).symm)
+    Nat.Coprime.pow_right w ((Nat.coprime_of_lt_prime (c.helperChart x hx i j).den_pos.ne' ((helperChart_entry c checked x hx i j).2.trans_lt Shared50ModularControl.prime_odd) prime_prime).symm)
   have inv := reduce_inverse (prime^w) (fun i j => adm j i) adm (c.helperChart_orthonormal checked x hx)
   change H.transpose * H = 1 at inv
   refine ⟨inv,mul_eq_one_comm.mp inv,?_⟩
