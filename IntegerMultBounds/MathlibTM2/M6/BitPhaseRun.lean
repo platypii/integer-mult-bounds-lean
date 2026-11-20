@@ -231,6 +231,105 @@ theorem phaseRead_label {k w B K : ℕ} (owner : Fin 661 ↪ Fin k) (r : Fin 661
   rw [← pos,M8.RevMachine.ext_cast,M8.RevMachine.ext_apply]
   simp [phaseRead,Copy.extendStored,r.isLt,i]
 
+open IntegerMultBounds.MathlibTM2.Cover RecursiveInterchangeLayout in
+noncomputable def scatterRead {w B K : ℕ} (n : Fin 9) (r : Fin 32) (d : Fin 5)
+    (g : Matrix (Fin 64) (Fin 64) (ZMod (prime^w))) (z : LabelEntry.Cell (copyLabelLayout w B K) B)
+    (data : Fin 142081 → Fin (volume prime (copyLabelLayout w B K)) → ZMod 2) :
+    ℕ → AddressStream (ZMod (prime^w)) :=
+  Copy.extendStored fun i s => chartRead (data (ownerTape n r d i)) (g*registerChart w n i.val)
+    {z with a := copyActive s}
+
+open IntegerMultBounds.MathlibTM2.Cover in
+private theorem scatterRead_window {w B K : ℕ} {n : Fin 9} {r : Fin 32} {d : Fin 5}
+    {life : Copy.Lifecycle} (scheduled : life ∈ Copy.lifecycles) {data out}
+    (effect : CopyWindowEffect n r d life w B K data out)
+    (g : Matrix (Fin 64) (Fin 64) (ZMod (prime^w))) (z : LabelEntry.Cell (copyLabelLayout w B K) B) :
+    scatterRead n r d g z out = scatterWindow (selectedWord w) life (scatterRead n r d g z data) := by
+  obtain ⟨_,other,source,targets⟩ := effect
+  obtain ⟨nodup,noTmp,_,_⟩ := Copy.wellformed life scheduled
+  have src := (Copy.source_bounds life scheduled).2
+  funext i s
+  unfold scatterWindow
+  by_cases tmp : i = 661
+  · subst i
+    simp [scatterRead,Copy.extendStored]
+  rw [Function.update_of_ne tmp,Copy.addTargets_eq _ nodup noTmp,Function.update_self,Function.update_of_ne tmp]
+  by_cases target : i ∈ life.targets
+  · have hi := (Copy.target_bounds life scheduled i target).2.trans (by decide : 222 < 661)
+    have h := targets i target (g*registerChart w n i) {z with a := copyActive s}
+    rw [Matrix.mul_assoc g, mul_eq_one_comm.mp (registerChart_inverse w n i),Matrix.mul_one] at h
+    simpa [scatterRead,Copy.extendStored,hi,src,target,Fin.ofNat, Nat.mod_eq_of_lt,Pi.add_apply] using h
+  · rw [if_neg target]
+    by_cases hi : i < 661
+    · by_cases eq : i = life.source
+      · subst i
+        have h := congrFun (source (g*registerChart w n life.source)) {z with a := copyActive s}
+        simpa [scatterRead,Copy.extendStored,src,Fin.ofNat,Nat.mod_eq_of_lt] using h
+      · let k := ownerTape n r d ⟨i,hi⟩
+        have distinct (j : ℕ) (hj : j < 661) (ne : i ≠ j) : k ≠ ownerTape n r d (Fin.ofNat 661 j) := by
+          intro same
+          have he := congrArg Fin.val (ownerTape_injective n r d same)
+          exact ne (he.trans (Nat.mod_eq_of_lt hj))
+        have keep := other k (Fin.castSucc_ne_last _) (distinct _ src eq) (by
+          intro mem
+          obtain ⟨j,hj,same⟩ := List.mem_map.mp mem
+          exact distinct j ((Copy.target_bounds life scheduled j hj).2.trans (by decide)) (fun e => target (e ▸ hj)) same.symm)
+        simp only [scatterRead,Copy.extendStored,hi,↓reduceDIte]
+        exact congrArg (fun x => chartRead x (g*registerChart w n i) {z with a := copyActive s}) keep
+    · simp [scatterRead,Copy.extendStored,hi]
+
+open IntegerMultBounds.MathlibTM2.Cover in
+theorem scatterRead_schedule {w B K : ℕ} {n : Fin 9} {r : Fin 32} {d : Fin 5}
+    {lives : List Copy.Lifecycle} (scheduled : ∀ life ∈ lives, life ∈ Copy.lifecycles) {data out}
+    (effect : CopyScheduleEffect n r d w B K lives data out)
+    (g : Matrix (Fin 64) (Fin 64) (ZMod (prime^w))) (z : LabelEntry.Cell (copyLabelLayout w B K) B) :
+    scatterRead n r d g z out = lives.foldl (fun b l => scatterWindow (selectedWord w) l b)
+      (scatterRead n r d g z data) := by
+  induction lives generalizing data with
+  | nil => exact congrArg (scatterRead n r d g z) effect.symm
+  | cons l ls ih =>
+    obtain ⟨mid,step,rest⟩ := effect
+    rw [ih (fun a h => scheduled a (List.mem_cons_of_mem _ h)) rest,
+      scatterRead_window (scheduled _ List.mem_cons_self) step]
+    rfl
+
+open IntegerMultBounds.MathlibTM2.Cover in
+theorem scatterRead_endpoint {w B K : ℕ} {n : Fin 9} {r : Fin 32} {d : Fin 5} {data out}
+    (effect : CopyScheduleEffect n r d w B K Copy.lifecycles data out)
+    (g : Matrix (Fin 64) (Fin 64) (ZMod (prime^w))) (z : LabelEntry.Cell (copyLabelLayout w B K) B) :
+    let frame := fun i => selectedFrame w (Frames.beforeScatter i)
+    let stored := FramedCircuit.decode frame (scatterRead n r d g z data)
+    ∀ i : Fin 661, scatterRead n r d g z out i.val =
+      frame i.val (FramedCircuit.moduleRun (sectionscatter.map RawGate.toCircuit) stored i.val) := by
+  intro frame stored i
+  let live := fun j : Fin 661 => stored j.val
+  have full : Copy.extendStored live = stored := by
+    funext j
+    by_cases h : j < 661
+    · simp [Copy.extendStored,h,live]
+    · simp [stored,FramedCircuit.decode,scatterRead,Copy.extendStored,h]
+  have encoded : FramedCircuit.encode frame (Copy.extendStored live) = scatterRead n r d g z data := by
+    rw [full,FramedCircuit.encode_decode]
+  have h := Copy.decoded_scatter (selectedFrame w) live i
+  change Copy.run (selectedFrame w) Copy.lifecycles (FramedCircuit.encode frame (Copy.extendStored live)) i.val = _ at h
+  rw [encoded,full] at h
+  rw [scatterRead_schedule (fun _ h => h) effect,(modular_scatter w).choose_spec.2.2.2.1]
+  exact h
+
+private theorem phaseLogicalRead (w : ℕ) (gates : List RawGate) (current : ℕ → ℕ)
+    (checked : ∀ p ∈ Frames.edges gates current, Geometry.Moves.CheckedPair p)
+    (input : ℕ → AddressStream (ZMod (prime^w))) :
+    let frame := selectedFrame w
+    runPhase (selectedWord w) (FramedCircuit.compile (fun i => frame (current i)) (gates.map (Frames.framedGate frame)))
+        (Frames.edges gates current) input =
+      FramedCircuit.encode (fun i => frame (Frames.run gates current i))
+        (FramedCircuit.moduleRun (gates.map RawGate.toCircuit)
+          (FramedCircuit.decode (fun i => frame (current i)) input)) := by
+  intro frame
+  rw [runPhase_eq _ frame (modular_scatter w).choose_spec.1 _ _ (Frames.compile_pairs ..) checked]
+  simpa only [FramedCircuit.encode_decode] using
+    Frames.compile_semantics frame gates current (FramedCircuit.decode (fun i => frame (current i)) input)
+
 open RecursiveInterchangeLayout (Descriptor volume) in
 private theorem flatCopyStage {k V : ℕ} {v : Descriptor} (size : volume prime v = V)
     (effect : (Fin k → Fin (volume prime v) → ZMod 2) → (Fin k → Fin (volume prime v) → ZMod 2) → Prop)
@@ -293,7 +392,9 @@ theorem invocation_stage [Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
         9*engine.time (copyChild w W) hs + 9
       let view := fun (data : Fin 142081 → Fin V → ZMod 2) k i => data k (Fin.cast (copyLabel_volume w B K) i)
       let phase := fun done (x y : Fin 142081 → Fin V → ZMod 2) =>
-        (∀ j, phaseRead owner y j = runPhase (selectedWord w) (instructions done) (edges done) (phaseRead owner x j)) ∧
+        (∀ j, phaseRead owner y j = FramedCircuit.encode (fun i => frame (Frames.run (gates done) (current done) i))
+          (FramedCircuit.moduleRun ((gates done).map RawGate.toCircuit)
+            (FramedCircuit.decode (fun i => frame (current done i)) (phaseRead owner x j)))) ∧
         ∀ i, (∀ a, owner a ≠ i) → y i = x i
       ∃ stage : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V)),
         stage.cost ≤ phaseCost false + scatterCost + phaseCost true + 2 ∧
@@ -314,6 +415,9 @@ theorem invocation_stage [Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
     change middle.cost ≤ scatterCost at midCost
     omega
   · intro data
-    exact ⟨_,_,⟨leftRead data,leftOff data⟩,midRead _,rightRead _,rightOff _⟩
+    have checked := Geometry.Moves.phase_checked
+    rw [Geometry.Moves.phaseEdges,List.forall_mem_append] at checked
+    refine ⟨_,_,⟨fun j => (leftRead data j).trans (phaseLogicalRead w _ _ checked.1 _),leftOff data⟩,
+      midRead _,fun j => (rightRead _ j).trans (phaseLogicalRead w _ _ checked.2 _),rightOff _⟩
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
