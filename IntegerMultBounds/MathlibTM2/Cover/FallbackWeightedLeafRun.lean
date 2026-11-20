@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.ShortConvSetupOps
+import IntegerMultBounds.MathlibTM2.Host.ChunkSwap
 import IntegerMultBounds.Machine.RecursiveHeaderBounds
 import IntegerMultBounds.MathlibTM2.Cover.FallbackPrefixVolume
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackGoodRecordWeights
@@ -229,6 +230,19 @@ private theorem signReleaseCost (N push : ℕ) (pos : 0 < N) :
     12000*N+(125+31*(6*(push*(12000*N)))) ≤ (12000*(1+186*push)+125)*N := by
   nlinarith only [pos]
 
+open M8.Machine in
+private theorem zeroBranchCapacity [M8.Machine.Net] :
+    217 ≤ stateCount (ArbitraryWidthOriginalZeroBranch.zeroProgram (t := 7) Fin.castSucc (Fin.last 6)) := by
+  unfold stateCount
+  omega
+
+open M8.Machine in
+/-- The zero-width branch alone supplies enough states for the leaf shears
+and sign routine. The positive-width branch adds to the same state space. -/
+theorem leafCoreCapacity [M8.Machine.Net] (io : Fin T) : 217 ≤ (LeafCore.core io).states :=
+  zeroBranchCapacity.trans ((Nat.le_add_right _ (stateCount
+    (ArbitraryWidthOriginalRun.program (t := 7) Fin.castSucc (Fin.last 6)))).trans (Nat.le_add_right _ 1))
+
 theorem weightedLeaf_exec [M8.Machine.Net] [NeZero M] (v : Descriptor) (positive : v.Positive)
     (w : ℕ) (width : v.width = w+1) (radix : prime^v.width = M)
     (weight inv : ZMod M) (unit : weight*inv = 1) (io : Fin T) (roles : Tapes T prime)
@@ -251,8 +265,8 @@ theorem weightedLeaf_exec [M8.Machine.Net] [NeZero M] (v : Descriptor) (positive
       (_other : ∀ j ∈ [gap,tail,pair 0,pair 12], j ≠ r 4 ∧ j ≠ r 12),
       let dims : Fin 4 → Fin K := ![r 4,gap,r 12,tail]
       ∀
-      (_pairOff : ∀ i j, j ∈ [0,4,12] → sim i ≠ pair j) (_dimsOff : ∀ i j, sim i ≠ dims j) (slot : Fin block.tapes) (_leading : slot.val = io.val)
-      (capacity : 217 ≤ block.states),
+      (_pairOff : ∀ i j, j ∈ [0,4,12] → sim i ≠ pair j) (_dimsOff : ∀ i j, sim i ≠ dims j) (slot : Fin block.tapes) (_leading : slot.val = io.val),
+      let capacity := leafCoreCapacity io
       let src := fun b : Bool => ![dims 0,dims 1,if b then pair 12 else pair 0,dims 2,dims 3,pair 4]
       let ports := sim.trans (Fin.castAddEmb 31)
       let shear := statePlacedNormalized (Record.payloadBank (sim slot) (22 : Fin 31)) capacity
@@ -551,7 +565,7 @@ theorem packedLeafPlacement {common record priv A : ℕ} (bank : Tapes common A)
         simpa only [(Embed.raw_right _ _).1,(Embed.raw_right _ _).2,Function.comp_apply,sim,
           appendPrivate_work,sub_zero] using (empty j x).symm
 
-theorem packedWeightedLeaf_exec [M8.Machine.Net] {m d : ℕ} (v : Descriptor) (positive : v.Positive)
+theorem packedWeightedLeaf_exec [M8.Machine.Net] [Fintype F] {m d : ℕ} (v : Descriptor) (positive : v.Positive)
     (w : ℕ) (width : v.width = w+1)
     (parent : Fin m → ZMod (prime^(w+1))) (j : Fin m) (parentInv : ZMod (prime^(w+1)))
     (reciprocal : parent j * parentInv = 1) (pivot : Fin d → ZMod (prime^(w+1)))
@@ -581,7 +595,7 @@ theorem packedWeightedLeaf_exec [M8.Machine.Net] {m d : ℕ} (v : Descriptor) (p
     let tail := dst 5
     let dims : Fin 4 → Fin K := ![r 4,gap,r 12,tail]
     let slot := (LeafCore.roleSlot io).castAdd LeafCore.small
-    ∀ (capacity : 217 ≤ block.states),
+    let capacity := leafCoreCapacity io
       let src := fun b : Bool => ![dims 0,dims 1,if b then pair 12 else pair 0,dims 2,dims 3,pair 4]
       let ports := sim.trans (Fin.castAddEmb 31)
       let shear := statePlacedNormalized (Record.payloadBank (sim slot) (22 : Fin 31)) capacity
@@ -616,8 +630,10 @@ theorem packedWeightedLeaf_exec [M8.Machine.Net] {m d : ℕ} (v : Descriptor) (p
           ∀ j : Fin K, (∀ i, sim i ≠ j) →
             D.L (j.castAdd 31) = S.L (j.castAdd 31) ∧ D.R (j.castAdd 31) = S.R (j.castAdd 31)
       ∀ (body : F → Pr F (K+31) block.states prime U) (u : HS (K+31) block.states prime U)
-        (S : Stacks (K+31) prime) push, (∀ b, Fast.Main.mnProgPush (prog b) ≤ push) →
-        Fast.Main.mnProgPush lastProg ≤ push → Fast.Main.mnProgPush sign ≤ push → (∀ f, Fast.Main.mnProgPush (body f) ≤ push) →
+        (S : Stacks (K+31) prime),
+        let bodyPush := Fast.Main.mnPushC body
+        let push := max (max (Fast.Main.mnProgPush (prog false)) (Fast.Main.mnProgPush (prog true)))
+          (max (Fast.Main.mnProgPush lastProg) (max (Fast.Main.mnProgPush sign) bodyPush))
         (∀ j : Fin 31, S.L (j.natAdd K) = [] ∧ S.R (j.natAdd K) = []) →
         S.R ((caller 18).castAdd 31) = [] →
         ∀ (pivotTail parentTail : List (Fin (prime+4))),
@@ -642,7 +658,11 @@ theorem packedWeightedLeaf_exec [M8.Machine.Net] {m d : ℕ} (v : Descriptor) (p
           Exec body ((signedChildPair prime j.val i.val coeff true).seq
             (call.seq (Mult.ShortConv.clearWords [coeff 0,coeff 14,coeff 12]))) (mk u S) n (mk z D) ∧
           output S D := by
-  intro M weight inv P G B size c word head input block common host K sim caller workBank pair r dst gap tail dims slot capacity src ports shear prog lastProg work stage result y xs len signWord signSrc load bank child sign output body u S push hp hl hsign hb free spare pivotTail parentTail recordInputs commonRep privateBlank rr setup leaf fields headers readFields call coeff coefficientRate
+  intro M weight inv P G B size c word head input block common host K sim caller workBank pair r dst gap tail dims slot capacity src ports shear prog lastProg work stage result y xs len signWord signSrc load bank child sign output body u S bodyPush push free spare pivotTail parentTail recordInputs commonRep privateBlank rr setup leaf fields headers readFields call coeff coefficientRate
+  have hp (b : Bool) : Fast.Main.mnProgPush (prog b) ≤ push := by cases b <;> dsimp only [push] <;> omega
+  have hl : Fast.Main.mnProgPush lastProg ≤ push := by dsimp only [push]; omega
+  have hsign : Fast.Main.mnProgPush sign ≤ push := by dsimp only [push]; omega
+  have hb (f) : Fast.Main.mnProgPush (body f) ≤ push := (Fast.Main.mn_progPush_le_pushC body f).trans (by dsimp only [push,bodyPush]; omega)
   have placement := packedLeafPlacement (record := 24) (priv := LeafCore.small)
     (CommonBank.bank roles (Routines.hdr v) f p node scalar ctr st)
     (fun j => S.L (j.castAdd 31)) (fun j => S.R (j.castAdd 31))
@@ -704,7 +724,7 @@ theorem packedWeightedLeaf_exec [M8.Machine.Net] {m d : ℕ} (v : Descriptor) (p
         (show prime^v.width = M by rw [width]) weight inv unit io roles f p node scalar ctr st word head input
         sim pair r gap tail dst rowSlots rfl rfl fieldsOff scratchOff pairKeep rfl other
         (fun k a ha => pairOff k a (by simp at ha ⊢; rcases ha with h | h | h <;> simp [h]))
-        dimsOff slot leading capacity body y E push hp hl hsign hb
+        dimsOff slot leading body y E push hp hl hsign hb
         (fun k => ⟨(congrFun hL _).trans (free k).1,(keep _ (privateOff k)).trans (free k).2⟩)
         (fun k hk => (keep _ (distinct _ (fieldPair k hk))).trans (fieldEmpty k hk))
         (fun k hk => (keep _ (distinct _ (pairScratch k hk))).trans (empty k hk))
@@ -735,5 +755,54 @@ theorem packedWeightedLeaf_exec [M8.Machine.Net] {m d : ℕ} (v : Descriptor) (p
   exact ⟨z,D,t,hz,by dsimp only at ht charge; dsimp only [coefficientRate,M]; omega,run,post⟩
 
 end
+
+/-- Schedule one verified atom-pair run per active coordinate. Each step sees
+its own descriptor view, while the conclusion acts on the full rank fields. -/
+theorem weightedCoordinates_exec {r M q w K Q A : ℕ} [NeZero M] {α : Type*}
+    (v : Descriptor) (width : v.width = r) (radix : M = q^w)
+    (weight inv : Fin r → ZMod M) (unit : ∀ i, weight i * inv i = 1)
+    (body : F → Pr F K Q A U) (call : Fin r → Pr F K Q A U) (budget : Fin r → ℕ)
+    (ready : Stacks K A → (ℕ → α) → Prop) :
+    let view := fun i : Fin r => {(RecursiveInterchangeLayout.child M 1 1 v i i.rev) with width := w}
+    let addr := fun a row pre mid post (x : IntegerMultBounds.Swap.Shear.State (Fin r) (ZMod M)) =>
+      index M v a row pre (FlatCoordinateLayout.rank x.1).val mid (FlatCoordinateLayout.rank x.2).val post
+    (∀ i u S word, ready S word → ∃ z D out n, z.user = u.user ∧ n ≤ budget i ∧
+      Exec body (call i) (mk u S) n (mk z D) ∧ ready D out ∧
+      ∀ a < v.beforeRows, ∀ row < v.rows, ∀ pre < (view i).beforeH, ∀ mid < (view i).between,
+        ∀ post < (view i).afterD, ∀ h t : ZMod M,
+        out (index q (view i) a row pre (weight i*t).val mid (inv i*h).val post) =
+          word (index q (view i) a row pre h.val mid t.val post)) →
+    ∀ u S word, ready S word → ∃ z D out n, z.user = u.user ∧ n ≤ ((List.finRange r).map budget).sum+1 ∧
+      Exec body (Prog.seqList ((List.finRange r).map call)) (mk u S) n (mk z D) ∧ ready D out ∧
+      ∀ a < v.beforeRows, ∀ row < v.rows, ∀ pre < v.beforeH, ∀ mid < v.between, ∀ post < v.afterD, ∀ x,
+        out (addr a row pre mid post (Weighted.child r weight inv x)) = word (addr a row pre mid post x) := by
+  intro view addr step
+  have run (is : List (Fin r)) : ∀ u S word, ready S word → ∃ z D out n, z.user = u.user ∧ n ≤ (is.map budget).sum+1 ∧
+      Exec body (Prog.seqList (is.map call)) (mk u S) n (mk z D) ∧ ready D out ∧
+      ∀ a < v.beforeRows, ∀ row < v.rows, ∀ pre < v.beforeH, ∀ mid < v.between, ∀ post < v.afterD, ∀ x,
+        out (addr a row pre mid post (is.foldl (Weighted.leafAt weight inv) x)) = word (addr a row pre mid post x) := by
+    induction is with
+    | nil =>
+      intro u S word initial
+      exact ⟨u,S,word,1,rfl,le_rfl,Exec.act _ _,initial,by intros; rfl⟩
+    | cons i is ih =>
+      intro u S word initial
+      obtain ⟨y,E,next,k,hy,hk,first,prepared,action⟩ := step i u S word initial
+      obtain ⟨z,D,out,n,hz,hn,rest,done,tail⟩ := ih y E next prepared
+      refine ⟨z,D,out,k+n,hz.trans hy,by simp only [List.map_cons,List.sum_cons]; omega,
+        Exec.seq first rest,done,?_⟩
+      intro a ha row hr pre hp mid hm post he x
+      apply (tail a ha row hr pre hp mid hm post he (Weighted.leafAt weight inv x i)).trans
+      have pair := leafPair_apply v width q w radix i (fun z => (weight i*z.2,inv i*z.1)) word next
+        x.1 x.2 a row pre mid post hp hm he (action a ha row hr)
+      simpa only [addr,Weighted.leafAt,Weighted.leaf_word _ _ (unit i)] using pair
+  intro u S word initial
+  obtain ⟨z,D,out,n,hz,hn,exec,done,action⟩ := run (List.finRange r) u S word initial
+  refine ⟨z,D,out,n,hz,hn,exec,done,?_⟩
+  intro a ha row hr pre hp mid hm post he x
+  have coords := Weighted.child_leafWords r weight inv (fun i _ => unit i) x
+  simp only [show ((List.finRange r).filter (fun i => decide (i.val < r))) = List.finRange r by simp] at coords
+  rw [← coords]
+  exact action a ha row hr pre hp mid hm post he x
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback

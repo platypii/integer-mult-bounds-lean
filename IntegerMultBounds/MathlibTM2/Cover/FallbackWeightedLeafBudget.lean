@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackWeightedLeafRun
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackGoodParentSetup
 public import IntegerMultBounds.MathlibTM2.M8.RevMachine.RevBudget
 
 /-! Charge weighted leaves at their actual terminal widths and volumes. -/
@@ -102,5 +103,79 @@ theorem packedWeightedLeaf_chain_cost [M8.Machine.Net] {ι : Type*} (gap overhea
     (Nat.mul_le_mul_right factor (Nat.add_le_add_left indexBound _))) _)
   exact chainCost_of_terminal gap overhead time step records v fits _
     ((Nat.cast_le.mpr bounded).trans (packedWeightedLeafCost_le child childPos tapes push rate widthBound))
+
+/-- For a rank-one terminal child the quotient atom has the full remaining
+width. Both packed archive indices are zero. Price the incoming word, child
+setup, packed leaf and outgoing word together on the parent descriptor. -/
+theorem rankOneRecordLeaf_cost [M8.Machine.Net] {T A : ℕ} {U : Type}
+    (machine : Fin 55 ↪ Fin T) (g digits tapes push : ℕ) :
+    ∃ overhead : ℕ, ∀ (v : Descriptor) w (L : ℝ), v.Positive → v.width = (1+g)*(w+1) →
+      let child := rankDescriptor prime (w+1) (g*(w+1)) v
+      let M := prime^(w+1)
+      let H := Nat.size M
+      let W := v.beforeRows*v.rows*v.beforeH*v.between*v.afterD
+      let K := digits*H+1
+      let budget := weightedLeafCost (volume prime child) child.width tapes push+
+        (1000*(prime+1)*(2*(prime.size+1)^2))*M
+      let middle := (((List.finRange 1).map fun i => childWeightTime prime w H i.val).sum+1+
+        dimensionTime H K (g+g))+(budget+2+(2*(1*H+1*H+((g+g)*H+K))+7))
+      ((max 1 child.width : ℕ) : ℝ)^M8.Machine.BudgetBound.tau ≤ L →
+      ((1+goodIncomingTime (P := Empty) (U := U) (A := A) Empty.elim machine prime w W H W.size 1
+        (Nat.le_add_right 1 g)+middle+(1+goodOutgoingTime (P := Empty) (U := U) (A := A) Empty.elim
+          machine prime w W H W.size 1 (Nat.le_add_right 1 g)) : ℕ) : ℝ) ≤
+        (weightedLeafRate tapes push L+overhead)*volume prime v := by
+  obtain ⟨c,adapter⟩ := goodRecordTime_volume_le (P := Empty) (U := U) (A := A) Empty.elim machine
+    1 g digits rfl (by omega) (Nat.le_add_right 1 g)
+  let rate := 1000*(prime+1)*(2*(prime.size+1)^2)
+  refine ⟨rate+c,?_⟩
+  intro v w L pos split child M H W K budget middle widthBound
+  have hW : 0 < W := Nat.mul_pos (Nat.mul_pos (Nat.mul_pos (Nat.mul_pos pos.1 pos.2.1)
+    pos.2.2.1) pos.2.2.2.1) pos.2.2.2.2
+  have same : volume prime child = volume prime v := rankDescriptor_volume v (by rw [split,Nat.add_mul,one_mul])
+  have wordVolume : M^((1+g)+(1+g))*W = volume prime v := by
+    simp only [volume,split,M,W,pow_add]; ring
+  have power := pow_pos Networks.Shared50ModularControl.prime_prime.pos (g*(w+1))
+  have childPos : child.Positive := ⟨pos.1,pos.2.1,pos.2.2.1,Nat.mul_pos (Nat.mul_pos power pos.2.2.2.1) power,pos.2.2.2.2⟩
+  have leaf := packedWeightedLeafCost_le child childPos tapes push rate widthBound
+  change (budget : ℝ) ≤ _ at leaf
+  rw [same] at leaf
+  have parent := adapter w W budget hW
+  change _ ≤ budget+c*(M^((1+g)+(1+g))*W) at parent
+  rw [wordVolume] at parent
+  apply (Nat.cast_le.mpr parent).trans
+  push_cast
+  linarith only [leaf]
+
+/-- Every coordinate call sees the full payload volume at one atom's width.
+Charge the packed archive scans at their actual indices and the empty
+instruction ending the sequence once. -/
+theorem weightedCoordinates_cost [M8.Machine.Net] {r : ℕ} (v : Descriptor) (width : v.width = r)
+    (w tapes push : ℕ) :
+    let M := prime^(w+1)
+    let view := fun i : Fin r => {(RecursiveInterchangeLayout.child M 1 1 v i i.rev) with width := w+1}
+    let factor := 2*(prime.size+1)^2
+    let cost := fun i : Fin r => weightedLeafCost (volume prime (view i)) (w+1) tapes push+
+      ((1000*(prime+1)+8*(i.val+i.val))*factor)*M
+    ((List.finRange r).map cost).sum+1 ≤
+      r*(weightedLeafCost (volume M v) (w+1) tapes push+
+        ((1000*(prime+1)+16*(r-1))*factor)*M)+1 := by
+  intro M view factor cost
+  let bound := weightedLeafCost (volume M v) (w+1) tapes push+((1000*(prime+1)+16*(r-1))*factor)*M
+  have each (i : Fin r) : cost i ≤ bound := by
+    have same := RecursiveInterchangeLayout.child_volume_div M 1 1 v i i.rev
+      (by simpa using width) (by decide) (one_dvd _)
+    have vol : volume prime (view i) = volume M v := by
+      simpa [view,M,volume,RecursiveInterchangeLayout.child] using same
+    have indexBound : 8*(i.val+i.val) ≤ 16*(r-1) := by have := i.isLt; omega
+    dsimp only [cost,bound]
+    rw [vol]
+    gcongr
+  have total (is : List (Fin r)) : (is.map cost).sum ≤ is.length*bound := by
+    induction is with
+    | nil => simp
+    | cons i is ih =>
+      simpa only [List.map_cons,List.sum_cons,List.length_cons,Nat.succ_mul,Nat.add_comm] using
+        Nat.add_le_add (each i) ih
+  simpa only [List.length_finRange] using Nat.add_le_add_right (total (List.finRange r)) 1
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
