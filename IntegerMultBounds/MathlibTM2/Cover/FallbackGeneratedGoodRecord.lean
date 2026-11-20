@@ -180,6 +180,30 @@ def DirectoryReady {m K : ℕ} (v : Descriptor) (proj : Matrix (Fin m) (Fin m) �
     D.R (caller 44) = binSyms H (1 : ZMod M).val ∧ (D.R (caller 45)).length = w ∧
     D.R (caller 55) = (List.ofFn fun i => binSyms H (parent i).val).flatten ∧ D.R (caller 54) = schedules pending
 
+theorem DirectoryReady.updateSelector {m K w W H J : ℕ} {v : Descriptor}
+    {proj : Matrix (Fin m) (Fin m) ℚ} {parent : Fin m → ZMod (prime^(w+1))}
+    {prefixes : ℕ → List (Fin (prime+4))} {archiveTail : List (Fin (prime+4))}
+    {schedules : List ℕ → List (Fin (prime+4))} {S : Stacks (66+K) prime} {is : List ℕ}
+    (port : Fin 66) (lo : 56 ≤ port.val) (hi : port.val ≤ 57) (xs : List (Fin (prime+4)))
+    (h : DirectoryReady v proj w W H J parent prefixes archiveTail schedules S is) :
+    DirectoryReady v proj w W H J parent prefixes archiveTail schedules
+      {S with R := Function.update S.R (port.castAdd K) xs} is := by
+  let caller := Fin.castAddEmb (n := 66) K
+  have apart (i : Fin 66) (hi : i ≠ port) : caller i ≠ caller port := caller.injective.ne hi
+  have pr (i : Fin (66+K)) (hi : 58 ≤ i.val) : i ≠ caller port := by
+    intro eq; subst i; change 58 ≤ port.val at hi; omega
+  let src := fun i : Fin 6 => caller ((i.natAdd 33).castLE (by decide : 39 ≤ 66))
+  have so (i) : src i ≠ caller port := apart _ (by intro eq; have h := congrArg Fin.val eq; change 33+i.val = port.val at h; omega)
+  have right (i : Fin 66) (small : i.val < 56) := Function.update_of_ne (apart i (by intro eq; subst port; omega)) xs S.R
+  obtain ⟨hd,hw,hp,hb,hq,h2,h28,h53,hs,h44,h45,h55,h54⟩ := h
+  refine ⟨(right 46 (by decide)).trans hd,fun j hj => (congrArg List.length (right 47 (by decide))).trans (hw j hj),
+    fun i hi => ⟨(hp i hi).1,(Function.update_of_ne (pr i hi) _ _).trans (hp i hi).2⟩,
+    (right 49 (by decide)).trans hb,?_,(right 2 (by decide)).trans h2,(right 28 (by decide)).trans h28,
+    (right 53 (by decide)).trans h53,fun i => (Function.update_of_ne (so i) _ _).trans (hs i),
+    (right 44 (by decide)).trans h44,(congrArg List.length (right 45 (by decide))).trans h45,
+    (right 55 (by decide)).trans h55,(right 54 (by decide)).trans h54⟩
+  · obtain ⟨suffix,eq⟩ := hq; exact ⟨suffix,(right 48 (by decide)).trans eq⟩
+
 /-- The physical executor advances the two queues and clears its workspace.
 These endpoints restore every condition consumed by the next ordinary record. -/
 theorem DirectoryReady.afterExceptional [M8.Machine.Net] {m K dimension w W H J label : ℕ}
@@ -328,6 +352,157 @@ theorem DirectoryReady.runExceptional [M8.Machine.Net] {m d K w W J N : ℕ} {P 
     dir pivots clean kept,tail,effect,(recordPayload_ordinaryBank room source head next D).2 output,kept 57 (by decide) (by decide) (by decide),
     kept 56 (by decide) (by decide) (by decide)⟩
 
+open IntegerMultBounds.MathlibTM2.Fast.Main in
+/-- Endpoint and time bound for the generated three-branch directory program. -/
+def ArchiveRun [M8.Machine.Net] {m d K w W J N : ℕ} {P U : Type}
+    (dimension : m+m = d+1) (vDescriptor : Descriptor) (proj : Matrix (Fin m) (Fin m) ℚ)
+    (parent inv : Fin m → ZMod (prime^(w+1)))
+    (data : ScanData m d w W)
+    (room : Record.size d+(rowSwapBlock.tapes+35+2) ≤ K+1)
+    (capacity : (anchorProgram d true).1+(anchorProgram d false).1+1 ≤ columnCapacity)
+    (body : P → Pr P (66+(K+1)) columnCapacity prime U) (c : ℕ)
+    (prefixes : ℕ → List (Fin (prime+4))) (archiveTail : List (Fin (prime+4)))
+    (rankFits : proj.rank ≤ m)
+    (source : ℤ → Fin 4) (head : ℤ) (length : N = (prime^(w+1))^m*((prime^(w+1))^m*W)) (original : Fin N → ZMod 2)
+    (good skip : Pr P (66+K) columnCapacity prime U) (ordinaryCost : ℕ → ℕ)
+    (ordinaryEffect : ℕ → (Fin N → ZMod 2) → (Fin N → ZMod 2) → Prop)
+    (u : HS (66+(K+1)) columnCapacity prime U) (S : Stacks (66+(K+1)) prime) : Prop :=
+    let e := finSumFinEquiv.trans (finCongr dimension)
+    let physical := data.physical e proj parent inv
+    let φ := LabelRing.res prime (w+1) (by omega)
+    let live := LabelStock.live m (w+1) 1
+    let bad := fun j => fallbackBit rankFits (reduce (prime^(w+1)) proj) (physicalLabel m (w+1) j)
+    let code := fun k => residualSchedule (A := prime) (projectorResidual finSumFinEquiv (reduce prime proj)
+      (φ ∘ parent) (φ ∘ inv) (LabelStock.residue m (w+1) 1 k))
+    let schedule := fun (xs : List ℕ) => xs.flatMap fun k => if bad k then code k else []
+    let ready := DirectoryReady vDescriptor proj w W data.H J parent prefixes archiveTail schedule
+    let placement := directoryOrdinaryBank room
+    let caller := Fin.castAddEmb (n := 66) K
+    let payload := RecordPayload (N := N) (caller 24) source head
+    let pending := fun j => (List.range data.records).drop j
+    let frame := fun j word D => ready D (pending j) ∧ payload word D
+    let costBad := fun j =>
+      let C := physical.table (LabelStock.residue m (w+1) 1 j)
+      let rows := classPivots C
+      let scratch := (List.finRange (66+(K+1))).filter fun i => decide (58 ≤ i.val ∧ i ≠ directoryMatrixTape room)
+      exceptionalRecordTime U rows (negativeAnchor rows C) m w W data.H J scratch.length
+        (max (mnProgPush (directoryExceptionalCore (P := P) (U := U) d room capacity)) c) (prefixes j).length
+    let effect := fun j (x y : Fin N → ZMod 2) => if live j && bad j then
+      ∀ a k, y ((FlatCoordinateLayout.index ((projectorResidual e (reduce (prime^(w+1)) proj) parent inv
+        (physicalLabel m (w+1) j)).mulVec a) k).cast (directoryPayloadLength e length)) =
+        x ((FlatCoordinateLayout.index a k).cast (directoryPayloadLength e length))
+      else ordinaryEffect j x y
+    frame 0 original (embStk placement S) → S.R (directoryMatrixTape room) = physical.matrices 0 →
+    S.R (placement (caller 57)) = (List.range data.records).map (fun j => bitSymbol (live j)) →
+    S.R (placement (caller 56)) = (List.range data.records).map (fun j => bitSymbol (bad j)) →
+    let advance := dropWords (placement (caller 2)) (directoryMatrixTape room) (placement (caller 59)) ((d+1)*(d+1))
+    let cost := fun j => if live j && bad j then costBad j else ordinaryCost j + ((d+1)*(d+1)*(4*data.H+4)+1)
+    let exceptionalCount := ((∑ k ∈ Finset.range proj.rank, (k+1)*(m+1))*data.records)/prime
+    let priced := fun n => ∀ parents baseline budget, data.records = parents*(prime^(w+1))^(m*m) →
+      let ordinaryTime := data.records*(baseline+6)+2
+      ordinaryTime ≤ budget →
+      (∀ j < data.records, ¬ (live j = true ∧ bad j = true) →
+        ordinaryCost j + ((d+1)*(d+1)*(4*data.H+4)+1) ≤ baseline ∨
+        (data.H = Nat.size (prime^(w+1)) ∧ 0 < W ∧ ordinaryCost j + (prime^(w+1))^(d+1)*W ≤ baseline)) →
+      (0 < exceptionalCount → ∀ j < data.records, live j = true → bad j = true →
+        costBad j ≤ baseline+(budget-ordinaryTime)/exceptionalCount) → n ≤ budget
+    ∃ z B n next, z.user = u.user ∧ frame data.records next (embStk placement B) ∧
+      (List.range data.records).foldl (fun possible j y => ∃ x, possible x ∧ effect j x y) (· = original) next ∧
+      B.R (directoryMatrixTape room) = [] ∧ B.R (placement (caller 57)) = [] ∧ B.R (placement (caller 56)) = [] ∧
+      priced n ∧ n ≤ ((List.range data.records).map fun j => cost j+2+4).sum+2 ∧
+      Exec body (classifiedScan (placement (caller 57)) (placement (caller 56)) ((embProg placement id good).seq advance)
+        (directoryExceptionalProgram m d room capacity) ((embProg placement id skip).seq advance)) (mk u S) n (mk z B)
+
+open IntegerMultBounds.MathlibTM2.Fast.Main in
+/-- Run the generated directory frame with its physical exceptional projector and shared matrix archive. -/
+theorem DirectoryReady.runArchive [M8.Machine.Net] {m d K w W J N : ℕ} {P U : Type}
+    (dimension : m+m = d+1) (vDescriptor : Descriptor) (proj : Matrix (Fin m) (Fin m) ℚ)
+    (idem : proj*proj = proj) (adm : Admissible prime proj)
+    (parent inv : Fin m → ZMod (prime^(w+1))) (reciprocal : ∀ i, parent i * inv i = 1)
+    (data : ScanData m d w W) (hm : prime^(w+1) < 2^data.H) (hw : W < 2^J) (positive : 0 < W)
+    (room : Record.size d+(rowSwapBlock.tapes+35+2) ≤ K+1)
+    (capacity : (anchorProgram d true).1+(anchorProgram d false).1+1 ≤ columnCapacity)
+    (body : P → Pr P (66+(K+1)) columnCapacity prime U) (c : ℕ) (bodyBound : ∀ f, mnProgPush (body f) ≤ c)
+    (prefixes : ℕ → List (Fin (prime+4))) (archiveTail : List (Fin (prime+4)))
+    (factor : Factorization univ univ proj) (small : ∀ k ∈ factorizationDenominators factor, k < prime)
+    (rankFits : proj.rank ≤ m)
+    (source : ℤ → Fin 4) (head : ℤ) (length : N = (prime^(w+1))^m*((prime^(w+1))^m*W)) (original : Fin N → ZMod 2)
+    (u : HS (66+(K+1)) columnCapacity prime U) (S : Stacks (66+(K+1)) prime) :
+    let e := finSumFinEquiv.trans (finCongr dimension)
+    let physical := data.physical e proj parent inv
+    let φ := LabelRing.res prime (w+1) (by omega)
+    let live := LabelStock.live m (w+1) 1
+    let bad := fun j => fallbackBit rankFits (reduce (prime^(w+1)) proj) (physicalLabel m (w+1) j)
+    let code := fun k => residualSchedule (A := prime) (projectorResidual finSumFinEquiv (reduce prime proj)
+      (φ ∘ parent) (φ ∘ inv) (LabelStock.residue m (w+1) 1 k))
+    let schedule := fun (xs : List ℕ) => xs.flatMap fun k => if bad k then code k else []
+    let ready := DirectoryReady vDescriptor proj w W data.H J parent prefixes archiveTail schedule
+    let placement := directoryOrdinaryBank room
+    let caller := Fin.castAddEmb (n := 66) K
+    let payload := RecordPayload (N := N) (caller 24) source head
+    let pending := fun j => (List.range data.records).drop j
+    let frame := fun j word D => ready D (pending j) ∧ payload word D
+    let costBad := fun j =>
+      let C := physical.table (LabelStock.residue m (w+1) 1 j)
+      let rows := classPivots C
+      let scratch := (List.finRange (66+(K+1))).filter fun i => decide (58 ≤ i.val ∧ i ≠ directoryMatrixTape room)
+      exceptionalRecordTime U rows (negativeAnchor rows C) m w W data.H J scratch.length
+        (max (mnProgPush (directoryExceptionalCore (P := P) (U := U) d room capacity)) c) (prefixes j).length
+    ∀ (localBody : P → Pr P (66+K) columnCapacity prime U)
+      (calls : ∀ f, body f = embProg placement id (localBody f))
+      (good skip : Pr P (66+K) columnCapacity prime U) (ordinaryCost : ℕ → ℕ)
+      (ordinaryEffect : ℕ → (Fin N → ZMod 2) → (Fin N → ZMod 2) → Prop),
+    let effect := fun j (x y : Fin N → ZMod 2) => if live j && bad j then
+      ∀ a k, y ((FlatCoordinateLayout.index ((projectorResidual e (reduce (prime^(w+1)) proj) parent inv
+        (physicalLabel m (w+1) j)).mulVec a) k).cast (directoryPayloadLength e length)) =
+        x ((FlatCoordinateLayout.index a k).cast (directoryPayloadLength e length))
+      else ordinaryEffect j x y
+    (∀ j labels word v S, ¬ (live j = true ∧ bad j = true) → ready S (j :: labels) → payload word S →
+      ∃ z D n next, z.user = v.user ∧ n ≤ ordinaryCost j ∧
+        Exec localBody (if live j then good else skip) (mk v S) n (mk z D) ∧ ready D labels ∧
+        ordinaryEffect j word next ∧ payload next D ∧ D.R (caller 57) = S.R (caller 57) ∧ D.R (caller 56) = S.R (caller 56)) →
+    ArchiveRun (J := J) dimension vDescriptor proj parent inv data room capacity body c prefixes archiveTail
+      rankFits source head length original good skip ordinaryCost ordinaryEffect u S := by
+  intro e physical φ live bad code schedule ready placement caller payload pending frame costBad localBody calls
+    good skip ordinaryCost ordinaryEffect effect ordinary
+  unfold ArchiveRun
+  dsimp only
+  intro start queue liveBits badBits
+  have release (port : Fin 66) (lo : 56 ≤ port.val) (hi : port.val ≤ 57) j x D bits (h : frame j x D) :
+      frame j x {D with R := Function.update D.R (caller port) bits} := by
+    refine ⟨DirectoryReady.updateSelector port lo hi bits h.1,?_⟩
+    have ne : caller 24 ≠ caller port := caller.injective.ne (by intro eq; subst port; contradiction)
+    simpa only [payload,RecordPayload,Function.update_of_ne ne] using h.2
+  obtain ⟨z,B,n,user,⟨⟨next,history,done⟩,tail⟩,mask,mode,bound,time,run⟩ :=
+    physical.classifiedArchive_exec room id proj idem factor small rankFits localBody body calls good skip
+      (directoryExceptionalProgram m d room capacity) ordinaryCost costBad original effect frame
+      (fun j x D k bits sel h => by rcases sel with rfl | rfl
+                                    · exact release 57 (by decide) (by decide) j x D bits h
+                                    · exact release 56 (by decide) (by decide) j x D bits h)
+      (by
+        intro j inside no x v D h
+        change j < data.records at inside
+        change ¬ (live j = true ∧ bad j = true) at no
+        have index : j < (List.range data.records).length := by simpa using inside
+        have suffix : pending j = j :: pending (j+1) := by
+          simpa only [List.getElem_range] using (List.getElem_cons_drop index).symm
+        obtain ⟨z,B,n,y,user,time,run,done,action,out,mask,mode⟩ :=
+          ordinary j _ x v D no (suffix ▸ h.1) h.2
+        exact ⟨y,z,B,n,user,by simpa [effect,no] using action,⟨done,out⟩,mask,mode,
+          by change (B.R ((Fin.castAddEmb K) 2)).length = data.H; rw [done.2.2.2.2.2.1,length_binSyms],(done.2.2.1 _ (by decide : 58 ≤ 59)).2,time,run⟩)
+      (by
+        intro j inside liveJ badJ x v D h matrix
+        change live j = true at liveJ
+        change bad j = true at badJ
+        obtain ⟨z,B,n,y,user,time,run,done,tail,action,out,mask,mode⟩ :=
+          DirectoryReady.runExceptional dimension vDescriptor proj idem adm parent inv reciprocal data hm hw positive
+            room capacity body c bodyBound prefixes archiveTail bad j inside liveJ badJ source head length x v D h.1 matrix h.2
+        exact ⟨y,z,B,n,user,by simpa [effect,liveJ,badJ] using action,⟨done,out⟩,tail,
+          by rw [directoryOrdinaryBank_caller]; exact mask,
+          by rw [directoryOrdinaryBank_caller]; exact mode,time,run⟩)
+      u S start queue liveBits badBits
+  exact ⟨z,B,n,next,user,done,history,tail,mask,mode,bound,time,run⟩
+
 private theorem classifiedStep {α β : Type*} (ok : ℕ → α → β → Prop) (live bad : Bool)
     (gc bc pc : ℕ) (g b p : α) (ge be pe : β)
     (ordinary : ¬ (live = true ∧ bad = true) → ok (if live then gc else pc)
@@ -473,7 +648,7 @@ def GeneratedRecordSpec [M8.Machine.Net] {T m work Q fields H J W : ℕ} {F U : 
             (mk u S) n (mk z D) ∧ ready D labels ∧
           (if liveBit label then effect label else Eq) word next ∧ payload next D ∧
           D.R mask = S.R mask ∧ D.R mode = S.R mode
-      if single then ordinaryStep ∧
+      if single then ordinaryStep ∧ (
         ∀ (dimension : ℕ) (data : ScanData m dimension w W) (room : Record.size dimension+(rowSwapBlock.tapes+35+2) ≤ (host+31+work)+1),
         let placement := directoryOrdinaryBank room
         let archive := directoryMatrixTape room
@@ -490,7 +665,19 @@ def GeneratedRecordSpec [M8.Machine.Net] {T m work Q fields H J W : ℕ} {F U : 
             Exec outer ((embProg placement id program).seq advance) (mk u S) n (mk z D) ∧
             ready (embStk placement D) labels ∧ (if liveBit label then effect label else Eq) word next ∧
             payload next (embStk placement D) ∧ D.R archive = data.matrices (label+1) ∧
-            D.R (placement mask) = S.R (placement mask) ∧ D.R (placement mode) = S.R (placement mode)
+            D.R (placement mask) = S.R (placement mask) ∧ D.R (placement mode) = S.R (placement mode)) ∧
+        ∀ (dimension : ℕ) (shape : m+m = dimension+1) (data : ScanData m dimension w W)
+          (room : Record.size dimension+(rowSwapBlock.tapes+35+2) ≤ (host+31+work)+1)
+          (anchor : (anchorProgram dimension true).1+(anchorProgram dimension false).1+1 ≤ columnCapacity)
+          (states : Q = columnCapacity) (fieldsEq : fields = m) (binary : data.H = H)
+          (outer : F → Pr F (66+((host+31+work)+1)) columnCapacity prime U)
+          (calls : ∀ f, outer f = embProg (directoryOrdinaryBank room) id (states ▸ body f))
+          (push : ℕ) (bounded : ∀ f, mnProgPush (outer f) ≤ push)
+          (u : HS _ columnCapacity prime U) (S : Stacks _ prime),
+          ArchiveRun (J := J) shape v proj parent parentInv data room anchor outer push prefixes archiveTail rankFits
+            source head (fieldsEq ▸ length) word (states ▸ recordProgram.seq (clearWorkTapes privateTapes))
+            (states ▸ skip) (fun j => if liveBit j then charge j else skipCost j)
+            (fun j => if liveBit j then effect j else Eq) u S
       else
       ∀ (fallback : Pr F K Q prime U) (badCost : ℕ → ℕ) (badEffect : ℕ → (Fin N → ZMod 2) → (Fin N → ZMod 2) → Prop),
       (∀ i is word (u : HS K Q prime U) (S : Stacks K prime), LabelStock.live m (w+1) 1 i = true → fallbackBit rankFits (reduce M proj) (g i) = true → ready S (i :: is) → payload word S →
@@ -560,21 +747,31 @@ theorem generatedOrdinaryRecord_exec [M8.Machine.Net] {T m work Q fields H J W :
   have srcOff (i) : src i ≠ scan 2 := by
     intro eq; have h := congrArg Fin.val eq; change 33+i.val = 46 at h; omega
   suffices step : ordinaryStep by
-    refine ⟨step,?_⟩
-    intro dimension data room placement archive outer calls label labels word u S binary inside ordinary start input queue
-      program advance
-    obtain ⟨v,D,n,next,user,time,run,done,effect,output,maskKeep,modeKeep⟩ :=
-      step label labels word (embDn placement u) (embStk placement S) ordinary start input
-    have clock : (D.R (caller 2)).length = data.H := by
-      rw [done.2.2.2.2.2.1,length_binSyms,binary]
-    have blank : D.R (caller 59) = [] := (done.2.2.1 _ (by decide : 58 ≤ 59)).2
-    obtain ⟨z,B,hz,bank,tail,_,exec⟩ := data.advanceEmbeddedRecord_exec label inside placement archive
-      (Fin.succAbove_ne _) (caller 2) (caller 59) (caller.injective.ne (by decide)) id body outer calls
-      program u S v D n run clock blank queue
-    have cell (i : Fin K) : B.R (placement i) = D.R i := congrArg (fun C => Stacks.R C i) bank
-    rw [binary] at exec
-    exact ⟨z,B,_,next,hz.trans user,Nat.add_le_add_right time _,exec,by rw [bank]; exact done,effect,
-      by rw [bank]; exact output,tail,(cell mask).trans maskKeep,(cell mode).trans modeKeep⟩
+    refine ⟨step,?_,?_⟩
+    · intro dimension data room placement archive outer calls label labels word u S binary inside ordinary start input queue
+        program advance
+      obtain ⟨v,D,n,next,user,time,run,done,effect,output,maskKeep,modeKeep⟩ :=
+        step label labels word (embDn placement u) (embStk placement S) ordinary start input
+      have clock : (D.R (caller 2)).length = data.H := by
+        rw [done.2.2.2.2.2.1,length_binSyms,binary]
+      have blank : D.R (caller 59) = [] := (done.2.2.1 _ (by decide : 58 ≤ 59)).2
+      obtain ⟨z,B,hz,bank,tail,_,exec⟩ := data.advanceEmbeddedRecord_exec label inside placement archive
+        (Fin.succAbove_ne _) (caller 2) (caller 59) (caller.injective.ne (by decide)) id body outer calls
+        program u S v D n run clock blank queue
+      have cell (i : Fin K) : B.R (placement i) = D.R i := congrArg (fun C => Stacks.R C i) bank
+      rw [binary] at exec
+      exact ⟨z,B,_,next,hz.trans user,Nat.add_le_add_right time _,exec,by rw [bank]; exact done,effect,
+        by rw [bank]; exact output,tail,(cell mask).trans maskKeep,(cell mode).trans modeKeep⟩
+    · intro dimension shape data room anchor states fieldsEq binary outer calls push bounded u S
+      subst Q
+      subst fields
+      subst H
+      apply DirectoryReady.runArchive shape v proj idem (by
+        simpa using admissible_of_lt Networks.Shared50ModularControl.prime_prime (fun k (h : k ∈ denominators proj) => hd k (by simp [factorizationDenominators,h])) 1) parent parentInv reciprocal data hm hw hW room anchor outer push bounded prefixes archiveTail
+        factor hd rankFits source head length initialWord u S body calls (recordProgram.seq (clearWorkTapes privateTapes))
+        skip (fun j => if liveBit j then charge j else skipCost j) (fun j => if liveBit j then effects j else Eq)
+      have port : r 0 = caller 24 := recordRoundTripPorts_other slot 0 (by decide)
+      simpa only [ordinaryStep,payload,port] using step
   intro label labels word u whole ordinary start input
   by_cases live : liveBit label = true
   case neg =>
@@ -1054,23 +1251,13 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
       (h : ready S is) (p : payload word S) :
       let B := {S with R := Function.update S.R (caller port) xs}
       ready B is ∧ payload word B := by
-    have apart (i : Fin 66) (hi : i ≠ port) : caller i ≠ caller port := caller.injective.ne hi
-    have pr (i : Fin K) (hi : 58 ≤ i.val) : i ≠ caller port := by
-      intro eq; subst i; change 58 ≤ port.val at hi; omega
-    have so (i) : src i ≠ caller port := apart _ (by intro eq; have h := congrArg Fin.val eq; change 33+i.val = port.val at h; omega)
-    have right (i : Fin 66) (small : i.val < 56) := Function.update_of_ne (apart i (by intro eq; subst port; omega)) xs S.R
-    obtain ⟨hd,hw,hp,hb,hq,h2,h28,h53,hs,h44,h45,h55,h54⟩ := h
-    refine ⟨⟨(right 46 (by decide)).trans hd,fun j hj => (congrArg List.length (right 47 (by decide))).trans (hw j hj),
-      fun i hi => ⟨(hp i hi).1,(Function.update_of_ne (pr i hi) _ _).trans (hp i hi).2⟩,
-      (right 49 (by decide)).trans hb,?_,(right 2 (by decide)).trans h2,(right 28 (by decide)).trans h28,
-      (right 53 (by decide)).trans h53,fun i => (Function.update_of_ne (so i) _ _).trans (hs i),
-      (right 44 (by decide)).trans h44,(congrArg List.length (right 45 (by decide))).trans h45,
-      (right 55 (by decide)).trans h55,(right 54 (by decide)).trans h54⟩,?_⟩
-    · obtain ⟨suffix,eq⟩ := hq; exact ⟨suffix,(right 48 (by decide)).trans eq⟩
-    · intro z
-      change readAt _ _ (Function.update S.R (caller port) xs (r 0)) _ = _
-      rw [show r 0 = caller 24 from recordRoundTripPorts_other slot 0 (by decide),right 24 (by decide)]
-      simpa only [show r 0 = caller 24 from recordRoundTripPorts_other slot 0 (by decide)] using p z
+    refine ⟨DirectoryReady.updateSelector port lo hi xs h,?_⟩
+    have right := Function.update_of_ne (caller.injective.ne (show (24 : Fin 66) ≠ port by
+      intro eq; subst port; contradiction)) xs S.R
+    intro z
+    change readAt _ _ (Function.update S.R (caller port) xs (r 0)) _ = _
+    rw [show r 0 = caller 24 from recordRoundTripPorts_other slot 0 (by decide),right]
+    simpa only [show r 0 = caller 24 from recordRoundTripPorts_other slot 0 (by decide)] using p z
   let liveWords := allLabels.map fun i => bitSymbol (a := prime) (liveBit i)
   let badWords := modes allLabels
   have apart : mask ≠ mode := caller.injective.ne (by decide)
