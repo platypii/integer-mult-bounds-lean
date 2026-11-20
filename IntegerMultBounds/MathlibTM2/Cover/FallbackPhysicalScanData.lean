@@ -78,6 +78,110 @@ theorem directoryAnchorBank_off {K : ℕ} (room : Record.size d ≤ K) (j : Fin 
     fin_cases i <;> intro eq <;> have val := congrArg Fin.val eq <;>
       simp [directoryAnchorPorts] at val <;> apply_rules [payload,schedule,Fin.ext] <;> omega
 
+/-- Materialize the payload length on caller tape 58 from the modulus and width.
+The binary product and all temporary registers are restored after conversion. -/
+def directoryCountPorts (K : ℕ) : Fin 10 ↪ Fin (66+K) :=
+  let slots : Fin 10 ↪ Fin 66 := ⟨![2,53,59,60,61,62,63,64,65,58],by decide⟩
+  slots.trans (Fin.castAddEmb K)
+
+open IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2.Stack Host Node in
+theorem directoryCount_exec {K Q A : ℕ} {P U : Type} (body : P → Pr P (66+K) Q A U)
+    (fields H J modulus width : ℕ) (hm : modulus < 2^H) (hw : width < 2^J)
+    (u : HS (66+K) Q A U) (S : Stacks (66+K) A) :
+    let r := directoryCountPorts K
+    let V := modulus^fields*width
+    let L := fields*H+J
+    S.R (r 0) = binSyms H modulus → S.R (r 1) = binSyms J width →
+    (∀ i : Fin 10, 2 ≤ i → S.R (r i) = []) →
+    ∃ z n, z.user = u.user ∧ n ≤ dimensionTime H J fields + 6*V + 13*L + 8 ∧
+      Exec body ((dimensionPower r fields).seq ((toUnary (r 2) (r 9) (r 3) (r 4) (r 5)).seq
+        (bclear (r 2)))) (mk u S) n
+        (mk z {S with R := Function.update S.R (r 9) (List.replicate V tick)}) := by
+  intro r V L base seed free
+  obtain ⟨v,t,hu,ht,power⟩ := dimensionPower_exec body fields r H J modulus width hm hw u S
+    base seed (fun i hi _ => free i hi)
+  let D : Stacks (66+K) A := {S with R := Function.update S.R (r 2) (binSyms L V)}
+  have fits : V < 2^L := by
+    rw [show 2^L = (2^H)^fields * 2^J by simp [L,pow_add,← pow_mul,Nat.mul_comm H fields]]
+    exact (Nat.mul_le_mul_right width (Nat.pow_le_pow_left hm.le fields)).trans_lt
+      (Nat.mul_lt_mul_of_pos_left hw (by positivity))
+  have blank (i : Fin 10) (hi : 2 < i) : D.R (r i) = [] := by
+    simpa [D,Function.update_of_ne (r.injective.ne hi.ne'),free i hi.le]
+  obtain ⟨y,m,hy,hm',convert⟩ := toUnary_exec_linear body
+    (a := r 2) (z := r 9) (w := r 3) (t := r 4) (t₂ := r 5)
+    (by simp [r.injective.eq_iff]) fits v D (by simp [D])
+    (blank 3 (by decide)) (blank 4 (by decide)) (blank 5 (by decide))
+  rw [blank 9 (by decide),List.append_nil] at convert
+  let E : Stacks (66+K) A := {D with R := Function.update D.R (r 9) (List.replicate V tick)}
+  obtain ⟨z,hz,_,clear⟩ := bclear_exec body (r 2) y E
+  have len : (E.R (r 2)).length = L := by simp [E,D,r.injective.eq_iff,length_binSyms]
+  rw [len] at clear
+  refine ⟨z,_,hz.trans (hy.trans hu),?_,Exec.seq power (Exec.seq convert (clear.cast rfl ?_))⟩
+  · omega
+  · apply congrArg (mk z)
+    refine Stacks.ext rfl rfl rfl ?_
+    funext k
+    by_cases h : k = r 2
+    · subst k
+      simp [E,D,r.injective.eq_iff,free]
+    · simp [E,D,Function.update_of_ne h,Function.update_apply]
+
+/-- The installer reads the caller's trailing width and reciprocal clock. Its five
+outputs are the descriptor and control cells in the anchor's private frame. -/
+def directoryAnchorInstaller {K : ℕ} (room : 22 ≤ K) : Fin 17 ↪ Fin (66+K) :=
+  let slots : Fin 17 ↪ Fin (66+22) := ⟨![0,1,2,66,67,68,71,72,73,9,53,70,45,69,84,85,86],by decide⟩
+  (((slots.trans finSumFinEquiv.symm.toEmbedding).trans
+    ((Function.Embedding.refl (Fin 66)).sumMap (Fin.castLEEmb room))).trans finSumFinEquiv.toEmbedding)
+
+open IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2.Stack Host Record M8 in
+theorem directoryAnchorFrame_exec {K Q : ℕ} {P U : Type} (room : size d ≤ K)
+    (body : P → Pr P (66+K) Q prime U) (u : HS (66+K) Q prime U) (S : Stacks (66+K) prime)
+    (J w W : ℕ) (bound : W < 2^J) :
+    let r := directoryAnchorInstaller ((Nat.le_add_right 22 _).trans room)
+    let host := directoryAnchorBank d K room
+    let privateBank := (Fin.castAddEmb (n := size d) 6).trans host
+    S.R ((53 : Fin 66).castAdd K) = binSyms J W → (S.R ((45 : Fin 66).castAdd K)).length = w →
+    (∀ i, S.L (privateBank i) = [] ∧ S.R (privateBank i) = []) →
+    ∃ z F n, z.user = u.user ∧ n ≤ (10*J+12)+(21*(w+1)+12)+1 ∧
+      Exec body (installFieldHeaders r) (mk u S) n (mk z F) ∧ Ready d 1 (w+1) W (embStk host F) ∧
+      ∀ h, h ∉ fieldMarkers r → F.L h = S.L h ∧ F.R h = S.R h := by
+  intro r host privateBank width clock free
+  have atSlot (i : Fin (size d)) : (privateBank i).val = 66+i.val := by
+    simp [privateBank,host,directoryAnchorBank]
+  have num (n : ℕ) (hn : n < 22) : ((OfNat.ofNat n : Fin (size d))).val = n :=
+    Nat.mod_eq_of_lt (hn.trans_le (Nat.le_add_right 22 _))
+  have key (i : Fin 17) (n : ℕ) (hn : n < 22) (v : (r i).val = 66+n) :
+      r i = privateBank (OfNat.ofNat n) := Fin.ext (by rw [atSlot,num n hn]; exact v)
+  obtain ⟨z,F,n,user,time,run,frame,keep⟩ := installFieldFrame_exec body r privateBank
+    (key 13 3 (by decide) rfl) (key 11 4 (by decide) rfl) (key 14 18 (by decide) rfl)
+    (key 15 19 (by decide) rfl) (key 16 20 (by decide) rfl) J bound u S width clock
+    (by intro j lo hi
+        have scratch (i : Fin 17) (n : ℕ) (hn : n < 22) (v : (r i).val = 66+n) :
+            S.R (r i) = [] := (congrArg S.R (key i n hn v)).trans (free _).2
+        fin_cases j <;> first | (exfalso; revert lo; decide) | (exfalso; revert hi; decide) |
+          exact scratch _ 0 (by decide) rfl | exact scratch _ 1 (by decide) rfl |
+          exact scratch _ 2 (by decide) rfl | exact scratch _ 5 (by decide) rfl |
+          exact scratch _ 6 (by decide) rfl | exact scratch _ 7 (by decide) rfl)
+    (fun k _ => free k)
+  refine ⟨z,F,n,user,time,run,?_,keep⟩
+  intro k x
+  by_cases hk : k.val = 17
+  · have eq : k = 17 := Fin.ext (hk.trans (num 17 (by decide)).symm)
+    subst k
+    have off : privateBank 17 ∉ fieldMarkers r := by
+      simp only [fieldMarkers,List.mem_cons,List.not_mem_nil,or_false]
+      intro h
+      rcases h with h | h | h | h | h <;> have v := congrArg Fin.val h <;>
+        rw [atSlot,num 17 (by decide)] at v <;> first
+          | exact (by decide : (83 : ℕ) ≠ 69) v | exact (by decide : (83 : ℕ) ≠ 70) v
+          | exact (by decide : (83 : ℕ) ≠ 84) v | exact (by decide : (83 : ℕ) ≠ 85) v
+          | exact (by decide : (83 : ℕ) ≠ 86) v
+    have stable := keep _ off
+    change _ = readAt blank (F.L (privateBank 17)) (F.R (privateBank 17)) _
+    rw [stable.1,stable.2,(free _).1,(free _).2,readAt_nil_left,wordTape_nil]
+    simp [AtomBank.outer,Nat.mod_eq_of_lt (show 17 < 22+anchorSlots d by omega)]
+  · exact frame k hk x
+
 open IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2.Stack Host Record in
 /-- Read the sign from an exceptional schedule, apply the anchor, and return
 the signed payload to the front of the input queue in forward order. -/
@@ -410,9 +514,16 @@ theorem scheduledProjectorRecord_exec [M8.Machine.Net] {K : ℕ} {P U : Type}
       let anchor := directoryAnchorBank d K ((Nat.le_add_right ..).trans room)
       let regs := Function.Embedding.refl (Fin 6)
       ∀ (capacity : (anchorProgram d true).1+(anchorProgram d false).1+1 ≤ columnCapacity)
-        (body : P → Pr P (66+K) columnCapacity prime U) (u : HS (66+K) columnCapacity prime U) (S : Stacks (66+K) prime)
+        (body : P → Pr P (66+K) columnCapacity prime U) (u : HS (66+K) columnCapacity prime U) (initial : Stacks (66+K) prime)
         (tail rest : List (Fin (prime+4))) (dest : ℤ → Fin 4) (q : ℤ)
         (original : Fin (M^(d+1)*W) → ZMod 2) (source : ℤ → Fin 4) (head : ℤ),
+      let counters := directoryCountPorts K
+      let countProgram := (dimensionPower counters (d+1)).seq
+        ((toUnary (counters 2) count (counters 3) (counters 4) (counters 5)).seq (bclear (counters 2)))
+      let setupTime := dimensionTime H J (d+1) + 6*(M^(d+1)*W) + 13*((d+1)*H+J) + 8
+      initial.R (counters 0) = binSyms H M → initial.R (counters 1) = binSyms J W →
+      (∀ i : Fin 10, 2 ≤ i → initial.R (counters i) = []) →
+      let S := {initial with R := Function.update initial.R count (List.replicate (M^(d+1)*W) Node.tick)}
       let queueTail := (S.R src).drop (M^(d+1)*W)
       (∀ z, q ≤ z → z < q+(M^(d+1)*W : ℕ) → dest z = blank) →
       let bank := columnBank.trans (archivePorts 0)
@@ -422,7 +533,7 @@ theorem scheduledProjectorRecord_exec [M8.Machine.Net] {K : ℕ} {P U : Type}
       ShearReady bank H J G tail (fun _ : ZMod 2 => blank) (fun _ => blank) dest 0 q original (embStk ports S) →
       clean S → Record.Ready d 1 (w+1) W (embStk anchor S) →
       (∀ z, readAt blank (S.L src) (S.R src) (z-head) = RadixToBinary.binaryEncoding.encode
-        (putWord source head ((List.ofFn original).map SparseRoleCircuit.encode) z)) → (S.R count).length = M^(d+1)*W →
+        (putWord source head ((List.ofFn original).map SparseRoleCircuit.encode) z)) →
       (∀ z, readAt blank (S.L dst) (S.R dst) z = blank) →
       (∀ i ∈ ([2,3,5] : List (Fin 6)), S.R (anchor (Record.port d regs i)) = []) →
       S.R ((54 : Fin 66).castAdd K) = residualSchedule C ++ rest →
@@ -442,9 +553,9 @@ theorem scheduledProjectorRecord_exec [M8.Machine.Net] {K : ℕ} {P U : Type}
       let scan := (goodRecordScanPorts.trans slots).trans caller
       S.R (scan 2) = (j :: pending).flatMap (LabelDirectory.entry prefixes r (w+1)) ++ archiveTail →
       (S.R (scan 0)).length = (prefixes j).length → (S.R (scan 1)).length = w → S.R (scan 3) = [] →
-      ∃ z F n next, z.user = u.user ∧ n ≤ recordTime + (initialClear + 6*(max (mnProgPush record) c * recordTime)) +
-          (1+(4*(prefixes j).length+4+(r*r*(4*(w+1)+4)+1)+1)) ∧
-        Exec body ((record.seq (clearWorkTapes privateTapes)).seq (readWithSuccessorClock (scan 1) (advanceDirectory r scan))) (mk u S) n (mk z F) ∧
+      ∃ z F n next, z.user = u.user ∧ n ≤ setupTime + (recordTime + (initialClear + 6*(max (mnProgPush record) c * recordTime)) +
+          (1+(4*(prefixes j).length+4+(r*r*(4*(w+1)+4)+1)+1))) ∧
+        Exec body (countProgram.seq ((record.seq (clearWorkTapes privateTapes)).seq (readWithSuccessorClock (scan 1) (advanceDirectory r scan)))) (mk u initial) n (mk z F) ∧
         (∀ i : Fin (66+K), 58 ≤ i.val → F.L i = [] ∧ F.R i = []) ∧
         (∀ x k, next (FlatCoordinateLayout.index (G.mulVec x) k) = original (FlatCoordinateLayout.index x k)) ∧
         F.R ((54 : Fin 66).castAdd K) = rest ∧ (∀ z, readAt blank (F.L src) (F.R src) (z-head) = RadixToBinary.binaryEncoding.encode
@@ -452,10 +563,13 @@ theorem scheduledProjectorRecord_exec [M8.Machine.Net] {K : ℕ} {P U : Type}
         F.R (scan 2) = pending.flatMap (LabelDirectory.entry prefixes r (w+1)) ++ archiveTail ∧
         ∀ j : Fin 58, j ≠ 24 → j ≠ 54 → j ≠ 46 → let i := (j.castAdd 8).castAdd K
           F.L i = S.L i ∧ F.R i = S.R i := by
-  intro N G φ C rows room ports count src saved tmp anchor regs capacity body u S tail rest dest q
-    original source head queueTail empty bank dst clean layout free ready read width blankDst scratch schedule sign V returnWord
+  intro N G φ C rows room ports count src saved tmp anchor regs capacity body initialUser initial tail rest dest q
+    original source head counters countProgram setupTime base seed vacant S queueTail empty bank dst clean layout free ready read blankDst scratch schedule sign V returnWord
     record recordTime privateTapes initialClear c bodyBound
   intro prefixes pending archiveTail slots caller scan directory prefixWidth clock fresh
+  obtain ⟨u,st,startUser,startTime,start⟩ := directoryCount_exec body (d+1) H J M W hm hw initialUser initial
+    base seed vacant
+  have width : (S.R count).length = M^(d+1)*W := by simp [S]
   suffices finished : ∃ z F n next, z.user = u.user ∧ n ≤ recordTime + (initialClear + 6*(max (mnProgPush record) c * recordTime)) ∧
         Exec body (record.seq (clearWorkTapes privateTapes)) (mk u S) n (mk z F) ∧
         (∀ i : Fin (66+K), 58 ≤ i.val → F.L i = [] ∧ F.R i = []) ∧
@@ -474,7 +588,8 @@ theorem scheduledProjectorRecord_exec [M8.Machine.Net] {K : ℕ} {P U : Type}
       ((before 3 (by decide) (by decide)).trans fresh)
     have port : scan 2 = (46 : Fin 66).castAdd K := rfl
     let remaining := pending.flatMap (LabelDirectory.entry prefixes r (w+1)) ++ archiveTail
-    refine ⟨finish,_,_,next,hz.trans user,Nat.add_le_add_right time _,Exec.seq run advance,?_,effect,
+    refine ⟨finish,_,_,next,(hz.trans user).trans startUser,Nat.add_le_add startTime (Nat.add_le_add_right time _),
+      Exec.seq start (Exec.seq run advance),?_,effect,
       (Function.update_of_ne (show (54 : Fin 66).castAdd K ≠ scan 2 by rw [port]; exact (Fin.castAddEmb K).injective.ne (by decide)) remaining F.R).trans queue,
       ?_,
       Function.update_self (scan 2) (pending.flatMap (LabelDirectory.entry prefixes r (w+1)) ++ archiveTail) F.R,?_⟩
