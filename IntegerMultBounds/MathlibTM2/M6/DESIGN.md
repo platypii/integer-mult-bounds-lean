@@ -661,7 +661,10 @@ use the maximum of their state capacities. Lifting the chart preserves its bound
 and normalizing the scanner state takes one step. `ordinaryOwnerBank_input` supplies the scheduled parent’s full entry
 contract on a chart payload with uniform-width packed prefixes.
 `ordinaryOwnerBank_inherited` discharges the private-tape charge on that frame.
-The chart composition still needs the parent program and its clean time budget. At return the selected bank contains exactly the
+`OrdinaryParentRun.afterChart` runs the installed parent on the selected owner
+after a hosted stage, adds the clean scanner time to the chart and normalization
+costs, and returns the checked port equation on each live label. The recursive
+node still needs the scheduled chart transport and a uniform bound on that sum. At return the selected bank contains exactly the
 restored archive suffix and the final projector tape. All its other stacks are empty.
 
 The semantic five-class node (S5d.3) certifies upstream's accounting under ideal routes and

@@ -320,6 +320,44 @@ theorem ordinaryOwnerBank_input {T k N w : ℕ} (room : 72 ≤ T) (layout : Desc
     change readAt blank [] [] j = blank
     rw [readAt_nil_left,wordTape_nil]
 
+/-- The installed parent program sharing the packed owner in register zero. -/
+noncomputable def ordinaryParentProgram [M8.Machine.Net] {K : ℕ} {U : Type}
+    (room : Record.size 127+(rowSwapBlock.tapes+35+2) ≤ K+1)
+    (fits : (36+2*64+1+(RingFormula.conjugationDepth 64+1)*13)+3 ≤ K+1)
+    (root : Bool) (interval : ℕ × ℕ) (bank : Fin 72 ↪ Fin ((66+(K+1))+5))
+    (step skipRow selectors : Pr Unit (66+K) columnCapacity prime U) :
+    Pr Unit ((66+(K+1))+5) columnCapacity prime U :=
+  let placement := directoryOrdinaryBank room
+  let privateTapes := (List.finRange (66+K)).filter fun i => 58 ≤ i.val
+  let embed := fun i : Fin (66+(K+1)) => i.castAdd 5
+  let caller := Fin.castAddEmb (n := 66) (K+1)
+  let inner := Fin.castAddEmb (n := 66) K
+  let advance : Pr Unit (66+(K+1)) columnCapacity prime U := dropWords (placement (inner 2)) (directoryMatrixTape room) (placement (inner 59)) (128*128)
+  let good := (embProg placement id (step.seq (clearWorkTapes privateTapes))).seq advance
+  let padding := (embProg placement id (skipRow)).seq advance
+  let dispatch := packedOwner (caller 24) (caller 57) (ownerDispatch (caller 57) (caller 56) good
+      (directoryExceptionalProgram 64 127 room remainderAnchorFits) padding)
+  let prepare : Pr Unit (66+(K+1)) columnCapacity prime U := directoryQueueProgram room fits (finSumFinEquiv.trans (finCongr (by decide : 64+64 = 127+1)))
+  let controls := embProg embed id (embProg placement id selectors)
+  let scan := (payloadCountProgram (ownerCountPorts (K+1)) 128).seq (controls.seq ((embProg embed id prepare).seq dispatch))
+  (remainderOwnerSetup root interval.1 interval.2 bank).seq scan
+
+/-- The packed row at each routed label implements the port's residual projector. -/
+def PortReads {w : ℕ} (R W parents : ℕ) (interval : ℕ × ℕ) (parent : Fin 64 → ZMod (prime^(w+1)))
+    (word output : Fin (R*((prime^(w+1))^128*W)) → ZMod 2) : Prop :=
+  let N := (prime^(w+1))^128*W
+  let M := prime^(w+1)
+  letI : NeZero M := ⟨(pow_pos Shared50ModularControl.prime_prime.pos _).ne'⟩
+  let box := M^(64*64)
+  ∀ (c : Certificates.PR589.Nine.PortCertificate), c.Checked → ∀ block < parents,
+        ∀ (g : LabelPadding.Label 64 (w+1)), IsUnit g →
+        let chart := reduce M (c.fullChart.submatrix stageAxis.symm remainderAxis)
+        let P := reduce M ((c.span interval.1 interval.2).submatrix stageAxis.symm stageAxis.symm)
+        let j := block*box+(LabelAddress.address (g*chart)).val
+        ∀ x k, ownerRow (R := R) (N := N) rfl output j
+          (index ((projectorResidual finSumFinEquiv P parent (fun i => Ring.inverse (parent i)) g).mulVec x) k) =
+            ownerRow (R := R) (N := N) rfl word j (index x k)
+
 def OrdinaryParentRun [M8.Machine.Net] {common work w rows B : ℕ} {U : Type}
     (interval : ℕ × ℕ) (layout : Descriptor)
     (root : Bool)
@@ -366,19 +404,8 @@ def OrdinaryParentRun [M8.Machine.Net] {common work w rows B : ℕ} {U : Type}
     let rarePush := max (mnProgPush (directoryExceptionalCore (P := Unit) (U := U) 127 room remainderAnchorFits)) (mnProgPush (body ()))
     let rate := exceptionalVolumeRate U 127 64 scratch.length rarePush w
     OrdinaryParentInput bank layout rows parents W root parent raw word prefixes tail →
-    let embed := fun i : Fin (66+(K+1)) => i.castAdd 5
-    let caller := Fin.castAddEmb (n := 66) (K+1)
-    let inner := Fin.castAddEmb (n := 66) K
-    let advance := dropWords (placement (inner 2)) (directoryMatrixTape room) (placement (inner 59)) (128*128)
-    let good := (embProg placement id (step.seq (clearWorkTapes privateTapes))).seq advance
-    let padding := (embProg placement id (readWithSuccessorClock (ports 1) (advanceDirectory 64 ports))).seq advance
-    let dispatch := packedOwner (caller 24) (caller 57) (ownerDispatch (caller 57) (caller 56) good
-      (directoryExceptionalProgram 64 127 room remainderAnchorFits) padding)
-    let prepare : Pr Unit (66+(K+1)) columnCapacity prime U := directoryQueueProgram room fits (finSumFinEquiv.trans (finCongr (by decide : 64+64 = 127+1)))
     ∃ z F t output,
-      let controls := embProg embed id (embProg placement id selectors)
-      let scan := (payloadCountProgram (ownerCountPorts (K+1)) 128).seq (controls.seq ((embProg embed id prepare).seq dispatch))
-      z.user = u.user ∧ OwnerScan outer ((remainderOwnerSetup root interval.1 interval.2 bank).seq scan) (reg 0) output u raw t z F ∧
+      z.user = u.user ∧ OwnerScan outer (ordinaryParentProgram room fits root interval bank step (readWithSuccessorClock (ports 1) (advanceDirectory 64 ports)) selectors) (reg 0) output u raw t z F ∧
       (let p := max (mnProgPush (directoryQueueInitProgram (m := 64) (d := 127) (P := Unit) (Q := columnCapacity) (U := U) room fits)) (mnProgPush (body ()))
        let tapeRate := (1+scratch.length*(6*p))*directoryQueueInitRate 64 127
        let clean := setupBase+ordinaryOwnerScanTime 64 127 proj.rank w W data.H W.size data.records N
@@ -391,19 +418,97 @@ def OrdinaryParentRun [M8.Machine.Net] {common work w rows B : ℕ} {U : Type}
         if LabelStock.live 64 (w+1) 1 j then ∀ x k, r (index ((projectorResidual finSumFinEquiv (reduce M proj)
           parent (fun i => Ring.inverse (parent i)) (physicalLabel 64 (w+1) j)).mulVec x) k) = ownerRow (R := data.records) (N := N) rfl word j (index x k)
         else ownerRow (R := data.records) (N := N) rfl word j = r) ∧
-      (∀ (c : Certificates.PR589.Nine.PortCertificate), c.Checked → ∀ block < parents,
-        ∀ (g : LabelPadding.Label 64 (w+1)), IsUnit g →
-        let chart := reduce M (c.fullChart.submatrix stageAxis.symm remainderAxis)
-        let P := reduce M ((c.span interval.1 interval.2).submatrix stageAxis.symm stageAxis.symm)
-        let j := block*box+(LabelAddress.address (g*chart)).val
-        ∀ x k, ownerRow (R := data.records) (N := N) rfl output j
-          (index ((projectorResidual finSumFinEquiv P parent (fun i => Ring.inverse (parent i)) g).mulVec x) k) =
-            ownerRow (R := data.records) (N := N) rfl word j (index x k)) ∧
+      PortReads data.records W parents interval parent word output ∧
       F.L (reg 0) = raw.L (reg 0) ∧ F.R (reg 0) = payloadWord (SparseRoleCircuit.encode ∘ output) ++
         (raw.R (reg 0)).drop (data.records*N) ∧ F.R (reg 1) = [] ∧
       F.R ((directoryMatrixTape room).castAdd 5) = [] ∧ F.R (bank 57) = [] ∧ F.R (bank 56) = [] ∧
       F.R (bank 46) = raw.R (bank 46) ∧ bankStock visited (mk z F) = (raw.R (bank 46)).length+(F.R (bank 48)).length ∧
       ∀ i : Fin (66+K), 58 ≤ i.val → F.L ((placement i).castAdd 5) = [] ∧ F.R ((placement i).castAdd 5) = []
+
+theorem OrdinaryParentRun.afterChart [M8.Machine.Net] {common work w rows B : ℕ} {U : Type}
+    (interval : ℕ × ℕ) (layout : Descriptor)
+    (root : Bool)
+    (parent : Fin 64 → ZMod (prime^(w+1)))
+    (room : Record.size 127+(rowSwapBlock.tapes+35+2) ≤ (common+24+31+work)+1)
+    (fits : (36+2*64+1+(RingFormula.conjugationDepth 64+1)*13)+3 ≤ (common+24+31+work)+1)
+    (pool : (RingFormula.conjugationDepth 64+1)*13 ≤ work) (space : 58 ≤ common+24+31+work)
+    (overhead childBudget : ℕ)
+    (localBody : Unit → Pr Unit (66+(common+24+31+work)) columnCapacity prime U)
+    (run : OrdinaryParentRun (rows := rows) (B := B) interval layout root parent room fits pool space overhead childBudget localBody)
+    (units : root = true → ∀ i, parent i = 1) (width : ℕ) (prefixes : ℕ → List (Fin (prime+4)))
+    (widths : ∀ i < layout.beforeRows*rows*B, (prefixes i).length = width) (widthFits : width ≤ prime^layout.width) :
+    let K := common+24+31+work
+    let M := prime^(w+1)
+    letI : NeZero M := ⟨(pow_pos Shared50ModularControl.prime_prime.pos _).ne'⟩
+    let W := layout.between*layout.afterD
+    let N := M^128*W
+    let directory := role layout 142080
+    let proj : Matrix (Fin 64) (Fin 64) ℚ := diagonal fun i => if interval.1 ≤ i.val ∧ i.val < interval.2 then 1 else 0
+    let placement := directoryOrdinaryBank room
+    let reg := fun i : Fin 5 => i.natAdd (66+(K+1))
+    let body := fun f => embProg placement id (localBody f)
+    let outer := fun f => embProg (fun i : Fin (66+(K+1)) => i.castAdd 5) id (body f)
+    let parents := layout.beforeRows*rows*B
+    let data : ScanData 64 127 w W := {
+      records := LabelMask.records directory, H := M.size, J := W.size,
+      table := fun _ => 0, matrix := fun _ => 0, input := fun _ _ => 0,
+      signed := [], matrixTail := [], pivotTail := [], inputTail := [], outputTail := [] }
+    let privateTapes := (List.finRange (66+K)).filter fun i => 58 ≤ i.val
+    let scratch := (List.finRange (66+(K+1))).filter fun i => decide (58 ≤ i.val ∧ i ≠ directoryMatrixTape room)
+    let ports := ordinaryCursorPorts.trans (Fin.castAddEmb (n := 66) K)
+    let step := (ordinaryRowCore (U := U) (Q := columnCapacity) (le_max_left ..) 64 proj.rank proj.rank_le_height pool space).seq
+      (readWithSuccessorClock (ports 1) (advanceDirectory 64 ports))
+    let push := max (mnProgPush step) (mnProgPush (localBody ()))
+    let rarePush := max (mnProgPush (directoryExceptionalCore (P := Unit) (U := U) 127 room remainderAnchorFits)) (mnProgPush (body ()))
+    let rate := exceptionalVolumeRate U 127 64 scratch.length rarePush w
+    let p := max (mnProgPush (directoryQueueInitProgram (m := 64) (d := 127) (P := Unit) (Q := columnCapacity) (U := U) room fits)) (mnProgPush (body ()))
+    let clean := (((366+16*64*64+19*64+344)*volume prime layout)/(prime^layout.width*142080))+ordinaryOwnerScanTime 64 127 proj.rank w W data.H W.size data.records N
+          (prefixes 0).length 0 0 0 privateTapes.length push scratch.length rate p overhead childBudget
+    let metadata := ordinaryEntryWords W layout.beforeRows rows layout.beforeH root parent width ((List.range parents).flatMap prefixes)
+    ∃ program : Pr Unit ((66+(K+1))+5) columnCapacity prime U,
+    ∀ {k : ℕ} (stage : SharedBankStage.Stage _ k prime (phaseOwners (N := data.records*N))) (src : Fin k)
+      (words : Fin k → Fin (data.records*N) → ZMod 2),
+      let share := payloadPlacement (reg 0) (stage.slots src)
+      let chartBank : Fin stage.tapes ↪ Fin (((66+(K+1))+5)+stage.tapes) := Fin.natAddEmb _
+      let cap := max stage.states columnCapacity
+      let fitsState : columnCapacity ≤ cap := le_max_right ..
+      let installed := fun f => statePlacedPr share fitsState columnCapacity_pos id (outer f)
+      let enter := embProg chartBank (Empty.elim : Empty → Unit) (foreign (liftQ stage.program (le_max_left stage.states columnCapacity)))
+      ∀ (u : HS (((66+(K+1))+5)+stage.tapes) cap prime U) (S : Stacks stage.tapes prime),
+      RepT (stage.input words) S.L S.R →
+      ∃ z F t output, t ≤ stage.cost*(stage.tapes+5)+6+(1+clean) ∧
+        Exec installed (enter.seq (statePlacedNormalized share fitsState columnCapacity_pos id program))
+          (mk u (ordinaryOwnerBank metadata S)) t (mk z F) ∧
+        (∀ i j, readAt blank (F.L (chartBank (stage.slots i))) (F.R (chartBank (stage.slots i))) j =
+          (phaseOwners (Function.update (stage.transform words) src output)).tape i j) ∧
+      PortReads data.records W parents interval parent (stage.transform words src) output := by
+  intro K M W N directory proj placement reg body outer parents data privateTapes scratch ports step push rarePush rate p clean metadata
+  obtain ⟨selectors,execute⟩ := run
+  let bank := (Fin.castLEEmb (show 72 ≤ 66+(K+1) by omega)).trans (Fin.castAddEmb 5)
+  let program := ordinaryParentProgram room fits root interval bank step (readWithSuccessorClock (ports 1) (advanceDirectory 64 ports)) selectors
+  refine ⟨program,?_⟩
+  intro k stage src words share chartBank cap fitsState installed enter start S input
+  let word := stage.transform words src
+  let post := fun (output : Fin (data.records*N) → ZMod 2) => PortReads data.records W parents interval parent word output
+  obtain ⟨z,F,t,output,ok,paid,run,reads⟩ := chartOwner_scan stage src metadata words columnCapacity_pos outer program clean post start S input (by
+    intro u owners chartReads
+    have reads (j : ℤ) := (chartReads src j).symm
+    simp only [embStk,Function.comp_apply,phaseOwners,sub_zero] at reads
+    let raw := embStk share (ordinaryOwnerBank metadata owners)
+    have entry := ordinaryOwnerBank_input (T := 66+(K+1)) (by omega) layout rows parents W width root parent units prefixes widths widthFits owners (stage.slots src) word reads
+    obtain ⟨z,F,t,output,_,scan,price,_,action,_⟩ := execute u raw word prefixes [] entry
+    refine ⟨z,F,t,output,?_,action,scan⟩
+    have cells := (ordinaryOwnerBank_private (T := 66+(K+1)) metadata owners (stage.slots src)).1
+    have left (i : Fin (66+(K+1))) : raw.L (i.castAdd 5) = [] := (cells i).1
+    have right (i : Fin 72) : raw.R (bank i) = metadata i.val := (cells (i.castLE (by omega))).2
+    have setup (i : Fin 72) : raw.L (bank i) = [] := left (i.castLE (by omega))
+    have bound := price.1
+    change t ≤ clean + (((([0,4,9,10,11,12] : List (Fin 15)).map (remainderDirectoryPorts.trans bank) ++ [bank 71]).map
+      (fun i => 4*(raw.L i).length)).sum + 2*0 +
+      ((privateTapes.map fun i => 4*(raw.L ((placement i).castAdd 5)).length).sum +
+        _*((raw.R (bank 46)).length+(raw.R (bank 48)).length))) at bound
+    simpa [Function.Embedding.trans_apply,left,right,setup,metadata,ordinaryEntryWords] using bound)
+  exact ⟨z,F,t,output,paid,run,reads,ok⟩
 
 private theorem ordinaryParent_exec [M8.Machine.Net] {common work w rows B : ℕ} {U : Type}
     (interval : ℕ × ℕ) (member : interval ∈ BitHosting.remainderIntervals) (layout : Descriptor)
@@ -427,7 +532,7 @@ private theorem ordinaryParent_exec [M8.Machine.Net] {common work w rows B : ℕ
   obtain ⟨selectors,execute⟩ := scan data rfl directory B rolePositive shape pairRoom
   refine ⟨selectors,?_⟩
   intro u raw word prefixes tail
-    setupScratch inherited setupBase setupTime privateTapes scanned visited left scratch ports step push rarePush rate entry caller inner advance good padding dispatch
+    setupScratch inherited setupBase setupTime privateTapes scanned visited left scratch ports step push rarePush rate entry
   obtain ⟨br,nr,bh,clean,source,widths,fitsWidth,short,padded,spare,parameters,parentPort,mask,mode,queue,payload,empty,blankData⟩ := entry
   let v := remainderRecordChild interval.1 interval.2 (w+1) W
   have binary : data.H = M.size := rfl
@@ -535,7 +640,8 @@ private theorem ordinaryParent_exec [M8.Machine.Net] {common work w rows B : ℕ
     exact Nat.add_le_add_left (Nat.add_le_add_right (Nat.add_le_add_right leftBound _) _) _
   · intro j
     simpa only [Fin.cast_refl,id_eq,coord] using action j
-  · intro c checked block inside g unit chart P j
+  · unfold PortReads
+    intro _ _ _ c checked block inside g unit chart P j
     have pos : j < data.records := by
       rw [count, remainderDirectoryCount layout w rows B split shape]
       calc
