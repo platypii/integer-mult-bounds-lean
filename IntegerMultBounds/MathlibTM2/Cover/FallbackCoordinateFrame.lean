@@ -256,15 +256,15 @@ theorem packedCoordinate_exec [M8.Machine.Net] {T m d work Q : ℕ} {F U : Type}
           exact out)
   exact ⟨next,z,D,t,user,bound,run,out,free,keep,addr⟩
 
-/-- Execute every packed coordinate from the initial rank down to counter zero. -/
-theorem packedCoordinates_exec [M8.Machine.Net] {T m d work Q : ℕ} {F U : Type}
-    (v : Descriptor) (positive : v.Positive) (w : ℕ) (width : v.width = d*(w+1))
+/-- Execution, restoration, payload action and step bound of the packed coordinate loop. -/
+abbrev PackedCoordinateRun [M8.Machine.Net] {T m d work Q : ℕ} {F U : Type}
+    (v : Descriptor) (w : ℕ)
     (rankFits : d ≤ m) (parent parentInv : Fin m → ZMod (prime^(w+1)))
-    (reciprocal : ∀ i, parent i * parentInv i = 1) (pivot : Fin d → ZMod (prime^(w+1)))
-    (unit : ∀ i, IsUnit (pivot i)) (io : Fin T) (roles : Tapes T prime)
+    (pivot : Fin d → ZMod (prime^(w+1)))
+    (io : Fin T) (roles : Tapes T prime)
     (f : ℤ → Fin (prime+4)) (p : ℤ) (node scalar : Tapes 1 prime)
-    (arity : ℕ) (st : Tapes 2 prime) (freeNode : Family.NodeFree node)
-    (fits : LeafCore.small ≤ work) (cap : (LeafCore.core io).states ≤ Q) :
+    (arity : ℕ) (st : Tapes 2 prime)
+    (fits : LeafCore.small ≤ work) (cap : (LeafCore.core io).states ≤ Q) : Prop :=
     let common := CommonBank.count T
     let host := common+24
     let M := prime^(w+1)
@@ -300,7 +300,19 @@ theorem packedCoordinates_exec [M8.Machine.Net] {T m d work Q : ℕ} {F U : Type
         (∀ k : Fin 55, D.L ((k.natAdd common).castAdd work) = S.L ((k.natAdd common).castAdd work) ∧
           D.R ((k.natAdd common).castAdd work) = S.R ((k.natAdd common).castAdd work)) ∧
         ∀ a < v.beforeRows, ∀ row < v.rows, ∀ pre < v.beforeH, ∀ mid < v.between, ∀ post < v.afterD, ∀ x,
-          ext next (addr a row pre mid post (Weighted.child d weight inv x)) = ext word (addr a row pre mid post x) := by
+          ext next (addr a row pre mid post (Weighted.child d weight inv x)) = ext word (addr a row pre mid post x)
+
+/-- Execute every packed coordinate from the initial rank down to counter zero. -/
+theorem packedCoordinates_exec [M8.Machine.Net] {T m d work Q : ℕ} {F U : Type}
+    (v : Descriptor) (positive : v.Positive) (w : ℕ) (width : v.width = d*(w+1))
+    (rankFits : d ≤ m) (parent parentInv : Fin m → ZMod (prime^(w+1)))
+    (reciprocal : ∀ i, parent i * parentInv i = 1) (pivot : Fin d → ZMod (prime^(w+1)))
+    (unit : ∀ i, IsUnit (pivot i)) (io : Fin T) (roles : Tapes T prime)
+    (f : ℤ → Fin (prime+4)) (p : ℤ) (node scalar : Tapes 1 prime)
+    (arity : ℕ) (st : Tapes 2 prime) (freeNode : Family.NodeFree node)
+    (fits : LeafCore.small ≤ work) (cap : (LeafCore.core io).states ≤ Q) :
+    PackedCoordinateRun (F := F) (U := U) v w rankFits parent parentInv pivot io roles f p node scalar arity st fits cap := by
+  unfold PackedCoordinateRun
   intro common host M view N entry leave record rep clean payload weight inv logical addr ef xf eqs xqs word body u S pivotTail parentTail initial free arithmetic spare archives call
   let budget := fun i : Fin d => (1+(1800*N*(entry.tapes+5)+6))+(1+(weightedLeafCost (volume prime (view i)) (w+1)
       (LeafCore.core io).tapes (packedLeafPush (F := Empty) (U := U) io Empty.elim)+

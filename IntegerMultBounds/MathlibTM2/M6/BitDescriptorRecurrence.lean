@@ -234,7 +234,11 @@ theorem five_root_closed {Node : Type*} (q : ℕ) (layout : Node → Descriptor)
     (width : 64^depth ∣ (layout root).width) (rows : 142080^depth ∣ (layout root).rows)
     (stop : (layout root).width * 42^depth ≤ u * 64^depth)
     (positive : 0 < volume q (layout root))
-    (hleaf : ∀ x, 0 < volume q (layout x) → (layout x).width ≤ u → (steps x : ℝ) ≤ (C₀ * (layout x).width) * volume q (layout x))
+    (rootLeaf : (layout root).width ≤ u → (steps root : ℝ) ≤ (C₀ * (layout root).width) * volume q (layout root))
+    (childLeaf : ∀ x, u < (layout x).width → 0 < volume q (layout x) →
+      64 ∣ (layout x).width → 142080 ∣ (layout x).rows → ∀ i,
+      0 < volume q (layout (child x i)) → (layout (child x i)).width ≤ u →
+      (steps (child x i) : ℝ) ≤ (C₀ * (layout (child x i)).width) * volume q (layout (child x i)))
     (physical : ∀ x, u < (layout x).width → 0 < volume q (layout x) →
       64 ∣ (layout x).width → 142080 ∣ (layout x).rows → ∀ i, layout (child x i) = scheduledChild q (layout x) i)
     (hcost : ∀ x, u < (layout x).width → 0 < volume q (layout x) →
@@ -244,31 +248,34 @@ theorem five_root_closed {Node : Type*} (q : ℕ) (layout : Node → Descriptor)
     (steps root : ℝ) ≤
       (2 * C₁ / (1 - ((42 : ℝ) / 64) ^ (lam - (1 - bitSaving))) * K ^ τ * ((layout root).width : ℝ) ^ lam +
       C₀ * ((layout root).width : ℝ) ^ (1 - bitSaving) * (u : ℝ) ^ (1 - (1 - bitSaving))) * volume q (layout root) := by
-  let Nodes := {x : Node // 0 < volume q (layout x) ∧ ∃ path : List (Fin nodeChildren5.length),
+  let Nodes := {x : Node // 0 < volume q (layout x) ∧
+    ((layout x).width ≤ u → (steps x : ℝ) ≤ (C₀ * (layout x).width) * volume q (layout x)) ∧ ∃ path : List (Fin nodeChildren5.length),
     path.foldl (scheduledChild q) (layout root) = layout x}
   have aligned (x : Nodes) (hx : u < (layout x.val).width) :
       64 ∣ (layout x.val).width ∧ 142080 ∣ (layout x.val).rows := by
-    obtain ⟨path,h⟩ := x.property.2
+    obtain ⟨path,h⟩ := x.property.2.2
     rw [← h] at hx ⊢
     exact scheduledPath_internal_alignment q _ depth u width rows stop path hx
   let descend (x : Nodes) (i : Fin nodeChildren5.length) : Nodes :=
     if hx : u < (layout x.val).width then ⟨child x.val i, by
       obtain ⟨⟨b,hb⟩,hr⟩ := aligned x hx
-      rw [physical _ hx x.property.1 ⟨b,hb⟩ hr i]
-      constructor
-      · have vol := (rankDescriptor_role_size (M := q) _ 142080 64 b hb
+      have desc := physical _ hx x.property.1 ⟨b,hb⟩ hr i
+      have pos : 0 < volume q (layout (child x.val i)) := by
+        rw [desc]
+        have vol := (rankDescriptor_role_size (M := q) _ 142080 64 b hb
           ((nodeChildren5_le i).trans (by decide : 42 ≤ 64)) hr).2
         simp only [scheduledChild,hb,Nat.mul_div_cancel_left _ (by decide : 0 < 64)]
         exact Nat.pos_of_mul_pos_right (vol.symm ▸ x.property.1)
-      · obtain ⟨path,h⟩ := x.property.2
-        exact ⟨path ++ [i],by simp [List.foldl_append,h]⟩⟩ else x
+      obtain ⟨path,h⟩ := x.property.2.2
+      exact ⟨pos,childLeaf _ hx x.property.1 ⟨b,hb⟩ hr i pos,
+        path ++ [i],by simp [List.foldl_append,h,desc]⟩⟩ else x
   have next (x : Nodes) (hx : u < (layout x.val).width) (i) :
       (descend x i).val = child x.val i := by simp [descend,hx]
   exact five_descriptor_closed q (fun x : Nodes => layout x.val) descend (fun x => steps x.val) u
-    hτ hτl hlam hK hC₀ hC₁ hu (fun x => x.property.1) (fun x => hleaf x.val x.property.1)
+    hτ hτl hlam hK hC₀ hC₁ hu (fun x => x.property.1) (fun x => x.property.2.1)
     (fun x hx => ⟨(aligned x hx).1,(aligned x hx).2,fun i => by rw [next x hx,physical _ hx x.property.1 (aligned x hx).1 (aligned x hx).2]⟩)
     (fun x hx => by simpa only [next x hx] using hcost x.val hx x.property.1 (aligned x hx).1 (aligned x hx).2)
-    ⟨root,positive,[],rfl⟩
+    ⟨root,positive,rootLeaf,[],rfl⟩
 
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
