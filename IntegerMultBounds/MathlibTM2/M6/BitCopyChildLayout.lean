@@ -342,6 +342,38 @@ theorem copyPacked_recursiveTranspose (parent : Descriptor) (w rows : ℕ)
     rw [← layout,swap,known]
   exact fun i => same ▸ correct i
 
+/-- Invoke the recursive procedure on the packed record. The induction
+hypothesis is needed only at the strict child width, and the stack call
+adds two steps to the child's execution. -/
+theorem copyPackedCall_exec [M8.Machine.Net] {P U : Type}
+    (body : P → Pr P (N+35) Q prime U) (f : P) (parent : Descriptor) (w rows : ℕ)
+    (width : parent.width = 64*(w+1)) (splitRows : parent.rows = 142080*rows) :
+    let M := prime^(w+1)
+    let W := M^112 * (parent.beforeRows*rows*parent.beforeH*parent.between*parent.afterD)
+    let child := rankDescriptor prime (7*(w+1)) (57*(w+1)) (role parent 142080)
+    let position := copyRecursivePosition parent w rows splitRows
+    let bank : Fin 35 ↪ Fin (N+35) := (Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)
+    let stored := RecordReady (b := prime) (w := w) (d := 15) (W := M*W) bank M.size (M*W).size []
+      SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0
+    let clean := fun (D : Stacks (N+35) prime) => ∀ k : Fin (N+35), 35 ≤ k.val → D.L k = [] ∧ D.R k = []
+    ∀ budget : ℕ,
+      (child.width < parent.width → ∀ v S word, stored word S → clean S → ∃ z F n changed, z.user = v.user ∧
+        n ≤ budget ∧ Exec body (body f) (mk v S) n (mk z F) ∧ stored changed F ∧ clean F ∧
+        ∀ i, changed (position i) = Shared50RecursiveNodeRows.transpose (one_dvd _) (word ∘ position) i) →
+      ∀ v S word, stored word S → clean S → ∃ z F n changed, z.user = v.user ∧ n ≤ budget+2 ∧
+        Exec body (.call f) (mk v S) n (mk z F) ∧ stored changed F ∧ clean F ∧
+        ∀ (h d : Fin 7 → ZMod M) (u : Fin 1 → ZMod M) (j : Fin (M*W)),
+          changed (FlatCoordinateLayout.index (Fin.append (Fin.append d h) u) j) =
+            word (FlatCoordinateLayout.index (Fin.append (Fin.append h d) u) j) := by
+  intro M W child position bank stored clean budget recurse v S word ready free
+  have smaller : child.width < parent.width := by
+    rw [width]
+    change 7*(w+1) < 64*(w+1)
+    omega
+  obtain ⟨z,F,n,changed,user,time,run,returned,clear,transpose⟩ := recurse smaller v S word ready free
+  exact ⟨z,F,n+2,changed,user,Nat.add_le_add_right time 2,Exec.call run,returned,clear,
+    copyRecursivePacked_swap parent w rows splitRows word changed transpose⟩
+
 /-- The prepared output of the seven exchanges contains the incoming COPY bit
 at its active-first descriptor position, including the final untouched atom. -/
 theorem copyPacked_read {w W T H J : ℕ}
