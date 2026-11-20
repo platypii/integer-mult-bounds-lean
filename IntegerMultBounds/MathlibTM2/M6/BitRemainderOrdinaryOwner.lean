@@ -192,6 +192,58 @@ theorem ordinaryMetadata_exec {T Q s w : ℕ} {P U : Type} (body : P → Pr P T 
     exact (ordinaryEntryWords_unused W a b h root parent width prefixes j.val
       (fun i eq => used ⟨i,Fin.ext eq⟩)).symm
 
+/-- The directory transfer installs the queue and its width in place.
+Only these seven remaining scanner words need a source register. -/
+def ordinaryHeaderPorts : Fin 7 ↪ Fin 59 := ⟨![2,29,30,31,45,53,55],by decide⟩
+
+theorem ordinaryHeaders_exec {T Q s w : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
+    (source : Fin 7 → Fin T) (bank : Fin s ↪ Fin T) (room : 59 ≤ s)
+    (tmp aux : Fin T) (W a b h : ℕ) (root : Bool) (parent : Fin 64 → ZMod (prime^(w+1)))
+    (width : ℕ) (queue : List (Fin (prime+4))) (u : HS T Q prime U) (S : Stacks T prime) :
+    let words := ordinaryEntryWords W a b h root parent width queue
+    let dst := (ordinaryHeaderPorts.trans (Fin.castLEEmb room)).trans bank
+    (∀ i, S.R (source i) = words (ordinaryHeaderPorts i).val) →
+    (∀ i j, source i ≠ dst j) → (∀ i, [source i,dst i,tmp,aux].Nodup) →
+    S.R tmp = [] → S.R aux = [] →
+    (∀ j, S.R (bank j) = if j.val = 47 then List.replicate width (bitSymbol true)
+      else if j.val = 58 then queue else []) →
+    ∃ z F, z.user = u.user ∧
+      Exec body (Record.copyLeafHeaders source dst tmp aux (List.finRange 7)) (mk u S)
+        (((List.finRange 7).map (fun i => 6*(words (ordinaryHeaderPorts i).val).length+6)).sum+1) (mk z F) ∧
+      F.L = S.L ∧ (∀ j, F.R (bank j) = words j.val) ∧ ∀ j, (∀ i, dst i ≠ j) → F.R j = S.R j := by
+  intro words dst sources apart ports temp auxFree initial
+  have separate : ∀ i : Fin 7, (ordinaryHeaderPorts i).val ≠ 47 ∧ (ordinaryHeaderPorts i).val ≠ 58 := by decide
+  obtain ⟨z,F,user,run,left,loaded,off⟩ := Record.copyLeafHeaders_exec body source dst tmp aux apart ports
+    (List.finRange 7) (List.nodup_finRange _) u S temp auxFree (by
+      intro i _
+      change S.R (bank ((ordinaryHeaderPorts i).castLE room)) = []
+      simp [initial,(separate i).1,(separate i).2])
+  refine ⟨z,F,user,by simpa only [sources] using run,left,?_,fun j hj => off j (fun i _ => hj i)⟩
+  intro j
+  by_cases used : ∃ i, (ordinaryHeaderPorts i).castLE room = j
+  · obtain ⟨i,rfl⟩ := used
+    exact (loaded i (List.mem_finRange i)).trans (sources i)
+  rw [off _ (fun i _ eq => used ⟨i,bank.injective eq⟩),initial]
+  have absent (i : Fin 7) : (ordinaryHeaderPorts i).val ≠ j.val := fun eq => used ⟨i,Fin.ext eq⟩
+  by_cases widthCell : j.val = 47
+  · simp [widthCell,words,ordinaryEntryWords]
+  by_cases queueCell : j.val = 58
+  · simp [queueCell,words,ordinaryEntryWords]
+  simp only [widthCell,queueCell,ite_false]
+  apply Eq.symm
+  apply ordinaryEntryWords_unused
+  intro i
+  fin_cases i <;> first
+    | exact Ne.symm widthCell
+    | exact Ne.symm queueCell
+    | exact absent 0
+    | exact absent 1
+    | exact absent 2
+    | exact absent 3
+    | exact absent 4
+    | exact absent 5
+    | exact absent 6
+
 theorem ordinaryEntryWords_parameters {w : ℕ} (W beforeRows rows beforeH : ℕ) (root : Bool)
     (parent : Fin 64 → ZMod (prime^(w+1))) (width : ℕ) (prefixes : List (Fin (prime+4)))
     (units : root = true → ∀ i, parent i = 1) :

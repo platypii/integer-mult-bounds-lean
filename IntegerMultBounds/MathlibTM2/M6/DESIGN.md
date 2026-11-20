@@ -742,8 +742,12 @@ scanner’s unary width. For an empty root directory, each ancestor adds
 `(width/64)*4096` digits. The rank bound of 42 gives
 `11*directoryDigits + 2048*child.width ≤ 2048*root.width` along every path.
 The aligned stopping cutoff therefore covers the inherited width at active
-children. The recursive invocation still needs the scanner register placement,
-its packed parent weights and the initial chart representation.
+children. The queue transfer writes scanner tapes 58 and 47 using the selected count on
+caller tape 3 or 5, and restores its temporary volume counter. Given the
+other seven source words, `childQueue_headers_exec` follows the transfer with
+a header copy and establishes the exact 59-register scanner bank. It preserves
+the installed queue and width. The recursive invocation still needs the
+packed parent weights and the initial chart representation.
 
 The semantic five-class node (S5d.3) certifies upstream's accounting under ideal routes and
 partial swaps. Its exponent `1 - 10/5769` holds under that idealization only.

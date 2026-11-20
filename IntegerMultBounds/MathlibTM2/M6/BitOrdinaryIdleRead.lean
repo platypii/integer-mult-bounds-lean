@@ -16,6 +16,35 @@ open Cover LabelTraversal FlatCoordinateLayout
 
 open Stack Host
 
+/-- Finish a nonroot scanner bank after the child queue transfer. The seven
+header sources and two work registers can stay outside the caller/scan bank. -/
+theorem childQueue_headers_exec {T Q w : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
+    (bank : Fin (21+59) ↪ Fin T) (source : Fin 7 → Fin T) (tmp aux : Fin T)
+    (W a b h width : ℕ) (parent : Fin 64 → ZMod (prime^(w+1))) (tail queue : List (Fin (prime+4)))
+    (u v : HS T Q prime U) (S : Stacks T prime) (p : Pr P T Q prime U) (t : ℕ) :
+    let scanner := (Fin.natAddEmb 21 (m := 59)).trans bank
+    let dst := ordinaryHeaderPorts.trans scanner
+    let words := ordinaryEntryWords W a b h false parent width queue
+    let D : Stacks T prime := {S with R := (Function.update (Function.update (Function.update
+      S.R (bank 7) tail) (scanner 58) queue) (scanner 47) (List.replicate width Node.tick))}
+    Exec body p (mk u S) t (mk v D) → v.user = u.user →
+    (∀ j, S.R (scanner j) = []) → (∀ i, S.R (source i) = words (ordinaryHeaderPorts i).val) →
+    (∀ k ∈ tmp :: aux :: (List.finRange 7).map source, ∀ j, k ≠ bank j) →
+    (∀ i, [source i,dst i,tmp,aux].Nodup) → S.R tmp = [] → S.R aux = [] →
+    ∃ z F, z.user = u.user ∧ F.L = S.L ∧ (∀ j : Fin 59, F.R (scanner j) = words j.val) ∧
+      Exec body (p.seq (Cover.Fallback.Record.copyLeafHeaders source dst tmp aux (List.finRange 7)))
+        (mk u S) (t+(((List.finRange 7).map (fun i => 6*(words (ordinaryHeaderPorts i).val).length+6)).sum+1)) (mk z F) := by
+  intro scanner dst words D prior same fresh sources outside ports temp auxFree
+  have keep (k : Fin T) (hk : k ∈ tmp :: aux :: (List.finRange 7).map source) : D.R k = S.R k := by
+    simp [D,scanner,Function.update_of_ne,outside k hk]
+  have mem (i : Fin 7) : source i ∈ tmp :: aux :: (List.finRange 7).map source :=
+    List.mem_cons_of_mem _ (List.mem_cons_of_mem _ (List.mem_map_of_mem (List.mem_finRange i)))
+  obtain ⟨z,F,user,run,left,loaded,_⟩ := ordinaryHeaders_exec body source scanner (by decide) tmp aux
+    W a b h false parent width queue v D (fun i => (keep _ (mem i)).trans (sources i))
+    (fun i j => outside _ (mem i) _) ports ((keep _ (by simp)).trans temp)
+    ((keep _ (by simp)).trans auxFree) (childQueue_scanner bank S tail queue width fresh)
+  exact ⟨z,F,user.trans same,left,loaded,Exec.seq prior run⟩
+
 /-- Normalize the caller's chart headers and decode the three row dimensions
 and both spectator factors for the scanner. -/
 theorem ordinaryDirectoryHeaders_exec {K T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
