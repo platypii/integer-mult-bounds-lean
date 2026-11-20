@@ -674,9 +674,12 @@ updated owners in place and costs at most `stage.cost*(stage.tapes+5)+6`.
 `OrdinaryParentRun.chartRoundTrip` instantiates both scheduled chart executions
 around the installed ordinary-parent scan. It preserves each other owner word
 and proves the residual read equation on the selected owner at the original
-label. Its time bound sums both hosted chart costs, normalization and the clean
-parent budget. The recursive node still needs this sum bounded uniformly for
-the stages and child execution that its program actually uses. At return the selected bank contains exactly the
+label. Given the installed child's width-power times volume bound, the
+theorem bounds elapsed time by packed volume times the sum of the two chart
+rates, the fixed directory setup coefficient and the scanner's width-power
+rate, plus 13 steps. The chart and scanner coefficients are independent of the
+layout and precision for fixed machine parameters. `scheduledOrdinaryParent_exec`
+supplies the required child budget for the scheduled scanner. At return the selected bank contains exactly the
 restored archive suffix and the final projector tape. All its other stacks are empty.
 
 The semantic five-class node (S5d.3) certifies upstream's accounting under ideal routes and

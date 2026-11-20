@@ -626,6 +626,14 @@ def OrdinaryParentRun [M8.Machine.Net] {common work w rows B : ℕ} {U : Type}
       F.R (bank 46) = raw.R (bank 46) ∧ bankStock visited (mk z F) = (raw.R (bank 46)).length+(F.R (bank 48)).length ∧
       ∀ i : Fin (66+K), 58 ≤ i.val → F.L ((placement i).castAdd 5) = [] ∧ F.R ((placement i).castAdd 5) = []
 
+/-- Hosted cost per packed symbol. The chart constants depend only on the
+selected port, owner and direction, so the same rate applies across layouts. -/
+noncomputable def packedChartRate [M8.Machine.Net] {k : ℕ} (src : Fin k)
+    (c : Certificates.PR589.Nine.PortCertificate) (hc : c.Checked) (inverse : Bool) (width : ℕ) : ℝ :=
+  let chart := packedRemainderChart_stage src c hc inverse
+  (chart.choose + 63*|LeafCore.C| *(width : ℝ)^M8.Machine.BudgetBound.tau) *
+    ((chart.choose_spec.choose : ℝ)+5)
+
 theorem OrdinaryParentRun.chartRoundTrip [M8.Machine.Net] {common work w rows B : ℕ} {U : Type}
     (interval : ℕ × ℕ) (layout : Descriptor)
     (positive : layout.Positive) (digits : layout.width = 64*(w+1)) (split : layout.rows = 142080*rows)
@@ -634,7 +642,9 @@ theorem OrdinaryParentRun.chartRoundTrip [M8.Machine.Net] {common work w rows B 
     (room : Record.size 127+(rowSwapBlock.tapes+35+2) ≤ (common+24+31+work)+1)
     (fits : (36+2*64+1+(RingFormula.conjugationDepth 64+1)*13)+3 ≤ (common+24+31+work)+1)
     (pool : (RingFormula.conjugationDepth 64+1)*13 ≤ work) (space : 58 ≤ common+24+31+work)
-    (overhead childBudget : ℕ)
+    (overhead childBudget : ℕ) (C : ℝ)
+    (childTime : (childBudget : ℝ) ≤ C*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau*
+      ((prime^(w+1))^128*(layout.between*layout.afterD) : ℕ))
     (localBody : Unit → Pr Unit (66+(common+24+31+work)) columnCapacity prime U)
     (run : OrdinaryParentRun (rows := rows) (B := B) interval layout root parent room fits pool space overhead childBudget localBody)
     (units : root = true → ∀ i, parent i = 1) (width : ℕ) (prefixes : ℕ → List (Fin (prime+4)))
@@ -662,13 +672,11 @@ theorem OrdinaryParentRun.chartRoundTrip [M8.Machine.Net] {common work w rows B 
       (readWithSuccessorClock (ports 1) (advanceDirectory 64 ports))
     let push := max (mnProgPush step) (mnProgPush (localBody ()))
     let rarePush := max (mnProgPush (directoryExceptionalCore (P := Unit) (U := U) 127 room remainderAnchorFits)) (mnProgPush (body ()))
-    let rate := exceptionalVolumeRate U 127 64 scratch.length rarePush w
     let p := max (mnProgPush (directoryQueueInitProgram (m := 64) (d := 127) (P := Unit) (Q := columnCapacity) (U := U) room fits)) (mnProgPush (body ()))
-    let clean := (((366+16*64*64+19*64+344)*volume prime layout)/(prime^layout.width*142080))+ordinaryOwnerScanTime 64 127 proj.rank w W data.H W.size data.records N
-          (prefixes 0).length 0 0 0 privateTapes.length push scratch.length rate p overhead childBudget
+    let scanRate := (ordinaryOwnerScanTime_rate U proj.rank privateTapes.length push scratch.length rarePush p overhead proj.rank_le_height C).choose
     let metadata := ordinaryEntryWords W layout.beforeRows rows layout.beforeH root parent width ((List.range parents).flatMap prefixes)
     ∃ program : Pr Unit ((66+(K+1))+5) columnCapacity prime U,
-    ∀ {k : ℕ} (src : Fin k) (c : Certificates.PR589.Nine.PortCertificate), c.Checked →
+    ∀ {k : ℕ} (src : Fin k) (c : Certificates.PR589.Nine.PortCertificate) (hc : c.Checked),
     ∃ stage back : SharedBankStage.Stage _ k prime (phaseOwners (N := data.records*N)),
       let share := payloadPlacement (reg 0) (stage.slots src)
       let chartBank : Fin stage.tapes ↪ Fin (((66+(K+1))+5)+stage.tapes) := Fin.natAddEmb _
@@ -686,21 +694,62 @@ theorem OrdinaryParentRun.chartRoundTrip [M8.Machine.Net] {common work w rows B 
       RepT (stage.input words) S.L S.R → RepT (back.input words) seed.L seed.R →
       let start := ordinaryOwnerBank (T := 66+(K+1)) metadata S
       let raw : Stacks _ prime := ⟨start.inp,start.out,Fin.addCases start.L seed.L,Fin.addCases start.R seed.R⟩
-      ∃ z F t, ∃ (final : Fin k → Fin (data.records*N) → ZMod 2), t ≤ stage.cost*(stage.tapes+5)+6+(1+clean)+(back.cost*(back.tapes+5)+6) ∧
+      ∃ z F, ∃ t : ℕ, ∃ (final : Fin k → Fin (data.records*N) → ZMod 2), (t : ℝ) ≤ (packedChartRate src c hc false layout.width +
+          packedChartRate src c hc true layout.width + (366+16*64*64+19*64+344) +
+          scanRate*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau)*(data.records*N : ℕ) + 13 ∧
         Exec (fun f => embProg base id (installed f)) ((embProg base id prior).seq leave) (mk u raw) t (mk z F) ∧
         RepT (phaseOwners final) (fun i => F.L (base (owners i))) (fun i => F.R (base (owners i))) ∧
         (∀ i, i ≠ src → final i = words i) ∧
         OriginalPortReads data.records W parents interval parent c (words src) (final src) := by
-  intro K M W N directory proj placement reg body outer parents data privateTapes scratch ports step push rarePush rate p clean metadata
+  intro K M W N directory proj placement reg body outer parents data privateTapes scratch ports step push rarePush p scanRate metadata
+  let rate := exceptionalVolumeRate U 127 64 scratch.length rarePush w
+  let clean := (((366+16*64*64+19*64+344)*volume prime layout)/(prime^layout.width*142080))+ordinaryOwnerScanTime 64 127 proj.rank w W data.H W.size data.records N
+          (prefixes 0).length 0 0 0 privateTapes.length push scratch.length rate p overhead childBudget
+  have spectators : 0 < W := Nat.mul_pos positive.2.2.2.1 positive.2.2.2.2
+  have rowsPos : 0 < rows := by have := positive.2.1; omega
+  have blocksPos : 0 < B := by
+    by_contra! h
+    have := positive.2.2.1
+    simp [Nat.eq_zero_of_le_zero h] at shape
+    omega
+  have rowCount : directory.rows = rows := by simp [directory,role,split]
+  have live : 0 < data.records := by
+    change 0 < directory.beforeRows*directory.rows*directory.beforeH
+    rw [rowCount]
+    exact Nat.mul_pos (Nat.mul_pos positive.1 rowsPos) positive.2.2.1
+  have cells : prime^layout.width = M^64 := by rw [digits,Nat.mul_comm 64,pow_mul]
+  have fitsPrefix : (prefixes 0).length ≤ N := by
+    rw [widths 0 (Nat.mul_pos (Nat.mul_pos positive.1 rowsPos) blocksPos)]
+    apply widthFits.trans
+    rw [cells]
+    exact (Nat.pow_le_pow_right (by exact pow_pos Shared50ModularControl.prime_prime.pos _) (by decide : 64 ≤ 128)).trans
+      (Nat.le_mul_of_pos_right _ spectators)
+  have size : volume prime directory = data.records*N := by
+    change layout.beforeRows*directory.rows*layout.beforeH*prime^layout.width*layout.between*prime^layout.width*layout.afterD =
+      (layout.beforeRows*directory.rows*layout.beforeH)*(M^128*(layout.between*layout.afterD))
+    rw [cells,show (128 : ℕ) = 64+64 by decide,pow_add]
+    ac_rfl
+  have setup := ordinaryParentSetup_volume_le layout rows split
+  change _ ≤ (366+16*64*64+19*64+344)*volume prime directory at setup
+  rw [size] at setup
+  have scan := (ordinaryOwnerScanTime_rate U proj.rank privateTapes.length push scratch.length rarePush p overhead
+    proj.rank_le_height C).choose_spec w W data.records (prefixes 0).length childBudget spectators live fitsPrefix childTime
+  have cleanTime : (clean : ℝ) ≤ ((366+16*64*64+19*64+344) +
+      scanRate*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau)*(data.records*N : ℕ) := by
+    rw [add_mul]
+    dsimp only [clean]
+    rw [Nat.cast_add]
+    apply add_le_add _ scan
+    exact_mod_cast setup
   obtain ⟨selectors,execute⟩ := run
   let bank := (Fin.castLEEmb (show 72 ≤ 66+(K+1) by omega)).trans (Fin.castAddEmb 5)
   let program := ordinaryParentProgram room fits root interval bank step (readWithSuccessorClock (ports 1) (advanceDirectory 64 ports)) selectors
   refine ⟨program,?_⟩
   intro k src c hc
-  obtain ⟨_,_,forward⟩ := packedRemainderChart_stage src c hc false
-  obtain ⟨_,_,reverse⟩ := packedRemainderChart_stage src c hc true
-  obtain ⟨stage,_,_,forwardRun⟩ := forward layout w rows B positive digits split shape
-  obtain ⟨back,_,_,reverseRun⟩ := reverse layout w rows B positive digits split shape
+  let forward := packedRemainderChart_stage src c hc false
+  let reverse := packedRemainderChart_stage src c hc true
+  obtain ⟨stage,_,forwardCost,forwardRun⟩ := forward.choose_spec.choose_spec layout w rows B positive digits split shape
+  obtain ⟨back,_,reverseCost,reverseRun⟩ := reverse.choose_spec.choose_spec layout w rows B positive digits split shape
   refine ⟨stage,back,?_⟩
   intro share chartBank owners ret base cap fitsState installed enter prior leave words S seed start input seedReady initial raw
   have chartFits : stage.states ≤ cap := (le_max_left ..).trans (le_max_left ..)
@@ -730,11 +779,21 @@ theorem OrdinaryParentRun.chartRoundTrip [M8.Machine.Net] {common work w rows B 
     simpa [phaseOwners,updated,owners,chartBank] using (reads i j).symm
   obtain ⟨y,D,n,price,exec,done⟩ := ownerRun_returnChart back (le_max_right ..) owners installed prior words updated seed seedReady
     initial F start z t run represented
-  refine ⟨y,D,t+n,back.transform updated,Nat.add_le_add paid price,exec,done,?_,?_⟩
+  refine ⟨y,D,t+n,back.transform updated,?_,exec,done,?_,?_⟩
+  · have widthBound : (w+1)*64 ≤ layout.width := by omega
+    have combined := Nat.add_le_add paid price
+    have times : ((t+n : ℕ) : ℝ) ≤ (stage.cost*(stage.tapes+5) : ℕ) + 6 + (1+(clean : ℝ)) +
+        ((back.cost*(back.tapes+5) : ℕ) + 6) := by exact_mod_cast combined
+    have enterBound := forwardCost layout.width widthBound
+    have leaveBound := reverseCost layout.width widthBound
+    change _ ≤ (((forward.choose : ℝ)+_)*(data.records*N : ℕ))*_ at enterBound
+    change _ ≤ (((reverse.choose : ℝ)+_)*(data.records*N : ℕ))*_ at leaveBound
+    unfold packedChartRate
+    dsimp only
+    linarith only [times,enterBound,leaveBound,cleanTime]
   · intro i hi
     exact ((reverseRun updated).1 i hi).trans ((Function.update_of_ne hi ..).trans ((forwardRun words).1 i hi))
-  · have rowCount : directory.rows = rows := by simp [directory,role,split]
-    have count : data.records = directory.beforeRows*directory.rows*B*M^(64*64) := by
+  · have count : data.records = directory.beforeRows*directory.rows*B*M^(64*64) := by
       rw [rowCount]; exact remainderDirectoryCount layout w rows B split shape
     have undo := (reverseRun updated).2
     simp only [ite_true] at undo
