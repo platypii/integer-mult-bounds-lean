@@ -166,18 +166,13 @@ theorem phasePrepared_frame [Net] {k w W : ℕ} (A B : List (FlatCoordinateSched
 noncomputable def phaseOwners {k N : ℕ} (data : Fin k → Fin N → ZMod 2) : Tapes k prime :=
   ⟨fun _ => 0,fun j => putWord (fun _ => blank) 0 (List.ofFn fun i => SparseRoleCircuit.encode (a := prime) (data j i))⟩
 
-/-- Execute the scalar part of a phase instruction on the same permanent
-tapes as its frame changes. All sources are read at their original values. -/
-theorem phaseGate_stage {k V : ℕ} (dst : Fin k) (sources : List (Fin k))
-    (separate : dst ∉ sources) (positive : 0 < V) :
+/-- Execute a list of XOR additions between disjoint sets of permanent tapes. -/
+theorem ownerAdds_stage {α β : Type*} {k V : ℕ} (target : α → Fin k) (src : β → Fin k)
+    (off : ∀ a b, target a ≠ src b) (entries : List (α × β)) (positive : 0 < V) :
     ∃ stage : SharedBankStage.Stage _ k prime (phaseOwners (N := V)),
-      stage.cost ≤ 76*sources.length*V ∧ ∀ data,
-        stage.transform data = Function.update data dst
-          (fun i => data dst i + (sources.map (fun src => data src i)).sum) := by
-  let src := fun j : {j // j ∈ sources} => j.val
-  let target := fun _ : Unit => dst
-  have off : ∀ a b, target a ≠ src b := fun _ b eq => separate ((show dst = b.val from eq).symm ▸ b.property)
-  let entries := sources.attach.map (fun j => ((),j))
+      stage.cost ≤ 76*entries.length*V ∧ ∀ data j i,
+        stage.transform data j i = Circuit.run (SparseCircuit.copies target src entries)
+          (fun j => data j i) j := by
   let bs := FlatCoordinateSchedule.bits V
   let controls := CountedLoopReuseAlphabet.controls (a := prime) CountedLoopReuseAlphabet.empty
     (CountedLoopReuseAlphabet.binary bs) 1 1
@@ -200,16 +195,31 @@ theorem phaseGate_stage {k V : ℕ} (dst : Fin k) (sources : List (Fin k))
   · intro data
     exact SparseRoleCircuit.copies_hoare target src off entries (fun _ _ => blank) (fun _ => 0)
       data bs (FlatCoordinateSchedule.bits_value V)
-  · simpa [entries] using SparseRoleCircuit.cost_linear entries.length V bs
+  · exact SparseRoleCircuit.cost_linear entries.length V bs
       (FlatCoordinateSchedule.bits_value V) (FlatCoordinateSchedule.bits_canonical V) positive
-  · intro data
-    funext j i
-    change Circuit.run _ _ j = _
-    rw [SparseCircuit.copies_run _ _ _ off]
-    by_cases eq : j = dst
-    · subst j
-      simp [entries,src,target,List.map_map,Function.comp_def]
-    · simp [entries,src,target,eq,Ne.symm eq,List.map_map,Function.comp_def]
+  · intros; rfl
+
+/-- Execute the scalar part of a phase instruction on the same permanent
+tapes as its frame changes. All sources are read at their original values. -/
+theorem phaseGate_stage {k V : ℕ} (dst : Fin k) (sources : List (Fin k))
+    (separate : dst ∉ sources) (positive : 0 < V) :
+    ∃ stage : SharedBankStage.Stage _ k prime (phaseOwners (N := V)),
+      stage.cost ≤ 76*sources.length*V ∧ ∀ data,
+        stage.transform data = Function.update data dst
+          (fun i => data dst i + (sources.map (fun src => data src i)).sum) := by
+  let src := fun j : {j // j ∈ sources} => j.val
+  let target := fun _ : Unit => dst
+  have off : ∀ a b, target a ≠ src b := fun _ b eq => separate ((show dst = b.val from eq).symm ▸ b.property)
+  let entries := sources.attach.map (fun j => ((),j))
+  obtain ⟨stage, bound, effect⟩ := ownerAdds_stage target src off entries positive
+  refine ⟨stage,by simpa [entries] using bound,?_⟩
+  intro data
+  funext j i
+  rw [effect, SparseCircuit.copies_run _ _ _ off]
+  by_cases eq : j = dst
+  · subst j
+    simp [entries,src,target,List.map_map,Function.comp_def]
+  · simp [entries,src,target,eq,Ne.symm eq,List.map_map,Function.comp_def]
 
 open IntegerMultBounds.Networks.Certificates.PR589 in
 theorem phaseRawGate_stage {k V : ℕ} (owner : Fin 661 ↪ Fin k) (g : RawGate)
