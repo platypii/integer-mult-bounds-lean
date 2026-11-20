@@ -11,17 +11,17 @@ open IntegerMultBounds.Networks.Shared50ModularControl (prime)
 
 noncomputable def weightedLeafRate [M8.Machine.Net] (tapes push : ℕ) (L : ℝ) : ℝ :=
   (1+186*(push : ℝ))*((3*(210*(2*((prime.size : ℝ)+1)^2)+16120+100)+387)+
-    2*(|LeafCore.C| * L*((tapes : ℝ)+5)))+(12000*(1+186*(push : ℝ))+125)
+    2*(|LeafCore.C| * L*((tapes : ℝ)+5)))+(12000*(1+186*(push : ℝ))+125+448)
 
 theorem weightedLeafCost_le [M8.Machine.Net] (N width tapes push : ℕ) {L : ℝ}
     (widthBound : ((max 1 width : ℕ) : ℝ)^M8.Machine.BudgetBound.tau ≤ L) :
     (weightedLeafCost N width tapes push : ℝ) ≤ weightedLeafRate tapes push L*N := by
   have core := RevBudget.coreCost_le N width widthBound
-  unfold weightedLeafCost weightedLeafRate
+  unfold weightedLeafCost weightedLeafBodyCost weightedLeafRate
   push_cast
   calc
     _ ≤ (1+186*(push : ℝ))*((3*(210*(2*((prime.size : ℝ)+1)^2)+16120+100)+387)*N+
-        2*((|LeafCore.C| * N*L)*((tapes : ℝ)+5)))+(12000*(1+186*(push : ℝ))+125)*N := by gcongr
+        2*((|LeafCore.C| * N*L)*((tapes : ℝ)+5)))+(12000*(1+186*(push : ℝ))+125)*N + 448*N := by gcongr
     _ = _ := by ring
 
 /-- Successive good records retain the parent's volume. Their linear overheads
