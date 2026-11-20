@@ -221,10 +221,10 @@ theorem phaseIntervalChild_width {p : ℕ × ℕ} (checked : Geometry.Moves.Chec
 using the coordinate-dimension machine. -/
 def phaseField (pre tail : ℕ) : Fin (pre+1+tail) := ⟨pre,by omega⟩
 
-noncomputable def phaseHeaderProgram (lo hi : ℕ) :=
+noncomputable def phaseHeaderProgram (lo hi : ℕ) (axes : ℕ := 8) :=
   FamilyPlacementAlphabet.sequence
-    (FamilyPlacementAlphabet.sequence (FlatCoordinateDimensions.program (phaseField lo (8-hi)))
-      (FlatCoordinateDimensions.program (phaseField (8-hi+lo) 0)))
+    (FamilyPlacementAlphabet.sequence (FlatCoordinateDimensions.program (phaseField lo (axes-hi)))
+      (FlatCoordinateDimensions.program (phaseField (axes-hi+lo) 0)))
     (DimensionProductDescriptor.program (q := prime))
 
 open FlatCoordinateSchedule (bits) in
@@ -233,25 +233,25 @@ noncomputable def phaseHeaderInput (lo hi w W : ℕ) :=
     (DimensionProductDescriptor.input (bits w) (bits (hi-lo)))
 
 open FlatCoordinateSchedule (bits) in
-noncomputable def phaseHeaderOutput (lo hi w W : ℕ) :=
-  ((FlatCoordinateDimensions.output (phaseField lo (8-hi)) w W).append
-    (FlatCoordinateDimensions.output (phaseField (8-hi+lo) 0) w 1)).append
+noncomputable def phaseHeaderOutput (lo hi w W : ℕ) (axes : ℕ := 8) :=
+  ((FlatCoordinateDimensions.output (phaseField lo (axes-hi)) w W).append
+    (FlatCoordinateDimensions.output (phaseField (axes-hi+lo) 0) w 1)).append
     (DimensionProductDescriptor.output (bits w) (bits (hi-lo)) (hi-lo) w)
 
 def phaseHeaderSlots : Fin 6 → Fin 24 := ![16,16,5,19,14,7]
 
 open FlatCoordinateSchedule (bits bits_value bits_canonical) in
-theorem phaseHeader_runs {lo hi w W : ℕ} (ordered : lo ≤ hi) (fits : hi ≤ 8) (hw : 0 < w) (hW : 0 < W) :
-    let child := phaseIntervalChild lo hi w W
+theorem intervalHeader_runs {lo hi w W axes : ℕ} (nonempty : 0 < axes) (ordered : lo ≤ hi) (fits : hi ≤ axes) (hw : 0 < w) (hW : 0 < W) :
+    let child := phaseIntervalChild lo hi w W axes
     let hs := fun i => bits (RecursiveDimensionBank.values child i)
-    let output := phaseHeaderOutput lo hi w W
-    HoareTime (phaseHeaderProgram lo hi) (fun z => z = phaseHeaderInput lo hi w W) (fun z => z = output)
-      (1300*((prime^w)^16*W)) ∧ RecursiveDimensionBank.Headers child hs ∧
+    let output := phaseHeaderOutput lo hi w W axes
+    HoareTime (phaseHeaderProgram lo hi axes) (fun z => z = phaseHeaderInput lo hi w W) (fun z => z = output)
+      ((2*(24*axes+333)+250)*((prime^w)^(axes+axes)*W)) ∧ RecursiveDimensionBank.Headers child hs ∧
       ∀ i, output.head (phaseHeaderSlots i) = 1 ∧
         output.tape (phaseHeaderSlots i) = RadixZeroFill.encodedBinary (hs i) := by
   intro child hs output
-  let p := phaseField lo (8-hi)
-  let m := phaseField (8-hi+lo) 0
+  let p := phaseField lo (axes-hi)
+  let m := phaseField (axes-hi+lo) 0
   have tail (a b) : FlatCoordinateLayout.suffixFields (phaseField a b) = b := by
     unfold FlatCoordinateLayout.suffixFields phaseField
     simp only
@@ -264,29 +264,41 @@ theorem phaseHeader_runs {lo hi w W : ℕ} (ordered : lo ≤ hi) (fits : hi ≤ 
   refine ⟨run.consequence (fun _ h => h) (fun _ h => h) ?_,⟨fun i => bits_value _,fun i => bits_canonical _⟩,?_⟩
   · let M := prime^w
     have pos : 0 < M := ActualAffineScaling.modulus_pos w
-    let V := M^16*W
+    let V := M^(axes+axes)*W
     have hv : 0 < V := Nat.mul_pos (pow_pos pos _) hW
-    have left : M^(lo+1+(8-hi))*W ≤ V := Nat.mul_le_mul_right _ (Nat.pow_le_pow_right pos (by omega))
-    have right : M^((8-hi+lo)+1+0) ≤ V :=
-      (Nat.pow_le_pow_right pos (by omega : (8-hi+lo)+1+0 ≤ 16)).trans (Nat.le_mul_of_pos_right _ hW)
+    have left : M^(lo+1+(axes-hi))*W ≤ V := Nat.mul_le_mul_right _ (Nat.pow_le_pow_right pos (by omega))
+    have right : M^((axes-hi+lo)+1+0) ≤ V :=
+      (Nat.pow_le_pow_right pos (by omega : (axes-hi+lo)+1+0 ≤ axes+axes)).trans (Nat.le_mul_of_pos_right _ hW)
     have width : (hi-lo)*w ≤ V := by
       have positive : child.Positive := ⟨Nat.zero_lt_one,Nat.zero_lt_one,pow_pos pos _,pow_pos pos _,Nat.mul_pos (pow_pos pos _) hW⟩
       have h := RecursiveHeaderBounds.values_le_volume FlatCoordinateDimensions.hprime _ positive (3 : Fin 6)
-      exact h.trans_eq (phaseIntervalChild_volume ordered fits w W)
+      exact h.trans_eq (intervalChild_volume ordered fits w W)
     simp only [p,m,tail,Nat.mul_one,phaseField,ActualAffineScaling.modulus] at *
-    change (24*lo+24*(8-hi)+333)*(M^(lo+1+(8-hi))*W) +
-      (24*(8-hi+lo)+24*0+333)*M^((8-hi+lo)+1+0)+1+(53*((hi-lo)*w)+28)+1 ≤ 1300*V
-    have l := Nat.mul_le_mul (by omega : 24*lo+24*(8-hi)+333 ≤ 525) left
-    have r := Nat.mul_le_mul (by omega : 24*(8-hi+lo)+24*0+333 ≤ 525) right
+    change (24*lo+24*(axes-hi)+333)*(M^(lo+1+(axes-hi))*W) +
+      (24*(axes-hi+lo)+24*0+333)*M^((axes-hi+lo)+1+0)+1+(53*((hi-lo)*w)+28)+1 ≤ (2*(24*axes+333)+250)*V
+    have l := Nat.mul_le_mul (by omega : 24*lo+24*(axes-hi)+333 ≤ 24*axes+333) left
+    have r := Nat.mul_le_mul (by omega : 24*(axes-hi+lo)+24*0+333 ≤ 24*axes+333) right
+    rw [Nat.add_mul (2*(24*axes+333)) 250 V, Nat.mul_assoc 2 (24*axes+333) V]
     omega
   · obtain ⟨_,pre,last⟩ := FlatCoordinateDimensions.output_descriptors p w W
     obtain ⟨_,mid,one⟩ := FlatCoordinateDimensions.output_descriptors m w 1
-    have hp : FlatCoordinateLayout.suffixFields p = 8-hi := tail _ _
+    have hp : FlatCoordinateLayout.suffixFields p = axes-hi := tail _ _
     have hm : FlatCoordinateLayout.suffixFields m = 0 := tail _ _
     simp only [FlatCoordinateLayout.prefixSize,FlatCoordinateLayout.suffixSize,hp,hm,
       pow_zero,Nat.mul_one,ActualAffineScaling.modulus] at pre last mid one
     intro i
     fin_cases i <;> constructor <;> first | rfl | exact pre | exact mid | exact last | exact one
+
+open FlatCoordinateSchedule (bits bits_value bits_canonical) in
+theorem phaseHeader_runs {lo hi w W : ℕ} (ordered : lo ≤ hi) (fits : hi ≤ 8) (hw : 0 < w) (hW : 0 < W) :
+    let child := phaseIntervalChild lo hi w W
+    let hs := fun i => bits (RecursiveDimensionBank.values child i)
+    let output := phaseHeaderOutput lo hi w W
+    HoareTime (phaseHeaderProgram lo hi) (fun z => z = phaseHeaderInput lo hi w W) (fun z => z = output)
+      (1300*((prime^w)^16*W)) ∧ RecursiveDimensionBank.Headers child hs ∧
+      ∀ i, output.head (phaseHeaderSlots i) = 1 ∧
+        output.tape (phaseHeaderSlots i) = RadixZeroFill.encodedBinary (hs i) :=
+  intervalHeader_runs (by decide : 0 < 8) ordered fits hw hW
 
 /-- The two seven-coordinate prefixes form the H and D fields of one child. -/
 noncomputable def copyChild (w W : ℕ) : Descriptor := ⟨1,1,1,7*w,prime^w,prime^w*W⟩
