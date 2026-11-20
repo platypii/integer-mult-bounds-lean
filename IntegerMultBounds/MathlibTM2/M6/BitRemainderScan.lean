@@ -1412,12 +1412,12 @@ theorem remainderOwnerDirectory_exec [M8.Machine.Net] {T : ℕ} {F U : Type}
       (inherited : ℕ → List (Fin (prime+4))) (tail : List (Fin (prime+4))) (c : ℕ),
       (∀ f, mnProgPush (body f) ≤ c) → data.records = LabelMask.records directory →
       (raw.R (bank 29)).length = layout.beforeRows → (raw.R (bank 30)).length = rows →
-      (raw.R (bank 31)).length = layout.beforeH → (raw.R (bank 71)).length = w+1 →
-      (∀ i : Fin (66+(K+1)), 59 ≤ i.val → i.val ≠ 71 → raw.R (i.castAdd 5) = []) →
+      (raw.R (bank 31)).length = layout.beforeH →
+      (∀ i : Fin (66+(K+1)), 59 ≤ i.val → raw.R (i.castAdd 5) = []) →
       raw.R (bank 58) = (List.range parents).flatMap inherited ++ tail →
       (∀ i < parents, (inherited i).length = (raw.R (bank 47)).length) →
       (raw.R (bank 47)).length ≤ prime^layout.width →
-      raw.R (bank 49) = [] → DirectoryDimensions v w W data.H J parent (fun i => raw.R (bank (i.castLE (by decide)))) →
+      raw.R (bank 28) = [] → raw.R (bank 44) = [] → raw.R (bank 49) = [] → DirectoryParameters v w W data.H J parent (fun i => raw.R (bank (i.castLE (by decide)))) →
       raw.R (bank 50) = [] → raw.R (bank 57) = [] → raw.R (bank 56) = [] → raw.R (bank 54) = [] →
       raw.R (reg 0) = payloadWord (SparseRoleCircuit.encode ∘ word) →
       (∀ i : Fin 5, i ≠ 0 → raw.R (reg i) = []) →
@@ -1426,7 +1426,7 @@ theorem remainderOwnerDirectory_exec [M8.Machine.Net] {T : ℕ} {F U : Type}
           prime^layout.width*((scratch.map (fun i => 4*(raw.L i).length)).sum + 2*tail.length)*142080 ∧
         (∀ k, (D.L k).length ≤ (raw.L k).length) ∧ D.R (bank 48) = matrixWords prime data.H (reduce (prime^(w+1)) proj) ++ raw.R (bank 48) ∧
         OwnerDirectoryPass (J := J) directory v w proj rankFits parent parentInv io dimension data length roleLength remainderAnchorFits
-          body D word (fun j => inherited (j/box)) (raw.R (bank 46)) c ((writeBinaryMatrix (intervalSeed interval.1 interval.2) (projectorSeedPorts.trans bank)).seq (remainderDirectoryProgram bank)) u raw q := by
+          body D word (fun j => inherited (j/box)) (raw.R (bank 46)) c (remainderOwnerSetup interval.1 interval.2 bank) u raw q := by
   intro W m dim J v proj rankFits dimension length roleLength
   obtain ⟨ordered,upper,_⟩ := BitHosting.remainder_counts interval member
   have rank : proj.rank = interval.2-interval.1 := intervalDiagonal_rank (show interval.2 ≤ m by dsimp [m]; omega)
@@ -1444,18 +1444,18 @@ theorem remainderOwnerDirectory_exec [M8.Machine.Net] {T : ℕ} {F U : Type}
     io arity dimension data hm hw hW length roleLength remainderAnchorFits
 
   intro directory space K room bank r parents box scratch reg body u raw word inherited tail c bounded count
-    br nr bh atom clean source widths fits spare dims parentPort mask mode queue payload empty blankData
+    br nr bh clean source widths fits short padded spare params parentPort mask mode queue payload empty blankData
   let placement := directoryOrdinaryBank space.archive
   let outer := fun f => embProg (fun i : Fin (66+(K+1)) => i.castAdd 5) id (embProg placement id (body f))
   obtain ⟨y,D,q,user,paid,build,input,free,matrix,right,left,size,regs⟩ :=
     remainderDirectory_prepareOwner room outer layout v w rows B W data.H J positiveLayout layoutWidth split shape
-      interval.1 interval.2 precision parent inherited tail u raw br nr bh atom clean source widths fits spare dims
+      interval.1 interval.2 precision parent inherited tail u raw br nr bh clean source widths fits short padded spare params
   let whole := embStk placement (embStk (fun i : Fin (66+(K+1)) => i.castAdd 5) D)
-  have frame (i : Fin 58) (ne : i.val ≠ 46) (off : i.val ≠ 48) :
+  have frame (i : Fin 58) (off : i ∉ ([28,44,46,48] : List (Fin 58))) :
       whole.R ((i.castAdd 8).castAdd K) = raw.R (bank (i.castLE (by decide))) := by
     change D.R ((placement ((i.castAdd 8).castAdd K)).castAdd 5) = _
     rw [directoryOrdinaryBank_caller]
-    exact right i ne off
+    exact right i off
   have workEmpty (i : Fin (66+K)) (hi : 58 ≤ i.val) : whole.R i = [] := by
     apply free
     by_contra! lo
@@ -1468,18 +1468,18 @@ theorem remainderOwnerDirectory_exec [M8.Machine.Net] {T : ℕ} {F U : Type}
   have saved (i : Fin 5) (hi : i ≠ 0) := (regs i).1.trans (empty i hi)
   refine ⟨D,q,paid,size,matrix,?_⟩
   exact pass body y D word (fun j => inherited (j/box)) (raw.R (bank 46)) c bounded workEmpty
-    ((congrArg List.length (frame 29 (by decide) (by decide))).trans br)
-    (((congrArg List.length (frame 30 (by decide) (by decide))).trans nr).trans roleRows.symm)
-    ((congrArg List.length (frame 31 (by decide) (by decide))).trans bh)
-    ((frame 50 (by decide) (by decide)).trans parentPort) ((frame 57 (by decide) (by decide)).trans mask)
-    ((frame 56 (by decide) (by decide)).trans mode) ((frame 54 (by decide) (by decide)).trans queue) input count
+    ((congrArg List.length (frame 29 (by decide))).trans br)
+    (((congrArg List.length (frame 30 (by decide))).trans nr).trans roleRows.symm)
+    ((congrArg List.length (frame 31 (by decide))).trans bh)
+    ((frame 50 (by decide)).trans parentPort) ((frame 57 (by decide)).trans mask)
+    ((frame 56 (by decide)).trans mode) ((frame 54 (by decide)).trans queue) input count
     (free _ (by have h := directoryMatrixTape_private space.archive; omega))
     ((regs 0).1.trans payload) (saved 1 (by decide)) (saved 2 (by decide)) (saved 3 (by decide)) (saved 4 (by decide))
     (by intro j; change readAt blank (D.L (bank 24)) (D.R (bank 24)) j = blank
         have hl : D.L (bank 24) = raw.L (bank 24) := left 24
-        have hr : D.R (bank 24) = raw.R (bank 24) := right 24 (by decide) (by decide)
+        have hr : D.R (bank 24) = raw.R (bank 24) := right 24 (by decide)
         rw [hl,hr]; exact blankData j)
-    ((writeBinaryMatrix (intervalSeed interval.1 interval.2) (projectorSeedPorts.trans bank)).seq (remainderDirectoryProgram bank)) u raw q user build
+    (remainderOwnerSetup interval.1 interval.2 bank) u raw q user build
 
 /-- The idle descriptor has the width, volume, and rational pivot certificate
 required by the generated record program, with the actual binary header sizes. -/
