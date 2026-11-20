@@ -399,7 +399,6 @@ theorem preparedCorrection_exec [M8.Machine.Net] {T w W r : ℕ} {P U : Type}
     let matrix := Matrix.diagonal fun k => (childCorrection r weight k : ZMod (prime^(w+1)))
     let scratch := fun D : Stacks T prime => ∀ j : Fin (rowSwapBlock.tapes+35), 35 ≤ j.val →
       D.L (ports (columnPorts j)) = [] ∧ D.R (ports (columnPorts j)) = []
-    (S.R (bank 2)).length = H → S.R (bank 44) = binSyms H (1 : ZMod (prime^(w+1))).val →
     S.R (bank 55) = (List.ofFn fun i => binSyms H (pivot i : ZMod (prime^(w+1))).val).flatten →
     S.R (bank 56) = (List.ofFn fun i => binSyms H (pivot i).inv.val).flatten →
     (∀ k ∈ ([58,59,61,62,63] : List (Fin 64)), S.R (bank k) = []) →
@@ -411,7 +410,13 @@ theorem preparedCorrection_exec [M8.Machine.Net] {T w W r : ℕ} {P U : Type}
       ready tail (fun x (j : Fin (64+64)) => Fin.addCases (corrected x).1 (corrected x).2 j) F ∧
       scratch F ∧ (∀ j : Fin 64, (∀ k, correctionCallerSlots k ≠ j) →
         F.L (bank j) = S.L (bank j) ∧ F.R (bank j) = S.R (bank j)) ∧ ∀ j, (∀ i, ports i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
-  intro ports weight emit write prep col ready plain corrected matrix scratch width unit pos inv free before clean
+  intro ports weight emit write prep col ready plain corrected matrix scratch pos inv free before clean
+  have width : (S.R (bank 2)).length = H := by
+    have shared : col 2 = bank 2 := correctionColumnPlacement_shared bank work apart 0
+    rw [← shared,before.choose_spec.1.modulus,length_binSyms]
+  have unit : S.R (bank 44) = binSyms H (1 : ZMod (prime^(w+1))).val := by
+    have shared : col 32 = bank 44 := correctionColumnPlacement_shared bank work apart 4
+    rw [← shared,before.choose_spec.1.padded]
   obtain ⟨y,t,user,paid,prepare⟩ := prepareCorrection_writes body bank fits pivot H u S ⟨width,unit,pos,inv,free⟩
   let D : Stacks T prime := {S with R := Function.update S.R (col 34) (matrixWords prime H matrix ++ S.R (col 34))}
   have shared : bank 60 = ports (columnBank 34) := (correctionColumnPlacement_shared bank work apart 6).symm

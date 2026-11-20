@@ -272,42 +272,101 @@ open Stack Host
 local notation "N" => rowSwapBlock.tapes
 local notation "Q" => rowSwapBlock.states
 
+/-- Place one whole packing pass on the shared column bank. The caller can
+run its recursive program between two such passes with all other tapes live. -/
+theorem placedPackSchedule_exec [M8.Machine.Net] {P U : Type} {T d w W : ℕ}
+    (ports : Fin (N+35) ↪ Fin T) (is : List ℕ) (fits : ∀ i ∈ is, i+1 < d)
+    (body : P → Pr P T columnCapacity prime U) (v : HS T columnCapacity prime U) (S : Stacks T prime)
+    (record : List (Fin (prime+4))) (dest : ℤ → Fin 4) (q : ℤ) (hW : 0 < W)
+    (original : Fin ((prime^(w+1))^d*W) → ZMod 2)
+    (addr : (Fin d → ZMod (prime^(w+1))) → Fin d → ZMod (prime^(w+1))) :
+    let bank := (Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)
+    let M := prime^(w+1)
+    let ready := ColumnRecordReady (bank.trans ports) M.size W.size record SparseRoleCircuit.encode
+      (fun _ => blank) dest 0 q original
+    let clean := fun D : Stacks T prime => ∀ k : Fin (N+35), 35 ≤ k.val → D.L (ports k) = [] ∧ D.R (ports k) = []
+    ready addr S → clean S → ∃ z F n, z.user = v.user ∧
+      n ≤ 1+((is.map (fun i => completeSwapTime (P := Empty) (U := U) Empty.elim d i (i+1) w W M.size W.size)).sum+1) ∧
+      Exec body (statePlacedNormalized ports swapStates_fit swapStates_pos Empty.elim (packSchedule d is))
+        (mk v S) n (mk z F) ∧ ready (fun x => is.foldl adjacentFields (addr x)) F ∧ clean F ∧
+        ∀ j, (∀ i, ports i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  intro bank M ready clean start free
+  obtain ⟨u,D,n,user,cost,run,done,clear⟩ := packSchedule_exec is fits M.size W.size
+    (Nat.size_le.mp le_rfl) (Nat.size_le.mp le_rfl) hW (P := Empty) Empty.elim
+    (stateLiftDown swapStates_pos (embDn ports v)) (embStk ports S) record dest q original addr
+    ((columnRecordReady_project bank ..).2 ((columnRecordReady_project (bank.trans ports) ..).1 start)) free
+  obtain ⟨z,_,same,placed⟩ := statePlaced_exec_normalized ports ports.injective swapStates_fit
+    swapStates_pos Empty.elim (body' := body) (fun e => nomatch e) v S run
+  let F := embOvr ports D.get S
+  have eq : embStk ports F = D := embStk_ovr ports.injective _ _
+  rw [← eq] at done clear
+  exact ⟨z,F,_,same.trans user,Nat.add_le_add_left cost 1,placed,
+    (columnRecordReady_project (bank.trans ports) ..).2 ((columnRecordReady_project bank ..).1 done),clear,
+    fun _ off => embOvr_off D.get S off⟩
+
 /-- Surround a transpose on the contiguous recursive word with the two tape
 routes. The return read is in the original parent's weighted-child layout. -/
-theorem ordinaryChildRoute_exec [M8.Machine.Net] {P U : Type} [Fintype P]
-    (body : P → Pr P (N+35) Q prime U) (r g : ℕ) (positive : 0 < r+g) :
+theorem ordinaryChildRoute_exec [M8.Machine.Net] {P U : Type} {T : ℕ}
+    (ports : Fin (N+35) ↪ Fin T) (body : P → Pr P T columnCapacity prime U) (r g : ℕ) (positive : 0 < r+g) :
     ∃ setup swaps : ℕ, ∀ w W, 0 < W →
       let d := (r+g)+(r+g)
       let M := prime^(w+1)
       let is := ordinaryChildPackSchedule r g
-      let bank := (Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)
-      let clean := fun (S : Stacks (N+35) prime) => ∀ k : Fin (N+35), 35 ≤ k.val → S.L k = [] ∧ S.R k = []
-      ∀ (v : HS (N+35) Q prime U) (S : Stacks (N+35) prime)
+      let bank := ((Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)).trans ports
+      let pass := fun js => statePlacedNormalized ports swapStates_fit swapStates_pos Empty.elim (packSchedule d js)
+      let clean := fun (S : Stacks T prime) => ∀ k : Fin (N+35), 35 ≤ k.val → S.L (ports k) = [] ∧ S.R (ports k) = []
+      ∀ (v : HS T columnCapacity prime U) (S : Stacks T prime)
         (record : List (Fin (prime+4))) (dest : ℤ → Fin 4) (q : ℤ)
-        (input : Fin (M^d*W) → ZMod 2) (child : Pr P (N+35) Q prime U) (budget : ℕ),
+        (original : Fin (M^d*W) → ZMod 2)
+        (input : (Fin d → ZMod M) → IntegerMultBounds.Swap.Shear.State (Fin (r+g)) (ZMod M))
+        (child : Pr P T columnCapacity prime U) (budget : ℕ),
+      let saved := fun D : Stacks T prime => ∀ j, (∀ i, ports i ≠ j) → D.L j = S.L j ∧ D.R j = S.R j
       let desc := ordinaryChildDescriptor r g w W
       let pos := ordinaryRecursivePosition r g w W
       let offset := fun (k : Fin (M^d*W)) => k.cast (ordinaryChildVolume r g w W).symm
       let ready := RecordReady (b := prime) (w := w) (W := W) (d := d) bank M.size W.size
         record SparseRoleCircuit.encode (fun _ => blank) dest 0 q
       let columns := ColumnRecordReady bank M.size W.size record SparseRoleCircuit.encode (fun _ => blank) dest 0 q
-      (∀ u D, ready (input ∘ pos ∘ offset) D → clean D → ∃ y G t, y.user = u.user ∧ t ≤ budget ∧
+      (∀ (before : Fin (M^d*W) → ZMod 2) u D, ready (before ∘ pos ∘ offset) D → clean D → saved D → ∃ y G t, y.user = u.user ∧ t ≤ budget ∧
         Exec body child (mk u D) t (mk y G) ∧
-        ready (Shared50RecursiveNodeRows.transpose (one_dvd desc.rows) (input ∘ pos) ∘ offset) G ∧ clean G) →
-      ready input S → clean S → ∃ z F n, z.user = v.user ∧
-        n ≤ budget + 2*((setup+swaps*swapVolumeRate w)*(M^d*W)) ∧
-        Exec body (.seq (packSchedule d is) (.seq child (packSchedule d is.reverse))) (mk v S) n (mk z F) ∧
-        columns (ordinaryChildOutput (r := r) (g := g) (w := w) input) id F ∧ clean F := by
-  obtain ⟨setup,swaps,route⟩ := withPacking_exec body ((r+g)+(r+g)) (ordinaryChildPackSchedule r g)
-    (by omega) (fun _ => ordinaryChildPackSchedule_inside)
+        ready (Shared50RecursiveNodeRows.transpose (one_dvd desc.rows) (before ∘ pos) ∘ offset) G ∧ clean G ∧ saved G) →
+      columns original (fun x => Fin.append (input x).1 (input x).2) S → clean S → ∃ z F n, z.user = v.user ∧
+        n ≤ budget + 2*(1+(setup+swaps*swapVolumeRate w)*(M^d*W)) ∧
+        Exec body (.seq (pass is) (.seq child (pass is.reverse))) (mk v S) n (mk z F) ∧
+        columns original (fun x => let t := Cover.Weighted.child r (fun _ => 1) (fun _ => 1) (input x)
+                                   Fin.append t.1 t.2) F ∧ clean F ∧ saved F := by
+  obtain ⟨setup,swaps,bound⟩ := packTime_le (P := Empty) (U := U) Empty.elim
+    ((r+g)+(r+g)) (ordinaryChildPackSchedule r g) (by omega)
   refine ⟨setup,swaps,?_⟩
-  intro w W hW d M is bank clean v S record dest q input child budget desc pos offset ready columns call start free
-  apply route w W hW v S record dest q input _ id child budget _ ⟨input,start,fun _ _ => rfl⟩ free
-  intro u D packed clear
-  obtain ⟨y,G,t,user,cost,run,returned,empty⟩ := call u D ((ordinaryPackedWord_iff ..).1 packed) clear
-  refine ⟨y,G,t,user,cost,run,(ordinaryPackedWord_iff ..).2 ?_,empty⟩
-  have cells := (ordinaryChildOutput_eq_iff (r := r) (g := g) (w := w) input _).1 rfl
-  simp only [cells]
-  exact returned
+  intro w W hW d M is bank pass clean v S record dest q original input child budget saved desc pos offset ready columns call start free
+  obtain ⟨before,layout,reads⟩ := start
+  let after := ordinaryChildOutput (r := r) (g := g) (w := w) before
+  have cells := (ordinaryChildOutput_eq_iff (r := r) (g := g) (w := w) before after).1 rfl
+  have fits : ∀ i ∈ is, i+1 < d := fun _ => ordinaryChildPackSchedule_inside
+  obtain ⟨u,D,n,hu,hn,pack,packed,clear,kept⟩ := placedPackSchedule_exec ports is fits body v S record dest q hW
+    before id ⟨before,layout,fun _ _ => rfl⟩ free
+  obtain ⟨y,G,k,hy,hk,run,returned,available,live⟩ := call before u D ((ordinaryPackedWord_iff ..).1 packed) clear kept
+  have changed : columns after (fun x => is.foldl adjacentFields x) G := by
+    apply (ordinaryPackedWord_iff ..).2
+    simp only [cells]
+    exact returned
+  obtain ⟨z,F,m,hz,hm,unpack,⟨word,done,placed⟩,empty,frame⟩ := placedPackSchedule_exec ports is.reverse
+    (fun i hi => fits i (List.mem_reverse.mp hi)) body y G record dest q hW after _ changed available
+  simp only [reverse_adjacentFields] at placed
+  simp only [List.map_reverse,List.sum_reverse] at hm
+  have price := bound w W hW
+  refine ⟨z,F,n+(k+m),hz.trans (hy.trans hu),?_,.seq pack (.seq run unpack),⟨word,done,?_⟩,empty,?_⟩
+  · dsimp only [is,d,M] at *
+    omega
+  · intro x j
+    apply (placed _ j).trans
+    apply Eq.trans _ (reads x j)
+    apply goodChild_effect (fun _ => 1) (fun _ => 1) before after
+    intro hg tg s j
+    have cell := ordinaryRecursiveTranspose_read before after cells hg tg s.1 (fun i => s.2 i.rev) j
+    simpa only [Cover.Weighted.child,Fin.isLt,ite_true,one_mul,Fin.rev_rev] using cell
+  · intro j off
+    exact ⟨(frame j off).1.trans (live j off).1,(frame j off).2.trans (live j off).2⟩
+
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode

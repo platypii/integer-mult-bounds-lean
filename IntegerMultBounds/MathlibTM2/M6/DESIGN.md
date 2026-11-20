@@ -767,8 +767,14 @@ storage. Given the positioned output and preservation of the other column
 tapes, `ordinaryChild_return` derives the correction’s input read from an
 ordinary transpose on each pair of active rank fields. The tail field is
 indexed in reverse order, with both gap fields and the final spectator fixed.
-The recursive invocation still needs to realize that transpose on these
-physical addresses.
+The ordinary child route reverses the active tail digits to pack the recursive
+word. It runs both packing passes on the shared column placement, with a
+caller-bank program between them. Given a transpose that restores its saved
+registers, the return supplies the unweighted payload read for the correction.
+The two routes, matrix preparation, diagonal pairs and archive cleanup have
+one cost bound uniform over ranks 0 through 64, proportional to row volume
+times atom width to the power `tau`. The recursive child program must still
+supply the transpose and restoration on this bank.
 
 The semantic five-class node (S5d.3) certifies upstream's accounting under ideal routes and
 partial swaps. Its exponent `1 - 10/5769` holds under that idealization only.
