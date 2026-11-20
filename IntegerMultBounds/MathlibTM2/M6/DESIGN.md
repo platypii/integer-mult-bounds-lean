@@ -735,9 +735,15 @@ bits in at most `34*W+14` steps. A full represented label bank
 can serve the forward chart directly via `RemainderChartFrame.caller_input`.
 From the same normalized precision header, `ordinaryModulusWord_exec` seeds
 exponentiation on blank workspace and encodes `M = prime^(w+1)` in exactly
-`M.size` bits within `60*M+28` steps. The prefix width, packed parent weights,
-prefix queue and the caller’s initial header representation still need to be
-connected to the recursive invocation.
+`M.size` bits within `60*M+28` steps. The directory partition retains the selected record count and the extended
+entry width through both child calls. Given those caller words and the selected
+records, `scheduledChildQueue_exec` moves the leading queue and writes the
+scanner’s unary width. For an empty root directory, each ancestor adds
+`(width/64)*4096` digits. The rank bound of 42 gives
+`11*directoryDigits + 2048*child.width ≤ 2048*root.width` along every path.
+The aligned stopping cutoff therefore covers the inherited width at active
+children. The recursive invocation still needs the scanner register placement,
+its packed parent weights and the initial chart representation.
 
 The semantic five-class node (S5d.3) certifies upstream's accounting under ideal routes and
 partial swaps. Its exponent `1 - 10/5769` holds under that idealization only.

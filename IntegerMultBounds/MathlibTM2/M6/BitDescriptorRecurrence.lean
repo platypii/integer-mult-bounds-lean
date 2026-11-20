@@ -60,6 +60,72 @@ theorem scheduledPath_width_le (q : ℕ) (v : Descriptor) (path : List (Fin node
       _ ≤ _ := Nat.mul_le_mul_right _ step
       _ = _ := by ring
 
+/-- Each ancestor adds one matrix of 64² entries at its local precision. -/
+noncomputable def directoryDigits (q : ℕ) (v : Descriptor) :
+    List (Fin nodeChildren5.length) → ℕ
+  | [] => 0
+  | i :: path => (v.width/64)*(64*64) + directoryDigits q (scheduledChild q v i) path
+
+/-- Appending one scheduled call extends the inherited prefix by precisely
+the new label word produced by the directory partition. -/
+theorem directoryDigits_append_call (q : ℕ) (v : Descriptor)
+    (path : List (Fin nodeChildren5.length)) (i : Fin nodeChildren5.length) :
+    directoryDigits q v (path ++ [i]) = directoryDigits q v path +
+      ((path.foldl (scheduledChild q) v).width/64)*(64*64) := by
+  induction path generalizing v with
+  | nil => simp [directoryDigits]
+  | cons j path ih => simp [directoryDigits,ih,Nat.add_assoc]
+
+/-- The geometric decrease in active width pays for every ancestor in the
+directory. The coefficient is 64²/(64-42), using the largest scheduled rank. -/
+theorem directoryDigits_bound (q : ℕ) (v : Descriptor) (path : List (Fin nodeChildren5.length)) :
+    11*directoryDigits q v path + 2048*(path.foldl (scheduledChild q) v).width ≤ 2048*v.width := by
+  induction path generalizing v with
+  | nil => simp [directoryDigits]
+  | cons i path ih =>
+    have rank := Nat.mul_le_mul_right (v.width/64) (nodeChildren5_le i)
+    change (scheduledChild q v i).width ≤ 42*(v.width/64) at rank
+    have remaining := ih (scheduledChild q v i)
+    simp only [directoryDigits,List.foldl_cons]
+    omega
+
+/-- A single root-size cutoff suffices for the scanner's prefix budget at
+every active descendant of an empty root directory. -/
+theorem directoryDigits_fit (q : ℕ) (hq : 0 < q) (v : Descriptor)
+    (path : List (Fin nodeChildren5.length)) (cutoff : ℕ)
+    (rootSize : 2048*v.width ≤ 11*q^cutoff)
+    (active : cutoff ≤ (path.foldl (scheduledChild q) v).width) :
+    directoryDigits q v path ≤ q^(path.foldl (scheduledChild q) v).width := by
+  have bound := directoryDigits_bound q v path
+  exact (show directoryDigits q v path ≤ q^cutoff by omega).trans
+    (Nat.pow_le_pow_right hq active)
+
+/-- Reserving at least one aligned level already pays for the directory at
+the cutoff that covers the largest scheduled leaf. -/
+theorem directoryDigits_fit_aligned (q : ℕ) (radix : 2 ≤ q) (v : Descriptor)
+    (depth b u : ℕ) (levels : 0 < depth) (base : 0 < b)
+    (width : v.width = 64^depth*b) (stop : 42^depth*b ≤ u)
+    (path : List (Fin nodeChildren5.length)) (active : u ≤ (path.foldl (scheduledChild q) v).width) :
+    directoryDigits q v path ≤ q^(path.foldl (scheduledChild q) v).width := by
+  have room : 11+6*depth+b ≤ 42^depth*b := by
+    cases depth with
+    | zero => omega
+    | succ d =>
+      clear levels width stop active
+      induction d with
+      | zero => simp; omega
+      | succ d ih =>
+        rw [pow_succ',Nat.mul_assoc]
+        omega
+  apply directoryDigits_fit q (by omega) v path u _ active
+  have bFits := (Nat.lt_two_pow_self (n := b)).le
+  calc
+    2048*v.width = 2^11*(2^(6*depth)*b) := by rw [width,pow_mul]; rfl
+    _ ≤ 2^11*(2^(6*depth)*2^b) := by gcongr
+    _ = 2^(11+6*depth+b) := by simp only [pow_add,Nat.mul_assoc]
+    _ ≤ q^u := (Nat.pow_le_pow_left radix _).trans (Nat.pow_le_pow_right (by omega) (room.trans stop))
+    _ ≤ 11*q^u := by omega
+
 /-- The width bound is attained: rank 42 occurs in the checked schedule
 and a path may select that occurrence at every level. -/
 theorem scheduledPath_max_width (q : ℕ) (v : Descriptor) (depth b : ℕ)

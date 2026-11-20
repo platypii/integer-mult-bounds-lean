@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.M6.BitScheduledChildQueue
 public import IntegerMultBounds.MathlibTM2.Cover.LabelCallerHeaders
 public import IntegerMultBounds.MathlibTM2.Host.UnaryBinaryHalving
 public import IntegerMultBounds.MathlibTM2.M6.BitRemainderOrdinaryOwner
