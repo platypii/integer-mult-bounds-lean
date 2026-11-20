@@ -246,22 +246,20 @@ theorem packSchedule_volume_le [Fintype P] (body : P → Pr P (N+35) Q prime U)
 
 /-- At the parent's binary counter widths the setup is linear in its volume.
 Only the row exchanges incur the atom-width factor. -/
-theorem goodChildPackTime_le [Fintype P] (body : P → Pr P (N+35) Q prime U)
-    (r g : ℕ) (positive : 0 < r+g) :
+theorem packTime_le [Fintype P] (body : P → Pr P (N+35) Q prime U)
+    (d : ℕ) (is : List ℕ) (positive : 0 < d) :
     ∃ setup swaps : ℕ, ∀ w W, 0 < W →
-      let d := (r+g)+(r+g)
       let M := prime^(w+1)
       let H := Nat.size M
       let J := Nat.size W
-      ((goodChildPackSchedule r g).map (fun i => completeSwapTime body d i (i+1) w W H J)).sum+1 ≤
+      (is.map (fun i => completeSwapTime body d i (i+1) w W H J)).sum+1 ≤
         (setup + swaps*swapVolumeRate w)*(M^d*W) := by
-  let d := (r+g)+(r+g)
   let c := 2*(Nat.size prime+1)^2
-  obtain ⟨a,base⟩ := packSchedule_setup_le body d (goodChildPackSchedule r g)
-  obtain ⟨b,run⟩ := packSchedule_volume_le body d (goodChildPackSchedule r g)
+  obtain ⟨a,base⟩ := packSchedule_setup_le body d is
+  obtain ⟨b,run⟩ := packSchedule_volume_le body d is
   refine ⟨a*(c+1),b,?_⟩
-  intro w W hW _ M H J
-  have dim : d-1+1 = d := by dsimp [d]; omega
+  intro w W hW M H J
+  have dim : d-1+1 = d := by omega
   have field := prefixSetup_volume_le w (d-1)
   change (w+1+M^(d-1))*(H+1)^2 ≤ c*M^(d-1+1) at field
   rw [dim] at field
@@ -277,7 +275,18 @@ theorem goodChildPackTime_le [Fintype P] (body : P → Pr P (N+35) Q prime U)
   have headers := Nat.add_le_add (h.trans (Nat.mul_le_mul_left c (Nat.le_mul_of_pos_right _ hW)))
     (len.trans (Nat.le_mul_of_pos_left W volume))
   have total := (run w W H J).trans (Nat.add_le_add_right (cost.trans (Nat.mul_le_mul_left a headers)) _)
-  exact total.trans_eq (by dsimp only [d] at *; ring)
+  exact total.trans_eq (by ring)
+
+theorem goodChildPackTime_le [Fintype P] (body : P → Pr P (N+35) Q prime U)
+    (r g : ℕ) (positive : 0 < r+g) :
+    ∃ setup swaps : ℕ, ∀ w W, 0 < W →
+      let d := (r+g)+(r+g)
+      let M := prime^(w+1)
+      let H := Nat.size M
+      let J := Nat.size W
+      ((goodChildPackSchedule r g).map (fun i => completeSwapTime body d i (i+1) w W H J)).sum+1 ≤
+        (setup + swaps*swapVolumeRate w)*(M^d*W) :=
+  packTime_le body _ _ (by omega)
 
 theorem packSchedule_exec [Fintype P] {d w W : ℕ} (is : List ℕ) (fits : ∀ i ∈ is, i+1 < d)
     (H J : ℕ) (hm : prime^(w+1) < 2^H) (hw : W < 2^J) (hW : 0 < W)
