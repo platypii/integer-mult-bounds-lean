@@ -473,7 +473,7 @@ theorem returnedPayload_reads {volume : ℕ} (out : Fin volume → Fin 4)
       simp [payloadWord,len]
 
 open IntegerMultBounds.Machine in
-private theorem payload_prefix_of_read {n : ℕ} (word : Fin n → ZMod 2) (source : ℤ → Fin 4) (head : ℤ)
+theorem payload_prefix_of_read {n : ℕ} (word : Fin n → ZMod 2) (source : ℤ → Fin 4) (head : ℤ)
     (L R : List (Fin (prime+4))) (read : ∀ z, readAt blank L R (z-head) =
       RadixToBinary.binaryEncoding.encode (putWord source head ((List.ofFn word).map SparseRoleCircuit.encode) z)) :
     R = payloadWord (SparseRoleCircuit.encode ∘ word) ++ R.drop n := by
