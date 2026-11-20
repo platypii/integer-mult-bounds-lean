@@ -466,6 +466,39 @@ theorem directoryQueueSetup_exec [M8.Machine.Net] {K d Q m H w records : ℕ} {P
       (∀ k ≤ conjugationDepth m, F.R (frame pool k 2) = S.R srcMod) ∧
       (∀ k ≤ conjugationDepth m, ∀ i : Fin 13, i ≠ 2 → F.R (frame pool k i) = []) ∧
       (∀ j, F.R (ports j 14) = binSyms H (parent j).val ∧ F.R (ports j 0) = binSyms H (inv j).val) ∧
+      (∀ k, k ≠ dir → k ≠ mask → k ≠ seed → k ≠ zero → (inputs (padded F)).R k = F.R k) ∧
+      (inputs (padded F)).R dir = S.R source ∧ (inputs (padded F)).R mask = S.R live ∧
+      (inputs (padded F)).R seed = identityWord ∧ (inputs (padded F)).R zero = binSyms H 0 ∧
+      (∀ i, (i.val < 36 ∧ i.val ∉ ([1,2,8,9,12,16,17,22,33,34] : List ℕ)) ∨
+          i.val = 36+2*m ∨ i.val = base+2 → (inputs (padded F)).R (bank i) = []) ∧
+      (∀ (e : (Fin m ⊕ Fin m) ≃ Fin (d+1)), ∃ writer : Pr P (66+K) Q prime U,
+        ∀ (proj : Matrix (Fin m) (Fin m) ℚ) (prefixes : ℕ → List (Fin (prime+4))) (tail : List (Fin (prime+4))),
+        (∃ suffix, S.R ((48 : Fin 66).castAdd K) = matrixWords prime H (reduce (prime^(w+1)) proj) ++ suffix) →
+        (∀ j < records, (S.R ((47 : Fin 66).castAdd K)).length = (prefixes j).length) →
+        S.R source = (List.range records).flatMap (LabelDirectory.entry prefixes m (w+1)) ++ tail →
+        let active := LabelStock.live m (w+1) 1
+        let matrix := projectorResidual e (reduce (prime^(w+1)) proj) parent inv
+        let words := (List.range records).flatMap fun j => if active j then
+          matrixWords prime H (matrix (physicalLabel m (w+1) j)) else identityWord
+        let num := fun i j : Fin m => numerator (matrixInput false) (matrixInput true) i j
+        let numTime := Finset.univ.sup fun ij : Fin m × Fin m => time H (readTime H) (num ij.1 ij.2)
+        let prefixWidth := (S.R ((47 : Fin 66).castAdd K)).length
+        let liveCost := liveRecordCost m (d+1) w H prefixWidth numTime (time H (readTime H) (determinant (matrixInput (m := m) false)))
+        let size := (d+1)*(d+1)*H
+        let result := queueResult (inputs (padded F)) mask dir (directoryMatrixTape room) tail words
+        let work := (List.finRange (66+K)).filter fun i => decide (58 ≤ i.val ∧ i ≠ directoryMatrixTape room)
+        let cleanup := (work.map fun i => 4*(result.L i).length+2*(result.R i).length+4).sum+1
+        let clean := {result with L := fun i => if i ∈ work then [] else result.L i,
+                                  R := fun i => if i ∈ work then [] else result.R i}
+        ∃ y steps, y.user = u.user ∧ steps ≤ n + ((List.range records).countP active*(liveCost+4*size) +
+          (List.range records).countP (fun j => !active j)*(10*size+6) +
+          records*(4*prefixWidth+4+(m*m*(4*(w+1)+4)+1)+6)+4) + cleanup ∧
+          Exec body (((((headers.seq (Prog.seqList ((List.finRange m).map program))).seq pad).seq copies).seq writer).seq
+            (clearWorkTapes work)) (mk u S) steps (mk y clean) ∧
+          clean.R (directoryMatrixTape room) = words ∧
+          (∀ i : Fin 66, i.val < 58 → clean.L (i.castAdd K) = S.L (i.castAdd K) ∧
+            clean.R (i.castAdd K) = S.R (i.castAdd K)) ∧
+          (∀ i, 58 ≤ i.val → i ≠ directoryMatrixTape room → clean.L i = [] ∧ clean.R i = [])) ∧
       ∀ k, (∀ i, dst i ≠ k) → (∀ i, k ≠ pool i) →
         (∀ j, k ≠ ports j 14 ∧ k ≠ ports j 0) → F.R k = S.R k := by
   intro ports readSlots pivot program C price bank src dst tmp aux pool srcMod digits headers headerTime base zero seed saved pad identityWord padded mask dir live source copies inputs bits blank
@@ -535,12 +568,150 @@ theorem directoryQueueSetup_exec [M8.Machine.Net] {K d Q m H w records : ℕ} {P
     (padFree _ (Or.inr (Or.inl rfl))) (padFree _ (Or.inr (Or.inr (Or.inr rfl))))
   change Exec body copies _ _ (mk endUser {padded F with R := Function.update (Function.update (padded F).R mask ((padded F).R live)) dir ((padded F).R source)}) at copyRun
   rw [show (padded F).R live = S.R live from callerPad 57,show (padded F).R source = S.R source from callerPad 46] at copyRun
+  have finalKeep (k) (hd : k ≠ dir) (hm : k ≠ mask) (hs : k ≠ seed) (hz : k ≠ zero) :
+      (inputs (padded F)).R k = F.R k :=
+    (Function.update_of_ne hd _ _).trans ((Function.update_of_ne hm _ _).trans
+      ((Function.update_of_ne hs _ _).trans (Function.update_of_ne hz _ _)))
+  have large : 35 < base := by dsimp [base]; omega
+  have ne (i j : Fin (base+3)) (h : i.val ≠ j.val) : bank i ≠ bank j := bank.injective.ne (fun eq => h (congrArg Fin.val eq))
+  have maskWord : (inputs (padded F)).R mask = S.R live :=
+    (Function.update_of_ne (ne _ _ (by change base ≠ 2; omega)) _ _).trans (Function.update_self ..)
+  have seedWord : (inputs (padded F)).R seed = identityWord :=
+    (Function.update_of_ne (ne _ _ (by change base+1 ≠ 2; omega)) _ _).trans
+      ((Function.update_of_ne (ne _ _ (by change base+1 ≠ base; omega)) _ _).trans (Function.update_self ..))
+  have zeroWord : (inputs (padded F)).R zero = binSyms H 0 :=
+    (Function.update_of_ne (ne _ _ (by decide : 9 ≠ 2)) _ _).trans ((Function.update_of_ne (ne _ _ (by change 9 ≠ base; omega)) _ _).trans
+      ((Function.update_of_ne (ne _ _ (by change 9 ≠ base+1; omega)) _ _).trans (Function.update_self ..)))
+  have writerBlank (i : Fin (base+3)) (h : (i.val < 36 ∧ i.val ∉ ([1,2,8,9,12,16,17,22,33,34] : List ℕ)) ∨
+      i.val = 36+2*m ∨ i.val = base+2) : (inputs (padded F)).R (bank i) = [] := by
+    have depthPositive : 0 < (conjugationDepth m+1)*13 := by omega
+    have hi : (i.val < 36 ∨ 36+2*m ≤ i.val) ∧ i.val ≠ 2 ∧ i.val ≠ 9 ∧ i.val ≠ base ∧ i.val ≠ base+1 := by
+      simp only [List.mem_cons,List.not_mem_nil,or_false,not_or] at h
+      dsimp only [base] at *
+      omega
+    have distinct (k : Fin (base+3)) (ne : i.val ≠ k.val) := bank.injective.ne (fun eq => ne (congrArg Fin.val eq))
+    have restored := finalKeep (bank i) (distinct _ hi.2.1) (distinct _ hi.2.2.2.1)
+      (distinct _ hi.2.2.2.2) (distinct _ hi.2.2.1)
+    apply restored.trans ((rest _ (outside _ hi.1)).trans ((keep _ ?_ ?_).trans (blank i)))
+    · intro j eq
+      have val := congrArg Fin.val (bank.injective eq)
+      change (directoryQueueHeaderSlots j).val = i.val at val
+      have mem : ∀ k, (directoryQueueHeaderSlots k).val ∈ ([1,2,8,9,12,16,17,22,33,34] : List ℕ) := by decide
+      have small := (directoryQueueHeaderSlots j).isLt
+      rcases h with low | h
+      · exact low.2 (val ▸ mem j)
+      · dsimp only [base] at h
+        omega
+    · intro j eq
+      have val := congrArg Fin.val (bank.injective eq)
+      change i.val = 36+2*m+1+j.val at val
+      have := j.isLt
+      dsimp only [base] at h
+      omega
   refine ⟨endUser,F,_,he.trans (hu.trans (hz.trans user)),Nat.add_le_add_right (Nat.add_le_add (Nat.add_le_add_left hn _) hl) _,
     Exec.seq (Exec.seq (Exec.seq run load) write) copyRun,leftF.trans left,
     header,
     fun i => (rest _ (fun j => ⟨(directoryQueueBank_caller room fits _ i).symm,(directoryQueueBank_caller room fits _ i).symm⟩)).trans (caller i),
     fun k hk => (poolKeep _).trans (moduli k hk),fun k hk i ne => (poolKeep _).trans (scratch k hk i ne),
-    coeff,fun k hd hp hw => (rest k hw).trans (keep k hd hp)⟩
+    coeff,finalKeep,Function.update_self ..,maskWord,seedWord,zeroWord,writerBlank,?_,fun k hd hp hw => (rest k hw).trans (keep k hd hp)⟩
+
+  intro e
+  let D := inputs (padded F)
+  have same (i : Fin (base+3)) (ok : i.val ≠ 2 ∧ i.val ≠ base ∧ i.val ≠ base+1 ∧ i.val ≠ 9) :
+      D.R (bank i) = F.R (bank i) :=
+    finalKeep _ (ne _ _ ok.1) (ne _ _ ok.2.1) (ne _ _ ok.2.2.1) (ne _ _ ok.2.2.2)
+  have headValue (j : Fin 8) : D.R (dst j) = if j = 7 then Node.tick :: S.R (src j) else S.R (src j) := by
+    apply (same _ ?_).trans (header j)
+    have off : ∀ k, (directoryQueueHeaderSlots k).val ≠ 2 ∧ (directoryQueueHeaderSlots k).val ≠ 9 := by decide
+    let v := (directoryQueueHeaderSlots j).val
+    change v ≠ 2 ∧ v ≠ base ∧ v ≠ base+1 ∧ v ≠ 9
+    have hv : v < 35 := (directoryQueueHeaderSlots j).isLt
+    exact ⟨(off j).1,by omega,by omega,(off j).2⟩
+  have stablePool (j) : D.R (pool j) = F.R (pool j) := by
+    apply same
+    change 36+2*m+1+j.val ≠ 2 ∧ 36+2*m+1+j.val ≠ base ∧ 36+2*m+1+j.val ≠ base+1 ∧ 36+2*m+1+j.val ≠ 9
+    have := j.isLt
+    dsimp [base]; omega
+  have coeffRow (j : Fin m) : D.R (ports j 14) = binSyms H (parent j).val := by
+    apply (same _ ?_).trans (coeff j).1
+    change 36+j.val ≠ 2 ∧ 36+j.val ≠ base ∧ 36+j.val ≠ base+1 ∧ 36+j.val ≠ 9
+    dsimp [base]; omega
+  have coeffCol (j : Fin m) : D.R (ports j 0) = binSyms H (inv j).val := by
+    apply (same _ ?_).trans (coeff j).2
+    change 36+m+j.val ≠ 2 ∧ 36+m+j.val ≠ base ∧ 36+m+j.val ≠ base+1 ∧ 36+m+j.val ≠ 9
+    dsimp [base]; omega
+  refine ⟨?_, ?_⟩
+  swap
+  intro proj prefixes tail projector widths directory active matrix words num numTime prefixWidth liveCost size result work cleanup clean
+  have prefixEq : (D.R (dst 1)).length = prefixWidth := congrArg List.length (headValue 1)
+  obtain ⟨_,y,t,hy,ht,generate⟩ := physicalResidualQueue_exec body w records (reduce (prime^(w+1)) proj) H hm bank
+    prefixes tail e parent inv endUser D seedWord (writerBlank _ (Or.inr (Or.inr rfl)))
+    ⟨writerBlank _ (Or.inl (by change 31 < 36 ∧ 31 ∉ ([1,2,8,9,12,16,17,22,33,34] : List ℕ); decide)),fun i j => by
+      constructor
+      · convert coeffRow i using 2 <;> apply congrArg bank <;> apply Fin.ext <;> exact Nat.zero_add _
+      · convert coeffCol j using 2 <;> apply congrArg bank <;> apply Fin.ext <;> exact Nat.zero_add _⟩
+    ⟨(by intro i hi; apply writerBlank _ (Or.inl ?_)
+         change 0+(0+i.val) < 36 ∧ 0+(0+i.val) ∉ _
+         simp only [Nat.zero_add]
+         exact (by decide : ∀ x : Fin 18, x ∈ [0,3,4,5,6,7,11,14,15] → x.val < 36 ∧
+           x.val ∉ ([1,2,8,9,12,16,17,22,33,34] : List ℕ)) i hi),
+      (congrArg List.length ((headValue 0).trans modulus)).trans (length_binSyms ..),
+      zeroWord,writerBlank _ (Or.inl (by change 10 < 36 ∧ 10 ∉ ([1,2,8,9,12,16,17,22,33,34] : List ℕ); decide)),(congrArg List.length (headValue 6)).trans clock,
+      writerBlank _ (Or.inl (by change 35 < 36 ∧ 35 ∉ ([1,2,8,9,12,16,17,22,33,34] : List ℕ); decide)),writerBlank _ (Or.inl (by change 32 < 36 ∧ 32 ∉ ([1,2,8,9,12,16,17,22,33,34] : List ℕ); decide)),
+      (headValue 5).trans unit,(headValue 4).trans modulus,
+      (by intro i hi lt; apply writerBlank _ (Or.inl ?_)
+          change 0+(18+i.val) < 36 ∧ 0+(18+i.val) ∉ _
+          simp only [Nat.zero_add]
+          have h : i.val ≠ 4 := fun eq => hi (Fin.ext eq)
+          change i.val < 13 at lt
+          simp only [List.mem_cons,List.not_mem_nil,or_false,not_or]; omega),
+      fun k hk => by
+        convert (stablePool _).trans ((poolKeep _).trans ((moduli k hk).trans modulus)) using 2
+        apply congrArg bank; apply Fin.ext; exact Nat.zero_add _,
+      fun k hk i off => by
+        convert (stablePool _).trans ((poolKeep _).trans (scratch k hk i off)) using 2
+        apply congrArg bank; apply Fin.ext; exact Nat.zero_add _,
+      (by obtain ⟨suffix,h⟩ := projector; exact ⟨suffix,(headValue 2).trans h⟩),(headValue 3).trans unit⟩
+    (fun j hj => prefixEq.trans (widths j hj))
+    (by change (D.R (dst 7)).length = w+1; rw [headValue]; exact congrArg Nat.succ clock)
+    (writerBlank _ (Or.inl (by change 4 < 36 ∧ 4 ∉ ([1,2,8,9,12,16,17,22,33,34] : List ℕ); decide))) (writerBlank _ (Or.inr (Or.inl (Nat.zero_add _))))
+    ((Function.update_self ..).trans directory) (writerBlank _ (Or.inl (by change 13 < 36 ∧ 13 ∉ ([1,2,8,9,12,16,17,22,33,34] : List ℕ); decide))) (maskWord.trans bits)
+  obtain ⟨finish,userFinish,clear⟩ := clearWorkTapes_exec body work ((List.nodup_finRange _).filter _) y result
+  refine ⟨finish,headerTime+n+l+((6*records+6)+(6*(S.R source).length+6))+t+cleanup,userFinish.trans (hy.trans (he.trans (hu.trans (hz.trans user)))),?_,?_,?_,?_,?_⟩
+  · change t ≤ _ at ht
+    change t ≤ (List.range records).countP active*(liveRecordCost m (d+1) w H (D.R (dst 1)).length numTime _+4*size) +
+      (List.range records).countP (fun j => !active j)*(10*size+6) +
+      records*(4*(D.R (dst 1)).length+4+(m*m*(4*(w+1)+4)+1)+6)+4 at ht
+    rw [prefixEq] at ht
+    exact Nat.add_le_add_right (Nat.add_le_add_left ht _) _
+  · have archiveEq : (QueueLayout.block (n := base) 0 (by omega) bank) ⟨36+2*m,by dsimp [base]; omega⟩ =
+        directoryMatrixTape room := by
+      rw [← directoryQueueBank_archive room fits]
+      apply congrArg bank
+      apply Fin.ext
+      exact Nat.zero_add _
+    change Exec body _ (mk endUser D) t (mk y (queueResult D mask dir
+      ((QueueLayout.block (n := base) 0 (by omega) bank) ⟨36+2*m,by dsimp [base]; omega⟩) tail words)) at generate
+    have endpoint := congrArg (fun a => queueResult D mask dir a tail words) archiveEq
+    change queueResult D mask dir _ tail words = result at endpoint
+    rw [endpoint] at generate
+    have combined := Exec.seq (Exec.seq (Exec.seq (Exec.seq (Exec.seq run load) write) copyRun) generate) clear
+    exact combined
+  · have off : directoryMatrixTape room ∉ work := by simp [work]
+    exact (if_neg off).trans (Function.update_self ..)
+  · intro i hi
+    have low : (i.castAdd K) ∉ work := by simp [work,Nat.not_le_of_lt hi]
+    have off (j) := (directoryQueueBank_caller room fits j i).symm
+    have archiveOff : i.castAdd K ≠ directoryMatrixTape room := by
+      rw [← directoryQueueBank_archive room fits]
+      exact off _
+    refine ⟨(if_neg low).trans (congrFun (leftF.trans left) _),(if_neg low).trans ?_⟩
+    exact (Function.update_of_ne archiveOff _ _).trans ((Function.update_of_ne (off _) _ _).trans
+      ((Function.update_of_ne (off _) _ _).trans ((Function.update_of_ne (off _) _ _).trans
+        ((Function.update_of_ne (off _) _ _).trans (callerPad i)))))
+  · intro i hi off
+    have mem : i ∈ work := by simp [work,hi,off]
+    exact ⟨if_pos mem,if_pos mem⟩
 
 /-- The writer returns all caller tapes intact, including the live and exceptional
 selectors. Its matrix stream is on the tape used by the classified scan. -/
@@ -826,6 +997,43 @@ def RecordPayload {K N : ℕ} (port : Fin K) (source : ℤ → Fin 4) (head : �
   ∀ z, readAt blank (S.L port) (S.R port) (z-head) = RadixToBinary.binaryEncoding.encode
     (putWord source head ((List.ofFn word).map SparseRoleCircuit.encode) z)
 
+/-- Removing the matrix tape leaves the ordinary scan with its original caller
+data and blank workspace, including the payload at the original head position. -/
+theorem DirectoryReady.afterMatrixWriter [M8.Machine.Net] {m K d w W H J N : ℕ} {v : Descriptor}
+    {proj : Matrix (Fin m) (Fin m) ℚ} {parent : Fin m → ZMod (prime^(w+1))}
+    {prefixes : ℕ → List (Fin (prime+4))} {archiveTail : List (Fin (prime+4))}
+    {schedules : List ℕ → List (Fin (prime+4))} {pending : List ℕ}
+    {source : ℤ → Fin 4} {head : ℤ} {word : Fin N → ZMod 2}
+    (room : Record.size d+(rowSwapBlock.tapes+35+2) ≤ K+1)
+    (S D : Stacks (66+(K+1)) prime)
+    (caller : ∀ i : Fin 66, i.val < 58 → D.L (i.castAdd (K+1)) = S.L (i.castAdd (K+1)) ∧
+      D.R (i.castAdd (K+1)) = S.R (i.castAdd (K+1)))
+    (blank : ∀ i, 58 ≤ i.val → i ≠ directoryMatrixTape room → D.L i = [] ∧ D.R i = []) :
+    let bank := directoryOrdinaryBank room
+    let ready := DirectoryReady v proj w W H J parent prefixes archiveTail schedules
+    let payload := RecordPayload ((24 : Fin 66).castAdd K) source head word
+    ready (embStk bank S) pending → payload (embStk bank S) →
+      ready (embStk bank D) pending ∧ payload (embStk bank D) := by
+  intro bank ready payload initial packed
+  have old := initial.2.2.1
+  have cleared := (directoryOrdinaryBank_clear_iff room D).2 blank
+  have agree (i : Fin (66+K)) :
+      (embStk bank D).L i = (embStk bank S).L i ∧ (embStk bank D).R i = (embStk bank S).R i := by
+    by_cases hi : 58 ≤ i.val
+    · exact ⟨(cleared i hi).1.trans (old i hi).1.symm,(cleared i hi).2.trans (old i hi).2.symm⟩
+    · let j : Fin 66 := ⟨i.val,by omega⟩
+      have eq : i = j.castAdd K := Fin.ext rfl
+      rw [eq]
+      change D.L (bank (j.castAdd K)) = S.L (bank (j.castAdd K)) ∧
+        D.R (bank (j.castAdd K)) = S.R (bank (j.castAdd K))
+      rw [directoryOrdinaryBank_caller]
+      exact caller j (Nat.lt_of_not_ge hi)
+  have left := funext fun i => (agree i).1
+  have right := funext fun i => (agree i).2
+  constructor
+  · simpa only [ready,DirectoryReady,left,right] using initial
+  · simpa only [payload,RecordPayload,left,right] using packed
+
 theorem recordPayload_ordinaryBank [M8.Machine.Net] {K d N : ℕ}
     (room : Record.size d+(rowSwapBlock.tapes+35+2) ≤ K+1) (source : ℤ → Fin 4)
     (head : ℤ) (word : Fin N → ZMod 2) (S : Stacks (66+(K+1)) prime) :
@@ -1007,6 +1215,87 @@ def ArchiveRun [M8.Machine.Net] {m d K w W J N : ℕ} {P U : Type}
       priced n ∧ binaryTime n ∧ n ≤ ((List.range data.records).map fun j => cost j+2+4).sum+2 ∧
       Exec body (classifiedScan (placement (caller 57)) (placement (caller 56)) ((embProg placement id good).seq advance)
         (directoryExceptionalProgram m d room capacity) ((embProg placement id skip).seq advance)) (mk u S) n (mk z B)
+
+open IntegerMultBounds.MathlibTM2.Fast.Main RingFormula in
+theorem generatedArchive_exec [M8.Machine.Net] {m d K w W J N : ℕ} {P U : Type}
+    (dimension : m+m = d+1) (vDescriptor : Descriptor) (proj : Matrix (Fin m) (Fin m) ℚ)
+    (parent inv : Fin m → ZMod (prime^(w+1)))
+    (data : ScanData m d w W)
+    (room : Record.size d+(rowSwapBlock.tapes+35+2) ≤ K+1)
+    (capacity : (anchorProgram d true).1+(anchorProgram d false).1+1 ≤ columnCapacity)
+    (body : P → Pr P (66+(K+1)) columnCapacity prime U) (c : ℕ)
+    (prefixes : ℕ → List (Fin (prime+4))) (archiveTail : List (Fin (prime+4)))
+    (rankFits : proj.rank ≤ m)
+    (source : ℤ → Fin 4) (head : ℤ) (length : N = (prime^(w+1))^m*((prime^(w+1))^m*W)) (original : Fin N → ZMod 2)
+    (good skip : Pr P (66+K) columnCapacity prime U) (ordinaryCost : ℕ → ℕ) (ordinaryCeiling : ℕ)
+    (ordinaryEffect : ℕ → (Fin N → ZMod 2) → (Fin N → ZMod 2) → Prop)
+    (u : HS (66+(K+1)) columnCapacity prime U) (S : Stacks (66+(K+1)) prime)
+    (fits : (36+2*m+1+(conjugationDepth m+1)*13)+3 ≤ K+1)
+    (hm : prime^(w+1) < 2^data.H) (reciprocal : ∀ i, parent i * inv i = 1)
+    (scan : ∀ y D, ArchiveRun (J := J) dimension vDescriptor proj parent inv data room capacity body c prefixes
+      archiveTail rankFits source head length original good skip ordinaryCost ordinaryCeiling ordinaryEffect y D) :
+    let e := finSumFinEquiv.trans (finCongr dimension)
+    let physical := data.physical e proj parent inv
+    let φ := LabelRing.res prime (w+1) (by omega)
+    let live := LabelStock.live m (w+1) 1
+    let bad := fun j => fallbackBit rankFits (reduce (prime^(w+1)) proj) (physicalLabel m (w+1) j)
+    let code := fun k => residualSchedule (A := prime) (projectorResidual finSumFinEquiv (reduce prime proj)
+      (φ ∘ parent) (φ ∘ inv) (LabelStock.residue m (w+1) 1 k))
+    let schedule := fun (xs : List ℕ) => xs.flatMap fun k => if bad k then code k else []
+    let ready := DirectoryReady vDescriptor proj w W data.H J parent prefixes archiveTail schedule
+    let placement := directoryOrdinaryBank room
+    let caller := Fin.castAddEmb (n := 66) K
+    let payload := RecordPayload (N := N) (caller 24) source head
+    let pending := fun j => (List.range data.records).drop j
+    let frame := fun j word D => ready D (pending j) ∧ payload word D
+    let effect := fun j (x y : Fin N → ZMod 2) => if live j && bad j then
+      ∀ a k, y ((FlatCoordinateLayout.index ((projectorResidual e (reduce (prime^(w+1)) proj) parent inv
+        (physicalLabel m (w+1) j)).mulVec a) k).cast (directoryPayloadLength e length)) =
+        x ((FlatCoordinateLayout.index a k).cast (directoryPayloadLength e length))
+      else ordinaryEffect j x y
+    frame 0 original (embStk placement S) →
+    S.R (directoryMatrixTape room) = [] →
+    S.R ((57 : Fin 66).castAdd (K+1)) = (List.range data.records).map (fun j => bitSymbol (live j)) →
+    S.R ((56 : Fin 66).castAdd (K+1)) = (List.range data.records).map (fun j => bitSymbol (bad j)) →
+    let advance := dropWords (placement (caller 2)) (directoryMatrixTape room) (placement (caller 59)) ((d+1)*(d+1))
+    let exceptionalCount := ((∑ k ∈ Finset.range proj.rank, (k+1)*(m+1))*data.records)/prime
+    let scratch := (List.finRange (66+(K+1))).filter fun i => decide (58 ≤ i.val ∧ i ≠ directoryMatrixTape room)
+    let push := max (mnProgPush (directoryExceptionalCore (P := P) (U := U) d room capacity)) c
+    let binaryTime := fun n => ∀ parents baseline, data.records = parents*(prime^(w+1))^(m*m) →
+      data.H = (prime^(w+1)).size → J = W.size →
+      ordinaryCeiling + N ≤ baseline →
+      n ≤ data.records*(baseline+6)+2 + exceptionalCount*(exceptionalVolumeRate U d m scratch.length push w*N)
+    ∃ (prepare : Pr P (66+(K+1)) columnCapacity prime U), ∃ z B setupSteps n next, z.user = u.user ∧ frame data.records next (embStk placement B) ∧
+      (List.range data.records).foldl (fun possible j y => ∃ x, possible x ∧ effect j x y) (· = original) next ∧
+      B.R (directoryMatrixTape room) = [] ∧ B.R (placement (caller 57)) = [] ∧ B.R (placement (caller 56)) = [] ∧
+      binaryTime n ∧
+      Exec body (prepare.seq (classifiedScan (placement (caller 57)) (placement (caller 56)) ((embProg placement id good).seq advance)
+        (directoryExceptionalProgram m d room capacity) ((embProg placement id skip).seq advance))) (mk u S) (setupSteps+n) (mk z B) := by
+  intro e physical φ live bad code schedule ready placement caller payload pending frame effect initial empty liveBits badBits
+    advance exceptionalCount scratch push binaryTime
+  have input := initial.1
+  obtain ⟨directory,widths,privateBlank,_,projector,modulus,_,_,_,unit,clock,weights,_⟩ := input
+  have port (j : Fin 66) : directoryOrdinaryBank room ((Fin.castAddEmb K) j) = j.castAdd (K+1) := directoryOrdinaryBank_caller room j
+  simp only [embStk,Function.comp_apply,placement,port] at directory widths projector modulus unit clock weights
+  have free (i) : S.R (directoryQueueBank room fits i) = [] := by
+    by_cases eq : directoryQueueBank room fits i = directoryMatrixTape room
+    · rw [eq]; exact empty
+    · apply ((directoryOrdinaryBank_clear_iff room S).1 privateBlank _ ?_ eq).2
+      by_contra! low
+      let j : Fin 66 := ⟨(directoryQueueBank room fits i).val,by omega⟩
+      exact directoryQueueBank_caller room fits i j (Fin.ext rfl)
+  obtain ⟨_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,generate,_⟩ :=
+    directoryQueueSetup_exec room fits body parent inv reciprocal hm u S liveBits free weights modulus unit clock
+  obtain ⟨writer,runWriter⟩ := generate e
+  obtain ⟨y,t,userY,writerTime,write,archive,keep,clear⟩ := runWriter proj prefixes archiveTail projector
+    (fun j hj => widths j (by simpa [pending] using hj)) directory
+  have start := DirectoryReady.afterMatrixWriter room S _ keep clear initial.1 initial.2
+  have bits (j : Fin 66) (hj : j.val < 58) := (keep j hj).2
+  obtain ⟨z,B,n,next,userZ,done,history,emptyArchive,emptyLive,emptyBad,_,time,_,run⟩ :=
+    scan y _ start (archive.trans (data.physical_archive e proj parent inv).symm)
+      (by rw [port]; exact (bits 57 (by decide)).trans liveBits)
+      (by rw [port]; exact (bits 56 (by decide)).trans badBits)
+  exact ⟨_,z,B,t,n,next,userZ.trans userY,done,history,emptyArchive,emptyLive,emptyBad,time,Exec.seq write run⟩
 
 open IntegerMultBounds.MathlibTM2.Fast.Main in
 /-- Run the generated directory frame with its physical exceptional projector and shared matrix archive. -/
