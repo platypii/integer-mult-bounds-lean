@@ -40,6 +40,17 @@ theorem packedWeightedLeafCost_le [M8.Machine.Net] (v : Descriptor) (positive : 
   rw [Nat.cast_add,add_mul]
   exact add_le_add (weightedLeafCost_le _ _ _ _ widthBound) (by exact_mod_cast Nat.mul_le_mul_left rate radix)
 
+private theorem weightedLeafRate_linear [M8.Machine.Net] (tapes push rate : ℕ) {w : ℝ}
+    (one : 1 ≤ w) : weightedLeafRate tapes push w + rate ≤ (weightedLeafRate tapes push 1 + rate)*w := by
+  let base := weightedLeafRate tapes push 0 + rate
+  have hb : 0 ≤ base := by dsimp [base,weightedLeafRate]; positivity
+  have linear : (weightedLeafRate tapes push 1 + rate)*w =
+      (weightedLeafRate tapes push w + rate) + base*(w-1) := by
+    unfold base weightedLeafRate
+    ring
+  rw [linear]
+  exact le_add_of_nonneg_right (mul_nonneg hb (sub_nonneg.mpr one))
+
 /-- Successive good records retain the parent's volume. Their linear overheads
 add, and the terminal interchange pays for the width left after all gaps. -/
 private theorem chainCost_of_terminal {ι : Type*} (gap overhead : ι → ℕ)
@@ -231,6 +242,58 @@ noncomputable def packedCoordinatesTime [M8.Machine.Net] (d V w tapes push entry
   d*(weightedLeafCost V (w+1) tapes push+
     ((1000*(prime+1)+16*(d-1))*(2*(prime.size+1)^2))*prime^(w+1)+
     (1800*(entryTapes+5)+200*(returnTapes+5)+15)*V)+1
+
+noncomputable def packedCoordinatesRate [M8.Machine.Net] (D tapes push entryTapes returnTapes : ℕ) : ℝ :=
+  let scans := (1000*(prime+1)+16*(D-1))*(2*(prime.size+1)^2)
+  let frame := 1800*(entryTapes+5)+200*(returnTapes+5)+15
+  weightedLeafRate tapes push 1 + (scans+frame+1 : ℕ)
+
+/-- The full coordinate loop, including the return frames and final instruction,
+costs at most a constant times active width times payload volume. -/
+theorem packedCoordinates_linear [M8.Machine.Net] (d D V w tapes push entryTapes returnTapes : ℕ)
+    (active : 0 < d) (rankBound : d ≤ D) (radix : prime^(w+1) ≤ V) :
+    let scans := (1000*(prime+1)+16*(D-1))*(2*(prime.size+1)^2)
+    let frame := 1800*(entryTapes+5)+200*(returnTapes+5)+15
+    (packedCoordinatesTime d V w tapes push entryTapes returnTapes : ℝ) ≤
+      (weightedLeafRate tapes push 1 + (scans+frame+1 : ℕ))*(d*(w+1) : ℕ)*V := by
+  intro scans frame
+  let atom : ℝ := (w+1 : ℕ)
+  have one : 1 ≤ atom := by dsimp [atom]; exact_mod_cast Nat.succ_pos w
+  have exp : ((max 1 (w+1) : ℕ) : ℝ)^M8.Machine.BudgetBound.tau ≤ atom := by
+    rw [max_eq_right (Nat.succ_pos w)]
+    simpa [atom] using Real.rpow_le_rpow_of_exponent_le one M8.Machine.BudgetBound.exponent_range.2.le
+  have leaf := weightedLeafCost_le V (w+1) tapes push exp
+  have scan : (1000*(prime+1)+16*(d-1))*(2*(prime.size+1)^2)*prime^(w+1) ≤ scans*V := by
+    dsimp [scans]
+    gcongr
+  have last : (1 : ℝ) ≤ d*(V : ℝ) := by
+    exact_mod_cast Nat.mul_pos active ((pow_pos Networks.Shared50ModularControl.prime_prime.pos _).trans_le radix)
+  change ((d*(_+_+frame*V)+1 : ℕ) : ℝ) ≤ _
+  push_cast
+  calc
+    _ ≤ (d : ℝ)*(weightedLeafRate tapes push atom*V + (scans*V : ℕ) + frame*(V : ℝ)) + d*V := by
+      gcongr <;> exact_mod_cast scan
+    _ = ((weightedLeafRate tapes push atom + (scans+frame+1 : ℕ))*d)*V := by push_cast; ring
+    _ ≤ (((weightedLeafRate tapes push 1 + (scans+frame+1 : ℕ))*atom)*d)*V := by
+      gcongr
+      exact weightedLeafRate_linear tapes push (scans+frame+1) one
+    _ = _ := by dsimp [atom]; push_cast; ring
+
+/-- Apply the coordinate execution budget in the units of the descriptor
+recurrence. All dependence on the active rank is bounded by the rank cap. -/
+theorem packedCoordinates_steps_linear [M8.Machine.Net] (v : Descriptor) (positive : v.Positive)
+    (d D w tapes push entryTapes returnTapes steps : ℕ) (active : 0 < d) (rankBound : d ≤ D)
+    (width : v.width = d*(w+1))
+    (run : steps ≤ packedCoordinatesTime d (volume prime v) w tapes push entryTapes returnTapes) :
+    (steps : ℝ) ≤ packedCoordinatesRate D tapes push entryTapes returnTapes*v.width*volume prime v := by
+  have qpos := Networks.Shared50ModularControl.prime_prime.pos
+  have atom : w+1 ≤ v.width := width ▸ Nat.le_mul_of_pos_left _ active
+  have pre := Nat.mul_pos (Nat.mul_pos positive.1 positive.2.1) positive.2.2.1
+  have radix : prime^(w+1) ≤ volume prime v := (Nat.pow_le_pow_right qpos atom).trans
+    ((Nat.le_mul_of_pos_left _ pre).trans ((Nat.le_mul_of_pos_right _ positive.2.2.2.1).trans
+      ((Nat.le_mul_of_pos_right _ (pow_pos qpos _)).trans (Nat.le_mul_of_pos_right _ positive.2.2.2.2))))
+  exact (Nat.cast_le.mpr run).trans (width ▸ packedCoordinates_linear d D _ w tapes push
+    entryTapes returnTapes active rankBound radix)
 
 /-- Install the verified packed coordinate budget at the end of the record
 list. Only the parent volume occurs in the resulting bound. -/
