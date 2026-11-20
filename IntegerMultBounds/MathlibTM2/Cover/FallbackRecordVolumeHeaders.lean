@@ -243,6 +243,48 @@ theorem loadCanonicalMatrix_exec {T Q A d e M : ℕ} [NeZero M] {F U : Type}
     (by simpa only [size,words] using input) (by simp [modulus,size,length_binSyms])
     (by simp [canonical,length_binSyms]) empty
 
+/-- Read the padded matrix from the second elimination tape, leaving its suffix
+in place and putting the canonical matrix on the first elimination tape. -/
+def matrixArchivePorts : Fin 7 ↪ Fin 82 := ⟨![2,74,58,59,61,60,62],by decide⟩
+
+def recordMatrixProgram {K Q A : ℕ} {F U : Type} (record : Fin 24 ↪ Fin K) (m : ℕ) : Pr F (66+K) Q A U :=
+  let host := recordLoaderBank record
+  let r := matrixArchivePorts.trans host
+  (narrowRecordWords r (m*m)).seq (moveR (r 6) (host 73) id)
+
+theorem recordMatrixProgram_exec {K Q A m M : ℕ} [NeZero M] {F U : Type}
+    (body : F → Pr F (66+K) Q A U) (record : Fin 24 ↪ Fin K) (H : ℕ) (hm : M < 2^H)
+    (matrix : Matrix (Fin m) (Fin m) (ZMod M)) (tail : List (Fin (A+4)))
+    (u : HS (66+K) Q A U) (S : Stacks (66+K) A) :
+    let caller := Fin.castAddEmb (n := 66) K
+    let reg := record.trans (Fin.natAddEmb 66)
+    S.R (caller 2) = binSyms H M → S.R (reg 2) = binSyms M.size M →
+    S.R (reg 16) = matrixWords A H matrix ++ tail →
+    (∀ i ∈ ([0,1,3,4,15] : List (Fin 24)), S.R (reg i) = []) →
+    ∃ z, z.user = u.user ∧ Exec body (recordMatrixProgram record m) (mk u S)
+      ((m*m)*(10*M.size+8*(H-M.size)+12)+1+(2*(matrixWords A M.size matrix).length+2))
+      (mk z {S with R := Function.update (Function.update S.R (reg 16) tail) (reg 15) (matrixWords A M.size matrix)}) := by
+  intro caller reg base canonical input empty
+  let host := recordLoaderBank record
+  let r := matrixArchivePorts.trans host
+  have port (i : Fin 24) (j : Fin 82) (h : i.natAdd 58 = j) : host j = reg i :=
+    h ▸ recordLoaderBank_private record i
+  have src : r 1 = reg 16 := port 16 74 (by decide)
+  have dst := port 15 73 (by decide)
+  obtain ⟨z,hz,run⟩ := loadCanonicalMatrix_exec body r (host 73)
+    (fun i => host.injective.ne ((by decide : ∀ i, 73 ≠ matrixArchivePorts i) i))
+    H hm matrix tail u S (by exact (recordLoaderBank_caller record 2) ▸ base)
+    (by rw [show r 5 = reg 2 from port 2 60 (by decide)]; exact canonical) (src ▸ input)
+    (by intro i hi
+        have h := (by decide : ∀ i ∈ ([2,3,4,6] : List (Fin 7)), ∃ j ∈ ([0,1,3,4,15] : List (Fin 24)),
+          j.natAdd 58 = matrixArchivePorts i) i hi
+        obtain ⟨j,hj,eq⟩ := h
+        rw [show r i = reg j from port j _ eq]
+        exact empty j hj)
+  refine ⟨z,hz,?_⟩
+  change Exec body ((narrowRecordWords r (m*m)).seq (moveR (r 6) (host 73) id)) _ _ _
+  simpa only [src,dst,empty 15 (by decide),List.append_nil] using run
+
 theorem recordVolumeHeaders_exec {T Q A : ℕ} {F U : Type}
     (body : F → Pr F T Q A U) (r : Fin 10 ↪ Fin T) (width : Fin T) (outside : ∀ i, width ≠ r i)
     (d H J M W : ℕ) (hm : M < 2^H) (hw : W < 2^J) (u : HS T Q A U) (S : Stacks T A)
