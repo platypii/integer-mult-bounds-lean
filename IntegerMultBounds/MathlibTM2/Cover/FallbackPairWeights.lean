@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.Mult.ShortConvSetupOps
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackWeightedEntry
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackShearReady
 
@@ -295,5 +296,57 @@ theorem loadSignedPairWeights_exec (body : P → Pr P T Q A U) (i : Fin d) (bank
   have ne : inv.val ≠ 0 := fun eq => (Ring.isUnit_iff_inverse_ne_zero.mp unitWeight) (by apply ZMod.val_injective; simpa using eq)
   rw [negWordValue inv ne hm,free 29 (by decide) (by decide) (by decide),List.append_nil] at sub
   exact ⟨z,_,hz.trans hu,Nat.add_le_add_right hl _,Exec.seq load sub⟩
+
+/-- Run a leaf on a reciprocal pair read from the two packed archives. The
+three coefficient words are released at their actual width on return. -/
+theorem withLeafPair_exec {n : ℕ} (body : P → Pr P T Q A U) (bank : Fin 20 ↪ Fin T)
+    (parent : Fin n → ZMod M) (j : Fin n) (inv : ZMod M) (reciprocal : parent j * inv = 1)
+    (pivot : Fin d → ZMod M) (i : Fin d) (unit : IsUnit (pivot i)) (hb : b.Prime)
+    (v : HS T Q A U) (S : Stacks T A) (tail rest : List (Fin (A+4)))
+    (leaf : Pr P T Q A U) (budget : ℕ) (post : Stacks T A → Prop) :
+    let H := Nat.size M
+    let weight := parent j * pivot i
+    let inverse := inv * Ring.inverse (pivot i)
+    let outputs := [bank 0,bank 14,bank 12]
+    let C := 48*H*H+152*H+66
+    let cost := (8*(j.val*H)+14*H+22) +
+      ((8*(i.val*H)+48*H*H+166*H+88)+(6*w+6+(14*H+16+(b-2)*C+C+w*(12*H+15+b*C)))) +
+      (2*H+2)+(8*H+8)
+    S.R (bank 19) = (List.ofFn fun k => binSyms H (parent k).val).flatten ++ rest →
+    S.R (bank 18) = (List.ofFn fun k => binSyms H (pivot k).val).flatten ++ tail →
+    S.R (bank 4) = binSyms H M → S.R (bank 15) = binSyms H (1 : ZMod M).val →
+    (S.R (bank 16)).length = w →
+    (∀ k : Fin 20, (k ≤ 14 ∧ k ≠ 4) ∨ k = 17 → S.R (bank k) = []) →
+    (∀ u E, u.user = v.user → weight*inverse = 1 → E.L = S.L →
+      E.R (bank 4) = binSyms H M → E.R (bank 0) = binSyms H inverse.val →
+      E.R (bank 12) = binSyms H (-weight).val →
+      (∀ k, k ∉ outputs → E.R k = S.R k) →
+      ∃ z D t, z.user = u.user ∧ t ≤ budget ∧ Exec body leaf (mk u E) t (mk z D) ∧
+        (∀ k ∈ outputs, D.R k = E.R k) ∧ post {D with R := fun k => if k ∈ outputs then [] else D.R k}) →
+    ∃ z D t, z.user = v.user ∧ t ≤ cost+budget+(6*H+7) ∧
+      Exec body ((signedChildPair b j.val i.val bank true).seq (leaf.seq (Mult.ShortConv.clearWords outputs)))
+        (mk v S) t (mk z D) ∧ (∀ k ∈ outputs, D.R k = []) ∧ post D := by
+  intro H weight inverse outputs C cost weights record modulus one clock free invoke
+  obtain ⟨u,E,t,hu,ht,load,forward,invWord,negWord,hL,_,_,frame⟩ :=
+    signedChildPair_exec body bank parent j inv reciprocal pivot i unit hb H (Nat.lt_size_self M)
+      v S tail rest weights record modulus one clock free true
+  have keep (k) (off : k ∉ outputs) : E.R k = S.R k := by
+    simp [outputs] at off
+    exact frame k off.1 off.2.1 off.2.2
+  have product : weight*inverse = 1 := by
+    simp only [weight,inverse,mul_mul_mul_comm (parent j) (pivot i),reciprocal,Ring.mul_inverse_cancel _ unit,one_mul]
+  obtain ⟨y,D,l,hy,hl,run,saved,result⟩ := invoke u E hu product hL
+    ((keep _ (by simp [outputs,bank.injective.eq_iff])).trans modulus) invWord negWord keep
+  obtain ⟨z,hz,clear⟩ := Mult.ShortConv.clearWords_exec (body := body) outputs
+    (by simp [outputs,List.nodup_cons,bank.injective.eq_iff]) y D
+  have lengths (k : Fin 20) (hk : k ∈ [0,14,12]) : (D.R (bank k)).length = H := by
+    simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
+    rcases hk with rfl | rfl | rfl <;>
+      rw [saved _ (by simp [outputs])] <;> first | rw [invWord,length_binSyms] | rw [forward,length_binSyms] | rw [negWord,length_binSyms]
+  have time : 2*(outputs.map fun k => (D.R k).length).sum+2*outputs.length+1 = 6*H+7 := by
+    simp [outputs,lengths 0 (by decide),lengths 14 (by decide),lengths 12 (by decide)]; omega
+  rw [time] at clear
+  exact ⟨z,_,_,hz.trans (hy.trans hu),by dsimp [cost,C] at *; omega,
+    Exec.seq load (Exec.seq run clear),fun k hk => by simp [hk],result⟩
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback

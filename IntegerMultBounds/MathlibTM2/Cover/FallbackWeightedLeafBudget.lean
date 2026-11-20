@@ -11,7 +11,7 @@ open IntegerMultBounds.Networks.Shared50ModularControl (prime)
 
 noncomputable def weightedLeafRate [M8.Machine.Net] (tapes push : ℕ) (L : ℝ) : ℝ :=
   (1+186*(push : ℝ))*((3*(210*(2*((prime.size : ℝ)+1)^2)+16120+100)+387)+
-    2*(|LeafCore.C| * L*((tapes : ℝ)+5)))+(12000*(1+186*(push : ℝ))+125+448)
+    2*(|LeafCore.C| * L*((tapes : ℝ)+5)))+(12000*(1+186*(push : ℝ))+125+550)
 
 theorem weightedLeafCost_le [M8.Machine.Net] (N width tapes push : ℕ) {L : ℝ}
     (widthBound : ((max 1 width : ℕ) : ℝ)^M8.Machine.BudgetBound.tau ≤ L) :
@@ -21,8 +21,23 @@ theorem weightedLeafCost_le [M8.Machine.Net] (N width tapes push : ℕ) {L : ℝ
   push_cast
   calc
     _ ≤ (1+186*(push : ℝ))*((3*(210*(2*((prime.size : ℝ)+1)^2)+16120+100)+387)*N+
-        2*((|LeafCore.C| * N*L)*((tapes : ℝ)+5)))+(12000*(1+186*(push : ℝ))+125)*N + 448*N := by gcongr
+        2*((|LeafCore.C| * N*L)*((tapes : ℝ)+5)))+(12000*(1+186*(push : ℝ))+125)*N + 550*N := by gcongr
     _ = _ := by ring
+
+/-- The packed leaf pays the archive charge from a single radix factor.
+The terminal recurrence can use its usual descriptor volume. -/
+theorem packedWeightedLeafCost_le [M8.Machine.Net] (v : Descriptor) (positive : v.Positive)
+    (tapes push rate : ℕ) {L : ℝ}
+    (widthBound : ((max 1 v.width : ℕ) : ℝ)^M8.Machine.BudgetBound.tau ≤ L) :
+    ((weightedLeafCost (volume prime v) v.width tapes push + rate*prime^v.width : ℕ) : ℝ) ≤
+      (weightedLeafRate tapes push L+rate)*volume prime v := by
+  have qpos := IntegerMultBounds.Networks.Shared50ModularControl.prime_prime.pos
+  have pre := Nat.mul_pos (Nat.mul_pos positive.1 positive.2.1) positive.2.2.1
+  have radix : prime^v.width ≤ volume prime v :=
+    (Nat.le_mul_of_pos_left _ pre).trans ((Nat.le_mul_of_pos_right _ positive.2.2.2.1).trans
+      ((Nat.le_mul_of_pos_right _ (pow_pos qpos _)).trans (Nat.le_mul_of_pos_right _ positive.2.2.2.2)))
+  rw [Nat.cast_add,add_mul]
+  exact add_le_add (weightedLeafCost_le _ _ _ _ widthBound) (by exact_mod_cast Nat.mul_le_mul_left rate radix)
 
 /-- Successive good records retain the parent's volume. Their linear overheads
 add, and the terminal interchange pays for the width left after all gaps. -/
