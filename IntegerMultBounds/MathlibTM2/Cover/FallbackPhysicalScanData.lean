@@ -621,7 +621,7 @@ theorem matrixAdvance_le_volume (d w W : ℕ) (positive : 0 < W) :
 open IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2.Stack Host in
 /-- The classified scan shares one archive. Good and padding programs operate on
 the embedded bank, while the exceptional program consumes its matrix directly. -/
-theorem ScanData.classifiedArchive_exec [M8.Machine.Net] {K Q : ℕ} {P F U : Type}
+theorem ScanData.classifiedArchive_exec [M8.Machine.Net] {K Q : ℕ} {P F U X : Type}
     (data : ScanData r d w W) (room : Record.size d+(rowSwapBlock.tapes+35+2) ≤ K+1)
     (labels : P → F) (projector : Matrix (Fin r) (Fin r) ℚ) (idem : projector*projector = projector)
     (factor : IntegerMultBounds.Swap.LowerTriangular.Factorization Finset.univ Finset.univ projector)
@@ -639,20 +639,21 @@ theorem ScanData.classifiedArchive_exec [M8.Machine.Net] {K Q : ℕ} {P F U : Ty
     ∀ (body : P → Pr P (66+K) Q prime U) (host : F → Pr F (66+(K+1)) Q prime U)
     (calls : ∀ f, host (labels f) = embProg bank labels (body f))
     (good skip : Pr P (66+K) Q prime U) (exceptional : Pr F (66+(K+1)) Q prime U)
-    (ordinaryCost badCost : ℕ → ℕ) (ready : ℕ → Stacks (66+K) prime → Prop)
-    (release : ∀ j S k bits, k = liveMask ∨ k = mode → ready j S →
-      ready j {S with R := Function.update S.R k bits})
+    (ordinaryCost badCost : ℕ → ℕ) (initial : X) (effect : ℕ → X → X → Prop)
+    (ready : ℕ → X → Stacks (66+K) prime → Prop)
+    (release : ∀ j x S k bits, k = liveMask ∨ k = mode → ready j x S →
+      ready j x {S with R := Function.update S.R k bits})
     (ordinary : ∀ j, j < data.records → ¬ (live j = true ∧ bad j = true) →
-      ∀ u S, ready j S → ∃ v D n, v.user = u.user ∧ ready (j+1) D ∧
+      ∀ x u S, ready j x S → ∃ y v D n, v.user = u.user ∧ effect j x y ∧ ready (j+1) y D ∧
         D.R liveMask = S.R liveMask ∧ D.R mode = S.R mode ∧ (D.R width).length = data.H ∧
         D.R tmp = [] ∧ n ≤ ordinaryCost j ∧
         Exec body (if live j then good else skip) (Host.mk u S) n (Host.mk v D))
     (repair : ∀ j, j < data.records → live j = true → bad j = true →
-      ∀ u S, ready j (embStk bank S) → S.R archive = data.matrices j →
-      ∃ v D n, v.user = u.user ∧ ready (j+1) (embStk bank D) ∧ D.R archive = data.matrices (j+1) ∧
+      ∀ x u S, ready j x (embStk bank S) → S.R archive = data.matrices j →
+      ∃ y v D n, v.user = u.user ∧ effect j x y ∧ ready (j+1) y (embStk bank D) ∧ D.R archive = data.matrices (j+1) ∧
         D.R (bank liveMask) = S.R (bank liveMask) ∧ D.R (bank mode) = S.R (bank mode) ∧
         n ≤ badCost j ∧ Exec host exceptional (Host.mk u S) n (Host.mk v D))
-    (u : HS (66+(K+1)) Q prime U) (S : Stacks (66+(K+1)) prime) (start : ready 0 (embStk bank S))
+    (u : HS (66+(K+1)) Q prime U) (S : Stacks (66+(K+1)) prime) (start : ready 0 initial (embStk bank S))
     (queue : S.R archive = data.matrices 0)
     (liveBits : S.R (bank liveMask) = (List.range data.records).map fun j => bitSymbol (live j))
     (badBits : S.R (bank mode) = (List.range data.records).map fun j => bitSymbol (bad j)),
@@ -667,20 +668,28 @@ theorem ScanData.classifiedArchive_exec [M8.Machine.Net] {K Q : ℕ} {P F U : Ty
         (data.H = Nat.size (prime^(w+1)) ∧ 0 < W ∧ ordinaryCost j + M^(d+1)*W ≤ baseline)) →
       (0 < exceptionalCount → ∀ j < data.records, live j = true → bad j = true →
         badCost j ≤ baseline+(budget-ordinaryTime)/exceptionalCount) → n ≤ budget
-    ∃ z B n, z.user = u.user ∧ (ready data.records (embStk bank B) ∧ B.R archive = data.matrixTail) ∧
+    ∃ z B n, z.user = u.user ∧ ((∃ x, (List.range data.records).foldl
+      (fun possible j y => ∃ a, possible a ∧ effect j a y) (fun a => a = initial) x ∧ ready data.records x (embStk bank B)) ∧ B.R archive = data.matrixTail) ∧
       B.R (bank liveMask) = [] ∧ B.R (bank mode) = [] ∧ priced n ∧ n ≤ ((List.range data.records).map fun j => cost j+2+4).sum+2 ∧
       Exec host (classifiedScan (bank liveMask) (bank mode) ((embProg bank labels good).seq advance)
         exceptional ((embProg bank labels skip).seq advance)) (Host.mk u S) n (Host.mk z B) := by
-  intro proj live bad bank archive width tmp liveMask mode body host calls good skip exceptional ordinaryCost badCost ready
+  intro proj live bad bank archive width tmp liveMask mode body host calls good skip exceptional ordinaryCost badCost initial effect ready
     release ordinary repair u S start queue liveBits badBits advance cost exceptionalCount priced
   have outside (i : Fin (66+K)) : bank i ≠ archive := Fin.succAbove_ne _ _
   have apart : width ≠ tmp := (Fin.castAddEmb K).injective.ne (by decide : (2 : Fin 66) ≠ 59)
   have selectors : liveMask ≠ mode := (Fin.castAddEmb K).injective.ne (by decide : (57 : Fin 66) ≠ 56)
-  let inv := fun j B => ready j (embStk bank B) ∧ B.R archive = data.matrices j
+  let reached (j : ℕ) := (List.range j).foldl
+    (fun (possible : X → Prop) i y => ∃ x, possible x ∧ effect i x y) (fun x => x = initial)
+  have advanceWord {j x y} (before : reached j x) (step : effect j x y) : reached (j+1) y := by
+    simpa only [reached,List.range_succ,List.foldl_append,List.foldl_cons,List.foldl_nil] using
+      (show ∃ a, reached j a ∧ effect j a y from ⟨x,before,step⟩)
+  let inv := fun j B => (∃ x, reached j x ∧ ready j x (embStk bank B)) ∧ B.R archive = data.matrices j
   have releaseAt (j) (B : Stacks (66+(K+1)) prime) (k : Fin (66+K)) (bits) (sel : k = liveMask ∨ k = mode)
       (h : inv j B) : inv j {B with R := Function.update B.R (bank k) bits} := by
     refine ⟨?_,(Function.update_of_ne (outside k).symm _ _).trans h.2⟩
-    convert release j (embStk bank B) k bits sel h.1 using 1
+    obtain ⟨x,hx,frame⟩ := h.1
+    refine ⟨x,hx,?_⟩
+    convert release j x (embStk bank B) k bits sel frame using 1
     refine Stacks.ext rfl rfl rfl ?_
     funext i
     change Function.update B.R (bank k) bits (bank i) = Function.update (B.R ∘ bank) k bits i
@@ -723,16 +732,17 @@ theorem ScanData.classifiedArchive_exec [M8.Machine.Net] {K Q : ℕ} {P F U : Ty
   apply classifiedScan_exec host _ _ (bank.injective.ne selectors) _ _ _ data.records live bad cost inv
     (fun j B k bits sel h => by rcases sel with rfl | rfl
                                 · exact releaseAt j B _ bits (Or.inl rfl) h
-                                · exact releaseAt j B _ bits (Or.inr rfl) h) _ u S ⟨start,queue⟩ liveBits badBits
+                                · exact releaseAt j B _ bits (Or.inr rfl) h) _ u S ⟨⟨initial,rfl,start⟩,queue⟩ liveBits badBits
   intro j inside v B current
+  obtain ⟨x,hx,frame⟩ := current.1
   by_cases both : live j = true ∧ bad j = true
-  · obtain ⟨z,D,n,user,next,tail,l,m,price,run⟩ := repair j inside both.1 both.2 v B current.1 current.2
-    exact ⟨z,D,n,user,⟨next,tail⟩,l,m,by simpa [cost,both.1,both.2] using price,by simpa [both.1,both.2] using run⟩
-  obtain ⟨y,D,n,user,next,l,m,clock,free,price,run⟩ := ordinary j inside both (embDn bank v) (embStk bank B) current.1
+  · obtain ⟨y,z,D,n,user,action,next,tail,l,m,price,run⟩ := repair j inside both.1 both.2 x v B frame current.2
+    exact ⟨z,D,n,user,⟨⟨y,advanceWord hx action,next⟩,tail⟩,l,m,by simpa [cost,both.1,both.2] using price,by simpa [both.1,both.2] using run⟩
+  obtain ⟨word,y,D,n,user,action,next,l,m,clock,free,price,run⟩ := ordinary j inside both x (embDn bank v) (embStk bank B) frame
   obtain ⟨z,E,hu,localBank,tail,_,step⟩ := data.advanceEmbeddedRecord_exec j inside bank archive outside
     width tmp apart labels body host calls _ v B y D n run clock free current.2
   have cell (i : Fin (66+K)) : E.R (bank i) = D.R i := congrArg (fun C => Stacks.R C i) localBank
-  refine ⟨z,E,n+((d+1)*(d+1)*(4*data.H+4)+1),hu.trans user,⟨by rw [localBank]; exact next,tail⟩,(cell _).trans l,(cell _).trans m,?_,?_⟩
+  refine ⟨z,E,n+((d+1)*(d+1)*(4*data.H+4)+1),hu.trans user,⟨⟨word,advanceWord hx action,by rw [localBank]; exact next⟩,tail⟩,(cell _).trans l,(cell _).trans m,?_,?_⟩
   · simpa [cost,both] using price
   · cases hl : live j <;> cases hb : bad j <;> first | simpa [hl,hb,advance] using step | exact (both ⟨hl,hb⟩).elim
 
