@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.M6.ModularScatter
 public import IntegerMultBounds.MathlibTM2.M6.BitInvocation
 public import IntegerMultBounds.Machine.SparseRoleCircuit
 
@@ -84,30 +85,43 @@ theorem copyAdds_hoare (n : Fin 9) (r : Fin 32) (d : Fin 5) (life : Copy.Lifecyc
 then clear it. Only the single-register frame conversion is supplied by the
 caller. The copy and erase gates overwrite their destination on every bit. -/
 theorem copyWindow_hoare {q : ℕ} (n : Fin 9) (r : Fin 32) (d : Fin 5) (life : Copy.Lifecycle)
-    (scheduled : life ∈ Copy.lifecycles) (convert : Program (142081+2) q a) :
+    (scheduled : life ∈ Copy.lifecycles) (w : ℕ) (convert : Program (142081+2) q a) :
     let src := ownerTape n r d ⟨life.source,(Copy.source_bounds life scheduled).2⟩
     let tmp := Fin.last 142080
     let regs := life.targets.attach.map fun j => (⟨j.val,((Copy.target_bounds life scheduled _ j.property).2.trans (by decide : 222 < 661))⟩ : Fin 661)
     let targets := regs.map (ownerTape n r d)
-    ∃ (states : ℕ) (program : Program (142081+2) states a), ∀ {N : ℕ}
-      (data : Fin 142081 → Fin N → ZMod 2) (frameOf : ℕ → FramedCircuit.Frame (ZMod 2) (Fin N → ZMod 2))
+    let R := ZMod (Shared50ModularControl.prime^w)
+    let S := Swap.Shear.State (Fin 8) R
+    ∃ (frame : ℕ → FramedCircuit.Frame (ZMod 2) (S → ZMod 2))
+      (word : ℕ × ℕ → List (AffineFieldProgram.Op (Fin 8) R))
+      (states : ℕ) (program : Program (142081+2) states a),
+      LocalMoveProfile word ∧ AffineFieldProgram.interchanges (word (life.sourceFrame,0)) = 7 ∧
+      ∀ {N W : ℕ} (addr : Fin N ≃ S × Fin W) (data : Fin 142081 → Fin N → ZMod 2)
       (background : Fin 142081 → ℤ → Fin (a+4)) (origins : Fin 142081 → ℤ)
       (bs : List Bool) (cost : ℕ), Counter.value bs = N →
-      let common := frameOf 0 ((frameOf life.sourceFrame).symm (data src))
+      let frameOf := fun j => tapeFrame addr (frame j)
+      let common := fun i => data src (addr.symm
+        (AffineFieldProgram.run (word (life.sourceFrame,0)) (addr i).1,(addr i).2))
       let bank := fun X => PointwiseRoleGate.bank background origins (SparseRoleCircuit.encoded X) bs
       HoareTime convert (fun w => w = bank (Function.update data tmp (data src)))
         (fun w => w = bank (Function.update data tmp common)) cost →
-      HoareTime program (fun w => w = bank data)
-        (fun w => w = bank (Function.update (fun j i => if j ∈ targets then data j i + common i else data j i) tmp 0))
-        (cost + (life.targets.length+2)*(14*N+14*bs.length+34)+1) := by
-  intro src tmp regs targets
+      let output := Function.update (fun j i => if j ∈ targets then data j i + common i else data j i) tmp 0
+      let stored := Copy.extendStored (fun j => data (ownerTape n r d j))
+      HoareTime program (fun w => w = bank data) (fun w => w = bank output)
+        (cost + (life.targets.length+2)*(14*N+14*bs.length+34)+1) ∧
+      (∀ j : Fin 661, output (ownerTape n r d j) = Copy.execute frameOf life stored j) ∧
+      output tmp = Copy.execute frameOf life stored 661 := by
+  intro src tmp regs targets R S
+  obtain ⟨frame,word,profile,windows⟩ := copyAddress_word w
+  obtain ⟨seven,read⟩ := windows life scheduled
   let gate : PointwiseRoleGate.Gate 142081 := ⟨src,tmp,Fin.castSucc_ne_last _⟩
   let copy := fun (s _ : Fin (a+4)) => s
   let erase := fun (_ _ : Fin (a+4)) => SparseRoleCircuit.encode (a := a) 0
   obtain ⟨_,adds,addRun⟩ := copyAdds_hoare (a := a) n r d life scheduled
-  refine ⟨_,seq (seq (seq (PointwiseRoleGate.program gate copy) convert) adds)
-    (PointwiseRoleGate.program gate erase),?_⟩
-  intro N data frameOf background origins bs cost count common bank converted
+  refine ⟨frame,word,_,seq (seq (seq (PointwiseRoleGate.program gate copy) convert) adds)
+    (PointwiseRoleGate.program gate erase),profile,seven,?_⟩
+  intro N W addr data background origins bs cost count frameOf common bank converted output stored
+  have decoded : common = frameOf 0 ((frameOf life.sourceFrame).symm (data src)) := funext (read addr (data src))
   let loaded := Function.update data tmp common
   let added := fun j i => if j ∈ targets then loaded j i + loaded tmp i else loaded j i
   have add := addRun loaded background origins bs count
@@ -129,12 +143,34 @@ theorem copyWindow_hoare {q : ℕ} (n : Fin 9) (r : Fin 32) (d : Fin 5) (life : 
     exact step
   have done := (((write data copy (data src) (fun _ => rfl)).seq converted).seq add).seq
     (write added erase 0 (fun _ => rfl))
-  have output : Function.update added tmp 0 =
+  have cleaned : Function.update added tmp 0 =
       Function.update (fun j i => if j ∈ targets then data j i + common i else data j i) tmp 0 := by
     funext j i
     by_cases eq : j = tmp <;> simp [eq,added,loaded]
-  rw [output] at done
-  convert done using 1
-  ring
+  rw [cleaned] at done
+  refine ⟨?_,?_,?_⟩
+  · convert done using 1
+    ring
+  · intro j
+    have off : ownerTape n r d j ≠ tmp := Fin.castSucc_ne_last _
+    have member : ownerTape n r d j ∈ targets ↔ j.val ∈ life.targets := by
+      change ownerTape n r d j ∈ regs.map (ownerTape n r d) ↔ _
+      rw [List.mem_map_of_injective (ownerTape_injective n r d)]
+      constructor
+      · intro mem
+        obtain ⟨k,_,eq⟩ := List.mem_map.mp mem
+        exact (congrArg Fin.val eq) ▸ k.property
+      · intro mem
+        exact List.mem_map.mpr ⟨⟨j.val,mem⟩,List.mem_attach ..,Fin.ext rfl⟩
+    have wf := Copy.wellformed life scheduled
+    have retained : stored life.source = data src := by
+      simp [stored,Copy.extendStored,(Copy.source_bounds life scheduled).2,src]
+    have old : stored j.val = data (ownerTape n r d j) := by simp [stored,Copy.extendStored,j.isLt]
+    have distinct : j.val ≠ 661 := Nat.ne_of_lt j.isLt
+    simp only [output,Function.update_of_ne off,Copy.execute,Function.update_of_ne distinct,
+      Copy.addTargets_eq _ wf.1 wf.2.1,Function.update_self,old,retained,member,decoded]
+    funext i
+    split <;> rfl
+  · simp [output,Copy.execute]
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode

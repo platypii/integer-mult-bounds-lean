@@ -78,4 +78,52 @@ theorem modular_scatter (w : ℕ) :
   rw [fold _ (fun _ h => h)]
   exact ⟨Copy.temporary_cleared frame stored, Copy.decoded_scatter frame stored⟩
 
+/-- Apply a stream frame separately on each spectator slice of a serialized tape. -/
+def tapeFrame {S : Type*} {N W : ℕ} (addr : Fin N ≃ S × Fin W)
+    (F : FramedCircuit.Frame (ZMod 2) (S → ZMod 2)) :
+    FramedCircuit.Frame (ZMod 2) (Fin N → ZMod 2) where
+  toFun f i := F (fun x => f (addr.symm (x,(addr i).2))) (addr i).1
+  invFun f i := F.symm (fun x => f (addr.symm (x,(addr i).2))) (addr i).1
+  left_inv f := by
+    funext i
+    simp
+  right_inv f := by
+    funext i
+    simp
+  map_add' f g := by
+    funext i
+    exact congrFun (F.map_add (fun x => f (addr.symm (x,(addr i).2))) (fun x => g (addr.symm (x,(addr i).2)))) _
+  map_smul' k f := by
+    funext i
+    exact congrFun (F.map_smul k (fun x => f (addr.symm (x,(addr i).2)))) _
+
+/-- The temporary's source address on a serialized tape. The same selected
+word acts independently on every spectator position and uses seven interchanges
+in each scheduled COPY window. -/
+theorem copyAddress_word (w : ℕ) :
+    let S := Swap.Shear.State (Fin 8) (ZMod (prime^w))
+    ∃ (frame : ℕ → FramedCircuit.Frame (ZMod 2) (S → ZMod 2))
+      (word : ℕ × ℕ → List (AffineFieldProgram.Op (Fin 8) (ZMod (prime^w)))),
+      LocalMoveProfile word ∧ ∀ life ∈ Copy.lifecycles,
+        let ops := word (life.sourceFrame,0)
+        AffineFieldProgram.interchanges ops = 7 ∧
+        ∀ {N W : ℕ} (addr : Fin N ≃ S × Fin W) (data : Fin N → ZMod 2) (i : Fin N),
+          data (addr.symm (AffineFieldProgram.run ops (addr i).1,(addr i).2)) =
+          tapeFrame addr (frame 0) ((tapeFrame addr (frame life.sourceFrame)).symm data) i := by
+  intro S
+  obtain ⟨frame,word,read,profile,_,_⟩ := modular_scatter w
+  refine ⟨frame,word,profile,?_⟩
+  intro life scheduled ops
+  have source : life.source ∈ Frames.retained := Copy.source_order ▸ List.mem_map_of_mem scheduled
+  have pair : (life.sourceFrame,0) ∈ retainedCopyEdges := by
+    apply List.mem_map.mpr
+    exact ⟨Frames.beforeScatter life.source,List.mem_map_of_mem source,
+      Prod.ext (Copy.wellformed life scheduled).2.2.1 rfl⟩
+  have count := List.mem_map_of_mem (f := AffineFieldProgram.interchanges) (List.mem_map_of_mem (f := word) pair)
+  rw [profile.copies] at count
+  refine ⟨(List.mem_replicate.mp count).2,?_⟩
+  intro N W addr data i
+  have checked := retainedCopy_checked.1 _ pair
+  simpa [tapeFrame] using congrFun (read _ checked (fun x => data (addr.symm (x,(addr i).2)))) (addr i).1
+
 end IntegerMultBounds.MathlibTM2.M6

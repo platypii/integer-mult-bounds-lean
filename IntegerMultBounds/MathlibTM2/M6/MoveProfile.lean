@@ -16,7 +16,7 @@ open M8.Exchange (exchange)
 def retainedCopyEdges : List (ℕ × ℕ) :=
   (Frames.retained.map Frames.beforeScatter).map fun label => (label, 0)
 
-private theorem retainedCopy_checked : (∀ p ∈ retainedCopyEdges, CheckedPair p) ∧
+theorem retainedCopy_checked : (∀ p ∈ retainedCopyEdges, CheckedPair p) ∧
     retainedCopyEdges.map value = List.replicate 9 7 := by
   rw [retainedCopyEdges, Frames.retained_frames]
   decide +kernel
