@@ -2007,13 +2007,13 @@ def GeneratedRecordSpec [M8.Machine.Net] {T m work Q fields H J W : ℕ} {F U : 
         (Node.scanR (caller 58) (caller 59) (LabelCountBank.pushAll (rs.map Prod.fst)))
       let clean := {whole with L := fun i => if i ∈ privateTapes then [] else whole.L i,
                                R := fun i => if i ∈ privateTapes then [] else Function.update whole.R (caller 54) (schedules labels) i}
-      ready clean labels → payload word clean →
+      ready clean labels →
       let setupCost := (26*high+4) + ((44*labels.length+13*(w+1)+16) + 3*((6+10*(m*m))*labels.length+4) +
         (2*(directory.beforeRows*directory.rows*B)+2)) +
         ((privateTapes.map fun i => 4*(whole.L i).length).sum + privateTapes.length*(2*high+4)+1)
       ∃ writer : Pr F K Q prime U, let prepare := (initCounters.seq writer).seq (clearWorkTapes privateTapes)
       ∃ z D n, z.user = u.user ∧ n ≤ setupCost ∧ Exec body prepare (mk u whole) n (mk z D) ∧
-        ready D labels ∧ payload word D ∧ D.R mask = labels.map (fun j => bitSymbol (liveBit j)) ∧ D.R mode = modes labels ∧
+        ready D labels ∧ ordinaryStep ∧ D.L (r 0) = whole.L (r 0) ∧ D.R (r 0) = whole.R (r 0) ∧ D.R mask = labels.map (fun j => bitSymbol (liveBit j)) ∧ D.R mode = modes labels ∧
         (∀ (dimension : ℕ) (archiveRoom : Record.size dimension+(rowSwapBlock.tapes+35+2) ≤ (host+31+work)+1),
           let placement := directoryOrdinaryBank archiveRoom
           let archive := directoryMatrixTape archiveRoom
@@ -2022,7 +2022,7 @@ def GeneratedRecordSpec [M8.Machine.Net] {T m work Q fields H J W : ℕ} {F U : 
             embDn placement initial = u → embStk placement B = whole →
             ∃ y E, y.user = initial.user ∧ embStk placement E = D ∧ E.R archive = B.R archive ∧
               Exec outer (embProg placement id prepare) (mk initial B) n (mk y E) ∧
-              (∀ (data : ScanData m dimension w W) (shape : m+m = dimension+1)
+              (payload word clean → ∀ (data : ScanData m dimension w W) (shape : m+m = dimension+1)
                 (anchor : (anchorProgram dimension true).1+(anchorProgram dimension false).1+1 ≤ columnCapacity)
                 (states : Q = columnCapacity) (fieldsEq : fields = m)
                 (extra : (36+2*m+1+(conjugationDepth m+1)*13)+3 ≤ (host+31+work)+1)
@@ -2081,7 +2081,7 @@ def GeneratedRecordSpec [M8.Machine.Net] {T m work Q fields H J W : ℕ} {F U : 
                         ((labels : ℝ)/prime)*rate*(data.records*N)) ∧
                   Exec scanBody ((states ▸ embProg placement id prepare).seq archivePass)
                     (mk (states ▸ initial) B) (n+steps) (mk finish final))) ∧
-      ∀ (fallback : Pr F K Q prime U) (badCost : ℕ → ℕ) (badEffect : ℕ → (Fin N → ZMod 2) → (Fin N → ZMod 2) → Prop),
+      ∀ (_ : payload word clean) (fallback : Pr F K Q prime U) (badCost : ℕ → ℕ) (badEffect : ℕ → (Fin N → ZMod 2) → (Fin N → ZMod 2) → Prop),
       (∀ i is word (u : HS K Q prime U) (S : Stacks K prime), LabelStock.live m (w+1) 1 i = true → fallbackBit rankFits (reduce M proj) (g i) = true → ready S (i :: is) → payload word S →
         ∃ z D n next, z.user = u.user ∧ n ≤ badCost i ∧ Exec body fallback (mk u S) n (mk z D) ∧
           ready D is ∧ badEffect i word next ∧ payload next D ∧ D.R mask = S.R mask ∧ D.R mode = S.R mode) →
@@ -2647,7 +2647,7 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
     parent parentInv reciprocal io arity hm hw hW length capacity source head fits cap ef xf eqs xqs
     initialWord body initialUser initialState poolFits directory prefixes archiveTail c bodyBound
   have step : ordinaryStep := ordinary.1
-  intro room Bcount rs parents shape freePrivate dirPositive brSize rowsSize beforeHSize parentsFree freeMask freeMode freeQueue high initCounters clean initialReady initialPayload setupCost
+  intro room Bcount rs parents shape freePrivate dirPositive brSize rowsSize beforeHSize parentsFree freeMask freeMode freeQueue high initCounters clean initialReady setupCost
   have release (port : Fin 66) (lo : 56 ≤ port.val) (hi : port.val ≤ 57)
       (is : List ℕ) (word : Fin N → ZMod 2) (S : Stacks K prime) (xs : List (Fin (prime+4)))
       (h : ready S is) (p : payload word S) :
@@ -2750,28 +2750,38 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
   rw [cleanEq,queueCost] at clearMasks
   let liveState := {clean with R := Function.update clean.R mask liveWords}
   let startState := {liveState with R := Function.update liveState.R mode badWords}
-  obtain ⟨r₁,p₁⟩ := release 57 (by decide) (by decide) _ _ clean liveWords initialReady initialPayload
-  obtain ⟨r₂,p₂⟩ := release 56 (by decide) (by decide) _ _ liveState badWords r₁ p₁
+  have r₁ : ready liveState allLabels := DirectoryReady.updateSelector 57 (by decide) (by decide) _ initialReady
+  have r₂ : ready startState allLabels := DirectoryReady.updateSelector 56 (by decide) (by decide) _ r₁
+  have payloadPort : r 0 = caller 24 := recordRoundTripPorts_other slot 0 (by decide)
+  have cellL : startState.L (r 0) = initialState.L (r 0) := by
+    simp [startState,liveState,clean,privateTapes,payloadPort,caller]
+  have cellR : startState.R (r 0) = initialState.R (r 0) := by
+    rw [payloadPort]
+    simp [startState,liveState,clean,privateTapes,mask,mode,caller,Function.update_of_ne]
+    exact Function.update_of_ne (caller.injective.ne (by decide : (24 : Fin 66) ≠ 54)) _ _
+  have payloadKept (h : payload initialWord clean) : payload initialWord startState :=
+    (release 56 (by decide) (by decide) _ _ liveState badWords r₁
+      (release 57 (by decide) (by decide) _ _ clean liveWords initialReady h).2).2
   have bits : startState.R mask = liveWords := (Function.update_of_ne apart badWords liveState.R).trans
     (Function.update_self mask liveWords clean.R)
   have initialModes : startState.R mode = badWords := Function.update_self mode badWords liveState.R
   have setupRun : Exec body ((initCounters.seq writer).seq (clearWorkTapes privateTapes))
       (mk initialUser initialState) _ (mk z startState) := Exec.seq (Exec.seq prepare write) clearMasks
   have setupBound := Nat.add_le_add (Nat.add_le_add time₀ hl) (Nat.add_le_add_right cleanup 1)
-  refine ⟨writer,z,startState,_,hz.trans (hy.trans user₀),setupBound,setupRun,r₂,p₂,bits,initialModes,?_,?_⟩
+  refine ⟨writer,z,startState,_,hz.trans (hy.trans user₀),setupBound,setupRun,r₂,step,cellL,cellR,bits,initialModes,?_,?_⟩
   · intro dimension archiveRoom placement archive outer calls v B control bank
     obtain ⟨y,E,run,_,user,localBank,frame⟩ := exec_emb placement.injective calls setupRun v control B bank
     have same := user.trans ((hz.trans (hy.trans user₀)).trans (congrArg HS.user control).symm)
     have kept := (frame archive (Fin.succAbove_ne _)).2
     refine ⟨y,E,same,localBank,kept,run,?_⟩
-    intro data dim anchor states fieldsEq extra push bounded binary count empty scanBody e action
+    intro initialPayload data dim anchor states fieldsEq extra push bounded binary count empty scanBody e action
     subst Q
     subst fields
     subst H
     have archiveRun := (ordinary.2.2 dimension dim data archiveRoom anchor rfl rfl rfl outer calls push bounded y E).2 extra
     have port : r 0 = caller 24 := recordRoundTripPorts_other slot 0 (by decide)
     have readyStart : ready (embStk placement E) allLabels := localBank ▸ r₂
-    have payloadStart : payload initialWord (embStk placement E) := localBank ▸ p₂
+    have payloadStart : payload initialWord (embStk placement E) := localBank ▸ payloadKept initialPayload
     have liveStart := (congrArg (fun A => Stacks.R A mask) localBank).trans bits
     have modeStart := (congrArg (fun A => Stacks.R A mode) localBank).trans initialModes
     obtain ⟨build,finish,final,h,t,next,hu,done,history,emptyArchive,emptyLive,emptyBad,_,_,volumeTime,_,scan⟩ := archiveRun
@@ -2868,7 +2878,7 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
         apply add_le_add _ (le_refl _)
         rw [← batchVolume]
         simpa only [terminal,Nat.cast_mul] using terminalBound)
-  intro fallback badCost badEffect bad branchCost action exceptional priced
+  intro initialPayload fallback badCost badEffect bad branchCost action exceptional priced
   suffices scanRun : ∃ finish D n next, finish.user = z.user ∧
       n ≤ (allLabels.map fun i => branchCost i+2+4).sum+2 ∧
       Exec body (classifiedScan mask mode (recordProgram.seq (clearWorkTapes privateTapes)) fallback skip)
@@ -2905,7 +2915,7 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
     omega
   apply classifiedPayloadScan_exec body mask mode (caller.injective.ne (by decide)) _ fallback skip liveBit badBit
     branchCost (fun is D => ready D is) payload action _ _ allLabels initialWord z startState
-    r₂ p₂ bits initialModes
+    r₂ (payloadKept initialPayload) bits initialModes
   · intro k hk
     rcases hk with rfl | rfl
     · exact release 57 (by decide) (by decide)

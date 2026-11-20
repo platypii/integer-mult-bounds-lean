@@ -569,6 +569,35 @@ theorem packedOwner_exec {ι P U : Type} {N T Q : ℕ} (positive : 0 < N)
     omega
   simp [Function.update_of_ne,off]
 
+/-- Run the generated selectors before the matrix writer, preserving the empty
+archive and all five external owner registers. -/
+theorem ownerSelectorSetup_exec [M8.Machine.Net] {K d Q : ℕ} {P U : Type}
+    (room : Record.size d+(rowSwapBlock.tapes+35+2) ≤ K+1)
+    (localBody : P → Pr P (66+K) Q prime U) (body : P → Pr P (66+(K+1)) Q prime U)
+    (calls : ∀ f, body f = embProg (directoryOrdinaryBank room) id (localBody f))
+    (prepare : Pr P (66+K) Q prime U)
+    (u : HS ((66+(K+1))+5) Q prime U) (S : Stacks ((66+(K+1))+5) prime) :
+    let placement := directoryOrdinaryBank room
+    let bank := fun i : Fin (66+(K+1)) => i.castAdd 5
+    ∀ y D t, Exec localBody prepare (mk (embDn placement (embDn bank u)) (embStk placement (embStk bank S))) t (mk y D) →
+      ∃ z F, z.user = y.user ∧ embStk placement (embStk bank F) = D ∧
+        (embStk bank F).R (directoryMatrixTape room) = (embStk bank S).R (directoryMatrixTape room) ∧
+        (∀ j : Fin 5, F.R (Fin.natAdd (66+(K+1)) j) = S.R (Fin.natAdd (66+(K+1)) j)) ∧
+        Exec (fun f => embProg bank id (body f)) (embProg bank id (embProg placement id prepare)) (mk u S) t (mk z F) := by
+  intro placement bank y D t run
+  obtain ⟨v,A,placed,_,uv,localEq,frame⟩ := exec_emb placement.injective calls run (embDn bank u) rfl (embStk bank S) rfl
+  obtain ⟨z,F,exec,_,uz,archiveEq,keep⟩ := exec_emb (ι := id) (body' := fun f => embProg bank id (body f))
+    (Fin.castAdd_injective ..) (fun _ => rfl) placed u rfl S rfl
+  refine ⟨z,F,uz.trans uv,by rw [archiveEq,localEq],?_,?_,exec⟩
+  · rw [archiveEq]
+    exact (frame _ (Fin.succAbove_ne _)).2
+  · intro j
+    apply (keep _ ?_).2
+    intro i eq
+    have h := congrArg Fin.val eq
+    change i.val = (66+(K+1))+j.val at h
+    omega
+
 open RingFormula IntegerMultBounds.MathlibTM2.Fast.Main in
 /-- Build the matrix archive from the directory headers while the owner
 registers are outside the writer's tape bank. -/
@@ -670,7 +699,7 @@ theorem classifiedDirectory_exec [M8.Machine.Net] {m d K w W J N : ℕ} {P U : T
     (length : N = (prime^(w+1))^m*((prime^(w+1))^m*W)) (input : ℕ → Fin N → ZMod 2)
     (localBody : P → Pr P (66+K) columnCapacity prime U)
     (calls : ∀ f, body f = embProg (directoryOrdinaryBank room) id (localBody f))
-    (goodRow skipRow : Pr P (66+K) columnCapacity prime U)
+    (selectors goodRow skipRow : Pr P (66+K) columnCapacity prime U) (selectorBudget : ℕ)
     (u : HS ((66+(K+1))+5) columnCapacity prime U) (S : Stacks ((66+(K+1))+5) prime) :
     let e := finSumFinEquiv.trans (finCongr dimension)
     let physical := data.physical e proj parent inv
@@ -705,8 +734,12 @@ theorem classifiedDirectory_exec [M8.Machine.Net] {m d K w W J N : ℕ} {P U : T
         (physicalLabel m (w+1) j)).mulVec x) k).cast (directoryPayloadLength e length)) =
         input j ((FlatCoordinateLayout.index x k).cast (directoryPayloadLength e length))
       else ordinaryEffect j next
-    ready (embStk placement start) rs → start.R (directoryMatrixTape room) = [] →
-    start.R (caller 57) = rs.map (fun j => bitSymbol (live j)) → start.R (caller 56) = rs.map (fun j => bitSymbol (bad j)) →
+    start.R (directoryMatrixTape room) = [] →
+    (∃ y D t, y.user = u.user ∧ t ≤ selectorBudget ∧
+      Exec localBody selectors (mk (embDn placement (embDn bank u)) (embStk placement start)) t (mk y D) ∧
+      ready D rs ∧ D.L (inner 24) = (embStk placement start).L (inner 24) ∧
+      D.R (inner 24) = (embStk placement start).R (inner 24) ∧
+      D.R (inner 57) = rs.map (fun j => bitSymbol (live j)) ∧ D.R (inner 56) = rs.map (fun j => bitSymbol (bad j))) →
     S.R (reg 0) = rs.flatMap (bits ∘ input) → S.R (reg 1) = [] → (S.R (reg 2)).length = N →
     S.R (reg 3) = [] → S.R (reg 4) = [] → (∀ j, readAt blank (start.L (caller 24)) (start.R (caller 24)) j = blank) →
     (∀ j, j < data.records → ¬ (live j = true ∧ bad j = true) → ∀ y A, ready A (j::pending (j+1)) →
@@ -717,21 +750,37 @@ theorem classifiedDirectory_exec [M8.Machine.Net] {m d K w W J N : ℕ} {P U : T
     let program := packedOwner (caller 24) (ownerDispatch (caller 57) (caller 56) good
       (directoryExceptionalProgram m d room capacity) padding)
     let work := (List.finRange (66+(K+1))).filter fun i => decide (58 ≤ i.val ∧ i ≠ directoryMatrixTape room)
-    let initTime := directoryQueueInitTime m d w data.H data.records start
-    let queueTime := directoryMatrixQueueTime m d w data.H data.records (start.R (caller 47)).length
-    ∃ prepare z F t n rows, z.user = u.user ∧
+    let controls := embProg bank id (embProg placement id selectors)
+    ∃ prepare z F t n rows s midUser mid, z.user = u.user ∧ s ≤ selectorBudget ∧
+      Exec (fun f => embProg bank id (body f)) controls (mk u S) s (mk midUser mid) ∧
+      let initTime := directoryQueueInitTime m d w data.H data.records (embStk bank mid)
+      let queueTime := directoryMatrixQueueTime m d w data.H data.records ((embStk bank mid).R (caller 47)).length
+
       (∀ p, mnProgPush prepare ≤ p → (∀ f, mnProgPush (body f) ≤ p) →
         t ≤ initTime + queueTime + (4*work.length+1+work.length*(6*(p*initTime)))) ∧
       n ≤ (rs.map (fun j => 6*N+6+cost j+(4*N+4))).sum + 2*rs.length+2 + (2*(rs.length*N)+2) ∧
-      Exec (fun f => embProg bank id (body f)) ((embProg bank id prepare).seq program) (mk u S) (t+n) (mk z F) ∧
+      Exec (fun f => embProg bank id (body f)) (controls.seq ((embProg bank id prepare).seq program)) (mk u S) (s+(t+n)) (mk z F) ∧
       List.Forall₂ (fun j out => ∃ word, effect j word ∧ out = bits word) rs rows ∧
       F.R (reg 0) = rows.flatten ∧ F.R (reg 1) = [] ∧ ready (embStk placement (embStk bank F)) [] ∧
       (embStk bank F).R (directoryMatrixTape room) = [] ∧
       (embStk bank F).R (caller 57) = [] ∧ (embStk bank F).R (caller 56) = [] := by
   intro e physical φ code schedule ready placement caller live rs pending bits bank reg start inner advance good padding ordinaryTime cost effect
-    directory matrix mask mode owner accumulator width saved tmp empty ordinary program work initTime queueTime
+    matrix generated owner accumulator width saved tmp empty ordinary program work controls
+  obtain ⟨sy,D,s,su,subtotal,selectorRun,directory,portL,portR,mask,mode⟩ := generated
+  obtain ⟨midUser,mid,um,project,archiveKept,extRegs,runControls⟩ :=
+    ownerSelectorSetup_exec room localBody body calls selectors u S sy D s selectorRun
+  have cellEq (j : Fin 66) : (embStk bank mid).R (caller j) = D.R (inner j) := by
+    have h := congrArg (fun A => Stacks.R A (inner j)) project
+    simpa only [embStk,Function.comp_apply,placement,inner,caller,Fin.castAddEmb_apply,directoryOrdinaryBank_caller] using h
+  have midBlank : ∀ j, readAt blank ((embStk bank mid).L (caller 24)) ((embStk bank mid).R (caller 24)) j = blank := by
+    have h := congrArg (fun A => Stacks.L A (inner 24)) project
+    simp only [embStk,Function.comp_apply,placement,inner,Fin.castAddEmb_apply,directoryOrdinaryBank_caller] at h portL portR
+    rw [cellEq,show (embStk bank mid).L (caller 24) = D.L (inner 24) from h]
+    change ∀ j, readAt blank (D.L ((24 : Fin 66).castAdd K)) (D.R ((24 : Fin 66).castAdd K)) j = blank
+    rw [portL,portR]
+    exact empty
   obtain ⟨prepare,y,B,t,uy,write,prepared,archive,keep,regs,setupTime⟩ := ownerArchiveSetup_exec
-    v proj parent inv reciprocal e data hm room fits body prefixes archiveTail schedule u S directory matrix mask
+    v proj parent inv reciprocal e data hm room fits body prefixes archiveTail schedule midUser mid (by rw [project]; exact directory) (archiveKept.trans matrix) ((cellEq 57).trans mask)
   have cell (j : Fin 66) (hj : j.val < 58) := keep j hj
   let frame := fun (xs : List ℕ) (A : Stacks (66+(K+1)) prime) =>
     ∃ k ≤ data.records, pending k = xs ∧ ready (embStk placement A) xs ∧
@@ -742,11 +791,11 @@ theorem classifiedDirectory_exec [M8.Machine.Net] {m d K w W J N : ℕ} {P U : T
   have pos : 0 < N := by rw [length]; exact Nat.mul_pos (pow_pos (pow_pos hp _) _) (Nat.mul_pos (pow_pos (pow_pos hp _) _) positive)
   obtain ⟨z,F,n,rows,user,time,run,correct,output,free,k,hk,remaining,done,archiveEnd,maskEnd,modeEnd⟩ :=
     packedOwner_exec pos body (caller 24) dispatch input effect cost frame rs y B
-      ⟨⟨0,Nat.zero_le _,rfl,prepared,archive,((cell 57 (by decide)).2.trans mask),((cell 56 (by decide)).2.trans mode)⟩,
-        (regs 0).trans owner,(regs 1).trans accumulator,(congrArg List.length (regs 2)).trans width,
-        (regs 3).trans saved,(regs 4).trans tmp,by
+      ⟨⟨0,Nat.zero_le _,rfl,prepared,archive,((cell 57 (by decide)).2.trans ((cellEq 57).trans mask)),((cell 56 (by decide)).2.trans ((cellEq 56).trans mode))⟩,
+        (regs 0).trans ((extRegs 0).trans owner),(regs 1).trans ((extRegs 1).trans accumulator),(congrArg List.length ((regs 2).trans (extRegs 2))).trans width,
+        (regs 3).trans ((extRegs 3).trans saved),(regs 4).trans ((extRegs 4).trans tmp),by
           change ∀ j, readAt blank ((embStk bank B).L (caller 24)) ((embStk bank B).R (caller 24)) j = blank
-          rw [(cell 24 (by decide)).1,(cell 24 (by decide)).2]; exact empty⟩ (by
+          rw [(cell 24 (by decide)).1,(cell 24 (by decide)).2]; exact midBlank⟩ (by
       intro j xs A y current loaded inputWord
       obtain ⟨k,hk,suffix,dir,archive,ls,bs⟩ := current
       have inside : k < data.records := by
@@ -789,7 +838,7 @@ theorem classifiedDirectory_exec [M8.Machine.Net] {m d K w W J N : ℕ} {P U : T
     have h := congrArg List.length remaining
     simp [pending,rs] at h
     omega
-  refine ⟨prepare,z,F,t,n,rows,user.trans uy,setupTime,time,Exec.seq write run,correct,output,free,done,archiveEnd.trans ?_,maskEnd,modeEnd⟩
+  refine ⟨prepare,z,F,t,n,rows,s,midUser,mid,user.trans (uy.trans (um.trans su)),subtotal,runControls,setupTime,time,Exec.seq runControls (Exec.seq write run),correct,output,free,done,archiveEnd.trans ?_,maskEnd,modeEnd⟩
   simp [last,ScanData.matrices,physical,ScanData.physical,List.drop_of_length_le (List.length_range.le)]
 
 /-- Charge loading and storing every record to its payload volume while
