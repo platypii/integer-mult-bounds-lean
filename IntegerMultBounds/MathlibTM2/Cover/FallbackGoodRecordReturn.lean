@@ -85,8 +85,14 @@ theorem goodRecordReturn_exec [M8.Machine.Net] {T m work Q : ℕ} {F U : Type}
         ∃ next : Fin N → ZMod 2, (∀ z, readAt blank (D.L (outer 1)) (D.R (outer 1)) (z-head) =
           RadixToBinary.binaryEncoding.encode (putWord source head ((List.ofFn next).map SparseRoleCircuit.encode) z)) ∧
           (∀ i, D.L (header i) = whole.L (header i) ∧ D.R (header i) = whole.R (header i)) ∧
-          ∀ a < v.beforeRows, ∀ row < v.rows, ∀ pre < v.beforeH, ∀ mid < v.between, ∀ post < v.afterD, ∀ x,
-            ext next (addr a row pre mid post (Weighted.child d weight inv x)) = ext word (addr a row pre mid post x) := by
+          (∀ a < v.beforeRows, ∀ row < v.rows, ∀ pre < v.beforeH, ∀ mid < v.between, ∀ post < v.afterD, ∀ x,
+            ext next (addr a row pre mid post (Weighted.child d weight inv x)) = ext word (addr a row pre mid post x)) ∧
+          ∀ gaps W, logical = goodChildDescriptor M d gaps W →
+            ∀ (hg tg : Fin gaps → ZMod M) x (j : Fin W),
+            let flat := fun y => let fields := childFields hg tg y
+                                 (FlatCoordinateLayout.index (Fin.append fields.1 fields.2) j).val
+            readAt blank (D.L (outer 1)) (D.R (outer 1)) (flat (Weighted.child d weight inv x)) =
+              RadixToBinary.binaryEncoding.encode (SparseRoleCircuit.encode (ext word (flat x))) := by
   intro d common host M N entry leave record bank g G rep clean payload logical addr K inner outer slot
     ef xf eqs xqs word body u whole tail parentTail S initial free empty good matrix modulus one ticks scratch archive
     src words spare call cost r header setup localRun finish coordinate
@@ -96,8 +102,36 @@ theorem goodRecordReturn_exec [M8.Machine.Net] {T m work Q : ℕ} {F U : Type}
     matrix modulus one ticks scratch archive
   obtain ⟨z,D,n,hz,bound,done,out,kept⟩ := coordinateReturn_exec hP hH hB capacity body slot coordinate u whole
     source head (List.ofFn next) (List.length_ofFn.trans length) y E t run user read src words spare
-  refine ⟨z,D,n,hz,bound.trans ?_,done,minor,next,out,kept,address⟩
-  rw [← length]
-  exact Nat.add_le_add_right time _
+  refine ⟨z,D,n,hz,bound.trans ?_,done,minor,next,out,kept,address,?_⟩
+  · rw [← length]
+    exact Nat.add_le_add_right time _
+  · intro gaps W layout hg tg x j flat
+    let stage := GoodForm.stageAt G d rankFits minor d le_rfl
+    let pivot := fun i : Fin d => stage.M (i.castLE rankFits) (i.castLE rankFits)
+    let y := Weighted.child d (fun i => parent (i.castLE rankFits)*pivot i)
+      (fun i => parentInv (i.castLE rankFits)*Ring.inverse (pivot i)) x
+    have shape : volume M logical = N := by
+      simp [N,logical,volume,width,M,d,pow_mul,Nat.mul_comm proj.rank (w+1)]
+    have inside : flat y < N := by
+      rw [← shape,layout,goodChildVolume]
+      exact (FlatCoordinateLayout.index (Fin.append (childFields hg tg y).1 (childFields hg tg y).2) j).isLt
+    have coord (u) : flat u = addr 0 0 0 (FlatCoordinateLayout.rank (Fin.append hg tg)).val j.val u := by
+      dsimp only [addr]
+      rw [layout]
+      exact goodChildIndex hg tg u j
+    have dims := congrArg (fun v : Descriptor => (v.beforeRows,v.rows,v.beforeH,v.between,v.afterD)) layout
+    have mid := (FlatCoordinateLayout.rank (Fin.append hg tg)).isLt
+    simp only [logical,goodChildDescriptor,Prod.mk.injEq] at dims
+    obtain ⟨_,_,_,hm,he⟩ := dims
+    have act := address 0 positive.1 0 positive.2.1 0 positive.2.2.1 _ (by rw [hm]; exact mid) j.val (by rw [he]; exact j.isLt) x
+    change ext next (addr _ _ _ _ _ y) = ext word (addr _ _ _ _ _ x) at act
+    rw [← coord,← coord] at act
+    have read := out (head+(flat y : ℤ))
+    rw [add_sub_cancel_left,WordSegments.get source head _ (flat y) (by simpa using inside)] at read
+    simp only [List.getElem_map,List.getElem_ofFn] at read
+    have valid : flat y < volume prime v := inside
+    simp only [M8.RevMachine.ext,dite_eq_left valid] at act
+    exact
+      read.trans (congrArg (fun b => RadixToBinary.binaryEncoding.encode (SparseRoleCircuit.encode b)) act)
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
