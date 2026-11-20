@@ -711,8 +711,13 @@ each live label, inherited block and spectator. Its head coordinates are
 multiplied by the label and then the diagonal parent weights. Its tail coordinates
 are multiplied by the label and then reversed. In these coordinates the scanner's
 residual implements the logical port exchange. The theorem consumes the per-owner
-round-trip postconditions and unchanged spectator tapes. The caller must still
-compose the physical executions on the shared tapes to supply those premises.
+round-trip postconditions and unchanged spectator tapes. `ordinaryIdle_exec` sequences those passes with a shared owner representation
+and a separate entry condition for each occurrence's private tapes. Each pass
+is used once. The sum of the individual budgets plus one final step bounds the
+execution. `idlePassBank_exec` installs the local procedure tables on common
+owner slots and disjoint private tapes, preserving the next pass's preloaded
+metadata. Instantiation still needs the initial private-bank contents and a
+common state capacity for the concrete scheduled parents.
 
 The semantic five-class node (S5d.3) certifies upstream's accounting under ideal routes and
 partial swaps. Its exponent `1 - 10/5769` holds under that idealization only.
