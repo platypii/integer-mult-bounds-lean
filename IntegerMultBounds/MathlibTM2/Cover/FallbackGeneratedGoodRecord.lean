@@ -141,17 +141,6 @@ private theorem emptyCommonTape {T : ℕ} (hs : Fin 6 → List Bool) (c : Fin 24
             | left k => intro _ _; simp [Tapes.append]
             | right k => intro ha _; exact absurd rfl (ha k)
 
-private theorem fallbackAllowance (labels : List ℕ) (cost : ℕ → ℕ) (eligible : ℕ → Prop)
-    (count baseline remaining : ℕ)
-    (fits : 0 < count → ∀ j ∈ labels, eligible j → cost j ≤ baseline + remaining/count) :
-    ∃ extra, count*extra ≤ remaining ∧ ∀ j ∈ labels, eligible j → cost j ≤ baseline+extra := by
-  by_cases zero : count = 0
-  · refine ⟨(labels.map cost).sum,by simp [zero],?_⟩
-    intro j hj _
-    exact (List.le_sum_of_mem (List.mem_map_of_mem (f := cost) hj)).trans (Nat.le_add_left _ _)
-  · exact ⟨remaining/count,(Nat.mul_comm ..).le.trans (Nat.div_mul_le_self remaining count),
-      fits (Nat.pos_of_ne_zero zero)⟩
-
 private theorem counterCleanup_le {K A : ℕ} (S : Stacks K A) (tapes digits : List (Fin K))
     (counter : Fin K) (high : ℕ) (separate : counter ∉ digits) (empty : ∀ i ∈ tapes, S.R i = []) :
     let R := LabelCountBank.fill digits high (Function.update S.R counter (List.replicate high Node.tick))

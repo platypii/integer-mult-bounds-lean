@@ -4,6 +4,7 @@ public import IntegerMultBounds.MathlibTM2.Cover.FallbackScanState
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackRecordMasks
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackRecordCleanup
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackLeafFrame
+import IntegerMultBounds.MathlibTM2.Cover.ProjectorWitness
 import IntegerMultBounds.MathlibTM2.Cover.FallbackArchivedResidual
 
 /-! Identify the generated live and padding words with the signed pass's matrix archive. -/
@@ -585,12 +586,49 @@ theorem ScanData.advanceEmbeddedRecord_exec {T K Q : ℕ} {P F U : Type}
   · intro k off
     exact ⟨(frame k off).1,fun ne => (Function.update_of_ne ne _ _).trans (frame k off).2⟩
 
+/-- At canonical width the entire matrix advance fits in one payload traversal. -/
+theorem matrixAdvance_le_volume (d w W : ℕ) (positive : 0 < W) :
+    (d+1)*(d+1)*(4*(prime^(w+1)).size+4)+1 ≤ (prime^(w+1))^(d+1)*W := by
+  let m := prime^(w+1)
+  have big : 32 ≤ m := by
+    have exp : 5 ≤ IntegerMultBounds.Networks.coefficientExponent :=
+      IntegerMultBounds.Networks.le_coefficientExponent (by
+        exact (by decide : 5 ≤ 2^3).trans (Nat.pow_le_pow_right (by decide) (by decide : 3 ≤ 53000)))
+    exact (IntegerMultBounds.Networks.two_pow_le_coefficientBound exp).trans
+      (IntegerMultBounds.Networks.Shared50ModularControl.coefficientBound_lt_prime.le.trans
+        (Nat.le_self_pow (by omega : w+1 ≠ 0) prime))
+  have digits (k : ℕ) (hk : 5 ≤ k) : 4*(k+1)+5 ≤ 2^k := by
+    induction k, hk using Nat.le_induction with
+    | base => decide
+    | succ k hk ih => rw [pow_succ]; omega
+  have header : 4*m.size+5 ≤ m := by
+    have lower : 5 < m.size := Nat.lt_size.mpr big
+    obtain ⟨k,hk⟩ := Nat.exists_eq_succ_of_ne_zero (by omega : m.size ≠ 0)
+    rw [hk]
+    exact (digits k (by omega)).trans (Nat.lt_size.mp (by omega : k < m.size))
+  have side : d+1 ≤ 2^d := Nat.lt_two_pow_self
+  have square : (d+1)*(d+1) ≤ m^d := by
+    calc
+      _ ≤ (2^d)*(2^d) := Nat.mul_le_mul side side
+      _ = 4^d := (mul_pow 2 2 d).symm
+      _ ≤ m^d := Nat.pow_le_pow_left (by omega) _
+  calc
+    _ ≤ (d+1)*(d+1)*(4*m.size+5) := by change _ ≤ _; dsimp [m]; nlinarith
+    _ ≤ m^d*m := Nat.mul_le_mul square header
+    _ ≤ m^(d+1)*W := Nat.le_mul_of_pos_right _ positive
+
 open IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2.Stack Host in
 /-- The classified scan shares one archive. Good and padding programs operate on
 the embedded bank, while the exceptional program consumes its matrix directly. -/
 theorem ScanData.classifiedArchive_exec [M8.Machine.Net] {K Q : ℕ} {P F U : Type}
     (data : ScanData r d w W) (room : Record.size d+(rowSwapBlock.tapes+35+2) ≤ K+1)
-    (labels : P → F) :
+    (labels : P → F) (projector : Matrix (Fin r) (Fin r) ℚ) (idem : projector*projector = projector)
+    (factor : IntegerMultBounds.Swap.LowerTriangular.Factorization Finset.univ Finset.univ projector)
+    (small : ∀ k ∈ IntegerMultBounds.Swap.Modular.factorizationDenominators factor, k < prime)
+    (rankFits : projector.rank ≤ r) :
+    let proj := reduce M projector
+    let live := LabelStock.live r (w+1) 1
+    let bad := fun j => fallbackBit rankFits proj (physicalLabel r (w+1) j)
     let bank := directoryOrdinaryBank room
     let archive := directoryMatrixTape room
     let width := (2 : Fin 66).castAdd K
@@ -600,7 +638,7 @@ theorem ScanData.classifiedArchive_exec [M8.Machine.Net] {K Q : ℕ} {P F U : Ty
     ∀ (body : P → Pr P (66+K) Q prime U) (host : F → Pr F (66+(K+1)) Q prime U)
     (calls : ∀ f, host (labels f) = embProg bank labels (body f))
     (good skip : Pr P (66+K) Q prime U) (exceptional : Pr F (66+(K+1)) Q prime U)
-    (live bad : ℕ → Bool) (ordinaryCost badCost : ℕ → ℕ) (ready : ℕ → Stacks (66+K) prime → Prop)
+    (ordinaryCost badCost : ℕ → ℕ) (ready : ℕ → Stacks (66+K) prime → Prop)
     (release : ∀ j S k bits, k = liveMask ∨ k = mode → ready j S →
       ready j {S with R := Function.update S.R k bits})
     (ordinary : ∀ j, j < data.records → ¬ (live j = true ∧ bad j = true) →
@@ -619,12 +657,21 @@ theorem ScanData.classifiedArchive_exec [M8.Machine.Net] {K Q : ℕ} {P F U : Ty
     (badBits : S.R (bank mode) = (List.range data.records).map fun j => bitSymbol (bad j)),
     let advance := dropWords (bank width) archive (bank tmp) ((d+1)*(d+1))
     let cost := fun j => if live j && bad j then badCost j else ordinaryCost j + ((d+1)*(d+1)*(4*data.H+4)+1)
+    let exceptionalCount := ((∑ k ∈ Finset.range projector.rank, (k+1)*(r+1))*data.records)/prime
+    let priced := fun n => ∀ parents baseline budget, data.records = parents*M^(r*r) →
+      let ordinaryTime := data.records*(baseline+6)+2
+      ordinaryTime ≤ budget →
+      (∀ j < data.records, ¬ (live j = true ∧ bad j = true) →
+        ordinaryCost j + ((d+1)*(d+1)*(4*data.H+4)+1) ≤ baseline ∨
+        (data.H = Nat.size (prime^(w+1)) ∧ 0 < W ∧ ordinaryCost j + M^(d+1)*W ≤ baseline)) →
+      (0 < exceptionalCount → ∀ j < data.records, live j = true → bad j = true →
+        badCost j ≤ baseline+(budget-ordinaryTime)/exceptionalCount) → n ≤ budget
     ∃ z B n, z.user = u.user ∧ (ready data.records (embStk bank B) ∧ B.R archive = data.matrixTail) ∧
-      B.R (bank liveMask) = [] ∧ B.R (bank mode) = [] ∧ n ≤ ((List.range data.records).map fun j => cost j+2+4).sum+2 ∧
+      B.R (bank liveMask) = [] ∧ B.R (bank mode) = [] ∧ priced n ∧ n ≤ ((List.range data.records).map fun j => cost j+2+4).sum+2 ∧
       Exec host (classifiedScan (bank liveMask) (bank mode) ((embProg bank labels good).seq advance)
         exceptional ((embProg bank labels skip).seq advance)) (Host.mk u S) n (Host.mk z B) := by
-  intro bank archive width tmp liveMask mode body host calls good skip exceptional live bad ordinaryCost badCost ready
-    release ordinary repair u S start queue liveBits badBits advance cost
+  intro proj live bad bank archive width tmp liveMask mode body host calls good skip exceptional ordinaryCost badCost ready
+    release ordinary repair u S start queue liveBits badBits advance cost exceptionalCount priced
   have outside (i : Fin (66+K)) : bank i ≠ archive := Fin.succAbove_ne _ _
   have apart : width ≠ tmp := (Fin.castAddEmb K).injective.ne (by decide : (2 : Fin 66) ≠ 59)
   have selectors : liveMask ≠ mode := (Fin.castAddEmb K).injective.ne (by decide : (57 : Fin 66) ≠ 56)
@@ -641,7 +688,37 @@ theorem ScanData.classifiedArchive_exec [M8.Machine.Net] {K Q : ℕ} {P F U : Ty
     · simp [eq,bank.injective.ne eq]
   have last : data.matrices data.records = data.matrixTail := by
     simp [ScanData.matrices,List.drop_of_length_le (List.length_range.le)]
-  rw [← last]
+  suffices scan : ∃ z B n, z.user = u.user ∧ inv data.records B ∧ B.R (bank liveMask) = [] ∧
+      B.R (bank mode) = [] ∧ n ≤ ((List.range data.records).map fun j => cost j+2+4).sum+2 ∧
+      Exec host (classifiedScan (bank liveMask) (bank mode) ((embProg bank labels good).seq advance)
+        exceptional ((embProg bank labels skip).seq advance)) (Host.mk u S) n (Host.mk z B) by
+    obtain ⟨z,B,n,user,done,l,m,time,run⟩ := scan
+    refine ⟨z,B,n,user,⟨done.1,done.2.trans last⟩,l,m,?_,time,run⟩
+    intro parents baseline budget shape ordinaryTime fits ordinaryBound exceptionalBound
+    have ordinaryPrice (j : ℕ) (hj : j < data.records) (h : ¬ (live j = true ∧ bad j = true)) :
+        ordinaryCost j + ((d+1)*(d+1)*(4*data.H+4)+1) ≤ baseline := by
+      rcases ordinaryBound j hj h with direct | ⟨canonical,positive,bound⟩
+      · exact direct
+      · rw [canonical]
+        exact (Nat.add_le_add_left (matrixAdvance_le_volume d w W positive) _).trans bound
+    obtain ⟨g₀,unit,generic⟩ := LabelProjector.residue_witness (w := w+1) (by omega) projector idem factor small rankFits
+    obtain ⟨extra,allowance,exceptionalPrice⟩ := fallbackAllowance (List.range data.records) badCost
+      (fun j => live j = true ∧ bad j = true) exceptionalCount baseline (budget-ordinaryTime)
+      (fun pos j hj h => exceptionalBound pos j (List.mem_range.mp hj) h.1 h.2)
+    suffices total : n ≤ data.records*(baseline+6)+exceptionalCount*extra+2 by
+      dsimp only [ordinaryTime] at fits allowance
+      omega
+    apply time.trans (classifiedRecordTime_le w projector.rank parents rankFits proj data.records shape g₀ unit generic
+      cost baseline extra ?_ ?_ ?_)
+    · intro j hj hl hb
+      have no : ¬ (live j = true ∧ bad j = true) := fun h => Bool.noConfusion (hb.symm.trans h.2)
+      simpa only [cost,show live j = true from hl,show bad j = false from hb,Bool.and_false,ite_false,
+        Bool.false_eq_true] using ordinaryPrice j hj no
+    · intro j hj hl
+      have no : ¬ (live j = true ∧ bad j = true) := fun h => Bool.noConfusion (hl.symm.trans h.1)
+      simpa [cost,show live j = false from hl] using ordinaryPrice j hj no
+    · intro j hj hl hb
+      simpa [cost,show live j = true from hl,show bad j = true from hb] using exceptionalPrice j (List.mem_range.mpr hj) ⟨hl,hb⟩
   apply classifiedScan_exec host _ _ (bank.injective.ne selectors) _ _ _ data.records live bad cost inv
     (fun j B k bits sel h => by rcases sel with rfl | rfl
                                 · exact releaseAt j B _ bits (Or.inl rfl) h

@@ -232,6 +232,17 @@ theorem fallbackRecordCount (w r parents : ℕ) (hr : r ≤ m) (P : LabelPadding
   simp only [fallback,fallbackBit,decide_eq_true_eq]
   exact (Nat.mul_le_mul_left parents bound).trans_eq (by ring)
 
+theorem fallbackAllowance (labels : List ℕ) (cost : ℕ → ℕ) (eligible : ℕ → Prop)
+    (count baseline remaining : ℕ)
+    (fits : 0 < count → ∀ j ∈ labels, eligible j → cost j ≤ baseline + remaining/count) :
+    ∃ extra, count*extra ≤ remaining ∧ ∀ j ∈ labels, eligible j → cost j ≤ baseline+extra := by
+  by_cases zero : count = 0
+  · refine ⟨(labels.map cost).sum,by simp [zero],?_⟩
+    intro j hj _
+    exact (List.le_sum_of_mem (List.mem_map_of_mem (f := cost) hj)).trans (Nat.le_add_left _ _)
+  · exact ⟨remaining/count,(Nat.mul_comm ..).le.trans (Nat.div_mul_le_self remaining count),
+      fits (Nat.pos_of_ne_zero zero)⟩
+
 private theorem classifiedCost_sum (xs : List ℕ) (live bad : ℕ → Bool) (cost : ℕ → ℕ)
     (baseline extra : ℕ)
     (hg : ∀ j ∈ xs, live j = true → bad j = false → cost j ≤ baseline)
