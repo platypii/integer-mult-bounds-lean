@@ -147,20 +147,27 @@ theorem rankOneRecordLeaf_cost [M8.Machine.Net] {T A : ℕ} {U : Type}
   linarith only [leaf]
 
 /-- Every coordinate call sees the full payload volume at one atom's width.
-Charge the packed archive scans at their actual indices and the empty
+Charge both host frame changes, the packed archive scans at their actual indices, and the empty
 instruction ending the sequence once. -/
 theorem weightedCoordinates_cost [M8.Machine.Net] {r : ℕ} (v : Descriptor) (width : v.width = r)
-    (w tapes push : ℕ) :
+    (positive : v.Positive) (w tapes push entryTapes returnTapes : ℕ) :
     let M := prime^(w+1)
     let view := fun i : Fin r => {(RecursiveInterchangeLayout.child M 1 1 v i i.rev) with width := w+1}
     let factor := 2*(prime.size+1)^2
-    let cost := fun i : Fin r => weightedLeafCost (volume prime (view i)) (w+1) tapes push+
-      ((1000*(prime+1)+8*(i.val+i.val))*factor)*M
+    let V := volume M v
+    let frame := 1800*(entryTapes+5)+200*(returnTapes+5)+14
+    let cost := fun i : Fin r => (1+(1800*V*(entryTapes+5)+6))+weightedLeafCost (volume prime (view i)) (w+1) tapes push+
+      ((1000*(prime+1)+8*(i.val+i.val))*factor)*M+(1+(200*V*(returnTapes+5)+6))
     ((List.finRange r).map cost).sum+1 ≤
       r*(weightedLeafCost (volume M v) (w+1) tapes push+
-        ((1000*(prime+1)+16*(r-1))*factor)*M)+1 := by
-  intro M view factor cost
-  let bound := weightedLeafCost (volume M v) (w+1) tapes push+((1000*(prime+1)+16*(r-1))*factor)*M
+        ((1000*(prime+1)+16*(r-1))*factor)*M+frame*V)+1 := by
+  intro M view factor V frame cost
+  let bound := weightedLeafCost (volume M v) (w+1) tapes push+((1000*(prime+1)+16*(r-1))*factor)*M+frame*V
+  have volPos : 0 < V := by
+    dsimp [V,volume,M]
+    obtain ⟨_,_,_,_,_⟩ := positive
+    have := Networks.Shared50ModularControl.prime_prime.pos
+    positivity
   have each (i : Fin r) : cost i ≤ bound := by
     have same := RecursiveInterchangeLayout.child_volume_div M 1 1 v i i.rev
       (by simpa using width) (by decide) (one_dvd _)
@@ -169,7 +176,10 @@ theorem weightedCoordinates_cost [M8.Machine.Net] {r : ℕ} (v : Descriptor) (wi
     have indexBound : 8*(i.val+i.val) ≤ 16*(r-1) := by have := i.isLt; omega
     dsimp only [cost,bound]
     rw [vol]
-    gcongr
+    have scans := Nat.mul_le_mul_right M (Nat.mul_le_mul_right factor (Nat.add_le_add_left indexBound (1000*(prime+1))))
+    dsimp only [frame]
+    simp only [Nat.add_mul,Nat.mul_assoc,Nat.mul_comm V] at *
+    nlinarith only [scans,volPos]
   have total (is : List (Fin r)) : (is.map cost).sum ≤ is.length*bound := by
     induction is with
     | nil => simp

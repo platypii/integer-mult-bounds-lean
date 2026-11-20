@@ -2,6 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackGoodChildLayout
 public import IntegerMultBounds.MathlibTM2.Cover.LabelExchange
+import IntegerMultBounds.MathlibTM2.M8.RevMachine.FamilyControlBounds
 
 /-! Run one stopped-leaf interchange on the selected pair of rank coordinates. -/
 @[expose] public section
@@ -12,6 +13,79 @@ open RecursiveInterchangeLayout (Descriptor volume)
 open M8.Machine.ArbitraryWidthHighExchangeShared (sourceWord)
 open FlatCoordinateLayout (rank)
 local instance (w : ℕ) : NeZero (prime^w) := ⟨(pow_pos prime_prime.pos _).ne'⟩
+
+private theorem sub_atom_view (v : Descriptor) (q b : ℕ) {n : ℕ} (i : Fin n) :
+    sub q b n i.val 1 v = {(RecursiveInterchangeLayout.child (q^b) 1 1 v i i.rev) with width := b} := by
+  simp [sub,RecursiveInterchangeLayout.child,pow_mul,Nat.mul_comm,Nat.sub_sub,Nat.add_comm]
+  exact Or.inl (congrArg ((q^b)^·) (by omega))
+
+/-- Enter a coordinate view at counter i+1, saving the parent headers.
+The matching return accepts the changed roles and leaves the counter at i. -/
+theorem coordinateFrame_runs {T n : ℕ} (roles : Tapes T prime) (v : Descriptor)
+    (positive : v.Positive) (b m : ℕ) (hb : 0 < b) (width : v.width = n*b) (i : Fin n)
+    (f : ℤ → Fin (prime+4)) (p : ℤ) (node scalar : Tapes 1 prime)
+    (st : Tapes 2 prime) (free : Family.NodeFree node) :
+    let c := Family.leafC b m n (i.val+1)
+    let live := Function.update (Function.update (Function.update c 12 (some i.val)) 13 (some 1))
+      14 (some (n-i.val-1))
+    let view := {(RecursiveInterchangeLayout.child (prime^b) 1 1 v i i.rev) with width := b}
+    let saved := RecursiveViewFrame.savedStack (Routines.hdr v) node
+    let before := CommonBank.bank roles (Routines.hdr v) f p node scalar c st
+    let inside := fun roles' => CommonBank.bank roles' (Routines.hdr view) f p saved scalar live st
+    GraphContract.Runs (Blocks.seqB LeafRoutines.offsets (Blocks.seqB Blocks.push LeafRoutines.view))
+      before (inside roles) (1800*volume prime v) ∧
+    ∀ roles', GraphContract.Runs (Blocks.seqB Blocks.restore LeafRoutines.advance)
+      (inside roles') (CommonBank.bank roles' (Routines.hdr v) f p node scalar (Family.leafC b m n i.val) st)
+      (200*volume prime v) := by
+  intro c live view saved before inside
+  have viewEq : sub prime b n i.val 1 v = view := sub_atom_view v prime b i
+  have hr : i.val+1 ≤ n := i.isLt
+  have headers := Routines.hdr_headers v
+  have hview : Headers.childHeaders (q := prime) v (Routines.hdr v) b i.val 1 (n-i.val-1) = Routines.hdr view :=
+    (Routines.hdr_eq (Headers.child_headers headers rfl)).trans (congrArg Routines.hdr viewEq)
+  have offsets := LeafRoutines.offsets_runs (roles := roles) (hs := Routines.hdr v) (f := f) (p := p)
+    (node := node) (scalar := scalar) (st := st) (c := c) (by omega : 1 ≤ i.val+1) hr
+    (by simp [c,Family.leafC]) (by simp [c,Family.leafC]) (by simp [c,Family.leafC,Prepare.rest])
+    (by simp [c,Family.leafC,Prepare.rest]) (by simp [c,Family.leafC,Prepare.rest]) (by simp [c,Family.leafC,Prepare.rest])
+  obtain ⟨cost,hc,off⟩ := offsets
+  have push := Blocks.push_runs roles (Routines.hdr v) f p node scalar live st
+  have install := LeafRoutines.view_runs (roles := roles) (f := f) (p := p) (node := saved)
+    (scalar := scalar) (st := st) (c := live) headers positive hb width (s := i.val) (cc := 1)
+    hr rfl (by simp [live,c,Family.leafC,Prepare.rest]) (by simp [live]) (by simp [live]) (by simp [live])
+  have parentLen := fun j => RecursiveAffinePrepare.header_log Networks.Shared50ModularControl.prime_prime.two_le
+    v positive _ headers j
+  have pushCost := RecursiveViewFrame.pushCost_le (Routines.hdr v) (Family.hlen v) parentLen
+  have volPos := RecursiveAffinePrepare.volume_positive prime_prime.two_le v positive
+  have rankBound : n ≤ volume prime v := calc
+    n ≤ v.width := width ▸ Nat.le_mul_of_pos_right _ hb
+    _ ≤ (v.width+1)^2 := by nlinarith
+    _ ≤ _ := Family.width_square_le_volume v positive
+  have headerBound : Family.hlen v ≤ 2*volume prime v := by
+    have := Nat.log2_le_self (volume prime v)
+    unfold Family.hlen
+    omega
+  constructor
+  · rw [hview] at install
+    exact Blocks.runs_mono (Blocks.seq_runs (fun _ => rfl) (fun _ => rfl) off
+      (Blocks.seq_runs (fun _ => rfl) (fun _ => rfl) push install)) (by omega)
+  · intro roles'
+    have restore := Blocks.restore_runs roles' (Routines.hdr view) f p node scalar live st (Routines.hdr v)
+      (Family.nodeFree_free free _)
+    obtain ⟨t,ht,advance⟩ := LeafRoutines.advance_runs (roles := roles') (hs := Routines.hdr v)
+      (f := f) (p := p) (node := node) (scalar := scalar) (st := st) (c := live)
+      (n := n) (r := i.val+1) (s := i.val) (cc := 1) (e := n-i.val-1) hr (by omega) (by omega) (by omega)
+      (by simp [live,c,Family.leafC]) (by simp [live]) (by simp [live]) (by simp [live])
+    have next : Function.update (Function.update (Function.update (Function.update live 11 (some i.val)) 12 none)
+      13 none) 14 none = Family.leafC b m n i.val := by funext j; fin_cases j <;> rfl
+    rw [next] at advance
+    have same := sub_volume prime b n i.val 1 v width hr
+    rw [viewEq] at same
+    have restoreCost := RecursiveViewFrame.restoreCost_le (Routines.hdr v) (Routines.hdr view) (Family.hlen v)
+      parentLen (fun j => by
+        have h := RecursiveAffinePrepare.header_log Networks.Shared50ModularControl.prime_prime.two_le view
+          (viewEq ▸ Family.sub_positive positive) _ (Routines.hdr_headers view) j
+        simpa only [same,Family.hlen] using h)
+    exact Blocks.runs_mono (Blocks.seq_runs (fun _ => rfl) (fun _ => rfl) restore advance) (by omega)
 
 theorem leafPairSwap_runs [M8.Machine.Net] {T r w : ℕ} (v : Descriptor) (width : v.width = r)
     (hp : v.Positive) (i : Fin r) (io : Fin T) (roles : Tapes T prime)
@@ -39,9 +113,7 @@ theorem leafPairSwap_runs [M8.Machine.Net] {T r w : ℕ} (v : Descriptor) (width
     simpa [u,parent,volume,RecursiveInterchangeLayout.child,pow_mul] using same
   let y := RevSemantics.leafOut u usize x
   have swap := LabelExchange.leafOut_swapped usize x
-  have view : sub prime w r i.val 1 parent = u := by
-    simp [sub,u,parent,RecursiveInterchangeLayout.child,pow_mul,Nat.mul_comm,Nat.sub_sub,Nat.add_comm]
-    exact Or.inl (congrArg ((prime^w)^·) (by omega))
+  have view : sub prime w r i.val 1 parent = u := sub_atom_view parent prime w i
   refine ⟨y,?_,?_⟩
   · apply RevSemantics.leaf_runs_of (LeafCore.leafCore97 io).1 (show parent.Positive from hp) hw
       (by simp [parent,width,Nat.mul_comm]) (Nat.succ_pos _) i.isLt free

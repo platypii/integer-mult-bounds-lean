@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.ShortConvSetupOps
+public import IntegerMultBounds.MathlibTM2.Host.StatePlacement
 import IntegerMultBounds.MathlibTM2.Host.ChunkSwap
 import IntegerMultBounds.Machine.RecursiveHeaderBounds
 import IntegerMultBounds.MathlibTM2.Cover.FallbackPrefixVolume
@@ -15,6 +16,161 @@ open IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2.Stack Host
 open IntegerMultBounds.Networks.Shared50ModularControl (prime)
 open M8.RevMachine RecursiveInterchangeLayout SharedBankStageInput
 variable {T P M G B : ℕ} {F U : Type}
+
+/-- A frame and its caller agree on the leading tapes. The remaining tapes
+may contain any stacks that represent a blank tape. -/
+private theorem frameRep_iff {A k : ℕ} (bank : Tapes T A) (fits : T ≤ k)
+    (L R : Fin k → List (Fin (A+4))) :
+    RepT (raw bank k) L R ↔
+      RepT bank (fun i => L (i.castLE fits)) (fun i => R (i.castLE fits)) ∧
+      ∀ i : Fin k, T ≤ i.val → ∀ x, readAt blank (L i) (R i) x = blank := by
+  constructor
+  · intro rep
+    constructor
+    · intro i x
+      simpa [raw,i.isLt] using rep (i.castLE fits) x
+    · intro i hi x
+      simpa [raw,Nat.not_lt.mpr hi] using (rep i x).symm
+  · rintro ⟨common,work⟩ i x
+    by_cases hi : i.val < T
+    · simpa [raw,hi] using common ⟨i.val,hi⟩ x
+    · simpa [raw,hi] using (work i (Nat.le_of_not_gt hi) x).symm
+
+/-- Run a coordinate frame block on its own ports in the caller's state space.
+Both entry and return use the graph's exact bank postcondition. -/
+theorem placedFrame_exec {K Q A k : ℕ} (block : Graph.Block T A) (x y : Tapes T A)
+    (correct : GraphContract.Runs block x y k) (ports : Fin block.tapes ↪ Fin K)
+    (capacity : block.states ≤ Q) (body : F → Pr F K Q A U) (u : HS K Q A U)
+    (S : Stacks K A) (fits : T ≤ block.tapes)
+    (ready : RepT x (fun i => S.L (ports (i.castLE fits))) (fun i => S.R (ports (i.castLE fits))))
+    (work : ∀ i : Fin block.tapes, T ≤ i.val → ∀ j, readAt blank (S.L (ports i)) (S.R (ports i)) j = blank) :
+    let pos := Nat.zero_lt_of_lt block.program.start.isLt
+    ∃ z D t, z.user = u.user ∧ t ≤ 1 + (k * (block.tapes+5)+6) ∧
+      Exec body (statePlacedNormalized ports capacity pos Empty.elim (foreign block.program))
+        (mk u S) t (mk z D) ∧
+      RepT y (fun i => D.L (ports (i.castLE fits))) (fun i => D.R (ports (i.castLE fits))) ∧
+      (∀ i : Fin block.tapes, T ≤ i.val → ∀ j, readAt blank (D.L (ports i)) (D.R (ports i)) j = blank) ∧
+      ∀ h, (∀ j, ports j ≠ h) → D.L h = S.L h ∧ D.R h = S.R h := by
+  intro pos
+  obtain ⟨v,E,_,rfl,next,user,_,_,_,l,bound,run⟩ := foreign_exec (P := Empty) Empty.elim
+    block.program correct (stateLiftDown pos (embDn ports u)) (embStk ports S) _ rfl
+      ((frameRep_iff x fits _ _).mpr ⟨ready,work⟩)
+  obtain ⟨z,_,hz,placed⟩ := statePlaced_exec_normalized ports ports.injective capacity pos Empty.elim
+    (body' := body) (fun e => nomatch e) u S run
+  have returned : RepT (raw y block.tapes) (embStk ports (embOvr ports E.get S)).L
+      (embStk ports (embOvr ports E.get S)).R := by rwa [embStk_ovr ports.injective]
+  obtain ⟨common,blankWork⟩ := (frameRep_iff y fits _ _).mp returned
+  exact ⟨z,_,_,hz.trans user,Nat.add_le_add_left bound 1,placed,common,blankWork,
+    fun h off => embOvr_off _ _ off⟩
+
+/-- Insert the packed leaf's record and arithmetic tapes after the common
+bank. Entry and restore can use the same trailing workspace at different sizes. -/
+def framePorts {common tapes work : ℕ} (record : ℕ) (fits : tapes ≤ common+work) :
+    Fin tapes ↪ Fin ((common+record)+work) where
+  toFun i := ⟨if i.val < common then i.val else i.val+record,by
+    have := i.isLt
+    split <;> omega⟩
+  inj' := by
+    intro i j eq
+    have h := congrArg Fin.val eq
+    dsimp only at h
+    apply Fin.ext
+    split_ifs at h <;> omega
+
+/-- Execute a frame on either side of a packed leaf. Every record stack is
+preserved exactly, and the entire shared workspace again reads blank. -/
+theorem recordFrame_exec {Q A k work : ℕ} (record : ℕ) (block : Graph.Block T A)
+    (x y : Tapes T A) (correct : GraphContract.Runs block x y k)
+    (leading : T ≤ block.tapes) (fits : block.tapes ≤ T+work) (capacity : block.states ≤ Q)
+    (body : F → Pr F ((T+record)+work) Q A U) (u : HS _ Q A U) (S : Stacks _ A)
+    (ready : RepT x (fun i => S.L ((i.castAdd record).castAdd work))
+      (fun i => S.R ((i.castAdd record).castAdd work)))
+    (blankWork : ∀ (j : Fin work) a, readAt blank (S.L (j.natAdd (T+record)))
+      (S.R (j.natAdd (T+record))) a = blank) :
+    let ports := framePorts record fits
+    ∃ z D t, z.user = u.user ∧ t ≤ 1+(k*(block.tapes+5)+6) ∧
+      Exec body (statePlacedNormalized ports capacity (Nat.zero_lt_of_lt block.program.start.isLt)
+        Empty.elim (foreign block.program)) (mk u S) t (mk z D) ∧
+      RepT y (fun i => D.L ((i.castAdd record).castAdd work))
+        (fun i => D.R ((i.castAdd record).castAdd work)) ∧
+      (∀ (j : Fin work) a, readAt blank (D.L (j.natAdd (T+record)))
+        (D.R (j.natAdd (T+record))) a = blank) ∧
+      ∀ j : Fin record, D.L ((j.natAdd T).castAdd work) = S.L ((j.natAdd T).castAdd work) ∧
+        D.R ((j.natAdd T).castAdd work) = S.R ((j.natAdd T).castAdd work) := by
+  intro ports
+  have shared (i : Fin T) : ports (i.castLE leading) = (i.castAdd record).castAdd work := by
+    apply Fin.ext
+    simp [ports,framePorts,i.isLt]
+  have privateSlot (i : Fin block.tapes) (h : T ≤ i.val) :
+      ports i = (⟨i.val-T,by have := i.isLt; omega⟩ : Fin work).natAdd (T+record) := by
+    apply Fin.ext
+    simp [ports,framePorts,Nat.not_lt.mpr h]
+    omega
+  obtain ⟨z,D,t,user,bound,run,rep,clean,off⟩ := placedFrame_exec block x y correct ports capacity body u S
+    leading (by simpa only [shared] using ready)
+    (by intro i h; rw [privateSlot i h]; exact blankWork _)
+  refine ⟨z,D,t,user,bound,run,by simpa only [shared] using rep,?_,?_⟩
+  · intro j a
+    by_cases h : T+j.val < block.tapes
+    · have eq : ports ⟨T+j.val,h⟩ = j.natAdd (T+record) := by
+        apply Fin.ext
+        simp [ports,framePorts]
+        omega
+      simpa only [eq] using clean ⟨T+j.val,h⟩ (by simp) a
+    · have keep := off (j.natAdd (T+record)) (by
+        intro i eq
+        have hval := congrArg Fin.val eq
+        have := i.isLt
+        simp [ports,framePorts] at hval
+        split_ifs at hval <;> omega)
+      rw [keep.1,keep.2]
+      exact blankWork j a
+  · intro j
+    apply off
+    intro i eq
+    have hval := congrArg Fin.val eq
+    have := j.isLt
+    simp [ports,framePorts] at hval
+    split_ifs at hval <;> omega
+
+/-- Enclose a leaf in its entry and return blocks. The return bank depends on
+the leaf result, so the restored parent retains the changed payload. -/
+theorem framedLeaf_exec {Q A record work a b c : ℕ} {ι : Type*}
+    (entry leave : Graph.Block T A) (parent child : Tapes T A)
+    (changed restored : ι → Tapes T A) (enter : GraphContract.Runs entry parent child a)
+    (restore : ∀ i, GraphContract.Runs leave (changed i) (restored i) c)
+    (en : T ≤ entry.tapes) (ex : T ≤ leave.tapes) (ef : entry.tapes ≤ T+work)
+    (xf : leave.tapes ≤ T+work) (eqs : entry.states ≤ Q) (xqs : leave.states ≤ Q)
+    (body : F → Pr F ((T+record)+work) Q A U) (leaf : Pr F _ Q A U)
+    (u : HS _ Q A U) (S : Stacks _ A) :
+    let rep := fun bank (D : Stacks ((T+record)+work) A) => RepT bank
+      (fun i : Fin T => D.L ((i.castAdd record).castAdd work))
+      (fun i => D.R ((i.castAdd record).castAdd work))
+    let clean := fun (D : Stacks ((T+record)+work) A) => ∀ (j : Fin work) x,
+      readAt blank (D.L (j.natAdd (T+record))) (D.R (j.natAdd (T+record))) x = blank
+    let keep := fun (D E : Stacks ((T+record)+work) A) => ∀ j : Fin record,
+      D.L ((j.natAdd T).castAdd work) = E.L ((j.natAdd T).castAdd work) ∧
+      D.R ((j.natAdd T).castAdd work) = E.R ((j.natAdd T).castAdd work)
+    let place := fun (g : Graph.Block T A) (fits : g.tapes ≤ T+work) (cap : g.states ≤ Q) =>
+      statePlacedNormalized (framePorts record fits) cap (Nat.zero_lt_of_lt g.program.start.isLt)
+        Empty.elim (foreign g.program)
+    rep parent S → clean S →
+    (∀ v D, rep child D → clean D → keep D S → ∃ i z E n, z.user = v.user ∧ n ≤ b ∧
+      Exec body leaf (mk v D) n (mk z E) ∧ rep (changed i) E ∧ clean E ∧ keep E D) →
+    ∃ i z D n, z.user = u.user ∧ n ≤ (1+(a*(entry.tapes+5)+6))+b+(1+(c*(leave.tapes+5)+6)) ∧
+      Exec body (((place entry ef eqs).seq leaf).seq (place leave xf xqs)) (mk u S) n (mk z D) ∧
+      rep (restored i) D ∧ clean D ∧ keep D S := by
+  intro rep clean keep place initial free runLeaf
+  obtain ⟨v,D,t,hv,ht,first,inside,freeD,keepD⟩ :=
+    recordFrame_exec record entry parent child enter en ef eqs body u S initial free
+  obtain ⟨i,z,E,n,hz,hn,middle,out,freeE,keepE⟩ := runLeaf v D inside freeD keepD
+  obtain ⟨y,G,l,hy,hl,last,done,freeG,keepG⟩ :=
+    recordFrame_exec record leave _ _ (restore i) ex xf xqs body z E out freeE
+  refine ⟨i,y,G,_,hy.trans (hz.trans hv),Nat.add_le_add (Nat.add_le_add ht hn) hl,
+    (first.seq middle).seq last,done,freeG,?_⟩
+  intro j
+  exact ⟨(keepG j).1.trans ((keepE j).1.trans (keepD j).1),
+    (keepG j).2.trans ((keepE j).2.trans (keepD j).2)⟩
 
 /-- Read a dimension from the represented common bank into the caller's
 arithmetic workspace, preserving every source cell including stored blanks. -/
@@ -619,8 +775,12 @@ theorem packedWeightedLeaf_exec [M8.Machine.Net] [Fintype F] {m d : ℕ} (v : De
       let bank := signWork.trans (Record.payloadBank (sim slot) (0 : Fin 31))
       let child := (leafSignSetup (F := Empty)).seq (embProg (Fin.castAddEmb 2) Empty.elim leafSignReturn)
       let sign := load.seq (statePlacedNormalized bank capacity (by decide) Empty.elim child)
-      let output := fun (S D : Stacks (K+31) prime) => RepT (raw (CommonBank.bank (SharedPlacementAlphabet.setTape roles io (leafBitTape (negateLeafHead signWord)) 0)
-            (Routines.hdr v) f p node scalar ctr st) block.tapes) (D.L ∘ ports) (D.R ∘ ports) ∧
+      let output := fun (S D : Stacks (K+31) prime) => (RepT (CommonBank.bank (SharedPlacementAlphabet.setTape roles io (leafBitTape (negateLeafHead signWord)) 0)
+            (Routines.hdr v) f p node scalar ctr st)
+            (fun i => D.L (((i.castAdd 24).castAdd LeafCore.small).castAdd 31))
+            (fun i => D.R (((i.castAdd 24).castAdd LeafCore.small).castAdd 31)) ∧
+            ∀ (j : Fin LeafCore.small) x, readAt blank (D.L ((j.natAdd host).castAdd 31))
+              (D.R ((j.natAdd host).castAdd 31)) x = blank) ∧
           (∀ x, readAt blank (D.L (ports slot)) (D.R (ports slot)) x = leafBitTape (negateLeafHead signWord) x) ∧
           (∀ (a : Fin v.beforeRows) (row : Fin v.rows) (pre : Fin v.beforeH)
               (mid : Fin v.between) (post : Fin v.afterD) (h t : ZMod M),
@@ -734,10 +894,13 @@ theorem packedWeightedLeaf_exec [M8.Machine.Net] [Fintype F] {m d : ℕ} (v : De
       · intro k hk
         simp at hk
         rcases hk with rfl | rfl | rfl <;> exact (frame _ (fun k => pairOff k _ (by decide))).2
-      · intro k x
+      · apply (packedLeafPlacement (record := 24) (priv := LeafCore.small) _
+          (fun j => D.L (j.castAdd 31))
+          (fun j => if j.castAdd 31 ∈ [coeff 0,coeff 14,coeff 12] then [] else D.R (j.castAdd 31))).2.mp
+        intro k x
         change _ = readAt blank (D.L (ports k)) (if ports k ∈ _ then [] else D.R (ports k)) _
-        rw [if_neg (outside k)]
-        exact rep k x
+        exact (rep k x).trans (congrArg (fun tape => readAt blank (D.L (ports k)) tape _)
+          (ite_eq_right (outside k)).symm)
       · intro x
         change readAt blank _ (if ports slot ∈ _ then [] else D.R (ports slot)) _ = _
         rw [if_neg (outside slot)]
@@ -756,29 +919,29 @@ theorem packedWeightedLeaf_exec [M8.Machine.Net] [Fintype F] {m d : ℕ} (v : De
 
 end
 
-/-- Schedule one verified atom-pair run per active coordinate. Each step sees
+/-- Follow the descriptor counter from rank down to zero. Each step sees
 its own descriptor view, while the conclusion acts on the full rank fields. -/
 theorem weightedCoordinates_exec {r M q w K Q A : ℕ} [NeZero M] {α : Type*}
     (v : Descriptor) (width : v.width = r) (radix : M = q^w)
     (weight inv : Fin r → ZMod M) (unit : ∀ i, weight i * inv i = 1)
     (body : F → Pr F K Q A U) (call : Fin r → Pr F K Q A U) (budget : Fin r → ℕ)
-    (ready : Stacks K A → (ℕ → α) → Prop) :
+    (ready : ℕ → Stacks K A → (ℕ → α) → Prop) :
     let view := fun i : Fin r => {(RecursiveInterchangeLayout.child M 1 1 v i i.rev) with width := w}
     let addr := fun a row pre mid post (x : IntegerMultBounds.Swap.Shear.State (Fin r) (ZMod M)) =>
       index M v a row pre (FlatCoordinateLayout.rank x.1).val mid (FlatCoordinateLayout.rank x.2).val post
-    (∀ i u S word, ready S word → ∃ z D out n, z.user = u.user ∧ n ≤ budget i ∧
-      Exec body (call i) (mk u S) n (mk z D) ∧ ready D out ∧
+    (∀ (i : Fin r) u S word, ready (i.val+1) S word → ∃ z D out n, z.user = u.user ∧ n ≤ budget i ∧
+      Exec body (call i) (mk u S) n (mk z D) ∧ ready i.val D out ∧
       ∀ a < v.beforeRows, ∀ row < v.rows, ∀ pre < (view i).beforeH, ∀ mid < (view i).between,
         ∀ post < (view i).afterD, ∀ h t : ZMod M,
         out (index q (view i) a row pre (weight i*t).val mid (inv i*h).val post) =
           word (index q (view i) a row pre h.val mid t.val post)) →
-    ∀ u S word, ready S word → ∃ z D out n, z.user = u.user ∧ n ≤ ((List.finRange r).map budget).sum+1 ∧
-      Exec body (Prog.seqList ((List.finRange r).map call)) (mk u S) n (mk z D) ∧ ready D out ∧
+    ∀ u S word, ready r S word → ∃ z D out n, z.user = u.user ∧ n ≤ ((List.finRange r).map budget).sum+1 ∧
+      Exec body (Prog.seqList ((List.finRange r).reverse.map call)) (mk u S) n (mk z D) ∧ ready 0 D out ∧
       ∀ a < v.beforeRows, ∀ row < v.rows, ∀ pre < v.beforeH, ∀ mid < v.between, ∀ post < v.afterD, ∀ x,
         out (addr a row pre mid post (Weighted.child r weight inv x)) = word (addr a row pre mid post x) := by
   intro view addr step
-  have run (is : List (Fin r)) : ∀ u S word, ready S word → ∃ z D out n, z.user = u.user ∧ n ≤ (is.map budget).sum+1 ∧
-      Exec body (Prog.seqList (is.map call)) (mk u S) n (mk z D) ∧ ready D out ∧
+  have run (is : List (Fin r)) (order : ∀ (j : Fin is.length), (is.get j).val + j.val + 1 = is.length) : ∀ u S word, ready is.length S word → ∃ z D out n, z.user = u.user ∧ n ≤ (is.map budget).sum+1 ∧
+      Exec body (Prog.seqList (is.map call)) (mk u S) n (mk z D) ∧ ready 0 D out ∧
       ∀ a < v.beforeRows, ∀ row < v.rows, ∀ pre < v.beforeH, ∀ mid < v.between, ∀ post < v.afterD, ∀ x,
         out (addr a row pre mid post (is.foldl (Weighted.leafAt weight inv) x)) = word (addr a row pre mid post x) := by
     induction is with
@@ -787,8 +950,14 @@ theorem weightedCoordinates_exec {r M q w K Q A : ℕ} [NeZero M] {α : Type*}
       exact ⟨u,S,word,1,rfl,le_rfl,Exec.act _ _,initial,by intros; rfl⟩
     | cons i is ih =>
       intro u S word initial
-      obtain ⟨y,E,next,k,hy,hk,first,prepared,action⟩ := step i u S word initial
-      obtain ⟨z,D,out,n,hz,hn,rest,done,tail⟩ := ih y E next prepared
+      have top := order ⟨0,by simp⟩
+      have atHead : i.val = is.length := by simpa using top
+      have tailOrder (j : Fin is.length) : (is.get j).val+j.val+1 = is.length := by
+        have h := order j.succ
+        simp only [List.get_eq_getElem,List.getElem_cons_succ,Fin.val_succ,List.length_cons] at h
+        simpa only [List.get_eq_getElem] using (show is[j.val].val+j.val+1 = is.length by omega)
+      obtain ⟨y,E,next,k,hy,hk,first,prepared,action⟩ := step i u S word (by simpa [atHead] using initial)
+      obtain ⟨z,D,out,n,hz,hn,rest,done,tail⟩ := ih tailOrder y E next (atHead ▸ prepared)
       refine ⟨z,D,out,k+n,hz.trans hy,by simp only [List.map_cons,List.sum_cons]; omega,
         Exec.seq first rest,done,?_⟩
       intro a ha row hr pre hp mid hm post he x
@@ -797,12 +966,17 @@ theorem weightedCoordinates_exec {r M q w K Q A : ℕ} [NeZero M] {α : Type*}
         x.1 x.2 a row pre mid post hp hm he (action a ha row hr)
       simpa only [addr,Weighted.leafAt,Weighted.leaf_word _ _ (unit i)] using pair
   intro u S word initial
-  obtain ⟨z,D,out,n,hz,hn,exec,done,action⟩ := run (List.finRange r) u S word initial
-  refine ⟨z,D,out,n,hz,hn,exec,done,?_⟩
+  let coords := (List.finRange r).reverse
+  have len : coords.length = r := by simp [coords]
+  have order (j : Fin coords.length) : (coords.get j).val+j.val+1 = coords.length := by
+    simp [coords,List.get_eq_getElem,List.getElem_reverse]
+    have := j.isLt
+    omega
+  obtain ⟨z,D,out,n,hz,hn,exec,done,action⟩ := run coords order u S word (len.symm ▸ initial)
+  refine ⟨z,D,out,n,hz,by simpa [coords,List.map_reverse] using hn,exec,done,?_⟩
   intro a ha row hr pre hp mid hm post he x
-  have coords := Weighted.child_leafWords r weight inv (fun i _ => unit i) x
-  simp only [show ((List.finRange r).filter (fun i => decide (i.val < r))) = List.finRange r by simp] at coords
-  rw [← coords]
-  exact action a ha row hr pre hp mid hm post he x
+  have effect := Weighted.fold_leafAt weight inv coords (by simpa [coords] using List.nodup_finRange r) (fun i _ => unit i) x
+  have active (j : Fin r) : j ∈ coords := by simp [coords]
+  simpa only [effect,Weighted.child,active,Fin.isLt,ite_true] using action a ha row hr pre hp mid hm post he x
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
