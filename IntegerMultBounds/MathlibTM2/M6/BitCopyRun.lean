@@ -767,20 +767,20 @@ theorem copySegment_source (stages : List (FlatCoordinateSchedule.Op 16))
   exact List.ofFn_congr (copyChild_volume w W).symm (fun i => SparseRoleCircuit.encode (a := 0) (x i))
 
 
-private theorem segmentWorkspace_eq (stages : List (FlatCoordinateSchedule.Op 16))
-    (x y : Fin ((prime^w)^16*W) → ZMod 2) :
-    let bank := fun (z : Fin ((prime^w)^16*W) → ZMod 2) => SharedBankStageInput.raw
-      (FlatCoordinateShiftSharedBank.common (d := 16) (b := w) (W := W)
-        (fun i => SparseRoleCircuit.encode (z i))) (FlatCoordinateCleanSchedule.tapeCount stages)
-    let spare := fun z => SharedPlacementAlphabet.setTape (bank z) (segmentSource stages) (fun _ => blank) 0
-    spare x = spare y := by
-  intro bank spare
+noncomputable def basisWorkspace (stages : List (FlatCoordinateSchedule.Op 16))
+    (x : Fin ((prime^w)^16*W) → ZMod 2) :=
+  SharedPlacementAlphabet.setTape (SharedBankStageInput.raw (FlatCoordinateShiftSharedBank.common
+    (d := 16) (b := w) (W := W) (fun i => SparseRoleCircuit.encode (x i)))
+    (FlatCoordinateCleanSchedule.tapeCount stages)) (segmentSource stages) (fun _ => blank) 0
+
+theorem basisWorkspace_eq (stages : List (FlatCoordinateSchedule.Op 16))
+    (x y : Fin ((prime^w)^16*W) → ZMod 2) : basisWorkspace stages x = basisWorkspace stages y := by
   apply congrArg₂ Tapes.mk
   · rfl
   · funext k
     by_cases eq : k = segmentSource stages
     · simp [eq]
-    · simp only [Function.update_of_ne eq, bank, SharedBankStageInput.raw]
+    · simp only [Function.update_of_ne eq, basisWorkspace, SharedBankStageInput.raw]
       split
       next h =>
         have nz : k.val ≠ 0 := fun zero => eq (Fin.ext zero)
@@ -823,7 +823,7 @@ theorem basisSegment_placed {t : ℕ} (view : Descriptor) (size : volume prime v
   change (bank y).head slot = 0 ∧ (bank y).tape slot = _ at hy
   have placed := shared_hoare run caller src slot (fun _ => blank) 0 (payload.trans hx.2.symm) (head.trans hx.1.symm)
   refine ⟨y,?_,moves⟩
-  have same : workspace x = workspace y := segmentWorkspace_eq stages x y
+  have same : workspace x = workspace y := basisWorkspace_eq stages x y
   rw [← hy.2, ← hy.1]
   apply placed.consequence (fun _ h => h) _ le_rfl
   intro z hz
@@ -917,11 +917,6 @@ theorem phaseEnterChild_runs [M8.Machine.Net] {t lo hi : ℕ} (lt : lo < hi) (fi
   simp only [next,setTape_setTape] at swap
   exact ⟨y,lifted.seq swap,fun s j => (action _ j).trans (move s j)⟩
 
-noncomputable def basisWorkspace (stages : List (FlatCoordinateSchedule.Op 16))
-    (x : Fin ((prime^w)^16*W) → ZMod 2) :=
-  SharedPlacementAlphabet.setTape (SharedBankStageInput.raw (FlatCoordinateShiftSharedBank.common
-    (d := 16) (b := w) (W := W) (fun i => SparseRoleCircuit.encode (x i)))
-    (FlatCoordinateCleanSchedule.tapeCount stages)) (segmentSource stages) (fun _ => blank) 0
 
 open M8.Machine.Segments SharedPlacementAlphabet M8.Machine.ArbitraryWidthOriginalRun in
 /-- Both fixed basis passes surround one child call on the same payload tape.
@@ -966,7 +961,7 @@ theorem copyMove_runs [M8.Machine.Net] {t : ℕ} (src : Fin t) (headers : Fin 6 
   let bits := fun i => mid (Fin.cast (copyChild_volume w W).symm i)
   obtain ⟨y,last,move⟩ := basisSegment_placed (copyChild w W) (copyChild_volume w W) src _ fwd.good hW next bits
     (by simp [next,setTape]) (by simp [next,setTape,bits]) (fwd.legal w)
-  have same : basisWorkspace B bits = basisWorkspace B x := segmentWorkspace_eq B bits x
+  have same : basisWorkspace B bits = basisWorkspace B x := basisWorkspace_eq B bits x
   change HoareTime leave (fun z => z = next.append (basisWorkspace B bits))
     (fun z => z = (setTape next src _ 0).append (basisWorkspace B bits)) _ at last
   rw [same] at last
@@ -1028,7 +1023,7 @@ theorem phaseMove_runs [M8.Machine.Net] {t lo hi : ℕ} (lt : lo < hi) (fits : h
   let bits := fun i => mid (Fin.cast (phaseIntervalChild_volume lt.le fits w W).symm i)
   obtain ⟨y,last,move⟩ := basisSegment_placed (phaseIntervalChild lo hi w W) (phaseIntervalChild_volume lt.le fits w W) src _ fwd.good hW next bits
     (by simp [next,setTape]) (by simp [next,setTape,bits]) (fwd.legal w)
-  have same : basisWorkspace B bits = basisWorkspace B x := segmentWorkspace_eq B bits x
+  have same : basisWorkspace B bits = basisWorkspace B x := basisWorkspace_eq B bits x
   change HoareTime leave (fun z => z = next.append (basisWorkspace B bits))
     (fun z => z = (setTape next src _ 0).append (basisWorkspace B bits)) _ at last
   rw [same] at last
@@ -1341,7 +1336,7 @@ theorem copyWindow_hoare [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5) (
     all_goals congr 2 <;> funext i <;> simp [SparseRoleCircuit.encoded,copied,eq]
   rw [updated, agree] at converted
   have clean (stages) : basisWorkspace stages (data src) = basisWorkspace stages (0 : Fin N → ZMod 2) :=
-    segmentWorkspace_eq stages _ _
+    basisWorkspace_eq stages _ _
   simp only [clean] at converted
   have liftRun {q b} {g : Program (142081+2) q prime} {v v' : Tapes (142081+2) prime}
       (h : HoareTime g (fun z => z = v) (fun z => z = v') b) :

@@ -98,6 +98,117 @@ theorem copyLabel_window_read {w B K : ℕ} (p : ℕ × ℕ)
   rfl
 
 
+/-- The phase header bank precedes the permanent caller tapes. All subsequent
+workspaces are private, including the basis passes and recursive transpose. -/
+private def PhaseFrame {k t : ℕ} (bank : Tapes 24 prime → Tapes k prime → Tapes t prime) : Prop :=
+  ∃ slots : Fin k ↪ Fin t, ∀ h x,
+    SharedBank.payload (bank h x) slots = x ∧
+    SharedBank.strip (bank h x) slots = SharedBank.strip (bank h (SharedBank.empty k prime)) slots
+
+private theorem phaseFrame_append {k t u : ℕ} {bank : Tapes 24 prime → Tapes k prime → Tapes t prime}
+    (work : Tapes u prime) (frame : PhaseFrame bank) :
+    PhaseFrame (fun h x => (bank h x).append work) := by
+  obtain ⟨slots,frame⟩ := frame
+  refine ⟨⟨fun i => Fin.castAdd u (slots i),(Fin.castAdd_injective _ _).comp slots.injective⟩,?_⟩
+  intro h x
+  change SharedBank.payload ((bank h x).append work) (fun i => Fin.castAdd u (slots i)) = _ ∧
+    SharedBank.strip ((bank h x).append work) (fun i => Fin.castAdd u (slots i)) =
+      SharedBank.strip ((bank h _).append work) (fun i => Fin.castAdd u (slots i))
+  rw [SharedBankFrames.payload_append_left,SharedBankFrames.strip_append_left,
+    SharedBankFrames.strip_append_left,(frame h x).1,(frame h x).2]
+  exact ⟨rfl,rfl⟩
+
+open M8.Machine in
+theorem phasePrepared_frame [Net] {k w W : ℕ} (A B : List (FlatCoordinateSchedule.Op 16)) :
+    let bank := fun (x : Fin ((prime^w)^16*W) → ZMod 2) (h : Tapes 24 prime) (v : Tapes k prime) =>
+      ArbitraryWidthOriginalRun.input (((h.append v).append (basisWorkspace B x)).append (basisWorkspace A x))
+    ∃ slots : Fin k ↪ Fin _, ∀ x h v,
+      SharedBank.payload (bank x h v) slots = v ∧
+      SharedBank.strip (bank x h v) slots = SharedBank.strip (bank 0 h (SharedBank.empty k prime)) slots := by
+  intro bank
+  suffices frame : PhaseFrame (bank 0) by
+    obtain ⟨slots,project⟩ := frame
+    refine ⟨slots,fun x h v => ?_⟩
+    have same : bank x h v = bank 0 h v := by
+      dsimp only [bank]
+      rw [basisWorkspace_eq B x 0,basisWorkspace_eq A x 0]
+    rw [same]
+    exact project h v
+  unfold bank ArbitraryWidthOriginalRun.input ArbitraryWidthHighPreparedRun.input
+    ArbitraryWidthHighCommonPrepare.input ArbitraryWidthHighBranchPrepare.input ArbitraryWidthHighExecutionInitialize.input
+  repeat apply phaseFrame_append
+  refine ⟨⟨Fin.natAdd 24,fun i j eq => Fin.ext (by simpa using congrArg Fin.val eq)⟩,?_⟩
+  intro h v
+  change SharedBank.payload (h.append v) (Fin.natAdd 24) = v ∧ SharedBank.strip (h.append v) (Fin.natAdd 24) = SharedBank.strip (h.append (SharedBank.empty k prime)) (Fin.natAdd 24)
+  constructor
+  · apply congrArg₂ Tapes.mk <;> funext i <;> simp [SharedBank.payload,Tapes.append]
+  · apply congrArg₂ Tapes.mk <;> funext i <;> induction i using Fin.addCases with
+    | left j => simp [SharedBank.strip,Tapes.append]
+    | right j => simp [SharedBank.strip,Tapes.append]
+
+/-- Flat bit streams on permanent owner tapes, with heads at the first cell. -/
+noncomputable def phaseOwners {k N : ℕ} (data : Fin k → Fin N → ZMod 2) : Tapes k prime :=
+  ⟨fun _ => 0,fun j => putWord (fun _ => blank) 0 (List.ofFn fun i => SparseRoleCircuit.encode (a := prime) (data j i))⟩
+
+open IntegerMultBounds.Networks.Certificates.PR589 M8.Machine M8.Machine.Segments SharedPlacementAlphabet in
+theorem scheduledPhase_stage [Net] {k : ℕ} (src : Fin k) {p : ℕ × ℕ}
+    (member : p ∈ Geometry.Moves.phaseEdges) (paid : 0 < Geometry.moveRank p.1 p.2) :
+    ∃ basis : ℕ, ∀ w W, 0 < w → 0 < W →
+      let V := (prime^w)^16*W
+      let a := Geometry.Dimensions.value p.1
+      let b := Geometry.Dimensions.value p.2
+      let child := phaseIntervalChild (min a b) (max a b) w W
+      let hs := fun i => FlatCoordinateSchedule.bits (RecursiveDimensionBank.values child i)
+      ∃ stage : SharedBankStage.Stage _ k prime (phaseOwners (N := V)),
+        stage.cost = phaseWork basis V (ArbitraryWidthOriginalRun.cost child hs) ∧
+        ∀ data, (∀ j, j ≠ src → stage.transform data j = data j) ∧
+          ∀ s j, stage.transform data src (FlatCoordinateLayout.index (AffineFieldCoordinates.embed
+            (AffineFieldProgram.run (selectedWord w p) s)) j) =
+            data src (FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) j) := by
+  obtain ⟨lt,fits,C,rev,fwd,run⟩ := scheduledPhase_runs member paid
+  let A := description _ rev.good
+  let B := description _ fwd.good
+  refine ⟨FlatCoordinateCleanSchedule.constant A + FlatCoordinateCleanSchedule.constant B,?_⟩
+  intro w W hw hW V a b child hs
+  let result := fun (data : Fin k → Fin V → ZMod 2) =>
+    (run src (phaseOwners data) (data src) hw hW rfl rfl).2
+  let moved := fun data => (result data).choose
+  let transform := fun data => Function.update data src (moved data)
+  let bank := fun (x : Fin V → ZMod 2) (h : Tapes 24 prime) (v : Tapes k prime) =>
+    ArbitraryWidthOriginalRun.input (((h.append v).append (basisWorkspace B x)).append (basisWorkspace A x))
+  let initial := phaseHeaderInput (min a b) (max a b) w W
+  let finalBank := phaseHeaderOutput (min a b) (max a b) w W
+  obtain ⟨slots,frame⟩ := phasePrepared_frame (k := k) (w := w) (W := W) A B
+  have execute (data : Fin k → Fin V → ZMod 2) := (result data).choose_spec.1
+  have updated (data : Fin k → Fin V → ZMod 2) :
+      setTape (phaseOwners data) src (putWord (fun _ => blank) 0
+        (List.ofFn fun i => SparseRoleCircuit.encode (a := prime) (moved data i))) 0 = phaseOwners (transform data) := by
+    apply congrArg₂ Tapes.mk <;> funext j <;> by_cases eq : j = src <;> simp [phaseOwners,setTape,transform,eq] <;> rfl
+  let machineOf {t q b : ℕ} {g : Program t q prime} {pre post : Tapes t prime → Prop}
+      (_ : HoareTime g pre post b) := g
+  let machine := machineOf (execute 0)
+  refine ⟨{ tapes := _, states := _, program := machine, transform := transform,
+            input := fun data => bank (data src) initial (phaseOwners data),
+            output := fun data => bank (data src) finalBank (phaseOwners (transform data)),
+            slots := slots, slots_injective := slots.injective,
+            metadata := SharedBank.strip (bank 0 initial (SharedBank.empty k prime)) slots,
+            cost := _, input_payload := fun data => (frame _ _ _).1,
+            output_payload := fun data => (frame _ _ _).1,
+            strip_input := fun data => (frame _ _ _).2,
+            realizes := ?_ },rfl,?_⟩
+  · intro data
+    have step := execute data
+    rw [setTape_append_right,sourceWord_cast] at step
+    change HoareTime _ _ (fun z => z = bank (data src) finalBank (setTape (phaseOwners data) src _ 0)) _ at step
+    rw [updated data] at step
+    exact step
+  · intro data
+    refine ⟨fun j h => Function.update_of_ne h ..,?_⟩
+    intro s j
+    change Function.update data src (moved data) src _ = _
+    rw [Function.update_self]
+    exact (result data).choose_spec.2 s j
+
 private theorem payload_append {k t u : ℕ} (v : Tapes t prime) (workspace : Tapes u prime)
     (slots : Fin k → Fin (t+u)) (leading : ∀ i, (slots i).val = i.val) (fits : k ≤ t) :
     SharedBank.payload (v.append workspace) slots = SharedBank.payload v (fun i => Fin.castLE fits i) := by
