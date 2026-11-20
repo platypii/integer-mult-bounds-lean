@@ -84,6 +84,114 @@ noncomputable def ordinaryEntryWords {w : ℕ} (W beforeRows rows beforeH : ℕ)
   | 58 => prefixes
   | _ => []
 
+/-- The scanner reads nine metadata words. The list excludes the payload and
+every workspace tape, regardless of the size of the installed program. -/
+def ordinaryMetadataPorts : Fin 9 ↪ Fin 59 := ⟨![2,29,30,31,45,47,53,55,58],by decide⟩
+
+private theorem ordinaryEntryWords_unused {w : ℕ} (W a b h : ℕ) (root : Bool)
+    (parent : Fin 64 → ZMod (prime^(w+1))) (width : ℕ) (prefixes : List (Fin (prime+4)))
+    (j : ℕ) (unused : ∀ i, (ordinaryMetadataPorts i).val ≠ j) :
+    ordinaryEntryWords W a b h root parent width prefixes j = [] := by
+  unfold ordinaryEntryWords
+  split <;> first | rfl | exfalso; first
+    | exact unused 0 rfl | exact unused 1 rfl | exact unused 2 rfl | exact unused 3 rfl
+    | exact unused 4 rfl | exact unused 5 rfl | exact unused 6 rfl | exact unused 7 rfl | exact unused 8 rfl
+
+private theorem ordinaryMetadata_sum (lengthAt : ℕ → ℕ) :
+    (((List.finRange 9).map fun i => 6*lengthAt (ordinaryMetadataPorts i).val+6).sum+1) =
+      6*(lengthAt 2+lengthAt 29+lengthAt 30+lengthAt 31+lengthAt 45+lengthAt 47+
+        lengthAt 53+lengthAt 55+lengthAt 58)+55 := by
+  let fee := fun j => 6*lengthAt j+6
+  change fee 2+(fee 29+(fee 30+(fee 31+(fee 45+(fee 47+(fee 53+(fee 55+(fee 58+0))))))))+1 = _
+  dsimp only [fee]
+  ring
+
+/-- The scanner-prefix copy charges each symbol six steps, including the
+packed parent weights only away from the root. -/
+theorem ordinaryMetadata_time {w : ℕ} (W a b h : ℕ) (root : Bool)
+    (parent : Fin 64 → ZMod (prime^(w+1))) (width : ℕ) (prefixes : List (Fin (prime+4))) :
+    let H := (prime^(w+1)).size
+    let words := ordinaryEntryWords W a b h root parent width prefixes
+    (((List.finRange 9).map fun i => 6*(words (ordinaryMetadataPorts i).val).length+6).sum+1) =
+      6*(H+a+b+h+w+width+W.size+(if root then 0 else 64*H)+prefixes.length)+55 := by
+  intro H words
+  rw [ordinaryMetadata_sum (fun j => (words j).length)]
+  have archive (n d : ℕ) (v : Fin n → ℕ) :
+      (List.ofFn fun i => binSyms (A := prime) d (v i)).flatten.length = n*d := by
+    simp only [List.length_flatten,List.map_ofFn,Function.comp_def,length_binSyms,
+      List.ofFn_const,List.sum_replicate,smul_eq_mul]
+  cases root <;> simp only [words,ordinaryEntryWords,length_binSyms,List.length_replicate,
+    Bool.false_eq_true,ite_false,ite_true,List.length_nil,archive,H]
+
+/-- A complete scanner metadata copy is linear in its packed role volume.
+The prefix queue uses at most one row-width word per record. -/
+theorem ordinaryMetadata_volume_le {w W a b h width parents : ℕ} (root : Bool)
+    (prefixes : ℕ → List (Fin (prime+4))) (sizes : ∀ i < parents, (prefixes i).length = width)
+    (blocks : parents ≤ a*b*h)
+    (positive : 0 < W) (outerRows : 0 < a) (rows : 0 < b) (field : 0 < h) :
+    let M := prime^(w+1)
+    let N := M^128*W
+    let V := a*b*h*N
+    width ≤ N →
+    6*(M.size+a+b+h+w+width+W.size+(if root then 0 else 64*M.size)+
+      ((List.range parents).flatMap prefixes).length)+55 ≤ 487*V := by
+  intro M N V fits
+  have size : ((List.range parents).flatMap prefixes).length = parents*width := by
+    rw [List.flatMap_def,BlockRotationData.uniform_volume width]
+    · simp
+    · intro xs hx
+      obtain ⟨j,hj,rfl⟩ := List.mem_map.mp hx
+      exact sizes j (List.mem_range.mp hj)
+  have packed : ((List.range parents).flatMap prefixes).length ≤ V :=
+    size ▸ Nat.mul_le_mul blocks fits
+  have radix : 0 < M := pow_pos Shared50ModularControl.prime_prime.pos _
+  have active : 0 < M^128 := pow_pos radix _
+  have cells : 0 < N := Nat.mul_pos active positive
+  have records : 0 < a*b*h := Nat.mul_pos (Nat.mul_pos outerRows rows) field
+  have full : 0 < V := Nat.mul_pos records cells
+  have rowFits : N ≤ V := Nat.le_mul_of_pos_left _ records
+  have countFits : a*b*h ≤ V := Nat.le_mul_of_pos_right _ cells
+  have ab := (Nat.le_mul_of_pos_right (a*b) field).trans countFits
+  have aFits := (Nat.le_mul_of_pos_right a rows).trans ab
+  have bFits := (Nat.le_mul_of_pos_left b outerRows).trans ab
+  have hFits := (Nat.le_mul_of_pos_left h (Nat.mul_pos outerRows rows)).trans countFits
+  have mFits : M ≤ V := (show M ≤ M^128 by simpa using Nat.pow_le_pow_right radix (by decide : 1 ≤ 128)).trans
+    ((Nat.le_mul_of_pos_right _ positive).trans rowFits)
+  have bits := (Nat.size_le.mpr Nat.lt_two_pow_self : M.size ≤ M).trans mFits
+  have clock := (Nat.lt_pow_self (n := w+1) Shared50ModularControl.prime_prime.one_lt).le.trans mFits
+  have spectators := (Nat.size_le.mpr Nat.lt_two_pow_self : W.size ≤ W).trans
+    ((Nat.le_mul_of_pos_left _ active).trans rowFits)
+  cases root <;> simp only [Bool.false_eq_true,ite_false,ite_true] <;> omega
+
+/-- Copy the caller's metadata into a fresh scanner prefix. All other right
+stacks and all left stacks retain their initial contents. -/
+theorem ordinaryMetadata_exec {T Q s w : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
+    (source : Fin 9 → Fin T) (bank : Fin s ↪ Fin T) (room : 59 ≤ s)
+    (tmp aux : Fin T) (W a b h : ℕ) (root : Bool) (parent : Fin 64 → ZMod (prime^(w+1)))
+    (width : ℕ) (prefixes : List (Fin (prime+4))) (u : HS T Q prime U) (S : Stacks T prime) :
+    let words := ordinaryEntryWords W a b h root parent width prefixes
+    let dst := (ordinaryMetadataPorts.trans (Fin.castLEEmb room)).trans bank
+    (∀ i, S.R (source i) = words (ordinaryMetadataPorts i).val) →
+    (∀ i j, source i ≠ dst j) → (∀ i, [source i,dst i,tmp,aux].Nodup) →
+    S.R tmp = [] → S.R aux = [] → (∀ j, S.R (bank j) = []) →
+    ∃ z F, z.user = u.user ∧
+      Exec body (Record.copyLeafHeaders source dst tmp aux (List.finRange 9)) (mk u S)
+        (6*((prime^(w+1)).size+a+b+h+w+width+W.size+(if root then 0 else 64*(prime^(w+1)).size)+prefixes.length)+55) (mk z F) ∧
+      F.L = S.L ∧ (∀ j, F.R (bank j) = words j.val) ∧ ∀ j, (∀ i, dst i ≠ j) → F.R j = S.R j := by
+  intro words dst sources apart ports tempFree auxFree empty
+  obtain ⟨z,F,user,run,left,loaded,off⟩ := Record.copyLeafHeaders_exec body source dst tmp aux apart ports
+    (List.finRange 9) (List.nodup_finRange _) u S tempFree auxFree (fun i _ => empty _)
+  simp only [sources] at run
+  rw [ordinaryMetadata_time W a b h root parent width prefixes] at run
+  refine ⟨z,F,user,run,left,?_,fun j outside => off j (fun i _ => outside i)⟩
+  intro j
+  by_cases used : ∃ i, ((ordinaryMetadataPorts i).castLE room) = j
+  · obtain ⟨i,rfl⟩ := used
+    exact (loaded i (List.mem_finRange i)).trans (sources i)
+  · rw [off _ (fun i _ eq => used ⟨i,bank.injective eq⟩),empty]
+    exact (ordinaryEntryWords_unused W a b h root parent width prefixes j.val
+      (fun i eq => used ⟨i,Fin.ext eq⟩)).symm
+
 theorem ordinaryEntryWords_parameters {w : ℕ} (W beforeRows rows beforeH : ℕ) (root : Bool)
     (parent : Fin 64 → ZMod (prime^(w+1))) (width : ℕ) (prefixes : List (Fin (prime+4)))
     (units : root = true → ∀ i, parent i = 1) :
@@ -166,6 +274,26 @@ theorem RemainderChartFrame.input_rep {k N w : ℕ} {machine : SharedBankSkeleto
   rw [slot]
   exact owners i pos
 
+/-- A forward chart can use the represented caller bank in place. Only
+workspace beyond its owner and descriptor slots needs blank tape contents. -/
+theorem RemainderChartFrame.caller_input {k N w : ℕ} {v : Descriptor}
+    {machine : SharedBankSkeleton.Skeleton k prime}
+    {stage : SharedBankStage.Stage _ k prime (phaseOwners (N := N))}
+    (frame : RemainderChartFrame machine v w stage) (data : Fin k → Fin N → ZMod 2)
+    (S : Stacks stage.tapes prime) :
+    let bank := Fin.castLEEmb frame.fits
+    RepT (LabelCall.bank (phaseOwners data) v (M8.Stage2Machine.Straight.words (LabelSchedule.base v w)))
+      (S.L ∘ bank) (S.R ∘ bank) →
+    (∀ j : Fin stage.tapes, k+24 ≤ j.val → ∀ h, blank = readAt blank (S.L j) (S.R j) h) →
+    RepT (stage.input data) S.L S.R := by
+  intro bank caller work
+  rw [frame.input]
+  intro j h
+  by_cases inside : j.val < k+24
+  · have slot : bank ⟨j.val,inside⟩ = j := Fin.ext rfl
+    simpa only [SharedBankStageInput.raw,dif_pos inside,Function.comp_apply,slot] using caller ⟨j.val,inside⟩ h
+  · simpa only [SharedBankStageInput.raw,dif_neg inside,sub_zero] using work j (by omega) h
+
 /-- A chart can take its leading owner and header tapes directly from the
 other chart at the same layout. Its remaining registers start blank. -/
 theorem RemainderChartFrame.reuse {k N w : ℕ} {v : Descriptor}
@@ -179,18 +307,13 @@ theorem RemainderChartFrame.reuse {k N w : ℕ} {v : Descriptor}
     (privateTapes : ∀ j : Fin t.tapes, k+24 ≤ j.val → ∀ h,
       blank = readAt blank (D.L j) (D.R j) h) :
     RepT (t.input data) D.L D.R := by
+  apply dst.caller_input data D _ privateTapes
   rw [src.input] at input
-  rw [dst.input]
-  intro j h
-  by_cases inside : j.val < k+24
-  · let i : Fin (k+24) := ⟨j.val,inside⟩
-    obtain ⟨left,right⟩ := shared i
-    have eq := input (i.castLE src.fits) h
-    change D.L j = _ at left
-    change D.R j = _ at right
-    rw [left,right]
-    simpa only [SharedBankStageInput.raw,Fin.coe_castLE,i,inside,dif_pos] using eq
-  · simpa only [SharedBankStageInput.raw,dif_neg inside,sub_zero] using privateTapes j (by omega) h
+  intro i h
+  obtain ⟨left,right⟩ := shared i
+  change _ = readAt blank (D.L (i.castLE dst.fits)) (D.R (i.castLE dst.fits)) _
+  rw [left,right]
+  simpa only [SharedBankStageInput.raw,Fin.val_castLE,dif_pos i.isLt] using input (i.castLE src.fits) h
 
 /-- A return chart can start from the scanner's owner stacks and its own
 initialized private tapes. Only the owner contents vary with the scan. -/

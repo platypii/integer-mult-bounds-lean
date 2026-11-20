@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.Cover.LabelCallerHeaders
 public import IntegerMultBounds.MathlibTM2.M6.BitRemainderOrdinaryOwner
 public import IntegerMultBounds.MathlibTM2.M6.BitRemainderPiece
 
@@ -12,6 +13,49 @@ open IntegerMultBounds.Networks.Certificates.PR589.Nine
 open Cover LabelTraversal FlatCoordinateLayout
 
 open Stack Host
+
+/-- Normalize the caller's chart headers and derive the three unary directory
+dimensions used on scanner tapes 29, 30 and 31. -/
+theorem ordinaryDirectoryHeaders_exec {K T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
+    (r : Fin 26 ↪ Fin T) (roles : Tapes K prime) (v : RecursiveInterchangeLayout.Descriptor) (w : ℕ)
+    (u : HS T Q prime U) (S : Stacks T prime) (headers : LabelCallerHeaders.Represents r S roles v w) :
+    let dims : List (Fin 7) := [0,1,2]
+    (∀ i ∈ dims, S.R (LabelDecode.target r i) = []) → (∀ k ∈ [r 9,r 10,r 11], S.R k = []) →
+    ∃ z F t, Exec body ((LabelCallerHeaders.load r).seq (LabelDecode.program r dims)) (mk u S) t (mk z F) ∧
+      z.user = u.user ∧ t ≤ LabelCallerHeaders.cost r S + 17*(v.beforeRows+v.rows+v.beforeH)+52 ∧
+      (∀ i ∈ dims, F.R (LabelDecode.target r i) = List.replicate (LabelDecode.field v w i) (bitSymbol true)) ∧
+      (∀ i, F.R (LabelDecode.source r i) = (FlatCoordinateSchedule.bits (LabelDecode.field v w i)).map bitSymbol ∧
+        F.L (LabelDecode.source r i) = [separator]) ∧
+      ∀ j, j ∉ LabelCallerHeaders.ports r → j ∉ dims.map (LabelDecode.target r) → F.R j = S.R j ∧ F.L j = S.L j := by
+  intro dims fresh scratch
+  obtain ⟨a,B,m,user,paid,binary,off,load⟩ := LabelCallerHeaders.load_exec body r roles v w u S headers
+  have separate (j : Fin 26) (small : j.val < 19) : r j ∉ LabelCallerHeaders.ports r := by
+    intro mem
+    obtain ⟨i,_,eq⟩ := List.mem_map.mp mem
+    have val := congrArg Fin.val (r.injective eq)
+    change 19+i.val = j.val at val
+    omega
+  obtain ⟨z,R,n,keep,time,unary,others,decode⟩ := LabelDecode.runs body r (LabelDecode.field v w)
+    dims (by decide) a B (fun i _ => (binary i).1)
+    (fun i hi => (off _ (separate _ (by change i.val < 19; omega))).1.trans (fresh i hi))
+    (by
+      intro j hj
+      have unchanged : B.R j = S.R j := by
+        simp only [List.mem_cons,List.not_mem_nil,or_false] at hj
+        rcases hj with rfl | rfl | rfl <;> exact (off _ (separate _ (by decide))).1
+      exact unchanged.trans (scratch j hj))
+  refine ⟨z,_,m+n,Exec.seq load decode,keep.trans user,?_,unary,?_,?_⟩
+  · change n ≤ 17*(v.beforeRows+1)+(17*(v.rows+1)+(17*(v.beforeH+1)+0))+1 at time
+    omega
+  · intro i
+    refine ⟨(others _ ?_).trans (binary i).1,(binary i).2⟩
+    intro mem
+    obtain ⟨j,_,eq⟩ := List.mem_map.mp mem
+    have val := congrArg Fin.val (r.injective eq)
+    change j.val = 19+i.val at val
+    omega
+  · intro j untouched unused
+    exact ⟨(others j unused).trans (off j untouched).1,(off j untouched).2⟩
 
 /-- Place each local owner program on the same permanent owners and a
 disjoint private bank, even when its local owner slots are scattered. -/

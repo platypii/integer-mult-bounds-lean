@@ -720,8 +720,18 @@ metadata. One normalization step per pass suffices at the maximum local state
 capacity. `idlePassStacks_view` recovers each local entry from one copy of the
 shared owners and its own private stacks. The scheduled parent's entry contract
 reads the current chart in place, requiring its scanner prefix and inverse
-workspace to be prepared. Constructing those metadata stacks from the caller's
-input and charging that preparation remain open.
+workspace to be prepared. Given the caller’s nine scanner words,
+`ordinaryMetadata_exec` copies them into a blank prefix and preserves all
+other registers. Each copied symbol costs six steps and the nine copies have
+55 steps of fixed overhead. For a uniform-width prefix queue,
+`ordinaryMetadata_volume_le` bounds the copy by 487 times the role volume.
+From the caller’s seven represented chart headers, `ordinaryDirectoryHeaders_exec`
+normalizes all seven and decodes the first three into the scanner’s unary row
+and field dimensions. The decoding takes at most 17 steps per unit of their
+sum plus 52 steps, in addition to normalization. A full represented label bank
+can serve the forward chart directly via `RemainderChartFrame.caller_input`.
+The other six scanner sources and the caller’s initial header representation
+still need to be connected to the recursive invocation.
 
 The semantic five-class node (S5d.3) certifies upstream's accounting under ideal routes and
 partial swaps. Its exponent `1 - 10/5769` holds under that idealization only.
