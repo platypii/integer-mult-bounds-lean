@@ -2041,7 +2041,8 @@ def GeneratedRecordSpec [M8.Machine.Net] {T m work Q fields H J W : ℕ} {F U : 
         ((privateTapes.map fun i => 4*(whole.L i).length).sum + privateTapes.length*(2*high+4)+1)
       ∃ writer : Pr F K Q prime U, let prepare := (initCounters.seq writer).seq (clearWorkTapes privateTapes)
       ∃ z D n, z.user = u.user ∧ n ≤ setupCost ∧ Exec body prepare (mk u whole) n (mk z D) ∧
-        ready D labels ∧ ordinaryStep ∧ D.L (r 0) = whole.L (r 0) ∧ D.R (r 0) = whole.R (r 0) ∧ D.R mask = labels.map (fun j => bitSymbol (liveBit j)) ∧ D.R mode = modes labels ∧
+        ready D labels ∧ ordinaryStep ∧ D.L (r 0) = whole.L (r 0) ∧ D.R (r 0) = whole.R (r 0) ∧
+        D.R (caller 48) = whole.R (caller 48) ∧ D.R mask = labels.map (fun j => bitSymbol (liveBit j)) ∧ D.R mode = modes labels ∧
         (∀ (dimension : ℕ) (archiveRoom : Record.size dimension+(rowSwapBlock.tapes+35+2) ≤ (host+31+work)+1),
           let placement := directoryOrdinaryBank archiveRoom
           let archive := directoryMatrixTape archiveRoom
@@ -2796,7 +2797,12 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
   have setupRun : Exec body ((initCounters.seq writer).seq (clearWorkTapes privateTapes))
       (mk initialUser initialState) _ (mk z startState) := Exec.seq (Exec.seq prepare write) clearMasks
   have setupBound := Nat.add_le_add (Nat.add_le_add time₀ hl) (Nat.add_le_add_right cleanup 1)
-  refine ⟨writer,z,startState,_,hz.trans (hy.trans user₀),setupBound,setupRun,r₂,step,cellL,cellR,bits,initialModes,?_,?_⟩
+  have projectorKept : startState.R (caller 48) = initialState.R (caller 48) := by
+    have outside : caller 48 ∉ privateTapes := by simp [privateTapes,caller]
+    have ne (j : Fin 66) (hj : (48 : Fin 66) ≠ j) := caller.injective.ne hj
+    simp only [startState,liveState,mode,mask,clean,Function.update_of_ne (ne 56 (by decide)),
+      Function.update_of_ne (ne 57 (by decide)),ite_eq_right outside,Function.update_of_ne (ne 54 (by decide))]
+  refine ⟨writer,z,startState,_,hz.trans (hy.trans user₀),setupBound,setupRun,r₂,step,cellL,cellR,projectorKept,bits,initialModes,?_,?_⟩
   · intro dimension archiveRoom placement archive outer calls v B control bank
     obtain ⟨y,E,run,_,user,localBank,frame⟩ := exec_emb placement.injective calls setupRun v control B bank
     have same := user.trans ((hz.trans (hy.trans user₀)).trans (congrArg HS.user control).symm)
@@ -2845,10 +2851,7 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
         rw [← placed]
         change (embStk placement E).R (caller 48) = _
         rw [localBank]
-        have outside : caller 48 ∉ privateTapes := by simp [privateTapes,caller]
-        have ne (j : Fin 66) (hj : (48 : Fin 66) ≠ j) := caller.injective.ne hj
-        simp only [startState,liveState,mode,mask,clean,Function.update_of_ne (ne 56 (by decide)),
-          Function.update_of_ne (ne 57 (by decide)),ite_eq_right outside,Function.update_of_ne (ne 54 (by decide))]
+        exact projectorKept
       have posM : 0 < M := pow_pos Networks.Shared50ModularControl.prime_prime.pos _
       have radix : M ≤ N := by
         dsimp only [N]

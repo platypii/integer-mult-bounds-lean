@@ -13,7 +13,15 @@ local notation "N" => rowSwapBlock.tapes+35
 local notation "Q" => rowSwapBlock.states
 local instance (w : ℕ) : NeZero (prime^(w+1)) := ⟨(pow_pos prime_prime.pos _).ne'⟩
 
-noncomputable abbrev columnCapacity := max 217 Q
+/-- The shear, the row swap and the PR589 exceptional sign branch share one state bank. -/
+noncomputable abbrev columnCapacity :=
+  max 217 (max Q 11192)
+
+theorem swapStates_fit : Q ≤ columnCapacity := (le_max_left ..).trans (le_max_right ..)
+
+theorem remainderStates_fit : 11192 ≤ columnCapacity :=
+  (le_max_right ..).trans (le_max_right ..)
+
 noncomputable def columnPorts : Fin N ↪ Fin (N+1) := Fin.castLEEmb (Nat.le_succ _)
 noncomputable def columnBank : Fin 35 ↪ Fin (N+1) :=
   ((Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)).trans columnPorts
@@ -21,7 +29,7 @@ noncomputable def columnBank : Fin 35 ↪ Fin (N+1) :=
 theorem swapStates_pos : 0 < Q := Nat.zero_lt_of_lt rowSwapBlock.program.start.isLt
 
 noncomputable def columnSwapProgram (d i j : ℕ) : Pr P (N+1) columnCapacity prime U :=
-  statePlacedNormalized columnPorts (le_max_right ..) swapStates_pos Empty.elim (completeSwap d i j)
+  statePlacedNormalized columnPorts swapStates_fit swapStates_pos Empty.elim (completeSwap d i j)
 
 theorem columnSwapRecord_exec {d w W : ℕ} (i j : Fin d) (lt : i < j) (H J : ℕ)
     (hm : prime^(w+1) < 2^H) (hw : W < 2^J) (hW : 0 < W)
@@ -42,7 +50,7 @@ theorem columnSwapRecord_exec {d w W : ℕ} (i j : Fin d) (lt : i < j) (H J : �
   obtain ⟨u,D,n,hu,hn,run,next,freeD⟩ := columnRecord_swap i j lt H J hm hw hW (P := Empty) Empty.elim
     (stateLiftDown swapStates_pos (embDn columnPorts v)) (embStk columnPorts S) record dest q original addr
     ((columnRecordReady_project bank ..).mpr projected) free
-  obtain ⟨z,_,hz,placed⟩ := statePlaced_exec_normalized columnPorts columnPorts.injective (le_max_right 217 Q)
+  obtain ⟨z,_,hz,placed⟩ := statePlaced_exec_normalized columnPorts columnPorts.injective swapStates_fit
     swapStates_pos Empty.elim (body' := body) (fun e => nomatch e) v S run
   let F := embOvr columnPorts D.get S
   have eq : embStk columnPorts F = D := embStk_ovr columnPorts.injective _ _

@@ -739,6 +739,7 @@ theorem classifiedDirectory_exec [M8.Machine.Net] {m d K w W J N : ℕ} {P U : T
       Exec localBody selectors (mk (embDn placement (embDn bank u)) (embStk placement start)) t (mk y D) ∧
       ready D rs ∧ D.L (inner 24) = (embStk placement start).L (inner 24) ∧
       D.R (inner 24) = (embStk placement start).R (inner 24) ∧
+      D.R (inner 48) = (embStk placement start).R (inner 48) ∧
       D.R (inner 57) = rs.map (fun j => bitSymbol (live j)) ∧ D.R (inner 56) = rs.map (fun j => bitSymbol (bad j))) →
     S.R (reg 0) = rs.flatMap (bits ∘ input) → S.R (reg 1) = [] → (S.R (reg 2)).length = N →
     S.R (reg 3) = [] → S.R (reg 4) = [] → (∀ j, readAt blank (start.L (caller 24)) (start.R (caller 24)) j = blank) →
@@ -754,6 +755,7 @@ theorem classifiedDirectory_exec [M8.Machine.Net] {m d K w W J N : ℕ} {P U : T
     ∃ prepare z F t n rows s midUser mid, z.user = u.user ∧ s ≤ selectorBudget ∧
       Exec (fun f => embProg bank id (body f)) controls (mk u S) s (mk midUser mid) ∧
       ready (embStk placement (embStk bank mid)) rs ∧
+      (embStk bank mid).R (caller 48) = (embStk placement start).R (inner 48) ∧
       let initTime := directoryQueueInitTime m d w data.H data.records (embStk bank mid)
       let queueTime := directoryMatrixQueueTime m d w data.H data.records ((embStk bank mid).R (caller 47)).length
 
@@ -767,7 +769,7 @@ theorem classifiedDirectory_exec [M8.Machine.Net] {m d K w W J N : ℕ} {P U : T
       (embStk bank F).R (caller 57) = [] ∧ (embStk bank F).R (caller 56) = [] := by
   intro e physical φ code schedule ready placement caller live rs pending bits bank reg start inner advance good padding ordinaryTime cost effect
     matrix generated owner accumulator width saved tmp empty ordinary program work controls
-  obtain ⟨sy,D,s,su,subtotal,selectorRun,directory,portL,portR,mask,mode⟩ := generated
+  obtain ⟨sy,D,s,su,subtotal,selectorRun,directory,portL,portR,projectorKept,mask,mode⟩ := generated
   obtain ⟨midUser,mid,um,project,archiveKept,extRegs,runControls⟩ :=
     ownerSelectorSetup_exec room localBody body calls selectors u S sy D s selectorRun
   have cellEq (j : Fin 66) : (embStk bank mid).R (caller j) = D.R (inner j) := by
@@ -839,7 +841,7 @@ theorem classifiedDirectory_exec [M8.Machine.Net] {m d K w W J N : ℕ} {P U : T
     have h := congrArg List.length remaining
     simp [pending,rs] at h
     omega
-  refine ⟨prepare,z,F,t,n,rows,s,midUser,mid,user.trans (uy.trans (um.trans su)),subtotal,runControls,(by rw [project]; exact directory),setupTime,time,Exec.seq runControls (Exec.seq write run),correct,output,free,done,archiveEnd.trans ?_,maskEnd,modeEnd⟩
+  refine ⟨prepare,z,F,t,n,rows,s,midUser,mid,user.trans (uy.trans (um.trans su)),subtotal,runControls,(by rw [project]; exact directory),(cellEq 48).trans projectorKept,setupTime,time,Exec.seq runControls (Exec.seq write run),correct,output,free,done,archiveEnd.trans ?_,maskEnd,modeEnd⟩
   simp [last,ScanData.matrices,physical,ScanData.physical,List.drop_of_length_le (List.length_range.le)]
 
 /-- Convert the packed traversal's integer bill to a charge on its PR589
@@ -909,6 +911,18 @@ private theorem packedClassifiedTime_le {m w N B : ℕ} {P : Matrix (Fin m) (Fin
   simp only [Nat.mul_add] at bill bound ⊢
   nlinarith
 
+private theorem directoryEntryStates_fit [M8.Machine.Net] (t : ℕ) :
+    (Blocks.seqB (LeafRoutines.offsets (t := t)) (Blocks.seqB Blocks.push LeafRoutines.view)).states ≤ columnCapacity := by
+  apply le_trans _ remainderStates_fit
+  change (Blocks.seqB (LeafRoutines.offsets (t := 0)) (Blocks.seqB Blocks.push LeafRoutines.view)).states ≤ 11192
+  decide +kernel
+
+private theorem directoryExitStates_fit [M8.Machine.Net] (t : ℕ) :
+    (Blocks.seqB (Blocks.restore (t := t)) LeafRoutines.advance).states ≤ columnCapacity := by
+  apply le_trans _ remainderStates_fit
+  change (Blocks.seqB (Blocks.restore (t := 0)) LeafRoutines.advance).states ≤ 11192
+  decide +kernel
+
 open RingFormula LabelTraversal IntegerMultBounds.MathlibTM2.Fast.Main RecursiveInterchangeLayout Matrix Finset
   IntegerMultBounds.Swap.LowerTriangular IntegerMultBounds.Swap.Modular in
 /-- Execute the generated selector, matrix writer and classified row programs on
@@ -917,7 +931,8 @@ def OwnerDirectoryRun [M8.Machine.Net] {T m dim work J W : ℕ} {F U : Type}
     (v : Descriptor) (w : ℕ) (proj : Matrix (Fin m) (Fin m) ℚ) (rankFits : proj.rank ≤ m)
     (parent parentInv : Fin m → ZMod (prime^(w+1))) (io : Fin T)
     (dimension : m+m = dim+1) (data : ScanData m dim w W)
-    (length : volume prime v = (prime^(w+1))^m*((prime^(w+1))^m*W)) : Prop :=
+    (length : volume prime v = (prime^(w+1))^m*((prime^(w+1))^m*W))
+    (anchor : (anchorProgram dim true).1+(anchorProgram dim false).1+1 ≤ columnCapacity) : Prop :=
     let d := proj.rank
     let common := CommonBank.count T
     let K := common+24+31+work
@@ -925,10 +940,9 @@ def OwnerDirectoryRun [M8.Machine.Net] {T m dim work J W : ℕ} {F U : Type}
     let N := volume prime v
     let entry : Graph.Block common prime := Blocks.seqB LeafRoutines.offsets (Blocks.seqB Blocks.push LeafRoutines.view)
     let leave : Graph.Block common prime := Blocks.seqB Blocks.restore LeafRoutines.advance
-    ∀ (ef : entry.tapes ≤ common+work) (xf : leave.tapes ≤ common+work) (eqs : entry.states ≤ columnCapacity) (xqs : leave.states ≤ columnCapacity)
+    ∀ (ef : entry.tapes ≤ common+work) (xf : leave.tapes ≤ common+work)
       (body : F → Pr F (66+K) columnCapacity prime U) (archiveRoom : Record.size dim+(rowSwapBlock.tapes+35+2) ≤ K+1)
       (writerFits : (36+2*m+1+(conjugationDepth m+1)*13)+3 ≤ K+1)
-      (anchor : (anchorProgram dim true).1+(anchorProgram dim false).1+1 ≤ columnCapacity)
       (outer : F → Pr F (66+(K+1)) columnCapacity prime U)
       (calls : ∀ f, outer f = embProg (directoryOrdinaryBank archiveRoom) id (body f))
       (push : ℕ) (bodyBound : ∀ f, mnProgPush (outer f) ≤ push)
@@ -1015,8 +1029,8 @@ def OwnerDirectoryRun [M8.Machine.Net] {T m dim work J W : ℕ} {F U : Type}
         (140+30*(m*m)+6*privateTapes.length)*(labels.length*N) ∧
       Exec (fun f => embProg bank id (outer f)) controls (mk ownerUser ownerState) s (mk midUser mid) ∧
       (data.H = M.size →
-        let V := data.records*max ((embStk bank mid).R (big 47)).length N
-        let suffix := ((embStk bank mid).R (big 48)).drop (m*m*data.H)
+        let V := data.records*max (prefixes 0).length N
+        let suffix := (whole.R (caller 48)).drop (m*m*data.H)
         let base := directoryQueueInitRate m dim*((1+m*m)*V+archiveTail.length+suffix.length)
         ∀ p, mnProgPush prepare ≤ p → (∀ f, mnProgPush (outer f) ≤ p) →
           t ≤ base + ((12*m*m+4+directoryMatrixRate m dim)*V+4) +
@@ -1047,19 +1061,20 @@ private theorem generatedOwnerDirectory_exec [M8.Machine.Net] {T m dim work J W 
     (reciprocal : ∀ i, parent i * parentInv i = 1) (io : Fin T) (arity : ℕ)
     (dimension : m+m = dim+1) (data : ScanData m dim w W) (hm : prime^(w+1) < 2^data.H) (hw : W < 2^J) (hW : 0 < W)
     (length : volume prime v = (prime^(w+1))^m*((prime^(w+1))^m*W))
-    (capacity : 217 ≤ columnCapacity) (fits : LeafCore.small ≤ work) (cap : (LeafCore.core io).states ≤ columnCapacity) :
-    OwnerDirectoryRun (F := F) (U := U) (work := work) (J := J) v w proj rankFits parent parentInv io dimension data length := by
+    (anchor : (anchorProgram dim true).1+(anchorProgram dim false).1+1 ≤ columnCapacity)
+    (fits : LeafCore.small ≤ work) (cap : (LeafCore.core io).states ≤ columnCapacity) :
+    OwnerDirectoryRun (F := F) (U := U) (work := work) (J := J) v w proj rankFits parent parentInv io dimension data length anchor := by
   unfold OwnerDirectoryRun
-  intro d common K M N entry leave ef xf eqs xqs body archiveRoom writerFits anchor outer calls push bodyBound ownerUser ownerState input pool directory prefixes archiveTail c bounded room B
+  intro d common K M N entry leave ef xf body archiveRoom writerFits outer calls push bodyBound ownerUser ownerState input pool directory prefixes archiveTail c bounded room B
     placement bank reg start u whole caller labels live g bad φ table schedules ready payload privateTapes clean logical addr G effect shape free positiveDir
     brSize rowsSize beforeSize parents mask mode queue initial coords pivotCost raw trip runCost price big bits count empty owner accumulator size saved tmp blankPort
   let selectorBudget := (26*prime^w+4) + ((44*labels.length+13*(w+1)+16) + 3*((6+10*(m*m))*labels.length+4) +
         (2*(directory.beforeRows*directory.rows*B)+2)) +
         ((privateTapes.map fun i => 4*(whole.L i).length).sum + privateTapes.length*(2*prime^w+4)+1)
   have spec := generatedRecordScan_exec v positive w proj width idem factor hd rankFits parent parentInv reciprocal io arity
-    hm hw hW length capacity (fun _ => blank) 0 fits cap ef xf eqs xqs (fun _ => 0) body u whole pool directory prefixes archiveTail
+    hm hw hW length (le_max_left ..) (fun _ => blank) 0 fits cap ef xf (directoryEntryStates_fit T) (directoryExitStates_fit T) (fun _ => 0) body u whole pool directory prefixes archiveTail
     c bounded room B shape free positiveDir brSize rowsSize beforeSize parents mask mode queue initial
-  obtain ⟨writer,z,D,t,user,time,run,done,step,keepL,keepR,liveBits,badBits,_⟩ := spec
+  obtain ⟨writer,z,D,t,user,time,run,done,step,keepL,keepR,projectorKept,liveBits,badBits,_⟩ := spec
   let slot := (((LeafCore.roleSlot io).castAdd 24).castAdd 31).castAdd work
   have port : recordRoundTripPorts slot 0 = caller 24 := recordRoundTripPorts_other slot 0 (by decide)
   have finish {core padding : Pr F (66+K) columnCapacity prime U}
@@ -1087,11 +1102,11 @@ private theorem generatedOwnerDirectory_exec [M8.Machine.Net] {T m dim work J W 
   have pass := classifiedDirectory_exec dimension v proj idem adm parent parentInv reciprocal data hm hw hW
     archiveRoom writerFits anchor outer push bodyBound prefixes archiveTail bad (price core) action length input body calls
     _ (core.seq (clearWorkTapes privateTapes)) padding selectorBudget ownerUser ownerState empty
-    ⟨z,D,t,user,time,run,by simpa only [count] using done,left,right,
+    ⟨z,D,t,user,time,run,by simpa only [count] using done,left,right,projectorKept,
       by simpa only [count] using liveBits,by simpa only [count] using badBits⟩
     (by simpa only [count] using owner) accumulator size saved tmp blankPort
     (fun j _ no y A readyRow payloadRow => ordinary j _ (input j) y A no readyRow payloadRow)
-  obtain ⟨prepare,finishState,final,t,n,rows,s,midUser,mid,hu,setup,controls,midReady,initBound,scan,exec,correct,out,free,done,archive,maskEnd,modeEnd⟩ := pass
+  obtain ⟨prepare,finishState,final,t,n,rows,s,midUser,mid,hu,setup,controls,midReady,projectorEq,initBound,scan,exec,correct,out,free,done,archive,maskEnd,modeEnd⟩ := pass
   have recordsPos : 0 < LabelMask.records directory :=
     Nat.mul_pos (Nat.mul_pos positiveDir.1 positiveDir.2.1) positiveDir.2.2.1
   have radixPos : 0 < M := pow_pos Shared50ModularControl.prime_prime.pos _
@@ -1114,8 +1129,15 @@ private theorem generatedOwnerDirectory_exec [M8.Machine.Net] {T m dim work J W 
     have positiveRecords : 0 < data.records := count ▸ recordsPos
     obtain ⟨initLe,queueLe⟩ := DirectoryReady.matrixSetup_volume data archiveRoom (embStk bank mid) midReady
       binary radixFits positiveRecords
-    exact (initBound p hp calls).trans (Nat.add_le_add (Nat.add_le_add initLe queueLe) (Nat.add_le_add_left
+    have widthEq := midReady.2.1 0 (List.mem_range.mpr positiveRecords)
+    change ((embStk bank mid).R (placement (caller 47))).length = (prefixes 0).length at widthEq
+    have placed : placement (caller 47) = big 47 := directoryOrdinaryBank_caller archiveRoom 47
+    rw [placed] at widthEq
+    change ((embStk bank mid).R ((47 : Fin 66).castAdd (K+1))).length = _ at widthEq
+    change (embStk bank mid).R ((48 : Fin 66).castAdd (K+1)) = whole.R (caller 48) at projectorEq
+    have paid := (initBound p hp calls).trans (Nat.add_le_add (Nat.add_le_add initLe queueLe) (Nat.add_le_add_left
       (Nat.mul_le_mul_left _ (Nat.mul_le_mul_left _ (Nat.mul_le_mul_left p initLe))) _))
+    simpa only [widthEq,projectorEq] using paid
   intro binary digits advanceTime baseline rate
   let e := finSumFinEquiv.trans (finCongr dimension)
   let physical := data.physical e proj parent parentInv
@@ -1152,6 +1174,10 @@ private theorem generatedOwnerDirectory_exec [M8.Machine.Net] {T m dim work J W 
     exact Nat.add_le_add_right (Nat.le_max_left ..) _
 
 
+theorem remainderAnchorFits [M8.Machine.Net] :
+    (anchorProgram 127 true).1+(anchorProgram 127 false).1+1 ≤ columnCapacity :=
+  (show (anchorProgram 127 true).1+(anchorProgram 127 false).1+1 = 11192 by decide +kernel).le.trans remainderStates_fit
+
 open RingFormula LabelTraversal IntegerMultBounds.MathlibTM2.Fast.Main RecursiveInterchangeLayout Matrix Finset
   IntegerMultBounds.Swap.LowerTriangular IntegerMultBounds.Swap.Modular in
 /-- The generated physical directory pass for every selected PR589 remainder interval. -/
@@ -1159,7 +1185,7 @@ theorem remainderOwnerDirectory_exec [M8.Machine.Net] {T work : ℕ} {F U : Type
     (interval : ℕ × ℕ) (member : interval ∈ BitHosting.remainderIntervals) (w W : ℕ) (hW : 0 < W)
     (parent parentInv : Fin 64 → ZMod (prime^(w+1))) (reciprocal : ∀ i, parent i * parentInv i = 1)
     (data : ScanData 64 127 w W) (precision : data.H = (prime^(w+1)).size)
-    (io : Fin T) (arity : ℕ) (capacity : 217 ≤ columnCapacity)
+    (io : Fin T) (arity : ℕ)
     (fits : LeafCore.small ≤ work) (cap : (LeafCore.core io).states ≤ columnCapacity) :
     let m := 64
     let dim := 127
@@ -1172,7 +1198,7 @@ theorem remainderOwnerDirectory_exec [M8.Machine.Net] {T work : ℕ} {F U : Type
     let length : volume prime v = (prime^(w+1))^m*((prime^(w+1))^m*W) := by
       obtain ⟨ordered,upper,_⟩ := BitHosting.remainder_counts interval member
       rw [intervalChild_volume ordered (show interval.2 ≤ m by dsimp [m]; omega),pow_add,Nat.mul_assoc]
-    OwnerDirectoryRun (F := F) (U := U) (work := work) (J := J) v w proj rankFits parent parentInv io dimension data length := by
+    OwnerDirectoryRun (F := F) (U := U) (work := work) (J := J) v w proj rankFits parent parentInv io dimension data length remainderAnchorFits := by
   intro m dim J v proj rankFits dimension length
   obtain ⟨ordered,upper,_⟩ := BitHosting.remainder_counts interval member
   have rank : proj.rank = interval.2-interval.1 := intervalDiagonal_rank (show interval.2 ≤ m by dsimp [m]; omega)
@@ -1185,7 +1211,7 @@ theorem remainderOwnerDirectory_exec [M8.Machine.Net] {T work : ℕ} {F U : Type
   have hm : prime^(w+1) < 2^data.H := precision ▸ Nat.size_le.mp (le_refl _)
   have hw : W < 2^J := Nat.size_le.mp (le_refl _)
   exact generatedOwnerDirectory_exec v positive w proj width idem factor hd rankFits parent parentInv reciprocal
-    io arity dimension data hm hw hW length capacity fits cap
+    io arity dimension data hm hw hW length remainderAnchorFits fits cap
 
 /-- The idle descriptor has the width, volume, and rational pivot certificate
 required by the generated record program, with the actual binary header sizes. -/
