@@ -632,9 +632,12 @@ word and restores the owner tail. On every live record its output satisfies the 
 residual-matrix read equation. `ownerRow_projected` identifies that matrix at the
 routed label with the incoming port projector. The scanner's time bound includes
 counter setup, selector construction, matrix preparation and row traversal. It charges
-the exceptional operation at the PR589 exceptional-label density. The incoming
-archive and projector suffixes still enter the setup bill. Composing the physical
-parent setup with this scanner and bounding the result by the node budget remain open.
+the exceptional operation at the PR589 exceptional-label density. The parent execution in `scheduledOrdinaryParent_exec` prepends the physical
+directory setup to that scan. For every live label in each inherited block it
+returns the incoming port projector’s read equation on the packed owner word.
+Its time bound uses the archive and projector suffix lengths and the scratch
+occupancy at entry. Bounding those terms and the preparation program’s push
+bound uniformly at recursive node calls remains open.
 
 The semantic five-class node (S5d.3) certifies upstream's accounting under ideal routes and
 partial swaps. Its exponent `1 - 10/5769` holds under that idealization only.

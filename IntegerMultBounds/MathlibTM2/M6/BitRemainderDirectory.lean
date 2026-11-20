@@ -71,7 +71,7 @@ private theorem buildCost_le (a w parents box records : ℕ) (count : records = 
     _ = parents*box*(15*(a*(64*64))+14*w+45) + parents*(6*w+25) + (22*box+8*a+32) := by ring
     _ ≤ _ := by grw [fixed]; ring_nf; omega
 
-private theorem remainderDirectoryCount (v : Descriptor) (w rows B : ℕ)
+theorem remainderDirectoryCount (v : Descriptor) (w rows B : ℕ)
     (split : v.rows = 142080*rows) (shape : v.beforeH = B*prime^(64*((w+1)*64))) :
     LabelMask.records (role v 142080) = (v.beforeRows*rows*B)*(prime^(w+1))^(64*64) := by
   simp only [LabelMask.records,role,split,Nat.mul_div_cancel_left _ (by decide : 0 < 142080),shape,← pow_mul]

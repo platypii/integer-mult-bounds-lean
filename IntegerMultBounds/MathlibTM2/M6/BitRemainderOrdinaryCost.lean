@@ -117,6 +117,20 @@ open IntegerMultBounds.MathlibTM2.Stack Host Cover M8.RevMachine
 open RecursiveInterchangeLayout (Descriptor)
 open Matrix Finset IntegerMultBounds.Swap.LowerTriangular IntegerMultBounds.Swap.Modular
 
+/-- Counter, selectors, matrix setup and traversal on the packed owner tape. -/
+noncomputable def ordinaryOwnerScanTime (m d r w W H J records N prefixWidth archiveSize suffixSize left
+    tapes push rareTapes rareRate preparePush overhead childBudget : ℕ) : ℕ :=
+  let V := records*N
+  let selector := left+(140+30*(m*m)+6*tapes)*V
+  let init := directoryQueueInitRate m d*((1+m*m)*V+archiveSize+suffixSize)
+  let queue := (12*m*m+4+directoryMatrixRate m d)*V+4
+  let pad := 1+(4*prefixWidth+4+(m*m*(4*(w+1)+4)+1)+1)
+  let elapsed := ordinaryRowTime m r w W H prefixWidth overhead childBudget+pad
+  let base := elapsed+(4*tapes+1+tapes*(6*(push*elapsed)))+((d+1)*(d+1)*(4*H+4)+1)+4*N
+  dimensionTime H J (d+1)+6*N+13*((d+1)*H+J)+8 + (selector + (
+    (init+queue+(4*rareTapes+1+rareTapes*(6*(preparePush*init)))) +
+    (records*(base+12*N+16)+(((∑ i ∈ range r, (i+1)*(m+1))*records)/prime)*(rareRate*N)+4)))
+
 /-- Charge the stopped ordinary row at the common prefix width of the live
 directory. Only the exceptional fraction pays for the residual permutation. -/
 theorem ordinaryDirectoryTime_le [M8.Machine.Net] {m d w W K H J B : ℕ} (U : Type)

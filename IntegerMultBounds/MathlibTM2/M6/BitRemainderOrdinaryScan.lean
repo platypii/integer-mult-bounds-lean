@@ -130,19 +130,12 @@ def ClassifiedOrdinaryScan [M8.Machine.Net] {a d common work w W J : ℕ} {U : T
       Exec (fun f => embProg bank id (body f)) ((payloadCountProgram (ownerCountPorts (K+1)) (d+1)).seq controls) (mk u S) (k+s) (mk midUser mid) ∧
       ready (embStk placement (embStk bank mid)) rs ∧
       (embStk bank mid).R (caller 48) = (embStk placement start).R (inner 48) ∧
-      let V := data.records*N
       let suffix := (raw.R (inner 48)).drop (m*m*data.H)
-      let initTime := directoryQueueInitRate m d*((1+m*m)*V+archiveTail.length+suffix.length)
-      let queueTime := (12*m*m+4+directoryMatrixRate m d)*V+4
-      let pad := 1+(4*(prefixes 0).length+4+(m*m*(4*(w+1)+4)+1)+1)
-      let elapsed := ordinaryRowTime m proj.rank w W data.H (prefixes 0).length overhead childBudget+pad
-      let base := elapsed+(4*scratch.length+1+scratch.length*(6*(push*elapsed)))+((d+1)*(d+1)*(4*data.H+4)+1)+4*N
       let rarePush := max (mnProgPush (directoryExceptionalCore (P := Unit) (U := U) d room capacity)) c
-      let rare := exceptionalVolumeRate U d m work.length rarePush w*N
+      let rareRate := exceptionalVolumeRate U d m work.length rarePush w
       (∀ p, mnProgPush prepare ≤ p → (∀ f, mnProgPush (body f) ≤ p) → (prefixes 0).length ≤ N →
-        k+(s+(t+n)) ≤ (dimensionTime data.H J (d+1)+6*N+13*((d+1)*data.H+J)+8) + (selectorBudget + (
-          (initTime+queueTime+(4*work.length+1+work.length*(6*(p*initTime)))) +
-          (data.records*(base+12*N+16)+(((∑ i ∈ range proj.rank, (i+1)*(m+1))*data.records)/prime)*rare+4)))) ∧
+        k+(s+(t+n)) ≤ ordinaryOwnerScanTime m d proj.rank w W data.H J data.records N
+          (prefixes 0).length archiveTail.length suffix.length left scratch.length push work.length rareRate p overhead childBudget) ∧
       Exec (fun f => embProg bank id (body f)) ((payloadCountProgram (ownerCountPorts (K+1)) (d+1)).seq (controls.seq ((embProg bank id prepare).seq program))) (mk u S) (k+(s+(t+n))) (mk z F) ∧
       (∀ j : Fin data.records, effect j (ownerRow (R := data.records) (N := N) rfl output j)) ∧
       (∀ j, readAt blank (F.L (reg 0)) (F.R (reg 0)) j = RadixToBinary.binaryEncoding.encode
