@@ -21,7 +21,7 @@ open IntegerMultBounds.Swap.Modular
 open IntegerMultBounds.Swap.LowerTriangular (Factorization)
 variable {T m : ℕ} [M8.Machine.Net]
 
-private theorem overhead (ps : List (LabelSchedule.Pair m)) :
+theorem overhead (ps : List (LabelSchedule.Pair m)) :
     ∃ C : ℕ, ∀ (v : Descriptor) (w B : ℕ), 0 < m → 0 < w → 0 < B →
       v.beforeH = B*prime^(m*(w*m)) → v.Positive →
       LabelRoute.pivotCost v w ps + 2 ≤
