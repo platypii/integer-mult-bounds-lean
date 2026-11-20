@@ -329,10 +329,10 @@ theorem ownerPayload_records {R N : ℕ} (word : Fin (R*N) → ZMod 2) :
 def ownerRow {R N V : ℕ} (size : R*N = V) (word : Fin V → ZMod 2) (j : ℕ) (i : Fin N) : ZMod 2 :=
   if h : j < R then word ((finProdFinEquiv (⟨j,h⟩,i)).cast size) else 0
 
-/-- Read an exceptional output of the packed owner scanner at the incoming
+/-- Read a live output of the packed owner scanner at the incoming
 port projector's address, including the two inherited weight vectors. -/
-theorem ownerRow_repaired {R N V w W : ℕ} (size : R*N = V)
-    (length : (prime^(w+1))^128*W = N) (input output : Fin V → ZMod 2) (ordinary : Prop)
+theorem ownerRow_projected {R N V w W : ℕ} (size : R*N = V)
+    (length : (prime^(w+1))^128*W = N) (input output : Fin V → ZMod 2)
     (c : IntegerMultBounds.Networks.Certificates.PR589.Nine.PortCertificate) (checked : c.Checked)
     (lo hi : ℕ) (fits : hi ≤ 63) (block : ℕ) (g : LabelPadding.Label 64 (w+1)) (live : IsUnit g)
     (α α' : Fin 64 → ZMod (prime^(w+1))) :
@@ -341,21 +341,19 @@ theorem ownerRow_repaired {R N V w W : ℕ} (size : R*N = V)
     let P := IntegerMultBounds.Swap.Modular.reduce M ((c.span lo hi).submatrix stageAxis.symm stageAxis.symm)
     let D : Matrix (Fin 64) (Fin 64) ℚ := Matrix.diagonal fun i => if lo ≤ i.val ∧ i.val < hi then 1 else 0
     let j := block*M^(64*64)+(LabelAddress.address (g*H)).val
-    let bad := fallbackBit D.rank_le_height (IntegerMultBounds.Swap.Modular.reduce M D) (physicalLabel 64 (w+1) j)
-    bad = true →
-    (if LabelStock.live 64 (w+1) 1 j && bad then
+    (if LabelStock.live 64 (w+1) 1 j then
       ∀ x k, ownerRow size output j ((FlatCoordinateLayout.index ((projectorResidual finSumFinEquiv
         (IntegerMultBounds.Swap.Modular.reduce M D) α α' (physicalLabel 64 (w+1) j)).mulVec x) k).cast length) =
         ownerRow size input j ((FlatCoordinateLayout.index x k).cast length)
-      else ordinary) →
+      else ownerRow size input j = ownerRow size output j) →
     ∀ x k, ownerRow size output j ((FlatCoordinateLayout.index ((projectorResidual finSumFinEquiv P α α' g).mulVec x) k).cast length) =
       ownerRow size input j ((FlatCoordinateLayout.index x k).cast length) := by
-  intro M H P D j bad repair effect
+  intro M H P D j effect
   obtain ⟨bit,archive⟩ := remainderArchive_at c checked lo hi (w+1) (by omega) fits block g live α α'
   change LabelStock.live 64 (w+1) 1 j = true at bit
   change projectorResidual finSumFinEquiv (IntegerMultBounds.Swap.Modular.reduce M D) α α'
     (physicalLabel 64 (w+1) j) = projectorResidual finSumFinEquiv P α α' g at archive
-  simpa only [bit,repair,Bool.and_self,ite_true,archive] using effect
+  simpa only [bit,ite_true,archive] using effect
 
 theorem ownerRow_queue {R N V : ℕ} (size : R*N = V) (word : Fin V → ZMod 2) :
     payloadWord (SparseRoleCircuit.encode ∘ word) =

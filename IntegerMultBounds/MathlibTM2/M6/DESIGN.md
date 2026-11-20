@@ -627,12 +627,11 @@ fixed-interval child cannot supply the idle read premise of `compiledNode_read` 
 full live cover with this interpretation. A replacement must implement the conjugated
 exchange on live records and preserve the node budget. `remainderGood_move` gives
 the good-record algebra and `remainderFallback_residual` identifies the exceptional
-record's residual. The packed scanner’s exceptional output satisfies the incoming projector’s bit-read
-equation (`ownerRow_repaired`). On ordinary records `remainderOrdinary_address`
-identifies the same address after the incoming adapter, the weighted rank child,
-and the outgoing adapter. The scanner currently supplies the middle child effect.
-The surrounding adapters, packed owner layout and combined time still have to be
-realized at the scheduled idle.
+record's residual. The scheduled scanner builds its owner counter, executes both branches on one packed
+word and restores the owner tail. On every live record its output satisfies the same
+residual-matrix read equation. `ownerRow_projected` identifies that matrix at the
+routed label with the incoming port projector. Composing the physical node setup
+with this execution and charging its total time remain open.
 
 The semantic five-class node (S5d.3) certifies upstream's accounting under ideal routes and
 partial swaps. Its exponent `1 - 10/5769` holds under that idealization only.
