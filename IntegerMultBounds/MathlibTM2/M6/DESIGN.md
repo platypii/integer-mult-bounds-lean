@@ -663,8 +663,12 @@ contract on a chart payload with uniform-width packed prefixes.
 `ordinaryOwnerBank_inherited` discharges the private-tape charge on that frame.
 `OrdinaryParentRun.afterChart` runs the installed parent on the selected owner
 after a hosted stage, adds the clean scanner time to the chart and normalization
-costs, and returns the checked port equation on each live label. The recursive
-node still needs the scheduled chart transport and a uniform bound on that sum. At return the selected bank contains exactly the
+costs, and returns the checked port equation on each live label. `packedRemainderChart_stage` supplies the scheduled forward transport at exactly
+this packed word length. Its tape count is fixed before precision and layout, and
+the hosted chart has a uniform width-power times volume bound. `ordinaryOwnerScanTime_rate` bounds the clean scan uniformly by a constant times
+`(w+1)^tau` times packed volume, given the stopped child’s rate. The exceptional
+coefficient retains the label fraction, and the parent setup is linear in packed
+volume. These estimates still need to be instantiated in the recursive node. At return the selected bank contains exactly the
 restored archive suffix and the final projector tape. All its other stacks are empty.
 
 The semantic five-class node (S5d.3) certifies upstream's accounting under ideal routes and

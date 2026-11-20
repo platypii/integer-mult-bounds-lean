@@ -131,6 +131,138 @@ noncomputable def ordinaryOwnerScanTime (m d r w W H J records N prefixWidth arc
     (init+queue+(4*rareTapes+1+rareTapes*(6*(preparePush*init)))) +
     (records*(base+12*N+16)+(((∑ i ∈ range r, (i+1)*(m+1))*records)/prime)*(rareRate*N)+4)))
 
+/-- The parent's directory setup is linear in the packed owner's volume. -/
+theorem ordinaryParentSetup_volume_le (layout : Descriptor) (rows : ℕ) (split : layout.rows = 142080*rows) :
+    let C := 366+16*64*64+19*64+344
+    C*RecursiveInterchangeLayout.volume prime layout/(prime^layout.width*142080) ≤
+      C*RecursiveInterchangeLayout.volume prime (RecursiveInterchangeLayout.role layout 142080) := by
+  intro C
+  have total := RecursiveInterchangeLayout.role_volume_mul prime 142080 layout ⟨rows,split⟩
+  rw [← total,← Nat.mul_assoc]
+  apply Nat.div_le_of_le_mul
+  calc
+    _ ≤ _ * (prime^layout.width*142080) := Nat.mul_le_mul_left _ (Nat.le_mul_of_pos_left _ (pow_pos prime_prime.pos _))
+    _ = _ := Nat.mul_comm ..
+
+/-- The packed counter and its dimension headers cost a constant per payload
+symbol, uniformly in the radix and the spectator volume. -/
+theorem ordinaryCounter_volume_le (M W : ℕ) (radix : 0 < M) (positive : 0 < W) :
+    let H := M.size
+    let J := W.size
+    let N := M^128*W
+    dimensionTime H J 128+6*N+13*(128*H+J)+8 ≤ 502951*N := by
+  intro H J N
+  have hM : H ≤ M := Nat.size_le.2 Nat.lt_two_pow_self
+  have hW : J ≤ W := Nat.size_le.2 Nat.lt_two_pow_self
+  have square := Nat.pow_le_pow_right radix (by decide : 2 ≤ 128)
+  have linear := Nat.pow_le_pow_right radix (by decide : 1 ≤ 128)
+  rw [pow_one] at linear
+  have h : H ≤ N := (hM.trans linear).trans (Nat.le_mul_of_pos_right _ positive)
+  have j : J ≤ N := hW.trans (Nat.le_mul_of_pos_left _ (pow_pos radix _))
+  have hh : H*H ≤ N := (Nat.mul_le_mul hM hM).trans ((pow_two M ▸ square).trans (Nat.le_mul_of_pos_right _ positive))
+  have hj : H*J ≤ N := Nat.mul_le_mul (hM.trans linear) hW
+  have one : 1 ≤ N := Nat.mul_pos (pow_pos radix _) positive
+  have dim := dimensionTime_le H J 128
+  nlinarith only [dim,h,j,hh,hj,one]
+
+private theorem scan_cost_sum (R N H counter elapsed budget bill tapes push rare prep init queue extra : ℕ)
+    (records : 0 < R) (volume : 0 < N) (size : H ≤ N) (head : counter ≤ 502951*N)
+    (row : elapsed ≤ budget+bill*N) :
+    counter+((140+30*(64*64)+6*tapes)*(R*N)+
+      ((init*((1+64*64)*(R*N))+(queue*(R*N)+4)+(4*rare+1+rare*(6*(prep*(init*((1+64*64)*(R*N)))))))+
+       (R*(elapsed+(4*tapes+1+tapes*(6*(push*elapsed)))+(128*128*(4*H+4)+1)+4*N+12*N+16)+extra+4))) ≤
+    (502951+(140+30*(64*64)+6*tapes)+(1+rare*(6*prep))*init*(1+64*64)+queue+4+
+      (4*rare+1)+(1+tapes*(6*push))*bill+(4*tapes+1)+128*128*8+1+16+16+4)*(R*N)+
+      R*((1+tapes*(6*push))*budget)+extra := by
+  grw [head,row,size]
+  obtain ⟨x,rfl⟩ := Nat.exists_eq_add_of_le volume
+  obtain ⟨y,rfl⟩ := Nat.exists_eq_add_of_le records
+  ring_nf
+  omega
+
+/-- Only the stopped child and the exceptional rows retain a precision-dependent
+rate. All remaining work is linear in the packed volume. -/
+theorem ordinaryOwnerScanTime_volume_le (tapes push rareTapes preparePush overhead : ℕ) :
+    ∃ fixed : ℕ, ∀ r w W records prefixWidth rareRate childBudget, r ≤ 64 → 0 < W → 0 < records →
+      let M := prime^(w+1)
+      let N : ℕ := M^128*W
+      prefixWidth ≤ N →
+      ordinaryOwnerScanTime 64 127 r w W M.size W.size records N prefixWidth 0 0 0
+        tapes push rareTapes rareRate preparePush overhead childBudget ≤
+        fixed*(records*N) + records*((1+tapes*(6*push))*childBudget) +
+        (((∑ i ∈ range r, (i+1)*65)*records)/prime)*(rareRate*N) := by
+  obtain ⟨a,row⟩ := ordinaryRowTime_volume_le 64 overhead (by decide)
+  let setup := directoryQueueInitRate 64 127
+  let queue := directoryMatrixRate 64 127
+  let factor := 1+tapes*(6*push)
+  let bill := 12*64*64+4+a
+  let fixed := 502951+(140+30*(64*64)+6*tapes)+
+    (1+rareTapes*(6*preparePush))*setup*(1+64*64)+(12*64*64+4+queue)+4+
+    (4*rareTapes+1)+factor*bill+(4*tapes+1)+128*128*8+1+16+16+4
+  refine ⟨fixed,?_⟩
+  intro r w W records prefixWidth rareRate childBudget rank hW live M N prefixBound
+  have radix : 0 < M := pow_pos prime_prime.pos _
+  have size : M.size ≤ N := (Nat.size_le.2 Nat.lt_two_pow_self : M.size ≤ M).trans
+    ((show M ≤ M^128 by simpa using Nat.pow_le_pow_right radix (by decide : 1 ≤ 128)).trans (Nat.le_mul_of_pos_right _ hW))
+  have one : 1 ≤ N := Nat.mul_pos (pow_pos radix _) hW
+  have elapsed := row r w W prefixWidth childBudget rank hW
+  have price := elapsed.trans (Nat.add_le_add_right (Nat.add_le_add_left (Nat.mul_le_mul_left _ prefixBound) childBudget) (a*N))
+  have eq : childBudget+(12*64*64+4)*N+a*N = childBudget+bill*N := by dsimp [bill]; ring
+  rw [eq] at price
+  have sum := scan_cost_sum records N M.size _ _ childBudget bill tapes push rareTapes preparePush setup
+    (12*64*64+4+queue) ((((∑ i ∈ range r, (i+1)*65)*records)/prime)*(rareRate*N))
+    live one size (ordinaryCounter_volume_le M W radix hW) price
+  simpa only [ordinaryOwnerScanTime,Nat.add_zero,Nat.zero_add] using sum
+
+/-- Uniform precision rate for the complete clean PR589 scanner. The
+exceptional coefficient is charged only at the certified label density. -/
+theorem ordinaryOwnerScanTime_rate [M8.Machine.Net] (U : Type)
+    (r tapes push rareTapes rarePush preparePush overhead : ℕ) (rank : r ≤ 64) (C : ℝ) :
+    ∃ rate : ℝ, ∀ (w W records prefixWidth childBudget : ℕ), 0 < W → 0 < records →
+      let M := prime^(w+1)
+      let N : ℕ := M^128*W
+      let power := ((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau
+      prefixWidth ≤ N → (childBudget : ℝ) ≤ C*power*N →
+      ((ordinaryOwnerScanTime 64 127 r w W M.size W.size records N prefixWidth 0 0 0 tapes push
+        rareTapes (exceptionalVolumeRate U 127 64 rareTapes rarePush w) preparePush overhead childBudget : ℕ) : ℝ) ≤
+        rate*power*(records*N : ℕ) := by
+  obtain ⟨fixed,price⟩ := ordinaryOwnerScanTime_volume_le tapes push rareTapes preparePush overhead
+  let coeff := exceptionalRecordTime_binary_le U 127 64 rareTapes rarePush
+  let base := coeff.choose
+  let swaps := coeff.choose_spec.choose
+  let rare : ℝ := base + (swaps : ℝ)*(3808275+LeafCore.C)
+  let labels := ∑ i ∈ range r, (i+1)*65
+  let factor := 1+tapes*(6*push)
+  refine ⟨fixed+(factor : ℝ)*C+(labels : ℝ)/prime*rare,?_⟩
+  intro w W records prefixWidth childBudget hW live M N power width child
+  have scaled : 1 ≤ power := Real.one_le_rpow (by exact_mod_cast Nat.le_add_left 1 w) M8.Machine.BudgetBound.exponent_range.1.le
+  let fee := exceptionalVolumeRate U 127 64 rareTapes rarePush w
+  have feeBound : (fee : ℝ) ≤ rare*power := by
+    change ((base+swaps*swapVolumeRate w : ℕ) : ℝ) ≤ _
+    rw [Nat.cast_add,Nat.cast_mul]
+    calc
+      _ ≤ base*power+(swaps : ℝ)*((3808275+LeafCore.C)*power) := by
+        apply add_le_add _ (mul_le_mul_of_nonneg_left (swapVolumeRate_le w) (Nat.cast_nonneg _))
+        simpa using mul_le_mul_of_nonneg_left scaled (Nat.cast_nonneg base)
+      _ = _ := by dsimp only [rare]; ring
+  have count : (((labels*records)/prime : ℕ) : ℝ) ≤ (labels : ℝ)/prime*records := by
+    have h := Nat.div_mul_le_self (labels*records) prime
+    have realBound : (((labels*records)/prime : ℕ) : ℝ)*prime ≤ (labels : ℝ)*records := by exact_mod_cast h
+    rw [div_mul_eq_mul_div]
+    exact (le_div_iff₀ (by exact_mod_cast prime_prime.pos)).2 realBound
+  have bill := price r w W records prefixWidth fee childBudget rank hW live width
+  apply (Nat.cast_le (α := ℝ)).mpr bill |>.trans
+  change ((fixed*(records*N)+records*(factor*childBudget)+((labels*records)/prime)*(fee*N) : ℕ) : ℝ) ≤ _
+  simp only [Nat.cast_add,Nat.cast_mul]
+  calc
+    _ ≤ ((fixed : ℝ)*power)*(records*N) + records*((factor : ℝ)*(C*power*N)) +
+        ((labels : ℝ)/prime*records)*(rare*power*N) := by
+      apply add_le_add (add_le_add ?_ ?_) ?_
+      · exact mul_le_mul_of_nonneg_right (by simpa using mul_le_mul_of_nonneg_left scaled (Nat.cast_nonneg fixed)) (by positivity)
+      · exact mul_le_mul_of_nonneg_left (mul_le_mul_of_nonneg_left child (Nat.cast_nonneg factor)) (Nat.cast_nonneg records)
+      · exact mul_le_mul count (mul_le_mul_of_nonneg_right feeBound (Nat.cast_nonneg N)) (by positivity) (by positivity)
+    _ = _ := by push_cast; ring
+
 /-- Extra time charged to the stacks inherited from the parent. -/
 theorem ordinaryOwnerScanTime_inherited (m d r w W H J records N prefixWidth archiveSize suffixSize left
     tapes push rareTapes rareRate preparePush overhead childBudget : ℕ) :

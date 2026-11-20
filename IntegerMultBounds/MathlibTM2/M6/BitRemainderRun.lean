@@ -841,16 +841,20 @@ theorem remainderChart_stage [M8.Machine.Net] {k : ℕ} (src : Fin k) (c : PortC
     (hc : c.Checked) (inverse : Bool) :
     let H := c.fullChart.submatrix stageAxis.symm remainderAxis
     let σ := if inverse then H.transpose else H
-    ∃ C : ℕ, ∀ (v : Descriptor) (w B : ℕ), 0 < w → 0 < B →
+    ∃ C tapes : ℕ, ∀ (v : Descriptor) (w B : ℕ), 0 < w → 0 < B →
       v.beforeH = B*prime^(64*(w*64)) → v.Positive →
       ∃ stage : SharedBankStage.Stage _ k prime (phaseOwners (N := volume prime v)),
+        stage.tapes = tapes ∧
         stage.cost = C*volume prime v + 63*LeafCore.coreCost (volume prime v) (w*64) ∧
+        (∀ width : ℕ, w*64 ≤ width →
+          ((stage.cost*(stage.tapes+5) : ℕ) : ℝ) ≤
+            (((C : ℝ)+63*|LeafCore.C| * (width : ℝ)^M8.Machine.BudgetBound.tau)*volume prime v)*(tapes+5)) ∧
         ∀ data, (∀ j, j ≠ src → stage.transform data j = data j) ∧
           LabelPermutation.Transport v B w (fun g => g * reduce (modulus w) σ)
             (ext (data src)) (ext (stage.transform data src)) := by
   intro H σ
   obtain ⟨block,C,leading,runs⟩ := remainderChart_runs src c hc inverse
-  refine ⟨C,?_⟩
+  refine ⟨C,block.tapes,?_⟩
   intro v w B hw hb shape positive
   let result := fun data : Fin k → Fin (volume prime v) → ZMod 2 =>
     runs v w B hw hb shape positive (phaseOwners data) (data src) rfl
@@ -872,14 +876,54 @@ theorem remainderChart_stage [M8.Machine.Net] {k : ℕ} (src : Fin k) (c : PortC
             metadata := SharedBank.strip (bank (SharedBank.empty k prime)) slots,
             cost := _, input_payload := fun _ => copyRoute_payload block leading _ v d,
             output_payload := fun _ => copyRoute_payload block leading _ v d,
-            strip_input := fun _ => routePrivate block leading _ _ v d, realizes := ?_ },rfl,?_⟩
+            strip_input := fun _ => routePrivate block leading _ _ v d, realizes := ?_ },rfl,rfl,?_,?_⟩
   · intro data
     have run := (result data).choose_spec.2.1
     change GraphContract.Runs block _ (LabelCall.bank (setTape _ src (sourceWord (moved data)) 0) v d) _ at run
     rwa [updated] at run
+  · intro width fits
+    have bound := (result (fun _ _ => 0)).choose_spec.2.2 width fits
+    push_cast at bound ⊢
+    exact mul_le_mul_of_nonneg_right bound (by positivity)
   · intro data
     exact ⟨fun j off => Function.update_of_ne off .., by
       simpa only [transform,Function.update_self] using (result data).choose_spec.1⟩
+
+/-- The scheduled forward chart acts on the packed record word consumed by the parent. -/
+theorem packedRemainderChart_stage [M8.Machine.Net] {k : ℕ} (src : Fin k) (c : PortCertificate)
+    (hc : c.Checked) :
+    ∃ C tapes : ℕ, ∀ (layout : Descriptor) (w rows B : ℕ), layout.Positive →
+      layout.width = 64*(w+1) → layout.rows = 142080*rows →
+      layout.beforeH = B*prime^(64*((w+1)*64)) →
+      let v := role layout 142080
+      let N := LabelMask.records v*((prime^(w+1))^128*(layout.between*layout.afterD))
+      let spec := fun n : ℕ =>
+      ∃ stage : SharedBankStage.Stage _ k prime (phaseOwners (N := n)),
+        stage.tapes = tapes ∧
+        (∀ width : ℕ, (w+1)*64 ≤ width → ((stage.cost*(stage.tapes+5) : ℕ) : ℝ) ≤
+          (((C : ℝ)+63*|LeafCore.C| * (width : ℝ)^M8.Machine.BudgetBound.tau)*n)*(tapes+5)) ∧
+        ∀ data, (∀ j, j ≠ src → stage.transform data j = data j) ∧
+          LabelPermutation.Transport v B (w+1)
+            (fun g => g * reduce (modulus (w+1)) (c.fullChart.submatrix stageAxis.symm remainderAxis))
+            (ext (data src)) (ext (stage.transform data src))
+      spec N := by
+  obtain ⟨C,tapes,chart⟩ := remainderChart_stage src c hc false
+  refine ⟨C,tapes,?_⟩
+  intro layout w rows B positive width split shape v N spec
+  have pos := RecursiveRowsNodeLayout.role_positive 142080 layout (by decide) positive ⟨rows,split⟩
+  have hb : 0 < B := by
+    by_contra! h
+    have := positive.2.2.1
+    simp [Nat.eq_zero_of_le_zero h] at shape
+    omega
+  have size : volume prime v = N := by
+    simp only [N,v,LabelMask.records,role,volume,width,show 64*(w+1) = (w+1)*64 by omega,
+      pow_mul,show (128 : ℕ) = 64+64 by decide,pow_add]
+    ac_rfl
+  obtain ⟨stage,count,_,time,action⟩ := chart v (w+1) B (by omega) hb shape pos
+  change spec N
+  rw [← size]
+  exact ⟨stage,count,time,action⟩
 
 private theorem remainderOwner_flat [M8.Machine.Net] {k w W N : ℕ} (src : Fin k)
     (e : ℕ × ℕ) (he : e ∈ BitHosting.remainderIntervals) (hw : 0 < w) (hW : 0 < W)
@@ -913,8 +957,8 @@ theorem routedRemainder_stage [M8.Machine.Net] {k : ℕ} (src : Fin k)
             LabelPermutation.Transport v B w (fun g => g * reduce (modulus w) H.transpose)
               (ext (fun i => Shared50RecursiveNodeRows.transpose (one_dvd child.rows)
                 (fun j => y (Fin.cast size j)) (Fin.cast size.symm i))) (ext (stage.transform data src)) := by
-  obtain ⟨A,enter⟩ := remainderChart_stage src c hc false
-  obtain ⟨D,leave⟩ := remainderChart_stage src c hc true
+  obtain ⟨A,_,enter⟩ := remainderChart_stage src c hc false
+  obtain ⟨D,_,leave⟩ := remainderChart_stage src c hc true
   refine ⟨A+(2*(24*64+333)+250)+D,?_⟩
   intro w B K hw hb hk W v V child hs H
   have pos := Shared50ModularControl.prime_prime.pos
@@ -923,9 +967,9 @@ theorem routedRemainder_stage [M8.Machine.Net] {k : ℕ} (src : Fin k)
   have flat : V = (prime^w)^128*W := by simp [V,v,volume,W,Nat.mul_assoc]
   obtain ⟨ordered,fit,_⟩ := BitHosting.remainder_counts e he
   have size : volume prime child = V := (intervalChild_volume ordered (show e.2 ≤ 64 by omega) w W).trans flat.symm
-  obtain ⟨s,bs,es⟩ := enter v w B hw hb rfl vp
+  obtain ⟨s,_,bs,_,es⟩ := enter v w B hw hb rfl vp
   obtain ⟨m,bm,em⟩ := remainderOwner_flat src e he hw hW size
-  obtain ⟨t,bt,et⟩ := leave v w B hw hb rfl vp
+  obtain ⟨t,_,bt,_,et⟩ := leave v w B hw hb rfl vp
   refine ⟨size,SharedBankStage.compose (SharedBankStage.compose s m) t,?_,?_⟩
   · change s.cost+m.cost+1+t.cost+1 ≤ _
     rw [bs,bm,bt,← flat]
