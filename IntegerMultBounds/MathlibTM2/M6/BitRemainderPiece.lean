@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.M6.BitRemainderRun
+public import IntegerMultBounds.MathlibTM2.M6.BitCompiledNode
 public import IntegerMultBounds.MathlibTM2.M6.BitPhaseRun
 
 /-! Run the remainder of an idle window on each replica, class and copy. -/
@@ -35,6 +36,23 @@ noncomputable def idleTape (i : Fin 9) (k : (Fin 32 × Fin 5) × Fin 222) : Fin 
 theorem idleRole_copy (i : Fin 9) (k : (Fin 32 × Fin 5) × Fin 222) : roleCopy (idleRole i k) = k.2.val := by
   change (2*pairOf i+k.2.val/111)%2*111+k.2.val%111 = k.2.val
   omega
+
+/-- The physical idle jobs cover exactly the pair selected by the logical schedule. -/
+theorem idleRole_coverage (i : Fin 9) (ρ : Role) :
+    (∃ k, idleRole i k = ρ) ↔ ρ.bank.val / 2 = pairOf i := by
+  constructor
+  · rintro ⟨k,rfl⟩
+    change (2*pairOf i+k.2.val/111)/2 = pairOf i
+    omega
+  · intro pair
+    obtain ⟨r,b,p,d⟩ := ρ
+    change b.val/2 = pairOf i at pair
+    let c : Fin 222 := ⟨b.val%2*111+p.val,by omega⟩
+    refine ⟨((r,d),c),?_⟩
+    have bank : 2*pairOf i+c.val/111 = b.val := by dsimp [c]; omega
+    have port : c.val%111 = p.val := by dsimp [c]; omega
+    dsimp only [idleRole]
+    congr 1 <;> apply Fin.ext <;> assumption
 
 theorem idleTape_injective (i : Fin 9) : Function.Injective (idleTape i) := by
   intro k l eq
@@ -182,9 +200,8 @@ private theorem remainderRanks_sum (price : ℕ → ℕ) :
   rw [Fin.sum_univ_eq_sum_range (fun i => ((remainderRanks i).map price).sum)]
   rw [← List.sum_toFinset _ List.nodup_range,List.toFinset_range]
 
-/-- The nine invocation stages and the nine nonempty idle windows share the
-same owner bank. Their combined child charges fit the five-class node inventory. -/
-theorem paidPieces_nodeCost [M8.Machine.Net] (engine : CopyTranspose := CopyTranspose.original) :
+/-- Cost of the complete compiled schedule on one aligned parent descriptor. -/
+theorem compiledNode_parentCost [M8.Machine.Net] (engine : CopyTranspose := CopyTranspose.original) :
     ∃ D : ℝ, ∀ (parent : Descriptor) (w B rows : ℕ), parent.Positive → 0 < w → 0 < B →
       parent.width = 64*w → parent.rows = 142080*rows → parent.beforeH = B*prime^(64*(w*64)) →
       let K := parent.beforeRows*rows*parent.between*parent.afterD
@@ -194,7 +211,8 @@ theorem paidPieces_nodeCost [M8.Machine.Net] (engine : CopyTranspose := CopyTran
       let V := (prime^w)^16*phaseW
       let v : Descriptor := ⟨(prime^w)^128,1,B*prime^(64*(w*64)),0,1,K⟩
       ∃ (size : volume prime v = V)
-        (inv idle : Fin 9 → SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V))),
+        (inv idle : Fin 9 → OwnerStage V) (bridge : ℕ → ℕ → OwnerStage V) (exchange : OwnerStage V),
+        BankActions bridge exchange ∧
         (∀ (price : ℕ → ℕ) (rate : ℕ → ℝ),
           (∀ p ∈ Geometry.Moves.phaseEdges, Geometry.moveRank p.1 p.2 ≠ 0 →
             phaseChildCost w phaseW p ≤ price (Geometry.moveRank p.1 p.2)) →
@@ -204,7 +222,7 @@ theorem paidPieces_nodeCost [M8.Machine.Net] (engine : CopyTranspose := CopyTran
             let child := phaseIntervalChild e.1 e.2 w W 64
             cost child (fun j => FlatCoordinateSchedule.bits (RecursiveDimensionBank.values child j)) ≤ price (e.2-e.1)) →
           (∀ j ∈ nodeChildren5, (price j : ℝ) ≤ V*rate j) →
-          (((∑ n, (inv n).cost) + (∑ i, (idle i).cost) : ℕ) : ℝ) ≤
+          ((compiledNode inv idle bridge exchange).cost : ℝ) ≤
             volume prime parent*(D*(w : ℝ)^M8.Machine.BudgetBound.tau + (nodeChildren5.map rate).sum/142080)) ∧
         (∀ n, ∃ run : (Fin 32 × Fin 5) → (Fin 142081 → Fin V → ZMod 2) → (Fin 142081 → Fin V → ZMod 2),
           (∀ k x, InvocationEffect n k.1 k.2 w B spectators x (run k x)) ∧
@@ -216,7 +234,8 @@ theorem paidPieces_nodeCost [M8.Machine.Net] (engine : CopyTranspose := CopyTran
   obtain ⟨C,make⟩ := invocationPieces_nodeCost engine
   choose coeff build using idlePiece_stage
   let overhead := 1440*(2*(63*9+252*527)) + 9*idleCopies.length*126
-  obtain ⟨D,route⟩ := labelRoute_cost_bound (C+∑ i, coeff i) overhead
+  let bankCoeff := 30*(76*17760)+49
+  obtain ⟨D,route⟩ := labelRoute_cost_bound (C+(∑ i, coeff i)+bankCoeff) overhead
   refine ⟨D/142080,?_⟩
   intro parent w B rows positive hw hB width split label K W spectators phaseW V v
   have hr : 0 < rows := by have := positive.2.1; rw [split] at this; omega
@@ -233,7 +252,9 @@ theorem paidPieces_nodeCost [M8.Machine.Net] (engine : CopyTranspose := CopyTran
     (∀ k, IdleTransport i k w B K (x (idleTape i k)) (y (idleTape i k))) ∧
     ∀ j, (∀ k, j ≠ idleTape i k) → y j = x j
   choose idle same action using fun i => reindexIdle size (parts i) (effect i) (actions i)
-  refine ⟨size,inv,idle,?_,phaseAction,?_⟩
+  have hV : 0 < V := by dsimp only [V,phaseW]; positivity
+  obtain ⟨bridge,exchange,assembly,bankAction⟩ := compiledNode_linear hV inv idle
+  refine ⟨size,inv,idle,bridge,exchange,bankAction,?_,phaseAction,?_⟩
   · intro price rate phase copy remainder childRates
     let core := LeafCore.coreCost V (w*64)
     have phaseBill := phaseCost price phase copy
@@ -261,7 +282,12 @@ theorem paidPieces_nodeCost [M8.Machine.Net] (engine : CopyTranspose := CopyTran
       | cons j xs ih =>
         simp only [List.map_cons,List.sum_cons,Nat.cast_add,mul_add]
         exact add_le_add (bound j List.mem_cons_self) (ih (fun k hk => bound k (List.mem_cons_of_mem _ hk)))
-    have paid := (Nat.cast_le (α := ℝ)).mpr integerBill
+    have whole : (compiledNode inv idle bridge exchange).cost ≤
+        ((C+(∑ i, coeff i)+bankCoeff)*V + overhead*core) + (nodeChildren5.map price).sum := by
+      dsimp only [bankCoeff]
+      rw [Nat.add_mul]
+      omega
+    have paid := (Nat.cast_le (α := ℝ)).mpr whole
     conv at paid => rhs; rw [Nat.cast_add]
     exact (paid.trans (add_le_add (route V w hw) (children _ childRates))).trans_eq (by rw [parentSize]; ring)
   · intro i x

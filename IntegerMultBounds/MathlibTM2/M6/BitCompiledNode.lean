@@ -1,7 +1,6 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.M6.BitBankRun
-public import IntegerMultBounds.MathlibTM2.M6.BitRemainderPiece
 
 /-! Compilation and join costs for the ordered PR589 owner-tape schedule. -/
 @[expose] public section
@@ -19,6 +18,22 @@ noncomputable def physicalPiece {V : ℕ} (inv idle : Fin 9 → OwnerStage V)
   | .remainder i => if h : i < 9 then idle ⟨i,h⟩ else SharedBankStage.identity _ (by decide)
   | .bridge d s => bridge d s
   | .exchangeSides => exchange
+
+open IntegerMultBounds.Networks.Certificates.PR589.Nine BitHosting in
+/-- Both endpoints of the last idle are at level nine. Its logical action
+agrees with the halt used for this entry of the compiled schedule. -/
+theorem terminalIdle_run (X : State) : (Piece.remainder 9).run X = X := by
+  funext ρ
+  have empty (k : ℕ) : interval (63+k) 63 = 0 := by
+    rw [interval, ← Matrix.diagonal_zero]
+    congr 1
+    funext p
+    simp only [ite_eq_right_iff]
+    omega
+  have span : remainderSpan 9 ρ = 0 := by
+    change (port ρ.port.val).span (63+_) 63 = 0
+    rw [PortCertificate.span,empty,Matrix.mul_zero,Matrix.zero_mul]
+  simp only [Piece.run,span,exchange_zero,along_one,ite_self]
 
 noncomputable def compiledNode {V : ℕ} (inv idle : Fin 9 → OwnerStage V)
     (bridge : ℕ → ℕ → OwnerStage V) (exchange : OwnerStage V) : OwnerStage V :=
@@ -69,14 +84,8 @@ theorem compiledNode_cost {V : ℕ} (inv idle : Fin 9 → OwnerStage V)
   simp only [List.map_map,Function.comp_def,bill,List.length_map,scheduleBill,
     show nodeProgram.length = 29 from rfl]
 
-/-- Fill all nine bridge occurrences and the final exchange with owner-tape programs.
-Only the invocation and remainder stages contribute recursive charges. -/
-theorem compiledNode_linear {V : ℕ} (positive : 0 < V) (inv idle : Fin 9 → OwnerStage V) :
-    ∃ (bridge : ℕ → ℕ → OwnerStage V) (exchange : OwnerStage V),
-      (compiledNode inv idle bridge exchange).cost ≤
-        (∑ n, (inv n).cost) + (∑ i, (idle i).cost) +
-          9*(2*(76*17760*V)+1) + (4*(3*(76*17760*V)+2)+3) + 29 ∧
-      (∀ e ∈ bridgeEdges, ∀ data, let d := e.1; let s := e.2
+def BankActions {V : ℕ} (bridge : ℕ → ℕ → OwnerStage V) (exchange : OwnerStage V) : Prop :=
+  (∀ e ∈ bridgeEdges, ∀ data, let d := e.1; let s := e.2
         let tape := fun b : ℕ => bankTape (Fin.ofNat 8 b)
         (∀ x i, (bridge d s).transform data (tape (2*d) x) i =
           data (tape (2*d) x) i + data (tape (2*s) x) i) ∧
@@ -86,7 +95,16 @@ theorem compiledNode_linear {V : ℕ} (positive : 0 < V) (inv idle : Fin 9 → O
           (bridge d s).transform data j = data j) ∧
       ∀ data, let tape := fun ρ : Role => bankTape ρ.bank (ρ.replica,ρ.port,ρ.cls)
         (∀ ρ, exchange.transform data (tape ρ) = data (tape (otherSide ρ))) ∧
-        exchange.transform data (Fin.last 142080) = data (Fin.last 142080) := by
+        exchange.transform data (Fin.last 142080) = data (Fin.last 142080)
+
+/-- Fill all nine bridge occurrences and the final exchange with owner-tape programs.
+Only the invocation and remainder stages contribute recursive charges. -/
+theorem compiledNode_linear {V : ℕ} (positive : 0 < V) (inv idle : Fin 9 → OwnerStage V) :
+    ∃ (bridge : ℕ → ℕ → OwnerStage V) (exchange : OwnerStage V),
+      (compiledNode inv idle bridge exchange).cost ≤
+        (∑ n, (inv n).cost) + (∑ i, (idle i).cost) +
+          9*(2*(76*17760*V)+1) + (4*(3*(76*17760*V)+2)+3) + 29 ∧
+      BankActions bridge exchange := by
   classical
   have valid : ∀ e ∈ bridgeEdges, e.1 < 4 ∧ e.2 < 4 ∧ e.1 ≠ e.2 := by decide
   have built (e : ℕ × ℕ) (h : e ∈ bridgeEdges) := bridge_stage
