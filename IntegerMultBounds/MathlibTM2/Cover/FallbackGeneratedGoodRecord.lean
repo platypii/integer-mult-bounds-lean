@@ -5,6 +5,7 @@ public import IntegerMultBounds.MathlibTM2.Cover.FallbackConjugationQueue
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackFormulaInit
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackRecordCleanup
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackRecordHeaders
+public import IntegerMultBounds.MathlibTM2.Cover.LabelCountBank
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackRecordMasks
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackRecordCounters
 
@@ -283,28 +284,35 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
       (∀ i is word (u : HS K Q prime U) (S : Stacks K prime), LabelStock.live m (w+1) 1 i = true → fallbackBit rankFits (reduce M proj) (g i) = true → ready S (i :: is) → payload word S →
         ∃ z D n next, z.user = u.user ∧ n ≤ badCost i ∧ Exec body fallback (mk u S) n (mk z D) ∧
           ready D is ∧ badEffect i word next ∧ payload next D ∧ D.R mask = S.R mask ∧ D.R mode = S.R mode) →
-      ∀ (rs : List (Pair K)) (parents saved : Fin K) (B : ℕ),
+      ∀ (rs : List (Pair K)) (B : ℕ),
+      let parents := caller 50
+      let saved := caller 62
       rs.length = m*m → (parents :: saved :: (LabelTraversal.slots rs ++ [mask])).Nodup →
       (parents :: saved :: (LabelTraversal.slots rs ++ [mode])).Nodup →
-      directory.beforeH = B*prime^(m*((w+1)*m)) → LabelTraversal.ready (prime^w) whole.R rs →
-      whole.R saved = [] → (whole.R parents).length = directory.beforeRows*directory.rows*B →
+      directory.beforeH = B*prime^(m*((w+1)*m)) → (∀ i ∈ LabelTraversal.slots rs, 66 ≤ i.val) →
+      (∀ i : Fin K, 58 ≤ i.val → whole.R i = []) →
+      (whole.R parents).length = directory.beforeRows*directory.rows*B →
       whole.R mask = [] → whole.R mode = [] →
+      let high := prime^w
+      let R := LabelCountBank.fill (rs.map Prod.fst) high (Function.update whole.R (caller 58) (List.replicate high Node.tick))
+      let initCounters : Pr F K Q prime U := (Node.expProg 0 prime (caller 28) (caller 45) (caller 58) (caller 59) (caller 60) (caller 61)).seq
+        (Node.scanR (caller 58) (caller 59) (LabelCountBank.pushAll (rs.map Prod.fst)))
       let clean := {whole with L := fun i => if i ∈ privateTapes then [] else whole.L i,
                                R := fun i => if i ∈ privateTapes then [] else whole.R i}
       ready clean labels → payload word clean →
-      let setupCost := 2*((6+10*(m*m))*labels.length+4) +
-        ((privateTapes.map fun i => 4*(whole.L i).length+2*(whole.R i).length+4).sum+1)
+      let setupCost := (26*high+4) + 2*((6+10*(m*m))*labels.length+4) +
+        ((privateTapes.map fun i => 4*(whole.L i).length+2*(R i).length+4).sum+1)
       let branchCost := fun i => if liveBit i then (if badBit i then badCost i else charge i) else skipCost i
       let action := fun i => if liveBit i then (if badBit i then badEffect i else effect i) else Eq
       ∃ writer : Pr F K Q prime U, ∃ z D n next, z.user = u.user ∧ n ≤ setupCost + ((labels.map fun i => branchCost i + 2 + 4).sum + 2) ∧
-        Exec body ((writer.seq (clearWorkTapes privateTapes)).seq (classifiedScan mask mode (recordProgram.seq (clearWorkTapes privateTapes)) fallback skip)) (mk u whole) n (mk z D) ∧
+        Exec body (((initCounters.seq writer).seq (clearWorkTapes privateTapes)).seq (classifiedScan mask mode (recordProgram.seq (clearWorkTapes privateTapes)) fallback skip)) (mk u whole) n (mk z D) ∧
         (ready D [] ∧ D.R mode = modes []) ∧ D.R mask = [] ∧ payload next D ∧
         labels.foldr (fun i rest x => ∃ y, action i x y ∧ rest y) (· = next) word := by
   intro d common host M N entry leave record bank commonPorts aux hdrPorts logical addr inner caller K ef xf eqs xqs initialWord
     body initialUser initialState poolFits directory prefixes archiveTail allLabels slots headers scanCaller scan joined dirSlots dir pool pivot counters inputs ports a digits prefixWidth zeros
     packedLabel clock count formula formulaCost detFormula C readBill generationBill generate withZero field slot r src dst ready payload gs matrices liveBit badBit
     call cost budget coordinate effects reverse transfer marks packed loading conversions headerCost runBills prepareCounters prepareHeaders recordProgram
-    privateTapes initialClear c bodyBound charge mask mode modes skip skipCost fallback badCost badEffect bad rs parents saved Bcount sizeRs maskRegs modeRegs shape radix scratch parentCount freeMask freeMode clean initialReady initialPayload setupCost branchCost action
+    privateTapes initialClear c bodyBound charge mask mode modes skip skipCost fallback badCost badEffect bad rs Bcount parents saved sizeRs maskRegs modeRegs shape rsPrivate freePrivate parentCount freeMask freeMode high R initCounters clean initialReady initialPayload setupCost branchCost action
   have clockSlot : headers 0 = 45 := rfl
   have widthSlot : headers 2 = 2 := rfl
   have unitSlot : headers 5 = 44 := rfl
@@ -338,12 +346,54 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
   let liveWords := allLabels.map fun i => bitSymbol (a := prime) (liveBit i)
   let badWords := modes allLabels
   have apart : mask ≠ mode := caller.injective.ne (by decide)
+  have callerOutside (j : Fin 66) : caller j ∉ LabelTraversal.slots rs := by
+    intro mem; have h := rsPrivate _ mem; change 66 ≤ j.val at h; omega
+  have fillKeep (i) (outside : i ∉ LabelTraversal.slots rs) (off : i ≠ caller 58) : R i = initialState.R i := by
+    have nf : i ∉ rs.map Prod.fst := by
+      intro h; obtain ⟨p,hp,rfl⟩ := List.mem_map.mp h
+      exact outside (List.mem_flatMap.mpr ⟨p,hp,by simp⟩)
+    simp [R,LabelCountBank.fill,nf,off]
+  have callerKeep (j : Fin 66) (hj : j ≠ 58) := fillKeep _ (callerOutside j) (caller.injective.ne hj)
+  have rawCaller (j : Fin 58) : clean.R (caller (j.castAdd 8)) = initialState.R (caller (j.castAdd 8)) := by
+    have lt : (caller (j.castAdd 8)).val < 58 := j.isLt
+    simp [clean,privateTapes,lt.not_ge]
+  obtain ⟨_,_,_,_,_,_,unitWord,_,_,_,ticks,_⟩ := And.intro initialReady.1 initialReady.2
+  have single : (initialState.R (caller 28)).length = 1 := by
+    exact (congrArg List.length (rawCaller 28)).symm.trans ((congrArg List.length unitWord).trans (length_binSyms ..))
+  have clockLen : (initialState.R (caller 45)).length = w := (congrArg List.length (rawCaller 45)).symm.trans ticks
+  have nd := (List.nodup_append.mp maskRegs.tail.tail).1
+  obtain ⟨radix,z₀,t₀,user₀,time₀,prepare⟩ := LabelCountBank.prepareClock_exec body rs
+    (caller 28) (caller 45) (caller 58) (caller 59) (caller 60) (caller 61)
+    ((by decide : ([28,45,58,59,60,61] : List (Fin 66)).Nodup).map caller.injective)
+    (by simp [List.nodup_cons,callerOutside,caller.injective.eq_iff,nd]) initialUser initialState single
+    (by intro i hi
+        rcases List.mem_append.mp hi with h | h
+        · simp only [List.mem_cons,List.not_mem_nil,or_false] at h
+          rcases h with rfl | rfl | rfl | rfl <;> apply freePrivate <;> simp [caller]
+        · exact freePrivate _ (by have := rsPrivate _ h; omega))
+  rw [clockLen] at radix time₀ prepare
+  let filled := {initialState with R := R}
+  have cleanEq : {filled with L := fun i => if i ∈ privateTapes then [] else filled.L i,
+                              R := fun i => if i ∈ privateTapes then [] else filled.R i} = clean := by
+    apply Stacks.ext <;> try rfl
+    funext i
+    by_cases h : i ∈ privateTapes
+    · simp [h,clean]
+    · have lt : i.val < 58 := by simpa [privateTapes] using h
+      have off : i ≠ caller 58 := by intro eq; subst i; change 58 < 58 at lt; omega
+      simp [h,clean,filled,fillKeep i (fun mem => by have := rsPrivate i mem; omega) off]
   obtain ⟨writer,generateMasks⟩ := recordMasks_exec body rankFits
     ((LabelRing.res prime (w+1) (by omega)).mapMatrix (reduce M proj)) rs sizeRs mask mode parents saved apart maskRegs modeRegs
-  obtain ⟨y,l,hy,hl,write⟩ := generateMasks directory w Bcount (reduce M proj) rfl shape initialUser initialState
-    radix scratch parentCount freeMask freeMode
+  obtain ⟨y,l,hy,hl,write⟩ := generateMasks directory w Bcount (reduce M proj) rfl shape z₀ filled
+    radix ((callerKeep 62 (by decide)).trans (freePrivate _ (by change 58 ≤ 62; decide)))
+    ((congrArg List.length (callerKeep 50 (by decide))).trans parentCount)
+    ((callerKeep 57 (by decide)).trans freeMask) ((callerKeep 56 (by decide)).trans freeMode)
   obtain ⟨z,hz,clearMasks⟩ := clearAfterMasks_exec body mask mode privateTapes ((List.nodup_finRange K).filter _)
-    (by simp [privateTapes,mask,caller]) (by simp [privateTapes,mode,caller]) liveWords badWords y initialState
+    (by simp [privateTapes,mask,caller]) (by simp [privateTapes,mode,caller]) liveWords badWords y filled
+  let setBits := fun (D : Stacks K prime) => {D with R := Function.update (Function.update D.R mask liveWords) mode badWords}
+  change Exec body _ _ _ (mk z (setBits {filled with L := fun i => if i ∈ privateTapes then [] else filled.L i,
+                                                     R := fun i => if i ∈ privateTapes then [] else filled.R i})) at clearMasks
+  rw [cleanEq] at clearMasks
   let liveState := {clean with R := Function.update clean.R mask liveWords}
   let startState := {liveState with R := Function.update liveState.R mode badWords}
   obtain ⟨r₁,p₁⟩ := release 57 (by decide) (by decide) _ _ clean liveWords initialReady initialPayload
@@ -357,8 +407,8 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
         (mk z startState) n (mk finish D) ∧ (ready D [] ∧ D.R mode = modes []) ∧ D.R mask = [] ∧ payload next D ∧
       allLabels.foldr (fun i rest x => ∃ y, action i x y ∧ rest y) (· = next) initialWord by
     obtain ⟨finish,D,n,next,user,time,run,post⟩ := scanRun
-    exact ⟨writer,finish,D,_,next,user.trans (hz.trans hy),Nat.add_le_add (Nat.add_le_add_right hl _) time,
-      Exec.seq (Exec.seq write clearMasks) run,post⟩
+    exact ⟨writer,finish,D,_,next,user.trans (hz.trans (hy.trans user₀)),Nat.add_le_add (Nat.add_le_add_right (Nat.add_le_add time₀ hl) _) time,
+      Exec.seq (Exec.seq (Exec.seq prepare write) clearMasks) run,post⟩
   apply classifiedPayloadScan_exec body mask mode (caller.injective.ne (by decide)) _ fallback skip liveBit badBit
     branchCost (fun is D => ready D is) payload action _ _ allLabels initialWord z startState
     r₂ p₂ bits initialModes

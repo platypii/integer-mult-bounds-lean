@@ -83,6 +83,34 @@ theorem filled_ready (rs : List (Pair T)) (hd : (slots rs).Nodup) (n : ℕ) (R :
     exact disjoint_counts rs hd p r hp hr he
   simp [fill,List.mem_map_of_mem hr,hn,h₁,h₂]
 
+/-- Broadcast the high-part count from the caller's exponent clock. The seed tape has
+one symbol, so exponentiation produces exactly the number of lifts per residue digit. -/
+theorem prepareClock_exec (body : P → Pr P T Q A U) (rs : List (Pair T))
+    (one clock high tmp t₂ t₃ : Fin T) (hr : [one,clock,high,tmp,t₂,t₃].Nodup)
+    (hb : (high :: tmp :: slots rs).Nodup) (u : HS T Q A U) (S : Stacks T A)
+    (h1 : (S.R one).length = 1) (free : ∀ k ∈ [high,tmp,t₂,t₃] ++ slots rs, S.R k = []) :
+    let n := prime^(S.R clock).length
+    let R := fill (rs.map Prod.fst) n (Function.update S.R high (List.replicate n tick))
+    ready n R rs ∧ ∃ z c, z.user = u.user ∧ c ≤ 26*n+4 ∧
+      Exec body ((expProg 0 prime one clock high tmp t₂ t₃).seq
+        (scanR high tmp (pushAll (rs.map Prod.fst)))) (mk u S) c (mk z {S with R := R}) := by
+  intro n R
+  obtain ⟨y,l,user,time,power⟩ := LabelCounts.power_exec body hr u S h1
+    (fun k hk => free k (List.mem_append_left _ hk))
+  let D := {S with R := Function.update S.R high (List.replicate n tick)}
+  have sub (ps : List (Pair T)) : (ps.map Prod.fst).Sublist (slots ps) := by
+    induction ps with
+    | nil => exact .slnil
+    | cons p ps ih => exact .cons_cons _ (.cons _ ih)
+  have fresh (k) (hk : k ∈ slots rs) : D.R k = [] :=
+    (Function.update_of_ne (fun (eq : k = high) => hb.notMem (List.mem_cons_of_mem _ (eq ▸ hk))) _ _).trans
+      (free k (List.mem_append_right _ hk))
+  obtain ⟨z,hz,copy⟩ := copy_exec body high tmp _ ((List.Sublist.cons_cons high (.cons_cons tmp (sub rs))).nodup hb)
+    y D ((Function.update_of_ne (fun eq => hb.notMem (by simp [eq])) _ _).trans (free tmp (by simp)))
+  have size : (D.R high).length = n := by simp [D]
+  rw [size] at copy
+  exact ⟨filled_ready rs hb.tail.tail n D.R fresh,z,_,hz.trans user,by dsimp [n]; omega,Exec.seq power copy⟩
+
 /-- Compute the high-part count once from the retained width, then initialize the traversal bank. -/
 theorem prepare_exec (body : P → Pr P T Q A U) (rs : List (Pair T))
     (one width high tmp t₂ t₃ : Fin T)
