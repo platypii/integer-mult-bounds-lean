@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.M6.BitRouteFactors
 public import IntegerMultBounds.MathlibTM2.M6.BitCopyChildLayout
 public import IntegerMultBounds.MathlibTM2.M8.Machine.ArbitraryWidthOriginalTotalRun
 
@@ -36,6 +37,115 @@ open M8.Machine.ArbitraryWidthHighExchangeShared (sourceWord)
 open RecursiveInterchangeLayout (Descriptor role)
 open CopyChildLayout (spectators changeLayout packActive)
 open Cover.Fallback (rankDescriptor)
+
+open IntegerMultBounds.Networks.Certificates.PR589.Nine Matrix
+
+/-- In flag coordinates the parent's rational remainder exchange swaps precisely
+the selected positions. The omitted line component stays in the identity term. -/
+theorem remainderExchange_flag (c : PortCertificate) (lo hi : ℕ) :
+    let F := Matrix.fromBlocks c.flag 0 0 c.flag
+    exchange (c.span lo hi) = 1 + F * (exchange (interval lo hi) - 1) * Fᵀ := by
+  intro F
+  simp only [F, exchange, Matrix.mul_sub, Matrix.mul_one, Matrix.sub_mul,
+    Matrix.fromBlocks_transpose, Matrix.transpose_zero, Matrix.fromBlocks_multiply,
+    Matrix.mul_zero, Matrix.zero_mul, add_zero, zero_add, PortCertificate.span]
+  ext (i | i) (j | j) <;>
+    simp [Matrix.one_apply, Matrix.sub_apply] <;> abel
+
+/-- Projecting both parent address halves into a checked port flag commutes
+with the remainder exchange. -/
+theorem remainderExchange_read (c : PortCertificate) (hc : c.Checked) (lo hi : ℕ) :
+    let F := Matrix.fromBlocks c.flag 0 0 c.flag
+    Fᵀ * exchange (c.span lo hi) = exchange (interval lo hi) * Fᵀ := by
+  intro F
+  have orth : Fᵀ * F = 1 := by
+    simp [F, Matrix.fromBlocks_transpose, Matrix.fromBlocks_multiply,
+      c.flag_orthonormal hc, Matrix.fromBlocks_one]
+  rw [remainderExchange_flag, Matrix.mul_add, Matrix.mul_one]
+  change Fᵀ + Fᵀ * (F * _ * Fᵀ) = _
+  rw [← Matrix.mul_assoc, ← Matrix.mul_assoc, orth, Matrix.one_mul, Matrix.sub_mul, Matrix.one_mul]
+  abel
+
+/-- Reading an actual parent address through the port flag gives an ordinary
+interval swap on its 63 pending coordinates. -/
+theorem remainderExchange_digits (c : PortCertificate) (hc : c.Checked) (lo hi : ℕ)
+    (x : Axis ⊕ Axis → ℚ) :
+    let F := Matrix.fromBlocks c.flag 0 0 c.flag
+    let digits := Fᵀ *ᵥ x
+    Fᵀ *ᵥ (exchange (c.span lo hi) *ᵥ x) =
+      Sum.elim (fun p => if lo ≤ pendingIndex p ∧ pendingIndex p < hi then digits (.inr p)
+        else digits (.inl p))
+        (fun p => if lo ≤ pendingIndex p ∧ pendingIndex p < hi then digits (.inl p)
+        else digits (.inr p)) := by
+  intro F digits
+  rw [Matrix.mulVec_mulVec, remainderExchange_read c hc, ← Matrix.mulVec_mulVec]
+  change exchange (interval lo hi) *ᵥ digits = _
+  funext i
+  cases i with
+  | inl p | inr p =>
+    by_cases active : lo ≤ pendingIndex p ∧ pendingIndex p < hi <;>
+      simp [exchange, Matrix.fromBlocks_mulVec, Matrix.sub_mulVec, interval,
+        Matrix.mulVec_diagonal, active]
+
+/-- The remaining coordinate on each half is the line of the port. Both
+line projections retain their values under the parent's remainder exchange. -/
+theorem remainderExchange_line (c : PortCertificate) (hc : c.Checked) (lo hi : ℕ) :
+    let L := Matrix.fromBlocks c.linePart 0 0 c.linePart
+    L * exchange (c.span lo hi) = L := by
+  intro L
+  have line : c.linePart * c.flag = 0 := by
+    simp [PortCertificate.linePart, PortCertificate.flag, Matrix.fromBlocks_multiply,
+      c.lineProj_mul_complement hc, Matrix.fromBlocks_zero]
+  have disjoint : c.linePart * c.span lo hi = 0 := by
+    rw [PortCertificate.span, ← Matrix.mul_assoc, ← Matrix.mul_assoc, line,
+      Matrix.zero_mul, Matrix.zero_mul]
+  simp [L, exchange, Matrix.fromBlocks_multiply, Matrix.mul_sub, disjoint]
+
+open IntegerMultBounds.Swap.Modular
+
+/-- Projecting the reduced parent exchange onto its port flag exchanges the
+same interval on arbitrary modular digits, at every tape width. -/
+theorem remainderExchange_modular (c : PortCertificate) (hc : c.Checked) (lo hi w : ℕ)
+    (x : IntegerMultBounds.Swap.Shear.State Axis (ZMod (prime^w))) :
+    let F := reduce (prime^w) c.flag
+    let S := reduce (prime^w) (c.span lo hi)
+    let y := M8.Exchange.exchange S x
+    ∀ p, ((Fᵀ *ᵥ y.1) p, (Fᵀ *ᵥ y.2) p) =
+      if lo ≤ pendingIndex p ∧ pendingIndex p < hi then ((Fᵀ *ᵥ x.2) p, (Fᵀ *ᵥ x.1) p)
+      else ((Fᵀ *ᵥ x.1) p, (Fᵀ *ᵥ x.2) p) := by
+  intro F S y p
+  let m := prime^w
+  have flag : Admissible m c.flag := by
+    intro i j
+    have bound : (c.flag i j).den ≤ 2 := (fullChart_entry c hc i (.inr j)).2
+    exact Nat.Coprime.pow_right w ((Nat.coprime_of_lt_prime (c.flag i j).den_pos.ne'
+      (bound.trans_lt Shared50ModularControl.prime_odd) Shared50ModularControl.prime_prime).symm)
+  let D : Matrix Pending Pending (ZMod m) := diagonal fun j =>
+    if lo ≤ pendingIndex j ∧ pendingIndex j < hi then 1 else 0
+  have sel : Admissible m (interval lo hi) := by
+    intro i j
+    simp only [interval, diagonal_apply]
+    split_ifs <;> simp
+  have reduced : reduce m (interval lo hi) = D := by
+    ext i j
+    simp only [reduce, Matrix.map_apply, interval, D, diagonal_apply]
+    split_ifs <;> simp [ratMod_zero,ratMod_one]
+  have transposed : Admissible m c.flagᵀ := fun i j => flag j i
+  have orth : Fᵀ * F = 1 := by
+    change reduce m c.flagᵀ * reduce m c.flag = 1
+    rw [← reduce_mul m transposed flag, c.flag_orthonormal hc, reduce_one]
+  have span : S = F * D * Fᵀ := by
+    change reduce m (c.flag * interval lo hi * c.flagᵀ) = _
+    rw [reduce_mul m (admissible_mul m flag sel) transposed,
+      reduce_mul m flag sel, reduced]
+    rfl
+  have commute : Fᵀ * S = D * Fᵀ := by
+    rw [span, ← Matrix.mul_assoc, ← Matrix.mul_assoc, orth, Matrix.one_mul]
+  have read (v : Axis → ZMod m) : Fᵀ *ᵥ (S *ᵥ v) = D *ᵥ (Fᵀ *ᵥ v) := by
+    rw [Matrix.mulVec_mulVec, commute, Matrix.mulVec_mulVec]
+  by_cases active : lo ≤ pendingIndex p ∧ pendingIndex p < hi <;>
+    simp [y,M8.Exchange.exchange,Matrix.sub_mulVec,Matrix.mulVec_add,Matrix.mulVec_sub,
+      read,D,-Matrix.mulVec_mulVec,Matrix.mulVec_diagonal,active]
 
 /-- The idle owner's other digits and all its spectator positions are exactly
 the middle gap and inherited fields of the parent's recursive rank descriptor. -/

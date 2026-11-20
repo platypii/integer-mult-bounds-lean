@@ -108,16 +108,13 @@ theorem stageFactor_reduce (c : PortCertificate) (checked : c.Checked) (s : Fin 
     change IsUnit (((reduce (prime^w) E).submatrix e e).det)
     rwa [det_submatrix_equiv_self]
   exact ⟨renumber L determinant.1,renumber M determinant.2.1,renumber R determinant.2.2,inv⟩
-/-- A helper chart consists of the half-line, the seven complement columns,
-and exterior coordinate columns, permuted into the slot order. -/
-theorem helperChart_entry (c : PortCertificate) (checked : c.Checked) (x : ℕ) (hx : x ≤ 55)
-    (a b : Axis) :
-    (c.helperChart x hx a b).num.natAbs ≤ 2 ∧ (c.helperChart x hx a b).den ≤ 2 := by
+/-- The half-line, complement columns and exterior coordinates have half-integral entries. -/
+theorem fullChart_entry (c : PortCertificate) (checked : c.Checked) (a : Axis) (k : ChartAxis) :
+    (c.fullChart a k).num.natAbs ≤ 2 ∧ (c.fullChart a k).den ≤ 2 := by
   let small := fun q : ℚ => q.num.natAbs ≤ 2 ∧ q.den ≤ 2
   have half {z : ℤ} (lo : -2 ≤ z) (hi : z ≤ 2) : small ((z : ℚ)/2) := by
     interval_cases z <;> decide +kernel
-  change small (c.fullChart a (slotPerm x hx b))
-  generalize slotPerm x hx b = k
+  change small (c.fullChart a k)
   have zero : small 0 := by decide
   have one : small 1 := by decide
   rcases k with l | (k | y) <;> rcases a with i | z
@@ -137,6 +134,11 @@ theorem helperChart_entry (c : PortCertificate) (checked : c.Checked) (x : ℕ) 
   · change small ((1 : Matrix Exterior Exterior ℚ) z y)
     rw [one_apply]
     split <;> assumption
+
+theorem helperChart_entry (c : PortCertificate) (checked : c.Checked) (x : ℕ) (hx : x ≤ 55)
+    (a b : Axis) :
+    (c.helperChart x hx a b).num.natAbs ≤ 2 ∧ (c.helperChart x hx a b).den ≤ 2 :=
+  fullChart_entry c checked a (slotPerm x hx b)
 
 -- The explicit slot permutation and eight-axis basis decomposition are in 34789f13.
 
