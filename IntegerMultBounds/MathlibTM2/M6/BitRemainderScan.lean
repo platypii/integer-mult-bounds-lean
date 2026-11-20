@@ -841,28 +841,72 @@ theorem classifiedDirectory_exec [M8.Machine.Net] {m d K w W J N : ℕ} {P U : T
   refine ⟨prepare,z,F,t,n,rows,s,midUser,mid,user.trans (uy.trans (um.trans su)),subtotal,runControls,setupTime,time,Exec.seq runControls (Exec.seq write run),correct,output,free,done,archiveEnd.trans ?_,maskEnd,modeEnd⟩
   simp [last,ScanData.matrices,physical,ScanData.physical,List.drop_of_length_le (List.length_range.le)]
 
-/-- Charge loading and storing every record to its payload volume while
-retaining the scan's inverse-prime discount on exceptional work. -/
+/-- Convert the packed traversal's integer bill to a charge on its PR589
+parent, including the floor in the exceptional-label count. -/
 theorem remainderRecord_charge (v : Descriptor) (w rows : ℕ) (e : ℕ × ℕ)
     (he : e ∈ BitHosting.remainderIntervals) (width : v.width = 64*(w+1))
-    (split : v.rows = 142080*rows) (elapsed overhead : ℕ) (baseline rate ordinary : ℝ) :
+    (split : v.rows = 142080*rows) (elapsed baseline rate : ℕ) (ordinary : ℝ) :
     let records := LabelMask.records (role v 142080)
     let N := volume prime (phaseIntervalChild e.1 e.2 (w+1) (v.between*v.afterD) 64)
     let degree := ∑ k ∈ Finset.range (e.2-e.1), (k+1)*65
-    0 < N → baseline+6 ≤ ordinary*N →
-    (elapsed : ℝ) ≤ overhead + records*(baseline+6) + 2 + ((degree : ℝ)/prime)*rate*(records*N) →
-    (elapsed : ℝ) + records*((6*(N : ℝ)+6)+(4*N+4)) + (2*records+2) + (2*(records*N)+2) ≤ overhead + 6 +
-      (ordinary+24+((degree : ℝ)/prime)*rate)*volume prime v/142080 := by
+    0 < N → (baseline : ℝ)+6 ≤ ordinary*N →
+    elapsed ≤ records*(baseline+12*N+16) + (degree*records/prime)*(rate*N)+4 →
+    (elapsed : ℝ) ≤ 4 + (ordinary+22+((degree : ℝ)/prime)*rate)*volume prime v/142080 := by
   intro records N degree positive base scan
   have size : ((records : ℝ)*N)*142080 = volume prime v := by
     exact_mod_cast remainderRecord_volume v w rows e he width split
   have one : (1 : ℝ) ≤ N := by exact_mod_cast positive
-  have io : (6*(N : ℝ)+6)+(4*N+4)+2+2*N ≤ 24*N := by linarith
+  have perRow : (baseline : ℝ)+12*N+16 ≤ (ordinary+22)*N := by nlinarith
+  have primePos : (0 : ℝ) < prime := by exact_mod_cast Shared50ModularControl.prime_prime.pos
+  have count : ((degree*records/prime : ℕ) : ℝ) ≤ (degree : ℝ)*records/prime := by
+    apply (le_div_iff₀ primePos).mpr
+    exact_mod_cast Nat.div_mul_le_self (degree*records) prime
+  have total : (elapsed : ℝ) ≤ records*((baseline : ℝ)+12*N+16) +
+      ((degree*records/prime : ℕ) : ℝ)*(rate*N : ℝ)+4 := by exact_mod_cast scan
   calc
-    _ ≤ overhead + records*(ordinary*N) + 2 + ((degree : ℝ)/prime)*rate*(records*N) + records*(24*N) + 4 := by
-      grw [scan,base]
-      nlinarith [mul_nonneg (Nat.cast_nonneg (α := ℝ) records) (sub_nonneg.mpr io)]
+    _ ≤ records*((ordinary+22)*N) + ((degree : ℝ)*records/prime)*(rate*N)+4 := by
+      grw [total,perRow,count]
     _ = _ := by rw [← size]; ring
+
+open Matrix Finset IntegerMultBounds.Swap.LowerTriangular IntegerMultBounds.Swap.Modular in
+/-- Charge the physical transfers and loop tests once per row, and charge the
+exceptional surcharge only on the labels counted by the projector witness. -/
+private theorem packedClassifiedTime_le {m w N B : ℕ} {P : Matrix (Fin m) (Fin m) ℚ}
+    (idem : P*P = P) (factor : Factorization univ univ P)
+    (small : ∀ k ∈ factorizationDenominators factor, k < prime) (rankFits : P.rank ≤ m)
+    (directory : Descriptor) (shape : directory.beforeH = B*prime^(m*((w+1)*m)))
+    (usual rare : ℕ → ℕ) (baseline extra : ℕ) :
+    let labels := List.range (LabelMask.records directory)
+    let live := LabelStock.live m (w+1) 1
+    let bad := fun j => fallbackBit rankFits (reduce (prime^(w+1)) P) (physicalLabel m (w+1) j)
+    let core := fun j => if live j && bad j then rare j else usual j
+    let cost := fun j => core j + (if live j then 4 else 3)
+    (∀ j ∈ labels, usual j ≤ baseline) → (∀ j ∈ labels, rare j ≤ baseline+extra) →
+    (labels.map (fun j => 6*N+6+cost j+(4*N+4))).sum + 2*labels.length+2 + (2*(labels.length*N)+2) ≤
+      labels.length*(baseline+12*N+16) + (((∑ k ∈ range P.rank, (k+1)*(m+1))*labels.length)/prime)*extra+4 := by
+  intro labels live bad core cost usualBound rareBound
+  obtain ⟨g₀,unit,generic⟩ := LabelProjector.residue_witness (w := w+1) (by omega) P idem factor small rankFits
+  have size : LabelMask.records directory = (directory.beforeRows*directory.rows*B)*(prime^(w+1))^(m*m) := by
+    rw [LabelMask.records,shape,← pow_mul]; ring
+  have bill := classifiedRecordTime_le w P.rank _ rankFits (reduce (prime^(w+1)) P) _ size g₀ unit generic
+    core baseline extra
+    (fun j hj l b => by change live j = true at l; change bad j = false at b; simpa [core,l,b] using usualBound j (List.mem_range.mpr hj))
+    (fun j hj l => by change live j = false at l; simpa [core,l] using usualBound j (List.mem_range.mpr hj))
+    (fun j hj l b => by change live j = true at l; change bad j = true at b; simpa [core,l,b] using rareBound j (List.mem_range.mpr hj))
+  have io (xs : List ℕ) : (xs.map (fun j => 6*N+6+cost j+(4*N+4))).sum + 2*xs.length ≤
+      (xs.map fun j => core j+2+4).sum + xs.length*(10*N+10) := by
+    induction xs with
+    | nil => simp
+    | cons j xs ih =>
+      simp only [List.map_cons,List.sum_cons,List.length_cons]
+      rw [Nat.add_mul xs.length 1,one_mul]
+      have dispatch : cost j ≤ core j+4 := by dsimp only [cost]; split <;> omega
+      omega
+  change (labels.map fun j => core j+2+4).sum+2 ≤ _ at bill
+  rw [← show labels.length = LabelMask.records directory from List.length_range] at bill
+  have bound := io labels
+  simp only [Nat.mul_add] at bill bound ⊢
+  nlinarith
 
 open RingFormula LabelTraversal IntegerMultBounds.MathlibTM2.Fast.Main RecursiveInterchangeLayout Matrix Finset
   IntegerMultBounds.Swap.LowerTriangular IntegerMultBounds.Swap.Modular in
@@ -968,7 +1012,7 @@ def OwnerDirectoryRun [M8.Machine.Net] {T m dim work J W : ℕ} {F U : Type}
         (g j)).mulVec x) k).cast (directoryPayloadLength e length)) =
         input j ((FlatCoordinateLayout.index x k).cast (directoryPayloadLength e length))
       else (if live j then effect j else Eq) (input j) next
-    ∃ prepare z F t n rows s midUser mid, z.user = ownerUser.user ∧ s ≤ selectorBudget ∧
+    ∃ prepare z final t n rows s midUser mid, z.user = ownerUser.user ∧ s ≤ selectorBudget ∧
       Exec (fun f => embProg bank id (outer f)) controls (mk ownerUser ownerState) s (mk midUser mid) ∧
       let initTime := directoryQueueInitTime m dim w data.H data.records (embStk bank mid)
       let queueTime := directoryMatrixQueueTime m dim w data.H data.records ((embStk bank mid).R (big 47)).length
@@ -976,11 +1020,20 @@ def OwnerDirectoryRun [M8.Machine.Net] {T m dim work J W : ℕ} {F U : Type}
       (∀ p, mnProgPush prepare ≤ p → (∀ f, mnProgPush (outer f) ≤ p) →
         t ≤ initTime + queueTime + (4*work.length+1+work.length*(6*(p*initTime)))) ∧
       n ≤ (labels.map (fun j => 6*N+6+cost j+(4*N+4))).sum + 2*labels.length+2 + (2*(labels.length*N)+2) ∧
-      Exec (fun f => embProg bank id (outer f)) (controls.seq ((embProg bank id prepare).seq program)) (mk ownerUser ownerState) (s+(t+n)) (mk z F) ∧
+      Exec (fun f => embProg bank id (outer f)) (controls.seq ((embProg bank id prepare).seq program)) (mk ownerUser ownerState) (s+(t+n)) (mk z final) ∧
       List.Forall₂ (fun j out => ∃ word, action j word ∧ out = bits word) labels rows ∧
-      F.R (reg 0) = rows.flatten ∧ F.R (reg 1) = [] ∧ ready (embStk placement (embStk bank F)) [] ∧
-      (embStk bank F).R (directoryMatrixTape archiveRoom) = [] ∧
-      (embStk bank F).R (big 57) = [] ∧ (embStk bank F).R (big 56) = []
+      final.R (reg 0) = rows.flatten ∧ final.R (reg 1) = [] ∧ ready (embStk placement (embStk bank final)) [] ∧
+      (embStk bank final).R (directoryMatrixTape archiveRoom) = [] ∧
+      (embStk bank final).R (big 57) = [] ∧ (embStk bank final).R (big 56) = [] ∧
+      (data.H = M.size → J = W.size →
+        let advanceTime := (dim+1)*(dim+1)*(4*data.H+4)+1
+        let baseline := max (4*(prefixes 0).length)
+          ((max (runCost 0+((privateTapes.length*4+1)+6*(max (mnProgPush core) c*runCost 0)))
+            (1+(4*(prefixes 0).length+4+(m*m*(4*(w+1)+4)+1)+1))) + advanceTime)
+        let rate := exceptionalVolumeRate U dim m work.length
+          (max (mnProgPush (directoryExceptionalCore (P := F) (U := U) dim archiveRoom anchor)) push) w
+        n ≤ labels.length*(baseline+12*N+16) +
+          (((∑ k ∈ range d, (k+1)*(m+1))*labels.length)/prime)*(rate*N)+4)
 
 open RingFormula LabelTraversal IntegerMultBounds.MathlibTM2.Fast.Main RecursiveInterchangeLayout Matrix Finset
   IntegerMultBounds.Swap.LowerTriangular IntegerMultBounds.Swap.Modular in
@@ -1033,7 +1086,44 @@ private theorem generatedOwnerDirectory_exec [M8.Machine.Net] {T m dim work J W 
       by simpa only [count] using liveBits,by simpa only [count] using badBits⟩
     (by simpa only [count] using owner) accumulator size saved tmp blankPort
     (fun j _ no y A readyRow payloadRow => ordinary j _ (input j) y A no readyRow payloadRow)
-  exact ⟨_,core,padding,by simpa only [count] using pass⟩
+  obtain ⟨prepare,finishState,final,t,n,rows,s,midUser,mid,hu,setup,controls,initBound,scan,exec,correct,out,free,done,archive,maskEnd,modeEnd⟩ := pass
+  refine ⟨_,core,padding,prepare,finishState,final,t,n,rows,s,midUser,mid,hu,setup,controls,initBound,
+    by simpa only [count] using scan,exec,by simpa only [count] using correct,out,free,done,archive,maskEnd,modeEnd,?_⟩
+  intro binary digits advanceTime baseline rate
+  let e := finSumFinEquiv.trans (finCongr dimension)
+  let physical := data.physical e proj parent parentInv
+  let scratch := (List.finRange (66+(K+1))).filter fun i => decide (58 ≤ i.val ∧ i ≠ directoryMatrixTape archiveRoom)
+  let pushBound := max (mnProgPush (directoryExceptionalCore (P := F) (U := U) dim archiveRoom anchor)) push
+  let rare := fun j =>
+    let C := physical.table (LabelStock.residue m (w+1) 1 j)
+    let pivots := classPivots C
+    exceptionalRecordTime U pivots (negativeAnchor pivots C) m w W data.H J scratch.length pushBound (prefixes j).length
+  have widths (j) (hj : j ∈ labels) : (prefixes j).length = (prefixes 0).length := by
+    have inside := List.mem_range.mp hj
+    exact (initial.2.1 j hj).symm.trans (initial.2.1 0 (List.mem_range.mpr (by omega)))
+  apply (show n ≤ _ from scan).trans
+  rw [count]
+  apply packedClassifiedTime_le (N := N) idem factor hd rankFits directory shape
+    (fun j => price core j + advanceTime) rare baseline (rate*N)
+  · intro j hj
+    have same : runCost j = runCost 0 := by simp only [runCost,widths j hj]
+    apply le_trans _ (Nat.le_max_right ..)
+    apply Nat.add_le_add_right
+    dsimp only [price]
+    rw [same,widths j hj]
+    split <;> first | apply Nat.le_max_left | apply Nat.le_max_right
+  · intro j hj
+    let C := physical.table (LabelStock.residue m (w+1) 1 j)
+    have bound : exceptionalRecordTime U (classPivots C) (negativeAnchor (classPivots C) C) m w W M.size W.size
+        scratch.length pushBound (prefixes j).length ≤ rate*(M^(dim+1)*W)+4*(prefixes j).length :=
+      (exceptionalRecordTime_binary_le U dim m scratch.length pushBound).choose_spec.choose_spec
+        (classPivots C) (negativeAnchor (classPivots C) C) w W (prefixes j).length hW
+    change exceptionalRecordTime U _ _ _ _ _ data.H J _ _ _ ≤ _
+    rw [binary,digits]
+    apply bound.trans
+    rw [directoryPayloadLength e length,widths j hj,Nat.add_comm]
+    exact Nat.add_le_add_right (Nat.le_max_left ..) _
+
 
 open RingFormula LabelTraversal IntegerMultBounds.MathlibTM2.Fast.Main RecursiveInterchangeLayout Matrix Finset
   IntegerMultBounds.Swap.LowerTriangular IntegerMultBounds.Swap.Modular in
