@@ -455,6 +455,34 @@ private theorem exceptionalBatchCost_le (steps overhead records baseline labels 
     exact_mod_cast bill
   linarith
 
+/-- Per-symbol charge of the pivot setup and the packed coordinate loop at
+the leaf exponent, before the record loader and its cleanup. -/
+noncomputable def directoryCoordinateRate [M8.Machine.Net] (m d w tapes push entry leave : ℕ) : ℝ :=
+  let scans := (1000*(prime+1)+16*(d-1))*(2*(prime.size+1)^2)
+  let frame := 1800*(entry+5)+200*(leave+5)+15
+  (pivotSetupTime m d 1 1 * (2*(prime.size+1)^2) : ℕ) +
+    d*(weightedLeafRate tapes push (((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau) + (scans+frame : ℕ)) + 1
+
+private theorem directoryCoordinateTime_le [M8.Machine.Net] (m d w N tapes push entry leave : ℕ)
+    (radix : prime^(w+1) ≤ N) :
+    ((pivotSetupTime m d w (prime^(w+1)).size + packedCoordinatesTime d N w tapes push entry leave : ℕ) : ℝ) ≤
+      directoryCoordinateRate m d w tapes push entry leave*N := by
+  let M := prime^(w+1)
+  let scans := (1000*(prime+1)+16*(d-1))*(2*(prime.size+1)^2)
+  let frame := 1800*(entry+5)+200*(leave+5)+15
+  let pivot := pivotSetupTime m d 1 1*(2*(prime.size+1)^2)
+  have init := (pivotSetupTime_radix_le m d d w le_rfl).trans (Nat.mul_le_mul_left pivot radix)
+  have leaf := weightedLeafCost_le N (w+1) tapes push (by rw [max_eq_right (Nat.succ_pos w)])
+  have pos : 1 ≤ N := (pow_pos Networks.Shared50ModularControl.prime_prime.pos (w+1)).trans_le radix
+  change ((pivotSetupTime m d w M.size + (d*(weightedLeafCost N (w+1) tapes push + scans*M + frame*N)+1) : ℕ) : ℝ) ≤
+    ((pivot : ℝ)+d*(weightedLeafRate tapes push (((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau)+(scans+frame : ℕ))+1)*N
+  push_cast
+  have a : (pivotSetupTime m d w M.size : ℝ) ≤ (pivot : ℝ)*N := by exact_mod_cast init
+  have b : (scans : ℝ)*M ≤ (scans : ℝ)*N := by exact_mod_cast Nat.mul_le_mul_left scans radix
+  have one : (1 : ℝ) ≤ N := by exact_mod_cast pos
+  push_cast at leaf
+  nlinarith only [a,mul_le_mul_of_nonneg_left (add_le_add leaf b) (Nat.cast_nonneg (α := ℝ) d),one]
+
 noncomputable def directoryQueueInitRate (m d : ℕ) :=
   96 + 12*(conjugationDepth m+1) +
     m*(parentCoefficientTime m 1 1*(2*(prime.size+1)^2)) +
@@ -1983,8 +2011,8 @@ def GeneratedRecordSpec [M8.Machine.Net] {T m work Q fields H J W : ℕ} {F U : 
                   finish.user = v.user ∧ ready (embStk placement final) [] ∧ payload next (embStk placement final) ∧
                   labels.foldl (fun history j y => ∃ x, history x ∧ action j x y) (· = word) next ∧
                   final.R archive = [] ∧ final.R (placement mask) = [] ∧ final.R (placement mode) = [] ∧
-                  (∀ baseline, H = M.size → J = W.size →
-                    (if 0 < d ∧ H = M.size ∧ J = W.size then min (charge 0) binaryCharge else charge 0) + N ≤ baseline →
+                  (H = M.size → J = W.size →
+                    let baseline := (if 0 < d then min (charge 0) binaryCharge else charge 0) + N
                     let V := data.records*max (prefixes 0).length N
                     let suffix := (whole.R (caller 48)).drop (m*m*H)
                     let budget := directoryQueueInitRate m dimension*((1+m*m)*V+archiveTail.length+suffix.length)
@@ -1998,6 +2026,12 @@ def GeneratedRecordSpec [M8.Machine.Net] {T m work Q fields H J W : ℕ} {F U : 
                     let left := (privateTapes.map fun i => 4*(whole.L i).length).sum
                     let controls := left + (140+30*(m*m)+6*privateTapes.length)*(data.records*N)
                     let overhead := controls+setup
+                    (0 < d → (baseline : ℝ) ≤
+                      (1+6*(max (mnProgPush recordProgram) c : ℕ)) *
+                        ((directoryCoordinateRate m d w (LeafCore.core io).tapes
+                          (packedLeafPush (F := Empty) (U := U) io Empty.elim) entry.tapes leave.tapes +
+                          (recordRoundTripRate m + generatedRecordRate m : ℕ))*N +
+                          ((12*m*m+4)*(prefixes 0).length : ℕ)) + initialClear + N) ∧
                     n+steps ≤ overhead + (data.records*(baseline+6)+2 + (labels*data.records/prime)*(rate*N)) ∧
                       ((n+steps : ℕ) : ℝ) ≤ overhead + data.records*(baseline+6) + 2 +
                         ((labels : ℝ)/prime)*rate*(data.records*N)) ∧
@@ -2707,7 +2741,9 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
     · simpa only [List.drop_length,List.length_range,List.drop_eq_nil_of_le (List.length_range.le)] using done.1
     · simpa only [payload,port] using done.2
     · simpa only [count] using history
-    · intro baseline precision weight ceiling V suffix budget scratch p setup labels rate left controls overhead
+    · intro precision weight baseline V suffix archiveBudget scratch p setup labels rate left controls overhead
+      have ceiling : (if 0 < d ∧ data.H = M.size ∧ J = W.size then min (charge 0) binaryCharge else charge 0) + N ≤ baseline := by
+        simp only [precision,weight,true_and,and_true,baseline,le_refl]
       have recordsPos : 0 < data.records := by
         rw [count,LabelMask.records]
         exact Nat.mul_pos (Nat.mul_pos dirPositive.1 dirPositive.2.1) dirPositive.2.2.1
@@ -2743,11 +2779,24 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
         (Nat.le_mul_of_pos_right _ (posM.trans_le radix)) boxCount
       rw [count] at controlCost
       have maskBound : _ ≤ controls := setupBound.trans (by simpa only [controls,count,allLabels,List.length_range] using controlCost)
-      suffices bill : _ ≤ overhead + (data.records*(baseline+6)+2 + (labels*data.records/prime)*(rate*N)) from
-        ⟨bill,exceptionalBatchCost_le _ _ _ _ _ _ _ bill⟩
-      dsimp only [overhead,setup,budget,suffix,V]
-      rw [← projectorEq,← widthEq,Nat.add_assoc controls]
-      exact Nat.add_le_add maskBound total
+      constructor
+      · intro active
+        have coordinates := directoryCoordinateTime_le m d w N (LeafCore.core io).tapes
+          (packedLeafPush (F := Empty) (U := U) io Empty.elim) entry.tapes leave.tapes radix
+        change (budget : ℝ) ≤ _ at coordinates
+        have baseBound : baseline ≤ binaryCharge+N := by
+          dsimp only [baseline]; rw [if_pos active]; exact Nat.add_le_add_right (min_le_right ..) _
+        apply (Nat.cast_le (α := ℝ)).mpr baseBound |>.trans
+        dsimp only [binaryCharge,binaryRun]
+        push_cast
+        have scaled := mul_le_mul_of_nonneg_left coordinates (Nat.cast_nonneg (α := ℝ) (max (mnProgPush recordProgram) c))
+        push_cast at scaled
+        nlinarith only [coordinates,scaled]
+      · suffices bill : _ ≤ overhead + (data.records*(baseline+6)+2 + (labels*data.records/prime)*(rate*N)) from
+          ⟨bill,exceptionalBatchCost_le _ _ _ _ _ _ _ bill⟩
+        dsimp only [overhead,setup,archiveBudget,suffix,V]
+        rw [← projectorEq,← widthEq,Nat.add_assoc controls]
+        exact Nat.add_le_add maskBound total
   intro fallback badCost badEffect bad branchCost action exceptional priced
   suffices scanRun : ∃ finish D n next, finish.user = z.user ∧
       n ≤ (allLabels.map fun i => branchCost i+2+4).sum+2 ∧
