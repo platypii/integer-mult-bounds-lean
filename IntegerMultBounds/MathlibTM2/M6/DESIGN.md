@@ -616,5 +616,23 @@ Implementing an upper shift by offset copies takes one pass per digit of the shi
   COPY lifetimes. Completed, a class-indexed machine bootstrapped once from Shared50 would give
   `a_b = c(1 - c) = 1.697·10^-3`, `c = 17/10000`.
 
+The compiled idle in `routedRemainder_stage` enters the port chart on the cover label,
+swaps a fixed interval of payload digits, and restores the label. `IdleTransport.digits`
+proves its exact action. At incoming label `g`, port chart `H`, and diagonal interval
+projector `D`, the required payload projector is `(gH) D (gH)⁻¹`.
+`remainderProjector_requires_label` proves that these projectors differ from `D` for
+some live label for **every** nonempty scheduled interval, already at width one.
+Its witness chooses `gH` to swap an interval digit with digit 63. Consequently the
+fixed-interval child cannot supply the idle read premise of `compiledNode_read` on the
+full live cover with this interpretation. A replacement must implement the conjugated
+exchange on live records and preserve the node budget. `remainderGood_move` gives
+the good-record algebra and `remainderFallback_residual` identifies the exceptional
+record's residual. The packed scanner’s exceptional output satisfies the incoming projector’s bit-read
+equation (`ownerRow_repaired`). On ordinary records `remainderOrdinary_address`
+identifies the same address after the incoming adapter, the weighted rank child,
+and the outgoing adapter. The scanner currently supplies the middle child effect.
+The surrounding adapters, packed owner layout and combined time still have to be
+realized at the scheduled idle.
+
 The semantic five-class node (S5d.3) certifies upstream's accounting under ideal routes and
 partial swaps. Its exponent `1 - 10/5769` holds under that idealization only.
