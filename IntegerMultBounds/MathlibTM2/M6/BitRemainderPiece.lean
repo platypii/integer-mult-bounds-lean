@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.M6.BitRemainderRecordLayout
 public import IntegerMultBounds.MathlibTM2.M6.BitRemainderRun
 public import IntegerMultBounds.MathlibTM2.M6.BitCompiledNode
 public import IntegerMultBounds.MathlibTM2.M6.BitPhaseRun
@@ -64,9 +65,9 @@ theorem idleTape_injective (i : Fin 9) : Function.Injective (idleTape i) := by
 
 def idleCopies := stageRuns.flatMap fun rc => (List.finRange 222).map fun c => (rc,c)
 
-private theorem idleCopies_prices (i : Fin 9) (price : ℕ → ℕ) :
-    (idleCopies.map (fun k => let e := idleInterval i k.2; price (e.2-e.1))).sum =
-      160*((remainderRanks i).map price).sum := by
+/-- Physical copy order agrees occurrence by occurrence with the idle's recursive calls. -/
+theorem idleCopies_ranks (i : Fin 9) :
+    idleCopies.map (fun k => let e := idleInterval i k.2; e.2-e.1) = (Piece.remainder i.val).children := by
   have ranks : (List.finRange 222).map (fun c => (idleInterval i c).2-(idleInterval i c).1) = remainderRanks i := by
     rw [remainderRanks_eq.1 i i.isLt]
     have width := idleRank_eq i
@@ -79,16 +80,23 @@ private theorem idleCopies_prices (i : Fin 9) (price : ℕ → ℕ) :
         (idleRanks 4).getD i.val 0-8*(copyCounts i)[j]
       rw [width,List.getD_eq_getElem?_getD,List.getElem?_eq_getElem inside,Option.getD_some]
       omega
-  have batch (ks : List (Fin 32 × Fin 5)) :
-      ((ks.flatMap fun rc => (List.finRange 222).map fun c => (rc,c)).map
-        (fun k => let e := idleInterval i k.2; price (e.2-e.1))).sum = ks.length*((remainderRanks i).map price).sum := by
-    induction ks with
-    | nil => simp
-    | cons rc ks ih =>
-      simp only [List.flatMap_cons,List.map_append,List.sum_append,ih,List.length_cons,Nat.add_mul,one_mul]
-      rw [← ranks]
-      simp [List.map_map,Function.comp_def,Nat.add_comm]
-  simpa only [idleCopies,stageRuns_length] using batch stageRuns
+  unfold idleCopies
+  rw [List.map_flatMap]
+  simp only [List.map_map,Function.comp_def,ranks,Piece.children,List.flatMap_def]
+
+/-- The ordinary scanner presents the scheduled child width at each physical copy. -/
+theorem idleCopies_recordWidths (i : Fin 9) (digits W : ℕ) :
+    (idleCopies.map fun k => let e := idleInterval i k.2
+                             (remainderRecordChild e.1 e.2 digits W).width) =
+      (Piece.remainder i.val).children.map (·*digits) := by
+  rw [← idleCopies_ranks,List.map_map]
+  rfl
+
+private theorem idleCopies_prices (i : Fin 9) (price : ℕ → ℕ) :
+    (idleCopies.map (fun k => let e := idleInterval i k.2; price (e.2-e.1))).sum =
+      160*((remainderRanks i).map price).sum := by
+  have priced := congrArg (fun xs : List ℕ => (xs.map price).sum) (idleCopies_ranks i)
+  simpa only [List.map_map,Function.comp_def,Piece.children,sum_runs] using priced
 
 private theorem foldOwners {κ ι α : Type*} (src : κ ↪ ι) (run : κ → (ι → α) → (ι → α))
     (effect : κ → α → α → Prop) (action : ∀ k x, effect k (x (src k)) (run k x (src k)))

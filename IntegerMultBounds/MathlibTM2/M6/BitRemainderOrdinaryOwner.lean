@@ -747,6 +747,34 @@ def OrdinaryParentRun [M8.Machine.Net] {common work w rows B : ℕ} {U : Type}
       F.R (bank 46) = raw.R (bank 46) ∧ bankStock visited (mk z F) = (raw.R (bank 46)).length+(F.R (bank 48)).length ∧
       ∀ i : Fin (66+K), 58 ≤ i.val → F.L ((placement i).castAdd 5) = [] ∧ F.R ((placement i).castAdd 5) = []
 
+private theorem packedRole_volume (layout : Descriptor) (w : ℕ) (width : layout.width = 64*(w+1)) :
+    let directory := role layout 142080
+    volume prime directory = LabelMask.records directory *
+      ((prime^(w+1))^128*(layout.between*layout.afterD)) := by
+  intro directory
+  change layout.beforeRows*directory.rows*layout.beforeH*prime^layout.width*layout.between*prime^layout.width*layout.afterD = _
+  rw [width,Nat.mul_comm 64 (w+1),pow_mul,show (128 : ℕ) = 64+64 by decide,pow_add (prime^(w+1)) 64 64]
+  unfold LabelMask.records
+  ac_rfl
+
+/-- Across all records, the scanner's rank-sized children occupy exactly one role stream. -/
+theorem ordinaryRecord_measures (layout : Descriptor) (w : ℕ) (width : layout.width = 64*(w+1))
+    (e : ℕ × ℕ) (he : e ∈ BitHosting.remainderIntervals) :
+    let directory := role layout 142080
+    let child := remainderRecordChild e.1 e.2 (w+1) (layout.between*layout.afterD)
+    child.width*64 = (e.2-e.1)*layout.width ∧
+      LabelMask.records directory * volume prime child = volume prime directory := by
+  intro directory child
+  have bound := (BitHosting.remainder_counts e he).2.1
+  constructor
+  · change ((e.2-e.1)*(w+1))*64 = _
+    rw [width]
+    ring
+  · rw [show volume prime child = _ from remainderRecordChild_volume e.1 e.2 (w+1)
+        (layout.between*layout.afterD) (by omega)]
+    rw [packedRole_volume layout w width,show (128 : ℕ) = 64+64 by decide,pow_add (prime^(w+1)) 64 64]
+    ac_rfl
+
 /-- Hosted cost per packed symbol. The chart constants depend only on the
 selected port, owner and direction, so the same rate applies across layouts. -/
 noncomputable def packedChartRate [M8.Machine.Net] {k : ℕ} (src : Fin k)
@@ -916,11 +944,7 @@ theorem OrdinaryParentRun.chartRoundTrip [M8.Machine.Net] {common work w rows B 
     rw [cells]
     exact (Nat.pow_le_pow_right (by exact pow_pos Shared50ModularControl.prime_prime.pos _) (by decide : 64 ≤ 128)).trans
       (Nat.le_mul_of_pos_right _ spectators)
-  have size : volume prime directory = data.records*N := by
-    change layout.beforeRows*directory.rows*layout.beforeH*prime^layout.width*layout.between*prime^layout.width*layout.afterD =
-      (layout.beforeRows*directory.rows*layout.beforeH)*(M^128*(layout.between*layout.afterD))
-    rw [cells,show (128 : ℕ) = 64+64 by decide,pow_add]
-    ac_rfl
+  have size : volume prime directory = data.records*N := packedRole_volume layout w digits
   have setup := ordinaryParentSetup_volume_le layout rows split
   change _ ≤ (366+16*64*64+19*64+344)*volume prime directory at setup
   rw [size] at setup
