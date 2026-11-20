@@ -297,6 +297,17 @@ theorem loadSignedPairWeights_exec (body : P → Pr P T Q A U) (i : Fin d) (bank
   rw [negWordValue inv ne hm,free 29 (by decide) (by decide) (by decide),List.append_nil] at sub
   exact ⟨z,_,hz.trans hu,Nat.add_le_add_right hl _,Exec.seq load sub⟩
 
+/-- The archive and control tapes supplied by elimination for one active child. -/
+structure PackedLeafInputs {n : ℕ} (bank : Fin 20 ↪ Fin T) (H : ℕ)
+    (parent : Fin n → ZMod M) (pivot : Fin d → ZMod M) (S : Stacks T A)
+    (pivotTail parentTail : List (Fin (A+4))) : Prop where
+  weights : S.R (bank 19) = (List.ofFn fun k => binSyms H (parent k).val).flatten ++ parentTail
+  pivots : S.R (bank 18) = (List.ofFn fun k => binSyms H (pivot k).val).flatten ++ pivotTail
+  modulus : S.R (bank 4) = binSyms H M
+  one : S.R (bank 15) = binSyms H (1 : ZMod M).val
+  clock : (S.R (bank 16)).length = w
+  scratch : ∀ k : Fin 20, (k ≤ 14 ∧ k ≠ 4) ∨ k = 17 → S.R (bank k) = []
+
 /-- Run a leaf on a reciprocal pair read from the two packed archives. The
 three coefficient words are released at their actual width on return. -/
 theorem withLeafPair_exec {n : ℕ} (body : P → Pr P T Q A U) (bank : Fin 20 ↪ Fin T)

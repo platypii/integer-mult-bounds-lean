@@ -57,8 +57,10 @@ theorem goodRecordWeights_exec (body : P → Pr P T Q A U) (ports : Fin 24 ↪ F
           (S.R (bank 15)) (S.R (bank 16)) proj.rank ∧
       F.L = S.L ∧ F.inp = S.inp ∧ F.out = S.out ∧
       (∀ i, i ≠ bank 14 → i ≠ stageBank bank proj.rank 15 → i ≠ stageBank bank proj.rank 16 → F.R i = S.R i) ∧
-      (∀ i : Fin proj.rank, ∀ rest : List (Fin (A+4)),
+      (∀ rest : List (Fin (A+4)),
         S.R (ports 23) = (List.ofFn fun k => binSyms H (α k).val).flatten ++ rest →
+        PackedLeafInputs child H α (fun k : Fin proj.rank => δ (k.castLE fits)) F [] rest ∧
+        ∀ i : Fin proj.rank,
         let C := 48*H*H+152*H+66
         ∃ u D t, u.user = v.user ∧ t ≤ (8*(i.val*H)+14*H+22) +
           ((8*(i.val*H)+48*H*H+166*H+88)+(6*w+6+(14*H+16+(prime-2)*C+C+w*(12*H+15+prime*C)))) +
@@ -102,7 +104,7 @@ theorem goodRecordWeights_exec (body : P → Pr P T Q A U) (ports : Fin 24 ↪ F
   have zero := goodHeadWord_children G proj.rank fits minor α α' proj.rank le_rfl
   refine ⟨z,F,l,user,time,run,?_,archive,left,inp,out,frame,?_,units,goodHeadWord_length ..,zero,(inverseWord_children _).trans zero,?_⟩
   · simpa only [δ,Fin.val_castLE,Fin.isLt,ite_true] using words
-  · intro i rest parent C
+  · intro rest parent
     have unchanged (k : Fin 23) (a : k ≠ 14) (b : k ≠ 15) (c : k ≠ 16) :
         F.R (bank k) = S.R (bank k) := by
       have stable := stageBank_fixed bank proj.rank k b c
@@ -126,11 +128,15 @@ theorem goodRecordWeights_exec (body : P → Pr P T Q A U) (ports : Fin 24 ↪ F
             ((j < 15 ∧ j ≠ 2) ∨ (17 ≤ j ∧ j ≤ 19) ∨ j = 21) := by decide
       obtain ⟨j,eq,h14,h15,h16,hfree⟩ := slots k hk
       exact (congrArg (fun x => F.R (ports x)) eq).trans ((unchanged j h14 h15 h16).trans (free j hfree))
+    have ready : PackedLeafInputs child H α pivot F [] rest :=
+      ⟨parentWord,pivots,(unchanged 2 (by decide) (by decide) (by decide)).trans modulus,
+        (unchanged 20 (by decide) (by decide) (by decide)).trans one,
+        (congrArg List.length (unchanged 22 (by decide) (by decide) (by decide))).trans ticks,scratch⟩
+    refine ⟨?_,?_⟩
+    · simpa only [δ,Fin.val_castLE,Fin.isLt,ite_true,pivot] using ready
+    intro i C
     obtain ⟨u,D,t,hu,ht,run,pair,inverse,negative,hL,hin,hout,kept⟩ := signedChildPair_exec body child α
-      (i.castLE fits) _ (inv _) pivot i (stage.unit _ i.isLt) prime_prime H hm z F [] rest parentWord pivots
-      ((unchanged 2 (by decide) (by decide) (by decide)).trans modulus)
-      ((unchanged 20 (by decide) (by decide) (by decide)).trans one)
-      ((congrArg List.length (unchanged 22 (by decide) (by decide) (by decide))).trans ticks) scratch negateForward
+      (i.castLE fits) _ (inv _) pivot i (stage.unit _ i.isLt) prime_prime H hm z F [] rest ready.weights ready.pivots ready.modulus ready.one ready.clock ready.scratch negateForward
     exact ⟨u,D,t,hu.trans user,ht,run,by simpa only [δ,Fin.val_castLE,Fin.isLt,ite_true] using pair,
       by simpa only [δ',Fin.val_castLE,Fin.isLt,ite_true] using inverse,
       by simpa only [δ,δ',Fin.val_castLE,Fin.isLt,ite_true] using negative,hL,hin,hout,kept⟩

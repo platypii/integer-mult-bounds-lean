@@ -573,13 +573,8 @@ theorem packedWeightedLeaf_exec [M8.Machine.Net] {m d : ℕ} (v : Descriptor) (p
         (∀ j : Fin 31, S.L (j.natAdd K) = [] ∧ S.R (j.natAdd K) = []) →
         (∀ j ∈ leafDimensionFields, S.R ((dst j).castAdd 31) = []) →
         (∀ i : Fin 13, (3 ≤ i ∧ i < 10) ∨ i = 12 → S.R ((r i).castAdd 31) = []) →
-        S.R ((pair 4).castAdd 31) = binSyms M.size M →
-        (∀ a : Fin 20, (a ≤ 14 ∧ a ≠ 4) ∨ a = 17 → S.R ((pair a).castAdd 31) = []) →
-        S.R ((pair 15).castAdd 31) = binSyms M.size (1 : ZMod M).val →
-        (S.R ((pair 16).castAdd 31)).length = w →
         ∀ (pivotTail parentTail : List (Fin (prime+4))),
-        S.R ((pair 18).castAdd 31) = (List.ofFn fun k => binSyms M.size (pivot k).val).flatten ++ pivotTail →
-        S.R ((pair 19).castAdd 31) = (List.ofFn fun k => binSyms M.size (parent k).val).flatten ++ parentTail →
+        PackedLeafInputs (pair.trans (Fin.castAddEmb 31)) M.size parent pivot S pivotTail parentTail →
         RepT (raw (CommonBank.bank roles (Routines.hdr v) f p node scalar ctr st) block.tapes) (S.L ∘ ports) (S.R ∘ ports) →
         let rr := r.trans (Fin.castAddEmb 31)
         let setup := (middleRowDescriptor ((Fin.castLEEmb (by decide : 11 ≤ 13)).trans rr)).seq
@@ -596,7 +591,7 @@ theorem packedWeightedLeaf_exec [M8.Machine.Net] {m d : ℕ} (v : Descriptor) (p
           Exec body ((signedChildPair prime j.val i.val coeff true).seq
             (call.seq (Mult.ShortConv.clearWords [coeff 0,coeff 14,coeff 12]))) (mk u S) n (mk z D) ∧
           output S D := by
-  intro M weight inv P G B size c word head input block K sim pair r gap tail dst rowSlots gapSlot tailSlot fieldsOff scratchOff pairKeep radixPort other dims pairScratch fieldPair pairOff dimsOff slot leading capacity src ports shear prog lastProg work stage result y xs len signWord signSrc load bank child sign output body u S push hp hl hsign hb free fieldEmpty empty modulus fresh one clock pivotTail parentTail record weights initial rr setup leaf fields headers readFields call coeff coefficientRate
+  intro M weight inv P G B size c word head input block K sim pair r gap tail dst rowSlots gapSlot tailSlot fieldsOff scratchOff pairKeep radixPort other dims pairScratch fieldPair pairOff dimsOff slot leading capacity src ports shear prog lastProg work stage result y xs len signWord signSrc load bank child sign output body u S push hp hl hsign hb free fieldEmpty empty pivotTail parentTail archives initial rr setup leaf fields headers readFields call coeff coefficientRate
   have distinct (k : Fin K) (h : ∀ a ∈ [0,14,12], k ≠ pair a) :
       k.castAdd 31 ∉ [coeff 0,coeff 14,coeff 12] := by
     simp [coeff,h 0 (by decide),h 14 (by decide),h 12 (by decide)]
@@ -611,7 +606,7 @@ theorem packedWeightedLeaf_exec [M8.Machine.Net] {m d : ℕ} (v : Descriptor) (p
     simp [ne]
   obtain ⟨z,D,t,hz,ht,run,_,post⟩ := withLeafPair_exec body coeff parent j parentInv reciprocal pivot i pivotUnit
     IntegerMultBounds.Networks.Shared50ModularControl.prime_prime u S pivotTail parentTail call
-    (weightedLeafCost (volume prime v) v.width block.tapes push) (output S) weights record modulus one clock fresh (by
+    (weightedLeafCost (volume prime v) v.width block.tapes push) (output S) archives.weights archives.pivots archives.modulus archives.one archives.clock archives.scratch (by
       intro y E hy unit hL modWord invWord negWord keep
       obtain ⟨z,D,t,hz,ht,run,rep,read,addr,clean,frame⟩ := weightedLeaf_exec v positive w width
         (show prime^v.width = M by rw [width]) weight inv unit io roles f p node scalar ctr st word head input
@@ -642,7 +637,7 @@ theorem packedWeightedLeaf_exec [M8.Machine.Net] {m d : ℕ} (v : Descriptor) (p
         change (if k.castAdd 31 ∈ [coeff 0,coeff 14,coeff 12] then [] else D.R _) = _
         split_ifs with mem
         · simp [coeff] at mem
-          rcases mem with h | h | h <;> subst k <;> exact (fresh _ (by decide)).symm
+          rcases mem with h | h | h <;> subst k <;> exact (archives.scratch _ (by decide)).symm
         · exact (frame k hk).2.trans (keep _ mem))
   have charge := leafPairCharge w i.val j.val
   exact ⟨z,D,t,hz,by dsimp only at ht charge; dsimp only [coefficientRate,M]; omega,run,post⟩

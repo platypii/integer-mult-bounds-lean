@@ -41,6 +41,28 @@ theorem packedWeightedLeafCost_le [M8.Machine.Net] (v : Descriptor) (positive : 
 
 /-- Successive good records retain the parent's volume. Their linear overheads
 add, and the terminal interchange pays for the width left after all gaps. -/
+private theorem chainCost_of_terminal {ι : Type*} (gap overhead : ι → ℕ)
+    (time : List ι → Descriptor → ℕ)
+    (step : ∀ i is v, gap i ≤ v.width → time (i :: is) v ≤
+      time is (rankDescriptor prime (v.width-gap i) (gap i) v) + overhead i * volume prime v)
+    (records : List ι) (v : Descriptor) (fits : (records.map gap).sum ≤ v.width)
+    (rate : ℝ) :
+    let child := rankDescriptor prime (v.width-(records.map gap).sum) (records.map gap).sum v
+    (time [] child : ℝ) ≤ rate*volume prime child →
+    (time records v : ℝ) ≤ (rate+(records.map overhead).sum)*(volume prime v : ℝ) := by
+  intro child terminal
+  have same : volume prime child = volume prime v := rankDescriptor_volume v (Nat.sub_add_cancel fits).symm
+  have chain := rankDescriptor_chain_time gap overhead time step records v fits
+  calc
+    (time records v : ℝ) ≤ ((time [] child + (records.map overhead).sum * volume prime v : ℕ) : ℝ) :=
+      Nat.cast_le.mpr chain
+    _ ≤ _ := by
+      push_cast
+      rw [add_mul]
+      apply add_le_add_left
+      rw [← same]
+      exact terminal
+
 theorem weightedLeaf_chain_cost [M8.Machine.Net] {ι : Type*} (gap overhead : ι → ℕ)
     (time : List ι → Descriptor → ℕ)
     (step : ∀ i is v, gap i ≤ v.width → time (i :: is) v ≤
@@ -52,17 +74,33 @@ theorem weightedLeaf_chain_cost [M8.Machine.Net] {ι : Type*} (gap overhead : ι
     ((max 1 child.width : ℕ) : ℝ)^M8.Machine.BudgetBound.tau ≤ L →
     (time records v : ℝ) ≤ (weightedLeafRate tapes push L+(records.map overhead).sum)*(volume prime v : ℝ) := by
   intro child terminal widthBound
-  have same : volume prime child = volume prime v := rankDescriptor_volume v (Nat.sub_add_cancel fits).symm
-  have leaf := weightedLeafCost_le (volume prime child) child.width tapes push widthBound
-  have chain := rankDescriptor_chain_time gap overhead time step records v fits
-  calc
-    (time records v : ℝ) ≤ ((time [] child + (records.map overhead).sum * volume prime v : ℕ) : ℝ) :=
-      Nat.cast_le.mpr chain
-    _ ≤ _ := by
-      push_cast
-      rw [add_mul]
-      apply add_le_add_left
-      rw [← same]
-      exact (Nat.cast_le.mpr terminal).trans leaf
+  exact chainCost_of_terminal gap overhead time step records v fits _
+    ((Nat.cast_le.mpr terminal).trans (weightedLeafCost_le _ _ _ _ widthBound))
+
+/-- A good record reads the same active coordinate from both archives.
+The rank bounds both offsets, uniformly in the coordinate and terminal width. -/
+theorem packedWeightedLeaf_chain_cost [M8.Machine.Net] {ι : Type*} (gap overhead : ι → ℕ)
+    (time : List ι → Descriptor → ℕ)
+    (step : ∀ i is v, gap i ≤ v.width → time (i :: is) v ≤
+      time is (rankDescriptor prime (v.width-gap i) (gap i) v) + overhead i * volume prime v)
+    (records : List ι) (v : Descriptor) (fits : (records.map gap).sum ≤ v.width)
+    (positive : v.Positive) {rank : ℕ} (i : Fin rank) (tapes push : ℕ) (L : ℝ) :
+    let child := rankDescriptor prime (v.width-(records.map gap).sum) (records.map gap).sum v
+    let factor := 2*(prime.size+1)^2
+    let rate := (1000*(prime+1)+16*(rank-1))*factor
+    time [] child ≤ weightedLeafCost (volume prime child) child.width tapes push+
+      ((1000*(prime+1)+8*(i.val+i.val))*factor)*prime^child.width →
+    ((max 1 child.width : ℕ) : ℝ)^M8.Machine.BudgetBound.tau ≤ L →
+    (time records v : ℝ) ≤ (weightedLeafRate tapes push L+rate+(records.map overhead).sum)*
+      (volume prime v : ℝ) := by
+  intro child factor rate terminal widthBound
+  have power := pow_pos IntegerMultBounds.Networks.Shared50ModularControl.prime_prime.pos (records.map gap).sum
+  have childPos : child.Positive := ⟨positive.1,positive.2.1,positive.2.2.1,
+    Nat.mul_pos (Nat.mul_pos power positive.2.2.2.1) power,positive.2.2.2.2⟩
+  have indexBound : 8*(i.val+i.val) ≤ 16*(rank-1) := by have := i.isLt; omega
+  have bounded := terminal.trans (Nat.add_le_add_left (Nat.mul_le_mul_right (prime^child.width)
+    (Nat.mul_le_mul_right factor (Nat.add_le_add_left indexBound _))) _)
+  exact chainCost_of_terminal gap overhead time step records v fits _
+    ((Nat.cast_le.mpr bounded).trans (packedWeightedLeafCost_le child childPos tapes push rate widthBound))
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
