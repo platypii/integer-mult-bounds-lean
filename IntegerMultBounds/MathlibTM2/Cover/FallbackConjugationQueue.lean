@@ -260,4 +260,99 @@ theorem physicalResidualQueue_exec (body : P → Pr P T Q prime U)
           exact (kr l).trans (free l hl hlt)⟩
   simpa only [word,price,livePrice,liveRecordCost,← widths j hj,h,ite_true,live,conjugate] using finish
 
+/-- Copy the directory before generating its residual matrices, so the classified scan can consume the original. -/
+theorem physicalResidualQueue_copy_exec (body : P → Pr P T Q prime U)
+    (w records : ℕ)
+    (projector : Matrix (Fin m) (Fin m) (ZMod (prime^(w+1))))
+    (H : ℕ) (hm : prime^(w+1) < 2^H) (registers : Fin ((36+2*m+1+(conjugationDepth m+1)*13)+3) ↪ Fin T) :
+    let size := 36+2*m+1+(conjugationDepth m+1)*13
+    let host := QueueLayout.block (n := size) 0 (by dsimp [size]; omega) registers
+    let control := QueueLayout.block (n := 3) size (Nat.le_refl _) registers
+    let mask := control 0
+    let seed := control 1
+    let tmp := control 2
+    let bank := QueueLayout.block (n := 18) 0 (by omega) host
+    let r := QueueLayout.block (n := 16) 18 (by omega) host
+    let counters := QueueLayout.block (n := 2) 34 (by omega) host
+    let clock := counters 0
+    let count := counters 1
+    let pool := QueueLayout.block (n := (conjugationDepth m+1)*13) (36+2*m+1) (by omega) host
+    let coeff := fun i j : Fin m => (coefficientSlots i j).trans host
+    let archive := host ⟨36+2*m, by omega⟩
+    have archiveOff : ∀ i, bank (QueueLayout.directoryWork i) ≠ archive := fun i h => by
+      have eq := congrArg Fin.val (host.injective h)
+      change 0 + i.val = 36+2*m at eq
+      omega
+    have coeffOff : ∀ i j k l, r k ≠ coeff i j l := fun i j k l h => by
+      have eq := congrArg Fin.val (host.injective h)
+      change 18+k.val = (coefficientSlots (extra := (conjugationDepth m+1)*13) i j l).val at eq
+      fin_cases l <;> simp [coefficientSlots, Matrix.cons_val] at eq <;> (try split_ifs at *) <;> omega
+    ∀ (ancestor : ℕ → List (Fin (prime+4))) (tail : List (Fin (prime+4)))
+    {d : ℕ} (e : (Fin m ⊕ Fin m) ≃ Fin d)
+    (α α' : Fin m → ZMod (prime^(w+1))),
+    let padWord := matrixWords prime H (1 : Matrix (Fin d) (Fin d) (ZMod (prime^(w+1))))
+    ∀ (source : Fin T) (v : HS T Q prime U) (B : Stacks T prime),
+    let S := {B with R := Function.update B.R (bank 2) (B.R source)}
+    ∀ (_apart : [source,bank 2,bank 4,tmp].Nodup) (_maskOff : source ≠ mask) (_archiveOff : source ≠ archive)
+    (_free : B.R (bank 2) = []) (_scratch : B.R (bank 4) = []) (_tmp : B.R tmp = [])
+    (_seedWord : S.R seed = padWord)
+    (_weightBank : S.R (r 13) = [] ∧ ∀ i j, let s := coeff i j
+      S.R (s 1) = binSyms H (α i).val ∧ S.R (s 2) = binSyms H (α' j).val)
+    (_ready :
+      (∀ i : Fin 18, i ∈ [0,3,4,5,6,7,11,14,15] → S.R (bank i) = []) ∧ (S.R (bank 8)).length = H ∧
+      S.R (bank 9) = binSyms H 0 ∧ S.R (bank 10) = [] ∧
+       (S.R clock).length = w ∧ S.R count = [] ∧ S.R (r 14) = [] ∧
+      S.R (r 15) = binSyms H (1 : ZMod (prime^(w+1))).val ∧ S.R (r 4) = binSyms H (prime^(w+1)) ∧
+      (∀ i : Fin 16, i ≠ 4 → i < 13 → S.R (r i) = []) ∧
+      (∀ k ≤ conjugationDepth m, S.R (frame pool k 2) = binSyms H (prime^(w+1))) ∧
+      (∀ k ≤ conjugationDepth m, ∀ i : Fin 13, i ≠ 2 → S.R (frame pool k i) = []) ∧
+      (∃ suffix, S.R (bank 16) = matrixWords prime H projector ++ suffix) ∧
+      S.R (bank 17) = binSyms H (1 : ZMod (prime^(w+1))).val)
+    (_widths : ∀ j < records, (S.R (bank 12)).length = (ancestor j).length)
+    (_width : (S.R (bank 1)).length = w+1) (_empty : S.R (archive) = [])
+    (_directory : B.R source = (List.range records).flatMap (LabelDirectory.entry ancestor m (w+1)) ++ tail)
+    (_output : S.R (bank 13) = []) (_bits : S.R mask = (List.range records).map fun j => bitSymbol (LabelStock.live m (w+1) 1 j)),
+    let inputs := QueueLayout.formulaInputs.trans bank
+    let formula := sourcePorts (m := m) inputs id
+    let weights := fun i j => QueueLayout.residualPorts r (coeff i j) (coeffOff i j)
+    let scan := QueueLayout.scanPorts (QueueLayout.directoryWork.trans bank) archive archiveOff
+    let num := fun i j : Fin m => numerator (matrixInput false) (matrixInput true) i j
+    let cost := Finset.univ.sup fun ij : Fin m × Fin m => time H (readTime H) (num ij.1 ij.2)
+    let f := determinant (matrixInput false)
+    let conjugate : Pr P T Q prime U := (.seq (directoryMatrix m (QueueLayout.readPorts.trans (QueueLayout.directoryWork.trans bank)) (QueueLayout.digitPorts.trans (QueueLayout.directoryWork.trans bank)) (bank 12) (bank 9) (bank 10)) (.seq (.seq (.seq (compile (readLeaf (leafBank formula)) (registerBank pool) f 0 (r 14)) (reusablePivotInverse prime r clock count))
+        (.seq (packedConjugate pool formula (QueueLayout.normalizationPorts.trans r) false true) (.seq (bclear (r 0)) (bclear (r 14))))) (bclear (bank 10))))
+    let live : Pr P T Q prime U := .seq conjugate (.seq (sequence (fun i => sequence
+      (fun j => blockEntry weights (e.symm i) (e.symm j)) (List.finRange d)) (List.finRange d)) (bclear (r 13)))
+    let active := LabelStock.live m (w+1) 1
+    let word := fun j => if active j then matrixWords prime H (projectorResidual e projector α α' (physicalLabel m (w+1) j)) else padWord
+    let livePrice := liveRecordCost m d w H (S.R (bank 12)).length cost (time H (readTime H) f)
+    let branch := fun p => Prog.seq p (.seq (moveR (scan 4) (scan 5) id) (advanceDirectory m scan))
+    let words := (List.range records).flatMap word
+    let generate := (.seq (maskedScan mask (branch live) (branch (bcopy seed (scan 4) (scan 3) tmp)))
+      (moveR (scan 5) (scan 4) id) : Pr P T Q prime U)
+    let D := queueResult S mask (scan 2) (scan 4) tail words
+    ∃ z n, z.user = v.user ∧ D.R source = B.R source ∧ D.R archive = words ∧
+      n ≤ 6*(B.R source).length+6 + ((List.range records).countP active * (livePrice + 4*(d*d*H)) +
+        (List.range records).countP (fun j => !active j) * (10*(d*d*H)+6) +
+        records * (4*(S.R (bank 12)).length+4+(m*m*(4*(w+1)+4)+1)+6) + 4) ∧
+      Exec body ((bcopy source (bank 2) (bank 4) tmp).seq generate) (mk v B) n (mk z D) := by
+  intro size host control mask seed tmp bank r counters clock count pool coeff archive archiveOff coeffOff ancestor tail
+    d e α α' padWord source v B S apart maskOff sourceOff free scratch tmpFree seedWord weightBank ready
+    widths width empty directory output bits inputs formula weights scan num cost f conjugate live active word
+    livePrice branch words generate D
+  obtain ⟨u,user,copy⟩ := bcopy_exec body apart v B scratch tmpFree
+  rw [free,List.append_nil] at copy
+  have tmpBlank : S.R tmp = [] := (Function.update_of_ne (by
+    intro eq; exact (List.nodup_cons.mp apart.tail).1 (by simp [eq])) _ _).trans tmpFree
+  have blank : S.R (bank 4) = [] := (Function.update_of_ne (bank.injective.ne (by decide)) _ _).trans scratch
+  have stored : S.R (bank 2) = B.R source := Function.update_self ..
+  obtain ⟨_,z,n,returned,time,run⟩ := physicalResidualQueue_exec body w records projector H hm registers
+    ancestor tail e α α' u S seedWord tmpBlank weightBank ready widths width blank empty (stored.trans directory) output bits
+  have separate : source ≠ bank 2 := by
+    intro eq
+    exact (List.nodup_cons.mp apart).1 (eq ▸ List.mem_cons_self)
+  refine ⟨z,_,returned.trans user,?_,Function.update_self ..,Nat.add_le_add_left time _,Exec.seq copy run⟩
+  change Function.update (Function.update (Function.update S.R mask []) (bank 2) tail) archive words source = _
+  simp [Function.update_of_ne,sourceOff,separate,maskOff,S]
+
 end IntegerMultBounds.MathlibTM2.Cover.Fallback.RingFormula

@@ -751,10 +751,6 @@ def GeneratedRecordSpec [M8.Machine.Net] {T m work Q fields H J W : ℕ} {F U : 
             (if 0 < d ∧ H = M.size ∧ J = W.size then min (charge 0) binaryCharge else charge 0)
             (fun j => if liveBit j then effect j else Eq) u S
       else
-      ∀ (fallback : Pr F K Q prime U) (badCost : ℕ → ℕ) (badEffect : ℕ → (Fin N → ZMod 2) → (Fin N → ZMod 2) → Prop),
-      (∀ i is word (u : HS K Q prime U) (S : Stacks K prime), LabelStock.live m (w+1) 1 i = true → fallbackBit rankFits (reduce M proj) (g i) = true → ready S (i :: is) → payload word S →
-        ∃ z D n next, z.user = u.user ∧ n ≤ badCost i ∧ Exec body fallback (mk u S) n (mk z D) ∧
-          ready D is ∧ badEffect i word next ∧ payload next D ∧ D.R mask = S.R mask ∧ D.R mode = S.R mode) →
       ∀ (room : m*m+m*m ≤ (host+31)+work) (B : ℕ),
       let rs := residuePairs (m*m) room
       let parents := caller 50
@@ -773,6 +769,21 @@ def GeneratedRecordSpec [M8.Machine.Net] {T m work Q fields H J W : ℕ} {F U : 
       let setupCost := (26*high+4) + ((44*labels.length+13*(w+1)+16) + 3*((6+10*(m*m))*labels.length+4) +
         (2*(directory.beforeRows*directory.rows*B)+2)) +
         ((privateTapes.map fun i => 4*(whole.L i).length).sum + privateTapes.length*(2*high+4)+1)
+      ∃ writer : Pr F K Q prime U, let prepare := (initCounters.seq writer).seq (clearWorkTapes privateTapes)
+      ∃ z D n, z.user = u.user ∧ n ≤ setupCost ∧ Exec body prepare (mk u whole) n (mk z D) ∧
+        ready D labels ∧ payload word D ∧ D.R mask = labels.map (fun j => bitSymbol (liveBit j)) ∧ D.R mode = modes labels ∧
+        (∀ (dimension : ℕ) (archiveRoom : Record.size dimension+(rowSwapBlock.tapes+35+2) ≤ (host+31+work)+1),
+          let placement := directoryOrdinaryBank archiveRoom
+          let archive := directoryMatrixTape archiveRoom
+          ∀ (outer : F → Pr F (66+((host+31+work)+1)) Q prime U)
+            (calls : ∀ f, outer f = embProg placement id (body f)) (v : HS _ Q prime U) (B : Stacks _ prime),
+            embDn placement v = u → embStk placement B = whole →
+            ∃ y E, y.user = v.user ∧ embStk placement E = D ∧ E.R archive = B.R archive ∧
+              Exec outer (embProg placement id prepare) (mk v B) n (mk y E)) ∧
+      ∀ (fallback : Pr F K Q prime U) (badCost : ℕ → ℕ) (badEffect : ℕ → (Fin N → ZMod 2) → (Fin N → ZMod 2) → Prop),
+      (∀ i is word (u : HS K Q prime U) (S : Stacks K prime), LabelStock.live m (w+1) 1 i = true → fallbackBit rankFits (reduce M proj) (g i) = true → ready S (i :: is) → payload word S →
+        ∃ z D n next, z.user = u.user ∧ n ≤ badCost i ∧ Exec body fallback (mk u S) n (mk z D) ∧
+          ready D is ∧ badEffect i word next ∧ payload next D ∧ D.R mask = S.R mask ∧ D.R mode = S.R mode) →
       let branchCost := fun i => if liveBit i then (if badBit i then badCost i else charge i) else skipCost i
       let action := fun i => if liveBit i then (if badBit i then badEffect i else effect i) else Eq
       let exceptional := ((∑ k ∈ Finset.range d, (k+1)*(m+1))*labels.length)/prime
@@ -783,7 +794,7 @@ def GeneratedRecordSpec [M8.Machine.Net] {T m work Q fields H J W : ℕ} {F U : 
         (0 < exceptional → ∀ j ∈ labels, liveBit j = true → badBit j = true →
           badCost j ≤ baseline + (parentBudget-ordinary)/exceptional) →
         n ≤ parentBudget
-      ∃ writer : Pr F K Q prime U, ∃ z D n next, z.user = u.user ∧ n ≤ setupCost + ((labels.map fun i => branchCost i + 2 + 4).sum + 2) ∧
+      ∃ z D n next, z.user = u.user ∧ n ≤ setupCost + ((labels.map fun i => branchCost i + 2 + 4).sum + 2) ∧
         priced n ∧ Exec body (((initCounters.seq writer).seq (clearWorkTapes privateTapes)).seq (classifiedScan mask mode (recordProgram.seq (clearWorkTapes privateTapes)) fallback skip)) (mk u whole) n (mk z D) ∧
         (ready D [] ∧ D.R mode = modes []) ∧ D.R mask = [] ∧ payload next D ∧
         labels.foldr (fun i rest x => ∃ y, action i x y ∧ rest y) (· = next) word
@@ -1325,7 +1336,7 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
   have step : ordinaryStep := (generatedOrdinaryRecord_exec v positive w proj width idem factor hd rankFits
     parent parentInv reciprocal io arity hm hw hW length capacity source head fits cap ef xf eqs xqs
     initialWord body initialUser initialState poolFits directory prefixes archiveTail c bodyBound).1
-  intro fallback badCost badEffect bad room Bcount rs parents shape freePrivate dirPositive brSize rowsSize beforeHSize parentsFree freeMask freeMode freeQueue high initCounters clean initialReady initialPayload setupCost branchCost action exceptional priced
+  intro room Bcount rs parents shape freePrivate dirPositive brSize rowsSize beforeHSize parentsFree freeMask freeMode freeQueue high initCounters clean initialReady initialPayload setupCost
   have release (port : Fin 66) (lo : 56 ≤ port.val) (hi : port.val ≤ 57)
       (is : List ℕ) (word : Fin N → ZMod 2) (S : Stacks K prime) (xs : List (Fin (prime+4)))
       (h : ready S is) (p : payload word S) :
@@ -1433,14 +1444,23 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
   have bits : startState.R mask = liveWords := (Function.update_of_ne apart badWords liveState.R).trans
     (Function.update_self mask liveWords clean.R)
   have initialModes : startState.R mode = badWords := Function.update_self mode badWords liveState.R
+  have setupRun : Exec body ((initCounters.seq writer).seq (clearWorkTapes privateTapes))
+      (mk initialUser initialState) _ (mk z startState) := Exec.seq (Exec.seq prepare write) clearMasks
+  have setupBound := Nat.add_le_add (Nat.add_le_add time₀ hl) (Nat.add_le_add_right cleanup 1)
+  refine ⟨writer,z,startState,_,hz.trans (hy.trans user₀),setupBound,setupRun,r₂,p₂,bits,initialModes,?_,?_⟩
+  · intro dimension archiveRoom placement archive outer calls v B control bank
+    obtain ⟨y,E,run,_,user,localBank,frame⟩ := exec_emb placement.injective calls setupRun v control B bank
+    exact ⟨y,E,user.trans ((hz.trans (hy.trans user₀)).trans (congrArg HS.user control).symm),
+      localBank,(frame archive (Fin.succAbove_ne _)).2,run⟩
+  intro fallback badCost badEffect bad branchCost action exceptional priced
   suffices scanRun : ∃ finish D n next, finish.user = z.user ∧
       n ≤ (allLabels.map fun i => branchCost i+2+4).sum+2 ∧
       Exec body (classifiedScan mask mode (recordProgram.seq (clearWorkTapes privateTapes)) fallback skip)
         (mk z startState) n (mk finish D) ∧ (ready D [] ∧ D.R mode = modes []) ∧ D.R mask = [] ∧ payload next D ∧
       allLabels.foldr (fun i rest x => ∃ y, action i x y ∧ rest y) (· = next) initialWord by
     obtain ⟨finish,D,n,next,user,time,run,post⟩ := scanRun
-    refine ⟨writer,finish,D,_,next,user.trans (hz.trans (hy.trans user₀)),Nat.add_le_add (Nat.add_le_add (Nat.add_le_add time₀ hl) (Nat.add_le_add_right cleanup 1)) time,?_,
-      Exec.seq (Exec.seq (Exec.seq prepare write) clearMasks) run,post⟩
+    refine ⟨finish,D,_,next,user.trans (hz.trans (hy.trans user₀)),Nat.add_le_add setupBound time,?_,
+      Exec.seq setupRun run,post⟩
     intro baseline parentBudget choice ordinary fitsParent fallbackFits
     obtain ⟨extra,allowance,fitsRecord⟩ := fallbackAllowance allLabels badCost
       (fun j => liveBit j = true ∧ badBit j = true) exceptional baseline (parentBudget-ordinary)
