@@ -1,7 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackLeafPairSwap
-public import IntegerMultBounds.MathlibTM2.Cover.FallbackWeightedLeafRun
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackWeightedLeafBudget
 
 /-! Execute a coordinate leaf between the descriptor change and its return. -/
 @[expose] public section
@@ -285,9 +285,6 @@ theorem packedCoordinates_exec [M8.Machine.Net] {T d work Q : ℕ} {F U : Type}
     let logical := {v with width := d}
     let addr := fun a row pre mid post (x : IntegerMultBounds.Swap.Shear.State (Fin d) (ZMod M)) =>
       index M logical a row pre (FlatCoordinateLayout.rank x.1).val mid (FlatCoordinateLayout.rank x.2).val post
-    let budget := fun i : Fin d => (1+(1800*N*(entry.tapes+5)+6))+(1+(weightedLeafCost (volume prime (view i)) (w+1)
-      (LeafCore.core io).tapes (packedLeafPush (F := Empty) (U := U) io Empty.elim)+
-      ((1000*(prime+1)+8*(i.val+i.val))*(2*(prime.size+1)^2))*M))+(1+(200*N*(leave.tapes+5)+6))
     ∀ (ef : entry.tapes ≤ common+work) (xf : leave.tapes ≤ common+work)
       (eqs : entry.states ≤ Q) (xqs : leave.states ≤ Q) (word : Fin N → ZMod 2) (body : F → Pr F ((host+31)+work) Q prime U)
       (u : HS _ Q prime U) (S : Stacks _ prime) (pivotTail parentTail : List (Fin (prime+4))),
@@ -296,14 +293,18 @@ theorem packedCoordinates_exec [M8.Machine.Net] {T d work Q : ℕ} {F U : Type}
       S.R (record 18) = [] →
       PackedLeafInputs (goodChildPorts.trans record) M.size parent pivot S pivotTail parentTail →
       let call := fun i : Fin d => packedCoordinateProgram (F := F) (U := U) io i.val i.val ef xf fits eqs xqs cap
-      ∃ next : Fin N → ZMod 2, ∃ z D t, z.user = u.user ∧ t ≤ ((List.finRange d).map budget).sum+1 ∧
+      ∃ next : Fin N → ZMod 2, ∃ z D t, z.user = u.user ∧ t ≤ packedCoordinatesTime d N w (LeafCore.core io).tapes
+          (packedLeafPush (F := Empty) (U := U) io Empty.elim) entry.tapes leave.tapes ∧
         Exec body (Prog.seqList ((List.finRange d).reverse.map call)) (mk u S) t (mk z D) ∧
         rep 0 (payload next) D ∧ clean D ∧
         (∀ k : Fin 55, D.L ((k.natAdd common).castAdd work) = S.L ((k.natAdd common).castAdd work) ∧
           D.R ((k.natAdd common).castAdd work) = S.R ((k.natAdd common).castAdd work)) ∧
         ∀ a < v.beforeRows, ∀ row < v.rows, ∀ pre < v.beforeH, ∀ mid < v.between, ∀ post < v.afterD, ∀ x,
           ext next (addr a row pre mid post (Weighted.child d weight inv x)) = ext word (addr a row pre mid post x) := by
-  intro common host M view N entry leave record rep clean payload weight inv logical addr budget ef xf eqs xqs word body u S pivotTail parentTail initial free arithmetic spare archives call
+  intro common host M view N entry leave record rep clean payload weight inv logical addr ef xf eqs xqs word body u S pivotTail parentTail initial free arithmetic spare archives call
+  let budget := fun i : Fin d => (1+(1800*N*(entry.tapes+5)+6))+(1+(weightedLeafCost (volume prime (view i)) (w+1)
+      (LeafCore.core io).tapes (packedLeafPush (F := Empty) (U := U) io Empty.elim)+
+      ((1000*(prime+1)+8*(i.val+i.val))*(2*(prime.size+1)^2))*M))+(1+(200*N*(leave.tapes+5)+6))
   let keep := fun (E : Stacks ((host+31)+work) prime) => ∀ k : Fin 55,
     E.L ((k.natAdd common).castAdd work) = S.L ((k.natAdd common).castAdd work) ∧
     E.R ((k.natAdd common).castAdd work) = S.R ((k.natAdd common).castAdd work)
@@ -339,7 +340,13 @@ theorem packedCoordinates_exec [M8.Machine.Net] {T d work Q : ℕ} {F U : Type}
       exact ⟨(keepD k).1.trans (kept k).1,(keepD k).2.trans (kept k).2⟩
     · simpa only [logical,weight,inv,child,Nat.div_one] using addrD) u S (ext word)
       ⟨word,rfl,initial,free,fun _ => ⟨rfl,rfl⟩⟩
-  exact ⟨next,z,D,t,user,bound,run,finalBank,blank,kept,address⟩
+  have same : volume M logical = N := by
+    simp [N,logical,volume,width,M,pow_mul,Nat.mul_comm d (w+1)]
+  have charge := weightedCoordinates_cost logical (r := d) rfl positive w (LeafCore.core io).tapes
+    (packedLeafPush (F := Empty) (U := U) io Empty.elim) entry.tapes leave.tapes
+  dsimp only at charge
+  rw [same] at charge
+  exact ⟨next,z,D,t,user,bound.trans charge,run,finalBank,blank,kept,address⟩
 
 end
 
