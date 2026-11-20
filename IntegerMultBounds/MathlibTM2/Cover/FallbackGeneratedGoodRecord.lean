@@ -19,6 +19,56 @@ open M8.RevMachine RecursiveInterchangeLayout Matrix Finset IntegerMultBounds.Sw
   IntegerMultBounds.Swap.Modular
 local instance (w : ℕ) : NeZero (prime^(w+1)) := ⟨pow_ne_zero _ Networks.Shared50ModularControl.prime_prime.ne_zero⟩
 
+open RingFormula in
+noncomputable def generatedRecordTime (m w H prefixWidth headerCost tripCost : ℕ) : ℕ :=
+  (((conjugationDepth m+1)*(6*H+6)+1 + (((4*H+4)+(recordConjugationTime m w H prefixWidth+(2*H+2)))+((conjugationDepth m+1)*(2*H+2)+1))) + (21*(w+1)+13)) + headerCost + tripCost + (1+(4*prefixWidth+4+(m*m*(4*(w+1)+4)+1)+1))
+
+def descriptorHeaderCost (v : Descriptor) :=
+  (((List.finRange 6).map fun i => 6*(Routines.hdr v i).length+6).sum+1)+1
+
+theorem descriptorHeaderCost_le (v : Descriptor) (positive : v.Positive) :
+    descriptorHeaderCost v ≤ 110*volume prime v := by
+  let V := volume prime v
+  have size (i) := RecursiveRowsNode.header_length v positive _ (Routines.hdr_headers v) i
+  have each (i : Fin 6) (_ : i ∈ List.finRange 6) :
+      6*(Routines.hdr v i).length+6 ≤ 12*V+6 := by have := size i; dsimp [V]; omega
+  have total := List.sum_le_sum each
+  simp only [List.map_const',List.length_finRange,List.sum_replicate_nat] at total
+  have pos := RecursiveAffinePrepare.volume_positive Networks.Shared50ModularControl.prime_prime.two_le v positive
+  unfold descriptorHeaderCost
+  dsimp only [V] at total
+  omega
+
+open RingFormula in
+noncomputable def generatedRecordRate (m : ℕ) :=
+  matrixBuildCost m 0 1 1 * (2*(prime.size+1)^2) + 16*(conjugationDepth m+1) + 8*(m*m)+200
+
+open RingFormula in
+theorem generatedRecordTime_binary_le (m w prefixWidth tripCost : ℕ) (v : Descriptor)
+    (positive : v.Positive) (radix : prime^(w+1) ≤ volume prime v) :
+    let M := prime^(w+1)
+    let V := volume prime v
+    generatedRecordTime m w M.size prefixWidth (descriptorHeaderCost v) tripCost ≤
+      tripCost + (12*m*m+4)*prefixWidth +
+        generatedRecordRate m*V := by
+  intro M V
+  have bits : M.size ≤ V := (Nat.size_le.mpr Nat.lt_two_pow_self).trans radix
+  have hw : w+1 ≤ V := Nat.lt_two_pow_self.le.trans
+    ((Nat.pow_le_pow_left Networks.Shared50ModularControl.prime_prime.two_le _).trans radix)
+  have pos : 0 < V := (pow_pos Networks.Shared50ModularControl.prime_prime.pos _).trans_le radix
+  have gen := recordConjugationTime_binary_le m w prefixWidth
+  unfold generatedRecordTime generatedRecordRate
+  change recordConjugationTime m w M.size prefixWidth ≤
+    12*m*m*prefixWidth + matrixBuildCost m 0 1 1 * (2*(prime.size+1)^2)*M at gen
+  have headers : descriptorHeaderCost v ≤ 110*V := descriptorHeaderCost_le v positive
+  have hd := Nat.le_mul_of_pos_right (conjugationDepth m+1) pos
+  have hm := Nat.le_mul_of_pos_right (m*m) pos
+  have cost := Nat.mul_le_mul_left (matrixBuildCost m 0 1 1 * (2*(prime.size+1)^2)) radix
+  change M ≤ V at radix
+  change matrixBuildCost m 0 1 1 * (2*(prime.size+1)^2)*M ≤ _*V at cost
+  nlinarith only [gen,headers,hd,hm,cost,pos,bits,hw,
+    Nat.mul_le_mul_left (conjugationDepth m+1) bits, Nat.mul_le_mul_left (m*m) hw]
+
 /-- Read the modulus and the unit from the caller. The other reciprocal
 registers borrow the elimination bank before elimination starts. -/
 def goodRecordPivotPorts : Fin 16 ↪ Fin 82 :=
@@ -234,11 +284,11 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
       let marks := ([2,3,4,5,6,7] : List (Fin 8)).map r
       let loading := recordWeightLoadTime m w H M.size
       let conversion := recordMatrixLoadTime m H M.size
-      let headerCost := (((List.finRange 6).map fun i => 6*((Routines.hdr v i).length)+6).sum+1)+1
+      let headerCost := descriptorHeaderCost v
       let raw := ((dimensionTime H 1 fields+(4*(fields*H+1)+6)+(10*J+12)+(6*(M^fields).size+6)) +
         (loading+(conversion+(budget+2*((218*N+1)*13+6)+3))))
       let tripCost := if 0 < d ∧ H = M.size ∧ J = W.size then min raw (budget+recordRoundTripRate m*N) else raw
-      let runCost := fun label => (((conjugationDepth m+1)*(6*H+6)+1 + (((4*H+4)+(generation label+(2*H+2)))+((conjugationDepth m+1)*(2*H+2)+1))) + (21*(w+1)+13)) + headerCost + tripCost + (1+(4*(prefixes label).length+4+(m*m*(4*(w+1)+4)+1)+1))
+      let runCost := fun label => generatedRecordTime m w H (prefixes label).length headerCost tripCost
       let prepareCounters := (swapExponent (leafCounterPorts aux)).seq
         (.act (installLeafCounters (aux.trans inner) arity d))
       let prepareHeaders := (Record.copyLeafHeaders src dst (caller 64) (caller 65) (List.finRange 6)).seq (.act (pushMarkers ((List.finRange 6).map dst)))
@@ -277,9 +327,12 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
         ((privateTapes.map fun i => 4*(whole.L i).length).sum + privateTapes.length*(2*high+4)+1)
       let branchCost := fun i => if liveBit i then (if badBit i then badCost i else charge i) else skipCost i
       let action := fun i => if liveBit i then (if badBit i then badEffect i else effect i) else Eq
-      let priced := fun n => ∀ extra : ℕ,
-        (∀ j ∈ labels, liveBit j = true → badBit j = true → badCost j ≤ charge 0+extra) →
-        n ≤ setupCost + (labels.length*(charge 0+6) +
+      let binaryRun := budget + recordRoundTripRate m*N + (12*m*m+4)*(prefixes 0).length + generatedRecordRate m*N
+      let binaryCharge := binaryRun + (initialClear + 6*(max (mnProgPush recordProgram) c * binaryRun))
+      let priced := fun n => ∀ baseline extra : ℕ,
+        (charge 0 ≤ baseline ∨ (0 < d ∧ H = M.size ∧ J = W.size ∧ binaryCharge ≤ baseline)) →
+        (∀ j ∈ labels, liveBit j = true → badBit j = true → badCost j ≤ baseline+extra) →
+        n ≤ setupCost + (labels.length*(baseline+6) +
           (((∑ k ∈ Finset.range d, (k+1)*(m+1))*labels.length)/prime)*extra+2)
       ∃ writer : Pr F K Q prime U, ∃ z D n next, z.user = u.user ∧ n ≤ setupCost + ((labels.map fun i => branchCost i + 2 + 4).sum + 2) ∧
         priced n ∧ Exec body (((initCounters.seq writer).seq (clearWorkTapes privateTapes)).seq (classifiedScan mask mode (recordProgram.seq (clearWorkTapes privateTapes)) fallback skip)) (mk u whole) n (mk z D) ∧
@@ -289,7 +342,7 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
     body initialUser initialState poolFits directory prefixes archiveTail allLabels slots headers scanCaller scan joined dirSlots dir pool pivot counters inputs ports a digits prefixWidth zeros
     packedLabel clock count formula detFormula generationBill generate withZero field slot r src dst ready payload gs matrices liveBit badBit
     call cost budget coordinate effects reverse transfer marks loading conversion headerCost raw tripCost runBills prepareCounters prepareHeaders recordProgram
-    privateTapes initialClear c bodyBound charge mask mode modes skip skipCost fallback badCost badEffect bad room Bcount rs parents shape freePrivate dirPositive brSize rowsSize beforeHSize parentsFree freeMask freeMode high initCounters clean initialReady initialPayload setupCost branchCost action priced
+    privateTapes initialClear c bodyBound charge mask mode modes skip skipCost fallback badCost badEffect bad room Bcount rs parents shape freePrivate dirPositive brSize rowsSize beforeHSize parentsFree freeMask freeMode high initCounters clean initialReady initialPayload setupCost branchCost action binaryRun binaryCharge priced
   have clockSlot : headers 0 = 45 := rfl
   have widthSlot : headers 2 = 2 := rfl
   have unitSlot : headers 5 = 44 := rfl
@@ -424,12 +477,32 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
     obtain ⟨finish,D,n,next,user,time,run,post⟩ := scanRun
     refine ⟨writer,finish,D,_,next,user.trans (hz.trans (hy.trans user₀)),Nat.add_le_add (Nat.add_le_add (Nat.add_le_add time₀ hl) (Nat.add_le_add_right cleanup 1)) time,?_,
       Exec.seq (Exec.seq (Exec.seq prepare write) clearMasks) run,post⟩
-    intro extra hf
+    intro baseline extra choice hf
+    have base : charge 0 ≤ baseline := by
+      rcases choice with direct | ⟨active,binary,trailingBits,limit⟩
+      · exact direct
+      have atom : w+1 ≤ v.width := width ▸ Nat.le_mul_of_pos_left _ active
+      have hp := Networks.Shared50ModularControl.prime_prime.pos
+      have pre := Nat.mul_pos (Nat.mul_pos positive.1 positive.2.1) positive.2.2.1
+      have radix : M ≤ N := (Nat.pow_le_pow_right hp atom).trans
+        ((Nat.le_mul_of_pos_left _ pre).trans ((Nat.le_mul_of_pos_right _ positive.2.2.2.1).trans
+          ((Nat.le_mul_of_pos_right _ (pow_pos hp _)).trans (Nat.le_mul_of_pos_right _ positive.2.2.2.2))))
+      have trip : tripCost ≤ budget + recordRoundTripRate m*N := by
+        dsimp only [tripCost]
+        simp only [active,binary,trailingBits,and_self,ite_true]
+        exact min_le_right _ _
+      have runBound : runBills 0 ≤ binaryRun := by
+        dsimp only [runBills,headerCost,binaryRun]
+        rw [binary]
+        exact (generatedRecordTime_binary_le m w _ _ v positive radix).trans
+          (Nat.add_le_add_right (Nat.add_le_add_right trip _) _)
+      exact (Nat.add_le_add runBound (Nat.add_le_add_left
+        (Nat.mul_le_mul_left 6 (Nat.mul_le_mul_left _ runBound)) initialClear)).trans limit
     have sameWidth (j : ℕ) (hj : j ∈ allLabels) : (prefixes j).length = (prefixes 0).length := by
       have first : 0 ∈ allLabels := List.mem_range.mpr (Nat.zero_lt_of_lt (List.mem_range.mp hj))
       exact (initialReady.2.1 j hj).symm.trans (initialReady.2.1 0 first)
     have sameCharge (j : ℕ) (hj : j ∈ allLabels) : charge j = charge 0 := by
-      simp only [charge,runBills,generationBill,sameWidth j hj]
+      simp only [charge,runBills,sameWidth j hj]
     have skipBound (j : ℕ) (hj : j ∈ allLabels) : skipCost j ≤ charge 0 := by
       rw [← sameCharge j hj]
       exact (Nat.le_add_left _ _).trans (Nat.le_add_right (runBills j) _)
@@ -437,7 +510,7 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
     obtain ⟨g₀,unit,generic⟩ := LabelProjector.residue_witness (w := w+1) (by omega) proj idem factor hd rankFits
     exact Nat.add_le_add (Nat.add_le_add (Nat.add_le_add time₀ hl) (Nat.add_le_add_right cleanup 1))
       (time.trans (directoryDispatchCost_le w d Bcount rankFits (reduce M proj) directory shape charge skipCost badCost
-        (charge 0) extra g₀ unit generic (fun j hj _ _ => (sameCharge j hj).le) (fun j hj _ => skipBound j hj) hf))
+        baseline extra g₀ unit generic (fun j hj _ _ => (sameCharge j hj).le.trans base) (fun j hj _ => (skipBound j hj).trans base) hf))
   apply classifiedPayloadScan_exec body mask mode (caller.injective.ne (by decide)) _ fallback skip liveBit badBit
     branchCost (fun is D => ready D is) payload action _ _ allLabels initialWord z startState
     r₂ p₂ bits initialModes
