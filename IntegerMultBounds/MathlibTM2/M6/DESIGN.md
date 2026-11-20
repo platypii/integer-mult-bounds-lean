@@ -661,9 +661,7 @@ can use any common capacity large enough for both programs. Lifting the chart pr
 and normalizing the scanner state takes one step. `ordinaryOwnerBank_input` supplies the scheduled parent’s full entry
 contract on a chart payload with uniform-width packed prefixes.
 `ordinaryOwnerBank_inherited` discharges the private-tape charge on that frame.
-`OrdinaryParentRun.afterChart` runs the installed parent on the selected owner
-after a hosted stage, adds the clean scanner time to the chart and normalization
-costs, and returns the checked port equation on each live label. `packedRemainderChart_stage` supplies the scheduled forward transport at exactly
+`packedRemainderChart_stage` supplies the scheduled forward transport at exactly
 this packed word length. Its tape count is fixed before precision and layout, and
 the hosted chart has a uniform width-power times volume bound. `ordinaryOwnerScanTime_rate` bounds the clean scan uniformly by a constant times
 `(w+1)^tau` times packed volume, given the stopped child’s rate. The exceptional
@@ -673,8 +671,12 @@ chart give the residual read equation at the original label and preserve all
 spectator offsets in the chart transports. `ownerRun_returnChart` appends a physical return chart to an owner execution.
 Its private registers are disjoint from the preceding program. It reads the
 updated owners in place and costs at most `stage.cost*(stage.tapes+5)+6`.
-Both directions of the packed chart have the uniform volume estimate. The node
-still needs the three scheduled executions instantiated together. At return the selected bank contains exactly the
+`OrdinaryParentRun.chartRoundTrip` instantiates both scheduled chart executions
+around the installed ordinary-parent scan. It preserves each other owner word
+and proves the residual read equation on the selected owner at the original
+label. Its time bound sums both hosted chart costs, normalization and the clean
+parent budget. The recursive node still needs this sum bounded uniformly for
+the stages and child execution that its program actually uses. At return the selected bank contains exactly the
 restored archive suffix and the final projector tape. All its other stacks are empty.
 
 The semantic five-class node (S5d.3) certifies upstream's accounting under ideal routes and
