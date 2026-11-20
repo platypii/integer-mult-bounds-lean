@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.M6.BitChildCorrection
+public import IntegerMultBounds.MathlibTM2.M6.BitOrdinaryChildLayout
 public import IntegerMultBounds.MathlibTM2.M6.BitScheduledChildQueue
 public import IntegerMultBounds.MathlibTM2.Cover.LabelCallerHeaders
 public import IntegerMultBounds.MathlibTM2.Host.UnaryBinaryHalving
