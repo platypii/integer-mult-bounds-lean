@@ -5,6 +5,7 @@ public import IntegerMultBounds.MathlibTM2.Cover.FallbackConjugationQueue
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackFormulaInit
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackRecordCleanup
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackRecordHeaders
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackRecordMasks
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackRecordCounters
 
 /-! Read a live directory label, compute the conjugate, and run the good-record round trip. -/
@@ -188,7 +189,8 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
       (eqs : entry.states ≤ Q) (xqs : leave.states ≤ Q) (word : Fin N → ZMod 2) (body : F → Pr F K Q prime U)
       (u : HS _ Q prime U) (whole : Stacks K prime),
       ∀ (poolFits : (conjugationDepth m+1)*13 ≤ work)
-        (prefixes : ℕ → List (Fin (prime+4))) (labels : List ℕ) (archiveTail : List (Fin (prime+4))),
+        (directory : Descriptor) (prefixes : ℕ → List (Fin (prime+4))) (archiveTail : List (Fin (prime+4))),
+      let labels := List.range (LabelMask.records directory)
       let slots : Fin 7 ↪ Fin 58 := ⟨![45,46,2,47,48,44,49],by decide⟩
       let headers := (Fin.castAddEmb (n := 6) 1).trans slots
       let scanCaller := goodRecordScanPorts.trans slots
@@ -281,18 +283,28 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
       (∀ i is word (u : HS K Q prime U) (S : Stacks K prime), LabelStock.live m (w+1) 1 i = true → fallbackBit rankFits (reduce M proj) (g i) = true → ready S (i :: is) → payload word S →
         ∃ z D n next, z.user = u.user ∧ n ≤ badCost i ∧ Exec body fallback (mk u S) n (mk z D) ∧
           ready D is ∧ badEffect i word next ∧ payload next D ∧ D.R mask = S.R mask ∧ D.R mode = S.R mode) →
-      whole.R mode = modes labels → ready whole labels → payload word whole → whole.R mask = labels.map (fun i => bitSymbol (liveBit i)) →
+      ∀ (rs : List (Pair K)) (parents saved : Fin K) (B : ℕ),
+      rs.length = m*m → (parents :: saved :: (LabelTraversal.slots rs ++ [mask])).Nodup →
+      (parents :: saved :: (LabelTraversal.slots rs ++ [mode])).Nodup →
+      directory.beforeH = B*prime^(m*((w+1)*m)) → LabelTraversal.ready (prime^w) whole.R rs →
+      whole.R saved = [] → (whole.R parents).length = directory.beforeRows*directory.rows*B →
+      whole.R mask = [] → whole.R mode = [] →
+      let clean := {whole with L := fun i => if i ∈ privateTapes then [] else whole.L i,
+                               R := fun i => if i ∈ privateTapes then [] else whole.R i}
+      ready clean labels → payload word clean →
+      let setupCost := 2*((6+10*(m*m))*labels.length+4) +
+        ((privateTapes.map fun i => 4*(whole.L i).length+2*(whole.R i).length+4).sum+1)
       let branchCost := fun i => if liveBit i then (if badBit i then badCost i else charge i) else skipCost i
       let action := fun i => if liveBit i then (if badBit i then badEffect i else effect i) else Eq
-      ∃ z D n next, z.user = u.user ∧ n ≤ (labels.map fun i => branchCost i + 2 + 4).sum + 2 ∧
-        Exec body (classifiedScan mask mode (recordProgram.seq (clearWorkTapes privateTapes)) fallback skip) (mk u whole) n (mk z D) ∧
+      ∃ writer : Pr F K Q prime U, ∃ z D n next, z.user = u.user ∧ n ≤ setupCost + ((labels.map fun i => branchCost i + 2 + 4).sum + 2) ∧
+        Exec body ((writer.seq (clearWorkTapes privateTapes)).seq (classifiedScan mask mode (recordProgram.seq (clearWorkTapes privateTapes)) fallback skip)) (mk u whole) n (mk z D) ∧
         (ready D [] ∧ D.R mode = modes []) ∧ D.R mask = [] ∧ payload next D ∧
         labels.foldr (fun i rest x => ∃ y, action i x y ∧ rest y) (· = next) word := by
   intro d common host M N entry leave record bank commonPorts aux hdrPorts logical addr inner caller K ef xf eqs xqs initialWord
-    body initialUser initialState poolFits prefixes allLabels archiveTail slots headers scanCaller scan joined dirSlots dir pool pivot counters inputs ports a digits prefixWidth zeros
+    body initialUser initialState poolFits directory prefixes archiveTail allLabels slots headers scanCaller scan joined dirSlots dir pool pivot counters inputs ports a digits prefixWidth zeros
     packedLabel clock count formula formulaCost detFormula C readBill generationBill generate withZero field slot r src dst ready payload gs matrices liveBit badBit
     call cost budget coordinate effects reverse transfer marks packed loading conversions headerCost runBills prepareCounters prepareHeaders recordProgram
-    privateTapes initialClear c bodyBound charge mask mode modes skip skipCost fallback badCost badEffect bad initialModes initialReady initialPayload bits branchCost action
+    privateTapes initialClear c bodyBound charge mask mode modes skip skipCost fallback badCost badEffect bad rs parents saved Bcount sizeRs maskRegs modeRegs shape radix scratch parentCount freeMask freeMode clean initialReady initialPayload setupCost branchCost action
   have clockSlot : headers 0 = 45 := rfl
   have widthSlot : headers 2 = 2 := rfl
   have unitSlot : headers 5 = 44 := rfl
@@ -323,9 +335,33 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
       change readAt _ _ (Function.update S.R (caller port) xs (r 0)) _ = _
       rw [show r 0 = caller 24 from recordRoundTripPorts_other slot 0 (by decide),right 24 (by decide)]
       simpa only [show r 0 = caller 24 from recordRoundTripPorts_other slot 0 (by decide)] using p z
+  let liveWords := allLabels.map fun i => bitSymbol (a := prime) (liveBit i)
+  let badWords := modes allLabels
+  have apart : mask ≠ mode := caller.injective.ne (by decide)
+  obtain ⟨writer,generateMasks⟩ := recordMasks_exec body rankFits
+    ((LabelRing.res prime (w+1) (by omega)).mapMatrix (reduce M proj)) rs sizeRs mask mode parents saved apart maskRegs modeRegs
+  obtain ⟨y,l,hy,hl,write⟩ := generateMasks directory w Bcount (reduce M proj) rfl shape initialUser initialState
+    radix scratch parentCount freeMask freeMode
+  obtain ⟨z,hz,clearMasks⟩ := clearAfterMasks_exec body mask mode privateTapes ((List.nodup_finRange K).filter _)
+    (by simp [privateTapes,mask,caller]) (by simp [privateTapes,mode,caller]) liveWords badWords y initialState
+  let liveState := {clean with R := Function.update clean.R mask liveWords}
+  let startState := {liveState with R := Function.update liveState.R mode badWords}
+  obtain ⟨r₁,p₁⟩ := release 57 (by decide) (by decide) _ _ clean liveWords initialReady initialPayload
+  obtain ⟨r₂,p₂⟩ := release 56 (by decide) (by decide) _ _ liveState badWords r₁ p₁
+  have bits : startState.R mask = liveWords := (Function.update_of_ne apart badWords liveState.R).trans
+    (Function.update_self mask liveWords clean.R)
+  have initialModes : startState.R mode = badWords := Function.update_self mode badWords liveState.R
+  suffices scanRun : ∃ finish D n next, finish.user = z.user ∧
+      n ≤ (allLabels.map fun i => branchCost i+2+4).sum+2 ∧
+      Exec body (classifiedScan mask mode (recordProgram.seq (clearWorkTapes privateTapes)) fallback skip)
+        (mk z startState) n (mk finish D) ∧ (ready D [] ∧ D.R mode = modes []) ∧ D.R mask = [] ∧ payload next D ∧
+      allLabels.foldr (fun i rest x => ∃ y, action i x y ∧ rest y) (· = next) initialWord by
+    obtain ⟨finish,D,n,next,user,time,run,post⟩ := scanRun
+    exact ⟨writer,finish,D,_,next,user.trans (hz.trans hy),Nat.add_le_add (Nat.add_le_add_right hl _) time,
+      Exec.seq (Exec.seq write clearMasks) run,post⟩
   apply classifiedPayloadScan_exec body mask mode (caller.injective.ne (by decide)) _ fallback skip liveBit badBit
-    branchCost (fun is D => ready D is) payload action _ _ allLabels initialWord initialUser initialState
-    initialReady initialPayload bits initialModes
+    branchCost (fun is D => ready D is) payload action _ _ allLabels initialWord z startState
+    r₂ p₂ bits initialModes
   · intro k hk
     rcases hk with rfl | rfl
     · exact release 57 (by decide) (by decide)

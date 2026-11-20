@@ -13,7 +13,7 @@ open RecursiveInterchangeLayout (Descriptor volume)
 open Host LabelTraversal LabelMask LabelStock LabelTransport
 variable {T Q A : ℕ} {P U : Type}
 
-private theorem selector_cost (v : Descriptor) (m w B : ℕ) (hw : 0 < w)
+theorem selector_cost (v : Descriptor) (m w B : ℕ) (hw : 0 < w)
     (hv : v.beforeH = B*prime^(m*(w*m))) :
     (v.beforeRows*v.rows*B)*(time (prime^(w-1)) (m*m) 1+5)+4 ≤
       (6+10*(m*m))*records v+4 := by
