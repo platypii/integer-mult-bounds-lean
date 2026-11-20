@@ -657,7 +657,7 @@ writer and row dispatch are fixed across owner payloads. The parent returns an
 `OwnerScan`, so `OwnerScan.place` embeds it at a permanent owner without changing
 the step count or other owner words. `chartOwner_scan` executes a hosted chart followed by a scanner on that shared
 slot. The combined bound is `stage.cost * (stage.tapes + 5) + 6 + (1 + budget)`. The chart and scanner
-use the maximum of their state capacities. Lifting the chart preserves its bound,
+can use any common capacity large enough for both programs. Lifting the chart preserves its bound,
 and normalizing the scanner state takes one step. `ordinaryOwnerBank_input` supplies the scheduled parent’s full entry
 contract on a chart payload with uniform-width packed prefixes.
 `ordinaryOwnerBank_inherited` discharges the private-tape charge on that frame.
@@ -668,7 +668,13 @@ this packed word length. Its tape count is fixed before precision and layout, an
 the hosted chart has a uniform width-power times volume bound. `ordinaryOwnerScanTime_rate` bounds the clean scan uniformly by a constant times
 `(w+1)^tau` times packed volume, given the stopped child’s rate. The exceptional
 coefficient retains the label fraction, and the parent setup is linear in packed
-volume. These estimates still need to be instantiated in the recursive node. At return the selected bank contains exactly the
+volume. `PortReads.roundTrip` proves that the forward chart, packed scanner and inverse
+chart give the residual read equation at the original label and preserve all
+spectator offsets in the chart transports. `ownerRun_returnChart` appends a physical return chart to an owner execution.
+Its private registers are disjoint from the preceding program. It reads the
+updated owners in place and costs at most `stage.cost*(stage.tapes+5)+6`.
+Both directions of the packed chart have the uniform volume estimate. The node
+still needs the three scheduled executions instantiated together. At return the selected bank contains exactly the
 restored archive suffix and the final projector tape. All its other stacks are empty.
 
 The semantic five-class node (S5d.3) certifies upstream's accounting under ideal routes and

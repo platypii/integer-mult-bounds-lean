@@ -889,9 +889,11 @@ theorem remainderChart_stage [M8.Machine.Net] {k : ℕ} (src : Fin k) (c : PortC
     exact ⟨fun j off => Function.update_of_ne off .., by
       simpa only [transform,Function.update_self] using (result data).choose_spec.1⟩
 
-/-- The scheduled forward chart acts on the packed record word consumed by the parent. -/
+/-- Both directions of the scheduled chart act on the packed record word consumed by the parent. -/
 theorem packedRemainderChart_stage [M8.Machine.Net] {k : ℕ} (src : Fin k) (c : PortCertificate)
-    (hc : c.Checked) :
+    (hc : c.Checked) (inverse : Bool) :
+    let H := c.fullChart.submatrix stageAxis.symm remainderAxis
+    let σ := if inverse then H.transpose else H
     ∃ C tapes : ℕ, ∀ (layout : Descriptor) (w rows B : ℕ), layout.Positive →
       layout.width = 64*(w+1) → layout.rows = 142080*rows →
       layout.beforeH = B*prime^(64*((w+1)*64)) →
@@ -904,10 +906,11 @@ theorem packedRemainderChart_stage [M8.Machine.Net] {k : ℕ} (src : Fin k) (c :
           (((C : ℝ)+63*|LeafCore.C| * (width : ℝ)^M8.Machine.BudgetBound.tau)*n)*(tapes+5)) ∧
         ∀ data, (∀ j, j ≠ src → stage.transform data j = data j) ∧
           LabelPermutation.Transport v B (w+1)
-            (fun g => g * reduce (modulus (w+1)) (c.fullChart.submatrix stageAxis.symm remainderAxis))
+            (fun g => g * reduce (modulus (w+1)) σ)
             (ext (data src)) (ext (stage.transform data src))
       spec N := by
-  obtain ⟨C,tapes,chart⟩ := remainderChart_stage src c hc false
+  intro H σ
+  obtain ⟨C,tapes,chart⟩ := remainderChart_stage src c hc inverse
   refine ⟨C,tapes,?_⟩
   intro layout w rows B positive width split shape v N spec
   have pos := RecursiveRowsNodeLayout.role_positive 142080 layout (by decide) positive ⟨rows,split⟩

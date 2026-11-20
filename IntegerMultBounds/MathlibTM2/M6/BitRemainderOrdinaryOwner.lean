@@ -125,6 +125,111 @@ theorem chartOwner_exec {N k Q : ℕ} {P U : Type}
   rw [← stage.output_payload]
   exact fun i j => output (stage.slots i) j
 
+/-- A return chart can start from the scanner's owner stacks and its own
+initialized private tapes. Only the owner contents vary with the scan. -/
+theorem chartOwner_input {N k : ℕ} (stage : SharedBankStage.Stage _ k prime (phaseOwners (N := N)))
+    (initial data : Fin k → Fin N → ZMod 2) (S F : Stacks stage.tapes prime)
+    (ready : RepT (stage.input initial) S.L S.R)
+    (owners : RepT (phaseOwners data) (embStk stage.slots F).L (embStk stage.slots F).R)
+    (privateFrame : ∀ j, (∀ i, stage.slots i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j) :
+    RepT (stage.input data) F.L F.R := by
+  intro j h
+  by_cases shared : ∃ i, stage.slots i = j
+  · obtain ⟨i,rfl⟩ := shared
+    have tape := congrArg (fun A : Tapes k prime => A.tape i h) (stage.input_payload data)
+    have head := congrArg (fun A : Tapes k prime => A.head i) (stage.input_payload data)
+    change (stage.input data).head (stage.slots i) = (phaseOwners data).head i at head
+    rw [head]
+    exact tape.trans (owners i h)
+  · have kept := privateFrame j (fun i eq => shared ⟨i,eq⟩)
+    have eq := (stage.strip_input data).trans (stage.strip_input initial).symm
+    have tape := congrArg (fun A : Tapes stage.tapes prime => A.tape j h) eq
+    have head := congrArg (fun A : Tapes stage.tapes prime => A.head j) eq
+    simp only [SharedBank.strip,shared,ite_false] at tape head
+    rw [tape,head,kept.1,kept.2]
+    exact ready j h
+
+/-- Run the return chart at its placed registers after the scanner. All
+registers outside the return chart keep both stacks. -/
+theorem returnChart_exec {T N k Q : ℕ} {P U : Type}
+    (stage : SharedBankStage.Stage _ k prime (phaseOwners (N := N))) (capacity : stage.states ≤ Q)
+    (bank : Fin stage.tapes ↪ Fin T) (body : P → Pr P T Q prime U)
+    (initial data : Fin k → Fin N → ZMod 2) (seed : Stacks stage.tapes prime)
+    (u : HS T Q prime U) (F : Stacks T prime)
+    (ready : RepT (stage.input initial) seed.L seed.R)
+    (owners : RepT (phaseOwners data) (fun i => F.L (bank (stage.slots i))) (fun i => F.R (bank (stage.slots i))))
+    (privateFrame : ∀ j, (∀ i, stage.slots i ≠ j) → F.L (bank j) = seed.L j ∧ F.R (bank j) = seed.R j) :
+    ∃ z D t, Exec body (embProg bank (Empty.elim : Empty → P) (foreign (liftQ stage.program capacity)))
+      (mk u F) t (mk z D) ∧ t ≤ stage.cost*(stage.tapes+5)+6 ∧ z.user = u.user ∧
+      RepT (phaseOwners (stage.transform data)) (fun i => D.L (bank (stage.slots i))) (fun i => D.R (bank (stage.slots i))) ∧
+      ∀ j, (∀ i, bank i ≠ j) → D.L j = F.L j ∧ D.R j = F.R j := by
+  have input := chartOwner_input stage initial data seed (embStk bank F) ready owners privateFrame
+  obtain ⟨v,A,t,run,paid,user,output⟩ := chartOwner_exec stage capacity (P := Empty) Empty.elim data (embDn bank u) _ input
+  obtain ⟨z,D,exec,_,same,view,off⟩ := exec_emb (ι := (Empty.elim : Empty → P)) (body' := body)
+    bank.injective (fun f => f.elim) run u rfl F rfl
+  rw [← view] at output
+  exact ⟨z,D,t,exec,paid,same.trans user,output,off⟩
+
+/-- Use the permanent owner slots for the chart payload and an appended
+bank for its private tapes. -/
+noncomputable def returnChartBank {k t T : ℕ} (slots : Fin k ↪ Fin t) (owners : Fin k ↪ Fin T) :
+    Fin t ↪ Fin (T+t) :=
+  let place := Fin.addCases (fun i : Fin k => (owners i).castAdd t) (Fin.natAdd T)
+  ⟨place ∘ SharedBank.slot slots,by
+    apply Function.Injective.comp _ (SharedBank.slot_injective slots)
+    have apart (i : Fin k) (j : Fin t) : (owners i).castAdd t ≠ j.natAdd T := by
+      intro eq
+      have h := congrArg Fin.val eq
+      simp at h
+      omega
+    intro i j
+    induction i using Fin.addCases <;> induction j using Fin.addCases <;>
+      simp [place,owners.injective.eq_iff,apart,Ne.symm (apart _ _)]⟩
+
+theorem returnChartBank_selected {k t T : ℕ} (slots : Fin k ↪ Fin t) (owners : Fin k ↪ Fin T) (i : Fin k) :
+    returnChartBank slots owners (slots i) = (owners i).castAdd t := by
+  simp [returnChartBank,SharedBank.slot_selected slots slots.injective]
+
+theorem returnChartBank_private {k t T : ℕ} (slots : Fin k ↪ Fin t) (owners : Fin k ↪ Fin T)
+    (j : Fin t) (off : ∀ i, slots i ≠ j) : returnChartBank slots owners j = j.natAdd T := by
+  simp [returnChartBank,SharedBank.slot,show ¬∃ i, slots i = j from fun ⟨i,eq⟩ => off i eq]
+
+/-- Append the return chart to an existing owner execution. Its private
+input is installed once and lies outside every register of the preceding run. -/
+theorem ownerRun_returnChart {T N k Q : ℕ} {P U : Type}
+    (stage : SharedBankStage.Stage _ k prime (phaseOwners (N := N))) (capacity : stage.states ≤ Q)
+    (owners : Fin k ↪ Fin T) (body : P → Pr P T Q prime U) (prior : Pr P T Q prime U)
+    (initial data : Fin k → Fin N → ZMod 2) (seed : Stacks stage.tapes prime)
+    (ready : RepT (stage.input initial) seed.L seed.R) (S F : Stacks T prime)
+    (u : HS (T+stage.tapes) Q prime U) (v : HS T Q prime U) (n : ℕ) :
+    let bank := Fin.castAddEmb (n := T) stage.tapes
+    let returnBank := returnChartBank ⟨stage.slots,stage.slots_injective⟩ owners
+    let outer := fun f => embProg bank id (body f)
+    let start : Stacks (T+stage.tapes) prime := ⟨S.inp,S.out,Fin.addCases S.L seed.L,Fin.addCases S.R seed.R⟩
+    Exec body prior (mk (embDn bank u) S) n (mk v F) →
+    RepT (phaseOwners data) (fun i => F.L (owners i)) (fun i => F.R (owners i)) →
+    ∃ z D t, t ≤ stage.cost*(stage.tapes+5)+6 ∧
+      Exec outer ((embProg bank id prior).seq
+        (embProg returnBank (Empty.elim : Empty → P) (foreign (liftQ stage.program capacity))))
+        (mk u start) (n+t) (mk z D) ∧
+      RepT (phaseOwners (stage.transform data)) (fun i => D.L (bank (owners i))) (fun i => D.R (bank (owners i))) := by
+  intro bank returnBank outer start run reads
+  obtain ⟨y,B,firstRun,_,_,view,off⟩ := exec_emb (ι := id) (body' := outer) bank.injective
+    (fun _ => rfl) run u rfl start (by apply Stacks.ext <;> simp [embStk,bank,start,Function.comp_def])
+  have shared (i : Fin k) : returnBank (stage.slots i) = bank (owners i) := returnChartBank_selected ..
+  have source := reads
+  rw [← view] at source
+  obtain ⟨z,D,t,back,paid,_,out,_⟩ := returnChart_exec stage capacity returnBank outer initial data seed y B ready
+    (by simpa only [shared,embStk,Function.comp_apply] using source) (by
+      intro j unused
+      rw [show returnBank j = j.natAdd T from returnChartBank_private _ _ _ unused]
+      have kept := off (j.natAdd T) (fun i eq => by
+        have h := congrArg Fin.val eq
+        simp [bank] at h
+        omega)
+      simpa [start] using kept)
+  exact ⟨z,D,t,paid,Exec.seq firstRun back,by simpa only [shared] using out⟩
+
 /-- Attach scanner metadata beside the owner tapes returned by the chart. -/
 def ordinaryOwnerBank {T k : ℕ} (metadata : ℕ → List (Fin (prime+4))) (owners : Stacks k prime) :
     Stacks ((T+5)+k) prime where
@@ -196,8 +301,7 @@ theorem chartOwner_scan {T N k Q : ℕ} {P U : Type}
     let slot := (0 : Fin 5).natAdd T
     let placement := payloadPlacement slot (stage.slots src)
     let chart : Fin stage.tapes ↪ Fin ((T+5)+stage.tapes) := Fin.natAddEmb (T+5)
-    let capacity := max stage.states Q
-    let fits : Q ≤ capacity := le_max_right ..
+    ∀ (capacity : ℕ) (chartFits : stage.states ≤ capacity) (fits : Q ≤ capacity),
     let outer := fun f => statePlacedPr placement fits positive id (body f)
     ∀ (u : HS ((T+5)+stage.tapes) capacity prime U) (S : Stacks stage.tapes prime),
     RepT (stage.input data) S.L S.R →
@@ -206,12 +310,12 @@ theorem chartOwner_scan {T N k Q : ℕ} {P U : Type}
       ∃ z D n word, n ≤ budget ∧ post word ∧ OwnerScan body program slot word v
         (embStk placement (ordinaryOwnerBank metadata F)) n z D) →
     ∃ z D n word, post word ∧ n ≤ stage.cost*(stage.tapes+5)+6+(1+budget) ∧
-      Exec outer ((embProg chart (Empty.elim : Empty → P) (foreign (liftQ stage.program (le_max_left stage.states Q)))).seq (statePlacedNormalized placement fits positive id program))
+      Exec outer ((embProg chart (Empty.elim : Empty → P) (foreign (liftQ stage.program chartFits))).seq (statePlacedNormalized placement fits positive id program))
         (mk u (ordinaryOwnerBank metadata S)) n (mk z D) ∧
       ∀ i j, readAt blank (D.L (chart (stage.slots i))) (D.R (chart (stage.slots i))) j =
         (phaseOwners (Function.update (stage.transform data) src word)).tape i j := by
-  intro slot placement chart capacity fits outer u S input scanner
-  obtain ⟨y,F,t,run,price,_,reads⟩ := chartOwner_exec stage (P := Empty) (le_max_left stage.states Q) Empty.elim data (embDn chart u) S input
+  intro slot placement chart capacity chartFits fits outer u S input scanner
+  obtain ⟨y,F,t,run,price,_,reads⟩ := chartOwner_exec stage (P := Empty) chartFits Empty.elim data (embDn chart u) S input
   obtain ⟨v,B,enter,_,_,view,off⟩ := exec_emb (ι := (Empty.elim : Empty → P)) (body' := outer)
     chart.injective (fun f => f.elim) run u rfl (ordinaryOwnerBank metadata S) (by
       apply Stacks.ext <;> simp [embStk,ordinaryOwnerBank,chart,Function.comp_def])
@@ -342,6 +446,42 @@ noncomputable def ordinaryParentProgram [M8.Machine.Net] {K : ℕ} {U : Type}
   let scan := (payloadCountProgram (ownerCountPorts (K+1)) 128).seq (controls.seq ((embProg embed id prepare).seq dispatch))
   (remainderOwnerSetup root interval.1 interval.2 bank).seq scan
 
+/-- A chart transports the entire contiguous payload at a label, including
+all spectator offsets inside its record. -/
+theorem chartTransport_record {v : Descriptor} {B w m : ℕ} [NeZero (prime^w)]
+    {f : LabelPadding.Label m w → LabelPadding.Label m w} {before after : ℕ → ZMod 2}
+    (transport : LabelPermutation.Transport v B w f before after)
+    (shape : v.beforeH = B*prime^(m*(w*m))) :
+    let q := prime^v.width
+    let box := prime^(m*(w*m))
+    let N := q*v.between*q*v.afterD
+    ∀ (block : Fin (v.beforeRows*v.rows*B)) (g : LabelPadding.Label m w) (i : Fin N),
+      after ((block.val*box+(LabelAddress.address (f g)).val)*N+i.val) =
+        before ((block.val*box+(LabelAddress.address g).val)*N+i.val) := by
+  intro q box N block g i
+  obtain ⟨⟨ar,b⟩,rfl⟩ := finProdFinEquiv.surjective block
+  obtain ⟨⟨a,row⟩,rfl⟩ := finProdFinEquiv.surjective ar
+  obtain ⟨⟨hmd,t⟩,rfl⟩ := finProdFinEquiv.surjective i
+  obtain ⟨⟨hm,d⟩,rfl⟩ := finProdFinEquiv.surjective hmd
+  obtain ⟨⟨h,mid⟩,rfl⟩ := finProdFinEquiv.surjective hm
+  have pos (label : LabelPadding.Label m w) :
+      RecursiveInterchangeLayout.index prime v a row (b.val*box+(LabelAddress.address label).val) h mid d t =
+        (((a.val*v.rows+row.val)*B+b.val)*box+(LabelAddress.address label).val)*N+
+        (((h.val*v.between+mid.val)*q+d.val)*v.afterD+t.val) := by
+    simp only [RecursiveInterchangeLayout.index,shape,N,q,box]
+    ring
+  have eq := transport g a a.isLt row row.isLt b b.isLt h h.isLt mid mid.isLt d d.isLt t t.isLt
+  rw [pos,pos] at eq
+  simpa only [finProdFinEquiv_apply_val,Nat.mul_comm,Nat.add_comm] using eq
+
+private theorem ownerRow_ext {R N : ℕ} (word : Fin (R*N) → ZMod 2) (j : ℕ) (inside : j < R) (i : Fin N) :
+    ownerRow (R := R) (N := N) rfl word j i = ext word (j*N+i.val) := by
+  rw [ownerRow,dif_pos inside]
+  let cell := finProdFinEquiv ((⟨j,inside⟩ : Fin R),i)
+  have pos : cell.val = j*N+i.val := by simp [cell,finProdFinEquiv_apply_val,Nat.mul_comm,Nat.add_comm]
+  rw [← pos,ext_apply]
+  rfl
+
 /-- The packed row at each routed label implements the port's residual projector. -/
 def PortReads {w : ℕ} (R W parents : ℕ) (interval : ℕ × ℕ) (parent : Fin 64 → ZMod (prime^(w+1)))
     (word output : Fin (R*((prime^(w+1))^128*W)) → ZMod 2) : Prop :=
@@ -357,6 +497,54 @@ def PortReads {w : ℕ} (R W parents : ℕ) (interval : ℕ × ℕ) (parent : Fi
         ∀ x k, ownerRow (R := R) (N := N) rfl output j
           (index ((projectorResidual finSumFinEquiv P parent (fun i => Ring.inverse (parent i)) g).mulVec x) k) =
             ownerRow (R := R) (N := N) rfl word j (index x k)
+
+/-- The reverse chart restores the incoming label. At that label the complete
+round trip implements the weighted residual of the scheduled port projector. -/
+theorem PortReads.roundTrip {w B R : ℕ} (v : Descriptor) (width : v.width = 64*(w+1))
+    (shape : v.beforeH = B*prime^(64*((w+1)*64))) (interval : ℕ × ℕ)
+    (parent : Fin 64 → ZMod (prime^(w+1))) (c : Certificates.PR589.Nine.PortCertificate) (hc : c.Checked) :
+    let M := prime^(w+1)
+    letI : NeZero M := ⟨(pow_pos Shared50ModularControl.prime_prime.pos _).ne'⟩
+    let W := v.between*v.afterD
+    let N := M^128*W
+    let parents := v.beforeRows*v.rows*B
+    let box := M^(64*64)
+    let H := reduce M (c.fullChart.submatrix stageAxis.symm remainderAxis)
+    let P := reduce M ((c.span interval.1 interval.2).submatrix stageAxis.symm stageAxis.symm)
+    ∀ (input routed scanned output : Fin (R*N) → ZMod 2), R = parents*box →
+      LabelPermutation.Transport v B (w+1) (fun g => g*H) (ext input) (ext routed) →
+      PortReads R W parents interval parent routed scanned →
+      LabelPermutation.Transport v B (w+1) (fun g => g*H.transpose) (ext scanned) (ext output) →
+      ∀ (block : Fin parents) (g : LabelPadding.Label 64 (w+1)), IsUnit g →
+        let j := block.val*box+(LabelAddress.address g).val
+        ∀ x k, ownerRow (R := R) (N := N) rfl output j
+          (index ((projectorResidual finSumFinEquiv P parent (fun i => Ring.inverse (parent i)) g).mulVec x) k) =
+            ownerRow (R := R) (N := N) rfl input j (index x k) := by
+  intro M W N parents box H P input routed scanned output count enter scan leave block g unit j x k
+  letI : NeZero (prime^(w+1)) := ⟨(pow_pos Shared50ModularControl.prime_prime.pos _).ne'⟩
+  let row := fun a : LabelPadding.Label 64 (w+1) => block.val*box+(LabelAddress.address a).val
+  have inside (a) : row a < R := by
+    rw [count]
+    exact (Nat.add_lt_add_left (LabelAddress.address a).isLt _).trans_le (by
+      rw [← Nat.succ_mul]; exact Nat.mul_le_mul_right _ block.isLt)
+  have boxes : prime^(64*((w+1)*64)) = box := by simp only [box,M,← pow_mul]; congr 1; ring
+  have size : prime^v.width*v.between*prime^v.width*v.afterD = N := by
+    rw [width,show 64*(w+1) = (w+1)*64 by omega,pow_mul]
+    dsimp only [N,M,W]
+    rw [show (128 : ℕ) = 64+64 by decide,pow_add (prime^(w+1)) 64 64]
+    ac_rfl
+  have move {f : LabelPadding.Label 64 (w+1) → LabelPadding.Label 64 (w+1)} {a b : Fin (R*N) → ZMod 2}
+      (h : LabelPermutation.Transport v B (w+1) f (ext a) (ext b)) (label) (i : Fin N) :
+      ownerRow rfl b (row (f label)) i = ownerRow rfl a (row label) i := by
+    rw [ownerRow_ext _ _ (inside _) _,ownerRow_ext _ _ (inside _) _]
+    have eq := chartTransport_record h shape block label (i.cast size.symm)
+    simpa only [Fin.val_cast,boxes,size,row] using eq
+  have undo := (remainderChart_reduced c hc (w+1)).2
+  change H*H.transpose = 1 at undo
+  let dst := index ((projectorResidual finSumFinEquiv P parent (fun i => Ring.inverse (parent i)) g).mulVec x) k
+  have back := move leave (g*H) dst
+  rw [Matrix.mul_assoc,undo,Matrix.mul_one] at back
+  exact back.trans ((scan c hc block block.isLt g unit x k).trans (move enter g (index x k)))
 
 def OrdinaryParentRun [M8.Machine.Net] {common work w rows B : ℕ} {U : Type}
     (interval : ℕ × ℕ) (layout : Descriptor)
@@ -470,10 +658,9 @@ theorem OrdinaryParentRun.afterChart [M8.Machine.Net] {common work w rows B : �
       (words : Fin k → Fin (data.records*N) → ZMod 2),
       let share := payloadPlacement (reg 0) (stage.slots src)
       let chartBank : Fin stage.tapes ↪ Fin (((66+(K+1))+5)+stage.tapes) := Fin.natAddEmb _
-      let cap := max stage.states columnCapacity
-      let fitsState : columnCapacity ≤ cap := le_max_right ..
+      ∀ (cap : ℕ) (chartFits : stage.states ≤ cap) (fitsState : columnCapacity ≤ cap),
       let installed := fun f => statePlacedPr share fitsState columnCapacity_pos id (outer f)
-      let enter := embProg chartBank (Empty.elim : Empty → Unit) (foreign (liftQ stage.program (le_max_left stage.states columnCapacity)))
+      let enter := embProg chartBank (Empty.elim : Empty → Unit) (foreign (liftQ stage.program chartFits))
       ∀ (u : HS (((66+(K+1))+5)+stage.tapes) cap prime U) (S : Stacks stage.tapes prime),
       RepT (stage.input words) S.L S.R →
       ∃ z F t output, t ≤ stage.cost*(stage.tapes+5)+6+(1+clean) ∧
@@ -487,10 +674,10 @@ theorem OrdinaryParentRun.afterChart [M8.Machine.Net] {common work w rows B : �
   let bank := (Fin.castLEEmb (show 72 ≤ 66+(K+1) by omega)).trans (Fin.castAddEmb 5)
   let program := ordinaryParentProgram room fits root interval bank step (readWithSuccessorClock (ports 1) (advanceDirectory 64 ports)) selectors
   refine ⟨program,?_⟩
-  intro k stage src words share chartBank cap fitsState installed enter start S input
+  intro k stage src words share chartBank cap chartFits fitsState installed enter start S input
   let word := stage.transform words src
   let post := fun (output : Fin (data.records*N) → ZMod 2) => PortReads data.records W parents interval parent word output
-  obtain ⟨z,F,t,output,ok,paid,run,reads⟩ := chartOwner_scan stage src metadata words columnCapacity_pos outer program clean post start S input (by
+  obtain ⟨z,F,t,output,ok,paid,run,reads⟩ := chartOwner_scan stage src metadata words columnCapacity_pos outer program clean post cap chartFits fitsState start S input (by
     intro u owners chartReads
     have reads (j : ℤ) := (chartReads src j).symm
     simp only [embStk,Function.comp_apply,phaseOwners,sub_zero] at reads
