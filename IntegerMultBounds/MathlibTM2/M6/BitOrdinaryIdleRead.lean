@@ -57,7 +57,8 @@ fits in one row-volume charge even for a single spectator. -/
 theorem childCorrectionSetup_volume_le (w W : ℕ) (positive : 0 < W) :
     let M := prime^(w+1)
     let H := M.size
-    128*(128*(8*(64*H)+14*H+22)+1)+1 ≤ (128*(128*(8*64+14+22)+1)+1)*(M^128*W) := by
+    4*H+4+(128*(128*(8*(64*H)+14*H+22)+1)+1+(2*H+2)) + 1 + (128*128*(4*H+4)+1) ≤
+      (128*(128*(8*64+14+22+8)+1)+15)*(M^128*W) := by
   intro M H
   have modulus : 0 < M := pow_pos Shared50ModularControl.prime_prime.pos _
   have digits : H ≤ M^128*W := (Nat.size_le.mpr Nat.lt_two_pow_self : M.size ≤ M).trans

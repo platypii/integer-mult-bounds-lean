@@ -757,8 +757,12 @@ archives and the zero and one words. `childCorrection_exec` executes the
 127 pair scalings on the ordinary child's address map. At canonical binary
 header widths, matrix preparation costs at most a constant times row volume,
 and the pair program costs at most a constant times row volume times
-`(w+1)^tau`. The recursive caller still needs to place the archives, install
-the correction around the child's payload, and restore the caller frame.
+`(w+1)^tau`. `preparedCorrection_exec` reads the active pivots and their inverses from caller
+tapes 55 and 56. Its writer shares the column archive with the scaling machine,
+which corrects the positioned payload. A counted drop restores the archive
+suffix, and the run preserves both stacks outside the column placement.
+The recursive invocation still needs to supply that placement and the
+positioned ordinary child output.
 
 The semantic five-class node (S5d.3) certifies upstream's accounting under ideal routes and
 partial swaps. Its exponent `1 - 10/5769` holds under that idealization only.

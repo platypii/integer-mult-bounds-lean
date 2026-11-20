@@ -1,6 +1,7 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.Cover.FallbackDiagonalProgram
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackNextRecord
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackPlacedDiagonal
 public import IntegerMultBounds.MathlibTM2.Cover.Weighted
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackProjectorEntries
 
@@ -153,7 +154,123 @@ theorem childCorrection_writes {T Q A M r : ℕ} [NeZero M] {P U : Type}
   rw [← matrix]
   exact write
 
+/-- Keep the caller's modulus, unit, positive weights and inverses on their
+original tapes. Use six private tapes for zero, scratch and matrix output. -/
+def callerCorrectionPorts (k : Fin 4) : Fin 7 ↪ Fin 64 :=
+  ⟨![59,2,(![58,44,55,56] : Fin 4 → Fin 64) k,60,61,62,63],
+    by fin_cases k <;> decide⟩
+
+/-- Install the correction from the rank-sized archives saved by the good
+caller. Only the matrix destination changes, including when the rank is zero. -/
+theorem callerCorrection_writes {T Q A M r : ℕ} [NeZero M] {P U : Type}
+    (body : P → Pr P T Q A U) (bank : Fin 64 ↪ Fin T)
+    (fits : r ≤ 64) (pivot : Fin r → (ZMod M)ˣ) (H : ℕ) :
+    let weight := fun i : Fin 64 => if h : i.val < r then pivot ⟨i.val,h⟩ else 1
+    let read := fun k => (callerCorrectionPorts k).trans bank
+    let emit := fun i j => let slot := correctionSlot r i j
+                           readMatrixWord slot.2.val (read slot.1)
+    LabelTraversal.Writes body (fun R => (R (bank 2)).length = H ∧
+      R (bank 44) = binSyms H (1 : ZMod M).val ∧ R (bank 58) = binSyms H 0 ∧
+      R (bank 55) = (List.ofFn fun i => binSyms H (pivot i : ZMod M).val).flatten ∧
+      R (bank 56) = (List.ofFn fun i => binSyms H (pivot i).inv.val).flatten ∧
+      ∀ k ∈ ([59,61,62,63] : List (Fin 64)), R (bank k) = [])
+      (bank 60) (LabelTraversal.sequence (fun i => LabelTraversal.sequence (emit i)
+        (List.finRange 128)) (List.finRange 128))
+      (matrixWords A H (Matrix.diagonal fun k => (childCorrection r weight k : ZMod M)))
+      (128*(128*(8*(64*H)+14*H+22)+1)+1) := by
+  intro weight read emit u S ⟨width,one,zero,pos,inv,free⟩
+  apply childCorrection_writes body read (bank 60) (fun _ => rfl) fits weight H u S
+  intro k
+  refine ⟨?_,width,?_⟩
+  · fin_cases k
+    · simpa [read,callerCorrectionPorts,correctionLength,correctionValue,List.ofFn_succ] using zero
+    · simpa [read,callerCorrectionPorts,correctionLength,correctionValue,List.ofFn_succ] using one
+    · change S.R (bank 55) = (List.ofFn fun i : Fin r => binSyms H (weight (i.castLE fits) : ZMod M).val).flatten
+      simpa [weight] using pos
+    · change S.R (bank 56) = (List.ofFn fun i : Fin r => binSyms H (weight (i.castLE fits)).inv.val).flatten
+      simpa [weight] using inv
+  · intro t ht
+    exact free _ ((by decide : ∀ (k : Fin 4) (t : Fin 7), t = 0 ∨ 4 ≤ t →
+      callerCorrectionPorts k t ∈ ([59,61,62,63] : List (Fin 64))) k t ht)
+
+/-- Make the zero constant from the modulus width, then release its tape
+after writing the matrix. The payload and both caller archives are preserved. -/
+theorem prepareCorrection_writes {T Q A M r : ℕ} [NeZero M] {P U : Type}
+    (body : P → Pr P T Q A U) (bank : Fin 64 ↪ Fin T)
+    (fits : r ≤ 64) (pivot : Fin r → (ZMod M)ˣ) (H : ℕ) :
+    let weight := fun i : Fin 64 => if h : i.val < r then pivot ⟨i.val,h⟩ else 1
+    let emit := fun i j => let slot := correctionSlot r i j
+                           readMatrixWord slot.2.val ((callerCorrectionPorts slot.1).trans bank)
+    let write := LabelTraversal.sequence (fun i => LabelTraversal.sequence (emit i)
+      (List.finRange 128)) (List.finRange 128)
+    LabelTraversal.Writes body (fun R => (R (bank 2)).length = H ∧
+      R (bank 44) = binSyms H (1 : ZMod M).val ∧
+      R (bank 55) = (List.ofFn fun i => binSyms H (pivot i : ZMod M).val).flatten ∧
+      R (bank 56) = (List.ofFn fun i => binSyms H (pivot i).inv.val).flatten ∧
+      ∀ k ∈ ([58,59,61,62,63] : List (Fin 64)), R (bank k) = [])
+      (bank 60) ((bzero (bank 2) (bank 58) (bank 59)).seq (write.seq (bclear (bank 58))))
+      (matrixWords A H (Matrix.diagonal fun k => (childCorrection r weight k : ZMod M)))
+      (4*H+4+(128*(128*(8*(64*H)+14*H+22)+1)+1+(2*H+2))) := by
+  intro weight emit write u S ⟨width,one,pos,inv,free⟩
+  obtain ⟨y,same,init⟩ := bzero_exec body (wR := bank 2) (c := bank 58) (t := bank 59)
+    (by simp) u S (free 59 (by decide))
+  rw [width,free 58 (by decide),List.append_nil] at init
+  let D : Stacks T A := {S with R := Function.update S.R (bank 58) (binSyms H 0)}
+  obtain ⟨z,n,user,paid,run⟩ := callerCorrection_writes body bank fits pivot H y D
+    ⟨by simpa [D] using width,by simpa [D] using one,Function.update_self ..,
+      by simpa [D] using pos,by simpa [D] using inv,by
+        intro k hk
+        have ne : k ≠ 58 := fun eq => by subst k; simp at hk
+        rw [show D.R (bank k) = S.R (bank k) from Function.update_of_ne (bank.injective.ne ne) ..]
+        exact free _ (List.mem_cons_of_mem _ hk)⟩
+  let word := matrixWords A H (Matrix.diagonal fun k => (childCorrection r weight k : ZMod M))
+  let F : Stacks T A := {D with R := Function.update D.R (bank 60) (word ++ D.R (bank 60))}
+  obtain ⟨out,unchanged,_,clear⟩ := bclear_exec (body := body) (bank 58) z F
+  have len : (F.R (bank 58)).length = H := by simp [F,D,length_binSyms]
+  rw [len] at clear
+  refine ⟨out,_,unchanged.trans (user.trans same),Nat.add_le_add_left (Nat.add_le_add_right paid _) _,
+    (Exec.seq init (Exec.seq run clear)).cast rfl ?_⟩
+  congr 2
+  funext k
+  by_cases zero : k = bank 58
+  · subst k; simp [free 58 (by decide)]
+  · simp [F,D,word,Function.update_apply,zero]
+
 local instance (w : ℕ) : NeZero (prime^(w+1)) := ⟨(pow_pos Shared50ModularControl.prime_prime.pos _).ne'⟩
+
+private theorem replaceColumnRecord {T d w W : ℕ} (col : Fin 35 ↪ Fin T) (H J : ℕ)
+    (record tail : List (Fin (prime+4)))
+    (dest : ℤ → Fin 4) (q : ℤ) (original : Fin ((prime^(w+1))^d*W) → ZMod 2)
+    (addr : (Fin d → ZMod (prime^(w+1))) → Fin d → ZMod (prime^(w+1))) (S : Stacks T prime)
+    (ready : ColumnRecordReady col H J tail SparseRoleCircuit.encode (fun _ => blank) dest 0 q original addr S) :
+    ColumnRecordReady col H J record SparseRoleCircuit.encode (fun _ => blank) dest 0 q original addr
+      {S with R := Function.update S.R (col 34) record} := by
+  obtain ⟨word,frame,reads⟩ := ready
+  refine ⟨word,⟨?_,?_,?_,?_,?_,?_,?_,?_,?_⟩,reads⟩
+  · simpa using frame.modulus
+  · simpa using frame.width
+  · simpa using frame.one
+  · simpa using frame.padded
+  · simpa using frame.clock
+  · exact Function.update_self ..
+  · intro i hi
+    have ne : i ≠ 34 := fun eq => by subst i; exact (by decide : (34 : Fin 35) ∉ shearWork) hi
+    simpa [Function.update_of_ne (col.injective.ne ne)] using frame.scratch i hi
+  · simpa using frame.src
+  · simpa using frame.dst
+
+/-- Prepending the correction on the column archive preserves the positioned
+child payload and establishes the scaling program's input representation. -/
+theorem correctionColumnReady {T d w W : ℕ} (col : Fin 35 ↪ Fin T) (H J : ℕ)
+    (matrix : Matrix (Fin d) (Fin d) (ZMod (prime^(w+1)))) (tail : List (Fin (prime+4)))
+    (dest : ℤ → Fin 4) (q : ℤ) (original : Fin ((prime^(w+1))^d*W) → ZMod 2)
+    (addr : (Fin d → ZMod (prime^(w+1))) → Fin d → ZMod (prime^(w+1))) (S : Stacks T prime)
+    (ready : ColumnRecordReady col H J tail SparseRoleCircuit.encode (fun _ => blank) dest 0 q original addr S) :
+    ColumnReady col H J matrix tail SparseRoleCircuit.encode (fun _ => blank) dest 0 q original addr
+      {S with R := Function.update S.R (col 34) (matrixWords prime H matrix ++ S.R (col 34))} := by
+  obtain ⟨word,frame,reads⟩ := ready
+  rw [frame.archive]
+  exact replaceColumnRecord col H J _ tail dest q original addr S ⟨word,frame,reads⟩
 
 /-- With the correction diagonal installed, the physical pair program
 converts the ordinary child address to the weighted one. -/
@@ -193,5 +310,86 @@ theorem childCorrection_exec [M8.Machine.Net] {P U : Type} {w W : ℕ}
     rw [Matrix.mulVec_diagonal]
     exact childCorrection_apply r weight (input x) j
   exact ⟨z,F,n,user,paid,run,action ▸ after⟩
+
+/-- Prepare and apply the pivot correction on a common archive port.
+The column machine leaves every tape outside its placement unchanged. -/
+theorem preparedCorrection_exec [M8.Machine.Net] {T w W r : ℕ} {P U : Type}
+    (bank : Fin 64 ↪ Fin T) (ports : Fin ((rowSwapBlock.tapes+35)+1) ↪ Fin T)
+    (shared : bank 60 = ports (columnBank 34)) (fits : r ≤ 64)
+    (pivot : Fin r → (ZMod (prime^(w+1)))ˣ) (H J : ℕ)
+    (hm : prime^(w+1) < 2^H) (hw : W < 2^J) (hW : 0 < W)
+    (body : P → Pr P T columnCapacity prime U) (u : HS T columnCapacity prime U) (S : Stacks T prime)
+    (tail : List (Fin (prime+4))) (dest : ℤ → Fin 4) (q : ℤ)
+    (empty : ∀ z, q ≤ z → z < q+((prime^(w+1))^128*W : ℕ) → dest z = blank)
+    (original : Fin ((prime^(w+1))^128*W) → ZMod 2)
+    (input : (Fin 128 → ZMod (prime^(w+1))) → IntegerMultBounds.Swap.Shear.State (Fin 64) (ZMod (prime^(w+1)))) :
+    let weight := fun i : Fin 64 => if h : i.val < r then pivot ⟨i.val,h⟩ else 1
+    let emit := fun i j => let slot := correctionSlot r i j
+                           readMatrixWord slot.2.val ((callerCorrectionPorts slot.1).trans bank)
+    let write := LabelTraversal.sequence (fun i => LabelTraversal.sequence (emit i) (List.finRange 128)) (List.finRange 128)
+    let prep := (bzero (bank 2) (bank 58) (bank 59)).seq (write.seq (bclear (bank 58)))
+    let col := columnBank.trans ports
+    let ready := fun record y D => ColumnRecordReady col H J record SparseRoleCircuit.encode (fun _ => blank) dest 0 q original y D
+    let plain := fun x => Weighted.child r (fun _ => 1) (fun _ => 1) (input x)
+    let corrected := fun x => Weighted.child r (fun i => (weight i : ZMod (prime^(w+1))))
+      (fun i => ((weight i)⁻¹ : (ZMod (prime^(w+1)))ˣ)) (input x)
+    let matrix := Matrix.diagonal fun k => (childCorrection r weight k : ZMod (prime^(w+1)))
+    let scratch := fun D : Stacks T prime => ∀ j : Fin (rowSwapBlock.tapes+35), 35 ≤ j.val →
+      D.L (ports (columnPorts j)) = [] ∧ D.R (ports (columnPorts j)) = []
+    (S.R (bank 2)).length = H → S.R (bank 44) = binSyms H (1 : ZMod (prime^(w+1))).val →
+    S.R (bank 55) = (List.ofFn fun i => binSyms H (pivot i : ZMod (prime^(w+1))).val).flatten →
+    S.R (bank 56) = (List.ofFn fun i => binSyms H (pivot i).inv.val).flatten →
+    (∀ k ∈ ([58,59,61,62,63] : List (Fin 64)), S.R (bank k) = []) →
+    ready tail (fun x (j : Fin (64+64)) => Fin.addCases (plain x).1 (plain x).2 j) S → scratch S →
+    ∃ z F n, z.user = u.user ∧
+      n ≤ 4*H+4+(128*(128*(8*(64*H)+14*H+22)+1)+1+(2*H+2)) +
+        (1+(((List.finRange 127).map (fun i => pairScalingTime U i.succ 0 i.succ w W H J)).sum+1)) + (128*128*(4*H+4)+1) ∧
+      Exec body ((prep.seq (placedDiagonalPairs ports 127)).seq (dropWords (col 2) (col 34) (col 0) (128*128))) (mk u S) n (mk z F) ∧
+      ready tail (fun x (j : Fin (64+64)) => Fin.addCases (corrected x).1 (corrected x).2 j) F ∧
+      scratch F ∧ ∀ j, (∀ i, ports i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  intro weight emit write prep col ready plain corrected matrix scratch width unit pos inv free before clean
+  obtain ⟨y,t,user,paid,prepare⟩ := prepareCorrection_writes body bank fits pivot H u S ⟨width,unit,pos,inv,free⟩
+  let D : Stacks T prime := {S with R := Function.update S.R (col 34) (matrixWords prime H matrix ++ S.R (col 34))}
+  rw [shared] at prepare
+  have live := correctionColumnReady col H J matrix tail dest q original _ S before
+  have project y D : ColumnReady col H J matrix tail SparseRoleCircuit.encode (fun _ => blank) dest 0 q original y D ↔
+      ColumnReady columnBank H J matrix tail SparseRoleCircuit.encode (fun _ => blank) dest 0 q original y (embStk ports D) :=
+    (columnReady_project ..).trans (columnReady_project columnBank H J matrix tail SparseRoleCircuit.encode
+      (fun _ => blank) dest 0 q original y (embStk ports D)).symm
+  let cap : 0 < columnCapacity := lt_of_lt_of_le (by decide : 0 < 217) (le_max_left ..)
+  have cleanD : scratch D := by
+    intro j hj
+    have ne : columnPorts j ≠ columnBank 34 := by
+      intro eq
+      have same := congrArg Fin.val eq
+      change j.val = 34 at same
+      omega
+    simpa [D,col,Function.update_of_ne (ports.injective.ne ne)] using clean j hj
+  obtain ⟨v,E,n,same,time,run,done,unused,_⟩ := childCorrection_exec r weight H J hm hw hW
+    (P := Empty) Empty.elim (stateLiftDown cap (embDn ports y)) (embStk ports D) tail
+    (D.R (ports (Fin.last _))) dest q empty original input ⟨(project ..).1 live,cleanD,rfl⟩
+  · obtain ⟨z,_,zu,placed⟩ := statePlaced_exec_normalized ports ports.injective le_rfl cap Empty.elim
+      (body' := body) (fun e => nomatch e) y D run
+    let F := embOvr ports E.get D
+    have eq : embStk ports F = E := embStk_ovr ports.injective _ _
+    rw [← eq] at done unused
+    have result := (project ..).2 done
+    obtain ⟨word,frame,reads⟩ := result
+    obtain ⟨out,final,drop⟩ := consumeMatrix_exec col body z F H matrix tail frame.archive
+      ((congrArg List.length frame.modulus).trans (length_binSyms ..)) (frame.scratch 0 (by decide)).2
+    let G : Stacks T prime := {F with R := Function.update F.R (col 34) tail}
+    refine ⟨out,G,_,final.trans (zu.trans (same.trans user)),Nat.add_le_add_right (Nat.add_le_add paid (Nat.add_le_add_left time 1)) _,
+      Exec.seq (Exec.seq prepare placed) drop,replaceColumnRecord col H J _ _ dest q original _ F ⟨word,frame,reads⟩,?_,?_⟩
+    · intro j hj
+      have ne : columnPorts j ≠ columnBank 34 := by
+        intro eq
+        have same := congrArg Fin.val eq
+        change j.val = 34 at same
+        omega
+      simpa [G,col,Function.update_of_ne (ports.injective.ne ne),embStk] using unused j hj
+    · intro j off
+      obtain ⟨left,right⟩ := embOvr_off E.get D off
+      have ne := (off (columnBank 34)).symm
+      exact ⟨left,(Function.update_of_ne ne ..).trans (right.trans (Function.update_of_ne ne ..))⟩
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
