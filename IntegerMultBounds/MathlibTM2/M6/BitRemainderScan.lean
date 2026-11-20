@@ -2,6 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.M6.BitRemainderDirectory
 public import IntegerMultBounds.MathlibTM2.M6.BitRemainderRun
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackGoodChildPrepare
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackGeneratedGoodRecord
 import IntegerMultBounds.Machine.RowPaddingConstructedAlphabet
 import IntegerMultBounds.MathlibTM2.Host.EmbedStock
@@ -1084,8 +1085,8 @@ open RingFormula LabelTraversal IntegerMultBounds.MathlibTM2.Fast.Main Recursive
 the packed PR589 remainder interval, retaining the action and price of each row. -/
 def OwnerDirectoryPass [M8.Machine.Net] {T m dim J W : ℕ} {F U : Type}
     (directory v : Descriptor) (w : ℕ) (proj : Matrix (Fin m) (Fin m) ℚ) (rankFits : proj.rank ≤ m)
-    (parent parentInv : Fin m → ZMod (prime^(w+1))) (io : Fin T)
-    (dimension : m+m = dim+1) (data : ScanData m dim w W)
+    (parent parentInv : Fin m → ZMod (prime^(w+1))) (reciprocal : ∀ i, parent i * parentInv i = 1) (io : Fin T)
+    (dimension : m+m = dim+1) (H : ℕ)
     (length : volume prime v = (prime^(w+1))^m*((prime^(w+1))^m*W))
     (roleLength : LabelMask.records directory * volume prime v = volume prime directory)
     (anchor : (anchorProgram dim true).1+(anchorProgram dim false).1+1 ≤ columnCapacity) :=
@@ -1121,7 +1122,7 @@ def OwnerDirectoryPass [M8.Machine.Net] {T m dim J W : ℕ} {F U : Type}
     let table := projectorResidual finSumFinEquiv (reduce prime proj) (φ ∘ parent) (φ ∘ parentInv)
     let schedules := fun js : List ℕ => js.flatMap fun j => if bad j then
       residualSchedule (A := prime) (table (LabelStock.residue m (w+1) 1 j)) else []
-    let ready := DirectoryReady v proj w W data.H J parent prefixes archiveTail schedules
+    let ready := DirectoryReady v proj w W H J parent prefixes archiveTail schedules
     let privateTapes := (List.finRange (66+K)).filter fun i => decide (58 ≤ i.val)
     let logical := {v with width := d}
     let addr := fun a row pre mid post (x : IntegerMultBounds.Swap.Shear.State (Fin d) (ZMod M)) =>
@@ -1131,10 +1132,9 @@ def OwnerDirectoryPass [M8.Machine.Net] {T m dim J W : ℕ} {F U : Type}
         ∃ minor : ∀ k (hk : k < d), IsUnit (GoodForm.lead (k+1) (lt_of_lt_of_le hk rankFits) (G label)).det,
         let stage := GoodForm.stageAt (G label) d rankFits minor d le_rfl
         let pivot := fun i : Fin d => stage.M (i.castLE rankFits) (i.castLE rankFits)
-        let weight := fun i : Fin d => parent (i.castLE rankFits)*pivot i
-        let inv := fun i : Fin d => parentInv (i.castLE rankFits)*Ring.inverse (pivot i)
+        let weights := pivotWeights rankFits parent parentInv reciprocal pivot (fun i => stage.unit _ i.isLt)
         ∀ a < v.beforeRows, ∀ row < v.rows, ∀ pre < v.beforeH, ∀ mid < v.between, ∀ post < v.afterD, ∀ x,
-            ext next (addr a row pre mid post (Weighted.child d weight inv x)) = ext word (addr a row pre mid post x)
+            ext next (addr a row pre mid post (Weighted.child d (fun i => (weights i : ZMod M)) (fun i => (weights i).inv) x)) = ext word (addr a row pre mid post x)
     let coords := packedCoordinatesTime d N w (LeafCore.core io).tapes
       (packedLeafPush (F := Empty) (U := U) io Empty.elim) entry.tapes leave.tapes
     let pivotCost := pivotSetupTime m d w M.size + coords
@@ -1160,16 +1160,16 @@ def OwnerDirectoryPass [M8.Machine.Net] {T m dim J W : ℕ} {F U : Type}
       (embStk bank final).R (directoryMatrixTape archiveRoom) = [] ∧
       (embStk bank final).R (big 57) = [] ∧ (embStk bank final).R (big 56) = [] ∧
       (
-        let counterBound := dimensionTime data.H J (dim+1)+6*N+13*((dim+1)*data.H+J)+8
+        let counterBound := dimensionTime H J (dim+1)+6*N+13*((dim+1)*H+J)+8
         let selectorBound := (privateTapes.map fun i => 4*(whole.L i).length).sum +
           (140+30*(m*m)+6*privateTapes.length)*(volume prime directory)
         let V := volume prime directory
-        let suffix := (whole.R (caller 48)).drop (m*m*data.H)
+        let suffix := (whole.R (caller 48)).drop (m*m*H)
         let base := directoryQueueInitRate m dim*((1+m*m)*V+archiveTail.length+suffix.length)
         let p := max (mnProgPush prepare) c
         let prepareBound := base + ((12*m*m+4+directoryMatrixRate m dim)*V+4) +
           (4*work.length+1+work.length*(6*(p*base)))
-        let advanceTime := (dim+1)*(dim+1)*(4*data.H+4)+1
+        let advanceTime := (dim+1)*(dim+1)*(4*H+4)+1
         let childCost := pivotCost+recordRoundTripRate m*N
         let ordinaryCost := childCost+(12*m*m+4+generatedRecordRate m)*N
         let baseline := max (4*(prefixes 0).length)
@@ -1187,7 +1187,7 @@ open RingFormula LabelTraversal IntegerMultBounds.MathlibTM2.Fast.Main Recursive
 the packed PR589 remainder interval, retaining the action and price of each row. -/
 def OwnerDirectoryRun [M8.Machine.Net] {T m dim J W : ℕ} {F U : Type}
     (directory v : Descriptor) (w : ℕ) (proj : Matrix (Fin m) (Fin m) ℚ) (rankFits : proj.rank ≤ m)
-    (parent parentInv : Fin m → ZMod (prime^(w+1))) (io : Fin T)
+    (parent parentInv : Fin m → ZMod (prime^(w+1))) (reciprocal : ∀ i, parent i * parentInv i = 1) (io : Fin T)
     (dimension : m+m = dim+1) (data : ScanData m dim w W)
     (length : volume prime v = (prime^(w+1))^m*((prime^(w+1))^m*W))
     (roleLength : LabelMask.records directory * volume prime v = volume prime directory)
@@ -1225,7 +1225,7 @@ def OwnerDirectoryRun [M8.Machine.Net] {T m dim J W : ℕ} {F U : Type}
       (rawUser : HS ((66+(K+1))+5) columnCapacity prime U) (rawState : Stacks ((66+(K+1))+5) prime) (q setupBound : ℕ) (share : ℝ),
       (volume prime directory : ℝ) = share → q ≤ setupBound → ownerUser.user = rawUser.user →
       Exec (fun f => embProg bank id (outer f)) setupProgram (mk rawUser rawState) q (mk ownerUser ownerState) →
-      OwnerDirectoryPass (J := J) directory v w proj rankFits parent parentInv io dimension data length roleLength anchor
+      OwnerDirectoryPass (J := J) directory v w proj rankFits parent parentInv reciprocal io dimension data.H length roleLength anchor
         body ownerState word prefixes archiveTail ownerTail c setupProgram rawUser rawState q setupBound share
 
 private theorem ownerWord_reads {N : ℕ} (word output : Fin N → ZMod 2) (tail : List (Fin (prime+4)))
@@ -1260,7 +1260,7 @@ private theorem generatedOwnerDirectory_exec [M8.Machine.Net] {T m dim J W : ℕ
     (length : volume prime v = (prime^(w+1))^m*((prime^(w+1))^m*W))
     (roleLength : LabelMask.records directory * volume prime v = volume prime directory)
     (anchor : (anchorProgram dim true).1+(anchorProgram dim false).1+1 ≤ columnCapacity) :
-    OwnerDirectoryRun (F := F) (U := U) (J := J) directory v w proj rankFits parent parentInv io dimension data length roleLength anchor := by
+    OwnerDirectoryRun (F := F) (U := U) (J := J) directory v w proj rankFits parent parentInv reciprocal io dimension data length roleLength anchor := by
   have hm : prime^(w+1) < 2^data.H := binary ▸ Nat.size_le.mp (le_refl _)
   have hw : W < 2^J := digits ▸ Nat.size_le.mp (le_refl _)
   unfold OwnerDirectoryRun
@@ -1475,14 +1475,16 @@ private theorem splitParentWords {α : Type} (xs : List α) (width parents : ℕ
 
 open RingFormula LabelTraversal IntegerMultBounds.MathlibTM2.Fast.Main RecursiveInterchangeLayout Matrix Finset
   IntegerMultBounds.Swap.LowerTriangular IntegerMultBounds.Swap.Modular in
-/-- The generated physical directory pass for every selected PR589 remainder interval. -/
+/-- Run the selected remainder interval on its owner. With no incoming weights the root writes
+64 padded ones on the empty weight tape. A recursive invocation reads the packed incoming units. -/
 theorem remainderOwnerDirectory_exec [M8.Machine.Net] {T : ℕ} {F U : Type}
     (interval : ℕ × ℕ) (member : interval ∈ BitHosting.remainderIntervals) (layout : Descriptor) (w rows B : ℕ)
     (positiveLayout : layout.Positive) (layoutWidth : layout.width = 64*(w+1)) (split : layout.rows = 142080*rows)
     (shape : layout.beforeH = B*prime^(64*((w+1)*64)))
-    (weights : Fin 64 → (ZMod (prime^(w+1)))ˣ)
-    (data : ScanData 64 127 w (layout.between*layout.afterD)) (precision : data.H = (prime^(w+1)).size)
+    (incoming : Option (Fin 64 → (ZMod (prime^(w+1)))ˣ))
     (io : Fin T) (arity : ℕ) :
+    let H := (prime^(w+1)).size
+    let weights := incoming.getD (fun _ => 1)
     let parent := fun i => (weights i : ZMod (prime^(w+1)))
     let parentInv := fun i => (↑((weights i)⁻¹) : ZMod (prime^(w+1)))
     let W := layout.between*layout.afterD
@@ -1520,22 +1522,29 @@ theorem remainderOwnerDirectory_exec [M8.Machine.Net] {T : ℕ} {F U : Type}
       let tail := source.drop (parents*width)
       let setupBound := (366+16*64*64+19*64+344)*(LabelMask.records directory*prime^layout.width*W) +
         (scratch.map (fun i => 4*(raw.L i).length)).sum + 2*tail.length
-      (∀ f, mnProgPush (body f) ≤ c) → data.records = LabelMask.records directory →
+      (∀ f, mnProgPush (body f) ≤ c) →
       (raw.R (bank 29)).length = layout.beforeRows → (raw.R (bank 30)).length = rows →
       (raw.R (bank 31)).length = layout.beforeH →
       (∀ i : Fin (66+(K+1)), 59 ≤ i.val → raw.R (i.castAdd 5) = []) →
       parents*width ≤ source.length →
       (raw.R (bank 47)).length ≤ prime^layout.width →
-      raw.R (bank 28) = [] → raw.R (bank 44) = [] → raw.R (bank 49) = [] → DirectoryParameters w W data.H J parent (fun i => raw.R (bank (i.castLE (by decide)))) →
+      raw.R (bank 28) = [] → raw.R (bank 44) = [] → raw.R (bank 49) = [] → DirectorySeed w W H J (incoming.elim [] (fun ws =>
+        (List.ofFn fun i => binSyms H (ws i : ZMod (prime^(w+1))).val).flatten)) (fun i => raw.R (bank (i.castLE (by decide)))) →
       raw.R (bank 50) = [] → raw.R (bank 57) = [] → raw.R (bank 56) = [] → raw.R (bank 54) = [] →
       (∀ j, readAt blank (raw.L (reg 0)) (raw.R (reg 0)) j =
         putWord (fun _ => blank) 0 (List.ofFn fun i => SparseRoleCircuit.encode (a := prime) (word i)) j) →
       (∀ i : Fin 5, i ≠ 0 → raw.R (reg i) = []) →
       (∀ j, readAt blank (raw.L (bank 24)) (raw.R (bank 24)) j = blank) →
-      ∃ D q, (∀ k, (D.L k).length ≤ (raw.L k).length) ∧ D.R (bank 48) = matrixWords prime data.H (reduce (prime^(w+1)) proj) ++ raw.R (bank 48) ∧
-        OwnerDirectoryPass (J := J) directory v w proj rankFits parent parentInv io dimension data length roleLength remainderAnchorFits
-          body D word (fun j => inherited (j/box)) (raw.R (bank 46)) ((raw.R (reg 0)).drop (volume prime directory)) c (remainderOwnerSetup interval.1 interval.2 bank) u raw q setupBound ((volume prime layout : ℝ)/142080) := by
-  intro parent parentInv W m dim J v proj rankFits dimension length roleLength
+      ∃ D q, (∀ k, (D.L k).length ≤ (raw.L k).length) ∧ D.R (bank 48) = matrixWords prime H (reduce (prime^(w+1)) proj) ++ raw.R (bank 48) ∧
+        OwnerDirectoryPass (J := J) directory v w proj rankFits parent parentInv (fun i => (weights i).val_inv) io dimension H length roleLength remainderAnchorFits
+          body D word (fun j => inherited (j/box)) (raw.R (bank 46)) ((raw.R (reg 0)).drop (volume prime directory)) c (remainderOwnerSetup incoming.isNone interval.1 interval.2 bank) u raw q setupBound ((volume prime layout : ℝ)/142080) := by
+  intro H weights parent parentInv W m dim J v proj rankFits dimension length roleLength
+  -- The physical scan generates its matrices and reads each row from the owner.
+  let data : ScanData 64 127 w W := {
+    records := LabelMask.records (role layout 142080), H := H, J := J,
+    table := fun _ => 0, matrix := fun _ => 0, input := fun _ _ => 0,
+    signed := [], matrixTail := [], pivotTail := [], inputTail := [], outputTail := [] }
+  have precision : data.H = (prime^(w+1)).size := rfl
   have reciprocal (i) : parent i * parentInv i = 1 := (weights i).val_inv
   obtain ⟨ordered,upper,_⟩ := BitHosting.remainder_counts interval member
   have rank : proj.rank = interval.2-interval.1 := intervalDiagonal_rank (show interval.2 ≤ m by dsimp [m]; omega)
@@ -1550,7 +1559,7 @@ theorem remainderOwnerDirectory_exec [M8.Machine.Net] {T : ℕ} {F U : Type}
   have pass := generatedOwnerDirectory_exec (F := F) (U := U) (role layout 142080) B rolePositive v positive w shape proj width idem factor hd (by rw [rank]; exact Nat.sub_pos_of_lt (BitHosting.remainder_counts_strict interval member).1) rankFits parent parentInv reciprocal
     io arity dimension data precision (show J = W.size from rfl) hW length roleLength remainderAnchorFits
 
-  intro directory space K room bank r parents box scratch reg body u raw word c source width inherited tail setupBound bounded count
+  intro directory space K room bank r parents box scratch reg body u raw word c source width inherited tail setupBound bounded
     br nr bh clean capacity fits short padded spare params parentPort mask mode queue payload empty blankData
   have packedSource := splitParentWords source width parents
   have widths (i : ℕ) (hi : i < parents) : (inherited i).length = width := by
@@ -1560,11 +1569,15 @@ theorem remainderOwnerDirectory_exec [M8.Machine.Net] {T : ℕ} {F U : Type}
     exact Nat.min_eq_left (by omega)
   let placement := directoryOrdinaryBank space.archive
   let outer := fun f => embProg (fun i : Fin (66+(K+1)) => i.castAdd 5) id (embProg placement id (body f))
+  have parameters : ParentParameters incoming.isNone W data.H J parent (fun i => raw.R (bank (i.castLE (by decide)))) := by
+    cases incoming with
+    | none => exact ⟨fun _ => rfl,params⟩
+    | some ws => exact params
   obtain ⟨y,D,q,user,paid,build,input,free,matrix,right,left,size,regs⟩ :=
     remainderDirectory_prepareOwner room outer layout v w rows B W data.H J positiveLayout layoutWidth split shape
-      interval.1 interval.2 precision rfl rfl ordered (by omega) (by intro i; fin_cases i <;> rfl) parent inherited tail u raw br nr bh clean packedSource widths fits short padded spare params
+      interval.1 interval.2 precision rfl rfl ordered (by omega) (by intro i; fin_cases i <;> rfl) incoming.isNone parent inherited tail u raw br nr bh clean packedSource widths fits short padded spare parameters
   let whole := embStk placement (embStk (fun i : Fin (66+(K+1)) => i.castAdd 5) D)
-  have frame (i : Fin 58) (off : i ∉ ([28,33,34,35,36,37,38,44,46,48] : List (Fin 58))) :
+  have frame (i : Fin 58) (off : i ∉ ([28,33,34,35,36,37,38,44,46,48,55] : List (Fin 58))) :
       whole.R ((i.castAdd 8).castAdd K) = raw.R (bank (i.castLE (by decide))) := by
     change D.R ((placement ((i.castAdd 8).castAdd K)).castAdd 5) = _
     rw [directoryOrdinaryBank_caller]
@@ -1614,14 +1627,14 @@ theorem remainderOwnerDirectory_exec [M8.Machine.Net] {T : ℕ} {F U : Type}
     (((congrArg List.length (frame 30 (by decide))).trans nr).trans roleRows.symm)
     ((congrArg List.length (frame 31 (by decide))).trans bh)
     ((frame 50 (by decide)).trans parentPort) ((frame 57 (by decide)).trans mask)
-    ((frame 56 (by decide)).trans mode) ((frame 54 (by decide)).trans queue) input count prefixFits
+    ((frame 56 (by decide)).trans mode) ((frame 54 (by decide)).trans queue) input rfl prefixFits
     (free _ (by have h := directoryMatrixTape_private space.archive; omega))
     ((regs 0).1.trans packed) (by intro j; rw [(regs 0).1,(regs 0).2]; exact payload j) (saved 1 (by decide)) (saved 2 (by decide)) (saved 3 (by decide)) (saved 4 (by decide))
     (by intro j; change readAt blank (D.L (bank 24)) (D.R (bank 24)) j = blank
         have hl : D.L (bank 24) = raw.L (bank 24) := left 24
         have hr : D.R (bank 24) = raw.R (bank 24) := right 24 (by decide)
         rw [hl,hr]; exact blankData j)
-    (remainderOwnerSetup interval.1 interval.2 bank) u raw q setupBound ((volume prime layout : ℝ)/142080) (by
+    (remainderOwnerSetup incoming.isNone interval.1 interval.2 bank) u raw q setupBound ((volume prime layout : ℝ)/142080) (by
       apply (eq_div_iff (by norm_num)).mpr
       exact_mod_cast role_volume_mul prime 142080 layout ⟨rows,split⟩) setupPaid user build
 

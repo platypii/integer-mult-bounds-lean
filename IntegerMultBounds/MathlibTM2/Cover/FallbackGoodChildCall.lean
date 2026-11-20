@@ -32,8 +32,9 @@ theorem goodChildCall_exec (body : P → Pr P T Q A U) (f : P) (host middleHost 
     let s := entry.trans (adapterBank.trans machine)
     let stage := stageAt G r hr minor r le_rfl
     let pivot := fun i : Fin r => stage.M (i.castLE hr) (i.castLE hr)
-    let pos := (List.ofFn fun i : Fin r => binSyms H (weight (i.castLE hr) * pivot i).val).flatten
-    let reciprocalWords := (List.ofFn fun i : Fin r => binSyms H (inv (i.castLE hr) * Ring.inverse (pivot i)).val).flatten
+    let childWeights := pivotWeights hr weight inv inverse pivot (fun i => stage.unit _ i.isLt)
+    let pos := (List.ofFn fun i => binSyms H (childWeights i : ZMod M).val).flatten
+    let reciprocalWords := (List.ofFn fun i => binSyms H (childWeights i).inv.val).flatten
     let middle := binSyms ((g+g)*H+J) (rankDescriptor M r g parentDesc).between
     let outputs := [host 55,host 56,host 57]
     let prepared := {S with R := Function.update (Function.update (Function.update S.R (host 55) pos) (host 56) reciprocalWords) (host 57) middle}
@@ -51,7 +52,7 @@ theorem goodChildCall_exec (body : P → Pr P T Q A U) (f : P) (host middleHost 
         (budget+2+(2*(r*H+r*H+((g+g)*H+J))+7)) ∧
       Exec body (goodChildCallAt f host middleHost b r g) (mk v S) n
         (mk z {F with R := fun j => if j ∈ outputs then [] else F.R j}) := by
-  intro bank machine c s stage pivot pos reciprocal middle outputs prepared packed pivots modulus one clock free
+  intro bank machine c s stage pivot childWeights pos reciprocal middle outputs prepared packed pivots modulus one clock free
     base seed scratch fresh call
   obtain ⟨u,l,hu,hl,pack⟩ := prepareGoodChild_exec body bank G r hr minor weight inv inverse hb H hm
     v S tail rest packed pivots modulus one clock free
