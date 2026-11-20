@@ -127,6 +127,34 @@ theorem physicalIdentity_address (hw : 0 < w) (e : (Fin m ⊕ Fin m) ≃ Fin n)
   have split : x ∘ e = Sum.elim banks.1 banks.2 := by funext i; cases i <;> rfl
   rw [show x ∘ e.symm.symm = Sum.elim banks.1 banks.2 from split,residual_mulVec,fullProjector_child]
 
+open Matrix Finset IntegerMultBounds.Swap.LowerTriangular IntegerMultBounds.Swap.Modular in
+/-- The directory selectors supply the algebraic inputs of the physical ordinary-record program. -/
+theorem physicalGood_inputs (hw : 0 < w) (P : Matrix (Fin m) (Fin m) ℚ)
+    (idem : P*P = P) (f : Factorization univ univ P)
+    (hd : ∀ k ∈ factorizationDenominators f, k < prime) (hr : P.rank ≤ m)
+    (j : ℕ) (live : LabelStock.live m w 1 j = true)
+    (clear : fallbackBit hr (reduce M P) (physicalLabel m w j) = false) :
+    let g := physicalLabel m w j
+    let G := g*reduce M P*g⁻¹
+    (∀ k (hk : k < P.rank), IsUnit (GoodForm.lead (k+1) (lt_of_lt_of_le hk hr) G).det) ∧
+      G*G = G ∧ ∃ (L : Matrix (Fin m) (Fin P.rank) (ZMod M))
+        (R : Matrix (Fin P.rank) (Fin m) (ZMod M)), G = L*R := by
+  intro g G
+  have unit : IsUnit g := (physicalLabel_live hw j).mp live
+  have adm : Admissible M P := admissible_of_lt prime_prime
+    (fun k h => hd k (by simp [factorizationDenominators,h])) w
+  refine ⟨?_,?_,LabelProjector.rank_factors P f prime_prime hd w g⟩
+  · intro k hk
+    by_contra missing
+    have bad : fallbackBit hr (reduce M P) g = true :=
+      decide_eq_true ⟨unit,k,hk,missing⟩
+    exact Bool.noConfusion (bad.symm.trans clear)
+  · have square : reduce M P * reduce M P = reduce M P := by rw [← reduce_mul _ adm adm,idem]
+    change (g*_*g⁻¹)*(g*_*g⁻¹) = _
+    calc
+      _ = g*(reduce M P*(g⁻¹*g)*reduce M P)*g⁻¹ := by simp only [Matrix.mul_assoc]
+      _ = _ := by rw [Matrix.nonsing_inv_mul _ ((Matrix.isUnit_iff_isUnit_det _).mp unit),Matrix.mul_one,square]
+
 open Matrix Finset IntegerMultBounds.Swap.LowerTriangular IntegerMultBounds.Swap.Modular
   IntegerMultBounds.Swap.Shear M8.Exchange M8.ReversedExchange in
 /-- A live record whose fallback bit is clear has the one-child weighted move. -/

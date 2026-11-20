@@ -3,6 +3,7 @@ module
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackGoodParentSetup
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackGoodRecordRun
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackCallerLeaf
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackPhysicalLabel
 
 /-! Execute a good record with its stopped weighted child installed. -/
 @[expose] public section
@@ -15,21 +16,16 @@ open IntegerMultBounds.Networks.Shared50ModularControl (prime prime_prime)
 variable [M8.Machine.Net] {U : Type} {n d Q : ℕ}
 local notation "fields" => d+1
 
-theorem stoppedGoodRecord_exec (cap : 217 ≤ Q) (fits : leafCapacity ((fields+d)+1) ≤ Q)
-    (rank g : ℕ) (dim : fields = rank+g) (hr : rank ≤ fields) (caller seedHost : Fin 58 ↪ Fin n)
-    (shared : ∀ j : Fin 58, j ≠ 28 → seedHost j = caller j) (digits : ℕ) :
-    ∃ T, ∃ body : Unit → Pr Unit (n+T) Q prime U, ∃ C : ℝ, ∃ overhead : ℕ,
-    ∀ w W H J, let M := prime^(w+1)
+/-- Execution, restoration and price of a prepared ordinary record. -/
+def StoppedRecordRun {T rank g digits w W H J : ℕ} (cap : 217 ≤ Q) (hr : rank ≤ fields)
+    (caller seedHost : Fin 58 ↪ Fin n) (body : Unit → Pr Unit (n+T) Q prime U)
+    (C : ℝ) (overhead budget : ℕ) (desc : RecursiveInterchangeLayout.Descriptor)
+    (G : Matrix (Fin fields) (Fin fields) (ZMod (prime^(w+1))))
+    (minor : ∀ j (hj : j < rank), IsUnit (lead (j+1) (lt_of_lt_of_le hj hr) G).det)
+    (weights inv : Fin fields → ZMod (prime^(w+1)))
+    (tail dest rest invRest pivotTail : List (Fin (prime+4))) (target : ℤ → Fin 4) (q : ℤ) : Prop :=
+    let M := prime^(w+1)
     letI : NeZero M := ⟨(pow_pos prime_prime.pos _).ne'⟩
-    ∃ budget : ℕ, (H = Nat.size M → J = Nat.size W → 0 < W →
-      (budget : ℝ) ≤ C*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau*(M^(fields+fields)*W : ℕ)) ∧
-    ∀ (desc : RecursiveInterchangeLayout.Descriptor) (_ : desc.between < 2^(digits*H+1)) (G : Matrix (Fin fields) (Fin fields) (ZMod M))
-      (minor : ∀ j (hj : j < rank), IsUnit (lead (j+1) (lt_of_lt_of_le hj hr) G).det)
-      (_ : G*G = G) (L : Matrix (Fin fields) (Fin rank) (ZMod M)) (R : Matrix (Fin rank) (Fin fields) (ZMod M))
-      (_ : G = L*R) (weights inv : Fin fields → ZMod M) (_ : ∀ i, weights i * inv i = 1)
-      (_ : M < 2^H) (_ : W < 2^J) (_ : 0 < W)
-      (tail dest rest invRest pivotTail : List (Fin (prime+4))) (target : ℤ → Fin 4) (q : ℤ)
-      (_ : ∀ z, q ≤ z → z < q+(M^(fields+fields)*W : ℕ) → target z = blank),
     let full := caller.trans (Fin.castAddEmb T)
     let middleHost := seedHost.trans (Fin.castAddEmb T)
     let K := digits*H+1
@@ -67,7 +63,26 @@ theorem stoppedGoodRecord_exec (cap : 217 ≤ Q) (fits : leafCapacity ((fields+d
         Exec body (hostedGoodRecordAt cap full middleHost () prime rank g hr) (mk v S) n (mk z F) ∧ ready out F ∧ F.R (bank 27) = [] ∧
         (∀ j, (∀ i, s i ≠ j) → (∀ i, ts i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j) ∧
         ∀ x j, let y := transform (diagonal weights) 1 (revExchangeOf (rev fields) G (transform (diagonal inv) 1 x))
-               out (index (Fin.append y.1 y.2) j) = word (index (Fin.append x.1 x.2) j) := by
+               out (index (Fin.append y.1 y.2) j) = word (index (Fin.append x.1 x.2) j)
+
+theorem stoppedGoodRecord_exec (cap : 217 ≤ Q) (fits : leafCapacity ((fields+d)+1) ≤ Q)
+    (rank g : ℕ) (dim : fields = rank+g) (hr : rank ≤ fields) (caller seedHost : Fin 58 ↪ Fin n)
+    (shared : ∀ j : Fin 58, j ≠ 28 → seedHost j = caller j) (digits : ℕ) :
+    ∃ T, ∃ body : Unit → Pr Unit (n+T) Q prime U, ∃ C : ℝ, ∃ overhead : ℕ,
+    ∀ w W H J, let M := prime^(w+1)
+    letI : NeZero M := ⟨(pow_pos prime_prime.pos _).ne'⟩
+    ∃ budget : ℕ, (H = Nat.size M → J = Nat.size W → 0 < W →
+      (budget : ℝ) ≤ C*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau*(M^(fields+fields)*W : ℕ)) ∧
+    ∀ (desc : RecursiveInterchangeLayout.Descriptor) (_ : desc.between < 2^(digits*H+1)) (G : Matrix (Fin fields) (Fin fields) (ZMod M))
+      (minor : ∀ j (hj : j < rank), IsUnit (lead (j+1) (lt_of_lt_of_le hj hr) G).det)
+      (_ : G*G = G) (L : Matrix (Fin fields) (Fin rank) (ZMod M)) (R : Matrix (Fin rank) (Fin fields) (ZMod M))
+      (_ : G = L*R) (weights inv : Fin fields → ZMod M) (_ : ∀ i, weights i * inv i = 1)
+      (_ : M < 2^H) (_ : W < 2^J) (_ : 0 < W)
+      (tail dest rest invRest pivotTail : List (Fin (prime+4))) (target : ℤ → Fin 4) (q : ℤ)
+      (_ : ∀ z, q ≤ z → z < q+(M^(fields+fields)*W : ℕ) → target z = blank),
+    StoppedRecordRun (g := g) (digits := digits) (W := W) (H := H) (J := J)
+      cap hr caller seedHost body C overhead budget desc G minor weights inv
+      tail dest rest invRest pivotTail target q := by
   obtain ⟨T,prog,child⟩ := stoppedChild_program (P := Unit) (U := U) fits rank g dim caller
   let body := fun _ : Unit => prog
   obtain ⟨C,charge⟩ := child body (Fast.Main.mnProgPush prog) (fun _ => le_rfl)
@@ -80,7 +95,8 @@ theorem stoppedGoodRecord_exec (cap : 217 ≤ Q) (fits : leafCapacity ((fields+d
   obtain ⟨budget,rate,leaf⟩ := charge w W H J
   refine ⟨budget,rate,?_⟩
   intro desc fitsMiddle G minor idem L R factor weights inv inverse hm hw hW tail dest rest invRest pivotTail target q empty
-    full middleHost K machine bank host c h s words pair stage piv parent ready ordinary ts middleCost
+  unfold StoppedRecordRun
+  intro _ full middleHost K machine bank host c h s words pair stage piv parent ready ordinary ts middleCost
     v S word initial free stored packed count pivots one clock scratch fresh seed privateFree
   have parentRun := hostedGoodRecord_exec cap body full middleHost (fun j hj => congrArg (Fin.castAdd T) (shared j hj))
     desc K fitsMiddle () budget G g dim hr minor idem L R factor weights inv inverse
@@ -110,5 +126,45 @@ theorem stoppedGoodRecord_exec (cap : 217 ≤ Q) (fits : leafCapacity ((fields+d
   have childCost : (budget : ℝ) ≤ C*scale*V := rate rfl rfl hW
   have steps : (l : ℝ) ≤ budget + (overhead : ℝ)*V := by exact_mod_cast total
   exact steps.trans ((add_le_add childCost parentCost).trans_eq (by ring))
+
+open IntegerMultBounds.Swap.Modular in
+def StoppedDirectoryRun (cap : 217 ≤ Q) (P : Matrix (Fin fields) (Fin fields) ℚ)
+    (caller : Fin 58 ↪ Fin n) : Prop :=
+    ∃ T, ∃ body : Unit → Pr Unit (n+T) Q prime U, ∃ C : ℝ, ∃ overhead : ℕ,
+    ∀ w W H J, let M := prime^(w+1)
+    letI : NeZero M := ⟨(pow_pos prime_prime.pos _).ne'⟩
+    ∃ budget : ℕ, (H = Nat.size M → J = Nat.size W → 0 < W →
+      (budget : ℝ) ≤ C*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau*(M^(fields+fields)*W : ℕ)) ∧
+    ∀ j, LabelStock.live fields (w+1) 1 j = true →
+      fallbackBit P.rank_le_height (reduce M P) (physicalLabel fields (w+1) j) = false →
+      let label := physicalLabel fields (w+1) j
+      let G := label*reduce M P*label⁻¹
+      ∃ minor : ∀ k (hk : k < P.rank), IsUnit (lead (k+1) (lt_of_lt_of_le hk P.rank_le_height) G).det,
+      ∀ (weights inv : Fin fields → ZMod M), (∀ i, weights i * inv i = 1) →
+        M < 2^H → W < 2^J → 0 < W →
+        ∀ tail dest rest invRest pivotTail target (q : ℤ), (∀ z, q ≤ z → z < q+(M^(fields+fields)*W : ℕ) → target z = blank) →
+        StoppedRecordRun (g := fields-P.rank) (digits := 0) (W := W) (H := H) (J := J)
+          cap P.rank_le_height caller caller body C overhead budget ⟨1,1,1,fields,1,W⟩ G minor
+          weights inv tail dest rest invRest pivotTail target q
+
+open IntegerMultBounds.Swap.LowerTriangular IntegerMultBounds.Swap.Modular Finset in
+/-- One fixed program for all ordinary directory entries of a rational projector.
+The physical record index supplies the pivots and determines the exchanged projector. -/
+theorem stoppedDirectoryRecord_exec (cap : 217 ≤ Q) (fits : leafCapacity ((fields+d)+1) ≤ Q)
+    (P : Matrix (Fin fields) (Fin fields) ℚ) (idem : P*P = P)
+    (factor : Factorization univ univ P) (small : ∀ k ∈ factorizationDenominators factor, k < prime)
+    (caller : Fin 58 ↪ Fin n) :
+    StoppedDirectoryRun (U := U) cap P caller := by
+  have hr := P.rank_le_height
+  obtain ⟨T,body,C,overhead,run⟩ := stoppedGoodRecord_exec (U := U) cap fits P.rank (fields-P.rank)
+    (by omega) hr caller caller (fun _ _ => rfl) 0
+  refine ⟨T,body,C,overhead,fun w W H J => ?_⟩
+  obtain ⟨budget,bill,execute⟩ := run w W H J
+  refine ⟨budget,bill,?_⟩
+  intro j live clear label G
+  obtain ⟨minor,square,L,R,fac⟩ := physicalGood_inputs (by omega : 0 < w+1) P idem factor small hr j live clear
+  refine ⟨minor,fun weights inv reciprocal hm hw hW tail dest rest invRest pivotTail target q blankTarget => ?_⟩
+  exact execute ⟨1,1,1,fields,1,W⟩ (by simp) G minor square L R fac weights inv reciprocal hm hw hW
+    tail dest rest invRest pivotTail target q blankTarget
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback.Record
