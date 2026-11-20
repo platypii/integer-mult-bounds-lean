@@ -20,6 +20,33 @@ open IntegerMultBounds.Swap.Modular
 open ActualAffineScaling (modulus)
 open SharedPlacementAlphabet (setTape)
 
+/-- The route bill scales with the label precision. The node volume occurs only once,
+including the linear passes surrounding the interchanges. -/
+theorem labelRoute_cost_bound [M8.Machine.Net] (P k : ℕ) :
+    ∃ C : ℝ, ∀ (V w : ℕ), 0 < w →
+      ((P * V + k * LeafCore.coreCost V (w*64) : ℕ) : ℝ) ≤
+        C * V * (w : ℝ) ^ M8.Machine.BudgetBound.tau := by
+  let τ := M8.Machine.BudgetBound.tau
+  have hτ : 0 ≤ τ := M8.Machine.BudgetBound.exponent_range.1.le
+  refine ⟨P + k * LeafCore.C * (64 : ℝ) ^ τ, ?_⟩
+  intro V w hw
+  have hw' : (1 : ℝ) ≤ w := by exact_mod_cast hw
+  have hp := Real.one_le_rpow hw' hτ
+  have hc : 0 ≤ LeafCore.C := (Classical.choose_spec
+    M8.Machine.ArbitraryWidthOriginalTotalRun.uniform_bound).1.le
+  have hf := Nat.floor_le (show 0 ≤ LeafCore.C * V *
+    ((max 1 (w*64) : ℕ) : ℝ) ^ τ by positivity)
+  push_cast
+  calc
+    _ ≤ (P : ℝ)*V*(w : ℝ)^τ + k*(LeafCore.C*V*((max 1 (w*64) : ℕ) : ℝ)^τ) :=
+      add_le_add (le_mul_of_one_le_right (by positivity) hp)
+        (mul_le_mul_of_nonneg_left hf (Nat.cast_nonneg k))
+    _ = _ := by
+      rw [max_eq_right (by omega : 1 ≤ w*64), Nat.cast_mul,
+        Real.mul_rpow (Nat.cast_nonneg _) (by positivity)]
+      push_cast
+      ring
+
 theorem stageRoute_runs [M8.Machine.Net] {T : ℕ} (io : Fin T) (c : PortCertificate)
     (checked : c.Checked) (s : Fin 8) :
     ∃ (program : Graph.Block (T+24) prime) (C : ℕ), Blocks.Leading program ∧

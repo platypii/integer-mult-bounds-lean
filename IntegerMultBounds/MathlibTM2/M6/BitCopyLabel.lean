@@ -303,21 +303,34 @@ theorem copyLabel_window_runs [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin
   simp only [Function.update_of_ne off,ite_eq_left target]
   exact copyLabel_window_read (life.sourceFrame,0) (data src) (data (io j)) g z
 
+open IntegerMultBounds.Networks.Certificates.PR589 in
+/-- Observable owner-bank action of one scheduled window, including the
+relative source label and preservation of every non-target role. -/
+def CopyWindowEffect (n : Fin 9) (r : Fin 32) (d : Fin 5) (life : Copy.Lifecycle) (w B K : ℕ)
+    (x out : Fin 142081 → Fin (volume prime (copyLabelLayout w B K)) → ZMod 2) : Prop :=
+    let io := fun j : ℕ => ownerTape n r d (Fin.ofNat 661 j)
+    let v := copyLabelLayout w B K
+    let move := AffineFieldProgram.run (selectedWord w (life.sourceFrame,0))
+    let readSource := fun (z : LabelEntry.Cell v B) => {z with a := copyActive (move (copyActive.symm z.a))}
+    out (Fin.last 142080) = 0 ∧
+    (∀ k, k ≠ Fin.last 142080 → k ≠ io life.source → k ∉ life.targets.map io → out k = x k) ∧
+    (∀ g : Matrix (Fin 64) (Fin 64) (ZMod (prime^w)), chartRead (B := B) (out (io life.source)) g = chartRead (x (io life.source)) g) ∧
+    ∀ j ∈ life.targets, ∀ (g : Matrix (Fin 64) (Fin 64) (ZMod (prime^w))) (z : LabelEntry.Cell v B),
+      chartRead (out (io j)) g z = chartRead (x (io j)) g z +
+        chartRead (x (io life.source)) (g*(registerChart w n j).transpose*registerChart w n life.source) (readSource z)
+
 open IntegerMultBounds.Networks.Certificates.PR589 M8.RevMachine M8.Machine.ArbitraryWidthOriginalRun in
 /-- Execute the scheduled charts on both sides of the actual COPY body.
 The returned target is read in its original chart, with the retained source
 read through the relative chart and the selected local frame change. -/
 theorem routedCopy_runs [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
     (life : Copy.Lifecycle) (scheduled : life ∈ Copy.lifecycles) :
-    let io := fun j : ℕ => ownerTape n r d (Fin.ofNat 661 j)
     ∃ (entry leave : Graph.Block (142081+24) prime) (P Q : ℕ)
       (A D : List (FlatCoordinateSchedule.Op 16)) (states : ℕ) (body : Program _ states prime),
-      ∀ (w B K : ℕ), 0 < w → 0 < B → 0 < K →
+      Blocks.Leading entry ∧ Blocks.Leading leave ∧ ∀ (w B K : ℕ), 0 < w → 0 < B → 0 < K →
       let v := copyLabelLayout w B K
       let W := B*prime^(64*(w*64))*K
       let V := volume prime v
-      let move := AffineFieldProgram.run (selectedWord w (life.sourceFrame,0))
-      let readSource := fun (z : LabelEntry.Cell v B) => {z with a := copyActive (move (copyActive.symm z.a))}
       let bank := fun data => LabelCall.bank (copyOwners (v := v) data) v (M8.Stage2Machine.Straight.words (LabelSchedule.base v w))
       let routeCost := fun C => C*V+(63+252*life.targets.length)*LeafCore.coreCost V (w*64)+life.targets.length+1
       let hs := fun i => FlatCoordinateSchedule.bits (RecursiveDimensionBank.values (copyChild w W) i)
@@ -339,18 +352,13 @@ theorem routedCopy_runs [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
           (fun z => z = SharedBankPair.output finish (SharedBankStageInput.raw (bank out) leave.tapes) common ls)
           (routeCost P + (copyWindowWork (FlatCoordinateCleanSchedule.constant A + FlatCoordinateCleanSchedule.constant D)
             life.targets.length V bs.length + cost (copyChild w W) hs) + 1 + routeCost Q + 1) ∧
-        out (Fin.last 142080) = 0 ∧
-        (∀ k, k ≠ Fin.last 142080 → k ≠ io life.source → k ∉ life.targets.map io → out k = x k) ∧
-        (∀ g : Matrix (Fin 64) (Fin 64) (ZMod (prime^w)), chartRead (B := B) (out (io life.source)) g = chartRead (x (io life.source)) g) ∧
-        ∀ j ∈ life.targets, ∀ (g : Matrix (Fin 64) (Fin 64) (ZMod (prime^w))) (z : LabelEntry.Cell v B),
-          chartRead (out (io j)) g z = chartRead (x (io j)) g z +
-            chartRead (x (io life.source)) (g*(registerChart w n j).transpose*registerChart w n life.source) (readSource z) := by
-  intro io
+        CopyWindowEffect n r d life w B K x out := by
+  let io := fun j : ℕ => ownerTape n r d (Fin.ofNat 661 j)
   obtain ⟨entry,P,leading,enter⟩ := copyWindow_routes n r d true life scheduled
   obtain ⟨leave,Q,leaveLeading,exitRun⟩ := copyWindow_routes n r d false life scheduled
   obtain ⟨A,D,states,body,run⟩ := copyLabel_window_runs n r d life scheduled
-  refine ⟨entry,leave,P,Q,A,D,states,body,?_⟩
-  intro w B K hw hB hK v W V move readSource bank routeCost hs x bs count controls prep rs cs pair common ls
+  refine ⟨entry,leave,P,Q,A,D,states,body,leading,leaveLeading,?_⟩
+  intro w B K hw hB hK v W V bank routeCost hs x bs count controls prep rs cs pair common ls
   have pos : v.Positive := ⟨pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _,Nat.zero_lt_one,
     Nat.mul_pos hB (pow_pos Shared50ModularControl.prime_prime.pos _),Nat.zero_lt_one,hK⟩
   obtain ⟨entered,source,targets,untouched,en⟩ := enter v w B hw hB rfl pos x
@@ -371,7 +379,10 @@ theorem routedCopy_runs [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
     rw [eq,← size] at exec
     exact copyRoute_window_return entry leading v _ (copyOwners x) (copyOwners entered) A D controls _ _
       body (copyOwners added) (copyOwners out) _ _ leave leaveLeading en exec ex
-  · have off (j) : io j ≠ Fin.last 142080 := Fin.castSucc_ne_last _
+  · dsimp only [CopyWindowEffect]
+    let move := AffineFieldProgram.run (selectedWord w (life.sourceFrame,0))
+    let readSource := fun (z : LabelEntry.Cell v B) => {z with a := copyActive (move (copyActive.symm z.a))}
+    have off (j) : io j ≠ Fin.last 142080 := Fin.castSucc_ne_last _
     have noTmp : Fin.last 142080 ∉ life.targets.map io := by
       intro mem
       obtain ⟨j,_,eq⟩ := List.mem_map.mp mem
@@ -421,5 +432,32 @@ theorem routedCopy_runs [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
       intro l
       rw [dataChart_transpose w n (Copy.target_bounds life scheduled j hj).2]
       exact chartRead_transport (targets j hj) l
+
+private theorem routedCopy_work (P Q basis targets V core child : ℕ) (pos : 0 < V) :
+    let bs := FlatCoordinateSchedule.bits V
+    (P*V+(63+252*targets)*core+targets+1) +
+      (copyWindowWork basis targets V bs.length + child) + 1 +
+      (Q*V+(63+252*targets)*core+targets+1) + 1 ≤
+      (P+Q+(504+basis+76*(targets+2))+2*targets+4)*V + 2*(63+252*targets)*core + child := by
+  dsimp only
+  have localWork := copyWindowWork_linear basis targets pos _ (FlatCoordinateSchedule.bits_value V)
+    (FlatCoordinateSchedule.bits_canonical V)
+  nlinarith only [localWork, Nat.mul_le_mul_left (2*targets+4) (show 1 ≤ V from pos)]
+
+/-- Both chart routes and local COPY passes fit the label-width allowance;
+the recursive transpose contributes exactly its own bill. -/
+theorem routedCopy_cost_bound [M8.Machine.Net] (P Q basis targets : ℕ) :
+    ∃ C : ℝ, ∀ (V w child : ℕ), 0 < V → 0 < w →
+      let core := M8.RevMachine.LeafCore.coreCost V (w*64)
+      let route := fun R => R*V+(63+252*targets)*core+targets+1
+      let digits := (FlatCoordinateSchedule.bits V).length
+      ((route P + (copyWindowWork basis targets V digits + child) + 1 + route Q + 1 : ℕ) : ℝ) ≤
+        C*V*(w : ℝ)^M8.Machine.BudgetBound.tau + child := by
+  obtain ⟨C, bound⟩ := labelRoute_cost_bound (P+Q+(504+basis+76*(targets+2))+2*targets+4)
+    (2*(63+252*targets))
+  refine ⟨C, fun V w child pos hw => ?_⟩
+  have bill := routedCopy_work P Q basis targets V (M8.RevMachine.LeafCore.coreCost V (w*64)) child pos
+  exact (Nat.cast_le.mpr bill).trans (by simpa only [Nat.cast_add] using add_le_add (bound V w hw) (le_refl (child : ℝ)))
+
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
