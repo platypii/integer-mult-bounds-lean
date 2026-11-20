@@ -753,6 +753,7 @@ theorem classifiedDirectory_exec [M8.Machine.Net] {m d K w W J N : ℕ} {P U : T
     let controls := embProg bank id (embProg placement id selectors)
     ∃ prepare z F t n rows s midUser mid, z.user = u.user ∧ s ≤ selectorBudget ∧
       Exec (fun f => embProg bank id (body f)) controls (mk u S) s (mk midUser mid) ∧
+      ready (embStk placement (embStk bank mid)) rs ∧
       let initTime := directoryQueueInitTime m d w data.H data.records (embStk bank mid)
       let queueTime := directoryMatrixQueueTime m d w data.H data.records ((embStk bank mid).R (caller 47)).length
 
@@ -838,7 +839,7 @@ theorem classifiedDirectory_exec [M8.Machine.Net] {m d K w W J N : ℕ} {P U : T
     have h := congrArg List.length remaining
     simp [pending,rs] at h
     omega
-  refine ⟨prepare,z,F,t,n,rows,s,midUser,mid,user.trans (uy.trans (um.trans su)),subtotal,runControls,setupTime,time,Exec.seq runControls (Exec.seq write run),correct,output,free,done,archiveEnd.trans ?_,maskEnd,modeEnd⟩
+  refine ⟨prepare,z,F,t,n,rows,s,midUser,mid,user.trans (uy.trans (um.trans su)),subtotal,runControls,(by rw [project]; exact directory),setupTime,time,Exec.seq runControls (Exec.seq write run),correct,output,free,done,archiveEnd.trans ?_,maskEnd,modeEnd⟩
   simp [last,ScanData.matrices,physical,ScanData.physical,List.drop_of_length_le (List.length_range.le)]
 
 /-- Convert the packed traversal's integer bill to a charge on its PR589
@@ -973,9 +974,6 @@ def OwnerDirectoryRun [M8.Machine.Net] {T m dim work J W : ℕ} {F U : Type}
     (whole.R (caller 30)).length = directory.rows → (whole.R (caller 31)).length = directory.beforeH →
     whole.R (caller 50) = [] → whole.R (caller 57) = [] → whole.R (caller 56) = [] → whole.R (caller 54) = [] →
     ready clean labels →
-    let selectorBudget := (26*prime^w+4) + ((44*labels.length+13*(w+1)+16) + 3*((6+10*(m*m))*labels.length+4) +
-        (2*(directory.beforeRows*directory.rows*B)+2)) +
-        ((privateTapes.map fun i => 4*(whole.L i).length).sum + privateTapes.length*(2*prime^w+4)+1)
     let coords := packedCoordinatesTime d N w (LeafCore.core io).tapes
       (packedLeafPush (F := Empty) (U := U) io Empty.elim) entry.tapes leave.tapes
     let pivotCost := pivotSetupTime m d w M.size + coords
@@ -1012,13 +1010,17 @@ def OwnerDirectoryRun [M8.Machine.Net] {T m dim work J W : ℕ} {F U : Type}
         (g j)).mulVec x) k).cast (directoryPayloadLength e length)) =
         input j ((FlatCoordinateLayout.index x k).cast (directoryPayloadLength e length))
       else (if live j then effect j else Eq) (input j) next
-    ∃ prepare z final t n rows s midUser mid, z.user = ownerUser.user ∧ s ≤ selectorBudget ∧
+    ∃ prepare z final t n rows s midUser mid, z.user = ownerUser.user ∧
+      s ≤ (privateTapes.map fun i => 4*(whole.L i).length).sum +
+        (140+30*(m*m)+6*privateTapes.length)*(labels.length*N) ∧
       Exec (fun f => embProg bank id (outer f)) controls (mk ownerUser ownerState) s (mk midUser mid) ∧
-      let initTime := directoryQueueInitTime m dim w data.H data.records (embStk bank mid)
-      let queueTime := directoryMatrixQueueTime m dim w data.H data.records ((embStk bank mid).R (big 47)).length
-
-      (∀ p, mnProgPush prepare ≤ p → (∀ f, mnProgPush (outer f) ≤ p) →
-        t ≤ initTime + queueTime + (4*work.length+1+work.length*(6*(p*initTime)))) ∧
+      (data.H = M.size →
+        let V := data.records*max ((embStk bank mid).R (big 47)).length N
+        let suffix := ((embStk bank mid).R (big 48)).drop (m*m*data.H)
+        let base := directoryQueueInitRate m dim*((1+m*m)*V+archiveTail.length+suffix.length)
+        ∀ p, mnProgPush prepare ≤ p → (∀ f, mnProgPush (outer f) ≤ p) →
+          t ≤ base + ((12*m*m+4+directoryMatrixRate m dim)*V+4) +
+            (4*work.length+1+work.length*(6*(p*base)))) ∧
       n ≤ (labels.map (fun j => 6*N+6+cost j+(4*N+4))).sum + 2*labels.length+2 + (2*(labels.length*N)+2) ∧
       Exec (fun f => embProg bank id (outer f)) (controls.seq ((embProg bank id prepare).seq program)) (mk ownerUser ownerState) (s+(t+n)) (mk z final) ∧
       List.Forall₂ (fun j out => ∃ word, action j word ∧ out = bits word) labels rows ∧
@@ -1050,7 +1052,10 @@ private theorem generatedOwnerDirectory_exec [M8.Machine.Net] {T m dim work J W 
   unfold OwnerDirectoryRun
   intro d common K M N entry leave ef xf eqs xqs body archiveRoom writerFits anchor outer calls push bodyBound ownerUser ownerState input pool directory prefixes archiveTail c bounded room B
     placement bank reg start u whole caller labels live g bad φ table schedules ready payload privateTapes clean logical addr G effect shape free positiveDir
-    brSize rowsSize beforeSize parents mask mode queue initial selectorBudget coords pivotCost raw trip runCost price big bits count empty owner accumulator size saved tmp blankPort
+    brSize rowsSize beforeSize parents mask mode queue initial coords pivotCost raw trip runCost price big bits count empty owner accumulator size saved tmp blankPort
+  let selectorBudget := (26*prime^w+4) + ((44*labels.length+13*(w+1)+16) + 3*((6+10*(m*m))*labels.length+4) +
+        (2*(directory.beforeRows*directory.rows*B)+2)) +
+        ((privateTapes.map fun i => 4*(whole.L i).length).sum + privateTapes.length*(2*prime^w+4)+1)
   have spec := generatedRecordScan_exec v positive w proj width idem factor hd rankFits parent parentInv reciprocal io arity
     hm hw hW length capacity (fun _ => blank) 0 fits cap ef xf eqs xqs (fun _ => 0) body u whole pool directory prefixes archiveTail
     c bounded room B shape free positiveDir brSize rowsSize beforeSize parents mask mode queue initial
@@ -1086,9 +1091,31 @@ private theorem generatedOwnerDirectory_exec [M8.Machine.Net] {T m dim work J W 
       by simpa only [count] using liveBits,by simpa only [count] using badBits⟩
     (by simpa only [count] using owner) accumulator size saved tmp blankPort
     (fun j _ no y A readyRow payloadRow => ordinary j _ (input j) y A no readyRow payloadRow)
-  obtain ⟨prepare,finishState,final,t,n,rows,s,midUser,mid,hu,setup,controls,initBound,scan,exec,correct,out,free,done,archive,maskEnd,modeEnd⟩ := pass
-  refine ⟨_,core,padding,prepare,finishState,final,t,n,rows,s,midUser,mid,hu,setup,controls,initBound,
+  obtain ⟨prepare,finishState,final,t,n,rows,s,midUser,mid,hu,setup,controls,midReady,initBound,scan,exec,correct,out,free,done,archive,maskEnd,modeEnd⟩ := pass
+  have recordsPos : 0 < LabelMask.records directory :=
+    Nat.mul_pos (Nat.mul_pos positiveDir.1 positiveDir.2.1) positiveDir.2.2.1
+  have radixPos : 0 < M := pow_pos Shared50ModularControl.prime_prime.pos _
+  have radixFits : M ≤ N := by
+    change prime^(w+1) ≤ volume prime v
+    rw [← directoryPayloadLength (finSumFinEquiv.trans (finCongr dimension)) length,pow_succ]
+    exact (Nat.le_mul_of_pos_left _ (pow_pos radixPos dim)).trans (Nat.le_mul_of_pos_right _ hW)
+  have boxes : directory.beforeRows*directory.rows*B ≤ LabelMask.records directory := by
+    change _ ≤ directory.beforeRows*directory.rows*directory.beforeH
+    rw [shape,← Nat.mul_assoc]
+    exact Nat.le_mul_of_pos_right _ (pow_pos Shared50ModularControl.prime_prime.pos _)
+  have setupVolume := maskSetup_volume_le m w (LabelMask.records directory) (directory.beforeRows*directory.rows*B)
+    privateTapes.length ((privateTapes.map fun i => 4*(whole.L i).length).sum) (LabelMask.records directory*N)
+    (radixFits.trans (Nat.le_mul_of_pos_left _ recordsPos))
+    (Nat.le_mul_of_pos_right _ (radixPos.trans_le radixFits)) boxes
+  have selectorsPaid := setup.trans (by simpa only [selectorBudget,labels,List.length_range] using setupVolume)
+  refine ⟨_,core,padding,prepare,finishState,final,t,n,rows,s,midUser,mid,hu,by simpa only [labels,List.length_range] using selectorsPaid,controls,?_,
     by simpa only [count] using scan,exec,by simpa only [count] using correct,out,free,done,archive,maskEnd,modeEnd,?_⟩
+  · intro binary V suffix base p hp calls
+    have positiveRecords : 0 < data.records := count ▸ recordsPos
+    obtain ⟨initLe,queueLe⟩ := DirectoryReady.matrixSetup_volume data archiveRoom (embStk bank mid) midReady
+      binary radixFits positiveRecords
+    exact (initBound p hp calls).trans (Nat.add_le_add (Nat.add_le_add initLe queueLe) (Nat.add_le_add_left
+      (Nat.mul_le_mul_left _ (Nat.mul_le_mul_left _ (Nat.mul_le_mul_left p initLe))) _))
   intro binary digits advanceTime baseline rate
   let e := finSumFinEquiv.trans (finCongr dimension)
   let physical := data.physical e proj parent parentInv

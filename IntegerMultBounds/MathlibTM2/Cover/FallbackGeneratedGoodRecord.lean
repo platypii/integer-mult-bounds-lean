@@ -425,7 +425,7 @@ noncomputable def directoryQueueInitTime {K : ℕ} (m d w H records : ℕ) (S : 
 
 /-- The counter and selector passes use linear time in batch volume, plus
 the initial left stacks that the cleanup program unloads. -/
-private theorem maskSetup_volume_le (m w records parents tapes left V : ℕ)
+theorem maskSetup_volume_le (m w records parents tapes left V : ℕ)
     (radix : prime^(w+1) ≤ V) (count : records ≤ V) (boxes : parents ≤ records) :
     (26*prime^w+4) + ((44*records+13*(w+1)+16) + 3*((6+10*(m*m))*records+4) +
       (2*parents+2)) + (left+tapes*(2*prime^w+4)+1) ≤
@@ -1538,6 +1538,94 @@ def GeneratedArchiveRun [M8.Machine.Net] {m d K w W J N : ℕ} {P U : Type}
         (directoryExceptionalProgram m d room capacity) ((embProg placement id skip).seq advance))) (mk u S) (setupSteps+n) (mk z B)
 
 open IntegerMultBounds.MathlibTM2.Fast.Main RingFormula in
+/-- Bound the two matrix-writer charges by the volume occupied by the ready
+directory, including the saved suffix of the projector tape. -/
+theorem DirectoryReady.matrixSetup_volume [M8.Machine.Net] {m d K w W J N : ℕ}
+    {v : Descriptor} {proj : Matrix (Fin m) (Fin m) ℚ} {parent : Fin m → ZMod (prime^(w+1))}
+    {prefixes : ℕ → List (Fin (prime+4))} {archiveTail : List (Fin (prime+4))}
+    {schedule : List ℕ → List (Fin (prime+4))} (data : ScanData m d w W)
+    (room : Record.size d+(rowSwapBlock.tapes+35+2) ≤ K+1) (S : Stacks (66+(K+1)) prime)
+    (initial : DirectoryReady v proj w W data.H J parent prefixes archiveTail schedule (embStk (directoryOrdinaryBank room) S)
+      (List.range data.records)) (precision : data.H = (prime^(w+1)).size)
+    (radixPayload : prime^(w+1) ≤ N) (nonempty : 0 < data.records) :
+    let span := max (S.R ((47 : Fin 66).castAdd (K+1))).length N
+    let V := data.records*span
+    let suffix := (S.R ((48 : Fin 66).castAdd (K+1))).drop (m*m*data.H)
+    let extent := (1+m*m)*V + archiveTail.length + suffix.length
+    let budget := directoryQueueInitRate m d*extent
+    let initTime := directoryQueueInitTime m d w data.H data.records S
+    let queueTime := directoryMatrixQueueTime m d w data.H data.records (S.R ((47 : Fin 66).castAdd (K+1))).length
+    initTime ≤ budget ∧ queueTime ≤ (12*m*m+4+directoryMatrixRate m d)*V+4 := by
+  intro span V suffix extent budget initTime queueTime
+  obtain ⟨directory,widths,_,_,projector,modulus,_,_,_,unit,clock,_,_⟩ := initial
+  have port (j : Fin 66) : directoryOrdinaryBank room ((Fin.castAddEmb K) j) = j.castAdd (K+1) := directoryOrdinaryBank_caller room j
+  simp only [embStk,Function.comp_apply,port] at directory widths projector modulus unit clock
+  have Mpos : 0 < prime^(w+1) := pow_pos Networks.Shared50ModularControl.prime_prime.pos _
+  have payloadSpan : N ≤ span := le_max_right ..
+  have spanVolume : span ≤ V := Nat.le_mul_of_pos_left _ nonempty
+  have payloadVolume : N ≤ V := payloadSpan.trans spanVolume
+  have prefixSpan : (S.R ((47 : Fin 66).castAdd (K+1))).length ≤ span := le_max_left ..
+  have volumeExtent : V ≤ extent := by
+    dsimp only [extent]; rw [Nat.add_mul,one_mul]; omega
+  have radix := (radixPayload.trans payloadVolume).trans volumeExtent
+  have recordsFit : data.records ≤ extent :=
+    (Nat.le_mul_of_pos_right _ ((Mpos.trans_le radixPayload).trans_le payloadSpan)).trans volumeExtent
+  have digits : data.H ≤ extent := precision ▸ (Nat.size_le.mpr Nat.lt_two_pow_self).trans radix
+  have atomN : w+1 ≤ N := Nat.lt_two_pow_self.le.trans
+    ((Nat.pow_le_pow_left Networks.Shared50ModularControl.prime_prime.two_le _).trans radixPayload)
+  have atom := ((Nat.le_succ w).trans atomN).trans (payloadVolume.trans volumeExtent)
+  let width := (S.R ((47 : Fin 66).castAdd (K+1))).length
+  have directorySize : (S.R ((46 : Fin 66).castAdd (K+1))).length ≤ extent := by
+    rw [directory]
+    simp only [List.length_append,List.flatMap_def]
+    rw [BlockRotationData.uniform_volume (width+(w+1)*(m*m))]
+    · simp only [List.length_map,List.length_range]
+      have words := Nat.mul_le_mul_left data.records (Nat.add_le_add prefixSpan (Nat.mul_le_mul_right (m*m) (atomN.trans payloadSpan)))
+      dsimp only [extent]
+      calc
+        _ ≤ data.records*(span+span*(m*m)) + archiveTail.length := Nat.add_le_add_right words _
+        _ = (1+m*m)*V + archiveTail.length := by dsimp only [V]; ring
+        _ ≤ _ := Nat.le_add_right _ _
+    · intro word mem
+      obtain ⟨j,hj,rfl⟩ := List.mem_map.mp mem
+      rw [LabelDirectory.entry_length,← widths j (hj)]
+  have projectorSize : (S.R ((48 : Fin 66).castAdd (K+1))).length ≤ extent := by
+    obtain ⟨tail,h⟩ := projector
+    dsimp only [extent,suffix]
+    rw [h,← length_matrixWords prime data.H (reduce (prime^(w+1)) proj),List.drop_left,
+      List.length_append,length_matrixWords]
+    have hH : data.H ≤ V := precision ▸ (Nat.size_le.mpr Nat.lt_two_pow_self).trans (radixPayload.trans payloadVolume)
+    have entry := Nat.mul_le_mul_left (m*m) hH
+    rw [Nat.add_mul,one_mul]
+    omega
+  have initLe : initTime ≤ budget := by
+    dsimp only [initTime,budget]
+    rw [precision]
+    apply directoryQueueInitTime_binary_le _ _ _ _ _ S radix recordsFit directorySize
+    intro j hj
+    simp only [List.mem_cons,List.not_mem_nil,or_false] at hj
+    rcases hj with h | h | h | h | h
+    · have eq : j = 2 := Fin.ext h
+      subst j; rw [modulus,length_binSyms]; exact digits
+    · have eq : j = 47 := Fin.ext h
+      exact eq ▸ prefixSpan.trans (spanVolume.trans volumeExtent)
+    · have eq : j = 48 := Fin.ext h
+      exact eq ▸ projectorSize
+    · have eq : j = 44 := Fin.ext h
+      subst j; rw [unit,length_binSyms]; exact digits
+    · have eq : j = 45 := Fin.ext h
+      subst j; rw [clock]; exact atom
+  have queueVolume : queueTime ≤ (12*m*m+4+directoryMatrixRate m d)*V+4 := by
+    dsimp only [queueTime]
+    rw [precision]
+    refine (directoryMatrixQueueTime_binary_le ..).trans (Nat.add_le_add_right ?_ 4)
+    calc
+      _ ≤ data.records*((12*m*m+4)*span+directoryMatrixRate m d*span) :=
+        Nat.mul_le_mul_left _ (Nat.add_le_add (Nat.mul_le_mul_left _ prefixSpan) (Nat.mul_le_mul_left _ (radixPayload.trans payloadSpan)))
+      _ = (12*m*m+4+directoryMatrixRate m d)*V := by dsimp only [V]; ring
+  exact ⟨initLe,queueVolume⟩
+
+open IntegerMultBounds.MathlibTM2.Fast.Main RingFormula in
 theorem generatedArchive_exec [M8.Machine.Net] {m d K w W J N : ℕ} {P U : Type}
     (dimension : m+m = d+1) (vDescriptor : Descriptor) (proj : Matrix (Fin m) (Fin m) ℚ)
     (parent inv : Fin m → ZMod (prime^(w+1)))
@@ -1604,68 +1692,8 @@ theorem generatedArchive_exec [M8.Machine.Net] {m d K w W J N : ℕ} {P U : Type
     have radixPayload : M ≤ N := by
       rw [← directoryPayloadLength e length,pow_succ]
       exact (Nat.le_mul_of_pos_left _ (pow_pos Mpos d)).trans (Nat.le_mul_of_pos_right _ positive)
-    have payloadSpan : N ≤ span := le_max_right ..
-    have spanVolume : span ≤ V := Nat.le_mul_of_pos_left _ nonempty
-    have payloadVolume : N ≤ V := payloadSpan.trans spanVolume
-    have prefixSpan : (S.R ((47 : Fin 66).castAdd (K+1))).length ≤ span := le_max_left ..
-    have volumeExtent : V ≤ extent := by
-      dsimp only [extent]; rw [Nat.add_mul,one_mul]; omega
-    have radix := (radixPayload.trans payloadVolume).trans volumeExtent
-    have recordsFit : data.records ≤ extent :=
-      (Nat.le_mul_of_pos_right _ ((Mpos.trans_le radixPayload).trans_le payloadSpan)).trans volumeExtent
-    have digits : data.H ≤ extent := precision ▸ (Nat.size_le.mpr Nat.lt_two_pow_self).trans radix
-    have atomN : w+1 ≤ N := Nat.lt_two_pow_self.le.trans
-      ((Nat.pow_le_pow_left Networks.Shared50ModularControl.prime_prime.two_le _).trans radixPayload)
-    have atom := ((Nat.le_succ w).trans atomN).trans (payloadVolume.trans volumeExtent)
-    let width := (S.R ((47 : Fin 66).castAdd (K+1))).length
-    have directorySize : (S.R ((46 : Fin 66).castAdd (K+1))).length ≤ extent := by
-      rw [directory]
-      simp only [pending,List.drop_zero,List.length_append,List.flatMap_def]
-      rw [BlockRotationData.uniform_volume (width+(w+1)*(m*m))]
-      · simp only [List.length_map,List.length_range]
-        have words := Nat.mul_le_mul_left data.records (Nat.add_le_add prefixSpan (Nat.mul_le_mul_right (m*m) (atomN.trans payloadSpan)))
-        dsimp only [extent]
-        calc
-          _ ≤ data.records*(span+span*(m*m)) + archiveTail.length := Nat.add_le_add_right words _
-          _ = (1+m*m)*V + archiveTail.length := by dsimp only [V]; ring
-          _ ≤ _ := Nat.le_add_right _ _
-      · intro word mem
-        obtain ⟨j,hj,rfl⟩ := List.mem_map.mp mem
-        rw [LabelDirectory.entry_length,← widths j (by simpa [pending] using hj)]
-    have projectorSize : (S.R ((48 : Fin 66).castAdd (K+1))).length ≤ extent := by
-      obtain ⟨tail,h⟩ := projector
-      dsimp only [extent,suffix]
-      rw [h,← length_matrixWords prime data.H (reduce (prime^(w+1)) proj),List.drop_left,
-        List.length_append,length_matrixWords]
-      have hH : data.H ≤ V := precision ▸ (Nat.size_le.mpr Nat.lt_two_pow_self).trans (radixPayload.trans payloadVolume)
-      have entry := Nat.mul_le_mul_left (m*m) hH
-      rw [Nat.add_mul,one_mul]
-      omega
-    have initLe : initTime ≤ budget := by
-      dsimp only [initTime,budget]
-      rw [precision]
-      apply directoryQueueInitTime_binary_le _ _ _ _ _ S radix recordsFit directorySize
-      intro j hj
-      simp only [List.mem_cons,List.not_mem_nil,or_false] at hj
-      rcases hj with h | h | h | h | h
-      · have eq : j = 2 := Fin.ext h
-        subst j; rw [modulus,length_binSyms]; exact digits
-      · have eq : j = 47 := Fin.ext h
-        exact eq ▸ prefixSpan.trans (spanVolume.trans volumeExtent)
-      · have eq : j = 48 := Fin.ext h
-        exact eq ▸ projectorSize
-      · have eq : j = 44 := Fin.ext h
-        subst j; rw [unit,length_binSyms]; exact digits
-      · have eq : j = 45 := Fin.ext h
-        subst j; rw [clock]; exact atom
-    have queueVolume : queueTime ≤ (12*m*m+4+directoryMatrixRate m d)*V+4 := by
-      dsimp only [queueTime]
-      rw [precision]
-      refine (directoryMatrixQueueTime_binary_le ..).trans (Nat.add_le_add_right ?_ 4)
-      calc
-        _ ≤ data.records*((12*m*m+4)*span+directoryMatrixRate m d*span) :=
-          Nat.mul_le_mul_left _ (Nat.add_le_add (Nat.mul_le_mul_left _ prefixSpan) (Nat.mul_le_mul_left _ (radixPayload.trans payloadSpan)))
-        _ = (12*m*m+4+directoryMatrixRate m d)*V := by dsimp only [V]; ring
+    have ⟨initLe,queueVolume⟩ := DirectoryReady.matrixSetup_volume (v := vDescriptor) (proj := proj) (parent := parent) (J := J) (prefixes := prefixes) (archiveTail := archiveTail) (schedule := schedule) data room S
+      (by simpa only [pending,List.drop_zero] using initial.1) precision radixPayload nonempty
     have setup : t ≤ preparation := (charge p (inputTime p (max_le_iff.mp (max_le_iff.mp hp).1).1 calls)).trans
       (Nat.add_le_add (Nat.add_le_add initLe queueVolume) (Nat.add_le_add_left
         (Nat.mul_le_mul_left _ (Nat.mul_le_mul_left _ (Nat.mul_le_mul_left p initLe))) _))
