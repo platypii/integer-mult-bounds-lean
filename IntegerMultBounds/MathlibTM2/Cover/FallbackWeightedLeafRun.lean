@@ -3,7 +3,7 @@ module
 public import IntegerMultBounds.MathlibTM2.Mult.ShortConvSetupOps
 import IntegerMultBounds.Machine.RecursiveHeaderBounds
 import IntegerMultBounds.MathlibTM2.Cover.FallbackPrefixVolume
-public import IntegerMultBounds.MathlibTM2.Cover.FallbackPairWeights
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackGoodRecordWeights
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackMiddleSwap
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackLeafSignRun
 
@@ -503,6 +503,54 @@ section
 local instance (w : ℕ) : NeZero (prime^(w+1)) :=
   ⟨(pow_pos IntegerMultBounds.Networks.Shared50ModularControl.prime_prime.pos _).ne'⟩
 
+/-- Row arithmetic reuses the coefficient bank's cleared slots. Its padded
+zero occupies the one extra slot after that bank. -/
+def packedRowPorts : Fin 13 ↪ Fin 21 := ⟨![1,2,3,7,8,9,10,11,13,17,5,4,20],by decide⟩
+
+def packedFieldPorts : Fin 6 ↪ Fin 20 := ⟨![1,2,3,4,5,6],by decide⟩
+
+/-- Insert the record tapes between the represented common bank and the
+interchange workspace. The two banks are disjoint and the workspace may
+already contain explicit blank cells left by an earlier interchange. -/
+theorem packedLeafPlacement {common record priv A : ℕ} (bank : Tapes common A)
+    (L R : Fin ((common+record)+priv) → List (Fin (A+4))) :
+    let sim := appendPrivate (Fin.castAddEmb (n := common) record) priv
+    let caller := (Fin.natAddEmb common (m := record)).trans (Fin.castAddEmb priv)
+    (∀ i j, sim i ≠ caller j) ∧
+      (RepT (raw bank (common+priv)) (L ∘ sim) (R ∘ sim) ↔
+        RepT bank (fun i => L ((i.castAdd record).castAdd priv))
+          (fun i => R ((i.castAdd record).castAdd priv)) ∧
+        ∀ (j : Fin priv) x, readAt blank (L (j.natAdd (common+record))) (R (j.natAdd (common+record))) x = blank) := by
+  intro sim caller
+  constructor
+  · intro i j
+    refine Fin.addCases (m := common) (n := priv) ?_ ?_ i
+    · intro k eq
+      have h := congrArg Fin.val eq
+      simp [sim,caller,appendPrivate_shared] at h
+      omega
+    · intro k eq
+      have h := congrArg Fin.val eq
+      simp [sim,caller,appendPrivate_work] at h
+      omega
+  · constructor
+    · intro rep
+      constructor
+      · intro i x
+        simpa only [(Embed.raw_left _ _).1,(Embed.raw_left _ _).2,Function.comp_apply,sim,
+          appendPrivate_shared,Fin.castAddEmb_apply] using rep (i.castAdd priv) x
+      · intro j x
+        simpa only [(Embed.raw_right _ _).1,(Embed.raw_right _ _).2,Function.comp_apply,sim,
+          appendPrivate_work,sub_zero] using (rep (j.natAdd common) x).symm
+    · rintro ⟨shared,empty⟩ i
+      refine Fin.addCases (m := common) (n := priv) ?_ ?_ i
+      · intro j x
+        simpa only [(Embed.raw_left _ _).1,(Embed.raw_left _ _).2,Function.comp_apply,sim,
+          appendPrivate_shared,Fin.castAddEmb_apply] using shared j x
+      · intro j x
+        simpa only [(Embed.raw_right _ _).1,(Embed.raw_right _ _).2,Function.comp_apply,sim,
+          appendPrivate_work,sub_zero] using (empty j x).symm
+
 theorem packedWeightedLeaf_exec [M8.Machine.Net] {m d : ℕ} (v : Descriptor) (positive : v.Positive)
     (w : ℕ) (width : v.width = w+1)
     (parent : Fin m → ZMod (prime^(w+1))) (j : Fin m) (parentInv : ZMod (prime^(w+1)))
@@ -520,20 +568,20 @@ theorem packedWeightedLeaf_exec [M8.Machine.Net] {m d : ℕ} (v : Descriptor) (p
     let c := fun b : Bool => if b then (⟨(-weight).val,(-weight).val_lt⟩ : Fin M) else ⟨inv.val,inv.val_lt⟩
     ∀ (word : Fin ((P*M*G)*(M*B)) → ZMod 2), roles.head io = 0 → roles.tape io = leafBitTape (List.ofFn word) →
     let block := LeafCore.core io
-    ∀ {K : ℕ} (sim : Fin block.tapes ↪ Fin K) (pair : Fin 20 ↪ Fin K) (r : Fin 13 ↪ Fin K) (gap tail : Fin K)
-      (dst : Fin 6 ↪ Fin K) (_rowSlots : ∀ i : Fin 3, dst (i.castLE (by decide)) = r (i.castLE (by decide)))
-      (_gapSlot : dst 4 = gap) (_tailSlot : dst 5 = tail)
-      (_fieldsOff : ∀ i j, sim i ≠ dst j)
-      (_scratchOff : ∀ i : Fin 13, (3 ≤ i ∧ i < 10) ∨ i = 12 → ∀ j ∈ leafDimensionFields, r i ≠ dst j)
-      (_pairKeep : ∀ i ∈ [0,4,12], ∀ j ∈ leafDimensionFields, pair i ≠ dst j)
-      (_radixPort : r 11 = pair 4)
-      (_other : ∀ j ∈ [gap,tail,pair 0,pair 12], j ≠ r 4 ∧ j ≠ r 12),
-      let dims : Fin 4 → Fin K := ![r 4,gap,r 12,tail]
-      ∀
-      (_pairScratch : ∀ k : Fin 13, (3 ≤ k ∧ k < 10) ∨ k = 12 → ∀ a ∈ [0,14,12], r k ≠ pair a)
-      (_fieldPair : ∀ k ∈ leafDimensionFields, ∀ a ∈ [0,14,12], dst k ≠ pair a)
-      (_pairOff : ∀ i j, j ∈ [0,4,12,14] → sim i ≠ pair j) (_dimsOff : ∀ i j, sim i ≠ dims j) (slot : Fin block.tapes) (_leading : slot.val = io.val)
-      (capacity : 217 ≤ block.states),
+    let common := CommonBank.count T
+    let host := common+24
+    let K := host+LeafCore.small
+    let sim := appendPrivate (Fin.castAddEmb (n := common) 24) LeafCore.small
+    let caller := (Fin.natAddEmb common (m := 24)).trans (Fin.castAddEmb LeafCore.small)
+    let workBank := goodLeafPorts.trans caller
+    let pair := (Fin.castAddEmb 1).trans workBank
+    let r := packedRowPorts.trans workBank
+    let dst := packedFieldPorts.trans pair
+    let gap := dst 4
+    let tail := dst 5
+    let dims : Fin 4 → Fin K := ![r 4,gap,r 12,tail]
+    let slot := (LeafCore.roleSlot io).castAdd LeafCore.small
+    ∀ (capacity : 217 ≤ block.states),
       let src := fun b : Bool => ![dims 0,dims 1,if b then pair 12 else pair 0,dims 2,dims 3,pair 4]
       let ports := sim.trans (Fin.castAddEmb 31)
       let shear := statePlacedNormalized (Record.payloadBank (sim slot) (22 : Fin 31)) capacity
@@ -571,11 +619,14 @@ theorem packedWeightedLeaf_exec [M8.Machine.Net] {m d : ℕ} (v : Descriptor) (p
         (S : Stacks (K+31) prime) push, (∀ b, Fast.Main.mnProgPush (prog b) ≤ push) →
         Fast.Main.mnProgPush lastProg ≤ push → Fast.Main.mnProgPush sign ≤ push → (∀ f, Fast.Main.mnProgPush (body f) ≤ push) →
         (∀ j : Fin 31, S.L (j.natAdd K) = [] ∧ S.R (j.natAdd K) = []) →
-        (∀ j ∈ leafDimensionFields, S.R ((dst j).castAdd 31) = []) →
-        (∀ i : Fin 13, (3 ≤ i ∧ i < 10) ∨ i = 12 → S.R ((r i).castAdd 31) = []) →
+        S.R ((caller 18).castAdd 31) = [] →
         ∀ (pivotTail parentTail : List (Fin (prime+4))),
-        PackedLeafInputs (pair.trans (Fin.castAddEmb 31)) M.size parent pivot S pivotTail parentTail →
-        RepT (raw (CommonBank.bank roles (Routines.hdr v) f p node scalar ctr st) block.tapes) (S.L ∘ ports) (S.R ∘ ports) →
+        PackedLeafInputs ((goodChildPorts.trans caller).trans (Fin.castAddEmb 31)) M.size parent pivot S pivotTail parentTail →
+        RepT (CommonBank.bank roles (Routines.hdr v) f p node scalar ctr st)
+          (fun i => S.L (((i.castAdd 24).castAdd LeafCore.small).castAdd 31))
+          (fun i => S.R (((i.castAdd 24).castAdd LeafCore.small).castAdd 31)) →
+        (∀ (j : Fin LeafCore.small) x, readAt blank (S.L ((j.natAdd host).castAdd 31))
+          (S.R ((j.natAdd host).castAdd 31)) x = blank) →
         let rr := r.trans (Fin.castAddEmb 31)
         let setup := (middleRowDescriptor ((Fin.castLEEmb (by decide : 11 ≤ 13)).trans rr)).seq
           (bzero (rr 11) (rr 12) (rr 5))
@@ -591,7 +642,48 @@ theorem packedWeightedLeaf_exec [M8.Machine.Net] {m d : ℕ} (v : Descriptor) (p
           Exec body ((signedChildPair prime j.val i.val coeff true).seq
             (call.seq (Mult.ShortConv.clearWords [coeff 0,coeff 14,coeff 12]))) (mk u S) n (mk z D) ∧
           output S D := by
-  intro M weight inv P G B size c word head input block K sim pair r gap tail dst rowSlots gapSlot tailSlot fieldsOff scratchOff pairKeep radixPort other dims pairScratch fieldPair pairOff dimsOff slot leading capacity src ports shear prog lastProg work stage result y xs len signWord signSrc load bank child sign output body u S push hp hl hsign hb free fieldEmpty empty pivotTail parentTail archives initial rr setup leaf fields headers readFields call coeff coefficientRate
+  intro M weight inv P G B size c word head input block common host K sim caller workBank pair r dst gap tail dims slot capacity src ports shear prog lastProg work stage result y xs len signWord signSrc load bank child sign output body u S push hp hl hsign hb free spare pivotTail parentTail recordInputs commonRep privateBlank rr setup leaf fields headers readFields call coeff coefficientRate
+  have placement := packedLeafPlacement (record := 24) (priv := LeafCore.small)
+    (CommonBank.bank roles (Routines.hdr v) f p node scalar ctr st)
+    (fun j => S.L (j.castAdd 31)) (fun j => S.R (j.castAdd 31))
+  have apart (i : Fin block.tapes) (j : Fin 21) : sim i ≠ caller (goodLeafPorts j) :=
+    placement.1 i _
+  have leading : slot.val = io.val := rfl
+  have initial : RepT (raw (CommonBank.bank roles (Routines.hdr v) f p node scalar ctr st) block.tapes)
+      (S.L ∘ ports) (S.R ∘ ports) := placement.2.mpr ⟨commonRep,privateBlank⟩
+  have pairEq : pair = goodChildPorts.trans caller := by
+    apply Function.Embedding.ext
+    intro j
+    exact congrArg caller (DFunLike.congr_fun goodLeafPorts_pair j)
+  have archives : PackedLeafInputs coeff M.size parent pivot S pivotTail parentTail := by
+    simpa only [coeff,pairEq] using recordInputs
+  have rowSlots (i : Fin 3) : dst (i.castLE (by decide)) = r (i.castLE (by decide)) :=
+    congrArg workBank ((by decide : ∀ i : Fin 3, (packedFieldPorts (i.castLE (by decide))).castAdd 1 =
+      packedRowPorts (i.castLE (by decide))) i)
+  have fieldsOff (i j) : sim i ≠ dst j := apart i _
+  have pairOff (i) (j : Fin 20) (_ : j ∈ [0,4,12,14]) : sim i ≠ pair j := apart i _
+  have dimsOff (i) (j : Fin 4) : sim i ≠ dims j := by fin_cases j <;> exact apart i _
+  have fieldPair (i) (hi : i ∈ leafDimensionFields) (j) (hj : j ∈ [0,14,12]) : dst i ≠ pair j :=
+    pair.injective.ne ((by decide : ∀ i ∈ leafDimensionFields, ∀ j ∈ [0,14,12], packedFieldPorts i ≠ j) i hi j hj)
+  have pairKeep (j) (hj : j ∈ [0,4,12]) (i) (hi : i ∈ leafDimensionFields) : pair j ≠ dst i :=
+    pair.injective.ne ((by decide : ∀ j ∈ [0,4,12], ∀ i ∈ leafDimensionFields, j ≠ packedFieldPorts i) j hj i hi)
+  have scratchOff (i : Fin 13) (hi : (3 ≤ i ∧ i < 10) ∨ i = 12) (j) (hj : j ∈ leafDimensionFields) : r i ≠ dst j :=
+    workBank.injective.ne ((by decide : ∀ i : Fin 13, (3 ≤ i ∧ i < 10) ∨ i = 12 → ∀ j ∈ leafDimensionFields,
+      packedRowPorts i ≠ (packedFieldPorts j).castAdd 1) i hi j hj)
+  have pairScratch (i : Fin 13) (hi : (3 ≤ i ∧ i < 10) ∨ i = 12) (j : Fin 20) (hj : j ∈ [0,14,12]) : r i ≠ pair j :=
+    workBank.injective.ne ((by decide : ∀ i : Fin 13, (3 ≤ i ∧ i < 10) ∨ i = 12 → ∀ j : Fin 20,
+      j ∈ [0,14,12] → packedRowPorts i ≠ j.castAdd 1) i hi j hj)
+  have other (k) (hk : k ∈ [gap,tail,pair 0,pair 12]) : k ≠ r 4 ∧ k ≠ r 12 := by
+    simp at hk
+    rcases hk with rfl | rfl | rfl | rfl <;> constructor <;> apply workBank.injective.ne <;> decide
+  have fieldEmpty (j) (hj : j ∈ leafDimensionFields) : S.R ((dst j).castAdd 31) = [] :=
+    archives.scratch (packedFieldPorts j) ((by decide : ∀ j ∈ leafDimensionFields,
+      (packedFieldPorts j ≤ 14 ∧ packedFieldPorts j ≠ 4) ∨ packedFieldPorts j = 17) j hj)
+  have empty (i : Fin 13) (hi : (3 ≤ i ∧ i < 10) ∨ i = 12) : S.R ((r i).castAdd 31) = [] := by
+    rcases (by decide : ∀ i : Fin 13, (3 ≤ i ∧ i < 10) ∨ i = 12 → packedRowPorts i = 20 ∨
+      ∃ j : Fin 20, packedRowPorts i = j.castAdd 1 ∧ ((j ≤ 14 ∧ j ≠ 4) ∨ j = 17)) i hi with eq | ⟨j,eq,free⟩
+    · change S.R ((workBank (packedRowPorts i)).castAdd 31) = []; rw [eq]; exact spare
+    · change S.R ((workBank (packedRowPorts i)).castAdd 31) = []; rw [eq]; exact archives.scratch j free
   have distinct (k : Fin K) (h : ∀ a ∈ [0,14,12], k ≠ pair a) :
       k.castAdd 31 ∉ [coeff 0,coeff 14,coeff 12] := by
     simp [coeff,h 0 (by decide),h 14 (by decide),h 12 (by decide)]
@@ -610,7 +702,7 @@ theorem packedWeightedLeaf_exec [M8.Machine.Net] {m d : ℕ} (v : Descriptor) (p
       intro y E hy unit hL modWord invWord negWord keep
       obtain ⟨z,D,t,hz,ht,run,rep,read,addr,clean,frame⟩ := weightedLeaf_exec v positive w width
         (show prime^v.width = M by rw [width]) weight inv unit io roles f p node scalar ctr st word head input
-        sim pair r gap tail dst rowSlots gapSlot tailSlot fieldsOff scratchOff pairKeep radixPort other
+        sim pair r gap tail dst rowSlots rfl rfl fieldsOff scratchOff pairKeep rfl other
         (fun k a ha => pairOff k a (by simp at ha ⊢; rcases ha with h | h | h <;> simp [h]))
         dimsOff slot leading capacity body y E push hp hl hsign hb
         (fun k => ⟨(congrFun hL _).trans (free k).1,(keep _ (privateOff k)).trans (free k).2⟩)

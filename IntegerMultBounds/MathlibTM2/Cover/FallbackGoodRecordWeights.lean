@@ -19,6 +19,16 @@ local instance : NeZero M := ⟨(pow_pos prime_prime.pos _).ne'⟩
 def goodChildPorts : Fin 20 ↪ Fin 24 :=
   ⟨![0,1,3,4,2,5,6,7,8,9,10,11,12,13,17,20,22,21,14,23],by decide⟩
 
+/-- The stopped leaf extends the twenty coefficient tapes by the parent's
+empty register 18. The two matrix archive tapes remain in place. -/
+def goodLeafPorts : Fin 21 ↪ Fin 24 :=
+  ⟨Fin.lastCases 18 goodChildPorts,by decide⟩
+
+theorem goodLeafPorts_pair : (Fin.castAddEmb 1).trans goodLeafPorts = goodChildPorts := by
+  apply Function.Embedding.ext
+  intro j
+  exact (by decide : ∀ j : Fin 20, goodLeafPorts (j.castAdd 1) = goodChildPorts j) j
+
 /-- On a good record the words emitted by elimination are precisely the
 diagonal corrections in the one-child move. Each active child coordinate can
 then read its product weight and reciprocal from the parent and pivot tapes. Tapes outside the pivot
@@ -59,6 +69,7 @@ theorem goodRecordWeights_exec (body : P → Pr P T Q A U) (ports : Fin 24 ↪ F
       (∀ i, i ≠ bank 14 → i ≠ stageBank bank proj.rank 15 → i ≠ stageBank bank proj.rank 16 → F.R i = S.R i) ∧
       (∀ rest : List (Fin (A+4)),
         S.R (ports 23) = (List.ofFn fun k => binSyms H (α k).val).flatten ++ rest →
+        F.R (ports (goodLeafPorts 20)) = [] ∧
         PackedLeafInputs child H α (fun k : Fin proj.rank => δ (k.castLE fits)) F [] rest ∧
         ∀ i : Fin proj.rank,
         let C := 48*H*H+152*H+66
@@ -132,7 +143,7 @@ theorem goodRecordWeights_exec (body : P → Pr P T Q A U) (ports : Fin 24 ↪ F
       ⟨parentWord,pivots,(unchanged 2 (by decide) (by decide) (by decide)).trans modulus,
         (unchanged 20 (by decide) (by decide) (by decide)).trans one,
         (congrArg List.length (unchanged 22 (by decide) (by decide) (by decide))).trans ticks,scratch⟩
-    refine ⟨?_,?_⟩
+    refine ⟨(unchanged 18 (by decide) (by decide) (by decide)).trans (free 18 (by decide)),?_,?_⟩
     · simpa only [δ,Fin.val_castLE,Fin.isLt,ite_true,pivot] using ready
     intro i C
     obtain ⟨u,D,t,hu,ht,run,pair,inverse,negative,hL,hin,hout,kept⟩ := signedChildPair_exec body child α

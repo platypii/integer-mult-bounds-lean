@@ -52,13 +52,13 @@ def appendPrivate {n m : ℕ} (bank : Fin n ↪ Fin m) (size : ℕ) :
   (finSumFinEquiv.symm.toEmbedding.trans (bank.sumMap (Function.Embedding.refl _))).trans
     finSumFinEquiv.toEmbedding
 
-private theorem appendPrivate_shared {n m size : ℕ} (bank : Fin n ↪ Fin m) (j : Fin n) :
+theorem appendPrivate_shared {n m size : ℕ} (bank : Fin n ↪ Fin m) (j : Fin n) :
     appendPrivate bank size (j.castAdd size) = (bank j).castAdd size := by
   change finSumFinEquiv (Sum.map bank id (finSumFinEquiv.symm (j.castAdd size))) = _
   rw [finSumFinEquiv_symm_apply_castAdd]
   rfl
 
-private theorem appendPrivate_work {n m size : ℕ} (bank : Fin n ↪ Fin m) (j : Fin size) :
+theorem appendPrivate_work {n m size : ℕ} (bank : Fin n ↪ Fin m) (j : Fin size) :
     appendPrivate bank size (j.natAdd n) = j.natAdd m := by
   change finSumFinEquiv (Sum.map bank id (finSumFinEquiv.symm (j.natAdd n))) = _
   rw [finSumFinEquiv_symm_apply_natAdd]
