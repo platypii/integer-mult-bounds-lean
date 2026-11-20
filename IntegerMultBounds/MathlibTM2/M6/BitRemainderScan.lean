@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.M6.BitRemainderDirectory
 public import IntegerMultBounds.MathlibTM2.M6.BitRemainderRun
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackGeneratedGoodRecord
 import IntegerMultBounds.MathlibTM2.Host.EmbedStock
@@ -960,6 +961,40 @@ noncomputable def directorySpace [M8.Machine.Net] (T m dim : ℕ) : DirectorySpa
   have h := directoryTapeBounds LeafCore.small pool entry leave archive writer matrix common host
   exact ⟨work, h.1, h.2.1, h.2.2.1, h.2.2.2.1, h.2.2.2.2.1, h.2.2.2.2.2.1, h.2.2.2.2.2.2⟩
 
+private theorem directoryReady_of_inputs {K m w W H J : ℕ} {v : Descriptor} {proj : Matrix (Fin m) (Fin m) ℚ}
+    {parent : Fin m → ZMod (prime^(w+1))} {prefixes : ℕ → List (Fin (prime+4))} {tail : List (Fin (prime+4))}
+    (schedules : List ℕ → List (Fin (prime+4))) (labels : List ℕ) (S : Stacks (66+K) prime) :
+    let caller := Fin.castAddEmb (n := 66) K
+    let privateTapes := (List.finRange (66+K)).filter fun i => decide (58 ≤ i.val)
+    let clean := {S with L := fun i => if i ∈ privateTapes then [] else S.L i,
+                         R := fun i => if i ∈ privateTapes then [] else Function.update S.R (caller 54) (schedules labels) i}
+    S.R (caller 46) = labels.flatMap (LabelDirectory.entry prefixes m (w+1)) ++ tail →
+    (∀ j ∈ labels, (S.R (caller 47)).length = (prefixes j).length) →
+    DirectoryHeaders v proj w W H J parent (fun i => S.R (caller (i.castAdd 8))) →
+    DirectoryReady v proj w W H J parent prefixes tail schedules clean labels := by
+  intro caller privateTapes clean archive widths headers
+  have shared (i : Fin 66) (small : i.val < 58) : caller i ∉ privateTapes := by
+    simp [privateTapes,caller, Nat.not_le_of_gt small]
+  have keep (i : Fin 66) (small : i.val < 58) (ne : i ≠ 54) :
+      clean.R (caller i) = S.R (caller i) := by
+    simp only [clean,ite_eq_right (shared i small),Function.update_of_ne (caller.injective.ne ne)]
+  obtain ⟨scratch,⟨suffix,projector⟩,base,unit,trailing,hdr,one,clock,parents⟩ := headers
+  refine ⟨(keep 46 (by decide) (by decide)).trans archive,fun j hj =>
+    (congrArg List.length (keep 47 (by decide) (by decide))).trans (widths j hj),?_,
+    (keep 49 (by decide) (by decide)).trans scratch,⟨suffix,(keep 48 (by decide) (by decide)).trans projector⟩,
+    (keep 2 (by decide) (by decide)).trans base,(keep 28 (by decide) (by decide)).trans unit,
+    (keep 53 (by decide) (by decide)).trans trailing,?_,(keep 44 (by decide) (by decide)).trans one,
+    (congrArg List.length (keep 45 (by decide) (by decide))).trans clock,(keep 55 (by decide) (by decide)).trans parents,?_⟩
+  · intro i hi
+    have mem : i ∈ privateTapes := by simp [privateTapes,hi]
+    simp [clean,mem]
+  · intro i
+    apply (keep _ ?_ ?_).trans (hdr i)
+    · change 33+i.val < 58; omega
+    · intro eq; have h := congrArg Fin.val eq; change 33+i.val = 54 at h; omega
+  · change (if caller 54 ∈ privateTapes then [] else Function.update S.R (caller 54) (schedules labels) (caller 54)) = _
+    rw [ite_eq_right (shared 54 (by decide)),Function.update_self]
+
 open RingFormula LabelTraversal IntegerMultBounds.MathlibTM2.Fast.Main RecursiveInterchangeLayout Matrix Finset
   IntegerMultBounds.Swap.LowerTriangular IntegerMultBounds.Swap.Modular in
 /-- Execute the generated selector, matrix writer and classified row programs on
@@ -1003,8 +1038,6 @@ def OwnerDirectoryRun [M8.Machine.Net] {T m dim J W : ℕ} {F U : Type}
     let ready := DirectoryReady v proj w W data.H J parent prefixes archiveTail schedules
     let payload := RecordPayload (N := N) (caller 24) (fun _ => blank) 0
     let privateTapes := (List.finRange (66+K)).filter fun i => decide (58 ≤ i.val)
-    let clean := {whole with L := fun i => if i ∈ privateTapes then [] else whole.L i,
-                             R := fun i => if i ∈ privateTapes then [] else Function.update whole.R (caller 54) (schedules labels) i}
     let logical := {v with width := d}
     let addr := fun a row pre mid post (x : IntegerMultBounds.Swap.Shear.State (Fin d) (ZMod M)) =>
       index M logical a row pre (FlatCoordinateLayout.rank x.1).val mid (FlatCoordinateLayout.rank x.2).val post
@@ -1021,7 +1054,7 @@ def OwnerDirectoryRun [M8.Machine.Net] {T m dim J W : ℕ} {F U : Type}
     (whole.R (caller 29)).length = directory.beforeRows →
     (whole.R (caller 30)).length = directory.rows → (whole.R (caller 31)).length = directory.beforeH →
     whole.R (caller 50) = [] → whole.R (caller 57) = [] → whole.R (caller 56) = [] → whole.R (caller 54) = [] →
-    ready clean labels →
+    DirectoryScanInput v proj w W data.H J parent prefixes archiveTail labels (fun i => ownerState.R (i.castLE (by omega))) →
     let coords := packedCoordinatesTime d N w (LeafCore.core io).tapes
       (packedLeafPush (F := Empty) (U := U) io Empty.elim) entry.tapes leave.tapes
     let pivotCost := pivotSetupTime m d w M.size + coords
@@ -1101,11 +1134,19 @@ private theorem generatedOwnerDirectory_exec [M8.Machine.Net] {T m dim J W : ℕ
     OwnerDirectoryRun (F := F) (U := U) (J := J) directory v w proj rankFits parent parentInv io dimension data length anchor := by
   unfold OwnerDirectoryRun
   intro d space work common K M N entry leave archiveRoom body ownerUser ownerState input prefixes archiveTail c bounded
-    placement outer bank reg start u whole caller labels live g bad φ table schedules ready payload privateTapes clean logical addr G effect free
-    brSize rowsSize beforeSize parents mask mode queue initial coords pivotCost raw trip runCost price big bits count empty owner accumulator size saved tmp blankPort
+    placement outer bank reg start u whole caller labels live g bad φ table schedules ready payload privateTapes logical addr G effect free
+    brSize rowsSize beforeSize parents mask mode queue scanInput coords pivotCost raw trip runCost price big bits count empty owner accumulator size saved tmp blankPort
   let selectorBudget := (26*prime^w+4) + ((44*labels.length+13*(w+1)+16) + 3*((6+10*(m*m))*labels.length+4) +
         (2*(directory.beforeRows*directory.rows*B)+2)) +
         ((privateTapes.map fun i => 4*(whole.L i).length).sum + privateTapes.length*(2*prime^w+4)+1)
+  have shared : (fun i : Fin 58 => whole.R (caller (i.castAdd 8))) =
+      fun i => ownerState.R (i.castLE (by omega)) := by
+    funext i
+    change ownerState.R ((placement ((i.castAdd 8).castAdd K)).castAdd 5) = _
+    rw [show placement ((i.castAdd 8).castAdd K) = (i.castAdd 8).castAdd (K+1) from directoryOrdinaryBank_caller archiveRoom _]
+    rfl
+  rw [← shared] at scanInput
+  have initial := directoryReady_of_inputs schedules labels whole scanInput.archive scanInput.widths scanInput.headers
   have spec := generatedRecordScan_exec v positive w proj width idem factor hd rankFits parent parentInv reciprocal io arity
     hm hw hW length (le_max_left ..) (fun _ => blank) 0 space.leaf (columnLeafFits io) space.entry space.exit (directoryEntryStates_fit T) (directoryExitStates_fit T) (fun _ => 0) body u whole space.pool directory prefixes archiveTail
     c bounded space.matrix B shape free positiveDir brSize rowsSize beforeSize parents mask mode queue initial

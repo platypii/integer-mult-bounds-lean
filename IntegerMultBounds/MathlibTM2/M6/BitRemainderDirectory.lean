@@ -21,6 +21,12 @@ private theorem buildCost_le (a w parents box records : ℕ) (count : records = 
     _ = parents*box*(15*(a*(64*64))+14*w+45) + parents*(6*w+25) + (22*box+8*a+32) := by ring
     _ ≤ _ := by grw [fixed]; ring_nf; omega
 
+private theorem remainderDirectoryCount (v : Descriptor) (w rows B : ℕ)
+    (split : v.rows = 142080*rows) (shape : v.beforeH = B*prime^(64*((w+1)*64))) :
+    LabelMask.records (role v 142080) = (v.beforeRows*rows*B)*(prime^(w+1))^(64*64) := by
+  simp only [LabelMask.records,role,split,Nat.mul_div_cancel_left _ (by decide : 0 < 142080),shape,← pow_mul]
+  ring
+
 private theorem buildCounted {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
     (r : Fin 15 ↪ Fin T) (atom one : Fin T) (atomOff : ∀ i, atom ≠ r i) (oneOff : ∀ i, one ≠ r i)
     (v : Descriptor) (w rows B : ℕ) (positive : v.Positive) (width : v.width = 64*(w+1))
@@ -45,10 +51,7 @@ private theorem buildCounted {T Q : ℕ} {P U : Type} (body : P → Pr P T Q pri
         (mk u S) n (mk z {S with R := Function.update (Function.update R (r 0) tail) (r 14) (entries ++ S.R (r 14))}) := by
   intro directory parents box L W parentCount atomWidth unit fresh source widths prefixFits entries R
   have roleRows : directory.rows = rows := by simp [directory,role,split]
-  have count : LabelMask.records directory = parents*box := by
-    rw [LabelMask.records,roleRows]
-    change v.beforeRows*rows*v.beforeH = _
-    rw [shape]; dsimp only [parents,box]; rw [← pow_mul]; ring_nf
+  have count : LabelMask.records directory = parents*box := remainderDirectoryCount v w rows B split shape
   have dp := RecursiveRowsNodeLayout.role_positive 142080 v (by decide) positive ⟨rows,split⟩
   have run := LabelDirectorySetup.build_from_parents (body := body) 64 r atom one atomOff oneOff u S word tail unit fresh
   simp only [atomWidth,parentCount,pow_mul prime (w+1) (64*64)] at run
@@ -72,18 +75,24 @@ private theorem buildCounted {T Q : ℕ} {P U : Type} (body : P → Pr P T Q pri
     exact Nat.mul_le_mul_right _ ((Nat.mul_le_mul_left _ paid).trans bound)
   · simpa only [entries,R,count,box,L] using exec
 
-private theorem parentCountCharge (v : Descriptor) (positive : v.Positive) (w t : ℕ)
+private theorem countAndCleanupCharge (v : Descriptor) (positive : v.Positive) (w t parents box : ℕ) (count : LabelMask.records v = parents*box)
     (width : v.width = 64*(w+1)) (time : t ≤ 44*LabelMask.records v+13*(w+1)+14) :
-    prime^v.width*t ≤ 71*volume prime v := by
+    prime^v.width*(t+2*(box+parents+2*((w+1)*(64*64))+parents*box+(w+1))+29) ≤ 364*volume prime v := by
   let records := LabelMask.records v
   let scale := prime^v.width
   have hr : 0 < records := Nat.mul_pos (Nat.mul_pos positive.1 positive.2.1) positive.2.2.1
   have hs : 0 < scale := Nat.pow_pos Networks.Shared50ModularControl.prime_prime.pos
   have hw : w+1 ≤ scale := (show w+1 ≤ v.width by omega).trans
     (Nat.lt_pow_self (n := v.width) Networks.Shared50ModularControl.prime_prime.one_lt).le
-  have budget : t ≤ 71*(records*scale) := by
+  have budget : t+2*(box+parents+2*((w+1)*(64*64))+parents*box+(w+1))+29 ≤ 364*(records*scale) := by
     have a := Nat.le_mul_of_pos_right records hs
     have b := Nat.le_mul_of_pos_left scale hr
+    have both : 0 < parents*box := count ▸ hr
+    have p := Nat.le_mul_of_pos_right parents (Nat.pos_of_mul_pos_left both)
+    have q := Nat.le_mul_of_pos_left box (Nat.pos_of_mul_pos_right both)
+    have radix := (Nat.lt_pow_self (n := v.width) Networks.Shared50ModularControl.prime_prime.one_lt).le
+    change records = parents*box at count
+    change v.width ≤ scale at radix
     change t ≤ 44*records+13*(w+1)+14 at time
     omega
   have occupied : records*scale*scale ≤ volume prime v := by
@@ -92,14 +101,78 @@ private theorem parentCountCharge (v : Descriptor) (positive : v.Positive) (w t 
       _ = records*scale*1*scale*1 := by ring
       _ ≤ _ := by gcongr <;> first | exact positive.2.2.2.1 | exact positive.2.2.2.2
   calc
-    _ ≤ scale*(71*(records*scale)) := Nat.mul_le_mul_left _ budget
-    _ = 71*(records*scale*scale) := by ring
+    _ ≤ scale*(364*(records*scale)) := Nat.mul_le_mul_left _ budget
+    _ = 364*(records*scale*scale) := by ring
     _ ≤ _ := Nat.mul_le_mul_left _ occupied
+
+local instance (w : ℕ) : NeZero (prime^(w+1)) := ⟨pow_ne_zero _ Networks.Shared50ModularControl.prime_prime.ne_zero⟩
+
+open IntegerMultBounds.Swap.Modular in
+/-- Shared inputs read by the row scan, all on registers preserved by the directory builder. -/
+def DirectoryHeaders {m : ℕ} (v : Descriptor) (proj : Matrix (Fin m) (Fin m) ℚ) (w W H J : ℕ)
+    (parent : Fin m → ZMod (prime^(w+1))) (R : Fin 58 → List (Fin (prime+4))) : Prop :=
+  let M := prime^(w+1)
+  R 49 = [] ∧ (∃ suffix, R 48 = matrixWords prime H (reduce M proj) ++ suffix) ∧
+    R 2 = binSyms H M ∧ R 28 = binSyms 1 1 ∧ R 53 = binSyms J W ∧
+    (∀ i : Fin 6, R ((i.natAdd 33).castLE (by decide : 39 ≤ 58)) = (M8.RevMachine.Routines.hdr v i).map bitSymbol) ∧
+    R 44 = binSyms H (1 : ZMod M).val ∧ (R 45).length = w ∧ R 55 = (List.ofFn fun i => binSyms H (parent i).val).flatten
+
+structure DirectoryScanInput {m : ℕ} (v : Descriptor) (proj : Matrix (Fin m) (Fin m) ℚ) (w W H J : ℕ)
+    (parent : Fin m → ZMod (prime^(w+1))) (prefixes : ℕ → List (Fin (prime+4))) (tail : List (Fin (prime+4)))
+    (labels : List ℕ) (R : Fin 58 → List (Fin (prime+4))) : Prop where
+  archive : R 46 = labels.flatMap (LabelDirectory.entry prefixes m (w+1)) ++ tail
+  widths : ∀ j ∈ labels, (R 47).length = (prefixes j).length
+  headers : DirectoryHeaders v proj w W H J parent R
+
+theorem DirectoryHeaders.of_frame {m w W H J : ℕ} {v : Descriptor} {proj : Matrix (Fin m) (Fin m) ℚ}
+    {parent : Fin m → ZMod (prime^(w+1))} {R S : Fin 58 → List (Fin (prime+4))}
+    (headers : DirectoryHeaders v proj w W H J parent R) (frame : ∀ i, i.val ≠ 46 → S i = R i) :
+    DirectoryHeaders v proj w W H J parent S := by
+  unfold DirectoryHeaders at headers ⊢
+  have hdr (i : Fin 6) : S ((i.natAdd 33).castLE (by decide)) = R ((i.natAdd 33).castLE (by decide)) :=
+    frame _ (by change 33+i.val ≠ 46; omega)
+  simpa only [hdr,frame 49 (by decide),frame 48 (by decide),frame 2 (by decide),frame 28 (by decide),
+    frame 53 (by decide),frame 44 (by decide),frame 45 (by decide),frame 55 (by decide)] using headers
 
 /-- Register 46 receives the archive and register 47 retains its prefix width.
 The other builder registers use the directory's private bank. -/
 def remainderDirectoryPorts : Fin 15 ↪ Fin 72 :=
   ⟨![58,47,59,60,61,62,63,64,65,66,67,68,69,70,46], by decide⟩
+
+/-- Clear the inherited source and the six transient counters, preserving the archive. -/
+private theorem finishDirectory {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
+    (r : Fin 15 ↪ Fin T) (atom : Fin T) (apart : ∀ i, atom ≠ r i)
+    (parents L box : ℕ) (tail entries : List (Fin (prime+4))) (u : HS T Q prime U) (raw : Stacks T prime) :
+    let scratch := ([0,4,9,10,11,12] : List (Fin 15)).map r ++ [atom]
+    let S := {raw with R := Function.update raw.R (r 9) (List.replicate parents tick)}
+    let R := Function.update (LabelDirectorySetup.prepared S.R r L) (r 12) (expandedMask box (fun _ => false) (S.R (r 9)))
+    let D := {S with R := Function.update (Function.update R (r 0) tail) (r 14) (entries ++ S.R (r 14))}
+    ∃ z, z.user = u.user ∧ Exec body (clearWorkTapes scratch) (mk u D)
+      ((scratch.map (fun i => 4*(raw.L i).length)).sum +
+        2*(tail.length+prime^L+parents+2*L+parents*box+(raw.R atom).length)+29)
+      (mk z {raw with L := fun i => if i ∈ scratch then [] else raw.L i,
+                      R := fun i => if i ∈ scratch then [] else Function.update raw.R (r 14) (entries ++ raw.R (r 14)) i}) := by
+  intro scratch S R D
+  have nodup : scratch.Nodup := by
+    simp only [scratch,List.nodup_append,List.nodup_cons,List.nodup_nil,List.not_mem_nil,not_false_eq_true,and_true]
+    exact ⟨List.Nodup.map r.injective (by decide),by simp [ne_comm,apart]⟩
+  obtain ⟨z,user,run⟩ := clearWorkTapes_exec body scratch nodup u D
+  refine ⟨z,user,run.cast ?_ ?_⟩
+  · simp [scratch,D,R,S,LabelDirectorySetup.prepared,RadixCounterData.zeros,expandedMask_length,apart]
+    ring
+  · congr 2
+    funext i
+    by_cases h : i ∈ scratch
+    · simp [h]
+    · have ne (j : Fin 15) (hj : j ∈ ([0,4,9,10,11,12] : List (Fin 15))) : i ≠ r j :=
+        fun eq => h (eq ▸ List.mem_append_left _ (List.mem_map_of_mem hj))
+      simp only [h,ite_false,D,R,S,LabelDirectorySetup.prepared]
+      by_cases out : i = r 14
+      · subst i; simp
+      · simp [Function.update_of_ne out,Function.update_of_ne (ne 0 (by decide)),
+          Function.update_of_ne (ne 4 (by decide)),Function.update_of_ne (ne 9 (by decide)),
+          Function.update_of_ne (ne 10 (by decide)),Function.update_of_ne (ne 11 (by decide)),
+          Function.update_of_ne (ne 12 (by decide))]
 
 /-- The builder writes the entries in scan order. Its tape time is charged to the
 parent volume using the actual role split and inherited prefix width. -/
@@ -118,21 +191,30 @@ theorem remainderDirectory_build {T Q : ℕ} {P U : Type} (body : P → Pr P T Q
     let directory := role v 142080
     let parents := v.beforeRows*rows*B
     let box := (prime^(w+1))^(64*64)
-    let L := (w+1)*(64*64)
     let W := (raw.R (r 1)).length
-    let S := {raw with R := Function.update raw.R (r 9) (List.replicate parents tick)}
     (raw.R br).length = v.beforeRows → (raw.R nr).length = rows → (raw.R bh).length = v.beforeH →
     (raw.R atom).length = w+1 → (raw.R one).length = 1 →
     (∀ i ∈ ([2,3,4,5,6,7,9,10,11,12,13] : List (Fin 15)), raw.R (r i) = []) →
     raw.R (r 0) = (List.range parents).flatMap word ++ tail → (∀ i < parents, (word i).length = W) →
     W ≤ prime^v.width →
     let entries := (List.range (LabelMask.records directory)).flatMap (LabelDirectory.entry (fun j => word (j/box)) 64 (w+1))
-    let R := Function.update (LabelDirectorySetup.prepared S.R r L) (r 12) (expandedMask box (fun _ => false) (S.R (r 9)))
-    ∃ z elapsed, z.user = u.user ∧ prime^v.width*elapsed*142080 ≤ (71+16*64*64+19*64+344)*volume prime v ∧
-      Exec body ((LabelSpectators.program 64 br nr bh atom (r 2) (r 9) (r 3) (r 5)).seq ((LabelDirectorySetup.setup 64 r atom one).seq
-        ((expandMask (r 9) (r 4) (r 2) (r 3) (r 5) (r 12) (fun _ => false)).seq (LabelDirectoryBuild.program r))))
-        (mk u raw) elapsed (mk z {S with R := Function.update (Function.update R (r 0) tail) (r 14) (entries ++ S.R (r 14))}) := by
-  intro r atom one br nr bh directory parents box L W S beforeRows rowCount beforeH atomWidth unit fresh source widths prefixFits entries R
+    let scratch := ([0,4,9,10,11,12] : List (Fin 15)).map r ++ [atom]
+    let inherited := (scratch.map (fun i => 4*(raw.L i).length)).sum + 2*tail.length
+    let final := {raw with
+          L := fun i => if i ∈ scratch then [] else raw.L i
+          R := fun i => if i ∈ scratch then [] else Function.update raw.R (r 14) (entries ++ raw.R (r 14)) i}
+    ∃ z elapsed, z.user = u.user ∧ prime^v.width*elapsed*142080 ≤ (364+16*64*64+19*64+344)*volume prime v + prime^v.width*inherited*142080 ∧
+      Exec body (((LabelSpectators.program 64 br nr bh atom (r 2) (r 9) (r 3) (r 5)).seq ((LabelDirectorySetup.setup 64 r atom one).seq
+        ((expandMask (r 9) (r 4) (r 2) (r 3) (r 5) (r 12) (fun _ => false)).seq (LabelDirectoryBuild.program r)))).seq (clearWorkTapes scratch))
+        (mk u raw) elapsed (mk z final) ∧
+      (∀ (child : Descriptor) (proj : Matrix (Fin 64) (Fin 64) ℚ) (rowVolume H J : ℕ) (parent : Fin 64 → ZMod (prime^(w+1))),
+        DirectoryHeaders child proj w rowVolume H J parent (fun i => raw.R (bank (i.castLE (by decide)))) →
+        DirectoryScanInput child proj w rowVolume H J parent (fun j => word (j/box)) (raw.R (bank 46))
+          (List.range (LabelMask.records directory)) (fun i => final.R (bank (i.castLE (by decide))))) ∧
+      (∀ i : Fin 58, i.val ≠ 46 → final.R (bank (i.castLE (by decide))) = raw.R (bank (i.castLE (by decide)))) := by
+  intro r atom one br nr bh directory parents box W beforeRows rowCount beforeH atomWidth unit fresh source widths prefixFits entries scratch inherited final
+  let L := (w+1)*(64*64)
+  let S := {raw with R := Function.update raw.R (r 9) (List.replicate parents tick)}
   have atomOff (i : Fin 15) : atom ≠ r i :=
     bank.injective.ne ((by decide : ∀ i, (71 : Fin 72) ≠ remainderDirectoryPorts i) i)
   have oneOff (i : Fin 15) : one ≠ r i :=
@@ -162,12 +244,44 @@ theorem remainderDirectory_build {T Q : ℕ} {P U : Type} (body : P → Pr P T Q
     ((congrArg List.length (keep 1 (by decide))).le.trans prefixFits)
   have size : volume prime directory * 142080 = volume prime v := by
     unfold volume; rw [roleRows,split]; dsimp only [directory,role]; ring
-  have countPaid := Nat.mul_le_mul_right 142080 (parentCountCharge directory dp w t width account)
-  change prime^v.width*t*142080 ≤ 71*volume prime directory*142080 at countPaid
-  rw [Nat.mul_assoc 71,size] at countPaid
-  refine ⟨z,t+n,user.trans yu,?_,Exec.seq init exec⟩
+  have count := remainderDirectoryCount v w rows B split shape
+  let spent := t+2*(box+parents+2*L+parents*box+(w+1))+29
+  have small := countAndCleanupCharge directory dp w t parents box count width account
+  have countPaid : prime^v.width*spent*142080 ≤ 364*volume prime v := by
+    rw [← size,← Nat.mul_assoc]
+    exact Nat.mul_le_mul_right _ small
+  obtain ⟨out,same,clean⟩ := finishDirectory body r atom atomOff parents L box tail entries z raw
+  have outside (i : Fin 72) (small : i.val < 58) : bank i ∉ scratch := by
+    have low : ∀ j ∈ ([0,4,9,10,11,12] : List (Fin 15)), 58 ≤ (remainderDirectoryPorts j).val := by decide
+    intro h
+    rcases List.mem_append.mp h with h | h
+    · obtain ⟨j,hj,eq⟩ := List.mem_map.mp h
+      have same := bank.injective (show bank (remainderDirectoryPorts j) = bank i from eq)
+      exact (Nat.not_le_of_gt small) (same ▸ low j hj)
+    · have eq := bank.injective (List.mem_singleton.mp h)
+      have := congrArg Fin.val eq
+      change i.val = 71 at this
+      omega
+  have frame (i : Fin 72) (small : i.val < 58) (ne : i.val ≠ 46) : final.R (bank i) = raw.R (bank i) := by
+    have off : bank i ≠ r 14 := bank.injective.ne (fun h => ne (congrArg Fin.val h))
+    simp only [final,ite_eq_right (outside i small),Function.update_of_ne off]
+  have archive : final.R (bank 46) = entries ++ raw.R (bank 46) := by
+    change (if bank 46 ∈ scratch then [] else Function.update raw.R (bank 46) (entries ++ raw.R (bank 46)) (bank 46)) = _
+    rw [ite_eq_right (outside 46 (by decide)),Function.update_self]
+  have prefixWidth (j : ℕ) (hj : j ∈ List.range (LabelMask.records directory)) :
+      (final.R (bank 47)).length = (word (j/box)).length := by
+    have inside := List.mem_range.mp hj
+    rw [count] at inside
+    have positiveBox := Nat.pos_of_mul_pos_left (Nat.zero_lt_of_lt inside)
+    rw [frame 47 (by decide) (by decide)]
+    exact (widths _ ((Nat.div_lt_iff_lt_mul positiveBox).mpr inside)).symm
+  refine ⟨out,_,same.trans (user.trans yu),?_,Exec.seq (Exec.seq init exec) clean,fun _ _ _ _ _ _ headers => ⟨archive,prefixWidth,headers.of_frame (fun i ne => frame _ i.isLt ne)⟩,fun i ne => frame _ (show i.val < 58 from i.isLt) ne⟩
+  have power : prime^L = box := pow_mul _ _ _
+  rw [power,atomWidth]
+  change prime^v.width*(t+n+(_+2*(tail.length+box+parents+2*L+parents*box+(w+1))+29))*142080 ≤ _
   calc
-    _ = prime^v.width*t*142080 + prime^v.width*n*142080 := by ring
-    _ ≤ _ := (Nat.add_le_add countPaid paid).trans_eq (by ring)
+    _ = prime^v.width*spent*142080 + prime^v.width*n*142080 + prime^v.width*inherited*142080 := by
+      dsimp only [spent,inherited]; ring
+    _ ≤ _ := (Nat.add_le_add_right (Nat.add_le_add countPaid paid) _).trans_eq (by ring)
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
