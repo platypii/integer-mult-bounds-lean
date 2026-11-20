@@ -51,6 +51,43 @@ theorem maskedScan_exec (body : P → Pr P T Q A U) (mask : Fin T)
     (by cases is <;> rfl)
   exact ⟨z,F,_,hz,done,empty,by omega,.seq peek more⟩
 
+/-- Run the record branches on one payload, composing their mathematical effects in directory
+order. The mask pop preserves the directory and payload representations. -/
+theorem maskedPayloadScan_exec {W : Type} (body : P → Pr P T Q A U) (mask : Fin T)
+    (live fallback : Pr P T Q A U) (active : ι → Bool) (cost : ι → ℕ)
+    (ready : List ι → Stacks T A → Prop) (payload : W → Stacks T A → Prop)
+    (effect : ι → W → W → Prop)
+    (release : ∀ is word (S : Stacks T A) xs, ready is S → payload word S →
+      let D := {S with R := Function.update S.R mask xs}
+      ready is D ∧ payload word D)
+    (step : ∀ i is word (v : HS T Q A U) (S : Stacks T A), ready (i :: is) S → payload word S →
+      ∃ z D n next, z.user = v.user ∧ n ≤ cost i ∧
+        Exec body (if active i then live else fallback) (mk v S) n (mk z D) ∧
+        ready is D ∧ effect i word next ∧ payload next D ∧ D.R mask = S.R mask)
+    (is : List ι) (word : W) (v : HS T Q A U) (S : Stacks T A)
+    (start : ready is S) (input : payload word S)
+    (bits : S.R mask = is.map fun i => bitSymbol (active i)) :
+    ∃ z D n next, z.user = v.user ∧ n ≤ (is.map fun i => cost i + 4).sum + 2 ∧
+      Exec body (maskedScan mask live fallback) (mk v S) n (mk z D) ∧
+      ready [] D ∧ D.R mask = [] ∧ payload next D ∧
+      is.foldr (fun i rest x => ∃ y, effect i x y ∧ rest y) (· = next) word := by
+  let chain := fun (js : List ι) (x y : W) =>
+    js.foldr (fun i rest a => ∃ b, effect i a b ∧ rest b) (· = y) x
+  let inv := fun remaining (B : Stacks T A) => ready remaining B ∧
+    ∃ current : W, payload current B ∧ ∀ final, chain remaining current final → chain is word final
+  obtain ⟨z,D,n,user,done,empty,time,run⟩ := maskedScan_exec body mask live fallback active cost inv
+    (by
+      intro i js u B h _
+      obtain ⟨r,x,px,cont⟩ := h
+      let xs := js.map fun j => bitSymbol (a := A) (active j)
+      obtain ⟨rr,pp⟩ := release _ x B xs r px
+      obtain ⟨y,E,t,b,uy,ht,exec,re,eb,pb,maskFrame⟩ := step i js x {u with flag := active i} _ rr pp
+      exact ⟨y,E,t,uy,⟨re,b,pb,fun final suffix => cont final ⟨b,eb,suffix⟩⟩,
+        maskFrame.trans (Function.update_self ..),ht,exec⟩)
+    is v S ⟨start,word,input,fun _ h => h⟩ bits
+  obtain ⟨r,x,px,cont⟩ := done
+  exact ⟨z,D,n,x,user,time,run,r,empty,px,cont x rfl⟩
+
 /-- Index the tape invariant by the number of records already consumed. The branch
 sees the remaining mask after dispatch and must retain it for the next iteration. -/
 theorem maskedRange_exec (body : P → Pr P T Q A U) (mask : Fin T) (live padding : Pr P T Q A U)
