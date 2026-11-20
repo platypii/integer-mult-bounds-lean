@@ -21,7 +21,7 @@ open M8.RevMachine RecursiveInterchangeLayout Matrix Finset IntegerMultBounds.Sw
 local instance (w : ℕ) : NeZero (prime^(w+1)) := ⟨pow_ne_zero _ Networks.Shared50ModularControl.prime_prime.ne_zero⟩
 
 section
-open RingFormula
+open RingFormula IntegerMultBounds.MathlibTM2.Fast.Main
 /-- The queue writer uses private registers, with its output at the matrix tape
 consumed by the classified scan. -/
 noncomputable def directoryQueueBank [M8.Machine.Net] {K d r : ℕ}
@@ -411,6 +411,95 @@ theorem directoryQueueInputs_exec [M8.Machine.Net] {K d r Q w records : ℕ} {P 
   exact ⟨v,hv.trans hy,(Function.update_of_ne dm.symm _ _).trans ((Function.update_self ..).trans bits),
     Function.update_self ..,Exec.seq writeMask writeDir⟩
 
+noncomputable def directoryQueueInitTime {K : ℕ} (m d w H records : ℕ) (S : Stacks (66+K) prime) : ℕ :=
+  let src := fun i : Fin 8 => ((![2,47,48,44,2,44,45,45] i : Fin 66)).castAdd K
+  let headers := ((List.finRange 8).map fun i => 6*(S.R (src i)).length+6).sum+1 +
+    ((conjugationDepth m+1)*(6*(S.R ((2 : Fin 66).castAdd K)).length+6)+1)+1
+  let C := 48*H*H+152*H+66
+  let price := fun j : Fin m => (8*(j.val*H)+14*H+22)+(6*w+6+(14*H+16+(prime-2)*C+C+w*(12*H+15+prime*C)))
+  headers+(((List.finRange m).map price).sum+1) + ((4*H+4)+((d+1)*((d+1)*(6*H+6)+1)+1)) +
+    ((6*records+6)+(6*(S.R ((46 : Fin 66).castAdd K)).length+6))
+
+noncomputable def directoryMatrixQueueTime (m d w H records prefixWidth : ℕ) : ℕ :=
+  let active := LabelStock.live m (w+1) 1
+  let num := fun i j : Fin m => numerator (matrixInput false) (matrixInput true) i j
+  let numTime := Finset.univ.sup fun ij : Fin m × Fin m => time H (readTime H) (num ij.1 ij.2)
+  let liveCost := liveRecordCost m (d+1) w H prefixWidth numTime (time H (readTime H) (determinant (matrixInput (m := m) false)))
+  let size := (d+1)*(d+1)*H
+  (List.range records).countP active*(liveCost+4*size) +
+    (List.range records).countP (fun j => !active j)*(10*size+6) +
+    records*(4*prefixWidth+4+(m*m*(4*(w+1)+4)+1)+6)+4
+
+noncomputable def directoryMatrixRate (m d : ℕ) :=
+  matrixBuildCost m (d+1) 1 1 * (2*(prime.size+1)^2) + 14*((d+1)*(d+1)) + 8*(m*m) + 17
+
+/-- At binary precision the matrix arithmetic and the directory counters cost
+a constant times the radix per record. The copied prefix is charged by length. -/
+theorem directoryMatrixQueueTime_binary_le (m d w records width : ℕ) :
+    let M := prime^(w+1)
+    directoryMatrixQueueTime m d w M.size records width ≤
+      records*((12*m*m+4)*width + directoryMatrixRate m d*M)+4 := by
+  intro M
+  let H := M.size
+  let size := (d+1)*(d+1)*H
+  let active := LabelStock.live m (w+1) 1
+  let base := matrixBuildCost m (d+1) 1 1 * (2*(prime.size+1)^2)
+  have build : matrixBuildCost m (d+1) w H ≤ base*M := by
+    refine (matrixBuildCost_le ..).trans ?_
+    dsimp only [base]
+    rw [Nat.mul_assoc,Nat.mul_assoc]
+    apply Nat.mul_le_mul_left
+    have bits := prefixSetup_volume_le w 0
+    simp only [Nat.zero_add,pow_one,pow_zero] at bits
+    exact (Nat.mul_le_mul_right _ (Nat.le_add_right (w+1) 1)).trans bits
+  have hH : H ≤ M := Nat.size_le.mpr Nat.lt_two_pow_self
+  have hw : w+1 ≤ M := Nat.lt_two_pow_self.le.trans (Nat.pow_le_pow_left Networks.Shared50ModularControl.prime_prime.two_le _)
+  have pos : 1 ≤ M := pow_pos Networks.Shared50ModularControl.prime_prime.pos _
+  have queue :
+      directoryMatrixQueueTime m d w H records width =
+        (List.range records).countP active*(matrixBuildCost m (d+1) w H + 12*m*m*width + 4*size) +
+        (List.range records).countP (fun j => !active j)*(10*size+6) +
+        records*(4*width+4+(m*m*(4*(w+1)+4)+1)+6)+4 := by
+    unfold directoryMatrixQueueTime matrixBuildCost liveRecordCost
+    dsimp only [active,size]
+    ring
+  have count (f : ℕ → Bool) : (List.range records).countP f ≤ records := by
+    simpa using (List.countP_le_length (l := List.range records) (p := f))
+  rw [queue]
+  have combined := Nat.add_le_add
+    (Nat.mul_le_mul (count active) (Nat.add_le_add_right (Nat.add_le_add_right build (12*m*m*width)) (4*size)))
+    (Nat.mul_le_mul_right (10*size+6) (count (fun j => !active j)))
+  refine (Nat.add_le_add_right (Nat.add_le_add_right combined _) 4).trans ?_
+  rw [← Nat.mul_add,← Nat.mul_add]
+  apply Nat.add_le_add_right
+  apply Nat.mul_le_mul_left
+  dsimp only [size,directoryMatrixRate,base] at *
+  nlinarith only [Nat.mul_le_mul_left ((d+1)*(d+1)) hH, Nat.mul_le_mul_left (m*m) hw,
+    Nat.mul_le_mul_left (m*m) pos,pos]
+
+/-- The queue consumes its mask and a prefix of its directory. With the archive
+excluded, clearing the remaining tapes costs at most their pre-writer charge. -/
+private theorem queue_cleanup_le {T A : ℕ} (S : Stacks T A) (mask dir archive : Fin T)
+    (tail words : List (Fin (A+4))) (work : List (Fin T)) (off : archive ∉ work)
+    (length : tail.length ≤ (S.R dir).length) :
+    let D := queueResult S mask dir archive tail words
+    (work.map fun i => 4*(D.L i).length+2*(D.R i).length+4).sum ≤
+      (work.map fun i => 4*(S.L i).length+2*(S.R i).length+4).sum := by
+  intro D
+  apply List.sum_le_sum
+  intro i hi
+  have away : i ≠ archive := fun h => off (h ▸ hi)
+  have right : (D.R i).length ≤ (S.R i).length := by
+    simp only [D,queueResult,Function.update_of_ne away]
+    by_cases hd : i = dir
+    · subst i; simpa using length
+    · rw [Function.update_of_ne hd]
+      by_cases hm : i = mask
+      · subst i; simp
+      · rw [Function.update_of_ne hm]
+  change 4*(S.L i).length+2*(D.R i).length+4 ≤ _
+  omega
+
 /-- Initialize the physical writer headers, formula frames, and both coefficient banks. -/
 theorem directoryQueueSetup_exec [M8.Machine.Net] {K d Q m H w records : ℕ} {P U : Type}
     (room : Record.size d+(rowSwapBlock.tapes+35+2) ≤ K)
@@ -490,9 +579,14 @@ theorem directoryQueueSetup_exec [M8.Machine.Net] {K d Q m H w records : ℕ} {P
         let cleanup := (work.map fun i => 4*(result.L i).length+2*(result.R i).length+4).sum+1
         let clean := {result with L := fun i => if i ∈ work then [] else result.L i,
                                   R := fun i => if i ∈ work then [] else result.R i}
-        ∃ y steps, y.user = u.user ∧ steps ≤ n + ((List.range records).countP active*(liveCost+4*size) +
+        let queueTime := (List.range records).countP active*(liveCost+4*size) +
           (List.range records).countP (fun j => !active j)*(10*size+6) +
-          records*(4*prefixWidth+4+(m*m*(4*(w+1)+4)+1)+6)+4) + cleanup ∧
+          records*(4*prefixWidth+4+(m*m*(4*(w+1)+4)+1)+6)+4
+        let setup := (((headers.seq (Prog.seqList ((List.finRange m).map program))).seq pad).seq copies)
+        ∃ y steps, y.user = u.user ∧ steps ≤ n + queueTime + cleanup ∧
+          (∀ c, mnProgPush setup ≤ c → (∀ f, mnProgPush (body f) ≤ c) →
+            steps ≤ n + queueTime + ((work.map fun i => 4*(S.L i).length+2*(S.R i).length+4).sum+1 +
+              work.length*(6*(c*n)))) ∧
           Exec body (((((headers.seq (Prog.seqList ((List.finRange m).map program))).seq pad).seq copies).seq writer).seq
             (clearWorkTapes work)) (mk u S) steps (mk y clean) ∧
           clean.R (directoryMatrixTape room) = words ∧
@@ -642,7 +736,7 @@ theorem directoryQueueSetup_exec [M8.Machine.Net] {K d Q m H w records : ℕ} {P
     dsimp [base]; omega
   refine ⟨?_, ?_⟩
   swap
-  intro proj prefixes tail projector widths directory active matrix words num numTime prefixWidth liveCost size result work cleanup clean
+  intro proj prefixes tail projector widths directory active matrix words num numTime prefixWidth liveCost size result work cleanup clean queueTime setup
   have prefixEq : (D.R (dst 1)).length = prefixWidth := congrArg List.length (headValue 1)
   obtain ⟨_,y,t,hy,ht,generate⟩ := physicalResidualQueue_exec body w records (reduce (prime^(w+1)) proj) H hm bank
     prefixes tail e parent inv endUser D seedWord (writerBlank _ (Or.inr (Or.inr rfl)))
@@ -677,13 +771,23 @@ theorem directoryQueueSetup_exec [M8.Machine.Net] {K d Q m H w records : ℕ} {P
     (writerBlank _ (Or.inl (by change 4 < 36 ∧ 4 ∉ ([1,2,8,9,12,16,17,22,33,34] : List ℕ); decide))) (writerBlank _ (Or.inr (Or.inl (Nat.zero_add _))))
     ((Function.update_self ..).trans directory) (writerBlank _ (Or.inl (by change 13 < 36 ∧ 13 ∉ ([1,2,8,9,12,16,17,22,33,34] : List ℕ); decide))) (maskWord.trans bits)
   obtain ⟨finish,userFinish,clear⟩ := clearWorkTapes_exec body work ((List.nodup_finRange _).filter _) y result
-  refine ⟨finish,headerTime+n+l+((6*records+6)+(6*(S.R source).length+6))+t+cleanup,userFinish.trans (hy.trans (he.trans (hu.trans (hz.trans user)))),?_,?_,?_,?_,?_⟩
-  · change t ≤ _ at ht
+  have queueBound : t ≤ queueTime := by
     change t ≤ (List.range records).countP active*(liveRecordCost m (d+1) w H (D.R (dst 1)).length numTime _+4*size) +
       (List.range records).countP (fun j => !active j)*(10*size+6) +
       records*(4*(D.R (dst 1)).length+4+(m*m*(4*(w+1)+4)+1)+6)+4 at ht
     rw [prefixEq] at ht
-    exact Nat.add_le_add_right (Nat.add_le_add_left ht _) _
+    exact ht
+  refine ⟨finish,headerTime+n+l+((6*records+6)+(6*(S.R source).length+6))+t+cleanup,userFinish.trans (hy.trans (he.trans (hu.trans (hz.trans user)))),Nat.add_le_add_right (Nat.add_le_add_left queueBound _) _,?_,?_,?_,?_,?_⟩
+  · intro c setupPush calls
+    have initialRun := Exec.seq (Exec.seq (Exec.seq run load) write) copyRun
+    have growth := cleanup_cost_le work initialRun setupPush calls
+    have dirLength : tail.length ≤ (D.R dir).length := by
+      change tail.length ≤ (Function.update (Function.update (padded F).R mask (S.R live)) dir (S.R source) dir).length
+      rw [Function.update_self,directory,List.length_append]
+      omega
+    have shrink := queue_cleanup_le D mask dir (directoryMatrixTape room) tail words work
+      (by simp [work]) dirLength
+    exact Nat.add_le_add (Nat.add_le_add_left queueBound _) ((Nat.add_le_add_right shrink 1).trans growth)
   · have archiveEq : (QueueLayout.block (n := base) 0 (by omega) bank) ⟨36+2*m,by dsimp [base]; omega⟩ =
         directoryMatrixTape room := by
       rw [← directoryQueueBank_archive room fits]
@@ -1265,14 +1369,24 @@ theorem generatedArchive_exec [M8.Machine.Net] {m d K w W J N : ℕ} {P U : Type
       data.H = (prime^(w+1)).size → J = W.size →
       ordinaryCeiling + N ≤ baseline →
       n ≤ data.records*(baseline+6)+2 + exceptionalCount*(exceptionalVolumeRate U d m scratch.length push w*N)
+    let initTime := directoryQueueInitTime m d w data.H data.records S
+    let queueTime := directoryMatrixQueueTime m d w data.H data.records (S.R ((47 : Fin 66).castAdd (K+1))).length
     ∃ (prepare : Pr P (66+(K+1)) columnCapacity prime U), ∃ z B setupSteps n next, z.user = u.user ∧ frame data.records next (embStk placement B) ∧
       (List.range data.records).foldl (fun possible j y => ∃ x, possible x ∧ effect j x y) (· = original) next ∧
       B.R (directoryMatrixTape room) = [] ∧ B.R (placement (caller 57)) = [] ∧ B.R (placement (caller 56)) = [] ∧
-      binaryTime n ∧
+      binaryTime n ∧ (∀ p, mnProgPush prepare ≤ p → (∀ f, mnProgPush (body f) ≤ p) →
+        setupSteps ≤ initTime + queueTime + (4*scratch.length+1 + scratch.length*(6*(p*initTime)))) ∧
+      (∀ p parents baseline, mnProgPush prepare ≤ p → (∀ f, mnProgPush (body f) ≤ p) →
+        data.records = parents*(prime^(w+1))^(m*m) → data.H = (prime^(w+1)).size → J = W.size →
+        0 < W → ordinaryCeiling + N ≤ baseline →
+        let width := (S.R ((47 : Fin 66).castAdd (K+1))).length
+        setupSteps+n ≤ initTime + (data.records*((12*m*m+4)*width+directoryMatrixRate m d*N)+4) +
+          (4*scratch.length+1 + scratch.length*(6*(p*initTime))) +
+          (data.records*(baseline+6)+2 + exceptionalCount*(exceptionalVolumeRate U d m scratch.length push w*N))) ∧
       Exec body (prepare.seq (classifiedScan (placement (caller 57)) (placement (caller 56)) ((embProg placement id good).seq advance)
         (directoryExceptionalProgram m d room capacity) ((embProg placement id skip).seq advance))) (mk u S) (setupSteps+n) (mk z B) := by
   intro e physical φ live bad code schedule ready placement caller payload pending frame effect initial empty liveBits badBits
-    advance exceptionalCount scratch push binaryTime
+    advance exceptionalCount scratch push binaryTime initTime queueTime
   have input := initial.1
   obtain ⟨directory,widths,privateBlank,_,projector,modulus,_,_,_,unit,clock,weights,_⟩ := input
   have port (j : Fin 66) : directoryOrdinaryBank room ((Fin.castAddEmb K) j) = j.castAdd (K+1) := directoryOrdinaryBank_caller room j
@@ -1284,10 +1398,10 @@ theorem generatedArchive_exec [M8.Machine.Net] {m d K w W J N : ℕ} {P U : Type
       by_contra! low
       let j : Fin 66 := ⟨(directoryQueueBank room fits i).val,by omega⟩
       exact directoryQueueBank_caller room fits i j (Fin.ext rfl)
-  obtain ⟨_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,generate,_⟩ :=
+  obtain ⟨_,_,init,_,initBound,_,_,_,_,_,_,_,_,_,_,_,_,_,generate,_⟩ :=
     directoryQueueSetup_exec room fits body parent inv reciprocal hm u S liveBits free weights modulus unit clock
   obtain ⟨writer,runWriter⟩ := generate e
-  obtain ⟨y,t,userY,writerTime,write,archive,keep,clear⟩ := runWriter proj prefixes archiveTail projector
+  obtain ⟨y,t,userY,writerTime,inputTime,write,archive,keep,clear⟩ := runWriter proj prefixes archiveTail projector
     (fun j hj => widths j (by simpa [pending] using hj)) directory
   have start := DirectoryReady.afterMatrixWriter room S _ keep clear initial.1 initial.2
   have bits (j : Fin 66) (hj : j.val < 58) := (keep j hj).2
@@ -1295,7 +1409,35 @@ theorem generatedArchive_exec [M8.Machine.Net] {m d K w W J N : ℕ} {P U : Type
     scan y _ start (archive.trans (data.physical_archive e proj parent inv).symm)
       (by rw [port]; exact (bits 57 (by decide)).trans liveBits)
       (by rw [port]; exact (bits 56 (by decide)).trans badBits)
-  exact ⟨_,z,B,t,n,next,userZ.trans userY,done,history,emptyArchive,emptyLive,emptyBad,time,Exec.seq write run⟩
+  have blankCost : (scratch.map fun i => 4*(S.L i).length+2*(S.R i).length+4).sum = 4*scratch.length := by
+    have each (i) (hi : i ∈ scratch) : 4*(S.L i).length+2*(S.R i).length+4 = 4 := by
+      have mem : 58 ≤ i.val ∧ i ≠ directoryMatrixTape room := by simpa [scratch] using hi
+      obtain ⟨left,right⟩ := (directoryOrdinaryBank_clear_iff room S).1 privateBlank i mem.1 mem.2
+      simp [left,right]
+    rw [List.map_congr_left each]
+    simp [Nat.mul_comm]
+  have charge (p : ℕ) (bound : t ≤ init + queueTime +
+      ((scratch.map fun i => 4*(S.L i).length+2*(S.R i).length+4).sum+1 + scratch.length*(6*(p*init)))) :
+      t ≤ initTime + queueTime + (4*scratch.length+1 + scratch.length*(6*(p*initTime))) := by
+    rw [blankCost] at bound
+    exact bound.trans (Nat.add_le_add (Nat.add_le_add_right initBound _) (Nat.add_le_add_left
+      (Nat.mul_le_mul_left _ (Nat.mul_le_mul_left _ (Nat.mul_le_mul_left p initBound))) _))
+  refine ⟨_,z,B,t,n,next,userZ.trans userY,done,history,emptyArchive,emptyLive,emptyBad,time,?_,?_,Exec.seq write run⟩
+  · intro p hp calls
+    exact charge p (inputTime p (max_le_iff.mp (max_le_iff.mp hp).1).1 calls)
+  · intro p parents baseline hp calls count precision weight positive ceiling width
+    have Mpos : 0 < prime^(w+1) := pow_pos Networks.Shared50ModularControl.prime_prime.pos _
+    have radix : prime^(w+1) ≤ N := by
+      rw [← directoryPayloadLength e length,pow_succ]
+      exact (Nat.le_mul_of_pos_left _ (pow_pos Mpos d)).trans (Nat.le_mul_of_pos_right _ positive)
+    have queueBound : queueTime ≤ data.records*((12*m*m+4)*width+directoryMatrixRate m d*N)+4 := by
+      dsimp only [queueTime]
+      rw [precision]
+      exact (directoryMatrixQueueTime_binary_le ..).trans (Nat.add_le_add_right
+        (Nat.mul_le_mul_left _ (Nat.add_le_add_left (Nat.mul_le_mul_left _ radix) _)) _)
+    have setup := charge p (inputTime p (max_le_iff.mp (max_le_iff.mp hp).1).1 calls)
+    exact Nat.add_le_add (setup.trans (Nat.add_le_add_right (Nat.add_le_add_left queueBound _) _))
+      (time parents baseline count precision weight ceiling)
 
 open IntegerMultBounds.MathlibTM2.Fast.Main in
 /-- Run the generated directory frame with its physical exceptional projector and shared matrix archive. -/
