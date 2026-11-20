@@ -663,4 +663,74 @@ theorem routedCopy_recursiveCost [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : 
     route*volume prime child*(w : ℝ)^M8.Machine.BudgetBound.tau +
       9*(wrap*volume prime child*(w : ℝ)^M8.Machine.BudgetBound.tau) by ring]
 
+open M8.RevMachine M8.Machine.ArbitraryWidthOriginalRun in
+/-- The normalized COPY contribution to the cover recurrence. The matrix entries
+are residues modulo prime^w, so their precision is the atom width w.
+The nine recursive calls each carry one role's share of the parent volume. -/
+theorem routedCopy_normalized [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
+    (engine : CopyTranspose) (setup swaps : ℕ) :
+    ∃ C : ℝ, ∀ (v : Descriptor) (w B rows : ℕ), v.Positive → 0 < w → 0 < B →
+      v.width = 64*w → v.rows = 142080*rows → v.beforeH = B*prime^(64*(w*64)) →
+      let K := (prime^w)^112 * (v.beforeRows*rows*v.between*v.afterD)
+      let W := B*prime^(64*(w*64))*K
+      let child := copyChild w W
+      let hs := fun i => FlatCoordinateSchedule.bits (RecursiveDimensionBank.values child i)
+      ∀ (budget : ℕ) (childRate : ℝ), (budget : ℝ) ≤ childRate*volume prime child →
+        engine.time child hs ≤ budget+2+(setup+swaps*Fallback.swapVolumeRate (w-1))*volume prime child →
+        ∃ stage : SharedBankStage.Stage _ 142081 prime (copyOwners (v := copyLabelLayout w B K)),
+          (∀ x, CopyScheduleEffect n r d w B K Copy.lifecycles x (stage.transform x)) ∧
+          (stage.cost : ℝ) ≤ volume prime v *
+            (C*(w : ℝ)^M8.Machine.BudgetBound.tau + (9/142080)*childRate) := by
+  obtain ⟨c,run⟩ := routedCopy_recursiveCost n r d engine setup swaps
+  refine ⟨(c+27) / 142080,?_⟩
+  intro v w B rows pos hw hB width splitRows label K W child hs budget childRate childTime engineTime
+  obtain ⟨stage,effect,_,size,time⟩ := run v w B rows pos hw hB width splitRows label budget.succ.succ
+    (engineTime.trans (by change budget+2+_ ≤ budget+2+2*((setup+swaps*Fallback.swapVolumeRate (w-1))*volume prime child); omega))
+  refine ⟨stage,effect,time.trans ?_⟩
+  have sizeR : (volume prime v : ℝ) = volume prime child * 142080 := by exact_mod_cast size.symm
+  obtain ⟨before,row,_,mid,after⟩ := pos
+  have hr : 0 < rows := by rw [splitRows] at row; omega
+  have hp := Shared50ModularControl.prime_prime.pos
+  have V : 0 < volume prime child := by
+    change 0 < volume prime (copyChild w W)
+    rw [copyChild_volume]
+    dsimp only [W,K]; positivity
+  let power := (w : ℝ)^M8.Machine.BudgetBound.tau
+  have one : 1 ≤ power := Real.one_le_rpow (by exact_mod_cast hw) M8.Machine.BudgetBound.exponent_range.1.le
+  have room : 1 ≤ (volume prime child : ℝ)*power :=
+    one_le_mul_of_one_le_of_one_le (by exact_mod_cast V) one
+  change c*volume prime child*power+9*(budget.succ.succ : ℝ)+9 ≤ _
+  push_cast
+  rw [sizeR]
+  change _ ≤ volume prime child * 142080 * ((c+27)/142080 * power + 9/142080*childRate)
+  nlinarith only [room,childTime]
+
+open M8.RevMachine M8.Machine.ArbitraryWidthOriginalRun in
+/-- Sum the physical COPY windows over all stages, replicas and host classes. -/
+theorem routedCopy_nodeCost [M8.Machine.Net]
+    (engine : CopyTranspose) (setup swaps : ℕ) :
+    ∃ C : ℝ, ∀ (v : Descriptor) (w B rows : ℕ), v.Positive → 0 < w → 0 < B →
+      v.width = 64*w → v.rows = 142080*rows → v.beforeH = B*prime^(64*(w*64)) →
+      let K := (prime^w)^112 * (v.beforeRows*rows*v.between*v.afterD)
+      let W := B*prime^(64*(w*64))*K
+      let child := copyChild w W
+      let hs := fun i => FlatCoordinateSchedule.bits (RecursiveDimensionBank.values child i)
+      ∀ (budget : ℕ) (childRate : ℝ), (budget : ℝ) ≤ childRate*volume prime child →
+        engine.time child hs ≤ budget+2+(setup+swaps*Fallback.swapVolumeRate (w-1))*volume prime child →
+        ∃ stages : (Fin 9 × Fin 32 × Fin 5) → SharedBankStage.Stage _ 142081 prime (copyOwners (v := copyLabelLayout w B K)),
+          (∀ i x, CopyScheduleEffect i.1 i.2.1 i.2.2 w B K Copy.lifecycles x ((stages i).transform x)) ∧
+          (∑ i, ((stages i).cost : ℝ)) ≤ volume prime v *
+            (C*(w : ℝ)^M8.Machine.BudgetBound.tau + (12960/142080)*childRate) := by
+  classical
+  choose rate run using fun i : Fin 9 × Fin 32 × Fin 5 =>
+    routedCopy_normalized i.1 i.2.1 i.2.2 engine setup swaps
+  refine ⟨∑ i, rate i,?_⟩
+  intro v w B rows pos hw hB width splitRows label K W child hs budget childRate childTime engineTime
+  choose stages effect time using fun i => run i v w B rows pos hw hB width splitRows label budget childRate childTime engineTime
+  refine ⟨stages,effect,(Finset.sum_le_sum (fun i _ => time i)).trans_eq ?_⟩
+  rw [← Finset.mul_sum,Finset.sum_add_distrib,← Finset.sum_mul]
+  simp only [Finset.sum_const,Finset.card_univ,Fintype.card_prod,Fintype.card_fin,nsmul_eq_mul]
+  push_cast
+  ring
+
 end IntegerMultBounds.MathlibTM2.M6.BitNode

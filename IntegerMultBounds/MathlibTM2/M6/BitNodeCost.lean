@@ -88,6 +88,19 @@ theorem nodeChildren5_price (price : ℕ → ℕ) :
     List.sum_append, List.sum_cons, List.sum_nil, List.nil_append]
   ring
 
+/-- Price COPY, phase moves and idle remainders separately. The nine COPY
+windows of each invocation already occur in the node's child sum. -/
+theorem nodeChildren5_split_price (price : ℕ → ℕ) :
+    (nodeChildren5.map price).sum = 12960 * price 7 +
+      1440 * (((Geometry.Moves.phaseValues.filter (· ≠ 0)).map price).sum) +
+      160 * (remainders.map price).sum := by
+  rw [nodeChildren5_price,nineRanks,List.map_append,List.sum_append,
+    sum_replicate_flatten,sum_replicate_flatten,Geometry.Moves.localPaid,
+    Geometry.Moves.phase_ranks,Geometry.Moves.copyRanks_eq,List.map_append,List.sum_append,
+    List.map_replicate,List.sum_replicate]
+  simp only [smul_eq_mul]
+  ring
+
 /-- The node's child list realizes five times the selected bit histogram. -/
 theorem nodeChildren5_realizes : Realizes nodeChildren5 fiveHistogram := by
   apply realizes_of_cost
