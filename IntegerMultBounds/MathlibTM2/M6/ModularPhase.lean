@@ -51,6 +51,35 @@ theorem runPhase_eq (word : ℕ × ℕ → List (AffineFieldProgram.Op (Fin 8) R
 open Frames (initialRefs finalRefs beforeScatter after234 framedGate scatterFinish)
 open IntegerMultBounds.Networks.Shared50ModularControl (prime)
 
+/-- A sequence of identity address reads leaves the entire register bank in place. -/
+private theorem runPhase_identity_edges (word : ℕ × ℕ → List (AffineFieldProgram.Op (Fin 8) R))
+    (current desired : ℕ → FramedCircuit.Frame (ZMod 2) (AddressStream R))
+    (wires : List ℕ) (edges : List (ℕ × ℕ)) (bank : ℕ → AddressStream R)
+    (fixed : ∀ p ∈ edges, ∀ s, AffineFieldProgram.run (word p) s = s) :
+    runPhase word (FramedCircuit.edges current desired wires) edges bank = bank := by
+  induction wires generalizing current edges with
+  | nil => rfl
+  | cons i rest ih =>
+    cases edges with
+    | nil => rfl
+    | cons p ps =>
+      have read : (fun x => bank i (AffineFieldProgram.run (word p) x)) = bank i :=
+        funext fun x => congrArg (bank i) (fixed p List.mem_cons_self x)
+      simp only [FramedCircuit.edges,runPhase,read,Function.update_eq_self]
+      exact ih _ _ (fun q h => fixed q (List.mem_cons_of_mem _ h))
+
+/-- All 661 final alignments may be omitted on the modular stream bank. -/
+theorem final_alignment_identity (w : ℕ)
+    (frame : ℕ → FramedCircuit.Frame (ZMod 2) (AddressStream (ZMod (prime^w))))
+    (bank : ℕ → AddressStream (ZMod (prime^w))) :
+    runPhase (selectedWord w) (FramedCircuit.edges (fun i => frame (Frames.snapshot after234 i))
+      (fun i => frame (finalRefs i)) (List.range 661)) Frames.finalEdges bank = bank := by
+  apply runPhase_identity_edges
+  intro p mem
+  have rank := List.mem_map_of_mem (f := fun p : ℕ × ℕ => Geometry.moveRank p.1 p.2) mem
+  rw [final_ranks] at rank
+  exact (modular_scatter w).choose_spec.2.2.1.zero p (final_checked.1 p mem) (List.mem_replicate.mp rank).2
+
 /-- Run every phase edge through its modular word, including the final alignments.
 The nine scatter windows read their temporary through the same word table. -/
 def runSelected (frame : ℕ → FramedCircuit.Frame (ZMod 2) (AddressStream R))

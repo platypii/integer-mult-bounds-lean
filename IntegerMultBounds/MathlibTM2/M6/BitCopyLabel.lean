@@ -237,7 +237,7 @@ theorem phaseRawGate_stage {k V : ℕ} (owner : Fin 661 ↪ Fin k) (g : RawGate)
 
 open IntegerMultBounds.Networks.Certificates.PR589 M8.Machine M8.Machine.Segments SharedPlacementAlphabet in
 theorem scheduledPhase_stage [Net] {k : ℕ} (src : Fin k) {p : ℕ × ℕ}
-    (member : p ∈ Geometry.Moves.phaseEdges) (paid : 0 < Geometry.moveRank p.1 p.2) :
+    (checked : Geometry.Moves.CheckedPair p) (paid : 0 < Geometry.moveRank p.1 p.2) :
     ∃ basis : ℕ, ∀ w W, 0 < w → 0 < W →
       let V := (prime^w)^16*W
       let a := Geometry.Dimensions.value p.1
@@ -250,7 +250,7 @@ theorem scheduledPhase_stage [Net] {k : ℕ} (src : Fin k) {p : ℕ × ℕ}
           ∀ s j, stage.transform data src (FlatCoordinateLayout.index (AffineFieldCoordinates.embed
             (AffineFieldProgram.run (selectedWord w p) s)) j) =
             data src (FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) j) := by
-  obtain ⟨lt,fits,C,rev,fwd,run⟩ := scheduledPhase_runs member paid
+  obtain ⟨lt,fits,C,rev,fwd,run⟩ := scheduledPhase_runs checked paid
   let A := description _ rev.good
   let B := description _ fwd.good
   refine ⟨FlatCoordinateCleanSchedule.constant A + FlatCoordinateCleanSchedule.constant B,?_⟩
@@ -293,6 +293,46 @@ theorem scheduledPhase_stage [Net] {k : ℕ} (src : Fin k) {p : ℕ × ℕ}
     change Function.update data src (moved data) src _ = _
     rw [Function.update_self]
     exact (result data).choose_spec.2 s j
+
+open IntegerMultBounds.Networks.Certificates.PR589 M8.Machine in
+/-- Read through the selected frame change on just one owner, including the
+identity action at rank zero. This is the read direction used by runPhase. -/
+theorem phaseEdge_stage [Net] {k : ℕ} (src : Fin k) {p : ℕ × ℕ}
+    (checked : Geometry.Moves.CheckedPair p) :
+    ∃ basis : ℕ, ∀ w W, 0 < w → 0 < W →
+      let V := (prime^w)^16*W
+      let a := Geometry.Dimensions.value p.1
+      let b := Geometry.Dimensions.value p.2
+      let child := phaseIntervalChild (min a b) (max a b) w W
+      let hs := fun i => FlatCoordinateSchedule.bits (RecursiveDimensionBank.values child i)
+      ∃ stage : SharedBankStage.Stage _ k prime (phaseOwners (N := V)),
+        stage.cost = (if Geometry.moveRank p.1 p.2 = 0 then 0 else
+          phaseWork basis V (ArbitraryWidthOriginalRun.cost child hs)) ∧
+        ∀ data, (∀ j, j ≠ src → stage.transform data j = data j) ∧
+          ∀ s j, stage.transform data src (FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) j) =
+            data src (FlatCoordinateLayout.index (AffineFieldCoordinates.embed
+              (AffineFieldProgram.run (selectedWord w p) s)) j) := by
+  classical
+  by_cases zero : Geometry.moveRank p.1 p.2 = 0
+  · refine ⟨0,?_⟩
+    intro w W hw hW V a b child hs
+    refine ⟨SharedBankStage.identity _ (Nat.zero_lt_of_lt src.isLt),by simp [zero,SharedBankStage.identity],?_⟩
+    intro data
+    refine ⟨fun _ _ => rfl,?_⟩
+    intro s j
+    rw [((modular_scatter w).choose_spec.2.2.1.zero p checked zero)]
+    rfl
+  · obtain ⟨basis,run⟩ := scheduledPhase_stage src checked (Nat.pos_of_ne_zero zero)
+    refine ⟨basis,?_⟩
+    intro w W hw hW V a b child hs
+    obtain ⟨stage,bill,action⟩ := run w W hw hW
+    refine ⟨stage,by simpa [zero] using bill,?_⟩
+    intro data
+    refine ⟨(action data).1,?_⟩
+    intro s j
+    have h := (action data).2 (AffineFieldProgram.run (selectedWord w p) s) j
+    rw [(modular_scatter w).choose_spec.2.1 p checked s] at h
+    exact h
 
 private theorem payload_append {k t u : ℕ} (v : Tapes t prime) (workspace : Tapes u prime)
     (slots : Fin k → Fin (t+u)) (leading : ∀ i, (slots i).val = i.val) (fits : k ≤ t) :

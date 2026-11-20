@@ -24,6 +24,7 @@ theorem retainedCopy_checked : (∀ p ∈ retainedCopyEdges, CheckedPair p) ∧
 /-- Local interchange charges of the very words used to change stream addresses. -/
 structure LocalMoveProfile {R : Type*} [CommRing R] (word : ℕ × ℕ → List (AffineFieldProgram.Op (Fin 8) R)) : Prop where
   legal : ∀ p, CheckedPair p → ∀ op ∈ word p, AffineFieldProgram.Legal op
+  zero : ∀ p, CheckedPair p → Geometry.moveRank p.1 p.2 = 0 → ∀ s, AffineFieldProgram.run (word p) s = s
   phases : (phaseEdges.map word).map AffineFieldProgram.interchanges = phaseValues
   alignment : (Frames.finalEdges.map word).map AffineFieldProgram.interchanges = List.replicate 661 0
   copies : (retainedCopyEdges.map word).map AffineFieldProgram.interchanges = List.replicate 9 7
@@ -92,6 +93,7 @@ theorem modular_move_profile :
   have spec (p : ℕ × ℕ) (h : CheckedPair p) :
       (∀ op ∈ word p, AffineFieldProgram.Legal op) ∧
       AffineFieldProgram.interchanges (word p) = Geometry.moveRank p.1 p.2 ∧
+      (Geometry.moveRank p.1 p.2 = 0 → ∀ s, AffineFieldProgram.run (word p) s = s) ∧
       ∀ s, AffineFieldProgram.run (word p) s =
         exchange (P ⟨p.2, h.2.1⟩) (exchange (P ⟨p.1, h.1⟩) s) := by
     simpa only [word, lookup, dite_eq_left h] using programs ⟨p.1,h.1⟩ ⟨p.2,h.2.1⟩ h
@@ -103,7 +105,7 @@ theorem modular_move_profile :
   have phase := (counts _ phase_checked).trans phase_ranks
   have copies := (counts _ retainedCopy_checked.1).trans
     ((profile _ retainedCopy_checked.1).trans retainedCopy_checked.2)
-  refine ⟨P, idem, commute, fun p h => (spec p h).2.2, fun p h => (spec p h).1, phase,
+  refine ⟨P, idem, commute, fun p h => (spec p h).2.2.2, fun p h => (spec p h).1, fun p h => (spec p h).2.2.1, phase,
     (counts _ final_checked.1).trans final_ranks, copies, ?_⟩
   rw [phase, copies, ← phase_ranks, ← copyRanks_eq]
   exact localPaid_histogram

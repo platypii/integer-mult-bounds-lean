@@ -1141,7 +1141,7 @@ theorem phasePrepared_runs [M8.Machine.Net] {t lo hi : ℕ} (lt : lo < hi) (fits
 /-- Each paid phase edge executes its selected modular word, with the actual
 recursive width priced by the schedule's move rank. -/
 theorem scheduledPhase_runs [M8.Machine.Net] {p : ℕ × ℕ}
-    (member : p ∈ Geometry.Moves.phaseEdges) (paid : 0 < Geometry.moveRank p.1 p.2) :
+    (checked : Geometry.Moves.CheckedPair p) (paid : 0 < Geometry.moveRank p.1 p.2) :
     let a := Geometry.Dimensions.value p.1
     let b := Geometry.Dimensions.value p.2
     let lo := min a b
@@ -1154,7 +1154,6 @@ theorem scheduledPhase_runs [M8.Machine.Net] {p : ℕ × ℕ}
       (phaseIntervalChild lo hi w W).width = Geometry.moveRank p.1 p.2*w ∧
       PhaseExecution lt fits src C rev fwd caller x (selectedWord w p) := by
   intro a b lo hi
-  have checked := Geometry.Moves.phase_checked p member
   have diff := Geometry.Moves.rank p checked
   change Geometry.moveRank p.1 p.2 = (b-a)+(a-b) at diff
   have lt : lo < hi := by dsimp only [lo,hi]; omega

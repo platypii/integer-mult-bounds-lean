@@ -55,6 +55,7 @@ private theorem checked_move_words :
         let q := (word i j).map (AffineFieldProgram.mapOp (Swap.Modular.ratMod (prime ^ w)))
         (∀ op ∈ q, AffineFieldProgram.Legal op) ∧
         AffineFieldProgram.interchanges q = Geometry.moveRank i.val j.val ∧
+        (Geometry.moveRank i.val j.val = 0 → ∀ s, AffineFieldProgram.run q s = s) ∧
         ∀ s, AffineFieldProgram.run q s = exchange (P j) (exchange (P i) s) := by
   classical
   obtain ⟨Q, height, projectors⟩ := compatible_label_projectors
@@ -96,6 +97,7 @@ private theorem checked_move_words :
       let q := (raw a b).map (AffineFieldProgram.mapOp (Swap.Modular.ratMod (prime ^ w)))
       (∀ op ∈ q, AffineFieldProgram.Legal op) ∧
       AffineFieldProgram.interchanges q = dim b - dim a ∧
+      (dim a = dim b → ∀ s, AffineFieldProgram.run q s = s) ∧
       ∀ s, AffineFieldProgram.run q s = exchange (P a) (exchange (P b) s) := by
     let m := prime ^ w
     let C := Swap.Modular.reduce m (moveBasis (Q b - Q a))
@@ -112,21 +114,31 @@ private theorem checked_move_words :
     dsimp only [raw]
     rw [rationalMoveWord_reduce m _ _ _ (moveBasis_reduce m _
       (ModularFrameSchedule.admissible_sub m (adm b) (adm a))).1 det]
-    exact ⟨legal, count, fun s => (correct s).trans (run s)⟩
+    refine ⟨legal, count, ?_, fun s => (correct s).trans (run s)⟩
+    intro eq s
+    rw [correct,eq]
+    rcases s with ⟨h,d⟩
+    have empty : intervalSwaps (R := R) (dim b) (dim b) = [] := by
+      unfold intervalSwaps coordinateSwaps
+      rw [List.filter_eq_nil_iff.mpr (by intro i _; simp)]
+      rfl
+    simp [prefixMoveProgram,empty,Swap.Shear.run,Swap.Shear.Op.run,Matrix.mulVec_mulVec,inv]
   intro i j check
   rw [Geometry.Moves.rank _ check]
 
   by_cases inc : incl i j
   · simp only [ite_eq_left inc]
-    obtain ⟨legal, count, run⟩ := oriented i j inc
+    obtain ⟨legal, count, zero, run⟩ := oriented i j inc
     obtain ⟨ji, ij⟩ := nested i j inc
-    refine ⟨legal, by change _ = (dim j - dim i) + (dim i - dim j); rw [count, Nat.sub_eq_zero_of_le (dimLe i j inc), Nat.add_zero], ?_⟩
+    refine ⟨legal, by change _ = (dim j - dim i) + (dim i - dim j); rw [count, Nat.sub_eq_zero_of_le (dimLe i j inc), Nat.add_zero], ?_, ?_⟩
+    · intro h; apply zero; change (dim j - dim i) + (dim i - dim j) = 0 at h; omega
     intro s
     rw [run, M8.Global.exchange_exchange, M8.Global.exchange_exchange, ij, ji, add_comm (P i)]
   · simp only [ite_eq_right inc]
     have inc := (comparable i j check).resolve_left inc
-    obtain ⟨legal, count, run⟩ := oriented j i inc
-    exact ⟨legal, by change _ = (dim j - dim i) + (dim i - dim j); rw [count, Nat.sub_eq_zero_of_le (dimLe j i inc), Nat.zero_add], run⟩
+    obtain ⟨legal, count, zero, run⟩ := oriented j i inc
+    refine ⟨legal, by change _ = (dim j - dim i) + (dim i - dim j); rw [count, Nat.sub_eq_zero_of_le (dimLe j i inc), Nat.zero_add], ?_, run⟩
+    intro h; apply zero; change (dim j - dim i) + (dim i - dim j) = 0 at h; omega
 
 private theorem legal_of_prime (op : AffineFieldProgram.Op (Fin 8) ℚ)
     (h : AffineFieldProgram.Legal (AffineFieldProgram.mapOp (Swap.Modular.ratMod prime) op)) :
@@ -160,6 +172,7 @@ theorem checked_move_programs :
         let q := (word i j).map (AffineFieldProgram.mapOp (Swap.Modular.ratMod (prime ^ w)))
         (∀ op ∈ q, AffineFieldProgram.Legal op) ∧
         AffineFieldProgram.interchanges q = Geometry.moveRank i.val j.val ∧
+        (Geometry.moveRank i.val j.val = 0 → ∀ s, AffineFieldProgram.run q s = s) ∧
         ∀ s, AffineFieldProgram.run q s = exchange (P j) (exchange (P i) s) := by
   obtain ⟨word, interval, height, widths⟩ := checked_move_words
   refine ⟨word, interval, ?_, widths⟩
