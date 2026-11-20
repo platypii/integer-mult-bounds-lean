@@ -262,6 +262,140 @@ theorem physicalResidualRecord_exec [M8.Machine.Net] {K : ℕ} {P U : Type}
   exact queuedResidual_exec ports outside separate rows G valid sign signed H J hm hw positive body u S
     tail rest queueTail dest q empty original word layout free placed queue width blankDst savedFree tmpFree code
 
+open IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2.Stack Host in
+/-- Apply the anchor and then the projector residual on the same directory tapes. -/
+theorem scheduledProjectorRecord_exec [M8.Machine.Net] {K : ℕ} {P U : Type}
+    (e : (Fin r ⊕ Fin r) ≃ Fin (d+1)) (proj : Matrix (Fin r) (Fin r) ℚ)
+    (idem : proj*proj = proj) (adm : Admissible prime proj)
+    (α inv : Fin r → ZMod M) (reciprocal : ∀ i, α i * inv i = 1)
+    (j : ℕ) (live : LabelStock.live r (w+1) 1 j = true)
+    (H J : ℕ) (hm : M < 2^H) (hw : W < 2^J) (positive : 0 < W) :
+    let N := rowSwapBlock.tapes+35
+    let G := projectorResidual e (reduce M proj) α inv (physicalLabel r (w+1) j)
+    let φ := LabelRing.res prime (w+1) (by omega)
+    let C := projectorResidual e (reduce prime proj) (φ ∘ α) (φ ∘ inv) (LabelStock.residue r (w+1) 1 j)
+    let rows := classPivots C
+    ∀ (room : Record.size d+(N+2) ≤ K),
+      let ports := directoryResidualBank d room (Fin.last N).castSucc
+      let count := (58 : Fin 66).castAdd K
+      let src := (24 : Fin 66).castAdd K
+      let saved := (59 : Fin 66).castAdd K
+      let tmp := (60 : Fin 66).castAdd K
+      let anchor := directoryAnchorBank d K ((Nat.le_add_right ..).trans room)
+      let regs := Function.Embedding.refl (Fin 6)
+      ∀ (capacity : (anchorProgram d true).1+(anchorProgram d false).1+1 ≤ columnCapacity)
+        (body : P → Pr P (66+K) columnCapacity prime U) (u : HS (66+K) columnCapacity prime U) (S : Stacks (66+K) prime)
+        (tail rest queueTail : List (Fin (prime+4))) (dest : ℤ → Fin 4) (q : ℤ)
+        (original : Fin (M^(d+1)*W) → ZMod 2) (a : Record.Array d 1 (w+1) W),
+      (∀ z, q ≤ z → z < q+(M^(d+1)*W : ℕ) → dest z = blank) →
+      let bank := columnBank.trans (archivePorts 0)
+      let dst := ports (bank 24)
+      let clean := fun (D : Stacks (66+K) prime) => ∀ i : Fin N, 35 ≤ i.val →
+        D.L (ports (columnPorts i).castSucc) = [] ∧ D.R (ports (columnPorts i).castSucc) = []
+      ShearReady bank H J G tail (fun _ : ZMod 2 => blank) (fun _ => blank) dest 0 q original (embStk ports S) →
+      clean S → Record.Ready d 1 (w+1) W (embStk anchor S) →
+      Record.scalarArray a = SparseRoleCircuit.encode ∘ original →
+      S.R src = payloadWord a ++ queueTail → (S.R count).length = M^(d+1)*W →
+      (∀ z, readAt blank (S.L dst) (S.R dst) z = blank) →
+      (∀ i ∈ ([2,3,5] : List (Fin 6)), S.R (anchor (Record.port d regs i)) = []) →
+      S.R ((54 : Fin 66).castAdd K) = residualSchedule C ++ rest →
+      let sign := statePlacedNormalized anchor capacity (Nat.zero_lt_succ _) Empty.elim
+        ((Record.program d regs).seq (moveR (Record.port d regs 5) (Record.port d regs 1) id))
+      let V := M^(d+1)*W
+      let returnWord := (Mult.ShortConv.transfer count dst saved tmp).seq (moveR saved src id)
+      ∃ z F n next, z.user = u.user ∧ n ≤ ((1+(Record.cost d 6 1 (w+1) W (negativeAnchor rows C)+(2*V+2))) +
+        (6*V+6+(1+signedResidualTime U rows w W H J))) + ((4*V+4)+(2*V+2)) ∧
+        Exec body ((sign.seq (queuedResidual ports count src saved tmp d)).seq returnWord) (mk u S) n (mk z F) ∧
+        (∀ x k, next (FlatCoordinateLayout.index (G.mulVec x) k) = original (FlatCoordinateLayout.index x k)) ∧
+        F.R ((54 : Fin 66).castAdd K) = rest ∧ F.R src = payloadWord (SparseRoleCircuit.encode ∘ next) ++ queueTail ∧
+        ∀ j : Fin 58, j ≠ 24 → j ≠ 54 → let i := (j.castAdd 8).castAdd K
+          F.L i = S.L i ∧ F.R i = S.R i := by
+  intro N G φ C rows room ports count src saved tmp anchor regs capacity body u S tail rest queueTail dest q
+    original a empty bank dst clean layout free ready encoded queue width blankDst scratch schedule sign V returnWord
+  have reg (i : Fin 6) : anchor (Record.port d regs i) = (directoryAnchorPorts i).castAdd K :=
+    directoryAnchorBank_port _ i
+  have cell (B : Stacks (66+K) prime) (i : Fin 6) :
+      (embStk anchor B).R (Record.port d regs i) = B.R ((directoryAnchorPorts i).castAdd K) :=
+    congrArg B.R (reg i)
+  obtain ⟨_,word,y,D,t,hu,ht,run,frame,input,pivots,_,_,keep,_,placed⟩ := scheduledAnchor_exec
+    ((Nat.le_add_right ..).trans room) capacity C positive a original encoded body u S queueTail rest ready
+    ((congrArg List.length (cell S 0)).trans width) ((cell S 1).trans queue)
+    scratch ((cell S 4).trans schedule)
+  have outside (i : Fin (N+2)) (h : i ≠ (Fin.last N).castSucc) :=
+    frame (ports i) (directoryAnchor_residual_disjoint room _ i h)
+  have bankFrame (i : Fin 35) := outside (bank i) (by
+    intro eq; have val := congrArg Fin.val eq
+    change i.val = rowSwapBlock.tapes+35 at val; omega)
+  have layoutD : ShearReady bank H J G tail (fun _ : ZMod 2 => blank) (fun _ => blank) dest 0 q
+      original (embStk ports D) := by
+    apply layout.returnPayload (fun i _ => bankFrame i)
+    intro z
+    change _ = readAt blank (D.L (ports (bank 24))) (D.R (ports (bank 24))) _
+    rw [(bankFrame 24).1,(bankFrame 24).2]
+    exact (layout.src z).symm
+  have cleanD : clean D := by
+    intro i hi
+    have pair := outside (columnPorts i).castSucc (by
+      intro eq; have val := congrArg Fin.val eq; exact i.isLt.ne val)
+    exact ⟨pair.1.trans (free i hi).1,pair.2.trans (free i hi).2⟩
+  have control (i : Fin 6) (h₁ : i ≠ 1) (h₄ : i ≠ 4) (h₅ : i ≠ 5) :
+      D.R (anchor (Record.port d regs i)) = S.R (anchor (Record.port d regs i)) := keep i h₁ h₄ h₅
+  obtain ⟨z,F,n,hz,hn,res,result,cleanF,endCode,endInput,archive,_,off⟩ :=
+    physicalResidualRecord_exec e proj idem adm α inv reciprocal j live H J hm hw positive room body y D tail rest
+      queueTail dest q original word empty layoutD cleanD placed ((cell D 1).symm.trans input)
+      (by have h := control 0 (by decide) (by decide) (by decide); rw [reg] at h; exact (congrArg List.length h).trans width)
+      (fun z => by rw [(bankFrame 24).1,(bankFrame 24).2]; exact blankDst z)
+      ((cell D 2).symm.trans ((control 2 (by decide) (by decide) (by decide)).trans (scratch 2 (by simp))))
+      ((cell D 3).symm.trans ((control 3 (by decide) (by decide) (by decide)).trans (scratch 3 (by simp))))
+      (by rw [directoryResidualBank_pivot]; apply (cell D 4).symm.trans; simpa only [List.append_assoc] using pivots)
+  obtain ⟨next,after,effect⟩ := result
+  have privateOff (k : Fin 66) (h : k ≠ 54) (i) := directoryResidualBank_off room (Fin.last N).castSucc i k h
+  have countF := (off count ((Fin.castAddEmb K).injective.ne (by decide)) (privateOff 58 (by decide))).2
+  have tmpF := (off tmp ((Fin.castAddEmb K).injective.ne (by decide)) (privateOff 60 (by decide))).2
+  have savedF := (off saved ((Fin.castAddEmb K).injective.ne (by decide)) (privateOff 59 (by decide))).2
+  have countD := control 0 (by decide) (by decide) (by decide)
+  have tmpD := (control 3 (by decide) (by decide) (by decide)).trans (scratch 3 (by simp))
+  have savedD := (control 2 (by decide) (by decide) (by decide)).trans (scratch 2 (by simp))
+  rw [reg] at countD tmpD savedD
+  have regsOff : [count,dst,saved,tmp].Nodup := by
+    simp [count,dst,saved,tmp,List.nodup_cons]
+    exact ⟨(privateOff 58 (by decide) _).symm,privateOff 59 (by decide) _,privateOff 60 (by decide) _⟩
+  obtain ⟨last,hLast,collect,_⟩ := collectPayload_exec body regsOff (SparseRoleCircuit.encode ∘ next) z F
+    ((congrArg List.length (countF.trans countD)).trans width) (tmpF.trans tmpD)
+    (fun k => by have read := (after.src k).symm; rw [sub_zero] at read; exact read)
+  let packed := payloadWord (SparseRoleCircuit.encode ∘ next)
+  let B := {F with R := Function.update (Function.update F.R dst ((F.R dst).drop V)) saved (packed.reverse ++ F.R saved)}
+  have acc : B.R saved = packed.reverse := by simp [B,savedF.trans savedD]
+  have sep (i j : Fin 66) (h : i ≠ j) := (Fin.castAddEmb K).injective.ne h
+  have oldSrc : B.R src = queueTail := by
+    dsimp only [B]
+    rw [Function.update_of_ne (show src ≠ saved from sep 24 59 (by decide)),Function.update_of_ne (show src ≠ dst from (privateOff 24 (by decide) _).symm),endInput]
+  obtain ⟨finish,user,rewind⟩ := moveR_exec body saved src (sep 59 24 (by decide)) id last B
+  have len : (B.R saved).length = V := by simp [acc,packed,payloadWord,V]
+  rw [len] at rewind
+  let finalBank := {B with R := movedR B.R saved src id (B.R saved)}
+  have kept (i : Fin 66) (hsrc : i ≠ 24) (hbuf : i ≠ 59) (hdst : i.castAdd K ≠ dst) :
+      finalBank.R (i.castAdd K) = F.R (i.castAdd K) := by
+    have ns : i.castAdd K ≠ src := sep i 24 hsrc
+    have nb : i.castAdd K ≠ saved := sep i 59 hbuf
+    simp only [finalBank,movedR,B,Function.update_of_ne ns,Function.update_of_ne nb,Function.update_of_ne hdst]
+  have schedOff : (54 : Fin 66).castAdd K ≠ dst := by
+    rw [← directoryResidualBank_pivot (d := d) room (Fin.last N).castSucc]
+    apply ports.injective.ne
+    intro eq; have h := congrArg Fin.val eq; change rowSwapBlock.tapes+35 = 24 at h; omega
+  refine ⟨finish,finalBank,_,next,user.trans (hLast.trans (hz.trans hu)),Nat.add_le_add_right (Nat.add_le_add ht hn) _,
+    Exec.seq (Exec.seq run res) (Exec.seq collect rewind),effect,
+    (kept 54 (by decide) (by decide) schedOff).trans (by simpa only [ports,directoryResidualBank_pivot] using endCode),?_,?_⟩
+  · simp [finalBank,movedR,acc,oldSrc,packed]
+  intro k hp hs i
+  have h₁ := frame i (directoryAnchorBank_off _ k hp hs)
+  have h₂ := off i (by intro eq; apply hp; have h := congrArg Fin.val eq; exact Fin.ext h)
+    (fun l => directoryResidualBank_off room _ l _ (by intro eq; apply hs; have h := congrArg Fin.val eq; exact Fin.ext h))
+  have keepR := kept (k.castAdd 8) (by intro eq; apply hp; have h := congrArg Fin.val eq; exact Fin.ext h)
+    (by intro eq; have h := congrArg Fin.val eq; change k.val = 59 at h; omega)
+    (privateOff _ (by intro eq; apply hs; have h := congrArg Fin.val eq; exact Fin.ext h) _).symm
+  exact ⟨h₂.1.trans h₁.1,keepR.trans (h₂.2.trans h₁.2)⟩
+
 open IntegerMultBounds.Machine.FlatCoordinateLayout in
 /-- The live output bit of the physical identity scan occurs at the enclosing
 weighted child's address, for every trailing position. -/
