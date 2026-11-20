@@ -726,12 +726,18 @@ other registers. Each copied symbol costs six steps and the nine copies have
 55 steps of fixed overhead. For a uniform-width prefix queue,
 `ordinaryMetadata_volume_le` bounds the copy by 487 times the role volume.
 From the caller’s seven represented chart headers, `ordinaryDirectoryHeaders_exec`
-normalizes all seven and decodes the first three into the scanner’s unary row
-and field dimensions. The decoding takes at most 17 steps per unit of their
-sum plus 52 steps, in addition to normalization. A full represented label bank
+normalizes all seven and decodes the three directory dimensions and both spectator
+factors. Decoding costs at most 17 times their sum plus 86 steps after normalization.
+At precision `w+1`, `ordinaryClock_exec` builds the predecessor clock in at most
+`17*w+35` steps. For positive trailing dimension, `ordinarySpectatorWord_exec`
+multiplies the spectator factors and writes their product `W` in exactly `W.size`
+bits in at most `34*W+14` steps. A full represented label bank
 can serve the forward chart directly via `RemainderChartFrame.caller_input`.
-The other six scanner sources and the caller’s initial header representation
-still need to be connected to the recursive invocation.
+From the same normalized precision header, `ordinaryModulusWord_exec` seeds
+exponentiation on blank workspace and encodes `M = prime^(w+1)` in exactly
+`M.size` bits within `60*M+28` steps. The prefix width, packed parent weights,
+prefix queue and the caller’s initial header representation still need to be
+connected to the recursive invocation.
 
 The semantic five-class node (S5d.3) certifies upstream's accounting under ideal routes and
 partial swaps. Its exponent `1 - 10/5769` holds under that idealization only.
