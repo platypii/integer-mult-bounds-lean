@@ -164,6 +164,130 @@ private theorem recordRadix_le_volume (v : Descriptor) (positive : v.Positive) (
         ((Nat.le_mul_of_pos_left _ pre).trans ((Nat.le_mul_of_pos_right _ positive.2.2.2.1).trans
           ((Nat.le_mul_of_pos_right _ (pow_pos hp _)).trans (Nat.le_mul_of_pos_right _ positive.2.2.2.2))))
 
+/-- Caller tapes shared by the generated good, padding and exceptional records. -/
+def DirectoryReady {m K : ℕ} (v : Descriptor) (proj : Matrix (Fin m) (Fin m) ℚ)
+    (w W H J : ℕ) (parent : Fin m → ZMod (prime^(w+1)))
+    (prefixes : ℕ → List (Fin (prime+4))) (archiveTail : List (Fin (prime+4)))
+    (schedules : List ℕ → List (Fin (prime+4))) (D : Stacks (66+K) prime) (pending : List ℕ) :=
+  let caller := Fin.castAddEmb (n := 66) K
+  let M := prime^(w+1)
+  D.R (caller 46) = pending.flatMap (LabelDirectory.entry prefixes m (w+1)) ++ archiveTail ∧
+    (∀ j ∈ pending, (D.R (caller 47)).length = (prefixes j).length) ∧
+    (∀ i : Fin (66+K), 58 ≤ i.val → D.L i = [] ∧ D.R i = []) ∧ D.R (caller 49) = [] ∧
+    (∃ suffix, D.R (caller 48) = matrixWords prime H (reduce M proj) ++ suffix) ∧
+    D.R (caller 2) = binSyms H M ∧ D.R (caller 28) = binSyms 1 1 ∧ D.R (caller 53) = binSyms J W ∧
+    (∀ i : Fin 6, D.R (caller ((i.natAdd 33).castLE (by decide : 39 ≤ 66))) = (Routines.hdr v i).map bitSymbol) ∧
+    D.R (caller 44) = binSyms H (1 : ZMod M).val ∧ (D.R (caller 45)).length = w ∧
+    D.R (caller 55) = (List.ofFn fun i => binSyms H (parent i).val).flatten ∧ D.R (caller 54) = schedules pending
+
+/-- The physical executor advances the two queues and clears its workspace.
+These endpoints restore every condition consumed by the next ordinary record. -/
+theorem DirectoryReady.afterExceptional [M8.Machine.Net] {m K dimension w W H J label : ℕ}
+    {v : Descriptor} {proj : Matrix (Fin m) (Fin m) ℚ} {parent : Fin m → ZMod (prime^(w+1))}
+    {prefixes : ℕ → List (Fin (prime+4))} {archiveTail : List (Fin (prime+4))}
+    {schedules : List ℕ → List (Fin (prime+4))} {labels : List ℕ}
+    (room : Record.size dimension+(rowSwapBlock.tapes+35+2) ≤ K+1)
+    (S F : Stacks (66+(K+1)) prime) :
+    let placement := directoryOrdinaryBank room
+    let caller := Fin.castAddEmb (n := 66) (K+1)
+    let ready := DirectoryReady v proj w W H J parent prefixes archiveTail schedules
+    ready (embStk placement S) (label :: labels) →
+    F.R (caller 46) = labels.flatMap (LabelDirectory.entry prefixes m (w+1)) ++ archiveTail →
+    F.R (caller 54) = schedules labels →
+    (∀ i, 58 ≤ i.val → i ≠ directoryMatrixTape room → F.L i = [] ∧ F.R i = []) →
+    (∀ j : Fin 58, j ≠ 24 → j ≠ 54 → j ≠ 46 → F.R (caller (j.castAdd 8)) = S.R (caller (j.castAdd 8))) →
+    ready (embStk placement F) labels := by
+  intro placement caller ready start directory schedule clean frame
+  obtain ⟨_,widths,_,scratch,⟨suffix,matrix⟩,base,unit,trailing,headers,one,clock,parents,_⟩ := start
+  have cell (B : Stacks (66+(K+1)) prime) (i : Fin 66) :
+      (embStk placement B).R (i.castAdd K) = B.R (caller i) := congrArg B.R (directoryOrdinaryBank_caller room i)
+  have keep (j : Fin 58) (p : j ≠ 24) (q : j ≠ 54) (h : j ≠ 46) :=
+    ((cell F (j.castAdd 8)).trans (frame j p q h)).trans (cell S (j.castAdd 8)).symm
+  refine ⟨(cell F 46).trans directory,fun j hj => (congrArg List.length (keep 47 (by decide) (by decide) (by decide))).trans
+    (widths j (List.mem_cons_of_mem _ hj)),(directoryOrdinaryBank_clear_iff room F).2 clean,
+    (keep 49 (by decide) (by decide) (by decide)).trans scratch,
+    ⟨suffix,(keep 48 (by decide) (by decide) (by decide)).trans matrix⟩,
+    (keep 2 (by decide) (by decide) (by decide)).trans base,(keep 28 (by decide) (by decide) (by decide)).trans unit,
+    (keep 53 (by decide) (by decide) (by decide)).trans trailing,?_,
+    (keep 44 (by decide) (by decide) (by decide)).trans one,
+    (congrArg List.length (keep 45 (by decide) (by decide) (by decide))).trans clock,
+    (keep 55 (by decide) (by decide) (by decide)).trans parents,(cell F 54).trans schedule⟩
+  intro i
+  let j := (i.natAdd 33).castLE (by decide : 39 ≤ 58)
+  have range : 33 ≤ j.val ∧ j.val < 39 := by change 33 ≤ 33+i.val ∧ 33+i.val < 39; omega
+  apply (keep j ?_ ?_ ?_).trans (headers i) <;> intro eq <;> have h := congrArg Fin.val eq <;> first | (change j.val = 24 at h; omega) | (change j.val = 54 at h; omega) | (change j.val = 46 at h; omega)
+
+open IntegerMultBounds.MathlibTM2.Fast.Main in
+/-- Execute an exceptional entry from the generated caller frame and return
+the same frame at the next label, with the transformed word still in place. -/
+theorem DirectoryReady.runExceptional [M8.Machine.Net] {m d K w W J : ℕ} {P U : Type}
+    (e : (Fin m ⊕ Fin m) ≃ Fin (d+1)) (v : Descriptor) (proj : Matrix (Fin m) (Fin m) ℚ)
+    (idem : proj*proj = proj) (adm : Admissible prime proj)
+    (parent inv : Fin m → ZMod (prime^(w+1))) (reciprocal : ∀ i, parent i * inv i = 1)
+    (data : ScanData m d w W) (hm : prime^(w+1) < 2^data.H) (hw : W < 2^J) (positive : 0 < W)
+    (room : Record.size d+(rowSwapBlock.tapes+35+2) ≤ K+1)
+    (capacity : (anchorProgram d true).1+(anchorProgram d false).1+1 ≤ columnCapacity)
+    (body : P → Pr P (66+(K+1)) columnCapacity prime U) (c : ℕ) (bodyBound : ∀ f, mnProgPush (body f) ≤ c)
+    (prefixes : ℕ → List (Fin (prime+4))) (archiveTail : List (Fin (prime+4)))
+    (bad : ℕ → Bool) (j : ℕ) (labels : List ℕ) (inside : j < data.records)
+    (live : LabelStock.live m (w+1) 1 j = true) (exceptional : bad j = true)
+    (source : ℤ → Fin 4) (head : ℤ) (original : Fin ((prime^(w+1))^(d+1)*W) → ZMod 2)
+    (u : HS (66+(K+1)) columnCapacity prime U) (S : Stacks (66+(K+1)) prime) :
+    let physical := data.physical e proj parent inv
+    let code := fun k => residualSchedule (A := prime) (physical.table (LabelStock.residue m (w+1) 1 k))
+    let schedule := fun (xs : List ℕ) => xs.flatMap fun k => if bad k then code k else []
+    let ready := DirectoryReady v proj w W data.H J parent prefixes archiveTail schedule
+    let placement := directoryOrdinaryBank room
+    let caller := Fin.castAddEmb (n := 66) (K+1)
+    let payload := fun (word : Fin ((prime^(w+1))^(d+1)*W) → ZMod 2) (D : Stacks (66+(K+1)) prime) =>
+      ∀ z, readAt blank (D.L (caller 24)) (D.R (caller 24)) (z-head) = RadixToBinary.binaryEncoding.encode
+        (putWord source head ((List.ofFn word).map SparseRoleCircuit.encode) z)
+    ready (embStk placement S) (j :: labels) → S.R (directoryMatrixTape room) = physical.matrices j →
+    payload original S →
+    let C := physical.table (LabelStock.residue m (w+1) 1 j)
+    let rows := classPivots C
+    let privateTapes := (List.finRange (66+(K+1))).filter fun i => decide (58 ≤ i.val ∧ i ≠ directoryMatrixTape room)
+    ∃ z D n next, z.user = u.user ∧ n ≤ exceptionalRecordTime U rows (negativeAnchor rows C) m w W data.H J
+      privateTapes.length (max (mnProgPush (directoryExceptionalCore (P := P) (U := U) d room capacity)) c) (prefixes j).length ∧
+      Exec body (directoryExceptionalProgram m d room capacity) (mk u S) n (mk z D) ∧
+      ready (embStk placement D) labels ∧ D.R (directoryMatrixTape room) = physical.matrices (j+1) ∧
+      (∀ x k, next (FlatCoordinateLayout.index ((projectorResidual e (reduce (prime^(w+1)) proj) parent inv
+        (physicalLabel m (w+1) j)).mulVec x) k) = original (FlatCoordinateLayout.index x k)) ∧
+      payload next D ∧ D.R (caller 57) = S.R (caller 57) ∧ D.R (caller 56) = S.R (caller 56) := by
+  intro physical code schedule ready placement caller payload start matrix input C rows privateTapes
+  have initialReady := start
+  obtain ⟨directory,widths,privateBlank,scratch,_,base,unit,width,_,one,clock,_,queue⟩ := start
+  have cell (i : Fin 66) : (embStk placement S).R (i.castAdd K) = S.R (caller i) :=
+    congrArg S.R (directoryOrdinaryBank_caller room i)
+  let counter := caller 58
+  let filled := {S with R := Function.update S.R counter (List.replicate ((prime^(w+1))^(d+1)*W) Node.tick)}
+  have keep (i : Fin 66) (ne : i ≠ 58) : filled.R (caller i) = S.R (caller i) :=
+    Function.update_of_ne (caller.injective.ne ne) _ _
+  have scheduleNow : S.R (caller 54) = code j ++ schedule labels := by
+    have parts : schedule (j :: labels) = code j ++ schedule labels := by
+      simp only [schedule,List.flatMap_cons,exceptional,ite_true]
+    exact (cell 54).symm.trans (queue.trans parts)
+  have archive : filled.R (directoryMatrixTape room) = physical.matrices j :=
+    (Function.update_of_ne (directoryResidualBank_off room _ _ 58 (by decide)) _ _).trans matrix
+  obtain ⟨z,D,n,next,user,time,run,tail,clean,effect,pivots,output,dir,frame⟩ :=
+    scheduledProjectorRecord_exec e proj idem adm parent inv reciprocal j live data inside J hm hw positive
+      room capacity body u S (schedule labels) original source head
+      ((cell 2).symm.trans base) ((cell 53).symm.trans width) ((directoryOrdinaryBank_clear_iff room S).1 privateBlank)
+      ((keep 28 (by decide)).trans ((cell 28).symm.trans unit))
+      ((keep 44 (by decide)).trans ((cell 44).symm.trans one)) archive
+      (fun z => by have eq := input z; change readAt _ (S.L (caller 24)) (filled.R (caller 24)) _ = _
+                   rw [keep 24 (by decide)]; exact eq)
+      ((keep 54 (by decide)).trans scheduleNow) c bodyBound prefixes labels archiveTail
+      ((keep 46 (by decide)).trans ((cell 46).symm.trans directory))
+      ((congrArg List.length ((keep 47 (by decide)).trans (cell 47).symm)).trans (widths j List.mem_cons_self))
+      ((congrArg List.length ((keep 45 (by decide)).trans (cell 45).symm)).trans clock)
+      ((keep 49 (by decide)).trans ((cell 49).symm.trans scratch))
+  have kept (i : Fin 58) (p : i ≠ 24) (q : i ≠ 54) (h : i ≠ 46) :=
+    (frame i p q h).2.trans (keep (i.castAdd 8) (by intro eq; have val := congrArg Fin.val eq; change i.val = 58 at val; omega))
+  exact ⟨z,D,n,next,user,time,run,DirectoryReady.afterExceptional room S D initialReady
+    dir pivots clean kept,tail,effect,output,kept 57 (by decide) (by decide) (by decide),
+    kept 56 (by decide) (by decide) (by decide)⟩
+
 private theorem classifiedStep {α β : Type*} (ok : ℕ → α → β → Prop) (live bad : Bool)
     (gc bc pc : ℕ) (g b p : α) (ge be pe : β)
     (ordinary : ¬ (live = true ∧ bad = true) → ok (if live then gc else pc)
@@ -262,16 +386,7 @@ def GeneratedRecordSpec [M8.Machine.Net] {T m work Q fields H J W : ℕ} {F U : 
       let fallbackCode := fun j => residualSchedule (A := prime) (table (LabelStock.residue m (w+1) 1 j))
       let schedules := fun (pending : List ℕ) => pending.flatMap fun j =>
         if badBit j then fallbackCode j else []
-      let ready := fun (D : Stacks K prime) (pending : List ℕ) =>
-        D.R (field 1) = pending.flatMap (LabelDirectory.entry prefixes m (w+1)) ++ archiveTail ∧
-        (∀ j ∈ pending, (D.R (field 3)).length = (prefixes j).length) ∧
-        (∀ i : Fin K, 58 ≤ i.val → D.L i = [] ∧ D.R i = []) ∧ D.R (scan 3) = [] ∧
-        (∃ suffix, D.R (field 4) = matrixWords prime H (reduce M proj) ++ suffix) ∧
-        D.R (caller 2) = binSyms H M ∧ D.R (caller 28) = binSyms 1 1 ∧ D.R (caller 53) = binSyms J W ∧
-        (∀ i, D.R (src i) = (Routines.hdr v i).map bitSymbol) ∧
-        D.R (caller 44) = binSyms H (1 : ZMod M).val ∧ (D.R (caller 45)).length = w ∧
-        D.R (caller 55) = (List.ofFn fun i => binSyms H (parent i).val).flatten ∧
-        D.R (caller 54) = schedules pending
+      let ready := DirectoryReady v proj w W H J parent prefixes archiveTail schedules (K := (host+31)+work)
       let payload := fun (word : Fin N → ZMod 2) (D : Stacks K prime) => ∀ z,
         readAt blank (D.L (r 0)) (D.R (r 0)) (z-head) =
           RadixToBinary.binaryEncoding.encode (putWord source head ((List.ofFn word).map SparseRoleCircuit.encode) z)
@@ -844,7 +959,8 @@ theorem generatedOrdinaryRecord_exec [M8.Machine.Net] {T m work Q fields H J W :
     (charge.trans (Nat.add_le_add_left (Nat.mul_le_mul_left 6 (Nat.mul_le_mul_left _ bound)) _)),
     Exec.seq step clear,?_,⟨minor,action⟩,?_,(finalFrame 57 (by decide) (by decide)).2,(finalFrame 56 (by decide) (by decide)).2⟩
   · refine ⟨?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_⟩
-    · simp [show scan 2 ∉ privateTapes from callerOut _,finalBank,show field 1 = scan 2 from rfl,tail]
+    · change (if scan 2 ∈ privateTapes then [] else finalBank.R (scan 2)) = tail
+      simp [show scan 2 ∉ privateTapes from callerOut _,finalBank]
     · intro j hj
       exact (congrArg List.length (hdrFrame 3 (scanOff 0 (by decide)) (by decide))).trans
         (widths j (List.mem_cons_of_mem _ hj))

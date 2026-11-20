@@ -879,6 +879,43 @@ theorem exceptionalDirectoryTime_le [M8.Machine.Net] (U : Type) (d r tapes push 
     exact (bound (rows j) (negative j) w W prefixWidth pos).trans ((Nat.add_le_add_left prefixFits _).trans_eq (Nat.add_comm ..))
 
 open IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2.Stack Host in
+def directoryExceptionalCore [M8.Machine.Net] {K : ℕ} {P U : Type} (d : ℕ)
+    (room : Record.size d+(rowSwapBlock.tapes+35+2) ≤ K)
+    (capacity : (anchorProgram d true).1+(anchorProgram d false).1+1 ≤ columnCapacity) :
+    Pr P (66+K) columnCapacity prime U :=
+  let N := rowSwapBlock.tapes+35
+  let ports := directoryResidualBank d room (Fin.last N).castSucc
+  let caller := Fin.castAddEmb (n := 66) K
+  let anchorRoom : Record.size d ≤ K := (Nat.le_add_right ..).trans room
+  let anchor := directoryAnchorBank d K anchorRoom
+  let regs := Function.Embedding.refl (Fin 6)
+  let bank := (columnBank.trans (archivePorts 0)).trans ports
+  let installer := directoryAnchorInstaller ((Nat.le_add_right 22 _).trans anchorRoom)
+  let sign := (installFieldHeaders installer).seq (statePlacedNormalized anchor capacity (Nat.zero_lt_succ _) Empty.elim
+    ((Record.program d regs).seq (moveR (Record.port d regs 5) (Record.port d regs 1) id)))
+  let headers := Record.copyLeafHeaders (residualCallerHeaders.trans caller) (residualHeaderPorts.trans bank)
+    (caller 64) (caller 65) (List.finRange 5)
+  let restore := (Mult.ShortConv.transfer (caller 58) (bank 24) (caller 59) (caller 60)).seq
+    (moveR (caller 59) (caller 24) id)
+  (((sign.seq headers).seq (queuedResidual ports (caller 58) (caller 24) (caller 59) (caller 60) d)).seq restore).seq
+    (dropWords (bank 2) (directoryMatrixTape room) (bank 0) ((d+1)*(d+1)))
+
+open IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2.Stack Host in
+/-- The exceptional branch is the same program for every live label. -/
+def directoryExceptionalProgram [M8.Machine.Net] {K : ℕ} {P U : Type} (r d : ℕ)
+    (room : Record.size d+(rowSwapBlock.tapes+35+2) ≤ K)
+    (capacity : (anchorProgram d true).1+(anchorProgram d false).1+1 ≤ columnCapacity) :
+    Pr P (66+K) columnCapacity prime U :=
+  let counters := directoryCountPorts K
+  let setup := (dimensionPower counters (d+1)).seq
+    ((toUnary (counters 2) (counters 9) (counters 3) (counters 4) (counters 5)).seq (bclear (counters 2)))
+  let privateTapes := (List.finRange (66+K)).filter fun i => decide (58 ≤ i.val ∧ i ≠ directoryMatrixTape room)
+  let slots : Fin 7 ↪ Fin 58 := ⟨![45,46,2,47,48,44,49],by decide⟩
+  let scan := (goodRecordScanPorts.trans slots).trans ((Fin.castAddEmb 8).trans (Fin.castAddEmb K))
+  setup.seq (((directoryExceptionalCore d room capacity).seq (clearWorkTapes privateTapes)).seq
+    (readWithSuccessorClock (scan 1) (advanceDirectory r scan)))
+
+open IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2.Stack Host in
 open IntegerMultBounds.MathlibTM2.Fast.Main in
 /-- Apply the anchor and then the projector residual on the same directory tapes. -/
 theorem scheduledProjectorRecord_exec [M8.Machine.Net] {K : ℕ} {P U : Type}
@@ -908,8 +945,6 @@ theorem scheduledProjectorRecord_exec [M8.Machine.Net] {K : ℕ} {P U : Type}
         (rest : List (Fin (prime+4)))
         (original : Fin (M^(d+1)*W) → ZMod 2) (source : ℤ → Fin 4) (head : ℤ),
       let counters := directoryCountPorts K
-      let countProgram := (dimensionPower counters (d+1)).seq
-        ((toUnary (counters 2) count (counters 3) (counters 4) (counters 5)).seq (bclear (counters 2)))
       initial.R (counters 0) = binSyms H M → initial.R (counters 1) = binSyms J W →
       (∀ k, 58 ≤ k.val → k ≠ directoryMatrixTape room → initial.L k = [] ∧ initial.R k = []) →
       let S := {initial with R := Function.update initial.R count (List.replicate (M^(d+1)*W) Node.tick)}
@@ -918,23 +953,14 @@ theorem scheduledProjectorRecord_exec [M8.Machine.Net] {K : ℕ} {P U : Type}
       let dst := ports (bank 24)
       let clean := fun (D : Stacks (66+K) prime) => ∀ i : Fin N, 35 ≤ i.val →
         D.L (ports (columnPorts i).castSucc) = [] ∧ D.R (ports (columnPorts i).castSucc) = []
-      let headerSrc := residualCallerHeaders.trans (Fin.castAddEmb K)
-      let headerDst := residualHeaderPorts.trans (bank.trans ports)
-      let headers := Record.copyLeafHeaders headerSrc headerDst ((64 : Fin 66).castAdd K)
-        ((65 : Fin 66).castAdd K) (List.finRange 5)
-      S.R (headerSrc 2) = binSyms 1 1 → S.R (headerSrc 3) = binSyms H (1 : ZMod M).val →
+      S.R ((28 : Fin 66).castAdd K) = binSyms 1 1 → S.R ((44 : Fin 66).castAdd K) = binSyms H (1 : ZMod M).val →
       S.R (ports (bank 34)) = physical.matrices j →
       (∀ z, readAt blank (S.L src) (S.R src) (z-head) = RadixToBinary.binaryEncoding.encode
         (putWord source head ((List.ofFn original).map SparseRoleCircuit.encode) z)) →
       S.R ((54 : Fin 66).castAdd K) = residualSchedule C ++ rest →
-      let installer := directoryAnchorInstaller ((Nat.le_add_right 22 _).trans ((Nat.le_add_right ..).trans room : Record.size d ≤ K))
-      let sign := (installFieldHeaders installer).seq (statePlacedNormalized anchor capacity (Nat.zero_lt_succ _) Empty.elim
-        ((Record.program d regs).seq (moveR (Record.port d regs 5) (Record.port d regs 1) id)))
       let V := M^(d+1)*W
-      let returnWord := (Mult.ShortConv.transfer count dst saved tmp).seq (moveR saved src id)
       let matrixTape := directoryMatrixTape room
-      let advanceMatrix := dropWords (ports (bank 2)) matrixTape (ports (bank 0)) ((d+1)*(d+1))
-      let record := (((sign.seq headers).seq (queuedResidual ports count src saved tmp d)).seq returnWord).seq advanceMatrix
+      let record := directoryExceptionalCore (P := P) (U := U) d room capacity
       let privateTapes := (List.finRange (66+K)).filter fun i => decide (58 ≤ i.val ∧ i ≠ matrixTape)
       ∀ c, (∀ f, mnProgPush (body f) ≤ c) →
       ∀ (prefixes : ℕ → List (Fin (prime+4))) (pending : List ℕ) (archiveTail : List (Fin (prime+4))),
@@ -945,7 +971,7 @@ theorem scheduledProjectorRecord_exec [M8.Machine.Net] {K : ℕ} {P U : Type}
       (S.R (scan 0)).length = (prefixes j).length → (S.R (scan 1)).length = w → S.R (scan 3) = [] →
       ∃ z F n next, z.user = u.user ∧ n ≤ exceptionalRecordTime U rows (negativeAnchor rows C) r w W H J privateTapes.length
           (max (mnProgPush record) c) (prefixes j).length ∧
-        Exec body (countProgram.seq ((record.seq (clearWorkTapes privateTapes)).seq (readWithSuccessorClock (scan 1) (advanceDirectory r scan)))) (mk u initial) n (mk z F) ∧
+        Exec body (directoryExceptionalProgram r d room capacity) (mk u initial) n (mk z F) ∧
         F.R matrixTape = tail ∧ (∀ i : Fin (66+K), 58 ≤ i.val → i ≠ matrixTape → F.L i = [] ∧ F.R i = []) ∧
         (∀ x k, next (FlatCoordinateLayout.index (G.mulVec x) k) = original (FlatCoordinateLayout.index x k)) ∧
         F.R ((54 : Fin 66).castAdd K) = rest ∧ (∀ z, readAt blank (F.L src) (F.R src) (z-head) = RadixToBinary.binaryEncoding.encode
@@ -954,8 +980,7 @@ theorem scheduledProjectorRecord_exec [M8.Machine.Net] {K : ℕ} {P U : Type}
         ∀ j : Fin 58, j ≠ 24 → j ≠ 54 → j ≠ 46 → let i := (j.castAdd 8).castAdd K
           F.L i = S.L i ∧ F.R i = S.R i := by
   intro H physical tail N G φ C rows room ports count src saved tmp anchor regs capacity body initialUser initial rest
-    original source head counters countProgram base seed initialBlank S queueTail bank dst clean headerSrc headerDst headers one padded matrix read schedule installer sign V returnWord
-    matrixTape advanceMatrix record privateTapes c bodyBound
+    original source head counters base seed initialBlank S queueTail bank dst clean one padded matrix read schedule V matrixTape record privateTapes c bodyBound
   intro prefixes pending archiveTail slots caller scan directory prefixWidth clock fresh
   let recordTime := exceptionalBodyTime U rows (negativeAnchor rows C) w W H J
   let initialClear := privateTapes.length*4+2*V+1
