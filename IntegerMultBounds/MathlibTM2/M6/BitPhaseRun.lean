@@ -60,6 +60,14 @@ noncomputable def edgeBasis [Net] {k : ℕ} (owner : Fin 661 ↪ Fin k) (p : ℕ
     ∑ r : Fin 661, (phaseEdge_stage (owner r) h).choose else 0
 
 open M8.Machine in
+noncomputable def phaseChildCost [Net] (w W : ℕ) (p : ℕ × ℕ) :=
+  let a := Geometry.Dimensions.value p.1
+  let b := Geometry.Dimensions.value p.2
+  let child := phaseIntervalChild (min a b) (max a b) w W
+  let hs := fun i => FlatCoordinateSchedule.bits (RecursiveDimensionBank.values child i)
+  ArbitraryWidthOriginalRun.cost child hs
+
+open M8.Machine in
 noncomputable def phaseEdgeBudget [Net] {k : ℕ} (owner : Fin 661 ↪ Fin k) (w W : ℕ) (p : ℕ × ℕ) :=
   let a := Geometry.Dimensions.value p.1
   let b := Geometry.Dimensions.value p.2
@@ -455,12 +463,68 @@ noncomputable def labelPhase (w : ℕ) (gates : List RawGate) (current : ℕ →
   FramedCircuit.encode (fun i => frame (Frames.run gates current i))
     (FramedCircuit.moduleRun (gates.map RawGate.toCircuit) (FramedCircuit.decode (fun i => frame (current i)) bank))
 
+/-- Scalar gates and instruction joins cost a fixed multiple of the volume.
+The coefficient depends only on the literal gates, including repeated inputs. -/
+private theorem compiled_overhead {w : ℕ} (V : ℕ) (positive : 0 < V)
+    (gs : List RawGate) (frame current : ℕ → FramedCircuit.Frame (ZMod 2) (AddressStream (ZMod (prime^w)))) :
+    let code := FramedCircuit.compile current (gs.map (Frames.framedGate frame))
+    (code.map (scalarWork V)).sum + code.length ≤
+      (gs.map (fun g => 77*g.sources.length+2)).sum*V := by
+  intro code
+  have edges (wires : List ℕ) (a b : ℕ → FramedCircuit.Frame (ZMod 2) (AddressStream (ZMod (prime^w)))) :
+      let es := FramedCircuit.edges a b wires
+      (es.map (scalarWork V)).sum = 0 ∧ es.length = wires.length := by
+    induction wires generalizing a with
+    | nil => exact ⟨rfl,rfl⟩
+    | cons i rest ih =>
+      simp only [FramedCircuit.edges,List.map_cons,List.sum_cons,scalarWork,List.length_cons,Nat.zero_add]
+      exact ⟨(ih _).1,congrArg Nat.succ (ih _).2⟩
+  induction gs generalizing current with
+  | nil => simp [code,FramedCircuit.compile]
+  | cons g gs ih =>
+    let v := Frames.framedGate frame g
+    have tail := ih (FramedCircuit.afterGate current v)
+    have e := edges (FramedCircuit.touched g.toCircuit) current (fun _ => frame g.frame)
+    dsimp only at e tail
+    simp only [code,List.map_cons,FramedCircuit.compile]
+    simp only [FramedCircuit.compileGate,Frames.framedGate,List.map_append,List.sum_append,
+      List.length_append,List.map_cons,List.sum_cons,List.length_cons,List.length_nil,List.map_nil,List.sum_nil,
+      scalarWork,e.1,e.2]
+    have terms : g.toCircuit.terms.length = g.sources.length := List.length_map _
+    simp only [Frames.touched_toCircuit,Frames.touched,List.length_cons,terms,Nat.add_mul]
+    have h := Nat.mul_le_mul_right (g.sources.length+2) (Nat.succ_le_of_lt positive)
+    simp only [Nat.one_mul,Nat.mul_add] at h
+    simp only [v,Frames.framedGate] at tail
+    nlinarith only [tail,h,positive]
+
+open M8.Machine in
+private theorem phaseEdgeBudget_sum [Net] {k : ℕ} (owner : Fin 661 ↪ Fin k) (w W : ℕ) (price : ℕ → ℕ)
+    (positive : 0 < (prime^w)^16*W)
+    (bound : ∀ p ∈ Geometry.Moves.phaseEdges, Geometry.moveRank p.1 p.2 ≠ 0 →
+      phaseChildCost w W p ≤ price (Geometry.moveRank p.1 p.2)) :
+    let edges := Geometry.Moves.phaseEdges
+    let paid := edges.filter (fun p => Geometry.moveRank p.1 p.2 != 0)
+    (edges.map (phaseEdgeBudget owner w W)).sum ≤
+      (paid.map (fun p => 1303+edgeBasis owner p)).sum*((prime^w)^16*W) +
+      ((Geometry.Moves.phaseValues.filter (· != 0)).map price).sum := by
+  intro edges paid
+  have strip (ps : List (ℕ × ℕ)) :
+      (ps.map (phaseEdgeBudget owner w W)).sum =
+      ((ps.filter (fun p => Geometry.moveRank p.1 p.2 != 0)).map
+        (fun p => phaseWork (edgeBasis owner p) ((prime^w)^16*W) (phaseChildCost w W p))).sum := by
+    induction ps with
+    | nil => rfl
+    | cons p ps ih =>
+      by_cases zero : Geometry.moveRank p.1 p.2 = 0 <;> simp [phaseEdgeBudget,phaseChildCost,zero,ih]
+  rw [strip]
+  exact phaseWork_sum _ _ _ positive bound
+
 open M8.Machine in
 /-- One physical invocation sequences D+A, the nine routed COPY windows,
 and B+C. The intermediate states carry both the modular and cover-label reads. -/
 theorem invocation_stage [Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
     (engine : CopyTranspose := CopyTranspose.original) :
-    ∃ C : ℕ, ∀ w B K, 0 < w → 0 < B → 0 < K →
+    ∃ C D : ℕ, ∀ w B K, 0 < w → 0 < B → 0 < K →
       let W := B*prime^(64*(w*64))*K
       let V := (prime^w)^16*W
       let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n r d,ownerTape_injective n r d⟩
@@ -482,6 +546,12 @@ theorem invocation_stage [Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
         ∀ i, (∀ a, owner a ≠ i) → y i = x i
       ∃ stage : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V)),
         stage.cost ≤ phaseCost false + scatterCost + phaseCost true + 2 ∧
+        (∀ price : ℕ → ℕ,
+          (∀ p ∈ Geometry.Moves.phaseEdges, Geometry.moveRank p.1 p.2 ≠ 0 →
+            phaseChildCost w W p ≤ price (Geometry.moveRank p.1 p.2)) →
+          engine.time (copyChild w W) hs ≤ price 7 →
+          stage.cost ≤ D*V + 2*(63*9+252*527)*M8.RevMachine.LeafCore.coreCost V (w*64) +
+            ((Geometry.Moves.phaseValues.filter (· != 0)).map price).sum + 9*price 7) ∧
         (∀ data (g : Matrix (Fin 64) (Fin 64) (ZMod (prime^w))) (z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B),
           phaseRead owner (stage.transform data) (labelSpectator g z) =
             labelPhase w (gates true) (current true) (labelScatter n (fun h =>
@@ -490,7 +560,11 @@ theorem invocation_stage [Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
           CopyScheduleEffect n r d w B K Copy.lifecycles (view before) (view after) ∧
           phase true after (stage.transform data) := by
   obtain ⟨C,copy⟩ := invocationScatter_stage n r d engine
-  refine ⟨C,?_⟩
+  let slots : Fin 661 ↪ Fin 142081 := ⟨ownerTape n r d,ownerTape_injective n r d⟩
+  let scalar := fun gs : List RawGate => (gs.map (fun g => 77*g.sources.length+2)).sum
+  let paid := Geometry.Moves.phaseEdges.filter (fun p => Geometry.moveRank p.1 p.2 != 0)
+  let moves := (paid.map (fun p => 1303+edgeBasis slots p)).sum
+  refine ⟨C,scalar (sectionD++sectionA)+scalar (sectionB++sectionC)+moves+C+11,?_⟩
   intro w B K hw hB hK W V owner gates current frame instructions edges phaseCost hs scatterCost view phase
   have hW : 0 < W := Nat.mul_pos (Nat.mul_pos hB (pow_pos Shared50ModularControl.prime_prime.pos _)) hK
   obtain ⟨left,leftCost,leftRead,leftOff⟩ := invocationPhase_stage owner hw hW false
@@ -504,11 +578,33 @@ theorem invocation_stage [Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
   have last (data j) : phaseRead owner (right.transform data) j =
       labelPhase w (gates true) (current true) (phaseRead owner data j) :=
     (rightRead data j).trans (phaseLogicalRead w _ _ checked.2 _)
-  refine ⟨SharedBankStage.compose (SharedBankStage.compose left middle) right,?_,?_,?_⟩
+  refine ⟨SharedBankStage.compose (SharedBankStage.compose left middle) right,?_,?_,?_,?_⟩
   · change left.cost+middle.cost+1+right.cost+1 ≤ _
     change left.cost ≤ phaseCost false at leftCost
     change right.cost ≤ phaseCost true at rightCost
     change middle.cost ≤ scatterCost at midCost
+    omega
+  · intro price phaseBound copyBound
+    have pos : 0 < V := Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) hW
+    let work := fun done => ((instructions done).map (scalarWork V)).sum + (instructions done).length
+    let calls := fun done => ((edges done).map (phaseEdgeBudget owner w W)).sum
+    have overhead (done) : work done ≤ scalar (gates done)*V := compiled_overhead V pos _ _ _
+    have childBill := phaseEdgeBudget_sum owner w W price pos phaseBound
+    change (Geometry.Moves.phaseEdges.map (phaseEdgeBudget owner w W)).sum ≤ moves*V + _ at childBill
+    rw [Geometry.Moves.phaseEdges,List.map_append,List.sum_append] at childBill
+    change calls false + calls true ≤ _ at childBill
+    have budget (s : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V))) (done)
+        (b : s.cost ≤ phaseCost done) : s.cost ≤ work done + calls done := by
+      simpa only [phaseCost,work,calls,Nat.add_right_comm] using b
+    have firstBound := budget left false leftCost
+    have lastBound := budget right true rightCost
+    change middle.cost ≤ scatterCost at midCost
+    dsimp only [scatterCost] at midCost
+    change left.cost + middle.cost + 1 + right.cost + 1 ≤
+      (scalar (gates false)+scalar (gates true)+moves+C+11)*V + _ + _ + _
+    simp only [Nat.add_mul]
+    have before := overhead false
+    have after := overhead true
     omega
   · intro data g z
     let x := left.transform data
