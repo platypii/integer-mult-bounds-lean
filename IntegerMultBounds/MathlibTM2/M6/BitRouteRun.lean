@@ -103,7 +103,7 @@ noncomputable def chartRead {v : Descriptor} {w B : ℕ} (x : Fin (volume prime 
   ext x (RecursiveInterchangeLayout.index prime v z.a z.row
     (z.b.val*prime^(64*(w*64)) + (LabelAddress.address g).val) z.h z.mid z.d z.after)
 
-private theorem chartRead_transport {v : Descriptor} {w B : ℕ}
+theorem chartRead_transport {v : Descriptor} {w B : ℕ}
     {a b : Fin (volume prime v) → ZMod 2} {f}
     (h : LabelPermutation.Transport v B w (m := 64) f (ext a) (ext b)) (g) :
     chartRead b (f g) = chartRead (B := B) a g := by
@@ -114,6 +114,11 @@ private theorem chartRead_transport {v : Descriptor} {w B : ℕ}
 /-- The scheduled register chart, in the physical order of the label fields. -/
 noncomputable def registerChart (w : ℕ) (n : Fin 9) (j : ℕ) :=
   (reduce (prime^w) (chart n j)).submatrix stageAxis.symm stageAxis.symm
+
+theorem dataChart_transpose (w : ℕ) (n : Fin 9) {j : ℕ} (data : j < 222) :
+    (registerChart w n j).transpose = registerChart w n j := by
+  change (reduce (prime^w) (chart n j).transpose).submatrix _ _ = _
+  simp only [registerChart,chart_data n j data,PortCertificate.stageRoute_transpose]
 
 theorem registerChart_inverse (w : ℕ) (n : Fin 9) (j : ℕ) :
     (registerChart w n j).transpose * registerChart w n j = 1 := by
@@ -213,10 +218,7 @@ theorem copyTarget_route [M8.Machine.Net] {T : ℕ} (io : Fin T) (n : Fin 9)
     obtain ⟨y,transport,run⟩ := runs v w B hw hb shape pos roles x head tape
     have entry : LabelPermutation.Transport v B w (fun g => g*A.transpose) (ext x) (ext y) := by
       simpa only [A,registerChart,chartRoute,modulus] using transport
-    have symmetric : A.transpose = A := by
-      change (reduce (prime^w) (chart n j).transpose).submatrix _ _ = _
-      rw [chartEq,PortCertificate.stageRoute_transpose]
-      simp only [A,registerChart,chartEq]
+    have symmetric : A.transpose = A := dataChart_transpose w n (Copy.target_bounds life scheduled j target).2
     refine ⟨y,chartRead_transport entry,?_,by simpa only [ite_eq_right firstStage] using run⟩
     rwa [symmetric] at entry
 

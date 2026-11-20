@@ -239,4 +239,87 @@ theorem copyLabel_window_runs [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin
   simp only [Function.update_of_ne off,ite_eq_left target]
   exact copyLabel_window_read (life.sourceFrame,0) (data src) (data (io j)) g z
 
+open IntegerMultBounds.Networks.Certificates.PR589 M8.RevMachine M8.Machine.ArbitraryWidthOriginalRun in
+/-- Execute the scheduled charts on both sides of the actual COPY body.
+The returned target is read in its original chart, with the retained source
+read through the relative chart and the selected local frame change. -/
+theorem routedCopy_runs [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
+    (life : Copy.Lifecycle) (scheduled : life ∈ Copy.lifecycles) :
+    let io := fun j : ℕ => ownerTape n r d (Fin.ofNat 661 j)
+    ∃ (entry leave : Graph.Block (142081+24) prime) (P Q : ℕ)
+      (A D : List (FlatCoordinateSchedule.Op 16)) (states : ℕ) (body : Program _ states prime),
+      ∀ (w B K : ℕ), 0 < w → 0 < B → 0 < K →
+      let v := copyLabelLayout w B K
+      let W := B*prime^(64*(w*64))*K
+      let V := volume prime v
+      let move := AffineFieldProgram.run (selectedWord w (life.sourceFrame,0))
+      let readSource := fun (z : LabelEntry.Cell v B) => {z with a := copyActive (move (copyActive.symm z.a))}
+      let bank := fun data => LabelCall.bank (copyOwners (v := v) data) v (M8.Stage2Machine.Straight.words (LabelSchedule.base v w))
+      let routeCost := fun C => C*V+(63+252*life.targets.length)*LeafCore.coreCost V (w*64)+life.targets.length+1
+      let hs := fun i => FlatCoordinateSchedule.bits (RecursiveDimensionBank.values (copyChild w W) i)
+      ∀ (x : Fin 142081 → Fin V → ZMod 2) (bs : List Bool), Counter.value bs = V →
+      let controls := CountedLoopReuseAlphabet.controls (a := prime) CountedLoopReuseAlphabet.empty (CountedLoopReuseAlphabet.binary bs) 1 1
+      let prep := fun data => copyPrepared (w := w) (W := W) A D ((copyOwners (v := v) data).append controls)
+      let rs := fun i => entry.slots (Fin.castAdd 24 i)
+      let cs := fun i : Fin 142081 => Fin.castLE (by omega : 142081 ≤ _) i
+      let pair := SharedBankPair.program entry.program body rs cs
+      let common := SharedBankFrames.commonSlots 142081 entry.tapes _
+      let ls := fun i => leave.slots (Fin.castAdd 24 i)
+      ∃ entered added out,
+        let setup := SharedBankPair.input (SharedBankStageInput.raw (bank x) entry.tapes)
+          (prep entered (FixedHeaderBankCopy.empty 6) (copyHeaderInput w W)) rs cs
+        let finish := SharedBankPair.output (SharedBankStageInput.raw (bank entered) entry.tapes)
+          (prep added (FixedHeaderBankCopy.headerBank hs) (copyHeaderOutput w W)) rs cs
+        HoareTime (SharedBankPair.program pair leave.program common ls)
+          (fun z => z = SharedBankPair.input setup (SharedBankStageInput.raw (bank added) leave.tapes) common ls)
+          (fun z => z = SharedBankPair.output finish (SharedBankStageInput.raw (bank out) leave.tapes) common ls)
+          (routeCost P + (copyWindowWork (FlatCoordinateCleanSchedule.constant A + FlatCoordinateCleanSchedule.constant D)
+            life.targets.length V bs.length + cost (copyChild w W) hs) + 1 + routeCost Q + 1) ∧
+        ∀ j ∈ life.targets, ∀ (g : Matrix (Fin 64) (Fin 64) (ZMod (prime^w))) (z : LabelEntry.Cell v B),
+          chartRead (out (io j)) g z = chartRead (x (io j)) g z +
+            chartRead (x (io life.source)) (g*(registerChart w n j).transpose*registerChart w n life.source) (readSource z) := by
+  intro io
+  obtain ⟨entry,P,leading,enter⟩ := copyWindow_routes n r d true life scheduled
+  obtain ⟨leave,Q,leaveLeading,exitRun⟩ := copyWindow_routes n r d false life scheduled
+  obtain ⟨A,D,states,body,run⟩ := copyLabel_window_runs n r d life scheduled
+  refine ⟨entry,leave,P,Q,A,D,states,body,?_⟩
+  intro w B K hw hB hK v W V move readSource bank routeCost hs x bs count controls prep rs cs pair common ls
+  have pos : v.Positive := ⟨pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _,Nat.zero_lt_one,
+    Nat.mul_pos hB (pow_pos Shared50ModularControl.prime_prime.pos _),Nat.zero_lt_one,hK⟩
+  obtain ⟨entered,source,targets,_,en⟩ := enter v w B hw hB rfl pos x
+  let size := copyLabel_volume w B K
+  let data := fun k (i : Fin ((prime^w)^16*W)) => entered k (Fin.cast size.symm i)
+  let view := fun (a : Fin ((prime^w)^16*W) → ZMod 2) (i : Fin V) => a (Fin.cast size i)
+  have cancel (k) : view (data k) = entered k := by funext i; simp [view,data]
+  obtain ⟨y,exec,_,_,_,add⟩ := run w B K hw hB hK data bs (count.trans size)
+  let added := fun k => view (y k)
+  obtain ⟨out,_,back,_,ex⟩ := exitRun v w B hw hB rfl pos added
+  refine ⟨entered,added,out,?_⟩
+  intro setup finish
+  constructor
+  · dsimp only at exec
+    rw [copyOwners_controls size data bs,copyOwners_controls size y bs] at exec
+    have eq : (fun k => view (data k)) = entered := funext cancel
+    change HoareTime body (fun z => z = prep (fun k => view (data k)) _ _) (fun z => z = prep added _ _) _ at exec
+    rw [eq,← size] at exec
+    exact copyRoute_window_return entry leading v _ (copyOwners x) (copyOwners entered) A D controls _ _
+      body (copyOwners added) (copyOwners out) _ _ leave leaveLeading en exec ex
+  · intro j hj g z
+    have jBound := ((Copy.target_bounds life scheduled j hj).2.trans (by decide : 222 < 661))
+    have jVal : (Fin.ofNat 661 j).val = j := Nat.mod_eq_of_lt jBound
+    have srcEq : Fin.ofNat 661 life.source = ⟨life.source,(Copy.source_bounds life scheduled).2⟩ :=
+      Fin.ext (Nat.mod_eq_of_lt (Copy.source_bounds life scheduled).2)
+    have action (l : Matrix (Fin 64) (Fin 64) (ZMod (prime^w))) : chartRead (added (io j)) l = chartRead (entered (io j)) l +
+        (fun c => chartRead (entered (io life.source)) l (readSource c)) := by
+      funext c
+      have h := add (Fin.ofNat 661 j) (by rwa [jVal]) l c
+      change chartRead (added (io j)) l c = chartRead (view (data (io j))) l c +
+        chartRead (view (data (ownerTape n r d ⟨life.source,_⟩))) l (readSource c) at h
+      simpa only [cancel,io,srcEq,Pi.add_apply] using h
+    apply congrFun (chartRead_copy_add n life.source j _ _ _ _ _ _ source ?_ (back j hj)
+      (fun a c => a (readSource c)) action g) z
+    intro l
+    rw [dataChart_transpose w n (Copy.target_bounds life scheduled j hj).2]
+    exact chartRead_transport (targets j hj) l
+
 end IntegerMultBounds.MathlibTM2.M6.BitNode
