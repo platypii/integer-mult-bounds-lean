@@ -49,7 +49,10 @@ private theorem transform_nonrecursive (C : Matrix (Fin 8) (Fin 8) ℚ) :
 execution order reproduces the full phase profile and the zero final-alignment bill. -/
 theorem modular_move_profile :
     ∃ raw : ℕ × ℕ → List (AffineFieldProgram.Op (Fin 8) ℚ),
-      (∀ p ∈ retainedCopyEdges, ∃ C, raw p = rationalMoveWord 0 7 C ∧ CopyBasisPass C.adjugate ∧ CopyBasisPass C) ∧
+      (∀ p, CheckedPair p → ∃ C,
+        raw p = rationalMoveWord (min (Geometry.Dimensions.value p.1) (Geometry.Dimensions.value p.2))
+          (max (Geometry.Dimensions.value p.1) (Geometry.Dimensions.value p.2)) C ∧
+        CopyBasisPass C.adjugate ∧ CopyBasisPass C) ∧
       (∀ p, CheckedPair p → ∀ ops ∈ AffineFieldSegments.runs (AffineFieldSegments.split (raw p)),
         M8.Machine.Segments.Good ops) ∧
     ∀ w : ℕ, let R := ZMod (prime ^ w)
@@ -64,16 +67,11 @@ theorem modular_move_profile :
   obtain ⟨raw, interval, segments, widths⟩ := checked_move_programs
   let lookup (p : ℕ × ℕ) := if h : CheckedPair p then raw ⟨p.1,h.1⟩ ⟨p.2,h.2.1⟩ else []
   refine ⟨lookup, ?_, ?_, ?_⟩
-  · have dims : ∀ p ∈ retainedCopyEdges,
-        Geometry.Dimensions.value p.1 = 7 ∧ Geometry.Dimensions.value p.2 = 0 := by
-      rw [retainedCopyEdges, Frames.retained_frames]
-      decide +kernel
-    intro p member
-    have checked := retainedCopy_checked.1 p member
+  · intro p checked
     obtain ⟨C, eq⟩ := interval ⟨p.1,checked.1⟩ ⟨p.2,checked.2.1⟩ checked
     let word := raw ⟨p.1,checked.1⟩ ⟨p.2,checked.2.1⟩
-    have shape : word = rationalMoveWord 0 7 C := by
-      simpa only [(dims p member).1, (dims p member).2, Nat.min_zero, Nat.max_zero] using eq
+    have shape : word = rationalMoveWord (min (Geometry.Dimensions.value p.1) (Geometry.Dimensions.value p.2))
+        (max (Geometry.Dimensions.value p.1) (Geometry.Dimensions.value p.2)) C := eq
     have pass (B) (sub : ∀ op ∈ M8.Exchange.transformOps B B, op ∈ word) : CopyBasisPass B := by
       refine ⟨segments _ _ checked _ sub (transform_nonrecursive B), ?_⟩
       intro w op hop

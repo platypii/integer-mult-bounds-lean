@@ -185,6 +185,34 @@ theorem chartAddress_selected (w : ℕ) [NeZero (prime^w)] :
 open FlatCoordinateLayout (rank)
 open RecursiveInterchangeLayout (Descriptor volume)
 
+/-- Group the same interval of each eight-coordinate half into the two
+active fields. The middle contains the H suffix followed by the D prefix. -/
+noncomputable def phaseIntervalChild (lo hi w W : ℕ) : Descriptor :=
+  let M := prime^w
+  ⟨1,1,M^lo,(hi-lo)*w,M^((8-hi)+lo),M^(8-hi)*W⟩
+
+theorem phaseIntervalChild_volume {lo hi : ℕ} (ordered : lo ≤ hi) (fits : hi ≤ 8) (w W : ℕ) :
+    volume prime (phaseIntervalChild lo hi w W) = (prime^w)^16*W := by
+  let M := prime^w
+  have field : prime^((hi-lo)*w) = M^(hi-lo) := by rw [Nat.mul_comm,pow_mul]
+  simp only [volume,phaseIntervalChild,one_mul,field]
+  change M^lo * M^(hi-lo) * M^(8-hi+lo) * M^(hi-lo) * (M^(8-hi)*W) = M^16*W
+  rw [← Nat.mul_assoc]
+  repeat rw [← pow_add]
+  congr 2
+  omega
+
+open IntegerMultBounds.Networks.Certificates.PR589 in
+theorem phaseIntervalChild_width {p : ℕ × ℕ} (checked : Geometry.Moves.CheckedPair p) (w W : ℕ) :
+    let a := Geometry.Dimensions.value p.1
+    let b := Geometry.Dimensions.value p.2
+    (phaseIntervalChild (min a b) (max a b) w W).width = Geometry.moveRank p.1 p.2*w := by
+  intro a b
+  rw [Geometry.Moves.rank p checked]
+  change (max a b-min a b)*w = ((b-a)+(a-b))*w
+  congr 1
+  omega
+
 /-- The two seven-coordinate prefixes form the H and D fields of one child. -/
 noncomputable def copyChild (w W : ℕ) : Descriptor := ⟨1,1,1,7*w,prime^w,prime^w*W⟩
 
@@ -343,6 +371,43 @@ theorem copySegment_runs (ops : List (AffineFieldProgram.Op (Fin 8) ℚ)) (good 
   exact hz.1.trans (congrArg (fun a => SharedBankStageInput.raw
     (FlatCoordinateShiftSharedBank.common a) (FlatCoordinateCleanSchedule.tapeCount stages)) exactArray)
 
+/-- Split each half into a prefix, the active interval and a suffix.
+The remainder after the H field and the prefix before the D field share
+the descriptor's middle register. -/
+noncomputable def phaseIntervalAddress {lo hi : ℕ}
+    (a b : Fin lo → ZMod (prime^w)) (h d : Fin (hi-lo) → ZMod (prime^w))
+    (u v : Fin (8-hi) → ZMod (prime^w)) (j : Fin W) :
+    RecursiveInterchangeScaling.Address (phaseIntervalChild lo hi w W) :=
+  let field (x : Fin (hi-lo) → ZMod (prime^w)) := (rank x).cast
+    (show (prime^w)^(hi-lo) = prime^((hi-lo)*w) by rw [← pow_mul,Nat.mul_comm])
+  ⟨(0 : Fin 1),(0 : Fin 1),rank a,field h,rank (Fin.addCases u b),field d,
+    finProdFinEquiv (rank v,j)⟩
+
+theorem phaseInterval_index {lo hi : ℕ}
+    (a b : Fin lo → ZMod (prime^w)) (h d : Fin (hi-lo) → ZMod (prime^w))
+    (u v : Fin (8-hi) → ZMod (prime^w)) (j : Fin W) :
+    (RecursiveInterchangeScaling.index (phaseIntervalAddress a b h d u v j)).val =
+      (FlatCoordinateLayout.index (Fin.addCases (Fin.addCases (Fin.addCases a h) u)
+        (Fin.addCases (Fin.addCases b d) v)) j).val := by
+  rw [RecursiveInterchangeScaling.index_val,FlatCoordinateLayout.index_val]
+  simp only [phaseIntervalAddress,phaseIntervalChild,RecursiveInterchangeLayout.index,
+    Fin.val_zero,zero_mul,zero_add,Fin.val_cast,finProdFinEquiv,Equiv.coe_fn_mk,
+    ArbitraryWidthSliceTranspose.rank_append]
+  rw [show prime^((hi-lo)*w) = (prime^w)^(hi-lo) by rw [← pow_mul,Nat.mul_comm]]
+  simp only [pow_add]
+  ring
+
+/-- A single transpose exchanges exactly the interval and preserves all
+four exterior slices and the trailing record position. -/
+theorem phaseInterval_transpose {lo hi : ℕ} {α : Type*}
+    (x : Fin (volume prime (phaseIntervalChild lo hi w W)) → α)
+    (a b : Fin lo → ZMod (prime^w)) (h d : Fin (hi-lo) → ZMod (prime^w))
+    (u v : Fin (8-hi) → ZMod (prime^w)) (j : Fin W) :
+    Shared50RecursiveNodeRows.transpose (one_dvd _) x
+      (RecursiveInterchangeScaling.index (phaseIntervalAddress a b d h u v j)) =
+      x (RecursiveInterchangeScaling.index (phaseIntervalAddress a b h d u v j)) :=
+  Shared50RecursiveNodeTranspose.transpose_all (by decide : 0 < 1) _ _ (phaseIntervalAddress a b h d u v j)
+
 noncomputable def copyChildAddress (h d : Fin 7 → ZMod (prime^w))
     (u v : Fin 1 → ZMod (prime^w)) (j : Fin W) : RecursiveInterchangeScaling.Address (copyChild w W) :=
   let field (x : Fin 7 → ZMod (prime^w)) : Fin (prime^(7*w)) := Fin.cast (by rw [← pow_mul, Nat.mul_comm w 7])
@@ -412,6 +477,30 @@ theorem copyChild_interval {α : Type*} (x : Fin ((prime^w)^16*W) → α)
 
 open M8.Machine.ArbitraryWidthOriginalRun (input program cost)
 open M8.Machine.ArbitraryWidthHighExchangeShared (sourceWord)
+
+/-- With the interval headers installed, the existing interchange machine
+executes a nonempty phase interval on the caller's designated tape. -/
+theorem phaseInterval_runs [M8.Machine.Net] {t lo hi : ℕ} (lt : lo < hi) (fits : hi ≤ 8)
+    (caller : Tapes t prime) (headers : Fin 6 → Fin t) (src : Fin t)
+    (hw : 0 < w) (hW : 0 < W) (hs : Fin 6 → List Bool) :
+    let child := phaseIntervalChild lo hi w W
+    RecursiveDimensionBank.Headers child hs →
+    (∀ i, caller.tape (headers i) = RadixZeroFill.encodedBinary (hs i)) →
+    (∀ i, caller.head (headers i) = 1) →
+    ∀ x : Fin ((prime^w)^16*W) → ZMod 2,
+    let inputWord := fun i => x (Fin.cast (phaseIntervalChild_volume lt.le fits w W) i)
+    caller.tape src = sourceWord inputWord → caller.head src = 0 →
+    ∃ y : Fin (volume prime child) → ZMod 2,
+      HoareTime (program headers src) (fun z => z = input caller)
+        (fun z => z = input (SharedPlacementAlphabet.setTape caller src (sourceWord y) 0)) (cost child hs) ∧
+      ∀ a b h d u v j, y (RecursiveInterchangeScaling.index (phaseIntervalAddress a b d h u v j)) =
+        inputWord (RecursiveInterchangeScaling.index (phaseIntervalAddress a b h d u v j)) := by
+  intro child valid words heads x inputWord data origin
+  have pos := pow_pos Shared50ModularControl.prime_prime.pos w
+  have positive : child.Positive := ⟨Nat.zero_lt_one,Nat.zero_lt_one,pow_pos pos _,pow_pos pos _,Nat.mul_pos (pow_pos pos _) hW⟩
+  have active : 0 < child.width := Nat.mul_pos (Nat.sub_pos_of_lt lt) hw
+  exact ⟨_,M8.Machine.ArbitraryWidthOriginalRun.runs caller headers src child hs positive active valid words heads
+    inputWord data origin,phaseInterval_transpose inputWord⟩
 
 open M8.Machine.ArbitraryWidthHighExchangeJoin M8.Machine.ArbitraryWidthHighRun in
 noncomputable abbrev copyTransposeTapes [M8.Machine.Net] (t : ℕ) := t+16+19+17+12+1+exchangeCount+movementCount+paddingCount+
@@ -771,7 +860,7 @@ theorem copyWindow_hoare [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5) (
       (∀ j : Fin 661, output (ownerTape n r d j) = Copy.execute frameOf life stored j) ∧
       output tmp = Copy.execute frameOf life stored 661 := by
   intro src tmp regs targets
-  obtain ⟨C,shape,rev,fwd⟩ := modular_move_profile.choose_spec.1 _ (copySource_mem life scheduled)
+  obtain ⟨C,shape,rev,fwd⟩ := selectedCopyBasis life scheduled
   let gate : PointwiseRoleGate.Gate 142081 := ⟨src,tmp,Fin.castSucc_ne_last _⟩
   let copy := fun (s _ : Fin (prime+4)) => s
   let erase := fun (_ _ : Fin (prime+4)) => SparseRoleCircuit.encode (a := prime) 0

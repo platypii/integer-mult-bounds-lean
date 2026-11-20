@@ -43,6 +43,18 @@ theorem copySource_mem (life : Copy.Lifecycle) (scheduled : life ∈ Copy.lifecy
   exact List.mem_map.mpr ⟨Frames.beforeScatter life.source,List.mem_map_of_mem source,
     Prod.ext (Copy.wellformed life scheduled).2.2.1 rfl⟩
 
+/-- The selected COPY edges specialize the general phase interval to ranks zero through seven. -/
+theorem selectedCopyBasis (life : Copy.Lifecycle) (scheduled : life ∈ Copy.lifecycles) :
+    ∃ C, selectedRaw (life.sourceFrame,0) = rationalMoveWord 0 7 C ∧
+      CopyBasisPass C.adjugate ∧ CopyBasisPass C := by
+  have member := copySource_mem life scheduled
+  have dims : ∀ p ∈ retainedCopyEdges,
+      Geometry.Dimensions.value p.1 = 7 ∧ Geometry.Dimensions.value p.2 = 0 := by
+    rw [retainedCopyEdges, Frames.retained_frames]
+    decide +kernel
+  obtain ⟨C,shape,passes⟩ := modular_move_profile.choose_spec.1 _ (retainedCopy_checked.1 _ member)
+  exact ⟨C,by simpa only [selectedRaw,(dims _ member).1,(dims _ member).2,Nat.min_zero,Nat.max_zero] using shape,passes⟩
+
 theorem modular_scatter (w : ℕ) :
     let R := ZMod (prime ^ w)
     let E := Swap.Shear.State (Fin 8) R → ZMod 2
