@@ -257,6 +257,59 @@ theorem copyPacked_index {w W : ℕ} (h d : Fin 7 → ZMod (prime^(w+1)))
   rw [show prime^(7*(w+1)) = (prime^(w+1))^7 by rw [← pow_mul, Nat.mul_comm]]
   ring
 
+/-- Physical position of a recursive child cell on the packed COPY tape. -/
+noncomputable def copyRecursivePosition (parent : Descriptor) (w rows : ℕ)
+    (splitRows : parent.rows = 142080*rows) :
+    let M := prime^(w+1)
+    let W := M^112 * (parent.beforeRows*rows*parent.beforeH*parent.between*parent.afterD)
+    let child := rankDescriptor prime (7*(w+1)) (57*(w+1)) (role parent 142080)
+    Fin (volume prime child) ≃ Fin (M^15*(M*W)) := by
+  intro M W child
+  refine (packActive child).trans (finCongr ?_)
+  have size := Fintype.card_congr ((copyChildLayoutEquiv parent (w+1) rows splitRows).trans (packActive child))
+  simp only [Fintype.card_fin,copyChild_volume] at size
+  rw [← size]
+  change M^16*W = M^15*(M*W)
+  ring
+
+/-- A recursive transpose on the selected child, read in active-first order,
+supplies the packed COPY swap at every physical suffix position. -/
+theorem copyRecursivePacked_swap (parent : Descriptor) (w rows : ℕ)
+    (splitRows : parent.rows = 142080*rows) :
+    let M := prime^(w+1)
+    let W := M^112 * (parent.beforeRows*rows*parent.beforeH*parent.between*parent.afterD)
+    let child := rankDescriptor prime (7*(w+1)) (57*(w+1)) (role parent 142080)
+    let position := copyRecursivePosition parent w rows splitRows
+    ∀ {α : Type} (word changed : Fin (M^15*(M*W)) → α),
+      (∀ i, changed (position i) = Shared50RecursiveNodeRows.transpose (one_dvd child.rows)
+        (word ∘ position) i) →
+      ∀ (h d : Fin 7 → ZMod M) (u : Fin 1 → ZMod M) (j : Fin (M*W)),
+        changed (FlatCoordinateLayout.index (Fin.append (Fin.append d h) u) j) =
+          word (FlatCoordinateLayout.index (Fin.append (Fin.append h d) u) j) := by
+  intro M W child position α word changed after h d u j
+  let input := word ∘ position
+  obtain ⟨⟨low,j⟩,rfl⟩ := finProdFinEquiv.surjective j
+  let v := (FlatCoordinateLayout.rankEquiv : (Fin 1 → ZMod M) ≃ Fin (M^1)).symm
+    (low.cast (pow_one M).symm)
+  have digit : (FlatCoordinateLayout.rank v).cast (pow_one M) = low := by
+    change ((FlatCoordinateLayout.rankEquiv _) : Fin (M^1)).cast _ = _
+    simp [v]
+  let e := copyChildLayoutEquiv parent (w+1) rows splitRows
+  let addr := fun h d => index (copyChildAddress h d u v j)
+  have location (h d : Fin 7 → ZMod M) :
+      (FlatCoordinateLayout.index (Fin.append (Fin.append h d) u) (finProdFinEquiv (low,j))).val =
+        (packActive child (e (addr h d))).val := by
+    rw [copyChildLayout_route parent (w+1) rows splitRows]
+    simpa only [digit] using copyPacked_index h d u v j
+  have cell (h d : Fin 7 → ZMod M) :
+      FlatCoordinateLayout.index (Fin.append (Fin.append h d) u) (finProdFinEquiv (low,j)) =
+        position (e (addr h d)) := Fin.ext (location h d)
+  rw [cell d h,cell h d,after]
+  change Shared50RecursiveNodeRows.transpose (one_dvd child.rows) input _ = input _
+  rw [← copyChild_reindex parent (w+1) rows splitRows input (addr d h)]
+  exact Shared50RecursiveNodeTranspose.transpose_all (by decide : 0 < 1) (one_dvd _)
+    (input ∘ e) (copyChildAddress h d u v j)
+
 /-- The prepared output of the seven exchanges contains the incoming COPY bit
 at its active-first descriptor position, including the final untouched atom. -/
 theorem copyPacked_read {w W T H J : ℕ}

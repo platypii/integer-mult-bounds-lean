@@ -359,8 +359,12 @@ theorem copyTransposeReturn_exec [M8.Machine.Net] {P P' U : Type} {T : ℕ} [Fin
     (body : P → Pr P (N+35) Q prime U) (host : P' → Pr P' T Q prime U)
     (placement : Fin (N+35) ↪ Fin T) (ι : P → P')
     (calls : ∀ f, host (ι f) = embProg placement ι (body f)) :
-    ∃ setup swaps : ℕ, ∀ w W, 0 < W →
+    ∃ setup swaps : ℕ, ∀ (parent : RecursiveInterchangeLayout.Descriptor) w rows
+      (splitRows : parent.rows = 142080*rows),
       let M := prime^(w+1)
+      let W := M^112 * (parent.beforeRows*rows*parent.beforeH*parent.between*parent.afterD)
+      let position := copyRecursivePosition parent w rows splitRows
+      0 < W →
       let suffix := M*W
       let size : M^15*suffix = volume prime (copyChild (w+1) W) := by
         rw [copyChild_volume]; change M^15*(M*W) = M^16*W; ring
@@ -378,9 +382,7 @@ theorem copyTransposeReturn_exec [M8.Machine.Net] {P P' U : Type} {T : ℕ} [Fin
         bank (Nat.size M) (Nat.size suffix) [] SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0
       (∀ v D word, stored word D → clean D → ∃ z F n changed, z.user = v.user ∧ n ≤ budget ∧
         Exec body child (mk v D) n (mk z F) ∧ stored changed F ∧ clean F ∧
-        ∀ (h d : Fin 7 → ZMod M) (u : Fin 1 → ZMod M) (j : Fin suffix),
-          changed (FlatCoordinateLayout.index (Fin.append (Fin.append d h) u) j) =
-          word (FlatCoordinateLayout.index (Fin.append (Fin.append h d) u) j)) →
+        ∀ i, changed (position i) = Shared50RecursiveNodeRows.transpose (one_dvd _) (word ∘ position) i) →
       (∀ i j, slots i = physical j → j = 24) → (∀ i, staged ≠ physical i) →
       (∀ i, staged ≠ slots i) → slots (Fin.castAdd 15 (Fin.castAdd 6 src)) = physical 24 →
       S.R staged = [] → (∀ i : Fin 35, i ≠ 24 → S.L (physical i) = [] ∧ S.R (physical i) = []) →
@@ -401,7 +403,7 @@ theorem copyTransposeReturn_exec [M8.Machine.Net] {P P' U : Type} {T : ℕ} [Fin
             (List.ofFn (SparseRoleCircuit.encode ∘ output)) k) := by
   obtain ⟨setup,swaps,transpose⟩ := withCopyTranspose_exec body
   refine ⟨setup,swaps,?_⟩
-  intro w W hW M suffix size bank clean t caller src slots staged v S x child budget physical headers width hs output stored call
+  intro parent w rows splitRows M W position hW suffix size bank clean t caller src slots staged v S x child budget physical headers width hs output stored call
     apart outside privateSlot shared fresh empty head data rep free ports
   obtain ⟨a,B,m,ha,hm,prepare,ready,off⟩ := copyCallerSetup_exec host w W caller src slots physical staged
     apart outside privateSlot shared v S fresh empty x head data rep
@@ -416,7 +418,11 @@ theorem copyTransposeReturn_exec [M8.Machine.Net] {P P' U : Type} {T : ℕ} [Fin
       exact (Nat.not_le_of_lt i.isLt) hk)
     exact ⟨kept.1.trans (free k hk).1,kept.2.trans (free k hk).2⟩
   obtain ⟨u,D,n,hu,time,run,placed,clear⟩ :=
-    transpose w W hW (embDn placement a) (embStk placement B) [] (fun _ => blank) 0 x child budget call start available
+    transpose w W hW (embDn placement a) (embStk placement B) [] (fun _ => blank) 0 x child budget (by
+      intro z F word storedWord cleanWord
+      obtain ⟨y,G,n,changed,user,time,run,placed,clear,transposed⟩ := call z F word storedWord cleanWord
+      exact ⟨y,G,n,changed,user,time,run,placed,clear,
+        copyRecursivePacked_swap parent w rows splitRows word changed transposed⟩) start available
   obtain ⟨z,F,hz,erase,left,right,read⟩ := copyRecordRetire_exec body bank w W u D output placed
   obtain ⟨y,G,execute,_,user,project,frame⟩ :=
     exec_emb placement.injective calls (Exec.seq run erase) a rfl B rfl
