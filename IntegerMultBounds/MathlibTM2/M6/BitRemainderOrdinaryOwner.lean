@@ -601,6 +601,29 @@ def PortReads {w : ℕ} (R W parents : ℕ) (interval : ℕ × ℕ) (parent : Fi
           (index ((projectorResidual finSumFinEquiv P parent (fun i => Ring.inverse (parent i)) g).mulVec x) k) =
             ownerRow (R := R) (N := N) rfl word j (index x k)
 
+private theorem ownerRow_fin {R N : ℕ} (word : Fin (R*N) → ZMod 2) (j : Fin R) (i : Fin N) :
+    ownerRow rfl word j.val i = word (finProdFinEquiv (j,i)) := by
+  simp [ownerRow,j.isLt]
+
+/-- The same change of coordinates intertwines every port exchange at a live label.
+The head bank carries the parent weights and the tail bank the reversal. -/
+theorem residual_ownerFrame {ι R : Type*} [Fintype ι] [DecidableEq ι] [CommRing R]
+    (A A' C g P : Matrix ι ι R) (weights : A'*A = 1) (reverse : C*C = 1)
+    (live : g⁻¹*g = 1) :
+    let frame := fromBlocks (A*g) 0 0 (C*g)
+    residual A A' C (g*P*g⁻¹) * frame = frame * fromBlocks (1-P) P P (1-P) := by
+  intro frame
+  let pair (X Y : Matrix ι ι R) := fromBlocks X (0 : Matrix ι ι R) (0 : Matrix ι ι R) Y
+  have cancel : pair A' C * frame = pair g g := by
+    simp [pair,frame,fromBlocks_multiply,← Matrix.mul_assoc,weights,reverse]
+  have move : g*P*g⁻¹*g = g*P := by rw [Matrix.mul_assoc (g*P),live,mul_one]
+  have exchange : fromBlocks (1-g*P*g⁻¹) (g*P*g⁻¹) (g*P*g⁻¹) (1-g*P*g⁻¹) * pair g g =
+      pair g g * fromBlocks (1-P) P P (1-P) := by
+    simp [pair,fromBlocks_multiply,Matrix.sub_mul,Matrix.mul_sub,move]
+  change pair A C * _ * pair A' C * frame = _
+  rw [Matrix.mul_assoc _ (pair A' C),cancel,Matrix.mul_assoc,exchange,← Matrix.mul_assoc]
+  simp [pair,frame,fromBlocks_multiply]
+
 /-- At original labels the parent applies the residual projector on live rows and copies inactive rows. -/
 def OriginalPortReads {w : ℕ} (R W parents : ℕ) (interval : ℕ × ℕ)
     (parent : Fin 64 → ZMod (prime^(w+1))) (c : Certificates.PR589.Nine.PortCertificate)
@@ -614,6 +637,42 @@ def OriginalPortReads {w : ℕ} (R W parents : ℕ) (interval : ℕ × ℕ)
       (index ((projectorResidual finSumFinEquiv P parent (fun i => Ring.inverse (parent i)) g).mulVec x) k) =
         ownerRow (R := R) (N := M^128*W) rfl input j (index x k)) ∧
     (¬ IsUnit g → ownerRow (R := R) (N := M^128*W) rfl output j = ownerRow rfl input j)
+
+/-- At a live label, reading both owner banks in the parent's coordinates
+turns the scanner's weighted update into the unweighted port exchange. -/
+theorem OriginalPortReads.exchange {w R W parents : ℕ} {interval : ℕ × ℕ}
+    {parent : Fin 64 → ZMod (prime^(w+1))} {c : Certificates.PR589.Nine.PortCertificate}
+    {input output} (reads : OriginalPortReads R W parents interval parent c input output)
+    (units : ∀ i, IsUnit (parent i)) (block : Fin parents) (g : LabelPadding.Label 64 (w+1)) (live : IsUnit g)
+    (count : parents*(prime^(w+1))^(64*64) = R) :
+    let M := prime^(w+1)
+    letI : NeZero M := ⟨(pow_pos Shared50ModularControl.prime_prime.pos _).ne'⟩
+    let P := reduce M ((c.span interval.1 interval.2).submatrix stageAxis.symm stageAxis.symm)
+    let frame := fromBlocks (diagonal parent*g) 0 0 (M8.ReversedExchange.rev 64*g)
+    let pack := fun x => (frame.mulVec x) ∘ finSumFinEquiv.symm
+    let row : Fin R := (finProdFinEquiv (block,LabelAddress.address g)).cast count
+    let address := fun x (k : Fin W) => finProdFinEquiv (row,index (pack x) k)
+    ∀ x k, output (address ((fromBlocks (1-P) P P (1-P)).mulVec x) k) = input (address x k) := by
+  intro M P frame pack row address x k
+  letI : NeZero (prime^(w+1)) := ⟨(pow_pos Shared50ModularControl.prime_prime.pos _).ne'⟩
+  let inv := fun i => Ring.inverse (parent i)
+  have weights := Weighted.diagonal_inv_mul inv parent (fun i => Ring.inverse_mul_cancel _ (units i))
+  have commute := residual_ownerFrame (diagonal parent) (diagonal inv) (M8.ReversedExchange.rev 64) g P
+    weights M8.ReversedExchange.rev_mul_rev (g.nonsing_inv_mul ((Matrix.isUnit_iff_isUnit_det _).mp live))
+  have coord : (projectorResidual finSumFinEquiv P parent inv g).mulVec (pack x) =
+      pack ((fromBlocks (1-P) P P (1-P)).mulVec x) := by
+    change (residual (diagonal parent) (diagonal inv) (M8.ReversedExchange.rev 64) (g*P*g⁻¹)).submatrix
+      finSumFinEquiv.symm finSumFinEquiv.symm *ᵥ ((frame *ᵥ x) ∘ finSumFinEquiv.symm) = _
+    dsimp only [pack]
+    rw [submatrix_mulVec_equiv]
+    simp only [Function.comp_assoc,Equiv.symm_symm,Equiv.symm_comp_self,Function.comp_id]
+    rw [mulVec_mulVec,commute,← mulVec_mulVec]
+  have rowNumber : row.val = block.val*M^(64*64)+(LabelAddress.address g).val := by
+    simp [row,M,finProdFinEquiv_apply_val,Nat.mul_comm,Nat.add_comm]
+  have read := (reads block g).1 live (pack x) k
+  rw [← rowNumber] at read
+  rw [ownerRow_fin,ownerRow_fin,coord] at read
+  exact read
 
 /-- The reverse chart restores the incoming label. At that label the complete
 round trip implements the weighted residual of the scheduled port projector. -/

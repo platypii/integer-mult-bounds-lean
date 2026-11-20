@@ -149,6 +149,40 @@ private theorem idleExchange_admissible (c : PortCertificate) (hc : c.Checked) (
   intro i j
   cases i <;> cases j <;> first | apply complement | apply span
 
+open Matrix IntegerMultBounds.Swap.Modular in
+/-- Numbering the two port banks by their stage axes gives the scanner's block exchange. -/
+theorem idleExchange_axes (c : PortCertificate) (hc : c.Checked) (lo hi w : ℕ)
+    (x : Axis ⊕ Axis → ZMod (prime^w)) :
+    let axes := Equiv.sumCongr stageAxis.symm stageAxis.symm
+    let P := reduce (prime^w) ((c.span lo hi).submatrix stageAxis.symm stageAxis.symm)
+    (reduce (prime^w) (exchange (c.span lo hi))).mulVec x ∘ axes =
+      (fromBlocks (1-P) P P (1-P)).mulVec (x ∘ axes) := by
+  intro axes P
+  let S := c.span lo hi
+  let m := prime^w
+  have adm : Admissible m S := fun i j => idleExchange_admissible c hc lo hi w (.inl i) (.inr j)
+  have sub := ModularFrameSchedule.reduce_sub m (admissible_one m) adm
+  rw [reduce_one] at sub
+  have blocks : (reduce m (exchange S)).submatrix axes axes = fromBlocks (1-P) P P (1-P) := by
+    ext i j
+    cases i with
+    | inl i =>
+      cases j with
+      | inr j => rfl
+      | inl j =>
+        change reduce m (1-S) _ _ = _
+        rw [sub]
+        simp [P,S,Matrix.one_apply] <;> rfl
+    | inr i =>
+      cases j with
+      | inl j => rfl
+      | inr j =>
+        change reduce m (1-S) _ _ = _
+        rw [sub]
+        simp [P,S,Matrix.one_apply] <;> rfl
+  rw [← blocks,submatrix_mulVec_equiv]
+  simp [Function.comp_assoc,m,S]
+
 /-- Read the entire idle at a packed modular address from its forward owner reads. -/
 theorem idleCopies_modular_read {V : ℕ} (w : ℕ) (i : Fin 9)
     (pack : (Axis ⊕ Axis → ZMod (prime^w)) → Fin V) (before after : Fin 142081 → Fin V → ZMod 2)
