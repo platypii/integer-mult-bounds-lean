@@ -4,6 +4,7 @@ public import IntegerMultBounds.MathlibTM2.Cover.FallbackGoodRecordRoundTrip
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackConjugationQueue
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackFormulaInit
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackRecordCleanup
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackRecordHeaders
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackRecordCounters
 
 /-! Read a live directory label, compute the conjugate, and run the good-record round trip. -/
@@ -146,6 +147,12 @@ theorem generatedGoodRecordRoundTrip_exec [M8.Machine.Net] {T m work Q fields H 
       have h := congrArg Fin.val eq
       simp only [CommonBank.auxSlot_val] at h
       omega⟩ : Fin 24 ↪ Fin common).trans commonPorts
+    let hdrPorts := (⟨CommonBank.headerSlot,by
+      intro i j eq
+      apply Fin.ext
+      have h := congrArg Fin.val eq
+      simp only [CommonBank.headerSlot_val] at h
+      omega⟩ : Fin 6 ↪ Fin common).trans commonPorts
     let initialBank := CommonBank.bank roles (Routines.hdr v) f p node scalar (Family.leafC (w+1) arity d d) st
     let logical := {v with width := d}
     let addr := fun a row pre mid post (x : IntegerMultBounds.Swap.Shear.State (Fin d) (ZMod M)) =>
@@ -204,7 +211,12 @@ theorem generatedGoodRecordRoundTrip_exec [M8.Machine.Net] {T m work Q fields H 
       (∀ z, readAt blank (whole.L (r 1)) (whole.R (r 1)) z = blank) →
       (∀ z, readAt blank (whole.L (r 0)) (whole.R (r 0)) (z-head) =
         RadixToBinary.binaryEncoding.encode (putWord source head ((List.ofFn word).map SparseRoleCircuit.encode) z)) →
-      (∀ k, (∀ i, CommonBank.auxSlot i ≠ k) → ∀ x, initialBank.tape k x =
+      let src := fun i : Fin 6 => caller ((i.natAdd 33).castLE (by decide : 39 ≤ 66))
+      let dst := hdrPorts.trans inner
+      (∀ i, src i ≠ scan 2) →
+      (∀ i, whole.R (src i) = (Routines.hdr v i).map bitSymbol) →
+      (∀ i, whole.L (dst i) = [] ∧ whole.R (dst i) = []) →
+      (∀ k, (∀ i, CommonBank.auxSlot i ≠ k) → (∀ i, CommonBank.headerSlot i ≠ k) → ∀ x, initialBank.tape k x =
         readAt blank (S.L (commonTape k)) (S.R (commonTape k)) (x-initialBank.head k)) →
       (∀ i, S.L (aux i) = [] ∧ S.R (aux i) = []) →
       fallbackBit rankFits (reduce M proj) g = false →
@@ -232,11 +244,13 @@ theorem generatedGoodRecordRoundTrip_exec [M8.Machine.Net] {T m work Q fields H 
       let loading := ((6*(whole.R (caller 55)).length+6)+((10*H+12)+(m*(10*M.size+8*(H-M.size)+12)+1+
         (2*packed.length+2))))+((10*M.size+10)+(6*(whole.R (caller 45)).length+6))
       let conversion := (m*m)*(10*M.size+8*(H-M.size)+12)+1+(2*(matrixWords prime M.size G).length+2)
-      let runCost := (((conjugationDepth m+1)*(6*H+6)+1 + (((4*H+4)+(generation+(2*H+2)))+((conjugationDepth m+1)*(2*H+2)+1))) + (21*(w+1)+13)) + ((dimensionTime H 1 fields+(4*(fields*H+1)+6)+(10*J+12)+(6*(M^fields).size+6)) +
+      let headerCost := (((List.finRange 6).map fun i => 6*((Routines.hdr v i).length)+6).sum+1)+1
+      let runCost := (((conjugationDepth m+1)*(6*H+6)+1 + (((4*H+4)+(generation+(2*H+2)))+((conjugationDepth m+1)*(2*H+2)+1))) + (21*(w+1)+13)) + headerCost + ((dimensionTime H 1 fields+(4*(fields*H+1)+6)+(10*J+12)+(6*(M^fields).size+6)) +
         (loading+(conversion+(budget+2*((218*N+1)*13+6)+3)))) + (1+(4*ancestor.length+4+(m*m*(4*(w+1)+4)+1)+1))
       let prepareCounters := (swapExponent (leafCounterPorts aux)).seq
         (.act (installLeafCounters (aux.trans inner) arity d))
-      let recordProgram : Pr F K Q prime U := (((((initFrames pool (pivot 4) (conjugationDepth m+1)).seq (withZero.seq (clearFrames pool (conjugationDepth m+1)))).seq prepareCounters).seq ((recordCounterSetup caller fields).seq ((recordInputProgram record m).seq ((recordMatrixProgram record m).seq ((.act (pushMarkers marks) : Pr F K Q prime U).seq
+      let prepareHeaders := (Record.copyLeafHeaders src dst (caller 64) (caller 65) (List.finRange 6)).seq (.act (pushMarkers ((List.finRange 6).map dst)))
+      let recordProgram : Pr F K Q prime U := (((((initFrames pool (pivot 4) (conjugationDepth m+1)).seq (withZero.seq (clearFrames pool (conjugationDepth m+1)))).seq prepareCounters |>.seq prepareHeaders).seq ((recordCounterSetup caller fields).seq ((recordInputProgram record m).seq ((recordMatrixProgram record m).seq ((.act (pushMarkers marks) : Pr F K Q prime U).seq
           ((transfer r).seq ((embProg inner Empty.elim coordinate).seq (transfer reverse)))))))).seq (readWithSuccessorClock (scan 1) (advanceDirectory m scan)))
       let privateTapes := (List.finRange K).filter fun i => decide (58 ≤ i.val)
       let initialClear := (privateTapes.map fun i => 4*(whole.L i).length+2*(whole.R i).length+4).sum+1
@@ -246,14 +260,14 @@ theorem generatedGoodRecordRoundTrip_exec [M8.Machine.Net] {T m work Q fields H 
         (∀ i : Fin K, 58 ≤ i.val → D.L i = [] ∧ D.R i = []) ∧
         effect ys ∧ (∀ k, readAt blank (D.L (r 0)) (D.R (r 0)) (k-head) =
           RadixToBinary.binaryEncoding.encode (putWord source head (ys.map SparseRoleCircuit.encode) k)) ∧
-        D.R (scan 2) = tail ∧
+        D.R (scan 2) = tail ∧ (∀ i, D.R (src i) = (Routines.hdr v i).map bitSymbol) ∧
         ∀ j : Fin 58, j ≠ 24 → j ≠ scanCaller 2 → let port := caller (j.castAdd 8)
           D.L port = whole.L port ∧ D.R port = whole.R port := by
-  intro d common host M N entry leave record bank g G commonTape commonPorts aux initialBank logical addr inner caller K ef xf eqs xqs word
+  intro d common host M N entry leave record bank g G commonTape commonPorts aux hdrPorts initialBank logical addr inner caller K ef xf eqs xqs word
     body u whole slots poolFits prefixes labels archiveTail headers scanCaller scan ancestor tail scanOff scanBlank joined dirSlots dir pool pivot counters clockSlot widthSlot unitSlot inputs ports a digits prefixWidth zeros
-    packedLabel clock count formula formulaCost detFormula C readCost generation generate withZero field dirInput prefixInput privateBlank projectorInput slot r S base unit trailing spare sharedBlank input initial auxBlank good
+    packedLabel clock count formula formulaCost detFormula C readCost generation generate withZero field dirInput prefixInput privateBlank projectorInput slot r S base unit trailing spare sharedBlank input src dst srcOff sourceWords hdrBlank initial auxBlank good
     one ticks archive call cost budget coordinate effect reverse transfer marks packed loading conversion
-    runCost prepareCounters recordProgram privateTapes initialClear c bodyBound
+    headerCost runCost prepareCounters prepareHeaders recordProgram privateTapes initialClear c bodyBound
 
   have workBlank (k : Fin work) := privateBlank (k.natAdd (host+31)) (by
     change common ≤ common+24+31+k.val
@@ -468,30 +482,61 @@ theorem generatedGoodRecordRoundTrip_exec [M8.Machine.Net] {T m work Q fields H 
     privateKept _ (Or.inl i.isLt)
   have auxEmpty (i : Fin 24) : B.L (auxPort i) = [] ∧ B.R (auxPort i) = [] :=
     ⟨(auxBlank i).1,(commonKeep (CommonBank.auxSlot i)).trans (auxBlank i).2⟩
-  obtain ⟨counterUser,C,costC,hUser,hCost,prep,countRep,keep⟩ :=
+  obtain ⟨counterUser,E,costC,hUser,hCost,prep,auxRep,auxKeep⟩ :=
     prepareLeafCounters_exec body auxPort (leafCounterPorts aux) rfl arity d w y B
       ((congrArg List.length (preserved 45)).trans ticks)
       (by intro i hi; cases i using Fin.cases with
           | zero => exact (hi rfl).elim
           | succ j => exact (auxEmpty (j.castLE (by decide))).2) auxEmpty
-  have callerFrame (i : Fin 66) := keep (caller i) (by
+  have callerApart (i : Fin 66) (j) : caller i ≠ dst j := by
+    intro eq; have h := congrArg Fin.val eq
+    change i.val = 66+(hdrPorts j).val at h; omega
+  have srcApart (i j) : src i ≠ dst j := callerApart _ _
+  have callerE (i : Fin 66) := auxKeep (caller i) (by
     intro j eq; have h := congrArg Fin.val eq
     change 66+(aux j).val = i.val at h; omega)
-  have outsideCommon (j) (hj : common ≤ j.val) := keep (inner j) (by
-    intro i eq; have h := congrArg Fin.val (inner.injective eq)
-    change (CommonBank.auxSlot (t := T) i).val = j.val at h
-    have small : (CommonBank.auxSlot (t := T) i).val < common := (CommonBank.auxSlot i).isLt
-    omega)
-  have other (k : Fin common) (off : ∀ i, CommonBank.auxSlot i ≠ k) := keep (inner (commonTape k))
-    (fun i eq => off i (commonPorts.injective (inner.injective eq)))
+  have hdrNe (i j) : CommonBank.auxSlot (t := T) i ≠ CommonBank.headerSlot j := by
+    intro eq; have h := congrArg Fin.val eq
+    rw [CommonBank.auxSlot_val, CommonBank.headerSlot_val] at h
+    have := j.isLt
+    omega
+  have dstE (j) := auxKeep (dst j) (fun i eq => hdrNe i j (commonPorts.injective (inner.injective eq)))
+  have wordsE (i) : E.R (src i) = (Routines.hdr v i).map bitSymbol :=
+    (callerE _).2.trans ((preserved _).trans (sourceWords i))
+  obtain ⟨headerUser,C,hHeaders,install,hdrRep,hdrKeep⟩ := prepareRecordHeaders_exec body v src dst
+    (caller 64) (caller 65) srcApart (by
+      intro i
+      simp only [List.nodup_cons,List.mem_cons,List.not_mem_nil,or_false,not_or]
+      exact ⟨⟨srcApart i i,by intro eq; have h := congrArg Fin.val eq; change 33+i.val = 64 at h; omega,
+        by intro eq; have h := congrArg Fin.val eq; change 33+i.val = 65 at h; omega⟩,
+        ⟨(callerApart 64 i).symm,(callerApart 65 i).symm⟩,caller.injective.ne (by decide),by simp⟩)
+    counterUser E wordsE (fun j => ⟨(dstE j).1.trans (hdrBlank j).1,
+      (dstE j).2.trans ((commonKeep (CommonBank.headerSlot j)).trans (hdrBlank j).2)⟩)
+    ((callerE 64).2.trans ((preserved 64).trans (spare 64 (by decide)).2))
+    ((callerE 65).2.trans ((preserved 65).trans (spare 65 (by decide)).2))
+  simp only [wordsE,List.length_map] at install
+  have keep (j) (ha : ∀ i, auxPort i ≠ j) (hh : ∀ i, dst i ≠ j) :=
+    And.intro ((hdrKeep j hh).1.trans (auxKeep j ha).1) ((hdrKeep j hh).2.trans (auxKeep j ha).2)
+  have callerFrame (i : Fin 66) := And.intro
+    ((hdrKeep _ (fun j => (callerApart i j).symm)).1.trans (callerE i).1)
+    ((hdrKeep _ (fun j => (callerApart i j).symm)).2.trans (callerE i).2)
+  have commonOff (k : Fin common) (j) (hj : common ≤ j.val) : inner (commonTape k) ≠ inner j := by
+    intro eq; have h := congrArg Fin.val (inner.injective eq)
+    change k.val = j.val at h; omega
+  have outsideCommon (j) (hj : common ≤ j.val) := keep (inner j) (fun _ => commonOff _ j hj) (fun _ => commonOff _ j hj)
+  have other (k : Fin common) (ha : ∀ i, CommonBank.auxSlot i ≠ k) (hh : ∀ i, CommonBank.headerSlot i ≠ k) :=
+    keep (inner (commonTape k)) (fun i eq => ha i (commonPorts.injective (inner.injective eq)))
+      (fun i eq => hh i (commonPorts.injective (inner.injective eq)))
   have roleKeep := other (LeafCore.roleSlot io) (by
     intro i eq; have h := congrArg Fin.val eq
     rw [CommonBank.auxSlot_val] at h
-    change T+12+i.val = io.val at h
-    omega)
+    change T+12+i.val = io.val at h; omega) (by
+    intro i eq; have h := congrArg Fin.val eq
+    rw [CommonBank.headerSlot_val] at h
+    change T+1+i.val = io.val at h; omega)
   obtain ⟨z,D,t,ys,hz,ht,run,act,read,frame⟩ := goodRecordRoundTrip_exec
     v positive w proj width idem factor hd label live rankFits parent parentInv reciprocal io roles f p node scalar
-    arity st freeNode hm hw hW length capacity source head fits cap ef xf eqs xqs word body counterUser C (whole.R out)
+    arity st freeNode hm hw hW length capacity source head fits cap ef xf eqs xqs word body headerUser C (whole.R out)
     ((callerFrame 2).2.trans ((preserved 2).trans base)) ((callerFrame 28).2.trans ((preserved 28).trans unit))
     ((callerFrame 53).2.trans ((preserved 53).trans trailing))
     (fun i hi => ⟨(callerFrame i).1.trans (spare i hi).1,(callerFrame i).2.trans ((preserved i).trans (spare i hi).2)⟩)
@@ -508,9 +553,17 @@ theorem generatedGoodRecordRoundTrip_exec [M8.Machine.Net] {T m work Q fields H 
           have atAux := CommonBank.bank_aux roles (Routines.hdr v) f p node scalar (Family.leafC (w+1) arity d d) st i
           change _ = readAt _ _ _ (x-initialBank.head _)
           rw [show initialBank.head _ = _ from atAux.1, show initialBank.tape _ = _ from atAux.2]
-          exact countRep i x
-        · have off := other k (fun i eq => h ⟨i,eq⟩)
-          rw [off.1,off.2,commonKeep]; exact initial k (fun i eq => h ⟨i,eq⟩) x)
+          have kept := hdrKeep (auxPort i) (fun j eq => hdrNe i j (commonPorts.injective (inner.injective eq.symm)))
+          change _ = readAt _ (C.L (auxPort i)) (C.R (auxPort i)) _
+          rw [kept.1,kept.2]
+          exact auxRep i x
+        · by_cases hh : ∃ i, CommonBank.headerSlot i = k
+          · obtain ⟨i,rfl⟩ := hh
+            have facts := CommonBank.bank_header roles (Routines.hdr v) f p node scalar (Family.leafC (w+1) arity d d) st i
+            rw [show initialBank.head _ = _ from facts.1,show initialBank.tape _ = _ from facts.2]
+            exact hdrRep i x
+          · have off := other k (fun i eq => h ⟨i,eq⟩) (fun i eq => hh ⟨i,eq⟩)
+            rw [off.1,off.2,commonKeep]; exact initial k (fun i eq => h ⟨i,eq⟩) (fun i eq => hh ⟨i,eq⟩) x)
     (by intro k x
         let j := k.natAdd (host+31)
         have hi : host ≤ j.val := by simp [j]; omega
@@ -545,9 +598,9 @@ theorem generatedGoodRecordRoundTrip_exec [M8.Machine.Net] {T m work Q fields H 
     ((keptScan 3 (by decide)).trans scanBlank)
   let finalBank := {D with R := Function.update D.R (scan 2) tail}
   have step : Exec body recordProgram (mk u whole) _ (mk last finalBank) :=
-    Exec.seq (Exec.seq (Exec.seq runWriter prep) run) advance
-  have bound : (n+costC)+t+(1+(4*ancestor.length+4+(m*m*(4*(w+1)+4)+1)+1)) ≤ runCost := by
-    apply Nat.add_le_add_right (Nat.add_le_add (Nat.add_le_add hn hCost) _) _
+    Exec.seq (Exec.seq (Exec.seq (Exec.seq runWriter prep) install) run) advance
+  have bound : (n+costC+headerCost)+t+(1+(4*ancestor.length+4+(m*m*(4*(w+1)+4)+1)+1)) ≤ runCost := by
+    apply Nat.add_le_add_right (Nat.add_le_add (Nat.add_le_add_right (Nat.add_le_add hn hCost) _) _) _
     rw [show C.R ((Fin.castAddEmb (CommonBank.count T+24+31+work)) 55) = whole.R (caller 55) from (callerFrame 55).2.trans (preserved 55),
       show C.R ((Fin.castAddEmb (CommonBank.count T+24+31+work)) 45) = whole.R (caller 45) from (callerFrame 45).2.trans (preserved 45)] at ht
     exact ht
@@ -559,15 +612,21 @@ theorem generatedGoodRecordRoundTrip_exec [M8.Machine.Net] {T m work Q fields H 
   have callerOut (j : Fin 58) : caller (j.castAdd 8) ∉ privateTapes := by
     rw [privateMem]; exact Nat.not_le_of_lt j.isLt
   have payloadOut : r 0 ∉ privateTapes := by rw [first]; exact callerOut 24
-  refine ⟨finish,_,_,ys,userFinish.trans (user.trans (hz.trans (hUser.trans hy))),Nat.add_le_add bound
+  refine ⟨finish,_,_,ys,userFinish.trans (user.trans (hz.trans (hHeaders.trans (hUser.trans hy)))),Nat.add_le_add bound
     (charge.trans (Nat.add_le_add_left (Nat.mul_le_mul_left 6 (Nat.mul_le_mul_left _ bound)) _)),
-    Exec.seq step clear,?_,act,?_,?_,?_⟩
+    Exec.seq step clear,?_,act,?_,?_,?_,?_⟩
   · intro i hi; simp [(privateMem i).mpr hi]
   · have off : r 0 ≠ scan 2 := by
       rw [first]
       exact caller.injective.ne ((Fin.castAddEmb 8).injective.ne (scanOff 2 (by decide)).symm)
     simpa only [ite_eq_right payloadOut,finalBank,Function.update_of_ne off] using read
   · simp [show scan 2 ∉ privateTapes from callerOut _,finalBank]
+  · intro i
+    let j : Fin 58 := (i.natAdd 33).castLE (by decide : 39 ≤ 58)
+    have ne : j ≠ 24 := by intro eq; have h := congrArg Fin.val eq; change 33+i.val = 24 at h; omega
+    have outside : src i ∉ privateTapes := callerOut j
+    simp only [ite_eq_right outside,finalBank,Function.update_of_ne (srcOff i)]
+    exact (keptCaller j ne).trans (sourceWords i)
   · intro j ne nd
     have off : caller (j.castAdd 8) ≠ scan 2 := caller.injective.ne ((Fin.castAddEmb 8).injective.ne nd)
     simp only [ite_eq_right (callerOut j)]
