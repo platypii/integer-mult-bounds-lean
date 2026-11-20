@@ -2,6 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackGoodRecordRoundTrip
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackMatrixBuildCost
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackIdentitySeed
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackFormulaInit
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackPhysicalScanData
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackRecordHeaders
@@ -112,6 +113,209 @@ theorem directoryQueueHeaders_exec [M8.Machine.Net] {K d r Q : ℕ} {P U : Type}
   intro k hk i ne
   apply (rest _ (fun l hl eq => ne (congrArg Prod.snd (finProdFinEquiv.injective (pool.injective eq))))).trans
   exact poolBlank _
+
+/-- Construct the fixed-width zero and padding identity in the writer's private bank. -/
+theorem directoryQueuePadding_exec [M8.Machine.Net] {K d r Q H w : ℕ} {P U : Type}
+    (room : Record.size d+(rowSwapBlock.tapes+35+2) ≤ K)
+    (fits : (36+2*r+1+(conjugationDepth r+1)*13)+3 ≤ K)
+    (body : P → Pr P (66+K) Q prime U) (u : HS (66+K) Q prime U) (S : Stacks (66+K) prime) :
+    let bank := directoryQueueBank room fits
+    let base := 36+2*r+1+(conjugationDepth r+1)*13
+    let width := bank ⟨8,by omega⟩
+    let zero := bank ⟨9,by omega⟩
+    let one := bank ⟨17,by omega⟩
+    let tmp := bank ⟨4,by omega⟩
+    let seed := bank ⟨base+1,by omega⟩
+    let saved := bank ⟨base+2,by omega⟩
+    let M := prime^(w+1)
+    let B := {S with R := Function.update S.R zero (binSyms H 0)}
+    let D := {B with R := Function.update B.R seed (matrixWords prime H (1 : Matrix (Fin (d+1)) (Fin (d+1)) (ZMod M)))}
+    (S.R width).length = H → S.R one = binSyms H (1 : ZMod M).val →
+    S.R zero = [] → S.R seed = [] → S.R tmp = [] → S.R saved = [] →
+    ∃ z n, z.user = u.user ∧ n ≤ (4*H+4)+((d+1)*((d+1)*(6*H+6)+1)+1) ∧
+      Exec body ((Node.umulSym 1 (bitSymbol false) width zero tmp).seq (identitySeed (d+1) zero one seed tmp saved))
+        (mk u S) n (mk z D) := by
+  intro bank base width zero one tmp seed saved M B D clock unit zeroFree seedFree tmpFree savedFree
+  have large : 35 < base := by dsimp [base]; omega
+  have different (i j : Fin (base+3)) (h : i.val ≠ j.val) : bank i ≠ bank j :=
+    bank.injective.ne (fun eq => h (congrArg Fin.val eq))
+  obtain ⟨y,user,writeZero⟩ := Node.umulSym_exec body 1 (bitSymbol false) (a := width) (b := zero) (t := tmp)
+    (different _ _ (by decide : 8 ≠ 9)) (different _ _ (by decide : 8 ≠ 4)) (different _ _ (by decide : 9 ≠ 4)) u S tmpFree
+  have binaryZero : (binSyms H 0 : List (Fin (prime+4))) = List.replicate H (bitSymbol false) := by
+    simp [binSyms,List.ofFn_const]
+  rw [clock,Nat.one_mul,zeroFree,List.append_nil,← binaryZero] at writeZero
+  have ports (i : Fin (base+3)) (small : i.val < base) (off : i.val ≠ 4) :
+      [bank i,seed,tmp,saved].Nodup := by
+    have a : bank i ≠ seed := different _ _ (by change i.val ≠ base+1; omega)
+    have b : bank i ≠ tmp := different _ _ off
+    have c : bank i ≠ saved := different _ _ (by change i.val ≠ base+2; omega)
+    have e : seed ≠ tmp := different _ _ (by change base+1 ≠ 4; omega)
+    have f : seed ≠ saved := different _ _ (by change base+1 ≠ base+2; omega)
+    have g : tmp ≠ saved := different _ _ (by change 4 ≠ base+2; omega)
+    simp [a,b,c,e,f,g]
+  have keep (i : Fin (base+3)) (h : i.val ≠ 9) : B.R (bank i) = S.R (bank i) :=
+    Function.update_of_ne (different _ _ h) _ _
+  obtain ⟨z,n,hz,time,writeSeed⟩ := identitySeed_writes («M» := M) body (d+1) H zero one seed tmp saved
+    (ports _ (by change 9 < base; omega) (by decide : 9 ≠ 4))
+    (ports _ (by change 17 < base; omega) (by decide : 17 ≠ 4))
+    y B ⟨Function.update_self ..,(keep _ (by decide : 17 ≠ 9)).trans unit,
+      (keep _ (by decide : 4 ≠ 9)).trans tmpFree,(keep _ (by change base+2 ≠ 9; omega)).trans savedFree⟩
+  rw [(keep _ (by change base+1 ≠ 9; omega)).trans seedFree,List.append_nil] at writeSeed
+  exact ⟨z,_,hz.trans user,Nat.add_le_add_left time _,Exec.seq writeZero writeSeed⟩
+
+/-- Route the two outputs into the row and column slots for this index.
+The packed source stays on caller tape 55. -/
+noncomputable def directoryParentPorts [M8.Machine.Net] {K d m : ℕ}
+    (room : Record.size d+(rowSwapBlock.tapes+35+2) ≤ K)
+    (fits : (36+2*m+1+(conjugationDepth m+1)*13)+3 ≤ K) (j : Fin m) : Fin 19 ↪ Fin (66+K) := by
+  let bank := directoryQueueBank room fits
+  let slot (i : Fin 19) : Fin ((36+2*m+1+(conjugationDepth m+1)*13)+3) :=
+    ⟨if i.val = 0 then 36+m+j.val else if i.val = 14 then 36+j.val else 18+i.val,by
+      split_ifs <;> omega⟩
+  refine ⟨fun i => if i = 18 then (55 : Fin 66).castAdd K else bank (slot i),?_⟩
+  intro i k eq
+  dsimp only at eq
+  split_ifs at eq with a b b
+  · exact a.trans b.symm
+  · exact ((directoryQueueBank_caller room fits _ 55) eq.symm).elim
+  · exact ((directoryQueueBank_caller room fits _ 55) eq).elim
+  · have h := congrArg Fin.val (bank.injective eq)
+    have hi : i.val ≠ 18 := fun h => a (Fin.ext h)
+    have hk : k.val ≠ 18 := fun h => b (Fin.ext h)
+    apply Fin.ext
+    dsimp only [slot] at h
+    split_ifs at h <;> omega
+
+/-- Read one parent coefficient without consuming the packed word, then
+compute its inverse with the writer's reusable exponent clock. -/
+theorem directoryParentPair_exec [M8.Machine.Net] {K d Q m H w : ℕ} {P U : Type}
+    (room : Record.size d+(rowSwapBlock.tapes+35+2) ≤ K)
+    (fits : (36+2*m+1+(conjugationDepth m+1)*13)+3 ≤ K) (body : P → Pr P (66+K) Q prime U)
+    (parent inv : Fin m → ZMod (prime^(w+1))) (j : Fin m) (reciprocal : parent j * inv j = 1)
+    (hm : prime^(w+1) < 2^H) (u : HS (66+K) Q prime U) (S : Stacks (66+K) prime) :
+    let ports := directoryParentPorts room fits j
+    let readSlots : Fin 7 ↪ Fin 19 := ⟨![1,4,18,14,2,3,5],by decide⟩
+    let readPorts := readSlots.trans ports
+    let pivot := (Fin.castLEEmb (by decide : 16 ≤ 19)).trans ports
+    S.R (ports 18) = (List.ofFn fun i => binSyms H (parent i).val).flatten →
+    S.R (ports 4) = binSyms H (prime^(w+1)) →
+    S.R (ports 15) = binSyms H (1 : ZMod (prime^(w+1))).val →
+    (S.R (ports 16)).length = w → S.R (ports 17) = [] → S.R (ports 14) = [] →
+    (∀ i : Fin 16, i ≠ 4 → i < 13 → S.R (pivot i) = []) →
+    let C := 48*H*H+152*H+66
+    let B := {S with R := Function.update S.R (ports 14) (binSyms H (parent j).val)}
+    let D := {B with R := Function.update B.R (ports 0) (binSyms H (inv j).val)}
+    ∃ z n, z.user = u.user ∧ n ≤ (8*(j.val*H)+14*H+22) +
+        (6*w+6+(14*H+16+(prime-2)*C+C+w*(12*H+15+prime*C))) ∧
+      Exec body ((readMatrixWord j.val readPorts).seq (reusablePivotInverse prime pivot (ports 16) (ports 17)))
+        (mk u S) n (mk z D) := by
+  intro ports readSlots readPorts pivot packed modulus unit ticks empty fresh free C B D
+  let row : Matrix (Fin 1) (Fin m) (ZMod (prime^(w+1))) := fun _ i => parent i
+  have scratch (k : Fin 7) (h : k = 0 ∨ 4 ≤ k) : S.R (readPorts k) = [] := by
+    fin_cases k <;> first | exact free 1 (by decide) (by decide) | exact free 2 (by decide) (by decide) | exact free 3 (by decide) (by decide) | exact free 5 (by decide) (by decide) | norm_num at h
+  obtain ⟨y,hy,read⟩ := readMatrixWord_exec body readPorts row 0 j H u S []
+    (by simpa [row,matrixWords,List.ofFn_succ,readPorts,readSlots] using packed)
+    ((congrArg List.length modulus).trans (length_binSyms ..)) scratch
+  change Exec _ (readMatrixWord (0*m+j.val) _) _ (8*((0*m+j.val)*H)+14*H+22)
+    (mk y {S with R := Function.update S.R (ports 14) (binSyms H (parent j).val ++ S.R (ports 14))}) at read
+  simp only [Nat.zero_mul,Nat.zero_add,fresh,List.append_nil] at read
+  have keep (i : Fin 19) (off : i ≠ 14) : B.R (ports i) = S.R (ports i) := Function.update_of_ne (ports.injective.ne off) _ _
+  have inverse := Itinerary.inverse_unique reciprocal
+  obtain ⟨z,F,n,user,price,run,_,out,left,inp,output,frame⟩ := reusablePivotInverse_exec body prime w
+    Networks.Shared50ModularControl.prime_prime (parent j) (isUnit_iff_exists_inv.mpr ⟨_,reciprocal⟩) pivot (ports 16) (ports 17)
+    ((by decide : ([16,17,2,3] : List (Fin 19)).Nodup).map ports.injective)
+    (fun i => ports.injective.ne (by intro eq; have h := congrArg Fin.val eq; change i.val = 17 at h; omega))
+    H hm y B ((congrArg List.length (keep 16 (by decide))).trans ticks) ((keep 17 (by decide)).trans empty)
+    (Function.update_self ..) ((keep 15 (by decide)).trans unit) ((keep 4 (by decide)).trans modulus)
+    (fun i hi lt => (keep _ (by intro eq; have h := congrArg Fin.val eq; change i.val = 14 at h; omega)).trans (free i hi lt))
+  rw [inverse] at out
+  have finalState : F = D := by
+    refine Stacks.ext inp output left ?_
+    funext k
+    by_cases eq : k = ports 0
+    · subst k; change F.R (ports 0) = _ at out; rw [out]; exact (Function.update_self (ports 0) _ B.R).symm
+    · exact (frame k eq).trans (Function.update_of_ne eq _ _).symm
+  exact ⟨z,_,user.trans hy,Nat.add_le_add_left price _,finalState ▸ Exec.seq read run⟩
+
+private theorem directoryParentPorts_separate [M8.Machine.Net] {K d m : ℕ}
+    (room : Record.size d+(rowSwapBlock.tapes+35+2) ≤ K)
+    (fits : (36+2*m+1+(conjugationDepth m+1)*13)+3 ≤ K) {i j : Fin m} (distinct : i ≠ j)
+    (k : Fin 19) : directoryParentPorts room fits i k ≠ directoryParentPorts room fits j 0 ∧
+      directoryParentPorts room fits i k ≠ directoryParentPorts room fits j 14 := by
+  have ne : i.val ≠ j.val := fun eq => distinct (Fin.ext eq)
+  by_cases last : k = 18
+  · subst k
+    exact ⟨(directoryQueueBank_caller room fits _ 55).symm,(directoryQueueBank_caller room fits _ 55).symm⟩
+  have small : k.val < 18 := by
+    have h : k.val ≠ 18 := fun eq => last (Fin.ext eq)
+    omega
+  simp only [directoryParentPorts,Function.Embedding.coeFn_mk,if_neg last,show (0 : Fin 19) ≠ 18 by decide,
+    show (14 : Fin 19) ≠ 18 by decide,ite_false]
+  constructor <;> intro eq <;> have h := congrArg Fin.val ((directoryQueueBank room fits).injective eq) <;>
+    dsimp at h <;> split_ifs at h <;> omega
+
+/-- Load every row coefficient and its reciprocal column coefficient, retaining
+the packed parent tape and the other writer registers. -/
+theorem directoryParentBank_exec [M8.Machine.Net] {K d Q m H w : ℕ} {P U : Type}
+    (room : Record.size d+(rowSwapBlock.tapes+35+2) ≤ K)
+    (fits : (36+2*m+1+(conjugationDepth m+1)*13)+3 ≤ K) (body : P → Pr P (66+K) Q prime U)
+    (parent inv : Fin m → ZMod (prime^(w+1))) (reciprocal : ∀ j, parent j * inv j = 1)
+    (hm : prime^(w+1) < 2^H) (u : HS (66+K) Q prime U) (S : Stacks (66+K) prime) :
+    let ports := directoryParentPorts room fits
+    let readSlots : Fin 7 ↪ Fin 19 := ⟨![1,4,18,14,2,3,5],by decide⟩
+    let pivot := fun j => (Fin.castLEEmb (by decide : 16 ≤ 19)).trans (ports j)
+    let program := fun j => (readMatrixWord j.val (readSlots.trans (ports j))).seq
+      (reusablePivotInverse prime (pivot j) (ports j 16) (ports j 17))
+    let C := 48*H*H+152*H+66
+    let price := fun j : Fin m => (8*(j.val*H)+14*H+22)+(6*w+6+(14*H+16+(prime-2)*C+C+w*(12*H+15+prime*C)))
+    (∀ j, S.R (ports j 18) = (List.ofFn fun i => binSyms H (parent i).val).flatten ∧
+      S.R (ports j 4) = binSyms H (prime^(w+1)) ∧ S.R (ports j 15) = binSyms H (1 : ZMod (prime^(w+1))).val ∧
+      (S.R (ports j 16)).length = w ∧ S.R (ports j 17) = [] ∧ S.R (ports j 14) = [] ∧
+      ∀ i : Fin 16, i ≠ 4 → i < 13 → S.R (pivot j i) = []) →
+    ∃ z F n, z.user = u.user ∧ n ≤ ((List.finRange m).map price).sum+1 ∧
+      Exec body (Prog.seqList ((List.finRange m).map program)) (mk u S) n (mk z F) ∧
+      F.L = S.L ∧ F.inp = S.inp ∧ F.out = S.out ∧
+      (∀ j, F.R (ports j 14) = binSyms H (parent j).val ∧ F.R (ports j 0) = binSyms H (inv j).val) ∧
+      ∀ k, (∀ j, k ≠ ports j 14 ∧ k ≠ ports j 0) → F.R k = S.R k := by
+  intro ports readSlots pivot program C price ready
+  have loop (js : List (Fin m)) (unique : js.Nodup) (v : HS (66+K) Q prime U) (B : Stacks (66+K) prime)
+      (pending : ∀ j ∈ js, ∀ k, B.R (ports j k) = S.R (ports j k)) :
+      ∃ z F n, z.user = v.user ∧ n ≤ (js.map price).sum+1 ∧
+        Exec body (Prog.seqList (js.map program)) (mk v B) n (mk z F) ∧
+        F.L = B.L ∧ F.inp = B.inp ∧ F.out = B.out ∧
+        (∀ j ∈ js, F.R (ports j 14) = binSyms H (parent j).val ∧ F.R (ports j 0) = binSyms H (inv j).val) ∧
+        ∀ k, (∀ j ∈ js, k ≠ ports j 14 ∧ k ≠ ports j 0) → F.R k = B.R k := by
+    induction js generalizing v B with
+    | nil => exact ⟨v,B,1,rfl,by simp,by simpa [Prog.seqList,Action.run] using Exec.act (body := body) .done (mk v B),
+        rfl,rfl,rfl,by simp,by simp⟩
+    | cons j js ih =>
+      have now := pending j List.mem_cons_self
+      obtain ⟨packed,modulus,unit,ticks,empty,fresh,free⟩ := ready j
+      obtain ⟨y,t,user,time,run⟩ := directoryParentPair_exec room fits body parent inv j (reciprocal j) hm v B
+        ((now 18).trans packed) ((now 4).trans modulus) ((now 15).trans unit) ((congrArg List.length (now 16)).trans ticks)
+        ((now 17).trans empty) ((now 14).trans fresh) (fun i hi hl => (now _).trans (free i hi hl))
+      let E := {B with R := Function.update (Function.update B.R (ports j 14) (binSyms H (parent j).val)) (ports j 0) (binSyms H (inv j).val)}
+      have keep (k) (row : k ≠ ports j 14) (col : k ≠ ports j 0) : E.R k = B.R k :=
+        (Function.update_of_ne col _ _).trans (Function.update_of_ne row _ _)
+      have sep (i) (mem : i ∈ js) k := directoryParentPorts_separate room fits
+        (show i ≠ j from fun eq => unique.notMem (eq ▸ mem)) k
+      obtain ⟨z,F,n,hz,hn,rest,left,input,output,loaded,frame⟩ := ih unique.tail y E
+        (fun i mem k => (keep _ (sep i mem k).2 (sep i mem k).1).trans (pending i (List.mem_cons_of_mem _ mem) k))
+      refine ⟨z,F,t+n,hz.trans user,?_,Exec.seq run rest,left,input,output,?_,?_⟩
+      · simpa only [List.map_cons,List.sum_cons,Nat.add_assoc] using Nat.add_le_add (show t ≤ price j from time) hn
+      · intro i mem
+        rcases List.mem_cons.mp mem with rfl | h
+        · have stored (k) := frame (ports i k) (fun l hl => by
+            have h : i ≠ l := fun eq => unique.notMem (eq ▸ hl)
+            exact ⟨(directoryParentPorts_separate room fits h k).2,(directoryParentPorts_separate room fits h k).1⟩)
+          exact ⟨(stored 14).trans ((Function.update_of_ne ((ports i).injective.ne (by decide : (14 : Fin 19) ≠ 0)) _ _).trans (Function.update_self ..)),
+            (stored 0).trans (Function.update_self ..)⟩
+        · exact loaded i h
+      · intro k off
+        exact (frame k (fun i mem => off i (List.mem_cons_of_mem _ mem))).trans
+          (keep k (off j List.mem_cons_self).1 (off j List.mem_cons_self).2)
+  obtain ⟨z,F,n,user,time,run,left,input,output,loaded,keep⟩ := loop _ (List.nodup_finRange m) u S (by intros; rfl)
+  exact ⟨z,F,n,user,time,run,left,input,output,fun j => loaded j (List.mem_finRange j),fun k h => keep k (fun j _ => h j)⟩
 
 /-- Seed both inputs consumed by the matrix writer from the directory and
 selector retained for the classified scan. The two copies reuse the same scratch. -/
