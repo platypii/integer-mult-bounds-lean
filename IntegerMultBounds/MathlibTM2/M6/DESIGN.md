@@ -749,5 +749,16 @@ a header copy and establishes the exact 59-register scanner bank. It preserves
 the installed queue and width. The recursive invocation still needs the
 packed parent weights and the initial chart representation.
 
+The good-record caller produces one weight and inverse per active pivot in the
+parent ring. `BitChildCorrection` factors the weighted child as an ordinary
+exchange followed by reciprocal diagonal scaling at that same precision.
+`childCorrection_writes` constructs the diagonal matrix from the two packed
+archives and the zero and one words. `childCorrection_exec` executes the
+127 pair scalings on the ordinary child's address map. At canonical binary
+header widths, matrix preparation costs at most a constant times row volume,
+and the pair program costs at most a constant times row volume times
+`(w+1)^tau`. The recursive caller still needs to place the archives, install
+the correction around the child's payload, and restore the caller frame.
+
 The semantic five-class node (S5d.3) certifies upstream's accounting under ideal routes and
 partial swaps. Its exponent `1 - 10/5769` holds under that idealization only.

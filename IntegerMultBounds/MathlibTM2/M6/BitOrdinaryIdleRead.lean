@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.M6.BitChildCorrection
 public import IntegerMultBounds.MathlibTM2.M6.BitScheduledChildQueue
 public import IntegerMultBounds.MathlibTM2.Cover.LabelCallerHeaders
 public import IntegerMultBounds.MathlibTM2.Host.UnaryBinaryHalving
@@ -15,6 +16,55 @@ open IntegerMultBounds.Networks.Certificates.PR589.Nine
 open Cover LabelTraversal FlatCoordinateLayout
 
 open Stack Host
+
+/-- The correction uses precisely the diagonal-pair part of a signed residual.
+Its binary headers therefore give the same uniform per-volume swap bound. -/
+theorem childCorrectionTime_le [M8.Machine.Net] (U : Type) :
+    ∃ fixed swaps : ℕ, ∀ w W, 0 < W →
+      let M := prime^(w+1)
+      ((List.finRange 127).map (fun i => Fallback.pairScalingTime U i.succ 0 i.succ w W M.size W.size)).sum+1 ≤
+        (fixed+swaps*Fallback.swapVolumeRate w)*(M^128*W) := by
+  obtain ⟨fixed,swaps,bound⟩ := Fallback.exceptionalRecordTime_binary_le U 127 0 0 0
+  refine ⟨fixed,swaps,?_⟩
+  intro w W positive M
+  have full := bound (fun _ => 0) false w W 0 positive
+  simp only [Nat.mul_zero,Nat.add_zero] at full
+  apply le_trans _ full
+  dsimp only [Fallback.exceptionalRecordTime,Fallback.exceptionalBodyTime,Fallback.signedResidualTime,M]
+  omega
+
+theorem childCorrectionTime_rate [M8.Machine.Net] (U : Type) :
+    ∃ rate : ℝ, ∀ w W, 0 < W →
+      let M := prime^(w+1)
+      let time := ((List.finRange 127).map (fun i => Fallback.pairScalingTime U i.succ 0 i.succ w W M.size W.size)).sum+1
+      (time : ℝ) ≤ rate*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau*(M^128*W : ℕ) := by
+  obtain ⟨fixed,swaps,bound⟩ := childCorrectionTime_le U
+  refine ⟨fixed+(swaps : ℝ)*(3808275+M8.RevMachine.LeafCore.C),?_⟩
+  intro w W positive M time
+  let power := ((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau
+  have one : 1 ≤ power := Real.one_le_rpow (by exact_mod_cast Nat.le_add_left 1 w)
+    M8.Machine.BudgetBound.exponent_range.1.le
+  have fee : ((fixed+swaps*Fallback.swapVolumeRate w : ℕ) : ℝ) ≤
+      (fixed+(swaps : ℝ)*(3808275+M8.RevMachine.LeafCore.C))*power := by
+    rw [Nat.cast_add,Nat.cast_mul,add_mul,mul_assoc]
+    apply add_le_add _ (mul_le_mul_of_nonneg_left (Fallback.swapVolumeRate_le w) (Nat.cast_nonneg _))
+    simpa using mul_le_mul_of_nonneg_left one (Nat.cast_nonneg fixed)
+  exact (show (time : ℝ) ≤ ((fixed+swaps*Fallback.swapVolumeRate w : ℕ) : ℝ)*(M^128*W : ℕ) by
+    exact_mod_cast bound w W positive).trans (mul_le_mul_of_nonneg_right fee (Nat.cast_nonneg _))
+
+/-- Preparing the diagonal is linear in the binary modulus width and hence
+fits in one row-volume charge even for a single spectator. -/
+theorem childCorrectionSetup_volume_le (w W : ℕ) (positive : 0 < W) :
+    let M := prime^(w+1)
+    let H := M.size
+    128*(128*(8*(64*H)+14*H+22)+1)+1 ≤ (128*(128*(8*64+14+22)+1)+1)*(M^128*W) := by
+  intro M H
+  have modulus : 0 < M := pow_pos Shared50ModularControl.prime_prime.pos _
+  have digits : H ≤ M^128*W := (Nat.size_le.mpr Nat.lt_two_pow_self : M.size ≤ M).trans
+    ((show M ≤ M^128 by simpa using Nat.pow_le_pow_right modulus (by decide : 1 ≤ 128)).trans
+      (Nat.le_mul_of_pos_right _ positive))
+  have volume : 0 < M^128*W := Nat.mul_pos (pow_pos modulus _) positive
+  omega
 
 /-- Finish a nonroot scanner bank after the child queue transfer. The seven
 header sources and two work registers can stay outside the caller/scan bank. -/

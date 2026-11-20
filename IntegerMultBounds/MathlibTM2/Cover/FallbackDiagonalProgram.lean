@@ -16,19 +16,20 @@ noncomputable def diagonalPairs : List (Fin d) → Pr P (N+1) columnCapacity pri
   | [] => .act .done
   | i :: is => .seq (pairScaling i.succ 0 i.succ) (diagonalPairs is)
 
-theorem diagonalPairs_exec (a : Fin (d+1) → (ZMod M)ˣ) (H J : ℕ) (hm : M < 2^H) (hw : W < 2^J) (hW : 0 < W)
+theorem diagonalPairs_addr_exec (a : Fin (d+1) → (ZMod M)ˣ) (H J : ℕ) (hm : M < 2^H) (hw : W < 2^J) (hW : 0 < W)
     (body : P → Pr P (N+1) columnCapacity prime U) (v : HS (N+1) columnCapacity prime U) (S : Stacks (N+1) prime)
     (tail rest : List (Fin (prime+4))) (dest : ℤ → Fin 4) (q : ℤ)
     (empty : ∀ z, q ≤ z → z < q+(M^(d+1)*W : ℕ) → dest z = blank)
-    (original : Fin (M^(d+1)*W) → ZMod 2) (s : (ZMod M)ˣ) (sign : ∏ j, a j = s) :
+    (original : Fin (M^(d+1)*W) → ZMod 2) (s : (ZMod M)ˣ) (sign : ∏ j, a j = s)
+    (addr : (Fin (d+1) → ZMod M) → Fin (d+1) → ZMod M) :
     let matrix := Matrix.diagonal (fun j => (a j : ZMod M))
     let ready := fun y (D : Stacks (N+1) prime) =>
       ColumnReady columnBank H J matrix tail SparseRoleCircuit.encode (fun _ => blank) dest 0 q original y D ∧
       (∀ j : Fin N, 35 ≤ j.val → D.L (columnPorts j) = [] ∧ D.R (columnPorts j) = []) ∧ D.R (Fin.last N) = rest
     let cost := fun i : Fin d => pairScalingTime U i.succ 0 i.succ w W H J
-    let anchor := fun x j => ((Fin.cons s (fun _ => 1) : Fin (d+1) → (ZMod M)ˣ) j : ZMod M) * x j
+    let anchor := fun x j => ((Fin.cons s (fun _ => 1) : Fin (d+1) → (ZMod M)ˣ) j : ZMod M) * addr x j
     ready anchor S → ∃ z F n, z.user = v.user ∧ n ≤ ((List.finRange d).map cost).sum+1 ∧
-      Exec body (diagonalPairs (List.finRange d)) (mk v S) n (mk z F) ∧ ready (fun x => matrix.mulVec x) F := by
+      Exec body (diagonalPairs (List.finRange d)) (mk v S) n (mk z F) ∧ ready (fun x => matrix.mulVec (addr x)) F := by
   intro matrix ready cost anchor before
   let weight := fun i : Fin d => a i.succ
   have loop (is : List (Fin d)) y (u : HS (N+1) columnCapacity prime U) D (ok : ready y D) :
@@ -58,5 +59,20 @@ theorem diagonalPairs_exec (a : Fin (d+1) → (ZMod M)ˣ) (H J : ℕ) (hm : M < 
   simp only [matrix,Matrix.mulVec_diagonal,applyPairs_eq,← List.ofFn_eq_map,List.prod_ofFn]
   rw [coord]
   simp [anchor,weight,Pi.mul_apply,Finset.prod_apply,Units.coe_prod,mul_left_comm,mul_assoc]
+
+theorem diagonalPairs_exec (a : Fin (d+1) → (ZMod M)ˣ) (H J : ℕ) (hm : M < 2^H) (hw : W < 2^J) (hW : 0 < W)
+    (body : P → Pr P (N+1) columnCapacity prime U) (v : HS (N+1) columnCapacity prime U) (S : Stacks (N+1) prime)
+    (tail rest : List (Fin (prime+4))) (dest : ℤ → Fin 4) (q : ℤ)
+    (empty : ∀ z, q ≤ z → z < q+(M^(d+1)*W : ℕ) → dest z = blank)
+    (original : Fin (M^(d+1)*W) → ZMod 2) (s : (ZMod M)ˣ) (sign : ∏ j, a j = s) :
+    let matrix := Matrix.diagonal (fun j => (a j : ZMod M))
+    let ready := fun y (D : Stacks (N+1) prime) =>
+      ColumnReady columnBank H J matrix tail SparseRoleCircuit.encode (fun _ => blank) dest 0 q original y D ∧
+      (∀ j : Fin N, 35 ≤ j.val → D.L (columnPorts j) = [] ∧ D.R (columnPorts j) = []) ∧ D.R (Fin.last N) = rest
+    let cost := fun i : Fin d => pairScalingTime U i.succ 0 i.succ w W H J
+    let anchor := fun x j => ((Fin.cons s (fun _ => 1) : Fin (d+1) → (ZMod M)ˣ) j : ZMod M) * x j
+    ready anchor S → ∃ z F n, z.user = v.user ∧ n ≤ ((List.finRange d).map cost).sum+1 ∧
+      Exec body (diagonalPairs (List.finRange d)) (mk v S) n (mk z F) ∧ ready (fun x => matrix.mulVec x) F := by
+  exact diagonalPairs_addr_exec a H J hm hw hW body v S tail rest dest q empty original s sign id
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
