@@ -2,6 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackSwapColumn
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackPlacedShear
+public import IntegerMultBounds.MathlibTM2.M8.RevMachine.LeafCore
 
 /-! Shared control capacity and a separate pivot stream for the reverse-column machine. -/
 @[expose] public section
@@ -13,14 +14,24 @@ local notation "N" => rowSwapBlock.tapes+35
 local notation "Q" => rowSwapBlock.states
 local instance (w : ℕ) : NeZero (prime^(w+1)) := ⟨(pow_pos prime_prime.pos _).ne'⟩
 
-/-- The shear, the row swap and the PR589 exceptional sign branch share one state bank. -/
+/-- Placing the leaf on a caller port changes only its tapes. -/
+@[irreducible] noncomputable def columnLeafStates := (M8.RevMachine.LeafCore.core (0 : Fin 1)).states
+
+/-- The shear, row swap, leaf and PR589 exceptional sign branch share one state bank. -/
 noncomputable abbrev columnCapacity :=
-  max 217 (max Q 11192)
+  max 217 (max Q (max columnLeafStates 11192))
 
 theorem swapStates_fit : Q ≤ columnCapacity := (le_max_left ..).trans (le_max_right ..)
 
+theorem columnLeafFits {T : ℕ} (io : Fin T) :
+    (M8.RevMachine.LeafCore.core io).states ≤ columnCapacity := by
+  have states : (M8.RevMachine.LeafCore.core io).states = columnLeafStates := by
+    simp only [columnLeafStates, M8.RevMachine.LeafCore.core, M8.RevMachine.Embed.place, SharedBankFamily.ofProgram]
+  rw [states]
+  exact (le_max_left ..).trans ((le_max_right ..).trans (le_max_right ..))
+
 theorem remainderStates_fit : 11192 ≤ columnCapacity :=
-  (le_max_right ..).trans (le_max_right ..)
+  (le_max_right ..).trans ((le_max_right ..).trans (le_max_right ..))
 
 noncomputable def columnPorts : Fin N ↪ Fin (N+1) := Fin.castLEEmb (Nat.le_succ _)
 noncomputable def columnBank : Fin 35 ↪ Fin (N+1) :=
