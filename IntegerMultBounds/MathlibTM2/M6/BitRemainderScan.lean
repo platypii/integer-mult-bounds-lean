@@ -357,14 +357,14 @@ theorem ownerRow_repaired {R N V w W : ℕ} (size : R*N = V)
     (physicalLabel 64 (w+1) j) = projectorResidual finSumFinEquiv P α α' g at archive
   simpa only [bit,repair,Bool.and_self,ite_true,archive] using effect
 
-private theorem ownerRow_queue {R N V : ℕ} (size : R*N = V) (word : Fin V → ZMod 2) :
+theorem ownerRow_queue {R N V : ℕ} (size : R*N = V) (word : Fin V → ZMod 2) :
     payloadWord (SparseRoleCircuit.encode ∘ word) =
       (List.range R).flatMap (fun j => payloadWord (SparseRoleCircuit.encode ∘ ownerRow size word j)) := by
   subst V
   rw [ownerPayload_records (R := R) (N := N), ← List.map_coe_finRange_eq_range,List.flatMap_map]
   simp [ownerRow,Function.comp_def]
 
-private theorem ownerRows_pack {R N V : ℕ} (size : R*N = V)
+theorem ownerRows_pack {R N V : ℕ} (size : R*N = V)
     {action : ℕ → (Fin N → ZMod 2) → Prop} {rows : List (List (Fin (prime+4)))}
     (correct : List.Forall₂ (fun j out => ∃ word, action j word ∧
       out = payloadWord (SparseRoleCircuit.encode ∘ word)) (List.range R) rows) :
@@ -1257,7 +1257,7 @@ def OwnerDirectoryRun [M8.Machine.Net] {T m dim J W : ℕ} {F U : Type}
       OwnerDirectoryPass (J := J) directory v w proj rankFits parent parentInv reciprocal io dimension data.H length roleLength anchor
         body ownerState word prefixes archiveTail ownerTail c setupProgram rawUser rawState q setupBound share
 
-private theorem ownerWord_reads {N : ℕ} (word output : Fin N → ZMod 2) (tail : List (Fin (prime+4)))
+theorem ownerWord_reads {N : ℕ} (word output : Fin N → ZMod 2) (tail : List (Fin (prime+4)))
     {left right finalLeft finalRight : List (Fin (prime+4))}
     (input : right = payloadWord (SparseRoleCircuit.encode ∘ word) ++ tail)
     (reads : ∀ j, readAt blank left right j = RadixToBinary.binaryEncoding.encode

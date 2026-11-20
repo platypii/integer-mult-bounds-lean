@@ -33,9 +33,10 @@ def ClassifiedOrdinaryScan [M8.Machine.Net] {a d common work w W J : ℕ} {U : T
     let inv := fun i => Ring.inverse (parent i)
     let bad := fun j => fallbackBit proj.rank_le_height (reduce M proj) (physicalLabel m (w+1) j)
     let length : N = M^m*(M^m*W) := by simp [N,pow_add,Nat.mul_assoc]
-    ∀ (input : ℕ → Fin N → ZMod 2)
+    ∀ (word : Fin (data.records*N) → ZMod 2)
       (directory : Descriptor) (B : ℕ)
       (u : HS ((66+(K+1))+5) columnCapacity prime U) (S : Stacks ((66+(K+1))+5) prime),
+    let input := ownerRow (R := data.records) (N := N) rfl word
     let body := fun f => embProg (directoryOrdinaryBank room) id (localBody f)
     let c := mnProgPush (body ())
     let core := ordinaryRowCore (U := U) cap m proj.rank proj.rank_le_height pool space
@@ -67,7 +68,6 @@ def ClassifiedOrdinaryScan [M8.Machine.Net] {a d common work w W J : ℕ} {U : T
     let live := LabelStock.live m (w+1) 1
     let rs := List.range data.records
     let pending := fun j => rs.drop j
-    let bits := fun word : Fin N → ZMod 2 => payloadWord (SparseRoleCircuit.encode ∘ word)
     let bank := fun i : Fin (66+(K+1)) => i.castAdd 5
     let reg := fun j : Fin 5 => Fin.natAdd (66+(K+1)) j
     let start := embStk bank S
@@ -100,15 +100,18 @@ def ClassifiedOrdinaryScan [M8.Machine.Net] {a d common work w W J : ℕ} {U : T
     (raw.R (inner 29)).length = directory.beforeRows → (raw.R (inner 30)).length = directory.rows →
     (raw.R (inner 31)).length = directory.beforeH → raw.R (inner 50) = [] →
     raw.R (inner 57) = [] → raw.R (inner 56) = [] → raw.R (inner 54) = [] →
-    S.R (reg 0) = rs.flatMap (bits ∘ input) ++ ownerTail → S.R (reg 1) = [] → (S.R (reg 2)).length = N →
+    S.R (reg 0) = payloadWord (SparseRoleCircuit.encode ∘ word) ++ ownerTail →
+    (∀ j, readAt blank (S.L (reg 0)) (S.R (reg 0)) j = RadixToBinary.binaryEncoding.encode
+      (putWord (fun _ => blank) 0 ((List.ofFn word).map SparseRoleCircuit.encode) j)) → S.R (reg 1) = [] → S.R (reg 2) = [] →
     S.R (reg 3) = [] → S.R (reg 4) = [] → (∀ j, readAt blank (start.L (caller 24)) (start.R (caller 24)) j = blank) →
     let program := packedOwner (caller 24) (caller 57) (ownerDispatch (caller 57) (caller 56) good
       (directoryExceptionalProgram m d room capacity) padding)
     let work := (List.finRange (66+(K+1))).filter fun i => decide (58 ≤ i.val ∧ i ≠ directoryMatrixTape room)
     ∃ selectors : Pr Unit (66+K) columnCapacity prime U,
     let controls := embProg bank id (embProg placement id selectors)
-    ∃ prepare z F t n rows s midUser mid, z.user = u.user ∧ s ≤ selectorBudget ∧
-      Exec (fun f => embProg bank id (body f)) controls (mk u S) s (mk midUser mid) ∧
+    ∃ prepare z F t n output k s midUser mid,
+      k ≤ dimensionTime data.H J (d+1)+6*N+13*((d+1)*data.H+J)+8 ∧ z.user = u.user ∧ s ≤ selectorBudget ∧
+      Exec (fun f => embProg bank id (body f)) ((payloadCountProgram (ownerCountPorts (K+1)) (d+1)).seq controls) (mk u S) (k+s) (mk midUser mid) ∧
       ready (embStk placement (embStk bank mid)) rs ∧
       (embStk bank mid).R (caller 48) = (embStk placement start).R (inner 48) ∧
       let initTime := directoryQueueInitTime m d w data.H data.records (embStk bank mid)
@@ -117,9 +120,11 @@ def ClassifiedOrdinaryScan [M8.Machine.Net] {a d common work w W J : ℕ} {U : T
       (∀ p, mnProgPush prepare ≤ p → (∀ f, mnProgPush (body f) ≤ p) →
         t ≤ initTime + queueTime + (4*work.length+1+work.length*(6*(p*initTime)))) ∧
       n ≤ (rs.map (fun j => 6*N+6+cost j+(4*N+4))).sum + 2*rs.length+2 + (2*(rs.length*N)+2) ∧
-      Exec (fun f => embProg bank id (body f)) (controls.seq ((embProg bank id prepare).seq program)) (mk u S) (s+(t+n)) (mk z F) ∧
-      List.Forall₂ (fun j out => ∃ word, effect j word ∧ out = bits word) rs rows ∧
-      F.L (reg 0) = S.L (reg 0) ∧ F.R (reg 0) = rows.flatten ++ ownerTail ∧ F.R (reg 1) = [] ∧ ready (embStk placement (embStk bank F)) [] ∧
+      Exec (fun f => embProg bank id (body f)) ((payloadCountProgram (ownerCountPorts (K+1)) (d+1)).seq (controls.seq ((embProg bank id prepare).seq program))) (mk u S) (k+(s+(t+n))) (mk z F) ∧
+      (∀ j : Fin data.records, effect j (ownerRow (R := data.records) (N := N) rfl output j)) ∧
+      (∀ j, readAt blank (F.L (reg 0)) (F.R (reg 0)) j = RadixToBinary.binaryEncoding.encode
+        (putWord (fun _ => blank) 0 ((List.ofFn output).map SparseRoleCircuit.encode) j)) ∧
+      F.L (reg 0) = S.L (reg 0) ∧ F.R (reg 0) = payloadWord (SparseRoleCircuit.encode ∘ output) ++ ownerTail ∧ F.R (reg 1) = [] ∧ ready (embStk placement (embStk bank F)) [] ∧
       (embStk bank F).R (directoryMatrixTape room) = [] ∧
       (embStk bank F).R (caller 57) = [] ∧ (embStk bank F).R (caller 56) = []
 
@@ -151,10 +156,10 @@ theorem classifiedOrdinaryDirectory_exec [M8.Machine.Net] {a d common work w W J
       prefixes archiveTail ownerTail localBody := by
   intro m K M N inv bad length localBody installed
   unfold ClassifiedOrdinaryScan
-  intro _ _ _ _ _ actualBad _ input directory B u S body c core ports skipRow step scratch goodRow push budget ordinaryEffect
-  intro e physical φ code schedule ready placement caller live rs pending bits bank reg start inner advance good padding ordinaryTime cost effect
+  intro _ _ _ _ _ actualBad _ word directory B u S input body c core ports skipRow step scratch goodRow push budget ordinaryEffect
+  intro e physical φ code schedule ready placement caller live rs pending bank reg start inner advance good padding ordinaryTime cost effect
     matrix raw privateTapes left selectorBudget dirPositive shape count pairRoom free inputs beforeRows rows beforeH parents mask mode queueFree
-    owner accumulator width saved tmp empty
+    owner reads accumulator width saved tmp empty
   have recordsPos : 0 < data.records := by
     rw [count]; exact Nat.mul_pos (Nat.mul_pos dirPositive.1 dirPositive.2.1) dirPositive.2.2.1
   have radixPos : 0 < M := pow_pos Shared50ModularControl.prime_prime.pos _
@@ -164,38 +169,57 @@ theorem classifiedOrdinaryDirectory_exec [M8.Machine.Net] {a d common work w W J
   have boxes : directory.beforeRows*directory.rows*B ≤ data.records := by
     rw [count]; change _ ≤ directory.beforeRows*directory.rows*directory.beforeH
     rw [shape,← Nat.mul_assoc]; exact Nat.le_mul_of_pos_right _ (pow_pos Shared50ModularControl.prime_prime.pos _)
+  obtain ⟨_,_,base,_,trailing,_⟩ := inputs.headers
+  have shared (i : Fin 66) : raw.R (inner i) = S.R ((i.castAdd (K+1)).castAdd 5) := by
+    change S.R ((placement (i.castAdd K)).castAdd 5) = _
+    rw [directoryOrdinaryBank_caller]
+  obtain ⟨counterUser,A,k,same,paid,build,view,size,keepLeft,regs⟩ := ownerCount_exec
+    (fun f => embProg bank id (body f)) (d+1) data.H J M W hm hw u S
+    (show M^(d+1)*W = N by rw [← dimension])
+    ((shared 2).symm.trans base) ((shared 53).symm.trans trailing)
+    (by intro i hi; rw [← shared]; exact free _ (by change 58 ≤ i.val; omega)) width
+  change embStk bank A = start at view
+  have rawEq := congrArg (embStk placement) view
   let table := projectorResidual finSumFinEquiv (reduce prime proj) (φ ∘ parent) (φ ∘ inv)
   obtain ⟨selectors,y,D,t,user,price,run,prepared,keepL,keepR,projector,liveBits,badBits⟩ :=
     ordinarySelectors_exec localBody proj v parent prefixes archiveTail table directory dirPositive shape pairRoom
-      (embDn placement (embDn bank u)) raw free (by simpa only [← count] using inputs)
+      (embDn placement (embDn bank counterUser)) raw free (by simpa only [← count] using inputs)
       beforeRows rows beforeH parents mask mode queueFree
   have controlsPrice := maskSetup_volume_le m w data.records (directory.beforeRows*directory.rows*B)
     privateTapes.length left (data.records*N) (radix.trans (Nat.le_mul_of_pos_left _ recordsPos))
     (Nat.le_mul_of_pos_right _ (radixPos.trans_le radix)) boxes
   refine ⟨selectors,?_⟩
-  apply classifiedDirectory_exec dimension v proj idem adm parent inv (fun i => Ring.mul_inverse_cancel _ (unit i))
+  have queue := owner.trans (congrArg (· ++ ownerTail) (ownerRow_queue (R := data.records) (N := N) rfl word))
+  have scan := classifiedDirectory_exec dimension v proj idem adm parent inv (fun i => Ring.mul_inverse_cancel _ (unit i))
     data hm hw positive room fits capacity body c (fun _ => le_rfl) prefixes archiveTail bad budget ordinaryEffect length
-    input localBody (fun _ => rfl) selectors goodRow skipRow selectorBudget ownerTail u S matrix ?_ owner accumulator width saved tmp empty
-  rotate_left
-  · refine ⟨y,D,t,user,price.trans ?_,run,?_,keepL,keepR,projector,?_,?_⟩
+    input localBody (fun _ => rfl) selectors goodRow skipRow selectorBudget ownerTail counterUser A (by rwa [view]) (by
+    rw [rawEq]
+    refine ⟨y,D,t,user,price.trans ?_,run,?_,keepL,keepR,projector,?_,?_⟩
     · simpa only [selectorBudget,List.length_range,count] using controlsPrice
     · simpa only [count,rs] using prepared
     · simpa only [count,rs] using liveBits
-    · simpa only [count,rs] using badBits
-  intro j inside regular y A dir payload
-  have clear : bad j = false := by
-    cases h : live j with
-    | true => exact Bool.eq_false_iff.mpr (fun hb => regular ⟨h,hb⟩)
-    | false =>
-      change fallbackBit _ _ _ = false
-      rw [fallbackBit_eq (by omega : 0 < w+1),show LabelStock.live (a+1) (w+1) 1 j = false from h,Bool.false_and]
-  have queue : schedule (j::pending (j+1)) = schedule (pending (j+1)) := by
-    have hb : actualBad j = false := clear
-    simp [schedule,hb]
-  obtain ⟨z,D,t,out,user,price,run,next,word,mask,mode,action⟩ := ordinaryOrPadding_exec cap overhead childBudget v proj
-    parent prefixes archiveTail schedule hm pool unit space localBody y A j (pending (j+1)) dir queue
-    (fun _ => clear) (input j) payload (fun hj => installed j hj clear)
-  exact ⟨z,D,t,out,user,price,run,next,action,word,mask,mode⟩
+    · simpa only [count,rs] using badBits) ((regs 0 (by decide)).trans queue) ((regs 1 (by decide)).trans accumulator) size ((regs 3 (by decide)).trans saved) ((regs 4 (by decide)).trans tmp) (by rwa [view]) (by
+    intro j inside regular y A dir payload
+    have clear : bad j = false := by
+      cases h : live j with
+      | true => exact Bool.eq_false_iff.mpr (fun hb => regular ⟨h,hb⟩)
+      | false =>
+        change fallbackBit _ _ _ = false
+        rw [fallbackBit_eq (by omega : 0 < w+1),show LabelStock.live (a+1) (w+1) 1 j = false from h,Bool.false_and]
+    have queue : schedule (j::pending (j+1)) = schedule (pending (j+1)) := by
+      have hb : actualBad j = false := clear
+      simp [schedule,hb]
+    obtain ⟨z,D,t,out,user,price,run,next,word,mask,mode,action⟩ := ordinaryOrPadding_exec cap overhead childBudget v proj
+      parent prefixes archiveTail schedule hm pool unit space localBody y A j (pending (j+1)) dir queue
+      (fun _ => clear) (input j) payload (fun hj => installed j hj clear)
+    exact ⟨z,D,t,out,user,price,run,next,action,word,mask,mode⟩)
+  obtain ⟨prepare,z,F,t,n,rows,s,midUser,mid,user,bounded,controls,prepared,projector,time,rowTime,run,rowsOk,leftOk,rightOk,rest⟩ := scan
+  obtain ⟨output,action,packed⟩ := ownerRows_pack (R := data.records) (N := N) rfl rowsOk
+  have finalLeft := leftOk.trans (congrFun keepLeft _)
+  have finalRight := rightOk.trans (congrArg (· ++ ownerTail) packed)
+  exact ⟨prepare,z,F,t,n,output,k,s,midUser,mid,paid,user.trans same,bounded,
+    Exec.seq build controls,prepared,projector.trans (congrArg (fun V : Stacks (66+K) prime => V.R (inner 48)) rawEq),time,rowTime,
+    Exec.seq build run,action,ownerWord_reads word output ownerTail owner reads finalLeft finalRight,finalLeft,finalRight,rest⟩
 
 /-- Every stopped-child sign program for the 128 fields fits the scanner's state bank. -/
 theorem remainderLeafCapacity [M8.Machine.Net] : Record.leafCapacity 128 ≤ columnCapacity := by
