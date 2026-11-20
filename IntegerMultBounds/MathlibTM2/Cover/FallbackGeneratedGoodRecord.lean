@@ -2779,12 +2779,10 @@ theorem generatedOrdinaryRecord_exec [M8.Machine.Net] {T m work Q fields H J W :
 
 /-- Generate the directory masks and exceptional queue using only the incoming
 dimension counters and precision clock. All temporary right stacks are cleared. -/
-theorem directoryControls_exec {m d k Q extra w Bcount : ℕ} {F U : Type}
+theorem directoryControls_exec {m d k Q extra : ℕ} {F U : Type}
     (body : F → Pr F (66+extra) Q prime U) (rankFits : d ≤ m)
     (request : Matrix (Fin m) (Fin m) (ZMod prime))
     (table : Matrix (Fin m) (Fin m) (ZMod prime) → Matrix (Fin k) (Fin k) (ZMod prime))
-    (proj : LabelPadding.Label m (w+1)) (reduction : (LabelRing.res prime (w+1) (by omega)).mapMatrix proj = request)
-    (directory : Descriptor) (dirPositive : directory.Positive) (shape : directory.beforeH = Bcount*prime^(m*((w+1)*m)))
     (room : m*m+m*m ≤ extra) :
     let K := 66+extra
     let caller := Fin.castAddEmb (n := 66) extra
@@ -2792,7 +2790,10 @@ theorem directoryControls_exec {m d k Q extra w Bcount : ℕ} {F U : Type}
     let mode := caller 56
     let parents := caller 50
     let rs := residuePairs (m*m) room
-    ∃ writer : Pr F (66+extra) Q prime U, ∀ (initialUser : HS (66+extra) Q prime U) (initialState : Stacks (66+extra) prime),
+    ∃ writer : Pr F (66+extra) Q prime U,
+    ∀ {w Bcount : ℕ} (proj : LabelPadding.Label m (w+1)) (reduction : (LabelRing.res prime (w+1) (by omega)).mapMatrix proj = request)
+    (directory : Descriptor) (dirPositive : directory.Positive) (shape : directory.beforeH = Bcount*prime^(m*((w+1)*m))),
+    ∀ (initialUser : HS (66+extra) Q prime U) (initialState : Stacks (66+extra) prime),
     let high := prime^w
     let allLabels := List.range (LabelMask.records directory)
     let schedules := fun xs : List ℕ => xs.flatMap fun j =>
@@ -2831,7 +2832,7 @@ theorem directoryControls_exec {m d k Q extra w Bcount : ℕ} {F U : Type}
   obtain ⟨writer,generateMasks⟩ := countedRecordControls_exec body rankFits
     request table rs sizeRs dim (caller 54) mask mode saved apart (caller.injective.ne (by decide)) (caller.injective.ne (by decide)) (layout 54 (by decide) (by decide)) maskRegs modeRegs
   refine ⟨writer,?_⟩
-  intro initialUser initialState high allLabels schedules liveWords badWords privateTapes clean freePrivate single clockLen
+  intro w Bcount proj reduction directory dirPositive shape initialUser initialState high allLabels schedules liveWords badWords privateTapes clean freePrivate single clockLen
     brSize rowsSize beforeHSize parentsFree freeMask freeMode freeQueue initCounters
   let R := LabelCountBank.fill (rs.map Prod.fst) high
     (Function.update initialState.R (caller 58) (List.replicate high Node.tick))
@@ -2949,8 +2950,8 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
     exact (congrArg List.length (rawCaller 28 (by decide))).symm.trans ((congrArg List.length unitWord).trans (length_binSyms ..))
   have clockLen : (initialState.R (caller 45)).length = w := (congrArg List.length (rawCaller 45 (by decide))).symm.trans ticks
   obtain ⟨writer,controls⟩ := directoryControls_exec body rankFits
-    ((LabelRing.res prime (w+1) (by omega)).mapMatrix (reduce M proj)) table (reduce M proj) rfl
-    directory dirPositive shape room
+    ((LabelRing.res prime (w+1) (by omega)).mapMatrix (reduce M proj)) table room
+  specialize controls (reduce M proj) rfl directory dirPositive shape
   obtain ⟨z,setupTime,userSetup,setupBound,setupRun⟩ := controls initialUser initialState freePrivate single clockLen brSize rowsSize beforeHSize
     parentsFree freeMask freeMode freeQueue
   let liveState := {clean with R := Function.update clean.R mask liveWords}

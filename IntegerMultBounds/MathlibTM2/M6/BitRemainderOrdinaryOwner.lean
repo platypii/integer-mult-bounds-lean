@@ -606,6 +606,7 @@ def OrdinaryParentRun [M8.Machine.Net] {common work w rows B : ℕ} {U : Type}
     (room : Record.size 127+(rowSwapBlock.tapes+35+2) ≤ (common+24+31+work)+1)
     (fits : (36+2*64+1+(RingFormula.conjugationDepth 64+1)*13)+3 ≤ (common+24+31+work)+1)
     (pool : (RingFormula.conjugationDepth 64+1)*13 ≤ work) (space : 58 ≤ common+24+31+work)
+    (pairRoom : 64*64+64*64 ≤ common+24+31+work)
     (overhead childBudget : ℕ)
     (localBody : Unit → Pr Unit (66+(common+24+31+work)) columnCapacity prime U) : Prop :=
     let K := common+24+31+work
@@ -626,7 +627,8 @@ def OrdinaryParentRun [M8.Machine.Net] {common work w rows B : ℕ} {U : Type}
       records := LabelMask.records directory, H := M.size, J := W.size,
       table := fun _ => 0, matrix := fun _ => 0, input := fun _ _ => 0,
       signed := [], matrixTail := [], pivotTail := [], inputTail := [], outputTail := [] }
-    ∃ selectors : Pr Unit (66+K) columnCapacity prime U,
+    let residue := LabelRing.res prime (w+1) (by omega)
+    let selectors := ordinarySelectorProgram localBody proj (residue ∘ parent) pairRoom
     ∀ (u : HS ((66+(K+1))+5) columnCapacity prime U) (raw : Stacks ((66+(K+1))+5) prime)
       (word : Fin (data.records*N) → ZMod 2) (prefixes : ℕ → List (Fin (prime+4))) (tail : List (Fin (prime+4))),
     let setupScratch := ([0,4,9,10,11,12] : List (Fin 15)).map (remainderDirectoryPorts.trans bank) ++ [bank 71]
@@ -681,6 +683,7 @@ def OrdinaryParentRoundTrip [M8.Machine.Net] {common work w rows B : ℕ} {U : T
     (room : Record.size 127+(rowSwapBlock.tapes+35+2) ≤ (common+24+31+work)+1)
     (fits : (36+2*64+1+(RingFormula.conjugationDepth 64+1)*13)+3 ≤ (common+24+31+work)+1)
     (pool : (RingFormula.conjugationDepth 64+1)*13 ≤ work) (space : 58 ≤ common+24+31+work)
+    (pairRoom : 64*64+64*64 ≤ common+24+31+work)
     (overhead : ℕ) (C : ℝ)
     (localBody : Unit → Pr Unit (66+(common+24+31+work)) columnCapacity prime U)
     (width : ℕ) (prefixes : ℕ → List (Fin (prime+4))) : Prop :=
@@ -710,7 +713,10 @@ def OrdinaryParentRoundTrip [M8.Machine.Net] {common work w rows B : ℕ} {U : T
     let p := max (mnProgPush (directoryQueueInitProgram (m := 64) (d := 127) (P := Unit) (Q := columnCapacity) (U := U) room fits)) (mnProgPush (body ()))
     let scanRate := (ordinaryOwnerScanTime_rate U proj.rank privateTapes.length push scratch.length rarePush p overhead proj.rank_le_height C).choose
     let metadata := ordinaryEntryWords W layout.beforeRows rows layout.beforeH root parent width ((List.range parents).flatMap prefixes)
-    ∃ program : Pr Unit ((66+(K+1))+5) columnCapacity prime U,
+    let residue := LabelRing.res prime (w+1) (by omega)
+    let selectors := ordinarySelectorProgram localBody proj (residue ∘ parent) pairRoom
+    let bank := (Fin.castLEEmb (show 72 ≤ 66+(K+1) by omega)).trans (Fin.castAddEmb 5)
+    let program := ordinaryParentProgram room fits root interval bank step (readWithSuccessorClock (ports 1) (advanceDirectory 64 ports)) selectors
     ∀ {k : ℕ} (src : Fin k) (c : Certificates.PR589.Nine.PortCertificate) (hc : c.Checked),
     ∃ stage back : SharedBankStage.Stage _ k prime (phaseOwners (N := data.records*N)),
       let share := payloadPlacement (reg 0) (stage.slots src)
@@ -750,14 +756,15 @@ theorem OrdinaryParentRun.chartRoundTrip [M8.Machine.Net] {common work w rows B 
     (room : Record.size 127+(rowSwapBlock.tapes+35+2) ≤ (common+24+31+work)+1)
     (fits : (36+2*64+1+(RingFormula.conjugationDepth 64+1)*13)+3 ≤ (common+24+31+work)+1)
     (pool : (RingFormula.conjugationDepth 64+1)*13 ≤ work) (space : 58 ≤ common+24+31+work)
+    (pairRoom : 64*64+64*64 ≤ common+24+31+work)
     (overhead childBudget : ℕ) (C : ℝ)
     (childTime : (childBudget : ℝ) ≤ C*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau*
       ((prime^(w+1))^128*(layout.between*layout.afterD) : ℕ))
     (localBody : Unit → Pr Unit (66+(common+24+31+work)) columnCapacity prime U)
-    (run : OrdinaryParentRun (rows := rows) (B := B) interval layout root parent room fits pool space overhead childBudget localBody)
+    (run : OrdinaryParentRun (rows := rows) (B := B) interval layout root parent room fits pool space pairRoom overhead childBudget localBody)
     (units : root = true → ∀ i, parent i = 1) (width : ℕ) (prefixes : ℕ → List (Fin (prime+4)))
     (widths : ∀ i < layout.beforeRows*rows*B, (prefixes i).length = width) (widthFits : width ≤ prime^layout.width) :
-    OrdinaryParentRoundTrip (rows := rows) (B := B) interval layout root parent room fits pool space overhead C localBody width prefixes := by
+    OrdinaryParentRoundTrip (rows := rows) (B := B) interval layout root parent room fits pool space pairRoom overhead C localBody width prefixes := by
   unfold OrdinaryParentRoundTrip
   intro K M W N directory proj placement reg body outer parents data privateTapes scratch ports step push rarePush p scanRate metadata
   let rate := exceptionalVolumeRate U 127 64 scratch.length rarePush w
@@ -799,10 +806,7 @@ theorem OrdinaryParentRun.chartRoundTrip [M8.Machine.Net] {common work w rows B 
     rw [Nat.cast_add]
     apply add_le_add _ scan
     exact_mod_cast setup
-  obtain ⟨selectors,execute⟩ := run
-  let bank := (Fin.castLEEmb (show 72 ≤ 66+(K+1) by omega)).trans (Fin.castAddEmb 5)
-  let program := ordinaryParentProgram room fits root interval bank step (readWithSuccessorClock (ports 1) (advanceDirectory 64 ports)) selectors
-  refine ⟨program,?_⟩
+  intro residue selectors bank program
   intro k src c hc
   let forward := packedRemainderChart_stage src c hc false
   let reverse := packedRemainderChart_stage src c hc true
@@ -824,7 +828,7 @@ theorem OrdinaryParentRun.chartRoundTrip [M8.Machine.Net] {common work w rows B 
     simp only [embStk,Function.comp_apply,phaseOwners,sub_zero] at reads
     let raw := embStk share (ordinaryOwnerBank metadata owners)
     have entry := ordinaryOwnerBank_input (T := 66+(K+1)) (by omega) layout rows parents W width root parent units prefixes widths widthFits owners (stage.slots src) word reads
-    obtain ⟨z,F,t,output,scanUser,scan,price,rowAction,action,_,_,_,_,_,_,_,_,cleared⟩ := execute u raw word prefixes [] entry
+    obtain ⟨z,F,t,output,scanUser,scan,price,rowAction,action,_,_,_,_,_,_,_,_,cleared⟩ := run u raw word prefixes [] entry
     have inactive (j : Fin data.records) (dead : LabelStock.live 64 (w+1) 1 j = false) :
         ownerRow (R := data.records) (N := N) rfl output j = ownerRow rfl word j := by
       have eq := rowAction j
@@ -900,12 +904,12 @@ private theorem ordinaryParent_exec [M8.Machine.Net] {common work w rows B : ℕ
         (remainderRecordChild interval.1 interval.2 (w+1) (layout.between*layout.afterD))
         (diagonal fun i => if interval.1 ≤ i.val ∧ i.val < interval.2 then 1 else 0) (by decide)
         parent data room fits remainderAnchorFits pool space (le_max_left ..) overhead childBudget localBody) :
-    OrdinaryParentRun (rows := rows) (B := B) interval layout root parent room fits pool space overhead childBudget localBody := by
+    OrdinaryParentRun (rows := rows) (B := B) interval layout root parent room fits pool space pairRoom overhead childBudget localBody := by
   unfold OrdinaryParentRun
   intro K M W N directory proj placement bank reg body outer parents box data
   have rolePositive := RecursiveRowsNodeLayout.role_positive 142080 layout (by decide) positive ⟨rows,split⟩
-  obtain ⟨selectors,execute⟩ := scan data rfl directory B rolePositive shape pairRoom
-  refine ⟨selectors,?_⟩
+  intro residue selectors
+  have execute := scan data rfl directory B rolePositive shape pairRoom
   intro u raw word prefixes tail
     setupScratch inherited setupBase setupTime privateTapes scanned visited left scratch ports step push rarePush rate entry
   obtain ⟨br,nr,bh,clean,source,widths,fitsWidth,short,padded,spare,parameters,parentPort,mask,mode,queue,payload,empty,blankData⟩ := entry
@@ -1067,14 +1071,15 @@ theorem scheduledOrdinaryParent_exec [M8.Machine.Net] {common work : ℕ} {U : T
         (root = true → ∀ i, parent i = 1) → ∀ (prefixWidth : ℕ) (prefixes : ℕ → List (Fin (prime+4))),
         (∀ i < layout.beforeRows*rows*B, (prefixes i).length = prefixWidth) → prefixWidth ≤ prime^layout.width →
         OrdinaryParentRoundTrip (common := common) (work := work+T) (rows := rows) (B := B) interval layout
-          root parent (by omega) (fits.trans (by omega)) (pool.trans (by omega)) (by omega) overhead C localBody prefixWidth prefixes := by
+          root parent (by omega) (fits.trans (by omega)) (pool.trans (by omega)) (by omega) (pairRoom.trans (by omega)) overhead C localBody prefixWidth prefixes := by
   obtain ⟨T,body,C,overhead,installed⟩ := scheduledOrdinaryScan_exec (U := U) interval member space pool room fits
   refine ⟨T,body,C,overhead,?_⟩
   intro layout w rows B positive width split shape root parent unit rootUnit prefixWidth prefixes widths widthFits
   let W := layout.between*layout.afterD
   obtain ⟨budget,paid,scan⟩ := installed w W (Nat.mul_pos positive.2.2.2.1 positive.2.2.2.2)
-  apply OrdinaryParentRun.chartRoundTrip interval layout positive width split shape root parent _ _ _ _ overhead budget C paid body
-    _ rootUnit prefixWidth prefixes widths widthFits
+  refine fun {k} src c hc => OrdinaryParentRun.chartRoundTrip (common := common) (work := work+T) interval layout positive width split shape root parent
+    (room.trans (by omega)) (fits.trans (by omega)) (pool.trans (by omega)) (space.trans (by omega)) (pairRoom.trans (by omega))
+    overhead budget C paid body ?_ rootUnit prefixWidth prefixes widths widthFits (k := k) src c hc
   apply ordinaryParent_exec (common := common) (work := work+T) interval member layout positive width split shape root parent
     (room.trans (by omega)) (fits.trans (by omega)) (pool.trans (by omega)) (space.trans (by omega)) (pairRoom.trans (by omega)) overhead budget body
   exact scan _ parent unit

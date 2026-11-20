@@ -9,13 +9,11 @@ open IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2.Stack Host Cover Cov
 open IntegerMultBounds.Networks.Shared50ModularControl (prime)
 open RecursiveInterchangeLayout Matrix IntegerMultBounds.Swap.Modular
 
-theorem ordinarySelectors_exec {m k Q extra w Bcount W H J : ℕ} {F U : Type}
+theorem ordinarySelectors_exec {m k Q extra : ℕ} {F U : Type}
     (body : F → Pr F (66+extra) Q prime U) (P : Matrix (Fin m) (Fin m) ℚ)
-    (v : Descriptor) (parent : Fin m → ZMod (prime^(w+1)))
+    (request : Matrix (Fin m) (Fin m) (ZMod prime))
     (table : Matrix (Fin m) (Fin m) (ZMod prime) → Matrix (Fin k) (Fin k) (ZMod prime))
-    (directory : Descriptor) (dirPositive : directory.Positive) (shape : directory.beforeH = Bcount*prime^(m*((w+1)*m)))
     (room : m*m+m*m ≤ extra) :
-    let proj := reduce (prime^(w+1)) P
     let rankFits := P.rank_le_height
     let K := 66+extra
     let caller := Fin.castAddEmb (n := 66) extra
@@ -23,14 +21,18 @@ theorem ordinarySelectors_exec {m k Q extra w Bcount W H J : ℕ} {F U : Type}
     let mode := caller 56
     let parents := caller 50
     let rs := residuePairs (m*m) room
+    let privateTapes := (List.finRange K).filter fun i => 58 ≤ i.val
+    ∃ selectors : Pr F K Q prime U, ∀ {w Bcount W H J : ℕ} (v : Descriptor) (parent : Fin m → ZMod (prime^(w+1)))
+      (reduction : (LabelRing.res prime (w+1) (by omega)).mapMatrix (reduce (prime^(w+1)) P) = request)
+      (directory : Descriptor) (dirPositive : directory.Positive) (shape : directory.beforeH = Bcount*prime^(m*((w+1)*m))),
+    let proj := reduce (prime^(w+1)) P
     let high := prime^w
     let allLabels := List.range (LabelMask.records directory)
     let schedules := fun xs : List ℕ => xs.flatMap fun j =>
       if fallbackBit rankFits proj (physicalLabel m (w+1) j) then residualSchedule (A := prime) (table (LabelStock.residue m (w+1) 1 j)) else []
     let liveWords := allLabels.map fun j => bitSymbol (a := prime) (LabelStock.live m (w+1) 1 j)
     let badWords := allLabels.map fun j => bitSymbol (a := prime) (fallbackBit rankFits proj (physicalLabel m (w+1) j))
-    let privateTapes := (List.finRange K).filter fun i => 58 ≤ i.val
-    ∃ selectors : Pr F K Q prime U, ∀ (prefixes : ℕ → List (Fin (prime+4))) (tail : List (Fin (prime+4)))
+    ∀ (prefixes : ℕ → List (Fin (prime+4))) (tail : List (Fin (prime+4)))
       (initialUser : HS K Q prime U) (initialState : Stacks K prime),
     let clean := {initialState with
       L := fun i => if i ∈ privateTapes then [] else initialState.L i
@@ -47,14 +49,15 @@ theorem ordinarySelectors_exec {m k Q extra w Bcount W H J : ℕ} {F U : Type}
       DirectoryReady v P w W H J parent prefixes tail schedules D allLabels ∧
       D.L (caller 24) = initialState.L (caller 24) ∧ D.R (caller 24) = initialState.R (caller 24) ∧
       D.R (caller 48) = initialState.R (caller 48) ∧ D.R mask = liveWords ∧ D.R mode = badWords := by
-  intro proj rankFits K caller mask mode parents rs high allLabels schedules liveWords badWords privateTapes
+  intro rankFits K caller mask mode parents rs privateTapes
   obtain ⟨writer,controls⟩ := Cover.Fallback.directoryControls_exec body rankFits
-    ((LabelRing.res prime (w+1) (by omega)).mapMatrix proj) table proj rfl directory dirPositive shape room
+    request table room
   let init : Pr F K Q prime U := (Node.expProg 0 prime (caller 28) (caller 45) (caller 58) (caller 59) (caller 60) (caller 61)).seq
     (Node.scanR (caller 58) (caller 59) (LabelCountBank.pushAll (rs.map Prod.fst)))
   refine ⟨(init.seq writer).seq (clearWorkTapes privateTapes),?_⟩
-  intro prefixes tail initialUser initialState clean freePrivate inputs
+  intro w Bcount W H J v parent reduction directory dirPositive shape proj high allLabels schedules liveWords badWords prefixes tail initialUser initialState clean freePrivate inputs
     beforeRows rows beforeH parentsFree maskFree modeFree queueFree
+  specialize controls proj reduction directory dirPositive shape
   have ready := directoryReady_of_inputs schedules allLabels initialState inputs.archive inputs.widths inputs.headers
   have raw (i : Fin 66) (hi : i.val < 58) (off : i ≠ 54) : clean.R (caller i) = initialState.R (caller i) := by
     simp [clean,privateTapes,show ¬58 ≤ (caller i).val from Nat.not_le_of_gt hi,Function.update_of_ne (caller.injective.ne off)]
@@ -75,5 +78,13 @@ theorem ordinarySelectors_exec {m k Q extra w Bcount W H J : ℕ} {F U : Type}
     keep 48 (by decide) (by decide) (by decide) (by decide),?_,Function.update_self mode badWords liveState.R⟩
   · simp [D,liveState,clean,privateTapes,caller]
   · exact (Function.update_of_ne (caller.injective.ne (by decide : (57 : Fin 66) ≠ 56)) badWords liveState.R).trans (Function.update_self mask liveWords clean.R)
+
+/-- Selectors are installed from the prime-field weights. All directory
+dimensions and the lifted parent weights are supplied on the tapes. -/
+noncomputable def ordinarySelectorProgram {m Q extra : ℕ} {F U : Type}
+    (body : F → Pr F (66+extra) Q prime U) (P : Matrix (Fin m) (Fin m) ℚ)
+    (weights : Fin m → ZMod prime) (room : m*m+m*m ≤ extra) : Pr F (66+extra) Q prime U :=
+  (ordinarySelectors_exec body P (reduce prime P)
+    (projectorResidual finSumFinEquiv (reduce prime P) weights (Ring.inverse ∘ weights)) room).choose
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode

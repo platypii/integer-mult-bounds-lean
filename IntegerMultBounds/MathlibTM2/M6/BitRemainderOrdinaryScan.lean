@@ -68,8 +68,9 @@ def ClassifiedOrdinaryScan [M8.Machine.Net] {a d common work w W J : ℕ} {U : T
     let bad := fun j => fallbackBit proj.rank_le_height (reduce M proj) (physicalLabel m (w+1) j)
     let length : N = M^m*(M^m*W) := by simp [N,pow_add,Nat.mul_assoc]
     ∀ (directory : Descriptor) (B : ℕ), directory.Positive →
-      directory.beforeH = B*prime^(m*((w+1)*m)) → m*m+m*m ≤ K →
-    ∃ selectors : Pr Unit (66+K) columnCapacity prime U,
+      directory.beforeH = B*prime^(m*((w+1)*m)) → ∀ pairRoom : m*m+m*m ≤ K,
+    let residue := LabelRing.res prime (w+1) (by omega)
+    let selectors := ordinarySelectorProgram localBody proj (residue ∘ parent) pairRoom
     ∀ (prefixes : ℕ → List (Fin (prime+4))) (archiveTail ownerTail : List (Fin (prime+4)))
       (word : Fin (data.records*N) → ZMod 2) (u : HS ((66+(K+1))+5) columnCapacity prime U) (S : Stacks ((66+(K+1))+5) prime),
     let input := ownerRow (R := data.records) (N := N) rfl word
@@ -176,9 +177,15 @@ theorem classifiedOrdinaryDirectory_exec [M8.Machine.Net] {a d common work w W J
   intro _ _ _ _ _ actualBad _ directory B dirPositive shape pairRoom
   let φ := LabelRing.res prime (w+1) (by omega)
   let table := projectorResidual finSumFinEquiv (reduce prime proj) (φ ∘ parent) (φ ∘ inv)
-  obtain ⟨selectors,controls⟩ :=
-    ordinarySelectors_exec localBody proj v parent table directory dirPositive shape pairRoom
-  refine ⟨selectors,?_⟩
+  have inverse : φ ∘ inv = Ring.inverse ∘ (φ ∘ parent) := by
+    funext i
+    obtain ⟨u,hu⟩ := unit i
+    change φ (Ring.inverse (parent i)) = Ring.inverse (φ (parent i))
+    rw [← hu,Ring.inverse_unit]
+    exact (Ring.inverse_unit (Units.map φ.toMonoidHom u)).symm
+  intro _ selectors
+  have controls := (ordinarySelectors_exec localBody proj (reduce prime proj) table pairRoom).choose_spec
+    (W := W) (H := data.H) (J := J) v parent (LabelProjector.residue_reduce (by omega) proj adm) directory dirPositive shape
   intro prefixes archiveTail ownerTail word u S input body c core ports skipRow step scratch goodRow push
   intro e _ code schedule ready placement caller live rs pending bank reg start inner advance good padding effect
     matrix raw privateTapes left selectorBudget count free inputs beforeRows rows beforeH parents mask mode queueFree
@@ -225,8 +232,9 @@ theorem classifiedOrdinaryDirectory_exec [M8.Machine.Net] {a d common work w W J
     data hm hw positive room fits capacity body c (fun _ => le_rfl) prefixes archiveTail bad budget ordinaryEffect length
     input localBody (fun _ => rfl) selectors goodRow skipRow selectorBudget ownerTail counterUser A (by rwa [view]) (by
     rw [rawEq]
-    refine ⟨y,D,t,user,price.trans ?_,run,?_,keepL,keepR,projector,?_,?_⟩
+    refine ⟨y,D,t,user,price.trans ?_,?_,?_,keepL,keepR,projector,?_,?_⟩
     · simpa only [selectorBudget,List.length_range,count] using controlsPrice
+    · simpa only [selectors,ordinarySelectorProgram,table,inverse,Function.comp_assoc] using run
     · simpa only [count,rs] using prepared
     · simpa only [count,rs] using liveBits
     · simpa only [count,rs] using badBits) ((regs 0 (by decide)).trans queue) ((regs 1 (by decide)).trans accumulator) size ((regs 3 (by decide)).trans saved) ((regs 4 (by decide)).trans tmp) (by rwa [view]) (by
