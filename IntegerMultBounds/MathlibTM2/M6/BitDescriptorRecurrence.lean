@@ -60,6 +60,92 @@ theorem scheduledPath_width_le (q : ℕ) (v : Descriptor) (path : List (Fin node
       _ ≤ _ := Nat.mul_le_mul_right _ step
       _ = _ := by ring
 
+/-- The width bound is attained: rank 42 occurs in the checked schedule
+and a path may select that occurrence at every level. -/
+theorem scheduledPath_max_width (q : ℕ) (v : Descriptor) (depth b : ℕ)
+    (width : v.width = 64^depth*b) :
+    ∃ path : List (Fin nodeChildren5.length), path.length = depth ∧
+      (path.foldl (scheduledChild q) v).width = 42^depth*b := by
+  have member : 42 ∈ nodeChildren5 := nodeChildren5_realizes.mem_iff.mpr (by
+    apply List.mem_flatMap.mpr
+    refine ⟨(42,5*288), List.mem_map.mpr ⟨(42,288),by decide,rfl⟩,?_⟩
+    exact List.mem_replicate.mpr ⟨by decide,rfl⟩)
+  obtain ⟨j,hj,rank⟩ := List.mem_iff_getElem.mp member
+  let i : Fin nodeChildren5.length := ⟨j,hj⟩
+  refine ⟨List.replicate depth i,List.length_replicate,?_⟩
+  induction depth generalizing v b with
+  | zero => simpa using width
+  | succ depth ih =>
+    have next : (scheduledChild q v i).width = 64^depth*(42*b) := by
+      change nodeChildren5[j]*(v.width/64) = _
+      rw [rank,width,pow_succ',Nat.mul_assoc,Nat.mul_div_cancel_left _ (by decide : 0 < 64)]
+      ring
+    rw [List.replicate_succ,List.foldl_cons,ih _ _ next,pow_succ]
+    ring
+
+theorem scheduledPath_cutoff_iff (q : ℕ) (v : Descriptor) (depth b u : ℕ)
+    (width : v.width = 64^depth*b) :
+    (∀ path : List (Fin nodeChildren5.length), path.length = depth →
+      (path.foldl (scheduledChild q) v).width ≤ u) ↔ 42^depth*b ≤ u := by
+  constructor
+  · intro all
+    obtain ⟨path,len,attains⟩ := scheduledPath_max_width q v depth b width
+    exact attains ▸ all path len
+  · intro cutoff path len
+    have bound := scheduledPath_width_le q v path
+    rw [len,width,show 64^depth*b*42^depth = 42^depth*b*64^depth by ring] at bound
+    exact (Nat.le_of_mul_le_mul_right bound (by positivity)).trans cutoff
+
+/-- Sum of the width times the volume at the leaves of a fixed-depth schedule. -/
+noncomputable def scheduledLeafWork (q : ℕ) : ℕ → Descriptor → ℕ
+  | 0, v => v.width * volume q v
+  | n+1, v => ∑ i, scheduledLeafWork q n (scheduledChild q v i)
+
+private theorem scheduled_rank_sum : (∑ i : Fin nodeChildren5.length, nodeChildren5[i.val]) = 9041760 := by
+  have h := (nodeChildren5_realizes.map id).sum_eq
+  rw [sum_map_expand] at h
+  simp only [List.map_id_fun, id_eq] at h
+  rw [← List.sum_ofFn]
+  simpa only [List.ofFn_getElem] using
+    h.trans (by decide : (fiveHistogram.map (fun e => e.2 • e.1)).sum = 9041760)
+
+private theorem reduce_rank_mass {a b : ℕ} (h : a*(64*142080) = 9041760*b) :
+    a*18944 = b*18837 := by
+  apply Nat.eq_of_mul_eq_mul_right (by decide : 0 < 480)
+  simpa only [Nat.mul_assoc, Nat.mul_comm 9041760 b] using h
+
+/-- Every aligned layer reduces the total linear leaf work by exactly
+18837/18944, including the multiplicities of every scheduled rank. -/
+theorem scheduledLeafWork_exact (q n : ℕ) (v : Descriptor)
+    (width : 64^n ∣ v.width) (rows : 142080^n ∣ v.rows) :
+    scheduledLeafWork q n v * 18944^n = v.width * volume q v * 18837^n := by
+  induction n generalizing v with
+  | zero => simp [scheduledLeafWork]
+  | succ n ih =>
+    obtain ⟨b,hb⟩ := (pow_dvd_pow 64 (Nat.succ_pos n)).trans width
+    have hr := (pow_dvd_pow 142080 (Nat.succ_pos n)).trans rows
+    simp only [pow_one] at hb hr
+    have childSum : (∑ i : Fin nodeChildren5.length,
+        (scheduledChild q v i).width * volume q (scheduledChild q v i)) * (64*142080) =
+        9041760 * (v.width * volume q v) := by
+      rw [← scheduled_rank_sum,Finset.sum_mul,Finset.sum_mul]
+      apply Finset.sum_congr rfl
+      intro i _
+      have m := rankDescriptor_role_size (M := q) v 142080 64 b hb
+        ((nodeChildren5_le i).trans (by decide : 42 ≤ 64)) hr
+      have eq : v.width / 64 = b := by simp [hb]
+      simp only [scheduledChild,eq]
+      rw [Nat.mul_mul_mul_comm, m.1, m.2, Nat.mul_assoc]
+    have step : (∑ i : Fin nodeChildren5.length,
+        (scheduledChild q v i).width * volume q (scheduledChild q v i)) * 18944 =
+        v.width * volume q v * 18837 := reduce_rank_mass childSum
+    simp only [scheduledLeafWork,pow_succ,← Nat.mul_assoc]
+    rw [Finset.sum_mul]
+    simp_rw [fun i => ih _ (scheduledChild_alignment q v n width rows i).1
+      (scheduledChild_alignment q v n width rows i).2]
+    rw [← Finset.sum_mul]
+    rw [Nat.mul_right_comm _ _ 18944, step, Nat.mul_right_comm _ 18837]
+
 /-- A single root alignment suffices at every nonleaf along a scheduled path
 when the rank bound reaches the stopping width within the reserved depth. -/
 theorem scheduledPath_internal_alignment (q : ℕ) (v : Descriptor) (depth u : ℕ)
