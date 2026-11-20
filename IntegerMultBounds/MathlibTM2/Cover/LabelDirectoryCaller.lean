@@ -1,6 +1,8 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Cover.LabelDirectoryClasses
+public import IntegerMultBounds.MathlibTM2.Mult.ShortConvSetupOps
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellTakePrefix
 public import IntegerMultBounds.MathlibTM2.Cover.LabelCountBank
 
 /-! Construct the directory from unary caller dimensions and empty selector counters. -/
@@ -174,6 +176,46 @@ theorem realizes (m : ℕ) (hm : 0 < m) (branch : Matrix (Fin m) (Fin m) (ZMod p
   rw [w1] at ht run
   rw [same 7 (by decide)] at run
   exact ⟨z,n+t,hz.trans hu,Nat.add_le_add hn ht,Exec.seq he run⟩
+
+/-- Move the leading child's directory to its scanner queue. The rest of
+the partition stays on the source tape for the sibling. -/
+theorem takeChild_exec (r : Fin 7 ↪ Fin T) (selected : List ℕ)
+    (ancestor : ℕ → List (Fin (prime+4))) (m w a : ℕ)
+    (width : ∀ j ∈ selected, (ancestor j).length = a)
+    (tail : List (Fin (prime+4))) (u : HS T Q prime U) (S : Stacks T prime) :
+    let word := fun i : ℕ => LabelDirectory.entry ancestor m w (selected[i]?.getD 0)
+    let size := selected.length*(a+w*(m*m))
+    S.R (r 1) = selected.flatMap (LabelDirectory.entry ancestor m w) ++ tail →
+    (S.R (r 5)).length = selected.length → (S.R (r 6)).length = a+w*(m*m) →
+    S.R (r 0) = [] → S.R (r 2) = [] → S.R (r 3) = [] → S.R (r 4) = [] →
+    ∃ z t, z.user = u.user ∧ t ≤ 10*size+9*selected.length+10 ∧ (∀ i < selected.length, (word i).length = a+w*(m*m)) ∧
+      Exec body ((Mult.ShortConv.unaryProduct (r 5) (r 6) (r 0) (r 3) (r 4)).seq
+        (Mult.PhaseCellToeplitz.takePrefix (r 0) (r 1) (r 2) (r 3) (r 4)))
+        (mk u S) t (mk z {S with R := (Function.update (Function.update
+          (Function.update S.R (r 0) (List.replicate size tick)) (r 1) tail)
+          (r 2) ((List.range selected.length).flatMap word))}) := by
+  intro word size source rows rowWidth count dst buf tmp
+  obtain ⟨packed,widths⟩ := LabelDirectory.child_prefixes selected ancestor m w a width
+  have volume : (selected.flatMap (LabelDirectory.entry ancestor m w)).length = size := by
+    rw [List.flatMap_def,BlockRotationData.uniform_volume (a+w*(m*m)),List.length_map]
+    intro x hx
+    obtain ⟨j,hj,rfl⟩ := List.mem_map.mp hx
+    rw [LabelDirectory.entry_length,width j hj]
+  obtain ⟨v,t,user,paid,product⟩ := Mult.ShortConv.unaryProduct_exec (body := body)
+    (a := r 5) (b := r 6) (dst := r 0) (t₁ := r 3) (t₂ := r 4) (by simp) u S buf tmp
+  rw [rows,rowWidth,count,List.append_nil] at product
+  let D : Stacks T prime := {S with R := Function.update S.R (r 0) (List.replicate size tick)}
+  obtain ⟨z,same,run⟩ := Mult.PhaseCellToeplitz.takePrefix_exec (body := body)
+    (count := r 0) (src := r 1) (dst := r 2) (buf := r 3) (tmp := r 4)
+    (by simp) v D _ tail (by simpa [D] using source) (by simp [D,volume])
+    (by simpa [D] using buf) (by simpa [D] using tmp)
+  refine ⟨z,t+(6*size+6),same.trans user,?_,widths,Exec.seq product ?_⟩
+  · rw [rows,rowWidth,Nat.mul_add] at paid
+    dsimp only [size]
+    rw [← Nat.mul_assoc,Nat.mul_comm selected.length 4,Nat.mul_assoc] at paid
+    omega
+  · rw [volume] at run
+    simpa [D,dst,packed,word] using run
 
 end
 end IntegerMultBounds.MathlibTM2.Cover.LabelDirectoryCaller

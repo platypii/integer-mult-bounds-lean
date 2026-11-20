@@ -64,6 +64,7 @@ theorem realizes (m : ℕ) (hm : 0 < m) (branch : Matrix (Fin m) (Fin m) (ZMod p
         F.R (r 3) = List.replicate good.length tick ∧ F.R (r 5) = List.replicate bad.length tick ∧
         F.R (streams 1) = S.R (streams 1) ∧ (∀ i ∈ ([2,6,13] : List (Fin 21)), F.R (r i) = []) ∧
         F.R (r 8) = S.R (r 8) ∧
+        F.R (r 1) = List.replicate L tick ++ S.R (r 1) ∧
         n ≤ (26*H+6 + ((44*LabelMask.records v+13*w+14) +
           (N*(time H (m*m) 1+5)+4 + (8*w+8+22*B + (N*B*(9*L+15)+6+
           (N*(B*(8*W+11)+6*W+15)+6+N*B*(6*(W+L)+13)+6)))))) +
@@ -105,7 +106,7 @@ theorem realizes (m : ℕ) (hm : 0 < m) (branch : Matrix (Fin m) (Fin m) (ZMod p
     apply scratch
     simp only [List.mem_cons,List.not_mem_nil,or_false] at hi
     rcases hi with rfl | rfl | rfl <;> decide)
-  refine ⟨z',_,n+t+c,hz'.trans (hz.trans hu),?_,?_,?_,?_,?_,?_,?_,?_,?_,Nat.add_le_add (Nat.add_le_add hn ht) hc,
+  refine ⟨z',_,n+t+c,hz'.trans (hz.trans hu),?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,Nat.add_le_add (Nat.add_le_add hn ht) hc,
     Exec.seq (Exec.seq he run) countRun⟩
   · simp [J,M,(outside 2 7).symm]
   · simp [J,outside,same]
@@ -122,6 +123,7 @@ theorem realizes (m : ℕ) (hm : 0 < m) (branch : Matrix (Fin m) (Fin m) (ZMod p
 
   · simp [J,M,Dreg,R,LabelDirectorySetup.prepared,masks,bank,LabelCountBank.fill,
       (outside 2 8).symm,off _ (apart _)]
+  · simp [J,M,(outside 2 1).symm]
 
 end
 end IntegerMultBounds.MathlibTM2.Cover.LabelChildStreams

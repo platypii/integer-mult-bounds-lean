@@ -16,22 +16,23 @@ def program (r : Fin 12 ↪ Fin T) (good bad : P) : Pr P T Q A U :=
 /-- A child consumes equally many directory and payload records, preserving the remaining
 inputs and prepending its result to the output register. -/
 def Child (body : P → Pr P T Q A U) (proc : P) (dir src count out : Fin T) (ids : List ℕ)
-    (entry data result : ℕ → List (Fin (A+4))) (cost : ℕ) :=
+    (entry data result : ℕ → List (Fin (A+4))) (cost : ℕ) (width : Fin T) (entryWidth : ℕ) :=
   ∀ (u : HS T Q A U) (S : Stacks T A) (a b : List (Fin (A+4))),
-    (S.R count).length = ids.length → S.R dir = ids.flatMap entry ++ a →
+    (S.R width).length = entryWidth → (S.R count).length = ids.length → S.R dir = ids.flatMap entry ++ a →
     S.R src = ids.flatMap data ++ b →
     ∃ z n, z.user = u.user ∧ n ≤ cost ∧ Exec body (body proc) (mk u S) n
       (mk z {S with R := Function.update (Function.update (Function.update S.R dir a) src b) out (ids.flatMap result ++ S.R out)})
 
-theorem calls_exec (r : Fin 12 ↪ Fin T) (g b : P) (ids : List ℕ) (keep : ℕ → Bool)
+theorem calls_exec (r : Fin 12 ↪ Fin T) (width : Fin T) (privateWidth : ∀ i, width ≠ r i) (entryWidth : ℕ) (g b : P) (ids : List ℕ) (keep : ℕ → Bool)
     (entry data good bad : ℕ → List (Fin (A+4))) (w cg cb : ℕ)
     (hg : ∀ i ∈ ids.filter keep, (good i).length = w)
     (hb : ∀ i ∈ ids.filter (fun k => !(keep k)), (bad i).length = w)
     (u : HS T Q A U) (S : Stacks T A) (dirTail dataTail : List (Fin (A+4))) :
     let G := ids.filter keep
     let B := ids.filter (fun k => !(keep k))
-    Child body g (r 8) (r 9) (r 10) (r 0) G entry data good cg →
-    Child body b (r 8) (r 9) (r 11) (r 1) B entry data bad cb →
+    Child body g (r 8) (r 9) (r 10) (r 0) G entry data good cg width entryWidth →
+    Child body b (r 8) (r 9) (r 11) (r 1) B entry data bad cb width entryWidth →
+    (S.R width).length = entryWidth →
     S.R (r 8) = G.flatMap entry ++ B.flatMap entry ++ dirTail →
     S.R (r 9) = G.flatMap data ++ B.flatMap data ++ dataTail →
     (S.R (r 10)).length = G.length → (S.R (r 11)).length = B.length →
@@ -40,12 +41,12 @@ theorem calls_exec (r : Fin 12 ↪ Fin T) (g b : P) (ids : List ℕ) (keep : ℕ
     let result := ids.flatMap fun j => if keep j then good j else bad j
     ∃ z n, z.user = u.user ∧ n ≤ cg+cb+ids.length*(6*w+10)+10 ∧
       Exec body (program r g b) (mk u S) n (mk z {S with R := Function.update (Function.update (Function.update S.R (r 8) dirTail) (r 9) dataTail) (r 7) (result ++ S.R (r 7))}) := by
-  intro G B runG runB dir src lenG lenB mask width fresh result
+  intro G B runG runB wordWidth dir src lenG lenB mask width fresh result
   obtain ⟨u₁,n₁,h₁,c₁,e₁⟩ := runG u S (B.flatMap entry ++ dirTail) (B.flatMap data ++ dataTail)
-    lenG (by simpa [List.append_assoc] using dir) (by simpa [List.append_assoc] using src)
+    wordWidth lenG (by simpa [List.append_assoc] using dir) (by simpa [List.append_assoc] using src)
   let M : Stacks T A := {S with R := Function.update (Function.update (Function.update S.R (r 8)
     (B.flatMap entry ++ dirTail)) (r 9) (B.flatMap data ++ dataTail)) (r 0) (G.flatMap good ++ S.R (r 0))}
-  obtain ⟨u₂,n₂,h₂,c₂,e₂⟩ := runB u₁ M dirTail dataTail (by simpa [M] using lenB)
+  obtain ⟨u₂,n₂,h₂,c₂,e₂⟩ := runB u₁ M dirTail dataTail (by simpa [M,privateWidth] using wordWidth) (by simpa [M] using lenB)
     (by simp [M]) (by simp [M])
   let H : Stacks T A := {M with R := Function.update (Function.update (Function.update M.R (r 8) dirTail) (r 9) dataTail) (r 1) (B.flatMap bad ++ M.R (r 1))}
   let merge := (Fin.castLEEmb (by decide : 8 ≤ 12)).trans r

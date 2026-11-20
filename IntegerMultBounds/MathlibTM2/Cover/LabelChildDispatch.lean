@@ -37,8 +37,8 @@ theorem realizes (m : ℕ) (hm : 0 < m) (branch : Matrix (Fin m) (Fin m) (ZMod p
       (∀ i ∈ ([2,3,4,5,6,7,9,10,11,12,13,20] : List (Fin 24)), S.R (r i) = []) →
       S.R (r 21) = ids.flatMap data ++ rest → (S.R (r 22)).length = V →
       (∀ i ∈ ids, (data i).length = V) →
-      ∀ cg cb, LabelChildCalls.Child body g (r 7) (r 23) (r 3) (r 4) good entry data outG cg →
-      LabelChildCalls.Child body b (r 7) (r 23) (r 5) (r 10) bad entry data outB cb →
+      ∀ cg cb, LabelChildCalls.Child body g (r 7) (r 23) (r 3) (r 4) good entry data outG cg (r 1) (W+L) →
+      LabelChildCalls.Child body b (r 7) (r 23) (r 5) (r 10) bad entry data outB cb (r 1) (W+L) →
       (∀ j ∈ good, (outG j).length = V) → (∀ j ∈ bad, (outB j).length = V) →
       let result := ids.flatMap fun j => if keep j then outG j else outB j
       ∃ z F n, z.user = u.user ∧ F.R (r 21) = S.R (r 21) ∧ F.R (r 8) = result ++ S.R (r 8) ∧
@@ -54,13 +54,13 @@ theorem realizes (m : ℕ) (hm : 0 < m) (branch : Matrix (Fin m) (Fin m) (ZMod p
     outside (fun i => apart _) hd (fun i => apart _)
   refine ⟨.seq p (LabelChildCalls.program (calls.trans r) g b),?_⟩
   intro v w D hw positive hv word tail rest data outG outB u S hbr hrows hbh atomWidth unit empty N L B W ids keep good bad entry V H source width fresh stock vol sizes cg cb runG runB sizeG sizeB result
-  obtain ⟨u',M,n,hu,hdir,hdata,hsrc,hmask,hg,hb,hwidth,hscratch,hout,hn,he⟩ :=
+  obtain ⟨u',M,n,hu,hdir,hdata,hsrc,hmask,hg,hb,hwidth,hscratch,hout,hentryWidth,hn,he⟩ :=
     hp v w D hw positive hv word tail rest data u S hbr hrows hbh atomWidth unit empty source width
       (by intro i hi; apply fresh; simp only [List.mem_cons,List.not_mem_nil,or_false] at hi
           rcases hi with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> decide)
       stock vol sizes
-  obtain ⟨z,t,hz,ht,run⟩ := LabelChildCalls.calls_exec (body := body) (calls.trans r) g b ids keep entry data outG outB V cg cb sizeG sizeB u' M
-    (S.R (r 7)) (S.R (r 23)) runG runB hdir hdata (by change (M.R (dir 3)).length = _; rw [hg,List.length_replicate])
+  obtain ⟨z,t,hz,ht,run⟩ := LabelChildCalls.calls_exec (body := body) (calls.trans r) (r 1) (fun i => r.injective.ne (by revert i; decide)) (W+L) g b ids keep entry data outG outB V cg cb sizeG sizeB u' M
+    (S.R (r 7)) (S.R (r 23)) runG runB (by change (M.R (dir 1)).length = _; rw [hentryWidth,List.length_append,List.length_replicate]; exact Nat.add_comm ..) hdir hdata (by change (M.R (dir 3)).length = _; rw [hg,List.length_replicate])
     (by change (M.R (dir 5)).length = _; rw [hb,List.length_replicate]) hmask (hwidth ▸ vol) (by
       intro i hi
       simp only [List.mem_cons,List.not_mem_nil,or_false] at hi

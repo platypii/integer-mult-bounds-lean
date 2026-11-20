@@ -40,6 +40,25 @@ def entry (ancestor : ℕ → List (Fin (prime+4))) (m w j : ℕ) :=
 theorem entry_length (ancestor : ℕ → List (Fin (prime+4))) (m w j : ℕ) :
     (entry ancestor m w j).length = (ancestor j).length+w*(m*m) := by simp [entry,digits]
 
+/-- A child scanner numbers the selected records consecutively, while their
+directory entries retain the original label addresses. -/
+theorem child_prefixes (selected : List ℕ) (ancestor : ℕ → List (Fin (prime+4)))
+    (m w a : ℕ) (width : ∀ j ∈ selected, (ancestor j).length = a) :
+    let word := fun i : ℕ => entry ancestor m w (selected[i]?.getD 0)
+    selected.flatMap (entry ancestor m w) = (List.range selected.length).flatMap word ∧
+      ∀ i < selected.length, (word i).length = a+w*(m*m) := by
+  intro word
+  have indices : (List.range selected.length).map (fun i => selected[i]?.getD 0) = selected := by
+    apply List.ext_getElem
+    · simp
+    · intro i hi hj
+      simp [hj]
+  constructor
+  · conv_lhs => rw [← indices]
+    rw [List.flatMap_map]
+  · intro i hi
+    simp [word,hi,entry_length,width _ (List.getElem_mem hi)]
+
 variable {T Q : ℕ} {P U : Type} {body : P → Pr P T Q prime U}
 
 /-- The retained class mask orders full prefix entries exactly as it orders the child payloads. -/
