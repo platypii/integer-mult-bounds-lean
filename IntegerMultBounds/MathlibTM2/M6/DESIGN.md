@@ -639,7 +639,13 @@ Its preparation charge uses the push count of the fixed directory initializer an
 the installed body. The time bound charges the two suffix lengths linearly with
 a coefficient independent of precision. On return the archive tape contains its
 incoming suffix and both stacks of each ordinary private tape are empty. The
-recursive calls still need a bound on inherited tape occupancy at entry.
+parent bound also applies after a preceding execution: it counts only its initial
+symbols and potential pushes on the setup and scanner left stacks and right
+tapes 58, 46 and 48. The coefficient is independent of the number of tapes,
+apart from the cleanup rate already present in the scan. To use this in the
+node recurrence, the installed predecessor still needs a bound on the selected
+pushes times its running time. At return the selected bank contains exactly the
+restored archive suffix and the final projector tape. All its other stacks are empty.
 
 The semantic five-class node (S5d.3) certifies upstream's accounting under ideal routes and
 partial swaps. Its exponent `1 - 10/5769` holds under that idealization only.

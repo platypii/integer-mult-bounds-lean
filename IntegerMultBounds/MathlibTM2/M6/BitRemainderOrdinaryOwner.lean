@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.M6.BitRemainderOrdinaryScan
+public import IntegerMultBounds.MathlibTM2.StackBankStock
 
 /-! Execute the scheduled remainder scanner from the parent's packed prefix and owner tapes. -/
 @[expose] public section
@@ -11,6 +12,60 @@ open RecursiveInterchangeLayout (Descriptor volume role)
 open IntegerMultBounds.MathlibTM2.Stack Host Cover Cover.Fallback M8.RevMachine
 open IntegerMultBounds.MathlibTM2.Fast.Main IntegerMultBounds.Swap.Modular Matrix
 open LabelTraversal FlatCoordinateLayout
+
+/-- Stacks whose inherited contents contribute to the parent setup or scan. -/
+def ordinaryInheritedBank {T : ℕ} (setup scan : List (Fin T)) (bank : Fin 72 ↪ Fin T) : Finset (HK T) :=
+  ((setup++scan).toFinset.map ⟨HK.lt,fun _ _ h => HK.lt.inj h⟩) ∪
+    ((([58,46,48] : List (Fin 72)).map bank).toFinset.map ⟨HK.rt,fun _ _ h => HK.rt.inj h⟩)
+
+private theorem ordinaryInheritedBank_stock {T Q : ℕ} {U : Type} (u : HS T Q prime U) (S : Stacks T prime)
+    (setup scan : List (Fin T)) (bank : Fin 72 ↪ Fin T) :
+    (∑ i ∈ (setup++scan).toFinset, (S.L i).length) +
+      (∑ i ∈ (([58,46,48] : List (Fin 72)).map bank).toFinset, (S.R i).length) =
+        bankStock (ordinaryInheritedBank setup scan bank) (mk u S) := by
+  unfold bankStock ordinaryInheritedBank
+  rw [Finset.sum_union,Finset.sum_map,Finset.sum_map]
+  · rfl
+  · apply Finset.disjoint_left.mpr
+    intro i hi hj
+    obtain ⟨_,_,rfl⟩ := Finset.mem_map.mp hi
+    obtain ⟨_,_,h⟩ := Finset.mem_map.mp hj
+    cases h
+
+/-- Each left stack can be billed in both setup and scanning. The three inherited
+right-hand words occupy distinct tapes. -/
+private theorem inherited_le_stock {T Q : ℕ} {U : Type} (u : HS T Q prime U) (S : Stacks T prime)
+    (setup scan : List (Fin T)) (hs : setup.Nodup) (hc : scan.Nodup) (bank : Fin 72 ↪ Fin T)
+    (tail rate : ℕ) (ht : tail ≤ (S.R (bank 58)).length) :
+    (setup.map (fun i => 4*(S.L i).length)).sum + 2*tail +
+      ((scan.map (fun i => 4*(S.L i).length)).sum + rate*((S.R (bank 46)).length+(S.R (bank 48)).length)) ≤
+      max 8 (max 2 rate)*bankStock (ordinaryInheritedBank setup scan bank) (mk u S) := by
+  let ls := (setup++scan).toFinset
+  let rs := ([58,46,48] : List (Fin 72)).map bank
+  let L := ∑ i ∈ ls, (S.L i).length
+  let R := ∑ i ∈ rs.toFinset, (S.R i).length
+  let c := max 8 (max 2 rate)
+  have left (ks : List (Fin T)) (unique : ks.Nodup) (sub : ks.toFinset ⊆ ls) :
+      (ks.map (fun i => 4*(S.L i).length)).sum ≤ 4*L := by
+    rw [← List.sum_toFinset _ unique,Finset.mul_sum]
+    exact Finset.sum_le_sum_of_subset sub
+  have right := List.sum_toFinset (fun i => (S.R i).length)
+    (List.Nodup.map bank.injective (by decide : ([58,46,48] : List (Fin 72)).Nodup))
+  change R = (S.R (bank 58)).length+((S.R (bank 46)).length+((S.R (bank 48)).length+0)) at right
+  have size := ordinaryInheritedBank_stock u S setup scan bank
+  have cr : rate ≤ c := (le_max_right 2 rate).trans (le_max_right ..)
+  have ct : 2 ≤ c := (le_max_left 2 rate).trans (le_max_right ..)
+  have controls := Nat.mul_le_mul_right L (show 8 ≤ c from le_max_left ..)
+  have tails := Nat.mul_le_mul_right ((S.R (bank 46)).length+(S.R (bank 48)).length) cr
+  have head := Nat.mul_le_mul ct ht
+  have bound := congrArg (c*·) right
+  calc
+    _ ≤ c*(L+R) := by
+      have := left setup hs (by simp [ls])
+      have := left scan hc (by simp [ls])
+      simp only [Nat.add_zero,Nat.mul_add] at bound tails ⊢
+      omega
+    _ = _ := congrArg (c*·) size
 
 def OrdinaryParentRun [M8.Machine.Net] {common work w rows B : ℕ} {U : Type}
     (interval : ℕ × ℕ) (layout : Descriptor)
@@ -43,8 +98,11 @@ def OrdinaryParentRun [M8.Machine.Net] {common work w rows B : ℕ} {U : Type}
       (word : Fin (data.records*N) → ZMod 2) (prefixes : ℕ → List (Fin (prime+4))) (tail : List (Fin (prime+4))),
     let setupScratch := ([0,4,9,10,11,12] : List (Fin 15)).map (remainderDirectoryPorts.trans bank) ++ [bank 71]
     let inherited := (setupScratch.map (fun i => 4*(raw.L i).length)).sum+2*tail.length
-    let setupTime := ((366+16*64*64+19*64+344)*volume prime layout)/(prime^layout.width*142080)+inherited
+    let setupBase := ((366+16*64*64+19*64+344)*volume prime layout)/(prime^layout.width*142080)
+    let setupTime := setupBase+inherited
     let privateTapes := (List.finRange (66+K)).filter fun i => 58 ≤ i.val
+    let scanned := privateTapes.map (fun i => (placement i).castAdd 5)
+    let visited := ordinaryInheritedBank setupScratch scanned bank
     let left := (privateTapes.map fun i => 4*(raw.L ((placement i).castAdd 5)).length).sum
     let scratch := (List.finRange (66+(K+1))).filter fun i => decide (58 ≤ i.val ∧ i ≠ directoryMatrixTape room)
     let ports := ordinaryCursorPorts.trans (Fin.castAddEmb (n := 66) K)
@@ -71,9 +129,12 @@ def OrdinaryParentRun [M8.Machine.Net] {common work w rows B : ℕ} {U : Type}
       let scan := (payloadCountProgram (ownerCountPorts (K+1)) 128).seq (controls.seq ((embProg embed id prepare).seq dispatch))
       z.user = u.user ∧ Exec outer ((remainderOwnerSetup root interval.1 interval.2 bank).seq scan) (mk u raw) t (mk z F) ∧
       (let p := max (mnProgPush (directoryQueueInitProgram (m := 64) (d := 127) (P := Unit) (Q := columnCapacity) (U := U) room fits)) (mnProgPush (body ()))
-       t ≤ setupTime+ordinaryOwnerScanTime 64 127 proj.rank w W data.H W.size data.records N
-          (prefixes 0).length 0 0 0 privateTapes.length push scratch.length rate p overhead childBudget +
-          (left+(1+scratch.length*(6*p))*directoryQueueInitRate 64 127*((raw.R (bank 46)).length+(raw.R (bank 48)).length))) ∧
+       let tapeRate := (1+scratch.length*(6*p))*directoryQueueInitRate 64 127
+       let clean := setupBase+ordinaryOwnerScanTime 64 127 proj.rank w W data.H W.size data.records N
+          (prefixes 0).length 0 0 0 privateTapes.length push scratch.length rate p overhead childBudget
+       t ≤ clean+(inherited+(left+tapeRate*((raw.R (bank 46)).length+(raw.R (bank 48)).length))) ∧
+       ∀ prior initial n, Exec outer prior initial n (mk u raw) →
+         t ≤ clean+max 8 (max 2 tapeRate)*(bankStock visited initial+max (bankProgPush visited prior) (bankProgPush visited (outer ()))*n)) ∧
       (∀ j : Fin data.records, let r := ownerRow (R := data.records) (N := N) rfl output j
         if LabelStock.live 64 (w+1) 1 j then ∀ x k, r (index ((projectorResidual finSumFinEquiv (reduce M proj)
           parent (fun i => Ring.inverse (parent i)) (physicalLabel 64 (w+1) j)).mulVec x) k) = ownerRow (R := data.records) (N := N) rfl word j (index x k)
@@ -91,7 +152,7 @@ def OrdinaryParentRun [M8.Machine.Net] {common work w rows B : ℕ} {U : Type}
       F.L (reg 0) = raw.L (reg 0) ∧ F.R (reg 0) = payloadWord (SparseRoleCircuit.encode ∘ output) ++
         (raw.R (reg 0)).drop (data.records*N) ∧ F.R (reg 1) = [] ∧
       F.R ((directoryMatrixTape room).castAdd 5) = [] ∧ F.R (bank 57) = [] ∧ F.R (bank 56) = [] ∧
-      F.R (bank 46) = raw.R (bank 46) ∧
+      F.R (bank 46) = raw.R (bank 46) ∧ bankStock visited (mk z F) = (raw.R (bank 46)).length+(F.R (bank 48)).length ∧
       ∀ i : Fin (66+K), 58 ≤ i.val → F.L ((placement i).castAdd 5) = [] ∧ F.R ((placement i).castAdd 5) = []
 
 private theorem ordinaryParent_exec [M8.Machine.Net] {common work w rows B : ℕ} {U : Type}
@@ -112,7 +173,7 @@ private theorem ordinaryParent_exec [M8.Machine.Net] {common work w rows B : ℕ
     OrdinaryParentRun (rows := rows) (B := B) interval layout root parent room fits pool space overhead childBudget localBody := by
   unfold OrdinaryParentRun
   intro K M W N directory proj placement bank reg body outer parents box data u raw word prefixes tail
-    setupScratch inherited setupTime privateTapes left scratch ports step push rarePush rate br nr bh clean source widths fitsWidth
+    setupScratch inherited setupBase setupTime privateTapes scanned visited left scratch ports step push rarePush rate br nr bh clean source widths fitsWidth
     short padded spare parameters parentPort mask mode queue payload empty blankData
   let v := remainderRecordChild interval.1 interval.2 (w+1) W
   have binary : data.H = M.size := rfl
@@ -160,9 +221,14 @@ private theorem ordinaryParent_exec [M8.Machine.Net] {common work w rows B : ℕ
           have hr : D.R (bank 24) = raw.R (bank 24) := right 24 (by decide)
           rw [hl,hr]; exact blankData j)
   have coord : finSumFinEquiv.trans (finCongr (by decide : 64+64 = 127+1)) = finSumFinEquiv := by ext i; rfl
+  have restored : F.R (bank 46) = raw.R (bank 46) := by
+    have h := done.1
+    change F.R ((placement ((46 : Fin 66).castAdd K)).castAdd 5) = _ at h
+    rw [directoryOrdinaryBank_caller] at h
+    exact h
   refine ⟨selectors,prepare,_,z,F,_,output,same.trans user,Exec.seq build run,?_,?_,?_,reads,
-    ownerLeft.trans (regs 0).2,ownerRight,accumulator,clear,maskEnd,modeEnd,?_,done.2.2.1⟩
-  · intro p
+    ownerLeft.trans (regs 0).2,ownerRight,accumulator,clear,maskEnd,modeEnd,restored,?_,done.2.2.1⟩
+  · intro p tapeRate cleanTime
     have setup : q ≤ setupTime := by
       have scale : 0 < prime^layout.width*142080 := Nat.mul_pos (pow_pos Shared50ModularControl.prime_prime.pos _) (by decide)
       dsimp only [setupTime]
@@ -188,7 +254,25 @@ private theorem ordinaryParent_exec [M8.Machine.Net] {common work w rows B : ℕ
         ← length_matrixWords prime data.H (reduce M proj),List.drop_left]
     have leftBound : (privateTapes.map (fun i => 4*(whole.L i).length)).sum ≤ left :=
       List.sum_le_sum (fun i hi => Nat.mul_le_mul_left 4 (size ((placement i).castAdd 5)))
-    rw [Nat.add_assoc,← ordinaryOwnerScanTime_inherited]
+    have uniq : setupScratch.Nodup := by
+      change (([58,61,66,67,68,69,71] : List (Fin 72)).map bank).Nodup
+      exact List.Nodup.map bank.injective (by decide)
+    have scanUniq : scanned.Nodup := List.Nodup.map (fun _ _ eq => placement.injective (Fin.castAdd_inj.mp eq))
+      ((List.nodup_finRange _).filter _)
+    have tailFits : tail.length ≤ (raw.R (bank 58)).length := by rw [source,List.length_append]; omega
+    have occupied := inherited_le_stock u raw setupScratch scanned uniq scanUniq bank tail.length tapeRate tailFits
+    simp only [scanned,List.map_map,Function.comp_def] at occupied
+    change inherited+(left+tapeRate*((raw.R (bank 46)).length+(raw.R (bank 48)).length)) ≤ _ at occupied
+    suffices exactTime : q+(k+(s+(t+n))) ≤ cleanTime+(inherited+(left+tapeRate*((raw.R (bank 46)).length+(raw.R (bank 48)).length))) by
+      refine ⟨exactTime,?_⟩
+      intro prior initial n arrival
+      have stock := exec_stock visited arrival (le_max_left (bankProgPush visited prior) _) (fun f => by cases f; exact le_max_right ..)
+      exact exactTime.trans (Nat.add_le_add_left (occupied.trans (Nat.mul_le_mul_left _ stock)) _)
+    have combine (a b c d : ℕ) : a+b+(c+d) = a+c+(b+d) := by omega
+    dsimp only [cleanTime]
+    rw [combine]
+    change _ ≤ setupTime+(_+_)
+    rw [← ordinaryOwnerScanTime_inherited]
     apply Nat.add_le_add setup
     apply scanBound.trans
     change ordinaryOwnerScanTime 64 127 proj.rank w W data.H W.size data.records N (archive 0).length
@@ -209,10 +293,31 @@ private theorem ordinaryParent_exec [M8.Machine.Net] {common work w rows B : ℕ
     apply ownerRow_projected (R := data.records) (N := N) (W := W) rfl rfl word output c checked interval.1 interval.2 upper
       block g unit parent (fun i => Ring.inverse (parent i))
     simpa only [Fin.cast_refl,id_eq,coord] using action ⟨j,pos⟩
-  · have restored := done.1
-    change F.R ((placement ((46 : Fin 66).castAdd K)).castAdd 5) = _ at restored
-    rw [directoryOrdinaryBank_caller] at restored
-    exact restored
+  · have stage (i : Fin 72) (hi : 58 ≤ i.val) : F.L (bank i) = [] ∧ F.R (bank i) = [] := by
+      let k : Fin (66+K) := ⟨i.val,by have := i.isLt; omega⟩
+      have above : i.val < (directoryMatrixTape room).val := by
+        unfold directoryMatrixTape
+        rw [directoryResidualBank_private room _ _ (by
+          intro eq; have h := congrArg Fin.val eq; change 34 = rowSwapBlock.tapes+35 at h; omega)]
+        change i.val < 66+(Record.size 127+34)
+        omega
+      have eq : placement k = k.castSucc := Fin.succAbove_of_castSucc_lt _ _ above
+      have h := done.2.2.1 k hi
+      change F.L ((placement k).castAdd 5) = [] ∧ F.R ((placement k).castAdd 5) = [] at h
+      rw [eq] at h
+      exact h
+    have freeLeft (i) (mem : i ∈ setupScratch++scanned) : (F.L i).length = 0 := by
+      rcases List.mem_append.mp mem with h | h
+      · change i ∈ ([58,61,66,67,68,69,71] : List (Fin 72)).map bank at h
+        obtain ⟨j,member,rfl⟩ := List.mem_map.mp h
+        rw [(stage j ((by decide : ∀ j ∈ ([58,61,66,67,68,69,71] : List (Fin 72)), 58 ≤ j.val) j member)).1]
+        rfl
+      · obtain ⟨j,member,rfl⟩ := List.mem_map.mp h
+        exact congrArg List.length (done.2.2.1 j (of_decide_eq_true (List.mem_filter.mp member).2)).1
+    rw [← ordinaryInheritedBank_stock,Finset.sum_eq_zero (fun i hi => freeLeft i (List.mem_toFinset.mp hi)),Nat.zero_add,
+        List.sum_toFinset _ (List.Nodup.map bank.injective (by decide : ([58,46,48] : List (Fin 72)).Nodup))]
+    simp only [List.map_cons,List.map_nil,List.sum_cons,List.sum_nil,Nat.add_zero,(stage 58 (by decide)).2,
+      List.length_nil,Nat.zero_add,restored]
 
 /-- A single installed body handles every precision and every parent at this interval. -/
 theorem scheduledOrdinaryParent_exec [M8.Machine.Net] {common work : ℕ} {U : Type}
