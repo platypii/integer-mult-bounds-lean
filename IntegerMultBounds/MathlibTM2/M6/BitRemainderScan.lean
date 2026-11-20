@@ -953,7 +953,7 @@ private theorem packedOwner_charge (elapsed overhead records N baseline degree r
 open Matrix Finset IntegerMultBounds.Swap.LowerTriangular IntegerMultBounds.Swap.Modular in
 /-- Charge the physical transfers and loop tests once per row, and charge the
 exceptional surcharge only on the labels counted by the projector witness. -/
-private theorem packedClassifiedTime_le {m w N B : ℕ} {P : Matrix (Fin m) (Fin m) ℚ}
+theorem packedClassifiedTime_le {m w N B : ℕ} {P : Matrix (Fin m) (Fin m) ℚ}
     (idem : P*P = P) (factor : Factorization univ univ P)
     (small : ∀ k ∈ factorizationDenominators factor, k < prime) (rankFits : P.rank ≤ m)
     (directory : Descriptor) (shape : directory.beforeH = B*prime^(m*((w+1)*m)))

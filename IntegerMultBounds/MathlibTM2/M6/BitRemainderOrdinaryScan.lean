@@ -13,17 +13,18 @@ open IntegerMultBounds.MathlibTM2.Stack Host Cover Cover.Fallback M8.RevMachine
 open IntegerMultBounds.MathlibTM2.Fast.Main IntegerMultBounds.Swap.Modular Matrix
 open LabelTraversal FlatCoordinateLayout M8.Exchange M8.ReversedExchange IntegerMultBounds.Swap.Shear
 
-theorem classifiedOrdinaryDirectory_exec [M8.Machine.Net] {a d common work w W J : ℕ} {U : Type}
+def ClassifiedOrdinaryScan [M8.Machine.Net] {a d common work w W J : ℕ} {U : Type}
     (v : Descriptor) (proj : Matrix (Fin (a+1)) (Fin (a+1)) ℚ)
-    (dimension : (a+1)+(a+1) = d+1) (idem : proj*proj = proj) (adm : Admissible prime proj)
-    (parent : Fin (a+1) → ZMod (prime^(w+1))) (unit : ∀ i, IsUnit (parent i))
-    (data : ScanData (a+1) d w W) (hm : prime^(w+1) < 2^data.H) (hw : W < 2^J) (positive : 0 < W)
+    (dimension : (a+1)+(a+1) = d+1)
+    (parent : Fin (a+1) → ZMod (prime^(w+1)))
+    (data : ScanData (a+1) d w W)
     (room : Record.size d+(rowSwapBlock.tapes+35+2) ≤ (common+24+31+work)+1)
     (fits : (36+2*(a+1)+1+(RingFormula.conjugationDepth (a+1)+1)*13)+3 ≤ (common+24+31+work)+1)
     (capacity : (anchorProgram d true).1+(anchorProgram d false).1+1 ≤ columnCapacity)
     (pool : (RingFormula.conjugationDepth (a+1)+1)*13 ≤ work) (space : 58 ≤ common+24+31+work)
     (cap : 217 ≤ columnCapacity) (overhead childBudget : ℕ)
-    (prefixes : ℕ → List (Fin (prime+4))) (archiveTail ownerTail : List (Fin (prime+4))) (selectorBudget : ℕ) :
+    (prefixes : ℕ → List (Fin (prime+4))) (archiveTail ownerTail : List (Fin (prime+4))) (selectorBudget : ℕ)
+    (localBody : Unit → Pr Unit (66+(common+24+31+work)) columnCapacity prime U) : Prop :=
     let m := a+1
     let K := common+24+31+work
     let M := prime^(w+1)
@@ -32,13 +33,9 @@ theorem classifiedOrdinaryDirectory_exec [M8.Machine.Net] {a d common work w W J
     let inv := fun i => Ring.inverse (parent i)
     let bad := fun j => fallbackBit proj.rank_le_height (reduce M proj) (physicalLabel m (w+1) j)
     let length : N = M^m*(M^m*W) := by simp [N,pow_add,Nat.mul_assoc]
-    ∀ (input : ℕ → Fin N → ZMod 2) (localBody : Unit → Pr Unit (66+K) columnCapacity prime U)
+    ∀ (input : ℕ → Fin N → ZMod 2)
       (selectors : Pr Unit (66+K) columnCapacity prime U)
       (u : HS ((66+(K+1))+5) columnCapacity prime U) (S : Stacks ((66+(K+1))+5) prime),
-    (∀ j, LabelStock.live m (w+1) 1 j = true → bad j = false →
-      let g := physicalLabel m (w+1) j
-      ∀ minor, OrdinaryRecordExec (W := W) (H := data.H) (J := J) cap proj.rank_le_height
-        (ordinaryCaller space) localBody overhead childBudget (g*reduce M proj*g⁻¹) minor parent) →
     let body := fun f => embProg (directoryOrdinaryBank room) id (localBody f)
     let c := mnProgPush (body ())
     let core := ordinaryRowCore (U := U) cap m proj.rank proj.rank_le_height pool space
@@ -118,8 +115,37 @@ theorem classifiedOrdinaryDirectory_exec [M8.Machine.Net] {a d common work w W J
       List.Forall₂ (fun j out => ∃ word, effect j word ∧ out = bits word) rs rows ∧
       F.L (reg 0) = S.L (reg 0) ∧ F.R (reg 0) = rows.flatten ++ ownerTail ∧ F.R (reg 1) = [] ∧ ready (embStk placement (embStk bank F)) [] ∧
       (embStk bank F).R (directoryMatrixTape room) = [] ∧
-      (embStk bank F).R (caller 57) = [] ∧ (embStk bank F).R (caller 56) = [] := by
-  intro m K M N inv bad length input localBody selectors u S installed body c core ports skipRow step scratch goodRow push budget ordinaryEffect
+      (embStk bank F).R (caller 57) = [] ∧ (embStk bank F).R (caller 56) = []
+
+theorem classifiedOrdinaryDirectory_exec [M8.Machine.Net] {a d common work w W J : ℕ} {U : Type}
+    (v : Descriptor) (proj : Matrix (Fin (a+1)) (Fin (a+1)) ℚ)
+    (dimension : (a+1)+(a+1) = d+1) (idem : proj*proj = proj) (adm : Admissible prime proj)
+    (parent : Fin (a+1) → ZMod (prime^(w+1))) (unit : ∀ i, IsUnit (parent i))
+    (data : ScanData (a+1) d w W) (hm : prime^(w+1) < 2^data.H) (hw : W < 2^J) (positive : 0 < W)
+    (room : Record.size d+(rowSwapBlock.tapes+35+2) ≤ (common+24+31+work)+1)
+    (fits : (36+2*(a+1)+1+(RingFormula.conjugationDepth (a+1)+1)*13)+3 ≤ (common+24+31+work)+1)
+    (capacity : (anchorProgram d true).1+(anchorProgram d false).1+1 ≤ columnCapacity)
+    (pool : (RingFormula.conjugationDepth (a+1)+1)*13 ≤ work) (space : 58 ≤ common+24+31+work)
+    (cap : 217 ≤ columnCapacity) (overhead childBudget : ℕ)
+    (prefixes : ℕ → List (Fin (prime+4))) (archiveTail ownerTail : List (Fin (prime+4))) (selectorBudget : ℕ) :
+    let m := a+1
+    let K := common+24+31+work
+    let M := prime^(w+1)
+    letI : NeZero M := ⟨(pow_pos Shared50ModularControl.prime_prime.pos _).ne'⟩
+    let N := M^(m+m)*W
+    let inv := fun i => Ring.inverse (parent i)
+    let bad := fun j => fallbackBit proj.rank_le_height (reduce M proj) (physicalLabel m (w+1) j)
+    let length : N = M^m*(M^m*W) := by simp [N,pow_add,Nat.mul_assoc]
+    ∀ localBody : Unit → Pr Unit (66+K) columnCapacity prime U,
+    (∀ j, LabelStock.live m (w+1) 1 j = true → bad j = false →
+      let g := physicalLabel m (w+1) j
+      ∀ minor, OrdinaryRecordExec (W := W) (H := data.H) (J := J) cap proj.rank_le_height
+        (ordinaryCaller space) localBody overhead childBudget (g*reduce M proj*g⁻¹) minor parent) →
+    ClassifiedOrdinaryScan (J := J) v proj dimension parent data room fits capacity pool space cap overhead childBudget
+      prefixes archiveTail ownerTail selectorBudget localBody := by
+  intro m K M N inv bad length localBody installed
+  unfold ClassifiedOrdinaryScan
+  intro _ _ _ _ _ actualBad _ input selectors u S body c core ports skipRow step scratch goodRow push budget ordinaryEffect
   intro e physical φ code schedule ready placement caller live rs pending bits bank reg start inner advance good padding ordinaryTime cost effect
     matrix generated owner accumulator width saved tmp empty
   apply classifiedDirectory_exec dimension v proj idem adm parent inv (fun i => Ring.mul_inverse_cancel _ (unit i))
@@ -133,10 +159,64 @@ theorem classifiedOrdinaryDirectory_exec [M8.Machine.Net] {a d common work w W J
       change fallbackBit _ _ _ = false
       rw [fallbackBit_eq (by omega : 0 < w+1),show LabelStock.live (a+1) (w+1) 1 j = false from h,Bool.false_and]
   have queue : schedule (j::pending (j+1)) = schedule (pending (j+1)) := by
-    simp [schedule,clear]
+    have hb : actualBad j = false := clear
+    simp [schedule,hb]
   obtain ⟨z,D,t,out,user,price,run,next,word,mask,mode,action⟩ := ordinaryOrPadding_exec cap overhead childBudget v proj
     parent prefixes archiveTail schedule hm pool unit space localBody y A j (pending (j+1)) dir queue
     (fun _ => clear) (input j) payload (fun hj => installed j hj clear)
   exact ⟨z,D,t,out,user,price,run,next,action,word,mask,mode⟩
+
+/-- Every stopped-child sign program for the 128 fields fits the scanner's state bank. -/
+theorem remainderLeafCapacity [M8.Machine.Net] : Record.leafCapacity 128 ≤ columnCapacity := by
+  apply max_le le_rfl
+  apply Finset.sup_le
+  intro i _
+  have bound : ∀ i : Fin 128, (fieldSignProgram i true).1 ≤ 11192 := by decide +kernel
+  exact (bound i).trans remainderStates_fit
+
+/-- Install a single ordinary body per scheduled PR589 interval. Its private tape
+count and cost constants are chosen before the precision or label. -/
+theorem remainderDirectoryBody_exists [M8.Machine.Net] {common work : ℕ} {U : Type}
+    (e : ℕ × ℕ) (member : e ∈ BitHosting.remainderIntervals) (space : 58 ≤ common+24+31+work) :
+    let proj : Matrix (Fin 64) (Fin 64) ℚ := diagonal fun i => if e.1 ≤ i.val ∧ i.val < e.2 then 1 else 0
+    proj.rank = e.2-e.1 ∧ ∃ T, OrdinaryDirectoryBody (d := 63) (Q := columnCapacity) U (le_max_left ..) proj
+      (ordinaryCaller (K := common+24+31+(work+T)) (by omega)) := by
+  intro proj
+  obtain ⟨rank,run⟩ := remainderOrdinary_exec (U := U) e member (le_max_left ..) remainderLeafCapacity (ordinaryCaller space)
+  exact ⟨rank,ordinaryDirectoryBody_exists _ proj space run⟩
+
+/-- The scheduled PR589 interval has one classified scanner body at all precisions. -/
+theorem scheduledOrdinaryScan_exec [M8.Machine.Net] {common work : ℕ} {U : Type}
+    (interval : ℕ × ℕ) (member : interval ∈ BitHosting.remainderIntervals)
+    (space : 58 ≤ common+24+31+work) (pool : (RingFormula.conjugationDepth 64+1)*13 ≤ work)
+    (room : Record.size 127+(rowSwapBlock.tapes+35+2) ≤ (common+24+31+work)+1)
+    (fits : (36+2*64+1+(RingFormula.conjugationDepth 64+1)*13)+3 ≤ (common+24+31+work)+1) :
+    let proj : Matrix (Fin 64) (Fin 64) ℚ := diagonal fun i => if interval.1 ≤ i.val ∧ i.val < interval.2 then 1 else 0
+    ∃ T, ∃ localBody : Unit → Pr Unit (66+(common+24+31+(work+T))) columnCapacity prime U,
+    ∃ C : ℝ, ∃ overhead : ℕ, ∀ w W, 0 < W →
+      let M := prime^(w+1)
+      ∃ budget : ℕ, (budget : ℝ) ≤ C*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau*(M^128*W : ℕ) ∧
+      ∀ (v : Descriptor) (parent : Fin 64 → ZMod M), (∀ i, IsUnit (parent i)) →
+      ∀ data : ScanData 64 127 w W, data.H = M.size →
+      ∀ prefixes archiveTail ownerTail selectorBudget,
+        ClassifiedOrdinaryScan (a := 63) (d := 127) (J := W.size) v proj (by decide) parent data
+          (common := common) (work := work+T) (by omega) (fits.trans (by omega)) remainderAnchorFits (pool.trans (by omega))
+          (by omega) (le_max_left ..) overhead budget prefixes archiveTail ownerTail selectorBudget localBody := by
+  intro proj
+  obtain ⟨_,T,localBody,C,overhead,installed⟩ := remainderDirectoryBody_exists (U := U) interval member space
+  refine ⟨T,localBody,C,overhead,?_⟩
+  intro w W positive M
+  obtain ⟨budget,bill,execute⟩ := installed w W
+  refine ⟨budget,bill positive,?_⟩
+  intro v parent unit data binary prefixes archiveTail ownerTail selectorBudget
+  have adm : Admissible prime proj := by
+    intro i j
+    simp only [proj,diagonal_apply]
+    split_ifs <;> simp
+  apply classifiedOrdinaryDirectory_exec v proj (by decide) (intervalDiagonal_idem 64 interval.1 interval.2) adm
+    parent unit data (binary ▸ Nat.size_le.mp (le_refl _)) (Nat.size_le.mp (le_refl _)) positive
+  intro j live clear g minor
+  rw [binary]
+  exact execute j live clear parent unit positive minor
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
