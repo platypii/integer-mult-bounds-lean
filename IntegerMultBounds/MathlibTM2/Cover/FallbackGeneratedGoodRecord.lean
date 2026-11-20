@@ -184,6 +184,29 @@ private theorem fallbackAllowance (labels : List ℕ) (cost : ℕ → ℕ) (elig
   · exact ⟨remaining/count,(Nat.mul_comm ..).le.trans (Nat.div_mul_le_self remaining count),
       fits (Nat.pos_of_ne_zero zero)⟩
 
+private theorem counterCleanup_le {K A : ℕ} (S : Stacks K A) (tapes digits : List (Fin K))
+    (counter : Fin K) (high : ℕ) (separate : counter ∉ digits) (empty : ∀ i ∈ tapes, S.R i = []) :
+    let R := LabelCountBank.fill digits high (Function.update S.R counter (List.replicate high Node.tick))
+    (tapes.map fun i => 4*(S.L i).length+2*(R i).length+4).sum ≤
+      (tapes.map fun i => 4*(S.L i).length).sum + tapes.length*(2*high+4) := by
+  intro R
+  have bound (i) (hi : i ∈ tapes) : (R i).length ≤ high := by
+    by_cases digit : i ∈ digits <;> by_cases eq : i = counter <;>
+      simp_all [R,LabelCountBank.fill]
+  calc
+    _ ≤ (tapes.map fun i => 4*(S.L i).length+(2*high+4)).sum :=
+      List.sum_le_sum fun i hi => by have := bound i hi; omega
+    _ = _ := by simp [List.sum_map_add,List.map_const']
+
+private theorem recordRadix_le_volume (v : Descriptor) (positive : v.Positive) (w d : ℕ)
+    (width : v.width = d*(w+1)) (active : 0 < d) : prime^(w+1) ≤ volume prime v := by
+  have atom : w+1 ≤ v.width := width ▸ Nat.le_mul_of_pos_left _ active
+  have hp := Networks.Shared50ModularControl.prime_prime.pos
+  have pre := Nat.mul_pos (Nat.mul_pos positive.1 positive.2.1) positive.2.2.1
+  exact (Nat.pow_le_pow_right hp atom).trans
+        ((Nat.le_mul_of_pos_left _ pre).trans ((Nat.le_mul_of_pos_right _ positive.2.2.2.1).trans
+          ((Nat.le_mul_of_pos_right _ (pow_pos hp _)).trans (Nat.le_mul_of_pos_right _ positive.2.2.2.2))))
+
 open RingFormula LabelTraversal IntegerMultBounds.MathlibTM2.Fast.Main in
 theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ} {F U : Type}
     (v : Descriptor) (positive : v.Positive) (w : ℕ) (proj : Matrix (Fin m) (Fin m) ℚ)
@@ -260,6 +283,16 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
       let r := recordRoundTripPorts slot
       let src := fun i : Fin 6 => caller ((i.natAdd 33).castLE (by decide : 39 ≤ 66))
       let dst := hdrPorts.trans inner
+      let g := physicalLabel m (w+1)
+      let G := fun label => g label*reduce M proj*(g label)⁻¹
+      let liveBit := LabelStock.live m (w+1) 1
+      let badBit := fun label => fallbackBit rankFits (reduce M proj) (g label)
+      let φ := LabelRing.res prime (w+1) (by omega)
+      let table := projectorResidual (finSumFinEquiv : (Fin m ⊕ Fin m) ≃ Fin (m+m))
+        (reduce prime proj) (φ ∘ parent) (φ ∘ parentInv)
+      let fallbackCode := fun j => residualSchedule (A := prime) (table (LabelStock.residue m (w+1) 1 j))
+      let schedules := fun (pending : List ℕ) => pending.flatMap fun j =>
+        if badBit j then fallbackCode j else []
       let ready := fun (D : Stacks K prime) (pending : List ℕ) =>
         D.R (field 1) = pending.flatMap (LabelDirectory.entry prefixes m (w+1)) ++ archiveTail ∧
         (∀ j ∈ pending, (D.R (field 3)).length = (prefixes j).length) ∧
@@ -268,14 +301,11 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
         D.R (caller 2) = binSyms H M ∧ D.R (caller 28) = binSyms 1 1 ∧ D.R (caller 53) = binSyms J W ∧
         (∀ i, D.R (src i) = (Routines.hdr v i).map bitSymbol) ∧
         D.R (caller 44) = binSyms H (1 : ZMod M).val ∧ (D.R (caller 45)).length = w ∧
-        D.R (caller 55) = (List.ofFn fun i => binSyms H (parent i).val).flatten
+        D.R (caller 55) = (List.ofFn fun i => binSyms H (parent i).val).flatten ∧
+        D.R (caller 54) = schedules pending
       let payload := fun (word : Fin N → ZMod 2) (D : Stacks K prime) => ∀ z,
         readAt blank (D.L (r 0)) (D.R (r 0)) (z-head) =
           RadixToBinary.binaryEncoding.encode (putWord source head ((List.ofFn word).map SparseRoleCircuit.encode) z)
-      let g := physicalLabel m (w+1)
-      let G := fun label => g label*reduce M proj*(g label)⁻¹
-      let liveBit := LabelStock.live m (w+1) 1
-      let badBit := fun label => fallbackBit rankFits (reduce M proj) (g label)
       let call := fun i : Fin d => packedCoordinateProgram (F := Empty) (U := U) io i.val i.val ef xf fits eqs xqs cap
       let cost := packedCoordinatesTime d N w (LeafCore.core io).tapes
         (packedLeafPush (F := Empty) (U := U) io Empty.elim) entry.tapes leave.tapes
@@ -326,14 +356,14 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
       directory.Positive → (whole.R (caller 29)).length = directory.beforeRows →
       (whole.R (caller 30)).length = directory.rows → (whole.R (caller 31)).length = directory.beforeH →
       whole.R parents = [] →
-      whole.R mask = [] → whole.R mode = [] →
+      whole.R mask = [] → whole.R mode = [] → whole.R (caller 54) = [] →
       let high := prime^w
       let initCounters : Pr F K Q prime U := (Node.expProg 0 prime (caller 28) (caller 45) (caller 58) (caller 59) (caller 60) (caller 61)).seq
         (Node.scanR (caller 58) (caller 59) (LabelCountBank.pushAll (rs.map Prod.fst)))
       let clean := {whole with L := fun i => if i ∈ privateTapes then [] else whole.L i,
-                               R := fun i => if i ∈ privateTapes then [] else whole.R i}
+                               R := fun i => if i ∈ privateTapes then [] else Function.update whole.R (caller 54) (schedules labels) i}
       ready clean labels → payload word clean →
-      let setupCost := (26*high+4) + ((44*labels.length+13*(w+1)+16) + 2*((6+10*(m*m))*labels.length+4) +
+      let setupCost := (26*high+4) + ((44*labels.length+13*(w+1)+16) + 3*((6+10*(m*m))*labels.length+4) +
         (2*(directory.beforeRows*directory.rows*B)+2)) +
         ((privateTapes.map fun i => 4*(whole.L i).length).sum + privateTapes.length*(2*high+4)+1)
       let branchCost := fun i => if liveBit i then (if badBit i then badCost i else charge i) else skipCost i
@@ -354,9 +384,9 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
         labels.foldr (fun i rest x => ∃ y, action i x y ∧ rest y) (· = next) word := by
   intro d common host M N entry leave record bank commonPorts aux hdrPorts logical addr inner caller K ef xf eqs xqs initialWord
     body initialUser initialState poolFits directory prefixes archiveTail allLabels slots headers scanCaller scan joined dirSlots dir pool pivot counters inputs ports a digits prefixWidth zeros
-    packedLabel clock count formula detFormula generationBill generate withZero field slot r src dst ready payload gs matrices liveBit badBit
+    packedLabel clock count formula detFormula generationBill generate withZero field slot r src dst gs matrices liveBit badBit φ table fallbackCode schedules ready payload
     call cost budget coordinate effects reverse transfer marks loading conversion headerCost raw tripCost runBills prepareCounters prepareHeaders recordProgram
-    privateTapes initialClear c bodyBound charge mask mode modes skip skipCost fallback badCost badEffect bad room Bcount rs parents shape freePrivate dirPositive brSize rowsSize beforeHSize parentsFree freeMask freeMode high initCounters clean initialReady initialPayload setupCost branchCost action binaryRun binaryCharge exceptional priced
+    privateTapes initialClear c bodyBound charge mask mode modes skip skipCost fallback badCost badEffect bad room Bcount rs parents shape freePrivate dirPositive brSize rowsSize beforeHSize parentsFree freeMask freeMode freeQueue high initCounters clean initialReady initialPayload setupCost branchCost action binaryRun binaryCharge exceptional priced
   have clockSlot : headers 0 = 45 := rfl
   have widthSlot : headers 2 = 2 := rfl
   have unitSlot : headers 5 = 44 := rfl
@@ -375,13 +405,13 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
       intro eq; subst i; change 58 ≤ port.val at hi; omega
     have so (i) : src i ≠ caller port := apart _ (by intro eq; have h := congrArg Fin.val eq; change 33+i.val = port.val at h; omega)
     have right (i : Fin 66) (small : i.val < 56) := Function.update_of_ne (apart i (by intro eq; subst port; omega)) xs S.R
-    obtain ⟨hd,hw,hp,hb,hq,h2,h28,h53,hs,h44,h45,h55⟩ := h
+    obtain ⟨hd,hw,hp,hb,hq,h2,h28,h53,hs,h44,h45,h55,h54⟩ := h
     refine ⟨⟨(right 46 (by decide)).trans hd,fun j hj => (congrArg List.length (right 47 (by decide))).trans (hw j hj),
       fun i hi => ⟨(hp i hi).1,(Function.update_of_ne (pr i hi) _ _).trans (hp i hi).2⟩,
       (right 49 (by decide)).trans hb,?_,(right 2 (by decide)).trans h2,(right 28 (by decide)).trans h28,
       (right 53 (by decide)).trans h53,fun i => (Function.update_of_ne (so i) _ _).trans (hs i),
       (right 44 (by decide)).trans h44,(congrArg List.length (right 45 (by decide))).trans h45,
-      (right 55 (by decide)).trans h55⟩,?_⟩
+      (right 55 (by decide)).trans h55,(right 54 (by decide)).trans h54⟩,?_⟩
     · obtain ⟨suffix,eq⟩ := hq; exact ⟨suffix,(right 48 (by decide)).trans eq⟩
     · intro z
       change readAt _ _ (Function.update S.R (caller port) xs (r 0)) _ = _
@@ -402,36 +432,23 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
   have modeRegs := layout 56 (by decide) (by decide)
   let R := LabelCountBank.fill (rs.map Prod.fst) high
     (Function.update initialState.R (caller 58) (List.replicate high Node.tick))
-  have cleanup : (privateTapes.map fun i => 4*(initialState.L i).length+2*(R i).length+4).sum ≤
-      (privateTapes.map fun i => 4*(initialState.L i).length).sum + privateTapes.length*(2*high+4) := by
-    have bound (i) (hi : i ∈ privateTapes) : (R i).length ≤ high := by
-      have blank := freePrivate i (by simpa [privateTapes] using hi)
-      by_cases eq : i = caller 58
-      · subst i
-        have off : caller 58 ∉ rs.map Prod.fst := by
-          intro h
-          obtain ⟨p,hp,h⟩ := List.mem_map.mp h
-          exact callerOutside 58 (List.mem_flatMap.mpr ⟨p,hp,by simp [← h]⟩)
-        simp [R,LabelCountBank.fill,off]
-      · simp [R,LabelCountBank.fill,Function.update_of_ne eq,blank]
-        split <;> simp
-    calc
-      _ ≤ (privateTapes.map fun i => 4*(initialState.L i).length+(2*high+4)).sum :=
-        List.sum_le_sum fun i hi => by have := bound i hi; omega
-      _ = _ := by simp [List.sum_map_add, List.map_const']
+  have cleanup := counterCleanup_le initialState privateTapes (rs.map Prod.fst) (caller 58) high
+    (by intro h; obtain ⟨p,hp,eq⟩ := List.mem_map.mp h
+        exact callerOutside 58 (List.mem_flatMap.mpr ⟨p,hp,by simp [← eq]⟩))
+    (fun i hi => freePrivate i (by simpa [privateTapes] using hi))
   have fillKeep (i) (outside : i ∉ LabelTraversal.slots rs) (off : i ≠ caller 58) : R i = initialState.R i := by
     have nf : i ∉ rs.map Prod.fst := by
       intro h; obtain ⟨p,hp,rfl⟩ := List.mem_map.mp h
       exact outside (List.mem_flatMap.mpr ⟨p,hp,by simp⟩)
     simp [R,LabelCountBank.fill,nf,off]
   have callerKeep (j : Fin 66) (hj : j ≠ 58) := fillKeep _ (callerOutside j) (caller.injective.ne hj)
-  have rawCaller (j : Fin 58) : clean.R (caller (j.castAdd 8)) = initialState.R (caller (j.castAdd 8)) := by
+  have rawCaller (j : Fin 58) (off : j.castAdd 8 ≠ (54 : Fin 66)) : clean.R (caller (j.castAdd 8)) = initialState.R (caller (j.castAdd 8)) := by
     have lt : (caller (j.castAdd 8)).val < 58 := j.isLt
-    simp [clean,privateTapes,lt.not_ge]
+    simp [clean,privateTapes,lt.not_ge,Function.update_of_ne (caller.injective.ne off)]
   obtain ⟨_,_,_,_,_,_,unitWord,_,_,_,ticks,_⟩ := And.intro initialReady.1 initialReady.2
   have single : (initialState.R (caller 28)).length = 1 := by
-    exact (congrArg List.length (rawCaller 28)).symm.trans ((congrArg List.length unitWord).trans (length_binSyms ..))
-  have clockLen : (initialState.R (caller 45)).length = w := (congrArg List.length (rawCaller 45)).symm.trans ticks
+    exact (congrArg List.length (rawCaller 28 (by decide))).symm.trans ((congrArg List.length unitWord).trans (length_binSyms ..))
+  have clockLen : (initialState.R (caller 45)).length = w := (congrArg List.length (rawCaller 45 (by decide))).symm.trans ticks
   have nd := (List.nodup_append.mp maskRegs.tail.tail).1
   obtain ⟨radix,z₀,t₀,user₀,time₀,prepare⟩ := LabelCountBank.prepareClock_exec body rs
     (caller 28) (caller 45) (caller 58) (caller 59) (caller 60) (caller 61)
@@ -444,18 +461,22 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
         · exact freePrivate _ (by have := rsPrivate _ h; omega))
   rw [clockLen] at radix time₀ prepare
   let filled := {initialState with R := R}
-  have cleanEq : {filled with L := fun i => if i ∈ privateTapes then [] else filled.L i,
-                              R := fun i => if i ∈ privateTapes then [] else filled.R i} = clean := by
+  let queued := {filled with R := Function.update filled.R (caller 54) (schedules allLabels)}
+  have cleanEq : {queued with L := fun i => if i ∈ privateTapes then [] else filled.L i,
+                              R := fun i => if i ∈ privateTapes then [] else queued.R i} = clean := by
     apply Stacks.ext <;> try rfl
     funext i
     by_cases h : i ∈ privateTapes
     · simp [h,clean]
     · have lt : i.val < 58 := by simpa [privateTapes] using h
       have off : i ≠ caller 58 := by intro eq; subst i; change 58 < 58 at lt; omega
-      simp [h,clean,filled,fillKeep i (fun mem => by have := rsPrivate i mem; omega) off]
+      by_cases q : i = caller 54
+      · subst i
+        simp only [clean,queued,ite_eq_right h,Function.update_self]
+      simp [h,clean,queued,q,filled,fillKeep i (fun mem => by have := rsPrivate i mem; omega) off]
   let dim := parentCountPorts.trans caller
-  obtain ⟨writer,generateMasks⟩ := countedRecordMasks_exec body rankFits
-    ((LabelRing.res prime (w+1) (by omega)).mapMatrix (reduce M proj)) rs sizeRs dim mask mode saved apart maskRegs modeRegs
+  obtain ⟨writer,generateMasks⟩ := countedRecordControls_exec body rankFits
+    ((LabelRing.res prime (w+1) (by omega)).mapMatrix (reduce M proj)) table rs sizeRs dim (caller 54) mask mode saved apart (caller.injective.ne (by decide)) (caller.injective.ne (by decide)) (layout 54 (by decide) (by decide)) maskRegs modeRegs
   obtain ⟨y,l,hy,hl,write⟩ := generateMasks directory w Bcount (reduce M proj) rfl dirPositive shape z₀ filled
     radix ((callerKeep 62 (by decide)).trans (freePrivate _ (by change 58 ≤ 62; decide)))
     ((congrArg List.length (callerKeep 29 (by decide))).trans brSize)
@@ -469,13 +490,21 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
         rcases parentCountPorts_scratch k hk with h | h
         · rw [h]; exact (callerKeep 50 (by decide)).trans parentsFree
         · exact tmp _ h)
+    ((callerKeep 54 (by decide)).trans freeQueue)
     ((callerKeep 57 (by decide)).trans freeMask) ((callerKeep 56 (by decide)).trans freeMode)
   obtain ⟨z,hz,clearMasks⟩ := clearAfterMasks_exec body mask mode privateTapes ((List.nodup_finRange K).filter _)
-    (by simp [privateTapes,mask,caller]) (by simp [privateTapes,mode,caller]) liveWords badWords y filled
+    (by simp [privateTapes,mask,caller]) (by simp [privateTapes,mode,caller]) liveWords badWords y queued
   let setBits := fun (D : Stacks K prime) => {D with R := Function.update (Function.update D.R mask liveWords) mode badWords}
-  change Exec body _ _ _ (mk z (setBits {filled with L := fun i => if i ∈ privateTapes then [] else filled.L i,
-                                                     R := fun i => if i ∈ privateTapes then [] else filled.R i})) at clearMasks
-  rw [cleanEq] at clearMasks
+  change Exec body _ _ _ (mk z (setBits {queued with L := fun i => if i ∈ privateTapes then [] else filled.L i,
+                                                     R := fun i => if i ∈ privateTapes then [] else queued.R i})) at clearMasks
+  have queueCost : (privateTapes.map fun i => 4*(queued.L i).length+2*(queued.R i).length+4) =
+      privateTapes.map (fun i => 4*(initialState.L i).length+2*(R i).length+4) := by
+    apply List.map_congr_left
+    intro i hi
+    have lo : 58 ≤ i.val := by simpa [privateTapes] using hi
+    have off : i ≠ caller 54 := by intro eq; subst i; change 58 ≤ 54 at lo; omega
+    simp [queued,filled,off]
+  rw [cleanEq,queueCost] at clearMasks
   let liveState := {clean with R := Function.update clean.R mask liveWords}
   let startState := {liveState with R := Function.update liveState.R mode badWords}
   obtain ⟨r₁,p₁⟩ := release 57 (by decide) (by decide) _ _ clean liveWords initialReady initialPayload
@@ -498,12 +527,7 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
     have base : charge 0 ≤ baseline := by
       rcases choice with direct | ⟨active,binary,trailingBits,limit⟩
       · exact direct
-      have atom : w+1 ≤ v.width := width ▸ Nat.le_mul_of_pos_left _ active
-      have hp := Networks.Shared50ModularControl.prime_prime.pos
-      have pre := Nat.mul_pos (Nat.mul_pos positive.1 positive.2.1) positive.2.2.1
-      have radix : M ≤ N := (Nat.pow_le_pow_right hp atom).trans
-        ((Nat.le_mul_of_pos_left _ pre).trans ((Nat.le_mul_of_pos_right _ positive.2.2.2.1).trans
-          ((Nat.le_mul_of_pos_right _ (pow_pos hp _)).trans (Nat.le_mul_of_pos_right _ positive.2.2.2.2))))
+      have radix := recordRadix_le_volume v positive w d width active
       have trip : tripCost ≤ budget + recordRoundTripRate m*N := by
         dsimp only [tripCost]
         simp only [active,binary,trailingBits,and_self,ite_true]
@@ -543,7 +567,11 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
     by_cases live : liveBit label = true
     case neg =>
       have pad := Bool.eq_false_iff.mpr live
-      obtain ⟨dir,widths,privateBlank,scratch,projector,base,unit,trailing,headersIn,one,ticks,archive⟩ := start
+      have noCode : badBit label = false := by
+        dsimp only [badBit,gs]
+        rw [fallbackBit_eq (by omega : 0 < w+1),show LabelStock.live m (w+1) 1 label = false from pad]
+        rfl
+      obtain ⟨dir,widths,privateBlank,scratch,projector,base,unit,trailing,headersIn,one,ticks,archive,queue⟩ := start
       let tail := labels.flatMap (LabelDirectory.entry prefixes m (w+1)) ++ archiveTail
       obtain ⟨z,user,advance⟩ := advanceGoodRecord_exec body scan m w label prefixes labels archiveTail u whole dir
         (widths label List.mem_cons_self) ticks scratch
@@ -555,7 +583,8 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
           (widths j (List.mem_cons_of_mem _ hj)),?_,(keep 49 (by decide)).trans scratch,?_,
           (keep 2 (by decide)).trans base,(keep 28 (by decide)).trans unit,(keep 53 (by decide)).trans trailing,
           fun i => (Function.update_of_ne (srcOff i) _ _).trans (headersIn i),(keep 44 (by decide)).trans one,
-          (congrArg List.length (keep 45 (by decide))).trans ticks,(keep 55 (by decide)).trans archive⟩
+          (congrArg List.length (keep 45 (by decide))).trans ticks,(keep 55 (by decide)).trans archive,
+          (keep 54 (by decide)).trans (by simpa only [schedules,List.flatMap_cons,noCode,Bool.false_eq_true,ite_false,List.nil_append] using queue)⟩
         · intro i hi
           exact ⟨(privateBlank i hi).1,(Function.update_of_ne (by intro eq; subst i; change 58 ≤ 46 at hi; omega) _ _).trans (privateBlank i hi).2⟩
         · obtain ⟨xs,h⟩ := projector; exact ⟨xs,(keep 48 (by decide)).trans h⟩
@@ -577,7 +606,7 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
     let tail := labels.flatMap (LabelDirectory.entry prefixes m (w+1)) ++ archiveTail
     let generation := generationBill label
     let runCost := runBills label
-    obtain ⟨dirInput,widths,privateBlank,scanBlank,projectorInput,base,unit,trailing,sourceWords,one,ticks,archive⟩ := start
+    obtain ⟨dirInput,widths,privateBlank,scanBlank,projectorInput,base,unit,trailing,sourceWords,one,ticks,archive,queue⟩ := start
     have prefixInput := widths label List.mem_cons_self
     let commonTape := fun k : Fin common => (((k.castAdd 24).castAdd 31).castAdd work)
     let roles := SharedBank.empty T prime
@@ -957,7 +986,7 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
     refine ⟨finish,_,_,next,userFinish.trans (user.trans (hz.trans (hHeaders.trans (hUser.trans hy)))),Nat.add_le_add bound
       (charge.trans (Nat.add_le_add_left (Nat.mul_le_mul_left 6 (Nat.mul_le_mul_left _ bound)) _)),
       Exec.seq step clear,?_,⟨minor,action⟩,?_,(finalFrame 57 (by decide) (by decide)).2,(finalFrame 56 (by decide) (by decide)).2⟩
-    · refine ⟨?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_⟩
+    · refine ⟨?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_⟩
       · simp [show scan 2 ∉ privateTapes from callerOut _,finalBank,show field 1 = scan 2 from rfl,tail]
       · intro j hj
         exact (congrArg List.length (hdrFrame 3 (scanOff 0 (by decide)) (by decide))).trans
@@ -979,6 +1008,7 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
       · have h := hdrFrame 0 (by rw [clockSlot]; decide) (by decide)
         rw [clockSlot] at h; exact (congrArg List.length h).trans ticks
       · exact (finalFrame 55 (by decide) (dirOff 55 (by decide))).2.trans archive
+      · exact (show _ = whole.R (caller 54) from (finalFrame 54 (by decide) (by decide)).2).trans (by simpa only [schedules,List.flatMap_cons,good,Bool.false_eq_true,ite_false,List.nil_append] using queue)
     · have off : r 0 ≠ scan 2 := by
         rw [first]
         exact caller.injective.ne ((Fin.castAddEmb 8).injective.ne (scanOff 2 (by decide)).symm)

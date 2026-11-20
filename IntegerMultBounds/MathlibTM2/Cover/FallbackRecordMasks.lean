@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackPivotStream
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackPhysicalLabel
 public import IntegerMultBounds.MathlibTM2.Cover.LabelSpectators
 public import IntegerMultBounds.MathlibTM2.Cover.LabelPadProgram
@@ -10,6 +11,41 @@ public import IntegerMultBounds.MathlibTM2.Cover.FallbackShearCleanup
 namespace IntegerMultBounds.MathlibTM2.Cover.Fallback
 open IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2.Stack Host LabelTraversal
 open IntegerMultBounds.Networks.Shared50ModularControl (prime)
+
+noncomputable def residualSchedule {A d : ℕ} (C : Matrix (Fin d) (Fin d) (ZMod prime)) :
+    List (Fin (A+4)) :=
+  let rows := classPivots C
+  bitSymbol (negativeAnchor rows C) :: (scheduleCode rows ++ orderedScheduleCode (List.finRange d).reverse rows)
+
+/-- The exceptional branch reads its sign followed by both pivot schedules.
+The other branches leave this queue in place. -/
+theorem fallbackSchedule_writes {T Q A m d r : ℕ} {P U : Type} (body : P → Pr P T Q A U)
+    (hr : r ≤ m) (request : Matrix (Fin m) (Fin m) (ZMod prime))
+    (table : Matrix (Fin m) (Fin m) (ZMod prime) → Matrix (Fin d) (Fin d) (ZMod prime))
+    (rs : List (Pair T)) (size : rs.length = m*m) (out count saved : Fin T)
+    (regs : (count :: saved :: (slots rs ++ [out])).Nodup) :
+    ∃ program : Pr P T Q A U, ∀ (v : RecursiveInterchangeLayout.Descriptor) (w B : ℕ)
+      (proj : LabelPadding.Label m (w+1)), (LabelRing.res prime (w+1) (by omega)).mapMatrix proj = request →
+      v.beforeH = B*prime^(m*((w+1)*m)) →
+      Writes body (fun R => ready (prime^w) R rs ∧ R saved = [] ∧
+        (R count).length = v.beforeRows*v.rows*B) out program
+        ((List.range (LabelMask.records v)).flatMap fun j =>
+          if fallbackBit hr proj (physicalLabel m (w+1) j) then
+            residualSchedule (table (LabelStock.residue m (w+1) 1 j))
+          else [])
+        ((v.beforeRows*v.rows*B)*(time (prime^w) (m*m) 1+5)+4) := by
+  classical
+  let emit := fun g : Matrix (Fin m) (Fin m) (ZMod prime) =>
+    if decide (g.det ≠ 0) && !LabelProjector.good request r hr g then
+      residualSchedule (A := A) (table g)
+    else []
+  obtain ⟨program,run⟩ := recordWords_writes (body := body) m
+    (fun a => emit (LabelSelectors.matrix m a)) rs size out count saved regs
+  refine ⟨program,?_⟩
+  intro v w B proj reduction shape
+  simpa only [LabelSelectors.recordMap,LabelSelectors.residue_eq,List.flatMap_def,emit,
+    fallbackBit_eq (by omega : 0 < w+1),reduction,LabelStock.live,Nat.add_one_sub_one] using
+    run v (w+1) B (by omega) shape
 
 /-- Each residue digit uses one counter in each half of a private tape interval. -/
 def residuePairs {k : ℕ} (n : ℕ) (room : n+n ≤ k) : List (Pair (66+k)) :=
@@ -80,6 +116,53 @@ theorem recordMasks_exec {T Q A m r : ℕ} {P U : Type} (body : P → Pr P T Q A
   have bill := LabelPadProgram.selector_cost v m (w+1) B (by omega) shape
   simp only [Nat.add_sub_cancel] at bill hn
   refine ⟨z,n+t,hz.trans hy,?_,Exec.seq emit emitBad⟩
+  simp only [labels,List.length_range]
+  omega
+
+/-- Generate the exceptional schedules and both selectors with a single
+initialized residue bank and parent counter. -/
+theorem recordControls_exec {T Q A m r d : ℕ} {P U : Type} (body : P → Pr P T Q A U)
+    (hr : r ≤ m) (request : Matrix (Fin m) (Fin m) (ZMod prime))
+    (table : Matrix (Fin m) (Fin m) (ZMod prime) → Matrix (Fin d) (Fin d) (ZMod prime))
+    (rs : List (Pair T)) (size : rs.length = m*m) (queue mask mode parents saved : Fin T)
+    (apart : mask ≠ mode) (mq : mask ≠ queue) (bq : mode ≠ queue)
+    (regs : ∀ j ∈ [queue,mask,mode], (parents :: saved :: (slots rs ++ [j])).Nodup) :
+    ∃ program : Pr P T Q A U, ∀ (v : RecursiveInterchangeLayout.Descriptor) (w B : ℕ)
+      (proj : LabelPadding.Label m (w+1)), (LabelRing.res prime (w+1) (by omega)).mapMatrix proj = request →
+      v.beforeH = B*prime^(m*((w+1)*m)) →
+      ∀ (u : HS T Q A U) (S : Stacks T A), ready (prime^w) S.R rs → S.R saved = [] →
+      (S.R parents).length = v.beforeRows*v.rows*B → S.R queue = [] → S.R mask = [] → S.R mode = [] →
+      let labels := List.range (LabelMask.records v)
+      let bad := fun j => fallbackBit hr proj (physicalLabel m (w+1) j)
+      let codes := labels.flatMap fun j => if bad j then residualSchedule (A := A) (table (LabelStock.residue m (w+1) 1 j)) else []
+      let live := labels.map fun j => bitSymbol (a := A) (LabelStock.live m (w+1) 1 j)
+      let modes := labels.map fun j => bitSymbol (a := A) (bad j)
+      ∃ z n, z.user = u.user ∧ n ≤ 3*((6+10*(m*m))*labels.length+4) ∧
+        Exec body program (mk u S) n (mk z {S with R := Function.update (Function.update (Function.update S.R queue codes) mask live) mode modes}) := by
+  have qr := regs queue (by simp)
+  obtain ⟨schedule,write⟩ := fallbackSchedule_writes body hr request table rs size queue parents saved qr
+  obtain ⟨masks,select⟩ := recordMasks_exec body hr request rs size mask mode parents saved apart
+    (regs mask (by simp)) (regs mode (by simp))
+  refine ⟨schedule.seq masks,?_⟩
+  intro v w B proj reduction shape u S radix scratch count blank emptyMask emptyMode labels bad codes live modes
+  obtain ⟨y,n,user,time,run⟩ := write v w B proj reduction shape u S ⟨radix,scratch,count⟩
+  simp only [blank,List.append_nil] at run
+  let D := {S with R := Function.update S.R queue codes}
+  have sep := (List.nodup_append.mp qr.tail.tail).2.2
+  have keep (i) (hi : i ∈ slots rs) : D.R i = S.R i := Function.update_of_ne (sep i hi queue (by simp)) _ _
+  have readyD : ready (prime^w) D.R rs := by
+    intro pair h
+    rw [keep _ (List.mem_flatMap.mpr ⟨pair,h,by simp⟩),keep _ (List.mem_flatMap.mpr ⟨pair,h,by simp⟩)]
+    exact radix pair h
+  have savedOff : saved ≠ queue := by rintro rfl; exact qr.tail.notMem (by simp)
+  have parentsOff : parents ≠ queue := by rintro rfl; exact qr.notMem (by simp)
+  obtain ⟨z,t,hz,ht,dispatch⟩ := select v w B proj reduction shape y D readyD
+    ((Function.update_of_ne savedOff ..).trans scratch) (by simpa [D,parentsOff] using count)
+    ((Function.update_of_ne mq ..).trans emptyMask) ((Function.update_of_ne bq ..).trans emptyMode)
+  have traversal := LabelPadProgram.selector_cost v m (w+1) B (by omega) shape
+  simp only [Nat.add_one_sub_one] at traversal
+  simp only [List.length_range] at ht
+  refine ⟨z,n+t,hz.trans user,?_,Exec.seq run dispatch⟩
   simp only [labels,List.length_range]
   omega
 
@@ -154,30 +237,36 @@ theorem parentCountPorts_scratch (k : Fin 8) (hk : 4 ≤ k) :
     parentCountPorts k = 50 ∨ 58 < (parentCountPorts k).val := by
   exact (by decide : ∀ k : Fin 8, 4 ≤ k → parentCountPorts k = 50 ∨ 58 < (parentCountPorts k).val) k hk
 
-theorem countedRecordMasks_exec {T Q A m d : ℕ} {P U : Type} (body : P → Pr P T Q A U)
+theorem countedRecordControls_exec {T Q A m d k : ℕ} {P U : Type} (body : P → Pr P T Q A U)
     (hd : d ≤ m) (request : Matrix (Fin m) (Fin m) (ZMod prime))
-    (rs : List (Pair T)) (size : rs.length = m*m) (r : Fin 8 ↪ Fin T) (mask mode saved : Fin T)
-    (apart : mask ≠ mode) (maskRegs : (r 5 :: saved :: (slots rs ++ [mask])).Nodup)
+    (table : Matrix (Fin m) (Fin m) (ZMod prime) → Matrix (Fin k) (Fin k) (ZMod prime))
+    (rs : List (Pair T)) (size : rs.length = m*m) (r : Fin 8 ↪ Fin T) (queue mask mode saved : Fin T)
+    (apart : mask ≠ mode) (mq : mask ≠ queue) (bq : mode ≠ queue)
+    (queueRegs : (r 5 :: saved :: (slots rs ++ [queue])).Nodup) (maskRegs : (r 5 :: saved :: (slots rs ++ [mask])).Nodup)
     (modeRegs : (r 5 :: saved :: (slots rs ++ [mode])).Nodup) :
     ∃ program : Pr P T Q A U, ∀ (v : RecursiveInterchangeLayout.Descriptor) (w B : ℕ)
       (proj : LabelPadding.Label m (w+1)), (LabelRing.res prime (w+1) (by omega)).mapMatrix proj = request →
       v.Positive → v.beforeH = B*prime^(m*((w+1)*m)) →
       ∀ (u : HS T Q A U) (S : Stacks T A), ready (prime^w) S.R rs → S.R saved = [] →
       (S.R (r 0)).length = v.beforeRows → (S.R (r 1)).length = v.rows → (S.R (r 2)).length = v.beforeH →
-      (S.R (r 3)).length = w → (∀ k : Fin 8, 4 ≤ k → S.R (r k) = []) → S.R mask = [] → S.R mode = [] →
+      (S.R (r 3)).length = w → (∀ k : Fin 8, 4 ≤ k → S.R (r k) = []) → S.R queue = [] → S.R mask = [] → S.R mode = [] →
       let labels := List.range (LabelMask.records v)
+      let codes := labels.flatMap fun j => if fallbackBit hd proj (physicalLabel m (w+1) j) then residualSchedule (A := A) (table (LabelStock.residue m (w+1) 1 j)) else []
       let live := labels.map fun i => bitSymbol (a := A) (LabelStock.live m (w+1) 1 i)
       let bad := labels.map fun i => bitSymbol (a := A) (fallbackBit hd proj (physicalLabel m (w+1) i))
       ∃ z n, z.user = u.user ∧ n ≤ (44*labels.length+13*(w+1)+16) +
-        2*((6+10*(m*m))*labels.length+4) + (2*(v.beforeRows*v.rows*B)+2) ∧
-        Exec body program (mk u S) n (mk z {S with R := Function.update (Function.update S.R mask live) mode bad}) := by
-  obtain ⟨writer,write⟩ := recordMasks_exec body hd request rs size mask mode (r 5) saved apart maskRegs modeRegs
+        3*((6+10*(m*m))*labels.length+4) + (2*(v.beforeRows*v.rows*B)+2) ∧
+        Exec body program (mk u S) n (mk z {S with R := Function.update (Function.update (Function.update S.R queue codes) mask live) mode bad}) := by
+  obtain ⟨writer,write⟩ := recordControls_exec body hd request table rs size queue mask mode (r 5) saved apart mq bq (by
+    intro i hi; simp only [List.mem_cons,List.not_mem_nil,or_false] at hi
+    rcases hi with rfl | rfl | rfl <;> assumption)
   refine ⟨((parentCounter m r).seq writer).seq (bclear (r 5)),?_⟩
-  intro v w B proj reduction positive shape u S radix scratch br rows bh clock fresh freeMask freeMode labels live bad
+  intro v w B proj reduction positive shape u S radix scratch br rows bh clock fresh freeQueue freeMask freeMode labels codes live bad
   obtain ⟨y,n,user,time,prepare⟩ := parentCounter_exec body m r v positive w B shape u S br rows bh clock fresh
   let parents := List.replicate (v.beforeRows*v.rows*B) (Node.tick (A := A))
   let E := {S with R := Function.update S.R (r 5) parents}
   have outside := maskRegs.notMem
+  have pq : r 5 ≠ queue := fun eq => queueRegs.notMem (by simp [eq])
   have pm : r 5 ≠ mask := fun eq => outside (by simp [eq])
   have pb : r 5 ≠ mode := fun eq => modeRegs.notMem (by simp [eq])
   have keep (i) (hi : i ∈ slots rs) : E.R i = S.R i :=
@@ -188,17 +277,17 @@ theorem countedRecordMasks_exec {T Q A m d : ℕ} {P U : Type} (body : P → Pr 
     exact radix pair h
   obtain ⟨x,t,hx,ht,emit⟩ := write v w B proj reduction shape y E radix'
     ((Function.update_of_ne (fun (eq : saved = r 5) => outside (by simp [eq])) _ _).trans scratch)
-    (by simp [E,parents]) ((Function.update_of_ne pm.symm _ _).trans freeMask)
+    (by simp [E,parents]) ((Function.update_of_ne pq.symm _ _).trans freeQueue) ((Function.update_of_ne pm.symm _ _).trans freeMask)
     ((Function.update_of_ne pb.symm _ _).trans freeMode)
-  let D := {E with R := Function.update (Function.update E.R mask live) mode bad}
+  let D := {E with R := Function.update (Function.update (Function.update E.R queue codes) mask live) mode bad}
   obtain ⟨z,hz,_,clear⟩ := bclear_exec body (r 5) x D
-  have len : (D.R (r 5)).length = v.beforeRows*v.rows*B := by simp [D,E,parents,pm,pb]
+  have len : (D.R (r 5)).length = v.beforeRows*v.rows*B := by simp [D,E,parents,pm,pb,pq]
   rw [len] at clear
-  have frame : Function.update D.R (r 5) [] = Function.update (Function.update S.R mask live) mode bad := by
+  have frame : Function.update D.R (r 5) [] = Function.update (Function.update (Function.update S.R queue codes) mask live) mode bad := by
     funext i
     by_cases p : i = r 5
-    · subst i; simp [pm,pb,fresh 5 (by decide)]
-    · by_cases a : i = mode <;> by_cases b : i = mask <;> simp [D,E,p,a,b,apart,pm.symm,pb.symm]
+    · subst i; simp [pm,pb,pq,fresh 5 (by decide)]
+    · by_cases a : i = mode <;> by_cases b : i = mask <;> by_cases q : i = queue <;> simp [D,E,Function.update_apply,p,a,b,q,apart,mq,bq,pm.symm,pb.symm,pq.symm]
   refine ⟨z,_,hz.trans (hx.trans user),Nat.add_le_add_right (Nat.add_le_add (by simpa [labels] using time) ht) _,
     Exec.seq (Exec.seq prepare emit) ?_⟩
   simpa only [frame] using clear
