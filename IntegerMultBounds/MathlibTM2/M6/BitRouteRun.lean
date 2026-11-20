@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.M6.BitInvocation
+public import IntegerMultBounds.Networks.Certificates.PR589.Copy.Data
 public import IntegerMultBounds.MathlibTM2.M6.BitRouteFactors
 public import IntegerMultBounds.MathlibTM2.Cover.LabelFactorization
 
@@ -95,6 +96,61 @@ theorem stageRoute_runs [M8.Machine.Net] {T : ℕ} (io : Fin T) (c : PortCertifi
 local instance (w : ℕ) : NeZero (prime^w) :=
   ⟨pow_ne_zero _ Shared50ModularControl.prime_prime.ne_zero⟩
 
+/-- The payload slice at a cover label, in the caller's physical descriptor. -/
+noncomputable def chartRead {v : Descriptor} {w B : ℕ} (x : Fin (volume prime v) → ZMod 2)
+    (g : Matrix (Fin 64) (Fin 64) (ZMod (prime^w))) (z : LabelEntry.Cell v B) : ZMod 2 :=
+  ext x (RecursiveInterchangeLayout.index prime v z.a z.row
+    (z.b.val*prime^(64*(w*64)) + (LabelAddress.address g).val) z.h z.mid z.d z.after)
+
+private theorem chartRead_transport {v : Descriptor} {w B : ℕ}
+    {a b : Fin (volume prime v) → ZMod 2} {f}
+    (h : LabelPermutation.Transport v B w (m := 64) f (ext a) (ext b)) (g) :
+    chartRead b (f g) = chartRead (B := B) a g := by
+  funext z
+  exact h g z.a z.a.isLt z.row z.row.isLt z.b z.b.isLt z.h z.h.isLt z.mid z.mid.isLt
+    z.d z.d.isLt z.after z.after.isLt
+
+/-- The scheduled register chart, in the physical order of the label fields. -/
+noncomputable def registerChart (w : ℕ) (n : Fin 9) (j : ℕ) :=
+  (reduce (prime^w) (chart n j)).submatrix stageAxis.symm stageAxis.symm
+
+theorem registerChart_inverse (w : ℕ) (n : Fin 9) (j : ℕ) :
+    (registerChart w n j).transpose * registerChart w n j = 1 := by
+  unfold registerChart
+  rw [transpose_submatrix,submatrix_mul_equiv,← submatrix_one_equiv stageAxis.symm]
+  apply congrArg (fun E : Matrix Axis Axis (ZMod (prime^w)) => E.submatrix stageAxis.symm stageAxis.symm)
+  unfold chart
+  split
+  · let c := port (j % 111)
+    have checked := port_checked (j % 111) (Nat.mod_lt _ (by decide))
+    change (reduce (prime^w) (c.stageRoute n).transpose) * reduce (prime^w) (c.stageRoute n) = 1
+    rw [c.stageRoute_transpose]
+    unfold PortCertificate.stageRoute
+    split
+    · simp [reduce_one]
+    · exact (stageFactor_reduce c checked _ stageAxis.symm w).2.2.2.2
+  · split
+    · exact (helperChart_reduce _ (port_checked _ (Nat.mod_lt _ (by decide))) _ _ w).1
+    · simp [reduce_one]
+
+/-- After entering different source and target charts, a pointwise COPY add
+at the common label reads the original source at the target label transported
+back through the source chart. The local address move acts on that whole slice. -/
+theorem chartRead_copy_add {v : Descriptor} {w B : ℕ}
+    (n : Fin 9) (source target : ℕ)
+    (src dst enteredSrc enteredDst added out : Fin (volume prime v) → ZMod 2)
+    (sourceRun : LabelPermutation.Transport v B w (fun g => g*(registerChart w n source).transpose) (ext src) (ext enteredSrc))
+    (targetRun : LabelPermutation.Transport v B w (fun g => g*(registerChart w n target).transpose) (ext dst) (ext enteredDst))
+    (leave : LabelPermutation.Transport v B w (fun g => g*registerChart w n target) (ext added) (ext out))
+    (move : (LabelEntry.Cell v B → ZMod 2) → (LabelEntry.Cell v B → ZMod 2))
+    (add : ∀ g, chartRead (w := w) added g = chartRead enteredDst g + move (chartRead enteredSrc g)) (g) :
+    chartRead out g = chartRead dst g + move (chartRead src (g*(registerChart w n target).transpose*registerChart w n source)) := by
+  have original := chartRead_transport sourceRun (g*(registerChart w n target).transpose*registerChart w n source)
+  rw [Matrix.mul_assoc (g*(registerChart w n target).transpose),mul_eq_one_comm.mp (registerChart_inverse w n source),Matrix.mul_one] at original
+  have restored := chartRead_transport leave (g*(registerChart w n target).transpose)
+  rw [Matrix.mul_assoc g,registerChart_inverse w n target,Matrix.mul_one] at restored
+  rw [restored,add,chartRead_transport targetRun g,original]
+
 /-- Execution of a register call in its scheduled chart, with a caller-supplied
 relation describing the local body on each label's payload. -/
 def ChartCall [M8.Machine.Net] {T : ℕ} (io : Fin T) (n : Fin 9) (j : ℕ)
@@ -104,9 +160,7 @@ def ChartCall [M8.Machine.Net] {T : ℕ} (io : Fin T) (n : Fin 9) (j : ℕ)
       let Label := Matrix (Fin 64) (Fin 64) (ZMod (prime^w))
       let route := ((reduce (prime^w) (chart n j)).submatrix stageAxis.symm stageAxis.symm).transpose
       let d := words (LabelSchedule.base v w)
-      let read := fun (x : Fin (volume prime v) → ZMod 2) (g : Label) (z : LabelEntry.Cell v B) =>
-        ext x (RecursiveInterchangeLayout.index prime v z.a z.row
-          (z.b.val*prime^(64*(w*64)) + (LabelAddress.address g).val) z.h z.mid z.d z.after)
+      let read := chartRead (v := v) (w := w) (B := B)
       ∀ (effect : Label → (LabelEntry.Cell v B → ZMod 2) → (LabelEntry.Cell v B → ZMod 2) → Prop) (budget : ℕ),
       (∀ (roles : Tapes T prime) y, roles.head io = 0 → roles.tape io = sourceWord y →
         ∃ z, (∀ g, effect g (read y g) (read z g)) ∧ GraphContract.Runs body
@@ -157,16 +211,11 @@ theorem dataPort_call [M8.Machine.Net] {T : ℕ} (io : Fin T) (n : Fin 9) (j : F
     dsimp only [route]
     rw [← transpose_mul,submatrix_mul_equiv,(stageFactor_reduce c checked s stageAxis.symm w).2.2.2.2,
       submatrix_one_equiv,transpose_one]
-  have move (a b : Fin (volume prime v) → ZMod 2)
-      (h : LabelPermutation.Transport v B w (fun g : Label => g * route) (ext a) (ext b)) (g : Label) :
-      read b (g*route) = read a g := by
-    funext z
-    exact h g z.a z.a.isLt z.row z.row.isLt z.b z.b.isLt z.h z.h.isLt z.mid z.mid.isLt
-      z.d z.d.isLt z.after z.after.isLt
   intro g
-  have back := move _ _ zo (g*route)
+  have back : read out ((g*route)*route) = read z (g*route) := chartRead_transport zo (g*route)
   rw [Matrix.mul_assoc,square,Matrix.mul_one] at back
-  rw [← move _ _ xy g,back]
+  change effect _ (chartRead _ _) (read out g)
+  rw [← chartRead_transport xy g,back]
   exact action _
 
 -- The separate basis and slot-permutation construction is in 34789f13.
@@ -206,6 +255,50 @@ theorem helperChart_runs [M8.Machine.Net] {T : ℕ} (io : Fin T) (c : PortCertif
     (M8.Exchange.factors σ.transpose) hd h₁ h₂
 
 open IntegerMultBounds.MathlibTM2.M6.BitHosting in
+private theorem helper_register_chart (n : Fin 9) (h : Fin 439) :
+    let slot := IntegerMultBounds.MathlibTM2.M6.BitNode.slotOf n.val h.val
+    chart n (222+h.val) = (port (slot.copy % 111)).helperChart (slotPos slot) (slotPos_le n n.isLt h h.isLt) := by
+  intro slot
+  have selectedAt (j k : ℕ) (dataOff : ¬ j < 222) (idx : j-222 = k)
+      (fit : slotPos (IntegerMultBounds.MathlibTM2.M6.BitNode.slotOf n k) ≤ 55) :
+      chart n j = (port ((IntegerMultBounds.MathlibTM2.M6.BitNode.slotOf n k).copy % 111)).helperChart _ fit := by
+    subst k
+    unfold chart
+    rw [ite_eq_right dataOff,dite_eq_left fit]
+  exact selectedAt _ _ (by omega) (by omega) _
+
+open IntegerMultBounds.MathlibTM2.M6.BitHosting IntegerMultBounds.Networks.Certificates.PR589 in
+/-- Enter the source chart of a retained COPY on the designated owner tape.
+The label read and the charged graph run refer to the same output bank. -/
+theorem copySource_route [M8.Machine.Net] {T : ℕ} (io : Fin T) (n : Fin 9)
+    (life : Copy.Lifecycle)
+    (scheduled : life ∈ Copy.lifecycles) :
+    ∃ (program : Graph.Block (T+24) prime) (C : ℕ), Blocks.Leading program ∧
+      ∀ (v : Descriptor) (w B : ℕ), 0 < w → 0 < B →
+      v.beforeH = B*prime^(64*(w*64)) → v.Positive →
+      ∀ (roles : Tapes T prime) (x : Fin (volume prime v) → ZMod 2),
+      roles.head io = 0 → roles.tape io = sourceWord x →
+      let d := words (LabelSchedule.base v w)
+      ∃ y : Fin (volume prime v) → ZMod 2, LabelPermutation.Transport v B w (fun g => g*(registerChart w n life.source).transpose)
+        (ext x) (ext y) ∧ GraphContract.Runs program (LabelCall.bank roles v d)
+          (LabelCall.bank (setTape roles io (sourceWord y) 0) v d)
+          (C*volume prime v + 63*LeafCore.coreCost (volume prime v) (w*64)) := by
+  obtain ⟨lo,hi⟩ := Copy.source_bounds life scheduled
+  let h : Fin 439 := ⟨life.source-222,by omega⟩
+  have idx : life.source = 222+h.val := by dsimp [h]; omega
+  let slot := IntegerMultBounds.MathlibTM2.M6.BitNode.slotOf n.val h.val
+  let c := port (slot.copy % 111)
+  obtain ⟨block,C,leading,runs⟩ := helperChart_runs io c
+    (port_checked _ (Nat.mod_lt _ (by decide))) _ (slotPos_le n n.isLt h h.isLt) true
+  refine ⟨block,C,leading,?_⟩
+  intro v w B hw hb shape pos roles x head tape d
+  obtain ⟨y,transport,run,_⟩ := runs v w B hw hb shape pos roles x head tape
+  refine ⟨y,?_,run⟩
+  unfold registerChart
+  rw [idx,helper_register_chart n h]
+  exact transport
+
+open IntegerMultBounds.MathlibTM2.M6.BitHosting in
 /-- Execute a local call in its scheduled helper chart and restore each
 label with the forward chart after entering through its transpose. -/
 theorem helperPort_call [M8.Machine.Net] {T : ℕ} (io : Fin T) (n : Fin 9) (h : Fin 439) (body : Graph.Block (T+24) prime) (leading : Blocks.Leading body) :
@@ -216,14 +309,7 @@ theorem helperPort_call [M8.Machine.Net] {T : ℕ} (io : Fin T) (n : Fin 9) (h :
   let c := port (slot.copy % 111)
   have checked := port_checked (slot.copy % 111) (Nat.mod_lt _ (by decide))
   have fits := slotPos_le n n.isLt h h.isLt
-  have selectedAt (j k : ℕ) (dataOff : ¬ j < 222) (idx : j-222 = k)
-      (fit : slotPos (IntegerMultBounds.MathlibTM2.M6.BitNode.slotOf n k) ≤ 55) :
-      chart n j = (port ((IntegerMultBounds.MathlibTM2.M6.BitNode.slotOf n k).copy % 111)).helperChart _ fit := by
-    subst k
-    unfold chart
-    rw [ite_eq_right dataOff,dite_eq_left fit]
-  have selected : chart n (222+h.val) = c.helperChart (slotPos slot) fits :=
-    selectedAt _ _ (by omega) (by omega) fits
+  have selected := helper_register_chart n h
   rw [selected]
   obtain ⟨enter,P,pe,entry⟩ := helperChart_runs io c checked _ fits true
   obtain ⟨leave,Q,pl,exitRun⟩ := helperChart_runs io c checked _ fits false
@@ -240,16 +326,11 @@ theorem helperPort_call [M8.Machine.Net] {T : ℕ} (io : Fin T) (n : Fin 9) (h :
   have undo : route * back = 1 := by
     change ((reduce (prime^w) (c.helperChart (slotPos slot) fits)).transpose.submatrix stageAxis.symm stageAxis.symm) * _ = _
     rw [submatrix_mul_equiv,(helperChart_reduce c checked _ fits w).1,submatrix_one_equiv]
-  have move (a b : Fin (volume prime v) → ZMod 2) (M : Label)
-      (transport : LabelPermutation.Transport v B w (fun g : Label => g * M) (ext a) (ext b)) (g : Label) :
-      read b (g*M) = read a g := by
-    funext z
-    exact transport g z.a z.a.isLt z.row z.row.isLt z.b z.b.isLt z.h z.h.isLt z.mid z.mid.isLt
-      z.d z.d.isLt z.after z.after.isLt
   intro g
-  have restored := move _ _ back zo (g*route)
+  have restored : read out ((g*route)*back) = read z (g*route) := chartRead_transport zo (g*route)
   rw [Matrix.mul_assoc,undo,Matrix.mul_one] at restored
-  rw [← move _ _ route xy g,restored]
+  change effect _ (chartRead _ _) (read out g)
+  rw [← chartRead_transport xy g,restored]
   exact action _
 
 /-- The chart and bill for any register used by a scheduled local word. -/
