@@ -679,8 +679,12 @@ theorem bounds elapsed time by packed volume times the sum of the two chart
 rates, the fixed directory setup coefficient and the scanner's width-power
 rate, plus 13 steps. The chart and scanner coefficients are independent of the
 layout and precision for fixed machine parameters. `scheduledOrdinaryParent_exec`
-supplies the required child budget for the scheduled scanner. At return the selected bank contains exactly the
-restored archive suffix and the final projector tape. All its other stacks are empty.
+supplies the required child budget for the scheduled scanner. The parent reads
+the live owner bank at entry. Both charts take their private initial stacks
+from metadata independent of the owner words. On return the caller's user
+state is preserved and both stacks of every ordinary private tape at index
+58 or above are empty. The inverse chart preserves the scanner's stacks on
+every preceding register outside the owner slots.
 
 The semantic five-class node (S5d.3) certifies upstream's accounting under ideal routes and
 partial swaps. Its exponent `1 - 10/5769` holds under that idealization only.
