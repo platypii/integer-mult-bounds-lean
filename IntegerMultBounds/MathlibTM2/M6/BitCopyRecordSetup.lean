@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.Host.Embed
 public import IntegerMultBounds.MathlibTM2.M6.BitCopyChildLayout
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackRecordVolumeHeaders
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackNegationDimensions
@@ -240,12 +241,13 @@ theorem copyCallerSetup_exec {P U : Type} {t T Q : ℕ} (body : P → Pr P T Q p
     let size : M^15*(M*W) = RecursiveInterchangeLayout.volume prime (copyChild (w+1) W) := by
       rw [copyChild_volume]; change M^15*(M*W) = M^16*W; ring
     RepT tapes (S.L ∘ slots) (S.R ∘ slots) →
-    ∃ u F n, u.user = v.user ∧ n ≤ 16*M.size+8*(M*W).size+6*(w+1)+19*(w+1).size+66 ∧
-      Exec body (.seq (copyDescriptor width (bank 0) staged) (copyRecordSetup headers bank staged))
+    ∃ u F n, u.user = v.user ∧ n ≤ 16*M.size+8*(M*W).size+6*(w+1)+21*(w+1).size+68 ∧
+      Exec body (.seq (.seq (copyDescriptor width (bank 0) staged) (copyRecordSetup headers bank staged))
+        (WordCmd.dropR staged))
         (mk v S) n (mk u F) ∧
       RecordReady (b := prime) (w := w) (d := 15) (W := M*W) bank M.size (M*W).size []
         SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0 (fun i => x (i.cast size)) F ∧
-      ∀ j, j ≠ staged → (∀ i, bank i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+      ∀ j, (∀ i, bank i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
   intro hs tapes headers width M size rep
   obtain ⟨words,bits,payload⟩ := copyCaller_reads w W caller src x head data slots S rep
   have ports : [width,bank 0,staged].Nodup := by
@@ -273,9 +275,169 @@ theorem copyCallerSetup_exec {P U : Type} {t T Q : ℕ} (body : P → Pr P T Q p
   have digits : (FlatCoordinateSchedule.bits (w+1)).length = (w+1).size := by
     have h := congrArg List.length (canonicalBits_symbols (A := prime) (w+1))
     simpa using h
-  refine ⟨u,F,_,hu.trans hv,?_,Exec.seq load run,ready,?_⟩
+  obtain ⟨z,hz,erase⟩ := WordCmd.dropR_exec body staged u F
+  have widthWord : F.R staged = binSyms (w+1).size (w+1) := by
+    simpa [D] using (off staged (fun i => (outside i).symm)).2
+  rw [widthWord,length_binSyms] at erase
+  refine ⟨z,_,_,hz.trans (hu.trans hv),?_,Exec.seq (Exec.seq load run) erase,?_,?_⟩
   · rw [digits]; dsimp only [M] at *; omega
-  · intro j ne free
-    simpa [D,Function.update_of_ne ne] using off j free
+  · apply ready.returnPayload
+    · intro i _
+      exact ⟨rfl,Function.update_of_ne (outside i).symm _ _⟩
+    · intro k
+      simpa [Function.update_of_ne (outside 24).symm] using (ready.src k).symm
+  · intro j free
+    obtain ⟨l,r⟩ := off j free
+    refine ⟨l,?_⟩
+    by_cases eq : j = staged
+    · subst j; simpa using fresh.symm
+    · simpa [D, Function.update_of_ne eq] using r
+
+/-- Retire a list of distinct right stacks, paying for each stored symbol once. -/
+private theorem retire_exec {P U : Type} {T Q A : ℕ} (body : P → Pr P T Q A U)
+    (ports : List (Fin T)) (unique : ports.Nodup) (v : HS T Q A U) (S : Stacks T A) :
+    ∃ u F, u.user = v.user ∧ Exec body (Prog.seqList (ports.map WordCmd.dropR)) (mk v S)
+      ((ports.map (fun j => 2*(S.R j).length+2)).sum+1) (mk u F) ∧ F.L = S.L ∧
+      ∀ j, F.R j = if j ∈ ports then [] else S.R j := by
+  induction ports generalizing v S with
+  | nil => exact ⟨v,S,rfl,Exec.act _ _,rfl,by simp⟩
+  | cons i ports ih =>
+    obtain ⟨u,hu,erase⟩ := WordCmd.dropR_exec body i v S
+    let D : Stacks T A := {S with R := Function.update S.R i []}
+    obtain ⟨z,F,hz,rest,left,right⟩ := ih unique.of_cons u D
+    have time : ports.map (fun j => 2*(D.R j).length+2) = ports.map (fun j => 2*(S.R j).length+2) := by
+      apply List.map_congr_left
+      intro j hj
+      have ne : j ≠ i := fun eq => unique.notMem (eq ▸ hj)
+      simp [D, Function.update_of_ne ne]
+    rw [time] at rest
+    refine ⟨z,F,hz.trans hu,?_,left,?_⟩
+    · simpa only [List.map_cons,List.sum_cons,Nat.add_assoc,Prog.seqList] using Exec.seq erase rest
+    · intro j
+      by_cases eq : j = i
+      · subst j; simp [right,D,unique.notMem]
+      · simp [right,D,eq]
+
+/-- After unpacking the changed payload, clear the five control registers that
+setup filled. Every left stack and every other right stack are preserved. -/
+theorem copyRecordRetire_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U)
+    (bank : Fin 35 ↪ Fin T) (w W : ℕ) (v : HS T Q prime U) (S : Stacks T prime) :
+    let M := prime^(w+1)
+    ∀ x : Fin (M^15*(M*W)) → ZMod 2,
+      RecordReady (b := prime) (w := w) (d := 15) (W := M*W) bank M.size (M*W).size []
+        SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0 x S →
+      let ports := ([2,27,28,32,33] : List (Fin 35)).map bank
+      ∃ u F, u.user = v.user ∧ Exec body (Prog.seqList (ports.map WordCmd.dropR))
+        (mk v S) (4*M.size+2*(M*W).size+2*w+13) (mk u F) ∧ F.L = S.L ∧
+        (∀ j, F.R j = if j ∈ ports then [] else S.R j) ∧
+        ∀ z, readAt blank (F.L (bank 24)) (F.R (bank 24)) z =
+          RadixToBinary.binaryEncoding.encode (putWord (fun _ => blank) 0
+            (List.ofFn (SparseRoleCircuit.encode ∘ x)) z) := by
+  intro M x ready ports
+  obtain ⟨u,F,user,run,left,right⟩ := retire_exec body ports
+    ((by decide : ([2,27,28,32,33] : List (Fin 35)).Nodup).map bank.injective) v S
+  have payload : bank 24 ∉ ports := by
+    intro h
+    obtain ⟨i,hi,eq⟩ := List.mem_map.mp h
+    exact (by decide : (24 : Fin 35) ∉ [2,27,28,32,33]) (bank.injective eq ▸ hi)
+  refine ⟨u,F,user,?_,left,right,?_⟩
+  · convert run using 1
+    simp only [ports,List.map_cons,List.map_nil,List.sum_cons,List.sum_nil,ready.modulus,ready.width,
+    ready.one,ready.padded,ready.clock,length_binSyms]
+    omega
+  · intro z
+    rw [left,right]; simp only [payload, ↓reduceIte]
+    simpa using ready.src z
+
+open RecursiveInterchangeLayout (volume)
+local notation "N" => rowSwapBlock.tapes
+local notation "Q" => rowSwapBlock.states
+local instance (w : ℕ) : NeZero (prime^(w+1)) := ⟨(pow_pos Shared50ModularControl.prime_prime.pos _).ne'⟩
+open FlatCoordinateLayout (index) in
+/-- Execute the packed child and return its transpose with the setup registers cleared. -/
+theorem copyTransposeReturn_exec [M8.Machine.Net] {P P' U : Type} {T : ℕ} [Fintype P]
+    (body : P → Pr P (N+35) Q prime U) (host : P' → Pr P' T Q prime U)
+    (placement : Fin (N+35) ↪ Fin T) (ι : P → P')
+    (calls : ∀ f, host (ι f) = embProg placement ι (body f)) :
+    ∃ setup swaps : ℕ, ∀ w W, 0 < W →
+      let M := prime^(w+1)
+      let suffix := M*W
+      let size : M^15*suffix = volume prime (copyChild (w+1) W) := by
+        rw [copyChild_volume]; change M^15*(M*W) = M^16*W; ring
+      let bank : Fin 35 ↪ Fin (N+35) := (Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)
+      let clean := fun (D : Stacks (N+35) prime) => ∀ k : Fin (N+35), 35 ≤ k.val → D.L k = [] ∧ D.R k = []
+      ∀ {t} (caller : Tapes t prime) (src : Fin t) (slots : Fin ((t+6)+15) ↪ Fin T) (staged : Fin T)
+        (v : HS T Q prime U) (S : Stacks T prime)
+        (x : Fin (volume prime (copyChild (w+1) W)) → ZMod 2) (child : Pr P (N+35) Q prime U) (budget : ℕ),
+      let physical := bank.trans placement
+      let headers := (Fin.natAddEmb t (m := 6)).trans ((Fin.castAddEmb 15).trans slots)
+      let width := slots (Fin.natAdd (t+6) (Fin.natAdd 9 (3 : Fin 6)))
+      let hs := fun i => FlatCoordinateSchedule.bits (RecursiveDimensionBank.values (copyChild (w+1) W) i)
+      let output := fun i => Shared50RecursiveNodeRows.transpose (one_dvd _) x (Fin.cast size i)
+      let stored := RecordReady (b := prime) (w := w) (d := 15) (W := suffix)
+        bank (Nat.size M) (Nat.size suffix) [] SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0
+      (∀ v D word, stored word D → clean D → ∃ z F n changed, z.user = v.user ∧ n ≤ budget ∧
+        Exec body child (mk v D) n (mk z F) ∧ stored changed F ∧ clean F ∧
+        ∀ (h d : Fin 7 → ZMod M) (u : Fin 1 → ZMod M) (j : Fin suffix),
+          changed (FlatCoordinateLayout.index (Fin.append (Fin.append d h) u) j) =
+          word (FlatCoordinateLayout.index (Fin.append (Fin.append h d) u) j)) →
+      (∀ i j, slots i = physical j → j = 24) → (∀ i, staged ≠ physical i) →
+      (∀ i, staged ≠ slots i) → slots (Fin.castAdd 15 (Fin.castAdd 6 src)) = physical 24 →
+      S.R staged = [] → (∀ i : Fin 35, i ≠ 24 → S.L (physical i) = [] ∧ S.R (physical i) = []) →
+      caller.head src = 0 → caller.tape src = M8.Machine.ArbitraryWidthHighExchangeShared.sourceWord x →
+      RepT ((caller.append (FixedHeaderBankCopy.headerBank hs)).append (copyHeaderOutput (w+1) W))
+        (S.L ∘ slots) (S.R ∘ slots) → clean (embStk placement S) →
+      let ports := ([2,27,28,32,33] : List (Fin 35)).map bank
+      ∃ z F n, z.user = v.user ∧
+        n ≤ budget + 2*((setup+swaps*swapVolumeRate w)*(M^15*suffix)) +
+          (4*M.size+2*suffix.size+2*w+13) + (16*M.size+8*suffix.size+6*(w+1)+21*(w+1).size+68) ∧
+        Exec host (.seq (.seq (.seq (copyDescriptor width (physical 0) staged) (copyRecordSetup headers physical staged))
+          (WordCmd.dropR staged)) (embProg placement ι (.seq (.seq (packSchedule 15 copyPackSchedule)
+          (.seq child (packSchedule 15 copyPackSchedule.reverse))) (Prog.seqList (ports.map WordCmd.dropR)))))
+          (mk v S) n (mk z F) ∧ clean (embStk placement F) ∧ (∀ j ∈ ports, F.R (placement j) = []) ∧
+        (∀ j, (∀ i, placement i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j) ∧
+        ∀ k, readAt blank (F.L (placement (bank 24))) (F.R (placement (bank 24))) k =
+          RadixToBinary.binaryEncoding.encode (putWord (fun _ => blank) 0
+            (List.ofFn (SparseRoleCircuit.encode ∘ output)) k) := by
+  obtain ⟨setup,swaps,transpose⟩ := withCopyTranspose_exec body
+  refine ⟨setup,swaps,?_⟩
+  intro w W hW M suffix size bank clean t caller src slots staged v S x child budget physical headers width hs output stored call
+    apart outside privateSlot shared fresh empty head data rep free ports
+  obtain ⟨a,B,m,ha,hm,prepare,ready,off⟩ := copyCallerSetup_exec host w W caller src slots physical staged
+    apart outside privateSlot shared v S fresh empty x head data rep
+  have start : stored (fun i => x (Fin.cast size i)) (embStk placement B) :=
+    ⟨ready.modulus,ready.width,ready.one,ready.padded,ready.clock,ready.archive,ready.scratch,ready.src,ready.dst⟩
+  have available : clean (embStk placement B) := by
+    intro k hk
+    have kept := off (placement k) (by
+      intro i eq
+      have eq' : bank i = k := placement.injective eq
+      rw [← eq'] at hk
+      exact (Nat.not_le_of_lt i.isLt) hk)
+    exact ⟨kept.1.trans (free k hk).1,kept.2.trans (free k hk).2⟩
+  obtain ⟨u,D,n,hu,time,run,placed,clear⟩ :=
+    transpose w W hW (embDn placement a) (embStk placement B) [] (fun _ => blank) 0 x child budget call start available
+  obtain ⟨z,F,hz,erase,left,right,read⟩ := copyRecordRetire_exec body bank w W u D output placed
+  obtain ⟨y,G,execute,_,user,project,frame⟩ :=
+    exec_emb placement.injective calls (Exec.seq run erase) a rfl B rfl
+  refine ⟨y,G,_,(user.trans (hz.trans hu)).trans ha,?_,Exec.seq prepare execute,?_,?_,?_,?_⟩
+  · dsimp only [M,suffix] at *; omega
+  · rw [project]
+    intro k hk
+    have outside : k ∉ ports := by
+      intro mem
+      obtain ⟨i,_,rfl⟩ := List.mem_map.mp mem
+      exact (Nat.not_le_of_lt i.isLt) hk
+    exact ⟨(congrFun left k).trans (clear k hk).1, (right k).trans (by change (if k ∈ ports then [] else D.R k) = []; simp [outside,(clear k hk).2])⟩
+  · intro j hj
+    change (embStk placement G).R j = []
+    rw [project]
+    rw [right]; change (if j ∈ ports then [] else D.R j) = []; simp [hj]
+
+  · intro j hj
+    have kept := off j (fun i => hj (bank i))
+    exact ⟨(frame j hj).1.trans kept.1,(frame j hj).2.trans kept.2⟩
+  · change ∀ k, readAt blank ((embStk placement G).L (bank 24)) ((embStk placement G).R (bank 24)) k = _
+    rwa [project]
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
