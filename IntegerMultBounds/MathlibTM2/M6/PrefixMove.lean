@@ -251,6 +251,33 @@ noncomputable def rationalMoveWord (d e : ℕ) (C : Matrix (Fin 8) (Fin 8) ℚ) 
   AffineFieldProgram.compile ([Op.transformH C.adjugate, .transformD C.adjugate] ++
     intervalSwaps d e ++ [.transformH C, .transformD C])
 
+/-- Address semantics in tape execution order: the adjugate basis pass,
+one contiguous exchange, and the forward basis pass. -/
+theorem rationalMoveWord_run (m d e : ℕ) (C : Matrix (Fin 8) (Fin 8) ℚ)
+    (s : State (Fin 8) (ZMod m)) :
+    let spec := List.map (AffineFieldProgram.mapOp (ratMod m))
+    AffineFieldProgram.run (spec (rationalMoveWord d e C)) s =
+      AffineFieldProgram.run (spec (M8.Exchange.transformOps C C))
+        (run (intervalSwaps d e) (AffineFieldProgram.run
+          (spec (M8.Exchange.transformOps C.adjugate C.adjugate)) s)) := by
+  intro spec
+  have middle : spec (AffineFieldProgram.compile (intervalSwaps (R := ℚ) d e)) =
+      AffineFieldProgram.compile (intervalSwaps (R := ZMod m) d e) := by
+    rw [show spec _ = _ from (AffineFieldProgram.compile_map (ratMod m) _).symm]
+    congr 1
+    simp only [intervalSwaps, coordinateSwaps, List.map_map, Function.comp_def, AffineFieldProgram.mapShear]
+  have correct := AffineFieldProgram.compile_run (intervalSwaps (R := ZMod m) d e) (by
+    intro op mem
+    obtain ⟨k,_,rfl⟩ := List.mem_map.mp mem
+    trivial)
+  have splitWord : rationalMoveWord d e C =
+      M8.Exchange.transformOps C.adjugate C.adjugate ++
+        AffineFieldProgram.compile (intervalSwaps d e) ++ M8.Exchange.transformOps C C := by
+    simp only [rationalMoveWord, M8.Exchange.transformOps, AffineFieldProgram.compile, List.flatMap_append]
+  rw [splitWord]
+  simp only [spec, List.map_append, M8.Exchange.run_append]
+  rw [show List.map _ (AffineFieldProgram.compile (intervalSwaps (R := ℚ) d e)) = _ from middle, correct]
+
 theorem rationalMoveWord_reduce (m d e : ℕ) (C : Matrix (Fin 8) (Fin 8) ℚ)
     (adm : Admissible m C) (det : (reduce m C).det = 1) :
     (rationalMoveWord d e C).map (AffineFieldProgram.mapOp (ratMod m)) =
