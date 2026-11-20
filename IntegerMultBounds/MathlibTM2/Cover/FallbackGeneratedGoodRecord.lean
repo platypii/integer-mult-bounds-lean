@@ -2749,6 +2749,127 @@ theorem generatedOrdinaryRecord_exec [M8.Machine.Net] {T m work Q fields H J W :
       exact caller.injective.ne ((Fin.castAddEmb 8).injective.ne (scanOff 2 (by decide)).symm)
     simpa only [payload,RecordPayload,ite_eq_right payloadOut,finalBank,Function.update_of_ne off] using read
 
+/-- Generate the directory masks and exceptional queue using only the incoming
+dimension counters and precision clock. All temporary right stacks are cleared. -/
+theorem directoryControls_exec {m d k Q extra w Bcount : ℕ} {F U : Type}
+    (body : F → Pr F (66+extra) Q prime U) (rankFits : d ≤ m)
+    (request : Matrix (Fin m) (Fin m) (ZMod prime))
+    (table : Matrix (Fin m) (Fin m) (ZMod prime) → Matrix (Fin k) (Fin k) (ZMod prime))
+    (proj : LabelPadding.Label m (w+1)) (reduction : (LabelRing.res prime (w+1) (by omega)).mapMatrix proj = request)
+    (directory : Descriptor) (dirPositive : directory.Positive) (shape : directory.beforeH = Bcount*prime^(m*((w+1)*m)))
+    (room : m*m+m*m ≤ extra) (initialUser : HS (66+extra) Q prime U) (initialState : Stacks (66+extra) prime) :
+    let K := 66+extra
+    let caller := Fin.castAddEmb (n := 66) extra
+    let mask := caller 57
+    let mode := caller 56
+    let parents := caller 50
+    let rs := residuePairs (m*m) room
+    let high := prime^w
+    let allLabels := List.range (LabelMask.records directory)
+    let schedules := fun xs : List ℕ => xs.flatMap fun j =>
+      if fallbackBit rankFits proj (physicalLabel m (w+1) j) then residualSchedule (A := prime) (table (LabelStock.residue m (w+1) 1 j)) else []
+    let liveWords := allLabels.map fun j => bitSymbol (a := prime) (LabelStock.live m (w+1) 1 j)
+    let badWords := allLabels.map fun j => bitSymbol (a := prime) (fallbackBit rankFits proj (physicalLabel m (w+1) j))
+    let privateTapes := (List.finRange K).filter fun i => 58 ≤ i.val
+    let clean := {initialState with
+      L := fun i => if i ∈ privateTapes then [] else initialState.L i
+      R := fun i => if i ∈ privateTapes then [] else Function.update initialState.R (caller 54) (schedules allLabels) i}
+    (∀ i : Fin K, 58 ≤ i.val → initialState.R i = []) →
+    (initialState.R (caller 28)).length = 1 → (initialState.R (caller 45)).length = w →
+    (initialState.R (caller 29)).length = directory.beforeRows → (initialState.R (caller 30)).length = directory.rows →
+    (initialState.R (caller 31)).length = directory.beforeH → initialState.R parents = [] →
+    initialState.R mask = [] → initialState.R mode = [] → initialState.R (caller 54) = [] →
+    let initCounters : Pr F K Q prime U := (Node.expProg 0 prime (caller 28) (caller 45) (caller 58) (caller 59) (caller 60) (caller 61)).seq
+      (Node.scanR (caller 58) (caller 59) (LabelCountBank.pushAll (rs.map Prod.fst)))
+    ∃ writer z n, z.user = initialUser.user ∧ n ≤ (26*high+4) +
+      ((44*allLabels.length+13*(w+1)+16)+3*((6+10*(m*m))*allLabels.length+4)+(2*(directory.beforeRows*directory.rows*Bcount)+2)) +
+      ((privateTapes.map fun i => 4*(initialState.L i).length).sum+privateTapes.length*(2*high+4)+1) ∧
+      Exec body ((initCounters.seq writer).seq (clearWorkTapes privateTapes)) (mk initialUser initialState) n
+        (mk z {clean with R := Function.update (Function.update clean.R mask liveWords) mode badWords}) := by
+  intro K caller mask mode parents rs high allLabels schedules liveWords badWords privateTapes clean freePrivate single clockLen
+    brSize rowsSize beforeHSize parentsFree freeMask freeMode freeQueue initCounters
+  have apart : mask ≠ mode := caller.injective.ne (by decide)
+  obtain ⟨sizeRs,slotsUnique,rsPrivate⟩ := residuePairs_layout room
+  let saved := caller 62
+  have callerOutside (j : Fin 66) : caller j ∉ LabelTraversal.slots rs := by
+    intro mem; have h := rsPrivate _ mem; change 66 ≤ j.val at h; omega
+  have layout (j : Fin 66) (hp : j ≠ 50) (hs : j ≠ 62) :
+      (parents :: saved :: (LabelTraversal.slots rs ++ [caller j])).Nodup := by
+    simp [parents,saved,List.nodup_append',callerOutside,slotsUnique,rs,
+      caller.injective.eq_iff,hp.symm,hs.symm]
+  have maskRegs := layout 57 (by decide) (by decide)
+  have modeRegs := layout 56 (by decide) (by decide)
+  let R := LabelCountBank.fill (rs.map Prod.fst) high
+    (Function.update initialState.R (caller 58) (List.replicate high Node.tick))
+  have cleanup := counterCleanup_le initialState privateTapes (rs.map Prod.fst) (caller 58) high
+    (by intro h; obtain ⟨p,hp,eq⟩ := List.mem_map.mp h
+        exact callerOutside 58 (List.mem_flatMap.mpr ⟨p,hp,by simp [← eq]⟩))
+    (fun i hi => freePrivate i (by simpa [privateTapes] using hi))
+  have fillKeep (i) (outside : i ∉ LabelTraversal.slots rs) (off : i ≠ caller 58) : R i = initialState.R i := by
+    have nf : i ∉ rs.map Prod.fst := by
+      intro h; obtain ⟨p,hp,rfl⟩ := List.mem_map.mp h
+      exact outside (List.mem_flatMap.mpr ⟨p,hp,by simp⟩)
+    simp [R,LabelCountBank.fill,nf,off]
+  have callerKeep (j : Fin 66) (hj : j ≠ 58) := fillKeep _ (callerOutside j) (caller.injective.ne hj)
+  have nd := (List.nodup_append.mp maskRegs.tail.tail).1
+  obtain ⟨radix,z₀,t₀,user₀,time₀,prepare⟩ := LabelCountBank.prepareClock_exec body rs
+    (caller 28) (caller 45) (caller 58) (caller 59) (caller 60) (caller 61)
+    ((by decide : ([28,45,58,59,60,61] : List (Fin 66)).Nodup).map caller.injective)
+    (by simp [List.nodup_cons,callerOutside,caller.injective.eq_iff,nd]) initialUser initialState single
+    (by intro i hi
+        rcases List.mem_append.mp hi with h | h
+        · simp only [List.mem_cons,List.not_mem_nil,or_false] at h
+          rcases h with rfl | rfl | rfl | rfl <;> apply freePrivate <;> simp [caller]
+        · exact freePrivate _ (by have := rsPrivate _ h; omega))
+  rw [clockLen] at radix time₀ prepare
+  let filled := {initialState with R := R}
+  let queued := {filled with R := Function.update filled.R (caller 54) (schedules allLabels)}
+  have cleanEq : {queued with L := fun i => if i ∈ privateTapes then [] else filled.L i,
+                              R := fun i => if i ∈ privateTapes then [] else queued.R i} = clean := by
+    apply Stacks.ext <;> try rfl
+    funext i
+    by_cases h : i ∈ privateTapes
+    · simp [h,clean]
+    · have lt : i.val < 58 := by simpa [privateTapes] using h
+      have off : i ≠ caller 58 := by intro eq; subst i; change 58 < 58 at lt; omega
+      by_cases q : i = caller 54
+      · subst i
+        simp only [clean,queued,ite_eq_right h,Function.update_self]
+      simp [h,clean,queued,q,filled,fillKeep i (fun mem => by have := rsPrivate i mem; omega) off]
+  let dim := parentCountPorts.trans caller
+  obtain ⟨writer,generateMasks⟩ := countedRecordControls_exec body rankFits
+    request table rs sizeRs dim (caller 54) mask mode saved apart (caller.injective.ne (by decide)) (caller.injective.ne (by decide)) (layout 54 (by decide) (by decide)) maskRegs modeRegs
+  obtain ⟨y,l,hy,hl,write⟩ := generateMasks directory w Bcount proj reduction dirPositive shape z₀ filled
+    radix ((callerKeep 62 (by decide)).trans (freePrivate _ (by change 58 ≤ 62; decide)))
+    ((congrArg List.length (callerKeep 29 (by decide))).trans brSize)
+    ((congrArg List.length (callerKeep 30 (by decide))).trans rowsSize)
+    ((congrArg List.length (callerKeep 31 (by decide))).trans beforeHSize)
+    ((congrArg List.length (callerKeep 45 (by decide))).trans clockLen)
+    (by intro k hk
+        have tmp (j : Fin 66) (hj : 58 < j.val) := (callerKeep j (by intro eq; subst j; omega)).trans
+          (freePrivate (caller j) (show 58 ≤ j.val by omega))
+        change filled.R (caller (parentCountPorts k)) = []
+        rcases parentCountPorts_scratch k hk with h | h
+        · rw [h]; exact (callerKeep 50 (by decide)).trans parentsFree
+        · exact tmp _ h)
+    ((callerKeep 54 (by decide)).trans freeQueue)
+    ((callerKeep 57 (by decide)).trans freeMask) ((callerKeep 56 (by decide)).trans freeMode)
+  obtain ⟨z,hz,clearMasks⟩ := clearAfterMasks_exec body mask mode privateTapes ((List.nodup_finRange K).filter _)
+    (by simp [privateTapes,mask,caller]) (by simp [privateTapes,mode,caller]) liveWords badWords y queued
+  let setBits := fun (D : Stacks K prime) => {D with R := Function.update (Function.update D.R mask liveWords) mode badWords}
+  change Exec body _ _ _ (mk z (setBits {queued with L := fun i => if i ∈ privateTapes then [] else filled.L i,
+                                                     R := fun i => if i ∈ privateTapes then [] else queued.R i})) at clearMasks
+  have queueCost : (privateTapes.map fun i => 4*(queued.L i).length+2*(queued.R i).length+4) =
+      privateTapes.map (fun i => 4*(initialState.L i).length+2*(R i).length+4) := by
+    apply List.map_congr_left
+    intro i hi
+    have lo : 58 ≤ i.val := by simpa [privateTapes] using hi
+    have off : i ≠ caller 54 := by intro eq; subst i; change 58 ≤ 54 at lo; omega
+    simp [queued,filled,off]
+  rw [cleanEq,queueCost] at clearMasks
+  exact ⟨writer,z,_,hz.trans (hy.trans user₀),Nat.add_le_add (Nat.add_le_add time₀ hl) (Nat.add_le_add_right cleanup 1),
+    Exec.seq (Exec.seq prepare write) clearMasks⟩
+
 /-- Generate the selector masks and execute all records in directory order. -/
 theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ} {F U : Type}
     (v : Descriptor) (positive : v.Positive) (w : ℕ) (proj : Matrix (Fin m) (Fin m) ℚ)
@@ -2789,28 +2910,6 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
   let liveWords := allLabels.map fun i => bitSymbol (a := prime) (liveBit i)
   let badWords := modes allLabels
   have apart : mask ≠ mode := caller.injective.ne (by decide)
-  obtain ⟨sizeRs,slotsUnique,rsPrivate⟩ := residuePairs_layout room
-  let saved := caller 62
-  have callerOutside (j : Fin 66) : caller j ∉ LabelTraversal.slots rs := by
-    intro mem; have h := rsPrivate _ mem; change 66 ≤ j.val at h; omega
-  have layout (j : Fin 66) (hp : j ≠ 50) (hs : j ≠ 62) :
-      (parents :: saved :: (LabelTraversal.slots rs ++ [caller j])).Nodup := by
-    simp [parents,saved,List.nodup_append',callerOutside,slotsUnique,rs,
-      caller.injective.eq_iff,hp.symm,hs.symm]
-  have maskRegs := layout 57 (by decide) (by decide)
-  have modeRegs := layout 56 (by decide) (by decide)
-  let R := LabelCountBank.fill (rs.map Prod.fst) high
-    (Function.update initialState.R (caller 58) (List.replicate high Node.tick))
-  have cleanup := counterCleanup_le initialState privateTapes (rs.map Prod.fst) (caller 58) high
-    (by intro h; obtain ⟨p,hp,eq⟩ := List.mem_map.mp h
-        exact callerOutside 58 (List.mem_flatMap.mpr ⟨p,hp,by simp [← eq]⟩))
-    (fun i hi => freePrivate i (by simpa [privateTapes] using hi))
-  have fillKeep (i) (outside : i ∉ LabelTraversal.slots rs) (off : i ≠ caller 58) : R i = initialState.R i := by
-    have nf : i ∉ rs.map Prod.fst := by
-      intro h; obtain ⟨p,hp,rfl⟩ := List.mem_map.mp h
-      exact outside (List.mem_flatMap.mpr ⟨p,hp,by simp⟩)
-    simp [R,LabelCountBank.fill,nf,off]
-  have callerKeep (j : Fin 66) (hj : j ≠ 58) := fillKeep _ (callerOutside j) (caller.injective.ne hj)
   have rawCaller (j : Fin 58) (off : j.castAdd 8 ≠ (54 : Fin 66)) : clean.R (caller (j.castAdd 8)) = initialState.R (caller (j.castAdd 8)) := by
     have lt : (caller (j.castAdd 8)).val < 58 := j.isLt
     simp [clean,privateTapes,lt.not_ge,Function.update_of_ne (caller.injective.ne off)]
@@ -2818,62 +2917,10 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
   have single : (initialState.R (caller 28)).length = 1 := by
     exact (congrArg List.length (rawCaller 28 (by decide))).symm.trans ((congrArg List.length unitWord).trans (length_binSyms ..))
   have clockLen : (initialState.R (caller 45)).length = w := (congrArg List.length (rawCaller 45 (by decide))).symm.trans ticks
-  have nd := (List.nodup_append.mp maskRegs.tail.tail).1
-  obtain ⟨radix,z₀,t₀,user₀,time₀,prepare⟩ := LabelCountBank.prepareClock_exec body rs
-    (caller 28) (caller 45) (caller 58) (caller 59) (caller 60) (caller 61)
-    ((by decide : ([28,45,58,59,60,61] : List (Fin 66)).Nodup).map caller.injective)
-    (by simp [List.nodup_cons,callerOutside,caller.injective.eq_iff,nd]) initialUser initialState single
-    (by intro i hi
-        rcases List.mem_append.mp hi with h | h
-        · simp only [List.mem_cons,List.not_mem_nil,or_false] at h
-          rcases h with rfl | rfl | rfl | rfl <;> apply freePrivate <;> simp [caller]
-        · exact freePrivate _ (by have := rsPrivate _ h; omega))
-  rw [clockLen] at radix time₀ prepare
-  let filled := {initialState with R := R}
-  let queued := {filled with R := Function.update filled.R (caller 54) (schedules allLabels)}
-  have cleanEq : {queued with L := fun i => if i ∈ privateTapes then [] else filled.L i,
-                              R := fun i => if i ∈ privateTapes then [] else queued.R i} = clean := by
-    apply Stacks.ext <;> try rfl
-    funext i
-    by_cases h : i ∈ privateTapes
-    · simp [h,clean]
-    · have lt : i.val < 58 := by simpa [privateTapes] using h
-      have off : i ≠ caller 58 := by intro eq; subst i; change 58 < 58 at lt; omega
-      by_cases q : i = caller 54
-      · subst i
-        simp only [clean,queued,ite_eq_right h,Function.update_self]
-      simp [h,clean,queued,q,filled,fillKeep i (fun mem => by have := rsPrivate i mem; omega) off]
-  let dim := parentCountPorts.trans caller
-  obtain ⟨writer,generateMasks⟩ := countedRecordControls_exec body rankFits
-    ((LabelRing.res prime (w+1) (by omega)).mapMatrix (reduce M proj)) table rs sizeRs dim (caller 54) mask mode saved apart (caller.injective.ne (by decide)) (caller.injective.ne (by decide)) (layout 54 (by decide) (by decide)) maskRegs modeRegs
-  obtain ⟨y,l,hy,hl,write⟩ := generateMasks directory w Bcount (reduce M proj) rfl dirPositive shape z₀ filled
-    radix ((callerKeep 62 (by decide)).trans (freePrivate _ (by change 58 ≤ 62; decide)))
-    ((congrArg List.length (callerKeep 29 (by decide))).trans brSize)
-    ((congrArg List.length (callerKeep 30 (by decide))).trans rowsSize)
-    ((congrArg List.length (callerKeep 31 (by decide))).trans beforeHSize)
-    ((congrArg List.length (callerKeep 45 (by decide))).trans clockLen)
-    (by intro k hk
-        have tmp (j : Fin 66) (hj : 58 < j.val) := (callerKeep j (by intro eq; subst j; omega)).trans
-          (freePrivate (caller j) (show 58 ≤ j.val by omega))
-        change filled.R (caller (parentCountPorts k)) = []
-        rcases parentCountPorts_scratch k hk with h | h
-        · rw [h]; exact (callerKeep 50 (by decide)).trans parentsFree
-        · exact tmp _ h)
-    ((callerKeep 54 (by decide)).trans freeQueue)
-    ((callerKeep 57 (by decide)).trans freeMask) ((callerKeep 56 (by decide)).trans freeMode)
-  obtain ⟨z,hz,clearMasks⟩ := clearAfterMasks_exec body mask mode privateTapes ((List.nodup_finRange K).filter _)
-    (by simp [privateTapes,mask,caller]) (by simp [privateTapes,mode,caller]) liveWords badWords y queued
-  let setBits := fun (D : Stacks K prime) => {D with R := Function.update (Function.update D.R mask liveWords) mode badWords}
-  change Exec body _ _ _ (mk z (setBits {queued with L := fun i => if i ∈ privateTapes then [] else filled.L i,
-                                                     R := fun i => if i ∈ privateTapes then [] else queued.R i})) at clearMasks
-  have queueCost : (privateTapes.map fun i => 4*(queued.L i).length+2*(queued.R i).length+4) =
-      privateTapes.map (fun i => 4*(initialState.L i).length+2*(R i).length+4) := by
-    apply List.map_congr_left
-    intro i hi
-    have lo : 58 ≤ i.val := by simpa [privateTapes] using hi
-    have off : i ≠ caller 54 := by intro eq; subst i; change 58 ≤ 54 at lo; omega
-    simp [queued,filled,off]
-  rw [cleanEq,queueCost] at clearMasks
+  obtain ⟨writer,z,setupTime,userSetup,setupBound,setupRun⟩ := directoryControls_exec body rankFits
+    ((LabelRing.res prime (w+1) (by omega)).mapMatrix (reduce M proj)) table (reduce M proj) rfl
+    directory dirPositive shape room initialUser initialState freePrivate single clockLen brSize rowsSize beforeHSize
+    parentsFree freeMask freeMode freeQueue
   let liveState := {clean with R := Function.update clean.R mask liveWords}
   let startState := {liveState with R := Function.update liveState.R mode badWords}
   have r₁ : ready liveState allLabels := DirectoryReady.updateSelector 57 (by decide) (by decide) _ initialReady
@@ -2891,18 +2938,18 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
   have bits : startState.R mask = liveWords := (Function.update_of_ne apart badWords liveState.R).trans
     (Function.update_self mask liveWords clean.R)
   have initialModes : startState.R mode = badWords := Function.update_self mode badWords liveState.R
-  have setupRun : Exec body ((initCounters.seq writer).seq (clearWorkTapes privateTapes))
-      (mk initialUser initialState) _ (mk z startState) := Exec.seq (Exec.seq prepare write) clearMasks
-  have setupBound := Nat.add_le_add (Nat.add_le_add time₀ hl) (Nat.add_le_add_right cleanup 1)
+  change Exec body ((initCounters.seq writer).seq (clearWorkTapes privateTapes))
+    (mk initialUser initialState) setupTime (mk z startState) at setupRun
+  change setupTime ≤ setupCost at setupBound
   have projectorKept : startState.R (caller 48) = initialState.R (caller 48) := by
     have outside : caller 48 ∉ privateTapes := by simp [privateTapes,caller]
     have ne (j : Fin 66) (hj : (48 : Fin 66) ≠ j) := caller.injective.ne hj
     simp only [startState,liveState,mode,mask,clean,Function.update_of_ne (ne 56 (by decide)),
       Function.update_of_ne (ne 57 (by decide)),ite_eq_right outside,Function.update_of_ne (ne 54 (by decide))]
-  refine ⟨writer,z,startState,_,hz.trans (hy.trans user₀),setupBound,setupRun,r₂,step,cellL,cellR,projectorKept,bits,initialModes,?_,?_⟩
+  refine ⟨writer,z,startState,_,userSetup,setupBound,setupRun,r₂,step,cellL,cellR,projectorKept,bits,initialModes,?_,?_⟩
   · intro dimension archiveRoom placement archive outer calls v B control bank
     obtain ⟨y,E,run,_,user,localBank,frame⟩ := exec_emb placement.injective calls setupRun v control B bank
-    have same := user.trans ((hz.trans (hy.trans user₀)).trans (congrArg HS.user control).symm)
+    have same := user.trans (userSetup.trans (congrArg HS.user control).symm)
     have kept := (frame archive (Fin.succAbove_ne _)).2
     refine ⟨y,E,same,localBank,kept,run,?_⟩
     intro initialPayload data dim anchor states fieldsEq extra push bounded binary count empty scanBody e action
@@ -2960,7 +3007,7 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
         privateTapes.length left (data.records*N) (radix.trans (Nat.le_mul_of_pos_left _ recordsPos))
         (Nat.le_mul_of_pos_right _ (posM.trans_le radix)) boxCount
       rw [count] at controlCost
-      have maskBound : _ ≤ controls := setupBound.trans (by simpa only [controls,count,allLabels,List.length_range] using controlCost)
+      have maskBound : _ ≤ controls := setupBound.trans (by simpa only [controls,setupCost,high,count,allLabels,List.length_range,left] using controlCost)
       have normalize (k : ℕ) (bound : k ≤ controls) :
           k+(h+t) ≤ overhead + (data.records*(baseline+6)+2 + (labels*data.records/prime)*(rate*N)) := by
         dsimp only [overhead,setup,archiveBudget,suffix,V]
@@ -3013,7 +3060,7 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
         (mk z startState) n (mk finish D) ∧ (ready D [] ∧ D.R mode = modes []) ∧ D.R mask = [] ∧ payload next D ∧
       allLabels.foldr (fun i rest x => ∃ y, action i x y ∧ rest y) (· = next) initialWord by
     obtain ⟨finish,D,n,next,user,time,run,post⟩ := scanRun
-    refine ⟨finish,D,_,next,user.trans (hz.trans (hy.trans user₀)),Nat.add_le_add setupBound time,?_,
+    refine ⟨finish,D,_,next,user.trans userSetup,Nat.add_le_add setupBound time,?_,
       Exec.seq setupRun run,post⟩
     intro baseline parentBudget choice ordinary fitsParent fallbackFits
     obtain ⟨extra,allowance,fitsRecord⟩ := fallbackAllowance allLabels badCost
@@ -3034,7 +3081,7 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
       exact (Nat.le_add_left _ _).trans (Nat.le_add_right (runBills j) _)
 
     obtain ⟨g₀,unit,generic⟩ := LabelProjector.residue_witness (w := w+1) (by omega) proj idem factor hd rankFits
-    have total := Nat.add_le_add (Nat.add_le_add (Nat.add_le_add time₀ hl) (Nat.add_le_add_right cleanup 1))
+    have total := Nat.add_le_add setupBound
       (time.trans (directoryDispatchCost_le w d Bcount rankFits (reduce M proj) directory shape charge skipCost badCost
         baseline extra g₀ unit generic (fun j hj _ _ => (sameCharge j hj).le.trans base) (fun j hj _ => (skipBound j hj).trans base)
         (fun j hj live badLabel => fitsRecord j hj ⟨live,badLabel⟩)))

@@ -1038,7 +1038,7 @@ noncomputable def directorySpace [M8.Machine.Net] (T m dim : ℕ) : DirectorySpa
   have h := directoryTapeBounds LeafCore.small pool entry leave archive writer matrix common host
   exact ⟨work, h.1, h.2.1, h.2.2.1, h.2.2.2.1, h.2.2.2.2.1, h.2.2.2.2.2.1, h.2.2.2.2.2.2⟩
 
-private theorem directoryReady_of_inputs {K m w W H J : ℕ} {v : Descriptor} {proj : Matrix (Fin m) (Fin m) ℚ}
+theorem directoryReady_of_inputs {K m w W H J : ℕ} {v : Descriptor} {proj : Matrix (Fin m) (Fin m) ℚ}
     {parent : Fin m → ZMod (prime^(w+1))} {prefixes : ℕ → List (Fin (prime+4))} {tail : List (Fin (prime+4))}
     (schedules : List ℕ → List (Fin (prime+4))) (labels : List ℕ) (S : Stacks (66+K) prime) :
     let caller := Fin.castAddEmb (n := 66) K
