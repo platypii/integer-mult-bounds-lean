@@ -208,16 +208,22 @@ theorem invocationPhase_stage [Net] {k w W : ℕ} (owner : Fin 661 ↪ Fin k) (h
     · exact List.mem_append_right _ c
 
 open IntegerMultBounds.MathlibTM2.Cover in
+noncomputable def labelSpectator {w B K : ℕ}
+    (g : Matrix (Fin 64) (Fin 64) (ZMod (prime^w))) (z : LabelEntry.Cell (copyLabelLayout w B K) B) :
+    Fin (B*prime^(64*(w*64))*K) :=
+  ⟨(z.b.val*prime^(64*(w*64))+(LabelAddress.address g).val)*K+z.after.val, by
+      apply LabelShift.pack_lt _ z.after.isLt
+      apply LabelShift.pack_lt z.b.isLt
+      simpa only [← pow_mul,show w*(64*64) = 64*(w*64) by omega] using (LabelAddress.address g).isLt⟩
+
+open IntegerMultBounds.MathlibTM2.Cover in
 /-- At a routed label, the phase reads the same owner bit with the matrix
 address, block, and trailing cell packed into its spectator coordinate. -/
 theorem phaseRead_label {k w B K : ℕ} (owner : Fin 661 ↪ Fin k) (r : Fin 661)
     (data : Fin k → Fin ((prime^w)^16*(B*prime^(64*(w*64))*K)) → ZMod 2)
     (g : Matrix (Fin 64) (Fin 64) (ZMod (prime^w))) (z : LabelEntry.Cell (copyLabelLayout w B K) B) :
     let W := B*prime^(64*(w*64))*K
-    let j : Fin W := ⟨(z.b.val*prime^(64*(w*64))+(LabelAddress.address g).val)*K+z.after.val, by
-      apply LabelShift.pack_lt _ z.after.isLt
-      apply LabelShift.pack_lt z.b.isLt
-      simpa only [← pow_mul,show w*(64*64) = 64*(w*64) by omega] using (LabelAddress.address g).isLt⟩
+    let j : Fin W := labelSpectator g z
     let view := fun i => data (owner r) (Fin.cast (copyLabel_volume w B K) i)
     chartRead view g z = phaseRead owner data j r.val (copyActive.symm z.a) := by
   intro W j view
@@ -316,6 +322,78 @@ theorem scatterRead_endpoint {w B K : ℕ} {n : Fin 9} {r : Fin 32} {d : Fin 5} 
   rw [scatterRead_schedule (fun _ h => h) effect,(modular_scatter w).choose_spec.2.2.2.1]
   exact h
 
+open IntegerMultBounds.MathlibTM2.Cover in
+private theorem scatterRead_flat {w B K : ℕ} (n : Fin 9) (r : Fin 32) (d : Fin 5)
+    (g : Matrix (Fin 64) (Fin 64) (ZMod (prime^w))) (z : LabelEntry.Cell (copyLabelLayout w B K) B)
+    (data : Fin 142081 → Fin ((prime^w)^16*(B*prime^(64*(w*64))*K)) → ZMod 2) (i : Fin 661) :
+    let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n r d,ownerTape_injective n r d⟩
+    let view := fun k t => data k (Fin.cast (copyLabel_volume w B K) t)
+    scatterRead n r d g z view i.val =
+      phaseRead owner data (labelSpectator (g*registerChart w n i.val) z) i.val := by
+  intro owner view
+  funext s
+  let G := g*registerChart w n i.val
+  let cell : LabelEntry.Cell (copyLabelLayout w B K) B := {z with a := copyActive s}
+  change (if h : i.val < 661 then _ else (0 : AddressStream (ZMod (prime^w)))) s = _
+  rw [dite_eq_left i.isLt]
+  have h := @phaseRead_label 142081 w B K owner i data G cell
+  have cancel : (copyActive (Q := prime^w)).symm cell.a = s := (copyActive (Q := prime^w)).symm_apply_apply s
+  change chartRead (view (owner i)) G cell = phaseRead owner data (labelSpectator G z) i.val s
+  dsimp only at h
+  have spectator : labelSpectator G cell = labelSpectator G z := by
+    apply Fin.ext
+    simp only [labelSpectator,cell]
+  rw [spectator,cancel] at h
+  exact h
+
+/-- Interpret all nine COPY windows on a bank indexed by a common matrix
+label. Each target reads its sources at their relative register charts. -/
+noncomputable def labelScatter {w : ℕ} (n : Fin 9)
+    (bank : Matrix (Fin 64) (Fin 64) (ZMod (prime^w)) → ℕ → AddressStream (ZMod (prime^w)))
+    (g : Matrix (Fin 64) (Fin 64) (ZMod (prime^w))) : ℕ → AddressStream (ZMod (prime^w)) :=
+  let frame := fun i => selectedFrame w (Frames.beforeScatter i)
+  Copy.extendStored fun i =>
+    let base := g*(registerChart w n i.val).transpose
+    let stored := Copy.extendStored fun j : Fin 661 => bank (base*registerChart w n j.val) j.val
+    frame i.val (FramedCircuit.moduleRun (sectionscatter.map RawGate.toCircuit)
+      (FramedCircuit.decode frame stored) i.val)
+
+open IntegerMultBounds.MathlibTM2.Cover in
+theorem labelScatter_read {w B K : ℕ} {n : Fin 9} {r : Fin 32} {d : Fin 5}
+    (data out : Fin 142081 → Fin ((prime^w)^16*(B*prime^(64*(w*64))*K)) → ZMod 2)
+    (effect : CopyScheduleEffect n r d w B K Copy.lifecycles
+      (fun k t => data k (Fin.cast (copyLabel_volume w B K) t))
+      (fun k t => out k (Fin.cast (copyLabel_volume w B K) t)))
+    (g : Matrix (Fin 64) (Fin 64) (ZMod (prime^w))) (z : LabelEntry.Cell (copyLabelLayout w B K) B) :
+    let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n r d,ownerTape_injective n r d⟩
+    phaseRead owner out (labelSpectator g z) =
+      labelScatter n (fun h => phaseRead owner data (labelSpectator h z)) g := by
+  intro owner
+  funext i
+  by_cases hi : i < 661
+  · let j : Fin 661 := ⟨i,hi⟩
+    let base := g*(registerChart w n i).transpose
+    let view := fun (x : Fin 142081 → Fin ((prime^w)^16*(B*prime^(64*(w*64))*K)) → ZMod 2) k t =>
+      x k (Fin.cast (copyLabel_volume w B K) t)
+    have inputs : scatterRead n r d base z (view data) = Copy.extendStored (fun a : Fin 661 =>
+        phaseRead owner data (labelSpectator (base*registerChart w n a.val) z) a.val) := by
+      funext a
+      by_cases ha : a < 661
+      · simpa only [Copy.extendStored,ha,↓reduceDIte] using scatterRead_flat n r d base z data ⟨a,ha⟩
+      · simp [scatterRead,Copy.extendStored,ha]
+    have h := scatterRead_endpoint effect base z j
+    change scatterRead n r d base z (view out) i = _ at h
+    rw [show scatterRead n r d base z (view out) i = _ from scatterRead_flat n r d base z out j] at h
+    have cancel : base*registerChart w n j.val = g := by
+      change g*(registerChart w n i).transpose*registerChart w n i = g
+      rw [Matrix.mul_assoc,registerChart_inverse,Matrix.mul_one]
+    rw [cancel] at h
+    change _ = selectedFrame w (Frames.beforeScatter i) (FramedCircuit.moduleRun _
+      (FramedCircuit.decode _ (scatterRead n r d base z (view data))) i) at h
+    rw [inputs] at h
+    simpa only [labelScatter,Copy.extendStored,hi,↓reduceDIte] using h
+  · simp [labelScatter,phaseRead,Copy.extendStored,hi]
+
 private theorem phaseLogicalRead (w : ℕ) (gates : List RawGate) (current : ℕ → ℕ)
     (checked : ∀ p ∈ Frames.edges gates current, Geometry.Moves.CheckedPair p)
     (input : ℕ → AddressStream (ZMod (prime^w))) :
@@ -371,6 +449,12 @@ theorem invocationScatter_stage [Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
   convert bill using 1
   rw [copyLabel_volume]
 
+noncomputable def labelPhase (w : ℕ) (gates : List RawGate) (current : ℕ → ℕ)
+    (bank : ℕ → AddressStream (ZMod (prime^w))) :=
+  let frame := selectedFrame w
+  FramedCircuit.encode (fun i => frame (Frames.run gates current i))
+    (FramedCircuit.moduleRun (gates.map RawGate.toCircuit) (FramedCircuit.decode (fun i => frame (current i)) bank))
+
 open M8.Machine in
 /-- One physical invocation sequences D+A, the nine routed COPY windows,
 and B+C. The intermediate states carry both the modular and cover-label reads. -/
@@ -398,6 +482,10 @@ theorem invocation_stage [Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
         ∀ i, (∀ a, owner a ≠ i) → y i = x i
       ∃ stage : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V)),
         stage.cost ≤ phaseCost false + scatterCost + phaseCost true + 2 ∧
+        (∀ data (g : Matrix (Fin 64) (Fin 64) (ZMod (prime^w))) (z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B),
+          phaseRead owner (stage.transform data) (labelSpectator g z) =
+            labelPhase w (gates true) (current true) (labelScatter n (fun h =>
+              labelPhase w (gates false) (current false) (phaseRead owner data (labelSpectator h z))) g)) ∧
         ∀ data, ∃ before after, phase false data before ∧
           CopyScheduleEffect n r d w B K Copy.lifecycles (view before) (view after) ∧
           phase true after (stage.transform data) := by
@@ -408,16 +496,28 @@ theorem invocation_stage [Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
   obtain ⟨left,leftCost,leftRead,leftOff⟩ := invocationPhase_stage owner hw hW false
   obtain ⟨right,rightCost,rightRead,rightOff⟩ := invocationPhase_stage owner hw hW true
   obtain ⟨middle,midCost,midRead⟩ := copy w B K hw hB hK
-  refine ⟨SharedBankStage.compose (SharedBankStage.compose left middle) right,?_,?_⟩
+  have checked := Geometry.Moves.phase_checked
+  rw [Geometry.Moves.phaseEdges,List.forall_mem_append] at checked
+  have first (data j) : phaseRead owner (left.transform data) j =
+      labelPhase w (gates false) (current false) (phaseRead owner data j) :=
+    (leftRead data j).trans (phaseLogicalRead w _ _ checked.1 _)
+  have last (data j) : phaseRead owner (right.transform data) j =
+      labelPhase w (gates true) (current true) (phaseRead owner data j) :=
+    (rightRead data j).trans (phaseLogicalRead w _ _ checked.2 _)
+  refine ⟨SharedBankStage.compose (SharedBankStage.compose left middle) right,?_,?_,?_⟩
   · change left.cost+middle.cost+1+right.cost+1 ≤ _
     change left.cost ≤ phaseCost false at leftCost
     change right.cost ≤ phaseCost true at rightCost
     change middle.cost ≤ scatterCost at midCost
     omega
+  · intro data g z
+    let x := left.transform data
+    let y := middle.transform x
+    change phaseRead owner (right.transform y) (labelSpectator g z) = _
+    rw [last,labelScatter_read x y (midRead x) g z]
+    exact congrArg (fun bank => labelPhase w (gates true) (current true) (labelScatter n bank g))
+      (funext (fun h => first data (labelSpectator h z)))
   · intro data
-    have checked := Geometry.Moves.phase_checked
-    rw [Geometry.Moves.phaseEdges,List.forall_mem_append] at checked
-    refine ⟨_,_,⟨fun j => (leftRead data j).trans (phaseLogicalRead w _ _ checked.1 _),leftOff data⟩,
-      midRead _,fun j => (rightRead _ j).trans (phaseLogicalRead w _ _ checked.2 _),rightOff _⟩
+    exact ⟨_,_,⟨first data,leftOff data⟩,midRead _,last _,rightOff _⟩
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
