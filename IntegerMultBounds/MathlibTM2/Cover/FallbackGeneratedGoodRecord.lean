@@ -281,15 +281,23 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
         ((privateTapes.map fun i => 4*(whole.L i).length+2*(R i).length+4).sum+1)
       let branchCost := fun i => if liveBit i then (if badBit i then badCost i else charge i) else skipCost i
       let action := fun i => if liveBit i then (if badBit i then badEffect i else effect i) else Eq
+      let priced := fun n => ∀ (baseline extra : ℕ) (g₀ : Matrix (Fin m) (Fin m) (ZMod prime)),
+        g₀.det ≠ 0 → (∀ k (hk : k < d), (GoodForm.lead (k+1) (lt_of_lt_of_le hk rankFits)
+          (g₀*(LabelRing.res prime (w+1) (by omega)).mapMatrix (reduce M proj)*g₀⁻¹)).det ≠ 0) →
+        (∀ j ∈ labels, liveBit j = true → badBit j = false → charge j ≤ baseline) →
+        (∀ j ∈ labels, liveBit j = false → skipCost j ≤ baseline) →
+        (∀ j ∈ labels, liveBit j = true → badBit j = true → badCost j ≤ baseline+extra) →
+        n ≤ setupCost + (labels.length*(baseline+6) +
+          (((∑ k ∈ Finset.range d, (k+1)*(m+1))*labels.length)/prime)*extra+2)
       ∃ writer : Pr F K Q prime U, ∃ z D n next, z.user = u.user ∧ n ≤ setupCost + ((labels.map fun i => branchCost i + 2 + 4).sum + 2) ∧
-        Exec body (((initCounters.seq writer).seq (clearWorkTapes privateTapes)).seq (classifiedScan mask mode (recordProgram.seq (clearWorkTapes privateTapes)) fallback skip)) (mk u whole) n (mk z D) ∧
+        priced n ∧ Exec body (((initCounters.seq writer).seq (clearWorkTapes privateTapes)).seq (classifiedScan mask mode (recordProgram.seq (clearWorkTapes privateTapes)) fallback skip)) (mk u whole) n (mk z D) ∧
         (ready D [] ∧ D.R mode = modes []) ∧ D.R mask = [] ∧ payload next D ∧
         labels.foldr (fun i rest x => ∃ y, action i x y ∧ rest y) (· = next) word := by
   intro d common host M N entry leave record bank commonPorts aux hdrPorts logical addr inner caller K ef xf eqs xqs initialWord
     body initialUser initialState poolFits directory prefixes archiveTail allLabels slots headers scanCaller scan joined dirSlots dir pool pivot counters inputs ports a digits prefixWidth zeros
     packedLabel clock count formula formulaCost detFormula C readBill generationBill generate withZero field slot r src dst ready payload gs matrices liveBit badBit
     call cost budget coordinate effects reverse transfer marks packed loading conversions headerCost runBills prepareCounters prepareHeaders recordProgram
-    privateTapes initialClear c bodyBound charge mask mode modes skip skipCost fallback badCost badEffect bad room Bcount rs parents shape freePrivate dirPositive brSize rowsSize beforeHSize parentsFree freeMask freeMode high R initCounters clean initialReady initialPayload setupCost branchCost action
+    privateTapes initialClear c bodyBound charge mask mode modes skip skipCost fallback badCost badEffect bad room Bcount rs parents shape freePrivate dirPositive brSize rowsSize beforeHSize parentsFree freeMask freeMode high R initCounters clean initialReady initialPayload setupCost branchCost action priced
   have clockSlot : headers 0 = 45 := rfl
   have widthSlot : headers 2 = 2 := rfl
   have unitSlot : headers 5 = 44 := rfl
@@ -403,8 +411,12 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
         (mk z startState) n (mk finish D) ∧ (ready D [] ∧ D.R mode = modes []) ∧ D.R mask = [] ∧ payload next D ∧
       allLabels.foldr (fun i rest x => ∃ y, action i x y ∧ rest y) (· = next) initialWord by
     obtain ⟨finish,D,n,next,user,time,run,post⟩ := scanRun
-    exact ⟨writer,finish,D,_,next,user.trans (hz.trans (hy.trans user₀)),Nat.add_le_add (Nat.add_le_add_right (Nat.add_le_add time₀ hl) _) time,
+    refine ⟨writer,finish,D,_,next,user.trans (hz.trans (hy.trans user₀)),Nat.add_le_add (Nat.add_le_add_right (Nat.add_le_add time₀ hl) _) time,?_,
       Exec.seq (Exec.seq (Exec.seq prepare write) clearMasks) run,post⟩
+    intro baseline extra g₀ unit generic hg hp hf
+    exact Nat.add_le_add (Nat.add_le_add_right (Nat.add_le_add time₀ hl) _)
+      (time.trans (directoryDispatchCost_le w d Bcount rankFits (reduce M proj) directory shape charge skipCost badCost
+        baseline extra g₀ unit generic hg hp hf))
   apply classifiedPayloadScan_exec body mask mode (caller.injective.ne (by decide)) _ fallback skip liveBit badBit
     branchCost (fun is D => ready D is) payload action _ _ allLabels initialWord z startState
     r₂ p₂ bits initialModes

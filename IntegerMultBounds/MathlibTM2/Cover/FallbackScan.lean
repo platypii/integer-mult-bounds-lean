@@ -116,25 +116,6 @@ theorem classifiedResidualScan_exec (a : ScanData r d w W) (ports : Fin (N+2) �
         (fun i => off i 0),frame _ (separate 2).symm (separate 5).symm outside,
         by simpa [cost,ScanData.recordTime,h,b] using hn,by simpa [h,b,fallback,advance,bank] using run⟩
 
-omit [M8.Machine.Net] in
-private theorem classifiedCost_sum (xs : List ℕ) (live bad : ℕ → Bool) (good other : ℕ → ℕ)
-    (baseline extra : ℕ)
-    (hg : ∀ j ∈ xs, live j = true → bad j = false → good j ≤ baseline)
-    (hp : ∀ j ∈ xs, live j = false → other j ≤ baseline)
-    (hf : ∀ j ∈ xs, live j = true → bad j = true → other j ≤ baseline+extra) :
-    (xs.map fun j => ((if live j && !bad j then good j else other j)+2)+4).sum ≤
-      xs.length*(baseline+6)+xs.countP bad*extra := by
-  induction xs with
-  | nil => simp
-  | cons j xs ih =>
-    have tail := ih (fun i hi => hg i (List.mem_cons_of_mem _ hi))
-      (fun i hi => hp i (List.mem_cons_of_mem _ hi)) (fun i hi => hf i (List.mem_cons_of_mem _ hi))
-    have g := hg j List.mem_cons_self
-    have p := hp j List.mem_cons_self
-    have f := hf j List.mem_cons_self
-    cases l : live j <;> cases b : bad j <;>
-      simp [l,b,Nat.add_mul] at g p f tail ⊢ <;> omega
-
 open GoodForm in
 /-- In a classified physical scan, the excess over the good/padding budget is
 charged at the request's minor-degree density, including all parent boxes. -/
@@ -155,18 +136,14 @@ theorem classifiedResidualTime_le (a : ScanData r d w W) (U : Type) (parents ran
     n ≤ a.records*(baseline+6)+
       (((∑ k ∈ Finset.range rank, (k+1)*(r+1))*a.records)/prime)*extra+2 := by
   intro live bad cost hg hp hf hn
-  have charge := classifiedCost_sum (List.range a.records) live bad goodTime (a.recordTime U) baseline extra
-    (fun j hj => hg j (List.mem_range.mp hj)) (fun j hj => hp j (List.mem_range.mp hj))
-    (fun j hj => hf j (List.mem_range.mp hj))
-  have rare := fallbackRecordCount w rank parents fits proj g₀ unit generic
-  dsimp only at rare
-  rw [← records] at rare
-  have count := (Nat.le_div_iff_mul_le prime_prime.pos).mpr rare
   apply hn.trans
-  apply Nat.add_le_add_right
-  apply charge.trans
-  rw [List.length_range]
-  exact Nat.add_le_add_left (Nat.mul_le_mul_right extra count) _
+  apply classifiedRecordTime_le w rank parents fits proj a.records records g₀ unit generic cost baseline extra
+  · intro j hj hl hb
+    simpa [cost,live,bad,hl,hb] using hg j hj hl hb
+  · intro j hj hl
+    simpa [cost,live,hl] using hp j hj hl
+  · intro j hj hl hb
+    simpa [cost,live,bad,hl,hb] using hf j hj hl hb
 
 open GoodForm in
 /-- Execute the classified scan with the minor-degree bound on fallback work. -/

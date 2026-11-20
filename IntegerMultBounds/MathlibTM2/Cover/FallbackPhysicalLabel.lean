@@ -232,6 +232,85 @@ theorem fallbackRecordCount (w r parents : ℕ) (hr : r ≤ m) (P : LabelPadding
   simp only [fallback,fallbackBit,decide_eq_true_eq]
   exact (Nat.mul_le_mul_left parents bound).trans_eq (by ring)
 
+private theorem classifiedCost_sum (xs : List ℕ) (live bad : ℕ → Bool) (cost : ℕ → ℕ)
+    (baseline extra : ℕ)
+    (hg : ∀ j ∈ xs, live j = true → bad j = false → cost j ≤ baseline)
+    (hp : ∀ j ∈ xs, live j = false → cost j ≤ baseline)
+    (hf : ∀ j ∈ xs, live j = true → bad j = true → cost j ≤ baseline+extra) :
+    (xs.map fun j => (cost j+2)+4).sum ≤
+      xs.length*(baseline+6)+xs.countP bad*extra := by
+  induction xs with
+  | nil => simp
+  | cons j xs ih =>
+    have tail := ih (fun i hi => hg i (List.mem_cons_of_mem _ hi))
+      (fun i hi => hp i (List.mem_cons_of_mem _ hi)) (fun i hi => hf i (List.mem_cons_of_mem _ hi))
+    have g := hg j List.mem_cons_self
+    have p := hp j List.mem_cons_self
+    have f := hf j List.mem_cons_self
+    cases l : live j <;> cases b : bad j <;>
+      simp [l,b,Nat.add_mul] at g p f tail ⊢ <;> omega
+
+open GoodForm in
+/-- Charge the excess over a uniform per-record budget only to bad labels in the full directory. -/
+theorem classifiedRecordTime_le (w r parents : ℕ) (hr : r ≤ m) (P : LabelPadding.Label m (w+1))
+    (records : ℕ) (size : records = parents*(prime^(w+1))^(m*m))
+    (g₀ : Matrix (Fin m) (Fin m) (ZMod prime)) (unit : g₀.det ≠ 0)
+    (generic : ∀ k (hk : k < r), (lead (k+1) (lt_of_lt_of_le hk hr)
+      (g₀*(LabelRing.res prime (w+1) (by omega)).mapMatrix P*g₀⁻¹)).det ≠ 0)
+    (cost : ℕ → ℕ) (baseline extra : ℕ) :
+    let live := LabelStock.live m (w+1) 1
+    let bad := fun j => fallbackBit hr P (physicalLabel m (w+1) j)
+    (∀ j < records, live j = true → bad j = false → cost j ≤ baseline) →
+    (∀ j < records, live j = false → cost j ≤ baseline) →
+    (∀ j < records, live j = true → bad j = true → cost j ≤ baseline+extra) →
+    ((List.range records).map fun j => cost j+2+4).sum+2 ≤ records*(baseline+6)+
+      (((∑ k ∈ Finset.range r, (k+1)*(m+1))*records)/prime)*extra+2 := by
+  intro live bad hg hp hf
+  have charge := classifiedCost_sum (List.range records) live bad cost baseline extra
+    (fun j hj => hg j (List.mem_range.mp hj)) (fun j hj => hp j (List.mem_range.mp hj))
+    (fun j hj => hf j (List.mem_range.mp hj))
+  have rare := fallbackRecordCount w r parents hr P g₀ unit generic
+  dsimp only at rare
+  rw [← size] at rare
+  have count := (Nat.le_div_iff_mul_le prime_prime.pos).mpr rare
+  rw [List.length_range] at charge
+  exact Nat.add_le_add_right (charge.trans (Nat.add_le_add_left (Nat.mul_le_mul_right extra count) _)) _
+
+open GoodForm in
+theorem directoryDispatchCost_le (w r B : ℕ) (hr : r ≤ m) (P : LabelPadding.Label m (w+1))
+    (directory : IntegerMultBounds.Machine.RecursiveInterchangeLayout.Descriptor)
+    (shape : directory.beforeH = B*prime^(m*((w+1)*m)))
+    (goodCost padCost badCost : ℕ → ℕ) (baseline extra : ℕ)
+    (g₀ : Matrix (Fin m) (Fin m) (ZMod prime)) (unit : g₀.det ≠ 0)
+    (generic : ∀ k (hk : k < r), (lead (k+1) (lt_of_lt_of_le hk hr)
+      (g₀*(LabelRing.res prime (w+1) (by omega)).mapMatrix P*g₀⁻¹)).det ≠ 0) :
+    let labels := List.range (LabelMask.records directory)
+    let live := LabelStock.live m (w+1) 1
+    let bad := fun j => fallbackBit hr P (physicalLabel m (w+1) j)
+    let branch := fun j => if live j then (if bad j then badCost j else goodCost j) else padCost j
+    (∀ j ∈ labels, live j = true → bad j = false → goodCost j ≤ baseline) →
+    (∀ j ∈ labels, live j = false → padCost j ≤ baseline) →
+    (∀ j ∈ labels, live j = true → bad j = true → badCost j ≤ baseline+extra) →
+    (labels.map fun j => branch j+2+4).sum+2 ≤ labels.length*(baseline+6)+
+      (((∑ k ∈ Finset.range r, (k+1)*(m+1))*labels.length)/prime)*extra+2 := by
+  intro labels live bad branch hg hp hf
+  have size : LabelMask.records directory = (directory.beforeRows*directory.rows*B)*(prime^(w+1))^(m*m) := by
+    rw [LabelMask.records,shape,← pow_mul]
+    ring
+  rw [show labels.length = LabelMask.records directory from List.length_range]
+  apply classifiedRecordTime_le w r _ hr P _ size g₀ unit generic branch baseline extra
+  · intro j hj l b
+    change live j = true at l
+    change bad j = false at b
+    simpa only [branch,l,b,Bool.false_eq_true,ite_false,ite_true] using hg j (List.mem_range.mpr hj) l b
+  · intro j hj l
+    change live j = false at l
+    simpa only [branch,l,Bool.false_eq_true,ite_false] using hp j (List.mem_range.mpr hj) l
+  · intro j hj l b
+    change live j = true at l
+    change bad j = true at b
+    simpa only [branch,l,b,ite_true] using hf j (List.mem_range.mpr hj) l b
+
 /-- The live addresses of one complete box enumerate the invertible matrices exactly once. -/
 theorem liveLabelCount (hw : 0 < w) :
     (List.range (M^(m*m))).countP (LabelStock.live m w 1) = Nat.card (LabelPadding.Label m w)ˣ := by
