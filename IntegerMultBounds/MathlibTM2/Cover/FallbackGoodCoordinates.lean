@@ -66,12 +66,18 @@ theorem goodRecordCoordinates_exec [M8.Machine.Net] {T m work Q : ℕ} {F U : Ty
         let weight := fun i : Fin d => parent (i.castLE rankFits)*pivot i
         let inv := fun i : Fin d => parentInv (i.castLE rankFits)*Ring.inverse (pivot i)
         ∃ next : Fin N → ZMod 2, rep 0 (payload next) D ∧ clean D ∧
+          (∀ k : Fin 31, D.L ((k.natAdd host).castAdd work) = [] ∧ D.R ((k.natAdd host).castAdd work) = []) ∧
+          (∀ x, let slot := (((LeafCore.roleSlot io).castAdd 24).castAdd 31).castAdd work
+                readAt blank (D.L slot) (D.R slot) x = leafBitTape (List.ofFn next) x) ∧
+          (D.R (stageBank bank d 15), D.R (stageBank bank d 16)) =
+            matrixArchive (fun k => if hk : k ≤ d then matrixWords prime M.size
+              (GoodForm.stageAt G d rankFits minor k hk).M else []) (S.R (bank 15)) (S.R (bank 16)) d ∧
           ∀ a < v.beforeRows, ∀ row < v.rows, ∀ pre < v.beforeH, ∀ mid < v.between, ∀ post < v.afterD, ∀ x,
             ext next (addr a row pre mid post (Weighted.child d weight inv x)) = ext word (addr a row pre mid post x) := by
   intro d common host M N entry leave record bank g G rep clean payload logical addr ef xf eqs xqs word body u S tail parentTail initial freeWork empty good matrix modulus one ticks scratch archive call cost
   apply withGoodRecordWeights_exec body record proj idem factor hd rankFits label M.size
     (Nat.lt_size_self _) live parent parentInv reciprocal u S tail parentTail _ cost _ good matrix modulus one ticks scratch archive
-  intro minor y E stage pivot units inputs spare left frame
+  intro minor y E stage pivot units inputs spare matrixPair left frame
   have outside (k : Fin ((host+31)+work)) (h : k.val < common ∨ host ≤ k.val) : E.R k = S.R k := by
     apply frame
     intro j eq
@@ -92,9 +98,26 @@ theorem goodRecordCoordinates_exec [M8.Machine.Net] {T m work Q : ℕ} {F U : Ty
   have emptyE (k : Fin 31) : E.L ((k.natAdd host).castAdd work) = [] ∧ E.R ((k.natAdd host).castAdd work) = [] := by
     rw [left,outside _ (Or.inr (by simp))]
     exact empty k
-  obtain ⟨next,z,D,t,user,time,run,out,free,_,address⟩ := packedCoordinates_exec v positive w width
+  obtain ⟨next,z,D,t,user,time,run,out,free,kept,address⟩ := packedCoordinates_exec v positive w width
     rankFits parent parentInv reciprocal pivot units io roles f p node scalar arity st freeNode fits cap
     ef xf eqs xqs word body y E [] parentTail initialE cleanE emptyE spare inputs
-  exact ⟨z,D,t,user,time,run,minor,next,out,free,address⟩
+  have stageKept (k : Fin 23) : D.R (stageBank bank d k) = E.R (stageBank bank d k) := by
+    obtain ⟨j,eq⟩ := stageBank_slot bank d k
+    rw [eq]
+    exact (kept ((j.castLE (by decide : 23 ≤ 24)).castAdd 31)).2
+  have emptyD (k : Fin 31) : D.L ((k.natAdd host).castAdd work) = [] ∧ D.R ((k.natAdd host).castAdd work) = [] := by
+    have h := kept (k.natAdd 24)
+    have eq : ((k.natAdd 24).natAdd common : Fin (common+55)) = k.natAdd host := by
+      apply Fin.ext
+      simp [host,Nat.add_assoc]
+    rw [eq] at h
+    exact ⟨h.1.trans (emptyE k).1,h.2.trans (emptyE k).2⟩
+  refine ⟨z,D,t,user,time,run,minor,next,out,free,emptyD,?_,by rwa [stageKept,stageKept],address⟩
+  intro x
+  have view := LeafCore.bank_role (payload next) (Routines.hdr v) f p node scalar
+    (Family.leafC (w+1) arity d 0) st io
+  have h := out (LeafCore.roleSlot io) x
+  rw [view.1, view.2] at h
+  simpa [payload, SharedPlacementAlphabet.setTape] using h.symm
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback

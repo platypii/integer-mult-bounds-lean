@@ -156,6 +156,12 @@ theorem goodRecordWeights_exec (body : P → Pr P T Q A U) (ports : Fin 24 ↪ F
     rw [goodHeadWord_inverse_apply _ _ _ _ _ _ inv,goodHeadWord_apply _ _ _ _ _ _ inv]
     exact stage.goodMove fits a b factor idempotent α α' inv s
 
+theorem stageBank_slot (bank : Fin 23 ↪ Fin T) (n : ℕ) (k : Fin 23) :
+    ∃ j, stageBank bank n k = bank j := by
+  induction n generalizing k with
+  | zero => exact ⟨k,rfl⟩
+  | succ n ih => exact ih ((Equiv.swap 15 16) k)
+
 /-- Pass the elimination pivots and the original full-width parent archive to the next host call. -/
 theorem withGoodRecordWeights_exec (body : P → Pr P T Q A U) (ports : Fin 24 ↪ Fin T)
     (proj : Matrix (Fin m) (Fin m) ℚ) (idem : proj*proj = proj)
@@ -180,25 +186,28 @@ theorem withGoodRecordWeights_exec (body : P → Pr P T Q A U) (ports : Fin 24 �
       let pivot := fun k : Fin proj.rank => stage.M (k.castLE fits) (k.castLE fits)
       (∀ k, IsUnit (pivot k)) →
       PackedLeafInputs child H α pivot E [] parentTail → E.R (ports 18) = [] →
+      (E.R (stageBank bank proj.rank 15), E.R (stageBank bank proj.rank 16)) =
+        matrixArchive (fun k => if hk : k ≤ proj.rank then
+          matrixWords A H (GoodForm.stageAt G proj.rank fits minor k hk).M else [])
+          (S.R (bank 15)) (S.R (bank 16)) proj.rank →
       E.L = S.L → (∀ j, (∀ k, ports k ≠ j) → E.R j = S.R j) →
       ∃ z D t, z.user = y.user ∧ t ≤ budget ∧ Exec body next (mk y E) t (mk z D) ∧ post D) →
     ∃ z D t, z.user = v.user ∧ t ≤ (proj.rank*(4*w+4+columnTime m prime w H)+1+
       (proj.rank*(8*(m*m*H)+14*H+22)+1))+budget ∧
       Exec body ((goodWeights prime proj.rank fits bank).seq next) (mk v S) t (mk z D) ∧ post D := by
   intro bank child g G good matrix modulus one ticks free weights consume
-  obtain ⟨minor,y,E,l,user,cost,run,_,_,left,_,_,frame,ready,units,_⟩ :=
+  obtain ⟨minor,y,E,l,user,cost,run,_,archive,left,_,_,frame,ready,units,_⟩ :=
     goodRecordWeights_exec body ports proj idem f hd fits j H hm live α α' inv v S tail
       (negateForward := false) good matrix modulus one ticks free
   obtain ⟨spare,packed,_⟩ := ready parentTail weights
   have outside (n) (k : Fin 23) (j : Fin T) (off : ∀ k, ports k ≠ j) : stageBank bank n k ≠ j := by
-    induction n generalizing k with
-    | zero => exact off _
-    | succ n ih => exact ih _
+    obtain ⟨i,eq⟩ := stageBank_slot bank n k
+    exact eq ▸ off _
   obtain ⟨z,D,t,hz,ht,step,done⟩ := consume minor y E (by
     intro k
     refine isUnit_iff_exists_inv.mpr ⟨Ring.inverse ((GoodForm.stageAt G proj.rank fits minor proj.rank le_rfl).M (k.castLE fits) (k.castLE fits)),?_⟩
     simpa only [Fin.val_castLE,k.isLt,ite_true] using units (k.castLE fits))
-    (by simpa only [Fin.val_castLE,Fin.isLt,ite_true] using packed) spare left
+    (by simpa only [Fin.val_castLE,Fin.isLt,ite_true] using packed) spare archive left
     (fun j off => frame j (off _).symm (outside _ _ j off).symm (outside _ _ j off).symm)
   exact ⟨z,D,l+t,hz.trans user,Nat.add_le_add cost ht,Exec.seq run step,done⟩
 
