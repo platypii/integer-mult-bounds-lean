@@ -503,7 +503,8 @@ theorem ordinaryGeneratedSetup_exec {m w W H J Q common work : ℕ} {P U : Type}
       (∀ i, 66+58 ≤ i.val → D.L i = [] ∧ D.R i = []) ∧
       D.R (full 54) = invWords ∧ (D.R (full 51)).length = m*m*H ∧
       D.R (full 47) = (List.ofFn fun i : Fin r => binSyms H (stage.M (i.castLE proj.rank_le_height) (i.castLE proj.rank_le_height)).val).flatten ∧
-      (D.R (full 49),D.R (full 50)) = matrixArchive words (words 0) [] r := by
+      (D.R (full 49),D.R (full 50)) = matrixArchive words (words 0) [] r ∧
+      (∀ i, i.val < 58 → D.R i = S.R i) := by
   intro K src full r slots tmp program g M G clear word payload
   obtain ⟨minor,generated⟩ :=
     ordinaryGeneratedArchive_exec v proj weights prefixes tail schedules hm poolFits room body u S j js ready live clear
@@ -515,29 +516,33 @@ theorem ordinaryGeneratedSetup_exec {m w W H J Q common work : ℕ} {P U : Type}
   obtain ⟨z,D,t,hz,ht,setup,headReady,empty,one,clock,free,temps,extra,result⟩ :=
     ordinarySetup_exec room body v proj weights prefixes tail schedules (j::js) y S B ready left frame unit hm word
       (by intro k; change _ = readAt blank (B.L (full 24)) (B.R (full 24)) k; rw [left,payloadB]; exact payload k)
-  refine ⟨z,D,_,hz.trans hy,Nat.add_le_add hn ht,Exec.seq archive setup,headReady,empty,one,clock,free,temps,extra,?_,?_,?_,?_⟩
+  refine ⟨z,D,_,hz.trans hy,Nat.add_le_add hn ht,Exec.seq archive setup,headReady,empty,one,clock,free,temps,extra,?_,?_,?_,?_,?_⟩
   all_goals rw [result]
+  case refine_5 =>
+    intro i hi
+    have apart (k : Fin 58) (hk : 58 ≤ (entrySlot k).val) : i ≠ full k := by
+      intro eq
+      rw [eq] at hi
+      change (entrySlot k).val < 58 at hi
+      omega
+    exact (Function.update_of_ne (apart 33 (by decide)) ..).trans
+      ((Function.update_of_ne (apart 51 (by decide)) ..).trans
+        ((Function.update_of_ne (apart 54 (by decide)) ..).trans
+          (frame _ (apart 47 (by decide)) (apart 49 (by decide)) (apart 50 (by decide)))))
   all_goals simp only [full,Function.update_apply,(ordinaryCaller room).injective.eq_iff,invWords] <;> norm_num <;> assumption
 
 open GoodForm FlatCoordinateLayout LabelTraversal Matrix M8.Exchange M8.ReversedExchange
 open IntegerMultBounds.Swap.Shear
 
-/-- Run the stopped adapter on the archive emitted by ordinary record preparation.
-The shared middle header describes a single block, so it needs no extra tape. -/
-theorem ordinaryPreparedRun_exec [M8.Machine.Net] {n T Q d w W H J rank : ℕ} {U : Type}
-    (cap : 217 ≤ Q) (hr : rank ≤ d+1) (caller : Fin 58 ↪ Fin n)
-    (body : Unit → Pr Unit (n+T) Q prime U) (C : ℝ) (overhead budget : ℕ)
+def OrdinaryRecordExec [M8.Machine.Net] {N Q d w W H J rank : ℕ} {U : Type}
+    (cap : 217 ≤ Q) (hr : rank ≤ d+1) (full : Fin 58 ↪ Fin N)
+    (body : Unit → Pr Unit N Q prime U) (overhead budget : ℕ)
     (G : Matrix (Fin (d+1)) (Fin (d+1)) (ZMod (prime^(w+1))))
     (minor : ∀ k (hk : k < rank), IsUnit (lead (k+1) (lt_of_lt_of_le hk hr) G).det)
-    (weights : Fin (d+1) → ZMod (prime^(w+1))) (enough : 124 ≤ n)
-    (width : H = Nat.size (prime^(w+1))) (digits : J = Nat.size W)
-    (run : Record.StoppedRecordRun (g := d+1-rank) (digits := 0) (W := W) (H := H) (J := J)
-      cap hr caller caller body C overhead budget ⟨1,1,1,d+1,1,W⟩ G minor weights
-      (fun i => Ring.inverse (weights i)) [] [] [] [] [] (fun _ => blank) 0) :
+    (weights : Fin (d+1) → ZMod (prime^(w+1))) : Prop :=
     let m := d+1
     let M := prime^(w+1)
     letI : NeZero M := ⟨(pow_pos prime_prime.pos _).ne'⟩
-    let full := caller.trans (Fin.castAddEmb T)
     let bank := adapterBank.trans (parent.trans (parentWithWeights.trans full))
     let host := head.trans bank
     let c := child.trans host
@@ -562,13 +567,297 @@ theorem ordinaryPreparedRun_exec [M8.Machine.Net] {n T Q d w W H J rank : ℕ} {
           F.L j = S.L j ∧ F.R j = S.R j) ∧
         ∀ x j, let y := transform (diagonal weights) 1 (revExchangeOf (rev m) G
                 (transform (diagonal fun i => Ring.inverse (weights i)) 1 x))
-               out (index (Fin.append y.1 y.2) j) = word (index (Fin.append x.1 x.2) j) := by
-  intro m M full bank host c parentWords ready words stage v S word headReady empty one clock free temps extra inverses length pivots pair
+               out (index (Fin.append y.1 y.2) j) = word (index (Fin.append x.1 x.2) j)
+
+/-- Run the stopped adapter on the archive emitted by ordinary record preparation.
+The shared middle header describes a single block, so it needs no extra tape. -/
+theorem ordinaryPreparedRun_exec [M8.Machine.Net] {n T Q d w W H J rank : ℕ} {U : Type}
+    (cap : 217 ≤ Q) (hr : rank ≤ d+1) (caller : Fin 58 ↪ Fin n)
+    (body : Unit → Pr Unit (n+T) Q prime U) (C : ℝ) (overhead budget : ℕ)
+    (G : Matrix (Fin (d+1)) (Fin (d+1)) (ZMod (prime^(w+1))))
+    (minor : ∀ k (hk : k < rank), IsUnit (lead (k+1) (lt_of_lt_of_le hk hr) G).det)
+    (weights : Fin (d+1) → ZMod (prime^(w+1))) (enough : 124 ≤ n)
+    (width : H = Nat.size (prime^(w+1))) (digits : J = Nat.size W)
+    (run : Record.StoppedRecordRun (g := d+1-rank) (digits := 0) (W := W) (H := H) (J := J)
+      cap hr caller caller body C overhead budget ⟨1,1,1,d+1,1,W⟩ G minor weights
+      (fun i => Ring.inverse (weights i)) [] [] [] [] [] (fun _ => blank) 0) :
+    OrdinaryRecordExec (W := W) (H := H) (J := J) cap hr (caller.trans (Fin.castAddEmb T))
+      body overhead budget G minor weights := by
+  unfold OrdinaryRecordExec
+  let full := caller.trans (Fin.castAddEmb T)
+  intro m M bank host c parentWords ready words stage v S word headReady empty one clock free temps extra inverses length pivots pair
   obtain ⟨z,F,t,out,user,_,price,exec,restored,blankPort,frame,correct⟩ := run v S word
     (by simpa only [List.append_nil] using headReady) empty (by rw [List.append_nil]; exact inverses)
     (by rw [List.append_nil]; exact pair) length (by rw [List.append_nil]; exact pivots)
     one clock free temps (Or.inl ⟨rfl,by simp⟩) (fun i hi => extra i (enough.trans hi))
   exact ⟨z,F,t,out,user,(price width digits).1,exec,by simpa only [List.append_nil] using restored,
     blankPort,frame,correct⟩
+
+theorem ordinaryGeneratedRecord_exec [M8.Machine.Net] {d w W H J Q common work : ℕ} {U : Type}
+    (cap : 217 ≤ Q) (overhead budget : ℕ)
+    (v : RecursiveInterchangeLayout.Descriptor) (proj : Matrix (Fin (d+1)) (Fin (d+1)) ℚ)
+    (weights : Fin (d+1) → ZMod (prime^(w+1))) (prefixes : ℕ → List (Fin (prime+4)))
+    (tail : List (Fin (prime+4))) (schedules : List ℕ → List (Fin (prime+4)))
+    (hm : prime^(w+1) < 2^H) (poolFits : (RingFormula.conjugationDepth (d+1)+1)*13 ≤ work)
+    (unit : ∀ i, IsUnit (weights i))
+    (room : 58 ≤ common+24+31+work)
+    (body : Unit → Pr Unit (66+(common+24+31+work)) Q prime U) (u : HS (66+(common+24+31+work)) Q prime U) (S : Stacks (66+(common+24+31+work)) prime) (j : ℕ) (js : List ℕ)
+    (ready : DirectoryReady v proj w W H J weights prefixes tail schedules S (j::js))
+    (live : LabelStock.live (d+1) (w+1) 1 j = true) :
+    letI : NeZero (prime^(w+1)) := ⟨(pow_pos prime_prime.pos _).ne'⟩
+    let m := d+1
+    let K := common+24+31+work
+    let src := directoryRecordMatrixSlot common work
+    let full := ordinaryCaller room
+    let r := proj.rank
+    let slots := stageBank (pivotSlots.trans full) r
+    let tmp := (59 : Fin 66).castAdd K
+    let program : Pr Unit (66+K) Q prime U :=
+      ((directoryRecordWriter m common poolFits).seq (if src = slots 15 then .act .done
+        else moveRightOrdered src tmp (slots 15))).seq (goodWeights prime r proj.rank_le_height slots : Pr Unit (66+K) Q prime U)
+      let g := physicalLabel m (w+1) j
+      let M := IntegerMultBounds.Swap.Modular.reduce (prime^(w+1)) proj
+      let G := g*M*g⁻¹
+      fallbackBit proj.rank_le_height M g = false →
+      ∀ word : Fin ((prime^(w+1))^(m+m)*W) → ZMod 2,
+    (∀ z, RadixToBinary.binaryEncoding.encode (putWord (fun _ => blank) 0
+      (List.ofFn (SparseRoleCircuit.encode ∘ word)) z) = readAt blank (S.L (full 24)) (S.R (full 24)) z) →
+    (∀ minor, OrdinaryRecordExec (W := W) (H := H) (J := J) cap proj.rank_le_height full body overhead budget G minor weights) →
+    let C : ℕ := 48*H*H+152*H+66
+    let cost := fun i : Fin m => (8*(i.val*H)+14*H+22) +
+      (6*w+6+(14*H+16+(prime-2)*C+C+w*(12*H+15+prime*C))) + (2*H+2) + (4*H+4)
+    let load : Pr Unit (66+K) Q prime U := packReciprocals prime (ordinaryReciprocalPorts.trans full) (full 54) (List.finRange m)
+    ∃ (z : HS (66+K) Q prime U) (D : Stacks (66+K) prime) (t : ℕ) (out : Fin ((prime^(w+1))^(m+m)*W) → ZMod 2), z.user = u.user ∧ t ≤ ((RingFormula.conjugationDepth m+1)*(6*H+6)+1 +
+          ((4*H+4)+(recordConjugationTime m w H (prefixes j).length+(2*H+2))+((RingFormula.conjugationDepth m+1)*(2*H+2)+1)) +
+          (4*(m*m*H)+4) + (r*(4*w+4+columnTime m prime w H)+1+(r*(8*(m*m*H)+14*H+22)+1))) + (((List.finRange m).map cost).sum+1+(4*H+4)+(6*H+6)) + (budget+overhead*((prime^(w+1))^(m+m)*W)) ∧
+      Exec body ((program.seq (load.seq ((Node.umul (m*m) (full 2) (full 51) (full 0)).seq
+        (bcopy (full 2) (full 33) (full 0) (full 1))))).seq (hostedGoodRecordAt cap full full () prime r (m-r) proj.rank_le_height)) (mk u S) t (mk z D) ∧
+      let bank := adapterBank.trans (parent.trans (parentWithWeights.trans full))
+      let host := head.trans bank
+      HeadColumnReady (d := m+m) (W := W) ((coeff true).trans host) (entry.trans bank) H J []
+        (List.ofFn fun i => binSyms H (weights i).val).flatten [] SparseRoleCircuit.encode
+        (fun _ => blank) (fun _ => blank) 0 0 out D ∧ D.R (bank 27) = [] ∧
+      (∀ i, i.val < 58 → i ≠ full 24 → D.R i = S.R i) ∧
+      ∀ x j, let y := transform (diagonal weights) 1 (revExchangeOf (rev m) G
+              (transform (diagonal fun i => Ring.inverse (weights i)) 1 x))
+             out (index (Fin.append y.1 y.2) j) = word (index (Fin.append x.1 x.2) j) := by
+  intro m K src full r slots tmp program g M G clear word payload installed C cost load
+  obtain ⟨minor,y,B,l,hy,hl,setup,headReady,empty,one,clock,free,temps,extra,inverses,length,pivots,pair,publicFrame⟩ :=
+    ordinaryGeneratedSetup_exec v proj weights prefixes tail schedules hm poolFits unit room body u S j js ready live clear word payload
+  obtain ⟨z,F,n,out,hz,hn,run,restored,blankPort,childFrame,correct⟩ := installed minor y B word
+    headReady empty one clock free temps extra inverses length pivots pair
+  refine ⟨z,F,_,out,hz.trans hy,Nat.add_le_add hl hn,Exec.seq setup run,restored,blankPort,?_,correct⟩
+  intro i hi off
+  by_cases base : i = full 2
+  · subst i; exact restored.base.trans (headReady.base.symm.trans (publicFrame _ hi))
+  by_cases onePort : i = full 28
+  · subst i; exact restored.one.trans (headReady.one.symm.trans (publicFrame _ hi))
+  by_cases widthPort : i = full 53
+  · subst i; exact restored.width.trans (headReady.width.symm.trans (publicFrame _ hi))
+  have outside (k : Fin 58) (hk : 58 ≤ (entrySlot k).val ∨ k = 2 ∨ k = 24 ∨ k = 28 ∨ k = 53) :
+      full k ≠ i := by
+    rcases hk with large | rfl | rfl | rfl | rfl
+    · intro eq; rw [← eq] at hi; change (entrySlot k).val < 58 at hi; omega
+    · exact Ne.symm base
+    · exact off.symm
+    · exact Ne.symm onePort
+    · exact Ne.symm widthPort
+  let bounds (k : Fin 58) : Prop := 58 ≤ (entrySlot k).val ∨ k = 2 ∨ k = 24 ∨ k = 28 ∨ k = 53
+  let bank := adapterBank.trans (parent.trans (parentWithWeights.trans (Function.Embedding.refl (Fin 58))))
+  have hs : ∀ k, bounds (((shear.trans head).trans bank) k) := by decide
+  have ht : ∀ k, bounds (((shear.trans ordinaryHead).trans bank) k) := by decide
+  exact (childFrame i (fun k => outside _ (hs k)) (fun k => outside _ (ht k))).2.trans (publicFrame _ hi)
+
+/-- A fixed stopped-child body works at every precision and live ordinary label
+after extending the directory workspace by its private tapes. -/
+def OrdinaryDirectoryBody [M8.Machine.Net] {N Q d : ℕ} (U : Type) (cap : 217 ≤ Q)
+    (proj : Matrix (Fin (d+1)) (Fin (d+1)) ℚ) (full : Fin 58 ↪ Fin N) : Prop :=
+  ∃ body : Unit → Pr Unit N Q prime U, ∃ C : ℝ, ∃ overhead : ℕ, ∀ w W,
+    let m := d+1
+    let M := prime^(w+1)
+    letI : NeZero M := ⟨(pow_pos prime_prime.pos _).ne'⟩
+    ∃ budget : ℕ, (0 < W → (budget : ℝ) ≤ C*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau*(M^(m+m)*W : ℕ)) ∧
+      ∀ j, LabelStock.live m (w+1) 1 j = true →
+      let g := physicalLabel m (w+1) j
+      let P := IntegerMultBounds.Swap.Modular.reduce M proj
+      fallbackBit proj.rank_le_height P g = false →
+      ∀ weights : Fin m → ZMod M, (∀ i, IsUnit (weights i)) → 0 < W →
+      ∀ minor, OrdinaryRecordExec (W := W) (H := M.size) (J := W.size) cap proj.rank_le_height
+        full body overhead budget (g*P*g⁻¹) minor weights
+
+theorem ordinaryDirectoryBody_exists [M8.Machine.Net] {Q d common work : ℕ} {U : Type}
+    (cap : 217 ≤ Q) (proj : Matrix (Fin (d+1)) (Fin (d+1)) ℚ)
+    (room : 58 ≤ common+24+31+work)
+    (stopped : Record.StoppedDirectoryRun (U := U) cap proj (ordinaryCaller room)) :
+    ∃ T, OrdinaryDirectoryBody U cap proj (ordinaryCaller (K := common+24+31+(work+T)) (by omega)) := by
+  obtain ⟨T,body,C,overhead,run⟩ := stopped
+  let caller := ordinaryCaller room
+  let full := caller.trans (Fin.castAddEmb T)
+  have installed : OrdinaryDirectoryBody U cap proj full := by
+    refine ⟨body,C,overhead,fun w W => ?_⟩
+    let M := prime^(w+1)
+    obtain ⟨budget,price,execute⟩ := run w W M.size W.size
+    refine ⟨budget,price rfl rfl,?_⟩
+    intro j live g P clear weights unit hW minor
+    obtain ⟨_,record⟩ := execute j live clear
+    have call := record weights (fun i => Ring.inverse (weights i))
+      (fun i => Ring.mul_inverse_cancel _ (unit i)) (Nat.size_le.mp (le_refl _)) (Nat.size_le.mp (le_refl _))
+      hW [] [] [] [] [] (fun _ => blank) 0 (fun _ _ _ => rfl)
+    exact ordinaryPreparedRun_exec cap proj.rank_le_height caller body C overhead budget _ minor weights
+      (by omega) rfl rfl call
+  have transport (N) (eq : (66+(common+24+31+work))+T = N) :
+      OrdinaryDirectoryBody U cap proj (full.trans (Fin.castLEEmb eq.le)) := by
+    subst N
+    exact installed
+  have total : (66+(common+24+31+work))+T = 66+(common+24+31+(work+T)) := by omega
+  have slots : full.trans (Fin.castLEEmb total.le) = ordinaryCaller (K := common+24+31+(work+T)) (by omega) := by
+    ext i
+    rfl
+  exact ⟨T,slots ▸ transport _ total⟩
+
+def ordinaryCursorPorts : Fin 6 ↪ Fin 66 := ⟨![47,45,46,49,50,51],by decide⟩
+
+open IntegerMultBounds.MathlibTM2.Fast.Main in
+/-- Consume the current directory entry and reclaim the ordinary branch's workspace. -/
+theorem ordinaryFinish_exec {K Q m w W H J N : ℕ} {P U : Type}
+    (body : P → Pr P (66+K) Q prime U) (prog : Pr P (66+K) Q prime U)
+    (v : RecursiveInterchangeLayout.Descriptor) (proj : Matrix (Fin m) (Fin m) ℚ)
+    (weights : Fin m → ZMod (prime^(w+1))) (prefixes : ℕ → List (Fin (prime+4)))
+    (tail : List (Fin (prime+4))) (schedule : List ℕ → List (Fin (prime+4)))
+    (j : ℕ) (js : List ℕ) (ordinary : schedule (j::js) = schedule js)
+    (u y : HS (66+K) Q prime U) (S D : Stacks (66+K) prime) (n push : ℕ)
+    (word : Fin N → ZMod 2) (user : y.user = u.user)
+    (run : Exec body prog (mk u S) n (mk y D))
+    (ready : DirectoryReady v proj w W H J weights prefixes tail schedule S (j::js)) :
+    let caller := Fin.castAddEmb (n := 66) K
+    let r := ordinaryCursorPorts.trans caller
+    let step := prog.seq (readWithSuccessorClock (r 1) (advanceDirectory m r))
+    let work := (List.finRange (66+K)).filter fun i => 58 ≤ i.val
+    let elapsed := n+(1+(4*(prefixes j).length+4+(m*m*(4*(w+1)+4)+1)+1))
+    mnProgPush step ≤ push → (∀ f, mnProgPush (body f) ≤ push) →
+    (∀ i, i.val < 58 → i ≠ caller 24 → D.R i = S.R i) →
+    RecordPayload (caller 24) (fun _ => blank) 0 word D →
+    ∃ z F t, z.user = u.user ∧ t ≤ elapsed+(4*work.length+1+work.length*(6*(push*elapsed))) ∧
+      Exec body (step.seq (clearWorkTapes work)) (mk u S) t (mk z F) ∧
+      DirectoryReady v proj w W H J weights prefixes tail schedule F js ∧
+      RecordPayload (caller 24) (fun _ => blank) 0 word F ∧
+      F.R (caller 57) = S.R (caller 57) ∧ F.R (caller 56) = S.R (caller 56) := by
+  intro caller r step work elapsed hp hb frame payload
+  obtain ⟨stream,lens,clean,scratch,matrix,base,one,width,headers,unit,clock,parent,queue⟩ := ready
+  have kept (k : Fin 66) (h : k.val < 58) (off : k ≠ 24) := frame (caller k) h (caller.injective.ne off)
+  obtain ⟨x,hx,advance⟩ := advanceDirectoryRecord_exec body r m w j prefixes js tail y D
+    ((kept 46 (by decide) (by decide)).trans stream)
+    ((congrArg List.length (kept 47 (by decide) (by decide))).trans (lens j (by simp)))
+    ((congrArg List.length (kept 45 (by decide) (by decide))).trans clock)
+    ((kept 49 (by decide) (by decide)).trans scratch)
+  let rest := js.flatMap (LabelDirectory.entry prefixes m (w+1)) ++ tail
+  let B := {D with R := Function.update D.R (caller 46) rest}
+  have exec : Exec body step (mk u S) elapsed (mk x B) := Exec.seq run advance
+  obtain ⟨z,F,t,hz,price,finish,publicTape,privateTape⟩ := Record.clearPrivateAfter 58 body step u x S B elapsed push exec hp hb clean
+  have same (k : Fin 66) (h : k.val < 58) (cursor : k ≠ 46) (off : k ≠ 24) :=
+    ((publicTape (caller k) h).2.trans (Function.update_of_ne (caller.injective.ne cursor) ..)).trans (kept k h off)
+  refine ⟨z,F,t,hz.trans (hx.trans user),price,finish,?_,?_,same 57 (by decide) (by decide) (by decide),
+    same 56 (by decide) (by decide) (by decide)⟩
+  · obtain ⟨suffix,mat⟩ := matrix
+    refine ⟨((publicTape (caller 46) (by change 46 < 58; decide)).2.trans (Function.update_self (caller 46) rest D.R)),
+      fun k hk => (congrArg List.length (same 47 (by decide) (by decide) (by decide))).trans (lens k (List.mem_cons_of_mem _ hk)),
+      privateTape,(same 49 (by decide) (by decide) (by decide)).trans scratch,
+      ⟨suffix,(same 48 (by decide) (by decide) (by decide)).trans mat⟩,
+      (same 2 (by decide) (by decide) (by decide)).trans base,(same 28 (by decide) (by decide) (by decide)).trans one,
+      (same 53 (by decide) (by decide) (by decide)).trans width,?_,
+      (same 44 (by decide) (by decide) (by decide)).trans unit,
+      (congrArg List.length (same 45 (by decide) (by decide) (by decide))).trans clock,
+      (same 55 (by decide) (by decide) (by decide)).trans parent,(same 54 (by decide) (by decide) (by decide)).trans (queue.trans ordinary)⟩
+    intro k
+    have bounds := (by decide : ∀ k : Fin 6, let i := (k.natAdd 33).castLE (by decide : 39 ≤ 66)
+      i.val < 58 ∧ i ≠ 46 ∧ i ≠ 24) k
+    exact (same _ bounds.1 bounds.2.1 bounds.2.2).trans (headers k)
+  · intro k
+    have h := publicTape (caller 24) (by change 24 < 58; decide)
+    have right := h.2.trans (Function.update_of_ne (caller.injective.ne (by decide : (24 : Fin 66) ≠ 46)) rest D.R)
+    rw [h.1,right]
+    exact payload k
+
+noncomputable def ordinaryRowCore [M8.Machine.Net] {Q common work : ℕ} {U : Type} (cap : 217 ≤ Q)
+    (m r : ℕ) (hr : r ≤ m) (poolFits : (RingFormula.conjugationDepth m+1)*13 ≤ work)
+    (room : 58 ≤ common+24+31+work) : Pr Unit (66+(common+24+31+work)) Q prime U :=
+    let K := common+24+31+work
+    let src := directoryRecordMatrixSlot common work
+    let full := ordinaryCaller room
+    let slots := stageBank (pivotSlots.trans full) r
+    let tmp := (59 : Fin 66).castAdd K
+    let program : Pr Unit (66+K) Q prime U :=
+      ((directoryRecordWriter m common poolFits).seq (if src = slots 15 then .act .done
+        else moveRightOrdered src tmp (slots 15))).seq (goodWeights prime r hr slots : Pr Unit (66+K) Q prime U)
+    let load : Pr Unit (66+K) Q prime U := packReciprocals prime (ordinaryReciprocalPorts.trans full) (full 54) (List.finRange m)
+    ((program.seq (load.seq ((Node.umul (m*m) (full 2) (full 51) (full 0)).seq
+        (bcopy (full 2) (full 33) (full 0) (full 1))))).seq (hostedGoodRecordAt cap full full () prime r (m-r) hr))
+
+noncomputable def ordinaryRowTime (m r w W H prefixLength overhead budget : ℕ) : ℕ :=
+    let C : ℕ := 48*H*H+152*H+66
+    let cost := fun i : Fin m => (8*(i.val*H)+14*H+22) +
+      (6*w+6+(14*H+16+(prime-2)*C+C+w*(12*H+15+prime*C))) + (2*H+2) + (4*H+4)
+    ((RingFormula.conjugationDepth m+1)*(6*H+6)+1 +
+          ((4*H+4)+(recordConjugationTime m w H prefixLength+(2*H+2))+((RingFormula.conjugationDepth m+1)*(2*H+2)+1)) +
+          (4*(m*m*H)+4) + (r*(4*w+4+columnTime m prime w H)+1+(r*(8*(m*m*H)+14*H+22)+1))) + (((List.finRange m).map cost).sum+1+(4*H+4)+(6*H+6)) + (budget+overhead*((prime^(w+1))^(m+m)*W))
+
+open IntegerMultBounds.MathlibTM2.Fast.Main in
+theorem ordinaryRow_exec [M8.Machine.Net] {d w W H J Q common work : ℕ} {U : Type}
+    (cap : 217 ≤ Q) (overhead budget : ℕ)
+    (v : RecursiveInterchangeLayout.Descriptor) (proj : Matrix (Fin (d+1)) (Fin (d+1)) ℚ)
+    (weights : Fin (d+1) → ZMod (prime^(w+1))) (prefixes : ℕ → List (Fin (prime+4)))
+    (tail : List (Fin (prime+4))) (schedules : List ℕ → List (Fin (prime+4)))
+    (hm : prime^(w+1) < 2^H) (poolFits : (RingFormula.conjugationDepth (d+1)+1)*13 ≤ work)
+    (unit : ∀ i, IsUnit (weights i))
+    (room : 58 ≤ common+24+31+work)
+    (body : Unit → Pr Unit (66+(common+24+31+work)) Q prime U) (u : HS (66+(common+24+31+work)) Q prime U) (S : Stacks (66+(common+24+31+work)) prime) (j : ℕ) (js : List ℕ)
+    (ready : DirectoryReady v proj w W H J weights prefixes tail schedules S (j::js))
+    (queue : schedules (j::js) = schedules js)
+    (live : LabelStock.live (d+1) (w+1) 1 j = true) :
+    letI : NeZero (prime^(w+1)) := ⟨(pow_pos prime_prime.pos _).ne'⟩
+    let m := d+1
+    let K := common+24+31+work
+    let caller := Fin.castAddEmb (n := 66) K
+    let full := ordinaryCaller room
+    let g := physicalLabel m (w+1) j
+    let M := IntegerMultBounds.Swap.Modular.reduce (prime^(w+1)) proj
+    let G := g*M*g⁻¹
+    fallbackBit proj.rank_le_height M g = false →
+    ∀ word : Fin ((prime^(w+1))^(m+m)*W) → ZMod 2,
+    RecordPayload (caller 24) (fun _ => blank) 0 word S →
+    (∀ minor, OrdinaryRecordExec (W := W) (H := H) (J := J) cap proj.rank_le_height full body overhead budget G minor weights) →
+    let core := ordinaryRowCore (U := U) cap m proj.rank proj.rank_le_height poolFits room
+    let ports := ordinaryCursorPorts.trans caller
+    let step := core.seq (readWithSuccessorClock (ports 1) (advanceDirectory m ports))
+    let scratch := (List.finRange (66+K)).filter fun i => 58 ≤ i.val
+    let elapsed := ordinaryRowTime m proj.rank w W H (prefixes j).length overhead budget +
+      (1+(4*(prefixes j).length+4+(m*m*(4*(w+1)+4)+1)+1))
+    let push := max (mnProgPush step) (mnProgPush (body ()))
+    ∃ z F t out, z.user = u.user ∧ t ≤ elapsed+(4*scratch.length+1+scratch.length*(6*(push*elapsed))) ∧
+      Exec body (step.seq (clearWorkTapes scratch)) (mk u S) t (mk z F) ∧
+      DirectoryReady v proj w W H J weights prefixes tail schedules F js ∧
+      RecordPayload (caller 24) (fun _ => blank) 0 out F ∧
+      F.R (caller 57) = S.R (caller 57) ∧ F.R (caller 56) = S.R (caller 56) ∧
+      ∀ x j, let y := transform (diagonal weights) 1 (revExchangeOf (rev m) G
+              (transform (diagonal fun i => Ring.inverse (weights i)) 1 x))
+             out (index (Fin.append y.1 y.2) j) = word (index (Fin.append x.1 x.2) j) := by
+  intro m K caller full g M G clear word payload installed core ports step scratch elapsed push
+  obtain ⟨y,D,n,out,hy,hn,exec,restored,_,frame,correct⟩ :=
+    ordinaryGeneratedRecord_exec cap overhead budget v proj weights prefixes tail schedules hm poolFits unit room
+      body u S j js ready live clear word (by
+        intro k
+        change _ = readAt blank (S.L (caller 24)) (S.R (caller 24)) k
+        simpa only [sub_zero,List.map_ofFn] using (payload k).symm) installed
+  obtain ⟨z,F,t,hz,ht,finish,next,output,sel,mask⟩ := ordinaryFinish_exec body core v proj weights prefixes tail
+    schedules j js queue u y S D n push out hy exec ready (le_max_left ..) (fun _ => le_max_right ..) frame
+    (by intro k
+        have output := (restored.src k).symm
+        change readAt blank (D.L (caller 24)) (D.R (caller 24)) (k-0) = _ at output
+        simpa only [List.map_ofFn] using output)
+  refine ⟨z,F,t,out,hz,ht.trans ?_,finish,next,output,sel,mask,correct⟩
+  have bound : n ≤ ordinaryRowTime m proj.rank w W H (prefixes j).length overhead budget := hn
+  apply Nat.add_le_add (Nat.add_le_add_right bound _)
+  exact Nat.add_le_add_left (Nat.mul_le_mul_left _ (Nat.mul_le_mul_left _ (Nat.mul_le_mul_left _
+    (Nat.add_le_add_right bound _)))) _
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
