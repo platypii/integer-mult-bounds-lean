@@ -30,6 +30,37 @@ theorem returnWord_ready (r : Fin 8 ↪ Fin T) (S : Stacks T A)
       | exact controls 0 z | exact controls 1 z | exact controls 2 z
       | exact controls 3 z | exact controls 4 z | exact controls 5 z
 
+def returnFromOrigin (r : Fin 8 ↪ Fin T) : Pr P T 217 A U :=
+  embProg r Empty.elim (foreign (liftQ FlatArrayNormalize.moveReturnProgram (by decide)))
+
+theorem returnFromOrigin_exec (body : P → Pr P T 217 A U) (r : Fin 8 ↪ Fin T) {N R Q B : ℕ} (volume : N = R*(Q*B)) (hR : 0 < R) (hQ : 0 < Q) (hB : 0 < B)
+    (source dest : ℤ → Fin (A+4)) (p q : ℤ) (word : List (Fin (A+4)))
+    (hw : word.length = N)
+    (bs qs ps : List Bool)
+    (hb : Counter.value bs = B) (hq : Counter.value qs = Q)
+    (hp : Counter.value ps = R)
+    (cb : GrowingCounterData.Canonical bs) (cq : GrowingCounterData.Canonical qs)
+    (cp : GrowingCounterData.Canonical ps)
+    (empty : ∀ z, q ≤ z → z < q+(N : ℕ) → dest z = blank)
+    (v : HS T 217 A U) (S : Stacks T A)
+    (ready : RepT (FlatArrayNormalize.bank (putWord dest q word) source
+      q p bs qs ps) (S.L ∘ r) (S.R ∘ r)) :
+    ∃ u F n, u.user = v.user ∧ n ≤ (218*N+1)*13+6 ∧
+      Exec body (returnFromOrigin r) (mk v S) n (mk u F) ∧
+      RepT (FlatArrayNormalize.bank dest (putWord source p word) q p bs qs ps) (F.L ∘ r) (F.R ∘ r) ∧
+      ∀ j, (∀ i, r i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  have ret := FlatArrayNormalize.moveReturn_hoare dest source q p word
+    R Q B bs qs ps (hw.trans volume) hb hq hp
+    hR hQ hB
+    cb cq cp (by simpa only [hw] using empty)
+  rw [hw] at ret
+  obtain ⟨u,F,_,rfl,rep,hu,_,_,_,n,hn,run⟩ := foreign_exec (P := Empty) Empty.elim _
+    (Host.HoareTime.liftQ (by decide : 100 ≤ 217) ret) (embDn r v) (embStk r S) _ rfl ready
+  obtain ⟨z,D,placed,_,hz,eq,frame⟩ := exec_emb (body' := body) (ι := Empty.elim)
+    r.injective (fun e => nomatch e) run v rfl S rfl
+  rw [← eq] at rep
+  exact ⟨z,D,n,hz.trans hu,hn,placed,rep,frame⟩
+
 theorem returnPackedList_exec (body : P → Pr P T 217 A U) (r : Fin 8 ↪ Fin T) {N R Q B : ℕ} (volume : N = R*(Q*B)) (hR : 0 < R) (hQ : 0 < Q) (hB : 0 < B)
     (source dest : ℤ → Fin (A+4)) (p q : ℤ) (a word : List (Fin (A+4)))
     (ha : a.length = N) (hw : word.length = N)

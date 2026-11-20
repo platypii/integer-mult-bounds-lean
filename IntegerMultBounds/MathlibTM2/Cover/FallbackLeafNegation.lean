@@ -186,30 +186,42 @@ theorem initializedNegateLeaf_exec {P M B : ℕ} {U F : Type} (hM : 0 < M) (hB :
     omega
   · simpa only [leafBitTape,List.map_ofFn] using src
 
+open IntegerMultBounds.Networks.Shared50ModularControl in
+private noncomputable def encodedLeafBits (xs : List (ZMod 2)) : List (Fin (prime+4)) :=
+  (xs.map (SparseRoleCircuit.encode (a := 0))).map RadixToBinary.binaryEncoding.encode
+
+open IntegerMultBounds.Networks.Shared50ModularControl in
+private theorem encodedLeafWord (source : ℤ → Fin 4) (p : ℤ) (xs : List (ZMod 2)) :
+    (fun z => RadixToBinary.binaryEncoding.encode (putWord source p (xs.map SparseRoleCircuit.encode) z)) =
+      putWord (RadixToBinary.binaryEncoding.encode ∘ source) p (encodedLeafBits xs) := by
+  change RowPaddingConstructedAlphabet.mapTape (putWord source p _) = _
+  rw [RowPaddingConstructedAlphabet.map_putWord]
+  rfl
+
+private theorem encodedLeafTape (xs : List (ZMod 2)) :
+    leafBitTape xs = putWord (fun _ => blank) 0 (encodedLeafBits xs) :=
+  encodedLeafWord (fun _ => blank) 0 xs
+
 open Host IntegerMultBounds.Networks.Shared50ModularControl in
 theorem returnLeafBits_exec {P M B T : ℕ} {F U : Type} (hP : 0 < P) (hM : 0 < M) (hB : 0 < B)
     (body : F → Pr F T 217 prime U) (r : Fin 8 ↪ Fin T) (v : HS T 217 prime U) (S : Stacks T prime)
-    (a xs : List (ZMod 2)) (ha : a.length = P*(M*B)) (hx : xs.length = P*(M*B))
+    (source : ℤ → Fin 4) (p : ℤ) (a xs : List (ZMod 2)) (ha : a.length = P*(M*B)) (hx : xs.length = P*(M*B))
     (dst : ∀ z, readAt blank (S.L (r 0)) (S.R (r 0)) (z-((P*(M*B) : ℕ) : ℤ)) = leafBitTape xs z)
-    (src : ∀ z, readAt blank (S.L (r 1)) (S.R (r 1)) (z-((P*(M*B) : ℕ) : ℤ)) = leafBitTape a z)
+    (src : ∀ z, readAt blank (S.L (r 1)) (S.R (r 1)) (z-(p+(P*(M*B) : ℕ))) =
+      RadixToBinary.binaryEncoding.encode (putWord source p (a.map SparseRoleCircuit.encode) z))
     (controls : ∀ (i : Fin 6) z, CountedLoopReuseAlphabet.binary
       (![[],binBits B.size B,[],binBits M.size M,[],binBits P.size P] i) z =
       readAt blank (S.L (r (Fin.natAdd 2 i))) (S.R (r (Fin.natAdd 2 i))) (z-1)) :
     ∃ u D n, u.user = v.user ∧ n ≤ (327*(P*(M*B))+2)*13+6 ∧
       Exec body (returnWord r) (mk v S) n (mk u D) ∧
-      (∀ z, readAt blank (D.L (r 1)) (D.R (r 1)) z = leafBitTape xs z) ∧
+      (∀ z, readAt blank (D.L (r 1)) (D.R (r 1)) (z-p) =
+        RadixToBinary.binaryEncoding.encode (putWord source p (xs.map SparseRoleCircuit.encode) z)) ∧
       ∀ j, (∀ i, r i ≠ j) → D.L j = S.L j ∧ D.R j = S.R j := by
-  let encoded := fun ys : List (ZMod 2) => (ys.map (SparseRoleCircuit.encode (a := 0))).map
-    (RadixToBinary.binaryEncoding (q := prime)).encode
-  have tape (ys : List (ZMod 2)) : leafBitTape ys = putWord (fun _ => blank) 0 (encoded ys) := by
-    change RowPaddingConstructedAlphabet.mapTape (putWord (fun _ => blank) 0 _) = _
-    rw [RowPaddingConstructedAlphabet.map_putWord]
-    rfl
   have ready := returnWord_ready r S _ _ _ _ _ _ _ dst src controls
-  rw [tape xs,tape a] at ready
+  rw [encodedLeafTape xs,encodedLeafWord source p a] at ready
   obtain ⟨u,D,n,hu,hn,run,rep,off⟩ := returnPackedList_exec body r rfl hP hM hB
-    (fun _ => blank) (fun _ => blank) 0 0 (encoded a) (encoded xs) (by simpa [encoded] using ha)
-    (by simpa [encoded] using hx) _ _ _
+    (RadixToBinary.binaryEncoding.encode ∘ source) (fun _ => blank) p 0 (encodedLeafBits a) (encodedLeafBits xs) (by simpa [encodedLeafBits] using ha)
+    (by simpa [encodedLeafBits] using hx) _ _ _
     (Routing.binaryCanonical_value_binBits _ _ (Nat.lt_size_self _))
     (Routing.binaryCanonical_value_binBits _ _ (Nat.lt_size_self _))
     (Routing.binaryCanonical_value_binBits _ _ (Nat.lt_size_self _))
@@ -217,10 +229,91 @@ theorem returnLeafBits_exec {P M B T : ℕ} {F U : Type} (hP : 0 < P) (hM : 0 < 
     (Mult.PhaseCellToeplitz.binBits_size_canonical _) (fun _ _ _ => rfl) v S (by simpa only [zero_add] using ready)
   refine ⟨u,D,n,hu,hn,run,?_,off⟩
   intro z
-  rw [tape]
-  have read := (rep 1 z).symm
-  change readAt blank (D.L (r 1)) (D.R (r 1)) (z-0) = putWord (fun _ => blank) 0 (encoded xs) z at read
-  simpa only [sub_zero] using read
+  exact (rep 1 z).symm.trans (congrFun (encodedLeafWord source p xs).symm z)
+
+open Host IntegerMultBounds.Networks.Shared50ModularControl in
+private theorem returnCounter_read (P M B : ℕ) (i : Fin 6) (z : ℤ) :
+    CountedLoopReuseAlphabet.binary (![[],binBits B.size B,[],binBits M.size M,[],binBits P.size P] i) z =
+      readAt (blank : Fin (prime+4)) [separator]
+        (![[],binSyms B.size B,[],binSyms M.size M,[],binSyms P.size P] i) (z-1) := by
+  fin_cases i <;> rw [← CountedLoopReuseAlphabet.encoding_binary] <;>
+    change RadixZeroFill.encodedBinary _ z = _ <;> rw [encodedBinary_eq,readAt_single] <;>
+    simp only [binSyms_eq] <;> rfl
+
+open Host IntegerMultBounds.Networks.Shared50ModularControl in
+theorem returnLeafBitsFromOrigin_exec {P M B T : ℕ} {F U : Type} (hP : 0 < P) (hM : 0 < M) (hB : 0 < B)
+    (body : F → Pr F T 217 prime U) (r : Fin 8 ↪ Fin T) (v : HS T 217 prime U) (S : Stacks T prime)
+    (source : ℤ → Fin 4) (p : ℤ) (xs : List (ZMod 2)) (hx : xs.length = P*(M*B))
+    (dst : ∀ z, readAt blank (S.L (r 0)) (S.R (r 0)) z = leafBitTape xs z)
+    (src : ∀ z, readAt blank (S.L (r 1)) (S.R (r 1)) (z-p) =
+      RadixToBinary.binaryEncoding.encode (source z))
+    (controls : ∀ i : Fin 6, S.L (r (Fin.natAdd 2 i)) = [] ∧
+      S.R (r (Fin.natAdd 2 i)) = ![[],binSyms B.size B,[],binSyms M.size M,[],binSyms P.size P] i) :
+    let marks := ([2,3,4,5,6,7] : List (Fin 8)).map r
+    ∃ u D n, u.user = v.user ∧ n ≤ (218*(P*(M*B))+1)*13+7 ∧
+      Exec body ((.act (pushMarkers marks) : Pr F T 217 prime U).seq (returnFromOrigin r)) (mk v S) n (mk u D) ∧
+      (∀ z, readAt blank (D.L (r 1)) (D.R (r 1)) (z-p) =
+        RadixToBinary.binaryEncoding.encode (putWord source p (xs.map SparseRoleCircuit.encode) z)) ∧
+      ∀ j, (∀ i, r i ≠ j) → D.L j = S.L j ∧ D.R j = S.R j := by
+  intro marks
+  let I : Stacks T prime := {S with L := fun j => if j ∈ marks then separator :: S.L j else S.L j}
+  have mark := Exec.act (body := body) (pushMarkers marks) (mk v S)
+  rw [pushMarkers_run _ ((by decide : ([2,3,4,5,6,7] : List (Fin 8)).Nodup).map r.injective)] at mark
+  have ready := returnWord_ready r I (leafBitTape xs) (RadixToBinary.binaryEncoding.encode ∘ source) 0 p
+    (binBits B.size B) (binBits M.size M) (binBits P.size P)
+    (fun z => by simpa [I,marks,r.injective.eq_iff] using dst z)
+    (fun z => by simpa [I,marks,r.injective.eq_iff] using src z) (by
+      intro i z
+      have on : r (Fin.natAdd 2 i) ∈ marks := List.mem_map.mpr
+        ⟨_,(by decide : ∀ j : Fin 6, Fin.natAdd 2 j ∈ ([2,3,4,5,6,7] : List (Fin 8))) i,rfl⟩
+      simp only [I,ite_eq_left on,(controls i).1,(controls i).2]
+      exact returnCounter_read P M B i z)
+  rw [encodedLeafTape xs] at ready
+  obtain ⟨u,D,n,hu,hn,run,rep,off⟩ := returnFromOrigin_exec body r rfl hP hM hB
+    (RadixToBinary.binaryEncoding.encode ∘ source) (fun _ => blank) p 0 (encodedLeafBits xs)
+    (by simpa [encodedLeafBits] using hx) _ _ _
+    (Routing.binaryCanonical_value_binBits _ _ (Nat.lt_size_self _))
+    (Routing.binaryCanonical_value_binBits _ _ (Nat.lt_size_self _))
+    (Routing.binaryCanonical_value_binBits _ _ (Nat.lt_size_self _))
+    (Mult.PhaseCellToeplitz.binBits_size_canonical _) (Mult.PhaseCellToeplitz.binBits_size_canonical _)
+    (Mult.PhaseCellToeplitz.binBits_size_canonical _) (fun _ _ _ => rfl) v I ready
+  refine ⟨u,D,1+n,hu,by omega,Exec.seq mark run,?_,?_⟩
+  · intro z
+    exact (rep 1 z).symm.trans (congrFun (encodedLeafWord source p xs).symm z)
+
+  · intro j outside
+    have absent : j ∉ marks := by
+      intro hj
+      obtain ⟨i,_,eq⟩ := List.mem_map.mp hj
+      exact outside i eq
+    simpa only [I,ite_eq_right absent] using off j outside
+
+open Host IntegerMultBounds.Networks.Shared50ModularControl in
+/-- Place the fixed return machine on the coordinate host's chosen payload and header tapes. -/
+theorem placedLeafReturn_exec {P M B T Q : ℕ} {F U : Type} (hP : 0 < P) (hM : 0 < M) (hB : 0 < B)
+    (capacity : 217 ≤ Q) (body : F → Pr F T Q prime U) (r : Fin 8 ↪ Fin T)
+    (v : HS T Q prime U) (S : Stacks T prime) (source : ℤ → Fin 4) (p : ℤ)
+    (xs : List (ZMod 2)) (hx : xs.length = P*(M*B))
+    (dst : ∀ z, readAt blank (S.L (r 0)) (S.R (r 0)) z = leafBitTape xs z)
+    (src : ∀ z, readAt blank (S.L (r 1)) (S.R (r 1)) (z-p) = RadixToBinary.binaryEncoding.encode (source z))
+    (controls : ∀ i : Fin 6, S.L (r (Fin.natAdd 2 i)) = [] ∧
+      S.R (r (Fin.natAdd 2 i)) = ![[],binSyms B.size B,[],binSyms M.size M,[],binSyms P.size P] i) :
+    let localRun : Pr Empty 8 217 prime U := (.act (pushMarkers [2,3,4,5,6,7]) : Pr Empty 8 217 prime U).seq
+      (returnFromOrigin (Function.Embedding.refl _))
+    ∃ u D n, u.user = v.user ∧ n ≤ (218*(P*(M*B))+1)*13+8 ∧
+      Exec body (statePlacedNormalized r capacity (by decide) Empty.elim localRun) (mk v S) n (mk u D) ∧
+      (∀ z, readAt blank (D.L (r 1)) (D.R (r 1)) (z-p) =
+        RadixToBinary.binaryEncoding.encode (putWord source p (xs.map SparseRoleCircuit.encode) z)) ∧
+      ∀ j, (∀ i, r i ≠ j) → D.L j = S.L j ∧ D.R j = S.R j := by
+  intro localRun
+  obtain ⟨w,E,n,user,time,run,out,_⟩ := returnLeafBitsFromOrigin_exec hP hM hB (F := Empty) Empty.elim
+    (Function.Embedding.refl _) (stateLiftDown (by decide) (embDn r v)) (embStk r S) source p xs hx dst src controls
+  obtain ⟨u,_,same,placed⟩ := statePlaced_exec_normalized r r.injective capacity (by decide) Empty.elim
+    (body' := body) (fun e => nomatch e) v S run
+  refine ⟨u,_,1+n,same.trans user,by omega,placed,?_,fun j off => embOvr_off E.get S off⟩
+  have eq := embStk_ovr r.injective E S
+  rw [← eq] at out
+  exact out
 
 def negationReturnPorts : Fin 8 ↪ Fin 15 := ⟨![1,0,9,10,11,12,13,14], by decide⟩
 
@@ -257,8 +350,7 @@ theorem negateAndReturn_exec {P M B : ℕ} {F U : Type} (hP : 0 < P) (hM : 0 < M
       readAt blank (I.L (i.natAdd 9)) (I.R (i.natAdd 9)) (z-1) := by
     have on := (by decide : ∀ j : Fin 6, j.natAdd 9 ∈ (List.finRange 6).map (Fin.natAddEmb 9)) i
     simp only [I,marks,ite_eq_left on,returnLeft,returnRight]
-    fin_cases i <;> rw [← CountedLoopReuseAlphabet.encoding_binary] <;>
-      change RadixZeroFill.encodedBinary _ z = _ <;> rw [encodedBinary_eq,readAt_single] <;> simp only [binSyms_eq] <;> rfl
+    exact returnCounter_read P M B i z
   obtain ⟨a,H,n,ha,hn,run,src,dst⟩ := initializedNegateLeaf_exec hM hB word (F := Empty) Empty.elim
     (stateLiftDown (by decide : 0 < 207) (embDn bank u)) (embStk bank I) (by
       intro x
@@ -271,14 +363,21 @@ theorem negateAndReturn_exec {P M B : ℕ} {F U : Type} (hP : 0 < P) (hM : 0 < M
   rw [← eq] at src dst
   have length : (negateLeafHead word).length = N := negateLeafHead_length word
   obtain ⟨z,D,m,hz,hm,ret,out,_⟩ := returnLeafBits_exec hP hM hB body negationReturnPorts b J
-    (List.ofFn word) (negateLeafHead word) List.length_ofFn length dst src (by
+    (fun _ => blank) 0 (List.ofFn word) (negateLeafHead word) List.length_ofFn length dst (by
+      intro z
+      rw [zero_add]
+      exact src z) (by
       intro i x
       have same := embOvr_off H.get I (j := i.natAdd 9) (e := bank)
         (by intro j; exact (by decide : ∀ (k : Fin 9) (l : Fin 6), k.castAdd 6 ≠ l.natAdd 9) j i)
       have port : negationReturnPorts (Fin.natAdd 2 i) = i.natAdd 9 := (by decide : ∀ j, negationReturnPorts (Fin.natAdd 2 j) = j.natAdd 9) i
       rw [port,same.1,same.2]
       exact controls i x)
-  refine ⟨z,D,_,hz.trans (hb.trans ha),?_,Exec.seq mark (Exec.seq placed ret),out⟩
+  refine ⟨z,D,_,hz.trans (hb.trans ha),?_,Exec.seq mark (Exec.seq placed ret),by
+    intro z
+    have read := out z
+    rw [sub_zero] at read
+    exact read⟩
   omega
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback

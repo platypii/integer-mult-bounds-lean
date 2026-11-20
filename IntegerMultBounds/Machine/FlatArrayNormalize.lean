@@ -122,6 +122,29 @@ theorem move_hoare (f g : ℤ → Fin (a+4)) (p q : ℤ) (xs : List (Fin (a+4)))
   simpa only [moveProgram,bank,v,Nat.cast_zero,add_zero,erased_zero,List.take_zero,putWord,
     ← hlen,List.take_length] using hh
 
+/-- Return a word when both heads already stand at their origins. -/
+def moveReturnProgram : Program 8 100 a := seq moveProgram rewindProgram
+
+theorem moveReturn_hoare (scratch common : ℤ → Fin (a+4)) (p q : ℤ) (xs : List (Fin (a+4)))
+    (P Q B : ℕ) (bs qs ps : List Bool) (hlen : xs.length = P*(Q*B))
+    (hb : Counter.value bs = B) (hq : Counter.value qs = Q) (hp : Counter.value ps = P)
+    (hP : 0 < P) (hQ : 0 < Q) (hB : 0 < B)
+    (cb : GrowingCounterData.Canonical bs) (cq : GrowingCounterData.Canonical qs)
+    (cp : GrowingCounterData.Canonical ps)
+    (hblank : ∀ z, p ≤ z → z < p+xs.length → scratch z = blank) :
+    HoareTime moveReturnProgram
+      (fun v => v = bank (putWord scratch p xs) common p q bs qs ps)
+      (fun v => v = bank scratch (putWord common q xs) p q bs qs ps)
+      (218*xs.length+1) := by
+  have move := move_hoare scratch common p q xs P Q B bs qs ps hlen hb hq hp
+  rw [erased_word scratch p xs hblank] at move
+  have rewind := rewind_hoare scratch (putWord common q xs) p q P Q B bs qs ps hb hq hp
+  rw [← hlen] at rewind
+  apply (move.seq rewind).consequence (fun _ h => h) (fun _ h => h) _
+  have bound := CountedVolumeLoop.bound_linear P Q B bs qs ps hP hQ hB hb hq hp cb cq cp
+  rw [← hlen] at bound
+  omega
+
 /-- Whole normalization is a fixed three-pass machine. -/
 def program : Program 8 150 a := seq (seq rewindProgram moveProgram) rewindProgram
 
