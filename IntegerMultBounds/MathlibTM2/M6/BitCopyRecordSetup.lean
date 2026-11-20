@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackPayloadPlacement
 public import IntegerMultBounds.MathlibTM2.Host.Embed
 public import IntegerMultBounds.MathlibTM2.M6.BitCopyChildLayout
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackRecordVolumeHeaders
@@ -366,8 +367,6 @@ theorem copyTransposeReturn_exec [M8.Machine.Net] {P P' U : Type} {T : ℕ} [Fin
       let position := copyRecursivePosition parent w rows splitRows
       0 < W →
       let suffix := M*W
-      let size : M^15*suffix = volume prime (copyChild (w+1) W) := by
-        rw [copyChild_volume]; change M^15*(M*W) = M^16*W; ring
       let bank : Fin 35 ↪ Fin (N+35) := (Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)
       let clean := fun (D : Stacks (N+35) prime) => ∀ k : Fin (N+35), 35 ≤ k.val → D.L k = [] ∧ D.R k = []
       ∀ {t} (caller : Tapes t prime) (src : Fin t) (slots : Fin ((t+6)+15) ↪ Fin T) (staged : Fin T)
@@ -377,13 +376,12 @@ theorem copyTransposeReturn_exec [M8.Machine.Net] {P P' U : Type} {T : ℕ} [Fin
       let headers := (Fin.natAddEmb t (m := 6)).trans ((Fin.castAddEmb 15).trans slots)
       let width := slots (Fin.natAdd (t+6) (Fin.natAdd 9 (3 : Fin 6)))
       let hs := fun i => FlatCoordinateSchedule.bits (RecursiveDimensionBank.values (copyChild (w+1) W) i)
-      let output := fun i => Shared50RecursiveNodeRows.transpose (one_dvd _) x (Fin.cast size i)
       let stored := RecordReady (b := prime) (w := w) (d := 15) (W := suffix)
         bank (Nat.size M) (Nat.size suffix) [] SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0
       (∀ v D word, stored word D → clean D → ∃ z F n changed, z.user = v.user ∧ n ≤ budget ∧
         Exec body child (mk v D) n (mk z F) ∧ stored changed F ∧ clean F ∧
         ∀ i, changed (position i) = Shared50RecursiveNodeRows.transpose (one_dvd _) (word ∘ position) i) →
-      (∀ i j, slots i = physical j → j = 24) → (∀ i, staged ≠ physical i) →
+      (∀ i j, slots i = placement j → i = Fin.castAdd 15 (Fin.castAdd 6 src)) → (∀ i, staged ≠ physical i) →
       (∀ i, staged ≠ slots i) → slots (Fin.castAdd 15 (Fin.castAdd 6 src)) = physical 24 →
       S.R staged = [] → (∀ i : Fin 35, i ≠ 24 → S.L (physical i) = [] ∧ S.R (physical i) = []) →
       caller.head src = 0 → caller.tape src = M8.Machine.ArbitraryWidthHighExchangeShared.sourceWord x →
@@ -397,15 +395,22 @@ theorem copyTransposeReturn_exec [M8.Machine.Net] {P P' U : Type} {T : ℕ} [Fin
           (.seq child (packSchedule 15 copyPackSchedule.reverse))) (Prog.seqList (ports.map WordCmd.dropR)))))
           (mk v S) n (mk z F) ∧ clean (embStk placement F) ∧ (∀ j ∈ ports, F.R (placement j) = []) ∧
         (∀ j, (∀ i, placement i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j) ∧
-        ∀ k, readAt blank (F.L (placement (bank 24))) (F.R (placement (bank 24))) k =
-          RadixToBinary.binaryEncoding.encode (putWord (fun _ => blank) 0
-            (List.ofFn (SparseRoleCircuit.encode ∘ output)) k) := by
+        RepT (SharedPlacementAlphabet.setTape
+          ((caller.append (FixedHeaderBankCopy.headerBank hs)).append (copyHeaderOutput (w+1) W))
+          (Fin.castAdd 15 (Fin.castAdd 6 src))
+          (M8.Machine.ArbitraryWidthHighExchangeShared.sourceWord (Shared50RecursiveNodeRows.transpose (one_dvd _) x)) 0)
+          (F.L ∘ slots) (F.R ∘ slots) := by
   obtain ⟨setup,swaps,transpose⟩ := withCopyTranspose_exec body
   refine ⟨setup+70,swaps,?_⟩
-  intro parent w rows splitRows M W position hW suffix size bank clean t caller src slots staged v S x child budget physical headers width hs output stored call
+  intro parent w rows splitRows M W position hW suffix bank clean t caller src slots staged v S x child budget physical headers width hs stored call
     apart outside privateSlot shared fresh empty head data rep free ports
+  have size : M^15*suffix = volume prime (copyChild (w+1) W) := by
+    rw [copyChild_volume]; change M^15*(M*W) = M^16*W; ring
   obtain ⟨a,B,m,ha,hm,prepare,ready,off⟩ := copyCallerSetup_exec host w W caller src slots physical staged
-    apart outside privateSlot shared v S fresh empty x head data rep
+    (by
+      intro i j eq
+      have same := apart i (bank j) eq
+      exact physical.injective (eq.symm.trans ((congrArg slots same).trans shared))) outside privateSlot shared v S fresh empty x head data rep
   have start : stored (fun i => x (Fin.cast size i)) (embStk placement B) :=
     ⟨ready.modulus,ready.width,ready.one,ready.padded,ready.clock,ready.archive,ready.scratch,ready.src,ready.dst⟩
   have available : clean (embStk placement B) := by
@@ -422,7 +427,7 @@ theorem copyTransposeReturn_exec [M8.Machine.Net] {P P' U : Type} {T : ℕ} [Fin
       obtain ⟨y,G,n,changed,user,time,run,placed,clear,transposed⟩ := call z F word storedWord cleanWord
       exact ⟨y,G,n,changed,user,time,run,placed,clear,
         copyRecursivePacked_swap parent w rows splitRows word changed transposed⟩) start available
-  obtain ⟨z,F,hz,erase,left,right,read⟩ := copyRecordRetire_exec body bank w W u D output placed
+  obtain ⟨z,F,hz,erase,left,right,read⟩ := copyRecordRetire_exec body bank w W u D _ placed
   obtain ⟨y,G,execute,_,user,project,frame⟩ :=
     exec_emb placement.injective calls (Exec.seq run erase) a rfl B rfl
   refine ⟨y,G,_,(user.trans (hz.trans hu)).trans ha,?_,Exec.seq prepare execute,?_,?_,?_,?_⟩
@@ -460,8 +465,20 @@ theorem copyTransposeReturn_exec [M8.Machine.Net] {P P' U : Type} {T : ℕ} [Fin
   · intro j hj
     have kept := off j (fun i => hj (bank i))
     exact ⟨(frame j hj).1.trans kept.1,(frame j hj).2.trans kept.2⟩
-  · change ∀ k, readAt blank ((embStk placement G).L (bank 24)) ((embStk placement G).R (bank 24)) k = _
-    rwa [project]
+  · intro i k
+    by_cases eq : i = Fin.castAdd 15 (Fin.castAdd 6 src)
+    · subst i
+      simp only [SharedPlacementAlphabet.setTape,Function.update_self,sub_zero,Function.comp_apply]
+      rw [shared,swap_source_word]
+      change _ = readAt blank ((embStk placement G).L (bank 24)) ((embStk placement G).R (bank 24)) k
+      rw [project,read]
+      congr 2
+      exact List.ofFn_congr size.symm (SparseRoleCircuit.encode ∘ Shared50RecursiveNodeRows.transpose (one_dvd _) x)
+    · have away : ∀ j, placement j ≠ slots i := fun j e => eq (apart i j e.symm)
+      obtain ⟨l,r⟩ := frame _ away
+      obtain ⟨sl,sr⟩ := off (slots i) (fun j => away (bank j))
+      simpa only [SharedPlacementAlphabet.setTape,Function.update_of_ne eq,Function.comp_apply,l,r,sl,sr]
+        using rep i k
 
 /-- At a recursive call the wrapper contributes a single volume-width term.
 The coefficient is independent of the child dimensions and its running time. -/
@@ -483,11 +500,38 @@ theorem copyReturn_parentCost [M8.Machine.Net] (setup swaps : ℕ) :
     _ ≤ budget + 2*((setup*power+swaps*(K*power))*V) := by gcongr
     _ ≤ _ := by change _ ≤ budget+(2*(setup+swaps*K)+1)*V*power; nlinarith [mul_nonneg (Nat.cast_nonneg V) (zero_le_one.trans one)]
 
+/-- Place the caller after the child workspace. Its payload occupies record
+port 24 and the displaced port supplies the private width staging tape. -/
+theorem copyCallerPlacement [M8.Machine.Net] {t : ℕ} (src : Fin t) :
+    let source := Fin.castAdd 15 (Fin.castAdd 6 src)
+    let bank : Fin 35 ↪ Fin (N+35) := (Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)
+    let slots := Fin.natAddEmb (N+35) (m := (t+6)+15)
+    let placement := payloadPlacement (bank 24) source
+    let staged := (bank 24).castAdd ((t+6)+15)
+    (∀ i j, slots i = placement j → i = source) ∧
+      (∀ i, staged ≠ placement (bank i)) ∧ (∀ i, staged ≠ slots i) ∧
+      slots source = placement (bank 24) := by
+  intro source bank slots placement staged
+  refine ⟨?_,fun i => payloadPlacement_vacant _ _ _,?_,(payloadPlacement_shared _ _).symm⟩
+  · intro i j eq
+    by_contra ne
+    exact payloadPlacement_off _ _ i ne j eq.symm
+  · intro i eq
+    have values := congrArg Fin.val eq
+    change (bank 24).val = (N+35)+i.val at values
+    have := (bank 24).isLt
+    omega
+
 /-- At bounded widths the represented caller executes the direct packed child in linear volume cost. -/
-theorem copyStoppedReturn_exec [M8.Machine.Net] {P P' U : Type} {T : ℕ} [Fintype P]
-    (body : P → Pr P (N+35) Q prime U) (host : P' → Pr P' T Q prime U)
-    (placement : Fin (N+35) ↪ Fin T) (ι : P → P')
-    (calls : ∀ f, host (ι f) = embProg placement ι (body f)) :
+theorem copyStoppedReturn_exec [M8.Machine.Net] {P P' U : Type} {t : ℕ} [Fintype P]
+    (src : Fin t) (body : P → Pr P (N+35) Q prime U)
+    (host : P' → Pr P' ((N+35)+((t+6)+15)) Q prime U) (ι : P → P') :
+    let source := Fin.castAdd 15 (Fin.castAdd 6 src)
+    let port : Fin 35 ↪ Fin (N+35) := (Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)
+    let placement := payloadPlacement (port 24) source
+    let slots := Fin.natAddEmb (N+35) (m := (t+6)+15)
+    let staged := (port 24).castAdd ((t+6)+15)
+    (∀ f, host (ι f) = embProg placement ι (body f)) →
     ∀ cutoff : ℕ, ∃ rate : ℕ, ∀ (parent : RecursiveInterchangeLayout.Descriptor) w rows
       (splitRows : parent.rows = 142080*rows),
       let M := prime^(w+1)
@@ -495,20 +539,15 @@ theorem copyStoppedReturn_exec [M8.Machine.Net] {P P' U : Type} {T : ℕ} [Finty
       w ≤ cutoff →
       0 < W →
       let suffix := M*W
-      let size : M^15*suffix = volume prime (copyChild (w+1) W) := by
-        rw [copyChild_volume]; change M^15*(M*W) = M^16*W; ring
       let bank : Fin 35 ↪ Fin (N+35) := (Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)
       let clean := fun (D : Stacks (N+35) prime) => ∀ k : Fin (N+35), 35 ≤ k.val → D.L k = [] ∧ D.R k = []
-      ∀ {t} (caller : Tapes t prime) (src : Fin t) (slots : Fin ((t+6)+15) ↪ Fin T) (staged : Fin T)
-        (v : HS T Q prime U) (S : Stacks T prime)
+      ∀ (caller : Tapes t prime)
+        (v : HS ((N+35)+((t+6)+15)) Q prime U) (S : Stacks ((N+35)+((t+6)+15)) prime)
         (x : Fin (volume prime (copyChild (w+1) W)) → ZMod 2) ,
       let physical := bank.trans placement
       let headers := (Fin.natAddEmb t (m := 6)).trans ((Fin.castAddEmb 15).trans slots)
       let width := slots (Fin.natAdd (t+6) (Fin.natAdd 9 (3 : Fin 6)))
       let hs := fun i => FlatCoordinateSchedule.bits (RecursiveDimensionBank.values (copyChild (w+1) W) i)
-      let output := fun i => Shared50RecursiveNodeRows.transpose (one_dvd _) x (Fin.cast size i)
-      (∀ i j, slots i = physical j → j = 24) → (∀ i, staged ≠ physical i) →
-      (∀ i, staged ≠ slots i) → slots (Fin.castAdd 15 (Fin.castAdd 6 src)) = physical 24 →
       S.R staged = [] → (∀ i : Fin 35, i ≠ 24 → S.L (physical i) = [] ∧ S.R (physical i) = []) →
       caller.head src = 0 → caller.tape src = M8.Machine.ArbitraryWidthHighExchangeShared.sourceWord x →
       RepT ((caller.append (FixedHeaderBankCopy.headerBank hs)).append (copyHeaderOutput (w+1) W))
@@ -521,16 +560,19 @@ theorem copyStoppedReturn_exec [M8.Machine.Net] {P P' U : Type} {T : ℕ} [Finty
           (.seq (packSchedule 15 (middleTailSchedule 7 7)) (packSchedule 15 copyPackSchedule.reverse))) (Prog.seqList (ports.map WordCmd.dropR)))))
           (mk v S) n (mk z F) ∧ clean (embStk placement F) ∧ (∀ j ∈ ports, F.R (placement j) = []) ∧
         (∀ j, (∀ i, placement i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j) ∧
-        ∀ k, readAt blank (F.L (placement (bank 24))) (F.R (placement (bank 24))) k =
-          RadixToBinary.binaryEncoding.encode (putWord (fun _ => blank) 0
-            (List.ofFn (SparseRoleCircuit.encode ∘ output)) k) := by
-  intro cutoff
+        RepT (SharedPlacementAlphabet.setTape
+          ((caller.append (FixedHeaderBankCopy.headerBank hs)).append (copyHeaderOutput (w+1) W))
+          (Fin.castAdd 15 (Fin.castAdd 6 src))
+          (M8.Machine.ArbitraryWidthHighExchangeShared.sourceWord (Shared50RecursiveNodeRows.transpose (one_dvd _) x)) 0)
+          (F.L ∘ slots) (F.R ∘ slots) := by
+  intro source port placement slots staged calls cutoff
+  obtain ⟨apart,outside,privateSlot,shared⟩ := copyCallerPlacement src
   obtain ⟨setup,swaps,wrapper⟩ := copyTransposeReturn_exec body host placement ι calls
   obtain ⟨base,passes,leaf⟩ := copyPackedBase_exec body
   let rates := ((List.range (cutoff+1)).map swapVolumeRate).sum
   refine ⟨base+passes*rates+2*(setup+swaps*rates),?_⟩
-  intro parent w rows splitRows M W small positive suffix size bank clean t caller src slots staged v S x
-    physical headers width hs output apart outside privateSlot shared fresh empty head data rep free ports
+  intro parent w rows splitRows M W small positive suffix bank clean caller v S x
+    physical headers width hs fresh empty head data rep free ports
   have hm : 0 < M := pow_pos Shared50ModularControl.prime_prime.pos _
   have hsuf : 0 < suffix := Nat.mul_pos hm positive
   have run := wrapper parent w rows splitRows positive caller src slots staged v S x

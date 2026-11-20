@@ -16,7 +16,7 @@ def payloadPlacement (slot : Fin T) (payload : Fin K) : Fin T ↪ Fin (T+K) :=
 theorem payloadPlacement_shared (slot : Fin T) (payload : Fin K) :
     payloadPlacement slot payload slot = payload.natAdd T := Equiv.swap_apply_left ..
 
-private theorem payloadPlacement_off (slot : Fin T) (payload k : Fin K) (hk : k ≠ payload)
+theorem payloadPlacement_off (slot : Fin T) (payload k : Fin K) (hk : k ≠ payload)
     (j : Fin T) : payloadPlacement slot payload j ≠ k.natAdd T := by
   by_cases same : j = slot
   · subst j
@@ -31,6 +31,17 @@ private theorem payloadPlacement_off (slot : Fin T) (payload k : Fin K) (hk : k 
   change Equiv.swap (slot.castAdd K) (payload.natAdd T) (j.castAdd K) ≠ _
   rw [Equiv.swap_apply_of_ne_of_ne diff (apart payload)]
   exact apart k
+
+/-- Sharing the payload frees the original child slot for caller staging. -/
+theorem payloadPlacement_vacant (slot : Fin T) (payload : Fin K) (j : Fin T) :
+    slot.castAdd K ≠ payloadPlacement slot payload j := by
+  intro eq
+  have back := congrArg (Equiv.swap (slot.castAdd K) (payload.natAdd T)) eq
+  change Equiv.swap _ _ _ = Equiv.swap _ _ (Equiv.swap _ _ _) at back
+  rw [Equiv.swap_apply_left,Equiv.swap_apply_self] at back
+  have values := congrArg Fin.val back
+  simp at values
+  omega
 
 /-- The returned payload is the child's actual pair of stacks. Every other
 caller tape retains both stacks, irrespective of the child's internal writes. -/
