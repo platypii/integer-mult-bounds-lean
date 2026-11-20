@@ -287,4 +287,14 @@ theorem data_writeback (j : ℕ) (hj : j < 222) (U V : Matrix Axis Axis ℚ) (f 
 
 end Data
 
+noncomputable def ownerTape (n : Fin 9) (r : Fin 32) (d : Fin 5) (j : Fin 661) : Fin 142081 :=
+  ((Fin.cast card_role) (Fintype.equivFin Role (owner n r d j))).castSucc
+
+theorem ownerTape_injective (n : Fin 9) (r : Fin 32) (d : Fin 5) :
+    Function.Injective (ownerTape n r d) := by
+  intro i j eq
+  apply Fin.ext
+  apply owner_injective n r d i i.isLt j j.isLt
+  exact (Fintype.equivFin Role).injective (Fin.cast_injective _ (Fin.castSucc_injective _ eq))
+
 end IntegerMultBounds.MathlibTM2.M6.BitNode

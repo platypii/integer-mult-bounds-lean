@@ -140,7 +140,7 @@ theorem chartRead_copy_add {v : Descriptor} {w B : ℕ}
     (n : Fin 9) (source target : ℕ)
     (src dst enteredSrc enteredDst added out : Fin (volume prime v) → ZMod 2)
     (sourceRun : LabelPermutation.Transport v B w (fun g => g*(registerChart w n source).transpose) (ext src) (ext enteredSrc))
-    (targetRun : LabelPermutation.Transport v B w (fun g => g*(registerChart w n target).transpose) (ext dst) (ext enteredDst))
+    (targetRead : ∀ g, chartRead (B := B) enteredDst (g*(registerChart w n target).transpose) = chartRead dst g)
     (leave : LabelPermutation.Transport v B w (fun g => g*registerChart w n target) (ext added) (ext out))
     (move : (LabelEntry.Cell v B → ZMod 2) → (LabelEntry.Cell v B → ZMod 2))
     (add : ∀ g, chartRead (w := w) added g = chartRead enteredDst g + move (chartRead enteredSrc g)) (g) :
@@ -149,7 +149,7 @@ theorem chartRead_copy_add {v : Descriptor} {w B : ℕ}
   rw [Matrix.mul_assoc (g*(registerChart w n target).transpose),mul_eq_one_comm.mp (registerChart_inverse w n source),Matrix.mul_one] at original
   have restored := chartRead_transport leave (g*(registerChart w n target).transpose)
   rw [Matrix.mul_assoc g,registerChart_inverse w n target,Matrix.mul_one] at restored
-  rw [restored,add,chartRead_transport targetRun g,original]
+  rw [restored,add,targetRead,original]
 
 /-- Execution of a register call in its scheduled chart, with a caller-supplied
 relation describing the local body on each label's payload. -/
@@ -170,6 +170,124 @@ def ChartCall [M8.Machine.Net] {T : ℕ} (io : Fin T) (n : Fin 9) (j : ℕ)
           GraphContract.Runs program (LabelCall.bank roles v d)
             (LabelCall.bank (setTape roles io (sourceWord out) 0) v d)
             (price C v w budget)
+
+open IntegerMultBounds.Networks.Certificates.PR589 in
+/-- The same physical route enters and leaves each scheduled COPY destination.
+At stage zero its identity block takes zero steps. -/
+theorem copyTarget_route [M8.Machine.Net] {T : ℕ} (io : Fin T) (n : Fin 9)
+    (life : Copy.Lifecycle) (scheduled : life ∈ Copy.lifecycles)
+    (j : ℕ) (target : j ∈ life.targets) :
+    ∃ (program : Graph.Block (T+24) prime) (C : ℕ), Blocks.Leading program ∧
+      ∀ (v : Descriptor) (w B : ℕ), 0 < w → 0 < B →
+      v.beforeH = B*prime^(64*(w*64)) → v.Positive →
+      ∀ (roles : Tapes T prime) (x : Fin (volume prime v) → ZMod 2),
+      roles.head io = 0 → roles.tape io = sourceWord x →
+      let d := words (LabelSchedule.base v w)
+      let A := registerChart w n j
+      ∃ y : Fin (volume prime v) → ZMod 2,
+        (∀ g, chartRead (B := B) y (g*A.transpose) = chartRead x g) ∧
+        LabelPermutation.Transport v B w (fun g => g*A) (ext x) (ext y) ∧
+        GraphContract.Runs program (LabelCall.bank roles v d)
+          (LabelCall.bank (setTape roles io (sourceWord y) 0) v d)
+          (if n.val = 0 then 0 else C*volume prime v + 252*LeafCore.coreCost (volume prime v) (w*64)) := by
+  let c := port (j % 111)
+  have chartEq := chart_data n j (Copy.target_bounds life scheduled j target).2
+  by_cases firstStage : n.val = 0
+  · refine ⟨SharedBankSkeleton.identity _ _ (by omega),0,fun _ => rfl,?_⟩
+    intro v w B hw hb shape pos roles x head tape d A
+    have idChart : A = 1 := by simp [A,registerChart,chartEq,PortCertificate.stageRoute,firstStage,reduce_one,submatrix_one_equiv]
+    refine ⟨x,?_,?_,?_⟩
+    · simp [idChart]
+    · intro g
+      simp only [idChart,mul_one]
+      intros
+      trivial
+    · rw [← tape,← head,SharedPlacementAlphabet.setTape_self,ite_eq_left firstStage]
+      exact skip_hoare _ _
+  · let s : Fin 8 := ⟨n.val-1,by omega⟩
+    have chartRoute : chart n j = c.route s := by simp [chartEq,PortCertificate.stageRoute,firstStage,s,c]
+    obtain ⟨block,C,leading,runs⟩ := stageRoute_runs io c (port_checked _ (Nat.mod_lt _ (by decide))) s
+    refine ⟨block,C,leading,?_⟩
+    intro v w B hw hb shape pos roles x head tape d A
+    obtain ⟨y,transport,run⟩ := runs v w B hw hb shape pos roles x head tape
+    have entry : LabelPermutation.Transport v B w (fun g => g*A.transpose) (ext x) (ext y) := by
+      simpa only [A,registerChart,chartRoute,modulus] using transport
+    have symmetric : A.transpose = A := by
+      change (reduce (prime^w) (chart n j).transpose).submatrix _ _ = _
+      rw [chartEq,PortCertificate.stageRoute_transpose]
+      simp only [A,registerChart,chartEq]
+    refine ⟨y,chartRead_transport entry,?_,by simpa only [ite_eq_right firstStage] using run⟩
+    rwa [symmetric] at entry
+
+open IntegerMultBounds.Networks.Certificates.PR589 in
+/-- Route all fanout destinations on one bank. Each original slice reaches its
+scheduled chart, while every tape outside the destination list keeps its data. -/
+theorem copyTargets_route [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
+    (life : Copy.Lifecycle) (scheduled : life ∈ Copy.lifecycles)
+    :
+    let io := fun j : ℕ => ownerTape n r d (Fin.ofNat 661 j)
+    ∃ (program : Graph.Block (142081+24) prime) (C : ℕ), Blocks.Leading program ∧
+      ∀ (v : Descriptor) (w B : ℕ), 0 < w → 0 < B →
+      v.beforeH = B*prime^(64*(w*64)) → v.Positive →
+      ∀ x : Fin 142081 → Fin (volume prime v) → ZMod 2,
+      let bank := fun (data : Fin 142081 → Fin (volume prime v) → ZMod 2) =>
+        LabelCall.bank (⟨fun _ => 0,fun k => sourceWord (data k)⟩ : Tapes 142081 prime) v (words (LabelSchedule.base v w))
+      ∃ y, (∀ j ∈ life.targets, LabelPermutation.Transport v B w
+        (fun g => g*registerChart w n j) (ext (x (io j))) (ext (y (io j)))) ∧
+        (∀ k, k ∉ life.targets.map io → y k = x k) ∧
+        GraphContract.Runs program (bank x) (bank y)
+          (C*volume prime v + life.targets.length*(252*LeafCore.coreCost (volume prime v) (w*64)+1)) := by
+  intro io
+  have distinct : Set.InjOn io {j | j ∈ life.targets} := by
+    intro j hj k hk eq
+    have hj' := (Copy.target_bounds life scheduled j hj).2
+    have hk' := (Copy.target_bounds life scheduled k hk).2
+    have same := congrArg Fin.val (ownerTape_injective n r d eq)
+    simpa only [Fin.val_ofNat,Nat.mod_eq_of_lt (by omega : j < 661),
+      Nat.mod_eq_of_lt (by omega : k < 661)] using same
+  generalize eq : life.targets = js
+  have subset : ∀ j ∈ js, j ∈ life.targets := by rw [← eq]; simp
+  have unique := eq ▸ (Copy.wellformed life scheduled).1
+  clear eq
+  induction js with
+  | nil =>
+    refine ⟨SharedBankSkeleton.identity _ _ (by omega),0,fun _ => rfl,?_⟩
+    intro v w B hw hb shape pos x bank
+    refine ⟨x,by simp,by simp,?_⟩
+    simp only [Nat.zero_mul,List.length_nil,Nat.add_zero]
+    exact skip_hoare _ _
+  | cons j js ih =>
+    obtain ⟨fresh,nodup⟩ := List.nodup_cons.mp unique
+    have mem := subset j List.mem_cons_self
+    obtain ⟨block,C,leading,run⟩ := copyTarget_route (io j) n life scheduled j mem
+    obtain ⟨tail,D,tailLeading,rest⟩ := ih (fun k hk => subset k (List.mem_cons_of_mem _ hk)) nodup
+    refine ⟨Blocks.seqB block tail,C+D,Blocks.seq_leading _ _,?_⟩
+    intro v w B hw hb shape pos x bank
+    let roles : Tapes 142081 prime := ⟨fun _ => 0,fun k => sourceWord (x k)⟩
+    obtain ⟨y,_,move,step⟩ := run v w B hw hb shape pos roles (x (io j)) rfl rfl
+    let next := Function.update x (io j) y
+    have updated : setTape roles (io j) (sourceWord y) 0 =
+        (⟨fun _ => 0,fun k => sourceWord (next k)⟩ : Tapes 142081 prime) := by
+      apply congrArg₂ Tapes.mk <;> funext k <;> by_cases h : k = io j <;> simp [roles,next,h]
+    rw [updated] at step
+    obtain ⟨out,moves,other,steps⟩ := rest v w B hw hb shape pos next
+    have off (k) (hk : k ∈ js) : io k ≠ io j := fun h =>
+      fresh (distinct (subset k (List.mem_cons_of_mem _ hk)) mem h ▸ hk)
+    refine ⟨out,?_,?_,Blocks.runs_mono (Blocks.seq_runs leading tailLeading step steps) ?_⟩
+    · intro k hk
+      rcases List.mem_cons.mp hk with eq | hk
+      · subst k
+        rw [other _ (by simpa only [List.mem_map,not_exists] using
+              (show ∀ k, ¬ (k ∈ js ∧ io k = io j) from fun k h => off k h.1 h.2))]
+        simpa [next] using move
+      · simpa [next,off k hk] using moves k hk
+    · intro k hk
+      simp only [List.map_cons,List.mem_cons,not_or] at hk
+      simpa [next,hk.1] using other _ hk.2
+    · have bound : (if n.val = 0 then 0 else C*volume prime v + 252*LeafCore.coreCost (volume prime v) (w*64))
+          ≤ C*volume prime v + 252*LeafCore.coreCost (volume prime v) (w*64) := by split <;> omega
+      simp only [List.length_cons,Nat.add_mul,Nat.mul_add,Nat.one_mul,Nat.mul_one]
+      omega
 
 /-- A call on a routed port may change its payload arbitrarily according to
 a label-indexed relation. Returning through the same route restores each label

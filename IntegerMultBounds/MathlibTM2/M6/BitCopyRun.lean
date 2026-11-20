@@ -16,16 +16,6 @@ open IntegerMultBounds.Machine IntegerMultBounds.Networks
 open IntegerMultBounds.Networks.Certificates.PR589
 variable {a : ℕ}
 
-noncomputable def ownerTape (n : Fin 9) (r : Fin 32) (d : Fin 5) (j : Fin 661) : Fin 142081 :=
-  ((Fin.cast card_role) (Fintype.equivFin Role (owner n r d j))).castSucc
-
-theorem ownerTape_injective (n : Fin 9) (r : Fin 32) (d : Fin 5) :
-    Function.Injective (ownerTape n r d) := by
-  intro i j eq
-  apply Fin.ext
-  apply owner_injective n r d i i.isLt j j.isLt
-  exact (Fintype.equivFin Role).injective (Fin.cast_injective _ (Fin.castSucc_injective _ eq))
-
 private theorem fanout {t N : ℕ} (src : Fin t) (targets : List (Fin t)) (fresh : src ∉ targets)
     (unique : targets.Nodup) (data : Fin t → Fin N → ZMod 2) :
     let gates := targets.attach.map fun dst => (⟨src,dst.val,fun h => fresh (h ▸ dst.property)⟩ : PointwiseRoleGate.Gate t)
