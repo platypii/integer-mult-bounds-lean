@@ -436,7 +436,7 @@ theorem intervalDiagonal_rank {m lo hi : ℕ} (fits : hi ≤ m) :
       right_inv := by intro j; apply Fin.ext; simp }
   exact (Fintype.card_congr E).trans (Fintype.card_fin _)
 
-private theorem intervalDiagonal_idem (m lo hi : ℕ) :
+theorem intervalDiagonal_idem (m lo hi : ℕ) :
     let D : Matrix (Fin m) (Fin m) ℚ := diagonal fun i => if lo ≤ i.val ∧ i.val < hi then 1 else 0
     D*D = D := by
   intro D
