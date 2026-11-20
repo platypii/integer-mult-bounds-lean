@@ -673,13 +673,18 @@ Its private registers are disjoint from the preceding program. It reads the
 updated owners in place and costs at most `stage.cost*(stage.tapes+5)+6`.
 `OrdinaryParentRun.chartRoundTrip` instantiates both scheduled chart executions
 around the installed ordinary-parent scan. It preserves each other owner word
-and proves the residual read equation on the selected owner at the original
-label. Given the installed child's width-power times volume bound, the
+and proves the residual read equation on the selected owner at each original
+live label. At each nonunit label the entire original row is preserved:
+multiplication by the chart keeps the label nonunit, so the scanner copies
+the routed row and the inverse chart returns it to its original position. Given the installed child's width-power times volume bound, the
 theorem bounds elapsed time by packed volume times the sum of the two chart
 rates, the fixed directory setup coefficient and the scanner's width-power
 rate, plus 13 steps. The chart and scanner coefficients are independent of the
 layout and precision for fixed machine parameters. `scheduledOrdinaryParent_exec`
-supplies the required child budget for the scheduled scanner. The parent reads
+instantiates the full round trip for every scheduled remainder interval,
+using the installed scanner's child budget. Its local procedure body, extra
+tape count and child rate are fixed before the precision, layout and parent
+weights. The enclosing parent program is still selected after those inputs. The parent reads
 the live owner bank at entry. Both charts take their private initial stacks
 from metadata independent of the owner words. On return the caller's user
 state is preserved and both stacks of every ordinary private tape at index
