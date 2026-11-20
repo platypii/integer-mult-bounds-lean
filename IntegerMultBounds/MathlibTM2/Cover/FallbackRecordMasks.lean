@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackDirectoryAdvance
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackPivotStream
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackPhysicalLabel
 public import IntegerMultBounds.MathlibTM2.Cover.LabelSpectators
@@ -172,6 +173,38 @@ def readWithSuccessorClock {T Q A : ℕ} {P U : Type} (clock : Fin T) (reader : 
   Prog.seq (.act (.push (.rt clock) (fun _ => Node.tick) .done)) (reader.seq (.act (Node.dropTop clock .done)))
 
 open LabelTraversal in
+/-- Advance across one physical record of the supplier directory, using the
+same reciprocal clock as the matrix reader. All remaining entries stay in order. -/
+theorem advanceDirectoryRecord_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
+    (r : Fin 6 ↪ Fin T) (m w label : ℕ) (ancestor : ℕ → List (Fin (prime+4)))
+    (labels : List ℕ) (tail : List (Fin (prime+4))) (u : HS T Q prime U) (S : Stacks T prime)
+    (stream : S.R (r 2) = ((label :: labels).flatMap (LabelDirectory.entry ancestor m (w+1))) ++ tail)
+    (prefixLen : (S.R (r 0)).length = (ancestor label).length) (ticks : (S.R (r 1)).length = w)
+    (scratch : S.R (r 3) = []) :
+    let rest := labels.flatMap (LabelDirectory.entry ancestor m (w+1)) ++ tail
+    ∃ z, z.user = u.user ∧ Exec body (readWithSuccessorClock (r 1) (advanceDirectory m r))
+      (mk u S) (1+(4*(ancestor label).length+4+(m*m*(4*(w+1)+4)+1)+1))
+      (mk z {S with R := Function.update S.R (r 2) rest}) := by
+  intro rest
+  let D := {S with R := Function.update S.R (r 1) (Node.tick :: S.R (r 1))}
+  have keep (i : Fin 6) (hi : i ≠ 1) : D.R (r i) = S.R (r i) :=
+    Function.update_of_ne (r.injective.ne hi) _ _
+  have push : Exec body (.act (.push (.rt (r 1)) (fun _ => Node.tick) .done)) (mk u S) 1 (mk u D) := by
+    simpa [D,Action.run,update_rt] using Exec.act (body := body) (.push (.rt (r 1)) (fun _ => Node.tick) .done) (mk u S)
+  obtain ⟨z,hz,advance⟩ := advanceDirectory_exec body r m (w+1) label (ancestor label) rest u D
+    (by rw [keep 2 (by decide),stream]; simp [LabelDirectory.entry,rest,List.append_assoc])
+    ((congrArg List.length (keep 0 (by decide))).trans prefixLen) (by simp [D,ticks])
+    ((keep 3 (by decide)).trans scratch)
+  let E := {D with R := Function.update D.R (r 2) rest}
+  have pop := Exec.act (body := body) (Node.dropTop (r 1) .done) (mk z E)
+  refine ⟨z,hz,Exec.seq push (Exec.seq advance ?_)⟩
+  have restore : Function.update (Function.update S.R (r 2) rest) (r 1) (S.R (r 1)) = Function.update S.R (r 2) rest := by
+    funext i; by_cases h : i = r 1 <;> simp [h,r.injective.eq_iff]
+  simpa [E,D,Node.dropTop,Action.run,update_rt,Function.update_comm (r.injective.ne (by decide : (1 : Fin 6) ≠ 2)),
+    r.injective.eq_iff,restore] using pop
+
+def goodRecordScanPorts : Fin 6 ↪ Fin 7 := ⟨![3,0,1,6,2,5],by decide⟩
+
 theorem readWithSuccessorClock_writes {T Q A : ℕ} {P U : Type} (body : P → Pr P T Q A U)
     (clock dst : Fin T) (apart : clock ≠ dst) (ok : Node.Regs T A → Prop)
     (reader : Pr P T Q A U) (word : List (Fin (A+4))) (cost : ℕ)

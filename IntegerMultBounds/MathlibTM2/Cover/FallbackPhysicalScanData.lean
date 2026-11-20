@@ -2,6 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackScanState
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackRecordMasks
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackRecordCleanup
 
 /-! Identify the generated live and padding words with the signed pass's matrix archive. -/
 @[expose] public section
@@ -263,6 +264,7 @@ theorem physicalResidualRecord_exec [M8.Machine.Net] {K : ℕ} {P U : Type}
     tail rest queueTail dest q empty original word layout free placed queue width blankDst savedFree tmpFree code
 
 open IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2.Stack Host in
+open IntegerMultBounds.MathlibTM2.Fast.Main in
 /-- Apply the anchor and then the projector residual on the same directory tapes. -/
 theorem scheduledProjectorRecord_exec [M8.Machine.Net] {K : ℕ} {P U : Type}
     (e : (Fin r ⊕ Fin r) ≃ Fin (d+1)) (proj : Matrix (Fin r) (Fin r) ℚ)
@@ -303,15 +305,59 @@ theorem scheduledProjectorRecord_exec [M8.Machine.Net] {K : ℕ} {P U : Type}
         ((Record.program d regs).seq (moveR (Record.port d regs 5) (Record.port d regs 1) id))
       let V := M^(d+1)*W
       let returnWord := (Mult.ShortConv.transfer count dst saved tmp).seq (moveR saved src id)
-      ∃ z F n next, z.user = u.user ∧ n ≤ ((1+(Record.cost d 6 1 (w+1) W (negativeAnchor rows C)+(2*V+2))) +
-        (6*V+6+(1+signedResidualTime U rows w W H J))) + ((4*V+4)+(2*V+2)) ∧
-        Exec body ((sign.seq (queuedResidual ports count src saved tmp d)).seq returnWord) (mk u S) n (mk z F) ∧
+      let record := (sign.seq (queuedResidual ports count src saved tmp d)).seq returnWord
+      let recordTime := ((1+(Record.cost d 6 1 (w+1) W (negativeAnchor rows C)+(2*V+2))) +
+        (6*V+6+(1+signedResidualTime U rows w W H J))) + ((4*V+4)+(2*V+2))
+      let privateTapes := (List.finRange (66+K)).filter fun i => decide (58 ≤ i.val)
+      let initialClear := (privateTapes.map fun i => 4*(S.L i).length+2*(S.R i).length+4).sum+1
+      ∀ c, (∀ f, mnProgPush (body f) ≤ c) →
+      ∀ (prefixes : ℕ → List (Fin (prime+4))) (pending : List ℕ) (archiveTail : List (Fin (prime+4))),
+      let slots : Fin 7 ↪ Fin 58 := ⟨![45,46,2,47,48,44,49],by decide⟩
+      let caller := (Fin.castAddEmb (n := 58) 8).trans (Fin.castAddEmb K)
+      let scan := (goodRecordScanPorts.trans slots).trans caller
+      S.R (scan 2) = (j :: pending).flatMap (LabelDirectory.entry prefixes r (w+1)) ++ archiveTail →
+      (S.R (scan 0)).length = (prefixes j).length → (S.R (scan 1)).length = w → S.R (scan 3) = [] →
+      ∃ z F n next, z.user = u.user ∧ n ≤ recordTime + (initialClear + 6*(max (mnProgPush record) c * recordTime)) +
+          (1+(4*(prefixes j).length+4+(r*r*(4*(w+1)+4)+1)+1)) ∧
+        Exec body ((record.seq (clearWorkTapes privateTapes)).seq (readWithSuccessorClock (scan 1) (advanceDirectory r scan))) (mk u S) n (mk z F) ∧
+        (∀ i : Fin (66+K), 58 ≤ i.val → F.L i = [] ∧ F.R i = []) ∧
         (∀ x k, next (FlatCoordinateLayout.index (G.mulVec x) k) = original (FlatCoordinateLayout.index x k)) ∧
         F.R ((54 : Fin 66).castAdd K) = rest ∧ F.R src = payloadWord (SparseRoleCircuit.encode ∘ next) ++ queueTail ∧
-        ∀ j : Fin 58, j ≠ 24 → j ≠ 54 → let i := (j.castAdd 8).castAdd K
+        F.R (scan 2) = pending.flatMap (LabelDirectory.entry prefixes r (w+1)) ++ archiveTail ∧
+        ∀ j : Fin 58, j ≠ 24 → j ≠ 54 → j ≠ 46 → let i := (j.castAdd 8).castAdd K
           F.L i = S.L i ∧ F.R i = S.R i := by
   intro N G φ C rows room ports count src saved tmp anchor regs capacity body u S tail rest queueTail dest q
     original a empty bank dst clean layout free ready encoded queue width blankDst scratch schedule sign V returnWord
+    record recordTime privateTapes initialClear c bodyBound
+  intro prefixes pending archiveTail slots caller scan directory prefixWidth clock fresh
+  suffices finished : ∃ z F n next, z.user = u.user ∧ n ≤ recordTime + (initialClear + 6*(max (mnProgPush record) c * recordTime)) ∧
+        Exec body (record.seq (clearWorkTapes privateTapes)) (mk u S) n (mk z F) ∧
+        (∀ i : Fin (66+K), 58 ≤ i.val → F.L i = [] ∧ F.R i = []) ∧
+        (∀ x k, next (FlatCoordinateLayout.index (G.mulVec x) k) = original (FlatCoordinateLayout.index x k)) ∧
+        F.R ((54 : Fin 66).castAdd K) = rest ∧ F.R src = payloadWord (SparseRoleCircuit.encode ∘ next) ++ queueTail ∧
+        ∀ j : Fin 58, j ≠ 24 → j ≠ 54 → let i := (j.castAdd 8).castAdd K
+          F.L i = S.L i ∧ F.R i = S.R i by
+    obtain ⟨z,F,n,next,user,time,run,clear,effect,queue,output,preserved⟩ := finished
+    have before (i : Fin 6) (hp : (goodRecordScanPorts.trans slots) i ≠ 24)
+        (hs : (goodRecordScanPorts.trans slots) i ≠ 54) : F.R (scan i) = S.R (scan i) :=
+      (preserved _ hp hs).2
+    obtain ⟨finish,hz,advance⟩ := advanceDirectoryRecord_exec body scan r w j prefixes pending archiveTail z F
+      ((before 2 (by decide) (by decide)).trans directory)
+      ((congrArg List.length (before 0 (by decide) (by decide))).trans prefixWidth)
+      ((congrArg List.length (before 1 (by decide) (by decide))).trans clock)
+      ((before 3 (by decide) (by decide)).trans fresh)
+    have port : scan 2 = (46 : Fin 66).castAdd K := rfl
+    let remaining := pending.flatMap (LabelDirectory.entry prefixes r (w+1)) ++ archiveTail
+    refine ⟨finish,_,_,next,hz.trans user,Nat.add_le_add_right time _,Exec.seq run advance,?_,effect,
+      (Function.update_of_ne (show (54 : Fin 66).castAdd K ≠ scan 2 by rw [port]; exact (Fin.castAddEmb K).injective.ne (by decide)) remaining F.R).trans queue,
+      (Function.update_of_ne (show src ≠ scan 2 by rw [port]; exact (Fin.castAddEmb K).injective.ne (by decide)) remaining F.R).trans output,
+      Function.update_self (scan 2) (pending.flatMap (LabelDirectory.entry prefixes r (w+1)) ++ archiveTail) F.R,?_⟩
+    · intro i hi
+      have off : i ≠ scan 2 := by intro eq; subst i; change 58 ≤ 46 at hi; omega
+      exact ⟨(clear i hi).1,(Function.update_of_ne off remaining F.R).trans (clear i hi).2⟩
+    · intro k hp hs hd i
+      have off : i ≠ scan 2 := caller.injective.ne hd
+      exact ⟨(preserved k hp hs).1,(Function.update_of_ne off remaining F.R).trans (preserved k hp hs).2⟩
   have reg (i : Fin 6) : anchor (Record.port d regs i) = (directoryAnchorPorts i).castAdd K :=
     directoryAnchorBank_port _ i
   have cell (B : Stacks (66+K) prime) (i : Fin 6) :
@@ -383,11 +429,26 @@ theorem scheduledProjectorRecord_exec [M8.Machine.Net] {K : ℕ} {P U : Type}
     rw [← directoryResidualBank_pivot (d := d) room (Fin.last N).castSucc]
     apply ports.injective.ne
     intro eq; have h := congrArg Fin.val eq; change rowSwapBlock.tapes+35 = 24 at h; omega
-  refine ⟨finish,finalBank,_,next,user.trans (hLast.trans (hz.trans hu)),Nat.add_le_add_right (Nat.add_le_add ht hn) _,
-    Exec.seq (Exec.seq run res) (Exec.seq collect rewind),effect,
-    (kept 54 (by decide) (by decide) schedOff).trans (by simpa only [ports,directoryResidualBank_pivot] using endCode),?_,?_⟩
-  · simp [finalBank,movedR,acc,oldSrc,packed]
+  have executed : Exec body record (mk u S) _ (mk finish finalBank) :=
+    Exec.seq (Exec.seq run res) (Exec.seq collect rewind)
+  have time : t+n+((4*V+4)+(2*V+2)) ≤ recordTime := Nat.add_le_add_right (Nat.add_le_add ht hn) _
+  have unique : privateTapes.Nodup := (List.nodup_finRange _).filter _
+  obtain ⟨z',same,clear⟩ := clearWorkTapes_exec body privateTapes unique finish finalBank
+  have price := recordCleanup_cost_le privateTapes unique executed (le_max_left (mnProgPush record) c)
+    (fun f => (bodyBound f).trans (le_max_right _ _))
+  have mem (i : Fin (66+K)) : i ∈ privateTapes ↔ 58 ≤ i.val := by simp [privateTapes]
+  have callerOff (j : Fin 58) : (j.castAdd 8).castAdd K ∉ privateTapes := by
+    rw [mem]; exact Nat.not_le_of_lt j.isLt
+  have queueOut : finalBank.R src = packed ++ queueTail := by simp [finalBank,movedR,acc,oldSrc]
+  refine ⟨z',_,_,next,same.trans (user.trans (hLast.trans (hz.trans hu))),Nat.add_le_add time
+    (price.trans (Nat.add_le_add_left (Nat.mul_le_mul_left 6 (Nat.mul_le_mul_left _ time)) _)),
+    Exec.seq executed clear,?_,effect,?_,?_,?_⟩
+  · intro i hi; simp [(mem i).mpr hi]
+  · apply (ite_eq_right (show (54 : Fin 66).castAdd K ∉ privateTapes from callerOff 54)).trans
+    exact (kept 54 (by decide) (by decide) schedOff).trans (by simpa only [ports,directoryResidualBank_pivot] using endCode)
+  · exact (ite_eq_right (callerOff 24)).trans queueOut
   intro k hp hs i
+  simp only [ite_eq_right (show i ∉ privateTapes from callerOff k)]
   have h₁ := frame i (directoryAnchorBank_off _ k hp hs)
   have h₂ := off i (by intro eq; apply hp; have h := congrArg Fin.val eq; exact Fin.ext h)
     (fun l => directoryResidualBank_off room _ l _ (by intro eq; apply hs; have h := congrArg Fin.val eq; exact Fin.ext h))
