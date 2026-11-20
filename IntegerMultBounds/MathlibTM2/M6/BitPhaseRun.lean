@@ -733,4 +733,87 @@ theorem invocationPieces_nodeCost [Net] (engine : CopyTranspose := CopyTranspose
   dsimp only [V,W]
   omega
 
+open RecursiveInterchangeLayout (Descriptor volume) in
+private theorem invocationVolume (v : Descriptor) (w B rows : ℕ)
+    (width : v.width = 64*w) (split : v.rows = 142080*rows) (label : v.beforeH = B*prime^(64*(w*64))) :
+    let K := (prime^w)^112*(v.beforeRows*rows*v.between*v.afterD)
+    let W := B*prime^(64*(w*64))*K
+    ((prime^w)^16*W)*142080 = volume prime v := by
+  intro K W
+  have spectators : (prime^w)^112*(v.beforeRows*rows*v.beforeH*v.between*v.afterD) = W := by
+    dsimp only [W,K]; rw [label]; ac_rfl
+  have size := (copyChild_measures v w rows width split).2
+  rwa [spectators,copyChild_volume] at size
+
+open RecursiveInterchangeLayout (Descriptor volume) in
+/-- The concrete phase descriptor satisfies both child measures in the
+five-class recurrence, including intervals with spectators on both sides. -/
+theorem phaseChild_parent_measures (v : Descriptor) (w B rows : ℕ) (p : ℕ × ℕ)
+    (checked : Geometry.Moves.CheckedPair p)
+    (width : v.width = 64*w) (split : v.rows = 142080*rows) (label : v.beforeH = B*prime^(64*(w*64))) :
+    let K := (prime^w)^112*(v.beforeRows*rows*v.between*v.afterD)
+    let W := B*prime^(64*(w*64))*K
+    let a := Geometry.Dimensions.value p.1
+    let b := Geometry.Dimensions.value p.2
+    let child := phaseIntervalChild (min a b) (max a b) w W
+    child.width*64 = Geometry.moveRank p.1 p.2*v.width ∧ volume prime child*142080 = volume prime v := by
+  intro K W a b child
+  have bounded (k : ℕ) (h : k < 636) : Geometry.Dimensions.value k ≤ 8 := by
+    rw [← Geometry.Dimensions.dimension k h]
+    simpa using Submodule.finrank_le (Geometry.label k)
+  constructor
+  · rw [show child.width = _ from phaseIntervalChild_width checked w W,width]
+    ring
+  · rw [show volume prime child = _ from phaseIntervalChild_volume (min_le_max : min a b ≤ max a b)
+        (max_le (bounded _ checked.1) (bounded _ checked.2.1)) w W]
+    exact invocationVolume v w B rows width split label
+
+open RecursiveInterchangeLayout (Descriptor volume) in
+open M8.Machine in
+/-- Normalize the physical stage costs by the parent volume. Every recursive
+occurrence is charged at its own rank with weight 1/142080. -/
+theorem invocationPieces_normalized [Net] (engine : CopyTranspose := CopyTranspose.original) :
+    ∃ C : ℝ, ∀ (v : Descriptor) (w B rows : ℕ), v.Positive → 0 < w → 0 < B →
+      v.width = 64*w → v.rows = 142080*rows → v.beforeH = B*prime^(64*(w*64)) →
+      let K := (prime^w)^112*(v.beforeRows*rows*v.between*v.afterD)
+      let W := B*prime^(64*(w*64))*K
+      let V := (prime^w)^16*W
+      let hs := fun i => FlatCoordinateSchedule.bits (RecursiveDimensionBank.values (copyChild w W) i)
+      ∃ pieces : Fin 9 → SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V)),
+        (∀ (price : ℕ → ℕ) (rate : ℕ → ℝ),
+          (∀ p ∈ Geometry.Moves.phaseEdges, Geometry.moveRank p.1 p.2 ≠ 0 →
+            phaseChildCost w W p ≤ price (Geometry.moveRank p.1 p.2)) →
+          engine.time (copyChild w W) hs ≤ price 7 →
+          (∀ j ∈ nodeChildren5, (price j : ℝ) ≤ V*rate j) →
+          ((∑ n, (pieces n).cost) + 160*(BitOccurrences.remainders.map price).sum : ℕ) ≤
+            (volume prime v : ℝ)*(C*(w : ℝ)^BudgetBound.tau + (nodeChildren5.map rate).sum/142080)) ∧
+        ∀ n, ∃ run : (Fin 32 × Fin 5) → (Fin 142081 → Fin V → ZMod 2) → (Fin 142081 → Fin V → ZMod 2),
+          (∀ k x, InvocationEffect n k.1 k.2 w B K x (run k x)) ∧
+          ∀ x, (pieces n).transform x = stageRuns.foldl (fun y k => run k y) x := by
+  obtain ⟨D,make⟩ := invocationPieces_nodeCost engine
+  obtain ⟨C,route⟩ := labelRoute_cost_bound D (1440*(2*(63*9+252*527)))
+  refine ⟨C/142080,?_⟩
+  intro v w B rows positive hw hB width split label K W V hs
+  obtain ⟨before,row,_,mid,after⟩ := positive
+  have hr : 0 < rows := by rw [split] at row; omega
+  have hp := Shared50ModularControl.prime_prime.pos
+  have hK : 0 < K := by dsimp only [K]; positivity
+  obtain ⟨pieces,time,action⟩ := make w B K hw hB hK
+  refine ⟨pieces,?_,action⟩
+  intro price rate phaseBound copyBound childBound
+  have children (xs : List ℕ) (bound : ∀ j ∈ xs, (price j : ℝ) ≤ V*rate j) :
+      ((xs.map price).sum : ℝ) ≤ V*(xs.map rate).sum := by
+    induction xs with
+    | nil => simp
+    | cons j xs ih =>
+      simp only [List.map_cons,List.sum_cons,Nat.cast_add,mul_add]
+      exact add_le_add (bound j List.mem_cons_self) (ih (fun i hi => bound i (List.mem_cons_of_mem _ hi)))
+  have size := invocationVolume v w B rows width split label
+  have sizeR : (volume prime v : ℝ) = V*142080 := by exact_mod_cast size.symm
+  have bill := time price phaseBound copyBound
+  rw [← Nat.mul_assoc 1440 (2*(63*9+252*527))] at bill
+  have paid := (Nat.cast_le (α := ℝ)).mpr bill
+  conv at paid => rhs; rw [Nat.cast_add]
+  exact (paid.trans (add_le_add (route V w hw) (children _ childBound))).trans_eq (by rw [sizeR]; ring)
+
 end IntegerMultBounds.MathlibTM2.M6.BitNode
