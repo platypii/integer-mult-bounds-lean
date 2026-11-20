@@ -408,6 +408,65 @@ theorem phaseInterval_transpose {lo hi : ℕ} {α : Type*}
       x (RecursiveInterchangeScaling.index (phaseIntervalAddress a b h d u v j)) :=
   Shared50RecursiveNodeTranspose.transpose_all (by decide : 0 < 1) _ _ (phaseIntervalAddress a b h d u v j)
 
+private def joinInterval {α : Type*} {lo hi : ℕ} (ordered : lo ≤ hi) (fits : hi ≤ 8)
+    (a : Fin lo → α) (h : Fin (hi-lo) → α) (u : Fin (8-hi) → α) (k : Fin 8) : α :=
+  Fin.append (Fin.append a h) u (k.cast (by omega))
+
+private theorem interval_run_join {R : Type*} [CommRing R] {lo hi : ℕ} (ordered : lo ≤ hi) (fits : hi ≤ 8)
+    (a b : Fin lo → R) (h d : Fin (hi-lo) → R) (u v : Fin (8-hi) → R) :
+    Swap.Shear.run (intervalSwaps lo hi) (joinInterval ordered fits a h u,joinInterval ordered fits b d v) =
+      (joinInterval ordered fits a d u,joinInterval ordered fits b h v) := by
+  rw [intervalSwaps_run]
+  apply Prod.ext <;> funext k
+  all_goals
+    have endAt : lo + (hi-lo) = hi := by omega
+    by_cases left : k.val < lo <;> by_cases right : k.val < hi <;> by_cases lower : lo ≤ k.val <;> try omega
+    all_goals simp [M8.Exchange.exchange,Matrix.sub_mulVec,Matrix.one_mulVec,Matrix.mulVec_diagonal,
+      joinInterval,Fin.append,Fin.addCases,endAt,left,right,lower]
+
+
+private theorem joinInterval_rank {lo hi : ℕ} (ordered : lo ≤ hi) (fits : hi ≤ 8)
+    (a : Fin lo → ZMod (prime^w)) (h : Fin (hi-lo) → ZMod (prime^w)) (u : Fin (8-hi) → ZMod (prime^w)) :
+    (rank (joinInterval ordered fits a h u)).val = (rank (Fin.append (Fin.append a h) u)).val := by
+  have castRank {m n : ℕ} (eq : m = n) (x : Fin n → ZMod (prime^w)) :
+      (rank (fun i => x (Fin.cast eq i))).val = (rank x).val := by subst n; rfl
+  exact castRank (by omega : 8 = lo+(hi-lo)+(8-hi)) (Fin.append (Fin.append a h) u)
+
+private theorem joinInterval_surj {α : Type*} {lo hi : ℕ} (ordered : lo ≤ hi) (fits : hi ≤ 8)
+    (x : Fin 8 → α) : ∃ a h u, joinInterval ordered fits a h u = x := by
+  let y := fun i : Fin (lo+(hi-lo)+(8-hi)) => x (i.cast (by omega))
+  let pre := fun i : Fin (lo+(hi-lo)) => y (i.castAdd (8-hi))
+  refine ⟨fun i => pre (i.castAdd (hi-lo)),fun i => pre (i.natAdd lo),fun i => y (i.natAdd _),?_⟩
+  funext k
+  unfold joinInterval
+  rw [Fin.append_castAdd_natAdd,show Fin.append pre (fun i => y (i.natAdd _)) = y from Fin.append_castAdd_natAdd]
+  rfl
+
+/-- In flat tape order the interval child's transpose executes the modular
+swap instruction at every address, including both boundary intervals. -/
+theorem phaseChild_interval {α : Type*} {lo hi : ℕ} (ordered : lo ≤ hi) (fits : hi ≤ 8)
+    (x : Fin ((prime^w)^16*W) → α) (s : Swap.Shear.State (Fin 8) (ZMod (prime^w))) (j : Fin W) :
+    let size := phaseIntervalChild_volume ordered fits w W
+    let atState := fun t => FlatCoordinateLayout.index (AffineFieldCoordinates.embed t) j
+    Shared50RecursiveNodeRows.transpose (v := phaseIntervalChild lo hi w W) (one_dvd _)
+      (fun i => x (i.cast size)) ((atState (Swap.Shear.run (intervalSwaps lo hi) s)).cast size.symm) =
+      x (atState s) := by
+  intro size atState
+  obtain ⟨h₀,d₀⟩ := s
+  obtain ⟨a,h,u,rfl⟩ := joinInterval_surj ordered fits h₀
+  obtain ⟨b,d,v,rfl⟩ := joinInterval_surj ordered fits d₀
+  have loc h d : (atState (joinInterval ordered fits a h u,joinInterval ordered fits b d v)).cast size.symm =
+      RecursiveInterchangeScaling.index (phaseIntervalAddress a b h d u v j) := by
+    apply Fin.ext
+    rw [Fin.val_cast,phaseInterval_index]
+    simp only [atState,FlatCoordinateLayout.index_val]
+    have packed := ArbitraryWidthSliceTranspose.rank_append (joinInterval ordered fits a h u) (joinInterval ordered fits b d v)
+    change (rank (AffineFieldCoordinates.embed (joinInterval ordered fits a h u,joinInterval ordered fits b d v))).val = _ at packed
+    rw [packed,joinInterval_rank,joinInterval_rank]
+    simp only [Fin.append,ArbitraryWidthSliceTranspose.rank_append]
+    rw [show lo+(hi-lo)+(8-hi) = 8 by omega]
+  rw [interval_run_join,loc,phaseInterval_transpose,← loc,Fin.cast_cast,Fin.cast_eq_self]
+
 noncomputable def copyChildAddress (h d : Fin 7 → ZMod (prime^w))
     (u v : Fin 1 → ZMod (prime^w)) (j : Fin W) : RecursiveInterchangeScaling.Address (copyChild w W) :=
   let field (x : Fin 7 → ZMod (prime^w)) : Fin (prime^(7*w)) := Fin.cast (by rw [← pow_mul, Nat.mul_comm w 7])
@@ -475,6 +534,55 @@ theorem copyChild_interval {α : Type*} (x : Fin ((prime^w)^16*W) → α)
   rw [← copyChild_index d h u v j, Fin.cast_cast, Fin.cast_eq_self]
   exact copyChild_transpose x h d u v j
 
+/-- Compose the two basis-pass address equations with the physical interval
+transpose. Only the two linear passes need to supply their endpoint arrays. -/
+theorem phaseMove_action {lo hi : ℕ} (ordered : lo ≤ hi) (fits : hi ≤ 8)
+    (C : Matrix (Fin 8) (Fin 8) ℚ)
+    (x loaded y : Fin ((prime^w)^16*W) → ZMod 2) :
+    let spec := List.map (AffineFieldProgram.mapOp (Swap.Modular.ratMod (prime^w)))
+    let atState := fun s (j : Fin W) => FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) j
+    let size := phaseIntervalChild_volume ordered fits w W
+    let moved := Shared50RecursiveNodeRows.transpose (v := phaseIntervalChild lo hi w W) (one_dvd _)
+      (fun i => loaded (i.cast size))
+    (∀ s j, loaded (atState (AffineFieldProgram.run (spec (M8.Exchange.transformOps C.adjugate C.adjugate)) s) j) =
+      x (atState s j)) →
+    (∀ s j, y (atState (AffineFieldProgram.run (spec (M8.Exchange.transformOps C C)) s) j) =
+      moved ((atState s j).cast size.symm)) →
+    ∀ s j, y (atState (AffineFieldProgram.run (spec (rationalMoveWord lo hi C)) s) j) = x (atState s j) := by
+  intro spec atState size moved enter leave s j
+  rw [rationalMoveWord_run,leave]
+  exact (phaseChild_interval ordered fits loaded _ j).trans (enter s j)
+
+open M8.Machine.Segments in
+/-- The certified basis programs accept the actual flat payloads on either
+side of the interval transpose, with a linear cost for each pass. -/
+theorem phaseBasis_runs {lo hi : ℕ} (ordered : lo ≤ hi) (fits : hi ≤ 8) (hW : 0 < W)
+    (C : Matrix (Fin 8) (Fin 8) ℚ) (rev : CopyBasisPass C.adjugate) (fwd : CopyBasisPass C)
+    (x : Fin ((prime^w)^16*W) → ZMod 2) :
+    let A := description _ rev.good
+    let B := description _ fwd.good
+    let bank := fun stages (y : Fin ((prime^w)^16*W) → ZMod 2) => SharedBankStageInput.raw
+      (FlatCoordinateShiftSharedBank.common (d := 16) (b := w) (W := W)
+        (fun i => SparseRoleCircuit.encode (y i))) (FlatCoordinateCleanSchedule.tapeCount stages)
+    let size := phaseIntervalChild_volume ordered fits w W
+    ∃ loaded y,
+      HoareTime (FlatCoordinateCleanSchedule.program A) (fun z => z = bank A x)
+        (fun z => z = bank A loaded) (FlatCoordinateCleanSchedule.constant A*((prime^w)^16*W)) ∧
+      let moved := Shared50RecursiveNodeRows.transpose (v := phaseIntervalChild lo hi w W) (one_dvd _)
+        (fun i => loaded (i.cast size))
+      HoareTime (FlatCoordinateCleanSchedule.program B) (fun z => z = bank B (fun i => moved (i.cast size.symm)))
+        (fun z => z = bank B y) (FlatCoordinateCleanSchedule.constant B*((prime^w)^16*W)) ∧
+      ∀ s j, y (FlatCoordinateLayout.index (AffineFieldCoordinates.embed
+        (AffineFieldProgram.run ((rationalMoveWord lo hi C).map
+          (AffineFieldProgram.mapOp (Swap.Modular.ratMod (prime^w)))) s)) j) =
+        x (FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) j) := by
+  intro A B bank size
+  obtain ⟨loaded,first,enter⟩ := copySegment_runs _ rev.good hW x (rev.legal w)
+  let moved := Shared50RecursiveNodeRows.transpose (v := phaseIntervalChild lo hi w W) (one_dvd _)
+    (fun i => loaded (i.cast size))
+  obtain ⟨y,last,leave⟩ := copySegment_runs _ fwd.good hW (fun i => moved (i.cast size.symm)) (fwd.legal w)
+  exact ⟨loaded,y,first,last,phaseMove_action ordered fits C x loaded y enter leave⟩
+
 open M8.Machine.ArbitraryWidthOriginalRun (input program cost)
 open M8.Machine.ArbitraryWidthHighExchangeShared (sourceWord)
 
@@ -493,14 +601,15 @@ theorem phaseInterval_runs [M8.Machine.Net] {t lo hi : ℕ} (lt : lo < hi) (fits
     ∃ y : Fin (volume prime child) → ZMod 2,
       HoareTime (program headers src) (fun z => z = input caller)
         (fun z => z = input (SharedPlacementAlphabet.setTape caller src (sourceWord y) 0)) (cost child hs) ∧
-      ∀ a b h d u v j, y (RecursiveInterchangeScaling.index (phaseIntervalAddress a b d h u v j)) =
-        inputWord (RecursiveInterchangeScaling.index (phaseIntervalAddress a b h d u v j)) := by
+      ∀ s j, y ((FlatCoordinateLayout.index (AffineFieldCoordinates.embed
+        (Swap.Shear.run (intervalSwaps lo hi) s)) j).cast (phaseIntervalChild_volume lt.le fits w W).symm) =
+        x (FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) j) := by
   intro child valid words heads x inputWord data origin
   have pos := pow_pos Shared50ModularControl.prime_prime.pos w
   have positive : child.Positive := ⟨Nat.zero_lt_one,Nat.zero_lt_one,pow_pos pos _,pow_pos pos _,Nat.mul_pos (pow_pos pos _) hW⟩
   have active : 0 < child.width := Nat.mul_pos (Nat.sub_pos_of_lt lt) hw
   exact ⟨_,M8.Machine.ArbitraryWidthOriginalRun.runs caller headers src child hs positive active valid words heads
-    inputWord data origin,phaseInterval_transpose inputWord⟩
+    inputWord data origin,phaseChild_interval lt.le fits x⟩
 
 open M8.Machine.ArbitraryWidthHighExchangeJoin M8.Machine.ArbitraryWidthHighRun in
 noncomputable abbrev copyTransposeTapes [M8.Machine.Net] (t : ℕ) := t+16+19+17+12+1+exchangeCount+movementCount+paddingCount+
