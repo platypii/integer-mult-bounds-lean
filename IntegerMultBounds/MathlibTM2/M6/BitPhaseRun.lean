@@ -207,4 +207,113 @@ theorem invocationPhase_stage [Net] {k w W : ℕ} (owner : Fin 661 ↪ Fin k) (h
     · exact List.mem_append_left _ (List.mem_append_right _ b)
     · exact List.mem_append_right _ c
 
+open IntegerMultBounds.MathlibTM2.Cover in
+/-- At a routed label, the phase reads the same owner bit with the matrix
+address, block, and trailing cell packed into its spectator coordinate. -/
+theorem phaseRead_label {k w B K : ℕ} (owner : Fin 661 ↪ Fin k) (r : Fin 661)
+    (data : Fin k → Fin ((prime^w)^16*(B*prime^(64*(w*64))*K)) → ZMod 2)
+    (g : Matrix (Fin 64) (Fin 64) (ZMod (prime^w))) (z : LabelEntry.Cell (copyLabelLayout w B K) B) :
+    let W := B*prime^(64*(w*64))*K
+    let j : Fin W := ⟨(z.b.val*prime^(64*(w*64))+(LabelAddress.address g).val)*K+z.after.val, by
+      apply LabelShift.pack_lt _ z.after.isLt
+      apply LabelShift.pack_lt z.b.isLt
+      simpa only [← pow_mul,show w*(64*64) = 64*(w*64) by omega] using (LabelAddress.address g).isLt⟩
+    let view := fun i => data (owner r) (Fin.cast (copyLabel_volume w B K) i)
+    chartRead view g z = phaseRead owner data j r.val (copyActive.symm z.a) := by
+  intro W j view
+  rw [copyLabel_read]
+  let i := FlatCoordinateLayout.index (AffineFieldCoordinates.embed (copyActive.symm z.a)) j
+  have pos : i.val = z.a.val*W+j.val := by
+    rw [FlatCoordinateLayout.index_val]
+    change (copyActive (copyActive.symm z.a)).val*W+j.val = _
+    exact congrArg (fun a : Fin ((prime^w)^16) => a.val*W+j.val) (copyActive.apply_symm_apply z.a)
+  change M8.RevMachine.ext view (z.a.val*W+j.val) = _
+  rw [← pos,M8.RevMachine.ext_cast,M8.RevMachine.ext_apply]
+  simp [phaseRead,Copy.extendStored,r.isLt,i]
+
+open RecursiveInterchangeLayout (Descriptor volume) in
+private theorem flatCopyStage {k V : ℕ} {v : Descriptor} (size : volume prime v = V)
+    (effect : (Fin k → Fin (volume prime v) → ZMod 2) → (Fin k → Fin (volume prime v) → ZMod 2) → Prop)
+    (budget : ℕ) (stage : SharedBankStage.Stage _ k prime (copyOwners (v := v)))
+    (acts : ∀ data, effect data (stage.transform data)) (bill : stage.cost ≤ budget) :
+    let view := fun (data : Fin k → Fin V → ZMod 2) r i => data r (Fin.cast size i)
+    ∃ flat : SharedBankStage.Stage _ k prime (phaseOwners (N := V)), flat.cost ≤ budget ∧
+      ∀ data, effect (view data) (view (flat.transform data)) := by
+  subst V
+  intro view
+  have same : @phaseOwners k (volume prime v) = copyOwners (v := v) := by
+    funext data
+    apply congrArg₂ Tapes.mk
+    · rfl
+    · funext r
+      exact (sourceWord_cast (v := v) rfl (data r)).symm
+  rw [same]
+  exact ⟨stage,bill,acts⟩
+
+open M8.Machine in
+/-- The routed scatter runs on exactly the flat owner bank consumed by the
+phase programs. Reindexing its proof across the volume equality costs no steps. -/
+theorem invocationScatter_stage [Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
+    (engine : CopyTranspose := CopyTranspose.original) :
+    ∃ C : ℕ, ∀ w B K, 0 < w → 0 < B → 0 < K →
+      let W := B*prime^(64*(w*64))*K
+      let V := (prime^w)^16*W
+      let hs := fun i => FlatCoordinateSchedule.bits (RecursiveDimensionBank.values (copyChild w W) i)
+      let view := fun (data : Fin 142081 → Fin V → ZMod 2) k i => data k (Fin.cast (copyLabel_volume w B K) i)
+      ∃ stage : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V)),
+        stage.cost ≤ C*V + 2*(63*9+252*527)*M8.RevMachine.LeafCore.coreCost V (w*64) +
+          9*engine.time (copyChild w W) hs + 9 ∧
+        ∀ data, CopyScheduleEffect n r d w B K Copy.lifecycles (view data) (view (stage.transform data)) := by
+  obtain ⟨C,run⟩ := routedCopy_schedule n r d engine
+  refine ⟨C,?_⟩
+  intro w B K hw hB hK W V hs view
+  obtain ⟨stage,acts,bill⟩ := run w B K hw hB hK
+  apply flatCopyStage (copyLabel_volume w B K) _ _ stage acts
+  convert bill using 1
+  rw [copyLabel_volume]
+
+open M8.Machine in
+/-- One physical invocation sequences D+A, the nine routed COPY windows,
+and B+C. The intermediate states carry both the modular and cover-label reads. -/
+theorem invocation_stage [Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
+    (engine : CopyTranspose := CopyTranspose.original) :
+    ∃ C : ℕ, ∀ w B K, 0 < w → 0 < B → 0 < K →
+      let W := B*prime^(64*(w*64))*K
+      let V := (prime^w)^16*W
+      let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n r d,ownerTape_injective n r d⟩
+      let gates := fun done : Bool => if done then sectionB ++ sectionC else sectionD ++ sectionA
+      let current := fun done : Bool => if done then Frames.scatterFinish Frames.beforeScatter else Frames.snapshot Frames.initialRefs
+      let frame := selectedFrame w
+      let instructions := fun done => FramedCircuit.compile (fun i => frame (current done i)) ((gates done).map (Frames.framedGate frame))
+      let edges := fun done => Frames.edges (gates done) (current done)
+      let phaseCost := fun done => ((instructions done).map (scalarWork V)).sum +
+        ((edges done).map (phaseEdgeBudget owner w W)).sum + (instructions done).length
+      let hs := fun i => FlatCoordinateSchedule.bits (RecursiveDimensionBank.values (copyChild w W) i)
+      let scatterCost := C*V + 2*(63*9+252*527)*M8.RevMachine.LeafCore.coreCost V (w*64) +
+        9*engine.time (copyChild w W) hs + 9
+      let view := fun (data : Fin 142081 → Fin V → ZMod 2) k i => data k (Fin.cast (copyLabel_volume w B K) i)
+      let phase := fun done (x y : Fin 142081 → Fin V → ZMod 2) =>
+        (∀ j, phaseRead owner y j = runPhase (selectedWord w) (instructions done) (edges done) (phaseRead owner x j)) ∧
+        ∀ i, (∀ a, owner a ≠ i) → y i = x i
+      ∃ stage : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V)),
+        stage.cost ≤ phaseCost false + scatterCost + phaseCost true + 2 ∧
+        ∀ data, ∃ before after, phase false data before ∧
+          CopyScheduleEffect n r d w B K Copy.lifecycles (view before) (view after) ∧
+          phase true after (stage.transform data) := by
+  obtain ⟨C,copy⟩ := invocationScatter_stage n r d engine
+  refine ⟨C,?_⟩
+  intro w B K hw hB hK W V owner gates current frame instructions edges phaseCost hs scatterCost view phase
+  have hW : 0 < W := Nat.mul_pos (Nat.mul_pos hB (pow_pos Shared50ModularControl.prime_prime.pos _)) hK
+  obtain ⟨left,leftCost,leftRead,leftOff⟩ := invocationPhase_stage owner hw hW false
+  obtain ⟨right,rightCost,rightRead,rightOff⟩ := invocationPhase_stage owner hw hW true
+  obtain ⟨middle,midCost,midRead⟩ := copy w B K hw hB hK
+  refine ⟨SharedBankStage.compose (SharedBankStage.compose left middle) right,?_,?_⟩
+  · change left.cost+middle.cost+1+right.cost+1 ≤ _
+    change left.cost ≤ phaseCost false at leftCost
+    change right.cost ≤ phaseCost true at rightCost
+    change middle.cost ≤ scatterCost at midCost
+    omega
+  · intro data
+    exact ⟨_,_,⟨leftRead data,leftOff data⟩,midRead _,rightRead _,rightOff _⟩
+
 end IntegerMultBounds.MathlibTM2.M6.BitNode
