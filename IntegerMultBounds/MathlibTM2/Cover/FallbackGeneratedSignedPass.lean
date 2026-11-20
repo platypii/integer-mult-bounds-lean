@@ -875,31 +875,6 @@ private theorem payload_eq_of_reads {volume : ℕ} (before packed : Fin volume �
   apply Fin.ext
   simpa [payloadWord,i.isLt,RadixToBinary.binaryEncoding] using congrArg Fin.val cell
 
-omit [M8.Machine.Net] in
-private theorem returnedPayload_reads {volume : ℕ} (out : Fin volume → Fin 4)
-    (source : ℤ → Fin 4) (p : ℤ) (left old tail : List (Fin (prime+4))) (len : old.length = volume)
-    (outside : ∀ k, k < p ∨ p+volume ≤ k →
-      RadixToBinary.binaryEncoding.encode (source k) =
-        readAt blank left (old ++ tail) (k-p)) (k : ℤ) :
-    RadixToBinary.binaryEncoding.encode (putWord source p (List.ofFn out) k) =
-      readAt blank left (payloadWord out ++ tail) (k-p) := by
-  by_cases before : k < p
-  · rw [putWord_outside _ _ _ _ (.inl before),outside k (.inl before)]
-    simp only [readAt,ite_eq_right (show ¬ 0 ≤ k-p by omega)]
-  · let i := (k-p).toNat
-    have offset : k-p = (i : ℤ) := by dsimp [i]; omega
-    by_cases inside : i < volume
-    · have atCell := BinaryDivide.putWord_getElem source p (List.ofFn out) i (by simpa using inside)
-      rw [show p+(i : ℤ) = k by omega] at atCell
-      rw [atCell,offset,readAt_nonneg,List.getElem?_append_left (by simpa [payloadWord] using inside)]
-      simp [payloadWord,inside]
-    · have after : p+volume ≤ k := by omega
-      rw [putWord_outside _ _ _ _ (.inr (by simpa using after)),outside k (.inr after),offset]
-      simp only [readAt_nonneg]
-      rw [List.getElem?_append_right (by simpa [len] using Nat.le_of_not_gt inside),
-        List.getElem?_append_right (by simpa [payloadWord] using Nat.le_of_not_gt inside)]
-      simp [payloadWord,len]
-
 def SignedPassBound (regs : Fin 6 ↪ Fin T) (anchor : Fin (size d+T) ↪ Fin K)
     (ports : Fin (N+2) ↪ Fin K) (ext : Fin 6 ↪ Fin K) (v : Descriptor) (B : ℕ)
     (a : ScanData r d w W) (payload : ℕ → Record.Array d 1 (w+1) W)
