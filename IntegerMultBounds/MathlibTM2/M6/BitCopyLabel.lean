@@ -119,6 +119,28 @@ private theorem phaseFrame_append {k t u : ℕ} {bank : Tapes 24 prime → Tapes
     SharedBankFrames.strip_append_left,(frame h x).1,(frame h x).2]
   exact ⟨rfl,rfl⟩
 
+private theorem headerOwner_frame {k : ℕ} : PhaseFrame (fun h (v : Tapes k prime) => h.append v) := by
+  refine ⟨⟨Fin.natAdd 24,fun i j eq => Fin.ext (by simpa using congrArg Fin.val eq)⟩,?_⟩
+  intro h v
+  change SharedBank.payload (h.append v) (Fin.natAdd 24) = v ∧ SharedBank.strip (h.append v) (Fin.natAdd 24) = SharedBank.strip (h.append (SharedBank.empty k prime)) (Fin.natAdd 24)
+  constructor
+  · apply congrArg₂ Tapes.mk <;> funext i <;> simp [SharedBank.payload,Tapes.append]
+  · apply congrArg₂ Tapes.mk <;> funext i <;> induction i using Fin.addCases with
+    | left j => simp [SharedBank.strip,Tapes.append]
+    | right j => simp [SharedBank.strip,Tapes.append]
+
+open M8.Machine in
+theorem intervalPrepared_frame [Net] {k : ℕ} :
+    ∃ slots : Fin k ↪ Fin _, ∀ (h : Tapes 24 prime) (v : Tapes k prime),
+      SharedBank.payload (ArbitraryWidthOriginalRun.input (h.append v)) slots = v ∧
+      SharedBank.strip (ArbitraryWidthOriginalRun.input (h.append v)) slots =
+        SharedBank.strip (ArbitraryWidthOriginalRun.input (h.append (SharedBank.empty k prime))) slots := by
+  change PhaseFrame _
+  unfold ArbitraryWidthOriginalRun.input ArbitraryWidthHighPreparedRun.input
+    ArbitraryWidthHighCommonPrepare.input ArbitraryWidthHighBranchPrepare.input ArbitraryWidthHighExecutionInitialize.input
+  repeat apply phaseFrame_append
+  exact headerOwner_frame
+
 open M8.Machine in
 theorem phasePrepared_frame [Net] {k w W : ℕ} (A B : List (FlatCoordinateSchedule.Op 16)) :
     let bank := fun (x : Fin ((prime^w)^16*W) → ZMod 2) (h : Tapes 24 prime) (v : Tapes k prime) =>
@@ -138,14 +160,7 @@ theorem phasePrepared_frame [Net] {k w W : ℕ} (A B : List (FlatCoordinateSched
   unfold bank ArbitraryWidthOriginalRun.input ArbitraryWidthHighPreparedRun.input
     ArbitraryWidthHighCommonPrepare.input ArbitraryWidthHighBranchPrepare.input ArbitraryWidthHighExecutionInitialize.input
   repeat apply phaseFrame_append
-  refine ⟨⟨Fin.natAdd 24,fun i j eq => Fin.ext (by simpa using congrArg Fin.val eq)⟩,?_⟩
-  intro h v
-  change SharedBank.payload (h.append v) (Fin.natAdd 24) = v ∧ SharedBank.strip (h.append v) (Fin.natAdd 24) = SharedBank.strip (h.append (SharedBank.empty k prime)) (Fin.natAdd 24)
-  constructor
-  · apply congrArg₂ Tapes.mk <;> funext i <;> simp [SharedBank.payload,Tapes.append]
-  · apply congrArg₂ Tapes.mk <;> funext i <;> induction i using Fin.addCases with
-    | left j => simp [SharedBank.strip,Tapes.append]
-    | right j => simp [SharedBank.strip,Tapes.append]
+  exact headerOwner_frame
 
 /-- Flat bit streams on permanent owner tapes, with heads at the first cell. -/
 noncomputable def phaseOwners {k N : ℕ} (data : Fin k → Fin N → ZMod 2) : Tapes k prime :=
@@ -406,7 +421,7 @@ private theorem copyPrivate [Net] {t w W : ℕ} (A D : List (FlatCoordinateSched
   repeat apply agreeAppend
   exact agreeOwners x y
 
-private theorem routePrivate {t : ℕ} (block : M8.RevMachine.Graph.Block (t+24) prime)
+theorem routePrivate {t : ℕ} (block : M8.RevMachine.Graph.Block (t+24) prime)
     (leading : M8.RevMachine.Blocks.Leading block) (x y : Tapes t prime) (v : Descriptor)
     (d : Fin 22 → Option (List Bool)) :
     let slots := fun i => block.slots (Fin.castAdd 24 i)
