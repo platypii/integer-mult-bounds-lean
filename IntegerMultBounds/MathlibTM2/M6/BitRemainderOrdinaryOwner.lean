@@ -330,6 +330,40 @@ def ordinaryOwnerBank {T k : ℕ} (metadata : ℕ → List (Fin (prime+4))) (own
   L := Fin.addCases (fun _ => []) owners.L
   R := Fin.addCases (Fin.addCases (fun i : Fin T => metadata i.val) (fun _ : Fin 5 => [])) owners.R
 
+/-- Entry bank of the complete round trip, with the scanner prefix before the
+live chart and a blank suffix for the inverse chart. -/
+def ordinaryParentEntry {T k : ℕ} (back : ℕ) (metadata : ℕ → List (Fin (prime+4)))
+    (chart : Stacks k prime) : Stacks (((T+5)+k)+back) prime :=
+  let S := ordinaryOwnerBank (T := T) metadata chart
+  ⟨chart.inp,chart.out,Fin.addCases S.L (fun _ => []),Fin.addCases S.R (fun _ => [])⟩
+
+/-- Only the scanner prefix and reverse workspace need prescribed stacks.
+The middle bank is read from the current physical state. -/
+theorem ordinaryParentEntry_recover {T k back : ℕ} (metadata : ℕ → List (Fin (prime+4)))
+    (S : Stacks (((T+5)+k)+back) prime)
+    (prefixReady : ∀ j : Fin (T+5), let h := (j.castAdd k).castAdd back
+      S.L h = [] ∧ S.R h = Fin.addCases (fun i : Fin T => metadata i.val) (fun _ : Fin 5 => []) j)
+    (suffixReady : ∀ j : Fin back, let h := j.natAdd ((T+5)+k)
+      S.L h = [] ∧ S.R h = []) :
+    let chart := (Fin.natAddEmb (T+5) (m := k)).trans (Fin.castAddEmb back)
+    ordinaryParentEntry (T := T) back metadata (embStk chart S) = S := by
+  intro chart
+  apply Stacks.ext
+  · rfl
+  · rfl
+  all_goals
+    funext j
+    induction j using Fin.addCases with
+    | left j =>
+      induction j using Fin.addCases with
+      | left j =>
+        simp only [ordinaryParentEntry,ordinaryOwnerBank,Fin.addCases_left]
+        first | exact (prefixReady j).1.symm | exact (prefixReady j).2.symm
+      | right j => simp [ordinaryParentEntry,ordinaryOwnerBank,chart,embStk,Function.comp_def]
+    | right j =>
+      simp only [ordinaryParentEntry,Fin.addCases_right]
+      first | exact (suffixReady j).1.symm | exact (suffixReady j).2.symm
+
 /-- Projecting the placed scanner shares exactly the chart's two payload stacks. -/
 theorem ordinaryOwnerBank_project {T k : ℕ} (metadata : ℕ → List (Fin (prime+4)))
     (owners : Stacks k prime) (src : Fin k) :
@@ -943,12 +977,15 @@ def OrdinaryParentRoundTrip [M8.Machine.Net] {common work w rows B : ℕ} {U : T
       let enter : Pr Unit (((66+(K+1))+5)+stage.tapes) cap prime U := embProg chartBank (Empty.elim : Empty → Unit) (foreign (liftQ stage.program ((le_max_left ..).trans (le_max_left ..))))
       let prior := enter.seq (statePlacedNormalized share fitsState columnCapacity_pos id program)
       let leave : Pr Unit ((((66+(K+1))+5)+stage.tapes)+back.tapes) cap prime U := embProg ret (Empty.elim : Empty → Unit) (foreign (liftQ back.program (le_max_right ..)))
-      ∀ (words : Fin k → Fin (data.records*N) → ZMod 2) (S : Stacks stage.tapes prime)
+      ∀ (words : Fin k → Fin (data.records*N) → ZMod 2) (raw : Stacks ((((66+(K+1))+5)+stage.tapes)+back.tapes) prime)
         (u : HS ((((66+(K+1))+5)+stage.tapes)+back.tapes) cap prime U),
+      let S := embStk (chartBank.trans base) raw
       RepT (phaseOwners words) (embStk stage.slots S).L (embStk stage.slots S).R →
       ChartPrivateReady stage S →
-      let start := ordinaryOwnerBank (T := 66+(K+1)) metadata S
-      let raw : Stacks _ prime := ⟨start.inp,start.out,Fin.addCases start.L (fun _ => []),Fin.addCases start.R (fun _ => [])⟩
+      (∀ j : Fin ((66+(K+1))+5), let h := base (j.castAdd stage.tapes)
+        raw.L h = [] ∧ raw.R h = Fin.addCases (fun i : Fin (66+(K+1)) => metadata i.val) (fun _ : Fin 5 => []) j) →
+      (∀ j : Fin back.tapes, let h := j.natAdd (((66+(K+1))+5)+stage.tapes)
+        raw.L h = [] ∧ raw.R h = []) →
       ∃ z F, ∃ t : ℕ, ∃ (final : Fin k → Fin (data.records*N) → ZMod 2), (t : ℝ) ≤ (packedChartRate src c hc false layout.width +
           packedChartRate src c hc true layout.width + (366+16*64*64+19*64+344) +
           scanRate*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau + 64*(8*64+21+28+(prime.size : ℝ)))*volume prime directory + 13 ∧
@@ -1036,7 +1073,8 @@ theorem OrdinaryParentRun.chartRoundTrip [M8.Machine.Net] {common work w rows B 
   obtain ⟨stage,forwardMachine,forwardCost,forwardRun⟩ := forward.choose_spec.choose_spec layout w rows B positive digits split shape
   obtain ⟨back,reverseMachine,reverseCost,reverseRun⟩ := reverse.choose_spec.choose_spec layout w rows B positive digits split shape
   refine ⟨stage,back,forwardMachine,reverseMachine,?_⟩
-  intro share chartBank owners ret base cap fitsState installed enter prior leave words S start ownerReads forwardReady initial raw
+  intro share chartBank owners ret base cap fitsState installed enter prior leave words raw start S ownerReads forwardReady prefixReady suffixReady
+  let initial := ordinaryOwnerBank (T := 66+(K+1)) metadata S
   have input := chartOwner_input stage words S S forwardReady ownerReads (fun _ _ => ⟨rfl,rfl⟩)
   have chartFits : stage.states ≤ cap := (le_max_left ..).trans (le_max_left ..)
   let word := stage.transform words src
@@ -1077,6 +1115,9 @@ theorem OrdinaryParentRun.chartRoundTrip [M8.Machine.Net] {common work w rows B 
   have chartInput := chartOwner_input stage updated (embStk chartBank F) (embStk chartBank F) privateReady represented (fun _ _ => ⟨rfl,rfl⟩)
   obtain ⟨y,D,n,price,exec,returnUser,backReady,done,kept⟩ := ownerRun_returnChart forwardMachine reverseMachine
     (le_max_right ..) chartBank installed prior updated initial F start z t run chartInput
+  have recover := ordinaryParentEntry_recover metadata raw prefixReady suffixReady
+  change Exec _ _ (mk start (ordinaryParentEntry (T := 66+(K+1)) back.tapes metadata S)) _ _ at exec
+  rw [recover] at exec
   refine ⟨y,D,t+n,back.transform updated,?_,exec,returnUser.trans priorUser,
     chartPrivateReady_of_input stage _ _ done,backReady,?_,?_,?_,?_⟩
   · have widthBound : (w+1)*64 ≤ layout.width := by omega

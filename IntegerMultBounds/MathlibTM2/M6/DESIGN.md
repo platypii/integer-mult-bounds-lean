@@ -716,8 +716,12 @@ and a separate entry condition for each occurrence's private tapes. Each pass
 is used once. The sum of the individual budgets plus one final step bounds the
 execution. `idlePassBank_exec` installs the local procedure tables on common
 owner slots and disjoint private tapes, preserving the next pass's preloaded
-metadata. Instantiation still needs the initial private-bank contents and a
-common state capacity for the concrete scheduled parents.
+metadata. One normalization step per pass suffices at the maximum local state
+capacity. `idlePassStacks_view` recovers each local entry from one copy of the
+shared owners and its own private stacks. The scheduled parent's entry contract
+reads the current chart in place, requiring its scanner prefix and inverse
+workspace to be prepared. Constructing those metadata stacks from the caller's
+input and charging that preparation remain open.
 
 The semantic five-class node (S5d.3) certifies upstream's accounting under ideal routes and
 partial swaps. Its exponent `1 - 10/5769` holds under that idealization only.
