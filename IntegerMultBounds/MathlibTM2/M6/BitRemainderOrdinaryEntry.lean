@@ -31,7 +31,7 @@ theorem ordinaryEntry_exec {K m w W H J Q : ℕ} {P U : Type} (room : 58 ≤ K)
     (ready : DirectoryReady v proj w W H J weights prefixes tail schedules initial pending)
     (left : S.L = initial.L)
     (frame : ∀ i, i ≠ ordinaryCaller room 47 → i ≠ ordinaryCaller room 49 →
-      i ≠ ordinaryCaller room 50 → S.R i = initial.R i)
+      i ≠ ordinaryCaller room 50 → i ≠ ordinaryCaller room 51 → i ≠ ordinaryCaller room 54 → S.R i = initial.R i)
     (word : Fin ((prime^(w+1))^(m+m)*W) → ZMod 2) :
     let M := prime^(w+1)
     letI : NeZero M := ⟨(pow_pos prime_prime.pos _).ne'⟩
@@ -49,10 +49,10 @@ theorem ordinaryEntry_exec {K m w W H J Q : ℕ} {P U : Type} (room : 58 ≤ K)
       D = {S with R := Function.update S.R (full 33) (binSyms H M)} := by
   intro M full bank coeffs ports parentWords payload
   obtain ⟨_,_,privateBlank,_,_,base,one,width,_,_,_,parentStored,_⟩ := ready
-  have same (i : Fin 58) (off : i ∉ ([47,49,50] : List (Fin 58))) : S.R (full i) = initial.R (full i) := by
+  have same (i : Fin 58) (off : i ∉ ([47,49,50,51,54] : List (Fin 58))) : S.R (full i) = initial.R (full i) := by
     simp only [List.mem_cons,List.not_mem_nil,or_false,not_or] at off
-    exact frame _ (full.injective.ne off.1) (full.injective.ne off.2.1) (full.injective.ne off.2.2)
-  have privatePort (i : Fin 58) (hi : 58 ≤ (entrySlot i).val) (off : i ∉ ([47,49,50] : List (Fin 58))) :
+    exact frame _ (full.injective.ne off.1) (full.injective.ne off.2.1) (full.injective.ne off.2.2.1) (full.injective.ne off.2.2.2.1) (full.injective.ne off.2.2.2.2)
+  have privatePort (i : Fin 58) (hi : 58 ≤ (entrySlot i).val) (off : i ∉ ([47,49,50,51,54] : List (Fin 58))) :
       S.L (full i) = [] ∧ S.R (full i) = [] := by rw [left,same i off]; exact privateBlank _ hi
   have baseSlot : S.R (full 2) = binSyms H M := (same 2 (by decide)).trans base
   obtain ⟨z,user,run⟩ := bcopy_exec (body := body)
@@ -62,7 +62,7 @@ theorem ordinaryEntry_exec {K m w W H J Q : ℕ} {P U : Type} (room : 58 ≤ K)
   let D := {S with R := Function.update S.R (full 33) (binSyms H M)}
   have keep (i : Fin 58) (hi : i ≠ 33) : D.R (full i) = S.R (full i) :=
     Function.update_of_ne (full.injective.ne hi) ..
-  have free (i : Fin 58) (hi : 58 ≤ (entrySlot i).val) (off : i ≠ 33) (archive : i ∉ ([47,49,50] : List (Fin 58))) :
+  have free (i : Fin 58) (hi : 58 ≤ (entrySlot i).val) (off : i ≠ 33) (archive : i ∉ ([47,49,50,51,54] : List (Fin 58))) :
       D.L (full i) = [] ∧ D.R (full i) = [] := ⟨(privatePort i hi archive).1,(keep _ off).trans (privatePort i hi archive).2⟩
   refine ⟨z,D,user,run,?_,rfl⟩
   constructor
@@ -73,7 +73,7 @@ theorem ordinaryEntry_exec {K m w W H J Q : ℕ} {P U : Type} (room : 58 ≤ K)
   · intro j hj
     let i := (coeff true j).castLE (by decide : 53 ≤ 58)
     have bounds := (by decide : ∀ j : Fin 17, j ≤ 1 ∨ 3 ≤ j ∧ j ≤ 11 →
-      58 ≤ (entrySlot ((coeff true j).castLE (by decide))).val ∧ (coeff true j).val ≠ 33 ∧ (coeff true j).castLE (by decide) ∉ ([47,49,50] : List (Fin 58))) j hj
+      58 ≤ (entrySlot ((coeff true j).castLE (by decide))).val ∧ (coeff true j).val ≠ 33 ∧ (coeff true j).castLE (by decide) ∉ ([47,49,50,51,54] : List (Fin 58))) j hj
     exact (free i bounds.1 (fun eq => bounds.2.1 (congrArg Fin.val eq)) bounds.2.2).2
   · exact (keep 2 (by decide)).trans ((same 2 (by decide)).trans base)
   · exact (keep 28 (by decide)).trans ((same 28 (by decide)).trans one)
@@ -81,7 +81,7 @@ theorem ordinaryEntry_exec {K m w W H J Q : ℕ} {P U : Type} (room : 58 ≤ K)
   · intro j hj
     let i := (entry j).castLE (by decide : 54 ≤ 58)
     have bounds := (by decide : ∀ j ∈ headShearWork,
-      58 ≤ (entrySlot ((entry j).castLE (by decide))).val ∧ (entry j).val ≠ 33 ∧ (entry j).castLE (by decide) ∉ ([47,49,50] : List (Fin 58))) j hj
+      58 ≤ (entrySlot ((entry j).castLE (by decide))).val ∧ (entry j).val ≠ 33 ∧ (entry j).castLE (by decide) ∉ ([47,49,50,51,54] : List (Fin 58))) j hj
     exact free i bounds.1 (fun eq => bounds.2.1 (congrArg Fin.val eq)) bounds.2.2
   · intro k
     simpa only [sub_zero,show ports 24 = full 24 from rfl,keep 24 (by decide)] using payload k
@@ -351,5 +351,224 @@ theorem ordinaryReciprocals_exec {T Q m w H : ℕ} {P U : Type}
       (fun j => full.injective.ne (apart j)) weight (List.finRange m) unit prime_prime H hm v S []
       (weights.trans (List.append_nil _).symm) modulus one clock
       (fun j hj => free _ (scratch j hj).1 (scratch j hj).2)
+
+theorem ordinarySetup_exec {K m w W H J Q : ℕ} {P U : Type} (room : 58 ≤ K)
+    (body : P → Pr P (66+K) Q prime U) (v : RecursiveInterchangeLayout.Descriptor)
+    (proj : Matrix (Fin m) (Fin m) ℚ) (weights : Fin m → ZMod (prime^(w+1)))
+    (prefixes : ℕ → List (Fin (prime+4))) (tail : List (Fin (prime+4)))
+    (schedules : List ℕ → List (Fin (prime+4))) (pending : List ℕ)
+    (u : HS (66+K) Q prime U) (initial S : Stacks (66+K) prime)
+    (ready : DirectoryReady v proj w W H J weights prefixes tail schedules initial pending)
+    (left : S.L = initial.L)
+    (frame : ∀ i, i ≠ ordinaryCaller room 47 → i ≠ ordinaryCaller room 49 →
+      i ≠ ordinaryCaller room 50 → S.R i = initial.R i)
+    (unit : ∀ i, IsUnit (weights i)) (hm : prime^(w+1) < 2^H)
+    (word : Fin ((prime^(w+1))^(m+m)*W) → ZMod 2) :
+    let M := prime^(w+1)
+    letI : NeZero M := ⟨(pow_pos prime_prime.pos _).ne'⟩
+    let full := ordinaryCaller room
+    let bank := adapterBank.trans (parent.trans (parentWithWeights.trans full))
+    let coeffs := (coeff true).trans (head.trans bank)
+    let ports := entry.trans bank
+    let parentWords := (List.ofFn fun i => binSyms (A := prime) H (weights i).val).flatten
+    (∀ z, RadixToBinary.binaryEncoding.encode (putWord (fun _ => blank) 0
+      (List.ofFn (SparseRoleCircuit.encode ∘ word)) z) = readAt blank (S.L (full 24)) (S.R (full 24)) z) →
+    let invWords := (List.ofFn fun i => binSyms (A := prime) H (Ring.inverse (weights i)).val).flatten
+    let C := 48*H*H+152*H+66
+    let cost := fun i : Fin m => (8*(i.val*H)+14*H+22) +
+      (6*w+6+(14*H+16+(prime-2)*C+C+w*(12*H+15+prime*C))) + (2*H+2) + (4*H+4)
+    let load := packReciprocals prime (ordinaryReciprocalPorts.trans full) (full 54) (List.finRange m)
+    let childBank := child.trans (head.trans bank)
+    ∃ z D t, z.user = u.user ∧ t ≤ ((List.finRange m).map cost).sum+1+(4*H+4)+(6*H+6) ∧
+      Exec body (load.seq ((Node.umul (m*m) (full 2) (full 51) (full 0)).seq
+        (bcopy (full 2) (full 33) (full 0) (full 1)))) (mk u S) t (mk z D) ∧
+      HeadColumnReady (d := m+m) (W := W) coeffs ports H J [] parentWords [] SparseRoleCircuit.encode
+        (fun _ => blank) (fun _ => blank) 0 0 word D ∧
+      D.R (bank 27) = [] ∧
+      D.R (childBank 15) = binSyms H (1 : ZMod M).val ∧ (D.R (childBank 16)).length = w ∧
+      (∀ j : Fin 20, (j ≤ 14 ∧ j ≠ 4) ∨ j = 17 → D.R (childBank j) = []) ∧
+      (∀ i ∈ [full 55,full 56,full 57], D.R i = []) ∧
+      (∀ i, 66+58 ≤ i.val → D.L i = [] ∧ D.R i = []) ∧
+      D = {S with R := Function.update (Function.update (Function.update S.R (full 54) invWords)
+        (full 51) (List.replicate (m*m*H) Node.tick)) (full 33) (binSyms H M)} := by
+  intro M full bank coeffs ports parentWords payload invWords C cost load childBank
+  obtain ⟨_,_,privateBlank,_,_,base,_,_,_,one,clock,stored,_⟩ := (show DirectoryReady _ _ _ _ _ _ _ _ _ _ _ _ from ready)
+  have keep (i : Fin 58) (h : i ∉ ([47,49,50] : List (Fin 58))) : S.R (full i) = initial.R (full i) := by
+    simp only [List.mem_cons,List.not_mem_nil,or_false,not_or] at h
+    exact frame _ (full.injective.ne h.1) (full.injective.ne h.2.1) (full.injective.ne h.2.2)
+  have free (i : Fin 58) (hi : 58 ≤ (entrySlot i).val) (h : i ∉ ([47,49,50] : List (Fin 58))) :
+      S.R (full i) = [] := (keep i h).trans (privateBlank _ hi).2
+  have scratch := (by decide : ∀ j : Fin 58, j ≤ 17 → j ≠ 2 →
+    58 ≤ (entrySlot j).val ∧ j ∉ ([47,49,50] : List (Fin 58)))
+  obtain ⟨y,n,hy,hn,rinv⟩ := ordinaryReciprocals_exec body full weights unit hm u S
+    ((keep 48 (by decide)).trans stored) ((keep 2 (by decide)).trans base) ((keep 44 (by decide)).trans one)
+    ((congrArg List.length (keep 45 (by decide))).trans clock) (fun j hj h => free j (scratch j hj h).1 (scratch j hj h).2)
+  rw [free 54 (by decide) (by decide),List.append_nil] at rinv
+  let B := {S with R := Function.update S.R (full 54) invWords}
+  have same (i : Fin 58) (hi : i ≠ 54) : B.R (full i) = S.R (full i) := Function.update_of_ne (full.injective.ne hi) ..
+  obtain ⟨x,hx,len⟩ := ordinaryArchiveLength_exec (m := m) body full y B
+    ((congrArg List.length ((same 2 (by decide)).trans ((keep 2 (by decide)).trans base))).trans (length_binSyms ..))
+    ((same 51 (by decide)).trans (free 51 (by decide) (by decide))) ((same 0 (by decide)).trans (free 0 (by decide) (by decide)))
+  let E := {B with R := Function.update B.R (full 51) (List.replicate (m*m*H) Node.tick)}
+  have unchanged (i) (h : i ≠ full 51) (k : i ≠ full 54) : E.R i = S.R i :=
+    (Function.update_of_ne h ..).trans (Function.update_of_ne k ..)
+  obtain ⟨z,D,hz,entryRun,headReady,result⟩ := ordinaryEntry_exec room body v proj weights prefixes tail schedules pending
+    x initial E ready left (fun i a b c h k => (unchanged i h k).trans (frame i a b c)) word
+    (by intro k; change _ = readAt blank (S.L (full 24)) (E.R (full 24)) k; rw [unchanged _ (full.injective.ne (by decide)) (full.injective.ne (by decide))]; exact payload k)
+  have fixed (i : Fin 58) (off : i ∉ ([33,51,54] : List (Fin 58))) : D.R (full i) = S.R (full i) := by
+    simp only [List.mem_cons,List.not_mem_nil,or_false,not_or] at off
+    rw [result]
+    exact (Function.update_of_ne (full.injective.ne off.1) ..).trans
+      (unchanged _ (full.injective.ne off.2.1) (full.injective.ne off.2.2))
+  have blankPort (i : Fin 58) (hi : 58 ≤ (entrySlot i).val)
+      (old : i ∉ ([47,49,50] : List (Fin 58))) (newPort : i ∉ ([33,51,54] : List (Fin 58))) :
+      D.R (full i) = [] := (fixed i newPort).trans (free i hi old)
+  refine ⟨z,D,_,hz.trans (hx.trans hy),by dsimp [cost,C] at *; omega,
+    Exec.seq rinv (Exec.seq len entryRun),headReady,blankPort 27 (by decide) (by decide) (by decide),
+    (fixed 44 (by decide)).trans ((keep 44 (by decide)).trans one),
+    (congrArg List.length ((fixed 45 (by decide)).trans (keep 45 (by decide)))).trans clock,?_,?_,?_,result⟩
+  · intro j hj
+    let i : Fin 58 := (child j).castLE (by decide)
+    have bounds := (by decide : ∀ j : Fin 20, (j ≤ 14 ∧ j ≠ 4) ∨ j = 17 →
+      let i : Fin 58 := (child j).castLE (by decide)
+      58 ≤ (entrySlot i).val ∧ i ∉ ([47,49,50] : List (Fin 58)) ∧ i ∉ ([33,51,54] : List (Fin 58))) j hj
+    exact blankPort i bounds.1 bounds.2.1 bounds.2.2
+  · intro i hi
+    simp only [List.mem_cons,List.not_mem_nil,or_false] at hi
+    rcases hi with rfl | rfl | rfl <;> exact blankPort _ (by decide) (by decide) (by decide)
+  · intro i hi
+    have apart (j : Fin 58) : i ≠ full j := by
+      intro eq
+      have bound := (entrySlot j).isLt
+      change i.val ≥ 66+58 at hi
+      rw [eq] at hi
+      change 66+58 ≤ (entrySlot j).val at hi
+      omega
+    have blank := privateBlank i (by omega)
+    rw [result]
+    exact ⟨(congrFun left i).trans blank.1,(Function.update_of_ne (apart 33) ..).trans
+      ((unchanged i (apart 51) (apart 54)).trans ((frame i (apart 47) (apart 49) (apart 50)).trans blank.2))⟩
+
+theorem ordinaryGeneratedSetup_exec {m w W H J Q common work : ℕ} {P U : Type}
+    (v : RecursiveInterchangeLayout.Descriptor) (proj : Matrix (Fin m) (Fin m) ℚ)
+    (weights : Fin m → ZMod (prime^(w+1))) (prefixes : ℕ → List (Fin (prime+4)))
+    (tail : List (Fin (prime+4))) (schedules : List ℕ → List (Fin (prime+4)))
+    (hm : prime^(w+1) < 2^H) (poolFits : (RingFormula.conjugationDepth m+1)*13 ≤ work)
+    (unit : ∀ i, IsUnit (weights i))
+    (room : 58 ≤ common+24+31+work)
+    (body : P → Pr P (66+(common+24+31+work)) Q prime U) (u : HS (66+(common+24+31+work)) Q prime U) (S : Stacks (66+(common+24+31+work)) prime) (j : ℕ) (js : List ℕ)
+    (ready : DirectoryReady v proj w W H J weights prefixes tail schedules S (j::js))
+    (live : LabelStock.live m (w+1) 1 j = true) :
+    letI : NeZero (prime^(w+1)) := ⟨(pow_pos prime_prime.pos _).ne'⟩
+    let K := common+24+31+work
+    let src := directoryRecordMatrixSlot common work
+    let full := ordinaryCaller room
+    let r := proj.rank
+    let slots := stageBank (pivotSlots.trans full) r
+    let tmp := (59 : Fin 66).castAdd K
+    let program : Pr P (66+K) Q prime U :=
+      ((directoryRecordWriter m common poolFits).seq (if src = slots 15 then .act .done
+        else moveRightOrdered src tmp (slots 15))).seq (goodWeights prime r proj.rank_le_height slots : Pr P (66+K) Q prime U)
+      let g := physicalLabel m (w+1) j
+      let M := IntegerMultBounds.Swap.Modular.reduce (prime^(w+1)) proj
+      let G := g*M*g⁻¹
+      fallbackBit proj.rank_le_height M g = false →
+      ∀ word : Fin ((prime^(w+1))^(m+m)*W) → ZMod 2,
+    (∀ z, RadixToBinary.binaryEncoding.encode (putWord (fun _ => blank) 0
+      (List.ofFn (SparseRoleCircuit.encode ∘ word)) z) = readAt blank (S.L (full 24)) (S.R (full 24)) z) →
+      ∃ minor : ∀ (k : ℕ) (hk : k < r), IsUnit (GoodForm.lead (k+1) (lt_of_lt_of_le hk proj.rank_le_height) G).det,
+      let words := fun k => if hk : k ≤ r then matrixWords prime H (GoodForm.stageAt G r proj.rank_le_height minor k hk).M else []
+      let stage := GoodForm.stageAt G r proj.rank_le_height minor r le_rfl
+    let bank := adapterBank.trans (parent.trans (parentWithWeights.trans full))
+    let coeffs := (coeff true).trans (head.trans bank)
+    let ports := entry.trans bank
+    let parentWords := (List.ofFn fun i => binSyms (A := prime) H (weights i).val).flatten
+    let invWords := (List.ofFn fun i => binSyms (A := prime) H (Ring.inverse (weights i)).val).flatten
+    let C : ℕ := 48*H*H+152*H+66
+    let cost := fun i : Fin m => (8*(i.val*H)+14*H+22) +
+      (6*w+6+(14*H+16+(prime-2)*C+C+w*(12*H+15+prime*C))) + (2*H+2) + (4*H+4)
+    let load : Pr P (66+K) Q prime U := packReciprocals prime (ordinaryReciprocalPorts.trans full) (full 54) (List.finRange m)
+    let childBank := child.trans (head.trans bank)
+    ∃ (z : HS (66+K) Q prime U) (D : Stacks (66+K) prime) (t : ℕ), z.user = u.user ∧ t ≤ ((RingFormula.conjugationDepth m+1)*(6*H+6)+1 +
+          ((4*H+4)+(recordConjugationTime m w H (prefixes j).length+(2*H+2))+((RingFormula.conjugationDepth m+1)*(2*H+2)+1)) +
+          (4*(m*m*H)+4) + (r*(4*w+4+columnTime m prime w H)+1+(r*(8*(m*m*H)+14*H+22)+1))) + (((List.finRange m).map cost).sum+1+(4*H+4)+(6*H+6)) ∧
+      Exec body (program.seq (load.seq ((Node.umul (m*m) (full 2) (full 51) (full 0)).seq
+        (bcopy (full 2) (full 33) (full 0) (full 1))))) (mk u S) t (mk z D) ∧
+      HeadColumnReady (d := m+m) (W := W) coeffs ports H J [] parentWords [] SparseRoleCircuit.encode
+        (fun _ => blank) (fun _ => blank) 0 0 word D ∧
+      D.R (bank 27) = [] ∧
+      D.R (childBank 15) = binSyms H (1 : ZMod (prime^(w+1))).val ∧ (D.R (childBank 16)).length = w ∧
+      (∀ j : Fin 20, (j ≤ 14 ∧ j ≠ 4) ∨ j = 17 → D.R (childBank j) = []) ∧
+      (∀ i ∈ [full 55,full 56,full 57], D.R i = []) ∧
+      (∀ i, 66+58 ≤ i.val → D.L i = [] ∧ D.R i = []) ∧
+      D.R (full 54) = invWords ∧ (D.R (full 51)).length = m*m*H ∧
+      D.R (full 47) = (List.ofFn fun i : Fin r => binSyms H (stage.M (i.castLE proj.rank_le_height) (i.castLE proj.rank_le_height)).val).flatten ∧
+      (D.R (full 49),D.R (full 50)) = matrixArchive words (words 0) [] r := by
+  intro K src full r slots tmp program g M G clear word payload
+  obtain ⟨minor,generated⟩ :=
+    ordinaryGeneratedArchive_exec v proj weights prefixes tail schedules hm poolFits room body u S j js ready live clear
+  refine ⟨minor,?_⟩
+  intro words stage bank coeffs ports parentWords invWords C cost load childBank
+  obtain ⟨y,B,n,hy,archive,hn,pivots,pair,left,frame⟩ := generated
+  have payloadB : B.R (full 24) = S.R (full 24) := frame _ (full.injective.ne (by decide))
+    (full.injective.ne (by decide)) (full.injective.ne (by decide))
+  obtain ⟨z,D,t,hz,ht,setup,headReady,empty,one,clock,free,temps,extra,result⟩ :=
+    ordinarySetup_exec room body v proj weights prefixes tail schedules (j::js) y S B ready left frame unit hm word
+      (by intro k; change _ = readAt blank (B.L (full 24)) (B.R (full 24)) k; rw [left,payloadB]; exact payload k)
+  refine ⟨z,D,_,hz.trans hy,Nat.add_le_add hn ht,Exec.seq archive setup,headReady,empty,one,clock,free,temps,extra,?_,?_,?_,?_⟩
+  all_goals rw [result]
+  all_goals simp only [full,Function.update_apply,(ordinaryCaller room).injective.eq_iff,invWords] <;> norm_num <;> assumption
+
+open GoodForm FlatCoordinateLayout LabelTraversal Matrix M8.Exchange M8.ReversedExchange
+open IntegerMultBounds.Swap.Shear
+
+/-- Run the stopped adapter on the archive emitted by ordinary record preparation.
+The shared middle header describes a single block, so it needs no extra tape. -/
+theorem ordinaryPreparedRun_exec [M8.Machine.Net] {n T Q d w W H J rank : ℕ} {U : Type}
+    (cap : 217 ≤ Q) (hr : rank ≤ d+1) (caller : Fin 58 ↪ Fin n)
+    (body : Unit → Pr Unit (n+T) Q prime U) (C : ℝ) (overhead budget : ℕ)
+    (G : Matrix (Fin (d+1)) (Fin (d+1)) (ZMod (prime^(w+1))))
+    (minor : ∀ k (hk : k < rank), IsUnit (lead (k+1) (lt_of_lt_of_le hk hr) G).det)
+    (weights : Fin (d+1) → ZMod (prime^(w+1))) (enough : 124 ≤ n)
+    (width : H = Nat.size (prime^(w+1))) (digits : J = Nat.size W)
+    (run : Record.StoppedRecordRun (g := d+1-rank) (digits := 0) (W := W) (H := H) (J := J)
+      cap hr caller caller body C overhead budget ⟨1,1,1,d+1,1,W⟩ G minor weights
+      (fun i => Ring.inverse (weights i)) [] [] [] [] [] (fun _ => blank) 0) :
+    let m := d+1
+    let M := prime^(w+1)
+    letI : NeZero M := ⟨(pow_pos prime_prime.pos _).ne'⟩
+    let full := caller.trans (Fin.castAddEmb T)
+    let bank := adapterBank.trans (parent.trans (parentWithWeights.trans full))
+    let host := head.trans bank
+    let c := child.trans host
+    let parentWords := (List.ofFn fun i => binSyms (A := prime) H (weights i).val).flatten
+    let ready := HeadColumnReady (d := m+m) (W := W) ((coeff true).trans host) (entry.trans bank)
+      H J [] parentWords [] SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0
+    let words := fun k => if hk : k ≤ rank then matrixWords prime H (stageAt G rank hr minor k hk).M else []
+    let stage := stageAt G rank hr minor rank le_rfl
+    ∀ v S word, ready word S → S.R (bank 27) = [] →
+      S.R (c 15) = binSyms H (1 : ZMod M).val → (S.R (c 16)).length = w →
+      (∀ j : Fin 20, (j ≤ 14 ∧ j ≠ 4) ∨ j = 17 → S.R (c j) = []) →
+      (∀ i ∈ [full 55,full 56,full 57], S.R i = []) →
+      (∀ i, 124 ≤ i.val → S.L i = [] ∧ S.R i = []) →
+      S.R (full 54) = (List.ofFn fun i => binSyms H (Ring.inverse (weights i)).val).flatten →
+      (S.R (full 51)).length = m*m*H →
+      S.R (full 47) = (List.ofFn fun i : Fin rank => binSyms H (stage.M (i.castLE hr) (i.castLE hr)).val).flatten →
+      (S.R (full 49),S.R (full 50)) = matrixArchive words (words 0) [] rank →
+      ∃ z F t out, z.user = v.user ∧ t ≤ budget + overhead*(M^(m+m)*W) ∧
+        Exec body (hostedGoodRecordAt cap full full () prime rank (m-rank) hr) (mk v S) t (mk z F) ∧
+        ready out F ∧ F.R (bank 27) = [] ∧
+        (∀ j, (∀ i, (shear.trans host) i ≠ j) → (∀ i, (shear.trans (ordinaryHead.trans bank)) i ≠ j) →
+          F.L j = S.L j ∧ F.R j = S.R j) ∧
+        ∀ x j, let y := transform (diagonal weights) 1 (revExchangeOf (rev m) G
+                (transform (diagonal fun i => Ring.inverse (weights i)) 1 x))
+               out (index (Fin.append y.1 y.2) j) = word (index (Fin.append x.1 x.2) j) := by
+  intro m M full bank host c parentWords ready words stage v S word headReady empty one clock free temps extra inverses length pivots pair
+  obtain ⟨z,F,t,out,user,_,price,exec,restored,blankPort,frame,correct⟩ := run v S word
+    (by simpa only [List.append_nil] using headReady) empty (by rw [List.append_nil]; exact inverses)
+    (by rw [List.append_nil]; exact pair) length (by rw [List.append_nil]; exact pivots)
+    one clock free temps (Or.inl ⟨rfl,by simp⟩) (fun i hi => extra i (enough.trans hi))
+  exact ⟨z,F,t,out,user,(price width digits).1,exec,by simpa only [List.append_nil] using restored,
+    blankPort,frame,correct⟩
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
