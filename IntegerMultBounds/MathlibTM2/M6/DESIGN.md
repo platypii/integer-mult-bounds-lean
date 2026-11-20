@@ -684,11 +684,14 @@ layout and precision for fixed machine parameters. `scheduledOrdinaryParent_exec
 instantiates the full round trip for every scheduled remainder interval,
 using the installed scanner's child budget. Its local procedure body, extra
 tape count and child rate are fixed before the precision, layout and parent
-weights. The enclosing scanner program is now explicit. For fixed interval, root mode
-and installed body, its selector depends only on the 64 parent weights reduced modulo the
-machine prime. Inverting these residues supplies the inverse weights in the table. The same instructions serve every
-precision and directory layout with those residues. The recursive caller still
-needs to dispatch to that selector from its physical weight data. The parent reads
+weights. For fixed interval, root mode and installed body, the enclosing scanner
+program is independent of the parent weights, precision and layout.
+`dispatchParentWeights` reads the 64 packed weights on tape 55 using the
+width on tape 2. It reduces each binary word modulo the machine prime and
+branches on the residue by bisection, restoring every stack before the next
+read. At the root it selects the all-ones branch directly. For word width
+`H`, dispatch takes at most `64*((8*64+21)*H+28+prime.size)` steps, charged
+within the parent volume bound. The parent reads
 the live owner bank at entry. Both charts take their private initial stacks
 from metadata independent of the owner words. On return the caller's user
 state is preserved and both stacks of every ordinary private tape at index

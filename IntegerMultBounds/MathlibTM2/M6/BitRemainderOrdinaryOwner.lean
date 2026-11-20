@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.M6.BitParentWeights
 public import IntegerMultBounds.MathlibTM2.M6.BitRemainderOrdinaryScan
 public import IntegerMultBounds.MathlibTM2.StackBankStock
 
@@ -676,6 +677,52 @@ noncomputable def packedChartRate [M8.Machine.Net] {k : ℕ} (src : Fin k)
   (chart.choose + 63*|LeafCore.C| *(width : ℝ)^M8.Machine.BudgetBound.tau) *
     ((chart.choose_spec.choose : ℝ)+5)
 
+def parentWeightPorts : Fin 7 ↪ Fin 72 := ⟨![0,2,55,1,3,4,5],by decide⟩
+
+noncomputable def dispatchParentWeights {T Q : ℕ} {P U : Type} (root : Bool) (bank : Fin 72 ↪ Fin T)
+    (branch : (Fin 64 → ZMod prime) → Pr P T Q prime U) : Pr P T Q prime U :=
+  if root then branch 1 else withParentResidues (parentWeightPorts.trans bank) branch (List.finRange 64) 0
+
+private theorem dispatchParentWeights_exec {T Q w : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
+    (root : Bool) (bank : Fin 72 ↪ Fin T) (branch : (Fin 64 → ZMod prime) → Pr P T Q prime U)
+    (parent : Fin 64 → ZMod (prime^(w+1))) (units : root = true → ∀ i, parent i = 1)
+    (W beforeRows rows beforeH width : ℕ) (prefixes : List (Fin (prime+4))) (u : HS T Q prime U) (S : Stacks T prime)
+    (ready : ∀ i, S.R (bank i) = ordinaryEntryWords W beforeRows rows beforeH root parent width prefixes i.val) :
+    let H := (prime^(w+1)).size
+    ∃ v : HS T Q prime U, ∃ n ≤ 64*((8*64+21)*H+28+prime.size), v.user = u.user ∧ ∀ F t,
+      Exec body (branch (LabelRing.res prime (w+1) (by omega) ∘ parent)) (mk v S) t F →
+      Exec body (dispatchParentWeights root bank branch) (mk u S) (n+t) F := by
+  intro H
+  cases root with
+  | true =>
+    have eq : LabelRing.res prime (w+1) (by omega) ∘ parent = 1 := by
+      funext i
+      simp [units rfl i]
+    exact ⟨u,0,Nat.zero_le _,rfl,fun F t run => by simpa [dispatchParentWeights,eq] using run⟩
+  | false =>
+    let r := parentWeightPorts.trans bank
+    have frame (j : Fin 7) : S.R (r j) = ordinaryEntryWords W beforeRows rows beforeH false parent width prefixes
+        (parentWeightPorts j).val := ready _
+    obtain ⟨v,keep,run⟩ := withParentResidues_exec body r parent branch S []
+      (by simpa [ordinaryEntryWords,parentWeightPorts] using frame 2)
+      (by simp [frame,ordinaryEntryWords,parentWeightPorts,H])
+      (by intro j h₁ h₂; fin_cases j <;> simp_all [frame,ordinaryEntryWords,parentWeightPorts])
+      (List.finRange 64) 0 (by simp) u
+    let fee := fun i : Fin 64 => 8*(i.val*H)+21*H+28+prime.size
+    have bound (xs : List (Fin 64)) : (xs.map fee).sum ≤ xs.length*((8*64+21)*H+28+prime.size) := by
+      induction xs with
+      | nil => simp
+      | cons i xs ih =>
+        rw [List.map_cons,List.sum_cons,List.length_cons,Nat.succ_mul xs.length]
+        rw [Nat.add_comm (xs.length*_)]
+        apply Nat.add_le_add _ ih
+        have le := Nat.mul_le_mul_left 8 (Nat.mul_le_mul_right H i.isLt.le)
+        unfold fee
+        rw [Nat.add_mul,Nat.mul_assoc]
+        omega
+    refine ⟨v,((List.finRange 64).map fee).sum,?_,keep,run⟩
+    simpa only [List.length_finRange] using bound (List.finRange 64)
+
 def OrdinaryParentRoundTrip [M8.Machine.Net] {common work w rows B : ℕ} {U : Type}
     (interval : ℕ × ℕ) (layout : Descriptor)
     (root : Bool)
@@ -713,10 +760,9 @@ def OrdinaryParentRoundTrip [M8.Machine.Net] {common work w rows B : ℕ} {U : T
     let p := max (mnProgPush (directoryQueueInitProgram (m := 64) (d := 127) (P := Unit) (Q := columnCapacity) (U := U) room fits)) (mnProgPush (body ()))
     let scanRate := (ordinaryOwnerScanTime_rate U proj.rank privateTapes.length push scratch.length rarePush p overhead proj.rank_le_height C).choose
     let metadata := ordinaryEntryWords W layout.beforeRows rows layout.beforeH root parent width ((List.range parents).flatMap prefixes)
-    let residue := LabelRing.res prime (w+1) (by omega)
-    let selectors := ordinarySelectorProgram localBody proj (residue ∘ parent) pairRoom
     let bank := (Fin.castLEEmb (show 72 ≤ 66+(K+1) by omega)).trans (Fin.castAddEmb 5)
-    let program := ordinaryParentProgram room fits root interval bank step (readWithSuccessorClock (ports 1) (advanceDirectory 64 ports)) selectors
+    let branch := fun weights => ordinaryParentProgram room fits root interval bank step (readWithSuccessorClock (ports 1) (advanceDirectory 64 ports)) (ordinarySelectorProgram localBody proj weights pairRoom)
+    let program := dispatchParentWeights root bank branch
     ∀ {k : ℕ} (src : Fin k) (c : Certificates.PR589.Nine.PortCertificate) (hc : c.Checked),
     ∃ stage back : SharedBankStage.Stage _ k prime (phaseOwners (N := data.records*N)),
       let share := payloadPlacement (reg 0) (stage.slots src)
@@ -738,7 +784,7 @@ def OrdinaryParentRoundTrip [M8.Machine.Net] {common work w rows B : ℕ} {U : T
       let raw : Stacks _ prime := ⟨start.inp,start.out,Fin.addCases start.L seed.L,Fin.addCases start.R seed.R⟩
       ∃ z F, ∃ t : ℕ, ∃ (final : Fin k → Fin (data.records*N) → ZMod 2), (t : ℝ) ≤ (packedChartRate src c hc false layout.width +
           packedChartRate src c hc true layout.width + (366+16*64*64+19*64+344) +
-          scanRate*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau)*(data.records*N : ℕ) + 13 ∧
+          scanRate*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau + 64*(8*64+21+28+(prime.size : ℝ)))*(data.records*N : ℕ) + 13 ∧
         Exec (fun f => embProg base id (installed f)) ((embProg base id prior).seq leave) (mk u raw) t (mk z F) ∧
         z.user = u.user ∧
         RepT (phaseOwners final) (fun i => F.L (base (owners i))) (fun i => F.R (base (owners i))) ∧
@@ -806,7 +852,20 @@ theorem OrdinaryParentRun.chartRoundTrip [M8.Machine.Net] {common work w rows B 
     rw [Nat.cast_add]
     apply add_le_add _ scan
     exact_mod_cast setup
-  intro residue selectors bank program
+  let dispatch := 64*((8*64+21)*M.size+28+prime.size)
+  have sizeFits : M.size ≤ data.records*N := by
+    apply (Nat.size_le.mpr Nat.lt_two_pow_self).trans
+    have radix : M ≤ M^128 := by simpa using Nat.pow_le_pow_right (show 0 < M from pow_pos IntegerMultBounds.Networks.Shared50ModularControl.prime_prime.pos _) (by decide : 1 ≤ 128)
+    exact radix.trans ((Nat.le_mul_of_pos_right _ spectators).trans (Nat.le_mul_of_pos_left _ live))
+  have occupied : 0 < data.records*N := Nat.mul_pos live (Nat.mul_pos (pow_pos (pow_pos IntegerMultBounds.Networks.Shared50ModularControl.prime_prime.pos _) _) spectators)
+  have dispatchBound : (dispatch : ℝ) ≤ 64*(8*64+21+28+(prime.size : ℝ))*(data.records*N : ℕ) := by
+    have fee := Nat.mul_le_mul_left (8*64+21) sizeFits
+    have base := Nat.le_mul_of_pos_right (28+prime.size) occupied
+    have total := Nat.mul_le_mul_left 64 (Nat.add_le_add fee base)
+    dsimp only [dispatch]
+    exact_mod_cast (by convert total using 1 <;> ring :
+      64*((8*64+21)*M.size+28+prime.size) ≤ 64*(8*64+21+28+prime.size)*(data.records*N))
+  intro bank branch program
   intro k src c hc
   let forward := packedRemainderChart_stage src c hc false
   let reverse := packedRemainderChart_stage src c hc true
@@ -822,23 +881,25 @@ theorem OrdinaryParentRun.chartRoundTrip [M8.Machine.Net] {common work w rows B 
       (∀ j : Fin data.records, LabelStock.live 64 (w+1) 1 j = false →
         ownerRow (R := data.records) (N := N) rfl output j = ownerRow rfl word j) ∧
       ∀ i : Fin (66+K), 58 ≤ i.val → D.L ((placement i).castAdd 5) = [] ∧ D.R ((placement i).castAdd 5) = []
-  obtain ⟨z,F,t,output,ok,paid,run,priorUser,reads⟩ := chartOwner_scan stage src metadata words columnCapacity_pos outer program clean post cap chartFits fitsState (embDn base start) S input (by
+  obtain ⟨z,F,t,output,ok,paid,run,priorUser,reads⟩ := chartOwner_scan stage src metadata words columnCapacity_pos outer program (dispatch+clean) post cap chartFits fitsState (embDn base start) S input (by
     intro u owners chartReads
     have reads (j : ℤ) := (chartReads src j).symm
     simp only [embStk,Function.comp_apply,phaseOwners,sub_zero] at reads
     let raw := embStk share (ordinaryOwnerBank metadata owners)
     have entry := ordinaryOwnerBank_input (T := 66+(K+1)) (by omega) layout rows parents W width root parent units prefixes widths widthFits owners (stage.slots src) word reads
-    obtain ⟨z,F,t,output,scanUser,scan,price,rowAction,action,_,_,_,_,_,_,_,_,cleared⟩ := run u raw word prefixes [] entry
+    have cells := (ordinaryOwnerBank_private (T := 66+(K+1)) metadata owners (stage.slots src)).1
+    have left (i : Fin (66+(K+1))) : raw.L (i.castAdd 5) = [] := (cells i).1
+    have right (i : Fin 72) : raw.R (bank i) = metadata i.val := (cells (i.castLE (by omega))).2
+    have setup (i : Fin 72) : raw.L (bank i) = [] := left (i.castLE (by omega))
+    obtain ⟨v,n,dispatchTime,keep,choose⟩ := dispatchParentWeights_exec outer root bank branch parent units W layout.beforeRows rows layout.beforeH width
+      ((List.range parents).flatMap prefixes) u raw right
+    obtain ⟨z,F,t,output,scanUser,scan,price,rowAction,action,_,_,_,_,_,_,_,_,cleared⟩ := run v raw word prefixes [] entry
     have inactive (j : Fin data.records) (dead : LabelStock.live 64 (w+1) 1 j = false) :
         ownerRow (R := data.records) (N := N) rfl output j = ownerRow rfl word j := by
       have eq := rowAction j
       simp only [dead,Bool.false_eq_true,if_false] at eq
       exact eq.symm
-    refine ⟨z,F,t,output,?_,⟨action,inactive,cleared⟩,scanUser,scan⟩
-    have cells := (ordinaryOwnerBank_private (T := 66+(K+1)) metadata owners (stage.slots src)).1
-    have left (i : Fin (66+(K+1))) : raw.L (i.castAdd 5) = [] := (cells i).1
-    have right (i : Fin 72) : raw.R (bank i) = metadata i.val := (cells (i.castLE (by omega))).2
-    have setup (i : Fin 72) : raw.L (bank i) = [] := left (i.castLE (by omega))
+    refine ⟨z,F,n+t,output,Nat.add_le_add dispatchTime ?_,⟨action,inactive,cleared⟩,scanUser.trans keep,⟨choose _ _ scan.run,scan.reads⟩⟩
     have bound := price.1
     change t ≤ clean + (((([0,4,9,10,11,12] : List (Fin 15)).map (remainderDirectoryPorts.trans bank) ++ [bank 71]).map
       (fun i => 4*(raw.L i).length)).sum + 2*0 +
@@ -854,7 +915,7 @@ theorem OrdinaryParentRun.chartRoundTrip [M8.Machine.Net] {common work w rows B 
   refine ⟨y,D,t+n,back.transform updated,?_,exec,returnUser.trans priorUser,done,?_,?_,?_⟩
   · have widthBound : (w+1)*64 ≤ layout.width := by omega
     have combined := Nat.add_le_add paid price
-    have times : ((t+n : ℕ) : ℝ) ≤ (stage.cost*(stage.tapes+5) : ℕ) + 6 + (1+(clean : ℝ)) +
+    have times : ((t+n : ℕ) : ℝ) ≤ (stage.cost*(stage.tapes+5) : ℕ) + 6 + (1+((dispatch : ℝ)+clean)) +
         ((back.cost*(back.tapes+5) : ℕ) + 6) := by exact_mod_cast combined
     have enterBound := forwardCost layout.width widthBound
     have leaveBound := reverseCost layout.width widthBound
@@ -862,7 +923,7 @@ theorem OrdinaryParentRun.chartRoundTrip [M8.Machine.Net] {common work w rows B 
     change _ ≤ (((reverse.choose : ℝ)+_)*(data.records*N : ℕ))*_ at leaveBound
     unfold packedChartRate
     dsimp only
-    linarith only [times,enterBound,leaveBound,cleanTime]
+    linarith only [times,enterBound,leaveBound,cleanTime,dispatchBound]
   · intro i hi
     let j := (placement i).castAdd 5
     have separate : share j = j.castAdd stage.tapes := by
