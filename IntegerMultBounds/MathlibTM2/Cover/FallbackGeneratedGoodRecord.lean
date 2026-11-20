@@ -81,6 +81,37 @@ theorem readWithSuccessorClock_writes {T Q A : ℕ} {P U : Type} (body : P → P
     funext i; by_cases h : i = clock <;> simp [h,apart]
   simpa [restore,E,D,Node.dropTop,Action.run,update_rt,Function.update_comm apart,apart,apart.symm] using pop
 
+private theorem emptyCommonTape {T : ℕ} (hs : Fin 6 → List Bool) (c : Fin 24 → Option ℕ)
+    (k : Fin (CommonBank.count T)) (ha : ∀ i, CommonBank.auxSlot i ≠ k)
+    (hh : ∀ i, CommonBank.headerSlot i ≠ k) (x : ℤ) :
+    (CommonBank.bank (SharedBank.empty T prime) hs (fun _ => blank) 0
+      (SharedBank.empty 1 prime) (SharedBank.empty 1 prime) c (SharedBank.empty 2 prime)).tape k x = blank := by
+  simp only [CommonBank.bank, Shared50RecursiveBank.bank, RecursiveCallBank.bank,
+    RecursiveShiftRoleBank.common, SharedBank.empty, RecursiveCallBank.work]
+  revert ha hh
+  induction k using Fin.addCases with
+  | left k => intro _ _; simp [Tapes.append]
+  | right k =>
+    induction k using Fin.addCases with
+    | left k =>
+      change Fin (1+6) at k
+      induction k using Fin.addCases with
+      | left k => intro _ _; simp [Tapes.append]
+      | right k => intro _ hh; exact absurd rfl (hh k)
+    | right k =>
+      induction k using Fin.addCases with
+      | right k => intro _ _; simp [Tapes.append]
+      | left k =>
+        induction k using Fin.addCases with
+        | left k => intro _ _; fin_cases k <;> simp [Tapes.append]
+        | right k =>
+          induction k using Fin.addCases with
+          | left k => intro _ _; simp [Tapes.append]
+          | right k =>
+            induction k using Fin.addCases with
+            | left k => intro _ _; simp [Tapes.append]
+            | right k => intro ha _; exact absurd rfl (ha k)
+
 /-- Advance across one physical record of the supplier directory, using the
 same reciprocal clock as the matrix reader. All remaining entries stay in order. -/
 theorem advanceGoodRecord_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
@@ -121,9 +152,7 @@ theorem generatedGoodRecordRoundTrip_exec [M8.Machine.Net] {T m work Q fields H 
     (label : ℕ) (live : LabelStock.live m (w+1) 1 label = true)
     (rankFits : proj.rank ≤ m) (parent parentInv : Fin m → ZMod (prime^(w+1)))
     (reciprocal : ∀ i, parent i * parentInv i = 1)
-    (io : Fin T) (roles : Tapes T prime)
-    (f : ℤ → Fin (prime+4)) (p : ℤ) (node scalar : Tapes 1 prime)
-    (arity : ℕ) (st : Tapes 2 prime) (freeNode : Family.NodeFree node)
+    (io : Fin T) (arity : ℕ)
     (hm : prime^(w+1) < 2^H) (hw : W < 2^J) (hW : 0 < W)
     (length : volume prime v = (prime^(w+1))^fields*((prime^(w+1))^fields*W))
     (capacity : 217 ≤ Q) (source : ℤ → Fin 4) (head : ℤ)
@@ -139,7 +168,6 @@ theorem generatedGoodRecordRoundTrip_exec [M8.Machine.Net] {T m work Q fields H 
     let bank := (Fin.castLEEmb (by decide : 23 ≤ 24)).trans record
     let g := physicalLabel m (w+1) label
     let G := g*reduce M proj*g⁻¹
-    let commonTape := fun k : Fin common => (((k.castAdd 24).castAdd 31).castAdd work)
     let commonPorts := ((Fin.castAddEmb (n := common) 24).trans (Fin.castAddEmb 31)).trans (Fin.castAddEmb work)
     let aux := (⟨CommonBank.auxSlot,by
       intro i j eq
@@ -153,7 +181,6 @@ theorem generatedGoodRecordRoundTrip_exec [M8.Machine.Net] {T m work Q fields H 
       have h := congrArg Fin.val eq
       simp only [CommonBank.headerSlot_val] at h
       omega⟩ : Fin 6 ↪ Fin common).trans commonPorts
-    let initialBank := CommonBank.bank roles (Routines.hdr v) f p node scalar (Family.leafC (w+1) arity d d) st
     let logical := {v with width := d}
     let addr := fun a row pre mid post (x : IntegerMultBounds.Swap.Shear.State (Fin d) (ZMod M)) =>
       index M logical a row pre (FlatCoordinateLayout.rank x.1).val mid (FlatCoordinateLayout.rank x.2).val post
@@ -170,7 +197,7 @@ theorem generatedGoodRecordRoundTrip_exec [M8.Machine.Net] {T m work Q fields H 
       let scan := (scanCaller.trans (Fin.castAddEmb 8)).trans caller
       let ancestor := prefixes label
       let tail := labels.flatMap (LabelDirectory.entry prefixes m (w+1)) ++ archiveTail
-      (∀ i : Fin 6, i < 4 → scanCaller i ≠ 24) → whole.R (scan 3) = [] →
+      (∀ i : Fin 6, i < 4 → scanCaller i ≠ 24) →
       let joined := recordLoaderBank record
       let dirSlots := goodRecordDirectoryPorts headers
       let dir := dirSlots.trans joined
@@ -198,30 +225,24 @@ theorem generatedGoodRecordRoundTrip_exec [M8.Machine.Net] {T m work Q fields H 
         (.seq (packedConjugate pool inputs ports false true) (.seq (bclear (pivot 0)) (bclear (pivot 14))))) (bclear packedLabel)))
       let withZero := (Node.umulSym 1 (bitSymbol false) (dir 8) zeros (dir 4)).seq (generate.seq (bclear zeros))
       let field := fun i => caller ((headers i).castAdd 8)
-      whole.R (field 1) = (label :: labels).flatMap (LabelDirectory.entry prefixes m (w+1)) ++ archiveTail →
-      (whole.R (field 3)).length = ancestor.length →
-      (∀ j : Fin ((host+31)+work), common ≤ j.val → whole.L (inner j) = [] ∧ whole.R (inner j) = []) →
-      (∃ suffix, whole.R (field 4) = matrixWords prime H (reduce M proj) ++ suffix) →
       let slot := (((LeafCore.roleSlot io).castAdd 24).castAdd 31).castAdd work
       let r := recordRoundTripPorts slot
-      let S := embStk inner whole
-      whole.R (caller 2) = binSyms H M → whole.R (caller 28) = binSyms 1 1 →
-      whole.R (caller 53) = binSyms J W →
-      (∀ i : Fin 66, 58 ≤ i.val → whole.L (caller i) = [] ∧ whole.R (caller i) = []) →
-      (∀ z, readAt blank (whole.L (r 1)) (whole.R (r 1)) z = blank) →
       (∀ z, readAt blank (whole.L (r 0)) (whole.R (r 0)) (z-head) =
         RadixToBinary.binaryEncoding.encode (putWord source head ((List.ofFn word).map SparseRoleCircuit.encode) z)) →
       let src := fun i : Fin 6 => caller ((i.natAdd 33).castLE (by decide : 39 ≤ 66))
       let dst := hdrPorts.trans inner
       (∀ i, src i ≠ scan 2) →
-      (∀ i, whole.R (src i) = (Routines.hdr v i).map bitSymbol) →
-      (∀ i, whole.L (dst i) = [] ∧ whole.R (dst i) = []) →
-      (∀ k, (∀ i, CommonBank.auxSlot i ≠ k) → (∀ i, CommonBank.headerSlot i ≠ k) → ∀ x, initialBank.tape k x =
-        readAt blank (S.L (commonTape k)) (S.R (commonTape k)) (x-initialBank.head k)) →
-      (∀ i, S.L (aux i) = [] ∧ S.R (aux i) = []) →
-      fallbackBit rankFits (reduce M proj) g = false →
-      whole.R (caller 44) = binSyms H (1 : ZMod M).val → (whole.R (caller 45)).length = w →
-      whole.R (caller 55) = (List.ofFn fun i => binSyms H (parent i).val).flatten →
+      headers 4 ≠ 24 → (∀ j ∈ ([28,53,55] : List (Fin 58)), j ≠ scanCaller 2) →
+      let ready := fun (D : Stacks K prime) (pending : List ℕ) =>
+        D.R (field 1) = pending.flatMap (LabelDirectory.entry prefixes m (w+1)) ++ archiveTail ∧
+        (∀ j ∈ pending, (D.R (field 3)).length = (prefixes j).length) ∧
+        (∀ i : Fin K, 58 ≤ i.val → D.L i = [] ∧ D.R i = []) ∧ D.R (scan 3) = [] ∧
+        (∃ suffix, D.R (field 4) = matrixWords prime H (reduce M proj) ++ suffix) ∧
+        D.R (caller 2) = binSyms H M ∧ D.R (caller 28) = binSyms 1 1 ∧ D.R (caller 53) = binSyms J W ∧
+        (∀ i, D.R (src i) = (Routines.hdr v i).map bitSymbol) ∧
+        D.R (caller 44) = binSyms H (1 : ZMod M).val ∧ (D.R (caller 45)).length = w ∧
+        D.R (caller 55) = (List.ofFn fun i => binSyms H (parent i).val).flatten
+      ready whole (label :: labels) → fallbackBit rankFits (reduce M proj) g = false →
       let call := fun i : Fin d => packedCoordinateProgram (F := Empty) (U := U) io i.val i.val ef xf fits eqs xqs cap
       let cost := packedCoordinatesTime d N w (LeafCore.core io).tapes
         (packedLeafPush (F := Empty) (U := U) io Empty.elim) entry.tapes leave.tapes
@@ -253,37 +274,49 @@ theorem generatedGoodRecordRoundTrip_exec [M8.Machine.Net] {T m work Q fields H 
       let recordProgram : Pr F K Q prime U := (((((initFrames pool (pivot 4) (conjugationDepth m+1)).seq (withZero.seq (clearFrames pool (conjugationDepth m+1)))).seq prepareCounters |>.seq prepareHeaders).seq ((recordCounterSetup caller fields).seq ((recordInputProgram record m).seq ((recordMatrixProgram record m).seq ((.act (pushMarkers marks) : Pr F K Q prime U).seq
           ((transfer r).seq ((embProg inner Empty.elim coordinate).seq (transfer reverse)))))))).seq (readWithSuccessorClock (scan 1) (advanceDirectory m scan)))
       let privateTapes := (List.finRange K).filter fun i => decide (58 ≤ i.val)
-      let initialClear := (privateTapes.map fun i => 4*(whole.L i).length+2*(whole.R i).length+4).sum+1
+      let initialClear := privateTapes.length*4+1
       ∀ c, (∀ f, mnProgPush (body f) ≤ c) →
       ∃ z D t ys, z.user = u.user ∧ t ≤ runCost + (initialClear + 6*(max (mnProgPush recordProgram) c * runCost)) ∧
         Exec body (recordProgram.seq (clearWorkTapes privateTapes)) (mk u whole) t (mk z D) ∧
-        (∀ i : Fin K, 58 ≤ i.val → D.L i = [] ∧ D.R i = []) ∧
+        ready D labels ∧
         effect ys ∧ (∀ k, readAt blank (D.L (r 0)) (D.R (r 0)) (k-head) =
           RadixToBinary.binaryEncoding.encode (putWord source head (ys.map SparseRoleCircuit.encode) k)) ∧
-        D.R (scan 2) = tail ∧ (∀ i, D.R (src i) = (Routines.hdr v i).map bitSymbol) ∧
         ∀ j : Fin 58, j ≠ 24 → j ≠ scanCaller 2 → let port := caller (j.castAdd 8)
           D.L port = whole.L port ∧ D.R port = whole.R port := by
-  intro d common host M N entry leave record bank g G commonTape commonPorts aux hdrPorts initialBank logical addr inner caller K ef xf eqs xqs word
-    body u whole slots poolFits prefixes labels archiveTail headers scanCaller scan ancestor tail scanOff scanBlank joined dirSlots dir pool pivot counters clockSlot widthSlot unitSlot inputs ports a digits prefixWidth zeros
-    packedLabel clock count formula formulaCost detFormula C readCost generation generate withZero field dirInput prefixInput privateBlank projectorInput slot r S base unit trailing spare sharedBlank input src dst srcOff sourceWords hdrBlank initial auxBlank good
-    one ticks archive call cost budget coordinate effect reverse transfer marks packed loading conversion
+  intro d common host M N entry leave record bank g G commonPorts aux hdrPorts logical addr inner caller K ef xf eqs xqs word
+    body u whole slots poolFits prefixes labels archiveTail headers scanCaller scan ancestor tail scanOff joined dirSlots dir pool pivot counters clockSlot widthSlot unitSlot inputs ports a digits prefixWidth zeros
+    packedLabel clock count formula formulaCost detFormula C readCost generation generate withZero field slot r input src dst srcOff projOff dirOff ready start good
+    call cost budget coordinate effect reverse transfer marks packed loading conversion
     headerCost runCost prepareCounters prepareHeaders recordProgram privateTapes initialClear c bodyBound
 
-  have workBlank (k : Fin work) := privateBlank (k.natAdd (host+31)) (by
-    change common ≤ common+24+31+k.val
-    omega)
+  obtain ⟨dirInput,widths,privateBlank,scanBlank,projectorInput,base,unit,trailing,sourceWords,one,ticks,archive⟩ := start
+  have prefixInput := widths label List.mem_cons_self
+  let commonTape := fun k : Fin common => (((k.castAdd 24).castAdd 31).castAdd work)
+  let roles := SharedBank.empty T prime
+  let node := SharedBank.empty 1 prime
+  let scalar := SharedBank.empty 1 prime
+  let st := SharedBank.empty 2 prime
+  let f := fun _ : ℤ => (blank : Fin (prime+4))
+  let p := (0 : ℤ)
+  let initialBank := CommonBank.bank roles (Routines.hdr v) f p node scalar (Family.leafC (w+1) arity d d) st
+  let S := embStk inner whole
+  have freeNode : Family.NodeFree node := fun _ _ => rfl
+  have innerBlank (j) := privateBlank (inner j) (show 58 ≤ 66+j.val by omega)
+  have spare (i : Fin 66) (hi : 58 ≤ i.val) := privateBlank (caller i) hi
+  have hdrBlank (i) := innerBlank (hdrPorts i)
+  have auxBlank (i) := innerBlank (aux i)
+  have sharedBlank (z : ℤ) : readAt blank (whole.L (r 1)) (whole.R (r 1)) z = blank := by
+    rw [show r 1 = inner slot from recordRoundTripPorts_shared slot,(innerBlank slot).1,(innerBlank slot).2,
+      readAt_nil_left,wordTape_nil]
+  have workBlank (k : Fin work) := innerBlank (k.natAdd (host+31))
   have poolBlank (j) : whole.R (pool j) = [] := (workBlank ((Fin.castLEEmb poolFits) j)).2
   have free : ∀ (k : Fin work) x,
       readAt blank (S.L (k.natAdd (host+31))) (S.R (k.natAdd (host+31))) x = blank := by
     intro k x
     change readAt _ (whole.L _) (whole.R _) _ = _
     rw [(workBlank k).1, (workBlank k).2,readAt_nil_left,wordTape_nil]
-  have empty (k : Fin 31) := privateBlank ((k.natAdd host).castAdd work) (by
-    change common ≤ common+24+k.val
-    omega)
-  have scratch (i : Fin 24) (_ : i ≠ 16) := (privateBlank (record i) (by
-    change common ≤ common+i.val
-    omega)).2
+  have empty (k : Fin 31) := innerBlank ((k.natAdd host).castAdd work)
+  have scratch (i : Fin 24) (_ : i ≠ 16) := (innerBlank (record i)).2
   let mat := fun b : Bool => if b then reduce M proj else g
   let out := inner (record 16)
   have depthFits (i j : Fin m) : (formula i j).depth ≤ conjugationDepth m :=
@@ -563,7 +596,9 @@ theorem generatedGoodRecordRoundTrip_exec [M8.Machine.Net] {T m work Q fields H 
             rw [show initialBank.head _ = _ from facts.1,show initialBank.tape _ = _ from facts.2]
             exact hdrRep i x
           · have off := other k (fun i eq => h ⟨i,eq⟩) (fun i eq => hh ⟨i,eq⟩)
-            rw [off.1,off.2,commonKeep]; exact initial k (fun i eq => h ⟨i,eq⟩) (fun i eq => hh ⟨i,eq⟩) x)
+            rw [off.1,off.2,commonKeep,show B.L _ = [] from (innerBlank (commonTape k)).1,
+              (innerBlank (commonTape k)).2,readAt_nil_left,wordTape_nil]
+            exact emptyCommonTape _ _ k (fun i eq => h ⟨i,eq⟩) (fun i eq => hh ⟨i,eq⟩) x)
     (by intro k x
         let j := k.natAdd (host+31)
         have hi : host ≤ j.val := by simp [j]; omega
@@ -609,27 +644,53 @@ theorem generatedGoodRecordRoundTrip_exec [M8.Machine.Net] {T m work Q fields H 
   have charge := recordCleanup_cost_le privateTapes distinct step (le_max_left (mnProgPush recordProgram) c)
     (fun f => (bodyBound f).trans (le_max_right _ _))
   have privateMem (i : Fin K) : i ∈ privateTapes ↔ 58 ≤ i.val := by simp [privateTapes]
+  have init : (privateTapes.map fun i => 4*(whole.L i).length+2*(whole.R i).length+4) =
+      privateTapes.map (fun _ => 4) := by
+    apply List.map_congr_left
+    intro i hi
+    simp [privateBlank i ((privateMem i).mp hi)]
+  simp only [init,List.map_const',List.sum_replicate_nat] at charge
   have callerOut (j : Fin 58) : caller (j.castAdd 8) ∉ privateTapes := by
     rw [privateMem]; exact Nat.not_le_of_lt j.isLt
   have payloadOut : r 0 ∉ privateTapes := by rw [first]; exact callerOut 24
+  have finalFrame (j : Fin 58) (ne : j ≠ 24) (nd : j ≠ scanCaller 2) :
+      let port := caller (j.castAdd 8)
+      (if port ∈ privateTapes then [] else finalBank.L port) = whole.L port ∧
+        (if port ∈ privateTapes then [] else finalBank.R port) = whole.R port := by
+    have off : caller (j.castAdd 8) ≠ scan 2 := caller.injective.ne ((Fin.castAddEmb 8).injective.ne nd)
+    simp only [ite_eq_right (callerOut j)]
+    exact ⟨(frame j ne).1.trans (callerFrame _).1,(Function.update_of_ne off _ _).trans (keptCaller j ne)⟩
+  have hdrFrame (i : Fin 6) (hp : headers i ≠ 24) (hd : i ≠ 1) :=
+    (finalFrame (headers i) hp (headers.injective.ne hd)).2
   refine ⟨finish,_,_,ys,userFinish.trans (user.trans (hz.trans (hHeaders.trans (hUser.trans hy)))),Nat.add_le_add bound
     (charge.trans (Nat.add_le_add_left (Nat.mul_le_mul_left 6 (Nat.mul_le_mul_left _ bound)) _)),
-    Exec.seq step clear,?_,act,?_,?_,?_,?_⟩
-  · intro i hi; simp [(privateMem i).mpr hi]
+    Exec.seq step clear,?_,act,?_,finalFrame⟩
+  · refine ⟨?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_⟩
+    · simp [show scan 2 ∉ privateTapes from callerOut _,finalBank,show field 1 = scan 2 from rfl,tail]
+    · intro j hj
+      exact (congrArg List.length (hdrFrame 3 (scanOff 0 (by decide)) (by decide))).trans
+        (widths j (List.mem_cons_of_mem _ hj))
+    · intro i hi; simp [(privateMem i).mpr hi]
+    · exact (finalFrame (scanCaller 3) (scanOff 3 (by decide)) (scanCaller.injective.ne (by decide))).2.trans scanBlank
+    · obtain ⟨xs,h⟩ := projectorInput
+      exact ⟨xs,(hdrFrame 4 projOff (by decide)).trans h⟩
+    · have h := hdrFrame 2 (by rw [widthSlot]; decide) (by decide)
+      rw [widthSlot] at h; exact h.trans base
+    · exact (finalFrame 28 (by decide) (dirOff 28 (by decide))).2.trans unit
+    · exact (finalFrame 53 (by decide) (dirOff 53 (by decide))).2.trans trailing
+    · intro i
+      let j : Fin 58 := (i.natAdd 33).castLE (by decide : 39 ≤ 58)
+      have ne : j ≠ 24 := by intro eq; have h := congrArg Fin.val eq; change 33+i.val = 24 at h; omega
+      exact (finalFrame j ne (fun eq => srcOff i (congrArg (fun k : Fin 58 => caller (k.castAdd 8)) eq))).2.trans (sourceWords i)
+    · have h := hdrFrame 5 (by rw [unitSlot]; decide) (by decide)
+      rw [unitSlot] at h; exact h.trans one
+    · have h := hdrFrame 0 (by rw [clockSlot]; decide) (by decide)
+      rw [clockSlot] at h; exact (congrArg List.length h).trans ticks
+    · exact (finalFrame 55 (by decide) (dirOff 55 (by decide))).2.trans archive
   · have off : r 0 ≠ scan 2 := by
       rw [first]
       exact caller.injective.ne ((Fin.castAddEmb 8).injective.ne (scanOff 2 (by decide)).symm)
     simpa only [ite_eq_right payloadOut,finalBank,Function.update_of_ne off] using read
-  · simp [show scan 2 ∉ privateTapes from callerOut _,finalBank]
-  · intro i
-    let j : Fin 58 := (i.natAdd 33).castLE (by decide : 39 ≤ 58)
-    have ne : j ≠ 24 := by intro eq; have h := congrArg Fin.val eq; change 33+i.val = 24 at h; omega
-    have outside : src i ∉ privateTapes := callerOut j
-    simp only [ite_eq_right outside,finalBank,Function.update_of_ne (srcOff i)]
-    exact (keptCaller j ne).trans (sourceWords i)
-  · intro j ne nd
-    have off : caller (j.castAdd 8) ≠ scan 2 := caller.injective.ne ((Fin.castAddEmb 8).injective.ne nd)
-    simp only [ite_eq_right (callerOut j)]
-    exact ⟨(frame j ne).1.trans (callerFrame _).1,(Function.update_of_ne off _ _).trans (keptCaller j ne)⟩
+
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
