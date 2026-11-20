@@ -32,11 +32,24 @@ structure LocalMoveProfile {R : Type*} [CommRing R] (word : ℕ × ℕ → List 
     let copy := (retainedCopyEdges.map word).map AffineFieldProgram.interchanges
     (List.range 9).map (((phase.filter (· ≠ 0)) ++ copy).count) = [0, 1323, 1342, 79, 44, 102, 11, 19, 0]
 
+/-- Compiler and modular legality conditions for one pass of the COPY machine. -/
+structure CopyBasisPass (C : Matrix (Fin 8) (Fin 8) ℚ) : Prop where
+  good : M8.Machine.Segments.Good (M8.Exchange.transformOps C C)
+  legal (w : ℕ) : ∀ op ∈ (M8.Exchange.transformOps C C).map
+    (AffineFieldProgram.mapOp (Swap.Modular.ratMod (prime^w))), AffineFieldProgram.Legal op
+
+private theorem transform_nonrecursive (C : Matrix (Fin 8) (Fin 8) ℚ) :
+    ∀ op ∈ M8.Exchange.transformOps C C, AffineFieldCoordinates.Nonrecursive op := by
+  intro op member
+  simp only [M8.Exchange.transformOps, AffineFieldProgram.compile, List.flatMap_cons, List.flatMap_nil,
+    List.append_nil, AffineFieldProgram.expand, List.mem_append, List.mem_map] at member
+  rcases member with ⟨_,_,rfl⟩ | ⟨_,_,rfl⟩ <;> trivial
+
 /-- Choose the modular program once per certified pair. Looking up the programs in
 execution order reproduces the full phase profile and the zero final-alignment bill. -/
 theorem modular_move_profile :
     ∃ raw : ℕ × ℕ → List (AffineFieldProgram.Op (Fin 8) ℚ),
-      (∀ p ∈ retainedCopyEdges, ∃ C, raw p = rationalMoveWord 0 7 C) ∧
+      (∀ p ∈ retainedCopyEdges, ∃ C, raw p = rationalMoveWord 0 7 C ∧ CopyBasisPass C.adjugate ∧ CopyBasisPass C) ∧
       (∀ p, CheckedPair p → ∀ ops ∈ AffineFieldSegments.runs (AffineFieldSegments.split (raw p)),
         M8.Machine.Segments.Good ops) ∧
     ∀ w : ℕ, let R := ZMod (prime ^ w)
@@ -58,11 +71,24 @@ theorem modular_move_profile :
     intro p member
     have checked := retainedCopy_checked.1 p member
     obtain ⟨C, eq⟩ := interval ⟨p.1,checked.1⟩ ⟨p.2,checked.2.1⟩ checked
-    refine ⟨C, ?_⟩
-    simpa only [lookup, dite_eq_left checked, (dims p member).1, (dims p member).2,
-      Nat.min_zero, Nat.max_zero] using eq
-  · intro p h
-    simpa only [lookup, dite_eq_left h] using segments ⟨p.1,h.1⟩ ⟨p.2,h.2.1⟩ h
+    let word := raw ⟨p.1,checked.1⟩ ⟨p.2,checked.2.1⟩
+    have shape : word = rationalMoveWord 0 7 C := by
+      simpa only [(dims p member).1, (dims p member).2, Nat.min_zero, Nat.max_zero] using eq
+    have pass (B) (sub : ∀ op ∈ M8.Exchange.transformOps B B, op ∈ word) : CopyBasisPass B := by
+      refine ⟨segments _ _ checked _ sub (transform_nonrecursive B), ?_⟩
+      intro w op hop
+      obtain ⟨a,ha,rfl⟩ := List.mem_map.mp hop
+      obtain ⟨_,_,_,_,edge⟩ := widths w
+      exact (edge _ _ checked).1 _ (List.mem_map_of_mem (sub a ha))
+    refine ⟨C, by simpa only [lookup,dite_eq_left checked] using shape, pass _ ?_, pass _ ?_⟩
+    all_goals intro op hop; rw [shape]; unfold rationalMoveWord AffineFieldProgram.compile
+    all_goals simp only [List.flatMap_append, List.mem_append]
+    · exact Or.inl (Or.inl hop)
+    · exact Or.inr hop
+  · intro p h ops member
+    obtain ⟨sub,atoms⟩ := AffineFieldSegments.split_run_spec _ _ member
+    apply segments ⟨p.1,h.1⟩ ⟨p.2,h.2.1⟩ h _ _ atoms
+    simpa only [lookup,dite_eq_left h] using sub
   intro w R word
   obtain ⟨P, idem, commute, _, programs⟩ := widths w
   have spec (p : ℕ × ℕ) (h : CheckedPair p) :

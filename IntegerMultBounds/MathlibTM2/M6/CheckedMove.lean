@@ -149,7 +149,8 @@ theorem checked_move_programs :
     ∃ word : Fin 636 → Fin 636 → List (AffineFieldProgram.Op (Fin 8) ℚ),
     (∀ i j : Fin 636, Geometry.Moves.CheckedPair (i.val,j.val) → MoveInterval i j (word i j)) ∧
     (∀ i j : Fin 636, Geometry.Moves.CheckedPair (i.val,j.val) →
-      ∀ ops ∈ AffineFieldSegments.runs (AffineFieldSegments.split (word i j)), M8.Machine.Segments.Good ops) ∧
+      ∀ ops, (∀ op ∈ ops, op ∈ word i j) → (∀ op ∈ ops, AffineFieldCoordinates.Nonrecursive op) →
+        M8.Machine.Segments.Good ops) ∧
     ∀ w : ℕ, let R := ZMod (prime ^ w)
     ∃ P : Fin 636 → Matrix (Fin 8) (Fin 8) R,
       (∀ l, P l * P l = P l) ∧
@@ -162,10 +163,9 @@ theorem checked_move_programs :
         ∀ s, AffineFieldProgram.run q s = exchange (P j) (exchange (P i) s) := by
   obtain ⟨word, interval, height, widths⟩ := checked_move_words
   refine ⟨word, interval, ?_, widths⟩
-  intro i j checked ops member
+  intro i j checked ops subset atoms
   obtain ⟨P, _, _, _, edge⟩ := widths 1
   obtain ⟨legal, _, _⟩ := edge i j checked
-  obtain ⟨subset, atoms⟩ := AffineFieldSegments.split_run_spec _ _ member
   have rational (op) (hop : op ∈ ops) : AffineFieldProgram.Legal op := by
     apply legal_of_prime
     have h := legal _ (List.mem_map_of_mem (f := AffineFieldProgram.mapOp _) (subset op hop))

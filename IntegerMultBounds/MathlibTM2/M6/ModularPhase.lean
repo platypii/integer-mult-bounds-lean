@@ -74,7 +74,7 @@ theorem runSelected_endpoint (w : ℕ) :
         FramedCircuit.encode (fun i => frame (Frames.snapshot finalRefs i))
           (FramedCircuit.moduleRun (program.map RawGate.toCircuit) (Copy.extendStored stored)) := by
   intro R
-  obtain ⟨frame, word, read, _, profile, scatter, _⟩ := modular_scatter w
+  obtain ⟨frame, word, read, _, profile, _, scatter, _⟩ := modular_scatter w
   refine ⟨frame, word, profile, ?_⟩
   intro stored
   have checked := phase_checked

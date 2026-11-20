@@ -394,8 +394,8 @@ open M8.Machine.Segments SharedPlacementAlphabet M8.Machine.ArbitraryWidthOrigin
 Only the designated tape changes in the prepared caller bank. -/
 theorem copyMove_runs [M8.Machine.Net] {t : ℕ} (src : Fin t) (headers : Fin 6 → Fin t)
     (distinct : ∀ i, headers i ≠ src) (C : Matrix (Fin 8) (Fin 8) ℚ)
-    (rev : Good (M8.Exchange.transformOps C.adjugate C.adjugate))
-    (fwd : Good (M8.Exchange.transformOps C C))
+    (rev : CopyBasisPass C.adjugate)
+    (fwd : CopyBasisPass C)
     (hw : 0 < w) (hW : 0 < W) (caller : Tapes t prime)
     (x : Fin ((prime^w)^16*W) → ZMod 2) (hs : Fin 6 → List Bool)
     (valid : RecursiveDimensionBank.Headers (copyChild w W) hs)
@@ -403,10 +403,8 @@ theorem copyMove_runs [M8.Machine.Net] {t : ℕ} (src : Fin t) (headers : Fin 6 
     (heads : ∀ i, caller.head (headers i) = 1) (head : caller.head src = 0)
     (payload : caller.tape src = sourceWord (fun i => x (Fin.cast (copyChild_volume w W) i))) :
     let spec := List.map (AffineFieldProgram.mapOp (IntegerMultBounds.Swap.Modular.ratMod (prime^w)))
-    (∀ op ∈ spec (M8.Exchange.transformOps C.adjugate C.adjugate), AffineFieldProgram.Legal op) →
-    (∀ op ∈ spec (M8.Exchange.transformOps C C), AffineFieldProgram.Legal op) →
-    let A := description _ rev
-    let B := description _ fwd
+    let A := description _ rev.good
+    let B := description _ fwd.good
     let n := FlatCoordinateCleanSchedule.tapeCount A
     let m := FlatCoordinateCleanSchedule.tapeCount B
     let bank := fun v : Tapes t prime => input ((v.append (basisWorkspace B x)).append (basisWorkspace A x))
@@ -424,16 +422,16 @@ theorem copyMove_runs [M8.Machine.Net] {t : ℕ} (src : Fin t) (headers : Fin 6 
       ∀ s j, y (FlatCoordinateLayout.index (AffineFieldCoordinates.embed
         (AffineFieldProgram.run (spec (rationalMoveWord 0 7 C)) s)) j) =
         x (FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) j) := by
-  intro spec legalRev legalFwd A B n m bank source enter child leave machine
+  intro spec A B n m bank source enter child leave machine
   obtain ⟨mid,first,action⟩ := copyEnterChild_runs source (fun i => Fin.castAdd m (headers i))
-    (fun i eq => distinct i (Fin.ext (congrArg (fun k : Fin (t+m) => k.val) eq))) _ rev hw hW (caller.append (basisWorkspace B x))
+    (fun i eq => distinct i (Fin.ext (congrArg (fun k : Fin (t+m) => k.val) eq))) _ rev.good hw hW (caller.append (basisWorkspace B x))
     x hs valid (by intro i; simpa [Tapes.append] using tapes i)
     (by intro i; simpa [Tapes.append] using heads i) (by simpa [source,Tapes.append] using head)
-    (by simpa [source,Tapes.append] using payload) legalRev
+    (by simpa [source,Tapes.append] using payload) (rev.legal w)
   let next := setTape caller src (sourceWord mid) 0
   let bits := fun i => mid (Fin.cast (copyChild_volume w W).symm i)
-  obtain ⟨y,last,move⟩ := copySegment_placed src _ fwd hW next bits
-    (by simp [next,setTape]) (by simp [next,setTape,bits]) legalFwd
+  obtain ⟨y,last,move⟩ := copySegment_placed src _ fwd.good hW next bits
+    (by simp [next,setTape]) (by simp [next,setTape,bits]) (fwd.legal w)
   have same : basisWorkspace B bits = basisWorkspace B x := segmentWorkspace_eq B bits x
   change HoareTime leave (fun z => z = next.append (basisWorkspace B bits))
     (fun z => z = (setTape next src _ 0).append (basisWorkspace B bits)) _ at last
@@ -493,11 +491,19 @@ theorem copyChild_bank_runs [M8.Machine.Net] {t : ℕ} (tmp : Fin t) (hw : 0 < w
 
 end
 
+/-- The physical COPY bank contains the caller, six descriptor headers,
+both basis workspaces and the private tapes of the chosen child machine. -/
+noncomputable def copyPrepared [M8.Machine.Net] {t w W : ℕ} (A B : List (FlatCoordinateSchedule.Op 16))
+    (x : Fin ((prime^w)^16*W) → ZMod 2) (v : Tapes t prime) (hs : Fin 6 → List Bool) :=
+  let hdr : Tapes 6 prime := ⟨fun _ => 1, fun i => RadixZeroFill.encodedBinary (hs i)⟩
+  M8.Machine.ArbitraryWidthOriginalRun.input (((v.append hdr).append (basisWorkspace B x)).append (basisWorkspace A x))
+
+open M8.Machine.ArbitraryWidthHighExchangeShared (sourceWord) in
+open M8.Machine.Segments M8.Machine.ArbitraryWidthOriginalRun SharedPlacementAlphabet in
 /-- Copy the retained owner into the temporary, convert its frame, fan out,
-then clear it. Only the single-register frame conversion is supplied by the
-caller. The copy and erase gates overwrite their destination on every bit. -/
-theorem copyWindow_hoare (n : Fin 9) (r : Fin 32) (d : Fin 5) (life : Copy.Lifecycle)
-    (scheduled : life ∈ Copy.lifecycles) (w : ℕ) :
+then clear it, charging both basis passes and one child transpose. -/
+theorem copyWindow_hoare [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5) (life : Copy.Lifecycle)
+    (scheduled : life ∈ Copy.lifecycles) (w : ℕ) (hw : 0 < w) :
     let src := ownerTape n r d ⟨life.source,(Copy.source_bounds life scheduled).2⟩
     let tmp := Fin.last 142080
     let regs := life.targets.attach.map fun j => (⟨j.val,((Copy.target_bounds life scheduled _ j.property).2.trans (by decide : 222 < 661))⟩ : Fin 661)
@@ -506,44 +512,71 @@ theorem copyWindow_hoare (n : Fin 9) (r : Fin 32) (d : Fin 5) (life : Copy.Lifec
     let S := Swap.Shear.State (Fin 8) R
     ∃ (frame : ℕ → FramedCircuit.Frame (ZMod 2) (S → ZMod 2))
       (word : ℕ × ℕ → List (AffineFieldProgram.Op (Fin 8) R)),
-      LocalMoveProfile word ∧ AffineFieldProgram.interchanges (word (life.sourceFrame,0)) = 7 ∧
-      ∀ {q workspace : ℕ} (convert : Program ((142081+2)+workspace) q a),
-      ∃ (states : ℕ) (program : Program ((142081+2)+workspace) states a),
-      ∀ {W : ℕ},
+      LocalMoveProfile word ∧ SelectedCopyWord w (word (life.sourceFrame,0)) ∧
+      AffineFieldProgram.interchanges (word (life.sourceFrame,0)) = 7 ∧
+      ∃ (C : Matrix (Fin 8) (Fin 8) ℚ) (rev : CopyBasisPass C.adjugate) (fwd : CopyBasisPass C),
+      let A := description _ rev.good
+      let B := description _ fwd.good
+      let prepare := fun {W} => copyPrepared (t := 142081+2) (w := w) (W := W) A B
+      ∃ (states : ℕ) (machine : Program _ states prime),
+      ∀ {W : ℕ} (hW : 0 < W),
       let N := (Shared50ModularControl.prime^w)^16 * W
       let _ : NeZero (Shared50ModularControl.prime^w) := ⟨Nat.ne_of_gt (ActualAffineScaling.modulus_pos w)⟩
       let addr : Fin N ≃ S × Fin W := copyAddress
       ∀ (data : Fin 142081 → Fin N → ZMod 2)
-      (background : Fin 142081 → ℤ → Fin (a+4)) (origins : Fin 142081 → ℤ)
-      (bs : List Bool) (cost : ℕ), Counter.value bs = N →
+      (bs : List Bool) (hs : Fin 6 → List Bool), Counter.value bs = N →
+      RecursiveDimensionBank.Headers (copyChild w W) hs →
       let frameOf := fun j => tapeFrame addr (frame j)
       let common := fun i => data src (addr.symm
         (AffineFieldProgram.run (word (life.sourceFrame,0)) (addr i).1,(addr i).2))
-      let bank := fun X => PointwiseRoleGate.bank background origins (SparseRoleCircuit.encoded X) bs
-      ∀ (before after : Tapes workspace a) (moved : Fin N → ZMod 2),
-      (∀ s j, moved (FlatCoordinateLayout.index (AffineFieldCoordinates.embed
-          (AffineFieldProgram.run (word (life.sourceFrame,0)) s)) j) =
-        data src (FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) j)) →
-      HoareTime convert (fun w => w = (bank (Function.update data tmp (data src))).append before)
-        (fun w => w = (bank (Function.update data tmp moved)).append after) cost →
+      let bank := fun X => PointwiseRoleGate.bank (a := prime) (fun _ _ => blank) (fun _ => 0) (SparseRoleCircuit.encoded X) bs
       let output := Function.update (fun j i => if j ∈ targets then data j i + common i else data j i) tmp 0
       let stored := Copy.extendStored (fun j => data (ownerTape n r d j))
-      HoareTime program (fun w => w = (bank data).append before) (fun w => w = (bank output).append after)
-        (cost + (life.targets.length+2)*(14*N+14*bs.length+34)+1) ∧
+      HoareTime machine (fun z => z = prepare (data src) (bank data) hs) (fun z => z = prepare (data src) (bank output) hs)
+        (((FlatCoordinateCleanSchedule.constant A + FlatCoordinateCleanSchedule.constant B)*N + cost (copyChild w W) hs + 2) + (life.targets.length+2)*(14*N+14*bs.length+34)+1) ∧
       (∀ j : Fin 661, output (ownerTape n r d j) = Copy.execute frameOf life stored j) ∧
       output tmp = Copy.execute frameOf life stored 661 := by
   intro src tmp regs targets R S
   obtain ⟨frame,word,profile,windows⟩ := copyAddress_word w
-  obtain ⟨seven,invol,read⟩ := windows life scheduled
+  obtain ⟨selected,seven,invol,read⟩ := windows life scheduled
   let gate : PointwiseRoleGate.Gate 142081 := ⟨src,tmp,Fin.castSucc_ne_last _⟩
-  let copy := fun (s _ : Fin (a+4)) => s
-  let erase := fun (_ _ : Fin (a+4)) => SparseRoleCircuit.encode (a := a) 0
-  obtain ⟨_,adds,addRun⟩ := copyAdds_hoare (a := a) n r d life scheduled
-  refine ⟨frame,word,profile,seven,?_⟩
-  intro q workspace convert
-  refine ⟨_,seq (seq (seq (extend (PointwiseRoleGate.program gate copy) workspace) convert) (extend adds workspace))
-    (extend (PointwiseRoleGate.program gate erase) workspace),?_⟩
-  intro W N inst addr data background origins bs cost count frameOf common bank before after moved forward converted output stored
+  let copy := fun (s _ : Fin (prime+4)) => s
+  let erase := fun (_ _ : Fin (prime+4)) => SparseRoleCircuit.encode (a := prime) 0
+  obtain ⟨_,adds,addRun⟩ := copyAdds_hoare (a := prime) n r d life scheduled
+  refine ⟨frame,word,profile,selected,seven,?_⟩
+  obtain ⟨C,rev,fwd,shape⟩ := selected
+  refine ⟨C,rev,fwd,?_⟩
+  intro A B prepare
+  let site := Fin.castAdd 6 (Fin.castAdd 2 tmp)
+  let nA := FlatCoordinateCleanSchedule.tapeCount A
+  let nB := FlatCoordinateCleanSchedule.tapeCount B
+  let liftGate {q} (g : Program (142081+2) q prime) :=
+    extendBanks (extend (extend (extend (extend (extend g 6) nB) nA) 16) 19)
+  let pre := Placement.placed (FlatCoordinateCleanSchedule.program A) (sharedPlacement (Fin.castAdd nB site) (segmentSource A))
+  let child := program (fun i : Fin 6 => Fin.castAdd nA (Fin.castAdd nB (Fin.natAdd (142081+2) i)))
+    (Fin.castAdd nA (Fin.castAdd nB site))
+  let post := Placement.placed (FlatCoordinateCleanSchedule.program B) (sharedPlacement site (segmentSource B))
+  let convert := seq (seq (extendBanks (extend (extend pre 16) 19)) child)
+    (extendBanks (extend (extend (extend post nA) 16) 19))
+  refine ⟨_,seq (seq (seq (liftGate (PointwiseRoleGate.program gate copy)) convert) (liftGate adds))
+    (liftGate (PointwiseRoleGate.program gate erase)), ?_⟩
+  intro W hW N inst addr data bs hs count valid frameOf common bank output stored
+  let background := fun (_ : Fin 142081) (_ : ℤ) => (blank : Fin (prime+4))
+  let origins := fun (_ : Fin 142081) => (0 : ℤ)
+  let headers : Tapes 6 prime := ⟨fun _ => 1, fun i => RadixZeroFill.encodedBinary (hs i)⟩
+  let copied := Function.update data tmp (data src)
+  let caller := (bank copied).append headers
+  have distinct (i : Fin 6) : Fin.natAdd (142081+2) i ≠ site := by
+    intro eq
+    have h := congrArg Fin.val eq
+    simp only [site,Fin.val_natAdd,Fin.val_castAdd] at h
+    omega
+  obtain ⟨moved,converted,forward⟩ := copyMove_runs site _ distinct C rev fwd hw hW caller (data src) hs valid
+    (by intro i; simp [caller,Tapes.append,headers])
+    (by intro i; simp [caller,Tapes.append,headers])
+    (by simp [caller,bank,site,Tapes.append,PointwiseRoleGate.bank])
+    (by rw [sourceWord_cast]; simp [caller,bank,site,Tapes.append,PointwiseRoleGate.bank,copied]; congr 2)
+  rw [← shape] at forward
   have agree : moved = common := by
     funext i
     obtain ⟨⟨s,j⟩,rfl⟩ := addr.symm.surjective i
@@ -551,13 +584,27 @@ theorem copyWindow_hoare (n : Fin 9) (r : Fin 32) (d : Fin 5) (life : Copy.Lifec
     rw [invol] at h
     simp only [common, Equiv.apply_symm_apply]
     exact h
-  rw [agree] at converted
+  have updated : setTape caller site (sourceWord (fun i => moved (Fin.cast (copyChild_volume w W) i))) 0 =
+      (bank (Function.update data tmp moved)).append headers := by
+    rw [sourceWord_cast]
+    simp only [caller,site,bank,PointwiseRoleGate.bank,setTape_append_left]
+    congr 2
+    apply congrArg₂ Tapes.mk <;> funext k <;> by_cases eq : k = tmp
+    all_goals simp [eq]
+    all_goals congr 2 <;> funext i <;> simp [SparseRoleCircuit.encoded,copied,eq]
+  rw [updated, agree] at converted
+  have liftRun {q b} {g : Program (142081+2) q prime} {v v' : Tapes (142081+2) prime}
+      (h : HoareTime g (fun z => z = v) (fun z => z = v') b) :
+      HoareTime (liftGate g) (fun z => z = prepare (data src) v hs) (fun z => z = prepare (data src) v' hs) b :=
+    extend_banks_hoare (hoare_extend_eq (hoare_extend_eq (hoare_extend_eq (hoare_extend_eq
+      (hoare_extend_eq h headers) (basisWorkspace B (data src))) (basisWorkspace A (data src)))
+      (FixedHeaderBankCopy.empty 16)) M8.Machine.ArbitraryWidthHighPrepareShared.privateInput)
   have decoded : common = frameOf 0 ((frameOf life.sourceFrame).symm (data src)) := funext (read addr (data src))
   let loaded := Function.update data tmp common
   let added := fun j i => if j ∈ targets then loaded j i + loaded tmp i else loaded j i
   have add := addRun loaded background origins bs count
   change HoareTime adds (fun w => w = bank loaded) (fun w => w = bank added) _ at add
-  have write (X : Fin 142081 → Fin N → ZMod 2) (op : Fin (a+4) → Fin (a+4) → Fin (a+4))
+  have write (X : Fin 142081 → Fin N → ZMod 2) (op : Fin (prime+4) → Fin (prime+4) → Fin (prime+4))
       (value : Fin N → ZMod 2) (action : ∀ i, op (SparseRoleCircuit.encode (X src i))
         (SparseRoleCircuit.encode (X tmp i)) = SparseRoleCircuit.encode (value i)) :
       HoareTime (PointwiseRoleGate.program gate op) (fun w => w = bank X)
@@ -572,8 +619,8 @@ theorem copyWindow_hoare (n : Fin 9) (r : Fin 32) (d : Fin 5) (life : Copy.Lifec
       · simp [PointwiseRoleGate.applyGate,gate,SparseRoleCircuit.encoded,eq]
     rw [same] at step
     exact step
-  have done := (((hoare_extend_eq (write data copy (data src) (fun _ => rfl)) before).seq converted).seq
-    (hoare_extend_eq add after)).seq (hoare_extend_eq (write added erase 0 (fun _ => rfl)) after)
+  have done := (((liftRun (write data copy (data src) (fun _ => rfl))).seq converted).seq
+    (liftRun add)).seq (liftRun (write added erase 0 (fun _ => rfl)))
   have cleaned : Function.update added tmp 0 =
       Function.update (fun j i => if j ∈ targets then data j i + common i else data j i) tmp 0 := by
     funext j i
