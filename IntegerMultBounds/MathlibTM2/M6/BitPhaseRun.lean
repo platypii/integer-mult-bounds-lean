@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.M6.BitCopyLabel
+public import IntegerMultBounds.MathlibTM2.M6.BitNodeCost
 public import IntegerMultBounds.MathlibTM2.M6.ModularPhase
 
 /-! Compose the PR589 frame changes and scalar instructions on the permanent
@@ -615,5 +616,121 @@ theorem invocation_stage [Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
       (funext (fun h => first data (labelSpectator h z)))
   · intro data
     exact ⟨_,_,⟨first data,leftOff data⟩,midRead _,last _,rightOff _⟩
+
+private theorem copySchedule_other {n : Fin 9} {r : Fin 32} {d : Fin 5} {w B K : ℕ}
+    {ls : List Copy.Lifecycle} {x y} (steps : CopyScheduleEffect n r d w B K ls x y)
+    (i : Fin 142081) (live : i ≠ Fin.last 142080) (outside : ∀ j, ownerTape n r d j ≠ i) :
+    y i = x i := by
+  induction ls generalizing x with
+  | nil => exact congrFun steps.symm i
+  | cons l ls ih =>
+    obtain ⟨mid,step,rest⟩ := steps
+    exact (ih rest).trans (step.2.1 i live (outside _).symm (by
+      rintro mem
+      obtain ⟨j,_,eq⟩ := List.mem_map.mp mem
+      exact outside _ eq))
+
+/-- Register action of one scheduled class run at every matrix label,
+including preservation of every live role outside its owner set. -/
+def InvocationEffect (n : Fin 9) (r : Fin 32) (d : Fin 5) (w B K : ℕ)
+    (x y : Fin 142081 → Fin ((prime^w)^16*(B*prime^(64*(w*64))*K)) → ZMod 2) : Prop :=
+  let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n r d,ownerTape_injective n r d⟩
+  (∀ g (z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B),
+    phaseRead owner y (labelSpectator g z) =
+      labelPhase w (sectionB ++ sectionC) (Frames.scatterFinish Frames.beforeScatter)
+        (labelScatter n (fun h => labelPhase w (sectionD ++ sectionA) (Frames.snapshot Frames.initialRefs)
+          (phaseRead owner x (labelSpectator h z))) g)) ∧
+    ∀ i, i ≠ Fin.last 142080 → (∀ j, owner j ≠ i) → y i = x i
+
+open M8.Machine in
+/-- Execute all 160 replica/class invocations of one stage piece in order.
+Each physical join is included in the linear overhead. -/
+theorem invocationPiece_stage [Net] (n : Fin 9) (engine : CopyTranspose := CopyTranspose.original) :
+    ∃ D : ℕ, ∀ w B K, 0 < w → 0 < B → 0 < K →
+      let W := B*prime^(64*(w*64))*K
+      let V := (prime^w)^16*W
+      let hs := fun i => FlatCoordinateSchedule.bits (RecursiveDimensionBank.values (copyChild w W) i)
+      ∃ piece : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V)),
+        (∀ price : ℕ → ℕ, (∀ p ∈ Geometry.Moves.phaseEdges, Geometry.moveRank p.1 p.2 ≠ 0 →
+          phaseChildCost w W p ≤ price (Geometry.moveRank p.1 p.2)) →
+          engine.time (copyChild w W) hs ≤ price 7 →
+          piece.cost ≤ D*V + 160*(2*(63*9+252*527)*M8.RevMachine.LeafCore.coreCost V (w*64) +
+            ((Geometry.Moves.phaseValues.filter (· != 0)).map price).sum + 9*price 7)) ∧
+        ∃ run : (Fin 32 × Fin 5) → (Fin 142081 → Fin V → ZMod 2) → (Fin 142081 → Fin V → ZMod 2), (∀ (k : Fin 32 × Fin 5) x, InvocationEffect n k.1 k.2 w B K x (run k x)) ∧
+          ∀ x, piece.transform x = stageRuns.foldl (fun y k => run k y) x := by
+  classical
+  let spec := fun k : Fin 32 × Fin 5 => (invocation_stage n k.1 k.2 engine).choose_spec
+  let coeff := fun k => (spec k).choose
+  refine ⟨(stageRuns.map coeff).sum + stageRuns.length,?_⟩
+  intro w B K hw hB hK W V hs
+  let impl := fun k => (spec k).choose_spec w B K hw hB hK
+  let stages := fun k => (impl k).choose
+  let compile := fun ks : List (Fin 32 × Fin 5) => SharedBankStage.compile
+    (phaseOwners (N := V)) (by decide : 0 < 142081) (ks.map stages)
+  refine ⟨compile stageRuns,?_,fun k => (stages k).transform,?_,?_⟩
+  · intro price phaseBound copyBound
+    let extra := 2*(63*9+252*527)*M8.RevMachine.LeafCore.coreCost V (w*64) +
+      ((Geometry.Moves.phaseValues.filter (· != 0)).map price).sum + 9*price 7
+    have pos : 0 < V := by
+      dsimp only [V,W]
+      have := Shared50ModularControl.prime_prime.pos
+      positivity
+    have bound (ks : List (Fin 32 × Fin 5)) : (compile ks).cost ≤
+        ((ks.map coeff).sum + ks.length)*V + ks.length*extra := by
+      induction ks with
+      | nil => simp [compile,SharedBankStage.compile_cost]
+      | cons k ks ih =>
+        have bill := (impl k).choose_spec.2.1 price phaseBound copyBound
+        change (stages k).cost ≤ coeff k*V + _ + _ + _ at bill
+        have localCost : (stages k).cost ≤ coeff k*V+extra := by simpa only [extra,Nat.add_assoc] using bill
+        change (stages k).cost + (compile ks).cost + 1 ≤ _
+        simp only [List.map_cons,List.sum_cons,List.length_cons,Nat.add_mul,Nat.one_mul] at ih ⊢
+        omega
+    exact (bound stageRuns).trans_eq (by rw [stageRuns_length])
+  · intro k x
+    obtain ⟨_,_,endpoint,mid⟩ := (impl k).choose_spec
+    refine ⟨endpoint x,?_⟩
+    intro i live outside
+    obtain ⟨before,after,first,scatter,last⟩ := mid x
+    have same := copySchedule_other scatter i live outside
+    refine (last.2 i outside).trans (Eq.trans ?_ (first.2 i outside))
+    funext t
+    exact congrFun same (Fin.cast (copyLabel_volume w B K).symm t)
+  · intro x
+    dsimp only [compile]
+    rw [SharedBankStage.compile_transform]
+    simp [SharedBankStage.execute,List.foldl_map]
+
+open M8.Machine in
+/-- The nine stage pieces consume exactly the phase and COPY portions of the
+node's child inventory. The remainder calls are available to the idle pieces. -/
+theorem invocationPieces_nodeCost [Net] (engine : CopyTranspose := CopyTranspose.original) :
+    ∃ D : ℕ, ∀ w B K, 0 < w → 0 < B → 0 < K →
+      let W := B*prime^(64*(w*64))*K
+      let V := (prime^w)^16*W
+      let hs := fun i => FlatCoordinateSchedule.bits (RecursiveDimensionBank.values (copyChild w W) i)
+      ∃ pieces : Fin 9 → SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V)),
+        (∀ price : ℕ → ℕ, (∀ p ∈ Geometry.Moves.phaseEdges, Geometry.moveRank p.1 p.2 ≠ 0 →
+          phaseChildCost w W p ≤ price (Geometry.moveRank p.1 p.2)) →
+          engine.time (copyChild w W) hs ≤ price 7 →
+          (∑ n, (pieces n).cost) + 160*(BitOccurrences.remainders.map price).sum ≤ D*V +
+            1440*(2*(63*9+252*527)*M8.RevMachine.LeafCore.coreCost V (w*64)) + (nodeChildren5.map price).sum) ∧
+        ∀ n, ∃ run : (Fin 32 × Fin 5) → (Fin 142081 → Fin V → ZMod 2) → (Fin 142081 → Fin V → ZMod 2),
+          (∀ (k : Fin 32 × Fin 5) x, InvocationEffect n k.1 k.2 w B K x (run k x)) ∧
+          ∀ x, (pieces n).transform x = stageRuns.foldl (fun y k => run k y) x := by
+  classical
+  choose coeff make using fun n => invocationPiece_stage n engine
+  refine ⟨∑ n, coeff n,?_⟩
+  intro w B K hw hB hK W V hs
+  choose pieces cost action using fun n => make n w B K hw hB hK
+  refine ⟨pieces,?_,action⟩
+  intro price phaseBound copyBound
+  have sum := Finset.sum_le_sum (s := Finset.univ) (fun n _ => cost n price phaseBound copyBound)
+  rw [Finset.sum_add_distrib,← Finset.sum_mul] at sum
+  simp only [Finset.sum_const,Finset.card_univ,Fintype.card_fin,nsmul_eq_mul] at sum
+  rw [nodeChildren5_split_price]
+  rw [show (fun x : ℕ => decide (x ≠ 0)) = (fun x => x != 0) by funext x; cases x <;> rfl]
+  dsimp only [V,W]
+  omega
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
