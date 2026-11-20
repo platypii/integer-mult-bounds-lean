@@ -692,8 +692,12 @@ branches on the residue by bisection, restoring every stack before the next
 read. At the root it selects the all-ones branch directly. For word width
 `H`, dispatch takes at most `64*((8*64+21)*H+28+prime.size)` steps, charged
 within the parent volume bound. The parent reads
-the live owner bank at entry. Both charts take their private initial stacks
-from metadata independent of the owner words. On return the caller's user
+the live owner bank at entry. For each owner, port and direction, `RemainderChartFrame` identifies one
+compiled chart program, state count and owner-slot assignment across precisions
+and layouts. The chart input puts two row headers and 22 descriptor words
+after the leading owners and starts the remaining workspace blank. On return,
+both physical chart banks again represent their private entry metadata, so a
+subsequent call at the same layout can reuse them. On return the caller's user
 state is preserved and both stacks of every ordinary private tape at index
 58 or above are empty. The inverse chart preserves the scanner's stacks on
 every preceding register outside the owner slots.
