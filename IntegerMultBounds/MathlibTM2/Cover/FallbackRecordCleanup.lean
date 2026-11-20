@@ -25,6 +25,24 @@ private theorem update_stack_sum {K : Type} [DecidableEq K] (ks : List K) (disti
       have := ih distinct.tail
       omega
 
+/-- A single installed counter contributes its length once to the cleanup bill. -/
+theorem counterFrameCleanup_le (ks : List (Fin T)) (distinct : ks.Nodup) (S : Stacks T A)
+    (blank : ∀ i ∈ ks, S.L i = [] ∧ S.R i = []) (count : Fin T) (word : List (Fin (A+4))) :
+    let D := {S with R := Function.update S.R count word}
+    (ks.map fun i => 4*(D.L i).length+2*(D.R i).length+4).sum+1 ≤ ks.length*4+2*word.length+1 := by
+  intro D
+  have cells : (ks.map fun i => 4*(D.L i).length+2*(D.R i).length+4) =
+      ks.map (Function.update (fun _ => 4) count (2*word.length+4)) := by
+    apply List.map_congr_left
+    intro i hi
+    obtain ⟨left,right⟩ := blank i hi
+    by_cases eq : i = count
+    · subst i; simp [D,left]
+    · simp [D,Function.update_of_ne eq,left,right]
+  rw [cells]
+  have bound := update_stack_sum ks distinct (fun _ => 4) count (2*word.length+4) (2*word.length) (by omega)
+  simpa [Nat.mul_comm] using Nat.add_le_add_right bound 1
+
 private theorem action_stack_sum {K σ : Type} {Γ : K → Type} [DecidableEq K]
     (ks : List K) (distinct : ks.Nodup) (a : Action Γ σ) (s : Store Γ σ) :
     (ks.map fun k => ((a.run s).stk k).length).sum ≤

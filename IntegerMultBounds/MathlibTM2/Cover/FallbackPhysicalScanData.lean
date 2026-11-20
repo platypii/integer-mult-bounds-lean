@@ -499,6 +499,59 @@ private theorem payload_prefix_of_read {n : ℕ} (word : Fin n → ZMod 2) (sour
       simpa [payloadWord] using h
   rw [← first,List.take_append_drop]
 
+/-- Omit the exceptional matrix archive from the generated ordinary branch's
+workspace. The remaining private tapes can still be cleared after every call. -/
+def directoryMatrixTape [M8.Machine.Net] {K : ℕ}
+    (room : Record.size d+(rowSwapBlock.tapes+35+2) ≤ K) : Fin (66+K) :=
+  directoryResidualBank d room (Fin.last (rowSwapBlock.tapes+35)).castSucc (archivePorts 0 (columnBank 34))
+
+def directoryOrdinaryBank [M8.Machine.Net] {K : ℕ}
+    (room : Record.size d+(rowSwapBlock.tapes+35+2) ≤ K+1) : Fin (66+K) ↪ Fin (66+(K+1)) :=
+  (directoryMatrixTape room).succAboveEmb
+
+theorem directoryOrdinaryBank_caller [M8.Machine.Net] {K : ℕ}
+    (room : Record.size d+(rowSwapBlock.tapes+35+2) ≤ K+1) (i : Fin 66) :
+    directoryOrdinaryBank room (i.castAdd K) = i.castAdd (K+1) := by
+  apply Fin.succAbove_of_castSucc_lt
+  change i.val < (directoryMatrixTape room).val
+  unfold directoryMatrixTape
+  rw [directoryResidualBank_private room _ _ (by
+    intro eq; have h := congrArg Fin.val eq; change 34 = rowSwapBlock.tapes+35 at h; omega)]
+  omega
+
+open IntegerMultBounds.MathlibTM2.Stack Host in
+/-- The ordinary branch's blank-workspace invariant is exactly the exceptional
+branch's cleanup guarantee, with the matrix stream left available. -/
+theorem directoryOrdinaryBank_clear_iff [M8.Machine.Net] {K A : ℕ}
+    (room : Record.size d+(rowSwapBlock.tapes+35+2) ≤ K+1) (S : Stacks (66+(K+1)) A) :
+    let bank := directoryOrdinaryBank room
+    (∀ i : Fin (66+K), 58 ≤ i.val → (embStk bank S).L i = [] ∧ (embStk bank S).R i = []) ↔
+      ∀ k, 58 ≤ k.val → k ≠ directoryMatrixTape room → S.L k = [] ∧ S.R k = [] := by
+  intro bank
+  have privatePort (i : Fin (66+K)) : 58 ≤ (bank i).val ↔ 58 ≤ i.val := by
+    constructor
+    · intro high
+      by_contra! low
+      let j : Fin 66 := ⟨i.val,by omega⟩
+      have eq : i = j.castAdd K := Fin.ext rfl
+      rw [eq,directoryOrdinaryBank_caller] at high
+      exact (Nat.not_le_of_lt low) high
+    · intro high
+      by_contra! low
+      let j : Fin 66 := ⟨(bank i).val,by omega⟩
+      have eq : bank i = bank (j.castAdd K) := by rw [directoryOrdinaryBank_caller]; exact Fin.ext rfl
+      have h := congrArg Fin.val (bank.injective eq)
+      change i.val = (bank i).val at h
+      omega
+  constructor
+  · intro clear k high off
+    obtain ⟨i,eq⟩ := Fin.exists_succAbove_eq off
+    change bank i = k at eq
+    subst k
+    exact clear i ((privatePort i).1 high)
+  · intro clear i high
+    exact clear (bank i) ((privatePort i).2 high) (Fin.succAbove_ne _ _)
+
 open IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2.Stack Host in
 /-- Run a good or padding branch on its own tapes, including its cleanup, then
 consume exactly its matrix from the shared archive outside that bank. -/
@@ -535,14 +588,19 @@ theorem ScanData.advanceEmbeddedRecord_exec {T K Q : ℕ} {P F U : Type}
 open IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2.Stack Host in
 /-- The classified scan shares one archive. Good and padding programs operate on
 the embedded bank, while the exceptional program consumes its matrix directly. -/
-theorem ScanData.classifiedArchive_exec {T K Q : ℕ} {P F U : Type}
-    (data : ScanData r d w W) (bank : Fin T ↪ Fin K) (archive : Fin K)
-    (outside : ∀ i, bank i ≠ archive) (width tmp liveMask mode : Fin T)
-    (apart : width ≠ tmp) (selectors : liveMask ≠ mode) (labels : P → F)
-    (body : P → Pr P T Q prime U) (host : F → Pr F K Q prime U)
+theorem ScanData.classifiedArchive_exec [M8.Machine.Net] {K Q : ℕ} {P F U : Type}
+    (data : ScanData r d w W) (room : Record.size d+(rowSwapBlock.tapes+35+2) ≤ K+1)
+    (labels : P → F) :
+    let bank := directoryOrdinaryBank room
+    let archive := directoryMatrixTape room
+    let width := (2 : Fin 66).castAdd K
+    let tmp := (59 : Fin 66).castAdd K
+    let liveMask := (57 : Fin 66).castAdd K
+    let mode := (56 : Fin 66).castAdd K
+    ∀ (body : P → Pr P (66+K) Q prime U) (host : F → Pr F (66+(K+1)) Q prime U)
     (calls : ∀ f, host (labels f) = embProg bank labels (body f))
-    (good skip : Pr P T Q prime U) (exceptional : Pr F K Q prime U)
-    (live bad : ℕ → Bool) (ordinaryCost badCost : ℕ → ℕ) (ready : ℕ → Stacks T prime → Prop)
+    (good skip : Pr P (66+K) Q prime U) (exceptional : Pr F (66+(K+1)) Q prime U)
+    (live bad : ℕ → Bool) (ordinaryCost badCost : ℕ → ℕ) (ready : ℕ → Stacks (66+K) prime → Prop)
     (release : ∀ j S k bits, k = liveMask ∨ k = mode → ready j S →
       ready j {S with R := Function.update S.R k bits})
     (ordinary : ∀ j, j < data.records → ¬ (live j = true ∧ bad j = true) →
@@ -555,19 +613,23 @@ theorem ScanData.classifiedArchive_exec {T K Q : ℕ} {P F U : Type}
       ∃ v D n, v.user = u.user ∧ ready (j+1) (embStk bank D) ∧ D.R archive = data.matrices (j+1) ∧
         D.R (bank liveMask) = S.R (bank liveMask) ∧ D.R (bank mode) = S.R (bank mode) ∧
         n ≤ badCost j ∧ Exec host exceptional (Host.mk u S) n (Host.mk v D))
-    (u : HS K Q prime U) (S : Stacks K prime) (start : ready 0 (embStk bank S))
+    (u : HS (66+(K+1)) Q prime U) (S : Stacks (66+(K+1)) prime) (start : ready 0 (embStk bank S))
     (queue : S.R archive = data.matrices 0)
     (liveBits : S.R (bank liveMask) = (List.range data.records).map fun j => bitSymbol (live j))
-    (badBits : S.R (bank mode) = (List.range data.records).map fun j => bitSymbol (bad j)) :
+    (badBits : S.R (bank mode) = (List.range data.records).map fun j => bitSymbol (bad j)),
     let advance := dropWords (bank width) archive (bank tmp) ((d+1)*(d+1))
     let cost := fun j => if live j && bad j then badCost j else ordinaryCost j + ((d+1)*(d+1)*(4*data.H+4)+1)
     ∃ z B n, z.user = u.user ∧ (ready data.records (embStk bank B) ∧ B.R archive = data.matrixTail) ∧
       B.R (bank liveMask) = [] ∧ B.R (bank mode) = [] ∧ n ≤ ((List.range data.records).map fun j => cost j+2+4).sum+2 ∧
       Exec host (classifiedScan (bank liveMask) (bank mode) ((embProg bank labels good).seq advance)
         exceptional ((embProg bank labels skip).seq advance)) (Host.mk u S) n (Host.mk z B) := by
-  intro advance cost
+  intro bank archive width tmp liveMask mode body host calls good skip exceptional live bad ordinaryCost badCost ready
+    release ordinary repair u S start queue liveBits badBits advance cost
+  have outside (i : Fin (66+K)) : bank i ≠ archive := Fin.succAbove_ne _ _
+  have apart : width ≠ tmp := (Fin.castAddEmb K).injective.ne (by decide : (2 : Fin 66) ≠ 59)
+  have selectors : liveMask ≠ mode := (Fin.castAddEmb K).injective.ne (by decide : (57 : Fin 66) ≠ 56)
   let inv := fun j B => ready j (embStk bank B) ∧ B.R archive = data.matrices j
-  have releaseAt (j) (B : Stacks K prime) (k : Fin T) (bits) (sel : k = liveMask ∨ k = mode)
+  have releaseAt (j) (B : Stacks (66+(K+1)) prime) (k : Fin (66+K)) (bits) (sel : k = liveMask ∨ k = mode)
       (h : inv j B) : inv j {B with R := Function.update B.R (bank k) bits} := by
     refine ⟨?_,(Function.update_of_ne (outside k).symm _ _).trans h.2⟩
     convert release j (embStk bank B) k bits sel h.1 using 1
@@ -591,7 +653,7 @@ theorem ScanData.classifiedArchive_exec {T K Q : ℕ} {P F U : Type}
   obtain ⟨y,D,n,user,next,l,m,clock,free,price,run⟩ := ordinary j inside both (embDn bank v) (embStk bank B) current.1
   obtain ⟨z,E,hu,localBank,tail,_,step⟩ := data.advanceEmbeddedRecord_exec j inside bank archive outside
     width tmp apart labels body host calls _ v B y D n run clock free current.2
-  have cell (i : Fin T) : E.R (bank i) = D.R i := congrArg (fun C => Stacks.R C i) localBank
+  have cell (i : Fin (66+K)) : E.R (bank i) = D.R i := congrArg (fun C => Stacks.R C i) localBank
   refine ⟨z,E,n+((d+1)*(d+1)*(4*data.H+4)+1),hu.trans user,⟨by rw [localBank]; exact next,tail⟩,(cell _).trans l,(cell _).trans m,?_,?_⟩
   · simpa [cost,both] using price
   · cases hl : live j <;> cases hb : bad j <;> first | simpa [hl,hb,advance] using step | exact (both ⟨hl,hb⟩).elim
@@ -630,7 +692,7 @@ theorem scheduledProjectorRecord_exec [M8.Machine.Net] {K : ℕ} {P U : Type}
         ((toUnary (counters 2) count (counters 3) (counters 4) (counters 5)).seq (bclear (counters 2)))
       let setupTime := dimensionTime H J (d+1) + 6*(M^(d+1)*W) + 13*((d+1)*H+J) + 8
       initial.R (counters 0) = binSyms H M → initial.R (counters 1) = binSyms J W →
-      (∀ i : Fin 10, 2 ≤ i → initial.R (counters i) = []) →
+      (∀ k, 58 ≤ k.val → k ≠ directoryMatrixTape room → initial.L k = [] ∧ initial.R k = []) →
       let S := {initial with R := Function.update initial.R count (List.replicate (M^(d+1)*W) Node.tick)}
       let queueTail := (S.R src).drop (M^(d+1)*W)
       let bank := columnBank.trans (archivePorts 0)
@@ -642,25 +704,22 @@ theorem scheduledProjectorRecord_exec [M8.Machine.Net] {K : ℕ} {P U : Type}
       let headers := Record.copyLeafHeaders headerSrc headerDst ((64 : Fin 66).castAdd K)
         ((65 : Fin 66).castAdd K) (List.finRange 5)
       S.R (headerSrc 2) = binSyms 1 1 → S.R (headerSrc 3) = binSyms H (1 : ZMod M).val →
-      (∀ i : Fin 35, i ≠ 34 → S.L (ports (bank i)) = [] ∧ S.R (ports (bank i)) = []) →
       S.R (ports (bank 34)) = physical.matrices j →
-      clean S → (∀ i : Fin (Record.size d), S.L (anchor (i.castAdd 6)) = [] ∧ S.R (anchor (i.castAdd 6)) = []) →
       (∀ z, readAt blank (S.L src) (S.R src) (z-head) = RadixToBinary.binaryEncoding.encode
         (putWord source head ((List.ofFn original).map SparseRoleCircuit.encode) z)) →
-      (∀ i ∈ ([2,3,5] : List (Fin 6)), S.R (anchor (Record.port d regs i)) = []) →
       S.R ((54 : Fin 66).castAdd K) = residualSchedule C ++ rest →
       let installer := directoryAnchorInstaller ((Nat.le_add_right 22 _).trans ((Nat.le_add_right ..).trans room : Record.size d ≤ K))
       let sign := (installFieldHeaders installer).seq (statePlacedNormalized anchor capacity (Nat.zero_lt_succ _) Empty.elim
         ((Record.program d regs).seq (moveR (Record.port d regs 5) (Record.port d regs 1) id)))
       let V := M^(d+1)*W
       let returnWord := (Mult.ShortConv.transfer count dst saved tmp).seq (moveR saved src id)
-      let matrixTape := ports (bank 34)
+      let matrixTape := directoryMatrixTape room
       let advanceMatrix := dropWords (ports (bank 2)) matrixTape (ports (bank 0)) ((d+1)*(d+1))
       let record := (((sign.seq headers).seq (queuedResidual ports count src saved tmp d)).seq returnWord).seq advanceMatrix
       let recordTime := (((10*J+12)+(21*(w+1)+12)+1) + (1+(Record.cost d 6 1 (w+1) W (negativeAnchor rows C)+(2*V+2)))) +
         (6*(2*H+J+w)+37) + (6*V+6+(1+signedResidualTime U rows w W H J)) + ((4*V+4)+(2*V+2)) + ((d+1)*(d+1)*(4*H+4)+1)
       let privateTapes := (List.finRange (66+K)).filter fun i => decide (58 ≤ i.val ∧ i ≠ matrixTape)
-      let initialClear := (privateTapes.map fun i => 4*(S.L i).length+2*(S.R i).length+4).sum+1
+      let initialClear := privateTapes.length*4+2*V+1
       ∀ c, (∀ f, mnProgPush (body f) ≤ c) →
       ∀ (prefixes : ℕ → List (Fin (prime+4))) (pending : List ℕ) (archiveTail : List (Fin (prime+4))),
       let slots : Fin 7 ↪ Fin 58 := ⟨![45,46,2,47,48,44,49],by decide⟩
@@ -679,9 +738,39 @@ theorem scheduledProjectorRecord_exec [M8.Machine.Net] {K : ℕ} {P U : Type}
         ∀ j : Fin 58, j ≠ 24 → j ≠ 54 → j ≠ 46 → let i := (j.castAdd 8).castAdd K
           F.L i = S.L i ∧ F.R i = S.R i := by
   intro H physical tail N G φ C rows room ports count src saved tmp anchor regs capacity body initialUser initial rest
-    original source head counters countProgram setupTime base seed vacant S queueTail bank dst clean headerSrc headerDst headers one padded emptyBank matrix free vacantAnchor read scratch schedule installer sign V returnWord
+    original source head counters countProgram setupTime base seed initialBlank S queueTail bank dst clean headerSrc headerDst headers one padded matrix read schedule installer sign V returnWord
     matrixTape advanceMatrix record recordTime privateTapes initialClear c bodyBound
   intro prefixes pending archiveTail slots caller scan directory prefixWidth clock fresh
+  have archiveVal : matrixTape.val = 66+(Record.size d+34) :=
+    directoryResidualBank_private room _ _ (by intro eq; have h := congrArg Fin.val eq
+                                               change 34 = rowSwapBlock.tapes+35 at h; omega)
+  have afterCount (k : Fin (66+K)) (hi : 58 < k.val) (off : k ≠ matrixTape) :
+      S.L k = [] ∧ S.R k = [] := by
+    have ne : k ≠ count := fun eq => by rw [eq] at hi; exact (Nat.lt_irrefl 58) hi
+    exact ⟨(initialBlank k hi.le off).1,(Function.update_of_ne ne _ _).trans (initialBlank k hi.le off).2⟩
+  have vacant (i : Fin 10) (hi : 2 ≤ i) : initial.R (counters i) = [] := by
+    have range : 58 ≤ (counters i).val ∧ (counters i).val < 66 := by
+      let slots : Fin 10 → Fin 66 := ![2,53,59,60,61,62,63,64,65,58]
+      exact (by decide : ∀ k : Fin 10, 2 ≤ k → 58 ≤ (slots k).val ∧ (slots k).val < 66) i hi
+    exact (initialBlank _ range.1 (fun eq => by have h := congrArg Fin.val eq; change _ = matrixTape.val at h; omega)).2
+  have blankPort (i : Fin (N+2)) (np : i ≠ (Fin.last N).castSucc) (na : i ≠ bank 34) :=
+    afterCount (ports i) (by rw [directoryResidualBank_private room _ _ np]; omega) (ports.injective.ne na)
+  have emptyBank (i : Fin 35) (off : i ≠ 34) := blankPort (bank i) (by
+    intro eq; have h := congrArg Fin.val eq; change i.val = rowSwapBlock.tapes+35 at h; omega) (bank.injective.ne off)
+  have free : clean S := by
+    intro i hi
+    exact blankPort _ (by intro eq; have h := congrArg Fin.val eq; exact i.isLt.ne h)
+      (by intro eq; have h := congrArg Fin.val eq; change i.val = 34 at h; omega)
+  have vacantAnchor (i : Fin (Record.size d)) : S.L (anchor (i.castAdd 6)) = [] ∧ S.R (anchor (i.castAdd 6)) = [] := by
+    have val : (anchor (i.castAdd 6)).val = 66+i.val := by simp [anchor,directoryAnchorBank]
+    apply afterCount _ (by omega)
+    intro eq; have h := congrArg Fin.val eq; omega
+  have scratch (i : Fin 6) (hi : i ∈ ([2,3,5] : List (Fin 6))) :
+      S.R (anchor (Record.port d regs i)) = [] := by
+    have v : (anchor (Record.port d regs i)).val = (directoryAnchorPorts i).val :=
+      congrArg Fin.val (directoryAnchorBank_port _ i)
+    have lo : 58 < (directoryAnchorPorts i).val := (by decide : ∀ k ∈ ([2,3,5] : List (Fin 6)), 58 < (directoryAnchorPorts k).val) i hi
+    exact (afterCount _ (by omega) (fun eq => by have h := congrArg Fin.val eq; omega)).2
   obtain ⟨u,st,startUser,startTime,start⟩ := directoryCount_exec body (d+1) H J M W hm hw initialUser initial
     base seed vacant
   have currentMatrix : S.R (ports (bank 34)) = matrixWords prime H G ++ tail := by
@@ -888,11 +977,14 @@ theorem scheduledProjectorRecord_exec [M8.Machine.Net] {K : ℕ} {P U : Type}
   have price := recordCleanup_cost_le privateTapes unique executed (le_max_left (mnProgPush record) c)
     (fun f => (bodyBound f).trans (le_max_right _ _))
   have mem (i : Fin (66+K)) : i ∈ privateTapes ↔ 58 ≤ i.val ∧ i ≠ matrixTape := by simp [privateTapes]
+  have initialCost : (privateTapes.map fun i => 4*(S.L i).length+2*(S.R i).length+4).sum+1 ≤ initialClear := by
+    simpa only [initialClear,List.length_replicate] using counterFrameCleanup_le privateTapes unique initial
+      (fun i hi => initialBlank i ((mem i).1 hi).1 ((mem i).1 hi).2) count (List.replicate V Node.tick)
   have callerOff (j : Fin 58) : (j.castAdd 8).castAdd K ∉ privateTapes := by
     rw [mem]; exact fun h => Nat.not_le_of_lt j.isLt h.1
   have queueOut : finalBank.R src = packed ++ queueTail := by rw [show finalBank.R src = returned.R src from unchanged 24]; simp [returned,movedR,acc,oldSrc]
   refine ⟨z',_,_,next,same.trans (advancedUser.trans (user.trans (hLast.trans (hz.trans (hUser.trans (hu.trans vu)))))),Nat.add_le_add time
-    (price.trans (Nat.add_le_add_left (Nat.mul_le_mul_left 6 (Nat.mul_le_mul_left _ time)) _)),
+    (price.trans (Nat.add_le_add initialCost (Nat.mul_le_mul_left 6 (Nat.mul_le_mul_left _ time)))),
     Exec.seq executed clear,?_,?_,effect,?_,?_,?_,?_⟩
   · exact (ite_eq_right (show matrixTape ∉ privateTapes by simp [mem])).trans (Function.update_self ..)
   · intro i hi ne; simp [(mem i).mpr ⟨hi,ne⟩]
