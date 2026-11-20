@@ -134,6 +134,56 @@ theorem copyRoute_payload {t : ℕ} (block : M8.RevMachine.Graph.Block (t+24) pr
   cases owners
   apply congrArg₂ Tapes.mk <;> funext i <;> simp [LabelCall.bank,Tapes.append]
 
+private def agreeAfter {t : ℕ} (k : ℕ) (x y : Tapes t prime) : Prop :=
+  ∀ i : Fin t, k ≤ i.val → x.head i = y.head i ∧ x.tape i = y.tape i
+
+private theorem agreeOwners {t : ℕ} (x y : Tapes t prime) : agreeAfter t x y :=
+  fun i h => False.elim (Nat.not_le_of_lt i.isLt h)
+
+private theorem agreeAppend {k t u : ℕ} {x y : Tapes t prime} (h : agreeAfter k x y)
+    (work : Tapes u prime) : agreeAfter k (x.append work) (y.append work) := by
+  intro i
+  induction i using Fin.addCases with
+  | left j => simpa [Tapes.append] using h j
+  | right j => simp [Tapes.append]
+
+private theorem strip_eq {t k : ℕ} {x y : Tapes t prime} (h : agreeAfter k x y)
+    (slots : Fin k → Fin t) (leading : ∀ i, (slots i).val = i.val) :
+    SharedBank.strip x slots = SharedBank.strip y slots := by
+  apply congrArg₂ Tapes.mk <;> funext i <;> by_cases mem : ∃ j, slots j = i
+  all_goals simp only [mem,↓reduceIte]
+  all_goals have bound : k ≤ i.val := by
+              by_contra! lt
+              exact mem ⟨⟨i.val,lt⟩,Fin.ext (leading _)⟩
+  · exact (h i bound).1
+  · exact (h i bound).2
+
+open M8.Machine in
+private theorem copyPrivate [Net] {t w W : ℕ} (A D : List (FlatCoordinateSchedule.Op 16))
+    (x y : Tapes t prime) (controls : Tapes 2 prime) (headers : Tapes 6 prime) (arithmetic : Tapes 15 prime)
+    (slots : Fin t → Fin _) (leading : ∀ i, (slots i).val = i.val) :
+    SharedBank.strip (copyPrepared (w := w) (W := W) A D (x.append controls) headers arithmetic) slots =
+    SharedBank.strip (copyPrepared (w := w) (W := W) A D (y.append controls) headers arithmetic) slots := by
+  apply strip_eq _ _ leading
+  unfold copyPrepared ArbitraryWidthOriginalRun.input ArbitraryWidthHighPreparedRun.input
+    ArbitraryWidthHighCommonPrepare.input ArbitraryWidthHighBranchPrepare.input ArbitraryWidthHighExecutionInitialize.input
+  repeat apply agreeAppend
+  exact agreeOwners x y
+
+private theorem routePrivate {t : ℕ} (block : M8.RevMachine.Graph.Block (t+24) prime)
+    (leading : M8.RevMachine.Blocks.Leading block) (x y : Tapes t prime) (v : Descriptor)
+    (d : Fin 22 → Option (List Bool)) :
+    let slots := fun i => block.slots (Fin.castAdd 24 i)
+    SharedBank.strip (SharedBankStageInput.raw (LabelCall.bank x v d) block.tapes) slots =
+      SharedBank.strip (SharedBankStageInput.raw (LabelCall.bank y v d) block.tapes) slots := by
+  intro slots
+  apply strip_eq _ _ (fun i => leading (Fin.castAdd 24 i))
+  have agree : agreeAfter t (LabelCall.bank x v d) (LabelCall.bank y v d) := agreeAppend (agreeOwners x y) _
+  intro i hi
+  by_cases small : i.val < t+24
+  · simpa only [SharedBankStageInput.raw,dite_eq_left small] using agree ⟨i.val,small⟩ hi
+  · simp [SharedBankStageInput.raw,small]
+
 open M8.RevMachine in
 /-- Compose both chart routes around a COPY body at their owner tapes. The route
 controls and the private tapes of all three machines remain in the postcondition. -/
@@ -155,22 +205,36 @@ theorem copyRoute_window_return [M8.Machine.Net] {t w W states : ℕ}
     let common := SharedBankFrames.commonSlots t route.tapes _
     let ls := fun i => leave.slots (Fin.castAdd 24 i)
     let setup := SharedBankPair.input (SharedBankStageInput.raw (LabelCall.bank before v d) route.tapes)
-        (copyPrepared (w := w) (W := W) A D (entered.append controls) headers arithmetic) rs cs
-    let finish := SharedBankPair.output (SharedBankStageInput.raw (LabelCall.bank entered v d) route.tapes)
-        (copyPrepared (w := w) (W := W) A D (added.append controls) finalHeaders finalArithmetic) rs cs
+        (copyPrepared (w := w) (W := W) A D (before.append controls) headers arithmetic) rs cs
+    let finish := SharedBankPair.output (SharedBankStageInput.raw (LabelCall.bank before v d) route.tapes)
+        (copyPrepared (w := w) (W := W) A D (out.append controls) finalHeaders finalArithmetic) rs cs
     HoareTime (SharedBankPair.program pair leave.program common ls)
-      (fun z => z = SharedBankPair.input setup (SharedBankStageInput.raw (LabelCall.bank added v d) leave.tapes) common ls)
+      (fun z => z = SharedBankPair.input setup (SharedBankStageInput.raw (LabelCall.bank before v d) leave.tapes) common ls)
       (fun z => z = SharedBankPair.output finish (SharedBankStageInput.raw (LabelCall.bank out v d) leave.tapes) common ls)
       (r+b+1+l+1) := by
   intro rs cs pair common ls setup finish
   have join := SharedBankPair.pair_hoare entry run rs (route.slots_injective.comp (Fin.castAdd_injective t 24)) cs
     (Fin.castLE_injective _) ((copyRoute_payload route leading entered v d).trans
       (copyLabel_payload A D entered controls headers arithmetic cs (fun _ => rfl)).symm)
-  apply SharedBankPair.pair_hoare join exitRun common (SharedBankFrames.commonSlots_injective ..) ls
-    (leave.slots_injective.comp (Fin.castAdd_injective t 24))
-  rw [SharedBankPair.output,SharedBankFrames.payload_common]
-  exact (copyLabel_payload A D added controls finalHeaders finalArithmetic cs (fun _ => rfl)).trans
-    (copyRoute_payload leave leaveLeading added v d).symm
+  have composed := SharedBankPair.pair_hoare join exitRun common (SharedBankFrames.commonSlots_injective ..) ls
+    (leave.slots_injective.comp (Fin.castAdd_injective t 24)) (by
+      rw [SharedBankPair.output,SharedBankFrames.payload_common]
+      exact (copyLabel_payload A D added controls finalHeaders finalArithmetic cs (fun _ => rfl)).trans
+        (copyRoute_payload leave leaveLeading added v d).symm)
+  let prep := fun (x : Tapes t prime) => copyPrepared (w := w) (W := W) A D (x.append controls)
+  let bank := fun (x : Tapes t prime) => LabelCall.bank x v d
+  dsimp only [setup,finish,SharedBankPair.input,SharedBankPair.output]
+  dsimp only [SharedBankPair.input,SharedBankPair.output] at composed
+  rw [copyPrivate (w := w) (W := W) A D entered before controls headers arithmetic cs (fun _ => rfl),
+    routePrivate leave leaveLeading added before v d,routePrivate route leading entered before v d,
+    copyPrivate (w := w) (W := W) A D added out controls finalHeaders finalArithmetic cs (fun _ => rfl)] at composed
+  have same := strip_eq (agreeAppend (agreeAppend (agreeOwners
+      (SharedBank.payload (prep added finalHeaders finalArithmetic) cs)
+      (SharedBank.payload (prep out finalHeaders finalArithmetic) cs))
+      (SharedBank.strip (SharedBankStageInput.raw (bank before) route.tapes) rs))
+      (SharedBank.strip (prep out finalHeaders finalArithmetic) cs)) common (fun _ => rfl)
+  dsimp only [prep,bank] at same
+  rwa [same] at composed
 
 open IntegerMultBounds.Networks.Certificates.PR589 M8.Machine.ArbitraryWidthOriginalRun in
 /-- The same width-uniform machine that executes the COPY window realizes its
@@ -265,16 +329,19 @@ theorem routedCopy_runs [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
       let pair := SharedBankPair.program entry.program body rs cs
       let common := SharedBankFrames.commonSlots 142081 entry.tapes _
       let ls := fun i => leave.slots (Fin.castAdd 24 i)
-      ∃ entered added out,
+      ∃ out,
         let setup := SharedBankPair.input (SharedBankStageInput.raw (bank x) entry.tapes)
-          (prep entered (FixedHeaderBankCopy.empty 6) (copyHeaderInput w W)) rs cs
-        let finish := SharedBankPair.output (SharedBankStageInput.raw (bank entered) entry.tapes)
-          (prep added (FixedHeaderBankCopy.headerBank hs) (copyHeaderOutput w W)) rs cs
+          (prep x (FixedHeaderBankCopy.empty 6) (copyHeaderInput w W)) rs cs
+        let finish := SharedBankPair.output (SharedBankStageInput.raw (bank x) entry.tapes)
+          (prep out (FixedHeaderBankCopy.headerBank hs) (copyHeaderOutput w W)) rs cs
         HoareTime (SharedBankPair.program pair leave.program common ls)
-          (fun z => z = SharedBankPair.input setup (SharedBankStageInput.raw (bank added) leave.tapes) common ls)
+          (fun z => z = SharedBankPair.input setup (SharedBankStageInput.raw (bank x) leave.tapes) common ls)
           (fun z => z = SharedBankPair.output finish (SharedBankStageInput.raw (bank out) leave.tapes) common ls)
           (routeCost P + (copyWindowWork (FlatCoordinateCleanSchedule.constant A + FlatCoordinateCleanSchedule.constant D)
             life.targets.length V bs.length + cost (copyChild w W) hs) + 1 + routeCost Q + 1) ∧
+        out (Fin.last 142080) = 0 ∧
+        (∀ k, k ≠ Fin.last 142080 → k ≠ io life.source → k ∉ life.targets.map io → out k = x k) ∧
+        (∀ g : Matrix (Fin 64) (Fin 64) (ZMod (prime^w)), chartRead (B := B) (out (io life.source)) g = chartRead (x (io life.source)) g) ∧
         ∀ j ∈ life.targets, ∀ (g : Matrix (Fin 64) (Fin 64) (ZMod (prime^w))) (z : LabelEntry.Cell v B),
           chartRead (out (io j)) g z = chartRead (x (io j)) g z +
             chartRead (x (io life.source)) (g*(registerChart w n j).transpose*registerChart w n life.source) (readSource z) := by
@@ -286,15 +353,15 @@ theorem routedCopy_runs [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
   intro w B K hw hB hK v W V move readSource bank routeCost hs x bs count controls prep rs cs pair common ls
   have pos : v.Positive := ⟨pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _,Nat.zero_lt_one,
     Nat.mul_pos hB (pow_pos Shared50ModularControl.prime_prime.pos _),Nat.zero_lt_one,hK⟩
-  obtain ⟨entered,source,targets,_,en⟩ := enter v w B hw hB rfl pos x
+  obtain ⟨entered,source,targets,untouched,en⟩ := enter v w B hw hB rfl pos x
   let size := copyLabel_volume w B K
   let data := fun k (i : Fin ((prime^w)^16*W)) => entered k (Fin.cast size.symm i)
   let view := fun (a : Fin ((prime^w)^16*W) → ZMod 2) (i : Fin V) => a (Fin.cast size i)
   have cancel (k) : view (data k) = entered k := by funext i; simp [view,data]
-  obtain ⟨y,exec,_,_,_,add⟩ := run w B K hw hB hK data bs (count.trans size)
+  obtain ⟨y,exec,cleared,retained,others,add⟩ := run w B K hw hB hK data bs (count.trans size)
   let added := fun k => view (y k)
-  obtain ⟨out,_,back,_,ex⟩ := exitRun v w B hw hB rfl pos added
-  refine ⟨entered,added,out,?_⟩
+  obtain ⟨out,returned,back,unrouted,ex⟩ := exitRun v w B hw hB rfl pos added
+  refine ⟨out,?_⟩
   intro setup finish
   constructor
   · dsimp only at exec
@@ -304,22 +371,55 @@ theorem routedCopy_runs [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
     rw [eq,← size] at exec
     exact copyRoute_window_return entry leading v _ (copyOwners x) (copyOwners entered) A D controls _ _
       body (copyOwners added) (copyOwners out) _ _ leave leaveLeading en exec ex
-  · intro j hj g z
-    have jBound := ((Copy.target_bounds life scheduled j hj).2.trans (by decide : 222 < 661))
-    have jVal : (Fin.ofNat 661 j).val = j := Nat.mod_eq_of_lt jBound
+  · have off (j) : io j ≠ Fin.last 142080 := Fin.castSucc_ne_last _
+    have noTmp : Fin.last 142080 ∉ life.targets.map io := by
+      intro mem
+      obtain ⟨j,_,eq⟩ := List.mem_map.mp mem
+      exact off j eq
     have srcEq : Fin.ofNat 661 life.source = ⟨life.source,(Copy.source_bounds life scheduled).2⟩ :=
       Fin.ext (Nat.mod_eq_of_lt (Copy.source_bounds life scheduled).2)
-    have action (l : Matrix (Fin 64) (Fin 64) (ZMod (prime^w))) : chartRead (added (io j)) l = chartRead (entered (io j)) l +
-        (fun c => chartRead (entered (io life.source)) l (readSource c)) := by
-      funext c
-      have h := add (Fin.ofNat 661 j) (by rwa [jVal]) l c
-      change chartRead (added (io j)) l c = chartRead (view (data (io j))) l c +
-        chartRead (view (data (ownerTape n r d ⟨life.source,_⟩))) l (readSource c) at h
-      simpa only [cancel,io,srcEq,Pi.add_apply] using h
-    apply congrFun (chartRead_copy_add n life.source j _ _ _ _ _ _ source ?_ (back j hj)
-      (fun a c => a (readSource c)) action g) z
-    intro l
-    rw [dataChart_transpose w n (Copy.target_bounds life scheduled j hj).2]
-    exact chartRead_transport (targets j hj) l
+    refine ⟨?_,?_,?_,?_⟩
+    · rw [unrouted _ (off _).symm noTmp]
+      change view (y _) = 0
+      rw [cleared]
+      rfl
+    · intro k live notSource outside
+      rw [unrouted k notSource outside]
+      have keep := others k live (by
+        intro j hj eq
+        apply outside
+        apply List.mem_map.mpr
+        refine ⟨j.val,hj,?_⟩
+        have idx : Fin.ofNat 661 j.val = j := Fin.ext (Nat.mod_eq_of_lt j.isLt)
+        simpa only [io,idx] using eq)
+      change view (y k) = x k
+      rw [keep,cancel,untouched k notSource outside]
+    · intro g
+      let S := registerChart w n life.source
+      have enterRead := chartRead_transport source g
+      have exitRead := chartRead_transport returned (g*S.transpose)
+      change chartRead (out (io life.source)) (g*S.transpose*S) = chartRead (added (io life.source)) (g*S.transpose) at exitRead
+      rw [Matrix.mul_assoc,registerChart_inverse w n life.source,Matrix.mul_one] at exitRead
+      have saved : added (io life.source) = entered (io life.source) := by
+        change view (y (ownerTape n r d (Fin.ofNat 661 life.source))) = _
+        rw [srcEq,retained,cancel]
+        simp only [io,srcEq]
+      rw [exitRead,saved]
+      exact enterRead
+    · intro j hj g z
+      have jBound := ((Copy.target_bounds life scheduled j hj).2.trans (by decide : 222 < 661))
+      have jVal : (Fin.ofNat 661 j).val = j := Nat.mod_eq_of_lt jBound
+      have action (l : Matrix (Fin 64) (Fin 64) (ZMod (prime^w))) : chartRead (added (io j)) l = chartRead (entered (io j)) l +
+          (fun c => chartRead (entered (io life.source)) l (readSource c)) := by
+        funext c
+        have h := add (Fin.ofNat 661 j) (by rwa [jVal]) l c
+        change chartRead (added (io j)) l c = chartRead (view (data (io j))) l c +
+          chartRead (view (data (ownerTape n r d ⟨life.source,_⟩))) l (readSource c) at h
+        simpa only [cancel,io,srcEq,Pi.add_apply] using h
+      apply congrFun (chartRead_copy_add n life.source j _ _ _ _ _ _ source ?_ (back j hj)
+        (fun a c => a (readSource c)) action g) z
+      intro l
+      rw [dataChart_transpose w n (Copy.target_bounds life scheduled j hj).2]
+      exact chartRead_transport (targets j hj) l
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
