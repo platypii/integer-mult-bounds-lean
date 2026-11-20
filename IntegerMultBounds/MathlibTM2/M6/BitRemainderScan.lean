@@ -12,6 +12,69 @@ open RecursiveInterchangeLayout (Descriptor volume role)
 open IntegerMultBounds.MathlibTM2.Cover
 open IntegerMultBounds.MathlibTM2.Cover.Fallback M8.RevMachine
 
+/-- Loading or draining a row on caller tape 24 preserves all pending
+directory entries, headers, pivot schedules and private work tapes. -/
+theorem directoryReady_updatePayload {m K w W H J : ℕ} {v : Descriptor}
+    {proj : Matrix (Fin m) (Fin m) ℚ} {parent : Fin m → ZMod (prime^(w+1))}
+    {prefixes : ℕ → List (Fin (prime+4))} {archiveTail : List (Fin (prime+4))}
+    {schedules : List ℕ → List (Fin (prime+4))} {S : Host.Stacks (66+K) prime} {pending : List ℕ}
+    (ready : DirectoryReady v proj w W H J parent prefixes archiveTail schedules S pending)
+    (xs : List (Fin (prime+4))) :
+    DirectoryReady v proj w W H J parent prefixes archiveTail schedules
+      {S with R := Function.update S.R ((24 : Fin 66).castAdd K) xs} pending := by
+  let caller := Fin.castAddEmb (n := 66) K
+  have keep (i : Fin 66) (h : i ≠ 24) := Function.update_of_ne (caller.injective.ne h) xs S.R
+  obtain ⟨dir,width,privateFree,scratch,⟨suffix,matrix⟩,base,unit,trailing,headers,one,clock,parents,pivots⟩ := ready
+  refine ⟨(keep 46 (by decide)).trans dir,fun j hj => (congrArg List.length (keep 47 (by decide))).trans (width j hj),
+    ?_,(keep 49 (by decide)).trans scratch,⟨suffix,(keep 48 (by decide)).trans matrix⟩,
+    (keep 2 (by decide)).trans base,(keep 28 (by decide)).trans unit,(keep 53 (by decide)).trans trailing,
+    ?_,(keep 44 (by decide)).trans one,(congrArg List.length (keep 45 (by decide))).trans clock,
+    (keep 55 (by decide)).trans parents,(keep 54 (by decide)).trans pivots⟩
+  · intro i hi
+    have off : i ≠ (24 : Fin 66).castAdd K := by intro eq; subst i; change 58 ≤ 24 at hi; omega
+    exact ⟨(privateFree i hi).1,(Function.update_of_ne off xs S.R).trans (privateFree i hi).2⟩
+  · intro i
+    apply (keep _ ?_).trans (headers i)
+    intro eq
+    have h := congrArg Fin.val eq
+    change 33+i.val = 24 at h
+    omega
+
+/-- The same payload write on the full archive machine also preserves the
+matrix stream and the live and exceptional selectors. -/
+theorem archiveReady_updatePayload [M8.Machine.Net] {m K d w W H J : ℕ} {v : Descriptor}
+    {proj : Matrix (Fin m) (Fin m) ℚ} {parent : Fin m → ZMod (prime^(w+1))}
+    {prefixes : ℕ → List (Fin (prime+4))} {archiveTail : List (Fin (prime+4))}
+    {schedules : List ℕ → List (Fin (prime+4))} {S : Host.Stacks (66+(K+1)) prime} {pending : List ℕ}
+    (room : Record.size d+(rowSwapBlock.tapes+35+2) ≤ K+1)
+    (xs : List (Fin (prime+4))) :
+    let bank := directoryOrdinaryBank room
+    let caller := Fin.castAddEmb (n := 66) (K+1)
+    let F := {S with R := Function.update S.R (caller 24) xs}
+    DirectoryReady v proj w W H J parent prefixes archiveTail schedules (Host.embStk bank S) pending →
+    DirectoryReady v proj w W H J parent prefixes archiveTail schedules (Host.embStk bank F) pending ∧
+      F.R (directoryMatrixTape room) = S.R (directoryMatrixTape room) ∧
+      F.R (caller 57) = S.R (caller 57) ∧ F.R (caller 56) = S.R (caller 56) := by
+  intro bank caller F ready
+  have cell : bank ((24 : Fin 66).castAdd K) = caller 24 := directoryOrdinaryBank_caller room 24
+  have off : directoryMatrixTape room ≠ caller 24 := by
+    intro eq
+    have h := directoryMatrixTape_private room
+    rw [eq] at h
+    change 66 ≤ 24 at h
+    omega
+  refine ⟨?_,Function.update_of_ne off xs S.R,Function.update_of_ne (caller.injective.ne (by decide : (57 : Fin 66) ≠ 24)) xs S.R,
+    Function.update_of_ne (caller.injective.ne (by decide : (56 : Fin 66) ≠ 24)) xs S.R⟩
+  have same : Host.embStk bank F = {Host.embStk bank S with R := (Function.update (Host.embStk bank S).R
+      ((24 : Fin 66).castAdd K) xs)} := by
+    unfold Host.embStk F
+    congr 1
+    funext i
+    by_cases h : i = (24 : Fin 66).castAdd K <;>
+      simp [Function.comp_def,← cell,bank.injective.eq_iff,h,Function.update_of_ne]
+  rw [same]
+  exact directoryReady_updatePayload ready xs
+
 /-- A record keeps the middle and trailing spectators. The prefix (including
 the cover label) selects the record, so it contributes to its count exactly once. -/
 theorem remainderRecord_volume (v : Descriptor) (w rows : ℕ) (e : ℕ × ℕ)
@@ -29,6 +92,183 @@ theorem remainderRecord_volume (v : Descriptor) (w rows : ℕ) (e : ℕ × ℕ)
   ac_rfl
 
 open IntegerMultBounds.MathlibTM2.Stack Host Mult.PhaseCellToeplitz
+
+/-- Dispatch one loaded owner record, consuming both selector bits even for
+padding. The enclosing owner loop supplies the iteration test. -/
+noncomputable def ownerDispatch {P U : Type} {T Q : ℕ} (mask mode : Fin T) (good exceptional padding : Pr P T Q prime U) :
+    Pr P T Q prime U :=
+  (.act (nextPivotBit mask) : Pr P T Q prime U).seq (.cond (·.flag)
+    ((.act (nextPivotBit mode) : Pr P T Q prime U).seq (.cond (·.flag) exceptional good))
+    ((.act (nextPivotBit mode) : Pr P T Q prime U).seq padding))
+
+theorem ownerDispatch_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U)
+    (mask mode : Fin T) (apart : mask ≠ mode) (good exceptional padding : Pr P T Q prime U)
+    (live bad : Bool) (u : HS T Q prime U) (S : Stacks T prime) (ls bs : List (Fin (prime+4)))
+    (liveBits : S.R mask = bitSymbol live :: ls) (badBits : S.R mode = bitSymbol bad :: bs) :
+    let B := {S with R := Function.update S.R mask ls}
+    let E := {B with R := Function.update B.R mode bs}
+    ∀ {z F n}, Exec body (if live then (if bad then exceptional else good) else padding)
+      (mk {u with flag := bad} E) n (mk z F) →
+      Exec body (ownerDispatch mask mode good exceptional padding) (mk u S)
+        (n + (if live then 4 else 3)) (mk z F) := by
+  intro B E z F n run
+  have firstBit : Exec body (.act (nextPivotBit mask)) (mk u S) 1 (mk {u with flag := live} B) := by
+    simpa [nextPivotBit,Action.run,liveBits,update_rt,B] using Exec.act (body := body) (nextPivotBit mask) (mk u S)
+  have bits : B.R mode = bitSymbol bad :: bs := (Function.update_of_ne apart.symm ls S.R).trans badBits
+  have secondBit : Exec body (.act (nextPivotBit mode)) (mk {u with flag := live} B) 1 (mk {u with flag := bad} E) := by
+    simpa [nextPivotBit,Action.run,bits,update_rt,E] using
+      Exec.act (body := body) (nextPivotBit mode) (mk {u with flag := live} B)
+  cases live with
+  | false =>
+    exact Exec.cast (Exec.seq firstBit (.cond_false rfl (Exec.seq secondBit run))) (by simp; omega) rfl
+  | true =>
+    cases bad with
+    | false => exact Exec.cast (Exec.seq firstBit (.cond_true rfl (Exec.seq secondBit (.cond_false rfl run)))) (by simp; omega) rfl
+    | true => exact Exec.cast (Exec.seq firstBit (.cond_true rfl (Exec.seq secondBit (.cond_true rfl run)))) (by simp; omega) rfl
+
+private theorem ownerSelectors_frame [M8.Machine.Net] {m d K w W H J N : ℕ} {v : Descriptor}
+    {proj : Matrix (Fin m) (Fin m) ℚ} {parent : Fin m → ZMod (prime^(w+1))}
+    {prefixes : ℕ → List (Fin (prime+4))} {archiveTail : List (Fin (prime+4))}
+    {schedule : List ℕ → List (Fin (prime+4))} {pending : List ℕ}
+    (room : Record.size d+(rowSwapBlock.tapes+35+2) ≤ K+1) (S : Stacks (66+(K+1)) prime)
+    (ls bs : List (Fin (prime+4))) (original : Fin N → ZMod 2) :
+    let placement := directoryOrdinaryBank room
+    let caller := Fin.castAddEmb (n := 66) (K+1)
+    let ready := DirectoryReady v proj w W H J parent prefixes archiveTail schedule
+    let payload := fun (word : Fin N → ZMod 2) D =>
+      RecordPayload ((24 : Fin 66).castAdd K) (fun _ => blank) 0 word (embStk placement D)
+    let B := {S with R := Function.update S.R (caller 57) ls}
+    let E := {B with R := Function.update B.R (caller 56) bs}
+    ready (embStk placement S) pending → payload original S →
+      ready (embStk placement E) pending ∧ payload original E ∧ E.R (directoryMatrixTape room) = S.R (directoryMatrixTape room) := by
+  intro placement caller ready payload B E start input
+  have update (D : Stacks (66+(K+1)) prime) (i : Fin 66) (xs : List (Fin (prime+4))) :
+      embStk placement {D with R := Function.update D.R (caller i) xs} =
+        {embStk placement D with R := Function.update (embStk placement D).R (i.castAdd K) xs} := by
+    have cell : placement (i.castAdd K) = caller i := directoryOrdinaryBank_caller room i
+    unfold embStk
+    congr 1
+    funext k
+    by_cases h : k = i.castAdd K <;> simp [Function.comp_def,← cell,placement.injective.eq_iff,h,Function.update_of_ne]
+  have readyE : ready (embStk placement E) pending := by
+    unfold E B
+    rw [update,update]
+    exact DirectoryReady.updateSelector 56 (by decide) (by decide) _ (DirectoryReady.updateSelector 57 (by decide) (by decide) _ start)
+  have off (i : Fin 66) : directoryMatrixTape room ≠ caller i := by
+    intro eq
+    have h := directoryMatrixTape_private room
+    rw [eq] at h
+    exact i.isLt.not_ge h
+  have inputE : payload original E := by
+    unfold payload E B
+    rw [update,update]
+    simpa [payload,RecordPayload,Function.update_of_ne] using input
+  exact ⟨readyE,inputE,by simp [E,B,off,Function.update_of_ne]⟩
+
+local instance (w : ℕ) : NeZero (prime^(w+1)) := ⟨pow_ne_zero _ Networks.Shared50ModularControl.prime_prime.ne_zero⟩
+
+open IntegerMultBounds.MathlibTM2.Fast.Main IntegerMultBounds.Swap.Modular Matrix in
+/-- Dispatch a live exceptional owner row through its physical projector and
+retain the archive frame needed after draining the transformed payload. -/
+theorem ownerExceptional_exec [M8.Machine.Net] {m d K w W J N : ℕ} {P U : Type}
+    (dimension : m+m = d+1) (v : Descriptor) (proj : Matrix (Fin m) (Fin m) ℚ)
+    (idem : proj*proj = proj) (adm : Admissible prime proj)
+    (parent inv : Fin m → ZMod (prime^(w+1))) (reciprocal : ∀ i, parent i * inv i = 1)
+    (data : ScanData m d w W) (hm : prime^(w+1) < 2^data.H) (hw : W < 2^J) (positive : 0 < W)
+    (room : Record.size d+(rowSwapBlock.tapes+35+2) ≤ K+1)
+    (capacity : (anchorProgram d true).1+(anchorProgram d false).1+1 ≤ columnCapacity)
+    (body : P → Pr P (66+(K+1)) columnCapacity prime U) (c : ℕ) (bodyBound : ∀ f, mnProgPush (body f) ≤ c)
+    (prefixes : ℕ → List (Fin (prime+4))) (archiveTail : List (Fin (prime+4)))
+    (bad : ℕ → Bool) (j : ℕ) (inside : j < data.records)
+    (live : LabelStock.live m (w+1) 1 j = true) (exceptional : bad j = true)
+    (length : N = (prime^(w+1))^m*((prime^(w+1))^m*W)) (original : Fin N → ZMod 2)
+    (u : HS (66+(K+1)) columnCapacity prime U) (S : Stacks (66+(K+1)) prime) :
+    let e := finSumFinEquiv.trans (finCongr dimension)
+    let physical := data.physical e proj parent inv
+    let φ := LabelRing.res prime (w+1) (by omega)
+    let code := fun k => residualSchedule (A := prime) (projectorResidual finSumFinEquiv (reduce prime proj)
+      (φ ∘ parent) (φ ∘ inv) (LabelStock.residue m (w+1) 1 k))
+    let schedule := fun (xs : List ℕ) => xs.flatMap fun k => if bad k then code k else []
+    let ready := DirectoryReady v proj w W data.H J parent prefixes archiveTail schedule
+    let placement := directoryOrdinaryBank room
+    let caller := Fin.castAddEmb (n := 66) (K+1)
+    let payload := fun (word : Fin N → ZMod 2) D =>
+      RecordPayload ((24 : Fin 66).castAdd K) (fun _ => blank) 0 word (embStk placement D)
+    let labels := (List.range data.records).drop (j+1)
+    ready (embStk placement S) ((List.range data.records).drop j) → S.R (directoryMatrixTape room) = physical.matrices j →
+    (good padding : Pr P (66+(K+1)) columnCapacity prime U) →
+    (ls bs : List (Fin (prime+4))) →
+    S.R (caller 57) = bitSymbol true :: ls → S.R (caller 56) = bitSymbol true :: bs →
+    payload original S →
+    let C := physical.table (LabelStock.residue m (w+1) 1 j)
+    let rows := classPivots C
+    let privateTapes := (List.finRange (66+(K+1))).filter fun i => decide (58 ≤ i.val ∧ i ≠ directoryMatrixTape room)
+    ∃ z D n next, z.user = u.user ∧ n ≤ exceptionalRecordTime U rows (negativeAnchor rows C) m w W data.H J
+      privateTapes.length (max (mnProgPush (directoryExceptionalCore (P := P) (U := U) d room capacity)) c) (prefixes j).length + 4 ∧
+      Exec body (ownerDispatch (caller 57) (caller 56) good (directoryExceptionalProgram m d room capacity) padding) (mk u S) n (mk z D) ∧
+      ready (embStk placement D) labels ∧ D.R (directoryMatrixTape room) = physical.matrices (j+1) ∧
+      (∀ x k, next ((FlatCoordinateLayout.index ((projectorResidual e (reduce (prime^(w+1)) proj) parent inv
+        (physicalLabel m (w+1) j)).mulVec x) k).cast (directoryPayloadLength e length)) = original ((FlatCoordinateLayout.index x k).cast (directoryPayloadLength e length))) ∧
+      payload next D ∧
+      let drained := {D with R := Function.update D.R (caller 24) ((D.R (caller 24)).drop N)}
+      ready (embStk placement drained) labels ∧ drained.R (directoryMatrixTape room) = physical.matrices (j+1) ∧
+      drained.R (caller 57) = ls ∧ drained.R (caller 56) = bs := by
+  intro e physical φ code schedule ready placement caller payload labels start matrix good padding ls bs liveBits badBits input C rows privateTapes
+  let B := {S with R := Function.update S.R (caller 57) ls}
+  let E := {B with R := Function.update B.R (caller 56) bs}
+  obtain ⟨readyE,inputE,archiveE⟩ := ownerSelectors_frame room S ls bs original start input
+  obtain ⟨z,D,n,next,user,time,run,done,tail,action,out,mask,mode⟩ :=
+    DirectoryReady.runExceptional dimension v proj idem adm parent inv reciprocal data hm hw positive room capacity
+      body c bodyBound prefixes archiveTail bad j inside live exceptional (fun _ => blank) 0 length original
+      {u with flag := true} E readyE (archiveE.trans matrix) inputE
+  have dispatch := ownerDispatch_exec body (caller 57) (caller 56) (caller.injective.ne (by decide : (57 : Fin 66) ≠ 56))
+    good (directoryExceptionalProgram m d room capacity) padding true true u S ls bs liveBits badBits run
+  obtain ⟨restored,archive,keepLive,keepBad⟩ := archiveReady_updatePayload room ((D.R (caller 24)).drop N) done
+  refine ⟨z,D,_,next,user,Nat.add_le_add_right time 4,dispatch,done,tail,action,out,restored,archive.trans tail,?_,?_⟩
+  · exact keepLive.trans (mask.trans (by simp [E,B,caller,Function.update_of_ne]))
+  · exact keepBad.trans (mode.trans (Function.update_self (caller 56) bs B.R))
+
+/-- Good and padding calls consume the same archive entry. The placed
+ordinary executor includes the matrix advance in its budget. -/
+theorem ownerOrdinary_exec [M8.Machine.Net] {m d K w W H J N Q : ℕ} {P U : Type}
+    (v : Descriptor) (proj : Matrix (Fin m) (Fin m) ℚ) (parent : Fin m → ZMod (prime^(w+1)))
+    (prefixes : ℕ → List (Fin (prime+4))) (archiveTail : List (Fin (prime+4)))
+    (schedule : List ℕ → List (Fin (prime+4))) (room : Record.size d+(rowSwapBlock.tapes+35+2) ≤ K+1)
+    (body : P → Pr P (66+(K+1)) Q prime U) (good exceptional padding : Pr P (66+(K+1)) Q prime U)
+    (live bad : Bool) (ordinary : ¬ (live = true ∧ bad = true)) (budget j : ℕ) (labels : List ℕ)
+    (matrices : ℕ → List (Fin (prime+4))) (original : Fin N → ZMod 2) (effect : (Fin N → ZMod 2) → Prop)
+    (u : HS (66+(K+1)) Q prime U) (S : Stacks (66+(K+1)) prime) (ls bs : List (Fin (prime+4))) :
+    let placement := directoryOrdinaryBank room
+    let caller := Fin.castAddEmb (n := 66) (K+1)
+    let ready := DirectoryReady v proj w W H J parent prefixes archiveTail schedule
+    let payload := fun (word : Fin N → ZMod 2) D =>
+      RecordPayload ((24 : Fin 66).castAdd K) (fun _ => blank) 0 word (embStk placement D)
+    ready (embStk placement S) (j::labels) → S.R (directoryMatrixTape room) = matrices j →
+    S.R (caller 57) = bitSymbol live :: ls → S.R (caller 56) = bitSymbol bad :: bs → payload original S →
+    (∀ y A, ready (embStk placement A) (j::labels) → payload original A → A.R (directoryMatrixTape room) = matrices j →
+      ∃ z D n next, z.user = y.user ∧ n ≤ budget ∧ Exec body (if live then good else padding) (mk y A) n (mk z D) ∧
+        ready (embStk placement D) labels ∧ effect next ∧ payload next D ∧ D.R (directoryMatrixTape room) = matrices (j+1) ∧
+        D.R (caller 57) = A.R (caller 57) ∧ D.R (caller 56) = A.R (caller 56)) →
+    ∃ z D n next, z.user = u.user ∧ n ≤ budget+(if live then 4 else 3) ∧
+      Exec body (ownerDispatch (caller 57) (caller 56) good exceptional padding) (mk u S) n (mk z D) ∧
+      effect next ∧ payload next D ∧
+      let drained := {D with R := Function.update D.R (caller 24) ((D.R (caller 24)).drop N)}
+      ready (embStk placement drained) labels ∧ drained.R (directoryMatrixTape room) = matrices (j+1) ∧
+      drained.R (caller 57) = ls ∧ drained.R (caller 56) = bs := by
+  intro placement caller ready payload start matrix liveBits badBits input call
+  let B := {S with R := Function.update S.R (caller 57) ls}
+  let E := {B with R := Function.update B.R (caller 56) bs}
+  obtain ⟨readyE,inputE,archiveE⟩ := ownerSelectors_frame room S ls bs original start input
+  obtain ⟨z,D,n,next,user,time,run,done,action,out,tail,mask,mode⟩ := call {u with flag := bad} E readyE inputE
+    (archiveE.trans matrix)
+  have branch : (if live then (if bad then exceptional else good) else padding) = (if live then good else padding) := by
+    cases live <;> cases bad <;> first | rfl | exact (ordinary ⟨rfl,rfl⟩).elim
+  have dispatch := ownerDispatch_exec body (caller 57) (caller 56) (caller.injective.ne (by decide : (57 : Fin 66) ≠ 56))
+    good exceptional padding live bad u S ls bs liveBits badBits (branch ▸ run)
+  obtain ⟨restored,archive,keepLive,keepBad⟩ := archiveReady_updatePayload room ((D.R (caller 24)).drop N) done
+  exact ⟨z,D,_,next,user,Nat.add_le_add_right time _,dispatch,action,out,restored,archive.trans tail,
+    keepLive.trans (mask.trans (by simp [E,B,caller,Function.update_of_ne])),
+    keepBad.trans (mode.trans (Function.update_self (caller 56) bs B.R))⟩
 
 /-- The packed owner word is the concatenation of the payloads in physical
 directory order. Each record occupies one contiguous range on the queue. -/
