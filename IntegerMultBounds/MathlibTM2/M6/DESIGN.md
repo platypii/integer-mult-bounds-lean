@@ -669,8 +669,8 @@ coefficient retains the label fraction, and the parent setup is linear in packed
 volume. `PortReads.roundTrip` proves that the forward chart, packed scanner and inverse
 chart give the residual read equation at the original label and preserve all
 spectator offsets in the chart transports. `ownerRun_returnChart` appends a physical return chart to an owner execution.
-Its private registers are disjoint from the preceding program. It reads the
-updated owners in place and costs at most `stage.cost*(stage.tapes+5)+6`.
+It reuses the forward chart’s owner slots and 24 header registers. Its scratch
+registers start blank. It reads the updated owners in place and costs at most `stage.cost*(stage.tapes+5)+6`.
 `OrdinaryParentRun.chartRoundTrip` instantiates both scheduled chart executions
 around the installed ordinary-parent scan. It preserves each other owner word
 and proves the residual read equation on the selected owner at each original
@@ -699,8 +699,8 @@ after the leading owners and starts the remaining workspace blank. On return,
 both physical chart banks again represent their private entry metadata, so a
 subsequent call at the same layout can reuse them. On return the caller's user
 state is preserved and both stacks of every ordinary private tape at index
-58 or above are empty. The inverse chart preserves the scanner's stacks on
-every preceding register outside the owner slots.
+58 or above are empty. The inverse chart preserves both stacks on every preceding register outside
+the shared owner and header slots.
 
 The semantic five-class node (S5d.3) certifies upstream's accounting under ideal routes and
 partial swaps. Its exponent `1 - 10/5769` holds under that idealization only.
