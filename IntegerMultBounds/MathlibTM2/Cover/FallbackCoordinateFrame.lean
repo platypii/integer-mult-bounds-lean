@@ -167,6 +167,12 @@ section
 local instance (w : ℕ) : NeZero (prime^(w+1)) :=
   ⟨pow_ne_zero _ Networks.Shared50ModularControl.prime_prime.ne_zero⟩
 
+private theorem coordinateWord_cast {n m : ℕ} (h : n = m) (word : Fin m → ZMod 2) :
+    List.ofFn (fun k : Fin n => word (k.cast h)) = List.ofFn word ∧
+    ext (fun k : Fin n => word (k.cast h)) = ext word := by
+  subst m
+  exact ⟨rfl,rfl⟩
+
 /-- The concrete weighted coordinate call returns the changed word at the
 decremented parent counter, preserving the caller's records. -/
 theorem packedCoordinate_exec [M8.Machine.Net] {T m d work Q : ℕ} {F U : Type}
@@ -181,7 +187,7 @@ theorem packedCoordinate_exec [M8.Machine.Net] {T m d work Q : ℕ} {F U : Type}
     let host := common+24
     let M := prime^(w+1)
     let view := {(RecursiveInterchangeLayout.child M 1 1 v i i.rev) with width := w+1}
-    let N := ((view.beforeRows*view.rows*view.beforeH)*M*view.between)*(M*view.afterD)
+    let N := volume prime v
     let entry : Graph.Block common prime := Blocks.seqB LeafRoutines.offsets (Blocks.seqB Blocks.push LeafRoutines.view)
     let leave : Graph.Block common prime := Blocks.seqB Blocks.restore LeafRoutines.advance
     let record := (Fin.natAddEmb common (m := 24)).trans ((Fin.castAddEmb 31).trans (Fin.castAddEmb work))
@@ -220,6 +226,16 @@ theorem packedCoordinate_exec [M8.Machine.Net] {T m d work Q : ℕ} {F U : Type}
   let effect := fun r => ∃ next, r = changed next ∧ address next
   have viewPos : view.Positive := child_positive M 1 1 v i i.rev
     (pow_pos Networks.Shared50ModularControl.prime_prime.pos _) (by decide) (one_dvd _) positive
+  have size : ((view.beforeRows*view.rows*view.beforeH)*M*view.between)*(M*view.afterD) = N := by
+    let logical := {v with width := d}
+    have same := child_volume_div M 1 1 logical i i.rev (by simp [logical]) (by decide) (one_dvd _)
+    rw [Nat.div_one] at same
+    calc
+      _ = volume M (child M 1 1 logical i i.rev) := by simp [view,volume,child,logical,Nat.mul_assoc]
+      _ = volume M logical := same
+      _ = N := by simp [N,logical,volume,width,M,pow_mul,Nat.mul_comm d (w+1)]
+  let localWord := fun k => word (Fin.cast size k)
+  obtain ⟨sameCells,sameRead⟩ := coordinateWord_cast size word
   let localLeaf := packedLeafProgram (F := Empty) (U := U) io j.val i.val
   let middle := statePlacedNormalized (packedFramePorts (host := host) fits) cap
     (Nat.lt_of_lt_of_le (by decide : 0 < 217) (leafCoreCapacity io)) (Empty.elim : Empty → F) localLeaf
@@ -229,9 +245,101 @@ theorem packedCoordinate_exec [M8.Machine.Net] {T m d work Q : ℕ} {F U : Type}
         intro y E inside cleanE kept
         obtain ⟨next,z,D,t,user,bound,run,out,free,keep,addr⟩ := packedCoordinateMiddle_exec
           view viewPos w rfl parent j parentInv reciprocal pivot i unit io roles f p _ scalar _ st fits cap
-          word body y S E pivotTail parentTail head input inside cleanE kept arithmetic spare archives
-        exact ⟨changed next,z,D,t,⟨next,rfl,addr⟩,user,bound,run,out,free,keep⟩)
+          localWord body y S E pivotTail parentTail head (by simpa only [localWord,sameCells] using input) inside cleanE kept arithmetic spare archives
+        let result := fun k => next (Fin.cast size.symm k)
+        obtain ⟨cells,read⟩ := coordinateWord_cast size.symm next
+        refine ⟨changed result,z,D,t,⟨result,rfl,?_⟩,user,bound,run,?_,free,keep⟩
+        · simpa only [address,result,read,localWord,sameRead] using addr
+        · have bankEq : changed result = SharedPlacementAlphabet.setTape roles io (leafBitTape (List.ofFn next)) 0 :=
+            congrArg (fun xs => SharedPlacementAlphabet.setTape roles io (leafBitTape xs) 0) cells
+          rw [bankEq]
+          exact out)
   exact ⟨next,z,D,t,user,bound,run,out,free,keep,addr⟩
+
+/-- Execute every packed coordinate from the initial rank down to counter zero. -/
+theorem packedCoordinates_exec [M8.Machine.Net] {T d work Q : ℕ} {F U : Type}
+    (v : Descriptor) (positive : v.Positive) (w : ℕ) (width : v.width = d*(w+1))
+    (parent parentInv : Fin d → ZMod (prime^(w+1)))
+    (reciprocal : ∀ i, parent i * parentInv i = 1) (pivot : Fin d → ZMod (prime^(w+1)))
+    (unit : ∀ i, IsUnit (pivot i)) (io : Fin T) (roles : Tapes T prime)
+    (f : ℤ → Fin (prime+4)) (p : ℤ) (node scalar : Tapes 1 prime)
+    (arity : ℕ) (st : Tapes 2 prime) (freeNode : Family.NodeFree node)
+    (fits : LeafCore.small ≤ work) (cap : (LeafCore.core io).states ≤ Q) :
+    let common := CommonBank.count T
+    let host := common+24
+    let M := prime^(w+1)
+    let view := fun i : Fin d => {(RecursiveInterchangeLayout.child M 1 1 v i i.rev) with width := w+1}
+    let N := volume prime v
+    let entry : Graph.Block common prime := Blocks.seqB LeafRoutines.offsets (Blocks.seqB Blocks.push LeafRoutines.view)
+    let leave : Graph.Block common prime := Blocks.seqB Blocks.restore LeafRoutines.advance
+    let record := (Fin.natAddEmb common (m := 24)).trans ((Fin.castAddEmb 31).trans (Fin.castAddEmb work))
+    let rep := fun count roles' (D : Stacks ((host+31)+work) prime) =>
+      RepT (CommonBank.bank roles' (Routines.hdr v) f p node scalar (Family.leafC (w+1) arity d count) st)
+        (fun k => D.L (((k.castAdd 24).castAdd 31).castAdd work))
+        (fun k => D.R (((k.castAdd 24).castAdd 31).castAdd work))
+    let clean := fun (D : Stacks ((host+31)+work) prime) => ∀ (k : Fin work) x,
+      readAt blank (D.L (k.natAdd (host+31))) (D.R (k.natAdd (host+31))) x = blank
+    let payload := fun x : Fin N → ZMod 2 => SharedPlacementAlphabet.setTape roles io (leafBitTape (List.ofFn x)) 0
+    let weight := fun i => parent i*pivot i
+    let inv := fun i => parentInv i*Ring.inverse (pivot i)
+    let logical := {v with width := d}
+    let addr := fun a row pre mid post (x : IntegerMultBounds.Swap.Shear.State (Fin d) (ZMod M)) =>
+      index M logical a row pre (FlatCoordinateLayout.rank x.1).val mid (FlatCoordinateLayout.rank x.2).val post
+    let budget := fun i : Fin d => (1+(1800*N*(entry.tapes+5)+6))+(1+(weightedLeafCost (volume prime (view i)) (w+1)
+      (LeafCore.core io).tapes (packedLeafPush (F := Empty) (U := U) io Empty.elim)+
+      ((1000*(prime+1)+8*(i.val+i.val))*(2*(prime.size+1)^2))*M))+(1+(200*N*(leave.tapes+5)+6))
+    ∀ (ef : entry.tapes ≤ common+work) (xf : leave.tapes ≤ common+work)
+      (eqs : entry.states ≤ Q) (xqs : leave.states ≤ Q) (word : Fin N → ZMod 2) (body : F → Pr F ((host+31)+work) Q prime U)
+      (u : HS _ Q prime U) (S : Stacks _ prime) (pivotTail parentTail : List (Fin (prime+4))),
+      rep d (payload word) S → clean S →
+      (∀ k : Fin 31, S.L ((k.natAdd host).castAdd work) = [] ∧ S.R ((k.natAdd host).castAdd work) = []) →
+      S.R (record 18) = [] →
+      PackedLeafInputs (goodChildPorts.trans record) M.size parent pivot S pivotTail parentTail →
+      let call := fun i : Fin d => packedCoordinateProgram (F := F) (U := U) io i.val i.val ef xf fits eqs xqs cap
+      ∃ next : Fin N → ZMod 2, ∃ z D t, z.user = u.user ∧ t ≤ ((List.finRange d).map budget).sum+1 ∧
+        Exec body (Prog.seqList ((List.finRange d).reverse.map call)) (mk u S) t (mk z D) ∧
+        rep 0 (payload next) D ∧ clean D ∧
+        (∀ k : Fin 55, D.L ((k.natAdd common).castAdd work) = S.L ((k.natAdd common).castAdd work) ∧
+          D.R ((k.natAdd common).castAdd work) = S.R ((k.natAdd common).castAdd work)) ∧
+        ∀ a < v.beforeRows, ∀ row < v.rows, ∀ pre < v.beforeH, ∀ mid < v.between, ∀ post < v.afterD, ∀ x,
+          ext next (addr a row pre mid post (Weighted.child d weight inv x)) = ext word (addr a row pre mid post x) := by
+  intro common host M view N entry leave record rep clean payload weight inv logical addr budget ef xf eqs xqs word body u S pivotTail parentTail initial free arithmetic spare archives call
+  let keep := fun (E : Stacks ((host+31)+work) prime) => ∀ k : Fin 55,
+    E.L ((k.natAdd common).castAdd work) = S.L ((k.natAdd common).castAdd work) ∧
+    E.R ((k.natAdd common).castAdd work) = S.R ((k.natAdd common).castAdd work)
+  let ready := fun count E (read : ℕ → ZMod 2) => ∃ x : Fin N → ZMod 2,
+    read = ext x ∧ rep count (payload x) E ∧ clean E ∧ keep E
+  have units (i : Fin d) : weight i * inv i = 1 := by
+    dsimp only [weight,inv]
+    rw [mul_mul_mul_comm,reciprocal,Ring.mul_inverse_cancel _ (unit i),one_mul]
+  have step := weightedCoordinates_exec logical rfl (q := prime) (w := w+1) rfl weight inv units body call budget ready
+  obtain ⟨z,D,out,t,user,bound,run,⟨next,rfl,finalBank,blank,kept⟩,address⟩ := step (by
+    intro i y E read current
+    obtain ⟨x,rfl,bank,blank,kept⟩ := current
+    have right (k : Fin 24) : E.R (record k) = S.R (record k) := (kept (k.castAdd 31)).2
+    have empty (k : Fin 31) : E.L ((k.natAdd host).castAdd work) = [] ∧ E.R ((k.natAdd host).castAdd work) = [] := by
+      have h := kept (k.natAdd 24)
+      have eq : ((k.natAdd 24).natAdd common : Fin (common+55)) = k.natAdd host := by
+        apply Fin.ext
+        simp [host,Nat.add_assoc]
+      rw [eq] at h
+      exact ⟨h.1.trans (arithmetic k).1,h.2.trans (arithmetic k).2⟩
+    have inputs : PackedLeafInputs (goodChildPorts.trans record) M.size parent pivot E pivotTail parentTail :=
+      ⟨(right _).trans archives.weights,(right _).trans archives.pivots,(right _).trans archives.modulus,
+       (right _).trans archives.one,(congrArg List.length (right _)).trans archives.clock,
+       fun k h => (right _).trans (archives.scratch k h)⟩
+    obtain ⟨next,z,D,t,hz,ht,run,result,cleanD,keepD,addrD⟩ :=
+      packedCoordinate_exec v positive w width parent i (parentInv i) (reciprocal i) pivot i (unit i) io
+        (payload x) f p node scalar arity st freeNode fits cap ef xf eqs xqs x body y E pivotTail parentTail
+        (by simp [payload,SharedPlacementAlphabet.setTape]) (by simp [payload,SharedPlacementAlphabet.setTape])
+        bank blank empty ((right _).trans spare) inputs
+    refine ⟨z,D,ext next,t,hz,ht,run,⟨next,rfl,?_,cleanD,?_⟩,?_⟩
+    · simpa only [payload,SharedPlacementAlphabet.setTape,Function.update_idem] using result
+    · intro k
+      exact ⟨(keepD k).1.trans (kept k).1,(keepD k).2.trans (kept k).2⟩
+    · simpa only [logical,weight,inv,child,Nat.div_one] using addrD) u S (ext word)
+      ⟨word,rfl,initial,free,fun _ => ⟨rfl,rfl⟩⟩
+  exact ⟨next,z,D,t,user,bound,run,finalBank,blank,kept,address⟩
 
 end
 
