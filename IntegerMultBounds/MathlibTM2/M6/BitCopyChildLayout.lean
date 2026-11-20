@@ -310,6 +310,38 @@ theorem copyRecursivePacked_swap (parent : Descriptor) (w rows : ℕ)
   exact Shared50RecursiveNodeTranspose.transpose_all (by decide : 0 < 1) (one_dvd _)
     (input ∘ e) (copyChildAddress h d u v j)
 
+/-- The packed swap equation determines the returned word on the entire
+recursive descriptor, including all spectator cells. -/
+theorem copyPacked_recursiveTranspose (parent : Descriptor) (w rows : ℕ)
+    (splitRows : parent.rows = 142080*rows) :
+    let M := prime^(w+1)
+    let W := M^112 * (parent.beforeRows*rows*parent.beforeH*parent.between*parent.afterD)
+    let position := copyRecursivePosition parent w rows splitRows
+    ∀ {α : Type} (word changed : Fin (M^15*(M*W)) → α),
+      (∀ (h d : Fin 7 → ZMod M) (u : Fin 1 → ZMod M) (j : Fin (M*W)),
+        changed (FlatCoordinateLayout.index (Fin.append (Fin.append d h) u) j) =
+          word (FlatCoordinateLayout.index (Fin.append (Fin.append h d) u) j)) →
+      ∀ i, changed (position i) = Shared50RecursiveNodeRows.transpose (one_dvd _) (word ∘ position) i := by
+  intro M W position α word changed swap
+  let expected := Shared50RecursiveNodeRows.transpose (one_dvd _) (word ∘ position) ∘ position.symm
+  have correct i : expected (position i) = Shared50RecursiveNodeRows.transpose (one_dvd _) (word ∘ position) i := by
+    exact congrArg (Shared50RecursiveNodeRows.transpose (one_dvd _) (word ∘ position)) (position.symm_apply_apply i)
+  have known := copyRecursivePacked_swap parent w rows splitRows word expected correct
+  have same : changed = expected := by
+    funext k
+    obtain ⟨⟨a,j⟩,rfl⟩ := finProdFinEquiv.surjective k
+    obtain ⟨x,rfl⟩ := (FlatCoordinateLayout.rankEquiv : (Fin 15 → ZMod M) ≃ Fin (M^15)).surjective a
+    let dh := fun i : Fin 14 => x (i.castAdd 1)
+    let d := fun i : Fin 7 => dh (i.castAdd 7)
+    let h := fun i : Fin 7 => dh (i.natAdd 7)
+    let u := fun i : Fin 1 => x (i.natAdd 14)
+    have layout : Fin.append (Fin.append d h) u = x := by
+      rw [show Fin.append d h = dh from Fin.append_castAdd_natAdd (m := 7) (n := 7)]
+      exact Fin.append_castAdd_natAdd (m := 14) (n := 1)
+    change changed (FlatCoordinateLayout.index x j) = expected (FlatCoordinateLayout.index x j)
+    rw [← layout,swap,known]
+  exact fun i => same ▸ correct i
+
 /-- The prepared output of the seven exchanges contains the incoming COPY bit
 at its active-first descriptor position, including the final untouched atom. -/
 theorem copyPacked_read {w W T H J : ℕ}
@@ -367,6 +399,43 @@ theorem copyPacking_transpose {w W : ℕ}
     simpa only [Fin.val_cast,digit] using copyPackingInput_index h d u v j
   rw [addr,addr]
   exact Shared50RecursiveNodeTranspose.transpose_all (by decide : 0 < 1) (one_dvd _) input (copyChildAddress h d u v j)
+
+/-- Direct execution of the packed rank-seven swap, with its actual tape cost.
+This gives a terminating child at widths where recursion stops. -/
+theorem copyPackedBase_exec [M8.Machine.Net] {P U : Type} [Fintype P]
+    (body : P → Pr P (N+35) Q prime U) :
+    ∃ setup swaps : ℕ, ∀ w W, 0 < W →
+      let M := prime^(w+1)
+      let bank : Fin 35 ↪ Fin (N+35) := (Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)
+      let clean := fun (D : Stacks (N+35) prime) => ∀ k : Fin (N+35), 35 ≤ k.val → D.L k = [] ∧ D.R k = []
+      ∀ (v : HS (N+35) Q prime U) (S : Stacks (N+35) prime)
+        (word : Fin (M^15*W) → ZMod 2),
+      let stored := RecordReady (b := prime) (w := w) (d := 15) (W := W) bank M.size W.size []
+        SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0
+      stored word S → clean S → ∃ z F n changed, z.user = v.user ∧
+        n ≤ (setup+swaps*swapVolumeRate w)*(M^15*W) ∧
+        Exec body (packSchedule 15 (middleTailSchedule 7 7)) (mk v S) n (mk z F) ∧
+        stored changed F ∧ clean F ∧
+        ∀ (h d : Fin 7 → ZMod M) (u : Fin 1 → ZMod M) (j : Fin W),
+          changed (FlatCoordinateLayout.index (Fin.append (Fin.append d h) u) j) =
+            word (FlatCoordinateLayout.index (Fin.append (Fin.append h d) u) j) := by
+  let schedule := middleTailSchedule 7 7
+  have fits : ∀ i ∈ schedule, i+1 < 15 := fun i hi =>
+    Nat.lt_trans (middleTailSchedule_inside hi) (by decide)
+  obtain ⟨setup,swaps,bill⟩ := packTime_le body 15 schedule (by decide)
+  refine ⟨setup,swaps,?_⟩
+  intro w W hW M bank clean v S word stored start free
+  obtain ⟨z,F,n,user,time,run,⟨changed,ready,read⟩,clear⟩ := packSchedule_exec schedule fits
+    M.size W.size (Nat.size_le.mp le_rfl) (Nat.size_le.mp le_rfl) hW body v S [] (fun _ => blank) 0 word id
+    ⟨word,start,fun _ _ => rfl⟩ free
+  refine ⟨z,F,n,changed,user,time.trans (bill w W hW),run,ready,clear,?_⟩
+  intro h d u j
+  have order : schedule.foldl adjacentFields (Fin.append (Fin.append h d) u) = Fin.append (Fin.append d h) u := by
+    apply List.ofFn_injective
+    rw [fold_adjacentFields _ _ fits]
+    simpa only [List.ofFn_fin_append,List.length_ofFn,schedule] using
+      middleTailSchedule_packs (List.ofFn h) (List.ofFn d) (List.ofFn u)
+  simpa only [id_eq,order] using read (Fin.append (Fin.append h d) u) j
 
 open FlatCoordinateLayout (index) in
 /-- A child that swaps the two contiguous seven-atom fields suffices for COPY on
