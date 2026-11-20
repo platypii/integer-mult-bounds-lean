@@ -155,8 +155,8 @@ theorem weightedCoordinates_cost [M8.Machine.Net] {r : ℕ} (v : Descriptor) (wi
     let view := fun i : Fin r => {(RecursiveInterchangeLayout.child M 1 1 v i i.rev) with width := w+1}
     let factor := 2*(prime.size+1)^2
     let V := volume M v
-    let frame := 1800*(entryTapes+5)+200*(returnTapes+5)+14
-    let cost := fun i : Fin r => (1+(1800*V*(entryTapes+5)+6))+weightedLeafCost (volume prime (view i)) (w+1) tapes push+
+    let frame := 1800*(entryTapes+5)+200*(returnTapes+5)+15
+    let cost := fun i : Fin r => (1+(1800*V*(entryTapes+5)+6))+1+weightedLeafCost (volume prime (view i)) (w+1) tapes push+
       ((1000*(prime+1)+8*(i.val+i.val))*factor)*M+(1+(200*V*(returnTapes+5)+6))
     ((List.finRange r).map cost).sum+1 ≤
       r*(weightedLeafCost (volume M v) (w+1) tapes push+

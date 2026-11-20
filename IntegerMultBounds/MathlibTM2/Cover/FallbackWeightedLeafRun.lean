@@ -133,6 +133,101 @@ theorem recordFrame_exec {Q A k work : ℕ} (record : ℕ) (block : Graph.Block 
     simp [ports,framePorts] at hval
     split_ifs at hval <;> omega
 
+/-- Place the packed leaf's final 31 arithmetic tapes next to the record
+tapes, where frame changes preserve empty stacks exactly. Its interchange
+tapes occupy the start of the workspace that frame changes may use. -/
+def packedFramePorts {host priv work : ℕ} (fits : priv ≤ work) :
+    Fin ((host+priv)+31) ↪ Fin ((host+31)+work) where
+  toFun i := ⟨if i.val < host then i.val else if i.val < host+priv then i.val+31 else i.val-priv,by
+    have := i.isLt
+    split_ifs <;> omega⟩
+  inj' := by
+    intro i j eq
+    have h := congrArg Fin.val eq
+    have := i.isLt
+    have := j.isLt
+    dsimp only at h
+    apply Fin.ext
+    split_ifs at h <;> omega
+
+theorem packedFramePorts_shared {host priv work : ℕ} (fits : priv ≤ work) (i : Fin host) :
+    packedFramePorts fits ((i.castAdd priv).castAdd 31) = (i.castAdd 31).castAdd work := by
+  apply Fin.ext
+  simp [packedFramePorts,i.isLt]
+
+theorem packedFramePorts_private {host priv work : ℕ} (fits : priv ≤ work) (i : Fin priv) :
+    packedFramePorts fits ((i.natAdd host).castAdd 31) = (i.castLE fits).natAdd (host+31) := by
+  apply Fin.ext
+  simp [packedFramePorts,i.isLt]
+  omega
+
+theorem packedFramePorts_arithmetic {host priv work : ℕ} (fits : priv ≤ work) (i : Fin 31) :
+    packedFramePorts fits (i.natAdd (host+priv)) = (i.natAdd host).castAdd work := by
+  apply Fin.ext
+  simp [packedFramePorts]
+  split <;> omega
+
+/-- Lift a packed leaf run into the frame's state space. Its returned stacks
+supply the active workspace, and unused workspace retains its blank contents. -/
+theorem packedFrame_exec {host priv work Q A q n : ℕ} (fits : priv ≤ work) (capacity : q ≤ Q)
+    (pos : 0 < q) (leaf : Pr Empty ((host+priv)+31) q A U)
+    (body : F → Pr F ((host+31)+work) Q A U) (u : HS _ Q A U) (S : Stacks _ A)
+    (v : HS _ q A U) (E : Stacks _ A) :
+    let ports := packedFramePorts (host := host) fits
+    Exec Empty.elim leaf (mk (stateLiftDown pos (embDn ports u)) (embStk ports S)) n (mk v E) →
+    (∀ (j : Fin priv) x, readAt blank (E.L ((j.natAdd host).castAdd 31))
+      (E.R ((j.natAdd host).castAdd 31)) x = blank) →
+    (∀ (j : Fin work) x, readAt blank (S.L (j.natAdd (host+31))) (S.R (j.natAdd (host+31))) x = blank) →
+    ∃ z D, z.user = v.user ∧ Exec body (statePlacedNormalized ports capacity pos Empty.elim leaf)
+      (mk u S) (1+n) (mk z D) ∧ embStk ports D = E ∧
+      ∀ (j : Fin work) x, readAt blank (D.L (j.natAdd (host+31))) (D.R (j.natAdd (host+31))) x = blank := by
+  intro ports run active free
+  obtain ⟨z,_,user,placed⟩ := statePlaced_exec_normalized ports ports.injective capacity pos Empty.elim
+    (body' := body) (fun f => nomatch f) u S run
+  let D := embOvr ports E.get S
+  have eq : embStk ports D = E := embStk_ovr ports.injective _ _
+  refine ⟨z,D,user,placed,eq,?_⟩
+  intro j x
+  by_cases h : j.val < priv
+  · let i : Fin priv := ⟨j.val,h⟩
+    have onPort := packedFramePorts_private (host := host) fits i
+    change ports ((i.natAdd host).castAdd 31) = j.natAdd (host+31) at onPort
+    rw [← onPort]
+    change readAt blank ((embStk ports D).L _) ((embStk ports D).R _) x = blank
+    rw [eq]
+    exact active i x
+  · have off := embOvr_off (e := (ports : Fin _ → Fin _)) E.get S (j := j.natAdd (host+31)) (by
+        intro i same
+        have val := congrArg Fin.val same
+        have := i.isLt
+        simp [ports,packedFramePorts] at val
+        split_ifs at val <;> omega)
+    change readAt blank ((embOvr ports E.get S).L _) ((embOvr ports E.get S).R _) x = blank
+    rw [off.1,off.2]
+    exact free j x
+
+/-- The local execution of a packed leaf can be replayed in any sufficiently
+large coordinate frame with the same input on its selected ports. -/
+def PackedFrameRun {host priv Q A : ℕ} (body : F → Pr F ((host+priv)+31) Q A U)
+    (p : Pr F ((host+priv)+31) Q A U) (u : HS ((host+priv)+31) Q A U) (S : Stacks ((host+priv)+31) A)
+    (n : ℕ) (z : HS ((host+priv)+31) Q A U) (D : Stacks ((host+priv)+31) A) : Prop :=
+  ∀ {G : Type} (ι : F → G) {work states : ℕ} (fits : priv ≤ work) (cap : Q ≤ states) (pos : 0 < Q)
+    (outer : G → Pr G ((host+31)+work) states A U)
+    (v : HS ((host+31)+work) states A U) (E : Stacks ((host+31)+work) A),
+    let ports := packedFramePorts (host := host) fits
+    (∀ f, outer (ι f) = statePlacedPr ports cap pos ι (body f)) →
+    stateLiftDown pos (embDn ports v) = u → embStk ports E = S →
+    ∃ y, y.user = z.user ∧ Exec outer (statePlacedNormalized ports cap pos ι p)
+      (mk v E) (1+n) (mk y (embOvr ports D.get E))
+
+private theorem packedFrameRun_of_exec {host priv Q A : ℕ}
+    {body : F → Pr F ((host+priv)+31) Q A U} {p u S n z D}
+    (run : Exec body p (mk u S) n (mk z D)) : PackedFrameRun body p u S n z D := by
+  intro G ι work states fits cap pos outer v E ports callbacks hu hS
+  subst u S
+  obtain ⟨y,_,user,placed⟩ := statePlaced_exec_normalized ports ports.injective cap pos ι callbacks v E run
+  exact ⟨y,user,placed⟩
+
 /-- Enclose a leaf in its entry and return blocks. The return bank depends on
 the leaf result, so the restored parent retains the changed payload. -/
 theorem framedLeaf_exec {Q A record work a b c : ℕ} {ι : Type*}
@@ -673,11 +768,95 @@ section
 local instance (w : ℕ) : NeZero (prime^(w+1)) :=
   ⟨(pow_pos IntegerMultBounds.Networks.Shared50ModularControl.prime_prime.pos _).ne'⟩
 
+/-- A frame change preserves the 24 record stacks and 31 arithmetic stacks.
+Read the packed leaf's inputs directly from those preserved host tapes. -/
+theorem packedFrame_inputs {common priv work m d w : ℕ} (fits : priv ≤ work)
+    (parent : Fin m → ZMod (prime^(w+1))) (pivot : Fin d → ZMod (prime^(w+1)))
+    (bank : Tapes common prime) (pivotTail parentTail : List (Fin (prime+4))) :
+    let host := common+24
+    let ports := packedFramePorts (host := host) fits
+    let caller := (Fin.natAddEmb common (m := 24)).trans (Fin.castAddEmb priv)
+    let record := (Fin.natAddEmb common (m := 24)).trans ((Fin.castAddEmb 31).trans (Fin.castAddEmb work))
+    ∀ (S D : Stacks ((host+31)+work) prime),
+      (∀ j : Fin 55, D.L ((j.natAdd common).castAdd work) = S.L ((j.natAdd common).castAdd work) ∧
+        D.R ((j.natAdd common).castAdd work) = S.R ((j.natAdd common).castAdd work)) →
+      (∀ j : Fin 31, S.L ((j.natAdd host).castAdd work) = [] ∧ S.R ((j.natAdd host).castAdd work) = []) →
+      S.R (record 18) = [] →
+      PackedLeafInputs (goodChildPorts.trans record) (prime^(w+1)).size parent pivot S pivotTail parentTail →
+      RepT bank (fun i => D.L (((i.castAdd 24).castAdd 31).castAdd work))
+        (fun i => D.R (((i.castAdd 24).castAdd 31).castAdd work)) →
+      (∀ (j : Fin work) x, readAt blank (D.L (j.natAdd (host+31))) (D.R (j.natAdd (host+31))) x = blank) →
+      let E := embStk ports D
+      (∀ j : Fin 31, E.L (j.natAdd (host+priv)) = [] ∧ E.R (j.natAdd (host+priv)) = []) ∧
+      E.R ((caller 18).castAdd 31) = [] ∧
+      PackedLeafInputs ((goodChildPorts.trans caller).trans (Fin.castAddEmb 31)) (prime^(w+1)).size
+        parent pivot E pivotTail parentTail ∧
+      RepT bank (fun i => E.L (((i.castAdd 24).castAdd priv).castAdd 31))
+        (fun i => E.R (((i.castAdd 24).castAdd priv).castAdd 31)) ∧
+      ∀ (j : Fin priv) x, readAt blank (E.L ((j.natAdd host).castAdd 31))
+        (E.R ((j.natAdd host).castAdd 31)) x = blank := by
+  intro host ports caller record S D keep free spare archives rep clean E
+  have eqR (j : Fin 24) : E.R ((caller j).castAdd 31) = S.R (record j) := by
+    change D.R (ports (((j.natAdd common).castAdd priv).castAdd 31)) = _
+    rw [packedFramePorts_shared]
+    exact (keep (j.castAdd 31)).2
+  refine ⟨?_,(eqR _).trans spare,?_,?_,?_⟩
+  · intro j
+    have h := keep (j.natAdd 24)
+    have idx : ((j.natAdd 24).natAdd common : Fin (common+55)) = j.natAdd host := by
+      apply Fin.ext
+      simp [host,Nat.add_assoc]
+    rw [idx] at h
+    simpa only [E,embStk,Function.comp_apply,ports,packedFramePorts_arithmetic] using
+      And.intro (h.1.trans (free j).1) (h.2.trans (free j).2)
+  · exact ⟨(eqR _).trans archives.weights,(eqR _).trans archives.pivots,(eqR _).trans archives.modulus,
+      (eqR _).trans archives.one,(congrArg List.length (eqR _)).trans archives.clock,
+      fun j h => (eqR _).trans (archives.scratch j h)⟩
+  · simpa only [E,embStk,Function.comp_apply,ports,packedFramePorts_shared] using rep
+  · intro j x
+    simpa only [E,embStk,Function.comp_apply,ports,packedFramePorts_private] using clean (j.castLE fits) x
+
+/-- The leaf's returned common bank is the restore block's input. The
+24 records retain their stacks, and the 31 arithmetic tapes return to their
+initial empty stacks, so all 55 satisfy the frame contract. -/
+theorem packedFrame_return {common priv work A : ℕ} (fits : priv ≤ work) (bank : Tapes common A) :
+    let host := common+24
+    let ports := packedFramePorts (host := host) fits
+    ∀ (S D : Stacks ((host+31)+work) A) (E : Stacks ((host+priv)+31) A),
+      embStk ports D = E →
+      RepT bank (fun i => E.L (((i.castAdd 24).castAdd priv).castAdd 31))
+        (fun i => E.R (((i.castAdd 24).castAdd priv).castAdd 31)) →
+      (∀ j : Fin 24, let k := ((j.natAdd common).castAdd priv).castAdd 31
+        E.L k = (embStk ports S).L k ∧ E.R k = (embStk ports S).R k) →
+      (∀ j : Fin 31, E.L (j.natAdd (host+priv)) = [] ∧ E.R (j.natAdd (host+priv)) = []) →
+      (∀ j : Fin 31, S.L ((j.natAdd host).castAdd work) = [] ∧ S.R ((j.natAdd host).castAdd work) = []) →
+      RepT bank (fun i => D.L (((i.castAdd 24).castAdd 31).castAdd work))
+        (fun i => D.R (((i.castAdd 24).castAdd 31).castAdd work)) ∧
+      ∀ j : Fin 55, D.L ((j.natAdd common).castAdd work) = S.L ((j.natAdd common).castAdd work) ∧
+        D.R ((j.natAdd common).castAdd work) = S.R ((j.natAdd common).castAdd work) := by
+  intro host ports S D E projected rep record cleared free
+  subst E
+  simp only [embStk,Function.comp_apply,ports,packedFramePorts_shared,packedFramePorts_arithmetic] at rep record cleared
+  refine ⟨rep,?_⟩
+  intro j
+  refine Fin.addCases (m := 24) (n := 31) ?_ ?_ j
+  · exact record
+  · intro k
+    have idx : ((k.natAdd 24).natAdd common : Fin (common+55)) = k.natAdd host := by
+      apply Fin.ext
+      simp [host,Nat.add_assoc]
+    rw [idx]
+    exact ⟨(cleared k).1.trans (free k).1.symm,(cleared k).2.trans (free k).2.symm⟩
+
 /-- Row arithmetic reuses the coefficient bank's cleared slots. Its padded
 zero occupies the one extra slot after that bank. -/
 def packedRowPorts : Fin 13 ↪ Fin 21 := ⟨![1,2,3,7,8,9,10,11,13,17,5,4,20],by decide⟩
 
 def packedFieldPorts : Fin 6 ↪ Fin 20 := ⟨![1,2,3,4,5,6],by decide⟩
+
+private theorem ext_ofFn_read {N : ℕ} (word : Fin N → ZMod 2) (k : ℕ) :
+    ((List.ofFn word)[k]?).getD 0 = ext word k := by
+  by_cases h : k < N <;> simp [List.getElem?_ofFn,ext,h]
 
 /-- Insert the record tapes between the represented common bank and the
 interchange workspace. The two banks are disjoint and the workspace may
@@ -787,8 +966,8 @@ theorem packedWeightedLeaf_exec [M8.Machine.Net] [Fintype F] {m d : ℕ} (v : De
               (negateLeafHead signWord)[index prime v a row pre (weight*t).val mid (inv*h).val post]? =
                 (List.ofFn word)[index prime v a row pre h.val mid t.val post]?) ∧
           (∀ j : Fin 31, D.L (j.natAdd K) = [] ∧ D.R (j.natAdd K) = []) ∧
-          ∀ j : Fin K, (∀ i, sim i ≠ j) →
-            D.L (j.castAdd 31) = S.L (j.castAdd 31) ∧ D.R (j.castAdd 31) = S.R (j.castAdd 31)
+          ∀ j : Fin 24, let k := (caller j).castAdd 31
+            D.L k = S.L k ∧ D.R k = S.R k
       ∀ (body : F → Pr F (K+31) block.states prime U) (u : HS (K+31) block.states prime U)
         (S : Stacks (K+31) prime),
         let bodyPush := Fast.Main.mnPushC body
@@ -815,9 +994,15 @@ theorem packedWeightedLeaf_exec [M8.Machine.Net] [Fintype F] {m d : ℕ} (v : De
         let coefficientRate := (1000*(prime+1)+8*(i.val+j.val))*(2*(prime.size+1)^2)
         ∃ z D n, z.user = u.user ∧ n ≤ weightedLeafCost (volume prime v) v.width block.tapes push+
           coefficientRate*M ∧
-          Exec body ((signedChildPair prime j.val i.val coeff true).seq
-            (call.seq (Mult.ShortConv.clearWords [coeff 0,coeff 14,coeff 12]))) (mk u S) n (mk z D) ∧
-          output S D := by
+          (let program := (signedChildPair prime j.val i.val coeff true).seq
+              (call.seq (Mult.ShortConv.clearWords [coeff 0,coeff 14,coeff 12]))
+           Exec body program (mk u S) n (mk z D) ∧ PackedFrameRun body program u S n z D) ∧
+          output S D ∧ ∃ next : Fin ((P*M*G)*(M*B)) → ZMod 2,
+            List.ofFn next = negateLeafHead signWord ∧
+            ∀ a < v.beforeRows, ∀ row < v.rows, ∀ pre < v.beforeH, ∀ mid < v.between,
+              ∀ post < v.afterD, ∀ h t : ZMod M,
+                ext next (index prime v a row pre (weight*t).val mid (inv*h).val post) =
+                ext word (index prime v a row pre h.val mid t.val post) := by
   intro M weight inv P G B size c word head input block common host K sim caller workBank pair r dst gap tail dims slot capacity src ports shear prog lastProg work stage result y xs len signWord signSrc load bank child sign output body u S bodyPush push free spare pivotTail parentTail recordInputs commonRep privateBlank rr setup leaf fields headers readFields call coeff coefficientRate
   have hp (b : Bool) : Fast.Main.mnProgPush (prog b) ≤ push := by cases b <;> dsimp only [push] <;> omega
   have hl : Fast.Main.mnProgPush lastProg ≤ push := by dsimp only [push]; omega
@@ -907,7 +1092,11 @@ theorem packedWeightedLeaf_exec [M8.Machine.Net] [Fintype F] {m d : ℕ} (v : De
         exact read x
       · intro k
         simpa only [if_neg (privateOff k)] using clean k
-      · intro k hk
+      · intro j
+        dsimp only
+        generalize eq : caller j = k
+        have hk (i) : sim i ≠ k := eq ▸ placement.1 i j
+        clear eq
         refine ⟨(frame k hk).1.trans (congrFun hL _),?_⟩
         change (if k.castAdd 31 ∈ [coeff 0,coeff 14,coeff 12] then [] else D.R _) = _
         split_ifs with mem
@@ -915,7 +1104,18 @@ theorem packedWeightedLeaf_exec [M8.Machine.Net] [Fintype F] {m d : ℕ} (v : De
           rcases mem with h | h | h <;> subst k <;> exact (archives.scratch _ (by decide)).symm
         · exact (frame k hk).2.trans (keep _ mem))
   have charge := leafPairCharge w i.val j.val
-  exact ⟨z,D,t,hz,by dsimp only at ht charge; dsimp only [coefficientRate,M]; omega,run,post⟩
+  have length : (negateLeafHead signWord).length = (P*M*G)*(M*B) := by
+    rw [negateLeafHead_length]
+    simp only [Nat.mul_assoc]
+  let next := fun k : Fin ((P*M*G)*(M*B)) => (negateLeafHead signWord).get (k.cast length.symm)
+  have cells : List.ofFn next = negateLeafHead signWord := by
+    apply List.ext_getElem <;> simp [next,length]
+  refine ⟨z,D,t,hz,by dsimp only at ht charge; dsimp only [coefficientRate,M]; omega,
+    ⟨run,packedFrameRun_of_exec run⟩,post,next,cells,?_⟩
+  intro a ha row hr pre hp mid hm tail ht h t
+  have addr := post.2.2.1 ⟨a,ha⟩ ⟨row,hr⟩ ⟨pre,hp⟩ ⟨mid,hm⟩ ⟨tail,ht⟩ h t
+  rw [← cells] at addr
+  simpa only [ext_ofFn_read] using congrArg (fun cell => cell.getD 0) addr
 
 end
 

@@ -217,6 +217,15 @@ as one block for the block-negation program. -/
 def negateLeafHead {α : Type*} {P M B : ℕ} (word : Fin (P*(M*B)) → α) : List α :=
   (List.ofFn (fun p : Fin P => (BlockNegationData.negate (FiberLayoutData.fiber word p)).flatten)).flatten
 
+theorem negateLeafHead_length {α : Type*} {P M B : ℕ} (word : Fin (P*(M*B)) → α) :
+    (negateLeafHead word).length = P*(M*B) := by
+  unfold negateLeafHead
+  rw [BlockRotationData.uniform_volume (M*B) _ (by
+    intro xs hx
+    obtain ⟨i,rfl⟩ := List.mem_ofFn.mp hx
+    rw [BlockNegationData.payload_length,BlockRotationData.uniform_volume B _ (FiberLayoutData.fiber_uniform word i),
+      FiberLayoutData.fiber_length]),List.length_ofFn]
+
 theorem negateLeafHead_entry {α : Type*} {P M B : ℕ} [NeZero M] (word : Fin (P*(M*B)) → α)
     (p : Fin P) (h : ZMod M) (j : Fin B) :
     (negateLeafHead word)[p.val*(M*B)+((-h).val*B+j.val)]? =

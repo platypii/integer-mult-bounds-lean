@@ -269,13 +269,7 @@ theorem negateAndReturn_exec {P M B : ℕ} {F U : Type} (hP : 0 < P) (hM : 0 < M
   let J := embOvr bank H.get I
   have eq : embStk bank J = H := embStk_ovr bank.injective _ _
   rw [← eq] at src dst
-  have length : (negateLeafHead word).length = N := by
-    unfold negateLeafHead
-    rw [BlockRotationData.uniform_volume (M*B) _ (by
-      intro xs hx
-      obtain ⟨i,rfl⟩ := List.mem_ofFn.mp hx
-      rw [BlockNegationData.payload_length,BlockRotationData.uniform_volume B _ (FiberLayoutData.fiber_uniform word i),
-        FiberLayoutData.fiber_length]),List.length_ofFn]
+  have length : (negateLeafHead word).length = N := negateLeafHead_length word
   obtain ⟨z,D,m,hz,hm,ret,out,_⟩ := returnLeafBits_exec hP hM hB body negationReturnPorts b J
     (List.ofFn word) (negateLeafHead word) List.length_ofFn length dst src (by
       intro i x
