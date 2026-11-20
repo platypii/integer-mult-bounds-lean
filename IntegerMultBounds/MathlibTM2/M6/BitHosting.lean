@@ -308,10 +308,17 @@ def remainderIntervals : List (ℕ × ℕ) :=
   (List.range 9).flatMap fun i => (copyCounts i).map fun k =>
     (7 * idleSource i + 8 * k, 7 * idleTarget i)
 
-theorem remainder_counts : ∀ e ∈ remainderIntervals, e.1 ≤ e.2 ∧ e.2 ≤ 63 ∧
+theorem remainder_counts_strict : ∀ e ∈ remainderIntervals, e.1 < e.2 ∧ e.2 ≤ 63 ∧
     Fintype.card {p : Pending // (if e.1 ≤ pendingIndex p ∧ pendingIndex p < e.2 then (1 : ℚ)
       else 0) ≠ 0} = e.2 - e.1 := by
   decide +kernel
+
+theorem remainder_counts : ∀ e ∈ remainderIntervals, e.1 ≤ e.2 ∧ e.2 ≤ 63 ∧
+    Fintype.card {p : Pending // (if e.1 ≤ pendingIndex p ∧ pendingIndex p < e.2 then (1 : ℚ)
+      else 0) ≠ 0} = e.2 - e.1 := by
+  intro e he
+  obtain ⟨ordered,upper,count⟩ := remainder_counts_strict e he
+  exact ⟨ordered.le,upper,count⟩
 
 /-- A remainder child has rank equal to its interval length. -/
 theorem rank_remainder (t : ℕ) (ht : t < 111) (e : ℕ × ℕ) (he : e ∈ remainderIntervals) :
