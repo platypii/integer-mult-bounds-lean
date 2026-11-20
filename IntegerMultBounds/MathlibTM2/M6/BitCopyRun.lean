@@ -118,6 +118,26 @@ theorem copyChild_volume (w W : ℕ) : volume prime (copyChild w W) = (prime^w)^
   simp only [pow_add]
   ring
 
+/-- Of the parent's 128 radix coordinates, a COPY window addresses sixteen.
+The other 112 coordinates and the nonactive fields index spectator positions. -/
+theorem copyChild_measures (v : Descriptor) (w rows : ℕ)
+    (width : v.width = 64*w) (splitRows : v.rows = 142080*rows) :
+    let W := (prime^w)^112 * (v.beforeRows*rows*v.beforeH*v.between*v.afterD)
+    (copyChild w W).width * 64 = 7*v.width ∧
+    volume prime (copyChild w W) * 142080 = volume prime v := by
+  intro W
+  constructor
+  · change 7*w*64 = _
+    rw [width]
+    ring
+  · rw [copyChild_volume]
+    simp only [volume,width,splitRows,show 64*w = w*64 by omega,pow_mul,W]
+    have powers (x : ℕ) : x^16*x^112 = x^64*x^64 := by
+      rw [← pow_add, ← pow_add]
+    calc
+      _ = ((prime^w)^16*(prime^w)^112)*(v.beforeRows*rows*v.beforeH*v.between*v.afterD)*142080 := by ac_rfl
+      _ = _ := by rw [powers]; ac_rfl
+
 /-- Install header words next to their caller while keeping arithmetic scratch
 outside the caller/header pair. -/
 def headerPlacement (t : ℕ) : Fin ((15+6)+t) ≃ Fin ((t+6)+15) where
@@ -588,6 +608,23 @@ noncomputable def copyPrepared [M8.Machine.Net] {t w W : ℕ} (A B : List (FlatC
   let x : Fin ((prime^w)^16*W) → ZMod 2 := 0
   M8.Machine.ArbitraryWidthOriginalRun.input ((((v.append hdr).append arithmetic).append (basisWorkspace B x)).append (basisWorkspace A x))
 
+/-- Local work in the physical COPY window, including the join after setup. -/
+def copyWindowWork (basis targets N digits : ℕ) :=
+  (500+basis)*N + (targets+2)*(14*N+14*digits+34)+4
+
+/-- A canonical payload counter makes the local charge linear with a constant
+depending only on the two fixed basis passes and the scheduled fanout. -/
+theorem copyWindowWork_linear (basis targets : ℕ) {N : ℕ} (positive : 0 < N)
+    (bs : List Bool) (count : Counter.value bs = N) (canonical : GrowingCounterData.Canonical bs) :
+    copyWindowWork basis targets N bs.length ≤ (504+basis+76*(targets+2))*N := by
+  have digits := GrowingCounterData.canonical_width bs canonical
+  rw [count] at digits
+  have logBound := Nat.log2_le_self N
+  have scan : 14*N+14*bs.length+34 ≤ 76*N := by omega
+  have fanout := Nat.mul_le_mul_left (targets+2) scan
+  unfold copyWindowWork
+  nlinarith only [fanout,positive]
+
 open M8.Machine.ArbitraryWidthHighExchangeShared (sourceWord) in
 open M8.Machine.Segments M8.Machine.ArbitraryWidthOriginalRun SharedPlacementAlphabet in
 /-- Copy the retained owner into the temporary, convert its frame, fan out,
@@ -608,7 +645,7 @@ theorem copyWindow_hoare [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5) (
       let frame := selectedFrame w
       LocalMoveProfile word ∧ AffineFieldProgram.interchanges (word (life.sourceFrame,0)) = 7 ∧
       let prepare := fun W => copyPrepared (t := 142081+2) (w := w) (W := W) A B
-      ∀ {W : ℕ} (hW : 0 < W),
+      ∀ {W : ℕ} (_hW : 0 < W),
       let N := (Shared50ModularControl.prime^w)^16 * W
       let _ : NeZero (Shared50ModularControl.prime^w) := ⟨Nat.ne_of_gt (ActualAffineScaling.modulus_pos w)⟩
       let addr : Fin N ≃ S × Fin W := copyAddress
@@ -622,7 +659,8 @@ theorem copyWindow_hoare [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5) (
       let output := Function.update (fun j i => if j ∈ targets then data j i + common i else data j i) tmp 0
       let stored := Copy.extendStored (fun j => data (ownerTape n r d j))
       HoareTime machine (fun z => z = prepare W (bank data) (FixedHeaderBankCopy.empty 6) (copyHeaderInput w W)) (fun z => z = prepare W (bank output) (FixedHeaderBankCopy.headerBank hs) (copyHeaderOutput w W))
-        (500*N+1+((FlatCoordinateCleanSchedule.constant A + FlatCoordinateCleanSchedule.constant B)*N + cost (copyChild w W) hs + 2) + (life.targets.length+2)*(14*N+14*bs.length+34)+1) ∧
+        (copyWindowWork (FlatCoordinateCleanSchedule.constant A + FlatCoordinateCleanSchedule.constant B)
+          life.targets.length N bs.length + cost (copyChild w W) hs) ∧
       (∀ j : Fin 661, output (ownerTape n r d j) = Copy.execute frameOf life stored j) ∧
       output tmp = Copy.execute frameOf life stored 661 := by
   intro src tmp regs targets
@@ -730,7 +768,7 @@ theorem copyWindow_hoare [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5) (
   have complete := setupRun.seq done
   refine ⟨?_,?_,?_⟩
   · convert complete using 1
-    all_goals first | rfl | (dsimp only [N]; ring)
+    all_goals first | rfl | (dsimp only [N,copyWindowWork]; ring)
   · intro j
     have off : ownerTape n r d j ≠ tmp := Fin.castSucc_ne_last _
     have member : ownerTape n r d j ∈ targets ↔ j.val ∈ life.targets := by

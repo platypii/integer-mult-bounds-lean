@@ -173,6 +173,17 @@ theorem scheduledPath_internal_alignment (q : ℕ) (v : Descriptor) (depth u : �
   simpa using scheduledPath_alignment q v path 1
     ((pow_dvd_pow 64 room).trans width) ((pow_dvd_pow 142080 room).trans rows)
 
+/-- Width and volume are the two descriptor fields used by the cost recurrence.
+Physical layouts can arrange their spectator coordinates differently. -/
+theorem scheduledChild_measures (q : ℕ) (v : Descriptor) (width : 64 ∣ v.width)
+    (rows : 142080 ∣ v.rows) (i : Fin nodeChildren5.length) :
+    (scheduledChild q v i).width * 64 = nodeChildren5[i.val] * v.width ∧
+    volume q (scheduledChild q v i) * 142080 = volume q v := by
+  obtain ⟨b,hb⟩ := width
+  rw [scheduledChild, show v.width / 64 = b by simp [hb]]
+  exact rankDescriptor_role_size (M := q) _ _ _ b hb
+    ((nodeChildren5_le i).trans (by decide : 42 ≤ 64)) rows
+
 /-- For a physical realization with the scheduled rank descriptors, row splitting
 supplies the recurrence weights and the active field supplies its size argument.
 The machine pays its local overhead on the parent volume and adds the observed
@@ -184,22 +195,15 @@ theorem five_descriptor_closed {Node : Type*} (q : ℕ) (layout : Node → Descr
     (hC₀ : 0 ≤ C₀) (hC₁ : 0 ≤ C₁) (hu : 1 ≤ u)
     (positive : ∀ x, 0 < volume q (layout x))
     (hleaf : ∀ x, (layout x).width ≤ u → (steps x : ℝ) ≤ (C₀ * (layout x).width) * volume q (layout x))
-    (physical : ∀ x, u < (layout x).width →
-      64 ∣ (layout x).width ∧ 142080 ∣ (layout x).rows ∧
-        ∀ i, layout (child x i) = scheduledChild q (layout x) i)
+    (measures : ∀ x, u < (layout x).width → ∀ i,
+      (layout (child x i)).width * 64 = nodeChildren5[i.val] * (layout x).width ∧
+      volume q (layout (child x i)) * 142080 = volume q (layout x))
     (hcost : ∀ x, u < (layout x).width →
       (steps x : ℝ) ≤ C₁ * ((K * (layout x).width) ^ τ + 1) * volume q (layout x) +
         ((∑ i, steps (child x i) : ℕ) : ℝ)) :
     ∀ x, (steps x : ℝ) ≤
       (2 * C₁ / (1 - ((42 : ℝ) / 64) ^ (lam - (1 - bitSaving))) * K ^ τ * ((layout x).width : ℝ) ^ lam +
       C₀ * ((layout x).width : ℝ) ^ (1 - bitSaving) * (u : ℝ) ^ (1 - (1 - bitSaving))) * volume q (layout x) := by
-  have measures (x) (hx : u < (layout x).width) (i : Fin nodeChildren5.length) :
-      (layout (child x i)).width * 64 = nodeChildren5[i.val] * (layout x).width ∧
-      volume q (layout (child x i)) * 142080 = volume q (layout x) := by
-    obtain ⟨⟨b,width⟩,divides,desc⟩ := physical x hx
-    rw [desc i, scheduledChild, show (layout x).width / 64 = b by simp [width]]
-    exact rankDescriptor_role_size (M := q) _ _ _ b width
-      ((nodeChildren5_le i).trans (by decide : 42 ≤ 64)) divides
   let rate := fun x => (steps x : ℝ) / volume q (layout x)
   have pos (x) : (0 : ℝ) < volume q (layout x) := by exact_mod_cast positive x
   intro x
@@ -273,7 +277,10 @@ theorem five_root_closed {Node : Type*} (q : ℕ) (layout : Node → Descriptor)
       (descend x i).val = child x.val i := by simp [descend,hx]
   exact five_descriptor_closed q (fun x : Nodes => layout x.val) descend (fun x => steps x.val) u
     hτ hτl hlam hK hC₀ hC₁ hu (fun x => x.property.1) (fun x => x.property.2.1)
-    (fun x hx => ⟨(aligned x hx).1,(aligned x hx).2,fun i => by rw [next x hx,physical _ hx x.property.1 (aligned x hx).1 (aligned x hx).2]⟩)
+    (fun x hx i => by
+      obtain ⟨width,rows⟩ := aligned x hx
+      rw [next x hx, physical _ hx x.property.1 width rows]
+      exact scheduledChild_measures q _ width rows i)
     (fun x hx => by simpa only [next x hx] using hcost x.val hx x.property.1 (aligned x hx).1 (aligned x hx).2)
     ⟨root,positive,rootLeaf,[],rfl⟩
 
