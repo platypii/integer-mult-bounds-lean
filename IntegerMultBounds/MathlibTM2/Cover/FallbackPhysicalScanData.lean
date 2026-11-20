@@ -507,6 +507,13 @@ def directoryMatrixTape [M8.Machine.Net] {K : ℕ}
     (room : Record.size d+(rowSwapBlock.tapes+35+2) ≤ K) : Fin (66+K) :=
   directoryResidualBank d room (Fin.last (rowSwapBlock.tapes+35)).castSucc (archivePorts 0 (columnBank 34))
 
+theorem directoryMatrixTape_private [M8.Machine.Net] {K : ℕ}
+    (room : Record.size d+(rowSwapBlock.tapes+35+2) ≤ K) : 66 ≤ (directoryMatrixTape room).val := by
+  unfold directoryMatrixTape
+  rw [directoryResidualBank_private room _ _ (by
+    intro eq; have h := congrArg Fin.val eq; change 34 = rowSwapBlock.tapes+35 at h; omega)]
+  omega
+
 def directoryOrdinaryBank [M8.Machine.Net] {K : ℕ}
     (room : Record.size d+(rowSwapBlock.tapes+35+2) ≤ K+1) : Fin (66+K) ↪ Fin (66+(K+1)) :=
   (directoryMatrixTape room).succAboveEmb
@@ -516,10 +523,7 @@ theorem directoryOrdinaryBank_caller [M8.Machine.Net] {K : ℕ}
     directoryOrdinaryBank room (i.castAdd K) = i.castAdd (K+1) := by
   apply Fin.succAbove_of_castSucc_lt
   change i.val < (directoryMatrixTape room).val
-  unfold directoryMatrixTape
-  rw [directoryResidualBank_private room _ _ (by
-    intro eq; have h := congrArg Fin.val eq; change 34 = rowSwapBlock.tapes+35 at h; omega)]
-  omega
+  exact lt_of_lt_of_le i.isLt (directoryMatrixTape_private room)
 
 open IntegerMultBounds.MathlibTM2.Stack Host in
 /-- The ordinary branch's blank-workspace invariant is exactly the exceptional
