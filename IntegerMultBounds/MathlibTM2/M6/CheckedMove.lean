@@ -1,6 +1,7 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.M8.ExchangeBound
+public import IntegerMultBounds.MathlibTM2.M8.Machine.Segments
+public import IntegerMultBounds.Networks.AffineFieldSegments
 public import IntegerMultBounds.MathlibTM2.M6.PrefixMove
 public import IntegerMultBounds.MathlibTM2.M8.Global.FrameMachine
 public import IntegerMultBounds.Networks.Certificates.PR589.Geometry.Moves.Model
@@ -33,10 +34,17 @@ private theorem rationalMoveWord_height (d e : ℕ) (C : Matrix (Fin 8) (Fin 8) 
     simp [M8.Exchange.opCoeffs] at hr
   · exact M8.Exchange.transformOps_coeffs forward forward _ right _ hr
 
+/-- One nested MOVE has a single interval exchange between two basis changes. -/
+def MoveInterval (i j : Fin 636) (word : List (AffineFieldProgram.Op (Fin 8) ℚ)) : Prop :=
+  let d := Geometry.Dimensions.value i.val
+  let e := Geometry.Dimensions.value j.val
+  ∃ C : Matrix (Fin 8) (Fin 8) ℚ, word = rationalMoveWord (min d e) (max d e) C
+
 /-- The same modular frames serve all certified edges. The field word for each
 edge runs in its recorded orientation and uses exactly the rational MOVE rank. -/
-theorem checked_move_programs :
+private theorem checked_move_words :
     ∃ word : Fin 636 → Fin 636 → List (AffineFieldProgram.Op (Fin 8) ℚ),
+    (∀ i j : Fin 636, Geometry.Moves.CheckedPair (i.val,j.val) → MoveInterval i j (word i j)) ∧
     (∀ i j op, op ∈ word i j → ∀ r ∈ M8.Exchange.opCoeffs op, M8.Height.ht r ≤ coefficientBound) ∧
     ∀ w : ℕ, let R := ZMod (prime ^ w)
     ∃ P : Fin 636 → Matrix (Fin 8) (Fin 8) R,
@@ -53,7 +61,24 @@ theorem checked_move_programs :
   let dim := fun i : Fin 636 => Geometry.Dimensions.value i.val
   let raw (a b : Fin 636) := rationalMoveWord (dim a) (dim b) (moveBasis (Q b - Q a))
   let incl (a b : Fin 636) := ∀ k ∈ Frames.labels a.val, k ∈ Frames.labels b.val
-  refine ⟨fun i j => if incl i j then raw i j else raw j i, ?_, ?_⟩
+  have dimLe (a b : Fin 636) (inc : ∀ k ∈ Frames.labels a.val, k ∈ Frames.labels b.val) :
+      dim a ≤ dim b := by
+    simpa only [dim, Geometry.Dimensions.dimension _ a.isLt, Geometry.Dimensions.dimension _ b.isLt]
+      using Submodule.finrank_mono (Geometry.Moves.label_le _ _ inc)
+  have comparable (i j : Fin 636) (check : Geometry.Moves.CheckedPair (i.val,j.val)) :
+      incl i j ∨ incl j i := by
+    rcases check.2.2 with eq | inc | inc
+    · change i.val = j.val at eq
+      exact Or.inl (fun k h => eq ▸ h)
+    · exact Or.inl inc
+    · exact Or.inr inc
+  refine ⟨fun i j => if incl i j then raw i j else raw j i, ?_, ?_, ?_⟩
+  · intro i j check
+    change ∃ C, (if incl i j then raw i j else raw j i) = rationalMoveWord (min (dim i) (dim j)) (max (dim i) (dim j)) C
+    by_cases h : incl i j
+    · exact ⟨_, by simp only [ite_eq_left h, min_eq_left (dimLe i j h), max_eq_right (dimLe i j h)]; rfl⟩
+    · have le := dimLe j i ((comparable i j check).resolve_left h)
+      exact ⟨_, by simp only [ite_eq_right h, min_eq_right le, max_eq_left le]; rfl⟩
   · intro i j op
     dsimp only
     split <;> exact rationalMoveWord_height _ _ _ (moveBasis_height _ _ (height _) (height _)) op
@@ -88,20 +113,9 @@ theorem checked_move_programs :
     rw [rationalMoveWord_reduce m _ _ _ (moveBasis_reduce m _
       (ModularFrameSchedule.admissible_sub m (adm b) (adm a))).1 det]
     exact ⟨legal, count, fun s => (correct s).trans (run s)⟩
-  have dimLe (a b : Fin 636) (inc : ∀ k ∈ Frames.labels a.val, k ∈ Frames.labels b.val) :
-      dim a ≤ dim b := by
-    simpa only [dim, Geometry.Dimensions.dimension _ a.isLt, Geometry.Dimensions.dimension _ b.isLt]
-      using Submodule.finrank_mono (Geometry.Moves.label_le _ _ inc)
   intro i j check
   rw [Geometry.Moves.rank _ check]
 
-  have cases : (∀ k ∈ Frames.labels i.val, k ∈ Frames.labels j.val) ∨
-      (∀ k ∈ Frames.labels j.val, k ∈ Frames.labels i.val) := by
-    rcases check.2.2 with eq | inc | inc
-    · change i.val = j.val at eq
-      exact Or.inl (fun k h => eq ▸ h)
-    · exact Or.inl inc
-    · exact Or.inr inc
   by_cases inc : incl i j
   · simp only [ite_eq_left inc]
     obtain ⟨legal, count, run⟩ := oriented i j inc
@@ -110,8 +124,58 @@ theorem checked_move_programs :
     intro s
     rw [run, M8.Global.exchange_exchange, M8.Global.exchange_exchange, ij, ji, add_comm (P i)]
   · simp only [ite_eq_right inc]
-    have inc := cases.resolve_left inc
+    have inc := (comparable i j check).resolve_left inc
     obtain ⟨legal, count, run⟩ := oriented j i inc
     exact ⟨legal, by change _ = (dim j - dim i) + (dim i - dim j); rw [count, Nat.sub_eq_zero_of_le (dimLe j i inc), Nat.zero_add], run⟩
+
+private theorem legal_of_prime (op : AffineFieldProgram.Op (Fin 8) ℚ)
+    (h : AffineFieldProgram.Legal (AffineFieldProgram.mapOp (Swap.Modular.ratMod prime) op)) :
+    AffineFieldProgram.Legal op := by
+  let : Fact prime.Prime := ⟨prime_prime⟩
+  have scale (r : ℚ) (hr : IsUnit (Swap.Modular.ratMod prime r)) : IsUnit r := by
+    apply isUnit_iff_ne_zero.mpr
+    intro zero
+    exact hr.ne_zero (zero ▸ Swap.Modular.ratMod_zero prime)
+  cases op with
+  | affineH op | affineD op =>
+    cases op with
+    | scale i r => exact scale r h
+    | shift i j r => exact h
+  | _ => trivial
+
+/-- All nonrecursive segments of the same checked word have fixed clean
+coordinate machines at every width, via `Segments.realizes`. -/
+theorem checked_move_programs :
+    ∃ word : Fin 636 → Fin 636 → List (AffineFieldProgram.Op (Fin 8) ℚ),
+    (∀ i j : Fin 636, Geometry.Moves.CheckedPair (i.val,j.val) → MoveInterval i j (word i j)) ∧
+    (∀ i j : Fin 636, Geometry.Moves.CheckedPair (i.val,j.val) →
+      ∀ ops ∈ AffineFieldSegments.runs (AffineFieldSegments.split (word i j)), M8.Machine.Segments.Good ops) ∧
+    ∀ w : ℕ, let R := ZMod (prime ^ w)
+    ∃ P : Fin 636 → Matrix (Fin 8) (Fin 8) R,
+      (∀ l, P l * P l = P l) ∧
+      (∀ i j : Fin 636, Geometry.Moves.CheckedPair (i.val, j.val) → P i * P j = P j * P i) ∧
+      (∀ l k, P l k k = if k.val < Geometry.Dimensions.value l.val then 1 else 0) ∧
+      ∀ (i j : Fin 636), Geometry.Moves.CheckedPair (i.val, j.val) →
+        let q := (word i j).map (AffineFieldProgram.mapOp (Swap.Modular.ratMod (prime ^ w)))
+        (∀ op ∈ q, AffineFieldProgram.Legal op) ∧
+        AffineFieldProgram.interchanges q = Geometry.moveRank i.val j.val ∧
+        ∀ s, AffineFieldProgram.run q s = exchange (P j) (exchange (P i) s) := by
+  obtain ⟨word, interval, height, widths⟩ := checked_move_words
+  refine ⟨word, interval, ?_, widths⟩
+  intro i j checked ops member
+  obtain ⟨P, _, _, _, edge⟩ := widths 1
+  obtain ⟨legal, _, _⟩ := edge i j checked
+  obtain ⟨subset, atoms⟩ := AffineFieldSegments.split_run_spec _ _ member
+  have rational (op) (hop : op ∈ ops) : AffineFieldProgram.Legal op := by
+    apply legal_of_prime
+    have h := legal _ (List.mem_map_of_mem (f := AffineFieldProgram.mapOp _) (subset op hop))
+    rw [pow_one] at h
+    exact h
+  refine ⟨rational, ?_, atoms⟩
+  intro op hop
+  apply M8.Machine.Coordinates.CoeffBounded.supported _ (rational op hop)
+  intro r hr
+  have h := height i j op (subset op hop) r hr
+  exact ⟨(M8.Height.num_le_ht r).trans h, (M8.Height.den_le_ht r).trans h⟩
 
 end IntegerMultBounds.MathlibTM2.M6

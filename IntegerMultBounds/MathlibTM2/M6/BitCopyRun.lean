@@ -1,9 +1,10 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.M8.Machine.ArbitraryWidthOriginalRun
 public import IntegerMultBounds.MathlibTM2.M6.ModularScatter
 public import IntegerMultBounds.MathlibTM2.M6.BitInvocation
 public import IntegerMultBounds.Machine.ExactFrame
-public import IntegerMultBounds.Machine.FlatCoordinateLayout
+public import IntegerMultBounds.Machine.ArbitraryWidthSliceTranspose
 public import IntegerMultBounds.Networks.AffineFieldCoordinates
 public import IntegerMultBounds.Machine.SparseRoleCircuit
 
@@ -102,6 +103,117 @@ noncomputable def copyAddress {Q W : ℕ} [NeZero Q] :
 @[simp] theorem copyAddress_index {Q W : ℕ} [NeZero Q]
     (s : Swap.Shear.State (Fin 8) (ZMod Q)) (j : Fin W) :
     copyAddress.symm (s,j) = FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) j := rfl
+
+open IntegerMultBounds.Networks.Shared50ModularControl (prime)
+open FlatCoordinateLayout (rank)
+open RecursiveInterchangeLayout (Descriptor volume)
+
+/-- The two seven-coordinate prefixes form the H and D fields of one child. -/
+noncomputable def copyChild (w W : ℕ) : Descriptor := ⟨1,1,1,7*w,prime^w,prime^w*W⟩
+
+theorem copyChild_volume (w W : ℕ) : volume prime (copyChild w W) = (prime^w)^16*W := by
+  simp only [volume, copyChild, one_mul, ← pow_mul, Nat.mul_comm w 16]
+  rw [show 16*w = 7*w+w+7*w+w by omega]
+  simp only [pow_add]
+  ring
+
+section
+variable {w W : ℕ}
+local instance : NeZero (prime^w) := ⟨pow_ne_zero _ Shared50ModularControl.prime_prime.ne_zero⟩
+
+noncomputable def copyChildAddress (h d : Fin 7 → ZMod (prime^w))
+    (u v : Fin 1 → ZMod (prime^w)) (j : Fin W) : RecursiveInterchangeScaling.Address (copyChild w W) :=
+  let field (x : Fin 7 → ZMod (prime^w)) : Fin (prime^(7*w)) := Fin.cast (by rw [← pow_mul, Nat.mul_comm w 7])
+    (rank x)
+  let low (x : Fin 1 → ZMod (prime^w)) := Fin.cast (pow_one _) (rank x)
+  ⟨(0 : Fin 1),(0 : Fin 1),(0 : Fin 1),field h,low u,field d,finProdFinEquiv (low v,j)⟩
+
+theorem copyChild_index (h d : Fin 7 → ZMod (prime^w)) (u v : Fin 1 → ZMod (prime^w)) (j : Fin W) :
+    Fin.cast (copyChild_volume w W) (RecursiveInterchangeScaling.index (copyChildAddress h d u v j)) =
+      FlatCoordinateLayout.index (AffineFieldCoordinates.embed (Fin.addCases h u, Fin.addCases d v)) j := by
+  apply Fin.ext
+  rw [Fin.val_cast, RecursiveInterchangeScaling.index_val, FlatCoordinateLayout.index_val]
+  simp only [copyChildAddress, copyChild, RecursiveInterchangeLayout.index, Fin.val_zero,
+    zero_mul, zero_add, Fin.val_cast, finProdFinEquiv, Equiv.coe_fn_mk]
+  have packed := ArbitraryWidthSliceTranspose.rank_append (Fin.addCases h u) (Fin.addCases d v)
+  change (rank (AffineFieldCoordinates.embed (Fin.addCases h u,Fin.addCases d v))).val = _ at packed
+  rw [packed, ArbitraryWidthSliceTranspose.rank_append h u, ArbitraryWidthSliceTranspose.rank_append d v]
+  have pack (q H D U V t z : ℕ) :
+      ((H*q^w+U)*q^(7*w)+D)*(q^w*t)+(z+t*V) =
+      ((H*(q^w)^1+U)*(q^w)^(7+1)+(D*(q^w)^1+V))*t+z := by
+    have power : (q^w)^(7+1) = q^(7*w)*q^w :=
+      (pow_succ _ 7).trans (congrArg (· * q^w) ((pow_mul q w 7).symm.trans
+        (congrArg (q^·) (Nat.mul_comm w 7))))
+    rw [power,pow_one]
+    ring
+  exact pack _ _ _ _ _ _ _
+
+/-- One transpose on the child sends both prefixes to the opposite halves and
+preserves the low coordinates and trailing record in the original array. -/
+theorem copyChild_transpose {α : Type*} (x : Fin ((prime^w)^16*W) → α)
+    (h d : Fin 7 → ZMod (prime^w)) (u v : Fin 1 → ZMod (prime^w)) (j : Fin W) :
+    Shared50RecursiveNodeRows.transpose (v := copyChild w W) (one_dvd _)
+      (fun i => x (Fin.cast (copyChild_volume w W) i))
+      (RecursiveInterchangeScaling.index (copyChildAddress d h u v j)) =
+      x (FlatCoordinateLayout.index (AffineFieldCoordinates.embed (Fin.addCases h u, Fin.addCases d v)) j) := by
+  rw [← copyChild_index]
+  exact Shared50RecursiveNodeTranspose.transpose_all (by decide : 0 < 1) _ _ (copyChildAddress h d u v j)
+
+private theorem copyInterval_run {R : Type*} [CommRing R]
+    (h d : Fin 7 → R) (u v : Fin 1 → R) :
+    IntegerMultBounds.Swap.Shear.run (intervalSwaps 0 7) (Fin.append h u, Fin.append d v) =
+      (Fin.append d u, Fin.append h v) := by
+  rw [intervalSwaps_run]
+  apply Prod.ext <;> funext k <;> refine Fin.addCases (m := 7) (n := 1) (fun i => ?_) (fun i => ?_) k
+  all_goals simp [M8.Exchange.exchange, Matrix.sub_mulVec, Matrix.one_mulVec, Matrix.mulVec_diagonal,
+    Fin.append, Fin.val_castAdd, Fin.val_natAdd, i.isLt]
+
+/-- The one child transpose realizes the selected interval instruction at every
+address of the original temporary, including its spectator record. -/
+theorem copyChild_interval {α : Type*} (x : Fin ((prime^w)^16*W) → α)
+    (s : IntegerMultBounds.Swap.Shear.State (Fin 8) (ZMod (prime^w))) (j : Fin W) :
+    let atState := fun t => FlatCoordinateLayout.index (AffineFieldCoordinates.embed t) j
+    Shared50RecursiveNodeRows.transpose (v := copyChild w W) (one_dvd _)
+      (fun i => x (Fin.cast (copyChild_volume w W) i))
+      (Fin.cast (copyChild_volume w W).symm
+        (atState (IntegerMultBounds.Swap.Shear.run (intervalSwaps 0 7) s))) = x (atState s) := by
+  intro atState
+  obtain ⟨h,d⟩ := s
+  obtain ⟨h,u,rfl⟩ : ∃ (a : Fin 7 → _) (b : Fin 1 → _), h = Fin.append a b :=
+    ⟨_,_,(Fin.append_castAdd_natAdd (m := 7) (n := 1)).symm⟩
+  obtain ⟨d,v,rfl⟩ : ∃ (a : Fin 7 → _) (b : Fin 1 → _), d = Fin.append a b :=
+    ⟨_,_,(Fin.append_castAdd_natAdd (m := 7) (n := 1)).symm⟩
+  rw [copyInterval_run]
+  dsimp only [atState, Fin.append]
+  rw [← copyChild_index d h u v j, Fin.cast_cast, Fin.cast_eq_self]
+  exact copyChild_transpose x h d u v j
+
+open M8.Machine.ArbitraryWidthOriginalRun (input program cost)
+open M8.Machine.ArbitraryWidthHighExchangeShared (sourceWord)
+
+/-- Execute the middle of COPY on the designated caller tape, with the
+descriptor headers at their binary words and the private bank clean. -/
+theorem copyChild_runs [M8.Machine.Net] {t : ℕ} (caller : Tapes t prime)
+    (headers : Fin 6 → Fin t) (source : Fin t) (hw : 0 < w) (hW : 0 < W)
+    (hs : Fin 6 → List Bool) (valid : RecursiveDimensionBank.Headers (copyChild w W) hs)
+    (tapes : ∀ i, caller.tape (headers i) = RadixZeroFill.encodedBinary (hs i))
+    (heads : ∀ i, caller.head (headers i) = 1)
+    (x : Fin ((prime^w)^16*W) → ZMod 2)
+    (payload : caller.tape source = sourceWord (fun i => x (Fin.cast (copyChild_volume w W) i)))
+    (origin : caller.head source = 0) :
+    ∃ y : Fin (volume prime (copyChild w W)) → ZMod 2,
+      HoareTime (program headers source) (fun z => z = input caller)
+        (fun z => z = input (SharedPlacementAlphabet.setTape caller source (sourceWord y) 0))
+        (cost (copyChild w W) hs) ∧
+      ∀ s j, y (Fin.cast (copyChild_volume w W).symm (FlatCoordinateLayout.index
+        (AffineFieldCoordinates.embed (IntegerMultBounds.Swap.Shear.run (intervalSwaps 0 7) s)) j)) =
+        x (FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) j) := by
+  have pos := pow_pos Shared50ModularControl.prime_prime.pos w
+  have hp : (copyChild w W).Positive := ⟨Nat.zero_lt_one, Nat.zero_lt_one, Nat.zero_lt_one, pos, Nat.mul_pos pos hW⟩
+  exact ⟨_, M8.Machine.ArbitraryWidthOriginalRun.runs caller headers source _ hs hp
+    (Nat.mul_pos (by decide) hw) valid tapes heads _ payload origin, copyChild_interval x⟩
+
+end
 
 /-- Copy the retained owner into the temporary, convert its frame, fan out,
 then clear it. Only the single-register frame conversion is supplied by the

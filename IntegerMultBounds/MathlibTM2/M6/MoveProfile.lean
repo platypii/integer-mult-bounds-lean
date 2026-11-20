@@ -34,27 +34,43 @@ structure LocalMoveProfile {R : Type*} [CommRing R] (word : ℕ × ℕ → List 
 
 /-- Choose the modular program once per certified pair. Looking up the programs in
 execution order reproduces the full phase profile and the zero final-alignment bill. -/
-theorem modular_move_profile (w : ℕ) :
-    let R := ZMod (prime ^ w)
-    ∃ (P : Fin 636 → Matrix (Fin 8) (Fin 8) R)
-      (word : ℕ × ℕ → List (AffineFieldProgram.Op (Fin 8) R)),
+theorem modular_move_profile :
+    ∃ raw : ℕ × ℕ → List (AffineFieldProgram.Op (Fin 8) ℚ),
+      (∀ p ∈ retainedCopyEdges, ∃ C, raw p = rationalMoveWord 0 7 C) ∧
+      (∀ p, CheckedPair p → ∀ ops ∈ AffineFieldSegments.runs (AffineFieldSegments.split (raw p)),
+        M8.Machine.Segments.Good ops) ∧
+    ∀ w : ℕ, let R := ZMod (prime ^ w)
+    let word := fun p => (raw p).map (AffineFieldProgram.mapOp (Swap.Modular.ratMod (prime ^ w)))
+    ∃ P : Fin 636 → Matrix (Fin 8) (Fin 8) R,
       (∀ l, P l * P l = P l) ∧
       (∀ i j : Fin 636, CheckedPair (i.val, j.val) → P i * P j = P j * P i) ∧
       (∀ p (h : CheckedPair p), ∀ s, AffineFieldProgram.run (word p) s =
           exchange (P ⟨p.2, h.2.1⟩) (exchange (P ⟨p.1, h.1⟩) s)) ∧
       LocalMoveProfile word := by
-  intro R
   classical
-  obtain ⟨raw, _, widths⟩ := checked_move_programs
+  obtain ⟨raw, interval, segments, widths⟩ := checked_move_programs
+  let lookup (p : ℕ × ℕ) := if h : CheckedPair p then raw ⟨p.1,h.1⟩ ⟨p.2,h.2.1⟩ else []
+  refine ⟨lookup, ?_, ?_, ?_⟩
+  · have dims : ∀ p ∈ retainedCopyEdges,
+        Geometry.Dimensions.value p.1 = 7 ∧ Geometry.Dimensions.value p.2 = 0 := by
+      rw [retainedCopyEdges, Frames.retained_frames]
+      decide +kernel
+    intro p member
+    have checked := retainedCopy_checked.1 p member
+    obtain ⟨C, eq⟩ := interval ⟨p.1,checked.1⟩ ⟨p.2,checked.2.1⟩ checked
+    refine ⟨C, ?_⟩
+    simpa only [lookup, dite_eq_left checked, (dims p member).1, (dims p member).2,
+      Nat.min_zero, Nat.max_zero] using eq
+  · intro p h
+    simpa only [lookup, dite_eq_left h] using segments ⟨p.1,h.1⟩ ⟨p.2,h.2.1⟩ h
+  intro w R word
   obtain ⟨P, idem, commute, _, programs⟩ := widths w
-  let word (p : ℕ × ℕ) := if h : CheckedPair p then
-    (raw ⟨p.1,h.1⟩ ⟨p.2,h.2.1⟩).map (AffineFieldProgram.mapOp (Swap.Modular.ratMod (prime ^ w))) else []
   have spec (p : ℕ × ℕ) (h : CheckedPair p) :
       (∀ op ∈ word p, AffineFieldProgram.Legal op) ∧
       AffineFieldProgram.interchanges (word p) = Geometry.moveRank p.1 p.2 ∧
       ∀ s, AffineFieldProgram.run (word p) s =
         exchange (P ⟨p.2, h.2.1⟩) (exchange (P ⟨p.1, h.1⟩) s) := by
-    simpa only [word, dite_eq_left h] using programs ⟨p.1,h.1⟩ ⟨p.2,h.2.1⟩ h
+    simpa only [word, lookup, dite_eq_left h] using programs ⟨p.1,h.1⟩ ⟨p.2,h.2.1⟩ h
   have counts (edges : List (ℕ × ℕ)) (checked : ∀ p ∈ edges, CheckedPair p) :
       (edges.map word).map AffineFieldProgram.interchanges =
         edges.map (fun p => Geometry.moveRank p.1 p.2) := by
@@ -63,7 +79,7 @@ theorem modular_move_profile (w : ℕ) :
   have phase := (counts _ phase_checked).trans phase_ranks
   have copies := (counts _ retainedCopy_checked.1).trans
     ((profile _ retainedCopy_checked.1).trans retainedCopy_checked.2)
-  refine ⟨P, word, idem, commute, fun p h => (spec p h).2.2, fun p h => (spec p h).1, phase,
+  refine ⟨P, idem, commute, fun p h => (spec p h).2.2, fun p h => (spec p h).1, phase,
     (counts _ final_checked.1).trans final_ranks, copies, ?_⟩
   rw [phase, copies, ← phase_ranks, ← copyRanks_eq]
   exact localPaid_histogram

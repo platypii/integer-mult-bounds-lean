@@ -48,7 +48,11 @@ theorem modular_scatter (w : ℕ) :
         output 661 = 0 ∧ ∀ i : Fin 661, output i.val = frame (Frames.beforeScatter i.val)
           (FramedCircuit.moduleRun (sectionscatter.map RawGate.toCircuit) (Copy.extendStored stored) i.val) := by
   intro R E
-  obtain ⟨P, word, idem, commute, spec, profile⟩ := modular_move_profile w
+  obtain ⟨raw, _, _, widths⟩ := modular_move_profile
+  let word := fun p => (raw p).map (AffineFieldProgram.mapOp (Swap.Modular.ratMod (prime ^ w)))
+  obtain ⟨P, idem, commute, spec, profile⟩ := widths w
+  change ∀ p (h : Geometry.Moves.CheckedPair p) s, AffineFieldProgram.run (word p) s =
+    exchange (P ⟨p.2,h.2.1⟩) (exchange (P ⟨p.1,h.1⟩) s) at spec
   let frame := streamFrame P idem
   have read (p : ℕ × ℕ) (h : Geometry.Moves.CheckedPair p) (f : E) :
       (fun x => f (AffineFieldProgram.run (word p) x)) = frame p.2 ((frame p.1).symm f) := by
