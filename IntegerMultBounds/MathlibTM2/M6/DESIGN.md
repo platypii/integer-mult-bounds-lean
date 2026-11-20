@@ -656,8 +656,12 @@ time charge vanishes. For each fixed parent and layout the selector, matrix-queu
 writer and row dispatch are fixed across owner payloads. The parent returns an
 `OwnerScan`, so `OwnerScan.place` embeds it at a permanent owner without changing
 the step count or other owner words. `chartOwner_scan` executes a hosted chart followed by a scanner on that shared
-slot. The combined bound is `stage.cost * (stage.tapes + 5) + 6 + budget`. Its scanner premise
-still needs instantiation at a common state capacity for the scheduled parent. At return the selected bank contains exactly the
+slot. The combined bound is `stage.cost * (stage.tapes + 5) + 6 + (1 + budget)`. The chart and scanner
+use the maximum of their state capacities. Lifting the chart preserves its bound,
+and normalizing the scanner state takes one step. `ordinaryOwnerBank_input` supplies the scheduled parent’s full entry
+contract on a chart payload with uniform-width packed prefixes.
+`ordinaryOwnerBank_inherited` discharges the private-tape charge on that frame.
+The chart composition still needs the parent program and its clean time budget. At return the selected bank contains exactly the
 restored archive suffix and the final projector tape. All its other stacks are empty.
 
 The semantic five-class node (S5d.3) certifies upstream's accounting under ideal routes and

@@ -111,16 +111,16 @@ theorem ordinaryEntryStacks_payload {T N : ℕ} (metadata : ℕ → List (Fin (p
 
 /-- Hosting a chart stage exposes its actual output stacks at the permanent
 owner slots, with the host interpreter's step bound. -/
-theorem chartOwner_exec {N k : ℕ} {P U : Type}
+theorem chartOwner_exec {N k Q : ℕ} {P U : Type}
     (stage : SharedBankStage.Stage _ k prime (phaseOwners (N := N)))
-    (body : P → Pr P stage.tapes stage.states prime U) (data : Fin k → Fin N → ZMod 2)
-    (u : HS stage.tapes stage.states prime U) (S : Stacks stage.tapes prime)
+    (capacity : stage.states ≤ Q) (body : P → Pr P stage.tapes Q prime U) (data : Fin k → Fin N → ZMod 2)
+    (u : HS stage.tapes Q prime U) (S : Stacks stage.tapes prime)
     (input : RepT (stage.input data) S.L S.R) :
-    ∃ z F n, Exec body (foreign stage.program) (mk u S) n (mk z F) ∧
+    ∃ z F n, Exec body (foreign (liftQ stage.program capacity)) (mk u S) n (mk z F) ∧
       n ≤ stage.cost*(stage.tapes+5)+6 ∧ z.user = u.user ∧
       RepT (phaseOwners (stage.transform data)) (embStk stage.slots F).L (embStk stage.slots F).R := by
   obtain ⟨z,F,_,rfl,output,user,_,_,_,n,time,run⟩ :=
-    foreign_exec (body := body) stage.program (stage.realizes data) u S _ rfl input
+    foreign_exec (body := body) (liftQ stage.program capacity) (HoareTime.liftQ capacity (stage.realizes data)) u S _ rfl input
   refine ⟨z,F,n,run,time,user,?_⟩
   rw [← stage.output_payload]
   exact fun i j => output (stage.slots i) j
@@ -188,28 +188,30 @@ theorem ordinaryOwnerBank_private {T k : ℕ} (metadata : ℕ → List (Fin (pri
 
 /-- Execute the chart and scanner on one bank. The scanner shares the selected
 physical chart slot and sees its own private metadata throughout the join. -/
-theorem chartOwner_scan {T N k : ℕ} {P U : Type}
+theorem chartOwner_scan {T N k Q : ℕ} {P U : Type}
     (stage : SharedBankStage.Stage _ k prime (phaseOwners (N := N))) (src : Fin k)
     (metadata : ℕ → List (Fin (prime+4))) (data : Fin k → Fin N → ZMod 2)
-    (body : P → Pr P (T+5) stage.states prime U) (program : Pr P (T+5) stage.states prime U)
+    (positive : 0 < Q) (body : P → Pr P (T+5) Q prime U) (program : Pr P (T+5) Q prime U)
     (budget : ℕ) (post : (Fin N → ZMod 2) → Prop) :
     let slot := (0 : Fin 5).natAdd T
     let placement := payloadPlacement slot (stage.slots src)
     let chart : Fin stage.tapes ↪ Fin ((T+5)+stage.tapes) := Fin.natAddEmb (T+5)
-    let outer := fun f => embProg placement id (body f)
-    ∀ (u : HS ((T+5)+stage.tapes) stage.states prime U) (S : Stacks stage.tapes prime),
+    let capacity := max stage.states Q
+    let fits : Q ≤ capacity := le_max_right ..
+    let outer := fun f => statePlacedPr placement fits positive id (body f)
+    ∀ (u : HS ((T+5)+stage.tapes) capacity prime U) (S : Stacks stage.tapes prime),
     RepT (stage.input data) S.L S.R →
-    (∀ (v : HS (T+5) stage.states prime U) (F : Stacks stage.tapes prime),
+    (∀ (v : HS (T+5) Q prime U) (F : Stacks stage.tapes prime),
       RepT (phaseOwners (stage.transform data)) (embStk stage.slots F).L (embStk stage.slots F).R →
       ∃ z D n word, n ≤ budget ∧ post word ∧ OwnerScan body program slot word v
         (embStk placement (ordinaryOwnerBank metadata F)) n z D) →
-    ∃ z D n word, post word ∧ n ≤ stage.cost*(stage.tapes+5)+6+budget ∧
-      Exec outer ((embProg chart (Empty.elim : Empty → P) (foreign stage.program)).seq (embProg placement id program))
+    ∃ z D n word, post word ∧ n ≤ stage.cost*(stage.tapes+5)+6+(1+budget) ∧
+      Exec outer ((embProg chart (Empty.elim : Empty → P) (foreign (liftQ stage.program (le_max_left stage.states Q)))).seq (statePlacedNormalized placement fits positive id program))
         (mk u (ordinaryOwnerBank metadata S)) n (mk z D) ∧
       ∀ i j, readAt blank (D.L (chart (stage.slots i))) (D.R (chart (stage.slots i))) j =
         (phaseOwners (Function.update (stage.transform data) src word)).tape i j := by
-  intro slot placement chart outer u S input scanner
-  obtain ⟨y,F,t,run,price,_,reads⟩ := chartOwner_exec stage (P := Empty) Empty.elim data (embDn chart u) S input
+  intro slot placement chart capacity fits outer u S input scanner
+  obtain ⟨y,F,t,run,price,_,reads⟩ := chartOwner_exec stage (P := Empty) (le_max_left stage.states Q) Empty.elim data (embDn chart u) S input
   obtain ⟨v,B,enter,_,_,view,off⟩ := exec_emb (ι := (Empty.elim : Empty → P)) (body' := outer)
     chart.injective (fun f => f.elim) run u rfl (ordinaryOwnerBank metadata S) (by
       apply Stacks.ext <;> simp [embStk,ordinaryOwnerBank,chart,Function.comp_def])
@@ -228,10 +230,12 @@ theorem chartOwner_scan {T N k : ℕ} {P U : Type}
       · first | simpa [ordinaryOwnerBank,embStk,chart] using congrArg (fun A => Stacks.L A j) view
               | simpa [ordinaryOwnerBank,embStk,chart] using congrArg (fun A => Stacks.R A j) view
   subst B
-  obtain ⟨w,D,n,word,paid,ok,scan⟩ := scanner (embDn placement v) F reads
+  obtain ⟨w,D,n,word,paid,ok,scan⟩ := scanner (stateLiftDown positive (embDn placement v)) F reads
+  have lifted := stateLift_exec_normalized fits positive id (body' := fun f => stateLiftPr fits positive id (body f))
+    (fun _ => rfl) (embDn placement v) scan.run
   obtain ⟨z,G,finish,_,_,project,keep⟩ := exec_emb (ι := id) (body' := outer) placement.injective
-    (fun _ => rfl) scan.run v rfl (ordinaryOwnerBank metadata F) rfl
-  refine ⟨z,G,t+n,word,ok,Nat.add_le_add price paid,Exec.seq enter finish,?_⟩
+    (fun _ => rfl) lifted v rfl (ordinaryOwnerBank metadata F) rfl
+  refine ⟨z,G,t+(1+n),word,ok,Nat.add_le_add price (Nat.add_le_add_left paid 1),Exec.seq enter finish,?_⟩
   intro i j
   by_cases h : i = src
   · subst i
@@ -244,18 +248,77 @@ theorem chartOwner_scan {T N k : ℕ} {P U : Type}
 
 /-- With the prefix queue packed to its exact length, fresh private tapes
 contribute zero to the inherited part of the scanner's time bound. -/
-theorem ordinaryEntryStacks_inherited {T N w : ℕ} (room : 72 ≤ T)
+theorem ordinaryOwnerBank_inherited {T k w : ℕ} (room : 72 ≤ T)
     (W beforeRows rows beforeH : ℕ) (root : Bool) (parent : Fin 64 → ZMod (prime^(w+1)))
-    (width : ℕ) (prefixes : List (Fin (prime+4))) (word : Fin N → ZMod 2)
-    (setup scan : List (Fin (T+5))) (rate : ℕ) :
-    let S := ordinaryEntryStacks (T := T) (ordinaryEntryWords W beforeRows rows beforeH root parent width prefixes) word
+    (width : ℕ) (prefixes : List (Fin (prime+4))) (owners : Stacks k prime) (src : Fin k)
+    (setup scan : List (Fin T)) (rate : ℕ) :
+    let metadata := ordinaryEntryWords W beforeRows rows beforeH root parent width prefixes
+    let S := embStk (payloadPlacement ((0 : Fin 5).natAdd T) src) (ordinaryOwnerBank metadata owners)
     let bank := (Fin.castLEEmb room).trans (Fin.castAddEmb 5)
-    (setup.map (fun i => 4*(S.L i).length)).sum +
-      ((scan.map (fun i => 4*(S.L i).length)).sum + rate*((S.R (bank 46)).length+(S.R (bank 48)).length)) = 0 := by
-  change (setup.map (fun _ => 0)).sum + ((scan.map (fun _ => 0)).sum + rate *
-    (((ordinaryEntryStacks (T := T) _ word).R (((46 : Fin 72).castLE room).castAdd 5)).length +
-    ((ordinaryEntryStacks (T := T) _ word).R (((48 : Fin 72).castLE room).castAdd 5)).length)) = 0
-  simp [ordinaryEntryStacks,ordinaryEntryWords]
+    (setup.map (fun i => 4*(S.L (i.castAdd 5)).length)).sum +
+      ((scan.map (fun i => 4*(S.L (i.castAdd 5)).length)).sum + rate*((S.R (bank 46)).length+(S.R (bank 48)).length)) = 0 := by
+  intro metadata S bank
+  obtain ⟨cells,_⟩ := ordinaryOwnerBank_private (T := T) metadata owners src
+  have left (i : Fin T) : S.L (i.castAdd 5) = [] := (cells i).1
+  have right (i : Fin 72) : S.R (bank i) = metadata i.val := (cells (i.castLE room)).2
+  simp [left,right,metadata,ordinaryEntryWords]
+
+def OrdinaryParentInput {T w N : ℕ} (bank : Fin 72 ↪ Fin (T+5)) (layout : Descriptor)
+    (rows parents W : ℕ) (root : Bool) (parent : Fin 64 → ZMod (prime^(w+1)))
+    (raw : Stacks (T+5) prime) (word : Fin N → ZMod 2)
+    (prefixes : ℕ → List (Fin (prime+4))) (tail : List (Fin (prime+4))) : Prop :=
+    let reg := fun i : Fin 5 => i.natAdd T
+    (raw.R (bank 29)).length = layout.beforeRows ∧ (raw.R (bank 30)).length = rows ∧ (raw.R (bank 31)).length = layout.beforeH ∧
+    (∀ i : Fin T, 59 ≤ i.val → raw.R (i.castAdd 5) = []) ∧
+    raw.R (bank 58) = (List.range parents).flatMap prefixes ++ tail ∧
+    (∀ i < parents, (prefixes i).length = (raw.R (bank 47)).length) ∧
+    (raw.R (bank 47)).length ≤ prime^layout.width ∧
+    raw.R (bank 28) = [] ∧ raw.R (bank 44) = [] ∧ raw.R (bank 49) = [] ∧
+    ParentParameters root W (prime^(w+1)).size W.size parent (fun i => raw.R (bank (i.castLE (by decide)))) ∧
+    raw.R (bank 50) = [] ∧ raw.R (bank 57) = [] ∧ raw.R (bank 56) = [] ∧ raw.R (bank 54) = [] ∧
+    (∀ j, readAt blank (raw.L (reg 0)) (raw.R (reg 0)) j = RadixToBinary.binaryEncoding.encode
+      (putWord (fun _ => blank) 0 ((List.ofFn word).map SparseRoleCircuit.encode) j)) ∧
+    (∀ i : Fin 5, i ≠ 0 → raw.R (reg i) = []) ∧
+    (∀ j, readAt blank (raw.L (bank 24)) (raw.R (bank 24)) j = blank)
+
+/-- The chart output and a packed prefix directory meet every parent entry condition. -/
+theorem ordinaryOwnerBank_input {T k N w : ℕ} (room : 72 ≤ T) (layout : Descriptor)
+    (rows parents W width : ℕ) (root : Bool) (parent : Fin 64 → ZMod (prime^(w+1)))
+    (units : root = true → ∀ i, parent i = 1) (prefixes : ℕ → List (Fin (prime+4)))
+    (widths : ∀ i < parents, (prefixes i).length = width) (fits : width ≤ prime^layout.width)
+    (owners : Stacks k prime) (src : Fin k) (word : Fin N → ZMod 2)
+    (reads : ∀ j, readAt blank (owners.L src) (owners.R src) j =
+      putWord (fun _ => blank) 0 (List.ofFn fun i => SparseRoleCircuit.encode (a := prime) (word i)) j) :
+    let packed := (List.range parents).flatMap prefixes
+    let metadata := ordinaryEntryWords W layout.beforeRows rows layout.beforeH root parent width packed
+    let slot := (0 : Fin 5).natAdd T
+    let raw := embStk (payloadPlacement slot src) (ordinaryOwnerBank metadata owners)
+    OrdinaryParentInput ((Fin.castLEEmb room).trans (Fin.castAddEmb 5)) layout rows parents W root parent raw word prefixes [] := by
+  intro packed metadata slot raw
+  obtain ⟨cells,regs⟩ := ordinaryOwnerBank_private (T := T) metadata owners src
+  let bank := (Fin.castLEEmb room).trans (Fin.castAddEmb 5)
+  have R (i : Fin 72) : raw.R (bank i) = metadata i.val := (cells (i.castLE room)).2
+  have L (i : Fin 72) : raw.L (bank i) = [] := (cells (i.castLE room)).1
+  change OrdinaryParentInput bank layout rows parents W root parent raw word prefixes []
+  unfold OrdinaryParentInput
+  change _ ∧ _
+  simp only [R]
+  refine ⟨List.length_replicate,List.length_replicate,List.length_replicate,?_,by simp [metadata,ordinaryEntryWords,packed],
+    fun i hi => (widths i hi).trans List.length_replicate.symm,?_,rfl,rfl,rfl,
+    ordinaryEntryWords_parameters W layout.beforeRows rows layout.beforeH root parent width packed units,
+    rfl,rfl,rfl,rfl,?_,fun i hi => (regs i hi).2,?_⟩
+  · intro i hi
+    rw [(cells i).2]
+    unfold metadata ordinaryEntryWords
+    split <;> first | rfl | omega
+  · simpa [metadata,ordinaryEntryWords] using fits
+  · intro j
+    rw [encodedOwnerCell]
+    simpa [raw,slot,ordinaryOwnerBank_project] using reads j
+  · intro j
+    rw [L]
+    change readAt blank [] [] j = blank
+    rw [readAt_nil_left,wordTape_nil]
 
 def OrdinaryParentRun [M8.Machine.Net] {common work w rows B : ℕ} {U : Type}
     (interval : ℕ × ℕ) (layout : Descriptor)
@@ -302,18 +365,7 @@ def OrdinaryParentRun [M8.Machine.Net] {common work w rows B : ℕ} {U : Type}
     let push := max (mnProgPush step) (mnProgPush (localBody ()))
     let rarePush := max (mnProgPush (directoryExceptionalCore (P := Unit) (U := U) 127 room remainderAnchorFits)) (mnProgPush (body ()))
     let rate := exceptionalVolumeRate U 127 64 scratch.length rarePush w
-    (raw.R (bank 29)).length = layout.beforeRows → (raw.R (bank 30)).length = rows → (raw.R (bank 31)).length = layout.beforeH →
-    (∀ i : Fin (66+(K+1)), 59 ≤ i.val → raw.R (i.castAdd 5) = []) →
-    raw.R (bank 58) = (List.range parents).flatMap prefixes ++ tail →
-    (∀ i < parents, (prefixes i).length = (raw.R (bank 47)).length) →
-    (raw.R (bank 47)).length ≤ prime^layout.width →
-    raw.R (bank 28) = [] → raw.R (bank 44) = [] → raw.R (bank 49) = [] →
-    ParentParameters root W data.H W.size parent (fun i => raw.R (bank (i.castLE (by decide)))) →
-    raw.R (bank 50) = [] → raw.R (bank 57) = [] → raw.R (bank 56) = [] → raw.R (bank 54) = [] →
-    (∀ j, readAt blank (raw.L (reg 0)) (raw.R (reg 0)) j = RadixToBinary.binaryEncoding.encode
-      (putWord (fun _ => blank) 0 ((List.ofFn word).map SparseRoleCircuit.encode) j)) →
-    (∀ i : Fin 5, i ≠ 0 → raw.R (reg i) = []) →
-    (∀ j, readAt blank (raw.L (bank 24)) (raw.R (bank 24)) j = blank) →
+    OrdinaryParentInput bank layout rows parents W root parent raw word prefixes tail →
     let embed := fun i : Fin (66+(K+1)) => i.castAdd 5
     let caller := Fin.castAddEmb (n := 66) (K+1)
     let inner := Fin.castAddEmb (n := 66) K
@@ -375,8 +427,8 @@ private theorem ordinaryParent_exec [M8.Machine.Net] {common work w rows B : ℕ
   obtain ⟨selectors,execute⟩ := scan data rfl directory B rolePositive shape pairRoom
   refine ⟨selectors,?_⟩
   intro u raw word prefixes tail
-    setupScratch inherited setupBase setupTime privateTapes scanned visited left scratch ports step push rarePush rate br nr bh clean source widths fitsWidth
-    short padded spare parameters parentPort mask mode queue payload empty blankData caller inner advance good padding dispatch
+    setupScratch inherited setupBase setupTime privateTapes scanned visited left scratch ports step push rarePush rate entry caller inner advance good padding dispatch
+  obtain ⟨br,nr,bh,clean,source,widths,fitsWidth,short,padded,spare,parameters,parentPort,mask,mode,queue,payload,empty,blankData⟩ := entry
   let v := remainderRecordChild interval.1 interval.2 (w+1) W
   have binary : data.H = M.size := rfl
   have count : data.records = LabelMask.records directory := rfl
