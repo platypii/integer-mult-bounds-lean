@@ -459,5 +459,138 @@ theorem routedCopy_cost_bound [M8.Machine.Net] (P Q basis targets : ℕ) :
   have bill := routedCopy_work P Q basis targets V (M8.RevMachine.LeafCore.coreCost V (w*64)) child pos
   exact (Nat.cast_le.mpr bill).trans (by simpa only [Nat.cast_add] using add_le_add (bound V w hw) (le_refl (child : ℝ)))
 
+private theorem stripPairInput {k t u v a : ℕ}
+    (r : Fin k → Fin t) (s : Fin k → Fin u) (l : Fin k → Fin v)
+    {x x' : Tapes t a} {y y' : Tapes u a} {z z' : Tapes v a}
+    (hx : SharedBank.strip x r = SharedBank.strip x' r)
+    (hy : SharedBank.strip y s = SharedBank.strip y' s)
+    (hz : SharedBank.strip z l = SharedBank.strip z' l) :
+    let slots := SharedBankFrames.commonSlots k t u
+    let all := SharedBankFrames.commonSlots k ((k+t)+u) v
+    SharedBank.strip (SharedBankPair.input (SharedBankPair.input x y r s) z slots l) all =
+      SharedBank.strip (SharedBankPair.input (SharedBankPair.input x' y' r s) z' slots l) all := by
+  simp only [SharedBankPair.input, SharedBank.bank, SharedBankFrames.strip_common, hx, hy, hz]
+
+open IntegerMultBounds.Networks.Certificates.PR589 M8.RevMachine M8.Machine.ArbitraryWidthOriginalRun in
+/-- A routed window as a composable stage on the permanent owner tapes.
+Its initialized private workspace is independent of the incoming data. -/
+theorem routedCopy_stage [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
+    (life : Copy.Lifecycle) (scheduled : life ∈ Copy.lifecycles) :
+    ∃ C : ℕ, ∀ w B K, 0 < w → 0 < B → 0 < K →
+      let v := copyLabelLayout w B K
+      let V := volume prime v
+      let W := B*prime^(64*(w*64))*K
+      let hs := fun i => FlatCoordinateSchedule.bits (RecursiveDimensionBank.values (copyChild w W) i)
+      ∃ stage : SharedBankStage.Stage _ 142081 prime (copyOwners (v := v)),
+        (∀ x, CopyWindowEffect n r d life w B K x (stage.transform x)) ∧
+        stage.cost ≤ C*V + 2*(63+252*life.targets.length)*LeafCore.coreCost V (w*64) + cost (copyChild w W) hs := by
+  obtain ⟨entry,leave,P,Q,A,D,states,body,eLead,lLead,runs⟩ := routedCopy_runs n r d life scheduled
+  let basis := FlatCoordinateCleanSchedule.constant A + FlatCoordinateCleanSchedule.constant D
+  refine ⟨P+Q+(504+basis+76*(life.targets.length+2))+2*life.targets.length+4,?_⟩
+  intro w B K hw hB hK v V W hs
+  let bs := FlatCoordinateSchedule.bits V
+  let tapeCount {t q : ℕ} (_ : Program t q prime) := t
+  let result := fun x => runs w B K hw hB hK x bs (FlatCoordinateSchedule.bits_value V)
+  let transform := fun x => (result x).choose
+  have run := fun x => ((result x).choose_spec).1
+  let rs := fun i : Fin 142081 => entry.slots (Fin.castAdd 24 i)
+  let ls := fun i : Fin 142081 => leave.slots (Fin.castAdd 24 i)
+  let cs := fun i : Fin 142081 => Fin.castLE (by dsimp [tapeCount]; omega : 142081 ≤ tapeCount body) i
+  let pair := SharedBankPair.program entry.program body rs cs
+  let common := SharedBankFrames.commonSlots 142081 entry.tapes (tapeCount body)
+  let machine := SharedBankPair.program pair leave.program common ls
+  let slots := SharedBankFrames.commonSlots 142081 (tapeCount pair) leave.tapes
+  let bank := fun data => LabelCall.bank (copyOwners (T := 142081) (v := v) data) v (M8.Stage2Machine.Straight.words (LabelSchedule.base v w))
+  let controls := CountedLoopReuseAlphabet.controls (a := prime) CountedLoopReuseAlphabet.empty (CountedLoopReuseAlphabet.binary bs) 1 1
+  let prep := fun data => copyPrepared (w := w) (W := W) A D ((copyOwners (T := 142081) (v := v) data).append controls)
+  let input := fun x => SharedBankPair.input
+    (SharedBankPair.input (SharedBankStageInput.raw (bank x) entry.tapes)
+      (prep x (FixedHeaderBankCopy.empty 6) (copyHeaderInput w W)) rs cs)
+    (SharedBankStageInput.raw (bank x) leave.tapes) common ls
+  let output := fun x => SharedBankPair.output
+    (SharedBankPair.output (SharedBankStageInput.raw (bank x) entry.tapes)
+      (prep (transform x) (FixedHeaderBankCopy.headerBank hs) (copyHeaderOutput w W)) rs cs)
+    (SharedBankStageInput.raw (bank (transform x)) leave.tapes) common ls
+  refine ⟨{ tapes := _, states := _, program := machine, transform := transform, input := input, output := output,
+            slots := slots, slots_injective := SharedBankFrames.commonSlots_injective ..,
+            metadata := SharedBank.strip (input 0) slots,
+            cost := (P*V+(63+252*life.targets.length)*LeafCore.coreCost V (w*64)+life.targets.length+1) +
+              (copyWindowWork basis life.targets.length V bs.length + cost (copyChild w W) hs) + 1 +
+              (Q*V+(63+252*life.targets.length)*LeafCore.coreCost V (w*64)+life.targets.length+1) + 1,
+            realizes := fun x => run x,
+            input_payload := ?_, output_payload := ?_, strip_input := ?_ },fun x => ((result x).choose_spec).2,?_⟩
+  · intro x
+    simp only [input,slots,common,tapeCount,pair,SharedBankPair.input,SharedBank.bank,SharedBankFrames.payload_common]
+    exact copyRoute_payload entry eLead _ _ _
+  · intro x
+    simp only [output,slots,tapeCount,pair,SharedBankPair.output,SharedBankFrames.payload_common]
+    exact copyRoute_payload leave lLead _ _ _
+  · intro x
+    exact stripPairInput rs cs ls
+      (routePrivate entry eLead (copyOwners x) (copyOwners 0) v _)
+      (copyPrivate (w := w) (W := W) A D (copyOwners (v := v) x) (copyOwners (v := v) 0)
+        controls (FixedHeaderBankCopy.empty 6) (copyHeaderInput w W) cs (Fin.val_castLE _))
+      (routePrivate leave lLead (copyOwners x) (copyOwners 0) v _)
+  · have pos : 0 < V := by
+      change 0 < volume prime (copyLabelLayout w B K)
+      rw [copyLabel_volume]
+      have hp := Shared50ModularControl.prime_prime.pos
+      positivity
+    exact routedCopy_work P Q basis life.targets.length V _ _ pos
+
+open IntegerMultBounds.Networks.Certificates.PR589
+
+/-- The successive owner states satisfy each routed window's chart equations in order. -/
+def CopyScheduleEffect (n : Fin 9) (r : Fin 32) (d : Fin 5) (w B K : ℕ) :
+    List Copy.Lifecycle → (Fin 142081 → Fin (volume prime (copyLabelLayout w B K)) → ZMod 2) →
+      (Fin 142081 → Fin (volume prime (copyLabelLayout w B K)) → ZMod 2) → Prop
+  | [], x, out => x = out
+  | life :: rest, x, out => ∃ y, CopyWindowEffect n r d life w B K x y ∧
+      CopyScheduleEffect n r d w B K rest y out
+
+open M8.RevMachine M8.Machine.ArbitraryWidthOriginalRun in
+theorem routedCopy_schedule [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5) :
+    ∃ C : ℕ, ∀ w B K, 0 < w → 0 < B → 0 < K →
+      let v := copyLabelLayout w B K
+      let V := volume prime v
+      let W := B*prime^(64*(w*64))*K
+      let hs := fun i => FlatCoordinateSchedule.bits (RecursiveDimensionBank.values (copyChild w W) i)
+      ∃ stage : SharedBankStage.Stage _ 142081 prime (copyOwners (v := v)),
+        (∀ x, CopyScheduleEffect n r d w B K Copy.lifecycles x (stage.transform x)) ∧
+        stage.cost ≤ C*V + 2*(63*9+252*527)*LeafCore.coreCost V (w*64) + 9*cost (copyChild w W) hs + 9 := by
+  let Life := {l // l ∈ Copy.lifecycles}
+  let spec := fun l : Life => routedCopy_stage n r d l.val l.property
+  let coeff := fun l : Life => (spec l).choose
+  refine ⟨(Copy.lifecycles.attach.map coeff).sum, ?_⟩
+  intro w B K hw hB hK v V W hs
+  let window := fun l : Life => (spec l).choose_spec w B K hw hB hK
+  let stage := fun l : Life => (window l).choose
+  let compile := fun ls : List Life => SharedBankStage.compile (copyOwners (v := v)) (by decide) (ls.map stage)
+  have effect (ls : List Life) : ∀ x, CopyScheduleEffect n r d w B K (ls.map Subtype.val) x ((compile ls).transform x) := by
+    induction ls with
+    | nil => exact fun _ => rfl
+    | cons l ls ih => exact fun x => ⟨_, (window l).choose_spec.1 x, ih ((stage l).transform x)⟩
+  let core := LeafCore.coreCost V (w*64)
+  let child := cost (copyChild w W) hs
+  have bound (ls : List Life) : (compile ls).cost ≤ (ls.map coeff).sum*V +
+      2*(63*ls.length+252*(ls.map (fun l => l.val.targets.length)).sum)*core + ls.length*child + ls.length := by
+    induction ls with
+    | nil => simp [compile, SharedBankStage.compile_cost]
+    | cons l ls ih =>
+      change (stage l).cost + (compile ls).cost + 1 ≤ _
+      have localCost : (stage l).cost ≤ coeff l*V + 2*(63+252*l.val.targets.length)*core + child :=
+        (window l).choose_spec.2
+      simp only [List.map_cons,List.sum_cons,List.length_cons]
+      nlinarith only [localCost,ih]
+  refine ⟨compile Copy.lifecycles.attach, ?_, ?_⟩
+  · simpa using effect Copy.lifecycles.attach
+  · have specialize (ls : List Life) (count : ls.length = 9)
+        (fanout : (ls.map (fun l => l.val.targets.length)).sum = 527) : (compile ls).cost ≤ (ls.map coeff).sum*V + 2*(63*9+252*527)*core + 9*child + 9 := by
+          have h := bound ls
+          rw [count, fanout] at h
+          exact h
+    exact specialize Copy.lifecycles.attach (List.length_attach.trans Copy.copy_count)
+      ((congrArg List.sum (List.attach_map_val (l := Copy.lifecycles)
+        (f := fun l => l.targets.length))).trans Copy.add_count)
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
