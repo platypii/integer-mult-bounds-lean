@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.M8.Height
 public import IntegerMultBounds.MathlibTM2.M6.PrefixFrame
 public import IntegerMultBounds.Networks.Certificates.PR589.Geometry.Dimensions.All
 
@@ -87,7 +88,8 @@ private theorem reduce_fraction {m : ℕ} (n d : ℤ) (nz : d ≠ 0)
 dimension-many prefix coordinates over every tape radix. -/
 theorem label_interpolation (label : ℕ) (live : label < 636) :
     let d := Geometry.Dimensions.value label
-    ∃ (hd : d ≤ 8) (chart : Matrix (Fin d) (Fin 8) ℚ), ∀ w : ℕ, let R := ZMod (prime ^ w)
+    ∃ (hd : d ≤ 8) (chart : Matrix (Fin d) (Fin 8) ℚ),
+      (∀ i j, M8.Height.ht (chart i j) ≤ 2^100) ∧ ∀ w : ℕ, let R := ZMod (prime ^ w)
       ∃ B : Matrix (Fin d) (Fin 8) R,
         (∀ i j, (chart i j).den.Coprime (prime ^ w) ∧ B i j = Swap.Modular.ratMod (prime ^ w) (chart i j)) ∧
         B.submatrix id (Fin.castLE hd) = 1 ∧
@@ -111,7 +113,19 @@ theorem label_interpolation (label : ℕ) (live : label < 636) :
     have h := (isUnit_iff_isUnit_det _).mp unit
     rw [← RingHom.map_det] at h
     exact fun zero => h.ne_zero (by rw [zero, map_zero])
-  refine ⟨hd, fun i j => Rat.divInt ((A.adjugate * G) i j) A.det, ?_⟩
+  refine ⟨hd, fun i j => Rat.divInt ((A.adjugate * G) i j) A.det, ?_, ?_⟩
+  · intro i j
+    apply (M8.Height.ht_divInt _ _ nz).trans
+    apply max_le
+    · change ((A.adjugate *ᵥ (fun k => G k j)) i).natAbs ≤ _
+      rw [← cramer_eq_adjugate_mulVec, cramer_apply]
+      apply prefix_det_bound hd
+      intro k l
+      rw [updateCol_apply]
+      split
+      · exact translatedEntry_bound _ _
+      · exact translatedEntry_bound _ _
+    · exact prefix_det_bound hd A fun _ _ => translatedEntry_bound _ _
   intro w R
   let M := G.map (Int.castRingHom R)
   let P := A.map (Int.castRingHom R)
@@ -217,7 +231,7 @@ theorem prefixProjector_shape {R : Type*} [CommRing R] {d : ℕ} (hd : d ≤ 8)
 generator lists, so the choice at a label is independent of the incoming MOVE. -/
 theorem compatible_label_frames :
     ∃ chart : (i : Fin 636) → Matrix (Fin (Geometry.Dimensions.value i.val)) (Fin 8) ℚ,
-    ∀ w : ℕ, let R := ZMod (prime ^ w)
+    (∀ l i j, M8.Height.ht (chart l i j) ≤ 2^100) ∧ ∀ w : ℕ, let R := ZMod (prime ^ w)
     ∃ B : (i : Fin 636) → Matrix (Fin (Geometry.Dimensions.value i.val)) (Fin 8) R,
       ∃ bound : ∀ i : Fin 636, Geometry.Dimensions.value i.val ≤ 8,
       let project := fun (i : Fin 636) (x : Fin 8 → R) => (x ∘ Fin.castLE (bound i)) ᵥ* B i
@@ -226,8 +240,8 @@ theorem compatible_label_frames :
       ∀ i j : Fin 636, (∀ k ∈ Frames.labels i.val, k ∈ Frames.labels j.val) →
         ∀ x, project j (project i x) = project i x ∧ project i (project j x) = project i x := by
   classical
-  choose bound chart frames using fun i : Fin 636 => label_interpolation i.val i.isLt
-  refine ⟨chart, ?_⟩
+  choose bound chart height frames using fun i : Fin 636 => label_interpolation i.val i.isLt
+  refine ⟨chart, height, ?_⟩
   intro w R
   choose B reduced norm factor fixes using fun i : Fin 636 => frames i w
   refine ⟨B, bound, reduced, norm, ?_⟩
@@ -246,17 +260,22 @@ theorem compatible_label_frames :
 /-- All modular labels admit lower triangular projectors in the same coordinates.
 Both products for a nested pair equal its smaller projector. -/
 theorem compatible_label_projectors :
-    ∃ Q : Fin 636 → Matrix (Fin 8) (Fin 8) ℚ, ∀ w : ℕ, let R := ZMod (prime ^ w)
+    ∃ Q : Fin 636 → Matrix (Fin 8) (Fin 8) ℚ, (∀ l i j, M8.Height.ht (Q l i j) ≤ 2^100) ∧ ∀ w : ℕ, let R := ZMod (prime ^ w)
     ∃ P : Fin 636 → Matrix (Fin 8) (Fin 8) R,
       (∀ l i j, (Q l i j).den.Coprime (prime ^ w) ∧ P l i j = Swap.Modular.ratMod (prime ^ w) (Q l i j)) ∧
       (∀ l i j, i < j → P l i j = 0) ∧
       (∀ l i, P l i i = if i.val < Geometry.Dimensions.value l.val then 1 else 0) ∧
       ∀ i j : Fin 636, (∀ k ∈ Frames.labels i.val, k ∈ Frames.labels j.val) →
         P j * P i = P i ∧ P i * P j = P i := by
-  obtain ⟨chart, frames⟩ := compatible_label_frames
+  obtain ⟨chart, height, frames⟩ := compatible_label_frames
   let Q (l : Fin 636) (i j : Fin 8) : ℚ :=
     if h : j.val < Geometry.Dimensions.value l.val then chart l ⟨j.val,h⟩ i else 0
-  refine ⟨Q, ?_⟩
+  refine ⟨Q, ?_, ?_⟩
+  · intro l i j
+    unfold Q
+    split
+    · exact height _ _ _
+    · simp
   intro w R
   obtain ⟨B, bound, reduced, norm, nested⟩ := frames w
   refine ⟨fun i => prefixProjector (bound i) (B i), ?_,

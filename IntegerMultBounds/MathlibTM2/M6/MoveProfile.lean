@@ -45,16 +45,16 @@ theorem modular_move_profile (w : ℕ) :
       LocalMoveProfile word := by
   intro R
   classical
-  obtain ⟨P, idem, commute, _, programs⟩ := checked_move_programs w
-  have existsWord (p : ℕ × ℕ) (h : CheckedPair p) :=
-    programs ⟨p.1, h.1⟩ ⟨p.2, h.2.1⟩ h
-  let word := fun p => if h : CheckedPair p then (existsWord p h).choose else []
+  obtain ⟨raw, _, widths⟩ := checked_move_programs
+  obtain ⟨P, idem, commute, _, programs⟩ := widths w
+  let word (p : ℕ × ℕ) := if h : CheckedPair p then
+    (raw ⟨p.1,h.1⟩ ⟨p.2,h.2.1⟩).map (AffineFieldProgram.mapOp (Swap.Modular.ratMod (prime ^ w))) else []
   have spec (p : ℕ × ℕ) (h : CheckedPair p) :
       (∀ op ∈ word p, AffineFieldProgram.Legal op) ∧
       AffineFieldProgram.interchanges (word p) = Geometry.moveRank p.1 p.2 ∧
       ∀ s, AffineFieldProgram.run (word p) s =
         exchange (P ⟨p.2, h.2.1⟩) (exchange (P ⟨p.1, h.1⟩) s) := by
-    simpa only [word, dite_eq_left h] using (existsWord p h).choose_spec
+    simpa only [word, dite_eq_left h] using programs ⟨p.1,h.1⟩ ⟨p.2,h.2.1⟩ h
   have counts (edges : List (ℕ × ℕ)) (checked : ∀ p ∈ edges, CheckedPair p) :
       (edges.map word).map AffineFieldProgram.interchanges =
         edges.map (fun p => Geometry.moveRank p.1 p.2) := by

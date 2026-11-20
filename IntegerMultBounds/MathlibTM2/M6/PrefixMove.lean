@@ -176,6 +176,50 @@ def moveBasis {R : Type*} [CommRing R] (U : Matrix (Fin 8) (Fin 8) R) :=
   let E := diagonal fun k => U k k
   U * E + (1 - U) * (1 - E)
 
+open M8.Height in
+theorem moveBasis_height (A B : Matrix (Fin 8) (Fin 8) ℚ)
+    (ha : Bounded A (2^100)) (hb : Bounded B (2^100)) :
+    Bounded (moveBasis (B-A)) (2^6465) := by
+  let U := B-A
+  let E := diagonal fun k => U k k
+  have hu : Bounded U (2^201) := bounded_sub hb ha
+  have he : Bounded E (2^201) := by
+    intro i j
+    by_cases h : i = j
+    · subst j
+      simpa [E] using hu i i
+    · simp [E, diagonal_apply_ne _ h]
+  have result := bounded_add (bounded_mul hu he)
+    (bounded_mul (bounded_sub bounded_one hu) (bounded_sub bounded_one he))
+  simp only [Fintype.card_fin, Nat.reduceAdd, Nat.reduceMul] at result
+  exact result
+
+open M8.Height in
+/-- A cofactor is a signed sum of at most eight factorial products. -/
+theorem adjugate_height (C : Matrix (Fin 8) (Fin 8) ℚ) {e : ℕ}
+    (bounded : Bounded C (2^e)) : Bounded C.adjugate (2^((e*8+1)*Nat.factorial 8)) := by
+  intro i j
+  rw [adjugate_apply, det_apply]
+  let A := C.updateRow j (Pi.single i 1)
+  have entry (k l) : ht (A k l) ≤ 2^e := by
+    simp only [A, updateRow_apply, Pi.single_apply]
+    split_ifs <;> first | exact bounded _ _ | simpa using (Nat.one_le_two_pow (n := e))
+  have product (σ : Equiv.Perm (Fin 8)) (s : Finset (Fin 8)) :
+      ht (∏ k ∈ s, A (σ k) k) ≤ (2^e)^s.card := by
+    induction s using Finset.induction_on with
+    | empty => simp
+    | insert k s fresh ih =>
+      rw [Finset.prod_insert fresh, Finset.card_insert_of_notMem fresh, pow_succ']
+      exact (ht_mul _ _).trans (Nat.mul_le_mul (entry _ _) ih)
+  apply (ht_sum _ _ ((2^e)^8) ?_).trans
+  · rw [Finset.card_univ, Fintype.card_perm, Fintype.card_fin, ← pow_mul, ← pow_succ', ← pow_mul]
+  · intro σ _
+    have h := product σ Finset.univ
+    simp only [Finset.card_univ, Fintype.card_fin] at h
+    rcases Int.units_eq_one_or (Equiv.Perm.sign σ) with pos | neg
+    · simpa only [pos, one_smul] using h
+    · simpa only [neg, Units.smul_def, Units.val_neg, Units.val_one, neg_smul, one_smul, ht_neg] using h
+
 open IntegerMultBounds.Swap.Modular
 open IntegerMultBounds.Networks.ModularFrameSchedule in
 theorem moveBasis_reduce (m : ℕ) (U : Matrix (Fin 8) (Fin 8) ℚ) (hu : Admissible m U) :
@@ -201,6 +245,34 @@ theorem moveBasis_reduce (m : ℕ) (U : Matrix (Fin 8) (Fin 8) ℚ) (hu : Admiss
     rw [reduce_add m (admissible_mul m hu he) (admissible_mul m hU hE), reduce_mul m hu he,
       reduce_mul m hU hE, reduce_sub m h1 hu, reduce_sub m h1 he, reduce_one, diag]
     rfl⟩
+
+/-- Compile the forward basis and its adjugate once, before choosing a tape width. -/
+noncomputable def rationalMoveWord (d e : ℕ) (C : Matrix (Fin 8) (Fin 8) ℚ) :=
+  AffineFieldProgram.compile ([Op.transformH C.adjugate, .transformD C.adjugate] ++
+    intervalSwaps d e ++ [.transformH C, .transformD C])
+
+theorem rationalMoveWord_reduce (m d e : ℕ) (C : Matrix (Fin 8) (Fin 8) ℚ)
+    (adm : Admissible m C) (det : (reduce m C).det = 1) :
+    (rationalMoveWord d e C).map (AffineFieldProgram.mapOp (ratMod m)) =
+      AffineFieldProgram.compile (prefixMoveProgram d e (reduce m C)) := by
+  let L := lift m C adm
+  have val : L.adjugate.map (denCoprime m).subtype = C.adjugate := by
+    apply ((denCoprime m).subtype.map_adjugate L).trans
+    exact congrArg Matrix.adjugate (lift_map_val m C adm)
+  have adj : reduce m C.adjugate = (reduce m C).adjugate := by
+    rw [← val, reduce_lift m C adm]
+    exact (toZMod m).map_adjugate L
+  have inv : (reduce m C)⁻¹ = (reduce m C).adjugate := by
+    rw [Matrix.nonsing_inv_apply _ (det ▸ isUnit_one)]
+    simp [det]
+  unfold rationalMoveWord
+  rw [← AffineFieldProgram.compile_map]
+  congr 1
+  simp only [prefixMoveProgram, List.map_append, List.map_cons, List.map_nil,
+    AffineFieldProgram.mapShear, intervalSwaps, coordinateSwaps, List.map_map]
+  change _ ++ _ ++ [Op.transformH (reduce m C), .transformD (reduce m C)] = _
+  rw [inv, ← adj]
+  rfl
 
 /-- One family of tape-ring frames serves every nested pair. In coordinates given by
 a unitriangular adapter, its MOVE exchanges precisely the newly gained prefix positions. -/
