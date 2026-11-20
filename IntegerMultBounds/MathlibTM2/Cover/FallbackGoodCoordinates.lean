@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackCoordinateFrame
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackPrefixVolume
 
 /-! Run the coordinate loop on elimination's packed pivots and original parent archive. -/
 @[expose] public section
@@ -36,6 +37,60 @@ theorem stagedCoordinateBank [M8.Machine.Net] {T work : ℕ} (v : Descriptor) (i
   · obtain ⟨hh,ht⟩ := LeafCore.bank_set roles (Routines.hdr v) f p node scalar ctr st io tape i h
     have same := frame (ports i) (ports.injective.ne h)
     simpa only [Function.comp_apply,hh,ht,same.1,same.2] using initial i x
+
+/-- Eliminate the active columns and write the pivot archive before entering
+the packed coordinate loop. -/
+noncomputable def pivotSetupTime (m d w H : ℕ) :=
+  d*(4*w+4+columnTime m prime w H)+1+(d*(8*(m*m*H)+14*H+22)+1)
+
+theorem pivotSetupTime_le (m d D w H : ℕ) (fits : d ≤ D) :
+    pivotSetupTime m d w H ≤ pivotSetupTime m D 1 1 * ((w+1)*(H+1)^2) := by
+  apply le_trans (show pivotSetupTime m d w H ≤ pivotSetupTime m D w H by unfold pivotSetupTime; gcongr)
+  unfold pivotSetupTime columnTime entryTime
+  generalize prime = p
+  generalize p-2 = k
+  ring_nf
+  omega
+
+theorem pivotSetupTime_radix_le (m d D w : ℕ) (fits : d ≤ D) :
+    pivotSetupTime m d w (prime^(w+1)).size ≤
+      (pivotSetupTime m D 1 1 * (2*(prime.size+1)^2))*prime^(w+1) := by
+  have bits := prefixSetup_volume_le w 0
+  simp only [Nat.zero_add,pow_zero,pow_one] at bits
+  refine (pivotSetupTime_le _ _ _ _ _ fits).trans ?_
+  rw [Nat.mul_assoc]
+  apply Nat.mul_le_mul_left
+  exact (Nat.mul_le_mul_right _ (Nat.le_add_right (w+1) 1)).trans bits
+
+/-- Linear leaf charge for the composed pivot writer and packed loop. -/
+theorem goodCoordinates_steps_linear [M8.Machine.Net] (v : Descriptor) (positive : v.Positive)
+    (m d D w tapes push entryTapes returnTapes transfer steps : ℕ) (active : 0 < d) (fits : d ≤ D)
+    (width : v.width = d*(w+1))
+    (run : steps ≤ pivotSetupTime m d w (prime^(w+1)).size +
+      packedCoordinatesTime d (volume prime v) w tapes push entryTapes returnTapes + transfer*volume prime v) :
+    let rate : ℕ := pivotSetupTime m D 1 1 * (2*(prime.size+1)^2)
+    (steps : ℝ) ≤ (((rate+transfer : ℕ) : ℝ) + packedCoordinatesRate D tapes push entryTapes returnTapes)*v.width*volume prime v := by
+  intro rate
+  have atom : w+1 ≤ v.width := width ▸ Nat.le_mul_of_pos_left _ active
+  have qpos := Networks.Shared50ModularControl.prime_prime.pos
+  have pre := Nat.mul_pos (Nat.mul_pos positive.1 positive.2.1) positive.2.2.1
+  have radix : prime^(w+1) ≤ volume prime v := (Nat.pow_le_pow_right qpos atom).trans
+    ((Nat.le_mul_of_pos_left _ pre).trans ((Nat.le_mul_of_pos_right _ positive.2.2.2.1).trans
+      ((Nat.le_mul_of_pos_right _ (pow_pos qpos _)).trans (Nat.le_mul_of_pos_right _ positive.2.2.2.2))))
+  have setup : pivotSetupTime m d w (prime^(w+1)).size ≤ rate*v.width*volume prime v :=
+    (pivotSetupTime_radix_le m d D w fits).trans (Nat.mul_le_mul
+      (Nat.le_mul_of_pos_right _ (Nat.zero_lt_of_lt atom)) radix)
+  have packed := packedCoordinates_steps_linear v positive d D w tapes push entryTapes returnTapes
+    _ active fits width le_rfl
+  have move : transfer * volume prime v ≤ transfer*v.width*volume prime v :=
+    Nat.mul_le_mul_right _ (Nat.le_mul_of_pos_right _ (Nat.zero_lt_of_lt atom))
+  push_cast
+  rw [add_mul,add_mul]
+  have hs := (Nat.cast_le (α := ℝ)).mpr setup
+  have hm := (Nat.cast_le (α := ℝ)).mpr move
+  have hr := (Nat.cast_le (α := ℝ)).mpr run
+  push_cast at hs hm hr
+  nlinarith only [packed,hs,hm,hr]
 
 theorem goodRecordCoordinates_exec [M8.Machine.Net] {T m work Q : ℕ} {F U : Type}
     (v : Descriptor) (positive : v.Positive) (w : ℕ) (proj : Matrix (Fin m) (Fin m) ℚ)
@@ -82,8 +137,7 @@ theorem goodRecordCoordinates_exec [M8.Machine.Net] {T m work Q : ℕ} {F U : Ty
       let call := fun i : Fin d => packedCoordinateProgram (F := F) (U := U) io i.val i.val ef xf fits eqs xqs cap
       let cost := packedCoordinatesTime d N w (LeafCore.core io).tapes
         (packedLeafPush (F := Empty) (U := U) io Empty.elim) entry.tapes leave.tapes
-      ∃ z D t, z.user = u.user ∧ t ≤ (d*(4*w+4+columnTime m prime w M.size)+1+
-        (d*(8*(m*m*M.size)+14*M.size+22)+1))+cost ∧
+      ∃ z D t, z.user = u.user ∧ t ≤ pivotSetupTime m d w M.size + cost ∧
         Exec body ((goodWeights prime d rankFits bank).seq (Prog.seqList ((List.finRange d).reverse.map call)))
           (mk u S) t (mk z D) ∧
         ∃ minor : ∀ k (hk : k < d), IsUnit (GoodForm.lead (k+1) (lt_of_lt_of_le hk rankFits) G).det,
@@ -193,8 +247,7 @@ theorem stagedGoodRecordCoordinates_exec [M8.Machine.Net] {T m work Q : ℕ} {F 
       let call := fun i : Fin d => packedCoordinateProgram (F := F) (U := U) io i.val i.val ef xf fits eqs xqs cap
       let cost := packedCoordinatesTime d N w (LeafCore.core io).tapes
         (packedLeafPush (F := Empty) (U := U) io Empty.elim) entry.tapes leave.tapes
-      ∃ z D t, z.user = u.user ∧ t ≤ (d*(4*w+4+columnTime m prime w M.size)+1+
-        (d*(8*(m*m*M.size)+14*M.size+22)+1))+cost ∧
+      ∃ z D t, z.user = u.user ∧ t ≤ pivotSetupTime m d w M.size + cost ∧
         Exec body ((goodWeights prime d rankFits bank).seq (Prog.seqList ((List.finRange d).reverse.map call)))
           (mk u E) t (mk z D) ∧
         ∃ minor : ∀ k (hk : k < d), IsUnit (GoodForm.lead (k+1) (lt_of_lt_of_le hk rankFits) G).det,

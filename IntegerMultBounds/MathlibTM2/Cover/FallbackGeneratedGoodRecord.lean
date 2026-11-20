@@ -222,7 +222,7 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
       let call := fun i : Fin d => packedCoordinateProgram (F := Empty) (U := U) io i.val i.val ef xf fits eqs xqs cap
       let cost := packedCoordinatesTime d N w (LeafCore.core io).tapes
         (packedLeafPush (F := Empty) (U := U) io Empty.elim) entry.tapes leave.tapes
-      let budget := (d*(4*w+4+columnTime m prime w M.size)+1+(d*(8*(m*m*M.size)+14*M.size+22)+1))+cost
+      let budget := pivotSetupTime m d w M.size + cost
       let coordinate := (goodWeights prime d rankFits bank).seq (Prog.seqList ((List.finRange d).reverse.map call))
       let effect := fun label (word next : Fin N → ZMod 2) =>
         ∃ minor : ∀ k (hk : k < d), IsUnit (GoodForm.lead (k+1) (lt_of_lt_of_le hk rankFits) (G label)).det,

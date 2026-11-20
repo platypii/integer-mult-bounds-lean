@@ -12,6 +12,18 @@ open M8.RevMachine RecursiveInterchangeLayout Matrix Finset IntegerMultBounds.Sw
   IntegerMultBounds.Swap.Modular
 local instance (w : ℕ) : NeZero (prime^(w+1)) := ⟨pow_ne_zero _ Networks.Shared50ModularControl.prime_prime.ne_zero⟩
 
+private theorem returnCost_le {P H B : ℕ} (hp : 0 < P) (hh : 0 < H) (hb : 0 < B) :
+    let N := P*(H*B)
+    6*(B.size+H.size+P.size)+19+((218*N+1)*13+8) ≤ 2892*N := by
+  intro N
+  have bound (a : ℕ) : a.size ≤ a := Nat.size_le.mpr Nat.lt_two_pow_self
+  have prod : H*B ≤ N := Nat.le_mul_of_pos_left _ hp
+  have b := ((bound B).trans (Nat.le_mul_of_pos_left _ hh)).trans prod
+  have h := ((bound H).trans (Nat.le_mul_of_pos_right _ hb)).trans prod
+  have p : P.size ≤ N := (bound P).trans (Nat.le_mul_of_pos_right _ (Nat.mul_pos hh hb))
+  have pos : 0 < N := Nat.mul_pos hp (Nat.mul_pos hh hb)
+  omega
+
 theorem goodRecordReturn_exec [M8.Machine.Net] {T m work Q : ℕ} {F U : Type}
     (v : Descriptor) (positive : v.Positive) (w : ℕ) (proj : Matrix (Fin m) (Fin m) ℚ)
     (width : v.width = proj.rank*(w+1)) (idem : proj*proj = proj)
@@ -74,8 +86,7 @@ theorem goodRecordReturn_exec [M8.Machine.Net] {T m work Q : ℕ} {F U : Type}
         (returnFromOrigin (Function.Embedding.refl _))
       let finish := setup.seq (statePlacedNormalized ((Fin.castAddEmb 2).trans r) capacity (by decide) Empty.elim localRun)
       let coordinate := (goodWeights prime d rankFits bank).seq (Prog.seqList ((List.finRange d).reverse.map call))
-      ∃ z D t, z.user = u.user ∧ t ≤ ((d*(4*w+4+columnTime m prime w M.size)+1+
-        (d*(8*(m*m*M.size)+14*M.size+22)+1))+cost)+(6*(B.size+H.size+P.size)+19+((218*N+1)*13+8)) ∧
+      ∃ z D t, z.user = u.user ∧ t ≤ (pivotSetupTime m d w M.size + cost) + 2892*N ∧
         Exec body ((embProg inner Empty.elim coordinate).seq finish) (mk u whole) t (mk z D) ∧
         ∃ minor : ∀ k (hk : k < d), IsUnit (GoodForm.lead (k+1) (lt_of_lt_of_le hk rankFits) G).det,
         let stage := GoodForm.stageAt G d rankFits minor d le_rfl
@@ -103,8 +114,7 @@ theorem goodRecordReturn_exec [M8.Machine.Net] {T m work Q : ℕ} {F U : Type}
   obtain ⟨z,D,n,hz,bound,done,out,kept⟩ := coordinateReturn_exec hP hH hB capacity body slot coordinate u whole
     source head (List.ofFn next) (List.length_ofFn.trans length) y E t run user read src words spare
   refine ⟨z,D,n,hz,bound.trans ?_,done,minor,next,out,kept,address,?_⟩
-  · rw [← length]
-    exact Nat.add_le_add_right time _
+  · exact Nat.add_le_add time (by simpa only [N,length] using returnCost_le hP hH hB)
   · intro gaps W layout hg tg x j flat
     let stage := GoodForm.stageAt G d rankFits minor d le_rfl
     let pivot := fun i : Fin d => stage.M (i.castLE rankFits) (i.castLE rankFits)
