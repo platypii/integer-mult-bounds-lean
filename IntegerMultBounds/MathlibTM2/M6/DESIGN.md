@@ -630,8 +630,11 @@ the good-record algebra and `remainderFallback_residual` identifies the exceptio
 record's residual. The scheduled scanner builds its owner counter, executes both branches on one packed
 word and restores the owner tail. On every live record its output satisfies the same
 residual-matrix read equation. `ownerRow_projected` identifies that matrix at the
-routed label with the incoming port projector. Composing the physical node setup
-with this execution and charging its total time remain open.
+routed label with the incoming port projector. The scanner's time bound includes
+counter setup, selector construction, matrix preparation and row traversal. It charges
+the exceptional operation at the PR589 exceptional-label density. The incoming
+archive and projector suffixes still enter the setup bill. Composing the physical
+parent setup with this scanner and bounding the result by the node budget remain open.
 
 The semantic five-class node (S5d.3) certifies upstream's accounting under ideal routes and
 partial swaps. Its exponent `1 - 10/5769` holds under that idealization only.

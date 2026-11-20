@@ -119,17 +119,17 @@ open Matrix Finset IntegerMultBounds.Swap.LowerTriangular IntegerMultBounds.Swap
 
 /-- Charge the stopped ordinary row at the common prefix width of the live
 directory. Only the exceptional fraction pays for the residual permutation. -/
-theorem ordinaryDirectoryTime_le [M8.Machine.Net] {m d w W K J B : ℕ} (U : Type)
+theorem ordinaryDirectoryTime_le [M8.Machine.Net] {m d w W K H J B : ℕ} (U : Type)
     (proj : Matrix (Fin m) (Fin m) ℚ) (idem : proj*proj = proj)
     (factor : Factorization univ univ proj) (small : ∀ k ∈ factorizationDenominators factor, k < prime)
     (dimension : m+m = d+1) (directory v : Descriptor)
     (shape : directory.beforeH = B*prime^(m*((w+1)*m))) (parent : Fin m → ZMod (prime^(w+1)))
     (prefixes : ℕ → List (Fin (prime+4))) (tail : List (Fin (prime+4))) (schedule : List ℕ → List (Fin (prime+4)))
     (S : Stacks (66+K) prime) (overhead budget tapes push rareTapes rarePush : ℕ)
-    (rows : ℕ → Fin (d+1) → Fin (d+1)) (negative : ℕ → Bool) (hW : 0 < W) :
+    (rows : ℕ → Fin (d+1) → Fin (d+1)) (negative : ℕ → Bool) (hW : 0 < W)
+    (binary : H = (prime^(w+1)).size) (digits : J = W.size) :
     let M := prime^(w+1)
     let N := M^(m+m)*W
-    let H := M.size
     let labels := List.range (LabelMask.records directory)
     let live := LabelStock.live m (w+1) 1
     let bad := fun j => fallbackBit proj.rank_le_height (reduce M proj) (physicalLabel m (w+1) j)
@@ -138,7 +138,7 @@ theorem ordinaryDirectoryTime_le [M8.Machine.Net] {m d w W K J B : ℕ} (U : Typ
     let cleared := fun width => elapsed width+(4*tapes+1+tapes*(6*(push*elapsed width)))
     let advance := (d+1)*(d+1)*(4*H+4)+1
     let usual := fun j => (if live j then cleared (prefixes j).length else pad (prefixes j).length) + advance
-    let rare := fun j => exceptionalRecordTime U (rows j) (negative j) m w W H W.size rareTapes rarePush (prefixes j).length
+    let rare := fun j => exceptionalRecordTime U (rows j) (negative j) m w W H J rareTapes rarePush (prefixes j).length
     let price := fun j => (if live j && bad j then rare j else usual j)+(if live j then 4 else 3)
     let base := cleared (prefixes 0).length+advance+4*N
     DirectoryReady v proj w W H J parent prefixes tail schedule S labels → (prefixes 0).length ≤ N →
@@ -147,7 +147,8 @@ theorem ordinaryDirectoryTime_le [M8.Machine.Net] {m d w W K J B : ℕ} (U : Typ
     (labels.map (fun j => 6*N+6+price j+(4*N+4))).sum+2*labels.length+2+(2*(labels.length*N)+2) ≤
         labels.length*(base+12*N+16) + (((∑ k ∈ range proj.rank, (k+1)*(m+1))*labels.length)/prime)*
           ((fixed+swaps*swapVolumeRate w)*N)+4 := by
-  intro M N H labels live bad pad elapsed cleared advance usual rare price base ready first
+  subst H J
+  intro M N labels live bad pad elapsed cleared advance usual rare price base ready first
   intro fixed swaps
   have bill := (exceptionalRecordTime_binary_le U d m rareTapes rarePush).choose_spec.choose_spec
   apply packedClassifiedTime_le idem factor small proj.rank_le_height directory shape usual rare base
