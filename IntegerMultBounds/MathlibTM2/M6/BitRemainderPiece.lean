@@ -63,6 +63,111 @@ theorem idleTape_injective (i : Fin 9) : Function.Injective (idleTape i) := by
   rw [idleRole_copy,idleRole_copy] at copies
   exact Prod.ext (Prod.ext (congrArg Role.replica roles) (congrArg Role.cls roles)) (Fin.ext copies)
 
+open IntegerMultBounds.Swap.Modular in
+section
+variable {ι : Type*} [Fintype ι] (m : ℕ)
+
+/-- Read a rational address modulo the tape radix. Addresses outside the
+denominator-coprime lattice share the zero address. -/
+noncomputable def addressMod (x : ι → ℚ) : ι → ZMod m := by
+  classical
+  exact if ∀ i, (x i).den.Coprime m then ratMod m ∘ x else 0
+
+/-- An admissible involution preserves the lattice in both directions, so its
+action descends to the modular address on every rational input. -/
+theorem addressMod_involution [DecidableEq ι] {A : Matrix ι ι ℚ} (adm : Admissible m A)
+    (invol : A * A = 1) (x : ι → ℚ) :
+    addressMod m (A.mulVec x) = (reduce m A).mulVec (addressMod m x) := by
+  classical
+  have closed (v : ι → ℚ) (h : ∀ i, (v i).den.Coprime m) :
+      ∀ i, ((A.mulVec v) i).den.Coprime m := fun i =>
+    admissible_mul m adm (B := Matrix.of (fun j (_ : Unit) => v j)) (fun j _ => h j) i ()
+  by_cases h : ∀ i, (x i).den.Coprime m
+  · simp only [addressMod,ite_eq_left h,ite_eq_left (closed x h)]
+    have product := reduce_mul m adm (B := Matrix.of (fun j (_ : Unit) => x j)) (fun j _ => h j)
+    exact funext fun i => congrArg (fun B : Matrix ι Unit (ZMod m) => B i ()) product
+  · have outside : ¬∀ i, ((A.mulVec x) i).den.Coprime m := by
+      intro hx
+      have back := closed _ hx
+      rw [Matrix.mulVec_mulVec,invol,Matrix.one_mulVec] at back
+      exact h back
+    simp [addressMod,h,outside]
+
+/-- A physical forward read at every modular coordinate gives the rational
+stream read by the idle, including coordinates outside the admissible lattice. -/
+theorem modularExchange_read (P : Matrix Axis Axis ℚ) (idem : P*P = P)
+    (adm : Admissible m (exchange P))
+    (before after : (Axis ⊕ Axis → ZMod m) → ZMod 2)
+    (reads : ∀ x, after ((reduce m (exchange P)).mulVec x) = before x) :
+    after ∘ addressMod m = along (exchange P) (before ∘ addressMod m) := by
+  funext z
+  have run := reads (addressMod m ((exchange P).mulVec z))
+  rw [← addressMod_involution m adm (exchange_mul_self idem),Matrix.mulVec_mulVec,
+    exchange_mul_self idem,Matrix.one_mulVec] at run
+  exact run
+
+end
+
+/-- Per-copy exchanges and the unchanged spectator tapes give the idle read
+required by the compiled node, for any interpretation of logical addresses. -/
+theorem idleCopies_read {V : ℕ} (i : Fin 9) (address : (Axis ⊕ Axis → ℚ) → Fin V)
+    (before after : Fin 142081 → Fin V → ZMod 2)
+    (reads : ∀ k, let e := idleInterval i k.2
+      let P := (port (idleRole i k).port.val).span e.1 e.2
+      (fun z => after (idleTape i k) (address z)) =
+        along (exchange P) (fun z => before (idleTape i k) (address z)))
+    (off : ∀ j, (∀ k, j ≠ idleTape i k) → after j = before j) :
+    readRoles address after = (Piece.remainder i.val).run (readRoles address before) := by
+  funext ρ
+  by_cases selected : ρ.bank.val / 2 = pairOf i
+  · obtain ⟨k,rfl⟩ := (idleRole_coverage i ρ).mpr selected
+    simp only [Piece.run,selected,ite_true,remainderSpan,idleRole_copy]
+    exact reads k
+  · simp only [Piece.run,selected,ite_false]
+    unfold readRoles
+    rw [off _ (by
+      intro k eq
+      have same := (Fintype.equivFin Role).injective (Fin.cast_injective _ (Fin.castSucc_injective _ eq))
+      exact selected ((idleRole_coverage i ρ).mp ⟨k,same.symm⟩))]
+
+open IntegerMultBounds.Swap.Modular in
+private theorem idleExchange_admissible (c : PortCertificate) (hc : c.Checked) (lo hi w : ℕ) :
+    Admissible (prime^w) (exchange (c.span lo hi)) := by
+  let m := prime^w
+  have flag : Admissible m c.flag := by
+    intro i j
+    have bound := (fullChart_entry c hc i (.inr j)).2
+    exact Nat.Coprime.pow_right w ((Nat.coprime_of_lt_prime (c.flag i j).den_pos.ne'
+      (bound.trans_lt Shared50ModularControl.prime_odd) Shared50ModularControl.prime_prime).symm)
+  have select : Admissible m (interval lo hi) := by
+    intro i j
+    simp only [interval,Matrix.diagonal_apply]
+    split_ifs <;> simp
+  have span : Admissible m (c.span lo hi) :=
+    admissible_mul m (admissible_mul m flag select) (fun i j => flag j i)
+  have complement := ModularFrameSchedule.admissible_sub m (admissible_one m) span
+  intro i j
+  cases i <;> cases j <;> first | apply complement | apply span
+
+/-- Read the entire idle at a packed modular address from its forward owner reads. -/
+theorem idleCopies_modular_read {V : ℕ} (w : ℕ) (i : Fin 9)
+    (pack : (Axis ⊕ Axis → ZMod (prime^w)) → Fin V) (before after : Fin 142081 → Fin V → ZMod 2)
+    (owners : ∀ k, let e := idleInterval i k.2
+      let P := (port (idleRole i k).port.val).span e.1 e.2
+        ∀ x, after (idleTape i k) (pack ((reduce (prime^w) (exchange P)).mulVec x)) =
+          before (idleTape i k) (pack x))
+    (off : ∀ j, (∀ k, j ≠ idleTape i k) → after j = before j) :
+    readRoles (pack ∘ addressMod (prime^w)) after =
+      (Piece.remainder i.val).run (readRoles (pack ∘ addressMod (prime^w)) before) := by
+  apply idleCopies_read _ _ _ _ _ off
+  intro k
+  have adm := idleExchange_admissible _ (port_checked _ (idleRole i k).port.isLt)
+    (idleInterval i k.2).1 (idleInterval i k.2).2 w
+  have idem := PortCertificate.span_mul_self (port_checked _ (idleRole i k).port.isLt)
+    (idleInterval i k.2).1 (idleInterval i k.2).2
+  exact modularExchange_read (prime^w) _ idem adm (before (idleTape i k) ∘ pack)
+    (after (idleTape i k) ∘ pack) (owners k)
+
 def idleCopies := stageRuns.flatMap fun rc => (List.finRange 222).map fun c => (rc,c)
 
 /-- Physical copy order agrees occurrence by occurrence with the idle's recursive calls. -/
@@ -120,6 +225,20 @@ private theorem foldOwners {κ ι α : Type*} (src : κ ↪ ι) (run : κ → (�
     · intro j outside
       exact (keeps j (fun k hk => outside k (List.mem_cons_of_mem _ hk))).trans
         (off a x j (outside a List.mem_cons_self))
+
+/-- Compose one update per selected owner, retaining its individual read relation. -/
+theorem idleCopies_fold {α : Type*} (i : Fin 9)
+    (run : (Fin 32 × Fin 5) × Fin 222 → (Fin 142081 → α) → Fin 142081 → α)
+    (effect : (Fin 32 × Fin 5) × Fin 222 → α → α → Prop)
+    (action : ∀ k x, effect k (x (idleTape i k)) (run k x (idleTape i k)))
+    (off : ∀ k x j, j ≠ idleTape i k → run k x j = x j) (x : Fin 142081 → α) :
+    let y := idleCopies.foldl (fun z k => run k z) x
+    (∀ k, effect k (x (idleTape i k)) (y (idleTape i k))) ∧
+      ∀ j, (∀ k, j ≠ idleTape i k) → y j = x j := by
+  have distinct : idleCopies.Nodup := stageRuns_nodup.product (List.nodup_finRange _)
+  obtain ⟨acts,keeps⟩ := foldOwners ⟨idleTape i,idleTape_injective i⟩ run effect action off idleCopies distinct x
+  refine ⟨fun k => acts k ?_,fun j outside => keeps j (fun k _ => outside k)⟩
+  exact List.mem_flatMap.mpr ⟨k.1,mem_stageRuns _,List.mem_map.mpr ⟨k.2,List.mem_finRange _,rfl⟩⟩
 
 /-- The two chart passes and the interval transpose, as observed on one owner. -/
 def IdleTransport (i : Fin 9) (k : (Fin 32 × Fin 5) × Fin 222) (w B K : ℕ) :=
@@ -258,15 +377,11 @@ theorem idlePiece_stage [M8.Machine.Net] (i : Fin 9) :
     simpa only [bill,idleCopies_prices,route] using bound idleCopies
   · intro data
     let run := fun k => (stages k).transform
-    have distinct : idleCopies.Nodup := stageRuns_nodup.product (List.nodup_finRange _)
-    have mem (k : (Fin 32 × Fin 5) × Fin 222) : k ∈ idleCopies := by
-      apply List.mem_flatMap.mpr
-      exact ⟨k.1,mem_stageRuns _,List.mem_map.mpr ⟨k.2,List.mem_finRange _,rfl⟩⟩
-    have endpoint := foldOwners ⟨idleTape i,idleTape_injective i⟩ run (fun k => IdleTransport i k w B K)
+    have endpoint := idleCopies_fold i run (fun k => IdleTransport i k w B K)
       (fun k x => ⟨(impl k).choose,((impl k).choose_spec.choose_spec.2 x).2⟩)
-      (fun k x => ((impl k).choose_spec.choose_spec.2 x).1) idleCopies distinct data
+      (fun k x => ((impl k).choose_spec.choose_spec.2 x).1) data
     simp only [compile,SharedBankStage.compile_transform,SharedBankStage.execute,List.foldl_map]
-    exact ⟨fun k => endpoint.1 k (mem k),fun j hj => endpoint.2 j (fun k _ => hj k)⟩
+    exact endpoint
 
 private theorem reindexIdle {N V : ℕ} (size : V = N)
     (stage : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V)))

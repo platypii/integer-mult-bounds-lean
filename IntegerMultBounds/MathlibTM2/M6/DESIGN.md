@@ -702,5 +702,13 @@ state is preserved and both stacks of every ordinary private tape at index
 58 or above are empty. The inverse chart preserves both stacks on every preceding register outside
 the shared owner and header slots.
 
+For an idle, `idleCopies_modular_read` reduces the compiled role equation to
+one forward read at each modular port exchange and preservation of unselected
+tapes. Rational addresses with all denominators coprime to the modulus reduce
+coordinatewise. The other addresses map to zero. The checked port exchange
+is an admissible involution, so it preserves both cases. Applying the result
+to the ordinary scanner still requires a common packing of modular addresses
+that intertwines its weighted, label-dependent residual with the port exchange.
+
 The semantic five-class node (S5d.3) certifies upstream's accounting under ideal routes and
 partial swaps. Its exponent `1 - 10/5769` holds under that idealization only.
