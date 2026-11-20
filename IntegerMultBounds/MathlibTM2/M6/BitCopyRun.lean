@@ -4,6 +4,7 @@ public import IntegerMultBounds.MathlibTM2.M8.Machine.ArbitraryWidthOriginalRun
 public import IntegerMultBounds.MathlibTM2.M6.ModularScatter
 public import IntegerMultBounds.MathlibTM2.M6.BitInvocation
 public import IntegerMultBounds.Machine.ExactFrame
+public import IntegerMultBounds.Networks.AffineFieldBijective
 public import IntegerMultBounds.Machine.ArbitraryWidthSliceTranspose
 public import IntegerMultBounds.Networks.AffineFieldCoordinates
 public import IntegerMultBounds.Machine.SparseRoleCircuit
@@ -121,6 +122,41 @@ section
 variable {w W : ℕ}
 local instance : NeZero (prime^w) := ⟨pow_ne_zero _ Shared50ModularControl.prime_prime.ne_zero⟩
 
+open M8.Machine.Segments in
+/-- A basis-change segment starts and ends in the same binary payload encoding
+as the COPY child. Its fixed program charges one linear pass constant. -/
+theorem copySegment_runs (ops : List (AffineFieldProgram.Op (Fin 8) ℚ)) (good : Good ops)
+    (hW : 0 < W) (x : Fin ((prime^w)^16*W) → ZMod 2) :
+    let q := ops.map (AffineFieldProgram.mapOp (IntegerMultBounds.Swap.Modular.ratMod (prime^w)))
+    (∀ op ∈ q, AffineFieldProgram.Legal op) →
+    let stages := description ops good
+    let bank := fun (y : Fin ((prime^w)^16*W) → ZMod 2) => SharedBankStageInput.raw
+      (FlatCoordinateShiftSharedBank.common (d := 16) (b := w) (W := W)
+        (fun i => SparseRoleCircuit.encode (y i))) (FlatCoordinateCleanSchedule.tapeCount stages)
+    ∃ y, HoareTime (FlatCoordinateCleanSchedule.program stages) (fun z => z = bank x)
+      (fun z => z = bank y) (FlatCoordinateCleanSchedule.constant stages * ((prime^w)^16*W)) ∧
+      ∀ s j, y (FlatCoordinateLayout.index (AffineFieldCoordinates.embed (AffineFieldProgram.run q s)) j) =
+        x (FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) j) := by
+  intro q legal stages bank
+  let perm := Equiv.ofBijective _ (AffineFieldBijective.run_bijective q legal)
+  let addr := copyAddress (Q := prime^w) (W := W)
+  let y := fun i => x (addr.symm (perm.symm (addr i).1,(addr i).2))
+  have moves (s) (j : Fin W) : y (addr.symm (perm s,j)) = x (addr.symm (s,j)) := by
+    simp only [y,Equiv.apply_symm_apply,Equiv.symm_apply_apply]
+  let encoded := fun i => SparseRoleCircuit.encode (a := 0) (x i)
+  have exactArray : FlatCoordinateInitializedSchedule.array stages w W hW encoded =
+      fun i => SparseRoleCircuit.encode (y i) := by
+    funext i
+    obtain ⟨⟨s,j⟩,rfl⟩ := addr.symm.surjective i
+    obtain ⟨s,rfl⟩ := perm.surjective s
+    rw [moves]
+    exact array_entry ops good w W hW encoded s j
+  refine ⟨y, ?_, moves⟩
+  apply (realizes ops good w W hW encoded).consequence (fun _ h => h) _ le_rfl
+  intro z hz
+  exact hz.1.trans (congrArg (fun a => SharedBankStageInput.raw
+    (FlatCoordinateShiftSharedBank.common a) (FlatCoordinateCleanSchedule.tapeCount stages)) exactArray)
+
 noncomputable def copyChildAddress (h d : Fin 7 → ZMod (prime^w))
     (u v : Fin 1 → ZMod (prime^w)) (j : Fin W) : RecursiveInterchangeScaling.Address (copyChild w W) :=
   let field (x : Fin 7 → ZMod (prime^w)) : Fin (prime^(7*w)) := Fin.cast (by rw [← pow_mul, Nat.mul_comm w 7])
@@ -212,6 +248,134 @@ theorem copyChild_runs [M8.Machine.Net] {t : ℕ} (caller : Tapes t prime)
   have hp : (copyChild w W).Positive := ⟨Nat.zero_lt_one, Nat.zero_lt_one, Nat.zero_lt_one, pos, Nat.mul_pos pos hW⟩
   exact ⟨_, M8.Machine.ArbitraryWidthOriginalRun.runs caller headers source _ hs hp
     (Nat.mul_pos (by decide) hw) valid tapes heads _ payload origin, copyChild_interval x⟩
+
+private theorem sourceWord_cast {v : Descriptor} {N : ℕ} (size : volume prime v = N)
+    (x : Fin N → ZMod 2) :
+    sourceWord (fun i => x (Fin.cast size i)) =
+      putWord (fun _ => blank) 0 (List.ofFn fun i => SparseRoleCircuit.encode (a := prime) (x i)) := by
+  subst N
+  rw [M8.Machine.ArbitraryWidthHighExchangeJoinEncoding.sourceWord_eq]
+  unfold RadixHighBlockJoinLoop.word
+  congr 2
+
+def segmentSource (stages : List (FlatCoordinateSchedule.Op 16)) :
+    Fin (FlatCoordinateCleanSchedule.tapeCount stages) :=
+  ⟨0, by
+    have h := FlatCoordinateInitializedSchedule.skeleton_tapes_ge stages
+    unfold FlatCoordinateCleanSchedule.tapeCount
+    omega⟩
+
+/-- Slot zero of a clean basis-change bank is exactly the child's payload
+tape, including its head position and its blank exterior. -/
+theorem copySegment_source (stages : List (FlatCoordinateSchedule.Op 16))
+    (x : Fin ((prime^w)^16*W) → ZMod 2) :
+    let n := FlatCoordinateCleanSchedule.tapeCount stages
+    let bank := SharedBankStageInput.raw (FlatCoordinateShiftSharedBank.common
+      (d := 16) (b := w) (W := W) (fun i => SparseRoleCircuit.encode (x i))) n
+    let slot := segmentSource stages
+    bank.head slot = 0 ∧ bank.tape slot = sourceWord (fun i => x (Fin.cast (copyChild_volume w W) i)) := by
+  intro n bank slot
+  refine ⟨rfl,?_⟩
+  apply congrArg (fun xs => FlatRepeatedControlNormalize.encoded (radix := prime)
+    (putWord (fun _ => blank) 0 xs))
+  exact List.ofFn_congr (copyChild_volume w W).symm (fun i => SparseRoleCircuit.encode (a := 0) (x i))
+
+
+private theorem segmentWorkspace_eq (stages : List (FlatCoordinateSchedule.Op 16))
+    (x y : Fin ((prime^w)^16*W) → ZMod 2) :
+    let bank := fun (z : Fin ((prime^w)^16*W) → ZMod 2) => SharedBankStageInput.raw
+      (FlatCoordinateShiftSharedBank.common (d := 16) (b := w) (W := W)
+        (fun i => SparseRoleCircuit.encode (z i))) (FlatCoordinateCleanSchedule.tapeCount stages)
+    let spare := fun z => SharedPlacementAlphabet.setTape (bank z) (segmentSource stages) (fun _ => blank) 0
+    spare x = spare y := by
+  intro bank spare
+  apply congrArg₂ Tapes.mk
+  · rfl
+  · funext k
+    by_cases eq : k = segmentSource stages
+    · simp [eq]
+    · simp only [Function.update_of_ne eq, bank, SharedBankStageInput.raw]
+      split
+      next h =>
+        have nz : k.val ≠ 0 := fun zero => eq (Fin.ext zero)
+        have i : (⟨k.val,h⟩ : Fin 4) = 1 ∨ (⟨k.val,h⟩ : Fin 4) = 2 ∨ (⟨k.val,h⟩ : Fin 4) = 3 := by
+          simp only [Fin.ext_iff]; omega
+        rcases i with e | e | e <;> rw [e] <;> rfl
+      next => rfl
+
+open M8.Machine.Segments SharedPlacementAlphabet in
+/-- Place the basis change on a caller's selected tape, leaving all other
+caller tapes stationary and the segment's original source slot blank. -/
+theorem copySegment_placed {t : ℕ} (src : Fin t) (ops : List (AffineFieldProgram.Op (Fin 8) ℚ))
+    (good : Good ops) (hW : 0 < W) (caller : Tapes t prime) (x : Fin ((prime^w)^16*W) → ZMod 2)
+    (head : caller.head src = 0)
+    (payload : caller.tape src = sourceWord (fun i => x (Fin.cast (copyChild_volume w W) i))) :
+    let q := ops.map (AffineFieldProgram.mapOp (IntegerMultBounds.Swap.Modular.ratMod (prime^w)))
+    (∀ op ∈ q, AffineFieldProgram.Legal op) →
+    let stages := description ops good
+    let slot := segmentSource stages
+    let bank := fun (y : Fin ((prime^w)^16*W) → ZMod 2) => SharedBankStageInput.raw
+      (FlatCoordinateShiftSharedBank.common (d := 16) (b := w) (W := W)
+        (fun i => SparseRoleCircuit.encode (y i))) (FlatCoordinateCleanSchedule.tapeCount stages)
+    let workspace := fun y => setTape (bank y) slot (fun _ => blank) 0
+    ∃ y : Fin ((prime^w)^16*W) → ZMod 2, HoareTime (Placement.placed (FlatCoordinateCleanSchedule.program stages) (sharedPlacement src slot))
+      (fun z => z = caller.append (workspace x))
+      (fun z => z = (setTape caller src
+        (sourceWord (fun i => y (Fin.cast (copyChild_volume w W) i))) 0).append (workspace x))
+      (FlatCoordinateCleanSchedule.constant stages * ((prime^w)^16*W)) ∧
+      ∀ s j, y (FlatCoordinateLayout.index (AffineFieldCoordinates.embed (AffineFieldProgram.run q s)) j) =
+        x (FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) j) := by
+  intro q legal stages slot bank workspace
+  obtain ⟨y,run,moves⟩ := copySegment_runs ops good hW x legal
+  have hx := copySegment_source stages x
+  have hy := copySegment_source stages y
+  change (bank x).head slot = 0 ∧ (bank x).tape slot = _ at hx
+  change (bank y).head slot = 0 ∧ (bank y).tape slot = _ at hy
+  have placed := shared_hoare run caller src slot (fun _ => blank) 0 (payload.trans hx.2.symm) (head.trans hx.1.symm)
+  refine ⟨y,?_,moves⟩
+  have same : workspace x = workspace y := segmentWorkspace_eq stages x y
+  rw [← hy.2, ← hy.1]
+  apply placed.consequence (fun _ h => h) _ le_rfl
+  intro z hz
+  exact hz.trans (congrArg _ same.symm)
+
+/-- The child starts directly on the pointwise gate's temporary. Its source
+word and head already have the required representation on the owner bank. -/
+theorem copyChild_bank_runs [M8.Machine.Net] {t : ℕ} (tmp : Fin t) (hw : 0 < w) (hW : 0 < W)
+    (bs : List Bool) (data : Fin t → Fin ((prime^w)^16*W) → ZMod 2)
+    (hs : Fin 6 → List Bool) (valid : RecursiveDimensionBank.Headers (copyChild w W) hs) :
+    let bank := fun X => PointwiseRoleGate.bank (a := prime) (fun _ _ => blank) (fun _ => 0)
+      (SparseRoleCircuit.encoded X) bs
+    let headerBank : Tapes 6 prime := ⟨fun _ => 1, fun i => RadixZeroFill.encodedBinary (hs i)⟩
+    let caller := (bank data).append headerBank
+    let src := Fin.castAdd 6 (Fin.castAdd 2 tmp)
+    ∃ y : Fin ((prime^w)^16*W) → ZMod 2,
+      HoareTime (program (Fin.natAdd (t+2)) src) (fun z => z = input caller)
+        (fun z => z = input ((bank (Function.update data tmp y)).append headerBank))
+        (cost (copyChild w W) hs) ∧
+      ∀ s j, y (FlatCoordinateLayout.index
+        (AffineFieldCoordinates.embed (IntegerMultBounds.Swap.Shear.run (intervalSwaps 0 7) s)) j) =
+        data tmp (FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) j) := by
+  intro bank headerBank caller src
+  obtain ⟨changed,run,action⟩ := copyChild_runs caller (Fin.natAdd (t+2)) src hw hW hs valid
+    (x := data tmp) (by intro i; simp [caller,Tapes.append,headerBank])
+    (by intro i; simp [caller,Tapes.append,headerBank]) (by
+      rw [sourceWord_cast]
+      simp [caller,src,bank,PointwiseRoleGate.bank,Tapes.append]
+      rfl) (by simp [caller,src,bank,PointwiseRoleGate.bank,Tapes.append])
+  let y := fun i => changed (Fin.cast (copyChild_volume w W).symm i)
+  refine ⟨y, ?_, action⟩
+  have wordEq : sourceWord changed = putWord (fun _ => blank) 0
+      (List.ofFn fun i => SparseRoleCircuit.encode (a := prime) (y i)) := by
+    simpa only [y,Fin.cast_cast,Fin.cast_eq_self] using sourceWord_cast (copyChild_volume w W) y
+  have updated : SharedPlacementAlphabet.setTape caller src (sourceWord changed) 0 =
+      (bank (Function.update data tmp y)).append headerBank := by
+    simp only [caller,src,bank,PointwiseRoleGate.bank,SharedPlacementAlphabet.setTape_append_left]
+    congr 2
+    apply congrArg₂ Tapes.mk <;> funext k <;> by_cases eq : k = tmp
+    all_goals simp [eq,wordEq]
+    all_goals congr 2; funext i; simp [SparseRoleCircuit.encoded,eq]
+  rwa [updated] at run
 
 end
 
