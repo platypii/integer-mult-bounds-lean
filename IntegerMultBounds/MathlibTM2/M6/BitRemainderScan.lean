@@ -17,7 +17,7 @@ open RecursiveInterchangeLayout (Descriptor volume role)
 open IntegerMultBounds.MathlibTM2.Cover
 open IntegerMultBounds.MathlibTM2.Cover.Fallback M8.RevMachine
 
-private theorem encodedOwnerCell {N : ℕ} (word : Fin N → ZMod 2) (j : ℤ) :
+theorem encodedOwnerCell {N : ℕ} (word : Fin N → ZMod 2) (j : ℤ) :
     (RadixToBinary.binaryEncoding (q := prime)).encode
       (putWord (fun _ => blank) 0 ((List.ofFn word).map SparseRoleCircuit.encode) j) =
     putWord (fun _ => blank) 0 (List.ofFn fun i => SparseRoleCircuit.encode (a := prime) (word i)) j := by
@@ -703,7 +703,8 @@ theorem ownerArchiveSetup_exec [M8.Machine.Net] {m K d w W J Q : ℕ} {P U : Typ
     let queueTime := directoryMatrixQueueTime m d w data.H data.records (start.R (caller 47)).length
     ready (embStk placement start) rs → start.R (directoryMatrixTape room) = [] →
     start.R (caller 57) = rs.map (fun j => bitSymbol (LabelStock.live m (w+1) 1 j)) →
-    ∃ prepare z F t, z.user = u.user ∧
+    let prepare : Pr P (66+(K+1)) Q prime U := directoryQueueProgram room fits e
+    ∃ z F t, z.user = u.user ∧
       Exec (fun f => embProg bank id (body f)) (embProg bank id prepare) (mk u S) t (mk z F) ∧
       ready (embStk placement (embStk bank F)) rs ∧
       (embStk bank F).R (directoryMatrixTape room) = (data.physical e proj parent inv).matrices 0 ∧
@@ -726,11 +727,11 @@ theorem ownerArchiveSetup_exec [M8.Machine.Net] {m K d w W J Q : ℕ} {P U : Typ
       exact directoryQueueBank_caller room fits i j (Fin.ext rfl)
   obtain ⟨_,_,init,_,initBound,_,_,_,_,_,_,_,_,_,_,_,_,_,generate,_⟩ :=
     directoryQueueSetup_exec room fits body parent inv reciprocal hm (embDn bank u) start liveBits free weights modulus unit clock
-  obtain ⟨writer,runWriter⟩ := generate e
+  have runWriter := generate e
   obtain ⟨y,t,userY,_,time,write,archive,keep,clear⟩ := runWriter proj prefixes archiveTail projector
     (fun j hj => widths j (List.mem_range.mpr hj)) directory
   obtain ⟨z,F,exec,_,user,projEq,stay⟩ := exec_emb (ι := id) (body' := fun f => embProg bank id (body f)) (Fin.castAdd_injective ..) (fun _ => rfl) write u rfl S rfl
-  refine ⟨_,z,F,t,user.trans userY,exec,?_,?_,?_,?_,?_⟩
+  refine ⟨z,F,t,user.trans userY,exec,?_,?_,?_,?_,?_⟩
   · rw [← projEq] at keep clear
     have preserved (i : Fin (66+K)) : (embStk placement (embStk bank F)).R i = (embStk placement start).R i := by
       by_cases hi : 58 ≤ i.val
@@ -834,7 +835,8 @@ theorem classifiedDirectory_exec [M8.Machine.Net] {m d K w W J N : ℕ} {P U : T
       (directoryExceptionalProgram m d room capacity) padding)
     let work := (List.finRange (66+(K+1))).filter fun i => decide (58 ≤ i.val ∧ i ≠ directoryMatrixTape room)
     let controls := embProg bank id (embProg placement id selectors)
-    ∃ prepare z F t n rows s midUser mid, z.user = u.user ∧ s ≤ selectorBudget ∧
+    let prepare : Pr P (66+(K+1)) columnCapacity prime U := directoryQueueProgram room fits e
+    ∃ z F t n rows s midUser mid, z.user = u.user ∧ s ≤ selectorBudget ∧
       Exec (fun f => embProg bank id (body f)) controls (mk u S) s (mk midUser mid) ∧
       ready (embStk placement (embStk bank mid)) rs ∧
       (embStk bank mid).R (caller 48) = (embStk placement start).R (inner 48) ∧
@@ -864,7 +866,7 @@ theorem classifiedDirectory_exec [M8.Machine.Net] {m d K w W J N : ℕ} {P U : T
     change ∀ j, readAt blank (D.L ((24 : Fin 66).castAdd K)) (D.R ((24 : Fin 66).castAdd K)) j = blank
     rw [portL,portR]
     exact empty
-  obtain ⟨prepare,y,B,t,uy,write,prepared,archive,keep,regs,setupTime⟩ := ownerArchiveSetup_exec
+  obtain ⟨y,B,t,uy,write,prepared,archive,keep,regs,setupTime⟩ := ownerArchiveSetup_exec
     v proj parent inv reciprocal e data hm room fits body prefixes archiveTail schedule midUser mid (by rw [project]; exact directory) (archiveKept.trans matrix) ((cellEq 57).trans mask)
   have cell (j : Fin 66) (hj : j.val < 58) := keep j hj
   let frame := fun (xs : List ℕ) (A : Stacks (66+(K+1)) prime) =>
@@ -925,7 +927,7 @@ theorem classifiedDirectory_exec [M8.Machine.Net] {m d K w W J N : ℕ} {P U : T
     have h := congrArg List.length remaining
     simp [pending,rs] at h
     omega
-  refine ⟨prepare,z,F,t,n,rows,s,midUser,mid,user.trans (uy.trans (um.trans su)),subtotal,runControls,(by rw [project]; exact directory),(cellEq 48).trans projectorKept,setupTime,time,Exec.seq runControls (Exec.seq write run),correct,left.trans ((regs 0).1.trans (extRegs 0).1),output,free,done,archiveEnd.trans ?_,maskEnd,modeEnd⟩
+  refine ⟨z,F,t,n,rows,s,midUser,mid,user.trans (uy.trans (um.trans su)),subtotal,runControls,(by rw [project]; exact directory),(cellEq 48).trans projectorKept,setupTime,time,Exec.seq runControls (Exec.seq write run),correct,left.trans ((regs 0).1.trans (extRegs 0).1),output,free,done,archiveEnd.trans ?_,maskEnd,modeEnd⟩
   simp [last,ScanData.matrices,physical,ScanData.physical,List.drop_of_length_le (List.length_range.le)]
 
 /-- Normalize the complete execution by the payload volume owned by its rows. -/
@@ -1380,7 +1382,7 @@ private theorem generatedOwnerDirectory_exec [M8.Machine.Net] {T m dim J W : ℕ
     filledSize ((stays 3 (by decide)).trans saved) ((stays 4 (by decide)).trans tmp)
     filledBlank
     (fun j _ no y A readyRow payloadRow => ordinary j _ (input j) y A no readyRow payloadRow)
-  obtain ⟨prepare,finishState,final,t,n,rows,s,midUser,mid,hu,setup,controls,midReady,projectorEq,initBound,scan,exec,correct,ownerLeft,out,free,done,archive,maskEnd,modeEnd⟩ := pass
+  obtain ⟨finishState,final,t,n,rows,s,midUser,mid,hu,setup,controls,midReady,projectorEq,initBound,scan,exec,correct,ownerLeft,out,free,done,archive,maskEnd,modeEnd⟩ := pass
   have recordsPos : 0 < LabelMask.records directory :=
     Nat.mul_pos (Nat.mul_pos positiveDir.1 positiveDir.2.1) positiveDir.2.2.1
   have radixPos : 0 < M := pow_pos Shared50ModularControl.prime_prime.pos _
@@ -1399,7 +1401,7 @@ private theorem generatedOwnerDirectory_exec [M8.Machine.Net] {T m dim J W : ℕ
   have selectorsPaid := setup.trans (by simpa only [selectorBudget,labels,List.length_range] using setupVolume)
   rw [count] at correct
   obtain ⟨output,rowAction,packed⟩ := ownerRows_pack roleLength correct
-  refine ⟨_,core,padding,prepare,finishState,final,t,n,output,k,s,(hu.trans sameUser).trans prefixUser,
+  refine ⟨_,core,padding,_,finishState,final,t,n,output,k,s,(hu.trans sameUser).trans prefixUser,
     ⟨Exec.seq prefixRun (Exec.seq counterRun exec),?_⟩,rowAction,out.trans (congrArg (· ++ ownerTail) packed),free,done,archive,maskEnd,modeEnd,?_⟩
   · intro j
     rw [← encodedOwnerCell]

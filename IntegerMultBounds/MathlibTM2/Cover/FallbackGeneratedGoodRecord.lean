@@ -647,6 +647,15 @@ noncomputable def directoryQueueInitProgram [M8.Machine.Net] {K d m Q : ℕ} {P 
   let copies := (bcopy live mask tmp saved).seq (bcopy source dir tmp saved)
   ((headers.seq (Prog.seqList ((List.finRange m).map program))).seq pad).seq copies
 
+/-- Prepare the queue, emit each residual matrix, and clear the private tapes. -/
+noncomputable def directoryQueueProgram [M8.Machine.Net] {K d m Q : ℕ} {P U : Type}
+    (room : Record.size d+(rowSwapBlock.tapes+35+2) ≤ K)
+    (fits : (36+2*m+1+(conjugationDepth m+1)*13)+3 ≤ K)
+    (e : (Fin m ⊕ Fin m) ≃ Fin (d+1)) : Pr P (66+K) Q prime U :=
+  let work := (List.finRange (66+K)).filter fun i => decide (58 ≤ i.val ∧ i ≠ directoryMatrixTape room)
+  ((directoryQueueInitProgram room fits).seq (physicalResidualQueue (directoryQueueBank room fits) e)).seq
+    (clearWorkTapes work)
+
 /-- Initialize the physical writer headers, formula frames, and both coefficient banks. -/
 theorem directoryQueueSetup_exec [M8.Machine.Net] {K d Q m H w records : ℕ} {P U : Type}
     (room : Record.size d+(rowSwapBlock.tapes+35+2) ≤ K)
@@ -696,7 +705,7 @@ theorem directoryQueueSetup_exec [M8.Machine.Net] {K d Q m H w records : ℕ} {P
       (inputs (padded F)).R seed = identityWord ∧ (inputs (padded F)).R zero = binSyms H 0 ∧
       (∀ i, (i.val < 36 ∧ i.val ∉ ([1,2,8,9,12,16,17,22,33,34] : List ℕ)) ∨
           i.val = 36+2*m ∨ i.val = base+2 → (inputs (padded F)).R (bank i) = []) ∧
-      (∀ (e : (Fin m ⊕ Fin m) ≃ Fin (d+1)), ∃ writer : Pr P (66+K) Q prime U,
+      (∀ (e : (Fin m ⊕ Fin m) ≃ Fin (d+1)), let writer : Pr P (66+K) Q prime U := physicalResidualQueue bank e
         ∀ (proj : Matrix (Fin m) (Fin m) ℚ) (prefixes : ℕ → List (Fin (prime+4))) (tail : List (Fin (prime+4))),
         (∃ suffix, S.R ((48 : Fin 66).castAdd K) = matrixWords prime H (reduce (prime^(w+1)) proj) ++ suffix) →
         (∀ j < records, (S.R ((47 : Fin 66).castAdd K)).length = (prefixes j).length) →
@@ -870,9 +879,7 @@ theorem directoryQueueSetup_exec [M8.Machine.Net] {K d Q m H w records : ℕ} {P
     apply (same _ ?_).trans (coeff j).2
     change 36+m+j.val ≠ 2 ∧ 36+m+j.val ≠ base ∧ 36+m+j.val ≠ base+1 ∧ 36+m+j.val ≠ 9
     dsimp [base]; omega
-  refine ⟨?_, ?_⟩
-  swap
-  intro proj prefixes tail projector widths directory active matrix words num numTime prefixWidth liveCost size result work cleanup clean queueTime setup
+  intro writer proj prefixes tail projector widths directory active matrix words num numTime prefixWidth liveCost size result work cleanup clean queueTime setup
   have prefixEq : (D.R (dst 1)).length = prefixWidth := congrArg List.length (headValue 1)
   obtain ⟨_,y,t,hy,ht,generate⟩ := physicalResidualQueue_exec body w records (reduce (prime^(w+1)) proj) H hm bank
     prefixes tail e parent inv endUser D seedWord (writerBlank _ (Or.inr (Or.inr rfl)))
@@ -1682,7 +1689,7 @@ theorem generatedArchive_exec [M8.Machine.Net] {m d K w W J N : ℕ} {P U : Type
       exact directoryQueueBank_caller room fits i j (Fin.ext rfl)
   obtain ⟨_,_,init,_,initBound,_,_,_,_,_,_,_,_,_,_,_,_,_,generate,_⟩ :=
     directoryQueueSetup_exec room fits body parent inv reciprocal hm u S liveBits free weights modulus unit clock
-  obtain ⟨writer,runWriter⟩ := generate e
+  have runWriter := generate e
   obtain ⟨y,t,userY,writerTime,inputTime,write,archive,keep,clear⟩ := runWriter proj prefixes archiveTail projector
     (fun j hj => widths j (by simpa [pending] using hj)) directory
   have start := DirectoryReady.afterMatrixWriter room S _ keep clear initial.1 initial.2

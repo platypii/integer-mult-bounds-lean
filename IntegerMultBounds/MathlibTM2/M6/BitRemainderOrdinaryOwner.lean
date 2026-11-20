@@ -189,10 +189,11 @@ def OrdinaryParentRun [M8.Machine.Net] {common work w rows B : ℕ} {U : Type}
     let padding := (embProg placement id (readWithSuccessorClock (ports 1) (advanceDirectory 64 ports))).seq advance
     let dispatch := packedOwner (caller 24) (caller 57) (ownerDispatch (caller 57) (caller 56) good
       (directoryExceptionalProgram 64 127 room remainderAnchorFits) padding)
-    ∃ prepare z F t output,
+    let prepare : Pr Unit (66+(K+1)) columnCapacity prime U := directoryQueueProgram room fits (finSumFinEquiv.trans (finCongr (by decide : 64+64 = 127+1)))
+    ∃ z F t output,
       let controls := embProg embed id (embProg placement id selectors)
       let scan := (payloadCountProgram (ownerCountPorts (K+1)) 128).seq (controls.seq ((embProg embed id prepare).seq dispatch))
-      z.user = u.user ∧ Exec outer ((remainderOwnerSetup root interval.1 interval.2 bank).seq scan) (mk u raw) t (mk z F) ∧
+      z.user = u.user ∧ OwnerScan outer ((remainderOwnerSetup root interval.1 interval.2 bank).seq scan) (reg 0) output u raw t z F ∧
       (let p := max (mnProgPush (directoryQueueInitProgram (m := 64) (d := 127) (P := Unit) (Q := columnCapacity) (U := U) room fits)) (mnProgPush (body ()))
        let tapeRate := (1+scratch.length*(6*p))*directoryQueueInitRate 64 127
        let clean := setupBase+ordinaryOwnerScanTime 64 127 proj.rank w W data.H W.size data.records N
@@ -213,8 +214,6 @@ def OrdinaryParentRun [M8.Machine.Net] {common work w rows B : ℕ} {U : Type}
         ∀ x k, ownerRow (R := data.records) (N := N) rfl output j
           (index ((projectorResidual finSumFinEquiv P parent (fun i => Ring.inverse (parent i)) g).mulVec x) k) =
             ownerRow (R := data.records) (N := N) rfl word j (index x k)) ∧
-      (∀ j, readAt blank (F.L (reg 0)) (F.R (reg 0)) j = RadixToBinary.binaryEncoding.encode
-        (putWord (fun _ => blank) 0 ((List.ofFn output).map SparseRoleCircuit.encode) j)) ∧
       F.L (reg 0) = raw.L (reg 0) ∧ F.R (reg 0) = payloadWord (SparseRoleCircuit.encode ∘ output) ++
         (raw.R (reg 0)).drop (data.records*N) ∧ F.R (reg 1) = [] ∧
       F.R ((directoryMatrixTape room).castAdd 5) = [] ∧ F.R (bank 57) = [] ∧ F.R (bank 56) = [] ∧
@@ -272,7 +271,7 @@ private theorem ordinaryParent_exec [M8.Machine.Net] {common work w rows B : ℕ
   have saved (i : Fin 5) (hi : i ≠ 0) := (regs i).1.trans (empty i hi)
   have packed := payload_prefix_of_read word (fun _ => blank) 0 (raw.L (reg 0)) (raw.R (reg 0)) (by simpa only [sub_zero] using payload)
   let archive := fun j => prefixes (j/box)
-  obtain ⟨prepare,z,F,t,n,output,k,s,midUser,mid,_,same,_,_,_,_,time,run,action,reads,ownerLeft,ownerRight,accumulator,done,clear,maskEnd,modeEnd⟩ :=
+  obtain ⟨z,F,t,n,output,k,s,midUser,mid,_,same,_,_,_,_,time,run,action,reads,ownerLeft,ownerRight,accumulator,done,clear,maskEnd,modeEnd⟩ :=
     execute archive (raw.R (bank 46)) ((raw.R (reg 0)).drop (data.records*N)) word y D (free _ (by have h := directoryMatrixTape_private room; omega)) count workEmpty
       (by
         change DirectoryScanInput v proj w W data.H W.size parent archive _ (List.range data.records)
@@ -294,7 +293,7 @@ private theorem ordinaryParent_exec [M8.Machine.Net] {common work w rows B : ℕ
     change F.R ((placement ((46 : Fin 66).castAdd K)).castAdd 5) = _ at h
     rw [directoryOrdinaryBank_caller] at h
     exact h
-  refine ⟨prepare,z,F,_,output,same.trans user,Exec.seq build run,?_,?_,?_,reads,
+  refine ⟨z,F,_,output,same.trans user,⟨Exec.seq build run,fun j => (reads j).trans (encodedOwnerCell output j)⟩,?_,?_,?_,
     ownerLeft.trans (regs 0).2,ownerRight,accumulator,clear,maskEnd,modeEnd,restored,?_,done.2.2.1⟩
   · intro p tapeRate cleanTime
     have setup : q ≤ setupTime := by

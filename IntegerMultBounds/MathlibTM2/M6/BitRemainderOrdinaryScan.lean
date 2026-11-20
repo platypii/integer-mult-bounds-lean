@@ -124,7 +124,8 @@ def ClassifiedOrdinaryScan [M8.Machine.Net] {a d common work w W J : ℕ} {U : T
       (directoryExceptionalProgram m d room capacity) padding)
     let work := (List.finRange (66+(K+1))).filter fun i => decide (58 ≤ i.val ∧ i ≠ directoryMatrixTape room)
     let controls := embProg bank id (embProg placement id selectors)
-    ∃ prepare z F t n output k s midUser mid,
+    let prepare : Pr Unit (66+(K+1)) columnCapacity prime U := directoryQueueProgram room fits e
+    ∃ z F t n output k s midUser mid,
       k ≤ dimensionTime data.H J (d+1)+6*N+13*((d+1)*data.H+J)+8 ∧ z.user = u.user ∧ s ≤ selectorBudget ∧
       Exec (fun f => embProg bank id (body f)) ((payloadCountProgram (ownerCountPorts (K+1)) (d+1)).seq controls) (mk u S) (k+s) (mk midUser mid) ∧
       ready (embStk placement (embStk bank mid)) rs ∧
@@ -243,11 +244,11 @@ theorem classifiedOrdinaryDirectory_exec [M8.Machine.Net] {a d common work w W J
       parent prefixes archiveTail schedule hm pool unit space localBody y A j (pending (j+1)) dir queue
       (fun _ => clear) (input j) payload (fun hj => installed j hj clear)
     exact ⟨z,D,t,out,user,price,run,next,action,word,mask,mode⟩)
-  obtain ⟨prepare,z,F,t,n,rows,s,midUser,mid,user,bounded,controls,prepared,projector,time,rowTime,run,rowsOk,leftOk,rightOk,rest⟩ := scan
+  obtain ⟨z,F,t,n,rows,s,midUser,mid,user,bounded,controls,prepared,projector,time,rowTime,run,rowsOk,leftOk,rightOk,rest⟩ := scan
   obtain ⟨output,action,packed⟩ := ownerRows_pack (R := data.records) (N := N) rfl rowsOk
   have finalLeft := leftOk.trans (congrFun keepLeft _)
   have finalRight := rightOk.trans (congrArg (· ++ ownerTail) packed)
-  refine ⟨prepare,z,F,t,n,output,k,s,midUser,mid,paid,user.trans same,bounded,
+  refine ⟨z,F,t,n,output,k,s,midUser,mid,paid,user.trans same,bounded,
     Exec.seq build controls,prepared,projector.trans (congrArg (fun V : Stacks (66+K) prime => V.R (inner 48)) rawEq),?_,
     Exec.seq build run,?_,ownerWord_reads word output ownerTail owner reads finalLeft finalRight,finalLeft,finalRight,rest⟩
   · intro p prepareBound calls first

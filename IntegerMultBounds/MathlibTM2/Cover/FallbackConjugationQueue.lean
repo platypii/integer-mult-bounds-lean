@@ -40,6 +40,45 @@ noncomputable def liveRecordCost (m d w H ancestorWidth numTime detTime : ℕ) :
        ((m*(m*(numTime+4*H+4)+1)+1) + (m*(m*(8*(m*m*H)+48*H*H+166*H+88)+1)+1) + (2*(m*m*H)+2)) + 4*H+4) + (2*(m*m*H)+2)) +
        (d*(d*(8*(m*m*H)+96*H*H+344*H+182)+1)+1)+(2*(m*m*H)+2)
 
+/-- The queue writer is fixed by its register layout and residual coordinates. -/
+noncomputable def physicalResidualQueue {d : ℕ}
+    (registers : Fin ((36+2*m+1+(conjugationDepth m+1)*13)+3) ↪ Fin T)
+    (e : (Fin m ⊕ Fin m) ≃ Fin d) : Pr P T Q prime U :=
+    let size := 36+2*m+1+(conjugationDepth m+1)*13
+    let host := QueueLayout.block (n := size) 0 (by dsimp [size]; omega) registers
+    let control := QueueLayout.block (n := 3) size (Nat.le_refl _) registers
+    let mask := control 0
+    let seed := control 1
+    let tmp := control 2
+    let bank := QueueLayout.block (n := 18) 0 (by omega) host
+    let r := QueueLayout.block (n := 16) 18 (by omega) host
+    let counters := QueueLayout.block (n := 2) 34 (by omega) host
+    let clock := counters 0
+    let count := counters 1
+    let pool := QueueLayout.block (n := (conjugationDepth m+1)*13) (36+2*m+1) (by omega) host
+    let coeff := fun i j : Fin m => (coefficientSlots i j).trans host
+    let archive := host ⟨36+2*m, by omega⟩
+    have archiveOff : ∀ i, bank (QueueLayout.directoryWork i) ≠ archive := fun i h => by
+      have eq := congrArg Fin.val (host.injective h)
+      change 0 + i.val = 36+2*m at eq
+      omega
+    have coeffOff : ∀ i j k l, r k ≠ coeff i j l := fun i j k l h => by
+      have eq := congrArg Fin.val (host.injective h)
+      change 18+k.val = (coefficientSlots (extra := (conjugationDepth m+1)*13) i j l).val at eq
+      fin_cases l <;> simp [coefficientSlots, Matrix.cons_val] at eq <;> (try split_ifs at *) <;> omega
+    let inputs := QueueLayout.formulaInputs.trans bank
+    let source := sourcePorts (m := m) inputs id
+    let weights := fun i j => QueueLayout.residualPorts r (coeff i j) (coeffOff i j)
+    let scan := QueueLayout.scanPorts (QueueLayout.directoryWork.trans bank) archive archiveOff
+    let f := determinant (matrixInput false)
+    let conjugate : Pr P T Q prime U := (.seq (directoryMatrix m (QueueLayout.readPorts.trans (QueueLayout.directoryWork.trans bank)) (QueueLayout.digitPorts.trans (QueueLayout.directoryWork.trans bank)) (bank 12) (bank 9) (bank 10)) (.seq (.seq (.seq (compile (readLeaf (leafBank source)) (registerBank pool) f 0 (r 14)) (reusablePivotInverse prime r clock count))
+        (.seq (packedConjugate pool source (QueueLayout.normalizationPorts.trans r) false true) (.seq (bclear (r 0)) (bclear (r 14))))) (bclear (bank 10))))
+    let live : Pr P T Q prime U := .seq conjugate (.seq (sequence (fun i => sequence
+      (fun j => blockEntry weights (e.symm i) (e.symm j)) (List.finRange d)) (List.finRange d)) (bclear (r 13)))
+    let branch := fun p => Prog.seq p (.seq (moveR (scan 4) (scan 5) id) (advanceDirectory m scan))
+    (.seq (maskedScan mask (branch live) (branch (bcopy seed (scan 4) (scan 3) tmp)))
+        (moveR (scan 5) (scan 4) id))
+
 theorem physicalResidualQueue_exec (body : P → Pr P T Q prime U)
     (w records : ℕ)
     (projector : Matrix (Fin m) (Fin m) (ZMod (prime^(w+1))))

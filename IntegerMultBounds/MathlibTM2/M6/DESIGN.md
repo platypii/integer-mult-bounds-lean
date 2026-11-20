@@ -652,7 +652,11 @@ scanner input. A stage composition must establish the scanner’s input frame,
 including its inherited stock, or exhibit that stack execution explicitly. The fresh frame in `ordinaryEntryStacks`
 separates the chart payload from fixed private metadata. Its parent parameters and
 encoded owner reads are checked. With an exactly packed prefix queue its inherited
-time charge vanishes. Installing this frame as a tape stage is still open. At return the selected bank contains exactly the
+time charge vanishes. For each fixed parent and layout the selector, matrix-queue
+writer and row dispatch are fixed across owner payloads. The parent returns an
+`OwnerScan`, so `OwnerScan.place` embeds it at a permanent owner without changing
+the step count or other owner words. Connecting the chart output to that placed
+input frame is still open. At return the selected bank contains exactly the
 restored archive suffix and the final projector tape. All its other stacks are empty.
 
 The semantic five-class node (S5d.3) certifies upstream's accounting under ideal routes and
