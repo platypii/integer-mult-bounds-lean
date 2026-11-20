@@ -31,21 +31,27 @@ def scatterWindow {R : Type*} [CommRing R]
   let temp := fun x => stored life.source (AffineFieldProgram.run (word (life.sourceFrame, 0)) x)
   Function.update (Copy.addTargets life.targets (Function.update stored 661 temp)) 661 0
 
-/-- The actual modular instructions are the specialization of a COPY word
-whose two rational basis passes are executable at every width. -/
-def SelectedCopyWord (w : ℕ) (ops : List (AffineFieldProgram.Op (Fin 8) (ZMod (prime^w)))) : Prop :=
-  ∃ C : Matrix (Fin 8) (Fin 8) ℚ, CopyBasisPass C.adjugate ∧ CopyBasisPass C ∧
-    ops = (rationalMoveWord 0 7 C).map (AffineFieldProgram.mapOp (Swap.Modular.ratMod (prime^w)))
+/-- One rational program table supplies every modular width. -/
+noncomputable def selectedRaw := modular_move_profile.choose
+
+noncomputable def selectedWord (w : ℕ) (p : ℕ × ℕ) :=
+  (selectedRaw p).map (AffineFieldProgram.mapOp (Swap.Modular.ratMod (prime ^ w)))
+
+theorem copySource_mem (life : Copy.Lifecycle) (scheduled : life ∈ Copy.lifecycles) :
+    (life.sourceFrame,0) ∈ retainedCopyEdges := by
+  have source : life.source ∈ Frames.retained := Copy.source_order ▸ List.mem_map_of_mem scheduled
+  exact List.mem_map.mpr ⟨Frames.beforeScatter life.source,List.mem_map_of_mem source,
+    Prod.ext (Copy.wellformed life scheduled).2.2.1 rfl⟩
 
 theorem modular_scatter (w : ℕ) :
     let R := ZMod (prime ^ w)
     let E := Swap.Shear.State (Fin 8) R → ZMod 2
-    ∃ (frame : ℕ → FramedCircuit.Frame (ZMod 2) E)
-      (word : ℕ × ℕ → List (AffineFieldProgram.Op (Fin 8) R)),
+    let word := selectedWord w
+    ∃ (frame : ℕ → FramedCircuit.Frame (ZMod 2) E),
       (∀ p, Geometry.Moves.CheckedPair p → ∀ f : E,
         (fun x => f (AffineFieldProgram.run (word p) x)) = frame p.2 ((frame p.1).symm f)) ∧
       (∀ p, Geometry.Moves.CheckedPair p → Function.Involutive (AffineFieldProgram.run (word p))) ∧
-      LocalMoveProfile word ∧ (∀ p ∈ retainedCopyEdges, SelectedCopyWord w (word p)) ∧
+      LocalMoveProfile word ∧
       (∀ bank : ℕ → E, Copy.lifecycles.foldl (fun b l => scatterWindow word l b) bank =
         Copy.run frame Copy.lifecycles bank) ∧
       ∀ stored : Fin 661 → E,
@@ -53,9 +59,8 @@ theorem modular_scatter (w : ℕ) :
         let output := Copy.lifecycles.foldl (fun bank life => scatterWindow word life bank) input
         output 661 = 0 ∧ ∀ i : Fin 661, output i.val = frame (Frames.beforeScatter i.val)
           (FramedCircuit.moduleRun (sectionscatter.map RawGate.toCircuit) (Copy.extendStored stored) i.val) := by
-  intro R E
-  obtain ⟨raw, copies, _, widths⟩ := modular_move_profile
-  let word := fun p => (raw p).map (AffineFieldProgram.mapOp (Swap.Modular.ratMod (prime ^ w)))
+  intro R E word
+  obtain ⟨_, _, widths⟩ := modular_move_profile.choose_spec
   obtain ⟨P, idem, commute, spec, profile⟩ := widths w
   change ∀ p (h : Geometry.Moves.CheckedPair p) s, AffineFieldProgram.run (word p) s =
     exchange (P ⟨p.2,h.2.1⟩) (exchange (P ⟨p.1,h.1⟩) s) at spec
@@ -93,14 +98,14 @@ theorem modular_scatter (w : ℕ) :
     | cons l ls ih =>
       rw [List.foldl_cons, step l (hl _ List.mem_cons_self), Copy.run]
       exact ih (fun k hk => hl _ (List.mem_cons_of_mem _ hk)) _
-  have selected (p) (hp : p ∈ retainedCopyEdges) : SelectedCopyWord w (word p) := by
-    obtain ⟨C, eq, rev, fwd⟩ := copies p hp
-    exact ⟨C,rev,fwd,congrArg _ eq⟩
-  refine ⟨frame, word, read, invol, profile, selected, fold _ (fun _ h => h), ?_⟩
+  refine ⟨frame, read, invol, profile, fold _ (fun _ h => h), ?_⟩
   intro stored input output
   dsimp only [output]
   rw [fold _ (fun _ h => h)]
   exact ⟨Copy.temporary_cleared frame stored, Copy.decoded_scatter frame stored⟩
+
+/-- The same width-indexed frames interpret the whole phase and every physical window. -/
+noncomputable def selectedFrame (w : ℕ) := (modular_scatter w).choose
 
 /-- Apply a stream frame separately on each spectator slice of a serialized tape. -/
 def tapeFrame {S : Type*} {N W : ℕ} (addr : Fin N ≃ S × Fin W)
@@ -126,28 +131,25 @@ word acts independently on every spectator position and uses seven interchanges
 in each scheduled COPY window. -/
 theorem copyAddress_word (w : ℕ) :
     let S := Swap.Shear.State (Fin 8) (ZMod (prime^w))
-    ∃ (frame : ℕ → FramedCircuit.Frame (ZMod 2) (S → ZMod 2))
-      (word : ℕ × ℕ → List (AffineFieldProgram.Op (Fin 8) (ZMod (prime^w)))),
-      LocalMoveProfile word ∧ ∀ life ∈ Copy.lifecycles,
-        let ops := word (life.sourceFrame,0)
-        SelectedCopyWord w ops ∧ AffineFieldProgram.interchanges ops = 7 ∧ Function.Involutive (AffineFieldProgram.run ops) ∧
-        ∀ {N W : ℕ} (addr : Fin N ≃ S × Fin W) (data : Fin N → ZMod 2) (i : Fin N),
-          data (addr.symm (AffineFieldProgram.run ops (addr i).1,(addr i).2)) =
-          tapeFrame addr (frame 0) ((tapeFrame addr (frame life.sourceFrame)).symm data) i := by
-  intro S
-  obtain ⟨frame,word,read,invol,profile,selected,_,_⟩ := modular_scatter w
-  refine ⟨frame,word,profile,?_⟩
+    let word := selectedWord w
+    let frame := selectedFrame w
+    LocalMoveProfile word ∧ ∀ life ∈ Copy.lifecycles,
+      let ops := word (life.sourceFrame,0)
+      AffineFieldProgram.interchanges ops = 7 ∧ Function.Involutive (AffineFieldProgram.run ops) ∧
+      ∀ {N W : ℕ} (addr : Fin N ≃ S × Fin W) (data : Fin N → ZMod 2) (i : Fin N),
+        data (addr.symm (AffineFieldProgram.run ops (addr i).1,(addr i).2)) =
+        tapeFrame addr (frame 0) ((tapeFrame addr (frame life.sourceFrame)).symm data) i := by
+  intro S word frame
+  obtain ⟨read,invol,profile,_,_⟩ := (modular_scatter w).choose_spec
+  refine ⟨profile,?_⟩
   intro life scheduled ops
-  have source : life.source ∈ Frames.retained := Copy.source_order ▸ List.mem_map_of_mem scheduled
-  have pair : (life.sourceFrame,0) ∈ retainedCopyEdges := by
-    apply List.mem_map.mpr
-    exact ⟨Frames.beforeScatter life.source,List.mem_map_of_mem source,
-      Prod.ext (Copy.wellformed life scheduled).2.2.1 rfl⟩
+  have pair := copySource_mem life scheduled
   have count := List.mem_map_of_mem (f := AffineFieldProgram.interchanges) (List.mem_map_of_mem (f := word) pair)
   rw [profile.copies] at count
-  refine ⟨selected _ pair,(List.mem_replicate.mp count).2,invol _ (retainedCopy_checked.1 _ pair),?_⟩
+  refine ⟨(List.mem_replicate.mp count).2,invol _ (retainedCopy_checked.1 _ pair),?_⟩
   intro N W addr data i
   have checked := retainedCopy_checked.1 _ pair
-  simpa [tapeFrame] using congrFun (read _ checked (fun x => data (addr.symm (x,(addr i).2)))) (addr i).1
+  change ∀ p, Geometry.Moves.CheckedPair p → ∀ f, (fun x => f (AffineFieldProgram.run (word p) x)) = frame p.2 ((frame p.1).symm f) at read
+  simpa [frame,selectedFrame,ops,word,tapeFrame] using congrFun (read _ checked (fun x => data (addr.symm (x,(addr i).2)))) (addr i).1
 
 end IntegerMultBounds.MathlibTM2.M6

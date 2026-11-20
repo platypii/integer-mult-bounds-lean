@@ -494,8 +494,9 @@ end
 /-- The physical COPY bank contains the caller, six descriptor headers,
 both basis workspaces and the private tapes of the chosen child machine. -/
 noncomputable def copyPrepared [M8.Machine.Net] {t w W : ℕ} (A B : List (FlatCoordinateSchedule.Op 16))
-    (x : Fin ((prime^w)^16*W) → ZMod 2) (v : Tapes t prime) (hs : Fin 6 → List Bool) :=
+    (v : Tapes t prime) (hs : Fin 6 → List Bool) :=
   let hdr : Tapes 6 prime := ⟨fun _ => 1, fun i => RadixZeroFill.encodedBinary (hs i)⟩
+  let x : Fin ((prime^w)^16*W) → ZMod 2 := 0
   M8.Machine.ArbitraryWidthOriginalRun.input (((v.append hdr).append (basisWorkspace B x)).append (basisWorkspace A x))
 
 open M8.Machine.ArbitraryWidthHighExchangeShared (sourceWord) in
@@ -503,22 +504,21 @@ open M8.Machine.Segments M8.Machine.ArbitraryWidthOriginalRun SharedPlacementAlp
 /-- Copy the retained owner into the temporary, convert its frame, fan out,
 then clear it, charging both basis passes and one child transpose. -/
 theorem copyWindow_hoare [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5) (life : Copy.Lifecycle)
-    (scheduled : life ∈ Copy.lifecycles) (w : ℕ) (hw : 0 < w) :
+    (scheduled : life ∈ Copy.lifecycles) :
     let src := ownerTape n r d ⟨life.source,(Copy.source_bounds life scheduled).2⟩
     let tmp := Fin.last 142080
     let regs := life.targets.attach.map fun j => (⟨j.val,((Copy.target_bounds life scheduled _ j.property).2.trans (by decide : 222 < 661))⟩ : Fin 661)
     let targets := regs.map (ownerTape n r d)
-    let R := ZMod (Shared50ModularControl.prime^w)
-    let S := Swap.Shear.State (Fin 8) R
-    ∃ (frame : ℕ → FramedCircuit.Frame (ZMod 2) (S → ZMod 2))
-      (word : ℕ × ℕ → List (AffineFieldProgram.Op (Fin 8) R)),
-      LocalMoveProfile word ∧ SelectedCopyWord w (word (life.sourceFrame,0)) ∧
-      AffineFieldProgram.interchanges (word (life.sourceFrame,0)) = 7 ∧
-      ∃ (C : Matrix (Fin 8) (Fin 8) ℚ) (rev : CopyBasisPass C.adjugate) (fwd : CopyBasisPass C),
+    ∃ (C : Matrix (Fin 8) (Fin 8) ℚ) (rev : CopyBasisPass C.adjugate) (fwd : CopyBasisPass C),
       let A := description _ rev.good
       let B := description _ fwd.good
-      let prepare := fun {W} => copyPrepared (t := 142081+2) (w := w) (W := W) A B
       ∃ (states : ℕ) (machine : Program _ states prime),
+      ∀ (w : ℕ), 0 < w →
+      let word := selectedWord w
+      let S := Swap.Shear.State (Fin 8) (ZMod (Shared50ModularControl.prime^w))
+      let frame := selectedFrame w
+      LocalMoveProfile word ∧ AffineFieldProgram.interchanges (word (life.sourceFrame,0)) = 7 ∧
+      let prepare := fun W => copyPrepared (t := 142081+2) (w := w) (W := W) A B
       ∀ {W : ℕ} (hW : 0 < W),
       let N := (Shared50ModularControl.prime^w)^16 * W
       let _ : NeZero (Shared50ModularControl.prime^w) := ⟨Nat.ne_of_gt (ActualAffineScaling.modulus_pos w)⟩
@@ -532,21 +532,18 @@ theorem copyWindow_hoare [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5) (
       let bank := fun X => PointwiseRoleGate.bank (a := prime) (fun _ _ => blank) (fun _ => 0) (SparseRoleCircuit.encoded X) bs
       let output := Function.update (fun j i => if j ∈ targets then data j i + common i else data j i) tmp 0
       let stored := Copy.extendStored (fun j => data (ownerTape n r d j))
-      HoareTime machine (fun z => z = prepare (data src) (bank data) hs) (fun z => z = prepare (data src) (bank output) hs)
+      HoareTime machine (fun z => z = prepare W (bank data) hs) (fun z => z = prepare W (bank output) hs)
         (((FlatCoordinateCleanSchedule.constant A + FlatCoordinateCleanSchedule.constant B)*N + cost (copyChild w W) hs + 2) + (life.targets.length+2)*(14*N+14*bs.length+34)+1) ∧
       (∀ j : Fin 661, output (ownerTape n r d j) = Copy.execute frameOf life stored j) ∧
       output tmp = Copy.execute frameOf life stored 661 := by
-  intro src tmp regs targets R S
-  obtain ⟨frame,word,profile,windows⟩ := copyAddress_word w
-  obtain ⟨selected,seven,invol,read⟩ := windows life scheduled
+  intro src tmp regs targets
+  obtain ⟨C,shape,rev,fwd⟩ := modular_move_profile.choose_spec.1 _ (copySource_mem life scheduled)
   let gate : PointwiseRoleGate.Gate 142081 := ⟨src,tmp,Fin.castSucc_ne_last _⟩
   let copy := fun (s _ : Fin (prime+4)) => s
   let erase := fun (_ _ : Fin (prime+4)) => SparseRoleCircuit.encode (a := prime) 0
   obtain ⟨_,adds,addRun⟩ := copyAdds_hoare (a := prime) n r d life scheduled
-  refine ⟨frame,word,profile,selected,seven,?_⟩
-  obtain ⟨C,rev,fwd,shape⟩ := selected
   refine ⟨C,rev,fwd,?_⟩
-  intro A B prepare
+  intro A B
   let site := Fin.castAdd 6 (Fin.castAdd 2 tmp)
   let nA := FlatCoordinateCleanSchedule.tapeCount A
   let nB := FlatCoordinateCleanSchedule.tapeCount B
@@ -560,7 +557,11 @@ theorem copyWindow_hoare [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5) (
     (extendBanks (extend (extend (extend post nA) 16) 19))
   refine ⟨_,seq (seq (seq (liftGate (PointwiseRoleGate.program gate copy)) convert) (liftGate adds))
     (liftGate (PointwiseRoleGate.program gate erase)), ?_⟩
-  intro W hW N inst addr data bs hs count valid frameOf common bank output stored
+  intro w hw word S frame
+  obtain ⟨profile,windows⟩ := copyAddress_word w
+  obtain ⟨seven,invol,read⟩ := windows life scheduled
+  refine ⟨profile,seven,?_⟩
+  intro prepare W hW N inst addr data bs hs count valid frameOf common bank output stored
   let background := fun (_ : Fin 142081) (_ : ℤ) => (blank : Fin (prime+4))
   let origins := fun (_ : Fin 142081) => (0 : ℤ)
   let headers : Tapes 6 prime := ⟨fun _ => 1, fun i => RadixZeroFill.encodedBinary (hs i)⟩
@@ -576,7 +577,9 @@ theorem copyWindow_hoare [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5) (
     (by intro i; simp [caller,Tapes.append,headers])
     (by simp [caller,bank,site,Tapes.append,PointwiseRoleGate.bank])
     (by rw [sourceWord_cast]; simp [caller,bank,site,Tapes.append,PointwiseRoleGate.bank,copied]; congr 2)
-  rw [← shape] at forward
+  have specialized : word (life.sourceFrame,0) = _ :=
+    congrArg (List.map (AffineFieldProgram.mapOp (Swap.Modular.ratMod (prime^w)))) shape
+  rw [← specialized] at forward
   have agree : moved = common := by
     funext i
     obtain ⟨⟨s,j⟩,rfl⟩ := addr.symm.surjective i
@@ -593,11 +596,14 @@ theorem copyWindow_hoare [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5) (
     all_goals simp [eq]
     all_goals congr 2 <;> funext i <;> simp [SparseRoleCircuit.encoded,copied,eq]
   rw [updated, agree] at converted
+  have clean (stages) : basisWorkspace stages (data src) = basisWorkspace stages (0 : Fin N → ZMod 2) :=
+    segmentWorkspace_eq stages _ _
+  simp only [clean] at converted
   have liftRun {q b} {g : Program (142081+2) q prime} {v v' : Tapes (142081+2) prime}
       (h : HoareTime g (fun z => z = v) (fun z => z = v') b) :
-      HoareTime (liftGate g) (fun z => z = prepare (data src) v hs) (fun z => z = prepare (data src) v' hs) b :=
+      HoareTime (liftGate g) (fun z => z = prepare W v hs) (fun z => z = prepare W v' hs) b :=
     extend_banks_hoare (hoare_extend_eq (hoare_extend_eq (hoare_extend_eq (hoare_extend_eq
-      (hoare_extend_eq h headers) (basisWorkspace B (data src))) (basisWorkspace A (data src)))
+      (hoare_extend_eq h headers) (basisWorkspace B (0 : Fin N → ZMod 2))) (basisWorkspace A (0 : Fin N → ZMod 2)))
       (FixedHeaderBankCopy.empty 16)) M8.Machine.ArbitraryWidthHighPrepareShared.privateInput)
   have decoded : common = frameOf 0 ((frameOf life.sourceFrame).symm (data src)) := funext (read addr (data src))
   let loaded := Function.update data tmp common
