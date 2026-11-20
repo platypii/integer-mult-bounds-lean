@@ -105,7 +105,89 @@ noncomputable def copyAddress {Q W : ℕ} [NeZero Q] :
     (s : Swap.Shear.State (Fin 8) (ZMod Q)) (j : Fin W) :
     copyAddress.symm (s,j) = FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) j := rfl
 
+/-- Split a charted parent address into its eight active axes and its eight
+exterior blocks of seven, in each half. -/
+def chartHalves {R : Type*} : Swap.Shear.State Nine.Axis R ≃
+    Swap.Shear.State (Fin 8) R × Swap.Shear.State Nine.Exterior R where
+  toFun s := ((s.1 ∘ Sum.inl,s.2 ∘ Sum.inl),(s.1 ∘ Sum.inr,s.2 ∘ Sum.inr))
+  invFun p := (Sum.elim p.1.1 p.2.1,Sum.elim p.1.2 p.2.2)
+  left_inv s := by
+    apply Prod.ext <;> funext i <;> cases i <;> rfl
+  right_inv _ := rfl
+
+/-- Serialize all 112 exterior coordinates into the spectator record. Each
+exterior half uses the source's block-major ordering on the 8 by 7 axes. -/
+noncomputable def chartAddress {Q W : ℕ} [NeZero Q] :
+    Swap.Shear.State Nine.Axis (ZMod Q) × Fin W ≃ Fin (Q^16*(Q^112*W)) :=
+  let half : (Nine.Exterior → ZMod Q) ≃ (Fin 56 → ZMod Q) :=
+    Equiv.arrowCongr finProdFinEquiv (Equiv.refl _)
+  let exterior := (half.prodCongr half).trans (copyExterior (Q := Q))
+  ((chartHalves.prodCongr (Equiv.refl _)).trans (Equiv.prodAssoc ..)).trans
+    ((Equiv.prodCongr (Equiv.refl _) ((exterior.prodCongr (Equiv.refl _)).trans finProdFinEquiv)).trans
+      copyAddress.symm)
+where
+  copyExterior {Q : ℕ} [NeZero Q] :
+      Swap.Shear.State (Fin 56) (ZMod Q) ≃ Fin (Q^112) :=
+    (Equiv.sumArrowEquivProdArrow (Fin 56) (Fin 56) (ZMod Q)).symm.trans
+      ((Equiv.arrowCongr finSumFinEquiv (Equiv.refl _)).trans FlatCoordinateLayout.rankEquiv)
+
+/-- Changing only the local state on a charted tape preserves the complete
+exterior record and trailing position, exactly as required by the COPY read. -/
+theorem chartAddress_local {Q W : ℕ} [NeZero Q] (s : Swap.Shear.State Nine.Axis (ZMod Q))
+    (j : Fin W) (f : Swap.Shear.State (Fin 8) (ZMod Q) → Swap.Shear.State (Fin 8) (ZMod Q)) :
+    let x := chartAddress (s,j)
+    copyAddress.symm (f (copyAddress x).1,(copyAddress x).2) =
+      chartAddress (chartHalves.symm (f (chartHalves s).1,(chartHalves s).2),j) := by
+  simp [chartAddress,-copyAddress_index]
+
+private theorem chartHalves_exchange {R : Type*} [CommRing R]
+    (U : Matrix (Fin 8) (Fin 8) R) (L : Matrix Nine.Exterior Nine.Exterior R)
+    (s : Swap.Shear.State Nine.Axis R) :
+    chartHalves (M8.Exchange.exchange (Matrix.fromBlocks U 0 0 L) s) =
+      (M8.Exchange.exchange U (chartHalves s).1,M8.Exchange.exchange L (chartHalves s).2) := by
+  apply Prod.ext <;> apply Prod.ext <;> funext i <;>
+    simp [chartHalves,M8.Exchange.exchange,Matrix.sub_mulVec,Matrix.fromBlocks_mulVec,Function.comp_def]
+
+/-- The exterior prefix is exchanged in both stage frames. Their relative
+move therefore fixes every spectator, including at the two end stages. -/
+theorem chartAddress_exchange {Q W : ℕ} [NeZero Q] (n : Fin 9)
+    (U V : Matrix (Fin 8) (Fin 8) (ZMod Q)) (s : Swap.Shear.State Nine.Axis (ZMod Q)) (j : Fin W) :
+    let L := Matrix.diagonal fun i : Nine.Exterior => if i.1.val < n.val then (1 : ZMod Q) else 0
+    let frame := fun P => M8.Exchange.exchange (Matrix.fromBlocks P 0 0 L)
+    let x := chartAddress (s,j)
+    copyAddress.symm (M8.Exchange.exchange V (M8.Exchange.exchange U (copyAddress x).1),(copyAddress x).2) =
+      chartAddress (frame V (frame U s),j) := by
+  intro L frame x
+  rw [chartAddress_local s j (fun a => M8.Exchange.exchange V (M8.Exchange.exchange U a))]
+  apply congrArg (fun a => chartAddress (a,j))
+  apply chartHalves.injective
+  rw [Equiv.apply_symm_apply]
+  simp only [frame,chartHalves_exchange]
+  refine Prod.ext rfl ?_
+  apply Prod.ext <;> funext i <;> by_cases h : i.1.val < n.val <;>
+    simp [L,M8.Exchange.exchange,Matrix.sub_mulVec,Matrix.mulVec_diagonal,h]
+
 open IntegerMultBounds.Networks.Shared50ModularControl (prime)
+/-- Every checked modular move reads precisely the relative stage-frame
+address on the charted parent tape, with one projector table for all stages. -/
+theorem chartAddress_selected (w : ℕ) [NeZero (prime^w)] :
+    ∃ P : Fin 636 → Matrix (Fin 8) (Fin 8) (ZMod (prime^w)),
+      ∀ p (checked : Geometry.Moves.CheckedPair p) (n : Fin 9) {W : ℕ}
+        (s : Swap.Shear.State Nine.Axis (ZMod (prime^w))) (j : Fin W),
+      let L := Matrix.diagonal fun i : Nine.Exterior => if i.1.val < n.val then (1 : ZMod (prime^w)) else 0
+      let frame := fun k => M8.Exchange.exchange (Matrix.fromBlocks (P k) 0 0 L)
+      let x := chartAddress (s,j)
+      copyAddress.symm (AffineFieldProgram.run (selectedWord w p) (copyAddress x).1,(copyAddress x).2) =
+        chartAddress (frame ⟨p.2,checked.2.1⟩ (frame ⟨p.1,checked.1⟩ s),j) := by
+  obtain ⟨_,_,widths⟩ := modular_move_profile.choose_spec
+  obtain ⟨P,_,_,action,_⟩ := widths w
+  refine ⟨P,?_⟩
+  intro p checked n W s j L frame x
+  change ∀ p (h : Geometry.Moves.CheckedPair p) a, AffineFieldProgram.run (selectedWord w p) a =
+    M8.Exchange.exchange (P ⟨p.2,h.2.1⟩) (M8.Exchange.exchange (P ⟨p.1,h.1⟩) a) at action
+  rw [action p checked]
+  exact chartAddress_exchange n _ _ s j
+
 open FlatCoordinateLayout (rank)
 open RecursiveInterchangeLayout (Descriptor volume)
 
