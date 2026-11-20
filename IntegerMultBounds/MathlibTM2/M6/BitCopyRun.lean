@@ -413,6 +413,49 @@ theorem copyChild_interval {α : Type*} (x : Fin ((prime^w)^16*W) → α)
 open M8.Machine.ArbitraryWidthOriginalRun (input program cost)
 open M8.Machine.ArbitraryWidthHighExchangeShared (sourceWord)
 
+open M8.Machine.ArbitraryWidthHighExchangeJoin M8.Machine.ArbitraryWidthHighRun in
+noncomputable abbrev copyTransposeTapes [M8.Machine.Net] (t : ℕ) := t+16+19+17+12+1+exchangeCount+movementCount+paddingCount+
+  M8.Machine.ArbitraryWidthElementary.tapeCount
+
+abbrev CopyTransposeProgram [M8.Machine.Net] (states : ℕ → ℕ) :=
+  ∀ {t : ℕ}, (Fin 6 → Fin t) → Fin t → Program (copyTransposeTapes t) (states t) prime
+
+def CopyTransposeRuns [M8.Machine.Net] {states} (machine : CopyTransposeProgram states)
+    (time : Descriptor → (Fin 6 → List Bool) → ℕ) : Prop :=
+  ∀ {t} (caller : Tapes t prime) (headers : Fin 6 → Fin t) (src : Fin t)
+    (w W : ℕ) (hs : Fin 6 → List Bool), 0 < w → 0 < W →
+    let d := copyChild w W
+    RecursiveDimensionBank.Headers d hs →
+    (∀ i, caller.tape (headers i) = RadixZeroFill.encodedBinary (hs i)) →
+    (∀ i, caller.head (headers i) = 1) → ∀ x : Fin (volume prime d) → ZMod 2,
+    caller.tape src = sourceWord x → caller.head src = 0 →
+    HoareTime (machine headers src) (fun z => z = input caller)
+      (fun z => z = input (SharedPlacementAlphabet.setTape caller src
+        (sourceWord (Shared50RecursiveNodeRows.transpose (one_dvd _) x)) 0)) (time d hs)
+
+/-- A transpose subroutine on the prepared COPY bank with its own finite
+control and time bound. -/
+structure TransposeImplementation (tapes : ℕ → ℕ)
+    (valid : ∀ (states : ℕ → ℕ), (∀ {t}, (Fin 6 → Fin t) → Fin t → Program (tapes t) (states t) prime) →
+      (Descriptor → (Fin 6 → List Bool) → ℕ) → Prop) where
+  states : ℕ → ℕ
+  machine : ∀ {t}, (Fin 6 → Fin t) → Fin t → Program (tapes t) (states t) prime
+  time : Descriptor → (Fin 6 → List Bool) → ℕ
+  run : valid states (@machine) time
+
+abbrev CopyTranspose [M8.Machine.Net] := TransposeImplementation copyTransposeTapes
+  (fun states machine time => CopyTransposeRuns (states := states) (@machine) time)
+
+noncomputable def CopyTranspose.original [M8.Machine.Net] : CopyTranspose where
+  states := _
+  machine := program
+  time := cost
+  run := by
+    intro t caller headers src w W hs hw hW d
+    have pos := pow_pos Shared50ModularControl.prime_prime.pos w
+    exact M8.Machine.ArbitraryWidthOriginalRun.runs caller headers src d hs
+      ⟨Nat.zero_lt_one, Nat.zero_lt_one, Nat.zero_lt_one, pos, Nat.mul_pos pos hW⟩ (Nat.mul_pos (by decide : 0 < 7) hw)
+
 /-- Execute the middle of COPY on the designated caller tape, with the
 descriptor headers at their binary words and the private bank clean. -/
 theorem copyChild_runs [M8.Machine.Net] {t : ℕ} (caller : Tapes t prime)
@@ -422,18 +465,15 @@ theorem copyChild_runs [M8.Machine.Net] {t : ℕ} (caller : Tapes t prime)
     (heads : ∀ i, caller.head (headers i) = 1)
     (x : Fin ((prime^w)^16*W) → ZMod 2)
     (payload : caller.tape source = sourceWord (fun i => x (Fin.cast (copyChild_volume w W) i)))
-    (origin : caller.head source = 0) :
+    (origin : caller.head source = 0) (engine : CopyTranspose := CopyTranspose.original) :
     ∃ y : Fin (volume prime (copyChild w W)) → ZMod 2,
-      HoareTime (program headers source) (fun z => z = input caller)
+      HoareTime (engine.machine headers source) (fun z => z = input caller)
         (fun z => z = input (SharedPlacementAlphabet.setTape caller source (sourceWord y) 0))
-        (cost (copyChild w W) hs) ∧
+        (engine.time (copyChild w W) hs) ∧
       ∀ s j, y (Fin.cast (copyChild_volume w W).symm (FlatCoordinateLayout.index
         (AffineFieldCoordinates.embed (IntegerMultBounds.Swap.Shear.run (intervalSwaps 0 7) s)) j)) =
         x (FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) j) := by
-  have pos := pow_pos Shared50ModularControl.prime_prime.pos w
-  have hp : (copyChild w W).Positive := ⟨Nat.zero_lt_one, Nat.zero_lt_one, Nat.zero_lt_one, pos, Nat.mul_pos pos hW⟩
-  exact ⟨_, M8.Machine.ArbitraryWidthOriginalRun.runs caller headers source _ hs hp
-    (Nat.mul_pos (by decide) hw) valid tapes heads _ payload origin, copyChild_interval x⟩
+  exact ⟨_, engine.run caller headers source w W hs hw hW valid tapes heads _ payload origin, copyChild_interval x⟩
 
 def segmentSource (stages : List (FlatCoordinateSchedule.Op 16)) :
     Fin (FlatCoordinateCleanSchedule.tapeCount stages) :=
@@ -526,7 +566,7 @@ theorem copyEnterChild_runs [M8.Machine.Net] {t : ℕ} (src : Fin t) (headers : 
     (valid : RecursiveDimensionBank.Headers (copyChild w W) hs)
     (tapes : ∀ i, caller.tape (headers i) = RadixZeroFill.encodedBinary (hs i))
     (heads : ∀ i, caller.head (headers i) = 1) (head : caller.head src = 0)
-    (payload : caller.tape src = sourceWord (fun i => x (Fin.cast (copyChild_volume w W) i))) :
+    (payload : caller.tape src = sourceWord (fun i => x (Fin.cast (copyChild_volume w W) i))) (engine : CopyTranspose := CopyTranspose.original) :
     let q := ops.map (AffineFieldProgram.mapOp (IntegerMultBounds.Swap.Modular.ratMod (prime^w)))
     (∀ op ∈ q, AffineFieldProgram.Legal op) →
     let stages := description ops good
@@ -536,11 +576,11 @@ theorem copyEnterChild_runs [M8.Machine.Net] {t : ℕ} (src : Fin t) (headers : 
       (d := 16) (b := w) (W := W) (fun i => SparseRoleCircuit.encode (x i))) n) slot (fun _ => blank) 0
     let basis := Placement.placed (FlatCoordinateCleanSchedule.program stages) (sharedPlacement src slot)
     let enter := extendBanks (extend (extend basis 16) 19)
-    let child := program (fun i => Fin.castAdd n (headers i)) (Fin.castAdd n src)
+    let child := engine.machine (fun i => Fin.castAdd n (headers i)) (Fin.castAdd n src)
     ∃ y : Fin (volume prime (copyChild w W)) → ZMod 2,
       HoareTime (seq enter child) (fun z => z = input (caller.append work))
         (fun z => z = input ((setTape caller src (sourceWord y) 0).append work))
-        (FlatCoordinateCleanSchedule.constant stages * ((prime^w)^16*W) + 1 + cost (copyChild w W) hs) ∧
+        (FlatCoordinateCleanSchedule.constant stages * ((prime^w)^16*W) + 1 + engine.time (copyChild w W) hs) ∧
       ∀ s j, y (Fin.cast (copyChild_volume w W).symm (FlatCoordinateLayout.index
         (AffineFieldCoordinates.embed (IntegerMultBounds.Swap.Shear.run (intervalSwaps 0 7)
           (AffineFieldProgram.run q s))) j)) =
@@ -551,7 +591,7 @@ theorem copyEnterChild_runs [M8.Machine.Net] {t : ℕ} (src : Fin t) (headers : 
   have lifted := extend_banks_hoare (hoare_extend_eq (hoare_extend_eq pass (FixedHeaderBankCopy.empty 16))
     M8.Machine.ArbitraryWidthHighPrepareShared.privateInput)
   change HoareTime enter (fun z => z = input (caller.append work)) (fun z => z = input (next.append work)) _ at lifted
-  obtain ⟨y,swap,action⟩ := copyChild_runs (next.append work) (fun i => Fin.castAdd n (headers i))
+  obtain ⟨y,swap,action⟩ := copyChild_runs (engine := engine) (next.append work) (fun i => Fin.castAdd n (headers i))
     (Fin.castAdd n src) hw hW hs valid (x := loaded)
     (by intro i; simpa [Tapes.append,next,setTape,distinct] using tapes i)
     (by intro i; simpa [Tapes.append,next,setTape,distinct] using heads i)
@@ -578,7 +618,7 @@ theorem copyMove_runs [M8.Machine.Net] {t : ℕ} (src : Fin t) (headers : Fin 6 
     (valid : RecursiveDimensionBank.Headers (copyChild w W) hs)
     (tapes : ∀ i, caller.tape (headers i) = RadixZeroFill.encodedBinary (hs i))
     (heads : ∀ i, caller.head (headers i) = 1) (head : caller.head src = 0)
-    (payload : caller.tape src = sourceWord (fun i => x (Fin.cast (copyChild_volume w W) i))) :
+    (payload : caller.tape src = sourceWord (fun i => x (Fin.cast (copyChild_volume w W) i))) (engine : CopyTranspose := CopyTranspose.original) :
     let spec := List.map (AffineFieldProgram.mapOp (IntegerMultBounds.Swap.Modular.ratMod (prime^w)))
     let A := description _ rev.good
     let B := description _ fwd.good
@@ -587,7 +627,7 @@ theorem copyMove_runs [M8.Machine.Net] {t : ℕ} (src : Fin t) (headers : Fin 6 
     let bank := fun v : Tapes t prime => input ((v.append (basisWorkspace B x)).append (basisWorkspace A x))
     let source := Fin.castAdd m src
     let enter := Placement.placed (FlatCoordinateCleanSchedule.program A) (sharedPlacement source (segmentSource A))
-    let child := program (fun i => Fin.castAdd n (Fin.castAdd m (headers i))) (Fin.castAdd n source)
+    let child := engine.machine (fun i => Fin.castAdd n (Fin.castAdd m (headers i))) (Fin.castAdd n source)
     let leave := Placement.placed (FlatCoordinateCleanSchedule.program B) (sharedPlacement src (segmentSource B))
     let machine := seq (seq (extendBanks (extend (extend enter 16) 19)) child)
       (extendBanks (extend (extend (extend leave n) 16) 19))
@@ -595,12 +635,12 @@ theorem copyMove_runs [M8.Machine.Net] {t : ℕ} (src : Fin t) (headers : Fin 6 
       HoareTime machine (fun z => z = bank caller)
         (fun z => z = bank (setTape caller src (sourceWord (fun i => y (Fin.cast (copyChild_volume w W) i))) 0))
         ((FlatCoordinateCleanSchedule.constant A + FlatCoordinateCleanSchedule.constant B) *
-          ((prime^w)^16*W) + cost (copyChild w W) hs + 2) ∧
+          ((prime^w)^16*W) + engine.time (copyChild w W) hs + 2) ∧
       ∀ s j, y (FlatCoordinateLayout.index (AffineFieldCoordinates.embed
         (AffineFieldProgram.run (spec (rationalMoveWord 0 7 C)) s)) j) =
         x (FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) j) := by
   intro spec A B n m bank source enter child leave machine
-  obtain ⟨mid,first,action⟩ := copyEnterChild_runs source (fun i => Fin.castAdd m (headers i))
+  obtain ⟨mid,first,action⟩ := copyEnterChild_runs (engine := engine) source (fun i => Fin.castAdd m (headers i))
     (fun i eq => distinct i (Fin.ext (congrArg (fun k : Fin (t+m) => k.val) eq))) _ rev.good hw hW (caller.append (basisWorkspace B x))
     x hs valid (by intro i; simpa [Tapes.append] using tapes i)
     (by intro i; simpa [Tapes.append] using heads i) (by simpa [source,Tapes.append] using head)
@@ -697,7 +737,7 @@ open M8.Machine.Segments M8.Machine.ArbitraryWidthOriginalRun SharedPlacementAlp
 /-- Copy the retained owner into the temporary, convert its frame, fan out,
 then clear it. Header construction, both basis passes and the child transpose are charged. -/
 theorem copyWindow_hoare [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5) (life : Copy.Lifecycle)
-    (scheduled : life ∈ Copy.lifecycles) :
+    (scheduled : life ∈ Copy.lifecycles) (engine : CopyTranspose := CopyTranspose.original) :
     let src := ownerTape n r d ⟨life.source,(Copy.source_bounds life scheduled).2⟩
     let tmp := Fin.last 142080
     let regs := life.targets.attach.map fun j => (⟨j.val,((Copy.target_bounds life scheduled _ j.property).2.trans (by decide : 222 < 661))⟩ : Fin 661)
@@ -727,7 +767,7 @@ theorem copyWindow_hoare [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5) (
       let stored := Copy.extendStored (fun j => data (ownerTape n r d j))
       HoareTime machine (fun z => z = prepare W (bank data) (FixedHeaderBankCopy.empty 6) (copyHeaderInput w W)) (fun z => z = prepare W (bank output) (FixedHeaderBankCopy.headerBank hs) (copyHeaderOutput w W))
         (copyWindowWork (FlatCoordinateCleanSchedule.constant A + FlatCoordinateCleanSchedule.constant B)
-          life.targets.length N bs.length + cost (copyChild w W) hs) ∧
+          life.targets.length N bs.length + engine.time (copyChild w W) hs) ∧
       (∀ j : Fin 661, output (ownerTape n r d j) = Copy.execute frameOf life stored j) ∧
       output tmp = Copy.execute frameOf life stored 661 := by
   intro src tmp regs targets
@@ -746,7 +786,7 @@ theorem copyWindow_hoare [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5) (
   let liftGate {q} (g : Program (142081+2) q prime) :=
     liftCore (extend (extend g 6) 15)
   let pre := Placement.placed (FlatCoordinateCleanSchedule.program A) (sharedPlacement (Fin.castAdd nB site) (segmentSource A))
-  let child := program (fun i : Fin 6 => Fin.castAdd nA (Fin.castAdd nB (Fin.castAdd 15 (Fin.natAdd (142081+2) i))))
+  let child := engine.machine (fun i : Fin 6 => Fin.castAdd nA (Fin.castAdd nB (Fin.castAdd 15 (Fin.natAdd (142081+2) i))))
     (Fin.castAdd nA (Fin.castAdd nB site))
   let post := Placement.placed (FlatCoordinateCleanSchedule.program B) (sharedPlacement site (segmentSource B))
   let convert := seq (seq (extendBanks (extend (extend pre 16) 19)) child)
@@ -769,7 +809,7 @@ theorem copyWindow_hoare [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5) (
     have h := congrArg Fin.val eq
     simp only [site,Fin.val_natAdd,Fin.val_castAdd] at h
     omega
-  obtain ⟨moved,converted,forward⟩ := copyMove_runs site _ distinct C rev fwd hw hW caller (data src) hs valid
+  obtain ⟨moved,converted,forward⟩ := copyMove_runs (engine := engine) site _ distinct C rev fwd hw hW caller (data src) hs valid
     (by intro i; simp [caller,Tapes.append,headers])
     (by intro i; simp [caller,Tapes.append,headers])
     (by simp [caller,bank,site,Tapes.append,PointwiseRoleGate.bank])

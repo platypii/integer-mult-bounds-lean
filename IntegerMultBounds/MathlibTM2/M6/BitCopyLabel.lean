@@ -240,7 +240,7 @@ open IntegerMultBounds.Networks.Certificates.PR589 M8.Machine.ArbitraryWidthOrig
 /-- The same width-uniform machine that executes the COPY window realizes its
 cover-label addition at every actual target, with the child run charged once. -/
 theorem copyLabel_window_runs [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
-    (life : Copy.Lifecycle) (scheduled : life ∈ Copy.lifecycles) :
+    (life : Copy.Lifecycle) (scheduled : life ∈ Copy.lifecycles) (engine : CopyTranspose := CopyTranspose.original) :
     let io := ownerTape n r d
     let src := io ⟨life.source,(Copy.source_bounds life scheduled).2⟩
     ∃ (A D : List (FlatCoordinateSchedule.Op 16)) (states : ℕ) (machine : Program _ states prime),
@@ -256,14 +256,14 @@ theorem copyLabel_window_runs [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin
       ∃ out, HoareTime machine (fun z => z = prepare (bank data) (FixedHeaderBankCopy.empty 6) (copyHeaderInput w W))
         (fun z => z = prepare (bank out) (FixedHeaderBankCopy.headerBank hs) (copyHeaderOutput w W))
         (copyWindowWork (FlatCoordinateCleanSchedule.constant A + FlatCoordinateCleanSchedule.constant D)
-          life.targets.length N bs.length + cost (copyChild w W) hs) ∧
+          life.targets.length N bs.length + engine.time (copyChild w W) hs) ∧
         out (Fin.last 142080) = 0 ∧ out src = data src ∧
         (∀ k, k ≠ Fin.last 142080 → (∀ j : Fin 661, j.val ∈ life.targets → io j ≠ k) → out k = data k) ∧
         ∀ (j : Fin 661), j.val ∈ life.targets → ∀ (g : Matrix (Fin 64) (Fin 64) (ZMod (prime^w))) (z : LabelEntry.Cell (copyLabelLayout w B K) B),
           chartRead (view (out (io j))) g z = chartRead (view (data (io j))) g z +
             chartRead (view (data src)) g {z with a := copyActive (move (copyActive.symm z.a))} := by
   intro io src
-  obtain ⟨C,rev,fwd,states,machine,run⟩ := copyWindow_hoare n r d life scheduled
+  obtain ⟨C,rev,fwd,states,machine,run⟩ := copyWindow_hoare (engine := engine) n r d life scheduled
   refine ⟨_,_,states,machine,?_⟩
   intro w B K hw hB hK W N prepare hs view move data bs count bank
   have hW : 0 < W := Nat.mul_pos (Nat.mul_pos hB (pow_pos Shared50ModularControl.prime_prime.pos _)) hK
@@ -324,7 +324,7 @@ open IntegerMultBounds.Networks.Certificates.PR589 M8.RevMachine M8.Machine.Arbi
 The returned target is read in its original chart, with the retained source
 read through the relative chart and the selected local frame change. -/
 theorem routedCopy_runs [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
-    (life : Copy.Lifecycle) (scheduled : life ∈ Copy.lifecycles) :
+    (life : Copy.Lifecycle) (scheduled : life ∈ Copy.lifecycles) (engine : CopyTranspose := CopyTranspose.original) :
     ∃ (entry leave : Graph.Block (142081+24) prime) (P Q : ℕ)
       (A D : List (FlatCoordinateSchedule.Op 16)) (states : ℕ) (body : Program _ states prime),
       Blocks.Leading entry ∧ Blocks.Leading leave ∧ ∀ (w B K : ℕ), 0 < w → 0 < B → 0 < K →
@@ -351,12 +351,12 @@ theorem routedCopy_runs [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
           (fun z => z = SharedBankPair.input setup (SharedBankStageInput.raw (bank x) leave.tapes) common ls)
           (fun z => z = SharedBankPair.output finish (SharedBankStageInput.raw (bank out) leave.tapes) common ls)
           (routeCost P + (copyWindowWork (FlatCoordinateCleanSchedule.constant A + FlatCoordinateCleanSchedule.constant D)
-            life.targets.length V bs.length + cost (copyChild w W) hs) + 1 + routeCost Q + 1) ∧
+            life.targets.length V bs.length + engine.time (copyChild w W) hs) + 1 + routeCost Q + 1) ∧
         CopyWindowEffect n r d life w B K x out := by
   let io := fun j : ℕ => ownerTape n r d (Fin.ofNat 661 j)
   obtain ⟨entry,P,leading,enter⟩ := copyWindow_routes n r d true life scheduled
   obtain ⟨leave,Q,leaveLeading,exitRun⟩ := copyWindow_routes n r d false life scheduled
-  obtain ⟨A,D,states,body,run⟩ := copyLabel_window_runs n r d life scheduled
+  obtain ⟨A,D,states,body,run⟩ := copyLabel_window_runs (engine := engine) n r d life scheduled
   refine ⟨entry,leave,P,Q,A,D,states,body,leading,leaveLeading,?_⟩
   intro w B K hw hB hK v W V bank routeCost hs x bs count controls prep rs cs pair common ls
   have pos : v.Positive := ⟨pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _,Nat.zero_lt_one,
@@ -475,7 +475,7 @@ open IntegerMultBounds.Networks.Certificates.PR589 M8.RevMachine M8.Machine.Arbi
 /-- A routed window as a composable stage on the permanent owner tapes.
 Its initialized private workspace is independent of the incoming data. -/
 theorem routedCopy_stage [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
-    (life : Copy.Lifecycle) (scheduled : life ∈ Copy.lifecycles) :
+    (life : Copy.Lifecycle) (scheduled : life ∈ Copy.lifecycles) (engine : CopyTranspose := CopyTranspose.original) :
     ∃ C : ℕ, ∀ w B K, 0 < w → 0 < B → 0 < K →
       let v := copyLabelLayout w B K
       let V := volume prime v
@@ -483,8 +483,8 @@ theorem routedCopy_stage [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
       let hs := fun i => FlatCoordinateSchedule.bits (RecursiveDimensionBank.values (copyChild w W) i)
       ∃ stage : SharedBankStage.Stage _ 142081 prime (copyOwners (v := v)),
         (∀ x, CopyWindowEffect n r d life w B K x (stage.transform x)) ∧
-        stage.cost ≤ C*V + 2*(63+252*life.targets.length)*LeafCore.coreCost V (w*64) + cost (copyChild w W) hs := by
-  obtain ⟨entry,leave,P,Q,A,D,states,body,eLead,lLead,runs⟩ := routedCopy_runs n r d life scheduled
+        stage.cost ≤ C*V + 2*(63+252*life.targets.length)*LeafCore.coreCost V (w*64) + engine.time (copyChild w W) hs := by
+  obtain ⟨entry,leave,P,Q,A,D,states,body,eLead,lLead,runs⟩ := routedCopy_runs (engine := engine) n r d life scheduled
   let basis := FlatCoordinateCleanSchedule.constant A + FlatCoordinateCleanSchedule.constant D
   refine ⟨P+Q+(504+basis+76*(life.targets.length+2))+2*life.targets.length+4,?_⟩
   intro w B K hw hB hK v V W hs
@@ -515,7 +515,7 @@ theorem routedCopy_stage [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
             slots := slots, slots_injective := SharedBankFrames.commonSlots_injective ..,
             metadata := SharedBank.strip (input 0) slots,
             cost := (P*V+(63+252*life.targets.length)*LeafCore.coreCost V (w*64)+life.targets.length+1) +
-              (copyWindowWork basis life.targets.length V bs.length + cost (copyChild w W) hs) + 1 +
+              (copyWindowWork basis life.targets.length V bs.length + engine.time (copyChild w W) hs) + 1 +
               (Q*V+(63+252*life.targets.length)*LeafCore.coreCost V (w*64)+life.targets.length+1) + 1,
             realizes := fun x => run x,
             input_payload := ?_, output_payload := ?_, strip_input := ?_ },fun x => ((result x).choose_spec).2,?_⟩
@@ -549,7 +549,7 @@ def CopyScheduleEffect (n : Fin 9) (r : Fin 32) (d : Fin 5) (w B K : ℕ) :
       CopyScheduleEffect n r d w B K rest y out
 
 open M8.RevMachine M8.Machine.ArbitraryWidthOriginalRun in
-theorem routedCopy_schedule [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5) :
+theorem routedCopy_schedule [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5) (engine : CopyTranspose := CopyTranspose.original) :
     ∃ C : ℕ, ∀ w B K, 0 < w → 0 < B → 0 < K →
       let v := copyLabelLayout w B K
       let V := volume prime v
@@ -557,9 +557,9 @@ theorem routedCopy_schedule [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5
       let hs := fun i => FlatCoordinateSchedule.bits (RecursiveDimensionBank.values (copyChild w W) i)
       ∃ stage : SharedBankStage.Stage _ 142081 prime (copyOwners (v := v)),
         (∀ x, CopyScheduleEffect n r d w B K Copy.lifecycles x (stage.transform x)) ∧
-        stage.cost ≤ C*V + 2*(63*9+252*527)*LeafCore.coreCost V (w*64) + 9*cost (copyChild w W) hs + 9 := by
+        stage.cost ≤ C*V + 2*(63*9+252*527)*LeafCore.coreCost V (w*64) + 9*engine.time (copyChild w W) hs + 9 := by
   let Life := {l // l ∈ Copy.lifecycles}
-  let spec := fun l : Life => routedCopy_stage n r d l.val l.property
+  let spec := fun l : Life => routedCopy_stage (engine := engine) n r d l.val l.property
   let coeff := fun l : Life => (spec l).choose
   refine ⟨(Copy.lifecycles.attach.map coeff).sum, ?_⟩
   intro w B K hw hB hK v V W hs
@@ -571,7 +571,7 @@ theorem routedCopy_schedule [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5
     | nil => exact fun _ => rfl
     | cons l ls ih => exact fun x => ⟨_, (window l).choose_spec.1 x, ih ((stage l).transform x)⟩
   let core := LeafCore.coreCost V (w*64)
-  let child := cost (copyChild w W) hs
+  let child := engine.time (copyChild w W) hs
   have bound (ls : List Life) : (compile ls).cost ≤ (ls.map coeff).sum*V +
       2*(63*ls.length+252*(ls.map (fun l => l.val.targets.length)).sum)*core + ls.length*child + ls.length := by
     induction ls with
@@ -592,5 +592,45 @@ theorem routedCopy_schedule [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5
     exact specialize Copy.lifecycles.attach (List.length_attach.trans Copy.copy_count)
       ((congrArg List.sum (List.attach_map_val (l := Copy.lifecycles)
         (f := fun l => l.targets.length))).trans Copy.add_count)
+
+open M8.RevMachine M8.Machine.ArbitraryWidthOriginalRun in
+/-- On a parent carrying the cover label before its H field, the scheduled COPY
+calls have the rank-seven width and one role's volume. All local work is
+charged at the label-width exponent, with nine child bills and nine joins. -/
+theorem routedCopy_parent [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5) (engine : CopyTranspose := CopyTranspose.original) :
+    ∃ C : ℝ, ∀ (v : Descriptor) (w B rows : ℕ), v.Positive → 0 < w → 0 < B →
+      v.width = 64*w → v.rows = 142080*rows → v.beforeH = B*prime^(64*(w*64)) →
+      let K := (prime^w)^112 * (v.beforeRows*rows*v.between*v.afterD)
+      let W := B*prime^(64*(w*64))*K
+      let child := copyChild w W
+      let hs := fun i => FlatCoordinateSchedule.bits (RecursiveDimensionBank.values child i)
+      ∃ stage : SharedBankStage.Stage _ 142081 prime (copyOwners (v := copyLabelLayout w B K)),
+        (∀ x, CopyScheduleEffect n r d w B K Copy.lifecycles x (stage.transform x)) ∧
+        child.width*64 = 7*v.width ∧ volume prime child*142080 = volume prime v ∧
+        (stage.cost : ℝ) ≤ C*volume prime child*(w : ℝ)^M8.Machine.BudgetBound.tau + 9*engine.time child hs + 9 := by
+  obtain ⟨P, schedule⟩ := routedCopy_schedule (engine := engine) n r d
+  obtain ⟨C, route⟩ := labelRoute_cost_bound P (2*(63*9+252*527))
+  refine ⟨C, ?_⟩
+  intro v w B rows pos hw hB width splitRows label K W child hs
+  obtain ⟨before, rowPos, _, mid, after⟩ := pos
+  have hr : 0 < rows := by rw [splitRows] at rowPos; omega
+  have hp := Shared50ModularControl.prime_prime.pos
+  have hK : 0 < K := by dsimp only [K]; positivity
+  obtain ⟨stage, effect, bill⟩ := schedule w B K hw hB hK
+  have spectators : (prime^w)^112 * (v.beforeRows*rows*v.beforeH*v.between*v.afterD) = W := by
+    dsimp only [W,K]
+    rw [label]
+    ac_rfl
+  have measures := copyChild_measures v w rows width splitRows
+  dsimp only at measures
+  rw [spectators] at measures
+  refine ⟨stage, effect, measures.1, measures.2, ?_⟩
+  have size : volume prime (copyLabelLayout w B K) = volume prime child :=
+    (copyLabel_volume w B K).trans (copyChild_volume w W).symm
+  conv at bill => rhs; rw [size]
+  have power := route (volume prime child) w hw
+  exact (Nat.cast_le.mpr bill).trans (by
+    simpa only [Nat.cast_add, Nat.cast_mul, Nat.cast_ofNat] using
+      add_le_add (add_le_add power (le_refl ((9 : ℝ)*engine.time child hs))) (le_refl (9 : ℝ)))
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
