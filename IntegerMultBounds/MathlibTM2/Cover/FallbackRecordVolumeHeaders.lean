@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackRecordWordWidth
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackSwapDimensions
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackLeafReturnHeaders
 
@@ -7,6 +8,110 @@ public import IntegerMultBounds.MathlibTM2.Cover.FallbackLeafReturnHeaders
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Cover.Fallback
 open IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2.Stack Host
+
+def recordInputSources : Fin 4 ↪ Fin 58 := ⟨![2,44,45,55],by decide⟩
+
+def recordInputTargets : Fin 4 ↪ Fin 24 := ⟨![2,20,22,23],by decide⟩
+
+/-- Load the modulus, unit, clock, and parent weight archive from the caller.
+Only those four right stacks change, so a prepared matrix survives the copy. -/
+theorem loadRecordInputs_exec {T Q A : ℕ} {F U : Type} (body : F → Pr F T Q A U)
+    (caller : Fin 58 ↪ Fin T) (record : Fin 24 ↪ Fin T) (apart : ∀ i j, caller i ≠ record j)
+    (u : HS T Q A U) (S : Stacks T A)
+    (empty : ∀ i : Fin 4, S.R (record (recordInputTargets i)) = [])
+    (tmp : S.R (record 0) = []) (aux : S.R (record 1) = []) :
+    let src := recordInputSources.trans caller
+    let dst := recordInputTargets.trans record
+    ∃ z D, z.user = u.user ∧ Exec body (Record.copyLeafHeaders src dst (record 0) (record 1) (List.finRange 4))
+      (mk u S) (((List.finRange 4).map (fun i => 6*(S.R (src i)).length+6)).sum+1) (mk z D) ∧
+      D.L = S.L ∧ D.R (record 2) = S.R (caller 2) ∧ D.R (record 20) = S.R (caller 44) ∧
+      D.R (record 22) = S.R (caller 45) ∧ D.R (record 23) = S.R (caller 55) ∧
+      ∀ j, (∀ i, dst i ≠ j) → D.R j = S.R j := by
+  intro src dst
+  have ports (i : Fin 4) : [src i,dst i,record 0,record 1].Nodup := by
+    have nd := ((by decide : ∀ i, [recordInputTargets i,0,1].Nodup) i).map record.injective
+    apply List.nodup_cons.mpr
+    exact ⟨by simp [src,dst,apart],nd⟩
+  obtain ⟨z,D,user,run,left,loaded,off⟩ := Record.copyLeafHeaders_exec body src dst (record 0) (record 1)
+    (fun i j => apart _ _) ports _ (List.nodup_finRange 4) u S tmp aux (fun i _ => empty i)
+  exact ⟨z,D,user,run,left,loaded 0 (List.mem_finRange _),loaded 1 (List.mem_finRange _),
+    loaded 2 (List.mem_finRange _),loaded 3 (List.mem_finRange _),fun j h => off j (fun i _ => h i)⟩
+
+theorem canonicalBits_symbols {A : ℕ} (a : ℕ) : (FlatCoordinateSchedule.bits a).map (bitSymbol (a := A)) = binSyms a.size a := by
+  rw [binSyms_eq]
+  congr 1
+  exact BinaryCanonicalData.value_injective _ _ (FlatCoordinateSchedule.bits_canonical _)
+    (Mult.PhaseCellToeplitz.binBits_size_canonical _) ((FlatCoordinateSchedule.bits_value _).trans
+      (Routing.binaryCanonical_value_binBits _ _ (Nat.lt_size_self _)).symm)
+
+/-- Use the stored modulus twice: its padded copy counts the input field,
+and its canonical copy counts the bits kept for each coefficient. -/
+theorem canonicalRecordArchive_exec {T Q A : ℕ} {F U : Type} (body : F → Pr F T Q A U)
+    (r : Fin 7 ↪ Fin T) (dst : Fin T) (outside : ∀ i, dst ≠ r i)
+    (M H : ℕ) (hm : M < 2^H) (xs : List ℕ) (below : ∀ x ∈ xs, x < M)
+    (tail : List (Fin (A+4))) (u : HS T Q A U) (S : Stacks T A)
+    (modulus : S.R (r 0) = binSyms H M) (input : S.R (r 1) = (xs.map (binSyms H)).flatten ++ tail)
+    (empty : ∀ i ∈ ([2,3,4,5,6] : List (Fin 7)), S.R (r i) = []) :
+    let words := (xs.map (binSyms (A := A) M.size)).flatten
+    let setup := Routing.binaryCanonicalCopyProgram (r 0) (r 5) (r 3) (r 4)
+    let pack := (narrowRecordWords r xs.length).seq (moveR (r 6) dst id)
+    ∃ z, z.user = u.user ∧ Exec body (setup.seq pack) (mk u S)
+      ((10*H+12)+(xs.length*(10*M.size+8*(H-M.size)+12)+1+(2*words.length+2)))
+      (mk z {S with R := Function.update (Function.update (Function.update S.R (r 5) (binSyms M.size M)) (r 1) tail) dst (words ++ S.R dst)}) := by
+  intro words setup pack
+  have ports := ((by decide : ([0,5,3,4] : List (Fin 7)).Nodup).map r.injective)
+  obtain ⟨v,hv,copy⟩ := swapWidth_exec body _ _ _ _ ports H M hm u S modulus
+    (empty 5 (by decide)) (empty 3 (by decide)) (empty 4 (by decide))
+  rw [canonicalBits_symbols] at copy
+  let E : Stacks T A := {S with R := Function.update S.R (r 5) (binSyms M.size M)}
+  have size : M.size+(H-M.size) = H := Nat.add_sub_of_le (Nat.size_le.mpr hm)
+  obtain ⟨z,hz,run⟩ := narrowRecordArchive_exec body r dst outside M.size (H-M.size) xs
+    (fun x h => (below x h).trans (Nat.lt_size_self _)) tail v E
+    (by simpa [E,r.injective.eq_iff,size] using input)
+    (by simp [E,r.injective.eq_iff,modulus,size,length_binSyms]) (by simp [E,length_binSyms])
+    (by intro i hi
+        have ok := (by decide : ∀ i ∈ ([2,3,4,6] : List (Fin 7)), i ≠ 5 ∧ i ∈ ([2,3,4,5,6] : List (Fin 7))) i hi
+        simp [E,r.injective.eq_iff,ok.1,empty i ok.2])
+  refine ⟨z,hz.trans hv,?_⟩
+  simpa only [E,Function.update_of_ne (outside 5)] using Exec.seq copy run
+
+/-- In the joined caller and record bank the modulus is borrowed from caller
+slot 2. The private canonical modulus and parent archive occupy slots 2 and 23. -/
+def parentArchivePorts : Fin 7 ↪ Fin 82 := ⟨![2,76,58,59,61,60,62],by decide⟩
+
+theorem loadCanonicalParents_exec {T Q A : ℕ} {F U : Type} (body : F → Pr F T Q A U)
+    (host : Fin 82 ↪ Fin T) (M H : ℕ) (hm : M < 2^H) (xs : List ℕ) (below : ∀ x ∈ xs, x < M)
+    (u : HS T Q A U) (S : Stacks T A) (modulus : S.R (host 2) = binSyms H M)
+    (archive : S.R (host 55) = (xs.map (binSyms H)).flatten)
+    (empty : ∀ i ∈ ([58,59,60,61,62,76,81] : List (Fin 82)), S.R (host i) = []) :
+    let r := parentArchivePorts.trans host
+    let copy := bcopy (host 55) (host 76) (host 59) (host 61)
+    let setup := Routing.binaryCanonicalCopyProgram (r 0) (r 5) (r 3) (r 4)
+    let pack := (narrowRecordWords r xs.length).seq (moveR (r 6) (host 81) id)
+    let words := (xs.map (binSyms (A := A) M.size)).flatten
+    ∃ z, z.user = u.user ∧ Exec body (copy.seq (setup.seq pack)) (mk u S)
+      ((6*(S.R (host 55)).length+6)+((10*H+12)+(xs.length*(10*M.size+8*(H-M.size)+12)+1+(2*words.length+2))))
+      (mk z {S with R := Function.update (Function.update S.R (host 60) (binSyms M.size M)) (host 81) words}) := by
+  intro r copy setup pack words
+  have regs := ((by decide : ([55,76,59,61] : List (Fin 82)).Nodup).map host.injective)
+  obtain ⟨v,hv,load⟩ := bcopy_exec body regs u S (empty 59 (by decide)) (empty 61 (by decide))
+  rw [empty 76 (by decide),List.append_nil] at load
+  let E : Stacks T A := {S with R := Function.update S.R (host 76) (S.R (host 55))}
+  have distinct (i : Fin 7) : host 81 ≠ r i :=
+    host.injective.ne ((by decide : ∀ i, 81 ≠ parentArchivePorts i) i)
+  obtain ⟨z,hz,run⟩ := canonicalRecordArchive_exec body r (host 81) distinct M H hm xs below [] v E
+    (by change E.R (host 2) = _; simp [E,host.injective.eq_iff,modulus])
+    (by change E.R (host 76) = _; simp [E,archive])
+    (by intro i hi
+        have ok := (by decide : ∀ i ∈ ([2,3,4,5,6] : List (Fin 7)), parentArchivePorts i ≠ 76 ∧
+          parentArchivePorts i ∈ ([58,59,60,61,62,76,81] : List (Fin 82))) i hi
+        simp [E,r,host.injective.eq_iff,ok.1,empty _ ok.2])
+  refine ⟨z,hz.trans hv,(Exec.seq load run).cast rfl ?_⟩
+  congr 2
+  funext j
+  change Function.update (Function.update (Function.update E.R (host 60) _) (host 76) []) (host 81) _ j = _
+  by_cases a : j = host 81 <;> by_cases b : j = host 76 <;> by_cases c : j = host 60 <;>
+    simp_all [words,E,host.injective.eq_iff]
 
 theorem recordVolumeHeaders_exec {T Q A : ℕ} {F U : Type}
     (body : F → Pr F T Q A U) (r : Fin 10 ↪ Fin T) (width : Fin T) (outside : ∀ i, width ≠ r i)
@@ -16,12 +121,6 @@ theorem recordVolumeHeaders_exec {T Q A : ℕ} {F U : Type}
     ∃ z n, z.user = u.user ∧ n ≤ dimensionTime H 1 d + (4*(d*H+1)+6) + (10*J+12) ∧
       Exec body ((swapPrefix r d).seq (Routing.binaryCanonicalCopyProgram width (r 9) (r 3) (r 4)))
         (mk u S) n (mk z {S with R := Function.update (Function.update S.R (r 2) (binSyms (M^d).size (M^d))) (r 9) (binSyms W.size W)}) := by
-  have canonical (a : ℕ) : (FlatCoordinateSchedule.bits a).map (bitSymbol (a := A)) = binSyms a.size a := by
-    rw [binSyms_eq]
-    congr 1
-    exact BinaryCanonicalData.value_injective _ _ (FlatCoordinateSchedule.bits_canonical _)
-      (Mult.PhaseCellToeplitz.binBits_size_canonical _) ((FlatCoordinateSchedule.bits_value _).trans
-        (Routing.binaryCanonical_value_binBits _ _ (Nat.lt_size_self _)).symm)
   obtain ⟨v,t,user,time,power⟩ := swapPrefix_exec body r d H M hm u S base one (fun i hi _ => free i hi)
   let D : Stacks T A := {S with R := Function.update S.R (r 2) ((FlatCoordinateSchedule.bits (M^d)).map bitSymbol)}
   have ports : [width,r 9,r 3,r 4].Nodup := by simp [outside,r.injective.eq_iff]
@@ -29,7 +128,7 @@ theorem recordVolumeHeaders_exec {T Q A : ℕ} {F U : Type}
     (by simp [D,outside,trailing]) (by simp [D,r.injective.eq_iff,free])
     (by simp [D,r.injective.eq_iff,free]) (by simp [D,r.injective.eq_iff,free])
   refine ⟨z,_,hz.trans user,Nat.add_le_add_right time _,?_⟩
-  simpa only [D,canonical] using Exec.seq power copy
+  simpa only [D,canonicalBits_symbols] using Exec.seq power copy
 
 /-- The first 58 slots are the recursive caller bank. The following eight
 slots hold the six loop controls and two temporary words. -/
