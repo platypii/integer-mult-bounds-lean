@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Cover.LabelRoute
+import IntegerMultBounds.MathlibTM2.M8.RevMachine.RevBudget
 
 /-! One circuit for a rational label route at every positive width. -/
 
@@ -62,9 +63,12 @@ theorem realizes (hk : 2 ≤ m*m) (io : Fin T) (σ : Matrix (Fin m) (Fin m) ℚ)
         let d := words (LabelSchedule.base v w)
         ∃ y : Fin (volume prime v) → ZMod 2,
           LabelPermutation.Transport v B w (fun g => g * reduce (modulus w) σ) (ext x) (ext y) ∧
+          let cost := C * volume prime v + (m-1)*LeafCore.coreCost (volume prime v) (w*m)
           GraphContract.Runs M (LabelCall.bank roles v d)
             (LabelCall.bank (SharedPlacementAlphabet.setTape roles io (sourceWord y) 0) v d)
-            (C * volume prime v + (m-1)*LeafCore.coreCost (volume prime v) (w*m)) := by
+            cost ∧ ∀ width : ℕ, w*m ≤ width →
+              (cost : ℝ) ≤ ((C : ℝ) + ((m-1 : ℕ) : ℝ) * |LeafCore.C| *
+                (width : ℝ)^M8.Machine.BudgetBound.tau) * volume prime v := by
   have hlen : F.L.length = m := by
     rw [IntegerMultBounds.Swap.PivotRank.length_eq_rank F, Matrix.rank_transpose,
       Matrix.rank_of_isUnit σ hu, Fintype.card_fin]
@@ -81,9 +85,20 @@ theorem realizes (hk : 2 ≤ m*m) (io : Fin T) (σ : Matrix (Fin m) (Fin m) ℚ)
     (isUnit_iff_exists.mpr ⟨_, i₂, i₂'⟩) (reduce (modulus w) σ) F.L (F.nodup₁.of_map _) hπ heq roles x hh hx
   have hm : 0 < m := by by_contra! h; interval_cases m; contradiction
   have := hc v w B hm hw hb hv hp
-  refine ⟨y, hy, Blocks.runs_mono h ?_⟩
-  simp only [Nat.add_mul]
-  omega
+  refine ⟨y, hy, Blocks.runs_mono h ?_, ?_⟩
+  · simp only [Nat.add_mul]
+    omega
+  · intro width fits
+    have col : max 1 (w*m) ≤ width := max_le ((Nat.mul_pos hw hm).trans_le fits) fits
+    have sized := RevBudget.coreCost_le (volume prime v) (w*m)
+      (Real.rpow_le_rpow (Nat.cast_nonneg _) (show ((max 1 (w*m) : ℕ) : ℝ) ≤ width by exact_mod_cast col)
+        M8.Machine.BudgetBound.exponent_range.1.le)
+    push_cast
+    calc
+      _ ≤ _ + ((m-1 : ℕ) : ℝ)*(|LeafCore.C| * volume prime v *
+          (width : ℝ)^M8.Machine.BudgetBound.tau) := add_le_add (le_refl _)
+            (mul_le_mul_of_nonneg_left sized (Nat.cast_nonneg _))
+      _ = _ := by ring
 
 end
 end IntegerMultBounds.MathlibTM2.Cover.LabelFactorization

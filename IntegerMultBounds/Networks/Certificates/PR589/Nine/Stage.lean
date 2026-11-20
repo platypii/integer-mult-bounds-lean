@@ -281,6 +281,40 @@ theorem oblique_lift_intertwines (h : c.Checked) (s : Fin 8) (U X Y : Matrix (Fi
     frameEq, ← Matrix.mul_assoc G, ← Matrix.mul_assoc R, ← Matrix.mul_assoc R G, routeEq]
   simp only [Matrix.mul_assoc]
 
+/-- Every shear in the stage route uses a half-integer with numerator at most
+two in absolute value, uniformly in the port and exterior block. -/
+theorem spread_entry (h : c.Checked) (s : Fin 8) (i : Fin 8) (x : Exterior) :
+    ∃ z : ℤ, -2 ≤ z ∧ z ≤ 2 ∧ c.spread s i x = (z : ℚ)/2 := by
+  by_cases active : x.1 = s
+  · have norm := h.2.1 x.2 x.2
+    simp only [ite_true, eq_self] at norm
+    have sq := Finset.single_le_sum (f := fun j => c.twiceComplement j x.2 * c.twiceComplement j x.2)
+      (fun j _ => mul_self_nonneg _) (Finset.mem_univ i)
+    rw [norm] at sq
+    refine ⟨c.twiceComplement i x.2, ?_, ?_, by simp [spread,active,complement]⟩ <;> nlinarith
+  · exact ⟨0, by decide, by decide, by simp [spread,active]⟩
+
+/-- The data route factors into three block triangular maps. Their only
+off-diagonal coefficients are signed entries of the port complement. The last
+map negates the active exterior block and fixes the other exterior axes. -/
+theorem route_triangular_factors (h : c.Checked) (s : Fin 8) :
+    let A := c.spread s
+    c.route s = fromBlocks 1 (-A) 0 1 *
+      (fromBlocks 1 0 Aᵀ 1 * fromBlocks 1 A 0 (avoid s - block s)) := by
+  intro A
+  have inner : fromBlocks 1 0 Aᵀ 1 * fromBlocks 1 A 0 (avoid s - block s) =
+      fromBlocks 1 A Aᵀ (avoid s) := by
+    rw [fromBlocks_multiply]
+    simp only [A, Matrix.one_mul, Matrix.zero_mul, Matrix.mul_zero, Matrix.mul_one,
+      add_zero, transpose_spread_mul_spread h]
+    congr 1
+    abel
+  rw [inner, fromBlocks_multiply]
+  simp only [A, Matrix.one_mul, Matrix.mul_one, Matrix.zero_mul, zero_add,
+    Matrix.neg_mul, spread_mul_transpose h, spread_mul_avoid, neg_zero, add_zero, route]
+  congr 1
+  abel
+
 theorem route_transpose (s : Fin 8) : (c.route s)ᵀ = c.route s := by
   rw [route, fromBlocks_transpose, transpose_transpose, lineProj_transpose, avoid,
     diagonal_transpose]
