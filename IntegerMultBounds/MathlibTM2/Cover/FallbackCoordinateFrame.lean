@@ -10,6 +10,108 @@ open IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2.Stack Host
 open IntegerMultBounds.Networks.Shared50ModularControl (prime)
 open M8.RevMachine RecursiveInterchangeLayout
 
+/-- The host word for one coordinate. Only the two archive offsets vary
+across the schedule. The role, tape placement and state space stay fixed. -/
+noncomputable def packedCoordinateProgram [M8.Machine.Net] {T work Q : ℕ} {F U : Type}
+    (io : Fin T) (parentIndex pivotIndex : ℕ) :
+    let common := CommonBank.count T
+    let entry : Graph.Block common prime := Blocks.seqB LeafRoutines.offsets (Blocks.seqB Blocks.push LeafRoutines.view)
+    let leave : Graph.Block common prime := Blocks.seqB Blocks.restore LeafRoutines.advance
+    entry.tapes ≤ common+work → leave.tapes ≤ common+work → LeafCore.small ≤ work →
+    entry.states ≤ Q → leave.states ≤ Q → (LeafCore.core io).states ≤ Q →
+    Pr F ((common+55)+work) Q prime U := by
+  intro common entry leave ef xf fits eqs xqs cap
+  let place (g : Graph.Block common prime) (h : g.tapes ≤ common+work) (q : g.states ≤ Q) :
+      Pr F ((common+55)+work) Q prime U :=
+    statePlacedNormalized (framePorts 55 h) q (Nat.zero_lt_of_lt g.program.start.isLt)
+      Empty.elim (foreign g.program)
+  let leaf : Pr F ((common+55)+work) Q prime U := statePlacedNormalized (packedFramePorts (host := common+24) fits) cap
+    (Nat.lt_of_lt_of_le (by decide : 0 < 217) (leafCoreCapacity io)) Empty.elim
+    (packedLeafProgram (F := Empty) io parentIndex pivotIndex)
+  exact ((place entry ef eqs).seq leaf).seq (place leave xf xqs)
+
+section
+local instance (w : ℕ) : NeZero (prime^(w+1)) :=
+  ⟨pow_ne_zero _ Networks.Shared50ModularControl.prime_prime.ne_zero⟩
+
+private theorem projectedUser {K T q Q A : ℕ} {U : Type} (ports : Fin T ↪ Fin K)
+    (pos : 0 < q) (u : HS K Q A U) : (stateLiftDown pos (embDn ports u)).user = u.user := rfl
+
+attribute [local irreducible] packedLeafPush packedLeafProgram Fast.Main.mnProgPush Fast.Main.mnPushC
+
+/-- Execute the weighted middle of a coordinate call on the same host as
+entry and restore. The output word identifies the role bank passed to restore. -/
+theorem packedCoordinateMiddle_exec [M8.Machine.Net] {T m d work Q : ℕ} {F U : Type}
+    (v : Descriptor) (positive : v.Positive) (w : ℕ) (width : v.width = w+1)
+    (parent : Fin m → ZMod (prime^(w+1))) (j : Fin m) (parentInv : ZMod (prime^(w+1)))
+    (reciprocal : parent j * parentInv = 1) (pivot : Fin d → ZMod (prime^(w+1)))
+    (i : Fin d) (unit : IsUnit (pivot i)) (io : Fin T) (roles : Tapes T prime)
+    (f : ℤ → Fin (prime+4)) (p : ℤ) (node scalar : Tapes 1 prime)
+    (ctr : Fin CommonBank.K → Option ℕ) (st : Tapes 2 prime)
+    (fits : LeafCore.small ≤ work) (cap : (LeafCore.core io).states ≤ Q) :
+    let common := CommonBank.count T
+    let host := common+24
+    let M := prime^(w+1)
+    let N := ((v.beforeRows*v.rows*v.beforeH)*M*v.between)*(M*v.afterD)
+    let ports := packedFramePorts (host := host) fits
+    let pos := Nat.lt_of_lt_of_le (by decide : 0 < 217) (leafCoreCapacity io)
+    let leaf := packedLeafProgram (F := Empty) (U := U) io j.val i.val
+    let record := (Fin.natAddEmb common (m := 24)).trans ((Fin.castAddEmb 31).trans (Fin.castAddEmb work))
+    let rep := fun roles' (D : Stacks ((host+31)+work) prime) =>
+      RepT (CommonBank.bank roles' (Routines.hdr v) f p node scalar ctr st)
+        (fun k => D.L (((k.castAdd 24).castAdd 31).castAdd work))
+        (fun k => D.R (((k.castAdd 24).castAdd 31).castAdd work))
+    let clean := fun (D : Stacks ((host+31)+work) prime) => ∀ (k : Fin work) x,
+      readAt blank (D.L (k.natAdd (host+31))) (D.R (k.natAdd (host+31))) x = blank
+    ∀ (word : Fin N → ZMod 2) (body : F → Pr F ((host+31)+work) Q prime U)
+      (u : HS _ Q prime U) (before S : Stacks _ prime) (pivotTail parentTail : List (Fin (prime+4))),
+      roles.head io = 0 → roles.tape io = leafBitTape (List.ofFn word) → rep roles S → clean S →
+      (∀ k : Fin 55, S.L ((k.natAdd common).castAdd work) = before.L ((k.natAdd common).castAdd work) ∧
+        S.R ((k.natAdd common).castAdd work) = before.R ((k.natAdd common).castAdd work)) →
+      (∀ k : Fin 31, before.L ((k.natAdd host).castAdd work) = [] ∧ before.R ((k.natAdd host).castAdd work) = []) →
+      before.R (record 18) = [] →
+      PackedLeafInputs (goodChildPorts.trans record) M.size parent pivot before pivotTail parentTail →
+      ∃ next : Fin N → ZMod 2, ∃ z D n, z.user = u.user ∧
+        n ≤ 1+(weightedLeafCost (volume prime v) v.width (LeafCore.core io).tapes
+          (packedLeafPush (F := Empty) (U := U) io Empty.elim)+
+          ((1000*(prime+1)+8*(i.val+j.val))*(2*(prime.size+1)^2))*M) ∧
+        Exec body (statePlacedNormalized ports cap pos Empty.elim leaf) (mk u S) n (mk z D) ∧
+        rep (SharedPlacementAlphabet.setTape roles io (leafBitTape (List.ofFn next)) 0) D ∧ clean D ∧
+        (∀ k : Fin 55, D.L ((k.natAdd common).castAdd work) = S.L ((k.natAdd common).castAdd work) ∧
+          D.R ((k.natAdd common).castAdd work) = S.R ((k.natAdd common).castAdd work)) ∧
+        ∀ a < v.beforeRows, ∀ row < v.rows, ∀ pre < v.beforeH, ∀ mid < v.between,
+          ∀ post < v.afterD, ∀ h t : ZMod M,
+          ext next (index prime v a row pre ((parent j*pivot i)*t).val mid ((parentInv*Ring.inverse (pivot i))*h).val post) =
+            ext word (index prime v a row pre h.val mid t.val post) := by
+  intro common host M N ports pos leaf record rep clean word body u before S pivotTail parentTail head input initial free keep arithmetic spare archives
+  obtain ⟨empty,spare',archives',initial',privateBlank⟩ := packedFrame_inputs fits parent pivot
+    (CommonBank.bank roles (Routines.hdr v) f p node scalar ctr st) pivotTail parentTail before S
+    keep arithmetic spare archives initial free
+  obtain ⟨y,E,t,user,bound,⟨run,_⟩,out,next,cells,addr⟩ := packedWeightedLeaf_exec v positive w width
+    parent j parentInv reciprocal pivot i unit io roles f p node scalar ctr st word head input
+    (F := Empty) Empty.elim (stateLiftDown pos (embDn ports u)) (embStk ports S) empty spare'
+    pivotTail parentTail archives' initial' privateBlank
+  obtain ⟨z,D,hz,placed,back,blank⟩ := packedFrame_exec fits cap pos leaf body u S y E run out.1.2 free
+  have startEmpty (k : Fin 31) : S.L ((k.natAdd host).castAdd work) = [] ∧
+      S.R ((k.natAdd host).castAdd work) = [] := by
+    have same := keep (k.natAdd 24)
+    have idx : ((k.natAdd 24).natAdd common : Fin (common+55)) = k.natAdd host := by
+      apply Fin.ext
+      simp [host,Nat.add_assoc]
+    rw [idx] at same
+    exact ⟨same.1.trans (arithmetic k).1,same.2.trans (arithmetic k).2⟩
+  obtain ⟨changed,kept⟩ := packedFrame_return fits _ S D E back out.1.1 out.2.2.2.2 out.2.2.2.1 startEmpty
+  refine ⟨next,z,D,1+t,?_,?_,?_,?_,?_,?_,?_⟩
+  · exact hz.trans (user.trans (projectedUser ports pos u))
+  · exact Nat.add_le_add_left bound 1
+  · exact placed
+  · simpa only [rep,cells] using changed
+  · exact blank
+  · exact kept
+  · exact addr
+
+end
+
 /-- A leaf may change its role tapes subject to its payload specification.
 Returning restores the parent descriptor and decrements the coordinate counter. -/
 theorem coordinateCall_exec {T n work Q cost : ℕ} {F U : Type} (roles : Tapes T prime)
@@ -60,5 +162,77 @@ theorem coordinateCall_exec {T n work Q cost : ℕ} {F U : Type} (roles : Tapes 
       obtain ⟨r,y,E,t,hr,h⟩ := middle z D child freeD keepD
       exact ⟨⟨r,hr⟩,y,E,t,h⟩)
   exact ⟨roles'.val,z,D,t,roles'.property,user,bound,run,out,cleanD,keepD⟩
+
+section
+local instance (w : ℕ) : NeZero (prime^(w+1)) :=
+  ⟨pow_ne_zero _ Networks.Shared50ModularControl.prime_prime.ne_zero⟩
+
+/-- The concrete weighted coordinate call returns the changed word at the
+decremented parent counter, preserving the caller's records. -/
+theorem packedCoordinate_exec [M8.Machine.Net] {T m d work Q : ℕ} {F U : Type}
+    (v : Descriptor) (positive : v.Positive) (w : ℕ) (width : v.width = d*(w+1))
+    (parent : Fin m → ZMod (prime^(w+1))) (j : Fin m) (parentInv : ZMod (prime^(w+1)))
+    (reciprocal : parent j * parentInv = 1) (pivot : Fin d → ZMod (prime^(w+1)))
+    (i : Fin d) (unit : IsUnit (pivot i)) (io : Fin T) (roles : Tapes T prime)
+    (f : ℤ → Fin (prime+4)) (p : ℤ) (node scalar : Tapes 1 prime)
+    (arity : ℕ) (st : Tapes 2 prime) (freeNode : Family.NodeFree node)
+    (fits : LeafCore.small ≤ work) (cap : (LeafCore.core io).states ≤ Q) :
+    let common := CommonBank.count T
+    let host := common+24
+    let M := prime^(w+1)
+    let view := {(RecursiveInterchangeLayout.child M 1 1 v i i.rev) with width := w+1}
+    let N := ((view.beforeRows*view.rows*view.beforeH)*M*view.between)*(M*view.afterD)
+    let entry : Graph.Block common prime := Blocks.seqB LeafRoutines.offsets (Blocks.seqB Blocks.push LeafRoutines.view)
+    let leave : Graph.Block common prime := Blocks.seqB Blocks.restore LeafRoutines.advance
+    let record := (Fin.natAddEmb common (m := 24)).trans ((Fin.castAddEmb 31).trans (Fin.castAddEmb work))
+    let rep := fun count roles' (D : Stacks ((host+31)+work) prime) =>
+      RepT (CommonBank.bank roles' (Routines.hdr v) f p node scalar (Family.leafC (w+1) arity d count) st)
+        (fun k => D.L (((k.castAdd 24).castAdd 31).castAdd work))
+        (fun k => D.R (((k.castAdd 24).castAdd 31).castAdd work))
+    let clean := fun (D : Stacks ((host+31)+work) prime) => ∀ (k : Fin work) x,
+      readAt blank (D.L (k.natAdd (host+31))) (D.R (k.natAdd (host+31))) x = blank
+    ∀ (ef : entry.tapes ≤ common+work) (xf : leave.tapes ≤ common+work)
+      (eqs : entry.states ≤ Q) (xqs : leave.states ≤ Q) (word : Fin N → ZMod 2) (body : F → Pr F ((host+31)+work) Q prime U)
+      (u : HS _ Q prime U) (S : Stacks _ prime) (pivotTail parentTail : List (Fin (prime+4))),
+      roles.head io = 0 → roles.tape io = leafBitTape (List.ofFn word) → rep (i.val+1) roles S → clean S →
+      (∀ k : Fin 31, S.L ((k.natAdd host).castAdd work) = [] ∧ S.R ((k.natAdd host).castAdd work) = []) →
+      S.R (record 18) = [] →
+      PackedLeafInputs (goodChildPorts.trans record) M.size parent pivot S pivotTail parentTail →
+      ∃ next : Fin N → ZMod 2, ∃ z D n, z.user = u.user ∧
+        n ≤ (1+(1800*volume prime v*(entry.tapes+5)+6))+(1+(weightedLeafCost (volume prime view) view.width (LeafCore.core io).tapes
+          (packedLeafPush (F := Empty) (U := U) io Empty.elim)+
+          ((1000*(prime+1)+8*(i.val+j.val))*(2*(prime.size+1)^2))*M))+(1+(200*volume prime v*(leave.tapes+5)+6)) ∧
+        Exec body (packedCoordinateProgram io j.val i.val ef xf fits eqs xqs cap) (mk u S) n (mk z D) ∧
+        rep i.val (SharedPlacementAlphabet.setTape roles io (leafBitTape (List.ofFn next)) 0) D ∧ clean D ∧
+        (∀ k : Fin 55, D.L ((k.natAdd common).castAdd work) = S.L ((k.natAdd common).castAdd work) ∧
+          D.R ((k.natAdd common).castAdd work) = S.R ((k.natAdd common).castAdd work)) ∧
+        ∀ a < view.beforeRows, ∀ row < view.rows, ∀ pre < view.beforeH, ∀ mid < view.between,
+          ∀ post < view.afterD, ∀ h t : ZMod M,
+          ext next (index prime view a row pre ((parent j*pivot i)*t).val mid ((parentInv*Ring.inverse (pivot i))*h).val post) =
+            ext word (index prime view a row pre h.val mid t.val post) := by
+  intro common host M view N entry leave record rep clean ef xf eqs xqs word body u S pivotTail parentTail head input initial blank arithmetic spare archives
+  let address := fun (next : Fin N → ZMod 2) =>
+        ∀ a < view.beforeRows, ∀ row < view.rows, ∀ pre < view.beforeH, ∀ mid < view.between,
+          ∀ post < view.afterD, ∀ h t : ZMod M,
+          ext next (index prime view a row pre ((parent j*pivot i)*t).val mid ((parentInv*Ring.inverse (pivot i))*h).val post) =
+            ext word (index prime view a row pre h.val mid t.val post)
+  let changed := fun (next : Fin N → ZMod 2) => SharedPlacementAlphabet.setTape roles io (leafBitTape (List.ofFn next)) 0
+  let effect := fun r => ∃ next, r = changed next ∧ address next
+  have viewPos : view.Positive := child_positive M 1 1 v i i.rev
+    (pow_pos Networks.Shared50ModularControl.prime_prime.pos _) (by decide) (one_dvd _) positive
+  let localLeaf := packedLeafProgram (F := Empty) (U := U) io j.val i.val
+  let middle := statePlacedNormalized (packedFramePorts (host := host) fits) cap
+    (Nat.lt_of_lt_of_le (by decide : 0 < 217) (leafCoreCapacity io)) (Empty.elim : Empty → F) localLeaf
+  obtain ⟨r,z,D,t,⟨next,rfl,addr⟩,user,bound,run,out,free,keep⟩ :=
+    coordinateCall_exec roles v positive (w+1) arity (Nat.succ_pos _) width i f p node scalar st freeNode
+      effect ef xf eqs xqs body middle u S initial blank (by
+        intro y E inside cleanE kept
+        obtain ⟨next,z,D,t,user,bound,run,out,free,keep,addr⟩ := packedCoordinateMiddle_exec
+          view viewPos w rfl parent j parentInv reciprocal pivot i unit io roles f p _ scalar _ st fits cap
+          word body y S E pivotTail parentTail head input inside cleanE kept arithmetic spare archives
+        exact ⟨changed next,z,D,t,⟨next,rfl,addr⟩,user,bound,run,out,free,keep⟩)
+  exact ⟨next,z,D,t,user,bound,run,out,free,keep,addr⟩
+
+end
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback

@@ -900,6 +900,67 @@ theorem packedLeafPlacement {common record priv A : ℕ} (bank : Tapes common A)
         simpa only [(Embed.raw_right _ _).1,(Embed.raw_right _ _).2,Function.comp_apply,sim,
           appendPrivate_work,sub_zero] using (empty j x).symm
 
+/-- The coordinate program and its maximum stack push share the same stages.
+Archive offsets select the word, while the push bound is uniform in both offsets. -/
+noncomputable def packedLeafSchedule [M8.Machine.Net] (io : Fin T) :
+    (ℕ → ℕ → Pr F (((CommonBank.count T+24)+LeafCore.small)+31) (LeafCore.core io).states prime U) ×
+      (ℕ → ℕ) :=
+  let block := LeafCore.core io
+  let common := CommonBank.count T
+  let host := common+24
+  let K := host+LeafCore.small
+  let sim := appendPrivate (Fin.castAddEmb (n := common) 24) LeafCore.small
+  let caller := (Fin.natAddEmb common (m := 24)).trans (Fin.castAddEmb LeafCore.small)
+  let workBank := goodLeafPorts.trans caller
+  let pair := (Fin.castAddEmb 1).trans workBank
+  let r := packedRowPorts.trans workBank
+  let dst := packedFieldPorts.trans pair
+  let gap := dst 4
+  let tail := dst 5
+  let dims : Fin 4 → Fin K := ![r 4,gap,r 12,tail]
+  let slot := (LeafCore.roleSlot io).castAdd LeafCore.small
+  let capacity := leafCoreCapacity io
+  let src := fun b : Bool => ![dims 0,dims 1,if b then pair 12 else pair 0,dims 2,dims 3,pair 4]
+  let ports := sim.trans (Fin.castAddEmb 31)
+  let shear := statePlacedNormalized (Record.payloadBank (sim slot) (22 : Fin 31)) capacity
+    (by decide : 0 < 217) Empty.elim initializedMiddleShear
+  let prog := fun b => (Record.copyLeafHeaders (fun i => (src b i).castAdd 31)
+    (middleHeaderTargets.trans (Fin.natAddEmb K)) ((4 : Fin 31).natAdd K) ((5 : Fin 31).natAdd K) (List.finRange 6)).seq
+    (.seq shear (embProg ports Empty.elim (foreign block.program)))
+  let lastProg := (Record.copyLeafHeaders (fun i => (src false i).castAdd 31)
+    (middleHeaderTargets.trans (Fin.natAddEmb K)) ((4 : Fin 31).natAdd K) ((5 : Fin 31).natAdd K) (List.finRange 6)).seq shear
+  let work := (List.finRange 31).map (Fin.natAddEmb K)
+  let stage := fun b => (prog b).seq (clearWorkTapes work)
+  let signSrc := fun i : Fin 4 => src false (![0,1,5,4] i)
+  let load := Record.copyLeafHeaders (fun i => (signSrc i).castAdd 31) (signHeaderTargets.trans (Fin.natAddEmb K))
+    ((1 : Fin 31).natAdd K) ((2 : Fin 31).natAdd K) (List.finRange 4)
+  let bank := signWork.trans (Record.payloadBank (sim slot) (0 : Fin 31))
+  let child := (leafSignSetup (F := Empty)).seq (embProg (Fin.castAddEmb 2) Empty.elim leafSignReturn)
+  let sign := load.seq (statePlacedNormalized bank capacity (by decide) Empty.elim child)
+  let rr := r.trans (Fin.castAddEmb 31)
+  let setup := (middleRowDescriptor ((Fin.castLEEmb (by decide : 11 ≤ 13)).trans rr)).seq
+    (bzero (rr 11) (rr 12) (rr 5))
+  let leaf := ((((stage false).seq (stage true)).seq (lastProg.seq (clearWorkTapes work))).seq (sign.seq (clearWorkTapes work)))
+  let fields := dst.trans (Fin.castAddEmb 31)
+  let headers := fun j => ports ((CommonBank.headerSlot j).castAdd LeafCore.small)
+  let readFields := loadLeafDimensions headers fields ((0 : Fin 31).natAdd K) leafDimensionFields
+  let call := (readFields.seq ((setup.seq (leaf.seq ((bclear (rr 4)).seq (bclear (rr 12))))).seq (Mult.ShortConv.clearWords (leafDimensionFields.map fields))))
+  let coeff := pair.trans (Fin.castAddEmb 31)
+  (fun parentIndex pivotIndex => (signedChildPair prime parentIndex pivotIndex coeff true).seq
+    (call.seq (Mult.ShortConv.clearWords [coeff 0,coeff 14,coeff 12])),
+   fun bodyPush => max (max (Fast.Main.mnProgPush (prog false)) (Fast.Main.mnProgPush (prog true)))
+     (max (Fast.Main.mnProgPush lastProg) (max (Fast.Main.mnProgPush sign) bodyPush)))
+
+noncomputable def packedLeafProgram [M8.Machine.Net] (io : Fin T) (parentIndex pivotIndex : ℕ) :
+    Pr F (((CommonBank.count T+24)+LeafCore.small)+31) (LeafCore.core io).states prime U :=
+  (packedLeafSchedule io).1 parentIndex pivotIndex
+
+noncomputable def packedLeafPush [M8.Machine.Net] [Fintype F] (io : Fin T)
+    (body : F → Pr F (((CommonBank.count T+24)+LeafCore.small)+31) (LeafCore.core io).states prime U) : ℕ :=
+  (packedLeafSchedule (F := F) (U := U) io).2 (Fast.Main.mnPushC body)
+
+attribute [local irreducible] Fast.Main.mnProgPush Fast.Main.mnPushC
+
 theorem packedWeightedLeaf_exec [M8.Machine.Net] [Fintype F] {m d : ℕ} (v : Descriptor) (positive : v.Positive)
     (w : ℕ) (width : v.width = w+1)
     (parent : Fin m → ZMod (prime^(w+1))) (j : Fin m) (parentInv : ZMod (prime^(w+1)))
@@ -971,8 +1032,7 @@ theorem packedWeightedLeaf_exec [M8.Machine.Net] [Fintype F] {m d : ℕ} (v : De
       ∀ (body : F → Pr F (K+31) block.states prime U) (u : HS (K+31) block.states prime U)
         (S : Stacks (K+31) prime),
         let bodyPush := Fast.Main.mnPushC body
-        let push := max (max (Fast.Main.mnProgPush (prog false)) (Fast.Main.mnProgPush (prog true)))
-          (max (Fast.Main.mnProgPush lastProg) (max (Fast.Main.mnProgPush sign) bodyPush))
+        let push := packedLeafPush io body
         (∀ j : Fin 31, S.L (j.natAdd K) = [] ∧ S.R (j.natAdd K) = []) →
         S.R ((caller 18).castAdd 31) = [] →
         ∀ (pivotTail parentTail : List (Fin (prime+4))),
@@ -989,13 +1049,12 @@ theorem packedWeightedLeaf_exec [M8.Machine.Net] [Fintype F] {m d : ℕ} (v : De
         let fields := dst.trans (Fin.castAddEmb 31)
         let headers := fun j => ports ((CommonBank.headerSlot j).castAdd LeafCore.small)
         let readFields := loadLeafDimensions headers fields ((0 : Fin 31).natAdd K) leafDimensionFields
-        let call := (readFields.seq ((setup.seq (leaf.seq ((bclear (rr 4)).seq (bclear (rr 12))))).seq (Mult.ShortConv.clearWords (leafDimensionFields.map fields))))
+        let call : Pr F (K+31) block.states prime U := (readFields.seq ((setup.seq (leaf.seq ((bclear (rr 4)).seq (bclear (rr 12))))).seq (Mult.ShortConv.clearWords (leafDimensionFields.map fields))))
         let coeff := pair.trans (Fin.castAddEmb 31)
         let coefficientRate := (1000*(prime+1)+8*(i.val+j.val))*(2*(prime.size+1)^2)
         ∃ z D n, z.user = u.user ∧ n ≤ weightedLeafCost (volume prime v) v.width block.tapes push+
           coefficientRate*M ∧
-          (let program := (signedChildPair prime j.val i.val coeff true).seq
-              (call.seq (Mult.ShortConv.clearWords [coeff 0,coeff 14,coeff 12]))
+          (let program := packedLeafProgram io j.val i.val
            Exec body program (mk u S) n (mk z D) ∧ PackedFrameRun body program u S n z D) ∧
           output S D ∧ ∃ next : Fin ((P*M*G)*(M*B)) → ZMod 2,
             List.ofFn next = negateLeafHead signWord ∧
@@ -1004,10 +1063,13 @@ theorem packedWeightedLeaf_exec [M8.Machine.Net] [Fintype F] {m d : ℕ} (v : De
                 ext next (index prime v a row pre (weight*t).val mid (inv*h).val post) =
                 ext word (index prime v a row pre h.val mid t.val post) := by
   intro M weight inv P G B size c word head input block common host K sim caller workBank pair r dst gap tail dims slot capacity src ports shear prog lastProg work stage result y xs len signWord signSrc load bank child sign output body u S bodyPush push free spare pivotTail parentTail recordInputs commonRep privateBlank rr setup leaf fields headers readFields call coeff coefficientRate
-  have hp (b : Bool) : Fast.Main.mnProgPush (prog b) ≤ push := by cases b <;> dsimp only [push] <;> omega
-  have hl : Fast.Main.mnProgPush lastProg ≤ push := by dsimp only [push]; omega
-  have hsign : Fast.Main.mnProgPush sign ≤ push := by dsimp only [push]; omega
-  have hb (f) : Fast.Main.mnProgPush (body f) ≤ push := (Fast.Main.mn_progPush_le_pushC body f).trans (by dsimp only [push,bodyPush]; omega)
+  have pushEq : push = max (max (Fast.Main.mnProgPush (prog false)) (Fast.Main.mnProgPush (prog true)))
+      (max (Fast.Main.mnProgPush lastProg) (max (Fast.Main.mnProgPush sign) bodyPush)) := by
+    dsimp only [push,packedLeafPush,packedLeafSchedule,Prod.snd]
+  have hp (b : Bool) : Fast.Main.mnProgPush (prog b) ≤ push := by cases b <;> rw [pushEq] <;> omega
+  have hl : Fast.Main.mnProgPush lastProg ≤ push := by rw [pushEq]; omega
+  have hsign : Fast.Main.mnProgPush sign ≤ push := by rw [pushEq]; omega
+  have hb (f) : Fast.Main.mnProgPush (body f) ≤ push := (Fast.Main.mn_progPush_le_pushC body f).trans (by rw [pushEq]; exact le_trans (le_max_right _ _) (le_trans (le_max_right _ _) (le_max_right _ _)))
   have placement := packedLeafPlacement (record := 24) (priv := LeafCore.small)
     (CommonBank.bank roles (Routines.hdr v) f p node scalar ctr st)
     (fun j => S.L (j.castAdd 31)) (fun j => S.R (j.castAdd 31))
@@ -1110,8 +1172,15 @@ theorem packedWeightedLeaf_exec [M8.Machine.Net] [Fintype F] {m d : ℕ} (v : De
   let next := fun k : Fin ((P*M*G)*(M*B)) => (negateLeafHead signWord).get (k.cast length.symm)
   have cells : List.ofFn next = negateLeafHead signWord := by
     apply List.ext_getElem <;> simp [next,length]
-  refine ⟨z,D,t,hz,by dsimp only at ht charge; dsimp only [coefficientRate,M]; omega,
-    ⟨run,packedFrameRun_of_exec run⟩,post,next,cells,?_⟩
+  have bound : t ≤ weightedLeafCost (volume prime v) v.width block.tapes push+coefficientRate*M := by
+    dsimp only at ht charge
+    dsimp only [coefficientRate,M]
+    omega
+  have namedRun : Exec body (packedLeafProgram io j.val i.val) (mk u S) t (mk z D) := by
+    dsimp only [packedLeafProgram,packedLeafSchedule,Prod.fst]
+    exact run
+  refine ⟨z,D,t,hz,bound,
+    ⟨namedRun,packedFrameRun_of_exec namedRun⟩,post,next,cells,?_⟩
   intro a ha row hr pre hp mid hm tail ht h t
   have addr := post.2.2.1 ⟨a,ha⟩ ⟨row,hr⟩ ⟨pre,hp⟩ ⟨mid,hm⟩ ⟨tail,ht⟩ h t
   rw [← cells] at addr
