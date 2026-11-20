@@ -213,6 +213,77 @@ theorem phaseIntervalChild_width {p : ℕ × ℕ} (checked : Geometry.Moves.Chec
   congr 1
   omega
 
+/-- Produce a prefix power and a suffix power times the trailing width
+using the coordinate-dimension machine. -/
+def phaseField (pre tail : ℕ) : Fin (pre+1+tail) := ⟨pre,by omega⟩
+
+noncomputable def phaseHeaderProgram (lo hi : ℕ) :=
+  FamilyPlacementAlphabet.sequence
+    (FamilyPlacementAlphabet.sequence (FlatCoordinateDimensions.program (phaseField lo (8-hi)))
+      (FlatCoordinateDimensions.program (phaseField (8-hi+lo) 0)))
+    (DimensionProductDescriptor.program (q := prime))
+
+open FlatCoordinateSchedule (bits) in
+noncomputable def phaseHeaderInput (lo hi w W : ℕ) :=
+  ((FlatCoordinateDimensions.input w W).append (FlatCoordinateDimensions.input w 1)).append
+    (DimensionProductDescriptor.input (bits w) (bits (hi-lo)))
+
+open FlatCoordinateSchedule (bits) in
+noncomputable def phaseHeaderOutput (lo hi w W : ℕ) :=
+  ((FlatCoordinateDimensions.output (phaseField lo (8-hi)) w W).append
+    (FlatCoordinateDimensions.output (phaseField (8-hi+lo) 0) w 1)).append
+    (DimensionProductDescriptor.output (bits w) (bits (hi-lo)) (hi-lo) w)
+
+def phaseHeaderSlots : Fin 6 → Fin 24 := ![16,16,5,19,14,7]
+
+open FlatCoordinateSchedule (bits bits_value bits_canonical) in
+theorem phaseHeader_runs {lo hi w W : ℕ} (ordered : lo ≤ hi) (fits : hi ≤ 8) (hw : 0 < w) (hW : 0 < W) :
+    let child := phaseIntervalChild lo hi w W
+    let hs := fun i => bits (RecursiveDimensionBank.values child i)
+    let output := phaseHeaderOutput lo hi w W
+    HoareTime (phaseHeaderProgram lo hi) (fun z => z = phaseHeaderInput lo hi w W) (fun z => z = output)
+      (1300*((prime^w)^16*W)) ∧ RecursiveDimensionBank.Headers child hs ∧
+      ∀ i, output.head (phaseHeaderSlots i) = 1 ∧
+        output.tape (phaseHeaderSlots i) = RadixZeroFill.encodedBinary (hs i) := by
+  intro child hs output
+  let p := phaseField lo (8-hi)
+  let m := phaseField (8-hi+lo) 0
+  have tail (a b) : FlatCoordinateLayout.suffixFields (phaseField a b) = b := by
+    unfold FlatCoordinateLayout.suffixFields phaseField
+    simp only
+    omega
+  have run := FamilyPlacementAlphabet.sequence_hoare
+    (FamilyPlacementAlphabet.sequence_hoare (FlatCoordinateDimensions.construct_hoare p w W hW)
+      (FlatCoordinateDimensions.construct_hoare m w 1 (by decide)))
+    (DimensionProductDescriptor.construct_hoare (q := prime) (bits w) (bits (hi-lo)) (hi-lo) w hw
+      (bits_value _) (bits_value _) (bits_canonical _) (bits_canonical _))
+  refine ⟨run.consequence (fun _ h => h) (fun _ h => h) ?_,⟨fun i => bits_value _,fun i => bits_canonical _⟩,?_⟩
+  · let M := prime^w
+    have pos : 0 < M := ActualAffineScaling.modulus_pos w
+    let V := M^16*W
+    have hv : 0 < V := Nat.mul_pos (pow_pos pos _) hW
+    have left : M^(lo+1+(8-hi))*W ≤ V := Nat.mul_le_mul_right _ (Nat.pow_le_pow_right pos (by omega))
+    have right : M^((8-hi+lo)+1+0) ≤ V :=
+      (Nat.pow_le_pow_right pos (by omega : (8-hi+lo)+1+0 ≤ 16)).trans (Nat.le_mul_of_pos_right _ hW)
+    have width : (hi-lo)*w ≤ V := by
+      have positive : child.Positive := ⟨Nat.zero_lt_one,Nat.zero_lt_one,pow_pos pos _,pow_pos pos _,Nat.mul_pos (pow_pos pos _) hW⟩
+      have h := RecursiveHeaderBounds.values_le_volume FlatCoordinateDimensions.hprime _ positive (3 : Fin 6)
+      exact h.trans_eq (phaseIntervalChild_volume ordered fits w W)
+    simp only [p,m,tail,Nat.mul_one,phaseField,ActualAffineScaling.modulus] at *
+    change (24*lo+24*(8-hi)+333)*(M^(lo+1+(8-hi))*W) +
+      (24*(8-hi+lo)+24*0+333)*M^((8-hi+lo)+1+0)+1+(53*((hi-lo)*w)+28)+1 ≤ 1300*V
+    have l := Nat.mul_le_mul (by omega : 24*lo+24*(8-hi)+333 ≤ 525) left
+    have r := Nat.mul_le_mul (by omega : 24*(8-hi+lo)+24*0+333 ≤ 525) right
+    omega
+  · obtain ⟨_,pre,last⟩ := FlatCoordinateDimensions.output_descriptors p w W
+    obtain ⟨_,mid,one⟩ := FlatCoordinateDimensions.output_descriptors m w 1
+    have hp : FlatCoordinateLayout.suffixFields p = 8-hi := tail _ _
+    have hm : FlatCoordinateLayout.suffixFields m = 0 := tail _ _
+    simp only [FlatCoordinateLayout.prefixSize,FlatCoordinateLayout.suffixSize,hp,hm,
+      pow_zero,Nat.mul_one,ActualAffineScaling.modulus] at pre last mid one
+    intro i
+    fin_cases i <;> constructor <;> first | rfl | exact pre | exact mid | exact last | exact one
+
 /-- The two seven-coordinate prefixes form the H and D fields of one child. -/
 noncomputable def copyChild (w W : ℕ) : Descriptor := ⟨1,1,1,7*w,prime^w,prime^w*W⟩
 
@@ -721,10 +792,10 @@ private theorem segmentWorkspace_eq (stages : List (FlatCoordinateSchedule.Op 16
 open M8.Machine.Segments SharedPlacementAlphabet in
 /-- Place the basis change on a caller's selected tape, leaving all other
 caller tapes stationary and the segment's original source slot blank. -/
-theorem copySegment_placed {t : ℕ} (src : Fin t) (ops : List (AffineFieldProgram.Op (Fin 8) ℚ))
+theorem basisSegment_placed {t : ℕ} (view : Descriptor) (size : volume prime view = (prime^w)^16*W) (src : Fin t) (ops : List (AffineFieldProgram.Op (Fin 8) ℚ))
     (good : Good ops) (hW : 0 < W) (caller : Tapes t prime) (x : Fin ((prime^w)^16*W) → ZMod 2)
     (head : caller.head src = 0)
-    (payload : caller.tape src = sourceWord (fun i => x (Fin.cast (copyChild_volume w W) i))) :
+    (payload : caller.tape src = sourceWord (fun i => x (Fin.cast size i))) :
     let q := ops.map (AffineFieldProgram.mapOp (IntegerMultBounds.Swap.Modular.ratMod (prime^w)))
     (∀ op ∈ q, AffineFieldProgram.Legal op) →
     let stages := description ops good
@@ -736,7 +807,7 @@ theorem copySegment_placed {t : ℕ} (src : Fin t) (ops : List (AffineFieldProgr
     ∃ y : Fin ((prime^w)^16*W) → ZMod 2, HoareTime (Placement.placed (FlatCoordinateCleanSchedule.program stages) (sharedPlacement src slot))
       (fun z => z = caller.append (workspace x))
       (fun z => z = (setTape caller src
-        (sourceWord (fun i => y (Fin.cast (copyChild_volume w W) i))) 0).append (workspace x))
+        (sourceWord (fun i => y (Fin.cast size i))) 0).append (workspace x))
       (FlatCoordinateCleanSchedule.constant stages * ((prime^w)^16*W)) ∧
       ∀ s j, y (FlatCoordinateLayout.index (AffineFieldCoordinates.embed (AffineFieldProgram.run q s)) j) =
         x (FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) j) := by
@@ -744,6 +815,10 @@ theorem copySegment_placed {t : ℕ} (src : Fin t) (ops : List (AffineFieldProgr
   obtain ⟨y,run,moves⟩ := copySegment_runs ops good hW x legal
   have hx := copySegment_source stages x
   have hy := copySegment_source stages y
+  have encoded (z : Fin ((prime^w)^16*W) → ZMod 2) :
+      sourceWord (fun i => z (Fin.cast (copyChild_volume w W) i)) =
+        sourceWord (fun i => z (Fin.cast size i)) := by rw [sourceWord_cast,sourceWord_cast]
+  rw [encoded] at hx hy
   change (bank x).head slot = 0 ∧ (bank x).tape slot = _ at hx
   change (bank y).head slot = 0 ∧ (bank y).tape slot = _ at hy
   have placed := shared_hoare run caller src slot (fun _ => blank) 0 (payload.trans hx.2.symm) (head.trans hx.1.symm)
@@ -784,7 +859,7 @@ theorem copyEnterChild_runs [M8.Machine.Net] {t : ℕ} (src : Fin t) (headers : 
           (AffineFieldProgram.run q s))) j)) =
         x (FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) j) := by
   intro q legal stages n slot work basis enter child
-  obtain ⟨loaded,pass,move⟩ := copySegment_placed src ops good hW caller x head payload legal
+  obtain ⟨loaded,pass,move⟩ := basisSegment_placed (copyChild w W) (copyChild_volume w W) src ops good hW caller x head payload legal
   let next := setTape caller src (sourceWord (fun i => loaded (Fin.cast (copyChild_volume w W) i))) 0
   have lifted := extend_banks_hoare (hoare_extend_eq (hoare_extend_eq pass (FixedHeaderBankCopy.empty 16))
     M8.Machine.ArbitraryWidthHighPrepareShared.privateInput)
@@ -794,6 +869,50 @@ theorem copyEnterChild_runs [M8.Machine.Net] {t : ℕ} (src : Fin t) (headers : 
     (by intro i; simpa [Tapes.append,next,setTape,distinct] using tapes i)
     (by intro i; simpa [Tapes.append,next,setTape,distinct] using heads i)
     (by simp [Tapes.append,next,setTape]) (by simp [Tapes.append,next,setTape])
+  rw [setTape_append_left] at swap
+  simp only [next,setTape_setTape] at swap
+  exact ⟨y,lifted.seq swap,fun s j => (action _ j).trans (move s j)⟩
+
+open M8.Machine.Segments SharedPlacementAlphabet M8.Machine.ArbitraryWidthOriginalRun in
+/-- Run one basis pass followed by the grouped child on the same caller tape.
+The six prepared header tapes are outside the payload slot. -/
+theorem phaseEnterChild_runs [M8.Machine.Net] {t lo hi : ℕ} (lt : lo < hi) (fits : hi ≤ 8) (src : Fin t) (headers : Fin 6 → Fin t)
+    (distinct : ∀ i, headers i ≠ src) (ops : List (AffineFieldProgram.Op (Fin 8) ℚ))
+    (good : Good ops) (hw : 0 < w) (hW : 0 < W) (caller : Tapes t prime)
+    (x : Fin ((prime^w)^16*W) → ZMod 2) (hs : Fin 6 → List Bool)
+    (valid : RecursiveDimensionBank.Headers (phaseIntervalChild lo hi w W) hs)
+    (tapes : ∀ i, caller.tape (headers i) = RadixZeroFill.encodedBinary (hs i))
+    (heads : ∀ i, caller.head (headers i) = 1) (head : caller.head src = 0)
+    (payload : caller.tape src = sourceWord (fun i => x (Fin.cast (phaseIntervalChild_volume lt.le fits w W) i))) :
+    let q := ops.map (AffineFieldProgram.mapOp (IntegerMultBounds.Swap.Modular.ratMod (prime^w)))
+    (∀ op ∈ q, AffineFieldProgram.Legal op) →
+    let stages := description ops good
+    let n := FlatCoordinateCleanSchedule.tapeCount stages
+    let slot := segmentSource stages
+    let work := setTape (SharedBankStageInput.raw (FlatCoordinateShiftSharedBank.common
+      (d := 16) (b := w) (W := W) (fun i => SparseRoleCircuit.encode (x i))) n) slot (fun _ => blank) 0
+    let basis := Placement.placed (FlatCoordinateCleanSchedule.program stages) (sharedPlacement src slot)
+    let enter := extendBanks (extend (extend basis 16) 19)
+    let child := program (fun i => Fin.castAdd n (headers i)) (Fin.castAdd n src)
+    ∃ y : Fin (volume prime (phaseIntervalChild lo hi w W)) → ZMod 2,
+      HoareTime (seq enter child) (fun z => z = input (caller.append work))
+        (fun z => z = input ((setTape caller src (sourceWord y) 0).append work))
+        (FlatCoordinateCleanSchedule.constant stages * ((prime^w)^16*W) + 1 + cost (phaseIntervalChild lo hi w W) hs) ∧
+      ∀ s j, y (Fin.cast (phaseIntervalChild_volume lt.le fits w W).symm (FlatCoordinateLayout.index
+        (AffineFieldCoordinates.embed (IntegerMultBounds.Swap.Shear.run (intervalSwaps lo hi)
+          (AffineFieldProgram.run q s))) j)) =
+        x (FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) j) := by
+  intro q legal stages n slot work basis enter child
+  obtain ⟨loaded,pass,move⟩ := basisSegment_placed (phaseIntervalChild lo hi w W) (phaseIntervalChild_volume lt.le fits w W) src ops good hW caller x head payload legal
+  let next := setTape caller src (sourceWord (fun i => loaded (Fin.cast (phaseIntervalChild_volume lt.le fits w W) i))) 0
+  have lifted := extend_banks_hoare (hoare_extend_eq (hoare_extend_eq pass (FixedHeaderBankCopy.empty 16))
+    M8.Machine.ArbitraryWidthHighPrepareShared.privateInput)
+  change HoareTime enter (fun z => z = input (caller.append work)) (fun z => z = input (next.append work)) _ at lifted
+  obtain ⟨y,swap,action⟩ := phaseInterval_runs lt fits (next.append work) (fun i => Fin.castAdd n (headers i))
+    (Fin.castAdd n src) hw hW hs valid
+    (by intro i; simpa [Tapes.append,next,setTape,distinct] using tapes i)
+    (by intro i; simpa [Tapes.append,next,setTape,distinct] using heads i)
+    loaded (by simp [Tapes.append,next,setTape]) (by simp [Tapes.append,next,setTape])
   rw [setTape_append_left] at swap
   simp only [next,setTape_setTape] at swap
   exact ⟨y,lifted.seq swap,fun s j => (action _ j).trans (move s j)⟩
@@ -845,7 +964,7 @@ theorem copyMove_runs [M8.Machine.Net] {t : ℕ} (src : Fin t) (headers : Fin 6 
     (by simpa [source,Tapes.append] using payload) (rev.legal w)
   let next := setTape caller src (sourceWord mid) 0
   let bits := fun i => mid (Fin.cast (copyChild_volume w W).symm i)
-  obtain ⟨y,last,move⟩ := copySegment_placed src _ fwd.good hW next bits
+  obtain ⟨y,last,move⟩ := basisSegment_placed (copyChild w W) (copyChild_volume w W) src _ fwd.good hW next bits
     (by simp [next,setTape]) (by simp [next,setTape,bits]) (fwd.legal w)
   have same : basisWorkspace B bits = basisWorkspace B x := segmentWorkspace_eq B bits x
   change HoareTime leave (fun z => z = next.append (basisWorkspace B bits))
@@ -865,6 +984,117 @@ theorem copyMove_runs [M8.Machine.Net] {t : ℕ} (src : Fin t) (headers : Fin 6 
   · intro s j
     rw [rationalMoveWord_run, move]
     exact action s j
+
+open M8.Machine.Segments SharedPlacementAlphabet M8.Machine.ArbitraryWidthOriginalRun in
+/-- Both fixed basis passes surround one child call on the same payload tape.
+Only the designated tape changes in the prepared caller bank. -/
+theorem phaseMove_runs [M8.Machine.Net] {t lo hi : ℕ} (lt : lo < hi) (fits : hi ≤ 8) (src : Fin t) (headers : Fin 6 → Fin t)
+    (distinct : ∀ i, headers i ≠ src) (C : Matrix (Fin 8) (Fin 8) ℚ)
+    (rev : CopyBasisPass C.adjugate)
+    (fwd : CopyBasisPass C)
+    (hw : 0 < w) (hW : 0 < W) (caller : Tapes t prime)
+    (x : Fin ((prime^w)^16*W) → ZMod 2) (hs : Fin 6 → List Bool)
+    (valid : RecursiveDimensionBank.Headers (phaseIntervalChild lo hi w W) hs)
+    (tapes : ∀ i, caller.tape (headers i) = RadixZeroFill.encodedBinary (hs i))
+    (heads : ∀ i, caller.head (headers i) = 1) (head : caller.head src = 0)
+    (payload : caller.tape src = sourceWord (fun i => x (Fin.cast (phaseIntervalChild_volume lt.le fits w W) i))) :
+    let spec := List.map (AffineFieldProgram.mapOp (IntegerMultBounds.Swap.Modular.ratMod (prime^w)))
+    let A := description _ rev.good
+    let B := description _ fwd.good
+    let n := FlatCoordinateCleanSchedule.tapeCount A
+    let m := FlatCoordinateCleanSchedule.tapeCount B
+    let bank := fun v : Tapes t prime => input ((v.append (basisWorkspace B x)).append (basisWorkspace A x))
+    let source := Fin.castAdd m src
+    let enter := Placement.placed (FlatCoordinateCleanSchedule.program A) (sharedPlacement source (segmentSource A))
+    let child := program (fun i => Fin.castAdd n (Fin.castAdd m (headers i))) (Fin.castAdd n source)
+    let leave := Placement.placed (FlatCoordinateCleanSchedule.program B) (sharedPlacement src (segmentSource B))
+    let machine := seq (seq (extendBanks (extend (extend enter 16) 19)) child)
+      (extendBanks (extend (extend (extend leave n) 16) 19))
+    ∃ y : Fin ((prime^w)^16*W) → ZMod 2,
+      HoareTime machine (fun z => z = bank caller)
+        (fun z => z = bank (setTape caller src (sourceWord (fun i => y (Fin.cast (phaseIntervalChild_volume lt.le fits w W) i))) 0))
+        ((FlatCoordinateCleanSchedule.constant A + FlatCoordinateCleanSchedule.constant B) *
+          ((prime^w)^16*W) + cost (phaseIntervalChild lo hi w W) hs + 2) ∧
+      ∀ s j, y (FlatCoordinateLayout.index (AffineFieldCoordinates.embed
+        (AffineFieldProgram.run (spec (rationalMoveWord lo hi C)) s)) j) =
+        x (FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) j) := by
+  intro spec A B n m bank source enter child leave machine
+  obtain ⟨mid,first,action⟩ := phaseEnterChild_runs lt fits source (fun i => Fin.castAdd m (headers i))
+    (fun i eq => distinct i (Fin.ext (congrArg (fun k : Fin (t+m) => k.val) eq))) _ rev.good hw hW (caller.append (basisWorkspace B x))
+    x hs valid (by intro i; simpa [Tapes.append] using tapes i)
+    (by intro i; simpa [Tapes.append] using heads i) (by simpa [source,Tapes.append] using head)
+    (by simpa [source,Tapes.append] using payload) (rev.legal w)
+  let next := setTape caller src (sourceWord mid) 0
+  let bits := fun i => mid (Fin.cast (phaseIntervalChild_volume lt.le fits w W).symm i)
+  obtain ⟨y,last,move⟩ := basisSegment_placed (phaseIntervalChild lo hi w W) (phaseIntervalChild_volume lt.le fits w W) src _ fwd.good hW next bits
+    (by simp [next,setTape]) (by simp [next,setTape,bits]) (fwd.legal w)
+  have same : basisWorkspace B bits = basisWorkspace B x := segmentWorkspace_eq B bits x
+  change HoareTime leave (fun z => z = next.append (basisWorkspace B bits))
+    (fun z => z = (setTape next src _ 0).append (basisWorkspace B bits)) _ at last
+  rw [same] at last
+  simp only [next,setTape_setTape] at last
+  have lifted := extend_banks_hoare (hoare_extend_eq (hoare_extend_eq (hoare_extend_eq last
+    (basisWorkspace A x)) (FixedHeaderBankCopy.empty 16)) M8.Machine.ArbitraryWidthHighPrepareShared.privateInput)
+  change HoareTime _ (fun z => z = bank caller)
+    (fun z => z = input ((setTape (caller.append (basisWorkspace B x)) (Fin.castAdd m src) (sourceWord mid) 0).append
+      (basisWorkspace A x))) _ at first
+  rw [setTape_append_left] at first
+  refine ⟨y, ?_, ?_⟩
+  · have bill (a b N c : ℕ) : (a+b)*N+c+2 = (a*N+1+c)+1+b*N := by ring
+    rw [bill]
+    exact first.seq lifted
+  · intro s j
+    rw [rationalMoveWord_run, move]
+    exact action s j
+
+open M8.Machine.Segments SharedPlacementAlphabet M8.Machine.ArbitraryWidthOriginalRun in
+theorem phasePrepared_runs [M8.Machine.Net] {t lo hi : ℕ} (lt : lo < hi) (fits : hi ≤ 8) (src : Fin t)
+    (C : Matrix (Fin 8) (Fin 8) ℚ)
+    (rev : CopyBasisPass C.adjugate)
+    (fwd : CopyBasisPass C)
+    (hw : 0 < w) (hW : 0 < W) (caller : Tapes t prime)
+    (x : Fin ((prime^w)^16*W) → ZMod 2) (head : caller.head src = 0)
+    (payload : caller.tape src = sourceWord (fun i => x (Fin.cast (phaseIntervalChild_volume lt.le fits w W) i))) :
+    let hs := fun i => FlatCoordinateSchedule.bits (RecursiveDimensionBank.values (phaseIntervalChild lo hi w W) i)
+    let headers := fun i => Fin.castAdd t (phaseHeaderSlots i)
+    let site := Fin.natAdd 24 src
+    let spec := List.map (AffineFieldProgram.mapOp (IntegerMultBounds.Swap.Modular.ratMod (prime^w)))
+    let A := description _ rev.good
+    let B := description _ fwd.good
+    let n := FlatCoordinateCleanSchedule.tapeCount A
+    let m := FlatCoordinateCleanSchedule.tapeCount B
+    let bank := fun v : Tapes (24+t) prime => input ((v.append (basisWorkspace B x)).append (basisWorkspace A x))
+    let source := Fin.castAdd m site
+    let enter := Placement.placed (FlatCoordinateCleanSchedule.program A) (sharedPlacement source (segmentSource A))
+    let child := program (fun i => Fin.castAdd n (Fin.castAdd m (headers i))) (Fin.castAdd n source)
+    let leave := Placement.placed (FlatCoordinateCleanSchedule.program B) (sharedPlacement site (segmentSource B))
+    let machine := seq (seq (extendBanks (extend (extend enter 16) 19)) child)
+      (extendBanks (extend (extend (extend leave n) 16) 19))
+    let setup := extendBanks (extend (extend (extend (extend (extend (phaseHeaderProgram lo hi) t) m) n) 16) 19)
+    ∃ y : Fin ((prime^w)^16*W) → ZMod 2,
+      HoareTime (seq setup machine) (fun z => z = bank ((phaseHeaderInput lo hi w W).append caller))
+        (fun z => z = bank (setTape ((phaseHeaderOutput lo hi w W).append caller) site (sourceWord (fun i => y (Fin.cast (phaseIntervalChild_volume lt.le fits w W) i))) 0))
+        (1300*((prime^w)^16*W) + 1 + ((FlatCoordinateCleanSchedule.constant A + FlatCoordinateCleanSchedule.constant B) *
+          ((prime^w)^16*W) + cost (phaseIntervalChild lo hi w W) hs + 2)) ∧
+      ∀ s j, y (FlatCoordinateLayout.index (AffineFieldCoordinates.embed
+        (AffineFieldProgram.run (spec (rationalMoveWord lo hi C)) s)) j) =
+        x (FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) j) := by
+  intro hs headers site spec A B n m bank source enter child leave machine setup
+  obtain ⟨build, valid, slots⟩ := phaseHeader_runs lt.le fits hw hW
+  let output := phaseHeaderOutput lo hi w W
+  obtain ⟨y, move, action⟩ := phaseMove_runs lt fits site headers
+    (fun i eq => by
+      have h := congrArg Fin.val eq
+      change (phaseHeaderSlots i).val = 24 + src.val at h
+      have := (phaseHeaderSlots i).isLt
+      omega) C rev fwd hw hW (output.append caller) x hs valid
+    (fun i => by simpa [headers,Tapes.append,output] using (slots i).2)
+    (fun i => by simpa [headers,Tapes.append,output] using (slots i).1)
+    (by simpa [site,Tapes.append] using head) (by simpa [site,Tapes.append] using payload)
+  have prepare := extend_banks_hoare (hoare_extend_eq (hoare_extend_eq (hoare_extend_eq
+    (hoare_extend_eq (hoare_extend_eq build caller) (basisWorkspace B x)) (basisWorkspace A x))
+    (FixedHeaderBankCopy.empty 16)) M8.Machine.ArbitraryWidthHighPrepareShared.privateInput)
+  exact ⟨y, prepare.seq move, action⟩
 
 /-- The child starts directly on the pointwise gate's temporary. Its source
 word and head already have the required representation on the owner bank. -/
