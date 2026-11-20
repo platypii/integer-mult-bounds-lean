@@ -29,7 +29,7 @@ theorem ownerCount_exec {K Q : ℕ} {P U : Type} (body : P → Pr P ((66+K)+5) Q
     ∃ z D n, z.user = u.user ∧ n ≤ dimensionTime H J fields+6*N+13*(fields*H+J)+8 ∧
       Exec body (payloadCountProgram (ownerCountPorts K) fields) (mk u S) n (mk z D) ∧
       embStk (fun i : Fin (66+K) => i.castAdd 5) D = embStk (fun i : Fin (66+K) => i.castAdd 5) S ∧
-      (D.R dst).length = N ∧ ∀ i : Fin 5, i ≠ 2 → D.R (i.natAdd (66+K)) = S.R (i.natAdd (66+K)) := by
+      (D.R dst).length = N ∧ D.L = S.L ∧ ∀ i : Fin 5, i ≠ 2 → D.R (i.natAdd (66+K)) = S.R (i.natAdd (66+K)) := by
   intro caller dst base width scratch empty
   let slots : Fin 9 → Fin 66 := ![2,53,59,60,61,62,63,64,65]
   have shared (i : Fin 9) : ownerCountPorts K i.castSucc = caller (slots i) := by
@@ -50,7 +50,7 @@ theorem ownerCount_exec {K Q : ℕ} {P U : Type} (body : P → Pr P ((66+K)+5) Q
         exact scratch _ ((by decide : ∀ k : Fin 9, 2 ≤ k.val → 59 ≤ (slots k).val) j hi))
   rw [last,volumeEq] at run
   obtain ⟨z,n,user,time,exec⟩ := run
-  refine ⟨z,_,n,user,time,exec,embStk_updateR_off S _ _ ?_,?_,?_⟩
+  refine ⟨z,_,n,user,time,exec,embStk_updateR_off S _ _ ?_,?_,rfl,?_⟩
   · intro i eq
     have bad := congrArg Fin.val eq
     change i.val = (66+K)+2 at bad
