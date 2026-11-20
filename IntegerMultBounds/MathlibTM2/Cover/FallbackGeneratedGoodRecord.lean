@@ -457,16 +457,19 @@ private theorem exceptionalBatchCost_le (steps overhead records baseline labels 
 
 /-- Per-symbol charge of the pivot setup and the packed coordinate loop at
 the leaf exponent, before the record loader and its cleanup. -/
-noncomputable def directoryCoordinateRate [M8.Machine.Net] (m d w tapes push entry leave : ℕ) : ℝ :=
+noncomputable def directoryCoordinateRateAt [M8.Machine.Net] (m d tapes push entry leave : ℕ) (power : ℝ) : ℝ :=
   let scans := (1000*(prime+1)+16*(d-1))*(2*(prime.size+1)^2)
   let frame := 1800*(entry+5)+200*(leave+5)+15
   (pivotSetupTime m d 1 1 * (2*(prime.size+1)^2) : ℕ) +
-    d*(weightedLeafRate tapes push (((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau) + (scans+frame : ℕ)) + 1
+    d*(weightedLeafRate tapes push power + (scans+frame : ℕ)) + 1
+
+noncomputable def directoryCoordinateRate [M8.Machine.Net] (m d w tapes push entry leave : ℕ) : ℝ :=
+  directoryCoordinateRateAt m d tapes push entry leave (((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau)
 
 private theorem directoryCoordinateTime_le [M8.Machine.Net] (m d w N tapes push entry leave : ℕ)
     (radix : prime^(w+1) ≤ N) :
     ((pivotSetupTime m d w (prime^(w+1)).size + packedCoordinatesTime d N w tapes push entry leave : ℕ) : ℝ) ≤
-      directoryCoordinateRate m d w tapes push entry leave*N := by
+      directoryCoordinateRateAt m d tapes push entry leave (((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau)*N := by
   let M := prime^(w+1)
   let scans := (1000*(prime+1)+16*(d-1))*(2*(prime.size+1)^2)
   let frame := 1800*(entry+5)+200*(leave+5)+15
@@ -1359,6 +1362,31 @@ noncomputable def exceptionalVolumeRate [M8.Machine.Net] (U : Type) (d m tapes p
   let coefficients := exceptionalRecordTime_binary_le U d m tapes push
   coefficients.choose + coefficients.choose_spec.choose * swapVolumeRate w
 
+private theorem atomPower_eq [M8.Machine.Net] (L d w : ℕ) (active : 0 < d) (width : L = d*(w+1)) :
+    ((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau =
+      (L : ℝ)^M8.Machine.BudgetBound.tau / (d : ℝ)^M8.Machine.BudgetBound.tau := by
+  rw [width,Nat.cast_mul,Real.mul_rpow (Nat.cast_nonneg d) (Nat.cast_nonneg (w+1))]
+  have pos : (0 : ℝ) < d := by exact_mod_cast active
+  field_simp
+
+private theorem batchRate_mono (fixed records labels N : ℕ) {b r b' r' : ℝ}
+    (ordinary : b ≤ b') (exceptional : r ≤ r') :
+    (fixed : ℝ) + records*(b+6)+2 + ((labels : ℝ)/prime)*r*(records*N) ≤
+      fixed + records*(b'+6)+2 + ((labels : ℝ)/prime)*r'*(records*N) := by
+  gcongr
+
+noncomputable def exceptionalRateAt [M8.Machine.Net] (U : Type) (d m tapes push : ℕ) (power : ℝ) : ℝ :=
+  let coeff := exceptionalRecordTime_binary_le U d m tapes push
+  coeff.choose + (coeff.choose_spec.choose : ℝ)*((3808275+M8.RevMachine.LeafCore.C)*power)
+
+private theorem exceptionalVolumeRate_le [M8.Machine.Net] (U : Type) (d m tapes push w : ℕ) :
+    (exceptionalVolumeRate U d m tapes push w : ℝ) ≤
+      exceptionalRateAt U d m tapes push (((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau) := by
+  unfold exceptionalVolumeRate exceptionalRateAt
+  push_cast
+  gcongr
+  simpa only [Nat.cast_add,Nat.cast_one] using swapVolumeRate_le w
+
 private theorem exceptionalVolumeRate_bound [M8.Machine.Net] (U : Type) (d m tapes push w W prefixWidth : ℕ)
     (rows : Fin (d+1) → Fin (d+1)) (negative : Bool) (positive : 0 < W) :
     exceptionalRecordTime U rows negative m w W (prime^(w+1)).size W.size tapes push prefixWidth ≤
@@ -1990,10 +2018,10 @@ def GeneratedRecordSpec [M8.Machine.Net] {T m work Q fields H J W : ℕ} {F U : 
           let placement := directoryOrdinaryBank archiveRoom
           let archive := directoryMatrixTape archiveRoom
           ∀ (outer : F → Pr F (66+((host+31+work)+1)) Q prime U)
-            (calls : ∀ f, outer f = embProg placement id (body f)) (v : HS _ Q prime U) (B : Stacks _ prime),
-            embDn placement v = u → embStk placement B = whole →
-            ∃ y E, y.user = v.user ∧ embStk placement E = D ∧ E.R archive = B.R archive ∧
-              Exec outer (embProg placement id prepare) (mk v B) n (mk y E) ∧
+            (calls : ∀ f, outer f = embProg placement id (body f)) (initial : HS _ Q prime U) (B : Stacks _ prime),
+            embDn placement initial = u → embStk placement B = whole →
+            ∃ y E, y.user = initial.user ∧ embStk placement E = D ∧ E.R archive = B.R archive ∧
+              Exec outer (embProg placement id prepare) (mk initial B) n (mk y E) ∧
               (∀ (data : ScanData m dimension w W) (shape : m+m = dimension+1)
                 (anchor : (anchorProgram dimension true).1+(anchorProgram dimension false).1+1 ≤ columnCapacity)
                 (states : Q = columnCapacity) (fieldsEq : fields = m)
@@ -2008,7 +2036,7 @@ def GeneratedRecordSpec [M8.Machine.Net] {T m work Q fields H J W : ℕ} {F U : 
                     x ((FlatCoordinateLayout.index a k).cast (directoryPayloadLength e (fieldsEq ▸ length)))
                   else (if liveBit j then effect j else Eq) x y
                 ∃ (archivePass : Pr F _ columnCapacity prime U), ∃ finish final steps next,
-                  finish.user = v.user ∧ ready (embStk placement final) [] ∧ payload next (embStk placement final) ∧
+                  finish.user = initial.user ∧ ready (embStk placement final) [] ∧ payload next (embStk placement final) ∧
                   labels.foldl (fun history j y => ∃ x, history x ∧ action j x y) (· = word) next ∧
                   final.R archive = [] ∧ final.R (placement mask) = [] ∧ final.R (placement mode) = [] ∧
                   (H = M.size → J = W.size →
@@ -2026,17 +2054,33 @@ def GeneratedRecordSpec [M8.Machine.Net] {T m work Q fields H J W : ℕ} {F U : 
                     let left := (privateTapes.map fun i => 4*(whole.L i).length).sum
                     let controls := left + (140+30*(m*m)+6*privateTapes.length)*(data.records*N)
                     let overhead := controls+setup
-                    (0 < d → (baseline : ℝ) ≤
-                      (1+6*(max (mnProgPush recordProgram) c : ℕ)) *
-                        ((directoryCoordinateRate m d w (LeafCore.core io).tapes
-                          (packedLeafPush (F := Empty) (U := U) io Empty.elim) entry.tapes leave.tapes +
+                    let power := (v.width : ℝ)^M8.Machine.BudgetBound.tau / (d : ℝ)^M8.Machine.BudgetBound.tau
+                    let ordinary := (1+6*(max (mnProgPush recordProgram) c : ℕ)) *
+                        ((directoryCoordinateRateAt m d (LeafCore.core io).tapes
+                          (packedLeafPush (F := Empty) (U := U) io Empty.elim) entry.tapes leave.tapes power +
                           (recordRoundTripRate m + generatedRecordRate m : ℕ))*N +
-                          ((12*m*m+4)*(prefixes 0).length : ℕ)) + initialClear + N) ∧
+                          ((12*m*m+4)*(prefixes 0).length : ℕ)) + initialClear + N
+                    let rare := exceptionalRateAt U dimension m work.length
+                      (max (mnProgPush (directoryExceptionalCore (P := F) (U := U) dimension archiveRoom anchor)) push) power
+                    let terminal := fun batchVolume : ℕ => (overhead : ℝ) + data.records*(ordinary+6) + 2 +
+                      ((labels : ℝ)/prime)*rare*batchVolume
+                    (0 < d → (baseline : ℝ) ≤ ordinary ∧ ((n+steps : ℕ) : ℝ) ≤ terminal (data.records*N) ∧
+                      ∀ (ι : Type) (gap adapter : ι → ℕ) (time : List ι → Descriptor → ℕ)
+                        (chain : List ι) (root : Descriptor),
+                        (∀ i is parent, gap i ≤ parent.width → time (i :: is) parent ≤
+                          time is (rankDescriptor prime (parent.width-gap i) (gap i) parent) +
+                            adapter i*volume prime parent) →
+                        (chain.map gap).sum ≤ root.width →
+                        rankDescriptor prime (root.width-(chain.map gap).sum) (chain.map gap).sum root = directory →
+                        time [] directory ≤ n+steps →
+                        ∀ suffixWidth, directory.width = m*(w+1)+suffixWidth →
+                        W = prime^(2*suffixWidth)*directory.between*directory.afterD →
+                        (time chain root : ℝ) ≤ terminal (volume prime root) + (chain.map adapter).sum*volume prime root) ∧
                     n+steps ≤ overhead + (data.records*(baseline+6)+2 + (labels*data.records/prime)*(rate*N)) ∧
                       ((n+steps : ℕ) : ℝ) ≤ overhead + data.records*(baseline+6) + 2 +
                         ((labels : ℝ)/prime)*rate*(data.records*N)) ∧
                   Exec scanBody ((states ▸ embProg placement id prepare).seq archivePass)
-                    (mk (states ▸ v) B) (n+steps) (mk finish final))) ∧
+                    (mk (states ▸ initial) B) (n+steps) (mk finish final))) ∧
       ∀ (fallback : Pr F K Q prime U) (badCost : ℕ → ℕ) (badEffect : ℕ → (Fin N → ZMod 2) → (Fin N → ZMod 2) → Prop),
       (∀ i is word (u : HS K Q prime U) (S : Stacks K prime), LabelStock.live m (w+1) 1 i = true → fallbackBit rankFits (reduce M proj) (g i) = true → ready S (i :: is) → payload word S →
         ∃ z D n next, z.user = u.user ∧ n ≤ badCost i ∧ Exec body fallback (mk u S) n (mk z D) ∧
@@ -2741,7 +2785,7 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
     · simpa only [List.drop_length,List.length_range,List.drop_eq_nil_of_le (List.length_range.le)] using done.1
     · simpa only [payload,port] using done.2
     · simpa only [count] using history
-    · intro precision weight baseline V suffix archiveBudget scratch p setup labels rate left controls overhead
+    · intro precision weight baseline V suffix archiveBudget scratch p setup labels rate left controls overhead power ordinaryRate rare terminal
       have ceiling : (if 0 < d ∧ data.H = M.size ∧ J = W.size then min (charge 0) binaryCharge else charge 0) + N ≤ baseline := by
         simp only [precision,weight,true_and,and_true,baseline,le_refl]
       have recordsPos : 0 < data.records := by
@@ -2779,8 +2823,17 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
         (Nat.le_mul_of_pos_right _ (posM.trans_le radix)) boxCount
       rw [count] at controlCost
       have maskBound : _ ≤ controls := setupBound.trans (by simpa only [controls,count,allLabels,List.length_range] using controlCost)
-      constructor
-      · intro active
+      have normalize (k : ℕ) (bound : k ≤ controls) :
+          k+(h+t) ≤ overhead + (data.records*(baseline+6)+2 + (labels*data.records/prime)*(rate*N)) := by
+        dsimp only [overhead,setup,archiveBudget,suffix,V]
+        rw [← projectorEq,← widthEq,Nat.add_assoc controls]
+        exact Nat.add_le_add bound total
+      have bill := normalize _ maskBound
+      have full := exceptionalBatchCost_le _ _ _ _ _ _ _ bill
+      refine ⟨?_,bill,full⟩
+      intro active
+      have split : ((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau = power := atomPower_eq _ d w active width
+      have ordinaryBound : (baseline : ℝ) ≤ ordinaryRate := by
         have coordinates := directoryCoordinateTime_le m d w N (LeafCore.core io).tapes
           (packedLeafPush (F := Empty) (U := U) io Empty.elim) entry.tapes leave.tapes radix
         change (budget : ℝ) ≤ _ at coordinates
@@ -2788,15 +2841,33 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
           dsimp only [baseline]; rw [if_pos active]; exact Nat.add_le_add_right (min_le_right ..) _
         apply (Nat.cast_le (α := ℝ)).mpr baseBound |>.trans
         dsimp only [binaryCharge,binaryRun]
+        dsimp only [ordinaryRate]
+        rw [split] at coordinates
         push_cast
         have scaled := mul_le_mul_of_nonneg_left coordinates (Nat.cast_nonneg (α := ℝ) (max (mnProgPush recordProgram) c))
         push_cast at scaled
         nlinarith only [coordinates,scaled]
-      · suffices bill : _ ≤ overhead + (data.records*(baseline+6)+2 + (labels*data.records/prime)*(rate*N)) from
-          ⟨bill,exceptionalBatchCost_le _ _ _ _ _ _ _ bill⟩
-        dsimp only [overhead,setup,archiveBudget,suffix,V]
-        rw [← projectorEq,← widthEq,Nat.add_assoc controls]
-        exact Nat.add_le_add maskBound total
+      have rareBound : (rate : ℝ) ≤ rare := by
+        dsimp only [rare]
+        rw [← split]
+        exact exceptionalVolumeRate_le ..
+      have terminalBound := full.trans (batchRate_mono overhead data.records labels N ordinaryBound rareBound)
+      refine ⟨ordinaryBound,by simpa only [terminal,Nat.cast_mul] using terminalBound,?_⟩
+      intro ι gap adapter time chain root descend fit endpoint base suffixWidth splitWidth spectators
+      have batchVolume : data.records*N = volume prime root := by
+        rw [← rankDescriptor_volume (M := prime) root (Nat.sub_add_cancel fit).symm, endpoint]
+        dsimp only [N]
+        rw [length,count,spectators]
+        simp only [LabelMask.records,volume,splitWidth,pow_add,pow_mul,Nat.mul_comm m (w+1),two_mul suffixWidth]
+        ring
+      have nested := rankDescriptor_chain_time gap adapter time descend chain root fit
+      rw [endpoint] at nested
+      have elapsed := nested.trans (Nat.add_le_add_right base _)
+      exact (Nat.cast_le (α := ℝ)).mpr elapsed |>.trans (by
+        rw [Nat.cast_add,Nat.cast_mul]
+        apply add_le_add _ (le_refl _)
+        rw [← batchVolume]
+        simpa only [terminal,Nat.cast_mul] using terminalBound)
   intro fallback badCost badEffect bad branchCost action exceptional priced
   suffices scanRun : ∃ finish D n next, finish.user = z.user ∧
       n ≤ (allLabels.map fun i => branchCost i+2+4).sum+2 ∧
