@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.M6.BitRemainderOrdinary
+public import IntegerMultBounds.MathlibTM2.M6.BitRemainderReciprocal
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackGeneratedGoodRecord
 
 /-! Load the physical ordinary adapter from the directory's current record. -/
@@ -26,8 +27,11 @@ theorem ordinaryEntry_exec {K m w W H J Q : ℕ} {P U : Type} (room : 58 ≤ K)
     (proj : Matrix (Fin m) (Fin m) ℚ) (weights : Fin m → ZMod (prime^(w+1)))
     (prefixes : ℕ → List (Fin (prime+4))) (tail : List (Fin (prime+4)))
     (schedules : List ℕ → List (Fin (prime+4))) (pending : List ℕ)
-    (u : HS (66+K) Q prime U) (S : Stacks (66+K) prime)
-    (ready : DirectoryReady v proj w W H J weights prefixes tail schedules S pending)
+    (u : HS (66+K) Q prime U) (initial S : Stacks (66+K) prime)
+    (ready : DirectoryReady v proj w W H J weights prefixes tail schedules initial pending)
+    (left : S.L = initial.L)
+    (frame : ∀ i, i ≠ ordinaryCaller room 47 → i ≠ ordinaryCaller room 49 →
+      i ≠ ordinaryCaller room 50 → S.R i = initial.R i)
     (word : Fin ((prime^(w+1))^(m+m)*W) → ZMod 2) :
     let M := prime^(w+1)
     letI : NeZero M := ⟨(pow_pos prime_prime.pos _).ne'⟩
@@ -45,41 +49,44 @@ theorem ordinaryEntry_exec {K m w W H J Q : ℕ} {P U : Type} (room : 58 ≤ K)
       D = {S with R := Function.update S.R (full 33) (binSyms H M)} := by
   intro M full bank coeffs ports parentWords payload
   obtain ⟨_,_,privateBlank,_,_,base,one,width,_,_,_,parentStored,_⟩ := ready
-  have privatePort (i : Fin 58) (hi : 58 ≤ (entrySlot i).val) :
-      S.L (full i) = [] ∧ S.R (full i) = [] := privateBlank _ hi
-  have baseSlot : S.R (full 2) = binSyms H M := base
+  have same (i : Fin 58) (off : i ∉ ([47,49,50] : List (Fin 58))) : S.R (full i) = initial.R (full i) := by
+    simp only [List.mem_cons,List.not_mem_nil,or_false,not_or] at off
+    exact frame _ (full.injective.ne off.1) (full.injective.ne off.2.1) (full.injective.ne off.2.2)
+  have privatePort (i : Fin 58) (hi : 58 ≤ (entrySlot i).val) (off : i ∉ ([47,49,50] : List (Fin 58))) :
+      S.L (full i) = [] ∧ S.R (full i) = [] := by rw [left,same i off]; exact privateBlank _ hi
+  have baseSlot : S.R (full 2) = binSyms H M := (same 2 (by decide)).trans base
   obtain ⟨z,user,run⟩ := bcopy_exec (body := body)
     ((by decide : ([2,33,0,1] : List (Fin 58)).Nodup).map full.injective)
-    u S (privatePort 0 (by decide)).2 (privatePort 1 (by decide)).2
-  simp only [baseSlot,(privatePort 33 (by decide)).2,List.append_nil,length_binSyms] at run
+    u S (privatePort 0 (by decide) (by decide)).2 (privatePort 1 (by decide) (by decide)).2
+  simp only [baseSlot,(privatePort 33 (by decide) (by decide)).2,List.append_nil,length_binSyms] at run
   let D := {S with R := Function.update S.R (full 33) (binSyms H M)}
   have keep (i : Fin 58) (hi : i ≠ 33) : D.R (full i) = S.R (full i) :=
     Function.update_of_ne (full.injective.ne hi) ..
-  have free (i : Fin 58) (hi : 58 ≤ (entrySlot i).val) (off : i ≠ 33) :
-      D.L (full i) = [] ∧ D.R (full i) = [] := ⟨(privatePort i hi).1,(keep _ off).trans (privatePort i hi).2⟩
+  have free (i : Fin 58) (hi : 58 ≤ (entrySlot i).val) (off : i ≠ 33) (archive : i ∉ ([47,49,50] : List (Fin 58))) :
+      D.L (full i) = [] ∧ D.R (full i) = [] := ⟨(privatePort i hi archive).1,(keep _ off).trans (privatePort i hi archive).2⟩
   refine ⟨z,D,user,run,?_,rfl⟩
   constructor
-  · exact (free 52 (by decide) (by decide)).2
-  · exact (keep 48 (by decide)).trans parentStored
-  · exact (free 41 (by decide) (by decide)).2
+  · exact (free 52 (by decide) (by decide) (by decide)).2
+  · exact (keep 48 (by decide)).trans ((same 48 (by decide)).trans parentStored)
+  · exact (free 41 (by decide) (by decide) (by decide)).2
   · exact Function.update_self (full 33) (binSyms H M) S.R
   · intro j hj
     let i := (coeff true j).castLE (by decide : 53 ≤ 58)
     have bounds := (by decide : ∀ j : Fin 17, j ≤ 1 ∨ 3 ≤ j ∧ j ≤ 11 →
-      58 ≤ (entrySlot ((coeff true j).castLE (by decide))).val ∧ (coeff true j).val ≠ 33) j hj
-    exact (free i bounds.1 (fun eq => bounds.2 (congrArg Fin.val eq))).2
-  · exact (keep 2 (by decide)).trans base
-  · exact (keep 28 (by decide)).trans one
-  · exact (keep 53 (by decide)).trans width
+      58 ≤ (entrySlot ((coeff true j).castLE (by decide))).val ∧ (coeff true j).val ≠ 33 ∧ (coeff true j).castLE (by decide) ∉ ([47,49,50] : List (Fin 58))) j hj
+    exact (free i bounds.1 (fun eq => bounds.2.1 (congrArg Fin.val eq)) bounds.2.2).2
+  · exact (keep 2 (by decide)).trans ((same 2 (by decide)).trans base)
+  · exact (keep 28 (by decide)).trans ((same 28 (by decide)).trans one)
+  · exact (keep 53 (by decide)).trans ((same 53 (by decide)).trans width)
   · intro j hj
     let i := (entry j).castLE (by decide : 54 ≤ 58)
     have bounds := (by decide : ∀ j ∈ headShearWork,
-      58 ≤ (entrySlot ((entry j).castLE (by decide))).val ∧ (entry j).val ≠ 33) j hj
-    exact free i bounds.1 (fun eq => bounds.2 (congrArg Fin.val eq))
+      58 ≤ (entrySlot ((entry j).castLE (by decide))).val ∧ (entry j).val ≠ 33 ∧ (entry j).castLE (by decide) ∉ ([47,49,50] : List (Fin 58))) j hj
+    exact free i bounds.1 (fun eq => bounds.2.1 (congrArg Fin.val eq)) bounds.2.2
   · intro k
     simpa only [sub_zero,show ports 24 = full 24 from rfl,keep 24 (by decide)] using payload k
   · intro k
-    obtain ⟨l,r⟩ := free 25 (by decide) (by decide)
+    obtain ⟨l,r⟩ := free 25 (by decide) (by decide) (by decide)
     rw [show ports 25 = full 25 from rfl,l,r,readAt_nil_left,wordTape_nil]
     rfl
 
@@ -297,5 +304,52 @@ theorem ordinaryGeneratedArchive_exec {m w W H J Q common work : ℕ} {P U : Typ
       | zero => intro k h; rcases h with rfl | rfl; exact Or.inl rfl; exact Or.inr rfl
       | succ n ih => intro k h; apply ih (Equiv.swap 15 16 k); rcases h with rfl | rfl <;> simp
     exact fun eq => (either r 15 (Or.inl rfl)).elim (fun h => ha (eq.trans h)) (fun h => hb (eq.trans h))
+
+/-- The modulus word clocks the full matrix archive, including for inherited weights.
+Only the archive-length tape changes, so this can follow pivot generation. -/
+theorem ordinaryArchiveLength_exec {T Q m H : ℕ} {P U : Type}
+    (body : P → Pr P T Q prime U) (full : Fin 58 ↪ Fin T)
+    (u : HS T Q prime U) (S : Stacks T prime)
+    (width : (S.R (full 2)).length = H) (empty : S.R (full 51) = [])
+    (scratch : S.R (full 0) = []) :
+    ∃ z, z.user = u.user ∧
+      Exec body (Node.umul (m*m) (full 2) (full 51) (full 0)) (mk u S) (4*H+4)
+        (mk z {S with R := Function.update S.R (full 51) (List.replicate (m*m*H) Node.tick)}) := by
+  obtain ⟨z,user,run⟩ := Node.umulSym_exec body (m*m) Node.tick (a := full 2) (b := full 51)
+    (t := full 0) (full.injective.ne (by decide)) (full.injective.ne (by decide))
+    (full.injective.ne (by decide)) u S scratch
+  exact ⟨z,user,by simpa only [Node.umul,width,empty,List.append_nil] using run⟩
+
+/-- The inherited diagonal, modulus, one and precision clock are shared with the
+directory. All other reciprocal-reader registers are private scratch. -/
+def ordinaryReciprocalPorts : Fin 19 ↪ Fin 58 :=
+  ⟨![0,1,3,4,2,5,6,7,8,9,10,11,12,13,14,44,45,17,48],by decide⟩
+
+theorem ordinaryReciprocals_exec {T Q m w H : ℕ} {P U : Type}
+    (body : P → Pr P T Q prime U) (full : Fin 58 ↪ Fin T)
+    (weight : Fin m → ZMod (prime^(w+1))) (unit : ∀ i, IsUnit (weight i))
+    (hm : prime^(w+1) < 2^H) (v : HS T Q prime U) (S : Stacks T prime)
+    (weights : S.R (full 48) = (List.ofFn fun j => binSyms H (weight j).val).flatten)
+    (modulus : S.R (full 2) = binSyms H (prime^(w+1)))
+    (one : S.R (full 44) = binSyms H (1 : ZMod (prime^(w+1))).val)
+    (clock : (S.R (full 45)).length = w)
+    (free : ∀ j : Fin 58, j ≤ 17 → j ≠ 2 → S.R (full j) = []) :
+    let word := fun i => binSyms (A := prime) H (Ring.inverse (weight i)).val
+    let C := 48*H*H+152*H+66
+    let cost := fun i : Fin m => (8*(i.val*H)+14*H+22) +
+      (6*w+6+(14*H+16+(prime-2)*C+C+w*(12*H+15+prime*C))) + (2*H+2) + (4*H+4)
+    ∃ z t, z.user = v.user ∧ t ≤ ((List.finRange m).map cost).sum+1 ∧
+      Exec body (packReciprocals prime (ordinaryReciprocalPorts.trans full) (full 54) (List.finRange m))
+        (mk v S) t (mk z {S with R := Function.update S.R (full 54) ((List.ofFn word).flatten ++ S.R (full 54))}) := by
+  intro word C cost
+  letI : NeZero (prime^(w+1)) := ⟨(pow_pos prime_prime.pos _).ne'⟩
+  have apart : ∀ j, ordinaryReciprocalPorts j ≠ 54 := by decide
+  have scratch : ∀ j : Fin 19, (j < 13 ∧ j ≠ 4) ∨ j = 14 ∨ j = 17 →
+      ordinaryReciprocalPorts j ≤ 17 ∧ ordinaryReciprocalPorts j ≠ 2 := by decide
+  simpa only [List.flatMap_def,List.ofFn_eq_map] using
+    packReciprocals_exec body (ordinaryReciprocalPorts.trans full) (full 54)
+      (fun j => full.injective.ne (apart j)) weight (List.finRange m) unit prime_prime H hm v S []
+      (weights.trans (List.append_nil _).symm) modulus one clock
+      (fun j hj => free _ (scratch j hj).1 (scratch j hj).2)
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
