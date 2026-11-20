@@ -67,6 +67,63 @@ private theorem inherited_le_stock {T Q : ℕ} {U : Type} (u : HS T Q prime U) (
       omega
     _ = _ := congrArg (c*·) size
 
+/-- Private right tapes at a fresh scanner entry. The packed owner itself is
+on a separate register, so these words can be fixed before the chart runs. -/
+noncomputable def ordinaryEntryWords {w : ℕ} (W beforeRows rows beforeH : ℕ) (root : Bool)
+    (parent : Fin 64 → ZMod (prime^(w+1))) (width : ℕ) (prefixes : List (Fin (prime+4))) :
+    ℕ → List (Fin (prime+4))
+  | 2 => binSyms (prime^(w+1)).size (prime^(w+1))
+  | 29 => List.replicate beforeRows (bitSymbol true)
+  | 30 => List.replicate rows (bitSymbol true)
+  | 31 => List.replicate beforeH (bitSymbol true)
+  | 45 => List.replicate w (bitSymbol true)
+  | 47 => List.replicate width (bitSymbol true)
+  | 53 => binSyms W.size W
+  | 55 => if root then [] else (List.ofFn fun i => binSyms (prime^(w+1)).size (parent i).val).flatten
+  | 58 => prefixes
+  | _ => []
+
+theorem ordinaryEntryWords_parameters {w : ℕ} (W beforeRows rows beforeH : ℕ) (root : Bool)
+    (parent : Fin 64 → ZMod (prime^(w+1))) (width : ℕ) (prefixes : List (Fin (prime+4)))
+    (units : root = true → ∀ i, parent i = 1) :
+    ParentParameters root W (prime^(w+1)).size W.size parent
+      (fun i => ordinaryEntryWords W beforeRows rows beforeH root parent width prefixes i.val) := by
+  cases root
+  · exact ⟨rfl,rfl,fun i => by fin_cases i <;> rfl,List.length_replicate,rfl⟩
+  · exact ⟨units rfl,rfl,rfl,fun i => by fin_cases i <;> rfl,List.length_replicate,rfl⟩
+
+/-- Combine the private metadata with the payload delivered by the chart. -/
+noncomputable def ordinaryEntryStacks {T N : ℕ} (metadata : ℕ → List (Fin (prime+4)))
+    (word : Fin N → ZMod 2) : Stacks (T+5) prime where
+  inp := []
+  out := []
+  L := fun _ => []
+  R := Fin.addCases (fun i => metadata i.val)
+    (fun i : Fin 5 => if i = 0 then payloadWord (SparseRoleCircuit.encode ∘ word) else [])
+
+theorem ordinaryEntryStacks_payload {T N : ℕ} (metadata : ℕ → List (Fin (prime+4)))
+    (word : Fin N → ZMod 2) (j : ℤ) :
+    let S := ordinaryEntryStacks (T := T) metadata word
+    readAt blank (S.L ((0 : Fin 5).natAdd T)) (S.R ((0 : Fin 5).natAdd T)) j =
+      RadixToBinary.binaryEncoding.encode (putWord (fun _ => blank) 0 ((List.ofFn word).map SparseRoleCircuit.encode) j) := by
+  simpa [ordinaryEntryStacks,M8.AtomBank.arrTape,List.map_ofFn,Function.comp_def] using
+    (payload_reads (SparseRoleCircuit.encode ∘ word) j).symm
+
+/-- With the prefix queue packed to its exact length, fresh private tapes
+contribute zero to the inherited part of the scanner's time bound. -/
+theorem ordinaryEntryStacks_inherited {T N w : ℕ} (room : 72 ≤ T)
+    (W beforeRows rows beforeH : ℕ) (root : Bool) (parent : Fin 64 → ZMod (prime^(w+1)))
+    (width : ℕ) (prefixes : List (Fin (prime+4))) (word : Fin N → ZMod 2)
+    (setup scan : List (Fin (T+5))) (rate : ℕ) :
+    let S := ordinaryEntryStacks (T := T) (ordinaryEntryWords W beforeRows rows beforeH root parent width prefixes) word
+    let bank := (Fin.castLEEmb room).trans (Fin.castAddEmb 5)
+    (setup.map (fun i => 4*(S.L i).length)).sum +
+      ((scan.map (fun i => 4*(S.L i).length)).sum + rate*((S.R (bank 46)).length+(S.R (bank 48)).length)) = 0 := by
+  change (setup.map (fun _ => 0)).sum + ((scan.map (fun _ => 0)).sum + rate *
+    (((ordinaryEntryStacks (T := T) _ word).R (((46 : Fin 72).castLE room).castAdd 5)).length +
+    ((ordinaryEntryStacks (T := T) _ word).R (((48 : Fin 72).castLE room).castAdd 5)).length)) = 0
+  simp [ordinaryEntryStacks,ordinaryEntryWords]
+
 def OrdinaryParentRun [M8.Machine.Net] {common work w rows B : ℕ} {U : Type}
     (interval : ℕ × ℕ) (layout : Descriptor)
     (root : Bool)
@@ -133,8 +190,9 @@ def OrdinaryParentRun [M8.Machine.Net] {common work w rows B : ℕ} {U : Type}
        let clean := setupBase+ordinaryOwnerScanTime 64 127 proj.rank w W data.H W.size data.records N
           (prefixes 0).length 0 0 0 privateTapes.length push scratch.length rate p overhead childBudget
        t ≤ clean+(inherited+(left+tapeRate*((raw.R (bank 46)).length+(raw.R (bank 48)).length))) ∧
-       ∀ prior initial n, Exec outer prior initial n (mk u raw) →
-         t ≤ clean+max 8 (max 2 tapeRate)*(bankStock visited initial+max (bankProgPush visited prior) (bankProgPush visited (outer ()))*n)) ∧
+       ∀ {P : Type} (priorBody : P → _) prior initial n c, Exec priorBody prior initial n (mk u raw) →
+         bankProgPush visited prior ≤ c → (∀ f, bankProgPush visited (priorBody f) ≤ c) →
+         t ≤ clean+max 8 (max 2 tapeRate)*(bankStock visited initial+c*n)) ∧
       (∀ j : Fin data.records, let r := ownerRow (R := data.records) (N := N) rfl output j
         if LabelStock.live 64 (w+1) 1 j then ∀ x k, r (index ((projectorResidual finSumFinEquiv (reduce M proj)
           parent (fun i => Ring.inverse (parent i)) (physicalLabel 64 (w+1) j)).mulVec x) k) = ownerRow (R := data.records) (N := N) rfl word j (index x k)
@@ -265,8 +323,8 @@ private theorem ordinaryParent_exec [M8.Machine.Net] {common work w rows B : ℕ
     change inherited+(left+tapeRate*((raw.R (bank 46)).length+(raw.R (bank 48)).length)) ≤ _ at occupied
     suffices exactTime : q+(k+(s+(t+n))) ≤ cleanTime+(inherited+(left+tapeRate*((raw.R (bank 46)).length+(raw.R (bank 48)).length))) by
       refine ⟨exactTime,?_⟩
-      intro prior initial n arrival
-      have stock := exec_stock visited arrival (le_max_left (bankProgPush visited prior) _) (fun f => by cases f; exact le_max_right ..)
+      intro P priorBody prior initial n c arrival programPush bodyPush
+      have stock := exec_stock visited arrival programPush bodyPush
       exact exactTime.trans (Nat.add_le_add_left (occupied.trans (Nat.mul_le_mul_left _ stock)) _)
     have combine (a b c d : ℕ) : a+b+(c+d) = a+c+(b+d) := by omega
     dsimp only [cleanTime]

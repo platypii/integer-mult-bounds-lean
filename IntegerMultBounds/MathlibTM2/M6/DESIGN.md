@@ -643,8 +643,16 @@ parent bound also applies after a preceding execution: it counts only its initia
 symbols and potential pushes on the setup and scanner left stacks and right
 tapes 58, 46 and 48. The coefficient is independent of the number of tapes,
 apart from the cleanup rate already present in the scan. To use this in the
-node recurrence, the installed predecessor still needs a bound on the selected
-pushes times its running time. At return the selected bank contains exactly the
+node recurrence, a preceding stack execution can supply its own body and a uniform
+bound on selected pushes per step. In particular a call-free predecessor can use
+an empty procedure type. At the planned chart/scan join, however,
+`remainderChart_stage` supplies a `SharedBankStage.Stage` with a tape-level
+`HoareTime` contract. Its cost alone supplies no stack execution ending in the
+scanner input. A stage composition must establish the scanner’s input frame,
+including its inherited stock, or exhibit that stack execution explicitly. The fresh frame in `ordinaryEntryStacks`
+separates the chart payload from fixed private metadata. Its parent parameters and
+encoded owner reads are checked. With an exactly packed prefix queue its inherited
+time charge vanishes. Installing this frame as a tape stage is still open. At return the selected bank contains exactly the
 restored archive suffix and the final projector tape. All its other stacks are empty.
 
 The semantic five-class node (S5d.3) certifies upstream's accounting under ideal routes and
