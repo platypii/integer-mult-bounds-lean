@@ -655,8 +655,9 @@ encoded owner reads are checked. With an exactly packed prefix queue its inherit
 time charge vanishes. For each fixed parent and layout the selector, matrix-queue
 writer and row dispatch are fixed across owner payloads. The parent returns an
 `OwnerScan`, so `OwnerScan.place` embeds it at a permanent owner without changing
-the step count or other owner words. Connecting the chart output to that placed
-input frame is still open. At return the selected bank contains exactly the
+the step count or other owner words. `chartOwner_scan` executes a hosted chart followed by a scanner on that shared
+slot. The combined bound is `stage.cost * (stage.tapes + 5) + 6 + budget`. Its scanner premise
+still needs instantiation at a common state capacity for the scheduled parent. At return the selected bank contains exactly the
 restored archive suffix and the final projector tape. All its other stacks are empty.
 
 The semantic five-class node (S5d.3) certifies upstream's accounting under ideal routes and

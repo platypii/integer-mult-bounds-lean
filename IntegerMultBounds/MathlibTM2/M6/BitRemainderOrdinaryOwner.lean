@@ -109,6 +109,139 @@ theorem ordinaryEntryStacks_payload {T N : ℕ} (metadata : ℕ → List (Fin (p
   simpa [ordinaryEntryStacks,M8.AtomBank.arrTape,List.map_ofFn,Function.comp_def] using
     (payload_reads (SparseRoleCircuit.encode ∘ word) j).symm
 
+/-- Hosting a chart stage exposes its actual output stacks at the permanent
+owner slots, with the host interpreter's step bound. -/
+theorem chartOwner_exec {N k : ℕ} {P U : Type}
+    (stage : SharedBankStage.Stage _ k prime (phaseOwners (N := N)))
+    (body : P → Pr P stage.tapes stage.states prime U) (data : Fin k → Fin N → ZMod 2)
+    (u : HS stage.tapes stage.states prime U) (S : Stacks stage.tapes prime)
+    (input : RepT (stage.input data) S.L S.R) :
+    ∃ z F n, Exec body (foreign stage.program) (mk u S) n (mk z F) ∧
+      n ≤ stage.cost*(stage.tapes+5)+6 ∧ z.user = u.user ∧
+      RepT (phaseOwners (stage.transform data)) (embStk stage.slots F).L (embStk stage.slots F).R := by
+  obtain ⟨z,F,_,rfl,output,user,_,_,_,n,time,run⟩ :=
+    foreign_exec (body := body) stage.program (stage.realizes data) u S _ rfl input
+  refine ⟨z,F,n,run,time,user,?_⟩
+  rw [← stage.output_payload]
+  exact fun i j => output (stage.slots i) j
+
+/-- Attach scanner metadata beside the owner tapes returned by the chart. -/
+def ordinaryOwnerBank {T k : ℕ} (metadata : ℕ → List (Fin (prime+4))) (owners : Stacks k prime) :
+    Stacks ((T+5)+k) prime where
+  inp := owners.inp
+  out := owners.out
+  L := Fin.addCases (fun _ => []) owners.L
+  R := Fin.addCases (Fin.addCases (fun i : Fin T => metadata i.val) (fun _ : Fin 5 => [])) owners.R
+
+/-- Projecting the placed scanner shares exactly the chart's two payload stacks. -/
+theorem ordinaryOwnerBank_project {T k : ℕ} (metadata : ℕ → List (Fin (prime+4)))
+    (owners : Stacks k prime) (src : Fin k) :
+    let slot := (0 : Fin 5).natAdd T
+    let bank := ordinaryOwnerBank (T := T) metadata owners
+    embStk (payloadPlacement slot src) bank =
+      ⟨owners.inp,owners.out,Function.update (fun _ => []) slot (owners.L src),
+        Function.update (Fin.addCases (fun i : Fin T => metadata i.val) (fun _ : Fin 5 => [])) slot (owners.R src)⟩ := by
+  intro slot bank
+  have away (i : Fin (T+5)) (hi : i ≠ slot) : payloadPlacement slot src i = i.castAdd k := by
+    apply Equiv.swap_apply_of_ne_of_ne ((Fin.castAddEmb k).injective.ne hi)
+    intro h
+    have eq := congrArg Fin.val h
+    simp at eq
+    omega
+  apply Stacks.ext <;> try rfl
+  all_goals
+    funext i
+    by_cases hi : i = slot
+    · subst i
+      simp [embStk,bank,ordinaryOwnerBank,payloadPlacement_shared]
+    · simp [embStk,bank,ordinaryOwnerBank,away i hi,Function.update_of_ne hi]
+
+theorem ordinaryOwnerBank_payload {T k N : ℕ} (metadata : ℕ → List (Fin (prime+4)))
+    (owners : Stacks k prime) (data : Fin k → Fin N → ZMod 2) (src : Fin k)
+    (chart : RepT (phaseOwners data) owners.L owners.R) (j : ℤ) :
+    let slot := (0 : Fin 5).natAdd T
+    let S := embStk (payloadPlacement slot src) (ordinaryOwnerBank metadata owners)
+    readAt blank (S.L slot) (S.R slot) j = RadixToBinary.binaryEncoding.encode
+      (putWord (fun _ => blank) 0 ((List.ofFn (data src)).map SparseRoleCircuit.encode) j) := by
+  simp only [ordinaryOwnerBank_project,Function.update_self,encodedOwnerCell]
+  simpa [phaseOwners] using (chart src j).symm
+
+/-- All private tapes retain their initial contents at the chart/scan join. -/
+theorem ordinaryOwnerBank_private {T k : ℕ} (metadata : ℕ → List (Fin (prime+4)))
+    (owners : Stacks k prime) (src : Fin k) :
+    let slot := (0 : Fin 5).natAdd T
+    let S := embStk (payloadPlacement slot src) (ordinaryOwnerBank metadata owners)
+    (∀ i : Fin T, S.L (i.castAdd 5) = [] ∧ S.R (i.castAdd 5) = metadata i.val) ∧
+      ∀ i : Fin 5, i ≠ 0 → S.L (i.natAdd T) = [] ∧ S.R (i.natAdd T) = [] := by
+  intro slot S
+  constructor
+  · intro i
+    have off : i.castAdd 5 ≠ slot := by
+      intro h
+      have eq := congrArg Fin.val h
+      simp [slot] at eq
+      omega
+    simp [S,slot,ordinaryOwnerBank_project,Function.update_of_ne (show i.castAdd 5 ≠ (0 : Fin 5).natAdd T from off)]
+  · intro i hi
+    have off := (Fin.natAddEmb T).injective.ne hi
+    simp [S,slot,ordinaryOwnerBank_project,Function.update_of_ne (show i.natAdd T ≠ (0 : Fin 5).natAdd T from off)]
+
+/-- Execute the chart and scanner on one bank. The scanner shares the selected
+physical chart slot and sees its own private metadata throughout the join. -/
+theorem chartOwner_scan {T N k : ℕ} {P U : Type}
+    (stage : SharedBankStage.Stage _ k prime (phaseOwners (N := N))) (src : Fin k)
+    (metadata : ℕ → List (Fin (prime+4))) (data : Fin k → Fin N → ZMod 2)
+    (body : P → Pr P (T+5) stage.states prime U) (program : Pr P (T+5) stage.states prime U)
+    (budget : ℕ) (post : (Fin N → ZMod 2) → Prop) :
+    let slot := (0 : Fin 5).natAdd T
+    let placement := payloadPlacement slot (stage.slots src)
+    let chart : Fin stage.tapes ↪ Fin ((T+5)+stage.tapes) := Fin.natAddEmb (T+5)
+    let outer := fun f => embProg placement id (body f)
+    ∀ (u : HS ((T+5)+stage.tapes) stage.states prime U) (S : Stacks stage.tapes prime),
+    RepT (stage.input data) S.L S.R →
+    (∀ (v : HS (T+5) stage.states prime U) (F : Stacks stage.tapes prime),
+      RepT (phaseOwners (stage.transform data)) (embStk stage.slots F).L (embStk stage.slots F).R →
+      ∃ z D n word, n ≤ budget ∧ post word ∧ OwnerScan body program slot word v
+        (embStk placement (ordinaryOwnerBank metadata F)) n z D) →
+    ∃ z D n word, post word ∧ n ≤ stage.cost*(stage.tapes+5)+6+budget ∧
+      Exec outer ((embProg chart (Empty.elim : Empty → P) (foreign stage.program)).seq (embProg placement id program))
+        (mk u (ordinaryOwnerBank metadata S)) n (mk z D) ∧
+      ∀ i j, readAt blank (D.L (chart (stage.slots i))) (D.R (chart (stage.slots i))) j =
+        (phaseOwners (Function.update (stage.transform data) src word)).tape i j := by
+  intro slot placement chart outer u S input scanner
+  obtain ⟨y,F,t,run,price,_,reads⟩ := chartOwner_exec stage (P := Empty) Empty.elim data (embDn chart u) S input
+  obtain ⟨v,B,enter,_,_,view,off⟩ := exec_emb (ι := (Empty.elim : Empty → P)) (body' := outer)
+    chart.injective (fun f => f.elim) run u rfl (ordinaryOwnerBank metadata S) (by
+      apply Stacks.ext <;> simp [embStk,ordinaryOwnerBank,chart,Function.comp_def])
+  have frame : B = ordinaryOwnerBank (T := T) metadata F := by
+    apply Stacks.ext
+    · exact congrArg (fun A : Stacks stage.tapes prime => A.inp) view
+    · exact congrArg (fun A : Stacks stage.tapes prime => A.out) view
+    all_goals
+      funext i
+      refine Fin.addCases (fun j => ?_) (fun j => ?_) i
+      · have keep := off (j.castAdd stage.tapes) (fun h eq => by
+          have := congrArg Fin.val eq
+          simp [chart] at this
+          omega)
+        first | simpa [ordinaryOwnerBank] using keep.1 | simpa [ordinaryOwnerBank] using keep.2
+      · first | simpa [ordinaryOwnerBank,embStk,chart] using congrArg (fun A => Stacks.L A j) view
+              | simpa [ordinaryOwnerBank,embStk,chart] using congrArg (fun A => Stacks.R A j) view
+  subst B
+  obtain ⟨w,D,n,word,paid,ok,scan⟩ := scanner (embDn placement v) F reads
+  obtain ⟨z,G,finish,_,_,project,keep⟩ := exec_emb (ι := id) (body' := outer) placement.injective
+    (fun _ => rfl) scan.run v rfl (ordinaryOwnerBank metadata F) rfl
+  refine ⟨z,G,t+n,word,ok,Nat.add_le_add price paid,Exec.seq enter finish,?_⟩
+  intro i j
+  by_cases h : i = src
+  · subst i
+    have eq := congrArg (fun A => readAt blank (Stacks.L A slot) (Stacks.R A slot) j) project
+    simpa [embStk,placement,chart,payloadPlacement_shared,phaseOwners] using eq.trans (scan.reads j)
+  · have stable := keep _ (payloadPlacement_off slot (stage.slots src) (stage.slots i) (fun eq => h (stage.slots_injective eq)))
+    change readAt blank (G.L ((stage.slots i).natAdd (T+5))) (G.R ((stage.slots i).natAdd (T+5))) j = _
+    rw [stable.1,stable.2]
+    simpa [ordinaryOwnerBank,chart,embStk,phaseOwners,Function.update_of_ne h] using (reads i j).symm
+
 /-- With the prefix queue packed to its exact length, fresh private tapes
 contribute zero to the inherited part of the scanner's time bound. -/
 theorem ordinaryEntryStacks_inherited {T N w : ℕ} (room : 72 ≤ T)
