@@ -76,10 +76,9 @@ theorem copyAdds_hoare (n : Fin 9) (r : Fin 32) (d : Fin 5) (life : Copy.Lifecyc
   rw [action] at exec
   simpa only [gates,tapes,regs,List.length_map,List.length_attach] using exec
 
-/-- Row-major tape address used by the flat coordinate stages, with the
-spectator record following the two field halves. -/
-noncomputable def copyAddress {Q W : ℕ} [NeZero Q] :
-    Fin (Q^16*W) ≃ Swap.Shear.State (Fin 8) (ZMod Q) × Fin W :=
+/-- Rank the two eight-coordinate halves in the COPY payload. -/
+noncomputable def copyActive {Q : ℕ} [NeZero Q] :
+    Swap.Shear.State (Fin 8) (ZMod Q) ≃ Fin (Q^16) :=
   let halves : Swap.Shear.State (Fin 8) (ZMod Q) ≃ (Fin 16 → ZMod Q) :=
     { toFun := AffineFieldCoordinates.embed
       invFun := fun x => (fun i => x (Fin.castAdd 8 i), fun i => x (Fin.natAdd 8 i))
@@ -88,8 +87,13 @@ noncomputable def copyAddress {Q W : ℕ} [NeZero Q] :
         funext i
         exact Fin.addCases (fun _ => Fin.addCases_left _)
           (fun _ => Fin.addCases_right _) i }
-  (((halves.trans FlatCoordinateLayout.rankEquiv).prodCongr (Equiv.refl (Fin W))).trans
-    finProdFinEquiv).symm
+  halves.trans FlatCoordinateLayout.rankEquiv
+
+/-- Row-major tape address used by the flat coordinate stages, with the
+spectator record following the two field halves. -/
+noncomputable def copyAddress {Q W : ℕ} [NeZero Q] :
+    Fin (Q^16*W) ≃ Swap.Shear.State (Fin 8) (ZMod Q) × Fin W :=
+  ((copyActive.prodCongr (Equiv.refl (Fin W))).trans finProdFinEquiv).symm
 
 @[simp] theorem copyAddress_index {Q W : ℕ} [NeZero Q]
     (s : Swap.Shear.State (Fin 8) (ZMod Q)) (j : Fin W) :
