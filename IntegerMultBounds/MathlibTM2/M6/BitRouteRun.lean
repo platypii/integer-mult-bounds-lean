@@ -161,4 +161,49 @@ theorem dataPort_call [M8.Machine.Net] {T : ℕ} (io : Fin T) (n : Fin 9) (j : F
   rw [← move _ _ xy g,back]
   exact action _
 
+/-- Run a helper basis change followed by the slot permutation. The basis
+block is shared by all slots of the port; the permutation uses at most 63
+column exchanges. -/
+theorem helperSlot_runs [M8.Machine.Net] {T : ℕ} (io : Fin T) (c : PortCertificate)
+    (slot : ℕ) (fits : slot ≤ 55) (basis : Graph.Block (T+24) prime) (leading : Blocks.Leading basis) :
+    ∃ (program : Graph.Block (T+24) prime) (C : ℕ), Blocks.Leading program ∧
+      ∀ (v : Descriptor) (w B budget : ℕ), 0 < w → 0 < B →
+      v.beforeH = B*prime^(64*(w*64)) → v.Positive →
+      let coords := fun E : Matrix Axis Axis ℚ => (reduce (prime^w) E).submatrix stageAxis.symm stageAxis.symm
+      let d := words (LabelSchedule.base v w)
+      ∀ (roles : Tapes T prime) (x : Fin (volume prime v) → ZMod 2),
+      (∃ y : Fin (volume prime v) → ZMod 2,
+        LabelPermutation.Transport v B w (fun g => g * coords (helperBasis c)) (ext x) (ext y) ∧
+        GraphContract.Runs basis (LabelCall.bank roles v d)
+          (LabelCall.bank (setTape roles io (sourceWord y) 0) v d) budget) →
+      ∃ out : Fin (volume prime v) → ZMod 2,
+        LabelPermutation.Transport v B w (fun g => g * coords (c.helperChart slot fits)) (ext x) (ext out) ∧
+        GraphContract.Runs program (LabelCall.bank roles v d)
+          (LabelCall.bank (setTape roles io (sourceWord out) 0) v d)
+          (budget + C*volume prime v + 63*LeafCore.coreCost (volume prime v) (w*64)) := by
+  obtain ⟨π,chart⟩ := helperChart_blocks c slot fits
+  let perm := (stageAxis.symm.trans π).trans stageAxis
+  obtain ⟨ps,len,run⟩ := LabelRoute.pivot_runs perm io
+  obtain ⟨C,cost⟩ := LabelFactorization.overhead ps
+  refine ⟨Blocks.seqB basis (LabelRoute.pivot io ps),C,Blocks.seq_leading _ _,?_⟩
+  intro v w B budget hw hb shape pos coords d roles x input
+  obtain ⟨y,xy,r₁⟩ := input
+  obtain ⟨out,yo,r₂⟩ := run v w B (Nat.mul_pos hw (by decide)) hb shape pos
+    (setTape roles io (sourceWord y) 0) y (by simp [setTape]) (by simp [setTape])
+  simp only [SharedPlacementAlphabet.setTape_setTape] at r₂
+  refine ⟨out,?_,Blocks.runs_mono (Blocks.seq_runs leading (Blocks.seq_leading _ _) r₁ r₂) ?_⟩
+  · intro g a ha row hr b hB h hh mid hm k hk t ht
+    let f := g * coords (helperBasis c)
+    have columns : (fun i j => f i (perm j)) = g * coords (c.helperChart slot fits) := by
+      funext i j
+      simp only [f,Matrix.mul_apply,coords,perm,Equiv.trans_apply,Equiv.symm_apply_apply,
+        chart,Matrix.submatrix_apply,reduce,Matrix.map_apply,id_eq]
+    let read := fun label : Matrix (Fin 64) (Fin 64) (ZMod (prime^w)) => ext out
+      (RecursiveInterchangeLayout.index prime v a row (b*prime^(64*(w*64))+(LabelAddress.address label).val) h mid k t)
+    exact (congrArg read columns.symm).trans ((yo f a ha row hr b hB h hh mid hm k hk t ht).trans
+      (xy g a ha row hr b hB h hh mid hm k hk t ht))
+  · have priced := cost v w B (by decide) hw hb shape pos
+    change LabelRoute.pivotCost v w ps + 2 ≤ C*volume prime v + 63*_ at priced
+    omega
+
 end IntegerMultBounds.MathlibTM2.M6.BitNode

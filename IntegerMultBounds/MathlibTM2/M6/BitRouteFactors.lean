@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.Networks.Certificates.PR589.Nine.Stage
+public import IntegerMultBounds.Networks.Certificates.PR589.Nine.Charts
 public import IntegerMultBounds.MathlibTM2.Cover.LabelPass
 
 /-! Scalar instructions of the three triangular PR589 stage factors. -/
@@ -108,4 +108,75 @@ theorem stageFactor_reduce (c : PortCertificate) (checked : c.Checked) (s : Fin 
     change IsUnit (((reduce (prime^w) E).submatrix e e).det)
     rwa [det_submatrix_equiv_self]
   exact ⟨renumber L determinant.1,renumber M determinant.2.1,renumber R determinant.2.2,inv⟩
+/-- A helper chart consists of the half-line, the seven complement columns,
+and exterior coordinate columns, permuted into the slot order. -/
+theorem helperChart_entry (c : PortCertificate) (checked : c.Checked) (x : ℕ) (hx : x ≤ 55)
+    (a b : Axis) : Occurs (c.helperChart x hx a b) := by
+  change Occurs (c.fullChart a (slotPerm x hx b))
+  generalize slotPerm x hx b = k
+  have zero : Occurs 0 := by simpa using half_occurs (z := 0) (by decide) (by decide)
+  have one : Occurs 1 := scale_occurs (sign_scale (Or.inl rfl))
+  rcases k with l | (k | y) <;> rcases a with i | z
+  · change Occurs ((c.line i : ℚ)/2)
+    have sq := Finset.single_le_sum (f := fun j => c.line j * c.line j)
+      (fun j _ => mul_self_nonneg _) (Finset.mem_univ i)
+    rw [checked.1] at sq
+    apply half_occurs <;> nlinarith
+  · exact zero
+  · obtain ⟨n,lo,hi,eq⟩ := c.spread_entry checked 0 i (0,k)
+    change Occurs (c.complement i k)
+    simp only [PortCertificate.spread,Matrix.of_apply,ite_true,eq_self] at eq
+    rw [eq]
+    exact half_occurs lo hi
+  · exact zero
+  · exact zero
+  · change Occurs ((1 : Matrix Exterior Exterior ℚ) z y)
+    rw [one_apply]
+    split <;> assumption
+
+/-- Number the line and its seven complement columns in the local eight-axis
+block, leaving the exterior axes in place. -/
+def helperAxis : ChartAxis ≃ Axis :=
+  (Equiv.sumAssoc (Fin 1) (Fin 7) Exterior).symm.trans
+    (Equiv.sumCongr finSumFinEquiv (Equiv.refl Exterior))
+
+def helperBasis (c : PortCertificate) : Matrix Axis Axis ℚ :=
+  let basis : Matrix (Fin 8) (Fin 8) ℚ := fun i j =>
+    Sum.elim (fun _ => (c.line i : ℚ)/2) (c.complement i) (finSumFinEquiv.symm j : Fin 1 ⊕ Fin 7)
+  fromBlocks basis 0 0 1
+
+/-- The slot selects a permutation of one fixed port basis. Only its eight
+local axes require a basis change. -/
+theorem helperChart_blocks (c : PortCertificate) (x : ℕ) (hx : x ≤ 55) :
+    ∃ π : Equiv.Perm Axis, c.helperChart x hx = (helperBasis c).submatrix id π := by
+  let perm := fun a => helperAxis (slotPerm x hx a)
+  let π := Equiv.ofBijective perm (Finite.injective_iff_bijective.mp
+    (helperAxis.injective.comp (slotPerm_injective x hx)))
+  refine ⟨π,?_⟩
+  ext a b
+  change c.fullChart a (slotPerm x hx b) =
+    helperBasis c a (helperAxis (slotPerm x hx b))
+  generalize slotPerm x hx b = k
+  rcases k with l | (j | y) <;> cases a <;>
+    simp [fromBlocks,helperAxis,helperBasis,PortCertificate.fullChart,PortCertificate.halfLine,PortCertificate.flag]
+
+/-- Over every prime-power width the helper chart's transpose undoes the
+chart in either order, and its eight local columns are the selected slot. -/
+theorem helperChart_reduce (c : PortCertificate) (checked : c.Checked) (x : ℕ) (hx : x ≤ 55)
+    (w : ℕ) :
+    let H := reduce (prime^w) (c.helperChart x hx)
+    H.transpose * H = 1 ∧ H * H.transpose = 1 ∧
+      H * reduce (prime^w) PortCertificate.localChart = reduce (prime^w) (c.slotChart x) := by
+  intro H
+  have adm : Admissible (prime^w) (c.helperChart x hx) := fun i j =>
+    Nat.Coprime.pow_right w ((Nat.coprime_of_lt_prime (c.helperChart x hx i j).den_pos.ne' (denominator_bound
+      (helperChart_entry c checked x hx i j)) prime_prime).symm)
+  have inv := reduce_inverse (prime^w) (fun i j => adm j i) adm (c.helperChart_orthonormal checked x hx)
+  change H.transpose * H = 1 at inv
+  refine ⟨inv,mul_eq_one_comm.mp inv,?_⟩
+  rw [← c.helperChart_local x hx]
+  apply (reduce_mul _ adm _).symm
+  intro i j
+  cases i <;> simp [PortCertificate.localChart]
+  split <;> simp
 end IntegerMultBounds.MathlibTM2.M6.BitNode
