@@ -185,22 +185,26 @@ theorem chartAddress_selected (w : ℕ) [NeZero (prime^w)] :
 open FlatCoordinateLayout (rank)
 open RecursiveInterchangeLayout (Descriptor volume)
 
-/-- Group the same interval of each eight-coordinate half into the two
+/-- Group the same interval of each coordinate half into the two
 active fields. The middle contains the H suffix followed by the D prefix. -/
-noncomputable def phaseIntervalChild (lo hi w W : ℕ) : Descriptor :=
+noncomputable def phaseIntervalChild (lo hi w W : ℕ) (axes : ℕ := 8) : Descriptor :=
   let M := prime^w
-  ⟨1,1,M^lo,(hi-lo)*w,M^((8-hi)+lo),M^(8-hi)*W⟩
+  ⟨1,1,M^lo,(hi-lo)*w,M^((axes-hi)+lo),M^(axes-hi)*W⟩
 
-theorem phaseIntervalChild_volume {lo hi : ℕ} (ordered : lo ≤ hi) (fits : hi ≤ 8) (w W : ℕ) :
-    volume prime (phaseIntervalChild lo hi w W) = (prime^w)^16*W := by
+theorem intervalChild_volume {lo hi axes : ℕ} (ordered : lo ≤ hi) (fits : hi ≤ axes) (w W : ℕ) :
+    volume prime (phaseIntervalChild lo hi w W axes) = (prime^w)^(axes+axes)*W := by
   let M := prime^w
   have field : prime^((hi-lo)*w) = M^(hi-lo) := by rw [Nat.mul_comm,pow_mul]
   simp only [volume,phaseIntervalChild,one_mul,field]
-  change M^lo * M^(hi-lo) * M^(8-hi+lo) * M^(hi-lo) * (M^(8-hi)*W) = M^16*W
+  change M^lo * M^(hi-lo) * M^(axes-hi+lo) * M^(hi-lo) * (M^(axes-hi)*W) = M^(axes+axes)*W
   rw [← Nat.mul_assoc]
   repeat rw [← pow_add]
   congr 2
   omega
+
+theorem phaseIntervalChild_volume {lo hi : ℕ} (ordered : lo ≤ hi) (fits : hi ≤ 8) (w W : ℕ) :
+    volume prime (phaseIntervalChild lo hi w W) = (prime^w)^16*W :=
+  intervalChild_volume ordered fits w W
 
 open IntegerMultBounds.Networks.Certificates.PR589 in
 theorem phaseIntervalChild_width {p : ℕ × ℕ} (checked : Geometry.Moves.CheckedPair p) (w W : ℕ) :
@@ -312,6 +316,25 @@ theorem copyChild_measures (v : Descriptor) (w rows : ℕ)
     calc
       _ = ((prime^w)^16*(prime^w)^112)*(v.beforeRows*rows*v.beforeH*v.between*v.afterD)*142080 := by ac_rfl
       _ = _ := by rw [powers]; ac_rfl
+
+/-- On an idle owner the recursive fields are precisely the unhosted flag interval.
+All other digits stay on the same tape as spectators. -/
+theorem remainderChild_measures (v : Descriptor) (w rows : ℕ)
+    (width : v.width = 64*w) (splitRows : v.rows = 142080*rows)
+    (e : ℕ × ℕ) (he : e ∈ BitHosting.remainderIntervals) (t : ℕ) (ht : t < 111) :
+    let W := v.beforeRows*rows*v.beforeH*v.between*v.afterD
+    let child := phaseIntervalChild e.1 e.2 w W 64
+    child.width * 64 = ((Nine.port t).span e.1 e.2).rank * v.width ∧
+      volume prime child * 142080 = volume prime v := by
+  intro W child
+  constructor
+  · rw [BitHosting.rank_remainder t ht e he, width]
+    change (e.2-e.1)*w*64 = (e.2-e.1)*(64*w)
+    ac_rfl
+  · obtain ⟨ordered, fits, _⟩ := BitHosting.remainder_counts e he
+    rw [intervalChild_volume ordered (show e.2 ≤ 64 by omega)]
+    simp only [volume,width,splitRows,show 64*w = w*64 by omega,pow_mul,W,pow_add]
+    ac_rfl
 
 /-- Install header words next to their caller while keeping arithmetic scratch
 outside the caller/header pair. -/
@@ -445,23 +468,23 @@ theorem copySegment_runs (ops : List (AffineFieldProgram.Op (Fin 8) ℚ)) (good 
 /-- Split each half into a prefix, the active interval and a suffix.
 The remainder after the H field and the prefix before the D field share
 the descriptor's middle register. -/
-noncomputable def phaseIntervalAddress {lo hi : ℕ}
+noncomputable def intervalAddress (axes : ℕ) {lo hi : ℕ}
     (a b : Fin lo → ZMod (prime^w)) (h d : Fin (hi-lo) → ZMod (prime^w))
-    (u v : Fin (8-hi) → ZMod (prime^w)) (j : Fin W) :
-    RecursiveInterchangeScaling.Address (phaseIntervalChild lo hi w W) :=
+    (u v : Fin (axes-hi) → ZMod (prime^w)) (j : Fin W) :
+    RecursiveInterchangeScaling.Address (phaseIntervalChild lo hi w W axes) :=
   let field (x : Fin (hi-lo) → ZMod (prime^w)) := (rank x).cast
     (show (prime^w)^(hi-lo) = prime^((hi-lo)*w) by rw [← pow_mul,Nat.mul_comm])
   ⟨(0 : Fin 1),(0 : Fin 1),rank a,field h,rank (Fin.addCases u b),field d,
     finProdFinEquiv (rank v,j)⟩
 
-theorem phaseInterval_index {lo hi : ℕ}
+theorem intervalAddress_index (axes : ℕ) {lo hi : ℕ}
     (a b : Fin lo → ZMod (prime^w)) (h d : Fin (hi-lo) → ZMod (prime^w))
-    (u v : Fin (8-hi) → ZMod (prime^w)) (j : Fin W) :
-    (RecursiveInterchangeScaling.index (phaseIntervalAddress a b h d u v j)).val =
+    (u v : Fin (axes-hi) → ZMod (prime^w)) (j : Fin W) :
+    (RecursiveInterchangeScaling.index (intervalAddress axes a b h d u v j)).val =
       (FlatCoordinateLayout.index (Fin.addCases (Fin.addCases (Fin.addCases a h) u)
         (Fin.addCases (Fin.addCases b d) v)) j).val := by
   rw [RecursiveInterchangeScaling.index_val,FlatCoordinateLayout.index_val]
-  simp only [phaseIntervalAddress,phaseIntervalChild,RecursiveInterchangeLayout.index,
+  simp only [intervalAddress,phaseIntervalChild,RecursiveInterchangeLayout.index,
     Fin.val_zero,zero_mul,zero_add,Fin.val_cast,finProdFinEquiv,Equiv.coe_fn_mk,
     ArbitraryWidthSliceTranspose.rank_append]
   rw [show prime^((hi-lo)*w) = (prime^w)^(hi-lo) by rw [← pow_mul,Nat.mul_comm]]
@@ -470,6 +493,25 @@ theorem phaseInterval_index {lo hi : ℕ}
 
 /-- A single transpose exchanges exactly the interval and preserves all
 four exterior slices and the trailing record position. -/
+theorem intervalAddress_transpose (axes : ℕ) {lo hi : ℕ} {α : Type*}
+    (x : Fin (volume prime (phaseIntervalChild lo hi w W axes)) → α)
+    (a b : Fin lo → ZMod (prime^w)) (h d : Fin (hi-lo) → ZMod (prime^w))
+    (u v : Fin (axes-hi) → ZMod (prime^w)) (j : Fin W) :
+    Shared50RecursiveNodeRows.transpose (one_dvd _) x
+      (RecursiveInterchangeScaling.index (intervalAddress axes a b d h u v j)) =
+      x (RecursiveInterchangeScaling.index (intervalAddress axes a b h d u v j)) :=
+  Shared50RecursiveNodeTranspose.transpose_all (by decide : 0 < 1) _ _ (intervalAddress axes a b h d u v j)
+
+noncomputable abbrev phaseIntervalAddress {lo hi : ℕ} := @intervalAddress w W 8 lo hi
+
+theorem phaseInterval_index {lo hi : ℕ}
+    (a b : Fin lo → ZMod (prime^w)) (h d : Fin (hi-lo) → ZMod (prime^w))
+    (u v : Fin (8-hi) → ZMod (prime^w)) (j : Fin W) :
+    (RecursiveInterchangeScaling.index (phaseIntervalAddress a b h d u v j)).val =
+      (FlatCoordinateLayout.index (Fin.addCases (Fin.addCases (Fin.addCases a h) u)
+        (Fin.addCases (Fin.addCases b d) v)) j).val :=
+  intervalAddress_index 8 a b h d u v j
+
 theorem phaseInterval_transpose {lo hi : ℕ} {α : Type*}
     (x : Fin (volume prime (phaseIntervalChild lo hi w W)) → α)
     (a b : Fin lo → ZMod (prime^w)) (h d : Fin (hi-lo) → ZMod (prime^w))
@@ -477,7 +519,7 @@ theorem phaseInterval_transpose {lo hi : ℕ} {α : Type*}
     Shared50RecursiveNodeRows.transpose (one_dvd _) x
       (RecursiveInterchangeScaling.index (phaseIntervalAddress a b d h u v j)) =
       x (RecursiveInterchangeScaling.index (phaseIntervalAddress a b h d u v j)) :=
-  Shared50RecursiveNodeTranspose.transpose_all (by decide : 0 < 1) _ _ (phaseIntervalAddress a b h d u v j)
+  intervalAddress_transpose 8 x a b h d u v j
 
 private def joinInterval {α : Type*} {lo hi : ℕ} (ordered : lo ≤ hi) (fits : hi ≤ 8)
     (a : Fin lo → α) (h : Fin (hi-lo) → α) (u : Fin (8-hi) → α) (k : Fin 8) : α :=
