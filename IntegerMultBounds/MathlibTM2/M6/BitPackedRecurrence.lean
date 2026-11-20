@@ -1,7 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.M6.BitDescriptorRecurrence
-public import IntegerMultBounds.MathlibTM2.Cover.FallbackGoodRecordReturn
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackGoodRecordRoundTrip
 
 /-! PR589 root cost with the stopped packed coordinate budget at each leaf. -/
 @[expose] public section
@@ -49,12 +49,12 @@ theorem five_packed_root_closed [M8.Machine.Net] {Node : Type*} (layout : Node �
     (positive : 0 < volume prime (layout root))
     (rootLeaf : (layout root).width ≤ u → ∃ d w, 0 < d ∧ d ≤ 42 ∧
       (layout root).width = d*(w+1) ∧
-      steps root ≤ pivotSetupTime 64 d w (prime^(w+1)).size + packedCoordinatesTime d (volume prime (layout root)) w tapes push entryTapes returnTapes + 2892*volume prime (layout root))
+      steps root ≤ pivotSetupTime 64 d w (prime^(w+1)).size + packedCoordinatesTime d (volume prime (layout root)) w tapes push entryTapes returnTapes + recordRoundTripRate 64*volume prime (layout root))
     (childLeaf : ∀ x, u < (layout x).width → 0 < volume prime (layout x) →
       64 ∣ (layout x).width → 142080 ∣ (layout x).rows → ∀ i, (layout (child x i)).width ≤ u →
       steps (child x i) ≤ pivotSetupTime 64 nodeChildren5[i.val] ((layout x).width/64-1)
         (prime^((layout x).width/64-1+1)).size + packedCoordinatesTime nodeChildren5[i.val] (volume prime (layout (child x i)))
-        ((layout x).width/64-1) tapes push entryTapes returnTapes + 2892*volume prime (layout (child x i)))
+        ((layout x).width/64-1) tapes push entryTapes returnTapes + recordRoundTripRate 64*volume prime (layout (child x i)))
     (physical : ∀ x, u < (layout x).width → 0 < volume prime (layout x) →
       64 ∣ (layout x).width → 142080 ∣ (layout x).rows → ∀ i, layout (child x i) = scheduledChild prime (layout x) i)
     (hcost : ∀ x, u < (layout x).width → 0 < volume prime (layout x) →
@@ -63,7 +63,7 @@ theorem five_packed_root_closed [M8.Machine.Net] {Node : Type*} (layout : Node �
         ((∑ i, steps (child x i) : ℕ) : ℝ)) :
     (steps root : ℝ) ≤
       (2 * C₁ / (1 - ((42 : ℝ) / 64) ^ (lam - (1 - bitSaving))) * K ^ τ * ((layout root).width : ℝ) ^ lam +
-      ((pivotSetupTime 64 42 1 1 * (2*(prime.size+1)^2) + 2892 : ℕ) + packedCoordinatesRate 42 tapes push entryTapes returnTapes) * ((layout root).width : ℝ) ^ (1 - bitSaving) * (u : ℝ) ^ (1 - (1 - bitSaving))) * volume prime (layout root) := by
+      ((pivotSetupTime 64 42 1 1 * (2*(prime.size+1)^2) + recordRoundTripRate 64 : ℕ) + packedCoordinatesRate 42 tapes push entryTapes returnTapes) * ((layout root).width : ℝ) ^ (1 - bitSaving) * (u : ℝ) ^ (1 - (1 - bitSaving))) * volume prime (layout root) := by
   apply five_root_closed prime layout child steps root depth u hτ hτl hlam hK _ hC₁ hu width rows stop
     positive _ _ physical hcost
   · apply add_nonneg (Nat.cast_nonneg _)
@@ -72,12 +72,12 @@ theorem five_packed_root_closed [M8.Machine.Net] {Node : Type*} (layout : Node �
   · intro small
     obtain ⟨d,w,active,rankBound,split,run⟩ := rootLeaf small
     exact goodCoordinates_steps_linear _ (M8.RevMachine.LeafCore.positive_of_volume positive)
-      64 d 42 w tapes push entryTapes returnTapes 2892 _ active rankBound split run
+      64 d 42 w tapes push entryTapes returnTapes (recordRoundTripRate 64) _ active rankBound split run
   · intro x large pos div rows i childPos small
     have atom : 0 < (layout x).width / 64 :=
       Nat.div_pos (Nat.le_of_dvd (Nat.zero_lt_of_lt large) div) (by decide)
     apply goodCoordinates_steps_linear _ (M8.RevMachine.LeafCore.positive_of_volume childPos)
-      64 _ 42 _ _ _ _ _ 2892 _ (scheduledRank_pos i) (nodeChildren5_le i) _ (childLeaf x large pos div rows i small)
+      64 _ 42 _ _ _ _ _ (recordRoundTripRate 64) _ (scheduledRank_pos i) (nodeChildren5_le i) _ (childLeaf x large pos div rows i small)
     rw [physical x large pos div rows i]
     change _ * _ = _ * _
     congr 1

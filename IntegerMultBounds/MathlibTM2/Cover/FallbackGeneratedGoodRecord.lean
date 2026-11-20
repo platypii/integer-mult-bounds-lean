@@ -236,13 +236,11 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
       let transfer := fun ports : Fin 8 ↪ Fin K => (stateLiftNormalize capacity (by decide)).seq
         (stateLiftPr capacity (by decide) Empty.elim (returnFromOrigin (P := Empty) ports))
       let marks := ([2,3,4,5,6,7] : List (Fin 8)).map r
-      let packed := (List.ofFn fun i => binSyms (A := prime) M.size (parent i).val).flatten
-      let loading := ((6*(m*H)+6)+((10*H+12)+(m*(10*M.size+8*(H-M.size)+12)+1+
-        (2*packed.length+2))))+((10*M.size+10)+(6*w+6))
-      let conversion := fun label => (m*m)*(10*M.size+8*(H-M.size)+12)+1+(2*(matrixWords prime M.size (G label)).length+2)
+      let loading := recordWeightLoadTime m w H M.size
+      let conversion := recordMatrixLoadTime m H M.size
       let headerCost := (((List.finRange 6).map fun i => 6*((Routines.hdr v i).length)+6).sum+1)+1
       let runCost := fun label => (((conjugationDepth m+1)*(6*H+6)+1 + (((4*H+4)+(generation label+(2*H+2)))+((conjugationDepth m+1)*(2*H+2)+1))) + (21*(w+1)+13)) + headerCost + ((dimensionTime H 1 fields+(4*(fields*H+1)+6)+(10*J+12)+(6*(M^fields).size+6)) +
-        (loading+(conversion label+(budget+2*((218*N+1)*13+6)+3)))) + (1+(4*(prefixes label).length+4+(m*m*(4*(w+1)+4)+1)+1))
+        (loading+(conversion+(budget+2*((218*N+1)*13+6)+3)))) + (1+(4*(prefixes label).length+4+(m*m*(4*(w+1)+4)+1)+1))
       let prepareCounters := (swapExponent (leafCounterPorts aux)).seq
         (.act (installLeafCounters (aux.trans inner) arity d))
       let prepareHeaders := (Record.copyLeafHeaders src dst (caller 64) (caller 65) (List.finRange 6)).seq (.act (pushMarkers ((List.finRange 6).map dst)))
@@ -292,7 +290,7 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
   intro d common host M N entry leave record bank commonPorts aux hdrPorts logical addr inner caller K ef xf eqs xqs initialWord
     body initialUser initialState poolFits directory prefixes archiveTail allLabels slots headers scanCaller scan joined dirSlots dir pool pivot counters inputs ports a digits prefixWidth zeros
     packedLabel clock count formula formulaCost detFormula C readBill generationBill generate withZero field slot r src dst ready payload gs matrices liveBit badBit
-    call cost budget coordinate effects reverse transfer marks packed loading conversions headerCost runBills prepareCounters prepareHeaders recordProgram
+    call cost budget coordinate effects reverse transfer marks loading conversion headerCost runBills prepareCounters prepareHeaders recordProgram
     privateTapes initialClear c bodyBound charge mask mode modes skip skipCost fallback badCost badEffect bad room Bcount rs parents shape freePrivate dirPositive brSize rowsSize beforeHSize parentsFree freeMask freeMode high initCounters clean initialReady initialPayload setupCost branchCost action priced
   have clockSlot : headers 0 = 45 := rfl
   have widthSlot : headers 2 = 2 := rfl
@@ -433,7 +431,7 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
       have first : 0 ∈ allLabels := List.mem_range.mpr (Nat.zero_lt_of_lt (List.mem_range.mp hj))
       exact (initialReady.2.1 j hj).symm.trans (initialReady.2.1 0 first)
     have sameCharge (j : ℕ) (hj : j ∈ allLabels) : charge j = charge 0 := by
-      simp only [charge,runBills,generationBill,readBill,conversions,length_matrixWords,sameWidth j hj]
+      simp only [charge,runBills,generationBill,readBill,sameWidth j hj]
     have skipBound (j : ℕ) (hj : j ∈ allLabels) : skipCost j ≤ charge 0 := by
       rw [← sameCharge j hj]
       exact (Nat.le_add_left _ _).trans (Nat.le_add_right (runBills j) _)
@@ -487,7 +485,6 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
     let tail := labels.flatMap (LabelDirectory.entry prefixes m (w+1)) ++ archiveTail
     let readCost := readBill label
     let generation := generationBill label
-    let conversion := conversions label
     let runCost := runBills label
     obtain ⟨dirInput,widths,privateBlank,scanBlank,projectorInput,base,unit,trailing,sourceWords,one,ticks,archive⟩ := start
     have prefixInput := widths label List.mem_cons_self
@@ -836,10 +833,7 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
       Exec.seq (Exec.seq (Exec.seq (Exec.seq runWriter prep) install) run) advance
     have bound : (n+costC+headerCost)+t+(1+(4*ancestor.length+4+(m*m*(4*(w+1)+4)+1)+1)) ≤ runCost := by
       apply Nat.add_le_add_right (Nat.add_le_add (Nat.add_le_add_right (Nat.add_le_add hn hCost) _) _) _
-      rw [show C.R ((Fin.castAddEmb (CommonBank.count T+24+31+work)) 55) = whole.R (caller 55) from (callerFrame 55).2.trans (preserved 55),
-        show C.R ((Fin.castAddEmb (CommonBank.count T+24+31+work)) 45) = whole.R (caller 45) from (callerFrame 45).2.trans (preserved 45)] at ht
-      rw [archive,ticks] at ht
-      simpa [loading,packed,List.length_flatten,Function.comp_def,length_binSyms,List.ofFn_const] using ht
+      exact ht
     have distinct : privateTapes.Nodup := (List.nodup_finRange K).filter _
     obtain ⟨finish,userFinish,clear⟩ := clearWorkTapes_exec body privateTapes distinct last finalBank
     have charge := recordCleanup_cost_le privateTapes distinct step (le_max_left (mnProgPush recordProgram) c)

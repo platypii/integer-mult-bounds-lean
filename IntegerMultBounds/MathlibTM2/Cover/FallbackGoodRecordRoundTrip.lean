@@ -12,6 +12,89 @@ open M8.RevMachine RecursiveInterchangeLayout Matrix Finset IntegerMultBounds.Sw
   IntegerMultBounds.Swap.Modular
 local instance (w : ℕ) : NeZero (prime^(w+1)) := ⟨pow_ne_zero _ Networks.Shared50ModularControl.prime_prime.ne_zero⟩
 
+/-- Archive input and matrix conversion on a record with padded and binary field widths. -/
+def recordWeightLoadTime (m w H bits : ℕ) :=
+  ((6*(m*H)+6)+((10*H+12)+(m*(10*bits+8*(H-bits)+12)+1+(2*(m*bits)+2))))+
+    ((10*bits+10)+(6*w+6))
+
+def recordMatrixLoadTime (m H bits : ℕ) :=
+  (m*m)*(10*bits+8*(H-bits)+12)+1+(2*(m*m*bits)+2)
+
+/-- Every archive field costs at most a constant per payload cell when
+the field widths and clock fit the volume. -/
+theorem recordLoadTime_le (m w H bits V : ℕ) (pos : 0 < V) (clock : w ≤ V)
+    (field : H ≤ V) (binary : bits ≤ V) :
+    recordWeightLoadTime m w H bits + recordMatrixLoadTime m H bits ≤
+      (recordWeightLoadTime m 1 2 1 + recordMatrixLoadTime m 2 1)*V := by
+  unfold recordWeightLoadTime recordMatrixLoadTime
+  have pad := (Nat.sub_le H bits).trans field
+  grw [pad,binary,field,clock]
+  have one : 1 ≤ V := pos
+  have linear := Nat.le_mul_of_pos_right m pos
+  have square := Nat.le_mul_of_pos_right (m*m) pos
+  nlinarith only [one,linear,square]
+
+/-- At binary archive width the modulus itself covers both the clock and
+the field length. -/
+theorem recordLoadTime_binary_le (m w V : ℕ) (radix : prime^(w+1) ≤ V) :
+    let bits := (prime^(w+1)).size
+    recordWeightLoadTime m w bits bits + recordMatrixLoadTime m bits bits ≤
+      (recordWeightLoadTime m 1 2 1 + recordMatrixLoadTime m 2 1)*V := by
+  intro bits
+  have hp := Networks.Shared50ModularControl.prime_prime
+  have size : bits ≤ V := (Nat.size_le.mpr Nat.lt_two_pow_self).trans radix
+  have clock : w ≤ V := (Nat.le_succ w).trans ((Nat.lt_two_pow_self.le).trans
+    ((Nat.pow_le_pow_left hp.two_le (w+1)).trans radix))
+  exact recordLoadTime_le _ _ _ _ _ ((pow_pos hp.pos _).trans_le radix) clock size size
+
+def recordRoundTripRate (m : ℕ) :=
+  recordWeightLoadTime m 1 2 1 + recordMatrixLoadTime m 2 1 + 6000
+
+/-- Binary counters and both payload moves cost a constant per payload cell,
+uniformly in the number of fields. -/
+theorem recordRoundTripCost_le (m w fields W V budget : ℕ) (positive : 0 < W)
+    (radix : prime^(w+1) ≤ V) (volumeEq : V = (prime^(w+1))^fields*((prime^(w+1))^fields*W)) :
+    let M := prime^(w+1)
+    let H := M.size
+    (dimensionTime H 1 fields+(4*(fields*H+1)+6)+(10*W.size+12)+(6*(M^fields).size+6)) +
+      (recordWeightLoadTime m w H H+(recordMatrixLoadTime m H H+(budget+2*((218*V+1)*13+6)+3))) ≤
+      budget + recordRoundTripRate m*V := by
+  intro M H
+  let P := M^fields
+  have two : 2 ≤ M := le_trans Networks.Shared50ModularControl.prime_prime.two_le
+    (Nat.le_self_pow (by omega : w+1 ≠ 0) prime)
+  have bits : H ≤ M := Nat.size_le.mpr Nat.lt_two_pow_self
+  have count (n : ℕ) : n*M ≤ M^n := by
+    induction n with
+    | zero => simp
+    | succ n ih =>
+      cases n with
+      | zero => simp
+      | succ n =>
+        have hm : M ≤ M^(n+1) := Nat.le_self_pow (by omega) M
+        rw [Nat.succ_mul,pow_succ]
+        exact (Nat.add_le_add ih hm).trans (by simpa [Nat.mul_two] using Nat.mul_le_mul_left (M^(n+1)) two)
+  have fh : fields*H ≤ P := (Nat.mul_le_mul_left _ bits).trans (count fields)
+  have fp : fields ≤ P := (Nat.le_mul_of_pos_right fields (by omega : 0 < M)).trans (count fields)
+  have pp : 0 < P := pow_pos (by omega : 0 < M) _
+  have square : P*P ≤ V := by rw [volumeEq]; exact Nat.mul_le_mul_left _ (Nat.le_mul_of_pos_right _ positive)
+  have pv : P ≤ V := (Nat.le_mul_of_pos_right _ pp).trans square
+  have tail : W.size ≤ V := by
+    apply (Nat.size_le.mpr Nat.lt_two_pow_self).trans
+    rw [volumeEq]; exact (Nat.le_mul_of_pos_left _ pp).trans (Nat.le_mul_of_pos_left _ pp)
+  have plen : P.size ≤ V := (Nat.size_le.mpr Nat.lt_two_pow_self).trans pv
+  have posV := pp.trans_le pv
+  have dim := dimensionTime_le H 1 fields
+  have quad := (Nat.mul_le_mul fh fh).trans square
+  have mixed := (Nat.mul_le_mul fp fh).trans square
+  have counter : dimensionTime H 1 fields ≤ 130*V := by
+    nlinarith only [dim,quad,mixed,fh.trans pv,fp.trans pv,posV]
+  have load := recordLoadTime_binary_le m w V radix
+  change recordWeightLoadTime m w H H + recordMatrixLoadTime m H H ≤ _ at load
+  change _ + (4*(fields*H+1)+6) + (10*W.size+12) + (6*P.size+6) + _ ≤ _
+  rw [recordRoundTripRate,Nat.add_mul (recordWeightLoadTime m 1 2 1 + recordMatrixLoadTime m 2 1) 6000 V]
+  omega
+
 theorem goodRecordRoundTrip_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ} {F U : Type}
     (v : Descriptor) (positive : v.Positive) (w : ℕ) (proj : Matrix (Fin m) (Fin m) ℚ)
     (width : v.width = proj.rank*(w+1)) (idem : proj*proj = proj)
@@ -86,10 +169,8 @@ theorem goodRecordRoundTrip_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
       let transfer := fun ports : Fin 8 ↪ Fin K => (stateLiftNormalize capacity (by decide)).seq
         (stateLiftPr capacity (by decide) Empty.elim (returnFromOrigin (P := Empty) ports))
       let marks := ([2,3,4,5,6,7] : List (Fin 8)).map r
-      let packed := (List.ofFn fun i => binSyms (A := prime) M.size (parent i).val).flatten
-      let loading := ((6*(whole.R (caller 55)).length+6)+((10*H+12)+(m*(10*M.size+8*(H-M.size)+12)+1+
-        (2*packed.length+2))))+((10*M.size+10)+(6*(whole.R (caller 45)).length+6))
-      let conversion := (m*m)*(10*M.size+8*(H-M.size)+12)+1+(2*(matrixWords prime M.size G).length+2)
+      let loading := recordWeightLoadTime m w H M.size
+      let conversion := recordMatrixLoadTime m H M.size
       ∃ z D t ys, z.user = u.user ∧ t ≤ (dimensionTime H 1 fields+(4*(fields*H+1)+6)+(10*J+12)+(6*(M^fields).size+6)) +
         (loading+(conversion+(budget+2*((218*N+1)*13+6)+3))) ∧
         Exec body ((recordCounterSetup caller fields).seq ((recordInputProgram record m).seq ((recordMatrixProgram record m).seq ((.act (pushMarkers marks) : Pr F K Q prime U).seq
@@ -100,7 +181,8 @@ theorem goodRecordRoundTrip_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
           D.L port = whole.L port ∧ D.R port = whole.R port := by
   intro d common host M N entry leave record bank g G rep clean logical addr inner caller K ef xf eqs xqs word
     body u whole tail slot r S base unit trailing spare input blank initial free empty good matrix
-    one ticks archive scratch call cost budget coordinate effect reverse transfer marks packed loading conversion
+    one ticks archive scratch call cost budget coordinate effect reverse transfer marks loading conversion
+  let packed := (List.ofFn fun i => binSyms (A := prime) M.size (parent i).val).flatten
   obtain ⟨a,A,c,ha,hc,setup,left,controls,off⟩ := recordCounterSetup_exec body caller fields H J M W
     hm hw u whole base unit trailing spare
   have disjoint (i : Fin 66) (j) : caller i ≠ inner j := by
@@ -178,7 +260,16 @@ theorem goodRecordRoundTrip_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
     (by intro i; rw [port]; exact ⟨(raw i).1,(outerRight _).trans (raw i).2⟩)
   suffices process : _ by
     obtain ⟨z,D,t,ys,hz,ht,run,act,read,frame⟩ := transferRun process
-    refine ⟨z,D,_,ys,hz.trans (hmat.trans (hb.trans ha)),Nat.add_le_add hc (Nat.add_le_add (by dsimp only [loading]; rw [show A.R (caller 55) = whole.R (caller 55) from callerKept 55,show A.R (caller 45) = whole.R (caller 45) from callerKept 45]) (Nat.add_le_add_left (by simpa only [← volumeEq] using ht) conversion)),Exec.seq setup (Exec.seq load (Exec.seq convert run)),act,read,?_⟩
+    have loadCost : ((6*(A.R (caller 55)).length+6)+((10*H+12)+(m*(10*M.size+8*(H-M.size)+12)+1+(2*packed.length+2))))+((10*M.size+10)+(6*(A.R (caller 45)).length+6)) ≤ loading := by
+      dsimp only [loading,recordWeightLoadTime]
+      rw [show A.R (caller 55) = whole.R (caller 55) from callerKept 55,
+        show A.R (caller 45) = whole.R (caller 45) from callerKept 45,archive,ticks]
+      simp [packed,List.length_flatten,List.map_ofFn,Function.comp_def,length_binSyms,List.ofFn_const]
+    refine ⟨z,D,_,ys,hz.trans (hmat.trans (hb.trans ha)),?_,Exec.seq setup (Exec.seq load (Exec.seq convert run)),act,read,?_⟩
+    · have length_matrixWords (b : ℕ) : (matrixWords prime b G).length = m*m*b := by
+        simp [matrixWords,List.length_flatten,List.map_ofFn,Function.comp_def,length_binSyms,List.ofFn_const,Nat.mul_assoc]
+      apply Nat.add_le_add hc (Nat.add_le_add loadCost _)
+      simpa only [conversion,recordMatrixLoadTime,length_matrixWords,← volumeEq] using Nat.add_le_add_left ht ((m*m)*(10*M.size+8*(H-M.size)+12)+1+(2*(matrixWords prime M.size G).length+2))
     intro j ne
     have outside (i : Fin 8) : r i ≠ caller (j.castAdd 8) := by
       by_cases h : i = 1
