@@ -20,12 +20,63 @@ def goodRecordPivotPorts : Fin 16 ↪ Fin 82 :=
 
 def goodRecordCounterPorts : Fin 2 ↪ Fin 82 := ⟨![45,73],by decide⟩
 
-/-- Seven caller tapes hold the directory inputs. The remaining eleven
+/-- Six caller tapes hold the directory inputs. The remaining twelve
 registers borrow blank elimination tapes until the matrix is produced. -/
-def goodRecordDirectoryPorts (headers : Fin 7 ↪ Fin 58) : Fin 18 ↪ Fin 82 :=
-  let order : Fin 18 ↪ Fin (7+11) := ⟨![7,0,1,8,9,10,11,12,2,3,13,14,4,15,16,17,5,6],by decide⟩
-  let scratch : Fin 11 ↪ Fin 24 := ⟨![2,3,4,5,6,7,17,8,9,10,11],by decide⟩
+def goodRecordDirectoryPorts (headers : Fin 6 ↪ Fin 58) : Fin 18 ↪ Fin 82 :=
+  let order : Fin 18 ↪ Fin (6+12) := ⟨![6,0,1,7,8,9,10,11,2,17,12,13,3,14,15,16,4,5],by decide⟩
+  let scratch : Fin 12 ↪ Fin 24 := ⟨![2,3,4,5,6,7,17,8,9,10,11,18],by decide⟩
   ((order.trans finSumFinEquiv.symm.toEmbedding).trans (headers.sumMap scratch)).trans finSumFinEquiv.toEmbedding
+
+/-- Borrow a blank register for the padded zero word and release it after
+the matrix writer has consumed the constant. -/
+theorem withRecordZero_exec {T Q A : ℕ} {P U : Type} (body : P → Pr P T Q A U)
+    (src zero tmp dst : Fin T) (ports : [src,zero,tmp].Nodup) (apart : dst ≠ zero)
+    (program : Pr P T Q A U) (word : List (Fin (A+4))) (cost : ℕ)
+    (u : HS T Q A U) (S : Stacks T A) (blank : S.R zero = []) (free : S.R tmp = []) :
+    let H := (S.R src).length
+    let B := {S with R := Function.update S.R zero (binSyms H 0)}
+    (∀ v : HS T Q A U, ∃ y n, y.user = v.user ∧ n ≤ cost ∧ Exec body program (mk v B) n
+      (mk y {B with R := Function.update B.R dst (word ++ B.R dst)})) →
+    ∃ z t, z.user = u.user ∧ t ≤ (4*H+4)+(cost+(2*H+2)) ∧
+      Exec body ((Node.umulSym 1 (bitSymbol false) src zero tmp).seq (program.seq (bclear zero)))
+        (mk u S) t (mk z {S with R := Function.update S.R dst (word ++ S.R dst)}) := by
+  intro H B writer
+  simp only [List.nodup_cons,List.mem_cons,List.not_mem_nil,not_or] at ports
+  obtain ⟨v,hv,fill⟩ := Node.umulSym_exec body 1 (bitSymbol false) ports.1.1 ports.1.2.1 ports.2.1.1 u S free
+  have code : binSyms (A := A) H 0 = List.replicate H (bitSymbol false) := by simp [binSyms,List.ofFn_const]
+  rw [Nat.one_mul,blank,List.append_nil,← code] at fill
+  obtain ⟨y,n,hy,hn,run⟩ := writer v
+  let E := {B with R := Function.update B.R dst (word ++ B.R dst)}
+  obtain ⟨z,hz,_,clear⟩ := bclear_exec body zero y E
+  have len : (E.R zero).length = H := by simp [E,B,apart.symm,length_binSyms]
+  rw [len] at clear
+  refine ⟨z,_,hz.trans (hy.trans hv),Nat.add_le_add_left (Nat.add_le_add_right hn _) _,Exec.seq fill (Exec.seq run ?_)⟩
+  simpa only [E,B,Function.update_of_ne apart,Function.update_comm apart,
+    Function.update_idem,← blank,Function.update_eq_self] using clear
+
+/-- The directory reader needs one more digit than the reciprocal clock.
+Borrow the clock for the read and restore it before computing the reciprocal. -/
+def readWithSuccessorClock {T Q A : ℕ} {P U : Type} (clock : Fin T) (reader : Pr P T Q A U) : Pr P T Q A U :=
+  Prog.seq (.act (.push (.rt clock) (fun _ => Node.tick) .done)) (reader.seq (.act (Node.dropTop clock .done)))
+
+open LabelTraversal in
+theorem readWithSuccessorClock_writes {T Q A : ℕ} {P U : Type} (body : P → Pr P T Q A U)
+    (clock dst : Fin T) (apart : clock ≠ dst) (ok : Node.Regs T A → Prop)
+    (reader : Pr P T Q A U) (word : List (Fin (A+4))) (cost : ℕ)
+    (read : Writes body ok dst reader word cost) :
+    Writes body (fun R => ok (Function.update R clock (Node.tick :: R clock))) dst
+      (readWithSuccessorClock clock reader) word (1+(cost+1)) := by
+  intro u S ready
+  let D := {S with R := Function.update S.R clock (Node.tick :: S.R clock)}
+  have push : Exec body (.act (.push (.rt clock) (fun _ => Node.tick) .done)) (mk u S) 1 (mk u D) := by
+    simpa [D,Action.run,update_rt] using Exec.act (body := body) (.push (.rt clock) (fun _ => Node.tick) .done) (mk u S)
+  obtain ⟨y,n,hy,hn,run⟩ := read u D ready
+  let E := {D with R := Function.update D.R dst (word ++ D.R dst)}
+  have pop := Exec.act (body := body) (Node.dropTop clock .done) (mk y E)
+  refine ⟨y,1+(n+1),hy,by omega,Exec.seq push (Exec.seq run ?_)⟩
+  have restore (xs) : Function.update (Function.update S.R dst xs) clock (S.R clock) = Function.update S.R dst xs := by
+    funext i; by_cases h : i = clock <;> simp [h,apart]
+  simpa [restore,E,D,Node.dropTop,Action.run,update_rt,Function.update_comm apart,apart,apart.symm] using pop
 
 open RingFormula LabelTraversal in
 theorem generatedGoodRecordRoundTrip_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ} {F U : Type}
@@ -68,14 +119,14 @@ theorem generatedGoodRecordRoundTrip_exec [M8.Machine.Net] {T m work Q fields H 
     ∀ (ef : entry.tapes ≤ common+work) (xf : leave.tapes ≤ common+work)
       (eqs : entry.states ≤ Q) (xqs : leave.states ≤ Q) (word : Fin N → ZMod 2) (body : F → Pr F K Q prime U)
       (u : HS _ Q prime U) (whole : Stacks K prime),
-      ∀ (headers : Fin 7 ↪ Fin 58) (poolFits : (conjugationDepth m+1)*13 ≤ work) (ancestor tail : List (Fin (prime+4))),
+      ∀ (headers : Fin 6 ↪ Fin 58) (poolFits : (conjugationDepth m+1)*13 ≤ work) (ancestor tail : List (Fin (prime+4))),
       let joined := recordLoaderBank record
       let dirSlots := goodRecordDirectoryPorts headers
       let dir := dirSlots.trans joined
       let pool := ((Fin.castLEEmb poolFits).trans (Fin.natAddEmb (host+31))).trans inner
       let pivot := goodRecordPivotPorts.trans joined
       let counters := goodRecordCounterPorts.trans joined
-      headers 2 = 2 → headers 6 = 44 →
+      headers 0 = 45 → headers 2 = 2 → headers 5 = 44 →
       let inputs := sourcePorts (m := m) (QueueLayout.formulaInputs.trans dir) id
       let ports := QueueLayout.normalizationPorts.trans pivot
       let a := QueueLayout.readPorts.trans (QueueLayout.directoryWork.trans dir)
@@ -89,15 +140,17 @@ theorem generatedGoodRecordRoundTrip_exec [M8.Machine.Net] {T m work Q fields H 
       let formulaCost := Finset.univ.sup fun ij : Fin m × Fin m => time H (readTime H) (formula ij.1 ij.2)
       let detFormula := determinant (matrixInput (m := m) false)
       let C := 48*H*H+152*H+66
-      let generation := ((m*(m*(12*ancestor.length+8*((w+1)*(m*m))+(w+1)*(7*H+prime+31)+10*H+42)+1)+1) + (time H (readTime H) detFormula + (6*w+6+(14*H+16+(prime-2)*C+C+w*(12*H+15+prime*C))) +
+      let readCost := m*(m*(12*ancestor.length+8*((w+1)*(m*m))+(w+1)*(7*H+prime+31)+10*H+42)+1)+1
+      let generation := ((1+(readCost+1)) + (time H (readTime H) detFormula + (6*w+6+(14*H+16+(prime-2)*C+C+w*(12*H+15+prime*C))) +
        ((m*(m*(formulaCost+4*H+4)+1)+1) + (m*(m*(8*(m*m*H)+48*H*H+166*H+88)+1)+1) + (2*(m*m*H)+2)) + 4*H+4) + (2*(m*m*H)+2))
-      let generate : Pr F K Q prime U := (.seq (directoryMatrix m a digits prefixWidth zeros packedLabel) (.seq (.seq (.seq (compile (readLeaf (leafBank inputs)) (registerBank pool) detFormula 0 (pivot 14)) (reusablePivotInverse prime pivot clock count))
+      let generate : Pr F K Q prime U := (.seq (readWithSuccessorClock clock (directoryMatrix m a digits prefixWidth zeros packedLabel)) (.seq (.seq (.seq (compile (readLeaf (leafBank inputs)) (registerBank pool) detFormula 0 (pivot 14)) (reusablePivotInverse prime pivot clock count))
         (.seq (packedConjugate pool inputs ports false true) (.seq (bclear (pivot 0)) (bclear (pivot 14))))) (bclear packedLabel)))
+      let withZero := (Node.umulSym 1 (bitSymbol false) (dir 8) zeros (dir 4)).seq (generate.seq (bclear zeros))
       let field := fun i => caller ((headers i).castAdd 8)
       whole.R (field 1) = ancestor ++ (LabelDirectory.digits m (w+1) label).map RadixDigits.digitSymbol ++ tail →
-      (whole.R (field 4)).length = ancestor.length → (whole.R (field 0)).length = w+1 →
-      whole.R (field 3) = binSyms H 0 → (∀ j, whole.R (pool j) = []) →
-      (∃ suffix, whole.R (field 5) = matrixWords prime H (reduce M proj) ++ suffix) →
+      (whole.R (field 3)).length = ancestor.length →
+      (∀ j, whole.R (pool j) = []) →
+      (∃ suffix, whole.R (field 4) = matrixWords prime H (reduce M proj) ++ suffix) →
       let slot := (((LeafCore.roleSlot io).castAdd 24).castAdd 31).castAdd work
       let r := recordRoundTripPorts slot
       let S := embStk inner whole
@@ -135,17 +188,17 @@ theorem generatedGoodRecordRoundTrip_exec [M8.Machine.Net] {T m work Q fields H 
       let loading := ((6*(whole.R (caller 55)).length+6)+((10*H+12)+(m*(10*M.size+8*(H-M.size)+12)+1+
         (2*packed.length+2))))+((10*M.size+10)+(6*(whole.R (caller 45)).length+6))
       let conversion := (m*m)*(10*M.size+8*(H-M.size)+12)+1+(2*(matrixWords prime M.size G).length+2)
-      ∃ z D t ys, z.user = u.user ∧ t ≤ ((conjugationDepth m+1)*(6*H+6)+1 + (generation+((conjugationDepth m+1)*(2*H+2)+1))) + ((dimensionTime H 1 fields+(4*(fields*H+1)+6)+(10*J+12)+(6*(M^fields).size+6)) +
+      ∃ z D t ys, z.user = u.user ∧ t ≤ ((conjugationDepth m+1)*(6*H+6)+1 + (((4*H+4)+(generation+(2*H+2)))+((conjugationDepth m+1)*(2*H+2)+1))) + ((dimensionTime H 1 fields+(4*(fields*H+1)+6)+(10*J+12)+(6*(M^fields).size+6)) +
         (loading+(conversion+(budget+2*((218*N+1)*13+6)+3)))) ∧
-        Exec body (((initFrames pool (pivot 4) (conjugationDepth m+1)).seq (generate.seq (clearFrames pool (conjugationDepth m+1)))).seq ((recordCounterSetup caller fields).seq ((recordInputProgram record m).seq ((recordMatrixProgram record m).seq ((.act (pushMarkers marks) : Pr F K Q prime U).seq
+        Exec body (((initFrames pool (pivot 4) (conjugationDepth m+1)).seq (withZero.seq (clearFrames pool (conjugationDepth m+1)))).seq ((recordCounterSetup caller fields).seq ((recordInputProgram record m).seq ((recordMatrixProgram record m).seq ((.act (pushMarkers marks) : Pr F K Q prime U).seq
           ((transfer r).seq ((embProg inner Empty.elim coordinate).seq (transfer reverse)))))))) (mk u whole) t (mk z D) ∧
         effect ys ∧ (∀ k, readAt blank (D.L (r 0)) (D.R (r 0)) (k-head) =
           RadixToBinary.binaryEncoding.encode (putWord source head (ys.map SparseRoleCircuit.encode) k)) ∧
         ∀ j : Fin 58, j ≠ 24 → let port := caller (j.castAdd 8)
           D.L port = whole.L port ∧ D.R port = whole.R port := by
   intro d common host M N entry leave record bank g G rep clean logical addr inner caller K ef xf eqs xqs word
-    body u whole headers poolFits ancestor tail joined dirSlots dir pool pivot counters widthSlot unitSlot inputs ports a digits prefixWidth zeros
-    packedLabel clock count formula formulaCost detFormula C generation generate field dirInput prefixInput atomInput zeroInput poolBlank projectorInput slot r S base unit trailing spare input blank initial free empty good
+    body u whole headers poolFits ancestor tail joined dirSlots dir pool pivot counters clockSlot widthSlot unitSlot inputs ports a digits prefixWidth zeros
+    packedLabel clock count formula formulaCost detFormula C readCost generation generate withZero field dirInput prefixInput poolBlank projectorInput slot r S base unit trailing spare input blank initial free empty good
     one ticks archive scratch call cost budget coordinate effect reverse transfer marks packed loading conversion
 
   let mat := fun b : Bool => if b then reduce M proj else g
@@ -174,8 +227,8 @@ theorem generatedGoodRecordRoundTrip_exec [M8.Machine.Net] {T m work Q fields H 
     by_cases hi : i = 10
     · subst i; exact (by decide : ∀ j, (75 : Fin 82) ≠ goodRecordPivotPorts j) j
     · have hj := h.resolve_left hi
-      let scratchSlots : Fin 11 → Fin 24 := ![2,3,4,5,6,7,17,8,9,10,11]
-      have allSlots (l : Fin (7+11)) :
+      let scratchSlots : Fin 12 → Fin 24 := ![2,3,4,5,6,7,17,8,9,10,11,18]
+      have allSlots (l : Fin (6+12)) :
           finSumFinEquiv (Sum.map headers scratchSlots (finSumFinEquiv.symm l)) ≠ goodRecordPivotPorts j := by
         induction l using Fin.addCases with
         | left k =>
@@ -183,8 +236,8 @@ theorem generatedGoodRecordRoundTrip_exec [M8.Machine.Net] {T m work Q fields H 
           exact (by decide : ∀ k : Fin 58, ∀ j ∈ ([0,1,12,14] : List (Fin 16)), k.castAdd 24 ≠ goodRecordPivotPorts j) (headers k) j hj
         | right k =>
           rw [finSumFinEquiv_symm_apply_natAdd]
-          exact (by decide : ∀ k : Fin 11, ∀ j ∈ ([0,1,12,14] : List (Fin 16)),
-          ((![2,3,4,5,6,7,17,8,9,10,11] k : Fin 24).natAdd 58) ≠ goodRecordPivotPorts j) k j hj
+          exact (by decide : ∀ k : Fin 12, ∀ j ∈ ([0,1,12,14] : List (Fin 16)),
+          ((![2,3,4,5,6,7,17,8,9,10,11,18] k : Fin 24).natAdd 58) ≠ goodRecordPivotPorts j) k j hj
       exact allSlots _
   have clockOff : packedLabel ≠ clock := joined.injective.ne (by decide : (75 : Fin 82) ≠ 45)
   have countOff : packedLabel ≠ count := joined.injective.ne (by decide : (75 : Fin 82) ≠ 73)
@@ -205,20 +258,21 @@ theorem generatedGoodRecordRoundTrip_exec [M8.Machine.Net] {T m work Q fields H 
   have dirEmpty (i : Fin 18) (hi : i ∈ [0,3,4,5,6,7,10,11,14,15]) : whole.R (dir i) = [] := by
     revert hi
     fin_cases i <;> simp <;> exact regEmpty _ (by decide)
-  have header (i : Fin 7) : joined ((headers i).castAdd 24) = field i := recordLoaderBank_caller record (headers i)
+  have header (i : Fin 6) : joined ((headers i).castAdd 24) = field i := recordLoaderBank_caller record (headers i)
   have directoryWord := (congrArg whole.R (header 1)).trans dirInput
-  have prefixLen := (congrArg (fun i => (whole.R i).length) (header 4)).trans prefixInput
-  have fieldWidth := (congrArg (fun i => (whole.R i).length) (header 0)).trans atomInput
-  have zeroWord := (congrArg whole.R (header 3)).trans zeroInput
+  have prefixLen := (congrArg (fun i => (whole.R i).length) (header 3)).trans prefixInput
+  have fieldClock : dir 1 = clock := by
+    change joined ((headers 0).castAdd 24) = joined 45
+    rw [clockSlot]; rfl
   have projector : ∃ suffix, whole.R (dir 16) = matrixWords prime H (reduce M proj) ++ suffix := by
-    change ∃ suffix, whole.R (joined ((headers 5).castAdd 24)) = _
+    change ∃ suffix, whole.R (joined ((headers 4).castAdd 24)) = _
     rwa [header]
   have packedEmpty := dirEmpty 10 (by decide)
   have widthPort : dir 8 = caller 2 := by
     change joined ((headers 2).castAdd 24) = _
     rw [widthSlot]; exact recordLoaderBank_caller record 2
   have unitPort : dir 17 = caller 44 := by
-    change joined ((headers 6).castAdd 24) = _
+    change joined ((headers 5).castAdd 24) = _
     rw [unitSlot]; exact recordLoaderBank_caller record 44
   have inputOne := (congrArg whole.R unitPort).trans one
   have digitWidth : (whole.R (digits 4)).length = H := by
@@ -237,55 +291,86 @@ theorem generatedGoodRecordRoundTrip_exec [M8.Machine.Net] {T m work Q fields H 
     rw [eq]; exact regEmpty j ne
   let B : Stacks K prime := {whole with R := Function.update whole.R out (matrixWords prime H G ++ whole.R out)}
   obtain ⟨y,n,hy,hn,runWriter⟩ := withFrames_exec body pool (pivot 4) out (rp 4) (by change ∀ j, inner (record 16) ≠ pool j; rw [← output]; exact rp 13)
-    generate (matrixWords prime H G) generation u whole poolBlank (by
+    withZero (matrixWords prime H G) ((4*H+4)+(generation+(2*H+2))) u whole poolBlank (by
     intro v' E stable filled frames
-    let R := Function.update E.R packedLabel (matrixWords prime H g)
-    have updated (i) (hi : ∀ j, i ≠ pool j) (ne : packedLabel ≠ i) : R i = whole.R i :=
-      (Function.update_of_ne ne.symm _ _).trans (stable i hi)
-    have pivotKept (i) := updated (pivot i) (rp i) (br 10 i (Or.inl rfl))
-    have keep (i : Fin 18) (hi : i ≠ 10) : R (dir i) = whole.R (dir i) :=
+    have widthE : (E.R (dir 8)).length = H := (congrArg List.length (stable _ (bp 8))).trans digitWidth
+    let Z := {E with R := Function.update E.R zeros (binSyms (A := prime) H 0)}
+    have zeroWord : Z.R zeros = binSyms H 0 := Function.update_self ..
+    have dirKeep (i : Fin 18) (hi : i ≠ 9) : Z.R (dir i) = whole.R (dir i) :=
       (Function.update_of_ne (dir.injective.ne hi) _ _).trans (stable _ (bp i))
+    apply (by
+      simpa only [widthE] using withRecordZero_exec body (dir 8) zeros (dir 4) out
+        (by change [dir 8,dir 9,dir 4].Nodup; simp) (joined.injective.ne (by decide : (74 : Fin 82) ≠ 76))
+        generate (matrixWords prime H G) generation v' E ((stable _ (bp 9)).trans (regEmpty 18 (by decide)))
+        ((stable _ (bp 4)).trans (dirEmpty 4 (by decide))) : _ → _)
+    intro vZero
+    let R := Function.update Z.R packedLabel (matrixWords prime H g)
+    have updated (i) (hi : ∀ j, i ≠ pool j) (nz : i ≠ zeros) (ne : packedLabel ≠ i) : R i = whole.R i :=
+      (Function.update_of_ne ne.symm _ _).trans ((Function.update_of_ne nz _ _).trans (stable i hi))
+    have pivotKept (i) := updated (pivot i) (rp i) (joined.injective.ne ((by decide : ∀ i, goodRecordPivotPorts i ≠ 76) i)) (br 10 i (Or.inl rfl))
+    have keep (i : Fin 18) (hi : i ≠ 10) (nz : i ≠ 9) : R (dir i) = whole.R (dir i) :=
+      (Function.update_of_ne (dir.injective.ne hi) _ _).trans (dirKeep i nz)
     let sources := QueueLayout.formulaInputs.trans dir
     have matrices (b : Bool) : ∃ suffix, R (sources (if id b then 7 else 2)) = matrixWords prime H (mat b) ++ suffix := by
       cases b
       · exact ⟨[],by simp [R,sources,QueueLayout.formulaInputs,packedLabel,mat]⟩
       · change ∃ suffix, R (dir 16) = matrixWords prime H (reduce M proj) ++ suffix
-        rwa [keep 16 (by decide)]
+        rwa [keep 16 (by decide) (by decide)]
     have leaves := sourcePorts_ready sources id mat H R matrices
-      ((congrArg List.length (keep 8 (by decide))).trans digitWidth)
-      ((keep 9 (by decide)).trans zeroWord) ((keep 17 (by decide)).trans inputOne)
+      ((congrArg List.length (keep 8 (by decide) (by decide))).trans digitWidth)
+      (show R (dir 9) = _ from (Function.update_of_ne (dir.injective.ne (by decide : (9 : Fin 18) ≠ 10)) _ _).trans zeroWord) ((keep 17 (by decide) (by decide)).trans inputOne)
       (fun i hi => by
         have ok := (by decide : ∀ i ∈ ([0,4,5,6] : List (Fin 10)), ∃ j : Fin 7,
           (j = 0 ∨ 3 ≤ j) ∧ QueueLayout.formulaInputs i = QueueLayout.directoryWork (QueueLayout.readPorts j) ∧
           QueueLayout.formulaInputs i ≠ 10) i hi
         obtain ⟨j,hj,eq,ne⟩ := ok
-        exact (keep _ ne).trans ((congrArg whole.R (congrArg dir eq)).trans (freeRead j hj)))
+        exact (keep _ ne ((by decide : ∀ i ∈ ([0,4,5,6] : List (Fin 10)), QueueLayout.formulaInputs i ≠ 9) i hi)).trans ((congrArg whole.R (congrArg dir eq)).trans (freeRead j hj)))
     have scratchPort : ∀ k : Fin 14, k = 1 ∨ 4 ≤ k ∧ k < 12 →
         QueueLayout.normalizationPorts k ≠ 4 ∧ QueueLayout.normalizationPorts k < 13 := by decide
-    have gen := physicalConjugation_writes body w label mat false true rfl live pivot clock count copyPorts
-      (fun i => rc i 1) (rc 14 0).symm H hm pool inputs (fun _ _ j => bp _ j) ports
-      (fun k => (rp 14 k).symm) (fun _ _ => br _ 14 (Or.inr (by decide))) (fun k => (rp 0 k).symm) (fun _ _ => br _ 0 (Or.inr (by decide)))
-      (fun j => pivot.injective.ne ((by decide : ∀ j, QueueLayout.normalizationPorts j ≠ 14) j)) rfl
-      (fun k _ _ => (rp _ k).symm) packedLabel (br 10 13 (Or.inl rfl)) a digits rfl
+    have posH : 0 < H := by
+      have hp := pow_pos Networks.Shared50ModularControl.prime_prime.pos (w+1)
+      by_contra! h
+      rw [show H = 0 by omega,pow_zero] at hm
+      omega
+    have readMatrix := directoryMatrix_writes body a digits rfl
       (fun i j => ((by decide : ∀ i j, QueueLayout.readPorts i ≠ QueueLayout.digitPorts j ∨ i = 3 ∧ j = 0) i j).imp
         (fun h => (QueueLayout.directoryWork.trans dir).injective.ne h) id)
-      prefixWidth zeros (by change [dir 12,dir 0,dir 6].Nodup; simp)
+      prefixWidth zeros packedLabel (by change [dir 12,dir 0,dir 6].Nodup; simp)
       (by change [dir 12,dir 9,dir 10].Nodup; simp) (dir.injective.ne (by decide : (12 : Fin 18) ≠ 7))
       (fun i => dir.injective.ne ((by decide : ∀ i, QueueLayout.directoryWork (QueueLayout.readPorts i) ≠ 10) i))
       (fun i => dir.injective.ne ((by decide : ∀ i, QueueLayout.directoryWork (QueueLayout.digitPorts i) ≠ 10) i))
-      (fun i => dir.injective.ne ((by decide : ∀ i, 9 ≠ QueueLayout.directoryWork (QueueLayout.digitPorts i)) i)) ancestor tail (fun _ _ j hj => br _ _ (Or.inr ((by decide : ∀ j : Fin 14, j = 1 ∨ j = 13 →
+      (fun i => dir.injective.ne ((by decide : ∀ i, 9 ≠ QueueLayout.directoryWork (QueueLayout.digitPorts i)) i)) m (w+1) label H posH ancestor tail
+    have read := readWithSuccessorClock_writes body clock packedLabel clockOff.symm _ _ _ _ readMatrix
+    have keepRead (i : Fin 18) (hi : i ≠ 1) :
+        Function.update Z.R clock (Node.tick :: Z.R clock) (dir i) = Z.R (dir i) := by
+      rw [← fieldClock]; exact Function.update_of_ne (dir.injective.ne hi) _ _
+    have zClock : (Z.R clock).length = w := by
+      rw [← fieldClock]
+      exact (congrArg List.length (dirKeep 1 (by decide))).trans (by rw [fieldClock]; exact clockWidth)
+    have gen := physicalConjugationFromReader_writes body w label mat false true rfl live pivot clock count copyPorts
+      (fun i => rc i 1) (rc 14 0).symm H hm pool inputs (fun _ _ j => bp _ j) ports
+      (fun k => (rp 14 k).symm) (fun _ _ => br _ 14 (Or.inr (by decide))) (fun k => (rp 0 k).symm) (fun _ _ => br _ 0 (Or.inr (by decide)))
+      (fun j => pivot.injective.ne ((by decide : ∀ j, QueueLayout.normalizationPorts j ≠ 14) j)) rfl
+      (fun k _ _ => (rp _ k).symm) packedLabel (br 10 13 (Or.inl rfl)) _ _ _ read
+      (fun _ _ j hj => br _ _ (Or.inr ((by decide : ∀ j : Fin 14, j = 1 ∨ j = 13 →
         QueueLayout.normalizationPorts j ∈ ([0,1,12,14] : List (Fin 16))) j hj)))
-      depthFits (Nat.le_max_left _ _) v' E
+      depthFits (Nat.le_max_left _ _) vZero Z
       ⟨by
-          exact ⟨(stable _ (bp _)).trans directoryWord, (congrArg List.length (stable _ (bp _))).trans prefixLen,
-            (congrArg List.length (stable _ (bp _))).trans fieldWidth,fun i hi => (stable _ (bp _)).trans (freeRead i hi),
-            (congrArg List.length (stable _ (bp _))).trans digitWidth, fun i hi => (stable _ (bp _)).trans (freeDigit i hi),
-            (stable _ (bp _)).trans zeroWord⟩,
-        (stable _ (bp _)).trans packedEmpty,(congrArg List.length (updated clock (cp 0) clockOff)).trans clockWidth,
-        (updated count (cp 1) countOff).trans (regEmpty 15 (by decide)),(pivotKept 14).trans (pivotEmpty 14 (by decide)),(pivotKept 15).trans unitWord,
+          exact ⟨(keepRead 2 (by decide)).trans ((dirKeep _ (by decide)).trans directoryWord),
+            (congrArg List.length (keepRead 12 (by decide))).trans ((congrArg List.length (dirKeep _ (by decide))).trans prefixLen),
+            by change ((Function.update Z.R clock (Node.tick :: Z.R clock)) (dir 1)).length = w+1
+               rw [fieldClock,Function.update_self,List.length_cons,zClock],
+            fun i hi => (keepRead _ ((by decide : ∀ i : Fin 7, i = 0 ∨ 3 ≤ i → QueueLayout.directoryWork (QueueLayout.readPorts i) ≠ 1) i hi)).trans
+              ((dirKeep _ ((by decide : ∀ i : Fin 7, QueueLayout.directoryWork (QueueLayout.readPorts i) ≠ 9) i)).trans (freeRead i hi)),
+            (congrArg List.length (keepRead 8 (by decide))).trans ((congrArg List.length (dirKeep _ (by decide))).trans digitWidth),
+            fun i hi => (keepRead _ ((by decide : ∀ i : Fin 6, QueueLayout.directoryWork (QueueLayout.digitPorts i) ≠ 1) i)).trans
+              ((dirKeep _ ((by decide : ∀ i : Fin 6, QueueLayout.directoryWork (QueueLayout.digitPorts i) ≠ 9) i)).trans (freeDigit i hi)),
+            (keepRead 9 (by decide)).trans zeroWord⟩,
+        (dirKeep _ (by decide)).trans packedEmpty,(congrArg List.length (updated clock (cp 0) (joined.injective.ne (by decide : (45 : Fin 82) ≠ 76)) clockOff)).trans clockWidth,
+        (updated count (cp 1) (joined.injective.ne (by decide : (73 : Fin 82) ≠ 76)) countOff).trans (regEmpty 15 (by decide)),(pivotKept 14).trans (pivotEmpty 14 (by decide)),(pivotKept 15).trans unitWord,
         (pivotKept 4).trans modulusWord,fun i h l => (pivotKept i).trans (pivotEmpty i (Or.inl ⟨h,l⟩)),
-        fun k hk => (Function.update_of_ne (bp 10 _).symm _ _).trans ((filled k hk).trans modulusWord),
-        fun k hk i hi => (Function.update_of_ne (bp 10 _).symm _ _).trans (frames k hk i hi),leaves,
+        fun k hk => (Function.update_of_ne (bp 10 _).symm _ _).trans ((Function.update_of_ne (bp 9 _).symm _ _).trans ((filled k hk).trans modulusWord)),
+        fun k hk i hi => (Function.update_of_ne (bp 10 _).symm _ _).trans ((Function.update_of_ne (bp 9 _).symm _ _).trans (frames k hk i hi)),leaves,
         (pivotKept 4).trans modulusWord,(pivotKept 12).trans (pivotEmpty 12 (by decide)),
         fun k hk => (pivotKept _).trans (pivotEmpty _ (Or.inl (scratchPort k hk)))⟩
     simpa only [atOutput,mat,G,Bool.false_eq_true,ite_false,ite_true] using gen)
