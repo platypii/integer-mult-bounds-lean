@@ -98,6 +98,80 @@ theorem copyLabel_window_read {w B K : ℕ} (p : ℕ × ℕ)
   rfl
 
 
+private theorem payload_append {k t u : ℕ} (v : Tapes t prime) (workspace : Tapes u prime)
+    (slots : Fin k → Fin (t+u)) (leading : ∀ i, (slots i).val = i.val) (fits : k ≤ t) :
+    SharedBank.payload (v.append workspace) slots = SharedBank.payload v (fun i => Fin.castLE fits i) := by
+  have same (i) : slots i = Fin.castAdd u (Fin.castLE fits i) := Fin.ext (leading i)
+  apply congrArg₂ Tapes.mk <;> funext i <;> simp [same,Tapes.append]
+
+open M8.Machine in
+/-- Projecting the leading owner slots of the complete COPY machine discards
+all of its private workspaces, for either its initial or its final bank. -/
+theorem copyLabel_payload [Net] {t w W : ℕ} (A D : List (FlatCoordinateSchedule.Op 16))
+    (owners : Tapes t prime) (controls : Tapes 2 prime) (headers : Tapes 6 prime) (arithmetic : Tapes 15 prime)
+    (slots : Fin t → Fin _) (leading : ∀ i, (slots i).val = i.val) :
+    SharedBank.payload (copyPrepared (w := w) (W := W) A D (owners.append controls) headers arithmetic) slots = owners := by
+  unfold copyPrepared ArbitraryWidthOriginalRun.input ArbitraryWidthHighPreparedRun.input
+    ArbitraryWidthHighCommonPrepare.input ArbitraryWidthHighBranchPrepare.input ArbitraryWidthHighExecutionInitialize.input
+  rw [payload_append _ _ slots leading (by omega)]
+  have peel {k u : ℕ} (v : Tapes k prime) (extra : Tapes u prime) (h : t ≤ k+u) (small : t ≤ k) :
+      SharedBank.payload (v.append extra) (fun i => Fin.castLE h i) =
+        SharedBank.payload v (fun i => Fin.castLE small i) := payload_append v extra (fun i => Fin.castLE h i) (fun _ => rfl) small
+  repeat rw [peel _ _ _ (by omega)]
+  cases owners
+  rfl
+
+/-- The route block exposes the identical leading owner bank through its
+24 public control tapes and its variable private tape count. -/
+theorem copyRoute_payload {t : ℕ} (block : M8.RevMachine.Graph.Block (t+24) prime)
+    (leading : M8.RevMachine.Blocks.Leading block) (owners : Tapes t prime) (v : Descriptor)
+    (d : Fin 22 → Option (List Bool)) :
+    SharedBank.payload (SharedBankStageInput.raw (LabelCall.bank owners v d) block.tapes)
+        (fun i => block.slots (Fin.castAdd 24 i)) = owners := by
+  have all := SharedBankRawCompose.payload_raw (LabelCall.bank owners v d) block.slots leading
+  change SharedBank.payload (SharedBank.payload (SharedBankStageInput.raw (LabelCall.bank owners v d) block.tapes) block.slots) (Fin.castAdd 24) = owners
+  rw [all]
+  cases owners
+  apply congrArg₂ Tapes.mk <;> funext i <;> simp [LabelCall.bank,Tapes.append]
+
+open M8.RevMachine in
+/-- Compose both chart routes around a COPY body at their owner tapes. The route
+controls and the private tapes of all three machines remain in the postcondition. -/
+theorem copyRoute_window_return [M8.Machine.Net] {t w W states : ℕ}
+    (route : Graph.Block (t+24) prime) (leading : Blocks.Leading route)
+    (v : Descriptor) (d : Fin 22 → Option (List Bool)) (before entered : Tapes t prime)
+    (A D : List (FlatCoordinateSchedule.Op 16)) (controls : Tapes 2 prime)
+    (headers : Tapes 6 prime) (arithmetic : Tapes 15 prime) (body : Program _ states prime)
+    (added out : Tapes t prime) (finalHeaders : Tapes 6 prime) (finalArithmetic : Tapes 15 prime)
+    (leave : Graph.Block (t+24) prime) (leaveLeading : Blocks.Leading leave) {r b l : ℕ}
+    (entry : GraphContract.Runs route (LabelCall.bank before v d) (LabelCall.bank entered v d) r)
+    (run : HoareTime body
+      (fun z => z = copyPrepared (w := w) (W := W) A D (entered.append controls) headers arithmetic)
+      (fun z => z = copyPrepared (w := w) (W := W) A D (added.append controls) finalHeaders finalArithmetic) b)
+    (exitRun : GraphContract.Runs leave (LabelCall.bank added v d) (LabelCall.bank out v d) l) :
+    let rs := fun i => route.slots (Fin.castAdd 24 i)
+    let cs := fun i : Fin t => Fin.castLE (by omega : t ≤ _) i
+    let pair := SharedBankPair.program route.program body rs cs
+    let common := SharedBankFrames.commonSlots t route.tapes _
+    let ls := fun i => leave.slots (Fin.castAdd 24 i)
+    let setup := SharedBankPair.input (SharedBankStageInput.raw (LabelCall.bank before v d) route.tapes)
+        (copyPrepared (w := w) (W := W) A D (entered.append controls) headers arithmetic) rs cs
+    let finish := SharedBankPair.output (SharedBankStageInput.raw (LabelCall.bank entered v d) route.tapes)
+        (copyPrepared (w := w) (W := W) A D (added.append controls) finalHeaders finalArithmetic) rs cs
+    HoareTime (SharedBankPair.program pair leave.program common ls)
+      (fun z => z = SharedBankPair.input setup (SharedBankStageInput.raw (LabelCall.bank added v d) leave.tapes) common ls)
+      (fun z => z = SharedBankPair.output finish (SharedBankStageInput.raw (LabelCall.bank out v d) leave.tapes) common ls)
+      (r+b+1+l+1) := by
+  intro rs cs pair common ls setup finish
+  have join := SharedBankPair.pair_hoare entry run rs (route.slots_injective.comp (Fin.castAdd_injective t 24)) cs
+    (Fin.castLE_injective _) ((copyRoute_payload route leading entered v d).trans
+      (copyLabel_payload A D entered controls headers arithmetic cs (fun _ => rfl)).symm)
+  apply SharedBankPair.pair_hoare join exitRun common (SharedBankFrames.commonSlots_injective ..) ls
+    (leave.slots_injective.comp (Fin.castAdd_injective t 24))
+  rw [SharedBankPair.output,SharedBankFrames.payload_common]
+  exact (copyLabel_payload A D added controls finalHeaders finalArithmetic cs (fun _ => rfl)).trans
+    (copyRoute_payload leave leaveLeading added v d).symm
+
 open IntegerMultBounds.Networks.Certificates.PR589 M8.Machine.ArbitraryWidthOriginalRun in
 /-- The same width-uniform machine that executes the COPY window realizes its
 cover-label addition at every actual target, with the child run charged once. -/
@@ -119,6 +193,8 @@ theorem copyLabel_window_runs [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin
         (fun z => z = prepare (bank out) (FixedHeaderBankCopy.headerBank hs) (copyHeaderOutput w W))
         (copyWindowWork (FlatCoordinateCleanSchedule.constant A + FlatCoordinateCleanSchedule.constant D)
           life.targets.length N bs.length + cost (copyChild w W) hs) ∧
+        out (Fin.last 142080) = 0 ∧ out src = data src ∧
+        (∀ k, k ≠ Fin.last 142080 → (∀ j : Fin 661, j.val ∈ life.targets → io j ≠ k) → out k = data k) ∧
         ∀ (j : Fin 661), j.val ∈ life.targets → ∀ (g : Matrix (Fin 64) (Fin 64) (ZMod (prime^w))) (z : LabelEntry.Cell (copyLabelLayout w B K) B),
           chartRead (view (out (io j))) g z = chartRead (view (data (io j))) g z +
             chartRead (view (data src)) g {z with a := copyActive (move (copyActive.symm z.a))} := by
@@ -128,7 +204,31 @@ theorem copyLabel_window_runs [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin
   intro w B K hw hB hK W N prepare hs view move data bs count bank
   have hW : 0 < W := Nat.mul_pos (Nat.mul_pos hB (pow_pos Shared50ModularControl.prime_prime.pos _)) hK
   obtain ⟨exec,_,_⟩ := (run w hw).2.2 hW data bs count
-  refine ⟨_,exec,?_⟩
+  let regs := life.targets.attach.map fun j =>
+    (⟨j.val,((Copy.target_bounds life scheduled _ j.property).2.trans (by decide : 222 < 661))⟩ : Fin 661)
+  have unchanged (k : Fin 142081)
+      (outside : ∀ j : Fin 661, j.val ∈ life.targets → io j ≠ k) : k ∉ regs.map io := by
+    rintro h
+    obtain ⟨j,hj,rfl⟩ := List.mem_map.mp h
+    obtain ⟨a,_,rfl⟩ := List.mem_map.mp hj
+    exact outside _ a.property rfl
+  refine ⟨_,exec,Function.update_self ..,?_,?_,?_⟩
+  · have off : src ≠ Fin.last 142080 := Fin.castSucc_ne_last _
+    have outside (j : Fin 661) (hj : j.val ∈ life.targets) : io j ≠ src := by
+      intro eq
+      have same := congrArg Fin.val (ownerTape_injective n r d eq)
+      have bound := (Copy.target_bounds life scheduled _ hj).2
+      have lo := (Copy.source_bounds life scheduled).1
+      change j.val = life.source at same
+      omega
+    have absent := unchanged src outside
+    dsimp only [regs,io] at absent
+    simp only [Function.update_of_ne off,ite_eq_right absent]
+  · intro k off outside
+    have absent := unchanged k outside
+    dsimp only [regs,io] at absent
+    simp only [Function.update_of_ne off,ite_eq_right absent]
+
   intro j member g z
   have target := List.mem_map_of_mem (f := ownerTape n r d)
     (List.mem_map_of_mem (f := fun k : {k // k ∈ life.targets} =>
