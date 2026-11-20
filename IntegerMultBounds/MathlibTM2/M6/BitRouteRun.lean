@@ -95,11 +95,11 @@ theorem stageRoute_runs [M8.Machine.Net] {T : ℕ} (io : Fin T) (c : PortCertifi
 local instance (w : ℕ) : NeZero (prime^w) :=
   ⟨pow_ne_zero _ Shared50ModularControl.prime_prime.ne_zero⟩
 
-/-- A call on a routed port may change its payload arbitrarily according to
-a label-indexed relation. Returning through the same route restores each label
-and charges the local call once. -/
-theorem dataPort_call [M8.Machine.Net] {T : ℕ} (io : Fin T) (n : Fin 9) (j : Fin 222) (body : Graph.Block (T+24) prime) (leading : Blocks.Leading body) :
-    ∃ (program : Graph.Block (T+24) prime) (C : ℕ), Blocks.Leading program ∧ ∀ (v : Descriptor) (w B : ℕ),
+/-- Execution of a register call in its scheduled chart, with a caller-supplied
+relation describing the local body on each label's payload. -/
+def ChartCall [M8.Machine.Net] {T : ℕ} (io : Fin T) (n : Fin 9) (j : ℕ)
+    (body : Graph.Block (T+24) prime) (price : ℕ → Descriptor → ℕ → ℕ → ℕ) : Prop :=
+  ∃ (program : Graph.Block (T+24) prime) (C : ℕ), Blocks.Leading program ∧ ∀ (v : Descriptor) (w B : ℕ),
       0 < w → 0 < B → v.beforeH = B*prime^(64*(w*64)) → v.Positive →
       let Label := Matrix (Fin 64) (Fin 64) (ZMod (prime^w))
       let route := ((reduce (prime^w) (chart n j)).submatrix stageAxis.symm stageAxis.symm).transpose
@@ -115,8 +115,16 @@ theorem dataPort_call [M8.Machine.Net] {T : ℕ} (io : Fin T) (n : Fin 9) (j : F
         ∃ out, (∀ g, effect (g * route) (read x g) (read out g)) ∧
           GraphContract.Runs program (LabelCall.bank roles v d)
             (LabelCall.bank (setTape roles io (sourceWord out) 0) v d)
-            (if n.val = 0 then budget else budget + 2*(C*volume prime v +
-              252*LeafCore.coreCost (volume prime v) (w*64))+2) := by
+            (price C v w budget)
+
+/-- A call on a routed port may change its payload arbitrarily according to
+a label-indexed relation. Returning through the same route restores each label
+and charges the local call once. -/
+theorem dataPort_call [M8.Machine.Net] {T : ℕ} (io : Fin T) (n : Fin 9) (j : Fin 222) (body : Graph.Block (T+24) prime) (leading : Blocks.Leading body) :
+    ChartCall io n j body (fun C v w budget =>
+      if n.val = 0 then budget else budget + 2*(C*volume prime v +
+        252*LeafCore.coreCost (volume prime v) (w*64))+2) := by
+  unfold ChartCall
   let c := port (j.val % 111)
   have checked := port_checked (j.val % 111) (Nat.mod_lt _ (by decide))
   rw [chart_data n j j.isLt]
@@ -144,7 +152,7 @@ theorem dataPort_call [M8.Machine.Net] {T : ℕ} (io : Fin T) (n : Fin 9) (j : F
   obtain ⟨out,zo,r₃⟩ := routed (setTape roles io (sourceWord z) 0) z (by simp [setTape]) (by simp [setTape])
   simp only [SharedPlacementAlphabet.setTape_setTape] at r₂ r₃
   refine ⟨out,?_,Blocks.runs_mono (Blocks.seq_runs (Blocks.seq_leading _ _) routeLeading
-    (Blocks.seq_runs routeLeading leading r₁ r₂) r₃) (by rw [ite_eq_right firstStage]; omega)⟩
+    (Blocks.seq_runs routeLeading leading r₁ r₂) r₃) (by dsimp only; rw [ite_eq_right firstStage]; omega)⟩
   have square : route*route = 1 := by
     dsimp only [route]
     rw [← transpose_mul,submatrix_mul_equiv,(stageFactor_reduce c checked s stageAxis.symm w).2.2.2.2,
@@ -196,5 +204,67 @@ theorem helperChart_runs [M8.Machine.Net] {T : ℕ} (io : Fin T) (c : PortCertif
   obtain ⟨hd,h₁,h₂⟩ := LabelFactorization.boundedFactors σ.transpose (by decide) (by decide) entries
   exact LabelFactorization.realizes (by decide) io σ (by cases inverse <;> first | exact unit | exact H.isUnit_transpose.mpr unit)
     (M8.Exchange.factors σ.transpose) hd h₁ h₂
+
+open IntegerMultBounds.MathlibTM2.M6.BitHosting in
+/-- Execute a local call in its scheduled helper chart and restore each
+label with the forward chart after entering through its transpose. -/
+theorem helperPort_call [M8.Machine.Net] {T : ℕ} (io : Fin T) (n : Fin 9) (h : Fin 439) (body : Graph.Block (T+24) prime) (leading : Blocks.Leading body) :
+    ChartCall io n (222+h.val) body (fun C v w budget =>
+      budget + C*volume prime v + 126*LeafCore.coreCost (volume prime v) (w*64)+2) := by
+  unfold ChartCall
+  let slot := IntegerMultBounds.MathlibTM2.M6.BitNode.slotOf n.val h.val
+  let c := port (slot.copy % 111)
+  have checked := port_checked (slot.copy % 111) (Nat.mod_lt _ (by decide))
+  have fits := slotPos_le n n.isLt h h.isLt
+  have selectedAt (j k : ℕ) (dataOff : ¬ j < 222) (idx : j-222 = k)
+      (fit : slotPos (IntegerMultBounds.MathlibTM2.M6.BitNode.slotOf n k) ≤ 55) :
+      chart n j = (port ((IntegerMultBounds.MathlibTM2.M6.BitNode.slotOf n k).copy % 111)).helperChart _ fit := by
+    subst k
+    unfold chart
+    rw [ite_eq_right dataOff,dite_eq_left fit]
+  have selected : chart n (222+h.val) = c.helperChart (slotPos slot) fits :=
+    selectedAt _ _ (by omega) (by omega) fits
+  rw [selected]
+  obtain ⟨enter,P,pe,entry⟩ := helperChart_runs io c checked _ fits true
+  obtain ⟨leave,Q,pl,exitRun⟩ := helperChart_runs io c checked _ fits false
+  refine ⟨Blocks.seqB (Blocks.seqB enter body) leave,P+Q,Blocks.seq_leading _ _,?_⟩
+  intro v w B hw hb shape pos Label route d read effect budget call roles x head tape
+  let back := (reduce (prime^w) (c.helperChart (slotPos slot) fits)).submatrix stageAxis.symm stageAxis.symm
+  obtain ⟨y,xy,r₁,_⟩ := entry v w B hw hb shape pos roles x head tape
+  obtain ⟨z,action,r₂⟩ := call (setTape roles io (sourceWord y) 0) y (by simp [setTape]) (by simp [setTape])
+  obtain ⟨out,zo,r₃,_⟩ := exitRun v w B hw hb shape pos (setTape roles io (sourceWord z) 0) z
+    (by simp [setTape]) (by simp [setTape])
+  simp only [SharedPlacementAlphabet.setTape_setTape] at r₂ r₃
+  refine ⟨out,?_,Blocks.runs_mono (Blocks.seq_runs (Blocks.seq_leading _ _) pl
+    (Blocks.seq_runs pe leading r₁ r₂) r₃) (by dsimp only; rw [Nat.add_mul]; omega)⟩
+  have undo : route * back = 1 := by
+    change ((reduce (prime^w) (c.helperChart (slotPos slot) fits)).transpose.submatrix stageAxis.symm stageAxis.symm) * _ = _
+    rw [submatrix_mul_equiv,(helperChart_reduce c checked _ fits w).1,submatrix_one_equiv]
+  have move (a b : Fin (volume prime v) → ZMod 2) (M : Label)
+      (transport : LabelPermutation.Transport v B w (fun g : Label => g * M) (ext a) (ext b)) (g : Label) :
+      read b (g*M) = read a g := by
+    funext z
+    exact transport g z.a z.a.isLt z.row z.row.isLt z.b z.b.isLt z.h z.h.isLt z.mid z.mid.isLt
+      z.d z.d.isLt z.after z.after.isLt
+  intro g
+  have restored := move _ _ back zo (g*route)
+  rw [Matrix.mul_assoc,undo,Matrix.mul_one] at restored
+  rw [← move _ _ route xy g,restored]
+  exact action _
+
+/-- The chart and bill for any register used by a scheduled local word. -/
+theorem register_call [M8.Machine.Net] {T : ℕ} (io : Fin T) (n : Fin 9) (j : Fin 661)
+    (body : Graph.Block (T+24) prime) (leading : Blocks.Leading body) :
+    ChartCall io n j body (fun C v w budget =>
+      let V := volume prime v
+      let leaf := LeafCore.coreCost V (w*64)
+      if j.val < 222 then
+        if n.val = 0 then budget else budget + 2*(C*V + 252*leaf)+2
+      else budget + C*V + 126*leaf+2) := by
+  by_cases data : j.val < 222
+  · simpa only [ite_eq_left data] using dataPort_call io n ⟨j.val,data⟩ body leading
+  · let h : Fin 439 := ⟨j.val-222,by omega⟩
+    have register : 222+h.val = j.val := by dsimp [h]; omega
+    simpa only [register,ite_eq_right data] using helperPort_call io n h body leading
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
