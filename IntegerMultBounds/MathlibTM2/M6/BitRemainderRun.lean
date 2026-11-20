@@ -11,11 +11,12 @@ public import IntegerMultBounds.MathlibTM2.M8.Machine.ArbitraryWidthOriginalTota
 namespace IntegerMultBounds.MathlibTM2.M6.BitHosting
 open BitOccurrences
 
-/-- Physical idle intervals, including empty spans, realize the charged rank list. -/
+theorem idleRank_eq : ∀ i : Fin 9, (idleRanks 4).getD i.val 0 =
+    7 * idleTarget i.val - 7 * idleSource i.val := by decide +kernel
+
+/-- Physical idle intervals realize the charged rank list. -/
 theorem remainderWidths_perm :
     (remainderIntervals.map fun e => e.2 - e.1).Perm remainders := by
-  have widths : ∀ i : Fin 9, (idleRanks 4).getD i.val 0 =
-      7 * idleTarget i.val - 7 * idleSource i.val := by decide +kernel
   apply List.Perm.trans _ remainders_perm
   apply List.Perm.of_eq
   simp only [remainderIntervals, List.map_flatMap, List.map_map, Function.comp_def]
@@ -23,7 +24,7 @@ theorem remainderWidths_perm :
   intro i hi
   apply List.map_congr_left
   intro k _
-  rw [widths ⟨i, List.mem_range.mp hi⟩]
+  rw [idleRank_eq ⟨i, List.mem_range.mp hi⟩]
   change 7 * idleTarget i - (7 * idleSource i + 8*k) = (7 * idleTarget i - 7 * idleSource i) - 8*k
   omega
 

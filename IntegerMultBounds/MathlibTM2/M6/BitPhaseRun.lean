@@ -734,7 +734,7 @@ theorem invocationPieces_nodeCost [Net] (engine : CopyTranspose := CopyTranspose
   omega
 
 open RecursiveInterchangeLayout (Descriptor volume) in
-private theorem invocationVolume (v : Descriptor) (w B rows : ℕ)
+theorem invocationVolume (v : Descriptor) (w B rows : ℕ)
     (width : v.width = 64*w) (split : v.rows = 142080*rows) (label : v.beforeH = B*prime^(64*(w*64))) :
     let K := (prime^w)^112*(v.beforeRows*rows*v.between*v.afterD)
     let W := B*prime^(64*(w*64))*K
