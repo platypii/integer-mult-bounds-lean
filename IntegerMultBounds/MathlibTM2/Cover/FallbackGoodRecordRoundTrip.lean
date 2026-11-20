@@ -171,8 +171,10 @@ theorem goodRecordRoundTrip_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
       let marks := ([2,3,4,5,6,7] : List (Fin 8)).map r
       let loading := recordWeightLoadTime m w H M.size
       let conversion := recordMatrixLoadTime m H M.size
-      ∃ z D t ys, z.user = u.user ∧ t ≤ (dimensionTime H 1 fields+(4*(fields*H+1)+6)+(10*J+12)+(6*(M^fields).size+6)) +
-        (loading+(conversion+(budget+2*((218*N+1)*13+6)+3))) ∧
+      let rawCost := (dimensionTime H 1 fields+(4*(fields*H+1)+6)+(10*J+12)+(6*(M^fields).size+6)) +
+        (loading+(conversion+(budget+2*((218*N+1)*13+6)+3)))
+      ∃ z D t ys, z.user = u.user ∧ (t ≤ rawCost ∧
+        (0 < d → H = M.size → J = W.size → t ≤ budget + recordRoundTripRate m*N)) ∧
         Exec body ((recordCounterSetup caller fields).seq ((recordInputProgram record m).seq ((recordMatrixProgram record m).seq ((.act (pushMarkers marks) : Pr F K Q prime U).seq
           ((transfer r).seq ((embProg inner Empty.elim coordinate).seq (transfer reverse))))))) (mk u whole) t (mk z D) ∧
         effect ys ∧ (∀ k, readAt blank (D.L (r 0)) (D.R (r 0)) (k-head) =
@@ -181,7 +183,7 @@ theorem goodRecordRoundTrip_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
           D.L port = whole.L port ∧ D.R port = whole.R port := by
   intro d common host M N entry leave record bank g G rep clean logical addr inner caller K ef xf eqs xqs word
     body u whole tail slot r S base unit trailing spare input blank initial free empty good matrix
-    one ticks archive scratch call cost budget coordinate effect reverse transfer marks loading conversion
+    one ticks archive scratch call cost budget coordinate effect reverse transfer marks loading conversion rawCost
   let packed := (List.ofFn fun i => binSyms (A := prime) M.size (parent i).val).flatten
   obtain ⟨a,A,c,ha,hc,setup,left,controls,off⟩ := recordCounterSetup_exec body caller fields H J M W
     hm hw u whole base unit trailing spare
@@ -265,7 +267,20 @@ theorem goodRecordRoundTrip_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
       rw [show A.R (caller 55) = whole.R (caller 55) from callerKept 55,
         show A.R (caller 45) = whole.R (caller 45) from callerKept 45,archive,ticks]
       simp [packed,List.length_flatten,List.map_ofFn,Function.comp_def,length_binSyms,List.ofFn_const]
-    refine ⟨z,D,_,ys,hz.trans (hmat.trans (hb.trans ha)),?_,Exec.seq setup (Exec.seq load (Exec.seq convert run)),act,read,?_⟩
+    have price {steps : ℕ} (bound : steps ≤ rawCost) : steps ≤ rawCost ∧
+        (0 < d → H = M.size → J = W.size → steps ≤ budget + recordRoundTripRate m*N) := by
+      refine ⟨bound,?_⟩
+      intro active binary trailingBits
+      have atom : w+1 ≤ v.width := width ▸ Nat.le_mul_of_pos_left _ active
+      have hp := Networks.Shared50ModularControl.prime_prime.pos
+      have pre := Nat.mul_pos (Nat.mul_pos positive.1 positive.2.1) positive.2.2.1
+      have radix : M ≤ N := (Nat.pow_le_pow_right hp atom).trans
+        ((Nat.le_mul_of_pos_left _ pre).trans ((Nat.le_mul_of_pos_right _ positive.2.2.2.1).trans
+          ((Nat.le_mul_of_pos_right _ (pow_pos hp _)).trans (Nat.le_mul_of_pos_right _ positive.2.2.2.2))))
+      apply bound.trans
+      simpa only [rawCost,loading,conversion,binary,trailingBits] using
+        recordRoundTripCost_le m w fields W N budget hW radix length
+    refine ⟨z,D,_,ys,hz.trans (hmat.trans (hb.trans ha)),price ?_,Exec.seq setup (Exec.seq load (Exec.seq convert run)),act,read,?_⟩
     · have length_matrixWords (b : ℕ) : (matrixWords prime b G).length = m*m*b := by
         simp [matrixWords,List.length_flatten,List.map_ofFn,Function.comp_def,length_binSyms,List.ofFn_const,Nat.mul_assoc]
       apply Nat.add_le_add hc (Nat.add_le_add loadCost _)

@@ -2,7 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackPrefixVolume
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackPhysicalSignedPass
-public import IntegerMultBounds.MathlibTM2.Cover.FallbackConjugationQueue
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackMatrixBuildCost
 public import IntegerMultBounds.MathlibTM2.Cover.LabelClassCost
 public import IntegerMultBounds.MathlibTM2.Cover.LabelCountBank
 public import IntegerMultBounds.MathlibTM2.Cover.LabelSpectators
@@ -625,33 +625,6 @@ private theorem collectPassCost (parents traversal lifts volume : ℕ) (xs : Lis
     3*parents*traversal + parents*lifts*(xs.map fun x => anchor x + scan x).sum + 4*volume+22 := by
   rw [List.sum_map_add]
   ring
-
-omit [M8.Machine.Net] in
-theorem liveRecordCost_le_width_budget (r d w H numTime detTime : ℕ) :
-    liveRecordCost r d w H 0 (numTime*(H+1)^2) (detTime*(H+1)^2) ≤
-      liveRecordCost r d 1 1 0 numTime detTime * (w+1)*(H+1)^2 := by
-  unfold liveRecordCost
-  ring_nf
-  omega
-
-noncomputable def matrixBuildCost (r d w H : ℕ) := liveRecordCost r d w H 0
-  (Finset.univ.sup fun ij : Fin r × Fin r => RingFormula.time H (readTime H)
-    (numerator (matrixInput false) (matrixInput true) ij.1 ij.2))
-  (RingFormula.time H (readTime H) (determinant (matrixInput (m := r) false)))
-
-omit [M8.Machine.Net] in
-theorem matrixBuildCost_le (r d w H : ℕ) :
-    matrixBuildCost r d w H ≤ matrixBuildCost r d 1 1 * (w+1)*(H+1)^2 := by
-  let num := fun h (ij : Fin r × Fin r) => RingFormula.time h (readTime h)
-    (numerator (matrixInput false) (matrixInput true) ij.1 ij.2)
-  have entries : Finset.univ.sup (num H) ≤ Finset.univ.sup (num 1)*(H+1)^2 := by
-    apply Finset.sup_le
-    intro ij hi
-    exact (time_readTime_le _ H).trans (Nat.mul_le_mul_right _ (Finset.le_sup (f := num 1) hi))
-  apply le_trans _ (liveRecordCost_le_width_budget r d w H _ _)
-  simp only [matrixBuildCost, liveRecordCost]
-  gcongr
-  all_goals first | exact entries | exact time_readTime_le _ H
 
 omit [M8.Machine.Net] in
 theorem matrixBuildCost_volume_le (v : Descriptor) (positive : v.Positive)

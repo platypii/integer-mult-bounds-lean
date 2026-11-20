@@ -1,7 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackGoodRecordRoundTrip
-public import IntegerMultBounds.MathlibTM2.Cover.FallbackConjugationQueue
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackMatrixBuildCost
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackFormulaInit
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackRecordCleanup
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackRecordHeaders
@@ -189,12 +189,8 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
       let clock := counters 0
       let count := counters 1
       let formula := fun i j : Fin m => numerator (matrixInput false) (matrixInput true) i j
-      let formulaCost := Finset.univ.sup fun ij : Fin m × Fin m => time H (readTime H) (formula ij.1 ij.2)
       let detFormula := determinant (matrixInput (m := m) false)
-      let C := 48*H*H+152*H+66
-      let readCost := fun (label : ℕ) => m*(m*(12*(prefixes label).length+8*((w+1)*(m*m))+(w+1)*(7*H+prime+31)+10*H+42)+1)+1
-      let generation := fun label => ((1+(readCost label+1)) + (time H (readTime H) detFormula + (6*w+6+(14*H+16+(prime-2)*C+C+w*(12*H+15+prime*C))) +
-       ((m*(m*(formulaCost+4*H+4)+1)+1) + (m*(m*(8*(m*m*H)+48*H*H+166*H+88)+1)+1) + (2*(m*m*H)+2)) + 4*H+4) + (2*(m*m*H)+2))
+      let generation := fun label => recordConjugationTime m w H (prefixes label).length
       let generate : Pr F K Q prime U := (.seq (readWithSuccessorClock clock (directoryMatrix m a digits prefixWidth zeros packedLabel)) (.seq (.seq (.seq (compile (readLeaf (leafBank inputs)) (registerBank pool) detFormula 0 (pivot 14)) (reusablePivotInverse prime pivot clock count))
         (.seq (packedConjugate pool inputs ports false true) (.seq (bclear (pivot 0)) (bclear (pivot 14))))) (bclear packedLabel)))
       let withZero := (Node.umulSym 1 (bitSymbol false) (dir 8) zeros (dir 4)).seq (generate.seq (bclear zeros))
@@ -239,8 +235,10 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
       let loading := recordWeightLoadTime m w H M.size
       let conversion := recordMatrixLoadTime m H M.size
       let headerCost := (((List.finRange 6).map fun i => 6*((Routines.hdr v i).length)+6).sum+1)+1
-      let runCost := fun label => (((conjugationDepth m+1)*(6*H+6)+1 + (((4*H+4)+(generation label+(2*H+2)))+((conjugationDepth m+1)*(2*H+2)+1))) + (21*(w+1)+13)) + headerCost + ((dimensionTime H 1 fields+(4*(fields*H+1)+6)+(10*J+12)+(6*(M^fields).size+6)) +
-        (loading+(conversion+(budget+2*((218*N+1)*13+6)+3)))) + (1+(4*(prefixes label).length+4+(m*m*(4*(w+1)+4)+1)+1))
+      let raw := ((dimensionTime H 1 fields+(4*(fields*H+1)+6)+(10*J+12)+(6*(M^fields).size+6)) +
+        (loading+(conversion+(budget+2*((218*N+1)*13+6)+3))))
+      let tripCost := if 0 < d ∧ H = M.size ∧ J = W.size then min raw (budget+recordRoundTripRate m*N) else raw
+      let runCost := fun label => (((conjugationDepth m+1)*(6*H+6)+1 + (((4*H+4)+(generation label+(2*H+2)))+((conjugationDepth m+1)*(2*H+2)+1))) + (21*(w+1)+13)) + headerCost + tripCost + (1+(4*(prefixes label).length+4+(m*m*(4*(w+1)+4)+1)+1))
       let prepareCounters := (swapExponent (leafCounterPorts aux)).seq
         (.act (installLeafCounters (aux.trans inner) arity d))
       let prepareHeaders := (Record.copyLeafHeaders src dst (caller 64) (caller 65) (List.finRange 6)).seq (.act (pushMarkers ((List.finRange 6).map dst)))
@@ -289,8 +287,8 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
         labels.foldr (fun i rest x => ∃ y, action i x y ∧ rest y) (· = next) word := by
   intro d common host M N entry leave record bank commonPorts aux hdrPorts logical addr inner caller K ef xf eqs xqs initialWord
     body initialUser initialState poolFits directory prefixes archiveTail allLabels slots headers scanCaller scan joined dirSlots dir pool pivot counters inputs ports a digits prefixWidth zeros
-    packedLabel clock count formula formulaCost detFormula C readBill generationBill generate withZero field slot r src dst ready payload gs matrices liveBit badBit
-    call cost budget coordinate effects reverse transfer marks loading conversion headerCost runBills prepareCounters prepareHeaders recordProgram
+    packedLabel clock count formula detFormula generationBill generate withZero field slot r src dst ready payload gs matrices liveBit badBit
+    call cost budget coordinate effects reverse transfer marks loading conversion headerCost raw tripCost runBills prepareCounters prepareHeaders recordProgram
     privateTapes initialClear c bodyBound charge mask mode modes skip skipCost fallback badCost badEffect bad room Bcount rs parents shape freePrivate dirPositive brSize rowsSize beforeHSize parentsFree freeMask freeMode high initCounters clean initialReady initialPayload setupCost branchCost action priced
   have clockSlot : headers 0 = 45 := rfl
   have widthSlot : headers 2 = 2 := rfl
@@ -431,7 +429,7 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
       have first : 0 ∈ allLabels := List.mem_range.mpr (Nat.zero_lt_of_lt (List.mem_range.mp hj))
       exact (initialReady.2.1 j hj).symm.trans (initialReady.2.1 0 first)
     have sameCharge (j : ℕ) (hj : j ∈ allLabels) : charge j = charge 0 := by
-      simp only [charge,runBills,generationBill,readBill,sameWidth j hj]
+      simp only [charge,runBills,generationBill,sameWidth j hj]
     have skipBound (j : ℕ) (hj : j ∈ allLabels) : skipCost j ≤ charge 0 := by
       rw [← sameCharge j hj]
       exact (Nat.le_add_left _ _).trans (Nat.le_add_right (runBills j) _)
@@ -483,7 +481,6 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
     let G := matrices label
     let ancestor := prefixes label
     let tail := labels.flatMap (LabelDirectory.entry prefixes m (w+1)) ++ archiveTail
-    let readCost := readBill label
     let generation := generationBill label
     let runCost := runBills label
     obtain ⟨dirInput,widths,privateBlank,scanBlank,projectorInput,base,unit,trailing,sourceWords,one,ticks,archive⟩ := start
@@ -689,7 +686,7 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
           fun k hk i hi => (Function.update_of_ne (bp 10 _).symm _ _).trans ((Function.update_of_ne (bp 9 _).symm _ _).trans (frames k hk i hi)),leaves,
           (pivotKept 4).trans modulusWord,(pivotKept 12).trans (pivotEmpty 12 (by decide)),
           fun k hk => (pivotKept _).trans (pivotEmpty _ (Or.inl (scratchPort k hk)))⟩
-      simpa only [atOutput,mat,G,Bool.false_eq_true,ite_false,ite_true] using gen)
+      simpa only [generation,generationBill,recordConjugationTime,generate,detFormula,atOutput,mat,G,Bool.false_eq_true,ite_false,ite_true] using gen)
     rw [modulusWord,length_binSyms] at hn
     have callerOff (i : Fin 66) : caller i ≠ out := by
       intro eq
@@ -764,7 +761,7 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
       intro i eq; have h := congrArg Fin.val eq
       rw [CommonBank.headerSlot_val] at h
       change T+1+i.val = io.val at h; omega)
-    obtain ⟨z,D,t,ys,hz,ht,run,act,read,frame⟩ := goodRecordRoundTrip_exec
+    obtain ⟨z,D,t,ys,hz,⟨ht,htVolume⟩,run,act,read,frame⟩ := goodRecordRoundTrip_exec
       v positive w proj width idem factor hd label live rankFits parent parentInv reciprocal io roles f p node scalar
       arity st freeNode hm hw hW length capacity source head fits cap ef xf eqs xqs word body headerUser C (whole.R out)
       ((callerFrame 2).2.trans ((preserved 2).trans base)) ((callerFrame 28).2.trans ((preserved 28).trans unit))
@@ -833,7 +830,12 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
       Exec.seq (Exec.seq (Exec.seq (Exec.seq runWriter prep) install) run) advance
     have bound : (n+costC+headerCost)+t+(1+(4*ancestor.length+4+(m*m*(4*(w+1)+4)+1)+1)) ≤ runCost := by
       apply Nat.add_le_add_right (Nat.add_le_add (Nat.add_le_add_right (Nat.add_le_add hn hCost) _) _) _
-      exact ht
+      change t ≤ tripCost
+      dsimp only [tripCost]
+      split
+      · rename_i binary
+        exact le_min ht (htVolume binary.1 binary.2.1 binary.2.2)
+      · exact ht
     have distinct : privateTapes.Nodup := (List.nodup_finRange K).filter _
     obtain ⟨finish,userFinish,clear⟩ := clearWorkTapes_exec body privateTapes distinct last finalBank
     have charge := recordCleanup_cost_le privateTapes distinct step (le_max_left (mnProgPush recordProgram) c)
