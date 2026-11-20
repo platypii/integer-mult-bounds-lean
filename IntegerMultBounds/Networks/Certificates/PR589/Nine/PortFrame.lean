@@ -358,7 +358,7 @@ theorem triangular_projector_basis {R : Type*} [CommRing R] {n : ℕ}
     (idem : U * U = U) (bits : ∀ i, U i i = 0 ∨ U i i = 1) :
     let E := diagonal fun i => U i i
     ∃ C : Matrix (Fin n) (Fin n) R, C.IsLowerTriangular ∧
-      (∀ i, C i i = 1) ∧ IsUnit C.det ∧ C * E = U * C := by
+      (∀ i, C i i = 1) ∧ IsUnit C.det ∧ C * E = U * C ∧ C = U * E + (1 - U) * (1 - E) := by
   intro E
   let C := U * E + (1 - U) * (1 - E)
   have entry (i j) : C i j = U i j * U j j +
@@ -384,7 +384,7 @@ theorem triangular_projector_basis {R : Type*} [CommRing R] {n : ℕ}
     have hU : U * (1 - U) = 0 := by rw [mul_sub, mul_one, idem, sub_self]
     rw [add_mul, Matrix.mul_assoc U E E, eIdem, Matrix.mul_assoc, hE, Matrix.mul_zero,
       mul_add, ← Matrix.mul_assoc, idem, ← Matrix.mul_assoc, hU, Matrix.zero_mul]
-  exact ⟨C, triangular, diag, unit, intertwine⟩
+  exact ⟨C, triangular, diag, unit, intertwine, rfl⟩
 
 /-- A lower triangular projector exchanges its pivot coordinates
 after a lower triangular change of basis on each address half. -/
@@ -406,7 +406,7 @@ theorem exchange_pivot_coordinates {n : ℕ} (U : Matrix (Fin n) (Fin n) ℚ)
       · rw [lower (i := j) (j := i) lt, mul_zero]
       · rw [lower (i := i) (j := j) gt, zero_mul]
     · simp
-  obtain ⟨C, triangular, _, unit, intertwine⟩ := triangular_projector_basis U lower idem bits
+  obtain ⟨C, triangular, _, unit, intertwine, _⟩ := triangular_projector_basis U lower idem bits
   change C * E = U * C at intertwine
   let := C.invertibleOfIsUnitDet unit
   refine ⟨C, triangular, blockTriangular_inv_of_blockTriangular triangular, C.mul_nonsing_inv unit, ?_, ?_⟩

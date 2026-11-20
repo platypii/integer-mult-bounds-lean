@@ -74,9 +74,9 @@ theorem port_complement_route {R : Type*} [CommRing R] (L H : Matrix (Fin 8) (Fi
     (hyper : ∀ i : Fin 8, H i i = if i.val < 7 then 1 else 0) :
     ∃ A B : Matrix (Fin 8) (Fin 8) R, A.IsLowerTriangular ∧ B.IsLowerTriangular ∧
       IsUnit A ∧ IsUnit B ∧ (B * portSwap * A) * (1 - L) = H * (B * portSwap * A) := by
-  obtain ⟨C, tri, _, unit, lc⟩ := triangular_projector_basis L ltL idemL
+  obtain ⟨C, tri, _, unit, lc, _⟩ := triangular_projector_basis L ltL idemL
     (fun i => by rw [line]; split <;> simp)
-  obtain ⟨B, tb, _, ub, hb⟩ := triangular_projector_basis H ltH idemH
+  obtain ⟨B, tb, _, ub, hb, _⟩ := triangular_projector_basis H ltH idemH
     (fun i => by rw [hyper]; split <;> simp)
   let := C.invertibleOfIsUnitDet unit
   rw [funext line] at lc

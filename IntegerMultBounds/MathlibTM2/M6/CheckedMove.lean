@@ -26,7 +26,8 @@ theorem checked_move_programs (w : ℕ) :
           AffineFieldProgram.interchanges q = Geometry.moveRank i.val j.val ∧
           ∀ s, AffineFieldProgram.run q s = exchange (P j) (exchange (P i) s) := by
   intro R
-  obtain ⟨P, lower, diag, nested⟩ := compatible_label_projectors w
+  obtain ⟨Q, projectors⟩ := compatible_label_projectors
+  obtain ⟨P, reduced, lower, diag, nested⟩ := projectors w
   refine ⟨P, fun l => (nested l l (fun _ h => h)).1, ?_, diag, ?_⟩
   · intro i j h
     rcases h.2.2 with eq | inc | inc
@@ -41,8 +42,16 @@ theorem checked_move_programs (w : ℕ) :
         (∀ op ∈ q, AffineFieldProgram.Legal op) ∧
         AffineFieldProgram.interchanges q = dim b - dim a ∧
         ∀ s, AffineFieldProgram.run q s = exchange (P a) (exchange (P b) s) := by
-    obtain ⟨C, tri, _, _, inv, run⟩ := nested_label_moves w P lower diag nested a b inc
-    have unit := (Matrix.isUnit_iff_isUnit_det C).mpr (Matrix.isUnit_det_of_right_inverse inv)
+    let m := prime ^ w
+    let C := Swap.Modular.reduce m (moveBasis (Q b - Q a))
+    have adm (l) : Swap.Modular.Admissible m (Q l) := fun i j => (reduced l i j).1
+    have frame (l) : Swap.Modular.reduce m (Q l) = P l := Matrix.ext fun i j => (reduced l i j).2.symm
+    have basis : C = moveBasis (P b - P a) := by
+      rw [show C = _ from (moveBasis_reduce m _ (ModularFrameSchedule.admissible_sub m (adm b) (adm a))).2,
+        ModularFrameSchedule.reduce_sub m (adm b) (adm a), frame, frame]
+    obtain ⟨tri, _, _, inv, run⟩ := nested_label_moves w P lower diag nested a b inc
+    rw [← basis] at tri inv run
+    have unit : IsUnit C := (Matrix.isUnit_iff_isUnit_det C).mpr (Matrix.isUnit_det_of_right_inverse inv)
     obtain ⟨legal, count, correct⟩ := compile_prefixMove _ _ (bounded a) (bounded b) C tri unit
     exact ⟨_, legal, count, fun s => (correct s).trans (run s)⟩
   have dimLe (a b : Fin 636) (inc : ∀ k ∈ Frames.labels a.val, k ∈ Frames.labels b.val) :

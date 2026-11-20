@@ -171,6 +171,37 @@ theorem compile_prefixMove {R : Type*} [CommRing R] (d e : ℕ) (hd : d ≤ 8) (
     (AffineFieldProgram.compile_interchanges p).trans (prefixMoveProgram_interchanges _ _ hd he C),
     AffineFieldProgram.compile_run _ (fun op h => (valid op h).triangular)⟩
 
+/-- The explicit triangular eigenbasis of the MOVE projector. -/
+def moveBasis {R : Type*} [CommRing R] (U : Matrix (Fin 8) (Fin 8) R) :=
+  let E := diagonal fun k => U k k
+  U * E + (1 - U) * (1 - E)
+
+open IntegerMultBounds.Swap.Modular
+open IntegerMultBounds.Networks.ModularFrameSchedule in
+theorem moveBasis_reduce (m : ℕ) (U : Matrix (Fin 8) (Fin 8) ℚ) (hu : Admissible m U) :
+    Admissible m (moveBasis U) ∧ reduce m (moveBasis U) = moveBasis (reduce m U) := by
+  let E := diagonal fun k => U k k
+  have he : Admissible m E := by
+    intro i j
+    by_cases h : i = j
+    · subst j
+      simpa [E] using hu i i
+    · simp [E, diagonal_apply_ne _ h]
+  have diag : reduce m E = diagonal (fun k => reduce m U k k) := by
+    ext i j
+    by_cases h : i = j
+    · subst j
+      simp [E, reduce]
+    · simp [E, reduce, diagonal_apply_ne _ h, ratMod_zero]
+  have h1 := admissible_one (ι := Fin 8) m
+  have hU := admissible_sub m h1 hu
+  have hE := admissible_sub m h1 he
+  exact ⟨admissible_add m (admissible_mul m hu he) (admissible_mul m hU hE), by
+    change reduce m (U * E + (1-U) * (1-E)) = _
+    rw [reduce_add m (admissible_mul m hu he) (admissible_mul m hU hE), reduce_mul m hu he,
+      reduce_mul m hU hE, reduce_sub m h1 hu, reduce_sub m h1 he, reduce_one, diag]
+    rfl⟩
+
 /-- One family of tape-ring frames serves every nested pair. In coordinates given by
 a unitriangular adapter, its MOVE exchanges precisely the newly gained prefix positions. -/
 theorem nested_label_moves (w : ℕ) :
@@ -182,7 +213,9 @@ theorem nested_label_moves (w : ℕ) :
       (∀ i j : Fin 636, (∀ k ∈ Frames.labels i.val, k ∈ Frames.labels j.val) →
         P j * P i = P i ∧ P i * P j = P i) →
       ∀ i j : Fin 636, (∀ k ∈ Frames.labels i.val, k ∈ Frames.labels j.val) →
-        ∃ C : Matrix (Fin 8) (Fin 8) R, C.IsLowerTriangular ∧ C⁻¹.IsLowerTriangular ∧
+        let U := P j - P i
+        let C := moveBasis U
+        C.IsLowerTriangular ∧ C⁻¹.IsLowerTriangular ∧
           (∀ k, C k k = 1) ∧ C * C⁻¹ = 1 ∧ ∀ s,
           run (prefixMoveProgram (dim i) (dim j) C) s = exchange (P i) (exchange (P j) s) := by
   intro R dim P lower diag nested i j incl
@@ -203,13 +236,16 @@ theorem nested_label_moves (w : ℕ) :
   have tri : U.IsLowerTriangular := fun {a b} h => by
     have lt : a < b := h
     simp [U, Matrix.sub_apply, lower j a b lt, lower i a b lt]
-  obtain ⟨C, hC, ones, unit, basis⟩ := Nine.triangular_projector_basis U tri
+  obtain ⟨C, hC, ones, unit, basis, canonical⟩ := Nine.triangular_projector_basis U tri
     (M8.Exchange.sub_idempotent _ _ (idem i) (idem j) ij ji)
     (fun k => by rw [entry]; split <;> simp)
   have eq : diagonal (fun k => U k k) = E := congrArg diagonal (funext entry)
   rw [eq] at basis
   let := C.invertibleOfIsUnitDet unit
-  refine ⟨C, hC, blockTriangular_inv_of_blockTriangular hC, ones, C.mul_nonsing_inv unit, ?_⟩
+  change C = U * diagonal (fun k => U k k) + (1-U) * (1-diagonal (fun k => U k k)) at canonical
+  dsimp only [moveBasis]
+  rw [← canonical]
+  refine ⟨hC, blockTriangular_inv_of_blockTriangular hC, ones, C.mul_nonsing_inv unit, ?_⟩
   intro s
   simp only [prefixMoveProgram, IntegerMultBounds.Swap.Shear.run_append, intervalSwaps_run]
   change transform C C (exchange E (transform C⁻¹ C⁻¹ s)) = _
