@@ -1047,18 +1047,53 @@ theorem phaseMove_runs [M8.Machine.Net] {t lo hi : ℕ} (lt : lo < hi) (fits : h
     rw [rationalMoveWord_run, move]
     exact action s j
 
+/-- The prepared move charges one recursive call and three sequence transitions. -/
+def phaseWork (basis V child : ℕ) := 1300*V + 1 + (basis*V + child + 2)
+
+/-- Sum the physical phase bills in schedule order. Each paid edge contributes
+one recursive bill at its certified rank; the remaining work is linear in volume. -/
+theorem phaseWork_sum (basis child : ℕ × ℕ → ℕ) (price : ℕ → ℕ) {V : ℕ} (positive : 0 < V)
+    (bound : ∀ p ∈ Geometry.Moves.phaseEdges, Geometry.moveRank p.1 p.2 ≠ 0 →
+      child p ≤ price (Geometry.moveRank p.1 p.2)) :
+    let rank := fun p : ℕ × ℕ => Geometry.moveRank p.1 p.2
+    let paid := Geometry.Moves.phaseEdges.filter (fun p => rank p != 0)
+    (paid.map (fun p => phaseWork (basis p) V (child p))).sum ≤
+      (paid.map (fun p => 1303 + basis p)).sum * V +
+        ((Geometry.Moves.phaseValues.filter (· != 0)).map price).sum := by
+  intro rank paid
+  have sum (edges : List (ℕ × ℕ)) (bounded : ∀ p ∈ edges, child p ≤ price (rank p)) :
+      (edges.map (fun p => phaseWork (basis p) V (child p))).sum ≤
+        (edges.map (fun p => 1303 + basis p)).sum * V + ((edges.map rank).map price).sum := by
+    induction edges with
+    | nil => simp
+    | cons p ps ih =>
+      have step := bounded p (by simp)
+      have rest := ih (fun q h => bounded q (List.mem_cons_of_mem _ h))
+      simp only [List.map_cons,List.sum_cons,Nat.add_mul,phaseWork] at rest ⊢
+      omega
+  have ranks (edges : List (ℕ × ℕ)) :
+      (edges.filter (fun p => rank p != 0)).map rank = (edges.map rank).filter (· != 0) := by
+    induction edges with
+    | nil => rfl
+    | cons p ps ih =>
+      by_cases zero : rank p = 0 <;> simp [zero,ih]
+  have bill := sum paid (fun p hp => by
+    obtain ⟨mem,positiveRank⟩ := List.mem_filter.mp hp
+    exact bound p mem (by simpa using positiveRank))
+  have same : paid.map rank = Geometry.Moves.phaseValues.filter (· != 0) :=
+    (ranks _).trans (congrArg (List.filter (· != 0)) Geometry.Moves.phase_ranks)
+  rwa [same] at bill
+
 open M8.Machine.Segments SharedPlacementAlphabet M8.Machine.ArbitraryWidthOriginalRun in
-theorem phasePrepared_runs [M8.Machine.Net] {t lo hi : ℕ} (lt : lo < hi) (fits : hi ≤ 8) (src : Fin t)
+noncomputable def PhaseExecution [M8.Machine.Net] {t lo hi : ℕ} (lt : lo < hi) (fits : hi ≤ 8) (src : Fin t)
     (C : Matrix (Fin 8) (Fin 8) ℚ)
     (rev : CopyBasisPass C.adjugate)
     (fwd : CopyBasisPass C)
-    (hw : 0 < w) (hW : 0 < W) (caller : Tapes t prime)
-    (x : Fin ((prime^w)^16*W) → ZMod 2) (head : caller.head src = 0)
-    (payload : caller.tape src = sourceWord (fun i => x (Fin.cast (phaseIntervalChild_volume lt.le fits w W) i))) :
+    (caller : Tapes t prime)
+    (x : Fin ((prime^w)^16*W) → ZMod 2) (word : List (AffineFieldProgram.Op (Fin 8) (ZMod (prime^w)))) : Prop :=
     let hs := fun i => FlatCoordinateSchedule.bits (RecursiveDimensionBank.values (phaseIntervalChild lo hi w W) i)
     let headers := fun i => Fin.castAdd t (phaseHeaderSlots i)
     let site := Fin.natAdd 24 src
-    let spec := List.map (AffineFieldProgram.mapOp (IntegerMultBounds.Swap.Modular.ratMod (prime^w)))
     let A := description _ rev.good
     let B := description _ fwd.good
     let n := FlatCoordinateCleanSchedule.tapeCount A
@@ -1074,12 +1109,24 @@ theorem phasePrepared_runs [M8.Machine.Net] {t lo hi : ℕ} (lt : lo < hi) (fits
     ∃ y : Fin ((prime^w)^16*W) → ZMod 2,
       HoareTime (seq setup machine) (fun z => z = bank ((phaseHeaderInput lo hi w W).append caller))
         (fun z => z = bank (setTape ((phaseHeaderOutput lo hi w W).append caller) site (sourceWord (fun i => y (Fin.cast (phaseIntervalChild_volume lt.le fits w W) i))) 0))
-        (1300*((prime^w)^16*W) + 1 + ((FlatCoordinateCleanSchedule.constant A + FlatCoordinateCleanSchedule.constant B) *
-          ((prime^w)^16*W) + cost (phaseIntervalChild lo hi w W) hs + 2)) ∧
+        (phaseWork (FlatCoordinateCleanSchedule.constant A + FlatCoordinateCleanSchedule.constant B)
+          ((prime^w)^16*W) (cost (phaseIntervalChild lo hi w W) hs)) ∧
       ∀ s j, y (FlatCoordinateLayout.index (AffineFieldCoordinates.embed
-        (AffineFieldProgram.run (spec (rationalMoveWord lo hi C)) s)) j) =
-        x (FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) j) := by
-  intro hs headers site spec A B n m bank source enter child leave machine setup
+        (AffineFieldProgram.run word s)) j) =
+        x (FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) j)
+
+open M8.Machine.ArbitraryWidthOriginalRun in
+theorem phasePrepared_runs [M8.Machine.Net] {t lo hi : ℕ} (lt : lo < hi) (fits : hi ≤ 8) (src : Fin t)
+    (C : Matrix (Fin 8) (Fin 8) ℚ)
+    (rev : CopyBasisPass C.adjugate)
+    (fwd : CopyBasisPass C)
+    (hw : 0 < w) (hW : 0 < W) (caller : Tapes t prime)
+    (x : Fin ((prime^w)^16*W) → ZMod 2) (head : caller.head src = 0)
+    (payload : caller.tape src = sourceWord (fun i => x (Fin.cast (phaseIntervalChild_volume lt.le fits w W) i))) :
+    PhaseExecution lt fits src C rev fwd caller x ((rationalMoveWord lo hi C).map
+      (AffineFieldProgram.mapOp (IntegerMultBounds.Swap.Modular.ratMod (prime^w)))) := by
+  unfold PhaseExecution
+  intro hs headers site A B n m bank source enter child leave machine setup
   obtain ⟨build, valid, slots⟩ := phaseHeader_runs lt.le fits hw hW
   let output := phaseHeaderOutput lo hi w W
   obtain ⟨y, move, action⟩ := phaseMove_runs lt fits site headers
@@ -1095,6 +1142,38 @@ theorem phasePrepared_runs [M8.Machine.Net] {t lo hi : ℕ} (lt : lo < hi) (fits
     (hoare_extend_eq (hoare_extend_eq build caller) (basisWorkspace B x)) (basisWorkspace A x))
     (FixedHeaderBankCopy.empty 16)) M8.Machine.ArbitraryWidthHighPrepareShared.privateInput)
   exact ⟨y, prepare.seq move, action⟩
+
+/-- Each paid phase edge executes its selected modular word, with the actual
+recursive width priced by the schedule's move rank. -/
+theorem scheduledPhase_runs [M8.Machine.Net] {p : ℕ × ℕ}
+    (member : p ∈ Geometry.Moves.phaseEdges) (paid : 0 < Geometry.moveRank p.1 p.2) :
+    let a := Geometry.Dimensions.value p.1
+    let b := Geometry.Dimensions.value p.2
+    let lo := min a b
+    let hi := max a b
+    ∃ (lt : lo < hi) (fits : hi ≤ 8) (C : Matrix (Fin 8) (Fin 8) ℚ)
+      (rev : CopyBasisPass C.adjugate) (fwd : CopyBasisPass C),
+      ∀ {t w W : ℕ} (src : Fin t) (caller : Tapes t prime)
+        (x : Fin ((prime^w)^16*W) → ZMod 2), 0 < w → 0 < W → caller.head src = 0 →
+        caller.tape src = putWord (fun _ => blank) 0 (List.ofFn fun i => SparseRoleCircuit.encode (a := prime) (x i)) →
+      (phaseIntervalChild lo hi w W).width = Geometry.moveRank p.1 p.2*w ∧
+      PhaseExecution lt fits src C rev fwd caller x (selectedWord w p) := by
+  intro a b lo hi
+  have checked := Geometry.Moves.phase_checked p member
+  have diff := Geometry.Moves.rank p checked
+  change Geometry.moveRank p.1 p.2 = (b-a)+(a-b) at diff
+  have lt : lo < hi := by dsimp only [lo,hi]; omega
+  have bounded (k : ℕ) (hk : k < 636) : Geometry.Dimensions.value k ≤ 8 := by
+    rw [← Geometry.Dimensions.dimension k hk]
+    simpa using (Submodule.finrank_le (Geometry.label k))
+  have fits : hi ≤ 8 := max_le (bounded _ checked.1) (bounded _ checked.2.1)
+  obtain ⟨C,shape,rev,fwd⟩ := modular_move_profile.choose_spec.1 p checked
+  refine ⟨lt,fits,C,rev,fwd,?_⟩
+  intro t w W src caller x hw hW head payload
+  refine ⟨phaseIntervalChild_width checked w W,?_⟩
+  unfold selectedWord selectedRaw
+  rw [shape]
+  exact phasePrepared_runs lt fits src C rev fwd hw hW caller x head (by rw [sourceWord_cast]; exact payload)
 
 /-- The child starts directly on the pointwise gate's temporary. Its source
 word and head already have the required representation on the owner bank. -/
