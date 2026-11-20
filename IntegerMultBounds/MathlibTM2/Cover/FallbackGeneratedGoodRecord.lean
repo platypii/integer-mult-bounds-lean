@@ -423,6 +423,38 @@ noncomputable def directoryQueueInitTime {K : ℕ} (m d w H records : ℕ) (S : 
   headers+(((List.finRange m).map fun j => parentCoefficientTime j.val w H).sum+1) + ((4*H+4)+((d+1)*((d+1)*(6*H+6)+1)+1)) +
     ((6*records+6)+(6*(S.R ((46 : Fin 66).castAdd K)).length+6))
 
+/-- The counter and selector passes use linear time in batch volume, plus
+the initial left stacks that the cleanup program unloads. -/
+private theorem maskSetup_volume_le (m w records parents tapes left V : ℕ)
+    (radix : prime^(w+1) ≤ V) (count : records ≤ V) (boxes : parents ≤ records) :
+    (26*prime^w+4) + ((44*records+13*(w+1)+16) + 3*((6+10*(m*m))*records+4) +
+      (2*parents+2)) + (left+tapes*(2*prime^w+4)+1) ≤
+      left + (140+30*(m*m)+6*tapes)*V := by
+  have high := (Nat.pow_le_pow_right Networks.Shared50ModularControl.prime_prime.pos (Nat.le_succ w)).trans radix
+  have atom : w+1 ≤ V := Nat.lt_two_pow_self.le.trans
+    ((Nat.pow_le_pow_left Networks.Shared50ModularControl.prime_prime.two_le _).trans radix)
+  have positive : 1 ≤ V := (pow_pos Networks.Shared50ModularControl.prime_prime.pos w).trans_le high
+  nlinarith only [high,atom,positive,count,boxes.trans count,Nat.mul_le_mul_left (m*m) count,
+    Nat.mul_le_mul_left tapes high,Nat.mul_le_mul_left tapes positive]
+
+/-- Express the exceptional record count as a fraction of the payload volume
+while keeping the ordinary per-record charge separate. -/
+private theorem exceptionalBatchCost_le (steps overhead records baseline labels rate N : ℕ)
+    (bill : steps ≤ overhead + (records*(baseline+6)+2 + (labels*records/prime)*(rate*N))) :
+    (steps : ℝ) ≤ overhead + records*(baseline+6) + 2 +
+      ((labels : ℝ)/prime)*rate*(records*N) := by
+  have frequency : ((labels*records/prime : ℕ) : ℝ) * prime ≤ (labels : ℝ)*records := by
+    exact_mod_cast Nat.div_mul_le_self (labels*records) prime
+  have weighted := mul_le_mul_of_nonneg_right frequency (show 0 ≤ (rate : ℝ)*N by positivity)
+  have pos : (0 : ℝ) < prime := by exact_mod_cast Networks.Shared50ModularControl.prime_prime.pos
+  have rare : ((labels*records/prime : ℕ) : ℝ)*(rate*N) ≤ ((labels : ℝ)/prime)*rate*(records*N) := by
+    apply (mul_le_mul_iff_of_pos_right pos).mp
+    field_simp
+    nlinarith only [weighted]
+  have total : (steps : ℝ) ≤ overhead + (records*(baseline+6)+2 + ((labels*records/prime : ℕ) : ℝ)*(rate*N)) := by
+    exact_mod_cast bill
+  linarith
+
 noncomputable def directoryQueueInitRate (m d : ℕ) :=
   96 + 12*(conjugationDepth m+1) +
     m*(parentCoefficientTime m 1 1*(2*(prime.size+1)^2)) +
@@ -1425,13 +1457,13 @@ def GeneratedArchiveRun [M8.Machine.Net] {m d K w W J N : ℕ} {P U : Type}
       B.R (directoryMatrixTape room) = [] ∧ B.R (placement (caller 57)) = [] ∧ B.R (placement (caller 56)) = [] ∧
       binaryTime n ∧ (∀ p, mnProgPush prepare ≤ p → (∀ f, mnProgPush (body f) ≤ p) →
         setupSteps ≤ initTime + queueTime + (4*scratch.length+1 + scratch.length*(6*(p*initTime)))) ∧
-      (let V := data.records*N
+      (let span := max (S.R ((47 : Fin 66).castAdd (K+1))).length N
+       let V := data.records*span
        let suffix := (S.R ((48 : Fin 66).castAdd (K+1))).drop (m*m*data.H)
        let extent := (1+m*m)*V + archiveTail.length + suffix.length
        let budget := directoryQueueInitRate m d*extent
        ∀ p, mnProgPush prepare ≤ p → (∀ f, mnProgPush (body f) ≤ p) →
          data.H = (prime^(w+1)).size → 0 < W → 0 < data.records →
-         (S.R ((47 : Fin 66).castAdd (K+1))).length ≤ N →
          let preparation := budget + ((12*m*m+4+directoryMatrixRate m d)*V+4) +
            (4*scratch.length+1 + scratch.length*(6*(p*budget)))
          setupSteps ≤ preparation ∧
@@ -1510,18 +1542,21 @@ theorem generatedArchive_exec [M8.Machine.Net] {m d K w W J N : ℕ} {P U : Type
   refine ⟨_,z,B,t,n,next,userZ.trans userY,done,history,emptyArchive,emptyLive,emptyBad,time,?_,?_,?_,Exec.seq write run⟩
   · intro p hp calls
     exact charge p (inputTime p (max_le_iff.mp (max_le_iff.mp hp).1).1 calls)
-  · intro V suffix extent budget p hp calls precision positive nonempty prefixFit preparation
+  · intro span V suffix extent budget p hp calls precision positive nonempty preparation
     let M := prime^(w+1)
     have Mpos : 0 < M := pow_pos Networks.Shared50ModularControl.prime_prime.pos _
     have radixPayload : M ≤ N := by
       rw [← directoryPayloadLength e length,pow_succ]
       exact (Nat.le_mul_of_pos_left _ (pow_pos Mpos d)).trans (Nat.le_mul_of_pos_right _ positive)
-    have payloadVolume : N ≤ V := Nat.le_mul_of_pos_left N nonempty
+    have payloadSpan : N ≤ span := le_max_right ..
+    have spanVolume : span ≤ V := Nat.le_mul_of_pos_left _ nonempty
+    have payloadVolume : N ≤ V := payloadSpan.trans spanVolume
+    have prefixSpan : (S.R ((47 : Fin 66).castAdd (K+1))).length ≤ span := le_max_left ..
     have volumeExtent : V ≤ extent := by
       dsimp only [extent]; rw [Nat.add_mul,one_mul]; omega
     have radix := (radixPayload.trans payloadVolume).trans volumeExtent
     have recordsFit : data.records ≤ extent :=
-      (Nat.le_mul_of_pos_right _ (Mpos.trans_le radixPayload)).trans volumeExtent
+      (Nat.le_mul_of_pos_right _ ((Mpos.trans_le radixPayload).trans_le payloadSpan)).trans volumeExtent
     have digits : data.H ≤ extent := precision ▸ (Nat.size_le.mpr Nat.lt_two_pow_self).trans radix
     have atomN : w+1 ≤ N := Nat.lt_two_pow_self.le.trans
       ((Nat.pow_le_pow_left Networks.Shared50ModularControl.prime_prime.two_le _).trans radixPayload)
@@ -1532,10 +1567,10 @@ theorem generatedArchive_exec [M8.Machine.Net] {m d K w W J N : ℕ} {P U : Type
       simp only [pending,List.drop_zero,List.length_append,List.flatMap_def]
       rw [BlockRotationData.uniform_volume (width+(w+1)*(m*m))]
       · simp only [List.length_map,List.length_range]
-        have words := Nat.mul_le_mul_left data.records (Nat.add_le_add prefixFit (Nat.mul_le_mul_right (m*m) atomN))
+        have words := Nat.mul_le_mul_left data.records (Nat.add_le_add prefixSpan (Nat.mul_le_mul_right (m*m) (atomN.trans payloadSpan)))
         dsimp only [extent]
         calc
-          _ ≤ data.records*(N+N*(m*m)) + archiveTail.length := Nat.add_le_add_right words _
+          _ ≤ data.records*(span+span*(m*m)) + archiveTail.length := Nat.add_le_add_right words _
           _ = (1+m*m)*V + archiveTail.length := by dsimp only [V]; ring
           _ ≤ _ := Nat.le_add_right _ _
       · intro word mem
@@ -1560,7 +1595,7 @@ theorem generatedArchive_exec [M8.Machine.Net] {m d K w W J N : ℕ} {P U : Type
       · have eq : j = 2 := Fin.ext h
         subst j; rw [modulus,length_binSyms]; exact digits
       · have eq : j = 47 := Fin.ext h
-        exact eq ▸ prefixFit.trans (payloadVolume.trans volumeExtent)
+        exact eq ▸ prefixSpan.trans (spanVolume.trans volumeExtent)
       · have eq : j = 48 := Fin.ext h
         exact eq ▸ projectorSize
       · have eq : j = 44 := Fin.ext h
@@ -1572,8 +1607,8 @@ theorem generatedArchive_exec [M8.Machine.Net] {m d K w W J N : ℕ} {P U : Type
       rw [precision]
       refine (directoryMatrixQueueTime_binary_le ..).trans (Nat.add_le_add_right ?_ 4)
       calc
-        _ ≤ data.records*((12*m*m+4)*N+directoryMatrixRate m d*N) :=
-          Nat.mul_le_mul_left _ (Nat.add_le_add (Nat.mul_le_mul_left _ prefixFit) (Nat.mul_le_mul_left _ radixPayload))
+        _ ≤ data.records*((12*m*m+4)*span+directoryMatrixRate m d*span) :=
+          Nat.mul_le_mul_left _ (Nat.add_le_add (Nat.mul_le_mul_left _ prefixSpan) (Nat.mul_le_mul_left _ (radixPayload.trans payloadSpan)))
         _ = (12*m*m+4+directoryMatrixRate m d)*V := by dsimp only [V]; ring
     have setup : t ≤ preparation := (charge p (inputTime p (max_le_iff.mp (max_le_iff.mp hp).1).1 calls)).trans
       (Nat.add_le_add (Nat.add_le_add initLe queueVolume) (Nat.add_le_add_left
@@ -1948,19 +1983,24 @@ def GeneratedRecordSpec [M8.Machine.Net] {T m work Q fields H J W : ℕ} {F U : 
                   finish.user = v.user ∧ ready (embStk placement final) [] ∧ payload next (embStk placement final) ∧
                   labels.foldl (fun history j y => ∃ x, history x ∧ action j x y) (· = word) next ∧
                   final.R archive = [] ∧ final.R (placement mask) = [] ∧ final.R (placement mode) = [] ∧
-                  (∀ baseline, H = M.size → J = W.size → (E.R (placement (caller 47))).length ≤ N →
+                  (∀ baseline, H = M.size → J = W.size →
                     (if 0 < d ∧ H = M.size ∧ J = W.size then min (charge 0) binaryCharge else charge 0) + N ≤ baseline →
-                    let V := data.records*N
-                    let suffix := (E.R (placement (caller 48))).drop (m*m*H)
+                    let V := data.records*max (prefixes 0).length N
+                    let suffix := (whole.R (caller 48)).drop (m*m*H)
                     let budget := directoryQueueInitRate m dimension*((1+m*m)*V+archiveTail.length+suffix.length)
                     let work := (List.finRange (66+(host+31+work+1))).filter fun i => decide (58 ≤ i.val ∧ i ≠ archive)
                     let p := max (mnProgPush archivePass) push
                     let setup := budget + ((12*m*m+4+directoryMatrixRate m dimension)*V+4) +
                       (4*work.length+1+work.length*(6*(p*budget)))
-                    let exceptional := ((∑ k ∈ Finset.range d, (k+1)*(m+1))*data.records)/prime
-                    n+steps ≤ setupCost + (setup + (data.records*(baseline+6)+2 +
-                      exceptional*(exceptionalVolumeRate U dimension m work.length
-                        (max (mnProgPush (directoryExceptionalCore (P := F) (U := U) dimension archiveRoom anchor)) push) w*N)))) ∧
+                    let labels := ∑ k ∈ Finset.range d, (k+1)*(m+1)
+                    let rate := exceptionalVolumeRate U dimension m work.length
+                      (max (mnProgPush (directoryExceptionalCore (P := F) (U := U) dimension archiveRoom anchor)) push) w
+                    let left := (privateTapes.map fun i => 4*(whole.L i).length).sum
+                    let controls := left + (140+30*(m*m)+6*privateTapes.length)*(data.records*N)
+                    let overhead := controls+setup
+                    n+steps ≤ overhead + (data.records*(baseline+6)+2 + (labels*data.records/prime)*(rate*N)) ∧
+                      ((n+steps : ℕ) : ℝ) ≤ overhead + data.records*(baseline+6) + 2 +
+                        ((labels : ℝ)/prime)*rate*(data.records*N)) ∧
                   Exec scanBody ((states ▸ embProg placement id prepare).seq archivePass)
                     (mk (states ▸ v) B) (n+steps) (mk finish final))) ∧
       ∀ (fallback : Pr F K Q prime U) (badCost : ℕ → ℕ) (badEffect : ℕ → (Fin N → ZMod 2) → (Fin N → ZMod 2) → Prop),
@@ -2667,7 +2707,7 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
     · simpa only [List.drop_length,List.length_range,List.drop_eq_nil_of_le (List.length_range.le)] using done.1
     · simpa only [payload,port] using done.2
     · simpa only [count] using history
-    · intro baseline precision weight prefixFit ceiling V suffix budget scratch p setup exceptional
+    · intro baseline precision weight ceiling V suffix budget scratch p setup labels rate left controls overhead
       have recordsPos : 0 < data.records := by
         rw [count,LabelMask.records]
         exact Nat.mul_pos (Nat.mul_pos dirPositive.1 dirPositive.2.1) dirPositive.2.2.1
@@ -2679,11 +2719,35 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
       have writerPush : mnProgPush build ≤ p := (le_max_left ..).trans (le_max_left ..)
       have bodyPush (f) : mnProgPush (outer f) ≤ p := (bounded f).trans (le_max_right ..)
       have placed (j : Fin 66) : placement (caller j) = j.castAdd (host+31+work+1) := directoryOrdinaryBank_caller archiveRoom j
-      rw [placed] at prefixFit
-      have total := (volumeTime p writerPush bodyPush precision hW recordsPos prefixFit).2 _ baseline parentsCount weight ceiling
-      dsimp only [setup,budget,suffix]
-      rw [placed]
-      exact Nat.add_le_add setupBound total
+      have widthEq := readyStart.2.1 0 (show 0 ∈ allLabels by simpa [allLabels,← count] using recordsPos)
+      change (E.R (placement (caller 47))).length = (prefixes 0).length at widthEq
+      rw [placed] at widthEq
+      have total := (volumeTime p writerPush bodyPush precision hW recordsPos).2 _ baseline parentsCount weight ceiling
+      have projectorEq : E.R ((48 : Fin 66).castAdd (host+31+work+1)) = initialState.R (caller 48) := by
+        rw [← placed]
+        change (embStk placement E).R (caller 48) = _
+        rw [localBank]
+        have outside : caller 48 ∉ privateTapes := by simp [privateTapes,caller]
+        have ne (j : Fin 66) (hj : (48 : Fin 66) ≠ j) := caller.injective.ne hj
+        simp only [startState,liveState,mode,mask,clean,Function.update_of_ne (ne 56 (by decide)),
+          Function.update_of_ne (ne 57 (by decide)),ite_eq_right outside,Function.update_of_ne (ne 54 (by decide))]
+      have posM : 0 < M := pow_pos Networks.Shared50ModularControl.prime_prime.pos _
+      have radix : M ≤ N := by
+        dsimp only [N]
+        rw [← directoryPayloadLength e length,pow_succ]
+        exact (Nat.le_mul_of_pos_left _ (pow_pos posM dimension)).trans (Nat.le_mul_of_pos_right _ hW)
+      have boxCount := (Nat.le_mul_of_pos_right (directory.beforeRows*directory.rows*Bcount)
+        (pow_pos posM (m*m))).trans_eq parentsCount.symm
+      have controlCost := maskSetup_volume_le m w data.records (directory.beforeRows*directory.rows*Bcount)
+        privateTapes.length left (data.records*N) (radix.trans (Nat.le_mul_of_pos_left _ recordsPos))
+        (Nat.le_mul_of_pos_right _ (posM.trans_le radix)) boxCount
+      rw [count] at controlCost
+      have maskBound : _ ≤ controls := setupBound.trans (by simpa only [controls,count,allLabels,List.length_range] using controlCost)
+      suffices bill : _ ≤ overhead + (data.records*(baseline+6)+2 + (labels*data.records/prime)*(rate*N)) from
+        ⟨bill,exceptionalBatchCost_le _ _ _ _ _ _ _ bill⟩
+      dsimp only [overhead,setup,budget,suffix,V]
+      rw [← projectorEq,← widthEq,Nat.add_assoc controls]
+      exact Nat.add_le_add maskBound total
   intro fallback badCost badEffect bad branchCost action exceptional priced
   suffices scanRun : ∃ finish D n next, finish.user = z.user ∧
       n ≤ (allLabels.map fun i => branchCost i+2+4).sum+2 ∧
