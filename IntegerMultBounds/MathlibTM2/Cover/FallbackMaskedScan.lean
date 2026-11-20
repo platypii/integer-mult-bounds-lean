@@ -137,6 +137,47 @@ def classifiedScan (liveMask fallbackMask : Fin T) (good fallback padding : Pr P
   maskedScan liveMask (.seq (.act (nextPivotBit fallbackMask)) (.cond (·.flag) fallback good))
     (.seq (.act (nextPivotBit fallbackMask)) padding)
 
+/-- Transport one payload through the three classified branches, consuming both selector streams. -/
+theorem classifiedPayloadScan_exec {W : Type} (body : P → Pr P T Q A U) (mask mode : Fin T)
+    (apart : mask ≠ mode) (good fallback padding : Pr P T Q A U) (live bad : ι → Bool)
+    (cost : ι → ℕ) (ready : List ι → Stacks T A → Prop) (payload : W → Stacks T A → Prop)
+    (effect : ι → W → W → Prop)
+    (release : ∀ k, k = mask ∨ k = mode → ∀ is word (S : Stacks T A) xs, ready is S → payload word S →
+      let B := {S with R := Function.update S.R k xs}
+      ready is B ∧ payload word B)
+    (step : ∀ i is word (u : HS T Q A U) (S : Stacks T A), ready (i :: is) S → payload word S →
+      ∃ z D n next, z.user = u.user ∧ n ≤ cost i ∧
+        Exec body (if live i then (if bad i then fallback else good) else padding) (mk u S) n (mk z D) ∧
+        ready is D ∧ effect i word next ∧ payload next D ∧ D.R mask = S.R mask ∧ D.R mode = S.R mode)
+    (is : List ι) (word : W) (u : HS T Q A U) (S : Stacks T A) (start : ready is S) (input : payload word S)
+    (liveBits : S.R mask = is.map fun j => bitSymbol (live j)) (badBits : S.R mode = is.map fun j => bitSymbol (bad j)) :
+    ∃ z D n next, z.user = u.user ∧ n ≤ (is.map fun i => cost i+2+4).sum+2 ∧
+      Exec body (classifiedScan mask mode good fallback padding) (mk u S) n (mk z D) ∧
+      (ready [] D ∧ D.R mode = []) ∧ D.R mask = [] ∧ payload next D ∧
+      is.foldr (fun i rest x => ∃ y, effect i x y ∧ rest y) (· = next) word := by
+  let modes := fun (js : List ι) => js.map fun i => bitSymbol (a := A) (bad i)
+  apply maskedPayloadScan_exec body mask _ _ live (fun i => cost i+2)
+    (fun js B => ready js B ∧ B.R mode = modes js) payload effect _ _ is word u S ⟨start,badBits⟩ input liveBits
+  · intro js x B xs h p
+    obtain ⟨r,q⟩ := release mask (Or.inl rfl) js x B xs h.1 p
+    exact ⟨⟨r,(Function.update_of_ne apart.symm xs B.R).trans h.2⟩,q⟩
+  · intro i js x v B current px
+    let rest := modes js
+    let E := {B with R := Function.update B.R mode rest}
+    let y := {v with flag := bad i}
+    have bit : B.R mode = bitSymbol (bad i) :: rest := current.2
+    have pop : Exec body (.act (nextPivotBit mode)) (mk v B) 1 (mk y E) := by
+      simpa [nextPivotBit,Action.run,bit,update_rt,y,E] using Exec.act (body := body) (nextPivotBit mode) (mk v B)
+    obtain ⟨r,p⟩ := release mode (Or.inr rfl) _ x B rest current.1 px
+    obtain ⟨z,D,n,next,user,time,run,rdy,eff,pay,hm,hb⟩ := step i js x y E r p
+    have frame : E.R mask = B.R mask := Function.update_of_ne apart rest B.R
+    have endMode : D.R mode = rest := hb.trans (Function.update_self mode rest B.R)
+    cases hl : live i <;> simp only [hl,Bool.false_eq_true,ite_false,ite_true] at run ⊢
+    · exact ⟨z,D,_,next,user,by omega,Exec.seq pop run,⟨rdy,endMode⟩,eff,pay,hm.trans frame⟩
+    · cases h : bad i <;> simp only [h,Bool.false_eq_true,ite_false,ite_true] at run
+      · exact ⟨z,D,_,next,user,by omega,Exec.seq pop (.cond_false h run),⟨rdy,endMode⟩,eff,pay,hm.trans frame⟩
+      · exact ⟨z,D,_,next,user,by omega,Exec.seq pop (.cond_true h run),⟨rdy,endMode⟩,eff,pay,hm.trans frame⟩
+
 /-- The three record programs share a tape invariant. Dispatch adds at most
 six steps per record and leaves both selector tapes empty. -/
 theorem classifiedScan_exec (body : P → Pr P T Q A U) (liveMask fallbackMask : Fin T)

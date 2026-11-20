@@ -237,7 +237,8 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
           RadixToBinary.binaryEncoding.encode (putWord source head ((List.ofFn word).map SparseRoleCircuit.encode) z)
       let g := physicalLabel m (w+1)
       let G := fun label => g label*reduce M proj*(g label)⁻¹
-      let active := fun label => LabelStock.live m (w+1) 1 label && !fallbackBit rankFits (reduce M proj) (g label)
+      let liveBit := LabelStock.live m (w+1) 1
+      let badBit := fun label => fallbackBit rankFits (reduce M proj) (g label)
       let call := fun i : Fin d => packedCoordinateProgram (F := Empty) (U := U) io i.val i.val ef xf fits eqs xqs cap
       let cost := packedCoordinatesTime d N w (LeafCore.core io).tapes
         (packedLeafPush (F := Empty) (U := U) io Empty.elim) entry.tapes leave.tapes
@@ -272,22 +273,26 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
       ∀ c, (∀ f, mnProgPush (body f) ≤ c) →
       let charge := fun label => runCost label + (initialClear + 6*(max (mnProgPush recordProgram) c * runCost label))
       let mask := caller 57
+      let mode := caller 56
+      let modes := fun (js : List ℕ) => js.map (fun i => bitSymbol (a := prime) (badBit i))
+      let skip := readWithSuccessorClock (scan 1) (advanceDirectory m scan)
+      let skipCost := fun i => 1+(4*(prefixes i).length+4+(m*m*(4*(w+1)+4)+1)+1)
       ∀ (fallback : Pr F K Q prime U) (badCost : ℕ → ℕ) (badEffect : ℕ → (Fin N → ZMod 2) → (Fin N → ZMod 2) → Prop),
-      (∀ i is word (u : HS K Q prime U) (S : Stacks K prime), active i = false → ready S (i :: is) → payload word S →
+      (∀ i is word (u : HS K Q prime U) (S : Stacks K prime), LabelStock.live m (w+1) 1 i = true → fallbackBit rankFits (reduce M proj) (g i) = true → ready S (i :: is) → payload word S →
         ∃ z D n next, z.user = u.user ∧ n ≤ badCost i ∧ Exec body fallback (mk u S) n (mk z D) ∧
-          ready D is ∧ badEffect i word next ∧ payload next D ∧ D.R mask = S.R mask) →
-      ready whole labels → payload word whole → whole.R mask = labels.map (fun i => bitSymbol (active i)) →
-      let branchCost := fun i => if active i then charge i else badCost i
-      let action := fun i => if active i then effect i else badEffect i
-      ∃ z D n next, z.user = u.user ∧ n ≤ (labels.map fun i => branchCost i + 4).sum + 2 ∧
-        Exec body (maskedScan mask (recordProgram.seq (clearWorkTapes privateTapes)) fallback) (mk u whole) n (mk z D) ∧
-        ready D [] ∧ D.R mask = [] ∧ payload next D ∧
+          ready D is ∧ badEffect i word next ∧ payload next D ∧ D.R mask = S.R mask ∧ D.R mode = S.R mode) →
+      whole.R mode = modes labels → ready whole labels → payload word whole → whole.R mask = labels.map (fun i => bitSymbol (liveBit i)) →
+      let branchCost := fun i => if liveBit i then (if badBit i then badCost i else charge i) else skipCost i
+      let action := fun i => if liveBit i then (if badBit i then badEffect i else effect i) else Eq
+      ∃ z D n next, z.user = u.user ∧ n ≤ (labels.map fun i => branchCost i + 2 + 4).sum + 2 ∧
+        Exec body (classifiedScan mask mode (recordProgram.seq (clearWorkTapes privateTapes)) fallback skip) (mk u whole) n (mk z D) ∧
+        (ready D [] ∧ D.R mode = modes []) ∧ D.R mask = [] ∧ payload next D ∧
         labels.foldr (fun i rest x => ∃ y, action i x y ∧ rest y) (· = next) word := by
   intro d common host M N entry leave record bank commonPorts aux hdrPorts logical addr inner caller K ef xf eqs xqs initialWord
     body initialUser initialState poolFits prefixes allLabels archiveTail slots headers scanCaller scan joined dirSlots dir pool pivot counters inputs ports a digits prefixWidth zeros
-    packedLabel clock count formula formulaCost detFormula C readBill generationBill generate withZero field slot r src dst ready payload gs matrices active
+    packedLabel clock count formula formulaCost detFormula C readBill generationBill generate withZero field slot r src dst ready payload gs matrices liveBit badBit
     call cost budget coordinate effects reverse transfer marks packed loading conversions headerCost runBills prepareCounters prepareHeaders recordProgram
-    privateTapes initialClear c bodyBound charge mask fallback badCost badEffect bad initialReady initialPayload bits branchCost action
+    privateTapes initialClear c bodyBound charge mask mode modes skip skipCost fallback badCost badEffect bad initialModes initialReady initialPayload bits branchCost action
   have clockSlot : headers 0 = 45 := rfl
   have widthSlot : headers 2 = 2 := rfl
   have unitSlot : headers 5 = 44 := rfl
@@ -296,14 +301,16 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
   have dirOff : ∀ j ∈ ([28,53,55] : List (Fin 58)), j ≠ scanCaller 2 := by decide
   have srcOff (i) : src i ≠ scan 2 := by
     intro eq; have h := congrArg Fin.val eq; change 33+i.val = 46 at h; omega
-  apply maskedPayloadScan_exec body mask _ fallback active branchCost (fun is D => ready D is) payload action _ _
-    allLabels initialWord initialUser initialState initialReady initialPayload bits
-  · intro is word S xs h p
-    have apart (i : Fin 66) (hi : i ≠ 57) : caller i ≠ mask := caller.injective.ne hi
-    have pr (i : Fin K) (hi : 58 ≤ i.val) : i ≠ mask := by
-      intro eq; subst i; change 58 ≤ 57 at hi; omega
-    have so (i) : src i ≠ mask := apart _ (by intro eq; have h := congrArg Fin.val eq; change 33+i.val = 57 at h; omega)
-    have right (i : Fin 66) (hi : i ≠ 57) := Function.update_of_ne (apart i hi) xs S.R
+  have release (port : Fin 66) (lo : 56 ≤ port.val) (hi : port.val ≤ 57)
+      (is : List ℕ) (word : Fin N → ZMod 2) (S : Stacks K prime) (xs : List (Fin (prime+4)))
+      (h : ready S is) (p : payload word S) :
+      let B := {S with R := Function.update S.R (caller port) xs}
+      ready B is ∧ payload word B := by
+    have apart (i : Fin 66) (hi : i ≠ port) : caller i ≠ caller port := caller.injective.ne hi
+    have pr (i : Fin K) (hi : 58 ≤ i.val) : i ≠ caller port := by
+      intro eq; subst i; change 58 ≤ port.val at hi; omega
+    have so (i) : src i ≠ caller port := apart _ (by intro eq; have h := congrArg Fin.val eq; change 33+i.val = port.val at h; omega)
+    have right (i : Fin 66) (small : i.val < 56) := Function.update_of_ne (apart i (by intro eq; subst port; omega)) xs S.R
     obtain ⟨hd,hw,hp,hb,hq,h2,h28,h53,hs,h44,h45,h55⟩ := h
     refine ⟨⟨(right 46 (by decide)).trans hd,fun j hj => (congrArg List.length (right 47 (by decide))).trans (hw j hj),
       fun i hi => ⟨(hp i hi).1,(Function.update_of_ne (pr i hi) _ _).trans (hp i hi).2⟩,
@@ -313,17 +320,48 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
       (right 55 (by decide)).trans h55⟩,?_⟩
     · obtain ⟨suffix,eq⟩ := hq; exact ⟨suffix,(right 48 (by decide)).trans eq⟩
     · intro z
-      change readAt _ _ (Function.update S.R mask xs (r 0)) _ = _
+      change readAt _ _ (Function.update S.R (caller port) xs (r 0)) _ = _
       rw [show r 0 = caller 24 from recordRoundTripPorts_other slot 0 (by decide),right 24 (by decide)]
       simpa only [show r 0 = caller 24 from recordRoundTripPorts_other slot 0 (by decide)] using p z
+  apply classifiedPayloadScan_exec body mask mode (caller.injective.ne (by decide)) _ fallback skip liveBit badBit
+    branchCost (fun is D => ready D is) payload action _ _ allLabels initialWord initialUser initialState
+    initialReady initialPayload bits initialModes
+  · intro k hk
+    rcases hk with rfl | rfl
+    · exact release 57 (by decide) (by decide)
+    · exact release 56 (by decide) (by decide)
   · intro label labels word u whole start input
-    by_cases hg : active label = true
+    by_cases live : liveBit label = true
     case neg =>
-      have no := Bool.eq_false_iff.mpr hg
-      simpa only [branchCost,action,no,Bool.false_eq_true,ite_false] using bad label labels word u whole no start input
-    simp only [branchCost,action,hg,ite_true]
-    have ⟨live,good⟩ := Bool.and_eq_true_iff.mp hg
-    have good : fallbackBit rankFits (reduce M proj) (gs label) = false := by simpa using good
+      have pad := Bool.eq_false_iff.mpr live
+      obtain ⟨dir,widths,privateBlank,scratch,projector,base,unit,trailing,headersIn,one,ticks,archive⟩ := start
+      let tail := labels.flatMap (LabelDirectory.entry prefixes m (w+1)) ++ archiveTail
+      obtain ⟨z,user,advance⟩ := advanceGoodRecord_exec body scan m w label prefixes labels archiveTail u whole dir
+        (widths label List.mem_cons_self) ticks scratch
+      let D := {whole with R := Function.update whole.R (scan 2) tail}
+      have keep (j : Fin 66) (hj : j ≠ 46) : D.R (caller j) = whole.R (caller j) :=
+        Function.update_of_ne (caller.injective.ne hj) _ _
+      have rdy : ready D labels := by
+        refine ⟨(show D.R (field 1) = tail from Function.update_self (scan 2) tail whole.R),fun j hj => (congrArg List.length (keep 47 (by decide))).trans
+          (widths j (List.mem_cons_of_mem _ hj)),?_,(keep 49 (by decide)).trans scratch,?_,
+          (keep 2 (by decide)).trans base,(keep 28 (by decide)).trans unit,(keep 53 (by decide)).trans trailing,
+          fun i => (Function.update_of_ne (srcOff i) _ _).trans (headersIn i),(keep 44 (by decide)).trans one,
+          (congrArg List.length (keep 45 (by decide))).trans ticks,(keep 55 (by decide)).trans archive⟩
+        · intro i hi
+          exact ⟨(privateBlank i hi).1,(Function.update_of_ne (by intro eq; subst i; change 58 ≤ 46 at hi; omega) _ _).trans (privateBlank i hi).2⟩
+        · obtain ⟨xs,h⟩ := projector; exact ⟨xs,(keep 48 (by decide)).trans h⟩
+      have pay : payload word D := by
+        intro k
+        have port := recordRoundTripPorts_other slot 0 (by decide)
+        change readAt _ (whole.L (r 0)) (D.R (r 0)) _ = _
+        rw [show r 0 = caller 24 from port,keep 24 (by decide)]
+        simpa only [show r 0 = caller 24 from port] using input k
+      simp only [branchCost,action,pad,Bool.false_eq_true,ite_false]
+      exact ⟨z,D,_,word,user,le_rfl,advance,rdy,rfl,pay,keep 57 (by decide),keep 56 (by decide)⟩
+    by_cases fail : badBit label = true
+    · simpa only [branchCost,action,live,fail,ite_true] using bad label labels word u whole live fail start input
+    have good := Bool.eq_false_iff.mpr fail
+    simp only [branchCost,action,live,good,Bool.false_eq_true,ite_false,ite_true]
     let g := gs label
     let G := matrices label
     let ancestor := prefixes label
@@ -709,7 +747,7 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
     obtain ⟨minor,next,rfl,action⟩ := act
     refine ⟨finish,_,_,next,userFinish.trans (user.trans (hz.trans (hHeaders.trans (hUser.trans hy)))),Nat.add_le_add bound
       (charge.trans (Nat.add_le_add_left (Nat.mul_le_mul_left 6 (Nat.mul_le_mul_left _ bound)) _)),
-      Exec.seq step clear,?_,⟨minor,action⟩,?_,(finalFrame 57 (by decide) (by decide)).2⟩
+      Exec.seq step clear,?_,⟨minor,action⟩,?_,(finalFrame 57 (by decide) (by decide)).2,(finalFrame 56 (by decide) (by decide)).2⟩
     · refine ⟨?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_⟩
       · simp [show scan 2 ∉ privateTapes from callerOut _,finalBank,show field 1 = scan 2 from rfl,tail]
       · intro j hj
