@@ -118,22 +118,59 @@ theorem copyChild_volume (w W : ℕ) : volume prime (copyChild w W) = (prime^w)^
   simp only [pow_add]
   ring
 
+/-- Install header words next to their caller while keeping arithmetic scratch
+outside the caller/header pair. -/
+def headerPlacement (t : ℕ) : Fin ((15+6)+t) ≃ Fin ((t+6)+15) where
+  toFun := Fin.addCases
+    (Fin.addCases (Fin.natAdd (t+6)) (fun i => Fin.castAdd 15 (Fin.natAdd t i)))
+    (fun i => Fin.castAdd 15 (Fin.castAdd 6 i))
+  invFun := Fin.addCases
+    (Fin.addCases (Fin.natAdd (15+6)) (fun i => Fin.castAdd t (Fin.natAdd 15 i)))
+    (fun i => Fin.castAdd t (Fin.castAdd 6 i))
+  left_inv := by
+    intro i
+    induction i using Fin.addCases with
+    | left i => induction i using Fin.addCases <;> simp
+    | right i => simp
+  right_inv := by
+    intro i
+    induction i using Fin.addCases with
+    | left i => induction i using Fin.addCases <;> simp
+    | right i => simp
+
+private theorem headerPlacement_bank {t : ℕ} (v : Tapes t prime) (h : Tapes 6 prime) (u : Tapes 15 prime) :
+    ((u.append h).append v).reindex (headerPlacement t) = (v.append h).append u := by
+  apply congrArg₂ Tapes.mk <;> funext i <;> induction i using Fin.addCases with
+  | left i => induction i using Fin.addCases <;> simp [Tapes.append,headerPlacement]
+  | right i => simp [Tapes.append,headerPlacement]
+
+open FlatCoordinateSchedule (bits) in
+noncomputable def copyHeaderInput (w W : ℕ) :=
+  (FlatCoordinateDimensions.input w W).append (DimensionProductDescriptor.input (bits w) (bits 7))
+
+open FlatCoordinateSchedule (bits) in
+noncomputable def copyHeaderOutput (w W : ℕ) :=
+  (FlatCoordinateDimensions.output (0 : Fin 2) w W).append (DimensionProductDescriptor.output (bits w) (bits 7) 7 w)
+
+noncomputable def copyHeaderSetup (k : ℕ) :=
+  let arithmetic := FamilyPlacementAlphabet.sequence (FlatCoordinateDimensions.program (0 : Fin 2))
+    (DimensionProductDescriptor.program (q := prime))
+  let slots : Fin 6 → Fin (9+6) := ![5,5,5,10,4,7]
+  Placement.placed (seq (extend arithmetic 6) (FixedHeaderBankCopy.program (by decide) slots)) (headerPlacement k)
+
 open FlatCoordinateSchedule (bits bits_value bits_canonical) in
 /-- Construct the rank-seven child dimensions from the binary width and spectator
 count, using a second width input and the fixed rank in the product bank. -/
-theorem copyChild_headers (w W : ℕ) (hw : 0 < w) (hW : 0 < W) :
-    let t := (0 : Fin 2)
-    let machine := FamilyPlacementAlphabet.sequence (FlatCoordinateDimensions.program t)
-      (DimensionProductDescriptor.program (q := prime))
-    let input := (FlatCoordinateDimensions.input w W).append (DimensionProductDescriptor.input (bits w) (bits 7))
-    let output := (FlatCoordinateDimensions.output t w W).append (DimensionProductDescriptor.output (bits w) (bits 7) 7 w)
-    let slots : Fin 6 → Fin (9+6) := ![5,5,5,10,4,7]
+theorem copyChild_headers {k : ℕ} (caller : Tapes k prime) (w W : ℕ) (hw : 0 < w) (hW : 0 < W) :
     let hs := fun i => bits (RecursiveDimensionBank.values (copyChild w W) i)
-    HoareTime (seq (extend machine 6) (FixedHeaderBankCopy.program (by decide) slots))
-      (fun z => z = input.append (FixedHeaderBankCopy.empty 6))
-      (fun z => z = output.append (FixedHeaderBankCopy.headerBank hs))
+    HoareTime (copyHeaderSetup k)
+      (fun z => z = (caller.append (FixedHeaderBankCopy.empty 6)).append (copyHeaderInput w W))
+      (fun z => z = (caller.append (FixedHeaderBankCopy.headerBank hs)).append (copyHeaderOutput w W))
       (500*((prime^w)^16*W)) ∧ RecursiveDimensionBank.Headers (copyChild w W) hs := by
-  intro t machine input output slots hs
+  intro hs
+  let t := (0 : Fin 2)
+  let slots : Fin 6 → Fin (9+6) := ![5,5,5,10,4,7]
+  let output := copyHeaderOutput w W
   have valid : RecursiveDimensionBank.Headers (copyChild w W) hs :=
     ⟨fun i => bits_value _,fun i => bits_canonical _⟩
   refine ⟨?_,valid⟩
@@ -162,7 +199,9 @@ theorem copyChild_headers (w W : ℕ) (hw : 0 < w) (hW : 0 < W) :
     (fun i => (generated i).2) (fun i => (generated i).1) V hV valid.2
     (fun i => (valid.1 i).le.trans (bound i))
   have run := (hoare_extend_eq build (FixedHeaderBankCopy.empty 6)).seq install
-  apply run.consequence (fun _ h => h) (fun _ h => h)
+  have placed := hoare_place run (headerPlacement k) caller
+  rw [headerPlacement_bank,headerPlacement_bank] at placed
+  apply placed.consequence (fun _ h => h) (fun _ h => h)
   change 357*((prime^w)^2*W)+(53*(7*w)+28)+1+1+60*V ≤ 500*V
   have small : (prime^w)^2*W ≤ V := Nat.mul_le_mul_right W (Nat.pow_le_pow_right pos (by decide : 2 ≤ 16))
   have width : 7*w ≤ V := bound 3
@@ -545,15 +584,14 @@ end
 /-- The physical COPY bank contains the caller, six descriptor headers,
 both basis workspaces and the private tapes of the chosen child machine. -/
 noncomputable def copyPrepared [M8.Machine.Net] {t w W : ℕ} (A B : List (FlatCoordinateSchedule.Op 16))
-    (v : Tapes t prime) (hs : Fin 6 → List Bool) :=
-  let hdr : Tapes 6 prime := ⟨fun _ => 1, fun i => RadixZeroFill.encodedBinary (hs i)⟩
+    (v : Tapes t prime) (hdr : Tapes 6 prime) (arithmetic : Tapes 15 prime) :=
   let x : Fin ((prime^w)^16*W) → ZMod 2 := 0
-  M8.Machine.ArbitraryWidthOriginalRun.input (((v.append hdr).append (basisWorkspace B x)).append (basisWorkspace A x))
+  M8.Machine.ArbitraryWidthOriginalRun.input ((((v.append hdr).append arithmetic).append (basisWorkspace B x)).append (basisWorkspace A x))
 
 open M8.Machine.ArbitraryWidthHighExchangeShared (sourceWord) in
 open M8.Machine.Segments M8.Machine.ArbitraryWidthOriginalRun SharedPlacementAlphabet in
 /-- Copy the retained owner into the temporary, convert its frame, fan out,
-then clear it, charging both basis passes and one child transpose. -/
+then clear it. Header construction, both basis passes and the child transpose are charged. -/
 theorem copyWindow_hoare [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5) (life : Copy.Lifecycle)
     (scheduled : life ∈ Copy.lifecycles) :
     let src := ownerTape n r d ⟨life.source,(Copy.source_bounds life scheduled).2⟩
@@ -575,16 +613,16 @@ theorem copyWindow_hoare [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5) (
       let _ : NeZero (Shared50ModularControl.prime^w) := ⟨Nat.ne_of_gt (ActualAffineScaling.modulus_pos w)⟩
       let addr : Fin N ≃ S × Fin W := copyAddress
       ∀ (data : Fin 142081 → Fin N → ZMod 2)
-      (bs : List Bool) (hs : Fin 6 → List Bool), Counter.value bs = N →
-      RecursiveDimensionBank.Headers (copyChild w W) hs →
+      (bs : List Bool), Counter.value bs = N →
+      let hs := fun i => FlatCoordinateSchedule.bits (RecursiveDimensionBank.values (copyChild w W) i)
       let frameOf := fun j => tapeFrame addr (frame j)
       let common := fun i => data src (addr.symm
         (AffineFieldProgram.run (word (life.sourceFrame,0)) (addr i).1,(addr i).2))
       let bank := fun X => PointwiseRoleGate.bank (a := prime) (fun _ _ => blank) (fun _ => 0) (SparseRoleCircuit.encoded X) bs
       let output := Function.update (fun j i => if j ∈ targets then data j i + common i else data j i) tmp 0
       let stored := Copy.extendStored (fun j => data (ownerTape n r d j))
-      HoareTime machine (fun z => z = prepare W (bank data) hs) (fun z => z = prepare W (bank output) hs)
-        (((FlatCoordinateCleanSchedule.constant A + FlatCoordinateCleanSchedule.constant B)*N + cost (copyChild w W) hs + 2) + (life.targets.length+2)*(14*N+14*bs.length+34)+1) ∧
+      HoareTime machine (fun z => z = prepare W (bank data) (FixedHeaderBankCopy.empty 6) (copyHeaderInput w W)) (fun z => z = prepare W (bank output) (FixedHeaderBankCopy.headerBank hs) (copyHeaderOutput w W))
+        (500*N+1+((FlatCoordinateCleanSchedule.constant A + FlatCoordinateCleanSchedule.constant B)*N + cost (copyChild w W) hs + 2) + (life.targets.length+2)*(14*N+14*bs.length+34)+1) ∧
       (∀ j : Fin 661, output (ownerTape n r d j) = Copy.execute frameOf life stored j) ∧
       output tmp = Copy.execute frameOf life stored 661 := by
   intro src tmp regs targets
@@ -595,30 +633,33 @@ theorem copyWindow_hoare [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5) (
   obtain ⟨_,adds,addRun⟩ := copyAdds_hoare (a := prime) n r d life scheduled
   refine ⟨C,rev,fwd,?_⟩
   intro A B
-  let site := Fin.castAdd 6 (Fin.castAdd 2 tmp)
+  let site := Fin.castAdd 15 (Fin.castAdd 6 (Fin.castAdd 2 tmp))
   let nA := FlatCoordinateCleanSchedule.tapeCount A
   let nB := FlatCoordinateCleanSchedule.tapeCount B
+  let liftCore {q} (g : Program ((142081+2+6)+15) q prime) :=
+    extendBanks (extend (extend (extend (extend g nB) nA) 16) 19)
   let liftGate {q} (g : Program (142081+2) q prime) :=
-    extendBanks (extend (extend (extend (extend (extend g 6) nB) nA) 16) 19)
+    liftCore (extend (extend g 6) 15)
   let pre := Placement.placed (FlatCoordinateCleanSchedule.program A) (sharedPlacement (Fin.castAdd nB site) (segmentSource A))
-  let child := program (fun i : Fin 6 => Fin.castAdd nA (Fin.castAdd nB (Fin.natAdd (142081+2) i)))
+  let child := program (fun i : Fin 6 => Fin.castAdd nA (Fin.castAdd nB (Fin.castAdd 15 (Fin.natAdd (142081+2) i))))
     (Fin.castAdd nA (Fin.castAdd nB site))
   let post := Placement.placed (FlatCoordinateCleanSchedule.program B) (sharedPlacement site (segmentSource B))
   let convert := seq (seq (extendBanks (extend (extend pre 16) 19)) child)
     (extendBanks (extend (extend (extend post nA) 16) 19))
-  refine ⟨_,seq (seq (seq (liftGate (PointwiseRoleGate.program gate copy)) convert) (liftGate adds))
-    (liftGate (PointwiseRoleGate.program gate erase)), ?_⟩
+  refine ⟨_,seq (liftCore (copyHeaderSetup _)) (seq (seq (seq (liftGate (PointwiseRoleGate.program gate copy)) convert) (liftGate adds))
+    (liftGate (PointwiseRoleGate.program gate erase))), ?_⟩
   intro w hw word S frame
   obtain ⟨profile,windows⟩ := copyAddress_word w
   obtain ⟨seven,invol,read⟩ := windows life scheduled
   refine ⟨profile,seven,?_⟩
-  intro prepare W hW N inst addr data bs hs count valid frameOf common bank output stored
+  intro prepare W hW N inst addr data bs count hs frameOf common bank output stored
+  obtain ⟨setup,valid⟩ := copyChild_headers (bank data) w W hw hW
   let background := fun (_ : Fin 142081) (_ : ℤ) => (blank : Fin (prime+4))
   let origins := fun (_ : Fin 142081) => (0 : ℤ)
   let headers : Tapes 6 prime := ⟨fun _ => 1, fun i => RadixZeroFill.encodedBinary (hs i)⟩
   let copied := Function.update data tmp (data src)
-  let caller := (bank copied).append headers
-  have distinct (i : Fin 6) : Fin.natAdd (142081+2) i ≠ site := by
+  let caller := ((bank copied).append headers).append (copyHeaderOutput w W)
+  have distinct (i : Fin 6) : Fin.castAdd 15 (Fin.natAdd (142081+2) i) ≠ site := by
     intro eq
     have h := congrArg Fin.val eq
     simp only [site,Fin.val_natAdd,Fin.val_castAdd] at h
@@ -639,10 +680,10 @@ theorem copyWindow_hoare [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5) (
     simp only [common, Equiv.apply_symm_apply]
     exact h
   have updated : setTape caller site (sourceWord (fun i => moved (Fin.cast (copyChild_volume w W) i))) 0 =
-      (bank (Function.update data tmp moved)).append headers := by
+      ((bank (Function.update data tmp moved)).append headers).append (copyHeaderOutput w W) := by
     rw [sourceWord_cast]
     simp only [caller,site,bank,PointwiseRoleGate.bank,setTape_append_left]
-    congr 2
+    congr 3
     apply congrArg₂ Tapes.mk <;> funext k <;> by_cases eq : k = tmp
     all_goals simp [eq]
     all_goals congr 2 <;> funext i <;> simp [SparseRoleCircuit.encoded,copied,eq]
@@ -652,9 +693,9 @@ theorem copyWindow_hoare [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5) (
   simp only [clean] at converted
   have liftRun {q b} {g : Program (142081+2) q prime} {v v' : Tapes (142081+2) prime}
       (h : HoareTime g (fun z => z = v) (fun z => z = v') b) :
-      HoareTime (liftGate g) (fun z => z = prepare W v hs) (fun z => z = prepare W v' hs) b :=
+      HoareTime (liftGate g) (fun z => z = prepare W v headers (copyHeaderOutput w W)) (fun z => z = prepare W v' headers (copyHeaderOutput w W)) b :=
     extend_banks_hoare (hoare_extend_eq (hoare_extend_eq (hoare_extend_eq (hoare_extend_eq
-      (hoare_extend_eq h headers) (basisWorkspace B (0 : Fin N → ZMod 2))) (basisWorkspace A (0 : Fin N → ZMod 2)))
+      (hoare_extend_eq (hoare_extend_eq h headers) (copyHeaderOutput w W)) (basisWorkspace B (0 : Fin N → ZMod 2))) (basisWorkspace A (0 : Fin N → ZMod 2)))
       (FixedHeaderBankCopy.empty 16)) M8.Machine.ArbitraryWidthHighPrepareShared.privateInput)
   have decoded : common = frameOf 0 ((frameOf life.sourceFrame).symm (data src)) := funext (read addr (data src))
   let loaded := Function.update data tmp common
@@ -683,9 +724,13 @@ theorem copyWindow_hoare [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5) (
     funext j i
     by_cases eq : j = tmp <;> simp [eq,added,loaded]
   rw [cleaned] at done
+  have setupRun := extend_banks_hoare (hoare_extend_eq (hoare_extend_eq (hoare_extend_eq (hoare_extend_eq setup
+    (basisWorkspace B (0 : Fin N → ZMod 2))) (basisWorkspace A (0 : Fin N → ZMod 2)))
+    (FixedHeaderBankCopy.empty 16)) M8.Machine.ArbitraryWidthHighPrepareShared.privateInput)
+  have complete := setupRun.seq done
   refine ⟨?_,?_,?_⟩
-  · convert done using 1
-    ring
+  · convert complete using 1
+    all_goals first | rfl | (dsimp only [N]; ring)
   · intro j
     have off : ownerTape n r d j ≠ tmp := Fin.castSucc_ne_last _
     have member : ownerTape n r d j ∈ targets ↔ j.val ∈ life.targets := by
