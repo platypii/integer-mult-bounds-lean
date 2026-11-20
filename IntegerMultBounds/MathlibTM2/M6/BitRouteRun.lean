@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.M6.BitInvocation
 public import IntegerMultBounds.MathlibTM2.M6.BitRouteFactors
 public import IntegerMultBounds.MathlibTM2.Cover.LabelFactorization
 
@@ -61,7 +62,7 @@ theorem stageRoute_runs [M8.Machine.Net] {T : ℕ} (io : Fin T) (c : PortCertifi
   have budgetR := rb v w B (by decide) hw hb shape pos
   have u := stageFactor_reduce c checked s rev w
   have mid := stageFactor_reduce c checked s e w
-  obtain ⟨y,xy,r₁⟩ := right v w B hw hb shape pos u.2.2.2 roles x head tape
+  obtain ⟨y,xy,r₁⟩ := right v w B hw hb shape pos u.2.2.2.1 roles x head tape
   obtain ⟨z,r₂,yz⟩ := LabelBits.pass_runs hk M hm (fun i j h => om _ _ (order i j h))
     mid.2.2.1 shape hw hb pos io (setTape roles io (sourceWord y) 0) y (by simp [setTape]) (by simp [setTape])
   obtain ⟨out,zo,r₃⟩ := left v w B hw hb shape pos u.2.1
@@ -90,5 +91,74 @@ theorem stageRoute_runs [M8.Machine.Net] {T : ℕ} (io : Fin T) (c : PortCertifi
     dsimp only [coeff]
     simp only [Nat.add_mul,Nat.mul_assoc] at *
     omega
+
+local instance (w : ℕ) : NeZero (prime^w) :=
+  ⟨pow_ne_zero _ Shared50ModularControl.prime_prime.ne_zero⟩
+
+/-- A call on a routed port may change its payload arbitrarily according to
+a label-indexed relation. Returning through the same route restores each label
+and charges the local call once. -/
+theorem dataPort_call [M8.Machine.Net] {T : ℕ} (io : Fin T) (n : Fin 9) (j : Fin 222) (body : Graph.Block (T+24) prime) (leading : Blocks.Leading body) :
+    ∃ (program : Graph.Block (T+24) prime) (C : ℕ), Blocks.Leading program ∧ ∀ (v : Descriptor) (w B : ℕ),
+      0 < w → 0 < B → v.beforeH = B*prime^(64*(w*64)) → v.Positive →
+      let Label := Matrix (Fin 64) (Fin 64) (ZMod (prime^w))
+      let route := ((reduce (prime^w) (chart n j)).submatrix stageAxis.symm stageAxis.symm).transpose
+      let d := words (LabelSchedule.base v w)
+      let read := fun (x : Fin (volume prime v) → ZMod 2) (g : Label) (z : LabelEntry.Cell v B) =>
+        ext x (RecursiveInterchangeLayout.index prime v z.a z.row
+          (z.b.val*prime^(64*(w*64)) + (LabelAddress.address g).val) z.h z.mid z.d z.after)
+      ∀ (effect : Label → (LabelEntry.Cell v B → ZMod 2) → (LabelEntry.Cell v B → ZMod 2) → Prop) (budget : ℕ),
+      (∀ (roles : Tapes T prime) y, roles.head io = 0 → roles.tape io = sourceWord y →
+        ∃ z, (∀ g, effect g (read y g) (read z g)) ∧ GraphContract.Runs body
+          (LabelCall.bank roles v d) (LabelCall.bank (setTape roles io (sourceWord z) 0) v d) budget) →
+      ∀ (roles : Tapes T prime) x, roles.head io = 0 → roles.tape io = sourceWord x →
+        ∃ out, (∀ g, effect (g * route) (read x g) (read out g)) ∧
+          GraphContract.Runs program (LabelCall.bank roles v d)
+            (LabelCall.bank (setTape roles io (sourceWord out) 0) v d)
+            (if n.val = 0 then budget else budget + 2*(C*volume prime v +
+              252*LeafCore.coreCost (volume prime v) (w*64))+2) := by
+  let c := port (j.val % 111)
+  have checked := port_checked (j.val % 111) (Nat.mod_lt _ (by decide))
+  rw [chart_data n j j.isLt]
+  by_cases firstStage : n.val = 0
+  · refine ⟨body,0,leading,?_⟩
+    intro v w B hw hb shape pos Label route d read effect budget call roles x head tape
+    obtain ⟨out,action,run⟩ := call roles x head tape
+    refine ⟨out,?_,by simpa only [firstStage,ite_true] using run⟩
+    have identity : route = 1 := by
+      simp [route,PortCertificate.stageRoute,firstStage,reduce_one,submatrix_one_equiv]
+    intro g
+    change Matrix (Fin 64) (Fin 64) (ZMod (prime^w)) at g
+    rw [identity,mul_one]
+    exact action g
+  let s : Fin 8 := ⟨n.val-1,by omega⟩
+  have chartEq : (port (j.val % 111)).stageRoute n = c.route s := by
+    simp [PortCertificate.stageRoute,firstStage,c,s]
+  rw [chartEq]
+  obtain ⟨routeBlock,C,routeLeading,run⟩ := stageRoute_runs io c checked s
+  refine ⟨Blocks.seqB (Blocks.seqB routeBlock body) routeBlock,C,Blocks.seq_leading _ _,?_⟩
+  intro v w B hw hb shape pos Label route d read effect budget call roles x head tape
+  have routed := run v w B hw hb shape pos
+  obtain ⟨y,xy,r₁⟩ := routed roles x head tape
+  obtain ⟨z,action,r₂⟩ := call (setTape roles io (sourceWord y) 0) y (by simp [setTape]) (by simp [setTape])
+  obtain ⟨out,zo,r₃⟩ := routed (setTape roles io (sourceWord z) 0) z (by simp [setTape]) (by simp [setTape])
+  simp only [SharedPlacementAlphabet.setTape_setTape] at r₂ r₃
+  refine ⟨out,?_,Blocks.runs_mono (Blocks.seq_runs (Blocks.seq_leading _ _) routeLeading
+    (Blocks.seq_runs routeLeading leading r₁ r₂) r₃) (by rw [ite_eq_right firstStage]; omega)⟩
+  have square : route*route = 1 := by
+    dsimp only [route]
+    rw [← transpose_mul,submatrix_mul_equiv,(stageFactor_reduce c checked s stageAxis.symm w).2.2.2.2,
+      submatrix_one_equiv,transpose_one]
+  have move (a b : Fin (volume prime v) → ZMod 2)
+      (h : LabelPermutation.Transport v B w (fun g : Label => g * route) (ext a) (ext b)) (g : Label) :
+      read b (g*route) = read a g := by
+    funext z
+    exact h g z.a z.a.isLt z.row z.row.isLt z.b z.b.isLt z.h z.h.isLt z.mid z.mid.isLt
+      z.d z.d.isLt z.after z.after.isLt
+  intro g
+  have back := move _ _ zo (g*route)
+  rw [Matrix.mul_assoc,square,Matrix.mul_one] at back
+  rw [← move _ _ xy g,back]
+  exact action _
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode

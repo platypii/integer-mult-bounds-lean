@@ -90,7 +90,7 @@ theorem stageFactor_reduce (c : PortCertificate) (checked : c.Checked) (s : Fin 
     let R := fromBlocks 1 A 0 (avoid s - block s)
     let unit := fun E : Matrix Axis Axis ℚ => IsUnit (reduce (prime^w) (E.submatrix e e))
     reduce (prime^w) (c.route s) = reduce (prime^w) L * (reduce (prime^w) M * reduce (prime^w) R) ∧
-      unit L ∧ unit M ∧ unit R := by
+      unit L ∧ unit M ∧ unit R ∧ reduce (prime^w) (c.route s) * reduce (prime^w) (c.route s) = 1 := by
   intro A L M R unit
   obtain ⟨⟨hl,_⟩,⟨hm,_⟩,hr,_⟩ := stageFactor_supported c checked s e w
   have product : c.route s = L*(M*R) := c.route_triangular_factors checked s
@@ -107,5 +107,5 @@ theorem stageFactor_reduce (c : PortCertificate) (checked : c.Checked) (s : Fin 
     apply (isUnit_iff_isUnit_det _).mpr
     change IsUnit (((reduce (prime^w) E).submatrix e e).det)
     rwa [det_submatrix_equiv_self]
-  exact ⟨renumber L determinant.1,renumber M determinant.2.1,renumber R determinant.2.2⟩
+  exact ⟨renumber L determinant.1,renumber M determinant.2.1,renumber R determinant.2.2,inv⟩
 end IntegerMultBounds.MathlibTM2.M6.BitNode
