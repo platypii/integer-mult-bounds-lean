@@ -38,6 +38,7 @@ theorem modular_scatter (w : ℕ) :
       (word : ℕ × ℕ → List (AffineFieldProgram.Op (Fin 8) R)),
       (∀ p, Geometry.Moves.CheckedPair p → ∀ f : E,
         (fun x => f (AffineFieldProgram.run (word p) x)) = frame p.2 ((frame p.1).symm f)) ∧
+      (∀ p, Geometry.Moves.CheckedPair p → Function.Involutive (AffineFieldProgram.run (word p))) ∧
       LocalMoveProfile word ∧
       (∀ bank : ℕ → E, Copy.lifecycles.foldl (fun b l => scatterWindow word l b) bank =
         Copy.run frame Copy.lifecycles bank) ∧
@@ -61,6 +62,16 @@ theorem modular_scatter (w : ℕ) :
       f (exchange (P ⟨i.val % 636, _⟩) (exchange (P ⟨j.val % 636, _⟩) x))
     rw [index i, index j, M8.Global.exchange_exchange, M8.Global.exchange_exchange,
       commute i j h, add_comm (P i)]
+  have invol (p : ℕ × ℕ) (h : Geometry.Moves.CheckedPair p) :
+      Function.Involutive (AffineFieldProgram.run (word p)) := by
+    let i : Fin 636 := ⟨p.1,h.1⟩
+    let j : Fin 636 := ⟨p.2,h.2.1⟩
+    have swap (s) : exchange (P i) (exchange (P j) s) = exchange (P j) (exchange (P i) s) := by
+      rw [M8.Global.exchange_exchange, M8.Global.exchange_exchange, commute i j h, add_comm (P i)]
+    intro s
+    simp only [spec p h]
+    change exchange (P j) (exchange (P i) (exchange (P j) (exchange (P i) s))) = s
+    rw [swap, M8.Global.exchange_involutive (idem i), M8.Global.exchange_involutive (idem j)]
   have step (life : Copy.Lifecycle) (hl : life ∈ Copy.lifecycles) (bank : ℕ → E) :
       scatterWindow word life bank = Copy.execute frame life bank := by
     have valid : ∀ l ∈ Copy.lifecycles, Geometry.Moves.CheckedPair (l.sourceFrame, 0) := by decide +kernel
@@ -72,7 +83,7 @@ theorem modular_scatter (w : ℕ) :
     | cons l ls ih =>
       rw [List.foldl_cons, step l (hl _ List.mem_cons_self), Copy.run]
       exact ih (fun k hk => hl _ (List.mem_cons_of_mem _ hk)) _
-  refine ⟨frame, word, read, profile, fold _ (fun _ h => h), ?_⟩
+  refine ⟨frame, word, read, invol, profile, fold _ (fun _ h => h), ?_⟩
   intro stored input output
   dsimp only [output]
   rw [fold _ (fun _ h => h)]
@@ -106,12 +117,12 @@ theorem copyAddress_word (w : ℕ) :
       (word : ℕ × ℕ → List (AffineFieldProgram.Op (Fin 8) (ZMod (prime^w)))),
       LocalMoveProfile word ∧ ∀ life ∈ Copy.lifecycles,
         let ops := word (life.sourceFrame,0)
-        AffineFieldProgram.interchanges ops = 7 ∧
+        AffineFieldProgram.interchanges ops = 7 ∧ Function.Involutive (AffineFieldProgram.run ops) ∧
         ∀ {N W : ℕ} (addr : Fin N ≃ S × Fin W) (data : Fin N → ZMod 2) (i : Fin N),
           data (addr.symm (AffineFieldProgram.run ops (addr i).1,(addr i).2)) =
           tapeFrame addr (frame 0) ((tapeFrame addr (frame life.sourceFrame)).symm data) i := by
   intro S
-  obtain ⟨frame,word,read,profile,_,_⟩ := modular_scatter w
+  obtain ⟨frame,word,read,invol,profile,_,_⟩ := modular_scatter w
   refine ⟨frame,word,profile,?_⟩
   intro life scheduled ops
   have source : life.source ∈ Frames.retained := Copy.source_order ▸ List.mem_map_of_mem scheduled
@@ -121,7 +132,7 @@ theorem copyAddress_word (w : ℕ) :
       Prod.ext (Copy.wellformed life scheduled).2.2.1 rfl⟩
   have count := List.mem_map_of_mem (f := AffineFieldProgram.interchanges) (List.mem_map_of_mem (f := word) pair)
   rw [profile.copies] at count
-  refine ⟨(List.mem_replicate.mp count).2,?_⟩
+  refine ⟨(List.mem_replicate.mp count).2,invol _ (retainedCopy_checked.1 _ pair),?_⟩
   intro N W addr data i
   have checked := retainedCopy_checked.1 _ pair
   simpa [tapeFrame] using congrFun (read _ checked (fun x => data (addr.symm (x,(addr i).2)))) (addr i).1
