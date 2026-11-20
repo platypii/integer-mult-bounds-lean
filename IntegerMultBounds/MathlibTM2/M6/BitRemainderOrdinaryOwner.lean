@@ -151,6 +151,7 @@ def OrdinaryParentRun [M8.Machine.Net] {common work w rows B : ℕ} {U : Type}
       records := LabelMask.records directory, H := M.size, J := W.size,
       table := fun _ => 0, matrix := fun _ => 0, input := fun _ _ => 0,
       signed := [], matrixTail := [], pivotTail := [], inputTail := [], outputTail := [] }
+    ∃ selectors : Pr Unit (66+K) columnCapacity prime U,
     ∀ (u : HS ((66+(K+1))+5) columnCapacity prime U) (raw : Stacks ((66+(K+1))+5) prime)
       (word : Fin (data.records*N) → ZMod 2) (prefixes : ℕ → List (Fin (prime+4))) (tail : List (Fin (prime+4))),
     let setupScratch := ([0,4,9,10,11,12] : List (Fin 15)).map (remainderDirectoryPorts.trans bank) ++ [bank 71]
@@ -181,7 +182,14 @@ def OrdinaryParentRun [M8.Machine.Net] {common work w rows B : ℕ} {U : Type}
     (∀ i : Fin 5, i ≠ 0 → raw.R (reg i) = []) →
     (∀ j, readAt blank (raw.L (bank 24)) (raw.R (bank 24)) j = blank) →
     let embed := fun i : Fin (66+(K+1)) => i.castAdd 5
-    ∃ selectors prepare dispatch z F t output,
+    let caller := Fin.castAddEmb (n := 66) (K+1)
+    let inner := Fin.castAddEmb (n := 66) K
+    let advance := dropWords (placement (inner 2)) (directoryMatrixTape room) (placement (inner 59)) (128*128)
+    let good := (embProg placement id (step.seq (clearWorkTapes privateTapes))).seq advance
+    let padding := (embProg placement id (readWithSuccessorClock (ports 1) (advanceDirectory 64 ports))).seq advance
+    let dispatch := packedOwner (caller 24) (caller 57) (ownerDispatch (caller 57) (caller 56) good
+      (directoryExceptionalProgram 64 127 room remainderAnchorFits) padding)
+    ∃ prepare z F t output,
       let controls := embProg embed id (embProg placement id selectors)
       let scan := (payloadCountProgram (ownerCountPorts (K+1)) 128).seq (controls.seq ((embProg embed id prepare).seq dispatch))
       z.user = u.user ∧ Exec outer ((remainderOwnerSetup root interval.1 interval.2 bank).seq scan) (mk u raw) t (mk z F) ∧
@@ -224,15 +232,19 @@ private theorem ordinaryParent_exec [M8.Machine.Net] {common work w rows B : ℕ
     (pairRoom : 64*64+64*64 ≤ common+24+31+work) (overhead childBudget : ℕ)
     (localBody : Unit → Pr Unit (66+(common+24+31+work)) columnCapacity prime U)
     (scan : ∀ (data : ScanData 64 127 w (layout.between*layout.afterD)), data.H = (prime^(w+1)).size →
-      ∀ prefixes archiveTail ownerTail, ClassifiedOrdinaryScan (a := 63) (J := (layout.between*layout.afterD).size)
+      ClassifiedOrdinaryScan (a := 63) (J := (layout.between*layout.afterD).size)
         (remainderRecordChild interval.1 interval.2 (w+1) (layout.between*layout.afterD))
         (diagonal fun i => if interval.1 ≤ i.val ∧ i.val < interval.2 then 1 else 0) (by decide)
-        parent data room fits remainderAnchorFits pool space (le_max_left ..) overhead childBudget prefixes archiveTail ownerTail localBody) :
+        parent data room fits remainderAnchorFits pool space (le_max_left ..) overhead childBudget localBody) :
     OrdinaryParentRun (rows := rows) (B := B) interval layout root parent room fits pool space overhead childBudget localBody := by
   unfold OrdinaryParentRun
-  intro K M W N directory proj placement bank reg body outer parents box data u raw word prefixes tail
+  intro K M W N directory proj placement bank reg body outer parents box data
+  have rolePositive := RecursiveRowsNodeLayout.role_positive 142080 layout (by decide) positive ⟨rows,split⟩
+  obtain ⟨selectors,execute⟩ := scan data rfl directory B rolePositive shape pairRoom
+  refine ⟨selectors,?_⟩
+  intro u raw word prefixes tail
     setupScratch inherited setupBase setupTime privateTapes scanned visited left scratch ports step push rarePush rate br nr bh clean source widths fitsWidth
-    short padded spare parameters parentPort mask mode queue payload empty blankData
+    short padded spare parameters parentPort mask mode queue payload empty blankData caller inner advance good padding dispatch
   let v := remainderRecordChild interval.1 interval.2 (w+1) W
   have binary : data.H = M.size := rfl
   have count : data.records = LabelMask.records directory := rfl
@@ -256,14 +268,12 @@ private theorem ordinaryParent_exec [M8.Machine.Net] {common work w rows B : ℕ
     have h := congrArg Fin.val (placement.injective eq)
     change i.val = (placement i).val at h
     omega
-  have rolePositive := RecursiveRowsNodeLayout.role_positive 142080 layout (by decide) positive ⟨rows,split⟩
   have roleRows : directory.rows = rows := by simp [directory,role,split]
   have saved (i : Fin 5) (hi : i ≠ 0) := (regs i).1.trans (empty i hi)
   have packed := payload_prefix_of_read word (fun _ => blank) 0 (raw.L (reg 0)) (raw.R (reg 0)) (by simpa only [sub_zero] using payload)
   let archive := fun j => prefixes (j/box)
-  obtain ⟨selectors,prepare,z,F,t,n,output,k,s,midUser,mid,_,same,_,_,_,_,time,run,action,reads,ownerLeft,ownerRight,accumulator,done,clear,maskEnd,modeEnd⟩ :=
-    scan data binary archive (raw.R (bank 46)) ((raw.R (reg 0)).drop (data.records*N)) word directory B y D
-      (free _ (by have h := directoryMatrixTape_private room; omega)) rolePositive shape count pairRoom workEmpty
+  obtain ⟨prepare,z,F,t,n,output,k,s,midUser,mid,_,same,_,_,_,_,time,run,action,reads,ownerLeft,ownerRight,accumulator,done,clear,maskEnd,modeEnd⟩ :=
+    execute archive (raw.R (bank 46)) ((raw.R (reg 0)).drop (data.records*N)) word y D (free _ (by have h := directoryMatrixTape_private room; omega)) count workEmpty
       (by
         change DirectoryScanInput v proj w W data.H W.size parent archive _ (List.range data.records)
           (fun i : Fin 58 => whole.R ((i.castAdd 8).castAdd K))
@@ -284,7 +294,7 @@ private theorem ordinaryParent_exec [M8.Machine.Net] {common work w rows B : ℕ
     change F.R ((placement ((46 : Fin 66).castAdd K)).castAdd 5) = _ at h
     rw [directoryOrdinaryBank_caller] at h
     exact h
-  refine ⟨selectors,prepare,_,z,F,_,output,same.trans user,Exec.seq build run,?_,?_,?_,reads,
+  refine ⟨prepare,z,F,_,output,same.trans user,Exec.seq build run,?_,?_,?_,reads,
     ownerLeft.trans (regs 0).2,ownerRight,accumulator,clear,maskEnd,modeEnd,restored,?_,done.2.2.1⟩
   · intro p tapeRate cleanTime
     have setup : q ≤ setupTime := by

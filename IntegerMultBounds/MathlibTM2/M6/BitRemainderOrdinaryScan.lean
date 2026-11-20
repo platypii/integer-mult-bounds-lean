@@ -58,7 +58,6 @@ def ClassifiedOrdinaryScan [M8.Machine.Net] {a d common work w W J : ℕ} {U : T
     (capacity : (anchorProgram d true).1+(anchorProgram d false).1+1 ≤ columnCapacity)
     (pool : (RingFormula.conjugationDepth (a+1)+1)*13 ≤ work) (space : 58 ≤ common+24+31+work)
     (cap : 217 ≤ columnCapacity) (overhead childBudget : ℕ)
-    (prefixes : ℕ → List (Fin (prime+4))) (archiveTail ownerTail : List (Fin (prime+4)))
     (localBody : Unit → Pr Unit (66+(common+24+31+work)) columnCapacity prime U) : Prop :=
     let m := a+1
     let K := common+24+31+work
@@ -68,9 +67,11 @@ def ClassifiedOrdinaryScan [M8.Machine.Net] {a d common work w W J : ℕ} {U : T
     let inv := fun i => Ring.inverse (parent i)
     let bad := fun j => fallbackBit proj.rank_le_height (reduce M proj) (physicalLabel m (w+1) j)
     let length : N = M^m*(M^m*W) := by simp [N,pow_add,Nat.mul_assoc]
-    ∀ (word : Fin (data.records*N) → ZMod 2)
-      (directory : Descriptor) (B : ℕ)
-      (u : HS ((66+(K+1))+5) columnCapacity prime U) (S : Stacks ((66+(K+1))+5) prime),
+    ∀ (directory : Descriptor) (B : ℕ), directory.Positive →
+      directory.beforeH = B*prime^(m*((w+1)*m)) → m*m+m*m ≤ K →
+    ∃ selectors : Pr Unit (66+K) columnCapacity prime U,
+    ∀ (prefixes : ℕ → List (Fin (prime+4))) (archiveTail ownerTail : List (Fin (prime+4)))
+      (word : Fin (data.records*N) → ZMod 2) (u : HS ((66+(K+1))+5) columnCapacity prime U) (S : Stacks ((66+(K+1))+5) prime),
     let input := ownerRow (R := data.records) (N := N) rfl word
     let body := fun f => embProg (directoryOrdinaryBank room) id (localBody f)
     let c := mnProgPush (body ())
@@ -109,8 +110,7 @@ def ClassifiedOrdinaryScan [M8.Machine.Net] {a d common work w W J : ℕ} {U : T
     let privateTapes := (List.finRange (66+K)).filter fun i => 58 ≤ i.val
     let left := (privateTapes.map fun i => 4*(raw.L i).length).sum
     let selectorBudget := left+(140+30*(m*m)+6*privateTapes.length)*(data.records*N)
-    directory.Positive → directory.beforeH = B*prime^(m*((w+1)*m)) →
-    data.records = LabelMask.records directory → m*m+m*m ≤ K →
+    data.records = LabelMask.records directory →
     (∀ i, 58 ≤ i.val → raw.R i = []) →
     DirectoryScanInput v proj w W data.H J parent prefixes archiveTail rs (fun i => raw.R (inner (i.castAdd 8))) →
     (raw.R (inner 29)).length = directory.beforeRows → (raw.R (inner 30)).length = directory.rows →
@@ -123,7 +123,6 @@ def ClassifiedOrdinaryScan [M8.Machine.Net] {a d common work w W J : ℕ} {U : T
     let program := packedOwner (caller 24) (caller 57) (ownerDispatch (caller 57) (caller 56) good
       (directoryExceptionalProgram m d room capacity) padding)
     let work := (List.finRange (66+(K+1))).filter fun i => decide (58 ≤ i.val ∧ i ≠ directoryMatrixTape room)
-    ∃ selectors : Pr Unit (66+K) columnCapacity prime U,
     let controls := embProg bank id (embProg placement id selectors)
     ∃ prepare z F t n output k s midUser mid,
       k ≤ dimensionTime data.H J (d+1)+6*N+13*((d+1)*data.H+J)+8 ∧ z.user = u.user ∧ s ≤ selectorBudget ∧
@@ -155,8 +154,7 @@ theorem classifiedOrdinaryDirectory_exec [M8.Machine.Net] {a d common work w W J
     (fits : (36+2*(a+1)+1+(RingFormula.conjugationDepth (a+1)+1)*13)+3 ≤ (common+24+31+work)+1)
     (capacity : (anchorProgram d true).1+(anchorProgram d false).1+1 ≤ columnCapacity)
     (pool : (RingFormula.conjugationDepth (a+1)+1)*13 ≤ work) (space : 58 ≤ common+24+31+work)
-    (cap : 217 ≤ columnCapacity) (overhead childBudget : ℕ)
-    (prefixes : ℕ → List (Fin (prime+4))) (archiveTail ownerTail : List (Fin (prime+4))) :
+    (cap : 217 ≤ columnCapacity) (overhead childBudget : ℕ) :
     let m := a+1
     let K := common+24+31+work
     let M := prime^(w+1)
@@ -171,12 +169,18 @@ theorem classifiedOrdinaryDirectory_exec [M8.Machine.Net] {a d common work w W J
       ∀ minor, OrdinaryRecordExec (W := W) (H := data.H) (J := J) cap proj.rank_le_height
         (ordinaryCaller space) localBody overhead childBudget (g*reduce M proj*g⁻¹) minor parent) →
     ClassifiedOrdinaryScan (J := J) v proj dimension parent data room fits capacity pool space cap overhead childBudget
-      prefixes archiveTail ownerTail localBody := by
+      localBody := by
   intro m K M N inv bad length localBody installed
   unfold ClassifiedOrdinaryScan
-  intro _ _ _ _ _ actualBad _ word directory B u S input body c core ports skipRow step scratch goodRow push
-  intro e φ code schedule ready placement caller live rs pending bank reg start inner advance good padding effect
-    matrix raw privateTapes left selectorBudget dirPositive shape count pairRoom free inputs beforeRows rows beforeH parents mask mode queueFree
+  intro _ _ _ _ _ actualBad _ directory B dirPositive shape pairRoom
+  let φ := LabelRing.res prime (w+1) (by omega)
+  let table := projectorResidual finSumFinEquiv (reduce prime proj) (φ ∘ parent) (φ ∘ inv)
+  obtain ⟨selectors,controls⟩ :=
+    ordinarySelectors_exec localBody proj v parent table directory dirPositive shape pairRoom
+  refine ⟨selectors,?_⟩
+  intro prefixes archiveTail ownerTail word u S input body c core ports skipRow step scratch goodRow push
+  intro e _ code schedule ready placement caller live rs pending bank reg start inner advance good padding effect
+    matrix raw privateTapes left selectorBudget count free inputs beforeRows rows beforeH parents mask mode queueFree
     owner reads accumulator width saved tmp empty
   let budget := fun (j : ℕ) =>
     let pad := 1+(4*(prefixes j).length+4+(m*m*(4*(w+1)+4)+1)+1)
@@ -209,15 +213,12 @@ theorem classifiedOrdinaryDirectory_exec [M8.Machine.Net] {a d common work w W J
     (by intro i hi; rw [← shared]; exact free _ (by change 58 ≤ i.val; omega)) width
   change embStk bank A = start at view
   have rawEq := congrArg (embStk placement) view
-  let table := projectorResidual finSumFinEquiv (reduce prime proj) (φ ∘ parent) (φ ∘ inv)
-  obtain ⟨selectors,y,D,t,user,price,run,prepared,keepL,keepR,projector,liveBits,badBits⟩ :=
-    ordinarySelectors_exec localBody proj v parent prefixes archiveTail table directory dirPositive shape pairRoom
-      (embDn placement (embDn bank counterUser)) raw free (by simpa only [← count] using inputs)
+  obtain ⟨y,D,t,user,price,run,prepared,keepL,keepR,projector,liveBits,badBits⟩ := controls prefixes archiveTail
+    (embDn placement (embDn bank counterUser)) raw free (by simpa only [← count] using inputs)
       beforeRows rows beforeH parents mask mode queueFree
   have controlsPrice := maskSetup_volume_le m w data.records (directory.beforeRows*directory.rows*B)
     privateTapes.length left (data.records*N) (radix.trans (Nat.le_mul_of_pos_left _ recordsPos))
     (Nat.le_mul_of_pos_right _ (radixPos.trans_le radix)) boxes
-  refine ⟨selectors,?_⟩
   have queue := owner.trans (congrArg (· ++ ownerTail) (ownerRow_queue (R := data.records) (N := N) rfl word))
   have scan := classifiedDirectory_exec dimension v proj idem adm parent inv (fun i => Ring.mul_inverse_cancel _ (unit i))
     data hm hw positive room fits capacity body c (fun _ => le_rfl) prefixes archiveTail bad budget ordinaryEffect length
@@ -323,17 +324,16 @@ theorem scheduledOrdinaryScan_exec [M8.Machine.Net] {common work : ℕ} {U : Typ
       ∃ budget : ℕ, (budget : ℝ) ≤ C*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau*(M^128*W : ℕ) ∧
       ∀ (v : Descriptor) (parent : Fin 64 → ZMod M), (∀ i, IsUnit (parent i)) →
       ∀ data : ScanData 64 127 w W, data.H = M.size →
-      ∀ prefixes archiveTail ownerTail,
         ClassifiedOrdinaryScan (a := 63) (d := 127) (J := W.size) v proj (by decide) parent data
           (common := common) (work := work+T) (by omega) (fits.trans (by omega)) remainderAnchorFits (pool.trans (by omega))
-          (by omega) (le_max_left ..) overhead budget prefixes archiveTail ownerTail localBody := by
+          (by omega) (le_max_left ..) overhead budget localBody := by
   intro proj
   obtain ⟨_,T,localBody,C,overhead,installed⟩ := remainderDirectoryBody_exists (U := U) interval member space
   refine ⟨T,localBody,C,overhead,?_⟩
   intro w W positive M
   obtain ⟨budget,bill,execute⟩ := installed w W
   refine ⟨budget,bill positive,?_⟩
-  intro v parent unit data binary prefixes archiveTail ownerTail
+  intro v parent unit data binary
   have adm : Admissible prime proj := by
     intro i j
     simp only [proj,diagonal_apply]

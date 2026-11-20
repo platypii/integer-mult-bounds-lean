@@ -2778,13 +2778,14 @@ theorem directoryControls_exec {m d k Q extra w Bcount : ℕ} {F U : Type}
     (table : Matrix (Fin m) (Fin m) (ZMod prime) → Matrix (Fin k) (Fin k) (ZMod prime))
     (proj : LabelPadding.Label m (w+1)) (reduction : (LabelRing.res prime (w+1) (by omega)).mapMatrix proj = request)
     (directory : Descriptor) (dirPositive : directory.Positive) (shape : directory.beforeH = Bcount*prime^(m*((w+1)*m)))
-    (room : m*m+m*m ≤ extra) (initialUser : HS (66+extra) Q prime U) (initialState : Stacks (66+extra) prime) :
+    (room : m*m+m*m ≤ extra) :
     let K := 66+extra
     let caller := Fin.castAddEmb (n := 66) extra
     let mask := caller 57
     let mode := caller 56
     let parents := caller 50
     let rs := residuePairs (m*m) room
+    ∃ writer : Pr F (66+extra) Q prime U, ∀ (initialUser : HS (66+extra) Q prime U) (initialState : Stacks (66+extra) prime),
     let high := prime^w
     let allLabels := List.range (LabelMask.records directory)
     let schedules := fun xs : List ℕ => xs.flatMap fun j =>
@@ -2802,13 +2803,12 @@ theorem directoryControls_exec {m d k Q extra w Bcount : ℕ} {F U : Type}
     initialState.R mask = [] → initialState.R mode = [] → initialState.R (caller 54) = [] →
     let initCounters : Pr F K Q prime U := (Node.expProg 0 prime (caller 28) (caller 45) (caller 58) (caller 59) (caller 60) (caller 61)).seq
       (Node.scanR (caller 58) (caller 59) (LabelCountBank.pushAll (rs.map Prod.fst)))
-    ∃ writer z n, z.user = initialUser.user ∧ n ≤ (26*high+4) +
+    ∃ z n, z.user = initialUser.user ∧ n ≤ (26*high+4) +
       ((44*allLabels.length+13*(w+1)+16)+3*((6+10*(m*m))*allLabels.length+4)+(2*(directory.beforeRows*directory.rows*Bcount)+2)) +
       ((privateTapes.map fun i => 4*(initialState.L i).length).sum+privateTapes.length*(2*high+4)+1) ∧
       Exec body ((initCounters.seq writer).seq (clearWorkTapes privateTapes)) (mk initialUser initialState) n
         (mk z {clean with R := Function.update (Function.update clean.R mask liveWords) mode badWords}) := by
-  intro K caller mask mode parents rs high allLabels schedules liveWords badWords privateTapes clean freePrivate single clockLen
-    brSize rowsSize beforeHSize parentsFree freeMask freeMode freeQueue initCounters
+  intro K caller mask mode parents rs
   have apart : mask ≠ mode := caller.injective.ne (by decide)
   obtain ⟨sizeRs,slotsUnique,rsPrivate⟩ := residuePairs_layout room
   let saved := caller 62
@@ -2820,6 +2820,12 @@ theorem directoryControls_exec {m d k Q extra w Bcount : ℕ} {F U : Type}
       caller.injective.eq_iff,hp.symm,hs.symm]
   have maskRegs := layout 57 (by decide) (by decide)
   have modeRegs := layout 56 (by decide) (by decide)
+  let dim := parentCountPorts.trans caller
+  obtain ⟨writer,generateMasks⟩ := countedRecordControls_exec body rankFits
+    request table rs sizeRs dim (caller 54) mask mode saved apart (caller.injective.ne (by decide)) (caller.injective.ne (by decide)) (layout 54 (by decide) (by decide)) maskRegs modeRegs
+  refine ⟨writer,?_⟩
+  intro initialUser initialState high allLabels schedules liveWords badWords privateTapes clean freePrivate single clockLen
+    brSize rowsSize beforeHSize parentsFree freeMask freeMode freeQueue initCounters
   let R := LabelCountBank.fill (rs.map Prod.fst) high
     (Function.update initialState.R (caller 58) (List.replicate high Node.tick))
   have cleanup := counterCleanup_le initialState privateTapes (rs.map Prod.fst) (caller 58) high
@@ -2857,9 +2863,6 @@ theorem directoryControls_exec {m d k Q extra w Bcount : ℕ} {F U : Type}
       · subst i
         simp only [clean,queued,ite_eq_right h,Function.update_self]
       simp [h,clean,queued,q,filled,fillKeep i (fun mem => by have := rsPrivate i mem; omega) off]
-  let dim := parentCountPorts.trans caller
-  obtain ⟨writer,generateMasks⟩ := countedRecordControls_exec body rankFits
-    request table rs sizeRs dim (caller 54) mask mode saved apart (caller.injective.ne (by decide)) (caller.injective.ne (by decide)) (layout 54 (by decide) (by decide)) maskRegs modeRegs
   obtain ⟨y,l,hy,hl,write⟩ := generateMasks directory w Bcount proj reduction dirPositive shape z₀ filled
     radix ((callerKeep 62 (by decide)).trans (freePrivate _ (by change 58 ≤ 62; decide)))
     ((congrArg List.length (callerKeep 29 (by decide))).trans brSize)
@@ -2888,7 +2891,7 @@ theorem directoryControls_exec {m d k Q extra w Bcount : ℕ} {F U : Type}
     have off : i ≠ caller 54 := by intro eq; subst i; change 58 ≤ 54 at lo; omega
     simp [queued,filled,off]
   rw [cleanEq,queueCost] at clearMasks
-  exact ⟨writer,z,_,hz.trans (hy.trans user₀),Nat.add_le_add (Nat.add_le_add time₀ hl) (Nat.add_le_add_right cleanup 1),
+  exact ⟨z,_,hz.trans (hy.trans user₀),Nat.add_le_add (Nat.add_le_add time₀ hl) (Nat.add_le_add_right cleanup 1),
     Exec.seq (Exec.seq prepare write) clearMasks⟩
 
 /-- Generate the selector masks and execute all records in directory order. -/
@@ -2938,9 +2941,10 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
   have single : (initialState.R (caller 28)).length = 1 := by
     exact (congrArg List.length (rawCaller 28 (by decide))).symm.trans ((congrArg List.length unitWord).trans (length_binSyms ..))
   have clockLen : (initialState.R (caller 45)).length = w := (congrArg List.length (rawCaller 45 (by decide))).symm.trans ticks
-  obtain ⟨writer,z,setupTime,userSetup,setupBound,setupRun⟩ := directoryControls_exec body rankFits
+  obtain ⟨writer,controls⟩ := directoryControls_exec body rankFits
     ((LabelRing.res prime (w+1) (by omega)).mapMatrix (reduce M proj)) table (reduce M proj) rfl
-    directory dirPositive shape room initialUser initialState freePrivate single clockLen brSize rowsSize beforeHSize
+    directory dirPositive shape room
+  obtain ⟨z,setupTime,userSetup,setupBound,setupRun⟩ := controls initialUser initialState freePrivate single clockLen brSize rowsSize beforeHSize
     parentsFree freeMask freeMode freeQueue
   let liveState := {clean with R := Function.update clean.R mask liveWords}
   let startState := {liveState with R := Function.update liveState.R mode badWords}
