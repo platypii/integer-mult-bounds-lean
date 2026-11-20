@@ -4,6 +4,7 @@ public import IntegerMultBounds.MathlibTM2.Cover.FallbackGoodRecordRoundTrip
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackConjugationQueue
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackFormulaInit
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackRecordCleanup
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackRecordCounters
 
 /-! Read a live directory label, compute the conjugate, and run the good-record round trip. -/
 @[expose] public section
@@ -137,12 +138,15 @@ theorem generatedGoodRecordRoundTrip_exec [M8.Machine.Net] {T m work Q fields H 
     let bank := (Fin.castLEEmb (by decide : 23 ≤ 24)).trans record
     let g := physicalLabel m (w+1) label
     let G := g*reduce M proj*g⁻¹
-    let rep := fun count roles' (D : Stacks ((host+31)+work) prime) =>
-      RepT (CommonBank.bank roles' (Routines.hdr v) f p node scalar (Family.leafC (w+1) arity d count) st)
-        (fun k => D.L (((k.castAdd 24).castAdd 31).castAdd work))
-        (fun k => D.R (((k.castAdd 24).castAdd 31).castAdd work))
-    let clean := fun (D : Stacks ((host+31)+work) prime) => ∀ (k : Fin work) x,
-      readAt blank (D.L (k.natAdd (host+31))) (D.R (k.natAdd (host+31))) x = blank
+    let commonTape := fun k : Fin common => (((k.castAdd 24).castAdd 31).castAdd work)
+    let commonPorts := ((Fin.castAddEmb (n := common) 24).trans (Fin.castAddEmb 31)).trans (Fin.castAddEmb work)
+    let aux := (⟨CommonBank.auxSlot,by
+      intro i j eq
+      apply Fin.ext
+      have h := congrArg Fin.val eq
+      simp only [CommonBank.auxSlot_val] at h
+      omega⟩ : Fin 24 ↪ Fin common).trans commonPorts
+    let initialBank := CommonBank.bank roles (Routines.hdr v) f p node scalar (Family.leafC (w+1) arity d d) st
     let logical := {v with width := d}
     let addr := fun a row pre mid post (x : IntegerMultBounds.Swap.Shear.State (Fin d) (ZMod M)) =>
       index M logical a row pre (FlatCoordinateLayout.rank x.1).val mid (FlatCoordinateLayout.rank x.2).val post
@@ -189,7 +193,7 @@ theorem generatedGoodRecordRoundTrip_exec [M8.Machine.Net] {T m work Q fields H 
       let field := fun i => caller ((headers i).castAdd 8)
       whole.R (field 1) = (label :: labels).flatMap (LabelDirectory.entry prefixes m (w+1)) ++ archiveTail →
       (whole.R (field 3)).length = ancestor.length →
-      (∀ j, whole.R (pool j) = []) →
+      (∀ j : Fin ((host+31)+work), common ≤ j.val → whole.L (inner j) = [] ∧ whole.R (inner j) = []) →
       (∃ suffix, whole.R (field 4) = matrixWords prime H (reduce M proj) ++ suffix) →
       let slot := (((LeafCore.roleSlot io).castAdd 24).castAdd 31).castAdd work
       let r := recordRoundTripPorts slot
@@ -197,15 +201,15 @@ theorem generatedGoodRecordRoundTrip_exec [M8.Machine.Net] {T m work Q fields H 
       whole.R (caller 2) = binSyms H M → whole.R (caller 28) = binSyms 1 1 →
       whole.R (caller 53) = binSyms J W →
       (∀ i : Fin 66, 58 ≤ i.val → whole.L (caller i) = [] ∧ whole.R (caller i) = []) →
+      (∀ z, readAt blank (whole.L (r 1)) (whole.R (r 1)) z = blank) →
       (∀ z, readAt blank (whole.L (r 0)) (whole.R (r 0)) (z-head) =
         RadixToBinary.binaryEncoding.encode (putWord source head ((List.ofFn word).map SparseRoleCircuit.encode) z)) →
-      (∀ z, readAt blank (whole.L (r 1)) (whole.R (r 1)) z = blank) →
-      rep d roles S → clean S →
-      (∀ k : Fin 31, S.L ((k.natAdd host).castAdd work) = [] ∧ S.R ((k.natAdd host).castAdd work) = []) →
+      (∀ k, (∀ i, CommonBank.auxSlot i ≠ k) → ∀ x, initialBank.tape k x =
+        readAt blank (S.L (commonTape k)) (S.R (commonTape k)) (x-initialBank.head k)) →
+      (∀ i, S.L (aux i) = [] ∧ S.R (aux i) = []) →
       fallbackBit rankFits (reduce M proj) g = false →
       whole.R (caller 44) = binSyms H (1 : ZMod M).val → (whole.R (caller 45)).length = w →
       whole.R (caller 55) = (List.ofFn fun i => binSyms H (parent i).val).flatten →
-      (∀ i : Fin 24, i ≠ 16 → S.R (record i) = []) →
       let call := fun i : Fin d => packedCoordinateProgram (F := Empty) (U := U) io i.val i.val ef xf fits eqs xqs cap
       let cost := packedCoordinatesTime d N w (LeafCore.core io).tapes
         (packedLeafPush (F := Empty) (U := U) io Empty.elim) entry.tapes leave.tapes
@@ -228,9 +232,11 @@ theorem generatedGoodRecordRoundTrip_exec [M8.Machine.Net] {T m work Q fields H 
       let loading := ((6*(whole.R (caller 55)).length+6)+((10*H+12)+(m*(10*M.size+8*(H-M.size)+12)+1+
         (2*packed.length+2))))+((10*M.size+10)+(6*(whole.R (caller 45)).length+6))
       let conversion := (m*m)*(10*M.size+8*(H-M.size)+12)+1+(2*(matrixWords prime M.size G).length+2)
-      let runCost := ((conjugationDepth m+1)*(6*H+6)+1 + (((4*H+4)+(generation+(2*H+2)))+((conjugationDepth m+1)*(2*H+2)+1))) + ((dimensionTime H 1 fields+(4*(fields*H+1)+6)+(10*J+12)+(6*(M^fields).size+6)) +
+      let runCost := (((conjugationDepth m+1)*(6*H+6)+1 + (((4*H+4)+(generation+(2*H+2)))+((conjugationDepth m+1)*(2*H+2)+1))) + (21*(w+1)+13)) + ((dimensionTime H 1 fields+(4*(fields*H+1)+6)+(10*J+12)+(6*(M^fields).size+6)) +
         (loading+(conversion+(budget+2*((218*N+1)*13+6)+3)))) + (1+(4*ancestor.length+4+(m*m*(4*(w+1)+4)+1)+1))
-      let recordProgram : Pr F K Q prime U := ((((initFrames pool (pivot 4) (conjugationDepth m+1)).seq (withZero.seq (clearFrames pool (conjugationDepth m+1)))).seq ((recordCounterSetup caller fields).seq ((recordInputProgram record m).seq ((recordMatrixProgram record m).seq ((.act (pushMarkers marks) : Pr F K Q prime U).seq
+      let prepareCounters := (swapExponent (leafCounterPorts aux)).seq
+        (.act (installLeafCounters (aux.trans inner) arity d))
+      let recordProgram : Pr F K Q prime U := (((((initFrames pool (pivot 4) (conjugationDepth m+1)).seq (withZero.seq (clearFrames pool (conjugationDepth m+1)))).seq prepareCounters).seq ((recordCounterSetup caller fields).seq ((recordInputProgram record m).seq ((recordMatrixProgram record m).seq ((.act (pushMarkers marks) : Pr F K Q prime U).seq
           ((transfer r).seq ((embProg inner Empty.elim coordinate).seq (transfer reverse)))))))).seq (readWithSuccessorClock (scan 1) (advanceDirectory m scan)))
       let privateTapes := (List.finRange K).filter fun i => decide (58 ≤ i.val)
       let initialClear := (privateTapes.map fun i => 4*(whole.L i).length+2*(whole.R i).length+4).sum+1
@@ -243,12 +249,27 @@ theorem generatedGoodRecordRoundTrip_exec [M8.Machine.Net] {T m work Q fields H 
         D.R (scan 2) = tail ∧
         ∀ j : Fin 58, j ≠ 24 → j ≠ scanCaller 2 → let port := caller (j.castAdd 8)
           D.L port = whole.L port ∧ D.R port = whole.R port := by
-  intro d common host M N entry leave record bank g G rep clean logical addr inner caller K ef xf eqs xqs word
+  intro d common host M N entry leave record bank g G commonTape commonPorts aux initialBank logical addr inner caller K ef xf eqs xqs word
     body u whole slots poolFits prefixes labels archiveTail headers scanCaller scan ancestor tail scanOff scanBlank joined dirSlots dir pool pivot counters clockSlot widthSlot unitSlot inputs ports a digits prefixWidth zeros
-    packedLabel clock count formula formulaCost detFormula C readCost generation generate withZero field dirInput prefixInput poolBlank projectorInput slot r S base unit trailing spare input blank initial free empty good
-    one ticks archive scratch call cost budget coordinate effect reverse transfer marks packed loading conversion
-    runCost recordProgram privateTapes initialClear c bodyBound
+    packedLabel clock count formula formulaCost detFormula C readCost generation generate withZero field dirInput prefixInput privateBlank projectorInput slot r S base unit trailing spare sharedBlank input initial auxBlank good
+    one ticks archive call cost budget coordinate effect reverse transfer marks packed loading conversion
+    runCost prepareCounters recordProgram privateTapes initialClear c bodyBound
 
+  have workBlank (k : Fin work) := privateBlank (k.natAdd (host+31)) (by
+    change common ≤ common+24+31+k.val
+    omega)
+  have poolBlank (j) : whole.R (pool j) = [] := (workBlank ((Fin.castLEEmb poolFits) j)).2
+  have free : ∀ (k : Fin work) x,
+      readAt blank (S.L (k.natAdd (host+31))) (S.R (k.natAdd (host+31))) x = blank := by
+    intro k x
+    change readAt _ (whole.L _) (whole.R _) _ = _
+    rw [(workBlank k).1, (workBlank k).2,readAt_nil_left,wordTape_nil]
+  have empty (k : Fin 31) := privateBlank ((k.natAdd host).castAdd work) (by
+    change common ≤ common+24+k.val
+    omega)
+  have scratch (i : Fin 24) (_ : i ≠ 16) := (privateBlank (record i) (by
+    change common ≤ common+i.val
+    omega)).2
   let mat := fun b : Bool => if b then reduce M proj else g
   let out := inner (record 16)
   have depthFits (i j : Fin m) : (formula i j).depth ≤ conjugationDepth m :=
@@ -442,29 +463,77 @@ theorem generatedGoodRecordRoundTrip_exec [M8.Machine.Net] {T m work Q fields H 
     Function.update_of_ne (privateOff j h) _ _
   have first : r 0 = caller 24 := recordRoundTripPorts_other slot 0 (by decide)
   have shared : inner slot = r 1 := (recordRoundTripPorts_shared slot).symm
+  let auxPort := aux.trans inner
+  have commonKeep (i : Fin common) : B.R (inner (commonTape i)) = whole.R (inner (commonTape i)) :=
+    privateKept _ (Or.inl i.isLt)
+  have auxEmpty (i : Fin 24) : B.L (auxPort i) = [] ∧ B.R (auxPort i) = [] :=
+    ⟨(auxBlank i).1,(commonKeep (CommonBank.auxSlot i)).trans (auxBlank i).2⟩
+  obtain ⟨counterUser,C,costC,hUser,hCost,prep,countRep,keep⟩ :=
+    prepareLeafCounters_exec body auxPort (leafCounterPorts aux) rfl arity d w y B
+      ((congrArg List.length (preserved 45)).trans ticks)
+      (by intro i hi; cases i using Fin.cases with
+          | zero => exact (hi rfl).elim
+          | succ j => exact (auxEmpty (j.castLE (by decide))).2) auxEmpty
+  have callerFrame (i : Fin 66) := keep (caller i) (by
+    intro j eq; have h := congrArg Fin.val eq
+    change 66+(aux j).val = i.val at h; omega)
+  have outsideCommon (j) (hj : common ≤ j.val) := keep (inner j) (by
+    intro i eq; have h := congrArg Fin.val (inner.injective eq)
+    change (CommonBank.auxSlot (t := T) i).val = j.val at h
+    have small : (CommonBank.auxSlot (t := T) i).val < common := (CommonBank.auxSlot i).isLt
+    omega)
+  have other (k : Fin common) (off : ∀ i, CommonBank.auxSlot i ≠ k) := keep (inner (commonTape k))
+    (fun i eq => off i (commonPorts.injective (inner.injective eq)))
+  have roleKeep := other (LeafCore.roleSlot io) (by
+    intro i eq; have h := congrArg Fin.val eq
+    rw [CommonBank.auxSlot_val] at h
+    change T+12+i.val = io.val at h
+    omega)
   obtain ⟨z,D,t,ys,hz,ht,run,act,read,frame⟩ := goodRecordRoundTrip_exec
     v positive w proj width idem factor hd label live rankFits parent parentInv reciprocal io roles f p node scalar
-    arity st freeNode hm hw hW length capacity source head fits cap ef xf eqs xqs word body y B (whole.R out)
-    ((preserved 2).trans base) ((preserved 28).trans unit) ((preserved 53).trans trailing)
-    (fun i hi => ⟨(spare i hi).1,(preserved i).trans (spare i hi).2⟩)
-    (by intro z; change readAt _ (whole.L (r 0)) (B.R (r 0)) _ = _; rw [first,preserved]; simpa only [first] using input z)
-    (by intro z; change readAt _ (whole.L (r 1)) (B.R (r 1)) _ = _; rw [← shared,privateKept _ (Or.inl (LeafCore.roleSlot io).isLt)]; simpa only [← shared] using blank z)
+    arity st freeNode hm hw hW length capacity source head fits cap ef xf eqs xqs word body counterUser C (whole.R out)
+    ((callerFrame 2).2.trans ((preserved 2).trans base)) ((callerFrame 28).2.trans ((preserved 28).trans unit))
+    ((callerFrame 53).2.trans ((preserved 53).trans trailing))
+    (fun i hi => ⟨(callerFrame i).1.trans (spare i hi).1,(callerFrame i).2.trans ((preserved i).trans (spare i hi).2)⟩)
+    (by intro z; change readAt _ (C.L (r 0)) (C.R (r 0)) _ = _
+        rw [first,(callerFrame 24).1,(callerFrame 24).2,preserved]; simpa only [first] using input z)
+    (by intro z; change readAt _ (C.L (r 1)) (C.R (r 1)) _ = _
+        rw [← shared,show C.L (inner slot) = B.L (inner slot) from roleKeep.1,
+          show C.R (inner slot) = B.R (inner slot) from roleKeep.2,privateKept _ (Or.inl (LeafCore.roleSlot io).isLt)]
+        simpa only [← shared] using sharedBlank z)
     (by intro k x
-        change _ = readAt _ _ (B.R (inner (((k.castAdd 24).castAdd 31).castAdd work))) _
-        rw [privateKept _ (Or.inl k.isLt)]
-        exact initial k x)
+        change initialBank.tape k x = readAt _ (C.L (inner (commonTape k))) (C.R (inner (commonTape k))) _
+        by_cases h : ∃ i, CommonBank.auxSlot i = k
+        · obtain ⟨i,rfl⟩ := h
+          have atAux := CommonBank.bank_aux roles (Routines.hdr v) f p node scalar (Family.leafC (w+1) arity d d) st i
+          change _ = readAt _ _ _ (x-initialBank.head _)
+          rw [show initialBank.head _ = _ from atAux.1, show initialBank.tape _ = _ from atAux.2]
+          exact countRep i x
+        · have off := other k (fun i eq => h ⟨i,eq⟩)
+          rw [off.1,off.2,commonKeep]; exact initial k (fun i eq => h ⟨i,eq⟩) x)
     (by intro k x
-        change readAt _ _ (B.R (inner (k.natAdd (host+31)))) _ = _
-        rw [privateKept _ (Or.inr (by simp; omega))]
+        let j := k.natAdd (host+31)
+        have hi : host ≤ j.val := by simp [j]; omega
+        change readAt _ (C.L (inner j)) (C.R (inner j)) _ = _
+        rw [(outsideCommon j (by dsimp [host] at hi; omega)).1,(outsideCommon j (by dsimp [host] at hi; omega)).2,
+          privateKept _ (Or.inr hi)]
         exact free k x)
-    (fun k => ⟨(empty k).1,(privateKept ((k.natAdd host).castAdd work) (Or.inr (by simp))).trans (empty k).2⟩)
-    good (by change B.R out = _; simp [B,G,g,M])
-    ((preserved 44).trans one) ((congrArg List.length (preserved 45)).trans ticks)
-    ((preserved 55).trans archive)
+    (fun k => by
+      let j := (k.natAdd host).castAdd work
+      have hi : host ≤ j.val := by simp [j]
+      have off := outsideCommon j (by dsimp [host] at hi; omega)
+      exact ⟨off.1.trans (empty k).1,off.2.trans ((privateKept j (Or.inr hi)).trans (empty k).2)⟩)
+    good (by change C.R out = _
+             rw [show C.R out = B.R out from (outsideCommon (record 16) (by change common ≤ common+16; omega)).2]
+             simp [B,G,g,M])
+    ((callerFrame 44).2.trans ((preserved 44).trans one))
+    ((congrArg List.length (callerFrame 45).2).trans ((congrArg List.length (preserved 45)).trans ticks))
+    ((callerFrame 55).2.trans ((preserved 55).trans archive))
     (by intro i hi
-        exact (Function.update_of_ne (inner.injective.ne (record.injective.ne hi)) _ _).trans (scratch i hi))
+        exact (outsideCommon (record i) (by change common ≤ common+i.val; omega)).2.trans
+          ((Function.update_of_ne (inner.injective.ne (record.injective.ne hi)) _ _).trans (scratch i hi)))
   have keptCaller (j : Fin 58) (ne : j ≠ 24) :=
-    (frame j ne).2.trans (preserved _)
+    (frame j ne).2.trans ((callerFrame _).2.trans (preserved _))
   have keptScan (i : Fin 6) (hi : i < 4) : D.R (scan i) = whole.R (scan i) :=
     keptCaller _ (scanOff i hi)
   obtain ⟨last,user,advance⟩ := advanceGoodRecord_exec body scan m w label prefixes labels archiveTail z D
@@ -476,11 +545,11 @@ theorem generatedGoodRecordRoundTrip_exec [M8.Machine.Net] {T m work Q fields H 
     ((keptScan 3 (by decide)).trans scanBlank)
   let finalBank := {D with R := Function.update D.R (scan 2) tail}
   have step : Exec body recordProgram (mk u whole) _ (mk last finalBank) :=
-    Exec.seq (Exec.seq runWriter run) advance
-  have bound : n+t+(1+(4*ancestor.length+4+(m*m*(4*(w+1)+4)+1)+1)) ≤ runCost := by
-    apply Nat.add_le_add_right (Nat.add_le_add hn _) _
-    rw [show B.R ((Fin.castAddEmb (CommonBank.count T+24+31+work)) 55) = whole.R (caller 55) from preserved 55,
-      show B.R ((Fin.castAddEmb (CommonBank.count T+24+31+work)) 45) = whole.R (caller 45) from preserved 45] at ht
+    Exec.seq (Exec.seq (Exec.seq runWriter prep) run) advance
+  have bound : (n+costC)+t+(1+(4*ancestor.length+4+(m*m*(4*(w+1)+4)+1)+1)) ≤ runCost := by
+    apply Nat.add_le_add_right (Nat.add_le_add (Nat.add_le_add hn hCost) _) _
+    rw [show C.R ((Fin.castAddEmb (CommonBank.count T+24+31+work)) 55) = whole.R (caller 55) from (callerFrame 55).2.trans (preserved 55),
+      show C.R ((Fin.castAddEmb (CommonBank.count T+24+31+work)) 45) = whole.R (caller 45) from (callerFrame 45).2.trans (preserved 45)] at ht
     exact ht
   have distinct : privateTapes.Nodup := (List.nodup_finRange K).filter _
   obtain ⟨finish,userFinish,clear⟩ := clearWorkTapes_exec body privateTapes distinct last finalBank
@@ -490,7 +559,7 @@ theorem generatedGoodRecordRoundTrip_exec [M8.Machine.Net] {T m work Q fields H 
   have callerOut (j : Fin 58) : caller (j.castAdd 8) ∉ privateTapes := by
     rw [privateMem]; exact Nat.not_le_of_lt j.isLt
   have payloadOut : r 0 ∉ privateTapes := by rw [first]; exact callerOut 24
-  refine ⟨finish,_,_,ys,userFinish.trans (user.trans (hz.trans hy)),Nat.add_le_add bound
+  refine ⟨finish,_,_,ys,userFinish.trans (user.trans (hz.trans (hUser.trans hy))),Nat.add_le_add bound
     (charge.trans (Nat.add_le_add_left (Nat.mul_le_mul_left 6 (Nat.mul_le_mul_left _ bound)) _)),
     Exec.seq step clear,?_,act,?_,?_,?_⟩
   · intro i hi; simp [(privateMem i).mpr hi]
@@ -502,6 +571,6 @@ theorem generatedGoodRecordRoundTrip_exec [M8.Machine.Net] {T m work Q fields H 
   · intro j ne nd
     have off : caller (j.castAdd 8) ≠ scan 2 := caller.injective.ne ((Fin.castAddEmb 8).injective.ne nd)
     simp only [ite_eq_right (callerOut j)]
-    exact ⟨(frame j ne).1,(Function.update_of_ne off _ _).trans (keptCaller j ne)⟩
+    exact ⟨(frame j ne).1.trans (callerFrame _).1,(Function.update_of_ne off _ _).trans (keptCaller j ne)⟩
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
