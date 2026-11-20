@@ -5,6 +5,7 @@ public import IntegerMultBounds.MathlibTM2.Cover.FallbackConjugationQueue
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackFormulaInit
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackRecordCleanup
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackRecordHeaders
+public import IntegerMultBounds.MathlibTM2.Cover.ProjectorWitness
 public import IntegerMultBounds.MathlibTM2.Cover.LabelCountBank
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackRecordMasks
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackRecordCounters
@@ -281,9 +282,7 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
         ((privateTapes.map fun i => 4*(whole.L i).length+2*(R i).length+4).sum+1)
       let branchCost := fun i => if liveBit i then (if badBit i then badCost i else charge i) else skipCost i
       let action := fun i => if liveBit i then (if badBit i then badEffect i else effect i) else Eq
-      let priced := fun n => ∀ (baseline extra : ℕ) (g₀ : Matrix (Fin m) (Fin m) (ZMod prime)),
-        g₀.det ≠ 0 → (∀ k (hk : k < d), (GoodForm.lead (k+1) (lt_of_lt_of_le hk rankFits)
-          (g₀*(LabelRing.res prime (w+1) (by omega)).mapMatrix (reduce M proj)*g₀⁻¹)).det ≠ 0) →
+      let priced := fun n => ∀ (baseline extra : ℕ),
         (∀ j ∈ labels, liveBit j = true → badBit j = false → charge j ≤ baseline) →
         (∀ j ∈ labels, liveBit j = false → skipCost j ≤ baseline) →
         (∀ j ∈ labels, liveBit j = true → badBit j = true → badCost j ≤ baseline+extra) →
@@ -413,7 +412,8 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
     obtain ⟨finish,D,n,next,user,time,run,post⟩ := scanRun
     refine ⟨writer,finish,D,_,next,user.trans (hz.trans (hy.trans user₀)),Nat.add_le_add (Nat.add_le_add_right (Nat.add_le_add time₀ hl) _) time,?_,
       Exec.seq (Exec.seq (Exec.seq prepare write) clearMasks) run,post⟩
-    intro baseline extra g₀ unit generic hg hp hf
+    intro baseline extra hg hp hf
+    obtain ⟨g₀,unit,generic⟩ := LabelProjector.residue_witness (w := w+1) (by omega) proj idem factor hd rankFits
     exact Nat.add_le_add (Nat.add_le_add_right (Nat.add_le_add time₀ hl) _)
       (time.trans (directoryDispatchCost_le w d Bcount rankFits (reduce M proj) directory shape charge skipCost badCost
         baseline extra g₀ unit generic hg hp hf))
