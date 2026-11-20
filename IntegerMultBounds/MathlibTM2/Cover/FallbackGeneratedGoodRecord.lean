@@ -52,35 +52,36 @@ theorem directoryQueueBank_caller [M8.Machine.Net] {K d r : ℕ}
   rw [← Equiv.swap_apply_self (base ⟨36+2*r,by omega⟩) (directoryMatrixTape room) (base i),eq]
   exact Equiv.swap_apply_of_ne_of_ne (off _).symm archiveOff.symm
 
-/-- Modulus, prefix width, projector, unit, reciprocal modulus and unit, and clock
+/-- Modulus, prefix width, projector, unit, reciprocal modulus and unit, and both clocks
 in the directory reader, elimination bank, and exponent counter, respectively. -/
-def directoryQueueHeaderSlots : Fin 7 ↪ Fin 35 :=
-  ⟨![8,12,16,17,22,33,34],by decide⟩
+def directoryQueueHeaderSlots : Fin 8 ↪ Fin 35 :=
+  ⟨![8,12,16,17,22,33,34,1],by decide⟩
 
 theorem directoryQueueHeaders_exec [M8.Machine.Net] {K d r Q : ℕ} {P U : Type}
     (room : Record.size d+(rowSwapBlock.tapes+35+2) ≤ K)
     (fits : (36+2*r+1+(conjugationDepth r+1)*13)+3 ≤ K)
     (body : P → Pr P (66+K) Q prime U) (u : HS (66+K) Q prime U) (S : Stacks (66+K) prime) :
     let bank := directoryQueueBank room fits
-    let src := fun i : Fin 7 => ((![2,47,48,44,2,44,45] i : Fin 66)).castAdd K
+    let src := fun i : Fin 8 => ((![2,47,48,44,2,44,45,45] i : Fin 66)).castAdd K
     let dst := (directoryQueueHeaderSlots.trans (Fin.castLEEmb (by omega))).trans bank
     let tmp := bank ⟨4,by omega⟩
     let aux := bank ⟨6,by omega⟩
     let pool := QueueLayout.block (n := (conjugationDepth r+1)*13) (36+2*r+1) (by omega) bank
     let srcMod := (2 : Fin 66).castAdd K
+    let digits := dst 7
     S.R tmp = [] → S.R aux = [] → (∀ i, S.R (dst i) = []) →
     (∀ i, S.R (pool i) = []) →
-    ∃ z F, z.user = u.user ∧ Exec body ((Record.copyLeafHeaders src dst tmp aux (List.finRange 7)).seq
-      (initFrames pool srcMod (conjugationDepth r+1)))
-      (mk u S) (((List.finRange 7).map fun i => 6*(S.R (src i)).length+6).sum+1 + ((conjugationDepth r+1)*(6*(S.R srcMod).length+6)+1)) (mk z F) ∧
-      F.L = S.L ∧ (∀ i, F.R (dst i) = S.R (src i)) ∧
+    ∃ z F, z.user = u.user ∧ Exec body (((Record.copyLeafHeaders src dst tmp aux (List.finRange 8)).seq
+      (initFrames pool srcMod (conjugationDepth r+1))).seq (.act (.push (.rt digits) (fun _ => Node.tick) .done)))
+      (mk u S) (((List.finRange 8).map fun i => 6*(S.R (src i)).length+6).sum+1 + ((conjugationDepth r+1)*(6*(S.R srcMod).length+6)+1)+1) (mk z F) ∧
+      F.L = S.L ∧ (∀ i, F.R (dst i) = if i = 7 then Node.tick :: S.R (src i) else S.R (src i)) ∧
       (∀ j : Fin 66, F.R (j.castAdd K) = S.R (j.castAdd K)) ∧
       (∀ k ≤ conjugationDepth r, F.R (frame pool k 2) = S.R srcMod) ∧
       (∀ k ≤ conjugationDepth r, ∀ i : Fin 13, i ≠ 2 → F.R (frame pool k i) = []) ∧
       ∀ k, (∀ i, dst i ≠ k) → (∀ i, k ≠ pool i) → F.R k = S.R k := by
-  intro bank src dst tmp aux pool srcMod tmpFree auxFree empty poolFree
-  have outside (i : Fin 7) j : src i ≠ bank j := (directoryQueueBank_caller room fits j _).symm
-  have separate (i : Fin 7) : dst i ≠ tmp ∧ dst i ≠ aux := by
+  intro bank src dst tmp aux pool srcMod digits tmpFree auxFree empty poolFree
+  have outside (i : Fin 8) j : src i ≠ bank j := (directoryQueueBank_caller room fits j _).symm
+  have separate (i : Fin 8) : dst i ≠ tmp ∧ dst i ≠ aux := by
     have avoid : ∀ j, (directoryQueueHeaderSlots j).val ≠ 4 ∧ (directoryQueueHeaderSlots j).val ≠ 6 := by decide
     constructor <;> intro eq <;> have h := congrArg Fin.val (bank.injective eq)
     · exact (avoid i).1 h
@@ -92,7 +93,7 @@ theorem directoryQueueHeaders_exec [M8.Machine.Net] {K d r Q : ℕ} {P U : Type}
     have ta : tmp ≠ aux := bank.injective.ne (fun eq => (by decide : 4 ≠ 6) (congrArg Fin.val eq))
     simp [sd,st,sa,(separate i).1,(separate i).2,ta]
   obtain ⟨z,F,user,run,left,loaded,keep⟩ := Record.copyLeafHeaders_exec body src dst tmp aux
-    (fun i j => outside i _) ports _ (List.nodup_finRange 7) u S tmpFree auxFree (fun i _ => empty i)
+    (fun i j => outside i _) ports _ (List.nodup_finRange 8) u S tmpFree auxFree (fun i _ => empty i)
   have dp (i j) : dst i ≠ pool j := by
     intro eq
     have h := congrArg Fin.val (bank.injective eq)
@@ -106,13 +107,28 @@ theorem directoryQueueHeaders_exec [M8.Machine.Net] {K d r Q : ℕ} {P U : Type}
     (fun j => (directoryQueueBank_caller room fits _ 2).symm) z F poolBlank (conjugationDepth r+1) le_rfl
   rw [modEq] at init moduli
   have frameOff (k) (h : ∀ i, k ≠ pool i) := rest k (fun _ _ => h _)
-  refine ⟨y,E,hy.trans user,Exec.seq run init,leftE.trans left,
-    fun i => (frameOff _ (dp i)).trans (loaded i (List.mem_finRange i)),
-    fun j => (frameOff _ (fun i => (directoryQueueBank_caller room fits _ j).symm)).trans (callerKeep j),
-    fun k hk => moduli k (by omega),?_,fun k hd hp => (frameOff k hp).trans (keep k (fun i _ => hd i))⟩
-  intro k hk i ne
-  apply (rest _ (fun l hl eq => ne (congrArg Prod.snd (finProdFinEquiv.injective (pool.injective eq))))).trans
-  exact poolBlank _
+  let D := {E with R := Function.update E.R digits (Node.tick :: E.R digits)}
+  have push : Exec body (.act (.push (.rt digits) (fun _ => Node.tick) .done)) (mk y E) 1 (mk y D) := by
+    simpa [D,Action.run,update_rt] using Exec.act (body := body) (.push (.rt digits) (fun _ => Node.tick) .done) (mk y E)
+  have intact (k) (off : k ≠ digits) : D.R k = E.R k := Function.update_of_ne off _ _
+  have value (i) := (frameOff _ (dp i)).trans (loaded i (List.mem_finRange i))
+  refine ⟨y,D,hy.trans user,Exec.seq (Exec.seq run init) push,leftE.trans left,?_,?_,?_,?_,?_⟩
+  · intro i
+    by_cases eq : i = 7
+    · subst i
+      exact (Function.update_self ..).trans (by simp only [ite_true]; rw [show E.R digits = _ from value 7])
+    · simpa only [if_neg eq] using (intact _ (dst.injective.ne eq)).trans (value i)
+  · intro j
+    exact (intact _ (directoryQueueBank_caller room fits _ j).symm).trans
+      ((frameOff _ (fun i => (directoryQueueBank_caller room fits _ j).symm)).trans (callerKeep j))
+  · intro k hk
+    exact (intact _ (dp 7 _).symm).trans (moduli k (by omega))
+  · intro k hk i ne
+    apply (intact _ (dp 7 _).symm).trans
+    apply (rest _ (fun l hl eq => ne (congrArg Prod.snd (finProdFinEquiv.injective (pool.injective eq))))).trans
+    exact poolBlank _
+  · intro k hd hp
+    exact (intact k (hd 7).symm).trans ((frameOff k hp).trans (keep k (fun i _ => hd i)))
 
 /-- Construct the fixed-width zero and padding identity in the writer's private bank. -/
 theorem directoryQueuePadding_exec [M8.Machine.Net] {K d r Q H w : ℕ} {P U : Type}
@@ -268,16 +284,44 @@ theorem directoryParentBank_exec [M8.Machine.Net] {K d Q m H w : ℕ} {P U : Typ
       (reusablePivotInverse prime (pivot j) (ports j 16) (ports j 17))
     let C := 48*H*H+152*H+66
     let price := fun j : Fin m => (8*(j.val*H)+14*H+22)+(6*w+6+(14*H+16+(prime-2)*C+C+w*(12*H+15+prime*C)))
-    (∀ j, S.R (ports j 18) = (List.ofFn fun i => binSyms H (parent i).val).flatten ∧
-      S.R (ports j 4) = binSyms H (prime^(w+1)) ∧ S.R (ports j 15) = binSyms H (1 : ZMod (prime^(w+1))).val ∧
-      (S.R (ports j 16)).length = w ∧ S.R (ports j 17) = [] ∧ S.R (ports j 14) = [] ∧
-      ∀ i : Fin 16, i ≠ 4 → i < 13 → S.R (pivot j i) = []) →
+    let bank := directoryQueueBank room fits
+    S.R ((55 : Fin 66).castAdd K) = (List.ofFn fun i => binSyms H (parent i).val).flatten →
+    S.R (bank ⟨22,by omega⟩) = binSyms H (prime^(w+1)) →
+    S.R (bank ⟨33,by omega⟩) = binSyms H (1 : ZMod (prime^(w+1))).val →
+    (S.R (bank ⟨34,by omega⟩)).length = w →
+    (∀ i, i.val = 35 ∨ (19 ≤ i.val ∧ i.val < 31 ∧ i.val ≠ 22) ∨ (36 ≤ i.val ∧ i.val < 36+2*m) →
+      S.R (bank i) = []) →
     ∃ z F n, z.user = u.user ∧ n ≤ ((List.finRange m).map price).sum+1 ∧
       Exec body (Prog.seqList ((List.finRange m).map program)) (mk u S) n (mk z F) ∧
       F.L = S.L ∧ F.inp = S.inp ∧ F.out = S.out ∧
       (∀ j, F.R (ports j 14) = binSyms H (parent j).val ∧ F.R (ports j 0) = binSyms H (inv j).val) ∧
       ∀ k, (∀ j, k ≠ ports j 14 ∧ k ≠ ports j 0) → F.R k = S.R k := by
-  intro ports readSlots pivot program C price ready
+  intro ports readSlots pivot program C price bank packedHeader modulusHeader unitHeader clockHeader blank
+  have ready : ∀ j : Fin m, S.R (ports j 18) = (List.ofFn fun i => binSyms H (parent i).val).flatten ∧
+      S.R (ports j 4) = binSyms H (prime^(w+1)) ∧ S.R (ports j 15) = binSyms H (1 : ZMod (prime^(w+1))).val ∧
+      (S.R (ports j 16)).length = w ∧ S.R (ports j 17) = [] ∧ S.R (ports j 14) = [] ∧
+      ∀ i : Fin 16, i ≠ 4 → i < 13 → S.R (pivot j i) = [] := by
+    intro j
+    refine ⟨packedHeader,modulusHeader,unitHeader,clockHeader,blank _ (Or.inl rfl),
+      blank _ (Or.inr (Or.inr (by change 36 ≤ 36+j.val ∧ 36+j.val < 36+2*m; omega))),?_⟩
+    intro i hi small
+    by_cases zero : i = 0
+    · subst i
+      exact blank _ (Or.inr (Or.inr (by change 36 ≤ 36+m+j.val ∧ 36+m+j.val < 36+2*m; omega)))
+    · have nz : i.val ≠ 0 := fun eq => zero (Fin.ext eq)
+      have notFour : i.val ≠ 4 := fun eq => hi (Fin.ext eq)
+      have upper : i.val < 13 := small
+      have atSlot : pivot j i = bank ⟨18+i.val,by omega⟩ := by
+        let k : Fin 19 := i.castLE (by decide)
+        have off : k ≠ 18 := by intro eq; have val := congrArg Fin.val eq; change i.val = 18 at val; omega
+        change (if k = 18 then _ else bank ⟨if i.val = 0 then _ else if i.val = 14 then _ else 18+i.val,_⟩) = _
+        rw [if_neg off]
+        apply congrArg bank
+        apply Fin.ext
+        change (if i.val = 0 then _ else if i.val = 14 then _ else 18+i.val) = 18+i.val
+        rw [if_neg nz,if_neg (show i.val ≠ 14 by omega)]
+      rw [atSlot]
+      exact blank _ (Or.inr (Or.inl (by change 19 ≤ 18+i.val ∧ 18+i.val < 31 ∧ 18+i.val ≠ 22; omega)))
   have loop (js : List (Fin m)) (unique : js.Nodup) (v : HS (66+K) Q prime U) (B : Stacks (66+K) prime)
       (pending : ∀ j ∈ js, ∀ k, B.R (ports j k) = S.R (ports j k)) :
       ∃ z F n, z.user = v.user ∧ n ≤ (js.map price).sum+1 ∧
@@ -366,6 +410,137 @@ theorem directoryQueueInputs_exec [M8.Machine.Net] {K d r Q w records : ℕ} {P 
   rw [src,empty,List.append_nil] at writeDir
   exact ⟨v,hv.trans hy,(Function.update_of_ne dm.symm _ _).trans ((Function.update_self ..).trans bits),
     Function.update_self ..,Exec.seq writeMask writeDir⟩
+
+/-- Initialize the physical writer headers, formula frames, and both coefficient banks. -/
+theorem directoryQueueSetup_exec [M8.Machine.Net] {K d Q m H w records : ℕ} {P U : Type}
+    (room : Record.size d+(rowSwapBlock.tapes+35+2) ≤ K)
+    (fits : (36+2*m+1+(conjugationDepth m+1)*13)+3 ≤ K) (body : P → Pr P (66+K) Q prime U)
+    (parent inv : Fin m → ZMod (prime^(w+1))) (reciprocal : ∀ j, parent j * inv j = 1)
+    (hm : prime^(w+1) < 2^H) (u : HS (66+K) Q prime U) (S : Stacks (66+K) prime) :
+    let ports := directoryParentPorts room fits
+    let readSlots : Fin 7 ↪ Fin 19 := ⟨![1,4,18,14,2,3,5],by decide⟩
+    let pivot := fun j => (Fin.castLEEmb (by decide : 16 ≤ 19)).trans (ports j)
+    let program := fun j => (readMatrixWord j.val (readSlots.trans (ports j))).seq
+      (reusablePivotInverse prime (pivot j) (ports j 16) (ports j 17))
+    let C := 48*H*H+152*H+66
+    let price := fun j : Fin m => (8*(j.val*H)+14*H+22)+(6*w+6+(14*H+16+(prime-2)*C+C+w*(12*H+15+prime*C)))
+    let bank := directoryQueueBank room fits
+    let src := fun i : Fin 8 => ((![2,47,48,44,2,44,45,45] i : Fin 66)).castAdd K
+    let dst := (directoryQueueHeaderSlots.trans (Fin.castLEEmb (by omega))).trans bank
+    let tmp := bank ⟨4,by omega⟩
+    let aux := bank ⟨6,by omega⟩
+    let pool := QueueLayout.block (n := (conjugationDepth m+1)*13) (36+2*m+1) (by omega) bank
+    let srcMod := (2 : Fin 66).castAdd K
+    let digits := dst 7
+    let headers := ((Record.copyLeafHeaders src dst tmp aux (List.finRange 8)).seq
+      (initFrames pool srcMod (conjugationDepth m+1))).seq (.act (.push (.rt digits) (fun _ => Node.tick) .done))
+    let headerTime := ((List.finRange 8).map fun i => 6*(S.R (src i)).length+6).sum+1 +
+      ((conjugationDepth m+1)*(6*(S.R srcMod).length+6)+1)+1
+    let base := 36+2*m+1+(conjugationDepth m+1)*13
+    let zero := bank ⟨9,by omega⟩
+    let seed := bank ⟨base+1,by omega⟩
+    let saved := bank ⟨base+2,by omega⟩
+    let pad := (Node.umulSym 1 (bitSymbol false) (dst 0) zero tmp).seq
+      (identitySeed (d+1) zero (dst 3) seed tmp saved)
+    let identityWord := matrixWords prime H (1 : Matrix (Fin (d+1)) (Fin (d+1)) (ZMod (prime^(w+1))))
+    let padded := fun (F : Stacks (66+K) prime) =>
+      {F with R := Function.update (Function.update F.R zero (binSyms H 0)) seed identityWord}
+    let mask := bank ⟨base,by omega⟩
+    let dir := bank ⟨2,by omega⟩
+    let live := (57 : Fin 66).castAdd K
+    let source := (46 : Fin 66).castAdd K
+    let copies := (bcopy live mask tmp saved).seq (bcopy source dir tmp saved)
+    let inputs := fun (F : Stacks (66+K) prime) =>
+      {F with R := Function.update (Function.update F.R mask (S.R live)) dir (S.R source)}
+    S.R live = (List.range records).map (fun j => bitSymbol (LabelStock.live m (w+1) 1 j)) →
+    (∀ i, S.R (bank i) = []) →
+    S.R ((55 : Fin 66).castAdd K) = (List.ofFn fun i => binSyms H (parent i).val).flatten →
+    S.R srcMod = binSyms H (prime^(w+1)) →
+    S.R ((44 : Fin 66).castAdd K) = binSyms H (1 : ZMod (prime^(w+1))).val →
+    (S.R ((45 : Fin 66).castAdd K)).length = w →
+    ∃ z F n, z.user = u.user ∧ n ≤ headerTime+(((List.finRange m).map price).sum+1) +
+        ((4*H+4)+((d+1)*((d+1)*(6*H+6)+1)+1)) + ((6*records+6)+(6*(S.R source).length+6)) ∧
+      Exec body (((headers.seq (Prog.seqList ((List.finRange m).map program))).seq pad).seq copies) (mk u S) n (mk z (inputs (padded F))) ∧
+      F.L = S.L ∧ (∀ i, F.R (dst i) = if i = 7 then Node.tick :: S.R (src i) else S.R (src i)) ∧
+      (∀ j : Fin 66, F.R (j.castAdd K) = S.R (j.castAdd K)) ∧
+      (∀ k ≤ conjugationDepth m, F.R (frame pool k 2) = S.R srcMod) ∧
+      (∀ k ≤ conjugationDepth m, ∀ i : Fin 13, i ≠ 2 → F.R (frame pool k i) = []) ∧
+      (∀ j, F.R (ports j 14) = binSyms H (parent j).val ∧ F.R (ports j 0) = binSyms H (inv j).val) ∧
+      ∀ k, (∀ i, dst i ≠ k) → (∀ i, k ≠ pool i) →
+        (∀ j, k ≠ ports j 14 ∧ k ≠ ports j 0) → F.R k = S.R k := by
+  intro ports readSlots pivot program C price bank src dst tmp aux pool srcMod digits headers headerTime base zero seed saved pad identityWord padded mask dir live source copies inputs bits blank
+    packed modulus unit clock
+  obtain ⟨y,B,user,run,left,values,caller,moduli,scratch,keep⟩ := directoryQueueHeaders_exec room fits body u S
+    (blank _) (blank _) (fun i => blank _) (fun i => blank _)
+  have free (i : Fin ((36+2*m+1+(conjugationDepth m+1)*13)+3)) (h : i.val = 35 ∨ (19 ≤ i.val ∧ i.val < 31 ∧ i.val ≠ 22) ∨ (36 ≤ i.val ∧ i.val < 36+2*m)) :
+      B.R (bank i) = [] := by
+    apply (keep _ ?_ ?_).trans (blank i)
+    · intro j eq
+      have val := congrArg Fin.val (bank.injective eq)
+      change (directoryQueueHeaderSlots j).val = i.val at val
+      have bounds : ∀ k, (directoryQueueHeaderSlots k).val ≤ 17 ∨
+        (directoryQueueHeaderSlots k).val = 22 ∨ (directoryQueueHeaderSlots k).val = 33 ∨
+        (directoryQueueHeaderSlots k).val = 34 := by decide
+      have := bounds j
+      omega
+    · intro k eq
+      have val := congrArg Fin.val (bank.injective eq)
+      change i.val = 36+2*m+1+k.val at val
+      omega
+  obtain ⟨z,F,n,hz,hn,load,leftF,_,_,coeff,rest⟩ := directoryParentBank_exec room fits body parent inv reciprocal hm y B
+    ((caller 55).trans packed) ((values 4).trans modulus) ((values 5).trans unit)
+    ((congrArg List.length (values 6)).trans clock) free
+  have outside (i : Fin ((36+2*m+1+(conjugationDepth m+1)*13)+3)) (range : i.val < 36 ∨ 36+2*m ≤ i.val) (j : Fin m) :
+      bank i ≠ ports j 14 ∧ bank i ≠ ports j 0 := by
+    constructor <;> intro eq <;> have val := congrArg Fin.val (bank.injective eq)
+    · change i.val = 36+j.val at val; omega
+    · change i.val = 36+m+j.val at val; omega
+  have poolKeep (k) : F.R (pool k) = B.R (pool k) :=
+    rest _ (outside _ (Or.inr (by change 36+2*m ≤ 36+2*m+1+k.val; omega)))
+  have header (i) := (rest _ (outside _ (Or.inl (Nat.lt_trans (directoryQueueHeaderSlots i).isLt (by decide))))).trans (values i)
+  have unused (i : Fin (base+3)) (whereAt : i.val = 2 ∨ i.val = 4 ∨ i.val = 9 ∨ base ≤ i.val) : F.R (bank i) = [] := by
+    have large : 36+2*m ≤ base := by dsimp [base]; omega
+    apply (rest _ (outside _ (by omega))).trans
+    apply (keep _ ?_ ?_).trans (blank i)
+    · intro j eq
+      have val := congrArg Fin.val (bank.injective eq)
+      change (directoryQueueHeaderSlots j).val = i.val at val
+      have off : ∀ k, (directoryQueueHeaderSlots k).val ≠ 2 ∧ (directoryQueueHeaderSlots k).val ≠ 4 ∧ (directoryQueueHeaderSlots k).val ≠ 9 := by decide
+      have := off j
+      have := (directoryQueueHeaderSlots j).isLt
+      omega
+    · intro k eq
+      have val := congrArg Fin.val (bank.injective eq)
+      change i.val = 36+2*m+1+k.val at val
+      have := k.isLt
+      dsimp [base] at whereAt
+      omega
+  obtain ⟨finish,l,hu,hl,write⟩ := directoryQueuePadding_exec (w := w) room fits body z F
+    ((congrArg List.length ((header 0).trans modulus)).trans (length_binSyms ..)) ((header 3).trans unit)
+    (unused _ (by simp [zero])) (unused _ (Or.inr (Or.inr (Or.inr (Nat.le_succ _)))))
+    (unused _ (by simp [tmp])) (unused _ (Or.inr (Or.inr (Or.inr (Nat.le_add_right ..)))))
+  have callerF (i : Fin 66) := (rest (i.castAdd K) (fun j => ⟨(directoryQueueBank_caller room fits _ i).symm,
+    (directoryQueueBank_caller room fits _ i).symm⟩)).trans (caller i)
+  have callerPad (i : Fin 66) : (padded F).R (i.castAdd K) = S.R (i.castAdd K) :=
+    (Function.update_of_ne (directoryQueueBank_caller room fits _ i).symm _ _).trans
+      ((Function.update_of_ne (directoryQueueBank_caller room fits _ i).symm _ _).trans (callerF i))
+  have padFree (i : Fin (base+3)) (h : i.val = 2 ∨ i.val = 4 ∨ i.val = base ∨ i.val = base+2) :
+      (padded F).R (bank i) = [] := by
+    have large : 35 < base := by dsimp [base]; omega
+    have a : bank i ≠ seed := bank.injective.ne (by intro eq; have v := congrArg Fin.val eq; change i.val = base+1 at v; omega)
+    have b : bank i ≠ zero := bank.injective.ne (by intro eq; have v := congrArg Fin.val eq; change i.val = 9 at v; omega)
+    exact (Function.update_of_ne a _ _).trans ((Function.update_of_ne b _ _).trans (unused i (by omega)))
+  obtain ⟨endUser,he,_,_,copyRun⟩ := directoryQueueInputs_exec room fits body finish (padded F)
+    ((callerPad 57).trans bits) (padFree _ (Or.inr (Or.inr (Or.inl rfl)))) (padFree _ (Or.inl rfl))
+    (padFree _ (Or.inr (Or.inl rfl))) (padFree _ (Or.inr (Or.inr (Or.inr rfl))))
+  change Exec body copies _ _ (mk endUser {padded F with R := Function.update (Function.update (padded F).R mask ((padded F).R live)) dir ((padded F).R source)}) at copyRun
+  rw [show (padded F).R live = S.R live from callerPad 57,show (padded F).R source = S.R source from callerPad 46] at copyRun
+  refine ⟨endUser,F,_,he.trans (hu.trans (hz.trans user)),Nat.add_le_add_right (Nat.add_le_add (Nat.add_le_add_left hn _) hl) _,
+    Exec.seq (Exec.seq (Exec.seq run load) write) copyRun,leftF.trans left,
+    header,
+    fun i => (rest _ (fun j => ⟨(directoryQueueBank_caller room fits _ i).symm,(directoryQueueBank_caller room fits _ i).symm⟩)).trans (caller i),
+    fun k hk => (poolKeep _).trans (moduli k hk),fun k hk i ne => (poolKeep _).trans (scratch k hk i ne),
+    coeff,fun k hd hp hw => (rest k hw).trans (keep k hd hp)⟩
 
 /-- The writer returns all caller tapes intact, including the live and exceptional
 selectors. Its matrix stream is on the tape used by the classified scan. -/
