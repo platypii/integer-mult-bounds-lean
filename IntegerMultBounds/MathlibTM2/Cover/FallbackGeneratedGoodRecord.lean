@@ -615,6 +615,38 @@ private theorem queue_cleanup_le {T A : ℕ} (S : Stacks T A) (mask dir archive 
   change 4*(S.L i).length+2*(D.R i).length+4 ≤ _
   omega
 
+/-- The fixed initialization program whose pushes are charged when clearing the writer tapes. -/
+noncomputable def directoryQueueInitProgram [M8.Machine.Net] {K d m Q : ℕ} {P U : Type}
+    (room : Record.size d+(rowSwapBlock.tapes+35+2) ≤ K)
+    (fits : (36+2*m+1+(conjugationDepth m+1)*13)+3 ≤ K) : Pr P (66+K) Q prime U :=
+  let ports := directoryParentPorts room fits
+  let readSlots : Fin 7 ↪ Fin 19 := ⟨![1,4,18,14,2,3,5],by decide⟩
+  let pivot := fun j => (Fin.castLEEmb (by decide : 16 ≤ 19)).trans (ports j)
+  let program := fun j => (readMatrixWord j.val (readSlots.trans (ports j))).seq
+    (reusablePivotInverse prime (pivot j) (ports j 16) (ports j 17))
+  let bank := directoryQueueBank room fits
+  let src := fun i : Fin 8 => ((![2,47,48,44,2,44,45,45] i : Fin 66)).castAdd K
+  let dst := (directoryQueueHeaderSlots.trans (Fin.castLEEmb (by omega))).trans bank
+  let tmp := bank ⟨4,by omega⟩
+  let aux := bank ⟨6,by omega⟩
+  let pool := QueueLayout.block (n := (conjugationDepth m+1)*13) (36+2*m+1) (by omega) bank
+  let srcMod := (2 : Fin 66).castAdd K
+  let digits := dst 7
+  let headers := ((Record.copyLeafHeaders src dst tmp aux (List.finRange 8)).seq
+    (initFrames pool srcMod (conjugationDepth m+1))).seq (.act (.push (.rt digits) (fun _ => Node.tick) .done))
+  let base := 36+2*m+1+(conjugationDepth m+1)*13
+  let zero := bank ⟨9,by omega⟩
+  let seed := bank ⟨base+1,by omega⟩
+  let saved := bank ⟨base+2,by omega⟩
+  let pad := (Node.umulSym 1 (bitSymbol false) (dst 0) zero tmp).seq
+    (identitySeed (d+1) zero (dst 3) seed tmp saved)
+  let mask := bank ⟨base,by omega⟩
+  let dir := bank ⟨2,by omega⟩
+  let live := (57 : Fin 66).castAdd K
+  let source := (46 : Fin 66).castAdd K
+  let copies := (bcopy live mask tmp saved).seq (bcopy source dir tmp saved)
+  ((headers.seq (Prog.seqList ((List.finRange m).map program))).seq pad).seq copies
+
 /-- Initialize the physical writer headers, formula frames, and both coefficient banks. -/
 theorem directoryQueueSetup_exec [M8.Machine.Net] {K d Q m H w records : ℕ} {P U : Type}
     (room : Record.size d+(rowSwapBlock.tapes+35+2) ≤ K)
@@ -622,30 +654,20 @@ theorem directoryQueueSetup_exec [M8.Machine.Net] {K d Q m H w records : ℕ} {P
     (parent inv : Fin m → ZMod (prime^(w+1))) (reciprocal : ∀ j, parent j * inv j = 1)
     (hm : prime^(w+1) < 2^H) (u : HS (66+K) Q prime U) (S : Stacks (66+K) prime) :
     let ports := directoryParentPorts room fits
-    let readSlots : Fin 7 ↪ Fin 19 := ⟨![1,4,18,14,2,3,5],by decide⟩
-    let pivot := fun j => (Fin.castLEEmb (by decide : 16 ≤ 19)).trans (ports j)
-    let program := fun j => (readMatrixWord j.val (readSlots.trans (ports j))).seq
-      (reusablePivotInverse prime (pivot j) (ports j 16) (ports j 17))
     let C := 48*H*H+152*H+66
     let price := fun j : Fin m => (8*(j.val*H)+14*H+22)+(6*w+6+(14*H+16+(prime-2)*C+C+w*(12*H+15+prime*C)))
     let bank := directoryQueueBank room fits
     let src := fun i : Fin 8 => ((![2,47,48,44,2,44,45,45] i : Fin 66)).castAdd K
     let dst := (directoryQueueHeaderSlots.trans (Fin.castLEEmb (by omega))).trans bank
     let tmp := bank ⟨4,by omega⟩
-    let aux := bank ⟨6,by omega⟩
     let pool := QueueLayout.block (n := (conjugationDepth m+1)*13) (36+2*m+1) (by omega) bank
     let srcMod := (2 : Fin 66).castAdd K
-    let digits := dst 7
-    let headers := ((Record.copyLeafHeaders src dst tmp aux (List.finRange 8)).seq
-      (initFrames pool srcMod (conjugationDepth m+1))).seq (.act (.push (.rt digits) (fun _ => Node.tick) .done))
     let headerTime := ((List.finRange 8).map fun i => 6*(S.R (src i)).length+6).sum+1 +
       ((conjugationDepth m+1)*(6*(S.R srcMod).length+6)+1)+1
     let base := 36+2*m+1+(conjugationDepth m+1)*13
     let zero := bank ⟨9,by omega⟩
     let seed := bank ⟨base+1,by omega⟩
     let saved := bank ⟨base+2,by omega⟩
-    let pad := (Node.umulSym 1 (bitSymbol false) (dst 0) zero tmp).seq
-      (identitySeed (d+1) zero (dst 3) seed tmp saved)
     let identityWord := matrixWords prime H (1 : Matrix (Fin (d+1)) (Fin (d+1)) (ZMod (prime^(w+1))))
     let padded := fun (F : Stacks (66+K) prime) =>
       {F with R := Function.update (Function.update F.R zero (binSyms H 0)) seed identityWord}
@@ -653,7 +675,6 @@ theorem directoryQueueSetup_exec [M8.Machine.Net] {K d Q m H w records : ℕ} {P
     let dir := bank ⟨2,by omega⟩
     let live := (57 : Fin 66).castAdd K
     let source := (46 : Fin 66).castAdd K
-    let copies := (bcopy live mask tmp saved).seq (bcopy source dir tmp saved)
     let inputs := fun (F : Stacks (66+K) prime) =>
       {F with R := Function.update (Function.update F.R mask (S.R live)) dir (S.R source)}
     S.R live = (List.range records).map (fun j => bitSymbol (LabelStock.live m (w+1) 1 j)) →
@@ -664,7 +685,7 @@ theorem directoryQueueSetup_exec [M8.Machine.Net] {K d Q m H w records : ℕ} {P
     (S.R ((45 : Fin 66).castAdd K)).length = w →
     ∃ z F n, z.user = u.user ∧ n ≤ headerTime+(((List.finRange m).map price).sum+1) +
         ((4*H+4)+((d+1)*((d+1)*(6*H+6)+1)+1)) + ((6*records+6)+(6*(S.R source).length+6)) ∧
-      Exec body (((headers.seq (Prog.seqList ((List.finRange m).map program))).seq pad).seq copies) (mk u S) n (mk z (inputs (padded F))) ∧
+      Exec body (directoryQueueInitProgram room fits) (mk u S) n (mk z (inputs (padded F))) ∧
       F.L = S.L ∧ (∀ i, F.R (dst i) = if i = 7 then Node.tick :: S.R (src i) else S.R (src i)) ∧
       (∀ j : Fin 66, F.R (j.castAdd K) = S.R (j.castAdd K)) ∧
       (∀ k ≤ conjugationDepth m, F.R (frame pool k 2) = S.R srcMod) ∧
@@ -697,12 +718,12 @@ theorem directoryQueueSetup_exec [M8.Machine.Net] {K d Q m H w records : ℕ} {P
         let queueTime := (List.range records).countP active*(liveCost+4*size) +
           (List.range records).countP (fun j => !active j)*(10*size+6) +
           records*(4*prefixWidth+4+(m*m*(4*(w+1)+4)+1)+6)+4
-        let setup := (((headers.seq (Prog.seqList ((List.finRange m).map program))).seq pad).seq copies)
+        let setup := directoryQueueInitProgram (P := P) (Q := Q) (U := U) room fits
         ∃ y steps, y.user = u.user ∧ steps ≤ n + queueTime + cleanup ∧
           (∀ c, mnProgPush setup ≤ c → (∀ f, mnProgPush (body f) ≤ c) →
             steps ≤ n + queueTime + ((work.map fun i => 4*(S.L i).length+2*(S.R i).length+4).sum+1 +
               work.length*(6*(c*n)))) ∧
-          Exec body (((((headers.seq (Prog.seqList ((List.finRange m).map program))).seq pad).seq copies).seq writer).seq
+          Exec body ((setup.seq writer).seq
             (clearWorkTapes work)) (mk u S) steps (mk y clean) ∧
           clean.R (directoryMatrixTape room) = words ∧
           (∀ i : Fin 66, i.val < 58 → clean.L (i.castAdd K) = S.L (i.castAdd K) ∧
@@ -710,7 +731,7 @@ theorem directoryQueueSetup_exec [M8.Machine.Net] {K d Q m H w records : ℕ} {P
           (∀ i, 58 ≤ i.val → i ≠ directoryMatrixTape room → clean.L i = [] ∧ clean.R i = [])) ∧
       ∀ k, (∀ i, dst i ≠ k) → (∀ i, k ≠ pool i) →
         (∀ j, k ≠ ports j 14 ∧ k ≠ ports j 0) → F.R k = S.R k := by
-  intro ports readSlots pivot program C price bank src dst tmp aux pool srcMod digits headers headerTime base zero seed saved pad identityWord padded mask dir live source copies inputs bits blank
+  intro ports C price bank src dst tmp pool srcMod headerTime base zero seed saved identityWord padded mask dir live source inputs bits blank
     packed modulus unit clock
   obtain ⟨y,B,user,run,left,values,caller,moduli,scratch,keep⟩ := directoryQueueHeaders_exec room fits body u S
     (blank _) (blank _) (fun i => blank _) (fun i => blank _)
@@ -775,7 +796,7 @@ theorem directoryQueueSetup_exec [M8.Machine.Net] {K d Q m H w records : ℕ} {P
   obtain ⟨endUser,he,_,_,copyRun⟩ := directoryQueueInputs_exec room fits body finish (padded F)
     ((callerPad 57).trans bits) (padFree _ (Or.inr (Or.inr (Or.inl rfl)))) (padFree _ (Or.inl rfl))
     (padFree _ (Or.inr (Or.inl rfl))) (padFree _ (Or.inr (Or.inr (Or.inr rfl))))
-  change Exec body copies _ _ (mk endUser {padded F with R := Function.update (Function.update (padded F).R mask ((padded F).R live)) dir ((padded F).R source)}) at copyRun
+  change Exec body _ _ _ (mk endUser {padded F with R := Function.update (Function.update (padded F).R mask ((padded F).R live)) dir ((padded F).R source)}) at copyRun
   rw [show (padded F).R live = S.R live from callerPad 57,show (padded F).R source = S.R source from callerPad 46] at copyRun
   have finalKeep (k) (hd : k ≠ dir) (hm : k ≠ mask) (hs : k ≠ seed) (hz : k ≠ zero) :
       (inputs (padded F)).R k = F.R k :=

@@ -17,6 +17,7 @@ def OrdinaryParentRun [M8.Machine.Net] {common work w rows B : ℕ} {U : Type}
     (root : Bool)
     (parent : Fin 64 → ZMod (prime^(w+1)))
     (room : Record.size 127+(rowSwapBlock.tapes+35+2) ≤ (common+24+31+work)+1)
+    (fits : (36+2*64+1+(RingFormula.conjugationDepth 64+1)*13)+3 ≤ (common+24+31+work)+1)
     (pool : (RingFormula.conjugationDepth 64+1)*13 ≤ work) (space : 58 ≤ common+24+31+work)
     (overhead childBudget : ℕ)
     (localBody : Unit → Pr Unit (66+(common+24+31+work)) columnCapacity prime U) : Prop :=
@@ -42,7 +43,7 @@ def OrdinaryParentRun [M8.Machine.Net] {common work w rows B : ℕ} {U : Type}
       (word : Fin (data.records*N) → ZMod 2) (prefixes : ℕ → List (Fin (prime+4))) (tail : List (Fin (prime+4))),
     let setupScratch := ([0,4,9,10,11,12] : List (Fin 15)).map (remainderDirectoryPorts.trans bank) ++ [bank 71]
     let inherited := (setupScratch.map (fun i => 4*(raw.L i).length)).sum+2*tail.length
-    let setupTime := ((366+16*64*64+19*64+344)*volume prime layout+prime^layout.width*inherited*142080)/(prime^layout.width*142080)
+    let setupTime := ((366+16*64*64+19*64+344)*volume prime layout)/(prime^layout.width*142080)+inherited
     let privateTapes := (List.finRange (66+K)).filter fun i => 58 ≤ i.val
     let left := (privateTapes.map fun i => 4*(raw.L ((placement i).castAdd 5)).length).sum
     let scratch := (List.finRange (66+(K+1))).filter fun i => decide (58 ≤ i.val ∧ i ≠ directoryMatrixTape room)
@@ -69,9 +70,10 @@ def OrdinaryParentRun [M8.Machine.Net] {common work w rows B : ℕ} {U : Type}
       let controls := embProg embed id (embProg placement id selectors)
       let scan := (payloadCountProgram (ownerCountPorts (K+1)) 128).seq (controls.seq ((embProg embed id prepare).seq dispatch))
       z.user = u.user ∧ Exec outer ((remainderOwnerSetup root interval.1 interval.2 bank).seq scan) (mk u raw) t (mk z F) ∧
-      (∀ p, mnProgPush (prepare : Pr Unit (66+(K+1)) columnCapacity prime U) ≤ p → mnProgPush (body ()) ≤ p →
-        t ≤ setupTime+ordinaryOwnerScanTime 64 127 proj.rank w W data.H W.size data.records N
-          (prefixes 0).length (raw.R (bank 46)).length (raw.R (bank 48)).length left privateTapes.length push scratch.length rate p overhead childBudget) ∧
+      (let p := max (mnProgPush (directoryQueueInitProgram (m := 64) (d := 127) (P := Unit) (Q := columnCapacity) (U := U) room fits)) (mnProgPush (body ()))
+       t ≤ setupTime+ordinaryOwnerScanTime 64 127 proj.rank w W data.H W.size data.records N
+          (prefixes 0).length 0 0 0 privateTapes.length push scratch.length rate p overhead childBudget +
+          (left+(1+scratch.length*(6*p))*directoryQueueInitRate 64 127*((raw.R (bank 46)).length+(raw.R (bank 48)).length))) ∧
       (∀ j : Fin data.records, let r := ownerRow (R := data.records) (N := N) rfl output j
         if LabelStock.live 64 (w+1) 1 j then ∀ x k, r (index ((projectorResidual finSumFinEquiv (reduce M proj)
           parent (fun i => Ring.inverse (parent i)) (physicalLabel 64 (w+1) j)).mulVec x) k) = ownerRow (R := data.records) (N := N) rfl word j (index x k)
@@ -88,7 +90,9 @@ def OrdinaryParentRun [M8.Machine.Net] {common work w rows B : ℕ} {U : Type}
         (putWord (fun _ => blank) 0 ((List.ofFn output).map SparseRoleCircuit.encode) j)) ∧
       F.L (reg 0) = raw.L (reg 0) ∧ F.R (reg 0) = payloadWord (SparseRoleCircuit.encode ∘ output) ++
         (raw.R (reg 0)).drop (data.records*N) ∧ F.R (reg 1) = [] ∧
-      F.R ((directoryMatrixTape room).castAdd 5) = [] ∧ F.R (bank 57) = [] ∧ F.R (bank 56) = []
+      F.R ((directoryMatrixTape room).castAdd 5) = [] ∧ F.R (bank 57) = [] ∧ F.R (bank 56) = [] ∧
+      F.R (bank 46) = raw.R (bank 46) ∧
+      ∀ i : Fin (66+K), 58 ≤ i.val → F.L ((placement i).castAdd 5) = [] ∧ F.R ((placement i).castAdd 5) = []
 
 private theorem ordinaryParent_exec [M8.Machine.Net] {common work w rows B : ℕ} {U : Type}
     (interval : ℕ × ℕ) (member : interval ∈ BitHosting.remainderIntervals) (layout : Descriptor)
@@ -105,7 +109,7 @@ private theorem ordinaryParent_exec [M8.Machine.Net] {common work w rows B : ℕ
         (remainderRecordChild interval.1 interval.2 (w+1) (layout.between*layout.afterD))
         (diagonal fun i => if interval.1 ≤ i.val ∧ i.val < interval.2 then 1 else 0) (by decide)
         parent data room fits remainderAnchorFits pool space (le_max_left ..) overhead childBudget prefixes archiveTail ownerTail localBody) :
-    OrdinaryParentRun (rows := rows) (B := B) interval layout root parent room pool space overhead childBudget localBody := by
+    OrdinaryParentRun (rows := rows) (B := B) interval layout root parent room fits pool space overhead childBudget localBody := by
   unfold OrdinaryParentRun
   intro K M W N directory proj placement bank reg body outer parents box data u raw word prefixes tail
     setupScratch inherited setupTime privateTapes left scratch ports step push rarePush rate br nr bh clean source widths fitsWidth
@@ -138,7 +142,7 @@ private theorem ordinaryParent_exec [M8.Machine.Net] {common work w rows B : ℕ
   have saved (i : Fin 5) (hi : i ≠ 0) := (regs i).1.trans (empty i hi)
   have packed := payload_prefix_of_read word (fun _ => blank) 0 (raw.L (reg 0)) (raw.R (reg 0)) (by simpa only [sub_zero] using payload)
   let archive := fun j => prefixes (j/box)
-  obtain ⟨selectors,prepare,z,F,t,n,output,k,s,midUser,mid,_,same,_,_,_,_,time,run,action,reads,ownerLeft,ownerRight,accumulator,_,clear,maskEnd,modeEnd⟩ :=
+  obtain ⟨selectors,prepare,z,F,t,n,output,k,s,midUser,mid,_,same,_,_,_,_,time,run,action,reads,ownerLeft,ownerRight,accumulator,done,clear,maskEnd,modeEnd⟩ :=
     scan data binary archive (raw.R (bank 46)) ((raw.R (reg 0)).drop (data.records*N)) word directory B y D
       (free _ (by have h := directoryMatrixTape_private room; omega)) rolePositive shape count pairRoom workEmpty
       (by
@@ -157,10 +161,13 @@ private theorem ordinaryParent_exec [M8.Machine.Net] {common work w rows B : ℕ
           rw [hl,hr]; exact blankData j)
   have coord : finSumFinEquiv.trans (finCongr (by decide : 64+64 = 127+1)) = finSumFinEquiv := by ext i; rfl
   refine ⟨selectors,prepare,_,z,F,_,output,same.trans user,Exec.seq build run,?_,?_,?_,reads,
-    ownerLeft.trans (regs 0).2,ownerRight,accumulator,clear,maskEnd,modeEnd⟩
-  · intro p bound calls
+    ownerLeft.trans (regs 0).2,ownerRight,accumulator,clear,maskEnd,modeEnd,?_,done.2.2.1⟩
+  · intro p
     have setup : q ≤ setupTime := by
-      apply (Nat.le_div_iff_mul_le (Nat.mul_pos (pow_pos Shared50ModularControl.prime_prime.pos _) (by decide))).mpr
+      have scale : 0 < prime^layout.width*142080 := Nat.mul_pos (pow_pos Shared50ModularControl.prime_prime.pos _) (by decide)
+      dsimp only [setupTime]
+      rw [← Nat.add_mul_div_left _ _ scale]
+      apply (Nat.le_div_iff_mul_le scale).mpr
       simpa only [Nat.mul_assoc,Nat.mul_left_comm,Nat.mul_comm] using paid
     have parentsPos : 0 < parents := by
       have rowsPos : 0 < rows := roleRows ▸ rolePositive.2.1
@@ -175,12 +182,13 @@ private theorem ordinaryParent_exec [M8.Machine.Net] {common work w rows B : ℕ
       have powLe : M^64 ≤ M^128 := Nat.pow_le_pow_right (pow_pos Shared50ModularControl.prime_prime.pos _) (by decide)
       rw [width,Nat.mul_comm 64 (w+1),pow_mul]
       exact powLe.trans (Nat.le_mul_of_pos_right _ (Nat.mul_pos positive.2.2.2.1 positive.2.2.2.2))
-    have scanBound := time p bound (fun f => by cases f; exact calls) first
+    have scanBound := time p (le_max_left ..) (fun f => by cases f; exact le_max_right ..) first
     have suffix : (whole.R ((48 : Fin 66).castAdd K)).drop (64*64*data.H) = raw.R (bank 48) := by
       rw [show whole.R ((48 : Fin 66).castAdd K) = D.R (bank 48) from shared 48,matrix,
         ← length_matrixWords prime data.H (reduce M proj),List.drop_left]
     have leftBound : (privateTapes.map (fun i => 4*(whole.L i).length)).sum ≤ left :=
       List.sum_le_sum (fun i hi => Nat.mul_le_mul_left 4 (size ((placement i).castAdd 5)))
+    rw [Nat.add_assoc,← ordinaryOwnerScanTime_inherited]
     apply Nat.add_le_add setup
     apply scanBound.trans
     change ordinaryOwnerScanTime 64 127 proj.rank w W data.H W.size data.records N (archive 0).length
@@ -201,6 +209,10 @@ private theorem ordinaryParent_exec [M8.Machine.Net] {common work w rows B : ℕ
     apply ownerRow_projected (R := data.records) (N := N) (W := W) rfl rfl word output c checked interval.1 interval.2 upper
       block g unit parent (fun i => Ring.inverse (parent i))
     simpa only [Fin.cast_refl,id_eq,coord] using action ⟨j,pos⟩
+  · have restored := done.1
+    change F.R ((placement ((46 : Fin 66).castAdd K)).castAdd 5) = _ at restored
+    rw [directoryOrdinaryBank_caller] at restored
+    exact restored
 
 /-- A single installed body handles every precision and every parent at this interval. -/
 theorem scheduledOrdinaryParent_exec [M8.Machine.Net] {common work : ℕ} {U : Type}
@@ -217,7 +229,7 @@ theorem scheduledOrdinaryParent_exec [M8.Machine.Net] {common work : ℕ} {U : T
       ∃ budget : ℕ, (budget : ℝ) ≤ C*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau*((prime^(w+1))^128*W : ℕ) ∧
       ∀ root (parent : Fin 64 → ZMod (prime^(w+1))), (∀ i, IsUnit (parent i)) →
         OrdinaryParentRun (common := common) (work := work+T) (rows := rows) (B := B) interval layout
-          root parent (by omega) (pool.trans (by omega)) (by omega) overhead budget localBody := by
+          root parent (by omega) (fits.trans (by omega)) (pool.trans (by omega)) (by omega) overhead budget localBody := by
   obtain ⟨T,body,C,overhead,installed⟩ := scheduledOrdinaryScan_exec (U := U) interval member space pool room fits
   refine ⟨T,body,C,overhead,?_⟩
   intro layout w rows B positive width split shape W

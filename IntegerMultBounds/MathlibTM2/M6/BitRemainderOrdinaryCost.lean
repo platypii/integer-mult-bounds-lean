@@ -131,6 +131,17 @@ noncomputable def ordinaryOwnerScanTime (m d r w W H J records N prefixWidth arc
     (init+queue+(4*rareTapes+1+rareTapes*(6*(preparePush*init)))) +
     (records*(base+12*N+16)+(((∑ i ∈ range r, (i+1)*(m+1))*records)/prime)*(rareRate*N)+4)))
 
+/-- Extra time charged to the stacks inherited from the parent. -/
+theorem ordinaryOwnerScanTime_inherited (m d r w W H J records N prefixWidth archiveSize suffixSize left
+    tapes push rareTapes rareRate preparePush overhead childBudget : ℕ) :
+    ordinaryOwnerScanTime m d r w W H J records N prefixWidth archiveSize suffixSize left
+      tapes push rareTapes rareRate preparePush overhead childBudget =
+    ordinaryOwnerScanTime m d r w W H J records N prefixWidth 0 0 0
+      tapes push rareTapes rareRate preparePush overhead childBudget +
+      (left+(1+rareTapes*(6*preparePush))*directoryQueueInitRate m d*(archiveSize+suffixSize)) := by
+  unfold ordinaryOwnerScanTime
+  ring
+
 /-- Charge the stopped ordinary row at the common prefix width of the live
 directory. Only the exceptional fraction pays for the residual permutation. -/
 theorem ordinaryDirectoryTime_le [M8.Machine.Net] {m d w W K H J B : ℕ} (U : Type)

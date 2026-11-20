@@ -635,9 +635,11 @@ counter setup, selector construction, matrix preparation and row traversal. It c
 the exceptional operation at the PR589 exceptional-label density. The parent execution in `scheduledOrdinaryParent_exec` prepends the physical
 directory setup to that scan. For every live label in each inherited block it
 returns the incoming port projector’s read equation on the packed owner word.
-Its time bound uses the archive and projector suffix lengths and the scratch
-occupancy at entry. Bounding those terms and the preparation program’s push
-bound uniformly at recursive node calls remains open.
+Its preparation charge uses the push count of the fixed directory initializer and
+the installed body. The time bound charges the two suffix lengths linearly with
+a coefficient independent of precision. On return the archive tape contains its
+incoming suffix and both stacks of each ordinary private tape are empty. The
+recursive calls still need a bound on inherited tape occupancy at entry.
 
 The semantic five-class node (S5d.3) certifies upstream's accounting under ideal routes and
 partial swaps. Its exponent `1 - 10/5769` holds under that idealization only.

@@ -710,7 +710,7 @@ theorem ownerArchiveSetup_exec [M8.Machine.Net] {m K d w W J Q : ℕ} {P U : Typ
       (∀ j : Fin 66, j.val < 58 → (embStk bank F).L (caller j) = start.L (caller j) ∧
         (embStk bank F).R (caller j) = start.R (caller j)) ∧
       (∀ j : Fin 5, F.L (Fin.natAdd (66+(K+1)) j) = S.L (Fin.natAdd (66+(K+1)) j) ∧ F.R (Fin.natAdd (66+(K+1)) j) = S.R (Fin.natAdd (66+(K+1)) j)) ∧
-      ∀ p, mnProgPush prepare ≤ p → (∀ f, mnProgPush (body f) ≤ p) →
+      ∀ p, mnProgPush (directoryQueueInitProgram (P := P) (U := U) (Q := Q) room fits) ≤ p → (∀ f, mnProgPush (body f) ≤ p) →
         t ≤ initTime + queueTime + (4*work.length+1+work.length*(6*(p*initTime))) := by
   intro placement bank start caller rs ready work initTime queueTime initial empty liveBits
   have input := initial
@@ -753,7 +753,7 @@ theorem ownerArchiveSetup_exec [M8.Machine.Net] {m K d w W J Q : ℕ} {P U : Typ
     change i.val = (66+(K+1))+j.val at h
     omega
   · intro p hp calls
-    have raw := time p (max_le_iff.mp (max_le_iff.mp hp).1).1 calls
+    have raw := time p hp calls
     have each (i) (hi : i ∈ work) : 4*(start.L i).length+2*(start.R i).length+4 = 4 := by
       have mem : 58 ≤ i.val ∧ i ≠ directoryMatrixTape room := by simpa [work] using hi
       obtain ⟨hl,hr⟩ := (directoryOrdinaryBank_clear_iff room start).1 privateBlank i mem.1 mem.2
@@ -841,7 +841,7 @@ theorem classifiedDirectory_exec [M8.Machine.Net] {m d K w W J N : ℕ} {P U : T
       let initTime := directoryQueueInitTime m d w data.H data.records (embStk bank mid)
       let queueTime := directoryMatrixQueueTime m d w data.H data.records ((embStk bank mid).R (caller 47)).length
 
-      (∀ p, mnProgPush prepare ≤ p → (∀ f, mnProgPush (body f) ≤ p) →
+      (∀ p, mnProgPush (directoryQueueInitProgram (P := P) (U := U) (Q := columnCapacity) room fits) ≤ p → (∀ f, mnProgPush (body f) ≤ p) →
         t ≤ initTime + queueTime + (4*work.length+1+work.length*(6*(p*initTime)))) ∧
       n ≤ (rs.map (fun j => 6*N+6+cost j+(4*N+4))).sum + 2*rs.length+2 + (2*(rs.length*N)+2) ∧
       Exec (fun f => embProg bank id (body f)) (controls.seq ((embProg bank id prepare).seq program)) (mk u S) (s+(t+n)) (mk z F) ∧
@@ -1193,7 +1193,7 @@ def OwnerDirectoryPass [M8.Machine.Net] {T m dim J W : ℕ} {F U : Type}
         let V := volume prime directory
         let suffix := (whole.R (caller 48)).drop (m*m*H)
         let base := directoryQueueInitRate m dim*((1+m*m)*V+archiveTail.length+suffix.length)
-        let p := max (mnProgPush prepare) c
+        let p := max (mnProgPush (directoryQueueInitProgram (P := F) (U := U) (Q := columnCapacity) archiveRoom space.writer)) c
         let prepareBound := base + ((12*m*m+4+directoryMatrixRate m dim)*V+4) +
           (4*work.length+1+work.length*(6*(p*base)))
         let advanceTime := (dim+1)*(dim+1)*(4*H+4)+1

@@ -133,7 +133,7 @@ def ClassifiedOrdinaryScan [M8.Machine.Net] {a d common work w W J : ℕ} {U : T
       let suffix := (raw.R (inner 48)).drop (m*m*data.H)
       let rarePush := max (mnProgPush (directoryExceptionalCore (P := Unit) (U := U) d room capacity)) c
       let rareRate := exceptionalVolumeRate U d m work.length rarePush w
-      (∀ p, mnProgPush prepare ≤ p → (∀ f, mnProgPush (body f) ≤ p) → (prefixes 0).length ≤ N →
+      (∀ p, mnProgPush (directoryQueueInitProgram (P := Unit) (U := U) (Q := columnCapacity) room fits) ≤ p → (∀ f, mnProgPush (body f) ≤ p) → (prefixes 0).length ≤ N →
         k+(s+(t+n)) ≤ ordinaryOwnerScanTime m d proj.rank w W data.H J data.records N
           (prefixes 0).length archiveTail.length suffix.length left scratch.length push work.length rareRate p overhead childBudget) ∧
       Exec (fun f => embProg bank id (body f)) ((payloadCountProgram (ownerCountPorts (K+1)) (d+1)).seq (controls.seq ((embProg bank id prepare).seq program))) (mk u S) (k+(s+(t+n))) (mk z F) ∧
