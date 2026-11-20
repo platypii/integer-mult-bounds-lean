@@ -199,6 +199,186 @@ theorem ordinaryClock_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime
   rw [endPop] at pop
   exact ⟨z,t+1,user,by omega,Exec.seq decode pop⟩
 
+/-- Widen the cutoff once against the root width header. The same operand
+then fits every child encountered along a scheduled path. -/
+theorem ordinaryRootCutoff_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
+    (r : Fin 5 ↪ Fin T) (root : RecursiveInterchangeLayout.Descriptor) (cutoff : ℕ)
+    (within : cutoff ≤ root.width) (u : HS T Q prime U) (S : Stacks T prime)
+    (word : S.R (r 0) = binSyms cutoff.size cutoff)
+    (header : (S.R (r 1)).length = root.width.size) (fresh : ∀ j : Fin 5, 2 ≤ j.val → S.R (r j) = []) :
+    let L := root.width.size
+    ∃ z, z.user = u.user ∧
+      Exec body (bwiden (r 0) (r 1) (r 2) (r 3) (r 4)) (mk u S) (12*L+18)
+        (mk z {S with R := Function.update S.R (r 0) (binSyms L cutoff)}) ∧
+      cutoff < 2^L ∧ ∀ path : List (Fin nodeChildren5.length),
+        (path.foldl (scheduledChild prime) root).width.size ≤ L := by
+  intro L
+  obtain ⟨z,user,run⟩ := bwiden_exec (body := body) (a := r 0) (wR := r 1) (cnt := r 2)
+    (t₁ := r 3) (t₂ := r 4) (by simp) (Nat.size_le_size within) (Nat.lt_size_self cutoff) u S word header
+    (fresh 2 (by decide)) (fresh 3 (by decide)) (fresh 4 (by decide))
+  refine ⟨z,user,run,within.trans_lt (Nat.lt_size_self _),fun path => ?_⟩
+  have bound := directoryDigits_bound prime root path
+  apply Nat.size_le_size
+  omega
+
+/-- The shared root precision is short enough even at the last active parent:
+writing the child's width and testing the cutoff together cost one volume term. -/
+theorem ordinaryChildComparison_volume_le (root : RecursiveInterchangeLayout.Descriptor)
+    (depth b cutoff rank w W : ℕ) (levels : 0 < depth) (base : 0 < b)
+    (width : root.width = 64^depth*b) (stop : 42^depth*b ≤ cutoff)
+    (active : cutoff ≤ 64*(w+1)) (fits : rank ≤ 64) (live : 0 < W) :
+    let L := root.width.size
+    let M := prime^(w+1)
+    4*w+23*((w+1)*rank)+22*L+51 ≤ 2940*(M^128*W) := by
+  intro L M
+  have room := alignedRootWidth_le root depth b cutoff levels base width stop
+  have pos : 0 < root.width := width ▸ Nat.mul_pos (by positivity) base
+  have bits : L ≤ cutoff := Nat.size_le.mpr (by omega)
+  have rankWidth := Nat.mul_le_mul_left (w+1) fits
+  have atom : w+1 ≤ M := (Nat.lt_two_pow_self (n := w+1)).le.trans
+    (Nat.pow_le_pow_left Shared50ModularControl.prime_prime.two_le _)
+  have vol : w+1 ≤ M^128*W := atom.trans ((Nat.le_self_pow (by decide : 128 ≠ 0) M).trans
+    (Nat.le_mul_of_pos_right _ live))
+  omega
+
+/-- Turn the parent's predecessor clock into the child's binary width. The
+cutoff register sets the padding. Only the comparison operand survives. -/
+theorem ordinaryChildWidth_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
+    (r : Fin 10 ↪ Fin T) (rank w L : ℕ) (fits : ((w+1)*rank).size ≤ L)
+    (u : HS T Q prime U) (S : Stacks T prime) (clock : (S.R (r 0)).length = w)
+    (precision : (S.R (r 1)).length = L) (empty : ∀ j : Fin 10, 2 ≤ j.val → S.R (r j) = []) :
+    let width := (w+1)*rank
+    let push := Prog.act (.push (.rt (r 0)) (fun _ => Node.tick) .done)
+    let pop := Prog.act (.pop (.rt (r 0)) (fun v _ => v) .done)
+    ∃ z n, z.user = u.user ∧ n ≤ 4*w+23*width+12*L+40 ∧
+      Exec body (((push.seq (Node.umul rank (r 0) (r 2) (r 4))).seq pop).seq
+        ((unaryBinaryWidth (r 2) (r 1) (r 3) (r 4) (r 5) (r 6) (r 7) (r 8) (r 9)).seq (bclear (r 2))))
+        (mk u S) n (mk z {S with R := Function.update S.R (r 3) (binSyms L width)}) := by
+  intro width push pop
+  let A : Stacks T prime := {S with R := Function.update S.R (r 0) (Node.tick :: S.R (r 0))}
+  have start : Exec body push (mk u S) 1 (mk u A) := by
+    apply (Exec.act (body := body) (.push (.rt (r 0)) (fun _ => Node.tick) .done) (mk u S)).cast rfl
+    simp [A,Action.run,update_rt]
+  obtain ⟨v,user,multiply⟩ := Node.umul_exec (body := body) rank (a := r 0) (b := r 2) (t := r 4)
+    (by simp) (by simp) (by simp) u A (by simpa [A] using empty 4 (by decide))
+  have count : (A.R (r 0)).length = w+1 := by simp [A,clock]
+  rw [count,show A.R (r 2) = [] by simpa [A] using empty 2 (by decide),List.append_nil,Nat.mul_comm rank] at multiply
+  let B : Stacks T prime := {S with R := Function.update S.R (r 2) (List.replicate width Node.tick)}
+  have restore : Exec body pop (mk v {A with R := Function.update A.R (r 2) (List.replicate width Node.tick)}) 1 (mk v B) := by
+    apply (Exec.act (body := body) (.pop (.rt (r 0)) (fun v _ => v) .done : Act T Q prime U)
+      (mk v {A with R := Function.update A.R (r 2) (List.replicate width Node.tick)})).cast rfl
+    simp [Action.run,A,B,update_rt,Function.update_comm (show r 2 ≠ r 0 by simp)]
+  have free (j : Fin 10) (hj : 3 ≤ j.val) : B.R (r j) = [] := by
+    have ne : j ≠ 2 := fun eq => by subst j; contradiction
+    simpa [B,Function.update_of_ne (r.injective.ne ne)] using empty j (by omega)
+  obtain ⟨y,t,same,cost,binary⟩ := unaryBinaryWidth_exec (body := body) (src := r 2) (width := r 1) (dst := r 3)
+    (a := r 4) (h := r 5) (par := r 6) (bits := r 7) (cnt := r 8) (saved := r 9) (by simp)
+    width L fits v B (by simp [B]) (by simpa [B] using precision) (by
+      intro k hk
+      simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
+      rcases hk with rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> exact free _ (by decide))
+  let D : Stacks T prime := {B with R := Function.update B.R (r 3) (binSyms L width)}
+  obtain ⟨z,final,_,erase⟩ := bclear_exec (body := body) (r 2) y D
+  have len : (D.R (r 2)).length = width := by simp [D,B]
+  rw [len] at erase
+  refine ⟨z,_,final.trans (same.trans user),?_,(Exec.seq (Exec.seq (Exec.seq start multiply) restore)
+    (Exec.seq binary erase)).cast rfl ?_⟩
+  · omega
+  · have reset : Function.update S.R (r 2) [] = S.R := by
+      rw [← empty 2 (by decide),Function.update_eq_self]
+    simp [D,B,Function.update_comm (show r 3 ≠ r 2 by simp),reset]
+
+/-- Compare from the live predecessor clock and restore the full stack bank
+before either child branch starts. The comparison bit survives cleanup. -/
+noncomputable def ordinaryCutoffTest {T Q : ℕ} {P U : Type} (r : Fin 10 ↪ Fin T) (rank : ℕ) : Pr P T Q prime U :=
+  let push := Prog.act (.push (.rt (r 0)) (fun _ => Node.tick) .done)
+  let pop := Prog.act (.pop (.rt (r 0)) (fun v _ => v) .done)
+  let width := ((push.seq (Node.umul rank (r 0) (r 2) (r 4))).seq pop).seq
+    ((unaryBinaryWidth (r 2) (r 1) (r 3) (r 4) (r 5) (r 6) (r 7) (r 8) (r 9)).seq (bclear (r 2)))
+  width.seq ((blt (r 1) (r 3) (r 4) (r 5) (r 6) (r 7)).seq (bclear (r 3)))
+
+theorem ordinaryCutoffTest_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
+    (r : Fin 10 ↪ Fin T) (rank w L cutoff : ℕ) (cutFits : cutoff < 2^L) (fits : ((w+1)*rank).size ≤ L)
+    (u : HS T Q prime U) (S : Stacks T prime) (clock : (S.R (r 0)).length = w)
+    (word : S.R (r 1) = binSyms L cutoff) (empty : ∀ j : Fin 10, 2 ≤ j.val → S.R (r j) = []) :
+    ∃ z n, z.user = u.user ∧ z.scan (r 7) = bitSymbol (decide (cutoff < (w+1)*rank)) ∧
+      n ≤ 4*w+23*((w+1)*rank)+22*L+50 ∧ Exec body (ordinaryCutoffTest r rank) (mk u S) n (mk z S) := by
+  let width := (w+1)*rank
+  obtain ⟨v,t,user,cost,prepare⟩ := ordinaryChildWidth_exec body r rank w L fits u S clock
+    (word ▸ length_binSyms ..) empty
+  let D : Stacks T prime := {S with R := Function.update S.R (r 3) (binSyms L width)}
+  obtain ⟨y,same,flag,_,compare⟩ := blt_exec body (a := r 1) (b := r 3) (tx := r 4) (ty := r 5)
+    (tz := r 6) (cy := r 7) (by simp) (by simp) (by simp) cutFits (Nat.size_le.mp fits) v D
+    (by simpa [D] using word) (by simp [D,width]) (by simpa [D] using empty 4 (by decide))
+    (by simpa [D] using empty 5 (by decide)) (by simpa [D] using empty 6 (by decide))
+  obtain ⟨z,final,slots,erase⟩ := bclear_exec (body := body) (r 3) y D
+  have len : (D.R (r 3)).length = L := by simp [D]
+  rw [len] at erase
+  have reset : Function.update S.R (r 3) [] = S.R := by rw [← empty 3 (by decide),Function.update_eq_self]
+  refine ⟨z,_,final.trans (same.trans user),(congrFun slots _).trans flag,?_,(Exec.seq prepare
+    (Exec.seq compare erase)).cast rfl ?_⟩
+  · omega
+  · simp [D,reset]
+
+local instance (w : ℕ) : NeZero (prime^(w+1)) := ⟨(pow_pos Shared50ModularControl.prime_prime.pos _).ne'⟩
+
+open Fallback RecursiveInterchangeLayout in
+/-- Read the predecessor clock and compare the child width with the cutoff. Equality executes the stopped exchange. -/
+theorem ordinaryChildDispatch_exec [M8.Machine.Net] {P U : Type} {T : ℕ}
+    (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T) (body : P → Pr P T columnCapacity prime U) (cmp : Fin 10 ↪ Fin T) :
+    ∃ C : ℕ, ∀ r g, r+g = 64 → 0 < r → 0 < g → ∀ w W, 0 < W →
+      let d := (r+g)+(r+g)
+      let M := prime^(w+1)
+      let is := ordinaryChildPackSchedule r g
+      let routeTime := (is.map (fun i => completeSwapTime (P := Empty) (U := U) Empty.elim d i (i+1) w W M.size W.size)).sum+1
+      let bank := ((Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)).trans ports
+      let pass := fun js => statePlacedNormalized ports swapStates_fit swapStates_pos Empty.elim (packSchedule d js)
+      let clean := fun (S : Stacks T prime) => ∀ k : Fin (rowSwapBlock.tapes+35), 35 ≤ k.val → S.L (ports k) = [] ∧ S.R (ports k) = []
+      ∀ (v : HS T columnCapacity prime U) (S : Stacks T prime)
+        (record : List (Fin (prime+4))) (dest : ℤ → Fin 4) (q : ℤ)
+        (original : Fin (M^d*W) → ZMod 2)
+        (input : (Fin d → ZMod M) → IntegerMultBounds.Swap.Shear.State (Fin (r+g)) (ZMod M))
+        (f : P) (budget cutoff L : ℕ),
+      let saved := fun D : Stacks T prime => ∀ j, (∀ i, ports i ≠ j) → D.L j = S.L j ∧ D.R j = S.R j
+      let desc := ordinaryChildDescriptor r g w W
+      let onTape := fun (word : Fin (volume prime desc) → ZMod 2) (D : Stacks T prime) =>
+        ∀ z, readAt blank (D.L (bank 24)) (D.R (bank 24)) z = M8.Machine.ArbitraryWidthHighExchangeShared.sourceWord word z
+      let columns := ColumnRecordReady bank M.size W.size record SparseRoleCircuit.encode (fun _ => blank) dest 0 q
+      cutoff < 2^L → desc.width.size ≤ L →
+      (S.R (cmp 0)).length = w → S.R (cmp 1) = binSyms L cutoff →
+      (∀ j : Fin 10, 2 ≤ j.val → S.R (cmp j) = []) →
+      (cutoff < desc.width → desc.width < (r+g)*(w+1) → ∀ word u D, onTape word D → clean D → saved D → ∃ y G t, y.user = u.user ∧ t ≤ budget ∧
+        Exec body (body f) (mk u D) t (mk y G) ∧
+        onTape (Shared50RecursiveNodeRows.transpose (one_dvd desc.rows) word) G ∧
+        (∀ j : Fin 35, j ≠ 24 → G.L (bank j) = D.L (bank j) ∧ G.R (bank j) = D.R (bank j)) ∧ clean G ∧ saved G) →
+      columns original (fun x => Fin.append (input x).1 (input x).2) S → clean S → ∃ z F n, z.user = v.user ∧
+        n ≤ 4*w+23*desc.width+22*L+51+(if cutoff < desc.width then budget+2+2*(1+routeTime) else C*(desc.width*(M^d*W))) ∧
+        Exec body (.seq (ordinaryCutoffTest cmp r)
+          (.cond (fun u => symBit (u.scan (cmp 7))) (.seq (pass is) (.seq (.call f) (pass is.reverse)))
+            (pass (stoppedParentSchedule r g)))) (mk v S) n (mk z F) ∧
+        columns original (fun x => let t := Cover.Weighted.child r (fun _ => 1) (fun _ => 1) (input x)
+                                   Fin.append t.1 t.2) F ∧ clean F ∧ saved F := by
+  obtain ⟨C,stopped⟩ := stoppedOrdinaryChild_exec ports body
+  refine ⟨C,?_⟩
+  intro r g split rankPos gap w W hW d M is routeTime bank pass clean v S record dest q original input f budget cutoff L
+    saved desc onTape columns cutFits widthFits clock cutWord empty recurse start free
+  obtain ⟨u,m,user,flag,testCost,compare⟩ := ordinaryCutoffTest_exec body cmp r w L cutoff cutFits widthFits
+    v S clock cutWord empty
+  change u.scan (cmp 7) = bitSymbol (decide (cutoff < desc.width)) at flag
+  change m ≤ 4*w+23*desc.width+22*L+50 at testCost
+  by_cases active : cutoff < desc.width
+  · obtain ⟨z,F,n,hu,cost,run,done,clear,kept⟩ := ordinaryChildRoute_exec ports body r g gap w W hW
+      u S record dest q original input f budget (recurse active) start free
+    refine ⟨z,F,_,hu.trans user,?_,Exec.seq compare (Exec.cond_true (by simp [mk_var,flag,active]) run),done,clear,kept⟩
+    rw [ite_eq_left active]
+    change n ≤ budget+2+2*(1+routeTime) at cost
+    omega
+  · obtain ⟨z,F,n,hu,cost,run,done,clear,kept⟩ := stopped r g split rankPos w W hW u S record dest q original input start free
+    refine ⟨z,F,_,hu.trans user,?_,Exec.seq compare (Exec.cond_false (by simp [mk_var,flag,active]) run),done,clear,kept⟩
+    rw [ite_eq_right active]
+    change n ≤ C*(desc.width*(M^d*W)) at cost
+    omega
+
 /-- Multiply the decoded spectator factors and encode their product in the
 minimal binary width expected on scanner tape 53. -/
 theorem ordinarySpectatorWord_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
