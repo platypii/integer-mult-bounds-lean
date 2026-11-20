@@ -103,6 +103,26 @@ theorem rankDescriptor_volume (v : RecursiveInterchangeLayout.Descriptor) (width
   ring
 
 omit [NeZero M] in
+/-- Splitting the rows among roles and retaining the active atoms gives the
+width ratio and volume weight of the same recursive descriptor. -/
+theorem rankDescriptor_role_size (v : RecursiveInterchangeLayout.Descriptor)
+    (roles atoms b : ℕ) (width : v.width = atoms*b) (fits : r ≤ atoms)
+    (divides : roles ∣ v.rows) :
+    let child := rankDescriptor M (r*b) ((atoms-r)*b) (RecursiveInterchangeLayout.role v roles)
+    child.width*atoms = r*v.width ∧
+      RecursiveInterchangeLayout.volume M child*roles = RecursiveInterchangeLayout.volume M v := by
+  intro child
+  constructor
+  · change r*b*atoms = r*v.width
+    rw [width]
+    ring
+  · have split : (RecursiveInterchangeLayout.role v roles).width = r*b+(atoms-r)*b := by
+      change v.width = _
+      rw [width, ← Nat.add_mul, Nat.add_sub_of_le fits]
+    exact (congrArg (· * roles) (rankDescriptor_volume _ split)).trans
+      (RecursiveInterchangeLayout.role_volume_mul M roles v divides)
+
+omit [NeZero M] in
 /-- Along a chain of recursive calls the gaps accumulate on both sides of the
 same inherited middle field. -/
 theorem rankDescriptor_chain (v : RecursiveInterchangeLayout.Descriptor) (gaps : List ℕ) :

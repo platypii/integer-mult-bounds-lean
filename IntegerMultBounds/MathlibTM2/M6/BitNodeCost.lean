@@ -147,7 +147,6 @@ theorem five_variable_closed {Node : Type*}
     (hτ : 0 ≤ τ) (hτl : τ ≤ lam) (hlam : 1 - bitSaving < lam) (hK : 1 ≤ K)
     (hC₀ : 0 ≤ C₀) (hC₁ : 0 ≤ C₁) (hu : 1 ≤ u)
     (hleaf : ∀ x, size x ≤ u → cost x ≤ C₀ * size x)
-    (hdecrease : ∀ x, u < size x → ∀ i, size (child x i) < size x)
     (hsize : ∀ x, u < size x → ∀ i,
       (size (child x i) : ℝ) ≤ ((nodeChildren5[i.1] : ℝ) / 64) * (size x : ℝ))
     (hcost : ∀ x, u < size x →
@@ -160,7 +159,7 @@ theorem five_variable_closed {Node : Type*}
     (fun _ i => nodeChildren5[i.1]) (fun _ _ => 1 / (142080 : ℝ)) cost u (m := 64) (R := 42)
     (by norm_num) (by norm_num) (by norm_num) hτ hτl (by rw [ha]; norm_num)
     (by rw [ha]; norm_num) hlam hK hC₀ hC₁ hu (fun _ _ => by norm_num)
-    (fun _ _ i => by exact_mod_cast nodeChildren5_le i) hleaf hdecrease hsize hcost
+    (fun _ _ i => by exact_mod_cast nodeChildren5_le i) hleaf hsize hcost
     (fun _ _ => five_moment_le_one)
 
 /-- **The five-class node under upstream's idealization**, as one result. Frame changes are ideal

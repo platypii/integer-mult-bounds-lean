@@ -13,7 +13,7 @@ this list: at every `λ > 1 - a`, `a = 10/5769`, the cost is `O(K^τ e^λ)` plus
 The moment is the selected bit bill `BitOccurrences.nine_moment_le`, with its nonnegative
 surcharge dropped.
 
-The execution premises `hdecrease`, `hsize` and `hcost` describe the hosted interchange machine;
+The execution premises `hsize` and `hcost` describe the hosted interchange machine;
 they are hypotheses here, as in `VariableRecurrence.t16_variable_closed`.
 -/
 
@@ -53,7 +53,6 @@ theorem bit_variable_closed {Node : Type*}
     (hτ : 0 ≤ τ) (hτl : τ ≤ lam) (hlam : 1 - bitSaving < lam) (hK : 1 ≤ K)
     (hC₀ : 0 ≤ C₀) (hC₁ : 0 ≤ C₁) (hu : 1 ≤ u)
     (hleaf : ∀ x, size x ≤ u → cost x ≤ C₀ * size x)
-    (hdecrease : ∀ x, u < size x → ∀ i, size (child x i) < size x)
     (hsize : ∀ x, u < size x → ∀ i,
       (size (child x i) : ℝ) ≤ ((nineRanks[i.1] : ℝ) / 64) * (size x : ℝ))
     (hcost : ∀ x, u < size x →
@@ -66,7 +65,7 @@ theorem bit_variable_closed {Node : Type*}
     (fun _ i => nineRanks[i.1]) (fun _ _ => 1 / (28416 : ℝ)) cost u (m := 64) (R := 42)
     (by norm_num) (by norm_num) (by norm_num) hτ hτl (by rw [ha]; norm_num)
     (by rw [ha]; norm_num) hlam hK hC₀ hC₁ hu (fun _ _ => by norm_num)
-    (fun _ _ i => by exact_mod_cast nineRanks_le i) hleaf hdecrease hsize hcost
+    (fun _ _ i => by exact_mod_cast nineRanks_le i) hleaf hsize hcost
     (fun _ _ => nine_moment_le_one)
 
 end IntegerMultBounds.MathlibTM2.M6.BitRecurrence

@@ -190,7 +190,6 @@ theorem variable_closed_of_rank {Node : Type*}
     (hweight : ∀ x i, 0 ≤ weight x i)
     (hrank : ∀ x, u < size x → ∀ i, (rank x i : ℝ) ≤ R)
     (hleaf : ∀ x, size x ≤ u → cost x ≤ C₀ * size x)
-    (hdecrease : ∀ x, u < size x → ∀ i, size (child x i) < size x)
     (hsize : ∀ x, u < size x → ∀ i,
       (size (child x i) : ℝ) ≤ ((rank x i : ℝ) / m) * (size x : ℝ))
     (hcost : ∀ x, u < size x →
@@ -200,8 +199,12 @@ theorem variable_closed_of_rank {Node : Type*}
       C₀ * (size x : ℝ) ^ σ * (u : ℝ) ^ (1 - σ) := by
   have hq : (R / m) ^ (lam - σ) < 1 :=
     Real.rpow_lt_one (div_nonneg hR hm.le) ((div_lt_one hm).2 hRm) (by linarith)
+  have decrease (x) (hx : u < size x) (i) : size (child x i) < size x := by
+    have pos : (0 : ℝ) < size x := by exact_mod_cast (Nat.zero_lt_of_lt hx)
+    have ratio := (div_lt_one hm).2 ((hrank x hx i).trans_lt hRm)
+    exact_mod_cast (hsize x hx i).trans_lt (mul_lt_of_lt_one_left pos ratio)
   exact variable_closed size arity child rank weight cost u hm hτ hτl hσ hσ1 hK hC₀ hC₁ hq hu
-    hweight hleaf hdecrease hsize hcost
+    hweight hleaf decrease hsize hcost
     (fun x hx => (moment_lam_lt_one (rank x) (weight x) hm hR hRm hσ hσl (hweight x)
       (hrank x hx) (hmom x hx)).1)
     hmom
@@ -224,14 +227,13 @@ theorem t16Ranks_le (i : Fin t16Ranks.length) : t16Ranks[i.1] ≤ 48 := by
 T16 occurrence, of size at most `rank/73` of the parent and weight `1/14336`, with per-node
 overhead `C₁ ((K e)^τ + 1)` and leaf cost `C₀ e`, costs at most
 `C (K^τ e^λ) + C₀ e^(1-a) u^a` at every `λ > 1 - a`, `a = 7/4178`. The execution premises
-(`hdecrease`, `hsize`, `hcost`) are the open hosting obligations of the selected supplier. -/
+(`hsize`, `hcost`) are the open hosting obligations of the selected supplier. -/
 theorem t16_variable_closed {Node : Type*}
     (size : Node → ℕ) (child : Node → Fin t16Ranks.length → Node)
     (cost : Node → ℝ) (u : ℕ) {τ lam K C₀ C₁ : ℝ}
     (hτ : 0 ≤ τ) (hτl : τ ≤ lam) (hlam : 1 - complexSaving < lam) (hK : 1 ≤ K)
     (hC₀ : 0 ≤ C₀) (hC₁ : 0 ≤ C₁) (hu : 1 ≤ u)
     (hleaf : ∀ x, size x ≤ u → cost x ≤ C₀ * size x)
-    (hdecrease : ∀ x, u < size x → ∀ i, size (child x i) < size x)
     (hsize : ∀ x, u < size x → ∀ i,
       (size (child x i) : ℝ) ≤ ((t16Ranks[i.1] : ℝ) / 73) * (size x : ℝ))
     (hcost : ∀ x, u < size x →
@@ -245,7 +247,7 @@ theorem t16_variable_closed {Node : Type*}
     (fun _ i => t16Ranks[i.1]) (fun _ _ => 1 / (14336 : ℝ)) cost u (m := 73) (R := 48)
     (by norm_num) (by norm_num) (by norm_num) hτ hτl (by rw [ha]; norm_num)
     (by rw [ha]; norm_num) hlam hK hC₀ hC₁ hu (fun _ _ => by norm_num)
-    (fun _ _ i => by exact_mod_cast t16Ranks_le i) hleaf hdecrease hsize hcost
+    (fun _ _ i => by exact_mod_cast t16Ranks_le i) hleaf hsize hcost
     (fun _ _ => t16_occurrence_moment_le)
 
 end T16
