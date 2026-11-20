@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.M6.BitRouteFactors
+public import IntegerMultBounds.MathlibTM2.M6.BitRouteRun
 public import IntegerMultBounds.MathlibTM2.M6.BitCopyChildLayout
 public import IntegerMultBounds.MathlibTM2.M8.Machine.ArbitraryWidthOriginalTotalRun
 
@@ -103,23 +103,29 @@ theorem remainderExchange_line (c : PortCertificate) (hc : c.Checked) (lo hi : �
 
 open IntegerMultBounds.Swap.Modular
 
-/-- Projecting the reduced parent exchange onto its port flag exchanges the
+/-- Projecting the reduced parent exchange onto its full port chart exchanges the
 same interval on arbitrary modular digits, at every tape width. -/
-theorem remainderExchange_modular (c : PortCertificate) (hc : c.Checked) (lo hi w : ℕ)
+theorem remainderExchange_chart (c : PortCertificate) (hc : c.Checked) (lo hi w : ℕ)
     (x : IntegerMultBounds.Swap.Shear.State Axis (ZMod (prime^w))) :
-    let F := reduce (prime^w) c.flag
+    let F := reduce (prime^w) c.fullChart
     let S := reduce (prime^w) (c.span lo hi)
     let y := M8.Exchange.exchange S x
     ∀ p, ((Fᵀ *ᵥ y.1) p, (Fᵀ *ᵥ y.2) p) =
-      if lo ≤ pendingIndex p ∧ pendingIndex p < hi then ((Fᵀ *ᵥ x.2) p, (Fᵀ *ᵥ x.1) p)
+      if lo < chartIndex p ∧ chartIndex p ≤ hi then ((Fᵀ *ᵥ x.2) p, (Fᵀ *ᵥ x.1) p)
       else ((Fᵀ *ᵥ x.1) p, (Fᵀ *ᵥ x.2) p) := by
   intro F S y p
   let m := prime^w
-  have flag : Admissible m c.flag := by
+  have chart : Admissible m c.fullChart := by
     intro i j
-    have bound : (c.flag i j).den ≤ 2 := (fullChart_entry c hc i (.inr j)).2
-    exact Nat.Coprime.pow_right w ((Nat.coprime_of_lt_prime (c.flag i j).den_pos.ne'
+    have bound := (fullChart_entry c hc i j).2
+    exact Nat.Coprime.pow_right w ((Nat.coprime_of_lt_prime (c.fullChart i j).den_pos.ne'
       (bound.trans_lt Shared50ModularControl.prime_odd) Shared50ModularControl.prime_prime).symm)
+  have flag : Admissible m c.flag := fun i j => chart i (.inr j)
+  let J := reduce m c.flag
+  have chartT : Admissible m c.fullChartᵀ := fun i j => chart j i
+  have orth : Fᵀ * F = 1 := by
+    change reduce m c.fullChartᵀ * reduce m c.fullChart = 1
+    rw [← reduce_mul m chartT chart, c.fullChart_orthonormal hc, reduce_one]
   let D : Matrix Pending Pending (ZMod m) := diagonal fun j =>
     if lo ≤ pendingIndex j ∧ pendingIndex j < hi then 1 else 0
   have sel : Admissible m (interval lo hi) := by
@@ -131,21 +137,136 @@ theorem remainderExchange_modular (c : PortCertificate) (hc : c.Checked) (lo hi 
     simp only [reduce, Matrix.map_apply, interval, D, diagonal_apply]
     split_ifs <;> simp [ratMod_zero,ratMod_one]
   have transposed : Admissible m c.flagᵀ := fun i j => flag j i
-  have orth : Fᵀ * F = 1 := by
-    change reduce m c.flagᵀ * reduce m c.flag = 1
-    rw [← reduce_mul m transposed flag, c.flag_orthonormal hc, reduce_one]
-  have span : S = F * D * Fᵀ := by
+  have span : S = J * D * Jᵀ := by
     change reduce m (c.flag * interval lo hi * c.flagᵀ) = _
     rw [reduce_mul m (admissible_mul m flag sel) transposed,
       reduce_mul m flag sel, reduced]
     rfl
-  have commute : Fᵀ * S = D * Fᵀ := by
-    rw [span, ← Matrix.mul_assoc, ← Matrix.mul_assoc, orth, Matrix.one_mul]
-  have read (v : Axis → ZMod m) : Fᵀ *ᵥ (S *ᵥ v) = D *ᵥ (Fᵀ *ᵥ v) := by
-    rw [Matrix.mulVec_mulVec, commute, Matrix.mulVec_mulVec]
-  by_cases active : lo ≤ pendingIndex p ∧ pendingIndex p < hi <;>
+  have read (v : Axis → ZMod m) :
+      (Fᵀ *ᵥ (S *ᵥ v)) p = if lo < chartIndex p ∧ chartIndex p ≤ hi
+        then (Fᵀ *ᵥ v) p else 0 := by
+    have cols (i j) : (Fᵀ * J) i j = (1 : Matrix ChartAxis ChartAxis (ZMod m)) i (.inr j) :=
+      congrFun (congrFun orth i) (.inr j)
+    rw [span, ← Matrix.mulVec_mulVec, ← Matrix.mulVec_mulVec, Matrix.mulVec_mulVec _ Fᵀ]
+    cases p with
+    | inl k => simp [Matrix.mulVec, dotProduct, cols, Matrix.one_apply,chartIndex]
+    | inr j =>
+      simp only [Matrix.mulVec, dotProduct, cols, Matrix.one_apply, Sum.inr.injEq,
+        ite_mul, one_mul, zero_mul, Finset.sum_ite_eq, Finset.mem_univ, if_true]
+      change (D *ᵥ (Jᵀ *ᵥ v)) j = _
+      rw [Matrix.mulVec_diagonal]
+      by_cases active : lo ≤ pendingIndex j ∧ pendingIndex j < hi
+      · have h : lo < chartIndex (.inr j) ∧ chartIndex (.inr j) ≤ hi := by simp [chartIndex]; omega
+        simp only [D,active,h,and_self,if_true,one_mul]
+        rfl
+      · have h : ¬(lo < chartIndex (.inr j) ∧ chartIndex (.inr j) ≤ hi) := by simp [chartIndex]; omega
+        simp only [D,active,h,if_false,zero_mul]
+  by_cases active : lo < chartIndex p ∧ chartIndex p ≤ hi <;>
     simp [y,M8.Exchange.exchange,Matrix.sub_mulVec,Matrix.mulVec_add,Matrix.mulVec_sub,
-      read,D,-Matrix.mulVec_mulVec,Matrix.mulVec_diagonal,active]
+      -Matrix.mulVec_mulVec,read,active]
+
+/-- Projecting the reduced parent exchange onto its port flag exchanges the
+same interval on arbitrary modular digits, at every tape width. -/
+theorem remainderExchange_modular (c : PortCertificate) (hc : c.Checked) (lo hi w : ℕ)
+    (x : IntegerMultBounds.Swap.Shear.State Axis (ZMod (prime^w))) :
+    let F := reduce (prime^w) c.flag
+    let S := reduce (prime^w) (c.span lo hi)
+    let y := M8.Exchange.exchange S x
+    ∀ p, ((Fᵀ *ᵥ y.1) p, (Fᵀ *ᵥ y.2) p) =
+      if lo ≤ pendingIndex p ∧ pendingIndex p < hi then ((Fᵀ *ᵥ x.2) p, (Fᵀ *ᵥ x.1) p)
+      else ((Fᵀ *ᵥ x.1) p, (Fᵀ *ᵥ x.2) p) := by
+  intro F S y p
+  have eq (v : Axis → ZMod (prime^w)) :
+      (((reduce (prime^w) c.fullChart)ᵀ) *ᵥ v) (.inr p) = (Fᵀ *ᵥ v) p := rfl
+  have bounds : (lo < chartIndex (.inr p) ∧ chartIndex (.inr p) ≤ hi) ↔
+      lo ≤ pendingIndex p ∧ pendingIndex p < hi := by simp only [chartIndex]; omega
+  simpa only [bounds,eq] using remainderExchange_chart c hc lo hi w x (.inr p)
+
+/-- Descriptor order places the 63 pending digits first and the line last. -/
+def remainderAxis : Fin 64 ≃ ChartAxis where
+  toFun i := if h : i.val < 63 then .inr (pendingAt ⟨i.val,h⟩) else .inl 0
+  invFun := Sum.elim (fun _ => 63) (fun p => ⟨pendingIndex p, by
+    have := chartIndex_lt (.inr p)
+    simp only [chartIndex] at this
+    omega⟩)
+  left_inv i := by
+    by_cases h : i.val < 63
+    · apply Fin.ext
+      simp [h,pendingIndex_pendingAt]
+    · apply Fin.ext
+      have := i.isLt
+      simp [h,show i.val = 63 by omega]
+  right_inv a := by
+    cases a with
+    | inl j => simp [Subsingleton.elim j 0]
+    | inr p =>
+      have bound := chartIndex_lt (.inr p)
+      simp only [chartIndex] at bound
+      have h : pendingIndex p < 63 := by omega
+      change (if h : pendingIndex p < 63 then Sum.inr (pendingAt ⟨pendingIndex p,h⟩) else Sum.inl 0) = Sum.inr p
+      rw [dif_pos h, Sum.inr.injEq]
+      apply pendingIndex_injective
+      exact pendingIndex_pendingAt _
+
+/-- In the tape descriptor's digit order the modular action is the literal
+half-open interval exchange, including its behavior at the final line digit. -/
+theorem remainderExchange_tapeDigits (c : PortCertificate) (hc : c.Checked)
+    (lo hi w : ℕ) (fits : hi ≤ 63) (x : IntegerMultBounds.Swap.Shear.State Axis (ZMod (prime^w))) :
+    let read := fun (v : Axis → ZMod (prime^w)) (i : Fin 64) =>
+      ((reduce (prime^w) c.fullChart)ᵀ *ᵥ v) (remainderAxis i)
+    let y := M8.Exchange.exchange (reduce (prime^w) (c.span lo hi)) x
+    ∀ i, (read y.1 i, read y.2 i) =
+      if lo ≤ i.val ∧ i.val < hi then (read x.2 i,read x.1 i) else (read x.1 i,read x.2 i) := by
+  intro read y i
+  have bounds : (lo < chartIndex (remainderAxis i) ∧ chartIndex (remainderAxis i) ≤ hi) ↔
+      lo ≤ i.val ∧ i.val < hi := by
+    by_cases h : i.val < 63 <;> simp [remainderAxis,h,chartIndex,pendingIndex_pendingAt] <;> omega
+  simpa only [bounds] using remainderExchange_chart c hc lo hi w x (remainderAxis i)
+
+open IntegerMultBounds.MathlibTM2.Cover IntegerMultBounds.MathlibTM2.M8.RevMachine
+open M8.Stage2Machine.Straight (words)
+open ActualAffineScaling (modulus)
+open SharedPlacementAlphabet (setTape)
+
+/-- Physically change the cover matrix labels into or out of the idle port's
+pending-first coordinate order on the chosen owner tape. -/
+theorem remainderChart_runs [M8.Machine.Net] {T : ℕ} (io : Fin T) (c : PortCertificate)
+    (hc : c.Checked) (inverse : Bool) :
+    let H := c.fullChart.submatrix stageAxis.symm remainderAxis
+    let σ := if inverse then H.transpose else H
+    ∃ (program : Graph.Block (T+24) prime) (C : ℕ), Blocks.Leading program ∧
+      ∀ (v : Descriptor) (w B : ℕ), 0 < w → 0 < B →
+      v.beforeH = B*prime^(64*(w*64)) → v.Positive →
+      ∀ (roles : Tapes T prime) (x : Fin (volume prime v) → ZMod 2),
+        roles.head io = 0 → roles.tape io = sourceWord x →
+        let d := words (LabelSchedule.base v w)
+        ∃ y : Fin (volume prime v) → ZMod 2,
+          LabelPermutation.Transport v B w (fun g => g * reduce (modulus w) σ) (ext x) (ext y) ∧
+          let cost := C*volume prime v + 63*LeafCore.coreCost (volume prime v) (w*64)
+          GraphContract.Runs program (LabelCall.bank roles v d)
+            (LabelCall.bank (setTape roles io (sourceWord y) 0) v d) cost ∧
+          ∀ width : ℕ, w*64 ≤ width → (cost : ℝ) ≤
+            ((C : ℝ) + 63 * |LeafCore.C| * (width : ℝ)^M8.Machine.BudgetBound.tau)*volume prime v := by
+  intro H σ
+  have orth : H.transpose * H = 1 := by
+    change (c.fullChart.transpose.submatrix remainderAxis stageAxis.symm) * _ = _
+    rw [submatrix_mul_equiv,c.fullChart_orthonormal hc,submatrix_one_equiv]
+  exact boundedChart_runs io H (isUnit_iff_exists.mpr ⟨_,mul_eq_one_comm.mp orth,orth⟩)
+    (fun i j => fullChart_entry c hc (stageAxis.symm i) (remainderAxis j)) inverse
+
+/-- A row of the physically relabelled matrix reads exactly the modular digits
+used by the interval descriptor, with the port line at the last position. -/
+theorem remainderChart_row (c : PortCertificate) (w : ℕ)
+    (g : Matrix (Fin 64) (Fin 64) (ZMod (prime^w))) (r i : Fin 64) :
+    (g * reduce (prime^w) (c.fullChart.submatrix stageAxis.symm remainderAxis)) r i =
+      ((reduce (prime^w) c.fullChart)ᵀ *ᵥ (fun a => g r (stageAxis a))) (remainderAxis i) := by
+  rw [Matrix.mul_apply]
+  change _ = ∑ a, (reduce (prime^w) c.fullChart) a (remainderAxis i) * g r (stageAxis a)
+  rw [← Equiv.sum_comp stageAxis.symm]
+  simp only [Equiv.apply_symm_apply]
+  apply Finset.sum_congr rfl
+  intro j _
+  exact mul_comm _ _
 
 /-- The idle owner's other digits and all its spectator positions are exactly
 the middle gap and inherited fields of the parent's recursive rank descriptor. -/

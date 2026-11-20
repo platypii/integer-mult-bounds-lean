@@ -366,6 +366,34 @@ theorem dataPort_call [M8.Machine.Net] {T : ℕ} (io : Fin T) (n : Fin 9) (j : F
   rw [← chartRead_transport xy g,back]
   exact action _
 
+/-- Compile a bounded invertible port chart on the matrix-label tape. -/
+theorem boundedChart_runs [M8.Machine.Net] {T : ℕ} (io : Fin T) (H : Matrix (Fin 64) (Fin 64) ℚ)
+    (unit : IsUnit H) (bound : ∀ i j, (H i j).num.natAbs ≤ 2 ∧ (H i j).den ≤ 2) (inverse : Bool) :
+    let σ := if inverse then H.transpose else H
+    ∃ (program : Graph.Block (T+24) prime) (C : ℕ), Blocks.Leading program ∧
+      ∀ (v : Descriptor) (w B : ℕ), 0 < w → 0 < B →
+      v.beforeH = B*prime^(64*(w*64)) → v.Positive →
+      ∀ (roles : Tapes T prime) (x : Fin (volume prime v) → ZMod 2),
+        roles.head io = 0 → roles.tape io = sourceWord x →
+        let d := words (LabelSchedule.base v w)
+        ∃ y : Fin (volume prime v) → ZMod 2,
+          LabelPermutation.Transport v B w (fun g => g * reduce (modulus w) σ) (ext x) (ext y) ∧
+          let cost := C*volume prime v + 63*LeafCore.coreCost (volume prime v) (w*64)
+          GraphContract.Runs program (LabelCall.bank roles v d)
+            (LabelCall.bank (setTape roles io (sourceWord y) 0) v d) cost ∧
+          ∀ width : ℕ, w*64 ≤ width → (cost : ℝ) ≤
+            ((C : ℝ) + 63 * |LeafCore.C| * (width : ℝ)^M8.Machine.BudgetBound.tau)*volume prime v := by
+  intro σ
+  have ten : 2 ≤ (10:ℕ)^10000 := (by decide : 2 ≤ 10).trans
+    (by simpa only [pow_one] using (pow_le_pow_right₀ (by decide : 1 ≤ (10:ℕ)) (by decide : 1 ≤ 10000)))
+  have entries (i j) : (σ.transpose i j).num.natAbs ≤ 10^10000 ∧ (σ.transpose i j).den ≤ 10^10000 := by
+    cases inverse
+    · exact ⟨(bound j i).1.trans ten,(bound j i).2.trans ten⟩
+    · exact ⟨(bound i j).1.trans ten,(bound i j).2.trans ten⟩
+  obtain ⟨hd,h₁,h₂⟩ := LabelFactorization.boundedFactors σ.transpose (by decide) (by decide) entries
+  exact LabelFactorization.realizes (by decide) io σ (by cases inverse <;> first | exact unit | exact H.isUnit_transpose.mpr unit)
+    (M8.Exchange.factors σ.transpose) hd h₁ h₂
+
 -- The separate basis and slot-permutation construction is in 34789f13.
 /-- Compile the full helper chart, including its slot permutation, in either
 direction. The chart's bounded rational entries suffice for every atom width. -/
@@ -392,15 +420,7 @@ theorem helperChart_runs [M8.Machine.Net] {T : ℕ} (io : Fin T) (c : PortCertif
     rw [submatrix_mul_equiv,c.helperChart_orthonormal checked,submatrix_one_equiv]
   have unit : IsUnit H := isUnit_iff_exists.mpr ⟨H.transpose,mul_eq_one_comm.mp inv,inv⟩
   have bound (i j) := helperChart_entry c checked slot fits (stageAxis.symm i) (stageAxis.symm j)
-  have ten : 2 ≤ (10:ℕ)^10000 := (by decide : 2 ≤ 10).trans
-    (by simpa only [pow_one] using (pow_le_pow_right₀ (by decide : 1 ≤ (10:ℕ)) (by decide : 1 ≤ 10000)))
-  have entries (i j) : (σ.transpose i j).num.natAbs ≤ 10^10000 ∧ (σ.transpose i j).den ≤ 10^10000 := by
-    cases inverse
-    · exact ⟨(bound j i).1.trans ten,(bound j i).2.trans ten⟩
-    · exact ⟨(bound i j).1.trans ten,(bound i j).2.trans ten⟩
-  obtain ⟨hd,h₁,h₂⟩ := LabelFactorization.boundedFactors σ.transpose (by decide) (by decide) entries
-  exact LabelFactorization.realizes (by decide) io σ (by cases inverse <;> first | exact unit | exact H.isUnit_transpose.mpr unit)
-    (M8.Exchange.factors σ.transpose) hd h₁ h₂
+  exact boundedChart_runs io H unit bound inverse
 
 open IntegerMultBounds.MathlibTM2.M6.BitHosting in
 private theorem helper_register_chart (n : Fin 9) (h : Fin 439) :
