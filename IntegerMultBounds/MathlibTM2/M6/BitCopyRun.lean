@@ -7,7 +7,7 @@ public import IntegerMultBounds.Machine.ExactFrame
 public import IntegerMultBounds.Networks.AffineFieldBijective
 public import IntegerMultBounds.Machine.ArbitraryWidthSliceTranspose
 public import IntegerMultBounds.Networks.AffineFieldCoordinates
-public import IntegerMultBounds.Machine.SparseRoleCircuit
+public import IntegerMultBounds.MathlibTM2.M6.BitCopyOwners
 
 /-! Copy, fan out, and clear the PR589 temporary on the scheduled owner tapes. -/
 @[expose] public section
@@ -430,15 +430,6 @@ theorem copyChild_runs [M8.Machine.Net] {t : ℕ} (caller : Tapes t prime)
   have hp : (copyChild w W).Positive := ⟨Nat.zero_lt_one, Nat.zero_lt_one, Nat.zero_lt_one, pos, Nat.mul_pos pos hW⟩
   exact ⟨_, M8.Machine.ArbitraryWidthOriginalRun.runs caller headers source _ hs hp
     (Nat.mul_pos (by decide) hw) valid tapes heads _ payload origin, copyChild_interval x⟩
-
-private theorem sourceWord_cast {v : Descriptor} {N : ℕ} (size : volume prime v = N)
-    (x : Fin N → ZMod 2) :
-    sourceWord (fun i => x (Fin.cast size i)) =
-      putWord (fun _ => blank) 0 (List.ofFn fun i => SparseRoleCircuit.encode (a := prime) (x i)) := by
-  subst N
-  rw [M8.Machine.ArbitraryWidthHighExchangeJoinEncoding.sourceWord_eq]
-  unfold RadixHighBlockJoinLoop.word
-  congr 2
 
 def segmentSource (stages : List (FlatCoordinateSchedule.Op 16)) :
     Fin (FlatCoordinateCleanSchedule.tapeCount stages) :=

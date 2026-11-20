@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.M6.BitCopyOwners
 public import IntegerMultBounds.MathlibTM2.M6.BitInvocation
 public import IntegerMultBounds.Networks.Certificates.PR589.Copy.Data
 public import IntegerMultBounds.MathlibTM2.M6.BitRouteFactors
@@ -231,7 +232,7 @@ theorem copyTargets_route [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
       v.beforeH = B*prime^(64*(w*64)) → v.Positive →
       ∀ x : Fin 142081 → Fin (volume prime v) → ZMod 2,
       let bank := fun (data : Fin 142081 → Fin (volume prime v) → ZMod 2) =>
-        LabelCall.bank (⟨fun _ => 0,fun k => sourceWord (data k)⟩ : Tapes 142081 prime) v (words (LabelSchedule.base v w))
+        LabelCall.bank (copyOwners data) v (words (LabelSchedule.base v w))
       ∃ y, (∀ j ∈ life.targets, LabelPermutation.Transport v B w
         (fun g => g*registerChart w n j) (ext (x (io j))) (ext (y (io j)))) ∧
         (∀ k, k ∉ life.targets.map io → y k = x k) ∧
@@ -386,9 +387,9 @@ private theorem helper_register_chart (n : Fin 9) (h : Fin 439) :
   exact selectedAt _ _ (by omega) (by omega) _
 
 open IntegerMultBounds.MathlibTM2.M6.BitHosting IntegerMultBounds.Networks.Certificates.PR589 in
-/-- Enter the source chart of a retained COPY on the designated owner tape.
+/-- Enter or leave the source chart of a retained COPY on the designated owner tape.
 The label read and the charged graph run refer to the same output bank. -/
-theorem copySource_route [M8.Machine.Net] {T : ℕ} (io : Fin T) (n : Fin 9)
+theorem copySource_route [M8.Machine.Net] {T : ℕ} (io : Fin T) (n : Fin 9) (enter : Bool)
     (life : Copy.Lifecycle)
     (scheduled : life ∈ Copy.lifecycles) :
     ∃ (program : Graph.Block (T+24) prime) (C : ℕ), Blocks.Leading program ∧
@@ -397,7 +398,7 @@ theorem copySource_route [M8.Machine.Net] {T : ℕ} (io : Fin T) (n : Fin 9)
       ∀ (roles : Tapes T prime) (x : Fin (volume prime v) → ZMod 2),
       roles.head io = 0 → roles.tape io = sourceWord x →
       let d := words (LabelSchedule.base v w)
-      ∃ y : Fin (volume prime v) → ZMod 2, LabelPermutation.Transport v B w (fun g => g*(registerChart w n life.source).transpose)
+      ∃ y : Fin (volume prime v) → ZMod 2, LabelPermutation.Transport v B w (fun g => g*(if enter then (registerChart w n life.source).transpose else registerChart w n life.source))
         (ext x) (ext y) ∧ GraphContract.Runs program (LabelCall.bank roles v d)
           (LabelCall.bank (setTape roles io (sourceWord y) 0) v d)
           (C*volume prime v + 63*LeafCore.coreCost (volume prime v) (w*64)) := by
@@ -407,14 +408,72 @@ theorem copySource_route [M8.Machine.Net] {T : ℕ} (io : Fin T) (n : Fin 9)
   let slot := IntegerMultBounds.MathlibTM2.M6.BitNode.slotOf n.val h.val
   let c := port (slot.copy % 111)
   obtain ⟨block,C,leading,runs⟩ := helperChart_runs io c
-    (port_checked _ (Nat.mod_lt _ (by decide))) _ (slotPos_le n n.isLt h h.isLt) true
+    (port_checked _ (Nat.mod_lt _ (by decide))) _ (slotPos_le n n.isLt h h.isLt) enter
   refine ⟨block,C,leading,?_⟩
   intro v w B hw hb shape pos roles x head tape d
   obtain ⟨y,transport,run,_⟩ := runs v w B hw hb shape pos roles x head tape
   refine ⟨y,?_,run⟩
   unfold registerChart
   rw [idx,helper_register_chart n h]
-  exact transport
+  cases enter <;> exact transport
+
+open IntegerMultBounds.Networks.Certificates.PR589 in
+/-- Enter or leave all the charts of one COPY window on the shared owner bank.
+The helper uses opposite directions on entry and return. The target routes are
+involutions, so the same target program serves both directions. -/
+theorem copyWindow_routes [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5) (enter : Bool)
+    (life : Copy.Lifecycle) (scheduled : life ∈ Copy.lifecycles) :
+    let io := fun j : ℕ => ownerTape n r d (Fin.ofNat 661 j)
+    let src := io life.source
+    ∃ (program : Graph.Block (142081+24) prime) (C : ℕ), Blocks.Leading program ∧
+      ∀ (v : Descriptor) (w B : ℕ), 0 < w → 0 < B →
+      v.beforeH = B*prime^(64*(w*64)) → v.Positive →
+      ∀ x : Fin 142081 → Fin (volume prime v) → ZMod 2,
+      let bank := fun (data : Fin 142081 → Fin (volume prime v) → ZMod 2) =>
+        LabelCall.bank (copyOwners data) v (words (LabelSchedule.base v w))
+      let A := registerChart w n life.source
+      ∃ y, LabelPermutation.Transport v B w (fun g => g*(if enter then A.transpose else A)) (ext (x src)) (ext (y src)) ∧
+        (∀ j ∈ life.targets, LabelPermutation.Transport v B w
+          (fun g => g*registerChart w n j) (ext (x (io j))) (ext (y (io j)))) ∧
+        (∀ k, k ≠ src → k ∉ life.targets.map io → y k = x k) ∧
+        GraphContract.Runs program (bank x) (bank y)
+          (C*volume prime v + (63+252*life.targets.length)*LeafCore.coreCost (volume prime v) (w*64)
+            + life.targets.length+1) := by
+  intro io src
+  obtain ⟨srcBlock,C,srcLeading,sourceRun⟩ := copySource_route src n enter life scheduled
+  obtain ⟨targetBlock,D,targetLeading,targetRun⟩ := copyTargets_route n r d life scheduled
+  refine ⟨Blocks.seqB srcBlock targetBlock,C+D,Blocks.seq_leading _ _,?_⟩
+  intro v w B hw hb shape pos x bank A
+  let roles : Tapes 142081 prime := ⟨fun _ => 0,fun k => sourceWord (x k)⟩
+  obtain ⟨z,source,run⟩ := sourceRun v w B hw hb shape pos roles (x src) rfl rfl
+  let next := Function.update x src z
+  have updated : setTape roles src (sourceWord z) 0 =
+      (⟨fun _ => 0,fun k => sourceWord (next k)⟩ : Tapes 142081 prime) := by
+    apply congrArg₂ Tapes.mk <;> funext k <;> by_cases eq : k = src <;> simp [roles,next,eq]
+  rw [updated] at run
+  have off (j) (hj : j ∈ life.targets) : io j ≠ src := by
+    intro eq
+    obtain ⟨lo,hi⟩ := Copy.source_bounds life scheduled
+    have bound := (Copy.target_bounds life scheduled j hj).2
+    have same := congrArg Fin.val (ownerTape_injective n r d eq)
+    simp only [Fin.val_ofNat,Nat.mod_eq_of_lt hi,Nat.mod_eq_of_lt (by omega : j < 661)] at same
+    omega
+  obtain ⟨out,moves,other,steps⟩ := targetRun v w B hw hb shape pos next
+  refine ⟨out,?_,?_,?_,Blocks.runs_mono (Blocks.seq_runs srcLeading targetLeading run steps) ?_⟩
+  · have fresh : src ∉ life.targets.map io := by
+      rintro h
+      obtain ⟨j,hj,eq⟩ := List.mem_map.mp h
+      exact off j hj eq
+    rw [other _ fresh]
+    simp only [next,Function.update_self]
+    exact source
+  · intro j hj
+    have moves_j := moves j hj
+    change LabelPermutation.Transport v B w (fun g => g*registerChart w n j) (ext (next (io j))) (ext (out (io j))) at moves_j
+    simpa only [next,Function.update_of_ne (off j hj)] using moves_j
+  · intro k hk fresh
+    simpa only [next,Function.update_of_ne hk] using other k fresh
+  · exact le_of_eq (by ring)
 
 open IntegerMultBounds.MathlibTM2.M6.BitHosting in
 /-- Execute a local call in its scheduled helper chart and restore each
