@@ -43,6 +43,53 @@ theorem ScanData.physical_live (a : ScanData r d w W) (e : (Fin r ⊕ Fin r) ≃
   simpa only [ScanData.physical,live,ite_true] using
     physicalProjector_spec (by omega : 0 < w+1) j live e P hp adm α α' ha
 
+open IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2.Stack Host in
+/-- Execute a single live projector residual from the pivot codes of its residue
+class. Only this record is consumed, so skipped labels need no pivot codes. -/
+theorem physicalResidualRecord_exec [M8.Machine.Net] {P U : Type}
+    (e : (Fin r ⊕ Fin r) ≃ Fin (d+1)) (proj : Matrix (Fin r) (Fin r) ℚ)
+    (idem : proj*proj = proj) (adm : Admissible prime proj)
+    (α inv : Fin r → ZMod M) (reciprocal : ∀ i, α i * inv i = 1)
+    (j : ℕ) (live : LabelStock.live r (w+1) 1 j = true)
+    (H J : ℕ) (hm : M < 2^H) (hw : W < 2^J) (positive : 0 < W) :
+    let N := rowSwapBlock.tapes+35
+    let G := projectorResidual e (reduce M proj) α inv (physicalLabel r (w+1) j)
+    let φ := LabelRing.res prime (w+1) (by omega)
+    let C := projectorResidual e (reduce prime proj) (φ ∘ α) (φ ∘ inv) (LabelStock.residue r (w+1) 1 j)
+    let rows := classPivots C
+    let sign : (ZMod M)ˣ := if negativeAnchor rows C then -1 else 1
+    let bank := fun n => columnBank.trans (archivePorts n)
+    ∀ (body : P → Pr P (N+2) columnCapacity prime U) (u : HS (N+2) columnCapacity prime U)
+      (S : Stacks (N+2) prime) (tail rest : List (Fin (prime+4))) (dest : ℤ → Fin 4) (q : ℤ)
+      (word : Fin (M^(d+1)*W) → ZMod 2),
+      (∀ z, q ≤ z → z < q+(M^(d+1)*W : ℕ) → dest z = blank) →
+      let ready := ColumnReady (bank 0) H J G tail SparseRoleCircuit.encode (fun _ => blank) dest 0 q word
+      let clean := fun (D : Stacks (N+2) prime) => ∀ i : Fin N, 35 ≤ i.val →
+        D.L (columnPorts i).castSucc = [] ∧ D.R (columnPorts i).castSucc = []
+      ready (fun x k => ((Fin.cons sign (fun _ => 1) : Fin (d+1) → (ZMod M)ˣ) k : ZMod M)*x k) S →
+      clean S → S.R (Fin.last N).castSucc = scheduleCode rows ++
+        (orderedScheduleCode (List.finRange (d+1)).reverse rows ++ rest) →
+      ∃ z D n, z.user = u.user ∧ n ≤ signedResidualTime U rows w W H J ∧
+        Exec body (signedResidual d) (mk u S) n (mk z D) ∧ ready (fun x => G.mulVec x) D ∧
+        clean D ∧ D.R (Fin.last N).castSucc = rest ∧ D.R (bank 1 34) = S.R (bank 1 34) := by
+  intro N G φ C rows sign bank body u S tail rest dest q word empty ready clean before free code
+  let : Fact prime.Prime := ⟨prime_prime⟩
+  obtain ⟨det,lift⟩ := physicalProjector_spec (by omega : 0 < w+1) j live e proj idem adm α inv reciprocal
+  change G.det = 1 ∨ G.det = -1 at det
+  change φ.mapMatrix G = C at lift
+  have unit : IsUnit C.det := by
+    rw [← lift,← RingHom.map_det]
+    rcases det with h | h <;> simp [h]
+  have reduced : Itinerary.Valid rows (φ.mapMatrix G) (d+1) := lift.symm ▸ classPivots_valid C unit
+  have valid := (Itinerary.valid_map_iff φ (fun a ha =>
+    (LabelRing.isUnit_iff_res prime (w+1) (by omega) a).mpr ha.ne_zero) rows G (d+1)).mpr reduced
+  have anchor := anchor_of_itinerary IntegerMultBounds.Networks.Shared50ModularControl.prime_odd
+    (by omega : 0 < w+1) rows G valid det
+  rw [show (LabelRing.res prime (w+1) (by omega)).mapMatrix G = C from lift] at anchor
+  have signed : (Itinerary.run rows G (d+1)).det = (sign : ZMod M) := by
+    cases h : negativeAnchor rows C <;> simpa [sign,h] using anchor
+  exact signedResidual_exec rows G valid sign signed H J hm hw positive body u S tail rest dest q empty word before free code
+
 open IntegerMultBounds.Machine.FlatCoordinateLayout in
 /-- The live output bit of the physical identity scan occurs at the enclosing
 weighted child's address, for every trailing position. -/

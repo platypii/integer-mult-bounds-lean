@@ -173,6 +173,17 @@ theorem advanceGoodRecord_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q p
 
 def goodRecordScanPorts : Fin 6 ↪ Fin 7 := ⟨![3,0,1,6,2,5],by decide⟩
 
+private theorem fallbackAllowance (labels : List ℕ) (cost : ℕ → ℕ) (eligible : ℕ → Prop)
+    (count baseline remaining : ℕ)
+    (fits : 0 < count → ∀ j ∈ labels, eligible j → cost j ≤ baseline + remaining/count) :
+    ∃ extra, count*extra ≤ remaining ∧ ∀ j ∈ labels, eligible j → cost j ≤ baseline+extra := by
+  by_cases zero : count = 0
+  · refine ⟨(labels.map cost).sum,by simp [zero],?_⟩
+    intro j hj _
+    exact (List.le_sum_of_mem (List.mem_map_of_mem (f := cost) hj)).trans (Nat.le_add_left _ _)
+  · exact ⟨remaining/count,(Nat.mul_comm ..).le.trans (Nat.div_mul_le_self remaining count),
+      fits (Nat.pos_of_ne_zero zero)⟩
+
 open RingFormula LabelTraversal IntegerMultBounds.MathlibTM2.Fast.Main in
 theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ} {F U : Type}
     (v : Descriptor) (positive : v.Positive) (w : ℕ) (proj : Matrix (Fin m) (Fin m) ℚ)
@@ -329,11 +340,14 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
       let action := fun i => if liveBit i then (if badBit i then badEffect i else effect i) else Eq
       let binaryRun := budget + recordRoundTripRate m*N + (12*m*m+4)*(prefixes 0).length + generatedRecordRate m*N
       let binaryCharge := binaryRun + (initialClear + 6*(max (mnProgPush recordProgram) c * binaryRun))
-      let priced := fun n => ∀ baseline extra : ℕ,
+      let exceptional := ((∑ k ∈ Finset.range d, (k+1)*(m+1))*labels.length)/prime
+      let priced := fun n => ∀ baseline parentBudget : ℕ,
         (charge 0 ≤ baseline ∨ (0 < d ∧ H = M.size ∧ J = W.size ∧ binaryCharge ≤ baseline)) →
-        (∀ j ∈ labels, liveBit j = true → badBit j = true → badCost j ≤ baseline+extra) →
-        n ≤ setupCost + (labels.length*(baseline+6) +
-          (((∑ k ∈ Finset.range d, (k+1)*(m+1))*labels.length)/prime)*extra+2)
+        let ordinary := setupCost + labels.length*(baseline+6) + 2
+        ordinary ≤ parentBudget →
+        (0 < exceptional → ∀ j ∈ labels, liveBit j = true → badBit j = true →
+          badCost j ≤ baseline + (parentBudget-ordinary)/exceptional) →
+        n ≤ parentBudget
       ∃ writer : Pr F K Q prime U, ∃ z D n next, z.user = u.user ∧ n ≤ setupCost + ((labels.map fun i => branchCost i + 2 + 4).sum + 2) ∧
         priced n ∧ Exec body (((initCounters.seq writer).seq (clearWorkTapes privateTapes)).seq (classifiedScan mask mode (recordProgram.seq (clearWorkTapes privateTapes)) fallback skip)) (mk u whole) n (mk z D) ∧
         (ready D [] ∧ D.R mode = modes []) ∧ D.R mask = [] ∧ payload next D ∧
@@ -342,7 +356,7 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
     body initialUser initialState poolFits directory prefixes archiveTail allLabels slots headers scanCaller scan joined dirSlots dir pool pivot counters inputs ports a digits prefixWidth zeros
     packedLabel clock count formula detFormula generationBill generate withZero field slot r src dst ready payload gs matrices liveBit badBit
     call cost budget coordinate effects reverse transfer marks loading conversion headerCost raw tripCost runBills prepareCounters prepareHeaders recordProgram
-    privateTapes initialClear c bodyBound charge mask mode modes skip skipCost fallback badCost badEffect bad room Bcount rs parents shape freePrivate dirPositive brSize rowsSize beforeHSize parentsFree freeMask freeMode high initCounters clean initialReady initialPayload setupCost branchCost action binaryRun binaryCharge priced
+    privateTapes initialClear c bodyBound charge mask mode modes skip skipCost fallback badCost badEffect bad room Bcount rs parents shape freePrivate dirPositive brSize rowsSize beforeHSize parentsFree freeMask freeMode high initCounters clean initialReady initialPayload setupCost branchCost action binaryRun binaryCharge exceptional priced
   have clockSlot : headers 0 = 45 := rfl
   have widthSlot : headers 2 = 2 := rfl
   have unitSlot : headers 5 = 44 := rfl
@@ -477,7 +491,10 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
     obtain ⟨finish,D,n,next,user,time,run,post⟩ := scanRun
     refine ⟨writer,finish,D,_,next,user.trans (hz.trans (hy.trans user₀)),Nat.add_le_add (Nat.add_le_add (Nat.add_le_add time₀ hl) (Nat.add_le_add_right cleanup 1)) time,?_,
       Exec.seq (Exec.seq (Exec.seq prepare write) clearMasks) run,post⟩
-    intro baseline extra choice hf
+    intro baseline parentBudget choice ordinary fitsParent fallbackFits
+    obtain ⟨extra,allowance,fitsRecord⟩ := fallbackAllowance allLabels badCost
+      (fun j => liveBit j = true ∧ badBit j = true) exceptional baseline (parentBudget-ordinary)
+      (fun pos j hj h => fallbackFits pos j hj h.1 h.2)
     have base : charge 0 ≤ baseline := by
       rcases choice with direct | ⟨active,binary,trailingBits,limit⟩
       · exact direct
@@ -508,9 +525,13 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
       exact (Nat.le_add_left _ _).trans (Nat.le_add_right (runBills j) _)
 
     obtain ⟨g₀,unit,generic⟩ := LabelProjector.residue_witness (w := w+1) (by omega) proj idem factor hd rankFits
-    exact Nat.add_le_add (Nat.add_le_add (Nat.add_le_add time₀ hl) (Nat.add_le_add_right cleanup 1))
+    have total := Nat.add_le_add (Nat.add_le_add (Nat.add_le_add time₀ hl) (Nat.add_le_add_right cleanup 1))
       (time.trans (directoryDispatchCost_le w d Bcount rankFits (reduce M proj) directory shape charge skipCost badCost
-        baseline extra g₀ unit generic (fun j hj _ _ => (sameCharge j hj).le.trans base) (fun j hj _ => (skipBound j hj).trans base) hf))
+        baseline extra g₀ unit generic (fun j hj _ _ => (sameCharge j hj).le.trans base) (fun j hj _ => (skipBound j hj).trans base)
+        (fun j hj live badLabel => fitsRecord j hj ⟨live,badLabel⟩)))
+    change _ ≤ setupCost + (allLabels.length*(baseline+6) + exceptional*extra + 2) at total
+    dsimp only [ordinary] at fitsParent allowance
+    omega
   apply classifiedPayloadScan_exec body mask mode (caller.injective.ne (by decide)) _ fallback skip liveBit badBit
     branchCost (fun is D => ready D is) payload action _ _ allLabels initialWord z startState
     r₂ p₂ bits initialModes
