@@ -18,24 +18,33 @@ variable {T Q A : ℕ} {P U : Type}
 def swapPrefix (r : Fin 10 ↪ Fin T) (d : ℕ) : Pr P T Q A U :=
   .seq (dimensionPower r d) (Routing.binaryCanonicalProgram (r 2) (r 3))
 
+theorem scaledPrefix_exec (body : P → Pr P T Q A U) (r : Fin 10 ↪ Fin T) (d H J M W : ℕ)
+    (hm : M < 2^H) (hw : W < 2^J) (v : HS T Q A U) (S : Stacks T A) (base : S.R (r 0) = binSyms H M)
+    (seed : S.R (r 1) = binSyms J W) (free : ∀ i : Fin 10, 2 ≤ i → i < 9 → S.R (r i) = []) :
+    ∃ z n, z.user = v.user ∧ n ≤ dimensionTime H J d + (4*(d*H+J)+6) ∧
+      Exec body (swapPrefix r d) (mk v S) n
+        (mk z {S with R := Function.update S.R (r 2) ((bits (M^d*W)).map bitSymbol)}) := by
+  obtain ⟨u,n,hu,hn,run⟩ := dimensionPower_exec body d r H J M W hm hw v S base seed free
+  let D : Stacks T A := {S with R := Function.update S.R (r 2) (binSyms (d*H+J) (M^d*W))}
+  have bound := Nat.pow_le_pow_left hm.le d
+  rw [← pow_mul,Nat.mul_comm H d] at bound
+  have fits : M^d*W < 2^(d*H+J) := by
+    rw [pow_add]
+    exact (Nat.mul_le_mul_right W bound).trans_lt (Nat.mul_lt_mul_of_pos_left hw (Nat.two_pow_pos _))
+  obtain ⟨cs,z,hc,hv,_,hz,trim⟩ := Routing.binaryCanonical_exec body (r 2) (r 3)
+    (r.injective.ne (by decide)) _ _ fits u D (by simp [D])
+    (by simp [D,r.injective.eq_iff,free 3 (by decide) (by decide)])
+  have eq := BinaryCanonicalData.value_injective cs (bits (M^d*W)) hc (bits_canonical _) (hv.trans (bits_value _).symm)
+  simp only [eq,D,Function.update_idem] at trim
+  exact ⟨z,_,hz.trans hu,Nat.add_le_add_right hn _,Exec.seq run trim⟩
+
 theorem swapPrefix_exec (body : P → Pr P T Q A U) (r : Fin 10 ↪ Fin T) (d H M : ℕ)
     (hm : M < 2^H) (v : HS T Q A U) (S : Stacks T A) (base : S.R (r 0) = binSyms H M)
     (one : S.R (r 1) = binSyms 1 1) (free : ∀ i : Fin 10, 2 ≤ i → i < 9 → S.R (r i) = []) :
     ∃ z n, z.user = v.user ∧ n ≤ dimensionTime H 1 d + (4*(d*H+1)+6) ∧
       Exec body (swapPrefix r d) (mk v S) n
         (mk z {S with R := Function.update S.R (r 2) ((bits (M^d)).map bitSymbol)}) := by
-  obtain ⟨u,n,hu,hn,run⟩ := dimensionPower_exec body d r H 1 M 1 hm (by decide) v S base one free
-  simp only [Nat.mul_one] at run
-  let D : Stacks T A := {S with R := Function.update S.R (r 2) (binSyms (d*H+1) (M^d))}
-  have bound := Nat.pow_le_pow_left hm.le d
-  rw [← pow_mul,Nat.mul_comm H d] at bound
-  have fits : M^d < 2^(d*H+1) := by rw [pow_succ]; have := Nat.two_pow_pos (d*H); omega
-  obtain ⟨cs,z,hc,hv,_,hz,trim⟩ := Routing.binaryCanonical_exec body (r 2) (r 3)
-    (r.injective.ne (by decide)) _ _ fits u D (by simp [D])
-    (by simp [D,r.injective.eq_iff,free 3 (by decide) (by decide)])
-  have eq := BinaryCanonicalData.value_injective cs (bits (M^d)) hc (bits_canonical _) (hv.trans (bits_value _).symm)
-  simp only [eq,D,Function.update_idem] at trim
-  exact ⟨z,_,hz.trans hu,Nat.add_le_add_right hn _,Exec.seq run trim⟩
+  simpa only [Nat.mul_one] using scaledPrefix_exec body r d H 1 M 1 hm (by decide) v S base one free
 
 theorem swapWidth_exec (body : P → Pr P T Q A U) (src dst tmp work : Fin T)
     (regs : [src,dst,tmp,work].Nodup) (J W : ℕ) (hw : W < 2^J)

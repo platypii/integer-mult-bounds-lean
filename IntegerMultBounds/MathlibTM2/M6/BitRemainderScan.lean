@@ -1417,12 +1417,12 @@ theorem remainderOwnerDirectory_exec [M8.Machine.Net] {T : ℕ} {F U : Type}
       raw.R (bank 58) = (List.range parents).flatMap inherited ++ tail →
       (∀ i < parents, (inherited i).length = (raw.R (bank 47)).length) →
       (raw.R (bank 47)).length ≤ prime^layout.width →
-      raw.R (bank 28) = [] → raw.R (bank 44) = [] → raw.R (bank 49) = [] → DirectoryParameters v w W data.H J parent (fun i => raw.R (bank (i.castLE (by decide)))) →
+      raw.R (bank 28) = [] → raw.R (bank 44) = [] → raw.R (bank 49) = [] → DirectoryParameters w W data.H J parent (fun i => raw.R (bank (i.castLE (by decide)))) →
       raw.R (bank 50) = [] → raw.R (bank 57) = [] → raw.R (bank 56) = [] → raw.R (bank 54) = [] →
       raw.R (reg 0) = payloadWord (SparseRoleCircuit.encode ∘ word) →
       (∀ i : Fin 5, i ≠ 0 → raw.R (reg i) = []) →
       (∀ j, readAt blank (raw.L (bank 24)) (raw.R (bank 24)) j = blank) →
-      ∃ D q, prime^layout.width*q*142080 ≤ (365+16*64*64+19*64+344)*volume prime layout +
+      ∃ D q, prime^layout.width*q*142080 ≤ (366+16*64*64+19*64+344)*volume prime layout +
           prime^layout.width*((scratch.map (fun i => 4*(raw.L i).length)).sum + 2*tail.length)*142080 ∧
         (∀ k, (D.L k).length ≤ (raw.L k).length) ∧ D.R (bank 48) = matrixWords prime data.H (reduce (prime^(w+1)) proj) ++ raw.R (bank 48) ∧
         OwnerDirectoryPass (J := J) directory v w proj rankFits parent parentInv io dimension data length roleLength remainderAnchorFits
@@ -1449,9 +1449,9 @@ theorem remainderOwnerDirectory_exec [M8.Machine.Net] {T : ℕ} {F U : Type}
   let outer := fun f => embProg (fun i : Fin (66+(K+1)) => i.castAdd 5) id (embProg placement id (body f))
   obtain ⟨y,D,q,user,paid,build,input,free,matrix,right,left,size,regs⟩ :=
     remainderDirectory_prepareOwner room outer layout v w rows B W data.H J positiveLayout layoutWidth split shape
-      interval.1 interval.2 precision parent inherited tail u raw br nr bh clean source widths fits short padded spare params
+      interval.1 interval.2 precision rfl rfl ordered (by omega) (by intro i; fin_cases i <;> rfl) parent inherited tail u raw br nr bh clean source widths fits short padded spare params
   let whole := embStk placement (embStk (fun i : Fin (66+(K+1)) => i.castAdd 5) D)
-  have frame (i : Fin 58) (off : i ∉ ([28,44,46,48] : List (Fin 58))) :
+  have frame (i : Fin 58) (off : i ∉ ([28,33,34,35,36,37,38,44,46,48] : List (Fin 58))) :
       whole.R ((i.castAdd 8).castAdd K) = raw.R (bank (i.castLE (by decide))) := by
     change D.R ((placement ((i.castAdd 8).castAdd K)).castAdd 5) = _
     rw [directoryOrdinaryBank_caller]
