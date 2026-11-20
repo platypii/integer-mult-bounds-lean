@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.Networks.Certificates.PR589.GateSources
 public import IntegerMultBounds.MathlibTM2.M6.BitCopyRecordSetup
 public import IntegerMultBounds.MathlibTM2.M6.BitRouteRun
 
@@ -149,6 +150,90 @@ theorem phasePrepared_frame [Net] {k w W : ℕ} (A B : List (FlatCoordinateSched
 /-- Flat bit streams on permanent owner tapes, with heads at the first cell. -/
 noncomputable def phaseOwners {k N : ℕ} (data : Fin k → Fin N → ZMod 2) : Tapes k prime :=
   ⟨fun _ => 0,fun j => putWord (fun _ => blank) 0 (List.ofFn fun i => SparseRoleCircuit.encode (a := prime) (data j i))⟩
+
+/-- Execute the scalar part of a phase instruction on the same permanent
+tapes as its frame changes. All sources are read at their original values. -/
+theorem phaseGate_stage {k V : ℕ} (dst : Fin k) (sources : List (Fin k))
+    (separate : dst ∉ sources) (positive : 0 < V) :
+    ∃ stage : SharedBankStage.Stage _ k prime (phaseOwners (N := V)),
+      stage.cost ≤ 76*sources.length*V ∧ ∀ data,
+        stage.transform data = Function.update data dst
+          (fun i => data dst i + (sources.map (fun src => data src i)).sum) := by
+  let src := fun j : {j // j ∈ sources} => j.val
+  let target := fun _ : Unit => dst
+  have off : ∀ a b, target a ≠ src b := fun _ b eq => separate ((show dst = b.val from eq).symm ▸ b.property)
+  let entries := sources.attach.map (fun j => ((),j))
+  let bs := FlatCoordinateSchedule.bits V
+  let controls := CountedLoopReuseAlphabet.controls (a := prime) CountedLoopReuseAlphabet.empty
+    (CountedLoopReuseAlphabet.binary bs) 1 1
+  let bank := fun data => (phaseOwners (k := k) (N := V) data).append controls
+  let transform := fun (data : Fin k → Fin V → ZMod 2) j i =>
+    Circuit.run (SparseCircuit.copies target src entries) (fun j => data j i) j
+  let slots := fun i : Fin k => Fin.castAdd 2 (id i)
+  have project (data) : SharedBank.payload (bank data) slots = phaseOwners data := by
+    rw [show SharedBank.payload (bank data) slots = _ from
+      SharedBankFrames.payload_append_left (phaseOwners data) controls id,SharedBankFrames.payload_identity]
+  refine ⟨{ tapes := _, states := _, program := SparseRoleCircuit.program target src off entries,
+            transform := transform, input := bank, output := fun data => bank (transform data),
+            slots := slots, slots_injective := Fin.castAdd_injective ..,
+            metadata := (SharedBank.empty k prime).append controls,
+            cost := entries.length*(14*V+14*bs.length+34), input_payload := project,
+            output_payload := fun data => project _, strip_input := ?_, realizes := ?_ },?_,?_⟩
+  · intro data
+    exact (SharedBankFrames.strip_append_left (phaseOwners data) controls id).trans
+      (congrArg (fun v : Tapes k prime => v.append controls) (SharedBankFrames.strip_identity _))
+  · intro data
+    exact SparseRoleCircuit.copies_hoare target src off entries (fun _ _ => blank) (fun _ => 0)
+      data bs (FlatCoordinateSchedule.bits_value V)
+  · simpa [entries] using SparseRoleCircuit.cost_linear entries.length V bs
+      (FlatCoordinateSchedule.bits_value V) (FlatCoordinateSchedule.bits_canonical V) positive
+  · intro data
+    funext j i
+    change Circuit.run _ _ j = _
+    rw [SparseCircuit.copies_run _ _ _ off]
+    by_cases eq : j = dst
+    · subst j
+      simp [entries,src,target,List.map_map,Function.comp_def]
+    · simp [entries,src,target,eq,Ne.symm eq,List.map_map,Function.comp_def]
+
+open IntegerMultBounds.Networks.Certificates.PR589 in
+theorem phaseRawGate_stage {k V : ℕ} (owner : Fin 661 ↪ Fin k) (g : RawGate)
+    (scheduled : g ∈ program) (positive : 0 < V) :
+    let dst := owner ⟨g.target,(register_bounds g scheduled).1⟩
+    ∃ stage : SharedBankStage.Stage _ k prime (phaseOwners (N := V)),
+      stage.cost ≤ 76*g.sources.length*V ∧ ∀ data,
+        (∀ j, j ≠ dst → stage.transform data j = data j) ∧
+        ∀ j : Fin 661, ∀ i, stage.transform data (owner j) i =
+          g.toCircuit.run (Copy.extendStored (fun r => data (owner r) i)) j.val := by
+  intro dst
+  have separate := target_not_mem_sources g scheduled
+  let source := fun j : {j // j ∈ g.sources} =>
+    owner ⟨j.val,(register_bounds g scheduled).2 _ j.property⟩
+  let sources := g.sources.attach.map source
+  have off : dst ∉ sources := by
+    intro mem
+    obtain ⟨j,_,eq⟩ := List.mem_map.mp mem
+    have same : j.val = g.target := congrArg Fin.val (owner.injective eq)
+    exact separate (same ▸ j.property)
+  obtain ⟨stage,bill,action⟩ := phaseGate_stage dst sources off positive
+  refine ⟨stage,by simpa [sources] using bill,?_⟩
+  intro data
+  rw [action]
+  refine ⟨fun j h => Function.update_of_ne h ..,?_⟩
+  intro j i
+  rw [RawGate.run_eq]
+  by_cases eq : j.val = g.target
+  · have same : owner j = dst := congrArg owner (Fin.ext eq)
+    rw [same,Function.update_self,eq,Function.update_self]
+    have reads (r : {j // j ∈ g.sources}) : data (source r) i =
+        Copy.extendStored (fun a => data (owner a) i) r.val := by
+      simp [Copy.extendStored,source,(register_bounds g scheduled).2 _ r.property]
+    simp only [sources,List.map_map,Function.comp_def,reads]
+    rw [List.attach_map_val (l := g.sources) (f := Copy.extendStored (fun a => data (owner a) i))]
+    simp [dst,Copy.extendStored,(register_bounds g scheduled).1]
+  · have ne : owner j ≠ dst := fun h => eq (congrArg Fin.val (owner.injective h))
+    rw [Function.update_of_ne ne,Function.update_of_ne eq]
+    simp [Copy.extendStored,j.isLt]
 
 open IntegerMultBounds.Networks.Certificates.PR589 M8.Machine M8.Machine.Segments SharedPlacementAlphabet in
 theorem scheduledPhase_stage [Net] {k : ℕ} (src : Fin k) {p : ℕ × ℕ}
