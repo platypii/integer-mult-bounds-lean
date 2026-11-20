@@ -773,8 +773,15 @@ caller-bank program between them. Given a transpose that restores its saved
 registers, the return supplies the unweighted payload read for the correction.
 The two routes, matrix preparation, diagonal pairs and archive cleanup have
 one cost bound uniform over ranks 0 through 64, proportional to row volume
-times atom width to the power `tau`. The recursive child program must still
-supply the transpose and restoration on this bank.
+times atom width to the power `tau`. With equally padded binary headers for the child width and cutoff, the
+dispatcher spends `8*L+9` steps comparing them and choosing a branch.
+At or below the cutoff, two block exchanges on the packed fields implement
+the transpose. Their complete routed cost fits a uniform constant times
+child width times record volume. Above the cutoff, the placed route calls
+the procedure on a strictly smaller width, charging two steps for the call.
+The concrete recursive body must still supply the transpose on tape 24 and
+restore the other live registers. The dispatcher requires its comparison
+headers to be prepared on entry.
 
 The semantic five-class node (S5d.3) certifies upstream's accounting under ideal routes and
 partial swaps. Its exponent `1 - 10/5769` holds under that idealization only.

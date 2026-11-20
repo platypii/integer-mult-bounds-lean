@@ -81,6 +81,23 @@ noncomputable def ordinaryChildAddress {r g w W : ℕ} (hg tg : Fin g → ZMod (
   ⟨(0 : Fin 1),(0 : Fin 1),(0 : Fin 1),(rankEquiv h).cast (ordinaryAtomWidth r w),
     rankEquiv (Fin.append hg tg),(rankEquiv d).cast (ordinaryAtomWidth r w),j⟩
 
+private theorem ordinaryPackedFields {α : Type*} {r g : ℕ} (hg tg : Fin g → α) (h d : Fin r → α) :
+    let t := childFields hg tg (h,fun k => d k.rev)
+    List.ofFn ((ordinaryChildPackSchedule r g).foldl adjacentFields (Fin.append t.1 t.2)) =
+      List.ofFn h ++ List.ofFn (Fin.append hg tg) ++ List.ofFn d := by
+  intro t
+  have castList {a b : ℕ} (eqn : a = b) (x : Fin b → α) :
+      List.ofFn (fun i => x (i.cast eqn)) = List.ofFn x := by subst b; rfl
+  have rev : List.ofFn (fun i => d i.rev) = (List.ofFn d).reverse := by
+    apply List.ext_getElem
+    · simp
+    · intros
+      simp [Fin.rev,Nat.sub_sub,Nat.add_comm]
+  apply (ordinaryChildPackSchedule_fields _ (List.ofFn h ++ List.ofFn hg ++ List.ofFn tg)
+    (List.ofFn (fun i => d i.rev)) (by simp [Nat.add_assoc]) (by simp) ?_).trans
+  · simp [List.ofFn_fin_append,rev,List.append_assoc]
+  · simp only [t,childFields,List.ofFn_fin_append,castList,List.append_assoc]
+
 /-- The physical packing schedule puts every parent cell at its recursive tape offset. -/
 theorem ordinaryChildPackSchedule_index {r g w W : ℕ} (hg tg : Fin g → ZMod (prime^(w+1)))
     (h d : Fin r → ZMod (prime^(w+1))) (j : Fin W) :
@@ -93,18 +110,10 @@ theorem ordinaryChildPackSchedule_index {r g w W : ℕ} (hg tg : Fin g → ZMod 
   have sizes : (r+g)+(r+g) = (r+(g+g))+r := by omega
   have castList {a b : ℕ} (eqn : a = b) (x : Fin b → ZMod (prime^(w+1))) :
       List.ofFn (fun i => x (i.cast eqn)) = List.ofFn x := by subst b; rfl
-  have rev : List.ofFn (fun i => d i.rev) = (List.ofFn d).reverse := by
-    apply List.ext_getElem
-    · simp
-    · intros
-      simp [Fin.rev,Nat.sub_sub,Nat.add_comm]
   have order : packed = fun i => fields (i.cast sizes) := by
     apply List.ofFn_injective
     rw [castList]
-    apply (ordinaryChildPackSchedule_fields _ (List.ofFn h ++ List.ofFn hg ++ List.ofFn tg)
-      (List.ofFn (fun i => d i.rev)) (by simp [Nat.add_assoc]) (by simp) ?_).trans
-    · simp [fields,List.ofFn_fin_append,rev,List.append_assoc]
-    · simp only [t,childFields,List.ofFn_fin_append,castList,List.append_assoc]
+    simpa only [fields,List.ofFn_fin_append,List.append_assoc] using ordinaryPackedFields hg tg h d
   have castRank {a b : ℕ} (eqn : a = b) (x : Fin b → ZMod (prime^(w+1))) :
       (FlatCoordinateLayout.rank (fun i => x (i.cast eqn))).val = (FlatCoordinateLayout.rank x).val := by
     subst b; rfl
@@ -272,6 +281,49 @@ open Stack Host
 local notation "N" => rowSwapBlock.tapes
 local notation "Q" => rowSwapBlock.states
 
+/-- On the packed stopped child, move the tail before the head, then move
+the head past the inactive middle field. -/
+def ordinaryStoppedSchedule (r g : ℕ) : List ℕ :=
+  middleTailSchedule (r+(g+g)) r ++ (middleTailSchedule r (g+g)).map (r+·)
+
+theorem ordinaryStoppedSchedule_inside {r g i : ℕ} (used : i ∈ ordinaryStoppedSchedule r g) :
+    i+1 < (r+g)+(r+g) := by
+  rcases List.mem_append.mp used with left | right
+  · have := middleTailSchedule_inside left
+    omega
+  · obtain ⟨k,hk,rfl⟩ := List.mem_map.mp right
+    have := middleTailSchedule_inside hk
+    omega
+
+theorem ordinaryStoppedSchedule_fields {α : Type*} {r g : ℕ}
+    (x : Fin ((r+g)+(r+g)) → α) (h m d : List α)
+    (hh : h.length = r) (hm : m.length = g+g) (hd : d.length = r)
+    (order : List.ofFn x = h++m++d) :
+    List.ofFn ((ordinaryStoppedSchedule r g).foldl adjacentFields x) = d++m++h := by
+  let y := (middleTailSchedule (r+(g+g)) r).foldl adjacentFields x
+  have first : List.ofFn y = d++(h++m) := by
+    simpa [y,hh,hm,hd] using packMiddleTail_fields x [] (h++m) d (by simpa using order)
+  simpa only [ordinaryStoppedSchedule,List.foldl_append,y,hh,hm,hd] using
+    packMiddleTail_fields y d h m (by simpa [List.append_assoc] using first)
+
+/-- Execute the two layout changes and the stopped exchange as a single
+schedule. Its action on parent addresses fixes both gaps. -/
+def stoppedParentSchedule (r g : ℕ) : List ℕ :=
+  ordinaryChildPackSchedule r g ++ ordinaryStoppedSchedule r g ++ (ordinaryChildPackSchedule r g).reverse
+
+theorem stoppedParentSchedule_cell {α : Type*} {r g : ℕ} (hg tg : Fin g → α) (h d : Fin r → α) :
+    let addr := fun h d => let t := childFields hg tg (h,fun k => d k.rev); Fin.append t.1 t.2
+    (stoppedParentSchedule r g).foldl adjacentFields (addr h d) = addr d h := by
+  intro addr
+  let pack := ordinaryChildPackSchedule r g
+  have swap : (ordinaryStoppedSchedule r g).foldl adjacentFields (pack.foldl adjacentFields (addr h d)) =
+      pack.foldl adjacentFields (addr d h) := by
+    apply List.ofFn_injective
+    exact (ordinaryStoppedSchedule_fields _ (List.ofFn h) (List.ofFn (Fin.append hg tg)) (List.ofFn d)
+      (by simp) (by simp) (by simp) (ordinaryPackedFields hg tg h d)).trans (ordinaryPackedFields hg tg d h).symm
+  change ((pack ++ ordinaryStoppedSchedule r g) ++ pack.reverse).foldl _ _ = _
+  rw [List.foldl_append,List.foldl_append,swap,reverse_adjacentFields]
+
 /-- Place one whole packing pass on the shared column bank. The caller can
 run its recursive program between two such passes with all other tapes live. -/
 theorem placedPackSchedule_exec [M8.Machine.Net] {P U : Type} {T d w W : ℕ}
@@ -304,14 +356,118 @@ theorem placedPackSchedule_exec [M8.Machine.Net] {P U : Type} {T d w W : ℕ}
     (columnRecordReady_project (bank.trans ports) ..).2 ((columnRecordReady_project bank ..).1 done),clear,
     fun _ off => embOvr_off D.get S off⟩
 
+private theorem stoppedScheduleTime_le [M8.Machine.Net] (U : Type) :
+    ∃ base swaps : ℕ, ∀ r g, r+g = 64 → ∀ w W, 0 < W →
+      let d := (r+g)+(r+g)
+      let M := prime^(w+1)
+      ((stoppedParentSchedule r g).map (fun i => completeSwapTime (P := Empty) (U := U) Empty.elim
+        d i (i+1) w W M.size W.size)).sum+1 ≤ (base+swaps*swapVolumeRate w)*(M^d*W) := by
+  classical
+  let prices (k : Fin 65) := packTime_le (P := Empty) (U := U) Empty.elim 128
+    (stoppedParentSchedule k (64-k.val)) (by decide)
+  let base := ∑ k : Fin 65, (prices k).choose
+  let swaps := ∑ k : Fin 65, (prices k).choose_spec.choose
+  refine ⟨base,swaps,?_⟩
+  intro r g split w W live d M
+  let k : Fin 65 := ⟨r,by omega⟩
+  have fixed : (prices k).choose ≤ base := Finset.single_le_sum (fun j _ => Nat.zero_le ((prices j).choose)) (Finset.mem_univ k)
+  have passes : (prices k).choose_spec.choose ≤ swaps :=
+    Finset.single_le_sum (fun j _ => Nat.zero_le ((prices j).choose_spec.choose)) (Finset.mem_univ k)
+  have bill := ((prices k).choose_spec.choose_spec w W live).trans
+    (Nat.mul_le_mul_right _ (Nat.add_le_add fixed (Nat.mul_le_mul_right _ passes)))
+  have size : d = 128 := by dsimp only [d]; omega
+  change (List.map _ (stoppedParentSchedule r (64-r))).sum+1 ≤ (base+swaps*swapVolumeRate w)*(M^128*W) at bill
+  rw [show 64-r = g by omega,← size] at bill
+  exact bill
+
+/-- A stopped ordinary record needs no recursive call. Its execution costs at most a constant times child width times volume,
+uniformly in the stopping cutoff. -/
+theorem stoppedOrdinaryChild_exec [M8.Machine.Net] {P U : Type} {T : ℕ}
+    (ports : Fin (N+35) ↪ Fin T) (body : P → Pr P T columnCapacity prime U)
+    : ∃ C : ℕ, ∀ r g, r+g = 64 → 0 < r → ∀ w W, 0 < W →
+      let d := (r+g)+(r+g)
+      let M := prime^(w+1)
+      let is := stoppedParentSchedule r g
+      let bank := ((Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)).trans ports
+      let clean := fun D : Stacks T prime => ∀ k : Fin (N+35), 35 ≤ k.val → D.L (ports k) = [] ∧ D.R (ports k) = []
+      ∀ (v : HS T columnCapacity prime U) (S : Stacks T prime)
+        (record : List (Fin (prime+4))) (dest : ℤ → Fin 4) (q : ℤ)
+        (original : Fin (M^d*W) → ZMod 2)
+        (input : (Fin d → ZMod M) → IntegerMultBounds.Swap.Shear.State (Fin (r+g)) (ZMod M)),
+      let ready := ColumnRecordReady bank M.size W.size record SparseRoleCircuit.encode (fun _ => blank) dest 0 q original
+      ready (fun x => Fin.append (input x).1 (input x).2) S → clean S → ∃ z F n, z.user = v.user ∧
+        n ≤ C*((ordinaryChildDescriptor r g w W).width*(M^d*W)) ∧ Exec body (statePlacedNormalized ports swapStates_fit swapStates_pos Empty.elim
+          (packSchedule d is)) (mk v S) n (mk z F) ∧
+        ready (fun x => let t := Cover.Weighted.child r (fun _ => 1) (fun _ => 1) (input x)
+                        Fin.append t.1 t.2) F ∧ clean F ∧
+        ∀ j, (∀ i, ports i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  obtain ⟨base,swaps,priceBound⟩ := stoppedScheduleTime_le U
+  let K : ℕ := 3808275+⌈M8.RevMachine.LeafCore.C⌉₊
+  refine ⟨1+base+swaps*K,?_⟩
+  intro r g split rankPos w W live d M is bank clean v S record dest q original input ready start free
+  have bill := priceBound r g split w W live
+  have fits : ∀ i ∈ is, i+1 < d := by
+    intro i hi
+    rcases List.mem_append.mp hi with hj | hj
+    · exact (List.mem_append.mp hj).elim ordinaryChildPackSchedule_inside ordinaryStoppedSchedule_inside
+    · exact ordinaryChildPackSchedule_inside (List.mem_reverse.mp hj)
+  obtain ⟨z,F,n,user,time,run,⟨word,layout,reads⟩,empty,frame⟩ :=
+    placedPackSchedule_exec ports is fits body v S record dest q live original _ start free
+  refine ⟨z,F,n,user,?_,run,⟨word,layout,?_⟩,empty,frame⟩
+  · have one : (1 : ℝ) ≤ ((w+1 : ℕ) : ℝ) := by exact_mod_cast Nat.le_add_left 1 w
+    have power : ((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau ≤ ((w+1 : ℕ) : ℝ) := by
+      simpa using Real.rpow_le_rpow_of_exponent_le one M8.Machine.BudgetBound.exponent_range.2.le
+    have coeff : (3808275 : ℝ)+M8.RevMachine.LeafCore.C ≤ K := by
+      dsimp only [K]
+      push_cast
+      exact add_le_add le_rfl (Nat.le_ceil M8.RevMachine.LeafCore.C)
+    have rate : swapVolumeRate w ≤ K*(w+1) := by
+      exact_mod_cast (swapVolumeRate_le w).trans (mul_le_mul coeff power (by positivity) (Nat.cast_nonneg _))
+    have price := bill.trans (Nat.mul_le_mul_right _ (Nat.add_le_add_left (Nat.mul_le_mul_left swaps rate) base))
+    let width := (ordinaryChildDescriptor r g w W).width
+    have atom : w+1 ≤ width := Nat.le_mul_of_pos_right _ rankPos
+    have basePrice : base ≤ base*width := Nat.le_mul_of_pos_right _ (by omega)
+    have scales : swaps*(K*(w+1)) ≤ (swaps*K)*width := by
+      rw [← Nat.mul_assoc]
+      exact Nat.mul_le_mul_left _ atom
+    have volume : 0 < M^d*W := Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) live
+    have room : 1 ≤ width*(M^d*W) := Nat.mul_pos (by omega) volume
+    change n ≤ (1+base+swaps*K)*(width*(M^d*W))
+    calc
+      n ≤ 1+(base+swaps*(K*(w+1)))*(M^d*W) := time.trans (Nat.add_le_add_left price 1)
+      _ ≤ width*(M^d*W)+(base*width+(swaps*K)*width)*(M^d*W) :=
+        Nat.add_le_add room (Nat.mul_le_mul_right _ (Nat.add_le_add basePrice scales))
+      _ = _ := by ring
+  · intro x j
+    obtain ⟨hg,tg,s,eq⟩ := childFields_surjective (r := r) (g := g) (input x).1 (input x).2
+    have read := reads x j
+    dsimp only at read ⊢
+    change childFields hg tg s = input x at eq
+    rw [← eq] at read ⊢
+    have act := stoppedParentSchedule_cell hg tg s.1 (fun k => s.2 k.rev)
+    simp only [Fin.rev_rev,Prod.eta] at act
+    rw [act] at read
+    rw [childFields_apply (fun _ => 1) (fun _ => 1)]
+    simpa only [Cover.Weighted.child,Fin.isLt,ite_true,one_mul] using read
+
+private theorem ordinarySourceWord {r g w W : ℕ}
+    (word : Fin (volume prime (ordinaryChildDescriptor r g w W)) → ZMod 2) (z : ℤ) :
+    M8.Machine.ArbitraryWidthHighExchangeShared.sourceWord word z =
+      RadixToBinary.binaryEncoding.encode (putWord (fun _ => blank) 0
+        (List.ofFn (fun k => SparseRoleCircuit.encode (word (k.cast (ordinaryChildVolume r g w W).symm)))) z) := by
+  rw [swap_source_word]
+  congr 2
+  exact List.ofFn_congr (ordinaryChildVolume r g w W) (SparseRoleCircuit.encode ∘ word)
+
 /-- Surround a transpose on the contiguous recursive word with the two tape
 routes. The return read is in the original parent's weighted-child layout. -/
 theorem ordinaryChildRoute_exec [M8.Machine.Net] {P U : Type} {T : ℕ}
-    (ports : Fin (N+35) ↪ Fin T) (body : P → Pr P T columnCapacity prime U) (r g : ℕ) (positive : 0 < r+g) :
-    ∃ setup swaps : ℕ, ∀ w W, 0 < W →
+    (ports : Fin (N+35) ↪ Fin T) (body : P → Pr P T columnCapacity prime U) (r g : ℕ) (gap : 0 < g) :
+    ∀ w W, 0 < W →
       let d := (r+g)+(r+g)
       let M := prime^(w+1)
       let is := ordinaryChildPackSchedule r g
+      let routeTime := (is.map (fun i => completeSwapTime (P := Empty) (U := U) Empty.elim d i (i+1) w W M.size W.size)).sum+1
       let bank := ((Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)).trans ports
       let pass := fun js => statePlacedNormalized ports swapStates_fit swapStates_pos Empty.elim (packSchedule d js)
       let clean := fun (S : Stacks T prime) => ∀ k : Fin (N+35), 35 ≤ k.val → S.L (ports k) = [] ∧ S.R (ports k) = []
@@ -319,44 +475,49 @@ theorem ordinaryChildRoute_exec [M8.Machine.Net] {P U : Type} {T : ℕ}
         (record : List (Fin (prime+4))) (dest : ℤ → Fin 4) (q : ℤ)
         (original : Fin (M^d*W) → ZMod 2)
         (input : (Fin d → ZMod M) → IntegerMultBounds.Swap.Shear.State (Fin (r+g)) (ZMod M))
-        (child : Pr P T columnCapacity prime U) (budget : ℕ),
+        (f : P) (budget : ℕ),
       let saved := fun D : Stacks T prime => ∀ j, (∀ i, ports i ≠ j) → D.L j = S.L j ∧ D.R j = S.R j
       let desc := ordinaryChildDescriptor r g w W
-      let pos := ordinaryRecursivePosition r g w W
-      let offset := fun (k : Fin (M^d*W)) => k.cast (ordinaryChildVolume r g w W).symm
-      let ready := RecordReady (b := prime) (w := w) (W := W) (d := d) bank M.size W.size
-        record SparseRoleCircuit.encode (fun _ => blank) dest 0 q
+      let onTape := fun (word : Fin (volume prime desc) → ZMod 2) (D : Stacks T prime) =>
+        ∀ z, readAt blank (D.L (bank 24)) (D.R (bank 24)) z = M8.Machine.ArbitraryWidthHighExchangeShared.sourceWord word z
       let columns := ColumnRecordReady bank M.size W.size record SparseRoleCircuit.encode (fun _ => blank) dest 0 q
-      (∀ (before : Fin (M^d*W) → ZMod 2) u D, ready (before ∘ pos ∘ offset) D → clean D → saved D → ∃ y G t, y.user = u.user ∧ t ≤ budget ∧
-        Exec body child (mk u D) t (mk y G) ∧
-        ready (Shared50RecursiveNodeRows.transpose (one_dvd desc.rows) (before ∘ pos) ∘ offset) G ∧ clean G ∧ saved G) →
+      (desc.width < (r+g)*(w+1) → ∀ word u D, onTape word D → clean D → saved D → ∃ y G t, y.user = u.user ∧ t ≤ budget ∧
+        Exec body (body f) (mk u D) t (mk y G) ∧
+        onTape (Shared50RecursiveNodeRows.transpose (one_dvd desc.rows) word) G ∧
+        (∀ j : Fin 35, j ≠ 24 → G.L (bank j) = D.L (bank j) ∧ G.R (bank j) = D.R (bank j)) ∧ clean G ∧ saved G) →
       columns original (fun x => Fin.append (input x).1 (input x).2) S → clean S → ∃ z F n, z.user = v.user ∧
-        n ≤ budget + 2*(1+(setup+swaps*swapVolumeRate w)*(M^d*W)) ∧
-        Exec body (.seq (pass is) (.seq child (pass is.reverse))) (mk v S) n (mk z F) ∧
+        n ≤ budget + 2 + 2*(1+routeTime) ∧
+        Exec body (.seq (pass is) (.seq (.call f) (pass is.reverse))) (mk v S) n (mk z F) ∧
         columns original (fun x => let t := Cover.Weighted.child r (fun _ => 1) (fun _ => 1) (input x)
                                    Fin.append t.1 t.2) F ∧ clean F ∧ saved F := by
-  obtain ⟨setup,swaps,bound⟩ := packTime_le (P := Empty) (U := U) Empty.elim
-    ((r+g)+(r+g)) (ordinaryChildPackSchedule r g) (by omega)
-  refine ⟨setup,swaps,?_⟩
-  intro w W hW d M is bank pass clean v S record dest q original input child budget saved desc pos offset ready columns call start free
+  intro w W hW d M is routeTime bank pass clean v S record dest q original input f budget saved desc onTape columns call start free
   obtain ⟨before,layout,reads⟩ := start
   let after := ordinaryChildOutput (r := r) (g := g) (w := w) before
   have cells := (ordinaryChildOutput_eq_iff (r := r) (g := g) (w := w) before after).1 rfl
   have fits : ∀ i ∈ is, i+1 < d := fun _ => ordinaryChildPackSchedule_inside
   obtain ⟨u,D,n,hu,hn,pack,packed,clear,kept⟩ := placedPackSchedule_exec ports is fits body v S record dest q hW
     before id ⟨before,layout,fun _ _ => rfl⟩ free
-  obtain ⟨y,G,k,hy,hk,run,returned,available,live⟩ := call before u D ((ordinaryPackedWord_iff ..).1 packed) clear kept
+  have stored := (ordinaryPackedWord_iff ..).1 packed
+  have smaller : desc.width < (r+g)*(w+1) := by
+    change (w+1)*r < (r+g)*(w+1)
+    rw [Nat.mul_comm]
+    exact Nat.mul_lt_mul_of_pos_right (by omega) (by omega)
+  obtain ⟨y,G,k,hy,hk,run,returned,keep,available,live⟩ := call smaller (before ∘ ordinaryRecursivePosition r g w W) u D (by
+    intro z
+    simpa only [bank,desc,ordinarySourceWord,sub_zero,Function.comp_def] using stored.src z) clear kept
   have changed : columns after (fun x => is.foldl adjacentFields x) G := by
     apply (ordinaryPackedWord_iff ..).2
     simp only [cells]
-    exact returned
+    apply stored.returnPayload keep
+    intro z
+    simpa only [bank,desc,ordinarySourceWord,sub_zero,Function.comp_def] using (returned z).symm
   obtain ⟨z,F,m,hz,hm,unpack,⟨word,done,placed⟩,empty,frame⟩ := placedPackSchedule_exec ports is.reverse
     (fun i hi => fits i (List.mem_reverse.mp hi)) body y G record dest q hW after _ changed available
   simp only [reverse_adjacentFields] at placed
   simp only [List.map_reverse,List.sum_reverse] at hm
-  have price := bound w W hW
-  refine ⟨z,F,n+(k+m),hz.trans (hy.trans hu),?_,.seq pack (.seq run unpack),⟨word,done,?_⟩,empty,?_⟩
-  · dsimp only [is,d,M] at *
+  refine ⟨z,F,n+(k+2+m),hz.trans (hy.trans hu),?_,.seq pack (.seq (.call run) unpack),⟨word,done,?_⟩,empty,?_⟩
+  · change n ≤ 1+routeTime at hn
+    change m ≤ 1+routeTime at hm
     omega
   · intro x j
     apply (placed _ j).trans
@@ -368,5 +529,60 @@ theorem ordinaryChildRoute_exec [M8.Machine.Net] {P U : Type} {T : ℕ}
   · intro j off
     exact ⟨(frame j off).1.trans (live j off).1,(frame j off).2.trans (live j off).2⟩
 
+
+/-- Compare the prepared binary child width with the cutoff. Equality executes the stopped exchange. -/
+theorem ordinaryChildDispatch_exec [M8.Machine.Net] {P U : Type} {T : ℕ}
+    (ports : Fin (N+35) ↪ Fin T) (body : P → Pr P T columnCapacity prime U) (cmp : Fin 6 ↪ Fin T) :
+    ∃ C : ℕ, ∀ r g, r+g = 64 → 0 < r → 0 < g → ∀ w W, 0 < W →
+      let d := (r+g)+(r+g)
+      let M := prime^(w+1)
+      let is := ordinaryChildPackSchedule r g
+      let routeTime := (is.map (fun i => completeSwapTime (P := Empty) (U := U) Empty.elim d i (i+1) w W M.size W.size)).sum+1
+      let bank := ((Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)).trans ports
+      let pass := fun js => statePlacedNormalized ports swapStates_fit swapStates_pos Empty.elim (packSchedule d js)
+      let clean := fun (S : Stacks T prime) => ∀ k : Fin (N+35), 35 ≤ k.val → S.L (ports k) = [] ∧ S.R (ports k) = []
+      ∀ (v : HS T columnCapacity prime U) (S : Stacks T prime)
+        (record : List (Fin (prime+4))) (dest : ℤ → Fin 4) (q : ℤ)
+        (original : Fin (M^d*W) → ZMod 2)
+        (input : (Fin d → ZMod M) → IntegerMultBounds.Swap.Shear.State (Fin (r+g)) (ZMod M))
+        (f : P) (budget cutoff L : ℕ),
+      let saved := fun D : Stacks T prime => ∀ j, (∀ i, ports i ≠ j) → D.L j = S.L j ∧ D.R j = S.R j
+      let desc := ordinaryChildDescriptor r g w W
+      let onTape := fun (word : Fin (volume prime desc) → ZMod 2) (D : Stacks T prime) =>
+        ∀ z, readAt blank (D.L (bank 24)) (D.R (bank 24)) z = M8.Machine.ArbitraryWidthHighExchangeShared.sourceWord word z
+      let columns := ColumnRecordReady bank M.size W.size record SparseRoleCircuit.encode (fun _ => blank) dest 0 q
+      cutoff < 2^L → desc.width < 2^L →
+      S.R (cmp 0) = binSyms L cutoff → S.R (cmp 1) = binSyms L desc.width →
+      S.R (cmp 2) = [] → S.R (cmp 3) = [] → S.R (cmp 4) = [] →
+      (cutoff < desc.width → desc.width < (r+g)*(w+1) → ∀ word u D, onTape word D → clean D → saved D → ∃ y G t, y.user = u.user ∧ t ≤ budget ∧
+        Exec body (body f) (mk u D) t (mk y G) ∧
+        onTape (Shared50RecursiveNodeRows.transpose (one_dvd desc.rows) word) G ∧
+        (∀ j : Fin 35, j ≠ 24 → G.L (bank j) = D.L (bank j) ∧ G.R (bank j) = D.R (bank j)) ∧ clean G ∧ saved G) →
+      columns original (fun x => Fin.append (input x).1 (input x).2) S → clean S → ∃ z F n, z.user = v.user ∧
+        n ≤ 8*L+9+(if cutoff < desc.width then budget+2+2*(1+routeTime) else C*(desc.width*(M^d*W))) ∧
+        Exec body (.seq (blt (cmp 0) (cmp 1) (cmp 2) (cmp 3) (cmp 4) (cmp 5))
+          (.cond (fun u => symBit (u.scan (cmp 5))) (.seq (pass is) (.seq (.call f) (pass is.reverse)))
+            (pass (stoppedParentSchedule r g)))) (mk v S) n (mk z F) ∧
+        columns original (fun x => let t := Cover.Weighted.child r (fun _ => 1) (fun _ => 1) (input x)
+                                   Fin.append t.1 t.2) F ∧ clean F ∧ saved F := by
+  obtain ⟨C,stopped⟩ := stoppedOrdinaryChild_exec ports body
+  refine ⟨C,?_⟩
+  intro r g split rankPos gap w W hW d M is routeTime bank pass clean v S record dest q original input f budget cutoff L
+    saved desc onTape columns cutFits widthFits cutWord widthWord tx ty tz recurse start free
+  obtain ⟨u,user,flag,_,compare⟩ := blt_exec body (a := cmp 0) (b := cmp 1) (tx := cmp 2)
+    (ty := cmp 3) (tz := cmp 4) (cy := cmp 5) (by simp [List.nodup_cons])
+    (cmp.injective.ne (by decide)) (cmp.injective.ne (by decide)) cutFits widthFits v S cutWord widthWord tx ty tz
+  by_cases active : cutoff < desc.width
+  · obtain ⟨z,F,n,hu,cost,run,done,clear,kept⟩ := ordinaryChildRoute_exec ports body r g gap w W hW
+      u S record dest q original input f budget (recurse active) start free
+    refine ⟨z,F,_,hu.trans user,?_,Exec.seq compare (Exec.cond_true (by simp [mk_var,flag,active]) run),done,clear,kept⟩
+    rw [ite_eq_left active]
+    change n ≤ budget+2+2*(1+routeTime) at cost
+    omega
+  · obtain ⟨z,F,n,hu,cost,run,done,clear,kept⟩ := stopped r g split rankPos w W hW u S record dest q original input start free
+    refine ⟨z,F,_,hu.trans user,?_,Exec.seq compare (Exec.cond_false (by simp [mk_var,flag,active]) run),done,clear,kept⟩
+    rw [ite_eq_right active]
+    change n ≤ C*(desc.width*(M^d*W)) at cost
+    omega
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
