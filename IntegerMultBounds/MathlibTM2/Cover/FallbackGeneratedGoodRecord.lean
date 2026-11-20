@@ -3,6 +3,7 @@ module
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackGoodRecordRoundTrip
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackConjugationQueue
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackFormulaInit
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackRecordCleanup
 
 /-! Read a live directory label, compute the conjugate, and run the good-record round trip. -/
 @[expose] public section
@@ -78,7 +79,39 @@ theorem readWithSuccessorClock_writes {T Q A : ℕ} {P U : Type} (body : P → P
     funext i; by_cases h : i = clock <;> simp [h,apart]
   simpa [restore,E,D,Node.dropTop,Action.run,update_rt,Function.update_comm apart,apart,apart.symm] using pop
 
-open RingFormula LabelTraversal in
+/-- Advance across one physical record of the supplier directory, using the
+same reciprocal clock as the matrix reader. All remaining entries stay in order. -/
+theorem advanceGoodRecord_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
+    (r : Fin 6 ↪ Fin T) (m w label : ℕ) (ancestor : ℕ → List (Fin (prime+4)))
+    (labels : List ℕ) (tail : List (Fin (prime+4))) (u : HS T Q prime U) (S : Stacks T prime)
+    (stream : S.R (r 2) = ((label :: labels).flatMap (LabelDirectory.entry ancestor m (w+1))) ++ tail)
+    (prefixLen : (S.R (r 0)).length = (ancestor label).length) (ticks : (S.R (r 1)).length = w)
+    (scratch : S.R (r 3) = []) :
+    let rest := labels.flatMap (LabelDirectory.entry ancestor m (w+1)) ++ tail
+    ∃ z, z.user = u.user ∧ Exec body (readWithSuccessorClock (r 1) (advanceDirectory m r))
+      (mk u S) (1+(4*(ancestor label).length+4+(m*m*(4*(w+1)+4)+1)+1))
+      (mk z {S with R := Function.update S.R (r 2) rest}) := by
+  intro rest
+  let D := {S with R := Function.update S.R (r 1) (Node.tick :: S.R (r 1))}
+  have keep (i : Fin 6) (hi : i ≠ 1) : D.R (r i) = S.R (r i) :=
+    Function.update_of_ne (r.injective.ne hi) _ _
+  have push : Exec body (.act (.push (.rt (r 1)) (fun _ => Node.tick) .done)) (mk u S) 1 (mk u D) := by
+    simpa [D,Action.run,update_rt] using Exec.act (body := body) (.push (.rt (r 1)) (fun _ => Node.tick) .done) (mk u S)
+  obtain ⟨z,hz,advance⟩ := advanceDirectory_exec body r m (w+1) label (ancestor label) rest u D
+    (by rw [keep 2 (by decide),stream]; simp [LabelDirectory.entry,rest,List.append_assoc])
+    ((congrArg List.length (keep 0 (by decide))).trans prefixLen) (by simp [D,ticks])
+    ((keep 3 (by decide)).trans scratch)
+  let E := {D with R := Function.update D.R (r 2) rest}
+  have pop := Exec.act (body := body) (Node.dropTop (r 1) .done) (mk z E)
+  refine ⟨z,hz,Exec.seq push (Exec.seq advance ?_)⟩
+  have restore : Function.update (Function.update S.R (r 2) rest) (r 1) (S.R (r 1)) = Function.update S.R (r 2) rest := by
+    funext i; by_cases h : i = r 1 <;> simp [h,r.injective.eq_iff]
+  simpa [E,D,Node.dropTop,Action.run,update_rt,Function.update_comm (r.injective.ne (by decide : (1 : Fin 6) ≠ 2)),
+    r.injective.eq_iff,restore] using pop
+
+def goodRecordScanPorts : Fin 6 ↪ Fin 7 := ⟨![3,0,1,6,2,5],by decide⟩
+
+open RingFormula LabelTraversal IntegerMultBounds.MathlibTM2.Fast.Main in
 theorem generatedGoodRecordRoundTrip_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ} {F U : Type}
     (v : Descriptor) (positive : v.Positive) (w : ℕ) (proj : Matrix (Fin m) (Fin m) ℚ)
     (width : v.width = proj.rank*(w+1)) (idem : proj*proj = proj)
@@ -119,7 +152,14 @@ theorem generatedGoodRecordRoundTrip_exec [M8.Machine.Net] {T m work Q fields H 
     ∀ (ef : entry.tapes ≤ common+work) (xf : leave.tapes ≤ common+work)
       (eqs : entry.states ≤ Q) (xqs : leave.states ≤ Q) (word : Fin N → ZMod 2) (body : F → Pr F K Q prime U)
       (u : HS _ Q prime U) (whole : Stacks K prime),
-      ∀ (headers : Fin 6 ↪ Fin 58) (poolFits : (conjugationDepth m+1)*13 ≤ work) (ancestor tail : List (Fin (prime+4))),
+      ∀ (slots : Fin 7 ↪ Fin 58) (poolFits : (conjugationDepth m+1)*13 ≤ work)
+        (prefixes : ℕ → List (Fin (prime+4))) (labels : List ℕ) (archiveTail : List (Fin (prime+4))),
+      let headers := (Fin.castAddEmb (n := 6) 1).trans slots
+      let scanCaller := goodRecordScanPorts.trans slots
+      let scan := (scanCaller.trans (Fin.castAddEmb 8)).trans caller
+      let ancestor := prefixes label
+      let tail := labels.flatMap (LabelDirectory.entry prefixes m (w+1)) ++ archiveTail
+      (∀ i : Fin 6, i < 4 → scanCaller i ≠ 24) → whole.R (scan 3) = [] →
       let joined := recordLoaderBank record
       let dirSlots := goodRecordDirectoryPorts headers
       let dir := dirSlots.trans joined
@@ -147,7 +187,7 @@ theorem generatedGoodRecordRoundTrip_exec [M8.Machine.Net] {T m work Q fields H 
         (.seq (packedConjugate pool inputs ports false true) (.seq (bclear (pivot 0)) (bclear (pivot 14))))) (bclear packedLabel)))
       let withZero := (Node.umulSym 1 (bitSymbol false) (dir 8) zeros (dir 4)).seq (generate.seq (bclear zeros))
       let field := fun i => caller ((headers i).castAdd 8)
-      whole.R (field 1) = ancestor ++ (LabelDirectory.digits m (w+1) label).map RadixDigits.digitSymbol ++ tail →
+      whole.R (field 1) = (label :: labels).flatMap (LabelDirectory.entry prefixes m (w+1)) ++ archiveTail →
       (whole.R (field 3)).length = ancestor.length →
       (∀ j, whole.R (pool j) = []) →
       (∃ suffix, whole.R (field 4) = matrixWords prime H (reduce M proj) ++ suffix) →
@@ -188,18 +228,26 @@ theorem generatedGoodRecordRoundTrip_exec [M8.Machine.Net] {T m work Q fields H 
       let loading := ((6*(whole.R (caller 55)).length+6)+((10*H+12)+(m*(10*M.size+8*(H-M.size)+12)+1+
         (2*packed.length+2))))+((10*M.size+10)+(6*(whole.R (caller 45)).length+6))
       let conversion := (m*m)*(10*M.size+8*(H-M.size)+12)+1+(2*(matrixWords prime M.size G).length+2)
-      ∃ z D t ys, z.user = u.user ∧ t ≤ ((conjugationDepth m+1)*(6*H+6)+1 + (((4*H+4)+(generation+(2*H+2)))+((conjugationDepth m+1)*(2*H+2)+1))) + ((dimensionTime H 1 fields+(4*(fields*H+1)+6)+(10*J+12)+(6*(M^fields).size+6)) +
-        (loading+(conversion+(budget+2*((218*N+1)*13+6)+3)))) ∧
-        Exec body (((initFrames pool (pivot 4) (conjugationDepth m+1)).seq (withZero.seq (clearFrames pool (conjugationDepth m+1)))).seq ((recordCounterSetup caller fields).seq ((recordInputProgram record m).seq ((recordMatrixProgram record m).seq ((.act (pushMarkers marks) : Pr F K Q prime U).seq
-          ((transfer r).seq ((embProg inner Empty.elim coordinate).seq (transfer reverse)))))))) (mk u whole) t (mk z D) ∧
+      let runCost := ((conjugationDepth m+1)*(6*H+6)+1 + (((4*H+4)+(generation+(2*H+2)))+((conjugationDepth m+1)*(2*H+2)+1))) + ((dimensionTime H 1 fields+(4*(fields*H+1)+6)+(10*J+12)+(6*(M^fields).size+6)) +
+        (loading+(conversion+(budget+2*((218*N+1)*13+6)+3)))) + (1+(4*ancestor.length+4+(m*m*(4*(w+1)+4)+1)+1))
+      let recordProgram : Pr F K Q prime U := ((((initFrames pool (pivot 4) (conjugationDepth m+1)).seq (withZero.seq (clearFrames pool (conjugationDepth m+1)))).seq ((recordCounterSetup caller fields).seq ((recordInputProgram record m).seq ((recordMatrixProgram record m).seq ((.act (pushMarkers marks) : Pr F K Q prime U).seq
+          ((transfer r).seq ((embProg inner Empty.elim coordinate).seq (transfer reverse)))))))).seq (readWithSuccessorClock (scan 1) (advanceDirectory m scan)))
+      let privateTapes := (List.finRange K).filter fun i => decide (58 ≤ i.val)
+      let initialClear := (privateTapes.map fun i => 4*(whole.L i).length+2*(whole.R i).length+4).sum+1
+      ∀ c, (∀ f, mnProgPush (body f) ≤ c) →
+      ∃ z D t ys, z.user = u.user ∧ t ≤ runCost + (initialClear + 6*(max (mnProgPush recordProgram) c * runCost)) ∧
+        Exec body (recordProgram.seq (clearWorkTapes privateTapes)) (mk u whole) t (mk z D) ∧
+        (∀ i : Fin K, 58 ≤ i.val → D.L i = [] ∧ D.R i = []) ∧
         effect ys ∧ (∀ k, readAt blank (D.L (r 0)) (D.R (r 0)) (k-head) =
           RadixToBinary.binaryEncoding.encode (putWord source head (ys.map SparseRoleCircuit.encode) k)) ∧
-        ∀ j : Fin 58, j ≠ 24 → let port := caller (j.castAdd 8)
+        D.R (scan 2) = tail ∧
+        ∀ j : Fin 58, j ≠ 24 → j ≠ scanCaller 2 → let port := caller (j.castAdd 8)
           D.L port = whole.L port ∧ D.R port = whole.R port := by
   intro d common host M N entry leave record bank g G rep clean logical addr inner caller K ef xf eqs xqs word
-    body u whole headers poolFits ancestor tail joined dirSlots dir pool pivot counters clockSlot widthSlot unitSlot inputs ports a digits prefixWidth zeros
+    body u whole slots poolFits prefixes labels archiveTail headers scanCaller scan ancestor tail scanOff scanBlank joined dirSlots dir pool pivot counters clockSlot widthSlot unitSlot inputs ports a digits prefixWidth zeros
     packedLabel clock count formula formulaCost detFormula C readCost generation generate withZero field dirInput prefixInput poolBlank projectorInput slot r S base unit trailing spare input blank initial free empty good
     one ticks archive scratch call cost budget coordinate effect reverse transfer marks packed loading conversion
+    runCost recordProgram privateTapes initialClear c bodyBound
 
   let mat := fun b : Bool => if b then reduce M proj else g
   let out := inner (record 16)
@@ -259,7 +307,10 @@ theorem generatedGoodRecordRoundTrip_exec [M8.Machine.Net] {T m work Q fields H 
     revert hi
     fin_cases i <;> simp <;> exact regEmpty _ (by decide)
   have header (i : Fin 6) : joined ((headers i).castAdd 24) = field i := recordLoaderBank_caller record (headers i)
-  have directoryWord := (congrArg whole.R (header 1)).trans dirInput
+  have directoryWord : whole.R (dir 2) = ancestor ++ (LabelDirectory.digits m (w+1) label).map RadixDigits.digitSymbol ++ tail := by
+    change whole.R (joined ((headers 1).castAdd 24)) = _
+    simpa only [ancestor,tail,List.flatMap_cons,LabelDirectory.entry,List.append_assoc] using
+      (congrArg whole.R (header 1)).trans dirInput
   have prefixLen := (congrArg (fun i => (whole.R i).length) (header 3)).trans prefixInput
   have fieldClock : dir 1 = clock := by
     change joined ((headers 0).castAdd 24) = joined 45
@@ -412,11 +463,45 @@ theorem generatedGoodRecordRoundTrip_exec [M8.Machine.Net] {T m work Q fields H 
     ((preserved 55).trans archive)
     (by intro i hi
         exact (Function.update_of_ne (inner.injective.ne (record.injective.ne hi)) _ _).trans (scratch i hi))
-  refine ⟨z,D,_,ys,hz.trans hy,Nat.add_le_add hn ?_,Exec.seq runWriter run,act,read,?_⟩
-  · rw [show B.R ((Fin.castAddEmb (CommonBank.count T+24+31+work)) 55) = whole.R (caller 55) from preserved 55,
+  have keptCaller (j : Fin 58) (ne : j ≠ 24) :=
+    (frame j ne).2.trans (preserved _)
+  have keptScan (i : Fin 6) (hi : i < 4) : D.R (scan i) = whole.R (scan i) :=
+    keptCaller _ (scanOff i hi)
+  obtain ⟨last,user,advance⟩ := advanceGoodRecord_exec body scan m w label prefixes labels archiveTail z D
+    ((keptScan 2 (by decide)).trans dirInput)
+    ((congrArg List.length (keptScan 0 (by decide))).trans prefixInput)
+    ((congrArg List.length (keptScan 1 (by decide))).trans (show (whole.R (field 0)).length = w by
+      change (whole.R (caller ((headers 0).castAdd 8))).length = _
+      rw [clockSlot]; exact ticks))
+    ((keptScan 3 (by decide)).trans scanBlank)
+  let finalBank := {D with R := Function.update D.R (scan 2) tail}
+  have step : Exec body recordProgram (mk u whole) _ (mk last finalBank) :=
+    Exec.seq (Exec.seq runWriter run) advance
+  have bound : n+t+(1+(4*ancestor.length+4+(m*m*(4*(w+1)+4)+1)+1)) ≤ runCost := by
+    apply Nat.add_le_add_right (Nat.add_le_add hn _) _
+    rw [show B.R ((Fin.castAddEmb (CommonBank.count T+24+31+work)) 55) = whole.R (caller 55) from preserved 55,
       show B.R ((Fin.castAddEmb (CommonBank.count T+24+31+work)) 45) = whole.R (caller 45) from preserved 45] at ht
     exact ht
-  · intro j ne
-    exact ⟨(frame j ne).1,(frame j ne).2.trans (preserved _)⟩
+  have distinct : privateTapes.Nodup := (List.nodup_finRange K).filter _
+  obtain ⟨finish,userFinish,clear⟩ := clearWorkTapes_exec body privateTapes distinct last finalBank
+  have charge := recordCleanup_cost_le privateTapes distinct step (le_max_left (mnProgPush recordProgram) c)
+    (fun f => (bodyBound f).trans (le_max_right _ _))
+  have privateMem (i : Fin K) : i ∈ privateTapes ↔ 58 ≤ i.val := by simp [privateTapes]
+  have callerOut (j : Fin 58) : caller (j.castAdd 8) ∉ privateTapes := by
+    rw [privateMem]; exact Nat.not_le_of_lt j.isLt
+  have payloadOut : r 0 ∉ privateTapes := by rw [first]; exact callerOut 24
+  refine ⟨finish,_,_,ys,userFinish.trans (user.trans (hz.trans hy)),Nat.add_le_add bound
+    (charge.trans (Nat.add_le_add_left (Nat.mul_le_mul_left 6 (Nat.mul_le_mul_left _ bound)) _)),
+    Exec.seq step clear,?_,act,?_,?_,?_⟩
+  · intro i hi; simp [(privateMem i).mpr hi]
+  · have off : r 0 ≠ scan 2 := by
+      rw [first]
+      exact caller.injective.ne ((Fin.castAddEmb 8).injective.ne (scanOff 2 (by decide)).symm)
+    simpa only [ite_eq_right payloadOut,finalBank,Function.update_of_ne off] using read
+  · simp [show scan 2 ∉ privateTapes from callerOut _,finalBank]
+  · intro j ne nd
+    have off : caller (j.castAdd 8) ≠ scan 2 := caller.injective.ne ((Fin.castAddEmb 8).injective.ne nd)
+    simp only [ite_eq_right (callerOut j)]
+    exact ⟨(frame j ne).1,(Function.update_of_ne off _ _).trans (keptCaller j ne)⟩
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
