@@ -1373,7 +1373,7 @@ def ArchiveRun [M8.Machine.Net] {m d K w W J N : ℕ} {P U : Type}
         (directoryExceptionalProgram m d room capacity) ((embProg placement id skip).seq advance)) (mk u S) n (mk z B)
 
 open IntegerMultBounds.MathlibTM2.Fast.Main RingFormula in
-theorem generatedArchive_exec [M8.Machine.Net] {m d K w W J N : ℕ} {P U : Type}
+def GeneratedArchiveRun [M8.Machine.Net] {m d K w W J N : ℕ} {P U : Type}
     (dimension : m+m = d+1) (vDescriptor : Descriptor) (proj : Matrix (Fin m) (Fin m) ℚ)
     (parent inv : Fin m → ZMod (prime^(w+1)))
     (data : ScanData m d w W)
@@ -1386,10 +1386,7 @@ theorem generatedArchive_exec [M8.Machine.Net] {m d K w W J N : ℕ} {P U : Type
     (good skip : Pr P (66+K) columnCapacity prime U) (ordinaryCost : ℕ → ℕ) (ordinaryCeiling : ℕ)
     (ordinaryEffect : ℕ → (Fin N → ZMod 2) → (Fin N → ZMod 2) → Prop)
     (u : HS (66+(K+1)) columnCapacity prime U) (S : Stacks (66+(K+1)) prime)
-    (fits : (36+2*m+1+(conjugationDepth m+1)*13)+3 ≤ K+1)
-    (hm : prime^(w+1) < 2^data.H) (reciprocal : ∀ i, parent i * inv i = 1)
-    (scan : ∀ y D, ArchiveRun (J := J) dimension vDescriptor proj parent inv data room capacity body c prefixes
-      archiveTail rankFits source head length original good skip ordinaryCost ordinaryCeiling ordinaryEffect y D) :
+    : Prop :=
     let e := finSumFinEquiv.trans (finCongr dimension)
     let physical := data.physical e proj parent inv
     let φ := LabelRing.res prime (w+1) (by omega)
@@ -1450,7 +1447,29 @@ theorem generatedArchive_exec [M8.Machine.Net] {m d K w W J N : ℕ} {P U : Type
           (4*scratch.length+1 + scratch.length*(6*(p*initTime))) +
           (data.records*(baseline+6)+2 + exceptionalCount*(exceptionalVolumeRate U d m scratch.length push w*N))) ∧
       Exec body (prepare.seq (classifiedScan (placement (caller 57)) (placement (caller 56)) ((embProg placement id good).seq advance)
-        (directoryExceptionalProgram m d room capacity) ((embProg placement id skip).seq advance))) (mk u S) (setupSteps+n) (mk z B) := by
+        (directoryExceptionalProgram m d room capacity) ((embProg placement id skip).seq advance))) (mk u S) (setupSteps+n) (mk z B)
+
+open IntegerMultBounds.MathlibTM2.Fast.Main RingFormula in
+theorem generatedArchive_exec [M8.Machine.Net] {m d K w W J N : ℕ} {P U : Type}
+    (dimension : m+m = d+1) (vDescriptor : Descriptor) (proj : Matrix (Fin m) (Fin m) ℚ)
+    (parent inv : Fin m → ZMod (prime^(w+1)))
+    (data : ScanData m d w W)
+    (room : Record.size d+(rowSwapBlock.tapes+35+2) ≤ K+1)
+    (capacity : (anchorProgram d true).1+(anchorProgram d false).1+1 ≤ columnCapacity)
+    (body : P → Pr P (66+(K+1)) columnCapacity prime U) (c : ℕ)
+    (prefixes : ℕ → List (Fin (prime+4))) (archiveTail : List (Fin (prime+4)))
+    (rankFits : proj.rank ≤ m)
+    (source : ℤ → Fin 4) (head : ℤ) (length : N = (prime^(w+1))^m*((prime^(w+1))^m*W)) (original : Fin N → ZMod 2)
+    (good skip : Pr P (66+K) columnCapacity prime U) (ordinaryCost : ℕ → ℕ) (ordinaryCeiling : ℕ)
+    (ordinaryEffect : ℕ → (Fin N → ZMod 2) → (Fin N → ZMod 2) → Prop)
+    (u : HS (66+(K+1)) columnCapacity prime U) (S : Stacks (66+(K+1)) prime)
+    (fits : (36+2*m+1+(conjugationDepth m+1)*13)+3 ≤ K+1)
+    (hm : prime^(w+1) < 2^data.H) (reciprocal : ∀ i, parent i * inv i = 1)
+    (scan : ∀ y D, ArchiveRun (J := J) dimension vDescriptor proj parent inv data room capacity body c prefixes
+      archiveTail rankFits source head length original good skip ordinaryCost ordinaryCeiling ordinaryEffect y D) :
+    GeneratedArchiveRun (J := J) dimension vDescriptor proj parent inv data room capacity body c prefixes
+      archiveTail rankFits source head length original good skip ordinaryCost ordinaryCeiling ordinaryEffect u S := by
+  unfold GeneratedArchiveRun
   intro e physical φ live bad code schedule ready placement caller payload pending frame effect initial empty liveBits badBits
     advance exceptionalCount scratch push binaryTime initTime queueTime
   have input := initial.1
@@ -1875,7 +1894,13 @@ def GeneratedRecordSpec [M8.Machine.Net] {T m work Q fields H J W : ℕ} {F U : 
             source head (fieldsEq ▸ length) word (states ▸ recordProgram.seq (clearWorkTapes privateTapes))
             (states ▸ skip) (fun j => if liveBit j then charge j else skipCost j)
             (if 0 < d ∧ H = M.size ∧ J = W.size then min (charge 0) binaryCharge else charge 0)
-            (fun j => if liveBit j then effect j else Eq) u S
+            (fun j => if liveBit j then effect j else Eq) u S ∧
+          ((36+2*m+1+(conjugationDepth m+1)*13)+3 ≤ (host+31+work)+1 →
+          GeneratedArchiveRun (J := J) shape v proj parent parentInv data room anchor outer push prefixes archiveTail rankFits
+            source head (fieldsEq ▸ length) word (states ▸ recordProgram.seq (clearWorkTapes privateTapes))
+            (states ▸ skip) (fun j => if liveBit j then charge j else skipCost j)
+            (if 0 < d ∧ H = M.size ∧ J = W.size then min (charge 0) binaryCharge else charge 0)
+            (fun j => if liveBit j then effect j else Eq) u S)
       else
       ∀ (room : m*m+m*m ≤ (host+31)+work) (B : ℕ),
       let rs := residuePairs (m*m) room
@@ -1905,7 +1930,39 @@ def GeneratedRecordSpec [M8.Machine.Net] {T m work Q fields H J W : ℕ} {F U : 
             (calls : ∀ f, outer f = embProg placement id (body f)) (v : HS _ Q prime U) (B : Stacks _ prime),
             embDn placement v = u → embStk placement B = whole →
             ∃ y E, y.user = v.user ∧ embStk placement E = D ∧ E.R archive = B.R archive ∧
-              Exec outer (embProg placement id prepare) (mk v B) n (mk y E)) ∧
+              Exec outer (embProg placement id prepare) (mk v B) n (mk y E) ∧
+              (∀ (data : ScanData m dimension w W) (shape : m+m = dimension+1)
+                (anchor : (anchorProgram dimension true).1+(anchorProgram dimension false).1+1 ≤ columnCapacity)
+                (states : Q = columnCapacity) (fieldsEq : fields = m)
+                (extra : (36+2*m+1+(conjugationDepth m+1)*13)+3 ≤ (host+31+work)+1)
+                (push : ℕ), (∀ f, mnProgPush (outer f) ≤ push) →
+                data.H = H → data.records = LabelMask.records directory → B.R archive = [] →
+                let scanBody : F → Pr F _ columnCapacity prime U := states ▸ outer
+                let e := finSumFinEquiv.trans (finCongr shape)
+                let action := fun j (x y : Fin N → ZMod 2) => if liveBit j && badBit j then
+                  ∀ a k, y ((FlatCoordinateLayout.index ((projectorResidual e (reduce M proj) parent parentInv
+                    (physicalLabel m (w+1) j)).mulVec a) k).cast (directoryPayloadLength e (fieldsEq ▸ length))) =
+                    x ((FlatCoordinateLayout.index a k).cast (directoryPayloadLength e (fieldsEq ▸ length)))
+                  else (if liveBit j then effect j else Eq) x y
+                ∃ (archivePass : Pr F _ columnCapacity prime U), ∃ finish final steps next,
+                  finish.user = v.user ∧ ready (embStk placement final) [] ∧ payload next (embStk placement final) ∧
+                  labels.foldl (fun history j y => ∃ x, history x ∧ action j x y) (· = word) next ∧
+                  final.R archive = [] ∧ final.R (placement mask) = [] ∧ final.R (placement mode) = [] ∧
+                  (∀ baseline, H = M.size → J = W.size → (E.R (placement (caller 47))).length ≤ N →
+                    (if 0 < d ∧ H = M.size ∧ J = W.size then min (charge 0) binaryCharge else charge 0) + N ≤ baseline →
+                    let V := data.records*N
+                    let suffix := (E.R (placement (caller 48))).drop (m*m*H)
+                    let budget := directoryQueueInitRate m dimension*((1+m*m)*V+archiveTail.length+suffix.length)
+                    let work := (List.finRange (66+(host+31+work+1))).filter fun i => decide (58 ≤ i.val ∧ i ≠ archive)
+                    let p := max (mnProgPush archivePass) push
+                    let setup := budget + ((12*m*m+4+directoryMatrixRate m dimension)*V+4) +
+                      (4*work.length+1+work.length*(6*(p*budget)))
+                    let exceptional := ((∑ k ∈ Finset.range d, (k+1)*(m+1))*data.records)/prime
+                    n+steps ≤ setupCost + (setup + (data.records*(baseline+6)+2 +
+                      exceptional*(exceptionalVolumeRate U dimension m work.length
+                        (max (mnProgPush (directoryExceptionalCore (P := F) (U := U) dimension archiveRoom anchor)) push) w*N)))) ∧
+                  Exec scanBody ((states ▸ embProg placement id prepare).seq archivePass)
+                    (mk (states ▸ v) B) (n+steps) (mk finish final))) ∧
       ∀ (fallback : Pr F K Q prime U) (badCost : ℕ → ℕ) (badEffect : ℕ → (Fin N → ZMod 2) → (Fin N → ZMod 2) → Prop),
       (∀ i is word (u : HS K Q prime U) (S : Stacks K prime), LabelStock.live m (w+1) 1 i = true → fallbackBit rankFits (reduce M proj) (g i) = true → ready S (i :: is) → payload word S →
         ∃ z D n next, z.user = u.user ∧ n ≤ badCost i ∧ Exec body fallback (mk u S) n (mk z D) ∧
@@ -1973,11 +2030,20 @@ theorem generatedOrdinaryRecord_exec [M8.Machine.Net] {T m work Q fields H J W :
       subst Q
       subst fields
       subst H
+      let ceiling := if 0 < d ∧ data.H = M.size ∧ J = W.size then min (charge 0) binaryCharge else charge 0
+      suffices scanned : ∀ y D, ArchiveRun (J := J) shape v proj parent parentInv data room anchor outer push
+          prefixes archiveTail rankFits source head length initialWord (recordProgram.seq (clearWorkTapes privateTapes))
+          skip (fun j => if liveBit j then charge j else skipCost j) ceiling (fun j => if liveBit j then effects j else Eq) y D by
+        exact ⟨scanned u S,fun extra => generatedArchive_exec shape v proj parent parentInv data room anchor outer push
+          prefixes archiveTail rankFits source head length initialWord (recordProgram.seq (clearWorkTapes privateTapes))
+          skip _ ceiling _ u S extra hm reciprocal scanned⟩
+      intro y D
       apply DirectoryReady.runArchive shape v proj idem (by
         simpa using admissible_of_lt Networks.Shared50ModularControl.prime_prime (fun k (h : k ∈ denominators proj) => hd k (by simp [factorizationDenominators,h])) 1) parent parentInv reciprocal data hm hw hW room anchor outer push bounded prefixes archiveTail
-        factor hd rankFits source head length initialWord u S body calls (recordProgram.seq (clearWorkTapes privateTapes))
+        factor hd rankFits source head length initialWord y D body calls (recordProgram.seq (clearWorkTapes privateTapes))
         skip (fun j => if liveBit j then charge j else skipCost j) _ (fun j => if liveBit j then effects j else Eq)
-      · intro j widthEq
+      · dsimp only [ceiling]
+        intro j widthEq
         have same : charge j = charge 0 := by simp only [charge,runBills,widthEq]
         have cheap : skipCost j ≤ charge j := (Nat.le_add_left _ _).trans (Nat.le_add_right (runBills j) _)
         have prefixBound : 4*(prefixes j).length ≤ skipCost j := by dsimp only [skipCost]; omega
@@ -2459,9 +2525,10 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
     packedLabel clock count formula detFormula generationBill generate withZero field slot r src dst gs matrices liveBit badBit φ table fallbackCode schedules ready payload
     call cost budget coordinate effects reverse transfer marks loading conversion headerCost raw tripCost runBills prepareCounters prepareHeaders recordProgram
     privateTapes initialClear c bodyBound charge binaryRun binaryCharge mask mode modes skip skipCost ordinaryStep
-  have step : ordinaryStep := (generatedOrdinaryRecord_exec v positive w proj width idem factor hd rankFits
+  have ordinary := generatedOrdinaryRecord_exec v positive w proj width idem factor hd rankFits
     parent parentInv reciprocal io arity hm hw hW length capacity source head fits cap ef xf eqs xqs
-    initialWord body initialUser initialState poolFits directory prefixes archiveTail c bodyBound).1
+    initialWord body initialUser initialState poolFits directory prefixes archiveTail c bodyBound
+  have step : ordinaryStep := ordinary.1
   intro room Bcount rs parents shape freePrivate dirPositive brSize rowsSize beforeHSize parentsFree freeMask freeMode freeQueue high initCounters clean initialReady initialPayload setupCost
   have release (port : Fin 66) (lo : 56 ≤ port.val) (hi : port.val ≤ 57)
       (is : List ℕ) (word : Fin N → ZMod 2) (S : Stacks K prime) (xs : List (Fin (prime+4)))
@@ -2576,8 +2643,47 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
   refine ⟨writer,z,startState,_,hz.trans (hy.trans user₀),setupBound,setupRun,r₂,p₂,bits,initialModes,?_,?_⟩
   · intro dimension archiveRoom placement archive outer calls v B control bank
     obtain ⟨y,E,run,_,user,localBank,frame⟩ := exec_emb placement.injective calls setupRun v control B bank
-    exact ⟨y,E,user.trans ((hz.trans (hy.trans user₀)).trans (congrArg HS.user control).symm),
-      localBank,(frame archive (Fin.succAbove_ne _)).2,run⟩
+    have same := user.trans ((hz.trans (hy.trans user₀)).trans (congrArg HS.user control).symm)
+    have kept := (frame archive (Fin.succAbove_ne _)).2
+    refine ⟨y,E,same,localBank,kept,run,?_⟩
+    intro data dim anchor states fieldsEq extra push bounded binary count empty scanBody e action
+    subst Q
+    subst fields
+    subst H
+    have archiveRun := (ordinary.2.2 dimension dim data archiveRoom anchor rfl rfl rfl outer calls push bounded y E).2 extra
+    have port : r 0 = caller 24 := recordRoundTripPorts_other slot 0 (by decide)
+    have readyStart : ready (embStk placement E) allLabels := localBank ▸ r₂
+    have payloadStart : payload initialWord (embStk placement E) := localBank ▸ p₂
+    have liveStart := (congrArg (fun A => Stacks.R A mask) localBank).trans bits
+    have modeStart := (congrArg (fun A => Stacks.R A mode) localBank).trans initialModes
+    obtain ⟨build,finish,final,h,t,next,hu,done,history,emptyArchive,emptyLive,emptyBad,_,_,volumeTime,_,scan⟩ := archiveRun
+      (by constructor
+          · simpa only [List.drop_zero,count] using readyStart
+          · simpa only [payload,port] using payloadStart)
+      (kept.trans empty)
+      (by rw [← directoryOrdinaryBank_caller archiveRoom 57,count]; exact liveStart)
+      (by rw [← directoryOrdinaryBank_caller archiveRoom 56,count]; exact modeStart)
+    refine ⟨_,finish,final,h+t,next,hu.trans same,?_,?_,?_,emptyArchive,emptyLive,emptyBad,?_,Exec.seq run scan⟩
+    · simpa only [List.drop_length,List.length_range,List.drop_eq_nil_of_le (List.length_range.le)] using done.1
+    · simpa only [payload,port] using done.2
+    · simpa only [count] using history
+    · intro baseline precision weight prefixFit ceiling V suffix budget scratch p setup exceptional
+      have recordsPos : 0 < data.records := by
+        rw [count,LabelMask.records]
+        exact Nat.mul_pos (Nat.mul_pos dirPositive.1 dirPositive.2.1) dirPositive.2.2.1
+      have parentsCount : data.records = (directory.beforeRows*directory.rows*Bcount)*M^(m*m) := by
+        rw [count,LabelMask.records,shape]
+        dsimp only [M]
+        rw [← pow_mul]
+        ring_nf
+      have writerPush : mnProgPush build ≤ p := (le_max_left ..).trans (le_max_left ..)
+      have bodyPush (f) : mnProgPush (outer f) ≤ p := (bounded f).trans (le_max_right ..)
+      have placed (j : Fin 66) : placement (caller j) = j.castAdd (host+31+work+1) := directoryOrdinaryBank_caller archiveRoom j
+      rw [placed] at prefixFit
+      have total := (volumeTime p writerPush bodyPush precision hW recordsPos prefixFit).2 _ baseline parentsCount weight ceiling
+      dsimp only [setup,budget,suffix]
+      rw [placed]
+      exact Nat.add_le_add setupBound total
   intro fallback badCost badEffect bad branchCost action exceptional priced
   suffices scanRun : ∃ finish D n next, finish.user = z.user ∧
       n ≤ (allLabels.map fun i => branchCost i+2+4).sum+2 ∧
