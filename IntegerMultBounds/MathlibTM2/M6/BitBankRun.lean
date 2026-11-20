@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.M6.BitCopyLabel
+public import IntegerMultBounds.MathlibTM2.M6.BitNodeProgram
 
 /-! Pointwise additions between two banks of the PR589 node. -/
 @[expose] public section
@@ -120,5 +121,70 @@ theorem bankSwap_stage (d s : Fin 8) (distinct : d ≠ s) {V : ℕ} (positive : 
     · funext i
       change a.transform (b.transform (a.transform data)) _ i = _
       rw [cf _ (fun y => off y x),mid]
+
+private theorem bankSwap_action (d s : Fin 8) (distinct : d ≠ s) {V : ℕ} (positive : 0 < V) :
+    ∃ stage : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V)),
+      stage.cost ≤ 3*(76*17760*V)+2 ∧ ∀ data,
+        (∀ b x, stage.transform data (bankTape b x) =
+          data (bankTape (Equiv.swap d s b) x)) ∧
+        stage.transform data (Fin.last 142080) = data (Fin.last 142080) := by
+  obtain ⟨stage,bill,effect⟩ := bankSwap_stage d s distinct positive
+  refine ⟨stage,bill,fun data => ?_⟩
+  obtain ⟨hd,hs,off⟩ := effect data
+  constructor
+  · intro b x
+    by_cases bd : b = d
+    · subst b; simpa using hd x
+    by_cases bs : b = s
+    · subst b; simpa using hs x
+    rw [Equiv.swap_apply_of_ne_of_ne bd bs]
+    exact off _ (fun y h => bd (bankTape_eq.mp h).1.symm)
+      (fun y h => bs (bankTape_eq.mp h).1.symm)
+  · exact off _ (fun _ => Fin.castSucc_ne_last _) (fun _ => Fin.castSucc_ne_last _)
+
+/-- Exchange the two sides of every pair on the permanent owner tapes. -/
+private theorem exchangeSides_stage {V : ℕ} (positive : 0 < V) :
+    ∃ stage : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V)),
+      stage.cost ≤ 4*(3*(76*17760*V)+2)+3 ∧ ∀ data,
+        (∀ b x, stage.transform data (bankTape b x) =
+          data (bankTape (if b.val % 2 = 0 then b+1 else b-1) x)) ∧
+        stage.transform data (Fin.last 142080) = data (Fin.last 142080) := by
+  obtain ⟨a,ca,ha⟩ := bankSwap_action 0 1 (by decide) positive
+  obtain ⟨b,cb,hb⟩ := bankSwap_action 2 3 (by decide) positive
+  obtain ⟨c,cc,hc⟩ := bankSwap_action 4 5 (by decide) positive
+  obtain ⟨d,cd,hd⟩ := bankSwap_action 6 7 (by decide) positive
+  let ab := SharedBankStage.compose a b
+  let abc := SharedBankStage.compose ab c
+  refine ⟨SharedBankStage.compose abc d,?_,fun data => ?_⟩
+  · change a.cost+b.cost+1+c.cost+1+d.cost+1 ≤ _
+    omega
+  · obtain ⟨ae,af⟩ := ha data
+    obtain ⟨be,bf⟩ := hb (a.transform data)
+    obtain ⟨ce,cf⟩ := hc (ab.transform data)
+    obtain ⟨de,df⟩ := hd (abc.transform data)
+    refine ⟨fun j x => ?_,df.trans (cf.trans (bf.trans af))⟩
+    change d.transform (abc.transform data) _ = _
+    rw [de]
+    change c.transform (ab.transform data) _ = _
+    rw [ce]
+    change b.transform (a.transform data) _ = _
+    rw [be,ae]
+    have sides : ∀ j : Fin 8, Equiv.swap 0 1 (Equiv.swap 2 3 (Equiv.swap 4 5 (Equiv.swap 6 7 j))) =
+        (if j.val % 2 = 0 then j+1 else j-1) := by decide
+    rw [sides]
+
+/-- The side exchange reads exactly the role named by the node program. -/
+theorem exchangeSides_roles {V : ℕ} (positive : 0 < V) :
+    let tape := fun ρ : Role => bankTape ρ.bank (ρ.replica,ρ.port,ρ.cls)
+    ∃ stage : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V)),
+      stage.cost ≤ 4*(3*(76*17760*V)+2)+3 ∧ ∀ data,
+        (∀ ρ, stage.transform data (tape ρ) = data (tape (otherSide ρ))) ∧
+        stage.transform data (Fin.last 142080) = data (Fin.last 142080) := by
+  intro tape
+  obtain ⟨stage,bill,h⟩ := exchangeSides_stage positive
+  refine ⟨stage,bill,fun data => ⟨fun ρ => ?_,(h data).2⟩⟩
+  have banks : ∀ b : Fin 8, (if b.val % 2 = 0 then b+1 else b-1) =
+      (⟨(if b.val % 2 = 0 then b.val+1 else b.val-1)%8,Nat.mod_lt _ (by decide)⟩ : Fin 8) := by decide
+  simpa only [tape,otherSide,withBank,banks] using (h data).1 ρ.bank (ρ.replica,ρ.port,ρ.cls)
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
