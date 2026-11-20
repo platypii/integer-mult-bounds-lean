@@ -303,7 +303,7 @@ theorem remainderProjector_factor (c : PortCertificate) (lo hi : ℕ) (fits : hi
       lo ≤ pendingIndex p ∧ pendingIndex p < hi := by omega
   simp only [same]
 
-private theorem remainderChart_reduced (c : PortCertificate) (hc : c.Checked) (w : ℕ) :
+theorem remainderChart_reduced (c : PortCertificate) (hc : c.Checked) (w : ℕ) :
     let A := c.fullChart.submatrix stageAxis.symm remainderAxis
     let H := reduce (prime^w) A
     Admissible (prime^w) A ∧ H*Hᵀ = 1 := by

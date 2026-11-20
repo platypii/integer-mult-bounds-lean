@@ -15,7 +15,7 @@ abbrev BankLane := Fin 32 × Fin 111 × Fin 5
 noncomputable def bankTape (b : Fin 8) (x : BankLane) : Fin 142081 :=
   ((Fin.cast card_role) (Fintype.equivFin Role ⟨x.1,b,x.2.1,x.2.2⟩)).castSucc
 
-private theorem bankTape_eq {b c : Fin 8} {x y : BankLane} :
+theorem bankTape_eq {b c : Fin 8} {x y : BankLane} :
     bankTape b x = bankTape c y ↔ b = c ∧ x = y := by
   constructor
   · intro h

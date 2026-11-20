@@ -97,6 +97,85 @@ def BankActions {V : ℕ} (bridge : ℕ → ℕ → OwnerStage V) (exchange : Ow
         (∀ ρ, exchange.transform data (tape ρ) = data (tape (otherSide ρ))) ∧
         exchange.transform data (Fin.last 142080) = data (Fin.last 142080)
 
+open IntegerMultBounds.Networks.Certificates.PR589.Nine
+
+/-- Read each role at the same physical address for a given logical coordinate. -/
+noncomputable def readRoles {V : ℕ} (address : (Axis ⊕ Axis → ℚ) → Fin V)
+    (data : Fin 142081 → Fin V → ZMod 2) : State :=
+  fun ρ z => data (bankTape ρ.bank (ρ.replica,ρ.port,ρ.cls)) (address z)
+
+theorem BankActions.bridge_read {V : ℕ} {bridge : ℕ → ℕ → OwnerStage V} {exchange}
+    (acts : BankActions bridge exchange) {d s : ℕ} (scheduled : (d,s) ∈ bridgeEdges)
+    (address) (data) : readRoles address ((bridge d s).transform data) =
+      (Piece.bridge d s).run (readRoles address data) := by
+  have bounds : ∀ e ∈ bridgeEdges, e.1 < 4 ∧ e.2 < 4 := by decide
+  obtain ⟨hd,hs⟩ := bounds _ scheduled
+  change d < 4 at hd
+  change s < 4 at hs
+  obtain ⟨even,odd,off⟩ := acts.1 _ scheduled data
+  funext ρ z
+  let x : BankLane := (ρ.replica,ρ.port,ρ.cls)
+  have bank (n : ℕ) (h : ρ.bank.val = n) : ρ.bank = Fin.ofNat 8 n := by
+    subst n; exact Fin.ext (Nat.mod_eq_of_lt ρ.bank.isLt).symm
+  by_cases a : ρ.bank.val = 2*d
+  · simp only [Piece.run,ite_eq_left a,Pi.add_apply,readRoles,withBank]
+    simpa only [bank _ a,x,Fin.ofNat] using even x (address z)
+  by_cases b : ρ.bank.val = 2*s+1
+  · simp only [Piece.run,ite_eq_right a,ite_eq_left b,Pi.add_apply,readRoles,withBank]
+    simpa only [bank _ b,x,Fin.ofNat] using odd x (address z)
+  · simp only [Piece.run,a,b,ite_false,readRoles]
+    apply congrFun (off _ _ _) (address z)
+    all_goals
+      intro y h
+      have eq := congrArg Fin.val (bankTape_eq.mp h).1
+      simp only [Fin.val_ofNat] at eq
+      omega
+
+theorem BankActions.exchange_read {V : ℕ} {bridge : ℕ → ℕ → OwnerStage V} {exchange}
+    (acts : BankActions bridge exchange) (address) (data) :
+    readRoles address (exchange.transform data) = Piece.exchangeSides.run (readRoles address data) := by
+  funext ρ z
+  exact congrFun ((acts.2 data).1 ρ) (address z)
+
+/-- For a fixed address interpretation, correctness of the complete schedule reduces
+to the nine invocation and nine nonempty idle reads. -/
+theorem compiledNode_read {V : ℕ} (inv idle : Fin 9 → OwnerStage V)
+    {bridge : ℕ → ℕ → OwnerStage V} {exchange} (acts : BankActions bridge exchange)
+    (address : (Axis ⊕ Axis → ℚ) → Fin V)
+    (sweep : ∀ n data, readRoles address ((inv n).transform data) =
+      (Piece.stage n).run (readRoles address data))
+    (rest : ∀ i : Fin 9, ∀ data, readRoles address ((idle i).transform data) =
+      (Piece.remainder i.val).run (readRoles address data)) (data) :
+    readRoles address ((compiledNode inv idle bridge exchange).transform data) =
+      runNode (readRoles address data) := by
+  have piece (p) (hp : p ∈ nodeProgram) (y) :
+      readRoles address ((physicalPiece inv idle bridge exchange p).transform y) =
+        p.run (readRoles address y) := by
+    cases p with
+    | stage n => exact sweep n y
+    | exchangeSides => exact acts.exchange_read address y
+    | bridge d s =>
+      apply acts.bridge_read
+      apply List.mem_filterMap.mpr
+      exact ⟨.bridge d s,hp,rfl⟩
+    | remainder i =>
+      by_cases hi : i < 9
+      · simpa only [physicalPiece,dite_eq_left hi] using rest ⟨i,hi⟩ y
+      · have last : i = 9 := by simp [nodeProgram] at hp; omega
+        subst i
+        exact (terminalIdle_run _).symm
+  have go (ps : List Piece) (inside : ∀ p ∈ ps, p ∈ nodeProgram) (y) :
+      readRoles address (ps.foldl (fun x p => (physicalPiece inv idle bridge exchange p).transform x) y) =
+        runPieces ps (readRoles address y) := by
+    induction ps generalizing y with
+    | nil => rfl
+    | cons p ps ih =>
+      simp only [List.foldl_cons,runPieces]
+      rw [← piece p (inside p List.mem_cons_self) y]
+      exact ih (fun q h => inside q (List.mem_cons_of_mem _ h)) _
+  rw [compiledNode_transform]
+  exact go _ (fun _ h => h) _
+
 /-- Fill all nine bridge occurrences and the final exchange with owner-tape programs.
 Only the invocation and remainder stages contribute recursive charges. -/
 theorem compiledNode_linear {V : ℕ} (positive : 0 < V) (inv idle : Fin 9 → OwnerStage V) :

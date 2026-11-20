@@ -128,6 +128,82 @@ def IdleTransport (i : Fin 9) (k : (Fin 32 × Fin 5) × Fin 222) (w B K : ℕ) :
         (ext (fun j => Shared50RecursiveNodeRows.transpose (one_dvd child.rows)
           (fun h => y (Fin.cast size h)) (Fin.cast size.symm j))) (ext after)
 
+/-- After both chart passes the original label is restored. A pair of cells whose
+routed indices are the input and transposed output of the child carry equal bits. -/
+theorem IdleTransport.read {i : Fin 9} {k : (Fin 32 × Fin 5) × Fin 222} {w B K : ℕ} :
+    let W := B*prime^(64*(w*64))*K
+    let v : Descriptor := ⟨(prime^w)^128,1,B*prime^(64*(w*64)),0,1,K⟩
+    let e := idleInterval i k.2
+    let child := phaseIntervalChild e.1 e.2 w W 64
+    let c := port (idleRole i k).port.val
+    let H := reduce (prime^w) (c.fullChart.submatrix stageAxis.symm remainderAxis)
+    ∀ {before after}, IdleTransport i k w B K before after →
+      ∀ (g : Matrix (Fin 64) (Fin 64) (ZMod (prime^w))) (x y : LabelEntry.Cell v B)
+        (a : RecursiveInterchangeScaling.Address child),
+        let pos := fun (z : LabelEntry.Cell v B) => RecursiveInterchangeLayout.index prime v z.a z.row
+          (z.b.val*prime^(64*(w*64))+(LabelAddress.address (g*H)).val) z.h z.mid z.d z.after
+        pos x = (RecursiveInterchangeScaling.index a).val →
+        pos y = (RecursiveInterchangeScaling.index (Shared50RecursiveNodeTranspose.swapAddress a)).val →
+        chartRead after g y = chartRead before g x := by
+  intro W v e child c H before after transport g x y a pos hx hy
+  obtain ⟨size,mid,forward,back⟩ := transport
+  let trans := fun j => Shared50RecursiveNodeRows.transpose (one_dvd child.rows)
+    (fun h => mid (Fin.cast size h)) (Fin.cast size.symm j)
+  have right : chartRead after ((g*H)*H.transpose) y = chartRead trans (g*H) y :=
+    congrFun (chartRead_transport back (g*H)) y
+  have undo := (remainderChart_reduced c (port_checked _ (idleRole i k).port.isLt) w).2
+  change H*H.transpose = 1 at undo
+  rw [Matrix.mul_assoc,undo,Matrix.mul_one] at right
+  rw [right,← congrFun (chartRead_transport forward g) x]
+  change ext trans (pos y) = ext mid (pos x)
+  rw [hx,hy]
+  let src := RecursiveInterchangeScaling.index a
+  let dst := RecursiveInterchangeScaling.index (Shared50RecursiveNodeTranspose.swapAddress a)
+  change ext trans (Fin.cast size dst).val = ext mid (Fin.cast size src).val
+  rw [ext_apply,ext_apply]
+  simpa only [trans,Fin.cast_cast,Fin.cast_refl,Fin.cast_eq_self] using
+    (Shared50RecursiveNodeTranspose.transpose_all (by decide : 0 < 1) (one_dvd _) (fun h => mid (Fin.cast size h)) a)
+
+noncomputable abbrev idleLayout (w B K : ℕ) : Descriptor :=
+  ⟨(prime^w)^128,1,B*prime^(64*(w*64)),0,1,K⟩
+
+/-- A cover cell with the two 64-digit words in its leading coordinate. -/
+noncomputable def idleDigitCell {w B K n : ℕ} (width : n = 128)
+    (digits : Fin n → ZMod (prime^w)) (b : Fin B) (t : Fin K) :
+    LabelEntry.Cell (idleLayout w B K) B :=
+  ⟨Fin.cast (congrArg ((prime^w)^·) width) (FlatCoordinateLayout.rank digits),0,b,⟨0,by simp [modulus]⟩,0,⟨0,by simp [modulus]⟩,t⟩
+
+/-- On the selected owner the child swaps precisely the two active digit slices.
+Both exterior slices, the block and the trailing offset are preserved. -/
+theorem IdleTransport.digits {i : Fin 9} {k : (Fin 32 × Fin 5) × Fin 222} {w B K : ℕ}
+    {before after} (run : IdleTransport i k w B K before after) :
+    let e := idleInterval i k.2
+    ∀ (a b : Fin e.1 → ZMod (prime^w)) (h d : Fin (e.2-e.1) → ZMod (prime^w))
+      (u v : Fin (64-e.2) → ZMod (prime^w)) (block : Fin B) (t : Fin K) (g : Matrix (Fin 64) (Fin 64) (ZMod (prime^w))),
+      let digits := fun (h d : Fin (e.2-e.1) → ZMod (prime^w)) =>
+        Fin.addCases (Fin.addCases (Fin.addCases a h) u) (Fin.addCases (Fin.addCases b d) v)
+      let width : (e.1+(e.2-e.1)+(64-e.2))+(e.1+(e.2-e.1)+(64-e.2)) = 128 := by
+        obtain ⟨hl,hr,_⟩ := remainder_counts _ (idleInterval_mem i k.2)
+        change e.1 ≤ e.2 at hl
+        change e.2 ≤ 63 at hr
+        omega
+      chartRead after g (idleDigitCell width (digits d h) block t) =
+        chartRead before g (idleDigitCell width (digits h d) block t) := by
+  intro e a b h d u v block t g digits width
+  let H := reduce (prime^w) ((port (idleRole i k).port.val).fullChart.submatrix stageAxis.symm remainderAxis)
+  let j : Fin (B*prime^(64*(w*64))*K) :=
+    ⟨(block.val*prime^(64*(w*64))+(LabelAddress.address (g*H)).val)*K+t.val,by
+      apply LabelShift.pack_lt _ t.isLt
+      apply LabelShift.pack_lt block.isLt
+      simpa only [← pow_mul,show w*(64*64) = 64*(w*64) by omega] using (LabelAddress.address (g*H)).isLt⟩
+  apply run.read g _ _ (intervalAddress 64 a b h d u v j)
+  all_goals
+    change _ = (RecursiveInterchangeScaling.index (intervalAddress 64 a b _ _ u v j)).val
+    rw [intervalAddress_index,FlatCoordinateLayout.index_val]
+    simp only [idleDigitCell,idleLayout,RecursiveInterchangeLayout.index,Fin.val_cast,Fin.val_zero,
+      mul_one,add_zero,pow_zero,digits,j,H]
+    ring
+
 /-- The stage for a window contains exactly one routed exchange for each of its
 scheduled owners. Each interval contributes its own rank to the child bill. -/
 theorem idlePiece_stage [M8.Machine.Net] (i : Fin 9) :
