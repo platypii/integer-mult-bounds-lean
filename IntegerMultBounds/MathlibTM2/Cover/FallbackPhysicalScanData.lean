@@ -86,23 +86,25 @@ def directoryCountPorts (K : ℕ) : Fin 10 ↪ Fin (66+K) :=
   let slots : Fin 10 ↪ Fin 66 := ⟨![2,53,59,60,61,62,63,64,65,58],by decide⟩
   slots.trans (Fin.castAddEmb K)
 
+open IntegerMultBounds.MathlibTM2.Stack Host Node in
+def payloadCountProgram {T Q A : ℕ} {P U : Type} (r : Fin 10 ↪ Fin T) (fields : ℕ) : Pr P T Q A U :=
+  (dimensionPower r fields).seq ((toUnary (r 2) (r 9) (r 3) (r 4) (r 5)).seq (bclear (r 2)))
+
 open IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2.Stack Host Node in
-theorem directoryCount_exec {K Q A : ℕ} {P U : Type} (body : P → Pr P (66+K) Q A U)
-    (fields H J modulus width : ℕ) (hm : modulus < 2^H) (hw : width < 2^J)
-    (u : HS (66+K) Q A U) (S : Stacks (66+K) A) :
-    let r := directoryCountPorts K
+theorem payloadCount_exec {T Q A : ℕ} {P U : Type} (body : P → Pr P T Q A U)
+    (r : Fin 10 ↪ Fin T) (fields H J modulus width : ℕ) (hm : modulus < 2^H) (hw : width < 2^J)
+    (u : HS T Q A U) (S : Stacks T A) :
     let V := modulus^fields*width
     let L := fields*H+J
     S.R (r 0) = binSyms H modulus → S.R (r 1) = binSyms J width →
     (∀ i : Fin 10, 2 ≤ i → S.R (r i) = []) →
     ∃ z n, z.user = u.user ∧ n ≤ dimensionTime H J fields + 6*V + 13*L + 8 ∧
-      Exec body ((dimensionPower r fields).seq ((toUnary (r 2) (r 9) (r 3) (r 4) (r 5)).seq
-        (bclear (r 2)))) (mk u S) n
+      Exec body (payloadCountProgram r fields) (mk u S) n
         (mk z {S with R := Function.update S.R (r 9) (List.replicate V tick)}) := by
-  intro r V L base seed free
+  intro V L base seed free
   obtain ⟨v,t,hu,ht,power⟩ := dimensionPower_exec body fields r H J modulus width hm hw u S
     base seed (fun i hi _ => free i hi)
-  let D : Stacks (66+K) A := {S with R := Function.update S.R (r 2) (binSyms L V)}
+  let D : Stacks T A := {S with R := Function.update S.R (r 2) (binSyms L V)}
   have fits : V < 2^L := by
     rw [show 2^L = (2^H)^fields * 2^J by simp [L,pow_add,← pow_mul,Nat.mul_comm H fields]]
     exact (Nat.mul_le_mul_right width (Nat.pow_le_pow_left hm.le fields)).trans_lt
@@ -114,7 +116,7 @@ theorem directoryCount_exec {K Q A : ℕ} {P U : Type} (body : P → Pr P (66+K)
     (by simp [r.injective.eq_iff]) fits v D (by simp [D])
     (blank 3 (by decide)) (blank 4 (by decide)) (blank 5 (by decide))
   rw [blank 9 (by decide),List.append_nil] at convert
-  let E : Stacks (66+K) A := {D with R := Function.update D.R (r 9) (List.replicate V tick)}
+  let E : Stacks T A := {D with R := Function.update D.R (r 9) (List.replicate V tick)}
   obtain ⟨z,hz,_,clear⟩ := bclear_exec body (r 2) y E
   have len : (E.R (r 2)).length = L := by simp [E,D,r.injective.eq_iff,length_binSyms]
   rw [len] at clear
@@ -127,6 +129,21 @@ theorem directoryCount_exec {K Q A : ℕ} {P U : Type} (body : P → Pr P (66+K)
     · subst k
       simp [E,D,r.injective.eq_iff,free]
     · simp [E,D,Function.update_of_ne h,Function.update_apply]
+
+open IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2.Stack Host Node in
+theorem directoryCount_exec {K Q A : ℕ} {P U : Type} (body : P → Pr P (66+K) Q A U)
+    (fields H J modulus width : ℕ) (hm : modulus < 2^H) (hw : width < 2^J)
+    (u : HS (66+K) Q A U) (S : Stacks (66+K) A) :
+    let r := directoryCountPorts K
+    let V := modulus^fields*width
+    let L := fields*H+J
+    S.R (r 0) = binSyms H modulus → S.R (r 1) = binSyms J width →
+    (∀ i : Fin 10, 2 ≤ i → S.R (r i) = []) →
+    ∃ z n, z.user = u.user ∧ n ≤ dimensionTime H J fields + 6*V + 13*L + 8 ∧
+      Exec body ((dimensionPower r fields).seq ((toUnary (r 2) (r 9) (r 3) (r 4) (r 5)).seq
+        (bclear (r 2)))) (mk u S) n
+        (mk z {S with R := Function.update S.R (r 9) (List.replicate V tick)}) :=
+  payloadCount_exec body (directoryCountPorts K) fields H J modulus width hm hw u S
 
 /-- The installer reads the caller's trailing width and reciprocal clock. Its five
 outputs are the descriptor and control cells in the anchor's private frame. -/

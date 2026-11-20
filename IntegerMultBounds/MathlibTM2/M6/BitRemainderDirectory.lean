@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.Host.EmbedUpdate
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackGeneratedSignedPass
 
 /-! Build the PR589 remainder directory from the inherited parent entries. -/
@@ -9,6 +10,52 @@ open IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2.Stack Host
 open IntegerMultBounds.MathlibTM2.Cover Cover.Fallback
 open IntegerMultBounds.Networks.Shared50ModularControl (prime)
 open RecursiveInterchangeLayout Node
+
+/-- Reuse the seven internal counting tapes and place the unary result in owner register two. -/
+def ownerCountPorts (K : ℕ) : Fin 10 ↪ Fin ((66+K)+5) :=
+  let slots : Fin 10 ↪ Fin (66+5) := ⟨![2,53,59,60,61,62,63,64,65,68],by decide⟩
+  slots.trans (appendPrivate (Fin.castAddEmb K) 5)
+
+theorem ownerCount_exec {K Q : ℕ} {P U : Type} (body : P → Pr P ((66+K)+5) Q prime U)
+    (fields H J M W : ℕ) (hm : M < 2^H) (hw : W < 2^J) (u : HS ((66+K)+5) Q prime U)
+    (S : Stacks ((66+K)+5) prime) {N : ℕ} (volumeEq : M^fields*W = N) :
+    let caller := fun i : Fin 66 => (i.castAdd K).castAdd 5
+    let dst := (2 : Fin 5).natAdd (66+K)
+    S.R (caller 2) = binSyms H M → S.R (caller 53) = binSyms J W →
+    (∀ i : Fin 66, 59 ≤ i.val → S.R (caller i) = []) → S.R dst = [] →
+    ∃ z D n, z.user = u.user ∧ n ≤ dimensionTime H J fields+6*N+13*(fields*H+J)+8 ∧
+      Exec body (payloadCountProgram (ownerCountPorts K) fields) (mk u S) n (mk z D) ∧
+      embStk (fun i : Fin (66+K) => i.castAdd 5) D = embStk (fun i : Fin (66+K) => i.castAdd 5) S ∧
+      (D.R dst).length = N ∧ ∀ i : Fin 5, i ≠ 2 → D.R (i.natAdd (66+K)) = S.R (i.natAdd (66+K)) := by
+  intro caller dst base width scratch empty
+  let slots : Fin 9 → Fin 66 := ![2,53,59,60,61,62,63,64,65]
+  have shared (i : Fin 9) : ownerCountPorts K i.castSucc = caller (slots i) := by
+    refine Eq.trans ?_ (appendPrivate_shared (Fin.castAddEmb K) (slots i))
+    apply congrArg (appendPrivate (Fin.castAddEmb K) 5)
+    exact (by decide : ∀ j : Fin 9, (![2,53,59,60,61,62,63,64,65,68] : Fin 10 → Fin 71) j.castSucc =
+      (slots j).castAdd 5) i
+  have last : ownerCountPorts K 9 = dst := appendPrivate_work (Fin.castAddEmb K) 2
+  have run := payloadCount_exec body (ownerCountPorts K) fields H J M W hm hw u S
+    ((congrArg S.R (shared 0)).trans base) ((congrArg S.R (shared 1)).trans width) (by
+      intro i hi
+      by_cases stop : i = 9
+      · simpa only [stop,last] using empty
+      · have lt : i.val < 9 := by have := i.isLt; have ne : i.val ≠ 9 := fun eq => stop (Fin.ext eq); omega
+        let j : Fin 9 := ⟨i.val,lt⟩
+        change S.R (ownerCountPorts K j.castSucc) = []
+        rw [shared]
+        exact scratch _ ((by decide : ∀ k : Fin 9, 2 ≤ k.val → 59 ≤ (slots k).val) j hi))
+  rw [last,volumeEq] at run
+  obtain ⟨z,n,user,time,exec⟩ := run
+  refine ⟨z,_,n,user,time,exec,embStk_updateR_off S _ _ ?_,?_,?_⟩
+  · intro i eq
+    have bad := congrArg Fin.val eq
+    change i.val = (66+K)+2 at bad
+    have := i.isLt
+    omega
+  · simp
+  · intro i hi
+    exact Function.update_of_ne ((Fin.natAdd_injective ..).ne hi) ..
 
 private theorem buildCost_le (a w parents box records : ℕ) (count : records = parents*box)
     (fixed : 22*box+8*a+32 ≤ 151*box) :
@@ -211,7 +258,8 @@ theorem remainderDirectory_build {T Q : ℕ} {P U : Type} (body : P → Pr P T Q
         DirectoryHeaders child proj w rowVolume H J parent (fun i => raw.R (bank (i.castLE (by decide)))) →
         DirectoryScanInput child proj w rowVolume H J parent (fun j => word (j/box)) (raw.R (bank 46))
           (List.range (LabelMask.records directory)) (fun i => final.R (bank (i.castLE (by decide))))) ∧
-      (∀ i : Fin 58, i.val ≠ 46 → final.R (bank (i.castLE (by decide))) = raw.R (bank (i.castLE (by decide)))) := by
+      (∀ i : Fin 58, i.val ≠ 46 → final.R (bank (i.castLE (by decide))) = raw.R (bank (i.castLE (by decide)))) ∧
+      (∀ k, (∀ i, bank i ≠ k) → final.R k = raw.R k ∧ final.L k = raw.L k) := by
   intro r atom one br nr bh directory parents box W beforeRows rowCount beforeH atomWidth unit fresh source widths prefixFits entries scratch inherited final
   let L := (w+1)*(64*64)
   let S := {raw with R := Function.update raw.R (r 9) (List.replicate parents tick)}
@@ -265,6 +313,15 @@ theorem remainderDirectory_build {T Q : ℕ} {P U : Type} (body : P → Pr P T Q
   have frame (i : Fin 72) (small : i.val < 58) (ne : i.val ≠ 46) : final.R (bank i) = raw.R (bank i) := by
     have off : bank i ≠ r 14 := bank.injective.ne (fun h => ne (congrArg Fin.val h))
     simp only [final,ite_eq_right (outside i small),Function.update_of_ne off]
+  have external (k : Fin T) (off : ∀ i, bank i ≠ k) : final.R k = raw.R k ∧ final.L k = raw.L k := by
+    have fresh : k ∉ scratch := by
+      intro h
+      rcases List.mem_append.mp h with h | h
+      · obtain ⟨j,_,eq⟩ := List.mem_map.mp h
+        exact off _ eq
+      · exact off 71 (List.mem_singleton.mp h).symm
+    have ne : k ≠ r 14 := (off _).symm
+    simp [final,fresh,ne]
   have archive : final.R (bank 46) = entries ++ raw.R (bank 46) := by
     change (if bank 46 ∈ scratch then [] else Function.update raw.R (bank 46) (entries ++ raw.R (bank 46)) (bank 46)) = _
     rw [ite_eq_right (outside 46 (by decide)),Function.update_self]
@@ -275,7 +332,7 @@ theorem remainderDirectory_build {T Q : ℕ} {P U : Type} (body : P → Pr P T Q
     have positiveBox := Nat.pos_of_mul_pos_left (Nat.zero_lt_of_lt inside)
     rw [frame 47 (by decide) (by decide)]
     exact (widths _ ((Nat.div_lt_iff_lt_mul positiveBox).mpr inside)).symm
-  refine ⟨out,_,same.trans (user.trans yu),?_,Exec.seq (Exec.seq init exec) clean,fun _ _ _ _ _ _ headers => ⟨archive,prefixWidth,headers.of_frame (fun i ne => frame _ i.isLt ne)⟩,fun i ne => frame _ (show i.val < 58 from i.isLt) ne⟩
+  refine ⟨out,_,same.trans (user.trans yu),?_,Exec.seq (Exec.seq init exec) clean,fun _ _ _ _ _ _ headers => ⟨archive,prefixWidth,headers.of_frame (fun i ne => frame _ i.isLt ne)⟩,fun i ne => frame _ (show i.val < 58 from i.isLt) ne,external⟩
   have power : prime^L = box := pow_mul _ _ _
   rw [power,atomWidth]
   change prime^v.width*(t+n+(_+2*(tail.length+box+parents+2*L+parents*box+(w+1))+29))*142080 ≤ _
