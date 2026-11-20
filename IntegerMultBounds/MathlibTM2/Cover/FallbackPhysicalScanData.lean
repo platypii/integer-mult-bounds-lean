@@ -4,6 +4,7 @@ public import IntegerMultBounds.MathlibTM2.Cover.FallbackScanState
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackRecordMasks
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackRecordCleanup
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackLeafFrame
+import IntegerMultBounds.MathlibTM2.Cover.FallbackPrefixVolume
 import IntegerMultBounds.MathlibTM2.Cover.ProjectorWitness
 import IntegerMultBounds.MathlibTM2.Cover.FallbackArchivedResidual
 
@@ -735,6 +736,148 @@ theorem ScanData.classifiedArchive_exec [M8.Machine.Net] {K Q : ℕ} {P F U : Ty
   · simpa [cost,both] using price
   · cases hl : live j <;> cases hb : bad j <;> first | simpa [hl,hb,advance] using step | exact (both ⟨hl,hb⟩).elim
 
+def exceptionalBodyTime [M8.Machine.Net] (U : Type) (rows : Fin (d+1) → Fin (d+1))
+    (negative : Bool) (w W H J : ℕ) :=
+  let V := (prime^(w+1))^(d+1)*W
+  (((10*J+12)+(21*(w+1)+12)+1) + (1+(Record.cost d 6 1 (w+1) W negative+(2*V+2)))) +
+    (6*(2*H+J+w)+37) + (6*V+6+(1+signedResidualTime U rows w W H J)) +
+    ((4*V+4)+(2*V+2)) + ((d+1)*(d+1)*(4*H+4)+1)
+
+/-- Full exceptional branch bill, including counter setup, workspace cleanup
+and the advance to the next directory entry. -/
+def exceptionalRecordTime [M8.Machine.Net] (U : Type) (rows : Fin (d+1) → Fin (d+1))
+    (negative : Bool) (r w W H J tapes push prefixWidth : ℕ) :=
+  let V := (prime^(w+1))^(d+1)*W
+  let setup := dimensionTime H J (d+1) + 6*V + 13*((d+1)*H+J) + 8
+  let record := exceptionalBodyTime U rows negative w W H J
+  setup + (record + (tapes*4+2*V+1 + 6*(push*record)) + (1+(4*prefixWidth+4+(r*r*(4*(w+1)+4)+1)+1)))
+
+/-- At the modulus's binary width, one unit-width record pays for setup.
+The directory prefix is read once and is charged separately. -/
+theorem exceptionalRecordTime_setup_le [M8.Machine.Net] (U : Type) (d r tapes push : ℕ) :
+    ∃ C : ℕ, ∀ (rows : Fin (d+1) → Fin (d+1)) negative w prefixWidth,
+      exceptionalRecordTime U rows negative r w 0 (Nat.size (prime^(w+1))) 0 tapes push prefixWidth ≤
+        C*(prime^(w+1))^(d+1) + 4*prefixWidth := by
+  obtain ⟨c,hc⟩ := signedResidualTime_setup_le U d
+  let overhead (w H kernel : ℕ) :=
+    let fields := d+1
+    let body := (12+(21*(w+1)+12)+1) + (1+(10+(Record.size d+6+5)+2*6+8+2)) +
+      (6*(2*H+w)+37) + (6+(1+kernel)) + (4+2) + (fields*fields*(4*H+4)+1)
+    (6+fields*((12*H+18)*(fields*H)+20*H+26)) + 13*(fields*H)+8 +
+      (body+(tapes*4+1+6*(push*body))+(1+(4+(r*r*(4*(w+1)+4)+1)+1)))
+  refine ⟨overhead 1 1 c * (2*(Nat.size prime+1)^2),?_⟩
+  intro rows negative w prefixWidth
+  let H := Nat.size (prime^(w+1))
+  let q := prime^(w+1)
+  let size := (w+1+q^d)*(H+1)^2
+  have raw : exceptionalRecordTime U rows negative r w 0 H 0 tapes push prefixWidth ≤
+      overhead w H (c*size) + 4*prefixWidth := by
+    unfold exceptionalRecordTime exceptionalBodyTime Record.cost
+    simp only [Nat.mul_zero,Nat.zero_mul,Nat.mul_one,Nat.one_mul,Nat.add_zero,Nat.zero_add]
+    grw [dimensionTime_le H 0 (d+1),hc rows w H]
+    dsimp only [overhead,size,q]
+    exact le_of_eq (by ring)
+  have poly : overhead w H (c*size) ≤ overhead 1 1 c * size := by
+    dsimp only [overhead,size]
+    ring_nf
+    omega
+  have volume := Nat.mul_le_mul_left (overhead 1 1 c) (prefixSetup_volume_le w d)
+  exact raw.trans (Nat.add_le_add_right (poly.trans (volume.trans_eq (Nat.mul_assoc ..).symm)) _)
+
+/-- Price the exceptional branch uniformly over pivot choices. Cleanup
+multiplies the cost of the record body, including its residual shears. -/
+theorem exceptionalRecordTime_le_setup_add_volume [M8.Machine.Net] (U : Type) (d : ℕ) :
+    ∃ swaps shears : ℕ, ∀ (rows : Fin (d+1) → Fin (d+1)) negative r w W H J tapes push prefixWidth,
+      let V := (prime^(w+1))^(d+1)*W
+      let anchor := M8.AtomSegment.chainConst (anchorOps d negative)*(Record.size d+6+5)
+      exceptionalRecordTime U rows negative r w W H J tapes push prefixWidth ≤
+        exceptionalRecordTime U rows negative r w 0 H 0 tapes push prefixWidth +
+        (6+(d+1)*(12*H+18)+13+(1+6*push)*(16+residualCounterRate U d H))*J +
+        (8+(1+6*push)*(24+anchor+swaps*swapVolumeRate w+shears))*V := by
+  obtain ⟨swaps,shears,kernel⟩ := signedResidualTime_le_setup_add_width_volume U d
+  refine ⟨swaps,shears,?_⟩
+  intro rows negative r w W H J tapes push prefixWidth V anchor
+  have residual := (kernel rows w W H J).trans (Nat.add_le_add_right
+    (residualCounterRate_spec U d H rows w 0 J) _)
+  unfold exceptionalRecordTime exceptionalBodyTime Record.cost
+  simp only [IntegerMultBounds.Machine.ActualAffineScaling.modulus,Nat.mul_one,Nat.mul_zero,Nat.add_zero]
+  rw [dimensionTime_eq_setup_add_width H J (d+1)]
+  dsimp only [anchor,V]
+  nlinarith only [residual,Nat.mul_le_mul_left (6*push) residual]
+
+/-- At canonical header widths, the only width-dependent rate left in a
+positive-volume exceptional record is the swap rate. -/
+theorem exceptionalRecordTime_binary_le [M8.Machine.Net] (U : Type) (d r tapes push : ℕ) :
+    ∃ fixed swaps : ℕ, ∀ (rows : Fin (d+1) → Fin (d+1)) negative w W prefixWidth, 0 < W →
+      exceptionalRecordTime U rows negative r w W (Nat.size (prime^(w+1))) W.size tapes push prefixWidth ≤
+        (fixed+swaps*swapVolumeRate w)*((prime^(w+1))^(d+1)*W) + 4*prefixWidth := by
+  obtain ⟨setup,setupBound⟩ := exceptionalRecordTime_setup_le U d r tapes push
+  obtain ⟨swaps,shears,affine⟩ := exceptionalRecordTime_le_setup_add_volume U d
+  obtain ⟨counter,counterBound⟩ := residualCounterRate_linear U d
+  let overhead := 1+6*push
+  let anchor := max (M8.AtomSegment.chainConst (anchorOps d true))
+    (M8.AtomSegment.chainConst (anchorOps d false))*(Record.size d+6+5)
+  let widthRate := 19+(d+1)*30+overhead*(16+2*counter)
+  refine ⟨setup+widthRate+8+overhead*(24+anchor+shears),overhead*swaps,?_⟩
+  intro rows negative w W prefixWidth pos
+  let q := prime^(w+1)
+  let H := Nat.size q
+  let fields := q^(d+1)
+  have qpos : 0 < q := pow_pos prime_prime.pos _
+  have large : 1 ≤ fields := pow_pos qpos _
+  have bits : H ≤ fields := (Nat.size_le.mpr Nat.lt_two_pow_self).trans (Nat.le_self_pow (by omega) q)
+  have width : 6+(d+1)*(12*H+18)+13+overhead*(16+residualCounterRate U d H) ≤ widthRate*fields := by
+    grw [counterBound H,bits]
+    dsimp only [widthRate]
+    nlinarith only [large,Nat.mul_le_mul_left (18*(d+1)) large,
+      Nat.mul_le_mul_left (16*overhead) large,Nat.mul_le_mul_left (overhead*counter) large,
+      Nat.mul_le_mul_left 19 large]
+  have digits := Nat.mul_le_mul width (Nat.size_le.mpr Nat.lt_two_pow_self : W.size ≤ W)
+  have start := (setupBound rows negative w prefixWidth).trans
+    (Nat.add_le_add_right (Nat.mul_le_mul_left setup (Nat.le_mul_of_pos_right fields pos)) _)
+  have sign : M8.AtomSegment.chainConst (anchorOps d negative)*(Record.size d+6+5) ≤ anchor := by
+    apply Nat.mul_le_mul_right; cases negative <;> simp
+  have rate := affine rows negative r w W H W.size tapes push prefixWidth
+  dsimp only at rate
+  grw [start,digits,sign] at rate
+  exact rate.trans_eq (by dsimp only [overhead,fields,q]; ring)
+
+/-- In a complete directory, only the exceptional-label count multiplies the
+physical branch's volume charge. A common directory prefix is included once
+in the ordinary per-record allowance. -/
+theorem exceptionalDirectoryTime_le [M8.Machine.Net] (U : Type) (d r tapes push : ℕ) :
+    ∃ fixed swaps : ℕ, ∀ (projector : Matrix (Fin r) (Fin r) ℚ) (idem : projector*projector = projector)
+      (factor : IntegerMultBounds.Swap.LowerTriangular.Factorization Finset.univ Finset.univ projector)
+      (small : ∀ k ∈ IntegerMultBounds.Swap.Modular.factorizationDenominators factor, k < prime)
+      (rankFits : projector.rank ≤ r) (w W parents prefixWidth baseline : ℕ) (pos : 0 < W)
+      (rows : ℕ → Fin (d+1) → Fin (d+1)) (negative : ℕ → Bool) (ordinary : ℕ → ℕ),
+      let q := prime^(w+1)
+      let records := parents*q^(r*r)
+      let bad := fun j => fallbackBit rankFits (reduce q projector) (physicalLabel r (w+1) j)
+      let live := LabelStock.live r (w+1) 1
+      let cost := fun j => if live j && bad j then
+        exceptionalRecordTime U (rows j) (negative j) r w W q.size W.size tapes push prefixWidth else ordinary j
+      let count := ((∑ k ∈ Finset.range projector.rank, (k+1)*(r+1))*records)/prime
+      4*prefixWidth ≤ baseline →
+      (∀ j < records, ¬ (live j = true ∧ bad j = true) → ordinary j ≤ baseline) →
+      ((List.range records).map fun j => cost j+2+4).sum+2 ≤ records*(baseline+6) +
+        count*((fixed+swaps*swapVolumeRate w)*(q^(d+1)*W))+2 := by
+  obtain ⟨fixed,swaps,bound⟩ := exceptionalRecordTime_binary_le U d r tapes push
+  refine ⟨fixed,swaps,?_⟩
+  intro projector idem factor small rankFits w W parents prefixWidth baseline pos rows negative ordinary
+    q records bad live cost count prefixFits ordinaryFits
+  obtain ⟨g₀,unit,generic⟩ := LabelProjector.residue_witness (w := w+1) (by omega) projector idem factor small rankFits
+  apply classifiedRecordTime_le w projector.rank parents rankFits (reduce q projector) records rfl g₀ unit generic
+  · intro j hj hl hb
+    have no : ¬ (live j = true ∧ bad j = true) := fun h => Bool.noConfusion (hb.symm.trans h.2)
+    simpa [cost,show live j = true from hl,show bad j = false from hb] using ordinaryFits j hj no
+  · intro j hj hl
+    have no : ¬ (live j = true ∧ bad j = true) := fun h => Bool.noConfusion (hl.symm.trans h.1)
+    simpa [cost,show live j = false from hl] using ordinaryFits j hj no
+  · intro j _ hl hb
+    simp only [cost,show live j = true from hl,show bad j = true from hb,Bool.and_self,ite_true]
+    exact (bound (rows j) (negative j) w W prefixWidth pos).trans ((Nat.add_le_add_left prefixFits _).trans_eq (Nat.add_comm ..))
+
 open IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2.Stack Host in
 open IntegerMultBounds.MathlibTM2.Fast.Main in
 /-- Apply the anchor and then the projector residual on the same directory tapes. -/
@@ -767,7 +910,6 @@ theorem scheduledProjectorRecord_exec [M8.Machine.Net] {K : ℕ} {P U : Type}
       let counters := directoryCountPorts K
       let countProgram := (dimensionPower counters (d+1)).seq
         ((toUnary (counters 2) count (counters 3) (counters 4) (counters 5)).seq (bclear (counters 2)))
-      let setupTime := dimensionTime H J (d+1) + 6*(M^(d+1)*W) + 13*((d+1)*H+J) + 8
       initial.R (counters 0) = binSyms H M → initial.R (counters 1) = binSyms J W →
       (∀ k, 58 ≤ k.val → k ≠ directoryMatrixTape room → initial.L k = [] ∧ initial.R k = []) →
       let S := {initial with R := Function.update initial.R count (List.replicate (M^(d+1)*W) Node.tick)}
@@ -793,10 +935,7 @@ theorem scheduledProjectorRecord_exec [M8.Machine.Net] {K : ℕ} {P U : Type}
       let matrixTape := directoryMatrixTape room
       let advanceMatrix := dropWords (ports (bank 2)) matrixTape (ports (bank 0)) ((d+1)*(d+1))
       let record := (((sign.seq headers).seq (queuedResidual ports count src saved tmp d)).seq returnWord).seq advanceMatrix
-      let recordTime := (((10*J+12)+(21*(w+1)+12)+1) + (1+(Record.cost d 6 1 (w+1) W (negativeAnchor rows C)+(2*V+2)))) +
-        (6*(2*H+J+w)+37) + (6*V+6+(1+signedResidualTime U rows w W H J)) + ((4*V+4)+(2*V+2)) + ((d+1)*(d+1)*(4*H+4)+1)
       let privateTapes := (List.finRange (66+K)).filter fun i => decide (58 ≤ i.val ∧ i ≠ matrixTape)
-      let initialClear := privateTapes.length*4+2*V+1
       ∀ c, (∀ f, mnProgPush (body f) ≤ c) →
       ∀ (prefixes : ℕ → List (Fin (prime+4))) (pending : List ℕ) (archiveTail : List (Fin (prime+4))),
       let slots : Fin 7 ↪ Fin 58 := ⟨![45,46,2,47,48,44,49],by decide⟩
@@ -804,8 +943,8 @@ theorem scheduledProjectorRecord_exec [M8.Machine.Net] {K : ℕ} {P U : Type}
       let scan := (goodRecordScanPorts.trans slots).trans caller
       S.R (scan 2) = (j :: pending).flatMap (LabelDirectory.entry prefixes r (w+1)) ++ archiveTail →
       (S.R (scan 0)).length = (prefixes j).length → (S.R (scan 1)).length = w → S.R (scan 3) = [] →
-      ∃ z F n next, z.user = u.user ∧ n ≤ setupTime + (recordTime + (initialClear + 6*(max (mnProgPush record) c * recordTime)) +
-          (1+(4*(prefixes j).length+4+(r*r*(4*(w+1)+4)+1)+1))) ∧
+      ∃ z F n next, z.user = u.user ∧ n ≤ exceptionalRecordTime U rows (negativeAnchor rows C) r w W H J privateTapes.length
+          (max (mnProgPush record) c) (prefixes j).length ∧
         Exec body (countProgram.seq ((record.seq (clearWorkTapes privateTapes)).seq (readWithSuccessorClock (scan 1) (advanceDirectory r scan)))) (mk u initial) n (mk z F) ∧
         F.R matrixTape = tail ∧ (∀ i : Fin (66+K), 58 ≤ i.val → i ≠ matrixTape → F.L i = [] ∧ F.R i = []) ∧
         (∀ x k, next (FlatCoordinateLayout.index (G.mulVec x) k) = original (FlatCoordinateLayout.index x k)) ∧
@@ -815,9 +954,11 @@ theorem scheduledProjectorRecord_exec [M8.Machine.Net] {K : ℕ} {P U : Type}
         ∀ j : Fin 58, j ≠ 24 → j ≠ 54 → j ≠ 46 → let i := (j.castAdd 8).castAdd K
           F.L i = S.L i ∧ F.R i = S.R i := by
   intro H physical tail N G φ C rows room ports count src saved tmp anchor regs capacity body initialUser initial rest
-    original source head counters countProgram setupTime base seed initialBlank S queueTail bank dst clean headerSrc headerDst headers one padded matrix read schedule installer sign V returnWord
-    matrixTape advanceMatrix record recordTime privateTapes initialClear c bodyBound
+    original source head counters countProgram base seed initialBlank S queueTail bank dst clean headerSrc headerDst headers one padded matrix read schedule installer sign V returnWord
+    matrixTape advanceMatrix record privateTapes c bodyBound
   intro prefixes pending archiveTail slots caller scan directory prefixWidth clock fresh
+  let recordTime := exceptionalBodyTime U rows (negativeAnchor rows C) w W H J
+  let initialClear := privateTapes.length*4+2*V+1
   have archiveVal : matrixTape.val = 66+(Record.size d+34) :=
     directoryResidualBank_private room _ _ (by intro eq; have h := congrArg Fin.val eq
                                                change 34 = rowSwapBlock.tapes+35 at h; omega)
