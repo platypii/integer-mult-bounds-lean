@@ -333,7 +333,7 @@ open Host IntegerMultBounds.Networks.Shared50ModularControl in
 theorem stagedLeafRoundTrip_exec {P M B T Q : ℕ} {F U : Type} (hP : 0 < P) (hM : 0 < M) (hB : 0 < B)
     (capacity : 217 ≤ Q) (body : F → Pr F T Q prime U) (r : Fin 8 ↪ Fin T) (child : Pr F T Q prime U)
     (v : HS T Q prime U) (S : Stacks T prime) (source : ℤ → Fin 4) (p : ℤ)
-    (xs : List (ZMod 2)) (hx : xs.length = P*(M*B)) (effect : List (ZMod 2) → Prop) (budget : ℕ)
+    (xs : List (ZMod 2)) (hx : xs.length = P*(M*B)) (effect : List (ZMod 2) → Prop) (budget : ℕ) (savedTape : Fin T → Prop)
     (input : ∀ z, readAt blank (S.L (r 0)) (S.R (r 0)) (z-p) =
       RadixToBinary.binaryEncoding.encode (putWord source p (xs.map SparseRoleCircuit.encode) z))
     (empty : ∀ z, readAt blank (S.L (r 1)) (S.R (r 1)) z = blank)
@@ -344,7 +344,8 @@ theorem stagedLeafRoundTrip_exec {P M B T Q : ℕ} {F U : Type} (hP : 0 < P) (hM
       ∃ w D t ys, w.user = u.user ∧ t ≤ budget ∧ Exec body child (mk u E) t (mk w D) ∧
         ys.length = xs.length ∧ effect ys ∧
         (∀ z, readAt blank (D.L (r 1)) (D.R (r 1)) z = leafBitTape ys z) ∧
-        ∀ i : Fin 8, i ≠ 1 → D.L (r i) = E.L (r i) ∧ D.R (r i) = E.R (r i)) :
+        (∀ i : Fin 8, i ≠ 1 → D.L (r i) = E.L (r i) ∧ D.R (r i) = E.R (r i)) ∧
+        ∀ j, savedTape j → D.L j = E.L j ∧ D.R j = E.R j) :
     let reverse := (Equiv.swap (0 : Fin 8) 1).toEmbedding.trans r
     let transfer := fun ports : Fin 8 ↪ Fin T => (stateLiftNormalize capacity (by decide)).seq
       (stateLiftPr capacity (by decide) Empty.elim (returnFromOrigin (P := Empty) ports))
@@ -352,8 +353,9 @@ theorem stagedLeafRoundTrip_exec {P M B T Q : ℕ} {F U : Type} (hP : 0 < P) (hM
     ∃ w D t ys, w.user = v.user ∧ t ≤ budget+2*((218*(P*(M*B))+1)*13+6)+3 ∧
       Exec body ((.act (pushMarkers marks) : Pr F T Q prime U).seq
         ((transfer r).seq (child.seq (transfer reverse)))) (mk v S) t (mk w D) ∧
-      effect ys ∧ ∀ z, readAt blank (D.L (r 0)) (D.R (r 0)) (z-p) =
-        RadixToBinary.binaryEncoding.encode (putWord source p (ys.map SparseRoleCircuit.encode) z) := by
+      effect ys ∧ (∀ z, readAt blank (D.L (r 0)) (D.R (r 0)) (z-p) =
+        RadixToBinary.binaryEncoding.encode (putWord source p (ys.map SparseRoleCircuit.encode) z)) ∧
+      ∀ j, savedTape j → (∀ i, r i ≠ j) → D.L j = S.L j ∧ D.R j = S.R j := by
   intro reverse transfer marks
   let I : Stacks T prime := {S with L := fun j => if j ∈ marks then separator :: S.L j else S.L j}
   have mark := Exec.act (body := body) (pushMarkers marks) (mk v S)
@@ -367,16 +369,16 @@ theorem stagedLeafRoundTrip_exec {P M B T Q : ℕ} {F U : Type} (hP : 0 < P) (hM
       exact returnCounter_read P M B i z)
   have placed := stateLift_exec_normalized capacity (by decide) Empty.elim (body' := body)
     (fun e => nomatch e) v stage
-  obtain ⟨w,D,t,ys,hw,ht,run,len,action,out,frame⟩ := process (stateLiftUp capacity u) E payload (by
-    intro j outside
+  have stageFrame (j) (outside : ∀ i, r i ≠ j) : E.L j = S.L j ∧ E.R j = S.R j := by
     have absent : j ∉ marks := by
       intro hj
       obtain ⟨i,_,eq⟩ := List.mem_map.mp hj
       exact outside i eq
-    simpa only [I,ite_eq_right absent] using kept j outside)
+    simpa only [I,ite_eq_right absent] using kept j outside
+  obtain ⟨w,D,t,ys,hw,ht,run,len,action,out,frame,childFrame⟩ := process (stateLiftUp capacity u) E payload stageFrame
   have a : reverse 0 = r 1 := congrArg r (Equiv.swap_apply_left ..)
   have b : reverse 1 = r 0 := congrArg r (Equiv.swap_apply_right ..)
-  obtain ⟨z,G,l,hz,hl,ret,read,_⟩ := returnLeafBitsWithCounters_exec hP hM hB (F := Empty) Empty.elim reverse (stateLiftDown (by decide) w) D
+  obtain ⟨z,G,l,hz,hl,ret,read,back⟩ := returnLeafBitsWithCounters_exec hP hM hB (F := Empty) Empty.elim reverse (stateLiftDown (by decide) w) D
     (FlatArrayNormalize.erased source p (P*(M*B))) p ys (len.trans hx) (a ▸ out) (by
       rw [b,(frame 0 (by decide)).1,(frame 0 (by decide)).2]; exact saved) (by
       intro i x
@@ -388,8 +390,13 @@ theorem stagedLeafRoundTrip_exec {P M B T Q : ℕ} {F U : Type} (hP : 0 < P) (hM
   rw [b,putWord_erased source p _ (by simpa using len.trans hx)] at read
   have returned := stateLift_exec_normalized capacity (by decide) Empty.elim (body' := body)
     (fun e => nomatch e) w ret
-  exact ⟨stateLiftUp capacity z,G,_,ys,hz.trans (hw.trans hu),by omega,
-    Exec.seq mark (Exec.seq placed (Exec.seq run returned)),action,read⟩
+  refine ⟨stateLiftUp capacity z,G,_,ys,hz.trans (hw.trans hu),by omega,
+    Exec.seq mark (Exec.seq placed (Exec.seq run returned)),action,read,?_⟩
+  intro j savedJ outside
+  have finish := back j (fun i => outside (Equiv.swap (0 : Fin 8) 1 i))
+  have middle := childFrame j savedJ
+  have start := stageFrame j outside
+  exact ⟨finish.1.trans (middle.1.trans start.1),finish.2.trans (middle.2.trans start.2)⟩
 
 open Host IntegerMultBounds.Networks.Shared50ModularControl in
 /-- Only the payload overlaps the child bank. Staging preserves the child's other
@@ -409,7 +416,8 @@ theorem stagedCoordinateChild_exec {K T Q : ℕ} {F U : Type}
     ∃ w D n ys, w.user = u.user ∧ n ≤ budget ∧ Exec body (embProg bank Empty.elim child) (mk u E) n (mk w D) ∧
       ys.length = xs.length ∧ effect ys ∧
       (∀ z, readAt blank (D.L (ports 1)) (D.R (ports 1)) z = leafBitTape ys z) ∧
-      ∀ j : Fin 8, j ≠ 1 → D.L (ports j) = E.L (ports j) ∧ D.R (ports j) = E.R (ports j) := by
+      (∀ j : Fin 8, j ≠ 1 → D.L (ports j) = E.L (ports j) ∧ D.R (ports j) = E.R (ports j)) ∧
+      ∀ j, (∀ i, bank i ≠ j) → D.L j = E.L j ∧ D.R j = E.R j := by
   obtain ⟨v,A,n,ys,user,time,run,len,action,out⟩ := coordinate (embDn bank u) (embStk bank E)
     (by intro z; change readAt blank (E.L (bank io)) (E.R (bank io)) z = _; rw [shared]; exact payload z) (by
       intro i ne
@@ -420,7 +428,7 @@ theorem stagedCoordinateChild_exec {K T Q : ℕ} {F U : Type}
       · exact (apart i j h).symm)
   obtain ⟨w,_,hw,placed⟩ := exec_emb_ovr bank.injective (body' := body) (ι := Empty.elim)
     (fun e => nomatch e) run u rfl E rfl
-  refine ⟨w,_,n,ys,hw.trans user,time,placed,len,action,?_,fun j ne => embOvr_off A.get E (fun i => apart i j ne)⟩
+  refine ⟨w,_,n,ys,hw.trans user,time,placed,len,action,?_,fun j ne => embOvr_off A.get E (fun i => apart i j ne),fun _ h => embOvr_off A.get E h⟩
   rw [← shared]
   have eq := embStk_ovr bank.injective A E
   rw [← eq] at out
