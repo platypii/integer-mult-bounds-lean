@@ -1,5 +1,7 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackGoodChildLayout
+public import IntegerMultBounds.MathlibTM2.Host.SharedRegisterPlacement
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackNextRecord
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackPlacedDiagonal
 public import IntegerMultBounds.MathlibTM2.Cover.Weighted
@@ -245,19 +247,8 @@ private theorem replaceColumnRecord {T d w W : ℕ} (col : Fin 35 ↪ Fin T) (H 
     (ready : ColumnRecordReady col H J tail SparseRoleCircuit.encode (fun _ => blank) dest 0 q original addr S) :
     ColumnRecordReady col H J record SparseRoleCircuit.encode (fun _ => blank) dest 0 q original addr
       {S with R := Function.update S.R (col 34) record} := by
-  obtain ⟨word,frame,reads⟩ := ready
-  refine ⟨word,⟨?_,?_,?_,?_,?_,?_,?_,?_,?_⟩,reads⟩
-  · simpa using frame.modulus
-  · simpa using frame.width
-  · simpa using frame.one
-  · simpa using frame.padded
-  · simpa using frame.clock
-  · exact Function.update_self ..
-  · intro i hi
-    have ne : i ≠ 34 := fun eq => by subst i; exact (by decide : (34 : Fin 35) ∉ shearWork) hi
-    simpa [Function.update_of_ne (col.injective.ne ne)] using frame.scratch i hi
-  · simpa using frame.src
-  · simpa using frame.dst
+  exact ready.replaceArchive rfl (fun i ne => Function.update_of_ne (col.injective.ne ne) ..)
+    (Function.update_self ..)
 
 /-- Prepending the correction on the column archive preserves the positioned
 child payload and establishes the scaling program's input representation. -/
@@ -271,6 +262,37 @@ theorem correctionColumnReady {T d w W : ℕ} (col : Fin 35 ↪ Fin T) (H J : �
   obtain ⟨word,frame,reads⟩ := ready
   rw [frame.archive]
   exact replaceColumnRecord col H J _ tail dest q original addr S ⟨word,frame,reads⟩
+
+/-- A returned word with the unweighted child action on its rank fields
+supplies the positioned parent record consumed by the correction. -/
+theorem ordinaryChild_return {T r g w W : ℕ}
+    (col : Fin 35 ↪ Fin T) (H J : ℕ) (tail : List (Fin (prime+4)))
+    (dest : ℤ → Fin 4) (q : ℤ) (S F : Stacks T prime) :
+    let M := prime^(w+1)
+    let d := r+g
+    ∀ (original before after : Fin (M^(d+d)*W) → ZMod 2)
+      (input : (Fin (d+d) → ZMod M) → IntegerMultBounds.Swap.Shear.State (Fin d) (ZMod M)),
+      RecordReady (b := prime) (w := w) (W := W) (d := d+d) col H J tail SparseRoleCircuit.encode
+        (fun _ => blank) dest 0 q before S →
+      (∀ x j, before (FlatCoordinateLayout.index (Fin.append (input x).1 (input x).2) j) =
+        original (FlatCoordinateLayout.index x j)) →
+      (∀ k : Fin 35, k ≠ 24 → F.L (col k) = S.L (col k) ∧ F.R (col k) = S.R (col k)) →
+      (∀ z, RadixToBinary.binaryEncoding.encode (putWord (fun _ => blank) 0
+        (List.ofFn (SparseRoleCircuit.encode ∘ after)) z) = readAt blank (F.L (col 24)) (F.R (col 24)) (z-0)) →
+      (∀ (hg tg : Fin g → ZMod M) (h d : Fin r → ZMod M) (j : Fin W),
+        let addr := fun h d => let t := childFields hg tg (h,fun i => d i.rev)
+                               FlatCoordinateLayout.index (Fin.append t.1 t.2) j
+        after (addr d h) = before (addr h d)) →
+      ColumnRecordReady col H J tail SparseRoleCircuit.encode (fun _ => blank) dest 0 q original
+        (fun x => let t := Weighted.child r (fun _ => 1) (fun _ => 1) (input x); Fin.append t.1 t.2) F := by
+  intro M d original before after input layout reads keep returned action
+  refine ⟨after,layout.returnPayload keep returned,?_⟩
+  intro x j
+  apply Eq.trans _ (reads x j)
+  apply goodChild_effect (fun _ => 1) (fun _ => 1) before after
+  intro hg tg s j
+  have cell := action hg tg s.1 (fun i => s.2 i.rev) j
+  simpa only [Weighted.child,Fin.isLt,ite_true,one_mul,Fin.rev_rev] using cell
 
 /-- With the correction diagonal installed, the physical pair program
 converts the ordinary child address to the weighted one. -/
@@ -311,11 +333,51 @@ theorem childCorrection_exec [M8.Machine.Net] {P U : Type} {w W : ℕ}
     exact childCorrection_apply r weight (input x) j
   exact ⟨z,F,n,user,paid,run,action ▸ after⟩
 
+/-- The modulus, payload banks, spectator width, padded one, clock and matrix
+archive are already on the caller. The column machine owns its other tapes. -/
+def correctionColumnSlots : Fin 7 ↪ Fin 35 := ⟨![2,24,25,27,32,33,34],by decide⟩
+def correctionCallerSlots : Fin 7 ↪ Fin 64 := ⟨![2,24,25,53,44,45,60],by decide⟩
+
+noncomputable def correctionRole [M8.Machine.Net] (j : Fin ((rowSwapBlock.tapes+35)+1)) : Option (Fin 7) :=
+  if h : ∃ k, columnBank (correctionColumnSlots k) = j then some h.choose else none
+
+theorem correctionRole_eq [M8.Machine.Net] {j k} (eq : correctionRole j = some k) :
+    columnBank (correctionColumnSlots k) = j := by
+  unfold correctionRole at eq
+  split at eq
+  · rename_i h
+    exact Option.some.inj eq ▸ h.choose_spec
+  · contradiction
+
+noncomputable def correctionColumnPlacement [M8.Machine.Net] {T : ℕ} (bank : Fin 64 ↪ Fin T)
+    (work : Fin ((rowSwapBlock.tapes+35)+1) ↪ Fin T) (apart : ∀ i j, work i ≠ bank j) :
+    Fin ((rowSwapBlock.tapes+35)+1) ↪ Fin T :=
+  ⟨sharedRegisterPlacement work (correctionCallerSlots.trans bank) correctionRole,
+    sharedRegisterPlacement_injective work work.injective _ (correctionCallerSlots.trans bank).injective
+      (fun i j => apart i _) _ (fun _ _ _ h k => (correctionRole_eq h).symm.trans (correctionRole_eq k))⟩
+
+theorem correctionColumnPlacement_shared [M8.Machine.Net] {T : ℕ} (bank : Fin 64 ↪ Fin T)
+    (work : Fin ((rowSwapBlock.tapes+35)+1) ↪ Fin T) (apart : ∀ i j, work i ≠ bank j) (k : Fin 7) :
+    correctionColumnPlacement bank work apart (columnBank (correctionColumnSlots k)) = bank (correctionCallerSlots k) := by
+  have h : ∃ i, columnBank (correctionColumnSlots i) = columnBank (correctionColumnSlots k) := ⟨k,rfl⟩
+  have eq := correctionColumnSlots.injective (columnBank.injective h.choose_spec)
+  simp [correctionColumnPlacement,sharedRegisterPlacement,correctionRole,h,eq]
+
+theorem correctionColumnPlacement_off [M8.Machine.Net] {T : ℕ} (bank : Fin 64 ↪ Fin T)
+    (work : Fin ((rowSwapBlock.tapes+35)+1) ↪ Fin T) (apart : ∀ i j, work i ≠ bank j)
+    (j : Fin 64) (outside : ∀ k, correctionCallerSlots k ≠ j) :
+    ∀ i, correctionColumnPlacement bank work apart i ≠ bank j := by
+  intro i
+  change sharedRegisterPlacement work (correctionCallerSlots.trans bank) correctionRole i ≠ bank j
+  cases h : correctionRole i with
+  | none => simpa [sharedRegisterPlacement,h] using apart i j
+  | some k => simpa [sharedRegisterPlacement,h] using bank.injective.ne (outside k)
+
 /-- Prepare and apply the pivot correction on a common archive port.
 The column machine leaves every tape outside its placement unchanged. -/
 theorem preparedCorrection_exec [M8.Machine.Net] {T w W r : ℕ} {P U : Type}
-    (bank : Fin 64 ↪ Fin T) (ports : Fin ((rowSwapBlock.tapes+35)+1) ↪ Fin T)
-    (shared : bank 60 = ports (columnBank 34)) (fits : r ≤ 64)
+    (bank : Fin 64 ↪ Fin T) (work : Fin ((rowSwapBlock.tapes+35)+1) ↪ Fin T)
+    (apart : ∀ i j, work i ≠ bank j) (fits : r ≤ 64)
     (pivot : Fin r → (ZMod (prime^(w+1)))ˣ) (H J : ℕ)
     (hm : prime^(w+1) < 2^H) (hw : W < 2^J) (hW : 0 < W)
     (body : P → Pr P T columnCapacity prime U) (u : HS T columnCapacity prime U) (S : Stacks T prime)
@@ -323,6 +385,7 @@ theorem preparedCorrection_exec [M8.Machine.Net] {T w W r : ℕ} {P U : Type}
     (empty : ∀ z, q ≤ z → z < q+((prime^(w+1))^128*W : ℕ) → dest z = blank)
     (original : Fin ((prime^(w+1))^128*W) → ZMod 2)
     (input : (Fin 128 → ZMod (prime^(w+1))) → IntegerMultBounds.Swap.Shear.State (Fin 64) (ZMod (prime^(w+1)))) :
+    let ports := correctionColumnPlacement bank work apart
     let weight := fun i : Fin 64 => if h : i.val < r then pivot ⟨i.val,h⟩ else 1
     let emit := fun i j => let slot := correctionSlot r i j
                            readMatrixWord slot.2.val ((callerCorrectionPorts slot.1).trans bank)
@@ -346,10 +409,12 @@ theorem preparedCorrection_exec [M8.Machine.Net] {T w W r : ℕ} {P U : Type}
         (1+(((List.finRange 127).map (fun i => pairScalingTime U i.succ 0 i.succ w W H J)).sum+1)) + (128*128*(4*H+4)+1) ∧
       Exec body ((prep.seq (placedDiagonalPairs ports 127)).seq (dropWords (col 2) (col 34) (col 0) (128*128))) (mk u S) n (mk z F) ∧
       ready tail (fun x (j : Fin (64+64)) => Fin.addCases (corrected x).1 (corrected x).2 j) F ∧
-      scratch F ∧ ∀ j, (∀ i, ports i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
-  intro weight emit write prep col ready plain corrected matrix scratch width unit pos inv free before clean
+      scratch F ∧ (∀ j : Fin 64, (∀ k, correctionCallerSlots k ≠ j) →
+        F.L (bank j) = S.L (bank j) ∧ F.R (bank j) = S.R (bank j)) ∧ ∀ j, (∀ i, ports i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  intro ports weight emit write prep col ready plain corrected matrix scratch width unit pos inv free before clean
   obtain ⟨y,t,user,paid,prepare⟩ := prepareCorrection_writes body bank fits pivot H u S ⟨width,unit,pos,inv,free⟩
   let D : Stacks T prime := {S with R := Function.update S.R (col 34) (matrixWords prime H matrix ++ S.R (col 34))}
+  have shared : bank 60 = ports (columnBank 34) := (correctionColumnPlacement_shared bank work apart 6).symm
   rw [shared] at prepare
   have live := correctionColumnReady col H J matrix tail dest q original _ S before
   have project y D : ColumnReady col H J matrix tail SparseRoleCircuit.encode (fun _ => blank) dest 0 q original y D ↔
@@ -374,12 +439,17 @@ theorem preparedCorrection_exec [M8.Machine.Net] {T w W r : ℕ} {P U : Type}
     have eq : embStk ports F = E := embStk_ovr ports.injective _ _
     rw [← eq] at done unused
     have result := (project ..).2 done
-    obtain ⟨word,frame,reads⟩ := result
-    obtain ⟨out,final,drop⟩ := consumeMatrix_exec col body z F H matrix tail frame.archive
-      ((congrArg List.length frame.modulus).trans (length_binSyms ..)) (frame.scratch 0 (by decide)).2
+    obtain ⟨word,record,reads⟩ := result
+    obtain ⟨out,final,drop⟩ := consumeMatrix_exec col body z F H matrix tail record.archive
+      ((congrArg List.length record.modulus).trans (length_binSyms ..)) (record.scratch 0 (by decide)).2
     let G : Stacks T prime := {F with R := Function.update F.R (col 34) tail}
+    have frame (j : Fin T) (off : ∀ i, ports i ≠ j) : G.L j = S.L j ∧ G.R j = S.R j := by
+      obtain ⟨left,right⟩ := embOvr_off E.get D off
+      have ne := (off (columnBank 34)).symm
+      exact ⟨left,(Function.update_of_ne ne ..).trans (right.trans (Function.update_of_ne ne ..))⟩
     refine ⟨out,G,_,final.trans (zu.trans (same.trans user)),Nat.add_le_add_right (Nat.add_le_add paid (Nat.add_le_add_left time 1)) _,
-      Exec.seq (Exec.seq prepare placed) drop,replaceColumnRecord col H J _ _ dest q original _ F ⟨word,frame,reads⟩,?_,?_⟩
+      Exec.seq (Exec.seq prepare placed) drop,replaceColumnRecord col H J _ _ dest q original _ F ⟨word,record,reads⟩,?_,
+      fun j hj => frame _ (correctionColumnPlacement_off bank work apart j hj),frame⟩
     · intro j hj
       have ne : columnPorts j ≠ columnBank 34 := by
         intro eq
@@ -387,9 +457,5 @@ theorem preparedCorrection_exec [M8.Machine.Net] {T w W r : ℕ} {P U : Type}
         change j.val = 34 at same
         omega
       simpa [G,col,Function.update_of_ne (ports.injective.ne ne),embStk] using unused j hj
-    · intro j off
-      obtain ⟨left,right⟩ := embOvr_off E.get D off
-      have ne := (off (columnBank 34)).symm
-      exact ⟨left,(Function.update_of_ne ne ..).trans (right.trans (Function.update_of_ne ne ..))⟩
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode

@@ -761,8 +761,14 @@ and the pair program costs at most a constant times row volume times
 tapes 55 and 56. Its writer shares the column archive with the scaling machine,
 which corrects the positioned payload. A counted drop restores the archive
 suffix, and the run preserves both stacks outside the column placement.
-The recursive invocation still needs to supply that placement and the
-positioned ordinary child output.
+The column placement shares the two payload ports, archive, modulus,
+spectator width, padded unit and clock. The remaining column tapes use private
+storage. Given the positioned output and preservation of the other column
+tapes, `ordinaryChild_return` derives the correction’s input read from an
+ordinary transpose on each pair of active rank fields. The tail field is
+indexed in reverse order, with both gap fields and the final spectator fixed.
+The recursive invocation still needs to realize that transpose on these
+physical addresses.
 
 The semantic five-class node (S5d.3) certifies upstream's accounting under ideal routes and
 partial swaps. Its exponent `1 - 10/5769` holds under that idealization only.
