@@ -118,6 +118,57 @@ theorem copyChild_volume (w W : ℕ) : volume prime (copyChild w W) = (prime^w)^
   simp only [pow_add]
   ring
 
+open FlatCoordinateSchedule (bits bits_value bits_canonical) in
+/-- Construct the rank-seven child dimensions from the binary width and spectator
+count, using a second width input and the fixed rank in the product bank. -/
+theorem copyChild_headers (w W : ℕ) (hw : 0 < w) (hW : 0 < W) :
+    let t := (0 : Fin 2)
+    let machine := FamilyPlacementAlphabet.sequence (FlatCoordinateDimensions.program t)
+      (DimensionProductDescriptor.program (q := prime))
+    let input := (FlatCoordinateDimensions.input w W).append (DimensionProductDescriptor.input (bits w) (bits 7))
+    let output := (FlatCoordinateDimensions.output t w W).append (DimensionProductDescriptor.output (bits w) (bits 7) 7 w)
+    let slots : Fin 6 → Fin (9+6) := ![5,5,5,10,4,7]
+    let hs := fun i => bits (RecursiveDimensionBank.values (copyChild w W) i)
+    HoareTime (seq (extend machine 6) (FixedHeaderBankCopy.program (by decide) slots))
+      (fun z => z = input.append (FixedHeaderBankCopy.empty 6))
+      (fun z => z = output.append (FixedHeaderBankCopy.headerBank hs))
+      (500*((prime^w)^16*W)) ∧ RecursiveDimensionBank.Headers (copyChild w W) hs := by
+  intro t machine input output slots hs
+  have valid : RecursiveDimensionBank.Headers (copyChild w W) hs :=
+    ⟨fun i => bits_value _,fun i => bits_canonical _⟩
+  refine ⟨?_,valid⟩
+  have build := FamilyPlacementAlphabet.sequence_hoare (FlatCoordinateDimensions.construct_hoare t w W hW)
+    (DimensionProductDescriptor.construct_hoare (q := prime) (bits w) (bits 7) 7 w hw
+      (bits_value _) (bits_value _) (bits_canonical _) (bits_canonical _))
+  have generated (i : Fin 6) : output.head (slots i) = 1 ∧
+      output.tape (slots i) = RadixZeroFill.encodedBinary (hs i) := by
+    obtain ⟨q,p,b⟩ := FlatCoordinateDimensions.output_descriptors t w W
+    have one : FlatCoordinateLayout.prefixSize (Q := ActualAffineScaling.modulus w) t = 1 := pow_zero _
+    have tail : FlatCoordinateLayout.suffixSize (Q := ActualAffineScaling.modulus w) (W := W) t = prime^w*W := by
+      change (prime^w)^1*W = _
+      rw [pow_one]
+    rw [one] at p
+    rw [tail] at b
+    fin_cases i <;> constructor <;> first | rfl | exact p | exact q | exact b
+  let V := (prime^w)^16*W
+  have pos := ActualAffineScaling.modulus_pos w
+  have hV : 0 < V := Nat.mul_pos (pow_pos pos _) hW
+  have childPos : (copyChild w W).Positive :=
+    ⟨Nat.zero_lt_one,Nat.zero_lt_one,Nat.zero_lt_one,pos,Nat.mul_pos pos hW⟩
+  have bound (i) : RecursiveDimensionBank.values (copyChild w W) i ≤ V := by
+    rw [show V = volume prime (copyChild w W) from (copyChild_volume w W).symm]
+    exact RecursiveHeaderBounds.values_le_volume FlatCoordinateDimensions.hprime _ childPos i
+  have install := FixedHeaderBankCopy.constructs_linear (by decide) slots hs output
+    (fun i => (generated i).2) (fun i => (generated i).1) V hV valid.2
+    (fun i => (valid.1 i).le.trans (bound i))
+  have run := (hoare_extend_eq build (FixedHeaderBankCopy.empty 6)).seq install
+  apply run.consequence (fun _ h => h) (fun _ h => h)
+  change 357*((prime^w)^2*W)+(53*(7*w)+28)+1+1+60*V ≤ 500*V
+  have small : (prime^w)^2*W ≤ V := Nat.mul_le_mul_right W (Nat.pow_le_pow_right pos (by decide : 2 ≤ 16))
+  have width : 7*w ≤ V := bound 3
+  omega
+
+
 section
 variable {w W : ℕ}
 local instance : NeZero (prime^w) := ⟨pow_ne_zero _ Shared50ModularControl.prime_prime.ne_zero⟩
