@@ -569,6 +569,91 @@ theorem packedOwner_exec {ι P U : Type} {N T Q : ℕ} (positive : 0 < N)
     omega
   simp [Function.update_of_ne,off]
 
+open RingFormula IntegerMultBounds.MathlibTM2.Fast.Main in
+/-- Build the matrix archive from the directory headers while the owner
+registers are outside the writer's tape bank. -/
+theorem ownerArchiveSetup_exec [M8.Machine.Net] {m K d w W J Q : ℕ} {P U : Type}
+    (v : Descriptor) (proj : Matrix (Fin m) (Fin m) ℚ) (parent inv : Fin m → ZMod (prime^(w+1)))
+    (reciprocal : ∀ i, parent i * inv i = 1) (e : (Fin m ⊕ Fin m) ≃ Fin (d+1))
+    (data : ScanData m d w W) (hm : prime^(w+1) < 2^data.H)
+    (room : Record.size d+(rowSwapBlock.tapes+35+2) ≤ K+1)
+    (fits : (36+2*m+1+(conjugationDepth m+1)*13)+3 ≤ K+1)
+    (body : P → Pr P (66+(K+1)) Q prime U) (prefixes : ℕ → List (Fin (prime+4)))
+    (archiveTail : List (Fin (prime+4))) (schedule : List ℕ → List (Fin (prime+4)))
+    (u : HS ((66+(K+1))+5) Q prime U) (S : Stacks ((66+(K+1))+5) prime) :
+    let placement := directoryOrdinaryBank room
+    let bank := fun i : Fin (66+(K+1)) => i.castAdd 5
+    let start := embStk bank S
+    let caller := Fin.castAddEmb (n := 66) (K+1)
+    let rs := List.range data.records
+    let ready := DirectoryReady v proj w W data.H J parent prefixes archiveTail schedule
+    let work := (List.finRange (66+(K+1))).filter fun i => decide (58 ≤ i.val ∧ i ≠ directoryMatrixTape room)
+    let initTime := directoryQueueInitTime m d w data.H data.records start
+    let queueTime := directoryMatrixQueueTime m d w data.H data.records (start.R (caller 47)).length
+    ready (embStk placement start) rs → start.R (directoryMatrixTape room) = [] →
+    start.R (caller 57) = rs.map (fun j => bitSymbol (LabelStock.live m (w+1) 1 j)) →
+    ∃ prepare z F t, z.user = u.user ∧
+      Exec (fun f => embProg bank id (body f)) (embProg bank id prepare) (mk u S) t (mk z F) ∧
+      ready (embStk placement (embStk bank F)) rs ∧
+      (embStk bank F).R (directoryMatrixTape room) = (data.physical e proj parent inv).matrices 0 ∧
+      (∀ j : Fin 66, j.val < 58 → (embStk bank F).L (caller j) = start.L (caller j) ∧
+        (embStk bank F).R (caller j) = start.R (caller j)) ∧
+      (∀ j : Fin 5, F.R (Fin.natAdd (66+(K+1)) j) = S.R (Fin.natAdd (66+(K+1)) j)) ∧
+      ∀ p, mnProgPush prepare ≤ p → (∀ f, mnProgPush (body f) ≤ p) →
+        t ≤ initTime + queueTime + (4*work.length+1+work.length*(6*(p*initTime))) := by
+  intro placement bank start caller rs ready work initTime queueTime initial empty liveBits
+  have input := initial
+  obtain ⟨directory,widths,privateBlank,_,projector,modulus,_,_,_,unit,clock,weights,_⟩ := input
+  have port (j : Fin 66) := directoryOrdinaryBank_caller room j
+  simp only [embStk,Function.comp_apply,placement,Fin.castAddEmb_apply,port] at directory widths projector modulus unit clock weights
+  have free (i) : start.R (directoryQueueBank room fits i) = [] := by
+    by_cases eq : directoryQueueBank room fits i = directoryMatrixTape room
+    · rw [eq]; exact empty
+    · apply ((directoryOrdinaryBank_clear_iff room start).1 privateBlank _ ?_ eq).2
+      by_contra! low
+      let j : Fin 66 := ⟨(directoryQueueBank room fits i).val,by omega⟩
+      exact directoryQueueBank_caller room fits i j (Fin.ext rfl)
+  obtain ⟨_,_,init,_,initBound,_,_,_,_,_,_,_,_,_,_,_,_,_,generate,_⟩ :=
+    directoryQueueSetup_exec room fits body parent inv reciprocal hm (embDn bank u) start liveBits free weights modulus unit clock
+  obtain ⟨writer,runWriter⟩ := generate e
+  obtain ⟨y,t,userY,_,time,write,archive,keep,clear⟩ := runWriter proj prefixes archiveTail projector
+    (fun j hj => widths j (List.mem_range.mpr hj)) directory
+  obtain ⟨z,F,exec,_,user,projEq,stay⟩ := exec_emb (ι := id) (body' := fun f => embProg bank id (body f)) (Fin.castAdd_injective ..) (fun _ => rfl) write u rfl S rfl
+  refine ⟨_,z,F,t,user.trans userY,exec,?_,?_,?_,?_,?_⟩
+  · rw [← projEq] at keep clear
+    have preserved (i : Fin (66+K)) : (embStk placement (embStk bank F)).R i = (embStk placement start).R i := by
+      by_cases hi : 58 ≤ i.val
+      · exact (((directoryOrdinaryBank_clear_iff room _).2 clear i hi).2).trans (privateBlank i hi).2.symm
+      · let j : Fin 66 := ⟨i.val,by omega⟩
+        have eq : i = j.castAdd K := Fin.ext rfl
+        rw [eq]
+        simp only [embStk,Function.comp_apply,placement,directoryOrdinaryBank_caller]
+        exact (keep j (by change i.val < 58; omega)).2
+    obtain ⟨a,b,_,c,d,h,f,g,l,vv,k,q,p⟩ := initial
+    unfold ready DirectoryReady
+    rw [funext preserved]
+    exact ⟨a,b,fun i hi => ⟨((directoryOrdinaryBank_clear_iff room _).2 clear i hi).1,(privateBlank i hi).2⟩,c,d,h,f,g,l,vv,k,q,p⟩
+  · rw [projEq]; exact archive.trans (data.physical_archive e proj parent inv).symm
+  · rw [projEq]; exact keep
+  · intro j
+    apply (stay _ ?_).2
+    intro i eq
+    have h := congrArg Fin.val eq
+    change i.val = (66+(K+1))+j.val at h
+    omega
+  · intro p hp calls
+    have raw := time p (max_le_iff.mp (max_le_iff.mp hp).1).1 calls
+    have each (i) (hi : i ∈ work) : 4*(start.L i).length+2*(start.R i).length+4 = 4 := by
+      have mem : 58 ≤ i.val ∧ i ≠ directoryMatrixTape room := by simpa [work] using hi
+      obtain ⟨hl,hr⟩ := (directoryOrdinaryBank_clear_iff room start).1 privateBlank i mem.1 mem.2
+      simp [hl,hr]
+    have base : (work.map fun i => 4*(start.L i).length+2*(start.R i).length+4).sum = 4*work.length := by
+      rw [List.map_congr_left each]; simp [Nat.mul_comm]
+    change t ≤ init + queueTime + ((work.map fun i => 4*(start.L i).length+2*(start.R i).length+4).sum+1+work.length*(6*(p*init))) at raw
+    rw [base] at raw
+    exact raw.trans (Nat.add_le_add (Nat.add_le_add_right initBound _) (Nat.add_le_add_left
+      (Nat.mul_le_mul_left _ (Nat.mul_le_mul_left _ (Nat.mul_le_mul_left p initBound))) _))
+
 open IntegerMultBounds.MathlibTM2.Fast.Main IntegerMultBounds.Swap.Modular Matrix in
 /-- Execute the classified archive over the entire packed owner directory. -/
 theorem classifiedDirectory_exec [M8.Machine.Net] {m d K w W J N : ℕ} {P U : Type}
@@ -577,12 +662,15 @@ theorem classifiedDirectory_exec [M8.Machine.Net] {m d K w W J N : ℕ} {P U : T
     (parent inv : Fin m → ZMod (prime^(w+1))) (reciprocal : ∀ i, parent i * inv i = 1)
     (data : ScanData m d w W) (hm : prime^(w+1) < 2^data.H) (hw : W < 2^J) (positive : 0 < W)
     (room : Record.size d+(rowSwapBlock.tapes+35+2) ≤ K+1)
+    (fits : (36+2*m+1+(RingFormula.conjugationDepth m+1)*13)+3 ≤ K+1)
     (capacity : (anchorProgram d true).1+(anchorProgram d false).1+1 ≤ columnCapacity)
     (body : P → Pr P (66+(K+1)) columnCapacity prime U) (c : ℕ) (bodyBound : ∀ f, mnProgPush (body f) ≤ c)
     (prefixes : ℕ → List (Fin (prime+4))) (archiveTail : List (Fin (prime+4)))
     (bad : ℕ → Bool) (budget : ℕ → ℕ) (ordinaryEffect : ℕ → (Fin N → ZMod 2) → Prop)
     (length : N = (prime^(w+1))^m*((prime^(w+1))^m*W)) (input : ℕ → Fin N → ZMod 2)
-    (good padding : Pr P (66+(K+1)) columnCapacity prime U)
+    (localBody : P → Pr P (66+K) columnCapacity prime U)
+    (calls : ∀ f, body f = embProg (directoryOrdinaryBank room) id (localBody f))
+    (goodRow skipRow : Pr P (66+K) columnCapacity prime U)
     (u : HS ((66+(K+1))+5) columnCapacity prime U) (S : Stacks ((66+(K+1))+5) prime) :
     let e := finSumFinEquiv.trans (finCongr dimension)
     let physical := data.physical e proj parent inv
@@ -593,8 +681,6 @@ theorem classifiedDirectory_exec [M8.Machine.Net] {m d K w W J N : ℕ} {P U : T
     let ready := DirectoryReady v proj w W data.H J parent prefixes archiveTail schedule
     let placement := directoryOrdinaryBank room
     let caller := Fin.castAddEmb (n := 66) (K+1)
-    let payload := fun (word : Fin N → ZMod 2) D =>
-      RecordPayload ((24 : Fin 66).castAdd K) (fun _ => blank) 0 word (embStk placement D)
     let live := LabelStock.live m (w+1) 1
     let rs := List.range data.records
     let pending := fun j => rs.drop j
@@ -602,35 +688,51 @@ theorem classifiedDirectory_exec [M8.Machine.Net] {m d K w W J N : ℕ} {P U : T
     let bank := fun i : Fin (66+(K+1)) => i.castAdd 5
     let reg := fun j : Fin 5 => Fin.natAdd (66+(K+1)) j
     let start := embStk bank S
+    let inner := Fin.castAddEmb (n := 66) K
+    let advance := dropWords (placement (inner 2)) (directoryMatrixTape room) (placement (inner 59)) ((d+1)*(d+1))
+    let good := (embProg placement id goodRow).seq advance
+    let padding := (embProg placement id skipRow).seq advance
+    let ordinaryTime := fun j => budget j + ((d+1)*(d+1)*(4*data.H+4)+1)
     let cost := fun j =>
       let C := physical.table (LabelStock.residue m (w+1) 1 j)
       let rows := classPivots C
       let scratch := (List.finRange (66+(K+1))).filter fun i => decide (58 ≤ i.val ∧ i ≠ directoryMatrixTape room)
       (if live j && bad j then exceptionalRecordTime U rows (negativeAnchor rows C) m w W data.H J scratch.length
-        (max (mnProgPush (directoryExceptionalCore (P := P) (U := U) d room capacity)) c) (prefixes j).length else budget j) +
+        (max (mnProgPush (directoryExceptionalCore (P := P) (U := U) d room capacity)) c) (prefixes j).length else ordinaryTime j) +
         (if live j then 4 else 3)
     let effect := fun j (next : Fin N → ZMod 2) => if live j && bad j then
       ∀ x k, next ((FlatCoordinateLayout.index ((projectorResidual e (reduce (prime^(w+1)) proj) parent inv
         (physicalLabel m (w+1) j)).mulVec x) k).cast (directoryPayloadLength e length)) =
         input j ((FlatCoordinateLayout.index x k).cast (directoryPayloadLength e length))
       else ordinaryEffect j next
-    ready (embStk placement start) rs → start.R (directoryMatrixTape room) = physical.matrices 0 →
+    ready (embStk placement start) rs → start.R (directoryMatrixTape room) = [] →
     start.R (caller 57) = rs.map (fun j => bitSymbol (live j)) → start.R (caller 56) = rs.map (fun j => bitSymbol (bad j)) →
     S.R (reg 0) = rs.flatMap (bits ∘ input) → S.R (reg 1) = [] → (S.R (reg 2)).length = N →
     S.R (reg 3) = [] → S.R (reg 4) = [] → (∀ j, readAt blank (start.L (caller 24)) (start.R (caller 24)) j = blank) →
-    (∀ j, j < data.records → ¬ (live j = true ∧ bad j = true) → ∀ y A, ready (embStk placement A) (j::pending (j+1)) → payload (input j) A → A.R (directoryMatrixTape room) = physical.matrices j →
-      ∃ z D n next, z.user = y.user ∧ n ≤ budget j ∧ Exec body (if live j then good else padding) (mk y A) n (mk z D) ∧
-        ready (embStk placement D) (pending (j+1)) ∧ ordinaryEffect j next ∧ payload next D ∧ D.R (directoryMatrixTape room) = physical.matrices (j+1) ∧
-        D.R (caller 57) = A.R (caller 57) ∧ D.R (caller 56) = A.R (caller 56)) →
+    (∀ j, j < data.records → ¬ (live j = true ∧ bad j = true) → ∀ y A, ready A (j::pending (j+1)) →
+      RecordPayload (inner 24) (fun _ => blank) 0 (input j) A →
+      ∃ z D n next, z.user = y.user ∧ n ≤ budget j ∧ Exec localBody (if live j then goodRow else skipRow) (mk y A) n (mk z D) ∧
+        ready D (pending (j+1)) ∧ ordinaryEffect j next ∧ RecordPayload (inner 24) (fun _ => blank) 0 next D ∧
+        D.R (inner 57) = A.R (inner 57) ∧ D.R (inner 56) = A.R (inner 56)) →
     let program := packedOwner (caller 24) (ownerDispatch (caller 57) (caller 56) good
       (directoryExceptionalProgram m d room capacity) padding)
-    ∃ z F n rows, z.user = u.user ∧
+    let work := (List.finRange (66+(K+1))).filter fun i => decide (58 ≤ i.val ∧ i ≠ directoryMatrixTape room)
+    let initTime := directoryQueueInitTime m d w data.H data.records start
+    let queueTime := directoryMatrixQueueTime m d w data.H data.records (start.R (caller 47)).length
+    ∃ prepare z F t n rows, z.user = u.user ∧
+      (∀ p, mnProgPush prepare ≤ p → (∀ f, mnProgPush (body f) ≤ p) →
+        t ≤ initTime + queueTime + (4*work.length+1+work.length*(6*(p*initTime)))) ∧
       n ≤ (rs.map (fun j => 6*N+6+cost j+(4*N+4))).sum + 2*rs.length+2 + (2*(rs.length*N)+2) ∧
-      Exec (fun f => embProg bank id (body f)) program (mk u S) n (mk z F) ∧
+      Exec (fun f => embProg bank id (body f)) ((embProg bank id prepare).seq program) (mk u S) (t+n) (mk z F) ∧
       List.Forall₂ (fun j out => ∃ word, effect j word ∧ out = bits word) rs rows ∧
-      F.R (reg 0) = rows.flatten ∧ F.R (reg 1) = [] ∧ ready (embStk placement (embStk bank F)) [] := by
-  intro e physical φ code schedule ready placement caller payload live rs pending bits bank reg start cost effect
-    directory matrix mask mode owner accumulator width saved tmp empty ordinary program
+      F.R (reg 0) = rows.flatten ∧ F.R (reg 1) = [] ∧ ready (embStk placement (embStk bank F)) [] ∧
+      (embStk bank F).R (directoryMatrixTape room) = [] ∧
+      (embStk bank F).R (caller 57) = [] ∧ (embStk bank F).R (caller 56) = [] := by
+  intro e physical φ code schedule ready placement caller live rs pending bits bank reg start inner advance good padding ordinaryTime cost effect
+    directory matrix mask mode owner accumulator width saved tmp empty ordinary program work initTime queueTime
+  obtain ⟨prepare,y,B,t,uy,write,prepared,archive,keep,regs,setupTime⟩ := ownerArchiveSetup_exec
+    v proj parent inv reciprocal e data hm room fits body prefixes archiveTail schedule u S directory matrix mask
+  have cell (j : Fin 66) (hj : j.val < 58) := keep j hj
   let frame := fun (xs : List ℕ) (A : Stacks (66+(K+1)) prime) =>
     ∃ k ≤ data.records, pending k = xs ∧ ready (embStk placement A) xs ∧
       A.R (directoryMatrixTape room) = physical.matrices k ∧
@@ -638,9 +740,13 @@ theorem classifiedDirectory_exec [M8.Machine.Net] {m d K w W J N : ℕ} {P U : T
   let dispatch := ownerDispatch (caller 57) (caller 56) good (directoryExceptionalProgram m d room capacity) padding
   have hp := Networks.Shared50ModularControl.prime_prime.pos
   have pos : 0 < N := by rw [length]; exact Nat.mul_pos (pow_pos (pow_pos hp _) _) (Nat.mul_pos (pow_pos (pow_pos hp _) _) positive)
-  obtain ⟨z,F,n,rows,user,time,run,correct,output,free,_,_,_,done,_⟩ :=
-    packedOwner_exec pos body (caller 24) dispatch input effect cost frame rs u S
-      ⟨⟨0,Nat.zero_le _,rfl,directory,matrix,mask,mode⟩,owner,accumulator,width,saved,tmp,empty⟩ (by
+  obtain ⟨z,F,n,rows,user,time,run,correct,output,free,k,hk,remaining,done,archiveEnd,maskEnd,modeEnd⟩ :=
+    packedOwner_exec pos body (caller 24) dispatch input effect cost frame rs y B
+      ⟨⟨0,Nat.zero_le _,rfl,prepared,archive,((cell 57 (by decide)).2.trans mask),((cell 56 (by decide)).2.trans mode)⟩,
+        (regs 0).trans owner,(regs 1).trans accumulator,(congrArg List.length (regs 2)).trans width,
+        (regs 3).trans saved,(regs 4).trans tmp,by
+          change ∀ j, readAt blank ((embStk bank B).L (caller 24)) ((embStk bank B).R (caller 24)) j = blank
+          rw [(cell 24 (by decide)).1,(cell 24 (by decide)).2]; exact empty⟩ (by
       intro j xs A y current loaded inputWord
       obtain ⟨k,hk,suffix,dir,archive,ls,bs⟩ := current
       have inside : k < data.records := by
@@ -653,11 +759,38 @@ theorem classifiedDirectory_exec [M8.Machine.Net] {m d K w W J N : ℕ} {P U : T
       obtain ⟨rfl,rfl⟩ := List.cons.inj (eq.symm.trans suffix)
       obtain ⟨v,B,t,word,uv,bound,exec,action,output,next,tail,maskTail,modeTail⟩ :=
         ownerClassified_exec dimension v proj idem adm parent inv reciprocal data hm hw positive room capacity body c bodyBound
-          prefixes archiveTail bad k inside (budget k) (ordinaryEffect k) length (input k) y A
-          (show ready (embStk placement A) (pending k) by rw [eq]; exact dir) archive good padding _ _ ls bs inputWord (ordinary k inside)
+          prefixes archiveTail bad k inside (ordinaryTime k) (ordinaryEffect k) length (input k) y A
+          (show ready (embStk placement A) (pending k) by rw [eq]; exact dir) archive good padding _ _ ls bs inputWord (by
+            intro no userState archiveState startRow inputRow archiveRow
+            obtain ⟨v,D,t,next,userEq,time,run,done,act,out,mask,mode⟩ :=
+              ordinary k inside no (embDn placement userState) (embStk placement archiveState) startRow inputRow
+            have clock : (D.R (inner 2)).length = physical.H := by
+              rw [done.2.2.2.2.2.1,length_binSyms]; rfl
+            obtain ⟨z,B,hz,bankEq,tail,_,exec⟩ := physical.advanceEmbeddedRecord_exec k inside placement
+              (directoryMatrixTape room) (Fin.succAbove_ne _) (inner 2) (inner 59)
+              (inner.injective.ne (by decide : (2 : Fin 66) ≠ 59)) id localBody body calls _ userState archiveState
+              v D t run clock (done.2.2.1 _ (by decide : 58 ≤ 59)).2 archiveRow
+            have cell (i : Fin 66) : B.R (caller i) = D.R (inner i) := by
+              change B.R (i.castAdd (K+1)) = _
+              rw [← directoryOrdinaryBank_caller room i]
+              exact congrArg (fun A => Stacks.R A (inner i)) bankEq
+            refine ⟨z,B,_,next,hz.trans userEq,Nat.add_le_add_right time _,?_,by rw [bankEq]; exact done,act,
+              ?_,tail,?_,?_⟩
+            · change Exec body (if live k then good else padding) _ _ _
+              cases h : live k <;> simpa only [h,Bool.false_eq_true,ite_false,ite_true,good,padding,advance,physical,ScanData.physical] using exec
+            · change RecordPayload (inner 24) _ _ next (embStk placement B)
+              rw [bankEq]
+              exact out
+            · simpa [embStk,placement,inner,caller,directoryOrdinaryBank_caller] using (cell 57).trans mask
+            · simpa [embStk,placement,inner,caller,directoryOrdinaryBank_caller] using (cell 56).trans mode)
       refine ⟨v,B,t,word,uv,bound,exec,action,?_,k+1,by omega,rfl,next,tail,maskTail,modeTail⟩
-      simpa only [payload,RecordPayload,embStk,Function.comp_apply,placement,directoryOrdinaryBank_caller,caller,Fin.castAddEmb_apply] using output)
-  exact ⟨z,F,n,rows,user,time,run,correct,output,free,done⟩
+      simpa only [RecordPayload,embStk,Function.comp_apply,placement,directoryOrdinaryBank_caller,caller,Fin.castAddEmb_apply] using output)
+  have last : k = data.records := by
+    have h := congrArg List.length remaining
+    simp [pending,rs] at h
+    omega
+  refine ⟨prepare,z,F,t,n,rows,user.trans uy,setupTime,time,Exec.seq write run,correct,output,free,done,archiveEnd.trans ?_,maskEnd,modeEnd⟩
+  simp [last,ScanData.matrices,physical,ScanData.physical,List.drop_of_length_le (List.length_range.le)]
 
 /-- Charge loading and storing every record to its payload volume while
 retaining the scan's inverse-prime discount on exceptional work. -/
