@@ -156,4 +156,50 @@ theorem goodRecordWeights_exec (body : P → Pr P T Q A U) (ports : Fin 24 ↪ F
     rw [goodHeadWord_inverse_apply _ _ _ _ _ _ inv,goodHeadWord_apply _ _ _ _ _ _ inv]
     exact stage.goodMove fits a b factor idempotent α α' inv s
 
+/-- Pass the elimination pivots and the original full-width parent archive to the next host call. -/
+theorem withGoodRecordWeights_exec (body : P → Pr P T Q A U) (ports : Fin 24 ↪ Fin T)
+    (proj : Matrix (Fin m) (Fin m) ℚ) (idem : proj*proj = proj)
+    (f : Factorization univ univ proj) (hd : ∀ d ∈ factorizationDenominators f, d < prime)
+    (fits : proj.rank ≤ m) (j H : ℕ) (hm : M < 2^H)
+    (live : LabelStock.live m (w+1) 1 j = true)
+    (α α' : Fin m → ZMod M) (inv : ∀ i, α i * α' i = 1)
+    (v : HS T Q A U) (S : Stacks T A) (tail : List (Fin (A+4))) (parentTail : List (Fin (A+4)))
+    (next : Pr P T Q A U) (budget : ℕ) (post : Stacks T A → Prop) :
+    let bank := (Fin.castLEEmb (by decide : 23 ≤ 24)).trans ports
+    let child := goodChildPorts.trans ports
+    let g := physicalLabel m (w+1) j
+    let G := g*reduce M proj*g⁻¹
+    fallbackBit fits (reduce M proj) g = false →
+    S.R (bank 15) = matrixWords A H G ++ tail → S.R (bank 2) = binSyms H M →
+    S.R (bank 20) = binSyms H (1 : ZMod M).val → (S.R (bank 22)).length = w →
+    (∀ i : Fin 23, (i < 15 ∧ i ≠ 2) ∨ (17 ≤ i ∧ i ≤ 19) ∨ i = 21 → S.R (bank i) = []) →
+    S.R (ports 23) = (List.ofFn fun k => binSyms H (α k).val).flatten ++ parentTail →
+    (∀ (minor : ∀ k (hk : k < proj.rank), IsUnit (GoodForm.lead (k+1) (lt_of_lt_of_le hk fits) G).det)
+        (y : HS T Q A U) (E : Stacks T A),
+      let stage := GoodForm.stageAt G proj.rank fits minor proj.rank le_rfl
+      let pivot := fun k : Fin proj.rank => stage.M (k.castLE fits) (k.castLE fits)
+      (∀ k, IsUnit (pivot k)) →
+      PackedLeafInputs child H α pivot E [] parentTail → E.R (ports 18) = [] →
+      E.L = S.L → (∀ j, (∀ k, ports k ≠ j) → E.R j = S.R j) →
+      ∃ z D t, z.user = y.user ∧ t ≤ budget ∧ Exec body next (mk y E) t (mk z D) ∧ post D) →
+    ∃ z D t, z.user = v.user ∧ t ≤ (proj.rank*(4*w+4+columnTime m prime w H)+1+
+      (proj.rank*(8*(m*m*H)+14*H+22)+1))+budget ∧
+      Exec body ((goodWeights prime proj.rank fits bank).seq next) (mk v S) t (mk z D) ∧ post D := by
+  intro bank child g G good matrix modulus one ticks free weights consume
+  obtain ⟨minor,y,E,l,user,cost,run,_,_,left,_,_,frame,ready,units,_⟩ :=
+    goodRecordWeights_exec body ports proj idem f hd fits j H hm live α α' inv v S tail
+      (negateForward := false) good matrix modulus one ticks free
+  obtain ⟨spare,packed,_⟩ := ready parentTail weights
+  have outside (n) (k : Fin 23) (j : Fin T) (off : ∀ k, ports k ≠ j) : stageBank bank n k ≠ j := by
+    induction n generalizing k with
+    | zero => exact off _
+    | succ n ih => exact ih _
+  obtain ⟨z,D,t,hz,ht,step,done⟩ := consume minor y E (by
+    intro k
+    refine isUnit_iff_exists_inv.mpr ⟨Ring.inverse ((GoodForm.stageAt G proj.rank fits minor proj.rank le_rfl).M (k.castLE fits) (k.castLE fits)),?_⟩
+    simpa only [Fin.val_castLE,k.isLt,ite_true] using units (k.castLE fits))
+    (by simpa only [Fin.val_castLE,Fin.isLt,ite_true] using packed) spare left
+    (fun j off => frame j (off _).symm (outside _ _ j off).symm (outside _ _ j off).symm)
+  exact ⟨z,D,l+t,hz.trans user,Nat.add_le_add cost ht,Exec.seq run step,done⟩
+
 end IntegerMultBounds.MathlibTM2.Cover.Fallback

@@ -257,9 +257,9 @@ theorem packedCoordinate_exec [M8.Machine.Net] {T m d work Q : ℕ} {F U : Type}
   exact ⟨next,z,D,t,user,bound,run,out,free,keep,addr⟩
 
 /-- Execute every packed coordinate from the initial rank down to counter zero. -/
-theorem packedCoordinates_exec [M8.Machine.Net] {T d work Q : ℕ} {F U : Type}
+theorem packedCoordinates_exec [M8.Machine.Net] {T m d work Q : ℕ} {F U : Type}
     (v : Descriptor) (positive : v.Positive) (w : ℕ) (width : v.width = d*(w+1))
-    (parent parentInv : Fin d → ZMod (prime^(w+1)))
+    (rankFits : d ≤ m) (parent parentInv : Fin m → ZMod (prime^(w+1)))
     (reciprocal : ∀ i, parent i * parentInv i = 1) (pivot : Fin d → ZMod (prime^(w+1)))
     (unit : ∀ i, IsUnit (pivot i)) (io : Fin T) (roles : Tapes T prime)
     (f : ℤ → Fin (prime+4)) (p : ℤ) (node scalar : Tapes 1 prime)
@@ -280,8 +280,8 @@ theorem packedCoordinates_exec [M8.Machine.Net] {T d work Q : ℕ} {F U : Type}
     let clean := fun (D : Stacks ((host+31)+work) prime) => ∀ (k : Fin work) x,
       readAt blank (D.L (k.natAdd (host+31))) (D.R (k.natAdd (host+31))) x = blank
     let payload := fun x : Fin N → ZMod 2 => SharedPlacementAlphabet.setTape roles io (leafBitTape (List.ofFn x)) 0
-    let weight := fun i => parent i*pivot i
-    let inv := fun i => parentInv i*Ring.inverse (pivot i)
+    let weight := fun i : Fin d => parent (i.castLE rankFits)*pivot i
+    let inv := fun i : Fin d => parentInv (i.castLE rankFits)*Ring.inverse (pivot i)
     let logical := {v with width := d}
     let addr := fun a row pre mid post (x : IntegerMultBounds.Swap.Shear.State (Fin d) (ZMod M)) =>
       index M logical a row pre (FlatCoordinateLayout.rank x.1).val mid (FlatCoordinateLayout.rank x.2).val post
@@ -330,7 +330,7 @@ theorem packedCoordinates_exec [M8.Machine.Net] {T d work Q : ℕ} {F U : Type}
        (right _).trans archives.one,(congrArg List.length (right _)).trans archives.clock,
        fun k h => (right _).trans (archives.scratch k h)⟩
     obtain ⟨next,z,D,t,hz,ht,run,result,cleanD,keepD,addrD⟩ :=
-      packedCoordinate_exec v positive w width parent i (parentInv i) (reciprocal i) pivot i (unit i) io
+      packedCoordinate_exec v positive w width parent (i.castLE rankFits) (parentInv (i.castLE rankFits)) (reciprocal _) pivot i (unit i) io
         (payload x) f p node scalar arity st freeNode fits cap ef xf eqs xqs x body y E pivotTail parentTail
         (by simp [payload,SharedPlacementAlphabet.setTape]) (by simp [payload,SharedPlacementAlphabet.setTape])
         bank blank empty ((right _).trans spare) inputs
