@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.Cover.FallbackPhysicalLabel
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackRecordMasks
 public import IntegerMultBounds.MathlibTM2.Cover.ProjectorWitness
 public import IntegerMultBounds.MathlibTM2.M6.BitCopyLabel
 public import IntegerMultBounds.MathlibTM2.M6.BitCopyChildLayout
@@ -302,6 +302,22 @@ theorem remainderProjector_factor (c : PortCertificate) (lo hi : ℕ) (fits : hi
       lo ≤ pendingIndex p ∧ pendingIndex p < hi := by omega
   simp only [same]
 
+private theorem remainderChart_reduced (c : PortCertificate) (hc : c.Checked) (w : ℕ) :
+    let A := c.fullChart.submatrix stageAxis.symm remainderAxis
+    let H := reduce (prime^w) A
+    Admissible (prime^w) A ∧ H*Hᵀ = 1 := by
+  intro A H
+  have chart : Admissible (prime^w) A := by
+    intro i j
+    have bound : (A i j).den ≤ 2 := (fullChart_entry c hc (stageAxis.symm i) (remainderAxis j)).2
+    exact Nat.Coprime.pow_right w ((Nat.coprime_of_lt_prime (A i j).den_pos.ne'
+      (bound.trans_lt Shared50ModularControl.prime_odd) Shared50ModularControl.prime_prime).symm)
+  have tr : Admissible (prime^w) Aᵀ := fun i j => chart j i
+  have orth : Aᵀ * A = 1 := by
+    change (c.fullChart.transpose.submatrix remainderAxis stageAxis.symm) * _ = _
+    rw [submatrix_mul_equiv,c.fullChart_orthonormal hc,submatrix_one_equiv]
+  exact ⟨chart,reduce_inverse _ chart tr (mul_eq_one_comm.mp orth)⟩
+
 /-- After the forward pass relabels a record from g to gH, the cover
 normalizer for the diagonal interval gives the parent's conjugated projector. -/
 theorem remainderProjector_atLabel (c : PortCertificate) (hc : c.Checked) (lo hi w : ℕ)
@@ -315,11 +331,7 @@ theorem remainderProjector_atLabel (c : PortCertificate) (hc : c.Checked) (lo hi
   let A := c.fullChart.submatrix stageAxis.symm remainderAxis
   let I : Matrix (Fin 64) (Fin 64) ℚ := diagonal fun i =>
     if lo ≤ i.val ∧ i.val < hi then 1 else 0
-  have chart : Admissible (prime^w) A := by
-    intro i j
-    have bound : (A i j).den ≤ 2 := (fullChart_entry c hc (stageAxis.symm i) (remainderAxis j)).2
-    exact Nat.Coprime.pow_right w ((Nat.coprime_of_lt_prime (A i j).den_pos.ne'
-      (bound.trans_lt Shared50ModularControl.prime_odd) Shared50ModularControl.prime_prime).symm)
+  obtain ⟨chart,undo⟩ := remainderChart_reduced c hc w
   have tr : Admissible (prime^w) Aᵀ := fun i j => chart j i
   have di : Admissible (prime^w) I := by
     intro i j
@@ -335,10 +347,7 @@ theorem remainderProjector_atLabel (c : PortCertificate) (hc : c.Checked) (lo hi
     dsimp only [P]
     rw [h,reduce_mul _ (admissible_mul _ chart di) tr, reduce_mul _ chart di,reduced]
     rfl
-  have orth : Aᵀ * A = 1 := by
-    change (c.fullChart.transpose.submatrix remainderAxis stageAxis.symm) * _ = _
-    rw [submatrix_mul_equiv,c.fullChart_orthonormal hc,submatrix_one_equiv]
-  have inv : H⁻¹ = Hᵀ := Matrix.inv_eq_right_inv (reduce_inverse _ chart tr (mul_eq_one_comm.mp orth))
+  have inv : H⁻¹ = Hᵀ := Matrix.inv_eq_right_inv undo
   rw [factor,Matrix.mul_inv_rev,inv]
   simp only [Matrix.mul_assoc]
 
@@ -490,6 +499,103 @@ theorem remainderFallback_count (lo hi w blocks : ℕ) (fits : hi ≤ 63) :
     (rank.trans_le hr)
   apply Cover.Fallback.fallbackRecordCount w r blocks hr _ g unit
   simpa only [rank] using good
+
+open IntegerMultBounds.MathlibTM2.Stack Host LabelTraversal LabelCycle GoodForm in
+open scoped Classical in
+/-- Compute both idle dispatch tapes and the exceptional pivot schedules, with setup and
+the excess branch work bounded on exactly the same physical directory. -/
+theorem remainderDispatch_controls {T Q A : ℕ} {P U : Type} (body : P → Pr P T Q A U)
+    (lo hi : ℕ) (fits : hi ≤ 63) (rs : List (Pair T)) (hk : rs.length = 64*64)
+    (α α' : Fin 64 → ZMod prime) (queue mask mode parents saved : Fin T)
+    (apart : mask ≠ mode) (mq : mask ≠ queue) (bq : mode ≠ queue)
+    (regs : ∀ j ∈ [queue,mask,mode], (parents :: saved :: (slots rs ++ [j])).Nodup) :
+    let r := hi-lo
+    let hr : r ≤ 64 := by dsimp [r]; omega
+    let D : Matrix (Fin 64) (Fin 64) ℚ := diagonal fun i => if lo ≤ i.val ∧ i.val < hi then 1 else 0
+    let table := Cover.Fallback.projectorResidual finSumFinEquiv (reduce prime D) α α'
+    ∃ program : Pr P T Q A U, ∀ (v : Descriptor) (w B : ℕ),
+      v.beforeH = B*prime^(64*((w+1)*64)) →
+      ∀ (u : HS T Q A U) (S : Stacks T A), ready (prime^w) S.R rs → S.R saved = [] →
+      (S.R parents).length = v.beforeRows*v.rows*B → S.R queue = [] → S.R mask = [] → S.R mode = [] →
+      let labels := List.range (LabelMask.records v)
+      let live := LabelStock.live 64 (w+1) 1
+      let bad := fun j => Cover.Fallback.fallbackBit hr (reduce (prime^(w+1)) D)
+        (Cover.Fallback.physicalLabel 64 (w+1) j)
+      let codes := labels.flatMap fun j => if bad j then Cover.Fallback.residualSchedule (A := A)
+        (table (LabelStock.residue 64 (w+1) 1 j)) else []
+      ∃ z n, z.user = u.user ∧ n ≤ 3*((6+10*(64*64))*labels.length+4) ∧
+        Exec body program (mk u S) n (mk z {S with R := (Function.update
+          (Function.update (Function.update S.R queue codes) mask (labels.map fun j => bitSymbol (live j)))
+          mode (labels.map fun j => bitSymbol (bad j)))}) ∧
+        ∀ (goodCost padCost badCost : ℕ → ℕ) (base extra : ℕ),
+          (∀ j ∈ labels, live j = true → bad j = false → goodCost j ≤ base) →
+          (∀ j ∈ labels, live j = false → padCost j ≤ base) →
+          (∀ j ∈ labels, live j = true → bad j = true → badCost j ≤ base+extra) →
+          n + (labels.map fun j => (if live j then (if bad j then badCost j else goodCost j)
+            else padCost j)+2+4).sum+2 ≤
+            3*((6+10*(64*64))*labels.length+4) + labels.length*(base+6) +
+            (((∑ k ∈ Finset.range r, (k+1)*65)*labels.length)/prime)*extra+2 := by
+  intro r hr D table
+  obtain ⟨program,write⟩ := Cover.Fallback.recordControls_exec body hr (reduce prime D) table rs hk
+    queue mask mode parents saved apart mq bq regs
+  refine ⟨program,?_⟩
+  intro v w B shape u S radix scratch count freeQueue freeMask freeMode labels live bad codes
+  have adm : Admissible prime D := by
+    intro i j
+    simp only [D,diagonal_apply]
+    split_ifs <;> simp
+  obtain ⟨z,n,user,time,run⟩ := write v w B _ (LabelProjector.residue_reduce (by omega : 0 < w+1) D adm)
+    shape u S radix scratch count freeQueue freeMask freeMode
+  refine ⟨z,n,user,time,run,?_⟩
+  intro goodCost padCost badCost base extra hg hp hb
+  have rank : D.rank = r := intervalDiagonal_rank (by omega : hi ≤ 64)
+  obtain ⟨g,unit,good⟩ := LabelProjector.residue_witness (by omega : 0 < w+1) D
+    (intervalDiagonal_idem 64 lo hi) (intervalFactor 64 lo hi) (intervalFactor_denominators 64 lo hi)
+    (rank.trans_le hr)
+  have bound := Cover.Fallback.directoryDispatchCost_le w r B hr (reduce (prime^(w+1)) D) v shape
+    goodCost padCost badCost base extra g unit (by simpa only [rank] using good) hg hp hb
+  simpa only [Nat.add_assoc] using Nat.add_le_add time bound
+
+/-- At a live routed record, the exceptional queue uses the reduction of the
+incoming port's weighted residual, including the sign used by pivot recovery. -/
+theorem remainderFallback_residual (c : PortCertificate) (hc : c.Checked) (lo hi w : ℕ)
+    (hw : 0 < w) (fits : hi ≤ 63) (block : ℕ)
+    (g : LabelPadding.Label 64 w) (unit : IsUnit g) (α α' : Fin 64 → ZMod (prime^w))
+    (inv : ∀ i, α i * α' i = 1) :
+    let H := reduce (prime^w) (c.fullChart.submatrix stageAxis.symm remainderAxis)
+    let P := reduce (prime^w) ((c.span lo hi).submatrix stageAxis.symm stageAxis.symm)
+    let D : Matrix (Fin 64) (Fin 64) ℚ := diagonal fun i => if lo ≤ i.val ∧ i.val < hi then 1 else 0
+    let φ := LabelRing.res prime w hw
+    let G := Cover.Fallback.projectorResidual finSumFinEquiv P α α' g
+    let j := block*(prime^w)^(64*64)+(LabelAddress.address (g*H)).val
+    (G.det = 1 ∨ G.det = -1) ∧ φ.mapMatrix G =
+      Cover.Fallback.projectorResidual finSumFinEquiv (reduce prime D) (φ ∘ α) (φ ∘ α')
+        (LabelStock.residue 64 w 1 j) := by
+  intro H P D φ G j
+  have routed : Cover.Fallback.physicalLabel 64 w j = g*H := by
+    apply Eq.trans _ (Cover.Fallback.physicalLabel_address (g*H))
+    simp [j,Cover.Fallback.physicalLabel,Nat.add_mod]
+    rfl
+  have undo : H*Hᵀ = 1 := (remainderChart_reduced c hc w).2
+  have live := (Cover.Fallback.physicalLabel_live (m := 64) hw j).mpr (routed ▸
+    unit.mul (isUnit_iff_exists.mpr ⟨Hᵀ,undo,mul_eq_one_comm.mp undo⟩))
+  have adm : Admissible prime D := by
+    intro i j
+    simp only [D,diagonal_apply]
+    split_ifs <;> simp
+  have result := Cover.Fallback.physicalProjector_spec hw j live finSumFinEquiv D
+    (intervalDiagonal_idem 64 lo hi) adm α α' inv
+  have reduction : reduce (prime^w) D = diagonal (fun i : Fin 64 =>
+      if lo ≤ i.val ∧ i.val < hi then (1 : ZMod (prime^w)) else 0) := by
+    ext i j
+    simp only [reduce,Matrix.map_apply,D,diagonal_apply]
+    split_ifs <;> simp [ratMod_zero,ratMod_one]
+  have same : G = Cover.Fallback.projectorResidual finSumFinEquiv (reduce (prime^w) D) α α'
+      (Cover.Fallback.physicalLabel 64 w j) := by
+    unfold G Cover.Fallback.projectorResidual
+    rw [routed,reduction,remainderProjector_atLabel c hc lo hi w fits g]
+  rw [same]
+  exact result
 
 /-- The idle owner's other digits and all its spectator positions are exactly
 the middle gap and inherited fields of the parent's recursive rank descriptor. -/
