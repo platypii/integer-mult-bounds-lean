@@ -1,5 +1,7 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackPhysicalLabel
+public import IntegerMultBounds.MathlibTM2.Cover.ProjectorWitness
 public import IntegerMultBounds.MathlibTM2.M6.BitCopyLabel
 public import IntegerMultBounds.MathlibTM2.M6.BitCopyChildLayout
 public import IntegerMultBounds.MathlibTM2.M8.Machine.ArbitraryWidthOriginalTotalRun
@@ -267,6 +269,227 @@ theorem remainderChart_row (c : PortCertificate) (w : ℕ)
   apply Finset.sum_congr rfl
   intro j _
   exact mul_comm _ _
+
+/-- In pending-first tape order the rational remainder projector is a diagonal
+interval. This factorization identifies the projector needed at a live cover label. -/
+theorem remainderProjector_factor (c : PortCertificate) (lo hi : ℕ) (fits : hi ≤ 63) :
+    let H := c.fullChart.submatrix stageAxis.symm remainderAxis
+    let D : Matrix (Fin 64) (Fin 64) ℚ := diagonal fun i =>
+      if lo ≤ i.val ∧ i.val < hi then 1 else 0
+    (c.span lo hi).submatrix stageAxis.symm stageAxis.symm = H * D * H.transpose := by
+  intro H D
+  ext a b
+  let weight := fun j : ChartAxis => if lo < chartIndex j ∧ chartIndex j ≤ hi then (1 : ℚ) else 0
+  have atDigit (i : Fin 64) : weight (remainderAxis i) = if lo ≤ i.val ∧ i.val < hi then 1 else 0 := by
+    have bounds : (lo < chartIndex (remainderAxis i) ∧ chartIndex (remainderAxis i) ≤ hi) ↔
+        lo ≤ i.val ∧ i.val < hi := by
+      by_cases h : i.val < 63 <;> simp [remainderAxis,h,chartIndex,pendingIndex_pendingAt] <;> omega
+    simp only [weight,bounds]
+  change (c.span lo hi) _ _ = _
+  unfold PortCertificate.span
+  rw [Matrix.mul_apply, Matrix.mul_apply]
+  simp only [interval, Matrix.mul_diagonal,
+    Matrix.transpose_apply,H,D,Matrix.submatrix_apply]
+  simp_rw [← atDigit]
+  rw [Equiv.sum_comp remainderAxis (fun j => c.fullChart (stageAxis.symm a) j * weight j *
+    c.fullChart (stageAxis.symm b) j)]
+  conv_rhs => rw [Fintype.sum_sum_type]
+  simp only [weight,chartIndex,not_lt_zero',false_and,if_false,mul_zero,zero_mul,Finset.sum_const_zero,zero_add]
+  apply Finset.sum_congr rfl
+  intro p _
+  change _ = c.flag _ p * (if lo < 1+pendingIndex p ∧ 1+pendingIndex p ≤ hi then 1 else 0) * c.flag _ p
+  have same : (lo < 1+pendingIndex p ∧ 1+pendingIndex p ≤ hi) ↔
+      lo ≤ pendingIndex p ∧ pendingIndex p < hi := by omega
+  simp only [same]
+
+/-- After the forward pass relabels a record from g to gH, the cover
+normalizer for the diagonal interval gives the parent's conjugated projector. -/
+theorem remainderProjector_atLabel (c : PortCertificate) (hc : c.Checked) (lo hi w : ℕ)
+    (fits : hi ≤ 63) (g : Matrix (Fin 64) (Fin 64) (ZMod (prime^w))) :
+    let H := reduce (prime^w) (c.fullChart.submatrix stageAxis.symm remainderAxis)
+    let D : Matrix (Fin 64) (Fin 64) (ZMod (prime^w)) := diagonal fun i =>
+      if lo ≤ i.val ∧ i.val < hi then 1 else 0
+    let P := reduce (prime^w) ((c.span lo hi).submatrix stageAxis.symm stageAxis.symm)
+    g * P * g⁻¹ = (g*H) * D * (g*H)⁻¹ := by
+  intro H D P
+  let A := c.fullChart.submatrix stageAxis.symm remainderAxis
+  let I : Matrix (Fin 64) (Fin 64) ℚ := diagonal fun i =>
+    if lo ≤ i.val ∧ i.val < hi then 1 else 0
+  have chart : Admissible (prime^w) A := by
+    intro i j
+    have bound : (A i j).den ≤ 2 := (fullChart_entry c hc (stageAxis.symm i) (remainderAxis j)).2
+    exact Nat.Coprime.pow_right w ((Nat.coprime_of_lt_prime (A i j).den_pos.ne'
+      (bound.trans_lt Shared50ModularControl.prime_odd) Shared50ModularControl.prime_prime).symm)
+  have tr : Admissible (prime^w) Aᵀ := fun i j => chart j i
+  have di : Admissible (prime^w) I := by
+    intro i j
+    simp only [I, diagonal_apply]
+    split_ifs <;> simp
+  have reduced : reduce (prime^w) I = D := by
+    ext i j
+    simp only [reduce, Matrix.map_apply,I,D,diagonal_apply]
+    split_ifs <;> simp [ratMod_zero,ratMod_one]
+  have factor : P = H*D*Hᵀ := by
+    have h : (c.span lo hi).submatrix stageAxis.symm stageAxis.symm = A*I*Aᵀ :=
+      remainderProjector_factor c lo hi fits
+    dsimp only [P]
+    rw [h,reduce_mul _ (admissible_mul _ chart di) tr, reduce_mul _ chart di,reduced]
+    rfl
+  have orth : Aᵀ * A = 1 := by
+    change (c.fullChart.transpose.submatrix remainderAxis stageAxis.symm) * _ = _
+    rw [submatrix_mul_equiv,c.fullChart_orthonormal hc,submatrix_one_equiv]
+  have inv : H⁻¹ = Hᵀ := Matrix.inv_eq_right_inv (reduce_inverse _ chart tr (mul_eq_one_comm.mp orth))
+  rw [factor,Matrix.mul_inv_rev,inv]
+  simp only [Matrix.mul_assoc]
+
+open IntegerMultBounds.Swap.LowerTriangular
+
+/-- The cover normalizer needs a rational pivot factorization even when its
+input projector is diagonal. All four triangular factors here are identities. -/
+def intervalFactor (m lo hi : ℕ) :
+    Factorization Finset.univ Finset.univ (diagonal (fun i : Fin m =>
+      if lo ≤ i.val ∧ i.val < hi then (1 : ℚ) else 0)) := by
+  let axes := (List.finRange m).filter fun i => decide (lo ≤ i.val ∧ i.val < hi)
+  let pivots := axes.map fun i => (i,i)
+  have nodup : axes.Nodup := (List.nodup_finRange m).filter _
+  refine ⟨1,1,1,1,pivots,lower_one,lower_one,lower_one,lower_one,by simp,by simp,
+    by simp,by simp,idOutside_one _,idOutside_one _,by simp,
+    by simpa [pivots,List.map_map,Function.comp_def] using nodup,
+    by simpa [pivots,List.map_map,Function.comp_def] using nodup,?_⟩
+  simp only [Matrix.one_mul, Matrix.mul_one]
+  ext i j
+  rw [IntegerMultBounds.Swap.PivotRank.pivotMatrix_apply pivots
+    (nodup.map (fun _ _ h => congrArg Prod.fst h)), diagonal_apply]
+  by_cases same : i = j
+  · subst j
+    simp [pivots,axes]
+  · simp [pivots,axes,same,Ne.symm same]
+
+/-- The diagonal normalizer is admissible at the existing machine prime for
+every interval. Neither its projector nor any factor introduces a denominator. -/
+theorem intervalFactor_denominators (m lo hi : ℕ) :
+    ∀ d ∈ factorizationDenominators (intervalFactor m lo hi), d < prime := by
+  intro d hd
+  have one : ∀ d ∈ denominators (1 : Matrix (Fin m) (Fin m) ℚ), d = 1 := by
+    intro d mem
+    obtain ⟨⟨i,j⟩,_,rfl⟩ := Finset.mem_image.mp mem
+    simp only [Matrix.one_apply]
+    split <;> simp
+  have diag : ∀ d ∈ denominators (diagonal (fun i : Fin m =>
+      if lo ≤ i.val ∧ i.val < hi then (1 : ℚ) else 0)), d = 1 := by
+    intro d mem
+    obtain ⟨⟨i,j⟩,_,rfl⟩ := Finset.mem_image.mp mem
+    simp only [diagonal_apply]
+    split_ifs <;> simp
+  simp only [factorizationDenominators, Finset.mem_union] at hd
+  have eq : d = 1 := by rcases hd with (((h|h)|h)|h)|h <;> first | exact diag d h | exact one d h
+  simpa only [eq] using Shared50ModularControl.prime_prime.one_lt
+
+local instance (w : ℕ) : NeZero (prime^w) := ⟨(pow_pos Shared50ModularControl.prime_prime.pos _).ne'⟩
+
+/-- The cover's good-record test at the routed physical address checks the
+leading minors of the original port projector in the incoming label. -/
+theorem remainderGood_at (c : PortCertificate) (hc : c.Checked) (lo hi w : ℕ)
+    (hw : 0 < w) (fits : hi ≤ 63) (block : ℕ) (g : LabelPadding.Label 64 w) :
+    let H := reduce (prime^w) (c.fullChart.submatrix stageAxis.symm remainderAxis)
+    let D : LabelPadding.Label 64 w := diagonal fun i =>
+      if lo ≤ i.val ∧ i.val < hi then 1 else 0
+    let P := reduce (prime^w) ((c.span lo hi).submatrix stageAxis.symm stageAxis.symm)
+    let r := hi-lo
+    let hr : r ≤ 64 := by dsimp [r]; omega
+    IsUnit (g*H).det →
+      (LabelProjector.good ((LabelRing.res prime w hw).mapMatrix D) r hr
+        (LabelStock.residue 64 w 1 (block*(prime^w)^(64*64)+(LabelAddress.address (g*H)).val)) = true ↔
+        ∀ k (hk : k < r), IsUnit (GoodForm.lead (k+1) (lt_of_lt_of_le hk hr) (g*P*g⁻¹)).det) := by
+  intro H D P r hr live
+  rw [LabelProjector.good_at hw D (g*H) live r hr block]
+  have same : g*P*g⁻¹ = (g*H)*D*(g*H)⁻¹ := remainderProjector_atLabel c hc lo hi w fits g
+  rw [same]
+
+/-- The diagonal interval charges one pivot for each digit in the interval. -/
+theorem intervalDiagonal_rank {m lo hi : ℕ} (fits : hi ≤ m) :
+    (diagonal (fun i : Fin m => if lo ≤ i.val ∧ i.val < hi then (1 : ℚ) else 0)).rank = hi-lo := by
+  rw [rank_diagonal]
+  let E : {i : Fin m // (if lo ≤ i.val ∧ i.val < hi then (1 : ℚ) else 0) ≠ 0} ≃ Fin (hi-lo) :=
+    { toFun := fun i => ⟨i.val.val-lo,by
+        have h : lo ≤ i.val.val ∧ i.val.val < hi := by simpa using i.property
+        omega⟩
+      invFun := fun j => ⟨⟨lo+j.val,by omega⟩,by
+        have lt := j.isLt
+        simp [show lo+j.val < hi by omega]⟩
+      left_inv := by
+        intro i
+        have h : lo ≤ i.val.val ∧ i.val.val < hi := by simpa using i.property
+        apply Subtype.ext
+        apply Fin.ext
+        dsimp
+        omega
+      right_inv := by intro j; apply Fin.ext; simp }
+  exact (Fintype.card_congr E).trans (Fintype.card_fin _)
+
+private theorem intervalDiagonal_idem (m lo hi : ℕ) :
+    let D : Matrix (Fin m) (Fin m) ℚ := diagonal fun i => if lo ≤ i.val ∧ i.val < hi then 1 else 0
+    D*D = D := by
+  intro D
+  unfold D
+  rw [diagonal_mul_diagonal]
+  congr 1
+  funext i
+  split_ifs <;> simp
+
+open M8.Exchange M8.ReversedExchange IntegerMultBounds.Swap.Shear in
+/-- On a live accepted record, the cover's weighted child has exactly the
+charged interval width and realizes the incoming port's conjugated exchange. -/
+theorem remainderGood_move (c : PortCertificate) (hc : c.Checked) (lo hi w : ℕ)
+    (hw : 0 < w) (fits : hi ≤ 63) (block : ℕ) (g : LabelPadding.Label 64 w)
+    (α α' : Fin 64 → ZMod (prime^w)) (inv : ∀ i, α i * α' i = 1) :
+    let H := reduce (prime^w) (c.fullChart.submatrix stageAxis.symm remainderAxis)
+    let P := reduce (prime^w) ((c.span lo hi).submatrix stageAxis.symm stageAxis.symm)
+    let D : Matrix (Fin 64) (Fin 64) ℚ := diagonal fun i =>
+      if lo ≤ i.val ∧ i.val < hi then 1 else 0
+    let r := hi-lo
+    let hr : r ≤ 64 := by dsimp [r]; omega
+    IsUnit (g*H).det →
+    LabelProjector.good (reduce prime D) r hr (LabelStock.residue 64 w 1
+      (block*(prime^w)^(64*64)+(LabelAddress.address (g*H)).val)) = true →
+    ∃ (L L' R R' K : LabelPadding.Label 64 w) (δ δ' : Fin 64 → ZMod (prime^w)),
+      GoodForm.UnitLower L ∧ GoodForm.UnitLower L' ∧ GoodForm.UnitLower R ∧ GoodForm.UnitLower R' ∧
+      (∀ i, δ i * δ' i = 1) ∧ ∀ s : IntegerMultBounds.Swap.Shear.State (Fin 64) (ZMod (prime^w)),
+        transform (diagonal α * L * diagonal α') R'
+          (cross (-K) (Weighted.child r (fun i => α i * δ i) (fun i => α' i * δ' i)
+            (cross K (transform (diagonal α * L' * diagonal α') R s)))) =
+          transform (diagonal α) 1 (revExchangeOf (rev 64) (g*P*g⁻¹) (transform (diagonal α') 1 s)) := by
+  intro H P D r hr live accepted
+  have rank : D.rank = r := intervalDiagonal_rank (by omega : hi ≤ 64)
+  have idem := intervalDiagonal_idem 64 lo hi
+  have result := LabelProjector.good_move_at hw D idem (intervalFactor 64 lo hi)
+    (intervalFactor_denominators 64 lo hi) (rank.trans_le hr) (g*H) live block α α' inv
+    (by simpa only [rank] using accepted)
+  have reduced : reduce (prime^w) D = diagonal (fun i : Fin 64 =>
+      if lo ≤ i.val ∧ i.val < hi then (1 : ZMod (prime^w)) else 0) := by
+    ext i j
+    simp only [reduce, Matrix.map_apply,D,diagonal_apply]
+    split_ifs <;> simp [ratMod_zero,ratMod_one]
+  rw [remainderProjector_atLabel c hc lo hi w fits g]
+  simpa only [rank,reduced,H] using result
+
+/-- In physical scan order the number of live idle records sent to fallback
+has the cover's inverse-prime bound, uniformly in width and block count. -/
+theorem remainderFallback_count (lo hi w blocks : ℕ) (fits : hi ≤ 63) :
+    let r := hi-lo
+    let hr : r ≤ 64 := by dsimp [r]; omega
+    let D : Matrix (Fin 64) (Fin 64) ℚ := diagonal fun i => if lo ≤ i.val ∧ i.val < hi then 1 else 0
+    let box := (prime^(w+1))^(64*64)
+    (List.range (blocks*box)).countP (fun j => Cover.Fallback.fallbackBit hr (reduce (prime^(w+1)) D)
+      (Cover.Fallback.physicalLabel 64 (w+1) j)) * prime ≤
+      (∑ k ∈ Finset.range r, (k+1)*(64+1)) * (blocks*box) := by
+  intro r hr D box
+  have rank : D.rank = r := intervalDiagonal_rank (by omega : hi ≤ 64)
+  obtain ⟨g,unit,good⟩ := LabelProjector.residue_witness (by omega : 0 < w+1) D
+    (intervalDiagonal_idem 64 lo hi) (intervalFactor 64 lo hi) (intervalFactor_denominators 64 lo hi)
+    (rank.trans_le hr)
+  apply Cover.Fallback.fallbackRecordCount w r blocks hr _ g unit
+  simpa only [rank] using good
 
 /-- The idle owner's other digits and all its spectator positions are exactly
 the middle gap and inherited fields of the parent's recursive rank descriptor. -/
