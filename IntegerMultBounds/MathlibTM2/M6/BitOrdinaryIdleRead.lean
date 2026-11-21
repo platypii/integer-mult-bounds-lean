@@ -109,6 +109,30 @@ theorem ordinaryClock_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime
   exact ⟨z,t+1,user,by omega,Exec.seq decode pop⟩
 
 open Fallback in
+/-- Copy and widen the root cutoff without changing its source or the tape
+supplying the common binary precision. -/
+theorem copyCutoff_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
+    (src header cut cnt tmp scratch : Fin T) (cutoff L : ℕ) (fits : cutoff.size ≤ L)
+    (u : HS T Q prime U) (S : Stacks T prime)
+    (regs : [src,header,cut,cnt,tmp,scratch].Nodup) (word : S.R src = binSyms cutoff.size cutoff)
+    (precision : (S.R header).length = L) (blankCut : S.R cut = []) (a : S.R cnt = [])
+    (b : S.R tmp = []) (c : S.R scratch = []) :
+    ∃ z, z.user = u.user ∧ Exec body ((bcopy src cut cnt tmp).seq (bwiden cut header cnt tmp scratch))
+      (mk u S) (6*cutoff.size+12*L+24) (mk z {S with R := Function.update S.R cut (binSyms L cutoff)}) := by
+  regs_ne regs
+  obtain ⟨v,user,copy⟩ := bcopy_exec (body := body) (a := src) (c := cut) (t₁ := cnt) (t₂ := tmp)
+    (by simp_all [ne_comm]) u S a b
+  rw [word,length_binSyms,blankCut,List.append_nil] at copy
+  let D : Stacks T prime := {S with R := Function.update S.R cut (binSyms cutoff.size cutoff)}
+  obtain ⟨z,final,widen⟩ := bwiden_exec (body := body) (a := cut) (wR := header) (cnt := cnt)
+    (t₁ := tmp) (t₂ := scratch) (by simp_all [ne_comm]) fits (Nat.lt_size_self cutoff) v D
+    (by simp [D]) (by change (Function.update S.R cut _ header).length = L; rw [Function.update_of_ne (by assumption)]; exact precision)
+    (by simp [D,Function.update_of_ne, *, Ne.symm])
+    (by simp [D,Function.update_of_ne, *, Ne.symm])
+    (by simp [D,Function.update_of_ne, *, Ne.symm])
+  exact ⟨z,final.trans user,(Exec.seq copy widen).cast (by omega) (by simp [D])⟩
+
+open Fallback in
 /-- Copy the caller's cutoff to the dispatcher's last tape and pad it to the
 root precision. The source headers survive and the column scratch is restored. -/
 theorem ordinaryRootCutoff_exec [M8.Machine.Net] {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
@@ -128,19 +152,9 @@ theorem ordinaryRootCutoff_exec [M8.Machine.Net] {T Q : ℕ} {P U : Type} (body 
       cutoff < 2^L ∧ ∀ path : List (Fin nodeChildren5.length),
         (path.foldl (scheduledChild prime) root).width.size ≤ L := by
   intro cut col L regs word precision blankCut a b c
-  regs_ne regs
-  obtain ⟨v,user,copy⟩ := bcopy_exec (body := body) (a := src) (c := cut) (t₁ := col 0) (t₂ := col 1)
-    (by simp_all [ne_comm]) u S a b
-  rw [word,length_binSyms,blankCut,List.append_nil] at copy
-  let D : Stacks T prime := {S with R := Function.update S.R cut (binSyms cutoff.size cutoff)}
-  obtain ⟨z,final,widen⟩ := bwiden_exec (body := body) (a := cut) (wR := header) (cnt := col 0)
-    (t₁ := col 1) (t₂ := col 3) (by simp_all [ne_comm]) (Nat.size_le_size within) (Nat.lt_size_self cutoff) v D
-    (by simp [D]) (by change (Function.update S.R cut _ header).length = L; rw [Function.update_of_ne (by assumption)]; exact precision)
-    (by simp [D,Function.update_of_ne, *, Ne.symm])
-    (by simp [D,Function.update_of_ne, *, Ne.symm])
-    (by simp [D,Function.update_of_ne, *, Ne.symm])
-  refine ⟨z,final.trans user,(Exec.seq copy widen).cast (by dsimp only [L]; omega) (by simp [D,L]),
-    within.trans_lt (Nat.lt_size_self _),fun path => ?_⟩
+  obtain ⟨z,user,run⟩ := copyCutoff_exec body src header cut (col 0) (col 1) (col 3) cutoff L
+    (Nat.size_le_size within) u S regs word precision blankCut a b c
+  refine ⟨z,user,run,within.trans_lt (Nat.lt_size_self _),fun path => ?_⟩
   have bound := directoryDigits_bound prime root path
   apply Nat.size_le_size
   omega
