@@ -87,6 +87,21 @@ private theorem fieldPass_owner
     input_payload := payload, output_payload := fun x => payload (out x),
     strip_input := fun x => (strip x).trans (basisWorkspace_eq stages x 0), realizes := exec },rfl,rfl,read⟩
 
+open M8.Machine.Segments IntegerMultBounds.Swap.Modular in
+/-- A fixed nonrecursive field segment acts on the owner tape at linear
+volume cost and preserves the trailing spectator. -/
+theorem fieldSegment_owner (ops : List (AffineFieldProgram.Op (Fin 8) ℚ)) (good : Good ops)
+    (legal : ∀ w : ℕ, ∀ op ∈ ops.map (AffineFieldProgram.mapOp (ratMod (prime^w))), AffineFieldProgram.Legal op) :
+    ∃ (c : ℕ) (machine : SharedBankSkeleton.Skeleton 1 prime), ∀ w W, 0 < W →
+      let V := (prime^w)^16*W
+      let run := AffineFieldProgram.run (ops.map (AffineFieldProgram.mapOp (ratMod (prime^w))))
+      ∃ stage : SharedBankStage.Stage _ 1 prime (@portOwner V),
+        SharedBankSkeleton.ofStage stage = machine ∧ stage.cost = c*V ∧ ∀ x s j,
+          stage.transform x (FlatCoordinateLayout.index (AffineFieldCoordinates.embed (run s)) j) =
+            x (FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) j) := by
+  apply fieldPass_owner _ (description ops good)
+  exact fun w W hW x => copySegment_runs ops good hW x (legal w)
+
 open IntegerMultBounds.Swap.Modular in
 theorem frameBasis_owner (l : Fin 636) (inverse : Bool) :
     ∃ (c : ℕ) (machine : SharedBankSkeleton.Skeleton 1 prime), ∀ w W, 0 < W →
