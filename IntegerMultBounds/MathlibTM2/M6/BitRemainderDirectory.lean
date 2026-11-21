@@ -724,6 +724,59 @@ noncomputable def remainderOwnerSetup {T Q : ℕ} {P U : Type} (root : Bool) (lo
 
 def directoryHeaderTime (w H : ℕ) := (64*(6*H+6)+1) + ((8*H+10)+(6*w+7)) + (4*H+4 + (64*(64*(6*H+6)+1)+1 + (2*H+2)))
 
+open IntegerMultBounds.Swap.Modular in
+/-- Both owner entry paths use the same precision, weight and matrix setup.
+All stacks outside the listed right-tape writes are preserved. -/
+theorem prepareDirectoryHeaders_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
+    (bank : Fin 72 ↪ Fin T) (child : Descriptor) (lo hi w W H J : ℕ)
+    (root : Bool) (parent : Fin 64 → ZMod (prime^(w+1)))
+    (fields : ∀ i, M8.RevMachine.Routines.hdr child i = FlatCoordinateSchedule.bits (intervalValues lo hi (w+1) (prime^(w+1)) W i))
+    (hm : prime^(w+1) < 2^H) (hw : W < 2^J) (u : HS T Q prime U) (raw : Stacks T prime)
+    (params : ParentParameters root W H J parent (fun i => raw.R (bank (i.castLE (by decide)))))
+    (short : raw.R (bank 28) = []) (padded : raw.R (bank 44) = []) (spare : raw.R (bank 49) = [])
+    (clean : ∀ i : Fin 72, 59 ≤ i.val → raw.R (bank i) = []) :
+    let proj := Matrix.diagonal fun i : Fin 64 => if lo ≤ i.val ∧ i.val < hi then (1 : ℚ) else 0
+    let matrix := matrixWords prime H (reduce (prime^(w+1)) proj)
+    ∃ z S n, z.user = u.user ∧
+      n ≤ directoryHeaderTime w H + (((List.finRange 6).map (intervalHeaderCosts lo hi (w+1) H J)).sum+1) ∧
+      Exec body ((weightedDimensions root bank lo hi).seq (writeBinaryMatrix (intervalSeed lo hi) (projectorSeedPorts.trans bank)))
+        (mk u raw) n (mk z S) ∧
+      DirectoryHeaders child proj w W H J parent (fun i => S.R (bank (i.castLE (by decide)))) ∧
+      (S.R (bank 71)).length = w+1 ∧ S.R (bank 48) = matrix ++ raw.R (bank 48) ∧ S.L = raw.L ∧
+      ∀ k, (∀ i ∈ ([28,33,34,35,36,37,38,44,48,55,71] : List (Fin 72)), k ≠ bank i) → S.R k = raw.R k := by
+  intro proj matrix
+  obtain ⟨initial,loaded,d,t,same,descriptorBound,weightBound,units,dims,atom,leftBank,unchanged⟩ :=
+    weightedDimensions_exec body bank child lo hi w W H J root parent fields hm hw u raw params short padded clean
+  let writes : List (Fin 72) := [28,33,34,35,36,37,38,44,48,55,71]
+  have keep (k : Fin T) (off : ∀ i ∈ writes, k ≠ bank i) : loaded.R k = raw.R k :=
+    unchanged k (off _ (by decide)) (off _ (by decide)) (off _ (by decide)) (off _ (by decide))
+      (fun j => off _ ((by decide : ∀ j, descriptorPorts j ∈ writes) j))
+  have frame (i : Fin 72) (outside : i ∉ writes) := keep (bank i)
+    (fun j hj => bank.injective.ne (fun h => outside (h ▸ hj)))
+  let ports := projectorSeedPorts.trans bank
+  have one : loaded.R (bank 44) = binSyms H (1 : ZMod (prime^(w+1))).val := dims.2.2.2.2.1
+  obtain ⟨y,n,yu,time,seed⟩ := writeBinaryMatrix_writes (M := prime^(w+1)) body (intervalSeed lo hi) H ports initial loaded
+    ⟨one,(frame 49 (by decide)).trans spare,(frame 59 (by decide)).trans (clean 59 (by decide)),
+      (frame 60 (by decide)).trans (clean 60 (by decide))⟩
+  let S := {loaded with R := Function.update loaded.R (bank 48) (matrix ++ loaded.R (bank 48))}
+  have seedRun : Exec body (writeBinaryMatrix (intervalSeed lo hi) ports) (mk initial loaded) n (mk y S) := by
+    simpa only [show ports 2 = bank 48 from rfl,S,matrix,proj,reduce_intervalSeed] using seed
+  have stay (i : Fin 72) (hi : i.val ≠ 48) : S.R (bank i) = loaded.R (bank i) :=
+    Function.update_of_ne (bank.injective.ne (fun h => hi (congrArg Fin.val h))) ..
+  have oldMatrix : loaded.R (bank 48) = raw.R (bank 48) := unchanged _ (by simp) (by simp) (by simp) (by simp)
+    (fun i => bank.injective.ne ((by decide : ∀ i, (48 : Fin 72) ≠ descriptorPorts i) i))
+  refine ⟨y,S,_,yu.trans same,?_,Exec.seq units seedRun,?_,(congrArg List.length (stay 71 (by decide))).trans atom,?_,leftBank,?_⟩
+  · unfold directoryHeaderTime; omega
+  · refine ⟨(stay 49 (by decide)).trans ((frame 49 (by decide)).trans spare),⟨loaded.R (bank 48),Function.update_self ..⟩,?_⟩
+    obtain ⟨base,unit,trailing,desc,one,clock,weights⟩ := dims
+    refine ⟨(stay 2 (by decide)).trans base,(stay 28 (by decide)).trans unit,(stay 53 (by decide)).trans trailing,?_,
+      (stay 44 (by decide)).trans one,(congrArg List.length (stay 45 (by decide))).trans clock,(stay 55 (by decide)).trans weights⟩
+    intro i
+    exact (stay _ (by change 33+i.val ≠ 48; omega)).trans (desc i)
+  · simp [S,oldMatrix]
+  · intro k off
+    exact (Function.update_of_ne (off 48 (by decide)) ..).trans (keep k off)
+
 private theorem directoryHeader_charge (v : Descriptor) (positive : v.Positive) (w rows : ℕ)
     (width : v.width = 64*(w+1)) (split : v.rows = 142080*rows) :
     prime^v.width*directoryHeaderTime w (prime^(w+1)).size*142080 ≤ volume prime v := by
@@ -777,10 +830,10 @@ private theorem descriptor_charge (v : Descriptor) (positive : v.Positive) (w ro
       gcongr <;> first | exact positive.1 | exact rowsFit | exact positive.2.2.1
     _ = volume prime v := by rw [tail]; unfold volume; ring
 
-private theorem prependTime_le (scale copies n t volume rate inherited : ℕ)
-    (setup : scale*n*copies ≤ volume) (run : scale*t*copies ≤ rate*volume+scale*inherited*copies) :
-    scale*(n+t)*copies ≤ (1+rate)*volume+scale*inherited*copies := by
-  rw [Nat.mul_add,Nat.add_mul,Nat.add_mul,one_mul]
+private theorem replayOwnerTime_le (scale copies n k clear volume : ℕ)
+    (setup : scale*n*copies ≤ volume+volume) (core : scale*k*copies ≤ 1324*volume)
+    (release : scale*clear*copies ≤ volume) : scale*(n+(k+clear))*copies ≤ 1327*volume := by
+  rw [Nat.mul_add, Nat.mul_add, Nat.add_mul, Nat.add_mul]
   omega
 
 open IntegerMultBounds.Swap.Modular in
@@ -822,88 +875,59 @@ theorem remainderDirectory_prepareOwner {K Q : ℕ} {P U : Type} (room : 72 ≤ 
       (∀ k, (D.L k).length ≤ (raw.L k).length) ∧
       (∀ i : Fin 5, D.R (i.natAdd K) = raw.R (i.natAdd K) ∧ D.L (i.natAdd K) = raw.L (i.natAdd K)) := by
   intro proj matrix bank r parents box directory scratch inherited br nr bh clean source widths fits short padded spare params
-  obtain ⟨initial,loaded,descriptorTime,weightTime,same,descriptorBound,weightBound,units,dims,atom,leftBank,unchanged⟩ :=
-    weightedDimensions_exec body bank child lo hi w W H J root parent fields (precision ▸ Nat.lt_size_self _) (digits ▸ Nat.lt_size_self _) u raw params short padded
-    (fun i hi => clean (i.castLE room) hi)
-  have frame (i : Fin 72) (keep : i ∉ ([28,33,34,35,36,37,38,44,55,71] : List (Fin 72))) :
-      loaded.R (bank i) = raw.R (bank i) := by
-    have facts := (by decide : ∀ k : Fin 72, k ∉ ([28,33,34,35,36,37,38,44,55,71] : List (Fin 72)) →
-      k ≠ 28 ∧ k ≠ 44 ∧ k ≠ 71 ∧ k ≠ 55 ∧ ∀ j, k ≠ descriptorPorts j) i keep
-    exact unchanged _ (bank.injective.ne facts.1) (bank.injective.ne facts.2.1)
-      (bank.injective.ne facts.2.2.1) (bank.injective.ne facts.2.2.2.1) (fun j => bank.injective.ne (facts.2.2.2.2 j))
-  have privateClean (i : Fin K) (hi : 59 ≤ i.val) (off : i.val ≠ 71) : loaded.R (i.castAdd 5) = [] := by
-    apply Eq.trans (unchanged _ ?_ ?_ ?_ ?_ ?_) (clean i hi)
-    · intro eq; have hh := congrArg Fin.val eq; change i.val = 28 at hh; omega
-    · intro eq; have hh := congrArg Fin.val eq; change i.val = 44 at hh; omega
-    · intro eq; have hh := congrArg Fin.val eq; change i.val = 71 at hh; omega
-    · intro eq; have hh := congrArg Fin.val eq; change i.val = 55 at hh; omega
-    · intro j eq
-      have hh := congrArg Fin.val eq
-      change i.val = (descriptorPorts j).val at hh
-      have h := (by decide : ∀ j, (descriptorPorts j).val ≤ 38) j
-      omega
-  have unit : (loaded.R (bank 28)).length = 1 := by
-    have one : loaded.R (bank 28) = binSyms 1 1 := dims.2.1
+  obtain ⟨y,S,n,same,time,setup,headers,atom,matrixReady,leftBank,unchanged⟩ :=
+    prepareDirectoryHeaders_exec body bank child lo hi w W H J root parent fields
+      (precision ▸ Nat.lt_size_self _) (digits ▸ Nat.lt_size_self _) u raw params short padded spare (fun i hi => clean (i.castLE room) hi)
+  let writes : List (Fin 72) := [28,33,34,35,36,37,38,44,48,55,71]
+  have frame (i : Fin 72) (outside : i ∉ writes) : S.R (bank i) = raw.R (bank i) :=
+    unchanged _ (fun j hj => bank.injective.ne (fun eq => outside (eq ▸ hj)))
+  have privateClean (i : Fin K) (hi : 59 ≤ i.val) (away : i.val ≠ 71) : S.R (i.castAdd 5) = [] := by
+    apply Eq.trans (unchanged _ ?_) (clean i hi)
+    intro j hj eq
+    have h := congrArg Fin.val eq
+    change i.val = j.val at h
+    have := (by decide : ∀ j ∈ writes, j.val ≤ 55 ∨ j.val = 71) j hj
+    omega
+  have unit : (S.R (bank 28)).length = 1 := by
+    have one : S.R (bank 28) = binSyms 1 1 := headers.2.2.2.1
     rw [one,length_binSyms]
-  let ports := projectorSeedPorts.trans bank
-  have one : loaded.R (bank 44) = binSyms H (1 : ZMod (prime^(w+1))).val := dims.2.2.2.2.1
-  obtain ⟨y,n,yu,time,seed⟩ := writeBinaryMatrix_writes (M := prime^(w+1)) body (intervalSeed lo hi) H ports initial loaded
-    ⟨one,(frame 49 (by decide)).trans spare,privateClean ((59 : Fin 72).castLE room) (by decide : 59 ≤ 59) (by decide : (59 : ℕ) ≠ 71),
-      privateClean ((60 : Fin 72).castLE room) (by decide : 59 ≤ 60) (by decide : (60 : ℕ) ≠ 71)⟩
-  let S := {loaded with R := Function.update loaded.R (bank 48) (matrix ++ loaded.R (bank 48))}
-  have seedRun : Exec body (writeBinaryMatrix (intervalSeed lo hi) ports) (mk initial loaded) n (mk y S) := by
-    simpa only [show ports 2 = bank 48 from rfl,S,matrix,proj,reduce_intervalSeed] using seed
-  have stay (i : Fin 72) (hi : i.val ≠ 48) : S.R (bank i) = loaded.R (bank i) :=
-    Function.update_of_ne (bank.injective.ne (fun h => hi (congrArg Fin.val h))) ..
-  have written : S.R (bank 48) = matrix ++ loaded.R (bank 48) := Function.update_self (bank 48) _ loaded.R
-  have headers : DirectoryHeaders child proj w W H J parent (fun i => S.R (bank (i.castLE (by decide)))) := by
-    refine ⟨(stay 49 (by decide)).trans ((frame 49 (by decide)).trans spare),⟨loaded.R (bank 48),written⟩,?_⟩
-    obtain ⟨base,unit,trailing,desc,one,clock,weights⟩ := dims
-    refine ⟨(stay 2 (by decide)).trans base,(stay 28 (by decide)).trans unit,(stay 53 (by decide)).trans trailing,?_,
-      (stay 44 (by decide)).trans one,(congrArg List.length (stay 45 (by decide))).trans clock,(stay 55 (by decide)).trans weights⟩
-    intro i
-    exact (stay _ (by change 33+i.val ≠ 48; omega)).trans (desc i)
   have fresh (i : Fin 15) (hi : i ∈ ([2,3,4,5,6,7,9,10,11,12,13] : List (Fin 15))) : S.R (r i) = [] := by
     have bounds := (by decide : ∀ j ∈ ([2,3,4,5,6,7,9,10,11,12,13] : List (Fin 15)),
       59 ≤ (remainderDirectoryPorts j).val ∧ (remainderDirectoryPorts j).val ≠ 71) i hi
-    exact (stay _ (by omega)).trans (privateClean ((remainderDirectoryPorts i).castLE room) bounds.1 bounds.2)
+    exact privateClean ((remainderDirectoryPorts i).castLE room) bounds.1 bounds.2
   obtain ⟨z,t,user,paid,run,input,right,left,size,cleared,off⟩ :=
     remainderDirectory_build body bank layout w rows B positive width split shape word tail y S
-      ((congrArg List.length ((stay 29 (by decide)).trans (frame 29 (by decide)))).trans br) ((congrArg List.length ((stay 30 (by decide)).trans (frame 30 (by decide)))).trans nr)
-      ((congrArg List.length ((stay 31 (by decide)).trans (frame 31 (by decide)))).trans bh) ((congrArg List.length (stay 71 (by decide))).trans atom)
-      ((congrArg List.length (stay 28 (by decide))).trans unit) fresh (((stay 58 (by decide)).trans (frame 58 (by decide))).trans source)
-      (fun i hi => (widths i hi).trans (congrArg List.length ((stay 47 (by decide)).trans (frame 47 (by decide)))).symm)
-      ((congrArg List.length ((stay 47 (by decide)).trans (frame 47 (by decide)))).le.trans fits)
+      ((congrArg List.length (frame 29 (by decide))).trans br) ((congrArg List.length (frame 30 (by decide))).trans nr)
+      ((congrArg List.length (frame 31 (by decide))).trans bh) atom
+      unit fresh ((frame 58 (by decide)).trans source)
+      (fun i hi => (widths i hi).trans (congrArg List.length (frame 47 (by decide))).symm)
+      ((congrArg List.length (frame 47 (by decide))).le.trans fits)
   have ready := input _ _ _ _ _ _ headers
-  rw [stay 46 (by decide),frame 46 (by decide)] at ready
-  have matrixReady : S.R (bank 48) = matrix ++ raw.R (bank 48) := written.trans (congrArg (matrix ++ ·) (frame 48 (by decide)))
-  refine ⟨z,_,(((((8*H+10)+(6*w+7))+descriptorTime)+weightTime)+n)+t,user.trans (yu.trans same),?_,Exec.seq (Exec.seq units seedRun) run,ready,?_,
+  rw [frame 46 (by decide)] at ready
+  refine ⟨z,_,n+t,user.trans same,?_,Exec.seq setup run,ready,?_,
     (right 48 (by decide)).trans matrixReady,?_,?_,?_,?_⟩
-  · have bound : ((8*H+10)+(6*w+7))+weightTime+n ≤ directoryHeaderTime w H := by unfold directoryHeaderTime; omega
-    have volumeBound := directoryHeader_charge layout positive w rows width split
-    rw [← precision] at volumeBound
-    have charged := (Nat.mul_le_mul_right 142080 (Nat.mul_le_mul_left (prime^layout.width) bound)).trans
-      volumeBound
-    change prime^layout.width*t*142080 ≤ _ + prime^layout.width*((scratch.map (fun i => 4*(loaded.L i).length)).sum + 2*tail.length)*142080 at paid
+  · have controls := directoryHeader_charge layout positive w rows width split
+    rw [← precision] at controls
+    have desc := descriptor_charge layout positive w rows lo hi H J W _ width split tailSize ordered hiFits precision digits le_rfl
+    have bound := Nat.mul_le_mul_right 142080 (Nat.mul_le_mul_left (prime^layout.width) time)
+    rw [Nat.mul_add,Nat.add_mul] at bound
+    change prime^layout.width*t*142080 ≤ _ + prime^layout.width*((scratch.map (fun i => 4*(S.L i).length)).sum + 2*tail.length)*142080 at paid
     rw [leftBank] at paid
-    have controlsPaid := prependTime_le _ _ _ _ _ _ _ charged paid
-    have headerPaid := descriptor_charge layout positive w rows lo hi H J W descriptorTime width split tailSize ordered hiFits precision digits descriptorBound
-    have total := prependTime_le _ _ _ _ _ _ _ headerPaid controlsPaid
-    have order (a b e c d : ℕ) : a+b+e+c+d ≤ b+(a+e+c+d) := by omega
-    exact (Nat.mul_le_mul_right 142080 (Nat.mul_le_mul_left (prime^layout.width) (order _ _ _ _ _))).trans total
+    rw [Nat.mul_add,Nat.add_mul]
+    exact (Nat.add_le_add (bound.trans (Nat.add_le_add controls desc)) paid).trans_eq (by dsimp only [inherited]; ring)
   · intro i high
     by_cases low : i.val < 72
-    · exact cleared ((stay 65 (by decide)).trans (privateClean ((65 : Fin 72).castLE room) (by decide : 59 ≤ 65) (by decide : (65 : ℕ) ≠ 71))) ⟨i.val,low⟩ high
+    · exact cleared (privateClean ((65 : Fin 72).castLE room) (by decide : 59 ≤ 65) (by decide : (65 : ℕ) ≠ 71)) ⟨i.val,low⟩ high
     · have outside (j : Fin 72) : bank j ≠ i.castAdd 5 := by
         intro eq
         have h := congrArg Fin.val eq
         change j.val = i.val at h
         omega
-      exact (off _ outside).1.trans ((Function.update_of_ne (outside 48).symm ..).trans (privateClean i (by omega) (by omega)))
+      exact (off _ outside).1.trans (privateClean i (by omega) (by omega))
   · intro i hi
     have apart := (by decide : ∀ j : Fin 58, j ∉ ([28,33,34,35,36,37,38,44,46,48,55] : List (Fin 58)) →
-      j.val ≠ 46 ∧ j.val ≠ 48 ∧ j.castAdd 14 ∉ ([28,33,34,35,36,37,38,44,55,71] : List (Fin 72))) i hi
-    exact (right i apart.1).trans ((stay _ apart.2.1).trans (frame _ apart.2.2))
+      j.val ≠ 46 ∧ j.castAdd 14 ∉ writes) i hi
+    exact (right i apart.1).trans (frame _ apart.2)
   · intro i; exact (left i).trans (congrFun leftBank _)
   · intro k; exact (size k).trans_eq (congrArg List.length (congrFun leftBank k))
   · intro i
@@ -912,6 +936,103 @@ theorem remainderDirectory_prepareOwner {K Q : ℕ} {P U : Type} (room : 72 ≤ 
       have h := congrArg Fin.val eq
       change j.val = K+i.val at h
       omega
-    exact ⟨(off _ outside).1.trans ((Function.update_of_ne (outside 48).symm ..).trans (unchanged _ (outside 28).symm (outside 44).symm (outside 71).symm (outside 55).symm (fun j => (outside (descriptorPorts j)).symm))),(off _ outside).2.trans (congrFun leftBank _)⟩
+    exact ⟨(off _ outside).1.trans (unchanged _ (fun j _ => (outside j).symm)),(off _ outside).2.trans (congrFun leftBank _)⟩
+
+open IntegerMultBounds.Swap.Modular in
+/-- Enter a recursive role scanner from the physical parameter bank and its
+routed replay stream; release the private precision tape before the scan. -/
+theorem prepareReplayOwner_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
+    (bank : Fin 72 ↪ Fin T) (layout child : Descriptor) (w rows blocks W H J lo hi : ℕ)
+    (positive : layout.Positive) (width : layout.width = 64*(w+1)) (split : layout.rows = 142080*rows)
+    (shape : layout.beforeH = blocks*prime^(64*layout.width))
+    (precision : H = (prime^(w+1)).size) (digits : J = W.size) (tailSize : W = layout.between*layout.afterD)
+    (ordered : lo ≤ hi) (hiFits : hi ≤ 64)
+    (fields : ∀ i, M8.RevMachine.Routines.hdr child i = FlatCoordinateSchedule.bits (intervalValues lo hi (w+1) (prime^(w+1)) W i))
+    (root : Bool) (parent : Fin 64 → ZMod (prime^(w+1))) (j : Fin 142080)
+    (archive : ℕ → List (Fin (prime+4))) (u : HS T Q prime U) (raw : Stacks T prime) :
+    let v := role layout 142080
+    let r := remainderDirectoryPorts.trans bank
+    let scanner := fun i : Fin 58 => bank (i.castLE (by decide))
+    let prefixes := fun k => archive (directoryRoleRecord v.beforeH j k)
+    let proj := Matrix.diagonal fun i : Fin 64 => if lo ≤ i.val ∧ i.val < hi then (1 : ℚ) else 0
+    (raw.R (bank 29)).length = layout.beforeRows → (raw.R (bank 30)).length = rows →
+    (raw.R (bank 31)).length = layout.beforeH →
+    raw.R (bank 58) = (List.range (LabelMask.records v)).flatMap prefixes →
+    (∀ k < layout.beforeRows*rows*142080*layout.beforeH, (archive k).length = (raw.R (bank 47)).length) →
+    (raw.R (bank 47)).length ≤ prime^layout.width →
+    raw.R (bank 28) = [] → raw.R (bank 44) = [] → raw.R (bank 49) = [] →
+    (∀ i : Fin 72, 59 ≤ i.val → raw.R (bank i) = []) →
+    ParentParameters root W H J parent (fun i => raw.R (scanner i)) →
+    let setup := (weightedDimensions root bank lo hi).seq (writeBinaryMatrix (intervalSeed lo hi) (projectorSeedPorts.trans bank))
+    let replay := (LabelSpectators.countRecords (bank 29) (bank 30) (bank 31) (r 2) (r 12) (r 3) (r 5)).seq
+      ((LabelDirectorySetup.replayFromCount 64 r (bank 71)).seq (uclear (r 12)))
+    ∃ z D n, z.user = u.user ∧ prime^layout.width*n*142080 ≤ 1327*volume prime layout ∧
+      Exec body (setup.seq (replay.seq (uclear (bank 71)))) (mk u raw) n (mk z D) ∧
+      DirectoryScanInput child proj w W H J parent prefixes (raw.R (bank 46))
+        (List.range (LabelMask.records v)) (fun i => D.R (scanner i)) ∧
+      (∀ i : Fin 72, 58 ≤ i.val → D.R (bank i) = []) ∧ D.L = raw.L ∧
+      ∀ k, (∀ i : Fin 72, k ≠ bank i) → D.R k = raw.R k := by
+  intro v r scanner prefixes proj br nr bh source widths fits short padded spare clean params setup replay
+  obtain ⟨y,S,n,same,time,head,headers,atom,_,left,unchanged⟩ :=
+    prepareDirectoryHeaders_exec body bank child lo hi w W H J root parent fields
+      (precision ▸ Nat.lt_size_self _) (digits ▸ Nat.lt_size_self _) u raw params short padded spare clean
+  let writes : List (Fin 72) := [28,33,34,35,36,37,38,44,48,55,71]
+  have frame (i : Fin 72) (outside : i ∉ writes) : S.R (bank i) = raw.R (bank i) :=
+    unchanged _ (fun l hl => bank.injective.ne (fun eq => outside (eq ▸ hl)))
+  have vr : v.rows = rows := by simp [v,role,split]
+  have hp := RecursiveRowsNodeLayout.role_positive 142080 layout (by decide) positive ⟨rows,split⟩
+  let word := (List.range (LabelMask.records v)).flatMap (LabelDirectory.entry prefixes 64 (w+1)) ++ S.R (bank 46)
+  let F : Stacks T prime := {S with R := Function.update (Function.update S.R (bank 58) []) (bank 46) word}
+  have run := replayDirectory_exec body bank child proj w W H J parent v hp blocks width shape j archive [] y S headers atom
+    ((congrArg List.length (frame 29 (by decide))).trans br) ((congrArg List.length (frame 30 (by decide))).trans (nr.trans vr.symm))
+    ((congrArg List.length (frame 31 (by decide))).trans bh)
+  obtain ⟨b,k,user,paid,exec,input⟩ := run (by
+    intro l hl
+    have off := (by decide : ∀ l ∈ ([2,3,5,6,10,11,12] : List (Fin 15)), remainderDirectoryPorts l ∉ writes ∧ 59 ≤ (remainderDirectoryPorts l).val) l hl
+    exact (frame _ off.1).trans (clean _ off.2)) (by
+    intro k hk
+    rw [vr] at hk
+    exact (widths k hk).trans (congrArg List.length (frame 47 (by decide))).symm)
+    ((congrArg List.length (frame 47 (by decide))).le.trans fits)
+    (by change S.R (bank 58) = (List.range (LabelMask.records v)).flatMap prefixes ++ []; rw [List.append_nil]; exact (frame 58 (by decide)).trans source)
+  obtain ⟨z,last,clear⟩ := uclear_exec body (bank 71) b F
+  let D := {F with R := Function.update F.R (bank 71) []}
+  have size : (F.R (bank 71)).length = w+1 := by simpa [F] using atom
+  rw [size] at clear
+  refine ⟨z,D,n+(k+(2*(w+1)+2)),last.trans (user.trans same),?_,Exec.seq head (Exec.seq exec clear),?_,?_,left,?_⟩
+  · have controls := directoryHeader_charge layout positive w rows width split
+    rw [← precision] at controls
+    have desc := descriptor_charge layout positive w rows lo hi H J W _ width split tailSize ordered hiFits precision digits le_rfl
+    have bound := Nat.mul_le_mul_right 142080 (Nat.mul_le_mul_left (prime^layout.width) time)
+    rw [Nat.mul_add,Nat.add_mul] at bound
+    have release : 2*(w+1)+2 ≤ directoryHeaderTime w H := by unfold directoryHeaderTime; omega
+    have close := (Nat.mul_le_mul_right 142080 (Nat.mul_le_mul_left (prime^layout.width) release)).trans controls
+    have vol : volume prime v*142080 = volume prime layout := by
+      unfold volume; rw [vr,split]; dsimp only [v,role]; ring
+    have core := Nat.mul_le_mul_right 142080 paid
+    change prime^layout.width*k*142080 ≤ 1324*volume prime v*142080 at core
+    rw [Nat.mul_assoc 1324,vol] at core
+    exact replayOwnerTime_le _ _ _ _ _ _ (bound.trans (Nat.add_le_add controls desc)) core close
+  · have equal (i : Fin 58) : D.R (scanner i) = F.R (scanner i) :=
+      Function.update_of_ne (bank.injective.ne (by intro eq; have h := congrArg Fin.val eq; change i.val = 71 at h; omega)) ..
+    change DirectoryScanInput _ _ _ _ _ _ _ _ (S.R (bank 46)) _ (fun i => F.R (scanner i)) at input
+    simpa only [equal,frame 46 (by decide)] using input
+  · intro i hi
+    by_cases src : i = 58
+    · subst i; simp [D,F]
+    by_cases prec : i = 71
+    · subst i; simp [D]
+    have off : i ∉ writes := by
+      intro h
+      have := (by decide : ∀ l ∈ writes, l.val ≤ 55 ∨ l = 71) i h
+      omega
+    have ne : i ≠ 46 := by intro eq; subst i; exact (by decide : ¬ 58 ≤ (46 : Fin 72).val) hi
+    simpa [D,F,Function.update_of_ne (bank.injective.ne prec),Function.update_of_ne (bank.injective.ne ne),
+      Function.update_of_ne (bank.injective.ne src)] using (frame i off).trans (clean i (by
+        have : i.val ≠ 58 := fun eq => src (Fin.ext eq)
+        omega))
+  · intro k off
+    simpa [D,F,Function.update_of_ne (off 71),Function.update_of_ne (off 46),Function.update_of_ne (off 58)] using
+      unchanged k (fun l _ => off l)
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
