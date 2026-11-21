@@ -679,4 +679,60 @@ theorem packedStageTargets_host (n : Fin 9) :
   rw [hl,hr]
   exact fanPayload live' owner z
 
+/-- The common counters and six scratch tapes for padding successive owners. -/
+noncomputable def ownerPadFrame (D N K : ℕ) : Tapes 12 prime :=
+  RowPaddingConstructedAlphabet.bank (fun _ => blank) (fun _ => blank) 0 0
+    (FlatCoordinateSchedule.bits D) (FlatCoordinateSchedule.bits 1)
+    (FlatCoordinateSchedule.bits N) (FlatCoordinateSchedule.bits K)
+
+private theorem ownerPad_aux (src dst : ℤ → Fin (prime+4)) (D N K : ℕ)
+    (j : Fin 12) (hs : j ≠ 0) (hd : j ≠ 1) :
+    let v := RowPaddingConstructedAlphabet.bank src dst 0 0
+      (FlatCoordinateSchedule.bits D) (FlatCoordinateSchedule.bits 1)
+      (FlatCoordinateSchedule.bits N) (FlatCoordinateSchedule.bits K)
+    v.tape j = (ownerPadFrame D N K).tape j ∧ v.head j = (ownerPadFrame D N K).head j := by
+  fin_cases j <;> first | contradiction | exact ⟨rfl,rfl⟩
+
+/-- Run the same host code on each ordinary owner. Only the selected payload
+ports change their represented words; the dimension counters are reusable. -/
+theorem placedOwnerPad {w B K T Q : ℕ} {P U : Type} (hB : 0 < B) (hK : 0 < K)
+    (port : Fin 12 ↪ Fin T) (fits : 215 ≤ Q) (body : P → Pr P T Q prime U) :
+    let A := (prime^w)^16
+    let N := prime^(64*(w*64))
+    let frame := ownerPadFrame (A*B) N K
+    let aux := fun (S : Stacks T prime) => ∀ j : Fin 12, j ≠ 0 → j ≠ 1 → ∀ z,
+      frame.tape j z = readAt blank (S.L (port j)) (S.R (port j)) (z-frame.head j)
+    ∃ label : Cover.LabelPadding.Label 64 w, ∃ code,
+    ∀ (x : Fin 142081 → Fin (A*(B*K)) → ZMod 2) i u S,
+      Cover.Fallback.RecordPayload (port 0) (fun _ => blank) 0 (x i) S →
+      (∀ z, readAt blank (S.L (port 1)) (S.R (port 1)) z = blank) → aux S →
+      ∃ z F steps, Exec body code (mk u S) steps (mk z F) ∧
+        steps ≤ 7021*(A*B)*(N*K)+6 ∧ z.user = u.user ∧
+        Cover.Fallback.RecordPayload (port 1) (fun _ => blank) 0 (singleLabelBank label x i) F ∧
+        aux F ∧ ∀ j, (∀ i, port i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  intro A N frame aux
+  obtain ⟨label,pad⟩ := singleLabelBank_pad_hoare (w := w) hB hK
+  refine ⟨label,embProg port (Empty.elim : Empty → P) (foreign (liftQ RowPaddingConstructedAlphabet.program fits)),?_⟩
+  intro x i u S payload empty ready
+  obtain ⟨z,F,steps,exec,paid,user,done,off⟩ := placedHoare_exec _ port fits body (pad x i) u S (by
+    intro j z
+    by_cases hs : j = 0
+    · subst j
+      have h := payload z
+      rw [encodedOwnerCell] at h
+      exact h.symm
+    by_cases hd : j = 1
+    · subst j
+      exact (empty _).symm
+    rw [(ownerPad_aux _ _ (A*B) N K j hs hd).1,(ownerPad_aux _ _ (A*B) N K j hs hd).2]
+    exact ready j hs hd z)
+  refine ⟨z,F,steps,exec,paid.trans_eq (by ring),user,?_,?_,off⟩
+  · intro l
+    rw [encodedOwnerCell]
+    exact (done 1 l).symm
+  · intro j hs hd l
+    have h := done j l
+    rw [(ownerPad_aux _ _ (A*B) N K j hs hd).1,(ownerPad_aux _ _ (A*B) N K j hs hd).2] at h
+    exact h
+
 end IntegerMultBounds.MathlibTM2.M6.BitNode

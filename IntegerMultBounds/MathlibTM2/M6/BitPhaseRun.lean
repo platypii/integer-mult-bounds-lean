@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.Machine.RowPaddingConstructedAlphabet
 public import IntegerMultBounds.Machine.LabelRowXor
 public import IntegerMultBounds.MathlibTM2.M6.BitCopyLabel
 public import IntegerMultBounds.MathlibTM2.M6.BitNodeCost
@@ -2434,6 +2435,93 @@ private theorem castRow_val {α : Type*} {m n : ℕ} (f : α → Fin m) (hf : Fu
 private theorem physicalLabelRow_val {w : ℕ} (g : Cover.LabelPadding.Label 64 w) :
     (physicalLabelRow w g).val = (Cover.LabelAddress.address g).val :=
   castRow_val _ (address_bijective w) (labelRowCount w) g
+
+/-- The ordinary one-row padding machine implements placement in physical row zero. -/
+theorem singleLabelBank_pad {w B K : ℕ} :
+    ∃ label : Cover.LabelPadding.Label 64 w,
+    ∀ (x : Fin 142081 → Fin ((prime^w)^16*(B*K)) → ZMod 2) i p,
+      singleLabelBank label x i p =
+        RecursiveRowPadding.pad (A := (prime^w)^16*B) (R := 1) (L := K)
+          (prime^(64*(w*64))) 0 (fun z => x i (Fin.cast (by simp [Nat.mul_assoc]) z))
+          (Fin.cast (by simp [Nat.mul_assoc]) p) := by
+  let label := (physicalLabelRow w).symm 0
+  refine ⟨label, ?_⟩
+  intro x i p
+  have addr : (Cover.LabelAddress.address label).val = 0 := by
+    rw [← physicalLabelRow_val]
+    simp [label]
+  obtain ⟨⟨a,t⟩,rfl⟩ := finProdFinEquiv.surjective p
+  obtain ⟨⟨br,k⟩,rfl⟩ := finProdFinEquiv.surjective t
+  obtain ⟨⟨b,r⟩,rfl⟩ := finProdFinEquiv.surjective br
+  have index : Fin.cast (by simp [Nat.mul_assoc])
+      (finProdFinEquiv (a,finProdFinEquiv (finProdFinEquiv (b,r),k))) =
+      RecursiveInterchangeRows.pack (RecursiveInterchangeRows.pack (finProdFinEquiv (a,b)) r) k := by
+    apply Fin.ext
+    simp only [Fin.val_cast, RecursiveInterchangeRows.pack, finProdFinEquiv_apply_val]
+    ring
+  rw [index, RecursiveRowPadding.pad_entry]
+  simp only [singleLabelBank, Equiv.symm_apply_apply, addr]
+  by_cases h : r.val = 0
+  · simp only [h, ite_true, Nat.zero_lt_one, dite_eq_left]
+    apply congrArg (x i)
+    apply Fin.ext
+    simp only [RecursiveInterchangeRows.pack, Fin.val_cast, finProdFinEquiv_apply_val]
+    simp
+    ring
+  · have hr : ¬ r.val < 1 := by omega
+    simp [h,hr]
+
+open RowPaddingConstructedAlphabet (bank) in
+open FlatCoordinateSchedule (bits bits_value bits_canonical) in
+/-- A prepared twelve-tape bank writes one padded owner at head zero in linear time. -/
+theorem singleLabelBank_pad_hoare {w B K : ℕ} (hB : 0 < B) (hK : 0 < K) :
+    let A := (prime^w)^16
+    let N := prime^(64*(w*64))
+    ∃ label : Cover.LabelPadding.Label 64 w,
+    ∀ (x : Fin 142081 → Fin (A*(B*K)) → ZMod 2) i,
+    let word := List.ofFn (SparseRoleCircuit.encoded (a := prime) x i)
+    let output := List.ofFn (SparseRoleCircuit.encoded (a := prime) (singleLabelBank label x) i)
+    HoareTime RowPaddingConstructedAlphabet.program
+      (fun v => v = bank (putWord (fun _ => blank) 0 word) (fun _ => blank) 0 0
+        (bits (A*B)) (bits 1) (bits N) (bits K))
+      (fun v => v = bank (RowPaddingConstructedAlphabet.erased (putWord (fun _ => blank) 0 word) 0 (A*(B*K)))
+        (putWord (fun _ => blank) 0 output) 0 0 (bits (A*B)) (bits 1) (bits N) (bits K))
+      (413*(A*B)*(N*K)) := by
+  intro A N
+  obtain ⟨label,placement⟩ := singleLabelBank_pad (w := w) (B := B) (K := K)
+  refine ⟨label, ?_⟩
+  intro x i
+  let hs : A*B*1*K = A*(B*K) := by simp [Nat.mul_assoc]
+  let hd : A*(B*N*K) = A*B*N*K := by simp [Nat.mul_assoc]
+  let source := fun z => x i (Fin.cast hs z)
+  have run := RowPaddingConstructedAlphabet.pad_bits_hoare (a := prime) (fun _ => blank) (fun _ => blank)
+    0 0 _ _ _ _ (A*B) 1 N K (fun z => decide (source z = 1))
+    (bits_value _) (bits_value _) (bits_value _) (bits_value _)
+    (bits_canonical _) (bits_canonical _) (bits_canonical _) (bits_canonical _)
+    (Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) hB)
+    Nat.zero_lt_one (pow_pos Shared50ModularControl.prime_prime.pos _) hK
+  have castWord {m n : ℕ} (h : m=n) (f : Fin n → Fin (prime+4)) :
+      List.ofFn (fun z => f (Fin.cast h z)) = List.ofFn f := by subst n; rfl
+  have encodePad (z : Fin (A*B*N*K)) :
+      SparseRoleCircuit.encode (a := prime) (RecursiveRowPadding.pad N 0 source z) =
+        RecursiveRowPadding.pad N (bitSymbol false) (fun j => bitSymbol (decide (source j = 1))) z := by
+    unfold RecursiveRowPadding.pad
+    dsimp only
+    split_ifs <;> rfl
+  have output : List.ofFn (SparseRoleCircuit.encoded (a := prime) (singleLabelBank label x) i) =
+      List.ofFn (RecursiveRowPadding.pad N (bitSymbol false) (fun j => bitSymbol (decide (source j = 1)))) := by
+    rw [← castWord hd (RecursiveRowPadding.pad N (bitSymbol false) _)]
+    apply congrArg List.ofFn
+    funext z
+    unfold SparseRoleCircuit.encoded
+    rw [placement]
+    exact encodePad (Fin.cast hd z)
+  dsimp only
+  have erasedLength (f : ℤ → Fin (prime+4)) :
+      RowPaddingConstructedAlphabet.erased f 0 (A*(B*K)) =
+      RowPaddingConstructedAlphabet.erased f 0 (A*B*1*K) := congrArg _ hs.symm
+  rw [output, erasedLength, ← castWord hs (SparseRoleCircuit.encoded (a := prime) x i)]
+  exact run
 
 private theorem labelSpectator_pack {w B K : ℕ} (g : Cover.LabelPadding.Label 64 w)
     (z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B) :
