@@ -1346,7 +1346,8 @@ private theorem outerWords_of_headers {K a b h : ℕ} (S : Stacks (66+K) prime)
   intro j
   fin_cases j <;> first | exact outer | exact rows | exact labels
 
-/-- Execute both certified charts around the prepared scanner on their shared owner. -/
+/-- Run the caller’s entry program and both certified charts around the scanner on their shared
+owner. The chart round trip preserves both stacks outside its placement. -/
 theorem chartDirectory_exec [M8.Machine.Net] {common aux k w : ℕ} {L P U : Type}
     (interval : ℕ × ℕ) (member : interval ∈ BitHosting.remainderIntervals)
     (layout : RecursiveInterchangeLayout.Descriptor) (rows B : ℕ) (positiveLayout : layout.Positive)
@@ -1396,7 +1397,7 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux k w : ℕ} {L P U : Typ
     let ret := returnChartBank (Fin.castLEEmb reverse.fits) headers
     ∀ (body : P → Pr P ((T+10)+5) columnCapacity prime U) (program : Pr P ((T+10)+5) columnCapacity prime U)
       (budget capacity : ℕ) (chartFits : stage.states ≤ capacity) (fits : columnCapacity ≤ capacity) (backFits : back.states ≤ capacity)
-      (u : HS ((((T+10)+5)+stage.tapes)+back.tapes) capacity prime U) (S : Stacks stage.tapes prime)
+      (S : Stacks stage.tapes prime)
       (finished : Stacks ((T+10)+5) prime → Prop),
     RepT (stage.input words) S.L S.R →
     (∀ (a : HS ((T+10)+5) columnCapacity prime U) (D : Stacks ((T+10)+5) prime),
@@ -1431,12 +1432,19 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux k w : ℕ} {L P U : Typ
     let leave : Pr P ((((T+10)+5)+stage.tapes)+back.tapes) capacity prime U :=
       embProg ret (Empty.elim : Empty → P) (foreign (liftQ back.program backFits))
     let stock := (S.L (stage.slots src)).length+(S.R (stage.slots src)).length
-    ∃ z D, ∃ n : ℕ, ∃ final, (n : ℝ) ≤
-        (13*packedChartRate src cert checked false layout.width + packedChartRate src cert checked true layout.width)*(R*N : ℕ) +
-          ((6*stock+directoryRowClockRate*N+setupCost+budget+91 : ℕ) : ℝ) ∧
-      Exec (fun f => embProg baseBank id (outer f)) ((embProg baseBank id enter).seq leave)
-        (mk u (ordinaryParentEntry (T := T+10) back.tapes metadata S)) n (mk z D) ∧
-      z.user = u.user ∧ ChartPrivateReady back (embStk ret D) ∧
+    ∀ {hostT : ℕ} {Label : Type} (place : Fin ((((T+10)+5)+stage.tapes)+back.tapes) ↪ Fin hostT)
+      (label : P → Label) (host : Label → Pr Label hostT capacity prime U)
+      (installed : ∀ f, host (label f) = embProg place label (embProg baseBank id (outer f)))
+      (prepare : Pr Label hostT capacity prime U) (u v : HS hostT capacity prime U)
+      (A B : Stacks hostT prime) (steps : ℕ),
+      Exec host prepare (mk u A) steps (mk v B) →
+      ordinaryParentEntry (T := T+10) back.tapes metadata S = embStk place B →
+    ∃ z D, ∃ n : ℕ, ∃ final, (n : ℝ) ≤ steps + ((13*packedChartRate src cert checked false layout.width + packedChartRate src cert checked true layout.width)*(R*N : ℕ) +
+          ((6*stock+directoryRowClockRate*N+setupCost+budget+91 : ℕ) : ℝ)) ∧
+      Exec host (prepare.seq (embProg place label ((embProg baseBank id enter).seq leave))) (mk u A) n (mk z D) ∧
+      z.user = v.user ∧ (∀ j, (∀ i, place i ≠ j) → D.L j = B.L j ∧ D.R j = B.R j) ∧
+      let D := embStk place D
+      ChartPrivateReady back (embStk ret D) ∧
       RepT (stage.input final) (embStk (chart.trans baseBank) D).L (embStk (chart.trans baseBank) D).R ∧
       (∀ i, i ≠ src → final i = words i) ∧ OriginalPortReads R W parents interval weights cert (words src) (final src) ∧
       ∃ F, finished (embStk placement F) ∧ ∀ j, (∀ i, headers i ≠ j) →
@@ -1447,7 +1455,8 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux k w : ℕ} {L P U : Typ
   obtain ⟨back,reverse,reverseCost,reverseRun⟩ := (packedRemainderChart_stage src cert checked true).choose_spec.choose_spec
     layout w rows B positiveLayout digits split shape
   refine ⟨stage,back,forward,reverse,?_⟩
-  intro words routed pool rowRoom archiveRoom queueRoom pairRoom localBody localPush placedPush bounded placed widths bank setup setupCost clock slot placement chart baseBank headers ret body program budget capacity chartFits fits backFits u S finished input scanner positive outer enter leave stock
+  intro words routed pool rowRoom archiveRoom queueRoom pairRoom localBody localPush placedPush bounded placed widths bank setup setupCost clock slot placement chart baseBank headers ret body program budget capacity chartFits fits backFits S finished input scanner positive outer enter leave stock hostT Label hostPlace label host installed prepare hostStart hostEntry initial preparedBank steps prep entryEq
+  let u := embDn hostPlace hostEntry
   obtain ⟨ordered,upper,_⟩ := BitHosting.remainder_counts interval member
   have room : 53 < T := by omega
   have base : metadata 2 = binSyms M.size M := rfl
@@ -1594,7 +1603,8 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux k w : ℕ} {L P U : Typ
     simpa [phaseOwners,updated,embStk,chart] using (owners i j).symm
   obtain ⟨y,F,t,price,exec,finish,privateReady,final,frame⟩ := ownerRun_returnChart forward reverse backFits chart outer
     enter updated (ordinaryOwnerBank metadata S) D u z n run chartInput
-  refine ⟨y,F,n+t,back.transform updated,?_,exec,finish.trans user,privateReady,final,?_,?_,D,done,frame⟩
+  obtain ⟨z,G,placedRun,_,same,view,outside⟩ := exec_emb hostPlace.injective installed exec hostEntry rfl preparedBank entryEq.symm
+  refine ⟨z,G,steps+(n+t),back.transform updated,?_,Exec.seq prep placedRun,same.trans (finish.trans user),outside,?_⟩
   · let localCost := 6*stock+directoryRowClockRate*N+setupCost+budget+91
     have actual : n+t ≤ 13*(stage.cost*(stage.tapes+5))+back.cost*(back.tapes+5)+localCost := by
       dsimp only [chartOwnerStock] at time
@@ -1606,10 +1616,13 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux k w : ℕ} {L P U : Typ
     have firstCost := forwardCost layout.width widthBound
     have lastCost := reverseCost layout.width widthBound
     change _ ≤ (((_ : ℝ)+_)*((R*N : ℕ) : ℝ))*_ at firstCost lastCost
+    rw [Nat.cast_add steps (n+t),add_le_add_iff_left]
     change _ ≤ ((_ : ℝ)+_)*((R*N : ℕ) : ℝ)+(localCost : ℝ)
     unfold packedChartRate
     dsimp only
     linarith only [runtime,firstCost,lastCost]
+  rw [view]
+  refine ⟨privateReady,final,?_,?_,D,done,frame⟩
   · intro i hi
     exact ((reverseRun updated).1 i hi).trans ((Function.update_of_ne hi ..).trans ((forwardRun words).1 i hi))
   · have undo := (reverseRun updated).2

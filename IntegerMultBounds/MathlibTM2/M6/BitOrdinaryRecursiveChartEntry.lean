@@ -109,12 +109,17 @@ theorem recursiveRoleChartEntry_exec {n K T Q s k back w : ℕ} {P U : Type}
     (separate : ∀ i j, replay i ≠ place j)
     (body : P → Pr P (n+roleSplitWorkspace) Q prime U)
     (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q)
-    (W a rows H width : ℕ) (role : Fin 142080) (archive : ℕ → List (Fin (prime+4)))
-    (outer : 0 < a) (rowCount : 0 < rows) (labels : 0 < H) (positive : 0 < W)
-    (fits : width ≤ (prime^(w+1))^128*W)
-    (widths : ∀ i < a*rows*142080*H, (archive i).length = width)
-    (clean : ∀ i < a*rows*142080*H, blank ∉ archive i)
+    (layout : RecursiveInterchangeLayout.Descriptor) (rows width : ℕ) (splitRows : layout.rows = 142080*rows)
+    (role : Fin 142080) (archive : ℕ → List (Fin (prime+4)))
+    (outer : 0 < layout.beforeRows) (rowCount : 0 < rows) (labels : 0 < layout.beforeH)
+    (positive : 0 < layout.between*layout.afterD)
+    (fits : width ≤ (prime^(w+1))^128*(layout.between*layout.afterD))
+    (widths : ∀ i < layout.beforeRows*rows*142080*layout.beforeH, (archive i).length = width)
+    (clean : ∀ i < layout.beforeRows*rows*142080*layout.beforeH, blank ∉ archive i)
     (u : HS (n+roleSplitWorkspace) Q prime U) (S : Stacks (n+roleSplitWorkspace) prime) :
+    let W := layout.between*layout.afterD
+    let a := layout.beforeRows
+    let H := layout.beforeH
     let lift := Fin.castAddEmb (n := n) roleSplitWorkspace
     let full := place.trans lift
     let split := recursiveRoleSplitPlacement room replay
@@ -133,7 +138,7 @@ theorem recursiveRoleChartEntry_exec {n K T Q s k back w : ℕ} {P U : Type}
     let work := (List.finRange roleSplitWorkspace).map (Fin.natAddEmb n)
     let V := (prime^(w+1))^128*W
     let weights := fun _ : Fin 64 => (1 : ZMod (prime^(w+1)))
-    let queue := directoryChartQueue (some role) H 0 (a*rows*H) archive
+    let queue := directoryChartQueue (some role) H 0 (LabelMask.records (RecursiveInterchangeLayout.role layout 142080)) archive
     (S.R cut).length ≤ a*rows*H*V →
     (∀ i, S.R (sources i) = ordinaryEntryWords W a rows H true weights width
       ((List.range (a*rows*142080*H)).flatMap archive) (ordinaryMetadataPorts i).val) →
@@ -149,7 +154,7 @@ theorem recursiveRoleChartEntry_exec {n K T Q s k back w : ℕ} {P U : Type}
       (∀ i, F.L (chart i) = S.L (chart i) ∧ F.R (chart i) = S.R (chart i)) ∧
       (∀ j : Fin n, (∀ i, scanner i ≠ lift j) → F.L (lift j) = S.L (lift j) ∧ F.R (lift j) = S.R (lift j)) ∧
       ∀ i : Fin roleSplitWorkspace, F.L (i.natAdd n) = [] ∧ F.R (i.natAdd n) = [] := by
-  intro lift full split sources cut scratch select localBank scanner chart dst port source load work V weights queue cutFits headers free front suffix c push bodies budget
+  intro W a H lift full split sources cut scratch select localBank scanner chart dst port source load work V weights queue cutFits headers free front suffix c push bodies budget
   obtain ⟨bank,h₀,h₁,h₂,h₃,privateCount⟩ := recursiveRoleSplit_layout room replay
   let bank' := (Fin.castAddEmb (n := roleSplitTapes) 12).trans split
   have high (j : Fin roleSplitTapes) : bank' j = (j.castAdd 12).natAdd n := bank j
@@ -207,7 +212,9 @@ theorem recursiveRoleChartEntry_exec {n K T Q s k back w : ℕ} {P U : Type}
     have sameChart : embStk chart B = embStk chart F :=
       projected (((Fin.natAddEmb (s+5) (m := k)).trans (Fin.castAddEmb back)).trans place)
     rw [sameChart]
-    exact entry
+    have records : LabelMask.records (RecursiveInterchangeLayout.role layout 142080) = a*rows*H := by
+      simp only [LabelMask.records,RecursiveInterchangeLayout.role,splitRows,Nat.mul_div_cancel_left _ (by decide : 0 < 142080),a,H]
+    simpa only [queue,records] using entry
   · intro i
     exact ⟨(stay _).1.trans (live i).1,(stay _).2.trans (live i).2⟩
   · intro j off
