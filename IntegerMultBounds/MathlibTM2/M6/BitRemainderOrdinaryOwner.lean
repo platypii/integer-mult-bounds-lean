@@ -4,6 +4,7 @@ public import IntegerMultBounds.MathlibTM2.M6.BitOrdinaryPortReads
 public import IntegerMultBounds.MathlibTM2.M6.BitParentWeights
 public import IntegerMultBounds.MathlibTM2.M6.BitRemainderOrdinaryScan
 public import IntegerMultBounds.MathlibTM2.StackBankStock
+import IntegerMultBounds.MathlibTM2.Host.ForeignStock
 
 /-! Execute the scheduled remainder scanner from the parent's packed prefix and owner tapes. -/
 @[expose] public section
@@ -593,6 +594,11 @@ theorem ordinaryOwnerBank_private {T k : ℕ} (metadata : ℕ → List (Fin (pri
     have off := (Fin.natAddEmb T).injective.ne hi
     simp [S,slot,ordinaryOwnerBank_project,Function.update_of_ne (show i.natAdd T ≠ (0 : Fin 5).natAdd T from off)]
 
+/-- Bound the two physical stacks of the selected owner after the chart. -/
+def chartOwnerStock {N k : ℕ} (stage : SharedBankStage.Stage _ k prime (phaseOwners (N := N)))
+    (src : Fin k) (S : Stacks stage.tapes prime) : ℕ :=
+  (S.L (stage.slots src)).length+(S.R (stage.slots src)).length+2*(stage.cost*(stage.tapes+5)+6)
+
 /-- Execute the chart and scanner on one bank. The scanner shares the selected
 physical chart slot and sees its own private metadata throughout the join. -/
 theorem chartOwner_scan {T N k Q : ℕ} {P U : Type}
@@ -610,6 +616,7 @@ theorem chartOwner_scan {T N k Q : ℕ} {P U : Type}
     RepT (stage.input data) S.L S.R →
     (∀ (v : HS (T+5) Q prime U) (F : Stacks stage.tapes prime),
       RepT (phaseOwners (stage.transform data)) (embStk stage.slots F).L (embStk stage.slots F).R →
+      (F.L (stage.slots src)).length+(F.R (stage.slots src)).length ≤ chartOwnerStock stage src S →
       ∃ z D n word, n ≤ budget ∧ post word D ∧ z.user = v.user ∧ OwnerScan body program slot word v
         (embStk placement (ordinaryOwnerBank metadata F)) n z D) →
     ∃ z D n word, post word (embStk placement D) ∧ n ≤ stage.cost*(stage.tapes+5)+6+(1+budget) ∧
@@ -638,7 +645,18 @@ theorem chartOwner_scan {T N k Q : ℕ} {P U : Type}
       · first | simpa [ordinaryOwnerBank,embStk,chart] using congrArg (fun A => Stacks.L A j) view
               | simpa [ordinaryOwnerBank,embStk,chart] using congrArg (fun A => Stacks.R A j) view
   subst B
-  obtain ⟨w,D,n,word,paid,ok,scanUser,scan⟩ := scanner (stateLiftDown positive (embDn placement v)) F reads
+  let bank : Finset (HK stage.tapes) := {HK.lt (stage.slots src),HK.rt (stage.slots src)}
+  have stock := exec_stock bank run (bankProgPush_of_native bank (foreign_native _)) (fun f => f.elim)
+  have measure (a : HS stage.tapes capacity prime U) (A : Stacks stage.tapes prime) :
+      bankStock bank (mk a A) = (A.L (stage.slots src)).length+(A.R (stage.slots src)).length := by
+    have distinct : HK.lt (stage.slots src) ∉ ({HK.rt (stage.slots src)} : Finset (HK stage.tapes)) := by
+      rw [Finset.mem_singleton]; intro h; cases h
+    simp only [bankStock,bank,Finset.sum_insert distinct,Finset.sum_singleton,mk_stk,Stacks.get]
+  rw [measure,measure] at stock
+  have bound : (F.L (stage.slots src)).length+(F.R (stage.slots src)).length ≤ chartOwnerStock stage src S := by
+    apply le_trans _ (Nat.add_le_add_left (Nat.mul_le_mul_left _ price) _)
+    exact stock
+  obtain ⟨w,D,n,word,paid,ok,scanUser,scan⟩ := scanner (stateLiftDown positive (embDn placement v)) F reads bound
   have lifted := stateLift_exec_normalized fits positive id (body' := fun f => stateLiftPr fits positive id (body f))
     (fun _ => rfl) (embDn placement v) scan.run
   obtain ⟨z,G,finish,_,finishUser,project,keep⟩ := exec_emb (ι := id) (body' := outer) placement.injective
@@ -1244,7 +1262,7 @@ theorem OrdinaryParentRun.chartRoundTrip [M8.Machine.Net] {common work w rows B 
         ownerRow (R := data.records) (N := N) rfl output j = ownerRow rfl word j) ∧
       ∀ i : Fin (66+K), 58 ≤ i.val → D.L ((placement i).castAdd 5) = [] ∧ D.R ((placement i).castAdd 5) = []
   obtain ⟨z,F,t,output,ok,paid,run,priorUser,privateReady,reads⟩ := chartOwner_scan stage src metadata words forwardMachine.restored columnCapacity_pos outer program (dispatch+clean) post cap chartFits fitsState (embDn base start) S input (by
-    intro u owners chartReads
+    intro u owners chartReads _
     have reads (j : ℤ) := (chartReads src j).symm
     simp only [embStk,Function.comp_apply,phaseOwners,sub_zero] at reads
     let raw := embStk share (ordinaryOwnerBank metadata owners)

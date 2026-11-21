@@ -23,6 +23,22 @@ def bankProgPush (bank : Finset K') : Prog P' Γ σ' → ℕ
   | .loop _ p => bankProgPush bank p
   | .call _ => 0
 
+/-- A native push bound also bounds pushes into any selected bank. -/
+theorem bankProgPush_of_native (bank : Finset K') {p : Prog P' Γ σ'} {c : ℕ}
+    (bound : mnNativePushBound c p) : bankProgPush bank p ≤ c := by
+  have act (a : Action Γ σ') : bankActPush bank a ≤ mnActPush a := by
+    induction a with
+    | done => exact le_rfl
+    | push k _ _ ih =>
+      exact Nat.add_le_add ih (by split <;> decide)
+    | branch _ _ _ ih₁ ih₂ => exact max_le_max ih₁ ih₂
+    | peek _ _ _ ih | pop _ _ _ ih | load _ _ ih => exact ih
+  induction p with
+  | act a => exact (act a).trans bound
+  | seq _ _ ih₁ ih₂ | cond _ _ _ ih₁ ih₂ => exact max_le (ih₁ bound.1) (ih₂ bound.2)
+  | loop _ _ ih => exact ih bound
+  | call _ => exact False.elim bound
+
 private theorem bank_update (bank : Finset K') (s : Store Γ σ') (v : σ') (k : K') (word : List (Γ k)) :
     bankStock bank (⟨v,Function.update s.stk k word⟩ : Store Γ σ') + (if k ∈ bank then (s.stk k).length else 0) =
       bankStock bank s + (if k ∈ bank then word.length else 0) := by
