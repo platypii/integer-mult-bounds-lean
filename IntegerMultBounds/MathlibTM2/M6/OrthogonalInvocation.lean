@@ -439,6 +439,50 @@ theorem orthogonalHostedRun {V : ℕ} (n : Fin 9) (r : Fin 32) (d : Fin 5)
     have h : ¬ ∃ i, emb i = j := fun ⟨i,eqn⟩ => off i eqn
     simp only [placeOwnerBank,h,↓reduceDIte]
 
+open Swap.Modular M8.Exchange in
+/-- Physical port reads of one invocation in the common orthogonal basis. -/
+structure OrthogonalPortReads {V W : ℕ} (w : ℕ)
+    (pos : Swap.Shear.State (Fin 8) (ZMod (prime^w)) → Fin W → Fin V)
+    (x y : Fin 661 → Fin V → ZMod 2) : Prop where
+  source (t : Fin 111) s k :
+    y ⟨t.val,by omega⟩ (pos s.swap k) =
+      x ⟨t.val,by omega⟩ (pos (exchange (reduce (prime^w) (Nine.port t).lineProj) s) k)
+  target (t : Fin 111) s k :
+    y ⟨111+t.val,by omega⟩ (pos (exchange (reduce (prime^w) (1-(Nine.port t).lineProj)) s) k) =
+      x ⟨111+t.val,by omega⟩ (pos s k) +
+      x ⟨t.val,by omega⟩ (pos (exchange (reduce (prime^w) (Nine.port t).lineProj) s) k)
+  helper (h : Fin 439) s k :
+    y ⟨222+h.val,by omega⟩ (pos s.swap k) = x ⟨222+h.val,by omega⟩ (pos s k)
+
+open Swap.Modular M8.Exchange in
+private theorem portReads_of_word {V W : ℕ} (w : ℕ)
+    (pos : Swap.Shear.State (Fin 8) (ZMod (prime^w)) → Fin W → Fin V)
+    (x y : Fin 661 → Fin V → ZMod 2) :
+    let addr := fun l s k => pos (exchange (reduce (prime^w) (Nine.labelProj l)) s) k
+    (∀ s k (i : Fin 661), y i (addr (Frames.finalRefs i) s k) =
+      Circuit.run (program.map RawGate.toCircuit) (Copy.extendStored (fun j : Fin 661 =>
+        x j (addr (Frames.snapshot Frames.initialRefs j) s k))) i) →
+    OrthogonalPortReads w pos x y := by
+  intro addr run
+  have zero : reduce (prime^w) (0 : Matrix (Fin 8) (Fin 8) ℚ) = 0 := by
+    ext i j; simp [reduce,ratMod_zero]
+  have one (s : Swap.Shear.State (Fin 8) (ZMod (prime^w))) : exchange 1 s = s.swap := by
+    cases s; simp [exchange]
+  constructor
+  all_goals
+    intro t s k
+    let stored := fun j : Fin 661 => x j (addr (Frames.snapshot Frames.initialRefs j) s k)
+  · have h := (run s k ⟨t.val,by omega⟩).trans (sources_restored stored t)
+    simpa only [stored,addr,Frames.snapshot,t.isLt,Fin.is_lt,↓reduceIte,Nine.labelProj_source_final _ t.isLt,
+      Nine.labelProj_source_initial _ t.isLt,reduce_one,one] using h
+  · have h := (run s k ⟨111+t.val,by omega⟩).trans (targets_added stored t)
+    simpa only [stored,addr,Frames.snapshot,Fin.is_lt,↓reduceIte,Nine.labelProj_target_final _ t.isLt,
+      Nine.labelProj_target_initial _ t.isLt,Nine.labelProj_source_initial _ t.isLt,zero,M8.Global.exchange_zero] using h
+  · have h := (run s k ⟨222+t.val,by omega⟩).trans (helpers_restored stored t)
+    obtain ⟨initial,final⟩ := Nine.helper_refs t.val t.isLt
+    simpa only [stored,addr,Frames.snapshot,Fin.is_lt,↓reduceIte,initial,final,Nine.labelProj_zero,
+      Nine.labelProj_one,reduce_one,zero,one,M8.Global.exchange_zero] using h
+
 /-- Execute the 32 replicas and five classes in certificate order. Reads of
 overlapping owners use the preceding invocation's output. -/
 theorem orthogonalHostedSweep :
@@ -450,8 +494,7 @@ theorem orthogonalHostedSweep :
       let desc := fun r => Cover.Fallback.rankDescriptor prime (r*w) ((64-r)*w) (role v 142080)
       let G := Swap.Modular.reduce m (orthogonalBasis.map (Nat.cast : ℕ → ℚ))
       let encode := M8.Exchange.transform G (Swap.Modular.reduce m (M8.ReversedExchange.rev 8)*G)
-      let addr := fun l s (k : Fin W) => FlatCoordinateLayout.index (AffineFieldCoordinates.embed
-        (encode (M8.Exchange.exchange (Swap.Modular.reduce m (Nine.labelProj l)) s))) k
+      let pos := fun s (k : Fin W) => FlatCoordinateLayout.index (AffineFieldCoordinates.embed (encode s)) k
       ∀ (price : Descriptor → ℕ), 0 < W →
       (∀ r, 0 < r → ∀ hr : r ≤ 8, (desc r).width < v.width →
         let pos := CopyChildLayout.orthogonalChildPosition v w rows r hr split
@@ -461,14 +504,12 @@ theorem orthogonalHostedSweep :
       ∃ piece : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V)),
         piece.cost ≤ 160*(C*volume prime (role v 142080) + (Geometry.Moves.localPaid.map (price ∘ desc)).sum + 1) ∧
         ∀ x, stageRuns.foldr (fun run next a => ∃ b,
-          (∀ s k (i : Fin 661), b (ownerTape n run.1 run.2 i) (addr (Frames.finalRefs i) s k) =
-            Circuit.run (program.map RawGate.toCircuit) (Copy.extendStored (fun j : Fin 661 =>
-              a (ownerTape n run.1 run.2 j) (addr (Frames.snapshot Frames.initialRefs j) s k))) i) ∧
-          (∀ j, (∀ i, ownerTape n run.1 run.2 i ≠ j) → b j = a j) ∧ next b)
+          (OrthogonalPortReads w pos (a ∘ ownerTape n run.1 run.2) (b ∘ ownerTape n run.1 run.2) ∧
+          (∀ j, (∀ i, ownerTape n run.1 run.2 i ≠ j) → b j = a j)) ∧ next b)
           (fun a => a = piece.transform x) x := by
   obtain ⟨C,invocation⟩ := orthogonalRoleInvocation
   refine ⟨C,?_⟩
-  intro n v w rows hw width split m W V desc G encode addr price live supply
+  intro n v w rows hw width split m W V desc G encode pos price live supply
   obtain ⟨localRun,cost,reads⟩ := invocation v w rows hw width split price live supply
   choose hosted time action using fun k : Fin 32 × Fin 5 => orthogonalHostedRun n k.1 k.2 localRun
   let compile := fun ks : List (Fin 32 × Fin 5) => SharedBankStage.compile
@@ -490,9 +531,75 @@ theorem orthogonalHostedSweep :
     | nil => intro x; rfl
     | cons run ks ih =>
       intro x
-      refine ⟨(hosted run).transform x,?_,(action run x).2,ih _⟩
+      refine ⟨(hosted run).transform x,⟨?_,(action run x).2⟩,ih _⟩
+      apply portReads_of_word
       intro s k i
+      simp only [Function.comp_apply]
       rw [(action run x).1 i]
       exact reads _ s k i
+
+private theorem uniqueTraceRead {I X Y : Type*} (atRun : I) (view : X → Y) (action : Y → Y → Prop)
+    (step : I → X → X → Prop)
+    (read : ∀ x y, step atRun x y → action (view x) (view y))
+    (idle : ∀ k, k ≠ atRun → ∀ x y, step k x y → view y = view x)
+    (ks : List I) (unique : ks.Nodup) (x y : X)
+    (trace : ks.foldr (fun k next a => ∃ b, step k a b ∧ next b) (· = y) x) :
+    (atRun ∈ ks → action (view x) (view y)) ∧ (atRun ∉ ks → view y = view x) := by
+  induction ks generalizing x with
+  | nil => exact ⟨fun h => False.elim (List.not_mem_nil h),fun _ => congrArg view trace.symm⟩
+  | cons k ks ih =>
+    obtain ⟨b,st,tail⟩ := trace
+    obtain ⟨fresh,nd⟩ := List.nodup_cons.mp unique
+    obtain ⟨hit,miss⟩ := ih nd b tail
+    by_cases eqn : k = atRun
+    · subst k
+      exact ⟨fun _ => miss fresh ▸ read x b st,fun h => False.elim (h List.mem_cons_self)⟩
+    · have fixed := idle k eqn x b st
+      exact ⟨fun h => fixed ▸ hit ((List.mem_cons.mp h).resolve_left (Ne.symm eqn)),
+        fun h => (miss (fun h' => h (List.mem_cons_of_mem _ h'))).trans fixed⟩
+
+private theorem otherRunMissesPort (n : Fin 9) (k run : Fin 32 × Fin 5) (other : k ≠ run)
+    (i j : Fin 661) (data : j.val < 222) :
+    ownerTape n k.1 k.2 i ≠ ownerTape n run.1 run.2 j := by
+  intro eqn
+  have same := (Fintype.equivFin Role).injective (Fin.cast_injective _ (Fin.castSucc_injective _ eqn))
+  have active : (owner n run.1 run.2 j).bank.val / 2 = BitHosting.activePair n.val := by
+    simp only [owner,data,ite_true]
+    apply side_pair
+    unfold regSide
+    split <;> omega
+  obtain ⟨hr,hd⟩ := owner_eq_side n k.1 k.2 i i.isLt _ active same
+  simp only [owner,data,ite_true,sideRole] at hr hd
+  exact other (Prod.ext hr.symm hd.symm)
+
+open Swap.Modular M8.Exchange in
+/-- In the full sweep each active port pair belongs to just one replica and
+class. Its target therefore adds the source present at the start of the sweep. -/
+theorem orthogonalSweep_activePorts {V W : ℕ} (n : Fin 9) (w : ℕ)
+    (pos : Swap.Shear.State (Fin 8) (ZMod (prime^w)) → Fin W → Fin V)
+    (x y : Fin 142081 → Fin V → ZMod 2)
+    (trace : stageRuns.foldr (fun run next a => ∃ b,
+      (OrthogonalPortReads w pos (a ∘ ownerTape n run.1 run.2) (b ∘ ownerTape n run.1 run.2) ∧
+      (∀ j, (∀ i, ownerTape n run.1 run.2 i ≠ j) → b j = a j)) ∧ next b) (· = y) x)
+    (run : Fin 32 × Fin 5) (t : Fin 111) :
+    let owner := ownerTape n run.1 run.2
+    let src := owner ⟨t.val,by omega⟩
+    let dst := owner ⟨111+t.val,by omega⟩
+    ∀ s k, y src (pos s.swap k) = x src (pos (exchange (reduce (prime^w) (Nine.port t).lineProj) s) k) ∧
+      y dst (pos (exchange (reduce (prime^w) (1-(Nine.port t).lineProj)) s) k) =
+      x dst (pos s k) + x src (pos (exchange (reduce (prime^w) (Nine.port t).lineProj) s) k) := by
+  intro owner src dst s k
+  let view := fun a : Fin 142081 → Fin V → ZMod 2 => (a dst,a src)
+  let step := fun (p : Fin 32 × Fin 5) (a b : Fin 142081 → Fin V → ZMod 2) =>
+    OrthogonalPortReads w pos (a ∘ ownerTape n p.1 p.2) (b ∘ ownerTape n p.1 p.2) ∧
+    ∀ j, (∀ i, ownerTape n p.1 p.2 i ≠ j) → b j = a j
+  exact (uniqueTraceRead run view (fun a b =>
+    b.2 (pos s.swap k) = a.2 (pos (exchange (reduce (prime^w) (Nine.port t).lineProj) s) k) ∧
+    b.1 (pos (exchange (reduce (prime^w) (1-(Nine.port t).lineProj)) s) k) =
+    a.1 (pos s k) + a.2 (pos (exchange (reduce (prime^w) (Nine.port t).lineProj) s) k)) step
+    (fun a b h => ⟨h.1.source t s k,h.1.target t s k⟩) (fun p other a b h => Prod.ext
+      (h.2 dst (fun i => otherRunMissesPort n p run other i ⟨111+t.val,by omega⟩ (by dsimp; omega)))
+      (h.2 src (fun i => otherRunMissesPort n p run other i ⟨t.val,by omega⟩ (by dsimp; omega))))
+    stageRuns stageRuns_nodup x y trace).1 (mem_stageRuns run)
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
