@@ -2,6 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.M6.BitPackedStage
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackFiberBank
+public import IntegerMultBounds.MathlibTM2.Host.BinArithMul
 public import IntegerMultBounds.MathlibTM2.Host.EmitRun
 public import IntegerMultBounds.MathlibTM2.M6.BitCopyRecordSetup
 
@@ -96,10 +97,10 @@ private theorem scanPrivate_ready {V T : ℕ} (K N D : ℕ) (word : Fin V → ZM
 the accumulator from its retained binary length. Only the accumulator changes. -/
 theorem scanAccumulator_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U)
     (bank : Fin 8 ↪ Fin T) (length tmp : Fin T) (apart : ∀ i, length ≠ bank i ∧ tmp ≠ bank i)
-    (distinct : length ≠ tmp) (H : ℕ) (u : HS T Q prime U) (S : Stacks T prime)
-    (size : S.R length = binSyms H.size H) (free : S.R tmp = [])
+    (distinct : length ≠ tmp) (H bits : ℕ) (fits : H < 2^bits) (u : HS T Q prime U) (S : Stacks T prime)
+    (size : S.R length = binSyms bits H) (free : S.R tmp = [])
     (clocks : ∀ i ∈ ([2,4,6] : List (Fin 8)), S.R (bank i) = []) :
-    ∃ z steps, z.user = u.user ∧ steps ≤ 8*H+11*H.size+8 ∧
+    ∃ z steps, z.user = u.user ∧ steps ≤ 8*H+11*bits+8 ∧
       Exec body (emitRun length (bank 2) (bank 1) (bank 4) (bank 6) tmp (SparseRoleCircuit.encode 0))
         (mk u S) steps (mk z {S with R := Function.update S.R (bank 1) (List.replicate H (SparseRoleCircuit.encode 0)++S.R (bank 1))}) := by
   have nd : [length,bank 2,bank 1,bank 4,bank 6,tmp].Nodup := by
@@ -107,7 +108,7 @@ theorem scanAccumulator_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T Q pri
     simp only [List.map_cons,List.map_nil,List.nodup_cons,List.mem_cons,List.mem_singleton,
       List.not_mem_nil,not_false_eq_true,not_or,List.nodup_nil,and_true] at inner ⊢
     simp_all [Ne.symm (apart _).2,(apart _).1]
-  apply emitRun_exec nd H.size H (Nat.lt_size_self _) _ u S size
+  apply emitRun_exec nd bits H fits _ u S size
   intro k hk
   simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
   rcases hk with rfl | rfl | rfl | rfl
@@ -259,6 +260,10 @@ private theorem scanCounters_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T 
       (rw [off _ (by intro i; apply bank.injective.ne; fin_cases i <;> decide)]
        first | exact (empty 0).2 | exact (empty 1).2 | exact (empty 3).2 | exact (empty 5).2)
 
+def stageScanCost (targets K N D : ℕ) :=
+  D.size*(12*(D.size+K.size)+20)+16*(D.size+K.size)+24 +
+    (targets*(2600*(D*(N*K))+6+(8*(D*K)+11*(D.size+K.size)+8)+scanCounterCost ![K,N,D])+1) + (2*(D.size+K.size)+2)
+
 /-- Scan the restored targets in stage order. Each accumulator retains its
 output while all subsequent scans execute on disjoint banks. -/
 theorem stageTargets_host (n : Fin 9) :
@@ -269,6 +274,9 @@ theorem stageTargets_host (n : Fin 9) :
     let bank := fun k : I => targetScanBank fan (targetOwner n k)
     ∀ length tmp, length ≠ tmp → (∀ k i, length ≠ bank k i ∧ tmp ≠ bank k i) →
     ∀ (src : Fin 3 → Fin (T+142081*7)), (∀ k i j, src i ≠ bank k j) →
+    ∀ (scratch : Fin 5 → Fin (T+142081*7)),
+    [src 2,src 0,length,scratch 0,scratch 1,scratch 2,scratch 3,scratch 4].Nodup →
+    (∀ i, src i ≠ length) →
     ∀ body : P → Pr P (T+142081*7) Q prime U, ∃ code,
     ∀ (w B W : ℕ) (label : Cover.LabelPadding.Label 64 w) (x y out),
     let K := (prime^w)^112*W
@@ -278,7 +286,8 @@ theorem stageTargets_host (n : Fin 9) :
       (fun a => a = y) (singleLabelBank label x) →
     HelperLabelTrace w (B*N) W (restoreSlotChanges (stageFinalSlot n)) y out →
     0 < K → 0 < B → ∀ u S, HelperFan full out S →
-    S.R length = binSyms (D*K).size (D*K) → S.R tmp = [] →
+    S.R (src 2) = binSyms D.size D → S.R (src 0) = binSyms K.size K →
+    S.R length = [] → (∀ i, S.R (scratch i) = []) → S.R tmp = [] →
     (∀ i z, readAt blank (S.L (src i)) (S.R (src i)) (z-1) =
       RadixZeroFill.encodedBinary (FlatCoordinateSchedule.bits (![K,N,D] i)) z) →
     (∀ k (j : Fin 7), S.L (bank k j.succ) = [] ∧ S.R (bank k j.succ) = []) →
@@ -291,22 +300,23 @@ theorem stageTargets_host (n : Fin 9) :
         readAt blank L R ((FlatCoordinateLayout.index (AffineFieldCoordinates.embed s)
           (finProdFinEquiv (b,j))).val-(D*K) : ℤ) = SparseRoleCircuit.encode
           (selectedFrame w (Frames.finalRefs dst) (initial dst + initial k.2.val) s)
-    ∃ z F steps, Exec body code (mk u S) steps (mk z F) ∧ steps ≤ order.length*(2600*(D*(N*K))+6+(8*(D*K)+11*(D*K).size+8)+scanCounterCost ![K,N,D])+1 ∧
+    ∃ z F steps, Exec body code (mk u S) steps (mk z F) ∧ steps ≤ stageScanCost order.length K N D ∧
       z.user = u.user ∧ (∀ k, result k (F.L (bank k 1)) (F.R (bank k 1))) ∧
       ∀ j, (∀ k i, bank k i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
   classical
   intro I order
   choose req scan using fun k : I => restoredTarget_host n k.1 k.2
   refine ⟨Finset.univ.sup req,?_⟩
-  intro T Q P U fan fits full bank length tmp distinct apart src srcApart body
+  intro T Q P U fan fits full bank length tmp distinct apart src srcApart scratch regs srcOff body
   choose code execute using fun k => scan k full (bank k) rfl ((Finset.le_sup (Finset.mem_univ k)).trans fits) body
   let placed := fun k => Prog.seq (scanCounters (bank k) src) (Prog.seq (emitRun length (bank k 2) (bank k 1) (bank k 4) (bank k 6) tmp
     (SparseRoleCircuit.encode 0)) (code k))
-  refine ⟨Prog.seqList (order.map placed),?_⟩
-  intro w B W label x y out K N D trace restored pos hb u S live size free words empty result
-  let price := 2600*(D*(N*K))+6+(8*(D*K)+11*(D*K).size+8)+scanCounterCost ![K,N,D]
+  let product : Pr P (T+142081*7) Q prime U := bmul (src 2) (src 0) length (scratch 0) (scratch 1) (scratch 2) (scratch 3) (scratch 4) (src 2)
+  refine ⟨Prog.seq product (.seq (Prog.seqList (order.map placed)) (bclear length)),?_⟩
+  intro w B W label x y out K N D trace restored pos hb u S live blockWord widthWord fresh work free words empty result
+  let price := 2600*(D*(N*K))+6+(8*(D*K)+11*(D.size+K.size)+8)+scanCounterCost ![K,N,D]
   have run (ks : List I) (unique : ks.Nodup) (v : HS _ Q prime U) (A : Stacks _ prime)
-      (sizeA : A.R length = binSyms (D*K).size (D*K)) (freeA : A.R tmp = [])
+      (sizeA : A.R length = binSyms (D.size+K.size) (D*K)) (freeA : A.R tmp = [])
       (headers : ∀ i z, readAt blank (A.L (src i)) (A.R (src i)) (z-1) =
         RadixZeroFill.encodedBinary (FlatCoordinateSchedule.bits (![K,N,D] i)) z)
       (ready : ∀ k ∈ ks, ∀ i, A.L (bank k i) = S.L (bank k i) ∧ A.R (bank k i) = S.R (bank k i)) :
@@ -326,7 +336,7 @@ theorem stageTargets_host (n : Fin 9) :
           exact empty k i)
       have right (i : Fin 7) := (stored i).2
       obtain ⟨u₁,e,ue,fillBill,fill⟩ := scanAccumulator_exec body (bank k) length tmp (apart k) distinct
-        (D*K) v₀ C
+        (D*K) (D.size+K.size) (by rw [pow_add]; exact Nat.mul_lt_mul_of_lt_of_le (Nat.lt_size_self _) (Nat.le_of_lt (Nat.lt_size_self _)) (by positivity)) v₀ C
         ((keepC _ (fun i => (apart k i.succ).1.symm)).2.trans sizeA)
         ((keepC _ (fun i => (apart k i.succ).2.symm)).2.trans freeA) (by
           intro i hi
@@ -382,9 +392,119 @@ theorem stageTargets_host (n : Fin 9) :
         have tail := keep j (fun h mem => hj h (List.mem_cons_of_mem _ mem))
         have head := off j (hj k List.mem_cons_self)
         exact ⟨tail.1.trans head.1,tail.2.trans head.2⟩
+  have carry : src 2 ≠ scratch 0 := fun eq => (List.nodup_cons.mp regs).1 (by simp [eq])
+  obtain ⟨v,m,userMul,mulBill,mul⟩ := bmul_exec (body := body) regs (srcOff 2) carry
+    (Nat.lt_size_self D) (Nat.lt_size_self K) u S blockWord widthWord fresh
+    (work 0) (work 1) (work 2) (work 3) (work 4)
+  let A : Stacks _ prime := {S with R := Function.update S.R length (binSyms (D.size+K.size) (D*K))}
+  have unchanged (j) (h : j ≠ length) : A.R j = S.R j := Function.update_of_ne h _ _
   obtain ⟨z,F,t,exec,paid,user,done,off⟩ := run order (stageRuns_nodup.product (List.nodup_finRange _))
-    u S size free words (fun _ _ _ => ⟨rfl,rfl⟩)
-  exact ⟨z,F,t,exec,paid,user,fun k => done k (List.mem_flatMap.mpr ⟨k.1,mem_stageRuns _,
-    List.mem_map.mpr ⟨k.2,List.mem_finRange _,rfl⟩⟩),fun j outside => off j (fun h _ => outside h)⟩
+    v A (by simp [A]) ((unchanged tmp distinct.symm).trans free)
+    (fun i z => by change readAt blank (S.L _) (A.R _) _ = _; rw [unchanged _ (srcOff i),words])
+    (fun k _ i => ⟨rfl,unchanged _ (apart k i).1.symm⟩)
+  have retained := (off length (fun k _ i => (apart k i).1.symm)).2
+  have width : (F.R length).length = D.size+K.size := by rw [retained]; simp [A,length_binSyms]
+  obtain ⟨z',userClear,_,clear⟩ := bclear_exec body length z F
+  rw [width] at clear
+  refine ⟨z',_,_,Exec.seq mul (Exec.seq exec clear),?_,userClear.trans (user.trans userMul),?_,?_⟩
+  · dsimp only [stageScanCost]
+    dsimp only [price] at paid
+    omega
+  · intro k
+    change result k (F.L (bank k 1)) (Function.update F.R length [] (bank k 1))
+    rw [show (Function.update F.R length [] (bank k 1)) = F.R (bank k 1) from Function.update_of_ne (apart k 1).1.symm _ _]
+    exact done k (List.mem_flatMap.mpr ⟨k.1,mem_stageRuns _,
+      List.mem_map.mpr ⟨k.2,List.mem_finRange _,rfl⟩⟩)
+  · intro j outside
+    obtain ⟨left,right⟩ := off j (fun h _ => outside h)
+    refine ⟨left,?_⟩
+    by_cases h : j = length
+    · subst j; simpa using fresh.symm
+    · exact (Function.update_of_ne h _ _).trans (right.trans (unchanged j h))
+
+
+/-- Run the packed stage on its original tapes, then scan the restored owners.
+The ten additional shared tapes hold the three dimensions and arithmetic workspace. -/
+theorem packedStageTargets_host (n : Fin 9) :
+    let I := (Fin 32 × Fin 5) × Fin 111
+    let order := stageRuns.product (List.finRange 111)
+    ∃ states : ℕ, ∀ {T Q : ℕ} {P U : Type} (fan : Fin (142081+2) ↪ Fin T), states ≤ Q →
+    let inner := (Fin.castAddEmb 10 (n := T)).trans (Fin.castAddEmb (142081*7))
+    let placedFan := fan.trans (Fin.castAddEmb 10)
+    let bank := fun k : I => targetScanBank placedFan (targetOwner n k)
+    let reg := (Fin.natAddEmb T (m := 10)).trans (Fin.castAddEmb (142081*7))
+    ∀ (body : P → Pr P T Q prime U) (stage : Pr P T Q prime U), ∃ code,
+    ∀ (w B W : ℕ) (label : Cover.LabelPadding.Label 64 w) (x),
+    let K := (prime^w)^112*W
+    let N := prime^(64*(w*64))
+    let D := (prime^w)^16*B
+    0 < K → 0 < B → ∀ u S v A time y out,
+    Exec body stage (mk (embDn inner u) (embStk inner S)) time (mk v A) →
+    v.user = u.user → HelperFan fan out A →
+    stageRuns.foldr (fun k next a => ∃ b, packedStageEffect n k w B W a b ∧ next b)
+      (fun a => a = y) (singleLabelBank label x) →
+    HelperLabelTrace w (B*N) W (restoreSlotChanges (stageFinalSlot n)) y out →
+    (∀ i : Fin 3, S.L (reg (i.castAdd 7)) = [separator] ∧
+      S.R (reg (i.castAdd 7)) = binSyms (![K,N,D] i).size (![K,N,D] i)) →
+    (∀ i : Fin 7, S.R (reg (i.natAdd 3)) = []) →
+    (∀ k (j : Fin 7), S.L (bank k j.succ) = [] ∧ S.R (bank k j.succ) = []) →
+    let result := fun (k : I) (L R : List (Fin (prime+4))) =>
+      let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n k.1.1 k.1.2,ownerTape_injective ..⟩
+      ∀ (s : Swap.Shear.State (Fin 8) (ZMod (prime^w))) (b : Fin B) (j : Fin K),
+        let initial := fun i => (selectedFrame w (Frames.initialRefs i)).symm
+          (phaseRead owner x (finProdFinEquiv (b,j)) i)
+        let dst := 111+k.2.val
+        readAt blank L R ((FlatCoordinateLayout.index (AffineFieldCoordinates.embed s)
+          (finProdFinEquiv (b,j))).val-(D*K) : ℤ) = SparseRoleCircuit.encode
+          (selectedFrame w (Frames.finalRefs dst) (initial dst + initial k.2.val) s)
+    ∃ z F steps, Exec (fun g => embProg inner id (body g)) code (mk u S) steps (mk z F) ∧
+      steps ≤ time + (stageScanCost order.length K N D) ∧ z.user = u.user ∧
+      ∀ k, result k (F.L (bank k 1)) (F.R (bank k 1)) := by
+  intro I order
+  obtain ⟨states,chooseScan⟩ := stageTargets_host n
+  refine ⟨states,?_⟩
+  intro T Q P U fan fits inner placedFan bank reg body stage
+  let outer := fun g => embProg inner id (body g)
+  let src := fun i : Fin 3 => reg (i.castAdd 7)
+  let scratch := fun i : Fin 5 => reg (i.natAdd 5)
+  have regOutside (i : Fin 10) (j : Fin T) : inner j ≠ reg i := by
+    intro eq
+    have h := congrArg Fin.val eq
+    change j.val = T+i.val at h
+    omega
+  have away (i : Fin 10) (k : I) (j : Fin 8) : reg i ≠ bank k j := by
+    refine Fin.cases ?_ (fun b => ?_) j
+    · exact (regOutside i _).symm
+    · intro eq
+      have h := congrArg Fin.val eq
+      change T+i.val = T+10+_ at h
+      omega
+  have regs : [src 2,src 0,reg 3,scratch 0,scratch 1,scratch 2,scratch 3,scratch 4].Nodup :=
+    ((by decide : ([2,0,3,5,6,7,8,9] : List (Fin 10)).Nodup).map reg.injective)
+  obtain ⟨scan,run⟩ := chooseScan placedFan fits (reg 3) (reg 4) (reg.injective.ne (by decide))
+    (fun k i => ⟨away 3 k i,away 4 k i⟩) src (fun k i => away _ k) scratch regs
+    (fun i => reg.injective.ne (by fin_cases i <;> decide)) outer
+  refine ⟨.seq (embProg inner id stage) scan,?_⟩
+  intro w B W label x K N D pos hb u S v A time y out exec user live trace restore words free empty result
+  obtain ⟨v',A',placed,_,same,view,off⟩ := exec_emb (ι := id) (body' := outer) inner.injective
+    (fun _ => rfl) exec u rfl S rfl
+  have keep (i) := off _ (regOutside i)
+  have live' : HelperFan (placedFan.trans (Fin.castAddEmb (142081*7))) out A' := by
+    rw [← view] at live
+    exact live
+  have headers (i : Fin 3) := (keep (i.castAdd 7)).2.trans (words i).2
+  obtain ⟨z,F,t,scanned,paid,saved,done,_⟩ := run w B W label x y out trace restore pos hb v' A'
+    live' (headers 2) (headers 0) ((keep 3).2.trans (free 0))
+    (fun i => (keep _).2.trans (by fin_cases i <;> first | exact free 2 | exact free 3 | exact free 4 | exact free 5 | exact free 6)) ((keep 4).2.trans (free 1))
+    (fun i z => by
+      change readAt blank (A'.L (reg _)) (A'.R (reg _)) _ = _
+      rw [(keep _).1,(words i).1,headers i,← Cover.Fallback.canonicalBits_symbols,encodedBinary_eq,readAt_single])
+    (fun k j => by
+      have untouched := off (bank k j.succ) (fun a eq => by
+        have h := congrArg Fin.val eq
+        change a.val = T+10+_ at h
+        omega)
+      exact ⟨untouched.1.trans (empty k j).1,untouched.2.trans (empty k j).2⟩)
+  exact ⟨z,F,_,Exec.seq placed scanned,Nat.add_le_add_left paid time,saved.trans (same.trans user),done⟩
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
