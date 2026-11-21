@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.M6.BitOrdinaryDirectoryWidth
+public import IntegerMultBounds.MathlibTM2.M6.BitOrdinaryDirectoryLeaf
 public import IntegerMultBounds.MathlibTM2.M6.BitOrdinaryGeneratedScan
 public import IntegerMultBounds.MathlibTM2.M6.BitRemainderOrdinaryOwner
 
