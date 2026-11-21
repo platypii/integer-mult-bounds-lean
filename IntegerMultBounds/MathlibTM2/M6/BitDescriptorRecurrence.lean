@@ -300,6 +300,14 @@ theorem five_descriptor_closed {Node : Type*} (q : ℕ) (layout : Node → Descr
     simpa only [contribution, Nat.cast_sum] using hcost x hx
 
 
+/-- The recurrence observes the active width, the rows available for later
+splits, and the total volume. Spectators may be regrouped between calls. -/
+structure ScheduledChildShape (q : ℕ) (parent : Descriptor) (i : Fin nodeChildren5.length)
+    (physical : Descriptor) : Prop where
+  width : physical.width = (scheduledChild q parent i).width
+  rows : physical.rows = (scheduledChild q parent i).rows
+  volume : volume q physical = volume q (scheduledChild q parent i)
+
 /-- At a single root, only executed child layouts need to be identified.
 Alignment and positive volume propagate to every recursive call. -/
 theorem five_root_closed {Node : Type*} (q : ℕ) (layout : Node → Descriptor)
@@ -316,7 +324,7 @@ theorem five_root_closed {Node : Type*} (q : ℕ) (layout : Node → Descriptor)
       0 < volume q (layout (child x i)) → (layout (child x i)).width ≤ u →
       (steps (child x i) : ℝ) ≤ (C₀ * (layout (child x i)).width) * volume q (layout (child x i)))
     (physical : ∀ x, u < (layout x).width → 0 < volume q (layout x) →
-      64 ∣ (layout x).width → 142080 ∣ (layout x).rows → ∀ i, layout (child x i) = scheduledChild q (layout x) i)
+      64 ∣ (layout x).width → 142080 ∣ (layout x).rows → ∀ i, ScheduledChildShape q (layout x) i (layout (child x i)))
     (hcost : ∀ x, u < (layout x).width → 0 < volume q (layout x) →
       64 ∣ (layout x).width → 142080 ∣ (layout x).rows →
       (steps x : ℝ) ≤ C₁ * ((K * (layout x).width) ^ τ + 1) * volume q (layout x) +
@@ -326,35 +334,37 @@ theorem five_root_closed {Node : Type*} (q : ℕ) (layout : Node → Descriptor)
       C₀ * ((layout root).width : ℝ) ^ (1 - bitSaving) * (u : ℝ) ^ (1 - (1 - bitSaving))) * volume q (layout root) := by
   let Nodes := {x : Node // 0 < volume q (layout x) ∧
     ((layout x).width ≤ u → (steps x : ℝ) ≤ (C₀ * (layout x).width) * volume q (layout x)) ∧ ∃ path : List (Fin nodeChildren5.length),
-    path.foldl (scheduledChild q) (layout root) = layout x}
+    (path.foldl (scheduledChild q) (layout root)).width = (layout x).width ∧
+    (path.foldl (scheduledChild q) (layout root)).rows = (layout x).rows}
   have aligned (x : Nodes) (hx : u < (layout x.val).width) :
       64 ∣ (layout x.val).width ∧ 142080 ∣ (layout x.val).rows := by
-    obtain ⟨path,h⟩ := x.property.2.2
-    rw [← h] at hx ⊢
+    obtain ⟨path,hw,hr⟩ := x.property.2.2
+    rw [← hw] at hx
+    rw [← hw,← hr]
     exact scheduledPath_internal_alignment q _ depth u width rows stop path hx
   let descend (x : Nodes) (i : Fin nodeChildren5.length) : Nodes :=
     if hx : u < (layout x.val).width then ⟨child x.val i, by
-      obtain ⟨⟨b,hb⟩,hr⟩ := aligned x hx
-      have desc := physical _ hx x.property.1 ⟨b,hb⟩ hr i
+      obtain ⟨hw,hr⟩ := aligned x hx
+      have desc := physical _ hx x.property.1 hw hr i
+      have share := (scheduledChild_measures q _ hw hr i).2
       have pos : 0 < volume q (layout (child x.val i)) := by
-        rw [desc]
-        have vol := (rankDescriptor_role_size (M := q) _ 142080 64 b hb
-          ((nodeChildren5_le i).trans (by decide : 42 ≤ 64)) hr).2
-        simp only [scheduledChild,hb,Nat.mul_div_cancel_left _ (by decide : 0 < 64)]
-        exact Nat.pos_of_mul_pos_right (vol.symm ▸ x.property.1)
-      obtain ⟨path,h⟩ := x.property.2.2
-      exact ⟨pos,childLeaf _ hx x.property.1 ⟨b,hb⟩ hr i pos,
-        path ++ [i],by simp [List.foldl_append,h,desc]⟩⟩ else x
+        rw [desc.volume]
+        exact Nat.pos_of_mul_pos_right (share.symm ▸ x.property.1)
+      obtain ⟨path,widthEq,rowsEq⟩ := x.property.2.2
+      refine ⟨pos,childLeaf _ hx x.property.1 hw hr i pos,path ++ [i],?_,?_⟩
+      · simpa only [List.foldl_append,List.foldl_cons,List.foldl_nil,desc.width,scheduledChild,rankDescriptor,widthEq]
+      · simpa only [List.foldl_append,List.foldl_cons,List.foldl_nil,desc.rows,scheduledChild,rankDescriptor,role,rowsEq]⟩ else x
   have next (x : Nodes) (hx : u < (layout x.val).width) (i) :
       (descend x i).val = child x.val i := by simp [descend,hx]
   exact five_descriptor_closed q (fun x : Nodes => layout x.val) descend (fun x => steps x.val) u
     hτ hτl hlam hK hC₀ hC₁ hu (fun x => x.property.1) (fun x => x.property.2.1)
     (fun x hx i => by
       obtain ⟨width,rows⟩ := aligned x hx
-      rw [next x hx, physical _ hx x.property.1 width rows]
+      have desc := physical _ hx x.property.1 width rows i
+      rw [next x hx,desc.width,desc.volume]
       exact scheduledChild_measures q _ width rows i)
     (fun x hx => by simpa only [next x hx] using hcost x.val hx x.property.1 (aligned x hx).1 (aligned x hx).2)
-    ⟨root,positive,rootLeaf,[],rfl⟩
+    ⟨root,positive,rootLeaf,[],rfl,rfl⟩
 
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode

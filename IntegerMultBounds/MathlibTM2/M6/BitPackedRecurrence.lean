@@ -141,7 +141,7 @@ theorem five_packed_root_closed [M8.Machine.Net] {Node : Type*} (layout : Node �
         (prime^((layout x).width/64-1+1)).size + packedCoordinatesTime nodeChildren5[i.val] (volume prime (layout (child x i)))
         ((layout x).width/64-1) tapes push entryTapes returnTapes + recordRoundTripRate 64*volume prime (layout (child x i)))
     (physical : ∀ x, u < (layout x).width → 0 < volume prime (layout x) →
-      64 ∣ (layout x).width → 142080 ∣ (layout x).rows → ∀ i, layout (child x i) = scheduledChild prime (layout x) i)
+      64 ∣ (layout x).width → 142080 ∣ (layout x).rows → ∀ i, ScheduledChildShape prime (layout x) i (layout (child x i)))
     (hcost : ∀ x, u < (layout x).width → 0 < volume prime (layout x) →
       64 ∣ (layout x).width → 142080 ∣ (layout x).rows →
       (steps x : ℝ) ≤ C₁ * ((K * (layout x).width) ^ τ + 1) * volume prime (layout x) +
@@ -163,7 +163,7 @@ theorem five_packed_root_closed [M8.Machine.Net] {Node : Type*} (layout : Node �
       Nat.div_pos (Nat.le_of_dvd (Nat.zero_lt_of_lt large) div) (by decide)
     apply goodCoordinates_steps_linear _ (M8.RevMachine.LeafCore.positive_of_volume childPos)
       64 _ 42 _ _ _ _ _ (recordRoundTripRate 64) _ (scheduledRank_pos i) (nodeChildren5_le i) _ (childLeaf x large pos div rows i small)
-    rw [physical x large pos div rows i]
+    rw [(physical x large pos div rows i).width]
     change _ * _ = _ * _
     congr 1
     omega
