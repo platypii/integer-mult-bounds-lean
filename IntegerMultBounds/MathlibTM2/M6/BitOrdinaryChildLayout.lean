@@ -532,6 +532,38 @@ theorem ordinaryIncomingPack_exec [M8.Machine.Net] {P U : Type} {T r g w W : ℕ
   intro z
   simpa only [word,ordinarySourceWord,sub_zero,Function.comp_def] using stored.src z
 
+/-- Undo the recursive coordinate order on one returned row, preserving the
+record fields required by the outgoing correction. -/
+theorem ordinaryOutgoingUnpack_exec [M8.Machine.Net] {P U : Type} {T r g w W : ℕ}
+    (ports : Fin (N+35) ↪ Fin T) (body : P → Pr P T columnCapacity prime U)
+    (v : HS T columnCapacity prime U) (S : Stacks T prime)
+    (record : List (Fin (prime+4))) (dest : ℤ → Fin 4) (q : ℤ) (hW : 0 < W)
+    (after : Fin ((prime^(w+1))^((r+g)+(r+g))*W) → ZMod 2) :
+    let d := (r+g)+(r+g)
+    let M := prime^(w+1)
+    let is := ordinaryChildPackSchedule r g
+    let bank := ((Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)).trans ports
+    let ready := RecordReady (b := prime) (w := w) (W := W) (d := d) bank M.size W.size record
+      SparseRoleCircuit.encode (fun _ => blank) dest 0 q
+    let clean := fun D : Stacks T prime => ∀ k : Fin (N+35), 35 ≤ k.val → D.L (ports k) = [] ∧ D.R (ports k) = []
+    ready (fun k => after (ordinaryRecursivePosition r g w W (k.cast (ordinaryChildVolume ..).symm))) S →
+    clean S → ∃ u D n, u.user = v.user ∧
+      n ≤ 1+((is.map (fun i => completeSwapTime (P := Empty) (U := U) Empty.elim d i (i+1) w W M.size W.size)).sum+1) ∧
+      Exec body (statePlacedNormalized ports swapStates_fit swapStates_pos Empty.elim (packSchedule d is.reverse))
+        (mk v S) n (mk u D) ∧ ready after D ∧ clean D ∧
+      ∀ j, (∀ i, ports i ≠ j) → D.L j = S.L j ∧ D.R j = S.R j := by
+  intro d M is bank ready clean stored free
+  obtain ⟨u,D,n,user,time,run,⟨word,done,placed⟩,clear,frame⟩ := placedPackSchedule_exec ports is.reverse
+    (fun _ hi => ordinaryChildPackSchedule_inside (List.mem_reverse.mp hi)) body v S record dest q hW after _
+    ((ordinaryPackedWord_iff ..).2 stored) free
+  simp only [is,reverse_adjacentFields] at placed
+  have eq : word = after := by
+    funext k
+    obtain ⟨⟨digits,j⟩,rfl⟩ := finProdFinEquiv.surjective k
+    obtain ⟨x,rfl⟩ := (rankEquiv : (Fin d → ZMod M) ≃ _).surjective digits
+    exact placed x j
+  exact ⟨u,D,n,user,by simpa only [List.map_reverse,List.sum_reverse] using time,run,eq ▸ done,clear,frame⟩
+
 /-- Surround a transpose on the contiguous recursive word with the two tape
 routes. The return read is in the original parent's weighted-child layout. -/
 theorem ordinaryChildRoute_exec [M8.Machine.Net] {P U : Type} {T : ℕ}
@@ -569,7 +601,6 @@ theorem ordinaryChildRoute_exec [M8.Machine.Net] {P U : Type} {T : ℕ}
   obtain ⟨before,layout,reads⟩ := start
   let after := ordinaryChildOutput (r := r) (g := g) (w := w) before
   have cells := (ordinaryChildOutput_eq_iff (r := r) (g := g) (w := w) before after).1 rfl
-  have fits : ∀ i ∈ is, i+1 < d := fun _ => ordinaryChildPackSchedule_inside
   obtain ⟨u,D,n,hu,hn,pack,stored,payload,clear,kept⟩ := ordinaryIncomingPack_exec
     (r := r) (g := g) ports body v S record dest q hW before layout free
   have smaller : desc.width < (r+g)*(w+1) := by
@@ -583,16 +614,13 @@ theorem ordinaryChildRoute_exec [M8.Machine.Net] {P U : Type} {T : ℕ}
     apply stored.returnPayload keep
     intro z
     simpa only [bank,desc,ordinarySourceWord,sub_zero,Function.comp_def] using (returned z).symm
-  obtain ⟨z,F,m,hz,hm,unpack,⟨word,done,placed⟩,empty,frame⟩ := placedPackSchedule_exec ports is.reverse
-    (fun i hi => fits i (List.mem_reverse.mp hi)) body y G record dest q hW after _ changed available
-  simp only [reverse_adjacentFields] at placed
-  simp only [List.map_reverse,List.sum_reverse] at hm
-  refine ⟨z,F,n+(k+2+m),hz.trans (hy.trans hu),?_,.seq pack (.seq (.call run) unpack),⟨word,done,?_⟩,empty,?_,?_⟩
+  obtain ⟨z,F,m,hz,hm,unpack,done,empty,frame⟩ := ordinaryOutgoingUnpack_exec ports body y G record dest q hW after
+    ((ordinaryPackedWord_iff ..).1 changed) available
+  refine ⟨z,F,n+(k+2+m),hz.trans (hy.trans hu),?_,.seq pack (.seq (.call run) unpack),⟨after,done,?_⟩,empty,?_,?_⟩
   · change n ≤ 1+routeTime at hn
     change m ≤ 1+routeTime at hm
     omega
   · intro x j
-    apply (placed _ j).trans
     apply Eq.trans _ (reads x j)
     apply goodChild_effect (fun _ => 1) (fun _ => 1) before after
     intro hg tg s j
