@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Host.EmbedUpdate
+public import IntegerMultBounds.MathlibTM2.M6.BitDirectoryRoleSplit
 public import IntegerMultBounds.MathlibTM2.M6.BitRemainderHeaders
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackIdentitySeed
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackGeneratedSignedPass
@@ -76,6 +77,58 @@ theorem remainderDirectoryCount (v : Descriptor) (w rows B : ℕ)
     LabelMask.records (role v 142080) = (v.beforeRows*rows*B)*(prime^(w+1))^(64*64) := by
   simp only [LabelMask.records,role,split,Nat.mul_div_cancel_left _ (by decide : 0 < 142080),shape,← pow_mul]
   ring
+
+/-- Generate the next scanner archive from the per-record words of one
+physical role. Its cost uses the same scaled volume as the parent builder. -/
+theorem replayDirectory_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
+    (r : Fin 15 ↪ Fin T) (atom : Fin T) (apart : ∀ i, atom ≠ r i)
+    (v : Descriptor) (positive : v.Positive) (a blocks : ℕ) (active : 0 < a)
+    (width : v.width = 64*a) (shape : v.beforeH = blocks*prime^(64*v.width))
+    (j : Fin 142080) (archive : ℕ → List (Fin (prime+4))) (tail : List (Fin (prime+4))) (u : HS T Q prime U) (S : Stacks T prime)
+    (precision : (S.R atom).length = a) (count : (S.R (r 12)).length = LabelMask.records v)
+    (fresh : ∀ i ∈ ([2,3,5,6,10,11] : List (Fin 15)), S.R (r i) = [])
+    (widths : ∀ k < v.beforeRows*v.rows*142080*v.beforeH, (archive k).length = (S.R (r 1)).length)
+    (fits : (S.R (r 1)).length ≤ prime^v.width) :
+    let prefixes := fun k => archive (directoryRoleRecord v.beforeH j k)
+    let L := a*(64*64)
+    let R := Function.update (Function.update S.R (r 11) (List.replicate L tick))
+      (r 10) ((RadixCounterData.zeros Networks.Shared50ModularControl.prime_prime.two_le L).map RadixDigits.digitSymbol)
+    S.R (r 0) = (List.range (LabelMask.records v)).flatMap prefixes ++ tail →
+    ∃ z n, z.user = u.user ∧ prime^v.width*n ≤ 1022*volume prime v ∧
+      Exec body ((umul (64*64) atom (r 11) (r 2)).seq
+        ((umulSym (64*64) (RadixDigits.digitSymbol (RadixCounterData.zeroDigit Networks.Shared50ModularControl.prime_prime.two_le)) atom (r 10) (r 2)).seq (LabelDirectoryBuild.replay r)))
+        (mk u S) n (mk z {S with R := Function.update (Function.update R (r 0) tail) (r 14) ((List.range (LabelMask.records v)).flatMap (LabelDirectory.entry prefixes 64 a) ++ S.R (r 14))}) := by
+  intro prefixes L R source
+  have roleWidths (k : ℕ) (hk : k < LabelMask.records v) : (prefixes k).length = (S.R (r 1)).length :=
+    widths _ (directoryRoleRecord_lt (groups := v.beforeRows*v.rows) j hk)
+  have records : LabelMask.records v = (v.beforeRows*v.rows*blocks)*(prime^a)^(64*64) := by
+    simp only [LabelMask.records,shape,width,← pow_mul]
+    ring_nf
+  have run := LabelDirectorySetup.replay_from_count (body := body) 64 (v.beforeRows*v.rows*blocks) r atom apart u S prefixes tail fresh
+  simp only [precision,count] at run
+  obtain ⟨z,n,user,paid,exec⟩ := run (by omega) records source roleWidths
+  refine ⟨z,n,user,?_,exec⟩
+  let scale := prime^v.width
+  let N := LabelMask.records v
+  have hr : 1 ≤ N := Nat.mul_pos (Nat.mul_pos positive.1 positive.2.1) positive.2.2.1
+  have hs : 1 ≤ scale := pow_pos Networks.Shared50ModularControl.prime_prime.pos _
+  have hw : v.width ≤ scale := (Nat.lt_pow_self (n := v.width) Networks.Shared50ModularControl.prime_prime.one_lt).le
+  have perRecord : 6*(S.R (r 1)).length+15*(a*(64*64))+28 ≤ 994*scale := by
+    change _ ≤ scale at fits
+    omega
+  have overhead : 8*a+20 ≤ 28*(N*scale) := by
+    have := Nat.le_mul_of_pos_left scale hr
+    omega
+  have budget : n ≤ 1022*(N*scale) := by
+    have := Nat.mul_le_mul_left N perRecord
+    change n ≤ 8*a+N*_+20 at paid
+    nlinarith
+  calc
+    _ ≤ scale*(1022*(N*scale)) := Nat.mul_le_mul_left _ budget
+    _ = 1022*(N*scale*1*scale*1) := by ring
+    _ ≤ _ := by
+      change _ ≤ 1022*(N*scale*v.between*scale*v.afterD)
+      gcongr <;> first | exact positive.2.2.2.1 | exact positive.2.2.2.2
 
 private theorem buildCounted {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
     (r : Fin 15 ↪ Fin T) (atom one : Fin T) (atomOff : ∀ i, atom ≠ r i) (oneOff : ∀ i, one ≠ r i)

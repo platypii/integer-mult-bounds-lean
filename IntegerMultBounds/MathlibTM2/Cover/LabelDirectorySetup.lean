@@ -54,6 +54,48 @@ theorem setup_exec (m : ℕ) (r : Fin 15 ↪ Fin T) (atom one : Fin T)
   rw [len] at run hn
   exact ⟨u'',_,hu''.trans (hu'.trans hu),by dsimp [w]; omega,Exec.seq he (Exec.seq he' run)⟩
 
+/-- Start a per-record replay directly from the unary precision and record
+count. Only the label width and zero seed occupy new workspace. -/
+theorem replay_from_count (m boxesCount : ℕ) (r : Fin 15 ↪ Fin T) (atom : Fin T) (ha : ∀ i, atom ≠ r i)
+    (v : HS T Q prime U) (S : Stacks T prime) (prefixes : ℕ → List (Fin (prime+4)))
+    (tail : List (Fin (prime+4))) (fresh : ∀ i ∈ ([2,3,5,6,10,11] : List (Fin 15)), S.R (r i) = []) :
+    let w := (S.R atom).length
+    let L := w*(m*m)
+    let N := (S.R (r 12)).length
+    let W := (S.R (r 1)).length
+    let R := Function.update (Function.update S.R (r 11) (List.replicate L tick))
+      (r 10) ((zeros prime_prime.two_le L).map digitSymbol)
+    0 < L → N = boxesCount*(prime^w)^(m*m) →
+    S.R (r 0) = (List.range N).flatMap prefixes ++ tail → (∀ j < N, (prefixes j).length = W) →
+    ∃ z n, z.user = v.user ∧ n ≤ 8*w+N*(6*W+15*L+28)+20 ∧
+      Exec body ((umul (m*m) atom (r 11) (r 2)).seq
+        ((umulSym (m*m) (digitSymbol (zeroDigit prime_prime.two_le)) atom (r 10) (r 2)).seq (LabelDirectoryBuild.replay r)))
+        (mk v S) n (mk z {S with R := Function.update (Function.update R (r 0) tail) (r 14) ((List.range N).flatMap (LabelDirectory.entry prefixes m w) ++ S.R (r 14))}) := by
+  intro w L N W R positive count source widths
+  obtain ⟨u,user,clock⟩ := umul_exec body (m*m) (ha 11) (ha 2) (by simp) v S (fresh 2 (by decide))
+  have mul : m*m*(S.R atom).length = L := Nat.mul_comm _ _
+  rw [mul,fresh 11 (by decide),List.append_nil] at clock
+  let M : Stacks T prime := {S with R := Function.update S.R (r 11) (List.replicate L tick)}
+  obtain ⟨y,same,seed⟩ := umulSym_exec body (m*m) (digitSymbol (zeroDigit prime_prime.two_le))
+    (ha 10) (ha 2) (by simp) u M (by simp [M,fresh 2 (by decide)])
+  have atomWidth : M.R atom = S.R atom := by simp [M,ha]
+  have empty : M.R (r 10) = [] := by simp [M,fresh 10 (by decide)]
+  rw [atomWidth,mul,empty,List.append_nil] at seed
+  let D : Stacks T prime := {S with R := R}
+  obtain ⟨z,k,last,paid,run⟩ := LabelDirectoryBuild.replay_exec (body := body) r m w boxesCount prefixes tail y D
+    positive (by simpa [D,R,N] using count) (by simpa [D,R,N] using source)
+    (by simpa [D,R,N,W] using widths) (by simp [D,R,L]) (by simp [D,R,L]) (by
+      intro i hi
+      simp only [List.mem_cons,List.not_mem_nil,or_false] at hi
+      rcases hi with rfl | rfl | rfl | rfl <;> simp [D,R,fresh])
+  have digits : List.replicate L (digitSymbol (zeroDigit prime_prime.two_le)) =
+      (zeros prime_prime.two_le L).map digitSymbol := by simp [zeros]
+  rw [digits] at seed
+  refine ⟨z,4*w+4+(4*w+4+k),last.trans (same.trans user),?_,?_⟩
+  · have bound : k ≤ N*(6*W+15*L+28)+12 := by simpa [D,R,N,W,L] using paid
+    omega
+  · simpa [D,R,N,M] using Exec.seq clock (Exec.seq seed run)
+
 /-- Initialize the directory builder from unary widths and a child count. -/
 theorem build_from_count (m : ℕ) (r : Fin 15 ↪ Fin T) (atom one : Fin T)
     (ha : ∀ i, atom ≠ r i) (ho : ∀ i, one ≠ r i) (v : HS T Q prime U) (S : Stacks T prime)

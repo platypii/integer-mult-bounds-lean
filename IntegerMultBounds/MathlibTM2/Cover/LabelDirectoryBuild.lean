@@ -82,6 +82,55 @@ theorem build_exec (r : Fin 15 ↪ Fin T) (m w : ℕ) (word : ℕ → List (Fin 
   simpa [program,M,joinSlots,N,B,Function.update_comm (show r 8 ≠ r 0 by simp),
     Function.update_idem,restore] using run'
 
+/-- A replay stream already carries one inherited word per physical record.
+Advance the child label counter alongside that stream and append its digits
+to each record, retaining the caller's source and output suffixes. -/
+def replay (r : Fin 15 ↪ Fin T) : Pr P T Q prime U :=
+  (LabelDirectoryLoop.write prime_prime.two_le (gen.trans r) (r 8)).seq
+    (LabelDirectoryJoin.program (joinSlots.trans r) (r 14))
+
+theorem replay_exec (r : Fin 15 ↪ Fin T) (m w boxesCount : ℕ) (prefixes : ℕ → List (Fin (prime+4)))
+    (tail : List (Fin (prime+4))) (v : HS T Q prime U) (S : Stacks T prime) :
+    let N := (S.R (r 12)).length
+    let L := w*(m*m)
+    let W := (S.R (r 1)).length
+    0 < L → N = boxesCount*(prime^w)^(m*m) →
+    S.R (r 0) = (List.range N).flatMap prefixes ++ tail → (∀ j < N, (prefixes j).length = W) →
+    S.R (r 10) = (zeros prime_prime.two_le L).map digitSymbol → (S.R (r 11)).length = L →
+    (∀ i ∈ ([2,3,5,6] : List (Fin 15)), S.R (r i) = []) →
+    ∃ u n, u.user = v.user ∧ n ≤ N*(6*W+15*L+28)+12 ∧
+      Exec body (replay r) (mk v S) n (mk u {S with R := Function.update (Function.update S.R (r 0) tail) (r 14) ((List.range N).flatMap (LabelDirectory.entry prefixes m w) ++ S.R (r 14))}) := by
+  intro N L W positive count source widths seed clock fresh
+  let xs := zeros prime_prime.two_le L
+  have cycle : advance prime_prime.two_le N xs = xs := by
+    rw [count]
+    simpa only [xs, L, pow_mul] using boxes prime_prime.two_le boxesCount L
+  obtain ⟨z,k,user,paid,write⟩ := LabelDirectoryLoop.write_exec (body := body) prime_prime.two_le
+    (gen.trans r) (r 8) (fun i => r.injective.ne (show 8 ≠ gen i by revert i; decide)) xs
+    (by simpa [xs] using positive) v S seed (by simpa [xs,gen] using clock)
+    (by intro i hi; fin_cases i <;> simp_all [gen])
+  change Exec _ _ _ _ (mk z {S with R := Function.update (Function.update S.R (r 10)
+    ((advance prime_prime.two_le N xs).map digitSymbol)) (r 8) (LabelDirectoryLoop.words prime_prime.two_le xs N ++ S.R (r 8))}) at write
+  rw [cycle, ← seed, Function.update_eq_self] at write
+  let D : Stacks T prime := {S with R := Function.update S.R (r 8) (LabelDirectoryLoop.words prime_prime.two_le xs N ++ S.R (r 8))}
+  obtain ⟨u,t,same,price,join⟩ := LabelDirectoryJoin.directory_exec (body := body) (joinSlots.trans r)
+    (r 14) (fun i => r.injective.ne (show 14 ≠ joinSlots i by revert i; decide)) m w prefixes z D tail (S.R (r 8))
+    (by simpa [D,joinSlots,N] using source) (by simp [D,joinSlots,N,xs,L])
+    (by simpa [D,joinSlots,N,W] using widths) (by simpa [D,joinSlots,L] using clock)
+    (by intro i hi; fin_cases i <;> simp_all [D,joinSlots])
+  refine ⟨u,k+t,same.trans user,?_,?_⟩
+  · change k ≤ N*(9*xs.length+15)+6 at paid
+    simp only [xs,zeros_length] at paid
+    change t ≤ _ at price
+    simp [D,joinSlots] at price
+    dsimp only [W,N,L]
+    dsimp only [W,N,L] at paid
+    nlinarith
+  · have restore : Function.update (Function.update S.R (r 0) tail) (r 8) (S.R (r 8)) = Function.update S.R (r 0) tail := by
+      apply Function.update_eq_self_iff.mpr; simp
+    simpa [replay,D,joinSlots,N,Function.update_comm (show r 8 ≠ r 0 by simp),
+      Function.update_idem,restore] using Exec.seq write join
+
 /-- Build the child directory and partition it by the mask retained from the payload split. -/
 theorem split_exec (r : Fin 15 ↪ Fin T) (d : Fin 8 ↪ Fin T) (src : d 0 = r 14)
     (apart : ∀ i, d i ≠ r 0) (m w : ℕ) (branch : Matrix (Fin m) (Fin m) (ZMod prime) → Bool) (word : ℕ → List (Fin (prime+4)))
