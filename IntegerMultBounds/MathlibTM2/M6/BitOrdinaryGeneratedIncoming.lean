@@ -167,8 +167,8 @@ theorem generatedIncomingRow_exec [M8.Machine.Net] {P U : Type} {r g w W common 
     (by rw [List.append_nil]; exact pair) count (by rw [List.append_nil]; exact pivots.trans (pivotWords_cast G hr minor rank H))
     one clock scratch (fun i => extra _ (by change 124 ≤ 124+_; omega))
   have publicKeep (k : Fin 64) (lo : 29 ≤ k.val) (hi : k.val < 58) (off : ∀ i, correctionCallerSlots i ≠ k) :=
-    (ordinaryPacking_publicFrame room A D (fun i h off => (kept i h off).2)
-      (fun i h off => (outside i h off).2) k lo hi off).trans (publicFrame _ (lt_trans hi (by decide : 58 < 66)))
+    (ordinaryPacking_publicFrame room A D (kept 48 (by decide) (by decide)).2
+      (fun i h off => (outside i h (fun k => off (columnPorts k))).2) k lo hi off).trans (publicFrame _ (lt_trans hi (by decide : 58 < 66)))
   obtain ⟨z,F,l,hz,price,done,next,result,frame⟩ := ordinaryDirectoryAdvance_exec body prog u y S D (n+t) c
     (before ∘ ordinaryRecursivePosition r g w W) (hu.trans user) (Exec.seq prepare run) push calls start skip
     ⟨headers.modulus,headers.width,headers.one,headers.padded,headers.clock⟩ publicKeep read

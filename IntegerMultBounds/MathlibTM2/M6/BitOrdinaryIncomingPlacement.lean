@@ -41,15 +41,15 @@ theorem ordinaryPacking_publicFrame [M8.Machine.Net] {K : ℕ} (room : 58+(rowSw
     (S D : Stacks (66+K) prime) :
     let bank := ordinaryPackingBank (by omega : 58 ≤ K)
     let work := ordinaryPackingWork room
-    let ports := columnPorts.trans (correctionColumnPlacement bank work (ordinaryPackingWork_apart room))
-    (∀ j : Fin 64, 29 ≤ j.val → (∀ k, correctionCallerSlots k ≠ j) → D.R (bank j) = S.R (bank j)) →
+    let ports := correctionColumnPlacement bank work (ordinaryPackingWork_apart room)
+    D.R (bank 48) = S.R (bank 48) →
     (∀ j, (∀ i, bank i ≠ j) → (∀ i, ports i ≠ j) → D.R j = S.R j) →
     ∀ j : Fin 64, 29 ≤ j.val → j.val < 58 → (∀ k, correctionCallerSlots k ≠ j) →
       D.R (j.castLE (by omega)) = S.R (j.castLE (by omega)) := by
   intro bank work ports kept outside j lo hi off
   by_cases weight : j = 55
   · subst j
-    exact kept 48 (by decide) (by decide)
+    exact kept
   have disjoint : ∀ i, bank i ≠ j.castLE (by omega) := by
     intro i eq
     have val := congrArg Fin.val eq
@@ -58,14 +58,14 @@ theorem ordinaryPacking_publicFrame [M8.Machine.Net] {K : ℕ} (room : 58+(rowSw
       (∀ k, correctionCallerSlots k ≠ j) → (ordinaryPackingSlot i).val ≠ j.val) i j lo hi weight off val
   apply outside _ disjoint
   intro i
-  change sharedRegisterPlacement work (correctionCallerSlots.trans bank) correctionRole (columnPorts i) ≠ _
-  cases h : correctionRole (columnPorts i) with
+  change sharedRegisterPlacement work (correctionCallerSlots.trans bank) correctionRole i ≠ _
+  cases h : correctionRole i with
   | some k => simpa only [sharedRegisterPlacement,h,Function.Embedding.trans_apply] using disjoint (correctionCallerSlots k)
   | none =>
     simp only [sharedRegisterPlacement,h]
     intro eq
     have val := congrArg Fin.val eq
-    change 124+(columnPorts i).val = j.val at val
+    change 124+i.val = j.val at val
     omega
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
