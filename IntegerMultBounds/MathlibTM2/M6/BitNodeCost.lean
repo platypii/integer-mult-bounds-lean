@@ -141,12 +141,14 @@ theorem five_moment_le_one :
   have hd : 0 ≤ surcharge bitHistogram 64 (1 - bitSaving) / 28416 := by positivity
   linarith
 
-theorem nodeChildren5_le (i : Fin nodeChildren5.length) : nodeChildren5[i.1] ≤ 42 := by
+theorem nodeChildren5_bounds (i : Fin nodeChildren5.length) : 0 < nodeChildren5[i.1] ∧ nodeChildren5[i.1] ≤ 42 := by
   have hmem : nodeChildren5[i.1] ∈ nodeChildren5 := List.getElem_mem i.2
   have hperm := nodeChildren5_realizes.mem_iff.1 hmem
   simp only [expand, fiveHistogram, bitHistogram, List.map_cons, List.map_nil, List.flatMap_cons,
     List.flatMap_nil, List.mem_append, List.mem_replicate, List.not_mem_nil, or_false] at hperm
   omega
+
+theorem nodeChildren5_le (i : Fin nodeChildren5.length) : nodeChildren5[i.1] ≤ 42 := (nodeChildren5_bounds i).2
 
 /-- **The five-class bit recurrence.** A recursion whose internal nodes make one child call per
 occurrence of the five-class node's child list, of size at most `rank/64` of the parent and weight

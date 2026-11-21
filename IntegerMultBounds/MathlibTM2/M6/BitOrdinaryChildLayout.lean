@@ -62,6 +62,46 @@ theorem ordinaryChildPackSchedule_fields {α : Type*} {r g : ℕ}
 noncomputable def ordinaryChildDescriptor (r g w W : ℕ) : Descriptor :=
   ⟨1,1,1,(w+1)*r,(prime^(w+1))^(g+g),W⟩
 
+/-- Flattening the role rows into the spectator suffix changes the descriptor
+but preserves the two rank fields and every spectator symbol. -/
+theorem ordinaryChildSpectators (parent : Descriptor) (r g w : ℕ) :
+    let W := CopyChildLayout.spectators parent
+    let child := rankDescriptor prime (r*(w+1)) (g*(w+1)) parent
+    CopyChildLayout.spectators (ordinaryChildDescriptor r g w W) = CopyChildLayout.spectators child := by
+  simp only [ordinaryChildDescriptor,CopyChildLayout.spectators,rankDescriptor,one_mul,pow_add,
+    Nat.mul_comm g (w+1),pow_mul]
+  ring
+
+noncomputable def ordinaryScheduledLayout (parent : Descriptor) (r g w : ℕ) :
+    let packed := ordinaryChildDescriptor r g w (CopyChildLayout.spectators parent)
+    let child := rankDescriptor prime (r*(w+1)) (g*(w+1)) parent
+    Fin (volume prime packed) ≃ Fin (volume prime child) := by
+  intro packed child
+  let f := CopyChildLayout.changeLayout packed child (Nat.mul_comm ..) (ordinaryChildSpectators parent r g w)
+  exact (CopyChildLayout.flatAddress packed).symm.trans (f.trans (CopyChildLayout.flatAddress child))
+
+theorem ordinaryScheduledTranspose (parent : Descriptor) (r g w : ℕ) :
+    let packed := ordinaryChildDescriptor r g w (CopyChildLayout.spectators parent)
+    let child := rankDescriptor prime (r*(w+1)) (g*(w+1)) parent
+    let e := ordinaryScheduledLayout parent r g w
+    ∀ {α : Type} (word : Fin (volume prime child) → α) i,
+      Shared50RecursiveNodeRows.transpose (one_dvd packed.rows) (word ∘ e) i =
+        Shared50RecursiveNodeRows.transpose (one_dvd child.rows) word (e i) :=
+  by
+    intro packed child e α word i
+    exact transpose_changeLayout packed child (Nat.mul_comm ..) (ordinaryChildSpectators parent r g w) word i
+
+/-- Packing both descriptors with the existing rectangular interchanges
+places corresponding symbols at the same physical offset. -/
+theorem ordinaryScheduledPack_index (parent : Descriptor) (r g w : ℕ) :
+    let packed := ordinaryChildDescriptor r g w (CopyChildLayout.spectators parent)
+    let child := rankDescriptor prime (r*(w+1)) (g*(w+1)) parent
+    let f := CopyChildLayout.changeLayout packed child (Nat.mul_comm ..) (ordinaryChildSpectators parent r g w)
+    ∀ a, (CopyChildLayout.packActive child (RecursiveInterchangeScaling.index (f a))).val =
+      (CopyChildLayout.packActive packed (RecursiveInterchangeScaling.index a)).val := by
+  intro packed child f a
+  exact CopyChildLayout.packActive_change packed child (Nat.mul_comm ..) (ordinaryChildSpectators parent r g w) a
+
 theorem ordinaryAtomWidth (r w : ℕ) : (prime^(w+1))^r = prime^((w+1)*r) := (pow_mul ..).symm
 
 /-- Read a recursive cell in the parent record, splitting the middle field

@@ -353,13 +353,53 @@ def ordinaryCutoffPorts {T : ℕ} (bank : Fin 35 ↪ Fin T) (cut : Fin T)
     · exact cutoffColumnSlots.injective (bank.injective eq)⟩
 
 open Fallback RecursiveInterchangeLayout in
+/-- The role-stream payload passed to an ordinary call is exactly one
+scheduled occurrence's volume. This identifies its charge in parent units. -/
+theorem ordinaryScheduledMeasures (node : Descriptor) (i : Fin nodeChildren5.length) (w : ℕ)
+    (aligned : node.width = 64*(w+1)) (rows : 142080 ∣ node.rows) :
+    let parent := role node 142080
+    let r := nodeChildren5[i.val]
+    let g := 64-r
+    let packed := ordinaryChildDescriptor r g w (CopyChildLayout.spectators parent)
+    let child := scheduledChild prime node i
+    rankDescriptor prime (r*(w+1)) (g*(w+1)) parent = child ∧
+      packed.width = child.width ∧ volume prime packed * 142080 = volume prime node := by
+  intro parent r g packed child
+  have rankLayout : rankDescriptor prime (r*(w+1)) (g*(w+1)) parent = child := by
+    simp only [child,scheduledChild,aligned,Nat.mul_div_cancel_left _ (by decide : 0 < 64)]
+    rfl
+  have size := Fintype.card_congr (ordinaryScheduledLayout parent r g w)
+  simp only [Fintype.card_fin,rankLayout] at size
+  refine ⟨rankLayout,?_,?_⟩
+  · rw [← rankLayout]
+    exact Nat.mul_comm ..
+  · rw [show volume prime packed = volume prime child from size]
+    exact (scheduledChild_measures prime node ⟨w+1,aligned⟩ rows i).2
+
+open Fallback RecursiveInterchangeLayout in
+private theorem ordinaryOccurrenceTranspose (parent : Descriptor) (r g w : ℕ) (child : Descriptor)
+    (eqn : rankDescriptor prime (r*(w+1)) (g*(w+1)) parent = child) :
+    let packed := ordinaryChildDescriptor r g w (CopyChildLayout.spectators parent)
+    let layout := (ordinaryScheduledLayout parent r g w).trans (finCongr (congrArg (volume prime) eqn))
+    ∀ (word : Fin (volume prime child) → ZMod 2) k,
+      Shared50RecursiveNodeRows.transpose (one_dvd packed.rows) (word ∘ layout) k =
+        Shared50RecursiveNodeRows.transpose (one_dvd child.rows) word (layout k) := by
+  subst child
+  exact ordinaryScheduledTranspose parent r g w
+
+open Fallback RecursiveInterchangeLayout in
 /-- Read the predecessor clock and compare the child width with the cutoff. Equality executes the stopped exchange. -/
 theorem ordinaryChildDispatch_exec [M8.Machine.Net] {P U : Type} {T : ℕ}
     (placement : Fin ((rowSwapBlock.tapes+35)+1) ↪ Fin T) (body : P → Pr P T columnCapacity prime U) :
     let ports := columnPorts.trans placement
     let cut := placement (Fin.last _)
     let outside : ∀ i, ports i ≠ cut := fun i => placement.injective.ne (Fin.castSucc_ne_last i)
-    ∃ C : ℕ, ∀ r g, r+g = 64 → 0 < r → 0 < g → ∀ w W, 0 < W →
+    ∃ C : ℕ, ∀ (node : Descriptor) (i : Fin nodeChildren5.length) w (aligned : node.width = 64*(w+1)),
+      let r := nodeChildren5[i.val]
+      let g := 64-r
+      let parent := role node 142080
+      let W := CopyChildLayout.spectators parent
+      0 < W →
       let d := (r+g)+(r+g)
       let M := prime^(w+1)
       let is := ordinaryChildPackSchedule r g
@@ -375,14 +415,20 @@ theorem ordinaryChildDispatch_exec [M8.Machine.Net] {P U : Type} {T : ℕ}
         (f : P) (budget cutoff L : ℕ),
       let saved := fun D : Stacks T prime => ∀ j, (∀ i, ports i ≠ j) → D.L j = S.L j ∧ D.R j = S.R j
       let desc := ordinaryChildDescriptor r g w W
-      let onTape := fun (word : Fin (volume prime desc) → ZMod 2) (D : Stacks T prime) =>
-        ∀ z, readAt blank (D.L (bank 24)) (D.R (bank 24)) z = M8.Machine.ArbitraryWidthHighExchangeShared.sourceWord word z
+      let child := scheduledChild prime node i
+      let same : rankDescriptor prime (r*(w+1)) (g*(w+1)) parent = child := by
+        simp only [child,scheduledChild,aligned,Nat.mul_div_cancel_left _ (by decide : 0 < 64)]
+        rfl
+      let layout := (ordinaryScheduledLayout parent r g w).trans (finCongr (congrArg (volume prime) same))
+      let onTape := fun (word : Fin (volume prime child) → ZMod 2) (D : Stacks T prime) =>
+        ∀ z, readAt blank (D.L (bank 24)) (D.R (bank 24)) z =
+          M8.Machine.ArbitraryWidthHighExchangeShared.sourceWord (v := desc) (word ∘ layout) z
       let columns := ColumnRecordReady bank M.size W.size record SparseRoleCircuit.encode (fun _ => blank) dest 0 q
       cutoff < 2^L → desc.width.size ≤ L →
       S.R cut = binSyms L cutoff →
-      (cutoff < desc.width → desc.width < (r+g)*(w+1) → ∀ word u D, onTape word D → clean D → saved D → D.R cut = binSyms L cutoff → ∃ y G t, y.user = u.user ∧ t ≤ budget ∧
+      (cutoff < desc.width → child.width < node.width → ∀ word u D, onTape word D → clean D → saved D → D.R cut = binSyms L cutoff → ∃ y G t, y.user = u.user ∧ t ≤ budget ∧
         Exec body (body f) (mk u D) t (mk y G) ∧
-        onTape (Shared50RecursiveNodeRows.transpose (one_dvd desc.rows) word) G ∧
+        onTape (Shared50RecursiveNodeRows.transpose (one_dvd child.rows) word) G ∧
         (∀ j : Fin 35, j ≠ 24 → G.L (bank j) = D.L (bank j) ∧ G.R (bank j) = D.R (bank j)) ∧ clean G ∧ saved G) →
       columns original (fun x => Fin.append (input x).1 (input x).2) S → clean S → ∃ z F n, z.user = v.user ∧
         n ≤ 4*w+23*desc.width+22*L+51+(if cutoff < desc.width then budget+2+2*(1+routeTime) else C*(desc.width*(M^d*W))) ∧
@@ -394,8 +440,13 @@ theorem ordinaryChildDispatch_exec [M8.Machine.Net] {P U : Type} {T : ℕ}
   intro ports cut outside
   obtain ⟨C,stopped⟩ := stoppedOrdinaryChild_exec ports body
   refine ⟨C,?_⟩
-  intro r g split rankPos gap w W hW d M is routeTime bank cmp pass clean v S record dest q original input f budget cutoff L
-    saved desc onTape columns cutFits widthFits cutWord recurse start free
+  intro node i w aligned r g parent W hW d M is routeTime bank cmp pass clean v S record dest q original input f budget cutoff L
+    saved desc child eqn layout onTape columns cutFits widthFits cutWord recurse start free
+  have rankPos : 0 < r := (nodeChildren5_bounds i).1
+  have rankBound : r ≤ 42 := nodeChildren5_le i
+  have split : r+g = 64 := by dsimp only [g]; omega
+  have gap : 0 < g := by omega
+  have div : node.width/64 = w+1 := by simp [aligned]
   obtain ⟨u,m,user,flag,testCost,compare⟩ := ordinaryCutoffTest_exec body cmp r w L cutoff cutFits widthFits
     v S (by exact start.choose_spec.1.clock) (by exact cutWord) (by
       intro j hj
@@ -406,8 +457,25 @@ theorem ordinaryChildDispatch_exec [M8.Machine.Net] {P U : Type} {T : ℕ}
   change m ≤ 4*w+23*desc.width+22*L+50 at testCost
   by_cases active : cutoff < desc.width
   · obtain ⟨z,F,n,hu,cost,run,done,clear,kept⟩ := ordinaryChildRoute_exec ports body r g gap w W hW
-      u S record dest q original input f budget (fun smaller word y D reads clear saved =>
-        recurse active smaller word y D reads clear saved ((saved cut outside).2.trans cutWord)) start free
+      u S record dest q original input f budget (by
+        intro smaller word y D reads clear saved
+        let x := word ∘ layout.symm
+        have entry : x ∘ layout = word := by funext k; simp [x]
+        have less : child.width < node.width := by
+          change r*(node.width/64) < node.width
+          rw [div,aligned,← split,Nat.mul_comm r]
+          exact smaller
+        obtain ⟨v,G,t,user,time,run,returned,keep,empty,frame⟩ := recurse active less x y D
+          (by simpa only [onTape,entry] using reads) clear saved ((saved cut outside).2.trans cutWord)
+        refine ⟨v,G,t,user,time,run,?_,keep,empty,frame⟩
+        have output : Shared50RecursiveNodeRows.transpose (one_dvd desc.rows) word =
+            Shared50RecursiveNodeRows.transpose (one_dvd child.rows) x ∘ layout := by
+          funext k
+          rw [← entry]
+          exact ordinaryOccurrenceTranspose parent r g w child eqn x k
+        intro k
+        rw [output]
+        exact returned k) start free
     refine ⟨z,F,_,hu.trans user,?_,Exec.seq compare (Exec.cond_true (by simp [mk_var,flag,active]) run),done,clear,kept,(kept cut outside).2.trans cutWord⟩
     rw [ite_eq_left active]
     change n ≤ budget+2+2*(1+routeTime) at cost

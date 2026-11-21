@@ -783,6 +783,11 @@ At or below the cutoff, two block exchanges on the packed fields implement
 the transpose. Their complete routed cost fits a uniform constant times
 child width times record volume. Above the cutoff, the placed route calls
 the procedure on a strictly smaller width, charging two steps for the call.
+The dispatcher selects the rank and role stream by occurrence index. Folding
+the role rows into the packed suffix preserves the scheduled transpose. Each
+packed record has exactly 1/142080 of the aligned parent volume when the row
+count is divisible by 142080. The recursive premise uses the scheduled
+descriptor and its strict decrease from the parent width.
 The concrete recursive body must still supply the transpose on tape 24 and
 restore the other live registers. Packing preserves the cutoff on entry to the smaller call. Both dispatch
 branches and the subsequent weighted correction preserve the cutoff word.

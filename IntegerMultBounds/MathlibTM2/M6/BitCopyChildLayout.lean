@@ -152,18 +152,16 @@ theorem copyChildLayout_route (v : Descriptor) (w rows : ℕ) (splitRows : v.row
   rw [entry]
   exact packActive_change packed child rfl (copySpectators v w rows splitRows) a
 
-/-- Flattening the spectators of a rank-seven child gives the exact permutation
-of the COPY temporary that intertwines the two physical payload transposes. -/
-theorem copyChild_reindex (v : Descriptor) (w rows : ℕ) (splitRows : v.rows = 142080*rows) :
-    let W := (prime^w)^112 * (v.beforeRows*rows*v.beforeH*v.between*v.afterD)
-    let packed := copyChild w W
-    let child := rankDescriptor prime (7*w) (57*w) (role v 142080)
-    let e := copyChildLayoutEquiv v w rows splitRows
-      ∀ {α : Type} (x : Fin (volume prime child) → α) i,
-        Shared50RecursiveNodeRows.transpose (one_dvd packed.rows) (x ∘ e) i =
-          Shared50RecursiveNodeRows.transpose (one_dvd child.rows) x (e i) := by
-  intro W packed child e
-  let f := changeLayout packed child rfl (copySpectators v w rows splitRows)
+/-- Repartitioning spectator coordinates preserves the transpose when both
+active fields retain their width. -/
+theorem transpose_changeLayout (packed child : Descriptor) (width : packed.width = child.width)
+    (size : spectators packed = spectators child) :
+    let f := changeLayout packed child width size
+    let e := (flatAddress packed).symm.trans (f.trans (flatAddress child))
+    ∀ {α : Type} (x : Fin (volume prime child) → α) i,
+      Shared50RecursiveNodeRows.transpose (one_dvd packed.rows) (x ∘ e) i =
+        Shared50RecursiveNodeRows.transpose (one_dvd child.rows) x (e i) := by
+  intro f e
   intro α x i
   obtain ⟨a,rfl⟩ := (flatAddress packed).surjective i
   have left := Shared50RecursiveNodeTranspose.transpose_all (by decide : 0 < 1)
@@ -180,6 +178,19 @@ theorem copyChild_reindex (v : Descriptor) (w rows : ℕ) (splitRows : v.rows = 
     _ = x (flatAddress child (swapAddress (f a))) := by
       rw [entry, show f (swapAddress a) = swapAddress (f a) from changeLayout_swap ..]
     _ = _ := right.symm
+
+/-- Flattening the spectators of a rank-seven child gives the exact permutation
+of the COPY temporary that intertwines the two physical payload transposes. -/
+theorem copyChild_reindex (v : Descriptor) (w rows : ℕ) (splitRows : v.rows = 142080*rows) :
+    let W := (prime^w)^112 * (v.beforeRows*rows*v.beforeH*v.between*v.afterD)
+    let packed := copyChild w W
+    let child := rankDescriptor prime (7*w) (57*w) (role v 142080)
+    let e := copyChildLayoutEquiv v w rows splitRows
+      ∀ {α : Type} (x : Fin (volume prime child) → α) i,
+        Shared50RecursiveNodeRows.transpose (one_dvd packed.rows) (x ∘ e) i =
+          Shared50RecursiveNodeRows.transpose (one_dvd child.rows) x (e i) := by
+  intro W packed child e α x i
+  exact transpose_changeLayout packed child rfl (copySpectators v w rows splitRows) x i
 
 open Cover.Fallback Stack Host
 
