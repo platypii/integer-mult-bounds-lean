@@ -91,7 +91,7 @@ noncomputable def ordinaryEntryWords {w : ℕ} (W beforeRows rows beforeH : ℕ)
 every workspace tape, regardless of the size of the installed program. -/
 def ordinaryMetadataPorts : Fin 9 ↪ Fin 59 := ⟨![2,29,30,31,45,47,53,55,58],by decide⟩
 
-private theorem ordinaryEntryWords_unused {w : ℕ} (W a b h : ℕ) (root : Bool)
+theorem ordinaryEntryWords_unused {w : ℕ} (W a b h : ℕ) (root : Bool)
     (parent : Fin 64 → ZMod (prime^(w+1))) (width : ℕ) (prefixes : List (Fin (prime+4)))
     (j : ℕ) (unused : ∀ i, (ordinaryMetadataPorts i).val ≠ j) :
     ordinaryEntryWords W a b h root parent width prefixes j = [] := by

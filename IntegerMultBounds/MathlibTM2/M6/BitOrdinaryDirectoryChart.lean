@@ -1428,6 +1428,55 @@ def DirectoryChartCall [M8.Machine.Net] {K w : ℕ} {L P U : Type}
         RecordPayload slot (fun _ => blank) 0 (Shared50RecursiveNodeRows.transpose (one_dvd batch.rows) x) B ∧
         ∀ i, i ≠ slot → B.L i = D.L i ∧ B.R i = D.R i)
 
+/-- Only nine entry words and the cutoff occupy the initial scanner prefix. -/
+private theorem chartMetadataLength {w t : ℕ} (room : 59 ≤ t) (cut : List (Fin (prime+4)))
+    (W a b h : ℕ) (root : Bool) (weights : Fin 64 → ZMod (prime^(w+1)))
+    (width : ℕ) (queue : List (Fin (prime+4))) :
+    let M := prime^(w+1)
+    let words := directoryChartWords cut W a b h root weights width queue
+    ((List.finRange t).map (fun j => (words j.val).length)).sum =
+      cut.length+(M.size+a+b+h+w+width+W.size+(if root then 0 else 64*M.size)+queue.length) := by
+  intro M words
+  classical
+  let ports := ordinaryMetadataPorts.trans (Fin.castLEEmb room)
+  let cutoff : Fin t := (40 : Fin 59).castLE room
+  let value (j : Fin t) := (words j.val).length
+  have off (j : Fin 9) : (ports j).val ≠ 40 := by
+    change (ordinaryMetadataPorts j).val ≠ 40
+    exact (by decide : ∀ i, (ordinaryMetadataPorts i).val ≠ 40) j
+  have separate : cutoff ∉ Finset.univ.map ports := by
+    intro hj
+    obtain ⟨i,_,eq⟩ := Finset.mem_map.mp hj
+    exact off i (congrArg Fin.val eq)
+  have support : ∑ j, value j = ∑ j ∈ insert cutoff (Finset.univ.map ports), value j := by
+    symm
+    apply Finset.sum_subset (Finset.subset_univ _)
+    intro j _ unused
+    have ne : j.val ≠ 40 := fun eq => unused (Finset.mem_insert.mpr (Or.inl (Fin.ext eq)))
+    have absent (i : Fin 9) : (ordinaryMetadataPorts i).val ≠ j.val := fun eq =>
+      unused (Finset.mem_insert.mpr (Or.inr (Finset.mem_map.mpr ⟨i,Finset.mem_univ _,Fin.ext eq⟩)))
+    simp only [value,words,directoryChartWords,ite_eq_right ne,ordinaryEntryWords_unused _ _ _ _ _ _ _ _ _ absent,List.length_nil]
+  have packed := ordinaryMetadata_time W a b h root weights width queue
+  let ordinary := ordinaryEntryWords W a b h root weights width queue
+  change (((List.finRange 9).map (fun i => 6*(ordinary (ordinaryMetadataPorts i).val).length+6)).sum+1) = _ at packed
+  simp only [List.sum_map_add,List.sum_map_mul_left,List.map_const',List.sum_replicate_nat,List.length_finRange] at packed
+  have mapped (i : Fin 9) : value (ports i) = (ordinary (ordinaryMetadataPorts i).val).length := by
+    simp only [value,words,directoryChartWords,ite_eq_right (off i)]
+    rfl
+  have all (n : ℕ) : (List.finRange n).toFinset = Finset.univ := by ext; simp
+  rw [← List.sum_toFinset value (List.nodup_finRange t),all,support,Finset.sum_insert separate,Finset.sum_map]
+  simp only [mapped]
+  rw [← List.sum_toFinset _ (List.nodup_finRange 9),all] at packed
+  change cut.length+_ = _
+  dsimp only [M]
+  omega
+
+/-- Erase both private banks around the child owners, including the final halt. -/
+def chartReturnCost {front owners back : ℕ} (D : Stacks ((front+owners)+back) prime) : ℕ :=
+  let cost (i) := 4*(D.L i).length+2*(D.R i).length+4
+  ((List.finRange front).map (fun j => cost ((j.castAdd owners).castAdd back))).sum+
+    ((List.finRange back).map (fun j => cost (j.natAdd (front+owners)))).sum+1
+
 private theorem chartCleanupCost {t n : ℕ} (place : Fin t ↪ Fin n) (D : Stacks n prime)
     (metadata : ℕ → List (Fin (prime+4))) (width growth : ℕ)
     (stock : ∀ j, (D.L (place j)).length ≤ growth ∧
@@ -1551,10 +1600,9 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux w : ℕ} {L P U : Type}
       (∀ push, Fast.Main.mnProgPush setup ≤ push → Fast.Main.mnProgPush program ≤ push →
         (∀ f, Fast.Main.mnProgPush (body f) ≤ push) →
         let growth := push*(setupCost+scanOverhead)
-        ((List.finRange ((T+10)+5)).map (fun j => let h := baseBank (j.castAdd stage.tapes)
-          4*(D.L h).length+2*(D.R h).length+4)).sum ≤
-          2*((List.finRange ((T+10)+5)).map (fun j => (metadata j.val).length)).sum+
-            ((T+10)+5)*(6*growth+2*N+4)) ∧
+        chartReturnCost D ≤
+          2*cutoffWord.length+167*(R*N)+
+            ((T+10)+5)*(6*growth+2*N+4)+back.tapes*(12*(back.cost*(back.tapes+5)+6)+4)+1) ∧
       let privateTapes := (List.finRange (66+K)).filter fun i => 58 ≤ i.val
       (privateTapes.map (fun i => let port := directoryChartPlacement T ((directoryOrdinaryBank archiveRoom i).castAdd 5)
         let tape := baseBank (port.castAdd stage.tapes)
@@ -1563,8 +1611,6 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux w : ℕ} {L P U : Type}
       (∀ j : Fin 4, D.L (baseBank ((directoryChartWork T (j.castAdd 6)).castAdd stage.tapes)) = []) ∧
       ((List.finRange 5).map (fun j => let i := baseBank ((j.natAdd (T+10)).castAdd stage.tapes)
         (D.R i).length)).sum = N ∧
-      ((List.finRange back.tapes).map (fun j => let i := j.natAdd (((T+10)+5)+stage.tapes)
-        4*(D.L i).length+2*(D.R i).length+4)).sum ≤ back.tapes*(12*(back.cost*(back.tapes+5)+6)+4) ∧
       RepT (stage.input final) (embStk (chart.trans baseBank) D).L (embStk (chart.trans baseBank) D).R ∧
       (∀ i, i ≠ src → final i = words i) ∧ OriginalPortReads R W parents interval weights cert (words src) (final src) ∧
       ∃ F, finished (embStk placement F) ∧ ∀ j, (∀ i, headers i ≠ j) →
@@ -1848,8 +1894,40 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux w : ℕ} {L P U : Type}
     exact Equiv.swap_apply_of_ne_of_ne ((Fin.castAddEmb stage.tapes).injective.ne ne) apart
   have maskPos (l : Fin 4) : maskBank (l.natAdd 2) = directoryChartWork T (l.castAdd 6) := by
     fin_cases l <;> rfl
-  refine ⟨privateReady,?_,?_,?_,?_,?_,?_,final,?_,?_,D,done,frame⟩
+  have metaBound : 2*((List.finRange ((T+10)+5)).map (fun j => (metadata j.val).length)).sum ≤
+      2*cutoffWord.length+167*(R*N) := by
+    have groups : R = layout.beforeRows*rows*layout.beforeH := by
+      simp only [R,LabelMask.records,directory,RecursiveInterchangeLayout.role,split,Nat.mul_div_cancel_left _ (by decide : 0 < 142080)]
+    have blocks : parents ≤ layout.beforeRows*rows*layout.beforeH := by
+      rw [← groups,records]
+      exact Nat.le_mul_of_pos_right _ (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _)
+    have fit : width ≤ N := by
+      apply widthFits.trans
+      change _ ≤ (prime^(w+1))^128*W
+      rw [digits,← pow_mul]
+      exact (Nat.pow_le_pow_right Shared50ModularControl.prime_prime.pos (by omega)).trans (Nat.le_mul_of_pos_right _ spectators)
+    have rowPos : 0 < rows := by have := positiveLayout.2.1; omega
+    have bound := directoryChartEntry_volume_le (w := w) root replayRole prefixes [] widths blocks
+      spectators positiveLayout.1 rowPos positiveLayout.2.2.1 fit (Nat.zero_le _)
+    have measure := chartMetadataLength (t := (T+10)+5) (by omega) cutoffWord W layout.beforeRows rows layout.beforeH root
+      weights width (directoryChartQueue replayRole layout.beforeH parents R prefixes)
+    change ((List.finRange ((T+10)+5)).map (fun j => (metadata j.val).length)).sum = _ at measure
+    rw [measure,groups]
+    change 6*(_+(_ : List (Fin (prime+4))).length)+55+(6*0+6) ≤ 499*(layout.beforeRows*rows*layout.beforeH*N) at bound
+    omega
+  have suffixCost : ((List.finRange back.tapes).map (fun j => let i := j.natAdd (((T+10)+5)+stage.tapes)
+      4*(F.L i).length+2*(F.R i).length+4)).sum ≤ back.tapes*(12*(back.cost*(back.tapes+5)+6)+4) := by
+    have total := List.sum_le_sum (l := List.finRange back.tapes) (g := fun _ => 12*(back.cost*(back.tapes+5)+6)+4)
+        (f := fun j => let i := j.natAdd (((T+10)+5)+stage.tapes)
+          4*(F.L i).length+2*(F.R i).length+4) (fun j _ => by
+            obtain ⟨left,right⟩ := suffixStock j
+            dsimp only
+            omega)
+    simpa only [List.map_const',List.sum_replicate_nat,List.length_finRange] using total
+  refine ⟨privateReady,?_,?_,?_,?_,?_,final,?_,?_,D,done,frame⟩
   · intro push setupPush scanPush bodyPush
+    apply Nat.add_le_add_right (Nat.add_le_add ?_ suffixCost) 1
+    apply le_trans _ (Nat.add_le_add_right metaBound _)
     apply chartCleanupCost ((Fin.castAddEmb stage.tapes).trans baseBank)
     intro j
     change (F.L (baseBank (j.castAdd stage.tapes))).length ≤ _ ∧ (F.R (baseBank (j.castAdd stage.tapes))).length ≤ _
@@ -1921,13 +1999,6 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux w : ℕ} {L P U : Type}
     simp [List.finRange_succ]
     dsimp only [baseBank]
     simp only [(kept 0).2,(kept 1).2,(kept 2).2,(kept 3).2,(kept 4).2,unusedSlot.2,acc,widthReg,save,tmp,List.length_nil,Nat.zero_add,Nat.add_zero]
-  · have total := List.sum_le_sum (l := List.finRange back.tapes) (g := fun _ => 12*(back.cost*(back.tapes+5)+6)+4)
-        (f := fun j => let i := j.natAdd (((T+10)+5)+stage.tapes)
-          4*(F.L i).length+2*(F.R i).length+4) (fun j _ => by
-            obtain ⟨left,right⟩ := suffixStock j
-            dsimp only
-            omega)
-    simpa only [List.map_const',List.sum_replicate_nat,List.length_finRange] using total
   · intro i hi
     exact ((reverseRun updated).1 i hi).trans ((Function.update_of_ne hi ..).trans ((forwardRun words).1 i hi))
   · have undo := (reverseRun updated).2

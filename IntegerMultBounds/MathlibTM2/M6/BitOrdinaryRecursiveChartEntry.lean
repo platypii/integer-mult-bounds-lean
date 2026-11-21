@@ -228,10 +228,7 @@ theorem recursiveRoleChartEntry_exec {n K T Q s k back w : ℕ} {P U : Type}
             (clearWorkTapes ((List.finRange ((s+5)+back)).map privateBank))) (mk u S) (t+m+d) (mk y B) ∧
           B.L (lift (owners i)) = G.L ((i.natAdd (s+5)).castAdd back) ∧
           B.R (lift (owners i)) = G.R ((i.natAdd (s+5)).castAdd back) ∧
-          d = ((List.finRange (s+5)).map (fun j => let h := (j.castAdd k).castAdd back
-            4*(G.L h).length+2*(G.R h).length+4)).sum +
-            ((List.finRange back).map (fun j => let h := j.natAdd ((s+5)+k)
-            4*(G.L h).length+2*(G.R h).length+4)).sum+1 ∧
+          d = chartReturnCost G ∧
           ∀ j, j ≠ lift (owners i) → B.L j = S.L j ∧ B.R j = S.R j := by
   intro W a H lift place privateBank full split sources cut scratch select localBank scanner chart dst port source load work V weights queue cutFits headers free reusable c push bodies budget
   obtain ⟨bank,h₀,h₁,h₂,h₃,privateCount⟩ := recursiveRoleSplit_layout room replay
@@ -372,6 +369,7 @@ theorem recursiveRoleChartEntry_exec {n K T Q s k back w : ℕ} {P U : Type}
           | right l =>
             simpa [full,place,recursiveEntryPlacement,privateBank] using off (l.natAdd (s+5)))
     refine ⟨out,Z,_,hu.trans user',run,left.trans (ownerView i).1,right.trans (ownerView i).2,?_,frame⟩
+    unfold chartReturnCost
     simp only [← List.ofFn_eq_map]
     rw [List.ofFn_add,List.map_append,List.sum_append]
     simp only [List.map_ofFn]
