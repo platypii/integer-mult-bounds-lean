@@ -696,13 +696,14 @@ private theorem ownerPad_aux (src dst : ℤ → Fin (prime+4)) (D N K : ℕ)
 /-- Run the same host code on each ordinary owner. Only the selected payload
 ports change their represented words; the dimension counters are reusable. -/
 theorem placedOwnerPad {w B K T Q : ℕ} {P U : Type} (hB : 0 < B) (hK : 0 < K)
-    (port : Fin 12 ↪ Fin T) (fits : 215 ≤ Q) (body : P → Pr P T Q prime U) :
+    (fits : 215 ≤ Q) (body : P → Pr P T Q prime U) :
+    ∃ label : Cover.LabelPadding.Label 64 w, ∀ port : Fin 12 ↪ Fin T,
     let A := (prime^w)^16
     let N := prime^(64*(w*64))
     let frame := ownerPadFrame (A*B) N K
     let aux := fun (S : Stacks T prime) => ∀ j : Fin 12, j ≠ 0 → j ≠ 1 → ∀ z,
       frame.tape j z = readAt blank (S.L (port j)) (S.R (port j)) (z-frame.head j)
-    ∃ label : Cover.LabelPadding.Label 64 w, ∃ code,
+    let code := embProg port (Empty.elim : Empty → P) (foreign (liftQ RowPaddingConstructedAlphabet.program fits))
     ∀ (x : Fin 142081 → Fin (A*(B*K)) → ZMod 2) i u S,
       Cover.Fallback.RecordPayload (port 0) (fun _ => blank) 0 (x i) S →
       (∀ z, readAt blank (S.L (port 1)) (S.R (port 1)) z = blank) → aux S →
@@ -710,10 +711,9 @@ theorem placedOwnerPad {w B K T Q : ℕ} {P U : Type} (hB : 0 < B) (hK : 0 < K)
         steps ≤ 7021*(A*B)*(N*K)+6 ∧ z.user = u.user ∧
         Cover.Fallback.RecordPayload (port 1) (fun _ => blank) 0 (singleLabelBank label x i) F ∧
         aux F ∧ ∀ j, (∀ i, port i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
-  intro A N frame aux
   obtain ⟨label,pad⟩ := singleLabelBank_pad_hoare (w := w) hB hK
-  refine ⟨label,embProg port (Empty.elim : Empty → P) (foreign (liftQ RowPaddingConstructedAlphabet.program fits)),?_⟩
-  intro x i u S payload empty ready
+  refine ⟨label,?_⟩
+  intro port A N frame aux code x i u S payload empty ready
   obtain ⟨z,F,steps,exec,paid,user,done,off⟩ := placedHoare_exec _ port fits body (pad x i) u S (by
     intro j z
     by_cases hs : j = 0
@@ -734,5 +734,166 @@ theorem placedOwnerPad {w B K T Q : ℕ} {P U : Type} (hB : 0 < B) (hK : 0 < K)
     have h := done j l
     rw [(ownerPad_aux _ _ (A*B) N K j hs hd).1,(ownerPad_aux _ _ (A*B) N K j hs hd).2] at h
     exact h
+
+/-- Read the scan accumulators in place. The new owner bank follows the stage
+tapes, with ten shared counter and work tapes after it. -/
+noncomputable def stagePadPort {T : ℕ} (fan : Fin (142081+2) ↪ Fin T)
+    (i : Fin 142081) : Fin 12 ↪ Fin ((T+142081*7)+142081+10) where
+  toFun j := ⟨if j.val = 0 then (targetScanBank fan i 1).val else
+    if j.val = 1 then T+142081*7+i.val else T+142081*7+142081+(j.val-2), by
+      have hs := (targetScanBank fan i 1).isLt
+      split_ifs <;> omega⟩
+  inj' := by
+    intro j k h
+    apply Fin.ext
+    have eq := congrArg Fin.val h
+    dsimp only at eq
+    have hs := (targetScanBank fan i 1).isLt
+    split_ifs at eq <;> omega
+
+private theorem stagePadPort_shared {T : ℕ} (fan : Fin (142081+2) ↪ Fin T)
+    (i k : Fin 142081) (j : Fin 12) (h0 : j ≠ 0) (h1 : j ≠ 1) :
+    stagePadPort fan i j = stagePadPort fan k j := by
+  apply Fin.ext
+  have b : j.val ≠ 1 := fun h => h1 (Fin.ext h)
+  simp [stagePadPort,h0,b]
+
+private theorem stagePadPort_apart {T : ℕ} (fan : Fin (142081+2) ↪ Fin T)
+    (i k : Fin 142081) (ne : i ≠ k) (j : Fin 12) :
+    stagePadPort fan i j ≠ stagePadPort fan k 0 ∧ stagePadPort fan i j ≠ stagePadPort fan k 1 := by
+  have ns : (targetScanBank fan i 1).val ≠ (targetScanBank fan k 1).val :=
+    fun h => targetScanBank_disjoint fan ne 1 1 (Fin.ext h)
+  have nd : i.val ≠ k.val := fun h => ne (Fin.ext h)
+  have hi := (targetScanBank fan i 1).isLt
+  have hk := (targetScanBank fan k 1).isLt
+  constructor <;> intro h <;> have eq := congrArg Fin.val h <;>
+    simp only [stagePadPort, Function.Embedding.coeFn_mk, Fin.val_zero, Fin.val_one,
+      ite_true, Nat.one_ne_zero, ite_false] at eq <;> split_ifs at eq <;> omega
+
+/-- Pad a list of distinct owners, reusing the same four counters and scratch tapes. -/
+theorem placedOwnerPads {w B K T Q : ℕ} {P U : Type} (hB : 0 < B) (hK : 0 < K)
+    (fan : Fin (142081+2) ↪ Fin T) (fits : 215 ≤ Q)
+    (body : P → Pr P ((T+142081*7)+142081+10) Q prime U) :
+    let port := stagePadPort fan
+    let A := (prime^w)^16
+    let N := prime^(64*(w*64))
+    let frame := ownerPadFrame (A*B) N K
+    let aux := fun (S : Stacks ((T+142081*7)+142081+10) prime) => ∀ j : Fin 12, j ≠ 0 → j ≠ 1 → ∀ z,
+      frame.tape j z = readAt blank (S.L (port 0 j)) (S.R (port 0 j)) (z-frame.head j)
+    let code := fun i => embProg (port i) (Empty.elim : Empty → P)
+      (foreign (liftQ RowPaddingConstructedAlphabet.program fits))
+    ∃ label : Cover.LabelPadding.Label 64 w,
+    ∀ (x : Fin 142081 → Fin (A*(B*K)) → ZMod 2) (order : List (Fin 142081)), order.Nodup → ∀ u S, aux S →
+      (∀ i ∈ order, Cover.Fallback.RecordPayload (port i 0) (fun _ => blank) 0 (x i) S) →
+      (∀ i ∈ order, ∀ z, readAt blank (S.L (port i 1)) (S.R (port i 1)) z = blank) →
+      ∃ z F steps, Exec body (Prog.seqList (order.map code)) (mk u S) steps (mk z F) ∧
+        steps ≤ order.length*(7021*(A*B)*(N*K)+6)+1 ∧ z.user = u.user ∧ aux F ∧
+        (∀ i ∈ order, Cover.Fallback.RecordPayload (port i 1) (fun _ => blank) 0 (singleLabelBank label x i) F) ∧
+        ∀ j, (∀ i ∈ order, ∀ h, port i h ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  intro port A N frame aux code
+  have shared := stagePadPort_shared fan
+  have apart := stagePadPort_apart fan
+  obtain ⟨label,pad⟩ := placedOwnerPad (w := w) hB hK fits body
+  refine ⟨label,?_⟩
+  intro x order
+  induction order with
+  | nil =>
+    intro _ u S auxS _ _
+    exact ⟨u,S,1,Exec.act .done _,by simp,rfl,auxS,by simp,fun _ _ => ⟨rfl,rfl⟩⟩
+  | cons i ks ih =>
+    intro unique u S auxS inputs empty
+    obtain ⟨fresh,nd⟩ := List.nodup_cons.mp unique
+    obtain ⟨v,C,m,first,paid,user,out,ready,off⟩ := pad (port i) x i u S
+      (inputs i List.mem_cons_self) (empty i List.mem_cons_self) (by
+        intro j h0 h1 l
+        rw [shared i 0 j h0 h1]
+        exact auxS j h0 h1 l)
+    have ne (k) (hk : k ∈ ks) : i ≠ k := fun eq => fresh (eq ▸ hk)
+    obtain ⟨z,F,n,rest,bill,same,auxF,outputs,keep⟩ := ih nd v C (by
+      intro j h0 h1 l
+      rw [← shared i 0 j h0 h1]
+      exact ready j h0 h1 l) (by
+      intro k hk l
+      obtain ⟨hl,hr⟩ := off _ (fun j => (apart i k (ne k hk) j).1)
+      change readAt blank (C.L _) (C.R _) _ = _
+      rw [hl,hr]
+      exact inputs k (List.mem_cons_of_mem _ hk) l) (by
+      intro k hk l
+      obtain ⟨hl,hr⟩ := off _ (fun j => (apart i k (ne k hk) j).2)
+      rw [hl,hr]
+      exact empty k (List.mem_cons_of_mem _ hk) l)
+    refine ⟨z,F,m+n,Exec.seq first rest,?_,same.trans user,auxF,?_,?_⟩
+    · simp only [List.length_cons,Nat.add_mul,Nat.one_mul]
+      change m ≤ 7021*(A*B)*(N*K)+6 at paid
+      omega
+    · intro k hk
+      rcases List.mem_cons.mp hk with rfl | hk
+      · obtain ⟨hl,hr⟩ := keep _ (fun a ha j => (apart a k (ne a ha).symm j).2)
+        intro l
+        change readAt blank (F.L _) (F.R _) _ = _
+        rw [hl,hr]
+        exact out l
+      · exact outputs k hk
+    · intro j outside
+      obtain ⟨hl,hr⟩ := keep j (fun k hk => outside k (List.mem_cons_of_mem _ hk))
+      obtain ⟨ll,rr⟩ := off j (outside i List.mem_cons_self)
+      exact ⟨hl.trans ll,hr.trans rr⟩
+
+/-- Put every updated target into the next labeled bank. The supplied next
+bank may specify the remaining owners independently. -/
+theorem stageTargets_pad {T Q : ℕ} {P U : Type} (n : Fin 9)
+    (fan : Fin (142081+2) ↪ Fin T) (fits : 215 ≤ Q)
+    (body : P → Pr P ((T+142081*7)+142081+10) Q prime U) :
+    ∃ code, ∀ w B K : ℕ, 0 < B → 0 < K →
+    let A := (prime^w)^16
+    let N := prime^(64*(w*64))
+    let port := stagePadPort fan
+    let frame := ownerPadFrame (A*B) N K
+    let aux := fun (S : Stacks ((T+142081*7)+142081+10) prime) => ∀ j : Fin 12, j ≠ 0 → j ≠ 1 → ∀ z,
+      frame.tape j z = readAt blank (S.L (port 0 j)) (S.R (port 0 j)) (z-frame.head j)
+    ∃ label : Cover.LabelPadding.Label 64 w,
+    ∀ (x next : Fin 142081 → Fin (A*(B*K)) → ZMod 2),
+      (∀ k, next (targetOwner n k) = stageTargetWord n k w B K x) →
+      ∀ u S, aux S →
+      (∀ k, Cover.Fallback.RecordPayload (port (targetOwner n k) 0) (fun _ => blank) 0
+        (stageTargetWord n k w B K x) S) →
+      (∀ k z, readAt blank (S.L (port (targetOwner n k) 1)) (S.R (port (targetOwner n k) 1)) z = blank) →
+      ∃ z F steps, Exec body code (mk u S) steps (mk z F) ∧
+        steps ≤ 17760*(7021*(A*B)*(N*K)+6)+1 ∧ z.user = u.user ∧ aux F ∧
+        (∀ k, Cover.Fallback.RecordPayload (port (targetOwner n k) 1) (fun _ => blank) 0
+          (singleLabelBank label next (targetOwner n k)) F) ∧
+        ∀ j, (∀ k h, port (targetOwner n k) h ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  let targets := stageRuns.product (List.finRange 111)
+  let order := targets.map (targetOwner n)
+  let pad : Fin 142081 → Pr P ((T+142081*7)+142081+10) Q prime U := fun i => embProg (stagePadPort fan i) (Empty.elim : Empty → P)
+    (foreign (liftQ RowPaddingConstructedAlphabet.program fits))
+  refine ⟨Prog.seqList (order.map pad),?_⟩
+  intro w B K hb hk A N port frame aux
+  obtain ⟨label,run⟩ := placedOwnerPads (w := w) hb hk fan fits body
+  refine ⟨label,?_⟩
+  intro x next targetWords u S ready inputs empty
+  have unique : order.Nodup := (stageRuns_nodup.product (List.nodup_finRange _)).map (targetOwner_injective n)
+  obtain ⟨z,F,t,exec,paid,user,headers,out,off⟩ := run next order unique u S ready (by
+    intro i hi
+    obtain ⟨k,_,rfl⟩ := List.mem_map.mp hi
+    rw [targetWords]
+    exact inputs k) (by
+    intro i hi
+    obtain ⟨k,_,rfl⟩ := List.mem_map.mp hi
+    exact empty k)
+  refine ⟨z,F,t,exec,?_,user,headers,?_,?_⟩
+  · have count : order.length = 17760 := by
+      rw [List.length_map]
+      exact (List.length_product stageRuns (List.finRange 111)).trans (by rw [stageRuns_length,List.length_finRange])
+    rw [count] at paid
+    exact paid
+  · intro k
+    exact out _ (List.mem_map.mpr ⟨k,List.mem_flatMap.mpr ⟨k.1,mem_stageRuns _,
+      List.mem_map.mpr ⟨k.2,List.mem_finRange _,rfl⟩⟩,rfl⟩)
+  · intro j outside
+    apply off
+    intro i hi
+    obtain ⟨k,_,rfl⟩ := List.mem_map.mp hi
+    exact outside k
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
