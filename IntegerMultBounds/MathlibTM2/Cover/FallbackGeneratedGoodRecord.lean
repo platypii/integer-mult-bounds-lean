@@ -1176,6 +1176,40 @@ def DirectoryReady {m K : ℕ} (v : Descriptor) (proj : Matrix (Fin m) (Fin m) �
     D.R (caller 44) = binSyms H (1 : ZMod M).val ∧ (D.R (caller 45)).length = w ∧
     D.R (caller 55) = (List.ofFn fun i => binSyms H (parent i).val).flatten ∧ D.R (caller 54) = schedules pending
 
+/-- A padding record advances only the directory tape. The payload,
+selector tapes and private workspace retain their contents. -/
+theorem DirectoryReady.advancePadding {m K w W H J Q : ℕ} {P U : Type} {v : Descriptor}
+    {proj : Matrix (Fin m) (Fin m) ℚ} {parent : Fin m → ZMod (prime^(w+1))}
+    {prefixes : ℕ → List (Fin (prime+4))} {archiveTail : List (Fin (prime+4))}
+    {schedules : List ℕ → List (Fin (prime+4))} {S : Stacks (66+K) prime} {j : ℕ} {js : List ℕ}
+    (body : P → Pr P (66+K) Q prime U) (u : HS (66+K) Q prime U)
+    (start : DirectoryReady v proj w W H J parent prefixes archiveTail schedules S (j::js))
+    (skip : schedules (j::js) = schedules js) :
+    let caller := Fin.castAddEmb (n := 66) K
+    let slots : Fin 7 ↪ Fin 58 := ⟨![45,46,2,47,48,44,49],by decide⟩
+    let scan := ((goodRecordScanPorts.trans slots).trans (Fin.castAddEmb 8)).trans caller
+    let tail := js.flatMap (LabelDirectory.entry prefixes m (w+1)) ++ archiveTail
+    let D := {S with R := Function.update S.R (caller 46) tail}
+    ∃ z, z.user = u.user ∧ Exec body (readWithSuccessorClock (scan 1) (advanceDirectory m scan))
+      (mk u S) (1+(4*(prefixes j).length+4+(m*m*(4*(w+1)+4)+1)+1)) (mk z D) ∧
+      DirectoryReady v proj w W H J parent prefixes archiveTail schedules D js := by
+  intro caller slots scan tail D
+  obtain ⟨dir,widths,free,scratch,projector,base,unit,trailing,headers,one,ticks,archive,queue⟩ := start
+  obtain ⟨z,user,run⟩ := advanceDirectoryRecord_exec body scan m w j prefixes js archiveTail u S dir
+    (widths j List.mem_cons_self) ticks scratch
+  have keep (i : Fin 66) (off : i ≠ 46) : D.R (caller i) = S.R (caller i) :=
+    Function.update_of_ne (caller.injective.ne off) _ _
+  refine ⟨z,user,run,(show D.R (caller 46) = tail from Function.update_self (caller 46) tail S.R),fun k hk => (congrArg List.length (keep 47 (by decide))).trans
+    (widths k (List.mem_cons_of_mem _ hk)),?_,(keep 49 (by decide)).trans scratch,?_,
+    (keep 2 (by decide)).trans base,(keep 28 (by decide)).trans unit,(keep 53 (by decide)).trans trailing,
+    fun i => (keep _ (by intro eq; have h := congrArg Fin.val eq; change 33+i.val = 46 at h; omega)).trans (headers i),
+    (keep 44 (by decide)).trans one,(congrArg List.length (keep 45 (by decide))).trans ticks,
+    (keep 55 (by decide)).trans archive,(keep 54 (by decide)).trans (queue.trans skip)⟩
+  · intro i hi
+    exact ⟨(free i hi).1,(Function.update_of_ne (by intro eq; subst i; change 58 ≤ 46 at hi; omega) _ _).trans (free i hi).2⟩
+  · obtain ⟨xs,h⟩ := projector
+    exact ⟨xs,(keep 48 (by decide)).trans h⟩
+
 theorem DirectoryReady.updateSelector {m K w W H J : ℕ} {v : Descriptor}
     {proj : Matrix (Fin m) (Fin m) ℚ} {parent : Fin m → ZMod (prime^(w+1))}
     {prefixes : ℕ → List (Fin (prime+4))} {archiveTail : List (Fin (prime+4))}
@@ -2509,23 +2543,12 @@ theorem generatedOrdinaryRecord_exec [M8.Machine.Net] {T m work Q fields H J W :
       dsimp only [badBit,gs]
       rw [fallbackBit_eq (by omega : 0 < w+1),show LabelStock.live m (w+1) 1 label = false from pad]
       rfl
-    obtain ⟨dir,widths,privateBlank,scratch,projector,base,unit,trailing,headersIn,one,ticks,archive,queue⟩ := start
+    obtain ⟨z,user,advance,rdy⟩ := DirectoryReady.advancePadding body u start (by
+      simp only [schedules,List.flatMap_cons,noCode,Bool.false_eq_true,ite_false,List.nil_append])
     let tail := labels.flatMap (LabelDirectory.entry prefixes m (w+1)) ++ archiveTail
-    obtain ⟨z,user,advance⟩ := advanceDirectoryRecord_exec body scan m w label prefixes labels archiveTail u whole dir
-      (widths label List.mem_cons_self) ticks scratch
     let D := {whole with R := Function.update whole.R (scan 2) tail}
     have keep (j : Fin 66) (hj : j ≠ 46) : D.R (caller j) = whole.R (caller j) :=
       Function.update_of_ne (caller.injective.ne hj) _ _
-    have rdy : ready D labels := by
-      refine ⟨(show D.R (field 1) = tail from Function.update_self (scan 2) tail whole.R),fun j hj => (congrArg List.length (keep 47 (by decide))).trans
-        (widths j (List.mem_cons_of_mem _ hj)),?_,(keep 49 (by decide)).trans scratch,?_,
-        (keep 2 (by decide)).trans base,(keep 28 (by decide)).trans unit,(keep 53 (by decide)).trans trailing,
-        fun i => (Function.update_of_ne (srcOff i) _ _).trans (headersIn i),(keep 44 (by decide)).trans one,
-        (congrArg List.length (keep 45 (by decide))).trans ticks,(keep 55 (by decide)).trans archive,
-        (keep 54 (by decide)).trans (by simpa only [schedules,List.flatMap_cons,noCode,Bool.false_eq_true,ite_false,List.nil_append] using queue)⟩
-      · intro i hi
-        exact ⟨(privateBlank i hi).1,(Function.update_of_ne (by intro eq; subst i; change 58 ≤ 46 at hi; omega) _ _).trans (privateBlank i hi).2⟩
-      · obtain ⟨xs,h⟩ := projector; exact ⟨xs,(keep 48 (by decide)).trans h⟩
     have pay : payload word D := by
       intro k
       have port := recordRoundTripPorts_other slot 0 (by decide)

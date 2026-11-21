@@ -150,4 +150,37 @@ theorem ordinaryDirectoryIncoming_exec [M8.Machine.Net] {P U : Type} {T r g w W 
   intro j off unused
   exact ⟨(kept j unused).1.trans (outside j off).1,(kept j unused).2.trans (outside j off).2⟩
 
+/-- On a padding row the physical scan advances both archives. Its projected
+bank changes only at the directory port, leaving the payload and selectors
+available to the collector. -/
+theorem ordinaryPaddingArchives_exec {K T m d w W J Q : ℕ} {P F U : Type}
+    (data : ScanData m d w W) (v : RecursiveInterchangeLayout.Descriptor)
+    (proj : Matrix (Fin m) (Fin m) ℚ) (parent : Fin m → ZMod (prime^(w+1)))
+    (prefixes : ℕ → List (Fin (prime+4))) (tail : List (Fin (prime+4)))
+    (schedules : List ℕ → List (Fin (prime+4))) (j : ℕ) (js : List ℕ)
+    (inside : j < data.records) (skip : schedules (j::js) = schedules js)
+    (bank : Fin (66+K) ↪ Fin T) (archive : Fin T) (apart : ∀ i, bank i ≠ archive)
+    (labels : P → F) (body : P → Pr P (66+K) Q prime U) (host : F → Pr F T Q prime U)
+    (calls : ∀ f, host (labels f) = embProg bank labels (body f)) (u : HS T Q prime U) (S : Stacks T prime) :
+    let caller := Fin.castAddEmb (n := 66) K
+    let slots : Fin 7 ↪ Fin 58 := ⟨![45,46,2,47,48,44,49],by decide⟩
+    let scan := ((goodRecordScanPorts.trans slots).trans (Fin.castAddEmb 8)).trans caller
+    let ready := DirectoryReady v proj w W data.H J parent prefixes tail schedules
+    let rest := js.flatMap (LabelDirectory.entry prefixes m (w+1)) ++ tail
+    let A := embStk bank S
+    ready A (j::js) → S.R archive = data.matrices j →
+    ∃ z B, z.user = u.user ∧ ready (embStk bank B) js ∧ B.R archive = data.matrices (j+1) ∧
+      embStk bank B = {A with R := Function.update A.R (caller 46) rest} ∧
+      (∀ k, (∀ i, bank i ≠ k) → B.L k = S.L k ∧ (k ≠ archive → B.R k = S.R k)) ∧
+      Exec host ((embProg bank labels (readWithSuccessorClock (scan 1) (advanceDirectory m scan))).seq
+          (dropWords (bank (caller 2)) archive (bank (caller 59)) ((d+1)*(d+1))))
+        (mk u S) ((1+(4*(prefixes j).length+4+(m*m*(4*(w+1)+4)+1)+1))+((d+1)*(d+1)*(4*data.H+4)+1))
+        (mk z B) := by
+  intro caller slots scan ready rest A start queue
+  obtain ⟨y,user,run,done⟩ := DirectoryReady.advancePadding body (embDn bank u) start skip
+  obtain ⟨z,B,hz,eqn,matrix,frame,advance⟩ := data.advanceEmbeddedRecord_exec j inside bank archive apart
+    (caller 2) (caller 59) (caller.injective.ne (by decide)) labels body host calls _ u S y _ _ run
+    (by rw [done.2.2.2.2.2.1,length_binSyms]) (done.2.2.1 _ (by decide : 58 ≤ 59)).2 queue
+  exact ⟨z,B,hz.trans user,eqn ▸ done,matrix,eqn,frame,advance⟩
+
 end IntegerMultBounds.MathlibTM2.M6.BitNode
