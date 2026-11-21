@@ -565,6 +565,32 @@ theorem packedStageRuns_exec [M8.Machine.Net] (n : Fin 9) (tapes : Fin 32 × Fin
   rwa [sum,show (stageRuns.map children).sum = _ from scheduledChildBill (fun _ => Geometry.Moves.localPaid)
     childTime stageRuns stageRuns_nodup (stageChildStart n)] at paid
 
+/-- The outer stage frame retains the two scalar seeds and the six row
+descriptor fields needed to construct its scan dimensions. -/
+def StageParentWords [M8.Machine.Net] {T : ℕ} (w : ℕ) (row : Descriptor)
+    (S : Stacks (((T+41)+273)+LeafCore.small) prime) : Prop :=
+  let caller := (Fin.castAddEmb 273 (n := T+41)).trans (Fin.castAddEmb LeafCore.small)
+  let regs := (Fin.natAddEmb 6 (m := 35)).trans (Fin.natAddEmb T)
+  let M := prime^(w+1)
+  S.R (caller (regs 2)) = binSyms M.size M ∧ S.R (caller (regs 28)) = binSyms 1 1 ∧
+    ∀ i : Fin 6, S.R (caller ((i.castAdd 35).natAdd T)) = (Routines.hdr row i).map bitSymbol
+
+theorem StageParentWords.of_frame [M8.Machine.Net] {T w : ℕ} {row : Descriptor}
+    {prepared S : Stacks (((T+41)+273)+LeafCore.small) prime}
+    (words : StageParentWords w row prepared) (fan : Fin (142081+2) ↪ Fin T) :
+    let original := (Fin.castAddEmb 41 (n := T)).trans ((Fin.castAddEmb 273).trans (Fin.castAddEmb LeafCore.small))
+    (∀ k, (∀ h, (fan.trans original) h ≠ k) → S.L k = prepared.L k ∧ S.R k = prepared.R k) →
+    StageParentWords w row S := by
+  intro original frame
+  have keep (k) (high : T ≤ k.val) := (frame k (fun h eq => by
+    have val := congrArg Fin.val eq
+    change (fan h).val = k.val at val
+    omega)).2
+  obtain ⟨radix,unit,fields⟩ := words
+  exact ⟨(keep _ (by change T ≤ T+(6+2); omega)).trans radix,
+    (keep _ (by change T ≤ T+(6+28); omega)).trans unit,
+    fun i => (keep _ (by change T ≤ T+i.val; omega)).trans (fields i)⟩
+
 def PackedAllocatedStage [M8.Machine.Net] (n : Fin 9) : Prop :=
     let edges := Geometry.Moves.phaseEdges.filter positiveMove
     let R := Fin 32 × Fin 5
@@ -619,7 +645,7 @@ def PackedAllocatedStage [M8.Machine.Net] (n : Fin 9) : Prop :=
       (base k ⟨j-start k,h⟩ + swaps k ⟨j-start k,h⟩ * swapVolumeRate w)*V else 0
     let localCost := fun k => ((sectionD++sectionA++(sectionB++sectionC)).map (fun g => 76*g.toCircuit.terms.length*V*(142081+7)+6)).sum +
       ((List.range' (start k) edges.length).map (work k)).sum + (List.ofFn (copyWork k)).sum + 3
-    ∃ prepared : Stacks (((T+41)+273)+LeafCore.small) prime, embStk full prepared = shared ∧
+    ∃ prepared : Stacks (((T+41)+273)+LeafCore.small) prime, embStk full prepared = shared ∧ StageParentWords w (role node 142080) prepared ∧
     ∃ code, ∀ data u S, represented full data S →
       (∀ k, (∀ h, full h ≠ k) → S.L k = prepared.L k ∧ S.R k = prepared.R k) →
       ∃ z F t packed out, Exec outer code (mk u S) t (mk z F) ∧
@@ -676,7 +702,8 @@ theorem packedAllocatedStage_host [M8.Machine.Net] (n : Fin 9) : PackedAllocated
         exact trace)
   obtain ⟨init,view,entry⟩ := packedInvocationFrame fan prepared row w
   let sweep := Prog.seqList (stageRuns.map fun k => embProg (runBank k) (Prod.mk k) (code k))
-  refine ⟨init,?_,.seq (embProg stageBank id sweep) restore,?_⟩
+  have ⟨_,radix,unit,_,words,_,_⟩ := entry init (fun _ _ => ⟨rfl,rfl⟩)
+  refine ⟨init,?_,⟨radix,unit,words⟩,.seq (embProg stageBank id sweep) restore,?_⟩
   · change embStk fan (embStk stageBank init) = shared
     rw [view,owners]
   intro data u S live fresh

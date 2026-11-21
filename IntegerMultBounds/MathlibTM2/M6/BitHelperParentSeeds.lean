@@ -9,7 +9,7 @@ open IntegerMultBounds.Machine IntegerMultBounds.Networks Stack Host Cover.Fallb
 open Shared50ModularControl (prime)
 variable {T Q : ℕ} {P U : Type}
 
-private theorem seedProduct_exec (body : P → Pr P T Q prime U) (r : Fin 11 ↪ Fin T)
+theorem seedProduct_exec (body : P → Pr P T Q prime U) (r : Fin 11 ↪ Fin T)
     (a b c : ℕ) (ha : 0 < a) (hb : 0 < b) (hc : 0 < c) (u : HS T Q prime U) (S : Stacks T prime)
     (x : S.R (r 0) = binSyms a.size a) (y : S.R (r 1) = binSyms b.size b)
     (z : S.R (r 2) = binSyms c.size c) (free : ∀ i : Fin 11, 3 ≤ i → i < 10 → S.R (r i) = []) :
