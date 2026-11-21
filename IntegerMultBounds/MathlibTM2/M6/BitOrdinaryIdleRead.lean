@@ -453,6 +453,18 @@ theorem ordinarySpectatorWord_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T
   dsimp only [W] at *
   omega
 
+noncomputable def directorySpectatorWord {T Q : ℕ} {P U : Type} (ports : Fin 12 ↪ Fin T) : Pr P T Q prime U :=
+  let r := (Fin.castAddEmb (n := 10) 2).trans ports
+  (((toUnary (ports 10) (r 0) (r 4) (r 5) (r 6)).seq
+        (toUnary (ports 11) (r 1) (r 4) (r 5) (r 6))).seq
+        ((Mult.ShortConv.unaryProduct (r 0) (r 1) (r 2) (r 4) (r 5)).seq
+        (unaryBinary (r 2) (r 3) (r 4) (r 5) (r 6) (r 7) (r 8) (r 9))))
+
+noncomputable def directorySpectatorState {T : ℕ} (r : Fin 12 ↪ Fin T) (b d : ℕ) (S : Stacks T prime) : Stacks T prime :=
+  let W := b*d
+  let factors := Function.update (Function.update S.R (r 0) (List.replicate b Node.tick)) (r 1) (List.replicate d Node.tick)
+  {S with R := Function.update (Function.update factors (r 2) (List.replicate W Node.tick)) (r 3) (binSyms W.size W)}
+
 /-- Compute the scanner's binary spectator product directly from the two
 binary descriptor fields on a recursive call. -/
 theorem directorySpectatorWord_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
@@ -461,18 +473,13 @@ theorem directorySpectatorWord_exec {T Q : ℕ} {P U : Type} (body : P → Pr P 
     (between : S.R (ports 10) = (FlatCoordinateSchedule.bits b).map bitSymbol)
     (afterD : S.R (ports 11) = (FlatCoordinateSchedule.bits d).map bitSymbol)
     (empty : ∀ i : Fin 10, S.R (ports (i.castAdd 2)) = []) :
-    let r := (Fin.castAddEmb (n := 10) 2).trans ports
     let W := b*d
-    let decoded := Function.update (Function.update S.R (r 0) (List.replicate b Node.tick))
-      (r 1) (List.replicate d Node.tick)
     ∃ z t, z.user = u.user ∧ t ≤ 68*W+48 ∧
-      Exec body (((toUnary (ports 10) (r 0) (r 4) (r 5) (r 6)).seq
-        (toUnary (ports 11) (r 1) (r 4) (r 5) (r 6))).seq
-        ((Mult.ShortConv.unaryProduct (r 0) (r 1) (r 2) (r 4) (r 5)).seq
-        (unaryBinary (r 2) (r 3) (r 4) (r 5) (r 6) (r 7) (r 8) (r 9))))
-        (mk u S) t (mk z {S with R := Function.update (Function.update decoded (r 2)
-          (List.replicate W Node.tick)) (r 3) (binSyms W.size W)}) := by
-  intro r W decoded
+      Exec body (directorySpectatorWord ports)
+        (mk u S) t (mk z (directorySpectatorState ports b d S)) := by
+  intro W
+  let r := (Fin.castAddEmb (n := 10) 2).trans ports
+  let decoded := Function.update (Function.update S.R (r 0) (List.replicate b Node.tick)) (r 1) (List.replicate d Node.tick)
   obtain ⟨v,m,vu,readB,first⟩ := LabelDecode.field_exec body
     ((by decide : ([10,0,4,5,6] : List (Fin 12)).Nodup).map ports.injective) b u S between (by
       intro i hi
