@@ -153,21 +153,29 @@ theorem blocks_run {a K N B : ℕ} (v : Tapes 2 a) (width count total : List Boo
     ∃ F, HoareTime (blocksProgram a) (· = frame v) (· = frame F)
       (B*(N*(14*K+14*width.length+39)+7*count.length+16+7*K+7*width.length+23)+7*total.length+16) ∧
       F.head 0 = v.head 0+B*(N*K) ∧ F.head 1 = v.head 1+B*K ∧ F.tape 0 = v.tape 0 ∧
+      (∀ z, ¬(v.head 1 ≤ z ∧ z < v.head 1+B*K) → F.tape 1 z = v.tape 1 z) ∧
       ∀ b j, F.tape 1 (v.head 1+b.val*K+j.val) = SparseRoleCircuit.encode (∑ r, x b r j) := by
   intro frame
   let ready := fun (i : ℕ) (u : Tapes 2 a) =>
     u.head 0 = v.head 0+i*(N*K) ∧ u.head 1 = v.head 1+i*K ∧ u.tape 0 = v.tape 0 ∧
+    (∀ z, ¬(v.head 1 ≤ z ∧ z < v.head 1+B*K) → u.tape 1 z = v.tape 1 z) ∧
     ∀ (b : Fin B) (j : Fin K), u.tape 1 (v.head 1+b.val*K+j.val) =
       (if b.val < i then SparseRoleCircuit.encode (∑ r, x b r j) else SparseRoleCircuit.encode 0)
   obtain ⟨F,done,exec⟩ := blocks_hoare width count total hw hb ready v
-    (by simpa [ready] using zero) (fun i hi u ⟨hs,hd,src,values⟩ => by
+    (by simpa [ready] using zero) (fun i hi u ⟨hs,hd,src,exterior,values⟩ => by
       let b : Fin B := ⟨i,hi⟩
       obtain ⟨D,scan,ss,dd,st,acc,off⟩ := run u width count K N hw hn (x b) (fun _ => 0)
         (fun r j => by rw [src,hs]; exact input b r j)
         (fun j => by rw [hd]; simpa [b] using values b j)
-      refine ⟨D,scan,?_,?_,st.trans src,?_⟩
+      refine ⟨D,scan,?_,?_,st.trans src,?_,?_⟩
       · simp [RoleArrayStackMoves.shifted,advance,Move.offset,ss,hs,add_mul,add_assoc]
       · simp [RoleArrayStackMoves.shifted,advance,Move.offset,dd,hd,add_mul,add_assoc]
+      · intro z outside
+        change D.tape 1 z = _
+        have bound := Nat.mul_le_mul_right K (Nat.succ_le_of_lt hi)
+        have endBlock : (i : ℤ)*K+K ≤ (B : ℤ)*K := by exact_mod_cast (show i*K+K ≤ B*K by simpa [Nat.succ_mul] using bound)
+        have nonneg : 0 ≤ (i : ℤ)*K := by positivity
+        exact (off z (by rw [hd]; intro hz; apply outside; constructor <;> omega)).trans (exterior z outside)
       intro k j
       change D.tape 1 _ = _
       by_cases eqn : k.val = i
@@ -184,7 +192,7 @@ theorem blocks_run {a K N B : ℕ} (v : Tapes 2 a) (width count total : List Boo
           · have := gap _ _ h; omega
         rw [off _ outside,values]
         by_cases h : k.val < i <;> simp [h,show (k.val < i+1) ↔ k.val < i by omega])
-  obtain ⟨hs,hd,src,values⟩ := done
-  exact ⟨F,exec,hs,hd,src,fun b j => by simpa [b.isLt] using values b j⟩
+  obtain ⟨hs,hd,src,exterior,values⟩ := done
+  exact ⟨F,exec,hs,hd,src,exterior,fun b j => by simpa [b.isLt] using values b j⟩
 
 end IntegerMultBounds.Machine.LabelRowXor

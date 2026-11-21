@@ -156,6 +156,54 @@ theorem scanAccumulator_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T Q pri
   · exact clocks 6 (by decide)
   · exact free
 
+/-- Read a target sum in the physical order of the unlabelled accumulator. -/
+noncomputable def stageTargetWord (n : Fin 9) (k : (Fin 32 × Fin 5) × Fin 111) (w B K : ℕ)
+    (x : Fin 142081 → Fin ((prime^w)^16*(B*K)) → ZMod 2)
+    (i : Fin ((prime^w)^16*(B*K))) : ZMod 2 :=
+  let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n k.1.1 k.1.2,ownerTape_injective ..⟩
+  let pair : Fin ((prime^w)^16) × Fin (B*K) := finProdFinEquiv.symm i
+  let initial := fun j => (selectedFrame w (Frames.initialRefs j)).symm (phaseRead owner x pair.2 j)
+  let dst := 111+k.2.val
+  selectedFrame w (Frames.finalRefs dst) (initial dst + initial k.2.val) (copyActive.symm pair.1)
+
+private theorem readStageTargetWord (n : Fin 9) (k : (Fin 32 × Fin 5) × Fin 111) (w B K : ℕ) (x)
+    (L R : List (Fin (prime+4))) :
+    let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n k.1.1 k.1.2,ownerTape_injective ..⟩
+    (∀ (s : Swap.Shear.State (Fin 8) (ZMod (prime^w))) (b : Fin B) (j : Fin K),
+      let initial := fun i => (selectedFrame w (Frames.initialRefs i)).symm
+        (phaseRead owner x (finProdFinEquiv (b,j)) i)
+      let dst := 111+k.2.val
+      readAt blank L R ((FlatCoordinateLayout.index (AffineFieldCoordinates.embed s)
+        (finProdFinEquiv (b,j))).val : ℤ) = SparseRoleCircuit.encode
+        (selectedFrame w (Frames.finalRefs dst) (initial dst + initial k.2.val) s)) →
+    ∀ i, readAt blank L R (i.val : ℤ) = SparseRoleCircuit.encode (stageTargetWord n k w B K x i) := by
+  intro owner read i
+  obtain ⟨⟨a,t⟩,rfl⟩ := finProdFinEquiv.surjective i
+  obtain ⟨s,rfl⟩ := copyActive.surjective a
+  obtain ⟨⟨b,j⟩,rfl⟩ := finProdFinEquiv.surjective t
+  have h := read s b j
+  rw [show FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) (finProdFinEquiv (b,j)) = finProdFinEquiv (copyActive s,finProdFinEquiv (b,j)) from rfl] at h
+  simpa only [stageTargetWord,owner,Equiv.symm_apply_apply] using h
+
+/-- Specify both the indexed word and the blank exterior at head zero. -/
+def WordAtZero {V : ℕ} (word : Fin V → ZMod 2) (L R : List (Fin (prime+4))) : Prop :=
+  ∀ z, readAt blank L R z = putWord (fun _ => blank) 0
+    (List.ofFn fun i => SparseRoleCircuit.encode (word i)) z
+
+private theorem wordAtZero_of_reads {V : ℕ} (word : Fin V → ZMod 2) (L R : List (Fin (prime+4)))
+    (inside : ∀ i, readAt blank L R (i.val : ℤ) = SparseRoleCircuit.encode (word i))
+    (outside : ∀ z, z < 0 ∨ (V : ℤ) ≤ z → readAt blank L R z = blank) : WordAtZero word L R := by
+  intro z
+  by_cases h : 0 ≤ z ∧ z < V
+  · let i : Fin V := ⟨z.toNat,by omega⟩
+    have pos : (i.val : ℤ) = z := by dsimp [i]; omega
+    rw [← pos]
+    have cell := BinaryDivide.putWord_getElem (a := prime) (fun _ => blank) 0
+      (List.ofFn fun i => SparseRoleCircuit.encode (a := prime) (word i)) i.val (by simpa using i.isLt)
+    simpa using (inside i).trans (by simpa using cell.symm)
+  · have off : z < 0 ∨ (V : ℤ) ≤ z := by omega
+    rw [putWord_outside _ _ _ _ (by simpa using off),outside z off]
+
 theorem restoredTarget_host (n : Fin 9) (run : Fin 32 × Fin 5) (t : Fin 111) :
     let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n run.1 run.2,ownerTape_injective ..⟩
     let dst : Fin 661 := ⟨111+t.val,by omega⟩
@@ -172,12 +220,7 @@ theorem restoredTarget_host (n : Fin 9) (run : Fin 32 × Fin 5) (t : Fin 111) :
     (∀ j : Fin 7, S.L (bank j.succ) = (if j = 0 then [] else [separator]) ∧
       S.R (bank j.succ) = scanPrivateWords K N D j) →
     ∃ z F steps, Exec body code (mk u S) steps (mk z F) ∧ steps ≤ 3900*(D*(N*K))+6 ∧ z.user = u.user ∧
-      (∀ (s : Swap.Shear.State (Fin 8) (ZMod (prime^w))) (b : Fin B) (j : Fin K),
-        let initial := fun i => (selectedFrame w (Frames.initialRefs i)).symm
-          (phaseRead owner x (finProdFinEquiv (b,j)) i)
-        readAt blank (F.L (bank 1)) (F.R (bank 1))
-          ((FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) (finProdFinEquiv (b,j))).val : ℤ) =
-          SparseRoleCircuit.encode (selectedFrame w (Frames.finalRefs dst.val) (initial dst.val + initial t.val) s)) ∧
+      WordAtZero (stageTargetWord n (run,t) w B K x) (F.L (bank 1)) (F.R (bank 1)) ∧
       ∀ j, (∀ i, bank i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
   intro owner dst
   let count := fun {q : ℕ} (_ : Program 8 q prime) => q
@@ -188,7 +231,7 @@ theorem restoredTarget_host (n : Fin 9) (run : Fin 32 × Fin 5) (t : Fin 111) :
   let v := scanInput (out (owner dst)) (D*K)
   let ready := scanFrame K N D v
   have privateReady := scanPrivate_ready K N D (out (owner dst)) bank S stored
-  obtain ⟨Y,scan,hs,hd,src,values⟩ := restoredStage_targetScan n run w B W label x y out trace restored t v pos hb
+  obtain ⟨Y,scan,hs,hd,src,exterior,values⟩ := restoredStage_targetScan n run w B W label x y out trace restored t v pos hb
     (scanInput_source (H := D*K) (out (owner dst))) (scanInput_zero (out (owner dst)))
   have rep : RepT ready (embStk bank S).L (embStk bank S).R := by
     intro i z
@@ -209,16 +252,23 @@ theorem restoredTarget_host (n : Fin 9) (run : Fin 32 × Fin 5) (t : Fin 111) :
   obtain ⟨z,F,steps,exec,paid,user,done,off⟩ := placedHoare_exec _ bank fits body linear u S rep
   refine ⟨z,F,steps,exec,?_,user,?_,off⟩
   · exact paid.trans_eq (by ring)
-  · intro s b j
-    let i := FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) (finProdFinEquiv (b,j))
-    have h := done 1 (v.head 1+i.val)
-    change Y.tape 1 _ = readAt blank (F.L (bank 1)) (F.R (bank 1)) (_-(Y.head 1+(D*K : ℕ)*(-1))) at h
-    rw [hd] at h
-    have h0 : v.head 1 = 0 := rfl
-    rw [h0] at h
-    simp only [zero_add,Nat.cast_mul,mul_neg_one,add_neg_cancel,sub_zero] at h
-    have result := h.symm.trans (by simpa only [h0,zero_add] using values s b j)
-    simpa only [h0,zero_add,D,K,owner,dst,Nat.cast_mul,i,add_neg_cancel,sub_zero] using result
+  · have h0 : v.head 1 = 0 := rfl
+    have cell (z : ℤ) : readAt blank (F.L (bank 1)) (F.R (bank 1)) z = Y.tape 1 z := by
+      have h := done 1 z
+      change Y.tape 1 z = readAt blank (F.L (bank 1)) (F.R (bank 1)) (z-(Y.head 1+(D*K : ℕ)*(-1))) at h
+      rw [hd,h0] at h
+      simpa [D,K,Nat.cast_mul] using h.symm
+    apply wordAtZero_of_reads
+    · apply readStageTargetWord
+      intro s b j
+      rw [cell]
+      simpa only [h0,zero_add] using values s b j
+    · intro z hz
+      have outside : z < 0 ∨ (D*K : ℕ) ≤ z := by simpa [D,Nat.mul_assoc] using hz
+      have ext : ¬(v.head 1 ≤ z ∧ z < v.head 1+(D : ℤ)*K) := by rw [h0]; push_cast at outside; omega
+      rw [cell,exterior z ext]
+      change putWord (fun _ => blank) 0 (List.replicate (D*K) (SparseRoleCircuit.encode 0)) z = _
+      exact putWord_outside _ _ _ _ (by simpa using outside)
 
 /-- The target stacks of distinct scheduled scans are disjoint. -/
 noncomputable def targetOwner (n : Fin 9) (k : (Fin 32 × Fin 5) × Fin 111) : Fin 142081 :=
@@ -373,15 +423,7 @@ theorem stageTargets_host (n : Fin 9) :
     (∀ i z, readAt blank (S.L (src i)) (S.R (src i)) (z-1) =
       RadixZeroFill.encodedBinary (FlatCoordinateSchedule.bits (![K,N,D] i)) z) →
     (∀ k (j : Fin 7), S.L (bank k j.succ) = [] ∧ S.R (bank k j.succ) = []) →
-    let result := fun (k : I) (L R : List (Fin (prime+4))) =>
-      let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n k.1.1 k.1.2,ownerTape_injective ..⟩
-      ∀ (s : Swap.Shear.State (Fin 8) (ZMod (prime^w))) (b : Fin B) (j : Fin K),
-        let initial := fun i => (selectedFrame w (Frames.initialRefs i)).symm
-          (phaseRead owner x (finProdFinEquiv (b,j)) i)
-        let dst := 111+k.2.val
-        readAt blank L R ((FlatCoordinateLayout.index (AffineFieldCoordinates.embed s)
-          (finProdFinEquiv (b,j))).val : ℤ) = SparseRoleCircuit.encode
-          (selectedFrame w (Frames.finalRefs dst) (initial dst + initial k.2.val) s)
+    let result := fun k => WordAtZero (stageTargetWord n k w B K x)
     ∃ z F steps, Exec body code (mk u S) steps (mk z F) ∧ steps ≤ stageScanCost order.length K N D ∧
       z.user = u.user ∧ (∀ k, result k (F.L (bank k 1)) (F.R (bank k 1))) ∧
       ∀ j, (∀ k i, bank k i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
@@ -570,15 +612,7 @@ theorem packedStageTargets_host (n : Fin 9) :
       S.R (reg (i.castAdd 7)) = binSyms (![K,N,D] i).size (![K,N,D] i)) →
     (∀ i : Fin 7, S.R (reg (i.natAdd 3)) = []) →
     (∀ k (j : Fin 7), S.L (bank k j.succ) = [] ∧ S.R (bank k j.succ) = []) →
-    let result := fun (k : I) (L R : List (Fin (prime+4))) =>
-      let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n k.1.1 k.1.2,ownerTape_injective ..⟩
-      ∀ (s : Swap.Shear.State (Fin 8) (ZMod (prime^w))) (b : Fin B) (j : Fin K),
-        let initial := fun i => (selectedFrame w (Frames.initialRefs i)).symm
-          (phaseRead owner x (finProdFinEquiv (b,j)) i)
-        let dst := 111+k.2.val
-        readAt blank L R ((FlatCoordinateLayout.index (AffineFieldCoordinates.embed s)
-          (finProdFinEquiv (b,j))).val : ℤ) = SparseRoleCircuit.encode
-          (selectedFrame w (Frames.finalRefs dst) (initial dst + initial k.2.val) s)
+    let result := fun k => WordAtZero (stageTargetWord n k w B K x)
     ∃ z F steps, Exec (fun g => embProg inner id (body g)) code (mk u S) steps (mk z F) ∧
       steps ≤ time + (4300*order.length+200)*(D*(N*K)) ∧ z.user = u.user ∧
       (∀ k, result k (F.L (bank k 1)) (F.R (bank k 1))) ∧

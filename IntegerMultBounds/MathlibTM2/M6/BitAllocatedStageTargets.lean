@@ -100,18 +100,9 @@ def AllocatedStageTargets [M8.Machine.Net] (n : Fin 9) : Prop :=
     (∀ i : Fin 3, S.L (reg (i.castAdd 11)) = [] ∧ S.R (reg (i.castAdd 11)) = []) →
     (∀ i : Fin 7, S.R (reg ((i.natAdd 3).castAdd 4)) = []) →
     (∀ k (j : Fin 7), S.L (bank k j.succ) = [] ∧ S.R (bank k j.succ) = []) →
-    let result := fun (k : (R × Fin 111)) (L R : List (Fin (prime+4))) =>
-      let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n k.1.1 k.1.2,ownerTape_injective ..⟩
-      ∀ (s : Swap.Shear.State (Fin 8) (ZMod M)) (b : Fin B) (j : Fin K),
-        let initial := fun i => (selectedFrame (w+1) (Frames.initialRefs i)).symm
-          (phaseRead owner x (finProdFinEquiv (b,j)) i)
-        let dst := 111+k.2.val
-        readAt blank L R ((FlatCoordinateLayout.index (AffineFieldCoordinates.embed s)
-          (finProdFinEquiv (b,j))).val : ℤ) = SparseRoleCircuit.encode
-          (selectedFrame (w+1) (Frames.finalRefs dst) (initial dst + initial k.2.val) s)
     ∃ z F steps, Exec (fun g => embProg inner id (outer g)) code (mk u S) steps (mk z F) ∧
       steps ≤ budget + (4300*order.length+1530001223)*V ∧ z.user = u.user ∧
-      (∀ k, result k (F.L (bank k 1)) (F.R (bank k 1))) ∧
+      (∀ k, RecordPayload (bank k 1) (fun _ => blank) 0 (stageTargetWord n k (w+1) B K x) F) ∧
       ∃ packed out, RestoredOwnerPayloads n (full.trans inner) out F ∧
         stageRuns.foldr (fun k next a => ∃ b, packedStageEffect n k (w+1) B
           (node.beforeRows*rows*node.between*node.afterD) a b ∧ next b)
@@ -151,7 +142,7 @@ theorem allocatedStageTargets_host [M8.Machine.Net] (n : Fin 9) : AllocatedStage
   have apart (i : Fin 14) (j : Fin total) : reg i ≠ inner j := shared_ne_inner i j
   let frame := (Fin.natAddEmb T (m := 41)).trans caller
   refine ⟨.seq (stageExterior (exteriorBank frame)) (.seq (stageHeadersFromLabels (stageHeaderBank frame)) code),?_⟩
-  intro label x u S live privateRegs tailFree blockFree blankHdr free empty result
+  intro label x u S live privateRegs tailFree blockFree blankHdr free empty
   let tail := node.beforeRows*rows*node.between*node.afterD
   have actual := parent.of_frame fan privateRegs
   have radix : S.R a = binSyms M.size M := actual.1
@@ -206,7 +197,7 @@ theorem allocatedStageTargets_host [M8.Machine.Net] (n : Fin 9) : AllocatedStage
         have val := congrArg Fin.val eq
         change total+14+_ = total+10 at val
         omega)).trans (empty k j).2)⟩)
-  refine ⟨z,F,k+(m+steps),Exec.seq makeTail (Exec.seq setup ran),?_,same.trans (same₀.trans first),output,packed,out,ownersOut,trace,restored⟩
+  refine ⟨z,F,k+(m+steps),Exec.seq makeTail (Exec.seq setup ran),?_,same.trans (same₀.trans first),(fun k z => by rw [encodedOwnerCell,sub_zero]; exact output k z),packed,out,ownersOut,trace,restored⟩
   have volume : D*(N*K) = V := by dsimp only [V,W,D,N]; ring
   rw [volume] at bill
   have hm : 0 < M := pow_pos Shared50ModularControl.prime_prime.pos _

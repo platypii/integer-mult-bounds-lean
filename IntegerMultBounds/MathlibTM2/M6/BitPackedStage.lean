@@ -403,6 +403,7 @@ theorem restoredStage_targetScan (n : Fin 9) (run : Fin 32 × Fin 5) (w B W : �
     (∀ i : Fin (D*K), v.tape 1 (v.head 1+i.val) = SparseRoleCircuit.encode 0) →
     ∃ F, HoareTime (LabelRowXor.blocksProgram prime) (· = frame v) (· = frame F) (200*(D*(N*K))) ∧
       F.head 0 = v.head 0+D*(N*K) ∧ F.head 1 = v.head 1+D*K ∧ F.tape 0 = v.tape 0 ∧
+      (∀ z, ¬(v.head 1 ≤ z ∧ z < v.head 1+D*K) → F.tape 1 z = v.tape 1 z) ∧
       ∀ (s : Swap.Shear.State (Fin 8) (ZMod (prime^w))) (b : Fin B) (j : Fin K),
         let initial := fun i => (selectedFrame w (Frames.initialRefs i)).symm
           (phaseRead owner x (finProdFinEquiv (b,j)) i)
@@ -417,12 +418,12 @@ theorem restoredStage_targetScan (n : Fin 9) (run : Fin 32 × Fin 5) (w B W : �
     obtain ⟨⟨a,b⟩,rfl⟩ := finProdFinEquiv.surjective q
     simp only [entry,Equiv.symm_apply_apply]
     simp [finProdFinEquiv]; ring
-  obtain ⟨F,scan,hsrc,hdst,src,acc⟩ := LabelRowXor.blocks_run v (bits K) (bits N) (bits D)
+  obtain ⟨F,scan,hsrc,hdst,src,exterior,acc⟩ := LabelRowXor.blocks_run v (bits K) (bits N) (bits D)
     (FlatCoordinateSchedule.bits_value _) (FlatCoordinateSchedule.bits_value _) (FlatCoordinateSchedule.bits_value _)
     (fun q r j => out (owner dst) (entry q r j)) (fun q r j => by
       simpa only [offset,Nat.cast_add,Nat.cast_mul,add_assoc] using input (entry q r j))
     (fun q j => by simpa [finProdFinEquiv,add_assoc,add_left_comm,add_comm,mul_comm] using zero (finProdFinEquiv (q,j)))
-  refine ⟨F,scan.consequence (fun _ h => h) (fun _ h => h) ?_,hsrc,hdst,src,?_⟩
+  refine ⟨F,scan.consequence (fun _ h => h) (fun _ h => h) ?_,hsrc,hdst,src,exterior,?_⟩
   · apply targetScan_cost pos (pow_pos Shared50ModularControl.prime_prime.pos _)
       (Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) hb)
     all_goals apply FlatCoordinateDimensions.bits_length_le_twice le_rfl <;> first | assumption | exact pow_pos Shared50ModularControl.prime_prime.pos _ | exact Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) hb
