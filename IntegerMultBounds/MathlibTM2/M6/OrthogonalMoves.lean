@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.M6.OrthogonalHeight
+import IntegerMultBounds.MathlibTM2.M8.Global.FrameMachine
 public import IntegerMultBounds.Networks.Shared50ModularControl
 
 /-! A single reversed coordinate layout for the original orthogonal PR589 frames. -/
@@ -71,6 +72,29 @@ private theorem small_admissible {A : Matrix (Fin 8) (Fin 8) ℚ} {e : ℕ}
   intro d mem
   exact ((M8.Exchange.den_mem_le bound le_rfl mem).trans (M8.Exchange.le_coefficientBound
     (size.trans (pow_le_pow_right₀ (by decide) (by decide))))).trans_lt coefficientBound_lt_prime
+
+open Shared50ModularControl IntegerMultBounds.Swap.Modular M8.Exchange in
+/-- The same residual exchange carries either nested frame into the other. -/
+theorem orthogonalResidual_frames (i j : Fin 636) (nested : Geometry.label i ≤ Geometry.label j) (w : ℕ) :
+    let P := reduce (prime^w) (labelProj i)
+    let Q := reduce (prime^w) (labelProj j)
+    ∀ s, exchange (Q-P) (exchange P s) = exchange Q s ∧
+      exchange (Q-P) (exchange Q s) = exchange P s := by
+  intro P Q s
+  have adm (k : Fin 636) := small_admissible (labelProj_bounded k) (by decide) w
+  obtain ⟨pq,qp⟩ := nested_mul nested
+  have mul (a b c : Fin 636) (eq : labelProj a * labelProj b = labelProj c) :
+      reduce (prime^w) (labelProj a) * reduce (prime^w) (labelProj b) = reduce (prime^w) (labelProj c) := by
+    rw [← reduce_mul _ (adm a) (adm b),eq]
+  have pp : P*P=P := mul i i i (labelProj_mul_self _)
+  have qq : Q*Q=Q := mul j j j (labelProj_mul_self _)
+  have pq' : P*Q=P := mul i j i pq
+  have qp' : Q*P=P := mul j i i qp
+  constructor
+  · rw [M8.Global.exchange_exchange,Matrix.sub_mul,qp',pp]
+    congr 1 <;> abel
+  · rw [M8.Global.exchange_exchange,Matrix.sub_mul,qq,pq']
+    congr 1 <;> abel
 
 open Shared50ModularControl IntegerMultBounds.Swap.Modular M8.Exchange in
 /-- In the shared reversed coordinates the reduced program performs the

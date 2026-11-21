@@ -190,4 +190,106 @@ theorem orthogonalMove_owner (U : Matrix (Fin 8) (Fin 8) ℚ) (spec : Orthogonal
       (M8.ReversedExchange.revPivots_snd 8 r) pairs]
     exact (rb _ _ j).trans ((move _ _ j).trans (ra x s j))
 
+open IntegerMultBounds.Networks.Certificates.PR589
+
+private theorem uniformRate {E : Type*} [Finite E] (rate : E → ℕ) : ∃ C, ∀ e, rate e ≤ C := by
+  classical
+  letI := Fintype.ofFinite E
+  exact ⟨Finset.univ.sup rate,fun e => Finset.le_sup (Finset.mem_univ e)⟩
+
+/-- One basis and one scan-cost coefficient serve every nested PR589 edge.
+Only the child at the certified rank contributes a recursive cost. -/
+theorem orthogonalEdges_owner :
+    ∃ (basis : Matrix (Fin 8) (Fin 8) ℕ) (C : ℕ),
+      (∀ a b, basis a b ≤ 2^28) ∧ (basis.map (Nat.cast : ℕ → ℚ)).det ≠ 0 ∧
+      ∀ i j : Fin 636, Geometry.label i ≤ Geometry.label j →
+      ∃ before after : SharedBankSkeleton.Skeleton 1 prime, ∀ w W : ℕ, 0 < W →
+        let m := prime^w
+        let V := m^16*W
+        let r := Geometry.moveRank i j
+        let G := reduce m (basis.map (Nat.cast : ℕ → ℚ))
+        let encode := Exchange.transform G (reduce m (ReversedExchange.rev 8)*G)
+        let addr := fun s (k : Fin W) => FlatCoordinateLayout.index (AffineFieldCoordinates.embed (encode s)) k
+        ∀ child : SharedBankStage.Stage _ 1 prime (@portOwner V),
+        (∀ x, RevT prime w r (sub prime w 8 0 r ⟨1,1,1,8*w,1,W⟩) (ext x) (ext (child.transform x))) →
+        ∃ stage : SharedBankStage.Stage _ 1 prime (@portOwner V),
+          SharedBankSkeleton.ofStage stage = SharedBankSkeleton.compose
+            (SharedBankSkeleton.compose before (SharedBankSkeleton.ofStage child)) after ∧
+          stage.cost ≤ C*V + child.cost + 2 ∧ ∀ x s k,
+            stage.transform x (addr (Exchange.exchange
+              (reduce m (Nine.labelProj j)-reduce m (Nine.labelProj i)) s) k) = x (addr s k) := by
+  classical
+  obtain ⟨basis,small,det,edges⟩ := orthogonalMoves_common_basis
+  let Edge := {p : Fin 636 × Fin 636 // Geometry.label p.1 ≤ Geometry.label p.2}
+  have compiled (e : Edge) := by
+    obtain ⟨spec,_,_,pivots⟩ := edges e.val.1 e.val.2 e.property
+    have bound : Geometry.moveRank e.val.1 e.val.2 ≤ 8 := by
+      simpa [Geometry.moveRank,Geometry.Address] using
+        Submodule.finrank_le (LinearMap.range (Geometry.projector e.val.2 - Geometry.projector e.val.1))
+    exact orthogonalMove_owner _ spec _ bound pivots
+  choose rate before after run using compiled
+  obtain ⟨C,le⟩ := uniformRate rate
+  refine ⟨basis,C,small,det,?_⟩
+  intro i j nested
+  let e : Edge := ⟨(i,j),nested⟩
+  refine ⟨before e,after e,?_⟩
+  intro w W pos m V r G encode addr child hchild
+  obtain ⟨stage,machine,cost,read⟩ := run e w W pos child hchild
+  refine ⟨stage,machine,?_,?_⟩
+  · rw [cost]
+    exact Nat.add_le_add_right (Nat.add_le_add_right (Nat.mul_le_mul_right V (le e)) _) _
+  · intro x s k
+    have spec := (edges i j nested).1
+    have action := (orthogonalMove_coordinates basis small i j w det spec).2 s
+    rw [(spec.2 w).2] at action
+    exact (congrArg (fun (t : Swap.Shear.State (Fin 8) (ZMod (prime^w))) => stage.transform x (FlatCoordinateLayout.index (AffineFieldCoordinates.embed t) k))
+      action.symm).trans (read x (encode s) k)
+
+/-- A scheduled move carries every bit from the source frame to the destination
+frame in the same basis, in either direction of nesting. -/
+theorem orthogonalCheckedMoves_owner :
+    ∃ (basis : Matrix (Fin 8) (Fin 8) ℕ) (C : ℕ),
+      (∀ a b, basis a b ≤ 2^28) ∧ (basis.map (Nat.cast : ℕ → ℚ)).det ≠ 0 ∧
+      ∀ i j : Fin 636, Geometry.Moves.CheckedPair (i.val,j.val) →
+      ∃ before after : SharedBankSkeleton.Skeleton 1 prime, ∀ w W : ℕ, 0 < W →
+        let m := prime^w
+        let V := m^16*W
+        let r := Geometry.moveRank i j
+        let G := reduce m (basis.map (Nat.cast : ℕ → ℚ))
+        let encode := Exchange.transform G (reduce m (ReversedExchange.rev 8)*G)
+        let addr := fun s (k : Fin W) => FlatCoordinateLayout.index (AffineFieldCoordinates.embed (encode s)) k
+        ∀ child : SharedBankStage.Stage _ 1 prime (@portOwner V),
+        (∀ x, RevT prime w r (sub prime w 8 0 r ⟨1,1,1,8*w,1,W⟩) (ext x) (ext (child.transform x))) →
+        ∃ stage : SharedBankStage.Stage _ 1 prime (@portOwner V),
+          SharedBankSkeleton.ofStage stage = SharedBankSkeleton.compose
+            (SharedBankSkeleton.compose before (SharedBankSkeleton.ofStage child)) after ∧
+          stage.cost ≤ C*V + child.cost + 2 ∧ ∀ x s k,
+            stage.transform x (addr (Exchange.exchange (reduce m (Nine.labelProj j)) s) k) =
+              x (addr (Exchange.exchange (reduce m (Nine.labelProj i)) s) k) := by
+  obtain ⟨basis,C,small,det,edges⟩ := orthogonalEdges_owner
+  refine ⟨basis,C,small,det,?_⟩
+  intro i j checked
+  rcases Geometry.Moves.nested _ checked with forward | back
+  · obtain ⟨before,after,runs⟩ := edges i j forward
+    refine ⟨before,after,?_⟩
+    intro w W pos m V r G encode addr child hchild
+    obtain ⟨stage,machine,cost,read⟩ := runs w W pos child hchild
+    refine ⟨stage,machine,cost,?_⟩
+    intro x s k
+    exact (congrArg (fun t => stage.transform x (addr t k))
+      (orthogonalResidual_frames i j forward w s).1.symm).trans
+        (read x (Exchange.exchange (reduce m (Nine.labelProj i)) s) k)
+  · obtain ⟨before,after,runs⟩ := edges j i back
+    refine ⟨before,after,?_⟩
+    intro w W pos m V r G encode addr child hchild
+    have rank : Geometry.moveRank j i = r := by
+      dsimp only [r]
+      rw [Geometry.moveRank_eq _ _ (Or.inl back),Geometry.moveRank_eq _ _ (Or.inr back),Nat.add_comm]
+    obtain ⟨stage,machine,cost,read⟩ := runs w W pos child (rank.symm ▸ hchild)
+    refine ⟨stage,machine,cost,?_⟩
+    intro x s k
+    exact (congrArg (fun t => stage.transform x (addr t k))
+      (orthogonalResidual_frames j i back w s).2.symm).trans
+        (read x (Exchange.exchange (reduce m (Nine.labelProj i)) s) k)
+
 end IntegerMultBounds.MathlibTM2.M6.BitNode
