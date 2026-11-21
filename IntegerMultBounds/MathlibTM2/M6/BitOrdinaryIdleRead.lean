@@ -2554,7 +2554,7 @@ theorem allocatedInvocation_host [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : 
 
 /-- Sequence local machines with shared owner tapes in schedule order. A later
 machine sees its own initialized private tapes and the preceding owner's result. -/
-private theorem scheduledBanks_exec {I : Type} [Fintype I] {k : ℕ}
+theorem scheduledBanks_exec {I : Type} [Fintype I] {k : ℕ}
     (tapes : I → ℕ) (ports : ∀ i, Fin k ↪ Fin (tapes i)) :
     ∃ (T : ℕ) (fan : Fin k ↪ Fin T) (bank : ∀ i, Fin (tapes i) ↪ Fin T),
     (∀ i j, bank i (ports i j) = fan j) ∧
@@ -2607,7 +2607,7 @@ private theorem scheduledBanks_exec {I : Type} [Fintype I] {k : ℕ}
     simp only [List.map_cons,List.sum_cons]
     omega
 
-private theorem scheduledChildBill {I : Type} [BEq I] [LawfulBEq I] (entries : I → List ℕ)
+theorem scheduledChildBill {I : Type} [BEq I] [LawfulBEq I] (entries : I → List ℕ)
     (childTime : ℕ → ℕ) (order : List I) (distinct : order.Nodup) (start : ℕ) :
     (order.map fun i => ((List.range' (start+((order.take (order.idxOf i)).flatMap entries).length)
       (entries i).length).map childTime).sum).sum =
