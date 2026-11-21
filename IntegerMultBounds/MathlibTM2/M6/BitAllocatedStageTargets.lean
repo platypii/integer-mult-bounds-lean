@@ -103,7 +103,8 @@ def AllocatedStageTargets [M8.Machine.Net] (n : Fin 9) : Prop :=
     ∃ z F steps, Exec (fun g => embProg inner id (outer g)) code (mk u S) steps (mk z F) ∧
       steps ≤ budget + (4300*order.length+1530001223)*V ∧ z.user = u.user ∧
       (∀ k, RecordPayload (bank k 1) (fun _ => blank) 0 (stageTargetWord n k (w+1) B K x) F) ∧
-      StageControls (full.trans inner) V F ∧ ∃ packed out, RestoredOwnerPayloads n (full.trans inner) out F ∧
+      StageControls (full.trans inner) V F ∧
+      StageDimensionWords (fun i => reg (i.castAdd 11)) K N D F ∧ ∃ packed out, RestoredOwnerPayloads n (full.trans inner) out F ∧
         stageRuns.foldr (fun k next a => ∃ b, packedStageEffect n k (w+1) B
           (node.beforeRows*rows*node.between*node.afterD) a b ∧ next b)
           (fun a => a = packed) (singleLabelBank (B := B) (K := K) label x) ∧
@@ -191,13 +192,13 @@ theorem allocatedStageTargets_host [M8.Machine.Net] (n : Fin 9) : AllocatedStage
   have applyFree := applyHeaders (fun i => headers i)
   have applyPrivate := applyFree
     (fun j => (off _ (reg.injective.ne ((by decide : ∀ j : Fin 7, (12 : Fin 14) ≠ (j.natAdd 3).castAdd 4) j)) (fun i => reg.injective.ne ((by decide : ∀ (i : Fin 3) (j : Fin 7), i.castAdd 11 ≠ (j.natAdd 3).castAdd 4) i j))).2.trans ((scratchKeep j).trans (free j)))
-  obtain ⟨z,F,steps,ran,bill,same,output,controls,ownersOut⟩ := applyPrivate (fun k j => by
+  obtain ⟨z,F,steps,ran,bill,same,output,controls,dimsOut,ownersOut⟩ := applyPrivate (fun k j => by
       have h := off (scanBank k j.succ) (shared_ne_private (T := total) (i := (12 : Fin 14)) _) (fun i => shared_ne_private (i.castAdd 11) _)
       exact ⟨h.1.trans ((congrFun left₀ _).trans (empty k j).1),h.2.trans ((keep _ (fun eq => by
         have val := congrArg Fin.val eq
         change total+14+_ = total+10 at val
         omega)).trans (empty k j).2)⟩)
-  refine ⟨z,F,k+(m+steps),Exec.seq makeTail (Exec.seq setup ran),?_,same.trans (same₀.trans first),(fun k z => by rw [encodedOwnerCell,sub_zero]; exact output k z),controls,packed,out,ownersOut,trace,restored⟩
+  refine ⟨z,F,k+(m+steps),Exec.seq makeTail (Exec.seq setup ran),?_,same.trans (same₀.trans first),(fun k z => by rw [encodedOwnerCell,sub_zero]; exact output k z),controls,dimsOut,packed,out,ownersOut,trace,restored⟩
   have volume : D*(N*K) = V := by dsimp only [V,W,D,N]; ring
   rw [volume] at bill
   have hm : 0 < M := pow_pos Shared50ModularControl.prime_prime.pos _
@@ -216,5 +217,78 @@ theorem allocatedStageTargets_host [M8.Machine.Net] (n : Fin 9) : AllocatedStage
   change t ≤ budget at paid
   rw [Nat.add_mul] at bill ⊢
   omega
+
+private theorem handoffSource {T : ℕ} (fan : Fin (142081+2) ↪ Fin T) (i : Fin 142081) :
+    stagePadPort fan i 0 = ((targetScanBank fan i 1).castAdd 142081).castAdd 10 := by
+  apply Fin.ext
+  simp only [stagePadPort,Function.Embedding.coeFn_mk,Fin.val_zero,Fin.val_castAdd,ite_true]
+
+private theorem extension_misses {t a b : ℕ} (i : Fin t) (j : Fin (t+a+b)) (hj : t ≤ j.val) :
+    (i.castAdd a).castAdd b ≠ j := by
+  intro eq
+  have h := congrArg Fin.val eq
+  change i.val = j.val at h
+  omega
+
+private theorem exec_blank_extension {t a b Q : ℕ} {P U : Type}
+    (body : P → Pr P t Q prime U) (stage : Pr P t Q prime U) :
+    let e := (Fin.castAddEmb a (n := t)).trans (Fin.castAddEmb b)
+    ∀ u S v C m, Exec body stage (mk (embDn e u) (embStk e S)) m (mk v C) →
+      (∀ j, t ≤ j.val → S.L j = [] ∧ S.R j = []) →
+      ∃ v' C', Exec (fun g => embProg e id (body g)) (embProg e id stage) (mk u S) m (mk v' C') ∧
+        v'.user = v.user ∧ embStk e C' = C ∧ ∀ j, t ≤ j.val → C'.L j = [] ∧ C'.R j = [] := by
+  intro e u S v C m run fresh
+  obtain ⟨v',C',placed,_,user,view,off⟩ := exec_emb (ι := id)
+    (body' := fun g => embProg e id (body g)) e.injective (fun _ => rfl) run u rfl S rfl
+  refine ⟨v',C',placed,user,view,?_⟩
+  intro j hj
+  obtain ⟨hl,hr⟩ := off j (fun i => extension_misses i j hj)
+  exact ⟨hl.trans (fresh j hj).1,hr.trans (fresh j hj).2⟩
+
+/-- Run the stage on its original tapes and initialize the handoff on its untouched extension. -/
+theorem stageWithHandoff_host {T Q : ℕ} {P U : Type} (n : Fin 9)
+    (fan : Fin (142081+2) ↪ Fin T) (fits : 215 ≤ Q) (src : Fin 3 → Fin T)
+    (body : P → Pr P (T+142081*7) Q prime U) (stage : Pr P (T+142081*7) Q prime U) :
+    let extBank := (Fin.castAddEmb 142081 (n := T+142081*7)).trans (Fin.castAddEmb 10)
+    let outer := fun g => embProg extBank id (body g)
+    let base := Fin.castAddEmb (142081*7) (n := T)
+    ∃ code, ∀ w B W : ℕ, 0 < B → 0 < (prime^w)^112*W →
+    let K := (prime^w)^112*W
+    let A := (prime^w)^16
+    let N := prime^(64*(w*64))
+    let V := A*(B*N*K)
+    let label := firstRowLabel w
+    ∀ x y out u S v C m, Exec body stage (mk (embDn extBank u) (embStk extBank S)) m (mk v C) →
+      v.user = u.user →
+      (∀ j, T+142081*7 ≤ j.val → S.L j = [] ∧ S.R j = []) →
+      StageDimensionWords (fun i => base (src i)) K N (A*B) C →
+      StageControls (fan.trans base) V C → RestoredOwnerPayloads n (fan.trans base) out C →
+      (∀ k, RecordPayload (targetScanBank fan (targetOwner n k) 1) (fun _ => blank) 0
+        (stageTargetWord n k w B K x) C) →
+      stageRuns.foldr (fun p cont a => ∃ b, packedStageEffect n p w B W a b ∧ cont b)
+        (fun a => a = y) (singleLabelBank label x) →
+      HelperLabelTrace w (B*N) W (restoreSlotChanges (stageFinalSlot n)) y out →
+      ∃ z F steps, Exec outer code (mk u S) steps (mk z F) ∧
+        steps ≤ m+(scanCounterCost ![K,N,A*B]+1+(17760*(7021*(A*B)*(N*K)+6)+1+
+          (14*V+14*(FlatCoordinateSchedule.bits V).length+33)*(142081+7)+6)) ∧
+        z.user = u.user ∧ HelperFan (stageOutputFan n fan)
+          (singleLabelBank label (Function.update (collapseLabelBank (B := B) (K := K) out)
+            (Fin.last 142080) (fun _ => 0))) F := by
+  intro extBank outer base
+  obtain ⟨handoff,run⟩ := stageHandoff_host n fan fits src outer
+  refine ⟨.seq (embProg extBank id stage) handoff,?_⟩
+  intro w B W hb hk K A N V label x y out u S v C m exec same fresh dims controls live targets trace restore
+  obtain ⟨v',C',placed,user,view,blank⟩ := exec_blank_extension (a := 142081) (b := 10)
+    body stage u S v C m exec fresh
+  rw [← view] at dims controls live targets
+  obtain ⟨z,F,t,finish,paid,unchanged,ready⟩ := run w B W hb hk x y out trace restore v' C'
+    (by simpa only [StageDimensionWords,embStk,Function.comp_apply,extBank,base,Function.Embedding.trans_apply,Fin.castAddEmb_apply] using dims)
+    blank
+    (by simpa only [StageControls,embStk,Function.comp_apply,extBank,base,Function.Embedding.trans_apply,Fin.castAddEmb_apply] using controls)
+    (by simpa only [RestoredOwnerPayloads,RecordPayload,embStk,Function.comp_apply,extBank,base,Function.Embedding.trans_apply,Fin.castAddEmb_apply] using live)
+    (fun k => by
+      rw [handoffSource]
+      simpa only [RecordPayload,embStk,Function.comp_apply,extBank,Function.Embedding.trans_apply,Fin.castAddEmb_apply] using targets k)
+  exact ⟨z,F,m+t,Exec.seq placed finish,Nat.add_le_add_left paid m,unchanged.trans (user.trans same),ready⟩
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
