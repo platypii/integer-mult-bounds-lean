@@ -146,6 +146,98 @@ def directoryReturnPorts {T K : ℕ} (place : Fin (K+5) ↪ Fin T) (p : Fin 6 �
       exact False.elim (p.injective.ne (by decide) h) | exact False.elim (apart _ _ (by decide) h) |
       exact False.elim (apart _ _ (by decide) h.symm)⟩
 
+/-- The outgoing call placement is fixed before the child runs. Redirecting
+four tapes to replay storage cannot collide with any of the five owner registers. -/
+theorem directoryReplay_owner_ne {n K T : ℕ} (bank : Fin n ↪ Fin K)
+    (place : Fin (K+5) ↪ Fin T) (slots : Fin 4 ↪ Fin n) (saved : Fin 4 ↪ Fin T)
+    (separate : ∀ i j, place i ≠ saved j) (i : Fin n) (j : Fin 5) :
+    replayPlacement ((bank.trans (Fin.castAddEmb 5)).trans place) slots saved
+      (fun _ _ => separate _ _) i ≠ place (j.natAdd K) := by
+  apply replayPlacement_ne
+  · intro k
+    apply place.injective.ne
+    intro eq
+    have h := congrArg Fin.val eq
+    change (bank k).val = K+j.val at h
+    have bound := (bank k).isLt
+    omega
+  · exact fun _ => (separate _ _).symm
+
+noncomputable def directoryOutgoingPlacement {n K T : ℕ} (bank : Fin n ↪ Fin K)
+    (place : Fin (K+5) ↪ Fin T) (slots : Fin 4 ↪ Fin n) (saved : Fin 4 ↪ Fin T)
+    (separate : ∀ i j, place i ≠ saved j) : Fin (n+5) ↪ Fin T :=
+  outgoingOwnerPlacement
+    (replayPlacement ((bank.trans (Fin.castAddEmb 5)).trans place) slots saved (fun _ _ => separate _ _))
+    ((Fin.natAddEmb K).trans place) (directoryReplay_owner_ne bank place slots saved separate)
+
+/-- Share the scanner metadata and workspace with the child, followed by the
+owner payload. The shadow copy stays outside the child's bank. -/
+def directoryChildBank {m n T : ℕ} (bank : Fin m ↪ Fin n)
+    (place : Fin (n+5) ↪ Fin T) : Fin (m+1) ↪ Fin T :=
+  let localBank := bank.trans ((Fin.castAddEmb 5).trans place)
+  let owner := ((Fin.castLEEmb (by decide : 1 ≤ 5)).trans (Fin.natAddEmb n)).trans place
+  Fin.Embedding.append (x := localBank) (y := owner) (Set.disjoint_range_iff.mpr (by
+    intro i j eq
+    have h := congrArg Fin.val (place.injective eq)
+    change (bank i).val = n+j.val at h
+    have bound := (bank i).isLt
+    omega))
+
+@[simp] theorem directoryChildBank_owner {m n T : ℕ} (bank : Fin m ↪ Fin n)
+    (place : Fin (n+5) ↪ Fin T) :
+    directoryChildBank bank place ((0 : Fin 1).natAdd m) = place ((0 : Fin 5).natAdd n) := by
+  simp [directoryChildBank]
+
+@[simp] theorem directoryChildBank_local {m n T : ℕ} (bank : Fin m ↪ Fin n)
+    (place : Fin (n+5) ↪ Fin T) (i : Fin m) :
+    directoryChildBank bank place (i.castAdd 1) = place ((bank i).castAdd 5) := by
+  simp [directoryChildBank]
+
+/-- Install the two scanner copies and the recursive child's call table on
+one host. Each scanner calls its own copy of the local row subroutines. -/
+noncomputable def directoryStageHost [M8.Machine.Net] {P C U : Type} {n K T t : ℕ} (bank : Fin n ↪ Fin K)
+    (place : Fin (K+5) ↪ Fin T) (slots : Fin 4 ↪ Fin n) (saved : Fin 4 ↪ Fin T)
+    (separate : ∀ i j, place i ≠ saved j) (localBody : P → Pr P n columnCapacity prime U)
+    (childBank : Fin t ↪ Fin T) (child : C → Pr C t columnCapacity prime U) :
+    P ⊕ P ⊕ C → Pr (P ⊕ P ⊕ C) T columnCapacity prime U
+  | .inl f => embProg place Sum.inl (embProg (Fin.castAdd 5) id (embProg bank id (localBody f)))
+  | .inr (.inl f) => embProg (directoryOutgoingPlacement bank place slots saved separate)
+      (Sum.inr ∘ Sum.inl) (embProg (Fin.castAdd 5) id (localBody f))
+  | .inr (.inr f) => embProg childBank (Sum.inr ∘ Sum.inr) (child f)
+
+/-- A recursive transpose on its own bank supplies the chart host's child
+call with the same budget. The scanner's saved tapes are framed on return. -/
+theorem directoryStageHost_child_exec [M8.Machine.Net] {P C U : Type} {n K T t : ℕ}
+    (bank : Fin n ↪ Fin K) (place : Fin (K+5) ↪ Fin T) (slots : Fin 4 ↪ Fin n)
+    (saved : Fin 4 ↪ Fin T) (separate : ∀ i j, place i ≠ saved j)
+    (localBody : P → Pr P n columnCapacity prime U) (childBank : Fin t ↪ Fin T)
+    (child : C → Pr C t columnCapacity prime U) (f : C) (port : Fin t) (batch : Descriptor)
+    (budget : ℕ) (a : HS T columnCapacity prime U) (A : Stacks T prime)
+    (x : Fin (RecursiveInterchangeLayout.volume prime batch) → ZMod 2)
+    (input : RecordPayload (childBank port) (fun _ => blank) 0 x A)
+    (recursive : RecordPayload port (fun _ => blank) 0 x (embStk childBank A) →
+      ∃ y B k, y.user = (embDn childBank a).user ∧ k ≤ budget ∧
+        Exec child (child f) (mk (embDn childBank a) (embStk childBank A)) k (mk y B) ∧
+        RecordPayload port (fun _ => blank) 0 (Shared50RecursiveNodeRows.transpose (one_dvd batch.rows) x) B ∧
+        ∀ i, i ≠ port → B.L i = A.L (childBank i) ∧ B.R i = A.R (childBank i)) :
+    let host := directoryStageHost bank place slots saved separate localBody childBank child
+    ∃ y B k, y.user = a.user ∧ k ≤ budget ∧ Exec host (host (.inr (.inr f))) (mk a A) k (mk y B) ∧
+      RecordPayload (childBank port) (fun _ => blank) 0 (Shared50RecursiveNodeRows.transpose (one_dvd batch.rows) x) B ∧
+      ∀ i, i ≠ childBank port → B.L i = A.L i ∧ B.R i = A.R i := by
+  intro host
+  obtain ⟨z,D,k,user,paid,run,output,frame⟩ := recursive input
+  obtain ⟨y,B,installed,_,same,view,off⟩ := exec_emb (body' := host) (ι := Sum.inr ∘ Sum.inr)
+    childBank.injective (fun _ => rfl) run a rfl A rfl
+  refine ⟨y,B,k,same.trans user,paid,installed,?_,?_⟩
+  · rw [← view] at output
+    exact output
+  · intro i hi
+    by_cases inside : ∃ j, childBank j = i
+    · obtain ⟨j,rfl⟩ := inside
+      rw [← view] at frame
+      exact frame j (fun h => hi (congrArg childBank h))
+    · exact off i (fun j eq => inside ⟨j,eq⟩)
+
 /-- Input at the local bank of the generated scanner, before either pass. -/
 def GeneratedDirectoryInput [M8.Machine.Net] {K d m w W N : ℕ}
     (room : Record.size d+(rowSwapBlock.tapes+35+2) ≤ K+1) (v directory : Descriptor)
@@ -320,6 +412,7 @@ def GeneratedDirectoryExecution [M8.Machine.Net] {P U : Type} {r g d w common au
       (S.L (reg 0) = [] → ownerTail = [] → ∀ (f : G) (childBudget : ℕ),
         let D := {F with R := Function.update F.R (q 1) (F.R (q 0))}
         (∀ b : HS T columnCapacity prime U, b.user = z.user → ∀ x : Fin V → ZMod 2,
+          ready (embStk localBank (embStk place D)) [] →
           RecordPayload (q 0) (fun _ => blank) 0 x D →
           ∃ y B k, y.user = b.user ∧ k ≤ childBudget ∧ Exec host (host f) (mk b D) k (mk y B) ∧
             RecordPayload (q 0) (fun _ => blank) 0 (Shared50RecursiveNodeRows.transpose (one_dvd batch.rows) x) B ∧
@@ -343,9 +436,8 @@ def GeneratedDirectoryExecution [M8.Machine.Net] {P U : Type} {r g d w common au
           B.R (outBank (inner 57)) = rs.map (fun j => bitSymbol (live j)) ∧
           B.R (outBank (inner 56)) = rs.map (fun j => bitSymbol (bad j)) ∧
           (∀ i, i ∉ [q 0,q 1,q 2,q 5,q 6] → B.L i = F.L i ∧ B.R i = F.R i) ∧
-          ∃ apart : ∀ (i : Fin (66+K)) (j : Fin 5), outBank i ≠ place (reg j),
           let regs := (Fin.natAddEmb (66+(K+1))).trans place
-          let outPlace := outgoingOwnerPlacement outBank regs apart
+          let outPlace := directoryOutgoingPlacement placement place slots copied (fun _ _ => separate _ _)
           ∀ (dim : m = 64) (outLabel : P → G),
           (∀ f, host (outLabel f) = embProg outPlace outLabel (embProg (Fin.castAdd 5) id (localBody f))) →
           let inBill := (rs.map cost).sum+12*(rs.length*N)+12*rs.length+4
@@ -536,7 +628,18 @@ theorem generatedIncomingDirectory_exec [M8.Machine.Net] {P U : Type} {r g d w c
       (finalWidth.trans size.symm) clearTmp (ls.trans (maskList live)) (bs.trans (maskList bad)) (by
         intro b hb x hx
         rw [← queue]
-        exact child b hb x (by simpa only [D,queue] using hx))
+        apply child b hb x _ (by simpa only [D,queue] using hx)
+        have sameBank : embStk localBank (embStk place D) = embStk localBank (embStk place F) := by
+          refine Stacks.ext rfl rfl rfl (funext fun i => ?_)
+          have different : place (localBank i) ≠ q 1 := place.injective.ne (by
+            intro eq
+            have h := congrArg Fin.val eq
+            change (placement i).val = 66+(K+1)+1 at h
+            have bound := (placement i).isLt
+            omega)
+          exact Function.update_of_ne different _ _
+        rw [sameBank]
+        exact finished)
   have offPorts (i : Fin T) (regs : ∀ k, place (reg k) ≠ i) (l : p 2 ≠ i) (b : p 3 ≠ i) :
       i ∉ [q 0,q 1,q 2,q 5,q 6] := by
     simp only [List.mem_cons,List.not_mem_nil,or_false,not_or]
@@ -591,16 +694,14 @@ theorem generatedIncomingDirectory_exec [M8.Machine.Net] {P U : Type} {r g d w c
     rw [show rs.length = R by simpa only [rs,List.length_range,R] using count]
     exact directoryReturnTime_volume (Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) positive)
       copyBound returned
-  have outApart (i : Fin (66+K)) (j : Fin 5) : outBank i ≠ place (reg j) :=
-    replayPlacement_ne (localBank.trans place) slots copied (fun _ _ => separate _ _)
-      (fun k => (apart k j).symm) (fun k => (separate _ _).symm) i
   intro throughReturn
   refine ⟨y,B,k,out,huser.trans (user.trans (copyUser.trans same)),returned,charged,
     Exec.seq scanned call,payload,action,cleared1,cleared2,cleared5,cleared6,
     by simpa only [rs,count] using returnedOwnerQueue (ordinaryDirectoryChild_volume directory r g w) out (q 0) B payload,
     (congrArg List.length (frame (q 3) (by simp [q.injective.eq_iff])).2).trans finalWidth,
     ((frame (q 4) (by simp [q.injective.eq_iff])).2).trans clearTmp,blankReturned,outgoing.1,outgoing.2.1,outgoing.2.2,frame,
-    outApart,?_⟩
+    ?_⟩
+  let outApart := directoryReplay_owner_ne placement place slots copied (fun _ _ => separate _ _)
   intro regs outPlace dim outLabel outCalls inBill outBill inRate outRate weightedVolume
   constructor
   · intro width

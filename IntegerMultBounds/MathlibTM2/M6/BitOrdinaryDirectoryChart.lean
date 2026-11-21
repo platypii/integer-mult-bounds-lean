@@ -60,6 +60,58 @@ theorem directoryChartPlacement_owner {T : ℕ} (j : Fin 5) :
   simp
   omega
 
+theorem directoryChartPlacement_ne_work {T : ℕ} (i : Fin (T+5)) (j : Fin 10) :
+    directoryChartPlacement T i ≠ directoryChartWork T j := by
+  intro eqn
+  have h := congrArg Fin.val eqn
+  change (if i.val < T then i.val else i.val+10) = T+j.val at h
+  split at h <;> omega
+
+/-- Call table for a scheduled directory stage on the chart's actual tapes. -/
+noncomputable def directoryChartHost [M8.Machine.Net] {K : ℕ} {P C U : Type}
+    (archiveRoom : Record.size 127+(rowSwapBlock.tapes+35+2) ≤ K+1)
+    (localBody : P → Pr P (66+K) columnCapacity prime U)
+    (child : C → Pr C ((66+K)+1) columnCapacity prime U) :=
+  let T := 66+(K+1)
+  directoryStageHost (directoryOrdinaryBank archiveRoom) (directoryChartPlacement T)
+    (replaySlots.trans (Fin.castAddEmb K))
+    ((Fin.castLEEmb (by decide : 4 ≤ 6)).trans (directoryChartReplay T))
+    (fun i j => directoryChartPlacement_ne_work i _) localBody
+    (directoryChildBank (directoryOrdinaryBank archiveRoom) (directoryChartPlacement T)) child
+
+/-- Run a recursive procedure on the chart payload and its private suffix.
+All other chart tapes retain both stacks, including the saved owner queue. -/
+theorem directoryChartHost_child_exec [M8.Machine.Net] {K : ℕ} {P C U : Type}
+    (room : Record.size 127+(rowSwapBlock.tapes+35+2) ≤ K+1)
+    (localBody : P → Pr P (66+K) columnCapacity prime U)
+    (child : C → Pr C ((66+K)+1) columnCapacity prime U) (f : C)
+    (batch : RecursiveInterchangeLayout.Descriptor) (budget : ℕ) (entry : Stacks (66+K) prime → Prop) :
+    let T := 66+(K+1)
+    let bank := directoryChildBank (directoryOrdinaryBank room) (directoryChartPlacement T)
+    let port := (0 : Fin 1).natAdd (66+K)
+    let owner := (0 : Fin 5).natAdd (T+10)
+    let host := directoryChartHost room localBody child
+    ∀ (a : HS ((T+10)+5) columnCapacity prime U) (A : Stacks ((T+10)+5) prime)
+      (x : Fin (RecursiveInterchangeLayout.volume prime batch) → ZMod 2),
+    entry (embStk (directoryOrdinaryBank room) (embStk (Fin.castAdd 5) (embStk (directoryChartPlacement T) A))) →
+    RecordPayload owner (fun _ => blank) 0 x A →
+    (∀ (u : HS ((66+K)+1) columnCapacity prime U) (S : Stacks ((66+K)+1) prime), entry (embStk (Fin.castAdd 1) S) →
+      RecordPayload port (fun _ => blank) 0 x S →
+      ∃ y B k, y.user = u.user ∧ k ≤ budget ∧ Exec child (child f) (mk u S) k (mk y B) ∧
+        RecordPayload port (fun _ => blank) 0 (Shared50RecursiveNodeRows.transpose (one_dvd batch.rows) x) B ∧
+        ∀ i, i ≠ port → B.L i = S.L i ∧ B.R i = S.R i) →
+    ∃ y B k, y.user = a.user ∧ k ≤ budget ∧ Exec host (host (.inr (.inr f))) (mk a A) k (mk y B) ∧
+      RecordPayload owner (fun _ => blank) 0 (Shared50RecursiveNodeRows.transpose (one_dvd batch.rows) x) B ∧
+      ∀ i, i ≠ owner → B.L i = A.L i ∧ B.R i = A.R i := by
+  intro T bank port owner host a A x free input recursive
+  have slot : bank port = owner := (directoryChildBank_owner ..).trans (directoryChartPlacement_owner ..)
+  rw [← slot] at input ⊢
+  apply directoryStageHost_child_exec _ _ _ _ _ localBody bank child f port batch budget a A x input
+  have view : embStk (Fin.castAdd 1) (embStk bank A) =
+      embStk (directoryOrdinaryBank room) (embStk (Fin.castAdd 5) (embStk (directoryChartPlacement T) A)) := by
+    apply Stacks.ext <;> first | rfl | (funext i; simp [bank,embStk,Function.comp_def])
+  exact recursive _ _ (view.symm ▸ free)
+
 -- The pre-setup chart projection is available at bfe0b0b4.
 /-- The initialized directory leaves the four mask work tapes and six replay
 tapes free. Only the two selector ports overlap the scanner's own bank. -/
@@ -73,11 +125,7 @@ theorem directoryChart_workspace {T : ℕ} (room : 58 ≤ T) (live bad : Fin T) 
       (∀ i j, place i ≠ replay j) ∧ (∀ i j, masks i ≠ replay j) ∧ ∀ j, A.R (replay j) = [] := by
   intro place masks replay
   let work := directoryChartWork T
-  have sep (i : Fin (T+5)) (j : Fin 10) : place i ≠ work j := by
-    intro eqn
-    have h := congrArg Fin.val eqn
-    change (if i.val < T then i.val else i.val+10) = T+j.val at h
-    split at h <;> omega
+  have sep := directoryChartPlacement_ne_work (T := T)
   have blankWork (j : Fin 10) : A.R (work j) = [] :=
     free (j.natAdd T) (by change 58 ≤ T+j.val; omega)
   refine ⟨rfl,rfl,?_,?_,fun i j => sep i (j.natAdd 4),?_,fun j => blankWork (j.natAdd 4)⟩
