@@ -1,11 +1,11 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.M6.BitOwnerRead
 public import IntegerMultBounds.MathlibTM2.M6.BitRemainderRecordLayout
 public import IntegerMultBounds.MathlibTM2.M6.BitRemainderDirectory
 public import IntegerMultBounds.MathlibTM2.M6.BitRemainderRun
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackGoodChildPrepare
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackGeneratedGoodRecord
-import IntegerMultBounds.Machine.RowPaddingConstructedAlphabet
 import IntegerMultBounds.MathlibTM2.Host.EmbedStock
 
 /-! Instantiate the generated cover scan with the physical PR589 idle child. -/
@@ -16,21 +16,6 @@ open Shared50ModularControl (prime)
 open RecursiveInterchangeLayout (Descriptor volume role)
 open IntegerMultBounds.MathlibTM2.Cover
 open IntegerMultBounds.MathlibTM2.Cover.Fallback M8.RevMachine
-
-theorem encodedOwnerCell {N : ℕ} (word : Fin N → ZMod 2) (j : ℤ) :
-    (RadixToBinary.binaryEncoding (q := prime)).encode
-      (putWord (fun _ => blank) 0 ((List.ofFn word).map SparseRoleCircuit.encode) j) =
-    putWord (fun _ => blank) 0 (List.ofFn fun i => SparseRoleCircuit.encode (a := prime) (word i)) j := by
-  rw [List.map_ofFn]
-  have mapped := congrFun (RowPaddingConstructedAlphabet.map_array_word (a := prime)
-    (fun _ => blank) 0 (SparseRoleCircuit.encode ∘ word)) j
-  have bits : RowPaddingConstructedAlphabet.mapArray (a := prime) (SparseRoleCircuit.encode ∘ word) =
-      fun i => SparseRoleCircuit.encode (a := prime) (word i) := by
-    funext i
-    by_cases h : word i = 1 <;> simp [RowPaddingConstructedAlphabet.mapArray,RowPaddingConstructedAlphabet.encoding,
-      CountedLoopReuseAlphabet.encoding,SparseRoleCircuit.encode,bitSymbol,h]
-  rw [bits] at mapped
-  exact mapped
 
 /-- Loading or draining a row on caller tape 24 preserves all pending
 directory entries, headers, pivot schedules and private work tapes. -/
