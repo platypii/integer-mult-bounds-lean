@@ -92,68 +92,6 @@ theorem stageDimensionsTime_le (M B W : ℕ) (hm : 0 < M) (hb : 0 < B) (hw : 0 <
   change _ ≤ 1530000002*V
   omega
 
-/-- Compute the counters in their scan order, then put the three heads just
-past the separators. Both stacks of every other register are preserved. -/
-theorem stageDimensions_exec (body : P → Pr P T Q prime U) (r : Fin 14 ↪ Fin T)
-    (w B W : ℕ) (u : HS T Q prime U) (S : Stacks T prime) :
-    let M := prime^w
-    let seed := (![W,1,B] : Fin 3 → ℕ)
-    let values := (![M^112*W,prime^(64*(w*64)),M^16*B] : Fin 3 → ℕ)
-    let dst := (Fin.castAddEmb 11 (n := 3)).trans r
-    let power := fun i => swapPrefix ((stagePowerPorts i).trans r) (stageDegrees i)
-    S.R (r 6) = binSyms M.size M →
-    (∀ i : Fin 3, S.R (r ((i.natAdd 3).castAdd 8)) = binSyms (seed i).size (seed i)) →
-    (∀ i, S.L (dst i) = [] ∧ S.R (dst i) = []) →
-    (∀ j : Fin 14, 7 ≤ j.val → S.R (r j) = []) →
-    ∃ v F t, v.user = u.user ∧ t ≤ ((List.finRange 3).map (fun i => stagePowerTime M (seed i) (stageDegrees i))).sum+2 ∧
-      Exec body (.seq (Prog.seqList ((List.finRange 3).map power)) (.act (pushMarkers ((List.finRange 3).map dst))))
-        (mk u S) t (mk v F) ∧
-      (∀ i, F.L (dst i) = [separator] ∧ F.R (dst i) = binSyms (values i).size (values i)) ∧
-      ∀ j, (∀ i, dst i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
-  intro M seed values dst power base words empty scratch
-  have run (is : List (Fin 3)) (nd : is.Nodup) (a : HS T Q prime U) (A : Stacks T prime)
-      (ready : ∀ j, (∀ i, dst i ≠ j) → A.R j = S.R j)
-      (free : ∀ i ∈ is, A.R (dst i) = []) :
-      ∃ v F t, v.user = a.user ∧ t ≤ (is.map (fun i => stagePowerTime M (seed i) (stageDegrees i))).sum+1 ∧
-        Exec body (Prog.seqList (is.map power)) (mk a A) t (mk v F) ∧ F.L = A.L ∧
-        (∀ i ∈ is, F.R (dst i) = binSyms (values i).size (values i)) ∧
-        ∀ j, (∀ i ∈ is, dst i ≠ j) → F.R j = A.R j := by
-    induction is generalizing a A with
-    | nil => exact ⟨a,A,1,rfl,by simp,Exec.act _ _,rfl,by simp,fun _ _ => rfl⟩
-    | cons i is ih =>
-      have keep (j : Fin 14) (h : 3 ≤ j.val) := ready (r j) (fun k => r.injective.ne (by
-        intro eq
-        have val := congrArg Fin.val eq
-        change k.val = j.val at val
-        omega))
-      obtain ⟨b,t,user,paid,first⟩ := stagePower_exec body r i M (seed i) a A
-        ((keep 6 (by decide)).trans base) ((keep _ (by change 3 ≤ 3+i.val; omega)).trans (words i))
-        (free i (by simp)) (fun j hj => (keep j (by omega)).trans (scratch j hj))
-      rw [show M^(stageDegrees i)*seed i = values i from stagePowerValues w B W i] at first
-      let C := {A with R := Function.update A.R (dst i) (binSyms (values i).size (values i))}
-      have kept (j) (h : dst i ≠ j) : C.R j = A.R j := Function.update_of_ne h.symm _ _
-      obtain ⟨v,F,m,same,bill,rest,left,loaded,off⟩ := ih nd.of_cons b C
-        (fun j h => (kept j (h i)).trans (ready j h))
-        (fun k hk => (kept _ (dst.injective.ne (fun eq => nd.notMem (eq ▸ hk)))).trans
-          (free k (List.mem_cons_of_mem _ hk)))
-      refine ⟨v,F,t+m,same.trans user,?_,Exec.seq first rest,left,?_,?_⟩
-      · simp only [List.map_cons,List.sum_cons]; omega
-      · intro k hk
-        rcases List.mem_cons.mp hk with eq | hk
-        · subst k
-          rw [off (dst i) (fun l hl => dst.injective.ne (fun eq : l = i => nd.notMem (eq ▸ hl)))]
-          exact Function.update_self ..
-        · exact loaded k hk
-      · intro j h
-        exact (off j (fun k hk => h k (List.mem_cons_of_mem _ hk))).trans (kept j (h i (by simp)))
-  obtain ⟨v,A,t,user,paid,exec,left,right,off⟩ := run _ (List.nodup_finRange 3) u S
-    (fun _ _ => rfl) (fun i _ => (empty i).2)
-  have mark := Exec.act (body := body) (pushMarkers ((List.finRange 3).map dst)) (mk v A)
-  rw [pushMarkers_run _ ((List.nodup_finRange 3).map dst.injective)] at mark
-  refine ⟨v,_,t+1,user,by omega,Exec.seq exec mark,?_,?_⟩
-  · intro i
-    exact ⟨by simp [left,(empty i).1,List.mem_finRange],right i (List.mem_finRange i)⟩
-  · intro j h
-    exact ⟨by simp [left,h],off j (fun i _ => h i)⟩
+-- The version requiring a caller-supplied block count is in ee1e2f78.
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode

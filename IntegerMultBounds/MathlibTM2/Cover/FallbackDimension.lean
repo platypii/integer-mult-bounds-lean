@@ -132,7 +132,7 @@ theorem middleRowCount_exec (body : P → Pr P T Q A U) (r : Fin 11 ↪ Fin T)
 def middleRowDescriptor (r : Fin 11 ↪ Fin T) : Pr P T Q A U :=
   .seq (middleRowCount r) (.seq (Routing.binaryCanonicalProgram (r 4) (r 5)) (bclear (r 3)))
 
-private theorem size_square_le (x : ℕ) (hx : 0 < x) : x.size^2 ≤ 4*x := by
+theorem size_square_le (x : ℕ) (hx : 0 < x) : x.size^2 ≤ 4*x := by
   have square (k : ℕ) : k^2 ≤ 2*2^k := by
     induction k with
     | zero => decide

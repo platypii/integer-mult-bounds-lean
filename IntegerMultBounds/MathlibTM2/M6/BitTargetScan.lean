@@ -277,21 +277,8 @@ theorem stageScanCost_le (targets K N D : ℕ) (hk : 0 < K) (hn : 0 < N) (hd : 0
   have pos := hd.trans_le d
   have size (a : ℕ) : a.size ≤ a := Nat.size_le.mpr Nat.lt_two_pow_self
   have cross := (Nat.mul_le_mul (size D) (size K)).trans dk
-  have square (i : ℕ) : (i+1)^2 ≤ 4*2^i := by
-    induction i with
-    | zero => decide
-    | succ i ih =>
-      rcases i with _ | i
-      · decide
-      rcases i with _ | i
-      · decide
-      rw [pow_succ 2]
-      nlinarith only [ih, Nat.zero_le (i*i), Nat.zero_le i]
-  obtain ⟨i,hi⟩ := Nat.exists_eq_succ_of_ne_zero (Nat.size_pos.mpr hd).ne'
-  have base : 2^i ≤ D := Nat.lt_size.mp (by omega)
   have sq : D.size*D.size ≤ 4*V := by
-    rw [hi,← pow_two]
-    exact (square i).trans (Nat.mul_le_mul_left 4 (base.trans d))
+    simpa only [pow_two] using (Cover.Fallback.size_square_le D hd).trans (Nat.mul_le_mul_left 4 d)
   have headers : scanCounterCost ![K,N,D] ≤ 74*V := by
     change (8*(FlatCoordinateSchedule.bits K).length+8)+
       ((8*(FlatCoordinateSchedule.bits N).length+8)+((8*(FlatCoordinateSchedule.bits D).length+8)+0))+2 ≤ _

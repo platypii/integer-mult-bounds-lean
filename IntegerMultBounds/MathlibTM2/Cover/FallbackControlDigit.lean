@@ -14,7 +14,7 @@ def divide (quotient : Bool) (r : Fin 11 ↪ Fin T) : Pr P T Q A U :=
   .seq (bdivmod (r 0) (r 1) (r 2) (r 3) (r 4) (r 5) (r 6) (r 7) (r 8) (r 9) (r 10))
     (bclear (if quotient then r 3 else r 2))
 
-private theorem divide_exec (body : P → Pr P T Q A U) (q : Bool) (r : Fin 11 ↪ Fin T)
+theorem divide_exec (body : P → Pr P T Q A U) (q : Bool) (r : Fin 11 ↪ Fin T)
     (L K x y : ℕ) (hx : x < 2^L) (hy : y < 2^K) (pos : 0 < y)
     (v : HS T Q A U) (S : Stacks T A) (ha : S.R (r 0) = binSyms L x)
     (hb : S.R (r 1) = binSyms K y) (blank : ∀ i : Fin 11, 2 ≤ i → i < 10 → S.R (r i) = []) :
