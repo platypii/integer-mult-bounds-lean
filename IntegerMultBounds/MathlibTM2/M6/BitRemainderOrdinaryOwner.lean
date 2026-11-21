@@ -582,6 +582,41 @@ theorem ordinaryParentEntry_recover {T k back : ℕ} (metadata : ℕ → List (F
       simp only [ordinaryParentEntry,Fin.addCases_right]
       first | exact (suffixReady j).1.symm | exact (suffixReady j).2.symm
 
+/-- Reconstruct a scheduled chart's entry after other copies have run.
+Only the shared owner words may have changed since its initial placement. -/
+theorem ordinaryParentEntry_after_passes {T N k back : ℕ}
+    (stage : SharedBankStage.Stage _ k prime (phaseOwners (N := N)))
+    (metadata : ℕ → List (Fin (prime+4))) (seed : Stacks stage.tapes prime)
+    (ready : ChartPrivateReady stage seed) (data : Fin k → Fin N → ZMod 2)
+    (S : Stacks (((T+5)+stage.tapes)+back) prime) :
+    let chart := (Fin.natAddEmb (T+5) (m := stage.tapes)).trans (Fin.castAddEmb back)
+    let slots := (⟨stage.slots,stage.slots_injective⟩ : Fin k ↪ Fin stage.tapes).trans chart
+    let entry := ordinaryParentEntry (T := T) back metadata seed
+    RepT (phaseOwners data) (embStk slots S).L (embStk slots S).R →
+    (∀ j, (∀ i, slots i ≠ j) → S.L j = entry.L j ∧ S.R j = entry.R j) →
+    ordinaryParentEntry (T := T) back metadata (embStk chart S) = S ∧
+      RepT (stage.input data) (embStk chart S).L (embStk chart S).R := by
+  intro chart slots entry owners fresh
+  constructor
+  · apply ordinaryParentEntry_recover
+    · intro j
+      have h := fresh ((j.castAdd stage.tapes).castAdd back) (fun i eq => by
+        have e := congrArg Fin.val eq
+        change T+5+(stage.slots i).val = j.val at e
+        omega)
+      simpa [entry,ordinaryParentEntry,ordinaryOwnerBank] using h
+    · intro j
+      have h := fresh (j.natAdd ((T+5)+stage.tapes)) (fun i eq => by
+        have e := congrArg Fin.val eq
+        change T+5+(stage.slots i).val = (T+5)+stage.tapes+j.val at e
+        have bound := (stage.slots i).isLt
+        omega)
+      simpa [entry,ordinaryParentEntry] using h
+  · apply chartOwner_input stage data seed (embStk chart S) ready owners
+    intro j off
+    have h := fresh (chart j) (fun i => chart.injective.ne (off i))
+    simpa [entry,ordinaryParentEntry,ordinaryOwnerBank,embStk,chart,Function.comp_def] using h
+
 /-- Projecting the placed scanner shares exactly the chart's two payload stacks. -/
 theorem ordinaryOwnerBank_project {T k : ℕ} (metadata : ℕ → List (Fin (prime+4)))
     (owners : Stacks k prime) (src : Fin k) :

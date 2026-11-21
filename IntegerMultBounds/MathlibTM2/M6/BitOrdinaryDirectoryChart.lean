@@ -1612,6 +1612,8 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux w : ℕ} {L P U : Type}
       ((List.finRange 5).map (fun j => let i := baseBank ((j.natAdd (T+10)).castAdd stage.tapes)
         (D.R i).length)).sum = N ∧
       RepT (stage.input final) (embStk (chart.trans baseBank) D).L (embStk (chart.trans baseBank) D).R ∧
+      RepT (phaseOwners final) (embStk (fun i => baseBank (chart (stage.slots i))) D).L
+        (embStk (fun i => baseBank (chart (stage.slots i))) D).R ∧
       (∀ i, i ≠ src → final i = words i) ∧ OriginalPortReads R W parents interval weights cert (words src) (final src) ∧
       ∃ F, finished (embStk placement F) ∧ ∀ j, (∀ i, headers i ≠ j) →
         D.L (baseBank j) = F.L j ∧ D.R (baseBank j) = F.R j := by
@@ -1924,7 +1926,7 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux w : ℕ} {L P U : Type}
             dsimp only
             omega)
     simpa only [List.map_const',List.sum_replicate_nat,List.length_finRange] using total
-  refine ⟨privateReady,?_,?_,?_,?_,?_,final,?_,?_,D,done,frame⟩
+  refine ⟨privateReady,?_,?_,?_,?_,?_,final,?_,?_,?_,D,done,frame⟩
   · intro push setupPush scanPush bodyPush
     apply Nat.add_le_add_right (Nat.add_le_add ?_ suffixCost) 1
     apply le_trans _ (Nat.add_le_add_right metaBound _)
@@ -1999,6 +2001,8 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux w : ℕ} {L P U : Type}
     simp [List.finRange_succ]
     dsimp only [baseBank]
     simp only [(kept 0).2,(kept 1).2,(kept 2).2,(kept 3).2,(kept 4).2,unusedSlot.2,acc,widthReg,save,tmp,List.length_nil,Nat.zero_add,Nat.add_zero]
+  · rw [← stage.input_payload]
+    exact fun i h => final (stage.slots i) h
   · intro i hi
     exact ((reverseRun updated).1 i hi).trans ((Function.update_of_ne hi ..).trans ((forwardRun words).1 i hi))
   · have undo := (reverseRun updated).2

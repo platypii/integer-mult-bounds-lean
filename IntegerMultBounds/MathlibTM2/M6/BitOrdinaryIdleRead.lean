@@ -813,6 +813,112 @@ theorem ordinaryIdle_exec {w R W parents T Q : ℕ} {P U : Type} (i : Fin 9)
   exact ⟨y,D,z,n,exec,paid,user,final,kept,fun block g live spectator =>
     ordinaryIdle_read i parent units block g live count spectator x y acts kept⟩
 
+/-- The physical occurrence in the directory schedule for a given port and copy. -/
+def idleCopyIndex (k : (Fin 32 × Fin 5) × Fin 222) : Fin idleCopies.length :=
+  ⟨idleCopies.idxOf k,List.idxOf_lt_length_iff.mpr (List.mem_flatMap.mpr
+    ⟨k.1,mem_stageRuns _,List.mem_map.mpr ⟨k.2,List.mem_finRange _,rfl⟩⟩)⟩
+
+theorem idleCopyIndex_get (k : (Fin 32 × Fin 5) × Fin 222) :
+    idleCopies[(idleCopyIndex k).val] = k := List.getElem_idxOf ..
+
+/-- Local interval runs suffice to execute the idle on a common owner bank. -/
+def PlacedIdleExecution {w R W parents jobs : ℕ} {P U : Type} (i : Fin 9)
+    (parent : Fin 64 → ZMod (prime^(w+1)))
+    (count : parents*(prime^(w+1))^(64*64) = R)
+    (copy : Fin jobs → (Fin 32 × Fin 5) × Fin 222) (index : ((Fin 32 × Fin 5) × Fin 222) → Fin jobs)
+    (width states : Fin jobs → ℕ) (positive : ∀ j, 0 < states j)
+    (slots : ∀ j, Fin 142081 ↪ Fin (width j))
+    (body : ∀ j, P → Pr P (width j) (states j) prime U)
+    (program : ∀ j, Pr P (width j) (states j) prime U)
+    (budget : Fin jobs → ℝ) (entry : ∀ j, Stacks (width j) prime)
+    (shared : Stacks 142081 prime) : Prop :=
+    let N := R*((prime^(w+1))^128*W)
+    let privateReady := fun j (S : Stacks (width j) prime) =>
+      ∀ a, (∀ l, slots j l ≠ a) → S.L a = (entry j).L a ∧ S.R a = (entry j).R a
+    (∀ j (x : Fin 142081 → Fin N → ZMod 2) (S : Stacks (width j) prime) (a : HS _ _ prime U),
+      RepT (phaseOwners x) (embStk (slots j) S).L (embStk (slots j) S).R → privateReady j S →
+      ∃ y D z n, Exec (body j) (program j) (mk a S) n (mk z D) ∧ (n : ℝ) ≤ budget j ∧
+        z.user = a.user ∧ RepT (phaseOwners y) (embStk (slots j) D).L (embStk (slots j) D).R ∧
+        let k := copy j
+        OriginalPortReads R W parents (idleInterval i k.2) parent (port (idleRole i k).port.val)
+          (x (idleTape i k)) (y (idleTape i k)) ∧ ∀ l, l ≠ idleTape i k → y l = x l) →
+    ∀ (x : Fin 142081 → Fin N → ZMod 2), RepT (phaseOwners x) shared.L shared.R →
+    let start := idlePassStacks width slots shared entry
+    let localPass := fun k => let j := index k
+      statePlacedNormalized (idlePassBank width j (slots j)) (idlePass_fits states j) (positive j) (Prod.mk j) (program j)
+    ∀ u, ∃ y D z n, Exec (idlePassBody width states positive slots body)
+      (Prog.seqList (idleCopies.map localPass)) (mk u start) n (mk z D) ∧
+      (n : ℝ) ≤ (idleCopies.map (fun k => 1+budget (index k))).sum+1 ∧ z.user = u.user ∧
+      RepT (phaseOwners y) (fun l => D.L (l.castAdd _)) (fun l => D.R (l.castAdd _)) ∧
+      (∀ l, (∀ k, l ≠ idleTape i k) → y l = x l) ∧
+      ∀ block g, IsUnit g → ∀ spectator, let address := ordinaryRoleAddress parent block g count spectator
+        readRoles address y = (Piece.remainder i.val).run (readRoles address x)
+
+private theorem placedIdleExecution_of_passes {w R W parents jobs : ℕ} {P U : Type} (i : Fin 9)
+    (parent : Fin 64 → ZMod (prime^(w+1))) (units : ∀ j, IsUnit (parent j))
+    (count : parents*(prime^(w+1))^(64*64) = R)
+    (copy : Fin jobs → (Fin 32 × Fin 5) × Fin 222) (index : ((Fin 32 × Fin 5) × Fin 222) → Fin jobs)
+    (selected : ∀ k, copy (index k) = k)
+    (width states : Fin jobs → ℕ) (positive : ∀ j, 0 < states j)
+    (slots : ∀ j, Fin 142081 ↪ Fin (width j))
+    (body : ∀ j, P → Pr P (width j) (states j) prime U)
+    (program : ∀ j, Pr P (width j) (states j) prime U)
+    (budget : Fin jobs → ℝ) (entry : ∀ j, Stacks (width j) prime)
+    (shared : Stacks 142081 prime) (common : ∀ j, embStk (slots j) (entry j) = shared) :
+    PlacedIdleExecution (W := W) i parent count copy index width states positive slots body program budget entry shared := by
+  unfold PlacedIdleExecution
+  intro N privateReady pass x represented start localPass u
+  let bank := fun j => idlePassBank width j (slots j)
+  let ready := fun (x : Fin 142081 → Fin N → ZMod 2) (S : Stacks _ prime) =>
+    RepT (phaseOwners x) (fun l => S.L (l.castAdd (Fintype.card (Σ j, Fin (width j)))))
+      (fun l => S.R (l.castAdd _))
+  let prepared := fun k S => privateReady (index k) (embStk (bank (index k)) S)
+  refine ordinaryIdle_exec i parent units count _ localPass _ prepared ready ?_ x start u ?_ ?_
+  · intro k words S a rep fresh
+    let j := index k
+    obtain ⟨y,D,z,n,run,time,user,output,act,kept⟩ := pass j words (embStk (bank j) S) _
+      (by simpa [ready,embStk,bank,Function.comp_def,idlePassBank_owner] using rep) fresh
+    obtain ⟨v,F,lifted,same,view,off⟩ := idlePassBank_exec width states j positive slots body (program j) a S z D n run
+    refine ⟨y,F,v,1+n,lifted,by simpa only [Nat.cast_add,Nat.cast_one] using add_le_add_right time 1,same.trans user,?_,?_,?_,?_⟩
+    · rw [← view] at output
+      simpa [ready,embStk,Function.comp_def,idlePassBank_owner] using output
+    · intro k' ne old l outside
+      have diff : index k' ≠ j := fun eq => ne (by
+        rw [← selected k',← selected k]
+        exact congrArg (fun h : Fin jobs => copy h) eq)
+      have loc : bank (index k') l = Fin.natAdd 142081 (Fallback.Record.exchangeScratch width (index k') l) := by
+        unfold bank idlePassBank
+        rw [Function.Embedding.trans_apply,returnChartBank_private _ _ _ outside,Fallback.Record.exchangeBank_private]
+      obtain ⟨left,right⟩ := off _ diff l
+      obtain ⟨priorL,priorR⟩ := old l outside
+      change F.L (bank _ l) = _ ∧ F.R (bank _ l) = _
+      change S.L (bank _ l) = _ at priorL
+      change S.R (bank _ l) = _ at priorR
+      rw [loc] at priorL priorR ⊢
+      exact ⟨left.trans priorL,right.trans priorR⟩
+    · simpa only [j,selected] using act
+    · simpa only [j,selected] using kept
+  · simpa [ready,start,idlePassStacks] using represented
+  · intro k
+    change privateReady _ (embStk (bank _) start)
+    rw [show embStk (bank (index k)) start = entry _ from idlePassStacks_view width slots shared entry _ (common _)]
+    exact fun _ _ => ⟨rfl,rfl⟩
+
+/-- Install the actual directory occurrences on a common owner bank. Later
+passes inherit the output words and retain their own initial private stacks. -/
+theorem ordinaryIdle_placed_exec {w R W parents : ℕ} {P U : Type} (i : Fin 9)
+    (parent : Fin 64 → ZMod (prime^(w+1))) (units : ∀ j, IsUnit (parent j))
+    (count : parents*(prime^(w+1))^(64*64) = R)
+    (width states : Fin idleCopies.length → ℕ) (positive : ∀ j, 0 < states j)
+    (slots : ∀ j, Fin 142081 ↪ Fin (width j))
+    (body : ∀ j, P → Pr P (width j) (states j) prime U)
+    (program : ∀ j, Pr P (width j) (states j) prime U)
+    (budget : Fin idleCopies.length → ℝ) (entry : ∀ j, Stacks (width j) prime)
+    (shared : Stacks 142081 prime) (common : ∀ j, embStk (slots j) (entry j) = shared) :
+    PlacedIdleExecution (W := W) i parent count (fun j => idleCopies[j.val]) idleCopyIndex width states positive slots body program budget entry shared :=
+  placedIdleExecution_of_passes i parent units count _ idleCopyIndex idleCopyIndex_get width states positive
+    slots body program budget entry shared common
+
 open Fallback in
 /-- Choose the scheduled child branch and correct the returned columns with the caller's pivots. -/
 noncomputable def weightedOrdinaryProgram [M8.Machine.Net] {P U : Type} {T : ℕ}
