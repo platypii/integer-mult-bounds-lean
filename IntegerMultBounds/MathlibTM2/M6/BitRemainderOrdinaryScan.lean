@@ -275,7 +275,7 @@ theorem classifiedOrdinaryDirectory_exec [M8.Machine.Net] {a d common work w W J
       (fun _ => clear) (input j) payload (fun hj => installed j hj clear)
     have charged : t ≤ budget j := rowTime_min_cleanup (live j) price localPrice
     exact ⟨z,D,t,out,user,charged,run,next,action,word,kept 40 (by decide) (by decide) (by decide),kept 57 (by decide) (by decide) (by decide),kept 56 (by decide) (by decide) (by decide)⟩)
-  obtain ⟨z,F,t,n,rows,s,midUser,mid,user,bounded,controls,prepared,projector,time,rowTime,run,rowsOk,leftOk,rightOk,rest⟩ := scan
+  obtain ⟨z,F,t,n,rows,s,midUser,mid,user,_,bounded,controls,_,_,_,_,prepared,projector,time,rowTime,run,rowsOk,leftOk,rightOk,rest⟩ := scan
   obtain ⟨output,action,packed⟩ := ownerRows_pack (R := data.records) (N := N) rfl rowsOk
   have finalLeft := leftOk.trans (congrFun keepLeft _)
   have finalRight := rightOk.trans (congrArg (· ++ ownerTail) packed)

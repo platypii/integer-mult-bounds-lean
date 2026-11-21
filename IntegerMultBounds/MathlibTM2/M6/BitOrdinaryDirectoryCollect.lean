@@ -33,6 +33,38 @@ theorem copyDirectoryMasks_exec {ι P U : Type} {T Q : ℕ} (body : P → Pr P T
   simp only [ls,bs,List.length_map]
   omega
 
+/-- Save the two selectors outside the scanner placement, then resume on
+the original projected stacks with the control state left by copying. -/
+theorem saveMasksAndScan_exec {ι P U : Type} {T K Q : ℕ}
+    (body : P → Pr P T Q prime U) (e : Fin T ↪ Fin K) (host : P → Pr P K Q prime U)
+    (calls : ∀ f, host f = embProg e id (body f)) (scan : Pr P T Q prime U)
+    (p : Fin 6 ↪ Fin K) (outside : ∀ i, e i ≠ p 2 ∧ e i ≠ p 3)
+    (labels : List ι) (live bad : ι → Bool) (u : HS K Q prime U) (S : Stacks K prime)
+    (ls : S.R (p 0) = labels.map (fun j => bitSymbol (live j)))
+    (bs : S.R (p 1) = labels.map (fun j => bitSymbol (bad j)))
+    (free : ∀ k : Fin 6, 2 ≤ k → S.R (p k) = [])
+    (result : ℕ → Stacks T prime → Prop)
+    (resume : ∀ a : HS T Q prime U, ∃ z F t, z.user = a.user ∧
+      Exec body scan (mk a (embStk e S)) t (mk z F) ∧ result t F) :
+    let copy := (bcopy (p 0) (p 2) (p 4) (p 5)).seq (bcopy (p 1) (p 3) (p 4) (p 5))
+    ∃ z F t, z.user = u.user ∧ Exec host (copy.seq (embProg e id scan))
+      (mk u S) (12*labels.length+12+t) (mk z F) ∧ result t (embStk e F) ∧
+      F.R (p 2) = labels.map (fun j => bitSymbol (live j)) ∧
+      F.R (p 3) = labels.map (fun j => bitSymbol (bad j)) := by
+  intro copy
+  obtain ⟨a,user,save⟩ := copyDirectoryMasks_exec host p labels live bad u S ls bs free
+  let D := {S with R := Function.update (Function.update S.R (p 2) (S.R (p 0))) (p 3) (S.R (p 1))}
+  have project : embStk e D = embStk e S := by
+    refine Stacks.ext rfl rfl rfl ?_
+    funext i
+    exact (Function.update_of_ne (outside i).2 ..).trans (Function.update_of_ne (outside i).1 ..)
+  obtain ⟨b,B,t,hb,run,ok⟩ := resume (embDn e a)
+  obtain ⟨z,F,placed,_,hz,eqn,kept⟩ := exec_emb e.injective calls run a rfl D project
+  refine ⟨z,F,t,hz.trans (hb.trans user),Exec.seq save placed,eqn ▸ ok,?_,?_⟩
+  · exact ((kept _ (fun i => (outside i).1)).2.trans (Function.update_of_ne (p.injective.ne
+      (by decide : (2 : Fin 6) ≠ 3)) ..)).trans ((Function.update_self ..).trans ls)
+  · exact ((kept _ (fun i => (outside i).2)).2.trans (Function.update_self ..)).trans bs
+
 theorem collectDirectoryRows_exec {ι P U : Type} {T Q N : ℕ} (body : P → Pr P T Q prime U)
     (p : Fin 6 ↪ Fin T) (record : Pr P T Q prime U) (cost : ι → ℕ)
     (valid : ι → (Fin N → ZMod 2) → Prop) (ready : List ι → Stacks T prime → Prop)

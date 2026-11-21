@@ -838,8 +838,25 @@ theorem classifiedDirectory_exec [M8.Machine.Net] {m d K w W J N : ℕ} {P U : T
     let work := (List.finRange (66+(K+1))).filter fun i => decide (58 ≤ i.val ∧ i ≠ directoryMatrixTape room)
     let controls := embProg bank id (embProg placement id selectors)
     let prepare : Pr P (66+(K+1)) columnCapacity prime U := directoryQueueProgram room fits e
-    ∃ z F t n rows s midUser mid, z.user = u.user ∧ s ≤ selectorBudget ∧
+    let resume := fun mid (a : HS ((66+(K+1))+5) columnCapacity prime U) => ∃ z F t n rows, z.user = a.user ∧
+      Exec (fun f => embProg bank id (body f)) ((embProg bank id prepare).seq program) (mk a mid) (t+n) (mk z F) ∧
+      let initTime := directoryQueueInitTime m d w data.H data.records (embStk bank mid)
+      let queueTime := directoryMatrixQueueTime m d w data.H data.records ((embStk bank mid).R (caller 47)).length
+
+      (∀ p, mnProgPush (directoryQueueInitProgram (P := P) (U := U) (Q := columnCapacity) room fits) ≤ p → (∀ f, mnProgPush (body f) ≤ p) →
+        t ≤ initTime + queueTime + (4*work.length+1+work.length*(6*(p*initTime)))) ∧
+      n ≤ (rs.map (fun j => 6*N+6+cost j+(4*N+4))).sum + 2*rs.length+2 + (2*(rs.length*N)+2) ∧
+      List.Forall₂ (fun j out => ∃ word, effect j word ∧ out = bits word) rs rows ∧
+      F.L (reg 0) = S.L (reg 0) ∧ F.R (reg 0) = rows.flatten ++ ownerTail ∧ F.R (reg 1) = [] ∧ ready (embStk placement (embStk bank F)) [] ∧
+      (embStk bank F).R (directoryMatrixTape room) = [] ∧
+      (embStk bank F).R (caller 57) = [] ∧ (embStk bank F).R (caller 56) = []
+    ∃ z F t n rows s midUser mid, z.user = u.user ∧ midUser.user = u.user ∧ s ≤ selectorBudget ∧
       Exec (fun f => embProg bank id (body f)) controls (mk u S) s (mk midUser mid) ∧
+      (embStk bank mid).R (caller 57) = rs.map (fun j => bitSymbol (live j)) ∧
+      (embStk bank mid).R (caller 56) = rs.map (fun j => bitSymbol (bad j)) ∧
+      Exec (fun f => embProg bank id (body f)) ((embProg bank id prepare).seq program)
+        (mk midUser mid) (t+n) (mk z F) ∧
+      (∀ a, resume mid a) ∧
       ready (embStk placement (embStk bank mid)) rs ∧
       (embStk bank mid).R (caller 48) = (embStk placement start).R (inner 48) ∧
       let initTime := directoryQueueInitTime m d w data.H data.records (embStk bank mid)
@@ -854,7 +871,7 @@ theorem classifiedDirectory_exec [M8.Machine.Net] {m d K w W J N : ℕ} {P U : T
       (embStk bank F).R (directoryMatrixTape room) = [] ∧
       (embStk bank F).R (caller 57) = [] ∧ (embStk bank F).R (caller 56) = [] := by
   intro e physical φ code schedule ready placement caller live rs pending bits bank reg start inner advance good padding ordinaryTime cost effect
-    matrix generated owner accumulator width saved tmp empty ordinary program work controls
+    matrix generated owner accumulator width saved tmp empty ordinary program work controls prepare resume
   obtain ⟨sy,D,s,su,subtotal,selectorRun,directory,portL,portR,projectorKept,cutKept,mask,mode⟩ := generated
   obtain ⟨midUser,mid,um,project,archiveKept,extRegs,runControls⟩ :=
     ownerSelectorSetup_exec room localBody body calls selectors u S sy D s selectorRun
@@ -868,70 +885,73 @@ theorem classifiedDirectory_exec [M8.Machine.Net] {m d K w W J N : ℕ} {P U : T
     change ∀ j, readAt blank (D.L ((24 : Fin 66).castAdd K)) (D.R ((24 : Fin 66).castAdd K)) j = blank
     rw [portL,portR]
     exact empty
-  obtain ⟨y,B,t,uy,write,prepared,archive,keep,regs,setupTime⟩ := ownerArchiveSetup_exec
-    v proj parent inv reciprocal e data hm room fits body prefixes archiveTail schedule midUser mid (by rw [project]; exact directory) (archiveKept.trans matrix) ((cellEq 57).trans mask)
-  have cell (j : Fin 66) (hj : j.val < 58) := keep j hj
-  let frame := fun (xs : List ℕ) (A : Stacks (66+(K+1)) prime) =>
-    ∃ k ≤ data.records, pending k = xs ∧ ready (embStk placement A) xs ∧
-      A.R (directoryMatrixTape room) = physical.matrices k ∧
-      A.R (caller 40) = start.R (caller 40) ∧ A.R (caller 57) = xs.map (fun j => bitSymbol (live j)) ∧ A.R (caller 56) = xs.map (fun j => bitSymbol (bad j))
-  let dispatch := ownerDispatch (caller 57) (caller 56) good (directoryExceptionalProgram m d room capacity) padding
-  obtain ⟨z,F,n,rows,user,time,run,correct,left,output,free,k,hk,remaining,done,archiveEnd,cutEnd,maskEnd,modeEnd⟩ :=
-    packedOwner_exec ownerTail body (caller 24) (caller 57) dispatch input effect cost frame rs y B (by
-        intro xs A h
-        obtain ⟨_,_,_,_,_,_,mask,_⟩ := h
-        rw [mask]
-        cases xs <;> rfl)
-      ⟨⟨0,Nat.zero_le _,rfl,prepared,archive,((cell 40 (by decide)).2.trans ((cellEq 40).trans (cutKept.trans (congrArg start.R (directoryOrdinaryBank_caller room 40))))),((cell 57 (by decide)).2.trans ((cellEq 57).trans mask)),((cell 56 (by decide)).2.trans ((cellEq 56).trans mode))⟩,
-        rfl,(regs 0).2.trans ((extRegs 0).2.trans owner),(regs 1).2.trans ((extRegs 1).2.trans accumulator),(congrArg List.length ((regs 2).2.trans (extRegs 2).2)).trans width,
-        (regs 3).2.trans ((extRegs 3).2.trans saved),(regs 4).2.trans ((extRegs 4).2.trans tmp),by
-          change ∀ j, readAt blank ((embStk bank B).L (caller 24)) ((embStk bank B).R (caller 24)) j = blank
-          rw [(cell 24 (by decide)).1,(cell 24 (by decide)).2]; exact midBlank⟩ (by
-      intro j xs A y current loaded inputWord
-      obtain ⟨k,hk,suffix,dir,archive,cut,ls,bs⟩ := current
-      have inside : k < data.records := by
-        have h := congrArg List.length suffix
-        simp [pending,rs] at h
-        omega
-      have eq : pending k = k :: pending (k+1) := by
-        have h : k < (List.range data.records).length := by simpa using inside
-        simpa [pending,rs] using (List.getElem_cons_drop h).symm
-      obtain ⟨rfl,rfl⟩ := List.cons.inj (eq.symm.trans suffix)
-      obtain ⟨v,B,t,word,uv,bound,exec,action,output,next,tail,cutTail,maskTail,modeTail⟩ :=
-        ownerClassified_exec dimension v proj idem adm parent inv reciprocal data hm hw positive room capacity body c bodyBound
-          prefixes archiveTail bad k inside (ordinaryTime k) (ordinaryEffect k) length (input k) y A
-          (show ready (embStk placement A) (pending k) by rw [eq]; exact dir) archive good padding _ _ ls bs inputWord (by
-            intro no userState archiveState startRow inputRow archiveRow cutRow
-            obtain ⟨v,D,t,next,userEq,time,run,done,act,out,cutResult,mask,mode⟩ :=
-              ordinary k inside no (embDn placement userState) (embStk placement archiveState) startRow (by simpa only [embStk,Function.comp_apply,placement,inner,caller,Fin.castAddEmb_apply,directoryOrdinaryBank_caller] using cutRow.trans cut) inputRow
-            have clock : (D.R (inner 2)).length = physical.H := by
-              rw [done.2.2.2.2.2.1,length_binSyms]; rfl
-            obtain ⟨z,B,hz,bankEq,tail,_,exec⟩ := physical.advanceEmbeddedRecord_exec k inside placement
-              (directoryMatrixTape room) (Fin.succAbove_ne _) (inner 2) (inner 59)
-              (inner.injective.ne (by decide : (2 : Fin 66) ≠ 59)) id localBody body calls _ userState archiveState
-              v D t run clock (done.2.2.1 _ (by decide : 58 ≤ 59)).2 archiveRow
-            have cell (i : Fin 66) : B.R (caller i) = D.R (inner i) := by
-              change B.R (i.castAdd (K+1)) = _
-              rw [← directoryOrdinaryBank_caller room i]
-              exact congrArg (fun A => Stacks.R A (inner i)) bankEq
-            refine ⟨z,B,_,next,hz.trans userEq,Nat.add_le_add_right time _,?_,by rw [bankEq]; exact done,act,
-              ?_,tail,?_,?_,?_⟩
-            · change Exec body (if live k then good else padding) _ _ _
-              cases h : live k <;> simpa only [h,Bool.false_eq_true,ite_false,ite_true,good,padding,advance,physical,ScanData.physical] using exec
-            · change RecordPayload (inner 24) _ _ next (embStk placement B)
-              rw [bankEq]
-              exact out
-            · simpa [embStk,placement,inner,caller,directoryOrdinaryBank_caller] using (cell 40).trans cutResult
-            · simpa [embStk,placement,inner,caller,directoryOrdinaryBank_caller] using (cell 57).trans mask
-            · simpa [embStk,placement,inner,caller,directoryOrdinaryBank_caller] using (cell 56).trans mode)
-      refine ⟨v,B,t,word,uv,bound,exec,action,?_,k+1,by omega,rfl,next,tail,cutTail.trans cut,maskTail,modeTail⟩
-      simpa only [RecordPayload,embStk,Function.comp_apply,placement,directoryOrdinaryBank_caller,caller,Fin.castAddEmb_apply] using output)
-  have last : k = data.records := by
-    have h := congrArg List.length remaining
-    simp [pending,rs] at h
-    omega
-  refine ⟨z,F,t,n,rows,s,midUser,mid,user.trans (uy.trans (um.trans su)),subtotal,runControls,(by rw [project]; exact directory),(cellEq 48).trans projectorKept,setupTime,time,Exec.seq runControls (Exec.seq write run),correct,left.trans ((regs 0).1.trans (extRegs 0).1),output,free,done,archiveEnd.trans ?_,maskEnd,modeEnd⟩
-  simp [last,ScanData.matrices,physical,ScanData.physical,List.drop_of_length_le (List.length_range.le)]
+  have restart (a) : resume mid a := by
+    obtain ⟨y,B,t,uy,write,prepared,archive,keep,regs,setupTime⟩ := ownerArchiveSetup_exec
+      v proj parent inv reciprocal e data hm room fits body prefixes archiveTail schedule a mid (by rw [project]; exact directory) (archiveKept.trans matrix) ((cellEq 57).trans mask)
+    have cell (j : Fin 66) (hj : j.val < 58) := keep j hj
+    let frame := fun (xs : List ℕ) (A : Stacks (66+(K+1)) prime) =>
+      ∃ k ≤ data.records, pending k = xs ∧ ready (embStk placement A) xs ∧
+        A.R (directoryMatrixTape room) = physical.matrices k ∧
+        A.R (caller 40) = start.R (caller 40) ∧ A.R (caller 57) = xs.map (fun j => bitSymbol (live j)) ∧ A.R (caller 56) = xs.map (fun j => bitSymbol (bad j))
+    let dispatch := ownerDispatch (caller 57) (caller 56) good (directoryExceptionalProgram m d room capacity) padding
+    obtain ⟨z,F,n,rows,user,time,run,correct,left,output,free,k,hk,remaining,done,archiveEnd,cutEnd,maskEnd,modeEnd⟩ :=
+      packedOwner_exec ownerTail body (caller 24) (caller 57) dispatch input effect cost frame rs y B (by
+          intro xs A h
+          obtain ⟨_,_,_,_,_,_,mask,_⟩ := h
+          rw [mask]
+          cases xs <;> rfl)
+        ⟨⟨0,Nat.zero_le _,rfl,prepared,archive,((cell 40 (by decide)).2.trans ((cellEq 40).trans (cutKept.trans (congrArg start.R (directoryOrdinaryBank_caller room 40))))),((cell 57 (by decide)).2.trans ((cellEq 57).trans mask)),((cell 56 (by decide)).2.trans ((cellEq 56).trans mode))⟩,
+          rfl,(regs 0).2.trans ((extRegs 0).2.trans owner),(regs 1).2.trans ((extRegs 1).2.trans accumulator),(congrArg List.length ((regs 2).2.trans (extRegs 2).2)).trans width,
+          (regs 3).2.trans ((extRegs 3).2.trans saved),(regs 4).2.trans ((extRegs 4).2.trans tmp),by
+            change ∀ j, readAt blank ((embStk bank B).L (caller 24)) ((embStk bank B).R (caller 24)) j = blank
+            rw [(cell 24 (by decide)).1,(cell 24 (by decide)).2]; exact midBlank⟩ (by
+        intro j xs A y current loaded inputWord
+        obtain ⟨k,hk,suffix,dir,archive,cut,ls,bs⟩ := current
+        have inside : k < data.records := by
+          have h := congrArg List.length suffix
+          simp [pending,rs] at h
+          omega
+        have eq : pending k = k :: pending (k+1) := by
+          have h : k < (List.range data.records).length := by simpa using inside
+          simpa [pending,rs] using (List.getElem_cons_drop h).symm
+        obtain ⟨rfl,rfl⟩ := List.cons.inj (eq.symm.trans suffix)
+        obtain ⟨v,B,t,word,uv,bound,exec,action,output,next,tail,cutTail,maskTail,modeTail⟩ :=
+          ownerClassified_exec dimension v proj idem adm parent inv reciprocal data hm hw positive room capacity body c bodyBound
+            prefixes archiveTail bad k inside (ordinaryTime k) (ordinaryEffect k) length (input k) y A
+            (show ready (embStk placement A) (pending k) by rw [eq]; exact dir) archive good padding _ _ ls bs inputWord (by
+              intro no userState archiveState startRow inputRow archiveRow cutRow
+              obtain ⟨v,D,t,next,userEq,time,run,done,act,out,cutResult,mask,mode⟩ :=
+                ordinary k inside no (embDn placement userState) (embStk placement archiveState) startRow (by simpa only [embStk,Function.comp_apply,placement,inner,caller,Fin.castAddEmb_apply,directoryOrdinaryBank_caller] using cutRow.trans cut) inputRow
+              have clock : (D.R (inner 2)).length = physical.H := by
+                rw [done.2.2.2.2.2.1,length_binSyms]; rfl
+              obtain ⟨z,B,hz,bankEq,tail,_,exec⟩ := physical.advanceEmbeddedRecord_exec k inside placement
+                (directoryMatrixTape room) (Fin.succAbove_ne _) (inner 2) (inner 59)
+                (inner.injective.ne (by decide : (2 : Fin 66) ≠ 59)) id localBody body calls _ userState archiveState
+                v D t run clock (done.2.2.1 _ (by decide : 58 ≤ 59)).2 archiveRow
+              have cell (i : Fin 66) : B.R (caller i) = D.R (inner i) := by
+                change B.R (i.castAdd (K+1)) = _
+                rw [← directoryOrdinaryBank_caller room i]
+                exact congrArg (fun A => Stacks.R A (inner i)) bankEq
+              refine ⟨z,B,_,next,hz.trans userEq,Nat.add_le_add_right time _,?_,by rw [bankEq]; exact done,act,
+                ?_,tail,?_,?_,?_⟩
+              · change Exec body (if live k then good else padding) _ _ _
+                cases h : live k <;> simpa only [h,Bool.false_eq_true,ite_false,ite_true,good,padding,advance,physical,ScanData.physical] using exec
+              · change RecordPayload (inner 24) _ _ next (embStk placement B)
+                rw [bankEq]
+                exact out
+              · simpa [embStk,placement,inner,caller,directoryOrdinaryBank_caller] using (cell 40).trans cutResult
+              · simpa [embStk,placement,inner,caller,directoryOrdinaryBank_caller] using (cell 57).trans mask
+              · simpa [embStk,placement,inner,caller,directoryOrdinaryBank_caller] using (cell 56).trans mode)
+        refine ⟨v,B,t,word,uv,bound,exec,action,?_,k+1,by omega,rfl,next,tail,cutTail.trans cut,maskTail,modeTail⟩
+        simpa only [RecordPayload,embStk,Function.comp_apply,placement,directoryOrdinaryBank_caller,caller,Fin.castAddEmb_apply] using output)
+    have last : k = data.records := by
+      have h := congrArg List.length remaining
+      simp [pending,rs] at h
+      omega
+    refine ⟨z,F,t,n,rows,user.trans uy,Exec.seq write run,setupTime,time,correct,left.trans ((regs 0).1.trans (extRegs 0).1),output,free,done,archiveEnd.trans ?_,maskEnd,modeEnd⟩
+    simp [last,ScanData.matrices,physical,ScanData.physical,List.drop_of_length_le (List.length_range.le)]
+  obtain ⟨z,F,t,n,rows,user,suffix,setupTime,time,correct,result⟩ := restart midUser
+  exact ⟨z,F,t,n,rows,s,midUser,mid,user.trans (um.trans su),um.trans su,subtotal,runControls,(cellEq 57).trans mask,(cellEq 56).trans mode,suffix,restart,(by rw [project]; exact directory),(cellEq 48).trans projectorKept,setupTime,time,Exec.seq runControls suffix,correct,result⟩
 
 /-- Normalize the complete execution by the payload volume owned by its rows. -/
 private theorem packedOwner_charge (elapsed overhead records N baseline degree rate : ℕ)
@@ -1385,7 +1405,7 @@ private theorem generatedOwnerDirectory_exec [M8.Machine.Net] {T m dim J W : ℕ
     filledSize ((stays 3 (by decide)).trans saved) ((stays 4 (by decide)).trans tmp)
     filledBlank
     (fun j _ no y A readyRow _ payloadRow => ordinary j _ (input j) y A no readyRow payloadRow)
-  obtain ⟨finishState,final,t,n,rows,s,midUser,mid,hu,setup,controls,midReady,projectorEq,initBound,scan,exec,correct,ownerLeft,out,free,done,archive,maskEnd,modeEnd⟩ := pass
+  obtain ⟨finishState,final,t,n,rows,s,midUser,mid,hu,_,setup,controls,_,_,_,_,midReady,projectorEq,initBound,scan,exec,correct,ownerLeft,out,free,done,archive,maskEnd,modeEnd⟩ := pass
   have recordsPos : 0 < LabelMask.records directory :=
     Nat.mul_pos (Nat.mul_pos positiveDir.1 positiveDir.2.1) positiveDir.2.2.1
   have radixPos : 0 < M := pow_pos Shared50ModularControl.prime_prime.pos _
