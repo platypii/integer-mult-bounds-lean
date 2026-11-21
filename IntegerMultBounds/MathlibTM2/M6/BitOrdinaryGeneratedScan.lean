@@ -7,6 +7,7 @@ public import IntegerMultBounds.MathlibTM2.M6.BitOrdinaryDirectoryReturn
 public import IntegerMultBounds.MathlibTM2.M6.BitOrdinaryHostedOutgoing
 public import IntegerMultBounds.MathlibTM2.M6.BitOrdinaryProjectedRead
 public import IntegerMultBounds.MathlibTM2.M6.BitOrdinaryPortReads
+public import IntegerMultBounds.MathlibTM2.M6.BitOrdinaryRowCost
 
 /-! Generate incoming directory rows, transpose the batch, and restore bypassed rows. -/
 @[expose] public section
@@ -35,10 +36,6 @@ private theorem replacedOwnerPayload {T V N : ℕ} (size : V = N) (port : Fin T)
   have packed := payload_prefix_of_read word (fun _ => blank) 0 _ _ old
   simpa only [RecordPayload,sub_zero] using ownerWord_reads word output _ packed
     (by simpa only [RecordPayload,sub_zero] using old) left right
-
-def outgoingScanRowCost (m w prefixLength tapes push base : ℕ) (active live : Bool) : ℕ :=
-  let cursor := 1+(4*prefixLength+4+(m*m*(4*(w+1)+4)+1)+1)
-  (if active then base+(4*tapes+1+tapes*(6*(push*base)))+cursor else cursor) + (if live then 4 else 3)
 
 /-- Queue motion in a complete pass costs twelve steps per payload cell and
 twelve per record, in addition to the row programs and four boundary steps. -/
@@ -299,6 +296,10 @@ theorem generatedIncomingDirectory_exec [M8.Machine.Net] {P U : Type} {r g d w c
           let outPlace := outgoingOwnerPlacement outBank regs apart
           ∀ (dim : m = 64) (outLabel : P → G),
           (∀ f, host (outLabel f) = embProg outPlace outLabel (embProg (Fin.castAdd 5) id (localBody f))) →
+          ((prefixes 0).length ≤ N →
+            (((rs.map outCost).sum+12*(rs.length*N)+12*rs.length+4 : ℕ) : ℝ) ≤
+              (outgoingDirectoryTime_volume U machine r g privateTapes.length outPush dim).choose *
+                ((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau*((rs.length : ℝ)*N)+4) ∧
           DirectoryStageResult (R := R) (N := N) host (throughReturn.seq (embProg outPlace outLabel outLocal)) a A
             ((s+(copyTime+(12*rs.length+12+elapsed)))+k)
             ((rs.map outCost).sum+12*(rs.length*N)+12*rs.length+4)
@@ -464,6 +465,19 @@ theorem generatedIncomingDirectory_exec [M8.Machine.Net] {P U : Type} {r g d w c
     fun i j => replayPlacement_ne (localBank.trans place) slots copied (fun _ _ => separate _ _)
       (fun k => (apart k j).symm) (fun k => (separate _ _).symm) i,?_⟩
   intro regs outPlace dim outLabel outCalls
+  constructor
+  · intro width
+    have extent : N = (prime^(w+1))^128*W := by rw [show N = M^(m+m)*W from rfl,dim]
+    have positiveRecords : 0 < data.records := by
+      rw [count]
+      exact Nat.mul_pos (Nat.mul_pos dirPositive.1 dirPositive.2.1) dirPositive.2.2.1
+    have widths := readyMid.2.1
+    have priced := (outgoingDirectoryTime_volume U machine r g privateTapes.length outPush dim).choose_spec
+      w W positive rs (fun j => (prefixes j).length) active live (by
+        intro j hj
+        rw [← widths j hj,widths 0 (List.mem_range.mpr positiveRecords)]
+        exact extent ▸ width)
+    simpa only [outCost,extent] using priced
   let returned := ownerRow (ordinaryDirectoryChild_volume directory r g w) out
   obtain ⟨z,C,n,output,sameUser,time,run,rowAction,left,owner,_⟩ := hostedOutgoingScan_exec
     (common := common) v proj rank dim idem factor small weights unit positive prefixes archiveTail
