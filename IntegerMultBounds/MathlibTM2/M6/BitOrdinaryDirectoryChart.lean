@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.M6.BitOrdinaryDirectoryWidth
 public import IntegerMultBounds.MathlibTM2.M6.BitOrdinaryGeneratedScan
 public import IntegerMultBounds.MathlibTM2.M6.BitRemainderOrdinaryOwner
 
@@ -136,16 +137,32 @@ theorem directoryChartOwner_exec {T Q N : ℕ} {P U : Type} (body : P → Pr P T
   obtain ⟨z,n,user,price,run⟩ := normTape_exec body slot a A
   exact ⟨z,n,user,price,by simpa only [sweep,filter_window _ _ 0 bits nonblank tape] using run⟩
 
+/-- Borrow the first seven chart work tapes before the scan. The two binary
+inputs are the ordinary metadata registers and the result is owner register two. -/
+def directoryChartClock {T : ℕ} (room : 53 < T) : Fin 10 ↪ Fin ((T+10)+5) where
+  toFun i := ⟨if i.val = 0 then 2 else if i.val = 1 then 53 else if i.val < 9 then T+(i.val-2) else T+12,
+    by split <;> first | omega | split <;> first | omega | split <;> omega⟩
+  inj' := by
+    intro i j eqn
+    apply Fin.ext
+    have h := congrArg Fin.val eqn
+    dsimp only at h
+    repeat' split at h
+    all_goals omega
+
 theorem chartDirectory_exec [M8.Machine.Net] {T k R W w parents : ℕ} {P U : Type}
     (interval : ℕ × ℕ) (weights : Fin 64 → ZMod (prime^(w+1)))
-    (records : R = parents*(prime^(w+1))^(64*64)) (upper : interval.2 ≤ 63) :
+    (records : R = parents*(prime^(w+1))^(64*64)) (upper : interval.2 ≤ 63) (spectators : 0 < W) :
     let M := prime^(w+1)
     let N := M^128*W
     let proj : Matrix (Fin 64) (Fin 64) ℚ := diagonal fun i => if interval.1 ≤ i.val ∧ i.val < interval.2 then 1 else 0
     ∀ (stage : SharedBankStage.Stage _ k prime (phaseOwners (N := R*N))) (src : Fin k)
       (metadata : ℕ → List (Fin (prime+4))) (words : Fin k → Fin (R*N) → ZMod 2),
     let routed := stage.transform words src
-    ∀ (live bad : Fin T) (apart : live ≠ bad),
+    ∀ (room : 53 < T),
+    let clock := directoryChartClock room
+    ∀ (base : metadata 2 = binSyms M.size M) (seed : metadata 53 = binSyms W.size W)
+      (live bad : Fin T) (apart : live ≠ bad),
     let masks := directoryChartMasks live bad apart
     let replay := directoryChartReplay T
     let padded := fun i => if i < T then metadata i else []
@@ -165,27 +182,28 @@ theorem chartDirectory_exec [M8.Machine.Net] {T k R W w parents : ℕ} {P U : Ty
         embStk (payloadPlacement ((0 : Fin 5).natAdd T) (stage.slots src)) (ordinaryOwnerBank metadata F) →
       (∀ j, 2 ≤ j → A.R (masks j) = []) → (∀ j, A.R (replay j) = []) →
       ∃ prior bound tail, prior+bound ≤ budget ∧
+        let B := {A with L := Function.update A.L slot [], R := Function.update A.R slot (payloadWord (SparseRoleCircuit.encode ∘ routed))}
         DirectoryStageResult (R := R) (N := N) body program a
-          {A with L := Function.update A.L slot [], R := Function.update A.R slot (payloadWord (SparseRoleCircuit.encode ∘ routed))}
+          {B with R := Function.update B.R ((2 : Fin 5).natAdd (T+10)) (List.replicate N Node.tick)}
           prior bound slot tail (fun j word => if LabelStock.live 64 (w+1) 1 j then ∀ x h,
             word (index ((projectorResidual finSumFinEquiv (reduce M proj) weights (fun i => Ring.inverse (weights i))
               (physicalLabel 64 (w+1) j)).mulVec x) h) = ownerRow rfl routed j (index x h)
             else ownerRow rfl routed j = word) finished) →
     let positive : 0 < columnCapacity := columnCapacity_pos
     let outer := fun f => statePlacedPr placement fits positive id (body f)
-    ∃ z D n output, n ≤ stage.cost*(stage.tapes+5)+6+(1+(6*chartOwnerStock stage src S+6+budget)) ∧
+    ∃ z D n output, n ≤ stage.cost*(stage.tapes+5)+6+(1+(6*chartOwnerStock stage src S+6+directoryRowClockRate*N+budget)) ∧
       Exec outer ((embProg chart (Empty.elim : Empty → P) (foreign (liftQ stage.program chartFits))).seq
-        (statePlacedNormalized placement fits positive id ((normTape slot).seq program))) (mk u (ordinaryOwnerBank padded S)) n (mk z D) ∧
+        (statePlacedNormalized placement fits positive id (((normTape slot).seq (directoryRowClock clock)).seq program))) (mk u (ordinaryOwnerBank padded S)) n (mk z D) ∧
       z.user = u.user ∧ finished (embStk placement D) ∧
       RepT (stage.input (Function.update (stage.transform words) src output)) (embStk chart D).L (embStk chart D).R ∧
       PortReads R W parents interval weights routed output ∧
       ∀ j : Fin R, LabelStock.live 64 (w+1) 1 j = false → ownerRow rfl output j = ownerRow rfl routed j := by
-  intro M N proj stage src metadata words routed live bad apart masks replay padded slot placement chart restore body program budget capacity chartFits fits u S finished input scanner positive outer
+  intro M N proj stage src metadata words routed room clock base seed live bad apart masks replay padded slot placement chart restore body program budget capacity chartFits fits u S finished input scanner positive outer
   let post := fun (out : Fin (R*N) → ZMod 2) (D : Stacks ((T+10)+5) prime) =>
     finished D ∧ PortReads R W parents interval weights routed out ∧
       ∀ j : Fin R, LabelStock.live 64 (w+1) 1 j = false → ownerRow rfl out j = ownerRow rfl routed j
   obtain ⟨z,D,n,out,⟨done,reads,inactive⟩,time,run,user,ready,owners⟩ :=
-    chartOwner_scan stage src padded words restore positive body ((normTape slot).seq program) (6*chartOwnerStock stage src S+6+budget) post capacity chartFits fits u S input (by
+    chartOwner_scan stage src padded words restore positive body (((normTape slot).seq (directoryRowClock clock)).seq program) (6*chartOwnerStock stage src S+6+directoryRowClockRate*N+budget) post capacity chartFits fits u S input (by
       intro a F represented stock
       let A := embStk placement (ordinaryOwnerBank padded F)
       have read : RecordPayload slot (fun _ => blank) 0 routed A := by
@@ -197,9 +215,48 @@ theorem chartDirectory_exec [M8.Machine.Net] {T k R W w parents : ℕ} {P U : Ty
         simpa [A,slot,placement,ordinaryOwnerBank_project] using stock
       obtain ⟨v,m,hu,cost,normalize⟩ := directoryChartOwner_exec body slot routed a A read
       obtain ⟨_,project,_,_,_,maskFree,_,_,replayFree⟩ := directoryChart_entry live bad apart metadata F (stage.slots src)
-      obtain ⟨prior,bound,tail,price,exec⟩ := scanner v F represented A project maskFree replayFree
+      let B := {A with L := Function.update A.L slot [], R := Function.update A.R slot (payloadWord (SparseRoleCircuit.encode ∘ routed))}
+      have privateTapes := ordinaryOwnerBank_private (T := T+10) padded F (stage.slots src)
+      have privateWord (i : Fin (T+10)) : B.R (i.castAdd 5) = padded i.val := by
+        have off : i.castAdd 5 ≠ slot := by
+          intro eqn
+          have h := congrArg Fin.val eqn
+          change i.val = (T+10)+0 at h
+          omega
+        exact (Function.update_of_ne off ..).trans (privateTapes.1 i).2
+      have low (i : Fin T) : B.R ((i.castAdd 10).castAdd 5) = metadata i.val :=
+        (privateWord (i.castAdd 10)).trans (if_pos i.isLt)
+      have work (i : Fin 10) : B.R ((i.natAdd T).castAdd 5) = [] :=
+        (privateWord (i.natAdd T)).trans (if_neg (by change ¬ T+i.val < T; omega))
+      have dst : clock 9 = (2 : Fin 5).natAdd (T+10) := by
+        apply Fin.ext
+        change T+12 = (T+10)+2
+        omega
+      have empty : B.R (clock 9) = [] := by
+        rw [dst]
+        exact (Function.update_of_ne ((Fin.natAddEmb (T+10)).injective.ne (by decide : (2 : Fin 5) ≠ 0)) ..).trans
+          (privateTapes.2 2 (by decide)).2
+      obtain ⟨b,l,bu,clockTime,init⟩ := directoryRowClock_exec body clock M W v B
+        ((low ⟨2,by omega⟩).trans base) ((low ⟨53,room⟩).trans seed) (by
+          intro i hi
+          by_cases last : i = 9
+          · exact last ▸ empty
+          have lt : i.val < 9 := by
+            have : i.val ≠ 9 := fun h => last (Fin.ext h)
+            omega
+          let j : Fin 10 := ⟨i.val-2,by omega⟩
+          have pos : 2 ≤ i.val := hi
+          have eqn : clock i = (j.natAdd T).castAdd 5 := by
+            apply Fin.ext
+            change (if i.val = 0 then 2 else if i.val = 1 then 53 else if i.val < 9 then T+(i.val-2) else T+12) = T+(i.val-2)
+            rw [if_neg (by omega),if_neg (by omega),if_pos lt]
+          exact eqn ▸ work j)
+      rw [dst] at init
+      have clockBound : l ≤ directoryRowClockRate*N :=
+        clockTime.trans (directoryRowClockTime_linear (pow_pos Shared50ModularControl.prime_prime.pos _) spectators)
+      obtain ⟨prior,bound,tail,price,exec⟩ := scanner b F represented A project maskFree replayFree
       obtain ⟨y,B,t,out,user,time,run,reads,inactive,_,done⟩ := exec.portReads interval weights routed records upper
-      exact ⟨y,B,m+(prior+t),out,by omega,⟨done,reads,inactive⟩,user.trans hu,⟨Exec.seq normalize run.run,run.reads⟩⟩)
+      exact ⟨y,B,(m+l)+(prior+t),out,by dsimp only [N] at *; omega,⟨done,reads,inactive⟩,user.trans (bu.trans hu),⟨Exec.seq (Exec.seq normalize init) run.run,run.reads⟩⟩)
   refine ⟨z,D,n,out,time,run,user,done,?_,reads,inactive⟩
   apply chartOwner_input stage _ (embStk chart D) _ ready _ (fun _ _ => ⟨rfl,rfl⟩)
   intro i j
