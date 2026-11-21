@@ -1559,14 +1559,54 @@ theorem scheduledMoves_host [M8.Machine.Net] (stage : Fin 9) (run : Fin 32 × Fi
   obtain ⟨v,G,placed,same,view,stock⟩ := place localBody i (code i) u S z F t ready exec kept
   exact ⟨v,G,t,y,placed,time,same.trans user,by dsimp only [live]; rw [view]; exact rep,stock,action⟩
 
+/-- Place the record, both basis passes and both chart machines around the same owner tapes. -/
+private theorem copyWindowPlacement {t k m n e x : ℕ} (record : Fin t) (tmp : Fin k)
+    (entry : Fin k ↪ Fin e) (exit : Fin k ↪ Fin x) :
+    ∃ (T : ℕ) (ports : Fin t ↪ Fin T) (fan : Fin (k+2) ↪ Fin T)
+      (a : Fin (1+m) ↪ Fin T) (b : Fin (1+n) ↪ Fin T) (left : Fin e ↪ Fin T) (right : Fin x ↪ Fin T),
+    let slots := (Fin.castAddEmb 2).trans fan
+    let privatePort := fun j => (∀ l, a l ≠ j) ∧ (∀ l, ports l ≠ j) ∧ (∀ l, b l ≠ j)
+    slots tmp = ports record ∧ a ((0 : Fin 1).castAdd _) = ports record ∧ b ((0 : Fin 1).castAdd _) = ports record ∧
+    (∀ j, ports j ≠ ports record → ∀ l, a l ≠ ports j) ∧
+    (∀ j : Fin n, (∀ l, a l ≠ b (j.natAdd 1)) ∧ (∀ l, ports l ≠ b (j.natAdd 1))) ∧
+    (∀ j, j ≠ tmp → privatePort (slots j)) ∧ (∀ i : Fin 2, privatePort (fan (i.natAdd k))) ∧
+    (∀ i, left (entry i) = slots i) ∧ (∀ i, right (exit i) = slots i) ∧
+    (∀ i : Fin 2, (∀ l, left l ≠ fan (i.natAdd k)) ∧ (∀ l, right l ≠ fan (i.natAdd k))) ∧
+    (∀ j, (∀ i, entry i ≠ j) → (privatePort (left j) ∧ ∀ h, fan h ≠ left j) ∧ ∀ l, right l ≠ left j) ∧
+    (∀ j, (∀ i, exit i ≠ j) → (privatePort (right j) ∧ ∀ h, fan h ≠ right j) ∧ ∀ l, left l ≠ right j) := by
+  obtain ⟨ports,fan,a,b,tmpSlot,aSlot,bSlot,apart,separate,owners,controls⟩ :=
+    copyWorkspacePlacement record tmp m n
+  let slots := (Fin.castAddEmb 2).trans fan
+  let parent := (Fin.castAddEmb (n := ((t+(k+2))+m)+n) e).trans (Fin.castAddEmb x)
+  obtain ⟨left,right,shared,outside,rightOff,leftOff⟩ := copyChartPlacement slots entry exit
+  refine ⟨_,ports.trans parent,fan.trans parent,a.trans parent,b.trans parent,left,right,
+    congrArg parent tmpSlot,congrArg parent aSlot,congrArg parent bSlot,?_,?_,?_,?_,
+    fun i => (shared i).1,fun i => (shared i).2,?_,?_,?_⟩
+  · exact fun j h l => parent.injective.ne (apart j (fun eq => h (congrArg parent eq)) l)
+  · exact fun j => ⟨fun l => parent.injective.ne ((separate j).1 l),fun l => parent.injective.ne ((separate j).2 l)⟩
+  · exact fun j h => ⟨fun l => parent.injective.ne ((owners j h).1 l),
+      fun l => parent.injective.ne ((owners j h).2.1 l),fun l => parent.injective.ne ((owners j h).2.2 l)⟩
+  · exact fun i => ⟨fun l => parent.injective.ne ((controls i).1 l),
+      fun l => parent.injective.ne ((controls i).2.1 l),fun l => parent.injective.ne ((controls i).2.2 l)⟩
+  · intro i
+    apply outside
+    intro j eq
+    have contra := congrArg Fin.val (fan.injective eq)
+    simp [Fin.val_natAdd] at contra
+    omega
+  · intro j h
+    obtain ⟨other,off⟩ := leftOff j h
+    exact ⟨⟨⟨fun l => off (a l),fun l => off (ports l),fun l => off (b l)⟩,fun l => off (fan l)⟩,other⟩
+  · intro j h
+    obtain ⟨other,off⟩ := rightOff j h
+    exact ⟨⟨⟨fun l => off (a l),fun l => off (ports l),fun l => off (b l)⟩,fun l => off (fan l)⟩,other⟩
+
 open M8.Machine.Segments SharedPlacementAlphabet in
 open M8.Machine.ArbitraryWidthHighExchangeShared (sourceWord) in
 open Cover.Fallback IntegerMultBounds.Networks.Certificates.PR589 RecursiveInterchangeLayout in
 /-- Execute one routed COPY window on its assigned tapes and charge its distinct rank-seven child. -/
-theorem scheduledCopyWindow_host [M8.Machine.Net] {P U : Type} {T Q : ℕ}
-    (stage : Fin 9) (r : Fin 32) (d : Fin 5) (window : Fin Copy.lifecycles.length)
-    (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T)
-    (body : P → Pr P T Q prime U) (f : P) (capacity : rowSwapBlock.states ≤ Q) :
+theorem scheduledCopyWindow_host [M8.Machine.Net]
+    (stage : Fin 9) (r : Fin 32) (d : Fin 5) (window : Fin Copy.lifecycles.length) :
     let life := Copy.lifecycles[window.val]
     let scheduled : life ∈ Copy.lifecycles := List.getElem_mem ..
     ∃ (enter leave : M8.RevMachine.Graph.Block (142081+24) prime) (P₀ Q₀ : ℕ),
@@ -1576,6 +1616,13 @@ theorem scheduledCopyWindow_host [M8.Machine.Net] {P U : Type} {T Q : ℕ}
     let lo := min (Geometry.Dimensions.value p.1) (Geometry.Dimensions.value p.2)
     let hi := max (Geometry.Dimensions.value p.1) (Geometry.Dimensions.value p.2)
     ∃ (C : Matrix (Fin 8) (Fin 8) ℚ) (rev : CopyBasisPass C.adjugate) (fwd : CopyBasisPass C),
+    let A := description _ rev.good
+    let forward := description _ fwd.good
+    ∃ (T states : ℕ) (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T) (fan : Fin (142081+2) ↪ Fin T)
+      (a : Fin (1+FlatCoordinateCleanSchedule.tapeCount A) ↪ Fin T)
+      (b : Fin (1+FlatCoordinateCleanSchedule.tapeCount forward) ↪ Fin T)
+      (left : Fin enter.tapes ↪ Fin T) (right : Fin leave.tapes ↪ Fin T),
+    ∀ {P U : Type} {Q : ℕ}, states ≤ Q → ∀ (body : P → Pr P T Q prime U) (f : P),
     ∃ setup swaps : ℕ, ∀ (node : Descriptor) (w B rows : ℕ),
     let i := copyChildPosition (stage,(r,d),window)
     node.width = 64*(w+1) →
@@ -1587,44 +1634,16 @@ theorem scheduledCopyWindow_host [M8.Machine.Net] {P U : Type} {T Q : ℕ}
     let desc := scheduledChild prime node i
     ∃ position : Fin (volume prime desc) ≃ Fin (M^16*W),
     (∀ k, (position k).val = (CopyChildLayout.packActive desc k).val) ∧
-    let is := phasePackSchedule lo hi
     let bank := ((Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)).trans ports
     let clean := fun D : Stacks T prime => ∀ k : Fin (rowSwapBlock.tapes+35), 35 ≤ k.val → D.L (ports k) = [] ∧ D.R (ports k) = []
-    let pack := fun js => statePlacedNormalized ports capacity swapStates_pos Empty.elim (packSchedule 16 js)
-    let middle := (pack is).seq ((Prog.call f).seq (pack is.reverse))
     let V := M^16*W
     let view := phaseIntervalChild lo hi (w+1) W
     ∃ size : volume prime view = V,
     let word := fun y : Fin V → ZMod 2 => sourceWord (v := view) (fun k => y (k.cast size))
     let caller := fun y => (⟨fun _ => 0,fun _ => word y⟩ : Tapes 1 prime)
     let input := fun stages y => (caller y).append (basisWorkspace stages y)
-    let A := description _ rev.good
-    let forward := description _ fwd.good
-    let machine := fun stages => Placement.placed (FlatCoordinateCleanSchedule.program stages)
-      (sharedPlacement (0 : Fin 1) (segmentSource stages))
     let basisRate := fun stages => FlatCoordinateCleanSchedule.constant stages*(1+FlatCoordinateCleanSchedule.tapeCount stages+5)
-    ∀ (a : Fin (1+FlatCoordinateCleanSchedule.tapeCount A) ↪ Fin T)
-      (b : Fin (1+FlatCoordinateCleanSchedule.tapeCount forward) ↪ Fin T) (fitsA : _ ≤ Q) (fitsB : _ ≤ Q),
-    a ((0 : Fin 1).castAdd _) = bank 24 → b ((0 : Fin 1).castAdd _) = bank 24 →
-    (∀ j, ports j ≠ bank 24 → ∀ k, a k ≠ ports j) →
-    (∀ j : Fin (FlatCoordinateCleanSchedule.tapeCount forward), (∀ k, a k ≠ b (j.natAdd 1)) ∧ (∀ k, ports k ≠ b (j.natAdd 1))) →
-    ∀ (fan : Fin (142081+2) ↪ Fin T) (loadFits : q ≤ Q) (finishFits : s ≤ Q),
-    let slots := (Fin.castAddEmb 2).trans fan
-    slots tmp = bank 24 →
-    (∀ j, j ≠ tmp → (∀ l, a l ≠ slots j) ∧ (∀ l, ports l ≠ slots j) ∧ (∀ l, b l ≠ slots j)) →
-    (∀ i : Fin 2, (∀ l, a l ≠ fan (i.natAdd 142081)) ∧ (∀ l, ports l ≠ fan (i.natAdd 142081)) ∧
-      (∀ l, b l ≠ fan (i.natAdd 142081))) →
-    ∀ (left : Fin enter.tapes ↪ Fin T) (right : Fin leave.tapes ↪ Fin T)
-      (lf : enter.states ≤ Q) (rf : leave.states ≤ Q),
     let privatePort := fun j => (∀ l, a l ≠ j) ∧ (∀ l, ports l ≠ j) ∧ (∀ l, b l ≠ j)
-    let off := fun j => privatePort j ∧ ∀ l, fan l ≠ j
-    let privateChart := fun {t : ℕ} (slot : Fin 142081 → Fin t) j => ∀ i, slot i ≠ j
-    let ls := fun i : Fin 142081 => enter.slots (i.castAdd 24)
-    let rs := fun i : Fin 142081 => leave.slots (i.castAdd 24)
-    (∀ i, left (ls i) = slots i) → (∀ i, right (rs i) = slots i) →
-    (∀ i : Fin 2, (∀ j, left j ≠ fan (i.natAdd 142081)) ∧ (∀ j, right j ≠ fan (i.natAdd 142081))) →
-    (∀ j, privateChart ls j → off (left j) ∧ ∀ l, right l ≠ left j) →
-    (∀ j, privateChart rs j → off (right j) ∧ ∀ l, left l ≠ right j) →
     let v := copyLabelLayout (w+1) B K
     let chartBank := fun (x : Fin 142081 → Fin (volume prime v) → ZMod 2) => LabelCall.bank (copyOwners (v := v) x) v
       (M8.Stage2Machine.Straight.words (LabelSchedule.base v (w+1)))
@@ -1647,18 +1666,14 @@ theorem scheduledCopyWindow_host [M8.Machine.Net] {P U : Type} {T Q : ℕ}
         stored changed F ∧ clean F ∧ (∀ j, (∀ i, ports i ≠ j) → F.L j = D.L j ∧ F.R j = D.R j) ∧
         ∀ k, changed (position k) = Shared50RecursiveNodeRows.transpose (one_dvd desc.rows) (word ∘ position) k) →
     let price := fun c t => (c*volume prime v+(63+252*life.targets.length)*M8.RevMachine.LeafCore.coreCost (volume prime v) ((w+1)*64)+life.targets.length+1)*(t+5)+6
-    let convert := (embProg a (Empty.elim : Empty → P) (foreign (liftQ (machine A) fitsA))).seq
-        (middle.seq (embProg b (Empty.elim : Empty → P) (foreign (liftQ (machine forward) fitsB))))
-    let inner := (embProg fan (Empty.elim : Empty → P) (foreign (liftQ load loadFits))).seq
-      (convert.seq (embProg fan (Empty.elim : Empty → P) (foreign (liftQ finish finishFits))))
-    let code : Pr P T Q prime U := ((embProg left (Empty.elim : Empty → P) (foreign (liftQ enter.program lf))).seq
-      (inner.seq (embProg right (Empty.elim : Empty → P) (foreign (liftQ leave.program rf)))))
+    ∃ code : Pr P T Q prime U,
     ∀ (data : Fin 142081 → Fin V → ZMod 2) (u : HS T Q prime U) (S : Stacks T prime),
     fanReady data S →
     (∀ j, workspace j → S.L j = prepared.L j ∧ S.R j = prepared.R j) →
-    ∃ out z F t, Exec body code
+    ∃ z F t out, Exec body code
       (mk u S) t (mk z F) ∧
-      t ≤ price P₀ enter.tapes+(budget+(basisRate A+basisRate forward+setup+16+swaps*swapVolumeRate w)*V+76*(life.targets.length+2)*V*142088+12)+price Q₀ leave.tapes ∧
+      t ≤ price P₀ enter.tapes+(basisRate A+basisRate forward+setup+16+swaps*swapVolumeRate w)*V+
+        76*(life.targets.length+2)*V*142088+12+price Q₀ leave.tapes+budget ∧
       z.user = u.user ∧ fanReady out F ∧ CopyWindowEffect stage r d life (w+1) B K (labels data) (labels out) ∧
       ∀ j, (∀ i, fan i ≠ j) → ¬ workspace j → F.L j = S.L j ∧ F.R j = S.R j := by
   intro life scheduled
@@ -1680,19 +1695,51 @@ theorem scheduledCopyWindow_host [M8.Machine.Net] {P U : Type} {T Q : ℕ}
   have paid : 0 < Geometry.moveRank p.1 p.2 := by omega
   obtain ⟨q,s,load,finish,fanout⟩ := copyFanout_host stage r d life scheduled
   obtain ⟨C,rev,fwd,packed⟩ := scheduledPhasePacked_host p checked paid
+  refine ⟨q,s,load,finish,C,rev,fwd,?_⟩
+  intro A B'
+  let recordPort : Fin (rowSwapBlock.tapes+35) := (Fin.castLEEmb swapHostFits) ((Fin.castLEEmb (by decide : 35 ≤ 59)) 24)
+  let ls : Fin 142081 ↪ Fin enter.tapes := (Fin.castAddEmb 24).trans ⟨enter.slots,enter.slots_injective⟩
+  let rs : Fin 142081 ↪ Fin leave.tapes := (Fin.castAddEmb 24).trans ⟨leave.slots,leave.slots_injective⟩
+  obtain ⟨T,ports,fan,a,b,left,right,shared,srcA,srcB,apart,priv,ownersOff,controlsOff,sameL,sameR,counts,leftPriv,rightPriv⟩ :=
+    copyWindowPlacement (m := FlatCoordinateCleanSchedule.tapeCount A) (n := FlatCoordinateCleanSchedule.tapeCount B') recordPort (Fin.last 142080) ls rs
+  let statesOf {t q : ℕ} (_ : Program t q prime) := q
+  let qa := statesOf (FlatCoordinateCleanSchedule.program A)
+  let qb := statesOf (FlatCoordinateCleanSchedule.program B')
+  refine ⟨T,rowSwapBlock.states+qa+qb+q+s+enter.states+leave.states,ports,fan,a,b,left,right,?_⟩
+  intro P U Q fits body f
+  have capacity : rowSwapBlock.states ≤ Q := by omega
   obtain ⟨setup,swaps,run⟩ := packed (k := 142081) ports body f capacity
-  refine ⟨q,s,load,finish,C,rev,fwd,setup,swaps,?_⟩
+  refine ⟨setup,swaps,?_⟩
   intro node w B rows i width split label M K W hW desc
   have seven := copyChildPosition_rank stage r d window
   obtain ⟨position,offset,step⟩ := run node i w B rows (seven.trans rank.symm) width split label hW
   refine ⟨position,offset,?_⟩
-  intro is bank clean pack middle V view
+  intro bank clean V view
   refine ⟨phaseIntervalChild_volume (phaseInterval_bounds checked paid).1.le (phaseInterval_bounds checked paid).2 (w+1) W,?_⟩
-  intro word caller input A B' machine basisRate a b fitsA fitsB
-    srcA srcB apart priv fan loadFits finishFits slots shared ownersOff controlsOff left right lf rf
-    privatePort off privateChart ls rs sameL sameR counts leftPriv rightPriv v chartBank sizeV labels workspace prepared record dest q' budget
+  intro word caller input basisRate
+  have fitsA : qa ≤ Q := by omega
+  have fitsB : qb ≤ Q := by omega
+  have loadFits : q ≤ Q := by omega
+  have finishFits : s ≤ Q := by omega
+  have lf : enter.states ≤ Q := by omega
+  have rf : leave.states ≤ Q := by omega
+  intro privatePort v chartBank sizeV labels workspace prepared record dest q' budget
     fanReady seedL seedR stored initialA initialB initialRecord initialClean recurse price
-  intro convert inner code
+  let slots := (Fin.castAddEmb 2).trans fan
+  let off := fun j => privatePort j ∧ ∀ l, fan l ≠ j
+  let pack := fun js => statePlacedNormalized (U := U) ports capacity swapStates_pos (Empty.elim : Empty → P) (packSchedule 16 js)
+  let is := phasePackSchedule (min (Geometry.Dimensions.value p.1) (Geometry.Dimensions.value p.2))
+    (max (Geometry.Dimensions.value p.1) (Geometry.Dimensions.value p.2))
+  let middle := (pack is).seq ((Prog.call f).seq (pack is.reverse))
+  let machine := fun (stages : List (FlatCoordinateSchedule.Op 16)) =>
+    Placement.placed (FlatCoordinateCleanSchedule.program stages) (sharedPlacement (0 : Fin 1) (segmentSource stages))
+  let convert := (embProg a (Empty.elim : Empty → P) (foreign (liftQ (machine A) fitsA))).seq
+        (middle.seq (embProg b (Empty.elim : Empty → P) (foreign (liftQ (machine B') fitsB))))
+  let inner := (embProg fan (Empty.elim : Empty → P) (foreign (liftQ load loadFits))).seq
+      (convert.seq (embProg fan (Empty.elim : Empty → P) (foreign (liftQ finish finishFits))))
+  let code : Pr P T Q prime U := ((embProg left (Empty.elim : Empty → P) (foreign (liftQ enter.program lf))).seq
+      (inner.seq (embProg right (Empty.elim : Empty → P) (foreign (liftQ leave.program rf)))))
+  refine ⟨code,?_⟩
   intro data u S flatReady saved
   let before := labels data
   let flatten := fun (X : Fin 142081 → Fin (volume prime v) → ZMod 2) k i => X k (Fin.cast sizeV.symm i)
@@ -1760,7 +1807,7 @@ theorem scheduledCopyWindow_host [M8.Machine.Net] {P U : Type} {T Q : ℕ}
             | left k =>
               change slots k ≠ j
               by_cases ht : k = tmp
-              · simpa only [ht,shared] using separate.symm
+              · exact fun eq => separate (eq.symm.trans ((congrArg slots ht).trans shared))
               · exact fun eq => used (eq ▸ ownersOff k ht)
             | right k => exact fun eq => used (eq ▸ controlsOff k)
           obtain ⟨ld,rd⟩ := outside j fanOff
@@ -1792,7 +1839,9 @@ theorem scheduledCopyWindow_host [M8.Machine.Net] {P U : Type} {T Q : ℕ}
     · intro j hj _ _
       exact frame _ hj.1 hj.2)
   have back : labels (flatten out) = out := by funext k i; simp [flatten,labels]
-  refine ⟨flatten out,z,F,t,exec,time,user,?_,?_,finishFrame F frame⟩
+  change t ≤ price P₀ enter.tapes+(budget+(basisRate A+basisRate B'+setup+16+swaps*swapVolumeRate w)*V+
+    76*(life.targets.length+2)*V*142088+12)+price Q₀ leave.tapes at time
+  refine ⟨z,F,t,flatten out,exec,by omega,user,?_,?_,finishFrame F frame⟩
   · change chartReady out F at rfan
     dsimp only [fanReady]
     rw [← bitSize]
