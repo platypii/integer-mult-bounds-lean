@@ -1461,7 +1461,7 @@ private theorem ordinaryParent_exec [M8.Machine.Net] {common work w rows B : ℕ
     change _ ≤ setupTime+(_+_)
     rw [← ordinaryOwnerScanTime_inherited]
     apply Nat.add_le_add setup
-    apply scanBound.trans
+    apply (scanBound.trans (min_le_left ..)).trans
     change ordinaryOwnerScanTime 64 127 proj.rank w W data.H W.size data.records N (archive 0).length
       (raw.R (bank 46)).length ((whole.R ((48 : Fin 66).castAdd K)).drop (64*64*data.H)).length
       (privateTapes.map (fun i => 4*(whole.L i).length)).sum privateTapes.length push scratch.length rate p overhead childBudget ≤ _

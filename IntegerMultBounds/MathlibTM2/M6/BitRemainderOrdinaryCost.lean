@@ -2,7 +2,7 @@ module
 
 import IntegerMultBounds.MathlibTM2.M6.BitRemainderScan
 public import IntegerMultBounds.MathlibTM2.M6.BitRemainderOrdinaryEntry
-import IntegerMultBounds.MathlibTM2.Cover.FallbackGoodRecordSetup
+import IntegerMultBounds.MathlibTM2.Cover.FallbackGoodParentSetup
 import IntegerMultBounds.MathlibTM2.Cover.FallbackGoodCoordinates
 
 /-! Volume charge for generating and executing ordinary PR589 records. -/
@@ -10,6 +10,15 @@ import IntegerMultBounds.MathlibTM2.Cover.FallbackGoodCoordinates
 namespace IntegerMultBounds.MathlibTM2.M6.BitNode
 open IntegerMultBounds.MathlibTM2.Cover.Fallback
 open IntegerMultBounds.Networks.Shared50ModularControl (prime prime_prime)
+
+noncomputable def ordinaryCleanup [M8.Machine.Net] {m common work : ℕ} (U : Type)
+    (proj : Matrix (Fin m) (Fin m) ℚ) (room : 58 ≤ common+24+31+work)
+    (w W H J tapes push width : ℕ) : ℕ :=
+  let full := ordinaryCaller room
+  let growth := push*ordinarySetupTime m proj.rank w H width +
+    goodRecordStackGrowth (U := U) (A := prime) (GoodChildLayout.parent.trans (GoodChildLayout.parentWithWeights.trans full))
+      prime w W H J proj.rank proj.rank_le_height
+  tapes*(6*growth+4)+1
 
 /-- The row setup and cursor advance cost one payload-volume factor plus a linear
 charge for reading the ancestor prefix. The child budget occurs once. -/
@@ -72,6 +81,42 @@ theorem ordinaryRowTime_volume_le (m overhead : ℕ) (active : 0 < m) :
   ring_nf
   omega
 
+open IntegerMultBounds.MathlibTM2.Fast.Main in
+theorem ordinaryCleanup_volume_le [M8.Machine.Net] {m common work : ℕ} (U : Type)
+    (proj : Matrix (Fin m) (Fin m) ℚ) (room : 58 ≤ common+24+31+work)
+    (tapes push : ℕ) (positive : 0 < m) :
+    ∃ rate : ℕ, ∀ w W width, 0 < W →
+      let M := prime^(w+1)
+      let V := M^(m+m)*W
+      width ≤ V → ordinaryCleanup U proj room w W M.size W.size tapes push width ≤ rate*V := by
+  let machine := GoodChildLayout.parent.trans (GoodChildLayout.parentWithWeights.trans (ordinaryCaller room))
+  let r := proj.rank
+  let hr := proj.rank_le_height
+  let a := mnProgPush (goodIncoming (P := Empty) (U := U) (A := prime) prime r hr machine)
+  let b := mnProgPush (goodOutgoing (P := Empty) (U := U) (A := prime) prime r hr machine)
+  obtain ⟨C,parent⟩ := goodParentTime_volume_le (P := Empty) (U := U) (A := prime) Empty.elim machine r hr positive
+  obtain ⟨B,setup⟩ := ordinaryRowTime_volume_le m 0 positive
+  refine ⟨tapes*(6*(push*(12*m*m+4+B)+max a b*C)+4)+1,?_⟩
+  intro w W width hW M V fits
+  have vol : 1 ≤ V := Nat.mul_pos (pow_pos (pow_pos prime_prime.pos _) _) hW
+  have before := setup r w W width 0 hr hW
+  simp only [ordinaryRowTime,Nat.zero_add,Nat.zero_mul,Nat.add_zero] at before
+  have setupBound : ordinarySetupTime m r w M.size width ≤ (12*m*m+4+B)*V := by
+    rw [Nat.add_mul]
+    exact (Nat.le_add_right ..).trans (before.trans (Nat.add_le_add_right (Nat.mul_le_mul_left _ fits) _))
+  have pass := parent w W 0 hW
+  simp only [Nat.add_zero,Nat.zero_add] at pass
+  have growth : goodRecordStackGrowth (U := U) (A := prime) machine prime w W M.size W.size r hr ≤ max a b*(C*V) := by
+    apply le_trans _ (Nat.mul_le_mul_left (max a b) pass)
+    rw [Nat.mul_add]
+    exact Nat.add_le_add (Nat.mul_le_mul_right _ (le_max_left a b)) (Nat.mul_le_mul_right _ (le_max_right a b))
+  have both := Nat.add_le_add (Nat.mul_le_mul_left push setupBound) growth
+  change tapes*(6*(_+_)+4)+1 ≤ _
+  calc
+    _ ≤ tapes*(6*(push*((12*m*m+4+B)*V)+max a b*(C*V))+4*V)+V := by
+      gcongr <;> omega
+    _ = _ := by ring
+
 /-- At a stopped child, the cost of clearing the private bank can be absorbed
 in the same precision-dependent rate as the child itself. -/
 theorem ordinaryStoppedRow_rate (m overhead tapes push : ℕ) (active : 0 < m) (C : ℝ) :
@@ -119,17 +164,40 @@ open Matrix Finset IntegerMultBounds.Swap.LowerTriangular IntegerMultBounds.Swap
 
 /-- Counter, selectors, matrix setup and traversal on the packed owner tape. -/
 noncomputable def ordinaryOwnerScanTime (m d r w W H J records N prefixWidth archiveSize suffixSize left
-    tapes push rareTapes rareRate preparePush overhead childBudget : ℕ) : ℕ :=
+    tapes push rareTapes rareRate preparePush overhead childBudget : ℕ)
+    (cleanup : ℕ → ℕ → ℕ := fun _ elapsed => 4*tapes+1+tapes*(6*(push*elapsed))) : ℕ :=
   let V := records*N
   let selector := left+(140+30*(m*m)+6*tapes)*V
   let init := directoryQueueInitRate m d*((1+m*m)*V+archiveSize+suffixSize)
   let queue := (12*m*m+4+directoryMatrixRate m d)*V+4
   let pad := 1+(4*prefixWidth+4+(m*m*(4*(w+1)+4)+1)+1)
   let elapsed := ordinaryRowTime m r w W H prefixWidth overhead childBudget+pad
-  let base := elapsed+(4*tapes+1+tapes*(6*(push*elapsed)))+((d+1)*(d+1)*(4*H+4)+1)+4*N
+  let base := elapsed+cleanup prefixWidth elapsed+((d+1)*(d+1)*(4*H+4)+1)+4*N
   dimensionTime H J (d+1)+6*N+13*((d+1)*H+J)+8 + (selector + (
     (init+queue+(4*rareTapes+1+rareTapes*(6*(preparePush*init)))) +
     (records*(base+12*N+16)+(((∑ i ∈ range r, (i+1)*(m+1))*records)/prime)*(rareRate*N)+4)))
+
+theorem ordinaryOwnerScanTime_mono_cleanup {m d r w W H J records N prefixWidth archiveSize suffixSize left
+    tapes push rareTapes rareRate preparePush overhead childBudget : ℕ} {f g : ℕ → ℕ → ℕ}
+    (bound : ∀ width elapsed, f width elapsed ≤ g width elapsed) :
+    ordinaryOwnerScanTime m d r w W H J records N prefixWidth archiveSize suffixSize left
+      tapes push rareTapes rareRate preparePush overhead childBudget f ≤
+    ordinaryOwnerScanTime m d r w W H J records N prefixWidth archiveSize suffixSize left
+      tapes push rareTapes rareRate preparePush overhead childBudget g := by
+  dsimp only [ordinaryOwnerScanTime]
+  gcongr
+  apply bound
+
+/-- With cleanup priced from local scratch, each directory slot contributes at
+most one child budget to the traversal bound. -/
+theorem ordinaryOwnerScanTime_childBudget (m d r w W H J records N prefixWidth archiveSize suffixSize left
+    tapes push rareTapes rareRate preparePush overhead childBudget : ℕ) (cleanup : ℕ → ℕ) :
+    ordinaryOwnerScanTime m d r w W H J records N prefixWidth archiveSize suffixSize left
+      tapes push rareTapes rareRate preparePush overhead childBudget (fun width _ => cleanup width) =
+    ordinaryOwnerScanTime m d r w W H J records N prefixWidth archiveSize suffixSize left
+      tapes push rareTapes rareRate preparePush overhead 0 (fun width _ => cleanup width) + records*childBudget := by
+  dsimp only [ordinaryOwnerScanTime,ordinaryRowTime]
+  ring
 
 /-- The parent's directory setup is linear in the packed owner's volume. -/
 theorem ordinaryParentSetup_volume_le (layout : Descriptor) (rows : ℕ) (split : layout.rows = 142080*rows) :
@@ -263,6 +331,52 @@ theorem ordinaryOwnerScanTime_rate [M8.Machine.Net] (U : Type)
       · exact mul_le_mul count (mul_le_mul_of_nonneg_right feeBound (Nat.cast_nonneg N)) (by positivity) (by positivity)
     _ = _ := by push_cast; ring
 
+/-- The owner pays a uniform local rate plus one recursive budget per slot.
+The local rate is independent of that budget. -/
+theorem ordinaryOwnerScanTime_local_rate [M8.Machine.Net] {common work : ℕ} (U : Type)
+    (proj : Matrix (Fin 64) (Fin 64) ℚ) (room : 58 ≤ common+24+31+work)
+    (tapes push rareTapes rarePush preparePush overhead : ℕ) :
+    ∃ rate : ℝ, ∀ (w W records width budget : ℕ), 0 < W → 0 < records →
+      let M := prime^(w+1)
+      let N := M^128*W
+      let power := ((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau
+      let fee := exceptionalVolumeRate U 127 64 rareTapes rarePush w
+      let cleanup := ordinaryCleanup U proj room w W M.size W.size tapes push
+      width ≤ N →
+      ((ordinaryOwnerScanTime 64 127 proj.rank w W M.size W.size records N width 0 0 0 tapes push
+        rareTapes fee preparePush overhead 0 (fun k _ => cleanup k) + records*budget : ℕ) : ℝ) ≤
+        rate*power*(records*N : ℕ) + records*budget := by
+  obtain ⟨base,owner⟩ := ordinaryOwnerScanTime_rate U proj.rank tapes push rareTapes rarePush preparePush overhead
+    proj.rank_le_height 0
+  obtain ⟨C,clear⟩ := ordinaryCleanup_volume_le U proj room tapes push (by decide)
+  refine ⟨base+C,?_⟩
+  intro w W records width budget hW live M N power fee cleanup fits
+  let time (price : ℕ → ℕ → ℕ) := ordinaryOwnerScanTime 64 127 proj.rank w W M.size W.size records N width 0 0 0 tapes push
+    rareTapes fee preparePush overhead 0 price
+  have localTime : time (fun k _ => cleanup k) = time (fun _ _ => 0) + records*cleanup width := by
+    dsimp only [time,ordinaryOwnerScanTime]
+    ring
+  have standard := owner w W records width 0 hW live fits (by simp)
+  have stock : cleanup width ≤ C*N := clear w W width hW fits
+  have empty : time (fun _ _ => 0) ≤ time (fun _ elapsed => 4*tapes+1+tapes*(6*(push*elapsed))) :=
+    ordinaryOwnerScanTime_mono_cleanup (fun _ _ => Nat.zero_le _)
+  have baseBound : (time (fun _ _ => 0) : ℝ) ≤ base*power*(records*N : ℕ) :=
+    (Nat.cast_le.mpr empty).trans standard
+  have scaled : 1 ≤ power := Real.one_le_rpow (by exact_mod_cast Nat.le_add_left 1 w)
+    M8.Machine.BudgetBound.exponent_range.1.le
+  change ((time (fun k _ => cleanup k) + records*budget : ℕ) : ℝ) ≤ _
+  rw [localTime]
+  push_cast at baseBound ⊢
+  apply add_le_add_left
+  have extra : (records : ℝ)*cleanup width ≤ (C : ℝ)*power*(records*N) := by
+    calc
+      _ ≤ (records : ℝ)*(C*N) := mul_le_mul_of_nonneg_left (by exact_mod_cast stock) (Nat.cast_nonneg _)
+      _ ≤ (records : ℝ)*(C*N)*power := le_mul_of_one_le_right (by positivity) scaled
+      _ = _ := by ring
+  calc
+    _ ≤ base*power*(records*N) + C*power*(records*N) := add_le_add baseBound extra
+    _ = _ := by ring
+
 /-- Extra time charged to the stacks inherited from the parent. -/
 theorem ordinaryOwnerScanTime_inherited (m d r w W H J records N prefixWidth archiveSize suffixSize left
     tapes push rareTapes rareRate preparePush overhead childBudget : ℕ) :
@@ -284,7 +398,8 @@ theorem ordinaryDirectoryTime_le [M8.Machine.Net] {m d w W K H J B : ℕ} (U : T
     (prefixes : ℕ → List (Fin (prime+4))) (tail : List (Fin (prime+4))) (schedule : List ℕ → List (Fin (prime+4)))
     (S : Stacks (66+K) prime) (overhead budget tapes push rareTapes rarePush : ℕ)
     (rows : ℕ → Fin (d+1) → Fin (d+1)) (negative : ℕ → Bool) (hW : 0 < W)
-    (binary : H = (prime^(w+1)).size) (digits : J = W.size) :
+    (binary : H = (prime^(w+1)).size) (digits : J = W.size)
+    (cleanup : ℕ → ℕ → ℕ := fun _ elapsed => 4*tapes+1+tapes*(6*(push*elapsed))) :
     let M := prime^(w+1)
     let N := M^(m+m)*W
     let labels := List.range (LabelMask.records directory)
@@ -292,7 +407,7 @@ theorem ordinaryDirectoryTime_le [M8.Machine.Net] {m d w W K H J B : ℕ} (U : T
     let bad := fun j => fallbackBit proj.rank_le_height (reduce M proj) (physicalLabel m (w+1) j)
     let pad := fun width => 1+(4*width+4+(m*m*(4*(w+1)+4)+1)+1)
     let elapsed := fun width => ordinaryRowTime m proj.rank w W H width overhead budget + pad width
-    let cleared := fun width => elapsed width+(4*tapes+1+tapes*(6*(push*elapsed width)))
+    let cleared := fun width => elapsed width+cleanup width (elapsed width)
     let advance := (d+1)*(d+1)*(4*H+4)+1
     let usual := fun j => (if live j then cleared (prefixes j).length else pad (prefixes j).length) + advance
     let rare := fun j => exceptionalRecordTime U (rows j) (negative j) m w W H J rareTapes rarePush (prefixes j).length

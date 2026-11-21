@@ -983,7 +983,12 @@ theorem ordinaryOrPadding_exec [M8.Machine.Net] {d w W H J Q common work : ℕ} 
     let elapsed := ordinaryRowTime m proj.rank w W H (prefixes j).length overhead budget +
       (1+(4*(prefixes j).length+4+(m*m*(4*(w+1)+4)+1)+1))
     let push := max (mnProgPush step) bodyPush
+    let growth := push*ordinarySetupTime m proj.rank w H (prefixes j).length +
+      goodRecordStackGrowth (U := U) (A := prime) (GoodChildLayout.parent.trans (parentWithWeights.trans full))
+        prime w W H J proj.rank proj.rank_le_height
     ∃ z F t out, z.user = u.user ∧ t ≤ (if live then elapsed+(4*scratch.length+1+scratch.length*(6*(push*elapsed)))
+        else 1+(4*(prefixes j).length+4+(m*m*(4*(w+1)+4)+1)+1)) ∧
+      t ≤ (if live then elapsed+(scratch.length*(6*growth+4)+1)
         else 1+(4*(prefixes j).length+4+(m*m*(4*(w+1)+4)+1)+1)) ∧
       Exec body (if live then step.seq (clearWorkTapes scratch) else padding) (mk u S) t (mk z F) ∧
       DirectoryReady v proj w W H J weights prefixes tail schedules F js ∧
@@ -992,20 +997,19 @@ theorem ordinaryOrPadding_exec [M8.Machine.Net] {d w W H J Q common work : ℕ} 
       (if live then ∀ x j, let y := transform (diagonal weights) 1 (revExchangeOf (rev m) G
               (transform (diagonal fun i => Ring.inverse (weights i)) 1 x))
              out (index (Fin.append y.1 y.2) j) = word (index (Fin.append x.1 x.2) j) else word = out) := by
-  intro m K caller full g M G live accepted word payload installed core ports padding step scratch elapsed push
+  intro m K caller full g M G live accepted word payload installed core ports padding step scratch elapsed push growth
   cases active : live with
   | true =>
     simp only [active,ite_true]
-    obtain ⟨z,F,t,out,user,time,_,exec,next,payload,frame,action⟩ := ordinaryRow_exec proc cap overhead budget v proj weights prefixes tail schedules hm poolFits unit room body u S
+    exact ordinaryRow_exec proc cap overhead budget v proj weights prefixes tail schedules hm poolFits unit room body u S
       j js bodyPush pushBound context preserved ready queue active (accepted active) word payload (installed active)
-    exact ⟨z,F,t,out,user,time,exec,next,payload,frame,action⟩
   | false =>
     simp only [active,Bool.false_eq_true,ite_false]
     obtain ⟨z,user,run,next⟩ := ordinaryPadding_exec body v proj weights prefixes tail schedules j js queue u S ready
     let rest := js.flatMap (LabelDirectory.entry prefixes m (w+1)) ++ tail
     have keep (k : Fin 66) (off : k ≠ 46) :=
       Function.update_of_ne (caller.injective.ne off) rest S.R
-    refine ⟨z,_,_,word,user,le_rfl,run,next,?_,(fun k _ ne _ => keep k ne),rfl⟩
+    refine ⟨z,_,_,word,user,le_rfl,le_rfl,run,next,?_,(fun k _ ne _ => keep k ne),rfl⟩
     intro k
     change readAt blank _ (Function.update S.R (caller 46) rest (caller 24)) _ = _
     rw [keep 24 (by decide)]

@@ -14,6 +14,12 @@ open IntegerMultBounds.MathlibTM2.Fast.Main IntegerMultBounds.Swap.Modular Matri
 open Finset IntegerMultBounds.Swap.LowerTriangular
 open LabelTraversal FlatCoordinateLayout M8.Exchange M8.ReversedExchange IntegerMultBounds.Swap.Shear
 
+private theorem rowTime_min_cleanup (live : Bool) {time elapsed pad a b : ℕ}
+    (ha : time ≤ if live then elapsed+a else pad) (hb : time ≤ if live then elapsed+b else pad) :
+    time ≤ if live then elapsed+min a b else pad := by
+  cases live <;> simp_all only [Bool.false_eq_true,ite_false,ite_true] <;> omega
+
+
 /-- The split banks of an ordinary row and the residual matrix use the same packed address. -/
 private theorem ordinaryProjectedRead {m n M W : ℕ} [NeZero M] (dimension : m+m = n)
     (P g : Matrix (Fin m) (Fin m) (ZMod M)) (parent inv : Fin m → ZMod M)
@@ -138,8 +144,12 @@ def ClassifiedOrdinaryScan [M8.Machine.Net] {a d common work w W J : ℕ} {P U :
       let rarePush := max (mnProgPush (directoryExceptionalCore (P := P) (U := U) d room capacity)) c
       let rareRate := exceptionalVolumeRate U d m work.length rarePush w
       (∀ p, mnProgPush (directoryQueueInitProgram (P := P) (U := U) (Q := columnCapacity) room fits) ≤ p → (∀ f, mnProgPush (body f) ≤ p) → (prefixes 0).length ≤ N →
-        k+(s+(t+n)) ≤ ordinaryOwnerScanTime m d proj.rank w W data.H J data.records N
-          (prefixes 0).length archiveTail.length suffix.length left scratch.length push work.length rareRate p overhead childBudget) ∧
+        k+(s+(t+n)) ≤ min
+          (ordinaryOwnerScanTime m d proj.rank w W data.H J data.records N (prefixes 0).length archiveTail.length
+            suffix.length left scratch.length push work.length rareRate p overhead childBudget)
+          (ordinaryOwnerScanTime m d proj.rank w W data.H J data.records N (prefixes 0).length archiveTail.length
+            suffix.length left scratch.length push work.length rareRate p overhead 0
+            (fun width _ => ordinaryCleanup U proj space w W data.H J scratch.length push width) + data.records*childBudget)) ∧
       Exec (fun f => embProg bank id (body f)) ((payloadCountProgram (ownerCountPorts (K+1)) (d+1)).seq (controls.seq ((embProg bank id prepare).seq program))) (mk u S) (k+(s+(t+n))) (mk z F) ∧
       (∀ j : Fin data.records, effect j (ownerRow (R := data.records) (N := N) rfl output j)) ∧
       (∀ j, readAt blank (F.L (reg 0)) (F.R (reg 0)) j = RadixToBinary.binaryEncoding.encode
@@ -196,10 +206,12 @@ theorem classifiedOrdinaryDirectory_exec [M8.Machine.Net] {a d common work w W J
   intro e _ code schedule ready placement caller live rs pending bank reg start inner advance good padding effect
     initialCut matrix raw privateTapes left selectorBudget count free inputs beforeRows rows beforeH parents mask mode queueFree
     owner reads accumulator width saved tmp empty
+  let cleanup : ℕ → ℕ → ℕ := fun width elapsed => min (4*scratch.length+1+scratch.length*(6*(push*elapsed)))
+              (ordinaryCleanup U proj space w W data.H J scratch.length push width)
   let budget := fun (j : ℕ) =>
     let pad := 1+(4*(prefixes j).length+4+(m*m*(4*(w+1)+4)+1)+1)
     let elapsed := ordinaryRowTime m proj.rank w W data.H (prefixes j).length overhead childBudget + pad
-    if LabelStock.live m (w+1) 1 j then elapsed+(4*scratch.length+1+scratch.length*(6*(push*elapsed))) else pad
+    if LabelStock.live m (w+1) 1 j then elapsed+cleanup (prefixes j).length elapsed else pad
   letI : NeZero (prime^(w+1)) := ⟨(pow_pos Shared50ModularControl.prime_prime.pos _).ne'⟩
   let ordinaryEffect := fun j (out : Fin N → ZMod 2) =>
     let g := physicalLabel m (w+1) j
@@ -254,14 +266,15 @@ theorem classifiedOrdinaryDirectory_exec [M8.Machine.Net] {a d common work w W J
     have queue : schedule (j::pending (j+1)) = schedule (pending (j+1)) := by
       have hb : actualBad j = false := clear
       simp [schedule,hb]
-    obtain ⟨z,D,t,out,user,price,run,next,word,kept,action⟩ := ordinaryOrPadding_exec proc cap overhead childBudget v proj
+    obtain ⟨z,D,t,out,user,price,localPrice,run,next,word,kept,action⟩ := ordinaryOrPadding_exec proc cap overhead childBudget v proj
       parent prefixes archiveTail schedule hm pool unit space localBody y A j (pending (j+1)) localPush localBound (fun D => cutReady (D.R (inner 40)))
       (by
         intro D frame
         rw [frame (inner 40) (by change 40 < 58; decide),cut,view]
         exact initialCut) dir queue
       (fun _ => clear) (input j) payload (fun hj => installed j hj clear)
-    exact ⟨z,D,t,out,user,price,run,next,action,word,kept 40 (by decide) (by decide) (by decide),kept 57 (by decide) (by decide) (by decide),kept 56 (by decide) (by decide) (by decide)⟩)
+    have charged : t ≤ budget j := rowTime_min_cleanup (live j) price localPrice
+    exact ⟨z,D,t,out,user,charged,run,next,action,word,kept 40 (by decide) (by decide) (by decide),kept 57 (by decide) (by decide) (by decide),kept 56 (by decide) (by decide) (by decide)⟩)
   obtain ⟨z,F,t,n,rows,s,midUser,mid,user,bounded,controls,prepared,projector,time,rowTime,run,rowsOk,leftOk,rightOk,rest⟩ := scan
   obtain ⟨output,action,packed⟩ := ownerRows_pack (R := data.records) (N := N) rfl rowsOk
   have finalLeft := leftOk.trans (congrFun keepLeft _)
@@ -276,7 +289,7 @@ theorem classifiedOrdinaryDirectory_exec [M8.Machine.Net] {a d common work w W J
     let table := fun j => physical.table (LabelStock.residue m (w+1) 1 j)
     have bill := ordinaryDirectoryTime_le U proj idem factor small dimension directory v shape parent prefixes archiveTail
       schedule (embStk placement (embStk bank mid)) overhead childBudget scratch.length push rareTapes rarePush
-      (fun j => classPivots (table j)) (fun j => negativeAnchor (classPivots (table j)) (table j)) positive binary digits
+      (fun j => classPivots (table j)) (fun j => negativeAnchor (classPivots (table j)) (table j)) positive binary digits cleanup
       (by simpa only [← count] using prepared) first
     rw [List.length_range,← count] at bill
     simp only [List.length_range] at rowTime
@@ -291,7 +304,11 @@ theorem classifiedOrdinaryDirectory_exec [M8.Machine.Net] {a d common work w W J
       (Nat.add_le_add_left (Nat.mul_le_mul_left _ (Nat.mul_le_mul_left _ (Nat.mul_le_mul_left p initLe))) _))
     simp only [bank] at widthEq matrixEq
     rw [widthEq,matrixEq,max_eq_right first] at setup
-    exact Nat.add_le_add paid (Nat.add_le_add bounded (Nat.add_le_add setup (rowTime.trans bill)))
+    have total := Nat.add_le_add paid (Nat.add_le_add bounded (Nat.add_le_add setup (rowTime.trans bill)))
+    apply le_min
+    · exact total.trans (ordinaryOwnerScanTime_mono_cleanup (fun _ _ => min_le_left ..))
+    · rw [← ordinaryOwnerScanTime_childBudget]
+      exact total.trans (ordinaryOwnerScanTime_mono_cleanup (fun _ _ => min_le_right ..))
   · intro j
     have row := action j
     change (if live j && bad j then _ else ordinaryEffect j _) at row
