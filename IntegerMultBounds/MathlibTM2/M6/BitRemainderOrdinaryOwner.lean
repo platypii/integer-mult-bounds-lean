@@ -1392,7 +1392,7 @@ private theorem ordinaryParent_exec [M8.Machine.Net] {common work w rows B : ℕ
   have packed := payload_prefix_of_read word (fun _ => blank) 0 (raw.L (reg 0)) (raw.R (reg 0)) (by simpa only [sub_zero] using payload)
   let archive := fun j => prefixes (j/box)
   obtain ⟨z,F,t,n,output,k,s,midUser,mid,_,same,_,_,_,_,time,run,action,reads,ownerLeft,ownerRight,accumulator,done,clear,maskEnd,modeEnd⟩ :=
-    execute archive (raw.R (bank 46)) ((raw.R (reg 0)).drop (data.records*N)) word y D (free _ (by have h := directoryMatrixTape_private room; omega)) count workEmpty
+    execute archive (raw.R (bank 46)) ((raw.R (reg 0)).drop (data.records*N)) word y D trivial (free _ (by have h := directoryMatrixTape_private room; omega)) count workEmpty
       (by
         change DirectoryScanInput v proj w W data.H W.size parent archive _ (List.range data.records)
           (fun i : Fin 58 => whole.R ((i.castAdd 8).castAdd K))

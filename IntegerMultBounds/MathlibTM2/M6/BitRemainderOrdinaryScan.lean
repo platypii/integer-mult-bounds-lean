@@ -60,7 +60,8 @@ def ClassifiedOrdinaryScan [M8.Machine.Net] {a d common work w W J : ℕ} {P U :
     (cap : 217 ≤ columnCapacity) (overhead childBudget : ℕ)
     (localBody : P → Pr P (66+(common+24+31+work)) columnCapacity prime U)
     (proc : P := by exact ()) (localPush : ℕ := mnProgPush (localBody proc))
-    (placedPush : ℕ := mnProgPush (embProg (directoryOrdinaryBank room) id (localBody proc))) : Prop :=
+    (placedPush : ℕ := mnProgPush (embProg (directoryOrdinaryBank room) id (localBody proc)))
+    (cutReady : List (Fin (prime+4)) → Prop := fun _ => True) : Prop :=
     let m := a+1
     let K := common+24+31+work
     let M := prime^(w+1)
@@ -108,7 +109,7 @@ def ClassifiedOrdinaryScan [M8.Machine.Net] {a d common work w W J : ℕ} {P U :
         (physicalLabel m (w+1) j)).mulVec x) k).cast (directoryPayloadLength e length)) =
         input j ((FlatCoordinateLayout.index x k).cast (directoryPayloadLength e length))
       else input j = next
-    start.R (directoryMatrixTape room) = [] →
+    cutReady (start.R (caller 40)) → start.R (directoryMatrixTape room) = [] →
     let raw := embStk placement start
     let privateTapes := (List.finRange (66+K)).filter fun i => 58 ≤ i.val
     let left := (privateTapes.map fun i => 4*(raw.L i).length).sum
@@ -158,7 +159,8 @@ theorem classifiedOrdinaryDirectory_exec [M8.Machine.Net] {a d common work w W J
     (fits : (36+2*(a+1)+1+(RingFormula.conjugationDepth (a+1)+1)*13)+3 ≤ (common+24+31+work)+1)
     (capacity : (anchorProgram d true).1+(anchorProgram d false).1+1 ≤ columnCapacity)
     (pool : (RingFormula.conjugationDepth (a+1)+1)*13 ≤ work) (space : 58 ≤ common+24+31+work)
-    (cap : 217 ≤ columnCapacity) (overhead childBudget : ℕ) :
+    (cap : 217 ≤ columnCapacity) (overhead childBudget : ℕ)
+    (cutReady : List (Fin (prime+4)) → Prop := fun _ => True) :
     let m := a+1
     let K := common+24+31+work
     let M := prime^(w+1)
@@ -173,9 +175,9 @@ theorem classifiedOrdinaryDirectory_exec [M8.Machine.Net] {a d common work w W J
     (∀ j, LabelStock.live m (w+1) 1 j = true → bad j = false →
       let g := physicalLabel m (w+1) j
       ∀ minor, OrdinaryRecordExec (W := W) (H := data.H) (J := J) cap proj.rank_le_height
-        (ordinaryCaller space) localBody overhead childBudget (g*reduce M proj*g⁻¹) minor parent proc) →
+        (ordinaryCaller space) localBody overhead childBudget (g*reduce M proj*g⁻¹) minor parent proc (fun D => cutReady (D.R ((40 : Fin 66).castAdd K)))) →
     ClassifiedOrdinaryScan (J := J) v proj dimension parent data room fits capacity pool space cap overhead childBudget
-      localBody proc localPush placedPush := by
+      localBody proc localPush placedPush cutReady := by
   intro m K M N inv bad length localBody proc localPush placedPush localBound placedBound installed
   unfold ClassifiedOrdinaryScan
   intro _ _ _ _ _ actualBad _ directory B dirPositive shape pairRoom
@@ -192,7 +194,7 @@ theorem classifiedOrdinaryDirectory_exec [M8.Machine.Net] {a d common work w W J
     (W := W) (H := data.H) (J := J) v parent (LabelProjector.residue_reduce (by omega) proj adm) directory dirPositive shape
   intro prefixes archiveTail ownerTail word u S input body c core ports skipRow step scratch goodRow push
   intro e _ code schedule ready placement caller live rs pending bank reg start inner advance good padding effect
-    matrix raw privateTapes left selectorBudget count free inputs beforeRows rows beforeH parents mask mode queueFree
+    initialCut matrix raw privateTapes left selectorBudget count free inputs beforeRows rows beforeH parents mask mode queueFree
     owner reads accumulator width saved tmp empty
   let budget := fun (j : ℕ) =>
     let pad := 1+(4*(prefixes j).length+4+(m*m*(4*(w+1)+4)+1)+1)
@@ -225,7 +227,7 @@ theorem classifiedOrdinaryDirectory_exec [M8.Machine.Net] {a d common work w W J
     (by intro i hi; rw [← shared]; exact free _ (by change 58 ≤ i.val; omega)) width
   change embStk bank A = start at view
   have rawEq := congrArg (embStk placement) view
-  obtain ⟨y,D,t,user,price,run,prepared,keepL,keepR,projector,liveBits,badBits⟩ := controls prefixes archiveTail
+  obtain ⟨y,D,t,user,price,run,prepared,keepL,keepR,projector,cutKept,liveBits,badBits⟩ := controls prefixes archiveTail
     (embDn placement (embDn bank counterUser)) raw free (by simpa only [← count] using inputs)
       beforeRows rows beforeH parents mask mode queueFree
   have controlsPrice := maskSetup_volume_le m w data.records (directory.beforeRows*directory.rows*B)
@@ -236,13 +238,13 @@ theorem classifiedOrdinaryDirectory_exec [M8.Machine.Net] {a d common work w W J
     data hm hw positive room fits capacity body c placedBound prefixes archiveTail bad budget ordinaryEffect length
     input localBody (fun _ => rfl) selectors goodRow skipRow selectorBudget ownerTail counterUser A (by rwa [view]) (by
     rw [rawEq]
-    refine ⟨y,D,t,user,price.trans ?_,?_,?_,keepL,keepR,projector,?_,?_⟩
+    refine ⟨y,D,t,user,price.trans ?_,?_,?_,keepL,keepR,projector,cutKept,?_,?_⟩
     · simpa only [selectorBudget,List.length_range,count] using controlsPrice
     · simpa only [selectors,ordinarySelectorProgram,table,inverse,Function.comp_assoc] using run
     · simpa only [count,rs] using prepared
     · simpa only [count,rs] using liveBits
     · simpa only [count,rs] using badBits) ((regs 0 (by decide)).trans queue) ((regs 1 (by decide)).trans accumulator) size ((regs 3 (by decide)).trans saved) ((regs 4 (by decide)).trans tmp) (by rwa [view]) (by
-    intro j inside regular y A dir payload
+    intro j inside regular y A dir cut payload
     have clear : bad j = false := by
       cases h : live j with
       | true => exact Bool.eq_false_iff.mpr (fun hb => regular ⟨h,hb⟩)
@@ -253,10 +255,13 @@ theorem classifiedOrdinaryDirectory_exec [M8.Machine.Net] {a d common work w W J
       have hb : actualBad j = false := clear
       simp [schedule,hb]
     obtain ⟨z,D,t,out,user,price,run,next,word,kept,action⟩ := ordinaryOrPadding_exec proc cap overhead childBudget v proj
-      parent prefixes archiveTail schedule hm pool unit space localBody y A j (pending (j+1)) localPush localBound (fun _ => True)
-      (fun _ _ => trivial) dir queue
+      parent prefixes archiveTail schedule hm pool unit space localBody y A j (pending (j+1)) localPush localBound (fun D => cutReady (D.R (inner 40)))
+      (by
+        intro D frame
+        rw [frame (inner 40) (by change 40 < 58; decide),cut,view]
+        exact initialCut) dir queue
       (fun _ => clear) (input j) payload (fun hj => installed j hj clear)
-    exact ⟨z,D,t,out,user,price,run,next,action,word,kept 57 (by decide) (by decide) (by decide),kept 56 (by decide) (by decide) (by decide)⟩)
+    exact ⟨z,D,t,out,user,price,run,next,action,word,kept 40 (by decide) (by decide) (by decide),kept 57 (by decide) (by decide) (by decide),kept 56 (by decide) (by decide) (by decide)⟩)
   obtain ⟨z,F,t,n,rows,s,midUser,mid,user,bounded,controls,prepared,projector,time,rowTime,run,rowsOk,leftOk,rightOk,rest⟩ := scan
   obtain ⟨output,action,packed⟩ := ownerRows_pack (R := data.records) (N := N) rfl rowsOk
   have finalLeft := leftOk.trans (congrFun keepLeft _)

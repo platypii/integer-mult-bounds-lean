@@ -48,7 +48,7 @@ theorem ordinarySelectors_exec {m k Q extra : ℕ} {F U : Type}
       Exec body selectors (mk initialUser initialState) n (mk z D) ∧
       DirectoryReady v P w W H J parent prefixes tail schedules D allLabels ∧
       D.L (caller 24) = initialState.L (caller 24) ∧ D.R (caller 24) = initialState.R (caller 24) ∧
-      D.R (caller 48) = initialState.R (caller 48) ∧ D.R mask = liveWords ∧ D.R mode = badWords := by
+      D.R (caller 48) = initialState.R (caller 48) ∧ D.R (caller 40) = initialState.R (caller 40) ∧ D.R mask = liveWords ∧ D.R mode = badWords := by
   intro rankFits K caller mask mode parents rs privateTapes
   obtain ⟨writer,controls⟩ := Cover.Fallback.directoryControls_exec body rankFits
     request table room
@@ -75,7 +75,7 @@ theorem ordinarySelectors_exec {m k Q extra : ℕ} {F U : Type}
     (Function.update_of_ne (caller.injective.ne b) ..).trans
       ((Function.update_of_ne (caller.injective.ne l) ..).trans (raw i hi h))
   refine ⟨z,D,n,user,price,run,finalReady,?_,keep 24 (by decide) (by decide) (by decide) (by decide),
-    keep 48 (by decide) (by decide) (by decide) (by decide),?_,Function.update_self mode badWords liveState.R⟩
+    keep 48 (by decide) (by decide) (by decide) (by decide),keep 40 (by decide) (by decide) (by decide) (by decide),?_,Function.update_self mode badWords liveState.R⟩
   · simp [D,liveState,clean,privateTapes,caller]
   · exact (Function.update_of_ne (caller.injective.ne (by decide : (57 : Fin 66) ≠ 56)) badWords liveState.R).trans (Function.update_self mask liveWords clean.R)
 

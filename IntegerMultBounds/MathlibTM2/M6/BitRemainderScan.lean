@@ -204,28 +204,29 @@ theorem ownerOrdinary_exec [M8.Machine.Net] {m d K w W H J N Q : ℕ} {P U : Typ
       RecordPayload ((24 : Fin 66).castAdd K) (fun _ => blank) 0 word (embStk placement D)
     ready (embStk placement S) (j::labels) → S.R (directoryMatrixTape room) = matrices j →
     S.R (caller 57) = bitSymbol live :: ls → S.R (caller 56) = bitSymbol bad :: bs → payload original S →
-    (∀ y A, ready (embStk placement A) (j::labels) → payload original A → A.R (directoryMatrixTape room) = matrices j →
+    (∀ y A, ready (embStk placement A) (j::labels) → payload original A → A.R (directoryMatrixTape room) = matrices j → A.R (caller 40) = S.R (caller 40) →
       ∃ z D n next, z.user = y.user ∧ n ≤ budget ∧ Exec body (if live then good else padding) (mk y A) n (mk z D) ∧
         ready (embStk placement D) labels ∧ effect next ∧ payload next D ∧ D.R (directoryMatrixTape room) = matrices (j+1) ∧
-        D.R (caller 57) = A.R (caller 57) ∧ D.R (caller 56) = A.R (caller 56)) →
+        D.R (caller 40) = A.R (caller 40) ∧ D.R (caller 57) = A.R (caller 57) ∧ D.R (caller 56) = A.R (caller 56)) →
     ∃ z D n next, z.user = u.user ∧ n ≤ budget+(if live then 4 else 3) ∧
       Exec body (ownerDispatch (caller 57) (caller 56) good exceptional padding) (mk u S) n (mk z D) ∧
       effect next ∧ payload next D ∧
       let drained := {D with R := Function.update D.R (caller 24) ((D.R (caller 24)).drop N)}
       ready (embStk placement drained) labels ∧ drained.R (directoryMatrixTape room) = matrices (j+1) ∧
-      drained.R (caller 57) = ls ∧ drained.R (caller 56) = bs := by
+      drained.R (caller 40) = S.R (caller 40) ∧ drained.R (caller 57) = ls ∧ drained.R (caller 56) = bs := by
   intro placement caller ready payload start matrix liveBits badBits input call
   let B := {S with R := Function.update S.R (caller 57) ls}
   let E := {B with R := Function.update B.R (caller 56) bs}
   obtain ⟨readyE,inputE,archiveE⟩ := ownerSelectors_frame room S ls bs original start input
-  obtain ⟨z,D,n,next,user,time,run,done,action,out,tail,mask,mode⟩ := call {u with flag := bad} E readyE inputE
-    (archiveE.trans matrix)
+  obtain ⟨z,D,n,next,user,time,run,done,action,out,tail,cut,mask,mode⟩ := call {u with flag := bad} E readyE inputE
+    (archiveE.trans matrix) (by simp [E,B,caller,Function.update_of_ne])
   have branch : (if live then (if bad then exceptional else good) else padding) = (if live then good else padding) := by
     cases live <;> cases bad <;> first | rfl | exact (ordinary ⟨rfl,rfl⟩).elim
   have dispatch := ownerDispatch_exec body (caller 57) (caller 56) (caller.injective.ne (by decide : (57 : Fin 66) ≠ 56))
     good exceptional padding live bad u S ls bs liveBits badBits (branch ▸ run)
   obtain ⟨restored,archive,keepLive,keepBad⟩ := archiveReady_updatePayload room ((D.R (caller 24)).drop N) done
   exact ⟨z,D,_,next,user,Nat.add_le_add_right time _,dispatch,action,out,restored,archive.trans tail,
+    (Function.update_of_ne (caller.injective.ne (by decide : (40 : Fin 66) ≠ 24)) ((D.R (caller 24)).drop N) D.R).trans (cut.trans (by simp [E,B,caller,Function.update_of_ne])),
     keepLive.trans (mask.trans (by simp [E,B,caller,Function.update_of_ne])),
     keepBad.trans (mode.trans (Function.update_self (caller 56) bs B.R))⟩
 
@@ -265,10 +266,10 @@ theorem ownerClassified_exec [M8.Machine.Net] {m d K w W J N : ℕ} {P U : Type}
     let port := caller 24
     let loaded := {S with R := Function.update S.R port (payloadWord (SparseRoleCircuit.encode ∘ original) ++ S.R port)}
     RecordPayload port (fun _ => blank) 0 original loaded →
-    (¬ (live = true ∧ bad j = true) → ∀ y A, ready (embStk placement A) (j::labels) → payload original A → A.R (directoryMatrixTape room) = physical.matrices j →
+    (¬ (live = true ∧ bad j = true) → ∀ y A, ready (embStk placement A) (j::labels) → payload original A → A.R (directoryMatrixTape room) = physical.matrices j → A.R (caller 40) = S.R (caller 40) →
       ∃ z D n next, z.user = y.user ∧ n ≤ budget ∧ Exec body (if live then good else padding) (mk y A) n (mk z D) ∧
         ready (embStk placement D) labels ∧ ordinaryEffect next ∧ payload next D ∧ D.R (directoryMatrixTape room) = physical.matrices (j+1) ∧
-        D.R (caller 57) = A.R (caller 57) ∧ D.R (caller 56) = A.R (caller 56)) →
+        D.R (caller 40) = A.R (caller 40) ∧ D.R (caller 57) = A.R (caller 57) ∧ D.R (caller 56) = A.R (caller 56)) →
     let C := physical.table (LabelStock.residue m (w+1) 1 j)
     let rows := classPivots C
     let privateTapes := (List.finRange (66+(K+1))).filter fun i => decide (58 ≤ i.val ∧ i ≠ directoryMatrixTape room)
@@ -280,7 +281,7 @@ theorem ownerClassified_exec [M8.Machine.Net] {m d K w W J N : ℕ} {P U : Type}
       payload next D ∧
       let drained := {D with R := Function.update D.R (caller 24) ((D.R (caller 24)).drop N)}
       ready (embStk placement drained) labels ∧ drained.R (directoryMatrixTape room) = physical.matrices (j+1) ∧
-      drained.R (caller 57) = ls ∧ drained.R (caller 56) = bs := by
+      drained.R (caller 40) = S.R (caller 40) ∧ drained.R (caller 57) = ls ∧ drained.R (caller 56) = bs := by
   intro e physical φ code schedule ready placement caller payload live labels start matrix good padding ls bs liveBits badBits port loaded input ordinary C rows privateTapes
   obtain ⟨loadedReady,archiveLoad,liveLoad,badLoad⟩ := archiveReady_updatePayload room
     (payloadWord (SparseRoleCircuit.encode ∘ original) ++ S.R port) start
@@ -291,7 +292,7 @@ theorem ownerClassified_exec [M8.Machine.Net] {m d K w W J N : ℕ} {P U : Type}
     let B := {loaded with R := Function.update loaded.R (caller 57) ls}
     let E := {B with R := Function.update B.R (caller 56) bs}
     obtain ⟨readyE,inputE,archiveE⟩ := ownerSelectors_frame room loaded ls bs original loadedReady loadedPayload
-    obtain ⟨z,D,n,next,user,time,run,done,tail,action,out,mask,mode⟩ :=
+    obtain ⟨z,D,n,next,user,time,run,done,tail,action,out,cut,mask,mode⟩ :=
       DirectoryReady.runExceptional dimension v proj idem adm parent inv reciprocal data hm hw positive room capacity
         body c bodyBound prefixes archiveTail bad j inside liveJ badJ (fun _ => blank) 0 length original
         {u with flag := true} E readyE (archiveE.trans (archiveLoad.trans matrix)) inputE
@@ -299,7 +300,8 @@ theorem ownerClassified_exec [M8.Machine.Net] {m d K w W J N : ℕ} {P U : Type}
       good (directoryExceptionalProgram m d room capacity) padding true true u loaded ls bs (liveJ ▸ (liveLoad.trans liveBits)) (badJ ▸ (badLoad.trans badBits)) run
     obtain ⟨restored,archive,keepLive,keepBad⟩ := archiveReady_updatePayload room ((D.R (caller 24)).drop N) done
     simp only [liveJ,badJ,Bool.and_self,ite_true]
-    refine ⟨z,D,_,next,user,Nat.add_le_add_right time 4,dispatch,action,out,restored,archive.trans tail,?_,?_⟩
+    refine ⟨z,D,_,next,user,Nat.add_le_add_right time 4,dispatch,action,out,restored,archive.trans tail,?_,?_,?_⟩
+    · exact (Function.update_of_ne (caller.injective.ne (by decide : (40 : Fin 66) ≠ 24)) ((D.R (caller 24)).drop N) D.R).trans (cut.trans (by simp [E,B,loaded,port,caller,Function.update_of_ne]))
     · exact keepLive.trans (mask.trans (by simp [E,B,caller,Function.update_of_ne]))
     · exact keepBad.trans (mode.trans (Function.update_self (caller 56) bs B.R))
 
@@ -308,8 +310,8 @@ theorem ownerClassified_exec [M8.Machine.Net] {m d K w W J N : ℕ} {P U : Type}
       simpa [labels] using (List.getElem_cons_drop h).symm
     have run := ownerOrdinary_exec v proj parent prefixes archiveTail schedule room body good
       (directoryExceptionalProgram m d room capacity) padding live (bad j) both budget j labels
-      physical.matrices original ordinaryEffect u loaded ls bs (suffix ▸ loadedReady) (archiveLoad.trans matrix) (liveLoad.trans liveBits) (badLoad.trans badBits) loadedPayload (ordinary both)
-    simpa only [Bool.and_eq_true,both,ite_false] using run
+      physical.matrices original ordinaryEffect u loaded ls bs (suffix ▸ loadedReady) (archiveLoad.trans matrix) (liveLoad.trans liveBits) (badLoad.trans badBits) loadedPayload (fun y A dir pay arch cut => ordinary both y A dir pay arch (cut.trans (by simp [loaded,port,caller,Function.update_of_ne])))
+    simpa only [Bool.and_eq_true,both,ite_false,loaded,port,caller,Function.update_of_ne ((Fin.castAddEmb (n := 66) (K+1)).injective.ne (by decide : (40 : Fin 66) ≠ 24))] using run
 
 /-- The packed owner word is the concatenation of the payloads in physical
 directory order. Each record occupies one contiguous range on the queue. -/
@@ -822,15 +824,15 @@ theorem classifiedDirectory_exec [M8.Machine.Net] {m d K w W J N : ℕ} {P U : T
       Exec localBody selectors (mk (embDn placement (embDn bank u)) (embStk placement start)) t (mk y D) ∧
       ready D rs ∧ D.L (inner 24) = (embStk placement start).L (inner 24) ∧
       D.R (inner 24) = (embStk placement start).R (inner 24) ∧
-      D.R (inner 48) = (embStk placement start).R (inner 48) ∧
+      D.R (inner 48) = (embStk placement start).R (inner 48) ∧ D.R (inner 40) = (embStk placement start).R (inner 40) ∧
       D.R (inner 57) = rs.map (fun j => bitSymbol (live j)) ∧ D.R (inner 56) = rs.map (fun j => bitSymbol (bad j))) →
     S.R (reg 0) = rs.flatMap (bits ∘ input) ++ ownerTail → S.R (reg 1) = [] → (S.R (reg 2)).length = N →
     S.R (reg 3) = [] → S.R (reg 4) = [] → (∀ j, readAt blank (start.L (caller 24)) (start.R (caller 24)) j = blank) →
-    (∀ j, j < data.records → ¬ (live j = true ∧ bad j = true) → ∀ y A, ready A (j::pending (j+1)) →
+    (∀ j, j < data.records → ¬ (live j = true ∧ bad j = true) → ∀ y A, ready A (j::pending (j+1)) → A.R (inner 40) = start.R (caller 40) →
       RecordPayload (inner 24) (fun _ => blank) 0 (input j) A →
       ∃ z D n next, z.user = y.user ∧ n ≤ budget j ∧ Exec localBody (if live j then goodRow else skipRow) (mk y A) n (mk z D) ∧
         ready D (pending (j+1)) ∧ ordinaryEffect j next ∧ RecordPayload (inner 24) (fun _ => blank) 0 next D ∧
-        D.R (inner 57) = A.R (inner 57) ∧ D.R (inner 56) = A.R (inner 56)) →
+        D.R (inner 40) = A.R (inner 40) ∧ D.R (inner 57) = A.R (inner 57) ∧ D.R (inner 56) = A.R (inner 56)) →
     let program := packedOwner (caller 24) (caller 57) (ownerDispatch (caller 57) (caller 56) good
       (directoryExceptionalProgram m d room capacity) padding)
     let work := (List.finRange (66+(K+1))).filter fun i => decide (58 ≤ i.val ∧ i ≠ directoryMatrixTape room)
@@ -853,7 +855,7 @@ theorem classifiedDirectory_exec [M8.Machine.Net] {m d K w W J N : ℕ} {P U : T
       (embStk bank F).R (caller 57) = [] ∧ (embStk bank F).R (caller 56) = [] := by
   intro e physical φ code schedule ready placement caller live rs pending bits bank reg start inner advance good padding ordinaryTime cost effect
     matrix generated owner accumulator width saved tmp empty ordinary program work controls
-  obtain ⟨sy,D,s,su,subtotal,selectorRun,directory,portL,portR,projectorKept,mask,mode⟩ := generated
+  obtain ⟨sy,D,s,su,subtotal,selectorRun,directory,portL,portR,projectorKept,cutKept,mask,mode⟩ := generated
   obtain ⟨midUser,mid,um,project,archiveKept,extRegs,runControls⟩ :=
     ownerSelectorSetup_exec room localBody body calls selectors u S sy D s selectorRun
   have cellEq (j : Fin 66) : (embStk bank mid).R (caller j) = D.R (inner j) := by
@@ -872,21 +874,21 @@ theorem classifiedDirectory_exec [M8.Machine.Net] {m d K w W J N : ℕ} {P U : T
   let frame := fun (xs : List ℕ) (A : Stacks (66+(K+1)) prime) =>
     ∃ k ≤ data.records, pending k = xs ∧ ready (embStk placement A) xs ∧
       A.R (directoryMatrixTape room) = physical.matrices k ∧
-      A.R (caller 57) = xs.map (fun j => bitSymbol (live j)) ∧ A.R (caller 56) = xs.map (fun j => bitSymbol (bad j))
+      A.R (caller 40) = start.R (caller 40) ∧ A.R (caller 57) = xs.map (fun j => bitSymbol (live j)) ∧ A.R (caller 56) = xs.map (fun j => bitSymbol (bad j))
   let dispatch := ownerDispatch (caller 57) (caller 56) good (directoryExceptionalProgram m d room capacity) padding
-  obtain ⟨z,F,n,rows,user,time,run,correct,left,output,free,k,hk,remaining,done,archiveEnd,maskEnd,modeEnd⟩ :=
+  obtain ⟨z,F,n,rows,user,time,run,correct,left,output,free,k,hk,remaining,done,archiveEnd,cutEnd,maskEnd,modeEnd⟩ :=
     packedOwner_exec ownerTail body (caller 24) (caller 57) dispatch input effect cost frame rs y B (by
         intro xs A h
-        obtain ⟨_,_,_,_,_,mask,_⟩ := h
+        obtain ⟨_,_,_,_,_,_,mask,_⟩ := h
         rw [mask]
         cases xs <;> rfl)
-      ⟨⟨0,Nat.zero_le _,rfl,prepared,archive,((cell 57 (by decide)).2.trans ((cellEq 57).trans mask)),((cell 56 (by decide)).2.trans ((cellEq 56).trans mode))⟩,
+      ⟨⟨0,Nat.zero_le _,rfl,prepared,archive,((cell 40 (by decide)).2.trans ((cellEq 40).trans (cutKept.trans (congrArg start.R (directoryOrdinaryBank_caller room 40))))),((cell 57 (by decide)).2.trans ((cellEq 57).trans mask)),((cell 56 (by decide)).2.trans ((cellEq 56).trans mode))⟩,
         rfl,(regs 0).2.trans ((extRegs 0).2.trans owner),(regs 1).2.trans ((extRegs 1).2.trans accumulator),(congrArg List.length ((regs 2).2.trans (extRegs 2).2)).trans width,
         (regs 3).2.trans ((extRegs 3).2.trans saved),(regs 4).2.trans ((extRegs 4).2.trans tmp),by
           change ∀ j, readAt blank ((embStk bank B).L (caller 24)) ((embStk bank B).R (caller 24)) j = blank
           rw [(cell 24 (by decide)).1,(cell 24 (by decide)).2]; exact midBlank⟩ (by
       intro j xs A y current loaded inputWord
-      obtain ⟨k,hk,suffix,dir,archive,ls,bs⟩ := current
+      obtain ⟨k,hk,suffix,dir,archive,cut,ls,bs⟩ := current
       have inside : k < data.records := by
         have h := congrArg List.length suffix
         simp [pending,rs] at h
@@ -895,13 +897,13 @@ theorem classifiedDirectory_exec [M8.Machine.Net] {m d K w W J N : ℕ} {P U : T
         have h : k < (List.range data.records).length := by simpa using inside
         simpa [pending,rs] using (List.getElem_cons_drop h).symm
       obtain ⟨rfl,rfl⟩ := List.cons.inj (eq.symm.trans suffix)
-      obtain ⟨v,B,t,word,uv,bound,exec,action,output,next,tail,maskTail,modeTail⟩ :=
+      obtain ⟨v,B,t,word,uv,bound,exec,action,output,next,tail,cutTail,maskTail,modeTail⟩ :=
         ownerClassified_exec dimension v proj idem adm parent inv reciprocal data hm hw positive room capacity body c bodyBound
           prefixes archiveTail bad k inside (ordinaryTime k) (ordinaryEffect k) length (input k) y A
           (show ready (embStk placement A) (pending k) by rw [eq]; exact dir) archive good padding _ _ ls bs inputWord (by
-            intro no userState archiveState startRow inputRow archiveRow
-            obtain ⟨v,D,t,next,userEq,time,run,done,act,out,mask,mode⟩ :=
-              ordinary k inside no (embDn placement userState) (embStk placement archiveState) startRow inputRow
+            intro no userState archiveState startRow inputRow archiveRow cutRow
+            obtain ⟨v,D,t,next,userEq,time,run,done,act,out,cutResult,mask,mode⟩ :=
+              ordinary k inside no (embDn placement userState) (embStk placement archiveState) startRow (by simpa only [embStk,Function.comp_apply,placement,inner,caller,Fin.castAddEmb_apply,directoryOrdinaryBank_caller] using cutRow.trans cut) inputRow
             have clock : (D.R (inner 2)).length = physical.H := by
               rw [done.2.2.2.2.2.1,length_binSyms]; rfl
             obtain ⟨z,B,hz,bankEq,tail,_,exec⟩ := physical.advanceEmbeddedRecord_exec k inside placement
@@ -913,15 +915,16 @@ theorem classifiedDirectory_exec [M8.Machine.Net] {m d K w W J N : ℕ} {P U : T
               rw [← directoryOrdinaryBank_caller room i]
               exact congrArg (fun A => Stacks.R A (inner i)) bankEq
             refine ⟨z,B,_,next,hz.trans userEq,Nat.add_le_add_right time _,?_,by rw [bankEq]; exact done,act,
-              ?_,tail,?_,?_⟩
+              ?_,tail,?_,?_,?_⟩
             · change Exec body (if live k then good else padding) _ _ _
               cases h : live k <;> simpa only [h,Bool.false_eq_true,ite_false,ite_true,good,padding,advance,physical,ScanData.physical] using exec
             · change RecordPayload (inner 24) _ _ next (embStk placement B)
               rw [bankEq]
               exact out
+            · simpa [embStk,placement,inner,caller,directoryOrdinaryBank_caller] using (cell 40).trans cutResult
             · simpa [embStk,placement,inner,caller,directoryOrdinaryBank_caller] using (cell 57).trans mask
             · simpa [embStk,placement,inner,caller,directoryOrdinaryBank_caller] using (cell 56).trans mode)
-      refine ⟨v,B,t,word,uv,bound,exec,action,?_,k+1,by omega,rfl,next,tail,maskTail,modeTail⟩
+      refine ⟨v,B,t,word,uv,bound,exec,action,?_,k+1,by omega,rfl,next,tail,cutTail.trans cut,maskTail,modeTail⟩
       simpa only [RecordPayload,embStk,Function.comp_apply,placement,directoryOrdinaryBank_caller,caller,Fin.castAddEmb_apply] using output)
   have last : k = data.records := by
     have h := congrArg List.length remaining
@@ -1336,7 +1339,7 @@ private theorem generatedOwnerDirectory_exec [M8.Machine.Net] {T m dim J W : ℕ
   have spec := generatedRecordScan_exec v positive w proj width idem factor hd rankFits parent parentInv reciprocal io arity
     hm hw hW length (le_max_left ..) (fun _ => blank) 0 space.leaf (columnLeafFits io) space.entry space.exit (directoryEntryStates_fit T) (directoryExitStates_fit T) (fun _ => 0) body u whole space.pool directory prefixes archiveTail
     c bounded space.matrix B shape free positiveDir brSize rowsSize beforeSize parents mask mode queue initial
-  obtain ⟨writer,z,D,t,user,time,run,done,step,keepL,keepR,projectorKept,liveBits,badBits,_⟩ := spec
+  obtain ⟨writer,z,D,t,user,time,run,done,step,keepL,keepR,projectorKept,cutKept,liveBits,badBits,_⟩ := spec
   let slot := (((LeafCore.roleSlot io).castAdd 24).castAdd 31).castAdd work
   have port : recordRoundTripPorts slot 0 = caller 24 := recordRoundTripPorts_other slot 0 (by decide)
   have finish {core padding : Pr F (66+K) columnCapacity prime U}
@@ -1346,13 +1349,13 @@ private theorem generatedOwnerDirectory_exec [M8.Machine.Net] {T m dim J W : ℕ
           Exec body (if live j then core.seq (clearWorkTapes privateTapes) else padding) (mk y A) t (mk z D) ∧ ready D js ∧
           (if live j then effect j else Eq) word next ∧
           RecordPayload (recordRoundTripPorts slot 0) (fun _ => blank) 0 next D ∧
-          D.R (caller 57) = A.R (caller 57) ∧ D.R (caller 56) = A.R (caller 56)) :
+          D.R (caller 40) = A.R (caller 40) ∧ D.R (caller 57) = A.R (caller 57) ∧ D.R (caller 56) = A.R (caller 56)) :
       ∃ (core padding : Pr F (66+K) columnCapacity prime U), ∀ j js word y A, ¬ (live j = true ∧ bad j = true) →
         ready A (j::js) → payload word A →
         ∃ z D t next, z.user = y.user ∧ t ≤ price core j ∧
           Exec body (if live j then core.seq (clearWorkTapes privateTapes) else padding) (mk y A) t (mk z D) ∧
           ready D js ∧ (if live j then effect j else Eq) word next ∧ payload next D ∧
-          D.R (caller 57) = A.R (caller 57) ∧ D.R (caller 56) = A.R (caller 56) :=
+          D.R (caller 40) = A.R (caller 40) ∧ D.R (caller 57) = A.R (caller 57) ∧ D.R (caller 56) = A.R (caller 56) :=
     ⟨core,padding,by simpa only [payload,port] using rows⟩
   obtain ⟨core,padding,ordinary⟩ := finish step
   have left : D.L (caller 24) = whole.L (caller 24) := by rw [← port]; exact keepL
@@ -1376,12 +1379,12 @@ private theorem generatedOwnerDirectory_exec [M8.Machine.Net] {T m dim J W : ℕ
     archiveRoom space.writer anchor outer c bodyBound prefixes archiveTail bad (price core) action length input body (fun _ => rfl)
     _ (core.seq (clearWorkTapes privateTapes)) padding selectorBudget ownerTail prepared filled filledEmpty
     ⟨z,D,t,user,time,runFilled,by simpa only [count] using done,
-      by rw [wholeEq]; exact left,by rw [wholeEq]; exact right,by rw [wholeEq]; exact projectorKept,
+      by rw [wholeEq]; exact left,by rw [wholeEq]; exact right,by rw [wholeEq]; exact projectorKept,by rw [wholeEq]; exact cutKept,
       by simpa only [count] using liveBits,by simpa only [count] using badBits⟩
     (by simpa only [count,input,Function.comp_def] using ((stays 0 (by decide)).trans owner).trans (congrArg (· ++ ownerTail) (ownerRow_queue roleLength word))) ((stays 1 (by decide)).trans accumulator)
     filledSize ((stays 3 (by decide)).trans saved) ((stays 4 (by decide)).trans tmp)
     filledBlank
-    (fun j _ no y A readyRow payloadRow => ordinary j _ (input j) y A no readyRow payloadRow)
+    (fun j _ no y A readyRow _ payloadRow => ordinary j _ (input j) y A no readyRow payloadRow)
   obtain ⟨finishState,final,t,n,rows,s,midUser,mid,hu,setup,controls,midReady,projectorEq,initBound,scan,exec,correct,ownerLeft,out,free,done,archive,maskEnd,modeEnd⟩ := pass
   have recordsPos : 0 < LabelMask.records directory :=
     Nat.mul_pos (Nat.mul_pos positiveDir.1 positiveDir.2.1) positiveDir.2.2.1

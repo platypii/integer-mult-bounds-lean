@@ -1342,7 +1342,7 @@ theorem DirectoryReady.runExceptional [M8.Machine.Net] {m d K w W J N : ℕ} {P 
       ready (embStk placement D) labels ∧ D.R (directoryMatrixTape room) = physical.matrices (j+1) ∧
       (∀ x k, next ((FlatCoordinateLayout.index ((projectorResidual e (reduce (prime^(w+1)) proj) parent inv
         (physicalLabel m (w+1) j)).mulVec x) k).cast (directoryPayloadLength e length)) = original ((FlatCoordinateLayout.index x k).cast (directoryPayloadLength e length))) ∧
-      payload next D ∧ D.R (caller 57) = S.R (caller 57) ∧ D.R (caller 56) = S.R (caller 56) := by
+      payload next D ∧ D.R (caller 40) = S.R (caller 40) ∧ D.R (caller 57) = S.R (caller 57) ∧ D.R (caller 56) = S.R (caller 56) := by
   have volumeEq := directoryPayloadLength (finSumFinEquiv.trans (finCongr dimension)) length
   cases volumeEq
   intro e physical φ code schedule ready placement caller payload labels start matrix input C rows privateTapes
@@ -1382,7 +1382,7 @@ theorem DirectoryReady.runExceptional [M8.Machine.Net] {m d K w W J N : ℕ} {P 
   have kept (i : Fin 58) (p : i ≠ 24) (q : i ≠ 54) (h : i ≠ 46) :=
     (frame i p q h).2.trans (keep (i.castAdd 8) (by intro eq; have val := congrArg Fin.val eq; change i.val = 58 at val; omega))
   exact ⟨z,D,n,next,user,time,run,DirectoryReady.afterExceptional room S D initialReady
-    dir pivots clean kept,tail,effect,(recordPayload_ordinaryBank room source head next D).2 output,kept 57 (by decide) (by decide) (by decide),
+    dir pivots clean kept,tail,effect,(recordPayload_ordinaryBank room source head next D).2 output,kept 40 (by decide) (by decide) (by decide),kept 57 (by decide) (by decide) (by decide),
     kept 56 (by decide) (by decide) (by decide)⟩
 
 /-- Uniform exceptional charge per payload symbol for a fixed machine layout. -/
@@ -1824,7 +1824,7 @@ theorem DirectoryReady.runArchive [M8.Machine.Net] {m d K w W J N : ℕ} {P U : 
         intro j inside liveJ badJ x v D h matrix
         change live j = true at liveJ
         change bad j = true at badJ
-        obtain ⟨z,B,n,y,user,time,run,done,tail,action,out,mask,mode⟩ :=
+        obtain ⟨z,B,n,y,user,time,run,done,tail,action,out,_,mask,mode⟩ :=
           DirectoryReady.runExceptional dimension vDescriptor proj idem adm parent inv reciprocal data hm hw positive
             room capacity body c bodyBound prefixes archiveTail bad j inside liveJ badJ source head length x v D h.1 matrix h.2
         exact ⟨y,z,B,n,user,by simpa [effect,liveJ,badJ] using action,⟨done,out⟩,tail,
@@ -2010,7 +2010,7 @@ def GeneratedRecordSpec [M8.Machine.Net] {T m work Q fields H J W : ℕ} {F U : 
           Exec body (if liveBit label then recordProgram.seq (clearWorkTapes privateTapes) else skip)
             (mk u S) n (mk z D) ∧ ready D labels ∧
           (if liveBit label then effect label else Eq) word next ∧ payload next D ∧
-          D.R mask = S.R mask ∧ D.R mode = S.R mode
+          D.R (caller 40) = S.R (caller 40) ∧ D.R mask = S.R mask ∧ D.R mode = S.R mode
       if single then ordinaryStep ∧ (
         ∀ (dimension : ℕ) (data : ScanData m dimension w W) (room : Record.size dimension+(rowSwapBlock.tapes+35+2) ≤ (host+31+work)+1),
         let placement := directoryOrdinaryBank room
@@ -2070,7 +2070,7 @@ def GeneratedRecordSpec [M8.Machine.Net] {T m work Q fields H J W : ℕ} {F U : 
       ∃ writer : Pr F K Q prime U, let prepare := (initCounters.seq writer).seq (clearWorkTapes privateTapes)
       ∃ z D n, z.user = u.user ∧ n ≤ setupCost ∧ Exec body prepare (mk u whole) n (mk z D) ∧
         ready D labels ∧ ordinaryStep ∧ D.L (r 0) = whole.L (r 0) ∧ D.R (r 0) = whole.R (r 0) ∧
-        D.R (caller 48) = whole.R (caller 48) ∧ D.R mask = labels.map (fun j => bitSymbol (liveBit j)) ∧ D.R mode = modes labels ∧
+        D.R (caller 48) = whole.R (caller 48) ∧ D.R (caller 40) = whole.R (caller 40) ∧ D.R mask = labels.map (fun j => bitSymbol (liveBit j)) ∧ D.R mode = modes labels ∧
         (∀ (dimension : ℕ) (archiveRoom : Record.size dimension+(rowSwapBlock.tapes+35+2) ≤ (host+31+work)+1),
           let placement := directoryOrdinaryBank archiveRoom
           let archive := directoryMatrixTape archiveRoom
@@ -2458,7 +2458,7 @@ theorem generatedOrdinaryRecord_exec [M8.Machine.Net] {T m work Q fields H J W :
     refine ⟨step,?_,?_⟩
     · intro dimension data room placement archive outer calls label labels word u S binary inside ordinary start input queue
         program advance
-      obtain ⟨v,D,n,next,user,time,run,done,effect,output,maskKeep,modeKeep⟩ :=
+      obtain ⟨v,D,n,next,user,time,run,done,effect,output,_,maskKeep,modeKeep⟩ :=
         step label labels word (embDn placement u) (embStk placement S) ordinary start input
       have clock : (D.R (caller 2)).length = data.H := by
         rw [done.2.2.2.2.2.1,length_binSyms,binary]
@@ -2498,7 +2498,9 @@ theorem generatedOrdinaryRecord_exec [M8.Machine.Net] {T m work Q fields H J W :
               (max (mnProgPush recordProgram) c) data.H J v positive width active)
         · exact le_rfl
       · have port : r 0 = caller 24 := recordRoundTripPorts_other slot 0 (by decide)
-        simpa only [ordinaryStep,payload,port] using step
+        intro j js word y A regular readyRow input
+        obtain ⟨z,D,t,next,user,time,run,done,action,out,_,mask,mode⟩ := step j js word y A regular readyRow (by simpa only [payload,port] using input)
+        exact ⟨z,D,t,next,user,time,run,done,action,by simpa only [payload,port] using out,mask,mode⟩
   intro label labels word u whole ordinary start input
   by_cases live : liveBit label = true
   case neg =>
@@ -2531,7 +2533,7 @@ theorem generatedOrdinaryRecord_exec [M8.Machine.Net] {T m work Q fields H J W :
       rw [show r 0 = caller 24 from port,keep 24 (by decide)]
       simpa only [show r 0 = caller 24 from port] using input k
     simp only [pad,Bool.false_eq_true,ite_false]
-    exact ⟨z,D,_,word,user,le_rfl,advance,rdy,rfl,pay,keep 57 (by decide),keep 56 (by decide)⟩
+    exact ⟨z,D,_,word,user,le_rfl,advance,rdy,rfl,pay,keep 40 (by decide),keep 57 (by decide),keep 56 (by decide)⟩
   have good : badBit label = false := Bool.eq_false_iff.mpr (fun h => ordinary ⟨live,h⟩)
   simp only [live,good,Bool.false_eq_true,ite_false,ite_true]
   let g := gs label
@@ -2747,7 +2749,7 @@ theorem generatedOrdinaryRecord_exec [M8.Machine.Net] {T m work Q fields H J W :
   obtain ⟨minor,next,rfl,action⟩ := act
   refine ⟨finish,_,_,next,userFinish.trans (user.trans (hz.trans (hHeaders.trans (hUser.trans hy)))),Nat.add_le_add bound
     (charge.trans (Nat.add_le_add_left (Nat.mul_le_mul_left 6 (Nat.mul_le_mul_left _ bound)) _)),
-    Exec.seq step clear,?_,⟨minor,action⟩,?_,(finalFrame 57 (by decide) (by decide)).2,(finalFrame 56 (by decide) (by decide)).2⟩
+    Exec.seq step clear,?_,⟨minor,action⟩,?_,(finalFrame 40 (by decide) (by decide)).2,(finalFrame 57 (by decide) (by decide)).2,(finalFrame 56 (by decide) (by decide)).2⟩
   · refine ⟨?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_⟩
     · change (if scan 2 ∈ privateTapes then [] else finalBank.R (scan 2)) = tail
       simp [show scan 2 ∉ privateTapes from callerOut _,finalBank]
@@ -2979,7 +2981,12 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
     have ne (j : Fin 66) (hj : (48 : Fin 66) ≠ j) := caller.injective.ne hj
     simp only [startState,liveState,mode,mask,clean,Function.update_of_ne (ne 56 (by decide)),
       Function.update_of_ne (ne 57 (by decide)),ite_eq_right outside,Function.update_of_ne (ne 54 (by decide))]
-  refine ⟨writer,z,startState,_,userSetup,setupBound,setupRun,r₂,step,cellL,cellR,projectorKept,bits,initialModes,?_,?_⟩
+  have cutKept : startState.R (caller 40) = initialState.R (caller 40) := by
+    have outside : caller 40 ∉ privateTapes := by simp [privateTapes,caller]
+    have ne (j : Fin 66) (hj : (40 : Fin 66) ≠ j) := caller.injective.ne hj
+    simp only [startState,liveState,mode,mask,clean,Function.update_of_ne (ne 56 (by decide)),
+      Function.update_of_ne (ne 57 (by decide)),ite_eq_right outside,Function.update_of_ne (ne 54 (by decide))]
+  refine ⟨writer,z,startState,_,userSetup,setupBound,setupRun,r₂,step,cellL,cellR,projectorKept,cutKept,bits,initialModes,?_,?_⟩
   · intro dimension archiveRoom placement archive outer calls v B control bank
     obtain ⟨y,E,run,_,user,localBank,frame⟩ := exec_emb placement.injective calls setupRun v control B bank
     have same := user.trans (userSetup.trans (congrArg HS.user control).symm)
@@ -3134,7 +3141,9 @@ theorem generatedRecordScan_exec [M8.Machine.Net] {T m work Q fields H J W : ℕ
         ready D labels ∧ effect word next ∧ payload next D ∧ D.R mask = whole.R mask ∧ D.R mode = whole.R mode
     exact classifiedStep ok (liveBit label) (badBit label) (charge label) (badCost label) (skipCost label)
       _ fallback skip (effects label) (badEffect label) Eq
-      (fun h => step label labels word u whole h start input)
+      (fun h => by
+        obtain ⟨z,D,n,next,user,time,run,done,action,out,_,mask,mode⟩ := step label labels word u whole h start input
+        exact ⟨z,D,n,next,user,time,run,done,action,out,mask,mode⟩)
       (fun live fail => bad label labels word u whole live fail start input)
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
