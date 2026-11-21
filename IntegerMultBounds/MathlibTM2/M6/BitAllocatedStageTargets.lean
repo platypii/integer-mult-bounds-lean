@@ -103,7 +103,7 @@ def AllocatedStageTargets [M8.Machine.Net] (n : Fin 9) : Prop :=
     ∃ z F steps, Exec (fun g => embProg inner id (outer g)) code (mk u S) steps (mk z F) ∧
       steps ≤ budget + (4300*order.length+1530001223)*V ∧ z.user = u.user ∧
       (∀ k, RecordPayload (bank k 1) (fun _ => blank) 0 (stageTargetWord n k (w+1) B K x) F) ∧
-      ∃ packed out, RestoredOwnerPayloads n (full.trans inner) out F ∧
+      StageControls (full.trans inner) V F ∧ ∃ packed out, RestoredOwnerPayloads n (full.trans inner) out F ∧
         stageRuns.foldr (fun k next a => ∃ b, packedStageEffect n k (w+1) B
           (node.beforeRows*rows*node.between*node.afterD) a b ∧ next b)
           (fun a => a = packed) (singleLabelBank (B := B) (K := K) label x) ∧
@@ -191,13 +191,13 @@ theorem allocatedStageTargets_host [M8.Machine.Net] (n : Fin 9) : AllocatedStage
   have applyFree := applyHeaders (fun i => headers i)
   have applyPrivate := applyFree
     (fun j => (off _ (reg.injective.ne ((by decide : ∀ j : Fin 7, (12 : Fin 14) ≠ (j.natAdd 3).castAdd 4) j)) (fun i => reg.injective.ne ((by decide : ∀ (i : Fin 3) (j : Fin 7), i.castAdd 11 ≠ (j.natAdd 3).castAdd 4) i j))).2.trans ((scratchKeep j).trans (free j)))
-  obtain ⟨z,F,steps,ran,bill,same,output,ownersOut⟩ := applyPrivate (fun k j => by
+  obtain ⟨z,F,steps,ran,bill,same,output,controls,ownersOut⟩ := applyPrivate (fun k j => by
       have h := off (scanBank k j.succ) (shared_ne_private (T := total) (i := (12 : Fin 14)) _) (fun i => shared_ne_private (i.castAdd 11) _)
       exact ⟨h.1.trans ((congrFun left₀ _).trans (empty k j).1),h.2.trans ((keep _ (fun eq => by
         have val := congrArg Fin.val eq
         change total+14+_ = total+10 at val
         omega)).trans (empty k j).2)⟩)
-  refine ⟨z,F,k+(m+steps),Exec.seq makeTail (Exec.seq setup ran),?_,same.trans (same₀.trans first),(fun k z => by rw [encodedOwnerCell,sub_zero]; exact output k z),packed,out,ownersOut,trace,restored⟩
+  refine ⟨z,F,k+(m+steps),Exec.seq makeTail (Exec.seq setup ran),?_,same.trans (same₀.trans first),(fun k z => by rw [encodedOwnerCell,sub_zero]; exact output k z),controls,packed,out,ownersOut,trace,restored⟩
   have volume : D*(N*K) = V := by dsimp only [V,W,D,N]; ring
   rw [volume] at bill
   have hm : 0 < M := pow_pos Shared50ModularControl.prime_prime.pos _

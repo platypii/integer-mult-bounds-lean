@@ -612,6 +612,18 @@ theorem RestoredOwnerPayloads.inactive {T V : ℕ} {n : Fin 9} {fan : Fin (14208
   unfold regSide
   split <;> omega
 
+private theorem data_ne_control {m n : ℕ} (i : Fin m) (j : Fin n) : i.castAdd n ≠ j.natAdd m := by
+  intro eq
+  have h := congrArg Fin.val eq
+  change i.val = m+j.val at h
+  omega
+
+/-- The empty loop clock and binary volume descriptor at their original heads. -/
+def StageControls {T : ℕ} (fan : Fin (142081+2) ↪ Fin T) (V : ℕ) (S : Stacks T prime) : Prop :=
+  ∀ (j : Fin 2) z, (if j = 0 then CountedLoopReuseAlphabet.empty else
+    CountedLoopReuseAlphabet.binary (FlatCoordinateSchedule.bits V)) z =
+    readAt blank (S.L (fan (j.natAdd 142081))) (S.R (fan (j.natAdd 142081))) (z-1)
+
 /-- Run the packed stage on its original tapes, then scan the restored owners.
 The additional shared tapes hold the three dimensions and arithmetic workspace. -/
 theorem packedStageTargets_host (n : Fin 9) :
@@ -641,7 +653,7 @@ theorem packedStageTargets_host (n : Fin 9) :
     ∃ z F steps, Exec (fun g => embProg inner id (body g)) code (mk u S) steps (mk z F) ∧
       steps ≤ time + (4300*order.length+200)*(D*(N*K)) ∧ z.user = u.user ∧
       (∀ k, result k (F.L (bank k 1)) (F.R (bank k 1))) ∧
-      RestoredOwnerPayloads n (fan.trans inner) out F := by
+      StageControls (fan.trans inner) ((prime^w)^16*(B*N*K)) F ∧ RestoredOwnerPayloads n (fan.trans inner) out F := by
   intro I order
   obtain ⟨states,chooseScan⟩ := stageTargets_host n
   refine ⟨states,?_⟩
@@ -690,7 +702,20 @@ theorem packedStageTargets_host (n : Fin 9) :
   have blocks : 0 < D := Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) hb
   have linear := stageScanCost_le order.length K N D pos (pow_pos Shared50ModularControl.prime_prime.pos _) blocks
   refine ⟨z,F,_,Exec.seq placed scanned,Nat.add_le_add_left (paid.trans linear) time,
-    saved.trans (same.trans user),done,?_⟩
+    saved.trans (same.trans user),done,?_,?_⟩
+  · intro j z
+    let ctrl := inner (fan (j.natAdd 142081))
+    have outside (k : I) (i : Fin 8) : bank k i ≠ ctrl := by
+      refine Fin.cases ?_ (fun b eq => ?_) i
+      · exact inner.injective.ne (fan.injective.ne (data_ne_control (targetOwner n k) j))
+      · have h := congrArg Fin.val eq
+        change T+14+_ = (fan (j.natAdd 142081)).val at h
+        omega
+    obtain ⟨hl,hr⟩ := untouched ctrl outside
+    change _ = readAt blank (F.L ctrl) (F.R ctrl) (z-1)
+    rw [hl,hr]
+    simpa only [PointwiseRoleGate.bank,Tapes.append,Fin.addCases_right,CountedLoopReuseAlphabet.controls,
+      ite_self,embStk,Function.comp_apply,ctrl,inner,placedFan,Function.Embedding.trans_apply,N,K] using live' (j.natAdd 142081) z
   intro owner other z
   let port := inner (fan (owner.castAdd 2))
   have outside (k : I) (i : Fin 8) : bank k i ≠ port := by
@@ -783,7 +808,7 @@ private theorem stagePadPort_shared {T : ℕ} (fan : Fin (142081+2) ↪ Fin T)
   have b : j.val ≠ 1 := fun h => h1 (Fin.ext h)
   simp [stagePadPort,h0,b]
 
-private theorem stagePadPort_apart {T : ℕ} (fan : Fin (142081+2) ↪ Fin T)
+theorem stagePadPort_apart {T : ℕ} (fan : Fin (142081+2) ↪ Fin T)
     (i k : Fin 142081) (ne : i ≠ k) (j : Fin 12) :
     stagePadPort fan i j ≠ stagePadPort fan k 0 ∧ stagePadPort fan i j ≠ stagePadPort fan k 1 := by
   have ns : (targetScanBank fan i 1).val ≠ (targetScanBank fan k 1).val :=
@@ -863,7 +888,7 @@ theorem placedOwnerPads {w B K T Q : ℕ} {P U : Type} (hB : 0 < B) (hK : 0 < K)
       obtain ⟨ll,rr⟩ := off j (outside i List.mem_cons_self)
       exact ⟨hl.trans ll,hr.trans rr⟩
 
-private theorem stagePadPort_off_original {T : ℕ} (fan : Fin (142081+2) ↪ Fin T)
+theorem stagePadPort_off_original {T : ℕ} (fan : Fin (142081+2) ↪ Fin T)
     (i : Fin 142081) (j : Fin 12) (k : Fin T) :
     stagePadPort fan i j ≠ ((k.castAdd (142081*7)).castAdd 142081).castAdd 10 := by
   intro eq
@@ -890,6 +915,92 @@ noncomputable def stageOutputBank {T : ℕ} (n : Fin 9) (fan : Fin (142081+2) �
     apply fan.injective
     have val := congrArg Fin.val eq
     exact Fin.ext val
+
+def appendPorts {m n T : ℕ} (data : Fin m ↪ Fin T) (ctrl : Fin n ↪ Fin T)
+    (apart : ∀ i j, data i ≠ ctrl j) : Fin (m+n) ↪ Fin T where
+  toFun := Fin.addCases data ctrl
+  inj' := by
+    intro i j
+    refine Fin.addCases (fun a => ?_) (fun a => ?_) i <;> refine Fin.addCases (fun b => ?_) (fun b => ?_) j
+    all_goals simp only [Fin.addCases_left,Fin.addCases_right]
+    · exact fun h => congrArg _ (data.injective h)
+    · exact fun h => (apart a b h).elim
+    · exact fun h => (apart b a h.symm).elim
+    · exact fun h => congrArg _ (ctrl.injective h)
+
+theorem stageOutputBank_off_control {T : ℕ} (n : Fin 9) (fan : Fin (142081+2) ↪ Fin T)
+    (i : Fin 142081) (j : Fin 2) : stageOutputBank n fan i ≠
+      (((fan (j.natAdd 142081)).castAdd (142081*7)).castAdd 142081).castAdd 10 := by
+  classical
+  unfold stageOutputBank
+  simp only [Function.Embedding.coeFn_mk]
+  split
+  · exact stagePadPort_off_original fan i 1 _
+  · intro eq
+    have v := congrArg Fin.val eq
+    have same := fan.injective (show fan (i.castAdd 2) = fan (j.natAdd 142081) from Fin.ext v)
+    have impossible := congrArg Fin.val same
+    change i.val = 142081+j.val at impossible
+    omega
+
+/-- The next invocation uses the output owners and the caller's original two controls. -/
+noncomputable def stageOutputFan {T : ℕ} (n : Fin 9) (fan : Fin (142081+2) ↪ Fin T) :
+    Fin (142081+2) ↪ Fin ((T+142081*7)+142081+10) :=
+  appendPorts (stageOutputBank n fan)
+    (((((Fin.natAddEmb 142081).trans fan).trans (Fin.castAddEmb (142081*7))).trans
+      (Fin.castAddEmb 142081)).trans (Fin.castAddEmb 10)) (stageOutputBank_off_control n fan)
+
+/-- Permanent words, the extra owner, and the two control reads suffice at stage entry. -/
+theorem stageEntry_of_payloads {T V : ℕ} (n : Fin 9) (bank : Fin (142081+2) ↪ Fin T)
+    (data : Fin 142081 → Fin V → ZMod 2) (S : Stacks ((T+142081*7)+142081+10) prime)
+    (roles : ∀ ρ : Role, let i := ((Fin.cast card_role) (Fintype.equivFin Role ρ)).castSucc
+      Cover.Fallback.RecordPayload (stageOutputBank n bank i) (fun _ => blank) 0 (data i) S)
+    (extra : Cover.Fallback.RecordPayload (stageOutputBank n bank (Fin.last 142080)) (fun _ => blank) 0
+      (data (Fin.last 142080)) S)
+    (controls : StageControls (stageOutputFan n bank) V S) :
+    HelperFan (stageOutputFan n bank) data S := by
+  intro i
+  refine Fin.addCases (fun j z => ?_) (fun j z => ?_) i
+  · have payload : Cover.Fallback.RecordPayload (stageOutputBank n bank j) (fun _ => blank) 0 (data j) S := by
+      refine Fin.lastCases extra (fun k => ?_) j
+      let e := (Fintype.equivFin Role).trans (finCongr card_role)
+      obtain ⟨ρ,rfl⟩ := e.surjective k
+      exact roles ρ
+    have read := payload z
+    rw [encodedOwnerCell] at read
+    simp only [PointwiseRoleGate.bank,Tapes.append,Fin.addCases_left,embStk,Function.comp_apply]
+    change putWord _ 0 (List.ofFn fun l => SparseRoleCircuit.encode (data j l)) z = _
+    simpa only [stageOutputFan,appendPorts,Function.Embedding.coeFn_mk,Fin.addCases_left] using read.symm
+  · simpa only [PointwiseRoleGate.bank,Tapes.append,Fin.addCases_right,CountedLoopReuseAlphabet.controls,
+      ite_self,embStk,Function.comp_apply] using controls j z
+
+/-- Reset the extra owner in place using the already represented volume counter. -/
+theorem resetExtra_host {T Q : ℕ} {P U : Type} (fan : Fin (142081+2) ↪ Fin T)
+    (body : P → Pr P T Q prime U) :
+    let last := Fin.last 142080
+    let gate : PointwiseRoleGate.Gate 142081 := ⟨(0 : Fin 142080).castSucc,last,Fin.castSucc_ne_last _⟩
+    let op := fun (_ _ : Fin (prime+4)) => SparseRoleCircuit.encode (a := prime) 0
+    let machine := PointwiseRoleGate.program gate op
+    ∀ fits : (fun {q} (_ : Program (142081+2) q prime) => q) machine ≤ Q,
+    ∃ code, ∀ V (data : Fin 142081 → Fin V → ZMod 2) u S, HelperFan fan data S →
+      ∃ z F steps, Exec body code (mk u S) steps (mk z F) ∧
+        steps ≤ (14*V+14*(FlatCoordinateSchedule.bits V).length+33)*(142081+7)+6 ∧ z.user = u.user ∧
+        HelperFan fan (Function.update data last (fun _ => 0)) F ∧
+        ∀ j, (∀ i, fan i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  intro last gate op machine fits
+  refine ⟨embProg fan (Empty.elim : Empty → P) (foreign (liftQ machine fits)),?_⟩
+  intro V data u S ready
+  have step := PointwiseRoleGate.gate_hoare gate op (fun _ _ => blank) (fun _ => 0)
+    (SparseRoleCircuit.encoded data) _ (FlatCoordinateSchedule.bits_value V)
+  have eq : PointwiseRoleGate.applyGate gate op (SparseRoleCircuit.encoded data) =
+      SparseRoleCircuit.encoded (Function.update data last (fun _ => 0)) := by
+    funext j i
+    by_cases h : j = last
+    · subst j
+      simp [gate,PointwiseRoleGate.applyGate,SparseRoleCircuit.encoded,op]
+    · simp [gate,PointwiseRoleGate.applyGate,SparseRoleCircuit.encoded,h]
+  rw [eq] at step
+  exact placedHoare_exec machine fan fits body step u S ready
 
 private theorem role_active_owner (n : Fin 9) (ρ : Role) (active : ρ.bank.val / 2 = BitHosting.activePair n.val) :
     let tape := ((Fin.cast card_role) (Fintype.equivFin Role ρ)).castSucc
@@ -929,14 +1040,15 @@ theorem stageTargets_pad {T Q : ℕ} {P U : Type} (n : Fin 9)
         (fun a => a = y) (singleLabelBank label x) →
       HelperLabelTrace w (B*N) W (restoreSlotChanges (stageFinalSlot n)) y out →
       let next := collapseLabelBank (B := B) (K := K) out
-      ∀ u S, aux S → RestoredOwnerPayloads n retained out S →
+      ∀ u S, aux S → StageControls retained (A*(B*N*K)) S → RestoredOwnerPayloads n retained out S →
       (∀ k, Cover.Fallback.RecordPayload (port (targetOwner n k) 0) (fun _ => blank) 0
         (stageTargetWord n k w B K x) S) →
       (∀ k z, readAt blank (S.L (port (targetOwner n k) 1)) (S.R (port (targetOwner n k) 1)) z = blank) →
       ∃ z F steps, Exec body code (mk u S) steps (mk z F) ∧
         steps ≤ 17760*(7021*(A*B)*(N*K)+6)+1 ∧ z.user = u.user ∧ aux F ∧
-        (∀ ρ : Role, let i := ((Fin.cast card_role) (Fintype.equivFin Role ρ)).castSucc
-          Cover.Fallback.RecordPayload (stageOutputBank n fan i) (fun _ => blank) 0 (singleLabelBank label next i) F) ∧
+        StageControls (stageOutputFan n fan) (A*(B*N*K)) F ∧
+        HelperFan (stageOutputFan n fan) (Function.update (singleLabelBank label next) (Fin.last 142080)
+          (out (Fin.last 142080))) F ∧
         ∀ j, (∀ k h, port (targetOwner n k) h ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
   let targets := stageRuns.product (List.finRange 111)
   let order := targets.map (targetOwner n)
@@ -945,7 +1057,7 @@ theorem stageTargets_pad {T Q : ℕ} {P U : Type} (n : Fin 9)
   refine ⟨Prog.seqList (order.map pad),?_⟩
   intro w B W hb hk K A N port frame aux
   have run := placedOwnerPads (w := w) hb hk fan fits body
-  intro label retained x y out trace restore next u S ready live inputs empty
+  intro label retained x y out trace restore next u S ready controls live inputs empty
   have targetWords := fun k => restoredStage_targetWord n k w B W label x y out trace restore
   have unique : order.Nodup := (stageRuns_nodup.product (List.nodup_finRange _)).map (targetOwner_injective n)
   obtain ⟨z,F,t,exec,paid,user,headers,padded,off⟩ := run next order unique u S ready (by
@@ -964,39 +1076,107 @@ theorem stageTargets_pad {T Q : ℕ} {P U : Type} (n : Fin 9)
     change readAt blank (F.L _) (F.R _) _ = _
     rw [hl,hr]
     exact live i hi l
-  refine ⟨z,F,t,exec,?_,user,headers,?_,?_⟩
+  have savedControls : StageControls (stageOutputFan n fan) (A*(B*N*K)) F := by
+    intro j l
+    have ctrl : stageOutputFan n fan (j.natAdd 142081) = retained (j.natAdd 142081) := by
+      simp only [stageOutputFan,appendPorts,Function.Embedding.coeFn_mk,Fin.addCases_right]
+      rfl
+    obtain ⟨hl,hr⟩ := off _ (fun a _ h => stagePadPort_off_original fan a h (fan (j.natAdd 142081)))
+    change F.L (retained (j.natAdd 142081)) = S.L _ at hl
+    change F.R (retained (j.natAdd 142081)) = S.R _ at hr
+    rw [ctrl,hl,hr]
+    exact controls j l
+  refine ⟨z,F,t,exec,?_,user,headers,savedControls,?_,?_⟩
   · have count : order.length = 17760 := by
       rw [List.length_map]
       exact (List.length_product stageRuns (List.finRange 111)).trans (by rw [stageRuns_length,List.length_finRange])
     rw [count] at paid
     exact paid
-  · intro ρ i
-    classical
-    by_cases hit : ∃ k, targetOwner n k = i
-    · obtain ⟨k,hk⟩ := hit
-      have pos : stageOutputBank n fan i = port i 1 := by
-        have mem : ∃ a, targetOwner n a = i := ⟨k,hk⟩
-        simp only [stageOutputBank,Function.Embedding.coeFn_mk,ite_eq_left mem]
+  · apply stageEntry_of_payloads
+    · intro ρ i
+      rw [Function.update_of_ne (Fin.castSucc_ne_last _)]
+      change Cover.Fallback.RecordPayload (stageOutputBank n fan i) _ 0 (singleLabelBank label next i) F
+      classical
+      by_cases hit : ∃ k, targetOwner n k = i
+      · obtain ⟨k,hk⟩ := hit
+        have pos : stageOutputBank n fan i = port i 1 := by
+          have mem : ∃ a, targetOwner n a = i := ⟨k,hk⟩
+          simp only [stageOutputBank,Function.Embedding.coeFn_mk,ite_eq_left mem]
+          rfl
+        rw [pos,← hk]
+        exact padded _ (List.mem_map.mpr ⟨k,List.mem_flatMap.mpr ⟨k.1,mem_stageRuns _,
+          List.mem_map.mpr ⟨k.2,List.mem_finRange _,rfl⟩⟩,rfl⟩)
+      · have pos : stageOutputBank n fan i = retained (i.castAdd 2) := by simp only [stageOutputBank,Function.Embedding.coeFn_mk,ite_eq_right hit]; rfl
+        rw [pos]
+        have word : out i = singleLabelBank label next i := by
+          by_cases active : ρ.bank.val / 2 = BitHosting.activePair n.val
+          · obtain target | source := role_active_owner n ρ active
+            · exact (hit ⟨_,target.symm⟩).elim
+            · change i = _ at source
+              rw [source]
+              exact restoredStage_sourceWord n (ρ.replica,ρ.cls) w B W label x y out trace restore ρ.port
+          · exact restoredStage_inactiveWord n w B W label x y out trace restore ρ active
+        rw [← word]
+        exact kept i (fun k h => hit ⟨k,h⟩)
+    · rw [Function.update_self]
+      have ne : ∀ k, targetOwner n k ≠ Fin.last 142080 := fun k => Fin.castSucc_ne_last _
+      have noTarget : ¬∃ k, targetOwner n k = Fin.last 142080 := fun ⟨k,h⟩ => ne k h
+      have portEq : stageOutputBank n fan (Fin.last 142080) = retained ((Fin.last 142080).castAdd 2) := by
+        classical
+        simp only [stageOutputBank,Function.Embedding.coeFn_mk,ite_eq_right noTarget]
         rfl
-      rw [pos,← hk]
-      exact padded _ (List.mem_map.mpr ⟨k,List.mem_flatMap.mpr ⟨k.1,mem_stageRuns _,
-        List.mem_map.mpr ⟨k.2,List.mem_finRange _,rfl⟩⟩,rfl⟩)
-    · have pos : stageOutputBank n fan i = retained (i.castAdd 2) := by simp only [stageOutputBank,Function.Embedding.coeFn_mk,ite_eq_right hit]; rfl
-      rw [pos]
-      have word : out i = singleLabelBank label next i := by
-        by_cases active : ρ.bank.val / 2 = BitHosting.activePair n.val
-        · obtain target | source := role_active_owner n ρ active
-          · exact (hit ⟨_,target.symm⟩).elim
-          · change i = _ at source
-            rw [source]
-            exact restoredStage_sourceWord n (ρ.replica,ρ.cls) w B W label x y out trace restore ρ.port
-        · exact restoredStage_inactiveWord n w B W label x y out trace restore ρ active
-      rw [← word]
-      exact kept i (fun k h => hit ⟨k,h⟩)
+      rw [portEq]
+      exact kept _ ne
+    · exact savedControls
   · intro j outside
     apply off
     intro i hi
     obtain ⟨k,_,rfl⟩ := List.mem_map.mp hi
     exact outside k
+
+/-- Finish the stage with a represented single-label bank, including its reset extra owner. -/
+theorem stageHandoff_host {T Q : ℕ} {P U : Type} (n : Fin 9)
+    (fan : Fin (142081+2) ↪ Fin T) (fits : 215 ≤ Q)
+    (body : P → Pr P ((T+142081*7)+142081+10) Q prime U) :
+    ∃ code, ∀ w B W : ℕ, 0 < B → 0 < (prime^w)^112*W →
+    let K := (prime^w)^112*W
+    let A := (prime^w)^16
+    let N := prime^(64*(w*64))
+    let port := stagePadPort fan
+    let frame := ownerPadFrame (A*B) N K
+    let aux := fun (S : Stacks ((T+142081*7)+142081+10) prime) => ∀ j : Fin 12, j ≠ 0 → j ≠ 1 → ∀ z,
+      frame.tape j z = readAt blank (S.L (port 0 j)) (S.R (port 0 j)) (z-frame.head j)
+    let label := firstRowLabel w
+    let retained := fan.trans (((Fin.castAddEmb (142081*7)).trans (Fin.castAddEmb 142081)).trans (Fin.castAddEmb 10))
+    ∀ x y out,
+      stageRuns.foldr (fun p cont a => ∃ b, packedStageEffect n p w B W a b ∧ cont b)
+        (fun a => a = y) (singleLabelBank label x) →
+      HelperLabelTrace w (B*N) W (restoreSlotChanges (stageFinalSlot n)) y out →
+      let next := collapseLabelBank (B := B) (K := K) out
+      ∀ u S, aux S → StageControls retained (A*(B*N*K)) S → RestoredOwnerPayloads n retained out S →
+      (∀ k, Cover.Fallback.RecordPayload (port (targetOwner n k) 0) (fun _ => blank) 0
+        (stageTargetWord n k w B K x) S) →
+      (∀ k z, readAt blank (S.L (port (targetOwner n k) 1)) (S.R (port (targetOwner n k) 1)) z = blank) →
+      ∃ z F steps, Exec body code (mk u S) steps (mk z F) ∧
+        steps ≤ 17760*(7021*(A*B)*(N*K)+6)+1+
+          (14*(A*(B*N*K))+14*(FlatCoordinateSchedule.bits (A*(B*N*K))).length+33)*(142081+7)+6 ∧
+        z.user = u.user ∧ HelperFan (stageOutputFan n fan)
+          (singleLabelBank label (Function.update next (Fin.last 142080) (fun _ => 0))) F := by
+  obtain ⟨pad,run⟩ := stageTargets_pad n fan fits body
+  obtain ⟨reset,clear⟩ := resetExtra_host (stageOutputFan n fan) body ((by decide : _ ≤ 215).trans fits)
+  refine ⟨.seq pad reset,?_⟩
+  intro w B W hb hk K A N port frame aux label retained x y out trace restore next u S ready controls live inputs empty
+  obtain ⟨v,C,m,first,paid,user,_,_,represented,_⟩ := run w B W hb hk x y out trace restore u S ready controls live inputs empty
+  obtain ⟨z,F,t,last,bill,same,clean,_⟩ := clear _ _ v C represented
+  refine ⟨z,F,m+t,Exec.seq first last,?_,same.trans user,?_⟩
+  · exact (Nat.add_le_add paid bill).trans_eq (Nat.add_assoc _ _ _).symm
+  · convert clean using 1
+    congr 1
+    funext i j
+    by_cases h : i = Fin.last 142080
+    · subst i
+      simp [singleLabelBank]
+    · simp only [Function.update_of_ne h,singleLabelBank]
+      rfl
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
