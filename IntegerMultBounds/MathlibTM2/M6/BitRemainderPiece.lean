@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.M6.BitOrdinaryDirectoryLayout
 public import IntegerMultBounds.MathlibTM2.M6.BitRemainderRecordLayout
 public import IntegerMultBounds.MathlibTM2.M6.BitRemainderRun
 public import IntegerMultBounds.MathlibTM2.M6.BitCompiledNode
@@ -230,6 +231,116 @@ theorem idleCopies_recordWidths (i : Fin 9) (digits W : ℕ) :
       (Piece.remainder i.val).children.map (·*digits) := by
   rw [← idleCopies_ranks,List.map_map]
   rfl
+
+private theorem flatMap_block {α β γ : Type*} (pieces : List α) (children : α → List β)
+    (pos : ℕ) (inside : pos < pieces.length) (jobs : List γ) (rank : γ → β)
+    (block : jobs.map rank = children pieces[pos]) :
+    let start := ((pieces.take pos).flatMap children).length
+    ∀ j : Fin jobs.length, ∃ h : start+j.val < (pieces.flatMap children).length,
+      (pieces.flatMap children)[start+j.val] = rank jobs[j.val] := by
+  intro start j
+  have split : pieces = pieces.take pos ++ pieces[pos] :: pieces.drop (pos+1) := by
+    rw [← List.drop_eq_getElem_cons inside, List.take_append_drop]
+  have allJobs : pieces.flatMap children = (pieces.take pos).flatMap children ++
+      (jobs.map rank ++ (pieces.drop (pos+1)).flatMap children) := by
+    conv_lhs => rw [split,List.flatMap_append,List.flatMap_cons,← block]
+  have enough : start+j.val < (pieces.flatMap children).length := by
+    rw [allJobs]
+    simp only [List.length_append,List.length_map,start]
+    omega
+  refine ⟨enough,?_⟩
+  simp only [allJobs,List.getElem_append_right (show ((pieces.take pos).flatMap children).length ≤ start+j.val by omega),
+    start,Nat.add_sub_cancel_left,List.getElem_append_left (show j.val < (jobs.map rank).length by simpa using j.isLt),
+    List.getElem_map]
+
+private theorem idlePieceAt (i : Fin 9) :
+    nodeProgram[idlePos i]'(idlePos_le i (by omega)) = .remainder i.val := by
+  have atPos := nodeProgram_at.2.1 i (by omega)
+  have inside : idlePos i < nodeProgram.length := idlePos_le i (by omega)
+  exact (List.getD_eq_getElem nodeProgram Piece.exchangeSides inside).symm.trans atPos
+
+noncomputable def idleChildStart (i : Fin 9) := ((nodeProgram.take (idlePos i)).flatMap Piece.children).length
+
+theorem idleRankAt (i : Fin 9) (j : Fin idleCopies.length) :
+    ∃ h : idleChildStart i+j.val < nodeChildren5.length,
+      nodeChildren5[idleChildStart i+j.val] = (idleInterval i idleCopies[j.val].2).2-(idleInterval i idleCopies[j.val].2).1 :=
+  flatMap_block nodeProgram Piece.children (idlePos i) (idlePos_le i (by omega)) idleCopies
+    (fun k => let e := idleInterval i k.2; e.2-e.1) (by rw [idlePieceAt]; exact idleCopies_ranks i) j
+
+/-- Distinct physical jobs use distinct child budgets, even at the same rank. -/
+noncomputable def idleDirectoryIndex : (Fin 9 × Fin idleCopies.length) ↪ Fin nodeChildren5.length where
+  toFun k := ⟨idleChildStart k.1+k.2.val,(idleRankAt k.1 k.2).choose⟩
+  inj' := by
+    have order : ∀ i k : Fin 9, i < k → idlePos i < idlePos k := by decide +kernel
+    have disjoint (i k : Fin 9) (lt : i < k) : idleChildStart i+idleCopies.length ≤ idleChildStart k := by
+      have earlier := (List.take_prefix_take_left (l := nodeProgram) (Nat.succ_le_of_lt (order i k lt))).sublist
+      have bound := (earlier.flatMap Piece.children).length_le
+      have inside : idlePos i < nodeProgram.length := idlePos_le i (by omega)
+      have lengthEq : nodeProgram[idlePos i].children.length = idleCopies.length :=
+        (congrArg (fun p : Piece => p.children.length) (idlePieceAt i)).trans
+          ((congrArg List.length (idleCopies_ranks i).symm).trans (List.length_map ..))
+      simp only [List.take_add_one,List.getElem?_eq_getElem inside,Option.toList_some,List.flatMap_append,
+        List.flatMap_cons,List.flatMap_nil,List.append_nil,List.length_append] at bound
+      exact (congrArg (idleChildStart i+·) lengthEq).symm.le.trans bound
+    rintro ⟨i,j⟩ ⟨k,l⟩ eq
+    have h := congrArg Fin.val eq
+    change idleChildStart i+j.val = idleChildStart k+l.val at h
+    have same : i = k := by
+      rcases lt_trichotomy i k with lt | eq | gt
+      · have := disjoint i k lt
+        omega
+      · exact eq
+      · have := disjoint k i gt
+        omega
+    subst k
+    exact Prod.ext rfl (Fin.ext (Nat.add_left_cancel h))
+
+/-- Charge each physical idle call once and leave the other occurrences'
+budgets available for the stage pieces. -/
+private theorem idleDirectoryBudget (budget : Fin nodeChildren5.length → ℝ) :
+    (∑ k, budget (idleDirectoryIndex k)) +
+      (∑ j ∈ (Finset.univ.map idleDirectoryIndex)ᶜ, budget j) = ∑ j, budget j := by
+  classical
+  simpa only [Finset.sum_map,Function.comp_apply] using
+    Finset.sum_add_sum_compl (Finset.univ.map idleDirectoryIndex) budget
+
+/-- Sum the nine idle execution bounds in physical copy order. Only the
+per-pass overhead and one final instruction per idle are added to the child bills. -/
+theorem idleDirectoryTime (time : Fin 9 → ℝ) (bill : Fin 9 → (Fin 32 × Fin 5) × Fin 222 → ℝ)
+    (overhead : Fin 9 × Fin idleCopies.length → ℝ) (budget : Fin nodeChildren5.length → ℝ)
+    (passes : ∀ i, time i ≤ (idleCopies.map (bill i)).sum+1)
+    (paid : ∀ k : Fin 9 × Fin idleCopies.length,
+      bill k.1 idleCopies[k.2.val] ≤ overhead k+budget (idleDirectoryIndex k)) :
+    (∑ i, time i) + (∑ j ∈ (Finset.univ.map idleDirectoryIndex)ᶜ, budget j) ≤
+      (∑ k, overhead k) + (∑ j, budget j) + 9 := by
+  have listed (i : Fin 9) : (idleCopies.map (bill i)).sum =
+      ∑ j : Fin idleCopies.length, bill i idleCopies[j.val] := by
+    have eq := congrArg (List.map (bill i)) (List.ofFn_getElem (xs := idleCopies))
+    exact (congrArg List.sum eq.symm).trans (by rw [List.map_ofFn,List.sum_ofFn]; rfl)
+  have summed := Finset.sum_le_sum (s := Finset.univ) (fun k _ => paid k)
+  rw [Finset.sum_add_distrib] at summed
+  have total := Finset.sum_le_sum (s := Finset.univ) (fun i _ => passes i)
+  simp only [listed,Finset.sum_add_distrib,Finset.sum_const,Finset.card_univ,Fintype.card_fin,
+    nsmul_eq_mul,Nat.cast_ofNat,mul_one] at total
+  rw [Fintype.sum_prod_type] at summed
+  linarith only [summed,total,idleDirectoryBudget budget]
+
+/-- The actual recursive directory at each idle copy has that occurrence's
+scheduled width, row count and volume. -/
+theorem idleDirectoryChild_shape (node : Descriptor) (w : ℕ) (aligned : node.width = 64*(w+1))
+    (rows : 142080 ∣ node.rows) (i : Fin 9) (j : Fin idleCopies.length) :
+    let interval := idleInterval i idleCopies[j.val].2
+    let rank := interval.2-interval.1
+    let batch := ordinaryDirectoryChild (RecursiveInterchangeLayout.role node 142080) rank (64-rank) w
+    ScheduledChildShape prime node (idleDirectoryIndex (i,j)) batch ∧ volume prime batch*142080 = volume prime node := by
+  intro interval rank batch
+  let index := idleDirectoryIndex (i,j)
+  have rankEq : nodeChildren5[index.val] = rank := (idleRankAt i j).choose_spec
+  have same := congrArg (fun r => ordinaryDirectoryChild (RecursiveInterchangeLayout.role node 142080) r (64-r) w) rankEq
+  have shape := (scheduledDirectoryTranspose node index w aligned rows).1
+  have actual : ScheduledChildShape prime node index batch := (congrArg (ScheduledChildShape prime node index) same).mp shape
+  exact ⟨actual,(congrArg (·*142080) actual.volume).trans
+    (scheduledChild_measures prime node ⟨w+1,aligned⟩ rows index).2⟩
 
 private theorem idleCopies_prices (i : Fin 9) (price : ℕ → ℕ) :
     (idleCopies.map (fun k => let e := idleInterval i k.2; price (e.2-e.1))).sum =
