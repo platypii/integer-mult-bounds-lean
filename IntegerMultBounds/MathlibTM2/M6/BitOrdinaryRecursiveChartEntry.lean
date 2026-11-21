@@ -113,7 +113,7 @@ theorem recursiveRoleChartEntry_exec {n K T Q s k back w : ℕ} {P U : Type}
     (role : Fin 142080) (archive : ℕ → List (Fin (prime+4)))
     (outer : 0 < layout.beforeRows) (rowCount : 0 < rows) (labels : 0 < layout.beforeH)
     (positive : 0 < layout.between*layout.afterD)
-    (fits : width ≤ (prime^(w+1))^128*(layout.between*layout.afterD))
+    (aligned : layout.width = 64*(w+1)) (fits : width ≤ prime^layout.width)
     (widths : ∀ i < layout.beforeRows*rows*142080*layout.beforeH, (archive i).length = width)
     (clean : ∀ i < layout.beforeRows*rows*142080*layout.beforeH, blank ∉ archive i)
     (u : HS (n+roleSplitWorkspace) Q prime U) (S : Stacks (n+roleSplitWorkspace) prime) :
@@ -139,7 +139,7 @@ theorem recursiveRoleChartEntry_exec {n K T Q s k back w : ℕ} {P U : Type}
     let V := (prime^(w+1))^128*W
     let weights := fun _ : Fin 64 => (1 : ZMod (prime^(w+1)))
     let queue := directoryChartQueue (some role) H 0 (LabelMask.records (RecursiveInterchangeLayout.role layout 142080)) archive
-    (S.R cut).length ≤ a*rows*H*V →
+    (S.R cut).length ≤ layout.width →
     (∀ i, S.R (sources i) = ordinaryEntryWords W a rows H true weights width
       ((List.range (a*rows*142080*H)).flatMap archive) (ordinaryMetadataPorts i).val) →
     (∀ i : Fin roleSplitWorkspace, S.L (i.natAdd n) = [] ∧ S.R (i.natAdd n) = []) →
@@ -185,8 +185,18 @@ theorem recursiveRoleChartEntry_exec {n K T Q s k back w : ℕ} {P U : Type}
   have ports (i) : [source i,dst i,scratch 0,scratch 1].Nodup := by
     have dstWork (j) : dst i ≠ scratch j := (disjoint _ _).symm
     simp [srcDst,srcWork,dstWork,scratchNe]
+  have radixFits : prime^layout.width ≤ V := by
+    change _ ≤ (prime^(w+1))^128*W
+    rw [← pow_mul,aligned]
+    exact (Nat.pow_le_pow_right Shared50ModularControl.prime_prime.pos (by omega)).trans
+      (Nat.le_mul_of_pos_right _ positive)
+  have cutoffFits : (S.R cut).length ≤ a*rows*H*V := by
+    have digits : layout.width ≤ prime^layout.width := (Nat.lt_two_pow_self (n := layout.width)).le.trans
+      (Nat.pow_le_pow_left Shared50ModularControl.prime_prime.two_le _)
+    exact ((cutFits.trans digits).trans radixFits).trans
+      (Nat.le_mul_of_pos_left _ (Nat.mul_pos (Nat.mul_pos outer rowCount) labels))
   have run := childRoleChartEntry_exec body full space split capacity sources cut (scratch 0) (scratch 1)
-    W a rows H width role archive outer rowCount labels positive fits widths clean u S cutFits headers
+    W a rows H width role archive outer rowCount labels positive (fits.trans radixFits) widths clean u S cutoffFits headers
   rw [← show bank' = (Fin.castAddEmb (n := roleSplitTapes) 12).trans split from rfl] at run
   rw [high port] at run
   obtain ⟨z,F,t,user,paid,exec,entry,live,frame⟩ := run (fun j i => (high j).symm ▸ disjoint _ _)

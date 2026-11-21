@@ -188,7 +188,7 @@ theorem activeBatchChartDimensions (root node : Descriptor) (depth b cutoff bloc
       batch.width = 64*(childClock+1) ∧ batch.rows = 142080*childRows ∧
         batch.beforeH = childBlocks*prime^(64*((childClock+1)*64)) ∧
         LabelMask.records (role node 142080) =
-          (batch.beforeRows*childRows*childBlocks)*(142080*prime^(64*batch.width)) := by
+          batch.beforeRows*childRows*142080*batch.beforeH := by
   intro r batch next childClock childRows childBlocks active
   have shape := (scheduledDirectoryTranspose node i w aligned rows).1
   have pathW : (next.foldl (scheduledChild prime) root).width = batch.width := by
@@ -238,7 +238,7 @@ theorem activeBatchChartDimensions (root node : Descriptor) (depth b cutoff bloc
     clock,rowCount,?_,?_⟩
   · simpa only [← show (childClock+1)*64 = batch.width by omega] using labelShape
   · change batch.beforeRows*batch.rows*batch.beforeH = _
-    rw [rowCount,labelShape]
+    rw [rowCount]
     ring
 
 /-- Fixed selector body for one interval rank. The width, cutoff and row
@@ -600,7 +600,8 @@ theorem childMetadataSources_words {K T n w rows : ℕ} (room : 16 ≤ T)
     let B := {G with R := Function.update (Function.update G.R (modulus 2) (List.replicate M Node.tick)) (modulus 3) (binSyms M.size M)}
     let words := ordinaryEntryWords (batch.between*batch.afterD) batch.beforeRows rows batch.beforeH true
       (fun _ => (1 : ZMod (prime^(w+1)))) next (F.R (publicPort 46))
-    ∀ i : Fin 9, B.R (replay (childMetadataSources K T room i)) = words (ordinaryMetadataPorts i).val := by
+    B.R (publicPort 40) = F.R (publicPort 40) ∧
+      ∀ i : Fin 9, B.R (replay (childMetadataSources K T room i)) = words (ordinaryMetadataPorts i).val := by
   intro publicPort counts spectator modulus D E G M B words
   have clock : batch.width/64-1 = w := by omega
   have count : batch.rows/142080 = rows := by omega
@@ -635,6 +636,7 @@ theorem childMetadataSources_words {K T n w rows : ℕ} (room : 16 ≤ T)
   have sources : (fun i => replay (childMetadataSources K T room i)) =
       ![priv 9,publicPort 29,priv 1,publicPort 31,priv 0,publicPort 58,priv 5,priv 6,publicPort 46] := by
     funext i; fin_cases i <;> rfl
+  refine ⟨by simp [Function.update_of_ne,separate,pub],?_⟩
   intro i
   rw [show replay (childMetadataSources K T room i) = _ from congrFun sources i]
   fin_cases i <;> simp [words,ordinaryMetadataPorts,ordinaryEntryWords,Function.update_of_ne,
@@ -646,8 +648,16 @@ recursive case the continuation receives a proof of strict width descent. -/
 theorem selectScheduledChart_exec [M8.Machine.Net] (K : ℕ) {P R U : Type}
     (room : Record.size 127+(rowSwapBlock.tapes+35+2) ≤ ((K+1)+3+LeafCore.small)+1)
     (localBody : P → Pr P (66+((K+1)+3+LeafCore.small)) columnCapacity prime U)
-    (node : Descriptor) (i : Fin nodeChildren5.length) (lo hi w L cutoff : ℕ)
+    (node : Descriptor) (i : Fin nodeChildren5.length) (lo hi w cutoff : ℕ)
+    (root : Descriptor) (depth b blocks : ℕ) (levels : 0 < depth) (base : 0 < b)
+    (rootWidth : root.width = 64^depth*b) (rootRows : 142080^depth ∣ root.rows)
+    (stop : 42^depth*b ≤ cutoff) (within : cutoff ≤ root.width)
+    (path : List (Fin nodeChildren5.length))
+    (pathWidth : (path.foldl (scheduledChild prime) root).width = node.width)
+    (pathRows : (path.foldl (scheduledChild prime) root).rows = node.rows)
+    (labels : node.beforeH = blocks*prime^(64*node.width))
     (aligned : node.width = 64*(w+1)) (rows : 142080 ∣ node.rows) (rank : hi-lo = nodeChildren5[i.val]) :
+    let L := root.width.size
     let parent := role node 142080
     let batch := ordinaryDirectoryChild parent nodeChildren5[i.val] (64-nodeChildren5[i.val]) w
     let row := remainderRecordChild lo hi (w+1) (parent.between*parent.afterD)
@@ -658,42 +668,39 @@ theorem selectScheduledChart_exec [M8.Machine.Net] (K : ℕ) {P R U : Type}
     let host := directoryChartHost room localBody (stoppedChartChild (K+1))
     let replay := directoryChartReplayBank room
     let values : Fin 3 → ℕ := ![parent.beforeRows,parent.rows,parent.beforeH]
-    let saved := fun j : Fin 3 => replay (stoppedChartHeader (K+1) T (j.castAdd 3))
     let leafBudget := ((223+((T+5 : ℕ)*|LeafCore.C|+8+T*(16+8*|LeafCore.C|)))*scheduled.width)*volume prime scheduled
     ∀ (recursive : R → Pr ((P ⊕ (P ⊕ Unit)) ⊕ (Fin 43 ⊕ R)) ((tapes+10)+5) columnCapacity prime U) (f : R) (recursiveBudget : ℕ),
     let procedures := scheduledChartProcedures K room localBody recursive f
     let body := recursiveChartTable host procedures
-    let counts := (directoryChildCountBank (K+1) T (show 6 ≤ T from (by decide : 6 ≤ 9).trans nine_le_leaf)).trans replay
-    let prefixPorts := (childPrefixPorts.trans (Fin.castAddEmb ((K+1)+3+T))).trans replay
     ∀ (a : HS ((tapes+10)+5) columnCapacity prime U) (A : Stacks ((tapes+10)+5) prime)
       (x : Fin (volume prime batch) → ZMod 2), 0 < volume prime node →
       (∀ j : Fin 3, directoryOuterWords (embStk replay A) j = List.replicate (values j) Node.tick) →
       ∀ {W H J : ℕ} {proj : Matrix (Fin 64) (Fin 64) ℚ} {weights : Fin 64 → ZMod (prime^(w+1))}
-        {prefixes : ℕ → List (Fin (prime+4))} {pending : List ℕ},
+        {prefixes : ℕ → List (Fin (prime+4))},
+      let pending := List.range (LabelMask.records parent)
       DirectoryReady row proj w W H J weights prefixes [] (fun _ => []) (embStk replay A) pending →
       RecordPayload owner (fun _ => blank) 0 x A →
-      cutoff < node.width → (cutoff < 2^L ∧ scheduled.width.size ≤ L ∧ L ≤ cutoff) →
+      cutoff < node.width → (prefixes 0).length = directoryDigits prime root path →
+      (∀ j ∈ pending, blank ∉ prefixes j) →
       A.R (replay ((40 : Fin 66).castAdd ((K+1)+3+T))) = binSyms L cutoff →
-      (cutoff < batch.width → (A.R (prefixPorts 0)).length+(w+1)*(64*64) ≤ volume prime batch) →
       (cutoff < batch.width → batch.width < node.width → batch.Positive →
-        ∀ (z : HS ((tapes+10)+5) columnCapacity prime U) (F : Stacks ((tapes+10)+5) prime),
-        let D := childCountState counts batch F
-        let next := (D.R (prefixPorts 0)).length+(w+1)*(64*64)
-        let E := {D with R := Function.update D.R (prefixPorts 3) (List.replicate next Node.tick)}
-        StoppedChartReady (K+1) T batch (embStk replay F) →
-        (∀ j, (∀ l : Fin 3, j ≠ saved l) → F.L j = A.L j ∧ F.R j = A.R j) →
-        (∀ j : Fin 66, D.R (replay (j.castAdd ((K+1)+3+T))) = A.R (replay (j.castAdd ((K+1)+3+T)))) →
-        E.R (replay ((46 : Fin 66).castAdd ((K+1)+3+T))) = pending.flatMap (LabelDirectory.entry prefixes 64 (w+1)) →
-        (∀ j ∈ pending, (LabelDirectory.entry prefixes 64 (w+1) j).length = (E.R (prefixPorts 3)).length) →
-        let r := (directorySpectatorBank (K+1) T spectatorRoom).trans replay
-        let G := directorySpectatorState r batch.between batch.afterD E
-        let modulus := (directoryModulusBank (K+1) T modulusRoom).trans replay
-        let M := prime^(batch.width/64-1+1)
-        let B := {G with R := Function.update (Function.update G.R (modulus 2) (List.replicate M Node.tick)) (modulus 3) (binSyms M.size M)}
-        (∀ e rows, batch.width = 64*(e+1) → batch.rows = 142080*rows →
-          ∀ j : Fin 9, B.R (replay (childMetadataSources (K+1) T modulusRoom j)) =
+        ∀ (z : HS ((tapes+10)+5) columnCapacity prime U) (B : Stacks ((tapes+10)+5) prime),
+        let next := directoryDigits prime root (path++[i])
+        let e := batch.width/64-1
+        let rows := batch.rows/142080
+        (List.foldl (scheduledChild prime) root (path++[i])).width = batch.width →
+        (List.foldl (scheduledChild prime) root (path++[i])).rows = batch.rows →
+        batch.beforeH = (blocks*prime^(64*(node.width-batch.width)))*prime^(64*((e+1)*64)) →
+        batch.width = 64*(e+1) → batch.rows = 142080*rows →
+        next ≤ prime^batch.width →
+        B.R (replay ((40 : Fin 66).castAdd ((K+1)+3+T))) = binSyms L cutoff →
+        (B.R (replay ((40 : Fin 66).castAdd ((K+1)+3+T)))).length ≤ batch.width →
+        (∀ j < batch.beforeRows*rows*142080*batch.beforeH,
+          (LabelDirectory.entry prefixes 64 (w+1) j).length = next ∧ blank ∉ LabelDirectory.entry prefixes 64 (w+1) j) →
+        (∀ j : Fin 9, B.R (replay (childMetadataSources (K+1) T modulusRoom j)) =
             ordinaryEntryWords (batch.between*batch.afterD) batch.beforeRows rows batch.beforeH true
-              (fun _ => (1 : ZMod (prime^(e+1)))) next (F.R (replay ((46 : Fin 66).castAdd ((K+1)+3+T))))
+              (fun _ => (1 : ZMod (prime^(e+1)))) next
+              ((List.range (batch.beforeRows*rows*142080*batch.beforeH)).flatMap (LabelDirectory.entry prefixes 64 (w+1)))
               (ordinaryMetadataPorts j).val) →
         RecordPayload owner (fun _ => blank) 0 x B →
         ∃ y J, ∃ k : ℕ, y.user = z.user ∧ k ≤ recursiveBudget ∧
@@ -706,9 +713,15 @@ theorem selectScheduledChart_exec [M8.Machine.Net] (K : ℕ) {P R U : Type}
           (mk a A) k (mk y B) ∧
         RecordPayload owner (fun _ => blank) 0 (Shared50RecursiveNodeRows.transpose (one_dvd batch.rows) x) B ∧
         ∀ j, j ≠ owner → B.L j = A.L j ∧ B.R j = A.R j := by
-  intro parent batch row scheduled T tapes owner host replay values saved leafBudget
-    recursive f recursiveBudget procedures body counts prefixPorts a A x positive src W H J proj weights prefixes pending directoryReady
-    payload activeParent ⟨cutFits,fits,precision⟩ cutWord prefixFits recurse
+  intro L parent batch row scheduled T tapes owner host replay values leafBudget
+    recursive f recursiveBudget procedures body a A x positive src W H J proj weights prefixes pending directoryReady
+    payload activeParent prefixWidth clean cutWord recurse
+  obtain ⟨cutFits, fits, precision⟩ := scheduledChartPrecision root depth b cutoff levels base rootWidth stop within path i
+  change (nodeChildren5[i.val]*((path.foldl (scheduledChild prime) root).width/64)).size ≤ L at fits
+  rw [pathWidth] at fits
+  let counts := (directoryChildCountBank (K+1) T (show 6 ≤ T from (by decide : 6 ≤ 9).trans nine_le_leaf)).trans replay
+  let prefixPorts := (childPrefixPorts.trans (Fin.castAddEmb ((K+1)+3+T))).trans replay
+  let saved := fun j : Fin 3 => replay (stoppedChartHeader (K+1) T (j.castAdd 3))
   let place := Fin.castLEEmb (show (66+(K+1))+3 ≤ 66+((K+1)+3+T) by omega)
   let bank := directoryOuterHeaderBank (K+1)
   let cmp := chartCutoffBank K T ((by decide : 8 ≤ 9).trans nine_le_leaf) replay
@@ -776,6 +789,12 @@ theorem selectScheduledChart_exec [M8.Machine.Net] (K : ℕ) {P R U : Type}
       have prepared := withDirectoryHeaders_exec body replay owner apart core parent hp lo hi w
         ((recursiveBudget+64*volume prime batch+133*volume prime batch+28*volume prime batch+2)+81*volume prime batch) z A
       rw [rank] at prepared
+      obtain ⟨_,nextWidth,nextRows,nextFits,prefixFits,childWidth,childRows,nextLabels,recordCount⟩ := activeBatchChartDimensions
+        root node depth b cutoff blocks levels base rootWidth rootRows stop path i w aligned rows positive
+        pathWidth pathRows labels (batchWidth.symm ▸ active)
+      have recordPos : 0 < LabelMask.records parent := Nat.mul_pos (Nat.mul_pos hp.1 hp.2.1) hp.2.2.1
+      have prefixSize := (directoryReady.2.1 0 (List.mem_range.mpr recordPos)).trans prefixWidth
+      change (A.R (prefixPorts 0)).length = directoryDigits prime root path at prefixSize
       have call := recurse (batchWidth.symm ▸ active) (batchWidth.symm ▸ smaller) batchPos
       obtain ⟨y,B,k,user,paid,execution,out,frame⟩ := prepared x sources empty tail free payload (by
         intro v F ready keep input
@@ -790,7 +809,7 @@ theorem selectScheduledChart_exec [M8.Machine.Net] (K : ℕ) {P R U : Type}
           have ne₃ : owner ≠ counts 3 := (apart _).symm
           simpa only [childCountState, Function.update_of_ne ne₃, Function.update_of_ne ne₂] using input t
         have publicWords := childCountState_public ((by decide : 6 ≤ 9).trans nine_le_leaf) replay batch A F keep
-        have fitsHere := prefixFits (batchWidth.symm ▸ active)
+        have fitsHere : (A.R (prefixPorts 0)).length+(w+1)*(64*64) ≤ volume prime batch := prefixSize.symm ▸ prefixFits
         have hclock := publicWords 47
         change (childCountState counts batch F).R (prefixPorts 0) = A.R (prefixPorts 0) at hclock
         let r := (directorySpectatorBank (K+1) T spectatorRoom).trans replay
@@ -811,11 +830,26 @@ theorem selectScheduledChart_exec [M8.Machine.Net] (K : ℕ) {P R U : Type}
             apply withChildModulus_exec body modulus owner (fun j => apart _) batch batchPos
               (Nat.zero_lt_of_lt (batchWidth.symm ▸ active)) (recursive f) recursiveBudget v _ x _ incoming clock free
             intro y
-            apply call y F ready keep publicWords archive widths
-            intro e rows hw hr
-            apply childMetadataSources_words modulusRoom replay batch F ready _ hw hr
-            · exact ((keep _ (public_ne_saved replay 29)).2).trans (src 0)
-            · exact ((keep _ (public_ne_saved replay 31)).2).trans (src 2))
+            have length : ((childCountState counts batch F).R (prefixPorts 0)).length+(w+1)*(64*64) = directoryDigits prime root (path++[i]) := by
+              rw [hclock,prefixSize,directoryDigits_append_call,pathWidth,aligned]
+              simp
+            obtain ⟨cutoffKept,metadata⟩ := childMetadataSources_words modulusRoom replay batch F ready
+              (((childCountState counts batch F).R (prefixPorts 0)).length+(w+1)*(64*64)) childWidth childRows
+              (((keep _ (public_ne_saved replay 29)).2).trans (src 0))
+              (((keep _ (public_ne_saved replay 31)).2).trans (src 2))
+            have cutoffWord := cutoffKept.trans (((keep _ (public_ne_saved replay 40)).2).trans cutWord)
+            apply call y _ nextWidth nextRows nextLabels childWidth childRows nextFits cutoffWord
+            · rw [cutoffWord,length_binSyms]
+              exact precision.trans (batchWidth.symm ▸ active.le)
+            · intro j hj
+              have mem : j ∈ pending := List.mem_range.mpr (recordCount.symm ▸ hj)
+              refine ⟨(widths j mem).trans (Eq.trans ?_ length), directoryEntry_nonblank _ _ _ _ (clean j mem)⟩
+              simp only [prefixPorts,T,Function.update_self,List.length_replicate]
+            have archiveWord := ((keep _ (public_ne_saved replay 46)).2).trans (directoryReady.1.trans (List.append_nil _))
+            change F.R (replay ((46 : Fin 66).castAdd ((K+1)+3+T))) = (List.range (LabelMask.records parent)).flatMap _ at archiveWord
+            rw [recordCount] at archiveWord
+            rw [← archiveWord]
+            simpa only [← length] using metadata)
         exact ⟨y,B,k+2,user,Nat.add_le_add_right time 2,Exec.call run,out,frame⟩)
       obtain ⟨count,erase⟩ := directoryHeaderCosts parent nodeChildren5[i.val] (64-nodeChildren5[i.val]) w (batchSize.symm ▸ pos)
       have bound : k ≤ 419*volume prime scheduled + recursiveBudget+2 := by
