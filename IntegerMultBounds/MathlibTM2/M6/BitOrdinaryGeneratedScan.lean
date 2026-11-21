@@ -129,11 +129,8 @@ theorem generatedIncomingDirectory_exec [M8.Machine.Net] {P U : Type} {r g d w c
     let machine := GoodChildLayout.parent.trans (parentWithWeights.trans full)
     let reduced := IntegerMultBounds.Swap.Modular.reduce M proj
     let localCaller := Fin.castAddEmb (n := 66) K
-    let is := ordinaryChildPackSchedule r g
     let prog := incomingRowProgram (P := P) (U := U) (common := common) r g pool room
-    let localTime := fun j => ordinarySetupTime m r w H (prefixes j).length +
-      (1+goodIncomingTime (A := prime) (U := U) Empty.elim machine prime w W H J r hr +
-      (1+((is.map (fun i => completeSwapTime (P := Empty) (U := U) Empty.elim (m+m) i (i+1) w W H J)).sum+1)))
+    let localTime := fun j => incomingRowTime U machine r g w W (prefixes j).length
     let privateTapes := (List.finRange (66+K)).filter (fun i => 58 ≤ i.val)
     let scanSlots : Fin 7 ↪ Fin 58 := ⟨![45,46,2,47,48,44,49],by decide⟩
     let scan := ((goodRecordScanPorts.trans scanSlots).trans (Fin.castAddEmb 8)).trans localCaller
@@ -297,6 +294,10 @@ theorem generatedIncomingDirectory_exec [M8.Machine.Net] {P U : Type} {r g d w c
           ∀ (dim : m = 64) (outLabel : P → G),
           (∀ f, host (outLabel f) = embProg outPlace outLabel (embProg (Fin.castAdd 5) id (localBody f))) →
           ((prefixes 0).length ≤ N →
+            (((rs.map cost).sum+12*(rs.length*N)+12*rs.length+4 : ℕ) : ℝ) ≤
+              (incomingDirectoryTime_volume U machine r g d privateTapes.length push work.length
+                (max (mnProgPush (directoryExceptionalCore (P := P) (U := U) d archiveRoom capacity)) c)
+                dim (by omega)).choose * ((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau*((rs.length : ℝ)*N)+4 ∧
             (((rs.map outCost).sum+12*(rs.length*N)+12*rs.length+4 : ℕ) : ℝ) ≤
               (outgoingDirectoryTime_volume U machine r g privateTapes.length outPush dim).choose *
                 ((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau*((rs.length : ℝ)*N)+4) ∧
@@ -306,7 +307,7 @@ theorem generatedIncomingDirectory_exec [M8.Machine.Net] {P U : Type} {r g d w c
             (q 0) ((B.R (q 0)).drop V) (fun j word => if live j then projected j word else input j = word)) := by
   intro W m hr K M H J N dimension proj rank idem factor small weights unit data binary positive pool room
     archiveRoom fits capacity localBody localPush c bounded placed prefixes archiveTail ownerTail input B dirPositive shape pairRoom
-    u S full machine reduced localCaller is prog
+    u S full machine reduced localCaller prog
     localTime privateTapes scanSlots scan skipRow goodRow push inv bad budget ordinaryEffect body length
     e physical φ code schedule ready placement caller live rs bits outer reg start inner advance good padding
     ordinaryTime cost projected effect outProg outPush active dispatch outLocal outCost initial raw selectors selectorBudget count free inputs beforeRows rowCount beforeH parents mask mode queueFree queue acc width saved tmp blankPort
@@ -472,11 +473,26 @@ theorem generatedIncomingDirectory_exec [M8.Machine.Net] {P U : Type} {r g d w c
       rw [count]
       exact Nat.mul_pos (Nat.mul_pos dirPositive.1 dirPositive.2.1) dirPositive.2.2.1
     have widths := readyMid.2.1
+    have fitAll (j) (hj : j ∈ rs) : (prefixes j).length ≤ (prime^(w+1))^128*W := by
+      rw [← widths j hj,widths 0 (List.mem_range.mpr positiveRecords)]
+      exact extent ▸ width
+    let piv := fun j => classPivots (physical.table (LabelStock.residue m (w+1) 1 j))
+    let neg := fun j => negativeAnchor (piv j) (physical.table (LabelStock.residue m (w+1) 1 j))
+    let rarePush := max (mnProgPush (directoryExceptionalCore (P := P) (U := U) d archiveRoom capacity)) c
+    have incomingBill := (incomingDirectoryTime_volume U machine r g d privateTapes.length push work.length
+      rarePush dim (by omega)).choose_spec w W positive rs (fun j => (prefixes j).length) live bad piv neg fitAll
+    constructor
+    · have rowEq (j) : cost j = (if live j && bad j then
+          exceptionalRecordTime U (piv j) (neg j) m w W M.size W.size work.length rarePush (prefixes j).length+4
+        else outgoingScanRowCost m w (prefixes j).length privateTapes.length push (localTime j) (live j) (live j)+
+          ((d+1)*(d+1)*(4*M.size+4)+1)) := by
+        have hl : LabelStock.live m (w+1) 1 j = live j := rfl
+        cases h : live j <;> cases b : bad j <;>
+          simp only [cost,ordinaryTime,budget,outgoingScanRowCost,hl,h,b,binary,Bool.false_and,Bool.true_and,
+            Bool.false_eq_true,ite_false,ite_true,piv,neg,rarePush,work,H,J] <;> omega
+      simpa only [← rowEq,localTime,m,M,extent] using incomingBill
     have priced := (outgoingDirectoryTime_volume U machine r g privateTapes.length outPush dim).choose_spec
-      w W positive rs (fun j => (prefixes j).length) active live (by
-        intro j hj
-        rw [← widths j hj,widths 0 (List.mem_range.mpr positiveRecords)]
-        exact extent ▸ width)
+      w W positive rs (fun j => (prefixes j).length) active live fitAll
     simpa only [outCost,extent] using priced
   let returned := ownerRow (ordinaryDirectoryChild_volume directory r g w) out
   obtain ⟨z,C,n,output,sameUser,time,run,rowAction,left,owner,_⟩ := hostedOutgoingScan_exec
