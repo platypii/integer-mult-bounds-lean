@@ -21,7 +21,7 @@ def loadDimensions {P U : Type} {T Q A k : ℕ} (src dst : Fin k → Fin T) (tmp
   | [] => .act .done
   | i :: rest => .seq (copyDescriptor (src i) tmp (dst i)) (loadDimensions src dst tmp rest)
 
-private theorem loadDimensions_exec {P U : Type} {T Q A k : ℕ} (body : P → Pr P T Q A U)
+theorem loadDimensions_exec {P U : Type} {T Q A k : ℕ} (body : P → Pr P T Q A U)
     (src : Fin k → Fin T) (dst : Fin k ↪ Fin T) (tmp : Fin T) (bits : Fin k → List Bool)
     (apart : ∀ i j, src i ≠ dst j) (ports : ∀ i, [src i,tmp,dst i].Nodup)
     (is : List (Fin k)) (unique : is.Nodup) (v : HS T Q A U) (S : Stacks T A)
