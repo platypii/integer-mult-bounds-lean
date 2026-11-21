@@ -382,6 +382,67 @@ noncomputable def labelScatter {w : ℕ} (n : Fin 9)
     frame i.val (FramedCircuit.moduleRun (sectionscatter.map RawGate.toCircuit)
       (FramedCircuit.decode frame stored) i.val)
 
+/-- At a target, decoding the physical scatter reads each incident helper
+at the label obtained from that target's chart and the helper's chart. -/
+theorem labelScatter_sum {w : ℕ} (n : Fin 9)
+    (x : Matrix (Fin 64) (Fin 64) (ZMod (prime^w)) → ℕ → AddressStream (ZMod (prime^w)))
+    (g) (i : Fin 661) :
+    let frame := fun j => selectedFrame w (Frames.beforeScatter j)
+    let base := g*(registerChart w n i.val).transpose
+    FramedCircuit.decode frame (labelScatter n (fun h => FramedCircuit.encode frame (x h)) g) i.val =
+      x g i.val + ((Copy.lifecycles.filter (fun l => i.val ∈ l.targets)).map
+        (fun l => x (base*registerChart w n l.source) l.source)).sum := by
+  intro frame base
+  let stored := fun j : Fin 661 => x (base*registerChart w n j.val) j.val
+  have decoded : FramedCircuit.decode frame (Copy.extendStored (fun j : Fin 661 =>
+      FramedCircuit.encode frame (x (base*registerChart w n j.val)) j.val)) = Copy.extendStored stored := by
+    funext j
+    by_cases low : j < 661 <;> simp [Copy.extendStored,FramedCircuit.decode,FramedCircuit.encode,low,stored]
+  simp only [labelScatter,Copy.extendStored,dite_eq_left i.isLt,FramedCircuit.decode]
+  change (frame i.val).symm (frame i.val (FramedCircuit.moduleRun _ _ i.val)) = _
+  rw [LinearEquiv.symm_apply_apply]
+  change FramedCircuit.moduleRun _ (FramedCircuit.decode frame (Copy.extendStored _)) i.val = _
+  rw [decoded,← Copy.logical_scatter_streams,Copy.logicalRun_sum _ (fun _ h => h)]
+  have cancel : base*registerChart w n i.val = g := by
+    change g*(registerChart w n i.val).transpose*registerChart w n i.val = g
+    rw [Matrix.mul_assoc,registerChart_inverse,Matrix.mul_one]
+  simp only [Copy.extendStored,dite_eq_left i.isLt,stored,cancel]
+  apply congrArg (x g i.val + ·)
+  apply congrArg List.sum
+  apply List.map_congr_left
+  intro l hl
+  have low := (Copy.source_bounds l (List.mem_filter.mp hl).1).2
+  simp [low]
+
+/-- Subtracting the common-label result cancels the target's dirty value.
+Only incident helper differences remain. -/
+theorem labelScatter_difference {w : ℕ} (n : Fin 9)
+    (x : Matrix (Fin 64) (Fin 64) (ZMod (prime^w)) → ℕ → AddressStream (ZMod (prime^w)))
+    (g) (i : Fin 661) (high : ∀ j, 661 ≤ j → x g j = 0) :
+    let frame := fun j => selectedFrame w (Frames.beforeScatter j)
+    let base := g*(registerChart w n i.val).transpose
+    FramedCircuit.decode frame (labelScatter n (fun h => FramedCircuit.encode frame (x h)) g) i.val -
+      FramedCircuit.moduleRun (sectionscatter.map RawGate.toCircuit) (x g) i.val =
+      ((Copy.lifecycles.filter (fun l => i.val ∈ l.targets)).map
+        (fun l => x (base*registerChart w n l.source) l.source - x g l.source)).sum := by
+  intro frame base
+  let stored := fun j : Fin 661 => x g j.val
+  have bounded : x g = Copy.extendStored stored := by
+    funext j
+    by_cases low : j < 661 <;> simp [Copy.extendStored,stored,low]
+    exact high j (by omega)
+  have localRead := (Copy.logical_scatter_streams stored i).symm.trans
+    (Copy.logicalRun_sum _ (fun _ h => h) _ _)
+  rw [← bounded] at localRead
+  rw [labelScatter_sum,localRead,add_sub_add_left_eq_sub]
+  generalize (Copy.lifecycles.filter _) = windows
+  induction windows with
+  | nil => simp
+  | cons l rest ih =>
+    simp only [List.map_cons,List.sum_cons]
+    rw [← ih]
+    abel
+
 /-- Scatter never writes a source or helper, even when the register charts
 select different labels for all of its incoming terms. -/
 theorem labelScatter_other {w : ℕ} (n : Fin 9) (bank) (g) (i : Fin 661)
@@ -748,8 +809,127 @@ theorem InvocationEffect.finalRead {n : Fin 9} {r : Fin 32} {d : Fin 5} {w B K :
   rw [Frames.after_scatter] at read
   exact read.trans (fixed.symm.trans aligned)
 
-/-- Source and helper outputs at a label depend only on the input owners
-at that label, even though the scatter reads other labels at target ports. -/
+/-- The decoded physical output differs from the literal scalar word exactly
+by the discrepancy at scatter. Every source and helper has zero discrepancy. -/
+theorem InvocationEffect.endpoint {n : Fin 9} {r : Fin 32} {d : Fin 5}
+    {w B K : ℕ} {x y} (act : InvocationEffect n r d w B K x y) (g)
+    (z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B) :
+    let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n r d,ownerTape_injective n r d⟩
+    let initial := fun h => FramedCircuit.decode (fun j => selectedFrame w (Frames.snapshot Frames.initialRefs j))
+      (phaseRead owner x (labelSpectator h z))
+    let prepared := fun h => FramedCircuit.moduleRun ((sectionD++sectionA).map RawGate.toCircuit) (initial h)
+    let frame := fun j => selectedFrame w (Frames.beforeScatter j)
+    let routed := FramedCircuit.decode frame (labelScatter n (fun h => FramedCircuit.encode frame (prepared h)) g)
+    let localRun := FramedCircuit.moduleRun (sectionscatter.map RawGate.toCircuit) (prepared g)
+    let delta := routed - localRun
+    (∀ j, j < 111 ∨ 222 ≤ j → delta j = 0) ∧
+      phaseRead owner y (labelSpectator g z) = FramedCircuit.encode
+        (fun j => selectedFrame w (Frames.snapshot Frames.finalRefs j))
+        (FramedCircuit.moduleRun (program.map RawGate.toCircuit) (initial g) + delta) := by
+  intro owner initial prepared frame routed localRun delta
+  have zero (j : ℕ) (outside : j < 111 ∨ 222 ≤ j) : delta j = 0 := by
+    have localRead : localRun j = prepared g j := by
+      apply FramedCircuit.moduleRun_preserves
+      intro gate mem
+      obtain ⟨raw,scheduled,rfl⟩ := List.mem_map.mp mem
+      have h := of_decide_eq_true (List.all_eq_true.mp scatter_target_range raw scheduled)
+      change raw.target ≠ j
+      omega
+    change routed j - localRun j = 0
+    rw [localRead,sub_eq_zero]
+    by_cases low : j < 661
+    · change (frame j).symm (labelScatter n _ g j) = _
+      rw [labelScatter_other n _ g ⟨j,low⟩ outside]
+      exact (frame j).symm_apply_apply _
+    · have high := Framed.moduleRun_high _ Framed.sectionDA_target_lt (initial g) j (by omega)
+      change routed j = FramedCircuit.moduleRun _ (initial g) j
+      rw [high]
+      simp [routed,initial,FramedCircuit.decode,labelScatter,phaseRead,Copy.extendStored,low]
+  refine ⟨zero,?_⟩
+  have finish := act.finalRead g z
+  dsimp only at finish
+  simp only [labelPhase,Frames.before_scatter] at finish
+  change phaseRead owner y _ = FramedCircuit.encode _
+    (FramedCircuit.moduleRun ((sectionB++sectionC).map RawGate.toCircuit) routed) at finish
+  rw [finish]
+  apply congrArg
+  have shift := afterScatter_shift localRun delta zero
+  rw [show localRun + delta = routed by dsimp [delta]; abel] at shift
+  rw [shift]
+  simp only [localRun,prepared,program,List.map_append,Framed.moduleRun_append]
+
+/-- At every physical label, each source and helper returns its own
+original dirty stream, expressed in its certified final frame. -/
+theorem InvocationEffect.otherRead {n : Fin 9} {r : Fin 32} {d : Fin 5}
+    {w B K : ℕ} {x y} (act : InvocationEffect n r d w B K x y) (g)
+    (z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B) (i : Fin 661)
+    (outside : i.val < 111 ∨ 222 ≤ i.val) :
+    let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n r d,ownerTape_injective n r d⟩
+    let j := labelSpectator g z
+    phaseRead owner y j i.val = selectedFrame w (Frames.finalRefs i.val)
+      ((selectedFrame w (Frames.initialRefs i.val)).symm (phaseRead owner x j i.val)) := by
+  intro owner j
+  let initial := FramedCircuit.decode (fun a => selectedFrame w (Frames.snapshot Frames.initialRefs a))
+    (phaseRead owner x j)
+  obtain ⟨zero,finish⟩ := act.endpoint g z
+  rw [finish]
+  change selectedFrame w (Frames.snapshot Frames.finalRefs i.val)
+    (FramedCircuit.moduleRun (program.map RawGate.toCircuit) initial i.val + _) = _
+  rw [zero i.val outside,add_zero]
+  rw [Frames.snapshot,ite_eq_left i.isLt]
+  apply congrArg (selectedFrame w (Frames.finalRefs i.val))
+  change FramedCircuit.moduleRun (program.map RawGate.toCircuit) initial i.val = _
+  funext a
+  rw [FramedCircuit.moduleRun_pointwise]
+  let stored := fun k : Fin 661 => initial k.val a
+  have bounded : (fun k => initial k a) = extendInput stored := by
+    funext k
+    by_cases low : k < 661
+    · simp [extendInput,low,stored]
+    · simp [initial,FramedCircuit.decode,phaseRead,Copy.extendStored,extendInput,low]
+  rw [bounded,dirty_endpoint]
+  simp only [show ¬(111 ≤ i.val ∧ i.val < 222) by omega,↓reduceDIte]
+  simp only [stored,initial,FramedCircuit.decode,Frames.snapshot,ite_eq_left i.isLt]
+
+/-- Exact dirty target endpoint: the incoming target, its paired source,
+and the chart-dependent differences from the incident retained helpers. -/
+theorem InvocationEffect.targetRead {n : Fin 9} {r : Fin 32} {d : Fin 5}
+    {w B K : ℕ} {x y} (act : InvocationEffect n r d w B K x y) (g)
+    (z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B) (t : Fin 111) :
+    let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n r d,ownerTape_injective n r d⟩
+    let initial := fun h => FramedCircuit.decode (fun j => selectedFrame w (Frames.snapshot Frames.initialRefs j))
+      (phaseRead owner x (labelSpectator h z))
+    let prepared := fun h => FramedCircuit.moduleRun ((sectionD++sectionA).map RawGate.toCircuit) (initial h)
+    let i : Fin 661 := ⟨111+t.val,by omega⟩
+    let base := g*(registerChart w n i.val).transpose
+    phaseRead owner y (labelSpectator g z) i.val = selectedFrame w (Frames.finalRefs i.val)
+      (initial g i.val + initial g t.val + ((Copy.lifecycles.filter (fun l => i.val ∈ l.targets)).map
+        (fun l => prepared (base*registerChart w n l.source) l.source - prepared g l.source)).sum) := by
+  intro owner initial prepared i base
+  have high (j : ℕ) (hj : 661 ≤ j) : initial g j = 0 := by
+    simp [initial,FramedCircuit.decode,phaseRead,Copy.extendStored,show ¬ j < 661 by omega]
+  have diff := labelScatter_difference n prepared g i (fun j hj =>
+    (Framed.moduleRun_high _ Framed.sectionDA_target_lt (initial g) j hj).trans (high j hj))
+  have scalar : FramedCircuit.moduleRun (program.map RawGate.toCircuit) (initial g) i.val =
+      initial g i.val + initial g t.val := by
+    funext a
+    rw [FramedCircuit.moduleRun_pointwise]
+    let stored := fun k : Fin 661 => initial g k.val a
+    have bounded : (fun j => initial g j a) = extendInput stored := by
+      funext j
+      by_cases low : j < 661 <;> simp [extendInput,stored,low]
+      rw [high j (by omega)]
+      rfl
+    rw [bounded]
+    exact targets_added stored t
+  rw [(act.endpoint g z).2]
+  change selectedFrame w (Frames.snapshot Frames.finalRefs i.val)
+    (FramedCircuit.moduleRun (program.map RawGate.toCircuit) (initial g) i.val + _) = _
+  rw [Frames.snapshot,ite_eq_left i.isLt,scalar]
+  exact congrArg (fun term => selectedFrame w (Frames.finalRefs i.val)
+    (initial g i.val + initial g t.val + term)) diff
+
+/-- Source and helper reads agree whenever their input label agrees. -/
 theorem InvocationEffect.otherRead_congr {n : Fin 9} {r : Fin 32} {d : Fin 5}
     {w B K : ℕ} {x y x' y'} (act : InvocationEffect n r d w B K x y)
     (act' : InvocationEffect n r d w B K x' y') (g)
@@ -760,28 +940,9 @@ theorem InvocationEffect.otherRead_congr {n : Fin 9} {r : Fin 32} {d : Fin 5}
     phaseRead owner x j = phaseRead owner x' j →
       phaseRead owner y j i.val = phaseRead owner y' j i.val := by
   intro owner j same
-  let before := fun data h => labelPhase w (sectionD ++ sectionA) (Frames.snapshot Frames.initialRefs)
-    (phaseRead owner data (labelSpectator h z))
-  let frame := fun a => selectedFrame w (Frames.beforeScatter a)
-  let stored := fun data => FramedCircuit.decode frame (labelScatter n (before data) g)
-  let delta := stored x - stored x'
-  have atLabel : before x g = before x' g :=
-    congrArg (labelPhase w (sectionD ++ sectionA) (Frames.snapshot Frames.initialRefs)) same
-  have zero (a : ℕ) (ha : a < 111 ∨ 222 ≤ a) : delta a = 0 := by
-    change (frame a).symm (labelScatter n (before x) g a) -
-      (frame a).symm (labelScatter n (before x') g a) = 0
-    apply sub_eq_zero.mpr
-    apply congrArg
-    by_cases low : a < 661
-    · exact (labelScatter_other n _ g ⟨a,low⟩ ha).trans ((congrFun atLabel a).trans
-        (labelScatter_other n _ g ⟨a,low⟩ ha).symm)
-    · simp [labelScatter,Copy.extendStored,low]
-  have shift := afterScatter_shift (stored x') delta zero
-  rw [show stored x' + delta = stored x by dsimp [delta]; abel] at shift
-  have wire := congrFun shift i.val
-  simp only [Pi.add_apply,zero _ outside,add_zero] at wire
-  rw [act.finalRead g z,act'.finalRead g z]
-  exact congrArg (selectedFrame w (Frames.snapshot Frames.finalRefs i.val)) wire
+  rw [act.otherRead g z i outside,act'.otherRead g z i outside]
+  exact congrArg (fun stream => selectedFrame w (Frames.finalRefs i.val)
+    ((selectedFrame w (Frames.initialRefs i.val)).symm stream)) (congrFun same i.val)
 
 open IntegerMultBounds.Swap.Modular Matrix in
 /-- In its own prefix coordinates the target owner needs only the inverse

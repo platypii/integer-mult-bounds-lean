@@ -61,6 +61,26 @@ theorem logical_scatter_streams (stored : Fin 661 → Ω → ZMod 2) (i : Fin 66
   rw [h]
   exact logical_scatter (fun j => stored j ω) i
 
+/-- Every fanout reads its original helper because all helper sources lie
+outside every target list. Thus a wire receives one term per incident window. -/
+theorem logicalRun_sum (ls : List Lifecycle) (scheduled : ∀ l ∈ ls, l ∈ lifecycles)
+    (x : ℕ → E) (i : ℕ) :
+    logicalRun ls x i = x i + ((ls.filter (fun l => i ∈ l.targets)).map (fun l => x l.source)).sum := by
+  induction ls generalizing x with
+  | nil => simp [logicalRun]
+  | cons l ls ih =>
+    have later := fun a (ha : a ∈ ls) => scheduled a (List.mem_cons_of_mem _ ha)
+    have keep (a : Lifecycle) (ha : a ∈ ls) : logicalStep l x a.source = x a.source := by
+      have hs := (source_bounds a (later a ha)).1
+      have off : a.source ∉ l.targets := fun h => (Nat.not_lt_of_ge hs)
+        (target_bounds l (scheduled l List.mem_cons_self) a.source h).2
+      simp [logicalStep,off]
+    rw [logicalRun,ih later]
+    have unchanged := List.map_congr_left (l := ls.filter (fun a => i ∈ a.targets))
+      (fun a ha => keep a (List.mem_filter.mp ha).1)
+    rw [unchanged]
+    by_cases hit : i ∈ l.targets <;> simp [logicalStep,hit,add_assoc]
+
 /-- Nine actual source-frame-to-zero-frame COPY/ADD/ERASE windows implement
 exactly the imported logical scatter on all retained registers. -/
 theorem decoded_scatter
