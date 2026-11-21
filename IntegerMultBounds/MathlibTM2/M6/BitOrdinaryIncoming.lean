@@ -11,6 +11,14 @@ open CrossWeightLayout HeadPivotLayout HeadWidthLayout GoodChildLayout
 open Shared50ModularControl (prime)
 local instance (w : ℕ) : NeZero (prime^(w+1)) := ⟨(pow_pos Shared50ModularControl.prime_prime.pos _).ne'⟩
 
+/-- Scalar headers reused when the scanner advances the two archives. -/
+structure OrdinaryRowHeaders {T : ℕ} (bank : Fin 64 ↪ Fin T) (w W : ℕ) (S : Stacks T prime) : Prop where
+  modulus : S.R (bank 2) = binSyms (prime^(w+1)).size (prime^(w+1))
+  width : S.R (bank 53) = binSyms W.size W
+  one : S.R (bank 28) = binSyms 1 1
+  padded : S.R (bank 44) = binSyms (prime^(w+1)).size (1 : ZMod (prime^(w+1))).val
+  clock : (S.R (bank 45)).length = w
+
 theorem ordinaryHeadPack_exec [M8.Machine.Net] {P U : Type} {T r g w W : ℕ}
     (bank : Fin 64 ↪ Fin T) (work : Fin ((rowSwapBlock.tapes+35)+1) ↪ Fin T)
     (apart : ∀ i j, work i ≠ bank j) (body : P → Pr P T columnCapacity prime U)
@@ -33,6 +41,7 @@ theorem ordinaryHeadPack_exec [M8.Machine.Net] {P U : Type} {T r g w W : ℕ}
       Exec body (statePlacedNormalized ports swapStates_fit swapStates_pos Empty.elim (packSchedule d is))
         (mk v S) n (mk u D) ∧ RecordPayload (bank 24) (fun _ => blank) 0
           (before ∘ ordinaryRecursivePosition r g w W) D ∧
+      OrdinaryRowHeaders bank w W D ∧
       (∀ k, 35 ≤ k.val → D.L (ports k) = [] ∧ D.R (ports k) = []) ∧
       ∀ j, (∀ i, ports i ≠ j) → D.L j = S.L j ∧ D.R j = S.R j := by
   intro M d full machine ordinary ports is before mid padded clock free
@@ -52,9 +61,15 @@ theorem ordinaryHeadPack_exec [M8.Machine.Net] {P U : Type} {T r g w W : ℕ}
       rw [show correctionRole (columnPorts k) = none from dite_eq_right off]
     rw [eq]
     exact free k
-  obtain ⟨u,D,n,user,time,run,_,payload,clear,frame⟩ := ordinaryIncomingPack_exec
+  obtain ⟨u,D,n,user,time,run,stored,payload,clear,frame⟩ := ordinaryIncomingPack_exec
     (r := r) (g := g) ports body v S _ dest q hW before layout clean
-  refine ⟨u,D,n,user,time,run,?_,clear,frame⟩
+  let col := columnBank.trans (correctionColumnPlacement bank work apart)
+  have share (k : Fin 8) : col (correctionColumnSlots k) = bank (correctionCallerSlots k) :=
+    correctionColumnPlacement_shared bank work apart k
+  have headers : OrdinaryRowHeaders bank w W D :=
+    ⟨(share 0) ▸ stored.modulus,(share 3) ▸ stored.width,(share 7) ▸ stored.one,
+      (share 4) ▸ stored.padded,(share 5) ▸ stored.clock⟩
+  refine ⟨u,D,n,user,time,run,?_,headers,clear,frame⟩
   intro z
   rw [sub_zero]
   have read := payload z
@@ -115,7 +130,10 @@ theorem ordinaryDirectoryIncoming_exec [M8.Machine.Net] {P U : Type} {T r g w W 
       RecordPayload (bank 24) (fun _ => blank) 0 (before ∘ ordinaryRecursivePosition r g w W) D ∧
       D.R (bank 24) = payloadWord (SparseRoleCircuit.encode ∘ before ∘ ordinaryRecursivePosition r g w W) ++
         (D.R (bank 24)).drop (RecursiveInterchangeLayout.volume prime (ordinaryChildDescriptor r g w W)) ∧
+      OrdinaryRowHeaders bank w W D ∧
       (∀ k, 35 ≤ k.val → D.L (ports k) = [] ∧ D.R (ports k) = []) ∧
+      (∀ j : Fin 64, 29 ≤ j.val → (∀ k, correctionCallerSlots k ≠ j) →
+        D.L (bank j) = S.L (bank j) ∧ D.R (bank j) = S.R (bank j)) ∧
       (∀ j, (∀ i, bank i ≠ j) → (∀ i, ports i ≠ j) → D.L j = S.L j ∧ D.R j = S.R j) ∧
       let δ := fun t : Fin m => if t.val < r then stage.M t t else 1
       let δ' := fun t : Fin m => if t.val < r then Ring.inverse (stage.M t t) else 1
@@ -138,7 +156,7 @@ theorem ordinaryDirectoryIncoming_exec [M8.Machine.Net] {P U : Type} {T r g w W 
       parentWithWeights (GoodChildLayout.parent (adapterBank (head (shear i)))) ≠ j) i j hj.1 hj.2))
       (fun i => full.injective.ne ((by decide : ∀ i (j : Fin 58), 29 ≤ j → j ≠ 53 →
       parentWithWeights (GoodChildLayout.parent (adapterBank (entry i))) ≠ j) i j hj.1 hj.2))).2
-  obtain ⟨y,F,k,hu,hk,run,payload,clear,kept⟩ := ordinaryHeadPack_exec (r := r) (g := g)
+  obtain ⟨y,F,k,hu,hk,run,payload,headers,clear,kept⟩ := ordinaryHeadPack_exec (r := r) (g := g)
     bank work apart body (stateLiftUp cap u) D parent target q hW before mid
     ((keep 44 (by decide)).trans one) ((congrArg List.length (keep 45 (by decide))).trans clock) (by
       intro i
@@ -146,9 +164,127 @@ theorem ordinaryDirectoryIncoming_exec [M8.Machine.Net] {P U : Type} {T r g w W 
       exact ⟨left.trans (free i).1,right.trans (free i).2⟩)
   have lifted := stateLift_exec_normalized cap (by decide) Empty.elim (body' := body) (fun f => nomatch f) v first
   refine ⟨y,F,_,before,hu.trans user,Nat.add_le_add (Nat.add_le_add_left time 1) hk,
-    Exec.seq lifted run,payload,payload_prefix_of_read _ _ _ _ _ payload,clear,?_,action⟩
+    Exec.seq lifted run,payload,payload_prefix_of_read _ _ _ _ _ payload,headers,clear,?_,?_,action⟩
+  · intro j hj off
+    have outsideHead : ∀ i, (shear.trans host) i ≠ bank j := fun i => bank.injective.ne
+      ((by decide : ∀ i (j : Fin 64), 29 ≤ j.val → ∀ (_ : ∀ k, correctionCallerSlots k ≠ j),
+        ((Fin.castLEEmb (by decide : 58 ≤ 64)) (parentWithWeights (GoodChildLayout.parent
+          (adapterBank (head (shear i)))))) ≠ j) i j hj off)
+    have outsideTail : ∀ i, (entry.trans adapter) i ≠ bank j := fun i => bank.injective.ne
+      ((by decide : ∀ i (j : Fin 64), 29 ≤ j.val → ∀ (_ : ∀ k, correctionCallerSlots k ≠ j),
+        ((Fin.castLEEmb (by decide : 58 ≤ 64)) (parentWithWeights (GoodChildLayout.parent
+          (adapterBank (entry i))))) ≠ j) i j hj off)
+    have first := frame (bank j) outsideHead outsideTail
+    have last := kept (bank j) (fun i => correctionColumnPlacement_off bank work apart j off (columnPorts i))
+    exact ⟨last.1.trans first.1,last.2.trans first.2⟩
   intro j off unused
   exact ⟨(kept j unused).1.trans (outside j off).1,(kept j unused).2.trans (outside j off).2⟩
+
+/-- At the end of a live incoming pass the scalar headers and the preserved
+caller tapes reestablish the directory invariant once private cleanup finishes.
+The pending label is consumed by the subsequent archive advance. -/
+theorem directoryReady_afterIncoming {K m w W : ℕ} {v : RecursiveInterchangeLayout.Descriptor}
+    {proj : Matrix (Fin m) (Fin m) ℚ} {parent : Fin m → ZMod (prime^(w+1))}
+    {prefixes : ℕ → List (Fin (prime+4))} {tail : List (Fin (prime+4))}
+    {schedules : List ℕ → List (Fin (prime+4))} {pending : List ℕ} {S F : Stacks (66+K) prime} :
+    let caller := Fin.castAddEmb (n := 66) K
+    let bank := (Fin.castLEEmb (by decide : 64 ≤ 66)).trans caller
+    let ready := DirectoryReady v proj w W (prime^(w+1)).size W.size parent prefixes tail schedules
+    ready S pending → OrdinaryRowHeaders bank w W F →
+    (∀ j : Fin 64, 29 ≤ j.val → j.val < 58 → (∀ k, correctionCallerSlots k ≠ j) → F.R (bank j) = S.R (bank j)) →
+    (∀ i, 58 ≤ i.val → F.L i = [] ∧ F.R i = []) → ready F pending := by
+  intro caller bank ready start headers keep free
+  obtain ⟨directory,widths,_,scratch,projector,_,_,_,inputs,_,_,archive,queue⟩ := start
+  obtain ⟨suffix,stored⟩ := projector
+  have shared (j : Fin 64) (hj : j ∈ ([46,47,48,49,54,55] : List (Fin 64))) :=
+    keep j ((by decide : ∀ j ∈ ([46,47,48,49,54,55] : List (Fin 64)), 29 ≤ j.val) j hj)
+      ((by decide : ∀ j ∈ ([46,47,48,49,54,55] : List (Fin 64)), j.val < 58) j hj)
+      ((by decide : ∀ j ∈ ([46,47,48,49,54,55] : List (Fin 64)), ∀ k, correctionCallerSlots k ≠ j) j hj)
+  refine ⟨(shared 46 (by decide)).trans directory,fun j hj =>
+    (congrArg List.length (shared 47 (by decide))).trans (widths j hj),free,
+    (shared 49 (by decide)).trans scratch,⟨suffix,(shared 48 (by decide)).trans stored⟩,
+    headers.modulus,headers.one,headers.width,?_,headers.padded,headers.clock,
+    (shared 55 (by decide)).trans archive,(shared 54 (by decide)).trans queue⟩
+  intro i
+  let slot (i : Fin 6) := (i.natAdd 33).castLE (by decide : 39 ≤ 64)
+  exact (keep (slot i) (by change 29 ≤ 33+i.val; omega) (by change 33+i.val < 58; omega)
+    ((by decide : ∀ i k, correctionCallerSlots k ≠ (i.natAdd 33 : Fin (33+6)).castLE (by decide : 39 ≤ 64)) i)).trans (inputs i)
+
+/-- Clear the live row's private tapes and recover the scanner at the same
+label. All public tape heads and their stacks survive cleanup. -/
+theorem ordinaryDirectoryCleanup_exec {P U : Type} {K m w W Q : ℕ} {v : RecursiveInterchangeLayout.Descriptor}
+    {proj : Matrix (Fin m) (Fin m) ℚ} {parent : Fin m → ZMod (prime^(w+1))}
+    {prefixes : ℕ → List (Fin (prime+4))} {tail : List (Fin (prime+4))}
+    {schedules : List ℕ → List (Fin (prime+4))} {pending : List ℕ}
+    (body : P → Pr P (66+K) Q prime U) (u : HS (66+K) Q prime U) (S D : Stacks (66+K) prime) :
+    let bank := (Fin.castLEEmb (by decide : 64 ≤ 66)).trans (Fin.castAddEmb K)
+    let ready := DirectoryReady v proj w W (prime^(w+1)).size W.size parent prefixes tail schedules
+    let work := (List.finRange (66+K)).filter (fun i => 58 ≤ i.val)
+    ready S pending → OrdinaryRowHeaders bank w W D →
+    (∀ j : Fin 64, 29 ≤ j.val → (∀ k, correctionCallerSlots k ≠ j) → D.R (bank j) = S.R (bank j)) →
+    ∃ z F, z.user = u.user ∧ Exec body (clearWorkTapes work) (mk u D)
+      ((work.map fun i => 4*(D.L i).length+2*(D.R i).length+4).sum+1) (mk z F) ∧
+      ready F pending ∧ ∀ i, i.val < 58 → F.L i = D.L i ∧ F.R i = D.R i := by
+  intro bank ready work start headers keep
+  obtain ⟨z,user,run⟩ := clearWorkTapes_exec body work ((List.nodup_finRange _).filter _) u D
+  let F : Stacks (66+K) prime := {D with L := fun i => if i ∈ work then [] else D.L i,
+                                         R := fun i => if i ∈ work then [] else D.R i}
+  have unchanged (i : Fin (66+K)) (hi : i.val < 58) : F.L i = D.L i ∧ F.R i = D.R i := by
+    simp [F,work,Nat.not_le_of_lt hi]
+  have right (j : Fin 64) (small : j.val < 58) := (unchanged (bank j) small).2
+  refine ⟨z,F,user,run,directoryReady_afterIncoming start ?_ ?_ ?_,unchanged⟩
+  · exact ⟨(right 2 (by decide)).trans headers.modulus,(right 53 (by decide)).trans headers.width,
+      (right 28 (by decide)).trans headers.one,(right 44 (by decide)).trans headers.padded,
+      (congrArg List.length (right 45 (by decide))).trans headers.clock⟩
+  · exact fun j hj small off => (right j small).trans (keep j hj off)
+  · intro i hi
+    simp [F,work,hi]
+
+/-- Finish a live incoming row at the next directory boundary. The bound
+charges temporary stack growth only during the local row program. -/
+theorem ordinaryDirectoryAdvance_exec {P U : Type} {K m w W Q N : ℕ} {v : RecursiveInterchangeLayout.Descriptor}
+    {proj : Matrix (Fin m) (Fin m) ℚ} {parent : Fin m → ZMod (prime^(w+1))}
+    {prefixes : ℕ → List (Fin (prime+4))} {tail : List (Fin (prime+4))}
+    {schedules : List ℕ → List (Fin (prime+4))} {j : ℕ} {js : List ℕ}
+    (body : P → Pr P (66+K) Q prime U) (prog : Pr P (66+K) Q prime U)
+    (u y : HS (66+K) Q prime U) (S D : Stacks (66+K) prime) (n c : ℕ) (word : Fin N → ZMod 2) :
+    let caller := Fin.castAddEmb (n := 66) K
+    let bank := (Fin.castLEEmb (by decide : 64 ≤ 66)).trans caller
+    let ready := DirectoryReady v proj w W (prime^(w+1)).size W.size parent prefixes tail schedules
+    let work := (List.finRange (66+K)).filter (fun i => 58 ≤ i.val)
+    let slots : Fin 7 ↪ Fin 58 := ⟨![45,46,2,47,48,44,49],by decide⟩
+    let scan := ((goodRecordScanPorts.trans slots).trans (Fin.castAddEmb 8)).trans caller
+    let advance := readWithSuccessorClock (scan 1) (advanceDirectory m scan)
+    y.user = u.user → Exec body prog (mk u S) n (mk y D) →
+    Fast.Main.mnProgPush prog ≤ c → (∀ f, Fast.Main.mnProgPush (body f) ≤ c) →
+    ready S (j::js) → schedules (j::js) = schedules js → OrdinaryRowHeaders bank w W D →
+    (∀ k : Fin 64, 29 ≤ k.val → (∀ i, correctionCallerSlots i ≠ k) → D.R (bank k) = S.R (bank k)) →
+    RecordPayload (caller 24) (fun _ => blank) 0 word D →
+    ∃ z F t, z.user = u.user ∧
+      t ≤ n+(4*work.length+1+work.length*(6*(c*n)))+(1+(4*(prefixes j).length+4+(m*m*(4*(w+1)+4)+1)+1)) ∧
+      Exec body ((prog.seq (clearWorkTapes work)).seq advance) (mk u S) t (mk z F) ∧
+      ready F js ∧ RecordPayload (caller 24) (fun _ => blank) 0 word F ∧
+      ∀ k : Fin 66, k.val < 58 → k ≠ 46 → F.L (caller k) = D.L (caller k) ∧ F.R (caller k) = D.R (caller k) := by
+  intro caller bank ready work slots scan advance user run push calls start skip headers keep payload
+  obtain ⟨b,B,hb,clean,readyB,publicFrame⟩ := ordinaryDirectoryCleanup_exec body y S D start headers keep
+  obtain ⟨z,hz,step,done⟩ := DirectoryReady.advancePadding body b readyB skip
+  have growth := cleanup_cost_le work run push calls
+  have cost : (work.map fun i => 4*(S.L i).length+2*(S.R i).length+4).sum = 4*work.length := by
+    have each (i) (hi : i ∈ work) := start.2.2.1 i (by simpa [work] using hi)
+    rw [List.map_congr_left (g := fun _ => 4) (fun i hi => by simp [(each i hi).1,(each i hi).2])]
+    simp [Nat.mul_comm]
+  rw [cost] at growth
+  refine ⟨z,_,_,hz.trans (hb.trans user),Nat.add_le_add_right (Nat.add_le_add_left growth n) _,
+    Exec.seq (Exec.seq run clean) step,done,?_,?_⟩
+  · intro a
+    have frame := publicFrame (caller 24) (by decide : 24 < 58)
+    change readAt blank (B.L (caller 24)) (Function.update B.R (caller 46) (js.flatMap (LabelDirectory.entry prefixes m (w+1)) ++ tail) (caller 24)) _ = _
+    rw [Function.update_of_ne (caller.injective.ne (by decide : (24 : Fin 66) ≠ 46)),frame.1,frame.2]
+    exact payload a
+  · intro k hk off
+    change _ ∧ Function.update B.R (caller 46) (js.flatMap (LabelDirectory.entry prefixes m (w+1)) ++ tail) (caller k) = _
+    rw [Function.update_of_ne (caller.injective.ne off)]
+    exact publicFrame (caller k) hk
 
 /-- On a padding row the physical scan advances both archives. Its projected
 bank changes only at the directory port, leaving the payload and selectors
