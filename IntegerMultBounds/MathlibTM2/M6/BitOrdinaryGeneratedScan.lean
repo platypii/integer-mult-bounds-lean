@@ -52,6 +52,35 @@ theorem directoryScanTime_eq {ι : Type} (rs : List ι) (N : ℕ) (cost : ι →
   rw [rows]
   ring
 
+/-- A framed child adds no stock to a spectator tape. Only the two
+surrounding passes contribute to its final stack lengths. -/
+private theorem spectatorGrowth {P U : Type} {T Q a b bound push : ℕ}
+    {body : P → Pr P T Q prime U} {before through after release₀ release₁ : Pr P T Q prime U}
+    {u v y z : HS T Q prime U} {A F B C : Stacks T prime}
+    (incoming : Exec body before (mk u A) a (mk v F))
+    (outgoing : Exec body after (mk y B) b (mk z C))
+    (bounded : mnProgPush ((((before.seq through).seq after).seq release₀).seq release₁) ≤ push)
+    (bodies : ∀ f, mnProgPush (body f) ≤ push) (paid : b ≤ bound)
+    (j : Fin T) (middle : B.L j = F.L j ∧ (B.R j).length ≤ (F.R j).length) :
+    (C.L j).length ≤ (A.L j).length+push*(a+bound) ∧
+      (C.R j).length ≤ (A.R j).length+push*(a+bound) := by
+  change max (max (max (max _ _) _) _) _ ≤ push at bounded
+  have both := (max_le_iff.mp (max_le_iff.mp bounded).1).1
+  have firstPush := (max_le_iff.mp (max_le_iff.mp both).1).1
+  have lastPush := (max_le_iff.mp both).2
+  have l₁ := exec_stack_length incoming firstPush bodies (.lt j)
+  have r₁ := exec_stack_length incoming firstPush bodies (.rt j)
+  have l₂ := exec_stack_length outgoing lastPush bodies (.lt j)
+  have r₂ := exec_stack_length outgoing lastPush bodies (.rt j)
+  change (F.L j).length ≤ (A.L j).length+_ at l₁
+  change (F.R j).length ≤ (A.R j).length+_ at r₁
+  change (C.L j).length ≤ (B.L j).length+_ at l₂
+  change (C.R j).length ≤ (B.R j).length+_ at r₂
+  have tail := Nat.mul_le_mul_left push paid
+  rw [middle.1] at l₂
+  rw [Nat.mul_add]
+  constructor <;> omega
+
 /-- The composed stage writes its complete packed output on the owner tape. -/
 def DirectoryStageResult [M8.Machine.Net] {G U : Type} {T R N : ℕ} (host : G → Pr G T columnCapacity prime U)
     (program : Pr G T columnCapacity prime U) (a : HS T columnCapacity prime U) (A : Stacks T prime)
@@ -446,21 +475,24 @@ def GeneratedDirectoryExecution [M8.Machine.Net] {P U : Type} {r g d w common au
           let outPlace := directoryOutgoingPlacement placement place slots copied (fun _ _ => separate _ _)
           ∀ (dim : m = 64) (outLabel : P → G),
           (∀ f, host (outLabel f) = embProg outPlace outLabel (embProg (Fin.castAdd 5) id (localBody f))) →
-          ∃ prior bound tail head, ((prefixes 0).length ≤ N →
+          let scan := directoryScanProgram (common := common) r g dimension proj (φ ∘ weights) pool room archiveRoom fits
+              capacity localBody pairRoom place p replay outside separate label outLabel f
+          ∃ prior bound outsideSteps tail head, ((prefixes 0).length ≤ N →
             ∀ p, mnProgPush (directoryQueueInitProgram (P := P) (U := U) (Q := columnCapacity) archiveRoom fits) ≤ p →
               (∀ f, mnProgPush (body f) ≤ p) →
-              ((prior+bound : ℕ) : ℝ) ≤
+              ((max (prior+bound) (outsideSteps+childBudget) : ℕ) : ℝ) ≤
                 directoryScanCharge (P := P) (U := U) (common := common) r g d dim (by omega) pool room archiveRoom capacity
                   localPush c p w R N (prefixes 0).length (privateTapes.map fun i => 4*(raw.L i).length).sum
                   archiveTail.length ((raw.R (inner 48)).drop (m*m*data.H)).length childBudget) ∧
-          DirectoryStageResult (R := R) (N := N) host
-            (directoryScanProgram (common := common) r g dimension proj (φ ∘ weights) pool room archiveRoom fits
-              capacity localBody pairRoom place p replay outside separate label outLabel f)
+          DirectoryStageResult (R := R) (N := N) host scan
             a A prior bound (q 0) tail (fun j word => if live j then projected j word else input j = word)
             (fun D => D.L (q 0) = head ∧ D.R (regs 1) = [] ∧ (D.R (regs 2)).length = N ∧
               D.R (regs 3) = [] ∧ D.R (regs 4) = [] ∧ (∀ j, D.R (replay j) = []) ∧
               (∀ j : Fin 6, 2 ≤ j → D.R (p j) = [] ∧ D.L (p j) = A.L (p j)) ∧
               (∀ i : Fin (66+K), 58 ≤ i.val → D.L (place (localBank i)) = [] ∧ D.R (place (localBank i)) = []) ∧
+              (∀ push, mnProgPush scan ≤ push → (∀ f, mnProgPush (host f) ≤ push) →
+                ∀ j, j ≠ q 0 → (D.L j).length ≤ (A.L j).length+push*outsideSteps ∧
+                  (D.R j).length ≤ (A.R j).length+push*outsideSteps) ∧
               ∀ i, (∀ j, place j ≠ i) → (∀ j, replay j ≠ i) → p 2 ≠ i → p 3 ≠ i →
                 D.L i = A.L i ∧ D.R i = A.R i)
 
@@ -499,6 +531,12 @@ private theorem childReplayControls {K T : ℕ} (outBank : Fin (66+K) ↪ Fin T)
   rw [same]
   intro j
   fin_cases j <;> first | exact beforeRows | exact rows | exact beforeH
+
+private theorem incomingRowCharge (live bad : Bool) (rare base cursor guard advance : ℕ) :
+    (if live && bad then rare else (if live then base+guard+cursor else cursor)+advance) +
+      (if live then 4 else 3) =
+    (if live && bad then rare+4 else ((if live then base+guard+cursor else cursor)+(if live then 4 else 3))+advance) := by
+  cases live <;> cases bad <;> simp <;> omega
 
 /-- Execute the classified scan and retain both masks. On a complete owner tape, a framed
 recursive transpose then returns the ordinary rows and restores each bypassed row. -/
@@ -838,7 +876,7 @@ theorem generatedIncomingDirectory_exec [M8.Machine.Net] {P U : Type} {r g d w c
     exact blankEnd j
   have returned : k ≤ childBudget+R*(16*N+14)+12 := by simpa only [ordinaryChildVolume] using price
   have charged (dim : m = 64) (fits : (prefixes 0).length ≤ N) :
-      copyTime+(12*rs.length+12)+k ≤ childBudget+72*(R*N)+6*archiveTail.length+49 := by
+      copyTime+(12*rs.length+12)+max k childBudget ≤ childBudget+72*(R*N)+6*archiveTail.length+49 := by
     have extent : N = (prime^(w+1))^128*W := by rw [show N = M^(m+m)*W from rfl,dim]
     have records : 0 < data.records := by
       rw [count]
@@ -849,9 +887,9 @@ theorem generatedIncomingDirectory_exec [M8.Machine.Net] {P U : Type} {r g d w c
       simpa only [copyTime,dim,count,R,extent] using saved
     rw [show rs.length = R by simpa only [rs,List.length_range,R] using count]
     exact directoryReturnTime_volume (Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) positive)
-      copyBound returned
+      copyBound (max_le returned (by omega))
   let outApart := directoryReplay_owner_ne placement place slots copied (fun _ _ => separate _ _)
-  intro regs outPlace dim outLabel outCalls
+  intro regs outPlace dim outLabel outCalls scan
   let inBill := (rs.map cost).sum+12*(rs.length*N)+12*rs.length+4
   let outBill := (rs.map outCost).sum+12*(rs.length*N)+12*rs.length+4
   let inRate := (incomingDirectoryTime_volume U machine r g d privateTapes.length push work.length
@@ -859,70 +897,75 @@ theorem generatedIncomingDirectory_exec [M8.Machine.Net] {P U : Type} {r g d w c
   let outRate := (outgoingDirectoryTime_volume U machine r g privateTapes.length outPush dim).choose
   let weightedVolume := ((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau*((rs.length : ℝ)*N)
   refine ⟨(s+(copyTime+(12*rs.length+12+t)))+k,outBill+2*archiveTail.length+2*(prefixes 0).length+4,
-    (B.R (q 0)).drop V,B.L (q 0),?_,?_⟩
-  · intro width
-    have extent : N = (prime^(w+1))^128*W := by rw [show N = M^(m+m)*W from rfl,dim]
-    have widths := readyMid.2.1
-    have fitAll (j) (hj : j ∈ rs) : (prefixes j).length ≤ (prime^(w+1))^128*W := by
-      rw [← widths j hj,widths 0 (List.mem_range.mpr recordsPos)]
-      exact extent ▸ width
-    let piv := fun j => classPivots (physical.table (LabelStock.residue m (w+1) 1 j))
-    let neg := fun j => negativeAnchor (piv j) (physical.table (LabelStock.residue m (w+1) 1 j))
-    let rarePush := max (mnProgPush (directoryExceptionalCore (P := P) (U := U) d archiveRoom capacity)) c
-    have incomingBill := (incomingDirectoryTime_volume U machine r g d privateTapes.length push work.length
-      rarePush dim (by omega)).choose_spec w W positive rs (fun j => (prefixes j).length) live bad piv neg fitAll
-    have inPrice : (inBill : ℝ) ≤ inRate*weightedVolume+4 := by
-      have rowEq (j) : cost j = (if live j && bad j then
-          exceptionalRecordTime U (piv j) (neg j) m w W M.size W.size work.length rarePush (prefixes j).length+4
-        else outgoingScanRowCost m w (prefixes j).length privateTapes.length push (localTime j) (live j) (live j)+
-          ((d+1)*(d+1)*(4*M.size+4)+1)) := by
-        have hl : LabelStock.live m (w+1) 1 j = live j := rfl
-        cases h : live j <;> cases b : bad j <;>
-          simp only [cost,ordinaryTime,budget,outgoingScanRowCost,hl,h,b,binary,Bool.false_and,Bool.true_and,
-            Bool.false_eq_true,ite_false,ite_true,piv,neg,rarePush,work,H,J] <;> omega
-      dsimp only [weightedVolume]
-      rw [← mul_assoc inRate]
-      simpa only [inBill,inRate,← rowEq,localTime,m,M,extent] using incomingBill
-    have priced := (outgoingDirectoryTime_volume U machine r g privateTapes.length outPush dim).choose_spec
-      w W positive rs (fun j => (prefixes j).length) active live fitAll
-    have outPrice : (outBill : ℝ) ≤ outRate*weightedVolume+4 := by
-      simpa only [outBill,outRate,weightedVolume,mul_assoc,outCost,extent] using priced
-    intro p hp hc
-    have overhead := charged dim width
-    have setup := prepPaid p hp hc
-    have physical : s+(copyTime+(12*rs.length+12+t))+k+(outBill+2*archiveTail.length+2*(prefixes 0).length+4) ≤
-        (selectorBudget+setupBudget p+childBudget+72*(R*N)+8*archiveTail.length+2*(prefixes 0).length+53)+inBill+outBill := by
-      change rowSteps ≤ inBill at rowPaid
-      omega
-    have recordsEq : data.records = R := count
-    have len : rs.length = R := by simpa only [rs,List.length_range] using recordsEq
-    change _ ≤ _ + _ + 8
-    rw [← recordsEq]
-    change _ ≤ ((selectorBudget+setupBudget p+childBudget+72*(data.records*N)+8*archiveTail.length+2*(prefixes 0).length+53 : ℕ) : ℝ) +
-      (inRate+outRate)*(((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau*((data.records : ℝ)*N))+8
-    rw [recordsEq,← len]
-    change _ ≤ ((selectorBudget+setupBudget p+childBudget+72*(rs.length*N)+8*archiveTail.length+2*(prefixes 0).length+53 : ℕ) : ℝ) +
-      (inRate+outRate)*weightedVolume+8
-    rw [len]
-    rw [len] at physical
-    apply (Nat.cast_le.mpr physical).trans
-    rw [Nat.cast_add,Nat.cast_add,add_mul]
-    linarith only [inPrice,outPrice]
+    s+(copyTime+(12*rs.length+12+t))+outBill,(B.R (q 0)).drop V,B.L (q 0),?_,?_⟩
+  · as_aux_lemma =>
+      intro width
+      have extent : N = (prime^(w+1))^128*W := by rw [show N = M^(m+m)*W from rfl,dim]
+      have widths := readyMid.2.1
+      have fitAll (j) (hj : j ∈ rs) : (prefixes j).length ≤ (prime^(w+1))^128*W := by
+        rw [← widths j hj,widths 0 (List.mem_range.mpr recordsPos)]
+        exact extent ▸ width
+      let piv := fun j => classPivots (physical.table (LabelStock.residue m (w+1) 1 j))
+      let neg := fun j => negativeAnchor (piv j) (physical.table (LabelStock.residue m (w+1) 1 j))
+      let rarePush := max (mnProgPush (directoryExceptionalCore (P := P) (U := U) d archiveRoom capacity)) c
+      have incomingBill := (incomingDirectoryTime_volume U machine r g d privateTapes.length push work.length
+        rarePush dim (by omega)).choose_spec w W positive rs (fun j => (prefixes j).length) live bad piv neg fitAll
+      have inPrice : (inBill : ℝ) ≤ inRate*weightedVolume+4 := by
+        have rowEq (j) : cost j = (if live j && bad j then
+            exceptionalRecordTime U (piv j) (neg j) m w W M.size W.size work.length rarePush (prefixes j).length+4
+          else outgoingScanRowCost m w (prefixes j).length privateTapes.length push (localTime j) (live j) (live j)+
+            ((d+1)*(d+1)*(4*M.size+4)+1)) := by
+          dsimp only [cost,ordinaryTime,budget,outgoingScanRowCost]
+          rw [binary]
+          exact incomingRowCharge (live j) (bad j) _ _ _ _ _
+        dsimp only [weightedVolume]
+        rw [← mul_assoc inRate]
+        simpa only [inBill,inRate,← rowEq,localTime,m,M,extent] using incomingBill
+      have priced := (outgoingDirectoryTime_volume U machine r g privateTapes.length outPush dim).choose_spec
+        w W positive rs (fun j => (prefixes j).length) active live fitAll
+      have outPrice : (outBill : ℝ) ≤ outRate*weightedVolume+4 := by
+        simpa only [outBill,outRate,weightedVolume,mul_assoc,outCost,extent] using priced
+      intro p hp hc
+      have overhead := charged dim width
+      have setup := prepPaid p hp hc
+      have physical : max (s+(copyTime+(12*rs.length+12+t))+k+(outBill+2*archiveTail.length+2*(prefixes 0).length+4))
+          (s+(copyTime+(12*rs.length+12+t))+outBill+childBudget) ≤
+          (selectorBudget+setupBudget p+childBudget+72*(R*N)+8*archiveTail.length+2*(prefixes 0).length+53)+inBill+outBill := by
+        change rowSteps ≤ inBill at rowPaid
+        omega
+      have recordsEq : data.records = R := count
+      have len : rs.length = R := by simpa only [rs,List.length_range] using recordsEq
+      change _ ≤ _ + _ + 8
+      rw [← recordsEq]
+      change _ ≤ ((selectorBudget+setupBudget p+childBudget+72*(data.records*N)+8*archiveTail.length+2*(prefixes 0).length+53 : ℕ) : ℝ) +
+        (inRate+outRate)*(((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau*((data.records : ℝ)*N))+8
+      rw [recordsEq,← len]
+      change _ ≤ ((selectorBudget+setupBudget p+childBudget+72*(rs.length*N)+8*archiveTail.length+2*(prefixes 0).length+53 : ℕ) : ℝ) +
+        (inRate+outRate)*weightedVolume+8
+      rw [len]
+      rw [len] at physical
+      apply (Nat.cast_le.mpr physical).trans
+      rw [Nat.cast_add,Nat.cast_add,add_mul]
+      linarith only [inPrice,outPrice]
+  let outsideSteps := s+(copyTime+(12*rs.length+12+t))+outBill
   let finalState := fun C : Stacks T prime => C.L (q 0) = B.L (q 0) ∧ C.R (regs 1) = [] ∧ (C.R (regs 2)).length = N ∧
               C.R (regs 3) = [] ∧ C.R (regs 4) = [] ∧
               DirectoryReady v proj w W data.H J weights prefixes archiveTail (fun _ => []) (embStk outBank C) [] ∧
               C.R (copied 0) = archiveTail ∧ (C.R (copied 1)).length = (prefixes 0).length ∧ C.R (copied 2) = [] ∧ C.R (copied 3) = [] ∧
               (∀ j : Fin 6, 2 ≤ j → C.R (p j) = [] ∧ C.L (p j) = A.L (p j)) ∧
+              (∀ push, mnProgPush scan ≤ push → (∀ f, mnProgPush (host f) ≤ push) →
+                ∀ j, j ≠ q 0 → (C.L j).length ≤ (A.L j).length+push*outsideSteps ∧
+                  (C.R j).length ≤ (A.R j).length+push*outsideSteps) ∧
               ∀ i, (∀ j, place j ≠ i) → (∀ j, copied j ≠ i) → p 2 ≠ i → p 3 ≠ i →
                 C.L i = A.L i ∧ C.R i = A.R i
   apply DirectoryStageResult.post (before := fun D => (∀ j, D.R (copied j) = []) ∧
     ∃ C, finalState C ∧ D.L = C.L ∧ ∀ i, i ≠ copied 0 → i ≠ copied 1 → D.R i = C.R i)
   · rintro D ⟨clear,C,done,left,keep⟩
-    obtain ⟨head,acc,width,save,tmp,dir,_,_,_,_,masks,frame⟩ := done
+    obtain ⟨head,acc,width,save,tmp,dir,_,_,_,_,masks,growth,frame⟩ := done
     have regsKept (j : Fin 5) : D.R (regs j) = C.R (regs j) := keep _ (separate _ _) (separate _ _)
     refine ⟨(congrFun left _).trans head,
       (regsKept 1).trans acc,(congrArg List.length (regsKept 2)).trans width,(regsKept 3).trans save,
-      (regsKept 4).trans tmp,?_,fun j hj => ⟨(keep _ (disjoint _ _) (disjoint _ _)).trans (masks j hj).1,(congrFun left _).trans (masks j hj).2⟩,?_,?_⟩
+      (regsKept 4).trans tmp,?_,fun j hj => ⟨(keep _ (disjoint _ _) (disjoint _ _)).trans (masks j hj).1,(congrFun left _).trans (masks j hj).2⟩,?_,?_,?_⟩
     · intro j
       by_cases hj : j.val < 4
       · exact clear ⟨j.val,hj⟩
@@ -948,6 +991,14 @@ theorem generatedIncomingDirectory_exec [M8.Machine.Net] {P U : Type} {r g d w c
       change C.L (outBank i) = [] ∧ C.R (outBank i) = [] at clean
       rw [bankEq] at clean
       exact ⟨(congrFun left _).trans clean.1,(keep _ (separate _ _) (separate _ _)).trans clean.2⟩
+    · intro push hp hb j ne
+      obtain ⟨l,r⟩ := growth push hp hb j ne
+      refine ⟨(congrArg List.length (congrFun left j)).le.trans l,?_⟩
+      by_cases a : j = copied 0
+      · subst j; simp [clear 0]
+      by_cases b : j = copied 1
+      · subst j; simp [clear 1]
+      exact (congrArg List.length (keep j a b)).le.trans r
     · intro i localOff replayOff l b
       have copyOff (j : Fin 4) : copied j ≠ i := replayOff _
       have before := frame i localOff copyOff l b
@@ -1027,9 +1078,15 @@ theorem generatedIncomingDirectory_exec [M8.Machine.Net] {P U : Type} {r g d w c
     rw [← savedSlot 2,← savedSlot 3]
     exact ⟨liveEnd,badEnd⟩
   have volume : V = R*N := (ordinaryDirectoryChild_volume directory r g w).symm.trans (congrArg (R*·) size)
+  have outTime : n ≤ outBill := by
+    dsimp only [outBill]; rw [← directoryScanTime_eq]
+    simpa only [rs,count,R,outCost,active,live,bad,reduced,machine,full,N,M,m,privateTapes,K] using time
   refine ⟨z,C,n,output,sameUser.trans (huser.trans (user.trans (copyUser.trans same))),
-    by dsimp only [outBill]; rw [← directoryScanTime_eq]; simpa only [rs,count,R,outCost,active,live,bad,reduced,machine,full,N,M,m,privateTapes,K] using time,Exec.seq (Exec.seq scanned call) run,?_,
-    replacedOwnerPayload volume (q 0) out output B C payload left owner,owner,left,accEmpty,rowWidth,savedEmpty,tmpEmpty,by simpa only [binary] using done,archiveEnd,prefixEnd,maskEnd.1,maskEnd.2,maskFrame,finalOff⟩
+    outTime,Exec.seq (Exec.seq scanned call) run,?_,
+    replacedOwnerPayload volume (q 0) out output B C payload left owner,owner,left,accEmpty,rowWidth,savedEmpty,tmpEmpty,by simpa only [binary] using done,archiveEnd,prefixEnd,maskEnd.1,maskEnd.2,maskFrame,?_,finalOff⟩
+  swap
+  · intro push hp hb j ne
+    exact spectatorGrowth scanned run hp hb outTime j (callStock j ne)
   intro j
   exact classifiedRowResult (live j) (bad j) _ (input j) _ _ _ (ordinaryProjectedRead dimension reduced (physicalLabel m (w+1) j) weights inv (input j) _) (rowAction j)
 
