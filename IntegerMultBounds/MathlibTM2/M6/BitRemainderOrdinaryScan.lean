@@ -48,7 +48,7 @@ private theorem ordinaryProjectedRead {m n M W : ℕ} [NeZero M] (dimension : m+
     _ = input (index (Fin.append banks.1 banks.2) k) := read banks k
     _ = _ := congrArg (fun u => input (index u k)) joined
 
-def ClassifiedOrdinaryScan [M8.Machine.Net] {a d common work w W J : ℕ} {U : Type}
+def ClassifiedOrdinaryScan [M8.Machine.Net] {a d common work w W J : ℕ} {P U : Type}
     (v : Descriptor) (proj : Matrix (Fin (a+1)) (Fin (a+1)) ℚ)
     (dimension : (a+1)+(a+1) = d+1)
     (parent : Fin (a+1) → ZMod (prime^(w+1)))
@@ -58,7 +58,9 @@ def ClassifiedOrdinaryScan [M8.Machine.Net] {a d common work w W J : ℕ} {U : T
     (capacity : (anchorProgram d true).1+(anchorProgram d false).1+1 ≤ columnCapacity)
     (pool : (RingFormula.conjugationDepth (a+1)+1)*13 ≤ work) (space : 58 ≤ common+24+31+work)
     (cap : 217 ≤ columnCapacity) (overhead childBudget : ℕ)
-    (localBody : Unit → Pr Unit (66+(common+24+31+work)) columnCapacity prime U) : Prop :=
+    (localBody : P → Pr P (66+(common+24+31+work)) columnCapacity prime U)
+    (proc : P := by exact ()) (localPush : ℕ := mnProgPush (localBody proc))
+    (placedPush : ℕ := mnProgPush (embProg (directoryOrdinaryBank room) id (localBody proc))) : Prop :=
     let m := a+1
     let K := common+24+31+work
     let M := prime^(w+1)
@@ -75,14 +77,14 @@ def ClassifiedOrdinaryScan [M8.Machine.Net] {a d common work w W J : ℕ} {U : T
       (word : Fin (data.records*N) → ZMod 2) (u : HS ((66+(K+1))+5) columnCapacity prime U) (S : Stacks ((66+(K+1))+5) prime),
     let input := ownerRow (R := data.records) (N := N) rfl word
     let body := fun f => embProg (directoryOrdinaryBank room) id (localBody f)
-    let c := mnProgPush (body ())
-    let core := ordinaryRowCore (U := U) cap m proj.rank proj.rank_le_height pool space
+    let c := placedPush
+    let core := ordinaryRowCore (U := U) cap m proj.rank proj.rank_le_height pool space proc
     let ports := ordinaryCursorPorts.trans (Fin.castAddEmb (n := 66) K)
     let skipRow := readWithSuccessorClock (ports 1) (advanceDirectory m ports)
     let step := core.seq skipRow
     let scratch := (List.finRange (66+K)).filter fun i => 58 ≤ i.val
     let goodRow := step.seq (clearWorkTapes scratch)
-    let push := max (mnProgPush step) (mnProgPush (localBody ()))
+    let push := max (mnProgPush step) localPush
     let e := finSumFinEquiv.trans (finCongr dimension)
     let φ := LabelRing.res prime (w+1) (by omega)
     let code := fun k => residualSchedule (A := prime) (projectorResidual finSumFinEquiv (reduce prime proj)
@@ -125,16 +127,16 @@ def ClassifiedOrdinaryScan [M8.Machine.Net] {a d common work w W J : ℕ} {U : T
       (directoryExceptionalProgram m d room capacity) padding)
     let work := (List.finRange (66+(K+1))).filter fun i => decide (58 ≤ i.val ∧ i ≠ directoryMatrixTape room)
     let controls := embProg bank id (embProg placement id selectors)
-    let prepare : Pr Unit (66+(K+1)) columnCapacity prime U := directoryQueueProgram room fits e
+    let prepare : Pr P (66+(K+1)) columnCapacity prime U := directoryQueueProgram room fits e
     ∃ z F t n output k s midUser mid,
       k ≤ dimensionTime data.H J (d+1)+6*N+13*((d+1)*data.H+J)+8 ∧ z.user = u.user ∧ s ≤ selectorBudget ∧
       Exec (fun f => embProg bank id (body f)) ((payloadCountProgram (ownerCountPorts (K+1)) (d+1)).seq controls) (mk u S) (k+s) (mk midUser mid) ∧
       ready (embStk placement (embStk bank mid)) rs ∧
       (embStk bank mid).R (caller 48) = (embStk placement start).R (inner 48) ∧
       let suffix := (raw.R (inner 48)).drop (m*m*data.H)
-      let rarePush := max (mnProgPush (directoryExceptionalCore (P := Unit) (U := U) d room capacity)) c
+      let rarePush := max (mnProgPush (directoryExceptionalCore (P := P) (U := U) d room capacity)) c
       let rareRate := exceptionalVolumeRate U d m work.length rarePush w
-      (∀ p, mnProgPush (directoryQueueInitProgram (P := Unit) (U := U) (Q := columnCapacity) room fits) ≤ p → (∀ f, mnProgPush (body f) ≤ p) → (prefixes 0).length ≤ N →
+      (∀ p, mnProgPush (directoryQueueInitProgram (P := P) (U := U) (Q := columnCapacity) room fits) ≤ p → (∀ f, mnProgPush (body f) ≤ p) → (prefixes 0).length ≤ N →
         k+(s+(t+n)) ≤ ordinaryOwnerScanTime m d proj.rank w W data.H J data.records N
           (prefixes 0).length archiveTail.length suffix.length left scratch.length push work.length rareRate p overhead childBudget) ∧
       Exec (fun f => embProg bank id (body f)) ((payloadCountProgram (ownerCountPorts (K+1)) (d+1)).seq (controls.seq ((embProg bank id prepare).seq program))) (mk u S) (k+(s+(t+n))) (mk z F) ∧
@@ -145,7 +147,7 @@ def ClassifiedOrdinaryScan [M8.Machine.Net] {a d common work w W J : ℕ} {U : T
       (embStk bank F).R (directoryMatrixTape room) = [] ∧
       (embStk bank F).R (caller 57) = [] ∧ (embStk bank F).R (caller 56) = []
 
-theorem classifiedOrdinaryDirectory_exec [M8.Machine.Net] {a d common work w W J : ℕ} {U : Type}
+theorem classifiedOrdinaryDirectory_exec [M8.Machine.Net] {a d common work w W J : ℕ} {P U : Type}
     (v : Descriptor) (proj : Matrix (Fin (a+1)) (Fin (a+1)) ℚ)
     (dimension : (a+1)+(a+1) = d+1) (idem : proj*proj = proj) (adm : Admissible prime proj)
     (factor : Factorization univ univ proj) (small : ∀ k ∈ factorizationDenominators factor, k < prime)
@@ -165,14 +167,16 @@ theorem classifiedOrdinaryDirectory_exec [M8.Machine.Net] {a d common work w W J
     let inv := fun i => Ring.inverse (parent i)
     let bad := fun j => fallbackBit proj.rank_le_height (reduce M proj) (physicalLabel m (w+1) j)
     let length : N = M^m*(M^m*W) := by simp [N,pow_add,Nat.mul_assoc]
-    ∀ localBody : Unit → Pr Unit (66+K) columnCapacity prime U,
+    ∀ (localBody : P → Pr P (66+K) columnCapacity prime U) (proc : P) (localPush placedPush : ℕ),
+    (∀ f, mnProgPush (localBody f) ≤ localPush) →
+    (∀ f, mnProgPush (embProg (directoryOrdinaryBank room) id (localBody f)) ≤ placedPush) →
     (∀ j, LabelStock.live m (w+1) 1 j = true → bad j = false →
       let g := physicalLabel m (w+1) j
       ∀ minor, OrdinaryRecordExec (W := W) (H := data.H) (J := J) cap proj.rank_le_height
-        (ordinaryCaller space) localBody overhead childBudget (g*reduce M proj*g⁻¹) minor parent) →
+        (ordinaryCaller space) localBody overhead childBudget (g*reduce M proj*g⁻¹) minor parent proc) →
     ClassifiedOrdinaryScan (J := J) v proj dimension parent data room fits capacity pool space cap overhead childBudget
-      localBody := by
-  intro m K M N inv bad length localBody installed
+      localBody proc localPush placedPush := by
+  intro m K M N inv bad length localBody proc localPush placedPush localBound placedBound installed
   unfold ClassifiedOrdinaryScan
   intro _ _ _ _ _ actualBad _ directory B dirPositive shape pairRoom
   let φ := LabelRing.res prime (w+1) (by omega)
@@ -229,7 +233,7 @@ theorem classifiedOrdinaryDirectory_exec [M8.Machine.Net] {a d common work w W J
     (Nat.le_mul_of_pos_right _ (radixPos.trans_le radix)) boxes
   have queue := owner.trans (congrArg (· ++ ownerTail) (ownerRow_queue (R := data.records) (N := N) rfl word))
   have scan := classifiedDirectory_exec dimension v proj idem adm parent inv (fun i => Ring.mul_inverse_cancel _ (unit i))
-    data hm hw positive room fits capacity body c (fun _ => le_rfl) prefixes archiveTail bad budget ordinaryEffect length
+    data hm hw positive room fits capacity body c placedBound prefixes archiveTail bad budget ordinaryEffect length
     input localBody (fun _ => rfl) selectors goodRow skipRow selectorBudget ownerTail counterUser A (by rwa [view]) (by
     rw [rawEq]
     refine ⟨y,D,t,user,price.trans ?_,?_,?_,keepL,keepR,projector,?_,?_⟩
@@ -248,10 +252,11 @@ theorem classifiedOrdinaryDirectory_exec [M8.Machine.Net] {a d common work w W J
     have queue : schedule (j::pending (j+1)) = schedule (pending (j+1)) := by
       have hb : actualBad j = false := clear
       simp [schedule,hb]
-    obtain ⟨z,D,t,out,user,price,run,next,word,mask,mode,action⟩ := ordinaryOrPadding_exec cap overhead childBudget v proj
-      parent prefixes archiveTail schedule hm pool unit space localBody y A j (pending (j+1)) dir queue
+    obtain ⟨z,D,t,out,user,price,run,next,word,kept,action⟩ := ordinaryOrPadding_exec proc cap overhead childBudget v proj
+      parent prefixes archiveTail schedule hm pool unit space localBody y A j (pending (j+1)) localPush localBound (fun _ => True)
+      (fun _ _ => trivial) dir queue
       (fun _ => clear) (input j) payload (fun hj => installed j hj clear)
-    exact ⟨z,D,t,out,user,price,run,next,action,word,mask,mode⟩)
+    exact ⟨z,D,t,out,user,price,run,next,action,word,kept 57 (by decide) (by decide) (by decide),kept 56 (by decide) (by decide) (by decide)⟩)
   obtain ⟨z,F,t,n,rows,s,midUser,mid,user,bounded,controls,prepared,projector,time,rowTime,run,rowsOk,leftOk,rightOk,rest⟩ := scan
   obtain ⟨output,action,packed⟩ := ownerRows_pack (R := data.records) (N := N) rfl rowsOk
   have finalLeft := leftOk.trans (congrFun keepLeft _)
@@ -261,7 +266,7 @@ theorem classifiedOrdinaryDirectory_exec [M8.Machine.Net] {a d common work w W J
     Exec.seq build run,?_,ownerWord_reads word output ownerTail owner reads finalLeft finalRight,finalLeft,finalRight,rest⟩
   · intro p prepareBound calls first
     let rareTapes := ((List.finRange (66+(K+1))).filter fun i => decide (58 ≤ i.val ∧ i ≠ directoryMatrixTape room)).length
-    let rarePush := max (mnProgPush (directoryExceptionalCore (P := Unit) (U := U) d room capacity)) c
+    let rarePush := max (mnProgPush (directoryExceptionalCore (P := P) (U := U) d room capacity)) c
     let physical := data.physical e proj parent inv
     let table := fun j => physical.table (LabelStock.residue m (w+1) 1 j)
     have bill := ordinaryDirectoryTime_le U proj idem factor small dimension directory v shape parent prefixes archiveTail
@@ -349,6 +354,8 @@ theorem scheduledOrdinaryScan_exec [M8.Machine.Net] {common work : ℕ} {U : Typ
     split_ifs <;> simp
   apply classifiedOrdinaryDirectory_exec v proj (by decide) (intervalDiagonal_idem 64 interval.1 interval.2) adm
     (intervalFactor 64 interval.1 interval.2) (intervalFactor_denominators 64 interval.1 interval.2) parent unit data (binary ▸ Nat.size_le.mp (le_refl _)) (Nat.size_le.mp (le_refl _)) positive binary rfl
+  · intro f; cases f; exact le_rfl
+  · intro f; cases f; exact le_rfl
   intro j live clear g minor
   rw [binary]
   exact execute j live clear parent unit positive minor

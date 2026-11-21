@@ -56,12 +56,37 @@ private theorem scheduledParentOverhead {U : Type} {T : ℕ} (machine : Fin 55 �
   have cost := bound.trans (Nat.add_le_add_left (Nat.mul_le_mul_right (M^((r+g)+(r+g))*W) uniform) budget)
   simpa only [Nat.zero_mul,Nat.zero_add,H,J,M,r,g,hr] using cost
 
+open IntegerMultBounds.Swap.LowerTriangular IntegerMultBounds.Swap.Modular Finset in
+private theorem physicalRecordExec [M8.Machine.Net] {P U : Type} {N Q m r W w : ℕ}
+    (cap : 217 ≤ Q) (full : Fin 58 ↪ Fin N) (body : P → Pr P N Q prime U)
+    (overhead budget : ℕ) (proc : P) (context : Stacks N prime → Prop) (hr : r ≤ m)
+    (run : ∀ (G : Matrix (Fin m) (Fin m) (ZMod (prime^(w+1))))
+      (minor : ∀ k (hk : k < r), IsUnit (lead (k+1) (lt_of_lt_of_le hk hr) G).det),
+      G*G = G → ∀ (B : Matrix (Fin m) (Fin r) _) (E : Matrix (Fin r) (Fin m) _), G = B*E →
+      ∀ weights, (∀ j, IsUnit (weights j)) → OrdinaryRecordExec (W := W) (H := (prime^(w+1)).size) (J := W.size)
+        cap hr full body overhead budget G minor weights proc context)
+    {height : ℕ} (size : height = m) (proj : Matrix (Fin height) (Fin height) ℚ) (rank : proj.rank = r)
+    (idem : proj*proj = proj) (factor : Factorization univ univ proj) (small : ∀ k ∈ factorizationDenominators factor, k < prime)
+    (j : ℕ) (live : LabelStock.live height (w+1) 1 j = true)
+    (clear : fallbackBit proj.rank_le_height (reduce (prime^(w+1)) proj) (physicalLabel height (w+1) j) = false) :
+    let label := physicalLabel height (w+1) j
+    let G := label*reduce (prime^(w+1)) proj*label⁻¹
+    ∀ weights, (∀ k, IsUnit (weights k)) → ∀ minor,
+      OrdinaryRecordExec (W := W) (H := (prime^(w+1)).size) (J := W.size) cap proj.rank_le_height full body
+        overhead budget G minor weights proc context := by
+  subst height
+  subst r
+  obtain ⟨_,square,B,E,eq⟩ := physicalGood_inputs (by omega : 0 < w+1) proj idem factor small proj.rank_le_height j live clear
+  intro label G weights unit minor
+  exact run G minor square B E eq weights unit
+
+open IntegerMultBounds.Swap.LowerTriangular IntegerMultBounds.Swap.Modular Finset in
 /-- Execute the complete incoming, weighted-child and outgoing stages of the
 ordinary record at its scheduled occurrence. -/
 theorem hostedScheduledRecord_exec [M8.Machine.Net] {P U : Type} [Fintype P] {n T : ℕ}
     (callerBank : Fin 58 ↪ Fin n) (rootCut : Fin n) (host : Fin 64 ↪ Fin T)
     (aux : Fin ((rowSwapBlock.tapes+35)+1) ↪ Fin T) (separate : ∀ i j, aux i ≠ host j)
-    (cutOffBank : ∀ j, callerBank j ≠ rootCut) (root : P)
+    (cutOffBank : ∀ j, callerBank j ≠ rootCut) (callerSpace : 124 ≤ n) (root : P)
     (nodes : P → Pr (P ⊕ Fin nodeChildren5.length) (n+T) columnCapacity prime U) :
     let body := ordinaryRecordTable callerBank rootCut host aux separate root nodes
     let physical := Record.payloadBank (callerBank 24) (host 24)
@@ -92,15 +117,7 @@ theorem hostedScheduledRecord_exec [M8.Machine.Net] {P U : Type} [Fintype P] {n 
           M8.Machine.ArbitraryWidthHighExchangeShared.sourceWord (v := desc) (word ∘ layout) z
       let full := callerBank.trans (Fin.castAddEmb T)
       let m := r+g
-      let hr := Nat.le_add_right r g
       let cap : 217 ≤ columnCapacity := le_max_left ..
-      let machine := GoodChildLayout.parent.trans (parentWithWeights.trans full)
-      let regs := adapterBank.trans machine
-      let headHost := head.trans regs
-      let c := HeadPivotLayout.child.trans headHost
-      let h := (coeff true).trans headHost
-      let shearPort := shear.trans headHost
-      let ts := shear.trans (ordinaryHead.trans regs)
       ∀ (budget cutoff L : ℕ),
       cutoff < 2^L → desc.width.size ≤ L →
       (cutoff < desc.width → child.width < node.width → ∀ word u D, onTape word D → clean D → D.R cut = binSyms L cutoff → ∃ y G t, y.user = u.user ∧ t ≤ budget ∧
@@ -109,48 +126,40 @@ theorem hostedScheduledRecord_exec [M8.Machine.Net] {P U : Type} [Fintype P] {n 
       let childBudget := ⌊((if cutoff < desc.width then budget else 0 : ℕ) : ℝ) +
         A*(((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau*(M^d*W : ℕ)+L+
           ((if cutoff < desc.width then 0 else desc.width*(M^d*W) : ℕ) : ℝ))⌋₊
-      ∀ (G : Matrix (Fin m) (Fin m) (ZMod M)) (minor : ∀ j (hj : j < r), IsUnit (lead (j+1) (lt_of_lt_of_le hj hr) G).det)
-        (idem : G*G = G) (B : Matrix (Fin m) (Fin r) (ZMod M)) (E : Matrix (Fin r) (Fin m) (ZMod M)) (factor : G = B*E)
-        (weights inv : Fin m → ZMod M) (inverse : ∀ j, weights j * inv j = 1),
-      let H := M.size
-      let J := W.size
-      let words := fun j => if hj : j ≤ r then matrixWords prime H (stageAt G r hr minor j hj).M else []
-      let stage := stageAt G r hr minor r le_rfl
-      let parentWords := (List.ofFn fun i => binSyms H (weights i).val).flatten
-      let ready := HeadColumnReady (d := m+m) (W := W) h (entry.trans regs) H J [] parentWords []
-        SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0
-      ∀ v S word, ready word S → S.R (regs 27) = [] →
-        S.R (machine 54) = (List.ofFn fun j => binSyms H (inv j).val).flatten →
-        (S.R (headHost 49),S.R (headHost 50)) = matrixArchive words (words 0) [] r →
-        (S.R (headHost 51)).length = m*m*H →
-        S.R (c 18) = (List.ofFn fun i : Fin r => binSyms H (stage.M (i.castLE hr) (i.castLE hr)).val).flatten →
-        S.R (c 15) = binSyms H (1 : ZMod M).val → (S.R (c 16)).length = w →
-        (∀ j : Fin 20, (j ≤ 14 ∧ j ≠ 4) ∨ j = 17 → S.R (c j) = []) →
-        (∀ k ∈ [full 55,full 56,full 57], S.R k = []) →
-        S.R (rootCut.castAdd T) = binSyms L cutoff →
-        (∀ j : Fin (n+T), n ≤ j.val → S.L j = [] ∧ S.R j = []) →
-        ∃ z F steps out, z.user = v.user ∧
-          steps ≤ childBudget + overhead*(M^d*W) ∧
-          Exec body (hostedGoodRecordAt cap full full (.inr i) prime r g hr) (mk v S) steps (mk z F) ∧ ready out F ∧ F.R (regs 27) = [] ∧
-          (∀ j, (∀ i, shearPort i ≠ j) → (∀ i, ts i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j) ∧
-          ∀ x j, let y := transform (diagonal weights) 1 (revExchangeOf (rev m) G (transform (diagonal inv) 1 x))
-                 out (index (Fin.append y.1 y.2) j) = word (index (Fin.append x.1 x.2) j) := by
+      ∀ (height : ℕ) (size : height = m) (proj : Matrix (Fin height) (Fin height) ℚ)
+        (rank : proj.rank = r) (idem : proj*proj = proj) (factor : Factorization univ univ proj)
+        (small : ∀ k ∈ factorizationDenominators factor, k < prime)
+        (j : ℕ) (live : LabelStock.live height (w+1) 1 j = true)
+        (clear : fallbackBit proj.rank_le_height (reduce M proj) (physicalLabel height (w+1) j) = false),
+      let label := physicalLabel height (w+1) j
+      let G := label*reduce M proj*label⁻¹
+      ∀ weights, (∀ k, IsUnit (weights k)) → ∀ minor,
+        OrdinaryRecordExec (W := W) (H := M.size) (J := W.size) cap proj.rank_le_height full body overhead childBudget G minor weights
+          (.inr i) (fun S => S.R (rootCut.castAdd T) = binSyms L cutoff) := by
   intro body physical caller work apart placement ports cut
   obtain ⟨A,childRun⟩ := hostedOrdinaryChildDispatch_exec callerBank rootCut host aux separate body
   classical
   let recordPorts := GoodChildLayout.parent.trans (parentWithWeights.trans (callerBank.trans (Fin.castAddEmb T)))
   obtain ⟨overhead,parentBound⟩ := scheduledParentOverhead (U := U) recordPorts
   refine ⟨A,overhead,?_⟩
-  intro node i w aligned r g parent W hW d M bank clean desc child eqn layout onTape full m hr cap machine regs headHost c h shearPort ts
-    budget cutoff L cutFits widthFits recurse childBudget G minor idem B E factor weights inv inverse H J words stage parentWords ready
-    v S word start empty invWords archive count pivots one clock scratch fresh cutWord privateFree
+  intro node i w aligned r g parent W hW d M bank clean desc child eqn layout onTape full m cap
+    budget cutoff L cutFits widthFits recurse childBudget height size proj rank square factors small j live clear
+  let hr := Nat.le_add_right r g
+  apply physicalRecordExec cap full body overhead childBudget (.inr i) _ hr _ size proj rank square factors small j live clear
+  intro G minor idem B E factor weights unit
+  let H := M.size
+  let J := W.size
+  let inv := fun j => Ring.inverse (weights j)
+  have inverse (j) : weights j * inv j = 1 := Ring.mul_inverse_cancel _ (unit j)
+  unfold OrdinaryRecordExec
+  intro modulus regs headHost c parentWords ready words stage v S word cutWord start empty one clock scratch fresh privateFree invWords count pivots archive
   let recordDesc : Descriptor := ⟨1,1,1,m,1,W⟩
   have outer := hostedGoodRecord_exec cap body full full (fun _ _ => rfl) recordDesc 1 (by change 1 < 2^1; decide) (.inr i) childBudget
     G g rfl hr minor idem B E factor weights inv inverse Shared50ModularControl.prime_prime H J
     (Nat.lt_size_self _) (Nat.lt_size_self _) hW [] [] [] [] [] SparseRoleCircuit.encode
     (fun _ => blank) (fun _ => blank) 0 0 (fun _ _ _ => rfl) v S word
-    (by simpa only [List.append_nil] using start) empty (by simpa only [List.append_nil] using invWords)
-    (by simpa only [List.append_nil] using archive) count (by simpa only [List.append_nil] using pivots)
+    (by simpa only [List.append_nil] using start) empty (by rw [List.append_nil]; exact invWords)
+    (by rw [List.append_nil]; exact archive) count (by rw [List.append_nil]; exact pivots)
     one clock scratch fresh (Or.inl ⟨rfl,rfl⟩)
   obtain ⟨z,F,t,out,user,paid,run,done,blankPort,frame,effect⟩ := outer (by
     intro positive units u D before payload base width unitWord pos _ _ neg padded clockLen off
@@ -163,11 +172,11 @@ theorem hostedScheduledRecord_exec [M8.Machine.Net] {P U : Type} [Fintype P] {n 
         change (callerBank i).val = j.val at val
         have := (callerBank i).isLt
         omega)
-      exact ⟨kept.1.trans (privateFree j hj).1,kept.2.trans (privateFree j hj).2⟩
+      exact ⟨kept.1.trans (privateFree j (callerSpace.trans hj)).1,kept.2.trans (privateFree j (callerSpace.trans hj)).2⟩
     obtain ⟨z,F,t,after,user,run,paid,action,returned,frame⟩ := childRun node i w aligned hW u D before (.inl root) budget cutoff L pivot
       pos neg cutFits widthFits (cutSaved.2.trans cutWord) recurse base width unitWord padded clockLen freeD payload
     refine ⟨z,F,t,after,user,Nat.le_floor paid,run,?_,frame,returned⟩
     exact action)
-  exact ⟨z,F,t,out,user,paid.trans (parentBound ⟨r,(nodeChildren5_le i).trans_lt (by decide)⟩ w W childBudget hW),run,by simpa only [List.append_nil] using done,blankPort,frame,effect⟩
+  exact ⟨z,F,t,out,user,paid.trans (parentBound ⟨r,(nodeChildren5_le i).trans_lt (by decide)⟩ w W childBudget hW),by simpa only [m,Nat.add_sub_cancel_left] using run,by simpa only [List.append_nil] using done,blankPort,frame,effect⟩
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
