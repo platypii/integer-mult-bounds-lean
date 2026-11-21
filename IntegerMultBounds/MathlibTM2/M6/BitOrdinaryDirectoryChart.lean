@@ -201,13 +201,80 @@ theorem replayChildPrefix_exec {K Q w W H J : ℕ} {P U : Type}
       · rw [Function.update_of_ne clock,(frame i hi).2]
         exact Function.update_of_ne clock ..
 
-/-- Run a recursive procedure on the chart payload and its private suffix.
-All other chart tapes retain both stacks, including the saved owner queue. -/
+/-- Read unary dimensions on 29–31 and borrow scratch 58–63. Only the
+three binary results live beyond the scanner's bank. -/
+def directoryOuterHeaderBank (K : ℕ) : Fin 12 ↪ Fin ((66+K)+3) where
+  toFun i := ⟨if i.val < 3 then 29+i.val else if i.val < 6 then 66+K+(i.val-3) else 58+(i.val-6),
+    by split <;> first | omega | split <;> omega⟩
+  inj' := by
+    intro i j eq
+    apply Fin.ext
+    have h := congrArg Fin.val eq
+    dsimp only at h
+    repeat' split at h
+    all_goals omega
+
+/-- Save the three outer dimensions and reuse the three rank-dependent
+headers already written by the record scanner. The combined six words
+describe the whole recursive batch. -/
+theorem directoryBatchHeaders_exec {K Q : ℕ} {P U : Type} (body : P → Pr P ((66+K)+3) Q prime U)
+    (parent : RecursiveInterchangeLayout.Descriptor)
+    (positive : parent.Positive) (lo hi w : ℕ) (u : HS ((66+K)+3) Q prime U) (S : Stacks ((66+K)+3) prime) :
+    let bank := directoryOuterHeaderBank K
+    let values : Fin 3 → ℕ := ![parent.beforeRows,parent.rows,parent.beforeH]
+    let outer := ((Fin.natAddEmb (m := 3) 3).trans (Fin.castAddEmb 6)).trans bank
+    let row := remainderRecordChild lo hi (w+1) (parent.between*parent.afterD)
+    let batch := ordinaryDirectoryChild parent (hi-lo) (64-(hi-lo)) w
+    (∀ i : Fin 3, (S.R (bank (i.castAdd 9))).length = values i) →
+    (∀ i : Fin 12, 3 ≤ i.val → S.R (bank i) = []) →
+    ∃ z D n, z.user = u.user ∧ n ≤ 63*LabelMask.records parent+31 ∧
+      Exec body (IntervalDescriptor.directoryOuterHeaders bank) (mk u S) n (mk z D) ∧ D.L = S.L ∧
+      (∀ k, (∀ i, k ≠ outer i) → D.R k = S.R k) ∧
+      (∀ (i : Fin (66+K)) (j : Fin 3), i.castAdd 3 ≠ outer j) ∧
+      ∀ (F : Stacks ((66+K)+3) prime) (inner : Fin 3 → Fin ((66+K)+3)),
+        (∀ i, F.R (outer i) = D.R (outer i)) →
+        (∀ i, F.R (inner i) = (Routines.hdr row (i.natAdd 3)).map bitSymbol) →
+        ∀ i : Fin 6, F.R (Fin.append outer inner i) = (Routines.hdr batch i).map bitSymbol := by
+  intro bank values outer row batch src empty
+  obtain ⟨z,D,n,user,paid,run,left,words,frame⟩ :=
+    IntervalDescriptor.directoryOuterHeaders_exec body bank values u S src empty
+  let R := LabelMask.records parent
+  have pair := Nat.mul_pos positive.1 positive.2.1
+  have first : parent.beforeRows ≤ R := (Nat.le_mul_of_pos_right _ positive.2.1).trans
+    (Nat.le_mul_of_pos_right _ positive.2.2.1)
+  have rows : parent.rows ≤ R := (Nat.le_mul_of_pos_left _ positive.1).trans
+    (Nat.le_mul_of_pos_right _ positive.2.2.1)
+  have last : parent.beforeH ≤ R := Nat.le_mul_of_pos_left _ pair
+  change n ≤ 21*(parent.beforeRows+parent.rows+parent.beforeH)+31 at paid
+  refine ⟨z,D,n,user,by change n ≤ 63*R+31; omega,run,left,frame,?_,?_⟩
+  · intro i j eq
+    have h := congrArg Fin.val eq
+    change i.val = (if 3+j.val < 3 then _ else if 3+j.val < 6 then _ else _) at h
+    simp only [if_neg (by omega : ¬ 3+j.val < 3),if_pos (by omega : 3+j.val < 6)] at h
+    omega
+  intro F inner kept tail i
+  induction i using Fin.addCases (m := 3) (n := 3) with
+  | left j =>
+    rw [Fin.append_left,kept,words,← canonicalBits_symbols]
+    fin_cases j <;> rfl
+  | right j =>
+    rw [Fin.append_right,tail]
+    fin_cases j <;> simp [Routines.hdr,RecursiveDimensionBank.values,row,batch,
+      remainderRecordChild,ordinaryDirectoryChild,ordinaryChildDescriptor,Nat.mul_comm,two_mul]
+
+open IntegerMultBounds.Networks.Certificates.PR589.Nine RecursiveInterchangeLayout in
+/-- Install the scheduled recursive transpose in directory tape order. It
+returns the batch transpose with the same cost and preserves every other tape. -/
 theorem directoryChartHost_child_exec [M8.Machine.Net] {K : ℕ} {P C U : Type}
     (room : Record.size 127+(rowSwapBlock.tapes+35+2) ≤ K+1)
     (localBody : P → Pr P (66+K) columnCapacity prime U)
     (child : C → Pr C ((66+K)+1) columnCapacity prime U) (f : C)
-    (batch : RecursiveInterchangeLayout.Descriptor) (budget : ℕ) (entry : Stacks (66+K) prime → Prop) :
+    (node : Descriptor) (i : Fin nodeChildren5.length) (w : ℕ)
+    (aligned : node.width = 64*(w+1)) (rows : 142080 ∣ node.rows) (budget : ℕ) (entry : Stacks (66+K) prime → Prop) :
+    let r := nodeChildren5[i.val]
+    let batch := ordinaryDirectoryChild (role node 142080) r (64-r) w
+    let scheduled := scheduledChild prime node i
+    let e := (scheduledDirectoryCoordinates node i w aligned rows).choose
     let T := 66+(K+1)
     let bank := directoryChartChildBank room
     let port := (0 : Fin 1).natAdd (66+K)
@@ -218,21 +285,31 @@ theorem directoryChartHost_child_exec [M8.Machine.Net] {K : ℕ} {P C U : Type}
     entry (embStk (directoryChartReplayBank room) A) →
     RecordPayload owner (fun _ => blank) 0 x A →
     (∀ (u : HS ((66+K)+1) columnCapacity prime U) (S : Stacks ((66+K)+1) prime), entry (embStk (Fin.castAdd 1) S) →
-      RecordPayload port (fun _ => blank) 0 x S →
+      ∀ word : Fin (volume prime scheduled) → ZMod 2,
+      RecordPayload port (fun _ => blank) 0 (word ∘ e) S →
       ∃ y B k, y.user = u.user ∧ k ≤ budget ∧ Exec child (child f) (mk u S) k (mk y B) ∧
-        RecordPayload port (fun _ => blank) 0 (Shared50RecursiveNodeRows.transpose (one_dvd batch.rows) x) B ∧
+        RecordPayload port (fun _ => blank) 0 (Shared50RecursiveNodeRows.transpose (one_dvd scheduled.rows) word ∘ e) B ∧
         ∀ i, i ≠ port → B.L i = S.L i ∧ B.R i = S.R i) →
     ∃ y B k, y.user = a.user ∧ k ≤ budget ∧ Exec host (host (.inr (.inr f))) (mk a A) k (mk y B) ∧
       RecordPayload owner (fun _ => blank) 0 (Shared50RecursiveNodeRows.transpose (one_dvd batch.rows) x) B ∧
       ∀ i, i ≠ owner → B.L i = A.L i ∧ B.R i = A.R i := by
-  intro T bank port owner host a A x free input recursive
+  intro r batch scheduled e T bank port owner host a A x free input recursive
   have slot : bank port = owner := by simp [bank,port,owner,T,directoryChartChildBank]
   rw [← slot] at input ⊢
   apply directoryStageHost_child_exec _ _ _ _ _ localBody bank child f port batch budget a A x input
   have view : embStk (Fin.castAdd 1) (embStk bank A) =
       embStk (directoryChartReplayBank room) A := by
     apply Stacks.ext <;> first | rfl | (funext i; simp [bank,directoryChartChildBank,embStk,Function.comp_def])
-  exact recursive _ _ (view.symm ▸ free)
+  intro payload
+  let word := x ∘ e.symm
+  have physical : word ∘ e = x := funext fun k => congrArg x (e.symm_apply_apply k)
+  obtain ⟨y,B,k,user,paid,run,returned,frame⟩ :=
+    recursive _ _ (view.symm ▸ free) word (physical.symm ▸ payload)
+  have action := (scheduledDirectoryCoordinates node i w aligned rows).choose_spec.2 word
+  change Shared50RecursiveNodeRows.transpose (one_dvd batch.rows) (word ∘ e) =
+    Shared50RecursiveNodeRows.transpose (one_dvd scheduled.rows) word ∘ e at action
+  rw [physical] at action
+  exact ⟨y,B,k,user,paid,run,action.symm ▸ returned,frame⟩
 
 -- The pre-setup chart projection is available at bfe0b0b4.
 /-- The initialized directory leaves the four mask work tapes and six replay

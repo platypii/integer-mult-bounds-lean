@@ -157,4 +157,36 @@ theorem scheduledDirectoryTranspose (node : Descriptor) (i : Fin nodeChildren5.l
   exact ⟨shape,(congrArg (· * 142080) size).trans weight,layout,ordinaryDirectoryPack_index parent r g w,
     fun word j => ordinaryDirectoryTranspose parent r g w word j⟩
 
+open IntegerMultBounds.Networks.Certificates.PR589.Nine RecursiveInterchangeLayout in
+/-- On the concatenated directory tape the scheduled transpose is conjugate
+to the batch transpose, including at the boundaries between adjacent records. -/
+theorem scheduledDirectoryCoordinates (node : Descriptor) (i : Fin nodeChildren5.length) (w : ℕ)
+    (aligned : node.width = 64*(w+1)) (rows : 142080 ∣ node.rows) :
+    let parent := role node 142080
+    let r := nodeChildren5[i.val]
+    let g := 64-r
+    let batch := ordinaryDirectoryChild parent r g w
+    let child := scheduledChild prime node i
+    ∃ e : Fin (volume prime batch) ≃ Fin (volume prime child),
+      (∀ k, (CopyChildLayout.packActive child (e k)).val = (CopyChildLayout.packActive batch k).val) ∧
+      ∀ {α : Type} (x : Fin (volume prime child) → α),
+        Shared50RecursiveNodeRows.transpose (one_dvd batch.rows) (x ∘ e) =
+          Shared50RecursiveNodeRows.transpose (one_dvd child.rows) x ∘ e := by
+  intro parent r g batch child
+  obtain ⟨_,_,layout,offset,action⟩ := scheduledDirectoryTranspose node i w aligned rows
+  let size := ordinaryDirectoryChild_volume parent r g w
+  let e := (finCongr size).symm.trans layout
+  refine ⟨e,fun k => ?_,?_⟩
+  · obtain ⟨j,rfl⟩ := (finCongr size).surjective k
+    simp only [e,Equiv.trans_apply,Equiv.symm_apply_apply]
+    exact offset j
+  · intro α x
+    funext k
+    obtain ⟨p,rfl⟩ := (finCongr size).surjective k
+    obtain ⟨⟨j,k⟩,rfl⟩ := finProdFinEquiv.surjective p
+    have batchRead := ordinaryDirectoryRowTranspose parent r g w (x ∘ e) j k
+    have scheduledRead := action x j k
+    simp only [Function.comp_def,e,Equiv.trans_apply,Equiv.symm_apply_apply,finCongr_apply] at batchRead scheduledRead ⊢
+    exact batchRead.symm.trans scheduledRead
+
 end IntegerMultBounds.MathlibTM2.M6.BitNode

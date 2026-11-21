@@ -41,6 +41,58 @@ private theorem sequenceHeaders_exec {k : ℕ} (body : P → Pr P T Q prime U)
     · intro j off
       exact (Function.update_of_ne (off i (by simp)) ..).trans (frame j (fun l hl => off l (by simp [hl])))
 
+/-- Save the three outer directory dimensions before the record scanner
+reuses their unary source tapes. All conversions share six scratch tapes. -/
+def directoryOuterHeaders {A : ℕ} (bank : Fin 12 ↪ Fin T) : Pr P T Q A U :=
+  LabelTraversal.sequence (fun i : Fin 3 => unaryBinary
+    (bank (i.castAdd 9)) (bank ((i.natAdd 3).castAdd 6))
+    (bank 6) (bank 7) (bank 8) (bank 9) (bank 10) (bank 11)) (List.finRange 3)
+
+theorem directoryOuterHeaders_exec (body : P → Pr P T Q prime U) (bank : Fin 12 ↪ Fin T)
+    (value : Fin 3 → ℕ) (u : HS T Q prime U) (S : Stacks T prime)
+    (source : ∀ i : Fin 3, (S.R (bank (i.castAdd 9))).length = value i)
+    (empty : ∀ i : Fin 12, 3 ≤ i.val → S.R (bank i) = []) :
+    let dst := ((Fin.natAddEmb (m := 3) 3).trans (Fin.castAddEmb 6)).trans bank
+    ∃ z D n, z.user = u.user ∧ n ≤ 21*(value 0+value 1+value 2)+31 ∧
+      Exec body (directoryOuterHeaders bank) (mk u S) n (mk z D) ∧ D.L = S.L ∧
+      (∀ i, D.R (dst i) = binSyms (value i).size (value i)) ∧
+      ∀ k, (∀ i, k ≠ dst i) → D.R k = S.R k := by
+  intro dst
+  let ok := fun R : Fin T → List (Fin (prime+4)) =>
+    (∀ i : Fin 3, (R (bank (i.castAdd 9))).length = value i) ∧
+    ∀ i : Fin 12, 6 ≤ i.val → R (bank i) = []
+  have off (i : Fin 12) (outside : i.val < 3 ∨ 6 ≤ i.val) (j : Fin 3) : bank i ≠ dst j :=
+    bank.injective.ne (by intro eq; have h := congrArg Fin.val eq; change i.val = 3+j.val at h; omega)
+  have stable (R F) (h : ok R) (keep : ∀ k, (∀ i, k ≠ dst i) → F k = R k) : ok F := by
+    constructor
+    · intro i
+      rw [keep _ (off _ (Or.inl i.isLt))]
+      exact h.1 i
+    · intro i hi
+      exact (keep _ (off i (Or.inr hi))).trans (h.2 i hi)
+  let program : Fin 3 → Pr P T Q prime U := fun i => unaryBinary (bank (i.castAdd 9)) (dst i)
+    (bank 6) (bank 7) (bank 8) (bank 9) (bank 10) (bank 11)
+  have step (i : Fin 3) (a : HS T Q prime U) (A : Stacks T prime) (h : ok A.R) (fresh : A.R (dst i) = []) :
+      ∃ z n, z.user = a.user ∧ n ≤ 21*value i+10 ∧ Exec body (program i) (mk a A) n
+        (mk z {A with R := Function.update A.R (dst i) (binSyms (value i).size (value i))}) := by
+    refine unaryBinary_exec (body := body)
+      (((by decide : ∀ i : Fin 3, [i.castAdd 9,(i.natAdd 3).castAdd 6,6,7,8,9,10,11].Nodup) i).map bank.injective)
+      _ a A (h.1 i) ?_
+    · intro k hk
+      simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
+      rcases hk with rfl|rfl|rfl|rfl|rfl|rfl|rfl
+      · exact fresh
+      all_goals exact h.2 _ (by decide)
+
+  obtain ⟨z,D,n,user,price,run,left,outputs,frame⟩ := sequenceHeaders_exec body program dst
+    (fun i => binSyms (value i).size (value i)) (fun i => 21*value i+10) ok stable step (List.finRange 3)
+    (List.nodup_finRange _) u S ⟨source,fun i hi => empty i (by omega)⟩
+    (fun i _ => empty _ (by change 3 ≤ 3+i.val; omega))
+  have indices : List.finRange 3 = [0,1,2] := by decide
+  rw [indices] at price
+  simp only [List.map_cons,List.map_nil,List.sum_cons,List.sum_nil] at price
+  exact ⟨z,D,n,user,by omega,run,left,fun i => outputs i (by simp),fun k h => frame k (fun i _ => h i)⟩
+
 def descriptorPorts : Fin 6 ↪ Fin 72 := (Fin.natAddEmb 33).trans (Fin.castLEEmb (by decide))
 
 def powerPorts (i : Fin 3) : Fin 10 ↪ Fin 72 :=
