@@ -582,6 +582,25 @@ def childMetadataSources (K T : ℕ) (room : 16 ≤ T) : Fin 9 → Fin (66+(K+3+
   ![privatePort ⟨9,by omega⟩,publicPort 29,privatePort ⟨1,by omega⟩,publicPort 31,
     privatePort ⟨0,by omega⟩,publicPort 58,privatePort ⟨5,by omega⟩,privatePort ⟨6,by omega⟩,publicPort 46]
 
+/-- The caller's reusable tapes between the public ports and the saved headers. -/
+def directoryChildWorkspace (K T : ℕ) : Fin K ↪ Fin (66+(K+3+T)) :=
+  (Fin.natAddEmb 66).trans (Fin.castLEEmb (by omega))
+
+theorem directoryChildWorkspace_off (K T : ℕ) (room : 16 ≤ T) (j : Fin K) :
+    (∀ i, childMetadataSources K T room i ≠ directoryChildWorkspace K T j) ∧
+    (40 : Fin 66).castAdd (K+3+T) ≠ directoryChildWorkspace K T j := by
+  have high (i : Fin T) : stoppedChartPrivate K T i ≠ directoryChildWorkspace K T j := by
+    intro eq
+    have h := congrArg Fin.val eq
+    change 66+K+3+i.val = 66+j.val at h
+    omega
+  have low (i : Fin 66) : i.castAdd (K+3+T) ≠ directoryChildWorkspace K T j := by
+    intro eq
+    have h := congrArg Fin.val eq
+    change i.val = 66+j.val at h
+    omega
+  exact ⟨by intro i; fin_cases i <;> first | apply high | apply low,low 40⟩
+
 open RecursiveInterchangeLayout in
 theorem childMetadataSources_words {K T n w rows : ℕ} (room : 16 ≤ T)
     (replay : Fin (66+(K+3+T)) ↪ Fin n) (batch : Descriptor) (F : Stacks n prime)
@@ -601,6 +620,8 @@ theorem childMetadataSources_words {K T n w rows : ℕ} (room : 16 ≤ T)
     let words := ordinaryEntryWords (batch.between*batch.afterD) batch.beforeRows rows batch.beforeH true
       (fun _ => (1 : ZMod (prime^(w+1)))) next (F.R (publicPort 46))
     B.R (publicPort 40) = F.R (publicPort 40) ∧
+      (∀ j : Fin (66+(K+3+T)), 66 ≤ j.val → j.val < 66+K →
+        B.L (replay j) = F.L (replay j) ∧ B.R (replay j) = F.R (replay j)) ∧
       ∀ i : Fin 9, B.R (replay (childMetadataSources K T room i)) = words (ordinaryMetadataPorts i).val := by
   intro publicPort counts spectator modulus D E G M B words
   have clock : batch.width/64-1 = w := by omega
@@ -636,7 +657,21 @@ theorem childMetadataSources_words {K T n w rows : ℕ} (room : 16 ≤ T)
   have sources : (fun i => replay (childMetadataSources K T room i)) =
       ![priv 9,publicPort 29,priv 1,publicPort 31,priv 0,publicPort 58,priv 5,priv 6,publicPort 46] := by
     funext i; fin_cases i <;> rfl
-  refine ⟨by simp [Function.update_of_ne,separate,pub],?_⟩
+  refine ⟨by simp [Function.update_of_ne,separate,pub],?_,?_⟩
+  · intro j low high
+    have off (i : Fin 16) : replay j ≠ priv i := by
+      apply replay.injective.ne
+      intro eq
+      have h := congrArg Fin.val eq
+      change j.val = 66+K+3+i.val at h
+      omega
+    have publicOff : replay j ≠ publicPort 58 := by
+      apply replay.injective.ne
+      intro eq
+      have h := congrArg Fin.val eq
+      change j.val = 58 at h
+      omega
+    exact ⟨rfl,by simp [Function.update_of_ne,off,publicOff]⟩
   intro i
   rw [show replay (childMetadataSources K T room i) = _ from congrFun sources i]
   fin_cases i <;> simp [words,ordinaryMetadataPorts,ordinaryEntryWords,Function.update_of_ne,
@@ -689,6 +724,8 @@ theorem selectScheduledChart_exec [M8.Machine.Net] (K : ℕ) {P R U : Type}
         next ≤ prime^batch.width →
         B.R (replay ((40 : Fin 66).castAdd ((K+1)+3+T))) = binSyms L cutoff →
         (B.R (replay ((40 : Fin 66).castAdd ((K+1)+3+T)))).length ≤ batch.width →
+        (∀ j : Fin (K+1), let i := replay (directoryChildWorkspace (K+1) T j)
+          B.L i = [] ∧ B.R i = []) →
         (∀ j < batch.beforeRows*rows*142080*batch.beforeH,
           (LabelDirectory.entry prefixes 64 (w+1) j).length = next ∧ blank ∉ LabelDirectory.entry prefixes 64 (w+1) j) →
         (∀ j : Fin 9, B.R (replay (childMetadataSources (K+1) T modulusRoom j)) =
@@ -834,7 +871,7 @@ theorem selectScheduledChart_exec [M8.Machine.Net] (K : ℕ) {P R U : Type}
             have length : ((childCountState counts batch F).R (prefixPorts 0)).length+(w+1)*(64*64) = directoryDigits prime root (path++[i]) := by
               rw [hclock,prefixSize,directoryDigits_append_call,pathWidth,aligned]
               simp
-            obtain ⟨cutoffKept,metadata⟩ := childMetadataSources_words modulusRoom replay batch F ready
+            obtain ⟨cutoffKept,privateKept,metadata⟩ := childMetadataSources_words modulusRoom replay batch F ready
               (((childCountState counts batch F).R (prefixPorts 0)).length+(w+1)*(64*64)) childWidth childRows
               (((keep _ (public_ne_saved replay 29)).2).trans (src 0))
               (((keep _ (public_ne_saved replay 31)).2).trans (src 2))
@@ -842,6 +879,19 @@ theorem selectScheduledChart_exec [M8.Machine.Net] (K : ℕ) {P R U : Type}
             apply call y _ nextWidth nextRows nextLabels childWidth childRows nextFits cutoffWord
             · rw [cutoffWord,length_binSyms]
               exact precision.trans (batchWidth.symm ▸ active.le)
+            · intro slot
+              let j := directoryChildWorkspace (K+1) T slot
+              have low : 66 ≤ j.val := by change 66 ≤ 66+slot.val; omega
+              have high : j.val < 66+(K+1) := by change 66+slot.val < _; omega
+              have original := directoryReady.2.2.1 j (by omega)
+              have kept := keep (replay j) (fun l => by
+                apply replay.injective.ne
+                intro eq
+                have h := congrArg Fin.val eq
+                simp only [stoppedChartHeader,Fin.val_castAdd,ite_eq_left l.isLt] at h
+                omega)
+              obtain ⟨left,right⟩ := privateKept j low high
+              exact ⟨left.trans (kept.1.trans original.1),right.trans (kept.2.trans original.2)⟩
             · intro j hj
               have mem : j ∈ pending := List.mem_range.mpr (recordCount.symm ▸ hj)
               refine ⟨(widths j mem).trans (Eq.trans ?_ length), directoryEntry_nonblank _ _ _ _ (clean j mem)⟩
