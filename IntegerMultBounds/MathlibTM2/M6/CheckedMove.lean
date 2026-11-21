@@ -50,6 +50,7 @@ private theorem checked_move_words :
     ∃ P : Fin 636 → Matrix (Fin 8) (Fin 8) R,
       (∀ l, P l * P l = P l) ∧
       (∀ i j : Fin 636, Geometry.Moves.CheckedPair (i.val, j.val) → P i * P j = P j * P i) ∧
+      (∀ l, LinearMap.range (P l).mulVecLin = translatedLabel w l.val) ∧
       (∀ l k, P l k k = if k.val < Geometry.Dimensions.value l.val then 1 else 0) ∧
       ∀ (i j : Fin 636), Geometry.Moves.CheckedPair (i.val, j.val) →
         let q := (word i j).map (AffineFieldProgram.mapOp (Swap.Modular.ratMod (prime ^ w)))
@@ -84,8 +85,8 @@ private theorem checked_move_words :
     dsimp only
     split <;> exact rationalMoveWord_height _ _ _ (moveBasis_height _ _ (height _) (height _)) op
   intro w R
-  obtain ⟨P, reduced, lower, diag, nested⟩ := projectors w
-  refine ⟨P, fun l => (nested l l (fun _ h => h)).1, ?_, diag, ?_⟩
+  obtain ⟨P, reduced, lower, diag, images, nested⟩ := projectors w
+  refine ⟨P, fun l => (nested l l (fun _ h => h)).1, ?_, images, diag, ?_⟩
   · intro i j h
     rcases h.2.2 with eq | inc | inc
     · obtain rfl : i = j := Fin.ext eq
@@ -167,6 +168,7 @@ theorem checked_move_programs :
     ∃ P : Fin 636 → Matrix (Fin 8) (Fin 8) R,
       (∀ l, P l * P l = P l) ∧
       (∀ i j : Fin 636, Geometry.Moves.CheckedPair (i.val, j.val) → P i * P j = P j * P i) ∧
+      (∀ l, LinearMap.range (P l).mulVecLin = translatedLabel w l.val) ∧
       (∀ l k, P l k k = if k.val < Geometry.Dimensions.value l.val then 1 else 0) ∧
       ∀ (i j : Fin 636), Geometry.Moves.CheckedPair (i.val, j.val) →
         let q := (word i j).map (AffineFieldProgram.mapOp (Swap.Modular.ratMod (prime ^ w)))
@@ -177,7 +179,7 @@ theorem checked_move_programs :
   obtain ⟨word, interval, height, widths⟩ := checked_move_words
   refine ⟨word, interval, ?_, widths⟩
   intro i j checked ops subset atoms
-  obtain ⟨P, _, _, _, edge⟩ := widths 1
+  obtain ⟨P, _, _, _, _, edge⟩ := widths 1
   obtain ⟨legal, _, _⟩ := edge i j checked
   have rational (op) (hop : op ∈ ops) : AffineFieldProgram.Legal op := by
     apply legal_of_prime

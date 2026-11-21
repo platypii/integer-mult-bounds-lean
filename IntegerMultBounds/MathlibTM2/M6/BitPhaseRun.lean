@@ -14,6 +14,31 @@ open Shared50ModularControl (prime)
 
 local instance (w : ℕ) : NeZero (prime^w) := ⟨(pow_pos Shared50ModularControl.prime_prime.pos _).ne'⟩
 
+/-- At a data source the physical initial frame exchanges precisely the
+translated port line. This identifies its image even over a prime-power ring. -/
+theorem sourceFrame_image (w : ℕ) (t : Fin 111) :
+    ∃ U : Matrix (Fin 8) (Fin 8) (ZMod (prime^w)), U * U = U ∧
+      LinearMap.range U.mulVecLin = Submodule.span _ {fun j : Fin 8 => (translatedEntry t j.val : ZMod (prime^w))} ∧
+      ∀ (f : AddressStream (ZMod (prime^w))) x,
+        selectedFrame w (Frames.initialRefs t.val) f x = f (M8.Exchange.exchange U x) := by
+  obtain ⟨P,idem,image,action⟩ := selectedFrame_projectors w
+  obtain ⟨initial,labels,_⟩ := Nine.source_frames t.val t.isLt
+  let l : Fin 636 := ⟨2+t.val, by omega⟩
+  refine ⟨P l,idem l,(image l).trans ?_,?_⟩
+  · unfold translatedLabel
+    congr 1
+    ext v
+    constructor
+    · rintro ⟨⟨k,mem⟩,rfl⟩
+      change k.val ∈ Frames.labels (2+t.val) at mem
+      rw [labels,List.mem_singleton] at mem
+      exact Set.mem_singleton_iff.mpr (congrArg
+        (fun a : Fin 111 => fun j : Fin 8 => (translatedEntry a j.val : ZMod (prime^w))) (Fin.ext mem))
+    · rintro ⟨⟩
+      exact ⟨⟨t,by change t.val ∈ Frames.labels (2+t.val); simpa only [labels,List.mem_singleton]⟩,rfl⟩
+  · rw [initial]
+    exact action l
+
 noncomputable def phaseRead {k w W : ℕ} (owner : Fin 661 ↪ Fin k)
     (data : Fin k → Fin ((prime^w)^16*W) → ZMod 2) (j : Fin W) : ℕ → AddressStream (ZMod (prime^w)) :=
   Copy.extendStored fun r s => data (owner r) (FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) j)
@@ -382,6 +407,20 @@ noncomputable def labelScatter {w : ℕ} (n : Fin 9)
     frame i.val (FramedCircuit.moduleRun (sectionscatter.map RawGate.toCircuit)
       (FramedCircuit.decode frame stored) i.val)
 
+/-- Reading each output at its register chart turns the physical scatter into
+one framed scalar word on the registers of a common base label. -/
+theorem labelScatter_at_chart {w : ℕ} (n : Fin 9)
+    (bank : Matrix (Fin 64) (Fin 64) (ZMod (prime^w)) → ℕ → AddressStream (ZMod (prime^w)))
+    (g : Matrix (Fin 64) (Fin 64) (ZMod (prime^w))) (i : Fin 661) :
+    let frame := fun j => selectedFrame w (Frames.beforeScatter j)
+    let stored := Copy.extendStored fun j : Fin 661 => bank (g*registerChart w n j.val) j.val
+    labelScatter n bank (g*registerChart w n i.val) i.val =
+      frame i.val (FramedCircuit.moduleRun (sectionscatter.map RawGate.toCircuit)
+        (FramedCircuit.decode frame stored) i.val) := by
+  have cancel : g*registerChart w n i.val*(registerChart w n i.val).transpose = g := by
+    rw [Matrix.mul_assoc,mul_eq_one_comm.mp (registerChart_inverse w n i.val),Matrix.mul_one]
+  simp only [labelScatter,Copy.extendStored,dite_eq_left i.isLt,cancel]
+
 open IntegerMultBounds.MathlibTM2.Cover in
 theorem labelScatter_read {w B K : ℕ} {n : Fin 9} {r : Fin 32} {d : Fin 5}
     (data out : Fin 142081 → Fin ((prime^w)^16*(B*prime^(64*(w*64))*K)) → ZMod 2)
@@ -657,6 +696,112 @@ def InvocationEffect (n : Fin 9) (r : Fin 32) (d : Fin 5) (w B K : ℕ)
           (phaseRead owner x (labelSpectator h z))) g)) ∧
     ∀ i, i ≠ Fin.last 142080 → (∀ j, owner j ≠ i) → y i = x i
 
+/-- At each label the physical invocation ends in the certified final frames.
+The omitted zero-rank alignment leaves the represented bank unchanged. -/
+theorem InvocationEffect.finalRead {n : Fin 9} {r : Fin 32} {d : Fin 5} {w B K : ℕ} {x y}
+    (act : InvocationEffect n r d w B K x y) (g) (z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B) :
+    let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n r d,ownerTape_injective n r d⟩
+    let frame := selectedFrame w
+    let before := fun h => labelPhase w (sectionD ++ sectionA) (Frames.snapshot Frames.initialRefs)
+      (phaseRead owner x (labelSpectator h z))
+    let stored := FramedCircuit.decode (fun i => frame (Frames.scatterFinish Frames.beforeScatter i))
+      (labelScatter n before g)
+    phaseRead owner y (labelSpectator g z) =
+      FramedCircuit.encode (fun i => frame (Frames.snapshot Frames.finalRefs i))
+        (FramedCircuit.moduleRun ((sectionB ++ sectionC).map RawGate.toCircuit) stored) := by
+  intro owner frame before stored
+  let output := FramedCircuit.moduleRun ((sectionB ++ sectionC).map RawGate.toCircuit) stored
+  have aligned := Frames.final_alignment_compiled frame output
+  have fixed := final_alignment_identity w frame (FramedCircuit.encode
+    (fun i => frame (Frames.snapshot Frames.after234 i)) output)
+  rw [runPhase_eq _ frame (modular_scatter w).choose_spec.1 _ _
+    (Frames.final_alignment_pairs _) Geometry.Moves.final_checked.1] at fixed
+  have read := act.1 g z
+  change phaseRead owner y (labelSpectator g z) = FramedCircuit.encode
+    (fun i => frame (Frames.run (sectionB ++ sectionC) (Frames.scatterFinish Frames.beforeScatter) i)) output at read
+  rw [Frames.after_scatter] at read
+  exact read.trans (fixed.symm.trans aligned)
+
+/-- Every spectator position belongs to one matrix label, block and trailing cell. -/
+private theorem labelSpectator_surjective {w B K : ℕ} (j : Fin (B*prime^(64*(w*64))*K)) :
+    ∃ (g : Matrix (Fin 64) (Fin 64) (ZMod (prime^w))) (z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B), labelSpectator g z = j := by
+  let tail := finProdFinEquiv.symm j
+  let block := finProdFinEquiv.symm tail.1
+  have count : prime^(64*(w*64)) = (prime^w)^(64*64) := by
+    rw [← pow_mul]
+    congr 1
+    omega
+  let digits := FlatCoordinateLayout.coordinates (block.2.cast count)
+  let g : Matrix (Fin 64) (Fin 64) (ZMod (prime^w)) := fun i k => digits (finProdFinEquiv (k,i))
+  have label : Cover.LabelAddress.address g = block.2.cast count := by
+    unfold Cover.LabelAddress.address
+    have eq : M8.AtomOps.refine (Cover.Route.cols g) = digits := by
+      funext k
+      simp only [g,Cover.Route.cols,M8.AtomOps.refine,Prod.mk.eta,Equiv.apply_symm_apply]
+    rw [eq,FlatCoordinateLayout.rank_coordinates]
+  let z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B :=
+    ⟨⟨0,pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _⟩,⟨0,by simp [copyLabelLayout]⟩,block.1,
+      ⟨0,by simp [copyLabelLayout,ActualAffineScaling.modulus]⟩,⟨0,by simp [copyLabelLayout]⟩,⟨0,by simp [copyLabelLayout,ActualAffineScaling.modulus]⟩,tail.2⟩
+  refine ⟨g,z,Fin.ext ?_⟩
+  have packed := congrArg Fin.val (finProdFinEquiv.apply_symm_apply j)
+  have inner := congrArg Fin.val (finProdFinEquiv.apply_symm_apply tail.1)
+  change (block.1.val*prime^(64*(w*64))+(Cover.LabelAddress.address g).val)*K+tail.2.val = j.val
+  rw [label]
+  change (block.1.val*prime^(64*(w*64))+block.2.val)*K+tail.2.val = j.val
+  change (finProdFinEquiv block).val = tail.1.val at inner
+  change (finProdFinEquiv tail).val = j.val at packed
+  simp only [finProdFinEquiv_apply_val] at inner packed
+  rw [Nat.mul_comm block.1.val,← Nat.add_comm block.2.val,inner,Nat.mul_comm, Nat.add_comm]
+  exact packed
+
+/-- Two realizations of a class invocation with the same permanent inputs give
+the same permanent outputs, even when their temporary tapes differ. -/
+theorem InvocationEffect.agree {n : Fin 9} {r : Fin 32} {d : Fin 5} {w B K : ℕ} {x y x' y'}
+    (run : InvocationEffect n r d w B K x y) (run' : InvocationEffect n r d w B K x' y')
+    (input : ∀ i, i ≠ Fin.last 142080 → x i = x' i) :
+    ∀ i, i ≠ Fin.last 142080 → y i = y' i := by
+  let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n r d,ownerTape_injective n r d⟩
+  have reads (j) : phaseRead owner x j = phaseRead owner x' j := by
+    unfold phaseRead
+    congr 1
+    funext k s
+    exact congrFun (input (owner k) (Fin.castSucc_ne_last _)) _
+  intro i permanent
+  by_cases covered : ∃ k, owner k = i
+  · obtain ⟨k,rfl⟩ := covered
+    funext a
+    obtain ⟨⟨s,j⟩,rfl⟩ := copyAddress.symm.surjective a
+    obtain ⟨g,z,rfl⟩ := labelSpectator_surjective j
+    have left := run.1 g z
+    have right := run'.1 g z
+    change phaseRead owner y _ = _ at left
+    change phaseRead owner y' _ = _ at right
+    let endpoint := fun (read : Fin (B*prime^(64*(w*64))*K) → ℕ → AddressStream (ZMod (prime^w))) =>
+      labelPhase w (sectionB ++ sectionC) (Frames.scatterFinish Frames.beforeScatter)
+        (labelScatter n (fun h => labelPhase w (sectionD ++ sectionA) (Frames.snapshot Frames.initialRefs)
+          (read (labelSpectator h z))) g)
+    have same := congrArg endpoint (funext reads)
+    have eq := congrArg (fun bank => bank k.val s) (left.trans (same.trans right.symm))
+    simpa only [copyAddress_index,phaseRead,Copy.extendStored,dite_eq_left k.isLt] using eq
+  · have off : ∀ k, owner k ≠ i := fun k eq => covered ⟨k,eq⟩
+    exact (run.2 i permanent off).trans ((input i permanent).trans (run'.2 i permanent off).symm)
+
+/-- Reading the permanent tapes after a sequence of invocations agrees with
+folding any realization of the same invocation effects. -/
+theorem invocationTrace_agree {n : Fin 9} {w B K : ℕ}
+    {run : (Fin 32 × Fin 5) → _ → _}
+    (valid : ∀ (k : Fin 32 × Fin 5) x, InvocationEffect n k.1 k.2 w B K x (run k x))
+    (order : List (Fin 32 × Fin 5)) {x out model}
+    (trace : order.foldr (fun k next a => ∃ b, InvocationEffect n k.1 k.2 w B K a b ∧ next b)
+      (fun a => a = out) x)
+    (input : ∀ i, i ≠ Fin.last 142080 → x i = model i) :
+    ∀ i, i ≠ Fin.last 142080 → out i = (order.foldl (fun a k => run k a) model) i := by
+  induction order generalizing x model with
+  | nil => exact trace ▸ input
+  | cons k ks ih =>
+    obtain ⟨mid,step,rest⟩ := trace
+    exact ih rest (step.agree (valid k model) input)
+
 open M8.Machine in
 /-- Execute all 160 replica/class invocations of one stage piece in order.
 Each physical join is included in the linear overhead. -/
@@ -715,6 +860,23 @@ theorem invocationPiece_stage [Net] (n : Fin 9) (engine : CopyTranspose := CopyT
     dsimp only [compile]
     rw [SharedBankStage.compile_transform]
     simp [SharedBankStage.execute,List.foldl_map]
+
+open M8.Machine in
+/-- The stage built from the reference COPY and phase programs. -/
+noncomputable def referenceStage [Net] (n : Fin 9) {w B K : ℕ}
+    (hw : 0 < w) (hB : 0 < B) (hK : 0 < K) :=
+  ((invocationPiece_stage n).choose_spec w B K hw hB hK).choose
+
+open M8.Machine in
+theorem stageTrace_transform [Net] (n : Fin 9) {w B K : ℕ}
+    (hw : 0 < w) (hB : 0 < B) (hK : 0 < K) {x out}
+    (trace : stageRuns.foldr (fun k next a => ∃ b, InvocationEffect n k.1 k.2 w B K a b ∧ next b)
+      (fun a => a = out) x) :
+    ∀ i, i ≠ Fin.last 142080 → out i = (referenceStage n hw hB hK).transform x i := by
+  obtain ⟨run,valid,endpoint⟩ := ((invocationPiece_stage n).choose_spec w B K hw hB hK).choose_spec.2
+  unfold referenceStage
+  rw [endpoint]
+  exact invocationTrace_agree valid stageRuns trace (fun _ _ => rfl)
 
 open M8.Machine in
 /-- The nine stage pieces consume exactly the phase and COPY portions of the

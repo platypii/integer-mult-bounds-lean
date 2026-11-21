@@ -2703,7 +2703,7 @@ def AllocatedStage [M8.Machine.Net] (n : Fin 9) : Prop :=
     let K := M^112*(node.beforeRows*rows*node.between*node.afterD)
     let W := B*prime^(64*((w+1)*64))*K
     let V := M^16*W
-    0 < W → ∀ (record : R → I → List (Fin (prime+4))) (copyRecord : R → J → List (Fin (prime+4))),
+    ∀ pos : 0 < W, ∀ (record : R → I → List (Fin (prime+4))) (copyRecord : R → J → List (Fin (prime+4))),
     let desc := fun k i => scheduledChild prime node (child k i)
     ∃ position : ∀ k i, Fin (volume prime (desc k i)) ≃ Fin V,
     (∀ k i h, (position k i h).val = (CopyChildLayout.packActive (desc k i) h).val) ∧
@@ -2734,7 +2734,9 @@ def AllocatedStage [M8.Machine.Net] (n : Fin 9) : Prop :=
       t ≤ (stageRuns.map localCost).sum +
         ((List.range' (stageChildStart n) (stageRuns.flatMap (fun _ => Geometry.Moves.localPaid)).length).map childTime).sum+1 ∧
         z.user = u.user ∧ represented fan out F ∧
-        stageRuns.foldr (fun k next x => ∃ y, InvocationEffect n k.1 k.2 (w+1) B K x y ∧ next y) (fun x => x = out) data
+        stageRuns.foldr (fun k next x => ∃ y, InvocationEffect n k.1 k.2 (w+1) B K x y ∧ next y) (fun x => x = out) data ∧
+        ∀ i, i ≠ Fin.last 142080 → out i = (referenceStage n (Nat.succ_pos w)
+          (Nat.pos_of_mul_pos_right (Nat.pos_of_mul_pos_right pos)) (Nat.pos_of_mul_pos_left pos)).transform data i
 
 open Cover.Fallback IntegerMultBounds.Networks.Certificates.PR589 RecursiveInterchangeLayout in
 theorem allocatedStage_host [M8.Machine.Net] (n : Fin 9) : AllocatedStage n := by
@@ -2764,7 +2766,10 @@ theorem allocatedStage_host [M8.Machine.Net] (n : Fin 9) : AllocatedStage n := b
     intro k x u S live fresh
     obtain ⟨v,D,t,y,exec,time,user,out,act⟩ := execute k x u S live fresh
     exact ⟨v,D,t,y,exec,time.trans_eq (Nat.add_right_comm _ _ 3),user,out,act⟩)
-  exact ⟨prepared,owners,_,runStage⟩
+  refine ⟨prepared,owners,Prog.seqList (stageRuns.map fun k => embProg (runBank k) (Prod.mk k) (code k)),?_⟩
+  intro data u S live fresh
+  obtain ⟨z,F,t,out,exec,time,user,representedOut,trace⟩ := runStage data u S live fresh
+  exact ⟨z,F,t,out,exec,time,user,representedOut,trace,stageTrace_transform n _ _ _ trace⟩
 
 open IntegerMultBounds.Networks.Certificates.PR589.Nine in
 /-- To read a physical stage it suffices to identify the framed word on each

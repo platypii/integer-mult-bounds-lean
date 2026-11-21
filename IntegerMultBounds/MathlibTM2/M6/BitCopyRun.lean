@@ -174,7 +174,7 @@ theorem chartAddress_selected (w : ℕ) [NeZero (prime^w)] :
       copyAddress.symm (AffineFieldProgram.run (selectedWord w p) (copyAddress x).1,(copyAddress x).2) =
         chartAddress (frame ⟨p.2,checked.2.1⟩ (frame ⟨p.1,checked.1⟩ s),j) := by
   obtain ⟨_,_,widths⟩ := modular_move_profile.choose_spec
-  obtain ⟨P,_,_,action,_⟩ := widths w
+  obtain ⟨P,_,_,_,action,_⟩ := widths w
   refine ⟨P,?_⟩
   intro p checked n W s j L frame x
   change ∀ p (h : Geometry.Moves.CheckedPair p) a, AffineFieldProgram.run (selectedWord w p) a =

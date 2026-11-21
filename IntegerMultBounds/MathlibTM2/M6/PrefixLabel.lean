@@ -227,6 +227,37 @@ theorem prefixProjector_shape {R : Type*} [CommRing R] {d : ℕ} (hd : d ≤ 8)
     next h => simpa [h] using entry ⟨i.val, h⟩ ⟨i.val, h⟩
     next h => simp
 
+/-- The translated generators of one physical label at the machine radix. -/
+noncomputable def translatedLabel (w label : ℕ) : Submodule (ZMod (prime^w)) (Fin 8 → ZMod (prime^w)) :=
+  Submodule.span _ (Set.range fun l : {l : Fin 111 // l.val ∈ Frames.labels label} =>
+    fun j : Fin 8 => (translatedEntry l.val j.val : ZMod (prime^w)))
+
+private theorem prefixProjector_range {w label d : ℕ} (hd : d ≤ 8)
+    (B : Matrix (Fin d) (Fin 8) (ZMod (prime^w)))
+    (factor : ∃ (lines : Fin d → Fin 111) (C : Matrix (Fin d) (Fin d) (ZMod (prime^w))),
+      (∀ i, (lines i).val ∈ Frames.labels label) ∧
+      B = C * of fun i j => (translatedEntry (lines i) j.val : ZMod (prime^w)))
+    (fixes : ∀ l : Fin 111, l.val ∈ Frames.labels label →
+      (fun i : Fin d => (translatedEntry l i.val : ZMod (prime^w))) ᵥ* B =
+        fun j => (translatedEntry l j.val : ZMod (prime^w))) :
+    LinearMap.range (prefixProjector hd B).mulVecLin = translatedLabel w label := by
+  obtain ⟨lines,C,member,fact⟩ := factor
+  let G : Matrix (Fin d) (Fin 8) (ZMod (prime^w)) := of fun i j => translatedEntry (lines i) j.val
+  apply le_antisymm
+  · rintro _ ⟨x,rfl⟩
+    change prefixProjector hd B *ᵥ x ∈ _
+    rw [prefixProjector_mulVec, fact, ← vecMul_vecMul]
+    have incl : LinearMap.range G.vecMulLinear ≤ translatedLabel w label := by
+      rw [range_vecMulLinear]
+      apply Submodule.span_le.mpr
+      rintro _ ⟨i,rfl⟩
+      exact Submodule.subset_span ⟨⟨lines i,member i⟩,rfl⟩
+    exact incl ⟨_,rfl⟩
+  · apply Submodule.span_le.mpr
+    rintro _ ⟨l,rfl⟩
+    refine ⟨fun i => (translatedEntry l.val i.val : ZMod (prime^w)),?_⟩
+    exact (prefixProjector_mulVec hd B (fun i => (translatedEntry l.val i.val : ZMod (prime^w)))).trans (fixes l.val l.property)
+
 /-- One choice of modular frames for the entire word respects every inclusion of
 generator lists, so the choice at a label is independent of the incoming MOVE. -/
 theorem compatible_label_frames :
@@ -237,6 +268,7 @@ theorem compatible_label_frames :
       let project := fun (i : Fin 636) (x : Fin 8 → R) => (x ∘ Fin.castLE (bound i)) ᵥ* B i
       (∀ l i j, (chart l i j).den.Coprime (prime ^ w) ∧ B l i j = Swap.Modular.ratMod (prime ^ w) (chart l i j)) ∧
       (∀ i, (B i).submatrix id (Fin.castLE (bound i)) = 1) ∧
+      (∀ i, LinearMap.range (prefixProjector (bound i) (B i)).mulVecLin = translatedLabel w i.val) ∧
       ∀ i j : Fin 636, (∀ k ∈ Frames.labels i.val, k ∈ Frames.labels j.val) →
         ∀ x, project j (project i x) = project i x ∧ project i (project j x) = project i x := by
   classical
@@ -244,7 +276,7 @@ theorem compatible_label_frames :
   refine ⟨chart, height, ?_⟩
   intro w R
   choose B reduced norm factor fixes using fun i : Fin 636 => frames i w
-  refine ⟨B, bound, reduced, norm, ?_⟩
+  refine ⟨B, bound, reduced, norm, fun i => prefixProjector_range _ _ (factor i) (fixes i), ?_⟩
   intro i j incl x
   have sub : Geometry.label i.val ≤ Geometry.label j.val := by
     apply Submodule.span_le.mpr
@@ -265,6 +297,7 @@ theorem compatible_label_projectors :
       (∀ l i j, (Q l i j).den.Coprime (prime ^ w) ∧ P l i j = Swap.Modular.ratMod (prime ^ w) (Q l i j)) ∧
       (∀ l i j, i < j → P l i j = 0) ∧
       (∀ l i, P l i i = if i.val < Geometry.Dimensions.value l.val then 1 else 0) ∧
+      (∀ i, LinearMap.range (P i).mulVecLin = translatedLabel w i.val) ∧
       ∀ i j : Fin 636, (∀ k ∈ Frames.labels i.val, k ∈ Frames.labels j.val) →
         P j * P i = P i ∧ P i * P j = P i := by
   obtain ⟨chart, height, frames⟩ := compatible_label_frames
@@ -277,10 +310,10 @@ theorem compatible_label_projectors :
     · exact height _ _ _
     · simp
   intro w R
-  obtain ⟨B, bound, reduced, norm, nested⟩ := frames w
+  obtain ⟨B, bound, reduced, norm, images, nested⟩ := frames w
   refine ⟨fun i => prefixProjector (bound i) (B i), ?_,
     fun i => (prefixProjector_shape _ _ (norm i)).1,
-    fun i => (prefixProjector_shape _ _ (norm i)).2, ?_⟩
+    fun i => (prefixProjector_shape _ _ (norm i)).2, images, ?_⟩
   · intro l i j
     simp only [prefixProjector_entry, Q]
     split

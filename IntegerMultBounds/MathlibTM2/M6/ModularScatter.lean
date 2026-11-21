@@ -66,6 +66,10 @@ theorem modular_scatter (w : ℕ) :
       LocalMoveProfile word ∧
       (∀ bank : ℕ → E, Copy.lifecycles.foldl (fun b l => scatterWindow word l b) bank =
         Copy.run frame Copy.lifecycles bank) ∧
+      (∃ P : Fin 636 → Matrix (Fin 8) (Fin 8) R,
+        (∀ l, P l * P l = P l) ∧
+        (∀ l, LinearMap.range (P l).mulVecLin = translatedLabel w l.val) ∧
+        ∀ (l : Fin 636) (f : E) x, frame l.val f x = f (exchange (P l) x)) ∧
       ∀ stored : Fin 661 → E,
         let input := FramedCircuit.encode (fun j => frame (Frames.beforeScatter j)) (Copy.extendStored stored)
         let output := Copy.lifecycles.foldl (fun bank life => scatterWindow word life bank) input
@@ -73,7 +77,7 @@ theorem modular_scatter (w : ℕ) :
           (FramedCircuit.moduleRun (sectionscatter.map RawGate.toCircuit) (Copy.extendStored stored) i.val) := by
   intro R E word
   obtain ⟨_, _, widths⟩ := modular_move_profile.choose_spec
-  obtain ⟨P, idem, commute, spec, profile⟩ := widths w
+  obtain ⟨P, idem, commute, images, spec, profile⟩ := widths w
   change ∀ p (h : Geometry.Moves.CheckedPair p) s, AffineFieldProgram.run (word p) s =
     exchange (P ⟨p.2,h.2.1⟩) (exchange (P ⟨p.1,h.1⟩) s) at spec
   let frame := streamFrame P idem
@@ -110,7 +114,10 @@ theorem modular_scatter (w : ℕ) :
     | cons l ls ih =>
       rw [List.foldl_cons, step l (hl _ List.mem_cons_self), Copy.run]
       exact ih (fun k hk => hl _ (List.mem_cons_of_mem _ hk)) _
-  refine ⟨frame, read, invol, profile, fold _ (fun _ h => h), ?_⟩
+  refine ⟨frame, read, invol, profile, fold _ (fun _ h => h), ⟨P,idem,images,?_⟩, ?_⟩
+  · intro l f x
+    change f (exchange (P ⟨l.val % 636, _⟩) x) = _
+    rw [show (⟨l.val % 636, Nat.mod_lt _ (by decide)⟩ : Fin 636) = l from Fin.ext (Nat.mod_eq_of_lt l.isLt)]
   intro stored input output
   dsimp only [output]
   rw [fold _ (fun _ h => h)]
@@ -118,6 +125,35 @@ theorem modular_scatter (w : ℕ) :
 
 /-- The same width-indexed frames interpret the whole phase and every physical window. -/
 noncomputable def selectedFrame (w : ℕ) := (modular_scatter w).choose
+
+/-- The chosen stream frame exchanges an idempotent with exactly the
+translated label as its image, at every machine precision. -/
+theorem selectedFrame_projectors (w : ℕ) :
+    ∃ P : Fin 636 → Matrix (Fin 8) (Fin 8) (ZMod (prime^w)),
+      (∀ l, P l * P l = P l) ∧
+      (∀ l, LinearMap.range (P l).mulVecLin = translatedLabel w l.val) ∧
+      ∀ (l : Fin 636) (f : Swap.Shear.State (Fin 8) (ZMod (prime^w)) → ZMod 2) x,
+        selectedFrame w l.val f x = f (exchange (P l) x) :=
+  (modular_scatter w).choose_spec.2.2.2.2.1
+
+/-- A candidate for a port boundary with the same image as the physical
+projector satisfies both absorption equations used by the port correction. -/
+theorem selectedFrame_same_image (w : ℕ) (l : Fin 636)
+    (V : Matrix (Fin 8) (Fin 8) (ZMod (prime^w))) (vv : V * V = V)
+    (image : LinearMap.range V.mulVecLin = translatedLabel w l.val) :
+    ∃ U : Matrix (Fin 8) (Fin 8) (ZMod (prime^w)), U * V = V ∧ V * U = U ∧
+      ∀ (f : Swap.Shear.State (Fin 8) (ZMod (prime^w)) → ZMod 2) x,
+        selectedFrame w l.val f x = f (exchange U x) := by
+  obtain ⟨P,idem,images,read⟩ := selectedFrame_projectors w
+  have absorb (A B : Matrix (Fin 8) (Fin 8) (ZMod (prime^w))) (aa : A * A = A)
+      (contained : LinearMap.range B.mulVecLin ≤ LinearMap.range A.mulVecLin) : A * B = B := by
+    apply Matrix.ext_iff_mulVec.mpr
+    intro x
+    obtain ⟨y,hy⟩ := contained (show B *ᵥ x ∈ LinearMap.range B.mulVecLin from ⟨x,rfl⟩)
+    change A *ᵥ y = B *ᵥ x at hy
+    rw [← mulVec_mulVec, ← hy, mulVec_mulVec, aa]
+  exact ⟨P l,absorb _ _ (idem l) ((images l).trans image.symm).ge,
+    absorb _ _ vv (image.trans (images l).symm).ge,read l⟩
 
 /-- Apply a stream frame separately on each spectator slice of a serialized tape. -/
 def tapeFrame {S : Type*} {N W : ℕ} (addr : Fin N ≃ S × Fin W)

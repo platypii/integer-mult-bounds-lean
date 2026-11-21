@@ -270,6 +270,15 @@ theorem oblique_line_route (h : c.Checked) (U : Matrix (Fin 8) (Fin 8) ℚ)
   simp [R, fromBlocks_multiply, Matrix.mul_sub, idem, ub, annihilate, leftInv, rightInv,
     ← fromBlocks_one]
 
+private theorem lineProj_rank_le : c.lineProj.rank ≤ 1 := by
+  have outer : c.lineProj = vecMulVec (fun i => (c.line i : ℚ))
+      (fun j => (c.line j : ℚ) / 4) := by
+    ext i j
+    simp only [lineProj, of_apply, vecMulVec_apply]
+    ring
+  rw [outer]
+  exact rank_vecMulVec_le _ _
+
 /-- The shear carrying the word's target hyperplane to the oblique target changes
 at most one coordinate direction. Its inverse subtracts the same square-zero map. -/
 theorem target_frame_correction (h : c.Checked) (U : Matrix (Fin 8) (Fin 8) ℚ)
@@ -287,24 +296,88 @@ theorem target_frame_correction (h : c.Checked) (U : Matrix (Fin 8) (Fin 8) ℚ)
   have square : N * N = 0 := by
     calc N * N = N * (c.lineProj * N) := by rw [fixed]
          _ = 0 := by rw [← Matrix.mul_assoc, kills, Matrix.zero_mul]
-  have rankP : c.lineProj.rank ≤ 1 := by
-    have outer : c.lineProj = vecMulVec (fun i => (c.line i : ℚ))
-        (fun j => (c.line j : ℚ) / 4) := by
-      ext i j
-      simp only [lineProj, of_apply, vecMulVec_apply]
-      ring
-    rw [outer]
-    exact rank_vecMulVec_le _ _
   have inverse : (1 + N) * (1 - N) = 1 := by
     rw [mul_sub, mul_one, add_mul, one_mul, square, add_zero, add_sub_cancel_right]
   refine ⟨?_, square, inverse, ?_⟩
   · calc N.rank = (c.lineProj * N).rank := by rw [fixed]
          _ ≤ c.lineProj.rank := rank_mul_le_left _ _
-         _ ≤ 1 := rankP
+         _ ≤ 1 := lineProj_rank_le (c := c)
   · rw [mul_sub (1 + N) 1 c.lineProj, mul_one, sub_mul, inverse, add_mul, one_mul, kills, add_zero,
       mul_sub, mul_one, fixed]
     dsimp [N]
     abel
+
+/-- The target correction also transports the whole port route. A single
+change of the eight local coordinates carries the orthogonal route to the
+oblique route while keeping the seven exterior coordinates fixed. -/
+theorem oblique_route_conjugate (h : c.Checked) (U : Matrix (Fin 8) (Fin 8) ℚ)
+    (up : U * c.lineProj = c.lineProj) (pu : c.lineProj * U = U) :
+    let N := c.lineProj - U
+    fromBlocks (1 + N) 0 0 1 * c.rho * fromBlocks (1 - N) 0 0 1 =
+      fromBlocks U ((1 - U) * c.complement) c.complementᵀ 0 := by
+  intro N
+  have kills : N * c.lineProj = 0 := by
+    rw [show N = c.lineProj - U from rfl, sub_mul, lineProj_mul_self h, up, sub_self]
+  have fixed : c.lineProj * N = N := by
+    rw [show N = c.lineProj - U from rfl, mul_sub, lineProj_mul_self h, pu]
+  have left : c.complementᵀ * U = 0 := by
+    calc _ = c.complementᵀ * (c.lineProj * U) := by rw [pu]
+         _ = 0 := by rw [← Matrix.mul_assoc, transpose_complement_mul_lineProj h, Matrix.zero_mul]
+  simp only [rho, fromBlocks_multiply, Matrix.zero_mul, Matrix.mul_zero, Matrix.mul_one,
+    Matrix.one_mul, zero_add, add_zero]
+  congr 1
+  · rw [add_mul, one_mul, kills, add_zero, mul_sub, mul_one, fixed]
+    dsimp [N]
+    abel
+  · simp [N, Matrix.add_mul, lineProj_mul_complement h, sub_eq_add_neg]
+  · simp [N, Matrix.mul_sub, transpose_complement_mul_lineProj h, left]
+
+/-- Transport a separately chosen projector onto the target hyperplane to the
+complement required by the oblique route. The two coordinate changes account
+for the choice of kernel at the target and at the source respectively. -/
+theorem oblique_target_transport (h : c.Checked) (U V : Matrix (Fin 8) (Fin 8) ℚ)
+    (up : U * c.lineProj = c.lineProj) (pu : c.lineProj * U = U)
+    (vq : V * (1 - c.lineProj) = 1 - c.lineProj)
+    (qv : (1 - c.lineProj) * V = V) :
+    let N := c.lineProj - U
+    let K := V - (1 - c.lineProj)
+    let T := (1 + N) * (1 + K)
+    let S := (1 - K) * (1 - N)
+    K.rank ≤ 1 ∧ K * K = 0 ∧ T * S = 1 ∧ T * V * S = 1 - U := by
+  intro N K T S
+  let Q := 1 - c.lineProj
+  have vq' : V * Q = Q := vq
+  have qv' : Q * V = V := qv
+  have qq : Q * Q = Q := orth_mul_self h
+  have vv : V * V = V := by
+    calc _ = V * (Q * V) := by rw [qv']
+         _ = V := by rw [← Matrix.mul_assoc, vq', qv']
+  have kv : K * V = 0 := by change (V - Q) * V = 0; rw [sub_mul, vv, qv', sub_self]
+  have vk : V * K = K := by change V * (V - Q) = V - Q; rw [mul_sub, vv, vq']
+  have kq : K * Q = 0 := by change (V - Q) * Q = 0; rw [sub_mul, vq', qq, sub_self]
+  have kk : K * K = 0 := by change K * (V - Q) = 0; rw [mul_sub, kv, kq, sub_self]
+  have rank : K.rank ≤ 1 := by
+    have eq : K = K * c.lineProj := by
+      change K * (1 - c.lineProj) = 0 at kq
+      rw [mul_sub, mul_one, sub_eq_zero] at kq
+      exact kq
+    calc K.rank = (K * c.lineProj).rank := congrArg Matrix.rank eq
+         _ ≤ c.lineProj.rank := rank_mul_le_right _ _
+         _ ≤ 1 := lineProj_rank_le (c := c)
+  have inverse : (1 + K) * (1 - K) = 1 := by
+    rw [mul_sub, mul_one, add_mul, one_mul, kk, add_zero, add_sub_cancel_right]
+  have target : (1 + K) * V * (1 - K) = Q := by
+    rw [add_mul, one_mul, kv, add_zero, mul_sub, mul_one, vk]
+    change V - (V - Q) = Q
+    abel
+  obtain ⟨_,_,outer,correct⟩ := target_frame_correction h U up pu
+  refine ⟨rank, kk, ?_, ?_⟩
+  · change (1 + N) * (1 + K) * ((1 - K) * (1 - N)) = 1
+    rw [Matrix.mul_assoc, ← Matrix.mul_assoc (1 + K), inverse, one_mul]
+    exact outer
+  · change (1 + N) * (1 + K) * V * ((1 - K) * (1 - N)) = 1 - U
+    rw [Matrix.mul_assoc (1 + N), ← Matrix.mul_assoc _ (1 - K), Matrix.mul_assoc (1 + N), target]
+    exact correct
 
 end PortCertificate
 
