@@ -414,66 +414,76 @@ theorem copyRoute_host [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
 open IntegerMultBounds.Networks.Certificates.PR589 in
 /-- Put the nine COPY programs on the same owner tapes, with a distinct private
 tape for every other local slot. This also separates equal-sized workspaces. -/
-theorem copyWindowBanks {k : ℕ} (tapes : Fin Copy.lifecycles.length → ℕ)
+theorem copyWindowBanks {I : Type} [Fintype I] {k : ℕ} (tapes : I → ℕ)
     (owner : ∀ i, Fin k ↪ Fin (tapes i)) :
     ∃ (T : ℕ) (shared : Fin k ↪ Fin T) (bank : ∀ i, Fin (tapes i) ↪ Fin T),
       (∀ i j, bank i (owner i j) = shared j) ∧
-      (∀ X : Stacks k prime, ∀ initial : (i : Fin Copy.lifecycles.length) → Stacks (tapes i) prime,
+      (∀ X : Stacks k prime, ∀ initial : (i : I) → Stacks (tapes i) prime,
         ∃ S : Stacks T prime, embStk shared S = X ∧ ∀ i l, (∀ j, owner i j ≠ l) →
           S.L (bank i l) = (initial i).L l ∧ S.R (bank i l) = (initial i).R l) ∧
       ∀ i l, (∀ j, owner i j ≠ l) →
         (∀ j, shared j ≠ bank i l) ∧ ∀ m, m ≠ i → ∀ j, bank m j ≠ bank i l := by
   classical
-  let J := (i : Fin Copy.lifecycles.length) × Fin (tapes i)
+  let J := (i : I) × {l : Fin (tapes i) // ∀ j, owner i j ≠ l}
   let N := Fintype.card J
-  let privateSlot (i) (l : Fin (tapes i)) : Fin N := Fintype.equivFin J ⟨i,l⟩
-  let localBank (i) : Fin (k+tapes i) ↪ Fin (k+N) :=
-    (finSumFinEquiv.symm.toEmbedding.trans ((Function.Embedding.refl (Fin k)).sumMap
-      ⟨privateSlot i,fun x y eq => by
-        have p := (Fintype.equivFin J).injective eq
-        exact Fin.ext (congrArg (fun z : J => z.2.val) p)⟩)).trans finSumFinEquiv.toEmbedding
-  let bank (i) : Fin (tapes i) ↪ Fin (k+N) :=
-    (⟨SharedBank.slot (owner i),SharedBank.slot_injective (owner i)⟩ :
-      Fin (tapes i) ↪ Fin (k+tapes i)).trans (localBank i)
-  have selected (i j) : bank i (owner i j) = j.castAdd N := by
-    change localBank i (SharedBank.slot (owner i) (owner i j)) = _
-    rw [SharedBank.slot_selected _ (owner i).injective]
-    simp [localBank]
-  have unused (i l) (off : ∀ j, owner i j ≠ l) : bank i l = (privateSlot i l).natAdd k := by
-    change localBank i (SharedBank.slot (owner i) l) = _
-    rw [SharedBank.slot,dif_neg (show ¬ ∃ j, owner i j = l from fun ⟨j,h⟩ => off j h)]
-    simp [localBank]
-    rfl
+  let slot (i) (l : Fin (tapes i)) : Fin (k+N) :=
+    if h : ∃ j, owner i j = l then h.choose.castAdd N
+    else ((Fintype.equivFin J) ⟨i,l,fun j eq => h ⟨j,eq⟩⟩).natAdd k
+  have selected (i j) : slot i (owner i j) = j.castAdd N := by
+    have h : ∃ x, owner i x = owner i j := ⟨j,rfl⟩
+    simp only [slot,dif_pos h,(owner i).injective h.choose_spec]
+  have unused (i l) (off : ∀ j, owner i j ≠ l) :
+      slot i l = ((Fintype.equivFin J) ⟨i,l,off⟩).natAdd k := by
+    simp only [slot,dif_neg (show ¬ ∃ j, owner i j = l from fun ⟨j,h⟩ => off j h)]
+  have sep (i l) (off : ∀ j, owner i j ≠ l) (j : Fin k) : j.castAdd N ≠ slot i l := by
+    rw [unused i l off]
+    intro eq
+    have h := congrArg Fin.val eq
+    simp only [Fin.val_castAdd,Fin.val_natAdd] at h
+    omega
+  let bank (i) : Fin (tapes i) ↪ Fin (k+N) := ⟨slot i,by
+    intro l m eq
+    by_cases hl : ∃ j, owner i j = l
+    · obtain ⟨j,rfl⟩ := hl
+      rw [selected] at eq
+      by_cases hm : ∃ h, owner i h = m
+      · obtain ⟨h,rfl⟩ := hm
+        rw [selected] at eq
+        exact congrArg (owner i) ((Fin.castAddEmb N).injective eq)
+      · exact False.elim (sep i m (fun h e => hm ⟨h,e⟩) j eq)
+    · have off := fun j e => hl (Exists.intro j e)
+      by_cases hm : ∃ h, owner i h = m
+      · obtain ⟨h,rfl⟩ := hm
+        rw [selected] at eq
+        exact False.elim (sep i l off h eq.symm)
+      · rw [unused i l off,unused i m (fun h e => hm ⟨h,e⟩)] at eq
+        have same := (Fintype.equivFin J).injective ((Fin.natAdd_injective N k) eq)
+        exact Fin.ext (congrArg (fun p : J => p.2.val.val) same)⟩
   refine ⟨k+N,Fin.castAddEmb N,bank,selected,?_,?_⟩
   · intro X initial
     let collect (get : ∀ i, Fin (tapes i) → List (Fin (prime+4))) (p : Fin N) :=
       let j := (Fintype.equivFin J).symm p
-      get j.1 j.2
+      get j.1 j.2.val
     let S : Stacks (k+N) prime := ⟨X.inp,X.out,Fin.addCases X.L (collect (fun i => (initial i).L)),
       Fin.addCases X.R (collect (fun i => (initial i).R))⟩
     refine ⟨S,?_,?_⟩
     · cases X
       simp [S,embStk,Function.comp_def]
     · intro i l off
+      change S.L (slot i l) = _ ∧ S.R (slot i l) = _
       rw [unused i l off]
-      have decode : (Fintype.equivFin J).symm (privateSlot i l) = (⟨i,l⟩ : J) :=
-        (Fintype.equivFin J).symm_apply_apply _
+      have decode := (Fintype.equivFin J).symm_apply_apply (⟨i,l,off⟩ : J)
       simp only [S,Fin.addCases_right,collect]
-      exact ⟨congrArg (fun p : J => (initial p.1).L p.2) decode,
-        congrArg (fun p : J => (initial p.1).R p.2) decode⟩
+      exact ⟨congrArg (fun p : J => (initial p.1).L p.2.val) decode,
+        congrArg (fun p : J => (initial p.1).R p.2.val) decode⟩
   intro i l off
-  have sep (j : Fin k) : j.castAdd N ≠ bank i l := by
-    rw [unused i l off]
-    intro eq
-    have h := congrArg Fin.val eq
-    simp only [Fin.val_castAdd,Fin.val_natAdd] at h
-    omega
-  refine ⟨sep,?_⟩
+  refine ⟨sep i l off,?_⟩
   intro m ne j
+  change slot m j ≠ slot i l
   by_cases mapped : ∃ x, owner m x = j
   · obtain ⟨x,rfl⟩ := mapped
     rw [selected]
-    exact sep x
+    exact sep i l off x
   · rw [unused m j (fun x eq => mapped ⟨x,eq⟩),unused i l off]
     intro eq
     have slots := (Fin.natAdd_injective N k) eq
@@ -1499,75 +1509,185 @@ theorem invocationPhase_host {T Q k w W : ℕ} {P U : Type} (owner : Fin 661 ↪
   rwa [gatesCost gates (fun i => frame (current i)),movesCost edges] at time
 
 open IntegerMultBounds.Networks.Certificates.PR589 in
+/-- The literal XOR list for a phase gate runs on the shared owner and control bank. -/
+private theorem phaseGateProgram {k : ℕ} (owner : Fin 661 ↪ Fin k) (g : RawGate) (mem : g ∈ program) :
+    ∃ (q : ℕ) (machine : Program (k+2) q prime), ∀ V, 0 < V → ∀ data : Fin k → Fin V → ZMod 2,
+      let bank := fun X => PointwiseRoleGate.bank (a := prime) (fun _ _ => blank) (fun _ => 0)
+        (SparseRoleCircuit.encoded X) (FlatCoordinateSchedule.bits V)
+      ∃ out, HoareTime machine (fun X => X = bank data) (fun Y => Y = bank out) (76*g.toCircuit.terms.length*V) ∧
+        (∀ i, (∀ j, owner j ≠ i) → out i = data i) ∧ ∀ j : Fin 661, ∀ i,
+        out (owner j) i = g.toCircuit.run (Copy.extendStored (fun r => data (owner r) i)) j.val := by
+  classical
+  let target := (⟨g.target,(register_bounds g mem).1⟩ : Fin 661)
+  let dst := fun _ : Unit => owner target
+  let src := fun j : {j // j ∈ g.sources} => owner ⟨j.val,(register_bounds g mem).2 _ j.property⟩
+  let entries := g.sources.attach.map fun j => ((),j)
+  have off : ∀ a b, dst a ≠ src b := by
+    intro a b eq
+    have same : b.val = g.target := (congrArg Fin.val (owner.injective eq)).symm
+    exact target_not_mem_sources g mem (same ▸ b.property)
+  refine ⟨_,SparseRoleCircuit.program dst src off entries,?_⟩
+  intro V pos data bank
+  let out := fun k i => Circuit.run (SparseCircuit.copies dst src entries) (fun j => data j i) k
+  refine ⟨out,?_,?_,?_⟩
+  · have run := SparseRoleCircuit.copies_hoare (a := prime) dst src off entries (fun _ _ => blank) (fun _ => 0)
+        data (FlatCoordinateSchedule.bits V) (FlatCoordinateSchedule.bits_value V)
+    apply run.consequence (fun _ h => h) (fun _ h => h)
+    simpa [entries,RawGate.toCircuit] using SparseRoleCircuit.cost_linear entries.length V _
+      (FlatCoordinateSchedule.bits_value V) (FlatCoordinateSchedule.bits_canonical V) pos
+  · intro j unused
+    funext i
+    simp [out,SparseCircuit.copies_run _ _ _ off,entries,dst,unused]
+  · intro j i
+    rw [RawGate.run_eq]
+    change Circuit.run _ _ _ = _
+    rw [SparseCircuit.copies_run _ _ _ off]
+    by_cases eq : j = target
+    · subst j
+      have reads (r : {j // j ∈ g.sources}) : data (src r) i =
+          Copy.extendStored (fun a => data (owner a) i) r.val := by
+        simp [Copy.extendStored,src,(register_bounds g mem).2 _ r.property]
+      simp only [entries,List.map_map,Function.comp_def,dst,ite_true,reads]
+      rw [List.attach_map_val (l := g.sources) (f := Copy.extendStored (fun a => data (owner a) i))]
+      simp [target,Copy.extendStored,(register_bounds g mem).1]
+    · have ne : j.val ≠ g.target := fun h => eq (Fin.ext h)
+      simp [entries,dst,Ne.symm eq,Function.update_of_ne ne,Copy.extendStored,j.isLt]
+
+open IntegerMultBounds.Networks.Certificates.PR589 in
 /-- One class invocation executes the two literal phases around the nine COPY
 lifecycles and returns the selected register action at every cover label. -/
-theorem invocation_host {T Q w B K : ℕ} {P U : Type}
-    (body : P → Pr P T Q prime U) (n : Fin 9) (r : Fin 32) (d : Fin 5) :
+theorem invocation_host {w B K : ℕ} {P U : Type}
+    (n : Fin 9) (r : Fin 32) (d : Fin 5)
+    (tapes : Option (Fin Copy.lifecycles.length) → ℕ)
+    (ports : ∀ i, Fin (142081+2) ↪ Fin (tapes i))
+    (shared : Stacks (142081+2) prime) (initial : ∀ i, Stacks (tapes i) prime) :
+    ∃ (T : ℕ) (fan : Fin (142081+2) ↪ Fin T) (bank : ∀ i, Fin (tapes i) ↪ Fin T)
+      (prepared : Stacks T prime),
+    (∀ i j, bank i (ports i j) = fan j) ∧ embStk fan prepared = shared ∧
+    (∀ i l, (∀ j, ports i j ≠ l) →
+      prepared.L (bank i l) = (initial i).L l ∧ prepared.R (bank i l) = (initial i).R l) ∧
+    let region := fun i k => ∃ l, (∀ j, ports i j ≠ l) ∧ bank i l = k
+    let workspace := fun i => region (some i)
+    let phaseTapes := region none
+    ∃ gateStates : ℕ, ∀ Q, gateStates ≤ Q →
+    ∀ localBody : ∀ i, P → Pr P (tapes i) Q prime U,
+    let proc := fun (i : Option (Fin Copy.lifecycles.length)) (f : P) => (i,f)
+    let body := fun f : Option (Fin Copy.lifecycles.length) × P =>
+      embProg (bank f.1) (proc f.1) (localBody f.1 f.2)
     let W := B*prime^(64*((w+1)*64))*K
     let V := (prime^(w+1))^16*W
     let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n r d,ownerTape_injective n r d⟩
     let view := fun (x : Fin 142081 → Fin V → ZMod 2) k t => x k (Fin.cast (copyLabel_volume (w+1) B K) t)
     let gateTime := fun g : Circuit.Gate ℕ (ZMod 2) => 76*g.terms.length*V*(142081+7)+6
-    ∀ (ready : Bool → (Fin 142081 → Fin V → ZMod 2) → Stacks T prime → Prop)
-      (fan : Fin (142081+2) ↪ Fin T) (phaseTapes : Fin T → Prop)
-      (workspace : Fin Copy.lifecycles.length → Fin T → Prop) (prepared : Stacks T prime)
-      (apart : ∀ i j, i ≠ j → ∀ k, workspace i k → ¬ workspace j k)
-      (privateTapes : ∀ i k, workspace i k ∨ phaseTapes k → ∀ j, fan j ≠ k)
-      (protectedOff : ∀ i k, phaseTapes k → ¬ workspace i k)
-      (moveTime : ℕ × ℕ → ℕ) (copyTime : Fin Copy.lifecycles.length → ℕ),
-    let copyReady := fun (data : Fin 142081 → Fin V → ZMod 2) (S : Stacks T prime) =>
+    0 < V → ∀ (moveTime : ℕ × ℕ → ℕ) (copyTime : Fin Copy.lifecycles.length → ℕ),
+    let represented := fun {t : ℕ} (e : Fin (142081+2) ↪ Fin t) (data : Fin 142081 → Fin V → ZMod 2) (S : Stacks t prime) =>
       RepT (PointwiseRoleGate.bank (a := prime) (fun _ _ => blank) (fun _ => 0)
-        (SparseRoleCircuit.encoded data) (FlatCoordinateSchedule.bits V)) (embStk fan S).L (embStk fan S).R
+        (SparseRoleCircuit.encoded data) (FlatCoordinateSchedule.bits V)) (embStk e S).L (embStk e S).R
+    let copyReady := represented fan
     let saved := fun (region : Fin T → Prop) (S : Stacks T prime) =>
       ∀ k, region k → S.L k = prepared.L k ∧ S.R k = prepared.R k
-    (∀ (side : Bool) (g : RawGate), g ∈ program → ∃ code, ∀ data u S, ready side data S →
-      ∃ z F t out, Exec body code (mk u S) t (mk z F) ∧ t ≤ gateTime g.toCircuit ∧ z.user = u.user ∧
-        ready side out F ∧ (∀ i, (∀ j, owner j ≠ i) → out i = data i) ∧ ∀ j : Fin 661, ∀ k,
-          out (owner j) k = g.toCircuit.run (Copy.extendStored (fun j => data (owner j) k)) j.val) →
-    (∀ side (j : Fin 661) p, p ∈ Geometry.Moves.phaseEdges → Geometry.Moves.CheckedPair p →
-      Geometry.moveRank p.1 p.2 ≠ 0 → ∃ code, ∀ data u S, ready side data S → ∃ z F t y,
-        Exec body code (mk u S) t (mk z F) ∧ t ≤ moveTime p ∧ z.user = u.user ∧
-        ready side (Function.update data (owner j) y) F ∧ ∀ s l,
+    let phaseReady := fun data (S : Stacks (tapes none) prime) => represented (ports none) data S ∧
+      ∀ l, (∀ h, ports none h ≠ l) → S.L l = (initial none).L l ∧ S.R l = (initial none).R l
+    (∀ (j : Fin 661) p, p ∈ Geometry.Moves.phaseEdges → Geometry.Moves.CheckedPair p →
+      Geometry.moveRank p.1 p.2 ≠ 0 → ∃ code, ∀ data u S, phaseReady data S → ∃ z F t y,
+        Exec (localBody none) code (mk u S) t (mk z F) ∧ t ≤ moveTime p ∧ z.user = u.user ∧
+        phaseReady (Function.update data (owner j) y) F ∧ ∀ s l,
           y (index (AffineFieldCoordinates.embed (AffineFieldProgram.run (selectedWord (w+1) p) s)) l) =
             data (owner j) (index (AffineFieldCoordinates.embed s) l)) →
-    (∀ data S, ready false data S → copyReady data S ∧ saved phaseTapes S ∧ ∀ i, saved (workspace i) S) →
-    (∀ j, ∃ code, ∀ data u S, copyReady data S →
-      saved (workspace j) S →
-      ∃ z F t out, Exec body code (mk u S) t (mk z F) ∧ t ≤ copyTime j ∧ z.user = u.user ∧ copyReady out F ∧
-      CopyWindowEffect n r d Copy.lifecycles[j.val] (w+1) B K (view data) (view out) ∧
-      ∀ k, (∀ l, fan l ≠ k) → ¬ workspace j k → F.L k = S.L k ∧ F.R k = S.R k) →
-    (∀ data S, copyReady data S → saved phaseTapes S → ready true data S) →
-    ∃ code, ∀ data u S, ready false data S → ∃ z F t out, Exec body code (mk u S) t (mk z F) ∧
+    (∀ j, ∃ code, ∀ data u S, represented (ports (some j)) data S →
+      (∀ l, (∀ h, ports (some j) h ≠ l) →
+        S.L l = (initial (some j)).L l ∧ S.R l = (initial (some j)).R l) →
+      ∃ z F t out, Exec (localBody (some j)) code (mk u S) t (mk z F) ∧ t ≤ copyTime j ∧
+        z.user = u.user ∧ represented (ports (some j)) out F ∧
+        CopyWindowEffect n r d Copy.lifecycles[j.val] (w+1) B K (view data) (view out)) →
+    ∃ code, ∀ data u S, copyReady data S → (∀ i, saved (region i) S) → ∃ z F t out, Exec body code (mk u S) t (mk z F) ∧
       t ≤ ((sectionD++sectionA++(sectionB++sectionC)).map (fun g => gateTime g.toCircuit)).sum +
         ((Geometry.Moves.phaseEdges.filter (fun p => Geometry.moveRank p.1 p.2 != 0)).map moveTime).sum +
-        (List.ofFn copyTime).sum+3 ∧ z.user = u.user ∧ ready true out F ∧
+        (List.ofFn copyTime).sum+3 ∧ z.user = u.user ∧ copyReady out F ∧ saved phaseTapes F ∧
         InvocationEffect n r d (w+1) B K data out := by
-  intro W V owner view gateTime ready fan phaseTapes workspace prepared apart privateTapes protectedOff moveTime copyTime copyReady saved gates moves beginCopies copies endCopies
-  obtain ⟨left,enter⟩ := invocationPhase_host owner body false (ready false) moveTime (gates false)
-    (fun j p hp => moves false j p (List.mem_append_left _ hp))
-  obtain ⟨right,leave⟩ := invocationPhase_host owner body true (ready true) moveTime (gates true)
-    (fun j p hp => moves true j p (List.mem_append_right _ hp))
+  obtain ⟨T,fan,bank,selected,collect,off⟩ := copyWindowBanks tapes ports
+  obtain ⟨prepared,base,localInit⟩ := collect shared initial
+  refine ⟨T,fan,bank,prepared,selected,base,localInit,?_⟩
+  intro region workspace phaseTapes
+  let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n r d,ownerTape_injective n r d⟩
+  let gate (g : {g // g ∈ program}) := phaseGateProgram owner g.val g.property
+  let states := program.attach.map fun g => (gate g).choose
+  refine ⟨states.sum,?_⟩
+  intro Q capacity localBody proc body W V _ view gateTime pos moveTime copyTime represented copyReady saved phaseReady moves copies
+  have gates : ∀ (g : RawGate), g ∈ program → ∃ code, ∀ data u S, phaseReady data S →
+      ∃ z F t out, Exec (localBody none) code (mk u S) t (mk z F) ∧ t ≤ gateTime g.toCircuit ∧ z.user = u.user ∧
+        phaseReady out F ∧ (∀ i, (∀ j, owner j ≠ i) → out i = data i) ∧ ∀ j : Fin 661, ∀ k,
+          out (owner j) k = g.toCircuit.run (Copy.extendStored (fun j => data (owner j) k)) j.val := by
+    intro g mem
+    let h := gate ⟨g,mem⟩
+    obtain ⟨machine,run⟩ := h.choose_spec
+    have fits : h.choose ≤ Q := (List.le_sum_of_mem (show h.choose ∈ states from
+      List.mem_map.mpr ⟨⟨g,mem⟩,List.mem_attach _ _,rfl⟩)).trans capacity
+    refine ⟨embProg (ports none) (Empty.elim : Empty → P) (foreign (liftQ machine fits)),?_⟩
+    intro data u S ok
+    obtain ⟨out,hoare,other,reads⟩ := run V pos data
+    obtain ⟨z,F,t,exec,time,user,rep,off⟩ := placedHoare_exec machine (ports none) fits (localBody none)
+      hoare u S ok.1
+    refine ⟨z,F,t,out,exec,time,user,⟨rep,?_⟩,other,reads⟩
+    intro l hl
+    obtain ⟨a,b⟩ := off l hl
+    obtain ⟨c,d⟩ := ok.2 l hl
+    exact ⟨a.trans c,b.trans d⟩
+  have outside (i j) (ne : i ≠ j) (k) (h : region i k) : ∀ l, bank j l ≠ k := by
+    obtain ⟨l,hl,rfl⟩ := h
+    exact (off i l hl).2 j ne.symm
+  obtain ⟨left,enter⟩ := invocationPhase_host owner (localBody none) false phaseReady moveTime gates
+    (fun j p hp => moves j p (List.mem_append_left _ hp))
+  obtain ⟨right,leave⟩ := invocationPhase_host owner (localBody none) true phaseReady moveTime gates
+    (fun j p hp => moves j p (List.mem_append_right _ hp))
+  have project (i) (S : Stacks T prime) : embStk (ports i) (embStk (bank i) S) = embStk fan S := by
+    simp only [embStk,Function.comp_def,selected]
+  have phase (data S) : phaseReady data (embStk (bank none) S) ↔ copyReady data S ∧ saved phaseTapes S := by
+    constructor
+    · intro ⟨rep,scratch⟩
+      refine ⟨by simpa only [represented,project,copyReady] using rep,?_⟩
+      rintro _ ⟨l,hl,rfl⟩
+      obtain ⟨a,b⟩ := scratch l hl
+      obtain ⟨c,d⟩ := localInit none l hl
+      exact ⟨a.trans c.symm,b.trans d.symm⟩
+    · intro ⟨rep,scratch⟩
+      refine ⟨by simpa only [represented,project,copyReady] using rep,?_⟩
+      intro l hl
+      obtain ⟨a,b⟩ := scratch _ ⟨l,hl,rfl⟩
+      obtain ⟨c,d⟩ := localInit none l hl
+      exact ⟨a.trans c,b.trans d⟩
   have scatter (ls : List (Fin Copy.lifecycles.length)) (unique : ls.Nodup) :
       ∃ code, ∀ data u S, copyReady data S → saved phaseTapes S →
         (∀ i ∈ ls, saved (workspace i) S) → ∃ z F t out, Exec body code (mk u S) t (mk z F) ∧
         t ≤ (ls.map copyTime).sum+1 ∧ z.user = u.user ∧ copyReady out F ∧ saved phaseTapes F ∧
-          CopyScheduleEffect n r d (w+1) B K (ls.map fun j => Copy.lifecycles[j.val]) (view data) (view out) := by
+          CopyScheduleEffect n r d (w+1) B K (ls.map fun j => Copy.lifecycles[j.val]'j.isLt) (view data) (view out) := by
     induction ls with
     | nil => exact ⟨.act .done,fun x u S ok guard _ => ⟨u,S,1,x,Exec.act _ _,by simp,rfl,ok,guard,rfl⟩⟩
     | cons l ls ih =>
       obtain ⟨head,step⟩ := copies l
       obtain ⟨tail,finish⟩ := ih (List.nodup_cons.mp unique).2
-      refine ⟨head.seq tail,?_⟩
+      refine ⟨(embProg (bank (some l)) (proc (some l)) head).seq tail,?_⟩
       intro x u S ok guard fresh
-      obtain ⟨v,D,t,y,a,ha,same,mid,act,off⟩ := step x u S ok (fresh l List.mem_cons_self)
+      obtain ⟨v₀,D₀,t,y,run,ha,user₀,rep,act⟩ := step x (embDn (bank (some l)) u) (embStk (bank (some l)) S)
+        (by simpa only [represented,project,copyReady] using ok) (by
+        intro m hm
+        obtain ⟨a,b⟩ := fresh l List.mem_cons_self (bank (some l) m) ⟨m,hm,rfl⟩
+        obtain ⟨c,d⟩ := localInit (some l) m hm
+        exact ⟨a.trans c,b.trans d⟩)
+      obtain ⟨v,D,a,_,user,placed,off⟩ := exec_emb (ι := proc (some l)) (body' := body)
+        (bank (some l)).injective (fun _ => rfl) run u rfl S rfl
+      have same : v.user = u.user := user.trans user₀
+      have mid : copyReady y D := by
+        rw [← placed] at rep
+        simpa only [represented,project,copyReady] using rep
       obtain ⟨z,F,m,out,b,hb,user,done,safe,rest⟩ := finish y v D mid (by
         intro k hk
-        obtain ⟨l₁,r₁⟩ := off k (privateTapes l k (Or.inr hk)) (protectedOff l k hk)
+        obtain ⟨l₁,r₁⟩ := off k (outside none (some l) (by simp) k hk)
         obtain ⟨l₂,r₂⟩ := guard k hk
         exact ⟨l₁.trans l₂,r₁.trans r₂⟩) (by
         intro i member k used
         have ne : i ≠ l := fun eq => (List.nodup_cons.mp unique).1 (eq ▸ member)
-        obtain ⟨ld,rd⟩ := off k (privateTapes i k (Or.inl used)) (apart i l ne k used)
+        obtain ⟨ld,rd⟩ := off k (outside (some i) (some l) (by simpa using ne) k used)
         obtain ⟨ls,rs⟩ := fresh i (List.mem_cons_of_mem _ member) k used
         exact ⟨ld.trans ls,rd.trans rs⟩)
       refine ⟨z,F,_,out,Exec.seq a b,?_,user.trans same,done,safe,view y,act,rest⟩
@@ -1575,12 +1695,26 @@ theorem invocation_host {T Q w B K : ℕ} {P U : Type}
       omega
   obtain ⟨middle,window⟩ := scatter (List.finRange Copy.lifecycles.length) (List.nodup_finRange _)
   rw [← List.ofFn_eq_map,← List.ofFn_eq_map,List.ofFn_getElem] at window
-  refine ⟨left.seq (middle.seq right),?_⟩
-  intro x u S ok
-  obtain ⟨v,D,a,y,first,ha,ua,mid,offA,readA⟩ := enter x u S ok
-  obtain ⟨h,G,b,z,copy,hb,ub,placed,safe,effect⟩ := window y v D (beginCopies y D mid).1 (beginCopies y D mid).2.1 (fun i _ => (beginCopies y D mid).2.2 i)
-  obtain ⟨q,F,c,out,last,hc,uc,done,offB,readB⟩ := leave z h G (endCopies z G placed safe)
-  refine ⟨q,F,_,out,Exec.seq first (Exec.seq copy last),?_,uc.trans (ub.trans ua),done,?_,?_⟩
+  refine ⟨(embProg (bank none) (proc none) left).seq (middle.seq (embProg (bank none) (proc none) right)),?_⟩
+  intro x u S ok fresh
+  obtain ⟨v₀,D₀,a,y,first₀,ha,ua,mid,offA,readA⟩ := enter x (embDn (bank none) u) (embStk (bank none) S)
+    ((phase _ _).2 ⟨ok,fresh none⟩)
+  obtain ⟨v,D,first,_,uv,vd,offD⟩ := exec_emb (ι := proc none) (body' := body)
+    (bank none).injective (fun _ => rfl) first₀ u rfl S rfl
+  rw [← vd] at mid
+  obtain ⟨live,guard⟩ := (phase _ _).1 mid
+  obtain ⟨h,G,b,z,copy,hb,ub,placed,safe,effect⟩ := window y v D live guard (by
+    intro i _ k hk
+    obtain ⟨a,b⟩ := offD k (outside (some i) none (by simp) k hk)
+    obtain ⟨c,d⟩ := fresh (some i) k hk
+    exact ⟨a.trans c,b.trans d⟩)
+  obtain ⟨q₀,F₀,c,out,last₀,hc,uc,done,offB,readB⟩ := leave z (embDn (bank none) h) (embStk (bank none) G)
+    ((phase _ _).2 ⟨placed,safe⟩)
+  obtain ⟨q,F,last,_,uq,qf,_⟩ := exec_emb (ι := proc none) (body' := body)
+    (bank none).injective (fun _ => rfl) last₀ h rfl G rfl
+  rw [← qf] at done
+  obtain ⟨result,restored⟩ := (phase _ _).1 done
+  refine ⟨q,F,_,out,Exec.seq first (Exec.seq copy last),?_,uq.trans (uc.trans (ub.trans (uv.trans ua))),result,restored,?_,?_⟩
   · change a ≤ ((sectionD++sectionA).map (fun g => gateTime g.toCircuit)).sum+_+1 at ha
     change c ≤ ((sectionB++sectionC).map (fun g => gateTime g.toCircuit)).sum+_+1 at hc
     simp only [Geometry.Moves.phaseEdges,List.filter_append,List.map_append,List.sum_append,
