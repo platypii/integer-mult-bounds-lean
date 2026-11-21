@@ -221,7 +221,7 @@ theorem ordinaryDirectoryCleanup_exec {P U : Type} {K m w W Q : ℕ} {v : Recurs
     let ready := DirectoryReady v proj w W (prime^(w+1)).size W.size parent prefixes tail schedules
     let work := (List.finRange (66+K)).filter (fun i => 58 ≤ i.val)
     ready S pending → OrdinaryRowHeaders bank w W D →
-    (∀ j : Fin 64, 29 ≤ j.val → (∀ k, correctionCallerSlots k ≠ j) → D.R (bank j) = S.R (bank j)) →
+    (∀ j : Fin 64, 29 ≤ j.val → j.val < 58 → (∀ k, correctionCallerSlots k ≠ j) → D.R (bank j) = S.R (bank j)) →
     ∃ z F, z.user = u.user ∧ Exec body (clearWorkTapes work) (mk u D)
       ((work.map fun i => 4*(D.L i).length+2*(D.R i).length+4).sum+1) (mk z F) ∧
       ready F pending ∧ ∀ i, i.val < 58 → F.L i = D.L i ∧ F.R i = D.R i := by
@@ -236,7 +236,7 @@ theorem ordinaryDirectoryCleanup_exec {P U : Type} {K m w W Q : ℕ} {v : Recurs
   · exact ⟨(right 2 (by decide)).trans headers.modulus,(right 53 (by decide)).trans headers.width,
       (right 28 (by decide)).trans headers.one,(right 44 (by decide)).trans headers.padded,
       (congrArg List.length (right 45 (by decide))).trans headers.clock⟩
-  · exact fun j hj small off => (right j small).trans (keep j hj off)
+  · exact fun j hj small off => (right j small).trans (keep j hj small off)
   · intro i hi
     simp [F,work,hi]
 
@@ -258,7 +258,7 @@ theorem ordinaryDirectoryAdvance_exec {P U : Type} {K m w W Q N : ℕ} {v : Recu
     y.user = u.user → Exec body prog (mk u S) n (mk y D) →
     Fast.Main.mnProgPush prog ≤ c → (∀ f, Fast.Main.mnProgPush (body f) ≤ c) →
     ready S (j::js) → schedules (j::js) = schedules js → OrdinaryRowHeaders bank w W D →
-    (∀ k : Fin 64, 29 ≤ k.val → (∀ i, correctionCallerSlots i ≠ k) → D.R (bank k) = S.R (bank k)) →
+    (∀ k : Fin 64, 29 ≤ k.val → k.val < 58 → (∀ i, correctionCallerSlots i ≠ k) → D.R (bank k) = S.R (bank k)) →
     RecordPayload (caller 24) (fun _ => blank) 0 word D →
     ∃ z F t, z.user = u.user ∧
       t ≤ n+(4*work.length+1+work.length*(6*(c*n)))+(1+(4*(prefixes j).length+4+(m*m*(4*(w+1)+4)+1)+1)) ∧
