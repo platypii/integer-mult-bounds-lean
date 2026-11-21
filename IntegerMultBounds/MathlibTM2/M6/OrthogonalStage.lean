@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.M6.OrthogonalMoves
+public import IntegerMultBounds.MathlibTM2.M8.RevMachine.SemCall
 public import IntegerMultBounds.MathlibTM2.M6.BitPortRun
 
 /-! Physical owner-tape scans around the contiguous reversed PR589 child. -/
@@ -23,6 +24,65 @@ theorem orthogonalOwner_index (w W : ℕ)
   unfold AffineFieldCoordinates.embed
   rw [ArbitraryWidthSliceTranspose.rank_append]
   simp [RecursiveInterchangeLayout.index, Nat.mul_comm 8 w, pow_mul]
+
+open M8 M8.RevMachine M8.RevMachine.RevSemantics
+
+private def singletonAtoms {w : ℕ} (s : Swap.Shear.State (Fin 8) (ZMod (prime^w))) :
+    Rev.Addr 8 (SA 1 w) := (fun i _ => s.1 i, fun i _ => s.2 i)
+
+private theorem singletonSwaps {w : ℕ} (L : List (Fin 8 × Fin 8))
+    (s : Swap.Shear.State (Fin 8) (ZMod (prime^w))) :
+    TwistedExchange.revSwaps (TwistedExchange.atomRev 1) L (singletonAtoms s) =
+      singletonAtoms (AffineFieldProgram.run (Exchange.swapOps L) s) := by
+  induction L generalizing s with
+  | nil => rfl
+  | cons p L ih =>
+    change TwistedExchange.revSwaps _ L (TwistedExchange.revSwap _ p (singletonAtoms s)) = _
+    have one : TwistedExchange.revSwap (TwistedExchange.atomRev 1) p (singletonAtoms s) =
+        singletonAtoms ((Swap.Shear.Op.interchange p.1 p.2).run s) := by
+      apply Prod.ext <;> funext i k
+      · by_cases h : i = p.1 <;> simp [TwistedExchange.revSwap,singletonAtoms,Swap.Shear.Op.run,h]
+      · by_cases h : i = p.2 <;> simp [TwistedExchange.revSwap,singletonAtoms,Swap.Shear.Op.run,h]
+    rw [one,ih]
+    rfl
+
+/-- The reversed child descriptor reads exactly the rank-sized swaps in the
+owner record, for every spectator and every initial bit array. -/
+theorem orthogonalChild_read (r w W : ℕ) (hr : r ≤ 8)
+    (input output : Fin ((prime^w)^16*W) → ZMod 2)
+    (child : RevT prime w r (sub prime w 8 0 r ⟨1,1,1,8*w,1,W⟩) (ext input) (ext output))
+    (s : Swap.Shear.State (Fin 8) (ZMod (prime^w))) (j : Fin W) :
+    output (FlatCoordinateLayout.index (AffineFieldCoordinates.embed
+      (AffineFieldProgram.run (Exchange.swapOps (ReversedExchange.revPivots 8 r)) s)) j) =
+      input (FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) j) := by
+  let v : RecursiveInterchangeLayout.Descriptor := ⟨1,1,1,8*w,1,W⟩
+  have vol : RecursiveInterchangeLayout.volume prime v = (prime^w)^16*W := by
+    simp [RecursiveInterchangeLayout.volume,v,Nat.mul_comm 8 w,pow_mul,← pow_add]
+  let x : RecursiveScalarCoordinates.Address (8*1) w v := ⟨0,0,0,0,0,0,j⟩
+  have addr (t : Swap.Shear.State (Fin 8) (ZMod (prime^w))) :
+      (pos (v := v) (by rfl) x (singletonAtoms t)).cast vol =
+        FlatCoordinateLayout.index (AffineFieldCoordinates.embed t) j := by
+    apply Fin.ext
+    rw [Fin.val_cast,pos_val,orthogonalOwner_index]
+    have ref (y : Fin 8 → ZMod (prime^w)) : AtomOps.refine (fun i (_ : Fin 1) => y i) = y := by
+      funext i
+      obtain ⟨k,l,e⟩ := exists_at (m := 8) (f := 1) i
+      rw [e,AtomOps.refine_at]
+      apply congrArg y
+      apply Fin.ext
+      simp [at_val,Subsingleton.elim l 0]
+    simp only [x,singletonAtoms,ref]
+    rfl
+  let read := fun (a : Fin ((prime^w)^16*W) → ZMod 2) (i : Fin (RecursiveInterchangeLayout.volume prime v)) => a (i.cast vol)
+  have h := call_link (m := 8) (f := 1) (b := w) (v := v) rfl hr (read input) (read output)
+    (by simpa only [Nat.mul_one,read,ext_cast] using child) x
+  let swaps : Rev.Addr 8 (SA 1 w) → Rev.Addr 8 (SA 1 w) := TwistedExchange.revSwaps (TwistedExchange.atomRev 1) (ReversedExchange.revPivots 8 r)
+  have invol : Function.Involutive (swaps : Rev.Addr 8 (SA 1 w) → _) :=
+    revSwaps_revPivots_invol (TwistedExchange.atomRev_atomRev 1)
+  have atSwap := h (swaps (singletonAtoms s))
+  change read output (pos _ x (swaps _)) = read input (pos _ x (swaps (swaps _))) at atSwap
+  rw [invol] at atSwap
+  simpa only [swaps,singletonSwaps,read,addr] using atSwap
 
 private theorem orthogonalSegment_good (U) (spec : OrthogonalMoveModular U)
     (ops : List (AffineFieldProgram.Op (Fin 8) ℚ))
@@ -70,15 +130,16 @@ private theorem swapOps_run_of_mem {m : ℕ} {R : Type*} [CommRing R]
 /-- Wrap the grouped pivot call in the two physical scans. Each scan has
 a fixed machine independent of the width; the cost includes both joins. -/
 theorem orthogonalMove_owner (U : Matrix (Fin 8) (Fin 8) ℚ) (spec : OrthogonalMoveModular U)
-    (r : ℕ) (pivots : ∀ a b, AffineFieldProgram.Op.interchange a b ∈ M8.Rev.revProgram U ↔
+    (r : ℕ) (hr : r ≤ 8) (pivots : ∀ a b, AffineFieldProgram.Op.interchange a b ∈ M8.Rev.revProgram U ↔
       (a,b) ∈ M8.ReversedExchange.revPivots 8 r) :
-    ∃ C : ℕ, ∀ (w W : ℕ), 0 < W →
+    ∃ (C : ℕ) (beforeMachine afterMachine : SharedBankSkeleton.Skeleton 1 prime), ∀ (w W : ℕ), 0 < W →
       let V := (prime^w)^16*W
       let addr := fun (s : IntegerMultBounds.Swap.Shear.State (Fin 8) (ZMod (prime^w))) (j : Fin W) => FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) j
-      let swaps := M8.Exchange.swapOps (R := ZMod (prime^w)) (M8.ReversedExchange.revPivots 8 r)
       ∀ child : SharedBankStage.Stage _ 1 prime (@portOwner V),
-      (∀ x s j, child.transform x (addr (AffineFieldProgram.run swaps s) j) = x (addr s j)) →
+      (∀ x, RevT prime w r (sub prime w 8 0 r ⟨1,1,1,8*w,1,W⟩) (ext x) (ext (child.transform x))) →
       ∃ stage : SharedBankStage.Stage _ 1 prime (@portOwner V),
+        SharedBankSkeleton.ofStage stage = SharedBankSkeleton.compose
+          (SharedBankSkeleton.compose beforeMachine (SharedBankSkeleton.ofStage child)) afterMachine ∧
         stage.cost = C*V + child.cost + 2 ∧ ∀ x s j,
           stage.transform x (addr (M8.ReversedExchange.revExchangeOf
             (reduce (prime^w) (M8.ReversedExchange.rev 8)) (reduce (prime^w) U) s) j) = x (addr s j) := by
@@ -109,13 +170,15 @@ theorem orthogonalMove_owner (U : Matrix (Fin 8) (Fin 8) ℚ) (spec : Orthogonal
     · rintro ⟨⟨a,b⟩,h,e⟩
       cases e
       exact h
-  obtain ⟨a,_,before⟩ := fieldSegment_owner pre preGood.1 preGood.2
-  obtain ⟨b,_,after⟩ := fieldSegment_owner post postGood.1 postGood.2
-  refine ⟨a+b,?_⟩
-  intro w W hW V addr swaps child move
-  obtain ⟨A,_,ca,ra⟩ := before w W hW
-  obtain ⟨B,_,cb,rb⟩ := after w W hW
-  refine ⟨SharedBankStage.compose (SharedBankStage.compose A child) B,?_,?_⟩
+  obtain ⟨a,beforeMachine,before⟩ := fieldSegment_owner pre preGood.1 preGood.2
+  obtain ⟨b,afterMachine,after⟩ := fieldSegment_owner post postGood.1 postGood.2
+  refine ⟨a+b,beforeMachine,afterMachine,?_⟩
+  intro w W hW V addr child hchild
+  have move x := orthogonalChild_read r w W hr x (child.transform x) (hchild x)
+  obtain ⟨A,hA,ca,ra⟩ := before w W hW
+  obtain ⟨B,hB,cb,rb⟩ := after w W hW
+  refine ⟨SharedBankStage.compose (SharedBankStage.compose A child) B,?_,?_,?_⟩
+  · simp only [SharedBankSkeleton.ofStage_compose,hA,hB]
   · change A.cost + child.cost + 1 + B.cost + 1 = _
     dsimp only [V]
     rw [ca,cb,Nat.add_mul]
