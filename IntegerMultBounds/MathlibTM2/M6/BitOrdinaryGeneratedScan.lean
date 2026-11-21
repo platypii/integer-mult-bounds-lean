@@ -219,25 +219,29 @@ theorem directoryStageHost_child_exec [M8.Machine.Net] {P C U : Type} {n K T t :
     (saved : Fin 4 ↪ Fin T) (separate : ∀ i j, place i ≠ saved j)
     (localBody : P → Pr P n columnCapacity prime U) (childBank : Fin t ↪ Fin T)
     (child : C → Pr C t columnCapacity prime U) (f : C) (port : Fin t) (batch : Descriptor)
-    (budget : ℕ) (a : HS T columnCapacity prime U) (A : Stacks T prime)
+    (budget growth : ℕ) (a : HS T columnCapacity prime U) (A : Stacks T prime)
     (x : Fin (RecursiveInterchangeLayout.volume prime batch) → ZMod 2)
     (input : RecordPayload (childBank port) (fun _ => blank) 0 x A)
     (recursive : RecordPayload port (fun _ => blank) 0 x (embStk childBank A) →
       ∃ y B k, y.user = (embDn childBank a).user ∧ k ≤ budget ∧
         Exec child (child f) (mk (embDn childBank a) (embStk childBank A)) k (mk y B) ∧
         RecordPayload port (fun _ => blank) 0 (Shared50RecursiveNodeRows.transpose (one_dvd batch.rows) x) B ∧
+        (B.L port).length+(B.R port).length ≤ (A.L (childBank port)).length+(A.R (childBank port)).length+growth ∧
         ∀ i, i ≠ port → B.L i = A.L (childBank i) ∧ B.R i = A.R (childBank i)) :
     let host := directoryStageHost bank place slots saved separate localBody childBank child
     ∃ y B k, y.user = a.user ∧ k ≤ budget ∧ Exec host (host (.inr (.inr f))) (mk a A) k (mk y B) ∧
       RecordPayload (childBank port) (fun _ => blank) 0 (Shared50RecursiveNodeRows.transpose (one_dvd batch.rows) x) B ∧
+      (B.L (childBank port)).length+(B.R (childBank port)).length ≤ (A.L (childBank port)).length+(A.R (childBank port)).length+growth ∧
       ∀ i, i ≠ childBank port → B.L i = A.L i ∧ B.R i = A.R i := by
   intro host
-  obtain ⟨z,D,k,user,paid,run,output,frame⟩ := recursive input
+  obtain ⟨z,D,k,user,paid,run,output,stock,frame⟩ := recursive input
   obtain ⟨y,B,installed,_,same,view,off⟩ := exec_emb (body' := host) (ι := Sum.inr ∘ Sum.inr)
     childBank.injective (fun _ => rfl) run a rfl A rfl
-  refine ⟨y,B,k,same.trans user,paid,installed,?_,?_⟩
+  refine ⟨y,B,k,same.trans user,paid,installed,?_,?_,?_⟩
   · rw [← view] at output
     exact output
+  · rw [← view] at stock
+    exact stock
   · intro i hi
     by_cases inside : ∃ j, childBank j = i
     · obtain ⟨j,rfl⟩ := inside

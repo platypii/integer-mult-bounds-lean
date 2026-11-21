@@ -87,7 +87,8 @@ theorem stoppedDirectoryLeaf_exec [M8.Machine.Net] {Q : ℕ} {P U : Type}
       Exec body (((Prog.act (pushMarkers fields)).seq (foreign (liftQ LeafCore.stage1 capacity))).seq (clearWorkTapes work))
         (mk u S) n (mk z F) ∧
       RecordPayload owner (fun _ => blank) 0 (Shared50RecursiveNodeRows.transpose (one_dvd batch.rows) word) F ∧
-      ∀ j, j ≠ owner → F.L j = [] ∧ F.R j = [] := by
+      (F.L owner).length+(F.R owner).length ≤ (S.L owner).length+(S.R owner).length+2*cost ∧
+        ∀ j, j ≠ owner → F.L j = [] ∧ F.R j = [] := by
   intro slot owner headers fields work cost words payload free
   let B := {S with L := fun j => if j ∈ fields then separator :: S.L j else S.L j}
   have mark := Exec.act (body := body) (pushMarkers fields) (mk u S)
@@ -128,10 +129,11 @@ theorem stoppedDirectoryLeaf_exec [M8.Machine.Net] {Q : ℕ} {P U : Type}
   have total := List.sum_le_sum priced
   simp only [List.map_const',List.sum_replicate_nat] at total
   have untouched : owner ∉ work := by simp [work]
-  refine ⟨y,_,_,same.trans user,?_,Exec.seq (Exec.seq mark run) clear,?_,?_⟩
+  refine ⟨y,_,_,same.trans user,?_,Exec.seq (Exec.seq mark run) clear,?_,?_,?_⟩
   · change n ≤ cost*(LeafCore.small+5)+6 at paid
     omega
   · simpa only [RecordPayload,ite_eq_right untouched] using out
+  · simpa only [ite_eq_right untouched,B,ite_eq_right ownerOff] using stock owner
   · intro j ne
     have inside : j ∈ work := by simp [work,ne]
     simp [inside]
@@ -191,17 +193,18 @@ theorem scheduledStoppedDirectory_exec [M8.Machine.Net] {P U : Type}
           ((volume prime scheduled : ℝ)*((max 1 scheduled.width : ℕ) : ℝ)^M8.Machine.BudgetBound.tau) ∧
         RecordPayload owner (fun _ => blank) 0
           (Shared50RecursiveNodeRows.transpose (one_dvd scheduled.rows) word ∘ e) F ∧
+        (F.L owner).length+(F.R owner).length ≤ (S.L owner).length+(S.R owner).length+2*(LeafCore.coreCost (volume prime batch) batch.width) ∧
         ∀ j, j ≠ owner → F.L j = [] ∧ F.R j = [] := by
   intro r batch scheduled e slot owner headers fields work program word u S positive prepared payload free
   have shape := (scheduledDirectoryTranspose node i w aligned rows).1
   have share := (scheduledChild_measures prime node ⟨w+1,aligned⟩ rows i).2
   have pos : 0 < volume prime batch := shape.volume.symm ▸ Nat.pos_of_mul_pos_right (share.symm ▸ positive)
-  obtain ⟨z,F,n,user,paid,run,out,clean⟩ := stoppedDirectoryLeaf_exec directoryLeafFits body batch
+  obtain ⟨z,F,n,user,paid,run,out,stock,clean⟩ := stoppedDirectoryLeaf_exec directoryLeafFits body batch
     (LeafCore.positive_of_volume pos) (word ∘ e) u S prepared payload free
   have fits : work.length ≤ LeafCore.small := (List.length_filter_le ..).trans_eq (List.length_finRange)
   have bound := stoppedDirectoryTime (volume prime batch) batch.width work.length pos fits
   have action := (scheduledDirectoryCoordinates node i w aligned rows).choose_spec.2 word
-  refine ⟨z,F,n,user,run,?_,action ▸ out,clean⟩
+  refine ⟨z,F,n,user,run,?_,action ▸ out,stock,clean⟩
   have time := (Nat.cast_le (α := ℝ)).mpr paid
   exact (time.trans bound).trans_eq (by rw [show volume prime batch = volume prime scheduled from shape.volume,
     show batch.width = scheduled.width from shape.width])
@@ -295,6 +298,18 @@ private theorem payloadBank_output {n T N : ℕ} (port : Fin n) (owner : Fin T)
   have hit := out t
   simpa only [embStk,Function.comp_apply,Record.payloadBank_shared] using hit
 
+private theorem payloadBank_stock {n T growth : ℕ} (port : Fin n) (owner : Fin T)
+    (S D F : Stacks (n+T) prime) (B : Stacks T prime)
+    (view : embStk (Record.payloadBank port owner) F = B)
+    (left : D.L = S.L) (right : D.R (port.castAdd T) = S.R (port.castAdd T))
+    (stock : (B.L owner).length+(B.R owner).length ≤
+      ((embStk (Record.payloadBank port owner) D).L owner).length+
+      ((embStk (Record.payloadBank port owner) D).R owner).length+growth) :
+    (F.L (port.castAdd T)).length+(F.R (port.castAdd T)).length ≤
+      (S.L (port.castAdd T)).length+(S.R (port.castAdd T)).length+growth := by
+  rw [← view] at stock
+  simpa only [embStk,Function.comp_apply,Record.payloadBank_shared,left,right] using stock
+
 open IntegerMultBounds.Networks.Certificates.PR589.Nine RecursiveInterchangeLayout in
 /-- Execute a stopped scheduled call directly from its six caller header words.
 The caller keeps its other stacks and the entire private suffix is reusable. -/
@@ -320,6 +335,7 @@ theorem hostedStoppedDirectory_exec [M8.Machine.Net] {n Q : ℕ} {P U : Type} (c
           ((volume prime scheduled : ℝ)*((max 1 scheduled.width : ℕ) : ℝ)^M8.Machine.BudgetBound.tau) ∧
         RecordPayload (port.castAdd LeafCore.small) (fun _ => blank) 0
           (Shared50RecursiveNodeRows.transpose (one_dvd scheduled.rows) word ∘ e) F ∧
+        (F.L (port.castAdd LeafCore.small)).length+(F.R (port.castAdd LeafCore.small)).length ≤ (S.L (port.castAdd LeafCore.small)).length+(S.R (port.castAdd LeafCore.small)).length+2*(LeafCore.coreCost (volume prime batch) batch.width) ∧
         (∀ j : Fin n, j ≠ port → F.L (j.castAdd LeafCore.small) = S.L (j.castAdd LeafCore.small) ∧ F.R (j.castAdd LeafCore.small) = S.R (j.castAdd LeafCore.small)) ∧
         ∀ j : Fin LeafCore.small, F.L (j.natAdd n) = [] ∧ F.R (j.natAdd n) = [] := by
   intro r batch scheduled e source word u S positive words payload free
@@ -327,7 +343,7 @@ theorem hostedStoppedDirectory_exec [M8.Machine.Net] {n Q : ℕ} {P U : Type} (c
   let bank := Record.payloadBank port owner
   obtain ⟨v,D,user,setup,left,keep,unused,prepared,input,rest⟩ :=
     directoryLeafHeaders_exec (n := n) (Q := Q) body src port batch (word ∘ e) u S words payload free
-  obtain ⟨y,B,k,same,run,paid,out,clean⟩ := scheduledStoppedDirectory_exec (P := Empty) Empty.elim
+  obtain ⟨y,B,k,same,run,paid,out,stock,clean⟩ := scheduledStoppedDirectory_exec (P := Empty) Empty.elim
     node i w aligned rows word (stateLiftDown columnCapacity_pos (embDn bank v)) (embStk bank D)
     positive prepared input rest
   obtain ⟨z,_,user',placed⟩ := statePlaced_exec_normalized bank bank.injective capacity columnCapacity_pos
@@ -341,7 +357,7 @@ theorem hostedStoppedDirectory_exec [M8.Machine.Net] {n Q : ℕ} {P U : Type} (c
     omega
   have seqRun := Exec.seq setup placed
   let init := ((List.finRange 6).map fun j => 6*(S.R (source j)).length+6).sum+1
-  refine ⟨z,F,init+(1+k),?_,?_,?_,?_,?_,?_⟩
+  refine ⟨z,F,init+(1+k),?_,?_,?_,?_,?_,?_,?_⟩
   · simp only [stateLiftDown,embDn] at same
     exact user'.trans (same.trans user)
   · unfold hostedStoppedDirectory
@@ -351,6 +367,7 @@ theorem hostedStoppedDirectory_exec [M8.Machine.Net] {n Q : ℕ} {P U : Type} (c
     simp only [init,source,hdr]
     exact headerSteps_add paid
   · exact payloadBank_output port owner _ F B onBank out
+  · exact payloadBank_stock port owner S D F B onBank left (keep port) stock
   · intro j ne
     have off : ∀ l, bank l ≠ j.castAdd LeafCore.small := by
       intro l

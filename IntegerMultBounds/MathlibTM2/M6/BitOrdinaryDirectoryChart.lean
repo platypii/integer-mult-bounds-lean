@@ -362,20 +362,24 @@ theorem stoppedChartChild_exec [M8.Machine.Net] (K : ℕ) {U : Type}
           ((volume prime scheduled : ℝ)*((max 1 scheduled.width : ℕ) : ℝ)^M8.Machine.BudgetBound.tau) ∧
         RecordPayload port (fun _ => blank) 0
           (Shared50RecursiveNodeRows.transpose (one_dvd scheduled.rows) word ∘ e) B ∧
+        (B.L port).length+(B.R port).length ≤ (S.L port).length+(S.R port).length+2*(LeafCore.coreCost (volume prime batch) batch.width) ∧
         ∀ j, j ≠ port → B.L j = S.L j ∧ B.R j = S.R j := by
   intro r batch scheduled e T bank port word v S positive words free payload
   have owner : bank ((Fin.last 6).castAdd T) = port := stoppedChartBank_owner K T
   have input : RecordPayload (bank ((Fin.last 6).castAdd T)) (fun _ => blank) 0 (word ∘ e) S := owner.symm ▸ payload
-  obtain ⟨z,D,k,user,run,paid,out,frame,clean⟩ := hostedStoppedDirectory_exec
+  obtain ⟨z,D,k,user,run,paid,out,stock,frame,clean⟩ := hostedStoppedDirectory_exec
     (n := 7) (le_refl columnCapacity) (P := Empty) Empty.elim Fin.castSucc (Fin.last 6)
     node i w aligned rows word (embDn bank v) (embStk bank S) positive words input free
   obtain ⟨y,B,installed,_,same,view,off⟩ := exec_emb (body' := stoppedChartChild K) (ι := Empty.elim)
     bank.injective (fun f => nomatch f) run v rfl S rfl
   simp only [embDn] at user
-  refine ⟨y,B,k,same.trans user,installed,paid,?_,?_⟩
+  refine ⟨y,B,k,same.trans user,installed,paid,?_,?_,?_⟩
   · rw [← view] at out
     rw [← owner]
     exact out
+  · rw [← view] at stock
+    rw [← owner]
+    exact stock
   · intro j ne
     rw [← owner] at ne
     by_cases inside : ∃ l, bank l = j
@@ -397,7 +401,7 @@ theorem directoryChartHost_child_exec [M8.Machine.Net] {K : ℕ} {P C U : Type}
     (localBody : P → Pr P (66+K) columnCapacity prime U)
     (child : C → Pr C ((66+K)+1) columnCapacity prime U) (f : C)
     (node : Descriptor) (i : Fin nodeChildren5.length) (w : ℕ)
-    (aligned : node.width = 64*(w+1)) (rows : 142080 ∣ node.rows) (budget : ℕ) (entry : Stacks (66+K) prime → Prop) :
+    (aligned : node.width = 64*(w+1)) (rows : 142080 ∣ node.rows) (budget growth : ℕ) (entry : Stacks (66+K) prime → Prop) :
     let r := nodeChildren5[i.val]
     let batch := ordinaryDirectoryChild (role node 142080) r (64-r) w
     let scheduled := scheduledChild prime node i
@@ -416,27 +420,29 @@ theorem directoryChartHost_child_exec [M8.Machine.Net] {K : ℕ} {P C U : Type}
       RecordPayload port (fun _ => blank) 0 (word ∘ e) S →
       ∃ y B k, y.user = u.user ∧ k ≤ budget ∧ Exec child (child f) (mk u S) k (mk y B) ∧
         RecordPayload port (fun _ => blank) 0 (Shared50RecursiveNodeRows.transpose (one_dvd scheduled.rows) word ∘ e) B ∧
+        (B.L port).length+(B.R port).length ≤ (S.L port).length+(S.R port).length+growth ∧
         ∀ i, i ≠ port → B.L i = S.L i ∧ B.R i = S.R i) →
     ∃ y B k, y.user = a.user ∧ k ≤ budget ∧ Exec host (host (.inr (.inr f))) (mk a A) k (mk y B) ∧
       RecordPayload owner (fun _ => blank) 0 (Shared50RecursiveNodeRows.transpose (one_dvd batch.rows) x) B ∧
+      (B.L owner).length+(B.R owner).length ≤ (A.L owner).length+(A.R owner).length+growth ∧
       ∀ i, i ≠ owner → B.L i = A.L i ∧ B.R i = A.R i := by
   intro r batch scheduled e T bank port owner host a A x free input recursive
   have slot : bank port = owner := by simp [bank,port,owner,T,directoryChartChildBank]
   rw [← slot] at input ⊢
-  apply directoryStageHost_child_exec _ _ _ _ _ localBody bank child f port batch budget a A x input
+  apply directoryStageHost_child_exec _ _ _ _ _ localBody bank child f port batch budget growth a A x input
   have view : embStk (Fin.castAdd 1) (embStk bank A) =
       embStk (directoryChartReplayBank room) A := by
     apply Stacks.ext <;> first | rfl | (funext i; simp [bank,directoryChartChildBank,embStk,Function.comp_def])
   intro payload
   let word := x ∘ e.symm
   have physical : word ∘ e = x := funext fun k => congrArg x (e.symm_apply_apply k)
-  obtain ⟨y,B,k,user,paid,run,returned,frame⟩ :=
+  obtain ⟨y,B,k,user,paid,run,returned,stock,frame⟩ :=
     recursive _ _ (view.symm ▸ free) word (physical.symm ▸ payload)
   have action := (scheduledDirectoryCoordinates node i w aligned rows).choose_spec.2 word
   change Shared50RecursiveNodeRows.transpose (one_dvd batch.rows) (word ∘ e) =
     Shared50RecursiveNodeRows.transpose (one_dvd scheduled.rows) word ∘ e at action
   rw [physical] at action
-  exact ⟨y,B,k,user,paid,run,action.symm ▸ returned,frame⟩
+  exact ⟨y,B,k,user,paid,run,action.symm ▸ returned,stock,frame⟩
 
 -- The pre-setup chart projection is available at bfe0b0b4.
 /-- The stopped call needs only the six saved words and its own blank tapes
@@ -542,15 +548,16 @@ theorem directoryChartHost_stopped_exec [M8.Machine.Net] (K : ℕ) {P U : Type}
       RecordPayload owner (fun _ => blank) 0 x A →
       ∃ y B k, y.user = a.user ∧ k ≤ ⌊price⌋₊ ∧ Exec host (host (.inr (.inr ()))) (mk a A) k (mk y B) ∧
         RecordPayload owner (fun _ => blank) 0 (Shared50RecursiveNodeRows.transpose (one_dvd batch.rows) x) B ∧
+        (B.L owner).length+(B.R owner).length ≤ (A.L owner).length+(A.R owner).length+2*(LeafCore.coreCost (volume prime batch) batch.width) ∧
         ∀ j, j ≠ owner → B.L j = A.L j ∧ B.R j = A.R j := by
   intro r batch scheduled T tapes owner host price a A x positive ready payload
   apply directoryChartHost_child_exec room localBody (stoppedChartChild K) () node i w aligned rows
-    ⌊price⌋₊ (StoppedChartReady K T batch) a A x ready payload
+    ⌊price⌋₊ (2*LeafCore.coreCost (volume prime batch) batch.width) (StoppedChartReady K T batch) a A x ready payload
   intro u S prepared word input
-  obtain ⟨y,B,k,user,run,paid,out,frame⟩ := stoppedChartChild_exec K node i w aligned rows word u S
+  obtain ⟨y,B,k,user,run,paid,out,stock,frame⟩ := stoppedChartChild_exec K node i w aligned rows word u S
     positive (fun j => stoppedChartBank_header K T j ▸ prepared.1 j)
     (fun j => stoppedChartBank_private K T j ▸ prepared.2 j) input
-  exact ⟨y,B,k,user,Nat.le_floor paid,run,out,frame⟩
+  exact ⟨y,B,k,user,Nat.le_floor paid,run,out,stock,frame⟩
 
 private theorem retireChartHeaders_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
     (owner : Fin T) (saved : Fin 3 → Fin T) (inject : Function.Injective saved)
@@ -767,6 +774,7 @@ theorem dispatchStoppedChart_exec [M8.Machine.Net] (K : ℕ) {P U : Type}
         Exec host (((embProg replay Empty.elim (embProg place Empty.elim (IntervalDescriptor.directoryOuterHeaders bank))).seq
           (host (.inr (.inr ())))).seq (Prog.seqList (scratch.map WordCmd.dropR))) (mk a A) k (mk y B) ∧
         RecordPayload owner (fun _ => blank) 0 (Shared50RecursiveNodeRows.transpose (one_dvd batch.rows) x) B ∧
+        (B.L owner).length+(B.R owner).length ≤ (A.L owner).length+(A.R owner).length+2*(LeafCore.coreCost (volume prime batch) batch.width) ∧
         ∀ j, j ≠ owner → B.L j = A.L j ∧ B.R j = A.R j := by
   intro parent batch row scheduled T tapes owner host replay place bank values saved scratch a A x positive src empty tail free payload
   let eraseCost := ((List.finRange 3).map fun j => 2*(Routines.hdr batch (j.castAdd 3)).length+2).sum+1
@@ -783,13 +791,17 @@ theorem dispatchStoppedChart_exec [M8.Machine.Net] (K : ℕ) {P U : Type}
     exact sep
   obtain ⟨y,B,k,user,time,run,out,frame⟩ := withDirectoryHeaders_exec host replay owner apart
     (host (.inr (.inr ()))) parent hp lo hi w ⌊price⌋₊ a A x (fun l r => RecordPayload owner (fun _ => blank) 0
-      (Shared50RecursiveNodeRows.transpose (one_dvd batch.rows) x) {A with L := fun _ => l, R := fun _ => r}) src empty tail free payload (by
-      intro z F ready _ input
+      (Shared50RecursiveNodeRows.transpose (one_dvd batch.rows) x) {A with L := fun _ => l, R := fun _ => r} ∧
+      l.length+r.length ≤ (A.L owner).length+(A.R owner).length+2*LeafCore.coreCost (volume prime batch) batch.width) src empty tail free payload (by
+      intro z F ready keep input
       have call := directoryChartHost_stopped_exec K room localBody node i w aligned rows z F
       rw [← rank] at call
-      exact call x positive ready input)
+      obtain ⟨v,D,t,user,paid,run,out,stock,frame⟩ := call x positive ready input
+      have same := keep owner (fun _ => (apart _).symm)
+      rw [same.1,same.2] at stock
+      exact ⟨v,D,t,user,paid,run,⟨out,stock⟩,frame⟩)
   exact ⟨y,B,k,user,((Nat.cast_le (α := ℝ)).mpr time).trans
-    (stoppedDispatch_linear node i lo hi w aligned rows rank positive),run,out,frame⟩
+    (stoppedDispatch_linear node i lo hi w aligned rows rank positive),run,out.1,out.2,frame⟩
 
 /-- The initialized directory leaves the four mask work tapes and six replay
 tapes free. Only the two selector ports overlap the scanner's own bank. -/
@@ -840,6 +852,29 @@ theorem directoryChartOwner_exec {T Q N : ℕ} {P U : Type} (body : P → Pr P T
       simpa [M8.AtomBank.arrTape,List.map_ofFn,Function.comp_def] using (read j).symm)
   obtain ⟨z,n,user,price,run⟩ := normTape_exec body slot a A
   exact ⟨z,n,user,price,by simpa only [sweep,filter_window _ _ 0 bits nonblank tape] using run⟩
+
+/-- Leave the stopped payload with no blank padding on either side. The
+extra work depends only on the leaf's own stack growth and payload length. -/
+theorem compactChartReturn_exec {T Q V : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
+    (program : Pr P T Q prime U) (owner : Fin T) (word : Fin V → ZMod 2)
+    {u y : HS T Q prime U} {A B : Stacks T prime} {k growth : ℕ}
+    (run : Exec body program (mk u A) k (mk y B))
+    (output : RecordPayload owner (fun _ => blank) 0 word B)
+    (stock : (B.L owner).length+(B.R owner).length ≤ V+growth)
+    (frame : ∀ j, j ≠ owner → B.L j = A.L j ∧ B.R j = A.R j) :
+    ∃ z D n, z.user = y.user ∧ n ≤ k+6*(V+growth)+6 ∧
+      Exec body (program.seq (normTape owner)) (mk u A) n (mk z D) ∧
+      RecordPayload owner (fun _ => blank) 0 word D ∧
+      D.L owner = [] ∧ (D.R owner).length = V ∧
+      ∀ j, j ≠ owner → D.L j = A.L j ∧ D.R j = A.R j := by
+  obtain ⟨z,n,user,price,clean⟩ := directoryChartOwner_exec body owner word y B output
+  refine ⟨z,_,k+n,user,by omega,Exec.seq run clean,?_,Function.update_self ..,?_,?_⟩
+  · intro j
+    simp only [Function.update_self,sub_zero,← payload_reads]
+    simp only [M8.AtomBank.arrTape,List.map_ofFn,Function.comp_def]
+  · simp [payloadWord]
+  · intro j off
+    simpa only [Function.update_of_ne off] using frame j off
 
 /-- Borrow the first seven chart work tapes before the scan. The two binary
 inputs are the ordinary metadata registers and the result is owner register two. -/
