@@ -398,6 +398,7 @@ def GeneratedDirectoryExecution [M8.Machine.Net] {P U : Type} {r g d w common au
             D.R (outBank (inner 57)) = rs.map (fun j => bitSymbol (live j)) ∧
             D.R (outBank (inner 56)) = rs.map (fun j => bitSymbol (bad j))) →
           D.R (outBank (inner 40)) = raw.R (inner 40) →
+          directoryOuterWords (embStk outBank D) = directoryOuterWords raw →
           (∀ j : Fin 3, (directoryOuterWords (embStk outBank D) j).length =
             ![directory.beforeRows,directory.rows,directory.beforeH] j) →
           RecordPayload (q 0) (fun _ => blank) 0 x D →
@@ -475,14 +476,17 @@ private theorem childReplayControls {K T : ℕ} (outBank : Fin (66+K) ↪ Fin T)
     (rows : (raw.R ((30 : Fin 66).castAdd K)).length = b)
     (beforeH : (raw.R ((31 : Fin 66).castAdd K)).length = c) :
     D.R (outBank ((40 : Fin 66).castAdd K)) = raw.R ((40 : Fin 66).castAdd K) ∧
+    directoryOuterWords (embStk outBank D) = directoryOuterWords raw ∧
     ∀ j : Fin 3, (directoryOuterWords (embStk outBank D) j).length = ![a,b,c] j := by
-  refine ⟨(shared 40 (by decide)).trans (cut.trans (initial 40)),?_⟩
+  have same : directoryOuterWords (embStk outBank D) = directoryOuterWords raw := by
+    funext j
+    let i : Fin 66 := (j.natAdd 29).castLE (by decide)
+    have off := (by decide : ∀ (j : Fin 3) (k : Fin 4), replaySlots k ≠
+      (j.natAdd 29).castLE (by decide)) j
+    exact (shared i off).trans ((congrFun dims j).trans (initial i))
+  refine ⟨(shared 40 (by decide)).trans (cut.trans (initial 40)),same,?_⟩
+  rw [same]
   intro j
-  let i : Fin 66 := (j.natAdd 29).castLE (by decide)
-  have off := (by decide : ∀ (j : Fin 3) (k : Fin 4), replaySlots k ≠
-    (j.natAdd 29).castLE (by decide)) j
-  have h := (shared i off).trans ((congrFun dims j).trans (initial i))
-  apply (congrArg List.length h).trans
   fin_cases j <;> first | exact beforeRows | exact rows | exact beforeH
 
 /-- Execute the classified scan and retain both masks. On a complete owner tape, a framed
@@ -685,9 +689,9 @@ theorem generatedIncomingDirectory_exec [M8.Machine.Net] {P U : Type} {r g d w c
           exact unchanged.trans (congrArg (fun k => F.R (place (outer k))) (directoryOrdinaryBank_caller archiveRoom i))
         have initialWord (i : Fin 66) : start.R (caller i) = raw.R (inner i) :=
           congrArg start.R (directoryOrdinaryBank_caller archiveRoom i).symm
-        obtain ⟨cutAtChild,childSizes⟩ := childReplayControls outBank D raw start (embStk outer (embStk place F))
+        obtain ⟨cutAtChild,outerAtChild,childSizes⟩ := childReplayControls outBank D raw start (embStk outer (embStk place F))
           initialWord sharedAtChild cutEnd dimEnd beforeRows rowCount beforeH
-        apply child b hb x _ cutAtChild childSizes (by simpa only [D,queue] using hx)
+        apply child b hb x _ cutAtChild outerAtChild childSizes (by simpa only [D,queue] using hx)
         have sameBank : embStk localBank (embStk place D) = embStk localBank (embStk place F) := by
           refine Stacks.ext rfl rfl rfl (funext fun i => ?_)
           have different : place (localBank i) ≠ q 1 := (apart i 1).symm

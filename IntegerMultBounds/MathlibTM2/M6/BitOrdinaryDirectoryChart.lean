@@ -1156,6 +1156,14 @@ private theorem intervalInput_cast [M8.Machine.Net] {K d m n w W R : ℕ} (dim :
   subst n
   exact fun _ input => input
 
+private theorem outerWords_of_headers {K a b h : ℕ} (S : Stacks (66+K) prime)
+    (outer : S.R ((29 : Fin 66).castAdd K) = List.replicate a Node.tick)
+    (rows : S.R ((30 : Fin 66).castAdd K) = List.replicate b Node.tick)
+    (labels : S.R ((31 : Fin 66).castAdd K) = List.replicate h Node.tick) :
+    ∀ j : Fin 3, directoryOuterWords S j = List.replicate (![a,b,h] j) Node.tick := by
+  intro j
+  fin_cases j <;> first | exact outer | exact rows | exact labels
+
 /-- Execute both certified charts around the prepared scanner on their shared owner. -/
 theorem chartDirectory_exec [M8.Machine.Net] {common aux k w : ℕ} {L P U : Type}
     (interval : ℕ × ℕ) (member : interval ∈ BitHosting.remainderIntervals)
@@ -1224,6 +1232,8 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux k w : ℕ} {L P U : Typ
       localState.L ((0 : Fin 5).natAdd T) = [] →
       (∀ i, localState.L (localBank i) = []) →
       localState.R (localBank ((40 : Fin 66).castAdd K)) = cutoffWord →
+      (∀ j : Fin 3, directoryOuterWords (embStk localBank localState) j =
+        List.replicate (![layout.beforeRows,rows,layout.beforeH] j) Node.tick) →
       localState.R (localBank ((48 : Fin 66).castAdd K)) = matrixWords prime M.size (reduce M proj) →
       (∀ j : Fin 6, 2 ≤ j → D.R (masks j) = []) → (∀ j, D.R (directoryChartReplay T j) = []) →
       ∃ prior bound tail, prior+bound ≤ budget ∧
@@ -1390,7 +1400,9 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux k w : ℕ} {L P U : Typ
       obtain ⟨prior,bound,tail,price,exec⟩ := scanner c D generated (by
         change D.L (place ((0 : Fin 5).natAdd T)) = []
         rw [directoryChartPlacement_owner,(regs 0).2]
-        simp [C,normalized,slot]) (fun i => localL _) (header 40 (by decide)) ((shared 48).trans matrix) maskFree replayFree
+        simp [C,normalized,slot]) (fun i => localL _) (header 40 (by decide))
+        (outerWords_of_headers raw (header 29 (by decide)) (header 30 (by decide)) (header 31 (by decide)))
+        ((shared 48).trans matrix) maskFree replayFree
       obtain ⟨y,B,t,out,user,time,run,reads,inactive,_,done⟩ := exec.portReads interval weights routed records upper
       exact ⟨y,B,((m+l)+s)+(prior+t),out,by change s ≤ setupCost at setupTime; omega,⟨done,reads,inactive⟩,user.trans (cu.trans (bu.trans hu)),⟨Exec.seq (Exec.seq (Exec.seq normalize init) prepare) run.run,run.reads⟩⟩)
   let updated := Function.update (stage.transform words) src out
