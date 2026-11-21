@@ -677,6 +677,24 @@ theorem childMetadataSources_words {K T n w rows : ℕ} (room : 16 ≤ T)
   fin_cases i <;> simp [words,ordinaryMetadataPorts,ordinaryEntryWords,Function.update_of_ne,
     pp, pub, separate, fun i j => (separate i j).symm,outer,labels,spare,Node.tick]
 
+private theorem childPadding_of_exec {P U : Type} {T Q V budget k : ℕ}
+    (body : P → Pr P T Q prime U) (label : P) (owner : Fin T) {A B : Stacks T prime}
+    {a y : HS T Q prime U} (compact : A.L owner = [] ∧ (A.R owner).length = V)
+    (run : Exec body (body label) (mk a A) k (mk y B)) (steps : k ≤ budget) :
+    ∀ push, (∀ f, Fast.Main.mnProgPush (body f) ≤ push) →
+      (B.L owner).length+((B.R owner).drop V).length ≤ 2*push*budget := by
+  intro push bounded
+  have left := exec_stack_length run (bounded label) bounded (.lt owner)
+  have right := exec_stack_length run (bounded label) bounded (.rt owner)
+  change (B.L owner).length ≤ (A.L owner).length+push*k at left
+  change (B.R owner).length ≤ (A.R owner).length+push*k at right
+  rw [compact.1,List.length_nil,zero_add] at left
+  rw [compact.2] at right
+  rw [List.length_drop]
+  have growth := Nat.mul_le_mul_left push steps
+  rw [Nat.mul_assoc]
+  omega
+
 open IntegerMultBounds.Networks.Certificates.PR589.Nine RecursiveInterchangeLayout in
 /-- Install both directory passes and the cutoff selector on their shared chart bank. -/
 theorem selectScheduledChart_exec [M8.Machine.Net] (K : ℕ) {P R U : Type}
@@ -741,7 +759,9 @@ theorem selectScheduledChart_exec [M8.Machine.Net] (K : ℕ) {P R U : Type}
       DirectoryChartCall room localBody body (Sum.inl ∘ Sum.inl) (Sum.inl ∘ (Sum.inr ∘ Sum.inl))
         (.inr (.inl ⟨hi-lo,rank.symm ▸ Nat.lt_succ_of_le (nodeChildren5_le i)⟩)) parent row
         (ordinaryDirectoryChild parent (hi-lo) (64-(hi-lo)) w) W H J (directoryDigits prime root path)
-        (scheduledChartBudget scheduled cutoff recursiveBudget) proj weights prefixes (binSyms L cutoff) := by
+        (scheduledChartBudget scheduled cutoff recursiveBudget) proj weights prefixes (binSyms L cutoff)
+        (fun head tail => ∀ push, (∀ f, Fast.Main.mnProgPush (body f) ≤ push) →
+          head.length+tail.length ≤ 2*push*scheduledChartBudget scheduled cutoff recursiveBudget) := by
   intro i interval lo hi rank L parent batch row scheduled T tapes owner host replay recursive f recursiveBudget procedures body
     W H J proj weights prefixes positive activeParent recursiveRun
   have handlers := recursiveChartTable_scan room localBody (stoppedChartChild (K+1)) procedures
@@ -749,7 +769,7 @@ theorem selectScheduledChart_exec [M8.Machine.Net] (K : ℕ) {P R U : Type}
     congrArg (fun r => ordinaryDirectoryChild parent r (64-r) w) rank
   rw [sameBatch]
   refine ⟨handlers.1,handlers.2,?_⟩
-  intro a A x prefixWidth clean directoryReady cutWord src payload
+  intro a A x prefixWidth clean directoryReady cutWord src compact payload
   let pending := List.range (LabelMask.records parent)
   have recurse := recursiveRun x
   let values : Fin 3 → ℕ := ![parent.beforeRows,parent.rows,parent.beforeH]
@@ -922,12 +942,15 @@ theorem selectScheduledChart_exec [M8.Machine.Net] (K : ℕ) {P R U : Type}
   have parentBound := Nat.mul_le_mul_left 64 (atomBound.trans size)
   have scaled : 80*volume prime scheduled+22*L+419*volume prime scheduled ≤ 1907*volume prime scheduled := by omega
   have cost := paid.trans comparison
-  refine ⟨y,B,k,user,?_,execution,out,frame⟩
-  change k ≤ ⌊((1907*volume prime scheduled : ℕ) : ℝ)+(if cutoff < scheduled.width then (recursiveBudget : ℝ) else leafBudget)⌋₊
-  apply Nat.le_floor
-  have slack := (Nat.cast_le (α := ℝ)).mpr scaled
-  have nonneg : (0 : ℝ) ≤ volume prime scheduled := Nat.cast_nonneg _
-  split_ifs at cost ⊢ <;> push_cast at cost slack ⊢ <;> linarith
+  have steps : k ≤ scheduledChartBudget scheduled cutoff recursiveBudget := by
+    change k ≤ ⌊((1907*volume prime scheduled : ℕ) : ℝ)+(if cutoff < scheduled.width then (recursiveBudget : ℝ) else leafBudget)⌋₊
+    apply Nat.le_floor
+    have slack := (Nat.cast_le (α := ℝ)).mpr scaled
+    have nonneg : (0 : ℝ) ≤ volume prime scheduled := Nat.cast_nonneg _
+    split_ifs at cost ⊢ <;> push_cast at cost slack ⊢ <;> linarith
+  refine ⟨y,B,k,user,steps,execution,out,?_,frame⟩
+  exact childPadding_of_exec body (.inr (.inl ⟨hi-lo,rank.symm ▸ Nat.lt_succ_of_le (nodeChildren5_le i)⟩))
+    owner compact execution steps
 
 
 open IntegerMultBounds.Networks.Certificates.PR589.Nine RecursiveInterchangeLayout in

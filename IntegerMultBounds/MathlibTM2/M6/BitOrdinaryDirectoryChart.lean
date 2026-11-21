@@ -1405,7 +1405,8 @@ def DirectoryChartCall [M8.Machine.Net] {K w : ℕ} {L P U : Type}
     (incoming outgoing : L → P) (childLabel : P)
     (directory child batch : RecursiveInterchangeLayout.Descriptor) (W H J width childBudget : ℕ)
     (proj : Matrix (Fin 64) (Fin 64) ℚ) (weights : Fin 64 → ZMod (prime^(w+1)))
-    (entryPrefix : ℕ → List (Fin (prime+4))) (cutoffWord : List (Fin (prime+4))) : Prop :=
+    (entryPrefix : ℕ → List (Fin (prime+4))) (cutoffWord : List (Fin (prime+4)))
+    (padding : List (Fin (prime+4)) → List (Fin (prime+4)) → Prop := fun _ _ => True) : Prop :=
     let T := 66+(K+1)
     let slot := (0 : Fin 5).natAdd (T+10)
     let replayBank := directoryChartReplayBank archiveRoom
@@ -1423,9 +1424,11 @@ def DirectoryChartCall [M8.Machine.Net] {K w : ℕ} {L P U : Type}
       D.R (replayBank ((40 : Fin 66).castAdd K)) = cutoffWord →
       (∀ j : Fin 3, directoryOuterWords (embStk replayBank D) j =
         List.replicate (![directory.beforeRows,directory.rows,directory.beforeH] j) Node.tick) →
+      (D.L slot = [] ∧ (D.R slot).length = RecursiveInterchangeLayout.volume prime batch) →
       RecordPayload slot (fun _ => blank) 0 x D →
       ∃ y B k, y.user = b.user ∧ k ≤ childBudget ∧ Exec body (body childLabel) (mk b D) k (mk y B) ∧
         RecordPayload slot (fun _ => blank) 0 (Shared50RecursiveNodeRows.transpose (one_dvd batch.rows) x) B ∧
+        padding (B.L slot) ((B.R slot).drop (RecursiveInterchangeLayout.volume prime batch)) ∧
         ∀ i, i ≠ slot → B.L i = D.L i ∧ B.R i = D.R i)
 
 /-- Only nine entry words and the cutoff occupy the initial scanner prefix. -/
@@ -1614,8 +1617,8 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux w : ℕ} {L P U : Type}
     RepT (phaseOwners words) (embStk ownerSlots A).L (embStk ownerSlots A).R →
     (∀ j, (∀ l, ownerSlots l ≠ j) → let entry := ordinaryParentEntry (T := T+10) back.tapes metadata seed
       A.L j = entry.L j ∧ A.R j = entry.R j) →
-    DirectoryChartCall archiveRoom localBody body incoming outgoing childLabel directory child batch W M.size W.size
-      width childBudget proj weights entryPrefix cutoffWord →
+    ∀ padding, DirectoryChartCall archiveRoom localBody body incoming outgoing childLabel directory child batch W M.size W.size
+      width childBudget proj weights entryPrefix cutoffWord padding →
     let positive : 0 < columnCapacity := columnCapacity_pos
     let outer := fun f => statePlacedPr placement fits positive id (body f)
     let enter := (embProg chart (Empty.elim : Empty → P) (foreign (liftQ stage.program chartFits))).seq
@@ -1644,6 +1647,8 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux w : ℕ} {L P U : Type}
       ((List.finRange 5).map (fun j => let i := baseBank ((j.natAdd (T+10)).castAdd stage.tapes)
         (D.R i).length)).sum = N ∧
       RepT (stage.input final) (embStk (chart.trans baseBank) D).L (embStk (chart.trans baseBank) D).R ∧
+      (∃ head tail, padding head tail ∧ let j := ownerSlots src
+        (D.L j).length+(D.R j).length ≤ R*N+head.length+tail.length+2*(back.cost*(back.tapes+5)+6)) ∧
       (∀ i, i ≠ src → let j := ownerSlots i
         (((D.L j).length+(D.R j).length : ℕ) : ℝ) ≤ ((A.L j).length+(A.R j).length : ℕ)+
           2*(packedChartRate src cert checked false layout.width+packedChartRate src cert checked true layout.width)*(R*N : ℕ)+24) ∧
@@ -1658,7 +1663,7 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux w : ℕ} {L P U : Type}
   obtain ⟨back,reverse,reverseCost,reverseRun⟩ := (packedRemainderChart_stage src cert checked true).choose_spec.choose_spec
     layout w rows B positiveLayout digits split shape
   refine ⟨stage,back,forward,reverse,?_⟩
-  intro words routed pool rowRoom archiveRoom queueRoom pairRoom localBody localPush placedPush bounded placed widths clean bank setup setupCost clock slot placement chart baseBank headers ret body incoming outgoing childLabel livePort badPort portsApart maskBank intervalMatrix program batch entryPrefix finished childBudget capacity chartFits fits backFits seedBank initial ownerSlots S p scanRate scanOverhead seedReady ownerInput fresh calls positive outer enter leave stock u
+  intro words routed pool rowRoom archiveRoom queueRoom pairRoom localBody localPush placedPush bounded placed widths clean bank setup setupCost clock slot placement chart baseBank headers ret body incoming outgoing childLabel livePort badPort portsApart maskBank intervalMatrix program batch entryPrefix finished childBudget capacity chartFits fits backFits seedBank initial ownerSlots S p scanRate scanOverhead seedReady ownerInput fresh padding calls positive outer enter leave stock u
   let budget := childBudget+scanOverhead
   obtain ⟨inCalls,outCalls,childRun⟩ := calls
   obtain ⟨entryEq,input⟩ := ordinaryParentEntry_after_passes (T := T+10) (back := back.tapes) stage metadata seedBank seedReady words initial ownerInput fresh
@@ -1673,9 +1678,10 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux w : ℕ} {L P U : Type}
       (∀ f, Fast.Main.mnProgPush (body f) ≤ push) → ∀ j, j ≠ slot →
         let growth := push*(setupCost+scanOverhead)
         (D.L j).length ≤ growth ∧ (D.R j).length ≤ (metadata j.val).length+N+growth) ∧
+    (∃ head tail, padding head tail ∧ (D.L slot).length+(D.R slot).length = R*N+head.length+tail.length) ∧
     finished D ∧ PortReads R W parents interval weights routed out ∧
       ∀ j : Fin R, LabelStock.live 64 (w+1) 1 j = false → ownerRow rfl out j = ownerRow rfl routed j
-  obtain ⟨z,D,n,out,⟨projectedStock,done,reads,inactive⟩,time,run,user,ready,unusedSlot,unchangedStock,owners⟩ :=
+  obtain ⟨z,D,n,out,⟨projectedStock,⟨head,tail,pad,extent⟩,done,reads,inactive⟩,time,run,user,ready,unusedSlot,unchangedStock,owners⟩ :=
     chartOwner_scan stage src metadata words forward.restored positive body ((((normTape slot).seq (directoryRowClock clock)).seq setup).seq program) (6*chartOwnerStock stage src S+6+directoryRowClockRate*N+setupCost+budget) post capacity chartFits fits (embDn baseBank u) S input (by
       intro a F represented stock
       let A := embStk placement (ordinaryOwnerBank metadata F)
@@ -1813,15 +1819,15 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux w : ℕ} {L P U : Type}
       have cleanRows := directoryChartPrefix_all replayRole groups records (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _)
         prefixes (fun word => blank ∉ word) clean
       have dirRows : directory.rows = rows := by simp [directory,RecursiveInterchangeLayout.role,split]
-      obtain ⟨prior,bound,outsideSteps,tail,head,paid,exec⟩ := generated place maskBank incoming body inCalls c D rfl rfl
-        liveEq badEq outside maskFree (directoryChartReplay T) separate disjoint replayFree ownerLeft rfl childLabel childBudget
+      obtain ⟨prior,bound,outsideSteps,tail,head,pad,paid,exec⟩ := generated place maskBank incoming body inCalls c D rfl rfl
+        liveEq badEq outside maskFree (directoryChartReplay T) separate disjoint replayFree ownerLeft rfl childLabel childBudget padding
         (by
-          intro b D x ready cut dims _ read
-          rw [ownerPort] at read ⊢
+          intro b D x ready cut dims _ compact read
+          rw [ownerPort] at compact read ⊢
           exact childRun b D x actualWidth cleanRows (intervalReady_cast dim interval weights child entryPrefix _ _ ready.1) (cut.trans (header 40 (by decide))) (fun j => by
             apply (congrFun dims j).trans
             rw [dirRows]
-            exact controls j) read)
+            exact controls j) compact read)
         dim outgoing outCalls
       have wordFits : width ≤ N := by
         apply widthFits.trans
@@ -1855,7 +1861,7 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux w : ℕ} {L P U : Type}
         omega
       rw [ownerPort] at exec
       have chartStage := intervalStage_cast (W := W) dim interval weights body program c D prior bound slot tail _ routed exec
-      obtain ⟨y,B,t,out,user,time,run,reads,inactive,_,done⟩ := chartStage.portReads interval weights routed records upper
+      obtain ⟨y,B,t,out,user,time,run,reads,inactive,packed,done⟩ := chartStage.portReads interval weights routed records upper
       have regEq (j : Fin 5) : ((Fin.natAddEmb T).trans place) j = j.natAdd (T+10) := directoryChartPlacement_owner j
       have cleaned : finished B := by
         obtain ⟨_,acc,widthReg,save,tmp,replayFree,maskFree,privateFree,_⟩ := done
@@ -1901,7 +1907,11 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux w : ℕ} {L P U : Type}
         dsimp only
         rw [Nat.mul_add]
         constructor <;> omega
-      exact ⟨y,B,((normSteps+l)+s)+(prior+t),out,by change s ≤ setupCost at setupTime; omega,⟨spectatorStock,cleaned,reads,inactive⟩,user.trans (cu.trans (bu.trans hu)),⟨Exec.seq (Exec.seq (Exec.seq normalize init) prepare) run.run,run.reads⟩⟩)
+      exact ⟨y,B,((normSteps+l)+s)+(prior+t),out,by change s ≤ setupCost at setupTime; omega,⟨spectatorStock,⟨head,tail,pad,by
+          rw [done.1,packed,List.length_append]
+          have len : (payloadWord (SparseRoleCircuit.encode ∘ out)).length = R*N := by
+            simp only [payloadWord,List.length_map,List.length_ofFn]; rfl
+          rw [len]; ac_rfl⟩,cleaned,reads,inactive⟩,user.trans (cu.trans (bu.trans hu)),⟨Exec.seq (Exec.seq (Exec.seq normalize init) prepare) run.run,run.reads⟩⟩)
   let updated := Function.update (stage.transform words) src out
   have chartInput : RepT (stage.input updated) (embStk chart D).L (embStk chart D).R := by
     apply chartOwner_input stage _ (embStk chart D) _ ready _ (fun _ _ => ⟨rfl,rfl⟩)
@@ -1983,7 +1993,7 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux w : ℕ} {L P U : Type}
             dsimp only
             omega)
     simpa only [List.map_const',List.sum_replicate_nat,List.length_finRange] using total
-  refine ⟨privateReady,?_,?_,?_,?_,?_,final,?_,?_,?_,?_,D,done,frame⟩
+  refine ⟨privateReady,?_,?_,?_,?_,?_,final,?_,?_,?_,?_,?_,D,done,frame⟩
   · intro push setupPush scanPush bodyPush
     apply Nat.add_le_add_right (Nat.add_le_add ?_ suffixCost) 1
     apply le_trans _ (Nat.add_le_add_right metaBound _)
@@ -2058,6 +2068,10 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux w : ℕ} {L P U : Type}
     simp [List.finRange_succ]
     dsimp only [baseBank]
     simp only [(kept 0).2,(kept 1).2,(kept 2).2,(kept 3).2,(kept 4).2,unusedSlot.2,acc,widthReg,save,tmp,List.length_nil,Nat.zero_add,Nat.add_zero]
+  · refine ⟨head,tail,pad,?_⟩
+    change (D.L (placement slot)).length+(D.R (placement slot)).length = _ at extent
+    rw [show placement slot = chart (stage.slots src) from payloadPlacement_shared ..] at extent
+    exact (returnedStock src).trans (Nat.add_le_add extent.le (Nat.mul_le_mul_left 2 price))
   · intro i ne
     let old := (initial.L (ownerSlots i)).length+(initial.R (ownerSlots i)).length
     let newStock := (F.L (ownerSlots i)).length+(F.R (ownerSlots i)).length

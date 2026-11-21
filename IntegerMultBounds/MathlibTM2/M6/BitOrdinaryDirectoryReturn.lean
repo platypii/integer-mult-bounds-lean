@@ -155,7 +155,7 @@ theorem classifiedDirectoryCall_exec {P U : Type} {T Q : ℕ} (body : P → Pr P
     let labels := List.finRange R
     ∀ (ready : ℕ → (Fin ((prime^(w+1))^((r+g)+(r+g))*W) → ZMod 2) → Prop)
       (rows : List (List (Fin (prime+4)))) (live bad : Fin R → Bool) (saved : Fin R → Fin N → ZMod 2)
-      (u : HS T Q prime U) (S : Stacks T prime) (budget : ℕ),
+      (u : HS T Q prime U) (S : Stacks T prime) (budget : ℕ) (padding : List (Fin (prime+4)) → List (Fin (prime+4)) → Prop),
     List.Forall₂ (fun j tape => ∃ word, ready j word ∧
       tape = payloadWord (SparseRoleCircuit.encode ∘ word ∘ ordinaryRecursivePosition r g w W)) (List.range R) rows →
     (∀ z, readAt blank (S.L (p 0)) (S.R (p 0)) z = readAt blank [] rows.flatten z) →
@@ -165,6 +165,7 @@ theorem classifiedDirectoryCall_exec {P U : Type} {T Q : ℕ} (body : P → Pr P
     (∀ word : Fin V → ZMod 2, RecordPayload (p 0) (fun _ => blank) 0 word S →
       ∃ y F t, y.user = u.user ∧ t ≤ budget ∧ Exec body (body f) (mk u S) t (mk y F) ∧
         RecordPayload (p 0) (fun _ => blank) 0 (Shared50RecursiveNodeRows.transpose (one_dvd batch.rows) word) F ∧
+        padding (F.L (p 0)) ((F.R (p 0)).drop V) ∧
         (∀ k, k ≠ p 0 → F.L k = S.L k ∧ F.R k = S.R k)) →
     ∃ z F t, ∃ (out : Fin V → ZMod 2) (tail : List (Fin (prime+4))),
       z.user = u.user ∧ t ≤ budget+R*(10*N+14)+6 ∧
@@ -173,12 +174,12 @@ theorem classifiedDirectoryCall_exec {P U : Type} {T Q : ℕ} (body : P → Pr P
       (∀ j, if live j && !bad j then ∃ word, ready j word ∧
           ownerRow size out j = ordinaryChildOutput (r := r) (g := g) (w := w) word ∘ ordinaryRecursivePosition r g w W
         else ownerRow size out j = saved j) ∧
-      F.R (p 1) = [] ∧ F.R (p 2) = [] ∧ F.R (p 5) = [] ∧ F.R (p 6) = [] ∧
+      padding (F.L (p 0)) ((F.R (p 0)).drop V) ∧ F.R (p 1) = [] ∧ F.R (p 2) = [] ∧ F.R (p 5) = [] ∧ F.R (p 6) = [] ∧
       (∀ k, k ≠ p 0 → F.L k = S.L k ∧ (F.R k).length ≤ (S.R k).length) ∧
       ∀ k, k ∉ [p 0,p 1,p 2,p 5,p 6] → F.L k = S.L k ∧ F.R k = S.R k := by
-  intro W packed batch R V N size labels ready rows live bad saved u S budget prepared input backup empty width tmp ls bs child
-  obtain ⟨y,D,n,word,user,paid,call,reads,kept,act⟩ :=
-    ordinaryDirectoryCall_exec body f (p 0) parent r g w ready rows u S budget prepared input child
+  intro W packed batch R V N size labels ready rows live bad saved u S budget padding prepared input backup empty width tmp ls bs child
+  obtain ⟨y,D,n,word,user,paid,call,reads,pad,kept,act⟩ :=
+    ordinaryDirectoryCall_exec body f (p 0) parent r g w ready rows u S budget padding prepared input child
   let row : Fin R → Fin N → ZMod 2 := fun j => ownerRow (R := R) (N := N) size word j
   let returned := fun j => payloadWord (SparseRoleCircuit.encode ∘ row j)
   let bypass := fun j => payloadWord (SparseRoleCircuit.encode ∘ saved j)
@@ -209,7 +210,7 @@ theorem classifiedDirectoryCall_exec {P U : Type} {T Q : ℕ} (body : P → Pr P
   have payload := ownerWord_reads word joined tail (payload_prefix_of_read word _ _ _ _ reads)
     (by simpa only [RecordPayload,sub_zero] using reads) (congrFun left (p 0)) result
   refine ⟨z,F,_,joined,tail,zy.trans user,?_,Exec.seq call merge,by simpa only [RecordPayload,sub_zero] using payload,
-    result,?_,back,acc,liveEnd,badEnd,?_,?_⟩
+    result,?_,?_,back,acc,liveEnd,badEnd,?_,?_⟩
   · simp only [labels,List.length_finRange] at time
     omega
   · intro j
@@ -219,6 +220,9 @@ theorem classifiedDirectoryCall_exec {P U : Type} {T Q : ℕ} (body : P → Pr P
       obtain ⟨original,ok,result⟩ := act j
       exact ⟨original,ok,by rw [show out j = row j from ite_eq_left h]; exact funext result⟩
     · next h => exact ite_eq_right h
+  · rw [congrFun left (p 0),result,List.drop_append,show (payloadWord (SparseRoleCircuit.encode ∘ joined)).length = V by simp [payloadWord]]
+    rw [List.drop_eq_nil_of_le (by simp [payloadWord]),List.nil_append,Nat.sub_self,List.drop_zero]
+    exact pad
   · intro k ne
     refine ⟨(congrFun left k).trans (kept k ne).1,?_⟩
     by_cases h : k ∈ [p 1,p 2,p 5,p 6]
@@ -244,16 +248,18 @@ theorem preparedDirectoryCall_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T
     let labels := List.finRange R
     ∀ (ready : ℕ → (Fin ((prime^(w+1))^((r+g)+(r+g))*W) → ZMod 2) → Prop)
       (rows : List (List (Fin (prime+4)))) (live bad : Fin R → Bool)
-      (u : HS T Q prime U) (S : Stacks T prime) (budget : ℕ),
+      (u : HS T Q prime U) (S : Stacks T prime) (budget : ℕ) (padding : List (Fin (prime+4)) → List (Fin (prime+4)) → Prop),
     List.Forall₂ (fun j tape => ∃ word, ready j word ∧
       tape = payloadWord (SparseRoleCircuit.encode ∘ word ∘ ordinaryRecursivePosition r g w W)) (List.range R) rows →
     S.L (p 0) = [] → S.R (p 0) = rows.flatten → S.R (p 1) = [] →
     S.R (p 2) = [] → (S.R (p 3)).length = N → S.R (p 4) = [] →
     S.R (p 5) = labels.map (fun j => bitSymbol (live j)) → S.R (p 6) = labels.map (fun j => bitSymbol (bad j)) →
     let D := {S with R := Function.update S.R (p 1) rows.flatten}
-    (∀ v : HS T Q prime U, v.user = u.user → ∀ word : Fin V → ZMod 2, RecordPayload (p 0) (fun _ => blank) 0 word D →
+    (∀ v : HS T Q prime U, v.user = u.user → ∀ word : Fin V → ZMod 2,
+      (D.L (p 0) = [] ∧ (D.R (p 0)).length = V) → RecordPayload (p 0) (fun _ => blank) 0 word D →
       ∃ y F t, y.user = v.user ∧ t ≤ budget ∧ Exec body (body f) (mk v D) t (mk y F) ∧
         RecordPayload (p 0) (fun _ => blank) 0 (Shared50RecursiveNodeRows.transpose (one_dvd batch.rows) word) F ∧
+        padding (F.L (p 0)) ((F.R (p 0)).drop V) ∧
         (∀ k, k ≠ p 0 → F.L k = D.L k ∧ F.R k = D.R k)) →
     ∃ z F t, ∃ out : Fin V → ZMod 2, z.user = u.user ∧ t ≤ budget+R*(16*N+14)+12 ∧
       Exec body ((bcopy (p 0) (p 1) (p 2) (p 4)).seq ((.call f : Pr P T Q prime U).seq (directoryReturn p)))
@@ -261,10 +267,10 @@ theorem preparedDirectoryCall_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T
       (∀ j : Fin R, ∃ word, ready j word ∧ ownerRow size out j =
         (if live j && !bad j then ordinaryChildOutput (r := r) (g := g) (w := w) word else word) ∘
           ordinaryRecursivePosition r g w W) ∧
-      F.R (p 1) = [] ∧ F.R (p 2) = [] ∧ F.R (p 5) = [] ∧ F.R (p 6) = [] ∧
+      padding (F.L (p 0)) ((F.R (p 0)).drop V) ∧ F.R (p 1) = [] ∧ F.R (p 2) = [] ∧ F.R (p 5) = [] ∧ F.R (p 6) = [] ∧
       (∀ k, k ≠ p 0 → F.L k = S.L k ∧ (F.R k).length ≤ (S.R k).length) ∧
       ∀ k, k ∉ [p 0,p 1,p 2,p 5,p 6] → F.L k = S.L k ∧ F.R k = S.R k := by
-  intro W packed batch R V N size labels ready rows live bad u S budget prepared left queue free empty width tmp ls bs D child
+  intro W packed batch R V N size labels ready rows live bad u S budget padding prepared left queue free empty width tmp ls bs D child
   obtain ⟨v,user,copy⟩ := bcopy_exec body ((by decide : ([0,1,2,4] : List (Fin 7)).Nodup).map p.injective)
     u S empty tmp
   rw [queue,free,List.append_nil] at copy
@@ -277,12 +283,14 @@ theorem preparedDirectoryCall_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T
   have backup : D.R (p 1) = labels.flatMap (fun (j : Fin R) => payloadWord (SparseRoleCircuit.encode ∘ saved j)) := by
     rw [show D.R (p 1) = rows.flatten from Function.update_self ..,encoded,packedRows size original]
   have keep (j : Fin 7) (off : j ≠ 1) : D.R (p j) = S.R (p j) := Function.update_of_ne (p.injective.ne off) ..
-  obtain ⟨z,F,t,out,tail,zy,time,call,payload,_,rowsOut,back,acc,liveEnd,badEnd,stock,frame⟩ :=
-    classifiedDirectoryCall_exec body f p parent r g w ready rows live bad saved v D budget prepared
+  obtain ⟨z,F,t,out,tail,zy,time,call,payload,_,rowsOut,pad,back,acc,liveEnd,badEnd,stock,frame⟩ :=
+    classifiedDirectoryCall_exec body f p parent r g w ready rows live bad saved v D budget padding prepared
       (by intro k; change readAt blank (S.L (p 0)) (D.R (p 0)) k = _; rw [left,keep 0 (by decide),queue])
       backup ((keep 2 (by decide)).trans empty) ((congrArg List.length (keep 3 (by decide))).trans width)
-      ((keep 4 (by decide)).trans tmp) ((keep 5 (by decide)).trans ls) ((keep 6 (by decide)).trans bs) (child v user)
-  refine ⟨z,F,_,out,zy.trans user,?_,Exec.seq copy call,payload,?_,back,acc,liveEnd,badEnd,?_,?_⟩
+      ((keep 4 (by decide)).trans tmp) ((keep 5 (by decide)).trans ls) ((keep 6 (by decide)).trans bs) (fun word => child v user word ⟨left,by
+        rw [keep 0 (by decide),queue,encoded]
+        simp [payloadWord]; rfl⟩)
+  refine ⟨z,F,_,out,zy.trans user,?_,Exec.seq copy call,payload,?_,pad,back,acc,liveEnd,badEnd,?_,?_⟩
   · have bytes : rows.flatten.length = R*N := by simpa only [encoded,payloadWord,List.length_map,List.length_ofFn] using size.symm
     rw [bytes]
     nlinarith
@@ -320,7 +328,7 @@ theorem scannedDirectoryCall_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T 
     let pos := ordinaryRecursivePosition r g w W
     ∀ (incoming : ℕ → (Fin raw → ZMod 2) → Prop) (bypass : ℕ → (Fin N → ZMod 2) → Prop)
       (rows : List (List (Fin (prime+4)))) (live bad : ℕ → Bool)
-      (u : HS T Q prime U) (S : Stacks T prime) (budget : ℕ),
+      (u : HS T Q prime U) (S : Stacks T prime) (budget : ℕ) (padding : List (Fin (prime+4)) → List (Fin (prime+4)) → Prop),
     let active := fun j => live j && !bad j
     List.Forall₂ (fun j tape => ∃ physical : Fin N → ZMod 2,
       (if active j then ∃ word, incoming j word ∧ physical = word ∘ pos else bypass j physical) ∧
@@ -330,9 +338,11 @@ theorem scannedDirectoryCall_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T 
     S.R (p 5) = (List.finRange R).map (fun j : Fin R => bitSymbol (live j)) →
     S.R (p 6) = (List.finRange R).map (fun j : Fin R => bitSymbol (bad j)) →
     let D := {S with R := Function.update S.R (p 1) rows.flatten}
-    (∀ v : HS T Q prime U, v.user = u.user → ∀ word : Fin V → ZMod 2, RecordPayload (p 0) (fun _ => blank) 0 word D →
+    (∀ v : HS T Q prime U, v.user = u.user → ∀ word : Fin V → ZMod 2,
+      (D.L (p 0) = [] ∧ (D.R (p 0)).length = V) → RecordPayload (p 0) (fun _ => blank) 0 word D →
       ∃ y F t, y.user = v.user ∧ t ≤ budget ∧ Exec body (body f) (mk v D) t (mk y F) ∧
         RecordPayload (p 0) (fun _ => blank) 0 (Shared50RecursiveNodeRows.transpose (one_dvd batch.rows) word) F ∧
+        padding (F.L (p 0)) ((F.R (p 0)).drop V) ∧
         (∀ k, k ≠ p 0 → F.L k = D.L k ∧ F.R k = D.R k)) →
     ∃ z F t, ∃ out : Fin V → ZMod 2, z.user = u.user ∧ t ≤ budget+R*(16*N+14)+12 ∧
       Exec body ((bcopy (p 0) (p 1) (p 2) (p 4)).seq ((.call f : Pr P T Q prime U).seq (directoryReturn p)))
@@ -340,14 +350,14 @@ theorem scannedDirectoryCall_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T 
       (∀ j : Fin R, if active j then ∃ word, incoming j word ∧
         ownerRow size out j = ordinaryChildOutput (r := r) (g := g) (w := w) word ∘ pos
         else bypass j (ownerRow size out j)) ∧
-      F.R (p 1) = [] ∧ F.R (p 2) = [] ∧ F.R (p 5) = [] ∧ F.R (p 6) = [] ∧
+      padding (F.L (p 0)) ((F.R (p 0)).drop V) ∧ F.R (p 1) = [] ∧ F.R (p 2) = [] ∧ F.R (p 5) = [] ∧ F.R (p 6) = [] ∧
       (∀ k, k ≠ p 0 → F.L k = S.L k ∧ (F.R k).length ≤ (S.R k).length) ∧
       ∀ k, k ∉ [p 0,p 1,p 2,p 5,p 6] → F.L k = S.L k ∧ F.R k = S.R k := by
-  intro W packed batch R V N raw size pos incoming bypass rows live bad u S budget active scanned left queue
+  intro W packed batch R V N raw size pos incoming bypass rows live bad u S budget padding active scanned left queue
     free empty width tmp ls bs D child
   let ready := fun j (word : Fin raw → ZMod 2) => if active j then incoming j word else bypass j (word ∘ pos)
   obtain ⟨z,F,t,out,user,time,run,payload,returned,frame⟩ := preparedDirectoryCall_exec body f p parent r g w
-    ready rows (fun j => live j) (fun j => bad j) u S budget (by
+    ready rows (fun j => live j) (fun j => bad j) u S budget padding (by
       apply scanned.imp
       rintro j tape ⟨physical,ok,rfl⟩
       cases h : active j with

@@ -458,7 +458,7 @@ def GeneratedDirectoryExecution [M8.Machine.Net] {P U : Type} {r g d w common au
     let batch := ordinaryDirectoryChild directory r g w
     let V := RecursiveInterchangeLayout.volume prime batch
     let R := LabelMask.records directory
-    S.L (reg 0) = [] → ownerTail = [] → ∀ (f : G) (childBudget : ℕ),
+    S.L (reg 0) = [] → ownerTail = [] → ∀ (f : G) (childBudget : ℕ) (padding : List (Fin (prime+4)) → List (Fin (prime+4)) → Prop),
         (∀ (b : HS T columnCapacity prime U) (D : Stacks T prime), ∀ x : Fin V → ZMod 2,
           (DirectoryReady v proj w W data.H J weights prefixes archiveTail (fun _ => []) (embStk outBank D) rs ∧
             D.R (outBank (inner 57)) = rs.map (fun j => bitSymbol (live j)) ∧
@@ -467,17 +467,17 @@ def GeneratedDirectoryExecution [M8.Machine.Net] {P U : Type} {r g d w common au
           directoryOuterWords (embStk outBank D) = directoryOuterWords raw →
           (∀ j : Fin 3, (directoryOuterWords (embStk outBank D) j).length =
             ![directory.beforeRows,directory.rows,directory.beforeH] j) →
-          RecordPayload (q 0) (fun _ => blank) 0 x D →
+          (D.L (q 0) = [] ∧ (D.R (q 0)).length = V) → RecordPayload (q 0) (fun _ => blank) 0 x D →
           ∃ y B k, y.user = b.user ∧ k ≤ childBudget ∧ Exec host (host f) (mk b D) k (mk y B) ∧
             RecordPayload (q 0) (fun _ => blank) 0 (Shared50RecursiveNodeRows.transpose (one_dvd batch.rows) x) B ∧
-            ∀ i, i ≠ q 0 → B.L i = D.L i ∧ B.R i = D.R i) →
+            padding (B.L (q 0)) ((B.R (q 0)).drop V) ∧ ∀ i, i ≠ q 0 → B.L i = D.L i ∧ B.R i = D.R i) →
           let regs := (Fin.natAddEmb (66+(K+1))).trans place
           let outPlace := directoryOutgoingPlacement placement place slots copied (fun _ _ => separate _ _)
           ∀ (dim : m = 64) (outLabel : P → G),
           (∀ f, host (outLabel f) = embProg outPlace outLabel (embProg (Fin.castAdd 5) id (localBody f))) →
           let scan := directoryScanProgram (common := common) r g dimension proj (φ ∘ weights) pool room archiveRoom fits
               capacity localBody pairRoom place p replay outside separate label outLabel f
-          ∃ prior bound outsideSteps tail head, ((prefixes 0).length ≤ N →
+          ∃ prior bound outsideSteps tail head, padding head tail ∧ ((prefixes 0).length ≤ N →
             ∀ p, mnProgPush (directoryQueueInitProgram (P := P) (U := U) (Q := columnCapacity) archiveRoom fits) ≤ p →
               (∀ f, mnProgPush (body f) ≤ p) →
               ((max (prior+bound) (outsideSteps+childBudget) : ℕ) : ℝ) ≤
@@ -783,7 +783,7 @@ theorem generatedIncomingDirectory_exec [M8.Machine.Net] {P U : Type} {r g d w c
   have savedLeft (j : Fin 6) (hj : 2 ≤ j.val) : F.L (p j) = A.L (p j) :=
     (leftOutside _ (outside j hj)).trans ((congrFun leftCopy _).trans (frame _ (outside j hj)).1)
   have scanned := Exec.seq run (Exec.seq timed continued)
-  intro left tail f childBudget child
+  intro left tail f childBudget padding child
   let D := {F with R := Function.update F.R (q 1) (F.R (q 0))}
   obtain ⟨prepSteps,rowSteps,rows,elapsedEq,prepPaid,rowPaid,cutEnd,dimEnd,blankEnd,ordered,ownerLeft,ownerRight,accFree,finalWidth,clearSaved,clearTmp,finished,_⟩ := ok
   have queue : F.R (q 0) = rows.flatten := by
@@ -815,11 +815,11 @@ theorem generatedIncomingDirectory_exec [M8.Machine.Net] {P U : Type} {r g d w c
       Fin.castAddEmb_apply,placement,directoryOrdinaryBank_caller] using lsMid)
     (by simpa only [localBank,Function.Embedding.trans_apply,embStk,Function.comp_apply,inner,caller,
       Fin.castAddEmb_apply,placement,directoryOrdinaryBank_caller] using bsMid)
-  obtain ⟨y,B,k,out,huser,price,call,payload,action,cleared1,cleared2,cleared5,cleared6,callStock,frame⟩ :=
-    scannedDirectoryCall_exec host f q directory r g w incoming bypass rows live bad z F childBudget
+  obtain ⟨y,B,k,out,huser,price,call,payload,action,pad,cleared1,cleared2,cleared5,cleared6,callStock,frame⟩ :=
+    scannedDirectoryCall_exec host f q directory r g w incoming bypass rows live bad z F childBudget padding
       (by simpa only [rs,count] using ordered) (ownerLeft.trans left) queue accFree clearSaved
       (finalWidth.trans size.symm) clearTmp (ls.trans (maskList live)) (bs.trans (maskList bad)) (by
-        intro b hb x hx
+        intro b hb x compact hx
         rw [← queue]
         have sharedAtChild (i : Fin 66) (off : ∀ k, replaySlots k ≠ i) :
             D.R (outBank (inner i)) = (embStk outer (embStk place F)).R (caller i) := by
@@ -834,7 +834,7 @@ theorem generatedIncomingDirectory_exec [M8.Machine.Net] {P U : Type} {r g d w c
           congrArg start.R (directoryOrdinaryBank_caller archiveRoom i).symm
         obtain ⟨cutAtChild,outerAtChild,childSizes⟩ := childReplayControls outBank D raw start (embStk outer (embStk place F))
           initialWord sharedAtChild cutEnd dimEnd beforeRows rowCount beforeH
-        apply child b D x _ cutAtChild outerAtChild childSizes (by simpa only [D,queue] using hx)
+        apply child b D x _ cutAtChild outerAtChild childSizes (by simpa only [D,queue] using compact) (by simpa only [D,queue] using hx)
         have sameBank : embStk localBank (embStk place D) = embStk localBank (embStk place F) := by
           refine Stacks.ext rfl rfl rfl (funext fun i => ?_)
           have different : place (localBank i) ≠ q 1 := (apart i 1).symm
@@ -897,7 +897,7 @@ theorem generatedIncomingDirectory_exec [M8.Machine.Net] {P U : Type} {r g d w c
   let outRate := (outgoingDirectoryTime_volume U machine r g privateTapes.length outPush dim).choose
   let weightedVolume := ((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau*((rs.length : ℝ)*N)
   refine ⟨(s+(copyTime+(12*rs.length+12+t)))+k,outBill+2*archiveTail.length+2*(prefixes 0).length+4,
-    s+(copyTime+(12*rs.length+12+t))+outBill,(B.R (q 0)).drop V,B.L (q 0),?_,?_⟩
+    s+(copyTime+(12*rs.length+12+t))+outBill,(B.R (q 0)).drop V,B.L (q 0),pad,?_,?_⟩
   · as_aux_lemma =>
       intro width
       have extent : N = (prime^(w+1))^128*W := by rw [show N = M^(m+m)*W from rfl,dim]
