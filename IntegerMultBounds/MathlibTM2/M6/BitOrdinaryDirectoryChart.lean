@@ -1963,6 +1963,7 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux w : ℕ} {L P U : Type}
   refine ⟨y,F,n+t,back.transform updated,?_,exec,finish.trans user,?_⟩
   · let localCost := 6*stock+directoryRowClockRate*N+setupCost+budget+91
     have actual : n+t ≤ 13*(stage.cost*(stage.tapes+5))+back.cost*(back.tapes+5)+localCost := by
+      have := Nat.le_mul_of_pos_right stage.cost (show 0 < stage.tapes+5 by omega)
       dsimp only [chartOwnerStock] at time
       dsimp only [localCost,stock]
       omega
@@ -2119,8 +2120,11 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux w : ℕ} {L P U : Type}
   · intro i ne
     let old := (initial.L (ownerSlots i)).length+(initial.R (ownerSlots i)).length
     let newStock := (F.L (ownerSlots i)).length+(F.R (ownerSlots i)).length
-    have physical : newStock ≤ old+2*(stage.cost*(stage.tapes+5)+6)+2*(back.cost*(back.tapes+5)+6) :=
+    have native : newStock ≤ old+2*stage.cost+2*(back.cost*(back.tapes+5)+6) :=
       (returnedStock i).trans (Nat.add_le_add (unchangedStock i ne) (Nat.mul_le_mul_left 2 price))
+    have physical : newStock ≤ old+2*(stage.cost*(stage.tapes+5)+6)+2*(back.cost*(back.tapes+5)+6) := by
+      have := Nat.le_mul_of_pos_right stage.cost (show 0 < stage.tapes+5 by omega)
+      omega
     have realStock : (newStock : ℝ) ≤ (old : ℝ)+2*((stage.cost*(stage.tapes+5) : ℕ)+6)+2*((back.cost*(back.tapes+5) : ℕ)+6) := by
       exact_mod_cast physical
     change (newStock : ℝ) ≤ (old : ℝ)+2*(_+_)*((R*N : ℕ) : ℝ)+24

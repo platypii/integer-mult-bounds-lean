@@ -282,10 +282,11 @@ theorem chartOwner_exec {N k Q : ℕ} {P U : Type}
     (input : RepT (stage.input data) S.L S.R) :
     ∃ z F n, Exec body (foreign (liftQ stage.program capacity)) (mk u S) n (mk z F) ∧
       n ≤ stage.cost*(stage.tapes+5)+6 ∧ z.user = u.user ∧ RepT (stage.output data) F.L F.R ∧
+      (∀ j, (F.L j).length+(F.R j).length ≤ (S.L j).length+(S.R j).length+2*stage.cost) ∧
       RepT (phaseOwners (stage.transform data)) (embStk stage.slots F).L (embStk stage.slots F).R := by
-  obtain ⟨z,F,_,rfl,output,user,_,_,_,n,time,run⟩ :=
+  obtain ⟨z,F,_,rfl,output,user,_,_,stock,n,time,run⟩ :=
     foreign_exec (body := body) (liftQ stage.program capacity) (HoareTime.liftQ capacity (stage.realizes data)) u S _ rfl input
-  refine ⟨z,F,n,run,time,user,output,?_⟩
+  refine ⟨z,F,n,run,time,user,output,stock,?_⟩
   rw [← stage.output_payload]
   exact fun i j => output (stage.slots i) j
 
@@ -394,6 +395,64 @@ theorem chartOwner_input {N k : ℕ} (stage : SharedBankStage.Stage _ k prime (p
     rw [tape,head,kept.1,kept.2]
     exact ready j (fun i eq => shared ⟨i,eq⟩) h
 
+/-- Execute a stage directly on the enclosing machine's owner slots. Private
+registers outside the installed stage keep their physical stacks. -/
+theorem ownerStage_exec_emb {N k T Q : ℕ} {P U : Type}
+    (stage : SharedBankStage.Stage _ k prime (phaseOwners (N := N)))
+    (bank : Fin stage.tapes ↪ Fin T) (fits : stage.states ≤ Q)
+    (body : P → Pr P T Q prime U) (data : Fin k → Fin N → ZMod 2)
+    (u : HS T Q prime U) (S : Stacks T prime)
+    (privateReady : ChartPrivateReady stage (embStk bank S))
+    (owners : RepT (phaseOwners data) (embStk (bank ∘ stage.slots) S).L
+      (embStk (bank ∘ stage.slots) S).R) :
+    ∃ z F n, Exec body (embProg bank (Empty.elim : Empty → P) (foreign (liftQ stage.program fits)))
+        (mk u S) n (mk z F) ∧ n ≤ stage.cost*(stage.tapes+5)+6 ∧ z.user = u.user ∧
+      RepT (stage.output data) (embStk bank F).L (embStk bank F).R ∧
+      RepT (phaseOwners (stage.transform data)) (embStk (bank ∘ stage.slots) F).L
+        (embStk (bank ∘ stage.slots) F).R ∧
+      (∀ j, (F.L (bank j)).length+(F.R (bank j)).length ≤
+        (S.L (bank j)).length+(S.R (bank j)).length+2*stage.cost) ∧
+      ∀ j, (∀ i, bank i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  have input := chartOwner_input stage data (embStk bank S) (embStk bank S) privateReady owners (fun _ _ => ⟨rfl,rfl⟩)
+  obtain ⟨v,A,n,run,time,user,full,stock,reads⟩ :=
+    chartOwner_exec stage fits (P := Empty) Empty.elim data (embDn bank u) _ input
+  obtain ⟨z,F,exec,_,same,view,off⟩ := exec_emb (ι := (Empty.elim : Empty → P))
+    (body' := body) bank.injective (fun f => f.elim) run u rfl S rfl
+  subst A
+  exact ⟨z,F,n,exec,time,same.trans user,full,reads,stock,off⟩
+
+open IntegerMultBounds.Networks.Certificates.PR589 in
+/-- A scalar phase gate on the live parent bank costs linear time in the owner
+word length. Its two private control tapes are ready for reuse on return. -/
+theorem phaseRawGate_host {k V : ℕ} (owner : Fin 661 ↪ Fin k) (g : RawGate)
+    (scheduled : g ∈ program) (positive : 0 < V) :
+    ∃ stage : SharedBankStage.Stage _ k prime (phaseOwners (N := V)),
+      (∀ data, (∀ j, j ≠ owner ⟨g.target,(register_bounds g scheduled).1⟩ →
+          stage.transform data j = data j) ∧ ∀ j : Fin 661, ∀ i,
+          stage.transform data (owner j) i =
+            g.toCircuit.run (Copy.extendStored (fun r => data (owner r) i)) j.val) ∧
+      ∀ {T Q : ℕ} {P U : Type} (bank : Fin stage.tapes ↪ Fin T) (fits : stage.states ≤ Q)
+        (body : P → Pr P T Q prime U) data (u : HS T Q prime U) (S : Stacks T prime),
+        ChartPrivateReady stage (embStk bank S) →
+        RepT (phaseOwners data) (embStk (bank ∘ stage.slots) S).L (embStk (bank ∘ stage.slots) S).R →
+        ∃ z F n, Exec body (embProg bank (Empty.elim : Empty → P) (foreign (liftQ stage.program fits)))
+            (mk u S) n (mk z F) ∧ n ≤ 76*g.sources.length*V*(k+7)+6 ∧ z.user = u.user ∧
+          RepT (phaseOwners (stage.transform data)) (embStk (bank ∘ stage.slots) F).L
+            (embStk (bank ∘ stage.slots) F).R ∧ ChartPrivateReady stage (embStk bank F) ∧
+          (∀ j, (F.L (bank j)).length+(F.R (bank j)).length ≤
+            (S.L (bank j)).length+(S.R (bank j)).length+2*(76*g.sources.length*V)) ∧
+          ∀ j, (∀ i, bank i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  obtain ⟨stage,tapes,restores,cost,acts⟩ := phaseRawGate_stage owner g scheduled positive
+  refine ⟨stage,acts,?_⟩
+  intro T Q P U bank fits body data u S ready owners
+  obtain ⟨z,F,n,run,time,user,full,reads,stock,off⟩ :=
+    ownerStage_exec_emb stage bank fits body data u S ready owners
+  rw [restores] at full
+  rw [tapes] at time
+  exact ⟨z,F,n,run,time.trans (Nat.add_le_add_right (Nat.mul_le_mul_right _ cost) _),user,reads,
+    chartPrivateReady_of_input stage _ _ full,fun j => (stock j).trans
+      (Nat.add_le_add_left (Nat.mul_le_mul_left 2 cost) _),off⟩
+
 /-- Use the permanent owner slots for the chart payload and an appended
 bank for its private tapes. -/
 noncomputable def returnChartBank {k t T : ℕ} (slots : Fin k ↪ Fin t) (owners : Fin k ↪ Fin T) :
@@ -489,7 +548,7 @@ theorem ownerRun_returnChart {T N k Q w : ℕ} {P U : Type} {v : Descriptor}
       change blank = readAt blank (B.L (ret j)) (B.R (ret j)) h
       rw [outside j hj,kept.1,kept.2]
       simp [start,readAt_nil_left,wordTape_nil]
-  obtain ⟨z,A,t,run,paid,user,full,_⟩ := chartOwner_exec back capacity (P := Empty) Empty.elim data (embDn ret y) _ ready
+  obtain ⟨z,A,t,run,paid,user,full,_,_⟩ := chartOwner_exec back capacity (P := Empty) Empty.elim data (embDn ret y) _ ready
   obtain ⟨x,D,exec,_,same,lastView,preserved⟩ := exec_emb (ι := (Empty.elim : Empty → P)) (body' := outer)
     ret.injective (fun f => f.elim) run y rfl B rfl
   rw [reverse.restored,← lastView] at full
@@ -706,7 +765,7 @@ theorem ordinaryOwnerBank_private {T k : ℕ} (metadata : ℕ → List (Fin (pri
 /-- Bound the two physical stacks of the selected owner after the chart. -/
 def chartOwnerStock {N k : ℕ} (stage : SharedBankStage.Stage _ k prime (phaseOwners (N := N)))
     (src : Fin k) (S : Stacks stage.tapes prime) : ℕ :=
-  (S.L (stage.slots src)).length+(S.R (stage.slots src)).length+2*(stage.cost*(stage.tapes+5)+6)
+  (S.L (stage.slots src)).length+(S.R (stage.slots src)).length+2*stage.cost
 
 /-- Execute the chart and scanner on one bank. The scanner shares the selected
 physical chart slot and sees its own private metadata throughout the join. -/
@@ -738,7 +797,7 @@ theorem chartOwner_scan {T N k Q : ℕ} {P U : Type}
       ∀ i j, readAt blank (D.L (chart (stage.slots i))) (D.R (chart (stage.slots i))) j =
         (phaseOwners (Function.update (stage.transform data) src word)).tape i j := by
   intro slot placement chart capacity chartFits fits outer u S input scanner
-  obtain ⟨y,F,t,run,price,chartUser,full,reads⟩ := chartOwner_exec stage (P := Empty) chartFits Empty.elim data (embDn chart u) S input
+  obtain ⟨y,F,t,run,price,chartUser,full,stock,reads⟩ := chartOwner_exec stage (P := Empty) chartFits Empty.elim data (embDn chart u) S input
   obtain ⟨v,B,enter,_,enterUser,view,off⟩ := exec_emb (ι := (Empty.elim : Empty → P)) (body' := outer)
     chart.injective (fun f => f.elim) run u rfl (ordinaryOwnerBank metadata S) (by
       apply Stacks.ext <;> simp [embStk,ordinaryOwnerBank,chart,Function.comp_def])
@@ -758,7 +817,7 @@ theorem chartOwner_scan {T N k Q : ℕ} {P U : Type}
               | simpa [ordinaryOwnerBank,embStk,chart] using congrArg (fun A => Stacks.R A j) view
   subst B
   have bound (i) : (F.L (stage.slots i)).length+(F.R (stage.slots i)).length ≤ chartOwnerStock stage i S :=
-    (foreignTapeStock _ run _).trans (Nat.add_le_add_left (Nat.mul_le_mul_left _ price) _)
+    stock (stage.slots i)
   obtain ⟨w,D,n,word,paid,ok,scanUser,scan⟩ := scanner (stateLiftDown positive (embDn placement v)) F reads (bound src)
   have lifted := stateLift_exec_normalized fits positive id (body' := fun f => stateLiftPr fits positive id (body f))
     (fun _ => rfl) (embDn placement v) scan.run

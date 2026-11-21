@@ -110,7 +110,7 @@ theorem phaseInstructions_stage [Net] {k w W : ℕ} (owner : Fin 661 ↪ Fin k)
     cases instr with
     | gate g =>
       obtain ⟨raw,scheduled,rfl⟩ := head
-      obtain ⟨step,price,acts⟩ := phaseRawGate_stage owner raw scheduled pos
+      obtain ⟨step,_,_,price,acts⟩ := phaseRawGate_stage owner raw scheduled pos
       obtain ⟨next,budget,reads,off⟩ := ih edges checked tail
       refine ⟨SharedBankStage.compose step next,?_,?_,?_⟩
       · change step.cost+next.cost+1 ≤ _

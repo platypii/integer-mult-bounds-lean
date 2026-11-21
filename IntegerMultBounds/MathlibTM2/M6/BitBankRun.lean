@@ -39,7 +39,7 @@ theorem bankAdd_stage (dst src : Fin 8) (distinct : dst ≠ src) {V : ℕ} (posi
   have lengthEntries : entries.length = 17760 := (List.length_ofFn).trans (by simp only [BankLane,Fintype.card_prod,Fintype.card_fin])
   have off (x y : BankLane) : bankTape dst x ≠ bankTape src y :=
     fun h => distinct (bankTape_eq.mp h).1
-  obtain ⟨stage,bill,effect⟩ := ownerAdds_stage (bankTape dst) (bankTape src) off entries positive
+  obtain ⟨stage,_,_,bill,effect⟩ := ownerAdds_stage (bankTape dst) (bankTape src) off entries positive
   refine ⟨stage,?_,fun data => ⟨?_,?_⟩⟩
   · simpa only [lengthEntries] using bill
   · intro x i

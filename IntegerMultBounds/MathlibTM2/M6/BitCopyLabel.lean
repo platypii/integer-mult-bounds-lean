@@ -170,6 +170,7 @@ noncomputable def phaseOwners {k N : ℕ} (data : Fin k → Fin N → ZMod 2) : 
 theorem ownerAdds_stage {α β : Type*} {k V : ℕ} (target : α → Fin k) (src : β → Fin k)
     (off : ∀ a b, target a ≠ src b) (entries : List (α × β)) (positive : 0 < V) :
     ∃ stage : SharedBankStage.Stage _ k prime (phaseOwners (N := V)),
+      stage.tapes = k+2 ∧ (∀ data, stage.output data = stage.input (stage.transform data)) ∧
       stage.cost ≤ 76*entries.length*V ∧ ∀ data j i,
         stage.transform data j i = Circuit.run (SparseCircuit.copies target src entries)
           (fun j => data j i) j := by
@@ -188,7 +189,7 @@ theorem ownerAdds_stage {α β : Type*} {k V : ℕ} (target : α → Fin k) (src
             slots := slots, slots_injective := Fin.castAdd_injective ..,
             metadata := (SharedBank.empty k prime).append controls,
             cost := entries.length*(14*V+14*bs.length+34), input_payload := project,
-            output_payload := fun data => project _, strip_input := ?_, realizes := ?_ },?_,?_⟩
+            output_payload := fun data => project _, strip_input := ?_, realizes := ?_ },rfl,fun _ => rfl,?_,?_⟩
   · intro data
     exact (SharedBankFrames.strip_append_left (phaseOwners data) controls id).trans
       (congrArg (fun v : Tapes k prime => v.append controls) (SharedBankFrames.strip_identity _))
@@ -204,6 +205,7 @@ tapes as its frame changes. All sources are read at their original values. -/
 theorem phaseGate_stage {k V : ℕ} (dst : Fin k) (sources : List (Fin k))
     (separate : dst ∉ sources) (positive : 0 < V) :
     ∃ stage : SharedBankStage.Stage _ k prime (phaseOwners (N := V)),
+      stage.tapes = k+2 ∧ (∀ data, stage.output data = stage.input (stage.transform data)) ∧
       stage.cost ≤ 76*sources.length*V ∧ ∀ data,
         stage.transform data = Function.update data dst
           (fun i => data dst i + (sources.map (fun src => data src i)).sum) := by
@@ -211,8 +213,8 @@ theorem phaseGate_stage {k V : ℕ} (dst : Fin k) (sources : List (Fin k))
   let target := fun _ : Unit => dst
   have off : ∀ a b, target a ≠ src b := fun _ b eq => separate ((show dst = b.val from eq).symm ▸ b.property)
   let entries := sources.attach.map (fun j => ((),j))
-  obtain ⟨stage, bound, effect⟩ := ownerAdds_stage target src off entries positive
-  refine ⟨stage,by simpa [entries] using bound,?_⟩
+  obtain ⟨stage,tapes,restores,bound,effect⟩ := ownerAdds_stage target src off entries positive
+  refine ⟨stage,tapes,restores,by simpa [entries] using bound,?_⟩
   intro data
   funext j i
   rw [effect, SparseCircuit.copies_run _ _ _ off]
@@ -226,6 +228,7 @@ theorem phaseRawGate_stage {k V : ℕ} (owner : Fin 661 ↪ Fin k) (g : RawGate)
     (scheduled : g ∈ program) (positive : 0 < V) :
     let dst := owner ⟨g.target,(register_bounds g scheduled).1⟩
     ∃ stage : SharedBankStage.Stage _ k prime (phaseOwners (N := V)),
+      stage.tapes = k+2 ∧ (∀ data, stage.output data = stage.input (stage.transform data)) ∧
       stage.cost ≤ 76*g.sources.length*V ∧ ∀ data,
         (∀ j, j ≠ dst → stage.transform data j = data j) ∧
         ∀ j : Fin 661, ∀ i, stage.transform data (owner j) i =
@@ -240,8 +243,8 @@ theorem phaseRawGate_stage {k V : ℕ} (owner : Fin 661 ↪ Fin k) (g : RawGate)
     obtain ⟨j,_,eq⟩ := List.mem_map.mp mem
     have same : j.val = g.target := congrArg Fin.val (owner.injective eq)
     exact separate (same ▸ j.property)
-  obtain ⟨stage,bill,action⟩ := phaseGate_stage dst sources off positive
-  refine ⟨stage,by simpa [sources] using bill,?_⟩
+  obtain ⟨stage,tapes,restores,bill,action⟩ := phaseGate_stage dst sources off positive
+  refine ⟨stage,tapes,restores,by simpa [sources] using bill,?_⟩
   intro data
   rw [action]
   refine ⟨fun j h => Function.update_of_ne h ..,?_⟩
