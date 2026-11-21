@@ -80,6 +80,12 @@ theorem stageFactor_order (c : PortCertificate) (s : Fin 8) :
        simp only [ne_eq,EmbeddingLike.apply_eq_iff_eq,Sum.inl.injEq,Sum.inr.injEq] at ne
        simp [one_apply,avoid,block,ne,Ne.symm ne])
 
+private theorem route_admissible (c : PortCertificate) (checked : c.Checked) (s : Fin 8) (w : ℕ) :
+    Admissible (prime^w) (c.route s) := by
+  obtain ⟨⟨hl,_⟩,⟨hm,_⟩,hr,_⟩ := stageFactor_supported c checked s stageAxis.symm w
+  rw [c.route_triangular_factors checked s]
+  exact admissible_mul _ hl (admissible_mul _ hm hr)
+
 /-- The modular product is the certified stage involution. Each pass is
 invertible in any numbering of the axes, including the reversed numbering. -/
 theorem stageFactor_reduce (c : PortCertificate) (checked : c.Checked) (s : Fin 8)
@@ -94,8 +100,7 @@ theorem stageFactor_reduce (c : PortCertificate) (checked : c.Checked) (s : Fin 
   intro A L M R unit
   obtain ⟨⟨hl,_⟩,⟨hm,_⟩,hr,_⟩ := stageFactor_supported c checked s e w
   have product : c.route s = L*(M*R) := c.route_triangular_factors checked s
-  have adm := admissible_mul (prime^w) hl (admissible_mul (prime^w) hm hr)
-  have routeAdm : Admissible (prime^w) (c.route s) := product ▸ adm
+  have routeAdm := route_admissible c checked s w
   have reduced : reduce (prime^w) (c.route s) = reduce (prime^w) L * (reduce (prime^w) M * reduce (prime^w) R) := by
     rw [product,reduce_mul (prime^w) hl (admissible_mul (prime^w) hm hr),reduce_mul (prime^w) hm hr]
   refine ⟨reduced,?_⟩
@@ -160,4 +165,37 @@ theorem helperChart_reduce (c : PortCertificate) (checked : c.Checked) (x : ℕ)
   intro i j
   cases i <;> simp [PortCertificate.localChart]
   split <;> simp
+/-- On a covered data port, changing the label by the stage route carries
+the modular window projector to the certificate's lifted parent projector. -/
+theorem stageProjector_atLabel (c : PortCertificate) (checked : c.Checked) (n : Fin 9) (w : ℕ)
+    (U : Matrix (Fin 8) (Fin 8) ℚ) (legal : Admissible (prime^w) U)
+    (g : Matrix Axis Axis (ZMod (prime^w))) :
+    let m := prime^w
+    let H := reduce m (c.stageRoute n)
+    let L : Matrix Exterior Exterior (ZMod m) := diagonal fun i => if i.1.val < n.val then 1 else 0
+    g * reduce m (c.stageLift n U) * g⁻¹ =
+      (g*H) * fromBlocks (reduce m U) 0 0 L * (g*H)⁻¹ := by
+  intro m H L
+  have route : Admissible m (c.stageRoute n) := by
+    unfold PortCertificate.stageRoute
+    split
+    · exact admissible_one _
+    · exact route_admissible c checked _ w
+  have window : Admissible m (windowProj n U) := by
+    rintro (i|i) (j|j)
+    · exact legal i j
+    · simp [windowProj]
+    · simp [windowProj]
+    · simp only [windowProj,fromBlocks_apply₂₂,lower,diagonal_apply]
+      split_ifs <;> simp
+  have red : reduce m (windowProj n U) = fromBlocks (reduce m U) 0 0 L := by
+    ext (i|i) (j|j)
+    all_goals simp only [reduce,Matrix.map_apply,windowProj,fromBlocks_apply₁₁,fromBlocks_apply₁₂,
+      fromBlocks_apply₂₁,fromBlocks_apply₂₂,Matrix.zero_apply,ratMod_zero,L,lower,diagonal_apply]
+    split_ifs <;> simp [ratMod_zero,ratMod_one]
+  have inv : H⁻¹ = H := Matrix.inv_eq_right_inv (reduce_inverse m route route (c.stageRoute_mul_self checked n))
+  rw [c.stageLift_eq,reduce_mul m (admissible_mul m route window) route,reduce_mul m route window,
+    red,Matrix.mul_inv_rev,inv]
+  simp only [H,Matrix.mul_assoc]
+
 end IntegerMultBounds.MathlibTM2.M6.BitNode

@@ -625,6 +625,23 @@ The scheduled children leave room for only 51,360 additional rank-one occurrence
 at exponent one. The present construction charges 319,680. A sharper recurrence
 therefore needs a different accounting or implementation of the port corrections.
 
+The original orthogonal frames admit a different local implementation in reversed
+coordinates. `orthogonalMoves_common_basis` proves that one integral basis, with entries
+at most `2^28`, gives every nested pair a rational program with precisely its original
+rank and the contiguous reversed pivot block. This includes a line at source entry and
+its orthogonal hyperplane at target exit. In the pinned scalar word every source first
+appears in its initial line frame and every target last appears in its final hyperplane
+frame. A machine running these original frames directly could dispense with both
+oblique-frame corrections. The physical reversed child and its embedding into the
+parent sweep still need a uniform prime-power program and cost proof.
+
+A concrete common basis is the Vandermonde matrix `G[i,j] = (3+i)^j` in zero-based
+coordinates. Run `python3 scripts/check-pr589-orthogonal-minors.py` to replay the pinned
+word using exact rational matrices. For all 2911 positive phase occurrences and nine
+retained COPYs, every required leading minor of the conjugated difference is nonzero.
+The largest absolute numerator or denominator takes 79 bits. This explicit basis is
+verified by the Python calculation. The Lean theorem proves existence independently.
+
 The compiled idle in `routedRemainder_stage` enters the port chart on the cover label,
 swaps a fixed interval of payload digits, and restores the label. `IdleTransport.digits`
 proves its exact action. At incoming label `g`, port chart `H`, and diagonal interval
