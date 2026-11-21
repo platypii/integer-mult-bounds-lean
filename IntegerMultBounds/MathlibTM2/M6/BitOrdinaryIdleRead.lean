@@ -2772,18 +2772,35 @@ theorem allocatedStage_host [M8.Machine.Net] (n : Fin 9) : AllocatedStage n := b
   exact ⟨z,F,t,out,exec,time,user,representedOut,trace,stageTrace_transform n _ _ _ trace⟩
 
 open IntegerMultBounds.Networks.Certificates.PR589.Nine in
+/-- Each replica, port and class may choose its own address order across
+the eight banks. A constant family specializes to the common role read. -/
+noncomputable def readLanes {V : ℕ} (address : BankLane → (Axis ⊕ Axis → ℚ) → Fin V)
+    (data : Fin 142081 → Fin V → ZMod 2) : State :=
+  fun ρ => readRoles (address (ρ.replica,ρ.port,ρ.cls)) data ρ
+
+private theorem remainder_readLanes {V : ℕ} (i : ℕ) {data out : Fin 142081 → Fin V → ZMod 2}
+    (address : BankLane → (Axis ⊕ Axis → ℚ) → Fin V)
+    (read : ∀ lane, readRoles (address lane) out = (Piece.remainder i).run (readRoles (address lane) data)) :
+    readLanes address out = (Piece.remainder i).run (readLanes address data) := by
+  funext ρ
+  have step := congrFun (read (ρ.replica,ρ.port,ρ.cls)) ρ
+  by_cases active : ρ.bank.val / 2 = BitHosting.pairOf i <;>
+    simpa only [Piece.run,active,↓reduceIte,readLanes] using step
+
+open IntegerMultBounds.Networks.Certificates.PR589.Nine in
 /-- To read a physical stage it suffices to identify the framed word on each
 of the 661 owners. All other roles follow from the invocation frame. -/
 theorem stageReads_of_ownerReads {w B K : ℕ} (n : Fin 9)
-    (address : (Axis ⊕ Axis → ℚ) → Fin ((prime^w)^16*(B*prime^(64*(w*64))*K)))
+    (address : BankLane → (Axis ⊕ Axis → ℚ) → Fin ((prime^w)^16*(B*prime^(64*(w*64))*K)))
     (owned : ∀ (k : Fin 32 × Fin 5) x y, InvocationEffect n k.1 k.2 w B K x y →
-      ∀ (j : Fin 661) z, y (ownerTape n k.1 k.2 j) (address z) =
-        along (bar (chart n j.val)ᵀ) (runWord n (registers n k.1 k.2 (readRoles address x)) j.val) z)
+      ∀ (j : Fin 661) z, let ρ := owner n k.1 k.2 j.val
+        y (ownerTape n k.1 k.2 j) (address (ρ.replica,ρ.port,ρ.cls) z) =
+        along (bar (chart n j.val)ᵀ) (runWord n (registers n k.1 k.2 (readLanes address x)) j.val) z)
     (data out) (acts : stageRuns.foldr (fun k next x => ∃ y, InvocationEffect n k.1 k.2 w B K x y ∧ next y)
       (fun x => x = out) data) :
-    readRoles address out = (Piece.stage n).run (readRoles address data) := by
+    readLanes address out = (Piece.stage n).run (readLanes address data) := by
   have step (k : Fin 32 × Fin 5) (x y) (run : InvocationEffect n k.1 k.2 w B K x y) :
-      readRoles address y = stageRun n k (readRoles address x) := by
+      readLanes address y = stageRun n k (readLanes address x) := by
     funext ρ z
     by_cases h : ∃ j : Fin 661, owner n k.1 k.2 j.val = ρ
     · obtain ⟨j,rfl⟩ := h
@@ -2794,15 +2811,15 @@ theorem stageReads_of_ownerReads {w B K : ℕ} (n : Fin 9)
       change _ = invoke n k.1 k.2 _ _ _
       rw [invoke_other _ _ _ _ _ outside]
       let lane : BankLane := (ρ.replica,ρ.port,ρ.cls)
-      apply congrFun (run.2 (bankTape ρ.bank lane) (Fin.castSucc_ne_last _) ?_) (address z)
+      apply congrFun (run.2 (bankTape ρ.bank lane) (Fin.castSucc_ne_last _) ?_) (address lane z)
       intro j eq
       have same := (Fintype.equivFin Role).injective (Fin.cast_injective _ (Fin.castSucc_injective _ eq))
       exact outside j.val j.isLt same
   have read (ls : List (Fin 32 × Fin 5)) (x y) (h : ls.foldr
       (fun k next a => ∃ b, InvocationEffect n k.1 k.2 w B K a b ∧ next b) (fun a => a = y) x) :
-      readRoles address y = ls.foldl (fun a k => stageRun n k a) (readRoles address x) := by
+      readLanes address y = ls.foldl (fun a k => stageRun n k a) (readLanes address x) := by
     induction ls generalizing x with
-    | nil => exact congrArg (readRoles address) h.symm
+    | nil => exact congrArg (readLanes address) h.symm
     | cons k rest ih =>
       obtain ⟨mid,run,tail⟩ := h
       simpa only [List.foldl_cons,← step k x mid run] using ih mid tail
@@ -2963,6 +2980,18 @@ private theorem bankPiece_adds (piece : Piece) (scheduled : piece ∈ nodeProgra
     rw [acts]
     simp only [exchangeAdds,List.foldl_append,swapAdds_apply,sides,Piece.run,otherSide,withBank,readRoles]
 
+private theorem bankPiece_readLanes {V : ℕ} {piece : Piece}
+    (bank : (∃ d s, piece = .bridge d s) ∨ piece = .exchangeSides)
+    {data out : Fin 142081 → Fin V → ZMod 2}
+    (read : ∀ address, readRoles address out = piece.run (readRoles address data)) :
+    ∀ address, readLanes address out = piece.run (readLanes address data) := by
+  intro address
+  funext ρ
+  have atLane := congrFun (read (address (ρ.replica,ρ.port,ρ.cls))) ρ
+  rcases bank with ⟨d,s,rfl⟩ | rfl
+  · simpa only [Piece.run,readLanes,withBank] using atLane
+  · exact atLane
+
 open IntegerMultBounds.Networks.Certificates.PR589.Nine in
 /-- Physical bridge and side-exchange instructions on the same owner/control
 bank as the stage invocations, at every logical address simultaneously. -/
@@ -2975,7 +3004,7 @@ theorem nodeBankPiece_host (piece : Piece) (scheduled : piece ∈ nodeProgram)
         (SparseRoleCircuit.encoded x) (FlatCoordinateSchedule.bits V)) (embStk ports S).L (embStk ports S).R
     ∀ data u S, ready data S → ∃ v D t out, Exec body code (mk u S) t (mk v D) ∧
       t ≤ (if piece = .exchangeSides then 12 else 2)*(76*17760*V*(142081+7)+6)+1 ∧
-      v.user = u.user ∧ ready out D ∧ (∀ address, readRoles address out = piece.run (readRoles address data)) ∧
+      v.user = u.user ∧ ready out D ∧ (∀ address, readLanes address out = piece.run (readLanes address data)) ∧
       out (Fin.last 142080) = data (Fin.last 142080) ∧
       ∀ j, (∀ l, ports l ≠ j) → D.L j = S.L j ∧ D.R j = S.R j := by
   obtain ⟨ops,len,acts⟩ := bankPiece_adds piece scheduled bankPiece
@@ -2986,7 +3015,7 @@ theorem nodeBankPiece_host (piece : Piece) (scheduled : piece ∈ nodeProgram)
   refine ⟨code,?_⟩
   intro V pos ready data u S live
   obtain ⟨v,D,t,out,exec,time,user,done,reads,tmp,off⟩ := run pos data u S live
-  exact ⟨v,D,t,out,exec,len ▸ time,user,done,acts data out reads,tmp,off⟩
+  exact ⟨v,D,t,out,exec,len ▸ time,user,done,bankPiece_readLanes bankPiece (acts data out reads),tmp,off⟩
 
 def Piece.bankOp : Piece → Bool
   | .bridge .. | .exchangeSides => true
@@ -3004,7 +3033,7 @@ theorem nodePieces_host
     ∀ {P U A : Type} {Q V : ℕ}, states ≤ Q → 0 < V →
     ∀ (body : ∀ i, P → Pr P (tapes i) Q prime U) (initial : ∀ i, Stacks (tapes i) prime)
       (localCost : I → ℕ) (childTime : ℕ → ℕ) (shared : Stacks (142081+2) prime)
-      (address : A → (Axis ⊕ Axis → ℚ) → Fin V),
+      (address : A → BankLane → (Axis ⊕ Axis → ℚ) → Fin V),
     let ready := fun (x : Fin 142081 → Fin V → ZMod 2) (S : Stacks (142081+2) prime) =>
       RepT (PointwiseRoleGate.bank (a := prime) (fun _ _ => blank) (fun _ => 0)
         (SparseRoleCircuit.encoded x) (FlatCoordinateSchedule.bits V)) S.L S.R
@@ -3017,13 +3046,13 @@ theorem nodePieces_host
       ∃ v D t y, Exec (body i) code (mk u S) t (mk v D) ∧
         t ≤ localCost i + ((List.range' (start i) (piece i).children.length).map childTime).sum ∧
         v.user = u.user ∧ ready y (embStk (ports i) D) ∧
-        ∀ a, readRoles (address a) y = (piece i).run (readRoles (address a) x)) →
+        ∀ a, readLanes (address a) y = (piece i).run (readLanes (address a) x)) →
     let table := fun g : I × P => embProg (bank g.1) (Prod.mk g.1) (body g.1 g.2)
     ∃ prepared : Stacks T prime, embStk fan prepared = shared ∧ ∃ code,
     ∀ x u S, ready x (embStk fan S) → (∀ l, (∀ j, fan j ≠ l) → S.L l = prepared.L l ∧ S.R l = prepared.R l) →
       ∃ v D t y, Exec table code (mk u S) t (mk v D) ∧
         t ≤ (List.ofFn fixed).sum + ((List.range nodeChildren5.length).map childTime).sum+1 ∧
-        v.user = u.user ∧ ready y (embStk fan D) ∧ ∀ a, readRoles (address a) y = runNode (readRoles (address a) x) := by
+        v.user = u.user ∧ ready y (embStk fan D) ∧ ∀ a, readLanes (address a) y = runNode (readLanes (address a) x) := by
   classical
   intro I piece
   letI : BEq I := inferInstanceAs (BEq (Fin nodeProgram.length))
@@ -3036,7 +3065,7 @@ theorem nodePieces_host
   refine ⟨Finset.univ.sup qs,T,fan,bank,selected,?_⟩
   intro P U A Q V fits pos body initial localCost childTime shared address ready start fixed active table
   let bill := fun i => ((List.range' (start i) (piece i).children.length).map childTime).sum
-  let effect := fun i x y => ∀ a, readRoles (address a) y = (piece i).run (readRoles (address a) x)
+  let effect := fun i x y => ∀ a, readLanes (address a) y = (piece i).run (readLanes (address a) x)
   have step (i : I) : ∃ code, ∀ x u S, ready x (embStk (ports i) S) →
       (∀ l, (∀ j, ports i j ≠ l) → S.L l = (initial i).L l ∧ S.R l = (initial i).R l) →
       ∃ v D t y, Exec (body i) code (mk u S) t (mk v D) ∧ t ≤ fixed i + bill i ∧
@@ -3080,9 +3109,9 @@ theorem nodePieces_host
     rw [split,show (order.map bill).sum = _ from fees,← List.ofFn_eq_map] at paid
     simpa only [List.range_eq_range'] using paid
   · have read (ls : List I) (a : A) (x y) (h : ls.foldr (fun i next x => ∃ y, effect i x y ∧ next y) (fun x => x = y) x) :
-        readRoles (address a) y = runPieces (ls.map piece) (readRoles (address a) x) := by
+        readLanes (address a) y = runPieces (ls.map piece) (readLanes (address a) x) := by
       induction ls generalizing x with
-      | nil => exact congrArg (readRoles (address a)) h.symm
+      | nil => exact congrArg (readLanes (address a)) h.symm
       | cons i ls ih =>
         obtain ⟨z,act,rest⟩ := h
         simpa only [List.map_cons,runPieces,List.foldl_cons,← act a] using ih z rest
@@ -3857,6 +3886,25 @@ theorem ordinaryIdle_read {w R W parents : ℕ} (i : Fin 9)
   intro k e P x
   rw [idleExchange_axes _ (port_checked _ (idleRole i k).port.isLt) e.1 e.2]
   exact (reads k).exchange units block g live count (x ∘ Equiv.sumCongr stageAxis.symm stageAxis.symm) spectator
+
+/-- An idle also preserves a lane-specific choice of live label, spectator
+and inherited block. Each remainder acts within a single role. -/
+theorem ordinaryIdle_readLanes {w R W parents : ℕ} (i : Fin 9)
+    (parent : Fin 64 → ZMod (prime^(w+1))) (units : ∀ j, IsUnit (parent j))
+    (block : BankLane → Fin parents) (g : BankLane → LabelPadding.Label 64 (w+1))
+    (live : ∀ lane, IsUnit (g lane)) (count : parents*(prime^(w+1))^(64*64) = R)
+    (spectator : BankLane → Fin W)
+    (before after : Fin 142081 → Fin (R*((prime^(w+1))^128*W)) → ZMod 2)
+    (reads : ∀ k, OriginalPortReads R W parents (idleInterval i k.2) parent (port (idleRole i k).port.val)
+      (before (idleTape i k)) (after (idleTape i k)))
+    (off : ∀ j, (∀ k, j ≠ idleTape i k) → after j = before j) :
+    let address := fun lane => ordinaryRoleAddress parent (block lane) (g lane) count (spectator lane)
+    readLanes address after = (Piece.remainder i.val).run (readLanes address before) := by
+  intro address
+  apply remainder_readLanes
+  intro lane
+  exact ordinaryIdle_read i parent units (block lane) (g lane) (live lane)
+    count (spectator lane) before after reads off
 
 /-- Run the installed passes on their common bank and read the compiled idle
 from the very same final store and summed step bound. -/

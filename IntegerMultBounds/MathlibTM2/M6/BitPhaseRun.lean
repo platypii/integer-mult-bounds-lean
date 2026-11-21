@@ -382,6 +382,57 @@ noncomputable def labelScatter {w : ℕ} (n : Fin 9)
     frame i.val (FramedCircuit.moduleRun (sectionscatter.map RawGate.toCircuit)
       (FramedCircuit.decode frame stored) i.val)
 
+/-- Scatter never writes a source or helper, even when the register charts
+select different labels for all of its incoming terms. -/
+theorem labelScatter_other {w : ℕ} (n : Fin 9) (bank) (g) (i : Fin 661)
+    (outside : i.val < 111 ∨ 222 ≤ i.val) : labelScatter (w := w) n bank g i.val = bank g i.val := by
+  simp only [labelScatter,Copy.extendStored,dite_eq_left i.isLt]
+  rw [FramedCircuit.moduleRun_preserves]
+  · simp only [FramedCircuit.decode,LinearEquiv.apply_symm_apply,Copy.extendStored,dite_eq_left i.isLt,
+      Matrix.mul_assoc,registerChart_inverse,Matrix.mul_one]
+  · intro gate mem
+    obtain ⟨raw,scheduled,rfl⟩ := List.mem_map.mp mem
+    have h := of_decide_eq_true (List.all_eq_true.mp scatter_target_range raw scheduled)
+    change raw.target ≠ i.val
+    omega
+
+private theorem run_shift {E : Type*} [AddCommGroup E] [Module (ZMod 2) E]
+    (gs : List RawGate) (delta : ℕ → E)
+    (zero : ∀ g ∈ gs, ∀ j ∈ g.sources, delta j = 0) (x : ℕ → E) :
+    FramedCircuit.moduleRun (gs.map RawGate.toCircuit) (x+delta) =
+      FramedCircuit.moduleRun (gs.map RawGate.toCircuit) x + delta := by
+  induction gs generalizing x with
+  | nil => rfl
+  | cons g gs ih =>
+    simp only [List.map_cons,FramedCircuit.moduleRun_cons]
+    have terms : (g.toCircuit.terms.map (fun p => p.2 • (x+delta) p.1)) =
+        g.toCircuit.terms.map (fun p => p.2 • x p.1) := by
+      simp only [RawGate.toCircuit,List.map_map]
+      apply List.map_congr_left
+      intro j mem
+      simp [Pi.add_apply,zero g (by simp) j mem]
+    have gate : FramedCircuit.moduleGate g.toCircuit (x+delta) =
+        FramedCircuit.moduleGate g.toCircuit x + delta := by
+      funext j
+      by_cases eq : j = g.target
+      · subst j
+        simp only [FramedCircuit.moduleGate,terms,show g.target = g.toCircuit.target from rfl,
+          Function.update_self,Pi.add_apply]
+        have h := congrArg List.sum terms
+        simp only [Pi.add_apply] at h
+        rw [h]
+        abel
+      · simp only [FramedCircuit.moduleGate,Function.update_of_ne (show j ≠ g.toCircuit.target from eq),Pi.add_apply]
+    rw [gate,ih (fun a mem => zero a (by simp [mem]))]
+
+/-- Every discrepancy introduced by chart-dependent fanout on the 111
+target ports passes through B and C unchanged, including on dirty banks. -/
+theorem afterScatter_shift {E : Type*} [AddCommGroup E] [Module (ZMod 2) E]
+    (x delta : ℕ → E) (outside : ∀ j, j < 111 ∨ 222 ≤ j → delta j = 0) :
+    FramedCircuit.moduleRun ((sectionB++sectionC).map RawGate.toCircuit) (x+delta) =
+      FramedCircuit.moduleRun ((sectionB++sectionC).map RawGate.toCircuit) x + delta := by
+  exact run_shift _ delta (fun g mem j hj => outside j (afterScatter_source_range g mem j hj)) x
+
 /-- Reading each output at its register chart turns the physical scatter into
 one framed scalar word on the registers of a common base label. -/
 theorem labelScatter_at_chart {w : ℕ} (n : Fin 9)
@@ -696,6 +747,41 @@ theorem InvocationEffect.finalRead {n : Fin 9} {r : Fin 32} {d : Fin 5} {w B K :
     (fun i => frame (Frames.run (sectionB ++ sectionC) (Frames.scatterFinish Frames.beforeScatter) i)) output at read
   rw [Frames.after_scatter] at read
   exact read.trans (fixed.symm.trans aligned)
+
+/-- Source and helper outputs at a label depend only on the input owners
+at that label, even though the scatter reads other labels at target ports. -/
+theorem InvocationEffect.otherRead_congr {n : Fin 9} {r : Fin 32} {d : Fin 5}
+    {w B K : ℕ} {x y x' y'} (act : InvocationEffect n r d w B K x y)
+    (act' : InvocationEffect n r d w B K x' y') (g)
+    (z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B) (i : Fin 661)
+    (outside : i.val < 111 ∨ 222 ≤ i.val) :
+    let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n r d,ownerTape_injective n r d⟩
+    let j := labelSpectator g z
+    phaseRead owner x j = phaseRead owner x' j →
+      phaseRead owner y j i.val = phaseRead owner y' j i.val := by
+  intro owner j same
+  let before := fun data h => labelPhase w (sectionD ++ sectionA) (Frames.snapshot Frames.initialRefs)
+    (phaseRead owner data (labelSpectator h z))
+  let frame := fun a => selectedFrame w (Frames.beforeScatter a)
+  let stored := fun data => FramedCircuit.decode frame (labelScatter n (before data) g)
+  let delta := stored x - stored x'
+  have atLabel : before x g = before x' g :=
+    congrArg (labelPhase w (sectionD ++ sectionA) (Frames.snapshot Frames.initialRefs)) same
+  have zero (a : ℕ) (ha : a < 111 ∨ 222 ≤ a) : delta a = 0 := by
+    change (frame a).symm (labelScatter n (before x) g a) -
+      (frame a).symm (labelScatter n (before x') g a) = 0
+    apply sub_eq_zero.mpr
+    apply congrArg
+    by_cases low : a < 661
+    · exact (labelScatter_other n _ g ⟨a,low⟩ ha).trans ((congrFun atLabel a).trans
+        (labelScatter_other n _ g ⟨a,low⟩ ha).symm)
+    · simp [labelScatter,Copy.extendStored,low]
+  have shift := afterScatter_shift (stored x') delta zero
+  rw [show stored x' + delta = stored x by dsimp [delta]; abel] at shift
+  have wire := congrFun shift i.val
+  simp only [Pi.add_apply,zero _ outside,add_zero] at wire
+  rw [act.finalRead g z,act'.finalRead g z]
+  exact congrArg (selectedFrame w (Frames.snapshot Frames.finalRefs i.val)) wire
 
 open IntegerMultBounds.Swap.Modular Matrix in
 /-- In its own prefix coordinates the target owner needs only the inverse
