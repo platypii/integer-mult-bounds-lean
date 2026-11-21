@@ -2,6 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.M6.BitCopyLabel
 public import IntegerMultBounds.MathlibTM2.M6.BitPortImage
+public import IntegerMultBounds.MathlibTM2.M6.BitPortInverse
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackColumnHost
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackPrefixVolume
 import Mathlib.Algebra.Group.Pi.Units
@@ -321,35 +322,186 @@ theorem selectedPort_shift (w : ℕ) (t : Fin 111) (atExit : Bool) :
   apply congrArg embed
   cases atExit <;> first | exact ((portFrame_shears w t s).1).symm | exact ((portFrame_shears w t s).2).symm
 
+open Matrix AffineFieldCoordinates in
+/-- The port basis is polynomial in three scalars: the reciprocals of
+the leading line entry, the last normal entry, and four. -/
+def portBasis {R : Type*} [CommRing R] (t : Fin 111) (atExit : Bool)
+    (leadInv lastInv quarter : R) : Matrix (Fin 16) (Fin 16) R :=
+  let v := fun i : Fin 8 => (translatedEntry t i.val : R)
+  let n := fun i : Fin 8 => (targetNormal t i : R)
+  let u := if atExit then v - Pi.single (Fin.last 7) (4*lastInv) else v
+  let r := if atExit then n else n - Pi.single 0 (4*leadInv)
+  let i := hIndex (0 : Fin 8)
+  let j := dIndex (Fin.last 7)
+  shearBasis i j (embed (-u,u)) (embed (r,-r)) (-lastInv) *
+    diagonal (fun a => if a = i then quarter * -(n (Fin.last 7)) else 1)
+
+open Matrix AffineFieldCoordinates in
+theorem portBasis_map {R S : Type*} [CommRing R] [CommRing S] (f : R →+* S)
+    (t : Fin 111) (atExit : Bool) (a b c : R) :
+    (portBasis t atExit a b c).map f = portBasis t atExit (f a) (f b) (f c) := by
+  have single {d : ℕ} (i j : Fin d) (x : R) :
+      f ((Pi.single i x : Fin d → R) j) = (Pi.single i (f x) : Fin d → S) j := by
+    by_cases eq : j = i <;> simp [eq,Pi.single_eq_of_ne]
+  have fields (u v : Fin 8 → R) (i : Fin (8+8)) :
+      f (embed (u,v) i) = embed (f ∘ u,f ∘ v) i := by
+    induction i using Fin.addCases <;> simp only [embed,Fin.addCases_left,Fin.addCases_right,Function.comp_apply]
+  ext i j
+  change f ((portBasis t atExit a b c) i j) = _
+  simp only [portBasis,mul_diagonal,map_mul]
+  congr 1
+  · simp only [shearBasis]
+    split_ifs <;> cases atExit <;>
+      simp only [ite_true,Bool.false_eq_true,ite_false,Pi.sub_apply,map_sub,single,map_one,map_mul,
+        fields,Function.comp_def,Pi.neg_apply,map_neg,map_intCast,map_ofNat] <;> rfl
+  · split_ifs <;> simp
+
+
+open Matrix AffineFieldCoordinates IntegerMultBounds.Swap.Modular in
+theorem portBasis_shift (w : ℕ) (t : Fin 111) (atExit : Bool) :
+    let R := ZMod (prime^w)
+    let B := portBasis t atExit (translatedEntry t 0 : R)⁻¹ (targetNormal t (Fin.last 7) : R)⁻¹ (4:R)⁻¹
+    let U := reduce (prime^w) (selectedProjector ⟨2+t.val,by omega⟩)
+    let V := reduce (prime^w) (selectedProjector ⟨525+t.val,by omega⟩)
+    let P := translatedPortProjector R (4:R)⁻¹ t
+    IntegerMultBounds.Swap.Shear.LowerTriangular B ∧ IsUnit B ∧
+      ∀ x s, B *ᵥ x = embed s →
+        B *ᵥ OrderedAffine.execute (.shift (hIndex (0 : Fin 8)) (dIndex (Fin.last 7)) 1) x =
+          embed (if atExit then M8.Exchange.exchange V (M8.Exchange.exchange (1-P) s)
+            else M8.Exchange.exchange P (M8.Exchange.exchange U s)) := by
+  obtain ⟨row,col⟩ := portShear_vectors w t
+  have action := selectedPort_shift w t atExit
+  dsimp only at action row col
+  rw [row,col] at action
+  exact action
+
+open IntegerMultBounds.Swap.Modular in
+private theorem lift_port_inverse {m : ℕ} (z : ℤ) (unit : IsUnit (z : ZMod m)) :
+    ∃ a : denCoprime m, (a : ℚ) = (z : ℚ)⁻¹ ∧ toZMod m a = (z : ZMod m)⁻¹ := by
+  by_cases hz : z = 0
+  · subst z; exact ⟨0,by simp,by simp [ZMod.inv_zero]⟩
+  have nz : (z : ℚ) ≠ 0 := by exact_mod_cast hz
+  have cop := Int.isCoprime_iff_nat_coprime.mp ((ZMod.coe_int_isUnit_iff_isCoprime _ _).mp unit)
+  let a : denCoprime m := ⟨(z : ℚ)⁻¹,by
+    change ((z : ℚ)⁻¹).den.Coprime m
+    simpa [Rat.den_inv_of_ne_zero nz] using cop.symm⟩
+  refine ⟨a,rfl,unit.mul_right_cancel ?_⟩
+  have identity : a * (z : denCoprime m) = 1 := Subtype.ext (inv_mul_cancel₀ nz)
+  have mapped := congrArg (toZMod m) identity
+  simpa only [map_mul,map_intCast,map_one,ZMod.inv_mul_of_unit _ unit] using mapped
+
+open IntegerMultBounds.Swap.Modular in
+/-- Each port has one fixed rational basis whose reduction supplies its
+triangular chart at every precision. -/
+theorem rationalPortBasis_reduction (w : ℕ) (t : Fin 111) (atExit : Bool) :
+    let m := prime^w
+    let a := translatedEntry t 0
+    let b := targetNormal t (Fin.last 7)
+    let B := portBasis t atExit (a : ℚ)⁻¹ (b : ℚ)⁻¹ (4:ℚ)⁻¹
+    Admissible m B ∧ reduce m B = portBasis t atExit (a : ZMod m)⁻¹ (b : ZMod m)⁻¹ (4:ZMod m)⁻¹ := by
+  intro m a b B
+  obtain ⟨lead,last,_,_⟩ := portShear_pivots w t
+  obtain ⟨u,hu,mu⟩ := lift_port_inverse a lead
+  obtain ⟨v,hv,mv⟩ := lift_port_inverse b last
+  obtain ⟨q,hq,mq⟩ := lift_port_inverse (m := m) 4
+    (by simpa using prefix_denominator_unit 4 (by decide) (by decide) w)
+  let C := portBasis t atExit u v q
+  have coeff : C.map (denCoprime m).subtype = B := by
+    rw [portBasis_map]
+    simp only [Subring.subtype_apply,hu,hv,hq,Int.cast_ofNat,B]
+  refine ⟨fun i j => coeff ▸ (C i j).property,?_⟩
+  rw [← coeff]
+  change C.map (toZMod m) = _
+  rw [portBasis_map,mu,mv,mq,Int.cast_ofNat]
+
+/-- The single rational chart compiled for each side of each port. -/
+def rationalPortBasis (t : Fin 111) (atExit : Bool) : Matrix (Fin 16) (Fin 16) ℚ :=
+  portBasis t atExit (translatedEntry t 0 : ℚ)⁻¹ (targetNormal t (Fin.last 7) : ℚ)⁻¹ (4:ℚ)⁻¹
+
+open M8.Height Matrix AffineFieldCoordinates in
+theorem rationalPortBasis_height (t : Fin 111) (atExit : Bool) :
+    Bounded (rationalPortBasis t atExit) (2^512) := by
+  let v := fun i : Fin 8 => (translatedEntry t i.val : ℚ)
+  let n := fun i : Fin 8 => (targetNormal t i : ℚ)
+  let u := if atExit then v - Pi.single (Fin.last 7) (4*(n (Fin.last 7))⁻¹) else v
+  let r := if atExit then n else n - Pi.single 0 (4*(v 0)⁻¹)
+  have normal : ∀ (l : Fin 111) (i : Fin 8), (targetNormal l i).natAbs ≤ 2^100 := by decide +kernel
+  have nv (i) : ht (n i) ≤ 2^100 := by simpa [n,ht] using normal t i
+  have vv (i) : ht (v i) ≤ 2^100 := by
+    simpa [v,ht] using (translatedEntry_bound t i).trans (show 1344 ≤ 2^100 by decide)
+  have one (k : ℕ) : 1 ≤ 2^k := Nat.one_le_two_pow
+  have single {k : ℕ} (i j : Fin k) (x : ℚ) {h : ℕ} (pos : 1 ≤ h) (hx : ht x ≤ h) :
+      ht ((Pi.single i x : Fin k → ℚ) j) ≤ h := by
+    by_cases eq : j = i <;> simp [eq,Pi.single_eq_of_ne,pos,hx]
+  have four : ht 4 = 4 := by decide
+  have adjust (x y : Fin 8 → ℚ) (j : Fin 8) (hx : ∀ i, ht (x i) ≤ 2^100)
+      (hy : ht (y j) ≤ 2^100) (i : Fin 8) :
+      ht (x i - (Pi.single j (4*(y j)⁻¹) : Fin 8 → ℚ) i) ≤ 2^203 := by
+    have coeff := (ht_mul 4 (y j)⁻¹).trans (Nat.mul_le_mul (four.le) ((ht_inv _).le.trans hy))
+    exact (ht_sub ..).trans ((Nat.mul_le_mul (Nat.mul_le_mul_left 2 (hx i))
+      (single j i _ (by decide : 1 ≤ 4*2^100) coeff)).trans (by decide))
+  have uh (i) : ht (u i) ≤ 2^203 := by
+    cases atExit
+    · exact (vv i).trans (by decide)
+    · exact adjust v n _ vv (nv _) i
+  have rh (i) : ht (r i) ≤ 2^203 := by
+    cases atExit
+    · exact adjust n v _ nv (vv _) i
+    · exact (nv i).trans (by decide)
+  have packed (x : Fin 8 → ℚ) (hx : ∀ i, ht (x i) ≤ 2^203) (a : Fin (8+8)) :
+      ht (embed (-x,x) a) ≤ 2^203 ∧ ht (embed (x,-x) a) ≤ 2^203 := by
+    induction a using Fin.addCases <;> simp only [embed,Fin.addCases_left,Fin.addCases_right,Pi.neg_apply,ht_neg,and_self,hx]
+  intro a b
+  let i := hIndex (0 : Fin 8)
+  let j := dIndex (Fin.last 7)
+  let q := -(n (Fin.last 7))⁻¹
+  let k := (4:ℚ)⁻¹ * -(n (Fin.last 7))
+  change ht ((shearBasis i j (embed (-u,u)) (embed (r,-r)) q * diagonal (fun a => if a=i then k else 1)) a b) ≤ _
+  rw [mul_diagonal]
+  apply (ht_mul ..).trans
+  have kh : ht (if b=i then k else 1) ≤ 4*2^100 := by
+    split
+    · exact (ht_mul ..).trans (Nat.mul_le_mul (by simp [four]) (by simpa using nv (Fin.last 7)))
+    · simp
+  suffices h : ht (shearBasis i j (embed (-u,u)) (embed (r,-r)) q a b) ≤ 2^305 from
+    (Nat.mul_le_mul h kh).trans (by decide)
+  unfold shearBasis
+  split
+  · exact (packed u uh a).1.trans (by decide)
+  split
+  · exact single j a 1 (one _) (ht_one.le.trans (one _))
+  · have prod := (ht_mul q (embed (r,-r) b)).trans (Nat.mul_le_mul
+        (show ht q ≤ 2^100 by simpa [q] using nv (Fin.last 7)) (packed r rh b).2)
+    exact (ht_sub ..).trans ((Nat.mul_le_mul (Nat.mul_le_mul_left 2 (single b a 1 le_rfl ht_one.le))
+      (single j a _ (by decide : 1 ≤ 2^100*2^203) prod)).trans (by decide))
+
 open Matrix IntegerMultBounds.Swap.Modular in
-/-- One lower-triangular factor acts on all sixteen packed digits in a
-linear pass. The trailing spectator record keeps its address. -/
-theorem triangularPort_owner (E : Matrix (Fin 16) (Fin 16) ℚ)
-    (support : ∀ op ∈ OrderedAffine.program E, FlatCoordinateSchedule.Supported op)
-    (valid : ∀ w, let M := reduce (prime^w) E
-      IntegerMultBounds.Swap.Shear.LowerTriangular M ∧ IsUnit M) :
+private theorem flatMatrix_owner (word : List (PortInverse.Op 16))
+    (support : ∀ op ∈ word, FlatCoordinateSchedule.Supported op)
+    (matrix : ∀ w : ℕ, Matrix (Fin 16) (Fin 16) (ZMod (prime^w)))
+    (unit : ∀ w, IsUnit (matrix w))
+    (action : ∀ w x, OrderedAffine.run (word.map (OrderedAffine.mapOp (ratMod (prime^w)))) x = matrix w *ᵥ x) :
     ∃ (C : ℕ) (machine : SharedBankSkeleton.Skeleton 1 prime), ∀ w W, 0 < W →
       let V := (prime^w)^16*W
       ∃ stage : SharedBankStage.Stage _ 1 prime (@portOwner V),
         SharedBankSkeleton.ofStage stage = machine ∧ stage.cost = C*V ∧ ∀ x a j,
-          stage.transform x (FlatCoordinateLayout.index ((reduce (prime^w) E) *ᵥ a) j) =
+          stage.transform x (FlatCoordinateLayout.index (matrix w *ᵥ a) j) =
             x (FlatCoordinateLayout.index a j) := by
-  let ops := FlatCoordinateSchedule.ofList (OrderedAffine.program E) support
+  let ops := FlatCoordinateSchedule.ofList word support
   let machine : SharedBankSkeleton.Skeleton 1 prime :=
     ⟨_,_,FlatCoordinateCleanSchedule.program ops,fun _ => segmentSource ops,fun _ _ _ => Subsingleton.elim _ _⟩
   refine ⟨FlatCoordinateCleanSchedule.constant ops,machine,?_⟩
   intro w W hW V
-  let M := reduce (prime^w) E
+  let M := matrix w
   let addr := (FlatCoordinateLayout.rankEquiv (Q := prime^w) (d := 16)).prodCongr (Equiv.refl (Fin W))
   let pack := addr.trans finProdFinEquiv
   let out := fun (x : Fin V → ZMod 2) i => x (pack ((M⁻¹ *ᵥ (pack.symm i).1),(pack.symm i).2))
   have move (x a j) : out x (pack (M *ᵥ a,j)) = x (pack (a,j)) := by
-    have inv : M⁻¹ * M = 1 := nonsing_inv_mul _ ((isUnit_iff_isUnit_det _).mp (valid w).2)
+    have inv : M⁻¹ * M = 1 := nonsing_inv_mul _ ((isUnit_iff_isUnit_det _).mp (unit w))
     simp only [out,Equiv.symm_apply_apply,mulVec_mulVec,inv,one_mulVec]
-  have actions : ops.map (fun op => op.action w) = OrderedAffine.program M := by
+  have actions : ops.map (fun op => op.action w) = word.map (OrderedAffine.mapOp (ratMod (prime^w))) := by
     change ops.map ((OrderedAffine.mapOp (ratMod (prime^w))) ∘ FlatCoordinateSchedule.Op.rational) = _
     rw [← List.map_map,FlatCoordinateSchedule.rational_ofList _]
-    exact (OrderedAffine.program_map _ E).symm
   let bank := fun (x : Fin V → ZMod 2) => SharedBankStageInput.raw
     (FlatCoordinateShiftSharedBank.common (d := 16) (b := w) (W := W)
       (fun i => SparseRoleCircuit.encode (x i))) (FlatCoordinateCleanSchedule.tapeCount ops)
@@ -360,12 +512,11 @@ theorem triangularPort_owner (E : Matrix (Fin 16) (Fin 16) ℚ)
         fun i => SparseRoleCircuit.encode (out x i) := by
       funext i
       obtain ⟨⟨a,j⟩,rfl⟩ := pack.surjective i
-      obtain ⟨a,rfl⟩ := (mulVec_surjective_iff_isUnit.mpr (valid w).2) a
+      obtain ⟨a,rfl⟩ := (mulVec_surjective_iff_isUnit.mpr (unit w)) a
       rw [move]
       have read := FlatCoordinateInitializedSchedule.array_entry ops w W hW bits a j
-      have lower : IntegerMultBounds.Swap.Shear.LowerTriangular M := (valid w).1
       rw [actions] at read
-      exact (congrArg (fun z => FlatCoordinateInitializedSchedule.array ops w W hW bits (FlatCoordinateLayout.index (Q := prime^w) z j)) (OrderedAffine.program_run lower a)).symm.trans read
+      exact (congrArg (fun z => FlatCoordinateInitializedSchedule.array ops w W hW bits (FlatCoordinateLayout.index (Q := prime^w) z j)) (action w a)).symm.trans read
     apply (FlatCoordinateCleanSchedule.realizes ops w W hW bits).consequence (fun _ h => h) _ le_rfl
     intro z h
     exact h.1.trans (congrArg (fun a => SharedBankStageInput.raw
@@ -384,6 +535,75 @@ theorem triangularPort_owner (E : Matrix (Fin 16) (Fin 16) ℚ)
            cost := FlatCoordinateCleanSchedule.constant ops*V,metadata := basisWorkspace ops (0 : Fin V → ZMod 2),
            input_payload := payload,output_payload := fun x => payload _,realizes := exec,
            strip_input := fun x => (strip x).trans (basisWorkspace_eq ops x 0) },rfl,rfl,move⟩
+
+open Matrix IntegerMultBounds.Swap.Modular in
+private theorem triangularPort_owner (E : Matrix (Fin 16) (Fin 16) ℚ)
+    (bounded : ∀ op ∈ OrderedAffine.program E, PortInverse.bounded op)
+    (valid : ∀ w, let M := reduce (prime^w) E
+      IntegerMultBounds.Swap.Shear.LowerTriangular M ∧ IsUnit M) (inverse : Bool) :
+    ∃ (C : ℕ) (machine : SharedBankSkeleton.Skeleton 1 prime), ∀ w W, 0 < W →
+      let V := (prime^w)^16*W
+      let M := reduce (prime^w) E
+      ∃ stage : SharedBankStage.Stage _ 1 prime (@portOwner V),
+        SharedBankSkeleton.ofStage stage = machine ∧ stage.cost = C*V ∧ ∀ x a j,
+          stage.transform x (FlatCoordinateLayout.index ((if inverse then M⁻¹ else M) *ᵥ a) j) =
+            x (FlatCoordinateLayout.index a j) := by
+  let ops := OrderedAffine.program E
+  have forward (w : ℕ) (x) : OrderedAffine.run (ops.map (OrderedAffine.mapOp (ratMod (prime^w)))) x =
+      reduce (prime^w) E *ᵥ x := by
+    rw [show ops.map _ = OrderedAffine.program (reduce (prime^w) E) from (OrderedAffine.program_map _ E).symm]
+    exact OrderedAffine.program_run (valid w).1 x
+  cases inverse with
+  | false => exact flatMatrix_owner ops (fun op h => PortInverse.supported (bounded op h)) _ (fun w => (valid w).2) forward
+  | true =>
+    refine flatMatrix_owner (ops.reverse.map PortInverse.undo) ?_ (fun w => (reduce (prime^w) E)⁻¹) ?_ ?_
+    · intro op h
+      obtain ⟨o,ho,rfl⟩ := List.mem_map.mp h
+      exact PortInverse.supported (PortInverse.undo_bounded (bounded o (List.mem_reverse.mp ho)))
+    · intro w
+      exact isUnit_nonsing_inv_iff.mpr (valid w).2
+    · intro w x
+      let M := reduce (prime^w) E
+      have right : M*M⁻¹ = 1 := mul_nonsing_inv M ((isUnit_iff_isUnit_det M).mp (valid w).2)
+      have cancel : M *ᵥ (M⁻¹ *ᵥ x) = x := by rw [mulVec_mulVec,right,one_mulVec]
+      have back := PortInverse.run_undo w ops bounded (M⁻¹ *ᵥ x)
+      dsimp only at back
+      rw [forward w] at back
+      exact (congrArg (OrderedAffine.run _) cancel.symm).trans back
+
+open Matrix M8.Height IntegerMultBounds.Swap.Modular in
+/-- A fixed tape program executes the surrounding rational basis in time
+linear in the payload volume, uniformly in the radix precision. -/
+theorem rationalPortBasis_owner (t : Fin 111) (atExit inverse : Bool) :
+    ∃ (c : ℕ) (machine : SharedBankSkeleton.Skeleton 1 prime), ∀ w W, 0 < W →
+      let V := (prime^w)^16*W
+      let B := reduce (prime^w) (rationalPortBasis t atExit)
+      ∃ stage : SharedBankStage.Stage _ 1 prime (@portOwner V),
+        SharedBankSkeleton.ofStage stage = machine ∧ stage.cost = c*V ∧ ∀ x a j,
+          stage.transform x (FlatCoordinateLayout.index ((if inverse then B⁻¹ else B) *ᵥ a) j) = x (FlatCoordinateLayout.index a j) := by
+  let E := rationalPortBasis t atExit
+  have valid (w : ℕ) : IntegerMultBounds.Swap.Shear.LowerTriangular (reduce (prime^w) E) ∧
+      IsUnit (reduce (prime^w) E) := by
+    dsimp only [E,rationalPortBasis]
+    rw [(rationalPortBasis_reduction w t atExit).2]
+    exact ⟨(portBasis_shift w t atExit).1,(portBasis_shift w t atExit).2.1⟩
+  apply triangularPort_owner E _ valid inverse
+  intro op hop
+  have bound (i j) : ht (E i j) ≤ coefficientBound := by
+    exact (rationalPortBasis_height t atExit i j).trans
+      (M8.Exchange.le_coefficientBound (show 512 ≤ 2^53000 from
+        (show 512 ≤ 2^9 by decide).trans (Nat.pow_le_pow_right (by decide) (by decide))))
+  rcases OrderedAffine.coefficient_origin E op hop with ⟨i,rfl⟩ | ⟨i,j,lt,rfl⟩
+  · refine ⟨?_,bound i i⟩
+    have modPrime : IntegerMultBounds.Swap.Shear.LowerTriangular (reduce prime E) ∧
+        IsUnit (reduce prime E) := by
+      let holds (m : ℕ) := IntegerMultBounds.Swap.Shear.LowerTriangular (reduce m E) ∧ IsUnit (reduce m E)
+      exact (congrArg holds (pow_one prime)).mp (valid 1)
+    letI : Fact prime.Prime := ⟨Shared50ModularControl.prime_prime⟩
+    have nz := (OrderedAffine.diagonal_unit modPrime.1 modPrime.2 i).ne_zero
+    intro eq
+    exact nz (by change ratMod prime (E i i) = 0; rw [eq,ratMod_zero])
+  · exact ⟨lt,bound i j⟩
 
 open Cover RecursiveInterchangeLayout M8.RevMachine SharedPlacementAlphabet in
 /-- A packed digit swap on the same source tape used by the basis passes. -/
@@ -481,6 +701,46 @@ theorem backwardDigit_owner [M8.Machine.Net] :
     apply (br (S.transform (A.transform x)) z j).trans
     rw [exchanged]
     exact (sr (A.transform x) (embed y) j).trans (ar x s j)
+
+open Matrix AffineFieldCoordinates IntegerMultBounds.Swap.Modular M8.RevMachine in
+/-- The complete physical port correction has one charged interchange
+between two linear-volume passes. Its program is fixed across widths. -/
+theorem portCorrection_owner [M8.Machine.Net] (t : Fin 111) (atExit : Bool) :
+    ∃ (c : ℕ) (machine : SharedBankSkeleton.Skeleton 1 prime), ∀ w W, 0 < w → 0 < W →
+      let V := (prime^w)^16*W
+      let P := translatedPortProjector (ZMod (prime^w)) (4:ZMod (prime^w))⁻¹ t
+      let U := reduce (prime^w) (selectedProjector ⟨2+t.val,by omega⟩)
+      let T := reduce (prime^w) (selectedProjector ⟨525+t.val,by omega⟩)
+      ∃ stage : SharedBankStage.Stage _ 1 prime (@portOwner V),
+        SharedBankSkeleton.ofStage stage = machine ∧ stage.cost = c*V + LeafCore.coreCost V w + 4 ∧
+        ∀ x s j, stage.transform x (FlatCoordinateLayout.index (embed
+          (if atExit then M8.Exchange.exchange T (M8.Exchange.exchange (1-P) s)
+          else M8.Exchange.exchange P (M8.Exchange.exchange U s))) j) = x (FlatCoordinateLayout.index (embed s) j) := by
+  obtain ⟨a,toChart,before⟩ := rationalPortBasis_owner t atExit true
+  obtain ⟨b,shift,middle⟩ := backwardDigit_owner
+  obtain ⟨c,fromChart,after⟩ := rationalPortBasis_owner t atExit false
+  refine ⟨a+b+c,SharedBankSkeleton.compose (SharedBankSkeleton.compose toChart shift) fromChart,?_⟩
+  intro w W hw hW V P U T
+  obtain ⟨A,fa,ca,ar⟩ := before w W hW
+  obtain ⟨S,fs,cs,sr⟩ := middle w W hw hW
+  obtain ⟨D,fd,cd,dr⟩ := after w W hW
+  refine ⟨SharedBankStage.compose (SharedBankStage.compose A S) D,?_,?_,?_⟩
+  · simp only [SharedBankSkeleton.ofStage_compose,fa,fs,fd]
+  · change A.cost+S.cost+1+D.cost+1 = _
+    rw [ca,cs,cd]
+    ring
+  · intro x s j
+    let B := reduce (prime^w) (rationalPortBasis t atExit)
+    have red : B = _ := (rationalPortBasis_reduction w t atExit).2
+    obtain ⟨_,unit,correct⟩ := portBasis_shift w t atExit
+    rw [← red] at unit correct
+    let coords := B⁻¹ *ᵥ embed s
+    have enter : B *ᵥ coords = embed s := by
+      rw [show B *ᵥ coords = (B*B⁻¹) *ᵥ embed s from mulVec_mulVec ..,
+        mul_nonsing_inv B ((isUnit_iff_isUnit_det B).mp unit),one_mulVec]
+    change D.transform (S.transform (A.transform x)) _ = _
+    rw [← correct coords s enter]
+    exact (dr _ _ j).trans ((sr _ coords j).trans (ar x (embed s) j))
 
 /-- Packed action of the two digit transpositions, one per field. -/
 def portSwapDigits {R : Type*} (x : Fin 16 → R) : Fin 16 → R :=

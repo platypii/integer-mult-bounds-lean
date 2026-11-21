@@ -688,6 +688,62 @@ theorem portShear_controls (w : ℕ) (t : Fin 111) :
     rw [← dotProduct_mulVec,sub_mulVec,one_mulVec,fixed,sub_self,dotProduct_zero]
   exact ⟨source,(plane _).mp ⟨v,rfl⟩⟩
 
+/-- The physical frame changes modify only one entry of the logical
+normal and line. Their coefficients use the two integer port pivots. -/
+theorem portShear_vectors (w : ℕ) (t : Fin 111) :
+    let R := ZMod (prime^w)
+    let v := fun i : Fin 8 => (translatedEntry t i.val : R)
+    let n := fun i : Fin 8 => (targetNormal t i : R)
+    let U := reduce (prime^w) (selectedProjector ⟨2+t.val,by omega⟩)
+    let V := reduce (prime^w) (selectedProjector ⟨525+t.val,by omega⟩)
+    n ᵥ* (1-U) = n - Pi.single 0 (4*(v 0)⁻¹) ∧
+      V *ᵥ v = v - Pi.single (Fin.last 7) (4*(n (Fin.last 7))⁻¹) := by
+  intro R v n U V
+  dsimp only [R] at v n
+  have pair : n ⬝ᵥ v = 4 := by
+    simpa only [n,v,dotProduct,Int.cast_sum,Int.cast_mul,Int.cast_ofNat] using
+      congrArg (Int.cast : ℤ → ZMod (prime^w)) (portPairing t)
+  obtain ⟨first,last,_,_⟩ := portShear_pivots w t
+  obtain ⟨entry,exit⟩ := portShear_controls w t
+  have recover (x y a : Fin 8 → R) (j : Fin 8) (unit : IsUnit (a j))
+      (same : ∀ i, i ≠ j → y i = x i) (px : x ⬝ᵥ a = 4) (py : y ⬝ᵥ a = 0) :
+      y = x - Pi.single j (4*(a j)⁻¹) := by
+    have diff : x-y = Pi.single j ((x-y) j) := by
+      funext i
+      by_cases h : i = j
+      · subst i; simp
+      · simp [Pi.single_eq_of_ne h,same i h]
+    have value := congrArg (fun z : Fin 8 → R => z ⬝ᵥ a) diff
+    simp only [sub_dotProduct,px,py,sub_zero,single_dotProduct] at value
+    have coeff := congrArg (· * (a j)⁻¹) value
+    simp only [mul_assoc,ZMod.mul_inv_of_unit _ unit,mul_one] at coeff
+    rw [← coeff] at diff
+    exact eq_sub_of_add_eq (by rw [← diff]; abel)
+  constructor
+  · apply recover n _ v 0 first _ pair entry
+    intro j hj
+    have mask := (selectedProjector_mask w ⟨2+t.val,by omega⟩).1
+    change U * prefixMask R (Geometry.Dimensions.value (2+t.val)) = U at mask
+    rw [source_dimension] at mask
+    have pos : ¬ j.val < 1 := by intro h; apply hj; exact Fin.ext (by omega)
+    have col (i : Fin 8) : U i j = 0 := by
+      have eq := congrArg (fun M : Matrix (Fin 8) (Fin 8) R => M i j) mask.symm
+      simpa [prefixMask,mul_diagonal,pos,hj] using eq
+    change (n ᵥ* (1-U)) j = n j
+    rw [vecMul_sub,vecMul_one]
+    simp only [Pi.sub_apply,Matrix.vecMul,dotProduct,col,mul_zero,Finset.sum_const_zero,sub_zero]
+  · apply recover v _ n (Fin.last 7) last _ ((dotProduct_comm ..).trans pair) ((dotProduct_comm ..).trans exit)
+    intro i hi
+    have small : i.val < 7 := by
+      have := i.isLt
+      by_contra! h
+      exact hi (Fin.ext (by change i.val = 7; omega))
+    have mask := (selectedProjector_mask w ⟨525+t.val,by omega⟩).2
+    change prefixMask R (Geometry.Dimensions.value (525+t.val)) * V = _ at mask
+    rw [(Nine.target_frames t.val t.isLt).2.2.1] at mask
+    have eq := congrFun (congrArg (fun M : Matrix (Fin 8) (Fin 8) R => M *ᵥ v) mask) i
+    simpa [← mulVec_mulVec,prefixMask,mulVec_diagonal,small] using eq
+
 /-- The inverse port pass reads the same control as the forward pass
 and subtracts its transfer. -/
 def portShearEquiv {R : Type*} [CommRing R] (c : R) (n v : Fin 8 → R)
