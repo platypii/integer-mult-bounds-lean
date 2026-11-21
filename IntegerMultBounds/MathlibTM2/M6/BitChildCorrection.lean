@@ -2,6 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackGoodChildLayout
 public import IntegerMultBounds.MathlibTM2.Host.SharedRegisterPlacement
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackLeafFrame
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackNextRecord
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackPlacedDiagonal
 public import IntegerMultBounds.MathlibTM2.Cover.Weighted
@@ -294,6 +295,33 @@ theorem ordinaryChild_return {T r g w W : ℕ}
   have cell := action hg tg s.1 (fun i => s.2 i.rev) j
   simpa only [Weighted.child,Fin.isLt,ite_true,one_mul,Fin.rev_rev] using cell
 
+/-- Extract the hosted child's rank-field action and positioned output from the
+weighted column returned on the parent's full address space. -/
+theorem weightedColumn_return {T r g w W : ℕ}
+    (col : Fin 35 ↪ Fin T) (H J : ℕ) (record : List (Fin (prime+4)))
+    (dest : ℤ → Fin 4) (q : ℤ) (F : Stacks T prime) :
+    let m := r+g
+    let M := prime^(w+1)
+    ∀ (before : Fin (M^(m+m)*W) → ZMod 2) (a b : Fin m → ZMod M),
+      let addr := fun x : Fin (m+m) → ZMod M =>
+        let y := Weighted.child r a b (fun k => x (k.castAdd m),fun k => x (k.natAdd m))
+        Fin.append y.1 y.2
+      ColumnRecordReady col H J record SparseRoleCircuit.encode (fun _ => blank) dest 0 q before addr F →
+      ∃ after, (∀ (hg tg : Fin g → ZMod M) (x : IntegerMultBounds.Swap.Shear.State (Fin r) (ZMod M)) (j : Fin W),
+        let index := fun y => let t := childFields hg tg y
+                              FlatCoordinateLayout.index (Fin.append t.1 t.2) j
+        after (index (Weighted.child r (fun k => a (k.castAdd g)) (fun k => b (k.castAdd g)) x)) = before (index x)) ∧
+        ∀ z, RadixToBinary.binaryEncoding.encode (putWord (fun _ => blank) 0 (List.ofFn (SparseRoleCircuit.encode ∘ after)) z) =
+          readAt blank (F.L (col 24)) (F.R (col 24)) (z-0) := by
+  intro m M before a b addr ⟨after,layout,reads⟩
+  refine ⟨after,?_,fun z => (layout.src z).symm⟩
+  intro hg tg x j
+  let t := childFields hg tg x
+  have cell := reads (Fin.append t.1 t.2) j
+  simp only [addr,Fin.append_left,Fin.append_right] at cell
+  change after (FlatCoordinateLayout.index (Fin.append (Weighted.child r a b t).1 (Weighted.child r a b t).2) j) = _ at cell
+  simpa only [t,childFields_apply] using cell
+
 /-- With the correction diagonal installed, the physical pair program
 converts the ordinary child address to the weighted one. -/
 theorem childCorrection_exec [M8.Machine.Net] {P U : Type} {w W : ℕ}
@@ -335,10 +363,10 @@ theorem childCorrection_exec [M8.Machine.Net] {P U : Type} {w W : ℕ}
 
 /-- The modulus, payload banks, spectator width, padded one, clock and matrix
 archive are already on the caller. The column machine owns its other tapes. -/
-def correctionColumnSlots : Fin 7 ↪ Fin 35 := ⟨![2,24,25,27,32,33,34],by decide⟩
-def correctionCallerSlots : Fin 7 ↪ Fin 64 := ⟨![2,24,25,53,44,45,60],by decide⟩
+def correctionColumnSlots : Fin 8 ↪ Fin 35 := ⟨![2,24,25,27,32,33,34,28],by decide⟩
+def correctionCallerSlots : Fin 8 ↪ Fin 64 := ⟨![2,24,25,53,44,45,60,28],by decide⟩
 
-noncomputable def correctionRole [M8.Machine.Net] (j : Fin ((rowSwapBlock.tapes+35)+1)) : Option (Fin 7) :=
+noncomputable def correctionRole [M8.Machine.Net] (j : Fin ((rowSwapBlock.tapes+35)+1)) : Option (Fin 8) :=
   if h : ∃ k, columnBank (correctionColumnSlots k) = j then some h.choose else none
 
 theorem correctionRole_eq [M8.Machine.Net] {j k} (eq : correctionRole j = some k) :
@@ -357,7 +385,7 @@ noncomputable def correctionColumnPlacement [M8.Machine.Net] {T : ℕ} (bank : F
       (fun i j => apart i _) _ (fun _ _ _ h k => (correctionRole_eq h).symm.trans (correctionRole_eq k))⟩
 
 theorem correctionColumnPlacement_shared [M8.Machine.Net] {T : ℕ} (bank : Fin 64 ↪ Fin T)
-    (work : Fin ((rowSwapBlock.tapes+35)+1) ↪ Fin T) (apart : ∀ i j, work i ≠ bank j) (k : Fin 7) :
+    (work : Fin ((rowSwapBlock.tapes+35)+1) ↪ Fin T) (apart : ∀ i j, work i ≠ bank j) (k : Fin 8) :
     correctionColumnPlacement bank work apart (columnBank (correctionColumnSlots k)) = bank (correctionCallerSlots k) := by
   have h : ∃ i, columnBank (correctionColumnSlots i) = columnBank (correctionColumnSlots k) := ⟨k,rfl⟩
   have eq := correctionColumnSlots.injective (columnBank.injective h.choose_spec)
@@ -372,6 +400,231 @@ theorem correctionColumnPlacement_off [M8.Machine.Net] {T : ℕ} (bank : Fin 64 
   cases h : correctionRole i with
   | none => simpa [sharedRegisterPlacement,h] using apart i j
   | some k => simpa [sharedRegisterPlacement,h] using bank.injective.ne (outside k)
+
+/-- Copy the scalar headers and both weight archives into the ordinary child's
+private bank. Tape 24 is shared separately and the destination starts empty. -/
+def ordinaryHeaderSlots : Fin 7 ↪ Fin 58 := ⟨![2,53,28,44,45,55,56],by decide⟩
+
+theorem ordinaryHeaderCost (lengthAt : Fin 58 → ℕ) (H J w rank L : ℕ)
+    (modulus : lengthAt 2 = H) (width : lengthAt 53 = J) (one : lengthAt 28 = 1)
+    (padded : lengthAt 44 = H) (clock : lengthAt 45 = w)
+    (weights : lengthAt 55 = rank*H) (inverses : lengthAt 56 = rank*H) :
+    ((List.finRange 7).map fun i => 6*lengthAt (ordinaryHeaderSlots i)+6).sum+1 + (6*L+6) =
+      6*(2*H+J+1+w+2*(rank*H)+L)+49 := by
+  change (6*lengthAt 2+6) + ((6*lengthAt 53+6) + ((6*lengthAt 28+6) +
+    ((6*lengthAt 44+6) + ((6*lengthAt 45+6) + ((6*lengthAt 55+6) +
+    ((6*lengthAt 56+6) + 0)))))) + 1 + (6*L+6) = _
+  rw [modulus,width,one,padded,clock,weights,inverses]
+  omega
+
+theorem loadOrdinaryHeaders_exec {n T Q : ℕ} {P U : Type}
+    (caller : Fin 58 ↪ Fin n) (host : Fin 64 ↪ Fin T) (body : P → Pr P (n+T) Q prime U)
+    (v : HS (n+T) Q prime U) (S : Stacks (n+T) prime)
+    (free : ∀ j : Fin T, S.L (j.natAdd n) = [] ∧ S.R (j.natAdd n) = []) :
+    let src := fun i => (caller (ordinaryHeaderSlots i)).castAdd T
+    let localSlots := ordinaryHeaderSlots.trans (Fin.castLEEmb (by decide : 58 ≤ 64))
+    let port := host.trans (Fin.natAddEmb n)
+    let dst := localSlots.trans port
+    ∃ z F, z.user = v.user ∧
+      Exec body (Record.copyLeafHeaders src dst (port 0) (port 1) (List.finRange 7)) (mk v S)
+        (((List.finRange 7).map fun i => 6*(S.R (src i)).length+6).sum+1) (mk z F) ∧
+      F.L = S.L ∧ (∀ j : Fin n, F.R (j.castAdd T) = S.R (j.castAdd T)) ∧
+      (∀ i, F.R (dst i) = S.R (src i)) ∧
+      ∀ j : Fin T, (∀ i, host (localSlots i) ≠ j) → F.R (j.natAdd n) = [] := by
+  intro src localSlots port dst
+  exact Record.loadPrivateHeaders_exec caller host ordinaryHeaderSlots localSlots 0 1 (by decide) body v S free
+
+theorem correctionColumnPlacement_cut [M8.Machine.Net] {T : ℕ} (bank : Fin 64 ↪ Fin T)
+    (work : Fin ((rowSwapBlock.tapes+35)+1) ↪ Fin T) (apart : ∀ i j, work i ≠ bank j) :
+    correctionColumnPlacement bank work apart (Fin.last _) = work (Fin.last _) := by
+  have absent : ¬ ∃ k, columnBank (correctionColumnSlots k) = Fin.last (rowSwapBlock.tapes+35) :=
+    fun ⟨k,h⟩ => Fin.castSucc_ne_last _ h
+  change sharedRegisterPlacement work (correctionCallerSlots.trans bank) correctionRole (Fin.last _) = _
+  unfold sharedRegisterPlacement
+  rw [show correctionRole (Fin.last _) = none from dif_neg absent]
+
+/-- Copy the caller's cutoff to the comparison port in the fresh bank. -/
+theorem loadPrivateCutoff_exec [M8.Machine.Net] {n T Q : ℕ} {P U : Type}
+    (payload rootCut : Fin n) (host : Fin 64 ↪ Fin T)
+    (work : Fin ((rowSwapBlock.tapes+35)+1) ↪ Fin T) (apart : ∀ i j, work i ≠ host j)
+    (body : P → Pr P (n+T) Q prime U) (u : HS (n+T) Q prime U) (D : Stacks (n+T) prime) :
+    let bank := Record.payloadBank payload (host 24)
+    let ports := correctionColumnPlacement (host.trans bank) (work.trans bank) (fun i j => bank.injective.ne (apart i j))
+    let cut := ports (Fin.last _)
+    let tmp := (host 0).natAdd n
+    let aux := (host 1).natAdd n
+    D.R ((work (Fin.last _)).natAdd n) = [] → D.R tmp = [] → D.R aux = [] →
+    ∃ z, z.user = u.user ∧ Exec body (bcopy (rootCut.castAdd T) cut tmp aux) (mk u D)
+      (6*(D.R (rootCut.castAdd T)).length+6) (mk z {D with R := Function.update D.R cut (D.R (rootCut.castAdd T))}) := by
+  intro bank ports cut tmp aux free t a
+  have place : cut = (work (Fin.last _)).natAdd n :=
+    (correctionColumnPlacement_cut _ _ _).trans (Record.payloadBank_private _ _ _ (apart _ _))
+  have outside (j : Fin T) : rootCut.castAdd T ≠ j.natAdd n := by
+    intro eq
+    have val := congrArg Fin.val eq
+    simp only [Fin.val_castAdd,Fin.val_natAdd] at val
+    omega
+  have distinct : [rootCut.castAdd T,cut,tmp,aux].Nodup := by
+    rw [place]
+    have within : [work (Fin.last _),host 0,host 1].Nodup := by
+      simp [apart,host.injective.eq_iff]
+    exact List.nodup_cons.mpr ⟨by simp [tmp,aux,outside],List.Nodup.map (Fin.natAddEmb n).injective within⟩
+  obtain ⟨z,user,copy⟩ := bcopy_exec body distinct u D t a
+  rw [show D.R cut = [] from place ▸ free,List.append_nil] at copy
+  exact ⟨z,user,copy⟩
+
+/-- With only the payload shared, the weighted return preserves both stacks of
+every other caller tape, including the original headers and destination. -/
+theorem correctionPrivateFrame [M8.Machine.Net] {n T : ℕ}
+    (payload : Fin n) (host : Fin 64 ↪ Fin T)
+    (work : Fin ((rowSwapBlock.tapes+35)+1) ↪ Fin T) (apart : ∀ i j, work i ≠ host j)
+    (S F : Stacks (n+T) prime) :
+    let bank := Record.payloadBank payload (host 24)
+    let caller := host.trans bank
+    let aux := work.trans bank
+    let ports := correctionColumnPlacement caller aux (fun i j => bank.injective.ne (apart i j))
+    (∀ j, (∀ i, ports i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j) →
+    ∀ j : Fin n, j ≠ payload → F.L (j.castAdd T) = S.L (j.castAdd T) ∧ F.R (j.castAdd T) = S.R (j.castAdd T) := by
+  intro bank caller aux ports frame j ne
+  have outside (k : Fin T) : bank k ≠ j.castAdd T := by
+    by_cases hit : k = host 24
+    · subst k
+      rw [show bank (host 24) = payload.castAdd T from Record.payloadBank_shared ..]
+      exact (Fin.castAddEmb T).injective.ne ne.symm
+    · rw [show bank k = k.natAdd n from Record.payloadBank_private _ _ _ hit]
+      intro eq
+      have val := congrArg Fin.val eq
+      simp only [Fin.val_natAdd,Fin.val_castAdd] at val
+      omega
+  apply frame
+  intro i
+  change sharedRegisterPlacement aux (correctionCallerSlots.trans caller) correctionRole i ≠ j.castAdd T
+  cases h : correctionRole i with
+  | none => simpa only [sharedRegisterPlacement,h,aux,caller,Function.Embedding.trans_apply] using outside (work i)
+  | some k => simpa only [sharedRegisterPlacement,h,aux,caller,Function.Embedding.trans_apply] using outside (host (correctionCallerSlots k))
+
+/-- Release private stacks after a weighted child. The recursive execution is
+charged once; cleanup is priced by the actual words left in the private bank. -/
+theorem finishPrivateOrdinary_exec {n T Q : ℕ} {P U : Type}
+    (payload : Fin n) (body : P → Pr P (n+T) Q prime U) (program : Pr P (n+T) Q prime U)
+    (v u : HS (n+T) Q prime U) (S D : Stacks (n+T) prime) (steps : ℕ)
+    (run : Exec body program (mk v S) steps (mk u D))
+    (free : ∀ j : Fin (n+T), n ≤ j.val → S.L j = [] ∧ S.R j = [])
+    (saved : ∀ j : Fin n, j ≠ payload → D.L (j.castAdd T) = S.L (j.castAdd T) ∧ D.R (j.castAdd T) = S.R (j.castAdd T)) :
+    let work := (List.finRange (n+T)).filter fun j => n ≤ j.val
+    let cleanup := (work.map fun j => 4*(D.L j).length+2*(D.R j).length+4).sum+1
+    ∃ z F, z.user = u.user ∧ Exec body (program.seq (clearWorkTapes work)) (mk v S) (steps+cleanup) (mk z F) ∧
+      F.L (payload.castAdd T) = D.L (payload.castAdd T) ∧ F.R (payload.castAdd T) = D.R (payload.castAdd T) ∧
+      ∀ j, j ≠ payload.castAdd T → F.L j = S.L j ∧ F.R j = S.R j := by
+  intro work cleanup
+  obtain ⟨z,user,clear⟩ := clearWorkTapes_exec body work ((List.nodup_finRange _).filter _) u D
+  have small (j : Fin n) : j.castAdd T ∉ work := by simp [work,j.isLt.not_ge]
+  refine ⟨z,_,user,Exec.seq run clear,if_neg (small payload),if_neg (small payload),?_⟩
+  intro j ne
+  by_cases hj : n ≤ j.val
+  · have hit : j ∈ work := by simp [work,hj]
+    simp only [hit,if_true]
+    exact ⟨(free j hj).1.symm,(free j hj).2.symm⟩
+  · let k : Fin n := ⟨j.val,Nat.lt_of_not_ge hj⟩
+    have eq : k.castAdd T = j := Fin.ext rfl
+    have diff : k ≠ payload := fun e => ne (eq.symm.trans (congrArg (Fin.castAdd T) e))
+    simpa only [← eq,if_neg (small k)] using saved k diff
+
+/-- Enclose the weighted dispatch between header loading and private cleanup.
+The hosted record receives the inner payload stacks and its exact original frame. -/
+theorem privateOrdinaryReturn_exec [M8.Machine.Net] {n T Q : ℕ} {P U : Type}
+    (caller : Fin 58 ↪ Fin n) (rootCut : Fin n) (host : Fin 64 ↪ Fin T)
+    (work : Fin ((rowSwapBlock.tapes+35)+1) ↪ Fin T) (apart : ∀ i j, work i ≠ host j)
+    (body : P → Pr P (n+T) Q prime U) (program : Pr P (n+T) Q prime U)
+    (v : HS (n+T) Q prime U) (S : Stacks (n+T) prime)
+    (free : ∀ j : Fin (n+T), n ≤ j.val → S.L j = [] ∧ S.R j = []) :
+    let src := fun i => (caller (ordinaryHeaderSlots i)).castAdd T
+    let slots := ordinaryHeaderSlots.trans (Fin.castLEEmb (by decide : 58 ≤ 64))
+    let privatePort := host.trans (Fin.natAddEmb n)
+    let dst := slots.trans privatePort
+    let load := Record.copyLeafHeaders src dst (privatePort 0) (privatePort 1) (List.finRange 7)
+    let cost := ((List.finRange 7).map fun i => 6*(S.R (src i)).length+6).sum+1
+    let payload := caller 24
+    let bank := Record.payloadBank payload (host 24)
+    let ports := correctionColumnPlacement (host.trans bank) (work.trans bank) (fun i j => bank.injective.ne (apart i j))
+    let cut := ports (Fin.last _)
+    let init := load.seq (bcopy (rootCut.castAdd T) cut (privatePort 0) (privatePort 1))
+    let setupTime := cost+(6*(S.R (rootCut.castAdd T)).length+6)
+    let privateTapes := (List.finRange (n+T)).filter fun j => n ≤ j.val
+    ∃ u D, u.user = v.user ∧ D.L = S.L ∧ (∀ j : Fin n, D.R (j.castAdd T) = S.R (j.castAdd T)) ∧
+      (∀ i, D.R (bank (host (slots i))) = S.R (src i)) ∧ D.R cut = S.R (rootCut.castAdd T) ∧
+      (∀ j : Fin T, j ≠ work (Fin.last _) → (∀ i, host (slots i) ≠ j) → D.R (j.natAdd n) = []) ∧
+      ∀ z F steps, Exec body program (mk u D) steps (mk z F) →
+        (∀ j, (∀ i, ports i ≠ j) → F.L j = D.L j ∧ F.R j = D.R j) →
+        let cleanup := (privateTapes.map fun j => 4*(F.L j).length+2*(F.R j).length+4).sum+1
+        ∃ y G, y.user = z.user ∧ Exec body ((init.seq program).seq (clearWorkTapes privateTapes))
+          (mk v S) (setupTime+steps+cleanup) (mk y G) ∧
+          G.L (payload.castAdd T) = F.L (payload.castAdd T) ∧ G.R (payload.castAdd T) = F.R (payload.castAdd T) ∧
+          ∀ j, j ≠ payload.castAdd T → G.L j = S.L j ∧ G.R j = S.R j := by
+  intro src slots privatePort dst load cost payload bank ports cut init setupTime privateTapes
+  obtain ⟨u,D,user,setup,left,right,loaded,empty⟩ := loadOrdinaryHeaders_exec caller host body v S
+    (fun j => free (j.natAdd n) (Nat.le_add_right ..))
+  have headers (i : Fin 7) : bank (host (slots i)) = dst i := by
+    exact Record.payloadBank_private _ _ _ (host.injective.ne ((by decide : ∀ k : Fin 7,
+      (ordinaryHeaderSlots k).castLE (by decide : 58 ≤ 64) ≠ 24) i))
+  have cutEq : cut = (work (Fin.last _)).natAdd n :=
+    (correctionColumnPlacement_cut _ _ _).trans (Record.payloadBank_private _ _ _ (apart _ _))
+  have source := right rootCut
+  have outside (j : Fin n) : j.castAdd T ≠ cut := by
+    rw [cutEq]
+    intro eq
+    have val := congrArg Fin.val eq
+    simp only [Fin.val_castAdd,Fin.val_natAdd] at val
+    omega
+  obtain ⟨y,same,copy⟩ := loadPrivateCutoff_exec payload rootCut host work apart body u D
+    (empty _ (fun i => (apart _ _).symm))
+    (empty _ (fun i => host.injective.ne ((by decide : ∀ k : Fin 7, (ordinaryHeaderSlots k).castLE (by decide : 58 ≤ 64) ≠ 0) i)))
+    (empty _ (fun i => host.injective.ne ((by decide : ∀ k : Fin 7, (ordinaryHeaderSlots k).castLE (by decide : 58 ≤ 64) ≠ 1) i)))
+  rw [source] at copy
+  let E := {D with R := Function.update D.R cut (S.R (rootCut.castAdd T))}
+  have fixed (j : Fin n) : E.R (j.castAdd T) = S.R (j.castAdd T) :=
+    (Function.update_of_ne (outside j) ..).trans (right j)
+  refine ⟨y,E,same.trans user,left,fixed,?_,Function.update_self ..,?_,?_⟩
+  · intro i
+    rw [headers i]
+    have ne : dst i ≠ cut := cutEq ▸ (Fin.natAddEmb n).injective.ne (apart _ _).symm
+    exact (Function.update_of_ne ne ..).trans (loaded i)
+  · intro j ne off
+    exact (Function.update_of_ne (cutEq ▸ (Fin.natAddEmb n).injective.ne ne) ..).trans (empty j off)
+  · intro z F steps run off cleanup
+    apply finishPrivateOrdinary_exec payload body (init.seq program) v z S F (setupTime+steps)
+      (Exec.seq (Exec.seq setup copy) run) free
+    intro j ne
+    obtain ⟨l,r⟩ := correctionPrivateFrame payload host work apart E F off j ne
+    exact ⟨l.trans (congrFun left _),r.trans (fixed j)⟩
+
+/-- The hosted child's scalar headers and payload give the column entry directly.
+Only the shear work tapes come from the private bank. -/
+theorem correctionRecordEntry [M8.Machine.Net] {T w W : ℕ}
+    (bank : Fin 64 ↪ Fin T) (work : Fin ((rowSwapBlock.tapes+35)+1) ↪ Fin T)
+    (apart : ∀ i j, work i ≠ bank j) (H J d : ℕ) (dest : ℤ → Fin 4) (q : ℤ)
+    (S : Stacks T prime) (word : Fin ((prime^(w+1))^d*W) → ZMod 2)
+    (modulus : S.R (bank 2) = binSyms H (prime^(w+1)))
+    (width : S.R (bank 53) = binSyms J W) (one : S.R (bank 28) = binSyms 1 1)
+    (padded : S.R (bank 44) = binSyms H (1 : ZMod (prime^(w+1))).val)
+    (clock : (S.R (bank 45)).length = w)
+    (scratch : ∀ i ∈ shearWork, S.L (work (columnBank i)) = [] ∧ S.R (work (columnBank i)) = [])
+    (src : ∀ z, readAt blank (S.L (bank 24)) (S.R (bank 24)) (z-0) =
+      RadixToBinary.binaryEncoding.encode (putWord (fun _ => blank) 0 (List.ofFn (SparseRoleCircuit.encode ∘ word)) z))
+    (dst : ∀ z, readAt blank (S.L (bank 25)) (S.R (bank 25)) (z-q) = RadixToBinary.binaryEncoding.encode (dest z)) :
+    RecordReady (columnBank.trans (correctionColumnPlacement bank work apart)) H J (S.R (bank 60))
+      SparseRoleCircuit.encode (fun _ => blank) dest 0 q word S := by
+  let col := columnBank.trans (correctionColumnPlacement bank work apart)
+  have shared (k : Fin 8) : col (correctionColumnSlots k) = bank (correctionCallerSlots k) :=
+    correctionColumnPlacement_shared bank work apart k
+  refine ⟨(shared 0) ▸ modulus,(shared 3) ▸ width,(shared 7) ▸ one,(shared 4) ▸ padded,
+    (shared 5) ▸ clock,?_,?_,(shared 1) ▸ src,(shared 2) ▸ dst⟩
+  · change S.R (col 34) = _
+    rw [show col 34 = bank 60 from shared 6]
+  · intro i hi
+    have outside : ∀ i ∈ shearWork, ∀ k, correctionColumnSlots k ≠ i := by decide
+    have off : ¬ ∃ k, correctionColumnSlots k = i := fun ⟨k,eq⟩ => outside i hi k eq
+    simpa [col,correctionColumnPlacement,sharedRegisterPlacement,correctionRole,off] using scratch i hi
 
 /-- Prepare and apply the pivot correction on a common archive port.
 The column machine leaves every tape outside its placement unchanged. -/

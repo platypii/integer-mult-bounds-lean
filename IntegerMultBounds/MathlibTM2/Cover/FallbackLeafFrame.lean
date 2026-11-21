@@ -81,6 +81,38 @@ theorem copyLeafHeaders_exec {k : ℕ} (body : P → Pr P T Q A U) (src : Fin k 
       exact (off _ (fun a ha => hk a (List.mem_cons_of_mem _ ha))).trans
         (keep _ (hk i (by simp)).symm)
 
+/-- Copy selected caller headers into distinct private tapes and preserve every caller stack. -/
+theorem loadPrivateHeaders_exec {k c h : ℕ} (caller : Fin c ↪ Fin n) (localHost : Fin h ↪ Fin T)
+    (sources : Fin k → Fin c) (targets : Fin k ↪ Fin h) (tmp aux : Fin h)
+    (distinctPorts : ∀ i, [targets i,tmp,aux].Nodup)
+    (body : P → Pr P (n+T) Q A U) (v : HS (n+T) Q A U) (S : Stacks (n+T) A)
+    (free : ∀ j : Fin T, S.L (j.natAdd n) = [] ∧ S.R (j.natAdd n) = []) :
+    let src := fun i => (caller (sources i)).castAdd T
+    let privatePort := localHost.trans (Fin.natAddEmb n)
+    let dst := targets.trans privatePort
+    ∃ z F, z.user = v.user ∧
+      Exec body (copyLeafHeaders src dst (privatePort tmp) (privatePort aux) (List.finRange k)) (mk v S)
+        (((List.finRange k).map fun i => 6*(S.R (src i)).length+6).sum+1) (mk z F) ∧
+      F.L = S.L ∧ (∀ j : Fin n, F.R (j.castAdd T) = S.R (j.castAdd T)) ∧
+      (∀ i, F.R (dst i) = S.R (src i)) ∧
+      ∀ j : Fin T, (∀ i, localHost (targets i) ≠ j) → F.R (j.natAdd n) = [] := by
+  intro src privatePort dst
+  have apart (j : Fin n) (k : Fin T) : j.castAdd T ≠ k.natAdd n := by
+    intro eq
+    have val := congrArg Fin.val eq
+    simp only [Fin.val_castAdd,Fin.val_natAdd] at val
+    omega
+  have ports (i : Fin k) : [src i,dst i,privatePort tmp,privatePort aux].Nodup := by
+    have distinct := List.Nodup.map privatePort.injective
+      (distinctPorts i)
+    apply List.nodup_cons.mpr
+    exact ⟨by simp [src,dst,privatePort,Function.Embedding.trans_apply,apart],distinct⟩
+  obtain ⟨z,F,hz,run,left,loaded,off⟩ := copyLeafHeaders_exec body src dst _ _ (fun i j => apart _ _)
+    ports (List.finRange k) (List.nodup_finRange _) v S (free _).2 (free _).2 (fun _ _ => (free _).2)
+  exact ⟨z,F,hz,run,left,fun j => off _ (fun _ _ => (apart j _).symm),
+    fun i => loaded i (List.mem_finRange i),fun j hj =>
+      (off _ (fun i _ => (Fin.natAddEmb n).injective.ne (hj i))).trans (free j).2⟩
+
 /-- Initialize the actual seven leaf words from the 58-port caller bank.
 Every caller stack is preserved, including both stacks of the shared payload. -/
 theorem loadPrivateLeaf_exec (caller : Fin 58 ↪ Fin n) (localHost : Fin 62 ↪ Fin T)
@@ -95,22 +127,7 @@ theorem loadPrivateLeaf_exec (caller : Fin 58 ↪ Fin n) (localHost : Fin 62 ↪
       F.L = S.L ∧ (∀ j : Fin n, F.R (j.castAdd T) = S.R (j.castAdd T)) ∧
       (∀ i, F.R (dst i) = S.R (src i)) ∧
       ∀ j : Fin T, (∀ i, localHost (leafHeaderTargets i) ≠ j) → F.R (j.natAdd n) = [] := by
-  intro src privatePort dst
-  have apart (j : Fin n) (k : Fin T) : j.castAdd T ≠ k.natAdd n := by
-    intro eq
-    have val := congrArg Fin.val eq
-    simp only [Fin.val_castAdd,Fin.val_natAdd] at val
-    omega
-  have ports (i : Fin 7) : [src i,dst i,privatePort 0,privatePort 1].Nodup := by
-    have distinct := List.Nodup.map privatePort.injective
-      ((by decide : ∀ i, [leafHeaderTargets i,0,1].Nodup) i)
-    apply List.nodup_cons.mpr
-    exact ⟨by simp [src,dst,privatePort,Function.Embedding.trans_apply,apart],distinct⟩
-  obtain ⟨z,F,hz,run,left,loaded,off⟩ := copyLeafHeaders_exec body src dst _ _ (fun i j => apart _ _)
-    ports (List.finRange 7) (List.nodup_finRange _) v S (free _).2 (free _).2 (fun _ _ => (free _).2)
-  exact ⟨z,F,hz,run,left,fun j => off _ (fun _ _ => (apart j _).symm),
-    fun i => loaded i (List.mem_finRange i),fun j hj =>
-      (off _ (fun i _ => (Fin.natAddEmb n).injective.ne (hj i))).trans (free j).2⟩
+  exact loadPrivateHeaders_exec caller localHost leafHeaderSources leafHeaderTargets 0 1 (by decide) body v S free
 
 /-- The loaded private bank presents the original word and a blank destination
 to the first column operation. The reciprocal archive stays on its separate tape. -/
