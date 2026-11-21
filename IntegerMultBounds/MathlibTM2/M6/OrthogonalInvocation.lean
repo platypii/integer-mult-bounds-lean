@@ -99,6 +99,60 @@ private theorem finalProjector (i : Fin 661) :
     exact (List.mem_replicate.mp hr).2)
   simpa only [Frames.final_alignment,Frames.snapshot,i.isLt,↓reduceIte] using h
 
+private theorem invocationReads (w W : ℕ) :
+      let m := prime^w
+      let V := m^16*W
+      let G := Swap.Modular.reduce m (orthogonalBasis.map (Nat.cast : ℕ → ℚ))
+      let encode := M8.Exchange.transform G (Swap.Modular.reduce m (M8.ReversedExchange.rev 8)*G)
+      let addr := fun l s (k : Fin W) => FlatCoordinateLayout.index (AffineFieldCoordinates.embed
+        (encode (M8.Exchange.exchange (Swap.Modular.reduce m (Nine.labelProj l)) s))) k
+      ∀ (A : SharedBankStage.Stage _ 661 prime (phaseOwners (N := V)))
+        (B : SharedBankStage.Stage _ 662 prime (phaseOwners (N := V)))
+        (D : SharedBankStage.Stage _ 661 prime (phaseOwners (N := V))),
+      (∀ x s k (i : Fin 661), A.transform x i
+        (addr (Frames.run (sectionD++sectionA) (Frames.snapshot Frames.initialRefs) i) s k) =
+        Circuit.run ((sectionD++sectionA).map RawGate.toCircuit) (Copy.extendStored (fun j : Fin 661 =>
+          x j (addr (Frames.snapshot Frames.initialRefs j) s k))) i) →
+      (∀ x s k (i : Fin 661), B.transform x i.castSucc (addr (Frames.beforeScatter i) s k) =
+        Circuit.run (sectionscatter.map RawGate.toCircuit) (Copy.extendStored (fun j : Fin 661 =>
+          x j.castSucc (addr (Frames.beforeScatter j) s k))) i) →
+      (∀ x s k (i : Fin 661), D.transform x i
+        (addr (Frames.run (sectionB++sectionC) (Frames.scatterFinish Frames.beforeScatter) i) s k) =
+        Circuit.run ((sectionB++sectionC).map RawGate.toCircuit) (Copy.extendStored (fun j : Fin 661 =>
+          x j (addr (Frames.scatterFinish Frames.beforeScatter j) s k))) i) →
+      ∀ x s k (i : Fin 661),
+          (SharedBankStage.compose (SharedBankStage.compose A (privateTemp B)) D).transform x i (addr (Frames.finalRefs i) s k) =
+            Circuit.run (program.map RawGate.toCircuit) (Copy.extendStored (fun j : Fin 661 =>
+              x j (addr (Frames.snapshot Frames.initialRefs j) s k))) i := by
+    intro m V G encode addr A B D a b d x s k i
+    let mid := privateTemp B
+    let get := fun (profile : ℕ → ℕ) (y : Fin 661 → Fin V → ZMod 2) (j : Fin 661) => y j (addr (profile j) s k)
+    let initial := get (Frames.snapshot Frames.initialRefs) x
+    let first := A.transform x
+    let middle := mid.transform first
+    have ar (j : Fin 661) : get Frames.beforeScatter first j =
+        Circuit.run ((sectionD++sectionA).map RawGate.toCircuit) (Copy.extendStored initial) j := by
+      rw [← Frames.before_scatter]
+      exact a x s k j
+    have br (j : Fin 661) : get Frames.beforeScatter middle j =
+        Circuit.run (sectionscatter.map RawGate.toCircuit) (Copy.extendStored (get Frames.beforeScatter first)) j := by
+      change B.transform (withTemp first) j.castSucc (addr (Frames.beforeScatter j) s k) = _
+      have h := b (withTemp first) s k j
+      have atReg (i : Fin 661) : withTemp first i.castSucc = first i := Fin.lastCases_castSucc ..
+      simpa only [atReg] using h
+    have ha := extendResult _ (fun g h => List.mem_append_left _ (List.mem_append_left _ (List.mem_append_left _ h))) _ _ ar
+    have hb := extendResult _ (fun g h => List.mem_append_left _ (List.mem_append_left _ (List.mem_append_right _ h))) _ _ br
+    have dr := d middle s k i
+    change get (Frames.run (sectionB++sectionC) (Frames.scatterFinish Frames.beforeScatter)) (D.transform middle) i =
+      Circuit.run ((sectionB++sectionC).map RawGate.toCircuit) (Copy.extendStored (get Frames.beforeScatter middle)) i at dr
+    rw [Frames.after_scatter,hb,ha] at dr
+    have same : addr (Frames.finalRefs i) s k = addr (Frames.snapshot Frames.after234 i) s k := by
+      dsimp only [addr]
+      rw [finalProjector i]
+    rw [same]
+    change get (Frames.snapshot Frames.after234) (D.transform middle) i = Circuit.run (program.map RawGate.toCircuit) (Copy.extendStored initial) i
+    simpa only [program,List.map_append,Circuit.run_append] using dr
+
 /-- The two physical phases and all nine COPY windows implement the literal
 PR589 word from the original frames to the certified final frames. -/
 theorem orthogonalStoppedInvocation [M8.Machine.Net] (cutoff : ℕ) :
@@ -131,32 +185,45 @@ theorem orthogonalStoppedInvocation [M8.Machine.Net] (cutoff : ℕ) :
     push_cast
     dsimp only [V,m] at cb ⊢
     linarith
-  · intro x s k i
-    let get := fun (profile : ℕ → ℕ) (y : Fin 661 → Fin V → ZMod 2) (j : Fin 661) => y j (addr (profile j) s k)
-    let initial := get (Frames.snapshot Frames.initialRefs) x
-    let first := A.transform x
-    let middle := mid.transform first
-    have ar (j : Fin 661) : get Frames.beforeScatter first j =
-        Circuit.run ((sectionD++sectionA).map RawGate.toCircuit) (Copy.extendStored initial) j := by
-      rw [← Frames.before_scatter]
-      exact a x s k j
-    have br (j : Fin 661) : get Frames.beforeScatter middle j =
-        Circuit.run (sectionscatter.map RawGate.toCircuit) (Copy.extendStored (get Frames.beforeScatter first)) j := by
-      change B.transform (withTemp first) j.castSucc (addr (Frames.beforeScatter j) s k) = _
-      have h := (b (withTemp first)).2 s k j
-      have atReg (i : Fin 661) : withTemp first i.castSucc = first i := Fin.lastCases_castSucc ..
-      simpa only [atReg] using h
-    have ha := extendResult _ (fun g h => List.mem_append_left _ (List.mem_append_left _ (List.mem_append_left _ h))) _ _ ar
-    have hb := extendResult _ (fun g h => List.mem_append_left _ (List.mem_append_left _ (List.mem_append_right _ h))) _ _ br
-    have dr := d middle s k i
-    change get (Frames.run (sectionB++sectionC) (Frames.scatterFinish Frames.beforeScatter)) (D.transform middle) i =
-      Circuit.run ((sectionB++sectionC).map RawGate.toCircuit) (Copy.extendStored (get Frames.beforeScatter middle)) i at dr
-    rw [Frames.after_scatter,hb,ha] at dr
-    have same : addr (Frames.finalRefs i) s k = addr (Frames.snapshot Frames.after234 i) s k := by
-      dsimp only [addr]
-      rw [finalProjector i]
-    rw [same]
-    change get (Frames.snapshot Frames.after234) (D.transform middle) i = Circuit.run (program.map RawGate.toCircuit) (Copy.extendStored initial) i
-    simpa only [program,List.map_append,Circuit.run_append] using dr
+  · exact invocationReads w W A B D a (fun x => (b x).2) d
+
+/-- Full PR589 invocation charging every recursive child at its frame-move rank. -/
+theorem orthogonalRecursiveInvocation :
+    ∃ P S : ℕ, ∀ w W : ℕ, 0 < W →
+      let m := prime^w
+      let V := m^16*W
+      let G := Swap.Modular.reduce m (orthogonalBasis.map (Nat.cast : ℕ → ℚ))
+      let encode := M8.Exchange.transform G (Swap.Modular.reduce m (M8.ReversedExchange.rev 8)*G)
+      let addr := fun l s (k : Fin W) => FlatCoordinateLayout.index (AffineFieldCoordinates.embed
+        (encode (M8.Exchange.exchange (Swap.Modular.reduce m (Nine.labelProj l)) s))) k
+          ∀ (children : ℕ → SharedBankSkeleton.Skeleton 1 prime) (price : ℕ → ℕ),
+          (∀ r, 0 < r → r ≤ 8 → ∃ child : SharedBankStage.Stage _ 1 prime (@portOwner V),
+            SharedBankSkeleton.ofStage child = children r ∧ child.cost ≤ price r ∧
+            ∀ x, M8.RevMachine.RevT prime w r (M8.RevMachine.sub prime w 8 0 r ⟨1,1,1,8*w,1,W⟩)
+              (M8.RevMachine.ext x) (M8.RevMachine.ext (child.transform x))) →
+      let bill := fun (gs : List RawGate) (current : ℕ → ℕ) =>
+        (gs.map (fun g => (g.sources.length+1)*(P*V+3)+76*g.sources.length*V+2)).sum +
+        ((Frames.edges gs current).map (fun p => let r := Geometry.moveRank p.1 p.2; if r = 0 then 0 else price r)).sum
+      ∃ stage : SharedBankStage.Stage _ 661 prime (phaseOwners (N := V)),
+        stage.cost ≤ bill (sectionD++sectionA) (Frames.snapshot Frames.initialRefs) +
+          (9*((S+152)*V+price 7+6)+527*(76*V+1)) +
+          bill (sectionB++sectionC) (Frames.scatterFinish Frames.beforeScatter) + 2 ∧ ∀ x s k (i : Fin 661),
+          stage.transform x i (addr (Frames.finalRefs i) s k) =
+            Circuit.run (program.map RawGate.toCircuit) (Copy.extendStored (fun j : Fin 661 =>
+              x j (addr (Frames.snapshot Frames.initialRefs j) s k))) i := by
+  obtain ⟨P,phase⟩ := orthogonalRecursivePhases
+  obtain ⟨S,_,_,scatter⟩ := orthogonalRecursiveScatter
+  refine ⟨P,S,?_⟩
+  intro w W hW m V G encode addr children price supply bill
+  obtain ⟨A,ca,a⟩ := phase false w W hW children price supply
+  obtain ⟨B,cb,b⟩ := scatter w W hW (children 7) (price 7) (supply 7 (by decide) (by decide))
+  obtain ⟨D,cd,d⟩ := phase true w W hW children price supply
+  refine ⟨SharedBankStage.compose (SharedBankStage.compose A (privateTemp B)) D,?_,?_⟩
+  · change A.cost+B.cost+1+D.cost+1 ≤ _
+    change A.cost ≤ bill (sectionD++sectionA) (Frames.snapshot Frames.initialRefs) at ca
+    change D.cost ≤ bill (sectionB++sectionC) (Frames.scatterFinish Frames.beforeScatter) at cd
+    change B.cost ≤ 9*((S+152)*V+price 7+6)+527*(76*V+1) at cb
+    omega
+  · exact invocationReads w W A B D a (fun x => (b x).2) d
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
