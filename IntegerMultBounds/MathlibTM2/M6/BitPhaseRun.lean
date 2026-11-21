@@ -820,6 +820,175 @@ theorem helperWindow_ownerStage [M8.Machine.Net] {T : ℕ} (io : Fin T)
     let cell : LabelEntry.Cell v B := {z with a := copyActive s}
     exact (ownerLabelRead _ z s _).symm.trans ((congrFun (read g) cell).trans (ownerLabelRead _ z s _))
 
+open Cover M8.RevMachine in
+/-- Change the helper charts that differ at an invocation boundary. Each
+selected owner is routed once, from its recorded previous chart. -/
+theorem helperWindow_batch [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
+    (previous : Fin 439 → Fin 9 × Fin 439) (hs : List (Fin 439)) (unique : hs.Nodup) :
+    let owner := fun h : Fin 439 => ownerTape n r d ⟨222+h.val,by omega⟩
+    ∃ C : ℕ, ∀ w B K : ℕ, 0 < w → 0 < B → 0 < K →
+      let W := B*prime^(64*(w*64))*K
+      let V := (prime^w)^16*W
+      ∃ stage : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V)),
+        stage.cost ≤ C*V + hs.length*(63*LeafCore.coreCost V (w*64)+1) ∧
+        ∀ x, (∀ t, t ∉ hs.map owner → stage.transform x t = x t) ∧
+        ∀ h ∈ hs, ∀ (g : LabelPadding.Label 64 w) (z : LabelEntry.Cell (copyLabelLayout w B K) B)
+          (s : Swap.Shear.State (Fin 8) (ZMod (prime^w))),
+          let addr := fun j => FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) j
+          let old := previous h
+          stage.transform x (owner h) (addr (labelSpectator (g*(registerChart w n (222+h.val)).transpose) z)) =
+            x (owner h) (addr (labelSpectator (g*(registerChart w old.1 (222+old.2.val)).transpose) z)) := by
+  intro owner
+  have inj : Function.Injective owner := by
+    intro h k eqn
+    have same := congrArg Fin.val (ownerTape_injective n r d eqn)
+    exact Fin.ext (Nat.add_left_cancel same)
+  induction hs with
+  | nil =>
+    refine ⟨0,fun w B K _ _ _ => ⟨SharedBankStage.identity _ (by decide),by simp [SharedBankStage.identity],?_⟩⟩
+    intro x
+    exact ⟨fun _ _ => rfl,fun _ hit => False.elim (List.not_mem_nil hit)⟩
+  | cons h hs ih =>
+    obtain ⟨fresh,nd⟩ := List.nodup_cons.mp unique
+    obtain ⟨P,one⟩ := helperWindow_ownerStage (owner h) (previous h).1 n (previous h).2 h
+    obtain ⟨Q,rest⟩ := ih nd
+    refine ⟨P+Q,?_⟩
+    intro w B K hw hb hk W V
+    obtain ⟨A,ca,a⟩ := one w B K hw hb hk
+    obtain ⟨D,cd,b⟩ := rest w B K hw hb hk
+    refine ⟨SharedBankStage.compose A D,?_,?_⟩
+    · change A.cost+D.cost+1 ≤ _
+      simp only [List.length_cons,Nat.add_mul,Nat.one_mul]
+      dsimp only [V,W]
+      omega
+    · intro x
+      obtain ⟨idle,read⟩ := a x
+      obtain ⟨idle',read'⟩ := b (A.transform x)
+      constructor
+      · intro t off
+        simp only [List.map_cons,List.mem_cons,not_or] at off
+        exact (idle' t off.2).trans (idle t off.1)
+      · intro k hit g z s addr old
+        change D.transform (A.transform x) _ _ = _
+        rcases List.mem_cons.mp hit with eqn | mem
+        · subst k
+          rw [idle' _ (by simpa [List.mem_map,inj.eq_iff] using fresh)]
+          exact read g z s
+        · exact (read' k mem g z s).trans (congrFun (idle _ (fun eqn => fresh (inj eqn ▸ mem))) _)
+
+open Cover M8.RevMachine in
+/-- Prepare every helper for its next invocation, skipping charts already in place. -/
+theorem prepareHelperWindows [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
+    (previous : Fin 439 → Fin 9 × Fin 439) :
+    let owner := fun h : Fin 439 => ownerTape n r d ⟨222+h.val,by omega⟩
+    let hs := (List.finRange 439).filter (fun h => previous h != (n,h))
+    ∃ C : ℕ, ∀ w B K : ℕ, 0 < w → 0 < B → 0 < K →
+      let W := B*prime^(64*(w*64))*K
+      let V := (prime^w)^16*W
+      ∃ stage : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V)),
+        stage.cost ≤ C*V + hs.length*(63*LeafCore.coreCost V (w*64)+1) ∧
+        ∀ x, (∀ t, t ∉ hs.map owner → stage.transform x t = x t) ∧
+        ∀ h : Fin 439, ∀ (g : LabelPadding.Label 64 w) (z : LabelEntry.Cell (copyLabelLayout w B K) B)
+          (s : Swap.Shear.State (Fin 8) (ZMod (prime^w))),
+          let addr := fun j => FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) j
+          let old := previous h
+          stage.transform x (owner h) (addr (labelSpectator (g*(registerChart w n (222+h.val)).transpose) z)) =
+            x (owner h) (addr (labelSpectator (g*(registerChart w old.1 (222+old.2.val)).transpose) z)) := by
+  intro owner hs
+  have unique : hs.Nodup := (List.nodup_finRange 439).filter _
+  obtain ⟨C,run⟩ := helperWindow_batch n r d previous hs unique
+  refine ⟨C,?_⟩
+  intro w B K hw hb hk W V
+  obtain ⟨stage,cost,act⟩ := run w B K hw hb hk
+  refine ⟨stage,cost,?_⟩
+  intro x
+  obtain ⟨idle,read⟩ := act x
+  refine ⟨idle,?_⟩
+  intro h g z s addr old
+  by_cases hit : h ∈ hs
+  · exact read h hit g z s
+  · have same : previous h = (n,h) := by simpa [hs] using hit
+    have off : owner h ∉ hs.map owner := by
+      rintro mem
+      obtain ⟨k,hk,eqn⟩ := List.mem_map.mp mem
+      have eqh := congrArg Fin.val (ownerTape_injective n r d eqn)
+      exact hit ((Fin.ext (Nat.add_left_cancel eqh) : k = h) ▸ hk)
+    rw [idle _ off]
+    simp only [old,same]
+
+/-- Chart record after a replica/class invocation. Each helper owner takes
+the chart of its scheduled register; other owners retain their record. -/
+noncomputable def helperChartsAfter (n : Fin 9) (run : Fin 32 × Fin 5)
+    (before : Fin 142081 → Fin 9 × Fin 439) (t : Fin 142081) : Fin 9 × Fin 439 := by
+  classical
+  exact if hit : ∃ h : Fin 439, ownerTape n run.1 run.2 ⟨222+h.val,by omega⟩ = t
+    then (n,hit.choose) else before t
+
+/-- The last scheduled use of an owner determines its current helper chart. -/
+theorem helperChart_lastUse (n : Fin 9) (pre post : List (Fin 32 × Fin 5))
+    (run : Fin 32 × Fin 5) (h : Fin 439) (initial : Fin 142081 → Fin 9 × Fin 439) :
+    let t := ownerTape n run.1 run.2 ⟨222+h.val,by omega⟩
+    (∀ p ∈ post, ∀ k : Fin 439, ownerTape n p.1 p.2 ⟨222+k.val,by omega⟩ ≠ t) →
+    ((pre ++ run :: post).foldl (fun chart p => helperChartsAfter n p chart) initial) t = (n,h) := by
+  intro t untouched
+  rw [List.foldl_append,List.foldl_cons]
+  have keep (chart : Fin 142081 → Fin 9 × Fin 439) :
+      (post.foldl (fun chart p => helperChartsAfter n p chart) chart) t = chart t := by
+    induction post generalizing chart with
+    | nil => rfl
+    | cons p ps ih =>
+      rw [List.foldl_cons,ih (fun q mem => untouched q (List.mem_cons_of_mem _ mem))]
+      exact dif_neg (fun ⟨k,eqn⟩ => untouched p List.mem_cons_self k eqn)
+  rw [keep]
+  have hit : ∃ k : Fin 439, ownerTape n run.1 run.2 ⟨222+k.val,by omega⟩ = t := ⟨h,rfl⟩
+  have eqn := congrArg Fin.val (ownerTape_injective n run.1 run.2 hit.choose_spec)
+  have same : hit.choose = h := Fin.ext (Nat.add_left_cancel eqn)
+  rw [helperChartsAfter,dif_pos hit,same]
+
+open Cover M8.RevMachine in
+/-- The physical chart preparation transports the whole bank between its
+incoming and outgoing chart records, at the cost of the changed owners. -/
+theorem helperChartsAfter_stage [M8.Machine.Net] (n : Fin 9) (run : Fin 32 × Fin 5)
+    (before : Fin 142081 → Fin 9 × Fin 439) :
+    let owner := fun h : Fin 439 => ownerTape n run.1 run.2 ⟨222+h.val,by omega⟩
+    let changed := (List.finRange 439).filter (fun h => before (owner h) != (n,h))
+    ∃ C : ℕ, ∀ w B K : ℕ, 0 < w → 0 < B → 0 < K →
+      let W := B*prime^(64*(w*64))*K
+      let V := (prime^w)^16*W
+      let addr := fun (c : Fin 9 × Fin 439) (g : LabelPadding.Label 64 w)
+        (z : LabelEntry.Cell (copyLabelLayout w B K) B) (s : Swap.Shear.State (Fin 8) (ZMod (prime^w))) =>
+        FlatCoordinateLayout.index (AffineFieldCoordinates.embed s)
+          (labelSpectator (g*(registerChart w c.1 (222+c.2.val)).transpose) z)
+      ∃ stage : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V)),
+        stage.cost ≤ C*V + changed.length*(63*LeafCore.coreCost V (w*64)+1) ∧
+        ∀ x t, (t ∉ changed.map owner → stage.transform x t = x t) ∧
+          ∀ g z s, stage.transform x t (addr (helperChartsAfter n run before t) g z s) =
+            x t (addr (before t) g z s) := by
+  classical
+  intro owner changed
+  obtain ⟨C,prepare⟩ := prepareHelperWindows n run.1 run.2 (before ∘ owner)
+  refine ⟨C,?_⟩
+  intro w B K hw hb hk W V addr
+  obtain ⟨stage,cost,act⟩ := prepare w B K hw hb hk
+  refine ⟨stage,cost,?_⟩
+  intro x t
+  obtain ⟨off,read⟩ := act x
+  refine ⟨off t,?_⟩
+  by_cases hit : ∃ h : Fin 439, owner h = t
+  · have slot : helperChartsAfter n run before t = (n,hit.choose) := dif_pos hit
+    rw [slot]
+    have atOwner (h : Fin 439) (t : Fin 142081) (eqn : owner h = t) :
+        ∀ g z s, stage.transform x t (addr (n,h) g z s) = x t (addr (before t) g z s) := by
+      subst t
+      exact read h
+    exact atOwner _ _ hit.choose_spec
+  · have miss : t ∉ changed.map owner := by
+      rintro ht
+      obtain ⟨h,_,eqn⟩ := List.mem_map.mp ht
+      exact hit ⟨h,eqn⟩
+    rw [off t miss,show helperChartsAfter n run before t = before t from dif_neg hit]
+    exact fun _ _ _ => rfl
+
 -- The explicit entry and return chart programs are available in commit 1b183c9b.
 /-- Read each permanent register in its own invocation chart. -/
 noncomputable def chartedPhaseRead {w B K : ℕ} (n : Fin 9) (owner : Fin 661 ↪ Fin 142081)
