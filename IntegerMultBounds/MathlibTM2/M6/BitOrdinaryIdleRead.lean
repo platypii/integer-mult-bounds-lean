@@ -53,20 +53,20 @@ theorem phasePackSchedule_fields {α : Type*} {lo hi : ℕ} (pre h mid d suffix 
 open Cover.Fallback in
 /-- Run the interval packing schedule on a live column record. The two active
 fields become the first digits of the physical output word. -/
-theorem phaseIncomingPack_exec [M8.Machine.Net] {P U : Type} {T lo hi : ℕ}
+theorem phaseIncomingPack_exec [M8.Machine.Net] {P U : Type} {T Q lo hi : ℕ} (capacity : rowSwapBlock.states ≤ Q)
     (ordered : lo ≤ hi) (bounded : hi ≤ 8) (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T)
-    (body : P → Pr P T columnCapacity prime U) :
+    (body : P → Pr P T Q prime U) :
     ∃ setup swaps : ℕ, ∀ w W, 0 < W →
     let M := prime^(w+1)
     let is := phasePackSchedule lo hi
     let bank := ((Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)).trans ports
     let clean := fun D : Stacks T prime => ∀ k : Fin (rowSwapBlock.tapes+35), 35 ≤ k.val → D.L (ports k) = [] ∧ D.R (ports k) = []
-    ∀ (v : HS T columnCapacity prime U) (S : Stacks T prime) record dest q (before : Fin (M^16*W) → ZMod 2),
+    ∀ (v : HS T Q prime U) (S : Stacks T prime) record dest q (before : Fin (M^16*W) → ZMod 2),
     let stored := RecordReady (b := prime) (w := w) (d := 16) (W := W) bank M.size W.size record
       SparseRoleCircuit.encode (fun _ => blank) dest 0 q
     stored before S → clean S → ∃ z F n word, z.user = v.user ∧
       n ≤ 1+(setup+swaps*swapVolumeRate w)*(M^16*W) ∧
-      Exec body (statePlacedNormalized ports swapStates_fit swapStates_pos Empty.elim (packSchedule 16 is))
+      Exec body (statePlacedNormalized ports capacity swapStates_pos Empty.elim (packSchedule 16 is))
         (mk v S) n (mk z F) ∧ stored word F ∧ clean F ∧
       (∀ j, (∀ i, ports i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j) ∧
       ∀ (x y : Fin 16 → ZMod M) pre h mid d suffix, pre.length = lo → h.length = hi-lo →
@@ -77,7 +77,7 @@ theorem phaseIncomingPack_exec [M8.Machine.Net] {P U : Type} {T lo hi : ℕ}
   intro w W hW M is bank clean v S record dest q before stored ready free
   have fits : ∀ i ∈ is, i+1 < 16 := fun _ => phasePackSchedule_inside ordered bounded
   obtain ⟨z,F,n,user,time,run,⟨word,out,reads⟩,clear,off⟩ :=
-    placedPackSchedule_exec ports is fits body v S record dest q hW before id ⟨before,ready,fun _ _ => rfl⟩ free
+    placedPackSchedule_exec capacity ports is fits body v S record dest q hW before id ⟨before,ready,fun _ _ => rfl⟩ free
   refine ⟨z,F,n,word,user,time.trans (Nat.add_le_add_left (price w W hW) 1),run,out,clear,off,?_⟩
   intro x y pre h mid d suffix hp hh hm hd hx hy j
   have eqn : is.foldl adjacentFields x = y := by
@@ -251,10 +251,10 @@ private theorem phaseTranspose_of_reads {α : Type*} {lo hi w W : ℕ}
 open Cover.Fallback IntegerMultBounds.Networks.Certificates.PR589 RecursiveInterchangeLayout in
 /-- Pack a live phase record, call the child once, and restore the parent's
 digit order. The child exchanges the two leading active fields. -/
-theorem phasePackedCall_exec [M8.Machine.Net] {P U : Type} {T : ℕ}
+theorem phasePackedCall_exec [M8.Machine.Net] {P U : Type} {T Q : ℕ} (capacity : rowSwapBlock.states ≤ Q)
     (p : ℕ × ℕ) (checked : Geometry.Moves.CheckedPair p) (paid : 0 < Geometry.moveRank p.1 p.2)
     (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T)
-    (body : P → Pr P T columnCapacity prime U) (f : P) :
+    (body : P → Pr P T Q prime U) (f : P) :
     let lo := min (Geometry.Dimensions.value p.1) (Geometry.Dimensions.value p.2)
     let hi := max (Geometry.Dimensions.value p.1) (Geometry.Dimensions.value p.2)
     ∃ setup swaps : ℕ, ∀ (node : Descriptor) (i : Fin nodeChildren5.length) (w B rows : ℕ),
@@ -270,11 +270,11 @@ theorem phasePackedCall_exec [M8.Machine.Net] {P U : Type} {T : ℕ}
     let is := phasePackSchedule lo hi
     let bank := ((Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)).trans ports
     let clean := fun D : Stacks T prime => ∀ k : Fin (rowSwapBlock.tapes+35), 35 ≤ k.val → D.L (ports k) = [] ∧ D.R (ports k) = []
-    let pack := fun js => statePlacedNormalized ports swapStates_fit swapStates_pos Empty.elim (packSchedule 16 js)
-    ∀ (v : HS T columnCapacity prime U) (S : Stacks T prime) record dest q (before : Fin (M^16*W) → ZMod 2) budget,
+    let pack := fun js => statePlacedNormalized ports capacity swapStates_pos Empty.elim (packSchedule 16 js)
+    ∀ (v : HS T Q prime U) (S : Stacks T prime) record dest q (before : Fin (M^16*W) → ZMod 2) budget,
     let stored := RecordReady (b := prime) (w := w) (d := 16) (W := W) bank M.size W.size record
       SparseRoleCircuit.encode (fun _ => blank) dest 0 q
-    (desc.width < node.width → ∀ (u : HS T columnCapacity prime U) D word, stored word D → clean D →
+    (desc.width < node.width → ∀ (u : HS T Q prime U) D word, stored word D → clean D →
       ∃ z F n changed, Exec body (body f) (mk u D) n (mk z F) ∧ n ≤ budget ∧ z.user = u.user ∧
         stored changed F ∧ clean F ∧ (∀ j, (∀ i, ports i ≠ j) → F.L j = D.L j ∧ F.R j = D.R j) ∧
         ∀ k, changed (position k) = Shared50RecursiveNodeRows.transpose (one_dvd desc.rows) (word ∘ position) k) →
@@ -289,7 +289,7 @@ theorem phasePackedCall_exec [M8.Machine.Net] {P U : Type} {T : ℕ}
   intro lo hi
   obtain ⟨lt,bounded⟩ := phaseInterval_bounds checked paid
   have ordered : lo ≤ hi := lt.le
-  obtain ⟨a,b,enter⟩ := phaseIncomingPack_exec ordered bounded ports body
+  obtain ⟨a,b,enter⟩ := phaseIncomingPack_exec capacity ordered bounded ports body
   obtain ⟨c,e,price⟩ := packTime_le (P := Empty) (U := U) Empty.elim 16 (phasePackSchedule lo hi).reverse (by decide)
   refine ⟨a+c,b+e,?_⟩
   intro node i w B rows rank width split label M K W hW desc
@@ -305,7 +305,7 @@ theorem phasePackedCall_exec [M8.Machine.Net] {P U : Type} {T : ℕ}
   have swap := action word changed returned
   have fits : ∀ i ∈ is, i+1 < 16 := fun _ => phasePackSchedule_inside ordered bounded
   obtain ⟨y,F,n,userB,timeB,runB,⟨after,out,reads⟩,clear,offB⟩ :=
-    placedPackSchedule_exec ports is.reverse (fun i hi => fits i (List.mem_reverse.mp hi)) body z G
+    placedPackSchedule_exec capacity ports is.reverse (fun i hi => fits i (List.mem_reverse.mp hi)) body z G
       record dest q hW changed id ⟨changed,readyB,fun _ _ => rfl⟩ freeB
   refine ⟨y,F,_,userB.trans (user.trans userA),?_,Exec.seq runA (Exec.seq (Exec.call run) runB),?_,clear,?_⟩
   · have back := timeB.trans (Nat.add_le_add_left (price w W hW) 1)
@@ -337,6 +337,186 @@ theorem phasePackedCall_exec [M8.Machine.Net] {P U : Type} {T : ℕ}
     obtain ⟨l',r'⟩ := off j hj
     obtain ⟨l'',r''⟩ := offB j hj
     exact ⟨l''.trans (l'.trans l),r''.trans (r'.trans r)⟩
+
+open Cover.Fallback in
+/-- Allocate the two basis workspaces after the parent bank. The only tape
+shared by either pass and the parent is the chosen payload. -/
+theorem phaseBasisPlacement {T : ℕ} (owner : Fin T) (m n : ℕ) :
+    let parent := (Fin.castAddEmb (n := T) m).trans (Fin.castAddEmb n)
+    ∃ (a : Fin (1+m) ↪ Fin ((T+m)+n)) (b : Fin (1+n) ↪ Fin ((T+m)+n)),
+      a ((0 : Fin 1).castAdd m) = parent owner ∧ b ((0 : Fin 1).castAdd n) = parent owner ∧
+      (∀ j, j ≠ owner → ∀ k, a k ≠ parent j) ∧
+      ∀ j : Fin n, (∀ k, a k ≠ b (j.natAdd 1)) ∧ (∀ k, parent k ≠ b (j.natAdd 1)) := by
+  intro parent
+  let slot : Fin 1 ↪ Fin T := ⟨fun _ => owner,fun _ _ _ => Subsingleton.elim _ _⟩
+  let a := (appendPrivate slot m).trans (Fin.castAddEmb n)
+  let b := appendPrivate (slot.trans (Fin.castAddEmb m)) n
+  have apart {l r : ℕ} (i : Fin l) (j : Fin r) : i.castAdd r ≠ j.natAdd l := by
+    intro eq
+    have h := congrArg Fin.val eq
+    simp only [Fin.val_castAdd,Fin.val_natAdd] at h
+    omega
+  refine ⟨a,b,?_,?_,?_,?_⟩
+  · exact congrArg (Fin.castAdd n) (appendPrivate_shared slot 0)
+  · exact appendPrivate_shared _ _
+  · intro j ne k
+    apply (Fin.castAddEmb n).injective.ne
+    induction k using Fin.addCases with
+    | left i => rw [appendPrivate_shared]; exact (Fin.castAddEmb m).injective.ne ne.symm
+    | right i => rw [appendPrivate_work]; exact (apart j i).symm
+  · intro j
+    rw [show b (j.natAdd 1) = j.natAdd (T+m) from appendPrivate_work _ _]
+    exact ⟨fun k => apart _ _,fun k => apart _ _⟩
+
+open M8.Machine.Segments SharedPlacementAlphabet in
+open M8.Machine.ArbitraryWidthHighExchangeShared (sourceWord) in
+open Cover.Fallback IntegerMultBounds.Networks.Certificates.PR589 RecursiveInterchangeLayout in
+/-- Pack a live phase record, call the child once, and restore the parent's
+digit order. Both basis passes share the payload port with the recursive call. -/
+theorem scheduledPhasePacked_host [M8.Machine.Net] {P U : Type} {T Q : ℕ}
+    (p : ℕ × ℕ) (checked : Geometry.Moves.CheckedPair p) (paid : 0 < Geometry.moveRank p.1 p.2)
+    (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T)
+    (body : P → Pr P T Q prime U) (f : P) (capacity : rowSwapBlock.states ≤ Q) :
+    let lo := min (Geometry.Dimensions.value p.1) (Geometry.Dimensions.value p.2)
+    let hi := max (Geometry.Dimensions.value p.1) (Geometry.Dimensions.value p.2)
+    ∃ (C : Matrix (Fin 8) (Fin 8) ℚ) (rev : CopyBasisPass C.adjugate) (fwd : CopyBasisPass C),
+    ∃ setup swaps : ℕ, ∀ (node : Descriptor) (i : Fin nodeChildren5.length) (w B rows : ℕ),
+    nodeChildren5[i.val] = Geometry.moveRank p.1 p.2 → node.width = 64*(w+1) →
+    node.rows = 142080*rows → node.beforeH = B*prime^(64*((w+1)*64)) →
+    let M := prime^(w+1)
+    let K := M^112*(node.beforeRows*rows*node.between*node.afterD)
+    let W := B*prime^(64*((w+1)*64))*K
+    0 < W →
+    let desc := scheduledChild prime node i
+    ∃ position : Fin (volume prime desc) ≃ Fin (M^16*W),
+    (∀ k, (position k).val = (CopyChildLayout.packActive desc k).val) ∧
+    let is := phasePackSchedule lo hi
+    let bank := ((Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)).trans ports
+    let clean := fun D : Stacks T prime => ∀ k : Fin (rowSwapBlock.tapes+35), 35 ≤ k.val → D.L (ports k) = [] ∧ D.R (ports k) = []
+    let pack := fun js => statePlacedNormalized ports capacity swapStates_pos Empty.elim (packSchedule 16 js)
+    let middle := (pack is).seq ((Prog.call f).seq (pack is.reverse))
+    let V := M^16*W
+    let view := phaseIntervalChild lo hi (w+1) W
+    let size := phaseIntervalChild_volume (phaseInterval_bounds checked paid).1.le (phaseInterval_bounds checked paid).2 (w+1) W
+    let word := fun y : Fin V → ZMod 2 => sourceWord (v := view) (fun k => y (k.cast size))
+    let caller := fun y => (⟨fun _ => 0,fun _ => word y⟩ : Tapes 1 prime)
+    let input := fun stages y => (caller y).append (basisWorkspace stages y)
+    let output := fun stages x y => (setTape (caller x) 0 (word y) 0).append (basisWorkspace stages x)
+    let A := description _ rev.good
+    let B := description _ fwd.good
+    let machine := fun stages => Placement.placed (FlatCoordinateCleanSchedule.program stages)
+      (sharedPlacement (0 : Fin 1) (segmentSource stages))
+    let basisRate := fun stages => FlatCoordinateCleanSchedule.constant stages*(1+FlatCoordinateCleanSchedule.tapeCount stages+5)
+    ∀ (a : Fin (1+FlatCoordinateCleanSchedule.tapeCount A) ↪ Fin T)
+      (b : Fin (1+FlatCoordinateCleanSchedule.tapeCount B) ↪ Fin T) (fitsA : _ ≤ Q) (fitsB : _ ≤ Q),
+    a ((0 : Fin 1).castAdd _) = bank 24 → b ((0 : Fin 1).castAdd _) = bank 24 →
+    (∀ j, ports j ≠ bank 24 → ∀ k, a k ≠ ports j) →
+    (∀ j : Fin (FlatCoordinateCleanSchedule.tapeCount B), (∀ k, a k ≠ b (j.natAdd 1)) ∧ (∀ k, ports k ≠ b (j.natAdd 1))) →
+    ∀ (u : HS T Q prime U) (S : Stacks T prime) record dest q (x : Fin V → ZMod 2) budget,
+    let stored := RecordReady (b := prime) (w := w) (d := 16) (W := W) bank M.size W.size record
+      SparseRoleCircuit.encode (fun _ => blank) dest 0 q
+    RepT (input A x) (embStk a S).L (embStk a S).R →
+    RepT (input B x) (embStk b S).L (embStk b S).R → stored x S → clean S →
+    (desc.width < node.width → ∀ (u : HS T Q prime U) D word, stored word D → clean D →
+      ∃ z F n changed, Exec body (body f) (mk u D) n (mk z F) ∧ n ≤ budget ∧ z.user = u.user ∧
+        stored changed F ∧ clean F ∧ (∀ j, (∀ i, ports i ≠ j) → F.L j = D.L j ∧ F.R j = D.R j) ∧
+        ∀ k, changed (position k) = Shared50RecursiveNodeRows.transpose (one_dvd desc.rows) (word ∘ position) k) →
+    ∃ mid y z G n, Exec body
+        ((embProg a (Empty.elim : Empty → P) (foreign (liftQ (machine A) fitsA))).seq
+          (middle.seq (embProg b (Empty.elim : Empty → P) (foreign (liftQ (machine B) fitsB)))))
+        (mk u S) n (mk z G) ∧ n ≤ budget+(basisRate A+basisRate B+setup+16+swaps*swapVolumeRate w)*V ∧
+      z.user = u.user ∧ stored y G ∧ clean G ∧ RepT (output B mid y) (embStk b G).L (embStk b G).R ∧
+      (∀ j, (∀ k, a k ≠ j) → (∀ k, ports k ≠ j) → (∀ k, b k ≠ j) → G.L j = S.L j ∧ G.R j = S.R j) ∧
+      ∀ s j, y (index (AffineFieldCoordinates.embed (AffineFieldProgram.run (selectedWord (w+1) p) s)) j) =
+        x (index (AffineFieldCoordinates.embed s) j) := by
+  intro lo hi
+  obtain ⟨setup,swaps,prepare⟩ := phasePackedCall_exec capacity p checked paid ports body f
+  obtain ⟨C,shape,rev,fwd⟩ := modular_move_profile.choose_spec.1 p checked
+  refine ⟨C,rev,fwd,setup,swaps,?_⟩
+  intro node i w B rows rank width split label M K W hW desc
+  obtain ⟨position,offset,route⟩ := prepare node i w B rows rank width split label hW
+  refine ⟨position,offset,?_⟩
+  intro is bank clean pack middle V view size word caller input output
+  intro A B' machine basisRate a b fitsA fitsB srcA srcB apart priv u S record dest q x budget stored readyA readyB start free child
+  obtain ⟨loaded,first,enter⟩ := phaseBasis_host view size _ rev.good hW (rev.legal _) x
+  obtain ⟨v,F,t,runA,timeA,userA,full,_,offA⟩ := enter a fitsA body u S readyA
+  have encoded (payload : Fin V → ZMod 2) (z : ℤ) : word payload z =
+      RadixToBinary.binaryEncoding.encode (putWord (fun _ => blank) 0 (List.ofFn (SparseRoleCircuit.encode ∘ payload)) z) := by
+    dsimp only [word]
+    rw [swap_source_word]
+    congr 2
+    exact List.ofFn_congr size _
+  have ready : stored loaded F := start.returnPayload (fun k ne => offA (bank k)
+    (apart _ (bank.injective.ne ne))) (by
+      intro z
+      have cell := full ((0 : Fin 1).castAdd _) z
+      simp only [Tapes.append,Fin.addCases_left,setTape,Function.update_self,sub_zero] at cell
+      change word loaded z = readAt blank (F.L (a _)) (F.R (a _)) z at cell
+      rw [← srcA]
+      simpa only [encoded,sub_zero] using cell)
+  have clear : clean F := by
+    intro k hk
+    have ne : ports k ≠ bank 24 := ports.injective.ne (fun eq => by have := congrArg Fin.val eq; change k.val = 24 at this; omega)
+    obtain ⟨l,r⟩ := offA _ (apart _ ne)
+    exact ⟨l.trans (free k hk).1,r.trans (free k hk).2⟩
+  obtain ⟨h,D,m,userM,timeM,exec,returned,freeM,offM⟩ := route v F record dest q loaded budget child ready clear
+  let mid := fun k => Shared50RecursiveNodeRows.transpose (v := view) (one_dvd _) (fun j => loaded (j.cast size)) (Fin.cast size.symm k)
+  have next : RepT (input B' mid) (embStk b D).L (embStk b D).R := by
+    intro k z
+    induction k using Fin.addCases with
+    | left k =>
+      have eq : k = 0 := Subsingleton.elim _ _
+      subst k
+      simpa only [input,caller,Tapes.append,Fin.addCases_left,sub_zero,embStk,Function.comp_apply,srcB,encoded]
+        using (show word mid z = readAt blank (D.L (b ((0 : Fin 1).castAdd _))) (D.R (b ((0 : Fin 1).castAdd _))) z from by
+          rw [srcB,encoded]; simpa only [sub_zero] using (returned.src z).symm)
+    | right k =>
+      obtain ⟨la,ra⟩ := offA _ (priv k).1
+      obtain ⟨lm,rm⟩ := offM _ (priv k).2
+      have cell := readyB (k.natAdd 1) z
+      simp only [input,Tapes.append,Fin.addCases_right,embStk,Function.comp_apply] at cell ⊢
+      rw [basisWorkspace_eq B' mid x,lm,rm,la,ra]
+      exact cell
+  obtain ⟨y,last,leave⟩ := phaseBasis_host view size _ fwd.good hW (fwd.legal _) mid
+  obtain ⟨z,G,n,runB,timeB,userB,done,_,offB⟩ := leave b fitsB body h D next
+  have backOff (k) (ne : ports k ≠ bank 24) : G.L (ports k) = D.L (ports k) ∧ G.R (ports k) = D.R (ports k) := by
+    apply offB
+    intro j
+    induction j using Fin.addCases with
+    | left j =>
+      have eq : j = 0 := Subsingleton.elim _ _
+      subst j
+      exact srcB ▸ ne.symm
+    | right j => exact fun h => (priv j).2 k h.symm
+  have finalRecord : stored y G := returned.returnPayload (fun k ne => backOff _ (bank.injective.ne ne)) (by
+    intro k
+    have cell := done ((0 : Fin 1).castAdd _) k
+    simp only [Tapes.append,Fin.addCases_left,setTape,Function.update_self,sub_zero] at cell
+    change word y k = readAt blank (G.L (b _)) (G.R (b _)) k at cell
+    rw [← srcB]
+    simpa only [encoded,sub_zero] using cell)
+  refine ⟨mid,y,z,G,_,Exec.seq runA (Exec.seq exec runB),?_,userB.trans (userM.trans userA),finalRecord,?_,done,?_,?_⟩
+  · change t ≤ FlatCoordinateCleanSchedule.constant A*V*(1+FlatCoordinateCleanSchedule.tapeCount A+5)+6 at timeA
+    change n ≤ FlatCoordinateCleanSchedule.constant B'*V*(1+FlatCoordinateCleanSchedule.tapeCount B'+5)+6 at timeB
+    change m ≤ budget+4+(setup+swaps*swapVolumeRate w)*V at timeM
+    have pos : 0 < V := Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) hW
+    rw [Nat.mul_right_comm] at timeA timeB
+    dsimp only [basisRate]
+    simp only [Nat.add_mul] at timeM ⊢
+    omega
+  · intro k hk
+    have ne : ports k ≠ bank 24 := ports.injective.ne (fun eq => by have := congrArg Fin.val eq; change k.val = 24 at this; omega)
+    obtain ⟨l,r⟩ := backOff k ne
+    exact ⟨l.trans (freeM k hk).1,r.trans (freeM k hk).2⟩
+  · intro j ha hm hb
+    obtain ⟨l,r⟩ := offA j ha
+    obtain ⟨l',r'⟩ := offM j hm
+    obtain ⟨l'',r''⟩ := offB j hb
+    exact ⟨l''.trans (l'.trans l),r''.trans (r'.trans r)⟩
+  · intro s j
+    unfold selectedWord selectedRaw
+    rw [shape,rationalMoveWord_run,last]
+    exact (phaseChild_interval (phaseInterval_bounds checked paid).1.le (phaseInterval_bounds checked paid).2 loaded _ j).trans (first s j)
 
 /-- Finish a nonroot scanner bank after the child queue transfer. The seven
 header sources and two work registers can stay outside the caller/scan bank. -/

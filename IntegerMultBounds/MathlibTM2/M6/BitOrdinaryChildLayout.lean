@@ -366,9 +366,9 @@ theorem stoppedParentSchedule_cell {α : Type*} {r g : ℕ} (hg tg : Fin g → �
 
 /-- Place one whole packing pass on the shared column bank. The caller can
 run its recursive program between two such passes with all other tapes live. -/
-theorem placedPackSchedule_exec [M8.Machine.Net] {P U : Type} {T d w W : ℕ}
+theorem placedPackSchedule_exec [M8.Machine.Net] {P U : Type} {T d w W capacity : ℕ} (fitsStates : rowSwapBlock.states ≤ capacity)
     (ports : Fin (N+35) ↪ Fin T) (is : List ℕ) (fits : ∀ i ∈ is, i+1 < d)
-    (body : P → Pr P T columnCapacity prime U) (v : HS T columnCapacity prime U) (S : Stacks T prime)
+    (body : P → Pr P T capacity prime U) (v : HS T capacity prime U) (S : Stacks T prime)
     (record : List (Fin (prime+4))) (dest : ℤ → Fin 4) (q : ℤ) (hW : 0 < W)
     (original : Fin ((prime^(w+1))^d*W) → ZMod 2)
     (addr : (Fin d → ZMod (prime^(w+1))) → Fin d → ZMod (prime^(w+1))) :
@@ -379,7 +379,7 @@ theorem placedPackSchedule_exec [M8.Machine.Net] {P U : Type} {T d w W : ℕ}
     let clean := fun D : Stacks T prime => ∀ k : Fin (N+35), 35 ≤ k.val → D.L (ports k) = [] ∧ D.R (ports k) = []
     ready addr S → clean S → ∃ z F n, z.user = v.user ∧
       n ≤ 1+((is.map (fun i => completeSwapTime (P := Empty) (U := U) Empty.elim d i (i+1) w W M.size W.size)).sum+1) ∧
-      Exec body (statePlacedNormalized ports swapStates_fit swapStates_pos Empty.elim (packSchedule d is))
+      Exec body (statePlacedNormalized ports fitsStates swapStates_pos Empty.elim (packSchedule d is))
         (mk v S) n (mk z F) ∧ ready (fun x => is.foldl adjacentFields (addr x)) F ∧ clean F ∧
         ∀ j, (∀ i, ports i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
   intro bank M ready clean start free
@@ -387,7 +387,7 @@ theorem placedPackSchedule_exec [M8.Machine.Net] {P U : Type} {T d w W : ℕ}
     (Nat.size_le.mp le_rfl) (Nat.size_le.mp le_rfl) hW (P := Empty) Empty.elim
     (stateLiftDown swapStates_pos (embDn ports v)) (embStk ports S) record dest q original addr
     ((columnRecordReady_project bank ..).2 ((columnRecordReady_project (bank.trans ports) ..).1 start)) free
-  obtain ⟨z,_,same,placed⟩ := statePlaced_exec_normalized ports ports.injective swapStates_fit
+  obtain ⟨z,_,same,placed⟩ := statePlaced_exec_normalized ports ports.injective fitsStates
     swapStates_pos Empty.elim (body' := body) (fun e => nomatch e) v S run
   let F := embOvr ports D.get S
   have eq : embStk ports F = D := embStk_ovr ports.injective _ _
@@ -452,7 +452,7 @@ theorem stoppedOrdinaryChild_exec [M8.Machine.Net] {P U : Type} {T : ℕ}
     · exact (List.mem_append.mp hj).elim ordinaryChildPackSchedule_inside ordinaryStoppedSchedule_inside
     · exact ordinaryChildPackSchedule_inside (List.mem_reverse.mp hj)
   obtain ⟨z,F,n,user,time,run,⟨word,layout,reads⟩,empty,frame⟩ :=
-    placedPackSchedule_exec ports is fits body v S record dest q live original _ start free
+    placedPackSchedule_exec swapStates_fit ports is fits body v S record dest q live original _ start free
   refine ⟨z,F,n,user,?_,run,⟨word,layout,?_⟩,empty,frame⟩
   · have one : (1 : ℝ) ≤ ((w+1 : ℕ) : ℝ) := by exact_mod_cast Nat.le_add_left 1 w
     have power : ((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau ≤ ((w+1 : ℕ) : ℝ) := by
@@ -524,7 +524,7 @@ theorem ordinaryIncomingPack_exec [M8.Machine.Net] {P U : Type} {T r g w W : ℕ
         M8.Machine.ArbitraryWidthHighExchangeShared.sourceWord word z) ∧ clean D ∧
       ∀ j, (∀ i, ports i ≠ j) → D.L j = S.L j ∧ D.R j = S.R j := by
   intro d M is bank clean word layout free
-  obtain ⟨u,D,n,user,cost,run,packed,clear,kept⟩ := placedPackSchedule_exec ports is
+  obtain ⟨u,D,n,user,cost,run,packed,clear,kept⟩ := placedPackSchedule_exec swapStates_fit ports is
     (fun _ => ordinaryChildPackSchedule_inside) body v S record dest q hW before id
     ⟨before,layout,fun _ _ => rfl⟩ free
   have stored := (ordinaryPackedWord_iff ..).1 packed
@@ -553,7 +553,7 @@ theorem ordinaryOutgoingUnpack_exec [M8.Machine.Net] {P U : Type} {T r g w W : �
         (mk v S) n (mk u D) ∧ ready after D ∧ clean D ∧
       ∀ j, (∀ i, ports i ≠ j) → D.L j = S.L j ∧ D.R j = S.R j := by
   intro d M is bank ready clean stored free
-  obtain ⟨u,D,n,user,time,run,⟨word,done,placed⟩,clear,frame⟩ := placedPackSchedule_exec ports is.reverse
+  obtain ⟨u,D,n,user,time,run,⟨word,done,placed⟩,clear,frame⟩ := placedPackSchedule_exec swapStates_fit ports is.reverse
     (fun _ hi => ordinaryChildPackSchedule_inside (List.mem_reverse.mp hi)) body v S record dest q hW after _
     ((ordinaryPackedWord_iff ..).2 stored) free
   simp only [is,reverse_adjacentFields] at placed
