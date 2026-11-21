@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.M6.BitOrdinaryPortReads
 public import IntegerMultBounds.MathlibTM2.M6.BitParentWeights
 public import IntegerMultBounds.MathlibTM2.M6.BitRemainderOrdinaryScan
 public import IntegerMultBounds.MathlibTM2.StackBankStock
@@ -794,22 +795,6 @@ private theorem ownerRow_ext {R N : ℕ} (word : Fin (R*N) → ZMod 2) (j : ℕ)
   rw [← pos,ext_apply]
   rfl
 
-/-- The packed row at each routed label implements the port's residual projector. -/
-def PortReads {w : ℕ} (R W parents : ℕ) (interval : ℕ × ℕ) (parent : Fin 64 → ZMod (prime^(w+1)))
-    (word output : Fin (R*((prime^(w+1))^128*W)) → ZMod 2) : Prop :=
-  let N := (prime^(w+1))^128*W
-  let M := prime^(w+1)
-  letI : NeZero M := ⟨(pow_pos Shared50ModularControl.prime_prime.pos _).ne'⟩
-  let box := M^(64*64)
-  ∀ (c : Certificates.PR589.Nine.PortCertificate), c.Checked → ∀ block < parents,
-        ∀ (g : LabelPadding.Label 64 (w+1)), IsUnit g →
-        let chart := reduce M (c.fullChart.submatrix stageAxis.symm remainderAxis)
-        let P := reduce M ((c.span interval.1 interval.2).submatrix stageAxis.symm stageAxis.symm)
-        let j := block*box+(LabelAddress.address (g*chart)).val
-        ∀ x k, ownerRow (R := R) (N := N) rfl output j
-          (index ((projectorResidual finSumFinEquiv P parent (fun i => Ring.inverse (parent i)) g).mulVec x) k) =
-            ownerRow (R := R) (N := N) rfl word j (index x k)
-
 private theorem ownerRow_fin {R N : ℕ} (word : Fin (R*N) → ZMod 2) (j : Fin R) (i : Fin N) :
     ownerRow rfl word j.val i = word (finProdFinEquiv (j,i)) := by
   simp [ownerRow,j.isLt]
@@ -1470,17 +1455,9 @@ private theorem ordinaryParent_exec [M8.Machine.Net] {common work w rows B : ℕ
     exact Nat.add_le_add_left (Nat.add_le_add_right (Nat.add_le_add_right leftBound _) _) _
   · intro j
     simpa only [Fin.cast_refl,id_eq,coord] using action j
-  · unfold PortReads
-    intro _ _ _ c checked block inside g unit chart P j
-    have pos : j < data.records := by
-      rw [count, remainderDirectoryCount layout w rows B split shape]
-      calc
-        j < block*box+box := Nat.add_lt_add_left (LabelAddress.address (g*chart)).isLt _
-        _ = (block+1)*box := (Nat.succ_mul ..).symm
-        _ ≤ parents*box := Nat.mul_le_mul_right _ inside
-    apply ownerRow_projected (R := data.records) (N := N) (W := W) rfl rfl word output c checked interval.1 interval.2 upper
-      block g unit parent (fun i => Ring.inverse (parent i))
-    simpa only [Fin.cast_refl,id_eq,coord] using action ⟨j,pos⟩
+  · apply PortReads.of_rows (W := W) (by rw [count,remainderDirectoryCount layout w rows B split shape]) upper
+    intro j
+    simpa only [Fin.cast_refl,id_eq,coord] using action j
   · have stage (i : Fin 72) (hi : 58 ≤ i.val) : F.L (bank i) = [] ∧ F.R (bank i) = [] := by
       let k : Fin (66+K) := ⟨i.val,by have := i.isLt; omega⟩
       have above : i.val < (directoryMatrixTape room).val := by
