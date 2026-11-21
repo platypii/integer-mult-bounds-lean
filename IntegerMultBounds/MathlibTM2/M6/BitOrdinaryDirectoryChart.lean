@@ -132,28 +132,28 @@ private theorem directoryChildPrefixClock_exec {T Q : ℕ} {P U : Type}
   exact ⟨z,zc.trans (cb.trans bu),by
     convert Exec.seq (Exec.seq copy mul) one using 1 <;> first | rfl | (dsimp [width]; omega)⟩
 
-def childPrefixPorts {K : ℕ} : Fin 5 ↪ Fin ((66+K)+1) :=
-  (⟨![47,45,28,58,59],by decide⟩ : Fin 5 ↪ Fin 66).trans ((Fin.castAddEmb K).trans (Fin.castAddEmb 1))
+def childPrefixPorts : Fin 5 ↪ Fin 66 := ⟨![47,45,28,58,59],by decide⟩
 
 /-- The replay queue already holds each complete child prefix. Build its
 unary width on tape 58 and carry the directory size estimate into recursion. -/
-theorem replayChildPrefix_exec {K Q w W H J : ℕ} {P U : Type}
-    (body : P → Pr P ((66+K)+1) Q prime U) (v : RecursiveInterchangeLayout.Descriptor)
+theorem replayChildPrefix_exec {T K Q w W H J : ℕ} {P U : Type}
+    (body : P → Pr P T Q prime U) (replay : Fin (66+K) ↪ Fin T) (owner : Fin T)
+    (separate : ∀ i, replay i ≠ owner) (v : RecursiveInterchangeLayout.Descriptor)
     (proj : Matrix (Fin 64) (Fin 64) ℚ) (weights : Fin 64 → ZMod (prime^(w+1)))
-    (prefixes : ℕ → List (Fin (prime+4))) (rs : List ℕ) (u : HS ((66+K)+1) Q prime U)
-    (S : Stacks ((66+K)+1) prime)
-    (entry : DirectoryReady v proj w W H J weights prefixes [] (fun _ => []) (embStk (Fin.castAdd 1) S) rs) :
-    let r := childPrefixPorts (K := K)
+    (prefixes : ℕ → List (Fin (prime+4))) (rs : List ℕ) (u : HS T Q prime U)
+    (S : Stacks T prime) (A : Stacks (66+K) prime)
+    (entry : DirectoryReady v proj w W H J weights prefixes [] (fun _ => []) A rs)
+    (publicWords : ∀ i : Fin 66, S.R (replay (i.castAdd K)) = A.R (i.castAdd K)) :
+    let r := (childPrefixPorts.trans (Fin.castAddEmb K)).trans replay
     let width := (S.R (r 0)).length
     let next := width+(w+1)*(64*64)
     let D := {S with R := Function.update S.R (r 3) (List.replicate next Node.tick)}
     ∃ z, z.user = u.user ∧ Exec body (directoryChildPrefixClock 64 r) (mk u S) (4*width+4*w+16) (mk z D) ∧
-      D.R (((46 : Fin 66).castAdd K).castAdd 1) = rs.flatMap (LabelDirectory.entry prefixes 64 (w+1)) ∧
+      D.R (replay ((46 : Fin 66).castAdd K)) = rs.flatMap (LabelDirectory.entry prefixes 64 (w+1)) ∧
       (∀ j ∈ rs, (LabelDirectory.entry prefixes 64 (w+1) j).length = (D.R (r 3)).length) ∧
       (∀ rank ≤ 42, 11*next + 2048*((w+1)*rank) ≤ 11*width + 2048*(64*(w+1))) ∧
-      ∀ {N : ℕ} (core : Pr P ((66+K)+1) Q prime U) (word : Fin N → ZMod 2)
-        (b : HS ((66+K)+1) Q prime U) (B : Stacks ((66+K)+1) prime) (k : ℕ),
-        let owner := (0 : Fin 1).natAdd (66+K)
+      ∀ {N : ℕ} (core : Pr P T Q prime U) (word : Fin N → ZMod 2)
+        (b : HS T Q prime U) (B : Stacks T prime) (k : ℕ),
         b.user = z.user → Exec body core (mk z D) k (mk b B) →
         RecordPayload owner (fun _ => blank) 0 word B →
         (∀ i, i ≠ owner → B.L i = D.L i ∧ B.R i = D.R i) →
@@ -163,30 +163,26 @@ theorem replayChildPrefix_exec {K Q w W H J : ℕ} {P U : Type}
           ∀ i, i ≠ owner → F.L i = S.L i ∧ F.R i = S.R i := by
   intro r width next D
   obtain ⟨queue,widths,free,_,_,_,unit,_,_,_,precision,_⟩ := entry
-  have tmp := (free ((59 : Fin 66).castAdd K) (by change 58 ≤ 59; decide)).2
-  have dst := (free ((58 : Fin 66).castAdd K) (by rfl)).2
-  obtain ⟨z,user,run⟩ := directoryChildPrefixClock_exec body 64 w r u S precision
-    (by change ((embStk (Fin.castAdd 1) S).R ((Fin.castAddEmb K) (28 : Fin 66))).length = 1
-        rw [unit,length_binSyms]) dst tmp
+  have tmp : S.R (r 4) = [] := (publicWords 59).trans ((free ((59 : Fin 66).castAdd K) (by change 58 ≤ 59; decide)).2)
+  have dst : S.R (r 3) = [] := (publicWords 58).trans ((free ((58 : Fin 66).castAdd K) (by rfl)).2)
+  have clock := (congrArg List.length (publicWords 45)).trans precision
+  have one := (congrArg List.length ((publicWords 28).trans unit)).trans (length_binSyms ..)
+  obtain ⟨z,user,run⟩ := directoryChildPrefixClock_exec body 64 w r u S clock one dst tmp
   refine ⟨z,user,run,?_,?_,?_,?_⟩
-  · have away : ((46 : Fin 66).castAdd K).castAdd 1 ≠ r 3 :=
-      (Fin.castAddEmb 1).injective.ne ((Fin.castAddEmb K).injective.ne (by decide : (46 : Fin 66) ≠ 58))
-    exact ((Function.update_of_ne away (List.replicate next Node.tick) S.R).trans queue).trans (List.append_nil _)
+  · have away : replay ((46 : Fin 66).castAdd K) ≠ r 3 :=
+      replay.injective.ne ((Fin.castAddEmb K).injective.ne (by decide : (46 : Fin 66) ≠ 58))
+    exact ((Function.update_of_ne away (List.replicate next Node.tick) S.R).trans ((publicWords 46).trans queue)).trans (List.append_nil _)
   · intro j hj
     rw [LabelDirectory.entry_length]
-    have len : width = (prefixes j).length := widths j hj
+    have len : width = (prefixes j).length := (congrArg List.length (publicWords 47)).trans (widths j hj)
     simp [D,next,len]
   · intro rank bound
     have smaller := Nat.mul_le_mul_left (w+1) bound
     dsimp only [next]
     omega
 
-  · intro N core word b B k owner bz coreRun payload frame
-    have apart : r 3 ≠ owner := by
-      intro eq
-      have h := congrArg Fin.val eq
-      change 58 = (66+K)+0 at h
-      omega
+  · intro N core word b B k bz coreRun payload frame
+    have apart : r 3 ≠ owner := separate _
     obtain ⟨y,yb,clear⟩ := Fast.clearR_exec body (r 3) b B
     have length : (B.R (r 3)).length = next := by rw [(frame _ apart).2]; simp [D]
     rw [length] at clear
@@ -202,6 +198,42 @@ theorem replayChildPrefix_exec {K Q w W H J : ℕ} {P U : Type}
         exact dst.symm
       · rw [Function.update_of_ne clock,(frame i hi).2]
         exact Function.update_of_ne clock ..
+
+noncomputable def withReplayPrefix {T Q : ℕ} {P U : Type} (r : Fin 5 ↪ Fin T) (core : Pr P T Q prime U) :=
+  ((directoryChildPrefixClock 64 r).seq core).seq (Fast.clearR (r 3))
+
+/-- Prepare the active child's archive width, run its body, and release the
+clock. The caller pays at most 28 steps per child payload symbol for the clock. -/
+theorem withReplayPrefix_exec {T K Q w W H J V : ℕ} {P U : Type}
+    (body : P → Pr P T Q prime U) (replay : Fin (66+K) ↪ Fin T) (owner : Fin T)
+    (separate : ∀ i, replay i ≠ owner) (v : RecursiveInterchangeLayout.Descriptor)
+    (proj : Matrix (Fin 64) (Fin 64) ℚ) (weights : Fin 64 → ZMod (prime^(w+1)))
+    (prefixes : ℕ → List (Fin (prime+4))) (rs : List ℕ) (u : HS T Q prime U)
+    (S : Stacks T prime) (A : Stacks (66+K) prime)
+    (entry : DirectoryReady v proj w W H J weights prefixes [] (fun _ => []) A rs)
+    (publicWords : ∀ i : Fin 66, S.R (replay (i.castAdd K)) = A.R (i.castAdd K))
+    (core : Pr P T Q prime U) (budget : ℕ) (input output : Fin V → ZMod 2)
+    (payload : RecordPayload owner (fun _ => blank) 0 input S) :
+    let r := (childPrefixPorts.trans (Fin.castAddEmb K)).trans replay
+    let next := (S.R (r 0)).length+(w+1)*(64*64)
+    let D := {S with R := Function.update S.R (r 3) (List.replicate next Node.tick)}
+    next ≤ V →
+    (∀ z : HS T Q prime U,
+      D.R (replay ((46 : Fin 66).castAdd K)) = rs.flatMap (LabelDirectory.entry prefixes 64 (w+1)) →
+      (∀ j ∈ rs, (LabelDirectory.entry prefixes 64 (w+1) j).length = (D.R (r 3)).length) →
+      RecordPayload owner (fun _ => blank) 0 input D →
+      ∃ b B k, b.user = z.user ∧ k ≤ budget ∧ Exec body core (mk z D) k (mk b B) ∧
+        RecordPayload owner (fun _ => blank) 0 output B ∧ ∀ i, i ≠ owner → B.L i = D.L i ∧ B.R i = D.R i) →
+    ∃ y F k, y.user = u.user ∧ k ≤ budget+28*V ∧ Exec body (withReplayPrefix r core) (mk u S) k (mk y F) ∧
+      RecordPayload owner (fun _ => blank) 0 output F ∧ ∀ i, i ≠ owner → F.L i = S.L i ∧ F.R i = S.R i := by
+  intro r next D fits run
+  obtain ⟨z,_,_,archive,widths,_,release⟩ :=
+    replayChildPrefix_exec body replay owner separate v proj weights prefixes rs u S A entry publicWords
+  have ownerOff : owner ≠ r 3 := (separate _).symm
+  obtain ⟨b,B,k,user,paid,execution,out,frame⟩ := run z archive widths (fun i => by
+    simpa only [D,Function.update_of_ne ownerOff] using payload i)
+  obtain ⟨y,F,same,complete,result,restored⟩ := release core output b B k user execution out frame
+  exact ⟨y,F,_,same,by dsimp only [next,r] at fits; omega,complete,result,restored⟩
 
 /-- Read unary dimensions on 29–31 and borrow scratch 58–63. Only the
 three binary results live beyond the scanner's bank. -/
