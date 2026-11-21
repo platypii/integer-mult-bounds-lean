@@ -1149,6 +1149,28 @@ private theorem chartedWord_retained {w B K : ℕ} {n : Fin 9} {owner : Fin 661 
   rw [dite_eq_right nonTarget,encoded,← run] at row
   exact row
 
+open Cover IntegerMultBounds.Swap.Modular in
+/-- The physical read contract of a decoded invocation on its caller's tapes. -/
+def DecodedInvocationEffect (n : Fin 9) (r : Fin 32) (d : Fin 5) (w B K : ℕ)
+    (x y : Fin 142081 → Fin ((prime^w)^16*(B*prime^(64*(w*64))*K)) → ZMod 2) : Prop :=
+  let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n r d,ownerTape_injective n r d⟩
+  (∀ g (z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B) (t : Fin 111) s,
+    let dst : Fin 661 := ⟨111+t.val,by omega⟩
+    let src : Fin 661 := ⟨t.val,by omega⟩
+    let P := translatedPortProjector (ZMod (prime^w)) (4:ZMod (prime^w))⁻¹ t
+    y (owner dst) (FlatCoordinateLayout.index (AffineFieldCoordinates.embed s)
+      (labelSpectator (g*registerChart w n dst.val) z)) =
+      chartedPhaseRead n owner x g z dst.val (M8.Exchange.exchange (1-P) s) +
+      chartedPhaseRead n owner x g z src.val s.swap) ∧
+  (∀ g (z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B) (t : Fin 111) s,
+    let P := translatedPortProjector (ZMod (prime^w)) (4:ZMod (prime^w))⁻¹ t
+    chartedPhaseRead n owner (y) g z t.val s =
+      chartedPhaseRead n owner x g z t.val (M8.Exchange.exchange P s.swap)) ∧
+  (∀ g (z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B) (h : Fin 439) s,
+    chartedPhaseRead n owner (y) g z (222+h.val) s =
+      chartedPhaseRead n owner x g z (222+h.val) s.swap) ∧
+  ∀ i, i ≠ Fin.last 142080 → (∀ j, owner j ≠ i) → y i = x i
+
 open Cover IntegerMultBounds.Swap.Modular M8.RevMachine in
 /-- The charged PR589 invocation on the caller’s charted tapes. Sources
 pass through their logical line frames, targets receive their transposed
@@ -1168,22 +1190,7 @@ theorem decodedInvocation_stage [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : F
         stage.cost ≤ bill (sectionD++sectionA) (Frames.snapshot Frames.initialRefs) +
           bill (sectionB++sectionC) (Frames.scatterFinish Frames.beforeScatter) +
           C*V + 9*engine.time (copyChild w W) hs + 2*661*(252*LeafCore.coreCost V (w*64)+1) + 222*(LeafCore.coreCost V w+7) + 15 ∧
-        (∀ x g (z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B) (t : Fin 111) s,
-          let dst : Fin 661 := ⟨111+t.val,by omega⟩
-          let src : Fin 661 := ⟨t.val,by omega⟩
-          let P := translatedPortProjector (ZMod (prime^w)) (4:ZMod (prime^w))⁻¹ t
-          stage.transform x (owner dst) (FlatCoordinateLayout.index (AffineFieldCoordinates.embed s)
-            (labelSpectator (g*registerChart w n dst.val) z)) =
-            chartedPhaseRead n owner x g z dst.val (M8.Exchange.exchange (1-P) s) +
-            chartedPhaseRead n owner x g z src.val s.swap) ∧
-        (∀ x g (z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B) (t : Fin 111) s,
-          let P := translatedPortProjector (ZMod (prime^w)) (4:ZMod (prime^w))⁻¹ t
-          chartedPhaseRead n owner (stage.transform x) g z t.val s =
-            chartedPhaseRead n owner x g z t.val (M8.Exchange.exchange P s.swap)) ∧
-        (∀ x g (z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B) (h : Fin 439) s,
-          chartedPhaseRead n owner (stage.transform x) g z (222+h.val) s =
-            chartedPhaseRead n owner x g z (222+h.val) s.swap) ∧
-        ∀ x i, i ≠ Fin.last 142080 → (∀ j, owner j ≠ i) → stage.transform x i = x i := by
+        ∀ x, DecodedInvocationEffect n r d w B K x (stage.transform x) := by
   obtain ⟨C,word⟩ := chartedInvocation_stage n r d engine
   obtain ⟨D,finish⟩ := chartedTargets_stage
   obtain ⟨E,prepare⟩ := chartedSources_stage
@@ -1202,7 +1209,7 @@ theorem decodedInvocation_stage [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : F
       have eq := congrArg Fin.val (owner.injective h)
       change 111+t.val = i.val at eq
       omega)) _
-  refine ⟨SharedBankStage.compose pre stage,?_,?_,?_,?_,?_⟩
+  refine ⟨SharedBankStage.compose pre stage,?_,?_⟩
   · change pre.cost + stage.cost + 1 ≤ _
     change mid.cost ≤ bill (sectionD++sectionA) (Frames.snapshot Frames.initialRefs) +
       bill (sectionB++sectionC) (Frames.scatterFinish Frames.beforeScatter) +
@@ -1211,7 +1218,9 @@ theorem decodedInvocation_stage [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : F
     change pre.cost = E*V+111*(LeafCore.coreCost V w+7) at preCost
     rw [preCost,price,Nat.add_mul,Nat.add_mul]
     omega
-  · intro x g z t s dst src P
+  intro x
+  refine ⟨?_,?_,?_,?_⟩
+  · intro g z t s dst src P
     have raw := target (pre.transform x) g z t s
     change stage.transform (pre.transform x) (owner dst) _ = _
     apply raw.trans
@@ -1230,13 +1239,13 @@ theorem decodedInvocation_stage [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : F
       change a.val = 111+t.val at eq
       omega)
     exact congrFun unchanged _
-  · intro x g z t s P
+  · intro g z t s P
     let i : Fin 661 := ⟨t.val,by omega⟩
     have nt : ¬ (111 ≤ i.val ∧ i.val < 222) := by change ¬ (111 ≤ t.val ∧ t.val < 222); omega
     change chartedPhaseRead n owner (stage.transform (pre.transform x)) g z i.val s = _
     rw [postRead _ _ _ i nt,chartedWord_retained (read _ g z) i nt,
       show Frames.finalRefs i.val = 1 from (Nine.source_frames t.val t.isLt).2.2,fullFrame_read,source n x g z t]
-  · intro x g z h s
+  · intro g z h s
     let i : Fin 661 := ⟨222+h.val,by omega⟩
     have nt : ¬ (111 ≤ i.val ∧ i.val < 222) := by change ¬ (111 ≤ 222+h.val ∧ 222+h.val < 222); omega
     have refs := Nine.helper_refs h.val h.isLt
@@ -1249,7 +1258,7 @@ theorem decodedInvocation_stage [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : F
       have val := congrArg Fin.val (owner.injective eq)
       change t.val = 222+h.val at val
       omega)) _
-  · intro x i hi away
+  · intro i hi away
     exact (off (pre.transform x) i (fun _ => away _)).trans
       ((keep (pre.transform x) i hi away).trans (preserve x i (fun _ => away _)))
 
@@ -2467,6 +2476,100 @@ theorem invocationTrace_agree {n : Fin 9} {w B K : ℕ}
     obtain ⟨mid,step,rest⟩ := trace
     exact ih rest (step.agree (valid k model) input)
 
+open M8.RevMachine in
+/-- The recurring part of one decoded invocation's bill, after separating
+linear-volume work. The two interchange widths stay explicit. -/
+noncomputable def decodedCallCost [M8.Machine.Net] (V w : ℕ) (price : ℕ → ℕ) :=
+  2*661*(252*LeafCore.coreCost V (w*64)+1) + 222*(LeafCore.coreCost V w+7) + 15 +
+    ((Geometry.Moves.phaseValues.filter (· != 0)).map price).sum + 9*price 7
+
+open M8.Machine in
+private theorem decodedInvocation_cost [Net] (n : Fin 9) (r : Fin 32) (d : Fin 5) (engine : CopyTranspose) :
+    ∃ D : ℕ, ∀ w B K, 0 < w → 0 < B → 0 < K →
+      let W := B*prime^(64*(w*64))*K
+      let V := (prime^w)^16*W
+      let hs := fun i => FlatCoordinateSchedule.bits (RecursiveDimensionBank.values (copyChild w W) i)
+      ∃ stage : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V)),
+        (∀ price : ℕ → ℕ, (∀ p ∈ Geometry.Moves.phaseEdges, Geometry.moveRank p.1 p.2 ≠ 0 →
+          phaseChildCost w W p ≤ price (Geometry.moveRank p.1 p.2)) →
+          engine.time (copyChild w W) hs ≤ price 7 →
+          stage.cost ≤ D*V + decodedCallCost V w price) ∧
+        ∀ x, DecodedInvocationEffect n r d w B K x (stage.transform x) := by
+  obtain ⟨C,make⟩ := decodedInvocation_stage n r d engine
+  let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n r d,ownerTape_injective n r d⟩
+  let scalar := fun gs : List RawGate => (gs.map (fun g => 77*g.sources.length+2)).sum
+  let paid := Geometry.Moves.phaseEdges.filter (fun p => Geometry.moveRank p.1 p.2 != 0)
+  let moves := (paid.map (fun p => 1303+edgeBasis owner p)).sum
+  refine ⟨scalar (sectionD++sectionA)+scalar (sectionB++sectionC)+moves+C,?_⟩
+  intro w B K hw hB hK W V hs
+  obtain ⟨stage,cost,read⟩ := make w B K hw hB hK
+  refine ⟨stage,?_,read⟩
+  intro price phaseBound copyBound
+  have hp := Shared50ModularControl.prime_prime.pos
+  have pos : 0 < V := by dsimp only [V,W]; positivity
+  let code := fun (gs : List RawGate) (current : ℕ → ℕ) =>
+    FramedCircuit.compile (fun i => selectedFrame w (current i)) (gs.map (Frames.framedGate (selectedFrame w)))
+  let left := code (sectionD++sectionA) (Frames.snapshot Frames.initialRefs)
+  let right := code (sectionB++sectionC) (Frames.scatterFinish Frames.beforeScatter)
+  let calls := fun ps : List (ℕ × ℕ) => (ps.map (phaseEdgeBudget owner w W)).sum
+  let a := Frames.edges (sectionD++sectionA) (Frames.snapshot Frames.initialRefs)
+  let b := Frames.edges (sectionB++sectionC) (Frames.scatterFinish Frames.beforeScatter)
+  have l : (left.map (scalarWork V)).sum + left.length ≤ scalar (sectionD++sectionA)*V := compiled_overhead V pos _ _ _
+  have r : (right.map (scalarWork V)).sum + right.length ≤ scalar (sectionB++sectionC)*V := compiled_overhead V pos _ _ _
+  have e := phaseEdgeBudget_sum owner w W price pos phaseBound
+  change (Geometry.Moves.phaseEdges.map (phaseEdgeBudget owner w W)).sum ≤ moves*V + _ at e
+  rw [Geometry.Moves.phaseEdges,List.map_append,List.sum_append] at e
+  change calls a + calls b ≤ _ at e
+  change stage.cost ≤ (left.map (scalarWork V)).sum + calls a + left.length +
+    ((right.map (scalarWork V)).sum + calls b + right.length) + C*V + 9*engine.time (copyChild w W) hs +
+    2*661*(252*M8.RevMachine.LeafCore.coreCost V (w*64)+1) + 222*(M8.RevMachine.LeafCore.coreCost V w+7) + 15 at cost
+  simp only [decodedCallCost,Nat.add_mul]
+  omega
+
+open M8.Machine in
+/-- All replica/class calls of a stage run in schedule order. Each
+intermediate bank is the input of the next decoded invocation. -/
+theorem decodedPiece_stage [Net] (n : Fin 9) (engine : CopyTranspose := CopyTranspose.original) :
+    ∃ D : ℕ, ∀ w B K, 0 < w → 0 < B → 0 < K →
+      let W := B*prime^(64*(w*64))*K
+      let V := (prime^w)^16*W
+      let hs := fun i => FlatCoordinateSchedule.bits (RecursiveDimensionBank.values (copyChild w W) i)
+      ∃ piece : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V)),
+        (∀ price : ℕ → ℕ, (∀ p ∈ Geometry.Moves.phaseEdges, Geometry.moveRank p.1 p.2 ≠ 0 →
+          phaseChildCost w W p ≤ price (Geometry.moveRank p.1 p.2)) →
+          engine.time (copyChild w W) hs ≤ price 7 →
+          piece.cost ≤ D*V + 160*decodedCallCost V w price) ∧
+        ∀ x, stageRuns.foldr (fun k next a => ∃ b, DecodedInvocationEffect n k.1 k.2 w B K a b ∧ next b)
+          (fun a => a = piece.transform x) x := by
+  choose coeff build using fun k : Fin 32 × Fin 5 => decodedInvocation_cost n k.1 k.2 engine
+  refine ⟨(stageRuns.map coeff).sum + stageRuns.length,?_⟩
+  intro w B K hw hB hK W V hs
+  choose stage cost effect using fun k => build k w B K hw hB hK
+  let compile := fun ks : List (Fin 32 × Fin 5) => SharedBankStage.compile
+    (phaseOwners (N := V)) (by decide : 0 < 142081) (ks.map stage)
+  refine ⟨compile stageRuns,?_,?_⟩
+  · intro price phase copy
+    have hp := Shared50ModularControl.prime_prime.pos
+    have pos : 0 < V := by dsimp only [V,W]; positivity
+    have bound (ks : List (Fin 32 × Fin 5)) : (compile ks).cost ≤
+        ((ks.map coeff).sum+ks.length)*V + ks.length*decodedCallCost V w price := by
+      induction ks with
+      | nil => simp [compile,SharedBankStage.compile_cost]
+      | cons k ks ih =>
+        have step := cost k price phase copy
+        change (stage k).cost ≤ coeff k*V + decodedCallCost V w price at step
+        change (stage k).cost + (compile ks).cost + 1 ≤ _
+        simp only [List.map_cons,List.sum_cons,List.length_cons,Nat.add_mul,Nat.one_mul] at ih ⊢
+        omega
+    exact (bound stageRuns).trans_eq (by rw [stageRuns_length])
+  · suffices trace : ∀ (ks : List (Fin 32 × Fin 5)) x, ks.foldr
+        (fun k next a => ∃ b, DecodedInvocationEffect n k.1 k.2 w B K a b ∧ next b)
+        (fun a => a = (compile ks).transform x) x from trace stageRuns
+    intro ks
+    induction ks with
+    | nil => intro x; rfl
+    | cons k ks ih => intro x; exact ⟨_,effect k x,ih ((stage k).transform x)⟩
+
 open M8.Machine in
 /-- Execute all 160 replica/class invocations of one stage piece in order.
 Each physical join is included in the linear overhead. -/
@@ -2570,6 +2673,39 @@ theorem invocationPieces_nodeCost [Net] (engine : CopyTranspose := CopyTranspose
   have sum := Finset.sum_le_sum (s := Finset.univ) (fun n _ => cost n price phaseBound copyBound)
   rw [Finset.sum_add_distrib,← Finset.sum_mul] at sum
   simp only [Finset.sum_const,Finset.card_univ,Fintype.card_fin,nsmul_eq_mul] at sum
+  rw [nodeChildren5_split_price]
+  rw [show (fun x : ℕ => decide (x ≠ 0)) = (fun x => x != 0) by funext x; cases x <;> rfl]
+  dsimp only [V,W]
+  omega
+
+open M8.Machine M8.RevMachine in
+/-- The nine decoded pieces have the selected child-price sum, plus the
+explicit routing and port charges. Remainder prices are accounted for
+separately from execution of the pieces. -/
+theorem decodedPieces_nodeCost [Net] (engine : CopyTranspose := CopyTranspose.original) :
+    ∃ D : ℕ, ∀ w B K, 0 < w → 0 < B → 0 < K →
+      let W := B*prime^(64*(w*64))*K
+      let V := (prime^w)^16*W
+      let hs := fun i => FlatCoordinateSchedule.bits (RecursiveDimensionBank.values (copyChild w W) i)
+      ∃ pieces : Fin 9 → SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V)),
+        (∀ price : ℕ → ℕ, (∀ p ∈ Geometry.Moves.phaseEdges, Geometry.moveRank p.1 p.2 ≠ 0 →
+          phaseChildCost w W p ≤ price (Geometry.moveRank p.1 p.2)) →
+          engine.time (copyChild w W) hs ≤ price 7 →
+          (∑ n, (pieces n).cost) + 160*(BitOccurrences.remainders.map price).sum ≤
+            D*V + (nodeChildren5.map price).sum +
+              1440*(2*661*(252*LeafCore.coreCost V (w*64)+1) + 222*(LeafCore.coreCost V w+7) + 15)) ∧
+        ∀ n x, stageRuns.foldr (fun k next a => ∃ b, DecodedInvocationEffect n k.1 k.2 w B K a b ∧ next b)
+          (fun a => a = (pieces n).transform x) x := by
+  classical
+  choose coeff make using fun n => decodedPiece_stage n engine
+  refine ⟨∑ n, coeff n,?_⟩
+  intro w B K hw hB hK W V hs
+  choose pieces cost trace using fun n => make n w B K hw hB hK
+  refine ⟨pieces,?_,trace⟩
+  intro price phase copy
+  have sum := Finset.sum_le_sum (s := Finset.univ) (fun n _ => cost n price phase copy)
+  rw [Finset.sum_add_distrib,← Finset.sum_mul] at sum
+  simp only [Finset.sum_const,Finset.card_univ,Fintype.card_fin,nsmul_eq_mul,decodedCallCost] at sum
   rw [nodeChildren5_split_price]
   rw [show (fun x : ℕ => decide (x ≠ 0)) = (fun x => x != 0) by funext x; cases x <;> rfl]
   dsimp only [V,W]
