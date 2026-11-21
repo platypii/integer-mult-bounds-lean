@@ -1610,6 +1610,9 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux w : ℕ} {L P U : Type}
       ((List.finRange 5).map (fun j => let i := baseBank ((j.natAdd (T+10)).castAdd stage.tapes)
         (D.R i).length)).sum = N ∧
       RepT (stage.input final) (embStk (chart.trans baseBank) D).L (embStk (chart.trans baseBank) D).R ∧
+      (∀ i, i ≠ src → let j := ownerSlots i
+        (((D.L j).length+(D.R j).length : ℕ) : ℝ) ≤ ((A.L j).length+(A.R j).length : ℕ)+
+          2*(packedChartRate src cert checked false layout.width+packedChartRate src cert checked true layout.width)*(R*N : ℕ)+24) ∧
       RepT (phaseOwners final) (embStk (fun i => baseBank (chart (stage.slots i))) D).L
         (embStk (fun i => baseBank (chart (stage.slots i))) D).R ∧
       (∀ i, i ≠ src → final i = words i) ∧ OriginalPortReads R W parents interval weights cert (words src) (final src) ∧
@@ -1637,7 +1640,7 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux w : ℕ} {L P U : Type}
         (D.L j).length ≤ growth ∧ (D.R j).length ≤ (metadata j.val).length+N+growth) ∧
     finished D ∧ PortReads R W parents interval weights routed out ∧
       ∀ j : Fin R, LabelStock.live 64 (w+1) 1 j = false → ownerRow rfl out j = ownerRow rfl routed j
-  obtain ⟨z,D,n,out,⟨projectedStock,done,reads,inactive⟩,time,run,user,ready,unusedSlot,owners⟩ :=
+  obtain ⟨z,D,n,out,⟨projectedStock,done,reads,inactive⟩,time,run,user,ready,unusedSlot,unchangedStock,owners⟩ :=
     chartOwner_scan stage src metadata words forward.restored positive body ((((normTape slot).seq (directoryRowClock clock)).seq setup).seq program) (6*chartOwnerStock stage src S+6+directoryRowClockRate*N+setupCost+budget) post capacity chartFits fits (embDn baseBank u) S input (by
       intro a F represented stock
       let A := embStk placement (ordinaryOwnerBank metadata F)
@@ -1860,10 +1863,14 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux w : ℕ} {L P U : Type}
     apply chartOwner_input stage _ (embStk chart D) _ ready _ (fun _ _ => ⟨rfl,rfl⟩)
     intro i j
     simpa [phaseOwners,updated,embStk,chart] using (owners i j).symm
-  obtain ⟨y,F,t,price,exec,finish,privateReady,final,suffixStock,frame⟩ := ownerRun_returnChart forward reverse backFits chart outer
+  obtain ⟨y,F,t,price,exec,finish,privateReady,final,returnedStock,suffixStock,frame⟩ := ownerRun_returnChart forward reverse backFits chart outer
     enter updated (ordinaryOwnerBank metadata S) D u z n run chartInput
   change Exec _ _ (mk u (ordinaryParentEntry (T := T+10) back.tapes metadata S)) _ _ at exec
   rw [entryEq] at exec
+  have widthBound : (w+1)*64 ≤ layout.width := by omega
+  have firstCost := forwardCost layout.width widthBound
+  have lastCost := reverseCost layout.width widthBound
+  change _ ≤ (((_ : ℝ)+_)*((R*N : ℕ) : ℝ))*_ at firstCost lastCost
   refine ⟨y,F,n+t,back.transform updated,?_,exec,finish.trans user,?_⟩
   · let localCost := 6*stock+directoryRowClockRate*N+setupCost+budget+91
     have actual : n+t ≤ 13*(stage.cost*(stage.tapes+5))+back.cost*(back.tapes+5)+localCost := by
@@ -1872,10 +1879,6 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux w : ℕ} {L P U : Type}
       omega
     have runtime : ((n+t : ℕ) : ℝ) ≤ 13*(stage.cost*(stage.tapes+5) : ℕ)+(back.cost*(back.tapes+5) : ℕ)+localCost := by
       exact_mod_cast actual
-    have widthBound : (w+1)*64 ≤ layout.width := by omega
-    have firstCost := forwardCost layout.width widthBound
-    have lastCost := reverseCost layout.width widthBound
-    change _ ≤ (((_ : ℝ)+_)*((R*N : ℕ) : ℝ))*_ at firstCost lastCost
     change _ ≤ ((_ : ℝ)+_)*((R*N : ℕ) : ℝ)+(localCost : ℝ)
     unfold packedChartRate
     dsimp only
@@ -1923,7 +1926,7 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux w : ℕ} {L P U : Type}
             dsimp only
             omega)
     simpa only [List.map_const',List.sum_replicate_nat,List.length_finRange] using total
-  refine ⟨privateReady,?_,?_,?_,?_,?_,final,?_,?_,?_,D,done,frame⟩
+  refine ⟨privateReady,?_,?_,?_,?_,?_,final,?_,?_,?_,?_,D,done,frame⟩
   · intro push setupPush scanPush bodyPush
     apply Nat.add_le_add_right (Nat.add_le_add ?_ suffixCost) 1
     apply le_trans _ (Nat.add_le_add_right metaBound _)
@@ -1998,6 +2001,17 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux w : ℕ} {L P U : Type}
     simp [List.finRange_succ]
     dsimp only [baseBank]
     simp only [(kept 0).2,(kept 1).2,(kept 2).2,(kept 3).2,(kept 4).2,unusedSlot.2,acc,widthReg,save,tmp,List.length_nil,Nat.zero_add,Nat.add_zero]
+  · intro i ne
+    let old := (initial.L (ownerSlots i)).length+(initial.R (ownerSlots i)).length
+    let newStock := (F.L (ownerSlots i)).length+(F.R (ownerSlots i)).length
+    have physical : newStock ≤ old+2*(stage.cost*(stage.tapes+5)+6)+2*(back.cost*(back.tapes+5)+6) :=
+      (returnedStock i).trans (Nat.add_le_add (unchangedStock i ne) (Nat.mul_le_mul_left 2 price))
+    have realStock : (newStock : ℝ) ≤ (old : ℝ)+2*((stage.cost*(stage.tapes+5) : ℕ)+6)+2*((back.cost*(back.tapes+5) : ℕ)+6) := by
+      exact_mod_cast physical
+    change (newStock : ℝ) ≤ (old : ℝ)+2*(_+_)*((R*N : ℕ) : ℝ)+24
+    unfold packedChartRate
+    dsimp only
+    linarith only [realStock,firstCost,lastCost]
   · rw [← stage.input_payload]
     exact fun i h => final (stage.slots i) h
   · intro i hi

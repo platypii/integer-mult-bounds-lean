@@ -711,32 +711,32 @@ return a different representation of the tape bank and has its own time bound. -
 theorem idleCopies_exec {T Q : ℕ} {P U α : Type} (i : Fin 9)
     (body : P → Pr P T Q prime U) (program : (Fin 32 × Fin 5) × Fin 222 → Pr P T Q prime U)
     (budget : (Fin 32 × Fin 5) × Fin 222 → ℝ)
-    (prepared : (Fin 32 × Fin 5) × Fin 222 → Stacks T prime → Prop)
+    (prepared : (Fin 32 × Fin 5) × Fin 222 → List ((Fin 32 × Fin 5) × Fin 222) → Stacks T prime → Prop)
     (ready : (Fin 142081 → α) → Stacks T prime → Prop)
     (effect : (Fin 32 × Fin 5) × Fin 222 → α → α → Prop)
-    (pass : ∀ k x S (u : HS T Q prime U), ready x S → prepared k S →
+    (pass : ∀ k past rest x S (u : HS T Q prime U), past ++ k::rest = idleCopies → ready x S → prepared k past S →
       ∃ y D z n, Exec body (program k) (mk u S) n (mk z D) ∧ (n : ℝ) ≤ budget k ∧
-        z.user = u.user ∧ ready y D ∧ (∀ a, a ≠ k → prepared a S → prepared a D) ∧
+        z.user = u.user ∧ ready y D ∧ (∀ a, a ≠ k → prepared a past S → prepared a (past++[k]) D) ∧
         effect k (x (idleTape i k)) (y (idleTape i k)) ∧
         ∀ j, j ≠ idleTape i k → y j = x j)
-    (x : Fin 142081 → α) (S : Stacks T prime) (u : HS T Q prime U) (input : ready x S) (frames : ∀ k, prepared k S) :
+    (x : Fin 142081 → α) (S : Stacks T prime) (u : HS T Q prime U) (input : ready x S) (frames : ∀ k, prepared k [] S) :
     ∃ y D z n, Exec body (Prog.seqList (idleCopies.map program)) (mk u S) n (mk z D) ∧
       (n : ℝ) ≤ (idleCopies.map budget).sum + 1 ∧ z.user = u.user ∧ ready y D ∧
       (∀ k, effect k (x (idleTape i k)) (y (idleTape i k))) ∧
       ∀ j, (∀ k, j ≠ idleTape i k) → y j = x j := by
-  have run (ks : List ((Fin 32 × Fin 5) × Fin 222)) (distinct : ks.Nodup)
-      (x : Fin 142081 → α) (S : Stacks T prime) (u : HS T Q prime U) (input : ready x S) (frames : ∀ k ∈ ks, prepared k S) :
+  have run (past ks : List ((Fin 32 × Fin 5) × Fin 222)) (distinct : ks.Nodup) (order : past++ks = idleCopies)
+      (x : Fin 142081 → α) (S : Stacks T prime) (u : HS T Q prime U) (input : ready x S) (frames : ∀ k ∈ ks, prepared k past S) :
       ∃ y D z n, Exec body (Prog.seqList (ks.map program)) (mk u S) n (mk z D) ∧
         (n : ℝ) ≤ (ks.map budget).sum + 1 ∧ z.user = u.user ∧ ready y D ∧
         (∀ k ∈ ks, effect k (x (idleTape i k)) (y (idleTape i k))) ∧
         ∀ j, (∀ k ∈ ks, j ≠ idleTape i k) → y j = x j := by
-    induction ks generalizing x S u with
+    induction ks generalizing past x S u with
     | nil =>
       exact ⟨x,S,u,1,Exec.act .done _,by simp,rfl,input,by simp,fun _ _ => rfl⟩
     | cons k ks ih =>
       obtain ⟨fresh,tail⟩ := List.nodup_cons.mp distinct
-      obtain ⟨v,B,t,m,firstRun,paid,keep,next,preserve,acted,off⟩ := pass k x S u input (frames k List.mem_cons_self)
-      obtain ⟨y,D,z,n,rest,bill,user,final,acts,kept⟩ := ih tail v B t next
+      obtain ⟨v,B,t,m,firstRun,paid,keep,next,preserve,acted,off⟩ := pass k past ks x S u order input (frames k List.mem_cons_self)
+      obtain ⟨y,D,z,n,rest,bill,user,final,acts,kept⟩ := ih (past++[k]) tail (by simpa using order) v B t next
         (fun a ha => preserve a (fun h => fresh (h ▸ ha)) (frames a (List.mem_cons_of_mem _ ha)))
       refine ⟨y,D,z,m+n,Exec.seq firstRun rest,?_,user.trans keep,final,?_,?_⟩
       · simp only [List.map_cons,List.sum_cons,Nat.cast_add]
@@ -750,8 +750,8 @@ theorem idleCopies_exec {T Q : ℕ} {P U α : Type} (i : Fin 9)
       · intro j outside
         exact (kept j (fun a ha => outside a (List.mem_cons_of_mem _ ha))).trans
           (off j (outside k List.mem_cons_self))
-  obtain ⟨y,D,z,n,exec,paid,user,final,acts,kept⟩ := run idleCopies
-    (stageRuns_nodup.product (List.nodup_finRange _)) x S u input (fun k _ => frames k)
+  obtain ⟨y,D,z,n,exec,paid,user,final,acts,kept⟩ := run [] idleCopies
+    (stageRuns_nodup.product (List.nodup_finRange _)) rfl x S u input (fun k _ => frames k)
   refine ⟨y,D,z,n,exec,paid,user,final,fun k => acts k ?_,fun j h => kept j (fun a _ => h a)⟩
   exact List.mem_flatMap.mpr ⟨k.1,mem_stageRuns _,List.mem_map.mpr ⟨k.2,List.mem_finRange _,rfl⟩⟩
 
@@ -793,15 +793,15 @@ theorem ordinaryIdle_exec {w R W parents T Q : ℕ} {P U : Type} (i : Fin 9)
     (count : parents*(prime^(w+1))^(64*64) = R)
     (body : P → Pr P T Q prime U) (program : (Fin 32 × Fin 5) × Fin 222 → Pr P T Q prime U)
     (budget : (Fin 32 × Fin 5) × Fin 222 → ℝ)
-    (prepared : (Fin 32 × Fin 5) × Fin 222 → Stacks T prime → Prop)
+    (prepared : (Fin 32 × Fin 5) × Fin 222 → List ((Fin 32 × Fin 5) × Fin 222) → Stacks T prime → Prop)
     (ready : (Fin 142081 → Fin (R*((prime^(w+1))^128*W)) → ZMod 2) → Stacks T prime → Prop)
-    (pass : ∀ k x S (u : HS T Q prime U), ready x S → prepared k S →
+    (pass : ∀ k past rest x S (u : HS T Q prime U), past ++ k::rest = idleCopies → ready x S → prepared k past S →
       ∃ y D z n, Exec body (program k) (mk u S) n (mk z D) ∧ (n : ℝ) ≤ budget k ∧
-        z.user = u.user ∧ ready y D ∧ (∀ a, a ≠ k → prepared a S → prepared a D) ∧
+        z.user = u.user ∧ ready y D ∧ (∀ a, a ≠ k → prepared a past S → prepared a (past++[k]) D) ∧
         OriginalPortReads R W parents (idleInterval i k.2) parent
           (port (idleRole i k).port.val) (x (idleTape i k)) (y (idleTape i k)) ∧
         ∀ j, j ≠ idleTape i k → y j = x j)
-    (x S u) (input : ready x S) (frames : ∀ k, prepared k S) :
+    (x S u) (input : ready x S) (frames : ∀ k, prepared k [] S) :
     ∃ y D z n, Exec body (Prog.seqList (idleCopies.map program)) (mk u S) n (mk z D) ∧
       (n : ℝ) ≤ (idleCopies.map budget).sum + 1 ∧ z.user = u.user ∧ ready y D ∧
       (∀ j, (∀ k, j ≠ idleTape i k) → y j = x j) ∧
@@ -834,25 +834,31 @@ def PlacedIdleExecution {w R W parents jobs : ℕ} {P U : Type} (i : Fin 9)
     (slots : ∀ j, Fin 142081 ↪ Fin (width j))
     (body : ∀ j, P → Pr P (width j) (states j) prime U)
     (program : ∀ j, Pr P (width j) (states j) prime U)
-    (budget : Fin jobs → ℝ) (entry : ∀ j, Stacks (width j) prime)
+    (budget growth : Fin jobs → ℝ) (entry : ∀ j, Stacks (width j) prime)
     (shared : Stacks 142081 prime) : Prop :=
     let N := R*((prime^(w+1))^128*W)
     let privateReady := fun j (S : Stacks (width j) prime) =>
       ∀ a, (∀ l, slots j l ≠ a) → S.L a = (entry j).L a ∧ S.R a = (entry j).R a
+    let stock := fun (j : Fin jobs) (S : Stacks (width j) prime) l =>
+      ((S.L (slots j l)).length+(S.R (slots j l)).length : ℕ)
     (∀ j (x : Fin 142081 → Fin N → ZMod 2) (S : Stacks (width j) prime) (a : HS _ _ prime U),
       RepT (phaseOwners x) (embStk (slots j) S).L (embStk (slots j) S).R → privateReady j S →
-      ∃ y D z n, Exec (body j) (program j) (mk a S) n (mk z D) ∧ (n : ℝ) ≤ budget j ∧
+      ∃ y D z n, Exec (body j) (program j) (mk a S) n (mk z D) ∧ (n : ℝ) ≤ budget j+6*(stock j S (idleTape i (copy j)) : ℝ) ∧
         z.user = a.user ∧ RepT (phaseOwners y) (embStk (slots j) D).L (embStk (slots j) D).R ∧
         let k := copy j
+        (∀ l, l ≠ idleTape i k → (stock j D l : ℝ) ≤ (stock j S l : ℝ)+growth j) ∧
         OriginalPortReads R W parents (idleInterval i k.2) parent (port (idleRole i k).port.val)
           (x (idleTape i k)) (y (idleTape i k)) ∧ ∀ l, l ≠ idleTape i k → y l = x l) →
     ∀ (x : Fin 142081 → Fin N → ZMod 2), RepT (phaseOwners x) shared.L shared.R →
     let start := idlePassStacks width slots shared entry
     let localPass := fun k => let j := index k
       statePlacedNormalized (idlePassBank width j (slots j)) (idlePass_fits states j) (positive j) (Prod.mk j) (program j)
+    let charge := fun k => let l := idleTape i k
+      let earlier := (idleCopies.take (idleCopies.idxOf k)).map (fun a => growth (index a))
+      1+budget (index k)+6*((((shared.L l).length+(shared.R l).length : ℕ) : ℝ)+earlier.sum)
     ∀ u, ∃ y D z n, Exec (idlePassBody width states positive slots body)
       (Prog.seqList (idleCopies.map localPass)) (mk u start) n (mk z D) ∧
-      (n : ℝ) ≤ (idleCopies.map (fun k => 1+budget (index k))).sum+1 ∧ z.user = u.user ∧
+      (n : ℝ) ≤ (idleCopies.map charge).sum+1 ∧ z.user = u.user ∧
       RepT (phaseOwners y) (fun l => D.L (l.castAdd _)) (fun l => D.R (l.castAdd _)) ∧
       (∀ l, (∀ k, l ≠ idleTape i k) → y l = x l) ∧
       ∀ block g, IsUnit g → ∀ spectator, let address := ordinaryRoleAddress parent block g count spectator
@@ -867,43 +873,72 @@ private theorem placedIdleExecution_of_passes {w R W parents jobs : ℕ} {P U : 
     (slots : ∀ j, Fin 142081 ↪ Fin (width j))
     (body : ∀ j, P → Pr P (width j) (states j) prime U)
     (program : ∀ j, Pr P (width j) (states j) prime U)
-    (budget : Fin jobs → ℝ) (entry : ∀ j, Stacks (width j) prime)
+    (budget growth : Fin jobs → ℝ) (entry : ∀ j, Stacks (width j) prime)
     (shared : Stacks 142081 prime) (common : ∀ j, embStk (slots j) (entry j) = shared) :
-    PlacedIdleExecution (W := W) i parent count copy index width states positive slots body program budget entry shared := by
+    PlacedIdleExecution (W := W) i parent count copy index width states positive slots body program budget growth entry shared := by
   unfold PlacedIdleExecution
-  intro N privateReady pass x represented start localPass u
+  intro N privateReady stock pass x represented start localPass charge u
   let bank := fun j => idlePassBank width j (slots j)
   let ready := fun (x : Fin 142081 → Fin N → ZMod 2) (S : Stacks _ prime) =>
     RepT (phaseOwners x) (fun l => S.L (l.castAdd (Fintype.card (Σ j, Fin (width j)))))
       (fun l => S.R (l.castAdd _))
-  let prepared := fun k S => privateReady (index k) (embStk (bank (index k)) S)
+  let observed := fun (S : Stacks (142081+Fintype.card (Σ j, Fin (width j))) prime) (l : Fin 142081) =>
+    (S.L (l.castAdd _)).length+(S.R (l.castAdd _)).length
+  let prepared := fun k (past : List ((Fin 32 × Fin 5) × Fin 222)) S => privateReady (index k) (embStk (bank (index k)) S) ∧
+    (observed S (idleTape i k) : ℝ) ≤ (((shared.L (idleTape i k)).length+(shared.R (idleTape i k)).length : ℕ) : ℝ)+
+      (past.map (fun a => growth (index a))).sum
   refine ordinaryIdle_exec i parent units count _ localPass _ prepared ready ?_ x start u ?_ ?_
-  · intro k words S a rep fresh
+  · intro k past rest words S a order rep fresh
     let j := index k
-    obtain ⟨y,D,z,n,run,time,user,output,act,kept⟩ := pass j words (embStk (bank j) S) _
-      (by simpa [ready,embStk,bank,Function.comp_def,idlePassBank_owner] using rep) fresh
+    obtain ⟨y,D,z,n,run,time,user,output,grows,act,kept⟩ := pass j words (embStk (bank j) S) _
+      (by simpa [ready,embStk,bank,Function.comp_def,idlePassBank_owner] using rep) fresh.1
     obtain ⟨v,F,lifted,same,view,off⟩ := idlePassBank_exec width states j positive slots body (program j) a S z D n run
-    refine ⟨y,F,v,1+n,lifted,by simpa only [Nat.cast_add,Nat.cast_one] using add_le_add_right time 1,same.trans user,?_,?_,?_,?_⟩
+    have oldStock (l) : stock j (embStk (bank j) S) l = observed S l := by
+      simp [stock,observed,embStk,bank,Function.comp_def,idlePassBank_owner]
+    have newStock (l) : stock j D l = observed F l := by
+      rw [← view]
+      simp [stock,observed,embStk,Function.comp_def,idlePassBank_owner]
+    refine ⟨y,F,v,1+n,lifted,?_,same.trans user,?_,?_,?_,?_⟩
+    · have distinct : (past++k::rest).Nodup := order ▸ stageRuns_nodup.product (List.nodup_finRange _)
+      have absent : k ∉ past := fun h => (List.disjoint_of_nodup_append distinct) h List.mem_cons_self
+      have pos : idleCopies.idxOf k = past.length := by simp [← order,List.idxOf_append,absent]
+      have earlier : idleCopies.take (idleCopies.idxOf k) = past := by rw [pos,← order]; simp
+      have prior := fresh.2
+      change (observed S (idleTape i k) : ℝ) ≤ _ at prior
+      rw [oldStock,selected] at time
+      dsimp only [charge]
+      rw [earlier,Nat.cast_add,Nat.cast_one]
+      change (n : ℝ) ≤ budget (index k)+6*(observed S (idleTape i k) : ℝ) at time
+      linarith
     · rw [← view] at output
       simpa [ready,embStk,Function.comp_def,idlePassBank_owner] using output
-    · intro k' ne old l outside
-      have diff : index k' ≠ j := fun eq => ne (by
-        rw [← selected k',← selected k]
-        exact congrArg (fun h : Fin jobs => copy h) eq)
-      have loc : bank (index k') l = Fin.natAdd 142081 (Fallback.Record.exchangeScratch width (index k') l) := by
-        unfold bank idlePassBank
-        rw [Function.Embedding.trans_apply,returnChartBank_private _ _ _ outside,Fallback.Record.exchangeBank_private]
-      obtain ⟨left,right⟩ := off _ diff l
-      obtain ⟨priorL,priorR⟩ := old l outside
-      change F.L (bank _ l) = _ ∧ F.R (bank _ l) = _
-      change S.L (bank _ l) = _ at priorL
-      change S.R (bank _ l) = _ at priorR
-      rw [loc] at priorL priorR ⊢
-      exact ⟨left.trans priorL,right.trans priorR⟩
+    · intro k' ne old
+      refine ⟨?_,?_⟩
+      · intro l outside
+        have diff : index k' ≠ j := fun eq => ne (by
+          rw [← selected k',← selected k]
+          exact congrArg (fun h : Fin jobs => copy h) eq)
+        have loc : bank (index k') l = Fin.natAdd 142081 (Fallback.Record.exchangeScratch width (index k') l) := by
+          unfold bank idlePassBank
+          rw [Function.Embedding.trans_apply,returnChartBank_private _ _ _ outside,Fallback.Record.exchangeBank_private]
+        obtain ⟨left,right⟩ := off _ diff l
+        obtain ⟨priorL,priorR⟩ := old.1 l outside
+        change F.L (bank _ l) = _ ∧ F.R (bank _ l) = _
+        change S.L (bank _ l) = _ at priorL
+        change S.R (bank _ l) = _ at priorR
+        rw [loc] at priorL priorR ⊢
+        exact ⟨left.trans priorL,right.trans priorR⟩
+      · have changeStock := grows (idleTape i k') (by rw [selected]; exact (idleTape_injective i).ne ne)
+        rw [oldStock,newStock] at changeStock
+        have before := old.2
+        change (observed F (idleTape i k') : ℝ) ≤ _ + ((past++[k]).map _).sum
+        simp only [List.map_append,List.sum_append,List.map_cons,List.map_nil,List.sum_cons,List.sum_nil,add_zero]
+        exact changeStock.trans (by simpa only [add_assoc] using add_le_add_left before (growth j))
     · simpa only [j,selected] using act
     · simpa only [j,selected] using kept
   · simpa [ready,start,idlePassStacks] using represented
   · intro k
+    refine ⟨?_,by simp [observed,start,idlePassStacks]⟩
     change privateReady _ (embStk (bank _) start)
     rw [show embStk (bank (index k)) start = entry _ from idlePassStacks_view width slots shared entry _ (common _)]
     exact fun _ _ => ⟨rfl,rfl⟩
@@ -917,11 +952,11 @@ theorem ordinaryIdle_placed_exec {w R W parents : ℕ} {P U : Type} (i : Fin 9)
     (slots : ∀ j, Fin 142081 ↪ Fin (width j))
     (body : ∀ j, P → Pr P (width j) (states j) prime U)
     (program : ∀ j, Pr P (width j) (states j) prime U)
-    (budget : Fin idleCopies.length → ℝ) (entry : ∀ j, Stacks (width j) prime)
+    (budget growth : Fin idleCopies.length → ℝ) (entry : ∀ j, Stacks (width j) prime)
     (shared : Stacks 142081 prime) (common : ∀ j, embStk (slots j) (entry j) = shared) :
-    PlacedIdleExecution (W := W) i parent count (fun j => idleCopies[j.val]) idleCopyIndex width states positive slots body program budget entry shared :=
+    PlacedIdleExecution (W := W) i parent count (fun j => idleCopies[j.val]) idleCopyIndex width states positive slots body program budget growth entry shared :=
   placedIdleExecution_of_passes i parent units count _ idleCopyIndex idleCopyIndex_get width states positive
-    slots body program budget entry shared common
+    slots body program budget growth entry shared common
 
 open Fallback in
 /-- Choose the scheduled child branch and correct the returned columns with the caller's pivots. -/
