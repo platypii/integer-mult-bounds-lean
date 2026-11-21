@@ -471,4 +471,62 @@ theorem preparedCorrection_exec [M8.Machine.Net] {T w W r : ℕ} {P U : Type}
       simpa [G,D,Function.update_of_ne ne,embStk] using lastWord
 
 
+/-- Apply the parent-radix correction after either ordinary dispatch branch.
+The saved caller frame supplies the pivot archives and writer scratch. -/
+theorem dispatchedCorrection_exec [M8.Machine.Net] {T w W r m : ℕ} {P U : Type}
+    (bank : Fin 64 ↪ Fin T) (work : Fin ((rowSwapBlock.tapes+35)+1) ↪ Fin T)
+    (apart : ∀ i j, work i ≠ bank j) (dim : m = 64) (fits : r ≤ m)
+    (pivot : Fin r → (ZMod (prime^(w+1)))ˣ) (H J : ℕ)
+    (hm : prime^(w+1) < 2^H) (hw : W < 2^J) (hW : 0 < W)
+    (body : P → Pr P T columnCapacity prime U) (u : HS T columnCapacity prime U) (S : Stacks T prime)
+    (dispatch : Pr P T columnCapacity prime U) (v : HS T columnCapacity prime U) (D : Stacks T prime) (steps : ℕ)
+    (tail : List (Fin (prime+4))) (dest : ℤ → Fin 4) (q : ℤ)
+    (empty : ∀ z, q ≤ z → z < q+((prime^(w+1))^(m+m)*W : ℕ) → dest z = blank)
+    (original : Fin ((prime^(w+1))^(m+m)*W) → ZMod 2)
+    (input : (Fin (m+m) → ZMod (prime^(w+1))) → IntegerMultBounds.Swap.Shear.State (Fin m) (ZMod (prime^(w+1)))) :
+    let ports := correctionColumnPlacement bank work apart
+    let weight := fun i : Fin m => if h : i.val < r then pivot ⟨i.val,h⟩ else 1
+    let emit := fun i j => let slot := correctionSlot r i j
+                           readMatrixWord slot.2.val ((callerCorrectionPorts slot.1).trans bank)
+    let write := LabelTraversal.sequence (fun i => LabelTraversal.sequence (emit i) (List.finRange 128)) (List.finRange 128)
+    let prep := (bzero (bank 2) (bank 58) (bank 59)).seq (write.seq (bclear (bank 58)))
+    let col := columnBank.trans ports
+    let ready := fun record y D => ColumnRecordReady col H J record SparseRoleCircuit.encode (fun _ => blank) dest 0 q original y D
+    let plain := fun x => Weighted.child r (fun _ => 1) (fun _ => 1) (input x)
+    let corrected := fun x => Weighted.child r (fun i => (weight i : ZMod (prime^(w+1))))
+      (fun i => ((weight i)⁻¹ : (ZMod (prime^(w+1)))ˣ)) (input x)
+    let scratch := fun D : Stacks T prime => ∀ j : Fin (rowSwapBlock.tapes+35), 35 ≤ j.val →
+      D.L (ports (columnPorts j)) = [] ∧ D.R (ports (columnPorts j)) = []
+    S.R (bank 55) = (List.ofFn fun i => binSyms H (pivot i : ZMod (prime^(w+1))).val).flatten →
+    S.R (bank 56) = (List.ofFn fun i => binSyms H (pivot i).inv.val).flatten →
+    (∀ k ∈ ([58,59,61,62,63] : List (Fin 64)), S.R (bank k) = []) →
+    v.user = u.user → Exec body dispatch (mk u S) steps (mk v D) →
+    (∀ j, (∀ i, ports (columnPorts i) ≠ j) → D.L j = S.L j ∧ D.R j = S.R j) →
+    ready tail (fun x (j : Fin (m+m)) => Fin.addCases (plain x).1 (plain x).2 j) D → scratch D →
+    ∃ z F n, z.user = u.user ∧
+      n ≤ steps + (4*H+4+(128*(128*(8*(64*H)+14*H+22)+1)+1+(2*H+2)) +
+        (1+(((List.finRange 127).map (fun i => pairScalingTime U i.succ 0 i.succ w W H J)).sum+1)) + (128*128*(4*H+4)+1)) ∧
+      Exec body (dispatch.seq ((prep.seq (placedDiagonalPairs ports 127)).seq (dropWords (col 2) (col 34) (col 0) (128*128)))) (mk u S) n (mk z F) ∧
+      ready tail (fun x (j : Fin (m+m)) => Fin.addCases (corrected x).1 (corrected x).2 j) F ∧
+      scratch F ∧ F.R (ports (Fin.last _)) = S.R (ports (Fin.last _)) ∧ (∀ j : Fin 64, (∀ k, correctionCallerSlots k ≠ j) →
+        F.L (bank j) = S.L (bank j) ∧ F.R (bank j) = S.R (bank j)) ∧ ∀ j, (∀ i, ports i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  subst m
+  intro ports weight emit write prep col ready plain corrected scratch pos inv free user run saved placed clean
+  have caller (j : Fin 64) (off : ∀ k, correctionCallerSlots k ≠ j) :=
+    saved (bank j) (fun i => correctionColumnPlacement_off bank work apart j off (columnPorts i))
+  have available : ∀ j ∈ ([58,59,61,62,63] : List (Fin 64)), D.R (bank j) = [] := by
+    intro j hj
+    have disjoint : ∀ j ∈ ([58,59,61,62,63] : List (Fin 64)), ∀ k, correctionCallerSlots k ≠ j := by decide
+    exact (caller j (disjoint j hj)).2.trans (free j hj)
+  obtain ⟨z,F,n,same,cost,correct,done,clear,lastWord,callerFrame,frame⟩ :=
+    preparedCorrection_exec bank work apart fits pivot H J hm hw hW body v D tail dest q empty original input
+      ((caller 55 (by decide)).2.trans pos) ((caller 56 (by decide)).2.trans inv) available placed clean
+  refine ⟨z,F,steps+n,same.trans user,Nat.add_le_add_left cost steps,Exec.seq run correct,done,clear,
+    lastWord.trans (saved _ (fun i => ports.injective.ne (Fin.castSucc_ne_last i))).2,?_,?_⟩
+  · intro j off
+    exact ⟨(callerFrame j off).1.trans (caller j off).1,(callerFrame j off).2.trans (caller j off).2⟩
+  · intro j off
+    have kept := saved j (fun i => off (columnPorts i))
+    exact ⟨(frame j off).1.trans kept.1,(frame j off).2.trans kept.2⟩
+
 end IntegerMultBounds.MathlibTM2.M6.BitNode
