@@ -206,4 +206,177 @@ theorem scheduledStoppedDirectory_exec [M8.Machine.Net] {P U : Type}
   exact (time.trans bound).trans_eq (by rw [show volume prime batch = volume prime scheduled from shape.volume,
     show batch.width = scheduled.width from shape.width])
 
+theorem nine_le_leaf [M8.Machine.Net] : 9 ≤ LeafCore.small := by
+  simp only [LeafCore.small, M8.Machine.ArbitraryWidthOriginalZeroBranch.count,
+    M8.Machine.ArbitraryWidthOriginalZeroBranch.highCount]
+  omega
+
+noncomputable def copyDirectoryHeaders {T n Q : ℕ} {P U : Type} (room : 9 ≤ T) (src : Fin 6 → Fin n) :
+    Pr P (n+T) Q prime U :=
+  let priv := (Fin.castLEEmb room).trans (Fin.natAddEmb n)
+  Record.copyLeafHeaders (fun i => (src i).castAdd T)
+    ((Fin.castAddEmb (n := 6) 3).trans priv) (priv 7) (priv 8) (List.finRange 6)
+
+/-- Copy the caller's six batch words into the stopped machine. Only its
+payload is shared, so the archived headers can be reused after the call. -/
+theorem directoryLeafHeaders_exec [M8.Machine.Net] {n Q : ℕ} {P U : Type}
+    (body : P → Pr P (n+LeafCore.small) Q prime U) (src : Fin 6 → Fin n) (port : Fin n)
+    (batch : Descriptor) (word : Fin (volume prime batch) → ZMod 2)
+    (u : HS (n+LeafCore.small) Q prime U) (S : Stacks (n+LeafCore.small) prime) :
+    let source := fun i => (src i).castAdd LeafCore.small
+    let slot := Fin.castLEEmb LeafCore.seven_le
+    let owner := slot (Fin.last 6)
+    let bank := Record.payloadBank port owner
+    (∀ i, S.R (source i) = (Routines.hdr batch i).map bitSymbol) →
+    RecordPayload (port.castAdd LeafCore.small) (fun _ => blank) 0 word S →
+    (∀ j : Fin LeafCore.small, S.L (j.natAdd n) = [] ∧ S.R (j.natAdd n) = []) →
+    ∃ z F, z.user = u.user ∧ Exec body
+      (copyDirectoryHeaders nine_le_leaf src)
+      (mk u S) (((List.finRange 6).map (fun i => 6*(S.R (source i)).length+6)).sum+1) (mk z F) ∧
+      F.L = S.L ∧ (∀ j : Fin n, F.R (j.castAdd LeafCore.small) = S.R (j.castAdd LeafCore.small)) ∧
+      F.R (owner.natAdd n) = [] ∧
+      (∀ j : Fin 6, (embStk bank F).L (slot j.castSucc) = [] ∧
+        (embStk bank F).R (slot j.castSucc) = (Routines.hdr batch j).map bitSymbol) ∧
+      RecordPayload owner (fun _ => blank) 0 word (embStk bank F) ∧
+      ∀ j : Fin LeafCore.small, 7 ≤ j.val → (embStk bank F).L j = [] ∧ (embStk bank F).R j = [] := by
+  intro source slot owner bank words payload free
+  let host := Fin.castLEEmb nine_le_leaf
+  let targets := Fin.castAddEmb (n := 6) 3
+  have distinct : ∀ i, [targets i,(7 : Fin 9),8].Nodup := by decide
+  obtain ⟨z,F,user,run,left,keep,loaded,off⟩ := Record.loadPrivateHeaders_exec
+    (Function.Embedding.refl (Fin n)) host src targets 7 8 distinct body u S free
+  refine ⟨z,F,user,run,left,keep,?_,?_,?_,?_⟩
+  · apply off
+    intro i eq
+    have h := congrArg Fin.val eq
+    change i.val = 6 at h
+    omega
+  · intro j
+    have ne : slot j.castSucc ≠ owner := slot.injective.ne (Fin.castSucc_ne_last j)
+    change F.L (bank (slot j.castSucc)) = [] ∧ F.R (bank (slot j.castSucc)) = _
+    rw [Record.payloadBank_private _ _ _ ne,left]
+    exact ⟨(free _).1,(loaded j).trans (words j)⟩
+  · intro k
+    change readAt _ (F.L (bank owner)) (F.R (bank owner)) _ = _
+    rw [Record.payloadBank_shared,left,keep]
+    exact payload k
+  · intro j high
+    have ne : j ≠ owner := by intro eq; have := congrArg Fin.val eq; change j.val = 6 at this; omega
+    change F.L (bank j) = [] ∧ F.R (bank j) = []
+    rw [Record.payloadBank_private _ _ _ ne,left]
+    refine ⟨(free _).1,off j (fun i eq => ?_)⟩
+    have h := congrArg Fin.val eq
+    change i.val = j.val at h
+    omega
+
+noncomputable def hostedStoppedDirectory [M8.Machine.Net] {n Q : ℕ} {P U : Type} (capacity : columnCapacity ≤ Q)
+    (src : Fin 6 → Fin n) (port : Fin n) : Pr P (n+LeafCore.small) Q prime U :=
+  let slot := Fin.castLEEmb LeafCore.seven_le
+  let owner := slot (Fin.last 6)
+  let fields := (List.finRange 6).map ((Fin.castAddEmb (n := 6) 1).trans slot)
+  let work := (List.finRange LeafCore.small).filter (· ≠ owner)
+  let leaf : Pr Empty LeafCore.small columnCapacity prime U :=
+    ((Prog.act (pushMarkers fields)).seq (foreign (liftQ LeafCore.stage1 directoryLeafFits))).seq (clearWorkTapes work)
+  Prog.seq (copyDirectoryHeaders nine_le_leaf src)
+    (statePlacedNormalized (Record.payloadBank port owner) capacity columnCapacity_pos Empty.elim leaf)
+
+private theorem headerSteps_add {copy k : ℕ} {price : ℝ} (paid : (k : ℝ) ≤ price) :
+    ((copy+(1+k) : ℕ) : ℝ) ≤ ((copy+1 : ℕ) : ℝ)+price := by
+  push_cast
+  linarith
+
+private theorem payloadBank_output {n T N : ℕ} (port : Fin n) (owner : Fin T)
+    (word : Fin N → ZMod 2) (F : Stacks (n+T) prime) (B : Stacks T prime)
+    (onBank : embStk (Record.payloadBank port owner) F = B)
+    (out : RecordPayload owner (fun _ => blank) 0 word B) :
+    RecordPayload (port.castAdd T) (fun _ => blank) 0 word F := by
+  subst B
+  intro t
+  have hit := out t
+  simpa only [embStk,Function.comp_apply,Record.payloadBank_shared] using hit
+
+open IntegerMultBounds.Networks.Certificates.PR589.Nine RecursiveInterchangeLayout in
+/-- Execute a stopped scheduled call directly from its six caller header words.
+The caller keeps its other stacks and the entire private suffix is reusable. -/
+theorem hostedStoppedDirectory_exec [M8.Machine.Net] {n Q : ℕ} {P U : Type} (capacity : columnCapacity ≤ Q)
+    (body : P → Pr P (n+LeafCore.small) Q prime U) (src : Fin 6 → Fin n) (port : Fin n)
+    (node : Descriptor) (i : Fin nodeChildren5.length) (w : ℕ) (aligned : node.width = 64*(w+1))
+    (rows : 142080 ∣ node.rows) :
+    let r := nodeChildren5[i.val]
+    let batch := ordinaryDirectoryChild (role node 142080) r (64-r) w
+    let scheduled := scheduledChild prime node i
+    let e := (scheduledDirectoryCoordinates node i w aligned rows).choose
+    let source := fun i => (src i).castAdd LeafCore.small
+    ∀ (word : Fin (volume prime scheduled) → ZMod 2) (u : HS (n+LeafCore.small) Q prime U)
+      (S : Stacks (n+LeafCore.small) prime), 0 < volume prime node →
+      (∀ j, S.R (source j) = (Routines.hdr batch j).map bitSymbol) →
+      RecordPayload (port.castAdd LeafCore.small) (fun _ => blank) 0 (word ∘ e) S →
+      (∀ j : Fin LeafCore.small, S.L (j.natAdd n) = [] ∧ S.R (j.natAdd n) = []) →
+      ∃ (z : HS (n+LeafCore.small) Q prime U) (F : Stacks (n+LeafCore.small) prime) (steps : ℕ), z.user = u.user ∧
+        Exec body (hostedStoppedDirectory capacity src port)
+          (mk u S) steps (mk z F) ∧
+        (steps : ℝ) ≤ descriptorHeaderCost batch +
+          ((LeafCore.small+5 : ℕ)*|LeafCore.C|+8+LeafCore.small*(16+8*|LeafCore.C|))*
+          ((volume prime scheduled : ℝ)*((max 1 scheduled.width : ℕ) : ℝ)^M8.Machine.BudgetBound.tau) ∧
+        RecordPayload (port.castAdd LeafCore.small) (fun _ => blank) 0
+          (Shared50RecursiveNodeRows.transpose (one_dvd scheduled.rows) word ∘ e) F ∧
+        (∀ j : Fin n, j ≠ port → F.L (j.castAdd LeafCore.small) = S.L (j.castAdd LeafCore.small) ∧ F.R (j.castAdd LeafCore.small) = S.R (j.castAdd LeafCore.small)) ∧
+        ∀ j : Fin LeafCore.small, F.L (j.natAdd n) = [] ∧ F.R (j.natAdd n) = [] := by
+  intro r batch scheduled e source word u S positive words payload free
+  let owner := (Fin.castLEEmb LeafCore.seven_le) (Fin.last 6)
+  let bank := Record.payloadBank port owner
+  obtain ⟨v,D,user,setup,left,keep,unused,prepared,input,rest⟩ :=
+    directoryLeafHeaders_exec (n := n) (Q := Q) body src port batch (word ∘ e) u S words payload free
+  obtain ⟨y,B,k,same,run,paid,out,clean⟩ := scheduledStoppedDirectory_exec (P := Empty) Empty.elim
+    node i w aligned rows word (stateLiftDown columnCapacity_pos (embDn bank v)) (embStk bank D)
+    positive prepared input rest
+  obtain ⟨z,_,user',placed⟩ := statePlaced_exec_normalized bank bank.injective capacity columnCapacity_pos
+    Empty.elim (body' := body) (fun f => nomatch f) v D run
+  let F := embOvr bank B.get D
+  have onBank : embStk bank F = B := embStk_ovr bank.injective _ _
+  have apart (j : Fin LeafCore.small) (l : Fin n) : j.natAdd n ≠ l.castAdd LeafCore.small := by
+    intro eq
+    have h := congrArg Fin.val eq
+    simp only [Fin.val_natAdd,Fin.val_castAdd] at h
+    omega
+  have seqRun := Exec.seq setup placed
+  let init := ((List.finRange 6).map fun j => 6*(S.R (source j)).length+6).sum+1
+  refine ⟨z,F,init+(1+k),?_,?_,?_,?_,?_,?_⟩
+  · simp only [stateLiftDown,embDn] at same
+    exact user'.trans (same.trans user)
+  · unfold hostedStoppedDirectory
+    exact seqRun
+  · have hdr (j) : (S.R ((src j).castAdd LeafCore.small)).length = (Routines.hdr batch j).length := by
+      rw [show S.R ((src j).castAdd LeafCore.small) = _ from words j,List.length_map]
+    simp only [init,source,hdr]
+    exact headerSteps_add paid
+  · exact payloadBank_output port owner _ F B onBank out
+  · intro j ne
+    have off : ∀ l, bank l ≠ j.castAdd LeafCore.small := by
+      intro l
+      by_cases h : l = owner
+      · subst l
+        rw [Record.payloadBank_shared]
+        exact (Fin.castAddEmb _).injective.ne ne.symm
+      · rw [Record.payloadBank_private _ _ _ h]
+        exact apart _ _
+    obtain ⟨l,r'⟩ := embOvr_off B.get D off
+    exact ⟨l.trans (congrFun left _),r'.trans (keep j)⟩
+  · intro j
+    by_cases h : j = owner
+    · subst j
+      have off : ∀ l, bank l ≠ owner.natAdd n := by
+        intro l
+        by_cases h : l = owner
+        · subst l
+          rw [Record.payloadBank_shared]
+          exact (apart _ _).symm
+        · rw [Record.payloadBank_private _ _ _ h]
+          exact (Fin.natAddEmb n).injective.ne h
+      obtain ⟨l,r'⟩ := embOvr_off B.get D off
+      exact ⟨l.trans ((congrFun left _).trans (free _).1),r'.trans unused⟩
+    · have erased := clean j h
+      rw [← onBank] at erased
+      simpa only [embStk,Function.comp_apply,bank,Record.payloadBank_private _ _ _ h] using erased
+
 end IntegerMultBounds.MathlibTM2.M6.BitNode
