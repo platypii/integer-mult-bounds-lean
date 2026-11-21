@@ -275,13 +275,13 @@ theorem classifiedOrdinaryDirectory_exec [M8.Machine.Net] {a d common work w W J
       (fun _ => clear) (input j) payload (fun hj => installed j hj clear)
     have charged : t ≤ budget j := rowTime_min_cleanup (live j) price localPrice
     exact ⟨z,D,t,out,user,charged,run,next,action,word,kept 40 (by decide) (by decide) (by decide),kept 57 (by decide) (by decide) (by decide),kept 56 (by decide) (by decide) (by decide)⟩)
-  obtain ⟨z,F,t,n,rows,s,midUser,mid,user,_,bounded,controls,_,_,_,_,prepared,projector,time,rowTime,run,rowsOk,leftOk,rightOk,rest⟩ := scan
+  obtain ⟨z,F,t,n,rows,s,midUser,mid,user,_,bounded,controls,_,_,_,_,prepared,projector,time,rowTime,run,rowsOk,leftOk,rightOk,free,_,_,_,rest⟩ := scan
   obtain ⟨output,action,packed⟩ := ownerRows_pack (R := data.records) (N := N) rfl rowsOk
   have finalLeft := leftOk.trans (congrFun keepLeft _)
   have finalRight := rightOk.trans (congrArg (· ++ ownerTail) packed)
   refine ⟨z,F,t,n,output,k,s,midUser,mid,paid,user.trans same,bounded,
     Exec.seq build controls,prepared,projector.trans (congrArg (fun V : Stacks (66+K) prime => V.R (inner 48)) rawEq),?_,
-    Exec.seq build run,?_,ownerWord_reads word output ownerTail owner reads finalLeft finalRight,finalLeft,finalRight,rest⟩
+    Exec.seq build run,?_,ownerWord_reads word output ownerTail owner reads finalLeft finalRight,finalLeft,finalRight,free,rest⟩
   · intro p prepareBound calls first
     let rareTapes := ((List.finRange (66+(K+1))).filter fun i => decide (58 ≤ i.val ∧ i ≠ directoryMatrixTape room)).length
     let rarePush := max (mnProgPush (directoryExceptionalCore (P := P) (U := U) d room capacity)) c

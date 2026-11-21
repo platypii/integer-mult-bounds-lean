@@ -35,9 +35,9 @@ theorem copyDirectoryMasks_exec {ι P U : Type} {T Q : ℕ} (body : P → Pr P T
 
 /-- Save the two selectors outside the scanner placement, then resume on
 the original projected stacks with the control state left by copying. -/
-theorem saveMasksAndScan_exec {ι P U : Type} {T K Q : ℕ}
-    (body : P → Pr P T Q prime U) (e : Fin T ↪ Fin K) (host : P → Pr P K Q prime U)
-    (calls : ∀ f, host f = embProg e id (body f)) (scan : Pr P T Q prime U)
+theorem saveMasksAndScan_exec {ι P G U : Type} {T K Q : ℕ}
+    (body : P → Pr P T Q prime U) (e : Fin T ↪ Fin K) (label : P → G) (host : G → Pr G K Q prime U)
+    (calls : ∀ f, host (label f) = embProg e label (body f)) (scan : Pr P T Q prime U)
     (p : Fin 6 ↪ Fin K) (outside : ∀ i, e i ≠ p 2 ∧ e i ≠ p 3)
     (labels : List ι) (live bad : ι → Bool) (u : HS K Q prime U) (S : Stacks K prime)
     (ls : S.R (p 0) = labels.map (fun j => bitSymbol (live j)))
@@ -47,7 +47,7 @@ theorem saveMasksAndScan_exec {ι P U : Type} {T K Q : ℕ}
     (resume : ∀ a : HS T Q prime U, ∃ z F t, z.user = a.user ∧
       Exec body scan (mk a (embStk e S)) t (mk z F) ∧ result t F) :
     let copy := (bcopy (p 0) (p 2) (p 4) (p 5)).seq (bcopy (p 1) (p 3) (p 4) (p 5))
-    ∃ z F t, z.user = u.user ∧ Exec host (copy.seq (embProg e id scan))
+    ∃ z F t, z.user = u.user ∧ Exec host (copy.seq (embProg e label scan))
       (mk u S) (12*labels.length+12+t) (mk z F) ∧ result t (embStk e F) ∧
       F.R (p 2) = labels.map (fun j => bitSymbol (live j)) ∧
       F.R (p 3) = labels.map (fun j => bitSymbol (bad j)) := by

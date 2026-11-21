@@ -614,7 +614,8 @@ theorem packedOwner_exec {ι P U : Type} {N T Q : ℕ} (tail : List (Fin (prime+
       n ≤ (rs.map (fun r => 6*N+6+cost r+(4*N+4))).sum + 2*rs.length+2 + (2*(rs.length*N)+2) ∧
       Exec outer (packedOwner port selector record) (mk u S) n (mk z F) ∧
       List.Forall₂ (fun r out => ∃ word, effect r word ∧ out = bits word) rs rows ∧
-      F.L (reg 0) = S.L (reg 0) ∧ F.R (reg 0) = rows.flatten ++ tail ∧ F.R (reg 1) = [] ∧ ready [] (embStk bank F) := by
+      F.L (reg 0) = S.L (reg 0) ∧ F.R (reg 0) = rows.flatten ++ tail ∧ F.R (reg 1) = [] ∧
+      (F.R (reg 2)).length = N ∧ F.R (reg 3) = [] ∧ F.R (reg 4) = [] ∧ ready [] (embStk bank F) := by
   intro bits bank reg outer inv flags start call
   let row := (((movePrefix (reg 2) (reg 0) (bank port) (reg 3) (reg 4)).seq (embProg bank id record)).seq
     (Mult.ShortConv.transfer (reg 2) (bank port) (reg 1) (reg 4)))
@@ -630,7 +631,7 @@ theorem packedOwner_exec {ι P U : Type} {N T Q : ℕ} (tail : List (Fin (prime+
       exact ⟨y,B,t,bits word,uy,bound,exec,⟨word,act,rfl⟩,next,left.trans ownerLeft,tail,accum,
         (congrArg List.length (keep 2 (by decide))).trans width,(keep 3 (by decide)).trans saved,
         (keep 4 (by decide)).trans tmp,clear⟩) rs [] u S start
-  obtain ⟨state,left,tail,stack,_⟩ := done
+  obtain ⟨state,left,tail,stack,width,saved,tmp,_⟩ := done
   have apart : reg 1 ≠ reg 0 := (Fin.natAdd_injective ..).ne (by decide : (1 : Fin 5) ≠ 0)
   obtain ⟨v,uv,restore⟩ := restoreOwnerRecords_exec outer apart z D rows.flatten (by simpa using stack)
   have extent {xs : List ι} {ys} (h : List.Forall₂ (fun r out => ∃ word, effect r word ∧ out = bits word) xs ys) :
@@ -640,8 +641,14 @@ theorem packedOwner_exec {ι P U : Type} {N T Q : ℕ} (tail : List (Fin (prime+
     | cons out _ ih =>
       obtain ⟨word,_,rfl⟩ := out
       simp [bits,payloadWord,ih,Nat.succ_mul,Nat.add_comm]
+  have kept (j : Fin 5) (hj : 2 ≤ j.val) :
+      Function.update (Function.update D.R (reg 1) []) (reg 0) (rows.flatten ++ D.R (reg 0)) (reg j) = D.R (reg j) := by
+    have off (i : Fin 5) (hi : i.val < 2) : reg j ≠ reg i :=
+      (Fin.natAdd_injective ..).ne (fun eq => by have := congrArg Fin.val eq; omega)
+    simp [Function.update_of_ne,off 0 (by decide),off 1 (by decide)]
   refine ⟨v,_,_,rows,uv.trans user,by rw [← extent correct]; exact Nat.add_le_add_right time _,Exec.seq run restore,correct,left,
-    by simp [tail,Function.update_self],by simp [Function.update_of_ne apart],?_⟩
+    by simp [tail,Function.update_self],by simp [Function.update_of_ne apart],
+    (congrArg List.length (kept 2 (by decide))).trans width,(kept 3 (by decide)).trans saved,(kept 4 (by decide)).trans tmp,?_⟩
   convert state using 1
   unfold embStk
   congr 1
@@ -847,7 +854,8 @@ theorem classifiedDirectory_exec [M8.Machine.Net] {m d K w W J N : ℕ} {P U : T
         t ≤ initTime + queueTime + (4*work.length+1+work.length*(6*(p*initTime)))) ∧
       n ≤ (rs.map (fun j => 6*N+6+cost j+(4*N+4))).sum + 2*rs.length+2 + (2*(rs.length*N)+2) ∧
       List.Forall₂ (fun j out => ∃ word, effect j word ∧ out = bits word) rs rows ∧
-      F.L (reg 0) = S.L (reg 0) ∧ F.R (reg 0) = rows.flatten ++ ownerTail ∧ F.R (reg 1) = [] ∧ ready (embStk placement (embStk bank F)) [] ∧
+      F.L (reg 0) = S.L (reg 0) ∧ F.R (reg 0) = rows.flatten ++ ownerTail ∧ F.R (reg 1) = [] ∧
+      (F.R (reg 2)).length = N ∧ F.R (reg 3) = [] ∧ F.R (reg 4) = [] ∧ ready (embStk placement (embStk bank F)) [] ∧
       (embStk bank F).R (directoryMatrixTape room) = [] ∧
       (embStk bank F).R (caller 57) = [] ∧ (embStk bank F).R (caller 56) = []
     ∃ z F t n rows s midUser mid, z.user = u.user ∧ midUser.user = u.user ∧ s ≤ selectorBudget ∧
@@ -867,7 +875,8 @@ theorem classifiedDirectory_exec [M8.Machine.Net] {m d K w W J N : ℕ} {P U : T
       n ≤ (rs.map (fun j => 6*N+6+cost j+(4*N+4))).sum + 2*rs.length+2 + (2*(rs.length*N)+2) ∧
       Exec (fun f => embProg bank id (body f)) (controls.seq ((embProg bank id prepare).seq program)) (mk u S) (s+(t+n)) (mk z F) ∧
       List.Forall₂ (fun j out => ∃ word, effect j word ∧ out = bits word) rs rows ∧
-      F.L (reg 0) = S.L (reg 0) ∧ F.R (reg 0) = rows.flatten ++ ownerTail ∧ F.R (reg 1) = [] ∧ ready (embStk placement (embStk bank F)) [] ∧
+      F.L (reg 0) = S.L (reg 0) ∧ F.R (reg 0) = rows.flatten ++ ownerTail ∧ F.R (reg 1) = [] ∧
+      (F.R (reg 2)).length = N ∧ F.R (reg 3) = [] ∧ F.R (reg 4) = [] ∧ ready (embStk placement (embStk bank F)) [] ∧
       (embStk bank F).R (directoryMatrixTape room) = [] ∧
       (embStk bank F).R (caller 57) = [] ∧ (embStk bank F).R (caller 56) = [] := by
   intro e physical φ code schedule ready placement caller live rs pending bits bank reg start inner advance good padding ordinaryTime cost effect
@@ -894,7 +903,7 @@ theorem classifiedDirectory_exec [M8.Machine.Net] {m d K w W J N : ℕ} {P U : T
         A.R (directoryMatrixTape room) = physical.matrices k ∧
         A.R (caller 40) = start.R (caller 40) ∧ A.R (caller 57) = xs.map (fun j => bitSymbol (live j)) ∧ A.R (caller 56) = xs.map (fun j => bitSymbol (bad j))
     let dispatch := ownerDispatch (caller 57) (caller 56) good (directoryExceptionalProgram m d room capacity) padding
-    obtain ⟨z,F,n,rows,user,time,run,correct,left,output,free,k,hk,remaining,done,archiveEnd,cutEnd,maskEnd,modeEnd⟩ :=
+    obtain ⟨z,F,n,rows,user,time,run,correct,left,output,free,finalWidth,clearSaved,clearTmp,k,hk,remaining,done,archiveEnd,cutEnd,maskEnd,modeEnd⟩ :=
       packedOwner_exec ownerTail body (caller 24) (caller 57) dispatch input effect cost frame rs y B (by
           intro xs A h
           obtain ⟨_,_,_,_,_,_,mask,_⟩ := h
@@ -948,7 +957,7 @@ theorem classifiedDirectory_exec [M8.Machine.Net] {m d K w W J N : ℕ} {P U : T
       have h := congrArg List.length remaining
       simp [pending,rs] at h
       omega
-    refine ⟨z,F,t,n,rows,user.trans uy,Exec.seq write run,setupTime,time,correct,left.trans ((regs 0).1.trans (extRegs 0).1),output,free,done,archiveEnd.trans ?_,maskEnd,modeEnd⟩
+    refine ⟨z,F,t,n,rows,user.trans uy,Exec.seq write run,setupTime,time,correct,left.trans ((regs 0).1.trans (extRegs 0).1),output,free,finalWidth,clearSaved,clearTmp,done,archiveEnd.trans ?_,maskEnd,modeEnd⟩
     simp [last,ScanData.matrices,physical,ScanData.physical,List.drop_of_length_le (List.length_range.le)]
   obtain ⟨z,F,t,n,rows,user,suffix,setupTime,time,correct,result⟩ := restart midUser
   exact ⟨z,F,t,n,rows,s,midUser,mid,user.trans (um.trans su),um.trans su,subtotal,runControls,(cellEq 57).trans mask,(cellEq 56).trans mode,suffix,restart,(by rw [project]; exact directory),(cellEq 48).trans projectorKept,setupTime,time,Exec.seq runControls suffix,correct,result⟩
@@ -1405,7 +1414,7 @@ private theorem generatedOwnerDirectory_exec [M8.Machine.Net] {T m dim J W : ℕ
     filledSize ((stays 3 (by decide)).trans saved) ((stays 4 (by decide)).trans tmp)
     filledBlank
     (fun j _ no y A readyRow _ payloadRow => ordinary j _ (input j) y A no readyRow payloadRow)
-  obtain ⟨finishState,final,t,n,rows,s,midUser,mid,hu,_,setup,controls,_,_,_,_,midReady,projectorEq,initBound,scan,exec,correct,ownerLeft,out,free,done,archive,maskEnd,modeEnd⟩ := pass
+  obtain ⟨finishState,final,t,n,rows,s,midUser,mid,hu,_,setup,controls,_,_,_,_,midReady,projectorEq,initBound,scan,exec,correct,ownerLeft,out,free,_,_,_,done,archive,maskEnd,modeEnd⟩ := pass
   have recordsPos : 0 < LabelMask.records directory :=
     Nat.mul_pos (Nat.mul_pos positiveDir.1 positiveDir.2.1) positiveDir.2.2.1
   have radixPos : 0 < M := pow_pos Shared50ModularControl.prime_prime.pos _
