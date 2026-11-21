@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.M6.BitCopyRun
+public import IntegerMultBounds.MathlibTM2.M6.BitCopyLabel
 public import IntegerMultBounds.MathlibTM2.M6.BitPortImage
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackColumnHost
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackPrefixVolume
@@ -37,6 +37,93 @@ theorem frameBasis_runs (l : Fin 636) (inverse : Bool) :
   obtain ⟨y,exec,reads⟩ := copySegment_runs ops pass.good hW x (pass.legal w)
   exact ⟨y,exec,fun s j => (action w s) ▸ reads s j⟩
 
+/-- The payload tape shared by every factor of a port correction. -/
+noncomputable def portOwner {V : ℕ} (x : Fin V → ZMod 2) : Tapes 1 prime :=
+  ⟨fun _ => 0,fun _ => putWord (fun _ => blank) 0
+    (List.ofFn fun i => SparseRoleCircuit.encode (a := prime) (x i))⟩
+
+open IntegerMultBounds.Swap.Modular in
+theorem frameBasis_owner (l : Fin 636) (inverse : Bool) :
+    ∃ (c : ℕ) (machine : SharedBankSkeleton.Skeleton 1 prime), ∀ w W, 0 < W →
+      let V := (prime^w)^16*W
+      let M := reduce (prime^w) (frameBasis l inverse)
+      ∃ stage : SharedBankStage.Stage _ 1 prime (@portOwner V), SharedBankSkeleton.ofStage stage = machine ∧ stage.cost = c*V ∧
+        ∀ x s j, stage.transform x (FlatCoordinateLayout.index
+          (AffineFieldCoordinates.embed (M8.Exchange.transform M M s)) j) =
+          x (FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) j) := by
+  obtain ⟨stages,runs⟩ := frameBasis_runs l inverse
+  let machine : SharedBankSkeleton.Skeleton 1 prime :=
+    ⟨_,_,FlatCoordinateCleanSchedule.program stages,fun _ => segmentSource stages,fun _ _ _ => Subsingleton.elim _ _⟩
+  refine ⟨FlatCoordinateCleanSchedule.constant stages,machine,?_⟩
+  intro w W pos V M
+  let bank := fun (x : Fin V → ZMod 2) => SharedBankStageInput.raw
+    (FlatCoordinateShiftSharedBank.common (d := 16) (b := w) (W := W)
+      (fun i => SparseRoleCircuit.encode (x i))) (FlatCoordinateCleanSchedule.tapeCount stages)
+  let slot := fun _ : Fin 1 => segmentSource stages
+  choose out exec read using runs w W pos
+  have payload (x : Fin V → ZMod 2) : SharedBank.payload (bank x) slot = portOwner x := by
+    obtain ⟨head,tape⟩ := copySegment_source stages x
+    exact congrArg₂ Tapes.mk (funext fun _ => head)
+      (funext fun _ => tape.trans (sourceWord_cast _ x))
+  have strip (x : Fin V → ZMod 2) : SharedBank.strip (bank x) slot = basisWorkspace stages x := by
+    apply congrArg₂ Tapes.mk <;> funext j <;> by_cases eq : segmentSource stages = j
+    all_goals first
+      | subst j; simp [SharedBank.strip,slot,basisWorkspace,SharedPlacementAlphabet.setTape]
+      | simp [SharedBank.strip,slot,eq,basisWorkspace,SharedPlacementAlphabet.setTape,Function.update_of_ne (Ne.symm eq),bank]
+  exact ⟨{
+    tapes := _, states := _, program := FlatCoordinateCleanSchedule.program stages,
+    transform := out, input := bank, output := fun x => bank (out x), slots := slot,
+    slots_injective := fun _ _ _ => Subsingleton.elim _ _, cost := _, metadata := basisWorkspace stages (0 : Fin V → ZMod 2),
+    input_payload := payload, output_payload := fun x => payload (out x),
+    strip_input := fun x => (strip x).trans (basisWorkspace_eq stages x 0), realizes := exec },rfl,rfl,read⟩
+
+open Cover RecursiveInterchangeLayout M8.RevMachine SharedPlacementAlphabet in
+/-- A packed digit swap on the same source tape used by the basis passes. -/
+theorem digitSwap_owner [M8.Machine.Net] (i j : Fin 16) (lt : i < j) :
+    ∃ machine : SharedBankSkeleton.Skeleton 1 prime, ∀ w W, 0 < w → 0 < W →
+    let V := (prime^w)^16*W
+    ∃ stage : SharedBankStage.Stage _ 1 prime (@portOwner V),
+      SharedBankSkeleton.ofStage stage = machine ∧ stage.cost = 3808274*V + LeafCore.coreCost V w ∧
+      ∀ x coords k, stage.transform x (FlatCoordinateLayout.index (coords ∘ Equiv.swap i j) k) =
+        x (FlatCoordinateLayout.index coords k) := by
+  let io : Fin 1 := 0
+  let block := LabelSwap.program io
+  let slots := fun k : Fin 1 => block.slots (Fin.castAdd 24 k)
+  refine ⟨⟨_,_,block.program,slots,fun _ _ _ => Subsingleton.elim _ _⟩,?_⟩
+  intro w W hw hW V
+  let v := payloadView prime 16 w W
+  have size : volume prime v = V := by simp [v,payloadView,volume,V,← pow_mul,Nat.mul_comm]
+  have leading : Blocks.Leading block := Blocks.seq_leading _ _
+  let d := LabelPrepare.input v 16 i.val j.val w
+  let bank := fun (x : Fin V → ZMod 2) => SharedBankStageInput.raw (LabelCall.bank (portOwner x) v d) block.tapes
+  let result := fun x : Fin V → ZMod 2 => swapPayload_runs i j lt hw hW (portOwner x) io
+    (fun t => x (Fin.cast size t)) rfl (sourceWord_cast size x).symm
+  let out := fun x t => (result x).choose (Fin.cast size.symm t)
+  have word (x) : M8.Machine.ArbitraryWidthHighExchangeShared.sourceWord (v := v) (result x).choose =
+      (portOwner (out x)).tape io := by
+    exact sourceWord_cast size (out x)
+  have same (x) : setTape (portOwner x) io ((portOwner (out x)).tape io) 0 = portOwner (out x) := by
+    apply congrArg₂ Tapes.mk <;> funext k <;> obtain rfl : k = io := Subsingleton.elim _ _ <;> simp [portOwner]
+  refine ⟨{
+    tapes := _, states := _, program := block.program, transform := out, input := bank,
+    output := fun x => bank (out x), slots := slots, slots_injective := fun _ _ _ => Subsingleton.elim _ _,
+    metadata := SharedBank.strip (bank 0) slots, cost := 3808274*V + LeafCore.coreCost V w,
+    input_payload := fun x => copyRoute_payload block leading _ v d,
+    output_payload := fun x => copyRoute_payload block leading _ v d,
+    strip_input := fun x => routePrivate block leading _ _ v d, realizes := ?_ },rfl,rfl,?_⟩
+  · intro x
+    have run := (result x).choose_spec.1
+    change GraphContract.Runs block _ (LabelCall.bank (setTape _ io _ 0) v d) _ at run
+    rw [word,same,size] at run
+    exact run
+  · intro x coords k
+    have read := (result x).choose_spec.2 coords k
+    have get (z : Fin (volume prime v) → ZMod 2) (a : Fin V) : ext z a.val = z (a.cast size.symm) := by
+      simp only [ext,dite_eq_left (show a.val < volume prime v from size.symm ▸ a.isLt)]
+      rfl
+    rw [get,get] at read
+    exact read
+
 /-- Packed action of the two digit transpositions, one per field. -/
 def portSwapDigits {R : Type*} (x : Fin 16 → R) : Fin 16 → R :=
   x ∘ Equiv.swap 0 7 ∘ Equiv.swap 8 15
@@ -51,6 +138,51 @@ theorem portSwapDigits_embed {R : Type*} [CommRing R] (s : IntegerMultBounds.Swa
   rw [M8.Exchange.transform,swap,swap]
   funext i
   fin_cases i <;> rfl
+
+open IntegerMultBounds.Swap.Modular M8.RevMachine in
+/-- Run all four factors of a port chart on one permanent payload tape,
+including both physical digit swaps and all three program joins. -/
+theorem portChart_owner [M8.Machine.Net] (k l : Fin 636) :
+    ∃ (c : ℕ) (machine : SharedBankSkeleton.Skeleton 1 prime), ∀ w W, 0 < w → 0 < W →
+      let V := (prime^w)^16*W
+      let T := reduce (prime^w) (frameBasis l false) * portPivotSwap (ZMod (prime^w)) *
+        reduce (prime^w) (frameBasis k true)
+      ∃ stage : SharedBankStage.Stage _ 1 prime (@portOwner V),
+        SharedBankSkeleton.ofStage stage = machine ∧ stage.cost = c*V + 2*LeafCore.coreCost V w + 3 ∧
+        ∀ x s j, stage.transform x (FlatCoordinateLayout.index
+          (AffineFieldCoordinates.embed (M8.Exchange.transform T T s)) j) =
+          x (FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) j) := by
+  obtain ⟨a,first,before⟩ := frameBasis_owner k true
+  obtain ⟨b,last,after⟩ := frameBasis_owner l false
+  obtain ⟨hi,hswap⟩ := digitSwap_owner (0 : Fin 16) 7 (by decide)
+  obtain ⟨di,dswap⟩ := digitSwap_owner (8 : Fin 16) 15 (by decide)
+  let machine := SharedBankSkeleton.compose (SharedBankSkeleton.compose (SharedBankSkeleton.compose first hi) di) last
+  refine ⟨a+b+2*3808274,machine,?_⟩
+  intro w W hw hW V T
+  obtain ⟨A,fa,ac,ar⟩ := before w W hW
+  obtain ⟨B,fb,bc,br⟩ := after w W hW
+  obtain ⟨H,fh,hc,hr⟩ := hswap w W hw hW
+  obtain ⟨D,fd,dc,dr⟩ := dswap w W hw hW
+  refine ⟨SharedBankStage.compose (SharedBankStage.compose (SharedBankStage.compose A H) D) B,?_,?_,?_⟩
+  · simp only [SharedBankSkeleton.ofStage_compose,fa,fb,fh,fd,machine]
+  · change A.cost+H.cost+1+D.cost+1+B.cost+1 = _
+    rw [ac,bc,hc,dc]
+    dsimp only [V]
+    ring
+  · intro x s j
+    let C := reduce (prime^w) (frameBasis l false)
+    let E := reduce (prime^w) (frameBasis k true)
+    let J := portPivotSwap (ZMod (prime^w))
+    let y := M8.Exchange.transform E E s
+    have factor : M8.Exchange.transform T T s =
+        M8.Exchange.transform C C (M8.Exchange.transform J J y) := by
+      simp only [M8.Exchange.transform,T,C,E,J,y,Matrix.mulVec_mulVec,Matrix.mul_assoc]
+    change B.transform (D.transform (H.transform (A.transform x))) _ = _
+    rw [factor,br,← portSwapDigits_embed]
+    unfold portSwapDigits
+    rw [show AffineFieldCoordinates.embed y ∘ Equiv.swap 0 7 ∘ Equiv.swap 8 15 =
+      (AffineFieldCoordinates.embed y ∘ Equiv.swap 0 7) ∘ Equiv.swap 8 15 from rfl,dr,hr]
+    exact ar x s j
 
 local notation "N" => rowSwapBlock.tapes+35
 

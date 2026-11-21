@@ -697,6 +697,48 @@ theorem InvocationEffect.finalRead {n : Fin 9} {r : Fin 32} {d : Fin 5} {w B K :
   rw [Frames.after_scatter] at read
   exact read.trans (fixed.symm.trans aligned)
 
+open IntegerMultBounds.Swap.Modular M8.RevMachine in
+/-- Reading a target owner after the port correction recovers the decoded
+invocation result at the target projector's exchanged address. The same
+program works at every width, for every class and every dirty input. -/
+theorem InvocationEffect.targetPort [M8.Machine.Net] (t : Fin 111) :
+    let k : Fin 636 := ⟨525+t.val,by omega⟩
+    let l : Fin 636 := ⟨2+t.val,by omega⟩
+    ∃ (c : ℕ) (machine : SharedBankSkeleton.Skeleton 1 prime), ∀ w B K,
+      0 < w → 0 < B*prime^(64*(w*64))*K →
+      let W := B*prime^(64*(w*64))*K
+      let volume := (prime^w)^16*W
+      let T := reduce (prime^w) (frameBasis l false) * portPivotSwap (ZMod (prime^w)) *
+        reduce (prime^w) (frameBasis k true)
+      ∃ stage : SharedBankStage.Stage _ 1 prime (@portOwner volume),
+        SharedBankSkeleton.ofStage stage = machine ∧
+        stage.cost = c*volume + 2*LeafCore.coreCost volume w + 3 ∧
+        ∀ n r d x y, InvocationEffect n r d w B K x y → ∀ g z s,
+          let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n r d,ownerTape_injective n r d⟩
+          let reg : Fin 661 := ⟨111+t.val,by omega⟩
+          let before := fun h => labelPhase w (sectionD ++ sectionA) (Frames.snapshot Frames.initialRefs)
+            (phaseRead owner x (labelSpectator h z))
+          let stored := FramedCircuit.decode (fun i => selectedFrame w (Frames.scatterFinish Frames.beforeScatter i))
+            (labelScatter n before g)
+          let output := FramedCircuit.moduleRun ((sectionB ++ sectionC).map RawGate.toCircuit) stored
+          stage.transform (y (owner reg)) (FlatCoordinateLayout.index
+            (AffineFieldCoordinates.embed (M8.Exchange.transform T T s)) (labelSpectator g z)) =
+            output reg.val (M8.Exchange.exchange (reduce (prime^w) (selectedProjector k)) s) := by
+  intro k l
+  obtain ⟨c,machine,run⟩ := portChart_owner k l
+  refine ⟨c,machine,?_⟩
+  intro w B K hw hW W volume T
+  obtain ⟨stage,fixed,cost,reads⟩ := run w W hw hW
+  refine ⟨stage,fixed,cost,?_⟩
+  intro n r d x y act g z s owner reg before stored output
+  rw [reads]
+  have finish := congrFun (congrFun (act.finalRead g z) reg.val) s
+  change phaseRead owner y (labelSpectator g z) reg.val s =
+    selectedFrame w (Frames.snapshot Frames.finalRefs reg.val) (output reg.val) s at finish
+  simp only [phaseRead,Copy.extendStored,dite_eq_left reg.isLt,Frames.snapshot,ite_eq_left reg.isLt] at finish
+  rw [(Nine.target_frames t.val t.isLt).2.1] at finish
+  exact finish.trans (selectedFrame_rational w k _ _)
+
 /-- Every spectator position belongs to one matrix label, block and trailing cell. -/
 private theorem labelSpectator_surjective {w B K : ℕ} (j : Fin (B*prime^(64*(w*64))*K)) :
     ∃ (g : Matrix (Fin 64) (Fin 64) (ZMod (prime^w))) (z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B), labelSpectator g z = j := by
