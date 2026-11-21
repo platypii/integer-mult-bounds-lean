@@ -48,7 +48,7 @@ theorem outgoingDirectoryScan_exec {P U : Type} {m K w W N Q : ℕ}
   intro caller bank reg ready flags bits slots scan skip active dispatch cursor cost start directory ls bs queue acc width saved tmp empty run
   let inv := fun (xs : List ℕ) (A : Stacks (66+K) prime) =>
     ready A xs ∧ A.R (caller 57) = flags live xs ∧ A.R (caller 56) = flags bad xs ∧ xs ⊆ rs
-  obtain ⟨z,F,n,rows,hu,time,step,ordered,left,right,clear,count,saveEnd,tmpEnd,done,lsEnd,bsEnd,_⟩ :=
+  obtain ⟨z,F,n,rows,hu,time,step,_,ordered,left,right,clear,count,saveEnd,tmpEnd,done,lsEnd,bsEnd,_⟩ :=
     packedOwner_exec ownerTail body (caller 24) (caller 57) dispatch input
       (fun j word => if active j then effect j word else word = input j) cost inv rs u S (by
         intro xs A h
@@ -111,6 +111,31 @@ private theorem ofFn_cast_payload {V N : ℕ} (size : V = N) (word : Fin V → Z
 open GoodForm FlatCoordinateLayout Matrix M8.Exchange M8.ReversedExchange IntegerMultBounds.Swap.Shear
 open IntegerMultBounds.Swap.Modular GoodChildLayout
 
+/-- Pack the outgoing scan into one tape word. Inactive rows inherit the action
+already proved at recursive return, since the outgoing scan copies those rows. -/
+theorem outgoingOwnerRows_pack {R N V total : ℕ} (width : V = N) (volume : R*N = total)
+    (active : ℕ → Bool) (returned : ℕ → Fin V → ZMod 2)
+    (ordinary bypass : ℕ → (Fin N → ZMod 2) → Prop)
+    {rows : List (List (Fin (prime+4)))}
+    (restored : ∀ j : Fin R, active j = false → ∃ word, bypass j word ∧
+      returned j = fun i => word (i.cast width))
+    (scanned : List.Forall₂ (fun j tape => ∃ word,
+      (if active j then ordinary j word else word = fun i => returned j (i.cast width.symm)) ∧
+      tape = payloadWord (SparseRoleCircuit.encode ∘ word)) (List.range R) rows) :
+    ∃ output : Fin total → ZMod 2,
+      (∀ j : Fin R, if active j then ordinary j (ownerRow volume output j)
+        else bypass j (ownerRow volume output j)) ∧
+      rows.flatten = payloadWord (SparseRoleCircuit.encode ∘ output) := by
+  obtain ⟨output,action,packed⟩ := ownerRows_pack volume scanned
+  refine ⟨output,fun j => ?_,packed⟩
+  have row := action j
+  cases h : active j with
+  | true => simpa [h] using row
+  | false =>
+    obtain ⟨word,ok,read⟩ := restored j h
+    have same : ownerRow volume output j = word := by simpa [h,read] using row
+    simpa [h,same] using ok
+
 /-- Execute the outgoing scan on the words returned by the batched transpose.
 Each active row recovers its original word at the projector-transformed addresses. -/
 theorem generatedOutgoingScan_exec [M8.Machine.Net] {P U : Type} {r g w W common work : ℕ}
@@ -125,10 +150,11 @@ theorem generatedOutgoingScan_exec [M8.Machine.Net] {P U : Type} {r g w W common
       (_idem : proj*proj = proj) (factor : IntegerMultBounds.Swap.LowerTriangular.Factorization Finset.univ Finset.univ proj)
       (_small : ∀ k ∈ factorizationDenominators factor, k < prime)
       (weights : Fin m → ZMod M) (_unit : ∀ i, IsUnit (weights i)) (_hW : 0 < W)
-      (prefixes : ℕ → List (Fin (prime+4))) (archiveTail ownerTail : List (Fin (prime+4))) (rs : List ℕ)
+      (prefixes : ℕ → List (Fin (prime+4))) (archiveTail ownerTail : List (Fin (prime+4))) (R : ℕ)
       (pool : (RingFormula.conjugationDepth m+1)*13 ≤ work) (room : 58+(rowSwapBlock.tapes+35+1) ≤ K)
       (body : P → Pr P (66+K) columnCapacity prime U) (u : HS ((66+K)+5) columnCapacity prime U)
       (S : Stacks ((66+K)+5) prime) (original : ℕ → Fin N → ZMod 2) (returned : ℕ → Fin V → ZMod 2) (c : ℕ),
+    let rs := List.range R
     let full := ordinaryCaller (by omega : 58 ≤ K)
     let machine := GoodChildLayout.parent.trans (parentWithWeights.trans full)
     let caller := Fin.castAddEmb (n := 66) K
@@ -167,27 +193,28 @@ theorem generatedOutgoingScan_exec [M8.Machine.Net] {P U : Type} {r g w W common
     S.R (reg 0) = rs.flatMap (fun j => payloadWord (SparseRoleCircuit.encode ∘ returned j)) ++ ownerTail →
     S.R (reg 1) = [] → (S.R (reg 2)).length = N → S.R (reg 3) = [] → S.R (reg 4) = [] →
     (∀ j, readAt blank (start.L (caller 24)) (start.R (caller 24)) j = blank) →
-    ∃ z F n rows, z.user = u.user ∧
+    ∀ (bypass : ℕ → (Fin N → ZMod 2) → Prop),
+    (∀ j : Fin R, active j = false → ∃ word, bypass j word ∧ returned j = fun i => word (i.cast size)) →
+    ∃ z F n, ∃ output : Fin (R*N) → ZMod 2, z.user = u.user ∧
       n ≤ (rs.map (fun j => 6*N+6+cost j+(4*N+4))).sum+2*rs.length+2+(2*(rs.length*N)+2) ∧
       Exec (fun f => embProg bank id (body f)) (packedOwner (caller 24) (caller 57) dispatch) (mk u S) n (mk z F) ∧
-      List.Forall₂ (fun j tape => ∃ word, (if active j then effect j word else word = fun i => returned j (i.cast size.symm)) ∧
-        tape = payloadWord (SparseRoleCircuit.encode ∘ word)) rs rows ∧
-      F.L (reg 0) = S.L (reg 0) ∧ F.R (reg 0) = rows.flatten ++ ownerTail ∧ F.R (reg 1) = [] ∧
+      (∀ j : Fin R, if active j then effect j (ownerRow rfl output j) else bypass j (ownerRow rfl output j)) ∧
+      F.L (reg 0) = S.L (reg 0) ∧ F.R (reg 0) = payloadWord (SparseRoleCircuit.encode ∘ output) ++ ownerTail ∧ F.R (reg 1) = [] ∧
       (F.R (reg 2)).length = N ∧ F.R (reg 3) = [] ∧ F.R (reg 4) = [] ∧ ready (embStk bank F) [] ∧
       F.R (bank (caller 57)) = [] ∧ F.R (bank (caller 56)) = [] := by
-  intro m hr K M N V proj rank dim idem factor small weights unit hW prefixes archiveTail ownerTail rs pool room body
-    u S original returned c full machine caller bank reg start ready reduced live bad active G inv pos size prog
-    privateTapes slots scan skip dispatch cost effect bounded calls classified directory liveBits badBits queue acc width saved tmp blankPort
+  intro m hr K M N V proj rank dim idem factor small weights unit hW prefixes archiveTail ownerTail R pool room body
+    u S original returned c rs full machine caller bank reg start ready reduced live bad active G inv pos size prog
+    privateTapes slots scan skip dispatch cost effect bounded calls classified directory liveBits badBits queue acc width saved tmp blankPort bypass restored
   let input := fun j (i : Fin N) => returned j (i.cast size.symm)
   let price := fun j => let base := outgoingRowTime U machine r g w W (prefixes j).length
                         base+(4*privateTapes.length+1+privateTapes.length*(6*(c*base)))+
                           (1+(4*(prefixes j).length+4+(m*m*(4*(w+1)+4)+1)+1))
-  refine outgoingDirectoryScan_exec body ((prog.seq (clearWorkTapes privateTapes)).seq skip) v proj weights prefixes
-    archiveTail ownerTail rs live bad input effect price u S directory liveBits badBits ?_ acc width saved tmp blankPort ?_
-  · change S.R (reg 0) = rs.flatMap (fun j => payloadWord (SparseRoleCircuit.encode ∘ (fun i => returned j (i.cast size.symm)))) ++ ownerTail
+  obtain ⟨z,F,n,rows,user,time,run,actions,left,right,rest⟩ := outgoingDirectoryScan_exec body ((prog.seq (clearWorkTapes privateTapes)).seq skip) v proj weights prefixes
+    archiveTail ownerTail rs live bad input effect price u S directory liveBits badBits (by
+    change S.R (reg 0) = rs.flatMap (fun j => payloadWord (SparseRoleCircuit.encode ∘ (fun i => returned j (i.cast size.symm)))) ++ ownerTail
     rw [queue]
-    exact congrArg (fun f => rs.flatMap f ++ ownerTail) (funext (fun j => (ofFn_cast_payload size (returned j)).symm))
-  · intro j hj xs a A l b dir read
+    exact congrArg (fun f => rs.flatMap f ++ ownerTail) (funext (fun j => (ofFn_cast_payload size (returned j)).symm))) acc width saved tmp blankPort (by
+    intro j hj xs a A l b dir read
     obtain ⟨minor,before,inc,returnedEq⟩ := classified j hj l b
     have payload : RecordPayload (full 24) (fun _ => blank) 0
         (ordinaryChildOutput (r := r) (g := g) (w := w) before ∘ pos) A := by
@@ -200,6 +227,8 @@ theorem generatedOutgoingScan_exec [M8.Machine.Net] {P U : Type} {r g w W common
     obtain ⟨z,D,n,out,user,time,run,next,result,action,frame⟩ := generatedLiveOutgoingRow_exec
       (common := common) v proj rank dim weights unit prefixes archiveTail (fun _ => []) j xs pool room body a A
       idem factor small dir l b hW (original j) before minor inc payload rfl c bounded calls
-    exact ⟨z,D,n,out,user,time,run,next,result,action,frame 57 (by decide),frame 56 (by decide)⟩
+    exact ⟨z,D,n,out,user,time,run,next,result,action,frame 57 (by decide),frame 56 (by decide)⟩)
+  obtain ⟨output,action,encoded⟩ := outgoingOwnerRows_pack size rfl active returned effect bypass restored actions
+  exact ⟨z,F,n,output,user,time,run,action,left,by rw [right,encoded],rest⟩
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode

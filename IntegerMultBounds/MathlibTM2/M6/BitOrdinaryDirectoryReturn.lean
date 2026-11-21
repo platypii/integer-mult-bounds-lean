@@ -130,6 +130,16 @@ private theorem packedRows {R N V : ℕ} (size : R*N = V) (word : Fin V → ZMod
   funext k
   simp [Function.comp_apply,ownerRow,j.isLt]
 
+/-- A positioned batch word supplies the outgoing scanner with one encoded row
+per label, followed by the remainder of the physical owner stack. -/
+theorem returnedOwnerQueue {R N V T : ℕ} (size : R*N = V) (word : Fin V → ZMod 2)
+    (port : Fin T) (S : Stacks T prime) (payload : RecordPayload port (fun _ => blank) 0 word S) :
+    S.R port = (List.range R).flatMap (fun j => payloadWord (SparseRoleCircuit.encode ∘ ownerRow size word j)) ++
+      (S.R port).drop V := by
+  have h := payload_prefix_of_read word (fun _ => blank) 0 _ _ payload
+  rw [packedRows size word] at h
+  simpa only [← List.map_coe_finRange_eq_range,List.flatMap_map,Function.comp_def] using h
+
 /-- Execute the shared recursive call and reassemble the classified output.
 The backup contains the bypass values in directory order. They may already
 include the result of the exceptional projector. -/

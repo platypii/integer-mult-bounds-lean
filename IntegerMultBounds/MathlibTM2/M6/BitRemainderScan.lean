@@ -613,6 +613,7 @@ theorem packedOwner_exec {ι P U : Type} {N T Q : ℕ} (tail : List (Fin (prime+
     ∃ z F n rows, z.user = u.user ∧
       n ≤ (rs.map (fun r => 6*N+6+cost r+(4*N+4))).sum + 2*rs.length+2 + (2*(rs.length*N)+2) ∧
       Exec outer (packedOwner port selector record) (mk u S) n (mk z F) ∧
+      (∀ j, readAt blank (F.L (bank port)) (F.R (bank port)) j = blank) ∧
       List.Forall₂ (fun r out => ∃ word, effect r word ∧ out = bits word) rs rows ∧
       F.L (reg 0) = S.L (reg 0) ∧ F.R (reg 0) = rows.flatten ++ tail ∧ F.R (reg 1) = [] ∧
       (F.R (reg 2)).length = N ∧ F.R (reg 3) = [] ∧ F.R (reg 4) = [] ∧ ready [] (embStk bank F) := by
@@ -631,7 +632,7 @@ theorem packedOwner_exec {ι P U : Type} {N T Q : ℕ} (tail : List (Fin (prime+
       exact ⟨y,B,t,bits word,uy,bound,exec,⟨word,act,rfl⟩,next,left.trans ownerLeft,tail,accum,
         (congrArg List.length (keep 2 (by decide))).trans width,(keep 3 (by decide)).trans saved,
         (keep 4 (by decide)).trans tmp,clear⟩) rs [] u S start
-  obtain ⟨state,left,tail,stack,width,saved,tmp,_⟩ := done
+  obtain ⟨state,left,tail,stack,width,saved,tmp,blankPort⟩ := done
   have apart : reg 1 ≠ reg 0 := (Fin.natAdd_injective ..).ne (by decide : (1 : Fin 5) ≠ 0)
   obtain ⟨v,uv,restore⟩ := restoreOwnerRecords_exec outer apart z D rows.flatten (by simpa using stack)
   have extent {xs : List ι} {ys} (h : List.Forall₂ (fun r out => ∃ word, effect r word ∧ out = bits word) xs ys) :
@@ -646,18 +647,18 @@ theorem packedOwner_exec {ι P U : Type} {N T Q : ℕ} (tail : List (Fin (prime+
     have off (i : Fin 5) (hi : i.val < 2) : reg j ≠ reg i :=
       (Fin.natAdd_injective ..).ne (fun eq => by have := congrArg Fin.val eq; omega)
     simp [Function.update_of_ne,off 0 (by decide),off 1 (by decide)]
-  refine ⟨v,_,_,rows,uv.trans user,by rw [← extent correct]; exact Nat.add_le_add_right time _,Exec.seq run restore,correct,left,
+  have off (k : Fin T) (j : Fin 5) : bank k ≠ reg j := by
+    intro eq
+    have h := congrArg Fin.val eq
+    change k.val = T+j.val at h
+    omega
+  refine ⟨v,_,_,rows,uv.trans user,by rw [← extent correct]; exact Nat.add_le_add_right time _,Exec.seq run restore,(fun j => by simpa only [Function.update_of_ne (off port 0),Function.update_of_ne (off port 1)] using blankPort j),correct,left,
     by simp [tail,Function.update_self],by simp [Function.update_of_ne apart],
     (congrArg List.length (kept 2 (by decide))).trans width,(kept 3 (by decide)).trans saved,(kept 4 (by decide)).trans tmp,?_⟩
   convert state using 1
   unfold embStk
   congr 1
   funext k
-  have off (j : Fin 5) : bank k ≠ reg j := by
-    intro eq
-    have h := congrArg Fin.val eq
-    change k.val = T+j.val at h
-    omega
   simp [Function.update_of_ne,off]
 
 /-- Run the generated selectors before the matrix writer, preserving the empty
@@ -853,6 +854,7 @@ theorem classifiedDirectory_exec [M8.Machine.Net] {m d K w W J N : ℕ} {P U : T
       (∀ p, mnProgPush (directoryQueueInitProgram (P := P) (U := U) (Q := columnCapacity) room fits) ≤ p → (∀ f, mnProgPush (body f) ≤ p) →
         t ≤ initTime + queueTime + (4*work.length+1+work.length*(6*(p*initTime)))) ∧
       n ≤ (rs.map (fun j => 6*N+6+cost j+(4*N+4))).sum + 2*rs.length+2 + (2*(rs.length*N)+2) ∧
+      (∀ j, readAt blank (F.L (bank (caller 24))) (F.R (bank (caller 24))) j = blank) ∧
       List.Forall₂ (fun j out => ∃ word, effect j word ∧ out = bits word) rs rows ∧
       F.L (reg 0) = S.L (reg 0) ∧ F.R (reg 0) = rows.flatten ++ ownerTail ∧ F.R (reg 1) = [] ∧
       (F.R (reg 2)).length = N ∧ F.R (reg 3) = [] ∧ F.R (reg 4) = [] ∧ ready (embStk placement (embStk bank F)) [] ∧
@@ -903,7 +905,7 @@ theorem classifiedDirectory_exec [M8.Machine.Net] {m d K w W J N : ℕ} {P U : T
         A.R (directoryMatrixTape room) = physical.matrices k ∧
         A.R (caller 40) = start.R (caller 40) ∧ A.R (caller 57) = xs.map (fun j => bitSymbol (live j)) ∧ A.R (caller 56) = xs.map (fun j => bitSymbol (bad j))
     let dispatch := ownerDispatch (caller 57) (caller 56) good (directoryExceptionalProgram m d room capacity) padding
-    obtain ⟨z,F,n,rows,user,time,run,correct,left,output,free,finalWidth,clearSaved,clearTmp,k,hk,remaining,done,archiveEnd,cutEnd,maskEnd,modeEnd⟩ :=
+    obtain ⟨z,F,n,rows,user,time,run,blankPort,correct,left,output,free,finalWidth,clearSaved,clearTmp,k,hk,remaining,done,archiveEnd,cutEnd,maskEnd,modeEnd⟩ :=
       packedOwner_exec ownerTail body (caller 24) (caller 57) dispatch input effect cost frame rs y B (by
           intro xs A h
           obtain ⟨_,_,_,_,_,_,mask,_⟩ := h
@@ -957,9 +959,9 @@ theorem classifiedDirectory_exec [M8.Machine.Net] {m d K w W J N : ℕ} {P U : T
       have h := congrArg List.length remaining
       simp [pending,rs] at h
       omega
-    refine ⟨z,F,t,n,rows,user.trans uy,Exec.seq write run,setupTime,time,correct,left.trans ((regs 0).1.trans (extRegs 0).1),output,free,finalWidth,clearSaved,clearTmp,done,archiveEnd.trans ?_,maskEnd,modeEnd⟩
+    refine ⟨z,F,t,n,rows,user.trans uy,Exec.seq write run,setupTime,time,blankPort,correct,left.trans ((regs 0).1.trans (extRegs 0).1),output,free,finalWidth,clearSaved,clearTmp,done,archiveEnd.trans ?_,maskEnd,modeEnd⟩
     simp [last,ScanData.matrices,physical,ScanData.physical,List.drop_of_length_le (List.length_range.le)]
-  obtain ⟨z,F,t,n,rows,user,suffix,setupTime,time,correct,result⟩ := restart midUser
+  obtain ⟨z,F,t,n,rows,user,suffix,setupTime,time,_,correct,result⟩ := restart midUser
   exact ⟨z,F,t,n,rows,s,midUser,mid,user.trans (um.trans su),um.trans su,subtotal,runControls,(cellEq 57).trans mask,(cellEq 56).trans mode,suffix,restart,(by rw [project]; exact directory),(cellEq 48).trans projectorKept,setupTime,time,Exec.seq runControls suffix,correct,result⟩
 
 /-- Normalize the complete execution by the payload volume owned by its rows. -/

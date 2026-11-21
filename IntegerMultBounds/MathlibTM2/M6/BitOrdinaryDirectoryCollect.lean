@@ -50,7 +50,8 @@ theorem saveMasksAndScan_exec {ι P G U : Type} {T K Q : ℕ}
     ∃ z F t, z.user = u.user ∧ Exec host (copy.seq (embProg e label scan))
       (mk u S) (12*labels.length+12+t) (mk z F) ∧ result t (embStk e F) ∧
       F.R (p 2) = labels.map (fun j => bitSymbol (live j)) ∧
-      F.R (p 3) = labels.map (fun j => bitSymbol (bad j)) := by
+      F.R (p 3) = labels.map (fun j => bitSymbol (bad j)) ∧
+      ∀ i, (∀ k, e k ≠ i) → i ≠ p 2 → i ≠ p 3 → F.R i = S.R i := by
   intro copy
   obtain ⟨a,user,save⟩ := copyDirectoryMasks_exec host p labels live bad u S ls bs free
   let D := {S with R := Function.update (Function.update S.R (p 2) (S.R (p 0))) (p 3) (S.R (p 1))}
@@ -60,10 +61,12 @@ theorem saveMasksAndScan_exec {ι P G U : Type} {T K Q : ℕ}
     exact (Function.update_of_ne (outside i).2 ..).trans (Function.update_of_ne (outside i).1 ..)
   obtain ⟨b,B,t,hb,run,ok⟩ := resume (embDn e a)
   obtain ⟨z,F,placed,_,hz,eqn,kept⟩ := exec_emb e.injective calls run a rfl D project
-  refine ⟨z,F,t,hz.trans (hb.trans user),Exec.seq save placed,eqn ▸ ok,?_,?_⟩
+  refine ⟨z,F,t,hz.trans (hb.trans user),Exec.seq save placed,eqn ▸ ok,?_,?_,?_⟩
   · exact ((kept _ (fun i => (outside i).1)).2.trans (Function.update_of_ne (p.injective.ne
       (by decide : (2 : Fin 6) ≠ 3)) ..)).trans ((Function.update_self ..).trans ls)
   · exact ((kept _ (fun i => (outside i).2)).2.trans (Function.update_self ..)).trans bs
+  · intro i off h2 h3
+    exact ((kept i off).2).trans ((Function.update_of_ne h3 ..).trans (Function.update_of_ne h2 ..))
 
 theorem collectDirectoryRows_exec {ι P U : Type} {T Q N : ℕ} (body : P → Pr P T Q prime U)
     (p : Fin 6 ↪ Fin T) (record : Pr P T Q prime U) (cost : ι → ℕ)

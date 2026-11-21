@@ -4,6 +4,7 @@ public import IntegerMultBounds.MathlibTM2.M6.BitOrdinaryGeneratedIncoming
 public import IntegerMultBounds.MathlibTM2.M6.BitRemainderOrdinarySelectors
 public import IntegerMultBounds.MathlibTM2.M6.BitOrdinaryDirectoryCollect
 public import IntegerMultBounds.MathlibTM2.M6.BitOrdinaryDirectoryReturn
+public import IntegerMultBounds.MathlibTM2.M6.BitOrdinaryHostedOutgoing
 
 /-! Generate incoming directory rows, transpose the batch, and restore bypassed rows. -/
 @[expose] public section
@@ -22,6 +23,19 @@ private theorem payloadWord_cast {V N : ℕ} (size : V = N) (word : Fin N → ZM
       payloadWord (SparseRoleCircuit.encode ∘ (fun i : Fin V => word (i.cast size))) := by
   subst N
   rfl
+
+def outgoingScanRowCost (m w prefixLength tapes push base : ℕ) (active live : Bool) : ℕ :=
+  let cursor := 1+(4*prefixLength+4+(m*m*(4*(w+1)+4)+1)+1)
+  (if active then base+(4*tapes+1+tapes*(6*(push*base)))+cursor else cursor) + (if live then 4 else 3)
+
+/-- The composed stage writes its complete packed output on the owner tape. -/
+def DirectoryStageResult [M8.Machine.Net] {G U : Type} {T R N : ℕ} (host : G → Pr G T columnCapacity prime U)
+    (program : Pr G T columnCapacity prime U) (a : HS T columnCapacity prime U) (A : Stacks T prime)
+    (prior bound : ℕ) (port : Fin T) (tail : List (Fin (prime+4)))
+    (effect : ℕ → (Fin N → ZMod 2) → Prop) : Prop :=
+  ∃ z C n, ∃ output : Fin (R*N) → ZMod 2, z.user = a.user ∧ n ≤ bound ∧
+    Exec host program (mk a A) (prior+n) (mk z C) ∧ (∀ j : Fin R, effect j (ownerRow rfl output j)) ∧
+    C.R port = payloadWord (SparseRoleCircuit.encode ∘ output) ++ tail
 
 /-- The return program reuses the five owner registers and the two saved masks. -/
 def directoryReturnPorts {T K : ℕ} (place : Fin (K+5) ↪ Fin T) (p : Fin 6 ↪ Fin T)
@@ -74,7 +88,7 @@ theorem generatedIncomingDirectory_exec [M8.Machine.Net] {P U : Type} {r g d w c
     let privateTapes := (List.finRange (66+K)).filter (fun i => 58 ≤ i.val)
     let scanSlots : Fin 7 ↪ Fin 58 := ⟨![45,46,2,47,48,44,49],by decide⟩
     let scan := ((goodRecordScanPorts.trans scanSlots).trans (Fin.castAddEmb 8)).trans localCaller
-    let skipRow := readWithSuccessorClock (scan 1) (advanceDirectory m scan)
+    let skipRow : Pr P (66+K) columnCapacity prime U := readWithSuccessorClock (scan 1) (advanceDirectory m scan)
     let goodRow := (prog.seq (clearWorkTapes privateTapes)).seq skipRow
     let push := max (mnProgPush prog) localPush
     let inv := fun i => Ring.inverse (weights i)
@@ -123,6 +137,16 @@ theorem generatedIncomingDirectory_exec [M8.Machine.Net] {P U : Type} {r g d w c
         (physicalLabel m (w+1) j)).mulVec x) k).cast (directoryPayloadLength e length)) =
         input j ((FlatCoordinateLayout.index x k).cast (directoryPayloadLength e length))
       else ordinaryEffect j next
+    let outProg := outgoingRowProgram (P := P) (U := U) (common := common) r g pool room
+    let outPush := max (mnProgPush outProg) localPush
+    let active : ℕ → Bool := fun j => live j && !bad j
+    let dispatch : Pr P (66+K) columnCapacity prime U := ownerDispatch (inner 57) (inner 56) ((outProg.seq (clearWorkTapes privateTapes)).seq skipRow) skipRow skipRow
+    let outLocal : Pr P ((66+K)+5) columnCapacity prime U := packedOwner (inner 24) (inner 57) dispatch
+    let outCost := fun j => outgoingScanRowCost m w (prefixes j).length privateTapes.length outPush
+      (outgoingRowTime U machine r g w W (prefixes j).length) (active j) (live j)
+    let outEffect : ℕ → (Fin N → ZMod 2) → Prop := fun j (word : Fin N → ZMod 2) => ∀ x k,
+      let y := transform (diagonal weights) 1 (revExchangeOf (rev m) (physicalLabel m (w+1) j * reduced * (physicalLabel m (w+1) j)⁻¹) (transform (diagonal inv) 1 x))
+      word (index (Fin.append y.1 y.2) k) = input j (index (Fin.append x.1 x.2) k)
     start.R (directoryMatrixTape archiveRoom) = [] →
     let raw := embStk placement start
     let selectors := ordinarySelectorProgram localBody proj (φ ∘ weights) pairRoom
@@ -158,6 +182,7 @@ theorem generatedIncomingDirectory_exec [M8.Machine.Net] {P U : Type} {r g d w c
       (∀ p, mnProgPush (directoryQueueInitProgram (P := P) (U := U) (Q := columnCapacity) archiveRoom fits) ≤ p → (∀ f, mnProgPush (body f) ≤ p) →
         t ≤ initTime + queueTime + (4*work.length+1+work.length*(6*(p*initTime)))) ∧
       n ≤ (rs.map (fun j => 6*N+6+cost j+(4*N+4))).sum + 2*rs.length+2 + (2*(rs.length*N)+2) ∧
+      (∀ j, readAt blank (F.L (outer (caller 24))) (F.R (outer (caller 24))) j = blank) ∧
       List.Forall₂ (fun j tape => ∃ physical,
         (if live j && !bad j then ∃ before, incoming j before ∧ physical = before ∘ pos
          else ∃ word, effect j word ∧ physical = fun i => word (i.cast size)) ∧
@@ -172,17 +197,27 @@ theorem generatedIncomingDirectory_exec [M8.Machine.Net] {P U : Type} {r g d w c
     embDn place a = u → embStk place A = S →
     p 0 = place (outer (caller 57)) → p 1 = place (outer (caller 56)) →
     ∀ (outside : ∀ k : Fin 6, 2 ≤ k → ∀ i, place i ≠ p k), (∀ k : Fin 6, 2 ≤ k → A.R (p k) = []) →
+    ∀ (replay : Fin 6 ↪ Fin T) (separate : ∀ i j, place i ≠ replay j)
+      (_disjoint : ∀ i j, p i ≠ replay j), (∀ j, A.R (replay j) = []) →
+    let localBank := placement.trans (Fin.castAddEmb 5)
+    let slots := replaySlots.trans inner
+    let copied := (Fin.castLEEmb (by decide : 4 ≤ 6)).trans replay
+    let pairs := (List.finRange 4).map fun j => (place (localBank (slots j)),copied j)
+    let snapshot : Pr G T columnCapacity prime U := Mult.PhaseCellToeplitz.copyWordHeaders (replay 4) (replay 5) pairs
+    let copyTime := fun D : Stacks ((66+(K+1))+5) prime =>
+      ((List.finRange 4).map (fun j => 6*(D.R (localBank (slots j))).length+6)).sum+1
+    let outBank := replayPlacement (localBank.trans place) slots copied (fun i j => separate _ _)
     let copy : Pr G T columnCapacity prime U := (bcopy (p 0) (p 2) (p 4) (p 5)).seq (bcopy (p 1) (p 3) (p 4) (p 5))
     let q := directoryReturnPorts place p outside
     let batch := ordinaryDirectoryChild directory r g w
     let V := RecursiveInterchangeLayout.volume prime batch
     let R := LabelMask.records directory
-    let scan := (embProg place label controls).seq (copy.seq (embProg place label suffix))
+    let scan := (embProg place label controls).seq (snapshot.seq (copy.seq (embProg place label suffix)))
     ∃ (z : HS T columnCapacity prime U) (F : Stacks T prime) (s elapsed : ℕ) (mid : Stacks ((66+(K+1))+5) prime), z.user = a.user ∧ s ≤ selectorBudget ∧
       ready (embStk placement (embStk outer mid)) rs ∧
       (embStk outer mid).R (caller 48) = (embStk placement start).R (inner 48) ∧
       Exec host scan
-        (mk a A) (Nat.add s (Nat.add (Nat.add (Nat.mul 12 rs.length) 12) elapsed)) (mk z F) ∧
+        (mk a A) (s+(copyTime mid+(12*rs.length+12+elapsed))) (mk z F) ∧
       result mid elapsed (embStk place F) ∧ F.R (p 2) = rs.map (fun j => bitSymbol (live j)) ∧
       F.R (p 3) = rs.map (fun j => bitSymbol (bad j)) ∧
       (S.L (reg 0) = [] → ownerTail = [] → ∀ (f : G) (childBudget : ℕ),
@@ -192,22 +227,38 @@ theorem generatedIncomingDirectory_exec [M8.Machine.Net] {P U : Type} {r g d w c
           ∃ y B k, y.user = b.user ∧ k ≤ childBudget ∧ Exec host (host f) (mk b D) k (mk y B) ∧
             RecordPayload (q 0) (fun _ => blank) 0 (Shared50RecursiveNodeRows.transpose (one_dvd batch.rows) x) B ∧
             ∀ i, i ≠ q 0 → B.L i = D.L i ∧ B.R i = D.R i) →
-        ∃ y B k, ∃ out : Fin V → ZMod 2, y.user = a.user ∧ k ≤ childBudget+R*(16*N+14)+12 ∧
-          Exec host (scan.seq ((bcopy (q 0) (q 1) (q 2) (q 4)).seq ((.call f : Pr G T columnCapacity prime U).seq (directoryReturn q))))
-            (mk a A) ((s+(12*rs.length+12+elapsed))+k) (mk y B) ∧
+        let throughReturn : Pr G T columnCapacity prime U := scan.seq ((bcopy (q 0) (q 1) (q 2) (q 4)).seq ((.call f : Pr G T columnCapacity prime U).seq (directoryReturn q)))
+        ∃ (y : HS T columnCapacity prime U) (B : Stacks T prime) (k : ℕ), ∃ out : Fin V → ZMod 2, y.user = a.user ∧ k ≤ childBudget+R*(16*N+14)+12 ∧
+          Exec host throughReturn
+            (mk a A) ((s+(copyTime mid+(12*rs.length+12+elapsed)))+k) (mk y B) ∧
           RecordPayload (q 0) (fun _ => blank) 0 out B ∧
           (∀ j : Fin R, let row := ownerRow (ordinaryDirectoryChild_volume directory r g w) out j
             if live j && !bad j then ∃ before, incoming j before ∧
               row = ordinaryChildOutput (r := r) (g := g) (w := w) before ∘ pos
             else ∃ word, effect j word ∧ row = fun i => word (i.cast size)) ∧
           B.R (q 1) = [] ∧ B.R (q 2) = [] ∧ B.R (q 5) = [] ∧ B.R (q 6) = [] ∧
-          ∀ i, i ∉ [q 0,q 1,q 2,q 5,q 6] → B.L i = F.L i ∧ B.R i = F.R i) := by
+          B.R (q 0) = rs.flatMap (fun j => payloadWord (SparseRoleCircuit.encode ∘ ownerRow (ordinaryDirectoryChild_volume directory r g w) out j)) ++
+            (B.R (q 0)).drop V ∧ (B.R (q 3)).length = N ∧ B.R (q 4) = [] ∧
+          (∀ j, readAt blank (B.L (outBank (inner 24))) (B.R (outBank (inner 24))) j = blank) ∧
+          DirectoryReady v proj w W data.H J weights prefixes archiveTail (fun _ => []) (embStk outBank B) rs ∧
+          B.R (outBank (inner 57)) = rs.map (fun j => bitSymbol (live j)) ∧
+          B.R (outBank (inner 56)) = rs.map (fun j => bitSymbol (bad j)) ∧
+          (∀ i, i ∉ [q 0,q 1,q 2,q 5,q 6] → B.L i = F.L i ∧ B.R i = F.R i) ∧
+          ∃ apart : ∀ (i : Fin (66+K)) (j : Fin 5), outBank i ≠ place (reg j),
+          let regs := (Fin.natAddEmb (66+(K+1))).trans place
+          let outPlace := outgoingOwnerPlacement outBank regs apart
+          ∀ (dim : m = 64) (outLabel : P → G),
+          (∀ f, host (outLabel f) = embProg outPlace outLabel (embProg (Fin.castAdd 5) id (localBody f))) →
+          DirectoryStageResult (R := R) (N := N) host (throughReturn.seq (embProg outPlace outLabel outLocal)) a A
+            ((s+(copyTime mid+(12*rs.length+12+elapsed)))+k)
+            ((rs.map (fun j => 6*N+6+outCost j+(4*N+4))).sum+2*rs.length+2+(2*(rs.length*N)+2))
+            (q 0) ((B.R (q 0)).drop V) (fun j word => if active j then outEffect j word else effect j word)) := by
   intro W m hr K M H J N dimension proj rank idem factor small weights unit data binary positive pool room
     archiveRoom fits capacity localBody localPush c bounded placed prefixes archiveTail ownerTail input B dirPositive shape pairRoom
     u S full machine reduced localCaller is prog
     localTime privateTapes scanSlots scan skipRow goodRow push inv bad budget ordinaryEffect body length
     e physical φ code schedule ready placement caller live rs bits outer reg start inner advance good padding
-    ordinaryTime cost effect initial raw selectors selectorBudget count free inputs beforeRows rowCount beforeH parents mask mode queueFree queue acc width saved tmp blankPort
+    ordinaryTime cost effect outProg outPush active dispatch outLocal outCost outEffect initial raw selectors selectorBudget count free inputs beforeRows rowCount beforeH parents mask mode queueFree queue acc width saved tmp blankPort
   have adm : Admissible prime proj := by
     simpa using admissible_of_lt Shared50ModularControl.prime_prime
       (fun k (hk : k ∈ denominators proj) => small k (by simp [factorizationDenominators,hk])) 1
@@ -241,17 +292,24 @@ theorem generatedIncomingDirectory_exec [M8.Machine.Net] {P U : Type} {r g d w c
       push (le_max_left ..) (fun f => (bounded f).trans (le_max_right ..))
     exact ⟨z,D,n,out,user,time,run,binary ▸ next,action,read,frame 40 (by decide),frame 57 (by decide),frame 56 (by decide)⟩)
   obtain ⟨_,_,_,_,_,s,b,mid,_,midUser,bound,control,lsMid,bsMid,_,resume,readyMid,projectorMid,_⟩ := scanRun
-  intro program work controls prepare smallBody suffix incoming pos size result G T place p label host calls a A hstate hstacks livePort badPort outside unused copy q batch V R scan
+  intro program work controls prepare smallBody suffix incoming pos size result G T place p label host calls a A hstate hstacks livePort badPort outside unused replay separate disjoint fresh localBank slots copied pairs snapshot copyTime outBank copy q batch V R scan
   obtain ⟨y,B,run,_,userY,project,frame⟩ := exec_emb place.injective calls control a hstate A hstacks
   have cell (i) : B.R (place i) = mid.R i := congrArg (fun D => Stacks.R D i) project
   have first : B.R (p 0) = rs.map (fun j => bitSymbol (live j)) := livePort ▸ (cell _).trans lsMid
   have second : B.R (p 1) = rs.map (fun j => bitSymbol (bad j)) := badPort ▸ (cell _).trans bsMid
-  obtain ⟨z,F,t,user,continued,ok,ls,bs⟩ := saveMasksAndScan_exec smallBody place label host calls suffix p
-    (fun i => ⟨outside 2 (by decide) i,outside 3 (by decide) i⟩) rs live bad y B first second
-    (fun k hk => ((frame _ (outside k hk)).2).trans (unused k hk)) (result mid) (by
+  obtain ⟨a₁,A₁,copyUser,copyRun,project₁,retained,_,off⟩ := saveDirectoryReplay_exec host place
+    (slots.trans localBank) replay separate y B (fun j => ((frame _ (fun i => separate i j)).2).trans (fresh j))
+  have pOff (k : Fin 6) : A₁.R (p k) = B.R (p k) := off _ (fun j => (disjoint k _).symm)
+  have timed : Exec host snapshot (mk y B) (copyTime mid) (mk a₁ A₁) := by
+    refine Exec.cast copyRun ?_ rfl
+    exact congrArg (fun f => ((List.finRange 4).map f).sum+1)
+      (funext (fun j => congrArg (fun xs => 6*List.length xs+6) (cell (localBank (slots j)))))
+  obtain ⟨z,F,t,user,continued,ok,ls,bs,untouched⟩ := saveMasksAndScan_exec smallBody place label host calls suffix p
+    (fun i => ⟨outside 2 (by decide) i,outside 3 (by decide) i⟩) rs live bad a₁ A₁ ((pOff 0).trans first) ((pOff 1).trans second)
+    (fun k hk => (pOff k).trans (((frame _ (outside k hk)).2).trans (unused k hk))) (result mid) (by
       intro a
-      obtain ⟨z,F,k,n,rows,user,step,price,time,ordered,rest⟩ := resume a
-      refine ⟨z,F,k+n,user,project ▸ step,k,n,rows,rfl,price,time,?_,rest⟩
+      obtain ⟨z,F,k,n,rows,user,step,price,time,blankEnd,ordered,rest⟩ := resume a
+      refine ⟨z,F,k+n,user,(project₁.trans project) ▸ step,k,n,rows,rfl,price,time,blankEnd,?_,rest⟩
       apply List.Forall₂.imp _ ordered
       intro j tape row
       obtain ⟨word,act,bytes⟩ := row
@@ -267,10 +325,10 @@ theorem generatedIncomingDirectory_exec [M8.Machine.Net] {P U : Type} {r g d w c
           exact ⟨before,⟨minor,action⟩,funext packed⟩
       · exact ⟨word,act,rfl⟩)
   have same : y.user = a.user := userY.trans (midUser.trans (congrArg HS.user hstate).symm)
-  have scanned := Exec.seq run continued
-  refine ⟨z,F,s,t,mid,user.trans same,bound,readyMid,projectorMid,scanned,ok,ls,bs,?_⟩
+  have scanned := Exec.seq run (Exec.seq timed continued)
+  refine ⟨z,F,s,t,mid,user.trans (copyUser.trans same),bound,readyMid,projectorMid,scanned,ok,ls,bs,?_⟩
   intro left tail f childBudget D child
-  obtain ⟨_,_,rows,_,_,_,ordered,ownerLeft,ownerRight,accFree,finalWidth,clearSaved,clearTmp,_⟩ := ok
+  obtain ⟨_,_,rows,_,_,_,blankEnd,ordered,ownerLeft,ownerRight,accFree,finalWidth,clearSaved,clearTmp,finished,_⟩ := ok
   have queue : F.R (q 0) = rows.flatten := by
     change F.R (place (reg 0)) = rows.flatten
     exact ownerRight.trans (by rw [tail,List.append_nil])
@@ -280,15 +338,83 @@ theorem generatedIncomingDirectory_exec [M8.Machine.Net] {P U : Type} {r g d w c
     rw [count,← List.map_coe_finRange_eq_range,List.map_map]
     rfl
   let bypass := fun j (physical : Fin (RecursiveInterchangeLayout.volume prime (ordinaryChildDescriptor r g w W)) → ZMod 2) => ∃ word, effect j word ∧ physical = fun i => word (i.cast size)
-  obtain ⟨y,B,k,out,huser,price,call,payload,action,frame⟩ :=
+  obtain ⟨y,B,k,out,huser,price,call,payload,action,cleared1,cleared2,cleared5,cleared6,frame⟩ :=
     scannedDirectoryCall_exec host f q directory r g w incoming bypass rows live bad z F childBudget
       (by simpa only [rs,count] using ordered) (ownerLeft.trans left) queue accFree clearSaved
       (finalWidth.trans size.symm) clearTmp (ls.trans (maskList live)) (bs.trans (maskList bad)) (by
         intro b hb x hx
         rw [← queue]
         exact child b hb x (by simpa only [D,queue] using hx))
-  exact ⟨y,B,k,out,huser.trans (user.trans same),by simpa only [ordinaryChildVolume] using price,
-    Exec.seq scanned call,payload,action,frame⟩
-
+  have offPorts (i : Fin T) (regs : ∀ k, place (reg k) ≠ i) (l : p 2 ≠ i) (b : p 3 ≠ i) :
+      i ∉ [q 0,q 1,q 2,q 5,q 6] := by
+    simp only [List.mem_cons,List.not_mem_nil,or_false,not_or]
+    exact ⟨(regs 0).symm,(regs 1).symm,(regs 3).symm,l.symm,b.symm⟩
+  have apart (i : Fin (66+K)) (j : Fin 5) : place (reg j) ≠ place (localBank i) := place.injective.ne (by
+    intro eq
+    have h := congrArg Fin.val eq
+    change 66+(K+1)+j.val = (placement i).val at h
+    have bound := (placement i).isLt
+    omega)
+  have keptBank (i : Fin (66+K)) := frame (place (localBank i)) (offPorts _ (apart i) (fun eq => outside 2 (by decide) _ eq.symm) (fun eq => outside 3 (by decide) _ eq.symm))
+  have restored (j : Fin 4) : B.R (copied j) = mid.R (localBank (slots j)) := by
+    have keep := frame (copied j) (offPorts _ (fun k => separate _ _) (disjoint 2 _) (disjoint 3 _))
+    exact keep.2.trans ((untouched _ (fun i => separate i _) (disjoint 2 _).symm (disjoint 3 _).symm).trans
+      ((retained j).trans (cell (localBank (slots j)))))
+  have old : ready (embStk (localBank.trans place) B) [] := by
+    let D := embStk (localBank.trans place) B
+    let E := embStk placement (embStk outer (embStk place F))
+    have leftEq : D.L = E.L := funext (fun i => (keptBank i).1)
+    have rightEq : D.R = E.R := funext (fun i => (keptBank i).2)
+    change DirectoryReady _ _ _ _ _ _ _ _ _ _ D []
+    unfold DirectoryReady
+    rw [leftEq,rightEq]
+    exact finished
+  have outgoing := outgoingReplay_ready (localBank.trans place) copied (fun i j => separate _ _)
+    (embStk localBank mid) B live bad readyMid old rfl restored
+    (by simpa only [localBank,Function.Embedding.trans_apply,embStk,Function.comp_apply,inner,caller,
+      Fin.castAddEmb_apply,placement,directoryOrdinaryBank_caller] using lsMid)
+    (by simpa only [localBank,Function.Embedding.trans_apply,embStk,Function.comp_apply,inner,caller,
+      Fin.castAddEmb_apply,placement,directoryOrdinaryBank_caller] using bsMid)
+  have blankReturned : ∀ j, readAt blank (B.L (outBank (inner 24))) (B.R (outBank (inner 24))) j = blank := by
+    intro j
+    have off : ∀ k, slots k ≠ inner 24 := fun k => inner.injective.ne ((by decide : ∀ k, replaySlots k ≠ 24) k)
+    have unsaved : outBank (inner 24) = place (localBank (inner 24)) :=
+      replayPlacement_off (localBank.trans place) slots copied (fun i j => separate _ _) _ off
+    rw [unsaved]
+    rw [(keptBank _).1,(keptBank _).2]
+    have port : localBank (inner 24) = outer (caller 24) := congrArg outer (directoryOrdinaryBank_caller archiveRoom 24)
+    rw [port]
+    exact blankEnd j
+  intro throughReturn
+  refine ⟨y,B,k,out,huser.trans (user.trans (copyUser.trans same)),by simpa only [ordinaryChildVolume] using price,
+    Exec.seq scanned call,payload,action,cleared1,cleared2,cleared5,cleared6,
+    by simpa only [rs,count] using returnedOwnerQueue (ordinaryDirectoryChild_volume directory r g w) out (q 0) B payload,
+    (congrArg List.length (frame (q 3) (by simp [q.injective.eq_iff])).2).trans finalWidth,
+    ((frame (q 4) (by simp [q.injective.eq_iff])).2).trans clearTmp,blankReturned,outgoing.1,outgoing.2.1,outgoing.2.2,frame,
+    fun i j => replayPlacement_ne (localBank.trans place) slots copied (fun _ _ => separate _ _)
+      (fun k => (apart k j).symm) (fun k => (separate _ _).symm) i,?_⟩
+  intro regs outPlace dim outLabel outCalls
+  let returned := ownerRow (ordinaryDirectoryChild_volume directory r g w) out
+  obtain ⟨z,C,n,output,sameUser,time,run,rowAction,_,owner,_⟩ := hostedOutgoingScan_exec
+    (common := common) v proj rank dim idem factor small weights unit positive prefixes archiveTail
+    ((B.R (q 0)).drop V) R pool room localBody outBank regs _ outLabel host y B input returned outPush
+    outCalls (le_max_left ..) (fun f => (bounded f).trans (le_max_right ..)) (by
+      intro j inside l b
+      change live j = true at l
+      change bad j = false at b
+      have hj : j < R := List.mem_range.mp inside
+      obtain ⟨before,⟨minor,inc⟩,eqn⟩ := (by simpa [l,b] using action ⟨j,hj⟩ :
+        ∃ before, incoming j before ∧ returned j = ordinaryChildOutput (r := r) (g := g) (w := w) before ∘ pos)
+      exact ⟨minor,before,inc,eqn⟩)
+    (by simpa only [rs,count,binary] using outgoing.1)
+    (by simpa only [rs,count] using outgoing.2.1) (by simpa only [rs,count] using outgoing.2.2)
+    (returnedOwnerQueue _ out (q 0) B payload) cleared1
+    ((congrArg List.length (frame (q 3) (by simp [q.injective.eq_iff])).2).trans finalWidth) cleared2
+    (((frame (q 4) (by simp [q.injective.eq_iff])).2).trans clearTmp) blankReturned effect (by
+      intro j inactive
+      change (live j && !bad j) = false at inactive
+      simpa only [inactive,Bool.false_eq_true,ite_false] using action j)
+  exact ⟨z,C,n,output,sameUser.trans (huser.trans (user.trans (copyUser.trans same))),
+    by simpa only [rs,count,R,outCost,outgoingScanRowCost,active,live,bad,reduced,machine,full,N,M,m,privateTapes,K] using time,Exec.seq (Exec.seq scanned call) run,rowAction,owner⟩
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
