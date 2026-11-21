@@ -92,7 +92,7 @@ theorem packedAllocatedInvocation_host [M8.Machine.Net] (n : Fin 9) (r : Fin 32)
   intro P U Q fits localMove f localCopy cp' moveBody localBody body prefixRuns cap caller original hdr regs before
   let fan' := fan.trans (Fin.castAddEmb 41)
   let outer := fun f => embProg original id (body f)
-  obtain ⟨pack,C,packing⟩ := parentSlotChanges_exec n (r,d) prefixRuns fan' hdr regs cap outer
+  obtain ⟨pack,C,packing⟩ := parentSlotChanges_exec (scheduledSlotChanges n (r,d) before) fan' hdr regs cap outer
   refine ⟨C,?_⟩
   obtain ⟨base,swaps,cb,cs,cl,cf,run⟩ := build fits localMove f localCopy cp'
   refine ⟨base,swaps,cb,cs,cl,cf,?_⟩

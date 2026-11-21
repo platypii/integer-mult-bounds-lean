@@ -59,12 +59,11 @@ private theorem placedParentHeaders {P U : Type} {T Q tail : ℕ}
 /-- The entire preparation and packing cost is independent of the child-call budget.
 All invocation controls and all caller tapes outside the owners keep their stacks. -/
 theorem parentSlotChanges_exec [M8.Machine.Net] {P U : Type} {T Q : ℕ}
-    (n : Fin 9) (p : Fin 32 × Fin 5) (prefixRuns : List (Fin 32 × Fin 5))
+    (changes : List (Fin 142081 × Option (Fin 56) × Option (Fin 56)))
     (fan : Fin (142081+2) ↪ Fin T) (hdr : Fin 6 → Fin T) (regs : Fin 35 ↪ Fin T)
     (capacity : columnCapacity ≤ Q) (body : P → Pr P ((T+273)+N) Q prime U) :
     let bank := Fin.castAddEmb N (n := T+273)
     let caller := (Fin.castAddEmb 273 (n := T)).trans bank
-    let before := prefixRuns.foldl (fun c r => helperChartsAfter n r c) (fun _ => none)
     ∃ code, ∃ C : ℝ, ∀ (row : Descriptor) (w V : ℕ), row.Positive →
       let W := row.beforeRows*row.rows*row.between*row.afterD
       let M := prime^(w+1)
@@ -78,14 +77,14 @@ theorem parentSlotChanges_exec [M8.Machine.Net] {P U : Type} {T Q : ℕ}
       HelperFan (fan.trans caller) data S →
       ∃ z F t a, z.user = u.user ∧ Exec body code (mk u S) t (mk z F) ∧
         (t : ℝ) ≤ C*(V*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau) ∧
-        HelperFan (fan.trans caller) a F ∧ HelperLabelTrace (w+1) row.beforeH W (scheduledSlotChanges n p before) data a ∧
+        HelperFan (fan.trans caller) a F ∧ HelperLabelTrace (w+1) row.beforeH W changes data a ∧
         ∀ j : Fin T, (∀ o : Fin 142081, j ≠ fan (o.castAdd 2)) →
           F.L (caller j) = S.L (caller j) ∧ F.R (caller j) = S.R (caller j) := by
-  intro bank caller before
+  intro bank caller
   let shared := fan.trans (Fin.castAddEmb 273)
   let headers := fun i : ℕ => parentHelperHeaders T (Fin.ofNat 127 i)
   have distinct (i j o) : headers i j ≠ shared (Fin.castAdd 2 o) := parentHeader_ne (Fin.ofNat 127 i) j (fan (o.castAdd 2))
-  obtain ⟨pack,C,run⟩ := helperFanChanges_exec shared (scheduledSlotChanges n p before) capacity body headers distinct
+  obtain ⟨pack,C,run⟩ := helperFanChanges_exec shared changes capacity body headers distinct
   let prep : Pr Empty (T+273) Q prime U := prepareHelperHeaders hdr regs
   refine ⟨.seq (embProg bank Empty.elim prep) pack,152402000+C,?_⟩
   intro row w V pos W M size

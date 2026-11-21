@@ -157,6 +157,36 @@ private theorem labelTrace_read {k V w L W : ℕ} (changes : List (Fin k × Opti
       intro eqn
       exact fresh (eqn ▸ List.mem_map_of_mem mem)
 
+/-- Restore only tapes whose helper slot is still installed. -/
+@[irreducible] def restoreSlotChanges {k : ℕ} (slot : Fin k → Option (Fin 56)) :=
+  ((List.finRange k).filter fun t => (slot t).isSome).map fun t => (t, slot t, (none : Option (Fin 56)))
+
+theorem restoreSlot_off {k V w L W : ℕ} (slot : Fin k → Option (Fin 56)) {data out : Fin k → Fin V → ZMod 2}
+    (trace : HelperLabelTrace w L W (restoreSlotChanges slot) data out) (t : Fin k) (empty : slot t = none) :
+    out t = data t := by
+  apply labelTrace_off _ _ _ trace
+  rintro q mem eqn
+  unfold restoreSlotChanges at mem
+  obtain ⟨a,ha,rfl⟩ := List.mem_map.mp mem
+  change a = t at eqn
+  subst a
+  simpa [empty] using (List.mem_filter.mp ha).2
+
+theorem restoreSlot_read {k V w L W : ℕ} (slot : Fin k → Option (Fin 56)) {data out : Fin k → Fin V → ZMod 2}
+    (trace : HelperLabelTrace w L W (restoreSlotChanges slot) data out) (t : Fin k)
+    (c : Certificates.PR589.Nine.PortCertificate) s (label : Fin L) (j : Fin W) :
+    ext (out t) (helperFieldCell (helperSlotField c none w s) label j) =
+      ext (data t) (helperFieldCell (helperSlotField c (slot t) w s) label j) := by
+  cases h : slot t with
+  | none => rw [restoreSlot_off slot trace t h]
+  | some pos =>
+    have unique : ((restoreSlotChanges slot).map Prod.fst).Nodup := by
+      simpa [restoreSlotChanges,List.map_map,Function.comp_def] using
+        (List.nodup_finRange k).filter (fun t => (slot t).isSome)
+    apply labelTrace_read _ _ _ trace unique
+    unfold restoreSlotChanges
+    exact List.mem_map.mpr ⟨t,List.mem_filter.mpr ⟨List.mem_finRange _,by simp [h]⟩,by simp [h]⟩
+
 theorem scheduledLabelRead (n : Fin 9) (p : Fin 32 × Fin 5) (before) {V w L W : ℕ}
     (data out : Fin 142081 → Fin V → ZMod 2)
     (trace : HelperLabelTrace w L W (scheduledSlotChanges n p before) data out) (h : Fin 439) :

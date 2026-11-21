@@ -270,6 +270,47 @@ theorem packedStage_inactive (n : Fin 9) (w B W : ℕ) (x y)
         simp [reduce,ratMod]
       simp only [fixed,zero,reduced,chart,List.foldl_append,List.foldl_cons,List.foldl_nil,helperChartsAfter,move,dif_neg hit,M8.Exchange.exchange,Matrix.zero_mulVec,sub_zero,Matrix.one_mulVec,zero_add,add_zero,Prod.mk.eta]
 
+noncomputable def stageFinalSlot (n : Fin 9) (t : Fin 142081) : Option (Fin 56) :=
+  (stageRuns.foldl (fun a k => helperChartsAfter n k a) (fun _ => none) t).map helperPosition
+
+open Cover Swap.Modular in
+/-- After slot restoration both sides of the inactive stage read use caller coordinates. -/
+theorem restoredStage_inactive (n : Fin 9) (w B W : ℕ) (x y out)
+    (trace : stageRuns.foldr (fun p next a => ∃ b, packedStageEffect n p w B W a b ∧ next b)
+      (fun a => a = y) x)
+    (restore : HelperLabelTrace w (B*prime^(64*(w*64))) W (restoreSlotChanges (stageFinalSlot n)) y out)
+    (ρ : Role) (inactive : ρ.bank.val / 2 ≠ BitHosting.activePair n.val)
+    (g : LabelPadding.Label 64 w)
+    (z : LabelEntry.Cell (copyLabelLayout w B ((prime^w)^112*W)) B) (j : Fin W) :
+    let c := Nine.port ρ.port.val
+    let tape := ((Fin.cast card_role) (Fintype.equivFin Role ρ)).castSucc
+    let label : Fin (B*prime^(64*(w*64))) := ⟨z.b.val*prime^(64*(w*64))+(LabelAddress.address g).val,
+      LabelShift.pack_lt z.b.isLt (by simpa only [← pow_mul,show w*(64*64) = 64*(w*64) by omega]
+        using (LabelAddress.address g).isLt)⟩
+    let read := fun word s => ext word (helperFieldCell (helperSlotField c none w s) label j)
+    ∀ s, read (out tape) (M8.Exchange.exchange (reduce (prime^w) (familySum n ρ)) s) = read (x tape) s := by
+  intro c tape label read s
+  exact (restoreSlot_read (k := 142081) (w := w) (L := B*prime^(64*(w*64))) (W := W) (stageFinalSlot n) restore tape c _ label j).trans
+    (packedStage_inactive n w B W x y trace ρ inactive g z j s)
+
+theorem restoredStage_activePort (n : Fin 9) (run : Fin 32 × Fin 5) (j : Fin 222)
+    {w L W V : ℕ} {data out : Fin 142081 → Fin V → ZMod 2}
+    (restore : HelperLabelTrace w L W (restoreSlotChanges (stageFinalSlot n)) data out) :
+    let t := ownerTape n run.1 run.2 (j.castLE (by decide))
+    out t = data t := by
+  intro t
+  apply restoreSlot_off (k := 142081) (w := w) (L := L) (W := W) (V := V) (stageFinalSlot n) restore
+  unfold stageFinalSlot
+  rw [(helperCharts_unvisited n stageRuns t).mpr ?_]
+  · rfl
+  intro p _ h eqn
+  by_cases same : p = run
+  · subst p
+    have sameReg := congrArg Fin.val (ownerTape_injective n run.1 run.2 eqn)
+    change 222+h.val = j.val at sameReg
+    omega
+  · exact otherRunMissesPort n p run same _ _ j.isLt eqn
+
 private def appendPrivate {t a n : ℕ} (S : Stacks t a) (words : Fin n → List (Fin (a+4))) : Stacks (t+n) a :=
   {S with L := Fin.addCases S.L (fun _ => []), R := Fin.addCases S.R words}
 
@@ -283,7 +324,7 @@ theorem packedInvocationFrame [M8.Machine.Net] {t : ℕ} (fan : Fin (142081+2) �
     let hdr := fun i : Fin 6 => (i.castAdd 35).natAdd t
     let regs := (Fin.natAddEmb 6 (m := 35)).trans (Fin.natAddEmb t)
     let M := prime^(w+1)
-    ∃ initial : Stacks (((t+41)+273)+N) prime,
+    ∃ initial : Stacks (((t+41)+273)+N) prime, embStk original initial = prepared ∧
       ∀ S : Stacks (((t+41)+273)+N) prime,
       (∀ j, (∀ h, (fan.trans original) h ≠ j) → S.L j = initial.L j ∧ S.R j = initial.R j) →
       (∀ k, (∀ h, fan h ≠ k) → S.L (original k) = prepared.L k ∧ S.R (original k) = prepared.R k) ∧
@@ -297,7 +338,10 @@ theorem packedInvocationFrame [M8.Machine.Net] {t : ℕ} (fan : Fin (142081+2) �
     else if i = 33 then List.replicate w blank else []
   let init := appendPrivate (appendPrivate (appendPrivate prepared
     (Fin.addCases (fun i => (Routines.hdr row i).map bitSymbol) scalars)) (fun _ : Fin 273 => [])) (fun _ : Fin N => [])
-  refine ⟨init,?_⟩
+  refine ⟨init,?_,?_⟩
+  · cases prepared
+    simp only [init,original,caller,embStk,appendPrivate,Function.comp_def,Function.Embedding.trans_apply,
+      Fin.castAddEmb_apply,Fin.addCases_left]
   intro S fresh
   have external (j) (high : t ≤ j.val) := fresh j (fun h eq => by
     have v := congrArg Fin.val eq
@@ -401,7 +445,10 @@ def PackedAllocatedStage [M8.Machine.Net] (n : Fin 9) : Prop :=
     let runBody := fun k (g : Option J × (I × P)) => embProg (bank k g.1) (fun h => (g.1,h)) (localBody k g.1 g.2)
     let original := fun k : R => ((Fin.castAddEmb 41 (n := runT k)).trans (Fin.castAddEmb 273)).trans (Fin.castAddEmb LeafCore.small)
     let body := fun g : R × (Option J × (I × P)) => embProg (runBank g.1) (Prod.mk g.1) (embProg (original g.1) id (runBody g.1 g.2))
-    ∃ (packRate : R → ℝ) (base swaps : R → I → ℕ) (copyBase copySwaps copyLeaf copyFixed : R → J → ℕ), ∀ (node : Descriptor) (w B rows : ℕ),
+    let stageBank := (Fin.castAddEmb 41 (n := T)).trans ((Fin.castAddEmb 273).trans (Fin.castAddEmb LeafCore.small))
+    let full := fan.trans stageBank
+    let outer := fun g => embProg stageBank id (body g)
+    ∃ (restoreRate : ℝ) (packRate : R → ℝ) (base swaps : R → I → ℕ) (copyBase copySwaps copyLeaf copyFixed : R → J → ℕ), ∀ (node : Descriptor) (w B rows : ℕ),
     node.width = 64*(w+1) → node.rows = 142080*rows → node.beforeH = B*prime^(64*((w+1)*64)) →
     let M := prime^(w+1)
     let K := M^112*(node.beforeRows*rows*node.between*node.afterD)
@@ -431,15 +478,17 @@ def PackedAllocatedStage [M8.Machine.Net] (n : Fin 9) : Prop :=
       (base k ⟨j-start k,h⟩ + swaps k ⟨j-start k,h⟩ * swapVolumeRate w)*V else 0
     let localCost := fun k => ((sectionD++sectionA++(sectionB++sectionC)).map (fun g => 76*g.toCircuit.terms.length*V*(142081+7)+6)).sum +
       ((List.range' (start k) edges.length).map (work k)).sum + (List.ofFn (copyWork k)).sum + 3
-    ∃ prepared : Stacks T prime, embStk fan prepared = shared ∧
-    ∃ code, ∀ data u S, represented fan data S →
-      (∀ k, (∀ h, fan h ≠ k) → S.L k = prepared.L k ∧ S.R k = prepared.R k) →
-      ∃ z F t out, Exec body code (mk u S) t (mk z F) ∧
-      t ≤ (stageRuns.map (fun k => ⌈packRate k*((V : ℝ)*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau)⌉₊ + localCost k)).sum +
-        ((List.range' (stageChildStart n) (stageRuns.flatMap (fun _ => Geometry.Moves.localPaid)).length).map childTime).sum+1 ∧
-        z.user = u.user ∧ represented fan out F ∧
+    ∃ prepared : Stacks (((T+41)+273)+LeafCore.small) prime, embStk full prepared = shared ∧
+    ∃ code, ∀ data u S, represented full data S →
+      (∀ k, (∀ h, full h ≠ k) → S.L k = prepared.L k ∧ S.R k = prepared.R k) →
+      ∃ z F t packed out, Exec outer code (mk u S) t (mk z F) ∧
+      t ≤ ⌈restoreRate*((V : ℝ)*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau)⌉₊ + ((stageRuns.map (fun k => ⌈packRate k*((V : ℝ)*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau)⌉₊ + localCost k)).sum +
+        ((List.range' (stageChildStart n) (stageRuns.flatMap (fun _ => Geometry.Moves.localPaid)).length).map childTime).sum+1) ∧
+        z.user = u.user ∧ represented full out F ∧
         stageRuns.foldr (fun k next a => ∃ b, packedStageEffect n k (w+1) B
-          (node.beforeRows*rows*node.between*node.afterD) a b ∧ next b) (fun a => a = out) data
+          (node.beforeRows*rows*node.between*node.afterD) a b ∧ next b) (fun a => a = packed) data ∧
+        HelperLabelTrace (w+1) node.beforeH (node.beforeRows*rows*node.between*node.afterD)
+          (restoreSlotChanges (stageFinalSlot n)) packed out
 
 theorem packedAllocatedStage_host [M8.Machine.Net] (n : Fin 9) : PackedAllocatedStage n := by
   classical
@@ -452,12 +501,16 @@ theorem packedAllocatedStage_host [M8.Machine.Net] (n : Fin 9) : PackedAllocated
   refine ⟨mt,regs,phaseT,max columnCapacity (Finset.univ.sup qs),mb,ct,cr,?_⟩
   intro tapes
   refine ⟨runT,bank,T,fan,runBank,?_⟩
-  intro P U Q fits localMove f localCopy copyProc moveBody localBody runBody orig body
+  intro P U Q fits localMove f localCopy copyProc moveBody localBody runBody orig body stageBank full outer
   have cap : columnCapacity ≤ Q := (le_max_left ..).trans fits
   have capacity (k : R) : qs k ≤ Q := (Finset.le_sup (Finset.mem_univ k)).trans ((le_max_right ..).trans fits)
   choose C base swaps cb cs cl cf invoke using fun k => run k (capacity k) (localMove k) (f k) (localCopy k) (copyProc k)
     (stageRuns.take (stageRuns.idxOf k)) cap
-  refine ⟨C,base,swaps,cb,cs,cl,cf,?_⟩
+  let hdr := fun i : Fin 6 => (i.castAdd 35).natAdd T
+  let regs' := (Fin.natAddEmb 6 (m := 35)).trans (Fin.natAddEmb T)
+  obtain ⟨restore,D,finish⟩ := parentSlotChanges_exec (restoreSlotChanges (stageFinalSlot n))
+    (fan.trans (Fin.castAddEmb 41)) hdr regs' cap outer
+  refine ⟨D,C,base,swaps,cb,cs,cl,cf,?_⟩
   intro node w B rows width split label M K W V pos record copyRecord desc
   choose position coords copyPosition copyCoords ready using fun k =>
     invoke k node w B rows width split label pos (record k) (copyRecord k)
@@ -467,7 +520,7 @@ theorem packedAllocatedStage_host [M8.Machine.Net] (n : Fin 9) : PackedAllocated
   intro childTime recurse copyRecurse shared represented copyWork start work localCost
   choose initial owner code execute using fun k => ready k childTime (recurse k) (copyRecurse k) shared
   let row := role node 142080
-  choose frame privateFrame using fun k => packedInvocationFrame (rf k) (initial k) row w
+  choose frame frameView privateFrame using fun k => packedInvocationFrame (rf k) (initial k) row w
   let localTable := fun k g => embProg (original k) id (runBody k g)
   obtain ⟨prepared,owners,runStage⟩ := stage (w := w+1) (B := B) (W := node.beforeRows*rows*node.between*node.afterD)
     localTable code C localCost childTime frame shared (by
@@ -480,8 +533,47 @@ theorem packedAllocatedStage_host [M8.Machine.Net] (n : Fin 9) : PackedAllocated
         rw [Nat.add_right_comm _ _ 3]
       · rw [label] at trace
         exact trace)
-  refine ⟨prepared,owners,Prog.seqList (stageRuns.map fun k => embProg (runBank k) (Prod.mk k) (code k)),?_⟩
+  obtain ⟨init,view,entry⟩ := packedInvocationFrame fan prepared row w
+  let sweep := Prog.seqList (stageRuns.map fun k => embProg (runBank k) (Prod.mk k) (code k))
+  refine ⟨init,?_,.seq (embProg stageBank id sweep) restore,?_⟩
+  · change embStk fan (embStk stageBank init) = shared
+    rw [view,owners]
   intro data u S live fresh
-  simpa only [body,orig,localTable,original,represented,HelperFan,V,W,K,M] using runStage data u S live fresh
+  obtain ⟨inside,radix,unit,clock,words,free,scratch⟩ := entry S fresh
+  obtain ⟨v,A,m,a,exec,paid,user,done,events⟩ :=
+    runStage data (embDn stageBank u) (embStk stageBank S) live inside
+  obtain ⟨v',A',placed,_,same,project,off⟩ := exec_emb (ι := id) (body' := outer)
+    stageBank.injective (fun _ => rfl) exec u rfl S rfl
+  rw [← project] at done
+  have keep (j) (high : T ≤ j.val) := off j (fun i eqn => by
+    have h := congrArg Fin.val eqn
+    change i.val = j.val at h
+    omega)
+  have rowCount : row.rows = rows := by
+    change node.rows/142080 = rows
+    rw [split,Nat.mul_div_cancel_left _ (by decide)]
+  have tailPos : 0 < node.beforeRows*rows*node.between*node.afterD :=
+    Nat.pos_of_mul_pos_left (Nat.pos_of_mul_pos_left pos)
+  have hrow : row.Positive := by
+    exact ⟨Nat.pos_of_mul_pos_right (Nat.pos_of_mul_pos_right (Nat.pos_of_mul_pos_right tailPos)),
+      rowCount ▸ Nat.pos_of_mul_pos_left (Nat.pos_of_mul_pos_right (Nat.pos_of_mul_pos_right tailPos)),
+      label ▸ Nat.pos_of_mul_pos_right pos,Nat.pos_of_mul_pos_left (Nat.pos_of_mul_pos_right tailPos),
+      Nat.pos_of_mul_pos_left tailPos⟩
+  have size : V = M^16*(row.beforeH*(M^112*(row.beforeRows*row.rows*row.between*row.afterD))) := by
+    rw [rowCount]; change _ = M^16*(node.beforeH*K); rw [label]
+  obtain ⟨z,F,t,out,uz,rest,price,representedOut,trace,_⟩ := finish row w V hrow size a v' A'
+    ((keep _ (by change T ≤ T+(6+2); omega)).2.trans radix)
+    ((keep _ (by change T ≤ T+(6+28); omega)).2.trans unit)
+    (by rw [(keep _ (by change T ≤ T+(6+33); omega)).2]; exact clock)
+    (fun i => (keep _ (by change T ≤ T+i.val; omega)).2.trans (words i))
+    (fun j => ⟨(keep _ (by change T ≤ T+41+j.val; omega)).1.trans (free j).1,
+      (keep _ (by change T ≤ T+41+j.val; omega)).2.trans (free j).2⟩)
+    (fun j => ⟨(keep _ (by change T ≤ T+41+273+j.val; omega)).1.trans (scratch j).1,
+      (keep _ (by change T ≤ T+41+273+j.val; omega)).2.trans (scratch j).2⟩) done
+  refine ⟨z,F,m+t,a,out,Exec.seq placed rest,?_,uz.trans (same.trans user),representedOut,events,?_⟩
+  · have bound : t ≤ ⌈D*((V : ℝ)*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau)⌉₊ := by simpa only [Nat.ceil_natCast] using Nat.ceil_le_ceil price
+    rw [Nat.add_comm m t]
+    exact Nat.add_le_add bound paid
+  · rwa [rowCount] at trace
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
