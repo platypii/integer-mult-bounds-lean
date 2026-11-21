@@ -422,6 +422,46 @@ private noncomputable def placedPortMachine {n : ℕ} (dst : Fin (n+1))
     induction a using Fin.succAboveCases dst <;> induction b using Fin.succAboveCases dst <;>
       simpa [sep,Ne.symm (sep _ _)] using h
 
+/-- Place each recursive MOVE on its destination register. A positive
+rank incurs exactly one child charge in the upper bound. -/
+theorem orthogonalPaidMoves_bank :
+    let basis := orthogonalBasis
+    ∃ C : ℕ,
+      (∀ a b, basis a b ≤ 2^28) ∧ (basis.map (Nat.cast : ℕ → ℚ)).det ≠ 0 ∧
+      ∀ i j : Fin 636, Geometry.Moves.CheckedPair (i.val,j.val) →
+      ∀ {n : ℕ} (dst : Fin (n+1)), ∃ wrap : SharedBankSkeleton.Skeleton 1 prime → SharedBankSkeleton.Skeleton (n+1) prime,
+      ∀ (w W : ℕ), 0 < W →
+        let m := prime^w
+        let V := m^16*W
+        let r := Geometry.moveRank i j
+        let G := reduce m (basis.map (Nat.cast : ℕ → ℚ))
+        let encode := Exchange.transform G (reduce m (ReversedExchange.rev 8)*G)
+        let addr := fun s (k : Fin W) => FlatCoordinateLayout.index (AffineFieldCoordinates.embed (encode s)) k
+        ∀ (machine : SharedBankSkeleton.Skeleton 1 prime) (price : ℕ),
+        (0 < r → ∃ child : SharedBankStage.Stage _ 1 prime (@portOwner V),
+          SharedBankSkeleton.ofStage child = machine ∧ child.cost ≤ price ∧
+          ∀ x, RevT prime w r (sub prime w 8 0 r ⟨1,1,1,8*w,1,W⟩) (ext x) (ext (child.transform x))) →
+        ∃ stage : SharedBankStage.Stage _ (n+1) prime (phaseOwners (N := V)),
+          SharedBankSkeleton.ofStage stage = wrap machine ∧
+          stage.cost ≤ (if r = 0 then 0 else C*V + price + 2) ∧ (∀ x t, t ≠ dst → stage.transform x t = x t) ∧ ∀ x s k,
+            stage.transform x dst (addr (Exchange.exchange (reduce m (Nine.labelProj j)) s) k) =
+              x dst (addr (Exchange.exchange (reduce m (Nine.labelProj i)) s) k) := by
+  intro basis
+  obtain ⟨C,small,det,edges⟩ := orthogonalPaidMoves_owner
+  refine ⟨C,small,det,?_⟩
+  intro i j checked n dst
+  obtain ⟨wrap,run⟩ := edges i j checked
+  refine ⟨fun child => placedPortMachine dst (wrap child),?_⟩
+  intro w W hW m V r G encode addr machine price supply
+  obtain ⟨stage,control,cost,read⟩ := run w W hW machine price supply
+  refine ⟨placePort dst stage,congrArg (placedPortMachine dst) control,cost,?_,?_⟩
+  · intro x t ne
+    exact Function.update_of_ne ne _ _
+  · intro x s k
+    change Function.update x dst (stage.transform (x dst)) dst _ = _
+    rw [Function.update_self]
+    exact read (x dst) s k
+
 /-- At a fixed atom-width cutoff every scheduled PR589 move has a physical
 implementation of linear volume cost, uniformly in both labels. -/
 theorem orthogonalStoppedMoves_bank [M8.Machine.Net] (cutoff : ℕ) :
@@ -440,46 +480,98 @@ theorem orthogonalStoppedMoves_bank [M8.Machine.Net] (cutoff : ℕ) :
           stage.transform x dst (addr (Exchange.exchange (reduce m (Nine.labelProj j)) s) k) =
             x dst (addr (Exchange.exchange (reduce m (Nine.labelProj i)) s) k) := by
   intro basis
-  obtain ⟨C,small,det,edges⟩ := orthogonalPaidMoves_owner
+  obtain ⟨C,small,det,edges⟩ := orthogonalPaidMoves_bank
   refine ⟨(C : ℝ)+8*(3808275+|LeafCore.C| * cutoff)+2,small,det,?_⟩
   intro i j checked n dst
   let r := Geometry.moveRank i j
   have hr : r ≤ 8 := by
     simpa [r,Geometry.moveRank,Geometry.Address] using
       Submodule.finrank_le (LinearMap.range (Geometry.projector j - Geometry.projector i))
-  obtain ⟨wrap,run⟩ := edges i j checked
+  obtain ⟨wrap,run⟩ := edges i j checked dst
   obtain ⟨child,leaf⟩ := orthogonalStoppedChild r 0 (by omega)
-  refine ⟨placedPortMachine dst (wrap child),?_⟩
+  refine ⟨wrap child,?_⟩
   intro w W hw stop hW m V G encode addr
   let price := r*(3808274*V + LeafCore.coreCost V w + 1)
-  obtain ⟨stage,control,cost,read⟩ := run w W hW child price (fun _ => by
+  obtain ⟨stage,control,cost,idle,read⟩ := run w W hW child price (fun _ => by
     obtain ⟨A,fixed,time,act⟩ := leaf w W hw hW
     exact ⟨A,fixed,time.le,act⟩)
-  refine ⟨placePort dst stage,?_,?_,?_,?_⟩
-  · exact congrArg (placedPortMachine dst) control
-  · change (stage.cost : ℝ) ≤ _
+  refine ⟨stage,control,?_,idle,read⟩
+  have cap : stage.cost ≤ C*V + 8*(3808274*V + LeafCore.coreCost V w + 1)+2 := by
+    apply cost.trans
+    split
+    · omega
+    · exact Nat.add_le_add_right (Nat.add_le_add_left (Nat.mul_le_mul_right _ hr) _) _
+  have hw' : (1 : ℝ) ≤ w := by exact_mod_cast hw
+  have core := RevBudget.coreCost_le V w (L := cutoff) (by
+    rw [max_eq_right hw]
+    exact (Real.rpow_le_self_of_one_le hw' M8.Machine.BudgetBound.exponent_range.2.le).trans (by exact_mod_cast stop))
+  have hv : 1 ≤ V := Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) hW
+  have live : (1 : ℝ) ≤ V := by exact_mod_cast hv
+  calc
+    _ ≤ ((C*V + 8*(3808274*V + LeafCore.coreCost V w + 1)+2 : ℕ) : ℝ) := by exact_mod_cast cap
+    _ ≤ _ := by push_cast; linarith only [core,live]
 
-    have cap : stage.cost ≤ C*V + 8*(3808274*V + LeafCore.coreCost V w + 1)+2 := by
-      apply cost.trans
-      split
-      · omega
-      · exact Nat.add_le_add_right (Nat.add_le_add_left (Nat.mul_le_mul_right _ hr) _) _
-    have hw' : (1 : ℝ) ≤ w := by exact_mod_cast hw
-    have core := RevBudget.coreCost_le V w (L := cutoff) (by
-      rw [max_eq_right hw]
-      exact (Real.rpow_le_self_of_one_le hw' M8.Machine.BudgetBound.exponent_range.2.le).trans (by exact_mod_cast stop))
-    have hv : 1 ≤ V := Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) hW
-    have live : (1 : ℝ) ≤ V := by exact_mod_cast hv
-    calc
-      _ ≤ ((C*V + 8*(3808274*V + LeafCore.coreCost V w + 1)+2 : ℕ) : ℝ) := by exact_mod_cast cap
-      _ ≤ _ := by push_cast; linarith only [core,live]
-  · intro x t ne
-    exact Function.update_of_ne ne _ _
-  · intro x s k
-    change Function.update x dst (stage.transform (x dst)) dst _ = _
-    rw [Function.update_self]
-    exact read (x dst) s k
-
+/-- A recursive trace pays the child price only at its positive certified
+ranks. The parent program depends on the child programs but not the width. -/
+theorem orthogonalPaidTrace :
+    ∃ C : ℕ, ∀ {n : ℕ} (updates : List (Fin (n+1) × Fin 636)) (current : Fin (n+1) → Fin 636),
+      (∀ p ∈ RankTrace.edges current updates, Geometry.Moves.CheckedPair (p.1.val,p.2.val)) →
+      ∀ children : ℕ → SharedBankSkeleton.Skeleton 1 prime,
+      ∃ machine : SharedBankSkeleton.Skeleton (n+1) prime, ∀ w W : ℕ, 0 < W →
+        let m := prime^w
+        let V := m^16*W
+        let G := reduce m (orthogonalBasis.map (Nat.cast : ℕ → ℚ))
+        let encode := Exchange.transform G (reduce m (ReversedExchange.rev 8)*G)
+        let addr := fun (l : Fin 636) s (k : Fin W) => FlatCoordinateLayout.index
+          (AffineFieldCoordinates.embed (encode (Exchange.exchange (reduce m (Nine.labelProj l)) s))) k
+        ∀ price : ℕ → ℕ,
+        (∀ r, 0 < r → r ≤ 8 → ∃ child : SharedBankStage.Stage _ 1 prime (@portOwner V),
+          SharedBankSkeleton.ofStage child = children r ∧ child.cost ≤ price r ∧
+          ∀ x, RevT prime w r (sub prime w 8 0 r ⟨1,1,1,8*w,1,W⟩) (ext x) (ext (child.transform x))) →
+        ∃ stage : SharedBankStage.Stage _ (n+1) prime (phaseOwners (N := V)),
+          SharedBankSkeleton.ofStage stage = machine ∧
+          stage.cost ≤ updates.length*(C*V+3) + ((RankTrace.edges current updates).map
+            (fun p => let r := Geometry.moveRank p.1 p.2; if r = 0 then 0 else price r)).sum ∧
+          ∀ x t s k, stage.transform x t (addr (RankTrace.finish current updates t) s k) =
+            x t (addr (current t) s k) := by
+  obtain ⟨C,_,_,move⟩ := orthogonalPaidMoves_bank
+  refine ⟨C,?_⟩
+  intro n updates
+  induction updates with
+  | nil =>
+    intro current checked children
+    refine ⟨SharedBankSkeleton.identity _ _ (by omega),?_⟩
+    intro w W hW m V G encode addr price supply
+    exact ⟨SharedBankStage.identity _ (by omega),rfl,by simp [SharedBankStage.identity,RankTrace.edges],fun _ _ _ _ => rfl⟩
+  | cons p rest ih =>
+    obtain ⟨dst,l⟩ := p
+    intro current checked children
+    let next := Function.update current dst l
+    let r := Geometry.moveRank (current dst) l
+    have fits : r ≤ 8 := by
+      simpa [r,Geometry.moveRank,Geometry.Address] using
+        Submodule.finrank_le (LinearMap.range (Geometry.projector l - Geometry.projector (current dst)))
+    obtain ⟨wrap,step⟩ := move (current dst) l (checked _ List.mem_cons_self) dst
+    obtain ⟨tail,finish⟩ := ih next (fun p h => checked p (List.mem_cons_of_mem _ h)) children
+    refine ⟨SharedBankSkeleton.compose (wrap (children r)) tail,?_⟩
+    intro w W hW m V G encode addr price supply
+    obtain ⟨A,ha,ca,idle,read⟩ := step w W hW (children r) (price r) (fun h => supply r h fits)
+    obtain ⟨B,hb,cb,reads⟩ := finish w W hW price supply
+    refine ⟨SharedBankStage.compose A B,by simp [ha,hb],?_,?_⟩
+    · change A.cost+B.cost+1 ≤ _
+      simp only [List.length_cons,Nat.succ_mul,RankTrace.edges,List.map_cons,List.sum_cons]
+      dsimp only [next] at cb
+      dsimp only [V,m]
+      by_cases zero : r = 0
+      all_goals simp only [show Geometry.moveRank (current dst) l = r from rfl,zero,ite_true,ite_false] at ca ⊢
+      all_goals omega
+    · intro x t s k
+      apply (reads (A.transform x) t s k).trans
+      by_cases eq : t = dst
+      · subst t
+        simpa only [next,Function.update_self] using read x s k
+      · change A.transform x t (addr (next t) s k) = _
+        simp only [idle x t eq,next,Function.update_of_ne eq]
 
 /-- Replay the frame updates in order on their physical registers. The
 ending address of each register reads its starting bit, including after
@@ -558,6 +650,34 @@ theorem orthogonalAlignedGate {k V : ℕ} (dst : Fin k) (sources : List (Fin k))
     rw [reads]
   · simp only [Function.update_of_ne eq]
 
+private theorem appendAlignedGate {n V : ℕ} {S : Type*} (dst : Fin (n+1)) (sources : List (Fin (n+1)))
+    (label : Fin 636) (current : Fin (n+1) → Fin 636) (off : dst ∉ sources) (live : 0 < V)
+    (addr : Fin 636 → S → Fin V) (A : SharedBankStage.Stage _ (n+1) prime (phaseOwners (N := V))) :
+    let next := RankTrace.finish current ((dst :: sources).map fun i => (i,label))
+    (∀ x i z, A.transform x i (addr (next i) z) = x i (addr (current i) z)) →
+    ∃ stage : SharedBankStage.Stage _ (n+1) prime (phaseOwners (N := V)),
+      stage.cost ≤ A.cost+76*sources.length*V+1 ∧ ∀ x z,
+        let initial := fun i => x i (addr (current i) z)
+        ∀ t, stage.transform x t (addr (next t) z) =
+          Function.update initial dst (initial dst + (sources.map initial).sum) t := by
+  intro next moved
+  obtain ⟨B,cb,gate⟩ := orthogonalAlignedGate dst sources off live
+  refine ⟨SharedBankStage.compose A B,?_,?_⟩
+  · change A.cost+B.cost+1 ≤ _
+    omega
+  · intro x z initial t
+    have shared (i) (mem : i ∈ dst :: sources) : next i = label :=
+      (RankTrace.finish_align current (fun _ => label) (dst :: sources) i).trans (if_pos mem)
+    have aligned (i) (mem : i ∈ sources) : addr (next i) z = addr (next dst) z := by
+      rw [shared i (List.mem_cons_of_mem _ mem),shared dst List.mem_cons_self]
+    have step := gate (A.transform x) (fun i => addr (next i) z) aligned t
+    have read (i) : A.transform x i (addr (next i) z) = initial i := moved x i z
+    change B.transform (A.transform x) t _ = _
+    by_cases hit : t = dst
+    · subst t
+      simpa only [Function.update_self,read] using step
+    · simpa only [Function.update_of_ne hit,read] using step
+
 /-- Execute the frame updates and the scalar gate as one stage. Every
 source is read from its own pre-gate frame. -/
 theorem orthogonalStoppedGate [M8.Machine.Net] (cutoff : ℕ) :
@@ -588,24 +708,52 @@ theorem orthogonalStoppedGate [M8.Machine.Net] (cutoff : ℕ) :
   obtain ⟨_,run⟩ := trace updates current checked
   obtain ⟨A,_,ca,moved⟩ := run w W hw stop hW
   have live : 0 < V := Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) hW
-  obtain ⟨B,cb,gate⟩ := orthogonalAlignedGate dst sources off live
-  refine ⟨SharedBankStage.compose A B,?_,?_⟩
-  · change ((A.cost+B.cost+1 : ℕ) : ℝ) ≤ _
-    push_cast
-    have bound : (B.cost : ℝ) ≤ 76*sources.length*V := by exact_mod_cast cb
-    dsimp only [V,m] at bound ⊢
-    linarith
-  · intro x s k initial t
-    have shared (i) (mem : i ∈ dst :: sources) : next i = label :=
-      (RankTrace.finish_align current (fun _ => label) (dst :: sources) i).trans (if_pos mem)
-    have aligned (i) (mem : i ∈ sources) : addr (next i) s k = addr (next dst) s k := by
-      rw [shared i (List.mem_cons_of_mem _ mem),shared dst List.mem_cons_self]
-    have step := gate (A.transform x) (fun i => addr (next i) s k) aligned t
-    have read (i) : A.transform x i (addr (next i) s k) = initial i := moved x i s k
-    change B.transform (A.transform x) t _ = _
-    by_cases hit : t = dst
-    · subst t
-      simpa only [Function.update_self,read] using step
-    · simpa only [Function.update_of_ne hit,read] using step
+  obtain ⟨stage,cost,read⟩ := appendAlignedGate dst sources label current off live
+    (fun l (z : Swap.Shear.State (Fin 8) (ZMod m) × Fin W) => addr l z.1 z.2) A
+    (fun x i z => moved x i z.1 z.2)
+  refine ⟨stage,?_,fun x s k => read x (s,k)⟩
+  have h := (Nat.cast_le (α := ℝ)).mpr cost
+  push_cast at h
+  dsimp only [V,m] at h ⊢
+  linarith
+
+/-- The recursive price is added once per positive incidence of the gate. -/
+theorem orthogonalPaidGate :
+    let basis := orthogonalBasis
+    ∃ C : ℕ,
+      ∀ {n : ℕ} (dst : Fin (n+1)) (sources : List (Fin (n+1))) (label : Fin 636)
+        (current : Fin (n+1) → Fin 636), dst ∉ sources →
+        let updates := (dst :: sources).map fun i => (i,label)
+        let next := RankTrace.finish current updates
+        (∀ p ∈ RankTrace.edges current updates, Geometry.Moves.CheckedPair (p.1.val,p.2.val)) →
+        ∀ w W : ℕ, 0 < W →
+          let m := prime^w
+          let V := m^16*W
+          let G := reduce m (basis.map (Nat.cast : ℕ → ℚ))
+          let encode := Exchange.transform G (reduce m (ReversedExchange.rev 8)*G)
+          let addr := fun (l : Fin 636) s (k : Fin W) => FlatCoordinateLayout.index (AffineFieldCoordinates.embed
+            (encode (Exchange.exchange (reduce m (Nine.labelProj l)) s))) k
+          ∀ (children : ℕ → SharedBankSkeleton.Skeleton 1 prime) (price : ℕ → ℕ),
+          (∀ r, 0 < r → r ≤ 8 → ∃ child : SharedBankStage.Stage _ 1 prime (@portOwner V),
+            SharedBankSkeleton.ofStage child = children r ∧ child.cost ≤ price r ∧
+            ∀ x, RevT prime w r (sub prime w 8 0 r ⟨1,1,1,8*w,1,W⟩) (ext x) (ext (child.transform x))) →
+          ∃ stage : SharedBankStage.Stage _ (n+1) prime (phaseOwners (N := V)),
+            stage.cost ≤ updates.length*(C*V+3) + ((RankTrace.edges current updates).map
+              (fun p => let r := Geometry.moveRank p.1 p.2; if r = 0 then 0 else price r)).sum + 76*sources.length*V+1 ∧ ∀ x s k,
+            let initial := fun t => x t (addr (current t) s k)
+            ∀ t, stage.transform x t (addr (next t) s k) =
+              Function.update initial dst (initial dst + (sources.map initial).sum) t := by
+  intro basis
+  obtain ⟨C,trace⟩ := orthogonalPaidTrace
+  refine ⟨C,?_⟩
+  intro n dst sources label current off updates next checked w W hW m V G encode addr children price supply
+  obtain ⟨_,run⟩ := trace updates current checked children
+  obtain ⟨A,_,ca,moved⟩ := run w W hW price supply
+  have live : 0 < V := Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) hW
+  obtain ⟨stage,cost,read⟩ := appendAlignedGate dst sources label current off live
+    (fun l (z : Swap.Shear.State (Fin 8) (ZMod m) × Fin W) => addr l z.1 z.2) A
+    (fun x i z => moved x i z.1 z.2)
+  refine ⟨stage,?_,fun x s k => read x (s,k)⟩
+  exact cost.trans (Nat.add_le_add_right (Nat.add_le_add_right ca _) _)
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode

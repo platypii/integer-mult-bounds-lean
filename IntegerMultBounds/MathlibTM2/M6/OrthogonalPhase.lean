@@ -35,6 +35,7 @@ private theorem literalGateUpdates (g : RawGate) (scheduled : g ∈ program) (cu
     ∃ (dst : Fin 661) (sources : List (Fin 661)) (l : Fin 636),
       dst.val = g.target ∧ sources.map Fin.val = g.sources ∧ dst ∉ sources ∧
       let xs := (dst :: sources).map fun i => (i,l)
+      (RankTrace.edges f xs).map (fun p => (p.1.val,p.2.val)) = Frames.edges [g] current ∧
       (∀ p ∈ RankTrace.edges f xs, Geometry.Moves.CheckedPair (p.1.val,p.2.val)) ∧
       ∀ i, (RankTrace.finish f xs i).val = Frames.step g current i.val := by
   intro f
@@ -46,21 +47,40 @@ private theorem literalGateUpdates (g : RawGate) (scheduled : g ∈ program) (cu
     simp [Frames.edges,Frames.updates,Frames.touched,RankTrace.edges]
   let l : Fin 636 := ⟨g.frame,(checked _ first).2.1⟩
   have wires : (dst :: sources).map Fin.val = Frames.touched g := by simp [dst,vals,Frames.touched]
-  refine ⟨dst,sources,l,rfl,vals,?_,?_,?_⟩
+  have trace := finiteEdges ((dst :: sources).map fun i => (i,l)) f current (fun _ => rfl)
+  have literal : _ = Frames.edges [g] current := trace.trans (by
+    simp only [Frames.edges,Frames.updates,List.flatMap_cons,List.flatMap_nil,List.append_nil,
+      ← wires,List.map_map,Function.comp_def,l])
+  refine ⟨dst,sources,l,rfl,vals,?_,literal,?_,?_⟩
   · intro mem
     exact target_not_mem_sources g scheduled (vals ▸ List.mem_map_of_mem (f := Fin.val) mem)
   · intro p mem
     apply checked
     have h := List.mem_map_of_mem (f := fun q : Fin 636 × Fin 636 => (q.1.val,q.2.val)) mem
-    rw [finiteEdges _ f current (fun _ => rfl)] at h
-    simpa only [Frames.edges,Frames.updates,List.flatMap_cons,List.flatMap_nil,List.append_nil,
-      ← wires,List.map_map,Function.comp_def,l] using h
+    exact literal ▸ h
   · intro i
     have member : i ∈ dst :: sources ↔ i.val ∈ Frames.touched g := by
       rw [← wires,List.mem_map]
       exact ⟨fun h => ⟨i,h,rfl⟩,fun ⟨j,h,e⟩ => Fin.ext e ▸ h⟩
     rw [RankTrace.finish_align]
     by_cases h : i ∈ dst :: sources <;> simp [Frames.step,h,← member,f,l]
+
+private theorem literalScalar (g : RawGate) (dst : Fin 661) (src : List (Fin 661))
+    (hd : dst.val = g.target) (hs : src.map Fin.val = g.sources)
+    (initial : Fin 661 → ZMod 2) (t : Fin 661) :
+    Function.update initial dst (initial dst + (src.map initial).sum) t =
+      g.toCircuit.run (Copy.extendStored initial) t := by
+  rw [RawGate.run_eq]
+  have atReg (i : Fin 661) : Copy.extendStored initial i.val = initial i := by simp [Copy.extendStored,i.isLt]
+  have terms : g.sources.map (Copy.extendStored initial) = src.map initial := by
+    rw [← hs,List.map_map]
+    exact List.map_congr_left fun i _ => atReg i
+  change _ = Function.update (Copy.extendStored initial) g.target
+    (Copy.extendStored initial g.target + (g.sources.map (Copy.extendStored initial)).sum) t.val
+  rw [← hd,terms,atReg]
+  by_cases eq : t = dst
+  · subst t; simp
+  · simp [Function.update_of_ne,eq,show t.val ≠ dst.val from fun h => eq (Fin.ext h),atReg]
 
 /-- Execute any scheduled literal gate at the cutoff on its 661 registers.
 The scalar result is read in the certificate's updated frame snapshot. -/
@@ -86,7 +106,7 @@ theorem orthogonalRawGate [M8.Machine.Net] (cutoff : ℕ) :
   obtain ⟨K,small,det,gates⟩ := orthogonalStoppedGate cutoff
   refine ⟨K,small,det,?_⟩
   intro g scheduled current bounded checked w W hw stop hW m V G encode addr
-  obtain ⟨dst,src,l,hd,hs,off,cert,finish⟩ := literalGateUpdates g scheduled current bounded checked
+  obtain ⟨dst,src,l,hd,hs,off,_,cert,finish⟩ := literalGateUpdates g scheduled current bounded checked
   let f := fun i : Fin 661 => (⟨current i,bounded i⟩ : Fin 636)
   obtain ⟨stage,cost,run⟩ := gates dst src l f off cert w W hw stop hW
   have len : src.length = g.sources.length := by simpa using congrArg List.length hs
@@ -97,17 +117,50 @@ theorem orthogonalRawGate [M8.Machine.Net] (cutoff : ℕ) :
   change stage.transform x t (addr _ s k) = Function.update initial dst
     (initial dst + (src.map initial).sum) t at read
   rw [finish t] at read
-  rw [read,RawGate.run_eq]
-  have atReg (i : Fin 661) : Copy.extendStored initial i.val = initial i := by simp [Copy.extendStored,i.isLt]
-  have terms : g.sources.map (Copy.extendStored initial) = src.map initial := by
-    rw [← hs,List.map_map]
-    exact List.map_congr_left fun i _ => atReg i
-  change _ = Function.update (Copy.extendStored initial) g.target
-    (Copy.extendStored initial g.target + (g.sources.map (Copy.extendStored initial)).sum) t.val
-  rw [← hd,terms,atReg]
-  by_cases eq : t = dst
-  · subst t; simp
-  · simp [Function.update_of_ne,eq,show t.val ≠ dst.val from fun h => eq (Fin.ext h),atReg]
+  exact read.trans (literalScalar g dst src hd hs initial t)
+
+/-- Execute a literal gate with its recursive charges in certificate order. -/
+theorem orthogonalRecursiveRawGate :
+    let basis := orthogonalBasis
+    ∃ C : ℕ,
+      ∀ (g : RawGate), g ∈ program → ∀ current : ℕ → ℕ,
+        (∀ i : Fin 661, current i < 636) →
+        (∀ p ∈ Frames.edges [g] current, Geometry.Moves.CheckedPair p) →
+        ∀ w W : ℕ, 0 < W →
+          let m := prime^w
+          let V := m^16*W
+          let G := reduce m (basis.map (Nat.cast : ℕ → ℚ))
+          let encode := M8.Exchange.transform G (reduce m (M8.ReversedExchange.rev 8)*G)
+          let addr := fun l s (k : Fin W) => FlatCoordinateLayout.index (AffineFieldCoordinates.embed
+            (encode (M8.Exchange.exchange (reduce m (Nine.labelProj l)) s))) k
+          ∀ (children : ℕ → SharedBankSkeleton.Skeleton 1 prime) (price : ℕ → ℕ),
+          (∀ r, 0 < r → r ≤ 8 → ∃ child : SharedBankStage.Stage _ 1 prime (@portOwner V),
+            SharedBankSkeleton.ofStage child = children r ∧ child.cost ≤ price r ∧
+            ∀ x, M8.RevMachine.RevT prime w r (M8.RevMachine.sub prime w 8 0 r ⟨1,1,1,8*w,1,W⟩)
+              (M8.RevMachine.ext x) (M8.RevMachine.ext (child.transform x))) →
+          ∃ stage : SharedBankStage.Stage _ 661 prime (phaseOwners (N := V)),
+            stage.cost ≤ (g.sources.length+1)*(C*V+3) + ((Frames.edges [g] current).map
+              (fun p => let r := Geometry.moveRank p.1 p.2; if r = 0 then 0 else price r)).sum + 76*g.sources.length*V+1 ∧
+            ∀ x s k (t : Fin 661), stage.transform x t (addr (Frames.step g current t) s k) =
+              g.toCircuit.run (Copy.extendStored (fun i : Fin 661 => x i (addr (current i) s k))) t := by
+  intro basis
+  obtain ⟨C,gates⟩ := orthogonalPaidGate
+  refine ⟨C,?_⟩
+  intro g scheduled current bounded checked w W hW m V G encode addr children price supply
+  obtain ⟨dst,src,l,hd,hs,off,literal,cert,finish⟩ := literalGateUpdates g scheduled current bounded checked
+  let f := fun i : Fin 661 => (⟨current i,bounded i⟩ : Fin 636)
+  obtain ⟨stage,cost,run⟩ := gates dst src l f off cert w W hW children price supply
+  have len : src.length = g.sources.length := by simpa using congrArg List.length hs
+  refine ⟨stage,?_,?_⟩
+  · rw [← literal,List.map_map]
+    simpa only [List.length_map,List.length_cons,len,Function.comp_def] using cost
+  · intro x s k t
+    let initial := fun i : Fin 661 => x i (addr (current i) s k)
+    have read := run x s k t
+    change stage.transform x t (addr _ s k) = Function.update initial dst
+      (initial dst + (src.map initial).sum) t at read
+    rw [finish t] at read
+    exact read.trans (literalScalar g dst src hd hs initial t)
 
 /-- Run a certified gate sequence in its successive literal frame snapshots. -/
 theorem orthogonalGateSequence [M8.Machine.Net] (cutoff : ℕ) :
@@ -169,6 +222,72 @@ theorem orthogonalGateSequence [M8.Machine.Net] (cutoff : ℕ) :
       · have ne : i ≠ g.target := fun e => h (e ▸ (register_bounds g hg).1)
         simp [Copy.extendStored,h,RawGate.run_eq,Function.update_of_ne ne,initial]
 
+/-- Sum recursive costs along the actual gate sequence and its evolving frame trace. -/
+theorem orthogonalRecursiveSequence :
+    let basis := orthogonalBasis
+    ∃ C : ℕ,
+      ∀ (gs : List RawGate), (∀ g ∈ gs, g ∈ program) → ∀ current : ℕ → ℕ,
+        (∀ i : Fin 661, current i < 636) →
+        (∀ p ∈ Frames.edges gs current, Geometry.Moves.CheckedPair p) →
+        ∀ w W : ℕ, 0 < W →
+          let m := prime^w
+          let V := m^16*W
+          let G := reduce m (basis.map (Nat.cast : ℕ → ℚ))
+          let encode := M8.Exchange.transform G (reduce m (M8.ReversedExchange.rev 8)*G)
+          let addr := fun l s (k : Fin W) => FlatCoordinateLayout.index (AffineFieldCoordinates.embed
+            (encode (M8.Exchange.exchange (reduce m (Nine.labelProj l)) s))) k
+          ∀ (children : ℕ → SharedBankSkeleton.Skeleton 1 prime) (price : ℕ → ℕ),
+          (∀ r, 0 < r → r ≤ 8 → ∃ child : SharedBankStage.Stage _ 1 prime (@portOwner V),
+            SharedBankSkeleton.ofStage child = children r ∧ child.cost ≤ price r ∧
+            ∀ x, M8.RevMachine.RevT prime w r (M8.RevMachine.sub prime w 8 0 r ⟨1,1,1,8*w,1,W⟩)
+              (M8.RevMachine.ext x) (M8.RevMachine.ext (child.transform x))) →
+          ∃ stage : SharedBankStage.Stage _ 661 prime (phaseOwners (N := V)),
+            stage.cost ≤ (gs.map (fun g => (g.sources.length+1)*(C*V+3)+76*g.sources.length*V+2)).sum +
+              ((Frames.edges gs current).map (fun p => let r := Geometry.moveRank p.1 p.2; if r = 0 then 0 else price r)).sum ∧
+            ∀ x s k (t : Fin 661), stage.transform x t (addr (Frames.run gs current t) s k) =
+              Circuit.run (gs.map RawGate.toCircuit) (Copy.extendStored (fun i : Fin 661 => x i (addr (current i) s k))) t := by
+  intro basis
+  obtain ⟨C,gate⟩ := orthogonalRecursiveRawGate
+  refine ⟨C,?_⟩
+  intro gs
+  induction gs with
+  | nil =>
+    intro scheduled current bounded checked w W hW m V G encode addr children price supply
+    exact ⟨SharedBankStage.identity _ (by decide),by simp [SharedBankStage.identity,Frames.edges,Frames.updates,RankTrace.edges],
+      fun x s k t => by simp [Frames.run,SharedBankStage.identity,Copy.extendStored,t.isLt]⟩
+  | cons g gs ih =>
+    intro scheduled current bounded checked w W hW m V G encode addr children price supply
+    have split := Frames.edges_append [g] gs current
+    change Frames.edges (g :: gs) current = Frames.edges [g] current ++ Frames.edges gs (Frames.step g current) at split
+    rw [split,List.forall_mem_append] at checked
+    have hg := scheduled g List.mem_cons_self
+    obtain ⟨A,ca,readA⟩ := gate g hg current bounded checked.1 w W hW children price supply
+    have first : (current g.target,g.frame) ∈ Frames.edges [g] current := by
+      simp [Frames.edges,Frames.updates,Frames.touched,RankTrace.edges]
+    have next (i : Fin 661) : Frames.step g current i < 636 := by
+      unfold Frames.step
+      split
+      · exact (checked.1 _ first).2.1
+      · exact bounded i
+    obtain ⟨B,cb,readB⟩ := ih (fun t h => scheduled t (List.mem_cons_of_mem _ h))
+      (Frames.step g current) next checked.2 w W hW children price supply
+    refine ⟨SharedBankStage.compose A B,?_,?_⟩
+    · change A.cost+B.cost+1 ≤ _
+      rw [split,List.map_append,List.sum_append]
+      simp only [Nat.cast_add,Nat.cast_one,List.map_cons,List.sum_cons] at ca cb ⊢
+      dsimp only [V,m]
+      omega
+    · intro x s k t
+      apply (readB (A.transform x) s k t).trans
+      let initial := Copy.extendStored (fun i : Fin 661 => x i (addr (current i) s k))
+      change Circuit.run _ _ _ = Circuit.run _ (g.toCircuit.run initial) _
+      congr 2
+      funext i
+      by_cases h : i < 661
+      · simpa only [Copy.extendStored,h,↓reduceDIte] using readA x s k ⟨i,h⟩
+      · have ne : i ≠ g.target := fun e => h (e ▸ (register_bounds g hg).1)
+        simp [Copy.extendStored,h,RawGate.run_eq,Function.update_of_ne ne,initial]
+
 private theorem finishBounded (xs : List (ℕ × ℕ)) (current : ℕ → ℕ)
     (bounded : ∀ i : Fin 661, current i < 636)
     (checked : ∀ p ∈ RankTrace.edges current xs, Geometry.Moves.CheckedPair p) :
@@ -184,6 +303,32 @@ private theorem finishBounded (xs : List (ℕ × ℕ)) (current : ℕ → ℕ)
         exact (checked _ List.mem_cons_self).2.1
       · simpa only [Function.update_of_ne eq] using bounded i
     · exact fun q h => checked q (List.mem_cons_of_mem _ h)
+
+private theorem phaseInputs (afterScatter : Bool) :
+    let gs := if afterScatter then sectionB ++ sectionC else sectionD ++ sectionA
+    let current := if afterScatter then Frames.scatterFinish Frames.beforeScatter else Frames.snapshot Frames.initialRefs
+    (∀ g ∈ gs, g ∈ program) ∧ (∀ i : Fin 661, current i < 636) ∧
+      (∀ p ∈ Frames.edges gs current, Geometry.Moves.CheckedPair p) := by
+  intro gs current
+  have checked := Geometry.Moves.phase_checked
+  rw [Geometry.Moves.phaseEdges,List.forall_mem_append] at checked
+  have init (i : Fin 661) : Frames.snapshot Frames.initialRefs i < 636 := by
+    simpa only [Frames.snapshot,i.isLt,↓reduceIte] using Frames.initial_ids_bounded i
+  refine ⟨?_,?_,?_⟩
+  · intro g mem
+    cases afterScatter <;> simp only [gs,Bool.false_eq_true,ite_false,ite_true,List.mem_append] at mem
+    · exact List.mem_append_left _ (List.mem_append_left _ (List.mem_append_left _ (List.mem_append.mpr mem)))
+    · rcases mem with b | c
+      · exact List.mem_append_left _ (List.mem_append_right _ b)
+      · exact List.mem_append_right _ c
+  · cases afterScatter
+    · exact init
+    · change ∀ i : Fin 661, Frames.beforeScatter i < 636
+      rw [← Frames.before_scatter,Frames.run_eq_finish]
+      exact finishBounded _ _ init checked.1
+  · cases afterScatter
+    · exact checked.1
+    · exact checked.2
 
 /-- Both literal phase lists use one basis and scan bound on opposite sides
 of the scatter. Each output is the scalar program evaluated registerwise. -/
@@ -209,24 +354,38 @@ theorem orthogonalStoppedPhases [M8.Machine.Net] (cutoff : ℕ) :
   obtain ⟨K,small,det,seq⟩ := orthogonalGateSequence cutoff
   refine ⟨K,small,det,?_⟩
   intro afterScatter gs current
-  have checked := Geometry.Moves.phase_checked
-  rw [Geometry.Moves.phaseEdges,List.forall_mem_append] at checked
-  have init (i : Fin 661) : Frames.snapshot Frames.initialRefs i < 636 := by
-    simpa only [Frames.snapshot,i.isLt,↓reduceIte] using Frames.initial_ids_bounded i
-  apply seq gs (current := current)
-  · intro g mem
-    cases afterScatter <;> simp only [gs,Bool.false_eq_true,ite_false,ite_true,List.mem_append] at mem
-    · exact List.mem_append_left _ (List.mem_append_left _ (List.mem_append_left _ (List.mem_append.mpr mem)))
-    · rcases mem with b | c
-      · exact List.mem_append_left _ (List.mem_append_right _ b)
-      · exact List.mem_append_right _ c
-  · cases afterScatter
-    · exact init
-    · change ∀ i : Fin 661, Frames.beforeScatter i < 636
-      rw [← Frames.before_scatter,Frames.run_eq_finish]
-      exact finishBounded _ _ init checked.1
-  · cases afterScatter
-    · exact checked.1
-    · exact checked.2
+  obtain ⟨scheduled,bounded,checked⟩ := phaseInputs afterScatter
+  exact seq gs scheduled current bounded checked
+
+/-- Both recursive phases use the certified incidence order on their physical owners. -/
+theorem orthogonalRecursivePhases :
+    let basis := orthogonalBasis
+    ∃ C : ℕ,
+      ∀ afterScatter : Bool,
+        let gs := if afterScatter then sectionB ++ sectionC else sectionD ++ sectionA
+        let current := if afterScatter then Frames.scatterFinish Frames.beforeScatter else Frames.snapshot Frames.initialRefs
+        ∀ w W : ℕ, 0 < W →
+          let m := prime^w
+          let V := m^16*W
+          let G := reduce m (basis.map (Nat.cast : ℕ → ℚ))
+          let encode := M8.Exchange.transform G (reduce m (M8.ReversedExchange.rev 8)*G)
+          let addr := fun l s (k : Fin W) => FlatCoordinateLayout.index (AffineFieldCoordinates.embed
+            (encode (M8.Exchange.exchange (reduce m (Nine.labelProj l)) s))) k
+          ∀ (children : ℕ → SharedBankSkeleton.Skeleton 1 prime) (price : ℕ → ℕ),
+          (∀ r, 0 < r → r ≤ 8 → ∃ child : SharedBankStage.Stage _ 1 prime (@portOwner V),
+            SharedBankSkeleton.ofStage child = children r ∧ child.cost ≤ price r ∧
+            ∀ x, M8.RevMachine.RevT prime w r (M8.RevMachine.sub prime w 8 0 r ⟨1,1,1,8*w,1,W⟩)
+              (M8.RevMachine.ext x) (M8.RevMachine.ext (child.transform x))) →
+          ∃ stage : SharedBankStage.Stage _ 661 prime (phaseOwners (N := V)),
+            stage.cost ≤ (gs.map (fun g => (g.sources.length+1)*(C*V+3)+76*g.sources.length*V+2)).sum +
+              ((Frames.edges gs current).map (fun p => let r := Geometry.moveRank p.1 p.2; if r = 0 then 0 else price r)).sum ∧
+            ∀ x s k (t : Fin 661), stage.transform x t (addr (Frames.run gs current t) s k) =
+              Circuit.run (gs.map RawGate.toCircuit) (Copy.extendStored (fun i : Fin 661 => x i (addr (current i) s k))) t := by
+  intro basis
+  obtain ⟨C,seq⟩ := orthogonalRecursiveSequence
+  refine ⟨C,?_⟩
+  intro afterScatter gs current
+  obtain ⟨scheduled,bounded,checked⟩ := phaseInputs afterScatter
+  exact seq gs scheduled current bounded checked
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
