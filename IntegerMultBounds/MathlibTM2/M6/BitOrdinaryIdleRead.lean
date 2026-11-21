@@ -453,6 +453,52 @@ theorem ordinarySpectatorWord_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T
   dsimp only [W] at *
   omega
 
+/-- Compute the scanner's binary spectator product directly from the two
+binary descriptor fields on a recursive call. -/
+theorem directorySpectatorWord_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
+    (ports : Fin 12 ↪ Fin T) (u : HS T Q prime U) (S : Stacks T prime) (b d : ℕ)
+    (hb : 0 < b) (hd : 0 < d)
+    (between : S.R (ports 10) = (FlatCoordinateSchedule.bits b).map bitSymbol)
+    (afterD : S.R (ports 11) = (FlatCoordinateSchedule.bits d).map bitSymbol)
+    (empty : ∀ i : Fin 10, S.R (ports (i.castAdd 2)) = []) :
+    let r := (Fin.castAddEmb (n := 10) 2).trans ports
+    let W := b*d
+    let decoded := Function.update (Function.update S.R (r 0) (List.replicate b Node.tick))
+      (r 1) (List.replicate d Node.tick)
+    ∃ z t, z.user = u.user ∧ t ≤ 68*W+48 ∧
+      Exec body (((toUnary (ports 10) (r 0) (r 4) (r 5) (r 6)).seq
+        (toUnary (ports 11) (r 1) (r 4) (r 5) (r 6))).seq
+        ((Mult.ShortConv.unaryProduct (r 0) (r 1) (r 2) (r 4) (r 5)).seq
+        (unaryBinary (r 2) (r 3) (r 4) (r 5) (r 6) (r 7) (r 8) (r 9))))
+        (mk u S) t (mk z {S with R := Function.update (Function.update decoded (r 2)
+          (List.replicate W Node.tick)) (r 3) (binSyms W.size W)}) := by
+  intro r W decoded
+  obtain ⟨v,m,vu,readB,first⟩ := LabelDecode.field_exec body
+    ((by decide : ([10,0,4,5,6] : List (Fin 12)).Nodup).map ports.injective) b u S between (by
+      intro i hi
+      simp only [List.mem_cons,List.not_mem_nil,or_false] at hi
+      rcases hi with rfl | rfl | rfl | rfl <;> first | exact empty 0 | exact empty 4 | exact empty 5 | exact empty 6)
+  let B := {S with R := Function.update S.R (r 0) (List.replicate b Node.tick)}
+  have free (i : Fin 10) (hi : i ≠ 0) : B.R (r i) = [] :=
+    (Function.update_of_ne (r.injective.ne hi) ..).trans (empty i)
+  obtain ⟨y,n,yv,readD,second⟩ := LabelDecode.field_exec body
+    ((by decide : ([11,1,4,5,6] : List (Fin 12)).Nodup).map ports.injective) d v B
+    ((Function.update_of_ne (ports.injective.ne (by decide : (11 : Fin 12) ≠ 0)) ..).trans afterD) (by
+      intro i hi
+      simp only [List.mem_cons,List.not_mem_nil,or_false] at hi
+      rcases hi with rfl | rfl | rfl | rfl <;> first
+        | exact free 1 (by decide) | exact free 4 (by decide) | exact free 5 (by decide) | exact free 6 (by decide))
+  let D := {S with R := decoded}
+  obtain ⟨z,k,zy,paid,run⟩ := ordinarySpectatorWord_exec body r y D b d
+    (by simp [D,decoded]) (by simp [D,decoded]) hd (by
+      intro i hi
+      have h₁ : i ≠ 1 := fun eq => by subst i; contradiction
+      have h₀ : i ≠ 0 := fun eq => by subst i; contradiction
+      exact (Function.update_of_ne (r.injective.ne h₁) ..).trans (free i h₀))
+  have lb : b ≤ W := Nat.le_mul_of_pos_right _ hd
+  have ld : d ≤ W := Nat.le_mul_of_pos_left _ hb
+  exact ⟨z,_,zy.trans (yv.trans vu),by change k ≤ 34*W+14 at paid; omega,Exec.seq (Exec.seq first second) run⟩
+
 /-- Generate the scanner modulus from the normalized binary precision header.
 The program writes its own unit seed before exponentiation. -/
 theorem ordinaryModulusWord_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)

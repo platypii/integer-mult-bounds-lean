@@ -348,6 +348,57 @@ private theorem childCountState_public {n K T : ℕ} (room : 6 ≤ T)
   change i.val = (if j.val < 3 then _ else _) at h
   split_ifs at h <;> omega
 
+/-- The two factor headers are public. The ten work tapes follow the two
+live child counts in the private leaf bank. -/
+def directorySpectatorBank (K T : ℕ) (room : 12 ≤ T) : Fin 12 ↪ Fin (66+(K+3+T)) where
+  toFun i := ⟨if i.val < 10 then 66+K+3+2+i.val else 27+i.val, by split <;> omega⟩
+  inj' := by
+    intro i j eq
+    apply Fin.ext
+    have h := congrArg Fin.val eq
+    dsimp only at h
+    split_ifs at h <;> omega
+
+theorem spectatorRoom [M8.Machine.Net] : 12 ≤ LeafCore.small := by
+  simp only [LeafCore.small, M8.Machine.ArbitraryWidthOriginalZeroBranch.count,
+    M8.Machine.ArbitraryWidthOriginalZeroBranch.highCount]
+  omega
+
+open RecursiveInterchangeLayout in
+theorem directorySpectatorBank_ready {K T n : ℕ} (room : 12 ≤ T)
+    (replay : Fin (66+(K+3+T)) ↪ Fin n) (batch : Descriptor) (F : Stacks n prime)
+    (ready : StoppedChartReady K T batch (embStk replay F)) (next : ℕ) :
+    let r := (directorySpectatorBank K T room).trans replay
+    let counts := (directoryChildCountBank K T (by omega)).trans replay
+    let D := childCountState counts batch F
+    let E := {D with R := Function.update D.R (replay ((58 : Fin 66).castAdd (K+3+T))) (List.replicate next Node.tick)}
+    E.R (r 10) = (FlatCoordinateSchedule.bits batch.between).map bitSymbol ∧
+      E.R (r 11) = (FlatCoordinateSchedule.bits batch.afterD).map bitSymbol ∧
+      ∀ j : Fin 10, E.R (r (j.castAdd 2)) = [] := by
+  intro r counts D E
+  have keep (i : Fin 12) : E.R (r i) = F.R (r i) := by
+    have off (j : Fin (66+(K+3+T))) (hj : j.val = 58 ∨ j.val = 66+K+3 ∨ j.val = 66+K+3+1) :
+        r i ≠ replay j := by
+      apply replay.injective.ne
+      intro eq
+      have h := congrArg Fin.val eq
+      change (if i.val < 10 then 66+K+3+2+i.val else 27+i.val) = j.val at h
+      split_ifs at h <;> omega
+    exact (Function.update_of_ne (off _ (Or.inl rfl)) ..).trans
+      ((Function.update_of_ne (off _ (Or.inr (Or.inr rfl))) ..).trans
+        (Function.update_of_ne (off _ (Or.inr (Or.inl rfl))) ..))
+  refine ⟨(keep 10).trans (ready.1 4), (keep 11).trans (ready.1 5), ?_⟩
+  intro j
+  rw [keep]
+  have port : directorySpectatorBank K T room (j.castAdd 2) = stoppedChartPrivate K T ⟨2+j.val,by omega⟩ := by
+    apply Fin.ext
+    change (if j.val < 10 then _ else _) = _
+    rw [if_pos j.isLt]
+    change 66+K+3+2+j.val = 66+K+3+(2+j.val)
+    omega
+  exact (show F.R (replay (directorySpectatorBank K T room (j.castAdd 2))) = [] from
+    port ▸ (ready.2 _).2)
+
 open IntegerMultBounds.Networks.Certificates.PR589.Nine RecursiveInterchangeLayout in
 /-- Read the parent's cutoff and execute the selected batch branch. In the
 recursive case the continuation receives a proof of strict width descent. -/
@@ -391,6 +442,10 @@ theorem selectScheduledChart_exec [M8.Machine.Net] (K : ℕ) {P R U : Type}
         StoppedChartReady (K+1) T batch (embStk replay F) →
         (∀ j, (∀ l : Fin 3, j ≠ saved l) → F.L j = A.L j ∧ F.R j = A.R j) →
         (∀ j : Fin 66, D.R (replay (j.castAdd ((K+1)+3+T))) = A.R (replay (j.castAdd ((K+1)+3+T)))) →
+        (let r := (directorySpectatorBank (K+1) T spectatorRoom).trans replay
+         E.R (r 10) = (FlatCoordinateSchedule.bits batch.between).map bitSymbol ∧
+         E.R (r 11) = (FlatCoordinateSchedule.bits batch.afterD).map bitSymbol ∧
+         ∀ j : Fin 10, E.R (r (j.castAdd 2)) = []) →
         E.R (replay ((46 : Fin 66).castAdd ((K+1)+3+T))) = pending.flatMap (LabelDirectory.entry prefixes 64 (w+1)) →
         (∀ j ∈ pending, (LabelDirectory.entry prefixes 64 (w+1) j).length = (E.R (prefixPorts 3)).length) →
         RecordPayload owner (fun _ => blank) 0 x E →
@@ -494,7 +549,8 @@ theorem selectScheduledChart_exec [M8.Machine.Net] (K : ℕ) {P R U : Type}
           pending v' (childCountState counts batch F) (embStk replay A) directoryReady publicWords (recursive f) recursiveBudget
           x (Shared50RecursiveNodeRows.transpose (one_dvd batch.rows) x) childInput
           (by change ((childCountState counts batch F).R (prefixPorts 0)).length+_ ≤ _; rwa [hclock])
-          (fun z archive widths word => call z F ready keep publicWords archive widths word)
+          (fun z archive widths word => call z F ready keep publicWords
+            (directorySpectatorBank_ready spectatorRoom replay batch F ready _) archive widths word)
         exact ⟨y,B,k+2,user,Nat.add_le_add_right time 2,Exec.call run,out,frame⟩)
       obtain ⟨count,erase⟩ := directoryHeaderCosts parent nodeChildren5[i.val] (64-nodeChildren5[i.val]) w (batchSize.symm ▸ pos)
       have bound : k ≤ 222*volume prime scheduled + recursiveBudget+2 := by

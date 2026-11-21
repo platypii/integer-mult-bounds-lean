@@ -856,6 +856,95 @@ noncomputable def directoryChartWords {w : ℕ} (cutoffWord : List (Fin (prime+4
     (width : ℕ) (prefixes : List (Fin (prime+4))) (i : ℕ) :=
   if i = 40 then cutoffWord else ordinaryEntryWords W beforeRows rows beforeH root parent width prefixes i
 
+/-- Load a fresh chart bank from the parent's physical words, including the
+saved cutoff. Only the ten destination registers change. -/
+private theorem directoryChartWords_exec {T Q s w : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
+    (source : Fin 9 → Fin T) (bank : Fin s ↪ Fin T) (room : 59 ≤ s) (cut tmp aux : Fin T)
+    (W a b h : ℕ) (root : Bool) (parent : Fin 64 → ZMod (prime^(w+1)))
+    (width : ℕ) (queue : List (Fin (prime+4))) (u : HS T Q prime U) (S : Stacks T prime) :
+    let words := ordinaryEntryWords W a b h root parent width queue
+    let dst := (ordinaryMetadataPorts.trans (Fin.castLEEmb room)).trans bank
+    let saved := bank ((40 : Fin 59).castLE room)
+    (∀ i, S.R (source i) = words (ordinaryMetadataPorts i).val) →
+    (∀ i j, source i ≠ dst j) → (∀ i, [source i,dst i,tmp,aux].Nodup) →
+    (∀ i, cut ≠ dst i) → [cut,saved,tmp,aux].Nodup →
+    S.R tmp = [] → S.R aux = [] → (∀ i, S.R (bank i) = []) →
+    ∃ z F, z.user = u.user ∧ Exec body
+      ((Record.copyLeafHeaders source dst tmp aux (List.finRange 9)).seq (bcopy cut saved tmp aux))
+      (mk u S) ((6*((prime^(w+1)).size+a+b+h+w+width+W.size+(if root then 0 else 64*(prime^(w+1)).size)+queue.length)+55) +
+        (6*(S.R cut).length+6)) (mk z F) ∧ F.L = S.L ∧
+      (∀ i, F.R (bank i) = directoryChartWords (S.R cut) W a b h root parent width queue i.val) ∧
+      ∀ j, j ≠ saved → (∀ i, dst i ≠ j) → F.R j = S.R j := by
+  intro words dst saved sources apart ports cutOff cutoffPorts tmpFree auxFree fresh
+  obtain ⟨v,D,user,load,left,loaded,off⟩ := ordinaryMetadata_exec body source bank room tmp aux
+    W a b h root parent width queue u S sources apart ports tmpFree auxFree fresh
+  have scratch (i : Fin 9) : dst i ≠ tmp ∧ dst i ≠ aux := by
+    have distinct := ports i
+    simp only [List.nodup_cons,List.mem_cons,List.not_mem_nil,or_false,not_or] at distinct
+    exact distinct.2.1
+  obtain ⟨z,same,copy⟩ := bcopy_exec body cutoffPorts v D
+    ((off tmp (fun i => (scratch i).1)).trans tmpFree) ((off aux (fun i => (scratch i).2)).trans auxFree)
+  have cutoff := off cut (fun i => (cutOff i).symm)
+  have empty : D.R saved = [] := (loaded _).trans rfl
+  rw [cutoff,empty,List.append_nil] at copy
+  refine ⟨z,_,same.trans user,Exec.seq load copy,left,?_,fun j away rest => (Function.update_of_ne away ..).trans (off j rest)⟩
+  intro i
+  by_cases h : i.val = 40
+  · have eq : i = (40 : Fin 59).castLE room := Fin.ext h
+    subst i
+    exact Function.update_self ..
+  · have away : bank i ≠ saved := bank.injective.ne (fun eq => h (congrArg Fin.val eq))
+    exact (Function.update_of_ne away ..).trans ((loaded i).trans (ite_eq_right h).symm)
+
+/-- Load the scanner registers alongside a live forward chart. The source
+registers may belong to the parent outside the entire round-trip bank. -/
+theorem directoryChartEntry_exec {T Q s k back w : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
+    (place : Fin (((s+5)+k)+back) ↪ Fin T) (room : 59 ≤ s)
+    (source : Fin 9 → Fin T) (cut tmp aux : Fin T) (W a b h : ℕ) (root : Bool)
+    (parent : Fin 64 → ZMod (prime^(w+1))) (width : ℕ) (queue : List (Fin (prime+4)))
+    (u : HS T Q prime U) (S : Stacks T prime) :
+    let localBank := ((Fin.castAddEmb (n := s) 5).trans (Fin.castAddEmb k)).trans (Fin.castAddEmb back)
+    let bank := localBank.trans place
+    let chart := (Fin.natAddEmb (s+5) (m := k)).trans (Fin.castAddEmb back)
+    let dst := (ordinaryMetadataPorts.trans (Fin.castLEEmb room)).trans bank
+    let saved := bank ((40 : Fin 59).castLE room)
+    let words := directoryChartWords (S.R cut) W a b h root parent width queue
+    (∀ i, S.R (source i) = ordinaryEntryWords W a b h root parent width queue (ordinaryMetadataPorts i).val) →
+    (∀ i j, source i ≠ dst j) → (∀ i, [source i,dst i,tmp,aux].Nodup) →
+    (∀ i, cut ≠ dst i) → [cut,saved,tmp,aux].Nodup → S.R tmp = [] → S.R aux = [] →
+    (∀ j : Fin (s+5), let i := place ((j.castAdd k).castAdd back)
+      S.L i = [] ∧ S.R i = []) →
+    (∀ j : Fin back, let i := place (j.natAdd ((s+5)+k))
+      S.L i = [] ∧ S.R i = []) →
+    ∃ z F, z.user = u.user ∧ Exec body
+      ((Record.copyLeafHeaders source dst tmp aux (List.finRange 9)).seq (bcopy cut saved tmp aux))
+      (mk u S) (6*((prime^(w+1)).size+a+b+h+w+width+W.size+(if root then 0 else 64*(prime^(w+1)).size)+queue.length)+55 +
+        (6*(S.R cut).length+6)) (mk z F) ∧
+      ordinaryParentEntry (T := s) back words (embStk (chart.trans place) F) =
+        embStk place F ∧ F.L = S.L ∧ ∀ j, (∀ i, j ≠ bank i) → F.R j = S.R j := by
+  intro localBank bank chart dst saved words sources apart ports cutOff cutoffPorts tmpFree auxFree empty suffix
+  obtain ⟨z,F,user,run,left,loaded,off⟩ := directoryChartWords_exec body source bank room cut tmp aux
+    W a b h root parent width queue u S sources apart ports cutOff cutoffPorts tmpFree auxFree
+    (fun i => (empty (i.castAdd 5)).2)
+  have kept (j) (outside : ∀ i, j ≠ bank i) := off j (outside _) (fun i => (outside _).symm)
+  refine ⟨z,F,user,run,?_,left,kept⟩
+  have outside (j : Fin (((s+5)+k)+back)) (high : s ≤ j.val) : F.R (place j) = S.R (place j) := by
+    apply kept
+    intro i eq
+    have h := congrArg Fin.val (place.injective eq)
+    change j.val = i.val at h
+    omega
+  apply ordinaryParentEntry_recover words (embStk place F)
+  · intro j
+    refine ⟨(congrFun left _).trans (empty j).1,?_⟩
+    induction j using Fin.addCases with
+    | left i => rw [Fin.addCases_left]; exact loaded i
+    | right i =>
+      rw [Fin.addCases_right]
+      exact (outside _ (by change s ≤ s+i.val; omega)).trans (empty (i.natAdd s)).2
+  · intro j
+    exact ⟨(congrFun left _).trans (suffix j).1,(outside _ (by change s ≤ (s+5)+k+j.val; omega)).trans (suffix j).2⟩
+
 private theorem directoryChartWords_high {w : ℕ} (cutoffWord : List (Fin (prime+4)))
     (W beforeRows rows beforeH : ℕ) (root : Bool) (parent : Fin 64 → ZMod (prime^(w+1)))
     (width : ℕ) (prefixes : List (Fin (prime+4))) (i : ℕ) (high : 58 < i) :
@@ -942,6 +1031,30 @@ def directoryChartQueue (replayRole : Option (Fin 142080)) (H parents records : 
   match replayRole with
   | none => (List.range parents).flatMap archive
   | some j => (List.range records).flatMap fun k => archive (directoryRoleRecord H j k)
+
+/-- Both chart entry paths copy at most one prefix per record. The saved
+cutoff is charged once in addition to the ordinary metadata. -/
+theorem directoryChartEntry_volume_le {w W a b h width parents : ℕ} (root : Bool)
+    (role : Option (Fin 142080)) (prefixes : ℕ → List (Fin (prime+4))) (cutoffWord : List (Fin (prime+4)))
+    (widths : ∀ j < (if role.isSome then a*b*142080*h else parents), (prefixes j).length = width)
+    (blocks : parents ≤ a*b*h) (positive : 0 < W) (outer : 0 < a) (rows : 0 < b) (labels : 0 < h) :
+    let M := prime^(w+1)
+    let N := M^128*W
+    let V := a*b*h*N
+    let queue := directoryChartQueue role h parents (a*b*h) prefixes
+    width ≤ N → cutoffWord.length ≤ V →
+    6*(M.size+a+b+h+w+width+W.size+(if root then 0 else 64*M.size)+queue.length)+55+
+      (6*cutoffWord.length+6) ≤ 499*V := by
+  intro M N V queue fits cut
+  have volumePos : 0 < V := Nat.mul_pos (Nat.mul_pos (Nat.mul_pos outer rows) labels)
+    (Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) positive)
+  have metadata : 6*(M.size+a+b+h+w+width+W.size+(if root then 0 else 64*M.size)+queue.length)+55 ≤ 487*V := by
+    cases role with
+    | none => exact ordinaryMetadata_volume_le root prefixes widths blocks positive outer rows labels fits
+    | some j =>
+      exact ordinaryMetadata_volume_le root (fun i => prefixes (directoryRoleRecord h j i))
+        (fun i hi => widths _ (directoryRoleRecord_lt (groups := a*b) j hi)) le_rfl positive outer rows labels fits
+  omega
 
 noncomputable def directoryChartOwnerSetup {T Q : ℕ} {P U : Type} (replayRole : Option (Fin 142080))
     (root : Bool) (lo hi : ℕ) (bank : Fin 72 ↪ Fin T) : Pr P T Q prime U :=
