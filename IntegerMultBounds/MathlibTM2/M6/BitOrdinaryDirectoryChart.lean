@@ -1502,7 +1502,7 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux w : ℕ} {L P U : Type}
     let finished := fun D : Stacks ((T+10)+5) prime =>
       D.R ((1 : Fin 5).natAdd (T+10)) = [] ∧ (D.R ((2 : Fin 5).natAdd (T+10))).length = N ∧
       D.R ((3 : Fin 5).natAdd (T+10)) = [] ∧ D.R ((4 : Fin 5).natAdd (T+10)) = [] ∧
-      (∀ j, D.R (directoryChartReplay T j) = []) ∧ (∀ j : Fin 6, 2 ≤ j → D.R (masks j) = []) ∧
+      (∀ j, D.R (directoryChartReplay T j) = []) ∧ (∀ j : Fin 6, 2 ≤ j → D.R (masks j) = [] ∧ D.L (masks j) = []) ∧
       ∀ i : Fin (66+K), 58 ≤ i.val →
         let port := directoryChartPlacement T ((directoryOrdinaryBank archiveRoom i).castAdd 5)
         D.L port = [] ∧ D.R port = []
@@ -1535,6 +1535,12 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux w : ℕ} {L P U : Type}
       z.user = v.user ∧ (∀ j, (∀ i, place i ≠ j) → D.L j = B.L j ∧ D.R j = B.R j) ∧
       let D := embStk place D
       ChartPrivateReady back (embStk ret D) ∧
+      let privateTapes := (List.finRange (66+K)).filter fun i => 58 ≤ i.val
+      (privateTapes.map (fun i => let port := directoryChartPlacement T ((directoryOrdinaryBank archiveRoom i).castAdd 5)
+        let tape := baseBank (port.castAdd stage.tapes)
+        4*(D.L tape).length+2*(D.R tape).length+4)).sum = 4*privateTapes.length ∧
+      (∀ j : Fin 10, D.R (baseBank ((directoryChartWork T j).castAdd stage.tapes)) = []) ∧
+      (∀ j : Fin 4, D.L (baseBank ((directoryChartWork T (j.castAdd 6)).castAdd stage.tapes)) = []) ∧
       ((List.finRange 5).map (fun j => let i := baseBank ((j.natAdd (T+10)).castAdd stage.tapes)
         (D.R i).length)).sum = N ∧
       ((List.finRange back.tapes).map (fun j => let i := j.natAdd (((T+10)+5)+stage.tapes)
@@ -1736,7 +1742,10 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux w : ℕ} {L P U : Type}
       have regEq (j : Fin 5) : ((Fin.natAddEmb T).trans place) j = j.natAdd (T+10) := directoryChartPlacement_owner j
       have cleaned : finished B := by
         obtain ⟨_,acc,widthReg,save,tmp,replayFree,maskFree,privateFree,_⟩ := done
-        exact ⟨(regEq 1) ▸ acc,(regEq 2) ▸ widthReg.trans rowWidth,(regEq 3) ▸ save,(regEq 4) ▸ tmp,replayFree,maskFree,privateFree⟩
+        refine ⟨(regEq 1) ▸ acc,(regEq 2) ▸ widthReg.trans rowWidth,(regEq 3) ▸ save,(regEq 4) ▸ tmp,replayFree,?_,privateFree⟩
+        intro j hj
+        refine ⟨(maskFree j hj).1,(maskFree j hj).2.trans ?_⟩
+        fin_cases j <;> first | (norm_num at hj; done) | exact left _
       exact ⟨y,B,((normSteps+l)+s)+(prior+t),out,by change s ≤ setupCost at setupTime; omega,⟨cleaned,reads,inactive⟩,user.trans (cu.trans (bu.trans hu)),⟨Exec.seq (Exec.seq (Exec.seq normalize init) prepare) run.run,run.reads⟩⟩)
   let updated := Function.update (stage.transform words) src out
   have chartInput : RepT (stage.input updated) (embStk chart D).L (embStk chart D).R := by
@@ -1764,18 +1773,72 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux w : ℕ} {L P U : Type}
     dsimp only
     linarith only [runtime,firstCost,lastCost]
   rw [view]
-  refine ⟨privateReady,?_,?_,final,?_,?_,D,done,frame⟩
-  · have kept (j : Fin 5) := frame ((j.natAdd (T+10)).castAdd stage.tapes) (fun i eq => by
+  have prefixFrame (j : Fin ((T+10)+5)) := frame (j.castAdd stage.tapes) (fun i eq => by
+    have h := congrArg Fin.val eq
+    change (T+10)+5+i.val = j.val at h
+    omega)
+  have prefixPort (j : Fin ((T+10)+5)) (ne : j ≠ slot) : placement j = j.castAdd stage.tapes := by
+    have apart : j.castAdd stage.tapes ≠ (stage.slots src).natAdd ((T+10)+5) := by
+      intro eq
       have h := congrArg Fin.val eq
-      change (T+10)+5+i.val = (T+10)+j.val at h
-      omega)
-    have regs (j : Fin 5) (ne : j ≠ 0) : placement (j.natAdd (T+10)) = (j.natAdd (T+10)).castAdd stage.tapes := by
-      have apart : (j.natAdd (T+10)).castAdd stage.tapes ≠ (stage.slots src).natAdd ((T+10)+5) := by
-        intro eq
-        have h := congrArg Fin.val eq
-        change (T+10)+j.val = (T+10)+5+(stage.slots src).val at h
+      change j.val = (T+10)+5+(stage.slots src).val at h
+      omega
+    exact Equiv.swap_apply_of_ne_of_ne ((Fin.castAddEmb stage.tapes).injective.ne ne) apart
+  have maskPos (l : Fin 4) : maskBank (l.natAdd 2) = directoryChartWork T (l.castAdd 6) := by
+    fin_cases l <;> rfl
+  refine ⟨privateReady,?_,?_,?_,?_,?_,final,?_,?_,D,done,frame⟩
+  · let privateTapes := (List.finRange (66+K)).filter fun i => 58 ≤ i.val
+    have charge (i) (hi : i ∈ privateTapes) := done.2.2.2.2.2.2 i (List.mem_filter.mp hi |>.2 |> of_decide_eq_true)
+    let physical := fun i : Fin (66+K) => directoryChartPlacement T ((directoryOrdinaryBank archiveRoom i).castAdd 5)
+    have off (i) : physical i ≠ slot := by
+      intro eq
+      have h := congrArg Fin.val eq
+      change (if (directoryOrdinaryBank archiveRoom i).val < T then _ else _) = (T+10)+0 at h
+      rw [ite_eq_left (directoryOrdinaryBank archiveRoom i).isLt] at h
+      have bound := (directoryOrdinaryBank archiveRoom i).isLt
+      omega
+    have four (i) (hi : i ∈ privateTapes) :
+        let j := baseBank ((physical i).castAdd stage.tapes)
+        4*(F.L j).length+2*(F.R j).length+4 = 4 := by
+      obtain ⟨left,right⟩ := charge i hi
+      change D.L (placement (physical i)) = [] at left
+      change D.R (placement (physical i)) = [] at right
+      rw [prefixPort _ (off i)] at left right
+      dsimp only
+      rw [(prefixFrame _).1,(prefixFrame _).2,left,right]
+      rfl
+    change (privateTapes.map _).sum = _
+    rw [List.map_congr_left four,List.map_const',List.sum_replicate_nat,Nat.mul_comm]
+  · intro j
+    have off : directoryChartWork T j ≠ slot := by
+      intro eq
+      have h := congrArg Fin.val eq
+      change T+j.val = (T+10)+0 at h
+      omega
+    rw [(prefixFrame _).2,← prefixPort _ off]
+    change (embStk placement D).R (directoryChartWork T j) = []
+    by_cases mask : j.val < 4
+    · let l : Fin 4 := ⟨j.val,mask⟩
+      have atMask := done.2.2.2.2.2.1 (l.natAdd 2) (by change 2 ≤ 2+l.val; omega)
+      rw [maskPos l] at atMask
+      exact atMask.1
+    · let l : Fin 6 := ⟨j.val-4,by omega⟩
+      have pos : directoryChartReplay T l = directoryChartWork T j := by
+        apply congrArg (directoryChartWork T)
+        apply Fin.ext
+        change 4+(j.val-4) = j.val
         omega
-      exact Equiv.swap_apply_of_ne_of_ne ((Fin.castAddEmb stage.tapes).injective.ne ((Fin.natAddEmb (T+10)).injective.ne ne)) apart
+      exact pos ▸ done.2.2.2.2.1 l
+  · intro j
+    have off : directoryChartWork T (j.castAdd 6) ≠ slot := by
+      intro eq
+      have h := congrArg Fin.val eq
+      change T+j.val = (T+10)+0 at h
+      omega
+    rw [(prefixFrame _).1,← prefixPort _ off,← maskPos]
+    exact (done.2.2.2.2.2.1 (j.natAdd 2) (by change 2 ≤ 2+j.val; omega)).2
+  · have kept (j : Fin 5) := prefixFrame (j.natAdd (T+10))
+    have regs (j : Fin 5) (ne : j ≠ 0) := prefixPort (j.natAdd (T+10)) ((Fin.natAddEmb (T+10)).injective.ne ne)
     obtain ⟨acc,widthReg,save,tmp,_⟩ := done
     change D.R (placement _) = [] at acc save tmp
     change (D.R (placement _)).length = N at widthReg

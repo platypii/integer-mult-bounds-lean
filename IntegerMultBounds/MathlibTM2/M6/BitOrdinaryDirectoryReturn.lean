@@ -174,6 +174,7 @@ theorem classifiedDirectoryCall_exec {P U : Type} {T Q : ℕ} (body : P → Pr P
           ownerRow size out j = ordinaryChildOutput (r := r) (g := g) (w := w) word ∘ ordinaryRecursivePosition r g w W
         else ownerRow size out j = saved j) ∧
       F.R (p 1) = [] ∧ F.R (p 2) = [] ∧ F.R (p 5) = [] ∧ F.R (p 6) = [] ∧
+      (∀ k, k ≠ p 0 → F.L k = S.L k ∧ (F.R k).length ≤ (S.R k).length) ∧
       ∀ k, k ∉ [p 0,p 1,p 2,p 5,p 6] → F.L k = S.L k ∧ F.R k = S.R k := by
   intro W packed batch R V N size labels ready rows live bad saved u S budget prepared input backup empty width tmp ls bs child
   obtain ⟨y,D,n,word,user,paid,call,reads,kept,act⟩ :=
@@ -208,7 +209,7 @@ theorem classifiedDirectoryCall_exec {P U : Type} {T Q : ℕ} (body : P → Pr P
   have payload := ownerWord_reads word joined tail (payload_prefix_of_read word _ _ _ _ reads)
     (by simpa only [RecordPayload,sub_zero] using reads) (congrFun left (p 0)) result
   refine ⟨z,F,_,joined,tail,zy.trans user,?_,Exec.seq call merge,by simpa only [RecordPayload,sub_zero] using payload,
-    result,?_,back,acc,liveEnd,badEnd,?_⟩
+    result,?_,back,acc,liveEnd,badEnd,?_,?_⟩
   · simp only [labels,List.length_finRange] at time
     omega
   · intro j
@@ -218,6 +219,13 @@ theorem classifiedDirectoryCall_exec {P U : Type} {T Q : ℕ} (body : P → Pr P
       obtain ⟨original,ok,result⟩ := act j
       exact ⟨original,ok,by rw [show out j = row j from ite_eq_left h]; exact funext result⟩
     · next h => exact ite_eq_right h
+  · intro k ne
+    refine ⟨(congrFun left k).trans (kept k ne).1,?_⟩
+    by_cases h : k ∈ [p 1,p 2,p 5,p 6]
+    · simp only [List.mem_cons,List.not_mem_nil,or_false] at h
+      rcases h with rfl | rfl | rfl | rfl <;> simp [back,acc,liveEnd,badEnd]
+    · have off : k ∉ [p 0,p 1,p 2,p 5,p 6] := by simpa only [List.mem_cons,not_or] using And.intro ne h
+      exact ((congrArg List.length ((frame k off).trans (kept k ne).2))).le
   · intro k off
     have outside : k ≠ p 0 := fun eq => off (by simp [eq])
     exact ⟨(congrFun left k).trans (kept k outside).1,(frame k off).trans (kept k outside).2⟩
@@ -254,6 +262,7 @@ theorem preparedDirectoryCall_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T
         (if live j && !bad j then ordinaryChildOutput (r := r) (g := g) (w := w) word else word) ∘
           ordinaryRecursivePosition r g w W) ∧
       F.R (p 1) = [] ∧ F.R (p 2) = [] ∧ F.R (p 5) = [] ∧ F.R (p 6) = [] ∧
+      (∀ k, k ≠ p 0 → F.L k = S.L k ∧ (F.R k).length ≤ (S.R k).length) ∧
       ∀ k, k ∉ [p 0,p 1,p 2,p 5,p 6] → F.L k = S.L k ∧ F.R k = S.R k := by
   intro W packed batch R V N size labels ready rows live bad u S budget prepared left queue free empty width tmp ls bs D child
   obtain ⟨v,user,copy⟩ := bcopy_exec body ((by decide : ([0,1,2,4] : List (Fin 7)).Nodup).map p.injective)
@@ -268,12 +277,12 @@ theorem preparedDirectoryCall_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T
   have backup : D.R (p 1) = labels.flatMap (fun (j : Fin R) => payloadWord (SparseRoleCircuit.encode ∘ saved j)) := by
     rw [show D.R (p 1) = rows.flatten from Function.update_self ..,encoded,packedRows size original]
   have keep (j : Fin 7) (off : j ≠ 1) : D.R (p j) = S.R (p j) := Function.update_of_ne (p.injective.ne off) ..
-  obtain ⟨z,F,t,out,tail,zy,time,call,payload,_,rowsOut,back,acc,liveEnd,badEnd,frame⟩ :=
+  obtain ⟨z,F,t,out,tail,zy,time,call,payload,_,rowsOut,back,acc,liveEnd,badEnd,stock,frame⟩ :=
     classifiedDirectoryCall_exec body f p parent r g w ready rows live bad saved v D budget prepared
       (by intro k; change readAt blank (S.L (p 0)) (D.R (p 0)) k = _; rw [left,keep 0 (by decide),queue])
       backup ((keep 2 (by decide)).trans empty) ((congrArg List.length (keep 3 (by decide))).trans width)
       ((keep 4 (by decide)).trans tmp) ((keep 5 (by decide)).trans ls) ((keep 6 (by decide)).trans bs) (child v user)
-  refine ⟨z,F,_,out,zy.trans user,?_,Exec.seq copy call,payload,?_,back,acc,liveEnd,badEnd,?_⟩
+  refine ⟨z,F,_,out,zy.trans user,?_,Exec.seq copy call,payload,?_,back,acc,liveEnd,badEnd,?_,?_⟩
   · have bytes : rows.flatten.length = R*N := by simpa only [encoded,payloadWord,List.length_map,List.length_ofFn] using size.symm
     rw [bytes]
     nlinarith
@@ -286,6 +295,11 @@ theorem preparedDirectoryCall_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T
     · next inactive =>
       obtain ⟨word,valid,eqn⟩ := ok j
       exact ⟨word,valid,by rw [ite_eq_right inactive]; exact h.trans eqn⟩
+  · intro k ne
+    refine ⟨(stock k ne).1,?_⟩
+    by_cases saved : k = p 1
+    · subst k; simp [back]
+    · simpa [D,Function.update_of_ne saved] using (stock k ne).2
   · intro k off
     have outside : k ≠ p 1 := fun eq => off (by simp [eq])
     exact ⟨(frame k off).1,(frame k off).2.trans (Function.update_of_ne outside ..)⟩
@@ -327,6 +341,7 @@ theorem scannedDirectoryCall_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T 
         ownerRow size out j = ordinaryChildOutput (r := r) (g := g) (w := w) word ∘ pos
         else bypass j (ownerRow size out j)) ∧
       F.R (p 1) = [] ∧ F.R (p 2) = [] ∧ F.R (p 5) = [] ∧ F.R (p 6) = [] ∧
+      (∀ k, k ≠ p 0 → F.L k = S.L k ∧ (F.R k).length ≤ (S.R k).length) ∧
       ∀ k, k ∉ [p 0,p 1,p 2,p 5,p 6] → F.L k = S.L k ∧ F.R k = S.R k := by
   intro W packed batch R V N raw size pos incoming bypass rows live bad u S budget active scanned left queue
     free empty width tmp ls bs D child

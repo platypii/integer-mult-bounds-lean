@@ -459,7 +459,7 @@ def GeneratedDirectoryExecution [M8.Machine.Net] {P U : Type} {r g d w common au
             a A prior bound (q 0) tail (fun j word => if live j then projected j word else input j = word)
             (fun D => D.L (q 0) = head ∧ D.R (regs 1) = [] ∧ (D.R (regs 2)).length = N ∧
               D.R (regs 3) = [] ∧ D.R (regs 4) = [] ∧ (∀ j, D.R (replay j) = []) ∧
-              (∀ j : Fin 6, 2 ≤ j → D.R (p j) = []) ∧
+              (∀ j : Fin 6, 2 ≤ j → D.R (p j) = [] ∧ D.L (p j) = A.L (p j)) ∧
               (∀ i : Fin (66+K), 58 ≤ i.val → D.L (place (localBank i)) = [] ∧ D.R (place (localBank i)) = []) ∧
               ∀ i, (∀ j, place j ≠ i) → (∀ j, replay j ≠ i) → p 2 ≠ i → p 3 ≠ i →
                 D.L i = A.L i ∧ D.R i = A.R i)
@@ -697,7 +697,7 @@ theorem generatedIncomingDirectory_exec [M8.Machine.Net] {P U : Type} {r g d w c
         placement,directoryOrdinaryBank_caller,List.length_map,rs,List.length_range,outer,caller] using congrArg List.length bsMid)
     exact (congrArg (fun f => ((List.finRange 4).map f).sum+1)
       (funext (fun j => congrArg (fun xs => 6*List.length xs+6) (cell (localBank (slots j)))))).trans measure
-  obtain ⟨z,F,t,user,continued,ok,ls,bs,untouched⟩ := saveMasksAndScan_exec smallBody place label host calls suffix p
+  obtain ⟨z,F,t,user,continued,ok,ls,bs,leftOutside,untouched⟩ := saveMasksAndScan_exec smallBody place label host calls suffix p
     (fun i => ⟨outside 2 (by decide) i,outside 3 (by decide) i⟩) rs live bad a₁ A₁ ((pOff 0).trans first) ((pOff 1).trans second)
     (fun k hk => (pOff k).trans (((frame _ (outside k hk)).2).trans (unused k hk))) result (by
       intro a
@@ -742,6 +742,8 @@ theorem generatedIncomingDirectory_exec [M8.Machine.Net] {P U : Type} {r g d w c
     exact ⟨kept.1.trans ((congrFun leftCopy i).trans original.1),
       kept.2.trans ((off i copyOff).trans original.2)⟩
   have same : y.user = a.user := userY.trans (midUser.trans (congrArg HS.user hstate).symm)
+  have savedLeft (j : Fin 6) (hj : 2 ≤ j.val) : F.L (p j) = A.L (p j) :=
+    (leftOutside _ (outside j hj)).trans ((congrFun leftCopy _).trans (frame _ (outside j hj)).1)
   have scanned := Exec.seq run (Exec.seq timed continued)
   intro left tail f childBudget child
   let D := {F with R := Function.update F.R (q 1) (F.R (q 0))}
@@ -775,7 +777,7 @@ theorem generatedIncomingDirectory_exec [M8.Machine.Net] {P U : Type} {r g d w c
       Fin.castAddEmb_apply,placement,directoryOrdinaryBank_caller] using lsMid)
     (by simpa only [localBank,Function.Embedding.trans_apply,embStk,Function.comp_apply,inner,caller,
       Fin.castAddEmb_apply,placement,directoryOrdinaryBank_caller] using bsMid)
-  obtain ⟨y,B,k,out,huser,price,call,payload,action,cleared1,cleared2,cleared5,cleared6,frame⟩ :=
+  obtain ⟨y,B,k,out,huser,price,call,payload,action,cleared1,cleared2,cleared5,cleared6,callStock,frame⟩ :=
     scannedDirectoryCall_exec host f q directory r g w incoming bypass rows live bad z F childBudget
       (by simpa only [rs,count] using ordered) (ownerLeft.trans left) queue accFree clearSaved
       (finalWidth.trans size.symm) clearTmp (ls.trans (maskList live)) (bs.trans (maskList bad)) (by
@@ -910,7 +912,7 @@ theorem generatedIncomingDirectory_exec [M8.Machine.Net] {P U : Type} {r g d w c
               C.R (regs 3) = [] ∧ C.R (regs 4) = [] ∧
               DirectoryReady v proj w W data.H J weights prefixes archiveTail (fun _ => []) (embStk outBank C) [] ∧
               C.R (copied 0) = archiveTail ∧ (C.R (copied 1)).length = (prefixes 0).length ∧ C.R (copied 2) = [] ∧ C.R (copied 3) = [] ∧
-              (∀ j : Fin 6, 2 ≤ j → C.R (p j) = []) ∧
+              (∀ j : Fin 6, 2 ≤ j → C.R (p j) = [] ∧ C.L (p j) = A.L (p j)) ∧
               ∀ i, (∀ j, place j ≠ i) → (∀ j, copied j ≠ i) → p 2 ≠ i → p 3 ≠ i →
                 C.L i = A.L i ∧ C.R i = A.R i
   apply DirectoryStageResult.post (before := fun D => (∀ j, D.R (copied j) = []) ∧
@@ -920,7 +922,7 @@ theorem generatedIncomingDirectory_exec [M8.Machine.Net] {P U : Type} {r g d w c
     have regsKept (j : Fin 5) : D.R (regs j) = C.R (regs j) := keep _ (separate _ _) (separate _ _)
     refine ⟨(congrFun left _).trans head,
       (regsKept 1).trans acc,(congrArg List.length (regsKept 2)).trans width,(regsKept 3).trans save,
-      (regsKept 4).trans tmp,?_,fun j hj => (keep _ (disjoint _ _) (disjoint _ _)).trans (masks j hj),?_,?_⟩
+      (regsKept 4).trans tmp,?_,fun j hj => ⟨(keep _ (disjoint _ _) (disjoint _ _)).trans (masks j hj).1,(congrFun left _).trans (masks j hj).2⟩,?_,?_⟩
     · intro j
       by_cases hj : j.val < 4
       · exact clear ⟨j.val,hj⟩
@@ -1006,6 +1008,10 @@ theorem generatedIncomingDirectory_exec [M8.Machine.Net] {P U : Type} {r g d w c
     · subst j
       exact keep.2.trans cleared6
     exact (finalOff _ (outside j hj) copyOff (p.injective.ne (Ne.symm l)) (p.injective.ne (Ne.symm b))).2.trans (unused j hj)
+  have maskFrame (j : Fin 6) (hj : 2 ≤ j.val) : C.R (p j) = [] ∧ C.L (p j) = A.L (p j) := by
+    have exit := outgoingOff (p j) (outside j hj) (fun _ => (disjoint _ _).symm)
+    have child := callStock (p j) (Ne.symm (outside j hj (reg 0)))
+    exact ⟨maskWork j hj,exit.1.trans (child.1.trans (savedLeft j hj))⟩
   have savedSlot (j : Fin 4) : outBank (slots j) = copied j :=
     replayPlacement_saved (localBank.trans place) slots copied (fun _ _ => separate _ _) j
   have archiveEnd : C.R (copied 0) = archiveTail := by
@@ -1023,7 +1029,7 @@ theorem generatedIncomingDirectory_exec [M8.Machine.Net] {P U : Type} {r g d w c
   have volume : V = R*N := (ordinaryDirectoryChild_volume directory r g w).symm.trans (congrArg (R*·) size)
   refine ⟨z,C,n,output,sameUser.trans (huser.trans (user.trans (copyUser.trans same))),
     by dsimp only [outBill]; rw [← directoryScanTime_eq]; simpa only [rs,count,R,outCost,active,live,bad,reduced,machine,full,N,M,m,privateTapes,K] using time,Exec.seq (Exec.seq scanned call) run,?_,
-    replacedOwnerPayload volume (q 0) out output B C payload left owner,owner,left,accEmpty,rowWidth,savedEmpty,tmpEmpty,by simpa only [binary] using done,archiveEnd,prefixEnd,maskEnd.1,maskEnd.2,maskWork,finalOff⟩
+    replacedOwnerPayload volume (q 0) out output B C payload left owner,owner,left,accEmpty,rowWidth,savedEmpty,tmpEmpty,by simpa only [binary] using done,archiveEnd,prefixEnd,maskEnd.1,maskEnd.2,maskFrame,finalOff⟩
   intro j
   exact classifiedRowResult (live j) (bad j) _ (input j) _ _ _ (ordinaryProjectedRead dimension reduced (physicalLabel m (w+1) j) weights inv (input j) _) (rowAction j)
 
