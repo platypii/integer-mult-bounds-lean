@@ -226,4 +226,64 @@ theorem orthogonalRecursiveInvocation :
     omega
   · exact invocationReads w W A B D a (fun x => (b x).2) d
 
+private theorem phaseOverhead (P V : ℕ) (live : 1 ≤ V) (gs : List RawGate) :
+    (gs.map (fun g => (g.sources.length+1)*(P*V+3)+76*g.sources.length*V+2)).sum ≤
+    (gs.map (fun g => (g.sources.length+1)*(P+3)+76*g.sources.length+2)).sum * V := by
+  induction gs with
+  | nil => simp
+  | cons g gs ih =>
+    simp only [List.map_cons,List.sum_cons]
+    rw [Nat.add_mul _ _ V]
+    apply Nat.add_le_add _ ih
+    nlinarith [Nat.mul_le_mul_left (3*(g.sources.length+1)) live]
+
+private theorem localPrice (price : ℕ → ℕ) :
+    (Geometry.Moves.localPaid.map price).sum =
+    (Geometry.Moves.phaseEdges.map (fun p => let r := Geometry.moveRank p.1 p.2; if r = 0 then 0 else price r)).sum +
+      9*price 7 := by
+  have filterPrice (rs : List ℕ) : ((rs.filter (· ≠ 0)).map price).sum =
+      (rs.map (fun r => if r = 0 then 0 else price r)).sum := by
+    induction rs with
+    | nil => rfl
+    | cons r rs ih => by_cases h : r = 0 <;> simp_all [h]
+  rw [Geometry.Moves.localPaid,List.map_append,List.sum_append,filterPrice,Geometry.Moves.copyRanks_eq]
+  simp only [List.map_map,Function.comp_def,List.map_replicate,List.sum_replicate,smul_eq_mul]
+
+/-- One invocation costs a linear parent term plus the certified local paid profile. -/
+theorem orthogonalProfiledInvocation :
+    ∃ C : ℕ, ∀ w W : ℕ, 0 < W →
+      let m := prime^w
+      let V := m^16*W
+      let G := Swap.Modular.reduce m (orthogonalBasis.map (Nat.cast : ℕ → ℚ))
+      let encode := M8.Exchange.transform G (Swap.Modular.reduce m (M8.ReversedExchange.rev 8)*G)
+      let addr := fun l s (k : Fin W) => FlatCoordinateLayout.index (AffineFieldCoordinates.embed
+        (encode (M8.Exchange.exchange (Swap.Modular.reduce m (Nine.labelProj l)) s))) k
+          ∀ (children : ℕ → SharedBankSkeleton.Skeleton 1 prime) (price : ℕ → ℕ),
+          (∀ r, 0 < r → r ≤ 8 → ∃ child : SharedBankStage.Stage _ 1 prime (@portOwner V),
+            SharedBankSkeleton.ofStage child = children r ∧ child.cost ≤ price r ∧
+            ∀ x, M8.RevMachine.RevT prime w r (M8.RevMachine.sub prime w 8 0 r ⟨1,1,1,8*w,1,W⟩)
+              (M8.RevMachine.ext x) (M8.RevMachine.ext (child.transform x))) →
+      ∃ stage : SharedBankStage.Stage _ 661 prime (phaseOwners (N := V)),
+        stage.cost ≤ C*V + (Geometry.Moves.localPaid.map price).sum ∧ ∀ x s k (i : Fin 661),
+          stage.transform x i (addr (Frames.finalRefs i) s k) =
+            Circuit.run (program.map RawGate.toCircuit) (Copy.extendStored (fun j : Fin 661 =>
+              x j (addr (Frames.snapshot Frames.initialRefs j) s k))) i := by
+  obtain ⟨P,S,run⟩ := orthogonalRecursiveInvocation
+  let overhead := fun (gs : List RawGate) =>
+    (gs.map (fun g => (g.sources.length+1)*(P+3)+76*g.sources.length+2)).sum
+  refine ⟨overhead (sectionD++sectionA) + overhead (sectionB++sectionC) + 9*(S+158)+527*77+2,?_⟩
+  intro w W hW m V G encode addr children price supply
+  obtain ⟨stage,cost,reads⟩ := run w W hW children price supply
+  refine ⟨stage,?_,reads⟩
+  have live : 1 ≤ V := Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) hW
+  have a := phaseOverhead P V live (sectionD++sectionA)
+  have b := phaseOverhead P V live (sectionB++sectionC)
+  rw [localPrice,Geometry.Moves.phaseEdges,List.map_append,List.sum_append]
+  dsimp only [overhead,V,m] at a b ⊢
+  dsimp only [V,m] at live
+  simp only [Nat.add_mul,Nat.mul_add] at a b cost ⊢
+  rw [Nat.mul_assoc 9 S]
+  omega
+
+
 end IntegerMultBounds.MathlibTM2.M6.BitNode

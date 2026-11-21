@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.M8.RevMachine.Views
 public import IntegerMultBounds.MathlibTM2.M6.BitCopyRun
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackPackSchedule
 
@@ -58,6 +59,50 @@ noncomputable def changeLayout (v u : Descriptor) (width : v.width = u.width)
 private theorem changeLayout_swap (v u : Descriptor) (width size) (a : Address v) :
     changeLayout v u width size (swapAddress a) = swapAddress (changeLayout v u width size a) := by
   rfl
+
+/-- The orthogonal bank exposes eight of the parent's 64 coordinates in each
+active field. The other 112 coordinates and the role spectators ride in W.
+At every local rank this gives the spectator count of the scheduled child. -/
+theorem orthogonalSpectators (v : Descriptor) (w rows r : ℕ) (hr : r ≤ 8)
+    (splitRows : v.rows = 142080*rows) :
+    let W := (prime^w)^112 * (v.beforeRows*rows*v.beforeH*v.between*v.afterD)
+    spectators (M8.RevMachine.sub prime w 8 0 r ⟨1,1,1,8*w,1,W⟩) =
+      spectators (rankDescriptor prime (r*w) ((64-r)*w) (role v 142080)) := by
+  intro W
+  have gap : 64-r = (8-r)+56 := by omega
+  simp only [spectators,M8.RevMachine.sub,rankDescriptor,role,W,splitRows,
+    Nat.mul_div_cancel_left _ (by decide : 0 < 142080),Nat.sub_zero,zero_mul,pow_zero,
+    mul_one,one_mul,gap,Nat.add_mul,pow_add]
+  rw [show 56*w = w*56 by omega,pow_mul]
+  ring
+
+/-- Reindexing the spectators transports a reversed interchange with the same
+atom width and count. Both active fields keep their original digits. -/
+theorem revT_changeLayout (v u : Descriptor) (n w : ℕ)
+    (hv : v.width = n*w) (hu : u.width = n*w) (size : spectators v = spectators u)
+    (x y : ℕ → ZMod 2) (read : M8.RevMachine.RevT prime w n u x y) :
+    let f := changeLayout v u (hv.trans hu.symm) size
+    let pull := fun (z : ℕ → ZMod 2) i => if hi : i < volume prime v then
+      z (index (f ((flatAddress v).symm ⟨i,hi⟩))).val else 0
+    M8.RevMachine.RevT prime w n v (pull x) (pull y) := by
+  intro f pull a ha row hrow b hb h hh m hm d hd j hj
+  let rev := M8.RevMachine.revAtoms (prime^w) n
+  have bound (z : ℕ) : rev z < prime^v.width := by
+    rw [hv,Nat.mul_comm,pow_mul]
+    exact M8.RevMachine.revAtoms_lt (pow_pos Shared50ModularControl.prime_prime.pos _) _ _
+  let src : Address v := ⟨⟨a,ha⟩,⟨row,hrow⟩,⟨b,hb⟩,⟨h,hv ▸ hh⟩,⟨m,hm⟩,⟨d,hv ▸ hd⟩,⟨j,hj⟩⟩
+  let dst : Address v := {src with h := ⟨rev d,bound d⟩, d := ⟨rev h,bound h⟩}
+  have atIndex (z : ℕ → ZMod 2) (p : Address v) :
+      pull z (index p).val = z (index (f p)).val := by
+    simp only [pull,(index p).isLt,↓reduceDIte]
+    change z (index (f ((flatAddress v).symm (flatAddress v p)))).val = _
+    rw [Equiv.symm_apply_apply]
+  change pull y _ = pull x _
+  rw [← show (index src).val = _ from RecursiveInterchangeScaling.index_val src,
+      ← show (index dst).val = _ from RecursiveInterchangeScaling.index_val dst,
+      atIndex,atIndex,RecursiveInterchangeScaling.index_val,RecursiveInterchangeScaling.index_val]
+  let t := f src
+  exact read _ t.beforeRows.isLt _ t.row.isLt _ t.before.isLt h hh _ t.middle.isLt d hd _ t.after.isLt
 
 theorem copySpectators (v : Descriptor) (w rows : ℕ) (splitRows : v.rows = 142080*rows) :
     let W := (prime^w)^112 * (v.beforeRows*rows*v.beforeH*v.between*v.afterD)
