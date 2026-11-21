@@ -1031,6 +1031,17 @@ def directoryChartPrefix (replayRole : Option (Fin 142080)) (H box : ℕ) (archi
   | none => archive (k/box)
   | some j => archive (directoryRoleRecord H j k)
 
+private theorem directoryChartPrefix_all (role : Option (Fin 142080)) {H box groups parents records : ℕ}
+    (byGroup : records = groups*H) (byParent : records = parents*box) (positive : 0 < box)
+    (archive : ℕ → List (Fin (prime+4))) (property : List (Fin (prime+4)) → Prop)
+    (valid : ∀ j < (if role.isSome then groups*142080*H else parents), property (archive j)) :
+    ∀ j ∈ List.range records, property (directoryChartPrefix role H box archive j) := by
+  intro j mem
+  have inside := List.mem_range.mp mem
+  cases role with
+  | none => exact valid _ ((Nat.div_lt_iff_lt_mul positive).mpr (byParent ▸ inside))
+  | some role => exact valid _ (directoryRoleRecord_lt role (byGroup ▸ inside))
+
 def directoryChartQueue (replayRole : Option (Fin 142080)) (H parents records : ℕ) (archive : ℕ → List (Fin (prime+4))) :=
   match replayRole with
   | none => (List.range parents).flatMap archive
@@ -1342,6 +1353,15 @@ private theorem intervalInput_cast [M8.Machine.Net] {K d m n w W R : ℕ} (dim :
   subst n
   exact fun _ input => input
 
+private theorem intervalReady_cast {m n w W K : ℕ} (dim : m = n)
+    (interval : ℕ × ℕ) (weights : Fin n → ZMod (prime^(w+1))) (child : RecursiveInterchangeLayout.Descriptor)
+    (archive : ℕ → List (Fin (prime+4))) (rs : List ℕ) (S : Stacks (66+K) prime) :
+    let proj (k : ℕ) : Matrix (Fin k) (Fin k) ℚ := diagonal fun i => if interval.1 ≤ i.val ∧ i.val < interval.2 then 1 else 0
+    DirectoryReady child (proj m) w W (prime^(w+1)).size W.size (weights ∘ Fin.cast dim) archive [] (fun _ => []) S rs →
+      DirectoryReady child (proj n) w W (prime^(w+1)).size W.size weights archive [] (fun _ => []) S rs := by
+  subst n
+  exact id
+
 /-- Transport the scanner's projected row action back to the chart dimensions.
 The owner port and the physical execution stay on the same tapes. -/
 private theorem intervalStage_cast [M8.Machine.Net] {T R m n w W : ℕ} {P U : Type}
@@ -1414,7 +1434,8 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux k w : ℕ} {L P U : Typ
       (pairRoom : m*m+m*m ≤ K) (localBody : L → Pr L (66+K) columnCapacity prime U) (localPush placedPush : ℕ)
       (bounded : ∀ f, Fast.Main.mnProgPush (localBody f) ≤ localPush)
       (placed : ∀ f, Fast.Main.mnProgPush (embProg (directoryOrdinaryBank archiveRoom) id (localBody f)) ≤ placedPush)
-      (widths : ∀ i < (if replayRole.isSome then layout.beforeRows*rows*142080*layout.beforeH else parents), (prefixes i).length = width),
+      (widths : ∀ i < (if replayRole.isSome then layout.beforeRows*rows*142080*layout.beforeH else parents), (prefixes i).length = width)
+      (clean : ∀ i < (if replayRole.isSome then layout.beforeRows*rows*142080*layout.beforeH else parents), blank ∉ prefixes i),
     let bank := (Fin.castLEEmb (by omega : 72 ≤ T+10)).trans (Fin.castAddEmb 5)
     let setup := directoryChartOwnerSetup (P := P) (U := U) (Q := columnCapacity) replayRole root interval.1 interval.2 bank
     let setupCost := directoryChartSetupRate replayRole *RecursiveInterchangeLayout.volume prime directory
@@ -1435,35 +1456,41 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux k w : ℕ} {L P U : Typ
       (LabelRing.res prime (w+1) (by omega) ∘ weights ∘ Fin.cast dim) pool rowRoom archiveRoom queueRoom
       remainderAnchorFits localBody pairRoom (directoryChartPlacement T) masks (directoryChartReplay T)
       (directoryChartPlacement_ne_mask live bad apart) (fun i _ => directoryChartPlacement_ne_work i _) incoming outgoing childLabel
-    ∀ (budget capacity : ℕ) (chartFits : stage.states ≤ capacity) (fits : columnCapacity ≤ capacity) (backFits : back.states ≤ capacity)
-      (S : Stacks stage.tapes prime)
-      (finished : Stacks ((T+10)+5) prime → Prop),
+    let replayBank := directoryChartReplayBank archiveRoom
+    let saved := (Fin.castLEEmb (by decide : 4 ≤ 6)).trans (directoryChartReplay T)
+    let outgoingBank := directoryOutgoingPlacement (directoryOrdinaryBank archiveRoom) (directoryChartPlacement T)
+      (replaySlots.trans (Fin.castAddEmb K)) saved (fun _ _ => directoryChartPlacement_ne_work _ _)
+    let batch := ordinaryDirectoryChild directory r (64-r) w
+    let entryPrefix := directoryChartPrefix replayRole layout.beforeH (M^(64*64)) prefixes
+    let finished := fun D : Stacks ((T+10)+5) prime =>
+      D.R ((1 : Fin 5).natAdd (T+10)) = [] ∧ (D.R ((2 : Fin 5).natAdd (T+10))).length = N ∧
+      D.R ((3 : Fin 5).natAdd (T+10)) = [] ∧ D.R ((4 : Fin 5).natAdd (T+10)) = [] ∧
+      (∀ j, D.R (directoryChartReplay T j) = []) ∧ (∀ j : Fin 6, 2 ≤ j → D.R (masks j) = []) ∧
+      ∀ i : Fin (66+K), 58 ≤ i.val →
+        let port := directoryChartPlacement T ((directoryOrdinaryBank archiveRoom i).castAdd 5)
+        D.L port = [] ∧ D.R port = []
+    ∀ (childBudget capacity : ℕ) (chartFits : stage.states ≤ capacity) (fits : columnCapacity ≤ capacity)
+      (backFits : back.states ≤ capacity) (S : Stacks stage.tapes prime),
+    let p := max placedPush (Fast.Main.mnProgPush (directoryQueueInitProgram (P := L) (U := U) (Q := columnCapacity) archiveRoom queueRoom))
+    let scanRate := (directoryScanCharge_clean (P := L) (U := U) (common := common) r (64-r) 127 dim rfl pool rowRoom
+      archiveRoom remainderAnchorFits localPush placedPush p).choose
+    let budget := ⌊(childBudget : ℝ)+scanRate*(((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau*((R : ℝ)*N))⌋₊
     RepT (stage.input words) S.L S.R →
-    (∀ (a : HS ((T+10)+5) columnCapacity prime U) (D : Stacks ((T+10)+5) prime),
-      let localState := embStk (directoryChartPlacement T) D
-      let localBank := (directoryOrdinaryBank archiveRoom).trans (Fin.castAddEmb 5)
-      let rowWidth : M^(m+m)*W = N := by rw [dim]
-      GeneratedDirectoryExecution (r := r) (g := 64-r) (common := common) child directory
-        (by change m+m = 127+1; omega) intervalProj (weights ∘ Fin.cast dim) data pool rowRoom archiveRoom queueRoom
-        remainderAnchorFits localBody localPush placedPush (directoryChartPrefix replayRole layout.beforeH (M^(64*64)) prefixes) [] []
-        (fun j i => ownerRow (R := R) (N := N) rfl routed j (i.cast rowWidth)) pairRoom
-        (embDn (directoryChartPlacement T) a) localState →
-      localState.L ((0 : Fin 5).natAdd T) = [] →
-      (∀ i, localState.L (localBank i) = []) →
-      localState.R (localBank ((40 : Fin 66).castAdd K)) = cutoffWord →
-      (∀ j : Fin 3, directoryOuterWords (embStk localBank localState) j =
+    (∀ f, body (incoming f) = embProg (directoryChartPlacement T) incoming
+      (embProg (Fin.castAdd 5) id (embProg (directoryOrdinaryBank archiveRoom) id (localBody f)))) →
+    (∀ f, body (outgoing f) = embProg outgoingBank outgoing (embProg (Fin.castAdd 5) id (localBody f))) →
+    (∀ (b : HS ((T+10)+5) columnCapacity prime U) (D : Stacks ((T+10)+5) prime)
+      (x : Fin (RecursiveInterchangeLayout.volume prime batch) → ZMod 2),
+      (entryPrefix 0).length = width → (∀ j ∈ List.range R, blank ∉ entryPrefix j) →
+      DirectoryReady child proj w W M.size W.size weights entryPrefix [] (fun _ => [])
+        (embStk replayBank D) (List.range R) →
+      D.R (replayBank ((40 : Fin 66).castAdd K)) = cutoffWord →
+      (∀ j : Fin 3, directoryOuterWords (embStk replayBank D) j =
         List.replicate (![layout.beforeRows,rows,layout.beforeH] j) Node.tick) →
-      localState.R (localBank ((48 : Fin 66).castAdd K)) = matrixWords prime M.size (reduce M proj) →
-      (∀ j : Fin 6, 2 ≤ j → D.R (masks j) = []) → (∀ j, D.R (directoryChartReplay T j) = []) →
-      ∃ prior bound tail, prior+bound ≤ budget ∧
-        DirectoryStageResult (R := R) body program a D
-          prior bound slot tail (N := M^(m+m)*W) (fun j word =>
-            let parent := weights ∘ Fin.cast dim
-            let e := finSumFinEquiv.trans (finCongr (show m+m = 127+1 by omega))
-            if LabelStock.live m (w+1) 1 j then ∀ x (h : Fin W),
-              word ((index ((projectorResidual e (reduce M intervalProj) parent (fun i => Ring.inverse (parent i))
-                (physicalLabel m (w+1) j)).mulVec x) h).cast rowWidth.symm) = ownerRow rfl routed j (index x h)
-            else (fun i => ownerRow rfl routed j (i.cast rowWidth)) = word) finished) →
+      RecordPayload slot (fun _ => blank) 0 x D →
+      ∃ y B k, y.user = b.user ∧ k ≤ childBudget ∧ Exec body (body childLabel) (mk b D) k (mk y B) ∧
+        RecordPayload slot (fun _ => blank) 0 (Shared50RecursiveNodeRows.transpose (one_dvd batch.rows) x) B ∧
+        ∀ i, i ≠ slot → B.L i = D.L i ∧ B.R i = D.R i) →
     let positive : 0 < columnCapacity := columnCapacity_pos
     let outer := fun f => statePlacedPr placement fits positive id (body f)
     let enter := (embProg chart (Empty.elim : Empty → P) (foreign (liftQ stage.program chartFits))).seq
@@ -1494,7 +1521,7 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux k w : ℕ} {L P U : Typ
   obtain ⟨back,reverse,reverseCost,reverseRun⟩ := (packedRemainderChart_stage src cert checked true).choose_spec.choose_spec
     layout w rows B positiveLayout digits split shape
   refine ⟨stage,back,forward,reverse,?_⟩
-  intro words routed pool rowRoom archiveRoom queueRoom pairRoom localBody localPush placedPush bounded placed widths bank setup setupCost clock slot placement chart baseBank headers ret body incoming outgoing childLabel livePort badPort portsApart maskBank intervalMatrix program budget capacity chartFits fits backFits S finished input scanner positive outer enter leave stock hostT Label hostPlace label host installed prepare hostStart hostEntry initial preparedBank steps prep entryEq
+  intro words routed pool rowRoom archiveRoom queueRoom pairRoom localBody localPush placedPush bounded placed widths clean bank setup setupCost clock slot placement chart baseBank headers ret body incoming outgoing childLabel livePort badPort portsApart maskBank intervalMatrix program replayBank saved outgoingBank batch entryPrefix finished childBudget capacity chartFits fits backFits S p scanRate budget input inCalls outCalls childRun positive outer enter leave stock hostT Label hostPlace label host installed prepare hostStart hostEntry initial preparedBank steps prep entryEq
   let u := embDn hostPlace hostEntry
   obtain ⟨ordered,upper,_⟩ := BitHosting.remainder_counts interval member
   have room : 53 < T := by omega
@@ -1516,7 +1543,7 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux k w : ℕ} {L P U : Typ
         simpa [A,placement,slot,ordinaryOwnerBank_project,phaseOwners,embStk,routed,encodedOwnerCell] using cell
       have extent : (A.L slot).length+(A.R slot).length ≤ chartOwnerStock stage src S := by
         simpa [A,slot,placement,ordinaryOwnerBank_project] using stock
-      obtain ⟨v,m,hu,cost,normalize⟩ := directoryChartOwner_exec body slot routed a A read
+      obtain ⟨v,normSteps,hu,cost,normalize⟩ := directoryChartOwner_exec body slot routed a A read
       let normalized := {A with L := Function.update A.L slot [], R := Function.update A.R slot (payloadWord (SparseRoleCircuit.encode ∘ routed))}
       have privateTapes := ordinaryOwnerBank_private (T := T+10) metadata F (stage.slots src)
       have privateWord (i : Fin (T+10)) : normalized.R (i.castAdd 5) = metadata i.val := by
@@ -1620,22 +1647,64 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux k w : ℕ} {L P U : Typ
           rw [directoryOrdinaryBank_caller] at cell
           change readAt blank (start.L _) (start.R _) j = blank
           rw [localL,cell,readAt_nil_left,wordTape_nil]
-      obtain ⟨_,_,_,maskFree,_,_,replayFree⟩ := directoryChart_workspace (by omega : 58 ≤ T)
+      obtain ⟨liveEq,badEq,outside,maskFree,separate,disjoint,replayFree⟩ := directoryChart_workspace (by omega : 58 ≤ T)
         ((57 : Fin 66).castAdd (K+1)) ((56 : Fin 66).castAdd (K+1)) ((Fin.castAddEmb (K+1)).injective.ne (by decide)) D free
       have prepared := intervalInput_cast dim archiveRoom child directory interval weights _ localState routed entry
       have rolePositive := RecursiveRowsNodeLayout.role_positive 142080 layout (by decide) positiveLayout ⟨rows,split⟩
       have generated := @scheduledIntervalDirectory_exec _ L U w common aux interval member directory weights invertible
         B rolePositive shape pool rowRoom archiveRoom queueRoom pairRoom localBody localPush placedPush bounded placed
         (directoryChartPrefix replayRole layout.beforeH (M^(64*64)) prefixes) _ (embDn place c) localState prepared
-      obtain ⟨prior,bound,tail,price,exec⟩ := scanner c D generated (by
+      have ownerLeft : localState.L ((0 : Fin 5).natAdd T) = [] := by
         change D.L (place ((0 : Fin 5).natAdd T)) = []
         rw [directoryChartPlacement_owner,(regs 0).2]
-        simp [C,normalized,slot]) (fun i => localL _) (header 40 (by decide))
-        (outerWords_of_headers raw (header 29 (by decide)) (header 30 (by decide)) (header 31 (by decide)))
-        ((shared 48).trans matrix) maskFree replayFree
-      have chartStage := intervalStage_cast (W := W) dim interval weights body program c D prior bound slot tail finished routed exec
+        simp [C,normalized,slot]
+      have controls := outerWords_of_headers raw (header 29 (by decide)) (header 30 (by decide)) (header 31 (by decide))
+      have ownerPort : directoryReturnPorts place maskBank outside 0 = slot :=
+        directoryChartPlacement_owner (0 : Fin 5)
+      have recordsPos : 0 < R := Nat.mul_pos (Nat.mul_pos rolePositive.1 rolePositive.2.1) rolePositive.2.2.1
+      have actualWidth : (entryPrefix 0).length = width :=
+        (dir.widths 0 (List.mem_range.mpr recordsPos)).symm.trans
+          ((congrArg List.length (headers 47 (by decide))).trans List.length_replicate)
+      have groups : R = layout.beforeRows*rows*layout.beforeH := by
+        simp only [R,LabelMask.records,directory,RecursiveInterchangeLayout.role,split,Nat.mul_div_cancel_left _ (by decide : 0 < 142080)]
+      have cleanRows := directoryChartPrefix_all replayRole groups records (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _)
+        prefixes (fun word => blank ∉ word) clean
+      obtain ⟨prior,bound,tail,head,paid,exec⟩ := generated place maskBank incoming body inCalls c D rfl rfl
+        liveEq badEq outside maskFree (directoryChartReplay T) separate disjoint replayFree ownerLeft rfl childLabel childBudget
+        (by
+          intro b D x ready cut dims _ read
+          rw [ownerPort] at read ⊢
+          exact childRun b D x actualWidth cleanRows (intervalReady_cast dim interval weights child entryPrefix _ _ ready.1) (cut.trans (header 40 (by decide))) (fun j => (congrFun dims j).trans (controls j)) read)
+        dim outgoing outCalls
+      have wordFits : width ≤ N := by
+        apply widthFits.trans
+        change _ ≤ (prime^(w+1))^128*W
+        rw [digits,← pow_mul]
+        exact (Nat.pow_le_pow_right Shared50ModularControl.prime_prime.pos (by omega)).trans (Nat.le_mul_of_pos_right _ spectators)
+      have rowWidth : M^(m+m)*W = N := by rw [dim]
+      have cost := paid (show (entryPrefix 0).length ≤ M^(m+m)*W by rw [rowWidth,actualWidth]; exact wordFits)
+        p (le_max_right ..) (fun f => (placed f).trans (le_max_left ..))
+      have noLeft (i : Fin (66+K)) : raw.L i = [] := localL _
+      have matrixSize : (raw.R ((48 : Fin 66).castAdd K)).length = m*m*M.size := by
+        have word : raw.R ((48 : Fin 66).castAdd K) = _ := (shared 48).trans matrix
+        rw [word,length_matrixWords,dim]
+      have zeroStock : (((List.finRange (66+K)).filter fun i => 58 ≤ i.val).map fun i => 4*(raw.L i).length).sum = 0 := by simp [noLeft]
+      change ((prior+bound : ℕ) : ℝ) ≤ directoryScanCharge (P := L) (U := U) (common := common) r (64-r) 127 dim rfl pool rowRoom archiveRoom remainderAnchorFits localPush placedPush p w R (M^(m+m)*W)
+        (entryPrefix 0).length (((List.finRange (66+K)).filter fun i => 58 ≤ i.val).map fun i => 4*(raw.L i).length).sum
+        0 ((raw.R ((48 : Fin 66).castAdd K)).drop (m*m*M.size)).length childBudget at cost
+      simp only [rowWidth,actualWidth,zeroStock,List.length_drop,matrixSize,Nat.sub_self] at cost
+      have weighted := (directoryScanCharge_clean (P := L) (U := U) (common := common) r (64-r) 127 dim rfl
+        pool rowRoom archiveRoom remainderAnchorFits localPush placedPush p).choose_spec w R N width childBudget
+        recordsPos (Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) spectators) wordFits
+      have price : prior+bound ≤ budget := Nat.le_floor (cost.trans weighted)
+      rw [ownerPort] at exec
+      have chartStage := intervalStage_cast (W := W) dim interval weights body program c D prior bound slot tail _ routed exec
       obtain ⟨y,B,t,out,user,time,run,reads,inactive,_,done⟩ := chartStage.portReads interval weights routed records upper
-      exact ⟨y,B,((m+l)+s)+(prior+t),out,by change s ≤ setupCost at setupTime; omega,⟨done,reads,inactive⟩,user.trans (cu.trans (bu.trans hu)),⟨Exec.seq (Exec.seq (Exec.seq normalize init) prepare) run.run,run.reads⟩⟩)
+      have regEq (j : Fin 5) : ((Fin.natAddEmb T).trans place) j = j.natAdd (T+10) := directoryChartPlacement_owner j
+      have cleaned : finished B := by
+        obtain ⟨_,acc,widthReg,save,tmp,replayFree,maskFree,privateFree,_⟩ := done
+        exact ⟨(regEq 1) ▸ acc,(regEq 2) ▸ widthReg.trans rowWidth,(regEq 3) ▸ save,(regEq 4) ▸ tmp,replayFree,maskFree,privateFree⟩
+      exact ⟨y,B,((normSteps+l)+s)+(prior+t),out,by change s ≤ setupCost at setupTime; omega,⟨cleaned,reads,inactive⟩,user.trans (cu.trans (bu.trans hu)),⟨Exec.seq (Exec.seq (Exec.seq normalize init) prepare) run.run,run.reads⟩⟩)
   let updated := Function.update (stage.transform words) src out
   have chartInput : RepT (stage.input updated) (embStk chart D).L (embStk chart D).R := by
     apply chartOwner_input stage _ (embStk chart D) _ ready _ (fun _ _ => ⟨rfl,rfl⟩)

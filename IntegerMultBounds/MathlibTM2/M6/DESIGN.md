@@ -788,9 +788,15 @@ the role rows into the packed suffix preserves the scheduled transpose. Each
 packed record has exactly 1/142080 of the aligned parent volume when the row
 count is divisible by 142080. The recursive premise uses the scheduled
 descriptor and its strict decrease from the parent width.
-The concrete recursive body must still supply the transpose on tape 24 and
-restore the other live registers. Packing preserves the cutoff on entry to the smaller call. Both dispatch
-branches and the subsequent weighted correction preserve the cutoff word.
+The interval chart now runs both directory passes around one call to the child.
+For a chart with `R` records of `N` symbols each and atom width `w+1`, the
+scanner costs at most the child budget plus `C (w+1)^τ R N`. The constant is
+independent of the record count, atom width and prefix width. The outgoing pass
+restores the replay tapes, mask workspace and private scanner tapes. The
+remaining recursive premise is the child procedure on the shared owner. It
+must return the transposed payload and restore both stacks on every other tape.
+Packing, dispatch and the subsequent weighted correction preserve the cutoff
+word.
 
 The semantic five-class node (S5d.3) certifies upstream's accounting under ideal routes and
 partial swaps. Its exponent `1 - 10/5769` holds under that idealization only.
