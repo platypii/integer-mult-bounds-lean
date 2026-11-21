@@ -116,6 +116,20 @@ theorem directoryChildCountBank_ready {K T N : ℕ} (room : 6 ≤ T) (replay : F
 noncomputable def childCountState {T : ℕ} (r : Fin 8 ↪ Fin T) (batch : Descriptor) (S : Stacks T prime) : Stacks T prime :=
   {S with R := Function.update (Function.update S.R (r 2) (List.replicate (batch.width/64-1) Node.tick)) (r 3) (List.replicate (batch.rows/142080) Node.tick)}
 
+/-- The two physical count tapes supply the corresponding scanner metadata
+words at the child's own precision, for every choice of directory labels. -/
+theorem childCountState_entryWords {T : ℕ} (r : Fin 8 ↪ Fin T) (batch : Descriptor)
+    (S : Stacks T prime) (w rows : ℕ) (width : batch.width = 64*(w+1))
+    (split : batch.rows = 142080*rows) (root : Bool) (weights : Fin 64 → ZMod (prime^(w+1)))
+    (prefixWidth : ℕ) (prefixes : List (Fin (prime+4))) :
+    let words := ordinaryEntryWords (batch.between*batch.afterD) batch.beforeRows rows batch.beforeH
+      root weights prefixWidth prefixes
+    (childCountState r batch S).R (r 2) = words 45 ∧
+      (childCountState r batch S).R (r 3) = words 30 := by
+  have clock : batch.width/64-1 = w := by omega
+  have count : batch.rows/142080 = rows := by omega
+  simp [childCountState, ordinaryEntryWords, clock, count, Node.tick]
+
 /-- Lend the decoded counts to a recursive body and release them after it
 returns. Both the setup and retirement are charged at the child's volume. -/
 theorem withChildCounts_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)

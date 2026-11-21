@@ -144,16 +144,18 @@ theorem activeBatchChartDimensions (root node : Descriptor) (depth b cutoff bloc
     let r := nodeChildren5[i.val]
     let batch := ordinaryDirectoryChild (role node 142080) r (64-r) w
     let next := path++[i]
+    let childClock := batch.width/64-1
+    let childRows := batch.rows/142080
+    let childBlocks := blocks*prime^(64*(node.width-batch.width))
     cutoff < batch.width →
     batch.Positive ∧ (next.foldl (scheduledChild prime) root).width = batch.width ∧
       (next.foldl (scheduledChild prime) root).rows = batch.rows ∧
       directoryDigits prime root next ≤ prime^batch.width ∧
-      ∃ childClock childRows childBlocks,
-        batch.width = 64*(childClock+1) ∧ batch.rows = 142080*childRows ∧
+      batch.width = 64*(childClock+1) ∧ batch.rows = 142080*childRows ∧
         batch.beforeH = childBlocks*prime^(64*((childClock+1)*64)) ∧
         LabelMask.records (role node 142080) =
           (batch.beforeRows*childRows*childBlocks)*(142080*prime^(64*batch.width)) := by
-  intro r batch next active
+  intro r batch next childClock childRows childBlocks active
   have shape := (scheduledDirectoryTranspose node i w aligned rows).1
   have pathW : (next.foldl (scheduledChild prime) root).width = batch.width := by
     rw [shape.width]
@@ -174,22 +176,23 @@ theorem activeBatchChartDimensions (root node : Descriptor) (depth b cutoff bloc
   have fits := directoryDigits_fit_aligned prime Shared50ModularControl.prime_prime.two_le root depth b cutoff
     levels base rootWidth stop next (pathW.symm ▸ active.le)
   obtain ⟨d,hd⟩ := internal.1
-  obtain ⟨childRows,hr⟩ := internal.2
+  obtain ⟨n,hr⟩ := internal.2
   have dpos : 0 < d := by by_contra! hz; simp [Nat.eq_zero_of_le_zero hz] at hd; omega
   have smaller : batch.width ≤ node.width := by
     change (w+1)*r ≤ node.width
     rw [aligned,Nat.mul_comm 64]
     exact Nat.mul_le_mul_left _ ((nodeChildren5_le i).trans (by decide : 42 ≤ 64))
-  let childBlocks := blocks*prime^(64*(node.width-batch.width))
+  have rowCount : batch.rows = 142080*childRows := by dsimp only [childRows]; omega
+  have clock : batch.width = 64*(childClock+1) := by dsimp only [childClock]; omega
   have rebuild : 64*(node.width-batch.width)+64*batch.width = 64*node.width := by omega
   have labelShape : batch.beforeH = childBlocks*prime^(64*batch.width) := by
     change node.beforeH = (blocks*prime^_)*prime^_
     rw [Nat.mul_assoc,← pow_add,rebuild,labels]
   refine ⟨LeafCore.positive_of_volume (shape.volume.symm ▸ pos),pathW,pathR,pathW ▸ fits,
-    d-1,childRows,childBlocks,by omega,hr,?_,?_⟩
-  · simpa only [← show (d-1+1)*64 = batch.width by omega] using labelShape
+    clock,rowCount,?_,?_⟩
+  · simpa only [← show (childClock+1)*64 = batch.width by omega] using labelShape
   · change batch.beforeRows*batch.rows*batch.beforeH = _
-    rw [hr,labelShape]
+    rw [rowCount,labelShape]
     ring
 
 open IntegerMultBounds.Networks.Certificates.PR589.Nine RecursiveInterchangeLayout in

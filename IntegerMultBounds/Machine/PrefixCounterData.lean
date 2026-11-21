@@ -174,7 +174,7 @@ theorem flatten_length (ds : Fin c → List (Fin q)) :
     (flatten (List.finRange c) ds).length = ∑ i, (ds i).length := by
   simp only [flatten,List.length_flatMap,← List.ofFn_id,List.map_ofFn,List.sum_ofFn,Function.comp_def,id_eq]
 
-private theorem word_injective (hq : 2 ≤ q) (xs ys : List (Fin q))
+theorem word_injective (hq : 2 ≤ q) (xs ys : List (Fin q))
     (hl : xs.length = ys.length) (hv : value xs = value ys) : xs = ys := by
   induction xs generalizing ys with
   | nil => simpa using hl.symm
