@@ -686,6 +686,21 @@ theorem helperChartAddress_swap (c : Nine.PortCertificate) (checked : c.Checked)
   apply Prod.ext <;> apply Prod.ext <;> funext i <;>
     simp [chartHalves,J,exchange,Matrix.sub_mulVec,Matrix.fromBlocks_mulVec,Function.comp_def]
 
+open Matrix Swap.Modular M8.Exchange in
+/-- Between uses of a helper, permuting both fields of the packed parent
+address gives the next slot address and preserves the trailing spectator. -/
+theorem helperSlotAddress_reindex (c : Nine.PortCertificate) (x y : ℕ) (hx : x ≤ 55) (hy : y ≤ 55)
+    (w : ℕ) [NeZero (prime^w)] {W : ℕ} (s : Swap.Shear.State Nine.Axis (ZMod (prime^w))) (j : Fin W) :
+    let H := fun k hk => (reduce (prime^w) (c.helperChart k hk)).transpose
+    let addr := fun k hk => chartAddress (transform (H k hk) (H k hk) s,j)
+    let order := (helperSlotOrder y hy).trans (helperSlotOrder x hx).symm
+    let old := chartAddress.symm (addr x hx)
+    chartAddress ((old.1.1 ∘ order,old.1.2 ∘ order),old.2) = addr y hy := by
+  intro H addr order old
+  simp only [old,addr,Equiv.symm_apply_apply,transform]
+  exact congrArg (fun a => chartAddress (a,j)) (Prod.ext
+    (helperSlot_reindex c x y hx hy w s.1).symm (helperSlot_reindex c x y hx hy w s.2).symm)
+
 open Matrix Swap.Modular M8.Exchange BitHosting in
 /-- At the scheduled helper position the hosted word exchanges the certified
 parent span, with the orthogonal encoding applied only to the local pair. -/
@@ -912,6 +927,21 @@ theorem orthogonalPreparedSweep [M8.Machine.Net] (n : Fin 9) :
     rw [(action p x).1 i]
     exact reads _ s k i
 
+/-- Each use of an inactive role exchanges the same two physical fields.
+Only the parity of its number of uses enters the sweep endpoint. -/
+theorem helperSwap_parity {α : Type*} (n : Fin 9) (ρ : Role)
+    (runs : List (Fin 32 × Fin 5)) (s : α × α) :
+    let hit := fun p : Fin 32 × Fin 5 => decide (∃ h : Fin 439, hostRole n p.1 p.2 h = ρ)
+    runs.foldl (fun a p => if hit p then Prod.swap a else a) s =
+      if (runs.filter hit).length % 2 = 1 then s.swap else s := by
+  intro hit
+  induction runs generalizing s with
+  | nil => rfl
+  | cons p ps ih =>
+    cases hp : hit p <;> simp only [List.foldl_cons,List.filter_cons,hp,Bool.false_eq_true,
+      if_false,if_true,List.length_cons,ih,Prod.swap_swap]
+    split <;> split <;> first | rfl | omega
+
 open Cover Swap.Modular M8.Exchange in
 /-- A charged PR589 stage with both endpoints in the caller coordinates. -/
 theorem orthogonalSweep [M8.Machine.Net] (n : Fin 9) :
@@ -939,10 +969,9 @@ theorem orthogonalSweep [M8.Machine.Net] (n : Fin 9) :
             x dst (pos s k) + x src (pos (exchange (reduce (prime^w) (Nine.port t).lineProj) s) k)) ∧
         (∀ ρ : Role, ρ.bank.val / 2 ≠ BitHosting.activePair n.val →
           let tape := ((Fin.cast card_role) (Fintype.equivFin Role ρ)).castSucc
-          let swaps := fun (s : Swap.Shear.State (Fin 8) (ZMod (prime^w))) (p : Fin 32 × Fin 5) =>
-            if ∃ h : Fin 439, hostRole n p.1 p.2 h = ρ then s.swap else s
+          let uses := stageRuns.filter fun p => decide (∃ h : Fin 439, hostRole n p.1 p.2 h = ρ)
           ∀ (g : LabelPadding.Label 64 w) (z : LabelEntry.Cell (copyLabelLayout w B K) B) s,
-            stage.transform x tape (pos (stageRuns.foldl swaps s) (labelSpectator g z)) =
+            stage.transform x tape (pos (if uses.length % 2 = 1 then s.swap else s) (labelSpectator g z)) =
               x tape (pos s (labelSpectator g z))) := by
   classical
   let final := stageRuns.foldl (fun c p => helperChartsAfter n p c) (fun _ => none)
@@ -976,7 +1005,12 @@ theorem orthogonalSweep [M8.Machine.Net] (n : Fin 9) :
       rw [idle src (activePortChart n run _ (by dsimp; omega)),
         idle dst (activePortChart n run _ (by dsimp; omega))]
       exact preparedSweep_activePorts n w B K pos invoke action x _ (trace x) run t s k
-    · intro ρ inactive tape swaps g z s
+    · intro ρ inactive tape uses g z s
+      let swaps := fun (a : Swap.Shear.State (Fin 8) (ZMod (prime^w))) (p : Fin 32 × Fin 5) =>
+        if ∃ h : Fin 439, hostRole n p.1 p.2 h = ρ then a.swap else a
+      have parity : stageRuns.foldl swaps s = (if uses.length % 2 = 1 then s.swap else s) := by
+        simpa only [swaps,uses,decide_eq_true_eq] using helperSwap_parity n ρ stageRuns s
+      rw [← parity]
       exact (read tape g z (encode (stageRuns.foldl swaps s))).trans
         (preparedSweep_inactive n w B K encode invoke action x _ (trace x) ρ inactive g z s)
 

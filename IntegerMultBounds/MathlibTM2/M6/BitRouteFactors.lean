@@ -224,4 +224,27 @@ theorem helperChart_span (c : PortCertificate) (checked : c.Checked) (x : ℕ) (
     rfl
   rw [span,← Matrix.mul_assoc,← Matrix.mul_assoc,(helperChart_reduce c checked x hx w).1,Matrix.one_mul,red]
 
+/-- Axis order of the eight live digits and the 56 exterior digits in a slot. -/
+noncomputable def helperSlotOrder (x : ℕ) (hx : x ≤ 55) : Axis ≃ ChartAxis :=
+  Equiv.ofBijective (slotPerm x hx) ((Fintype.bijective_iff_injective_and_card _).2
+    ⟨slotPerm_injective x hx,by decide⟩)
+
+/-- On the same port, changing helper slots only permutes the 64 digits
+of a charted field. The new live digits can come from the old exterior. -/
+theorem helperSlot_reindex (c : PortCertificate) (x y : ℕ) (hx : x ≤ 55) (hy : y ≤ 55)
+    (w : ℕ) (v : Axis → ZMod (prime^w)) :
+    let H := fun z hz => (reduce (prime^w) (c.helperChart z hz)).transpose
+    let order := (helperSlotOrder y hy).trans (helperSlotOrder x hx).symm
+    H y hy *ᵥ v = (H x hx *ᵥ v) ∘ order := by
+  intro H order
+  funext i
+  have same : slotPerm x hx (order i) = slotPerm y hy i :=
+    (helperSlotOrder x hx).apply_symm_apply _
+  change (∑ j, _ * v j) = ∑ j, _ * v j
+  apply Finset.sum_congr rfl
+  intro j _
+  congr 1
+  unfold H reduce
+  simp only [Matrix.transpose_apply,PortCertificate.helperChart,Matrix.of_apply,Matrix.map_apply,same]
+
 end IntegerMultBounds.MathlibTM2.M6.BitNode
