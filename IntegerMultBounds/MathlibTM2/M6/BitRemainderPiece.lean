@@ -21,7 +21,7 @@ local instance (w : ℕ) : NeZero (prime^w) := ⟨(pow_pos Shared50ModularContro
 def idleInterval (i : Fin 9) (c : Fin 222) : ℕ × ℕ :=
   (7*idleSource i+8*copyCount i c,7*idleTarget i)
 
-private theorem idleInterval_mem (i : Fin 9) (c : Fin 222) : idleInterval i c ∈ remainderIntervals := by
+theorem idleInterval_mem (i : Fin 9) (c : Fin 222) : idleInterval i c ∈ remainderIntervals := by
   apply List.mem_flatMap.mpr
   refine ⟨i.val,List.mem_range.mpr i.isLt,List.mem_map.mpr ⟨copyCount i c,?_,rfl⟩⟩
   have inside : c.val < (copyCounts i).length := (copyCounts_length _ i.isLt).symm ▸ c.isLt
@@ -32,8 +32,11 @@ def idleRole (i : Fin 9) (k : (Fin 32 × Fin 5) × Fin 222) : Role :=
   ⟨k.1.1,⟨2*pairOf i+k.2.val/111,by have := pairOf_lt i.val (by omega); omega⟩,
     ⟨k.2.val%111,by omega⟩,k.1.2⟩
 
+noncomputable def idleRoleIndex (i : Fin 9) (k : (Fin 32 × Fin 5) × Fin 222) : Fin 142080 :=
+  Fin.cast card_role (Fintype.equivFin Role (idleRole i k))
+
 noncomputable def idleTape (i : Fin 9) (k : (Fin 32 × Fin 5) × Fin 222) : Fin 142081 :=
-  ((Fin.cast card_role) (Fintype.equivFin Role (idleRole i k))).castSucc
+  (idleRoleIndex i k).castSucc
 
 theorem idleRole_copy (i : Fin 9) (k : (Fin 32 × Fin 5) × Fin 222) : roleCopy (idleRole i k) = k.2.val := by
   change (2*pairOf i+k.2.val/111)%2*111+k.2.val%111 = k.2.val
@@ -205,6 +208,9 @@ theorem idleCopies_modular_read {V : ℕ} (w : ℕ) (i : Fin 9)
 
 def idleCopies := stageRuns.flatMap fun rc => (List.finRange 222).map fun c => (rc,c)
 
+theorem idleCopies_length : idleCopies.length = 35520 := by
+  simp [idleCopies,List.length_flatMap,List.map_const',stageRuns_length]
+
 /-- Physical copy order agrees occurrence by occurrence with the idle's recursive calls. -/
 theorem idleCopies_ranks (i : Fin 9) :
     idleCopies.map (fun k => let e := idleInterval i k.2; e.2-e.1) = (Piece.remainder i.val).children := by
@@ -295,6 +301,11 @@ noncomputable def idleDirectoryIndex : (Fin 9 × Fin idleCopies.length) ↪ Fin 
     subst k
     exact Prod.ext rfl (Fin.ext (Nat.add_left_cancel h))
 
+theorem idleDirectoryIndex_rank (i : Fin 9) (j : Fin idleCopies.length) :
+    let interval := idleInterval i idleCopies[j.val].2
+    nodeChildren5.get (idleDirectoryIndex (i,j)) = interval.2-interval.1 :=
+  (idleRankAt i j).choose_spec
+
 /-- Charge each physical idle call once and leave the other occurrences'
 budgets available for the stage pieces. -/
 private theorem idleDirectoryBudget (budget : Fin nodeChildren5.length → ℝ) :
@@ -335,7 +346,7 @@ theorem idleDirectoryChild_shape (node : Descriptor) (w : ℕ) (aligned : node.w
     ScheduledChildShape prime node (idleDirectoryIndex (i,j)) batch ∧ volume prime batch*142080 = volume prime node := by
   intro interval rank batch
   let index := idleDirectoryIndex (i,j)
-  have rankEq : nodeChildren5[index.val] = rank := (idleRankAt i j).choose_spec
+  have rankEq : nodeChildren5[index.val] = rank := idleDirectoryIndex_rank i j
   have same := congrArg (fun r => ordinaryDirectoryChild (RecursiveInterchangeLayout.role node 142080) r (64-r) w) rankEq
   have shape := (scheduledDirectoryTranspose node index w aligned rows).1
   have actual : ScheduledChildShape prime node index batch := (congrArg (ScheduledChildShape prime node index) same).mp shape

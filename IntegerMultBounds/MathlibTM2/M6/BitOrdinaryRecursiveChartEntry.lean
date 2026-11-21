@@ -106,7 +106,8 @@ The nine sources and cutoff are the actual replay ports. -/
 theorem recursiveRoleChartEntry_exec {n K T Q s k back w : ℕ} {P U : Type}
     (room : 16 ≤ T) (replay : Fin (66+(K+3+T)) ↪ Fin n)
     (place : Fin (((s+5)+k)+back) ↪ Fin n) (space : 59 ≤ s)
-    (separate : ∀ i j, replay i ≠ place j)
+    (metadataOff : ∀ i j, replay (childMetadataSources K T room i) ≠ place j)
+    (cutoffOff : ∀ j, replay ((40 : Fin 66).castAdd (K+3+T)) ≠ place j)
     (body : P → Pr P (n+roleSplitWorkspace) Q prime U)
     (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q)
     (layout : RecursiveInterchangeLayout.Descriptor) (rows width : ℕ) (splitRows : layout.rows = 142080*rows)
@@ -174,7 +175,7 @@ theorem recursiveRoleChartEntry_exec {n K T Q s k back w : ℕ} {P U : Type}
     by_cases eq : i = 8
     · subst i; exact (show source 8 = _ from Function.update_self ..) ▸ disjoint (port.castAdd 12) _
     · rw [show source i = sources i from Function.update_of_ne eq ..]
-      exact lift.injective.ne (separate _ _)
+      exact lift.injective.ne (metadataOff _ _)
   have srcWork (i j) : source i ≠ scratch j := by
     by_cases eq : i = 8
     · subst i
@@ -201,9 +202,9 @@ theorem recursiveRoleChartEntry_exec {n K T Q s k back w : ℕ} {P U : Type}
   rw [high port] at run
   obtain ⟨z,F,t,user,paid,exec,entry,live,frame⟩ := run (fun j i => (high j).symm ▸ disjoint _ _)
     (fun j i => (high j).symm ▸ disjoint _ _) (fun j => ⟨(high j).symm ▸ disjoint _ _,noWork j 0,noWork j 1⟩)
-    srcDst ports (fun i => lift.injective.ne (separate _ _)) (by
+    srcDst ports (fun i => lift.injective.ne (cutoffOff _)) (by
       change [cut,scanner ((40 : Fin 59).castLE space),scratch 0,scratch 1].Nodup
-      have sep : cut ≠ scanner ((40 : Fin 59).castLE space) := lift.injective.ne (separate _ _)
+      have sep : cut ≠ scanner ((40 : Fin 59).castLE space) := lift.injective.ne (cutoffOff _)
       simp [sep,scratchNe,show ∀ i, cut ≠ scratch i from fun i => (disjoint _ _).symm,
         show ∀ i, scanner ((40 : Fin 59).castLE space) ≠ scratch i from fun i => (disjoint _ _).symm])
     (free _).2 (free _).2 front suffix h₀ h₁ h₂ h₃ (fun i hi => (privateCount i hi).symm ▸ (free _).2)
