@@ -408,7 +408,7 @@ theorem preparedCorrection_exec [M8.Machine.Net] {T w W r : ℕ} {P U : Type}
         (1+(((List.finRange 127).map (fun i => pairScalingTime U i.succ 0 i.succ w W H J)).sum+1)) + (128*128*(4*H+4)+1) ∧
       Exec body ((prep.seq (placedDiagonalPairs ports 127)).seq (dropWords (col 2) (col 34) (col 0) (128*128))) (mk u S) n (mk z F) ∧
       ready tail (fun x (j : Fin (64+64)) => Fin.addCases (corrected x).1 (corrected x).2 j) F ∧
-      scratch F ∧ (∀ j : Fin 64, (∀ k, correctionCallerSlots k ≠ j) →
+      scratch F ∧ F.R (ports (Fin.last _)) = S.R (ports (Fin.last _)) ∧ (∀ j : Fin 64, (∀ k, correctionCallerSlots k ≠ j) →
         F.L (bank j) = S.L (bank j) ∧ F.R (bank j) = S.R (bank j)) ∧ ∀ j, (∀ i, ports i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
   intro ports weight emit write prep col ready plain corrected matrix scratch pos inv free before clean
   have width : (S.R (bank 2)).length = H := by
@@ -435,14 +435,14 @@ theorem preparedCorrection_exec [M8.Machine.Net] {T w W r : ℕ} {P U : Type}
       change j.val = 34 at same
       omega
     simpa [D,col,Function.update_of_ne (ports.injective.ne ne)] using clean j hj
-  obtain ⟨v,E,n,same,time,run,done,unused,_⟩ := childCorrection_exec r weight H J hm hw hW
+  obtain ⟨v,E,n,same,time,run,done,unused,lastWord⟩ := childCorrection_exec r weight H J hm hw hW
     (P := Empty) Empty.elim (stateLiftDown cap (embDn ports y)) (embStk ports D) tail
     (D.R (ports (Fin.last _))) dest q empty original input ⟨(project ..).1 live,cleanD,rfl⟩
   · obtain ⟨z,_,zu,placed⟩ := statePlaced_exec_normalized ports ports.injective le_rfl cap Empty.elim
       (body' := body) (fun e => nomatch e) y D run
     let F := embOvr ports E.get D
     have eq : embStk ports F = E := embStk_ovr ports.injective _ _
-    rw [← eq] at done unused
+    rw [← eq] at done unused lastWord
     have result := (project ..).2 done
     obtain ⟨word,record,reads⟩ := result
     obtain ⟨out,final,drop⟩ := consumeMatrix_exec col body z F H matrix tail record.archive
@@ -453,7 +453,7 @@ theorem preparedCorrection_exec [M8.Machine.Net] {T w W r : ℕ} {P U : Type}
       have ne := (off (columnBank 34)).symm
       exact ⟨left,(Function.update_of_ne ne ..).trans (right.trans (Function.update_of_ne ne ..))⟩
     refine ⟨out,G,_,final.trans (zu.trans (same.trans user)),Nat.add_le_add_right (Nat.add_le_add paid (Nat.add_le_add_left time 1)) _,
-      Exec.seq (Exec.seq prepare placed) drop,replaceColumnRecord col H J _ _ dest q original _ F ⟨word,record,reads⟩,?_,
+      Exec.seq (Exec.seq prepare placed) drop,replaceColumnRecord col H J _ _ dest q original _ F ⟨word,record,reads⟩,?_,?_,
       fun j hj => frame _ (correctionColumnPlacement_off bank work apart j hj),frame⟩
     · intro j hj
       have ne : columnPorts j ≠ columnBank 34 := by
@@ -462,5 +462,13 @@ theorem preparedCorrection_exec [M8.Machine.Net] {T w W r : ℕ} {P U : Type}
         change j.val = 34 at same
         omega
       simpa [G,col,Function.update_of_ne (ports.injective.ne ne),embStk] using unused j hj
+    · have ne : ports (Fin.last _) ≠ col 34 := by
+        intro e
+        have same : Fin.last (rowSwapBlock.tapes+35) = columnBank 34 := ports.injective e
+        have h := congrArg Fin.val same
+        change rowSwapBlock.tapes+35 = 34 at h
+        omega
+      simpa [G,D,Function.update_of_ne ne,embStk] using lastWord
+
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
