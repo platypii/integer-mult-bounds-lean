@@ -84,27 +84,56 @@ theorem orthogonalChild_read (r w W : ℕ) (hr : r ≤ 8)
   rw [invol] at atSwap
   simpa only [swaps,singletonSwaps,read,addr] using atSwap
 
-/-- At rank one the outermost two digits are the two active fields. The
-fixed leaf machine supplies this child on the original owner tape. -/
-theorem orthogonalChild_one [M8.Machine.Net] :
+/-- Swap one reversed pair in place, with its original spectators. -/
+private theorem orthogonalChild_one [M8.Machine.Net] (k : ℕ) (hk : k < 8) :
     ∃ machine : SharedBankSkeleton.Skeleton 1 prime, ∀ w W : ℕ, 0 < w → 0 < W →
       let V := (prime^w)^16*W
       ∃ stage : SharedBankStage.Stage _ 1 prime (@portOwner V),
         SharedBankSkeleton.ofStage stage = machine ∧ stage.cost = 3808274*V + LeafCore.coreCost V w ∧
-        ∀ x, RevT prime w 1 (sub prime w 8 0 1 ⟨1,1,1,8*w,1,W⟩) (ext x) (ext (stage.transform x)) := by
-  obtain ⟨machine,runs⟩ := digitSwap_view_owner (0 : Fin 16) 15 (by decide)
+        ∀ x, RevT prime w 1 (sub prime w 8 k 1 ⟨1,1,1,8*w,1,W⟩) (ext x) (ext (stage.transform x)) := by
+  let i : Fin 16 := ⟨k,by omega⟩
+  let j : Fin 16 := ⟨15-k,by omega⟩
+  obtain ⟨machine,runs⟩ := digitSwap_view_owner i j (by change k < 15-k; omega)
   refine ⟨machine,?_⟩
   intro w W hw hW V
   obtain ⟨stage,control,cost,swap⟩ := runs w W hw hW
   refine ⟨stage,control,cost,?_⟩
-  have view : sub prime w 8 0 1 ⟨1,1,1,8*w,1,W⟩ =
-      Cover.Fallback.swapView prime w W (0 : Fin 16) 15 := by
-    simp [sub,Cover.Fallback.swapView,FlatCoordinateLayout.suffixFields,← pow_add,← pow_mul]
-    congr 1
-    omega
+  have gap : j.val-i.val-1 = (8-k-1)+(8-k-1) := by dsimp [i,j]; omega
+  have suffix : FlatCoordinateLayout.suffixFields j = k := by
+    dsimp [FlatCoordinateLayout.suffixFields,j]; omega
+  have view : sub prime w 8 k 1 ⟨1,1,1,8*w,1,W⟩ = Cover.Fallback.swapView prime w W i j := by
+    simp [sub,Cover.Fallback.swapView,gap,suffix,i,pow_add,← pow_mul,Nat.mul_comm w]
   intro x
   rw [view]
   exact revT_one (swap x)
+
+/-- At the recursion cutoff, execute all reversed pairs of a contiguous
+block on the owner tape. Each additional pair costs one join. -/
+theorem orthogonalStoppedChild [M8.Machine.Net] (r k : ℕ) (fits : k+r ≤ 8) :
+    ∃ machine : SharedBankSkeleton.Skeleton 1 prime, ∀ w W : ℕ, 0 < w → 0 < W →
+      let V := (prime^w)^16*W
+      ∃ stage : SharedBankStage.Stage _ 1 prime (@portOwner V),
+        SharedBankSkeleton.ofStage stage = machine ∧ stage.cost = r*(3808274*V + LeafCore.coreCost V w + 1) ∧
+        ∀ x, RevT prime w r (sub prime w 8 k r ⟨1,1,1,8*w,1,W⟩) (ext x) (ext (stage.transform x)) := by
+  induction r generalizing k with
+  | zero =>
+    refine ⟨SharedBankSkeleton.identity 1 prime (by decide),?_⟩
+    intro w W hw hW V
+    exact ⟨SharedBankStage.identity _ (by decide),rfl,by simp [SharedBankStage.identity],
+      fun x => revT_zero _ _ _ _⟩
+  | succ r ih =>
+    obtain ⟨tail,runTail⟩ := ih (k+1) (by omega)
+    obtain ⟨pair,runPair⟩ := orthogonalChild_one k (by omega)
+    refine ⟨SharedBankSkeleton.compose tail pair,?_⟩
+    intro w W hw hW V
+    obtain ⟨A,hA,cA,a⟩ := runTail w W hw hW
+    obtain ⟨B,hB,cB,b⟩ := runPair w W hw hW
+    refine ⟨SharedBankStage.compose A B,by simp [hA,hB],?_,?_⟩
+    · change A.cost + B.cost + 1 = _
+      rw [cA,cB,Nat.succ_mul r]
+      dsimp only [V]
+      omega
+    · exact fun x => revT_grow Shared50ModularControl.prime_prime.pos fits (a x) (b _)
 
 private theorem orthogonalSegment_good (U) (spec : OrthogonalMoveModular U)
     (ops : List (AffineFieldProgram.Op (Fin 8) ℚ))
@@ -365,5 +394,79 @@ theorem orthogonalPaidMoves_owner :
     refine ⟨stage,control ▸ compiled,?_,read⟩
     simp only [r,zero,ite_false]
     exact cost.trans (Nat.add_le_add_right (Nat.add_le_add_left time _) _)
+
+/-- Extend a one-owner machine by the stationary registers in the parent. -/
+private noncomputable def placedPortMachine {n : ℕ} (dst : Fin (n+1))
+    (machine : SharedBankSkeleton.Skeleton 1 prime) : SharedBankSkeleton.Skeleton (n+1) prime where
+  tapes := machine.tapes+n
+  states := machine.states
+  program := extend machine.program n
+  slots := dst.succAboveCases (Fin.castAdd n (machine.slots 0)) (Fin.natAdd machine.tapes)
+  slots_injective := by
+    have sep (a : Fin machine.tapes) (b : Fin n) : Fin.castAdd n a ≠ Fin.natAdd machine.tapes b := by
+      intro h
+      have eq := congrArg Fin.val h
+      simp only [Fin.val_castAdd,Fin.val_natAdd] at eq
+      omega
+    intro a b h
+    induction a using Fin.succAboveCases dst <;> induction b using Fin.succAboveCases dst <;>
+      simpa [sep,Ne.symm (sep _ _)] using h
+
+/-- At a fixed atom-width cutoff every scheduled PR589 move has a physical
+implementation of linear volume cost, uniformly in both labels. -/
+theorem orthogonalStoppedMoves_bank [M8.Machine.Net] (cutoff : ℕ) :
+    ∃ (basis : Matrix (Fin 8) (Fin 8) ℕ) (K : ℝ),
+      (∀ a b, basis a b ≤ 2^28) ∧ (basis.map (Nat.cast : ℕ → ℚ)).det ≠ 0 ∧
+      ∀ i j : Fin 636, Geometry.Moves.CheckedPair (i.val,j.val) →
+      ∀ {n : ℕ} (dst : Fin (n+1)), ∃ machine : SharedBankSkeleton.Skeleton (n+1) prime, ∀ w W : ℕ, 0 < w → w ≤ cutoff → 0 < W →
+        let m := prime^w
+        let V := m^16*W
+        let G := reduce m (basis.map (Nat.cast : ℕ → ℚ))
+        let encode := Exchange.transform G (reduce m (ReversedExchange.rev 8)*G)
+        let addr := fun s (k : Fin W) => FlatCoordinateLayout.index (AffineFieldCoordinates.embed (encode s)) k
+        ∃ stage : SharedBankStage.Stage _ (n+1) prime (phaseOwners (N := V)), SharedBankSkeleton.ofStage stage = machine ∧
+          (stage.cost : ℝ) ≤ K*V ∧ (∀ x t, t ≠ dst → stage.transform x t = x t) ∧ ∀ x s k,
+          stage.transform x dst (addr (Exchange.exchange (reduce m (Nine.labelProj j)) s) k) =
+            x dst (addr (Exchange.exchange (reduce m (Nine.labelProj i)) s) k) := by
+  obtain ⟨basis,C,small,det,edges⟩ := orthogonalPaidMoves_owner
+  refine ⟨basis,(C : ℝ)+8*(3808275+|LeafCore.C| * cutoff)+2,small,det,?_⟩
+  intro i j checked n dst
+  let r := Geometry.moveRank i j
+  have hr : r ≤ 8 := by
+    simpa [r,Geometry.moveRank,Geometry.Address] using
+      Submodule.finrank_le (LinearMap.range (Geometry.projector j - Geometry.projector i))
+  obtain ⟨wrap,run⟩ := edges i j checked
+  obtain ⟨child,leaf⟩ := orthogonalStoppedChild r 0 (by omega)
+  refine ⟨placedPortMachine dst (wrap child),?_⟩
+  intro w W hw stop hW m V G encode addr
+  let price := r*(3808274*V + LeafCore.coreCost V w + 1)
+  obtain ⟨stage,control,cost,read⟩ := run w W hW child price (fun _ => by
+    obtain ⟨A,fixed,time,act⟩ := leaf w W hw hW
+    exact ⟨A,fixed,time.le,act⟩)
+  refine ⟨placePort dst stage,?_,?_,?_,?_⟩
+  · exact congrArg (placedPortMachine dst) control
+  · change (stage.cost : ℝ) ≤ _
+
+    have cap : stage.cost ≤ C*V + 8*(3808274*V + LeafCore.coreCost V w + 1)+2 := by
+      apply cost.trans
+      split
+      · omega
+      · exact Nat.add_le_add_right (Nat.add_le_add_left (Nat.mul_le_mul_right _ hr) _) _
+    have hw' : (1 : ℝ) ≤ w := by exact_mod_cast hw
+    have core := RevBudget.coreCost_le V w (L := cutoff) (by
+      rw [max_eq_right hw]
+      exact (Real.rpow_le_self_of_one_le hw' M8.Machine.BudgetBound.exponent_range.2.le).trans (by exact_mod_cast stop))
+    have hv : 1 ≤ V := Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) hW
+    have live : (1 : ℝ) ≤ V := by exact_mod_cast hv
+    calc
+      _ ≤ ((C*V + 8*(3808274*V + LeafCore.coreCost V w + 1)+2 : ℕ) : ℝ) := by exact_mod_cast cap
+      _ ≤ _ := by push_cast; linarith only [core,live]
+  · intro x t ne
+    exact Function.update_of_ne ne _ _
+  · intro x s k
+    change Function.update x dst (stage.transform (x dst)) dst _ = _
+    rw [Function.update_self]
+    exact read (x dst) s k
+
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
