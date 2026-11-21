@@ -1192,6 +1192,23 @@ theorem phasePrepared_runs [M8.Machine.Net] {t lo hi : ℕ} (lt : lo < hi) (fits
     (FixedHeaderBankCopy.empty 16)) M8.Machine.ArbitraryWidthHighPrepareShared.privateInput)
   exact ⟨y, prepare.seq move, action⟩
 
+theorem phaseInterval_bounds {p : ℕ × ℕ} (checked : Geometry.Moves.CheckedPair p)
+    (paid : 0 < Geometry.moveRank p.1 p.2) :
+    let a := Geometry.Dimensions.value p.1
+    let b := Geometry.Dimensions.value p.2
+    min a b < max a b ∧ max a b ≤ 8 := by
+  intro a b
+  let lo := min a b
+  let hi := max a b
+  have diff := Geometry.Moves.rank p checked
+  change Geometry.moveRank p.1 p.2 = (b-a)+(a-b) at diff
+  have lt : lo < hi := by dsimp only [lo,hi]; omega
+  have bounded (k : ℕ) (hk : k < 636) : Geometry.Dimensions.value k ≤ 8 := by
+    rw [← Geometry.Dimensions.dimension k hk]
+    simpa using (Submodule.finrank_le (Geometry.label k))
+  have fits : hi ≤ 8 := max_le (bounded _ checked.1) (bounded _ checked.2.1)
+  exact ⟨lt,fits⟩
+
 /-- Each paid phase edge executes its selected modular word, with the actual
 recursive width priced by the schedule's move rank. -/
 theorem scheduledPhase_runs [M8.Machine.Net] {p : ℕ × ℕ}
@@ -1208,13 +1225,7 @@ theorem scheduledPhase_runs [M8.Machine.Net] {p : ℕ × ℕ}
       (phaseIntervalChild lo hi w W).width = Geometry.moveRank p.1 p.2*w ∧
       PhaseExecution lt fits src C rev fwd caller x (selectedWord w p) := by
   intro a b lo hi
-  have diff := Geometry.Moves.rank p checked
-  change Geometry.moveRank p.1 p.2 = (b-a)+(a-b) at diff
-  have lt : lo < hi := by dsimp only [lo,hi]; omega
-  have bounded (k : ℕ) (hk : k < 636) : Geometry.Dimensions.value k ≤ 8 := by
-    rw [← Geometry.Dimensions.dimension k hk]
-    simpa using (Submodule.finrank_le (Geometry.label k))
-  have fits : hi ≤ 8 := max_le (bounded _ checked.1) (bounded _ checked.2.1)
+  obtain ⟨lt,fits⟩ := phaseInterval_bounds checked paid
   obtain ⟨C,shape,rev,fwd⟩ := modular_move_profile.choose_spec.1 p checked
   refine ⟨lt,fits,C,rev,fwd,?_⟩
   intro t w W src caller x hw hW head payload

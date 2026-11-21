@@ -453,6 +453,149 @@ theorem phaseRawGate_host {k V : ℕ} (owner : Fin 661 ↪ Fin k) (g : RawGate)
     chartPrivateReady_of_input stage _ _ full,fun j => (stock j).trans
       (Nat.add_le_add_left (Nat.mul_le_mul_left 2 cost) _),off⟩
 
+/-- Prepare all six interval-child dimensions on the parent's header bank.
+The child payload and both basis workspaces can lie outside these 24 tapes. -/
+theorem phaseHeader_host {T Q lo hi w W : ℕ} {P U : Type}
+    (ordered : lo ≤ hi) (bounded : hi ≤ 8) (hw : 0 < w) (hW : 0 < W)
+    (bank : Fin 24 ↪ Fin T) (fits : _ ≤ Q) (body : P → Pr P T Q prime U)
+    (u : HS T Q prime U) (S : Stacks T prime)
+    (ready : RepT (phaseHeaderInput lo hi w W) (embStk bank S).L (embStk bank S).R) :
+    ∃ z F n, Exec body (embProg bank (Empty.elim : Empty → P)
+        (foreign (liftQ (phaseHeaderProgram lo hi) fits))) (mk u S) n (mk z F) ∧
+      n ≤ 37700*((prime^w)^16*W)+6 ∧ z.user = u.user ∧
+      RepT (phaseHeaderOutput lo hi w W) (embStk bank F).L (embStk bank F).R ∧
+      (∀ j, (F.L (bank j)).length+(F.R (bank j)).length ≤ (S.L (bank j)).length+(S.R (bank j)).length+
+        2600*((prime^w)^16*W)) ∧
+      ∀ j, (∀ i, bank i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  obtain ⟨build,_,_⟩ := phaseHeader_runs ordered bounded hw hW
+  obtain ⟨v,A,_,rfl,full,user,_,_,stock,n,time,run⟩ := foreign_exec (body := (Empty.elim : Empty → _))
+    (liftQ _ fits) (HoareTime.liftQ fits build) (embDn bank u) (embStk bank S) _ rfl ready
+  obtain ⟨z,F,exec,_,same,viewBank,off⟩ := exec_emb (ι := (Empty.elim : Empty → P))
+    (body' := body) bank.injective (fun f => f.elim) run u rfl S rfl
+  subst A
+  refine ⟨z,F,n,exec,?_,same.trans user,full,?_,off⟩
+  · change n ≤ 1300*((prime^w)^16*W)*29+6 at time
+    omega
+  · intro j
+    simpa only [embStk,Function.comp_apply,← Nat.mul_assoc,Nat.reduceMul] using stock j
+
+section
+local instance (w : ℕ) : NeZero (prime^w) := ⟨(pow_pos Shared50ModularControl.prime_prime.pos _).ne'⟩
+open M8.Machine.Segments SharedPlacementAlphabet
+open M8.Machine.ArbitraryWidthHighExchangeShared (sourceWord)
+/-- Run either basis pass of a phase edge on one live owner. Embedding only
+this owner and the fixed pass workspace preserves every other physical tape. -/
+theorem phaseBasis_host {w W : ℕ} (view : Descriptor) (size : volume prime view = (prime^w)^16*W)
+    (ops : List (AffineFieldProgram.Op (Fin 8) ℚ)) (good : Good ops) (hW : 0 < W)
+    (legal : ∀ op ∈ ops.map (AffineFieldProgram.mapOp (ratMod (prime^w))), AffineFieldProgram.Legal op)
+    (x : Fin ((prime^w)^16*W) → ZMod 2) :
+    let q := ops.map (AffineFieldProgram.mapOp (ratMod (prime^w)))
+    let stages := description ops good
+    let m := FlatCoordinateCleanSchedule.tapeCount stages
+    let machine := Placement.placed (FlatCoordinateCleanSchedule.program stages)
+      (sharedPlacement (0 : Fin 1) (segmentSource stages))
+    let word := fun y : Fin ((prime^w)^16*W) → ZMod 2 => sourceWord (v := view) (fun i => y (Fin.cast size i))
+    let caller : Tapes 1 prime := ⟨fun _ => 0, fun _ => word x⟩
+    ∃ y, (∀ s j, y (FlatCoordinateLayout.index (AffineFieldCoordinates.embed (AffineFieldProgram.run q s)) j) =
+        x (FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) j)) ∧
+      ∀ {T Q : ℕ} {P U : Type} (bank : Fin (1+m) ↪ Fin T) (fits : _ ≤ Q)
+        (body : P → Pr P T Q prime U) (u : HS T Q prime U) (S : Stacks T prime),
+        RepT (caller.append (basisWorkspace stages x)) (embStk bank S).L (embStk bank S).R →
+        ∃ z F n, Exec body (embProg bank (Empty.elim : Empty → P) (foreign (liftQ machine fits)))
+            (mk u S) n (mk z F) ∧ n ≤ FlatCoordinateCleanSchedule.constant stages*((prime^w)^16*W)*(1+m+5)+6 ∧
+          z.user = u.user ∧ RepT ((setTape caller 0 (word y) 0).append (basisWorkspace stages x))
+            (embStk bank F).L (embStk bank F).R ∧
+          (∀ j, (F.L (bank j)).length+(F.R (bank j)).length ≤ (S.L (bank j)).length+(S.R (bank j)).length+
+            2*(FlatCoordinateCleanSchedule.constant stages*((prime^w)^16*W))) ∧
+          ∀ j, (∀ i, bank i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  intro q stages m machine word caller
+  obtain ⟨y,pass,action⟩ := basisSegment_placed view size (0 : Fin 1) ops good hW caller x rfl rfl legal
+  refine ⟨y,action,?_⟩
+  intro T Q P U bank fits body u S ready
+  obtain ⟨v,A,_,rfl,full,user,_,_,stock,n,time,run⟩ := foreign_exec (body := (Empty.elim : Empty → _))
+    (liftQ machine fits) (HoareTime.liftQ fits pass) (embDn bank u) (embStk bank S) _ rfl ready
+  obtain ⟨z,F,exec,_,same,viewBank,off⟩ := exec_emb (ι := (Empty.elim : Empty → P))
+    (body' := body) bank.injective (fun f => f.elim) run u rfl S rfl
+  subst A
+  exact ⟨z,F,n,exec,time,same.trans user,full,stock,off⟩
+
+open IntegerMultBounds.Networks.Certificates.PR589 in
+/-- Execute the two selected basis changes around one physical interval-child
+execution. Only the parent passes pay the foreign-machine simulation factor. -/
+theorem scheduledPhase_host {T Q w W : ℕ} {P U : Type} {p : ℕ × ℕ}
+    (checked : Geometry.Moves.CheckedPair p) (paid : 0 < Geometry.moveRank p.1 p.2) (hW : 0 < W)
+    (body : P → Pr P T Q prime U) (child : Pr P T Q prime U) (budget : ℕ) :
+    let lo := min (Geometry.Dimensions.value p.1) (Geometry.Dimensions.value p.2)
+    let hi := max (Geometry.Dimensions.value p.1) (Geometry.Dimensions.value p.2)
+    ∃ (ordered : lo < hi) (bounded : hi ≤ 8) (C : Matrix (Fin 8) (Fin 8) ℚ)
+      (rev : CopyBasisPass C.adjugate) (fwd : CopyBasisPass C),
+    let V := (prime^w)^16*W
+    let view := phaseIntervalChild lo hi w W
+    let size := phaseIntervalChild_volume ordered.le bounded w W
+    let word := fun y : Fin V → ZMod 2 => sourceWord (v := view) (fun i => y (Fin.cast size i))
+    let caller := fun y => (⟨fun _ => 0,fun _ => word y⟩ : Tapes 1 prime)
+    let input := fun stages y => (caller y).append (basisWorkspace stages y)
+    let output := fun stages x y => (setTape (caller x) 0 (word y) 0).append (basisWorkspace stages x)
+    let transpose := fun (x : Fin V → ZMod 2) (i : Fin V) =>
+      Shared50RecursiveNodeRows.transpose (v := view) (one_dvd _) (fun j => x (j.cast size)) (i.cast size.symm)
+    let A := description _ rev.good
+    let B := description _ fwd.good
+    let machine := fun stages => Placement.placed (FlatCoordinateCleanSchedule.program stages)
+      (sharedPlacement (0 : Fin 1) (segmentSource stages))
+    let cost := fun stages => FlatCoordinateCleanSchedule.constant stages*V*
+      (1+FlatCoordinateCleanSchedule.tapeCount stages+5)+6
+    view.width = Geometry.moveRank p.1 p.2*w ∧
+    ∀ (a : Fin (1+FlatCoordinateCleanSchedule.tapeCount A) ↪ Fin T)
+      (b : Fin (1+FlatCoordinateCleanSchedule.tapeCount B) ↪ Fin T)
+      (fitsA : _ ≤ Q) (fitsB : _ ≤ Q) (x : Fin V → ZMod 2) (u : HS T Q prime U) (S : Stacks T prime),
+      ∀ (keep : Fin T → Prop), (∀ j, keep j → ∀ i, a i ≠ j) → (∀ j, keep j → ∀ i, b i ≠ j) →
+      RepT (input A x) (embStk a S).L (embStk a S).R →
+      (∀ loaded (v : HS T Q prime U) (F : Stacks T prime),
+        RepT (output A x loaded) (embStk a F).L (embStk a F).R →
+        (∀ j, (F.L (a j)).length+(F.R (a j)).length ≤
+          (S.L (a j)).length+(S.R (a j)).length+2*(FlatCoordinateCleanSchedule.constant A*V)) →
+        (∀ j, (∀ i, a i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j) →
+        ∃ z G n, Exec body child (mk v F) n (mk z G) ∧ n ≤ budget ∧ z.user = v.user ∧
+          (∀ j, keep j → G.L j = F.L j ∧ G.R j = F.R j) ∧
+          RepT (input B (transpose loaded)) (embStk b G).L (embStk b G).R) →
+      ∃ mid y z G n, Exec body
+        ((embProg a (Empty.elim : Empty → P) (foreign (liftQ (machine A) fitsA))).seq
+          (child.seq (embProg b (Empty.elim : Empty → P) (foreign (liftQ (machine B) fitsB)))))
+        (mk u S) n (mk z G) ∧ n ≤ cost A+budget+cost B ∧ z.user = u.user ∧
+        (∀ j, keep j → G.L j = S.L j ∧ G.R j = S.R j) ∧
+        RepT (output B mid y) (embStk b G).L (embStk b G).R ∧
+        ∀ s j, y (index (AffineFieldCoordinates.embed (AffineFieldProgram.run
+          (selectedWord w p) s)) j) =
+          x (index (AffineFieldCoordinates.embed s) j) := by
+  intro lo hi
+  obtain ⟨C,shape,rev,fwd⟩ := modular_move_profile.choose_spec.1 p checked
+  obtain ⟨ordered,bounded⟩ := phaseInterval_bounds checked paid
+  refine ⟨ordered,bounded,C,rev,fwd,?_⟩
+  intro V view size word caller input output transpose A B machine cost
+  refine ⟨phaseIntervalChild_width checked w W,?_⟩
+  intro a b fitsA fitsB x u S keep outsideA outsideB ready recurse
+  obtain ⟨loaded,first,enter⟩ := phaseBasis_host view size _ rev.good hW (rev.legal w) x
+  obtain ⟨v,F,t,runA,timeA,userA,fullA,stockA,off⟩ := enter a fitsA body u S ready
+  obtain ⟨h,D,m,runChild,timeChild,userChild,kept,readyB⟩ := recurse loaded v F fullA stockA off
+  let mid := transpose loaded
+  obtain ⟨y,last,leave⟩ := phaseBasis_host view size _ fwd.good hW (fwd.legal w) mid
+  obtain ⟨z,G,n,runB,timeB,userB,fullB,_,offB⟩ := leave b fitsB body h D readyB
+  refine ⟨mid,y,z,G,_,Exec.seq runA (Exec.seq runChild runB),?_,userB.trans (userChild.trans userA),?_,fullB,?_⟩
+  · change t ≤ cost A at timeA
+    change n ≤ cost B at timeB
+    omega
+  · intro j hj
+    obtain ⟨l,r⟩ := off j (outsideA j hj)
+    obtain ⟨l',r'⟩ := kept j hj
+    obtain ⟨l'',r''⟩ := offB j (outsideB j hj)
+    exact ⟨l''.trans (l'.trans l),r''.trans (r'.trans r)⟩
+  · intro s j
+    unfold selectedWord selectedRaw
+    rw [shape,rationalMoveWord_run,last]
+    exact (phaseChild_interval ordered.le bounded loaded _ j).trans (first s j)
+
+end
+
 /-- Use the permanent owner slots for the chart payload and an appended
 bank for its private tapes. -/
 noncomputable def returnChartBank {k t T : ℕ} (slots : Fin k ↪ Fin t) (owners : Fin k ↪ Fin T) :
