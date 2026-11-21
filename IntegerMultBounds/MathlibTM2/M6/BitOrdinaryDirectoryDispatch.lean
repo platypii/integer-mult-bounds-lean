@@ -989,6 +989,46 @@ theorem scheduledIdleTime [M8.Machine.Net] (node : Descriptor) (width : 64 ∣ n
   norm_num at selectors total ⊢
   linarith only [total,stages,selectors,branches]
 
+open IntegerMultBounds.Networks.Certificates.PR589.Nine in
+/-- The same constant pays for the running time of both physical charts and
+the growth of a spectator owner, at every positive width and stream volume. -/
+theorem idlePackedChart_cost [M8.Machine.Net] :
+    ∃ C : ℝ, ∀ (i : Fin 9) (k : (Fin 32 × Fin 5) × Fin 222) (width v : ℕ),
+      1 ≤ width → 1 ≤ v →
+      let role := idleRole i k
+      let rate := packedChartRate (idleTape i k) (port role.port.val) (port_checked _ role.port.isLt)
+      let toll := C*(width : ℝ)^M8.Machine.BudgetBound.tau*v
+      (13*rate false width+rate true width)*v ≤ toll ∧
+        2*(rate false width+rate true width)*v+24 ≤ toll := by
+  let rate := fun (i : Fin 9) (k : (Fin 32 × Fin 5) × Fin 222) =>
+    packedChartRate (idleTape i k) (port (idleRole i k).port.val) (port_checked _ (idleRole i k).port.isLt)
+  obtain ⟨M,bound⟩ := Finite.exists_le (fun j : (Fin 9 × ((Fin 32 × Fin 5) × Fin 222)) × Bool =>
+    rate j.1.1 j.1.2 j.2 1)
+  refine ⟨14*max M 0+24,?_⟩
+  intro i k width v hw hv role r toll
+  let power := (width : ℝ)^M8.Machine.BudgetBound.tau
+  have one : 1 ≤ power := Real.one_le_rpow (by exact_mod_cast hw) M8.Machine.BudgetBound.exponent_range.1.le
+  have size : (1 : ℝ) ≤ v := by exact_mod_cast hv
+  have absorb (a b t : ℝ) (ha : 0 ≤ a) (ht : 0 ≤ t) :
+      (a+b*power)*t ≤ (a+b)*t*power := by
+    calc
+      _ ≤ (a*power+b*power)*t := by
+        exact mul_le_mul_of_nonneg_right (add_le_add_left (le_mul_of_one_le_right ha one) _) ht
+      _ = _ := by ring
+  have scaled (d : Bool) : r d width ≤ max M 0*power := by
+    calc
+      _ ≤ rate i k d 1 * power := by
+        dsimp only [r,role,rate,packedChartRate]
+        simp only [Nat.cast_one,Real.one_rpow,mul_one]
+        exact absorb _ _ _ (Nat.cast_nonneg _) (by positivity)
+      _ ≤ _ := mul_le_mul_of_nonneg_right ((bound ((i,k),d)).trans (le_max_left ..)) (by linarith)
+  have f := mul_le_mul_of_nonneg_right (scaled false) (zero_le_one.trans size)
+  have b := mul_le_mul_of_nonneg_right (scaled true) (zero_le_one.trans size)
+  have unit := mul_le_mul one size (by norm_num) (by linarith : 0 ≤ power)
+  have pos : 0 ≤ max M 0 * power * v := by positivity
+  dsimp only [toll]
+  constructor <;> linarith only [f,b,unit,pos]
+
 /-- Across a window of length n, each earlier pass contributes to the later
 passes once. A uniform growth bound therefore has a triangular coefficient. -/
 private theorem prefixGrowth_sum_le {α : Type*} (xs : List α) (growth : α → ℝ)
@@ -1024,6 +1064,60 @@ theorem scheduledIdleGrowth (growth : Fin 9 → Fin idleCopies.length → ℝ) (
   convert bound using 1
   rw [idleCopies_length]
   norm_num
+
+/-- Distinct scheduled passes normalize distinct entry tapes. -/
+private theorem idleEntry_stock (i : Fin 9) (stock : Fin 142081 → ℝ) (positive : ∀ l, 0 ≤ stock l) :
+    (∑ j : Fin idleCopies.length, stock (idleTape i idleCopies[j.val])) ≤ ∑ l, stock l := by
+  let tape : Fin idleCopies.length ↪ Fin 142081 :=
+    ⟨fun j => idleTape i idleCopies[j.val],fun _ _ eq => by
+      simpa only [idleCopyIndex_at] using congrArg idleCopyIndex (idleTape_injective i eq)⟩
+  change (∑ j, stock (tape j)) ≤ _
+  simpa only [Finset.sum_map] using
+    (Finset.sum_le_sum_of_subset_of_nonneg (Finset.subset_univ (Finset.univ.map tape))
+      (fun l _ _ => positive l) : ∑ l ∈ Finset.univ.map tape, stock l ≤ ∑ l, stock l)
+
+open IntegerMultBounds.Networks.Certificates.PR589.Nine RecursiveInterchangeLayout in
+/-- The forward and reverse charts and all accumulated spectator growth fit
+one parent volume times the width exponent. Each window also pays once for
+the initial physical stock of its owner bank. -/
+theorem scheduledIdleCharts_cost [M8.Machine.Net] :
+    ∃ C : ℝ, ∀ (node : Descriptor), 1 ≤ node.width → 142080 ∣ node.rows →
+      0 < volume prime node →
+      let v := volume prime (role node 142080)
+      let rate := fun i k => let portRole := idleRole i k
+        packedChartRate (idleTape i k) (port portRole.port.val) (port_checked _ portRole.port.isLt)
+      let growth := fun i k => 2*(rate i k false node.width+rate i k true node.width)*v+24
+      let chartTime := fun i k => (13*rate i k false node.width+rate i k true node.width)*v
+      ∀ entry : Fin 9 → Stacks 142081 prime,
+      let stock := fun i l => (((entry i).L l).length+((entry i).R l).length : ℕ)
+      (∑ i, ∑ j : Fin idleCopies.length, let k := idleCopies[j.val]
+        chartTime i k+6*((stock i (idleTape i k) : ℝ)+((idleCopies.take j.val).map (growth i)).sum)) ≤
+        C*(node.width : ℝ)^M8.Machine.BudgetBound.tau*volume prime node + 6*(∑ i, ∑ l, (stock i l : ℝ)) := by
+  obtain ⟨A,chart⟩ := idlePackedChart_cost
+  refine ⟨(35520+6*630817440)*9*A/142080,?_⟩
+  intro node width rows positive v rate growth chartTime entry stock
+  have parent := role_volume_mul prime 142080 node rows
+  have live := Nat.pos_of_mul_pos_right (parent.symm ▸ positive)
+  let g := A*(node.width : ℝ)^M8.Machine.BudgetBound.tau*v
+  have history := scheduledIdleGrowth (fun i j => growth i idleCopies[j.val]) (fun _ => g)
+    (fun i j => (chart i idleCopies[j.val] node.width v width live).2)
+  simp only [idleCopyIndex_get,Finset.sum_const,Finset.card_univ,Fintype.card_fin,nsmul_eq_mul] at history
+  have size : (v : ℝ)*142080 = volume prime node := by exact_mod_cast parent
+  have charts : (∑ i, ∑ j : Fin idleCopies.length, chartTime i idleCopies[j.val]) ≤ 9*(35520*g) := by
+    calc
+      _ ≤ ∑ i : Fin 9, ∑ _j : Fin idleCopies.length, g :=
+        Finset.sum_le_sum fun i _ => Finset.sum_le_sum fun j _ => (chart i idleCopies[j.val] node.width v width live).1
+      _ = _ := by simp only [Finset.sum_const,Finset.card_univ,Fintype.card_fin,idleCopies_length,nsmul_eq_mul]; norm_num
+  have initial := Finset.sum_le_sum (s := Finset.univ) (fun i _ =>
+    idleEntry_stock i (fun l => (stock i l : ℝ)) (fun l => Nat.cast_nonneg _))
+  simp only [mul_add,Finset.sum_add_distrib,← Finset.mul_sum]
+  rw [← size]
+  calc
+    _ ≤ 9*(35520*g)+(6*(∑ i, ∑ l, (stock i l : ℝ))+6*(630817440*(9*g))) := by
+      exact add_le_add charts (add_le_add (mul_le_mul_of_nonneg_left initial (by norm_num))
+        (mul_le_mul_of_nonneg_left history (by norm_num)))
+    _ = _ := by dsimp only [g]; ring
+
 
 open IntegerMultBounds.Networks.Certificates.PR589.Nine RecursiveInterchangeLayout in
 /-- Sum chart and entry costs, the history of the shared owners, and the
