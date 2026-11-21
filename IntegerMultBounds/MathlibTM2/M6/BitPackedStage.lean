@@ -140,32 +140,75 @@ theorem packedStageEffect_helper (n : Fin 9) (p : Fin 32 × Fin 5) (w B W : ℕ)
     helperFieldCell digits label j from addr, ext_apply] at read
   exact read
 
+open Swap.Modular Matrix in
+private theorem hostedExchange_fold (n : Fin 9) (ρ : Role) (w : ℕ) :
+    let P := fun k : Fin 32 × Fin 5 => hostSpan n k.1 k.2 ρ
+    ∀ s, stageRuns.foldl (fun a k => M8.Exchange.exchange (reduce (prime^w) (P k)) a) s =
+      M8.Exchange.exchange (reduce (prime^w) (familySum n ρ)) s := by
+  intro P
+  let m := prime^w
+  have sumAdm {ι : Type} (ls : List ι) (f : ι → Matrix Axis Axis ℚ)
+      (ok : ∀ i ∈ ls, Admissible m (f i)) : Admissible m (ls.map f).sum := by
+    induction ls with
+    | nil => intro i j; simp
+    | cons i ls ih =>
+      exact ModularFrameSchedule.admissible_add m (ok i List.mem_cons_self)
+        (ih (fun j hj => ok j (List.mem_cons_of_mem _ hj)))
+  have adm (p) : Admissible m (P p) := by
+    apply sumAdm
+    intro h _
+    split
+    · exact portSpan_admissible _ (Nine.port_checked _ (Nat.mod_lt _ (by decide))) _ _ w
+    · intro i j; simp
+  have zero : reduce m (0 : Matrix Axis Axis ℚ) = 0 := by ext i j; simp [reduce,ratMod]
+  rw [← hostSpan_sum n ρ]
+  suffices fold : ∀ ks : List (Fin 32 × Fin 5), ks.Nodup → ∀ s,
+      ks.foldl (fun a k => M8.Exchange.exchange (reduce m (P k)) a) s =
+      M8.Exchange.exchange (reduce m (ks.map P).sum) s from fold _ stageRuns_nodup
+  intro ks
+  induction ks with
+  | nil => intro _ s; simp [zero,M8.Exchange.exchange]
+  | cons k ks ih =>
+    intro nd s
+    obtain ⟨fresh,nd⟩ := List.nodup_cons.mp nd
+    have tail := sumAdm ks P (fun j _ => adm j)
+    have orth : (ks.map P).sum * P k = 0 := by
+      rw [← List.sum_map_mul_right]
+      apply List.sum_eq_zero
+      intro a ha
+      obtain ⟨j,hj,rfl⟩ := List.mem_map.mp ha
+      exact hostSpan_orthogonal n j k (fun eq => fresh (eq ▸ hj)) ρ
+    have reduced := reduce_mul m tail (adm k)
+    rw [orth,zero] at reduced
+    rw [List.foldl_cons,ih nd,List.map_cons,List.sum_cons,ModularFrameSchedule.reduce_add m (adm k) tail]
+    apply Prod.ext <;> simp only [M8.Exchange.exchange,mulVec_add,mulVec_sub,mulVec_mulVec,
+      Matrix.sub_mul,Matrix.one_mul,reduced.symm,sub_mulVec,add_mulVec,
+      zero_mulVec,one_mulVec] <;> abel
+
 open Cover Swap.Modular M8.Exchange in
 /-- Across a stage an inactive owner's parent coordinates undergo exactly the
 span exchanges of its helper uses. Its last slot locates the final read. -/
 theorem packedStage_inactive (n : Fin 9) (w B W : ℕ) (x y)
     (trace : stageRuns.foldr (fun p next a => ∃ b, packedStageEffect n p w B W a b ∧ next b)
       (fun a => a = y) x) (ρ : Role) (inactive : ρ.bank.val / 2 ≠ BitHosting.activePair n.val)
-    (c : PortCertificate) (checked : c.Checked) (g : LabelPadding.Label 64 w)
+    (g : LabelPadding.Label 64 w)
     (z : LabelEntry.Cell (copyLabelLayout w B ((prime^w)^112*W)) B) (j : Fin W) :
+    let c := Nine.port ρ.port.val
     let tape := ((Fin.cast card_role) (Fintype.equivFin Role ρ)).castSucc
     let label : Fin (B*prime^(64*(w*64))) := ⟨z.b.val*prime^(64*(w*64))+(LabelAddress.address g).val,
       LabelShift.pack_lt z.b.isLt (by simpa only [← pow_mul,show w*(64*64) = 64*(w*64) by omega]
         using (LabelAddress.address g).isLt)⟩
-    let move := fun s (p : Fin 32 × Fin 5) => open Classical in
-      if hit : ∃ h : Fin 439, ownerTape n p.1 p.2 ⟨222+h.val,by omega⟩ = tape then
-        let slot := helperPosition (n,hit.choose)
-        exchange (reduce (prime^w) (c.span slot (slot+8 : ℕ))) s else s
     let chart := fun (runs : List (Fin 32 × Fin 5)) =>
       (runs.foldl (fun a k => helperChartsAfter n k a) (fun _ => none) tape).map helperPosition
     let read := fun word slot s => ext word (helperFieldCell (helperSlotField c slot w s) label j)
-    ∀ s, read (y tape) (chart stageRuns) (stageRuns.foldl move s) = read (x tape) none s := by
+    ∀ s, read (y tape) (chart stageRuns) (M8.Exchange.exchange (reduce (prime^w) (familySum n ρ)) s) = read (x tape) none s := by
   classical
-  intro tape label move chart read
+  intro c tape label chart read
+  let move := fun s (p : Fin 32 × Fin 5) => M8.Exchange.exchange (reduce (prime^w) (hostSpan n p.1 p.2 ρ)) s
   suffices follow : ∀ past runs, past ++ runs = stageRuns → ∀ a,
       runs.foldr (fun p next u => ∃ b, packedStageEffect n p w B W u b ∧ next b) (· = y) a →
       ∀ s, read (y tape) (chart stageRuns) (runs.foldl move s) = read (a tape) (chart past) s from
-    follow [] stageRuns rfl x trace
+    fun s => (hostedExchange_fold n ρ w s) ▸ follow [] stageRuns rfl x trace s
   intro past runs
   induction runs generalizing past with
   | nil =>
@@ -182,11 +225,26 @@ theorem packedStage_inactive (n : Fin 9) (w B W : ℕ) (x y)
     have pre : stageRuns.take (stageRuns.idxOf p) = past := by rw [pos,← order]; simp
     by_cases hit : ∃ h : Fin 439, ownerTape n p.1 p.2 ⟨222+h.val,by omega⟩ = tape
     · have eqn := hit.choose_spec
-      have atSlot := packedStageEffect_helper n p w B W a b step hit.choose c checked s g z j
+      have role : hostRole n p.1 p.2 hit.choose = ρ := by
+        have same := (Fintype.equivFin Role).injective (Fin.cast_injective _ (Fin.castSucc_injective _ eqn))
+        simpa [owner] using same
+      have portEq := congrArg (fun r : Role => r.port.val) role
+      have spanEq : hostSpan n p.1 p.2 ρ = helperSpan n hit.choose := by
+        apply sum_single _ List.nodup_range _ _ _ (List.mem_range.mpr hit.choose.isLt) role
+        intro h hm hh
+        have bound := List.mem_range.mp hm
+        have same := owner_injective n p.1 p.2 (222+h) (by omega) (222+hit.choose.val) (by omega)
+          (by simpa [owner] using hh.trans role.symm)
+        omega
+      have align : helperSpan n hit.choose = c.span (helperPosition (n,hit.choose)) ((helperPosition (n,hit.choose) : ℕ)+8) := by
+        unfold helperSpan
+        rw [show (IntegerMultBounds.MathlibTM2.M6.BitNode.slotOf n hit.choose).copy % 111 = ρ.port.val from portEq]
+        rfl
+      have atSlot := packedStageEffect_helper n p w B W a b step hit.choose c (Nine.port_checked _ ρ.port.isLt) s g z j
       dsimp only [helperSlotChange] at atSlot
       simp only [pre,eqn] at atSlot
       simpa only [read,move,chart,List.foldl_append,List.foldl_cons,List.foldl_nil,
-        helperChartsAfter,dif_pos hit,Option.map_some] using atSlot
+        helperChartsAfter,dif_pos hit,Option.map_some,spanEq,align] using atSlot
     · have miss (i : Fin 661) : ownerTape n p.1 p.2 i ≠ tape := by
         intro eqn
         have same : owner n p.1 p.2 i = ρ :=
@@ -202,7 +260,15 @@ theorem packedStage_inactive (n : Fin 9) (w B W : ℕ) (x y)
         rintro q mem
         obtain ⟨h,_,rfl⟩ := List.mem_map.mp mem
         exact miss _))
-      simp only [fixed,chart,List.foldl_append,List.foldl_cons,List.foldl_nil,helperChartsAfter,move,dif_neg hit]
+      have zero : hostSpan n p.1 p.2 ρ = 0 := by
+        apply sum_none
+        intro h mem hosted
+        apply hit
+        exact ⟨⟨h,List.mem_range.mp mem⟩,by simp [ownerTape,owner,hosted,tape]⟩
+      have reduced : reduce (prime^w) (0 : Matrix Axis Axis ℚ) = 0 := by
+        ext a b
+        simp [reduce,ratMod]
+      simp only [fixed,zero,reduced,chart,List.foldl_append,List.foldl_cons,List.foldl_nil,helperChartsAfter,move,dif_neg hit,M8.Exchange.exchange,Matrix.zero_mulVec,sub_zero,Matrix.one_mulVec,zero_add,add_zero,Prod.mk.eta]
 
 private def appendPrivate {t a n : ℕ} (S : Stacks t a) (words : Fin n → List (Fin (a+4))) : Stacks (t+n) a :=
   {S with L := Fin.addCases S.L (fun _ => []), R := Fin.addCases S.R words}

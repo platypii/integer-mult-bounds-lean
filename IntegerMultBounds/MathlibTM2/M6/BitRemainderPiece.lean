@@ -135,8 +135,8 @@ theorem idleCopies_read {V : ℕ} (i : Fin 9) (address : (Axis ⊕ Axis → ℚ)
       exact selected ((idleRole_coverage i ρ).mp ⟨k,same.symm⟩))]
 
 open IntegerMultBounds.Swap.Modular in
-private theorem idleExchange_admissible (c : PortCertificate) (hc : c.Checked) (lo hi w : ℕ) :
-    Admissible (prime^w) (exchange (c.span lo hi)) := by
+theorem portSpan_admissible (c : PortCertificate) (hc : c.Checked) (lo hi w : ℕ) :
+    Admissible (prime^w) (c.span lo hi) := by
   let m := prime^w
   have flag : Admissible m c.flag := by
     intro i j
@@ -147,8 +147,13 @@ private theorem idleExchange_admissible (c : PortCertificate) (hc : c.Checked) (
     intro i j
     simp only [interval,Matrix.diagonal_apply]
     split_ifs <;> simp
-  have span : Admissible m (c.span lo hi) :=
-    admissible_mul m (admissible_mul m flag select) (fun i j => flag j i)
+  exact admissible_mul m (admissible_mul m flag select) (fun i j => flag j i)
+
+open IntegerMultBounds.Swap.Modular in
+private theorem idleExchange_admissible (c : PortCertificate) (hc : c.Checked) (lo hi w : ℕ) :
+    Admissible (prime^w) (exchange (c.span lo hi)) := by
+  let m := prime^w
+  have span := portSpan_admissible c hc lo hi w
   have complement := ModularFrameSchedule.admissible_sub m (admissible_one m) span
   intro i j
   cases i <;> cases j <;> first | apply complement | apply span
