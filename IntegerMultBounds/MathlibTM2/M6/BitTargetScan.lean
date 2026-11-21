@@ -264,6 +264,54 @@ def stageScanCost (targets K N D : ℕ) :=
   D.size*(12*(D.size+K.size)+20)+16*(D.size+K.size)+24 +
     (targets*(2600*(D*(N*K))+6+(8*(D*K)+11*(D.size+K.size)+8)+scanCounterCost ![K,N,D])+1) + (2*(D.size+K.size)+2)
 
+/-- The shared binary product and the per-target counters fit the same linear
+volume bound as the payload scans. -/
+theorem stageScanCost_le (targets K N D : ℕ) (hk : 0 < K) (hn : 0 < N) (hd : 0 < D) :
+    stageScanCost targets K N D ≤ (3000*targets+200)*(D*(N*K)) := by
+  let V := D*(N*K)
+  have d : D ≤ V := Nat.le_mul_of_pos_right _ (Nat.mul_pos hn hk)
+  have nk : N*K ≤ V := Nat.le_mul_of_pos_left _ hd
+  have k : K ≤ V := (Nat.le_mul_of_pos_left _ hn).trans nk
+  have n : N ≤ V := (Nat.le_mul_of_pos_right _ hk).trans nk
+  have dk : D*K ≤ V := Nat.mul_le_mul_left D (Nat.le_mul_of_pos_left _ hn)
+  have pos := hd.trans_le d
+  have size (a : ℕ) : a.size ≤ a := Nat.size_le.mpr Nat.lt_two_pow_self
+  have cross := (Nat.mul_le_mul (size D) (size K)).trans dk
+  have square (i : ℕ) : (i+1)^2 ≤ 4*2^i := by
+    induction i with
+    | zero => decide
+    | succ i ih =>
+      rcases i with _ | i
+      · decide
+      rcases i with _ | i
+      · decide
+      rw [pow_succ 2]
+      nlinarith only [ih, Nat.zero_le (i*i), Nat.zero_le i]
+  obtain ⟨i,hi⟩ := Nat.exists_eq_succ_of_ne_zero (Nat.size_pos.mpr hd).ne'
+  have base : 2^i ≤ D := Nat.lt_size.mp (by omega)
+  have sq : D.size*D.size ≤ 4*V := by
+    rw [hi,← pow_two]
+    exact (square i).trans (Nat.mul_le_mul_left 4 (base.trans d))
+  have headers : scanCounterCost ![K,N,D] ≤ 74*V := by
+    change (8*(FlatCoordinateSchedule.bits K).length+8)+
+      ((8*(FlatCoordinateSchedule.bits N).length+8)+((8*(FlatCoordinateSchedule.bits D).length+8)+0))+2 ≤ _
+    have := FlatCoordinateDimensions.bits_length_le_twice k pos
+    have := FlatCoordinateDimensions.bits_length_le_twice n pos
+    have := FlatCoordinateDimensions.bits_length_le_twice d pos
+    omega
+  have ds := (size D).trans d
+  have ks := (size K).trans k
+  have each : 2600*V+6+(8*(D*K)+11*(D.size+K.size)+8)+scanCounterCost ![K,N,D] ≤ 3000*V := by omega
+  have shared : D.size*(12*(D.size+K.size)+20)+16*(D.size+K.size)+24+1+(2*(D.size+K.size)+2) ≤ 200*V := by
+    nlinarith only [sq,cross,ds,ks,pos]
+  have all := Nat.mul_le_mul_left targets each
+  change _ ≤ (3000*targets+200)*V
+  unfold stageScanCost
+  change _ + (targets*(2600*V+6+(8*(D*K)+11*(D.size+K.size)+8)+scanCounterCost ![K,N,D])+1) + _ ≤ _
+  rw [Nat.add_mul]
+  rw [show targets*(3000*V) = 3000*targets*V by ring] at all
+  omega
+
 /-- Scan the restored targets in stage order. Each accumulator retains its
 output while all subsequent scans execute on disjoint banks. -/
 theorem stageTargets_host (n : Fin 9) :
@@ -458,7 +506,7 @@ theorem packedStageTargets_host (n : Fin 9) :
           (finProdFinEquiv (b,j))).val-(D*K) : ℤ) = SparseRoleCircuit.encode
           (selectedFrame w (Frames.finalRefs dst) (initial dst + initial k.2.val) s)
     ∃ z F steps, Exec (fun g => embProg inner id (body g)) code (mk u S) steps (mk z F) ∧
-      steps ≤ time + (stageScanCost order.length K N D) ∧ z.user = u.user ∧
+      steps ≤ time + (3000*order.length+200)*(D*(N*K)) ∧ z.user = u.user ∧
       ∀ k, result k (F.L (bank k 1)) (F.R (bank k 1)) := by
   intro I order
   obtain ⟨states,chooseScan⟩ := stageTargets_host n
@@ -505,6 +553,9 @@ theorem packedStageTargets_host (n : Fin 9) :
         change a.val = T+10+_ at h
         omega)
       exact ⟨untouched.1.trans (empty k j).1,untouched.2.trans (empty k j).2⟩)
-  exact ⟨z,F,_,Exec.seq placed scanned,Nat.add_le_add_left paid time,saved.trans (same.trans user),done⟩
+  have blocks : 0 < D := Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) hb
+  have linear := stageScanCost_le order.length K N D pos (pow_pos Shared50ModularControl.prime_prime.pos _) blocks
+  exact ⟨z,F,_,Exec.seq placed scanned,Nat.add_le_add_left (paid.trans linear) time,
+    saved.trans (same.trans user),done⟩
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
