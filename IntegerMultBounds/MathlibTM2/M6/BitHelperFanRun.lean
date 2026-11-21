@@ -128,7 +128,7 @@ theorem helperFanChanges_exec [M8.Machine.Net] {k T Q : ℕ} {P U : Type}
     · intro j hj
       exact ⟨(off j hj).1.trans (keep j (hj o)).1,(off j hj).2.trans (keep j (hj o)).2⟩
 
-private theorem labelTrace_off {k V w L W : ℕ} (changes : List (Fin k × Option (Fin 56) × Option (Fin 56)))
+theorem labelTrace_off {k V w L W : ℕ} (changes : List (Fin k × Option (Fin 56) × Option (Fin 56)))
     (data out : Fin k → Fin V → ZMod 2) (trace : HelperLabelTrace w L W changes data out)
     (t : Fin k) (off : ∀ p ∈ changes, p.1 ≠ t) : out t = data t := by
   induction changes generalizing data with

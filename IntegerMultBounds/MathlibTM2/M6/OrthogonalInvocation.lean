@@ -546,7 +546,7 @@ theorem orthogonalHostedSweep :
       rw [(action run x).1 i]
       exact reads _ s k i
 
-private theorem uniqueTraceRead {I X Y : Type*} (atRun : I) (view : X → Y) (action : Y → Y → Prop)
+theorem uniqueTraceRead {I X Y : Type*} (atRun : I) (view : X → Y) (action : Y → Y → Prop)
     (step : I → X → X → Prop)
     (read : ∀ x y, step atRun x y → action (view x) (view y))
     (idle : ∀ k, k ≠ atRun → ∀ x y, step k x y → view y = view x)
@@ -566,7 +566,7 @@ private theorem uniqueTraceRead {I X Y : Type*} (atRun : I) (view : X → Y) (ac
       exact ⟨fun h => fixed ▸ hit ((List.mem_cons.mp h).resolve_left (Ne.symm eqn)),
         fun h => (miss (fun h' => h (List.mem_cons_of_mem _ h'))).trans fixed⟩
 
-private theorem otherRunMissesPort (n : Fin 9) (k run : Fin 32 × Fin 5) (other : k ≠ run)
+theorem otherRunMissesPort (n : Fin 9) (k run : Fin 32 × Fin 5) (other : k ≠ run)
     (i j : Fin 661) (data : j.val < 222) :
     ownerTape n k.1 k.2 i ≠ ownerTape n run.1 run.2 j := by
   intro eqn

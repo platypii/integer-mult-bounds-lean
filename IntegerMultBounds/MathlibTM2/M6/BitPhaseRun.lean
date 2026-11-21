@@ -1298,7 +1298,7 @@ private theorem port_complements_swap (w : ℕ) (t : Fin 111) (s : IntegerMultBo
   rw [comp,M8.Global.exchange_involutive idem]
 
 open Matrix in
-private theorem emptyFrame_decode (w : ℕ) (f : AddressStream (ZMod (prime^w))) :
+theorem emptyFrame_decode (w : ℕ) (f : AddressStream (ZMod (prime^w))) :
     (selectedFrame w 0).symm f = f := by
   apply (selectedFrame w 0).injective
   rw [LinearEquiv.apply_symm_apply]
@@ -1312,7 +1312,7 @@ private theorem emptyFrame_decode (w : ℕ) (f : AddressStream (ZMod (prime^w)))
   simpa [M8.Exchange.exchange] using atZero.symm
 
 open Matrix in
-private theorem fullFrame_read (w : ℕ) (f : AddressStream (ZMod (prime^w))) (s) :
+theorem fullFrame_read (w : ℕ) (f : AddressStream (ZMod (prime^w))) (s) :
     selectedFrame w 1 f s = f s.swap := by
   have mask := (selectedProjector_mask w (1 : Fin 636)).2
   change prefixMask _ (Geometry.Dimensions.value 1) * _ = prefixMask _ (Geometry.Dimensions.value 1) at mask

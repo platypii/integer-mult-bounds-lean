@@ -8,6 +8,7 @@ namespace IntegerMultBounds.MathlibTM2.M6.BitNode
 open IntegerMultBounds.Machine IntegerMultBounds.Networks Stack Host Cover.Fallback M8.RevMachine
 open Shared50ModularControl (prime)
 open Certificates.PR589 Certificates.PR589.Nine RecursiveInterchangeLayout
+local instance (w : ℕ) : NeZero (prime^w) := ⟨(pow_pos Shared50ModularControl.prime_prime.pos _).ne'⟩
 
 /-- Each run uses the helper slots installed by its strict prefix in the stage. -/
 noncomputable def packedStageEffect (n : Fin 9) (p : Fin 32 × Fin 5) (w B W : ℕ) :=
@@ -18,6 +19,190 @@ noncomputable def packedStageEffect (n : Fin 9) (p : Fin 32 × Fin 5) (w B W : �
   let before := (stageRuns.take (stageRuns.idxOf p)).foldl (fun c r => helperChartsAfter n r c) (fun _ => none)
   fun (data out : Fin 142081 → Fin V → ZMod 2) => ∃ packed,
     HelperLabelTrace w L W (scheduledSlotChanges n p before) data packed ∧ InvocationEffect n p.1 p.2 w B K packed out
+
+/-- On the 222 active ports the whole stage has the endpoint of their
+unique invocation. Its helper packing leaves the incoming active words intact. -/
+theorem packedStage_active (n : Fin 9) (run : Fin 32 × Fin 5) (w B W : ℕ) (x y)
+    (trace : stageRuns.foldr (fun k next a => ∃ b, packedStageEffect n k w B W a b ∧ next b)
+      (fun a => a = y) x) :
+    let port := fun j : Fin 222 => ownerTape n run.1 run.2 (j.castLE (by decide))
+    ∃ a b, InvocationEffect n run.1 run.2 w B ((prime^w)^112*W) a b ∧
+      (∀ j, a (port j) = x (port j)) ∧ (∀ j, b (port j) = y (port j)) := by
+  intro port
+  let view := fun z : Fin 142081 → Fin ((prime^w)^16*(B*prime^(64*(w*64))*((prime^w)^112*W))) → ZMod 2 => z ∘ port
+  apply (uniqueTraceRead run view (fun u v => ∃ a b,
+    InvocationEffect n run.1 run.2 w B ((prime^w)^112*W) a b ∧
+    (∀ j, a (port j) = u j) ∧ (∀ j, b (port j) = v j)) (fun k => packedStageEffect n k w B W)
+    ?_ ?_ stageRuns stageRuns_nodup x y trace).1 (mem_stageRuns run)
+  · rintro x y ⟨a,pack,act⟩
+    refine ⟨a,y,act,fun j => labelTrace_off _ _ _ pack _ ?_,fun _ => rfl⟩
+    rintro q mem eqn
+    obtain ⟨h,_,rfl⟩ := List.mem_map.mp mem
+    have same := congrArg Fin.val (ownerTape_injective n run.1 run.2 eqn)
+    change 222+h.val = j.val at same
+    omega
+  · rintro k other x y ⟨a,pack,act⟩
+    funext j
+    have miss := fun i => otherRunMissesPort n k run other i (j.castLE (by decide)) j.isLt
+    apply (act.2 (port j) (Fin.castSucc_ne_last _) miss).trans
+    apply labelTrace_off _ _ _ pack
+    rintro q mem
+    obtain ⟨h,_,rfl⟩ := List.mem_map.mp mem
+    exact miss _
+
+open Swap.Modular M8.Exchange in
+/-- A span exchange swaps the live halves in its helper slot and fixes
+every digit beyond the label. -/
+theorem helperFieldCell_exchange (c : PortCertificate) (checked : c.Checked) (slot : Fin 56)
+    (w : ℕ) (s : Swap.Shear.State Axis (ZMod (prime^w))) {L W : ℕ} (label : Fin L) (j : Fin W) :
+    let digits := helperSlotField c (some slot) w s
+    let live := digits ∘ Fin.castAdd 112
+    let state : Swap.Shear.State (Fin 8) (ZMod (prime^w)) := (live ∘ Fin.castAdd 8,live ∘ Fin.natAdd 8)
+    helperFieldCell (helperSlotField c (some slot) w
+      (exchange (reduce (prime^w) (c.span slot (slot+8 : ℕ))) s)) label j =
+      helperLabelCell (AffineFieldCoordinates.embed state.swap) label (digits ∘ Fin.natAdd 16) j := by
+  intro digits live state
+  let H := (reduce (prime^w) (c.helperChart slot (by omega))).transpose
+  let u := transform H H s
+  let v := transform H H (exchange (reduce (prime^w) (c.span slot (slot+8 : ℕ))) s)
+  have swap := helperChartAddress_swap c checked slot (by omega) w s j
+  dsimp only at swap
+  rw [chartAddress_local _ _ Prod.swap] at swap
+  have coord : v = chartHalves.symm ((chartHalves u).1.swap,(chartHalves u).2) :=
+    congrArg Prod.fst (chartAddress.injective swap)
+  unfold helperFieldCell
+  rw [helperSlotField_some]
+  change helperLabelCell (((Sum.elim v.1 v.2) ∘ helperDigits) ∘ Fin.castAdd 112) label
+    (((Sum.elim v.1 v.2) ∘ helperDigits) ∘ Fin.natAdd 16) j = _
+  rw [coord]
+  dsimp only [state,live,digits]
+  rw [helperSlotField_some]
+  congr 1
+  · funext i
+    refine Fin.addCases (m := 8) (n := 8) (fun a => ?_) (fun a => ?_) i
+    all_goals simp only [AffineFieldCoordinates.embed,Fin.addCases_left,Fin.addCases_right,Prod.swap,
+      Function.comp_apply,helperDigits,Equiv.trans_apply,@finSumFinEquiv_symm_apply_castAdd 16 112,
+      @finSumFinEquiv_symm_apply_castAdd 8 8,@finSumFinEquiv_symm_apply_natAdd 8 8,
+      Equiv.sumCongr_apply,Sum.map_inl,Sum.map_inr] <;> rfl
+  · funext i
+    refine Fin.addCases (m := 56) (n := 56) (fun a => ?_) (fun a => ?_) i
+    all_goals simp only [Function.comp_apply,helperDigits,Equiv.trans_apply,
+      @finSumFinEquiv_symm_apply_natAdd 16 112,@finSumFinEquiv_symm_apply_castAdd 56 56,
+      @finSumFinEquiv_symm_apply_natAdd 56 56,Equiv.sumCongr_apply,Sum.map_inl,Sum.map_inr] <;> rfl
+
+open Cover in
+/-- Reading the final helper through its certified frames recovers the cell
+at the slot held on entry, even when this invocation repacked the owner. -/
+theorem packedStageEffect_helper (n : Fin 9) (p : Fin 32 × Fin 5) (w B W : ℕ)
+    (x y) (step : packedStageEffect n p w B W x y) (h : Fin 439)
+    (c : PortCertificate) (checked : c.Checked) (s : Swap.Shear.State Axis (ZMod (prime^w)))
+    (g : LabelPadding.Label 64 w) (z : LabelEntry.Cell (copyLabelLayout w B ((prime^w)^112*W)) B)
+    (j : Fin W) :
+    let before := (stageRuns.take (stageRuns.idxOf p)).foldl (fun a k => helperChartsAfter n k a) (fun _ => none)
+    let change := helperSlotChange n p before h
+    let label : Fin (B*prime^(64*(w*64))) := ⟨z.b.val*prime^(64*(w*64))+(LabelAddress.address g).val,
+      LabelShift.pack_lt z.b.isLt (by simpa only [← pow_mul,show w*(64*64) = 64*(w*64) by omega]
+        using (LabelAddress.address g).isLt)⟩
+    let slot := helperPosition (n,h)
+    ext (y change.1) (helperFieldCell (helperSlotField c (some slot) w
+      (M8.Exchange.exchange (Swap.Modular.reduce (prime^w) (c.span slot (slot+8 : ℕ))) s)) label j) =
+      ext (x change.1) (helperFieldCell (helperSlotField c change.2.1 w s) label j) := by
+  intro before change label slot
+  rw [helperFieldCell_exchange c checked slot w s label j]
+  let digits := helperSlotField c change.2.2 w s
+  let live := digits ∘ Fin.castAdd 112
+  let state : Swap.Shear.State (Fin 8) (ZMod (prime^w)) := (live ∘ Fin.castAdd 8, live ∘ Fin.natAdd 8)
+  let cell := {z with after := FlatCoordinateLayout.index (digits ∘ Fin.natAdd 16) j}
+  let i : Fin 661 := ⟨222+h.val,by omega⟩
+  let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n p.1 p.2,ownerTape_injective ..⟩
+  change ext (y change.1) (helperLabelCell (AffineFieldCoordinates.embed state.swap) label (digits ∘ Fin.natAdd 16) j) = _
+  have output := helperLabelCell_invocation (W := W) (B := B) g cell
+    (AffineFieldCoordinates.embed state.swap) (digits ∘ Fin.natAdd 16) j rfl
+  rw [← output,ext_apply]
+  have physical : phaseRead owner y (labelSpectator g cell) i.val state.swap =
+      y change.1 (FlatCoordinateLayout.index (AffineFieldCoordinates.embed state.swap) (labelSpectator g cell)) := by
+    simp only [phaseRead,Copy.extendStored,dite_eq_left i.isLt]
+    rfl
+  rw [← physical]
+  obtain ⟨packed,pack,act⟩ := step
+  obtain ⟨hi,hf⟩ := Nine.helper_refs h.val h.isLt
+  rw [act.otherRead g cell i (Or.inr (by dsimp [i]; omega)),
+    show Frames.finalRefs i.val = 1 from hf, fullFrame_read,
+    show Frames.initialRefs i.val = 0 from hi, emptyFrame_decode]
+  change phaseRead owner packed (labelSpectator g cell) i.val state = _
+  have embed : AffineFieldCoordinates.embed state = live := by
+    funext k
+    exact Fin.addCases (fun a => Fin.addCases_left ..) (fun a => Fin.addCases_right ..) k
+  simp only [phaseRead,Copy.extendStored,dite_eq_left i.isLt,embed]
+  have addr := helperLabelCell_invocation (W := W) (B := B) g cell live (digits ∘ Fin.natAdd 16) j rfl
+  have read := scheduledLabelRead n p before x packed pack h c s label j
+  rw [← show (FlatCoordinateLayout.index live (labelSpectator g cell)).val =
+    helperFieldCell digits label j from addr, ext_apply] at read
+  exact read
+
+open Cover Swap.Modular M8.Exchange in
+/-- Across a stage an inactive owner's parent coordinates undergo exactly the
+span exchanges of its helper uses. Its last slot locates the final read. -/
+theorem packedStage_inactive (n : Fin 9) (w B W : ℕ) (x y)
+    (trace : stageRuns.foldr (fun p next a => ∃ b, packedStageEffect n p w B W a b ∧ next b)
+      (fun a => a = y) x) (ρ : Role) (inactive : ρ.bank.val / 2 ≠ BitHosting.activePair n.val)
+    (c : PortCertificate) (checked : c.Checked) (g : LabelPadding.Label 64 w)
+    (z : LabelEntry.Cell (copyLabelLayout w B ((prime^w)^112*W)) B) (j : Fin W) :
+    let tape := ((Fin.cast card_role) (Fintype.equivFin Role ρ)).castSucc
+    let label : Fin (B*prime^(64*(w*64))) := ⟨z.b.val*prime^(64*(w*64))+(LabelAddress.address g).val,
+      LabelShift.pack_lt z.b.isLt (by simpa only [← pow_mul,show w*(64*64) = 64*(w*64) by omega]
+        using (LabelAddress.address g).isLt)⟩
+    let move := fun s (p : Fin 32 × Fin 5) => open Classical in
+      if hit : ∃ h : Fin 439, ownerTape n p.1 p.2 ⟨222+h.val,by omega⟩ = tape then
+        let slot := helperPosition (n,hit.choose)
+        exchange (reduce (prime^w) (c.span slot (slot+8 : ℕ))) s else s
+    let chart := fun (runs : List (Fin 32 × Fin 5)) =>
+      (runs.foldl (fun a k => helperChartsAfter n k a) (fun _ => none) tape).map helperPosition
+    let read := fun word slot s => ext word (helperFieldCell (helperSlotField c slot w s) label j)
+    ∀ s, read (y tape) (chart stageRuns) (stageRuns.foldl move s) = read (x tape) none s := by
+  classical
+  intro tape label move chart read
+  suffices follow : ∀ past runs, past ++ runs = stageRuns → ∀ a,
+      runs.foldr (fun p next u => ∃ b, packedStageEffect n p w B W u b ∧ next b) (· = y) a →
+      ∀ s, read (y tape) (chart stageRuns) (runs.foldl move s) = read (a tape) (chart past) s from
+    follow [] stageRuns rfl x trace
+  intro past runs
+  induction runs generalizing past with
+  | nil =>
+    intro order a eqn s
+    cases eqn
+    simp_all
+  | cons p ps ih =>
+    intro order a trace s
+    obtain ⟨b,step,rest⟩ := trace
+    rw [List.foldl_cons,ih (past++[p]) (by simpa using order) b rest]
+    have nd := order.symm ▸ stageRuns_nodup
+    have absent : p ∉ past := fun mem => (List.nodup_append.mp nd).2.2 p mem p List.mem_cons_self rfl
+    have pos : stageRuns.idxOf p = past.length := by simp [← order,List.idxOf_append,absent]
+    have pre : stageRuns.take (stageRuns.idxOf p) = past := by rw [pos,← order]; simp
+    by_cases hit : ∃ h : Fin 439, ownerTape n p.1 p.2 ⟨222+h.val,by omega⟩ = tape
+    · have eqn := hit.choose_spec
+      have atSlot := packedStageEffect_helper n p w B W a b step hit.choose c checked s g z j
+      dsimp only [helperSlotChange] at atSlot
+      simp only [pre,eqn] at atSlot
+      simpa only [read,move,chart,List.foldl_append,List.foldl_cons,List.foldl_nil,
+        helperChartsAfter,dif_pos hit,Option.map_some] using atSlot
+    · have miss (i : Fin 661) : ownerTape n p.1 p.2 i ≠ tape := by
+        intro eqn
+        have same : owner n p.1 p.2 i = ρ :=
+          (Fintype.equivFin Role).injective (Fin.cast_injective _ (Fin.castSucc_injective _ eqn))
+        by_cases data : i.val < 222
+        · simp only [owner,data,ite_true] at same
+          exact inactive (same ▸ side_pair n p.1 p.2 _ (by unfold regSide; split <;> omega) _)
+        · apply hit
+          refine ⟨⟨i.val-222,by omega⟩,?_⟩
+          convert eqn using 2 <;> apply Fin.ext <;> dsimp <;> omega
+      obtain ⟨packed,pack,act⟩ := step
+      have fixed := (act.2 tape (Fin.castSucc_ne_last _) miss).trans (labelTrace_off _ _ _ pack tape (by
+        rintro q mem
+        obtain ⟨h,_,rfl⟩ := List.mem_map.mp mem
+        exact miss _))
+      simp only [fixed,chart,List.foldl_append,List.foldl_cons,List.foldl_nil,helperChartsAfter,move,dif_neg hit]
 
 private def appendPrivate {t a n : ℕ} (S : Stacks t a) (words : Fin n → List (Fin (a+4))) : Stacks (t+n) a :=
   {S with L := Fin.addCases S.L (fun _ => []), R := Fin.addCases S.R words}
