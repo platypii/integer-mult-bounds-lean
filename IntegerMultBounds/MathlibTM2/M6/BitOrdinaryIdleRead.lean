@@ -411,6 +411,231 @@ theorem copyRoute_host [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
   obtain ⟨z,F,t,placed,time,user,done,off⟩ := placedHoare_exec _ ports fits body exec u S ready
   exact ⟨y,z,F,t,placed,time,user,done,source,targets,unchanged,off⟩
 
+open Cover.Fallback in
+/-- Append the two chart workspaces to the running COPY machine. Only the
+specified owner ports of either chart coincide with the original machine. -/
+theorem copyChartPlacement {T k m n : ℕ} (owners : Fin k ↪ Fin T)
+    (entry : Fin k ↪ Fin m) (leave : Fin k ↪ Fin n) :
+    let parent := (Fin.castAddEmb (n := T) m).trans (Fin.castAddEmb n)
+    ∃ (a : Fin m ↪ Fin ((T+m)+n)) (b : Fin n ↪ Fin ((T+m)+n)),
+      (∀ i, a (entry i) = parent (owners i) ∧ b (leave i) = parent (owners i)) ∧
+      (∀ j, (∀ i, owners i ≠ j) → (∀ l, a l ≠ parent j) ∧ (∀ l, b l ≠ parent j)) ∧
+      (∀ j, (∀ i, leave i ≠ j) → (∀ l, a l ≠ b j) ∧ (∀ l, parent l ≠ b j)) ∧
+      ∀ j, (∀ i, entry i ≠ j) → (∀ l, b l ≠ a j) ∧ (∀ l, parent l ≠ a j) := by
+  intro parent
+  have install {t s : ℕ} (shared : Fin k ↪ Fin t) (slots : Fin k ↪ Fin s) :
+      ∃ e : Fin s ↪ Fin (t+s), (∀ i, e (slots i) = (shared i).castAdd s) ∧
+        ∀ j, (∀ i, slots i ≠ j) → e j = j.natAdd t := by
+    let lift : Fin s ↪ Fin (k+s) := ⟨SharedBank.slot slots,SharedBank.slot_injective slots⟩
+    refine ⟨lift.trans (appendPrivate shared s),?_,?_⟩
+    · intro i
+      change appendPrivate shared s (SharedBank.slot slots (slots i)) = _
+      rw [SharedBank.slot_selected _ slots.injective,appendPrivate_shared]
+    · intro j off
+      have absent : ¬ ∃ i, slots i = j := fun ⟨i,h⟩ => off i h
+      change appendPrivate shared s (SharedBank.slot slots j) = _
+      rw [SharedBank.slot,dif_neg absent,appendPrivate_work]
+  obtain ⟨left,leftOwner,leftPrivate⟩ := install owners entry
+  obtain ⟨right,rightOwner,rightPrivate⟩ := install (owners.trans (Fin.castAddEmb m)) leave
+  have sep {u v : ℕ} (i : Fin u) (j : Fin v) : i.castAdd v ≠ j.natAdd u := by
+    intro eq
+    have h := congrArg Fin.val eq
+    simp only [Fin.val_castAdd,Fin.val_natAdd] at h
+    omega
+  refine ⟨left.trans (Fin.castAddEmb n),right,fun i => ⟨congrArg (Fin.castAdd n) (leftOwner i),rightOwner i⟩,?_,?_,?_⟩
+  · intro j off
+    constructor
+    · intro l
+      apply (Fin.castAddEmb n).injective.ne
+      by_cases h : ∃ i, entry i = l
+      · obtain ⟨i,rfl⟩ := h
+        rw [leftOwner]
+        exact (Fin.castAddEmb m).injective.ne (off i)
+      · rw [leftPrivate l (fun i eq => h ⟨i,eq⟩)]
+        exact (sep j l).symm
+    · intro l
+      by_cases h : ∃ i, leave i = l
+      · obtain ⟨i,rfl⟩ := h
+        rw [rightOwner]
+        exact parent.injective.ne (off i)
+      · rw [rightPrivate l (fun i eq => h ⟨i,eq⟩)]
+        exact (sep _ l).symm
+  · intro j off
+    rw [rightPrivate j off]
+    exact ⟨fun l => sep (left l) j,fun l => sep (l.castAdd m) j⟩
+  · intro j off
+    have against (l : Fin T) : parent l ≠ (left j).castAdd n := by
+      apply (Fin.castAddEmb n).injective.ne
+      rw [leftPrivate j off]
+      exact sep l j
+    refine ⟨?_,against⟩
+    intro l
+    by_cases h : ∃ i, leave i = l
+    · obtain ⟨i,rfl⟩ := h
+      rw [rightOwner]
+      exact against (owners i)
+    · rw [rightPrivate l (fun i eq => h ⟨i,eq⟩)]
+      exact (sep (left j) l).symm
+
+open M8.RevMachine RecursiveInterchangeLayout in
+/-- Reassemble a chart bank from the current owner tapes and the saved chart controls. -/
+private theorem copyRoute_ready {k T : ℕ} (route : Graph.Block (k+24) prime) (leading : Blocks.Leading route)
+    (ports : Fin route.tapes ↪ Fin T) (v : Descriptor) (d : Fin 22 → Option (List Bool))
+    (x y : Tapes k prime) (S F : Stacks T prime) :
+    let bank := fun x => SharedBankStageInput.raw (LabelCall.bank x v d) route.tapes
+    let slot := fun i => route.slots (Fin.castAdd 24 i)
+    RepT (bank x) (embStk ports S).L (embStk ports S).R →
+    RepT y (embStk (fun i => ports (slot i)) F).L (embStk (fun i => ports (slot i)) F).R →
+    (∀ j, (∀ i, slot i ≠ j) → F.L (ports j) = S.L (ports j) ∧ F.R (ports j) = S.R (ports j)) →
+    RepT (bank y) (embStk ports F).L (embStk ports F).R := by
+  intro bank slot initial owners keep j h
+  by_cases shared : ∃ i, slot i = j
+  · obtain ⟨i,rfl⟩ := shared
+    have payload := copyRoute_payload route leading y v d
+    have tape := congrArg (fun b : Tapes k prime => b.tape i h) payload
+    have head := congrArg (fun b : Tapes k prime => b.head i) payload
+    change (bank y).head (slot i) = y.head i at head
+    rw [head]
+    exact tape.trans (owners i h)
+  · obtain ⟨l,r⟩ := keep j (fun i eq => shared ⟨i,eq⟩)
+    have eq := routePrivate route leading y x v d
+    have tape := congrArg (fun b : Tapes route.tapes prime => b.tape j h) eq
+    have head := congrArg (fun b : Tapes route.tapes prime => b.head j) eq
+    change (SharedBank.strip (bank y) slot).tape j h = (SharedBank.strip (bank x) slot).tape j h at tape
+    change (SharedBank.strip (bank y) slot).head j = (SharedBank.strip (bank x) slot).head j at head
+    simp only [SharedBank.strip,shared,ite_false] at tape head
+    simpa only [embStk,Function.comp_apply,tape,head,l,r] using initial j h
+
+open M8.RevMachine RecursiveInterchangeLayout IntegerMultBounds.Networks.Certificates.PR589 in
+/-- Run the two physical chart programs around a common-chart COPY execution. Only
+owner tapes are shared with the return chart, whose saved controls survive the body. -/
+theorem routedCopyWindow_host [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
+    (life : Copy.Lifecycle) (scheduled : life ∈ Copy.lifecycles) :
+    ∃ (enter leave : Graph.Block (142081+24) prime) (C E : ℕ), Blocks.Leading enter ∧ Blocks.Leading leave ∧
+    ∀ {T Q : ℕ} {P U : Type} (a : Fin enter.tapes ↪ Fin T) (b : Fin leave.tapes ↪ Fin T)
+      (fan : Fin (142081+2) ↪ Fin T) (fitsA : enter.states ≤ Q) (fitsB : leave.states ≤ Q)
+      (body : P → Pr P T Q prime U) (inner : Pr P T Q prime U) (keep : Fin T → Prop) (budget w B K : ℕ),
+    0 < w → 0 < B → 0 < K →
+    let v := copyLabelLayout w B K
+    let V := volume prime v
+    let headers := M8.Stage2Machine.Straight.words (LabelSchedule.base v w)
+    let bank := fun x => LabelCall.bank (copyOwners (v := v) x) v headers
+    let slot := fun i => leave.slots (Fin.castAdd 24 i)
+    let owner := fun i => b (slot i)
+    let privateEntry := fun j => ∀ i : Fin 142081, enter.slots (i.castAdd 24) ≠ j
+    let privateSlot := fun j => ∀ i, slot i ≠ j
+    let price := fun c t => (c*V+(63+252*life.targets.length)*LeafCore.coreCost V (w*64)+life.targets.length+1)*(t+5)+6
+    (∀ i, a (enter.slots (Fin.castAdd 24 i)) = fan (Fin.castAdd 2 i)) →
+    (∀ i : Fin 2, ∀ j, a j ≠ fan (i.natAdd 142081)) →
+    (∀ i, owner i = fan (Fin.castAdd 2 i)) →
+    (∀ i : Fin 2, ∀ j, b j ≠ fan (i.natAdd 142081)) →
+    (∀ j, privateSlot j → ∀ k, a k ≠ b j) →
+    (∀ j, privateEntry j → ∀ k, b k ≠ a j) →
+    ∀ (x : Fin 142081 → Fin V → ZMod 2) (u : HS T Q prime U) (S : Stacks T prime),
+    RepT (SharedBankStageInput.raw (bank x) enter.tapes) (embStk a S).L (embStk a S).R →
+    RepT (SharedBankStageInput.raw (bank x) leave.tapes) (embStk b S).L (embStk b S).R →
+    let size := copyLabel_volume w B K
+    let flatten := fun (X : Fin 142081 → Fin V → ZMod 2) k i => X k (Fin.cast size.symm i)
+    let fanReady := fun X (D : Stacks T prime) => RepT (PointwiseRoleGate.bank (a := prime)
+      (fun _ _ => blank) (fun _ => 0) (SparseRoleCircuit.encoded (flatten X)) (FlatCoordinateSchedule.bits V))
+      (embStk fan D).L (embStk fan D).R
+    fanReady x S →
+    (∀ entered v' D, entered (Fin.last 142080) = x (Fin.last 142080) → fanReady entered D →
+      (∀ j, (∀ i, a i ≠ j) → D.L j = S.L j ∧ D.R j = S.R j) →
+      let data := flatten entered
+      ∃ y z F t, Exec body inner (mk v' D) t (mk z F) ∧ t ≤ budget ∧ z.user = v'.user ∧
+        fanReady (fun k i => y k (Fin.cast size i)) F ∧
+        CopyFanoutEffect n r d life scheduled w B K data y ∧
+        (∀ j, privateEntry j → F.L (a j) = D.L (a j) ∧ F.R (a j) = D.R (a j)) ∧
+        (∀ j, privateSlot j → F.L (b j) = D.L (b j) ∧ F.R (b j) = D.R (b j)) ∧
+        ∀ j, keep j → (∀ i, a i ≠ j) → (∀ i, b i ≠ j) → F.L j = D.L j ∧ F.R j = D.R j) →
+    ∃ out z F t, Exec body ((embProg a (Empty.elim : Empty → P) (foreign (liftQ enter.program fitsA))).seq
+        (inner.seq (embProg b (Empty.elim : Empty → P) (foreign (liftQ leave.program fitsB)))))
+        (mk u S) t (mk z F) ∧ t ≤ price C enter.tapes+budget+price E leave.tapes ∧ z.user = u.user ∧
+      RepT (SharedBankStageInput.raw (bank out) leave.tapes) (embStk b F).L (embStk b F).R ∧
+      RepT (SharedBankStageInput.raw (bank out) enter.tapes) (embStk a F).L (embStk a F).R ∧
+      fanReady out F ∧ CopyWindowEffect n r d life w B K x out ∧
+      ∀ j, keep j → (∀ i, a i ≠ j) → (∀ i, b i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  obtain ⟨enter,C,enterLeading,entry⟩ := copyRoute_host n r d true life scheduled
+  obtain ⟨leave,E,leading,exitRun⟩ := copyRoute_host n r d false life scheduled
+  refine ⟨enter,leave,C,E,enterLeading,leading,?_⟩
+  intro T Q P U a b fan fitsA fitsB body inner keep budget w B K hw hB hK v V headers bank slot owner privateEntry privateSlot price shared controls sharedB controlsB apart apartB
+    x u S left right size flatten fanReady initial run
+  have pos : v.Positive := ⟨pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _,Nat.zero_lt_one,
+    Nat.mul_pos hB (pow_pos Shared50ModularControl.prime_prime.pos _),Nat.zero_lt_one,hK⟩
+  obtain ⟨entered,v',D,t,first,timeA,userA,loaded,source,targets,others,offA⟩ :=
+    entry a fitsA body v w B hw hB rfl pos x u S left
+  have eq (X : Fin 142081 → Fin V → ZMod 2) : (fun k i => flatten X k (Fin.cast size i)) = X := by
+    funext k i
+    simp [flatten]
+  have transfer (route : Graph.Block (142081+24) prime) (leading : Blocks.Leading route)
+      (ports : Fin route.tapes ↪ Fin T) (shared : ∀ i, ports (route.slots (Fin.castAdd 24 i)) = fan (Fin.castAdd 2 i))
+      (old new : Fin 142081 → Fin V → ZMod 2) (S D : Stacks T prime)
+      (initial : fanReady old S) (loaded : RepT (SharedBankStageInput.raw (bank new) route.tapes) (embStk ports D).L (embStk ports D).R)
+      (controls : ∀ j : Fin 2, D.L (fan (j.natAdd 142081)) = S.L (fan (j.natAdd 142081)) ∧
+        D.R (fan (j.natAdd 142081)) = S.R (fan (j.natAdd 142081))) : fanReady new D := by
+    dsimp only [fanReady] at initial ⊢
+    rw [copyOwners_controls size (flatten old),eq] at initial
+    rw [copyOwners_controls size (flatten new),eq]
+    intro j z
+    induction j using Fin.addCases with
+    | left j =>
+      have payload := copyRoute_payload route leading (copyOwners (v := v) new) v headers
+      let tape := SharedBankStageInput.raw (bank new) route.tapes
+      let site := route.slots (Fin.castAdd 24 j)
+      have cell : tape.tape site z = (copyOwners new).tape j z := congrArg (fun b : Tapes 142081 prime => b.tape j z) payload
+      have head : tape.head site = (copyOwners new).head j := congrArg (fun b : Tapes 142081 prime => b.head j) payload
+      have read := loaded site z
+      change tape.tape site z = readAt blank (D.L (ports site)) (D.R (ports site)) (z-tape.head site) at read
+      rw [cell,head,show ports site = _ from shared j] at read
+      simpa only [Tapes.append,Fin.addCases_left,embStk,Function.comp_apply] using read
+    | right j =>
+      obtain ⟨l,r⟩ := controls j
+      simpa only [Tapes.append,Fin.addCases_right,embStk,Function.comp_apply,l,r] using initial (j.natAdd 142081) z
+  have fanInput := transfer enter enterLeading a shared x entered S D initial loaded (fun j => offA _ (controls j))
+  have retainedTmp : entered (Fin.last 142080) = x (Fin.last 142080) := by
+    apply others _ (Fin.castSucc_ne_last _).symm
+    intro member
+    obtain ⟨j,_,eq⟩ := List.mem_map.mp member
+    exact Fin.castSucc_ne_last _ eq
+  obtain ⟨y,h,G,m,middle,time,user,fanMiddle,fanout,entryOff,off,offM⟩ := run entered v' D retainedTmp fanInput offA
+  let added := fun k i => y k (Fin.cast (copyLabel_volume w B K) i)
+  have project (X : Fin 142081 → Fin V → ZMod 2) (G : Stacks T prime) (fanMid : fanReady X G) :
+      RepT (copyOwners (v := v) X) (embStk (fun i : Fin 142081 => fan (i.castAdd 2)) G).L
+        (embStk (fun i : Fin 142081 => fan (i.castAdd 2)) G).R := by
+    dsimp only [fanReady] at fanMid
+    rw [copyOwners_controls size (flatten X),eq X] at fanMid
+    intro j z
+    simpa only [Tapes.append,Fin.addCases_left,embStk,Function.comp_apply] using fanMid (j.castAdd 2) z
+  have owners : RepT (copyOwners (v := v) added) (embStk owner G).L (embStk owner G).R := by
+    intro j z
+    simpa only [embStk,Function.comp_apply,sharedB] using project added G fanMiddle j z
+  have prepared := copyRoute_ready leave leading b v headers (copyOwners x) (copyOwners added) S G right owners (by
+    intro j hj
+    obtain ⟨l,r⟩ := off j hj
+    obtain ⟨la,ra⟩ := offA _ (apart _ hj)
+    exact ⟨l.trans la,r.trans ra⟩)
+  obtain ⟨out,z,F,l,last,timeB,userB,done,returned,back,unchanged,offB⟩ :=
+    exitRun b fitsB body v w B hw hB rfl pos added h G prepared
+  have finalFan := transfer leave leading b sharedB added out G F fanMiddle done (fun j => offB _ (controlsB j))
+  have finalEntry := copyRoute_ready enter enterLeading a v headers (copyOwners entered) (copyOwners out) D F loaded
+    (by
+      intro j z
+      simpa only [embStk,Function.comp_apply,shared] using project out F finalFan j z)
+    (by
+      intro j hj
+      obtain ⟨lm,rm⟩ := entryOff j hj
+      obtain ⟨lb,rb⟩ := offB _ (apartB _ hj)
+      exact ⟨lb.trans lm,rb.trans rm⟩)
+  refine ⟨out,z,F,_,Exec.seq first (Exec.seq middle last),by dsimp only [price,V] at *; omega,
+    userB.trans (user.trans userA),done,finalEntry,finalFan,copyWindowEffect_of_routes n r d life scheduled w B K x entered out y
+      ⟨source,targets,others⟩ fanout ⟨returned,back,unchanged⟩,?_⟩
+  intro j hj ha hb
+  obtain ⟨la,ra⟩ := offA j ha
+  obtain ⟨lm,rm⟩ := offM j hj ha hb
+  obtain ⟨lb,rb⟩ := offB j hb
+  exact ⟨lb.trans (lm.trans la),rb.trans (rm.trans ra)⟩
+
 private theorem word_of_involutive_scatter {I A J R : Type*} (addr : I ≃ A × J)
     (move : A → A) (invol : Function.Involutive move) (x y : I → R)
     (scatter : ∀ s j, y (addr.symm (move s,j)) = x (addr.symm (s,j))) :
@@ -790,15 +1015,15 @@ theorem scheduledCopyFanout_host [M8.Machine.Net] {P U : Type} {T Q : ℕ}
     let caller := fun y => (⟨fun _ => 0,fun _ => word y⟩ : Tapes 1 prime)
     let input := fun stages y => (caller y).append (basisWorkspace stages y)
     let A := description _ rev.good
-    let B := description _ fwd.good
+    let forward := description _ fwd.good
     let machine := fun stages => Placement.placed (FlatCoordinateCleanSchedule.program stages)
       (sharedPlacement (0 : Fin 1) (segmentSource stages))
     let basisRate := fun stages => FlatCoordinateCleanSchedule.constant stages*(1+FlatCoordinateCleanSchedule.tapeCount stages+5)
     ∀ (a : Fin (1+FlatCoordinateCleanSchedule.tapeCount A) ↪ Fin T)
-      (b : Fin (1+FlatCoordinateCleanSchedule.tapeCount B) ↪ Fin T) (fitsA : _ ≤ Q) (fitsB : _ ≤ Q),
+      (b : Fin (1+FlatCoordinateCleanSchedule.tapeCount forward) ↪ Fin T) (fitsA : _ ≤ Q) (fitsB : _ ≤ Q),
     a ((0 : Fin 1).castAdd _) = bank 24 → b ((0 : Fin 1).castAdd _) = bank 24 →
     (∀ j, ports j ≠ bank 24 → ∀ k, a k ≠ ports j) →
-    (∀ j : Fin (FlatCoordinateCleanSchedule.tapeCount B), (∀ k, a k ≠ b (j.natAdd 1)) ∧ (∀ k, ports k ≠ b (j.natAdd 1))) →
+    (∀ j : Fin (FlatCoordinateCleanSchedule.tapeCount forward), (∀ k, a k ≠ b (j.natAdd 1)) ∧ (∀ k, ports k ≠ b (j.natAdd 1))) →
     ∀ (fan : Fin (142081+2) ↪ Fin T) (loadFits : q ≤ Q) (finishFits : s ≤ Q),
     let slots := (Fin.castAddEmb 2).trans fan
     slots tmp = bank 24 →
@@ -814,13 +1039,13 @@ theorem scheduledCopyFanout_host [M8.Machine.Net] {P U : Type} {T Q : ℕ}
       SparseRoleCircuit.encode (fun _ => blank) dest 0 q'
     fanReady data S →
     RepT (input A (data tmp)) (embStk a S).L (embStk a S).R →
-    RepT (input B (data tmp)) (embStk b S).L (embStk b S).R → stored (data tmp) S → clean S →
+    RepT (input forward (data tmp)) (embStk b S).L (embStk b S).R → stored (data tmp) S → clean S →
     (desc.width < node.width → ∀ (u : HS T Q prime U) D word, stored word D → clean D →
       ∃ z F n changed, Exec body (body f) (mk u D) n (mk z F) ∧ n ≤ budget ∧ z.user = u.user ∧
         stored changed F ∧ clean F ∧ (∀ j, (∀ i, ports i ≠ j) → F.L j = D.L j ∧ F.R j = D.R j) ∧
         ∀ k, changed (position k) = Shared50RecursiveNodeRows.transpose (one_dvd desc.rows) (word ∘ position) k) →
     let convert := (embProg a (Empty.elim : Empty → P) (foreign (liftQ (machine A) fitsA))).seq
-        (middle.seq (embProg b (Empty.elim : Empty → P) (foreign (liftQ (machine B) fitsB))))
+        (middle.seq (embProg b (Empty.elim : Empty → P) (foreign (liftQ (machine forward) fitsB))))
     let addr := copyAddress (Q := M) (W := W)
     let move := AffineFieldProgram.run (selectedWord (w+1) p)
     let common := fun i => x (addr.symm (move (addr i).1,(addr i).2))
@@ -828,8 +1053,9 @@ theorem scheduledCopyFanout_host [M8.Machine.Net] {P U : Type} {T Q : ℕ}
     ∃ z F t, Exec body ((embProg fan (Empty.elim : Empty → P) (foreign (liftQ load loadFits))).seq
         (convert.seq (embProg fan (Empty.elim : Empty → P) (foreign (liftQ finish finishFits)))))
       (mk u S) t (mk z F) ∧
-      t ≤ budget+(basisRate A+basisRate B+setup+16+swaps*swapVolumeRate w)*V+76*(life.targets.length+2)*V*142088+12 ∧
-      z.user = u.user ∧ fanReady result F ∧ ∀ j, (∀ l, a l ≠ j) → (∀ l, ports l ≠ j) →
+      t ≤ budget+(basisRate A+basisRate forward+setup+16+swaps*swapVolumeRate w)*V+76*(life.targets.length+2)*V*142088+12 ∧
+      z.user = u.user ∧ fanReady result F ∧ CopyFanoutEffect stage r d life scheduled (w+1) B K data result ∧
+      ∀ j, (∀ l, a l ≠ j) → (∀ l, ports l ≠ j) →
         (∀ l, b l ≠ j) → (∀ l, fan l ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
   intro p src tmp regs targets
   have mem := copySource_mem life scheduled
@@ -933,7 +1159,8 @@ theorem scheduledCopyFanout_host [M8.Machine.Net] {P U : Type} {T Q : ℕ}
           simpa only [PointwiseRoleGate.bank,Tapes.append,Fin.addCases_right,embStk,Function.comp_apply,l,r]
             using loaded (k.natAdd 142081) j
       · simpa only [copyAddress_index,X,Function.update_self] using action)
-  exact ⟨z,F,t,exec,time,user,done,fun j ha hp hb hj => off j ⟨ha,hp,hb⟩ hj⟩
+  exact ⟨z,F,t,exec,time,user,done,copyFanout_effect stage r d life scheduled (w+1) B K data,
+    fun j ha hp hb hj => off j ⟨ha,hp,hb⟩ hj⟩
 
 open IntegerMultBounds.Networks.Certificates.PR589 in
 /-- Sequence physical phase instructions on the common owner bank. Each gate
