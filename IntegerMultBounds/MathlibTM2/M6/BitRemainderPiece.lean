@@ -259,6 +259,110 @@ private theorem flatMap_block {α β γ : Type*} (pieces : List α) (children : 
     start,Nat.add_sub_cancel_left,List.getElem_append_left (show j.val < (jobs.map rank).length by simpa using j.isLt),
     List.getElem_map]
 
+/-- Embed a local job in the flattened schedule. Its position is the length of
+the preceding blocks plus its offset within the selected block. -/
+private theorem blockPositions {α β : Type*} (xs : List α) (jobs : α → List β) :
+    ∃ embed : ((i : Fin xs.length) × Fin (jobs xs[i.val]).length) ↪ Fin (xs.flatMap jobs).length,
+      ∀ i j, (xs.flatMap jobs)[(embed ⟨i,j⟩).val] = (jobs xs[i.val])[j.val] ∧
+        (embed ⟨i,j⟩).val = ((xs.take i.val).flatMap jobs).length+j.val := by
+  let start := fun i : Fin xs.length => ((xs.take i.val).flatMap jobs).length
+  have atPos (i : Fin xs.length) (j : Fin (jobs xs[i.val]).length) := flatMap_block xs jobs i.val i.isLt
+    (jobs xs[i.val]) id (List.map_id _) j
+  let slot := fun ij : (i : Fin xs.length) × Fin (jobs xs[i.val]).length =>
+    (⟨start ij.1+ij.2.val,(atPos ij.1 ij.2).choose⟩ : Fin (xs.flatMap jobs).length)
+  have apart (i k : Fin xs.length) (lt : i < k) : start i+(jobs xs[i.val]).length ≤ start k := by
+    have earlier := (List.take_prefix_take_left (l := xs) (Nat.succ_le_of_lt lt)).sublist
+    have bound := (earlier.flatMap jobs).length_le
+    simpa only [start,List.take_add_one,List.getElem?_eq_getElem i.isLt,Option.toList_some,List.flatMap_append,
+      List.flatMap_cons,List.flatMap_nil,List.append_nil,List.length_append] using bound
+  refine ⟨⟨slot,?_⟩,fun i j => ⟨(atPos i j).choose_spec,rfl⟩⟩
+  rintro ⟨i,j⟩ ⟨k,l⟩ eq
+  have h := congrArg Fin.val eq
+  change start i+j.val = start k+l.val at h
+  have same : i = k := by
+    rcases lt_trichotomy i k with lt | eq | gt
+    · have := apart i k lt; omega
+    · exact eq
+    · have := apart k i gt; omega
+  subst k
+  exact congrArg (Sigma.mk i) (Fin.ext (Nat.add_left_cancel h))
+
+noncomputable def stageChildStart (s : Fin 9) :=
+  ((nodeProgram.take (stagePos s.val)).flatMap Piece.children).length
+
+noncomputable def runChildStart (r : Fin 32 × Fin 5) :=
+  ((stageRuns.take (stageRuns.idxOf r)).flatMap (fun _ => Geometry.Moves.localPaid)).length
+
+/-- Every active stage job has its own recursive call, including jobs of equal rank. -/
+theorem stageChildPositions :
+    ∃ locate : (Fin 9 × (Fin 32 × Fin 5) × Fin Geometry.Moves.localPaid.length) ↪ Fin nodeChildren5.length,
+      ∀ stage run j, nodeChildren5[(locate (stage,run,j)).val] = Geometry.Moves.localPaid[j.val] ∧
+        (locate (stage,run,j)).val = stageChildStart stage+(runChildStart run+j.val) := by
+  obtain ⟨outer,outerRank⟩ := blockPositions nodeProgram Piece.children
+  obtain ⟨inner,innerRank⟩ := blockPositions stageRuns (fun _ => Geometry.Moves.localPaid)
+  let pos := fun s : Fin 9 => (⟨stagePos s.val, (stagePos_le _ s.isLt).1⟩ : Fin nodeProgram.length)
+  have piece (s : Fin 9) : nodeProgram[(pos s).val] = .stage s :=
+    (List.getD_eq_getElem nodeProgram Piece.exchangeSides (pos s).isLt).symm.trans (nodeProgram_at.1 s)
+  let ix := fun run : Fin 32 × Fin 5 => (⟨stageRuns.idxOf run,List.idxOf_lt_length_of_mem (mem_stageRuns run)⟩ : Fin stageRuns.length)
+  have jobs (s : Fin 9) : (nodeProgram[(pos s).val]).children = stageRuns.flatMap (fun _ => Geometry.Moves.localPaid) := by
+    rw [piece]; rfl
+  let localSlot := fun run j => inner ⟨ix run,j⟩
+  let embed := fun (k : Fin 9 × (Fin 32 × Fin 5) × Fin Geometry.Moves.localPaid.length) =>
+    outer ⟨pos k.1,(localSlot k.2.1 k.2.2).cast (congrArg List.length (jobs k.1)).symm⟩
+  have ix_inj : Function.Injective ix := by
+    intro x y eq
+    have h := congrArg (fun j : Fin stageRuns.length => stageRuns[j.val]) eq
+    simpa only [ix,List.getElem_idxOf] using h
+  refine ⟨⟨embed,?_⟩,?_⟩
+  · rintro ⟨s,r,j⟩ ⟨s',r',j'⟩ eq
+    have pair := outer.injective eq
+    have posEq := congrArg Sigma.fst pair
+    have sEq : s = s' := Piece.stage.inj ((piece s).symm.trans ((congrArg (fun i : Fin nodeProgram.length => nodeProgram[i.val]) posEq).trans (piece s')))
+    subst s'
+    have locEq := congrArg (fun p => p.2.val) pair
+    have innerEq := inner.injective (show localSlot r j = localSlot r' j' from Fin.ext locEq)
+    have rEq := ix_inj (congrArg Sigma.fst innerEq)
+    subst r'
+    exact congrArg (fun k => (s,r,k)) (Fin.ext (congrArg (fun p => p.2.val) innerEq))
+  · intro s r j
+    have first := outerRank (pos s) ((localSlot r j).cast (congrArg List.length (jobs s)).symm)
+    have second := innerRank (ix r) j
+    constructor
+    · change (nodeProgram.flatMap Piece.children)[(outer ⟨pos s,(localSlot r j).cast (congrArg List.length (jobs s)).symm⟩).val] = _
+      exact first.1.trans (by simpa only [Fin.val_cast,jobs,localSlot] using second.1)
+    · exact first.2.trans (congrArg (stageChildStart s+·) second.2)
+
+/-- Within each invocation the nine COPY charges follow the positive phase charges. -/
+theorem copyPaidPositions :
+    ∃ slot : Fin Copy.lifecycles.length ↪ Fin Geometry.Moves.localPaid.length,
+      ∀ j, Geometry.Moves.localPaid[(slot j).val] = 7 ∧
+        (slot j).val = (Geometry.Moves.phaseValues.filter (· ≠ 0)).length+j.val := by
+  let phases := Geometry.Moves.phaseValues.filter (· ≠ 0)
+  have ranks : Geometry.Moves.localPaid = phases ++ List.replicate Copy.lifecycles.length 7 := by
+    rw [Geometry.Moves.localPaid,Geometry.Moves.phase_ranks,Geometry.Moves.copyRanks_eq,Copy.copy_count]
+  have size : phases.length+Copy.lifecycles.length = Geometry.Moves.localPaid.length := by
+    rw [ranks,List.length_append,List.length_replicate]
+  refine ⟨(Fin.natAddEmb phases.length).trans (Fin.castOrderIso size).toEquiv.toEmbedding,?_⟩
+  intro j
+  refine ⟨?_,rfl⟩
+  change Geometry.Moves.localPaid[phases.length+j.val] = _
+  simp only [ranks,List.getElem_append_right (Nat.le_add_right _ _),Nat.add_sub_cancel_left,List.getElem_replicate]
+
+noncomputable def copyChildPosition :
+    (Fin 9 × (Fin 32 × Fin 5) × Fin Copy.lifecycles.length) ↪ Fin nodeChildren5.length :=
+  ((Function.Embedding.refl _).prodMap ((Function.Embedding.refl _).prodMap copyPaidPositions.choose)).trans
+    stageChildPositions.choose
+
+theorem copyChildPosition_rank (s : Fin 9) (r : Fin 32) (d : Fin 5) (j : Fin Copy.lifecycles.length) :
+    nodeChildren5[(copyChildPosition (s,(r,d),j)).val] = 7 :=
+  (stageChildPositions.choose_spec s (r,d) (copyPaidPositions.choose j)).1.trans (copyPaidPositions.choose_spec j).1
+
+theorem copyChildPosition_offset (s : Fin 9) (r : Fin 32) (d : Fin 5) (j : Fin Copy.lifecycles.length) :
+    (copyChildPosition (s,(r,d),j)).val =
+      stageChildStart s+(runChildStart (r,d)+((Geometry.Moves.phaseValues.filter (· ≠ 0)).length+j.val)) :=
+  (stageChildPositions.choose_spec s (r,d) (copyPaidPositions.choose j)).2.trans
+    (congrArg (fun k => stageChildStart s+(runChildStart (r,d)+k)) (copyPaidPositions.choose_spec j).2)
+
 private theorem idlePieceAt (i : Fin 9) :
     nodeProgram[idlePos i]'(idlePos_le i (by omega)) = .remainder i.val := by
   have atPos := nodeProgram_at.2.1 i (by omega)
