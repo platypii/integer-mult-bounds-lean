@@ -918,6 +918,175 @@ theorem chartedTarget_read {n : Fin 9} {w B K : ℕ} {owner : Fin 661 ↪ Fin 14
   rw [encoded,← run] at target
   exact target
 
+open IntegerMultBounds.Swap.Modular M8.RevMachine in
+/-- The inverse port pass on a finished target tape exposes the decoded
+sum at the logical target address, for arbitrary owner inputs and labels. -/
+theorem chartedTarget_owner [M8.Machine.Net] (t : Fin 111) :
+    ∃ (c : ℕ) (machine : SharedBankSkeleton.Skeleton 1 prime), ∀ w B K,
+      0 < w → 0 < B*prime^(64*(w*64))*K →
+      let W := B*prime^(64*(w*64))*K
+      let V := (prime^w)^16*W
+      let P := translatedPortProjector (ZMod (prime^w)) (4:ZMod (prime^w))⁻¹ t
+      ∃ stage : SharedBankStage.Stage _ 1 prime (@portOwner V),
+        SharedBankSkeleton.ofStage stage = machine ∧ stage.cost = c*V + LeafCore.coreCost V w + 6 ∧
+        ∀ n (owner : Fin 661 ↪ Fin 142081) x y g (z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B),
+          chartedPhaseRead n owner y g z =
+            runSelected (selectedFrame w) (selectedWord w) (chartedPhaseRead n owner x g z) →
+          let dst : Fin 661 := ⟨111+t.val,by omega⟩
+          let src : Fin 661 := ⟨t.val,by omega⟩
+          let stored := fun j : Fin 661 => (selectedFrame w (Frames.initialRefs j.val)).symm
+            (chartedPhaseRead n owner x g z j.val)
+          ∀ s, stage.transform (y (owner dst)) (FlatCoordinateLayout.index (AffineFieldCoordinates.embed s)
+            (labelSpectator (g*registerChart w n dst.val) z)) =
+            (stored dst + stored src) (M8.Exchange.exchange (1-P) s) := by
+  obtain ⟨c,machine,correct⟩ := portCorrection_owner t true true
+  refine ⟨c,machine,?_⟩
+  intro w B K hw hW W V P
+  obtain ⟨stage,fixed,cost,read⟩ := correct w W hw hW
+  refine ⟨stage,fixed,cost,?_⟩
+  intro n owner x y g z run dst src stored s
+  apply (read (y (owner dst)) s (labelSpectator (g*registerChart w n dst.val) z)).trans
+  have endpoint := chartedTarget_read g z run t s
+  have move := ((portFrame_transfers w t).2.2 s).2
+  have raw (a : Swap.Shear.State (Fin 8) (ZMod (prime^w))) :
+      chartedPhaseRead n owner y g z (111+t.val) a = y (owner dst)
+        (FlatCoordinateLayout.index (AffineFieldCoordinates.embed a) (labelSpectator (g*registerChart w n dst.val) z)) := by
+    simp [chartedPhaseRead,phaseRead,Copy.extendStored,show 111+t.val < 661 by omega,dst]
+  dsimp only at endpoint
+  rw [raw] at endpoint
+  simpa only [ite_true,move] using endpoint
+
+private theorem executePorts {k V : ℕ} {α : Type*} (slot : α ↪ Fin (k+1))
+    (port : α → SharedBankStage.Stage _ 1 prime (@portOwner V))
+    (ts : List α) (unique : ts.Nodup) (data : Fin (k+1) → Fin V → ZMod 2) :
+    let out := SharedBankStage.execute (ts.map fun t => placePort (slot t) (port t)) data
+    (∀ t ∈ ts, out (slot t) = (port t).transform (data (slot t))) ∧
+      ∀ i, (∀ t ∈ ts, slot t ≠ i) → out i = data i := by
+  induction ts generalizing data with
+  | nil => exact ⟨by simp,fun _ _ => rfl⟩
+  | cons t ts ih =>
+    let next := Function.update data (slot t) ((port t).transform (data (slot t)))
+    obtain ⟨hits,off⟩ := ih (List.nodup_cons.mp unique).2 next
+    change (∀ a ∈ t::ts, SharedBankStage.execute _ next (slot a) = _) ∧ _
+    constructor
+    · intro a ha
+      rcases List.mem_cons.mp ha with rfl | inside
+      · rw [off]
+        · exact Function.update_self ..
+        · intro b hb eq
+          exact (List.nodup_cons.mp unique).1 (slot.injective eq ▸ hb)
+      · rw [hits a inside]
+        have ne : a ≠ t := fun e => (List.nodup_cons.mp unique).1 (e ▸ inside)
+        rw [show next (slot a) = data (slot a) from Function.update_of_ne (slot.injective.ne ne) ..]
+    · intro i away
+      exact (off i (fun b hb => away b (List.mem_cons_of_mem _ hb))).trans
+        (Function.update_of_ne (away t List.mem_cons_self).symm ..)
+
+private theorem compilePorts {k V : ℕ} {α : Type*} (slot : α ↪ Fin (k+1))
+    (port : α → SharedBankStage.Stage _ 1 prime (@portOwner V)) (ts : List α) (unique : ts.Nodup) :
+    ∃ post : SharedBankStage.Stage _ (k+1) prime (phaseOwners (N := V)),
+      post.cost = (ts.map fun t => (port t).cost).sum + ts.length ∧
+      (∀ data t, t ∈ ts → post.transform data (slot t) = (port t).transform (data (slot t))) ∧
+      ∀ data i, (∀ t ∈ ts, slot t ≠ i) → post.transform data i = data i := by
+  let stages := ts.map fun t => placePort (slot t) (port t)
+  refine ⟨SharedBankStage.compile _ (Nat.zero_lt_succ _) stages,?_,?_,?_⟩
+  · simp only [SharedBankStage.compile_cost,stages,List.map_map,List.length_map]
+    rfl
+  · intro data t ht
+    rw [SharedBankStage.compile_transform]
+    exact (executePorts slot port ts unique data).1 t ht
+  · intro data i away
+    rw [SharedBankStage.compile_transform]
+    exact (executePorts slot port ts unique data).2 i away
+
+open IntegerMultBounds.Swap.Modular M8.RevMachine in
+/-- Append all 111 target corrections to a charted invocation. Each
+target is visited once, and every other permanent tape retains the
+invocation's output. The bill includes every pass and program join. -/
+theorem chartedTargets_stage [M8.Machine.Net] :
+    ∃ C : ℕ, ∀ w B K, 0 < w → 0 < B*prime^(64*(w*64))*K →
+      let W := B*prime^(64*(w*64))*K
+      let V := (prime^w)^16*W
+      ∀ n (owner : Fin 661 ↪ Fin 142081) (mid : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V))),
+      (∀ x g (z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B), chartedPhaseRead n owner (mid.transform x) g z =
+        runSelected (selectedFrame w) (selectedWord w) (chartedPhaseRead n owner x g z)) →
+      ∃ stage : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V)),
+        stage.cost = mid.cost + C*V + 111*(LeafCore.coreCost V w + 7) + 1 ∧
+        (∀ x g (z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B) (t : Fin 111) s,
+          let dst : Fin 661 := ⟨111+t.val,by omega⟩
+          let src : Fin 661 := ⟨t.val,by omega⟩
+          let stored := fun j : Fin 661 => (selectedFrame w (Frames.initialRefs j.val)).symm
+            (chartedPhaseRead n owner x g z j.val)
+          let P := translatedPortProjector (ZMod (prime^w)) (4:ZMod (prime^w))⁻¹ t
+          stage.transform x (owner dst) (FlatCoordinateLayout.index (AffineFieldCoordinates.embed s)
+            (labelSpectator (g*registerChart w n dst.val) z)) =
+            (stored dst + stored src) (M8.Exchange.exchange (1-P) s)) ∧
+        ∀ x i, (∀ t : Fin 111, owner ⟨111+t.val,by omega⟩ ≠ i) → stage.transform x i = mid.transform x i := by
+  choose c machine run using chartedTarget_owner
+  let ts := List.finRange 111
+  refine ⟨(ts.map c).sum,?_⟩
+  intro w B K hw hW W V n owner mid word
+  choose port _ price read using fun t => run t w B K hw hW
+  let slot : Fin 111 ↪ Fin 142081 := ⟨fun t => owner ⟨111+t.val,by omega⟩,by
+    intro a b eq
+    have val := congrArg Fin.val (owner.injective eq)
+    exact Fin.ext (Nat.add_left_cancel val)⟩
+  obtain ⟨post,cost,hits,off⟩ := compilePorts slot port ts (List.nodup_finRange _)
+  refine ⟨SharedBankStage.compose mid post,?_,?_,?_⟩
+  · change mid.cost + post.cost + 1 = _
+    rw [cost]
+    simp only [price,List.sum_map_add,List.sum_map_mul_right,List.map_const',List.sum_replicate,nsmul_eq_mul,
+      ts,List.length_finRange]
+    ring
+  · intro x g z t s dst src stored P
+    exact (congrFun (hits (mid.transform x) t (List.mem_finRange t)) _).trans
+      (read t n owner x (mid.transform x) g z (word x g z) s)
+  · intro x i away
+    exact off (mid.transform x) i (fun t _ => away t)
+
+open Cover IntegerMultBounds.Swap.Modular M8.RevMachine in
+/-- The concrete charted word followed by its target passes returns every
+decoded target sum on its physical owner tape. -/
+theorem decodedInvocation_stage [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
+    (engine : CopyTranspose := CopyTranspose.original) :
+    ∃ C : ℕ, ∀ w B K, 0 < w → 0 < B → 0 < K →
+      let W := B*prime^(64*(w*64))*K
+      let V := (prime^w)^16*W
+      let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n r d,ownerTape_injective n r d⟩
+      let bill := fun (gates : List RawGate) (current : ℕ → ℕ) =>
+        let code := FramedCircuit.compile (fun i => selectedFrame w (current i))
+          (gates.map (Frames.framedGate (selectedFrame w)))
+        (code.map (scalarWork V)).sum + ((Frames.edges gates current).map (phaseEdgeBudget owner w W)).sum + code.length
+      let hs := fun i => FlatCoordinateSchedule.bits (RecursiveDimensionBank.values (copyChild w W) i)
+      ∃ stage : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V)),
+        stage.cost ≤ bill (sectionD++sectionA) (Frames.snapshot Frames.initialRefs) +
+          bill (sectionB++sectionC) (Frames.scatterFinish Frames.beforeScatter) +
+          C*V + 9*engine.time (copyChild w W) hs + 2*661*(252*LeafCore.coreCost V (w*64)+1) + 111*(LeafCore.coreCost V w+7) + 14 ∧
+        (∀ x g (z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B) (t : Fin 111) s,
+          let dst : Fin 661 := ⟨111+t.val,by omega⟩
+          let src : Fin 661 := ⟨t.val,by omega⟩
+          let stored := fun j : Fin 661 => (selectedFrame w (Frames.initialRefs j.val)).symm
+            (chartedPhaseRead n owner x g z j.val)
+          let P := translatedPortProjector (ZMod (prime^w)) (4:ZMod (prime^w))⁻¹ t
+          stage.transform x (owner dst) (FlatCoordinateLayout.index (AffineFieldCoordinates.embed s)
+            (labelSpectator (g*registerChart w n dst.val) z)) =
+            (stored dst + stored src) (M8.Exchange.exchange (1-P) s)) ∧
+        ∀ x i, i ≠ Fin.last 142080 → (∀ j, owner j ≠ i) → stage.transform x i = x i := by
+  obtain ⟨C,word⟩ := chartedInvocation_stage n r d engine
+  obtain ⟨D,finish⟩ := chartedTargets_stage
+  refine ⟨C+D,?_⟩
+  intro w B K hw hB hK W V owner bill hs
+  obtain ⟨mid,cost,read,keep⟩ := word w B K hw hB hK
+  have hW : 0 < W := Nat.mul_pos (Nat.mul_pos hB (pow_pos Shared50ModularControl.prime_prime.pos _)) hK
+  obtain ⟨stage,price,target,off⟩ := finish w B K hw hW n owner mid read
+  refine ⟨stage,?_,target,fun x i hi away => (off x i (fun _ => away _)).trans (keep x i hi away)⟩
+  change mid.cost ≤ bill (sectionD++sectionA) (Frames.snapshot Frames.initialRefs) +
+    bill (sectionB++sectionC) (Frames.scatterFinish Frames.beforeScatter) +
+    C*V + 9*engine.time (copyChild w W) hs + 2*661*(252*LeafCore.coreCost V (w*64)+1) + 13 at cost
+  change stage.cost = mid.cost+D*V+111*(LeafCore.coreCost V w+7)+1 at price
+  rw [price,Nat.add_mul]
+  omega
+
 open M8.Machine in
 /-- The routed scatter runs on exactly the flat owner bank consumed by the
 phase programs. Reindexing its proof across the volume equality costs no steps. -/
