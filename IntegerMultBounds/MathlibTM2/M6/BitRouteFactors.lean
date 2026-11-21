@@ -198,4 +198,30 @@ theorem stageProjector_atLabel (c : PortCertificate) (checked : c.Checked) (n : 
     red,Matrix.mul_inv_rev,inv]
   simp only [H,Matrix.mul_assoc]
 
+/-- In a helper's modular chart, exchanging the scheduled parent span is
+exactly the exchange of the eight local axes. -/
+theorem helperChart_span (c : PortCertificate) (checked : c.Checked) (x : ℕ) (hx : x ≤ 55) (w : ℕ) :
+    let H := reduce (prime^w) (c.helperChart x hx)
+    let S := reduce (prime^w) (c.span x (x+8))
+    H.transpose * S = (fromBlocks 1 0 0 (0 : Matrix Exterior Exterior (ZMod (prime^w)))) * H.transpose := by
+  intro H S
+  let J : Matrix Axis Axis ℚ := fromBlocks 1 0 0 (0 : Matrix Exterior Exterior ℚ)
+  have adm : Admissible (prime^w) (c.helperChart x hx) := fun i j =>
+    Nat.Coprime.pow_right w ((Nat.coprime_of_lt_prime (c.helperChart x hx i j).den_pos.ne'
+      ((helperChart_entry c checked x hx i j).2.trans_lt Shared50ModularControl.prime_odd) prime_prime).symm)
+  have legal : Admissible (prime^w) J := by
+    intro i j
+    cases i <;> cases j <;> simp [J,Matrix.fromBlocks,Matrix.one_apply] <;> split <;> simp
+  have red : reduce (prime^w) J = fromBlocks 1 0 0 (0 : Matrix Exterior Exterior (ZMod (prime^w))) := by
+    ext i j
+    cases i <;> cases j <;> simp [J,reduce,Matrix.fromBlocks,Matrix.one_apply,ratMod_zero] <;>
+      split <;> simp [ratMod_one,ratMod_zero]
+  have trans : Admissible (prime^w) (c.helperChart x hx).transpose := fun i j => adm j i
+  have span : S = H * reduce (prime^w) J * H.transpose := by
+    dsimp only [S,H]
+    rw [← c.helperChart_slot x hx,reduce_mul _ (admissible_mul _ adm legal) trans,
+      reduce_mul _ adm legal]
+    rfl
+  rw [span,← Matrix.mul_assoc,← Matrix.mul_assoc,(helperChart_reduce c checked x hx w).1,Matrix.one_mul,red]
+
 end IntegerMultBounds.MathlibTM2.M6.BitNode

@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.M6.BitRouteFactors
 public import IntegerMultBounds.MathlibTM2.M6.BitNodeCost
 public import IntegerMultBounds.MathlibTM2.M6.BitCopyChildLayout
 public import IntegerMultBounds.MathlibTM2.M6.OrthogonalPhase
@@ -483,6 +484,14 @@ private theorem portReads_of_word {V W : ℕ} (w : ℕ)
     simpa only [stored,addr,Frames.snapshot,Fin.is_lt,↓reduceIte,initial,final,Nine.labelProj_zero,
       Nine.labelProj_one,reduce_one,zero,one,M8.Global.exchange_zero] using h
 
+/-- Successive physical owner banks in a list of replica/class invocations. -/
+def OrthogonalSweepTrace {V W : ℕ} (n : Fin 9) (w : ℕ)
+    (pos : Swap.Shear.State (Fin 8) (ZMod (prime^w)) → Fin W → Fin V)
+    (ks : List (Fin 32 × Fin 5)) (x y : Fin 142081 → Fin V → ZMod 2) : Prop :=
+  ks.foldr (fun run next a => ∃ b,
+    (OrthogonalPortReads w pos (a ∘ ownerTape n run.1 run.2) (b ∘ ownerTape n run.1 run.2) ∧
+    (∀ j, (∀ i, ownerTape n run.1 run.2 i ≠ j) → b j = a j)) ∧ next b) (· = y) x
+
 /-- Execute the 32 replicas and five classes in certificate order. Reads of
 overlapping owners use the preceding invocation's output. -/
 theorem orthogonalHostedSweep :
@@ -503,10 +512,7 @@ theorem orthogonalHostedSweep :
             (M8.RevMachine.ext (child.transform x ∘ pos))) →
       ∃ piece : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V)),
         piece.cost ≤ 160*(C*volume prime (role v 142080) + (Geometry.Moves.localPaid.map (price ∘ desc)).sum + 1) ∧
-        ∀ x, stageRuns.foldr (fun run next a => ∃ b,
-          (OrthogonalPortReads w pos (a ∘ ownerTape n run.1 run.2) (b ∘ ownerTape n run.1 run.2) ∧
-          (∀ j, (∀ i, ownerTape n run.1 run.2 i ≠ j) → b j = a j)) ∧ next b)
-          (fun a => a = piece.transform x) x := by
+        ∀ x, OrthogonalSweepTrace n w pos stageRuns x (piece.transform x) := by
   obtain ⟨C,invocation⟩ := orthogonalRoleInvocation
   refine ⟨C,?_⟩
   intro n v w rows hw width split m W V desc G encode pos price live supply
@@ -524,7 +530,8 @@ theorem orthogonalHostedSweep :
         omega
     rw [bill,stageRuns_length]
     exact Nat.mul_le_mul_left _ (Nat.add_le_add_right cost 1)
-  · suffices trace : ∀ (ks : List (Fin 32 × Fin 5)) x, ks.foldr _ (fun a => a = (compile ks).transform x) x from
+  · unfold OrthogonalSweepTrace
+    suffices trace : ∀ (ks : List (Fin 32 × Fin 5)) x, ks.foldr _ (fun a => a = (compile ks).transform x) x from
       trace stageRuns
     intro ks
     induction ks with
@@ -578,9 +585,7 @@ class. Its target therefore adds the source present at the start of the sweep. -
 theorem orthogonalSweep_activePorts {V W : ℕ} (n : Fin 9) (w : ℕ)
     (pos : Swap.Shear.State (Fin 8) (ZMod (prime^w)) → Fin W → Fin V)
     (x y : Fin 142081 → Fin V → ZMod 2)
-    (trace : stageRuns.foldr (fun run next a => ∃ b,
-      (OrthogonalPortReads w pos (a ∘ ownerTape n run.1 run.2) (b ∘ ownerTape n run.1 run.2) ∧
-      (∀ j, (∀ i, ownerTape n run.1 run.2 i ≠ j) → b j = a j)) ∧ next b) (· = y) x)
+    (trace : OrthogonalSweepTrace n w pos stageRuns x y)
     (run : Fin 32 × Fin 5) (t : Fin 111) :
     let owner := ownerTape n run.1 run.2
     let src := owner ⟨t.val,by omega⟩
@@ -601,5 +606,90 @@ theorem orthogonalSweep_activePorts {V W : ℕ} (n : Fin 9) (w : ℕ)
       (h.2 dst (fun i => otherRunMissesPort n p run other i ⟨111+t.val,by omega⟩ (by dsimp; omega)))
       (h.2 src (fun i => otherRunMissesPort n p run other i ⟨t.val,by omega⟩ (by dsimp; omega))))
     stageRuns stageRuns_nodup x y trace).1 (mem_stageRuns run)
+
+/-- Follow one inactive role's physical word. Each invocation using the role
+as a helper swaps the two local fields, preserving its spectator index. -/
+theorem orthogonalSweep_inactive {V W : ℕ} (n : Fin 9) (w : ℕ)
+    (pos : Swap.Shear.State (Fin 8) (ZMod (prime^w)) → Fin W → Fin V)
+    (x y : Fin 142081 → Fin V → ZMod 2)
+    (trace : OrthogonalSweepTrace n w pos stageRuns x y)
+    (ρ : Role) (inactive : ρ.bank.val / 2 ≠ BitHosting.activePair n.val) :
+    let tape := ((Fin.cast card_role) (Fintype.equivFin Role ρ)).castSucc
+    let swaps := fun (s : Swap.Shear.State (Fin 8) (ZMod (prime^w))) (p : Fin 32 × Fin 5) =>
+      if ∃ h : Fin 439, hostRole n p.1 p.2 h = ρ then s.swap else s
+    ∀ s k, y tape (pos (stageRuns.foldl swaps s) k) = x tape (pos s k) := by
+  classical
+  intro tape swaps
+  suffices follow : ∀ ks a, OrthogonalSweepTrace n w pos ks a y →
+      ∀ s k, y tape (pos (ks.foldl swaps s) k) = a tape (pos s k) from follow _ _ trace
+  intro ks
+  induction ks with
+  | nil => intro a eqn s k; cases eqn; rfl
+  | cons p ks ih =>
+    intro a tr s k
+    obtain ⟨b,⟨reads,off⟩,tail⟩ := tr
+    rw [List.foldl_cons,ih b tail]
+    by_cases hit : ∃ h : Fin 439, hostRole n p.1 p.2 h = ρ
+    · rw [show swaps s p = s.swap by simp [swaps,hit]]
+      obtain ⟨h,host⟩ := hit
+      have eqn : ownerTape n p.1 p.2 ⟨222+h.val,by omega⟩ = tape := by
+        simp [ownerTape,owner,host,tape]
+      simpa only [Function.comp_apply,eqn] using reads.helper h s k
+    · rw [show swaps s p = s by simp [swaps,hit]]
+      apply congrFun (off tape ?_)
+      intro i eqn
+      have same : owner n p.1 p.2 i = ρ :=
+        (Fintype.equivFin Role).injective (Fin.cast_injective _ (Fin.castSucc_injective _ eqn))
+      by_cases data : i.val < 222
+      · simp only [owner,data,ite_true] at same
+        exact inactive (same ▸ side_pair n p.1 p.2 _ (by unfold regSide; split <;> omega) _)
+      · exact hit ⟨⟨i.val-222,by omega⟩,by simpa only [owner,data,ite_false] using same⟩
+
+open Matrix Swap.Modular M8.Exchange in
+/-- Reading the charted parent at a helper's actual slot exchange changes only
+the active eight-axis pair. The serialized exterior and trailing cells agree. -/
+theorem helperChartAddress_swap (c : Nine.PortCertificate) (checked : c.Checked)
+    (x : ℕ) (hx : x ≤ 55) (w : ℕ) [NeZero (prime^w)] {W : ℕ}
+    (s : Swap.Shear.State Nine.Axis (ZMod (prime^w))) (j : Fin W) :
+    let H := (reduce (prime^w) (c.helperChart x hx)).transpose
+    let S := reduce (prime^w) (c.span x (x+8))
+    let addr := fun z => chartAddress (transform H H z,j)
+    let a := copyAddress (addr s)
+    addr (exchange S s) = copyAddress.symm (a.1.swap,a.2) := by
+  intro H S addr a
+  let J : Matrix Nine.Axis Nine.Axis (ZMod (prime^w)) := fromBlocks 1 0 0 (0 : Matrix Nine.Exterior Nine.Exterior _)
+  have commute : H*S = J*H := helperChart_span c checked x hx w
+  have complement : H*(1-S) = (1-J)*H := by rw [mul_sub,sub_mul,mul_one,one_mul,commute]
+  have conj : transform H H (exchange S s) = exchange J (transform H H s) := by
+    apply Prod.ext <;> simp only [transform,exchange,mulVec_add, mulVec_mulVec,commute,complement]
+  rw [show addr (exchange S s) = chartAddress (exchange J (transform H H s),j) from congrArg (fun z => chartAddress (z,j)) conj]
+  rw [show copyAddress.symm (a.1.swap,a.2) = _ from chartAddress_local (transform H H s) j Prod.swap]
+  apply congrArg (fun z => chartAddress (z,j))
+  apply chartHalves.injective
+  rw [Equiv.apply_symm_apply]
+  apply Prod.ext <;> apply Prod.ext <;> funext i <;>
+    simp [chartHalves,J,exchange,Matrix.sub_mulVec,Matrix.fromBlocks_mulVec,Function.comp_def]
+
+open Matrix Swap.Modular M8.Exchange BitHosting in
+/-- At the scheduled helper position the hosted word exchanges the certified
+parent span, with the orthogonal encoding applied only to the local pair. -/
+theorem OrthogonalPortReads.helperSlot {V W : ℕ} (n : Fin 9) (h : Fin 439) (w : ℕ)
+    [NeZero (prime^w)] (pos : Swap.Shear.State (Fin 8) (ZMod (prime^w)) → Fin ((prime^w)^112*W) → Fin V)
+    (input output : Fin 661 → Fin V → ZMod 2) (read : OrthogonalPortReads w pos input output) :
+    let slot := IntegerMultBounds.MathlibTM2.M6.BitNode.slotOf n.val h.val
+    let c := Nine.port (slot.copy % 111)
+    let H := (reduce (prime^w) (c.helperChart (slotPos slot) (slotPos_le n n.isLt h h.isLt))).transpose
+    let address := fun s (j : Fin W) =>
+      let a := copyAddress (chartAddress (transform H H s,j))
+      pos a.1 a.2
+    let helper : Fin 661 := ⟨222+h.val,by omega⟩
+    ∀ s j, output helper (address (exchange (reduce (prime^w) (helperSpan n h)) s) j) =
+      input helper (address s j) := by
+  intro slot c H address helper s j
+  have shift := helperChartAddress_swap c (Nine.port_checked _ (Nat.mod_lt _ (by decide)))
+    (slotPos slot) (slotPos_le n n.isLt h h.isLt) w s j
+  apply (congrArg (fun z => output helper (pos (copyAddress z).1 (copyAddress z).2)) shift).trans
+  simp only [Equiv.apply_symm_apply]
+  exact read.helper h _ _
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
