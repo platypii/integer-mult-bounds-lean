@@ -2766,6 +2766,324 @@ theorem allocatedStage_host [M8.Machine.Net] (n : Fin 9) : AllocatedStage n := b
     exact ⟨v,D,t,y,exec,time.trans_eq (Nat.add_right_comm _ _ 3),user,out,act⟩)
   exact ⟨prepared,owners,_,runStage⟩
 
+open IntegerMultBounds.Networks.Certificates.PR589.Nine in
+/-- To read a physical stage it suffices to identify the framed word on each
+of the 661 owners. All other roles follow from the invocation frame. -/
+theorem stageReads_of_ownerReads {w B K : ℕ} (n : Fin 9)
+    (address : (Axis ⊕ Axis → ℚ) → Fin ((prime^w)^16*(B*prime^(64*(w*64))*K)))
+    (owned : ∀ (k : Fin 32 × Fin 5) x y, InvocationEffect n k.1 k.2 w B K x y →
+      ∀ (j : Fin 661) z, y (ownerTape n k.1 k.2 j) (address z) =
+        along (bar (chart n j.val)ᵀ) (runWord n (registers n k.1 k.2 (readRoles address x)) j.val) z)
+    (data out) (acts : stageRuns.foldr (fun k next x => ∃ y, InvocationEffect n k.1 k.2 w B K x y ∧ next y)
+      (fun x => x = out) data) :
+    readRoles address out = (Piece.stage n).run (readRoles address data) := by
+  have step (k : Fin 32 × Fin 5) (x y) (run : InvocationEffect n k.1 k.2 w B K x y) :
+      readRoles address y = stageRun n k (readRoles address x) := by
+    funext ρ z
+    by_cases h : ∃ j : Fin 661, owner n k.1 k.2 j.val = ρ
+    · obtain ⟨j,rfl⟩ := h
+      change _ = invoke n k.1 k.2 _ _ _
+      rw [invoke_owner _ _ _ _ _ j.isLt]
+      exact owned k x y run j z
+    · have outside (j : ℕ) (hj : j < 661) : owner n k.1 k.2 j ≠ ρ := fun eq => h ⟨⟨j,hj⟩,eq⟩
+      change _ = invoke n k.1 k.2 _ _ _
+      rw [invoke_other _ _ _ _ _ outside]
+      let lane : BankLane := (ρ.replica,ρ.port,ρ.cls)
+      apply congrFun (run.2 (bankTape ρ.bank lane) (Fin.castSucc_ne_last _) ?_) (address z)
+      intro j eq
+      have same := (Fintype.equivFin Role).injective (Fin.cast_injective _ (Fin.castSucc_injective _ eq))
+      exact outside j.val j.isLt same
+  have read (ls : List (Fin 32 × Fin 5)) (x y) (h : ls.foldr
+      (fun k next a => ∃ b, InvocationEffect n k.1 k.2 w B K a b ∧ next b) (fun a => a = y) x) :
+      readRoles address y = ls.foldl (fun a k => stageRun n k a) (readRoles address x) := by
+    induction ls generalizing x with
+    | nil => exact congrArg (readRoles address) h.symm
+    | cons k rest ih =>
+      obtain ⟨mid,run,tail⟩ := h
+      simpa only [List.foldl_cons,← step k x mid run] using ih mid tail
+  exact read stageRuns data out acts
+
+/-- One directed XOR between two distinct banks, applied to every lane. -/
+private abbrev BankAdd := {p : Fin 8 × Fin 8 // p.1 ≠ p.2}
+
+private def BankAdd.apply {α : Type} [Add α] (p : BankAdd) (x : Fin 8 → α) : Fin 8 → α :=
+  Function.update x p.val.1 (x p.val.1 + x p.val.2)
+
+private theorem bankAddProgram (p : BankAdd) :
+    ∃ (q : ℕ) (machine : Program (142081+2) q prime), ∀ {V : ℕ}, 0 < V →
+    ∀ data : Fin 142081 → Fin V → ZMod 2,
+    let bank := fun X => PointwiseRoleGate.bank (a := prime) (fun _ _ => blank) (fun _ => 0)
+      (SparseRoleCircuit.encoded X) (FlatCoordinateSchedule.bits V)
+    ∃ out, HoareTime machine (fun X => X = bank data) (fun Y => Y = bank out) (76*17760*V) ∧
+      (∀ x b, out (bankTape b x) = p.apply (fun j => data (bankTape j x)) b) ∧
+      out (Fin.last 142080) = data (Fin.last 142080) := by
+  classical
+  let dst := bankTape p.val.1
+  let src := bankTape p.val.2
+  let lanes := Fintype.equivFin BankLane
+  let entries := List.ofFn fun i => (lanes.symm i,lanes.symm i)
+  have off (x y : BankLane) : dst x ≠ src y := fun h => p.property (bankTape_eq.mp h).1
+  refine ⟨_,SparseRoleCircuit.program dst src off entries,?_⟩
+  intro V pos data bank
+  let out := fun j i => Circuit.run (SparseCircuit.copies dst src entries) (fun l => data l i) j
+  refine ⟨out,?_,?_,?_⟩
+  · have run := SparseRoleCircuit.copies_hoare (a := prime) dst src off entries (fun _ _ => blank) (fun _ => 0)
+        data (FlatCoordinateSchedule.bits V) (FlatCoordinateSchedule.bits_value V)
+    apply run.consequence (fun _ h => h) (fun _ h => h)
+    have len : entries.length = 17760 := List.length_ofFn.trans (by simp only [BankLane,Fintype.card_prod,Fintype.card_fin])
+    simpa only [len] using SparseRoleCircuit.cost_linear entries.length V _ (FlatCoordinateSchedule.bits_value V)
+      (FlatCoordinateSchedule.bits_canonical V) pos
+  · intro x b
+    funext i
+    simp only [out,SparseCircuit.copies_run _ _ _ off,BankAdd.apply]
+    by_cases h : b = p.val.1
+    · subst b
+      simp only [entries,List.map_ofFn,List.sum_ofFn,Function.comp_apply,dst,src,bankTape_eq,
+        true_and,Equiv.symm_apply_eq,Function.update_self,Pi.add_apply]
+      simp only [Finset.sum_ite_eq',Finset.mem_univ,ite_true,Equiv.symm_apply_apply]
+    · have unused (j : BankLane) : dst j ≠ bankTape b x := fun eq => h (bankTape_eq.mp eq).1.symm
+      simp only [entries,List.map_ofFn,List.sum_ofFn,Function.comp_apply,unused,ite_false,Finset.sum_const_zero,add_zero,Function.update_of_ne h]
+  · funext i
+    have untouched (x : BankLane) : dst x ≠ Fin.last 142080 := Fin.castSucc_ne_last _
+    simp only [out,SparseCircuit.copies_run _ _ _ off,entries,List.map_ofFn,List.sum_ofFn,Function.comp_apply,untouched,ite_false,Finset.sum_const_zero,add_zero]
+
+/-- Run directed bank additions on the owner's physical tapes, retaining the
+counting controls and every tape outside the placement. -/
+private theorem bankAdds_host (ops : List BankAdd) :
+    ∃ states : ℕ, ∀ {T Q : ℕ} {P U : Type} (ports : Fin (142081+2) ↪ Fin T)
+      (body : P → Pr P T Q prime U), states ≤ Q → ∃ code, ∀ {V : ℕ}, 0 < V →
+    let ready := fun (x : Fin 142081 → Fin V → ZMod 2) (S : Stacks T prime) =>
+      RepT (PointwiseRoleGate.bank (a := prime) (fun _ _ => blank) (fun _ => 0)
+        (SparseRoleCircuit.encoded x) (FlatCoordinateSchedule.bits V)) (embStk ports S).L (embStk ports S).R
+    ∀ data u S, ready data S → ∃ v D t out, Exec body code (mk u S) t (mk v D) ∧
+      t ≤ ops.length*(76*17760*V*(142081+7)+6)+1 ∧ v.user = u.user ∧ ready out D ∧
+      (∀ x b, out (bankTape b x) = ops.foldl (fun y op => op.apply y) (fun j => data (bankTape j x)) b) ∧
+      out (Fin.last 142080) = data (Fin.last 142080) ∧
+      ∀ j, (∀ l, ports l ≠ j) → D.L j = S.L j ∧ D.R j = S.R j := by
+  induction ops with
+  | nil =>
+    exact ⟨0,fun _ _ _ => ⟨.act .done,fun _ data u S live =>
+      ⟨u,S,1,data,Exec.act _ _,by simp,rfl,live,fun _ _ => rfl,rfl,fun _ _ => ⟨rfl,rfl⟩⟩⟩⟩
+  | cons op ops ih =>
+    obtain ⟨q,machine,run⟩ := bankAddProgram op
+    obtain ⟨s,rest⟩ := ih
+    refine ⟨max q s,?_⟩
+    intro T Q P U ports body fits
+    have cap := (le_max_left q s).trans fits
+    obtain ⟨tail,execTail⟩ := rest ports body ((le_max_right q s).trans fits)
+    refine ⟨(embProg ports (Empty.elim : Empty → P) (foreign (liftQ machine cap))).seq tail,?_⟩
+    intro V pos ready data u S live
+    obtain ⟨y,step,reads,tmp⟩ := run pos data
+    obtain ⟨z,F,t,first,time,user,mid,keep⟩ := placedHoare_exec machine ports cap body step u S live
+    obtain ⟨v,D,m,out,last,bill,same,done,acts,spare,off⟩ := execTail pos y z F mid
+    refine ⟨v,D,_,out,Exec.seq first last,?_,same.trans user,done,?_,spare.trans tmp,?_⟩
+    · simp only [List.length_cons,Nat.add_mul,Nat.one_mul]
+      omega
+    · intro x b
+      simpa only [List.foldl_cons,show (fun j => y (bankTape j x)) = _ from funext (reads x)] using acts x b
+    · intro j hj
+      exact ⟨(off j hj).1.trans (keep j hj).1,(off j hj).2.trans (keep j hj).2⟩
+
+private def swapAdds (d s : Fin 8) (h : d ≠ s) : List BankAdd :=
+  [⟨(d,s),h⟩,⟨(s,d),Ne.symm h⟩,⟨(d,s),h⟩]
+
+private theorem swapAdds_apply {V : ℕ} (d s : Fin 8) (h : d ≠ s) (x : Fin 8 → Fin V → ZMod 2) :
+    (swapAdds d s h).foldl (fun y op => op.apply y) x = fun b => x (Equiv.swap d s b) := by
+  have cancel₁ : ∀ a b : ZMod 2, (a+b)+(b+(a+b)) = b := by decide
+  have cancel₂ : ∀ a b : ZMod 2, b+(a+b) = a := by decide
+  funext b i
+  by_cases hd : b = d
+  · subst b
+    simp only [swapAdds,List.foldl_cons,List.foldl_nil,BankAdd.apply,Function.update_self,
+      Function.update_of_ne h,Function.update_of_ne (Ne.symm h),Pi.add_apply,Equiv.swap_apply_left,cancel₁]
+  by_cases hs : b = s
+  · subst b
+    simp only [swapAdds,List.foldl_cons,List.foldl_nil,BankAdd.apply,Function.update_self,
+      Function.update_of_ne h,Function.update_of_ne hd,Pi.add_apply,Equiv.swap_apply_right,cancel₂]
+  · simp only [swapAdds,List.foldl_cons,List.foldl_nil,BankAdd.apply,Function.update_of_ne hd,
+      Function.update_of_ne hs,Equiv.swap_apply_of_ne_of_ne hd hs]
+
+private def exchangeAdds := swapAdds 0 1 (by decide) ++ swapAdds 2 3 (by decide) ++
+  swapAdds 4 5 (by decide) ++ swapAdds 6 7 (by decide)
+
+open IntegerMultBounds.Networks.Certificates.PR589.Nine in
+private theorem bankPiece_adds (piece : Piece) (scheduled : piece ∈ nodeProgram)
+    (isBank : (∃ d s, piece = .bridge d s) ∨ piece = .exchangeSides) :
+    ∃ ops : List BankAdd, ops.length = (if piece = .exchangeSides then 12 else 2) ∧
+    ∀ {V : ℕ} (data out : Fin 142081 → Fin V → ZMod 2),
+      (∀ x b, out (bankTape b x) = ops.foldl (fun y op => op.apply y) (fun j => data (bankTape j x)) b) →
+      ∀ address, readRoles address out = piece.run (readRoles address data) := by
+  rcases isBank with ⟨d,s,rfl⟩ | rfl
+  · have valid : ∀ e ∈ bridgeEdges, e.1 < 4 ∧ e.2 < 4 ∧ e.1 ≠ e.2 := by decide
+    have member : (d,s) ∈ bridgeEdges := List.mem_filterMap.mpr ⟨_,scheduled,rfl⟩
+    obtain ⟨hd,hs,ne⟩ := valid (d,s) member
+    change d < 4 at hd
+    change s < 4 at hs
+    change d ≠ s at ne
+    let de : Fin 8 := ⟨2*d,by omega⟩
+    let se : Fin 8 := ⟨2*s,by omega⟩
+    let do' : Fin 8 := ⟨2*d+1,by omega⟩
+    let so : Fin 8 := ⟨2*s+1,by omega⟩
+    have bankNe {a b : Fin 8} (h : a.val ≠ b.val) : a ≠ b := fun eq => h (congrArg Fin.val eq)
+    let even : BankAdd := ⟨(de,se),bankNe (by dsimp [de,se]; omega)⟩
+    let odd : BankAdd := ⟨(so,do'),bankNe (by dsimp [so,do']; omega)⟩
+    refine ⟨[even,odd],rfl,?_⟩
+    intro V data out acts address
+    funext ρ z
+    let lane : BankLane := (ρ.replica,ρ.port,ρ.cls)
+    change out (bankTape ρ.bank lane) (address z) = _
+    rw [acts]
+    have parity : so ≠ de := bankNe (by dsimp [so,de]; omega)
+    have parity' : do' ≠ de := bankNe (by dsimp [do',de]; omega)
+    have srcEven : (⟨(2*s)%8,Nat.mod_lt _ (by decide)⟩ : Fin 8) = se := Fin.ext (Nat.mod_eq_of_lt se.isLt)
+    have srcOdd : (⟨(2*d+1)%8,Nat.mod_lt _ (by decide)⟩ : Fin 8) = do' := Fin.ext (Nat.mod_eq_of_lt do'.isLt)
+    by_cases a : ρ.bank.val = 2*d
+    · have eq : ρ.bank = de := Fin.ext a
+      simp only [List.foldl_cons,List.foldl_nil,even,odd,BankAdd.apply,eq,Function.update_of_ne (Ne.symm parity),
+        Function.update_self,Piece.run,show de.val = 2*d from rfl,ite_true,readRoles,withBank,lane,srcEven,Pi.add_apply]
+    · by_cases b : ρ.bank.val = 2*s+1
+      · have eq : ρ.bank = so := Fin.ext b
+        simp only [Piece.run,ite_eq_right a,ite_eq_left b]
+        simp only [readRoles,withBank,lane,srcOdd,eq,List.foldl_cons,
+          List.foldl_nil,even,odd,BankAdd.apply,Function.update_self,Function.update_of_ne parity,Function.update_of_ne parity',Pi.add_apply]
+      · have n₁ : ρ.bank ≠ so := fun h => b (congrArg Fin.val h)
+        have n₂ : ρ.bank ≠ de := fun h => a (congrArg Fin.val h)
+        simp only [Piece.run,ite_eq_right a,ite_eq_right b,readRoles,lane,List.foldl_cons,List.foldl_nil,even,odd,BankAdd.apply,Function.update_of_ne n₁,Function.update_of_ne n₂]
+  · refine ⟨exchangeAdds,rfl,?_⟩
+    intro V data out acts address
+    have sides : ∀ b : Fin 8, Equiv.swap 0 1 (Equiv.swap 2 3 (Equiv.swap 4 5 (Equiv.swap 6 7 b))) =
+        (⟨(if b.val % 2 = 0 then b.val+1 else b.val-1)%8,Nat.mod_lt _ (by decide)⟩ : Fin 8) := by decide
+    funext ρ z
+    change out (bankTape ρ.bank (ρ.replica,ρ.port,ρ.cls)) (address z) = _
+    rw [acts]
+    simp only [exchangeAdds,List.foldl_append,swapAdds_apply,sides,Piece.run,otherSide,withBank,readRoles]
+
+open IntegerMultBounds.Networks.Certificates.PR589.Nine in
+/-- Physical bridge and side-exchange instructions on the same owner/control
+bank as the stage invocations, at every logical address simultaneously. -/
+theorem nodeBankPiece_host (piece : Piece) (scheduled : piece ∈ nodeProgram)
+    (bankPiece : (∃ d s, piece = .bridge d s) ∨ piece = .exchangeSides) :
+    ∃ states : ℕ, ∀ {T Q : ℕ} {P U : Type} (ports : Fin (142081+2) ↪ Fin T)
+      (body : P → Pr P T Q prime U), states ≤ Q → ∃ code, ∀ {V : ℕ}, 0 < V →
+    let ready := fun (x : Fin 142081 → Fin V → ZMod 2) (S : Stacks T prime) =>
+      RepT (PointwiseRoleGate.bank (a := prime) (fun _ _ => blank) (fun _ => 0)
+        (SparseRoleCircuit.encoded x) (FlatCoordinateSchedule.bits V)) (embStk ports S).L (embStk ports S).R
+    ∀ data u S, ready data S → ∃ v D t out, Exec body code (mk u S) t (mk v D) ∧
+      t ≤ (if piece = .exchangeSides then 12 else 2)*(76*17760*V*(142081+7)+6)+1 ∧
+      v.user = u.user ∧ ready out D ∧ (∀ address, readRoles address out = piece.run (readRoles address data)) ∧
+      out (Fin.last 142080) = data (Fin.last 142080) ∧
+      ∀ j, (∀ l, ports l ≠ j) → D.L j = S.L j ∧ D.R j = S.R j := by
+  obtain ⟨ops,len,acts⟩ := bankPiece_adds piece scheduled bankPiece
+  obtain ⟨states,build⟩ := bankAdds_host ops
+  refine ⟨states,?_⟩
+  intro T Q P U ports body cap
+  obtain ⟨code,run⟩ := build ports body cap
+  refine ⟨code,?_⟩
+  intro V pos ready data u S live
+  obtain ⟨v,D,t,out,exec,time,user,done,reads,tmp,off⟩ := run pos data u S live
+  exact ⟨v,D,t,out,exec,len ▸ time,user,done,acts data out reads,tmp,off⟩
+
+def Piece.bankOp : Piece → Bool
+  | .bridge .. | .exchangeSides => true
+  | _ => false
+
+open IntegerMultBounds.Networks.Certificates.PR589.Nine in
+/-- Sequence the 29 physical piece occurrences. The nine bridges, side exchange
+and terminal idle are supplied here. Stage and idle calls retain their own child intervals. -/
+theorem nodePieces_host
+    (tapes : Fin nodeProgram.length → ℕ) (ports : ∀ i, Fin (142081+2) ↪ Fin (tapes i)) :
+    let I := Fin nodeProgram.length
+    let piece := fun i : I => nodeProgram[i.val]'i.isLt
+    ∃ (states T : ℕ) (fan : Fin (142081+2) ↪ Fin T) (bank : ∀ i, Fin (tapes i) ↪ Fin T),
+    (∀ i j, bank i (ports i j) = fan j) ∧
+    ∀ {P U A : Type} {Q V : ℕ}, states ≤ Q → 0 < V →
+    ∀ (body : ∀ i, P → Pr P (tapes i) Q prime U) (initial : ∀ i, Stacks (tapes i) prime)
+      (localCost : I → ℕ) (childTime : ℕ → ℕ) (shared : Stacks (142081+2) prime)
+      (address : A → (Axis ⊕ Axis → ℚ) → Fin V),
+    let ready := fun (x : Fin 142081 → Fin V → ZMod 2) (S : Stacks (142081+2) prime) =>
+      RepT (PointwiseRoleGate.bank (a := prime) (fun _ _ => blank) (fun _ => 0)
+        (SparseRoleCircuit.encoded x) (FlatCoordinateSchedule.bits V)) S.L S.R
+    let start := fun i : I => ((nodeProgram.take i.val).flatMap Piece.children).length
+    let fixed := fun (i : I) => if (piece i).bankOp then
+      (if piece i = .exchangeSides then 12 else 2)*(76*17760*V*(142081+7)+6)+1
+      else if piece i = .remainder 9 then 1 else localCost i
+    (∀ i, (piece i).bankOp = false → piece i ≠ .remainder 9 → ∃ code, ∀ x u S, ready x (embStk (ports i) S) →
+      (∀ l, (∀ j, ports i j ≠ l) → S.L l = (initial i).L l ∧ S.R l = (initial i).R l) →
+      ∃ v D t y, Exec (body i) code (mk u S) t (mk v D) ∧
+        t ≤ localCost i + ((List.range' (start i) (piece i).children.length).map childTime).sum ∧
+        v.user = u.user ∧ ready y (embStk (ports i) D) ∧
+        ∀ a, readRoles (address a) y = (piece i).run (readRoles (address a) x)) →
+    let table := fun g : I × P => embProg (bank g.1) (Prod.mk g.1) (body g.1 g.2)
+    ∃ prepared : Stacks T prime, embStk fan prepared = shared ∧ ∃ code,
+    ∀ x u S, ready x (embStk fan S) → (∀ l, (∀ j, fan j ≠ l) → S.L l = prepared.L l ∧ S.R l = prepared.R l) →
+      ∃ v D t y, Exec table code (mk u S) t (mk v D) ∧
+        t ≤ (List.ofFn fixed).sum + ((List.range nodeChildren5.length).map childTime).sum+1 ∧
+        v.user = u.user ∧ ready y (embStk fan D) ∧ ∀ a, readRoles (address a) y = runNode (readRoles (address a) x) := by
+  classical
+  intro I piece
+  letI : BEq I := inferInstanceAs (BEq (Fin nodeProgram.length))
+  let B := {i : I // (piece i).bankOp = true}
+  have allowed (i : B) : (∃ d s, piece i.val = .bridge d s) ∨ piece i.val = .exchangeSides := by
+    have h := i.property
+    cases eq : piece i.val <;> simp_all [Piece.bankOp]
+  choose qs make using fun i : B => nodeBankPiece_host (piece i.val) (List.getElem_mem ..) (allowed i)
+  obtain ⟨T,fan,bank,selected,assemble⟩ := scheduledBanks_exec tapes ports
+  refine ⟨Finset.univ.sup qs,T,fan,bank,selected,?_⟩
+  intro P U A Q V fits pos body initial localCost childTime shared address ready start fixed active table
+  let bill := fun i => ((List.range' (start i) (piece i).children.length).map childTime).sum
+  let effect := fun i x y => ∀ a, readRoles (address a) y = (piece i).run (readRoles (address a) x)
+  have step (i : I) : ∃ code, ∀ x u S, ready x (embStk (ports i) S) →
+      (∀ l, (∀ j, ports i j ≠ l) → S.L l = (initial i).L l ∧ S.R l = (initial i).R l) →
+      ∃ v D t y, Exec (body i) code (mk u S) t (mk v D) ∧ t ≤ fixed i + bill i ∧
+        v.user = u.user ∧ ready y (embStk (ports i) D) ∧ effect i x y := by
+    by_cases h : (piece i).bankOp = true
+    · let j : B := ⟨i,h⟩
+      obtain ⟨code,run⟩ := make j (ports i) (body i) ((Finset.le_sup (Finset.mem_univ j)).trans fits)
+      refine ⟨code,?_⟩
+      intro x u S live _
+      obtain ⟨v,D,t,y,exec,time,user,done,reads,_,_⟩ := run pos x u S live
+      refine ⟨v,D,t,y,exec,?_,user,done,fun a => reads (address a)⟩
+      exact (show t ≤ fixed i by simpa only [fixed,h,ite_true] using time).trans (Nat.le_add_right ..)
+    have hb : (piece i).bankOp = false := Bool.eq_false_iff.mpr h
+    by_cases terminal : piece i = .remainder 9
+    · refine ⟨.act .done,?_⟩
+      intro x u S live _
+      refine ⟨u,S,1,x,Exec.act _ _,?_,rfl,live,?_⟩
+      · simp [fixed,terminal,Piece.bankOp]
+      · intro a
+        rw [terminal,terminalIdle_run]
+    · simpa only [fixed,hb,Bool.false_eq_true,ite_false,if_neg terminal] using active i hb terminal
+  choose code run using step
+  let order := List.finRange nodeProgram.length
+  have listed : order.map piece = nodeProgram := by rw [← List.ofFn_eq_map]; exact List.ofFn_getElem
+  obtain ⟨prepared,owners,exec⟩ := assemble body code ready effect (fun i => fixed i + bill i) initial shared run
+  refine ⟨prepared,owners,Prog.seqList (order.map fun i => embProg (bank i) (Prod.mk i) (code i)),?_⟩
+  intro x u S live fresh
+  obtain ⟨v,D,t,y,steps,paid,user,done,acts⟩ := exec order (List.nodup_finRange _) x u S live fresh
+  refine ⟨v,D,t,y,steps,?_,user,done,?_⟩
+  · have before (i : I) : ((order.take (order.idxOf i)).flatMap (fun j => (piece j).children)).length = start i := by
+      rw [← List.flatMap_map, List.map_take,listed]
+      have idx : order.idxOf i = i.val := List.idxOf_finRange i
+      rw [idx]
+    have children : order.flatMap (fun i => (piece i).children) = nodeChildren5 := by rw [← List.flatMap_map,listed,nodeChildren5]
+    have fees := scheduledChildBill (fun i => (piece i).children) childTime order (List.nodup_finRange _) 0
+    simp only [Nat.zero_add,before,children,List.range_eq_range'] at fees
+    have split (ls : List I) : (ls.map fun i => fixed i + bill i).sum = (ls.map fixed).sum + (ls.map bill).sum := by
+      induction ls with
+      | nil => rfl
+      | cons i rest ih => simp only [List.map_cons,List.sum_cons,ih]; omega
+    rw [split,show (order.map bill).sum = _ from fees,← List.ofFn_eq_map] at paid
+    simpa only [List.range_eq_range'] using paid
+  · have read (ls : List I) (a : A) (x y) (h : ls.foldr (fun i next x => ∃ y, effect i x y ∧ next y) (fun x => x = y) x) :
+        readRoles (address a) y = runPieces (ls.map piece) (readRoles (address a) x) := by
+      induction ls generalizing x with
+      | nil => exact congrArg (readRoles (address a)) h.symm
+      | cons i ls ih =>
+        obtain ⟨z,act,rest⟩ := h
+        simpa only [List.map_cons,runPieces,List.foldl_cons,← act a] using ih z rest
+    intro a
+    simpa only [listed,runNode] using read order a x y acts
+
 /-- Finish a nonroot scanner bank after the child queue transfer. The seven
 header sources and two work registers can stay outside the caller/scan bank. -/
 theorem childQueue_headers_exec {T Q w : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
