@@ -107,11 +107,17 @@ def AllocatedStageTargets [M8.Machine.Net] (n : Fin 9) : Prop :=
           (phaseRead owner x (finProdFinEquiv (b,j)) i)
         let dst := 111+k.2.val
         readAt blank L R ((FlatCoordinateLayout.index (AffineFieldCoordinates.embed s)
-          (finProdFinEquiv (b,j))).val-(D*K) : ℤ) = SparseRoleCircuit.encode
+          (finProdFinEquiv (b,j))).val : ℤ) = SparseRoleCircuit.encode
           (selectedFrame (w+1) (Frames.finalRefs dst) (initial dst + initial k.2.val) s)
     ∃ z F steps, Exec (fun g => embProg inner id (outer g)) code (mk u S) steps (mk z F) ∧
-      steps ≤ budget + (3000*order.length+1530001223)*V ∧ z.user = u.user ∧
-      ∀ k, result k (F.L (bank k 1)) (F.R (bank k 1))
+      steps ≤ budget + (4300*order.length+1530001223)*V ∧ z.user = u.user ∧
+      (∀ k, result k (F.L (bank k 1)) (F.R (bank k 1))) ∧
+      ∃ packed out, RestoredOwnerPayloads n (full.trans inner) out F ∧
+        stageRuns.foldr (fun k next a => ∃ b, packedStageEffect n k (w+1) B
+          (node.beforeRows*rows*node.between*node.afterD) a b ∧ next b)
+          (fun a => a = packed) (singleLabelBank (B := B) (K := K) label x) ∧
+        HelperLabelTrace (w+1) (B*N) (node.beforeRows*rows*node.between*node.afterD)
+          (restoreSlotChanges (stageFinalSlot n)) packed out
 
 theorem allocatedStageTargets_host [M8.Machine.Net] (n : Fin 9) : AllocatedStageTargets n := by
   unfold AllocatedStageTargets
@@ -194,13 +200,13 @@ theorem allocatedStageTargets_host [M8.Machine.Net] (n : Fin 9) : AllocatedStage
   have applyFree := applyHeaders (fun i => headers i)
   have applyPrivate := applyFree
     (fun j => (off _ (reg.injective.ne ((by decide : ∀ j : Fin 7, (12 : Fin 14) ≠ (j.natAdd 3).castAdd 4) j)) (fun i => reg.injective.ne ((by decide : ∀ (i : Fin 3) (j : Fin 7), i.castAdd 11 ≠ (j.natAdd 3).castAdd 4) i j))).2.trans ((scratchKeep j).trans (free j)))
-  obtain ⟨z,F,steps,ran,bill,same,output⟩ := applyPrivate (fun k j => by
+  obtain ⟨z,F,steps,ran,bill,same,output,ownersOut⟩ := applyPrivate (fun k j => by
       have h := off (scanBank k j.succ) (shared_ne_private (T := total) (i := (12 : Fin 14)) _) (fun i => shared_ne_private (i.castAdd 11) _)
       exact ⟨h.1.trans ((congrFun left₀ _).trans (empty k j).1),h.2.trans ((keep _ (fun eq => by
         have val := congrArg Fin.val eq
         change total+14+_ = total+10 at val
         omega)).trans (empty k j).2)⟩)
-  refine ⟨z,F,k+(m+steps),Exec.seq makeTail (Exec.seq setup ran),?_,same.trans (same₀.trans first),output⟩
+  refine ⟨z,F,k+(m+steps),Exec.seq makeTail (Exec.seq setup ran),?_,same.trans (same₀.trans first),output,packed,out,ownersOut,trace,restored⟩
   have volume : D*(N*K) = V := by dsimp only [V,W,D,N]; ring
   rw [volume] at bill
   have hm : 0 < M := pow_pos Shared50ModularControl.prime_prime.pos _
@@ -215,7 +221,7 @@ theorem allocatedStageTargets_host [M8.Machine.Net] (n : Fin 9) : AllocatedStage
     ((stageDimensionsTime_le M B tail hm hb ht).trans (Nat.mul_le_mul_left _ small)) (Nat.mul_le_mul_left 153 labelsLe))
   change k ≤ 868*tail at charge
   have tailBound : tail ≤ V := (Nat.le_mul_of_pos_left tail hb).trans ((Nat.le_mul_of_pos_left _ (pow_pos hm 2)).trans small)
-  change steps ≤ t+(3000*order.length+200)*V at bill
+  change steps ≤ t+(4300*order.length+200)*V at bill
   change t ≤ budget at paid
   rw [Nat.add_mul] at bill ⊢
   omega

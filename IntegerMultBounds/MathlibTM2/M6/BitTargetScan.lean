@@ -34,6 +34,45 @@ noncomputable def scanFrame (K N D : ℕ) (v : Tapes 2 prime) :=
   CountedLoopReuseAlphabet.bank (LabelRowXor.bank v (FlatCoordinateSchedule.bits K) (FlatCoordinateSchedule.bits N))
     CountedLoopReuseAlphabet.empty (CountedLoopReuseAlphabet.binary (FlatCoordinateSchedule.bits D)) 1 1
 
+/-- Repeat a width-sized rewind for every block, using the same two counters
+that bounded the forward scan. -/
+def returnAccumulator (a : ℕ) :=
+  CountedLoopReuseAlphabet.program (extend (RoleArrayStackMoves.moveProgram (a := a) LabelRowXor.rewind) 2)
+
+private theorem returnAccumulator_hoare (K N D : ℕ) (hk : 0 < K) (hn : 0 < N) (hd : 0 < D)
+    (v : Tapes 2 prime) :
+    HoareTime (returnAccumulator prime) (· = scanFrame K N D v)
+      (· = scanFrame K N D (RoleArrayStackMoves.shifted v LabelRowXor.rewind (D*K))) (99*(D*(N*K))) := by
+  let bits := FlatCoordinateSchedule.bits
+  let state := fun i => RoleArrayStackMoves.shifted v LabelRowXor.rewind (i*K)
+  let row := extend (RoleArrayStackMoves.moveProgram (a := prime) LabelRowXor.rewind) 2
+  have run := CountedLoopReuseAlphabet.loop_hoare row (bits D) D
+    (fun i => LabelRowXor.bank (state i) (bits K) (bits N)) (fun _ => 7*K+7*(bits K).length+16)
+    (FlatCoordinateSchedule.bits_value _) (by
+      intro i _
+      have next : RoleArrayStackMoves.shifted (state i) LabelRowXor.rewind K = state (i+1) := by
+        apply congrArg₂ Tapes.mk
+        · funext j; simp only [state,RoleArrayStackMoves.shifted,Nat.cast_mul,Nat.cast_add,Nat.cast_one]; ring
+        · rfl
+      have move := hoare_extend_eq (RoleArrayStackMoves.move_hoare (state i) LabelRowXor.rewind (bits K) K
+        (FlatCoordinateSchedule.bits_value _))
+        (CountedLoopReuseAlphabet.controls CountedLoopReuseAlphabet.empty (CountedLoopReuseAlphabet.binary (bits N)) 1 1)
+      rw [next] at move
+      exact move)
+  have start : state 0 = v := by
+    cases v
+    simp [state,RoleArrayStackMoves.shifted]
+  rw [start] at run
+  apply run.consequence (fun _ h => h) (fun _ h => h)
+  simp only [Finset.sum_const,Finset.card_range,nsmul_eq_mul,Nat.cast_id]
+  have width := FlatCoordinateDimensions.bits_length_le_twice (le_refl K) hk
+  have count := FlatCoordinateDimensions.bits_length_le_twice (le_refl D) hd
+  have d := Nat.le_mul_of_pos_right D hk
+  have vol := Nat.mul_le_mul_left D (Nat.le_mul_of_pos_left K hn)
+  have bound := Nat.mul_le_mul_left D width
+  dsimp only [bits]
+  nlinarith only [bound,count,d,vol,hd]
+
 /-- The accumulator is followed by the reusable width, row and block counters.
 Each counter pair starts just to the right of its separator. -/
 noncomputable def scanPrivateWords (K N D : ℕ) : Fin 7 → List (Fin (prime+4)) :=
@@ -132,19 +171,19 @@ theorem restoredTarget_host (n : Fin 9) (run : Fin 32 × Fin 5) (t : Fin 111) :
     0 < K → 0 < B → ∀ u S, Cover.Fallback.RecordPayload (fan ((owner dst).castAdd 2)) (fun _ => blank) 0 (out (owner dst)) S →
     (∀ j : Fin 7, S.L (bank j.succ) = (if j = 0 then [] else [separator]) ∧
       S.R (bank j.succ) = scanPrivateWords K N D j) →
-    ∃ z F steps, Exec body code (mk u S) steps (mk z F) ∧ steps ≤ 2600*(D*(N*K))+6 ∧ z.user = u.user ∧
+    ∃ z F steps, Exec body code (mk u S) steps (mk z F) ∧ steps ≤ 3900*(D*(N*K))+6 ∧ z.user = u.user ∧
       (∀ (s : Swap.Shear.State (Fin 8) (ZMod (prime^w))) (b : Fin B) (j : Fin K),
         let initial := fun i => (selectedFrame w (Frames.initialRefs i)).symm
           (phaseRead owner x (finProdFinEquiv (b,j)) i)
         readAt blank (F.L (bank 1)) (F.R (bank 1))
-          ((FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) (finProdFinEquiv (b,j))).val-(D*K) : ℤ) =
+          ((FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) (finProdFinEquiv (b,j))).val : ℤ) =
           SparseRoleCircuit.encode (selectedFrame w (Frames.finalRefs dst.val) (initial dst.val + initial t.val) s)) ∧
       ∀ j, (∀ i, bank i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
   intro owner dst
   let count := fun {q : ℕ} (_ : Program 8 q prime) => q
-  refine ⟨count (LabelRowXor.blocksProgram prime),?_⟩
+  refine ⟨count (seq (LabelRowXor.blocksProgram prime) (returnAccumulator prime)),?_⟩
   intro T Q P U fan bank selected fits body
-  refine ⟨embProg bank (Empty.elim : Empty → P) (foreign (liftQ (LabelRowXor.blocksProgram prime) fits)),?_⟩
+  refine ⟨embProg bank (Empty.elim : Empty → P) (foreign (liftQ (seq (LabelRowXor.blocksProgram prime) (returnAccumulator prime)) fits)),?_⟩
   intro w B W label x y out K N D trace restored pos hb u S live stored
   let v := scanInput (out (owner dst)) (D*K)
   let ready := scanFrame K N D v
@@ -161,17 +200,25 @@ theorem restoredTarget_host (n : Fin 9) (run : Fin 32 × Fin 5) (t : Fin 111) :
       rw [selected]
       exact h.symm
     · exact privateReady i eqn z
-  obtain ⟨z,F,steps,exec,paid,user,done,off⟩ := placedHoare_exec _ bank fits body scan u S rep
+  have rows : 0 < N := pow_pos Shared50ModularControl.prime_prime.pos _
+  have blocks : 0 < D := Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) hb
+  have volume := Nat.mul_pos blocks (Nat.mul_pos rows pos)
+  have both := scan.seq (returnAccumulator_hoare K N D pos rows blocks Y)
+  have cost : 200*(D*(N*K))+1+99*(D*(N*K)) ≤ 300*(D*(N*K)) := by omega
+  have linear := both.consequence (fun _ h => h) (fun _ h => h) cost
+  obtain ⟨z,F,steps,exec,paid,user,done,off⟩ := placedHoare_exec _ bank fits body linear u S rep
   refine ⟨z,F,steps,exec,?_,user,?_,off⟩
   · exact paid.trans_eq (by ring)
   · intro s b j
     let i := FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) (finProdFinEquiv (b,j))
     have h := done 1 (v.head 1+i.val)
-    change Y.tape 1 _ = readAt blank (F.L (bank 1)) (F.R (bank 1)) (_-Y.head 1) at h
+    change Y.tape 1 _ = readAt blank (F.L (bank 1)) (F.R (bank 1)) (_-(Y.head 1+(D*K : ℕ)*(-1))) at h
     rw [hd] at h
     have h0 : v.head 1 = 0 := rfl
-    have result := h.symm.trans (values s b j)
-    simpa only [h0,zero_add,D,K,owner,dst,Nat.cast_mul,i] using result
+    rw [h0] at h
+    simp only [zero_add,Nat.cast_mul,mul_neg_one,add_neg_cancel,sub_zero] at h
+    have result := h.symm.trans (by simpa only [h0,zero_add] using values s b j)
+    simpa only [h0,zero_add,D,K,owner,dst,Nat.cast_mul,i,add_neg_cancel,sub_zero] using result
 
 /-- The target stacks of distinct scheduled scans are disjoint. -/
 noncomputable def targetOwner (n : Fin 9) (k : (Fin 32 × Fin 5) × Fin 111) : Fin 142081 :=
@@ -262,12 +309,12 @@ private theorem scanCounters_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T 
 
 def stageScanCost (targets K N D : ℕ) :=
   D.size*(12*(D.size+K.size)+20)+16*(D.size+K.size)+24 +
-    (targets*(2600*(D*(N*K))+6+(8*(D*K)+11*(D.size+K.size)+8)+scanCounterCost ![K,N,D])+1) + (2*(D.size+K.size)+2)
+    (targets*(3900*(D*(N*K))+6+(8*(D*K)+11*(D.size+K.size)+8)+scanCounterCost ![K,N,D])+1) + (2*(D.size+K.size)+2)
 
 /-- The shared binary product and the per-target counters fit the same linear
 volume bound as the payload scans. -/
 theorem stageScanCost_le (targets K N D : ℕ) (hk : 0 < K) (hn : 0 < N) (hd : 0 < D) :
-    stageScanCost targets K N D ≤ (3000*targets+200)*(D*(N*K)) := by
+    stageScanCost targets K N D ≤ (4300*targets+200)*(D*(N*K)) := by
   let V := D*(N*K)
   have d : D ≤ V := Nat.le_mul_of_pos_right _ (Nat.mul_pos hn hk)
   have nk : N*K ≤ V := Nat.le_mul_of_pos_left _ hd
@@ -288,15 +335,15 @@ theorem stageScanCost_le (targets K N D : ℕ) (hk : 0 < K) (hn : 0 < N) (hd : 0
     omega
   have ds := (size D).trans d
   have ks := (size K).trans k
-  have each : 2600*V+6+(8*(D*K)+11*(D.size+K.size)+8)+scanCounterCost ![K,N,D] ≤ 3000*V := by omega
+  have each : 3900*V+6+(8*(D*K)+11*(D.size+K.size)+8)+scanCounterCost ![K,N,D] ≤ 4300*V := by omega
   have shared : D.size*(12*(D.size+K.size)+20)+16*(D.size+K.size)+24+1+(2*(D.size+K.size)+2) ≤ 200*V := by
     nlinarith only [sq,cross,ds,ks,pos]
   have all := Nat.mul_le_mul_left targets each
-  change _ ≤ (3000*targets+200)*V
+  change _ ≤ (4300*targets+200)*V
   unfold stageScanCost
-  change _ + (targets*(2600*V+6+(8*(D*K)+11*(D.size+K.size)+8)+scanCounterCost ![K,N,D])+1) + _ ≤ _
+  change _ + (targets*(3900*V+6+(8*(D*K)+11*(D.size+K.size)+8)+scanCounterCost ![K,N,D])+1) + _ ≤ _
   rw [Nat.add_mul]
-  rw [show targets*(3000*V) = 3000*targets*V by ring] at all
+  rw [show targets*(4300*V) = 4300*targets*V by ring] at all
   omega
 
 /-- Scan the restored targets in stage order. Each accumulator retains its
@@ -333,7 +380,7 @@ theorem stageTargets_host (n : Fin 9) :
           (phaseRead owner x (finProdFinEquiv (b,j)) i)
         let dst := 111+k.2.val
         readAt blank L R ((FlatCoordinateLayout.index (AffineFieldCoordinates.embed s)
-          (finProdFinEquiv (b,j))).val-(D*K) : ℤ) = SparseRoleCircuit.encode
+          (finProdFinEquiv (b,j))).val : ℤ) = SparseRoleCircuit.encode
           (selectedFrame w (Frames.finalRefs dst) (initial dst + initial k.2.val) s)
     ∃ z F steps, Exec body code (mk u S) steps (mk z F) ∧ steps ≤ stageScanCost order.length K N D ∧
       z.user = u.user ∧ (∀ k, result k (F.L (bank k 1)) (F.R (bank k 1))) ∧
@@ -349,7 +396,7 @@ theorem stageTargets_host (n : Fin 9) :
   let product : Pr P (T+142081*7) Q prime U := bmul (src 2) (src 0) length (scratch 0) (scratch 1) (scratch 2) (scratch 3) (scratch 4) (src 2)
   refine ⟨Prog.seq product (.seq (Prog.seqList (order.map placed)) (bclear length)),?_⟩
   intro w B W label x y out K N D trace restored pos hb u S live blockWord widthWord fresh work free words empty result
-  let price := 2600*(D*(N*K))+6+(8*(D*K)+11*(D.size+K.size)+8)+scanCounterCost ![K,N,D]
+  let price := 3900*(D*(N*K))+6+(8*(D*K)+11*(D.size+K.size)+8)+scanCounterCost ![K,N,D]
   have run (ks : List I) (unique : ks.Nodup) (v : HS _ Q prime U) (A : Stacks _ prime)
       (sizeA : A.R length = binSyms (D.size+K.size) (D*K)) (freeA : A.R tmp = [])
       (headers : ∀ i z, readAt blank (A.L (src i)) (A.R (src i)) (z-1) =
@@ -458,6 +505,46 @@ theorem stageTargets_host (n : Fin 9) :
     · exact (Function.update_of_ne h _ _).trans (right.trans (unchanged j h))
 
 
+/-- Owners outside the target set still hold their restored word at head zero. -/
+def RestoredOwnerPayloads {T V : ℕ} (n : Fin 9) (fan : Fin (142081+2) ↪ Fin T)
+    (out : Fin 142081 → Fin V → ZMod 2) (F : Stacks T prime) : Prop :=
+  ∀ t, (∀ k, targetOwner n k ≠ t) →
+    Cover.Fallback.RecordPayload (fan (t.castAdd 2)) (fun _ => blank) 0 (out t) F
+
+theorem RestoredOwnerPayloads.source {T V : ℕ} {n : Fin 9} {fan : Fin (142081+2) ↪ Fin T}
+    {out : Fin 142081 → Fin V → ZMod 2} {F : Stacks T prime} (live : RestoredOwnerPayloads n fan out F)
+    (run : Fin 32 × Fin 5) (s : Fin 111) :
+    let src := ownerTape n run.1 run.2 (s.castLE (by decide))
+    Cover.Fallback.RecordPayload (fan (src.castAdd 2)) (fun _ => blank) 0 (out src) F := by
+  intro src
+  apply live
+  rintro ⟨p,t⟩
+  by_cases same : p = run
+  · subst p
+    apply (ownerTape_injective n run.1 run.2).ne
+    intro eq
+    have h := congrArg Fin.val eq
+    change 111+t.val = s.val at h
+    omega
+  · exact otherRunMissesPort n p run same _ _ (by change s.val < 222; omega)
+
+theorem RestoredOwnerPayloads.inactive {T V : ℕ} {n : Fin 9} {fan : Fin (142081+2) ↪ Fin T}
+    {out : Fin 142081 → Fin V → ZMod 2} {F : Stacks T prime} (live : RestoredOwnerPayloads n fan out F)
+    (ρ : Role) (off : ρ.bank.val / 2 ≠ BitHosting.activePair n.val) :
+    let tape := ((Fin.cast card_role) (Fintype.equivFin Role ρ)).castSucc
+    Cover.Fallback.RecordPayload (fan (tape.castAdd 2)) (fun _ => blank) 0 (out tape) F := by
+  intro tape
+  apply live
+  rintro ⟨p,t⟩ eq
+  have same := (Fintype.equivFin Role).injective (Fin.cast_injective _ (Fin.castSucc_injective _ eq))
+  apply off
+  change owner n p.1 p.2 (111+t.val) = ρ at same
+  rw [← same]
+  simp only [owner,show 111+t.val < 222 by omega,ite_true]
+  apply side_pair
+  unfold regSide
+  split <;> omega
+
 /-- Run the packed stage on its original tapes, then scan the restored owners.
 The additional shared tapes hold the three dimensions and arithmetic workspace. -/
 theorem packedStageTargets_host (n : Fin 9) :
@@ -490,11 +577,12 @@ theorem packedStageTargets_host (n : Fin 9) :
           (phaseRead owner x (finProdFinEquiv (b,j)) i)
         let dst := 111+k.2.val
         readAt blank L R ((FlatCoordinateLayout.index (AffineFieldCoordinates.embed s)
-          (finProdFinEquiv (b,j))).val-(D*K) : ℤ) = SparseRoleCircuit.encode
+          (finProdFinEquiv (b,j))).val : ℤ) = SparseRoleCircuit.encode
           (selectedFrame w (Frames.finalRefs dst) (initial dst + initial k.2.val) s)
     ∃ z F steps, Exec (fun g => embProg inner id (body g)) code (mk u S) steps (mk z F) ∧
-      steps ≤ time + (3000*order.length+200)*(D*(N*K)) ∧ z.user = u.user ∧
-      ∀ k, result k (F.L (bank k 1)) (F.R (bank k 1)) := by
+      steps ≤ time + (4300*order.length+200)*(D*(N*K)) ∧ z.user = u.user ∧
+      (∀ k, result k (F.L (bank k 1)) (F.R (bank k 1))) ∧
+      RestoredOwnerPayloads n (fan.trans inner) out F := by
   intro I order
   obtain ⟨states,chooseScan⟩ := stageTargets_host n
   refine ⟨states,?_⟩
@@ -528,7 +616,7 @@ theorem packedStageTargets_host (n : Fin 9) :
     rw [← view] at live
     exact live
   have headers (i : Fin 3) := (keep (i.castAdd 7)).2.trans (words i).2
-  obtain ⟨z,F,t,scanned,paid,saved,done,_⟩ := run w B W label x y out trace restore pos hb v' A'
+  obtain ⟨z,F,t,scanned,paid,saved,done,untouched⟩ := run w B W label x y out trace restore pos hb v' A'
     live' (headers 2) (headers 0) ((keep 3).2.trans (free 0))
     (fun i => (keep _).2.trans (by fin_cases i <;> first | exact free 2 | exact free 3 | exact free 4 | exact free 5 | exact free 6)) ((keep 4).2.trans (free 1))
     (fun i z => by
@@ -542,7 +630,19 @@ theorem packedStageTargets_host (n : Fin 9) :
       exact ⟨untouched.1.trans (empty k j).1,untouched.2.trans (empty k j).2⟩)
   have blocks : 0 < D := Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) hb
   have linear := stageScanCost_le order.length K N D pos (pow_pos Shared50ModularControl.prime_prime.pos _) blocks
-  exact ⟨z,F,_,Exec.seq placed scanned,Nat.add_le_add_left (paid.trans linear) time,
-    saved.trans (same.trans user),done⟩
+  refine ⟨z,F,_,Exec.seq placed scanned,Nat.add_le_add_left (paid.trans linear) time,
+    saved.trans (same.trans user),done,?_⟩
+  intro owner other z
+  let port := inner (fan (owner.castAdd 2))
+  have outside (k : I) (i : Fin 8) : bank k i ≠ port := by
+    refine Fin.cases ?_ (fun j eq => ?_) i
+    · exact inner.injective.ne (fan.injective.ne ((Fin.castAddEmb 2).injective.ne (other k)))
+    · have h := congrArg Fin.val eq
+      change T+14+_ = (fan (owner.castAdd 2)).val at h
+      omega
+  obtain ⟨hl,hr⟩ := untouched port outside
+  change readAt blank (F.L port) (F.R port) _ = _
+  rw [hl,hr]
+  exact fanPayload live' owner z
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
