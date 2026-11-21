@@ -1062,24 +1062,33 @@ theorem InvocationEffect.targetRead_of_support {n : Fin 9} {r : Fin 32} {d : Fin
   exact congrArg (selectedFrame w (Frames.finalRefs i.val))
     ((congrArg (initial g i.val + initial g t.val + ·) correction).trans (add_zero _))
 
-/-- A replicated input stream on live cover labels stays replicated through
-one complete invocation. Singular padding is arbitrary, since the relative
-charts in each COPY window preserve invertibility. -/
-theorem InvocationEffect.liveEndpoint {n : Fin 9} {r : Fin 32} {d : Fin 5}
+private theorem registerChart_gram (w : ℕ) (n : Fin 9) (a b : ℕ)
+    (g : Matrix (Fin 64) (Fin 64) (ZMod (prime^w))) :
+    let h := g*(registerChart w n a).transpose*registerChart w n b
+    h*h.transpose = g*g.transpose := by
+  intro h
+  simp only [h,Matrix.transpose_mul,Matrix.transpose_transpose]
+  rw [Matrix.mul_assoc,← Matrix.mul_assoc (registerChart w n b),
+    mul_eq_one_comm.mp (registerChart_inverse w n b),Matrix.one_mul,
+    Matrix.mul_assoc,← Matrix.mul_assoc (registerChart w n a).transpose,
+    registerChart_inverse,Matrix.one_mul]
+
+/-- Each live Gram class may carry its own independent dirty register bank. -/
+theorem InvocationEffect.gramEndpoint {n : Fin 9} {r : Fin 32} {d : Fin 5}
     {w B K : ℕ} {x y} (act : InvocationEffect n r d w B K x y)
     (z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B)
     (stored : Fin 661 → AddressStream (ZMod (prime^w))) :
     let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n r d,ownerTape_injective n r d⟩
-    (∀ h, IsUnit h → ∀ j : Fin 661, phaseRead owner x (labelSpectator h z) j.val =
+    ∀ g : Cover.LabelPadding.Label 64 w, IsUnit g → (∀ h, IsUnit h → h*h.transpose = g*g.transpose → ∀ j : Fin 661, phaseRead owner x (labelSpectator h z) j.val =
       selectedFrame w (Frames.initialRefs j.val) (stored j)) →
-    ∀ g, IsUnit g → ∀ i : Fin 661, phaseRead owner y (labelSpectator g z) i.val =
+    ∀ i : Fin 661, phaseRead owner y (labelSpectator g z) i.val =
       selectedFrame w (Frames.finalRefs i.val)
         (if hit : 111 ≤ i.val ∧ i.val < 222 then stored i + stored ⟨i.val-111,by omega⟩ else stored i) := by
-  intro owner input g live i
+  intro owner g live input i
   let initial := fun h => FramedCircuit.decode (fun j => selectedFrame w (Frames.snapshot Frames.initialRefs j))
     (phaseRead owner x (labelSpectator h z))
-  have decode (h) (unit : IsUnit h) (j : Fin 661) : initial h j.val = stored j := by
-    simp only [initial,FramedCircuit.decode,Frames.snapshot,ite_eq_left j.isLt,input h unit j,
+  have decode (h) (unit : IsUnit h) (gram : h*h.transpose = g*g.transpose) (j : Fin 661) : initial h j.val = stored j := by
+    simp only [initial,FramedCircuit.decode,Frames.snapshot,ite_eq_left j.isLt,input h unit gram j,
       LinearEquiv.symm_apply_apply]
   by_cases hit : 111 ≤ i.val ∧ i.val < 222
   · let t : Fin 111 := ⟨i.val-111,by omega⟩
@@ -1094,13 +1103,129 @@ theorem InvocationEffect.liveEndpoint {n : Fin 9} {r : Fin 32} {d : Fin 5}
         initial (g*(registerChart w n target.val).transpose*registerChart w n l.source) k.val = initial g k.val := by
       have unit (j : ℕ) := isUnit_iff_exists_inv.mpr ⟨_,registerChart_inverse w n j⟩
       have back := isUnit_iff_exists_inv.mpr ⟨_,mul_eq_one_comm.mp (registerChart_inverse w n l.source)⟩
-      exact (decode _ ((live.mul (unit target.val)).mul back) k).trans (decode g live k).symm
+      exact (decode _ ((live.mul (unit target.val)).mul back) (registerChart_gram _ _ _ _ _) k).trans (decode g live rfl k).symm
     have read := eq compatible
     change phaseRead owner y (labelSpectator g z) target.val = selectedFrame w (Frames.finalRefs target.val)
       (initial g target.val + initial g t.val) at read
-    rw [same,decode g live i,decode g live (⟨t.val,by omega⟩ : Fin 661)] at read
+    rw [same,decode g live rfl i,decode g live rfl (⟨t.val,by omega⟩ : Fin 661)] at read
     simpa only [dite_eq_left hit] using read
-  · rw [dite_eq_right hit,act.otherRead g z i (by omega),input g live i,LinearEquiv.symm_apply_apply]
+  · rw [dite_eq_right hit,act.otherRead g z i (by omega),input g live rfl i,LinearEquiv.symm_apply_apply]
+
+/-- A replicated input stream on live cover labels stays replicated through
+one complete invocation. Singular padding is arbitrary, since the relative
+charts in each COPY window preserve invertibility. -/
+theorem InvocationEffect.liveEndpoint {n : Fin 9} {r : Fin 32} {d : Fin 5}
+    {w B K : ℕ} {x y} (act : InvocationEffect n r d w B K x y)
+    (z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B)
+    (stored : Fin 661 → AddressStream (ZMod (prime^w))) :
+    let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n r d,ownerTape_injective n r d⟩
+    (∀ h, IsUnit h → ∀ j : Fin 661, phaseRead owner x (labelSpectator h z) j.val =
+      selectedFrame w (Frames.initialRefs j.val) (stored j)) →
+    ∀ g, IsUnit g → ∀ i : Fin 661, phaseRead owner y (labelSpectator g z) i.val =
+      selectedFrame w (Frames.finalRefs i.val)
+        (if hit : 111 ≤ i.val ∧ i.val < 222 then stored i + stored ⟨i.val-111,by omega⟩ else stored i) := by
+  intro owner input g live
+  exact act.gramEndpoint z stored g live (fun h unit _ => input h unit)
+
+/-- Each relative COPY chart is orthogonal, so it preserves the row Gram
+matrix of a live label. Every union of Gram classes therefore has its
+own aggregate endpoint, including the full set of live labels. -/
+theorem InvocationEffect.targetRead_sum {n : Fin 9} {r : Fin 32} {d : Fin 5}
+    {w B K : ℕ} {x y} (act : InvocationEffect n r d w B K x y)
+    (z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B) (t : Fin 111) :
+    let R := Matrix (Fin 64) (Fin 64) (ZMod (prime^w))
+    ∀ keep : R → Bool,
+    let Labels := {g : Rˣ // keep (g.val*g.val.transpose) = true}
+    let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n r d,ownerTape_injective n r d⟩
+    let initial := fun h => FramedCircuit.decode (fun j => selectedFrame w (Frames.snapshot Frames.initialRefs j))
+      (phaseRead owner x (labelSpectator h z))
+    let i : Fin 661 := ⟨111+t.val,by omega⟩
+    (∑ g : Labels, phaseRead owner y (labelSpectator g.val.val z) i.val) =
+      selectedFrame w (Frames.finalRefs i.val)
+        ((∑ g : Labels, initial g.val.val i.val) + ∑ g : Labels, initial g.val.val t.val) := by
+  classical
+  intro R keep Labels owner initial i
+  let prep := fun h => FramedCircuit.moduleRun ((sectionD++sectionA).map RawGate.toCircuit) (initial h)
+  let windows := Copy.lifecycles.filter (fun l => i.val ∈ l.targets)
+  let diff := fun (l : Copy.Lifecycle) (g : Labels) =>
+    prep (g.val.val*(registerChart w n i.val).transpose*registerChart w n l.source) l.source - prep g.val.val l.source
+  have cancel (l : Copy.Lifecycle) : ∑ g : Labels, diff l g = 0 := by
+    let chart (j : ℕ) : Rˣ := ⟨registerChart w n j,(registerChart w n j).transpose,
+      mul_eq_one_comm.mp (registerChart_inverse w n j),registerChart_inverse w n j⟩
+    let route := (chart i.val)⁻¹ * chart l.source
+    have gram (g : Rˣ) : (g*route).val*(g*route).val.transpose = g.val*g.val.transpose := by
+      change (g.val*((registerChart w n i.val).transpose*registerChart w n l.source))*
+        (g.val*((registerChart w n i.val).transpose*registerChart w n l.source)).transpose = _
+      rw [← Matrix.mul_assoc]
+      exact registerChart_gram _ _ _ _ _
+    let permute : Labels ≃ Labels := (Equiv.mulRight route).subtypeEquiv (fun g => by
+      change keep (g.val*g.val.transpose) = true ↔ keep ((g*route).val*(g*route).val.transpose) = true
+      rw [gram])
+    have perm := Equiv.sum_comp permute (fun g : Labels => prep g.val.val l.source)
+    unfold diff
+    rw [Finset.sum_sub_distrib,sub_eq_zero]
+    change (∑ g : Labels, prep (g.val.val*((registerChart w n i.val).transpose*registerChart w n l.source)) l.source) = _ at perm
+    calc
+      _ = ∑ g : Labels, prep (g.val.val*((registerChart w n i.val).transpose*registerChart w n l.source)) l.source := by
+        apply Finset.sum_congr rfl
+        intro g _
+        rw [Matrix.mul_assoc]
+      _ = _ := perm
+  have allWindows (ls : List Copy.Lifecycle) :
+      (∑ g : Labels, (ls.map (fun l => diff l g)).sum) = 0 := by
+    induction ls with
+    | nil => simp
+    | cons l ls ih => simp only [List.map_cons,List.sum_cons,Finset.sum_add_distrib,cancel,ih,add_zero]
+  have atLabel (g : Labels) := act.targetRead g.val.val z t
+  calc
+    _ = ∑ g : Labels, selectedFrame w (Frames.finalRefs i.val)
+        (initial g.val.val i.val + initial g.val.val t.val + (windows.map (fun l => diff l g)).sum) :=
+      Finset.sum_congr rfl (fun g _ => atLabel g)
+    _ = _ := by rw [← map_sum,Finset.sum_add_distrib,Finset.sum_add_distrib,allWindows,add_zero]
+
+/-- On each permanent tape the active stream at a live label agrees with
+the identity-label stream at the same block and spectator. -/
+def LiveReplicated {w B K : ℕ}
+    (x : Fin 142081 → Fin ((prime^w)^16*(B*prime^(64*(w*64))*K)) → ZMod 2) : Prop :=
+  ∀ i, i ≠ Fin.last 142080 → ∀ g, IsUnit g →
+    ∀ (z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B) (s : Swap.Shear.State (Fin 8) (ZMod (prime^w))),
+      x i (FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) (labelSpectator g z)) =
+      x i (FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) (labelSpectator 1 z))
+
+theorem InvocationEffect.liveReplicated {n : Fin 9} {r : Fin 32} {d : Fin 5} {w B K : ℕ} {x y}
+    (act : InvocationEffect n r d w B K x y) (input : LiveReplicated (w := w) (B := B) (K := K) x) :
+    LiveReplicated (w := w) (B := B) (K := K) y := by
+  intro i permanent g live z s
+  let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n r d,ownerTape_injective n r d⟩
+  by_cases owned : ∃ j, owner j = i
+  · obtain ⟨j,rfl⟩ := owned
+    let stored := fun k : Fin 661 => (selectedFrame w (Frames.initialRefs k.val)).symm
+      (phaseRead owner x (labelSpectator 1 z) k.val)
+    have read := act.liveEndpoint z stored
+    have encoded (h) (unit : IsUnit h) (k : Fin 661) : phaseRead owner x (labelSpectator h z) k.val =
+        selectedFrame w (Frames.initialRefs k.val) (stored k) := by
+      rw [show selectedFrame w (Frames.initialRefs k.val) (stored k) = _ from
+        (selectedFrame w (Frames.initialRefs k.val)).apply_symm_apply _]
+      funext a
+      simpa only [phaseRead,Copy.extendStored,dite_eq_left k.isLt] using
+        input (owner k) (Fin.castSucc_ne_last _) h unit z a
+    have same := (read encoded g live j).trans (read encoded 1 isUnit_one j).symm
+    simpa only [phaseRead,Copy.extendStored,dite_eq_left j.isLt] using congrFun same s
+  · rw [act.2 i permanent (fun j eq => owned ⟨j,eq⟩)]
+    exact input i permanent g live z s
+
+/-- Replication is inherited by each successive class run, including when
+different invocations use the same permanent tape for helpers. -/
+theorem stageTrace_liveReplicated {n : Fin 9} {w B K : ℕ} {x out}
+    (trace : stageRuns.foldr (fun k next a => ∃ b, InvocationEffect n k.1 k.2 w B K a b ∧ next b)
+      (fun a => a = out) x) (input : LiveReplicated (w := w) (B := B) (K := K) x) :
+    LiveReplicated (w := w) (B := B) (K := K) out := by
+  generalize stageRuns = order at trace
+  induction order generalizing x with
+  | nil => exact trace ▸ input
+  | cons k rest ih =>
+    obtain ⟨y,run,tail⟩ := trace
+    exact ih (run.liveReplicated input) tail
 
 /-- Source and helper reads agree whenever their input label agrees. -/
 theorem InvocationEffect.otherRead_congr {n : Fin 9} {r : Fin 32} {d : Fin 5}
