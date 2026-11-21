@@ -15,6 +15,66 @@ local instance (w : ℕ) : NeZero (prime^(w+1)) := ⟨(pow_pos Shared50ModularCo
 /-- The outgoing scan reads these four words beginning at their saved positions. -/
 def replaySlots : Fin 4 ↪ Fin 66 := ⟨![46,47,57,56],by decide⟩
 
+/-- Charge the archive, one prefix-width word and both selector masks. -/
+def directoryReplayTime (m w records width tail : ℕ) : ℕ :=
+  6*(records*(width+(w+1)*(m*m))+tail+width+2*records)+25
+
+/-- At width 64 the archive and its two masks cost at most thirty steps per
+payload cell, plus the inherited archive tail and the fixed copy instructions. -/
+theorem directoryReplayTime_volume (w R W width tail : ℕ) (rows : 0 < R) (positive : 0 < W) :
+    let M := prime^(w+1)
+    let N := M^128*W
+    width ≤ N → directoryReplayTime 64 w R width tail ≤ 30*(R*N)+6*tail+25 := by
+  intro M N fits
+  have radix : 2 ≤ M := (Shared50ModularControl.prime_prime.two_le).trans
+    (Nat.le_self_pow (by omega : w+1 ≠ 0) prime)
+  have ticks : w+1 ≤ M := Nat.le_of_lt (Nat.lt_pow_self Shared50ModularControl.prime_prime.one_lt)
+  have digits : (w+1)*(64*64) ≤ N := calc
+    _ ≤ M*M^12 := Nat.mul_le_mul ticks (by simpa using Nat.pow_le_pow_left radix 12)
+    _ = M^13 := by rw [show M^13 = M^12*M from pow_succ M 12,Nat.mul_comm]
+    _ ≤ M^128 := Nat.pow_le_pow_right (by omega) (by decide)
+    _ ≤ N := Nat.le_mul_of_pos_right _ positive
+  have nonzero : 0 < N := Nat.mul_pos (pow_pos (by omega : 0 < M) _) positive
+  have archive := Nat.mul_le_mul_left R (Nat.add_le_add fits digits)
+  have prefixWidth := fits.trans (Nat.le_mul_of_pos_left N rows)
+  have masks := Nat.le_mul_of_pos_right R nonzero
+  unfold directoryReplayTime
+  rw [Nat.mul_add R N N] at archive
+  omega
+
+/-- Replay, mask copying and restoration together charge the recursive child once. -/
+theorem directoryReturnTime_volume {R N tail replay child steps : ℕ} (positive : 0 < N)
+    (saved : replay ≤ 30*(R*N)+6*tail+25) (returned : steps ≤ child+R*(16*N+14)+12) :
+    replay+(12*R+12)+steps ≤ child+72*(R*N)+6*tail+49 := by
+  have rows := Nat.le_mul_of_pos_right R positive
+  rw [show R*(16*N+14) = 16*(R*N)+14*R by ring] at returned
+  omega
+
+theorem directoryReplayTime_eq {K m w W H J R : ℕ} {v : RecursiveInterchangeLayout.Descriptor}
+    {proj : Matrix (Fin m) (Fin m) ℚ} {weights : Fin m → ZMod (prime^(w+1))}
+    {prefixes : ℕ → List (Fin (prime+4))} {tail : List (Fin (prime+4))}
+    {schedule : List ℕ → List (Fin (prime+4))} (S : Stacks (66+K) prime)
+    (ready : DirectoryReady v proj w W H J weights prefixes tail schedule S (List.range R))
+    (positive : 0 < R) :
+    let caller := Fin.castAddEmb (n := 66) K
+    (S.R (caller 57)).length = R → (S.R (caller 56)).length = R →
+    ((List.finRange 4).map (fun j => 6*(S.R (caller (replaySlots j))).length+6)).sum+1 =
+      directoryReplayTime m w R (prefixes 0).length tail.length := by
+  intro caller live bad
+  have width := ready.2.1 0 (List.mem_range.mpr positive)
+  have archive : ((List.range R).flatMap (LabelDirectory.entry prefixes m (w+1))).length =
+      R*((prefixes 0).length+(w+1)*(m*m)) := by
+    rw [List.flatMap_def,BlockRotationData.uniform_volume ((prefixes 0).length+(w+1)*(m*m))]
+    · simp
+    · intro xs hx
+      obtain ⟨j,hj,rfl⟩ := List.mem_map.mp hx
+      rw [LabelDirectory.entry_length,← ready.2.1 j hj,width]
+  change (6*(S.R (caller 46)).length+6)+((6*(S.R (caller 47)).length+6)+
+    ((6*(S.R (caller 57)).length+6)+((6*(S.R (caller 56)).length+6)+0)))+1 = _
+  rw [ready.1,List.length_append,archive,width,live,bad]
+  unfold directoryReplayTime
+  omega
+
 noncomputable def replayRole {n : ℕ} (slots : Fin 4 ↪ Fin n) (i : Fin n) : Option (Fin 4) :=
   if h : ∃ j, slots j = i then some h.choose else none
 
