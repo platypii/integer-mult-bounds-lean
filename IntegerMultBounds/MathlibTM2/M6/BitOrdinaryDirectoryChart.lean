@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.M6.BitCopyRecordSetup
 public import IntegerMultBounds.MathlibTM2.M6.BitOrdinaryDirectoryWidth
 public import IntegerMultBounds.MathlibTM2.M6.BitOrdinaryDirectoryLeaf
 public import IntegerMultBounds.MathlibTM2.M6.BitOrdinaryGeneratedScan
@@ -424,7 +425,7 @@ theorem prepareStoppedChart_exec {K T Q : ℕ} {P U : Type}
     (∀ j, S.L (stoppedChartPrivate K T j) = [] ∧ S.R (stoppedChartPrivate K T j) = []) →
     ∃ z F n, z.user = u.user ∧ n ≤ 63*LabelMask.records parent+31 ∧
       Exec body (embProg place Empty.elim (IntervalDescriptor.directoryOuterHeaders bank)) (mk u S) n (mk z F) ∧
-      StoppedChartReady K T batch F ∧
+      F.L = S.L ∧ StoppedChartReady K T batch F ∧
       ∀ j, (∀ i : Fin 3, j ≠ stoppedChartHeader K T (i.castAdd 3)) → F.L j = S.L j ∧ F.R j = S.R j := by
   intro place bank values row batch src empty tail free
   let outer := ((Fin.natAddEmb (m := 3) 3).trans (Fin.castAddEmb 6)).trans bank
@@ -458,7 +459,13 @@ theorem prepareStoppedChart_exec {K T Q : ℕ} {P U : Type}
       change (if 3+j.val < 3 then _ else _) = (if i.val < 3 then _ else _) at h
       split_ifs at h <;> omega
   have allWords := headers D inner (fun _ => rfl) tailWords
-  refine ⟨z,F,n,same.trans user,paid,installed,⟨?_,?_⟩,stable⟩
+  refine ⟨z,F,n,same.trans user,paid,installed,?_,⟨?_,?_⟩,stable⟩
+  · funext j
+    by_cases inside : ∃ l, place l = j
+    · obtain ⟨l,rfl⟩ := inside
+      rw [← view] at left
+      exact congrFun left l
+    · exact (off j (fun l eq => inside ⟨l,eq⟩)).1
   · intro j
     rw [← view] at allWords
     induction j using Fin.addCases (m := 3) (n := 3) with
@@ -506,6 +513,200 @@ theorem directoryChartHost_stopped_exec [M8.Machine.Net] (K : ℕ) {P U : Type}
     positive (fun j => stoppedChartBank_header K T j ▸ prepared.1 j)
     (fun j => stoppedChartBank_private K T j ▸ prepared.2 j) input
   exact ⟨y,B,k,user,Nat.le_floor paid,run,out,frame⟩
+
+private theorem retireChartHeaders_exec {T Q N : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
+    (owner : Fin T) (saved : Fin 3 → Fin T) (inject : Function.Injective saved)
+    (apart : ∀ j, saved j ≠ owner) (headers : Fin 3 → List Bool) (word : Fin N → ZMod 2)
+    (v : HS T Q prime U) (S B : Stacks T prime)
+    (initial : ∀ j, S.R (saved j) = []) (words : ∀ j, B.R (saved j) = (headers j).map bitSymbol)
+    (left : ∀ j, j ≠ owner → B.L j = S.L j)
+    (right : ∀ j, j ≠ owner → (∀ l, j ≠ saved l) → B.R j = S.R j)
+    (out : RecordPayload owner (fun _ => blank) 0 word B) :
+    let scratch := (List.finRange 3).map saved
+    let charge := ((List.finRange 3).map fun j => 2*(headers j).length+2).sum+1
+    ∃ last G, last.user = v.user ∧ Exec body (Prog.seqList (scratch.map WordCmd.dropR)) (mk v B) charge (mk last G) ∧
+      RecordPayload owner (fun _ => blank) 0 word G ∧ ∀ j, j ≠ owner → G.L j = S.L j ∧ G.R j = S.R j := by
+  intro scratch charge
+  obtain ⟨last,G,same,erase,keepLeft,keepRight⟩ := retire_exec body scratch ((List.nodup_finRange _).map inject) v B
+  have time : (scratch.map fun j => 2*(B.R j).length+2).sum+1 = charge := by
+    simp only [scratch,charge,List.map_map,Function.comp_def,words,List.length_map]
+  have outside : owner ∉ scratch := by
+    intro mem
+    obtain ⟨j,_,eq⟩ := List.mem_map.mp mem
+    exact apart j eq
+  refine ⟨last,G,same,time ▸ erase,?_,?_⟩
+  · intro t
+    change readAt blank (G.L owner) (G.R owner) (t-0) = _
+    rw [keepLeft,keepRight,if_neg outside]
+    exact out t
+  · intro j ne
+    refine ⟨(congrFun keepLeft j).trans (left j ne),?_⟩
+    rw [keepRight]
+    split_ifs with mem
+    · obtain ⟨l,_,rfl⟩ := List.mem_map.mp mem
+      exact (initial l).symm
+    · exact right j ne (fun l eq => mem (List.mem_map.mpr ⟨l,List.mem_finRange l,eq.symm⟩))
+
+private theorem leafRate_nonneg (tapes : ℕ) (rate : ℝ) :
+    0 ≤ (tapes+5 : ℕ)*|rate|+8+tapes*(16+8*|rate|) := by positivity
+
+private theorem stoppedDispatchCost_le {records erase header V b : ℕ} {C τ : ℝ}
+    (vol : 0 < V) (active : 0 < b) (count : records ≤ V) (cleanup : erase ≤ 19*V)
+    (copy : header ≤ 110*V) (rate : 0 ≤ C) (exponent : τ ≤ 1) :
+    (((63*records+31)+⌊(header : ℝ)+C*((V : ℝ)*((max 1 b : ℕ) : ℝ)^τ)⌋₊+erase : ℕ) : ℝ) ≤
+      ((223+C)*b)*V := by
+  have one : (1 : ℝ) ≤ b := by exact_mod_cast active
+  have power : (b : ℝ)^τ ≤ b := by simpa using Real.rpow_le_rpow_of_exponent_le one exponent
+  rw [max_eq_right active]
+  have floor := Nat.floor_le (show 0 ≤ (header : ℝ)+C*(V*(b : ℝ)^τ) by positivity)
+  have initial : ((63*records+31 : ℕ) : ℝ) ≤ 94*(V : ℝ) := by exact_mod_cast (by omega : 63*records+31 ≤ 94*V)
+  have headers : (header : ℝ) ≤ 110*(V : ℝ) := by exact_mod_cast copy
+  have finalCost : (erase : ℝ) ≤ 19*(V : ℝ) := by exact_mod_cast cleanup
+  have machine := mul_le_mul_of_nonneg_left (mul_le_mul_of_nonneg_left power (Nat.cast_nonneg V)) rate
+  have overhead := mul_le_mul_of_nonneg_left one (show 0 ≤ 223*(V : ℝ) by positivity)
+  push_cast at initial ⊢
+  linarith only [initial,headers,finalCost,floor,machine,overhead]
+
+open IntegerMultBounds.Networks.Certificates.PR589.Nine RecursiveInterchangeLayout in
+private theorem stoppedDispatch_linear [M8.Machine.Net] (node : Descriptor) (i : Fin nodeChildren5.length)
+    (lo hi w : ℕ) (aligned : node.width = 64*(w+1)) (rows : 142080 ∣ node.rows)
+    (rank : hi-lo = nodeChildren5[i.val]) (positive : 0 < volume prime node) :
+    let parent := role node 142080
+    let batch := ordinaryDirectoryChild parent (hi-lo) (64-(hi-lo)) w
+    let child := scheduledChild prime node i
+    let V := volume prime child
+    let C := (LeafCore.small+5 : ℕ)*|LeafCore.C|+8+LeafCore.small*(16+8*|LeafCore.C|)
+    let erase := ((List.finRange 3).map fun j => 2*(Routines.hdr batch (j.castAdd 3)).length+2).sum+1
+    (((63*LabelMask.records parent+31)+⌊(descriptorHeaderCost batch : ℝ)+C*((V : ℝ)*((max 1 child.width : ℕ) : ℝ)^M8.Machine.BudgetBound.tau)⌋₊+erase : ℕ) : ℝ) ≤
+      ((223+C)*child.width)*V := by
+  intro parent batch child V C erase
+  have shape := (scheduledDirectoryTranspose node i w aligned rows).1
+  rw [← rank] at shape
+  have size : volume prime batch = V := shape.volume
+  have weight := (scheduledChild_measures prime node ⟨w+1,aligned⟩ rows i).2
+  have pos : 0 < V := Nat.pos_of_mul_pos_right (weight.symm ▸ positive)
+  have batchPos := LeafCore.positive_of_volume (size.symm ▸ pos)
+  have split := (ordinaryDirectoryChild_volume parent (hi-lo) (64-(hi-lo)) w).trans size
+  have count : LabelMask.records parent ≤ V :=
+    (Nat.le_mul_of_pos_right _ (Nat.pos_of_mul_pos_left (split.symm ▸ pos))).trans_eq split
+  have nonzero := (nodeChildren5_bounds i).1
+  have active : 0 < child.width := by
+    rw [← shape.width]
+    exact Nat.mul_pos (Nat.succ_pos _) (rank.symm ▸ nonzero)
+  have length (j : Fin 3) : 2*(Routines.hdr batch (j.castAdd 3)).length+2 ≤ 4*V+2 := by
+    have h := RecursiveRowsNode.header_length batch batchPos _ (Routines.hdr_headers batch) (j.castAdd 3)
+    rw [size] at h
+    omega
+  have sum := List.sum_le_sum (l := List.finRange 3) (fun j _ => length j)
+  simp only [List.map_const',List.sum_replicate_nat,List.length_finRange] at sum
+  apply stoppedDispatchCost_le pos active count _ _ _ M8.Machine.BudgetBound.exponent_range.2.le
+  · dsimp only [erase]
+    omega
+  · rw [← size]
+    exact descriptorHeaderCost_le batch batchPos
+  · exact leafRate_nonneg LeafCore.small LeafCore.C
+
+open IntegerMultBounds.Networks.Certificates.PR589.Nine RecursiveInterchangeLayout in
+/-- Prepare the stopped branch in the replay bank and dispatch the chart child
+on the shared owner, then retire the three saved outer words. -/
+theorem dispatchStoppedChart_exec [M8.Machine.Net] (K : ℕ) {P U : Type}
+    (room : Record.size 127+(rowSwapBlock.tapes+35+2) ≤ (K+3+LeafCore.small)+1)
+    (localBody : P → Pr P (66+(K+3+LeafCore.small)) columnCapacity prime U)
+    (node : Descriptor) (i : Fin nodeChildren5.length) (lo hi w : ℕ)
+    (aligned : node.width = 64*(w+1)) (rows : 142080 ∣ node.rows) (rank : hi-lo = nodeChildren5[i.val]) :
+    let parent := role node 142080
+    let batch := ordinaryDirectoryChild parent (hi-lo) (64-(hi-lo)) w
+    let row := remainderRecordChild lo hi (w+1) (parent.between*parent.afterD)
+    let scheduled := scheduledChild prime node i
+    let T := LeafCore.small
+    let tapes := 66+((K+3+T)+1)
+    let owner := (0 : Fin 5).natAdd (tapes+10)
+    let host := directoryChartHost room localBody (stoppedChartChild K)
+    let replay := directoryChartReplayBank room
+    let place := Fin.castLEEmb (show (66+K)+3 ≤ 66+(K+3+T) by omega)
+    let bank := directoryOuterHeaderBank K
+    let values : Fin 3 → ℕ := ![parent.beforeRows,parent.rows,parent.beforeH]
+    let saved := fun j : Fin 3 => replay (stoppedChartHeader K T (j.castAdd 3))
+    let scratch := (List.finRange 3).map saved
+    ∀ (a : HS ((tapes+10)+5) columnCapacity prime U) (A : Stacks ((tapes+10)+5) prime)
+      (x : Fin (volume prime batch) → ZMod 2), 0 < volume prime node →
+      (∀ j : Fin 3, (A.R (replay (place (bank (j.castAdd 9))))).length = values j) →
+      (∀ j : Fin 12, 3 ≤ j.val → A.R (replay (place (bank j))) = []) →
+      (∀ j : Fin 3, A.R (replay (stoppedChartHeader K T (j.natAdd 3))) = (Routines.hdr row (j.natAdd 3)).map bitSymbol) →
+      (∀ j, A.L (replay (stoppedChartPrivate K T j)) = [] ∧ A.R (replay (stoppedChartPrivate K T j)) = []) →
+      RecordPayload owner (fun _ => blank) 0 x A →
+      ∃ y B, ∃ k : ℕ, y.user = a.user ∧ (k : ℝ) ≤ ((223+((T+5 : ℕ)*|LeafCore.C|+8+T*(16+8*|LeafCore.C|)))*scheduled.width)*volume prime scheduled ∧
+        Exec host (((embProg replay Empty.elim (embProg place Empty.elim (IntervalDescriptor.directoryOuterHeaders bank))).seq
+          (host (.inr (.inr ())))).seq (Prog.seqList (scratch.map WordCmd.dropR))) (mk a A) k (mk y B) ∧
+        RecordPayload owner (fun _ => blank) 0 (Shared50RecursiveNodeRows.transpose (one_dvd batch.rows) x) B ∧
+        ∀ j, j ≠ owner → B.L j = A.L j ∧ B.R j = A.R j := by
+  intro parent batch row scheduled T tapes owner host replay place bank values saved scratch a A x positive src empty tail free payload
+  let eraseCost := ((List.finRange 3).map fun j => 2*(Routines.hdr batch (j.castAdd 3)).length+2).sum+1
+  let price := (descriptorHeaderCost batch : ℝ) +
+      ((T+5 : ℕ)*|LeafCore.C|+8+T*(16+8*|LeafCore.C|))*
+      ((volume prime scheduled : ℝ)*((max 1 scheduled.width : ℕ) : ℝ)^M8.Machine.BudgetBound.tau)
+  have hp := RecursiveRowsNodeLayout.role_positive 142080 node (by decide)
+    (LeafCore.positive_of_volume positive) rows
+  obtain ⟨v,D,n,user,paid,prep,left,ready,stable⟩ := prepareStoppedChart_exec (K := K) (T := T)
+    (P := Empty) Empty.elim parent hp lo hi w (embDn replay a) (embStk replay A) src empty tail free
+  obtain ⟨z,F,placed,_,same,view,off⟩ := exec_emb (body' := host) (ι := Empty.elim)
+    replay.injective (fun f => nomatch f) prep a rfl A rfl
+  have apart (j) : replay j ≠ owner := by
+    have sep := directoryReplay_owner_ne (directoryOrdinaryBank room) (directoryChartPlacement tapes)
+      (replaySlots.trans (Fin.castAddEmb (K+3+T))) ((Fin.castLEEmb (by decide : 4 ≤ 6)).trans (directoryChartReplay tapes))
+      (fun i j => directoryChartPlacement_ne_work i _) j (0 : Fin 5)
+    rw [directoryChartPlacement_owner] at sep
+    exact sep
+  have ownerKept := off owner apart
+  have input : RecordPayload owner (fun _ => blank) 0 x F := by
+    intro t
+    change readAt blank (F.L owner) (F.R owner) (t-0) = _
+    rw [ownerKept.1,ownerKept.2]
+    exact payload t
+  have call := directoryChartHost_stopped_exec K room localBody node i w aligned rows z F
+  rw [← rank] at call
+  rw [← view] at left ready stable
+  obtain ⟨y,B,k,finish,time,run,out,frame⟩ := call x positive ready input
+  simp only [embDn] at user
+  have inject : Function.Injective saved := by
+    intro l j eq
+    have h := congrArg Fin.val (replay.injective eq)
+    change (if l.val < 3 then 66+K+l.val else 33+l.val) =
+      (if j.val < 3 then 66+K+j.val else 33+j.val) at h
+    apply Fin.ext
+    split_ifs at h <;> omega
+  have initial (j : Fin 3) : A.R (saved j) = [] := by
+    have eq : stoppedChartHeader K T (j.castAdd 3) = place (bank ((j.natAdd 3).castAdd 6)) := by
+      apply Fin.ext
+      change (if j.val < 3 then 66+K+j.val else 33+j.val) =
+        (if 3+j.val < 3 then 29+(3+j.val) else if 3+j.val < 6 then 66+K+(3+j.val-3) else 58+(3+j.val-6))
+      split_ifs <;> omega
+    change A.R (replay (stoppedChartHeader K T (j.castAdd 3))) = []
+    rw [eq]
+    exact empty _ (by change 3 ≤ 3+j.val; omega)
+  have words (j : Fin 3) : B.R (saved j) = (Routines.hdr batch (j.castAdd 3)).map bitSymbol :=
+    (frame (saved j) (apart (stoppedChartHeader K T (j.castAdd 3)))).2.trans (ready.1 (j.castAdd 3))
+  obtain ⟨last,G,finalUser,erase,output,restored⟩ := retireChartHeaders_exec host owner saved inject
+    (fun j => apart (stoppedChartHeader K T (j.castAdd 3))) (fun j => Routines.hdr batch (j.castAdd 3))
+    (Shared50RecursiveNodeRows.transpose (one_dvd batch.rows) x) y A B initial words (by
+      intro j ne
+      apply (frame j ne).1.trans
+      by_cases inside : ∃ l, replay l = j
+      · obtain ⟨l,rfl⟩ := inside
+        exact congrFun left l
+      · exact (off j (fun l eq => inside ⟨l,eq⟩)).1) (by
+      intro j ne outer
+      apply (frame j ne).2.trans
+      by_cases inside : ∃ l, replay l = j
+      · obtain ⟨l,rfl⟩ := inside
+        exact (stable l (fun j eq => outer j (congrArg replay eq))).2
+      · exact (off j (fun l eq => inside ⟨l,eq⟩)).2) out
+  have bound : (n+k)+eraseCost ≤ (63*LabelMask.records parent+31)+⌊price⌋₊+eraseCost :=
+    Nat.add_le_add_right (Nat.add_le_add paid time) _
+  refine ⟨last,G,(n+k)+eraseCost,finalUser.trans (finish.trans (same.trans user)),?_,
+    Exec.seq (Exec.seq placed run) erase,output,restored⟩
+  exact ((Nat.cast_le (α := ℝ)).mpr bound).trans
+    (stoppedDispatch_linear node i lo hi w aligned rows rank positive)
 
 /-- The initialized directory leaves the four mask work tapes and six replay
 tapes free. Only the two selector ports overlap the scanner's own bank. -/

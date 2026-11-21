@@ -321,7 +321,7 @@ theorem copyCallerSetup_exec {P U : Type} {t T Q : ℕ} (body : P → Pr P T Q p
     · simpa [D, Function.update_of_ne eq] using r
 
 /-- Retire a list of distinct right stacks, paying for each stored symbol once. -/
-private theorem retire_exec {P U : Type} {T Q A : ℕ} (body : P → Pr P T Q A U)
+theorem retire_exec {P U : Type} {T Q A : ℕ} (body : P → Pr P T Q A U)
     (ports : List (Fin T)) (unique : ports.Nodup) (v : HS T Q A U) (S : Stacks T A) :
     ∃ u F, u.user = v.user ∧ Exec body (Prog.seqList (ports.map WordCmd.dropR)) (mk v S)
       ((ports.map (fun j => 2*(S.R j).length+2)).sum+1) (mk u F) ∧ F.L = S.L ∧
