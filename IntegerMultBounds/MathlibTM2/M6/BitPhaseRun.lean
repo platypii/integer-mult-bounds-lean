@@ -738,6 +738,88 @@ private theorem flatCopyStage {k V : ℕ} {v : Descriptor} (size : volume prime 
   rw [same]
   exact ⟨stage,bill,acts⟩
 
+open Cover M8.RevMachine in
+private theorem ownerLabelRead {w B K : ℕ} (G : LabelPadding.Label 64 w)
+    (z : LabelEntry.Cell (copyLabelLayout w B K) B) (s : Swap.Shear.State (Fin 8) (ZMod (prime^w)))
+    (a : Fin ((prime^w)^16*(B*prime^(64*(w*64))*K)) → ZMod 2) :
+    chartRead (fun i => a (i.cast (copyLabel_volume w B K))) G {z with a := copyActive s} =
+      a (FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) (labelSpectator G z)) := by
+  let j := labelSpectator G z
+  let idx := FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) j
+  have val : idx.val = (copyActive s).val*(B*prime^(64*(w*64))*K)+j.val :=
+    FlatCoordinateLayout.index_val _ _
+  rw [copyLabel_read]
+  change ext (fun i => a (i.cast _)) ((copyActive s).val*(B*prime^(64*(w*64))*K)+j.val) = _
+  rw [← val,ext_cast,ext_apply]
+
+open Cover RecursiveInterchangeLayout M8.RevMachine in
+/-- The direct helper-chart transition on a permanent physical owner. It
+moves the label inside the spectator record, preserving every active field
+and all words on the other owners. -/
+theorem helperWindow_ownerStage [M8.Machine.Net] {T : ℕ} (io : Fin T)
+    (n m : Fin 9) (h k : Fin 439) :
+    ∃ C : ℕ, ∀ w B K : ℕ, 0 < w → 0 < B → 0 < K →
+      let W := B*prime^(64*(w*64))*K
+      let V := (prime^w)^16*W
+      ∃ stage : SharedBankStage.Stage _ T prime (phaseOwners (N := V)),
+        stage.cost ≤ C*V + 63*LeafCore.coreCost V (w*64) ∧
+        ∀ x, (∀ t, t ≠ io → stage.transform x t = x t) ∧
+        ∀ (g : LabelPadding.Label 64 w) (z : LabelEntry.Cell (copyLabelLayout w B K) B)
+          (s : Swap.Shear.State (Fin 8) (ZMod (prime^w))),
+          let addr := fun j => FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) j
+          stage.transform x io (addr (labelSpectator (g*(registerChart w m (222+k.val)).transpose) z)) =
+            x io (addr (labelSpectator (g*(registerChart w n (222+h.val)).transpose) z)) := by
+  classical
+  obtain ⟨block,C,leading,run⟩ := helperWindowTransition io n m h k
+  refine ⟨C,?_⟩
+  intro w B K hw hB hK W V
+  let v := copyLabelLayout w B K
+  have size : volume prime v = V := copyLabel_volume w B K
+  have positive : v.Positive := by
+    have hp := Shared50ModularControl.prime_prime.pos
+    simp only [v,Descriptor.Positive,copyLabelLayout]
+    exact ⟨by positivity,by decide,by positivity,by decide,hK⟩
+  let d := M8.Stage2Machine.Straight.words (LabelSchedule.base v w)
+  let result := fun x : Fin T → Fin (volume prime v) → ZMod 2 =>
+    run v w B hw hB rfl positive (copyOwners x) (x io) rfl rfl
+  let next := fun x => Function.update x io (result x).choose
+  let bank := fun x : Fin T → Fin (volume prime v) → ZMod 2 => SharedBankStageInput.raw (LabelCall.bank (copyOwners (v := v) x) v d) block.tapes
+  let slots := fun i : Fin T => block.slots (Fin.castAdd 24 i)
+  let routed : SharedBankStage.Stage _ T prime (copyOwners (v := v)) := {
+    tapes := block.tapes, states := block.states, program := block.program, transform := next,
+    input := bank, output := fun x => bank (next x), slots := slots,
+    slots_injective := block.slots_injective.comp (Fin.castAdd_injective T 24),
+    metadata := SharedBank.strip (bank 0) slots, cost := C*volume prime v + 63*LeafCore.coreCost (volume prime v) (w*64),
+    input_payload := fun x => copyRoute_payload block leading _ v d,
+    output_payload := fun x => copyRoute_payload block leading _ v d,
+    strip_input := fun x => routePrivate block leading _ _ v d,
+    realizes := fun x => by
+      have step := (result x).choose_spec.2
+      have updated : SharedPlacementAlphabet.setTape (copyOwners x) io
+          (M8.Machine.ArbitraryWidthHighExchangeShared.sourceWord (result x).choose) 0 = copyOwners (next x) := by
+        apply congrArg₂ Tapes.mk <;> funext t <;> by_cases eqn : t = io <;> simp [copyOwners,next,eqn]
+      rw [updated] at step
+      exact step }
+  let effect := fun (a b : Fin T → Fin (volume prime v) → ZMod 2) =>
+    (∀ t, t ≠ io → b t = a t) ∧ ∀ g : LabelPadding.Label 64 w,
+      chartRead (B := B) (b io) (g*(registerChart w m (222+k.val)).transpose) =
+      chartRead (a io) (g*(registerChart w n (222+h.val)).transpose)
+  obtain ⟨stage,bill,acts⟩ := flatCopyStage size effect routed.cost routed (fun x =>
+    ⟨fun t off => Function.update_of_ne off _ _,by
+      change ∀ g, chartRead (B := B) (next x io) _ = _
+      simp only [next,Function.update_self]
+      exact (result x).choose_spec.1⟩) le_rfl
+  refine ⟨stage,by simpa only [routed,size] using bill,?_⟩
+  intro x
+  obtain ⟨idle,read⟩ := acts x
+  constructor
+  · intro t off
+    funext i
+    exact congrFun (idle t off) (i.cast size.symm)
+  · intro g z s addr
+    let cell : LabelEntry.Cell v B := {z with a := copyActive s}
+    exact (ownerLabelRead _ z s _).symm.trans ((congrFun (read g) cell).trans (ownerLabelRead _ z s _))
+
 -- The explicit entry and return chart programs are available in commit 1b183c9b.
 /-- Read each permanent register in its own invocation chart. -/
 noncomputable def chartedPhaseRead {w B K : ℕ} (n : Fin 9) (owner : Fin 661 ↪ Fin 142081)

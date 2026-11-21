@@ -463,6 +463,65 @@ theorem helperRegister_route [M8.Machine.Net] {T : ℕ} (io : Fin T) (n : Fin 9)
   rw [idx,helper_register_chart n h]
   cases enter <;> exact transport
 
+/-- Switch one covered owner directly from its old helper label to its next
+helper label. All labels and spectator fields refer to the same parent cell. -/
+theorem helperWindowTransition [M8.Machine.Net] {T : ℕ} (io : Fin T)
+    (n m : Fin 9) (h k : Fin 439) :
+    let src : Fin 661 := ⟨222+h.val,by omega⟩
+    let dst : Fin 661 := ⟨222+k.val,by omega⟩
+    ∃ (program : Graph.Block (T+24) prime) (C : ℕ), Blocks.Leading program ∧
+      ∀ (v : Descriptor) (w B : ℕ), 0 < w → 0 < B →
+      v.beforeH = B*prime^(64*(w*64)) → v.Positive →
+      ∀ (roles : Tapes T prime) (x : Fin (volume prime v) → ZMod 2),
+      roles.head io = 0 → roles.tape io = sourceWord x →
+      let d := words (LabelSchedule.base v w)
+      ∃ y : Fin (volume prime v) → ZMod 2,
+        (∀ g : Matrix (Fin 64) (Fin 64) (ZMod (prime^w)), chartRead (B := B) y (g*(registerChart w m dst).transpose) =
+          chartRead x (g*(registerChart w n src).transpose)) ∧
+        GraphContract.Runs program (LabelCall.bank roles v d)
+          (LabelCall.bank (setTape roles io (sourceWord y) 0) v d)
+          (C*volume prime v + 63*LeafCore.coreCost (volume prime v) (w*64)) := by
+  intro src dst
+  let H := fun (stage : Fin 9) (helper : Fin 439) =>
+    (chart stage (222+helper.val)).submatrix stageAxis.symm stageAxis.symm
+  have entries (stage : Fin 9) (helper : Fin 439) : M8.Height.Bounded (H stage helper) 2 := by
+    intro i j
+    dsimp only [H,submatrix_apply]
+    rw [helper_register_chart stage helper]
+    exact max_le ((helperChart_entry _ (port_checked _ (Nat.mod_lt _ (by decide))) _ _ _ _).1)
+      ((helperChart_entry _ (port_checked _ (Nat.mod_lt _ (by decide))) _ _ _ _).2)
+  have unit (stage : Fin 9) (helper : Fin 439) : IsUnit (H stage helper) := by
+    have inv : (H stage helper).transpose * H stage helper = 1 := by
+      dsimp only [H]
+      rw [helper_register_chart stage helper,transpose_submatrix,submatrix_mul_equiv,
+        PortCertificate.helperChart_orthonormal (port_checked _ (Nat.mod_lt _ (by decide))),submatrix_one_equiv]
+    exact isUnit_iff_exists.mpr ⟨_,mul_eq_one_comm.mp inv,inv⟩
+  let route := H n h * (H m k).transpose
+  have bounded := M8.Height.bounded_mul (a := 1) (b := 1) (entries n h) (show M8.Height.Bounded (H m k).transpose 2 from fun i j => entries m k j i)
+  have bound (i j : Fin 64) : M8.Height.ht (route.transpose i j) ≤ 10^10000 :=
+    (bounded j i).trans ((Nat.pow_le_pow_left (by decide : 2 ≤ 10) _).trans
+      (pow_le_pow_right₀ (by decide) (by simp only [Fintype.card_fin]; decide)))
+  obtain ⟨den,left,right⟩ := LabelFactorization.boundedFactors route.transpose (by decide) (by decide)
+    (fun i j => ⟨(M8.Height.num_le_ht _).trans (bound i j),(M8.Height.den_le_ht _).trans (bound i j)⟩)
+  obtain ⟨block,C,leading,run⟩ := LabelFactorization.realizes (by decide) io route
+    ((unit n h).mul ((H m k).isUnit_transpose.mpr (unit m k))) _ den left right
+  refine ⟨block,C,leading,?_⟩
+  intro v w B hw hb shape pos roles x head tape d
+  obtain ⟨y,move,steps,_⟩ := run v w B hw hb shape pos roles x head tape
+  refine ⟨y,?_,steps⟩
+  have adm (stage : Fin 9) (helper : Fin 439) : Admissible (prime^w) (H stage helper) := fun i j =>
+    Nat.Coprime.pow_right w ((Nat.coprime_of_lt_prime (H stage helper i j).den_pos.ne'
+      (((M8.Height.den_le_ht _).trans (entries stage helper i j)).trans_lt Shared50ModularControl.prime_odd)
+      Shared50ModularControl.prime_prime).symm)
+  have red : reduce (prime^w) route = registerChart w n src * (registerChart w m dst).transpose := by
+    dsimp only [route]
+    rw [reduce_mul _ (adm n h) (show Admissible (prime^w) (H m k).transpose from fun i j => adm m k j i)]
+    rfl
+  intro g
+  have out := chartRead_transport move (g*(registerChart w n src).transpose)
+  change chartRead y ((g*(registerChart w n src).transpose)*reduce (prime^w) route) = _ at out
+  rwa [red,← Matrix.mul_assoc,Matrix.mul_assoc g,registerChart_inverse,Matrix.mul_one] at out
+
 /-- Every invocation owner has a width-uniform entry and return program.
 The chart direction is opposite on the two trips. -/
 theorem register_route [M8.Machine.Net] {T : ℕ} (io : Fin T) (n : Fin 9) (enter : Bool) (j : Fin 661) :
