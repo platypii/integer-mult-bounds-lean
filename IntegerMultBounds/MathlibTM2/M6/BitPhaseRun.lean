@@ -757,7 +757,7 @@ open Cover RecursiveInterchangeLayout M8.RevMachine in
 moves the label inside the spectator record, preserving every active field
 and all words on the other owners. -/
 theorem helperWindow_ownerStage [M8.Machine.Net] {T : ℕ} (io : Fin T)
-    (previous : Option (Fin 9 × Fin 439)) (m : Fin 9) (k : Fin 439) :
+    (previous destination : Option (Fin 9 × Fin 439)) :
     ∃ C : ℕ, ∀ w B K : ℕ, 0 < w → 0 < B → 0 < K →
       let W := B*prime^(64*(w*64))*K
       let V := (prime^w)^16*W
@@ -767,10 +767,10 @@ theorem helperWindow_ownerStage [M8.Machine.Net] {T : ℕ} (io : Fin T)
         ∀ (g : LabelPadding.Label 64 w) (z : LabelEntry.Cell (copyLabelLayout w B K) B)
           (s : Swap.Shear.State (Fin 8) (ZMod (prime^w))),
           let addr := fun j => FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) j
-          stage.transform x io (addr (labelSpectator (g*(registerChart w m (222+k.val)).transpose) z)) =
+          stage.transform x io (addr (labelSpectator (helperLabel w destination g) z)) =
             x io (addr (labelSpectator (helperLabel w previous g) z)) := by
   classical
-  obtain ⟨block,C,leading,run⟩ := helperWindowEntry io previous m k
+  obtain ⟨block,C,leading,run⟩ := helperLabelTransition io previous destination
   refine ⟨C,?_⟩
   intro w B K hw hB hK W V
   let v := copyLabelLayout w B K
@@ -802,7 +802,7 @@ theorem helperWindow_ownerStage [M8.Machine.Net] {T : ℕ} (io : Fin T)
       exact step }
   let effect := fun (a b : Fin T → Fin (volume prime v) → ZMod 2) =>
     (∀ t, t ≠ io → b t = a t) ∧ ∀ g : LabelPadding.Label 64 w,
-      chartRead (B := B) (b io) (g*(registerChart w m (222+k.val)).transpose) =
+      chartRead (B := B) (b io) (helperLabel w destination g) =
       chartRead (a io) (helperLabel w previous g)
   obtain ⟨stage,bill,acts⟩ := flatCopyStage size effect routed.cost routed (fun x =>
     ⟨fun t off => Function.update_of_ne off _ _,by
@@ -823,9 +823,9 @@ theorem helperWindow_ownerStage [M8.Machine.Net] {T : ℕ} (io : Fin T)
 open Cover M8.RevMachine in
 /-- Change the helper charts that differ at an invocation boundary. Each
 selected owner is routed once, from its recorded previous chart. -/
-theorem helperWindow_batch [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
-    (previous : Fin 439 → Option (Fin 9 × Fin 439)) (hs : List (Fin 439)) (unique : hs.Nodup) :
-    let owner := fun h : Fin 439 => ownerTape n r d ⟨222+h.val,by omega⟩
+theorem helperWindow_batch [M8.Machine.Net] {ι : Type} (owner : ι → Fin 142081)
+    (inj : Function.Injective owner) (previous destination : ι → Option (Fin 9 × Fin 439))
+    (hs : List ι) (unique : hs.Nodup) :
     ∃ C : ℕ, ∀ w B K : ℕ, 0 < w → 0 < B → 0 < K →
       let W := B*prime^(64*(w*64))*K
       let V := (prime^w)^16*W
@@ -836,13 +836,9 @@ theorem helperWindow_batch [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
           (s : Swap.Shear.State (Fin 8) (ZMod (prime^w))),
           let addr := fun j => FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) j
           let old := previous h
-          stage.transform x (owner h) (addr (labelSpectator (g*(registerChart w n (222+h.val)).transpose) z)) =
+          stage.transform x (owner h) (addr (labelSpectator (helperLabel w (destination h) g) z)) =
             x (owner h) (addr (labelSpectator (helperLabel w old g) z)) := by
-  intro owner
-  have inj : Function.Injective owner := by
-    intro h k eqn
-    have same := congrArg Fin.val (ownerTape_injective n r d eqn)
-    exact Fin.ext (Nat.add_left_cancel same)
+  classical
   induction hs with
   | nil =>
     refine ⟨0,fun w B K _ _ _ => ⟨SharedBankStage.identity _ (by decide),by simp [SharedBankStage.identity],?_⟩⟩
@@ -850,7 +846,7 @@ theorem helperWindow_batch [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
     exact ⟨fun _ _ => rfl,fun _ hit => False.elim (List.not_mem_nil hit)⟩
   | cons h hs ih =>
     obtain ⟨fresh,nd⟩ := List.nodup_cons.mp unique
-    obtain ⟨P,one⟩ := helperWindow_ownerStage (owner h) (previous h) n h
+    obtain ⟨P,one⟩ := helperWindow_ownerStage (owner h) (previous h) (destination h)
     obtain ⟨Q,rest⟩ := ih nd
     refine ⟨P+Q,?_⟩
     intro w B K hw hb hk W V
@@ -896,7 +892,10 @@ theorem prepareHelperWindows [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 
             x (owner h) (addr (labelSpectator (helperLabel w old g) z)) := by
   intro owner hs
   have unique : hs.Nodup := (List.nodup_finRange 439).filter _
-  obtain ⟨C,run⟩ := helperWindow_batch n r d previous hs unique
+  have inj : Function.Injective owner := by
+    intro h k eqn
+    exact Fin.ext (Nat.add_left_cancel (congrArg Fin.val (ownerTape_injective n r d eqn)))
+  obtain ⟨C,run⟩ := helperWindow_batch owner inj previous (fun h => some (n,h)) hs unique
   refine ⟨C,?_⟩
   intro w B K hw hb hk W V
   obtain ⟨stage,cost,act⟩ := run w B K hw hb hk

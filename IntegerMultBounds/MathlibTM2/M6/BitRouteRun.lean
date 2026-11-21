@@ -529,10 +529,9 @@ noncomputable def helperLabel (w : ℕ) (c : Option (Fin 9 × Fin 439))
   | none => g
   | some (n,h) => g*(registerChart w n (222+h.val)).transpose
 
-/-- Enter a helper window from either the original tape or its last scheduled window. -/
-theorem helperWindowEntry [M8.Machine.Net] {T : ℕ} (io : Fin T)
-    (previous : Option (Fin 9 × Fin 439)) (m : Fin 9) (k : Fin 439) :
-    let dst : Fin 661 := ⟨222+k.val,by omega⟩
+/-- Move between scheduled or original helper labels in either direction. -/
+theorem helperLabelTransition [M8.Machine.Net] {T : ℕ} (io : Fin T)
+    (previous : Option (Fin 9 × Fin 439)) (next : Option (Fin 9 × Fin 439)) :
     ∃ (program : Graph.Block (T+24) prime) (C : ℕ), Blocks.Leading program ∧
       ∀ (v : Descriptor) (w B : ℕ), 0 < w → 0 < B →
       v.beforeH = B*prime^(64*(w*64)) → v.Positive →
@@ -540,20 +539,39 @@ theorem helperWindowEntry [M8.Machine.Net] {T : ℕ} (io : Fin T)
       roles.head io = 0 → roles.tape io = sourceWord x →
       let d := words (LabelSchedule.base v w)
       ∃ y : Fin (volume prime v) → ZMod 2,
-        (∀ g : Matrix (Fin 64) (Fin 64) (ZMod (prime^w)), chartRead (B := B) y (g*(registerChart w m dst).transpose) =
+        (∀ g : Matrix (Fin 64) (Fin 64) (ZMod (prime^w)), chartRead (B := B) y (helperLabel w next g) =
           chartRead x (helperLabel w previous g)) ∧
         GraphContract.Runs program (LabelCall.bank roles v d)
           (LabelCall.bank (setTape roles io (sourceWord y) 0) v d)
           (C*volume prime v + 63*LeafCore.coreCost (volume prime v) (w*64)) := by
-  cases previous with
-  | some c => exact helperWindowTransition io c.1 m c.2 k
-  | none =>
-    intro dst
-    obtain ⟨block,C,leading,run⟩ := helperRegister_route io m true dst (by dsimp [dst]; omega)
-    refine ⟨block,C,leading,?_⟩
-    intro v w B hw hb shape pos roles x head tape d
-    obtain ⟨y,move,steps⟩ := run v w B hw hb shape pos roles x head tape
-    exact ⟨y,fun g => chartRead_transport move g,steps⟩
+  rcases next with _ | ⟨m,k⟩
+  · rcases previous with _ | ⟨n,h⟩
+    · refine ⟨SharedBankSkeleton.identity _ _ (by omega),0,fun _ => rfl,?_⟩
+      intro v w B hw hb shape pos roles x head tape d
+      refine ⟨x,fun _ => rfl,?_⟩
+      have unchanged : setTape roles io (sourceWord x) 0 = roles := by
+        rw [← tape,← head]
+        cases roles
+        simp [setTape]
+      rw [unchanged]
+      exact Blocks.runs_mono (skip_hoare _ _) (Nat.zero_le _)
+    · let src : Fin 661 := ⟨222+h.val,by omega⟩
+      obtain ⟨block,C,leading,run⟩ := helperRegister_route io n false src (by dsimp [src]; omega)
+      refine ⟨block,C,leading,?_⟩
+      intro v w B hw hb shape pos roles x head tape d
+      obtain ⟨y,move,steps⟩ := run v w B hw hb shape pos roles x head tape
+      refine ⟨y,?_,steps⟩
+      intro g
+      have back := chartRead_transport move (g*(registerChart w n src).transpose)
+      simpa only [Bool.false_eq_true,ite_false,Matrix.mul_assoc,registerChart_inverse,Matrix.mul_one,helperLabel] using back
+  · rcases previous with _ | ⟨n,h⟩
+    · let dst : Fin 661 := ⟨222+k.val,by omega⟩
+      obtain ⟨block,C,leading,run⟩ := helperRegister_route io m true dst (by dsimp [dst]; omega)
+      refine ⟨block,C,leading,?_⟩
+      intro v w B hw hb shape pos roles x head tape d
+      obtain ⟨y,move,steps⟩ := run v w B hw hb shape pos roles x head tape
+      exact ⟨y,fun g => chartRead_transport move g,steps⟩
+    · exact helperWindowTransition io n m h k
 
 /-- Every invocation owner has a width-uniform entry and return program.
 The chart direction is opposite on the two trips. -/
