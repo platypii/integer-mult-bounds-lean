@@ -608,6 +608,35 @@ theorem orthogonalSweep_activePorts {V W : ℕ} (n : Fin 9) (w : ℕ)
       (h.2 src (fun i => otherRunMissesPort n p run other i ⟨t.val,by omega⟩ (by dsimp; omega))))
     stageRuns stageRuns_nodup x y trace).1 (mem_stageRuns run)
 
+private theorem inactiveRunRead {V W : ℕ} (n : Fin 9) (w : ℕ)
+    (pos : Swap.Shear.State (Fin 8) (ZMod (prime^w)) → Fin W → Fin V)
+    (x y : Fin 142081 → Fin V → ZMod 2)
+    (p : Fin 32 × Fin 5)
+    (reads : OrthogonalPortReads w pos (x ∘ ownerTape n p.1 p.2) (y ∘ ownerTape n p.1 p.2))
+    (off : ∀ t, (∀ i, ownerTape n p.1 p.2 i ≠ t) → y t = x t)
+    (ρ : Role) (inactive : ρ.bank.val / 2 ≠ BitHosting.activePair n.val) :
+    let tape := ((Fin.cast card_role) (Fintype.equivFin Role ρ)).castSucc
+    let swaps := fun (s : Swap.Shear.State (Fin 8) (ZMod (prime^w))) (p : Fin 32 × Fin 5) =>
+      if ∃ h : Fin 439, hostRole n p.1 p.2 h = ρ then s.swap else s
+    ∀ s k, y tape (pos (swaps s p) k) = x tape (pos s k) := by
+  classical
+  intro tape swaps s k
+  by_cases hit : ∃ h : Fin 439, hostRole n p.1 p.2 h = ρ
+  · rw [show swaps s p = s.swap by simp [swaps,hit]]
+    obtain ⟨h,host⟩ := hit
+    have eqn : ownerTape n p.1 p.2 ⟨222+h.val,by omega⟩ = tape := by
+      simp [ownerTape,owner,host,tape]
+    simpa only [Function.comp_apply,eqn] using reads.helper h s k
+  · rw [show swaps s p = s by simp [swaps,hit]]
+    apply congrFun (off tape ?_)
+    intro i eqn
+    have same : owner n p.1 p.2 i = ρ :=
+      (Fintype.equivFin Role).injective (Fin.cast_injective _ (Fin.castSucc_injective _ eqn))
+    by_cases data : i.val < 222
+    · simp only [owner,data,ite_true] at same
+      exact inactive (same ▸ side_pair n p.1 p.2 _ (by unfold regSide; split <;> omega) _)
+    · exact hit ⟨⟨i.val-222,by omega⟩,by simpa only [owner,data,ite_false] using same⟩
+
 /-- Follow one inactive role's physical word. Each invocation using the role
 as a helper swaps the two local fields, preserving its spectator index. -/
 theorem orthogonalSweep_inactive {V W : ℕ} (n : Fin 9) (w : ℕ)
@@ -630,21 +659,7 @@ theorem orthogonalSweep_inactive {V W : ℕ} (n : Fin 9) (w : ℕ)
     intro a tr s k
     obtain ⟨b,⟨reads,off⟩,tail⟩ := tr
     rw [List.foldl_cons,ih b tail]
-    by_cases hit : ∃ h : Fin 439, hostRole n p.1 p.2 h = ρ
-    · rw [show swaps s p = s.swap by simp [swaps,hit]]
-      obtain ⟨h,host⟩ := hit
-      have eqn : ownerTape n p.1 p.2 ⟨222+h.val,by omega⟩ = tape := by
-        simp [ownerTape,owner,host,tape]
-      simpa only [Function.comp_apply,eqn] using reads.helper h s k
-    · rw [show swaps s p = s by simp [swaps,hit]]
-      apply congrFun (off tape ?_)
-      intro i eqn
-      have same : owner n p.1 p.2 i = ρ :=
-        (Fintype.equivFin Role).injective (Fin.cast_injective _ (Fin.castSucc_injective _ eqn))
-      by_cases data : i.val < 222
-      · simp only [owner,data,ite_true] at same
-        exact inactive (same ▸ side_pair n p.1 p.2 _ (by unfold regSide; split <;> omega) _)
-      · exact hit ⟨⟨i.val-222,by omega⟩,by simpa only [owner,data,ite_false] using same⟩
+    exact inactiveRunRead n w pos a b p reads off ρ inactive s k
 
 open Matrix Swap.Modular M8.Exchange in
 /-- Reading the charted parent at a helper's actual slot exchange changes only
@@ -693,10 +708,109 @@ theorem OrthogonalPortReads.helperSlot {V W : ℕ} (n : Fin 9) (h : Fin 439) (w 
   simp only [Equiv.apply_symm_apply]
   exact read.helper h _ _
 
+open Cover in
+/-- At a fixed parent label, chart preparation preserves the read between
+successive invocations. The final chart and the sequence of helper swaps
+therefore determine an inactive role's read from the original input. -/
+theorem preparedSweep_inactive (n : Fin 9) (w B K : ℕ)
+    (encode : Swap.Shear.State (Fin 8) (ZMod (prime^w)) → Swap.Shear.State (Fin 8) (ZMod (prime^w))) :
+    let W := B*prime^(64*(w*64))*K
+    let V := (prime^w)^16*W
+    let pos := fun s (k : Fin W) => FlatCoordinateLayout.index (AffineFieldCoordinates.embed (encode s)) k
+    ∀ (invoke : Fin 32 × Fin 5 → (Fin 142081 → Fin V → ZMod 2) → (Fin 142081 → Fin V → ZMod 2)),
+      (∀ p x, OrthogonalPortReads w pos (x ∘ ownerTape n p.1 p.2) (invoke p x ∘ ownerTape n p.1 p.2) ∧
+        ∀ t, (∀ i, ownerTape n p.1 p.2 i ≠ t) → invoke p x t = x t) →
+      ∀ x y, PreparedHelperTrace n w B K invoke stageRuns (fun _ => none) x y →
+      ∀ ρ : Role, ρ.bank.val / 2 ≠ BitHosting.activePair n.val →
+      let tape := ((Fin.cast card_role) (Fintype.equivFin Role ρ)).castSucc
+      let final := stageRuns.foldl (fun c p => helperChartsAfter n p c) (fun _ => none)
+      let swaps := fun (s : Swap.Shear.State (Fin 8) (ZMod (prime^w))) (p : Fin 32 × Fin 5) =>
+        if ∃ h : Fin 439, hostRole n p.1 p.2 h = ρ then s.swap else s
+      ∀ (g : LabelPadding.Label 64 w) (z : LabelEntry.Cell (copyLabelLayout w B K) B) s,
+        y tape (pos (stageRuns.foldl swaps s) (labelSpectator (helperLabel w (final tape) g) z)) =
+          x tape (pos s (labelSpectator g z)) := by
+  classical
+  intro W V pos invoke action x y trace ρ inactive tape final swaps g z
+  let key := fun c => labelSpectator (helperLabel w c g) z
+  suffices follow : ∀ ks c a, PreparedHelperTrace n w B K invoke ks c a y → ∀ s,
+      y tape (pos (ks.foldl swaps s) (key ((ks.foldl (fun c p => helperChartsAfter n p c) c) tape))) =
+        a tape (pos s (key (c tape))) from follow _ _ _ trace
+  intro ks
+  induction ks with
+  | nil => intro c a eqn s; cases eqn; rfl
+  | cons p ps ih =>
+    intro c a tr s
+    obtain ⟨ready,_,shift,tail⟩ := tr
+    obtain ⟨reads,off⟩ := action p ready
+    rw [List.foldl_cons,List.foldl_cons,ih _ _ tail]
+    exact (inactiveRunRead n w pos ready (invoke p ready) p reads off ρ inactive s
+      (key (helperChartsAfter n p c tape))).trans (shift tape g z (encode s))
+
+open Swap.Modular M8.Exchange in
+/-- Preparing helper windows preserves both active words, so the covered
+sweep adds the original source even after all intervening chart changes. -/
+theorem preparedSweep_activePorts (n : Fin 9) (w B K : ℕ) :
+    let W := B*prime^(64*(w*64))*K
+    let V := (prime^w)^16*W
+    ∀ (pos : Swap.Shear.State (Fin 8) (ZMod (prime^w)) → Fin W → Fin V)
+      (invoke : Fin 32 × Fin 5 → (Fin 142081 → Fin V → ZMod 2) → (Fin 142081 → Fin V → ZMod 2)),
+      (∀ p x, OrthogonalPortReads w pos (x ∘ ownerTape n p.1 p.2) (invoke p x ∘ ownerTape n p.1 p.2) ∧
+        ∀ t, (∀ i, ownerTape n p.1 p.2 i ≠ t) → invoke p x t = x t) →
+      ∀ x y, PreparedHelperTrace n w B K invoke stageRuns (fun _ => none) x y →
+      ∀ (run : Fin 32 × Fin 5) (t : Fin 111),
+    let owner := ownerTape n run.1 run.2
+    let src := owner ⟨t.val,by omega⟩
+    let dst := owner ⟨111+t.val,by omega⟩
+    ∀ s k, y src (pos s.swap k) = x src (pos (exchange (reduce (prime^w) (Nine.port t).lineProj) s) k) ∧
+      y dst (pos (exchange (reduce (prime^w) (1-(Nine.port t).lineProj)) s) k) =
+      x dst (pos s k) + x src (pos (exchange (reduce (prime^w) (Nine.port t).lineProj) s) k) := by
+  intro W V pos invoke action x y trace run t owner src dst s k
+  let view := fun a : Fin 142081 → Fin V → ZMod 2 => (a dst,a src)
+  let step := fun p a b => ∃ ready, view ready = view a ∧ b = invoke p ready
+  have misses (p : Fin 32 × Fin 5) (h : Fin 439) (j : Fin 661) (data : j.val < 222) :
+      ownerTape n p.1 p.2 ⟨222+h.val,by omega⟩ ≠ owner j := by
+    by_cases eqn : p = run
+    · subst p
+      intro same
+      have bad := congrArg Fin.val (ownerTape_injective n run.1 run.2 same)
+      change 222+h.val = j.val at bad
+      omega
+    · exact otherRunMissesPort n p run eqn _ j data
+  have forget (ks : List (Fin 32 × Fin 5)) (c) (a) (tr : PreparedHelperTrace n w B K invoke ks c a y) :
+      ks.foldr (fun p next a => ∃ b, step p a b ∧ next b) (· = y) a := by
+    induction ks generalizing c a with
+    | nil => exact tr
+    | cons p ks ih =>
+      obtain ⟨ready,idle,_,tail⟩ := tr
+      exact ⟨invoke p ready,⟨ready,Prod.ext
+        (idle dst (fun h => misses p h ⟨111+t.val,by omega⟩ (by dsimp; omega)))
+        (idle src (fun h => misses p h ⟨t.val,by omega⟩ (by dsimp; omega))),rfl⟩,ih _ _ tail⟩
+  apply (uniqueTraceRead run view (fun a b =>
+    b.2 (pos s.swap k) = a.2 (pos (exchange (reduce (prime^w) (Nine.port t).lineProj) s) k) ∧
+    b.1 (pos (exchange (reduce (prime^w) (1-(Nine.port t).lineProj)) s) k) =
+    a.1 (pos s k) + a.2 (pos (exchange (reduce (prime^w) (Nine.port t).lineProj) s) k)) step
+    ?_ ?_ stageRuns stageRuns_nodup x y (forget _ _ _ trace)).1 (mem_stageRuns run)
+  · rintro a _ ⟨ready,fixed,rfl⟩
+    rw [← fixed]
+    exact ⟨(action run ready).1.source t s k,(action run ready).1.target t s k⟩
+  · rintro p other a _ ⟨ready,fixed,rfl⟩
+    apply Eq.trans _ fixed
+    exact Prod.ext ((action p ready).2 dst (fun i => otherRunMissesPort n p run other i ⟨111+t.val,by omega⟩ (by dsimp; omega)))
+      ((action p ready).2 src (fun i => otherRunMissesPort n p run other i ⟨t.val,by omega⟩ (by dsimp; omega)))
+
+private theorem absorbSweepJoins (P changes V core children : ℕ) (live : 1 ≤ V) :
+    P*V + changes*(63*core+1) + children + 320 ≤
+      (P+changes+320)*V + (changes*63)*core + children := by
+  have room := Nat.mul_le_mul_left (changes+320) live
+  simp only [Nat.add_mul,Nat.mul_one] at room
+  rw [Nat.mul_add,Nat.mul_one,Nat.mul_assoc changes 63]
+  simp only [Nat.add_mul]
+  omega
+
 /-- The covered sweep starts with the original labels and interleaves each
 chart preparation with its actual PR589 invocation. -/
 theorem orthogonalPreparedSweep [M8.Machine.Net] (n : Fin 9) :
-    ∃ C : ℕ, ∀ w B K : ℕ, 0 < w → 0 < B → 0 < K →
+    ∃ C : ℕ, ∃ D : ℝ, ∀ w B K : ℕ, 0 < w → 0 < B → 0 < K →
       let m := prime^w
       let W := B*prime^(64*(w*64))*K
       let V := m^16*W
@@ -711,27 +825,39 @@ theorem orthogonalPreparedSweep [M8.Machine.Net] (n : Fin 9) :
       ∃ stage : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V)),
         stage.cost ≤ C*V + helperChangeCount n stageRuns (fun _ => none)*
           (63*M8.RevMachine.LeafCore.coreCost V (w*64)+1) + 160*(Geometry.Moves.localPaid.map price).sum + 320 ∧
+        (stage.cost : ℝ) ≤ D * V * (w : ℝ)^M8.Machine.BudgetBound.tau +
+          ((((Piece.stage n).children.map price).sum : ℕ) : ℝ) ∧
         ∃ invoke, (∀ p x, OrthogonalPortReads w pos (x ∘ ownerTape n p.1 p.2)
           (invoke p x ∘ ownerTape n p.1 p.2) ∧
           ∀ t, (∀ i, ownerTape n p.1 p.2 i ≠ t) → invoke p x t = x t) ∧
           ∀ x, PreparedHelperTrace n w B K invoke stageRuns (fun _ => none) x (stage.transform x) := by
   obtain ⟨P,word⟩ := orthogonalProfiledInvocation
   obtain ⟨Q,schedule⟩ := preparedHelperSchedule n stageRuns (fun _ => none)
-  refine ⟨Q+160*P,?_⟩
+  let changes := helperChangeCount n stageRuns (fun _ => none)
+  obtain ⟨D,overhead⟩ := labelRoute_cost_bound (Q+160*P+changes+320) (changes*63)
+  refine ⟨Q+160*P,D,?_⟩
   intro w B K hw hb hk m W V G encode pos children price supply
   have live : 0 < W := Nat.mul_pos (Nat.mul_pos hb (pow_pos Shared50ModularControl.prime_prime.pos _)) hk
   obtain ⟨localRun,lc,reads⟩ := word w W live children price supply
   choose calls cost action using fun p : Fin 32 × Fin 5 => orthogonalHostedRun n p.1 p.2 localRun
   obtain ⟨stage,bill,trace⟩ := schedule w B K hw hb hk calls
-  refine ⟨stage,?_,fun p => (calls p).transform,?_,trace⟩
-  · have sum : (stageRuns.map (fun p => (calls p).cost)).sum = 160*localRun.cost := by
+  have exactBill : stage.cost ≤ (Q+160*P)*V + changes*(63*M8.RevMachine.LeafCore.coreCost V (w*64)+1) +
+      160*(Geometry.Moves.localPaid.map price).sum + 320 := by
+    have sum : (stageRuns.map (fun p => (calls p).cost)).sum = 160*localRun.cost := by
       simp only [cost,List.map_const',stageRuns_length,List.sum_replicate,smul_eq_mul]
     rw [sum,stageRuns_length] at bill
     change localRun.cost ≤ P*V + _ at lc
-    rw [Nat.add_mul,Nat.mul_assoc]
+    rw [Nat.add_mul Q, Nat.mul_assoc 160 P V]
     change stage.cost ≤ Q*V + _ + 160*localRun.cost + 2*160 at bill
-    dsimp only [V,W,m] at lc bill ⊢
+    dsimp only [V,W,m,changes] at lc bill ⊢
     omega
+  refine ⟨stage,exactBill,?_,fun p => (calls p).transform,?_,trace⟩
+  · have volumePos : 1 ≤ V := Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) live
+    have charged := exactBill.trans (absorbSweepJoins _ _ _ _ _ volumePos)
+    rw [Piece.children,sum_runs]
+    exact (Nat.cast_le (α := ℝ)).mpr charged |>.trans (by
+      rw [Nat.cast_add]
+      exact add_le_add_left (overhead V w hw) _)
   · intro p x
     refine ⟨?_,(action p x).2⟩
     apply portReads_of_word

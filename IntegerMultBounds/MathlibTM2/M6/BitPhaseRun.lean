@@ -1033,7 +1033,8 @@ def PreparedHelperTrace (n : Fin 9) (w B K : ℕ)
     let addr := fun c (g : LabelPadding.Label 64 w) (z : LabelEntry.Cell (copyLabelLayout w B K) B)
       (s : Swap.Shear.State (Fin 8) (ZMod (prime^w))) => FlatCoordinateLayout.index
         (AffineFieldCoordinates.embed s) (labelSpectator (helperLabel w c g) z)
-    ∃ ready, (∀ t g z s, ready t (addr (after t) g z s) = x t (addr (before t) g z s)) ∧
+    ∃ ready, (∀ t, (∀ h : Fin 439, ownerTape n p.1 p.2 ⟨222+h.val,by omega⟩ ≠ t) → ready t = x t) ∧
+      (∀ t g z s, ready t (addr (after t) g z s) = x t (addr (before t) g z s)) ∧
       PreparedHelperTrace n w B K invoke ps after (invoke p ready) y
 
 open M8.RevMachine in
@@ -1064,7 +1065,12 @@ theorem preparedHelperSchedule [M8.Machine.Net] (n : Fin 9) (ps : List (Fin 32 �
       simp only [Nat.mul_add] at ca cd
       omega
     · intro x
-      exact ⟨A.transform x,fun t => (read x t).2,tail _⟩
+      refine ⟨A.transform x,?_,fun t => (read x t).2,tail _⟩
+      intro t off
+      apply (read x t).1
+      rintro hit
+      obtain ⟨h,_,eqn⟩ := List.mem_map.mp hit
+      exact off h eqn
 
 -- The explicit entry and return chart programs are available in commit 1b183c9b.
 /-- Read each permanent register in its own invocation chart. -/
