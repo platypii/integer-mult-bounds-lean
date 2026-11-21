@@ -67,6 +67,28 @@ theorem directoryChartPlacement_ne_work {T : ℕ} (i : Fin (T+5)) (j : Fin 10) :
   change (if i.val < T then i.val else i.val+10) = T+j.val at h
   split at h <;> omega
 
+/-- The child reads the saved directory and both masks at their original
+local indices. Its other metadata and scratch stay on the scanner tapes. -/
+noncomputable def directoryChartReplayBank [M8.Machine.Net] {K : ℕ}
+    (room : Record.size 127+(rowSwapBlock.tapes+35+2) ≤ K+1) :=
+  let T := 66+(K+1)
+  let place := directoryChartPlacement T
+  let saved := (Fin.castLEEmb (by decide : 4 ≤ 6)).trans (directoryChartReplay T)
+  replayPlacement (((directoryOrdinaryBank room).trans (Fin.castAddEmb 5)).trans place)
+    (replaySlots.trans (Fin.castAddEmb K)) saved (fun i j => directoryChartPlacement_ne_work _ _)
+
+noncomputable def directoryChartChildBank [M8.Machine.Net] {K : ℕ}
+    (room : Record.size 127+(rowSwapBlock.tapes+35+2) ≤ K+1) :=
+  let T := 66+(K+1)
+  let owner := (Fin.castLEEmb (by decide : 1 ≤ 5)).trans (Fin.natAddEmb (T+10))
+  Fin.Embedding.append (x := directoryChartReplayBank room) (y := owner) (Set.disjoint_range_iff.mpr (by
+    intro i j
+    have sep := directoryReplay_owner_ne (directoryOrdinaryBank room) (directoryChartPlacement T)
+      (replaySlots.trans (Fin.castAddEmb K)) ((Fin.castLEEmb (by decide : 4 ≤ 6)).trans (directoryChartReplay T))
+      (fun _ _ => directoryChartPlacement_ne_work _ _) i ((Fin.castLEEmb (by decide : 1 ≤ 5)) j)
+    rw [directoryChartPlacement_owner] at sep
+    exact sep))
+
 /-- Call table for a scheduled directory stage on the chart's actual tapes. -/
 noncomputable def directoryChartHost [M8.Machine.Net] {K : ℕ} {P C U : Type}
     (archiveRoom : Record.size 127+(rowSwapBlock.tapes+35+2) ≤ K+1)
@@ -77,7 +99,107 @@ noncomputable def directoryChartHost [M8.Machine.Net] {K : ℕ} {P C U : Type}
     (replaySlots.trans (Fin.castAddEmb K))
     ((Fin.castLEEmb (by decide : 4 ≤ 6)).trans (directoryChartReplay T))
     (fun i j => directoryChartPlacement_ne_work i _) localBody
-    (directoryChildBank (directoryOrdinaryBank archiveRoom) (directoryChartPlacement T)) child
+    (directoryChartChildBank archiveRoom) child
+
+/-- Form the child prefix clock in fresh workspace. The three source
+lengths are the inherited prefix width, the precision minus one, and one. -/
+def directoryChildPrefixClock {T Q A : ℕ} {P U : Type} (m : ℕ) (r : Fin 5 ↪ Fin T) : Pr P T Q A U :=
+  ((Node.ucopy (r 0) (r 3) (r 4)).seq (Node.umul (m*m) (r 1) (r 3) (r 4))).seq
+    (Node.umul (m*m) (r 2) (r 3) (r 4))
+
+private theorem directoryChildPrefixClock_exec {T Q : ℕ} {P U : Type}
+    (body : P → Pr P T Q prime U) (m w : ℕ) (r : Fin 5 ↪ Fin T)
+    (u : HS T Q prime U) (S : Stacks T prime) (precision : (S.R (r 1)).length = w)
+    (unit : (S.R (r 2)).length = 1) (empty : S.R (r 3) = []) (tmp : S.R (r 4) = []) :
+    let width := (S.R (r 0)).length
+    ∃ z, z.user = u.user ∧ Exec body (directoryChildPrefixClock m r) (mk u S) (4*width+4*w+16)
+      (mk z {S with R := Function.update S.R (r 3) (List.replicate (width+(w+1)*(m*m)) Node.tick)}) := by
+  intro width
+  obtain ⟨b,bu,copy⟩ := Node.ucopy_exec (body := body) (a := r 0) (b := r 3) (t := r 4)
+    (by simp) (by simp) (by simp) u S tmp
+  rw [empty,List.append_nil] at copy
+  let B := {S with R := Function.update S.R (r 3) (List.replicate width Node.tick)}
+  obtain ⟨c,cb,mul⟩ := Node.umul_exec (body := body) (m*m) (a := r 1) (b := r 3) (t := r 4)
+    (by simp) (by simp) (by simp) b B (by simpa [B] using tmp)
+  let C := {S with R := Function.update S.R (r 3) (List.replicate (m*m*w+width) Node.tick)}
+  simp [B,precision,List.replicate_append_replicate] at mul
+  obtain ⟨z,zc,one⟩ := Node.umul_exec (body := body) (m*m) (a := r 2) (b := r 3) (t := r 4)
+    (by simp) (by simp) (by simp) c C (by simpa [C] using tmp)
+  simp [C,unit,List.replicate_append_replicate] at one
+  rw [show m*m+(m*m*w+width) = width+(w+1)*(m*m) by ring] at one
+  exact ⟨z,zc.trans (cb.trans bu),by
+    convert Exec.seq (Exec.seq copy mul) one using 1 <;> first | rfl | (dsimp [width]; omega)⟩
+
+def childPrefixPorts {K : ℕ} : Fin 5 ↪ Fin ((66+K)+1) :=
+  (⟨![47,45,28,58,59],by decide⟩ : Fin 5 ↪ Fin 66).trans ((Fin.castAddEmb K).trans (Fin.castAddEmb 1))
+
+/-- The replay queue already holds each complete child prefix. Build its
+unary width on tape 58 and carry the directory size estimate into recursion. -/
+theorem replayChildPrefix_exec {K Q w W H J : ℕ} {P U : Type}
+    (body : P → Pr P ((66+K)+1) Q prime U) (v : RecursiveInterchangeLayout.Descriptor)
+    (proj : Matrix (Fin 64) (Fin 64) ℚ) (weights : Fin 64 → ZMod (prime^(w+1)))
+    (prefixes : ℕ → List (Fin (prime+4))) (rs : List ℕ) (u : HS ((66+K)+1) Q prime U)
+    (S : Stacks ((66+K)+1) prime)
+    (entry : DirectoryReady v proj w W H J weights prefixes [] (fun _ => []) (embStk (Fin.castAdd 1) S) rs) :
+    let r := childPrefixPorts (K := K)
+    let width := (S.R (r 0)).length
+    let next := width+(w+1)*(64*64)
+    let D := {S with R := Function.update S.R (r 3) (List.replicate next Node.tick)}
+    ∃ z, z.user = u.user ∧ Exec body (directoryChildPrefixClock 64 r) (mk u S) (4*width+4*w+16) (mk z D) ∧
+      D.R (((46 : Fin 66).castAdd K).castAdd 1) = rs.flatMap (LabelDirectory.entry prefixes 64 (w+1)) ∧
+      (∀ j ∈ rs, (LabelDirectory.entry prefixes 64 (w+1) j).length = (D.R (r 3)).length) ∧
+      (∀ rank ≤ 42, 11*next + 2048*((w+1)*rank) ≤ 11*width + 2048*(64*(w+1))) ∧
+      ∀ {N : ℕ} (core : Pr P ((66+K)+1) Q prime U) (word : Fin N → ZMod 2)
+        (b : HS ((66+K)+1) Q prime U) (B : Stacks ((66+K)+1) prime) (k : ℕ),
+        let owner := (0 : Fin 1).natAdd (66+K)
+        b.user = z.user → Exec body core (mk z D) k (mk b B) →
+        RecordPayload owner (fun _ => blank) 0 word B →
+        (∀ i, i ≠ owner → B.L i = D.L i ∧ B.R i = D.R i) →
+        ∃ y F, y.user = u.user ∧ Exec body (((directoryChildPrefixClock 64 r).seq core).seq (Fast.clearR (r 3)))
+          (mk u S) (4*width+4*w+16+k+(2*next+2)) (mk y F) ∧
+          RecordPayload owner (fun _ => blank) 0 word F ∧
+          ∀ i, i ≠ owner → F.L i = S.L i ∧ F.R i = S.R i := by
+  intro r width next D
+  obtain ⟨queue,widths,free,_,_,_,unit,_,_,_,precision,_⟩ := entry
+  have tmp := (free ((59 : Fin 66).castAdd K) (by change 58 ≤ 59; decide)).2
+  have dst := (free ((58 : Fin 66).castAdd K) (by rfl)).2
+  obtain ⟨z,user,run⟩ := directoryChildPrefixClock_exec body 64 w r u S precision
+    (by change ((embStk (Fin.castAdd 1) S).R ((Fin.castAddEmb K) (28 : Fin 66))).length = 1
+        rw [unit,length_binSyms]) dst tmp
+  refine ⟨z,user,run,?_,?_,?_,?_⟩
+  · have away : ((46 : Fin 66).castAdd K).castAdd 1 ≠ r 3 :=
+      (Fin.castAddEmb 1).injective.ne ((Fin.castAddEmb K).injective.ne (by decide : (46 : Fin 66) ≠ 58))
+    exact ((Function.update_of_ne away (List.replicate next Node.tick) S.R).trans queue).trans (List.append_nil _)
+  · intro j hj
+    rw [LabelDirectory.entry_length]
+    have len : width = (prefixes j).length := widths j hj
+    simp [D,next,len]
+  · intro rank bound
+    have smaller := Nat.mul_le_mul_left (w+1) bound
+    dsimp only [next]
+    omega
+
+  · intro N core word b B k owner bz coreRun payload frame
+    have apart : r 3 ≠ owner := by
+      intro eq
+      have h := congrArg Fin.val eq
+      change 58 = (66+K)+0 at h
+      omega
+    obtain ⟨y,yb,clear⟩ := Fast.clearR_exec body (r 3) b B
+    have length : (B.R (r 3)).length = next := by rw [(frame _ apart).2]; simp [D]
+    rw [length] at clear
+    refine ⟨y,_,yb.trans (bz.trans user),Exec.seq (Exec.seq run coreRun) clear,?_,?_⟩
+    · intro j
+      simpa only [Function.update_of_ne apart.symm] using payload j
+    · intro i hi
+      refine ⟨(frame i hi).1,?_⟩
+      change Function.update B.R (r 3) [] i = S.R i
+      by_cases clock : i = r 3
+      · subst i
+        rw [Function.update_self]
+        exact dst.symm
+      · rw [Function.update_of_ne clock,(frame i hi).2]
+        exact Function.update_of_ne clock ..
 
 /-- Run a recursive procedure on the chart payload and its private suffix.
 All other chart tapes retain both stacks, including the saved owner queue. -/
@@ -87,13 +209,13 @@ theorem directoryChartHost_child_exec [M8.Machine.Net] {K : ℕ} {P C U : Type}
     (child : C → Pr C ((66+K)+1) columnCapacity prime U) (f : C)
     (batch : RecursiveInterchangeLayout.Descriptor) (budget : ℕ) (entry : Stacks (66+K) prime → Prop) :
     let T := 66+(K+1)
-    let bank := directoryChildBank (directoryOrdinaryBank room) (directoryChartPlacement T)
+    let bank := directoryChartChildBank room
     let port := (0 : Fin 1).natAdd (66+K)
     let owner := (0 : Fin 5).natAdd (T+10)
     let host := directoryChartHost room localBody child
     ∀ (a : HS ((T+10)+5) columnCapacity prime U) (A : Stacks ((T+10)+5) prime)
       (x : Fin (RecursiveInterchangeLayout.volume prime batch) → ZMod 2),
-    entry (embStk (directoryOrdinaryBank room) (embStk (Fin.castAdd 5) (embStk (directoryChartPlacement T) A))) →
+    entry (embStk (directoryChartReplayBank room) A) →
     RecordPayload owner (fun _ => blank) 0 x A →
     (∀ (u : HS ((66+K)+1) columnCapacity prime U) (S : Stacks ((66+K)+1) prime), entry (embStk (Fin.castAdd 1) S) →
       RecordPayload port (fun _ => blank) 0 x S →
@@ -104,12 +226,12 @@ theorem directoryChartHost_child_exec [M8.Machine.Net] {K : ℕ} {P C U : Type}
       RecordPayload owner (fun _ => blank) 0 (Shared50RecursiveNodeRows.transpose (one_dvd batch.rows) x) B ∧
       ∀ i, i ≠ owner → B.L i = A.L i ∧ B.R i = A.R i := by
   intro T bank port owner host a A x free input recursive
-  have slot : bank port = owner := (directoryChildBank_owner ..).trans (directoryChartPlacement_owner ..)
+  have slot : bank port = owner := by simp [bank,port,owner,T,directoryChartChildBank]
   rw [← slot] at input ⊢
   apply directoryStageHost_child_exec _ _ _ _ _ localBody bank child f port batch budget a A x input
   have view : embStk (Fin.castAdd 1) (embStk bank A) =
-      embStk (directoryOrdinaryBank room) (embStk (Fin.castAdd 5) (embStk (directoryChartPlacement T) A)) := by
-    apply Stacks.ext <;> first | rfl | (funext i; simp [bank,embStk,Function.comp_def])
+      embStk (directoryChartReplayBank room) A := by
+    apply Stacks.ext <;> first | rfl | (funext i; simp [bank,directoryChartChildBank,embStk,Function.comp_def])
   exact recursive _ _ (view.symm ▸ free)
 
 -- The pre-setup chart projection is available at bfe0b0b4.

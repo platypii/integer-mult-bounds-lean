@@ -170,29 +170,7 @@ noncomputable def directoryOutgoingPlacement {n K T : ℕ} (bank : Fin n ↪ Fin
     (replayPlacement ((bank.trans (Fin.castAddEmb 5)).trans place) slots saved (fun _ _ => separate _ _))
     ((Fin.natAddEmb K).trans place) (directoryReplay_owner_ne bank place slots saved separate)
 
-/-- Share the scanner metadata and workspace with the child, followed by the
-owner payload. The shadow copy stays outside the child's bank. -/
-def directoryChildBank {m n T : ℕ} (bank : Fin m ↪ Fin n)
-    (place : Fin (n+5) ↪ Fin T) : Fin (m+1) ↪ Fin T :=
-  let localBank := bank.trans ((Fin.castAddEmb 5).trans place)
-  let owner := ((Fin.castLEEmb (by decide : 1 ≤ 5)).trans (Fin.natAddEmb n)).trans place
-  Fin.Embedding.append (x := localBank) (y := owner) (Set.disjoint_range_iff.mpr (by
-    intro i j eq
-    have h := congrArg Fin.val (place.injective eq)
-    change (bank i).val = n+j.val at h
-    have bound := (bank i).isLt
-    omega))
-
-@[simp] theorem directoryChildBank_owner {m n T : ℕ} (bank : Fin m ↪ Fin n)
-    (place : Fin (n+5) ↪ Fin T) :
-    directoryChildBank bank place ((0 : Fin 1).natAdd m) = place ((0 : Fin 5).natAdd n) := by
-  simp [directoryChildBank]
-
-@[simp] theorem directoryChildBank_local {m n T : ℕ} (bank : Fin m ↪ Fin n)
-    (place : Fin (n+5) ↪ Fin T) (i : Fin m) :
-    directoryChildBank bank place (i.castAdd 1) = place ((bank i).castAdd 5) := by
-  simp [directoryChildBank]
-
+-- The child bank without replay data is available at 06671153.
 /-- Install the two scanner copies and the recursive child's call table on
 one host. Each scanner calls its own copy of the local row subroutines. -/
 noncomputable def directoryStageHost [M8.Machine.Net] {P C U : Type} {n K T t : ℕ} (bank : Fin n ↪ Fin K)
@@ -412,7 +390,9 @@ def GeneratedDirectoryExecution [M8.Machine.Net] {P U : Type} {r g d w common au
       (S.L (reg 0) = [] → ownerTail = [] → ∀ (f : G) (childBudget : ℕ),
         let D := {F with R := Function.update F.R (q 1) (F.R (q 0))}
         (∀ b : HS T columnCapacity prime U, b.user = z.user → ∀ x : Fin V → ZMod 2,
-          ready (embStk localBank (embStk place D)) [] →
+          (DirectoryReady v proj w W data.H J weights prefixes archiveTail (fun _ => []) (embStk outBank D) rs ∧
+            D.R (outBank (inner 57)) = rs.map (fun j => bitSymbol (live j)) ∧
+            D.R (outBank (inner 56)) = rs.map (fun j => bitSymbol (bad j))) →
           RecordPayload (q 0) (fun _ => blank) 0 x D →
           ∃ y B k, y.user = b.user ∧ k ≤ childBudget ∧ Exec host (host f) (mk b D) k (mk y B) ∧
             RecordPayload (q 0) (fun _ => blank) 0 (Shared50RecursiveNodeRows.transpose (one_dvd batch.rows) x) B ∧
@@ -622,6 +602,26 @@ theorem generatedIncomingDirectory_exec [M8.Machine.Net] {P U : Type} {r g d w c
     rw [count,← List.map_coe_finRange_eq_range,List.map_map]
     rfl
   let bypass := fun j (physical : Fin (RecursiveInterchangeLayout.volume prime (ordinaryChildDescriptor r g w W)) → ZMod 2) => ∃ word, effect j word ∧ physical = fun i => word (i.cast size)
+  have apart (i : Fin (66+K)) (j : Fin 5) : place (reg j) ≠ place (localBank i) := place.injective.ne (by
+    intro eq
+    have h := congrArg Fin.val eq
+    change 66+(K+1)+j.val = (placement i).val at h
+    have bound := (placement i).isLt
+    omega)
+  have savedWords (j : Fin 4) : F.R (copied j) = mid.R (localBank (slots j)) :=
+    (untouched _ (fun i => separate i _) (disjoint 2 _).symm (disjoint 3 _).symm).2.trans
+      ((retained j).trans (cell (localBank (slots j))))
+  have replayed (X : Stacks T prime) (old : ready (embStk (localBank.trans place) X) [])
+      (saved : ∀ j, X.R (copied j) = mid.R (localBank (slots j))) :
+      DirectoryReady v proj w W data.H J weights prefixes archiveTail (fun _ => []) (embStk outBank X) rs ∧
+        X.R (outBank (inner 57)) = rs.map (fun j => bitSymbol (live j)) ∧
+        X.R (outBank (inner 56)) = rs.map (fun j => bitSymbol (bad j)) :=
+    outgoingReplay_ready (localBank.trans place) copied (fun i j => separate _ _)
+    (embStk localBank mid) X live bad readyMid old rfl saved
+    (by simpa only [localBank,Function.Embedding.trans_apply,embStk,Function.comp_apply,inner,caller,
+      Fin.castAddEmb_apply,placement,directoryOrdinaryBank_caller] using lsMid)
+    (by simpa only [localBank,Function.Embedding.trans_apply,embStk,Function.comp_apply,inner,caller,
+      Fin.castAddEmb_apply,placement,directoryOrdinaryBank_caller] using bsMid)
   obtain ⟨y,B,k,out,huser,price,call,payload,action,cleared1,cleared2,cleared5,cleared6,frame⟩ :=
     scannedDirectoryCall_exec host f q directory r g w incoming bypass rows live bad z F childBudget
       (by simpa only [rs,count] using ordered) (ownerLeft.trans left) queue accFree clearSaved
@@ -631,30 +631,23 @@ theorem generatedIncomingDirectory_exec [M8.Machine.Net] {P U : Type} {r g d w c
         apply child b hb x _ (by simpa only [D,queue] using hx)
         have sameBank : embStk localBank (embStk place D) = embStk localBank (embStk place F) := by
           refine Stacks.ext rfl rfl rfl (funext fun i => ?_)
-          have different : place (localBank i) ≠ q 1 := place.injective.ne (by
-            intro eq
-            have h := congrArg Fin.val eq
-            change (placement i).val = 66+(K+1)+1 at h
-            have bound := (placement i).isLt
-            omega)
+          have different : place (localBank i) ≠ q 1 := (apart i 1).symm
           exact Function.update_of_ne different _ _
-        rw [sameBank]
-        exact finished)
+        apply replayed D
+        · change ready (embStk localBank (embStk place D)) []
+          rw [sameBank]
+          exact finished
+        · intro j
+          have away : copied j ≠ q 1 := (separate (reg 1) _).symm
+          exact (Function.update_of_ne away _ _).trans (savedWords j))
   have offPorts (i : Fin T) (regs : ∀ k, place (reg k) ≠ i) (l : p 2 ≠ i) (b : p 3 ≠ i) :
       i ∉ [q 0,q 1,q 2,q 5,q 6] := by
     simp only [List.mem_cons,List.not_mem_nil,or_false,not_or]
     exact ⟨(regs 0).symm,(regs 1).symm,(regs 3).symm,l.symm,b.symm⟩
-  have apart (i : Fin (66+K)) (j : Fin 5) : place (reg j) ≠ place (localBank i) := place.injective.ne (by
-    intro eq
-    have h := congrArg Fin.val eq
-    change 66+(K+1)+j.val = (placement i).val at h
-    have bound := (placement i).isLt
-    omega)
   have keptBank (i : Fin (66+K)) := frame (place (localBank i)) (offPorts _ (apart i) (fun eq => outside 2 (by decide) _ eq.symm) (fun eq => outside 3 (by decide) _ eq.symm))
   have restored (j : Fin 4) : B.R (copied j) = mid.R (localBank (slots j)) := by
     have keep := frame (copied j) (offPorts _ (fun k => separate _ _) (disjoint 2 _) (disjoint 3 _))
-    exact keep.2.trans ((untouched _ (fun i => separate i _) (disjoint 2 _).symm (disjoint 3 _).symm).2.trans
-      ((retained j).trans (cell (localBank (slots j)))))
+    exact keep.2.trans (savedWords j)
   have old : ready (embStk (localBank.trans place) B) [] := by
     let D := embStk (localBank.trans place) B
     let E := embStk placement (embStk outer (embStk place F))
@@ -664,12 +657,7 @@ theorem generatedIncomingDirectory_exec [M8.Machine.Net] {P U : Type} {r g d w c
     unfold DirectoryReady
     rw [leftEq,rightEq]
     exact finished
-  have outgoing := outgoingReplay_ready (localBank.trans place) copied (fun i j => separate _ _)
-    (embStk localBank mid) B live bad readyMid old rfl restored
-    (by simpa only [localBank,Function.Embedding.trans_apply,embStk,Function.comp_apply,inner,caller,
-      Fin.castAddEmb_apply,placement,directoryOrdinaryBank_caller] using lsMid)
-    (by simpa only [localBank,Function.Embedding.trans_apply,embStk,Function.comp_apply,inner,caller,
-      Fin.castAddEmb_apply,placement,directoryOrdinaryBank_caller] using bsMid)
+  have outgoing := replayed B old restored
   have blankReturned : ∀ j, readAt blank (B.L (outBank (inner 24))) (B.R (outBank (inner 24))) j = blank := by
     intro j
     have off : ∀ k, slots k ≠ inner 24 := fun k => inner.injective.ne ((by decide : ∀ k, replaySlots k ≠ 24) k)
@@ -803,7 +791,10 @@ theorem generatedIncomingDirectory_exec [M8.Machine.Net] {P U : Type} {r g d w c
         ∃ before, incoming j before ∧ returned j = ordinaryChildOutput (r := r) (g := g) (w := w) before ∘ pos)
       exact ⟨minor,before,inc,eqn⟩)
     (by simpa only [rs,count,binary] using outgoing.1)
-    (by simpa only [rs,count] using outgoing.2.1) (by simpa only [rs,count] using outgoing.2.2)
+    (by change B.R (outBank (inner 57)) = (List.range R).map (fun j => bitSymbol (live j))
+        exact (show rs = List.range R by simp only [rs,count,R]) ▸ outgoing.2.1)
+    (by change B.R (outBank (inner 56)) = (List.range R).map (fun j => bitSymbol (bad j))
+        exact (show rs = List.range R by simp only [rs,count,R]) ▸ outgoing.2.2)
     (returnedOwnerQueue _ out (q 0) B payload) cleared1
     ((congrArg List.length (frame (q 3) (by simp [q.injective.eq_iff])).2).trans finalWidth) cleared2
     (((frame (q 4) (by simp [q.injective.eq_iff])).2).trans clearTmp) blankReturned effect (by
