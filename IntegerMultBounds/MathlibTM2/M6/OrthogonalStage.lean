@@ -248,10 +248,14 @@ private theorem uniformRate {E : Type*} [Finite E] (rate : E → ℕ) : ∃ C, �
   letI := Fintype.ofFinite E
   exact ⟨Finset.univ.sup rate,fun e => Finset.le_sup (Finset.mem_univ e)⟩
 
+/-- Shared by the phase and COPY machines at every width and cutoff. -/
+noncomputable def orthogonalBasis : Matrix (Fin 8) (Fin 8) ℕ := orthogonalMoves_common_basis.choose
+
 /-- One basis and one scan-cost coefficient serve every nested PR589 edge.
 Only the child at the certified rank contributes a recursive cost. -/
 theorem orthogonalEdges_owner :
-    ∃ (basis : Matrix (Fin 8) (Fin 8) ℕ) (C : ℕ),
+    let basis := orthogonalBasis
+    ∃ C : ℕ,
       (∀ a b, basis a b ≤ 2^28) ∧ (basis.map (Nat.cast : ℕ → ℚ)).det ≠ 0 ∧
       ∀ i j : Fin 636, Geometry.label i ≤ Geometry.label j →
       ∃ before after : SharedBankSkeleton.Skeleton 1 prime, ∀ w W : ℕ, 0 < W →
@@ -270,7 +274,8 @@ theorem orthogonalEdges_owner :
             stage.transform x (addr (Exchange.exchange
               (reduce m (Nine.labelProj j)-reduce m (Nine.labelProj i)) s) k) = x (addr s k) := by
   classical
-  obtain ⟨basis,small,det,edges⟩ := orthogonalMoves_common_basis
+  intro basis
+  obtain ⟨small,det,edges⟩ := orthogonalMoves_common_basis.choose_spec
   let Edge := {p : Fin 636 × Fin 636 // Geometry.label p.1 ≤ Geometry.label p.2}
   have compiled (e : Edge) := by
     obtain ⟨spec,_,_,pivots⟩ := edges e.val.1 e.val.2 e.property
@@ -280,7 +285,7 @@ theorem orthogonalEdges_owner :
     exact orthogonalMove_owner _ spec _ bound pivots
   choose rate before after run using compiled
   obtain ⟨C,le⟩ := uniformRate rate
-  refine ⟨basis,C,small,det,?_⟩
+  refine ⟨C,small,det,?_⟩
   intro i j nested
   let e : Edge := ⟨(i,j),nested⟩
   refine ⟨before e,after e,?_⟩
@@ -292,6 +297,7 @@ theorem orthogonalEdges_owner :
   · intro x s k
     have spec := (edges i j nested).1
     have action := (orthogonalMove_coordinates basis small i j w det spec).2 s
+    dsimp only [basis,orthogonalBasis] at action
     rw [(spec.2 w).2] at action
     exact (congrArg (fun (t : Swap.Shear.State (Fin 8) (ZMod (prime^w))) => stage.transform x (FlatCoordinateLayout.index (AffineFieldCoordinates.embed t) k))
       action.symm).trans (read x (encode s) k)
@@ -299,7 +305,8 @@ theorem orthogonalEdges_owner :
 /-- A scheduled move carries every bit from the source frame to the destination
 frame in the same basis, in either direction of nesting. -/
 theorem orthogonalCheckedMoves_owner :
-    ∃ (basis : Matrix (Fin 8) (Fin 8) ℕ) (C : ℕ),
+    let basis := orthogonalBasis
+    ∃ C : ℕ,
       (∀ a b, basis a b ≤ 2^28) ∧ (basis.map (Nat.cast : ℕ → ℚ)).det ≠ 0 ∧
       ∀ i j : Fin 636, Geometry.Moves.CheckedPair (i.val,j.val) →
       ∃ before after : SharedBankSkeleton.Skeleton 1 prime, ∀ w W : ℕ, 0 < W →
@@ -317,8 +324,9 @@ theorem orthogonalCheckedMoves_owner :
           stage.cost ≤ C*V + child.cost + 2 ∧ ∀ x s k,
             stage.transform x (addr (Exchange.exchange (reduce m (Nine.labelProj j)) s) k) =
               x (addr (Exchange.exchange (reduce m (Nine.labelProj i)) s) k) := by
-  obtain ⟨basis,C,small,det,edges⟩ := orthogonalEdges_owner
-  refine ⟨basis,C,small,det,?_⟩
+  intro basis
+  obtain ⟨C,small,det,edges⟩ := orthogonalEdges_owner
+  refine ⟨C,small,det,?_⟩
   intro i j checked
   rcases Geometry.Moves.nested _ checked with forward | back
   · obtain ⟨before,after,runs⟩ := edges i j forward
@@ -355,7 +363,8 @@ theorem labelProj_eq_of_moveRank_zero {i j : ℕ} (zero : Geometry.moveRank i j 
 /-- The filtered phase bill needs a child supplier only at positive ranks.
 A zero-rank incidence consumes no machine steps. -/
 theorem orthogonalPaidMoves_owner :
-    ∃ (basis : Matrix (Fin 8) (Fin 8) ℕ) (C : ℕ),
+    let basis := orthogonalBasis
+    ∃ C : ℕ,
       (∀ a b, basis a b ≤ 2^28) ∧ (basis.map (Nat.cast : ℕ → ℚ)).det ≠ 0 ∧
       ∀ i j : Fin 636, Geometry.Moves.CheckedPair (i.val,j.val) →
       ∃ wrap : SharedBankSkeleton.Skeleton 1 prime → SharedBankSkeleton.Skeleton 1 prime,
@@ -375,8 +384,9 @@ theorem orthogonalPaidMoves_owner :
           stage.cost ≤ (if r = 0 then 0 else C*V + price + 2) ∧ ∀ x s k,
             stage.transform x (addr (Exchange.exchange (reduce m (Nine.labelProj j)) s) k) =
               x (addr (Exchange.exchange (reduce m (Nine.labelProj i)) s) k) := by
-  obtain ⟨basis,C,small,det,edges⟩ := orthogonalCheckedMoves_owner
-  refine ⟨basis,C,small,det,?_⟩
+  intro basis
+  obtain ⟨C,small,det,edges⟩ := orthogonalCheckedMoves_owner
+  refine ⟨C,small,det,?_⟩
   intro i j checked
   by_cases zero : Geometry.moveRank i j = 0
   · refine ⟨fun _ => SharedBankSkeleton.identity 1 prime (by decide),?_⟩
@@ -415,7 +425,8 @@ private noncomputable def placedPortMachine {n : ℕ} (dst : Fin (n+1))
 /-- At a fixed atom-width cutoff every scheduled PR589 move has a physical
 implementation of linear volume cost, uniformly in both labels. -/
 theorem orthogonalStoppedMoves_bank [M8.Machine.Net] (cutoff : ℕ) :
-    ∃ (basis : Matrix (Fin 8) (Fin 8) ℕ) (K : ℝ),
+    let basis := orthogonalBasis
+    ∃ K : ℝ,
       (∀ a b, basis a b ≤ 2^28) ∧ (basis.map (Nat.cast : ℕ → ℚ)).det ≠ 0 ∧
       ∀ i j : Fin 636, Geometry.Moves.CheckedPair (i.val,j.val) →
       ∀ {n : ℕ} (dst : Fin (n+1)), ∃ machine : SharedBankSkeleton.Skeleton (n+1) prime, ∀ w W : ℕ, 0 < w → w ≤ cutoff → 0 < W →
@@ -428,8 +439,9 @@ theorem orthogonalStoppedMoves_bank [M8.Machine.Net] (cutoff : ℕ) :
           (stage.cost : ℝ) ≤ K*V ∧ (∀ x t, t ≠ dst → stage.transform x t = x t) ∧ ∀ x s k,
           stage.transform x dst (addr (Exchange.exchange (reduce m (Nine.labelProj j)) s) k) =
             x dst (addr (Exchange.exchange (reduce m (Nine.labelProj i)) s) k) := by
-  obtain ⟨basis,C,small,det,edges⟩ := orthogonalPaidMoves_owner
-  refine ⟨basis,(C : ℝ)+8*(3808275+|LeafCore.C| * cutoff)+2,small,det,?_⟩
+  intro basis
+  obtain ⟨C,small,det,edges⟩ := orthogonalPaidMoves_owner
+  refine ⟨(C : ℝ)+8*(3808275+|LeafCore.C| * cutoff)+2,small,det,?_⟩
   intro i j checked n dst
   let r := Geometry.moveRank i j
   have hr : r ≤ 8 := by
@@ -473,7 +485,8 @@ theorem orthogonalStoppedMoves_bank [M8.Machine.Net] (cutoff : ℕ) :
 ending address of each register reads its starting bit, including after
 repeated updates of that register. -/
 theorem orthogonalStoppedTrace [M8.Machine.Net] (cutoff : ℕ) :
-    ∃ (basis : Matrix (Fin 8) (Fin 8) ℕ) (K : ℝ),
+    let basis := orthogonalBasis
+    ∃ K : ℝ,
       (∀ a b, basis a b ≤ 2^28) ∧ (basis.map (Nat.cast : ℕ → ℚ)).det ≠ 0 ∧
       ∀ {n : ℕ} (updates : List (Fin (n+1) × Fin 636)) (current : Fin (n+1) → Fin 636),
         (∀ p ∈ RankTrace.edges current updates, Geometry.Moves.CheckedPair (p.1.val,p.2.val)) →
@@ -489,8 +502,9 @@ theorem orthogonalStoppedTrace [M8.Machine.Net] (cutoff : ℕ) :
             (stage.cost : ℝ) ≤ updates.length * (K*V+1) ∧ ∀ x t s k,
               stage.transform x t (addr (RankTrace.finish current updates t) s k) =
                 x t (addr (current t) s k) := by
-  obtain ⟨basis,K,small,det,move⟩ := orthogonalStoppedMoves_bank cutoff
-  refine ⟨basis,K,small,det,?_⟩
+  intro basis
+  obtain ⟨K,small,det,move⟩ := orthogonalStoppedMoves_bank cutoff
+  refine ⟨K,small,det,?_⟩
   intro n updates
   induction updates with
   | nil =>
@@ -547,7 +561,8 @@ theorem orthogonalAlignedGate {k V : ℕ} (dst : Fin k) (sources : List (Fin k))
 /-- Execute the frame updates and the scalar gate as one stage. Every
 source is read from its own pre-gate frame. -/
 theorem orthogonalStoppedGate [M8.Machine.Net] (cutoff : ℕ) :
-    ∃ (basis : Matrix (Fin 8) (Fin 8) ℕ) (K : ℝ),
+    let basis := orthogonalBasis
+    ∃ K : ℝ,
       (∀ a b, basis a b ≤ 2^28) ∧ (basis.map (Nat.cast : ℕ → ℚ)).det ≠ 0 ∧
       ∀ {n : ℕ} (dst : Fin (n+1)) (sources : List (Fin (n+1))) (label : Fin 636)
         (current : Fin (n+1) → Fin 636), dst ∉ sources →
@@ -566,8 +581,9 @@ theorem orthogonalStoppedGate [M8.Machine.Net] (cutoff : ℕ) :
             let initial := fun t => x t (addr (current t) s k)
             ∀ t, stage.transform x t (addr (next t) s k) =
               Function.update initial dst (initial dst + (sources.map initial).sum) t := by
-  obtain ⟨basis,K,small,det,trace⟩ := orthogonalStoppedTrace cutoff
-  refine ⟨basis,K,small,det,?_⟩
+  intro basis
+  obtain ⟨K,small,det,trace⟩ := orthogonalStoppedTrace cutoff
+  refine ⟨K,small,det,?_⟩
   intro n dst sources label current off updates next checked w W hw stop hW m V G encode addr
   obtain ⟨_,run⟩ := trace updates current checked
   obtain ⟨A,_,ca,moved⟩ := run w W hw stop hW

@@ -65,7 +65,8 @@ private theorem literalGateUpdates (g : RawGate) (scheduled : g ∈ program) (cu
 /-- Execute any scheduled literal gate at the cutoff on its 661 registers.
 The scalar result is read in the certificate's updated frame snapshot. -/
 theorem orthogonalRawGate [M8.Machine.Net] (cutoff : ℕ) :
-    ∃ (basis : Matrix (Fin 8) (Fin 8) ℕ) (K : ℝ),
+    let basis := orthogonalBasis
+    ∃ K : ℝ,
       (∀ a b, basis a b ≤ 2^28) ∧ (basis.map (Nat.cast : ℕ → ℚ)).det ≠ 0 ∧
       ∀ (g : RawGate), g ∈ program → ∀ current : ℕ → ℕ,
         (∀ i : Fin 661, current i < 636) →
@@ -81,8 +82,9 @@ theorem orthogonalRawGate [M8.Machine.Net] (cutoff : ℕ) :
             (stage.cost : ℝ) ≤ (g.sources.length+1 : ℕ)*(K*V+1)+76*g.sources.length*V+1 ∧
             ∀ x s k (t : Fin 661), stage.transform x t (addr (Frames.step g current t) s k) =
               g.toCircuit.run (Copy.extendStored (fun i : Fin 661 => x i (addr (current i) s k))) t := by
-  obtain ⟨basis,K,small,det,gates⟩ := orthogonalStoppedGate cutoff
-  refine ⟨basis,K,small,det,?_⟩
+  intro basis
+  obtain ⟨K,small,det,gates⟩ := orthogonalStoppedGate cutoff
+  refine ⟨K,small,det,?_⟩
   intro g scheduled current bounded checked w W hw stop hW m V G encode addr
   obtain ⟨dst,src,l,hd,hs,off,cert,finish⟩ := literalGateUpdates g scheduled current bounded checked
   let f := fun i : Fin 661 => (⟨current i,bounded i⟩ : Fin 636)
@@ -109,7 +111,8 @@ theorem orthogonalRawGate [M8.Machine.Net] (cutoff : ℕ) :
 
 /-- Run a certified gate sequence in its successive literal frame snapshots. -/
 theorem orthogonalGateSequence [M8.Machine.Net] (cutoff : ℕ) :
-    ∃ (basis : Matrix (Fin 8) (Fin 8) ℕ) (K : ℝ),
+    let basis := orthogonalBasis
+    ∃ K : ℝ,
       (∀ a b, basis a b ≤ 2^28) ∧ (basis.map (Nat.cast : ℕ → ℚ)).det ≠ 0 ∧
       ∀ (gs : List RawGate), (∀ g ∈ gs, g ∈ program) → ∀ current : ℕ → ℕ,
         (∀ i : Fin 661, current i < 636) →
@@ -125,8 +128,9 @@ theorem orthogonalGateSequence [M8.Machine.Net] (cutoff : ℕ) :
             (stage.cost : ℝ) ≤ (gs.map (fun g => ((g.sources.length+1 : ℕ) : ℝ)*(K*V+1)+76*g.sources.length*V+2)).sum ∧
             ∀ x s k (t : Fin 661), stage.transform x t (addr (Frames.run gs current t) s k) =
               Circuit.run (gs.map RawGate.toCircuit) (Copy.extendStored (fun i : Fin 661 => x i (addr (current i) s k))) t := by
-  obtain ⟨basis,K,small,det,gate⟩ := orthogonalRawGate cutoff
-  refine ⟨basis,K,small,det,?_⟩
+  intro basis
+  obtain ⟨K,small,det,gate⟩ := orthogonalRawGate cutoff
+  refine ⟨K,small,det,?_⟩
   intro gs
   induction gs with
   | nil =>
@@ -184,7 +188,8 @@ private theorem finishBounded (xs : List (ℕ × ℕ)) (current : ℕ → ℕ)
 /-- Both literal phase lists use one basis and scan bound on opposite sides
 of the scatter. Each output is the scalar program evaluated registerwise. -/
 theorem orthogonalStoppedPhases [M8.Machine.Net] (cutoff : ℕ) :
-    ∃ (basis : Matrix (Fin 8) (Fin 8) ℕ) (K : ℝ),
+    let basis := orthogonalBasis
+    ∃ K : ℝ,
       (∀ a b, basis a b ≤ 2^28) ∧ (basis.map (Nat.cast : ℕ → ℚ)).det ≠ 0 ∧
       ∀ afterScatter : Bool,
         let gs := if afterScatter then sectionB ++ sectionC else sectionD ++ sectionA
@@ -200,8 +205,9 @@ theorem orthogonalStoppedPhases [M8.Machine.Net] (cutoff : ℕ) :
             (stage.cost : ℝ) ≤ (gs.map (fun g => ((g.sources.length+1 : ℕ) : ℝ)*(K*V+1)+76*g.sources.length*V+2)).sum ∧
             ∀ x s k (t : Fin 661), stage.transform x t (addr (Frames.run gs current t) s k) =
               Circuit.run (gs.map RawGate.toCircuit) (Copy.extendStored (fun i : Fin 661 => x i (addr (current i) s k))) t := by
-  obtain ⟨basis,K,small,det,seq⟩ := orthogonalGateSequence cutoff
-  refine ⟨basis,K,small,det,?_⟩
+  intro basis
+  obtain ⟨K,small,det,seq⟩ := orthogonalGateSequence cutoff
+  refine ⟨K,small,det,?_⟩
   intro afterScatter gs current
   have checked := Geometry.Moves.phase_checked
   rw [Geometry.Moves.phaseEdges,List.forall_mem_append] at checked
