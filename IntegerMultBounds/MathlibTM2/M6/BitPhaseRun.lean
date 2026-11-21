@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.Machine.LabelRowXor
 public import IntegerMultBounds.MathlibTM2.M6.BitCopyLabel
 public import IntegerMultBounds.MathlibTM2.M6.BitNodeCost
 public import IntegerMultBounds.MathlibTM2.M6.BitPortRun
@@ -1127,6 +1128,46 @@ theorem InvocationEffect.liveEndpoint {n : Fin 9} {r : Fin 32} {d : Fin 5}
   intro owner input g live
   exact act.gramEndpoint z stored g live (fun h unit _ => input h unit)
 
+private theorem InvocationEffect.targetRead_permutation {n : Fin 9} {r : Fin 32} {d : Fin 5}
+    {w B K : ℕ} {x y} (act : InvocationEffect n r d w B K x y)
+    (z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B) (t : Fin 111) :
+    let R := Matrix (Fin 64) (Fin 64) (ZMod (prime^w))
+    ∀ {Labels : Type} [Fintype Labels] (label : Labels → R),
+    (∀ l : Copy.Lifecycle, ∃ perm : Labels ≃ Labels, ∀ g, label (perm g) =
+      label g*(registerChart w n (111+t.val)).transpose*registerChart w n l.source) →
+    let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n r d,ownerTape_injective n r d⟩
+    let initial := fun h => FramedCircuit.decode (fun j => selectedFrame w (Frames.snapshot Frames.initialRefs j))
+      (phaseRead owner x (labelSpectator h z))
+    let i : Fin 661 := ⟨111+t.val,by omega⟩
+    (∑ g : Labels, phaseRead owner y (labelSpectator (label g) z) i.val) =
+      selectedFrame w (Frames.finalRefs i.val)
+        ((∑ g : Labels, initial (label g) i.val) + ∑ g : Labels, initial (label g) t.val) := by
+  classical
+  intro R Labels inst label permutes owner initial i
+  let prep := fun h => FramedCircuit.moduleRun ((sectionD++sectionA).map RawGate.toCircuit) (initial h)
+  let windows := Copy.lifecycles.filter (fun l => i.val ∈ l.targets)
+  let diff := fun (l : Copy.Lifecycle) (g : Labels) =>
+    prep ((label g)*(registerChart w n i.val).transpose*registerChart w n l.source) l.source - prep (label g) l.source
+  have cancel (l : Copy.Lifecycle) : ∑ g : Labels, diff l g = 0 := by
+    obtain ⟨perm,action⟩ := permutes l
+    unfold diff
+    rw [Finset.sum_sub_distrib,sub_eq_zero]
+    calc
+      _ = ∑ g : Labels, prep (label (perm g)) l.source :=
+        Finset.sum_congr rfl (fun g _ => congrArg (fun h => prep h l.source) (action g).symm)
+      _ = _ := Equiv.sum_comp perm (fun g => prep (label g) l.source)
+  have allWindows (ls : List Copy.Lifecycle) :
+      (∑ g : Labels, (ls.map (fun l => diff l g)).sum) = 0 := by
+    induction ls with
+    | nil => simp
+    | cons l ls ih => simp only [List.map_cons,List.sum_cons,Finset.sum_add_distrib,cancel,ih,add_zero]
+  have atLabel (g : Labels) := act.targetRead (label g) z t
+  calc
+    _ = ∑ g : Labels, selectedFrame w (Frames.finalRefs i.val)
+        (initial (label g) i.val + initial (label g) t.val + (windows.map (fun l => diff l g)).sum) :=
+      Finset.sum_congr rfl (fun g _ => atLabel g)
+    _ = _ := by rw [← map_sum,Finset.sum_add_distrib,Finset.sum_add_distrib,allWindows,add_zero]
+
 /-- Each relative COPY chart is orthogonal, so it preserves the row Gram
 matrix of a live label. Every union of Gram classes therefore has its
 own aggregate endpoint, including the full set of live labels. -/
@@ -1145,43 +1186,55 @@ theorem InvocationEffect.targetRead_sum {n : Fin 9} {r : Fin 32} {d : Fin 5}
         ((∑ g : Labels, initial g.val.val i.val) + ∑ g : Labels, initial g.val.val t.val) := by
   classical
   intro R keep Labels owner initial i
-  let prep := fun h => FramedCircuit.moduleRun ((sectionD++sectionA).map RawGate.toCircuit) (initial h)
-  let windows := Copy.lifecycles.filter (fun l => i.val ∈ l.targets)
-  let diff := fun (l : Copy.Lifecycle) (g : Labels) =>
-    prep (g.val.val*(registerChart w n i.val).transpose*registerChart w n l.source) l.source - prep g.val.val l.source
-  have cancel (l : Copy.Lifecycle) : ∑ g : Labels, diff l g = 0 := by
-    let chart (j : ℕ) : Rˣ := ⟨registerChart w n j,(registerChart w n j).transpose,
-      mul_eq_one_comm.mp (registerChart_inverse w n j),registerChart_inverse w n j⟩
-    let route := (chart i.val)⁻¹ * chart l.source
-    have gram (g : Rˣ) : (g*route).val*(g*route).val.transpose = g.val*g.val.transpose := by
-      change (g.val*((registerChart w n i.val).transpose*registerChart w n l.source))*
-        (g.val*((registerChart w n i.val).transpose*registerChart w n l.source)).transpose = _
-      rw [← Matrix.mul_assoc]
-      exact registerChart_gram _ _ _ _ _
-    let permute : Labels ≃ Labels := (Equiv.mulRight route).subtypeEquiv (fun g => by
-      change keep (g.val*g.val.transpose) = true ↔ keep ((g*route).val*(g*route).val.transpose) = true
-      rw [gram])
-    have perm := Equiv.sum_comp permute (fun g : Labels => prep g.val.val l.source)
-    unfold diff
-    rw [Finset.sum_sub_distrib,sub_eq_zero]
-    change (∑ g : Labels, prep (g.val.val*((registerChart w n i.val).transpose*registerChart w n l.source)) l.source) = _ at perm
-    calc
-      _ = ∑ g : Labels, prep (g.val.val*((registerChart w n i.val).transpose*registerChart w n l.source)) l.source := by
-        apply Finset.sum_congr rfl
-        intro g _
-        rw [Matrix.mul_assoc]
-      _ = _ := perm
-  have allWindows (ls : List Copy.Lifecycle) :
-      (∑ g : Labels, (ls.map (fun l => diff l g)).sum) = 0 := by
-    induction ls with
-    | nil => simp
-    | cons l ls ih => simp only [List.map_cons,List.sum_cons,Finset.sum_add_distrib,cancel,ih,add_zero]
-  have atLabel (g : Labels) := act.targetRead g.val.val z t
-  calc
-    _ = ∑ g : Labels, selectedFrame w (Frames.finalRefs i.val)
-        (initial g.val.val i.val + initial g.val.val t.val + (windows.map (fun l => diff l g)).sum) :=
-      Finset.sum_congr rfl (fun g _ => atLabel g)
-    _ = _ := by rw [← map_sum,Finset.sum_add_distrib,Finset.sum_add_distrib,allWindows,add_zero]
+  apply act.targetRead_permutation z t (fun g : Labels => g.val.val)
+  intro l
+  let chart (j : ℕ) : Rˣ := ⟨registerChart w n j,(registerChart w n j).transpose,
+    mul_eq_one_comm.mp (registerChart_inverse w n j),registerChart_inverse w n j⟩
+  let route := (chart i.val)⁻¹ * chart l.source
+  have gram (g : Rˣ) : (g*route).val*(g*route).val.transpose = g.val*g.val.transpose := by
+    change (g.val*((registerChart w n i.val).transpose*registerChart w n l.source))*
+      (g.val*((registerChart w n i.val).transpose*registerChart w n l.source)).transpose = _
+    rw [← Matrix.mul_assoc]
+    exact registerChart_gram _ _ _ _ _
+  let permute : Labels ≃ Labels := (Equiv.mulRight route).subtypeEquiv (fun g => by
+    change keep (g.val*g.val.transpose) = true ↔ keep ((g*route).val*(g*route).val.transpose) = true
+    rw [gram])
+  refine ⟨permute,fun g => ?_⟩
+  change g.val.val*((registerChart w n i.val).transpose*registerChart w n l.source) = _
+  rw [Matrix.mul_assoc]
+
+/-- Every physical matrix row, including singular padding, contributes to
+this sum. Recovery can therefore scan the label box without a class test. -/
+theorem InvocationEffect.targetRead_box {n : Fin 9} {r : Fin 32} {d : Fin 5}
+    {w B K : ℕ} {x y} (act : InvocationEffect n r d w B K x y)
+    (z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B) (t : Fin 111) :
+    let R := Cover.LabelPadding.Label 64 w
+    let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n r d,ownerTape_injective n r d⟩
+    let total := fun j => ∑ g : R, phaseRead owner x (labelSpectator g z) j
+    let initial := fun j => (selectedFrame w (Frames.initialRefs j)).symm (total j)
+    (∑ g : R, phaseRead owner y (labelSpectator g z) (111+t.val)) =
+      selectedFrame w (Frames.finalRefs (111+t.val)) (initial (111+t.val) + initial t.val) := by
+  classical
+  intro R owner total initial
+  have permutes (l : Copy.Lifecycle) :
+      ∃ perm : R ≃ R, ∀ g, perm g = g*(registerChart w n (111+t.val)).transpose*registerChart w n l.source := by
+    let A := registerChart w n (111+t.val)
+    let B := registerChart w n l.source
+    have left := registerChart_inverse w n (111+t.val)
+    have right := registerChart_inverse w n l.source
+    change A.transpose*A = 1 at left
+    change B.transpose*B = 1 at right
+    refine ⟨⟨fun g => g*A.transpose*B,fun g => g*B.transpose*A,?_,?_⟩,fun _ => rfl⟩
+    · intro g
+      change g*A.transpose*B*B.transpose*A = g
+      rw [Matrix.mul_assoc (g*A.transpose) B,mul_eq_one_comm.mp right,Matrix.mul_one,Matrix.mul_assoc,left,Matrix.mul_one]
+    · intro g
+      change g*B.transpose*A*A.transpose*B = g
+      rw [Matrix.mul_assoc (g*B.transpose) A,mul_eq_one_comm.mp left,Matrix.mul_one,Matrix.mul_assoc,right,Matrix.mul_one]
+  have read := act.targetRead_permutation z t (fun g : R => g) permutes
+  dsimp only at read
+  simpa only [initial,total,FramedCircuit.decode,Frames.snapshot,
+    ite_eq_left (show 111+t.val < 661 by omega),ite_eq_left (show t.val < 661 by omega),map_sum,owner] using read
 
 /-- The complete invocation acts on a Gram-class sum just as the scalar
 word acts on the decoded input sums, for every retained register. -/
@@ -1223,6 +1276,68 @@ noncomputable def singleLabelBank {w B K : ℕ} (label : Cover.LabelPadding.Labe
   let block : Fin B × Fin (prime^(64*(w*64))) := finProdFinEquiv.symm tail.1
   if block.2.val = (Cover.LabelAddress.address label).val then
     x i (finProdFinEquiv (active.1,finProdFinEquiv (block.1,tail.2))) else 0
+
+/-- XOR the full matrix box at a fixed active address, inherited block and
+trailing spectator, in the physical row numbering. -/
+noncomputable def collapseLabelBank {w B K : ℕ}
+    (x : Fin 142081 → Fin ((prime^w)^16*(B*prime^(64*(w*64))*K)) → ZMod 2)
+    (i : Fin 142081) (p : Fin ((prime^w)^16*(B*K))) : ZMod 2 :=
+  let active : Fin ((prime^w)^16) × Fin (B*K) := finProdFinEquiv.symm p
+  let block : Fin B × Fin K := finProdFinEquiv.symm active.2
+  ∑ row : Fin (prime^(64*(w*64))), x i
+    (finProdFinEquiv (active.1,finProdFinEquiv (finProdFinEquiv (block.1,row),block.2)))
+
+/-- Scan all physical label rows of one active address and inherited block.
+The result is the complete collapsed spectator record at linear volume cost. -/
+theorem collapseLabelBlock_run {w B K : ℕ} (hK : 0 < K)
+    (x : Fin 142081 → Fin ((prime^w)^16*(B*prime^(64*(w*64))*K)) → ZMod 2)
+    (i : Fin 142081) (a : Fin ((prime^w)^16)) (b : Fin B) (v : Tapes 2 prime) :
+    let N := prime^(64*(w*64))
+    let bits := FlatCoordinateSchedule.bits
+    (∀ (row : Fin N) (j : Fin K), v.tape 0 (v.head 0+row.val*K+j.val) = SparseRoleCircuit.encode
+      (x i (finProdFinEquiv (a,finProdFinEquiv (finProdFinEquiv (b,row),j))))) →
+    (∀ j : Fin K, v.tape 1 (v.head 1+j.val) = SparseRoleCircuit.encode 0) →
+    ∃ out, HoareTime (LabelRowXor.program prime) (fun s => s = LabelRowXor.bank v (bits K) (bits N))
+        (fun s => s = LabelRowXor.bank out (bits K) (bits N)) (111*(N*K)) ∧
+      out.head 0 = v.head 0 + N*K ∧ out.head 1 = v.head 1 ∧ out.tape 0 = v.tape 0 ∧
+      (∀ j : Fin K, out.tape 1 (v.head 1+j.val) = SparseRoleCircuit.encode
+        (collapseLabelBank x i (finProdFinEquiv (a,finProdFinEquiv (b,j))))) ∧
+      ∀ z, ¬(v.head 1 ≤ z ∧ z < v.head 1+K) → out.tape 1 z = v.tape 1 z := by
+  intro N bits input zero
+  obtain ⟨out,run,hsrc,hdst,src,acc,off⟩ := LabelRowXor.run v (bits K) (bits N) K N
+    (FlatCoordinateSchedule.bits_value K) (FlatCoordinateSchedule.bits_value N) _ (fun _ => 0) input zero
+  refine ⟨out,run.consequence (fun _ h => h) (fun _ h => h) ?_,hsrc,hdst,src,?_,off⟩
+  · have hn : 0 < N := pow_pos Shared50ModularControl.prime_prime.pos _
+    have width := FlatCoordinateDimensions.bits_length_le_twice (Nat.le_refl K) hK
+    have count := FlatCoordinateDimensions.bits_length_le_twice (Nat.le_refl N) hn
+    have scan := Nat.mul_le_mul_left N (show 14*K+14*(bits K).length+39 ≤ 81*K by
+      change 14*K+14*(FlatCoordinateSchedule.bits K).length+39 ≤ 81*K
+      omega)
+    have volume := Nat.le_mul_of_pos_right N hK
+    change N*(14*K+14*(FlatCoordinateSchedule.bits K).length+39)+7*(FlatCoordinateSchedule.bits N).length+16 ≤ _
+    dsimp only [bits] at scan
+    rw [show N*(81*K) = 81*(N*K) by ring] at scan
+    omega
+  · intro j
+    simpa only [collapseLabelBank,Equiv.symm_apply_apply,zero_add] using acc j
+
+theorem collapse_singleLabelBank {w B K : ℕ} (label : Cover.LabelPadding.Label 64 w)
+    (x : Fin 142081 → Fin ((prime^w)^16*(B*K)) → ZMod 2) :
+    collapseLabelBank (singleLabelBank label x) = x := by
+  classical
+  funext i p
+  obtain ⟨⟨a,tail⟩,rfl⟩ := (finProdFinEquiv : Fin ((prime^w)^16) × Fin (B*K) ≃ _).surjective p
+  obtain ⟨⟨b,k⟩,rfl⟩ := (finProdFinEquiv : Fin B × Fin K ≃ _).surjective tail
+  have count : (prime^w)^(64*64) = prime^(64*(w*64)) := by rw [← pow_mul]; congr 1; omega
+  let row := (Cover.LabelAddress.address label).cast count
+  simp only [collapseLabelBank,singleLabelBank,Equiv.symm_apply_apply]
+  rw [Finset.sum_eq_single row]
+  · simp [row]
+  · intro j _ ne
+    have different : j.val ≠ row.val := fun eq => ne (Fin.ext eq)
+    simp only [row,Fin.val_cast] at different
+    simp only [ite_eq_right different]
+  · simp
 
 theorem singleLabelBank_read {w B K : ℕ} (label g : Cover.LabelPadding.Label 64 w)
     (x : Fin 142081 → Fin ((prime^w)^16*(B*K)) → ZMod 2) (i : Fin 142081)
