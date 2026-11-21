@@ -2,6 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.M6.ModularPhase
 public import IntegerMultBounds.Networks.Certificates.PR589.Nine.PortLabels
+public import IntegerMultBounds.Networks.Certificates.PR589.FramedDirty
 public import IntegerMultBounds.Networks.ModularFrameSchedule
 
 /-! Images of the physical source and target frames in translated coordinates. -/
@@ -231,15 +232,15 @@ theorem portFrame_uniform_correction (t : Fin 111) (w : ℕ) :
 
 /-- At a data source the physical initial frame exchanges precisely the
 translated port line. This identifies its image even over a prime-power ring. -/
-theorem sourceFrame_image (w : ℕ) (t : Fin 111) :
-    ∃ U : Matrix (Fin 8) (Fin 8) (ZMod (prime^w)), U * U = U ∧
+private theorem sourceFrame_projector (w : ℕ) (t : Fin 111) :
+    ∃ U : Matrix (Fin 8) (Fin 8) (ZMod (prime^w)), U = reduce (prime^w) (selectedProjector ⟨2+t.val,by omega⟩) ∧ U * U = U ∧
       LinearMap.range U.mulVecLin = Submodule.span _ {fun j : Fin 8 => (translatedEntry t j.val : ZMod (prime^w))} ∧
       ∀ (f : AddressStream (ZMod (prime^w))) x,
         selectedFrame w (Frames.initialRefs t.val) f x = f (M8.Exchange.exchange U x) := by
-  obtain ⟨P,idem,image,action⟩ := selectedFrame_projectors w
+  obtain ⟨P,reduceP,idem,image,action⟩ := (modular_scatter w).choose_spec.2.2.2.2.1
   obtain ⟨initial,labels,_⟩ := Nine.source_frames t.val t.isLt
   let l : Fin 636 := ⟨2+t.val, by omega⟩
-  refine ⟨P l,idem l,(image l).trans ?_,?_⟩
+  refine ⟨P l,reduceP l,idem l,(image l).trans ?_,?_⟩
   · unfold translatedLabel
     congr 1
     ext v
@@ -253,6 +254,14 @@ theorem sourceFrame_image (w : ℕ) (t : Fin 111) :
       exact ⟨⟨t,by change t.val ∈ Frames.labels (2+t.val); simp only [labels,List.mem_singleton]⟩,rfl⟩
   · rw [initial]
     exact action l
+
+theorem sourceFrame_image (w : ℕ) (t : Fin 111) :
+    ∃ U : Matrix (Fin 8) (Fin 8) (ZMod (prime^w)), U * U = U ∧
+      LinearMap.range U.mulVecLin = Submodule.span _ {fun j : Fin 8 => (translatedEntry t j.val : ZMod (prime^w))} ∧
+      ∀ (f : AddressStream (ZMod (prime^w))) x,
+        selectedFrame w (Frames.initialRefs t.val) f x = f (M8.Exchange.exchange U x) := by
+  obtain ⟨U,_,h⟩ := sourceFrame_projector w t
+  exact ⟨U,h⟩
 
 open Matrix in
 /-- Substitution of X - 2 recovers the original polynomial coefficients. -/
@@ -272,6 +281,116 @@ open Matrix in
 /-- The port's normal covector in translated coordinates. -/
 def targetNormal (t : Fin 111) : Fin 8 → ℤ :=
   (fun i : Fin 8 => (Frames.lines t.val).getD i.val 0) ᵥ* undoTranslation
+
+private theorem portPairing (t : Fin 111) :
+    targetNormal t ⬝ᵥ (fun j => translatedEntry t j.val) = 4 := by
+  rw [targetNormal, ← dotProduct_mulVec, undoTranslation_line]
+  simpa only [dotProduct,← Nine.port_lines t.val t.isLt] using (Nine.port_checked t.val t.isLt).1
+
+/-- The port line projector in translated coordinates. The normalization
+is valid at every machine precision since four is a unit. -/
+noncomputable def translatedPortProjector (R : Type*) [CommRing R] (quarter : R) (t : Fin 111) :
+    Matrix (Fin 8) (Fin 8) R :=
+  quarter • vecMulVec (fun i => (translatedEntry t i.val : R)) (fun i => (targetNormal t i : R))
+
+private theorem translatedPort_apply {R : Type*} [CommRing R] (q : R) (t : Fin 111) (x : Fin 8 → R) :
+    translatedPortProjector R q t *ᵥ x =
+      (q*((fun i => (targetNormal t i : R)) ⬝ᵥ x)) • (fun i : Fin 8 => (translatedEntry t i.val : R)) := by
+  ext i
+  simp only [translatedPortProjector,smul_mulVec,vecMulVec_mulVec,Pi.smul_apply,smul_eq_mul,
+    MulOpposite.smul_eq_mul_unop,MulOpposite.unop_op]
+  ring
+
+/-- Undoing the translation carries the projector back to the rational
+port certificate's exact line projector. -/
+theorem translatedPort_original (t : Fin 111) :
+    let D := undoTranslation.map (Int.cast : ℤ → ℚ)
+    D * translatedPortProjector ℚ (4:ℚ)⁻¹ t = (Nine.port t.val).lineProj * D := by
+  intro D
+  let l := fun i : Fin 8 => ((Nine.port t.val).line i : ℚ)
+  have formula : (Nine.port t.val).lineProj = (4:ℚ)⁻¹ • vecMulVec l l := by
+    ext i j
+    change _ / 4 = (4:ℚ)⁻¹ * (l i*l j)
+    rw [div_eq_mul_inv,mul_comm]
+  have line : D *ᵥ (fun j : Fin 8 => (translatedEntry t j.val : ℚ)) = l := by
+    funext i
+    have eq := congrArg (Int.cast : ℤ → ℚ) (congrFun (undoTranslation_line t) i)
+    simpa only [D,l,Matrix.mulVec,dotProduct,Int.cast_sum,Int.cast_mul,Matrix.map_apply,Nine.port_lines t.val t.isLt] using eq
+  have normal : l ᵥ* D = fun i => (targetNormal t i : ℚ) := by
+    ext i
+    simp only [D,l,targetNormal,vecMul,dotProduct,Int.cast_sum,Int.cast_mul,Matrix.map_apply,Nine.port_lines t.val t.isLt]
+  rw [translatedPortProjector,formula,Matrix.mul_smul,Matrix.smul_mul,mul_vecMulVec,vecMulVec_mul,line,normal]
+
+/-- Reduction of the rational port projector agrees entry by entry with
+the projector used for the machine's address corrections. -/
+theorem translatedPort_reduction (w : ℕ) (t : Fin 111) :
+    let m := prime^w
+    reduce m (translatedPortProjector ℚ (4:ℚ)⁻¹ t) =
+      translatedPortProjector (ZMod m) (4:ZMod m)⁻¹ t := by
+  intro m
+  have unit : IsUnit (4 : ZMod m) := by simpa using prefix_denominator_unit 4 (by decide) (by decide) w
+  have four : Nat.Coprime 4 m := (ZMod.isUnit_iff_coprime 4 m).mp unit
+  have integral (z : ℤ) : ratMod m (z : ℚ) = (z : ZMod m) := by simp [ratMod]
+  have quarter : ratMod m (4:ℚ)⁻¹ = (4:ZMod m)⁻¹ := by
+    unfold ratMod
+    norm_num
+  ext i j
+  change ratMod m ((4:ℚ)⁻¹*((translatedEntry t i.val : ℚ)*(targetNormal t j : ℚ))) = _
+  rw [← Int.cast_mul,ratMod_mul m (by simpa using four) (by rw [Rat.den_intCast]; exact Nat.coprime_one_left _),quarter,integral]
+  simp [translatedPortProjector,vecMulVec_apply]
+
+/-- The same translation intertwines the two port projectors after
+reduction at every width. It is an invertible change of address. -/
+theorem translatedPort_modular (w : ℕ) (t : Fin 111) :
+    let m := prime^w
+    let D := undoTranslation.map (Int.cast : ℤ → ZMod m)
+    IsUnit D ∧ D * translatedPortProjector (ZMod m) (4:ZMod m)⁻¹ t =
+      reduce m (Nine.port t.val).lineProj * D := by
+  intro m D
+  have triangular : D.IsUpperTriangular := by
+    intro i j h
+    simp [D,undoTranslation,Nat.choose_eq_zero_of_lt (show j.val < i.val from h)]
+  have diag (i : Fin 8) : D i i = 1 := by simp [D,undoTranslation]
+  refine ⟨(Matrix.isUnit_iff_isUnit_det _).mpr (by simp [D.det_of_isUpperTriangular triangular,diag]),?_⟩
+  let Q := undoTranslation.map (Int.cast : ℤ → ℚ)
+  have adm : Admissible m Q := by intro i j; simp [Q]
+  have reduction : reduce m Q = D := by ext i j; simp [Q,D,reduce,ratMod]
+  have unit : IsUnit (4 : ZMod m) := by simpa using prefix_denominator_unit 4 (by decide) (by decide) w
+  have quarter : ((4:ℚ)⁻¹).den.Coprime m := by simpa using (ZMod.isUnit_iff_coprime 4 m).mp unit
+  have product (x y : ℤ) : ((4:ℚ)⁻¹*((x:ℚ)*y)).den.Coprime m := by
+    rw [← Int.cast_mul]
+    exact Nat.Coprime.coprime_dvd_left (Rat.mul_den_dvd ..) (Nat.Coprime.mul_left quarter (by rw [Rat.den_intCast]; exact Nat.coprime_one_left _))
+  have translated : Admissible m (translatedPortProjector ℚ (4:ℚ)⁻¹ t) :=
+    fun i j => product (translatedEntry t i.val) (targetNormal t j)
+  have original : Admissible m (Nine.port t.val).lineProj := by
+    intro i j
+    change (((_:ℚ)*_)/4).den.Coprime m
+    rw [div_eq_mul_inv,mul_comm]
+    exact product _ _
+  have eq := congrArg (reduce m) (translatedPort_original t)
+  rw [reduce_mul m adm translated,reduce_mul m original adm,reduction,translatedPort_reduction] at eq
+  exact eq
+
+/-- Translating both address halves commutes with the logical source
+exchange and with its complementary target exchange. -/
+theorem portExchange_original (w : ℕ) (t : Fin 111) :
+    let R := ZMod (prime^w)
+    let D := undoTranslation.map (Int.cast : ℤ → R)
+    let P := translatedPortProjector R (4:R)⁻¹ t
+    let L := reduce (prime^w) (Nine.port t.val).lineProj
+    ∀ s : Swap.Shear.State (Fin 8) R,
+      M8.Exchange.transform D D (M8.Exchange.exchange P s) =
+        M8.Exchange.exchange L (M8.Exchange.transform D D s) ∧
+      M8.Exchange.transform D D (M8.Exchange.exchange (1-P) s) =
+        M8.Exchange.exchange (1-L) (M8.Exchange.transform D D s) := by
+  intro R D P L s
+  have changeFrames {S : Type} [CommRing S] (D A B : Matrix (Fin 8) (Fin 8) S)
+      (s : Swap.Shear.State (Fin 8) S) (eq : D*A=B*D) :
+      M8.Exchange.transform D D (M8.Exchange.exchange A s) = M8.Exchange.exchange B (M8.Exchange.transform D D s) := by
+    have comp : D*(1-A)=(1-B)*D := by rw [mul_sub,sub_mul,mul_one,one_mul,eq]
+    simp only [M8.Exchange.transform,M8.Exchange.exchange,mulVec_add,mulVec_mulVec,eq,comp]
+  have port : D*P=L*D := (translatedPort_modular w t).2
+  exact ⟨changeFrames (S := R) D P L s port,changeFrames (S := R) D (1-P) (1-L) s (by rw [mul_sub,sub_mul,mul_one,one_mul,port])⟩
 
 private theorem targetNormal_unit (w : ℕ) (t : Fin 111) :
     IsUnit (targetNormal t (Fin.last 7) : ZMod (prime^w)) := by
@@ -301,7 +420,7 @@ open Matrix in
 linear form on the first seven digits, over every machine radix. -/
 private theorem targetFrame_graph (w : ℕ) (t : Fin 111) :
     let R := ZMod (prime^w)
-    ∃ (U : Matrix (Fin 8) (Fin 8) R) (a : Fin 7 → R), U * U = U ∧
+    ∃ (U : Matrix (Fin 8) (Fin 8) R) (a : Fin 7 → R), U = reduce (prime^w) (selectedProjector ⟨525+t.val,by omega⟩) ∧ U * U = U ∧
       LinearMap.range U.mulVecLin = translatedLabel w (525+t.val) ∧
       (∀ x : Fin 8 → R, x ∈ LinearMap.range U.mulVecLin ↔
         x (Fin.last 7) = ∑ i : Fin 7, x i.castSucc * a i) ∧
@@ -310,7 +429,7 @@ private theorem targetFrame_graph (w : ℕ) (t : Fin 111) :
   intro R
   obtain ⟨_,label,dim,_⟩ := Nine.target_frames t.val t.isLt
   let l : Fin 636 := ⟨525+t.val,by omega⟩
-  obtain ⟨P,idem,images,read⟩ := selectedFrame_projectors w
+  obtain ⟨P,reduceP,idem,images,read⟩ := (modular_scatter w).choose_spec.2.2.2.2.1
   obtain ⟨_,_,frames⟩ := compatible_label_frames
   obtain ⟨B,bound,_,norm,ranges,_⟩ := frames w
   have graph : ∃ A : Matrix (Fin 7) (Fin 8) R,
@@ -326,7 +445,7 @@ private theorem targetFrame_graph (w : ℕ) (t : Fin 111) :
       exact ⟨A,normalized,image⟩
     exact transport (bound l) (B l) (norm l) (ranges l) dim
   obtain ⟨A,normalized,image⟩ := graph
-  refine ⟨P l,fun i => A i (Fin.last 7),idem l,images l,?_,?_⟩
+  refine ⟨P l,fun i => A i (Fin.last 7),reduceP l,idem l,images l,?_,?_⟩
   · intro x
     rw [images l,← image]
     have leading (v : Fin 7 → R) : (v ᵥ* A) ∘ Fin.castSucc = v := by
@@ -349,16 +468,16 @@ private theorem targetFrame_graph (w : ℕ) (t : Fin 111) :
 open Matrix in
 /-- The physical final target frame exchanges a projector onto the orthogonal
 hyperplane of its port, expressed in the translated machine coordinates. -/
-theorem targetFrame_image (w : ℕ) (t : Fin 111) :
+private theorem targetFrame_projector (w : ℕ) (t : Fin 111) :
     let R := ZMod (prime^w)
-    ∃ U : Matrix (Fin 8) (Fin 8) R, U * U = U ∧
+    ∃ U : Matrix (Fin 8) (Fin 8) R, U = reduce (prime^w) (selectedProjector ⟨525+t.val,by omega⟩) ∧ U * U = U ∧
       (∀ x : Fin 8 → R, x ∈ LinearMap.range U.mulVecLin ↔
         (fun i => (targetNormal t i : R)) ⬝ᵥ x = 0) ∧
       ∀ (f : AddressStream R) x, selectedFrame w (Frames.finalRefs (111+t.val)) f x =
         f (M8.Exchange.exchange U x) := by
   intro R
-  obtain ⟨U,a,idem,image,graph,read⟩ := targetFrame_graph w t
-  refine ⟨U,idem,fun x => ⟨fun hx => targetNormal_annihilates w t (image ▸ hx),?_⟩,read⟩
+  obtain ⟨U,a,eq,idem,image,graph,read⟩ := targetFrame_graph w t
+  refine ⟨U,eq,idem,fun x => ⟨fun hx => targetNormal_annihilates w t (image ▸ hx),?_⟩,read⟩
   intro zero
   let z := ∑ i : Fin 7, x i.castSucc * a i
   let y : Fin 8 → R := Fin.lastCases z (fun i => x i.castSucc)
@@ -370,6 +489,16 @@ theorem targetFrame_image (w : ℕ) (t : Fin 111) :
   simp only [y,Fin.lastCases_castSucc,Fin.lastCases_last] at other
   exact (graph x).2 ((targetNormal_unit w t).mul_left_cancel
     (add_left_cancel (zero.trans other.symm)))
+
+theorem targetFrame_image (w : ℕ) (t : Fin 111) :
+    let R := ZMod (prime^w)
+    ∃ U : Matrix (Fin 8) (Fin 8) R, U * U = U ∧
+      (∀ x : Fin 8 → R, x ∈ LinearMap.range U.mulVecLin ↔
+        (fun i => (targetNormal t i : R)) ⬝ᵥ x = 0) ∧
+      ∀ (f : AddressStream R) x, selectedFrame w (Frames.finalRefs (111+t.val)) f x =
+        f (M8.Exchange.exchange U x) := by
+  obtain ⟨U,_,h⟩ := targetFrame_projector w t
+  exact ⟨U,h⟩
 
 open Matrix in
 /-- The source and target images at each physical port give a direct sum
@@ -386,12 +515,9 @@ theorem portFrame_images_complementary (w : ℕ) (t : Fin 111) :
   obtain ⟨V,vv,target,rv⟩ := targetFrame_image w t
   let v : Fin 8 → R := fun j => translatedEntry t j.val
   let n : Fin 8 → R := fun j => targetNormal t j
-  have pairing : targetNormal t ⬝ᵥ (fun j => translatedEntry t j.val) = 4 := by
-    rw [targetNormal, ← dotProduct_mulVec, undoTranslation_line]
-    simpa only [dotProduct,← Nine.port_lines t.val t.isLt] using (Nine.port_checked t.val t.isLt).1
   have nv : n ⬝ᵥ v = 4 := by
     simpa only [n,v,dotProduct,Int.cast_sum,Int.cast_mul,Int.cast_ofNat] using
-      congrArg (Int.cast : ℤ → ZMod (prime^w)) pairing
+      congrArg (Int.cast : ℤ → ZMod (prime^w)) (portPairing t)
   have unit : IsUnit (4 : R) := by
     simpa using prefix_denominator_unit 4 (by decide) (by decide) w
   refine ⟨U,V,uu,vv,⟨Submodule.disjoint_def.mpr ?_,?_⟩,ru,rv⟩
@@ -413,6 +539,147 @@ theorem portFrame_images_complementary (w : ℕ) (t : Fin 111) :
       x - c • v,(target _).mpr ?_,by abel⟩
     change n ⬝ᵥ (x - c • v) = 0
     rw [dotProduct_sub,dotProduct_smul,nv,smul_eq_mul,coefficient,sub_self]
+
+private theorem fixes_image {R : Type*} [CommRing R] {U : Matrix (Fin 8) (Fin 8) R}
+    (idem : U*U=U) {x} (mem : x ∈ LinearMap.range U.mulVecLin) : U *ᵥ x = x := by
+  obtain ⟨v,rfl⟩ := mem
+  change U *ᵥ (U *ᵥ v) = U *ᵥ v
+  rw [mulVec_mulVec,idem]
+
+/-- The physical and logical source projectors fix one another's images;
+so do the physical and logical target projectors. -/
+theorem portFrame_absorption (w : ℕ) (t : Fin 111) :
+    let R := ZMod (prime^w)
+    let P := translatedPortProjector R (4:R)⁻¹ t
+    let U := reduce (prime^w) (selectedProjector ⟨2+t.val,by omega⟩)
+    let V := reduce (prime^w) (selectedProjector ⟨525+t.val,by omega⟩)
+    U*P=P ∧ P*U=U ∧ V*(1-P)=1-P ∧ (1-P)*V=V ∧
+      (∀ f x, selectedFrame w (Frames.initialRefs t.val) f x = f (M8.Exchange.exchange U x)) ∧
+      (∀ f x, selectedFrame w (Frames.finalRefs (111+t.val)) f x = f (M8.Exchange.exchange V x)) := by
+  intro R P
+  obtain ⟨_,rfl,uu,image,src⟩ := sourceFrame_projector w t
+  obtain ⟨_,rfl,vv,hyperplane,dst⟩ := targetFrame_projector w t
+  intro U V
+  let v := fun i : Fin 8 => (translatedEntry t i.val : R)
+  let n := fun i : Fin 8 => (targetNormal t i : R)
+  have nv : n ⬝ᵥ v = 4 := by
+    simpa only [n,v,dotProduct,Int.cast_sum,Int.cast_mul,Int.cast_ofNat] using
+      congrArg (Int.cast : ℤ → ZMod (prime^w)) (portPairing t)
+  have unit : IsUnit (4:R) := by simpa using prefix_denominator_unit 4 (by decide) (by decide) w
+  have norm (c : R) : (4:R)⁻¹*(c*4) = c := by rw [mul_comm c,← mul_assoc,ZMod.inv_mul_of_unit _ unit,one_mul]
+  have project (x) : P *ᵥ x = ((4:R)⁻¹*(n ⬝ᵥ x)) • v := translatedPort_apply _ _ _
+  refine ⟨?_,?_,?_,?_,src,dst⟩
+  · apply ext_of_mulVec_single
+    intro i
+    rw [← mulVec_mulVec]
+    apply fixes_image uu
+    rw [image,project]
+    exact Submodule.smul_mem _ _ (Submodule.subset_span (Set.mem_singleton _))
+  · apply ext_of_mulVec_single
+    intro i
+    rw [← mulVec_mulVec]
+    have mem : U *ᵥ Pi.single i 1 ∈ LinearMap.range U.mulVecLin := ⟨_,rfl⟩
+    obtain ⟨c,eq⟩ := Submodule.mem_span_singleton.mp (image ▸ mem)
+    rw [project,← eq,dotProduct_smul,nv,smul_eq_mul,norm]
+  · apply ext_of_mulVec_single
+    intro i
+    rw [← mulVec_mulVec]
+    apply fixes_image vv
+    apply (hyperplane _).2
+    change n ⬝ᵥ ((1-P) *ᵥ Pi.single i 1) = 0
+    simp only [sub_mulVec,one_mulVec,project,dotProduct_sub,dotProduct_smul,nv,smul_eq_mul]
+    change _ - ((4:R)⁻¹ * _) * 4 = 0
+    rw [mul_comm _ (4:R),← mul_assoc,ZMod.mul_inv_of_unit _ unit,one_mul,sub_self]
+  · apply ext_of_mulVec_single
+    intro i
+    have zero := (hyperplane _).1 (show V *ᵥ Pi.single i 1 ∈ LinearMap.range V.mulVecLin from ⟨_,rfl⟩)
+    rw [← mulVec_mulVec,sub_mulVec,one_mulVec,project]
+    change _ - ((4:R)⁻¹ * (n ⬝ᵥ _)) • v = _
+    rw [zero,mul_zero,zero_smul,sub_zero]
+
+/-- Changing between partial swaps with the same image adds the same
+address difference to one half and subtracts it from the other. -/
+private theorem exchange_change_image {R : Type*} [CommRing R] {ι : Type*} [Fintype ι] [DecidableEq ι]
+    {U P : Matrix ι ι R} (fixes : U*P=P) (s : Swap.Shear.State ι R) :
+    let delta := (P-U) *ᵥ (s.1-s.2)
+    M8.Exchange.exchange U (M8.Exchange.exchange P s) = (s.1+delta,s.2-delta) := by
+  intro delta
+  apply Prod.ext <;> simp only [delta,M8.Exchange.exchange,sub_mulVec,one_mulVec,
+    mulVec_add,mulVec_sub,mulVec_mulVec,Matrix.sub_mul,Matrix.one_mul,fixes,sub_self,zero_mulVec] <;> abel
+
+/-- Each change of frame is a single scalar transfer between address
+halves. At entry it acts along the translated port line. At exit it
+acts along that line's physical target projection. -/
+theorem portFrame_transfers (w : ℕ) (t : Fin 111) :
+    let R := ZMod (prime^w)
+    let P := translatedPortProjector R (4:R)⁻¹ t
+    let v := fun i : Fin 8 => (translatedEntry t i.val : R)
+    let n := fun i : Fin 8 => (targetNormal t i : R)
+    let U := reduce (prime^w) (selectedProjector ⟨2+t.val,by omega⟩)
+    let V := reduce (prime^w) (selectedProjector ⟨525+t.val,by omega⟩)
+    (∀ f x, selectedFrame w (Frames.initialRefs t.val) f x = f (M8.Exchange.exchange U x)) ∧
+      (∀ f x, selectedFrame w (Frames.finalRefs (111+t.val)) f x = f (M8.Exchange.exchange V x)) ∧
+      ∀ s : Swap.Shear.State (Fin 8) R, let diff := s.1-s.2
+        let src := ((4:R)⁻¹*(n ⬝ᵥ ((1-U) *ᵥ diff))) • v
+        let dst := ((4:R)⁻¹*(n ⬝ᵥ diff)) • (V *ᵥ v)
+        M8.Exchange.exchange P (M8.Exchange.exchange U s) = (s.1-src,s.2+src) ∧
+        M8.Exchange.exchange V (M8.Exchange.exchange (1-P) s) = (s.1-dst,s.2+dst) := by
+  intro R P v n U V
+  obtain ⟨_,pu,vh,_,source,target⟩ := portFrame_absorption w t
+  have sourceDiff : U-P = -(P*(1-U)) := by rw [Matrix.mul_sub,mul_one,pu]; abel
+  have targetDiff : 1-P-V = -(V*P) := by rw [Matrix.mul_sub,mul_one] at vh; rw [← vh]; abel
+  refine ⟨source,target,?_⟩
+  intro s diff src dst
+  have entry := exchange_change_image pu s
+  have exit := exchange_change_image vh s
+  rw [sourceDiff] at entry
+  rw [targetDiff] at exit
+  have project (x : Fin 8 → R) : P *ᵥ x = ((4:R)⁻¹*(n ⬝ᵥ x)) • v := translatedPort_apply _ _ _
+  simp only [neg_mulVec,← mulVec_mulVec,project,mulVec_smul,sub_neg_eq_add,← sub_eq_add_neg] at entry exit
+  exact ⟨entry,exit⟩
+
+/-- The entry correction encodes the logical source in the machine frame.
+At the corrected target address the complete selected word returns the
+logical target and source sum, for arbitrary stored registers. -/
+theorem portTransfer_endpoint (w : ℕ) (t : Fin 111) (stored : Fin 661 → AddressStream (ZMod (prime^w))) :
+    let R := ZMod (prime^w)
+    let P := translatedPortProjector R (4:R)⁻¹ t
+    let U := reduce (prime^w) (selectedProjector ⟨2+t.val,by omega⟩)
+    let V := reduce (prime^w) (selectedProjector ⟨525+t.val,by omega⟩)
+    let v := fun i : Fin 8 => (translatedEntry t i.val : R)
+    let n := fun i : Fin 8 => (targetNormal t i : R)
+    let src : Fin 661 := ⟨t.val,by omega⟩
+    let dst : Fin 661 := ⟨111+t.val,by omega⟩
+    let input := FramedCircuit.encode (fun j => selectedFrame w (Frames.snapshot Frames.initialRefs j))
+      (Copy.extendStored stored)
+    ∀ s : Swap.Shear.State (Fin 8) R, let diff := s.1-s.2
+      let a := ((4:R)⁻¹*(n ⬝ᵥ ((1-U) *ᵥ diff))) • v
+      let b := ((4:R)⁻¹*(n ⬝ᵥ diff)) • (V *ᵥ v)
+      input src.val s = stored src (M8.Exchange.exchange P (s.1-a,s.2+a)) ∧
+      runSelected (selectedFrame w) (selectedWord w) input dst.val (s.1-b,s.2+b) =
+        (stored dst + stored src) (M8.Exchange.exchange (1-P) s) := by
+  intro R P U V v n src dst input s diff a b
+  obtain ⟨up,pu,vh,hv,_,_⟩ := portFrame_absorption w t
+  have idem {A B : Matrix (Fin 8) (Fin 8) R} (ab : A*B=B) (ba : B*A=A) : B*B=B := by
+    calc B*B = B*(A*B) := congrArg (B*·) ab.symm
+         _ = B := by rw [← Matrix.mul_assoc,ba,ab]
+  have pp : P*P=P := idem up pu
+  have vv : V*V=V := idem hv vh
+  obtain ⟨source,target,transfer⟩ := portFrame_transfers w t
+  obtain ⟨entry,exit⟩ := transfer s
+  constructor
+  · have encoded : input src.val = selectedFrame w (Frames.initialRefs t.val) (stored src) := by
+      simp only [input,FramedCircuit.encode,Frames.snapshot,Copy.extendStored,src.isLt,ite_true,↓reduceDIte]
+      rfl
+    rw [encoded,source,← entry,M8.Global.exchange_involutive pp]
+  · have word := ((runSelected_endpoint w).2 stored).trans (Framed.execute_endpoint (selectedFrame w) stored).symm
+    have row := (congrFun word dst.val).trans (Framed.execute_dirty (selectedFrame w) stored dst)
+    have hit : 111 ≤ dst.val ∧ dst.val < 222 := by dsimp [dst]; omega
+    rw [dite_eq_left hit] at row
+    have index : (⟨dst.val-111,by omega⟩ : Fin 661) = src := Fin.ext (by dsimp [dst,src]; omega)
+    rw [index] at row
+    change runSelected _ _ input dst.val = selectedFrame w (Frames.finalRefs (111+t.val)) (stored dst + stored src) at row
+    rw [row,target,← exit,M8.Global.exchange_involutive vv]
 
 open Matrix in
 /-- A change of coordinates takes the actual target projector to the

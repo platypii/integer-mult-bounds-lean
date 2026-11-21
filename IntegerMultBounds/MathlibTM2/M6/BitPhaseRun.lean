@@ -888,6 +888,36 @@ where
       (route : out ≤ mid+D*V+charts+2) :
       out ≤ a+b+(C+D)*V+9*child+charts+13 := by rw [Nat.add_mul]; omega
 
+open Matrix IntegerMultBounds.Swap.Modular in
+/-- Read the actual charted invocation at a corrected target address.
+The input on this label can be any dirty bank. -/
+theorem chartedTarget_read {n : Fin 9} {w B K : ℕ} {owner : Fin 661 ↪ Fin 142081} {x y}
+    (g : Cover.LabelPadding.Label 64 w) (z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B)
+    (run : chartedPhaseRead n owner y g z =
+      runSelected (selectedFrame w) (selectedWord w) (chartedPhaseRead n owner x g z)) (t : Fin 111) :
+    let R := ZMod (prime^w)
+    let P := translatedPortProjector R (4:R)⁻¹ t
+    let V := reduce (prime^w) (selectedProjector ⟨525+t.val,by omega⟩)
+    let v := fun i : Fin 8 => (translatedEntry t i.val : R)
+    let normal := fun i : Fin 8 => (targetNormal t i : R)
+    let stored := fun j : Fin 661 => (selectedFrame w (Frames.initialRefs j.val)).symm
+      (chartedPhaseRead n owner x g z j.val)
+    ∀ s : Swap.Shear.State (Fin 8) R,
+      let delta := ((4:R)⁻¹*(normal ⬝ᵥ (s.1-s.2))) • (V *ᵥ v)
+      chartedPhaseRead n owner y g z (111+t.val) (s.1-delta,s.2+delta) =
+        (stored ⟨111+t.val,by omega⟩ + stored ⟨t.val,by omega⟩) (M8.Exchange.exchange (1-P) s) := by
+  intro R P V v normal stored s delta
+  have encoded : FramedCircuit.encode (fun j => selectedFrame w (Frames.snapshot Frames.initialRefs j))
+      (Copy.extendStored stored) = chartedPhaseRead n owner x g z := by
+    funext j
+    by_cases hj : j < 661
+    · simp only [FramedCircuit.encode,Frames.snapshot,Copy.extendStored,stored,hj,ite_true,↓reduceDIte,
+        LinearEquiv.apply_symm_apply]
+    · simp [FramedCircuit.encode,Copy.extendStored,chartedPhaseRead,hj]
+  have target := (portTransfer_endpoint w t stored s).2
+  rw [encoded,← run] at target
+  exact target
+
 open M8.Machine in
 /-- The routed scatter runs on exactly the flat owner bank consumed by the
 phase programs. Reindexing its proof across the volume equality costs no steps. -/
