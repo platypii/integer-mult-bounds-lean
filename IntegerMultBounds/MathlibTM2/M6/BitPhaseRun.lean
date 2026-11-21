@@ -1287,6 +1287,21 @@ noncomputable def collapseLabelBank {w B K : ℕ}
   ∑ row : Fin (prime^(64*(w*64))), x i
     (finProdFinEquiv (active.1,finProdFinEquiv (finProdFinEquiv (block.1,row),block.2)))
 
+/-- Summing the one-block scan bills over all active addresses and inherited
+blocks charges exactly 111 passes over one role in the represented parent. -/
+theorem collapseLabelBlock_parentBill (v : RecursiveInterchangeLayout.Descriptor) (w B rows : ℕ)
+    (width : v.width = 64*w) (split : v.rows = 142080*rows)
+    (labels : v.beforeH = B*prime^(64*(w*64))) :
+    let K := (prime^w)^112*(v.beforeRows*rows*v.between*v.afterD)
+    (prime^w)^16*B*(111*(prime^(64*(w*64))*K))*142080 =
+      111*RecursiveInterchangeLayout.volume prime v := by
+  intro K
+  have size := (copyChild_measures v w rows width split).2
+  rw [copyChild_volume,labels] at size
+  rw [← size]
+  dsimp only [K]
+  ac_rfl
+
 /-- Scan all physical label rows of one active address and inherited block.
 The result is the complete collapsed spectator record at linear volume cost. -/
 theorem collapseLabelBlock_run {w B K : ℕ} (hK : 0 < K)
@@ -1339,6 +1354,47 @@ theorem collapse_singleLabelBank {w B K : ℕ} (label : Cover.LabelPadding.Label
     simp only [ite_eq_right different]
   · simp
 
+private theorem labelRowCount (w : ℕ) : (prime^w)^(64*64) = prime^(64*(w*64)) := by
+  rw [← pow_mul]; congr 1; omega
+
+private theorem address_bijective (w : ℕ) :
+    Function.Bijective (Cover.LabelAddress.address (m := 64) (Q := prime^w)) := by
+  constructor
+  · intro g h heq
+    ext i j
+    apply ZMod.val_injective
+    rw [← Cover.LabelAddress.entry g i j,← Cover.LabelAddress.entry h i j,heq]
+  · intro row
+    let digits := FlatCoordinateLayout.coordinates row
+    refine ⟨fun i j => digits (finProdFinEquiv (j,i)),?_⟩
+    unfold Cover.LabelAddress.address
+    have unpack : M8.AtomOps.refine (Cover.Route.cols (fun i j => digits (finProdFinEquiv (j,i)))) = digits := by
+      funext k
+      simp only [Cover.Route.cols,M8.AtomOps.refine,Prod.mk.eta,Equiv.apply_symm_apply]
+    rw [unpack,FlatCoordinateLayout.rank_coordinates]
+
+private noncomputable def physicalLabelRow (w : ℕ) :
+    Cover.LabelPadding.Label 64 w ≃ Fin (prime^(64*(w*64))) :=
+  (Equiv.ofBijective _ (address_bijective w)).trans (finCongr (labelRowCount w))
+
+private theorem castRow_val {α : Type*} {m n : ℕ} (f : α → Fin m) (hf : Function.Bijective f)
+    (size : m = n) (g : α) : (((Equiv.ofBijective f hf).trans (finCongr size)) g).val = (f g).val := by
+  subst n
+  rfl
+
+private theorem physicalLabelRow_val {w : ℕ} (g : Cover.LabelPadding.Label 64 w) :
+    (physicalLabelRow w g).val = (Cover.LabelAddress.address g).val :=
+  castRow_val _ (address_bijective w) (labelRowCount w) g
+
+private theorem labelSpectator_pack {w B K : ℕ} (g : Cover.LabelPadding.Label 64 w)
+    (z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B) :
+    labelSpectator g z = finProdFinEquiv (finProdFinEquiv (z.b,physicalLabelRow w g),(z.after : Fin K)) := by
+  apply Fin.ext
+  simp only [labelSpectator,finProdFinEquiv_apply_val,physicalLabelRow_val]
+  exact pack z.b.val (prime^(64*(w*64))) (Cover.LabelAddress.address g).val K z.after.val
+where
+  pack (b N row K k : ℕ) : (b*N+row)*K+k = k+K*(row+N*b) := by ring
+
 theorem singleLabelBank_read {w B K : ℕ} (label g : Cover.LabelPadding.Label 64 w)
     (x : Fin 142081 → Fin ((prime^w)^16*(B*K)) → ZMod 2) (i : Fin 142081)
     (z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B) (s : Swap.Shear.State (Fin 8) (ZMod (prime^w))) :
@@ -1363,6 +1419,38 @@ theorem singleLabelBank_read {w B K : ℕ} (label g : Cover.LabelPadding.Label 6
   rfl
 where
   pack (b N row K k : ℕ) : (b*N+row)*K+k = k+K*(row+N*b) := by ring
+
+/-- Reading the physically collapsed tape is the sum of the matrix-indexed
+reads, for the same active address, inherited block and spectator. -/
+theorem collapseLabelBank_read {w B K : ℕ}
+    (x : Fin 142081 → Fin ((prime^w)^16*(B*prime^(64*(w*64))*K)) → ZMod 2)
+    (owner : Fin 661 ↪ Fin 142081) (z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B) (i : Fin 661) :
+    phaseRead owner (collapseLabelBank x) (finProdFinEquiv (z.b,z.after)) i.val =
+      ∑ g : Cover.LabelPadding.Label 64 w, phaseRead owner x (labelSpectator g z) i.val := by
+  funext s
+  simp only [Finset.sum_apply,phaseRead,Copy.extendStored,dite_eq_left i.isLt,FlatCoordinateLayout.index,
+    collapseLabelBank,Equiv.symm_apply_apply,labelSpectator_pack]
+  exact (Equiv.sum_comp (physicalLabelRow w) (fun row => x (owner i)
+    (finProdFinEquiv (FlatCoordinateLayout.rank (AffineFieldCoordinates.embed s),
+      finProdFinEquiv (finProdFinEquiv (z.b,row),(z.after : Fin K)))))).symm
+
+/-- The scan recovers each target's framed XOR from the two input scans. -/
+theorem InvocationEffect.collapsedTarget {n : Fin 9} {r : Fin 32} {d : Fin 5}
+    {w B K : ℕ} {x y} (act : InvocationEffect n r d w B K x y)
+    (z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B) (t : Fin 111) :
+    let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n r d,ownerTape_injective n r d⟩
+    let j : Fin (B*K) := finProdFinEquiv (z.b,z.after)
+    let initial := fun i => (selectedFrame w (Frames.initialRefs i)).symm
+      (phaseRead owner (collapseLabelBank x) j i)
+    phaseRead owner (collapseLabelBank y) j (111+t.val) =
+      selectedFrame w (Frames.finalRefs (111+t.val)) (initial (111+t.val) + initial t.val) := by
+  intro owner j initial
+  let dst : Fin 661 := ⟨111+t.val,by omega⟩
+  let src : Fin 661 := ⟨t.val,by omega⟩
+  exact (collapseLabelBank_read y owner z dst).trans ((act.targetRead_box z t).trans
+    (congrArg (selectedFrame w (Frames.finalRefs dst.val)) (congrArg₂ (· + ·)
+      (congrArg (selectedFrame w (Frames.initialRefs dst.val)).symm (collapseLabelBank_read x owner z dst).symm)
+      (congrArg (selectedFrame w (Frames.initialRefs src.val)).symm (collapseLabelBank_read x owner z src).symm))))
 
 /-- Summing the physical reads of a single-row encoding recovers the
 original bank at every block and active address of the retained class. -/
