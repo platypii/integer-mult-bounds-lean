@@ -293,16 +293,17 @@ theorem helperFieldCell_swap {α : Type*} {w L W : ℕ} (i : Fin 127) {x y : ℕ
 
 /-- On a common caller volume, each scheduled leaf returns the word consumed by
 the next leaf. The address invariant holds for the complete slot permutation. -/
-theorem helperLabelPacking {w L W : ℕ} {v : Descriptor}
-    (size : volume prime v = (prime^w)^16*(L*((prime^w)^112*W)))
-    (src dst : Option (Fin 56)) :
+theorem helperLabelPacking (src dst : Option (Fin 56)) :
     ∃ is : List ℕ, (∀ i ∈ is, i+1 < 128) ∧
+      ∀ {w L W : ℕ} {v : Descriptor}
+        (size : volume prime v = (prime^w)^16*(L*((prime^w)^112*W))),
       ∀ word c s (label : Fin L) (j : Fin W),
         ext (is.foldl (helperPackingStep size) word) (helperFieldCell (helperSlotField c dst w s) label j) =
           ext word (helperFieldCell (helperSlotField c src w s) label j) := by
   let perm := (helperFieldOrder dst).trans (helperFieldOrder src).symm
   obtain ⟨is,fits,acts⟩ := fieldSchedule perm
   refine ⟨is,fits,?_⟩
+  intro w L W v size
   have fold (js : List ℕ) (valid : ∀ i ∈ js, i+1 < 128)
       (word : Fin (volume prime v) → ZMod 2) (digits : Fin 128 → ZMod (prime^w))
       (label : Fin L) (j : Fin W) :

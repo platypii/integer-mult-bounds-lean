@@ -310,42 +310,38 @@ private theorem payloadBank_stock {n T growth : ℕ} (port : Fin n) (owner : Fin
   rw [← view] at stock
   simpa only [embStk,Function.comp_apply,Record.payloadBank_shared,left,right] using stock
 
-open IntegerMultBounds.Networks.Certificates.PR589.Nine RecursiveInterchangeLayout in
-/-- Execute a stopped scheduled call directly from its six caller header words.
+/-- Execute a stopped transpose directly from its six caller header words.
 The caller keeps its other stacks and the entire private suffix is reusable. -/
-theorem hostedStoppedDirectory_exec [M8.Machine.Net] {n Q : ℕ} {P U : Type} (capacity : columnCapacity ≤ Q)
+theorem hostedStoppedView_exec [M8.Machine.Net] {n Q : ℕ} {P U : Type} (capacity : columnCapacity ≤ Q)
     (body : P → Pr P (n+LeafCore.small) Q prime U) (src : Fin 6 → Fin n) (port : Fin n)
-    (node : Descriptor) (i : Fin nodeChildren5.length) (w : ℕ) (aligned : node.width = 64*(w+1))
-    (rows : 142080 ∣ node.rows) :
-    let r := nodeChildren5[i.val]
-    let batch := ordinaryDirectoryChild (role node 142080) r (64-r) w
-    let scheduled := scheduledChild prime node i
-    let e := (scheduledDirectoryCoordinates node i w aligned rows).choose
+    (batch : Descriptor) :
     let source := fun i => (src i).castAdd LeafCore.small
-    ∀ (word : Fin (volume prime scheduled) → ZMod 2) (u : HS (n+LeafCore.small) Q prime U)
-      (S : Stacks (n+LeafCore.small) prime), 0 < volume prime node →
+    ∀ (word : Fin (volume prime batch) → ZMod 2) (u : HS (n+LeafCore.small) Q prime U)
+      (S : Stacks (n+LeafCore.small) prime), 0 < volume prime batch →
       (∀ j, S.R (source j) = (Routines.hdr batch j).map bitSymbol) →
-      RecordPayload (port.castAdd LeafCore.small) (fun _ => blank) 0 (word ∘ e) S →
+      RecordPayload (port.castAdd LeafCore.small) (fun _ => blank) 0 word S →
       (∀ j : Fin LeafCore.small, S.L (j.natAdd n) = [] ∧ S.R (j.natAdd n) = []) →
       ∃ (z : HS (n+LeafCore.small) Q prime U) (F : Stacks (n+LeafCore.small) prime) (steps : ℕ), z.user = u.user ∧
         Exec body (hostedStoppedDirectory capacity src port)
           (mk u S) steps (mk z F) ∧
         (steps : ℝ) ≤ descriptorHeaderCost batch +
           ((LeafCore.small+5 : ℕ)*|LeafCore.C|+8+LeafCore.small*(16+8*|LeafCore.C|))*
-          ((volume prime scheduled : ℝ)*((max 1 scheduled.width : ℕ) : ℝ)^M8.Machine.BudgetBound.tau) ∧
+          ((volume prime batch : ℝ)*((max 1 batch.width : ℕ) : ℝ)^M8.Machine.BudgetBound.tau) ∧
         RecordPayload (port.castAdd LeafCore.small) (fun _ => blank) 0
-          (Shared50RecursiveNodeRows.transpose (one_dvd scheduled.rows) word ∘ e) F ∧
+          (Shared50RecursiveNodeRows.transpose (one_dvd batch.rows) word) F ∧
         (F.L (port.castAdd LeafCore.small)).length+(F.R (port.castAdd LeafCore.small)).length ≤ (S.L (port.castAdd LeafCore.small)).length+(S.R (port.castAdd LeafCore.small)).length+2*(LeafCore.coreCost (volume prime batch) batch.width) ∧
         (∀ j : Fin n, j ≠ port → F.L (j.castAdd LeafCore.small) = S.L (j.castAdd LeafCore.small) ∧ F.R (j.castAdd LeafCore.small) = S.R (j.castAdd LeafCore.small)) ∧
         ∀ j : Fin LeafCore.small, F.L (j.natAdd n) = [] ∧ F.R (j.natAdd n) = [] := by
-  intro r batch scheduled e source word u S positive words payload free
+  intro source word u S positive words payload free
   let owner := (Fin.castLEEmb LeafCore.seven_le) (Fin.last 6)
   let bank := Record.payloadBank port owner
   obtain ⟨v,D,user,setup,left,keep,unused,prepared,input,rest⟩ :=
-    directoryLeafHeaders_exec (n := n) (Q := Q) body src port batch (word ∘ e) u S words payload free
-  obtain ⟨y,B,k,same,run,paid,out,stock,clean⟩ := scheduledStoppedDirectory_exec (P := Empty) Empty.elim
-    node i w aligned rows word (stateLiftDown columnCapacity_pos (embDn bank v)) (embStk bank D)
-    positive prepared input rest
+    directoryLeafHeaders_exec (n := n) (Q := Q) body src port batch word u S words payload free
+  obtain ⟨y,B,k,same,time,run,out,stock,clean⟩ := stoppedDirectoryLeaf_exec directoryLeafFits
+    (Empty.elim : Empty → _) batch (LeafCore.positive_of_volume positive) word
+    (stateLiftDown columnCapacity_pos (embDn bank v)) (embStk bank D) prepared input rest
+  have paid := ((Nat.cast_le (α := ℝ)).mpr time).trans
+    (stoppedDirectoryTime _ _ _ positive ((List.length_filter_le ..).trans_eq List.length_finRange))
   obtain ⟨z,_,user',placed⟩ := statePlaced_exec_normalized bank bank.injective capacity columnCapacity_pos
     Empty.elim (body' := body) (fun f => nomatch f) v D run
   let F := embOvr bank B.get D
@@ -395,5 +391,44 @@ theorem hostedStoppedDirectory_exec [M8.Machine.Net] {n Q : ℕ} {P U : Type} (c
     · have erased := clean j h
       rw [← onBank] at erased
       simpa only [embStk,Function.comp_apply,bank,Record.payloadBank_private _ _ _ h] using erased
+
+open IntegerMultBounds.Networks.Certificates.PR589.Nine RecursiveInterchangeLayout in
+/-- Execute a stopped scheduled call directly from its six caller header words.
+The caller keeps its other stacks and the entire private suffix is reusable. -/
+theorem hostedStoppedDirectory_exec [M8.Machine.Net] {n Q : ℕ} {P U : Type} (capacity : columnCapacity ≤ Q)
+    (body : P → Pr P (n+LeafCore.small) Q prime U) (src : Fin 6 → Fin n) (port : Fin n)
+    (node : Descriptor) (i : Fin nodeChildren5.length) (w : ℕ) (aligned : node.width = 64*(w+1))
+    (rows : 142080 ∣ node.rows) :
+    let r := nodeChildren5[i.val]
+    let batch := ordinaryDirectoryChild (role node 142080) r (64-r) w
+    let scheduled := scheduledChild prime node i
+    let e := (scheduledDirectoryCoordinates node i w aligned rows).choose
+    let source := fun i => (src i).castAdd LeafCore.small
+    ∀ (word : Fin (volume prime scheduled) → ZMod 2) (u : HS (n+LeafCore.small) Q prime U)
+      (S : Stacks (n+LeafCore.small) prime), 0 < volume prime node →
+      (∀ j, S.R (source j) = (Routines.hdr batch j).map bitSymbol) →
+      RecordPayload (port.castAdd LeafCore.small) (fun _ => blank) 0 (word ∘ e) S →
+      (∀ j : Fin LeafCore.small, S.L (j.natAdd n) = [] ∧ S.R (j.natAdd n) = []) →
+      ∃ (z : HS (n+LeafCore.small) Q prime U) (F : Stacks (n+LeafCore.small) prime) (steps : ℕ), z.user = u.user ∧
+        Exec body (hostedStoppedDirectory capacity src port)
+          (mk u S) steps (mk z F) ∧
+        (steps : ℝ) ≤ descriptorHeaderCost batch +
+          ((LeafCore.small+5 : ℕ)*|LeafCore.C|+8+LeafCore.small*(16+8*|LeafCore.C|))*
+          ((volume prime scheduled : ℝ)*((max 1 scheduled.width : ℕ) : ℝ)^M8.Machine.BudgetBound.tau) ∧
+        RecordPayload (port.castAdd LeafCore.small) (fun _ => blank) 0
+          (Shared50RecursiveNodeRows.transpose (one_dvd scheduled.rows) word ∘ e) F ∧
+        (F.L (port.castAdd LeafCore.small)).length+(F.R (port.castAdd LeafCore.small)).length ≤ (S.L (port.castAdd LeafCore.small)).length+(S.R (port.castAdd LeafCore.small)).length+2*(LeafCore.coreCost (volume prime batch) batch.width) ∧
+        (∀ j : Fin n, j ≠ port → F.L (j.castAdd LeafCore.small) = S.L (j.castAdd LeafCore.small) ∧ F.R (j.castAdd LeafCore.small) = S.R (j.castAdd LeafCore.small)) ∧
+        ∀ j : Fin LeafCore.small, F.L (j.natAdd n) = [] ∧ F.R (j.natAdd n) = [] := by
+  intro r batch scheduled e source word u S positive prepared payload free
+  have shape := (scheduledDirectoryTranspose node i w aligned rows).1
+  have share := (scheduledChild_measures prime node ⟨w+1,aligned⟩ rows i).2
+  have pos : 0 < volume prime batch := shape.volume.symm ▸ Nat.pos_of_mul_pos_right (share.symm ▸ positive)
+  obtain ⟨z,F,k,user,run,paid,out,stock,keep,clean⟩ := hostedStoppedView_exec capacity body src port
+    batch (word ∘ e) u S pos prepared payload free
+  have action := (scheduledDirectoryCoordinates node i w aligned rows).choose_spec.2 word
+  refine ⟨z,F,k,user,run,?_,action ▸ out,stock,keep,clean⟩
+  simpa only [show volume prime batch = volume prime scheduled from shape.volume,
+    show batch.width = scheduled.width from shape.width] using paid
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
