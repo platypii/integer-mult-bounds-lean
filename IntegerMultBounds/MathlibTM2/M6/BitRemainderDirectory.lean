@@ -78,58 +78,6 @@ theorem remainderDirectoryCount (v : Descriptor) (w rows B : ℕ)
   simp only [LabelMask.records,role,split,Nat.mul_div_cancel_left _ (by decide : 0 < 142080),shape,← pow_mul]
   ring
 
-/-- Generate the next scanner archive from the per-record words of one
-physical role. Its cost uses the same scaled volume as the parent builder. -/
-theorem replayDirectory_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
-    (r : Fin 15 ↪ Fin T) (atom : Fin T) (apart : ∀ i, atom ≠ r i)
-    (v : Descriptor) (positive : v.Positive) (a blocks : ℕ) (active : 0 < a)
-    (width : v.width = 64*a) (shape : v.beforeH = blocks*prime^(64*v.width))
-    (j : Fin 142080) (archive : ℕ → List (Fin (prime+4))) (tail : List (Fin (prime+4))) (u : HS T Q prime U) (S : Stacks T prime)
-    (precision : (S.R atom).length = a) (count : (S.R (r 12)).length = LabelMask.records v)
-    (fresh : ∀ i ∈ ([2,3,5,6,10,11] : List (Fin 15)), S.R (r i) = [])
-    (widths : ∀ k < v.beforeRows*v.rows*142080*v.beforeH, (archive k).length = (S.R (r 1)).length)
-    (fits : (S.R (r 1)).length ≤ prime^v.width) :
-    let prefixes := fun k => archive (directoryRoleRecord v.beforeH j k)
-    let L := a*(64*64)
-    let R := Function.update (Function.update S.R (r 11) (List.replicate L tick))
-      (r 10) ((RadixCounterData.zeros Networks.Shared50ModularControl.prime_prime.two_le L).map RadixDigits.digitSymbol)
-    S.R (r 0) = (List.range (LabelMask.records v)).flatMap prefixes ++ tail →
-    ∃ z n, z.user = u.user ∧ prime^v.width*n ≤ 1022*volume prime v ∧
-      Exec body ((umul (64*64) atom (r 11) (r 2)).seq
-        ((umulSym (64*64) (RadixDigits.digitSymbol (RadixCounterData.zeroDigit Networks.Shared50ModularControl.prime_prime.two_le)) atom (r 10) (r 2)).seq (LabelDirectoryBuild.replay r)))
-        (mk u S) n (mk z {S with R := Function.update (Function.update R (r 0) tail) (r 14) ((List.range (LabelMask.records v)).flatMap (LabelDirectory.entry prefixes 64 a) ++ S.R (r 14))}) := by
-  intro prefixes L R source
-  have roleWidths (k : ℕ) (hk : k < LabelMask.records v) : (prefixes k).length = (S.R (r 1)).length :=
-    widths _ (directoryRoleRecord_lt (groups := v.beforeRows*v.rows) j hk)
-  have records : LabelMask.records v = (v.beforeRows*v.rows*blocks)*(prime^a)^(64*64) := by
-    simp only [LabelMask.records,shape,width,← pow_mul]
-    ring_nf
-  have run := LabelDirectorySetup.replay_from_count (body := body) 64 (v.beforeRows*v.rows*blocks) r atom apart u S prefixes tail fresh
-  simp only [precision,count] at run
-  obtain ⟨z,n,user,paid,exec⟩ := run (by omega) records source roleWidths
-  refine ⟨z,n,user,?_,exec⟩
-  let scale := prime^v.width
-  let N := LabelMask.records v
-  have hr : 1 ≤ N := Nat.mul_pos (Nat.mul_pos positive.1 positive.2.1) positive.2.2.1
-  have hs : 1 ≤ scale := pow_pos Networks.Shared50ModularControl.prime_prime.pos _
-  have hw : v.width ≤ scale := (Nat.lt_pow_self (n := v.width) Networks.Shared50ModularControl.prime_prime.one_lt).le
-  have perRecord : 6*(S.R (r 1)).length+15*(a*(64*64))+28 ≤ 994*scale := by
-    change _ ≤ scale at fits
-    omega
-  have overhead : 8*a+20 ≤ 28*(N*scale) := by
-    have := Nat.le_mul_of_pos_left scale hr
-    omega
-  have budget : n ≤ 1022*(N*scale) := by
-    have := Nat.mul_le_mul_left N perRecord
-    change n ≤ 8*a+N*_+20 at paid
-    nlinarith
-  calc
-    _ ≤ scale*(1022*(N*scale)) := Nat.mul_le_mul_left _ budget
-    _ = 1022*(N*scale*1*scale*1) := by ring
-    _ ≤ _ := by
-      change _ ≤ 1022*(N*scale*v.between*scale*v.afterD)
-      gcongr <;> first | exact positive.2.2.2.1 | exact positive.2.2.2.2
-
 private theorem buildCounted {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
     (r : Fin 15 ↪ Fin T) (atom one : Fin T) (atomOff : ∀ i, atom ≠ r i) (oneOff : ∀ i, one ≠ r i)
     (v : Descriptor) (w rows B : ℕ) (positive : v.Positive) (width : v.width = 64*(w+1))
@@ -382,6 +330,115 @@ theorem DirectoryHeaders.of_frame {m w W H J : ℕ} {v : Descriptor} {proj : Mat
 The other builder registers use the directory's private bank. -/
 def remainderDirectoryPorts : Fin 15 ↪ Fin 72 :=
   ⟨![58,47,59,60,61,62,63,64,65,66,67,68,69,70,46], by decide⟩
+
+/-- Generate the next scanner archive from the per-record words of one
+physical role. Its cost uses the same scaled volume as the parent builder. -/
+theorem replayDirectory_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
+    (bank : Fin 72 ↪ Fin T) (child : Descriptor) (proj : Matrix (Fin 64) (Fin 64) ℚ) (w W H J : ℕ)
+    (weights : Fin 64 → ZMod (prime^(w+1)))
+    (v : Descriptor) (positive : v.Positive) (blocks : ℕ)
+    (width : v.width = 64*(w+1)) (shape : v.beforeH = blocks*prime^(64*v.width))
+    (j : Fin 142080) (archive : ℕ → List (Fin (prime+4))) (tail : List (Fin (prime+4))) (u : HS T Q prime U) (S : Stacks T prime) :
+    let a := w+1
+    let atom := bank 71
+    let r := remainderDirectoryPorts.trans bank
+    let scanner := fun i : Fin 58 => bank (i.castLE (by decide))
+    DirectoryHeaders child proj w W H J weights (fun i => S.R (scanner i)) →
+    (S.R atom).length = a → (S.R (bank 29)).length = v.beforeRows →
+    (S.R (bank 30)).length = v.rows → (S.R (bank 31)).length = v.beforeH →
+    (∀ i ∈ ([2,3,5,6,10,11,12] : List (Fin 15)), S.R (r i) = []) →
+    (∀ k < v.beforeRows*v.rows*142080*v.beforeH, (archive k).length = (S.R (r 1)).length) →
+    (S.R (r 1)).length ≤ prime^v.width →
+    let prefixes := fun k => archive (directoryRoleRecord v.beforeH j k)
+    S.R (r 0) = (List.range (LabelMask.records v)).flatMap prefixes ++ tail →
+    let D := {S with R := Function.update (Function.update S.R (r 0) tail) (r 14) ((List.range (LabelMask.records v)).flatMap (LabelDirectory.entry prefixes 64 a) ++ S.R (r 14))}
+    ∃ z n, z.user = u.user ∧ prime^v.width*n ≤ 1324*volume prime v ∧
+      Exec body ((LabelSpectators.countRecords (bank 29) (bank 30) (bank 31) (r 2) (r 12) (r 3) (r 5)).seq
+        ((LabelDirectorySetup.replayFromCount 64 r atom).seq (uclear (r 12)))) (mk u S) n (mk z D) ∧
+      DirectoryScanInput child proj w W H J weights prefixes (S.R (r 14))
+        (List.range (LabelMask.records v)) (fun i => D.R (scanner i)) := by
+  intro a atom r scanner headers precision br rows bh fresh widths fits prefixes source D
+  have apart (i : Fin 15) : atom ≠ r i :=
+    bank.injective.ne ((by decide : ∀ i, (71 : Fin 72) ≠ remainderDirectoryPorts i) i)
+  have roleWidths (k : ℕ) (hk : k < LabelMask.records v) : (prefixes k).length = (S.R (r 1)).length :=
+    widths _ (directoryRoleRecord_lt (groups := v.beforeRows*v.rows) j hk)
+  have records : LabelMask.records v = (v.beforeRows*v.rows*blocks)*(prime^a)^(64*64) := by
+    simp only [a,LabelMask.records,shape,width,← pow_mul]
+    ring_nf
+  have nodup : [bank 29,bank 30,bank 31,r 2,r 12,r 3,r 5].Nodup :=
+    (by decide : ([29,30,31,59,69,60,62] : List (Fin 72)).Nodup).map bank.injective
+  obtain ⟨y,c,same,charge,build⟩ := LabelSpectators.records_exec body _ _ _ _ _ _ _ nodup v positive u S br rows bh (by
+    intro k hk
+    simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
+    rcases hk with rfl | rfl | rfl | rfl <;> apply fresh <;> decide)
+  let N := LabelMask.records v
+  let C : Stacks T prime := {S with R := Function.update S.R (r 12) (List.replicate N tick)}
+  have off (i : Fin 15) (h : i ≠ 12) : C.R (r i) = S.R (r i) := Function.update_of_ne (r.injective.ne h) ..
+  have run := LabelDirectorySetup.replay_from_count (body := body) 64 (v.beforeRows*v.rows*blocks) r atom apart y C prefixes tail (by
+    intro i hi
+    have ne : i ≠ 12 := by intro eq; subst i; revert hi; decide
+    rw [off _ ne]
+    apply fresh
+    simp_all)
+  have prec : (C.R atom).length = a := by simpa [C,Function.update_of_ne (apart 12)] using precision
+  have count : (C.R (r 12)).length = N := by simp [C]
+  simp only [prec,count,off 0 (by decide),off 1 (by decide),off 14 (by decide)] at run
+  obtain ⟨z,n,user,paid,exec⟩ := run (by dsimp [a]; omega) records source roleWidths
+  let F : Stacks T prime := {C with R := Function.update (Function.update C.R (r 0) tail) (r 14) (D.R (r 14))}
+  have output : D.R (r 14) = (List.range N).flatMap (LabelDirectory.entry prefixes 64 a) ++ S.R (r 14) := by simp [D,N]
+  have middle : Exec body (LabelDirectorySetup.replayFromCount 64 r atom) (mk y C) n (mk z F) := by simpa only [F,output] using exec
+  obtain ⟨z',last,clear⟩ := uclear_exec body (r 12) z F
+  have len : (F.R (r 12)).length = N := by simpa [F] using count
+  rw [len] at clear
+  have restored : {F with R := Function.update F.R (r 12) []} = D := by
+    refine Stacks.ext rfl rfl rfl ?_
+    funext k
+    by_cases h : k = r 12
+    · subst k; simp [D,fresh]
+    by_cases dst : k = r 14
+    · subst k; simp [F]
+    simp [F,C,D,Function.update_apply,h,dst]
+  rw [restored] at clear
+  refine ⟨z',c+(n+(2*N+2)),last.trans (user.trans same),?_,Exec.seq build (Exec.seq middle clear),?_⟩
+  rotate_left
+  · have frame (i : Fin 58) (off : i.val ≠ 46) : D.R (scanner i) = S.R (scanner i) := by
+      have sep : scanner i ≠ r 14 := bank.injective.ne (fun eq => off (congrArg Fin.val eq))
+      have src : scanner i ≠ r 0 := bank.injective.ne (by
+        intro eq
+        have h := congrArg Fin.val eq
+        change i.val = 58 at h
+        omega)
+      simp [D, Function.update_of_ne sep, Function.update_of_ne src]
+    refine ⟨?_,?_,headers.of_frame frame⟩
+    · change D.R (r 14) = _
+      simp [D,a]
+    · intro k hk
+      rw [frame 47 (by decide)]
+      exact (roleWidths k (List.mem_range.mp hk)).symm
+  let scale := prime^v.width
+  have hr : 1 ≤ N := Nat.mul_pos (Nat.mul_pos positive.1 positive.2.1) positive.2.2.1
+  have hs : 1 ≤ scale := pow_pos Networks.Shared50ModularControl.prime_prime.pos _
+  have hw : v.width ≤ scale := (Nat.lt_pow_self (n := v.width) Networks.Shared50ModularControl.prime_prime.one_lt).le
+  have perRecord : 6*(S.R (r 1)).length+15*(a*(64*64))+28 ≤ 994*scale := by
+    change _ ≤ scale at fits
+    omega
+  have overhead : 8*a+4*(a*(64*64))+24 ≤ 288*(N*scale) := by
+    have := Nat.le_mul_of_pos_left scale hr
+    omega
+  have budget : n ≤ 1282*(N*scale) := by
+    have := Nat.mul_le_mul_left N perRecord
+    change n ≤ 8*a+N*_+4*(a*(64*64))+24 at paid
+    nlinarith
+  have cost : c+(n+(2*N+2)) ≤ 1324*(N*scale) := by
+    change c ≤ 28*N+10 at charge
+    have := Nat.le_mul_of_pos_right N hs
+    omega
+  calc
+    _ ≤ scale*(1324*(N*scale)) := Nat.mul_le_mul_left _ cost
+    _ = 1324*(N*scale*1*scale*1) := by ring
+    _ ≤ _ := by
+      change _ ≤ 1324*(N*scale*v.between*scale*v.afterD)
+      gcongr <;> first | exact positive.2.2.2.1 | exact positive.2.2.2.2
 
 /-- Clear the inherited source and the six transient counters, preserving the archive. -/
 private theorem finishDirectory {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)

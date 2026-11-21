@@ -54,8 +54,13 @@ theorem setup_exec (m : ℕ) (r : Fin 15 ↪ Fin T) (atom one : Fin T)
   rw [len] at run hn
   exact ⟨u'',_,hu''.trans (hu'.trans hu),by dsimp [w]; omega,Exec.seq he (Exec.seq he' run)⟩
 
-/-- Start a per-record replay directly from the unary precision and record
-count. Only the label width and zero seed occupy new workspace. -/
+/-- Read the unary precision, extend the replay stream and retire the label
+counter and its width tape. -/
+def replayFromCount (m : ℕ) (r : Fin 15 ↪ Fin T) (atom : Fin T) : Pr P T Q prime U :=
+  ((umul (m*m) atom (r 11) (r 2)).seq
+    ((umulSym (m*m) (digitSymbol (zeroDigit prime_prime.two_le)) atom (r 10) (r 2)).seq
+      (LabelDirectoryBuild.replay r))).seq ((uclear (r 10)).seq (uclear (r 11)))
+
 theorem replay_from_count (m boxesCount : ℕ) (r : Fin 15 ↪ Fin T) (atom : Fin T) (ha : ∀ i, atom ≠ r i)
     (v : HS T Q prime U) (S : Stacks T prime) (prefixes : ℕ → List (Fin (prime+4)))
     (tail : List (Fin (prime+4))) (fresh : ∀ i ∈ ([2,3,5,6,10,11] : List (Fin 15)), S.R (r i) = []) :
@@ -63,15 +68,13 @@ theorem replay_from_count (m boxesCount : ℕ) (r : Fin 15 ↪ Fin T) (atom : Fi
     let L := w*(m*m)
     let N := (S.R (r 12)).length
     let W := (S.R (r 1)).length
-    let R := Function.update (Function.update S.R (r 11) (List.replicate L tick))
-      (r 10) ((zeros prime_prime.two_le L).map digitSymbol)
     0 < L → N = boxesCount*(prime^w)^(m*m) →
     S.R (r 0) = (List.range N).flatMap prefixes ++ tail → (∀ j < N, (prefixes j).length = W) →
-    ∃ z n, z.user = v.user ∧ n ≤ 8*w+N*(6*W+15*L+28)+20 ∧
-      Exec body ((umul (m*m) atom (r 11) (r 2)).seq
-        ((umulSym (m*m) (digitSymbol (zeroDigit prime_prime.two_le)) atom (r 10) (r 2)).seq (LabelDirectoryBuild.replay r)))
-        (mk v S) n (mk z {S with R := Function.update (Function.update R (r 0) tail) (r 14) ((List.range N).flatMap (LabelDirectory.entry prefixes m w) ++ S.R (r 14))}) := by
-  intro w L N W R positive count source widths
+    ∃ z n, z.user = v.user ∧ n ≤ 8*w+N*(6*W+15*L+28)+4*L+24 ∧
+      Exec body (replayFromCount m r atom) (mk v S) n (mk z {S with R := Function.update (Function.update S.R (r 0) tail) (r 14) ((List.range N).flatMap (LabelDirectory.entry prefixes m w) ++ S.R (r 14))}) := by
+  intro w L N W positive count source widths
+  let R := Function.update (Function.update S.R (r 11) (List.replicate L tick))
+      (r 10) ((zeros prime_prime.two_le L).map digitSymbol)
   obtain ⟨u,user,clock⟩ := umul_exec body (m*m) (ha 11) (ha 2) (by simp) v S (fresh 2 (by decide))
   have mul : m*m*(S.R atom).length = L := Nat.mul_comm _ _
   rw [mul,fresh 11 (by decide),List.append_nil] at clock
@@ -91,10 +94,29 @@ theorem replay_from_count (m boxesCount : ℕ) (r : Fin 15 ↪ Fin T) (atom : Fi
   have digits : List.replicate L (digitSymbol (zeroDigit prime_prime.two_le)) =
       (zeros prime_prime.two_le L).map digitSymbol := by simp [zeros]
   rw [digits] at seed
-  refine ⟨z,4*w+4+(4*w+4+k),last.trans (same.trans user),?_,?_⟩
+  let output := (List.range N).flatMap (LabelDirectory.entry prefixes m w) ++ S.R (r 14)
+  let F : Stacks T prime := {S with R := Function.update (Function.update R (r 0) tail) (r 14) output}
+  have build : Exec body ((umul (m*m) atom (r 11) (r 2)).seq ((umulSym (m*m) (digitSymbol (zeroDigit prime_prime.two_le)) atom (r 10) (r 2)).seq (LabelDirectoryBuild.replay r))) (mk v S) (4*w+4+(4*w+4+k)) (mk z F) := by
+    simpa [F,output,D,R,N,M] using Exec.seq clock (Exec.seq seed run)
+  obtain ⟨b,bu,dropSeed⟩ := uclear_exec body (r 10) z F
+  let B : Stacks T prime := {F with R := Function.update F.R (r 10) []}
+  obtain ⟨c,cu,dropClock⟩ := uclear_exec body (r 11) b B
+  have seedLen : (F.R (r 10)).length = L := by simp [F,R]
+  have clockLen : (B.R (r 11)).length = L := by simp [B,F,R]
+  rw [seedLen] at dropSeed
+  rw [clockLen] at dropClock
+  have reset : Function.update B.R (r 11) [] = Function.update (Function.update S.R (r 0) tail) (r 14) output := by
+    funext i
+    by_cases h : i = r 11
+    · subst i; simp [fresh]
+    by_cases g : i = r 10
+    · subst i; simp [B,fresh]
+    simp [B,F,R,h,g,Function.update_apply]
+  refine ⟨c,(4*w+4+(4*w+4+k)) + ((2*L+2)+(2*L+2)),cu.trans (bu.trans (last.trans (same.trans user))),?_,?_⟩
+  swap
+  · exact (Exec.seq build (Exec.seq dropSeed dropClock)).cast rfl (by rw [show {B with R := Function.update B.R (r 11) []} = {S with R := Function.update (Function.update S.R (r 0) tail) (r 14) output} from Stacks.ext rfl rfl rfl reset])
   · have bound : k ≤ N*(6*W+15*L+28)+12 := by simpa [D,R,N,W,L] using paid
     omega
-  · simpa [D,R,N,M] using Exec.seq clock (Exec.seq seed run)
 
 /-- Initialize the directory builder from unary widths and a child count. -/
 theorem build_from_count (m : ℕ) (r : Fin 15 ↪ Fin T) (atom one : Fin T)
