@@ -284,6 +284,31 @@ theorem targetOwner_injective (n : Fin 9) : Function.Injective (targetOwner n) :
   change 111+t.val = 111+u.val at val
   exact Prod.ext rfl (Fin.ext (Nat.add_left_cancel val))
 
+/-- The restored label sum is the same ordinary target word returned by the host scan. -/
+theorem restoredStage_targetWord (n : Fin 9) (k : (Fin 32 × Fin 5) × Fin 111) (w B W : ℕ)
+    (label : Cover.LabelPadding.Label 64 w) (x y out)
+    (trace : stageRuns.foldr (fun p next a => ∃ b, packedStageEffect n p w B W a b ∧ next b)
+      (fun a => a = y) (singleLabelBank label x))
+    (restore : HelperLabelTrace w (B*prime^(64*(w*64))) W (restoreSlotChanges (stageFinalSlot n)) y out) :
+    let K := (prime^w)^112*W
+    collapseLabelBank (B := B) (K := K) out (targetOwner n k) = stageTargetWord n k w B K x := by
+  intro K
+  funext i
+  obtain ⟨⟨a,t⟩,rfl⟩ := finProdFinEquiv.surjective i
+  obtain ⟨s,rfl⟩ := copyActive.surjective a
+  obtain ⟨⟨b,j⟩,rfl⟩ := finProdFinEquiv.surjective t
+  let z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B :=
+    ⟨⟨0,pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _⟩,⟨0,Nat.zero_lt_one⟩,b,
+      ⟨0,by simp [copyLabelLayout,ActualAffineScaling.modulus]⟩,⟨0,Nat.zero_lt_one⟩,
+      ⟨0,by simp [copyLabelLayout,ActualAffineScaling.modulus]⟩,j⟩
+  have sum := congrFun (restoredStage_active n k.1 w B W _ y out trace restore k.2 z).1 s
+  rw [collapse_singleLabelBank] at sum
+  have dst : 111+k.2.val < 661 := by omega
+  simp only [phaseRead,Copy.extendStored,dite_eq_left dst] at sum
+  have index (s : Swap.Shear.State (Fin 8) (ZMod (prime^w))) (j : Fin (B*K)) :
+      FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) j = finProdFinEquiv (copyActive s,j) := rfl
+  simpa only [stageTargetWord,Equiv.symm_apply_apply,phaseRead,Copy.extendStored,dite_eq_left dst,targetOwner,z,index,Function.Embedding.coeFn_mk] using sum
+
 /-- Each target retains its original owner tape and has seven private tapes
 indexed by that owner. Thus one scan can move both heads freely. -/
 noncomputable def targetScanBank {T : ℕ} (fan : Fin (142081+2) ↪ Fin T) (t : Fin 142081) :
@@ -838,12 +863,59 @@ theorem placedOwnerPads {w B K T Q : ℕ} {P U : Type} (hB : 0 < B) (hK : 0 < K)
       obtain ⟨ll,rr⟩ := off j (outside i List.mem_cons_self)
       exact ⟨hl.trans ll,hr.trans rr⟩
 
-/-- Put every updated target into the next labeled bank. The supplied next
-bank may specify the remaining owners independently. -/
+private theorem stagePadPort_off_original {T : ℕ} (fan : Fin (142081+2) ↪ Fin T)
+    (i : Fin 142081) (j : Fin 12) (k : Fin T) :
+    stagePadPort fan i j ≠ ((k.castAdd (142081*7)).castAdd 142081).castAdd 10 := by
+  intro eq
+  have h := congrArg Fin.val eq
+  change (if j.val = 0 then T+(finProdFinEquiv (i,(0 : Fin 7))).val else
+    if j.val = 1 then T+142081*7+i.val else T+142081*7+142081+(j.val-2)) = k.val at h
+  split_ifs at h <;> omega
+
+/-- A target moves to its new tape, while every other role keeps its original tape. -/
+noncomputable def stageOutputBank {T : ℕ} (n : Fin 9) (fan : Fin (142081+2) ↪ Fin T) :
+    Fin 142081 ↪ Fin ((T+142081*7)+142081+10) := by
+  classical
+  let old := fun i : Fin 142081 => (((fan (i.castAdd 2)).castAdd (142081*7)).castAdd 142081).castAdd 10
+  let dst := fun i => stagePadPort fan i 1
+  refine ⟨fun i => if ∃ k, targetOwner n k = i then dst i else old i,?_⟩
+  intro i j eq
+  dsimp only at eq
+  split_ifs at eq
+  · by_contra ne
+    exact (stagePadPort_apart fan i j ne 1).2 eq
+  · exact (stagePadPort_off_original fan i 1 _ eq).elim
+  · exact (stagePadPort_off_original fan j 1 _ eq.symm).elim
+  · apply (Fin.castAddEmb 2).injective
+    apply fan.injective
+    have val := congrArg Fin.val eq
+    exact Fin.ext val
+
+private theorem role_active_owner (n : Fin 9) (ρ : Role) (active : ρ.bank.val / 2 = BitHosting.activePair n.val) :
+    let tape := ((Fin.cast card_role) (Fintype.equivFin Role ρ)).castSucc
+    tape = targetOwner n ((ρ.replica,ρ.cls),ρ.port) ∨
+      tape = ownerTape n ρ.replica ρ.cls (ρ.port.castLE (by decide)) := by
+  intro tape
+  have side := role_side n ρ active
+  let addr := fun r : Role => ((Fin.cast card_role) (Fintype.equivFin Role r)).castSucc
+  have bound := ρ.port.isLt
+  by_cases src : ρ.bank.val % 2 = n.val % 2
+  · right
+    apply congrArg addr
+    rw [src] at side
+    simpa [owner,regSide,Nat.mod_eq_of_lt bound,show ρ.port.val < 222 by omega] using side
+  · left
+    apply congrArg addr
+    rw [show ρ.bank.val % 2 = 1 - n.val % 2 by omega] at side
+    simpa [owner,regSide,show 111+ρ.port.val < 222 by omega,Nat.add_mod,bound,Nat.mod_eq_of_lt bound] using side
+
+/-- Put every updated target into the next labeled bank. Use the restored row sums
+as the common ordinary bank for targets and retained owners. -/
 theorem stageTargets_pad {T Q : ℕ} {P U : Type} (n : Fin 9)
     (fan : Fin (142081+2) ↪ Fin T) (fits : 215 ≤ Q)
     (body : P → Pr P ((T+142081*7)+142081+10) Q prime U) :
-    ∃ code, ∀ w B K : ℕ, 0 < B → 0 < K →
+    ∃ code, ∀ w B W : ℕ, 0 < B → 0 < (prime^w)^112*W →
+    let K := (prime^w)^112*W
     let A := (prime^w)^16
     let N := prime^(64*(w*64))
     let port := stagePadPort fan
@@ -851,43 +923,76 @@ theorem stageTargets_pad {T Q : ℕ} {P U : Type} (n : Fin 9)
     let aux := fun (S : Stacks ((T+142081*7)+142081+10) prime) => ∀ j : Fin 12, j ≠ 0 → j ≠ 1 → ∀ z,
       frame.tape j z = readAt blank (S.L (port 0 j)) (S.R (port 0 j)) (z-frame.head j)
     let label := firstRowLabel w
-    ∀ (x next : Fin 142081 → Fin (A*(B*K)) → ZMod 2),
-      (∀ k, next (targetOwner n k) = stageTargetWord n k w B K x) →
-      ∀ u S, aux S →
+    let retained := fan.trans (((Fin.castAddEmb (142081*7)).trans (Fin.castAddEmb 142081)).trans (Fin.castAddEmb 10))
+    ∀ x y out,
+      stageRuns.foldr (fun p cont a => ∃ b, packedStageEffect n p w B W a b ∧ cont b)
+        (fun a => a = y) (singleLabelBank label x) →
+      HelperLabelTrace w (B*N) W (restoreSlotChanges (stageFinalSlot n)) y out →
+      let next := collapseLabelBank (B := B) (K := K) out
+      ∀ u S, aux S → RestoredOwnerPayloads n retained out S →
       (∀ k, Cover.Fallback.RecordPayload (port (targetOwner n k) 0) (fun _ => blank) 0
         (stageTargetWord n k w B K x) S) →
       (∀ k z, readAt blank (S.L (port (targetOwner n k) 1)) (S.R (port (targetOwner n k) 1)) z = blank) →
       ∃ z F steps, Exec body code (mk u S) steps (mk z F) ∧
         steps ≤ 17760*(7021*(A*B)*(N*K)+6)+1 ∧ z.user = u.user ∧ aux F ∧
-        (∀ k, Cover.Fallback.RecordPayload (port (targetOwner n k) 1) (fun _ => blank) 0
-          (singleLabelBank label next (targetOwner n k)) F) ∧
+        (∀ ρ : Role, let i := ((Fin.cast card_role) (Fintype.equivFin Role ρ)).castSucc
+          Cover.Fallback.RecordPayload (stageOutputBank n fan i) (fun _ => blank) 0 (singleLabelBank label next i) F) ∧
         ∀ j, (∀ k h, port (targetOwner n k) h ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
   let targets := stageRuns.product (List.finRange 111)
   let order := targets.map (targetOwner n)
   let pad : Fin 142081 → Pr P ((T+142081*7)+142081+10) Q prime U := fun i => embProg (stagePadPort fan i) (Empty.elim : Empty → P)
     (foreign (liftQ RowPaddingConstructedAlphabet.program fits))
   refine ⟨Prog.seqList (order.map pad),?_⟩
-  intro w B K hb hk A N port frame aux
+  intro w B W hb hk K A N port frame aux
   have run := placedOwnerPads (w := w) hb hk fan fits body
-  intro label x next targetWords u S ready inputs empty
+  intro label retained x y out trace restore next u S ready live inputs empty
+  have targetWords := fun k => restoredStage_targetWord n k w B W label x y out trace restore
   have unique : order.Nodup := (stageRuns_nodup.product (List.nodup_finRange _)).map (targetOwner_injective n)
-  obtain ⟨z,F,t,exec,paid,user,headers,out,off⟩ := run next order unique u S ready (by
+  obtain ⟨z,F,t,exec,paid,user,headers,padded,off⟩ := run next order unique u S ready (by
     intro i hi
     obtain ⟨k,_,rfl⟩ := List.mem_map.mp hi
-    rw [targetWords]
+    rw [show next (targetOwner n k) = _ from targetWords k]
     exact inputs k) (by
     intro i hi
     obtain ⟨k,_,rfl⟩ := List.mem_map.mp hi
     exact empty k)
+  have kept : RestoredOwnerPayloads n retained out F := by
+    intro i hi l
+    obtain ⟨hl,hr⟩ := off _ (fun a _ j => stagePadPort_off_original fan a j (fan (i.castAdd 2)))
+    change F.L (retained (i.castAdd 2)) = S.L _ at hl
+    change F.R (retained (i.castAdd 2)) = S.R _ at hr
+    change readAt blank (F.L _) (F.R _) _ = _
+    rw [hl,hr]
+    exact live i hi l
   refine ⟨z,F,t,exec,?_,user,headers,?_,?_⟩
   · have count : order.length = 17760 := by
       rw [List.length_map]
       exact (List.length_product stageRuns (List.finRange 111)).trans (by rw [stageRuns_length,List.length_finRange])
     rw [count] at paid
     exact paid
-  · intro k
-    exact out _ (List.mem_map.mpr ⟨k,List.mem_flatMap.mpr ⟨k.1,mem_stageRuns _,
-      List.mem_map.mpr ⟨k.2,List.mem_finRange _,rfl⟩⟩,rfl⟩)
+  · intro ρ i
+    classical
+    by_cases hit : ∃ k, targetOwner n k = i
+    · obtain ⟨k,hk⟩ := hit
+      have pos : stageOutputBank n fan i = port i 1 := by
+        have mem : ∃ a, targetOwner n a = i := ⟨k,hk⟩
+        simp only [stageOutputBank,Function.Embedding.coeFn_mk,ite_eq_left mem]
+        rfl
+      rw [pos,← hk]
+      exact padded _ (List.mem_map.mpr ⟨k,List.mem_flatMap.mpr ⟨k.1,mem_stageRuns _,
+        List.mem_map.mpr ⟨k.2,List.mem_finRange _,rfl⟩⟩,rfl⟩)
+    · have pos : stageOutputBank n fan i = retained (i.castAdd 2) := by simp only [stageOutputBank,Function.Embedding.coeFn_mk,ite_eq_right hit]; rfl
+      rw [pos]
+      have word : out i = singleLabelBank label next i := by
+        by_cases active : ρ.bank.val / 2 = BitHosting.activePair n.val
+        · obtain target | source := role_active_owner n ρ active
+          · exact (hit ⟨_,target.symm⟩).elim
+          · change i = _ at source
+            rw [source]
+            exact restoredStage_sourceWord n (ρ.replica,ρ.cls) w B W label x y out trace restore ρ.port
+        · exact restoredStage_inactiveWord n w B W label x y out trace restore ρ active
+      rw [← word]
+      exact kept i (fun k h => hit ⟨k,h⟩)
   · intro j outside
     apply off
     intro i hi
