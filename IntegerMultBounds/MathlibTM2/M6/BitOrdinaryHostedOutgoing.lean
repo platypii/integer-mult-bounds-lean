@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.M6.BitOrdinaryDirectoryReplay
+public import IntegerMultBounds.MathlibTM2.M6.BitOrdinaryRowCost
 
 /-! Execute the outgoing directory pass on the saved scanner bank and the physical owner registers. -/
 @[expose] public section
@@ -52,10 +53,8 @@ theorem hostedOutgoingScan_exec [M8.Machine.Net] {P U : Type} {r g w W common wo
     let scan := ((goodRecordScanPorts.trans slots).trans (Fin.castAddEmb 8)).trans caller
     let skip : Pr P (66+K) columnCapacity prime U := readWithSuccessorClock (scan 1) (advanceDirectory m scan)
     let dispatch := ownerDispatch (caller 57) (caller 56) ((prog.seq (clearWorkTapes privateTapes)).seq skip) skip skip
-    let cost := fun j => let base := outgoingRowTime U machine r g w W (prefixes j).length
-                         let cursor := 1+(4*(prefixes j).length+4+(m*m*(4*(w+1)+4)+1)+1)
-                         (if active j then base+(4*privateTapes.length+1+privateTapes.length*(6*(c*base)))+cursor else cursor) +
-                           (if live j then 4 else 3)
+    let cost := fun j => outgoingScanRowCost m w (prefixes j).length privateTapes.length c
+      (outgoingRowTime U machine r g w W (prefixes j).length) (active j) (live j)
     let effect := fun j (word : Fin N → ZMod 2) => ∀ x k,
       let y := transform (diagonal weights) 1 (revExchangeOf (rev m) (G j) (transform (diagonal inv) 1 x))
       word (index (Fin.append y.1 y.2) k) = original j (index (Fin.append x.1 x.2) k)

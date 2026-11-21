@@ -1376,7 +1376,8 @@ theorem DirectoryReady.runExceptional [M8.Machine.Net] {m d K w W J N : ℕ} {P 
       ready (embStk placement D) labels ∧ D.R (directoryMatrixTape room) = physical.matrices (j+1) ∧
       (∀ x k, next ((FlatCoordinateLayout.index ((projectorResidual e (reduce (prime^(w+1)) proj) parent inv
         (physicalLabel m (w+1) j)).mulVec x) k).cast (directoryPayloadLength e length)) = original ((FlatCoordinateLayout.index x k).cast (directoryPayloadLength e length))) ∧
-      payload next D ∧ D.R (caller 40) = S.R (caller 40) ∧ D.R (caller 57) = S.R (caller 57) ∧ D.R (caller 56) = S.R (caller 56) := by
+      payload next D ∧
+      (∀ i : Fin 58, i ≠ 24 → i ≠ 54 → i ≠ 46 → D.R (caller (i.castAdd 8)) = S.R (caller (i.castAdd 8))) ∧ D.R (caller 57) = S.R (caller 57) ∧ D.R (caller 56) = S.R (caller 56) := by
   have volumeEq := directoryPayloadLength (finSumFinEquiv.trans (finCongr dimension)) length
   cases volumeEq
   intro e physical φ code schedule ready placement caller payload labels start matrix input C rows privateTapes
@@ -1416,7 +1417,7 @@ theorem DirectoryReady.runExceptional [M8.Machine.Net] {m d K w W J N : ℕ} {P 
   have kept (i : Fin 58) (p : i ≠ 24) (q : i ≠ 54) (h : i ≠ 46) :=
     (frame i p q h).2.trans (keep (i.castAdd 8) (by intro eq; have val := congrArg Fin.val eq; change i.val = 58 at val; omega))
   exact ⟨z,D,n,next,user,time,run,DirectoryReady.afterExceptional room S D initialReady
-    dir pivots clean kept,tail,effect,(recordPayload_ordinaryBank room source head next D).2 output,kept 40 (by decide) (by decide) (by decide),kept 57 (by decide) (by decide) (by decide),
+    dir pivots clean kept,tail,effect,(recordPayload_ordinaryBank room source head next D).2 output,kept,kept 57 (by decide) (by decide) (by decide),
     kept 56 (by decide) (by decide) (by decide)⟩
 
 /-- Uniform exceptional charge per payload symbol for a fixed machine layout. -/

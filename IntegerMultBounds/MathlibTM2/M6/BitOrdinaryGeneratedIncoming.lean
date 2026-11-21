@@ -118,7 +118,7 @@ theorem generatedIncomingRow_exec [M8.Machine.Net] {P U : Type} {r g w W common 
       t ≤ (if live then cost+(4*privateTapes.length+1+privateTapes.length*(6*(c*cost)))+cursorTime else cursorTime) ∧
       Exec body (if live then (prog.seq (clearWorkTapes privateTapes)).seq advance else advance) (mk u S) t (mk y D) ∧
       ready D js ∧ RecordPayload (caller 24) (fun _ => blank) 0 out D ∧
-      (∀ k ∈ ([40,56,57] : List (Fin 66)), D.R (caller k) = S.R (caller k)) ∧
+      (∀ k ∈ ([29,30,31,40,56,57] : List (Fin 66)), D.R (caller k) = S.R (caller k)) ∧
       (if live then ∃ minor : ∀ i (hi : i < r), IsUnit (lead (i+1) (lt_of_lt_of_le hi hr) G).det,
         ∃ before, IncomingRowEffect (w := w) (W := W) hr G minor weights inv word before ∧
           ∀ i, out (i.cast (ordinaryChildVolume r g w W)) = before (ordinaryRecursivePosition r g w W i)
@@ -145,7 +145,7 @@ theorem generatedIncomingRow_exec [M8.Machine.Net] {P U : Type} {r g w W common 
       rw [keep 24 (by decide)]
       exact payload i
     · intro k hk
-      exact keep k ((by decide : ∀ k ∈ ([40,56,57] : List (Fin 66)), k ≠ 46) k hk)
+      exact keep k ((by decide : ∀ k ∈ ([29,30,31,40,56,57] : List (Fin 66)), k ≠ 46) k hk)
   simp only [active,ite_true]
   obtain ⟨_,idem,factors⟩ := physicalGood_inputs (by omega : 0 < w+1) proj idemProj f small proj.rank_le_height j active good
   rw [rank] at factors
@@ -185,7 +185,10 @@ theorem generatedIncomingRow_exec [M8.Machine.Net] {P U : Type} {r g w W common 
     exact result k
   · intro k hk
     simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
-    rcases hk with rfl | rfl | rfl
+    rcases hk with rfl | rfl | rfl | rfl | rfl | rfl
+    · exact (frame _ (by decide) (by decide)).2.trans (publicKeep 29 (by decide) (by decide) (by decide))
+    · exact (frame _ (by decide) (by decide)).2.trans (publicKeep 30 (by decide) (by decide) (by decide))
+    · exact (frame _ (by decide) (by decide)).2.trans (publicKeep 31 (by decide) (by decide) (by decide))
     · exact (frame _ (by decide) (by decide)).2.trans (publicKeep 40 (by decide) (by decide) (by decide))
     · exact (frame _ (by decide) (by decide)).2.trans (publicKeep 56 (by decide) (by decide) (by decide))
     · exact (frame _ (by decide) (by decide)).2.trans (publicKeep 57 (by decide) (by decide) (by decide))

@@ -12,24 +12,27 @@ open Shared50ModularControl (prime)
 open FlatCoordinateLayout LabelTraversal Matrix M8.Exchange IntegerMultBounds.Swap.Modular
 local instance (w : ℕ) : NeZero (prime^(w+1)) := ⟨(pow_pos Shared50ModularControl.prime_prime.pos _).ne'⟩
 
-/-- Test the width using the scanner's predecessor clock on tape 45 and the
-cutoff saved immediately before the outer headers. The eight scratch tapes
-belong to the leaf and are restored before either continuation starts. -/
-def chartCutoffBank (K T : ℕ) (room : 8 ≤ T) : Fin 10 ↪ Fin (66+((K+1)+3+T)) where
-  toFun j := ⟨if j.val = 0 then 45 else if j.val = 1 then 66+K else 66+(K+1)+3+(j.val-2),
-    by split_ifs <;> omega⟩
-  inj' := by
-    intro j l eq
+/-- The scanner carries the saved cutoff in register 40 and the unary width in
+register 45. The comparison uses eight private tapes, all blank at child entry. -/
+def chartCutoffBank {n : ℕ} (K T : ℕ) (room : 8 ≤ T)
+    (replay : Fin (66+((K+1)+3+T)) ↪ Fin n) : Fin 10 ↪ Fin n :=
+  (⟨fun j => ⟨if j.val = 0 then 45 else if j.val = 1 then 40 else 66+(K+1)+3+(j.val-2),
+      by split_ifs <;> omega⟩,by
+    intro i j eq
     apply Fin.ext
     have h := congrArg Fin.val eq
     dsimp only at h
-    split_ifs at h <;> omega
+    repeat' split at h
+    all_goals omega⟩ : Fin 10 ↪ Fin (66+((K+1)+3+T))).trans replay
 
-private theorem chartCutoffBank_scratch (K T : ℕ) (room : 8 ≤ T) (j : Fin 10) (high : 2 ≤ j.val) :
-    chartCutoffBank K T room j = stoppedChartPrivate (K+1) T ⟨j.val-2,by omega⟩ := by
+private theorem chartCutoffBank_scratch {n : ℕ} (K T : ℕ) (room : 8 ≤ T)
+    (replay : Fin (66+((K+1)+3+T)) ↪ Fin n) (j : Fin 10) (high : 2 ≤ j.val) :
+    chartCutoffBank K T room replay j = replay (stoppedChartPrivate (K+1) T ⟨j.val-2,by omega⟩) := by
+  apply congrArg replay
   apply Fin.ext
-  change (if j.val = 0 then 45 else if j.val = 1 then 66+K else 66+(K+1)+3+(j.val-2)) = 66+(K+1)+3+(j.val-2)
-  split_ifs <;> omega
+  change (if j.val = 0 then _ else if j.val = 1 then _ else _) = _
+  rw [ite_eq_right (show j.val ≠ 0 by omega),ite_eq_right (show j.val ≠ 1 by omega)]
+  rfl
 
 /-- The cutoff test restores all stacks before entering the selected branch. -/
 private theorem chartCutoff_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
@@ -61,6 +64,37 @@ def recursiveChartTable {T Q : ℕ} {P R U : Type}
     (chart : P → Pr P T Q prime U) (recursive : R → Pr (P ⊕ R) T Q prime U) :
     P ⊕ R → Pr (P ⊕ R) T Q prime U :=
   Sum.elim (fun f => stateMapProg id id Sum.inl (chart f)) recursive
+
+private theorem stateMapAct_id {K σ : Type} {Γ : K → Type} (a : Action Γ σ) :
+    stateMapAct id id a = a := by
+  induction a <;> simp_all [stateMapAct]
+
+/-- Renaming an installed procedure preserves its tape placement and composes
+the two maps on callees. -/
+private theorem renamePlaced {K T Q : ℕ} {P G R U : Type} (bank : Fin K ↪ Fin T)
+    (label : P → G) (includeLabel : G → R) (p : Pr P K Q prime U) :
+    stateMapProg id id includeLabel (embProg bank label p) = embProg bank (includeLabel ∘ label) p := by
+  induction p <;> simp_all [embProg,stateMapProg,stateMapAct_id]
+
+/-- The recursive table installs both placements used by the generated scan:
+incoming on the chart bank and outgoing on the saved replay bank. -/
+theorem recursiveChartTable_scan [M8.Machine.Net] {K : ℕ} {P C R U : Type}
+    (room : Record.size 127+(rowSwapBlock.tapes+35+2) ≤ K+1)
+    (localBody : P → Pr P (66+K) columnCapacity prime U) (child : C → Pr C ((66+K)+1) columnCapacity prime U) :
+    let T := 66+(K+1)
+    let place := directoryChartPlacement T
+    let bank := directoryOrdinaryBank room
+    let slots := replaySlots.trans (Fin.castAddEmb K)
+    let saved := (Fin.castLEEmb (by decide : 4 ≤ 6)).trans (directoryChartReplay T)
+    let outgoing := directoryOutgoingPlacement bank place slots saved (fun _ _ => directoryChartPlacement_ne_work _ _)
+    ∀ recursive : R → Pr ((P ⊕ (P ⊕ C)) ⊕ R) ((T+10)+5) columnCapacity prime U,
+      let body := recursiveChartTable (directoryChartHost room localBody child) recursive
+      (∀ f, body (.inl (.inl f)) = embProg place (Sum.inl ∘ Sum.inl)
+        (embProg (Fin.castAdd 5) id (embProg bank id (localBody f)))) ∧
+      (∀ f, body (.inl (.inr (.inl f))) = embProg outgoing (Sum.inl ∘ (Sum.inr ∘ Sum.inl))
+        (embProg (Fin.castAdd 5) id (localBody f))) := by
+  intro T place bank slots saved outgoing recursive body
+  constructor <;> intro f <;> apply renamePlaced
 
 private theorem recursiveChartTable_exec {T Q : ℕ} {P R U : Type}
     (chart : P → Pr P T Q prime U) (recursive : R → Pr (P ⊕ R) T Q prime U)
@@ -104,7 +138,7 @@ theorem initializeChartCutoff_exec [M8.Machine.Net] {P U : Type} (K : ℕ)
     let T := LeafCore.small
     let tapes := 66+(((K+1)+3+T)+1)
     let replay := directoryChartReplayBank room
-    let cmp := (chartCutoffBank K T (show 8 ≤ T from (by decide : 8 ≤ 9).trans nine_le_leaf)).trans replay
+    let cmp := chartCutoffBank K T ((by decide : 8 ≤ 9).trans nine_le_leaf) replay
     let L := root.width.size
     ∀ (body : P → Pr P ((tapes+10)+5) columnCapacity prime U) (src header : Fin ((tapes+10)+5))
       (u : HS ((tapes+10)+5) columnCapacity prime U) (S : Stacks ((tapes+10)+5) prime),
@@ -122,8 +156,8 @@ theorem initializeChartCutoff_exec [M8.Machine.Net] {P U : Type} (K : ℕ)
     change ((FlatCoordinateSchedule.bits root.width).map (bitSymbol (a := prime))).length = root.width.size
     rw [canonicalBits_symbols,length_binSyms]
   have free (j : Fin 10) (hj : 2 ≤ j.val) : S.R (cmp j) = [] := by
-    change S.R (replay (chartCutoffBank K T _ j)) = []
-    rw [chartCutoffBank_scratch K T _ j hj]
+    change S.R (chartCutoffBank K T _ replay j) = []
+    rw [chartCutoffBank_scratch K T _ replay j hj]
     exact empty _
   obtain ⟨z,user,run⟩ := copyCutoff_exec body src header (cmp 1) (cmp 2) (cmp 3) (cmp 4) cutoff L
     (Nat.size_le_size within) u S regs word precision fresh (free 2 (by decide)) (free 3 (by decide)) (free 4 (by decide))
@@ -195,6 +229,70 @@ theorem activeBatchChartDimensions (root node : Descriptor) (depth b cutoff bloc
     rw [rowCount,labelShape]
     ring
 
+/-- Fixed selector body for one interval rank. The width, cutoff and row
+count are read at runtime. The large branch calls the supplied node label. -/
+noncomputable def scheduledChartCall [M8.Machine.Net] (K : ℕ) {P R U : Type}
+    (room : Record.size 127+(rowSwapBlock.tapes+35+2) ≤ ((K+1)+3+LeafCore.small)+1)
+    (localBody : P → Pr P (66+((K+1)+3+LeafCore.small)) columnCapacity prime U)
+    (rank : ℕ) (f : R) :
+    Pr ((P ⊕ (P ⊕ Unit)) ⊕ R) ((66+(((K+1)+3+LeafCore.small)+1)+10)+5) columnCapacity prime U :=
+  let T := LeafCore.small
+  let replay := directoryChartReplayBank room
+  let place := Fin.castLEEmb (show (66+(K+1))+3 ≤ 66+((K+1)+3+T) by omega)
+  let prepare := IntervalDescriptor.directoryOuterHeaders (directoryOuterHeaderBank (K+1))
+  let saved := fun j : Fin 3 => replay (stoppedChartHeader (K+1) T (j.castAdd 3))
+  let release := (List.finRange 3).map saved
+  let cmp := chartCutoffBank K T ((by decide : 8 ≤ 9).trans nine_le_leaf) replay
+  let counts := (directoryChildCountBank (K+1) T ((by decide : 6 ≤ 9).trans nine_le_leaf)).trans replay
+  let host := directoryChartHost room localBody (stoppedChartChild (K+1))
+  let leaf := ((embProg replay Empty.elim (embProg place Empty.elim prepare)).seq (host (.inr (.inr ())))).seq
+    (Prog.seqList (release.map WordCmd.dropR))
+  let large := ((embProg replay Empty.elim (embProg place Empty.elim prepare)).seq
+    (((prepareChildCounts counts).seq (.call (.inr f))).seq (Prog.seqList ([counts 2,counts 3].map WordCmd.dropR)))).seq
+      (Prog.seqList (release.map WordCmd.dropR))
+  (ordinaryCutoffTest cmp rank).seq (.cond (fun z => symBit (z.scan (cmp 7))) large (stateMapProg id id Sum.inl leaf))
+
+/-- The generated scanner calls a rank selector by label. Each selector
+can enter the same node procedure on the prepared child tapes. -/
+noncomputable def scheduledChartProcedures [M8.Machine.Net] (K : ℕ) {P R U : Type}
+    (room : Record.size 127+(rowSwapBlock.tapes+35+2) ≤ ((K+1)+3+LeafCore.small)+1)
+    (localBody : P → Pr P (66+((K+1)+3+LeafCore.small)) columnCapacity prime U)
+    (node : R → Pr ((P ⊕ (P ⊕ Unit)) ⊕ (Fin 43 ⊕ R))
+      ((66+(((K+1)+3+LeafCore.small)+1)+10)+5) columnCapacity prime U) (f : R) :
+    Fin 43 ⊕ R → Pr ((P ⊕ (P ⊕ Unit)) ⊕ (Fin 43 ⊕ R))
+      ((66+(((K+1)+3+LeafCore.small)+1)+10)+5) columnCapacity prime U
+  | .inl r => scheduledChartCall K room localBody r.val (.inr f)
+  | .inr g => node g
+
+private theorem directorySelectorInputs {K T m w W H J : ℕ} {row : RecursiveInterchangeLayout.Descriptor}
+    {proj : Matrix (Fin m) (Fin m) ℚ} {weights : Fin m → ZMod (prime^(w+1))}
+    {prefixes : ℕ → List (Fin (prime+4))} {archiveTail : List (Fin (prime+4))}
+    {schedule : List ℕ → List (Fin (prime+4))} {pending : List ℕ} {D : Stacks (66+(K+3+T)) prime}
+    (ready : DirectoryReady row proj w W H J weights prefixes archiveTail schedule D pending) :
+    let place := Fin.castLEEmb (show (66+K)+3 ≤ 66+(K+3+T) by omega)
+    (∀ j : Fin 12, 3 ≤ j.val → D.R (place (directoryOuterHeaderBank K j)) = []) ∧
+    (∀ j : Fin 3, D.R (stoppedChartHeader K T (j.natAdd 3)) = (Routines.hdr row (j.natAdd 3)).map bitSymbol) ∧
+    (∀ j, D.L (stoppedChartPrivate K T j) = [] ∧ D.R (stoppedChartPrivate K T j) = []) ∧
+    (D.R ((45 : Fin 66).castAdd (K+3+T))).length = w := by
+  intro place
+  obtain ⟨_,_,work,_,_,_,_,_,headers,_,clock,_,_⟩ := ready
+  refine ⟨?_,?_,?_,clock⟩
+  · intro j high
+    apply (work _ _).2
+    change 58 ≤ if j.val < 3 then _ else if j.val < 6 then _ else _
+    split_ifs <;> omega
+  · intro j
+    have idx : stoppedChartHeader K T (j.natAdd 3) =
+        (((j.natAdd 3).natAdd 33).castLE (by decide : 39 ≤ 66)).castAdd (K+3+T) := by
+      apply Fin.ext
+      simp [stoppedChartHeader,Fin.natAdd]
+    rw [idx]
+    exact headers (j.natAdd 3)
+  · intro j
+    apply work
+    change 58 ≤ 66+K+3+j.val
+    omega
+
 open IntegerMultBounds.Networks.Certificates.PR589.Nine RecursiveInterchangeLayout in
 /-- Read the parent's cutoff and execute the selected batch branch. In the
 recursive case the continuation receives a proof of strict width descent. -/
@@ -216,26 +314,22 @@ theorem selectScheduledChart_exec [M8.Machine.Net] (K : ℕ) {P R U : Type}
     let bank := directoryOuterHeaderBank (K+1)
     let values : Fin 3 → ℕ := ![parent.beforeRows,parent.rows,parent.beforeH]
     let saved := fun j : Fin 3 => replay (stoppedChartHeader (K+1) T (j.castAdd 3))
-    let scratch := (List.finRange 3).map saved
-    let cmp := (chartCutoffBank K T (show 8 ≤ T from (by decide : 8 ≤ 9).trans nine_le_leaf)).trans replay
-    let leaf := ((embProg replay Empty.elim (embProg place Empty.elim (IntervalDescriptor.directoryOuterHeaders bank))).seq
-      (host (.inr (.inr ())))).seq (Prog.seqList (scratch.map WordCmd.dropR))
+    let cmp := chartCutoffBank K T ((by decide : 8 ≤ 9).trans nine_le_leaf) replay
     let leafBudget := ((223+((T+5 : ℕ)*|LeafCore.C|+8+T*(16+8*|LeafCore.C|)))*scheduled.width)*volume prime scheduled
-    ∀ (recursive : R → Pr ((P ⊕ (P ⊕ Unit)) ⊕ R) ((tapes+10)+5) columnCapacity prime U) (f : R) (recursiveBudget : ℕ),
-    let body := recursiveChartTable host recursive
+    ∀ (recursive : R → Pr ((P ⊕ (P ⊕ Unit)) ⊕ (Fin 43 ⊕ R)) ((tapes+10)+5) columnCapacity prime U) (f : R) (recursiveBudget : ℕ),
+    let procedures := scheduledChartProcedures K room localBody recursive f
+    let body := recursiveChartTable host procedures
     let counts := (directoryChildCountBank (K+1) T (show 6 ≤ T from (by decide : 6 ≤ 9).trans nine_le_leaf)).trans replay
-    let large : Pr ((P ⊕ (P ⊕ Unit)) ⊕ R) ((tapes+10)+5) columnCapacity prime U :=
-      (((embProg replay Empty.elim (embProg place Empty.elim (IntervalDescriptor.directoryOuterHeaders bank))).seq
-        (((prepareChildCounts counts).seq (.call (.inr f))).seq (Prog.seqList ([counts 2,counts 3].map WordCmd.dropR)))).seq (Prog.seqList (scratch.map WordCmd.dropR)))
     ∀ (a : HS ((tapes+10)+5) columnCapacity prime U) (A : Stacks ((tapes+10)+5) prime)
       (x : Fin (volume prime batch) → ZMod 2), 0 < volume prime node →
       (∀ j : Fin 3, (A.R (replay (place (bank (j.castAdd 9))))).length = values j) →
-      (∀ j : Fin 12, 3 ≤ j.val → A.R (replay (place (bank j))) = []) →
-      (∀ j : Fin 3, A.R (replay (stoppedChartHeader (K+1) T (j.natAdd 3))) = (Routines.hdr row (j.natAdd 3)).map bitSymbol) →
-      (∀ j, A.L (replay (stoppedChartPrivate (K+1) T j)) = [] ∧ A.R (replay (stoppedChartPrivate (K+1) T j)) = []) →
+      ∀ {m W H J : ℕ} {proj : Matrix (Fin m) (Fin m) ℚ} {weights : Fin m → ZMod (prime^(w+1))}
+        {prefixes : ℕ → List (Fin (prime+4))} {archiveTail : List (Fin (prime+4))}
+        {schedule : List ℕ → List (Fin (prime+4))} {pending : List ℕ},
+      DirectoryReady row proj w W H J weights prefixes archiveTail schedule (embStk replay A) pending →
       RecordPayload owner (fun _ => blank) 0 x A →
       cutoff < node.width → (cutoff < 2^L ∧ scheduled.width.size ≤ L ∧ L ≤ cutoff) →
-      (A.R (cmp 0)).length = w → A.R (cmp 1) = binSyms L cutoff →
+      A.R (cmp 1) = binSyms L cutoff →
       (cutoff < batch.width → batch.width < node.width → batch.Positive →
         ∀ (z : HS ((tapes+10)+5) columnCapacity prime U) (F : Stacks ((tapes+10)+5) prime),
         let D := childCountState counts batch F
@@ -248,21 +342,34 @@ theorem selectScheduledChart_exec [M8.Machine.Net] (K : ℕ) {P R U : Type}
           ∀ j, j ≠ owner → B.L j = D.L j ∧ B.R j = D.R j) →
       ∃ y B, ∃ k : ℕ, y.user = a.user ∧ (k : ℝ) ≤ (1682*volume prime scheduled : ℕ)+
         (if cutoff < scheduled.width then (recursiveBudget : ℝ) else leafBudget) ∧
-        Exec body ((ordinaryCutoffTest cmp (hi-lo)).seq (.cond (fun z => symBit (z.scan (cmp 7))) large
-          (stateMapProg id id Sum.inl leaf)))
+        Exec body (body (.inr (.inl ⟨hi-lo,by have := nodeChildren5_le i; omega⟩)))
           (mk a A) k (mk y B) ∧
         RecordPayload owner (fun _ => blank) 0 (Shared50RecursiveNodeRows.transpose (one_dvd batch.rows) x) B ∧
         ∀ j, j ≠ owner → B.L j = A.L j ∧ B.R j = A.R j := by
-  intro parent batch row scheduled T tapes owner host replay place bank values saved scratch cmp leaf leafBudget
-    recursive f recursiveBudget body counts large a A x positive src empty tail free payload activeParent ⟨cutFits,fits,precision⟩ clock cutWord recurse
+  intro parent batch row scheduled T tapes owner host replay place bank values saved cmp leafBudget
+    recursive f recursiveBudget procedures body counts a A x positive src m W H J proj weights prefixes archiveTail schedule pending ready
+    payload activeParent ⟨cutFits,fits,precision⟩ cutWord recurse
+  obtain ⟨empty,tail,free,clock⟩ := directorySelectorInputs (K := K+1) (T := T) ready
+  change ∀ j : Fin 12, 3 ≤ j.val → A.R (replay (place (bank j))) = [] at empty
+  change ∀ j : Fin 3, A.R (replay (stoppedChartHeader (K+1) T (j.natAdd 3))) =
+    (Routines.hdr row (j.natAdd 3)).map bitSymbol at tail
+  change ∀ j, A.L (replay (stoppedChartPrivate (K+1) T j)) = [] ∧
+    A.R (replay (stoppedChartPrivate (K+1) T j)) = [] at free
+  change (A.R (cmp 0)).length = w at clock
+  let scratch := (List.finRange 3).map saved
+  let leaf := ((embProg replay Empty.elim (embProg place Empty.elim (IntervalDescriptor.directoryOuterHeaders bank))).seq
+      (host (.inr (.inr ())))).seq (Prog.seqList (scratch.map WordCmd.dropR))
+  let large : Pr ((P ⊕ (P ⊕ Unit)) ⊕ (Fin 43 ⊕ R)) ((tapes+10)+5) columnCapacity prime U :=
+      (((embProg replay Empty.elim (embProg place Empty.elim (IntervalDescriptor.directoryOuterHeaders bank))).seq
+        (((prepareChildCounts counts).seq (.call (.inr (.inr f)))).seq (Prog.seqList ([counts 2,counts 3].map WordCmd.dropR)))).seq (Prog.seqList (scratch.map WordCmd.dropR)))
   have shape := (scheduledDirectoryTranspose node i w aligned rows).1
   have width : (w+1)*(hi-lo) = scheduled.width := by
     rw [rank]
     exact shape.width
   have run := chartCutoff_exec body cmp (hi-lo) w L cutoff cutFits (width.symm ▸ fits) large (stateMapProg id id Sum.inl leaf) a A clock cutWord
     (fun j hj => by
-      change A.R (replay (chartCutoffBank K T _ j)) = []
-      rw [chartCutoffBank_scratch K T _ j hj]
+      change A.R (chartCutoffBank K T _ replay j) = []
+      rw [chartCutoffBank_scratch K T _ replay j hj]
       exact (free _).2)
     (fun B => RecordPayload owner (fun _ => blank) 0 (Shared50RecursiveNodeRows.transpose (one_dvd batch.rows) x) B ∧
       ∀ j, j ≠ owner → B.L j = A.L j ∧ B.R j = A.R j)
@@ -292,8 +399,8 @@ theorem selectScheduledChart_exec [M8.Machine.Net] (K : ℕ) {P R U : Type}
           (fun i j => directoryChartPlacement_ne_work i _) j (0 : Fin 5)
         rw [directoryChartPlacement_owner] at sep
         exact sep
-      let core : Pr ((P ⊕ (P ⊕ Unit)) ⊕ R) ((tapes+10)+5) columnCapacity prime U :=
-        ((prepareChildCounts counts).seq (.call (.inr f))).seq (Prog.seqList ([counts 2,counts 3].map WordCmd.dropR))
+      let core : Pr ((P ⊕ (P ⊕ Unit)) ⊕ (Fin 43 ⊕ R)) ((tapes+10)+5) columnCapacity prime U :=
+        ((prepareChildCounts counts).seq (.call (.inr (.inr f)))).seq (Prog.seqList ([counts 2,counts 3].map WordCmd.dropR))
       have prepared := withDirectoryHeaders_exec body replay owner apart core parent hp lo hi w
         ((recursiveBudget+2)+81*volume prime batch) z A
       rw [rank] at prepared
@@ -302,7 +409,7 @@ theorem selectScheduledChart_exec [M8.Machine.Net] (K : ℕ) {P R U : Type}
         intro v F ready keep input
         have registers := directoryChildCountBank_ready (K := K+1) (T := T) ((by decide : 6 ≤ 9).trans nine_le_leaf)
           replay batch F ready
-        apply withChildCounts_exec body counts owner (fun j => apart _) batch (batchSize.symm ▸ pos) (.call (.inr f))
+        apply withChildCounts_exec body counts owner (fun j => apart _) batch (batchSize.symm ▸ pos) (.call (.inr (.inr f)))
           (recursiveBudget+2) v F _ registers.1 registers.2.1 registers.2.2
         intro v'
         have childInput : RecordPayload owner (fun _ => blank) 0 x (childCountState counts batch F) := by
@@ -326,7 +433,7 @@ theorem selectScheduledChart_exec [M8.Machine.Net] (K : ℕ) {P R U : Type}
       have stopped := dispatchStoppedChart_exec (K+1) room localBody node i lo hi w aligned rows rank z A
       rw [rank] at stopped
       obtain ⟨y,B,k,user,paid,call,out,frame⟩ := stopped x positive src empty tail free payload
-      exact ⟨y,B,k,user,paid,recursiveChartTable_exec host recursive call,out,frame⟩)
+      exact ⟨y,B,k,user,paid,recursiveChartTable_exec host procedures call,out,frame⟩)
   have comparison := cutoffBudget_le (cutoff < scheduled.width) ((Nat.le_succ w).trans atomBound) size pos
     (recursive := (recursiveBudget : ℝ)+(194*volume prime scheduled : ℕ)) (leaf := leafBudget) (L := L)
   have parentBound := Nat.mul_le_mul_left 64 (atomBound.trans size)

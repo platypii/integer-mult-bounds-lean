@@ -225,18 +225,18 @@ theorem classifiedOrdinaryDirectory_exec [M8.Machine.Net] {a d common work w W J
     (by intro i hi; rw [← shared]; exact free _ (by change 58 ≤ i.val; omega)) width
   change embStk bank A = start at view
   have rawEq := congrArg (embStk placement) view
-  obtain ⟨y,D,t,user,price,run,prepared,keepL,keepR,projector,cutKept,liveBits,badBits⟩ := controls prefixes archiveTail
+  obtain ⟨y,D,t,user,price,run,prepared,_,keepL,keepR,projector,cutKept,liveBits,badBits⟩ := controls prefixes archiveTail
     (embDn placement (embDn bank counterUser)) raw free (by simpa only [← count] using inputs)
       beforeRows rows beforeH parents mask mode queueFree
   have controlsPrice := maskSetup_volume_le m w data.records (directory.beforeRows*directory.rows*B)
     privateTapes.length left (data.records*N) (radix.trans (Nat.le_mul_of_pos_left _ recordsPos))
     (Nat.le_mul_of_pos_right _ (radixPos.trans_le radix)) boxes
   have queue := owner.trans (congrArg (· ++ ownerTail) (ownerRow_queue (R := data.records) (N := N) rfl word))
-  obtain ⟨z,F,t,n,rows,s,midUser,mid,user,_,bounded,controls,_,_,_,_,prepared,projector,time,rowTime,run,rowsOk,leftOk,rightOk,free,_,_,_,rest⟩ := classifiedDirectory_exec dimension v proj idem adm parent inv (fun i => Ring.mul_inverse_cancel _ (unit i))
+  obtain ⟨z,F,t,n,rows,s,midUser,mid,user,_,bounded,controls,_,_,_,_,_,prepared,projector,time,rowTime,run,rowsOk,leftOk,rightOk,free,_,_,_,rest⟩ := classifiedDirectory_exec dimension v proj idem adm parent inv (fun i => Ring.mul_inverse_cancel _ (unit i))
     data hm hw positive room fits capacity body c placedBound prefixes archiveTail bad budget ordinaryEffect length
-    input localBody (fun _ => rfl) selectors goodRow skipRow selectorBudget ownerTail counterUser A (by rwa [view]) (by
+    input localBody (fun _ => rfl) selectors goodRow skipRow selectorBudget ownerTail counterUser A (fun _ => True) False (by rwa [view]) (by
     rw [rawEq]
-    refine ⟨y,D,t,user,price.trans ?_,?_,?_,keepL,keepR,projector,cutKept,?_,?_⟩
+    refine ⟨y,D,t,user,price.trans ?_,?_,True.intro,?_,keepL,keepR,projector,cutKept,?_,?_⟩
     · simpa only [selectorBudget,List.length_range,count] using controlsPrice
     · simpa only [selectors,ordinarySelectorProgram,table,inverse,Function.comp_assoc] using run
     · simpa only [count,rs] using prepared
@@ -260,7 +260,7 @@ theorem classifiedOrdinaryDirectory_exec [M8.Machine.Net] {a d common work w W J
         exact initialCut) dir queue
       (fun _ => clear) (input j) payload (fun hj => installed j hj clear)
     have charged : t ≤ budget j := rowTime_min_cleanup (live j) price localPrice
-    exact ⟨z,D,t,out,user,charged,run,next,action,word,kept 40 (by decide) (by decide) (by decide),kept 57 (by decide) (by decide) (by decide),kept 56 (by decide) (by decide) (by decide)⟩)
+    exact ⟨z,D,t,out,user,charged,run,next,action,word,False.elim,kept 40 (by decide) (by decide) (by decide),kept 57 (by decide) (by decide) (by decide),kept 56 (by decide) (by decide) (by decide)⟩)
   obtain ⟨output,action,packed⟩ := ownerRows_pack (R := data.records) (N := N) rfl rowsOk
   have finalLeft := leftOk.trans (congrFun keepLeft _)
   have finalRight := rightOk.trans (congrArg (· ++ ownerTail) packed)

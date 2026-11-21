@@ -47,6 +47,7 @@ theorem ordinarySelectors_exec {m k Q extra : ℕ} {F U : Type}
       ((privateTapes.map fun i => 4*(initialState.L i).length).sum+privateTapes.length*(2*high+4)+1) ∧
       Exec body selectors (mk initialUser initialState) n (mk z D) ∧
       DirectoryReady v P w W H J parent prefixes tail schedules D allLabels ∧
+      (∀ j : Fin 3, D.R (caller ((j.natAdd 29).castLE (by decide))) = initialState.R (caller ((j.natAdd 29).castLE (by decide)))) ∧
       D.L (caller 24) = initialState.L (caller 24) ∧ D.R (caller 24) = initialState.R (caller 24) ∧
       D.R (caller 48) = initialState.R (caller 48) ∧ D.R (caller 40) = initialState.R (caller 40) ∧ D.R mask = liveWords ∧ D.R mode = badWords := by
   intro rankFits K caller mask mode parents rs privateTapes
@@ -74,8 +75,10 @@ theorem ordinarySelectors_exec {m k Q extra : ℕ} {F U : Type}
       D.R (caller i) = initialState.R (caller i) :=
     (Function.update_of_ne (caller.injective.ne b) ..).trans
       ((Function.update_of_ne (caller.injective.ne l) ..).trans (raw i hi h))
-  refine ⟨z,D,n,user,price,run,finalReady,?_,keep 24 (by decide) (by decide) (by decide) (by decide),
+  refine ⟨z,D,n,user,price,run,finalReady,?_,?_,keep 24 (by decide) (by decide) (by decide) (by decide),
     keep 48 (by decide) (by decide) (by decide) (by decide),keep 40 (by decide) (by decide) (by decide) (by decide),?_,Function.update_self mode badWords liveState.R⟩
+  · intro j
+    fin_cases j <;> apply keep <;> decide
   · simp [D,liveState,clean,privateTapes,caller]
   · exact (Function.update_of_ne (caller.injective.ne (by decide : (57 : Fin 66) ≠ 56)) badWords liveState.R).trans (Function.update_self mask liveWords clean.R)
 
