@@ -311,6 +311,95 @@ theorem restoredStage_activePort (n : Fin 9) (run : Fin 32 × Fin 5) (j : Fin 22
     omega
   · exact otherRunMissesPort n p run same _ _ j.isLt eqn
 
+/-- The restored target adds its original source after summing labels.
+The source itself retains its framed stream at every individual label. -/
+theorem restoredStage_active (n : Fin 9) (run : Fin 32 × Fin 5) (w B W : ℕ) (x y out)
+    (trace : stageRuns.foldr (fun k next a => ∃ b, packedStageEffect n k w B W a b ∧ next b)
+      (fun a => a = y) x)
+    (restore : HelperLabelTrace w (B*prime^(64*(w*64))) W (restoreSlotChanges (stageFinalSlot n)) y out)
+    (t : Fin 111) :
+    let K := (prime^w)^112*W
+    let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n run.1 run.2,ownerTape_injective ..⟩
+    ∀ (z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B),
+    let j : Fin (B*K) := finProdFinEquiv (z.b,z.after)
+    let initial := fun i => (selectedFrame w (Frames.initialRefs i)).symm (phaseRead owner (collapseLabelBank x) j i)
+    phaseRead owner (collapseLabelBank out) j (111+t.val) =
+      selectedFrame w (Frames.finalRefs (111+t.val)) (initial (111+t.val) + initial t.val) ∧
+    ∀ g, phaseRead owner out (labelSpectator g z) t.val =
+      selectedFrame w (Frames.finalRefs t.val)
+        ((selectedFrame w (Frames.initialRefs t.val)).symm (phaseRead owner x (labelSpectator g z) t.val)) := by
+  intro K owner z j initial
+  obtain ⟨a,b,act,inputs,outputs⟩ := packedStage_active n run w B W x y trace
+  let src : Fin 222 := ⟨t.val,by omega⟩
+  let dst : Fin 222 := ⟨111+t.val,by omega⟩
+  have after (k : Fin 222) := (outputs k).trans
+    (restoredStage_activePort n run k (w := w) (L := B*prime^(64*(w*64))) (W := W) restore).symm
+  have collapsed {u v} (k : Fin 222) (eqn : u (owner (k.castLE (by decide))) = v (owner (k.castLE (by decide)))) :
+      phaseRead owner (collapseLabelBank (w := w) (B := B) (K := K) u) j k.val =
+      phaseRead owner (collapseLabelBank v) j k.val := by
+    have bound : k.val < 661 := by omega
+    simp only [phaseRead,Copy.extendStored,dite_eq_left bound,collapseLabelBank]
+    change u (owner ⟨k.val,bound⟩) = v (owner ⟨k.val,bound⟩) at eqn
+    rw [eqn]
+  constructor
+  · have sum := act.collapsedTarget z t
+    dsimp only at sum
+    exact (collapsed dst (after dst)).symm.trans (sum.trans (congrArg _ (congrArg₂ (· + ·)
+      (congrArg _ (collapsed dst (inputs dst))) (congrArg _ (collapsed src (inputs src))))))
+  · intro g
+    have read := act.otherRead g z (src.castLE (by decide)) (Or.inl t.isLt)
+    have eqn {u v} (eqn : u (owner (src.castLE (by decide))) = v (owner (src.castLE (by decide)))) :
+        phaseRead (w := w) owner u (labelSpectator g z) t.val = phaseRead (w := w) owner v (labelSpectator g z) t.val := by
+      have bound : t.val < 661 := by omega
+      simp only [phaseRead,Copy.extendStored,dite_eq_left bound]
+      change u (owner ⟨t.val,bound⟩) = v (owner ⟨t.val,bound⟩) at eqn
+      rw [eqn]
+    exact (eqn (after src)).symm.trans (read.trans (congrArg _ (congrArg _ (eqn (inputs src)))))
+
+/-- A physical row scan on a restored target writes the certified framed
+sum of its two incoming streams throughout the spectator block. -/
+theorem restoredStage_targetScan (n : Fin 9) (run : Fin 32 × Fin 5) (w B W : ℕ)
+    (label : Cover.LabelPadding.Label 64 w) (x y out)
+    (trace : stageRuns.foldr (fun k next a => ∃ b, packedStageEffect n k w B W a b ∧ next b)
+      (fun a => a = y) (singleLabelBank label x))
+    (restore : HelperLabelTrace w (B*prime^(64*(w*64))) W (restoreSlotChanges (stageFinalSlot n)) y out)
+    (t : Fin 111) :
+    let K := (prime^w)^112*W
+    let N := prime^(64*(w*64))
+    let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n run.1 run.2,ownerTape_injective ..⟩
+    let dst : Fin 661 := ⟨111+t.val,by omega⟩
+    ∀ (s : Swap.Shear.State (Fin 8) (ZMod (prime^w))) (b : Fin B) (v : Tapes 2 prime), 0 < K →
+    (∀ (r : Fin N) (j : Fin K), v.tape 0 (v.head 0+r.val*K+j.val) = SparseRoleCircuit.encode
+      (out (owner dst) (FlatCoordinateLayout.index (AffineFieldCoordinates.embed s)
+        (finProdFinEquiv (finProdFinEquiv (b,r),j))))) →
+    (∀ j : Fin K, v.tape 1 (v.head 1+j.val) = SparseRoleCircuit.encode 0) →
+    ∃ F, HoareTime (LabelRowXor.program prime)
+      (fun u => u = LabelRowXor.bank v (FlatCoordinateSchedule.bits K) (FlatCoordinateSchedule.bits N))
+      (fun u => u = LabelRowXor.bank F (FlatCoordinateSchedule.bits K) (FlatCoordinateSchedule.bits N)) (111*(N*K)) ∧
+      F.head 0 = v.head 0+N*K ∧ F.head 1 = v.head 1 ∧ F.tape 0 = v.tape 0 ∧
+      (∀ j : Fin K,
+        let initial := fun i => (selectedFrame w (Frames.initialRefs i)).symm
+          (phaseRead owner x (finProdFinEquiv (b,j)) i)
+        F.tape 1 (v.head 1+j.val) = SparseRoleCircuit.encode
+          (selectedFrame w (Frames.finalRefs dst.val) (initial dst.val + initial t.val) s)) ∧
+      ∀ i, ¬(v.head 1 ≤ i ∧ i < v.head 1+K) → F.tape 1 i = v.tape 1 i := by
+  intro K N owner dst s b v pos input zero
+  obtain ⟨F,scan,hsrc,hdst,src,acc,off⟩ := collapseLabelBlock_run (w := w) (B := B) pos out
+    (owner dst) (FlatCoordinateLayout.rank (AffineFieldCoordinates.embed s)) b v input zero
+  refine ⟨F,scan,hsrc,hdst,src,fun j => ?_,off⟩
+  let z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B :=
+    ⟨⟨0,pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _⟩,⟨0,Nat.zero_lt_one⟩,b,
+      ⟨0,by simp [copyLabelLayout,ActualAffineScaling.modulus]⟩,⟨0,Nat.zero_lt_one⟩,
+      ⟨0,by simp [copyLabelLayout,ActualAffineScaling.modulus]⟩,j⟩
+  have sum := congrFun (restoredStage_active n run w B W _ y out trace restore t z).1 s
+  rw [collapse_singleLabelBank] at sum
+  refine (acc j).trans (congrArg SparseRoleCircuit.encode ?_)
+  have address : FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) (finProdFinEquiv (b,j)) =
+      finProdFinEquiv (FlatCoordinateLayout.rank (AffineFieldCoordinates.embed s),finProdFinEquiv (b,j)) := by
+    apply Fin.ext
+    simp [FlatCoordinateLayout.index_val,finProdFinEquiv,Nat.mul_comm,Nat.add_comm]
+  simpa only [dst,z,owner,address,phaseRead,Copy.extendStored,dite_eq_left (show 111+t.val < 661 by omega)] using sum
+
 private def appendPrivate {t a n : ℕ} (S : Stacks t a) (words : Fin n → List (Fin (a+4))) : Stacks (t+n) a :=
   {S with L := Fin.addCases S.L (fun _ => []), R := Fin.addCases S.R words}
 
