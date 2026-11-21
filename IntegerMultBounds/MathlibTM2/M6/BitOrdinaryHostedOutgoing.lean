@@ -79,6 +79,7 @@ theorem hostedOutgoingScan_exec [M8.Machine.Net] {P U : Type} {r g w W common wo
       F.L (regs 0) = A.L (regs 0) ∧ F.R (regs 0) = payloadWord (SparseRoleCircuit.encode ∘ output) ++ ownerTail ∧ F.R (regs 1) = [] ∧
       (F.R (regs 2)).length = N ∧ F.R (regs 3) = [] ∧ F.R (regs 4) = [] ∧ ready (embStk localBank F) [] ∧
       F.R (localBank (caller 57)) = [] ∧ F.R (localBank (caller 56)) = [] ∧
+      F.R (localBank (caller 47)) = A.R (localBank (caller 47)) ∧
       ∀ i, (∀ j, place j ≠ i) → F.L i = A.L i ∧ F.R i = A.R i := by
   intro m hr K M N V proj rank dim idem factor small weights unit hW prefixes archiveTail ownerTail R pool room body
     G T localBank regs apart label host a A original returned c rs full machine caller bank place start ready reduced live bad
@@ -91,7 +92,7 @@ theorem hostedOutgoingScan_exec [M8.Machine.Net] {P U : Type} {r g w W common wo
     outgoingOwnerPlacement_reg localBank regs apart j
   have bankEq (i : Fin (66+(common+24+31+work))) : place (i.castAdd 5) = localBank i :=
     outgoingOwnerPlacement_bank localBank regs apart i
-  obtain ⟨y,B,n,out,user,time,run,action,left,right,empty,length,clear,free,done,ls,bs⟩ :=
+  obtain ⟨y,B,n,out,user,time,run,action,left,right,empty,length,clear,free,done,ls,bs,widthKept⟩ :=
     generatedOutgoingScan_exec (common := common) v proj rank dim idem factor small weights unit hW prefixes archiveTail
       ownerTail R pool room body (embDn place a) (embStk place A) original returned c bounded localPush classified
       (by rwa [project]) (by rwa [project]) (by rwa [project])
@@ -100,7 +101,7 @@ theorem hostedOutgoingScan_exec [M8.Machine.Net] {P U : Type} {r g w W common wo
       (by simpa only [embStk,Function.comp_apply,regEq] using tmp) (by rwa [project]) bypass restored
   obtain ⟨z,F,placed,_,same,physical,frame⟩ := exec_emb place.injective calls run a rfl A rfl
   subst B
-  refine ⟨z,F,n,out,same.trans user,time,placed,action,?_,?_,?_,?_,?_,?_,?_,?_,?_,frame⟩
+  refine ⟨z,F,n,out,same.trans user,time,placed,action,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,frame⟩
   · simpa only [embStk,Function.comp_apply,regEq] using left
   · simpa only [embStk,Function.comp_apply,regEq] using right
   · simpa only [embStk,Function.comp_apply,regEq] using empty
@@ -110,5 +111,6 @@ theorem hostedOutgoingScan_exec [M8.Machine.Net] {P U : Type} {r g w W common wo
   · rwa [project] at done
   · simpa only [embStk,Function.comp_apply,bank,bankEq] using ls
   · simpa only [embStk,Function.comp_apply,bank,bankEq] using bs
+  · simpa only [embStk,Function.comp_apply,bank,bankEq] using widthKept
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode

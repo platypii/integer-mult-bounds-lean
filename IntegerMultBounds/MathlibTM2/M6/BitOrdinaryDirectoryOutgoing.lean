@@ -407,7 +407,7 @@ theorem generatedLiveOutgoingRow_exec [M8.Machine.Net] {P U : Type} {r g w W com
       RecordPayload (full 24) (fun _ => blank) 0 out F ∧
       (∀ x k, let y := transform (diagonal weights) 1 (revExchangeOf (rev m) G (transform (diagonal inv) 1 x))
         out (index (Fin.append y.1 y.2) k) = original (index (Fin.append x.1 x.2) k)) ∧
-      ∀ k ∈ ([40,56,57] : List (Fin 66)), F.R (caller k) = S.R (caller k) := by
+      ∀ k ∈ ([40,47,56,57] : List (Fin 66)), F.R (caller k) = S.R (caller k) := by
   intro m hr K M H J proj rank dim weights unit prefixes tail schedules j js pool room body u S full bank
     machine label reduced G inv idemProj f small ready live regular hW original before minor inc pos plain payload prog cost caller privateTapes slots scan advance skip c bounded calls
   obtain ⟨_,idem,factors⟩ := physicalGood_inputs (by omega : 0 < w+1) proj idemProj f small proj.rank_le_height j live regular
@@ -449,8 +449,9 @@ theorem generatedLiveOutgoingRow_exec [M8.Machine.Net] {P U : Type} {r g w W com
     (Nat.mul_le_mul_left _ (Nat.mul_le_mul_left _ (Nat.mul_le_mul_left c bound))) _)) _),step,next,result,action,?_⟩
   intro k hk
   simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
-  rcases hk with h|h|h <;> subst k
+  rcases hk with h|h|h|h <;> subst k
   · exact (frame 40 (by decide) (by decide)).2.trans (publicKeep 40 (by decide) (by decide) (by decide))
+  · exact (frame 47 (by decide) (by decide)).2.trans (publicKeep 47 (by decide) (by decide) (by decide))
   · exact (frame 56 (by decide) (by decide)).2.trans (publicKeep 56 (by decide) (by decide) (by decide))
   · exact (frame 57 (by decide) (by decide)).2.trans (publicKeep 57 (by decide) (by decide) (by decide))
 

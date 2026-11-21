@@ -62,6 +62,41 @@ def DirectoryStageResult [M8.Machine.Net] {G U : Type} {T R N : ℕ} (host : G �
     RecordPayload port (fun _ => blank) 0 output C ∧
     C.R port = payloadWord (SparseRoleCircuit.encode ∘ output) ++ tail ∧ finished C
 
+/-- Release the two remaining replay tapes after a stage. The saved masks are
+already empty, and clearing the archive and prefix preserves the packed owner. -/
+theorem DirectoryStageResult.releaseReplay [M8.Machine.Net] {G U : Type} {T R N : ℕ}
+    {host : G → Pr G T columnCapacity prime U} {program : Pr G T columnCapacity prime U}
+    {a : HS T columnCapacity prime U} {A : Stacks T prime} {prior bound : ℕ} {port : Fin T}
+    {tail : List (Fin (prime+4))} {effect : ℕ → (Fin N → ZMod 2) → Prop} {finished : Stacks T prime → Prop}
+    (replay : Fin 4 ↪ Fin T) (off : ∀ j, port ≠ replay j) (archiveWidth prefixWidth : ℕ)
+    (ready : ∀ C, finished C → (C.R (replay 0)).length = archiveWidth ∧
+      (C.R (replay 1)).length = prefixWidth ∧ C.R (replay 2) = [] ∧ C.R (replay 3) = [])
+    (stage : DirectoryStageResult (R := R) host program a A prior bound port tail effect finished) :
+    DirectoryStageResult (R := R) host ((program.seq (Fast.clearR (replay 0))).seq (Fast.clearR (replay 1)))
+      a A prior (bound + 2*archiveWidth + 2*prefixWidth + 4) port tail effect
+      (fun D => (∀ j, D.R (replay j) = []) ∧ ∃ C, finished C ∧ D.L = C.L ∧
+        ∀ i, i ≠ replay 0 → i ≠ replay 1 → D.R i = C.R i) := by
+  obtain ⟨z,C,n,out,user,time,run,action,payload,owner,done⟩ := stage
+  obtain ⟨archive,width,live,bad⟩ := ready C done
+  let B := {C with R := Function.update C.R (replay 0) []}
+  let D := {B with R := Function.update B.R (replay 1) []}
+  obtain ⟨y,hy,first⟩ := Fast.clearR_exec host (replay 0) z C
+  obtain ⟨v,hv,last⟩ := Fast.clearR_exec host (replay 1) y B
+  have prefixKept : B.R (replay 1) = C.R (replay 1) :=
+    Function.update_of_ne (replay.injective.ne (by decide : (1 : Fin 4) ≠ 0)) ..
+  have keep (i) (h₀ : i ≠ replay 0) (h₁ : i ≠ replay 1) : D.R i = C.R i := by
+    simp [D,B,h₀,h₁]
+  have ownerKept := keep port (off 0) (off 1)
+  refine ⟨v,D,n+2*archiveWidth+2*prefixWidth+4,out,hv.trans (hy.trans user),by omega,
+    Exec.cast (Exec.seq (Exec.seq run first) last) (by rw [prefixKept,archive,width]; omega) rfl,
+    action,?_,ownerKept.trans owner,?_,C,done,rfl,keep⟩
+  · intro k
+    change readAt blank (C.L port) (D.R port) _ = _
+    rw [ownerKept]
+    exact payload k
+  · intro j
+    fin_cases j <;> simp [D,B,replay.injective.eq_iff,live,bad]
+
 /-- A complete interval-directory execution supplies the packed owner scan and
 the address action at every routed port, with the same host run and charge. -/
 theorem DirectoryStageResult.portReads [M8.Machine.Net] {G U : Type} {T R W w parents : ℕ}
@@ -304,20 +339,23 @@ theorem generatedIncomingDirectory_exec [M8.Machine.Net] {P U : Type} {r g d w c
             (inBill : ℝ) ≤ inRate*weightedVolume+4 ∧ (outBill : ℝ) ≤ outRate*weightedVolume+4 ∧
             ∀ p, mnProgPush (directoryQueueInitProgram (P := P) (U := U) (Q := columnCapacity) archiveRoom fits) ≤ p →
               (∀ f, mnProgPush (body f) ≤ p) →
-              ((s+(copyTime+(12*rs.length+12+elapsed))+k+outBill : ℕ) : ℝ) ≤
-                ((selectorBudget+setupBudget p+childBudget+72*(R*N)+6*archiveTail.length+49 : ℕ) : ℝ) +
+              ((s+(copyTime+(12*rs.length+12+elapsed))+k+outBill+2*archiveTail.length+2*(prefixes 0).length+4 : ℕ) : ℝ) ≤
+                ((selectorBudget+setupBudget p+childBudget+72*(R*N)+8*archiveTail.length+2*(prefixes 0).length+53 : ℕ) : ℝ) +
                   (inRate+outRate)*weightedVolume+8) ∧
-          DirectoryStageResult (R := R) (N := N) host (throughReturn.seq (embProg outPlace outLabel outLocal)) a A
-            ((s+(copyTime+(12*rs.length+12+elapsed)))+k)
-            ((rs.map outCost).sum+12*(rs.length*N)+12*rs.length+4)
-            (q 0) ((B.R (q 0)).drop V) (fun j word => if live j then projected j word else input j = word)
-            (fun C => C.L (q 0) = B.L (q 0) ∧ C.R (regs 1) = [] ∧ (C.R (regs 2)).length = N ∧
+          let finished := fun C : Stacks T prime => C.L (q 0) = B.L (q 0) ∧ C.R (regs 1) = [] ∧ (C.R (regs 2)).length = N ∧
               C.R (regs 3) = [] ∧ C.R (regs 4) = [] ∧
               DirectoryReady v proj w W data.H J weights prefixes archiveTail (fun _ => []) (embStk outBank C) [] ∧
-              C.R (copied 0) = archiveTail ∧ C.R (copied 2) = [] ∧ C.R (copied 3) = [] ∧
+              C.R (copied 0) = archiveTail ∧ (C.R (copied 1)).length = (prefixes 0).length ∧ C.R (copied 2) = [] ∧ C.R (copied 3) = [] ∧
               (∀ j : Fin 6, 2 ≤ j → C.R (p j) = []) ∧
               ∀ i, (∀ j, place j ≠ i) → (∀ j, copied j ≠ i) → p 2 ≠ i → p 3 ≠ i →
-                C.L i = A.L i ∧ C.R i = A.R i)) := by
+                C.L i = A.L i ∧ C.R i = A.R i
+          DirectoryStageResult (R := R) (N := N) host
+            (((throughReturn.seq (embProg outPlace outLabel outLocal)).seq (Fast.clearR (copied 0))).seq (Fast.clearR (copied 1)))
+            a A ((s+(copyTime+(12*rs.length+12+elapsed)))+k)
+            (outBill+2*archiveTail.length+2*(prefixes 0).length+4)
+            (q 0) ((B.R (q 0)).drop V) (fun j word => if live j then projected j word else input j = word)
+            (fun D => (∀ j, D.R (copied j) = []) ∧ ∃ C, finished C ∧ D.L = C.L ∧
+              ∀ i, i ≠ copied 0 → i ≠ copied 1 → D.R i = C.R i)) := by
   intro W m hr K M H J N dimension proj rank idem factor small weights unit data binary positive pool room
     archiveRoom fits capacity localBody localPush c bounded placed prefixes archiveTail ownerTail input B dirPositive shape pairRoom
     u S full machine reduced localCaller prog
@@ -547,15 +585,20 @@ theorem generatedIncomingDirectory_exec [M8.Machine.Net] {P U : Type} {r g d w c
     intro p hp hc
     have overhead := charged dim width
     have setup := prepPaid p hp hc
-    have physical : s+(copyTime+(12*rs.length+12+t))+k+outBill ≤
-        (selectorBudget+setupBudget p+childBudget+72*(R*N)+6*archiveTail.length+49)+inBill+outBill := by
+    have physical : s+(copyTime+(12*rs.length+12+t))+k+outBill+2*archiveTail.length+2*(prefixes 0).length+4 ≤
+        (selectorBudget+setupBudget p+childBudget+72*(R*N)+8*archiveTail.length+2*(prefixes 0).length+53)+inBill+outBill := by
       change rowSteps ≤ inBill at rowPaid
       omega
     apply (Nat.cast_le.mpr physical).trans
     rw [Nat.cast_add,Nat.cast_add,add_mul]
     linarith only [inPrice,outPrice]
+  intro finalState
+  apply DirectoryStageResult.releaseReplay (finished := finalState) copied (fun j => separate (reg 0) ((Fin.castLEEmb (by decide : 4 ≤ 6)) j)) archiveTail.length (prefixes 0).length
+  · intro C h
+    obtain ⟨_,_,_,_,_,_,archive,width,live,bad,_⟩ := h
+    exact ⟨congrArg List.length archive,width,live,bad⟩
   let returned := ownerRow (ordinaryDirectoryChild_volume directory r g w) out
-  obtain ⟨z,C,n,output,sameUser,time,run,rowAction,left,owner,accEmpty,rowWidth,savedEmpty,tmpEmpty,done,liveEnd,badEnd,untouchedOut⟩ := hostedOutgoingScan_exec
+  obtain ⟨z,C,n,output,sameUser,time,run,rowAction,left,owner,accEmpty,rowWidth,savedEmpty,tmpEmpty,done,liveEnd,badEnd,widthEnd,untouchedOut⟩ := hostedOutgoingScan_exec
     (common := common) v proj rank dim idem factor small weights unit positive prefixes archiveTail
     ((B.R (q 0)).drop V) R pool room localBody outBank regs _ outLabel host y B input returned outPush
     outCalls (le_max_left ..) (fun f => (bounded f).trans (le_max_right ..)) (by
@@ -609,13 +652,18 @@ theorem generatedIncomingDirectory_exec [M8.Machine.Net] {P U : Type} {r g d w c
     rw [← savedSlot 0]
     change (embStk outBank C).R (inner 46) = archiveTail
     simpa only [List.flatMap_nil,List.nil_append] using done.1
+  have prefixEnd : (C.R (copied 1)).length = (prefixes 0).length := by
+    have kept : C.R (outBank (slots 1)) = B.R (outBank (slots 1)) := widthEnd
+    rw [savedSlot] at kept
+    rw [kept,restored]
+    exact readyMid.2.1 0 (List.mem_range.mpr recordsPos)
   have maskEnd : C.R (copied 2) = [] ∧ C.R (copied 3) = [] := by
     rw [← savedSlot 2,← savedSlot 3]
     exact ⟨liveEnd,badEnd⟩
   have volume : V = R*N := (ordinaryDirectoryChild_volume directory r g w).symm.trans (congrArg (R*·) size)
   refine ⟨z,C,n,output,sameUser.trans (huser.trans (user.trans (copyUser.trans same))),
-    by rw [← directoryScanTime_eq]; simpa only [rs,count,R,outCost,outgoingScanRowCost,active,live,bad,reduced,machine,full,N,M,m,privateTapes,K] using time,Exec.seq (Exec.seq scanned call) run,?_,
-    replacedOwnerPayload volume (q 0) out output B C payload left owner,owner,left,accEmpty,rowWidth,savedEmpty,tmpEmpty,by simpa only [binary] using done,archiveEnd,maskEnd.1,maskEnd.2,maskWork,finalOff⟩
+    by dsimp only [outBill]; rw [← directoryScanTime_eq]; simpa only [rs,count,R,outCost,outgoingScanRowCost,active,live,bad,reduced,machine,full,N,M,m,privateTapes,K] using time,Exec.seq (Exec.seq scanned call) run,?_,
+    replacedOwnerPayload volume (q 0) out output B C payload left owner,owner,left,accEmpty,rowWidth,savedEmpty,tmpEmpty,by simpa only [binary] using done,archiveEnd,prefixEnd,maskEnd.1,maskEnd.2,maskWork,finalOff⟩
   intro j
   have row := rowAction j
   change (if live j && !bad j then _ else effect j _) at row

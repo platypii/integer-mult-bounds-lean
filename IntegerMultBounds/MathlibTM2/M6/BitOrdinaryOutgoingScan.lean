@@ -37,25 +37,25 @@ theorem outgoingDirectoryScan_exec {P U : Type} {m K w W N Q : ℕ}
       ready A (j::xs) → RecordPayload (caller 24) (fun _ => blank) 0 (input j) A →
       ∃ z D t out, z.user = a.user ∧ t ≤ price j ∧ Exec body good (mk a A) t (mk z D) ∧
         ready D xs ∧ RecordPayload (caller 24) (fun _ => blank) 0 out D ∧ effect j out ∧
-        D.R (caller 57) = A.R (caller 57) ∧ D.R (caller 56) = A.R (caller 56)) →
+        D.R (caller 57) = A.R (caller 57) ∧ D.R (caller 56) = A.R (caller 56) ∧ D.R (caller 47) = A.R (caller 47)) →
     ∃ z F n rows, z.user = u.user ∧
       n ≤ (rs.map (fun j => 6*N+6+cost j+(4*N+4))).sum+2*rs.length+2+(2*(rs.length*N)+2) ∧
       Exec (fun f => embProg bank id (body f)) (packedOwner (caller 24) (caller 57) dispatch) (mk u S) n (mk z F) ∧
       List.Forall₂ (fun j tape => ∃ word, (if active j then effect j word else word = input j) ∧ tape = bits word) rs rows ∧
       F.L (reg 0) = S.L (reg 0) ∧ F.R (reg 0) = rows.flatten ++ ownerTail ∧ F.R (reg 1) = [] ∧
       (F.R (reg 2)).length = N ∧ F.R (reg 3) = [] ∧ F.R (reg 4) = [] ∧ ready (embStk bank F) [] ∧
-      F.R (bank (caller 57)) = [] ∧ F.R (bank (caller 56)) = [] := by
+      F.R (bank (caller 57)) = [] ∧ F.R (bank (caller 56)) = [] ∧ F.R (bank (caller 47)) = S.R (bank (caller 47)) := by
   intro caller bank reg ready flags bits slots scan skip active dispatch cursor cost start directory ls bs queue acc width saved tmp empty run
   let inv := fun (xs : List ℕ) (A : Stacks (66+K) prime) =>
-    ready A xs ∧ A.R (caller 57) = flags live xs ∧ A.R (caller 56) = flags bad xs ∧ xs ⊆ rs
-  obtain ⟨z,F,n,rows,hu,time,step,_,ordered,left,right,clear,count,saveEnd,tmpEnd,done,lsEnd,bsEnd,_⟩ :=
+    ready A xs ∧ A.R (caller 57) = flags live xs ∧ A.R (caller 56) = flags bad xs ∧ A.R (caller 47) = start.R (caller 47) ∧ xs ⊆ rs
+  obtain ⟨z,F,n,rows,hu,time,step,_,ordered,left,right,clear,count,saveEnd,tmpEnd,done,lsEnd,bsEnd,widthEnd,_⟩ :=
     packedOwner_exec ownerTail body (caller 24) (caller 57) dispatch input
       (fun j word => if active j then effect j word else word = input j) cost inv rs u S (by
         intro xs A h
         rw [h.2.1]
-        cases xs <;> rfl) ⟨⟨directory,ls,bs,List.Subset.refl _⟩,rfl,queue,acc,width,saved,tmp,empty⟩ (by
+        cases xs <;> rfl) ⟨⟨directory,ls,bs,rfl,List.Subset.refl _⟩,rfl,queue,acc,width,saved,tmp,empty⟩ (by
       intro j xs A a state loaded payload
-      obtain ⟨dir,liveBits,badBits,subset⟩ := state
+      obtain ⟨dir,liveBits,badBits,widthBefore,subset⟩ := state
       let E := {loaded with R := Function.update (Function.update loaded.R (caller 57) (flags live xs)) (caller 56) (flags bad xs)}
       let b := {a with flag := bad j}
       have dirE : ready E (j::xs) := DirectoryReady.updateSelector 56 (by decide) (by decide) _
@@ -69,38 +69,42 @@ theorem outgoingDirectoryScan_exec {P U : Type} {m K w W N Q : ℕ}
         exact payload k
       have masks : E.R (caller 57) = flags live xs ∧ E.R (caller 56) = flags bad xs := by
         simp [E]
+      have keep (i : Fin 66) (hi : i ≠ 24) : loaded.R (caller i) = A.R (caller i) :=
+        Function.update_of_ne (caller.injective.ne hi) ..
+      have widthE : E.R (caller 47) = start.R (caller 47) :=
+        (on 47 (by decide)).trans ((keep 47 (by decide)).trans widthBefore)
       have branch : ∃ z D n out, z.user = a.user ∧ n ≤ (if active j then price j else cursor j) ∧
           Exec body (if live j then (if bad j then skip else good) else skip) (mk b E) n (mk z D) ∧
           (if active j then effect j out else out = input j) ∧ RecordPayload (caller 24) (fun _ => blank) 0 out D ∧ inv xs D := by
         by_cases selected : active j = true
         · obtain ⟨l,h⟩ := Bool.and_eq_true_iff.mp selected
           have noBad : bad j = false := by simpa using h
-          obtain ⟨z,D,n,out,user,paid,exec,next,read,ok,lm,bm⟩ :=
+          obtain ⟨z,D,n,out,user,paid,exec,next,read,ok,lm,bm,wm⟩ :=
             run j (subset List.mem_cons_self) xs b E l noBad dirE inputE
           simp only [selected,l,noBad,ite_true,Bool.false_eq_true,ite_false]
-          exact ⟨z,D,n,out,user,paid,exec,ok,read,next,lm.trans masks.1,bm.trans masks.2,fun _ h => subset (List.mem_cons_of_mem j h)⟩
+          exact ⟨z,D,n,out,user,paid,exec,ok,read,next,lm.trans masks.1,bm.trans masks.2,wm.trans widthE,fun _ h => subset (List.mem_cons_of_mem j h)⟩
         · have prog : (if live j then (if bad j then skip else good) else skip) = skip := by
             cases l : live j <;> cases h : bad j <;> simp_all only [active,Bool.and_true,Bool.not_true,
               Bool.not_false,Bool.and_false,Bool.false_eq_true,ite_false,ite_true,not_true_eq_false]
           obtain ⟨z,user,exec,next⟩ := DirectoryReady.advancePadding body b dirE rfl
           simp only [selected,prog]
-          refine ⟨z,_,cursor j,input j,user,le_rfl,exec,rfl,?_,next,?_,?_,fun _ h => subset (List.mem_cons_of_mem j h)⟩
+          refine ⟨z,_,cursor j,input j,user,le_rfl,exec,rfl,?_,next,?_,?_,?_,fun _ h => subset (List.mem_cons_of_mem j h)⟩
           · intro k
             change readAt blank (E.L _) (Function.update E.R (caller 46) (xs.flatMap (LabelDirectory.entry prefixes m (w+1)) ++ archiveTail) (caller 24)) _ = _
             rw [Function.update_of_ne (caller.injective.ne (by decide : (24 : Fin 66) ≠ 46))]
             exact inputE k
           · exact (Function.update_of_ne (caller.injective.ne (by decide : (57 : Fin 66) ≠ 46)) (xs.flatMap (LabelDirectory.entry prefixes m (w+1)) ++ archiveTail) E.R).trans masks.1
           · exact (Function.update_of_ne (caller.injective.ne (by decide : (56 : Fin 66) ≠ 46)) (xs.flatMap (LabelDirectory.entry prefixes m (w+1)) ++ archiveTail) E.R).trans masks.2
-      obtain ⟨z,D,t,out,user,paid,exec,ok,read,next,liveNext,badNext,rem⟩ := branch
-      have keep (i : Fin 66) (hi : i ≠ 24) : loaded.R (caller i) = A.R (caller i) :=
-        Function.update_of_ne (caller.injective.ne hi) ..
+          · exact (Function.update_of_ne (caller.injective.ne (by decide : (47 : Fin 66) ≠ 46)) (xs.flatMap (LabelDirectory.entry prefixes m (w+1)) ++ archiveTail) E.R).trans widthE
+      obtain ⟨z,D,t,out,user,paid,exec,ok,read,next,liveNext,badNext,widthNext,rem⟩ := branch
       have step := ownerDispatch_exec body (caller 57) (caller 56) (caller.injective.ne (by decide))
         good skip skip (live j) (bad j) a loaded (flags live xs) (flags bad xs)
         ((keep 57 (by decide)).trans liveBits) ((keep 56 (by decide)).trans badBits) exec
-      refine ⟨z,D,_,out,user,Nat.add_le_add_right paid _,step,ok,read,directoryReady_updatePayload next _,?_,?_,rem⟩
+      refine ⟨z,D,_,out,user,Nat.add_le_add_right paid _,step,ok,read,directoryReady_updatePayload next _,?_,?_,?_,rem⟩
       · exact (Function.update_of_ne (caller.injective.ne (by decide : (57 : Fin 66) ≠ 24)) ((D.R (caller 24)).drop N) D.R).trans liveNext
-      · exact (Function.update_of_ne (caller.injective.ne (by decide : (56 : Fin 66) ≠ 24)) ((D.R (caller 24)).drop N) D.R).trans badNext)
-  exact ⟨z,F,n,rows,hu,time,step,ordered,left,right,clear,count,saveEnd,tmpEnd,done,lsEnd,bsEnd⟩
+      · exact (Function.update_of_ne (caller.injective.ne (by decide : (56 : Fin 66) ≠ 24)) ((D.R (caller 24)).drop N) D.R).trans badNext
+      · exact (Function.update_of_ne (caller.injective.ne (by decide : (47 : Fin 66) ≠ 24)) ((D.R (caller 24)).drop N) D.R).trans widthNext)
+  exact ⟨z,F,n,rows,hu,time,step,ordered,left,right,clear,count,saveEnd,tmpEnd,done,lsEnd,bsEnd,widthEnd⟩
 
 private theorem ofFn_cast_payload {V N : ℕ} (size : V = N) (word : Fin V → ZMod 2) :
     payloadWord (SparseRoleCircuit.encode ∘ (fun i => word (i.cast size.symm))) =
@@ -201,7 +205,7 @@ theorem generatedOutgoingScan_exec [M8.Machine.Net] {P U : Type} {r g w W common
       (∀ j : Fin R, if active j then effect j (ownerRow rfl output j) else bypass j (ownerRow rfl output j)) ∧
       F.L (reg 0) = S.L (reg 0) ∧ F.R (reg 0) = payloadWord (SparseRoleCircuit.encode ∘ output) ++ ownerTail ∧ F.R (reg 1) = [] ∧
       (F.R (reg 2)).length = N ∧ F.R (reg 3) = [] ∧ F.R (reg 4) = [] ∧ ready (embStk bank F) [] ∧
-      F.R (bank (caller 57)) = [] ∧ F.R (bank (caller 56)) = [] := by
+      F.R (bank (caller 57)) = [] ∧ F.R (bank (caller 56)) = [] ∧ F.R (bank (caller 47)) = S.R (bank (caller 47)) := by
   intro m hr K M N V proj rank dim idem factor small weights unit hW prefixes archiveTail ownerTail R pool room body
     u S original returned c rs full machine caller bank reg start ready reduced live bad active G inv pos size prog
     privateTapes slots scan skip dispatch cost effect bounded calls classified directory liveBits badBits queue acc width saved tmp blankPort bypass restored
@@ -227,7 +231,7 @@ theorem generatedOutgoingScan_exec [M8.Machine.Net] {P U : Type} {r g w W common
     obtain ⟨z,D,n,out,user,time,run,next,result,action,frame⟩ := generatedLiveOutgoingRow_exec
       (common := common) v proj rank dim weights unit prefixes archiveTail (fun _ => []) j xs pool room body a A
       idem factor small dir l b hW (original j) before minor inc payload rfl c bounded calls
-    exact ⟨z,D,n,out,user,time,run,next,result,action,frame 57 (by decide),frame 56 (by decide)⟩)
+    exact ⟨z,D,n,out,user,time,run,next,result,action,frame 57 (by decide),frame 56 (by decide),frame 47 (by decide)⟩)
   obtain ⟨output,action,encoded⟩ := outgoingOwnerRows_pack size rfl active returned effect bypass restored actions
   exact ⟨z,F,n,output,user,time,run,action,left,by rw [right,encoded],rest⟩
 
