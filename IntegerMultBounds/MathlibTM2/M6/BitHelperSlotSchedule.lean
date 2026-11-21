@@ -1,7 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.M6.BitHelperPacking
-public import IntegerMultBounds.MathlibTM2.M6.BitPhaseRun
+public import IntegerMultBounds.MathlibTM2.M6.OrthogonalInvocation
 
 /-! The packed slot changes between successive uses of a PR589 helper owner. -/
 @[expose] public section
@@ -16,15 +16,43 @@ local instance (w : ℕ) : NeZero (prime^(w+1)) := ⟨(pow_pos Shared50ModularCo
 def helperPosition (entry : Fin 9 × Fin 439) : Fin 56 :=
   ⟨slotPos (IntegerMultBounds.MathlibTM2.M6.BitNode.slotOf entry.1 entry.2),Nat.lt_succ_of_le (slotPos_le _ entry.1.isLt _ entry.2.isLt)⟩
 
-noncomputable def helperSlotChange (n : Fin 9) (run : Fin 32 × Fin 5)
-    (before : Fin 142081 → Option (Fin 9 × Fin 439)) (h : Fin 439) : Fin 142081 × Fin 56 × Fin 56 :=
-  let t := ownerTape n run.1 run.2 ⟨222+h.val,by omega⟩
-  (t,helperPosition ((before t).getD (n,h)),helperPosition (n,h))
+open IntegerMultBounds.Swap.Modular M8.Exchange in
+/-- The invocation exchanges the scheduled parent span when its helper word
+is read at the flat packing address, with the actual local port encoding. -/
+theorem OrthogonalPortReads.packedHelper {V W : ℕ} (n : Fin 9) (h : Fin 439) (w : ℕ)
+    [NeZero (prime^w)] (pos : IntegerMultBounds.Swap.Shear.State (Fin 8) (ZMod (prime^w)) →
+      Fin ((prime^w)^112*W) → Fin V)
+    (input output : Fin 661 → Fin V → ZMod 2) (read : OrthogonalPortReads w pos input output) :
+    let slot := IntegerMultBounds.MathlibTM2.M6.BitNode.slotOf n.val h.val
+    let c := port (slot.copy % 111)
+    let readAt := fun (i : Fin ((prime^w)^128*W)) =>
+      let a := copyAddress (i.cast (by rw [← Nat.mul_assoc,← pow_add]))
+      pos a.1 a.2
+    let address := fun s (j : Fin W) => readAt (FlatCoordinateLayout.index
+      (helperSlotField c (some (helperPosition (n,h))) w s) j)
+    let reg : Fin 661 := ⟨222+h.val,by omega⟩
+    ∀ s j, output reg (address (exchange (reduce (prime^w) (helperSpan n h)) s) j) =
+      input reg (address s j) := by
+  intro slot c readAt address reg s j
+  let H := (reduce (prime^w) (c.helperChart (slotPos slot) (slotPos_le n n.isLt h h.isLt))).transpose
+  have cell (a : IntegerMultBounds.Swap.Shear.State Axis (ZMod (prime^w))) :
+      address a j = pos (copyAddress (chartAddress (transform H H a,j))).1
+        (copyAddress (chartAddress (transform H H a,j))).2 := by
+    dsimp only [address,readAt]
+    rw [helperSlotField_some]
+    apply congrArg (fun i => pos (copyAddress i).1 (copyAddress i).2)
+    exact Fin.ext (helperDigits_index (transform H H a) j)
+  rw [cell,cell]
+  exact read.helperSlot n h w pos input output s j
 
-/-- Emit a change only for an owner whose previous slot is known and differs
-from its next one. First uses enter from the port chart separately. -/
+noncomputable def helperSlotChange (n : Fin 9) (run : Fin 32 × Fin 5)
+    (before : Fin 142081 → Option (Fin 9 × Fin 439)) (h : Fin 439) : Fin 142081 × Option (Fin 56) × Option (Fin 56) :=
+  let t := ownerTape n run.1 run.2 ⟨222+h.val,by omega⟩
+  (t,(before t).map helperPosition,some (helperPosition (n,h)))
+
+/-- Enter first-use slots from the port descriptor and skip repeated slots already in place. -/
 noncomputable def scheduledSlotChanges (n : Fin 9) (run : Fin 32 × Fin 5)
-    (before : Fin 142081 → Option (Fin 9 × Fin 439)) : List (Fin 142081 × Fin 56 × Fin 56) :=
+    (before : Fin 142081 → Option (Fin 9 × Fin 439)) : List (Fin 142081 × Option (Fin 56) × Option (Fin 56)) :=
   let change := helperSlotChange n run before
   ((List.finRange 439).filter fun h => (change h).2.1 != (change h).2.2).map change
 
@@ -55,7 +83,7 @@ private theorem scheduledSlotChanges_unique (n : Fin 9) (run : Fin 32 × Fin 5) 
   have eqn := congrArg Fin.val (ownerTape_injective n run.1 run.2 same)
   exact Fin.ext (Nat.add_left_cancel eqn)
 
-private theorem trace_off {k w W : ℕ} (ls : List (Fin k × Fin 56 × Fin 56)) (a b)
+private theorem trace_off {k w W : ℕ} (ls : List (Fin k × Option (Fin 56) × Option (Fin 56))) (a b)
     (trace : HelperSlotTrace w W ls a b) (t : Fin k) (off : ∀ p ∈ ls, p.1 ≠ t) : b t = a t := by
   induction ls generalizing a with
   | nil => exact congrFun trace.symm t
@@ -64,11 +92,11 @@ private theorem trace_off {k w W : ℕ} (ls : List (Fin k × Fin 56 × Fin 56)) 
     rw [ih _ tail (fun q hq => off q (List.mem_cons_of_mem _ hq)),Function.update_of_ne
       (Ne.symm (off p List.mem_cons_self))]
 
-private theorem trace_slot {k w W : ℕ} (ls : List (Fin k × Fin 56 × Fin 56)) (a b)
+private theorem trace_slot {k w W : ℕ} (ls : List (Fin k × Option (Fin 56) × Option (Fin 56))) (a b)
     (trace : HelperSlotTrace w W ls a b) (unique : (ls.map Prod.fst).Nodup)
-    (t : Fin k) (x y : Fin 56) (hit : (t,x,y) ∈ ls) (c : PortCertificate) s j :
-    b t (FlatCoordinateLayout.index (helperSlotField c y (by omega) (w+1) s) j) =
-      a t (FlatCoordinateLayout.index (helperSlotField c x (by omega) (w+1) s) j) := by
+    (t : Fin k) (x y : Option (Fin 56)) (hit : (t,x,y) ∈ ls) (c : PortCertificate) s j :
+    b t (FlatCoordinateLayout.index (helperSlotField c y (w+1) s) j) =
+      a t (FlatCoordinateLayout.index (helperSlotField c x (w+1) s) j) := by
   induction ls generalizing a with
   | nil => simp at hit
   | cons p ps ih =>
@@ -88,11 +116,11 @@ that reuses the previous slot without touching the owner. -/
 theorem scheduledSlotRead (n : Fin 9) (run : Fin 32 × Fin 5) (before) {w W : ℕ} (a b)
     (trace : HelperSlotTrace w W (scheduledSlotChanges n run before) a b) (h : Fin 439) :
     let change := helperSlotChange n run before h
-    ∀ c s j, b change.1 (FlatCoordinateLayout.index (helperSlotField c change.2.2 (by omega) (w+1) s) j) =
-      a change.1 (FlatCoordinateLayout.index (helperSlotField c change.2.1 (by omega) (w+1) s) j) := by
+    ∀ c s j, b change.1 (FlatCoordinateLayout.index (helperSlotField c change.2.2 (w+1) s) j) =
+      a change.1 (FlatCoordinateLayout.index (helperSlotField c change.2.1 (w+1) s) j) := by
   intro change c s j
   by_cases same : change.2.1 = change.2.2
-  · let pos := fun i : Fin 56 => FlatCoordinateLayout.index (helperSlotField c i (by omega) (w+1) s) j
+  · let pos := fun i : Option (Fin 56) => FlatCoordinateLayout.index (helperSlotField c i (w+1) s) j
     change b change.1 (pos change.2.2) = a change.1 (pos change.2.1)
     rw [same]
     apply congrFun
@@ -126,8 +154,8 @@ theorem scheduledSlotPack_exec [M8.Machine.Net] {P U : Type} (n : Fin 9) (run : 
           (F.R (t.natAdd (rowSwapBlock.tapes+35))) j = M8.AtomBank.arrTape (SparseRoleCircuit.encode ∘ result t) j) ∧
         (∀ t, (∀ h : Fin 439, (helperSlotChange n run before h).1 ≠ t) → result t = data t) ∧
         ∀ h : Fin 439, let change := helperSlotChange n run before h
-          ∀ c s j, result change.1 (FlatCoordinateLayout.index (helperSlotField c change.2.2 (by omega) (w+1) s) j) =
-            data change.1 (FlatCoordinateLayout.index (helperSlotField c change.2.1 (by omega) (w+1) s) j) := by
+          ∀ c s j, result change.1 (FlatCoordinateLayout.index (helperSlotField c change.2.2 (w+1) s) j) =
+            data change.1 (FlatCoordinateLayout.index (helperSlotField c change.2.1 (w+1) s) j) := by
   intro before
   obtain ⟨code,C,batch⟩ := helperSlotBatch_fromOwners (scheduledSlotChanges n run before) body
   refine ⟨code,C,?_⟩

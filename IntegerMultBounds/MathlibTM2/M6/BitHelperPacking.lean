@@ -3,6 +3,7 @@ module
 public import IntegerMultBounds.MathlibTM2.M6.BitOrdinaryChildLayout
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackPayloadPlacement
 public import IntegerMultBounds.MathlibTM2.M6.BitRouteFactors
+public import IntegerMultBounds.MathlibTM2.M6.BitRemainderRun
 import Mathlib.Data.List.FinRange
 
 /-! Reorder the two packed parent fields when an owner changes helper slots. -/
@@ -64,24 +65,86 @@ def helperDigits : Fin 128 ≃ Axis ⊕ Axis :=
     (@finSumFinEquiv 56 56).symm.trans (Equiv.sumCongr exterior exterior)
   (@finSumFinEquiv 16 112).symm.trans ((Equiv.sumCongr live tail).trans (Equiv.sumSumSumComm ..))
 
-/-- The physical digits of a parent address in one helper slot. -/
-noncomputable def helperSlotField (c : PortCertificate) (x : ℕ) (hx : x ≤ 55)
-    (w : ℕ) (s : IntegerMultBounds.Swap.Shear.State Axis (ZMod (prime^w))) :=
-  let H := (IntegerMultBounds.Swap.Modular.reduce (prime^w) (c.helperChart x hx)).transpose
-  (Sum.elim (H *ᵥ s.1) (H *ᵥ s.2)) ∘ helperDigits
+/-- Flattening both live halves and both exterior halves produces precisely
+the cell used by the invocation's nested spectator record. -/
+theorem helperDigits_index {M W : ℕ} [NeZero M]
+    (s : IntegerMultBounds.Swap.Shear.State Axis (ZMod M)) (j : Fin W) :
+    (FlatCoordinateLayout.index ((Sum.elim s.1 s.2) ∘ helperDigits) j).val =
+      (chartAddress (s,j)).val := by
+  let live := IntegerMultBounds.Networks.AffineFieldCoordinates.embed (chartHalves s).1
+  let exterior := fun i : Fin 112 =>
+    Sum.elim ((chartHalves s).2.1 ∘ (@finProdFinEquiv 8 7).symm)
+      ((chartHalves s).2.2 ∘ (@finProdFinEquiv 8 7).symm) ((@finSumFinEquiv 56 56).symm i)
+  have digits : (Sum.elim s.1 s.2) ∘ helperDigits =
+      Fin.addCases (m := 16) (n := 112) (motive := fun _ => ZMod M) live exterior := by
+    funext i
+    refine Fin.addCases (m := 16) (n := 112) (fun a => ?_) (fun b => ?_) i
+    · refine Fin.addCases (m := 8) (n := 8) (fun h => ?_) (fun d => ?_) a
+      all_goals simp only [helperDigits,Function.comp_apply,Equiv.trans_apply,
+        @finSumFinEquiv_symm_apply_castAdd 16 112,@finSumFinEquiv_symm_apply_castAdd 8 8,
+        @finSumFinEquiv_symm_apply_natAdd 8 8,Equiv.sumCongr_apply,Sum.map_inl,Sum.map_inr,
+        live,IntegerMultBounds.Networks.AffineFieldCoordinates.embed,Fin.addCases_left,Fin.addCases_right]
+      all_goals rfl
+    · refine Fin.addCases (m := 56) (n := 56) (fun h => ?_) (fun d => ?_) b
+      all_goals simp only [helperDigits,Function.comp_apply,Equiv.trans_apply,
+        @finSumFinEquiv_symm_apply_natAdd 16 112,@finSumFinEquiv_symm_apply_castAdd 56 56,
+        @finSumFinEquiv_symm_apply_natAdd 56 56,Equiv.sumCongr_apply,Sum.map_inl,Sum.map_inr,
+        exterior,Fin.addCases_right]
+      all_goals rfl
+  rw [digits,FlatCoordinateLayout.index_val,ArbitraryWidthSliceTranspose.rank_append]
+  change _ = (j.val + W*(FlatCoordinateLayout.rank exterior).val) + (M^112*W)*(FlatCoordinateLayout.rank live).val
+  ring
 
-/-- The address obtained by the tape permutation reads precisely the next
-slot chart, including the digits that used to belong to the exterior. -/
-theorem helperDigits_reindex (c : PortCertificate) (x y : ℕ) (hx : x ≤ 55) (hy : y ≤ 55)
-    (w : ℕ) (s : IntegerMultBounds.Swap.Shear.State Axis (ZMod (prime^w))) :
-    let order := (helperSlotOrder y hy).trans (helperSlotOrder x hx).symm
-    helperSlotField c x hx w s ∘ helperDigits.trans ((Equiv.sumCongr order order).trans helperDigits.symm) = helperSlotField c y hy w s := by
-  intro order
+/-- Digit order on entering from the port's pending-first descriptor, or
+while a scheduled eight-coordinate helper slot is live. -/
+noncomputable def helperFieldOrder : Option (Fin 56) → Fin 128 ≃ ChartAxis ⊕ ChartAxis
+  | none => (@finSumFinEquiv 64 64).symm.trans (Equiv.sumCongr remainderAxis remainderAxis)
+  | some x =>
+    let order := helperSlotOrder x (by omega)
+    helperDigits.trans (Equiv.sumCongr order order)
+
+/-- The same charted parent point in the digit order of the selected layout. -/
+noncomputable def helperSlotField (c : PortCertificate) (slot : Option (Fin 56))
+    (w : ℕ) (s : IntegerMultBounds.Swap.Shear.State Axis (ZMod (prime^w))) :=
+  let H := (IntegerMultBounds.Swap.Modular.reduce (prime^w) c.fullChart).transpose
+  (Sum.elim (H *ᵥ s.1) (H *ᵥ s.2)) ∘ helperFieldOrder slot
+
+/-- At entry, the two parent fields are rows of the port's actual
+pending-first label matrix, in descriptor order. -/
+theorem helperSlotField_none_rows (c : PortCertificate) (w : ℕ)
+    (g : Matrix (Fin 64) (Fin 64) (ZMod (prime^w))) (r t : Fin 64) :
+    let label := g * IntegerMultBounds.Swap.Modular.reduce (prime^w)
+      (c.fullChart.submatrix stageAxis.symm remainderAxis)
+    helperSlotField c none w (fun a => g r (stageAxis a),fun a => g t (stageAxis a)) =
+      Fin.addCases (m := 64) (n := 64) (motive := fun _ => ZMod (prime^w)) (label r) (label t) := by
+  intro label
   funext i
-  simp only [helperSlotField,Function.comp_apply,Equiv.trans_apply,Equiv.apply_symm_apply]
-  cases helperDigits i with
-  | inl j => exact (congrFun (helperSlot_reindex c x y hx hy w s.1) j).symm
-  | inr j => exact (congrFun (helperSlot_reindex c x y hx hy w s.2) j).symm
+  refine Fin.addCases (m := 64) (n := 64) (fun j => ?_) (fun j => ?_) i
+  · rw [Fin.addCases_left]
+    have index : (@finSumFinEquiv 64 64).symm (j.castAdd 64) = Sum.inl j :=
+      (@finSumFinEquiv 64 64).symm_apply_apply (Sum.inl j)
+    simpa only [helperSlotField,helperFieldOrder,Function.comp_apply,Equiv.trans_apply,index,
+      Equiv.sumCongr_apply,Sum.map_inl,Sum.elim_inl] using (remainderChart_row c w g r j).symm
+  · rw [Fin.addCases_right]
+    have index : (@finSumFinEquiv 64 64).symm (j.natAdd 64) = Sum.inr j :=
+      (@finSumFinEquiv 64 64).symm_apply_apply (Sum.inr j)
+    simpa only [helperSlotField,helperFieldOrder,Function.comp_apply,Equiv.trans_apply,index,
+      Equiv.sumCongr_apply,Sum.map_inr,Sum.elim_inr] using (remainderChart_row c w g t j).symm
+
+theorem helperSlotField_some (c : PortCertificate) (x : Fin 56)
+    (w : ℕ) (s : IntegerMultBounds.Swap.Shear.State Axis (ZMod (prime^w))) :
+    let H := (IntegerMultBounds.Swap.Modular.reduce (prime^w) (c.helperChart x (by omega))).transpose
+    helperSlotField c (some x) w s = (Sum.elim (H *ᵥ s.1) (H *ᵥ s.2)) ∘ helperDigits := by
+  intro H
+  funext i
+  simp only [helperSlotField,helperFieldOrder,Function.comp_apply,Equiv.trans_apply]
+  cases helperDigits i <;> rfl
+
+theorem helperDigits_reindex (c : PortCertificate) (x y : Option (Fin 56))
+    (w : ℕ) (s : IntegerMultBounds.Swap.Shear.State Axis (ZMod (prime^w))) :
+    helperSlotField c x w s ∘ (helperFieldOrder y).trans (helperFieldOrder x).symm = helperSlotField c y w s := by
+  funext i
+  simp [helperSlotField]
 
 variable [M8.Machine.Net] {P U : Type}
 local notation "N" => rowSwapBlock.tapes
@@ -208,7 +271,7 @@ theorem helperPackInput_ready {k : ℕ} (w W : ℕ) (owners : Stacks k prime)
 
 /-- Run a slot change on its permanent owner. All other owner tapes retain
 both stacks, and the output owner reads the old word at the new slot address. -/
-theorem helperSlotPack_exec {k : ℕ} (owner : Fin k) (x y : ℕ) (hx : x ≤ 55) (hy : y ≤ 55)
+theorem helperSlotPack_exec {k : ℕ} (owner : Fin k) (x y : Option (Fin 56))
     (body : P → Pr P ((N+35)+k) Q prime U) :
     let clean := fun (S : Stacks ((N+35)+k) prime) => ∀ i : Fin (N+35), 35 ≤ i.val →
       S.L (i.castAdd k) = [] ∧ S.R (i.castAdd k) = []
@@ -222,14 +285,13 @@ theorem helperSlotPack_exec {k : ℕ} (owner : Fin k) (x y : ℕ) (hx : x ≤ 55
       (∀ t, ready t (data t) S) → clean S → ∃ z F, ∃ n : ℕ, ∃ out, z.user = v.user ∧
         (n : ℝ) ≤ C * ((M^128*W : ℕ) : ℝ) * ((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau ∧
         Exec body code (mk v S) n (mk z F) ∧ (∀ t, ready t (Function.update data owner out t) F) ∧ clean F ∧
-        (∀ c s j, out (FlatCoordinateLayout.index (helperSlotField c y hy (w+1) s) j) =
-          data owner (FlatCoordinateLayout.index (helperSlotField c x hx (w+1) s) j)) ∧
+        (∀ c s j, out (FlatCoordinateLayout.index (helperSlotField c y (w+1) s) j) =
+          data owner (FlatCoordinateLayout.index (helperSlotField c x (w+1) s) j)) ∧
         ∀ t : Fin k, t ≠ owner → F.L (t.natAdd (N+35)) = S.L (t.natAdd (N+35)) ∧
           F.R (t.natAdd (N+35)) = S.R (t.natAdd (N+35)) := by
   intro clean
   let ports := payloadPlacement (24 : Fin (N+35)) owner
-  let order := (helperSlotOrder y hy).trans (helperSlotOrder x hx).symm
-  let perm := helperDigits.trans ((Equiv.sumCongr order order).trans helperDigits.symm)
+  let perm := (helperFieldOrder y).trans (helperFieldOrder x).symm
   obtain ⟨is,fits,acts⟩ := fieldSchedule perm
   obtain ⟨setup,swaps,bound⟩ := packTime_le (P := Empty) (U := U) Empty.elim 128 is (by decide)
   let C := ((setup+1 : ℕ) : ℝ) + (swaps : ℝ)*(3808275+M8.RevMachine.LeafCore.C)
@@ -278,21 +340,21 @@ theorem helperSlotPack_exec {k : ℕ} (owner : Fin k) (x y : ℕ) (hx : x ≤ 55
       exact (start t).src z
   exact ⟨z,F,n,out,user,time,run,records,(fun i hi => by rw [← privatePort i hi]; exact clear i hi),
     fun c s j => by
-      rw [← helperDigits_reindex c x y hx hy (w+1) s]
-      simpa only [id_eq,acts] using read (helperSlotField c x hx (w+1) s) j,
+      rw [← helperDigits_reindex c x y (w+1) s]
+      simpa only [id_eq,acts] using read (helperSlotField c x (w+1) s) j,
     fun t ne => off _ (payloadPlacement_off _ owner t ne)⟩
 
 /-- Ordered parent-address reads of the slot changes on the permanent bank. -/
-def HelperSlotTrace {k : ℕ} (w W : ℕ) (changes : List (Fin k × Fin 56 × Fin 56))
+def HelperSlotTrace {k : ℕ} (w W : ℕ) (changes : List (Fin k × Option (Fin 56) × Option (Fin 56)))
     (data result : Fin k → Fin ((prime^(w+1))^128*W) → ZMod 2) : Prop :=
   changes.foldr (fun (t,x,y) next a => ∃ word,
-    (∀ c s j, word (FlatCoordinateLayout.index (helperSlotField c y (by omega) (w+1) s) j) =
-      a t (FlatCoordinateLayout.index (helperSlotField c x (by omega) (w+1) s) j)) ∧
+    (∀ c s j, word (FlatCoordinateLayout.index (helperSlotField c y (w+1) s) j) =
+      a t (FlatCoordinateLayout.index (helperSlotField c x (w+1) s) j)) ∧
     next (Function.update a t word)) (· = result) data
 
 /-- Execute a list of slot changes using one workspace. Its charge coefficient
 depends only on the list, including when the same owner occurs repeatedly. -/
-theorem helperSlotBatch_exec {k : ℕ} (changes : List (Fin k × Fin 56 × Fin 56))
+theorem helperSlotBatch_exec {k : ℕ} (changes : List (Fin k × Option (Fin 56) × Option (Fin 56)))
     (body : P → Pr P ((N+35)+k) Q prime U) :
     ∃ (code : Pr P ((N+35)+k) Q prime U) (C : ℝ), ∀ w W, 0 < W →
       let M := prime^(w+1)
@@ -319,7 +381,7 @@ theorem helperSlotBatch_exec {k : ℕ} (changes : List (Fin k × Fin 56 × Fin 5
     simpa using one_le_mul_of_one_le_of_one_le (show (1:ℝ) ≤ V by exact_mod_cast live) power
   | cons step rest ih =>
     obtain ⟨t,x,y⟩ := step
-    obtain ⟨A,C,one⟩ := helperSlotPack_exec t x y (by omega) (by omega) body
+    obtain ⟨A,C,one⟩ := helperSlotPack_exec t x y body
     obtain ⟨B,D,tail⟩ := ih
     refine ⟨.seq A B,C+D,?_⟩
     intro w W hW M V v S record dest q data ready clean start free
@@ -333,7 +395,7 @@ theorem helperSlotBatch_exec {k : ℕ} (changes : List (Fin k × Fin 56 × Fin 5
 
 /-- Run the batch from positioned owner words with its fixed private headers.
 The returned stacks represent the resulting words at the same owner ports. -/
-theorem helperSlotBatch_fromOwners {k : ℕ} (changes : List (Fin k × Fin 56 × Fin 56))
+theorem helperSlotBatch_fromOwners {k : ℕ} (changes : List (Fin k × Option (Fin 56) × Option (Fin 56)))
     (body : P → Pr P ((N+35)+k) Q prime U) :
     ∃ (code : Pr P ((N+35)+k) Q prime U) (C : ℝ), ∀ w W, 0 < W →
       let M := prime^(w+1)
