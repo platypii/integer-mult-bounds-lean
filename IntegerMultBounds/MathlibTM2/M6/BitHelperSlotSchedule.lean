@@ -74,7 +74,7 @@ theorem helperChart_origin (n : Fin 9) (prefixRuns : List (Fin 32 × Fin 5)) (t 
       obtain ⟨q,mem,origin⟩ := ih recorded
       exact ⟨q,List.mem_append_left _ mem,origin⟩
 
-private theorem scheduledSlotChanges_unique (n : Fin 9) (run : Fin 32 × Fin 5) (before) :
+theorem scheduledSlotChanges_unique (n : Fin 9) (run : Fin 32 × Fin 5) (before) :
     ((scheduledSlotChanges n run before).map Prod.fst).Nodup := by
   unfold scheduledSlotChanges
   rw [List.map_map]
