@@ -483,6 +483,54 @@ section
 local instance (w : ℕ) : NeZero (prime^w) := ⟨(pow_pos Shared50ModularControl.prime_prime.pos _).ne'⟩
 open M8.Machine.Segments SharedPlacementAlphabet
 open M8.Machine.ArbitraryWidthHighExchangeShared (sourceWord)
+/-- The stopped phase child reads the six dimensions in place. The first two
+fields share a header tape, and the payload is the only caller word updated. -/
+theorem phaseStoppedChild_host [M8.Machine.Net] {T Q lo hi w W : ℕ} {P U : Type}
+    (ordered : lo ≤ hi) (bounded : hi ≤ 8) (hw : 0 < w) (hW : 0 < W)
+    (body : P → Pr P T Q prime U) :
+    let view := phaseIntervalChild lo hi w W
+    let output := phaseHeaderOutput lo hi w W
+    let caller := fun word : Fin (volume prime view) → ZMod 2 =>
+      output.append (⟨fun _ => 0,fun _ => sourceWord word⟩ : Tapes 1 prime)
+    let headers := fun i => (phaseHeaderSlots i).castAdd 1
+    let owner := (0 : Fin 1).natAdd 24
+    let machine := M8.Machine.ArbitraryWidthOriginalTotalRun.program headers owner
+    let tapes := M8.Machine.ArbitraryWidthOriginalZeroBranch.count 25
+    let cost := LeafCore.coreCost (volume prime view) view.width
+    ∀ (bank : Fin tapes ↪ Fin T) (fits : _ ≤ Q) word (u : HS T Q prime U) (S : Stacks T prime),
+      RepT (M8.Machine.ArbitraryWidthOriginalTotalRun.input (caller word)) (embStk bank S).L (embStk bank S).R →
+      ∃ z F n, Exec body (embProg bank (Empty.elim : Empty → P) (foreign (liftQ machine fits)))
+          (mk u S) n (mk z F) ∧ n ≤ cost*(tapes+5)+6 ∧ z.user = u.user ∧
+        RepT (M8.Machine.ArbitraryWidthOriginalTotalRun.input
+          (caller (Shared50RecursiveNodeRows.transpose (one_dvd view.rows) word)))
+          (embStk bank F).L (embStk bank F).R ∧
+        (∀ j, (F.L (bank j)).length+(F.R (bank j)).length ≤
+          (S.L (bank j)).length+(S.R (bank j)).length+2*cost) ∧
+        ∀ j, (∀ i, bank i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  intro view output caller headers owner machine tapes cost bank fits word u S ready
+  obtain ⟨_,valid,fields⟩ := phaseHeader_runs ordered bounded hw hW
+  have pos := pow_pos Shared50ModularControl.prime_prime.pos w
+  have positive : view.Positive := ⟨Nat.zero_lt_one,Nat.zero_lt_one,pow_pos pos _,pow_pos pos _,Nat.mul_pos (pow_pos pos _) hW⟩
+  have leaf := M8.Machine.ArbitraryWidthOriginalTotalRun.runs (caller word) headers owner view (Routines.hdr view)
+    positive valid (fun i => by simpa [caller,headers,output,Tapes.append,Routines.hdr] using (fields i).2)
+    (fun i => by simpa [caller,headers,output,Tapes.append] using (fields i).1) word
+    (by simp only [caller,owner,Tapes.append,Fin.addCases_right]) (by simp only [caller,owner,Tapes.append,Fin.addCases_right])
+  have boundedLeaf := leaf.consequence (fun _ h => h) (fun _ h => h) (LeafCore.cost_le positive)
+  obtain ⟨v,A,_,rfl,full,user,_,_,stock,n,time,run⟩ := foreign_exec (body := (Empty.elim : Empty → _))
+    (liftQ machine fits) (HoareTime.liftQ fits boundedLeaf) (embDn bank u) (embStk bank S) _ rfl ready
+  obtain ⟨z,F,exec,_,same,viewBank,off⟩ := exec_emb (ι := (Empty.elim : Empty → P))
+    (body' := body) bank.injective (fun f => f.elim) run u rfl S rfl
+  subst A
+  have update (y : Fin (volume prime view) → ZMod 2) : setTape (caller word) owner (sourceWord y) 0 = caller y := by
+    rw [show owner = (0 : Fin 1).natAdd 24 from rfl]
+    unfold caller
+    rw [setTape_append_right]
+    congr 1
+    apply congrArg₂ Tapes.mk <;> funext i <;> have e : i = 0 := Subsingleton.elim _ _
+    all_goals subst i; simp [setTape]
+  rw [update] at full
+  exact ⟨z,F,n,exec,time,same.trans user,full,stock,off⟩
+
 /-- Run either basis pass of a phase edge on one live owner. Embedding only
 this owner and the fixed pass workspace preserves every other physical tape. -/
 theorem phaseBasis_host {w W : ℕ} (view : Descriptor) (size : volume prime view = (prime^w)^16*W)

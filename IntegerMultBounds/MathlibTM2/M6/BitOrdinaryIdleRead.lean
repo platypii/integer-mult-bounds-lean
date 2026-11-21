@@ -17,6 +17,141 @@ open Cover LabelTraversal FlatCoordinateLayout
 
 open Stack Host
 
+local instance (w : ℕ) : NeZero (prime^(w+1)) := ⟨(pow_pos Shared50ModularControl.prime_prime.pos _).ne'⟩
+
+open Cover.Fallback in
+def phasePackSchedule (lo hi : ℕ) : List ℕ :=
+  let r := hi-lo
+  middleTailSchedule lo r ++ (middleTailSchedule (lo+(8-hi+lo)) r).map (r+·)
+
+open Cover.Fallback in
+theorem phasePackSchedule_inside {lo hi i : ℕ} (ordered : lo ≤ hi) (bounded : hi ≤ 8)
+    (used : i ∈ phasePackSchedule lo hi) : i+1 < 16 := by
+  rcases List.mem_append.mp used with head | tail
+  · have := middleTailSchedule_inside head
+    omega
+  · obtain ⟨j,mem,rfl⟩ := List.mem_map.mp tail
+    have := middleTailSchedule_inside mem
+    omega
+
+open Cover.Fallback in
+/-- Pack both active fields ahead of the spectators by adjacent exchanges,
+preserving the order within each field and within the spectator suffix. -/
+theorem phasePackSchedule_fields {α : Type*} {lo hi : ℕ} (pre h mid d suffix : List α)
+    (prefixSize : pre.length = lo) (hSize : h.length = hi-lo)
+    (middleSize : mid.length = 8-hi+lo) (dSize : d.length = hi-lo) :
+    (phasePackSchedule lo hi).foldl (fun xs i => swapAtomAt i xs) (pre++h++mid++d++suffix) =
+      h++d++pre++mid++suffix := by
+  simp only [phasePackSchedule,List.foldl_append,List.foldl_map]
+  have first := middleTailSchedule_packs pre h (mid++d++suffix)
+  have last := middleTailSchedule_packs (pre++mid) d suffix
+  simp only [prefixSize,hSize,List.append_assoc] at first
+  simp only [List.length_append,prefixSize,middleSize,dSize,List.append_assoc] at last
+  simp only [List.append_assoc] at *
+  rw [first,← hSize,fold_swapAtomAt_prefix,hSize,last]
+
+open Cover.Fallback in
+/-- Run the interval packing schedule on a live column record. The two active
+fields become the first digits of the physical output word. -/
+theorem phaseIncomingPack_exec [M8.Machine.Net] {P U : Type} {T lo hi : ℕ}
+    (ordered : lo ≤ hi) (bounded : hi ≤ 8) (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T)
+    (body : P → Pr P T columnCapacity prime U) :
+    ∃ setup swaps : ℕ, ∀ w W, 0 < W →
+    let M := prime^(w+1)
+    let is := phasePackSchedule lo hi
+    let bank := ((Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)).trans ports
+    let clean := fun D : Stacks T prime => ∀ k : Fin (rowSwapBlock.tapes+35), 35 ≤ k.val → D.L (ports k) = [] ∧ D.R (ports k) = []
+    ∀ (v : HS T columnCapacity prime U) (S : Stacks T prime) record dest q (before : Fin (M^16*W) → ZMod 2),
+    let stored := RecordReady (b := prime) (w := w) (d := 16) (W := W) bank M.size W.size record
+      SparseRoleCircuit.encode (fun _ => blank) dest 0 q
+    stored before S → clean S → ∃ z F n word, z.user = v.user ∧
+      n ≤ 1+(setup+swaps*swapVolumeRate w)*(M^16*W) ∧
+      Exec body (statePlacedNormalized ports swapStates_fit swapStates_pos Empty.elim (packSchedule 16 is))
+        (mk v S) n (mk z F) ∧ stored word F ∧ clean F ∧
+      (∀ j, (∀ i, ports i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j) ∧
+      ∀ (x y : Fin 16 → ZMod M) pre h mid d suffix, pre.length = lo → h.length = hi-lo →
+        mid.length = 8-hi+lo → d.length = hi-lo → List.ofFn x = pre++h++mid++d++suffix →
+        List.ofFn y = h++d++pre++mid++suffix → ∀ j, word (index y j) = before (index x j) := by
+  obtain ⟨setup,swaps,price⟩ := packTime_le (P := Empty) (U := U) Empty.elim 16 (phasePackSchedule lo hi) (by decide)
+  refine ⟨setup,swaps,?_⟩
+  intro w W hW M is bank clean v S record dest q before stored ready free
+  have fits : ∀ i ∈ is, i+1 < 16 := fun _ => phasePackSchedule_inside ordered bounded
+  obtain ⟨z,F,n,user,time,run,⟨word,out,reads⟩,clear,off⟩ :=
+    placedPackSchedule_exec ports is fits body v S record dest q hW before id ⟨before,ready,fun _ _ => rfl⟩ free
+  refine ⟨z,F,n,word,user,time.trans (Nat.add_le_add_left (price w W hW) 1),run,out,clear,off,?_⟩
+  intro x y pre h mid d suffix hp hh hm hd hx hy j
+  have eqn : is.foldl adjacentFields x = y := by
+    apply List.ofFn_injective
+    rw [fold_adjacentFields is x fits,hx,hy]
+    exact phasePackSchedule_fields pre h mid d suffix hp hh hm hd
+  rw [← eqn]
+  exact reads x j
+
+/-- The packed phase tape and the active-first recursive descriptor assign the
+same physical offset to the two interval fields and their four spectators. -/
+theorem phasePacked_index {w W lo hi : ℕ}
+    (a b : Fin lo → ZMod (prime^(w+1))) (h d : Fin (hi-lo) → ZMod (prime^(w+1)))
+    (u v : Fin (8-hi) → ZMod (prime^(w+1))) (j : Fin W) :
+    (CopyChildLayout.packActive (phaseIntervalChild lo hi (w+1) W)
+      (RecursiveInterchangeScaling.index (phaseIntervalAddress a b h d u v j))).val =
+      (index (Fin.addCases (Fin.addCases h d) (Fin.addCases a (Fin.addCases (Fin.addCases u b) v))) j).val := by
+  rw [CopyChildLayout.packActive_index,FlatCoordinateLayout.index_val]
+  let M := prime^(w+1)
+  change ((j.val+W*(rank v).val)+(M^(8-hi)*W)*((rank (Fin.addCases u b)).val+
+    M^(8-hi+lo)*((rank a).val+M^lo*(0+1*0))))+
+    CopyChildLayout.spectators (phaseIntervalChild lo hi (w+1) W)*
+      ((rank d).val+prime^((hi-lo)*(w+1))*(rank h).val) = _
+  have width : prime^((hi-lo)*(w+1)) = M^(hi-lo) := by dsimp only [M]; rw [← pow_mul,Nat.mul_comm]
+  rw [width]
+  simp only [CopyChildLayout.spectators,phaseIntervalChild,one_mul,zero_mul,mul_zero,zero_add,add_zero,
+    ArbitraryWidthSliceTranspose.rank_append,pow_add]
+  dsimp only [M]
+  ring
+
+open IntegerMultBounds.Networks.Certificates.PR589 RecursiveInterchangeLayout in
+/-- A phase interval has one physical row. Regroup its spectators into the
+scheduled child's rows while keeping both active fields and the transpose. -/
+theorem scheduledPhaseCoordinates (node : Descriptor) (i : Fin nodeChildren5.length)
+    (p : ℕ × ℕ) (checked : Geometry.Moves.CheckedPair p) (w B rows : ℕ)
+    (rank : nodeChildren5[i.val] = Geometry.moveRank p.1 p.2)
+    (width : node.width = 64*w) (split : node.rows = 142080*rows)
+    (label : node.beforeH = B*prime^(64*(w*64))) :
+    let K := (prime^w)^112*(node.beforeRows*rows*node.between*node.afterD)
+    let W := B*prime^(64*(w*64))*K
+    let a := Geometry.Dimensions.value p.1
+    let b := Geometry.Dimensions.value p.2
+    let packed := phaseIntervalChild (min a b) (max a b) w W
+    let child := scheduledChild prime node i
+    ∃ e : Fin (volume prime packed) ≃ Fin (volume prime child),
+      (∀ j, (CopyChildLayout.packActive child (e j)).val = (CopyChildLayout.packActive packed j).val) ∧
+      ∀ {α : Type} (x : Fin (volume prime child) → α),
+        Shared50RecursiveNodeRows.transpose (one_dvd packed.rows) (x ∘ e) =
+          Shared50RecursiveNodeRows.transpose (one_dvd child.rows) x ∘ e := by
+  intro K W a b packed child
+  obtain ⟨pw,pv⟩ := phaseChild_parent_measures node w B rows p checked width split label
+  obtain ⟨cw,cv⟩ := scheduledChild_measures prime node ⟨w,width⟩ ⟨rows,split⟩ i
+  change packed.width*64 = _ at pw
+  change child.width*64 = _ at cw
+  rw [rank] at cw
+  have sameWidth : packed.width = child.width := by omega
+  change volume prime packed*142080 = _ at pv
+  change volume prime child*142080 = _ at cv
+  have sameVolume : volume prime packed = volume prime child := by omega
+  have count (d : Descriptor) : volume prime d = prime^d.width*prime^d.width*CopyChildLayout.spectators d := by
+    unfold volume CopyChildLayout.spectators
+    ring
+  rw [count,count,sameWidth] at sameVolume
+  have size := Nat.eq_of_mul_eq_mul_left (Nat.mul_pos (pow_pos Shared50ModularControl.prime_prime.pos _)
+    (pow_pos Shared50ModularControl.prime_prime.pos _)) sameVolume
+  let f := CopyChildLayout.changeLayout packed child sameWidth size
+  let e := (CopyChildLayout.flatAddress packed).symm.trans (f.trans (CopyChildLayout.flatAddress child))
+  refine ⟨e,?_,fun x => funext (transpose_changeLayout packed child sameWidth size x)⟩
+  intro j
+  let addr := (CopyChildLayout.flatAddress packed).symm j
+  have src : RecursiveInterchangeScaling.index addr = j := (CopyChildLayout.flatAddress packed).apply_symm_apply j
+  exact (CopyChildLayout.packActive_change packed child sameWidth size addr).trans
+    (congrArg (fun z => (CopyChildLayout.packActive packed z).val) src)
+
 /-- Finish a nonroot scanner bank after the child queue transfer. The seven
 header sources and two work registers can stay outside the caller/scan bank. -/
 theorem childQueue_headers_exec {T Q w : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
@@ -258,7 +393,6 @@ theorem ordinaryCutoffTest_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q 
   · omega
   · simp [D,reset]
 
-local instance (w : ℕ) : NeZero (prime^(w+1)) := ⟨(pow_pos Shared50ModularControl.prime_prime.pos _).ne'⟩
 
 def cutoffColumnSlots : Fin 10 ↪ Fin 35 := ⟨![33,34,0,1,3,4,5,6,7,8],by decide⟩
 
