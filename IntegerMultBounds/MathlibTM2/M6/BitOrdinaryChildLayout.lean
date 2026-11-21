@@ -529,7 +529,9 @@ theorem ordinaryChildRoute_exec [M8.Machine.Net] {P U : Type} {T : ℕ}
         n ≤ budget + 2 + 2*(1+routeTime) ∧
         Exec body (.seq (pass is) (.seq (.call f) (pass is.reverse))) (mk v S) n (mk z F) ∧
         columns original (fun x => let t := Cover.Weighted.child r (fun _ => 1) (fun _ => 1) (input x)
-                                   Fin.append t.1 t.2) F ∧ clean F ∧ saved F := by
+                                   Fin.append t.1 t.2) F ∧ clean F ∧ saved F ∧
+        ∀ c, Fast.Main.mnProgPush (pass is) ≤ c → Fast.Main.mnProgPush (pass is.reverse) ≤ c →
+          (∀ f, Fast.Main.mnProgPush (body f) ≤ c) → StackGrowthExcept (bank 24) S F (c*(2*(1+routeTime))) := by
   intro w W hW d M is routeTime bank pass clean v S record dest q original input f budget saved desc onTape columns call start free
   obtain ⟨before,layout,reads⟩ := start
   let after := ordinaryChildOutput (r := r) (g := g) (w := w) before
@@ -555,7 +557,7 @@ theorem ordinaryChildRoute_exec [M8.Machine.Net] {P U : Type} {T : ℕ}
     (fun i hi => fits i (List.mem_reverse.mp hi)) body y G record dest q hW after _ changed available
   simp only [reverse_adjacentFields] at placed
   simp only [List.map_reverse,List.sum_reverse] at hm
-  refine ⟨z,F,n+(k+2+m),hz.trans (hy.trans hu),?_,.seq pack (.seq (.call run) unpack),⟨word,done,?_⟩,empty,?_⟩
+  refine ⟨z,F,n+(k+2+m),hz.trans (hy.trans hu),?_,.seq pack (.seq (.call run) unpack),⟨word,done,?_⟩,empty,?_,?_⟩
   · change n ≤ 1+routeTime at hn
     change m ≤ 1+routeTime at hm
     omega
@@ -568,6 +570,30 @@ theorem ordinaryChildRoute_exec [M8.Machine.Net] {P U : Type} {T : ℕ}
     simpa only [Cover.Weighted.child,Fin.isLt,ite_true,one_mul,Fin.rev_rev] using cell
   · intro j off
     exact ⟨(frame j off).1.trans (live j off).1,(frame j off).2.trans (live j off).2⟩
+  · intro c enter exit bodies j ne
+    have held : G.L j = D.L j ∧ G.R j = D.R j := by
+      by_cases localPort : ∃ i, ports i = j
+      · obtain ⟨i,rfl⟩ := localPort
+        by_cases small : i.val < 35
+        · let k : Fin 35 := ⟨i.val,small⟩
+          have same : bank k = ports i := congrArg ports (Fin.ext rfl)
+          exact same ▸ keep k (fun e => ne (same.symm.trans (congrArg bank e)))
+        · obtain ⟨l,r⟩ := available i (by omega)
+          obtain ⟨l',r'⟩ := clear i (by omega)
+          exact ⟨l.trans l'.symm,r.trans r'.symm⟩
+      · have off := fun i h => localPort ⟨i,h⟩
+        exact ⟨(live j off).1.trans (kept j off).1.symm,(live j off).2.trans (kept j off).2.symm⟩
+    obtain ⟨l,r⟩ := StackGrowthExcept.of_exec (bank 24) pack enter bodies j ne
+    obtain ⟨l',r'⟩ := StackGrowthExcept.of_exec (bank 24) unpack exit bodies j ne
+    rw [held.1] at l'
+    rw [held.2] at r'
+    have time : n+m ≤ 2*(1+routeTime) := by
+      change n ≤ 1+routeTime at hn
+      change m ≤ 1+routeTime at hm
+      omega
+    have paid := Nat.mul_le_mul_left c time
+    rw [Nat.mul_add] at paid
+    exact ⟨by omega,by omega⟩
 
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode

@@ -436,7 +436,11 @@ theorem ordinaryChildDispatch_exec [M8.Machine.Net] {P U : Type} {T : ℕ}
           (.cond (fun u => symBit (u.scan (cmp 7))) (.seq (pass is) (.seq (.call f) (pass is.reverse)))
             (pass (stoppedParentSchedule r g)))) (mk v S) n (mk z F) ∧
         columns original (fun x => let t := Cover.Weighted.child r (fun _ => 1) (fun _ => 1) (input x)
-                                   Fin.append t.1 t.2) F ∧ clean F ∧ saved F ∧ F.R cut = binSyms L cutoff := by
+                                   Fin.append t.1 t.2) F ∧ clean F ∧ saved F ∧ F.R cut = binSyms L cutoff ∧
+        ∀ c, Fast.Main.mnProgPush (pass is) ≤ c → Fast.Main.mnProgPush (pass is.reverse) ≤ c →
+          Fast.Main.mnProgPush (pass (stoppedParentSchedule r g)) ≤ c →
+          (∀ f, Fast.Main.mnProgPush (body f) ≤ c) → StackGrowthExcept (bank 24) S F
+            (c*(if cutoff < desc.width then 2*(1+routeTime) else C*(desc.width*(M^d*W)))) := by
   intro ports cut outside
   obtain ⟨C,stopped⟩ := stoppedOrdinaryChild_exec ports body
   refine ⟨C,?_⟩
@@ -456,7 +460,7 @@ theorem ordinaryChildDispatch_exec [M8.Machine.Net] {P U : Type} {T : ℕ}
   change u.scan (cmp 7) = bitSymbol (decide (cutoff < desc.width)) at flag
   change m ≤ 4*w+23*desc.width+22*L+50 at testCost
   by_cases active : cutoff < desc.width
-  · obtain ⟨z,F,n,hu,cost,run,done,clear,kept⟩ := ordinaryChildRoute_exec ports body r g gap w W hW
+  · obtain ⟨z,F,n,hu,cost,run,done,clear,kept,growth⟩ := ordinaryChildRoute_exec ports body r g gap w W hW
       u S record dest q original input f budget (by
         intro smaller word y D reads clear saved
         let x := word ∘ layout.symm
@@ -476,15 +480,21 @@ theorem ordinaryChildDispatch_exec [M8.Machine.Net] {P U : Type} {T : ℕ}
         intro k
         rw [output]
         exact returned k) start free
-    refine ⟨z,F,_,hu.trans user,?_,Exec.seq compare (Exec.cond_true (by simp [mk_var,flag,active]) run),done,clear,kept,(kept cut outside).2.trans cutWord⟩
-    rw [ite_eq_left active]
-    change n ≤ budget+2+2*(1+routeTime) at cost
-    omega
+    refine ⟨z,F,_,hu.trans user,?_,Exec.seq compare (Exec.cond_true (by simp [mk_var,flag,active]) run),done,clear,kept,(kept cut outside).2.trans cutWord,?_⟩
+    · rw [ite_eq_left active]
+      change n ≤ budget+2+2*(1+routeTime) at cost
+      omega
+    · simpa only [ite_eq_left active] using fun c enter exit _ hb => growth c enter exit hb
   · obtain ⟨z,F,n,hu,cost,run,done,clear,kept⟩ := stopped r g split rankPos w W hW u S record dest q original input start free
-    refine ⟨z,F,_,hu.trans user,?_,Exec.seq compare (Exec.cond_false (by simp [mk_var,flag,active]) run),done,clear,kept,(kept cut outside).2.trans cutWord⟩
-    rw [ite_eq_right active]
-    change n ≤ C*(desc.width*(M^d*W)) at cost
-    omega
+    refine ⟨z,F,_,hu.trans user,?_,Exec.seq compare (Exec.cond_false (by simp [mk_var,flag,active]) run),done,clear,kept,(kept cut outside).2.trans cutWord,?_⟩
+    · rw [ite_eq_right active]
+      change n ≤ C*(desc.width*(M^d*W)) at cost
+      omega
+    · intro c _ _ hp hb j ne
+      rw [ite_eq_right active]
+      obtain ⟨l,r⟩ := StackGrowthExcept.of_exec (bank 24) run hp hb j ne
+      have paid := Nat.mul_le_mul_left c cost
+      exact ⟨l.trans (Nat.add_le_add_left paid _),r.trans (Nat.add_le_add_left paid _)⟩
 
 /-- Multiply the decoded spectator factors and encode their product in the
 minimal binary width expected on scanner tape 53. -/
@@ -770,6 +780,25 @@ theorem ordinaryIdle_exec {w R W parents T Q : ℕ} {P U : Type} (i : Fin 9)
   exact ⟨y,D,z,n,exec,paid,user,final,kept,fun block g live spectator =>
     ordinaryIdle_read i parent units block g live count spectator x y acts kept⟩
 
+open Fallback in
+/-- Choose the scheduled child branch and correct the returned columns with the caller's pivots. -/
+noncomputable def weightedOrdinaryProgram [M8.Machine.Net] {P U : Type} {T : ℕ}
+    (caller : Fin 64 ↪ Fin T) (work : Fin ((rowSwapBlock.tapes+35)+1) ↪ Fin T)
+    (apart : ∀ i j, work i ≠ caller j) (r g : ℕ) (f : P) : Pr P T columnCapacity prime U :=
+  let placement := correctionColumnPlacement caller work apart
+  let ports := columnPorts.trans placement
+  let bank := columnBank.trans placement
+  let cmp := ordinaryCutoffPorts bank (placement (Fin.last _)) (fun i => placement.injective.ne (Fin.castSucc_ne_last _))
+  let pass := fun js => statePlacedNormalized ports swapStates_fit swapStates_pos Empty.elim (packSchedule ((r+g)+(r+g)) js)
+  let is := ordinaryChildPackSchedule r g
+  let emit := fun i j => let slot := correctionSlot r i j
+                         readMatrixWord slot.2.val ((callerCorrectionPorts slot.1).trans caller)
+  let write := LabelTraversal.sequence (fun i => LabelTraversal.sequence (emit i) (List.finRange 128)) (List.finRange 128)
+  let prep := (bzero (caller 2) (caller 58) (caller 59)).seq (write.seq (bclear (caller 58)))
+  let correction := (prep.seq (placedDiagonalPairs placement 127)).seq (dropWords (bank 2) (bank 34) (bank 0) (128*128))
+  ((ordinaryCutoffTest cmp r).seq (.cond (fun u => symBit (u.scan (cmp 7)))
+    ((pass is).seq ((Prog.call f).seq (pass is.reverse))) (pass (stoppedParentSchedule r g)))).seq correction
+
 open Fallback RecursiveInterchangeLayout in
 /-- Execute the scheduled ordinary exchange and apply the archived parent pivots. -/
 theorem weightedOrdinaryChildDispatch_exec [M8.Machine.Net] {P U : Type} {T : ℕ}
@@ -778,7 +807,6 @@ theorem weightedOrdinaryChildDispatch_exec [M8.Machine.Net] {P U : Type} {T : �
     let placement := correctionColumnPlacement caller work apart
     let ports := columnPorts.trans placement
     let cut := placement (Fin.last _)
-    let outside : ∀ i, ports i ≠ cut := fun i => placement.injective.ne (Fin.castSucc_ne_last i)
     ∃ C : ℕ, ∀ (node : Descriptor) (i : Fin nodeChildren5.length) w (aligned : node.width = 64*(w+1)),
       let r := nodeChildren5[i.val]
       let g := 64-r
@@ -790,8 +818,6 @@ theorem weightedOrdinaryChildDispatch_exec [M8.Machine.Net] {P U : Type} {T : �
       let is := ordinaryChildPackSchedule r g
       let routeTime := (is.map (fun i => completeSwapTime (P := Empty) (U := U) Empty.elim d i (i+1) w W M.size W.size)).sum+1
       let bank := ((Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)).trans ports
-      let cmp := ordinaryCutoffPorts bank cut (fun i => outside _)
-      let pass := fun js => statePlacedNormalized ports swapStates_fit swapStates_pos Empty.elim (packSchedule d js)
       let clean := fun (S : Stacks T prime) => ∀ k : Fin (rowSwapBlock.tapes+35), 35 ≤ k.val → S.L (ports k) = [] ∧ S.R (ports k) = []
       ∀ (v : HS T columnCapacity prime U) (S : Stacks T prime)
         (dest : ℤ → Fin 4) (q : ℤ)
@@ -808,12 +834,6 @@ theorem weightedOrdinaryChildDispatch_exec [M8.Machine.Net] {P U : Type} {T : �
         ∀ z, readAt blank (D.L (bank 24)) (D.R (bank 24)) z =
           M8.Machine.ArbitraryWidthHighExchangeShared.sourceWord (v := desc) (word ∘ layout) z
       ∀ pivot : Fin r → (ZMod M)ˣ,
-      let weight := fun k : Fin (r+g) => if h : k.val < r then pivot ⟨k.val,h⟩ else 1
-      let emit := fun i j => let slot := correctionSlot r i j
-                             readMatrixWord slot.2.val ((callerCorrectionPorts slot.1).trans caller)
-      let write := LabelTraversal.sequence (fun i => LabelTraversal.sequence (emit i) (List.finRange 128)) (List.finRange 128)
-      let prep := (bzero (caller 2) (caller 58) (caller 59)).seq (write.seq (bclear (caller 58)))
-      let correction := (prep.seq (placedDiagonalPairs placement 127)).seq (dropWords (bank 2) (bank 34) (bank 0) (128*128))
       (∀ z, q ≤ z → z < q+(M^d*W : ℕ) → dest z = blank) →
       S.R (caller 55) = (List.ofFn fun k => binSyms M.size (pivot k : ZMod M).val).flatten →
       S.R (caller 56) = (List.ofFn fun k => binSyms M.size (pivot k).inv.val).flatten →
@@ -833,12 +853,8 @@ theorem weightedOrdinaryChildDispatch_exec [M8.Machine.Net] {P U : Type} {T : �
       (∀ z, readAt blank (S.L (caller 25)) (S.R (caller 25)) (z-q) = RadixToBinary.binaryEncoding.encode (dest z)) →
       clean S → ∃ z F n after, z.user = v.user ∧
         n ≤ 4*w+23*desc.width+22*L+51+(if cutoff < desc.width then budget+2+2*(1+routeTime) else C*(desc.width*(M^d*W))) +
-          (4*M.size+4+(128*(128*(8*(64*M.size)+14*M.size+22)+1)+1+(2*M.size+2)) +
-           (1+(((List.finRange 127).map (fun k => pairScalingTime U k.succ 0 k.succ w W M.size W.size)).sum+1)) +
-           (128*128*(4*M.size+4)+1)) ∧
-        Exec body ((Prog.seq (ordinaryCutoffTest cmp r)
-          (.cond (fun u => symBit (u.scan (cmp 7))) (.seq (pass is) (.seq (.call f) (pass is.reverse)))
-            (pass (stoppedParentSchedule r g)))).seq correction) (mk v S) n (mk z F) ∧
+          ordinaryCorrectionTime U w W M.size W.size ∧
+        Exec body (weightedOrdinaryProgram caller work apart r g f) (mk v S) n (mk z F) ∧
         (∀ (hg tg : Fin g → ZMod M) (x : IntegerMultBounds.Swap.Shear.State (Fin r) (ZMod M)) (j : Fin W),
           let address := fun y => let t := childFields hg tg y
                                   FlatCoordinateLayout.index (Fin.append t.1 t.2) j
@@ -846,12 +862,17 @@ theorem weightedOrdinaryChildDispatch_exec [M8.Machine.Net] {P U : Type} {T : �
         (∀ z, RadixToBinary.binaryEncoding.encode (putWord (fun _ => blank) 0 (List.ofFn (SparseRoleCircuit.encode ∘ after)) z) =
           readAt blank (F.L (caller 24)) (F.R (caller 24)) (z-0)) ∧ clean F ∧ F.R cut = binSyms L cutoff ∧
         (∀ j : Fin 64, (∀ k, correctionCallerSlots k ≠ j) → F.L (caller j) = S.L (caller j) ∧ F.R (caller j) = S.R (caller j)) ∧
-        ∀ j, (∀ k, placement k ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
-  intro placement ports cut outside
+        (∀ j, (∀ k, placement k ≠ j) → F.L j = S.L j ∧ F.R j = S.R j) ∧
+        ∀ c, Fast.Main.mnProgPush (weightedOrdinaryProgram (U := U) caller work apart r g f) ≤ c →
+          (∀ f, Fast.Main.mnProgPush (body f) ≤ c) → StackGrowthExcept (caller 24) S F
+            (c*((if cutoff < desc.width then 2*(1+routeTime) else C*(desc.width*(M^d*W))) +
+              ordinaryCorrectionTime U w W M.size W.size)) := by
+  intro placement ports cut
   obtain ⟨C,dispatch⟩ := ordinaryChildDispatch_exec placement body
   refine ⟨C,?_⟩
-  intro node i w aligned r g parent W hW d M is routeTime bank cmp pass clean v S dest q before f budget cutoff L
-    saved desc child eqn layout onTape pivot weight emit write prep correction empty pos inv fresh cutFits widthFits cutWord recurse modulus width one padded clock temps src dst free
+  intro node i w aligned r g parent W hW d M is routeTime bank clean v S dest q before f budget cutoff L
+    saved desc child eqn layout onTape pivot empty pos inv fresh cutFits widthFits cutWord recurse modulus width one padded clock temps src dst free
+  let weight := fun k : Fin (r+g) => if h : k.val < r then pivot ⟨k.val,h⟩ else 1
   let input := fun x : Fin d → ZMod M => (fun k : Fin (r+g) => x (k.castAdd (r+g)),fun k : Fin (r+g) => x (k.natAdd (r+g)))
   let record := S.R (caller 60)
   have start : ColumnRecordReady bank M.size W.size record SparseRoleCircuit.encode (fun _ => blank) dest 0 q before
@@ -859,18 +880,31 @@ theorem weightedOrdinaryChildDispatch_exec [M8.Machine.Net] {P U : Type} {T : �
     refine ⟨before,correctionRecordEntry caller work apart M.size W.size d dest q S before modulus width one padded clock temps src dst,?_⟩
     intro x j
     exact congrArg (fun y => before (FlatCoordinateLayout.index y j)) (Fin.append_castAdd_natAdd (f := x))
-  obtain ⟨u,D,t,user,paid,run,plain,scratch,frame,_⟩ := dispatch node i w aligned hW v S record dest q before input f budget cutoff L
+  obtain ⟨u,D,t,user,paid,run,plain,scratch,frame,_,routeGrowth⟩ := dispatch node i w aligned hW v S record dest q before input f budget cutoff L
     cutFits widthFits cutWord recurse start free
   have rankBound : r ≤ 42 := nodeChildren5_le i
   have dim : r+g = 64 := by dsimp only [g]; omega
-  obtain ⟨z,F,n,same,cost,done,weighted,clear,lastWord,callerFrame,off⟩ :=
+  obtain ⟨z,F,n,same,cost,done,weighted,clear,lastWord,callerFrame,off,correctionGrowth⟩ :=
     dispatchedCorrection_exec caller work apart dim (Nat.le_add_right r g) pivot M.size W.size
       (Nat.lt_size_self _) (Nat.lt_size_self _) hW body v S _ u D t record dest q empty before input
       pos inv fresh user run frame plain scratch
   obtain ⟨after,action,returned⟩ := weightedColumn_return bank M.size W.size record dest q F before
     (fun k => (weight k : ZMod M)) (fun k => (weight k).inv) weighted
   have payload : bank 24 = caller 24 := correctionColumnPlacement_shared caller work apart 1
-  refine ⟨z,F,n,after,same,cost.trans (Nat.add_le_add_right paid _),done,?_,payload ▸ returned,clear,lastWord.trans cutWord,callerFrame,off⟩
-  simpa only [weight,Fin.val_castAdd,Fin.isLt,dif_pos] using action
+  refine ⟨z,F,n,after,same,cost.trans (Nat.add_le_add_right paid _),done,?_,payload ▸ returned,clear,lastWord.trans cutWord,callerFrame,off,?_⟩
+  · simpa only [weight,Fin.val_castAdd,Fin.isLt,dif_pos] using action
+  · intro c hp hb j ne
+    obtain ⟨branch,correct⟩ := max_le_iff.mp hp
+    obtain ⟨active,stopped⟩ := max_le_iff.mp (max_le_iff.mp branch).2
+    obtain ⟨enter,callExit⟩ := max_le_iff.mp active
+    have route := routeGrowth c enter (max_le_iff.mp callExit).2 stopped hb
+    have final := correctionGrowth c correct hb
+    have together := route.trans final j (payload ▸ ne)
+    change n ≤ t+ordinaryCorrectionTime U w W M.size W.size at cost
+    have bound : n-t ≤ ordinaryCorrectionTime U w W M.size W.size := by omega
+    have price := Nat.mul_le_mul_left c bound
+    rw [Nat.mul_add]
+    exact ⟨together.1.trans (Nat.add_le_add_left (Nat.add_le_add_left price _) _),
+      together.2.trans (Nat.add_le_add_left (Nat.add_le_add_left price _) _)⟩
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode

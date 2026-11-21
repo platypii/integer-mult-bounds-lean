@@ -551,7 +551,7 @@ theorem privateOrdinaryReturn_exec [M8.Machine.Net] {n T Q : ℕ} {P U : Type}
     let init := load.seq (bcopy (rootCut.castAdd T) cut (privatePort 0) (privatePort 1))
     let setupTime := cost+(6*(S.R (rootCut.castAdd T)).length+6)
     let privateTapes := (List.finRange (n+T)).filter fun j => n ≤ j.val
-    ∃ u D, u.user = v.user ∧ D.L = S.L ∧ (∀ j : Fin n, D.R (j.castAdd T) = S.R (j.castAdd T)) ∧
+    ∃ u D, u.user = v.user ∧ Exec body init (mk v S) setupTime (mk u D) ∧ D.L = S.L ∧ (∀ j : Fin n, D.R (j.castAdd T) = S.R (j.castAdd T)) ∧
       (∀ i, D.R (bank (host (slots i))) = S.R (src i)) ∧ D.R cut = S.R (rootCut.castAdd T) ∧
       (∀ j : Fin T, j ≠ work (Fin.last _) → (∀ i, host (slots i) ≠ j) → D.R (j.natAdd n) = []) ∧
       ∀ z F steps, Exec body program (mk u D) steps (mk z F) →
@@ -584,7 +584,7 @@ theorem privateOrdinaryReturn_exec [M8.Machine.Net] {n T Q : ℕ} {P U : Type}
   let E := {D with R := Function.update D.R cut (S.R (rootCut.castAdd T))}
   have fixed (j : Fin n) : E.R (j.castAdd T) = S.R (j.castAdd T) :=
     (Function.update_of_ne (outside j) ..).trans (right j)
-  refine ⟨y,E,same.trans user,left,fixed,?_,Function.update_self ..,?_,?_⟩
+  refine ⟨y,E,same.trans user,Exec.seq setup copy,left,fixed,?_,Function.update_self ..,?_,?_⟩
   · intro i
     rw [headers i]
     have ne : dst i ≠ cut := cutEq ▸ (Fin.natAddEmb n).injective.ne (apart _ _).symm
@@ -724,6 +724,27 @@ theorem preparedCorrection_exec [M8.Machine.Net] {T w W r : ℕ} {P U : Type}
       simpa [G,D,Function.update_of_ne ne,embStk] using lastWord
 
 
+noncomputable def ordinaryCorrectionTime [M8.Machine.Net] (U : Type) (w W H J : ℕ) : ℕ :=
+  4*H+4+(128*(128*(8*(64*H)+14*H+22)+1)+1+(2*H+2)) +
+    (1+(((List.finRange 127).map (fun i => pairScalingTime U i.succ 0 i.succ w W H J)).sum+1)) + (128*128*(4*H+4)+1)
+
+/-- Growth of the two stacks outside the recursive payload. -/
+def StackGrowthExcept {T : ℕ} (payload : Fin T) (S F : Stacks T prime) (extra : ℕ) : Prop :=
+  ∀ j, j ≠ payload → (F.L j).length ≤ (S.L j).length+extra ∧ (F.R j).length ≤ (S.R j).length+extra
+
+theorem StackGrowthExcept.of_exec {T Q : ℕ} {P U : Type} {p : Pr P T Q prime U}
+    {body : P → Pr P T Q prime U} {u v : HS T Q prime U} {S F : Stacks T prime} {n c : ℕ}
+    (payload : Fin T) (run : Exec body p (mk u S) n (mk v F)) (hp : Fast.Main.mnProgPush p ≤ c)
+    (hb : ∀ f, Fast.Main.mnProgPush (body f) ≤ c) : StackGrowthExcept payload S F (c*n) :=
+  fun j _ => ⟨exec_stack_length run hp hb (.lt j),exec_stack_length run hp hb (.rt j)⟩
+
+theorem StackGrowthExcept.trans {T : ℕ} {j : Fin T} {S D F : Stacks T prime} {a b : ℕ}
+    (h : StackGrowthExcept j S D a) (k : StackGrowthExcept j D F b) : StackGrowthExcept j S F (a+b) := by
+  intro i ne
+  obtain ⟨l,r⟩ := h i ne
+  obtain ⟨l',r'⟩ := k i ne
+  exact ⟨by omega,by omega⟩
+
 /-- Apply the parent-radix correction after either ordinary dispatch branch.
 The saved caller frame supplies the pivot archives and writer scratch. -/
 theorem dispatchedCorrection_exec [M8.Machine.Net] {T w W r m : ℕ} {P U : Type}
@@ -762,7 +783,9 @@ theorem dispatchedCorrection_exec [M8.Machine.Net] {T w W r m : ℕ} {P U : Type
       Exec body (dispatch.seq ((prep.seq (placedDiagonalPairs ports 127)).seq (dropWords (col 2) (col 34) (col 0) (128*128)))) (mk u S) n (mk z F) ∧
       ready tail (fun x (j : Fin (m+m)) => Fin.addCases (corrected x).1 (corrected x).2 j) F ∧
       scratch F ∧ F.R (ports (Fin.last _)) = S.R (ports (Fin.last _)) ∧ (∀ j : Fin 64, (∀ k, correctionCallerSlots k ≠ j) →
-        F.L (bank j) = S.L (bank j) ∧ F.R (bank j) = S.R (bank j)) ∧ ∀ j, (∀ i, ports i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+        F.L (bank j) = S.L (bank j) ∧ F.R (bank j) = S.R (bank j)) ∧ (∀ j, (∀ i, ports i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j) ∧
+      ∀ c, Fast.Main.mnProgPush ((prep.seq (placedDiagonalPairs ports 127)).seq (dropWords (col 2) (col 34) (col 0) (128*128)) : Pr P T columnCapacity prime U) ≤ c →
+        (∀ f, Fast.Main.mnProgPush (body f) ≤ c) → StackGrowthExcept (col 24) D F (c*(n-steps)) := by
   subst m
   intro ports weight emit write prep col ready plain corrected scratch pos inv free user run saved placed clean
   have caller (j : Fin 64) (off : ∀ k, correctionCallerSlots k ≠ j) :=
@@ -775,11 +798,13 @@ theorem dispatchedCorrection_exec [M8.Machine.Net] {T w W r m : ℕ} {P U : Type
     preparedCorrection_exec bank work apart fits pivot H J hm hw hW body v D tail dest q empty original input
       ((caller 55 (by decide)).2.trans pos) ((caller 56 (by decide)).2.trans inv) available placed clean
   refine ⟨z,F,steps+n,same.trans user,Nat.add_le_add_left cost steps,Exec.seq run correct,done,clear,
-    lastWord.trans (saved _ (fun i => ports.injective.ne (Fin.castSucc_ne_last i))).2,?_,?_⟩
+    lastWord.trans (saved _ (fun i => ports.injective.ne (Fin.castSucc_ne_last i))).2,?_,?_,?_⟩
   · intro j off
     exact ⟨(callerFrame j off).1.trans (caller j off).1,(callerFrame j off).2.trans (caller j off).2⟩
   · intro j off
     have kept := saved j (fun i => off (columnPorts i))
     exact ⟨(frame j off).1.trans kept.1,(frame j off).2.trans kept.2⟩
+  · intro c hp hb
+    simpa only [Nat.add_sub_cancel_left] using StackGrowthExcept.of_exec (col 24) correct hp hb
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
