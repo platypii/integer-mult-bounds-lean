@@ -905,6 +905,49 @@ private theorem PrivateStock.frame {T A : ℕ} {used : Fin T → Prop} {initiali
   intro j hj
   exact ⟨(same j hj).1.trans (stored j hj).1,(same j hj).2.trans (stored j hj).2⟩
 
+/-- Allocate a finite family of MOVE workspaces. Each local program runs in its
+own procedure table and preserves every other workspace's initialization. -/
+theorem moveFamily_host {I : Type} [Fintype I] {k : ℕ} (tapes : I → ℕ)
+    (ports : ∀ i, Fin k ↪ Fin (tapes i)) :
+    ∃ (T : ℕ) (fan : Fin k ↪ Fin T) (bank : ∀ i, Fin (tapes i) ↪ Fin T),
+    (∀ i j, bank i (ports i j) = fan j) ∧
+    ∀ (used : ∀ i, Fin (tapes i) → Prop) (init : ∀ i, Stacks (tapes i) prime → Prop),
+    (∀ i l, used i l → ∀ j, ports i j ≠ l) →
+    (∀ i, ∃ S, PrivateStock (used i) (init i) S) →
+    let ready := fun S => ∀ i, PrivateStock (used i) (init i) (embStk (bank i) S)
+    (∀ X, ∃ S, embStk fan S = X ∧ ready S) ∧
+    (∀ S F, ready S → (∀ j, (∀ l, fan l ≠ j) → F.L j = S.L j ∧ F.R j = S.R j) → ready F) ∧
+    ∀ {P U : Type} {Q : ℕ} (localBody : ∀ i, P → Pr P (tapes i) Q prime U),
+    let proc := fun (i : I) (f : P) => (i,f)
+    let body := fun f : I × P => embProg (bank f.1) (proc f.1) (localBody f.1 f.2)
+    ∀ i code u S z F t, ready S →
+      Exec (localBody i) code (mk (embDn (bank i) u) (embStk (bank i) S)) t (mk z F) →
+      PrivateStock (used i) (init i) F →
+      ∃ v G, Exec body (embProg (bank i) (proc i) code) (mk u S) t (mk v G) ∧
+        v.user = z.user ∧ embStk fan G = embStk (ports i) F ∧ ready G := by
+  obtain ⟨T,fan,bank,shared,collect,off⟩ := copyWindowBanks tapes ports
+  refine ⟨T,fan,bank,shared,?_⟩
+  intro used init privatePorts seed ready
+  constructor
+  · intro X
+    choose initial initialized using seed
+    obtain ⟨S,base,placed⟩ := collect X initial
+    exact ⟨S,base,fun i => PrivateStock.frame (initialized i) (fun l hl => placed i l (privatePorts i l hl))⟩
+  constructor
+  · intro S F ready same i
+    exact PrivateStock.frame (ready i) (fun l hl => same _ ((off i l (privatePorts i l hl)).1))
+  intro P U Q localBody proc body i code u S z F t start run done
+  obtain ⟨v,G,exec,_,user,localView,frame⟩ := exec_emb (ι := proc i) (body' := body) (bank i).injective
+    (fun _ => rfl) run u rfl S rfl
+  refine ⟨v,G,exec,user,?_,?_⟩
+  · rw [← localView]
+    simp only [embStk,Function.comp_def,shared]
+  intro j
+  by_cases same : j = i
+  · subst j
+    rwa [localView]
+  · exact PrivateStock.frame (start j) (fun l hl => frame _ ((off j l (privatePorts j l hl)).2 i (Ne.symm same)))
+
 open M8.Machine.Segments SharedPlacementAlphabet in
 open M8.Machine.ArbitraryWidthHighExchangeShared (sourceWord) in
 open Cover.Fallback IntegerMultBounds.Networks.Certificates.PR589 RecursiveInterchangeLayout in
@@ -1179,6 +1222,93 @@ theorem scheduledPhasePacked_host [M8.Machine.Net]
     rw [shape,rationalMoveWord_run,last]
     exact (phaseChild_interval (phaseInterval_bounds checked paid).1.le (phaseInterval_bounds checked paid).2 loaded _ j).trans (first s j)
 
+private theorem disjointStackBanks {t m n T a : ℕ} (p : Fin t ↪ Fin T) (q : Fin m ↪ Fin T) (r : Fin n ↪ Fin T)
+    (pq : ∀ i j, p i ≠ q j) (pr : ∀ i j, p i ≠ r j) (qr : ∀ i j, q i ≠ r j)
+    (X : Stacks t a) (Y : Stacks m a) (Z : Stacks n a) :
+    ∃ D : Stacks T a, (∀ i, D.L (p i) = X.L i ∧ D.R (p i) = X.R i) ∧
+      (∀ j, D.L (q j) = Y.L j ∧ D.R (q j) = Y.R j) ∧ (∀ j, D.L (r j) = Z.L j ∧ D.R (r j) = Z.R j) := by
+  let all := fun {β : Type} (x : Fin t → β) (y : Fin m → β) (z : Fin n → β) (empty : β) =>
+    embExt p x (embExt q y (embExt r z (fun _ => empty)))
+  refine ⟨⟨[],[],all X.L Y.L Z.L [],all X.R Y.R Z.R []⟩,?_,?_,?_⟩
+  · intro i
+    simp [all,embExt_apply p.injective]
+  · intro j
+    simp [all,embExt_off _ _ (fun i => pq i j),embExt_apply q.injective]
+  · intro j
+    simp [all,embExt_off _ _ (fun i => pr i j),embExt_off _ _ (fun i => qr i j),embExt_apply r.injective]
+
+open Cover.Fallback SharedPlacementAlphabet in
+/-- Concrete host stacks for a basis pass, with the payload kept on the caller's tape. -/
+private theorem basisWorkspaceStacks {w W : ℕ} (stages : List (FlatCoordinateSchedule.Op 16))
+    (x : Fin ((prime^w)^16*W) → ZMod 2) :
+    ∃ S : Stacks (FlatCoordinateCleanSchedule.tapeCount stages) prime, RepT (basisWorkspace (w := w) (W := W) stages x) S.L S.R := by
+  classical
+  let bits := fun i => SparseRoleCircuit.encode (a := 0) (x i)
+  let common := FlatCoordinateShiftSharedBank.common (d := 16) (b := w) (W := W) bits
+  have four (i : Fin 4) : ∃ L R, ∀ z, common.tape i z = readAt blank L R (z-common.head i) := by
+    change Fin (2+2) at i
+    induction i using Fin.addCases with
+    | left i =>
+      simp only [common,FlatCoordinateShiftSharedBank.common,Tapes.append,Fin.addCases_left]
+      fin_cases i
+      · refine ⟨[],payloadWord bits,fun z => ?_⟩
+        change M8.AtomBank.arrTape bits z = readAt blank [] _ (z-0)
+        simpa only [sub_zero] using payload_reads bits z
+      · refine ⟨[],[],fun z => ?_⟩
+        change blank = readAt blank [] [] (z-0)
+        simp [readAt_nil_left,wordTape_nil]
+    | right i =>
+      simp only [common,FlatCoordinateShiftSharedBank.common,Tapes.append,Fin.addCases_right]
+      have header (bs : List Bool) (z : ℤ) : RadixZeroFill.encodedBinary (q := prime) bs z =
+          readAt blank [separator] (bs.map bitSymbol) (z-1) := by rw [encodedBinary_eq,readAt_single]
+      fin_cases i
+      · exact ⟨_,_,header (FlatCoordinateSchedule.bits w)⟩
+      · exact ⟨_,_,header (FlatCoordinateSchedule.bits W)⟩
+  have tape (i : Fin (FlatCoordinateCleanSchedule.tapeCount stages)) :
+      ∃ L R, ∀ z, (basisWorkspace (w := w) (W := W) stages x).tape i z = readAt blank L R (z-(basisWorkspace (w := w) (W := W) stages x).head i) := by
+    by_cases src : i = segmentSource stages
+    · exact ⟨[],[],fun z => by simp [basisWorkspace,setTape,src,readAt_nil_left,wordTape_nil]⟩
+    · by_cases h : i.val < 4
+      · simp only [basisWorkspace,setTape,Function.update_of_ne src,SharedBankStageInput.raw,dite_eq_left h]
+        exact four ⟨i.val,h⟩
+      · exact ⟨[],[],fun z => by simp [basisWorkspace,setTape,Function.update_of_ne src,SharedBankStageInput.raw,h,
+          readAt_nil_left,wordTape_nil]⟩
+  choose L R rep using tape
+  exact ⟨⟨[],[],L,R⟩,rep⟩
+
+open Cover.Fallback in
+private theorem moveRecordStacks [M8.Machine.Net] {w W : ℕ} (record : List (Fin (prime+4))) (dest : ℤ → Fin 4) (q : ℤ)
+    (destL destR : List (Fin (prime+4)))
+    (readDest : ∀ z, readAt blank destL destR (z-q) = RadixToBinary.binaryEncoding.encode (dest z)) :
+    let M := prime^(w+1)
+    let bank := (Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)
+    ∃ S : Stacks (rowSwapBlock.tapes+35) prime,
+      RecordReady (b := prime) (w := w) (d := 16) (W := W) bank M.size W.size record SparseRoleCircuit.encode
+        (fun _ => blank) dest 0 q (fun _ => 0) S ∧
+      ∀ l : Fin (rowSwapBlock.tapes+35), 35 ≤ l.val → S.L l = [] ∧ S.R l = [] := by
+  intro M bank
+  let bits := fun _ : Fin (M^16*W) => SparseRoleCircuit.encode (a := 0) (0 : ZMod 2)
+  let left := fun l : Fin (rowSwapBlock.tapes+35) => if l.val = 25 then destL else []
+  let right := fun l : Fin (rowSwapBlock.tapes+35) =>
+    if l.val = 2 then binSyms M.size M else if l.val = 24 then payloadWord bits else
+    if l.val = 25 then destR else if l.val = 27 then binSyms W.size W else if l.val = 28 then binSyms 1 1 else
+    if l.val = 32 then binSyms M.size (1 : ZMod M).val else if l.val = 33 then List.replicate w blank else
+    if l.val = 34 then record else []
+  refine ⟨⟨[],[],left,right⟩,⟨rfl,rfl,rfl,rfl,by change (List.replicate w _).length = w; simp,rfl,?_,?_,?_⟩,?_⟩
+  · intro i hi
+    have v : (bank i).val = i.val := rfl
+    have outside : ∀ j ∈ shearWork, j.val ≠ 2 ∧ j.val ≠ 24 ∧ j.val ≠ 25 ∧ j.val ≠ 27 ∧ j.val ≠ 28 ∧
+        j.val ≠ 32 ∧ j.val ≠ 33 ∧ j.val ≠ 34 := by decide +kernel
+    obtain ⟨h₂,h₂₄,h₂₅,h₂₇,h₂₈,h₃₂,h₃₃,h₃₄⟩ := outside i hi
+    simp [left,right,v,h₂,h₂₄,h₂₅,h₂₇,h₂₈,h₃₂,h₃₃,h₃₄]
+  · intro z
+    change readAt blank [] (payloadWord bits) (z-0) = _
+    rw [sub_zero]
+    exact (payload_reads bits z).symm
+  · exact readDest
+  · intro i hi
+    simp [left,right,show ∀ n < 35, i.val ≠ n by omega]
+
 open M8.Machine.Segments SharedPlacementAlphabet in
 open M8.Machine.ArbitraryWidthHighExchangeShared (sourceWord) in
 open Cover.Fallback IntegerMultBounds.Networks.Certificates.PR589 RecursiveInterchangeLayout in
@@ -1219,6 +1349,8 @@ theorem allocatedPhaseMove_host [M8.Machine.Net] {k : ℕ} (src : Fin k)
     let stock := PrivateStock privateSlot
       (fun D => ∃ old, RepT (input A old) (embStk a D).L (embStk a D).R ∧
         RepT (input B' old) (embStk b D).L (embStk b D).R ∧ stored old D ∧ clean D)
+    (∀ (owners : Stacks (k+2) prime) (L R : List (Fin (prime+4))), (∀ z, readAt blank L R (z-q) = RadixToBinary.binaryEncoding.encode (dest z)) →
+      ∃ seed, embStk fan seed = owners ∧ stock seed) ∧
     ∃ code : Pr P T Q prime U, ∀ budget,
     (desc.width < node.width → ∀ u D word, stored word D → clean D →
       ∃ z F n changed, Exec body (body f) (mk u D) n (mk z F) ∧ n ≤ budget ∧ z.user = u.user ∧
@@ -1238,8 +1370,9 @@ theorem allocatedPhaseMove_host [M8.Machine.Net] {k : ℕ} (src : Fin k)
   let statesOf {t q : ℕ} (_ : Program t q prime) := q
   let qa := statesOf (FlatCoordinateCleanSchedule.program A)
   let qb := statesOf (FlatCoordinateCleanSchedule.program B')
-  refine ⟨A,B',_,rowSwapBlock.states+qa+qb,ports,fan,a,b,?_,shared,srcA,srcB,?_⟩
-  · intro j hj l
+  have disjoint (j) (hj : j ≠ ports recordPort ∧ ¬ ((∀ l, a l ≠ j) ∧ (∀ l, ports l ≠ j) ∧ (∀ l, b l ≠ j))) :
+      ∀ l, fan l ≠ j := by
+    intro l
     induction l using Fin.addCases with
     | left l =>
       by_cases eq : l = src
@@ -1247,6 +1380,7 @@ theorem allocatedPhaseMove_host [M8.Machine.Net] {k : ℕ} (src : Fin k)
         exact fun h => hj.1 (h.symm.trans shared)
       · exact fun h => hj.2 (h ▸ ownersOff l eq)
     | right l => exact fun h => hj.2 (h ▸ controlsOff l)
+  refine ⟨A,B',_,rowSwapBlock.states+qa+qb,ports,fan,a,b,disjoint,shared,srcA,srcB,?_⟩
   intro P U Q fits body f
   obtain ⟨setup,swaps,run⟩ := build (k := k) ports body f (by omega)
   let rate := fun (stages : List (FlatCoordinateSchedule.Op 16)) => FlatCoordinateCleanSchedule.constant stages*(1+FlatCoordinateCleanSchedule.tapeCount stages+5)
@@ -1257,6 +1391,48 @@ theorem allocatedPhaseMove_host [M8.Machine.Net] {k : ℕ} (src : Fin k)
     ownersOff controlsOff record dest q
   refine ⟨position,offset,?_⟩
   intro lo hi view size input stock
+  constructor
+  · intro owners L R readDest
+    obtain ⟨X,recX,freeX⟩ := moveRecordStacks (w := w) (W := W) record dest q L R readDest
+    obtain ⟨Y,repY⟩ := basisWorkspaceStacks (w := w+1) (W := W) A 0
+    obtain ⟨Z,repZ⟩ := basisWorkspaceStacks (w := w+1) (W := W) B' 0
+    let pa := (Fin.natAddEmb 1).trans a
+    let pb := (Fin.natAddEmb 1).trans b
+    have paOff (i j) : ports i ≠ pa j := by
+      by_cases eq : ports i = ports recordPort
+      · rw [eq,← srcA]
+        exact a.injective.ne (by intro h; have := congrArg Fin.val h; simp [pa] at this; omega)
+      · exact (apart i eq _).symm
+    obtain ⟨D,placed,reverseBank,forwardBank⟩ := disjointStackBanks ports pa pb paOff
+      (fun i j => (privateB j).2 i) (fun i j => (privateB j).1 _) X Y Z
+    have recordRead : stored 0 D := by
+      let localBank := (Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)
+      have same (j : Fin 35) : D.L (bank j) = X.L (localBank j) ∧ D.R (bank j) = X.R (localBank j) := placed _
+      exact ⟨(same 2).2.trans recX.modulus,(same 27).2.trans recX.width,(same 28).2.trans recX.one,
+        (same 32).2.trans recX.padded,(congrArg List.length (same 33).2).trans recX.clock,(same 34).2.trans recX.archive,
+        fun j hj => ⟨(same j).1.trans (recX.scratch j hj).1,(same j).2.trans (recX.scratch j hj).2⟩,
+        fun z => by rw [(same 24).1,(same 24).2]; exact recX.src z,
+        fun z => by rw [(same 25).1,(same 25).2]; exact recX.dst z⟩
+    have basis (stages : List (FlatCoordinateSchedule.Op 16)) (e : Fin (1+FlatCoordinateCleanSchedule.tapeCount stages) ↪ Fin _)
+        (site : e ((0 : Fin 1).castAdd _) = ports recordPort) (Y : Stacks _ prime)
+        (rep : RepT (basisWorkspace (w := w+1) (W := W) stages 0) Y.L Y.R)
+        (onBank : ∀ j, D.L (e (j.natAdd 1)) = Y.L j ∧ D.R (e (j.natAdd 1)) = Y.R j) :
+        RepT (input stages 0) (embStk e D).L (embStk e D).R := by
+      intro j z
+      induction j using Fin.addCases with
+      | left j =>
+        obtain rfl : j = 0 := Subsingleton.elim _ _
+        simp only [input,Tapes.append,Fin.addCases_left,embStk,Function.comp_apply,site,swap_source_word]
+        apply Eq.trans _ (recordRead.src z).symm
+        congr 2
+        exact List.ofFn_congr size _
+      | right j =>
+        simpa only [input,Tapes.append,Fin.addCases_right,embStk,Function.comp_apply,(onBank j).1,(onBank j).2] using rep j z
+    refine ⟨embOvr fan owners.get D,embStk_ovr fan.injective owners D,D,
+      ⟨0,basis A a srcA Y repY reverseBank,basis B' b srcB Z repZ forwardBank,recordRead,?_⟩,
+      fun j hj => embOvr_off _ _ (disjoint j hj)⟩
+    intro l hl
+    exact ⟨(placed l).1.trans (freeX l hl).1,(placed l).2.trans (freeX l hl).2⟩
   let pack := fun js => statePlacedNormalized (U := U) ports (show rowSwapBlock.states ≤ Q by omega)
     swapStates_pos (Empty.elim : Empty → P) (packSchedule 16 js)
   let is := phasePackSchedule lo hi
@@ -1268,6 +1444,80 @@ theorem allocatedPhaseMove_host [M8.Machine.Net] {k : ℕ} (src : Fin k)
   intro budget child data u S liveS stockS
   obtain ⟨y,z,F,t,exec,time,user,rep,kept,_,action⟩ := useMove budget child data u S liveS stockS
   exact ⟨z,F,t,y,exec,time,user,rep,kept,action⟩
+
+open Cover.Fallback IntegerMultBounds.Networks.Certificates.PR589 RecursiveInterchangeLayout in
+/-- Install a finite family of paid MOVE calls on a single owner bank. The
+workspace and procedure name belong to the occurrence, even for equal pairs. -/
+theorem scheduledMoves_host [M8.Machine.Net] {k : ℕ} (stage : Fin 9) (run : Fin 32 × Fin 5) :
+    let edges := Geometry.Moves.phaseEdges.filter fun p => Geometry.moveRank p.1 p.2 != 0
+    let I := Fin edges.length
+    let edge := fun i : I => edges[i.val]'i.isLt
+    let child := fun i : I => phaseChildPositions.choose (stage,run,i)
+    ∀ src : I → Fin k,
+    ∃ (tapes : I → ℕ) (T states : ℕ) (ports : ∀ i, Fin (rowSwapBlock.tapes+35) ↪ Fin (tapes i))
+      (fan : Fin (k+2) ↪ Fin T) (bank : ∀ i, Fin (tapes i) ↪ Fin T),
+    ∀ {P U : Type} {Q : ℕ}, states ≤ Q → ∀ (localBody : ∀ i, P → Pr P (tapes i) Q prime U) (f : I → P),
+    let proc := fun (i : I) (g : P) => (i,g)
+    let body := fun g : I × P => embProg (bank g.1) (proc g.1) (localBody g.1 g.2)
+    ∃ base swaps : I → ℕ, ∀ (node : Descriptor) (w B rows : ℕ),
+    node.width = 64*(w+1) → node.rows = 142080*rows → node.beforeH = B*prime^(64*((w+1)*64)) →
+    let M := prime^(w+1)
+    let K := M^112*(node.beforeRows*rows*node.between*node.afterD)
+    let W := B*prime^(64*((w+1)*64))*K
+    let V := M^16*W
+    0 < W → ∀ record : I → List (Fin (prime+4)),
+    let desc := fun i => scheduledChild prime node (child i)
+    let regs := fun i => ((Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)).trans (ports i)
+    let stored := fun i => RecordReady (b := prime) (w := w) (d := 16) (W := W) (regs i) M.size W.size (record i)
+      SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0
+    let clean := fun i (D : Stacks (tapes i) prime) => ∀ l : Fin (rowSwapBlock.tapes+35), 35 ≤ l.val →
+      D.L (ports i l) = [] ∧ D.R (ports i l) = []
+    let live := fun (X : Fin k → Fin V → ZMod 2) (D : Stacks T prime) => RepT (PointwiseRoleGate.bank (a := prime)
+      (fun _ _ => blank) (fun _ => 0) (SparseRoleCircuit.encoded X) (FlatCoordinateSchedule.bits V))
+      (embStk fan D).L (embStk fan D).R
+    ∃ (position : ∀ i, Fin (volume prime (desc i)) ≃ Fin V) (stock : Stacks T prime → Prop),
+    (∀ i h, (position i h).val = (CopyChildLayout.packActive (desc i) h).val) ∧
+    (∀ owners, ∃ S, embStk fan S = owners ∧ stock S) ∧
+    (∀ S F, stock S → (∀ j, (∀ l, fan l ≠ j) → F.L j = S.L j ∧ F.R j = S.R j) → stock F) ∧
+    ∀ i, ∃ code, ∀ budget,
+    ((desc i).width < node.width → ∀ u D word, stored i word D → clean i D →
+      ∃ z F t changed, Exec (localBody i) (localBody i (f i)) (mk u D) t (mk z F) ∧ t ≤ budget ∧ z.user = u.user ∧
+        stored i changed F ∧ clean i F ∧ (∀ j, (∀ l, ports i l ≠ j) → F.L j = D.L j ∧ F.R j = D.R j) ∧
+        ∀ h, changed (position i h) = Shared50RecursiveNodeRows.transpose (one_dvd (desc i).rows) (word ∘ position i) h) →
+    ∀ data u S, live data S → stock S → ∃ z F t y, Exec body code (mk u S) t (mk z F) ∧
+      t ≤ budget+(base i+swaps i*swapVolumeRate w)*V ∧ z.user = u.user ∧ live (Function.update data (src i) y) F ∧
+      stock F ∧ ∀ s (j : Fin W), y (index (AffineFieldCoordinates.embed (AffineFieldProgram.run (selectedWord (w+1) (edge i)) s)) j) =
+        data (src i) (index (AffineFieldCoordinates.embed s) j) := by
+  classical
+  intro edges I edge child src
+  have mem (i : I) := List.mem_filter.mp (show edge i ∈ edges from List.getElem_mem ..)
+  have checked (i : I) := Geometry.Moves.phase_checked _ (mem i).1
+  have paid (i : I) : 0 < Geometry.moveRank (edge i).1 (edge i).2 := Nat.pos_of_ne_zero (bne_iff_ne.mp (mem i).2)
+  choose A B' tapes states ports fans a b layout using fun i => allocatedPhaseMove_host (src i) (edge i) (checked i) (paid i)
+  obtain ⟨T,fan,bank,shared,family⟩ := moveFamily_host tapes fans
+  refine ⟨tapes,T,Finset.univ.sup states,ports,fan,bank,?_⟩
+  intro P U Q capacity localBody f proc body
+  have fits (i) : states i ≤ Q := (Finset.le_sup (Finset.mem_univ i)).trans capacity
+  choose base swaps runMove using fun i => (layout i).2.2.2.2 (fits i) (localBody i) (f i)
+  refine ⟨base,swaps,?_⟩
+  intro node w B rows width split label M K W V hW record desc regs stored clean live
+  choose position offset calls using fun i => runMove i node (child i) w B rows (phaseChildPositions.choose_spec stage run i).1 width split label hW (record i) (fun _ => blank) 0
+  let owners : Stacks (k+2) prime := ⟨[],[],fun _ => [],fun _ => []⟩
+  have seeds (i) := (calls i).1 owners [] [] (fun z => by simp [readAt_nil_left,wordTape_nil]; rfl)
+  choose code step using fun i => (calls i).2
+  obtain ⟨prepare,frame,place⟩ := family _ _ (fun i => (layout i).1) (fun i => by
+    obtain ⟨S,_,ready⟩ := seeds i
+    exact ⟨S,ready⟩)
+  refine ⟨position,_,offset,prepare,frame,?_⟩
+  intro i
+  refine ⟨embProg (bank i) (proc i) (code i),?_⟩
+  intro budget recurse data u S represented ready
+  have project (D : Stacks T prime) : embStk (fans i) (embStk (bank i) D) = embStk fan D := by
+    simp only [embStk,Function.comp_def,shared]
+  obtain ⟨z,F,t,y,exec,time,user,rep,kept,action⟩ := step i budget recurse data (embDn (bank i) u) (embStk (bank i) S)
+    (by dsimp only; rw [project]; exact represented) (ready i)
+  obtain ⟨v,G,placed,same,view,stock⟩ := place localBody i (code i) u S z F t ready exec kept
+  exact ⟨v,G,t,y,placed,time,same.trans user,by dsimp only [live]; rw [view]; exact rep,stock,action⟩
 
 open M8.Machine.Segments SharedPlacementAlphabet in
 open M8.Machine.ArbitraryWidthHighExchangeShared (sourceWord) in
