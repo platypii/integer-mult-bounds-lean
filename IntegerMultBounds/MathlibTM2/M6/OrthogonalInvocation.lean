@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.M6.BitNodeCost
 public import IntegerMultBounds.MathlibTM2.M6.BitCopyChildLayout
 public import IntegerMultBounds.MathlibTM2.M6.OrthogonalPhase
 public import IntegerMultBounds.MathlibTM2.M6.OrthogonalScatter
@@ -335,5 +336,163 @@ theorem orthogonalRoleInvocation :
     ring
   exact (vol ▸ (show stage.cost ≤ C*V + _ from cost) : stage.cost ≤ _)
 
+
+/-- Run a local bank on its selected owners. Unselected tapes form a stationary
+frame, so placement adds no execution steps. -/
+noncomputable def placeOwnerBank {n k V : ℕ} (owner : Fin n ↪ Fin k)
+    (s : SharedBankStage.Stage _ n prime (phaseOwners (N := V))) :
+    SharedBankStage.Stage _ k prime (phaseOwners (N := V)) := by
+  classical
+  let pick := fun i : Fin k => ∃ j, owner j = i
+  let slot := fun i : Fin k => if h : pick i then (s.slots h.choose).castAdd k else i.natAdd s.tapes
+  let moved := fun (x : Fin k → Fin V → ZMod 2) i =>
+    if h : pick i then s.transform (x ∘ owner) h.choose else x i
+  let frame := fun (x : Fin k → Fin V → ZMod 2) =>
+    (⟨fun i => if pick i then 0 else (phaseOwners x).head i,
+      fun i => if pick i then fun _ => blank else (phaseOwners x).tape i⟩ : Tapes k prime)
+  have chosen (i : Fin k) (h : pick i) : owner h.choose = i := h.choose_spec
+  have payload (x : Fin k → Fin V → ZMod 2) (z : Fin n → Fin V → ZMod 2)
+      (t : Tapes s.tapes prime) (ht : SharedBank.payload t s.slots = phaseOwners z) :
+      SharedBank.payload (t.append (frame x)) slot = phaseOwners
+        (fun i => if h : pick i then z h.choose else x i) := by
+    apply congrArg₂ Tapes.mk <;> funext i <;> by_cases h : pick i
+    · simpa [slot,h,SharedBank.payload,Tapes.append,phaseOwners] using congrArg (fun b : Tapes n prime => b.head h.choose) ht
+    · simp [slot,h,frame,SharedBank.payload,Tapes.append,phaseOwners]
+    · simpa [slot,h,SharedBank.payload,Tapes.append,phaseOwners] using congrArg (fun b : Tapes n prime => b.tape h.choose) ht
+    · simp [slot,h,frame,SharedBank.payload,Tapes.append,phaseOwners]
+  have sep (i : Fin s.tapes) (j : Fin k) : i.castAdd k ≠ j.natAdd s.tapes := by
+    intro eqn
+    have h := congrArg Fin.val eqn
+    simp only [Fin.val_castAdd,Fin.val_natAdd] at h
+    omega
+  refine {
+    tapes := s.tapes+k, states := s.states, program := extend s.program k, transform := moved,
+    input := fun x => (s.input (x ∘ owner)).append (frame x),
+    output := fun x => (s.output (x ∘ owner)).append (frame x), slots := slot,
+    slots_injective := ?_, metadata := s.metadata.append (SharedBank.empty k prime), cost := s.cost,
+    input_payload := ?_, output_payload := fun x => payload x _ _ (s.output_payload _),
+    strip_input := ?_, realizes := ?_ }
+  · intro i j eqn
+    by_cases hi : pick i <;> by_cases hj : pick j <;> simp only [slot,hi,hj,↓reduceDIte] at eqn
+    · exact (chosen i hi).symm.trans ((congrArg owner (s.slots_injective (Fin.castAdd_injective _ _ eqn))).trans (chosen j hj))
+    · exact False.elim (sep _ _ eqn)
+    · exact False.elim (sep _ _ eqn.symm)
+    · exact Fin.natAdd_injective _ _ eqn
+  · intro x
+    convert payload x _ _ (s.input_payload (x ∘ owner)) using 2
+    funext i
+    by_cases h : pick i <;> simp [h,Function.comp_def,chosen]
+  · intro x
+    rw [← s.strip_input (x ∘ owner)]
+    have left (i : Fin s.tapes) : (∃ j, slot j = i.castAdd k) ↔ ∃ j, s.slots j = i := by
+      constructor
+      · rintro ⟨j,eqn⟩
+        by_cases h : pick j
+        · exact ⟨h.choose,by simpa [slot,h] using eqn⟩
+        · exact False.elim (sep i j (by simpa only [slot,h,↓reduceDIte] using eqn.symm))
+      · rintro ⟨j,rfl⟩
+        have h : pick (owner j) := ⟨j,rfl⟩
+        exact ⟨owner j,by simp [slot,h,owner.injective (chosen _ h)]⟩
+    have right (i : Fin k) : (∃ j, slot j = i.natAdd s.tapes) ↔ ¬ pick i := by
+      constructor
+      · rintro ⟨j,eqn⟩
+        by_cases h : pick j
+        · exact False.elim (sep (s.slots h.choose) i (by simpa only [slot,h,↓reduceDIte] using eqn))
+        · exact (show j = i by simpa [slot,h] using eqn) ▸ h
+      · intro h
+        exact ⟨i,by simp [slot,h]⟩
+    apply congrArg₂ Tapes.mk <;> funext j <;> induction j using Fin.addCases
+    all_goals first | simp [SharedBank.strip,Tapes.append,left,SharedBank.empty] | skip
+    all_goals
+      rename_i i
+      intro off
+      have hit : pick i := by
+        by_contra h
+        obtain ⟨j,eqn⟩ := (right i).2 h
+        exact off j eqn
+      simp [frame,hit]
+  · intro x
+    apply ((s.realizes (x ∘ owner)).extend (frame x)).consequence _ _ le_rfl
+    · rintro t rfl; exact ⟨_,rfl,rfl⟩
+    · rintro t ⟨_,rfl,rfl⟩; rfl
+
+/-- Place the invocation on the certified 661 owners for this stage, replica
+and row class. Every other owner retains its word. -/
+theorem orthogonalHostedRun {V : ℕ} (n : Fin 9) (r : Fin 32) (d : Fin 5)
+    (localRun : SharedBankStage.Stage _ 661 prime (phaseOwners (N := V))) :
+    let owner := ownerTape n r d
+    ∃ stage : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V)),
+      stage.cost = localRun.cost ∧ ∀ x,
+      (∀ i, stage.transform x (owner i) = localRun.transform (x ∘ owner) i) ∧
+      ∀ j, (∀ i, owner i ≠ j) → stage.transform x j = x j := by
+  classical
+  intro owner
+  let emb : Fin 661 ↪ Fin 142081 := ⟨owner,ownerTape_injective n r d⟩
+  refine ⟨placeOwnerBank emb localRun,rfl,?_⟩
+  intro x
+  constructor
+  · intro i
+    have h : ∃ j, emb j = owner i := ⟨i,rfl⟩
+    simp only [placeOwnerBank,h,↓reduceDIte]
+    exact congrArg (localRun.transform (x ∘ owner)) (emb.injective h.choose_spec)
+  · intro j off
+    have h : ¬ ∃ i, emb i = j := fun ⟨i,eqn⟩ => off i eqn
+    simp only [placeOwnerBank,h,↓reduceDIte]
+
+/-- Execute the 32 replicas and five classes in certificate order. Reads of
+overlapping owners use the preceding invocation's output. -/
+theorem orthogonalHostedSweep :
+    ∃ C : ℕ, ∀ (n : Fin 9) (v : Descriptor) (w rows : ℕ) (hw : 0 < w)
+      (width : v.width = 64*w) (split : v.rows = 142080*rows),
+      let m := prime^w
+      let W := m^112 * (v.beforeRows*rows*v.beforeH*v.between*v.afterD)
+      let V := m^16*W
+      let desc := fun r => Cover.Fallback.rankDescriptor prime (r*w) ((64-r)*w) (role v 142080)
+      let G := Swap.Modular.reduce m (orthogonalBasis.map (Nat.cast : ℕ → ℚ))
+      let encode := M8.Exchange.transform G (Swap.Modular.reduce m (M8.ReversedExchange.rev 8)*G)
+      let addr := fun l s (k : Fin W) => FlatCoordinateLayout.index (AffineFieldCoordinates.embed
+        (encode (M8.Exchange.exchange (Swap.Modular.reduce m (Nine.labelProj l)) s))) k
+      ∀ (price : Descriptor → ℕ), 0 < W →
+      (∀ r, 0 < r → ∀ hr : r ≤ 8, (desc r).width < v.width →
+        let pos := CopyChildLayout.orthogonalChildPosition v w rows r hr split
+        ∃ child : SharedBankStage.Stage _ 1 prime (@portOwner V), child.cost ≤ price (desc r) ∧
+          ∀ x, M8.RevMachine.RevT prime w r (desc r) (M8.RevMachine.ext (x ∘ pos))
+            (M8.RevMachine.ext (child.transform x ∘ pos))) →
+      ∃ piece : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V)),
+        piece.cost ≤ 160*(C*volume prime (role v 142080) + (Geometry.Moves.localPaid.map (price ∘ desc)).sum + 1) ∧
+        ∀ x, stageRuns.foldr (fun run next a => ∃ b,
+          (∀ s k (i : Fin 661), b (ownerTape n run.1 run.2 i) (addr (Frames.finalRefs i) s k) =
+            Circuit.run (program.map RawGate.toCircuit) (Copy.extendStored (fun j : Fin 661 =>
+              a (ownerTape n run.1 run.2 j) (addr (Frames.snapshot Frames.initialRefs j) s k))) i) ∧
+          (∀ j, (∀ i, ownerTape n run.1 run.2 i ≠ j) → b j = a j) ∧ next b)
+          (fun a => a = piece.transform x) x := by
+  obtain ⟨C,invocation⟩ := orthogonalRoleInvocation
+  refine ⟨C,?_⟩
+  intro n v w rows hw width split m W V desc G encode addr price live supply
+  obtain ⟨localRun,cost,reads⟩ := invocation v w rows hw width split price live supply
+  choose hosted time action using fun k : Fin 32 × Fin 5 => orthogonalHostedRun n k.1 k.2 localRun
+  let compile := fun ks : List (Fin 32 × Fin 5) => SharedBankStage.compile
+    (phaseOwners (N := V)) (by decide : 0 < 142081) (ks.map hosted)
+  refine ⟨compile stageRuns,?_,?_⟩
+  · have bill (ks : List (Fin 32 × Fin 5)) : (compile ks).cost = ks.length*(localRun.cost+1) := by
+      induction ks with
+      | nil => simp [compile,SharedBankStage.compile_cost]
+      | cons k ks ih =>
+        change (hosted k).cost + (compile ks).cost + 1 = _
+        rw [time,ih,List.length_cons,Nat.succ_mul]
+        omega
+    rw [bill,stageRuns_length]
+    exact Nat.mul_le_mul_left _ (Nat.add_le_add_right cost 1)
+  · suffices trace : ∀ (ks : List (Fin 32 × Fin 5)) x, ks.foldr _ (fun a => a = (compile ks).transform x) x from
+      trace stageRuns
+    intro ks
+    induction ks with
+    | nil => intro x; rfl
+    | cons run ks ih =>
+      intro x
+      refine ⟨(hosted run).transform x,?_,(action run x).2,ih _⟩
+      intro s k i
+      rw [(action run x).1 i]
+      exact reads _ s k i
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
