@@ -262,6 +262,166 @@ theorem phaseRead_label {k w B K : ℕ} (owner : Fin 661 ↪ Fin k) (r : Fin 661
   rw [← pos,M8.RevMachine.ext_cast,M8.RevMachine.ext_apply]
   simp [phaseRead,Copy.extendStored,r.isLt,i]
 
+open IntegerMultBounds.MathlibTM2.Cover in
+private theorem phaseRead_active {k w B K : ℕ} (owner : Fin 661 ↪ Fin k) (r : Fin 661)
+    (data : Fin k → Fin ((prime^w)^16*(B*prime^(64*(w*64))*K)) → ZMod 2)
+    (g : LabelPadding.Label 64 w) (z : LabelEntry.Cell (copyLabelLayout w B K) B)
+    (s : Swap.Shear.State (Fin 8) (ZMod (prime^w))) :
+    chartRead (fun i => data (owner r) (Fin.cast (copyLabel_volume w B K) i)) g {z with a := copyActive s} =
+      phaseRead owner data (labelSpectator g z) r.val s := by
+  have eq := phaseRead_label owner r data g {z with a := copyActive s}
+  simpa only [Equiv.symm_apply_apply,labelSpectator] using eq
+
+open IntegerMultBounds.MathlibTM2.Cover in
+/-- Before chart routing, the physical fanout executes the scatter window
+separately on each label, including arbitrary dirty rows. -/
+theorem phaseRead_fanout {w B K : ℕ} {n : Fin 9} {r : Fin 32} {d : Fin 5}
+    {life : Copy.Lifecycle} (scheduled : life ∈ Copy.lifecycles) {x y}
+    (fanout : CopyFanoutEffect n r d life scheduled w B K x y)
+    (g : LabelPadding.Label 64 w) (z : LabelEntry.Cell (copyLabelLayout w B K) B) :
+    let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n r d,ownerTape_injective n r d⟩
+    let j := labelSpectator g z
+    phaseRead owner y j = scatterWindow (selectedWord w) life (phaseRead owner x j) := by
+  intro owner j
+  obtain ⟨_,_,other,add⟩ := fanout
+  obtain ⟨nodup,noTmp,_,_⟩ := Copy.wellformed life scheduled
+  funext i s
+  unfold scatterWindow
+  by_cases tmp : i = 661
+  · subst i
+    simp [phaseRead,Copy.extendStored]
+  rw [Function.update_of_ne tmp,Copy.addTargets_eq _ nodup noTmp,Function.update_self,Function.update_of_ne tmp]
+  by_cases hit : i ∈ life.targets
+  · let k : Fin 661 := ⟨i,((Copy.target_bounds life scheduled i hit).2.trans (by decide : 222 < 661))⟩
+    let src : Fin 661 := ⟨life.source,(Copy.source_bounds life scheduled).2⟩
+    let cell : LabelEntry.Cell (copyLabelLayout w B K) B := {z with a := copyActive s}
+    have read := add k hit g cell
+    let move := AffineFieldProgram.run (selectedWord w (life.sourceFrame,0))
+    have moved : copyActive.symm cell.a = s := copyActive.symm_apply_apply s
+    simp only [moved] at read
+    rw [ite_eq_left hit]
+    exact (phaseRead_active owner k y g z s).symm.trans (read.trans
+      (congrArg₂ (· + ·) (phaseRead_active owner k x g z s) (phaseRead_active owner src x g z (move s))))
+  · rw [ite_eq_right hit]
+    by_cases hi : i < 661
+    · let k : Fin 661 := ⟨i,hi⟩
+      have keep := other (owner k) (Fin.castSucc_ne_last _) (by
+        intro h mem eq
+        have same : h.val = i := congrArg Fin.val (owner.injective eq)
+        exact hit (same ▸ mem))
+      simp only [phaseRead,Copy.extendStored,hi,↓reduceDIte]
+      exact congrFun keep _
+    · simp [phaseRead,Copy.extendStored,hi]
+
+open IntegerMultBounds.MathlibTM2.Cover in
+/-- All nine common-coordinate windows execute the certified COPY word
+independently at each row, with one child charge per window. -/
+theorem commonScatter_stage [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
+    (engine : CopyTranspose := CopyTranspose.original) :
+    ∃ C : ℕ, ∀ w B K, 0 < w → 0 < B → 0 < K →
+      let W := B*prime^(64*(w*64))*K
+      let V := (prime^w)^16*W
+      let hs := fun i => FlatCoordinateSchedule.bits (RecursiveDimensionBank.values (copyChild w W) i)
+      let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n r d,ownerTape_injective n r d⟩
+      ∃ stage : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V)),
+        stage.cost ≤ C*V + 9*engine.time (copyChild w W) hs + 9 ∧
+        (∀ x g (z : LabelEntry.Cell (copyLabelLayout w B K) B),
+          phaseRead owner (stage.transform x) (labelSpectator g z) =
+            Copy.run (selectedFrame w) Copy.lifecycles (phaseRead owner x (labelSpectator g z))) ∧
+        ∀ x i, i ≠ Fin.last 142080 → (∀ k, owner k ≠ i) → stage.transform x i = x i := by
+  let Life := {l // l ∈ Copy.lifecycles}
+  let spec := fun l : Life => commonCopy_stage n r d l.val l.property engine
+  let coeff := fun l : Life => (spec l).choose
+  refine ⟨(Copy.lifecycles.attach.map coeff).sum,?_⟩
+  intro w B K hw hB hK W V hs owner
+  let window := fun l : Life => (spec l).choose_spec w B K hw hB hK
+  let stage := fun l : Life => (window l).choose
+  let compile := fun ls : List Life => SharedBankStage.compile (phaseOwners (N := V)) (by decide) (ls.map stage)
+  let child := engine.time (copyChild w W) hs
+  have bound (ls : List Life) : (compile ls).cost ≤ (ls.map coeff).sum*V + ls.length*child + ls.length := by
+    induction ls with
+    | nil => simp [compile,SharedBankStage.compile_cost]
+    | cons l ls ih =>
+      change (stage l).cost + (compile ls).cost + 1 ≤ _
+      have step : (stage l).cost ≤ coeff l*V + child := (window l).choose_spec.2
+      simp only [List.map_cons,List.sum_cons,List.length_cons]
+      nlinarith only [step,ih]
+  refine ⟨compile Copy.lifecycles.attach,?_,?_,?_⟩
+  · have size : Copy.lifecycles.attach.length = 9 := List.length_attach.trans Copy.copy_count
+    have price := bound Copy.lifecycles.attach
+    rw [size] at price
+    exact price
+  · intro x g z
+    let read := fun x => phaseRead (w := w) owner x (labelSpectator g z)
+    have action (ls : List Life) (x) : read ((compile ls).transform x) =
+        (ls.map Subtype.val).foldl (fun b l => scatterWindow (selectedWord w) l b) (read x) := by
+      induction ls generalizing x with
+      | nil => rfl
+      | cons l ls ih =>
+        change read ((compile ls).transform ((stage l).transform x)) = _
+        rw [ih]
+        have step := phaseRead_fanout l.property ((window l).choose_spec.1 x) g z
+        change read ((stage l).transform x) = _ at step
+        rw [step]
+        rfl
+    have eq := action Copy.lifecycles.attach x
+    rw [List.attach_map_subtype_val] at eq
+    exact eq.trans ((modular_scatter w).choose_spec.2.2.2.1 _)
+  · intro x i permanent outside
+    have keep (ls : List Life) (x) : (compile ls).transform x i = x i := by
+      induction ls generalizing x with
+      | nil => rfl
+      | cons l ls ih =>
+        have step := ((window l).choose_spec.1 x).2.2.1 i permanent (fun k _ => outside k)
+        exact (ih ((stage l).transform x)).trans step
+    exact keep _ _
+
+open IntegerMultBounds.MathlibTM2.Cover in
+/-- In the common layout both scalar phases and the intervening fanouts
+execute the selected word at every independent physical row. -/
+theorem commonInvocation_stage [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
+    (engine : CopyTranspose := CopyTranspose.original) :
+    ∃ C : ℕ, ∀ w B K, 0 < w → 0 < B → 0 < K →
+      let W := B*prime^(64*(w*64))*K
+      let V := (prime^w)^16*W
+      let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n r d,ownerTape_injective n r d⟩
+      let bill := fun (gates : List RawGate) (current : ℕ → ℕ) =>
+        let code := FramedCircuit.compile (fun i => selectedFrame w (current i))
+          (gates.map (Frames.framedGate (selectedFrame w)))
+        (code.map (scalarWork V)).sum + ((Frames.edges gates current).map (phaseEdgeBudget owner w W)).sum + code.length
+      let hs := fun i => FlatCoordinateSchedule.bits (RecursiveDimensionBank.values (copyChild w W) i)
+      ∃ stage : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V)),
+        stage.cost ≤ bill (sectionD++sectionA) (Frames.snapshot Frames.initialRefs) +
+          (C*V + 9*engine.time (copyChild w W) hs + 9) +
+          bill (sectionB++sectionC) (Frames.scatterFinish Frames.beforeScatter) + 2 ∧
+        (∀ x g (z : LabelEntry.Cell (copyLabelLayout w B K) B),
+          phaseRead owner (stage.transform x) (labelSpectator g z) =
+            runSelected (selectedFrame w) (selectedWord w) (phaseRead owner x (labelSpectator g z))) ∧
+        ∀ x i, i ≠ Fin.last 142080 → (∀ k, owner k ≠ i) → stage.transform x i = x i := by
+  obtain ⟨C,scatter⟩ := commonScatter_stage n r d engine
+  refine ⟨C,?_⟩
+  intro w B K hw hB hK W V owner bill hs
+  have hW : 0 < W := Nat.mul_pos (Nat.mul_pos hB (pow_pos Shared50ModularControl.prime_prime.pos _)) hK
+  obtain ⟨first,firstCost,firstRead,firstOff⟩ := invocationPhase_stage owner hw hW false
+  obtain ⟨last,lastCost,lastRead,lastOff⟩ := invocationPhase_stage owner hw hW true
+  obtain ⟨mid,midCost,midRead,midOff⟩ := scatter w B K hw hB hK
+  refine ⟨SharedBankStage.compose (SharedBankStage.compose first mid) last,?_,?_,?_⟩
+  · change first.cost + mid.cost + 1 + last.cost + 1 ≤ _
+    change first.cost ≤ bill (sectionD++sectionA) (Frames.snapshot Frames.initialRefs) at firstCost
+    change last.cost ≤ bill (sectionB++sectionC) (Frames.scatterFinish Frames.beforeScatter) at lastCost
+    change mid.cost ≤ C*V+9*engine.time (copyChild w W) hs+9 at midCost
+    omega
+  · intro x g z
+    let j := labelSpectator g z
+    change phaseRead owner (last.transform (mid.transform (first.transform x))) j = _
+    rw [lastRead]
+    unfold runSelected
+    rw [final_alignment_identity,(modular_scatter w).choose_spec.2.2.2.1]
+    apply congrArg (runPhase (selectedWord w) _ _)
+    exact (midRead (first.transform x) g z).trans (congrArg (Copy.run (selectedFrame w) Copy.lifecycles) (firstRead x j))
+  · intro x i permanent outside
+    exact (lastOff _ i outside).trans ((midOff _ i permanent outside).trans (firstOff x i outside))
+
 open IntegerMultBounds.MathlibTM2.Cover RecursiveInterchangeLayout in
 noncomputable def scatterRead {w B K : ℕ} (n : Fin 9) (r : Fin 32) (d : Fin 5)
     (g : Matrix (Fin 64) (Fin 64) (ZMod (prime^w))) (z : LabelEntry.Cell (copyLabelLayout w B K) B)

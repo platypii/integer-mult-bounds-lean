@@ -595,6 +595,65 @@ theorem copyLabel_window_runs [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin
   obtain ⟨exec,_,_⟩ := (run w hw).2.2 hW data bs count
   exact ⟨_,exec,copyFanout_effect n r d life scheduled w B K data⟩
 
+open M8.Machine.ArbitraryWidthOriginalRun in
+private theorem commonCopyPrepared_stage [M8.Machine.Net] {k w W V states : ℕ}
+    (A D : List (FlatCoordinateSchedule.Op 16)) (bs : List Bool) (hs : Fin 6 → List Bool)
+    (machine : Program _ states prime)
+    (transform : (Fin k → Fin V → ZMod 2) → Fin k → Fin V → ZMod 2) (cost : ℕ)
+    (run : ∀ x,
+        let bank := fun (data : Fin k → Fin V → ZMod 2) => PointwiseRoleGate.bank (a := prime) (fun _ _ => blank) (fun _ => 0)
+          (SparseRoleCircuit.encoded data) bs
+        HoareTime machine (fun z => z = copyPrepared (w := w) (W := W) A D (bank x)
+            (FixedHeaderBankCopy.empty 6) (copyHeaderInput w W))
+          (fun z => z = copyPrepared (w := w) (W := W) A D (bank (transform x))
+            (FixedHeaderBankCopy.headerBank hs) (copyHeaderOutput w W)) cost) :
+    ∃ stage : SharedBankStage.Stage _ k prime (phaseOwners (N := V)),
+      stage.transform = transform ∧ stage.cost = cost := by
+  let controls := CountedLoopReuseAlphabet.controls (a := prime) CountedLoopReuseAlphabet.empty
+    (CountedLoopReuseAlphabet.binary bs) 1 1
+  let prep := fun x => copyPrepared (w := w) (W := W) A D ((phaseOwners (k := k) (N := V) x).append controls)
+  let input := fun x => prep x (FixedHeaderBankCopy.empty 6) (copyHeaderInput w W)
+  let output := fun x => prep (transform x) (FixedHeaderBankCopy.headerBank hs) (copyHeaderOutput w W)
+  let tapeCount {t q : ℕ} (_ : Program t q prime) := t
+  let slots := fun i : Fin k => Fin.castLE (by dsimp [tapeCount]; omega : k ≤ tapeCount machine) i
+  exact ⟨{ tapes := _, states := states, program := machine, transform := transform, input := input,
+           output := output, slots := slots, slots_injective := Fin.castLE_injective _,
+           metadata := SharedBank.strip (input 0) slots, cost := cost, realizes := run,
+           input_payload := fun x => copyLabel_payload (w := w) (W := W) A D (phaseOwners x) controls
+             (FixedHeaderBankCopy.empty 6) (copyHeaderInput w W) slots (fun _ => rfl),
+           output_payload := fun x => copyLabel_payload (w := w) (W := W) A D (phaseOwners (transform x)) controls
+             (FixedHeaderBankCopy.headerBank hs) (copyHeaderOutput w W) slots (fun _ => rfl),
+           strip_input := fun x => copyPrivate (w := w) (W := W) A D (phaseOwners x) (phaseOwners 0) controls
+             (FixedHeaderBankCopy.empty 6) (copyHeaderInput w W) slots (fun _ => rfl) },rfl,rfl⟩
+
+open IntegerMultBounds.Networks.Certificates.PR589 M8.Machine.ArbitraryWidthOriginalRun in
+/-- A COPY window on common-coordinate rows is already a permanent-bank
+stage. Its only recursive charge is the rank-seven child. -/
+theorem commonCopy_stage [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
+    (life : Copy.Lifecycle) (scheduled : life ∈ Copy.lifecycles) (engine : CopyTranspose := CopyTranspose.original) :
+    ∃ C : ℕ, ∀ w B K, 0 < w → 0 < B → 0 < K →
+      let W := B*prime^(64*(w*64))*K
+      let V := (prime^w)^16*W
+      let hs := fun i => FlatCoordinateSchedule.bits (RecursiveDimensionBank.values (copyChild w W) i)
+      ∃ stage : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V)),
+        (∀ x, CopyFanoutEffect n r d life scheduled w B K x (stage.transform x)) ∧
+        stage.cost ≤ C*V + engine.time (copyChild w W) hs := by
+  obtain ⟨A,D,states,machine,runs⟩ := copyLabel_window_runs n r d life scheduled engine
+  let basis := FlatCoordinateCleanSchedule.constant A + FlatCoordinateCleanSchedule.constant D
+  refine ⟨504+basis+76*(life.targets.length+2),?_⟩
+  intro w B K hw hB hK W V hs
+  let bs := FlatCoordinateSchedule.bits V
+  choose transform exec effect using fun x => runs w B K hw hB hK x bs (FlatCoordinateSchedule.bits_value V)
+  have ready := commonCopyPrepared_stage (w := w) (W := W) (V := V) A D bs hs machine transform
+    (copyWindowWork basis life.targets.length V bs.length + engine.time (copyChild w W) hs) exec
+  obtain ⟨stage,action,price⟩ := ready
+  refine ⟨stage,fun x => action.symm ▸ effect x,?_⟩
+  rw [price]
+  have hp := Shared50ModularControl.prime_prime.pos
+  have pos : 0 < V := by dsimp [V,W]; positivity
+  exact Nat.add_le_add_right (copyWindowWork_linear basis life.targets.length pos bs
+    (FlatCoordinateSchedule.bits_value V) (FlatCoordinateSchedule.bits_canonical V)) _
+
 open IntegerMultBounds.Networks.Certificates.PR589 in
 /-- Observable owner-bank action of one scheduled window, including the
 relative source label and preservation of every non-target role. -/
