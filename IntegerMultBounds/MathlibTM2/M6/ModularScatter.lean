@@ -67,6 +67,7 @@ theorem modular_scatter (w : ℕ) :
       (∀ bank : ℕ → E, Copy.lifecycles.foldl (fun b l => scatterWindow word l b) bank =
         Copy.run frame Copy.lifecycles bank) ∧
       (∃ P : Fin 636 → Matrix (Fin 8) (Fin 8) R,
+        (∀ l, P l = (selectedProjector l).map (Swap.Modular.ratMod (prime^w))) ∧
         (∀ l, P l * P l = P l) ∧
         (∀ l, LinearMap.range (P l).mulVecLin = translatedLabel w l.val) ∧
         ∀ (l : Fin 636) (f : E) x, frame l.val f x = f (exchange (P l) x)) ∧
@@ -77,7 +78,7 @@ theorem modular_scatter (w : ℕ) :
           (FramedCircuit.moduleRun (sectionscatter.map RawGate.toCircuit) (Copy.extendStored stored) i.val) := by
   intro R E word
   obtain ⟨_, _, widths⟩ := modular_move_profile.choose_spec
-  obtain ⟨P, idem, commute, images, spec, profile⟩ := widths w
+  obtain ⟨P, idem, commute, rational, images, spec, profile⟩ := widths w
   change ∀ p (h : Geometry.Moves.CheckedPair p) s, AffineFieldProgram.run (word p) s =
     exchange (P ⟨p.2,h.2.1⟩) (exchange (P ⟨p.1,h.1⟩) s) at spec
   let frame := streamFrame P idem
@@ -114,7 +115,7 @@ theorem modular_scatter (w : ℕ) :
     | cons l ls ih =>
       rw [List.foldl_cons, step l (hl _ List.mem_cons_self), Copy.run]
       exact ih (fun k hk => hl _ (List.mem_cons_of_mem _ hk)) _
-  refine ⟨frame, read, invol, profile, fold _ (fun _ h => h), ⟨P,idem,images,?_⟩, ?_⟩
+  refine ⟨frame, read, invol, profile, fold _ (fun _ h => h), ⟨P,rational,idem,images,?_⟩, ?_⟩
   · intro l f x
     change f (exchange (P ⟨l.val % 636, _⟩) x) = _
     rw [show (⟨l.val % 636, Nat.mod_lt _ (by decide)⟩ : Fin 636) = l from Fin.ext (Nat.mod_eq_of_lt l.isLt)]
@@ -133,8 +134,18 @@ theorem selectedFrame_projectors (w : ℕ) :
       (∀ l, P l * P l = P l) ∧
       (∀ l, LinearMap.range (P l).mulVecLin = translatedLabel w l.val) ∧
       ∀ (l : Fin 636) (f : Swap.Shear.State (Fin 8) (ZMod (prime^w)) → ZMod 2) x,
-        selectedFrame w l.val f x = f (exchange (P l) x) :=
-  (modular_scatter w).choose_spec.2.2.2.2.1
+        selectedFrame w l.val f x = f (exchange (P l) x) := by
+  obtain ⟨P,_,h⟩ := (modular_scatter w).choose_spec.2.2.2.2.1
+  exact ⟨P,h⟩
+
+/-- The same bounded rational matrix determines the physical read at every width. -/
+theorem selectedFrame_rational (w : ℕ) (l : Fin 636)
+    (f : Swap.Shear.State (Fin 8) (ZMod (prime^w)) → ZMod 2) x :
+    selectedFrame w l.val f x =
+      f (exchange ((selectedProjector l).map (Swap.Modular.ratMod (prime^w))) x) := by
+  obtain ⟨P,reduced,_,_,read⟩ := (modular_scatter w).choose_spec.2.2.2.2.1
+  rw [← reduced l]
+  exact read l f x
 
 /-- A candidate for a port boundary with the same image as the physical
 projector satisfies both absorption equations used by the port correction. -/

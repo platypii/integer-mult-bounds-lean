@@ -39,7 +39,7 @@ structure CopyBasisPass (C : Matrix (Fin 8) (Fin 8) ℚ) : Prop where
   legal (w : ℕ) : ∀ op ∈ (M8.Exchange.transformOps C C).map
     (AffineFieldProgram.mapOp (Swap.Modular.ratMod (prime^w))), AffineFieldProgram.Legal op
 
-private theorem transform_nonrecursive (C : Matrix (Fin 8) (Fin 8) ℚ) :
+theorem transform_nonrecursive (C : Matrix (Fin 8) (Fin 8) ℚ) :
     ∀ op ∈ M8.Exchange.transformOps C C, AffineFieldCoordinates.Nonrecursive op := by
   intro op member
   simp only [M8.Exchange.transformOps, AffineFieldProgram.compile, List.flatMap_cons, List.flatMap_nil,
@@ -61,6 +61,7 @@ theorem modular_move_profile :
     ∃ P : Fin 636 → Matrix (Fin 8) (Fin 8) R,
       (∀ l, P l * P l = P l) ∧
       (∀ i j : Fin 636, CheckedPair (i.val, j.val) → P i * P j = P j * P i) ∧
+      (∀ l, P l = (selectedProjector l).map (Swap.Modular.ratMod (prime^w))) ∧
       (∀ l, LinearMap.range (P l).mulVecLin = translatedLabel w l.val) ∧
       (∀ p (h : CheckedPair p), ∀ s, AffineFieldProgram.run (word p) s =
           exchange (P ⟨p.2, h.2.1⟩) (exchange (P ⟨p.1, h.1⟩) s)) ∧
@@ -78,7 +79,7 @@ theorem modular_move_profile :
       refine ⟨segments _ _ checked _ sub (transform_nonrecursive B), ?_⟩
       intro w op hop
       obtain ⟨a,ha,rfl⟩ := List.mem_map.mp hop
-      obtain ⟨_,_,_,_,_,edge⟩ := widths w
+      obtain ⟨_,_,_,_,_,_,edge⟩ := widths w
       exact (edge _ _ checked).1 _ (List.mem_map_of_mem (sub a ha))
     refine ⟨C, by simpa only [lookup,dite_eq_left checked] using shape, pass _ ?_, pass _ ?_⟩
     all_goals intro op hop; rw [shape]; unfold rationalMoveWord AffineFieldProgram.compile
@@ -90,7 +91,7 @@ theorem modular_move_profile :
     apply segments ⟨p.1,h.1⟩ ⟨p.2,h.2.1⟩ h _ _ atoms
     simpa only [lookup,dite_eq_left h] using sub
   intro w R word
-  obtain ⟨P, idem, commute, images, _, programs⟩ := widths w
+  obtain ⟨P, idem, commute, rational, images, _, programs⟩ := widths w
   have spec (p : ℕ × ℕ) (h : CheckedPair p) :
       (∀ op ∈ word p, AffineFieldProgram.Legal op) ∧
       AffineFieldProgram.interchanges (word p) = Geometry.moveRank p.1 p.2 ∧
@@ -106,7 +107,7 @@ theorem modular_move_profile :
   have phase := (counts _ phase_checked).trans phase_ranks
   have copies := (counts _ retainedCopy_checked.1).trans
     ((profile _ retainedCopy_checked.1).trans retainedCopy_checked.2)
-  refine ⟨P, idem, commute, images, fun p h => (spec p h).2.2.2, fun p h => (spec p h).1, fun p h => (spec p h).2.2.1, phase,
+  refine ⟨P, idem, commute, rational, images, fun p h => (spec p h).2.2.2, fun p h => (spec p h).1, fun p h => (spec p h).2.2.1, phase,
     (counts _ final_checked.1).trans final_ranks, copies, ?_⟩
   rw [phase, copies, ← phase_ranks, ← copyRanks_eq]
   exact localPaid_histogram

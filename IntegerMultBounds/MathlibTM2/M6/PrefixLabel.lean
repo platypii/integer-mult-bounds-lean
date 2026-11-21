@@ -289,6 +289,36 @@ theorem compatible_label_frames :
     (fun k => fixes j (lines k) (incl _ (members k))) x
   simpa only [eq] using h
 
+/-- Coordinate projection onto the initial segment used to interpolate a label. -/
+def prefixMask (R : Type*) [Zero R] [One R] (d : ℕ) : Matrix (Fin 8) (Fin 8) R :=
+  diagonal fun i => if i.val < d then 1 else 0
+
+private theorem prefixProjector_mask {R : Type*} [CommRing R] {d : ℕ} (hd : d ≤ 8)
+    (B : Matrix (Fin d) (Fin 8) R) (norm : B.submatrix id (Fin.castLE hd) = 1) :
+    let P := prefixProjector hd B
+    let E := prefixMask R d
+    P*E=P ∧ E*P=E := by
+  intro P E
+  constructor
+  · ext i j
+    by_cases h : j.val < d <;> simp [P,E,prefixMask,mul_diagonal,prefixProjector_entry,h]
+  · ext i j
+    by_cases hi : i.val < d
+    · by_cases hj : j.val < d
+      · have e := congrFun (congrFun norm ⟨j.val,hj⟩) ⟨i.val,hi⟩
+        by_cases eq : i=j
+        · subst j
+          simpa [P,E,prefixMask,diagonal_mul,prefixProjector_entry,hi] using e
+        · have ne : (⟨j.val,hj⟩ : Fin d) ≠ ⟨i.val,hi⟩ :=
+            fun h => eq (Fin.ext (congrArg Fin.val h).symm)
+          simpa [P,E,prefixMask,diagonal_mul,prefixProjector_entry,hi,hj,
+            diagonal_apply_ne _ eq,Matrix.one_apply_ne ne,Matrix.submatrix_apply] using e
+      · have ne : i ≠ j := fun eq => hj (eq ▸ hi)
+        simp [P,E,prefixMask,diagonal_mul,prefixProjector_entry,hi,hj,diagonal_apply_ne _ ne]
+    · by_cases eq : i=j
+      · subst j; simp [E,prefixMask,diagonal_mul,hi]
+      · simp [E,prefixMask,diagonal_mul,hi,diagonal_apply_ne _ eq]
+
 /-- All modular labels admit lower triangular projectors in the same coordinates.
 Both products for a nested pair equal its smaller projector. -/
 theorem compatible_label_projectors :
@@ -297,6 +327,7 @@ theorem compatible_label_projectors :
       (∀ l i j, (Q l i j).den.Coprime (prime ^ w) ∧ P l i j = Swap.Modular.ratMod (prime ^ w) (Q l i j)) ∧
       (∀ l i j, i < j → P l i j = 0) ∧
       (∀ l i, P l i i = if i.val < Geometry.Dimensions.value l.val then 1 else 0) ∧
+      (∀ l, let E := prefixMask R (Geometry.Dimensions.value l.val); P l*E=P l ∧ E*P l=E) ∧
       (∀ i, LinearMap.range (P i).mulVecLin = translatedLabel w i.val) ∧
       ∀ i j : Fin 636, (∀ k ∈ Frames.labels i.val, k ∈ Frames.labels j.val) →
         P j * P i = P i ∧ P i * P j = P i := by
@@ -313,7 +344,7 @@ theorem compatible_label_projectors :
   obtain ⟨B, bound, reduced, norm, images, nested⟩ := frames w
   refine ⟨fun i => prefixProjector (bound i) (B i), ?_,
     fun i => (prefixProjector_shape _ _ (norm i)).1,
-    fun i => (prefixProjector_shape _ _ (norm i)).2, images, ?_⟩
+    fun i => (prefixProjector_shape _ _ (norm i)).2, fun i => prefixProjector_mask _ _ (norm i), images, ?_⟩
   · intro l i j
     simp only [prefixProjector_entry, Q]
     split

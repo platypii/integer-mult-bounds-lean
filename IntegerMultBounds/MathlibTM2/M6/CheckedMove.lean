@@ -40,6 +40,22 @@ def MoveInterval (i j : Fin 636) (word : List (AffineFieldProgram.Op (Fin 8) ℚ
   let e := Geometry.Dimensions.value j.val
   ∃ C : Matrix (Fin 8) (Fin 8) ℚ, word = rationalMoveWord (min d e) (max d e) C
 
+/-- Rational prefix projector used to compile every precision of the selected word. -/
+noncomputable def selectedProjector := compatible_label_projectors.choose
+
+theorem selectedProjector_height (l i j) :
+    M8.Height.ht (selectedProjector l i j) ≤ 2^100 :=
+  compatible_label_projectors.choose_spec.1 l i j
+
+theorem selectedProjector_mask (w : ℕ) (l : Fin 636) :
+    let P := (selectedProjector l).map (Swap.Modular.ratMod (prime^w))
+    let E := prefixMask (ZMod (prime^w)) (Geometry.Dimensions.value l.val)
+    P*E=P ∧ E*P=E := by
+  obtain ⟨P,reduced,_,_,mask,_,_⟩ := compatible_label_projectors.choose_spec.2 w
+  have eq : P l = (selectedProjector l).map (Swap.Modular.ratMod (prime^w)) :=
+    Matrix.ext fun i j => (reduced l i j).2
+  exact eq ▸ mask l
+
 /-- The same modular frames serve all certified edges. The field word for each
 edge runs in its recorded orientation and uses exactly the rational MOVE rank. -/
 private theorem checked_move_words :
@@ -50,6 +66,7 @@ private theorem checked_move_words :
     ∃ P : Fin 636 → Matrix (Fin 8) (Fin 8) R,
       (∀ l, P l * P l = P l) ∧
       (∀ i j : Fin 636, Geometry.Moves.CheckedPair (i.val, j.val) → P i * P j = P j * P i) ∧
+      (∀ l, P l = (selectedProjector l).map (Swap.Modular.ratMod (prime^w))) ∧
       (∀ l, LinearMap.range (P l).mulVecLin = translatedLabel w l.val) ∧
       (∀ l k, P l k k = if k.val < Geometry.Dimensions.value l.val then 1 else 0) ∧
       ∀ (i j : Fin 636), Geometry.Moves.CheckedPair (i.val, j.val) →
@@ -59,7 +76,8 @@ private theorem checked_move_words :
         (Geometry.moveRank i.val j.val = 0 → ∀ s, AffineFieldProgram.run q s = s) ∧
         ∀ s, AffineFieldProgram.run q s = exchange (P j) (exchange (P i) s) := by
   classical
-  obtain ⟨Q, height, projectors⟩ := compatible_label_projectors
+  let Q := selectedProjector
+  obtain ⟨height, projectors⟩ := compatible_label_projectors.choose_spec
   let dim := fun i : Fin 636 => Geometry.Dimensions.value i.val
   let raw (a b : Fin 636) := rationalMoveWord (dim a) (dim b) (moveBasis (Q b - Q a))
   let incl (a b : Fin 636) := ∀ k ∈ Frames.labels a.val, k ∈ Frames.labels b.val
@@ -85,8 +103,8 @@ private theorem checked_move_words :
     dsimp only
     split <;> exact rationalMoveWord_height _ _ _ (moveBasis_height _ _ (height _) (height _)) op
   intro w R
-  obtain ⟨P, reduced, lower, diag, images, nested⟩ := projectors w
-  refine ⟨P, fun l => (nested l l (fun _ h => h)).1, ?_, images, diag, ?_⟩
+  obtain ⟨P, reduced, lower, diag, _, images, nested⟩ := projectors w
+  refine ⟨P, fun l => (nested l l (fun _ h => h)).1, ?_, fun l => Matrix.ext (fun i j => (reduced l i j).2), images, diag, ?_⟩
   · intro i j h
     rcases h.2.2 with eq | inc | inc
     · obtain rfl : i = j := Fin.ext eq
@@ -141,7 +159,7 @@ private theorem checked_move_words :
     refine ⟨legal, by change _ = (dim j - dim i) + (dim i - dim j); rw [count, Nat.sub_eq_zero_of_le (dimLe j i inc), Nat.zero_add], ?_, run⟩
     intro h; apply zero; change (dim j - dim i) + (dim i - dim j) = 0 at h; omega
 
-private theorem legal_of_prime (op : AffineFieldProgram.Op (Fin 8) ℚ)
+theorem legal_of_prime (op : AffineFieldProgram.Op (Fin 8) ℚ)
     (h : AffineFieldProgram.Legal (AffineFieldProgram.mapOp (Swap.Modular.ratMod prime) op)) :
     AffineFieldProgram.Legal op := by
   let : Fact prime.Prime := ⟨prime_prime⟩
@@ -168,6 +186,7 @@ theorem checked_move_programs :
     ∃ P : Fin 636 → Matrix (Fin 8) (Fin 8) R,
       (∀ l, P l * P l = P l) ∧
       (∀ i j : Fin 636, Geometry.Moves.CheckedPair (i.val, j.val) → P i * P j = P j * P i) ∧
+      (∀ l, P l = (selectedProjector l).map (Swap.Modular.ratMod (prime^w))) ∧
       (∀ l, LinearMap.range (P l).mulVecLin = translatedLabel w l.val) ∧
       (∀ l k, P l k k = if k.val < Geometry.Dimensions.value l.val then 1 else 0) ∧
       ∀ (i j : Fin 636), Geometry.Moves.CheckedPair (i.val, j.val) →
@@ -179,7 +198,7 @@ theorem checked_move_programs :
   obtain ⟨word, interval, height, widths⟩ := checked_move_words
   refine ⟨word, interval, ?_, widths⟩
   intro i j checked ops subset atoms
-  obtain ⟨P, _, _, _, _, edge⟩ := widths 1
+  obtain ⟨P, _, _, _, _, _, edge⟩ := widths 1
   obtain ⟨legal, _, _⟩ := edge i j checked
   have rational (op) (hop : op ∈ ops) : AffineFieldProgram.Legal op := by
     apply legal_of_prime

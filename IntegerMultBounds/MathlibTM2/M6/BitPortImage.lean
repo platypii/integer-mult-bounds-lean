@@ -2,6 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.M6.ModularPhase
 public import IntegerMultBounds.Networks.Certificates.PR589.Nine.PortLabels
+public import IntegerMultBounds.Networks.ModularFrameSchedule
 
 /-! Images of the physical source and target frames in translated coordinates. -/
 @[expose] public section
@@ -9,6 +10,193 @@ namespace IntegerMultBounds.MathlibTM2.M6.BitNode
 open IntegerMultBounds.Networks
 open IntegerMultBounds.Networks.Certificates.PR589
 open Shared50ModularControl (prime)
+
+open IntegerMultBounds.Swap.Modular Matrix
+
+/-- Fixed rational coordinate changes taking prefix digits to physical
+frame coordinates and back. -/
+noncomputable def frameBasis (l : Fin 636) (inverse : Bool) : Matrix (Fin 8) (Fin 8) ℚ :=
+  let N := selectedProjector l - prefixMask ℚ (Geometry.Dimensions.value l.val)
+  if inverse then 1-N else 1+N
+
+open M8.Height in
+theorem frameBasis_height (l : Fin 636) (inverse : Bool) :
+    Bounded (frameBasis l inverse) (2^102) := by
+  let d := Geometry.Dimensions.value l.val
+  have mask : Bounded (prefixMask ℚ d) (2^0) := by
+    intro i j
+    by_cases eq : i=j
+    · subst j; by_cases h : i.val < d <;> simp [prefixMask,h]
+    · simp [prefixMask,diagonal_apply_ne _ eq]
+  have diff : Bounded (selectedProjector l-prefixMask ℚ d) (2^101) :=
+    bounded_sub (selectedProjector_height l) mask
+  cases inverse
+  · exact bounded_add bounded_one diff
+  · exact bounded_sub bounded_one diff
+
+theorem frameBasis_spec (l : Fin 636) (w : ℕ) :
+    let m := prime^w
+    let C := reduce m (frameBasis l false)
+    let D := reduce m (frameBasis l true)
+    let E := prefixMask (ZMod m) (Geometry.Dimensions.value l.val)
+    let P := reduce m (selectedProjector l)
+    C*D=1 ∧ D*C=1 ∧ IntegerMultBounds.Swap.Shear.LowerTriangular C ∧
+      IntegerMultBounds.Swap.Shear.LowerTriangular D ∧ C*E*D=P := by
+  intro m C D E P
+  let d := Geometry.Dimensions.value l.val
+  have maskAd : Admissible m (prefixMask ℚ d) := by
+    intro i j
+    by_cases eq : i=j
+    · subst j; by_cases h : i.val < d <;> simp [prefixMask,h]
+    · simp [prefixMask,diagonal_apply_ne _ eq]
+  have maskRed : reduce m (prefixMask ℚ d) = E := by
+    ext i j
+    change (prefixMask ℚ d).map (ratMod m) i j = prefixMask (ZMod m) d i j
+    by_cases eq : i=j
+    · subst j; by_cases h : i.val < d <;> simp [prefixMask,h,ratMod_zero,ratMod_one]
+    · simp [prefixMask,diagonal_apply_ne _ eq,ratMod_zero]
+  obtain ⟨_,reduced,lower,_⟩ := compatible_label_projectors.choose_spec.2 w
+  have projAd : Admissible m (selectedProjector l) := fun i j => (reduced l i j).1
+  have diffAd := ModularFrameSchedule.admissible_sub m projAd maskAd
+  let N := P-E
+  have forward : C = 1+N := by
+    change reduce m (1+(selectedProjector l-prefixMask ℚ d)) = 1+N
+    rw [ModularFrameSchedule.reduce_add m (admissible_one m) diffAd,reduce_one,
+      ModularFrameSchedule.reduce_sub m projAd maskAd,maskRed]
+  have backward : D = 1-N := by
+    change reduce m (1-(selectedProjector l-prefixMask ℚ d)) = 1-N
+    rw [ModularFrameSchedule.reduce_sub m (admissible_one m) diffAd,reduce_one,
+      ModularFrameSchedule.reduce_sub m projAd maskAd,maskRed]
+  obtain ⟨pe,ep⟩ := selectedProjector_mask w l
+  change P*E=P at pe
+  change E*P=E at ep
+  have pp : P*P=P := by calc
+    _ = (P*E)*P := by rw [pe]
+    _ = P := by rw [Matrix.mul_assoc,ep,pe]
+  have ee : E*E=E := by calc
+    _ = (E*P)*E := by rw [ep]
+    _ = E := by rw [Matrix.mul_assoc,pe,ep]
+  have ne : N*E=N := by change (P-E)*E=P-E; rw [sub_mul,pe,ee]
+  have pn : P*N=0 := by change P*(P-E)=0; rw [mul_sub,pp,pe,sub_self]
+  have nn : N*N=0 := by
+    change (P-E)*(P-E)=0
+    rw [sub_mul,pn,mul_sub,ep,ee,sub_self,sub_self]
+  have inv : (1+N)*(1-N)=1 := by rw [mul_sub,mul_one,add_mul,one_mul,nn,add_zero,add_sub_cancel_right]
+  rw [forward,backward]
+  have off (i j : Fin 8) (h : i < j) : N i j = 0 := by
+    change ratMod m (selectedProjector l i j) - prefixMask (ZMod m) d i j = 0
+    have zero : ratMod m (selectedProjector l i j) = 0 := ((reduced l i j).2).symm.trans (lower l i j h)
+    rw [zero]
+    simp [prefixMask,diagonal_apply_ne _ h.ne]
+  refine ⟨inv,mul_eq_one_comm.mp inv,fun i j h => ?_,fun i j h => ?_,?_⟩
+  · simp only [Matrix.add_apply,Matrix.one_apply_ne h.ne,off i j h,zero_add]
+  · simp only [Matrix.sub_apply,Matrix.one_apply_ne h.ne,off i j h,sub_self]
+  rw [add_mul,one_mul,ne,show E+N=P by dsimp [N]; abel,mul_sub,mul_one,pn,sub_zero]
+
+open IntegerMultBounds.Machine in
+/-- Each basis change compiles to a clean nonrecursive segment on the two
+active fields. Its specialized word acts by the reduced basis on both halves. -/
+theorem frameBasis_pass (l : Fin 636) (inverse : Bool) :
+    let B := frameBasis l inverse
+    CopyBasisPass B ∧ ∀ w s, AffineFieldProgram.run ((M8.Exchange.transformOps B B).map
+      (AffineFieldProgram.mapOp (ratMod (prime^w)))) s =
+      M8.Exchange.transform (reduce (prime^w) B) (reduce (prime^w) B) s := by
+  intro B
+  have shape (w : ℕ) :
+      IntegerMultBounds.Swap.Shear.LowerTriangular (reduce (prime^w) B) ∧
+      reduce (prime^w) B * reduce (prime^w) (frameBasis l (!inverse)) = 1 := by
+    obtain ⟨cd,dc,c,d,_⟩ := frameBasis_spec l w
+    cases inverse
+    · exact ⟨c,cd⟩
+    · exact ⟨d,dc⟩
+  have legal (w : ℕ) : ∀ op ∈ (M8.Exchange.transformOps B B).map
+      (AffineFieldProgram.mapOp (ratMod (prime^w))), AffineFieldProgram.Legal op := by
+    rw [M8.Exchange.transformOps_map]
+    exact M8.Exchange.transformOps_legal (shape w).1 (shape w).1 (shape w).2 (shape w).2
+  have rational (op) (mem : op ∈ M8.Exchange.transformOps B B) : AffineFieldProgram.Legal op := by
+    apply legal_of_prime
+    have h := legal 1 _ (List.mem_map_of_mem (f := AffineFieldProgram.mapOp _) mem)
+    rw [pow_one] at h
+    exact h
+  refine ⟨⟨⟨rational,?_,transform_nonrecursive B⟩,legal⟩,?_⟩
+  · intro op mem
+    apply M8.Machine.Coordinates.CoeffBounded.supported _ (rational op mem)
+    intro r hr
+    have bound := M8.Exchange.transformOps_coeffs (frameBasis_height l inverse)
+      (frameBasis_height l inverse) op mem r hr
+    have room : 2^102 ≤ coefficientBound :=
+      two_pow_le_coefficientBound (le_coefficientExponent
+        ((by decide : 102 ≤ 2^7).trans (pow_le_pow_right₀ one_le_two (by decide : 7 ≤ 53000))))
+    exact ⟨(M8.Height.num_le_ht r).trans (bound.trans room),(M8.Height.den_le_ht r).trans (bound.trans room)⟩
+  · intro w s
+    rw [M8.Exchange.transformOps_map]
+    exact M8.Exchange.transformOps_run _ _ (shape w).1 (shape w).1 s
+
+/-- Swap only the two digits where the target and complementary source
+prefix masks differ. -/
+def portPivotSwap (R : Type*) [Zero R] [One R] : Matrix (Fin 8) (Fin 8) R :=
+  of fun i j => if j = Equiv.swap 0 (Fin.last 7) i then 1 else 0
+
+private theorem portPivotSwap_square (R : Type*) [CommRing R] :
+    portPivotSwap R * portPivotSwap R = 1 := by
+  ext i j
+  simp only [portPivotSwap,mul_apply,of_apply,one_apply,mul_ite,mul_one,mul_zero]
+  rw [Finset.sum_eq_single (Equiv.swap 0 (Fin.last 7) i)]
+  · simp only [Equiv.swap_apply_self,eq_comm]
+    simp
+  · intro k _ hk
+    simp only [ite_eq_right hk,ite_self]
+  · simp
+
+private theorem swap_targetMask (R : Type*) [CommRing R] :
+    let J := portPivotSwap R
+    J * prefixMask R 7 * J = 1-prefixMask R 1 := by
+  intro J
+  have step : J * prefixMask R 7 = (1-prefixMask R 1)*J := by
+    ext i j
+    rw [Matrix.sub_mul,one_mul]
+    simp only [prefixMask,mul_diagonal,Matrix.sub_apply,diagonal_mul,J,portPivotSwap,of_apply]
+    by_cases eq : j = Equiv.swap 0 (Fin.last 7) i
+    · subst j
+      have rev : (Equiv.swap (0 : Fin 8) (Fin.last 7) i).val < 7 ↔ ¬ i.val < 1 := by
+        fin_cases i <;> decide
+      by_cases h : i.val < 1 <;> simp only [rev,h,not_true_eq_false,not_false_eq_true,ite_true,ite_false,mul_one,mul_zero,sub_self,sub_zero]
+    · simp only [ite_eq_right eq,zero_mul,mul_zero,sub_self]
+  rw [step,Matrix.mul_assoc,portPivotSwap_square,mul_one]
+
+/-- The same two rational basis changes and a swap of digits zero and seven correct
+the target at every precision. The inverse uses the factors in reverse order. -/
+theorem portFrame_uniform_correction (t : Fin 111) (w : ℕ) :
+    let m := prime^w
+    let l : Fin 636 := ⟨2+t.val,by omega⟩
+    let k : Fin 636 := ⟨525+t.val,by omega⟩
+    let C := fun i => reduce m (frameBasis i false)
+    let D := fun i => reduce m (frameBasis i true)
+    let J := portPivotSwap (ZMod m)
+    let T := C l*J*D k
+    let S := C k*J*D l
+    T*S=1 ∧ S*T=1 ∧
+      T*reduce m (selectedProjector k)*S = 1-reduce m (selectedProjector l) := by
+  intro m l k C D J T S
+  obtain ⟨left,right,_,_,source⟩ := frameBasis_spec l w
+  obtain ⟨_,back,_,_,target⟩ := frameBasis_spec k w
+  have dimSource : ∀ t : Fin 111, Geometry.Dimensions.value (2+t.val) = 1 := by decide +kernel
+  rw [show Geometry.Dimensions.value l.val = 1 from dimSource t] at source
+  rw [show Geometry.Dimensions.value k.val = 7 from (Nine.target_frames t t.isLt).2.2.1] at target
+  change C l * prefixMask (ZMod m) 1 * D l = _ at source
+  change C k * prefixMask (ZMod m) 7 * D k = _ at target
+  have cancel : D k*C k=1 := back
+  have rr : J*J=1 := portPivotSwap_square _
+  have inv : T*S=1 := by
+    change C l*J*D k*(C k*J*D l)=1
+    calc _ = C l*J*(D k*C k)*J*D l := by simp only [Matrix.mul_assoc]
+         _ = 1 := by rw [cancel,mul_one,Matrix.mul_assoc (C l),rr,mul_one]; exact left
+  refine ⟨inv,mul_eq_one_comm.mp inv,?_⟩
+  rw [← target]
+  change C l*J*D k*(C k*prefixMask (ZMod m) 7*D k)*(C k*J*D l) = _
+  calc _ = C l*J*(D k*C k)*prefixMask (ZMod m) 7*(D k*C k)*J*D l := by simp only [Matrix.mul_assoc]
+       _ = C l*(J*prefixMask (ZMod m) 7*J)*D l := by rw [cancel]; simp [Matrix.mul_assoc]
+       _ = _ := by rw [swap_targetMask,Matrix.mul_sub,mul_one,Matrix.sub_mul,left,source]
 
 /-- At a data source the physical initial frame exchanges precisely the
 translated port line. This identifies its image even over a prime-power ring. -/
@@ -195,20 +383,6 @@ theorem portFrame_images_complementary (w : ℕ) (t : Fin 111) :
     change n ⬝ᵥ (x - c • v) = 0
     rw [dotProduct_sub,dotProduct_smul,nv,smul_eq_mul,coefficient,sub_self]
 
-/-- Projectors with the same image differ by a square-zero shear. -/
-private theorem projectorShear {A : Type*} [Ring A] (p q : A)
-    (pp : p*p=p) (qq : q*q=q) (pq : p*q=q) (qp : q*p=p) :
-    let k := p-q
-    (1+k)*(1-k)=1 ∧ (1+k)*p*(1-k)=q := by
-  intro k
-  have kp : k*p=0 := by change (p-q)*p=0; rw [sub_mul,pp,qp,sub_self]
-  have pk : p*k=k := by change p*(p-q)=p-q; rw [mul_sub,pp,pq]
-  have kk : k*k=0 := by change k*(p-q)=0; rw [mul_sub,kp,show k*q=0 by change (p-q)*q=0; rw [sub_mul,pq,qq,sub_self],sub_self]
-  constructor
-  · rw [mul_sub,mul_one,add_mul,one_mul,kk,add_zero,add_sub_cancel_right]
-  · rw [add_mul,one_mul,kp,add_zero,mul_sub,mul_one,pk]
-    exact sub_sub_cancel p q
-
 open Matrix in
 /-- A change of coordinates takes the actual target projector to the
 complement of the source projector at the same port and precision. -/
@@ -223,57 +397,28 @@ theorem portFrame_correction (w : ℕ) (t : Fin 111) :
         (fun y => f (M8.Exchange.transform T T y)) (M8.Exchange.transform S S x) =
           f (M8.Exchange.exchange (1-U) x) := by
   intro R
-  obtain ⟨U,V,uu,vv,comp,src,dst⟩ := portFrame_images_complementary w t
-  let p := LinearMap.range U.mulVecLin
-  let q := LinearMap.range V.mulVecLin
-  let P := LinearMap.toMatrix' (p.projection q comp)
-  let Q := LinearMap.toMatrix' (q.projection p comp.symm)
-  have action (h : (Fin 8 → R) →ₗ[R] (Fin 8 → R)) x :
-      LinearMap.toMatrix' h *ᵥ x = h x := LinearMap.toMatrix'_mulVec h x
-  have absorb (A B : Matrix (Fin 8) (Fin 8) R) (aa : A*A=A)
-      (same : LinearMap.range A.mulVecLin = LinearMap.range B.mulVecLin) : A*B=B := by
-    apply Matrix.ext_iff_mulVec.mpr
-    intro x
-    obtain ⟨y,hy⟩ := same.ge (show B *ᵥ x ∈ LinearMap.range B.mulVecLin from ⟨x,rfl⟩)
-    change A *ᵥ y = B *ᵥ x at hy
-    rw [← mulVec_mulVec,← hy,mulVec_mulVec,aa]
-  have proj (a b : Submodule R (Fin 8 → R)) (h : IsCompl a b) :
-      let M := LinearMap.toMatrix' (a.projection b h)
-      M*M=M ∧ LinearMap.range M.mulVecLin = a := by
-    intro M
-    have eq : M.mulVecLin = a.projection b h := LinearMap.ext (action _)
-    refine ⟨?_,eq ▸ Submodule.range_projection h⟩
-    apply Matrix.ext_iff_mulVec.mpr
-    intro x
-    simp only [← mulVec_mulVec,M,action,Submodule.projection_apply_of_mem_left h (Submodule.projection_apply_mem h _)]
-  obtain ⟨pp,pr⟩ := proj p q comp
-  obtain ⟨qq,qr⟩ := proj q p comp.symm
-  have total : P+Q=1 := by
-    apply Matrix.ext_iff_mulVec.mpr
-    intro x
-    simpa only [add_mulVec,one_mulVec,P,Q,action] using (show
-      (p.projection q comp) x + (q.projection p comp.symm) x = x from
-        Submodule.projection_add_projection_eq_self comp x)
-  obtain ⟨ab,au⟩ := projectorShear P U pp uu (absorb P U pp pr) (absorb U P uu pr.symm)
-  obtain ⟨cd,cv⟩ := projectorShear V Q vv qq (absorb V Q vv qr.symm) (absorb Q V qq qr)
-  let A := 1+(P-U)
-  let B := 1-(P-U)
-  let C := 1+(V-Q)
-  let D := 1-(V-Q)
-  have inv : A*C*(D*B)=1 := by rw [Matrix.mul_assoc,← Matrix.mul_assoc C,cd,one_mul,ab]
-  have complement : Q=1-P := by rw [← total]; abel
-  have corrected : A*C*V*(D*B)=1-U := by
-    rw [Matrix.mul_assoc A,← Matrix.mul_assoc _ D,Matrix.mul_assoc A,cv,complement,
-      Matrix.mul_sub A 1 P,mul_one,Matrix.sub_mul A (A*P) B,ab,au]
-  let T := A*C
-  let S := D*B
+  let l : Fin 636 := ⟨2+t.val,by omega⟩
+  let k : Fin 636 := ⟨525+t.val,by omega⟩
+  let U := reduce (prime^w) (selectedProjector l)
+  let V := reduce (prime^w) (selectedProjector k)
+  let C := fun i => reduce (prime^w) (frameBasis i false)
+  let D := fun i => reduce (prime^w) (frameBasis i true)
+  let J := portPivotSwap R
+  let T := C l*J*D k
+  let S := C k*J*D l
+  obtain ⟨inv,back,corrected⟩ := portFrame_uniform_correction t w
+  change T*S=1 at inv
   change T*V*S=1-U at corrected
+  rw [(Nine.source_frames t.val t.isLt).1,(Nine.target_frames t.val t.isLt).2.1]
+  have dst := selectedFrame_rational w k
+  change ∀ (f : AddressStream R) x, selectedFrame w k.val f x = f (M8.Exchange.exchange V x) at dst
   have rest : T*(1-V)*S = 1-(1-U) := by
     rw [Matrix.mul_sub T 1 V,mul_one,Matrix.sub_mul T (T*V) S,inv,corrected]
-  refine ⟨U,V,T,S,inv,mul_eq_one_comm.mp inv,corrected,src,dst,?_⟩
+  refine ⟨U,V,T,S,inv,back,corrected,selectedFrame_rational w l,dst,?_⟩
   intro f x
   rw [dst]
   apply congrArg f
+  change M8.Exchange.transform T T (M8.Exchange.exchange V (M8.Exchange.transform S S x)) = M8.Exchange.exchange (1-U) x
   simp only [M8.Exchange.transform,M8.Exchange.exchange,mulVec_add,mulVec_mulVec]
   simp only [← Matrix.mul_assoc T,rest,corrected]
 

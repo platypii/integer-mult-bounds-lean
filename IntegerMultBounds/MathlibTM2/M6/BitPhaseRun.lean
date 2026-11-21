@@ -2,7 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.M6.BitCopyLabel
 public import IntegerMultBounds.MathlibTM2.M6.BitNodeCost
-public import IntegerMultBounds.MathlibTM2.M6.BitPortImage
+public import IntegerMultBounds.MathlibTM2.M6.BitPortRun
 
 /-! Compose the PR589 frame changes and scalar instructions on the permanent
 owner tapes, and read their result in the modular phase semantics. -/
