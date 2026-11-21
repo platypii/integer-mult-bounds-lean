@@ -84,6 +84,28 @@ theorem orthogonalChild_read (r w W : ℕ) (hr : r ≤ 8)
   rw [invol] at atSwap
   simpa only [swaps,singletonSwaps,read,addr] using atSwap
 
+/-- At rank one the outermost two digits are the two active fields. The
+fixed leaf machine supplies this child on the original owner tape. -/
+theorem orthogonalChild_one [M8.Machine.Net] :
+    ∃ machine : SharedBankSkeleton.Skeleton 1 prime, ∀ w W : ℕ, 0 < w → 0 < W →
+      let V := (prime^w)^16*W
+      ∃ stage : SharedBankStage.Stage _ 1 prime (@portOwner V),
+        SharedBankSkeleton.ofStage stage = machine ∧ stage.cost = 3808274*V + LeafCore.coreCost V w ∧
+        ∀ x, RevT prime w 1 (sub prime w 8 0 1 ⟨1,1,1,8*w,1,W⟩) (ext x) (ext (stage.transform x)) := by
+  obtain ⟨machine,runs⟩ := digitSwap_view_owner (0 : Fin 16) 15 (by decide)
+  refine ⟨machine,?_⟩
+  intro w W hw hW V
+  obtain ⟨stage,control,cost,swap⟩ := runs w W hw hW
+  refine ⟨stage,control,cost,?_⟩
+  have view : sub prime w 8 0 1 ⟨1,1,1,8*w,1,W⟩ =
+      Cover.Fallback.swapView prime w W (0 : Fin 16) 15 := by
+    simp [sub,Cover.Fallback.swapView,FlatCoordinateLayout.suffixFields,← pow_add,← pow_mul]
+    congr 1
+    omega
+  intro x
+  rw [view]
+  exact revT_one (swap x)
+
 private theorem orthogonalSegment_good (U) (spec : OrthogonalMoveModular U)
     (ops : List (AffineFieldProgram.Op (Fin 8) ℚ))
     (sub : ∀ op ∈ ops, op ∈ M8.Rev.revProgram U)
@@ -291,5 +313,57 @@ theorem orthogonalCheckedMoves_owner :
     exact (congrArg (fun t => stage.transform x (addr t k))
       (orthogonalResidual_frames j i back w s).2.symm).trans
         (read x (Exchange.exchange (reduce m (Nine.labelProj i)) s) k)
+
+/-- The phase scheduler drops every edge of rank zero. Even distinct labels
+at such an edge have identical orthogonal frame addresses. -/
+theorem labelProj_eq_of_moveRank_zero {i j : ℕ} (zero : Geometry.moveRank i j = 0) :
+    Nine.labelProj j = Nine.labelProj i := by
+  have range : LinearMap.range (Geometry.projector j - Geometry.projector i) = ⊥ :=
+    Submodule.finrank_eq_zero.mp zero
+  have eq := sub_eq_zero.mp (LinearMap.range_eq_bot.mp range)
+  exact congrArg LinearMap.toMatrix' eq
+
+/-- The filtered phase bill needs a child supplier only at positive ranks.
+A zero-rank incidence consumes no machine steps. -/
+theorem orthogonalPaidMoves_owner :
+    ∃ (basis : Matrix (Fin 8) (Fin 8) ℕ) (C : ℕ),
+      (∀ a b, basis a b ≤ 2^28) ∧ (basis.map (Nat.cast : ℕ → ℚ)).det ≠ 0 ∧
+      ∀ i j : Fin 636, Geometry.Moves.CheckedPair (i.val,j.val) →
+      ∃ wrap : SharedBankSkeleton.Skeleton 1 prime → SharedBankSkeleton.Skeleton 1 prime,
+      ∀ (w W : ℕ), 0 < W →
+        let m := prime^w
+        let V := m^16*W
+        let r := Geometry.moveRank i j
+        let G := reduce m (basis.map (Nat.cast : ℕ → ℚ))
+        let encode := Exchange.transform G (reduce m (ReversedExchange.rev 8)*G)
+        let addr := fun s (k : Fin W) => FlatCoordinateLayout.index (AffineFieldCoordinates.embed (encode s)) k
+        ∀ (machine : SharedBankSkeleton.Skeleton 1 prime) (price : ℕ),
+        (0 < r → ∃ child : SharedBankStage.Stage _ 1 prime (@portOwner V),
+          SharedBankSkeleton.ofStage child = machine ∧ child.cost ≤ price ∧
+          ∀ x, RevT prime w r (sub prime w 8 0 r ⟨1,1,1,8*w,1,W⟩) (ext x) (ext (child.transform x))) →
+        ∃ stage : SharedBankStage.Stage _ 1 prime (@portOwner V),
+          SharedBankSkeleton.ofStage stage = wrap machine ∧
+          stage.cost ≤ (if r = 0 then 0 else C*V + price + 2) ∧ ∀ x s k,
+            stage.transform x (addr (Exchange.exchange (reduce m (Nine.labelProj j)) s) k) =
+              x (addr (Exchange.exchange (reduce m (Nine.labelProj i)) s) k) := by
+  obtain ⟨basis,C,small,det,edges⟩ := orthogonalCheckedMoves_owner
+  refine ⟨basis,C,small,det,?_⟩
+  intro i j checked
+  by_cases zero : Geometry.moveRank i j = 0
+  · refine ⟨fun _ => SharedBankSkeleton.identity 1 prime (by decide),?_⟩
+    intro w W pos m V r G encode addr machine price child
+    refine ⟨SharedBankStage.identity _ (by decide),rfl,?_,?_⟩
+    · simp [r,zero,SharedBankStage.identity]
+    · intro x s k
+      rw [labelProj_eq_of_moveRank_zero zero]
+      rfl
+  · obtain ⟨before,after,runs⟩ := edges i j checked
+    refine ⟨fun machine => SharedBankSkeleton.compose (SharedBankSkeleton.compose before machine) after,?_⟩
+    intro w W pos m V r G encode addr machine price supply
+    obtain ⟨child,control,time,hchild⟩ := supply (Nat.pos_of_ne_zero zero)
+    obtain ⟨stage,compiled,cost,read⟩ := runs w W pos child hchild
+    refine ⟨stage,control ▸ compiled,?_,read⟩
+    simp only [r,zero,ite_false]
+    exact cost.trans (Nat.add_le_add_right (Nat.add_le_add_left time _) _)
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode

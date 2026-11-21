@@ -622,13 +622,12 @@ theorem rationalPortBasis_owner (t : Fin 111) (atExit inverse : Bool) :
 
 open Cover RecursiveInterchangeLayout M8.RevMachine SharedPlacementAlphabet in
 /-- A packed digit swap on the same source tape used by the basis passes. -/
-theorem digitSwap_owner [M8.Machine.Net] (i j : Fin 16) (lt : i < j) :
+theorem digitSwap_view_owner [M8.Machine.Net] (i j : Fin 16) (lt : i < j) :
     ∃ machine : SharedBankSkeleton.Skeleton 1 prime, ∀ w W, 0 < w → 0 < W →
     let V := (prime^w)^16*W
     ∃ stage : SharedBankStage.Stage _ 1 prime (@portOwner V),
       SharedBankSkeleton.ofStage stage = machine ∧ stage.cost = 3808274*V + LeafCore.coreCost V w ∧
-      ∀ x coords k, stage.transform x (FlatCoordinateLayout.index (coords ∘ Equiv.swap i j) k) =
-        x (FlatCoordinateLayout.index coords k) := by
+      ∀ x, LabelView.Swapped prime (swapView prime w W i j) (ext x) (ext (stage.transform x)) := by
   let io : Fin 1 := 0
   let block := LabelSwap.program io
   let slots := fun k : Fin 1 => block.slots (Fin.castAdd 24 k)
@@ -639,8 +638,10 @@ theorem digitSwap_owner [M8.Machine.Net] (i j : Fin 16) (lt : i < j) :
   have leading : Blocks.Leading block := Blocks.seq_leading _ _
   let d := LabelPrepare.input v 16 i.val j.val w
   let bank := fun (x : Fin V → ZMod 2) => SharedBankStageInput.raw (LabelCall.bank (portOwner x) v d) block.tapes
-  let result := fun x : Fin V → ZMod 2 => swapPayload_runs i j lt hw hW (portOwner x) io
-    (fun t => x (Fin.cast size t)) rfl (sourceWord_cast size x).symm
+  have hv : v.beforeH = 1*prime^(16*w) := by simp [v,payloadView]
+  have hp : v.Positive := by simp [v,payloadView,Descriptor.Positive,hW,Shared50ModularControl.prime_prime.pos]
+  let result := fun x : Fin V → ZMod 2 => LabelSwap.runs lt j.isLt hw (by decide : 0 < 1) hv hp
+    (portOwner x) io (fun t => x (Fin.cast size t)) rfl (sourceWord_cast size x).symm
   let out := fun x t => (result x).choose (Fin.cast size.symm t)
   have word (x) : M8.Machine.ArbitraryWidthHighExchangeShared.sourceWord (v := v) (result x).choose =
       (portOwner (out x)).tape io := by
@@ -655,17 +656,36 @@ theorem digitSwap_owner [M8.Machine.Net] (i j : Fin 16) (lt : i < j) :
     output_payload := fun x => copyRoute_payload block leading _ v d,
     strip_input := fun x => routePrivate block leading _ _ v d, realizes := ?_ },rfl,rfl,?_⟩
   · intro x
-    have run := (result x).choose_spec.1
+    have run := (result x).choose_spec.2
     change GraphContract.Runs block _ (LabelCall.bank (setTape _ io _ 0) v d) _ at run
     rw [word,same,size] at run
     exact run
-  · intro x coords k
-    have read := (result x).choose_spec.2 coords k
-    have get (z : Fin (volume prime v) → ZMod 2) (a : Fin V) : ext z a.val = z (a.cast size.symm) := by
-      simp only [ext,dite_eq_left (show a.val < volume prime v from size.symm ▸ a.isLt)]
-      rfl
-    rw [get,get] at read
-    exact read
+  · intro x
+    have swap := (result x).choose_spec.1
+    have view : LabelView.colView prime w 16 i.val j.val 1 v = swapView prime w W i j := by
+      simp [LabelView.colView,swapView,v,payloadView,FlatCoordinateLayout.suffixFields,
+        ← pow_mul,Nat.mul_comm,Nat.sub_sub,Nat.add_comm]
+    let y := (result x).choose
+    change LabelView.Swapped prime _ (ext (fun t => x (Fin.cast size t))) (ext y) at swap
+    change LabelView.Swapped prime _ (ext x) (ext (fun t => y (Fin.cast size.symm t)))
+    rw [ext_cast]
+    exact (congrArg (fun u => LabelView.Swapped prime u (ext x) (ext y)) view).mp
+      (by simpa only [ext_cast] using swap)
+
+open Cover RecursiveInterchangeLayout M8.RevMachine in
+theorem digitSwap_owner [M8.Machine.Net] (i j : Fin 16) (lt : i < j) :
+    ∃ machine : SharedBankSkeleton.Skeleton 1 prime, ∀ w W, 0 < w → 0 < W →
+    let V := (prime^w)^16*W
+    ∃ stage : SharedBankStage.Stage _ 1 prime (@portOwner V),
+      SharedBankSkeleton.ofStage stage = machine ∧ stage.cost = 3808274*V + LeafCore.coreCost V w ∧
+      ∀ x coords k, stage.transform x (FlatCoordinateLayout.index (coords ∘ Equiv.swap i j) k) =
+        x (FlatCoordinateLayout.index coords k) := by
+  obtain ⟨machine,runs⟩ := digitSwap_view_owner i j lt
+  refine ⟨machine,?_⟩
+  intro w W hw hW V
+  obtain ⟨stage,fixed,cost,swap⟩ := runs w W hw hW
+  exact ⟨stage,fixed,cost,fun x coords k => by
+    simpa only [ext_apply] using swapView_apply i j lt (swap x) coords k⟩
 
 open AffineFieldCoordinates M8.RevMachine in
 /-- The backward digit addition uses one interchange. Adding into the
