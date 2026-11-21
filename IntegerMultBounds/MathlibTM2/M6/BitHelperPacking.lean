@@ -36,7 +36,7 @@ private theorem adjacentSchedule {α : Type*} {xs ys : List α} (perm : xs.Perm 
     exact ⟨is++js,fun i hi => (List.mem_append.mp hi).elim (fits i)
       (fun hj => h.length_eq.symm ▸ fits' i hj),by rw [List.foldl_append,run,run']⟩
 
-private theorem fieldSchedule {d : ℕ} (order : Equiv.Perm (Fin d)) :
+theorem fieldSchedule {d : ℕ} (order : Equiv.Perm (Fin d)) :
     ∃ is : List ℕ, (∀ i ∈ is, i+1 < d) ∧
       ∀ {α : Type} (x : Fin d → α), is.foldl adjacentFields x = x ∘ order := by
   obtain ⟨is,fits,run⟩ := adjacentSchedule (order.ofFn_comp_perm id).symm
