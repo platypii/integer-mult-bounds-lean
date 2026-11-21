@@ -152,6 +152,192 @@ theorem scheduledPhaseCoordinates (node : Descriptor) (i : Fin nodeChildren5.len
   exact (CopyChildLayout.packActive_change packed child sameWidth size addr).trans
     (congrArg (fun z => (CopyChildLayout.packActive packed z).val) src)
 
+private theorem digits_of_length {α : Type*} {n : ℕ} (xs : List α) (size : xs.length = n) :
+    ∃ x : Fin n → α, List.ofFn x = xs := by
+  subst n
+  exact ⟨xs.get,List.ofFn_get xs⟩
+
+private theorem index_eq_of_digits {M n m W : ℕ} [NeZero M]
+    (x : Fin n → ZMod M) (y : Fin m → ZMod M) (same : List.ofFn x = List.ofFn y) (j : Fin W) :
+    (index x j).val = (index y j).val := by
+  have sizes := congrArg List.length same
+  simp only [List.length_ofFn] at sizes
+  subst m
+  rw [List.ofFn_injective same]
+
+open IntegerMultBounds.Networks.Certificates.PR589 RecursiveInterchangeLayout in
+/-- Read an actual scheduled child transpose at the addresses produced by
+phase packing, including all exterior digits and the trailing spectator. -/
+theorem scheduledPhasePacked_swap (node : Descriptor) (i : Fin nodeChildren5.length)
+    (p : ℕ × ℕ) (checked : Geometry.Moves.CheckedPair p) (paid : 0 < Geometry.moveRank p.1 p.2)
+    (w B rows : ℕ) (rank : nodeChildren5[i.val] = Geometry.moveRank p.1 p.2)
+    (width : node.width = 64*(w+1)) (split : node.rows = 142080*rows)
+    (label : node.beforeH = B*prime^(64*((w+1)*64))) :
+    let M := prime^(w+1)
+    let K := M^112*(node.beforeRows*rows*node.between*node.afterD)
+    let W := B*prime^(64*((w+1)*64))*K
+    let lo := min (Geometry.Dimensions.value p.1) (Geometry.Dimensions.value p.2)
+    let hi := max (Geometry.Dimensions.value p.1) (Geometry.Dimensions.value p.2)
+    let child := scheduledChild prime node i
+    ∃ position : Fin (volume prime child) ≃ Fin (M^16*W),
+      (∀ k, (position k).val = (CopyChildLayout.packActive child k).val) ∧
+      ∀ {α : Type} (word changed : Fin (M^16*W) → α),
+        (∀ k, changed (position k) = Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (word ∘ position) k) →
+        ∀ (x y : Fin 16 → ZMod M) h d rest, h.length = hi-lo → d.length = hi-lo →
+          List.ofFn x = h++d++rest → List.ofFn y = d++h++rest → ∀ j, changed (index y j) = word (index x j) := by
+  intro M K W lo hi child
+  let packed := phaseIntervalChild lo hi (w+1) W
+  obtain ⟨e,route,action⟩ := scheduledPhaseCoordinates node i p checked (w+1) B rows rank width split label
+  obtain ⟨lt,bound⟩ := phaseInterval_bounds checked paid
+  have size := Fintype.card_congr (e.trans (CopyChildLayout.packActive child))
+  simp only [Fintype.card_fin] at size
+  have count : volume prime packed = M^16*W := phaseIntervalChild_volume lt.le bound _ _
+  let position := (CopyChildLayout.packActive child).trans (finCongr (size.symm.trans count))
+  refine ⟨position,fun _ => rfl,?_⟩
+  intro α word changed returned x y h d rest hh hd hx hy j
+  obtain ⟨h,rfl⟩ := digits_of_length h hh
+  obtain ⟨d,rfl⟩ := digits_of_length d hd
+  have sizeRest := congrArg List.length hx
+  simp only [List.length_ofFn,List.length_append] at sizeRest
+  change lo < hi at lt
+  change hi ≤ 8 at bound
+  obtain ⟨suffix,rfl⟩ := digits_of_length rest (show rest.length = lo+((8-hi+lo)+(8-hi)) by omega)
+  let a := fun k : Fin lo => suffix (k.castAdd _)
+  let tail := fun k : Fin ((8-hi+lo)+(8-hi)) => suffix (k.natAdd lo)
+  let mid := fun k : Fin (8-hi+lo) => tail (k.castAdd (8-hi))
+  let v := fun k : Fin (8-hi) => tail (k.natAdd (8-hi+lo))
+  let u := fun k : Fin (8-hi) => mid (k.castAdd lo)
+  let b := fun k : Fin lo => mid (k.natAdd (8-hi))
+  have parts : Fin.append a (Fin.append (Fin.append u b) v) = suffix := by
+    rw [show Fin.append u b = mid from Fin.append_castAdd_natAdd,
+      show Fin.append mid v = tail from Fin.append_castAdd_natAdd]
+    exact Fin.append_castAdd_natAdd
+  let digits := fun h d : Fin (hi-lo) → ZMod M => Fin.append (Fin.append h d) (Fin.append a (Fin.append (Fin.append u b) v))
+  let addr := fun h d => RecursiveInterchangeScaling.index (phaseIntervalAddress a b h d u v j)
+  have loc (h d : Fin (hi-lo) → ZMod M) (z : Fin 16 → ZMod M)
+      (layout : List.ofFn z = List.ofFn h++List.ofFn d++List.ofFn suffix) : index z j = position (e (addr h d)) := by
+    apply Fin.ext
+    have lists : List.ofFn z = List.ofFn (digits h d) := by
+      simp only [digits,parts,List.ofFn_fin_append,layout]
+    exact (index_eq_of_digits z (digits h d) lists j).trans
+      ((phasePacked_index a b h d u v j).symm.trans (route (addr h d)).symm)
+  rw [loc d h y hy,loc h d x hx,returned]
+  have eqn := congrFun (action (word ∘ position)) (addr d h)
+  exact eqn.symm.trans (intervalAddress_transpose 8 ((word ∘ position) ∘ e) a b h d u v j)
+
+private theorem phaseTranspose_of_reads {α : Type*} {lo hi w W : ℕ}
+    (ordered : lo ≤ hi) (bound : hi ≤ 8) (before after : Fin ((prime^(w+1))^16*W) → α)
+    (reads : ∀ s j, after (index (AffineFieldCoordinates.embed (IntegerMultBounds.Swap.Shear.run (intervalSwaps lo hi) s)) j) =
+      before (index (AffineFieldCoordinates.embed s) j)) :
+    let size := phaseIntervalChild_volume ordered bound (w+1) W
+    after = fun i => Shared50RecursiveNodeRows.transpose (v := phaseIntervalChild lo hi (w+1) W)
+      (one_dvd _) (fun j => before (j.cast size)) (i.cast size.symm) := by
+  intro size
+  funext k
+  obtain ⟨⟨s,j⟩,rfl⟩ := (copyAddress (Q := prime^(w+1)) (W := W)).symm.surjective k
+  let D : Matrix (Fin 8) (Fin 8) (ZMod (prime^(w+1))) := diagonal fun i => if lo ≤ i.val ∧ i.val < hi then 1 else 0
+  have idem : D*D = D := by
+    unfold D
+    rw [diagonal_mul_diagonal]
+    congr 1
+    funext i
+    split_ifs <;> simp
+  let t := IntegerMultBounds.Swap.Shear.run (intervalSwaps lo hi) s
+  have back : IntegerMultBounds.Swap.Shear.run (intervalSwaps lo hi) t = s := by
+    simpa only [t,intervalSwaps_run,D] using M8.Global.exchange_involutive idem s
+  rw [copyAddress_index,← back]
+  exact (reads t j).trans (phaseChild_interval ordered bound before t j).symm
+
+open Cover.Fallback IntegerMultBounds.Networks.Certificates.PR589 RecursiveInterchangeLayout in
+/-- Pack a live phase record, call the child once, and restore the parent's
+digit order. The child exchanges the two leading active fields. -/
+theorem phasePackedCall_exec [M8.Machine.Net] {P U : Type} {T : ℕ}
+    (p : ℕ × ℕ) (checked : Geometry.Moves.CheckedPair p) (paid : 0 < Geometry.moveRank p.1 p.2)
+    (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T)
+    (body : P → Pr P T columnCapacity prime U) (f : P) :
+    let lo := min (Geometry.Dimensions.value p.1) (Geometry.Dimensions.value p.2)
+    let hi := max (Geometry.Dimensions.value p.1) (Geometry.Dimensions.value p.2)
+    ∃ setup swaps : ℕ, ∀ (node : Descriptor) (i : Fin nodeChildren5.length) (w B rows : ℕ),
+    nodeChildren5[i.val] = Geometry.moveRank p.1 p.2 → node.width = 64*(w+1) →
+    node.rows = 142080*rows → node.beforeH = B*prime^(64*((w+1)*64)) →
+    let M := prime^(w+1)
+    let K := M^112*(node.beforeRows*rows*node.between*node.afterD)
+    let W := B*prime^(64*((w+1)*64))*K
+    0 < W →
+    let desc := scheduledChild prime node i
+    ∃ position : Fin (volume prime desc) ≃ Fin (M^16*W),
+    (∀ k, (position k).val = (CopyChildLayout.packActive desc k).val) ∧
+    let is := phasePackSchedule lo hi
+    let bank := ((Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)).trans ports
+    let clean := fun D : Stacks T prime => ∀ k : Fin (rowSwapBlock.tapes+35), 35 ≤ k.val → D.L (ports k) = [] ∧ D.R (ports k) = []
+    let pack := fun js => statePlacedNormalized ports swapStates_fit swapStates_pos Empty.elim (packSchedule 16 js)
+    ∀ (v : HS T columnCapacity prime U) (S : Stacks T prime) record dest q (before : Fin (M^16*W) → ZMod 2) budget,
+    let stored := RecordReady (b := prime) (w := w) (d := 16) (W := W) bank M.size W.size record
+      SparseRoleCircuit.encode (fun _ => blank) dest 0 q
+    (desc.width < node.width → ∀ (u : HS T columnCapacity prime U) D word, stored word D → clean D →
+      ∃ z F n changed, Exec body (body f) (mk u D) n (mk z F) ∧ n ≤ budget ∧ z.user = u.user ∧
+        stored changed F ∧ clean F ∧ (∀ j, (∀ i, ports i ≠ j) → F.L j = D.L j ∧ F.R j = D.R j) ∧
+        ∀ k, changed (position k) = Shared50RecursiveNodeRows.transpose (one_dvd desc.rows) (word ∘ position) k) →
+    let size := phaseIntervalChild_volume (phaseInterval_bounds checked paid).1.le
+      (phaseInterval_bounds checked paid).2 (w+1) W
+    let after := fun k => Shared50RecursiveNodeRows.transpose (v := phaseIntervalChild lo hi (w+1) W)
+      (one_dvd _) (fun j => before (j.cast size)) (Fin.cast size.symm k)
+    stored before S → clean S → ∃ z F n, z.user = v.user ∧
+      n ≤ budget+4+(setup+swaps*swapVolumeRate w)*(M^16*W) ∧
+      Exec body ((pack is).seq ((Prog.call f).seq (pack is.reverse))) (mk v S) n (mk z F) ∧
+      stored after F ∧ clean F ∧ ∀ j, (∀ i, ports i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  intro lo hi
+  obtain ⟨lt,bounded⟩ := phaseInterval_bounds checked paid
+  have ordered : lo ≤ hi := lt.le
+  obtain ⟨a,b,enter⟩ := phaseIncomingPack_exec ordered bounded ports body
+  obtain ⟨c,e,price⟩ := packTime_le (P := Empty) (U := U) Empty.elim 16 (phasePackSchedule lo hi).reverse (by decide)
+  refine ⟨a+c,b+e,?_⟩
+  intro node i w B rows rank width split label M K W hW desc
+  obtain ⟨position,offset,action⟩ := scheduledPhasePacked_swap node i p checked paid w B rows rank width split label
+  refine ⟨position,offset,?_⟩
+  have smaller : desc.width < node.width := by
+    have r := nodeChildren5_le i
+    have scaled := Nat.mul_lt_mul_of_pos_right (lt_of_le_of_lt r (by decide : 42 < 64)) (Nat.succ_pos w)
+    simpa only [desc,scheduledChild,rankDescriptor,width,Nat.mul_div_cancel_left _ (by decide : 0 < 64)] using scaled
+  intro is bank clean pack v S record dest q before budget stored child size expected ready free
+  obtain ⟨u,D,t,word,userA,timeA,runA,readyA,freeA,offA,readsA⟩ := (enter w W hW v S record dest q before ready free)
+  obtain ⟨z,G,m,changed,run,time,user,readyB,freeB,off,returned⟩ := child smaller u D _ readyA freeA
+  have swap := action word changed returned
+  have fits : ∀ i ∈ is, i+1 < 16 := fun _ => phasePackSchedule_inside ordered bounded
+  obtain ⟨y,F,n,userB,timeB,runB,⟨after,out,reads⟩,clear,offB⟩ :=
+    placedPackSchedule_exec ports is.reverse (fun i hi => fits i (List.mem_reverse.mp hi)) body z G
+      record dest q hW changed id ⟨changed,readyB,fun _ _ => rfl⟩ freeB
+  refine ⟨y,F,_,userB.trans (user.trans userA),?_,Exec.seq runA (Exec.seq (Exec.call run) runB),?_,clear,?_⟩
+  · have back := timeB.trans (Nat.add_le_add_left (price w W hW) 1)
+    simp only [M,Nat.add_mul] at timeA back ⊢
+    omega
+  · suffices after = expected by simpa only [← this] using out
+    apply phaseTranspose_of_reads ordered bounded
+    intro s j
+    let x := AffineFieldCoordinates.embed s
+    let y := AffineFieldCoordinates.embed (IntegerMultBounds.Swap.Shear.run (intervalSwaps lo hi) s)
+    obtain ⟨pre,h,mid,d,suffix,hp,hh,hm,hd,hx,hy⟩ := phaseInterval_digits ordered bounded s
+    change List.ofFn x = _ at hx
+    change List.ofFn y = _ at hy
+    let route := fun z : Fin 16 → ZMod M => is.foldl adjacentFields z
+    have left : List.ofFn (route x) = h++d++pre++mid++suffix := by
+      rw [show List.ofFn (route x) = _ from fold_adjacentFields is x fits,hx]
+      exact phasePackSchedule_fields pre h mid d suffix hp hh hm hd
+    have right : List.ofFn (route y) = d++h++pre++mid++suffix := by
+      rw [show List.ofFn (route y) = _ from fold_adjacentFields is y fits,hy]
+      exact phasePackSchedule_fields pre d mid h suffix hp hd hm hh
+    have moved := swap (route x) (route y) h d (pre++mid++suffix) hh hd
+      (by simpa only [List.append_assoc] using left) (by simpa only [List.append_assoc] using right) j
+    have back := reads (route y) j
+    simp only [id_eq,route,reverse_adjacentFields] at back
+    exact back.trans (moved.trans (readsA x (route x) pre h mid d suffix hp hh hm hd hx left j))
+
+  · intro j hj
+    obtain ⟨l,r⟩ := offA j hj
+    obtain ⟨l',r'⟩ := off j hj
+    obtain ⟨l'',r''⟩ := offB j hj
+    exact ⟨l''.trans (l'.trans l),r''.trans (r'.trans r)⟩
+
 /-- Finish a nonroot scanner bank after the child queue transfer. The seven
 header sources and two work registers can stay outside the caller/scan bank. -/
 theorem childQueue_headers_exec {T Q w : ℕ} {P U : Type} (body : P → Pr P T Q prime U)

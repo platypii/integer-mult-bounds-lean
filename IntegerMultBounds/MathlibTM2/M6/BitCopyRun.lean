@@ -567,6 +567,31 @@ private theorem joinInterval_surj {α : Type*} {lo hi : ℕ} (ordered : lo ≤ h
   rw [Fin.append_castAdd_natAdd,show Fin.append pre (fun i => y (i.natAdd _)) = y from Fin.append_castAdd_natAdd]
   rfl
 
+/-- Split a flat state into the five consecutive digit lists seen by a phase
+edge. Transposition exchanges its two active lists at every spectator. -/
+theorem phaseInterval_digits {R : Type*} [CommRing R] {lo hi : ℕ}
+    (ordered : lo ≤ hi) (fits : hi ≤ 8) (s : Swap.Shear.State (Fin 8) R) :
+    ∃ pre h mid d suffix : List R, pre.length = lo ∧ h.length = hi-lo ∧
+      mid.length = 8-hi+lo ∧ d.length = hi-lo ∧
+      List.ofFn (AffineFieldCoordinates.embed s) = pre++h++mid++d++suffix ∧
+      List.ofFn (AffineFieldCoordinates.embed (Swap.Shear.run (intervalSwaps lo hi) s)) =
+        pre++d++mid++h++suffix := by
+  obtain ⟨x,y⟩ := s
+  obtain ⟨a,h,u,rfl⟩ := joinInterval_surj ordered fits x
+  obtain ⟨b,d,v,rfl⟩ := joinInterval_surj ordered fits y
+  have digits (a : Fin lo → R) (h : Fin (hi-lo) → R) (u : Fin (8-hi) → R) :
+      List.ofFn (joinInterval ordered fits a h u) = List.ofFn a++List.ofFn h++List.ofFn u := by
+    have eqn : lo+(hi-lo)+(8-hi) = 8 := by omega
+    simp only [← List.ofFn_fin_append]
+    exact (List.ofFn_congr eqn (Fin.append (Fin.append a h) u)).symm
+  refine ⟨List.ofFn a,List.ofFn h,List.ofFn u++List.ofFn b,List.ofFn d,List.ofFn v,by simp,by simp,
+    by simp,by simp,?_,?_⟩
+  · change List.ofFn (Fin.append _ _) = _
+    simp only [List.ofFn_fin_append,digits,List.append_assoc]
+  · rw [interval_run_join ordered fits]
+    change List.ofFn (Fin.append _ _) = _
+    simp only [List.ofFn_fin_append,digits,List.append_assoc]
+
 /-- In flat tape order the interval child's transpose executes the modular
 swap instruction at every address, including both boundary intervals. -/
 theorem phaseChild_interval {α : Type*} {lo hi : ℕ} (ordered : lo ≤ hi) (fits : hi ≤ 8)
