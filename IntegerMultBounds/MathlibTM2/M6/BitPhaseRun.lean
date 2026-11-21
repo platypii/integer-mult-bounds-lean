@@ -2,7 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.M6.BitCopyLabel
 public import IntegerMultBounds.MathlibTM2.M6.BitNodeCost
-public import IntegerMultBounds.MathlibTM2.M6.ModularPhase
+public import IntegerMultBounds.MathlibTM2.M6.BitPortImage
 
 /-! Compose the PR589 frame changes and scalar instructions on the permanent
 owner tapes, and read their result in the modular phase semantics. -/
@@ -13,31 +13,6 @@ open IntegerMultBounds.Networks.Certificates.PR589
 open Shared50ModularControl (prime)
 
 local instance (w : ℕ) : NeZero (prime^w) := ⟨(pow_pos Shared50ModularControl.prime_prime.pos _).ne'⟩
-
-/-- At a data source the physical initial frame exchanges precisely the
-translated port line. This identifies its image even over a prime-power ring. -/
-theorem sourceFrame_image (w : ℕ) (t : Fin 111) :
-    ∃ U : Matrix (Fin 8) (Fin 8) (ZMod (prime^w)), U * U = U ∧
-      LinearMap.range U.mulVecLin = Submodule.span _ {fun j : Fin 8 => (translatedEntry t j.val : ZMod (prime^w))} ∧
-      ∀ (f : AddressStream (ZMod (prime^w))) x,
-        selectedFrame w (Frames.initialRefs t.val) f x = f (M8.Exchange.exchange U x) := by
-  obtain ⟨P,idem,image,action⟩ := selectedFrame_projectors w
-  obtain ⟨initial,labels,_⟩ := Nine.source_frames t.val t.isLt
-  let l : Fin 636 := ⟨2+t.val, by omega⟩
-  refine ⟨P l,idem l,(image l).trans ?_,?_⟩
-  · unfold translatedLabel
-    congr 1
-    ext v
-    constructor
-    · rintro ⟨⟨k,mem⟩,rfl⟩
-      change k.val ∈ Frames.labels (2+t.val) at mem
-      rw [labels,List.mem_singleton] at mem
-      exact Set.mem_singleton_iff.mpr (congrArg
-        (fun a : Fin 111 => fun j : Fin 8 => (translatedEntry a j.val : ZMod (prime^w))) (Fin.ext mem))
-    · rintro ⟨⟩
-      exact ⟨⟨t,by change t.val ∈ Frames.labels (2+t.val); simpa only [labels,List.mem_singleton]⟩,rfl⟩
-  · rw [initial]
-    exact action l
 
 noncomputable def phaseRead {k w W : ℕ} (owner : Fin 661 ↪ Fin k)
     (data : Fin k → Fin ((prime^w)^16*W) → ZMod 2) (j : Fin W) : ℕ → AddressStream (ZMod (prime^w)) :=
