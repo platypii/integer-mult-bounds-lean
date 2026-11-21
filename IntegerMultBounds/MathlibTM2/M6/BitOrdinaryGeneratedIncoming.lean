@@ -26,7 +26,7 @@ def IncomingRowEffect {m r w W : ℕ} (hr : r ≤ m)
   ∀ (x y : Fin m → ZMod M) (k : Fin W), before (index (Fin.append (action.mulVec x)
     ((rev m * stage.U * rev m).mulVec y + cross.mulVec (action.mulVec x))) k) = word (index (Fin.append x y) k)
 
-private theorem pivotWords_cast {m r a M : ℕ} [NeZero M] (G : Matrix (Fin m) (Fin m) (ZMod M))
+theorem pivotWords_cast {m r a M : ℕ} [NeZero M] (G : Matrix (Fin m) (Fin m) (ZMod M))
     (hr : r ≤ m) (minor : ∀ i (hi : i < r), IsUnit (lead (i+1) (lt_of_lt_of_le hi hr) G).det)
     (eq : a = r) (H : ℕ) :
     (List.ofFn fun i : Fin r => binSyms (A := prime) H
@@ -35,6 +35,22 @@ private theorem pivotWords_cast {m r a M : ℕ} [NeZero M] (G : Matrix (Fin m) (
       ((stageAt G r hr minor r le_rfl).M (i.castLE hr) (i.castLE hr)).val).flatten := by
   subst a
   rfl
+
+/-- Materialize the stage archive and scalar headers shared by both row passes. -/
+noncomputable def ordinaryRowSetup [M8.Machine.Net] {P U : Type} {common aux : ℕ} (r g : ℕ)
+    (pool : (RingFormula.conjugationDepth (r+g)+1)*13 ≤ aux) (room : 58 ≤ common+24+31+aux) :
+    Pr P (66+(common+24+31+aux)) columnCapacity prime U :=
+    let m := r+g
+    let hr : r ≤ m := Nat.le_add_right ..
+    let K := common+24+31+aux
+    let full := ordinaryCaller room
+    let slots := stageBank (pivotSlots.trans full) r
+    let src := directoryRecordMatrixSlot common aux
+    let localCaller := Fin.castAddEmb (n := 66) K
+    let write : Pr P (66+K) columnCapacity prime U := ((directoryRecordWriter m common pool).seq
+      (if src = slots 15 then .act .done else moveRightOrdered src (localCaller 59) (slots 15))).seq (goodWeights prime r hr slots)
+    let load : Pr P (66+K) columnCapacity prime U := packReciprocals prime (ordinaryReciprocalPorts.trans full) (full 54) (List.finRange m)
+    write.seq (load.seq ((Node.umul (m*m) (full 2) (full 51) (full 0)).seq (bcopy (full 2) (full 33) (full 0) (full 1))))
 
 noncomputable def incomingRowProgram [M8.Machine.Net] {P U : Type} {common aux : ℕ} (r g : ℕ)
     (pool : (RingFormula.conjugationDepth (r+g)+1)*13 ≤ aux)
@@ -47,13 +63,7 @@ noncomputable def incomingRowProgram [M8.Machine.Net] {P U : Type} {common aux :
     let bank := ordinaryPackingBank (by omega : 58 ≤ K)
     let ports := columnPorts.trans (correctionColumnPlacement bank (ordinaryPackingWork room) (ordinaryPackingWork_apart room))
     let machine := GoodChildLayout.parent.trans (parentWithWeights.trans full)
-    let slots := stageBank (pivotSlots.trans full) r
-    let src := directoryRecordMatrixSlot common aux
-    let localCaller := Fin.castAddEmb (n := 66) K
-    let write : Pr P (66+K) columnCapacity prime U := ((directoryRecordWriter m common pool).seq
-      (if src = slots 15 then .act .done else moveRightOrdered src (localCaller 59) (slots 15))).seq (goodWeights prime r hr slots)
-    let load : Pr P (66+K) columnCapacity prime U := packReciprocals prime (ordinaryReciprocalPorts.trans full) (full 54) (List.finRange m)
-    let setup := write.seq (load.seq ((Node.umul (m*m) (full 2) (full 51) (full 0)).seq (bcopy (full 2) (full 33) (full 0) (full 1))))
+    let setup : Pr P (66+K) columnCapacity prime U := ordinaryRowSetup (common := common) r g pool (by omega)
     let cap : 217 ≤ columnCapacity := le_max_left ..
     let inc : Pr P (66+K) columnCapacity prime U := (stateLiftNormalize cap (by decide)).seq (stateLiftPr cap (by decide) Empty.elim (goodIncoming prime r hr machine))
     let is := ordinaryChildPackSchedule r g
@@ -158,7 +168,7 @@ theorem generatedIncomingRow_exec [M8.Machine.Net] {P U : Type} {r g w W common 
     one clock scratch (fun i => extra _ (by change 124 ≤ 124+_; omega))
   have publicKeep (k : Fin 64) (lo : 29 ≤ k.val) (hi : k.val < 58) (off : ∀ i, correctionCallerSlots i ≠ k) :=
     (ordinaryPacking_publicFrame room A D (fun i h off => (kept i h off).2)
-      (fun i h off => (outside i h off).2) k lo hi off).trans (publicFrame _ hi)
+      (fun i h off => (outside i h off).2) k lo hi off).trans (publicFrame _ (lt_trans hi (by decide : 58 < 66)))
   obtain ⟨z,F,l,hz,price,done,next,result,frame⟩ := ordinaryDirectoryAdvance_exec body prog u y S D (n+t) c
     (before ∘ ordinaryRecursivePosition r g w W) (hu.trans user) (Exec.seq prepare run) push calls start skip
     ⟨headers.modulus,headers.width,headers.one,headers.padded,headers.clock⟩ publicKeep read

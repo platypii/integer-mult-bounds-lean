@@ -507,7 +507,7 @@ theorem ordinaryGeneratedSetup_exec {m w W H J Q common work : ℕ} {P U : Type}
       D.R (full 54) = invWords ∧ (D.R (full 51)).length = m*m*H ∧
       D.R (full 47) = (List.ofFn fun i : Fin r => binSyms H (stage.M (i.castLE proj.rank_le_height) (i.castLE proj.rank_le_height)).val).flatten ∧
       (D.R (full 49),D.R (full 50)) = matrixArchive words (words 0) [] r ∧
-      (∀ i, i.val < 58 → D.R i = S.R i) := by
+      (∀ i, i.val < 66 → D.R i = S.R i) := by
   intro K src full r slots tmp program g M G clear word payload
   obtain ⟨minor,generated⟩ :=
     ordinaryGeneratedArchive_exec v proj weights prefixes tail schedules hm poolFits room body u S j js ready live clear
@@ -523,10 +523,10 @@ theorem ordinaryGeneratedSetup_exec {m w W H J Q common work : ℕ} {P U : Type}
   all_goals rw [result]
   case refine_5 =>
     intro i hi
-    have apart (k : Fin 58) (hk : 58 ≤ (entrySlot k).val) : i ≠ full k := by
+    have apart (k : Fin 58) (hk : 66 ≤ (entrySlot k).val) : i ≠ full k := by
       intro eq
       rw [eq] at hi
-      change (entrySlot k).val < 58 at hi
+      change (entrySlot k).val < 66 at hi
       omega
     exact (Function.update_of_ne (apart 33 (by decide)) ..).trans
       ((Function.update_of_ne (apart 51 (by decide)) ..).trans
@@ -657,7 +657,7 @@ theorem ordinaryGeneratedRecord_exec [M8.Machine.Net] {d w W H J Q common work :
   intro m K src full r slots tmp program g M G clear word payload installed load prepare
   obtain ⟨minor,y,B,l,hy,hl,setup,headReady,empty,one,clock,free,temps,extra,inverses,length,pivots,pair,publicFrame⟩ :=
     ordinaryGeneratedSetup_exec v proj weights prefixes tail schedules hm poolFits unit room body u S j js ready live clear word payload
-  obtain ⟨z,F,n,out,hz,hn,run,restored,blankPort,childFrame,childGrowth,correct⟩ := installed minor y B word (preserved B publicFrame)
+  obtain ⟨z,F,n,out,hz,hn,run,restored,blankPort,childFrame,childGrowth,correct⟩ := installed minor y B word (preserved B (fun i hi => publicFrame i (by omega)))
     headReady empty one clock free temps extra inverses length pivots pair
   refine ⟨z,F,_,out,hz.trans hy,Nat.add_le_add hl hn,Exec.seq setup run,restored,blankPort,?_,?_,correct⟩
   · intro push hp hb i hi
@@ -677,11 +677,11 @@ theorem ordinaryGeneratedRecord_exec [M8.Machine.Net] {d w W H J Q common work :
       right.trans (Nat.add_le_add_right (preR.trans (Nat.mul_le_mul_left push hl)) _)⟩
   intro i hi off
   by_cases base : i = full 2
-  · subst i; exact restored.base.trans (headReady.base.symm.trans (publicFrame _ hi))
+  · subst i; exact restored.base.trans (headReady.base.symm.trans (publicFrame _ (lt_trans hi (by decide : 58 < 66))))
   by_cases onePort : i = full 28
-  · subst i; exact restored.one.trans (headReady.one.symm.trans (publicFrame _ hi))
+  · subst i; exact restored.one.trans (headReady.one.symm.trans (publicFrame _ (lt_trans hi (by decide : 58 < 66))))
   by_cases widthPort : i = full 53
-  · subst i; exact restored.width.trans (headReady.width.symm.trans (publicFrame _ hi))
+  · subst i; exact restored.width.trans (headReady.width.symm.trans (publicFrame _ (lt_trans hi (by decide : 58 < 66))))
   have outside (k : Fin 58) (hk : 58 ≤ (entrySlot k).val ∨ k = 2 ∨ k = 24 ∨ k = 28 ∨ k = 53) :
       full k ≠ i := by
     rcases hk with large | rfl | rfl | rfl | rfl
@@ -694,7 +694,7 @@ theorem ordinaryGeneratedRecord_exec [M8.Machine.Net] {d w W H J Q common work :
   let bank := adapterBank.trans (parent.trans (parentWithWeights.trans (Function.Embedding.refl (Fin 58))))
   have hs : ∀ k, bounds (((shear.trans head).trans bank) k) := by decide
   have ht : ∀ k, bounds (((shear.trans ordinaryHead).trans bank) k) := by decide
-  exact (childFrame i (fun k => outside _ (hs k)) (fun k => outside _ (ht k))).2.trans (publicFrame _ hi)
+  exact (childFrame i (fun k => outside _ (hs k)) (fun k => outside _ (ht k))).2.trans (publicFrame _ (lt_trans hi (by decide : 58 < 66)))
 
 /-- A fixed stopped-child body works at every precision and live ordinary label
 after extending the directory workspace by its private tapes. -/
