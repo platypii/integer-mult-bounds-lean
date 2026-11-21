@@ -472,15 +472,15 @@ theorem stageTargets_host (n : Fin 9) :
 
 
 /-- Run the packed stage on its original tapes, then scan the restored owners.
-The ten additional shared tapes hold the three dimensions and arithmetic workspace. -/
+The additional shared tapes hold the three dimensions and arithmetic workspace. -/
 theorem packedStageTargets_host (n : Fin 9) :
     let I := (Fin 32 × Fin 5) × Fin 111
     let order := stageRuns.product (List.finRange 111)
     ∃ states : ℕ, ∀ {T Q : ℕ} {P U : Type} (fan : Fin (142081+2) ↪ Fin T), states ≤ Q →
-    let inner := (Fin.castAddEmb 10 (n := T)).trans (Fin.castAddEmb (142081*7))
-    let placedFan := fan.trans (Fin.castAddEmb 10)
+    let inner := (Fin.castAddEmb 14 (n := T)).trans (Fin.castAddEmb (142081*7))
+    let placedFan := fan.trans (Fin.castAddEmb 14)
     let bank := fun k : I => targetScanBank placedFan (targetOwner n k)
-    let reg := (Fin.natAddEmb T (m := 10)).trans (Fin.castAddEmb (142081*7))
+    let reg := (Fin.castAddEmb 4 (n := 10)).trans ((Fin.natAddEmb T (m := 14)).trans (Fin.castAddEmb (142081*7)))
     ∀ (body : P → Pr P T Q prime U) (stage : Pr P T Q prime U), ∃ code,
     ∀ (w B W : ℕ) (label : Cover.LabelPadding.Label 64 w) (x),
     let K := (prime^w)^112*W
@@ -525,7 +525,7 @@ theorem packedStageTargets_host (n : Fin 9) :
     · exact (regOutside i _).symm
     · intro eq
       have h := congrArg Fin.val eq
-      change T+i.val = T+10+_ at h
+      change T+i.val = T+14+_ at h
       omega
   have regs : [src 2,src 0,reg 3,scratch 0,scratch 1,scratch 2,scratch 3,scratch 4].Nodup :=
     ((by decide : ([2,0,3,5,6,7,8,9] : List (Fin 10)).Nodup).map reg.injective)
@@ -550,7 +550,7 @@ theorem packedStageTargets_host (n : Fin 9) :
     (fun k j => by
       have untouched := off (bank k j.succ) (fun a eq => by
         have h := congrArg Fin.val eq
-        change a.val = T+10+_ at h
+        change a.val = T+14+_ at h
         omega)
       exact ⟨untouched.1.trans (empty k j).1,untouched.2.trans (empty k j).2⟩)
   have blocks : 0 < D := Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) hb

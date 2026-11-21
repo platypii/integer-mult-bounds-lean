@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.M6.BitTargetScan
+public import IntegerMultBounds.MathlibTM2.M6.BitStageDimensions
 
 /-! Read the target sums of the allocated stage with all recursive calls charged once. -/
 @[expose] public section
@@ -12,6 +13,49 @@ local instance (w : ℕ) : NeZero (prime^w) := ⟨(pow_pos Shared50ModularContro
 
 private theorem projectedUser {a b q f : ℕ} {U : Type} (e : Fin a → Fin b) (u : HS b q f U) :
     (embDn e u).user = u.user := rfl
+
+private theorem shared_ne_inner {T G : ℕ} (i : Fin 3) (j : Fin T) :
+    ((i.castAdd 11).natAdd T).castAdd G ≠ (j.castAdd 14).castAdd G := by
+  intro eq
+  have h := congrArg Fin.val eq
+  change T+i.val = j.val at h
+  omega
+
+private theorem shared_ne_private {T G : ℕ} (i : Fin 3) (j : Fin G) :
+    ((i.castAdd 11).natAdd T).castAdd G ≠ j.natAdd (T+14) := by
+  intro eq
+  have h := congrArg Fin.val eq
+  change T+i.val = T+14+j.val at h
+  omega
+
+private def dimensionSlots : Fin 14 ↪ Fin 14 :=
+  ⟨![0,1,2,10,11,12,13,3,4,5,6,7,8,9],by decide⟩
+
+private theorem stageRegisterSetup {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
+    (reg : Fin 14 ↪ Fin T) (w B tail : ℕ) (u : HS T Q prime U) (S : Stacks T prime) :
+    let M := prime^w
+    let seed := (![tail,1,B] : Fin 3 → ℕ)
+    let values := (![M^112*tail,prime^(64*(w*64)),M^16*B] : Fin 3 → ℕ)
+    let r := dimensionSlots.trans reg
+    let power := fun i => swapPrefix ((stagePowerPorts i).trans r) (stageDegrees i)
+    let dst := (Fin.castAddEmb 11 (n := 3)).trans r
+    S.R (reg 13) = binSyms M.size M →
+    (∀ i : Fin 3, S.R (reg ((i.natAdd 10).castAdd 1)) = binSyms (seed i).size (seed i)) →
+    (∀ i : Fin 3, S.L (reg (i.castAdd 11)) = [] ∧ S.R (reg (i.castAdd 11)) = []) →
+    (∀ i : Fin 7, S.R (reg ((i.natAdd 3).castAdd 4)) = []) →
+    ∃ v F t, v.user = u.user ∧ t ≤ ((List.finRange 3).map (fun i => stagePowerTime M (seed i) (stageDegrees i))).sum+2 ∧
+      Exec body (.seq (Prog.seqList ((List.finRange 3).map power)) (.act (pushMarkers ((List.finRange 3).map dst))))
+        (mk u S) t (mk v F) ∧
+      (∀ i : Fin 3, F.L (reg (i.castAdd 11)) = [separator] ∧ F.R (reg (i.castAdd 11)) = binSyms (values i).size (values i)) ∧
+      ∀ j, (∀ i : Fin 3, reg (i.castAdd 11) ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  intro M seed values r power dst radix seeds blankHdr free
+  obtain ⟨v₀,C,m,same₀,cost,setup,headers,off⟩ := stageDimensions_exec
+    body r w B tail u S radix
+    (fun i => by fin_cases i <;> first | exact seeds 0 | exact seeds 1 | exact seeds 2)
+    (fun i => by fin_cases i <;> first | exact blankHdr 0 | exact blankHdr 1 | exact blankHdr 2)
+    (fun j hj => by fin_cases j <;> first | contradiction | omega | exact free 0 | exact free 1 | exact free 2 | exact free 3 | exact free 4 | exact free 5 | exact free 6)
+  have coord (i : Fin 3) : dst i = reg (i.castAdd 11) := congrArg reg ((by decide : ∀ i : Fin 3, dimensionSlots (i.castAdd 11) = i.castAdd 11) i)
+  exact ⟨v₀,C,m,same₀,cost,setup,fun i => coord i ▸ headers i,fun j h => off j (fun i => coord i ▸ h i)⟩
 
 def AllocatedStageTargets [M8.Machine.Net] (n : Fin 9) : Prop :=
     let edges := Geometry.Moves.phaseEdges.filter positiveMove
@@ -69,9 +113,9 @@ def AllocatedStageTargets [M8.Machine.Net] (n : Fin 9) : Prop :=
       ((List.range' (start k) edges.length).map (work k)).sum + (List.ofFn (copyWork k)).sum + 3
     ∃ prepared : Stacks (((T+41)+273)+LeafCore.small) prime, embStk full prepared = shared ∧
     let total := ((T+41)+273)+LeafCore.small
-    let inner := (Fin.castAddEmb 10 (n := total)).trans (Fin.castAddEmb (142081*7))
-    let bank := fun k : R × Fin 111 => targetScanBank (full.trans (Fin.castAddEmb 10)) (targetOwner n k)
-    let reg := (Fin.natAddEmb total (m := 10)).trans (Fin.castAddEmb (142081*7))
+    let inner := (Fin.castAddEmb 14 (n := total)).trans (Fin.castAddEmb (142081*7))
+    let bank := fun k : R × Fin 111 => targetScanBank (full.trans (Fin.castAddEmb 14)) (targetOwner n k)
+    let reg := (Fin.natAddEmb total (m := 14)).trans (Fin.castAddEmb (142081*7))
     let N := prime^(64*((w+1)*64))
     let D := M^16*B
     let order := stageRuns.product (List.finRange 111)
@@ -80,9 +124,11 @@ def AllocatedStageTargets [M8.Machine.Net] (n : Fin 9) : Prop :=
     ∃ code, ∀ (label : Cover.LabelPadding.Label 64 (w+1)) (x : Fin 142081 → Fin (M^16*(B*K)) → ZMod 2) u S,
     represented full (singleLabelBank (B := B) (K := K) label x) (embStk inner S) →
     (∀ k, (∀ h, full h ≠ k) → (embStk inner S).L k = prepared.L k ∧ (embStk inner S).R k = prepared.R k) →
-    (∀ i : Fin 3, S.L (reg (i.castAdd 7)) = [separator] ∧
-      S.R (reg (i.castAdd 7)) = binSyms (![K,N,D] i).size (![K,N,D] i)) →
-    (∀ i : Fin 7, S.R (reg (i.natAdd 3)) = []) →
+    S.R (reg 13) = binSyms M.size M →
+    (∀ i : Fin 3, let a := ![node.beforeRows*rows*node.between*node.afterD,1,B] i
+      S.R (reg ((i.natAdd 10).castAdd 1)) = binSyms a.size a) →
+    (∀ i : Fin 3, S.L (reg (i.castAdd 11)) = [] ∧ S.R (reg (i.castAdd 11)) = []) →
+    (∀ i : Fin 7, S.R (reg ((i.natAdd 3).castAdd 4)) = []) →
     (∀ k (j : Fin 7), S.L (bank k j.succ) = [] ∧ S.R (bank k j.succ) = []) →
     let result := fun (k : (R × Fin 111)) (L R : List (Fin (prime+4))) =>
       let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n k.1.1 k.1.2,ownerTape_injective ..⟩
@@ -94,7 +140,7 @@ def AllocatedStageTargets [M8.Machine.Net] (n : Fin 9) : Prop :=
           (finProdFinEquiv (b,j))).val-(D*K) : ℤ) = SparseRoleCircuit.encode
           (selectedFrame (w+1) (Frames.finalRefs dst) (initial dst + initial k.2.val) s)
     ∃ z F steps, Exec (fun g => embProg inner id (outer g)) code (mk u S) steps (mk z F) ∧
-      steps ≤ budget + (3000*order.length+200)*V ∧ z.user = u.user ∧
+      steps ≤ budget + (3000*order.length+1530000202)*V ∧ z.user = u.user ∧
       ∀ k, result k (F.L (bank k 1)) (F.R (bank k 1))
 
 theorem allocatedStageTargets_host [M8.Machine.Net] (n : Fin 9) : AllocatedStageTargets n := by
@@ -122,20 +168,50 @@ theorem allocatedStageTargets_host [M8.Machine.Net] (n : Fin 9) : AllocatedStage
   refine ⟨prepared,owners,?_⟩
   intro total inner scanBank reg N D order budget
   obtain ⟨code,finish⟩ := scan (U := U) full ((le_max_right ..).trans fits) outer stage
-  refine ⟨code,?_⟩
-  intro label x u S live privateRegs headers free empty result
+  let r := dimensionSlots.trans reg
+  let power : Fin 3 → Pr (R × (Option J × (I × P))) (total+14+142081*7) Q prime U := fun i => swapPrefix ((stagePowerPorts i).trans r) (stageDegrees i)
+  let dst := (Fin.castAddEmb 11 (n := 3)).trans r
+  refine ⟨.seq (.seq (Prog.seqList ((List.finRange 3).map power)) (.act (pushMarkers ((List.finRange 3).map dst)))) code,?_⟩
+  intro label x u S live privateRegs radix seeds blankHdr free empty result
+  let tail := node.beforeRows*rows*node.between*node.afterD
+  obtain ⟨v₀,C,m,same₀,cost,setup,headers,off⟩ := stageRegisterSetup
+    (fun g => embProg inner id (outer g)) reg (w+1) B tail u S radix seeds blankHdr free
+  have outside (j : Fin total) := off (inner j) (fun i => shared_ne_inner i j)
+  have liveC : represented full (singleLabelBank (B := B) (K := K) label x) (embStk inner C) := by
+    intro i z
+    obtain ⟨hl,hr⟩ := outside (full i)
+    simpa only [embStk,Function.comp_apply,hl,hr] using live i z
   obtain ⟨v,A,t,packed,out,exec,paid,user,done,trace,restored⟩ :=
-    execute (singleLabelBank (B := B) (K := K) label x) (embDn inner u) (embStk inner S) live privateRegs
+    execute (singleLabelBank (B := B) (K := K) label x) (embDn inner v₀) (embStk inner C) liveC
+      (fun j hj => ⟨(outside j).1.trans (privateRegs j hj).1,(outside j).2.trans (privateRegs j hj).2⟩)
   rw [before] at restored
   have useScan := finish (w+1) B (node.beforeRows*rows*node.between*node.afterD) label x
     (Nat.pos_of_mul_pos_left pos) (Nat.pos_of_mul_pos_right (Nat.pos_of_mul_pos_right pos))
-    u S v A t packed out
-  change Exec outer stage (mk (embDn inner u) (embStk inner S)) t (mk v A) at exec
-  obtain ⟨z,F,steps,ran,bill,same,output⟩ := useScan exec (user.trans (projectedUser inner u))
-    done trace restored headers free empty
-  refine ⟨z,F,steps,ran,?_,same,output⟩
+    v₀ C v A t packed out
+  change Exec outer stage (mk (embDn inner v₀) (embStk inner C)) t (mk v A) at exec
+  have applyHeaders := useScan exec (user.trans (projectedUser inner v₀))
+    done trace restored
+  have applyFree := applyHeaders (fun i => headers i)
+  have applyPrivate := applyFree
+    (fun j => (off _ (fun i => reg.injective.ne ((by decide : ∀ (i : Fin 3) (j : Fin 7), i.castAdd 11 ≠ (j.natAdd 3).castAdd 4) i j))).2.trans (free j))
+  obtain ⟨z,F,steps,ran,bill,same,output⟩ := applyPrivate (fun k j => by
+      have h := off (scanBank k j.succ) (fun i => shared_ne_private i _)
+      exact ⟨h.1.trans (empty k j).1,h.2.trans (empty k j).2⟩)
+  refine ⟨z,F,m+steps,Exec.seq setup ran,?_,same.trans same₀,output⟩
   have volume : D*(N*K) = V := by dsimp only [V,W,D,N]; ring
   rw [volume] at bill
-  exact bill.trans (Nat.add_le_add_right paid _)
+  have hm : 0 < M := pow_pos Shared50ModularControl.prime_prime.pos _
+  have hb := Nat.pos_of_mul_pos_right (Nat.pos_of_mul_pos_right pos)
+  have ht : 0 < tail := Nat.pos_of_mul_pos_left (Nat.pos_of_mul_pos_left pos)
+  have small : M^2*(B*tail) ≤ V := by
+    have a := Nat.pow_le_pow_right hm (by decide : 2 ≤ 16)
+    have b : B ≤ B*N := Nat.le_mul_of_pos_right _ (pow_pos Shared50ModularControl.prime_prime.pos _)
+    have c : tail ≤ K := Nat.le_mul_of_pos_left _ (pow_pos hm 112)
+    exact Nat.mul_le_mul a (Nat.mul_le_mul b c)
+  have setupBill := cost.trans ((stageDimensionsTime_le M B tail hm hb ht).trans (Nat.mul_le_mul_left _ small))
+  change steps ≤ t+(3000*order.length+200)*V at bill
+  change t ≤ budget at paid
+  rw [Nat.add_mul] at bill ⊢
+  omega
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
