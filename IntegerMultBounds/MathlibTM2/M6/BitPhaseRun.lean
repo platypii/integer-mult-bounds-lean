@@ -929,6 +929,179 @@ theorem InvocationEffect.targetRead {n : Fin 9} {r : Fin 32} {d : Fin 5}
   exact congrArg (fun term => selectedFrame w (Frames.finalRefs i.val)
     (initial g i.val + initial g t.val + term)) diff
 
+open BinaryScalarReplay in
+private theorem prepared_read {Ω : Type*} (x : ℕ → Ω → ZMod 2) (high : ∀ j, 661 ≤ j → x j = 0)
+    (j : ℕ) (a : Ω) :
+    FramedCircuit.moduleRun ((sectionD++sectionA).map RawGate.toCircuit) x j a =
+      eval (snapshot maskBank refsAfter091 j) (fun k => x k.val a) := by
+  let stored := fun k : Fin 661 => x k.val a
+  have bounded : (fun k => x k a) = extendInput stored := by
+    funext k
+    by_cases low : k < 661
+    · simp [extendInput,stored,low]
+    · simp [extendInput,low,high k (by omega)]
+  rw [FramedCircuit.moduleRun_pointwise,bounded,← eval_start,← eval_replay,replay_append,replaySectionD]
+  have link : snapshot maskBank refsAfter004 = snapshot maskBank refsBefore005 := rfl
+  rw [link,replaySectionA]
+
+/-- The retained-input columns of the nine prepared rows form an identity
+matrix. In particular the nine dirty helper streams can vary independently. -/
+private theorem retained_diagonal (l : Copy.Lifecycle) (hl : l ∈ Copy.lifecycles)
+    (j : ℕ) (hj : j ∈ Frames.retained) :
+    (snapshot maskBank refsAfter091 l.source).getLsbD j = decide (j = l.source) := by
+  have checked : Copy.lifecycles.all (fun a => Frames.retained.all fun k =>
+      decide ((snapshot maskBank refsAfter091 a.source).getLsbD k = decide (k = a.source))) = true := by
+    decide +kernel
+  exact of_decide_eq_true (List.all_eq_true.mp (List.all_eq_true.mp checked l hl) j hj)
+
+open BinaryScalarReplay in
+/-- With arbitrary dirty data on the nine retained helpers alone, preparation
+returns each of those inputs verbatim at its own register. -/
+private theorem prepared_retained {Ω : Type*} (x : ℕ → Ω → ZMod 2)
+    (supported : ∀ j, j ∉ Frames.retained → x j = 0)
+    (l : Copy.Lifecycle) (hl : l ∈ Copy.lifecycles) :
+    FramedCircuit.moduleRun ((sectionD++sectionA).map RawGate.toCircuit) x l.source = x l.source := by
+  have bounded : ∀ j ∈ Frames.retained, j < 661 := by decide
+  have mem : l.source ∈ Frames.retained := Copy.source_order ▸ List.mem_map_of_mem (f := Copy.Lifecycle.source) hl
+  let k : Fin 661 := ⟨l.source,bounded _ mem⟩
+  funext a
+  rw [prepared_read x (fun j hj => supported j (fun h => (Nat.not_lt_of_ge hj) (bounded j h)))]
+  unfold eval
+  rw [Finset.sum_eq_single k]
+  · simp [k,retained_diagonal l hl _ mem]
+  · intro j _ ne
+    by_cases hj : j.val ∈ Frames.retained
+    · rw [retained_diagonal l hl _ hj]
+      simp [show j.val ≠ l.source from fun eq => ne (Fin.ext eq)]
+    · simp [supported _ hj]
+  · simp
+
+/-- On retained-helper inputs the target reads precisely the differences
+between the routed and local dirty helpers. This isolates the part of the
+endpoint that a cover representation must cancel for arbitrary helpers. -/
+theorem InvocationEffect.targetRead_retained {n : Fin 9} {r : Fin 32} {d : Fin 5}
+    {w B K : ℕ} {x y} (act : InvocationEffect n r d w B K x y) (g)
+    (z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B) (t : Fin 111) :
+    let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n r d,ownerTape_injective n r d⟩
+    let initial := fun h => FramedCircuit.decode (fun j => selectedFrame w (Frames.snapshot Frames.initialRefs j))
+      (phaseRead owner x (labelSpectator h z))
+    let i : Fin 661 := ⟨111+t.val,by omega⟩
+    let base := g*(registerChart w n i.val).transpose
+    (∀ h j, j ∉ Frames.retained → initial h j = 0) →
+    phaseRead owner y (labelSpectator g z) i.val = selectedFrame w (Frames.finalRefs i.val)
+      (((Copy.lifecycles.filter (fun l => i.val ∈ l.targets)).map
+        (fun l => initial (base*registerChart w n l.source) l.source - initial g l.source)).sum) := by
+  intro owner initial i base supported
+  have helpers : ∀ j ∈ Frames.retained, 222 ≤ j := by decide
+  have target : initial g i.val = 0 := supported _ _ (fun h => by
+    have bound := helpers _ h
+    change 222 ≤ 111+t.val at bound
+    omega)
+  have source : initial g t.val = 0 := supported _ _ (fun h => by have := helpers _ h; omega)
+  rw [act.targetRead g z t]
+  change selectedFrame w (Frames.finalRefs i.val) (initial g i.val + initial g t.val + _) = _
+  rw [source,target,zero_add,zero_add]
+  apply congrArg (selectedFrame w (Frames.finalRefs i.val))
+  apply congrArg List.sum
+  apply List.map_congr_left
+  intro l hl
+  have mem := (List.mem_filter.mp hl).1
+  exact congrArg₂ (· - ·) (prepared_retained _ (supported _) l mem) (prepared_retained _ (supported _) l mem)
+
+private theorem retained_support (l : Copy.Lifecycle) (hl : l ∈ Copy.lifecycles) (k : Fin 661)
+    (mem : (snapshot maskBank refsAfter091 l.source).getLsbD k.val = true) :
+    k.val < 111 ∨ 222 ≤ k.val := by
+  have checked : Copy.lifecycles.all (fun a =>
+      decide ((snapshot maskBank refsAfter091 a.source).extractLsb' 111 111 = 0)) = true := by decide +kernel
+  have empty := of_decide_eq_true (List.all_eq_true.mp checked l hl)
+  by_contra! h
+  have bit := congrArg (fun row : BitVec 111 => row.getLsbD (k.val-111)) empty
+  simp only [BitVec.getLsbD_extractLsb',show k.val-111 < 111 by omega,decide_true,Bool.true_and,
+    show 111+(k.val-111) = k.val by omega,mem] at bit
+  simp [BitVec.getLsbD] at bit
+
+open BinaryScalarReplay in
+/-- The target receives exactly its original stream plus its source whenever
+the decoded inputs agree on the support of each incident retained row at
+the two labels used for that row. Other inputs may differ arbitrarily. -/
+theorem InvocationEffect.targetRead_of_support {n : Fin 9} {r : Fin 32} {d : Fin 5}
+    {w B K : ℕ} {x y} (act : InvocationEffect n r d w B K x y) (g)
+    (z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B) (t : Fin 111) :
+    let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n r d,ownerTape_injective n r d⟩
+    let initial := fun h => FramedCircuit.decode (fun j => selectedFrame w (Frames.snapshot Frames.initialRefs j))
+      (phaseRead owner x (labelSpectator h z))
+    let i : Fin 661 := ⟨111+t.val,by omega⟩
+    let base := g*(registerChart w n i.val).transpose
+    (∀ l ∈ Copy.lifecycles, i.val ∈ l.targets → ∀ k : Fin 661,
+      (k.val < 111 ∨ 222 ≤ k.val) →
+      (snapshot maskBank refsAfter091 l.source).getLsbD k.val = true →
+      initial (base*registerChart w n l.source) k.val = initial g k.val) →
+    phaseRead owner y (labelSpectator g z) i.val =
+      selectedFrame w (Frames.finalRefs i.val) (initial g i.val + initial g t.val) := by
+  intro owner initial i base agree
+  have high (h) (j : ℕ) (hj : 661 ≤ j) : initial h j = 0 := by
+    simp [initial,FramedCircuit.decode,phaseRead,Copy.extendStored,show ¬ j < 661 by omega]
+  let prepared := fun h => FramedCircuit.moduleRun ((sectionD++sectionA).map RawGate.toCircuit) (initial h)
+  have same (l : Copy.Lifecycle) (hl : l ∈ Copy.lifecycles) (hit : i.val ∈ l.targets) :
+      prepared (base*registerChart w n l.source) l.source = prepared g l.source := by
+    funext a
+    simp only [prepared,prepared_read _ (high _),eval]
+    apply Finset.sum_congr rfl
+    intro k _
+    by_cases mem : (snapshot maskBank refsAfter091 l.source).getLsbD k.val = true
+    · simp only [mem,ite_true,agree l hl hit k (retained_support l hl k mem) mem]
+    · rw [ite_eq_right mem,ite_eq_right mem]
+  have correction : (((Copy.lifecycles.filter (fun l => i.val ∈ l.targets)).map
+      (fun l => prepared (base*registerChart w n l.source) l.source - prepared g l.source))).sum = 0 := by
+    apply List.sum_eq_zero
+    intro v hv
+    obtain ⟨l,hl,rfl⟩ := List.mem_map.mp hv
+    have hit := List.mem_filter.mp hl
+    rw [same l hit.1 (by simpa using hit.2),sub_self]
+  rw [act.targetRead g z t]
+  exact congrArg (selectedFrame w (Frames.finalRefs i.val))
+    ((congrArg (initial g i.val + initial g t.val + ·) correction).trans (add_zero _))
+
+/-- A replicated input stream on live cover labels stays replicated through
+one complete invocation. Singular padding is arbitrary, since the relative
+charts in each COPY window preserve invertibility. -/
+theorem InvocationEffect.liveEndpoint {n : Fin 9} {r : Fin 32} {d : Fin 5}
+    {w B K : ℕ} {x y} (act : InvocationEffect n r d w B K x y)
+    (z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B)
+    (stored : Fin 661 → AddressStream (ZMod (prime^w))) :
+    let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n r d,ownerTape_injective n r d⟩
+    (∀ h, IsUnit h → ∀ j : Fin 661, phaseRead owner x (labelSpectator h z) j.val =
+      selectedFrame w (Frames.initialRefs j.val) (stored j)) →
+    ∀ g, IsUnit g → ∀ i : Fin 661, phaseRead owner y (labelSpectator g z) i.val =
+      selectedFrame w (Frames.finalRefs i.val)
+        (if hit : 111 ≤ i.val ∧ i.val < 222 then stored i + stored ⟨i.val-111,by omega⟩ else stored i) := by
+  intro owner input g live i
+  let initial := fun h => FramedCircuit.decode (fun j => selectedFrame w (Frames.snapshot Frames.initialRefs j))
+    (phaseRead owner x (labelSpectator h z))
+  have decode (h) (unit : IsUnit h) (j : Fin 661) : initial h j.val = stored j := by
+    simp only [initial,FramedCircuit.decode,Frames.snapshot,ite_eq_left j.isLt,input h unit j,
+      LinearEquiv.symm_apply_apply]
+  by_cases hit : 111 ≤ i.val ∧ i.val < 222
+  · let t : Fin 111 := ⟨i.val-111,by omega⟩
+    have index : 111+t.val = i.val := by dsimp [t]; omega
+    let target : Fin 661 := ⟨111+t.val,by omega⟩
+    have same : target = i := Fin.ext index
+    have eq := act.targetRead_of_support g z t
+    dsimp only at eq
+    have compatible (l : Copy.Lifecycle) (_hl : l ∈ Copy.lifecycles) (_target : target.val ∈ l.targets)
+        (k : Fin 661) (_range : k.val < 111 ∨ 222 ≤ k.val)
+        (_mem : (snapshot maskBank refsAfter091 l.source).getLsbD k.val = true) :
+        initial (g*(registerChart w n target.val).transpose*registerChart w n l.source) k.val = initial g k.val := by
+      have unit (j : ℕ) := isUnit_iff_exists_inv.mpr ⟨_,registerChart_inverse w n j⟩
+      have back := isUnit_iff_exists_inv.mpr ⟨_,mul_eq_one_comm.mp (registerChart_inverse w n l.source)⟩
+      exact (decode _ ((live.mul (unit target.val)).mul back) k).trans (decode g live k).symm
+    have read := eq compatible
+    change phaseRead owner y (labelSpectator g z) target.val = selectedFrame w (Frames.finalRefs target.val)
+      (initial g target.val + initial g t.val) at read
+    rw [same,decode g live i,decode g live (⟨t.val,by omega⟩ : Fin 661)] at read
+    simpa only [dite_eq_left hit] using read
+  · rw [dite_eq_right hit,act.otherRead g z i (by omega),input g live i,LinearEquiv.symm_apply_apply]
+
 /-- Source and helper reads agree whenever their input label agrees. -/
 theorem InvocationEffect.otherRead_congr {n : Fin 9} {r : Fin 32} {d : Fin 5}
     {w B K : ℕ} {x y x' y'} (act : InvocationEffect n r d w B K x y)
