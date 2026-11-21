@@ -135,16 +135,16 @@ returns. Both the setup and retirement are charged at the child's volume. -/
 theorem withChildCounts_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
     (r : Fin 8 ↪ Fin T) (port : Fin T) (apart : ∀ j, r j ≠ port)
     (batch : Descriptor) (pos : 0 < volume prime batch) (core : Pr P T Q prime U)
-    (budget : ℕ) (u : HS T Q prime U) (S : Stacks T prime) (word : Fin (volume prime batch) → ZMod 2)
+    (budget : ℕ) (u : HS T Q prime U) (S : Stacks T prime) (result : List (Fin (prime+4)) → List (Fin (prime+4)) → Prop)
     (width : S.R (r 0) = (Routines.hdr batch 3).map bitSymbol)
     (rows : S.R (r 1) = (Routines.hdr batch 1).map bitSymbol)
     (empty : ∀ j : Fin 8, 2 ≤ j.val → S.R (r j) = []) :
     let D := childCountState r batch S
     (∀ v : HS T Q prime U, ∃ y B k, y.user = v.user ∧ k ≤ budget ∧ Exec body core (mk v D) k (mk y B) ∧
-      RecordPayload port (fun _ => blank) 0 word B ∧ ∀ j, j ≠ port → B.L j = D.L j ∧ B.R j = D.R j) →
+      result (B.L port) (B.R port) ∧ ∀ j, j ≠ port → B.L j = D.L j ∧ B.R j = D.R j) →
     ∃ z F k, z.user = u.user ∧ k ≤ budget+81*volume prime batch ∧
       Exec body (((prepareChildCounts r).seq core).seq (Prog.seqList ([r 2,r 3].map WordCmd.dropR)))
-        (mk u S) k (mk z F) ∧ RecordPayload port (fun _ => blank) 0 word F ∧
+        (mk u S) k (mk z F) ∧ result (F.L port) (F.R port) ∧
       ∀ j, j ≠ port → F.L j = S.L j ∧ F.R j = S.R j := by
   intro D child
   let clock := batch.width/64-1
@@ -162,10 +162,8 @@ theorem withChildCounts_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q pri
   have countSize : count ≤ batch.rows := Nat.div_le_self ..
   refine ⟨z,F,_,last.trans (same.trans user),?_,Exec.seq (Exec.seq prep run) erase,?_,?_⟩
   · omega
-  · intro t
-    change readAt blank (F.L port) (F.R port) (t-0) = _
-    rw [left,right,if_neg (by simp [(apart 2).symm,(apart 3).symm])]
-    exact out t
+  · rw [left,right,if_neg (by simp [(apart 2).symm,(apart 3).symm])]
+    exact out
   · intro j ne
     refine ⟨(congrFun left j).trans (frame j ne).1,?_⟩
     rw [right]

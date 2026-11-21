@@ -158,14 +158,14 @@ theorem replayChildPrefix_exec {T K Q w W H J : ℕ} {P U : Type}
       D.R (replay ((46 : Fin 66).castAdd K)) = rs.flatMap (LabelDirectory.entry prefixes 64 (w+1)) ∧
       (∀ j ∈ rs, (LabelDirectory.entry prefixes 64 (w+1) j).length = (D.R (r 3)).length) ∧
       (∀ rank ≤ 42, 11*next + 2048*((w+1)*rank) ≤ 11*width + 2048*(64*(w+1))) ∧
-      ∀ {N : ℕ} (core : Pr P T Q prime U) (word : Fin N → ZMod 2)
+      ∀ (core : Pr P T Q prime U) (result : List (Fin (prime+4)) → List (Fin (prime+4)) → Prop)
         (b : HS T Q prime U) (B : Stacks T prime) (k : ℕ),
         b.user = z.user → Exec body core (mk z D) k (mk b B) →
-        RecordPayload owner (fun _ => blank) 0 word B →
+        result (B.L owner) (B.R owner) →
         (∀ i, i ≠ owner → B.L i = D.L i ∧ B.R i = D.R i) →
         ∃ y F, y.user = u.user ∧ Exec body (((directoryChildPrefixClock 64 r).seq core).seq (Fast.clearR (r 3)))
           (mk u S) (4*width+4*w+16+k+(2*next+2)) (mk y F) ∧
-          RecordPayload owner (fun _ => blank) 0 word F ∧
+          result (F.L owner) (F.R owner) ∧
           ∀ i, i ≠ owner → F.L i = S.L i ∧ F.R i = S.R i := by
   intro r width next D
   obtain ⟨queue,widths,free,_,_,_,unit,_,_,_,precision,_⟩ := entry
@@ -187,14 +187,14 @@ theorem replayChildPrefix_exec {T K Q w W H J : ℕ} {P U : Type}
     dsimp only [next]
     omega
 
-  · intro N core word b B k bz coreRun payload frame
+  · intro core result b B k bz coreRun payload frame
     have apart : r 3 ≠ owner := separate _
     obtain ⟨y,yb,clear⟩ := Fast.clearR_exec body (r 3) b B
     have length : (B.R (r 3)).length = next := by rw [(frame _ apart).2]; simp [D]
     rw [length] at clear
     refine ⟨y,_,yb.trans (bz.trans user),Exec.seq (Exec.seq run coreRun) clear,?_,?_⟩
-    · intro j
-      simpa only [Function.update_of_ne apart.symm] using payload j
+    · change result _ (Function.update B.R (r 3) [] owner)
+      rwa [Function.update_of_ne apart.symm]
     · intro i hi
       refine ⟨(frame i hi).1,?_⟩
       change Function.update B.R (r 3) [] i = S.R i
@@ -218,7 +218,7 @@ theorem withReplayPrefix_exec {T K Q w W H J V : ℕ} {P U : Type}
     (S : Stacks T prime) (A : Stacks (66+K) prime)
     (entry : DirectoryReady v proj w W H J weights prefixes [] (fun _ => []) A rs)
     (publicWords : ∀ i : Fin 66, S.R (replay (i.castAdd K)) = A.R (i.castAdd K))
-    (core : Pr P T Q prime U) (budget : ℕ) (input output : Fin V → ZMod 2)
+    (core : Pr P T Q prime U) (budget : ℕ) (input : Fin V → ZMod 2) (result : List (Fin (prime+4)) → List (Fin (prime+4)) → Prop)
     (payload : RecordPayload owner (fun _ => blank) 0 input S) :
     let r := (childPrefixPorts.trans (Fin.castAddEmb K)).trans replay
     let next := (S.R (r 0)).length+(w+1)*(64*64)
@@ -229,16 +229,16 @@ theorem withReplayPrefix_exec {T K Q w W H J V : ℕ} {P U : Type}
       (∀ j ∈ rs, (LabelDirectory.entry prefixes 64 (w+1) j).length = (D.R (r 3)).length) →
       RecordPayload owner (fun _ => blank) 0 input D →
       ∃ b B k, b.user = z.user ∧ k ≤ budget ∧ Exec body core (mk z D) k (mk b B) ∧
-        RecordPayload owner (fun _ => blank) 0 output B ∧ ∀ i, i ≠ owner → B.L i = D.L i ∧ B.R i = D.R i) →
+        result (B.L owner) (B.R owner) ∧ ∀ i, i ≠ owner → B.L i = D.L i ∧ B.R i = D.R i) →
     ∃ y F k, y.user = u.user ∧ k ≤ budget+28*V ∧ Exec body (withReplayPrefix r core) (mk u S) k (mk y F) ∧
-      RecordPayload owner (fun _ => blank) 0 output F ∧ ∀ i, i ≠ owner → F.L i = S.L i ∧ F.R i = S.R i := by
+      result (F.L owner) (F.R owner) ∧ ∀ i, i ≠ owner → F.L i = S.L i ∧ F.R i = S.R i := by
   intro r next D fits run
   obtain ⟨z,_,_,archive,widths,_,release⟩ :=
     replayChildPrefix_exec body replay owner separate v proj weights prefixes rs u S A entry publicWords
   have ownerOff : owner ≠ r 3 := (separate _).symm
   obtain ⟨b,B,k,user,paid,execution,out,frame⟩ := run z archive widths (fun i => by
     simpa only [D,Function.update_of_ne ownerOff] using payload i)
-  obtain ⟨y,F,same,complete,result,restored⟩ := release core output b B k user execution out frame
+  obtain ⟨y,F,same,complete,result,restored⟩ := release core result b B k user execution out frame
   exact ⟨y,F,_,same,by dsimp only [next,r] at fits; omega,complete,result,restored⟩
 
 /-- Read unary dimensions on 29–31 and borrow scratch 58–63. Only the
@@ -552,18 +552,18 @@ theorem directoryChartHost_stopped_exec [M8.Machine.Net] (K : ℕ) {P U : Type}
     (fun j => stoppedChartBank_private K T j ▸ prepared.2 j) input
   exact ⟨y,B,k,user,Nat.le_floor paid,run,out,frame⟩
 
-private theorem retireChartHeaders_exec {T Q N : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
+private theorem retireChartHeaders_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
     (owner : Fin T) (saved : Fin 3 → Fin T) (inject : Function.Injective saved)
-    (apart : ∀ j, saved j ≠ owner) (headers : Fin 3 → List Bool) (word : Fin N → ZMod 2)
+    (apart : ∀ j, saved j ≠ owner) (headers : Fin 3 → List Bool) (result : List (Fin (prime+4)) → List (Fin (prime+4)) → Prop)
     (v : HS T Q prime U) (S B : Stacks T prime)
     (initial : ∀ j, S.R (saved j) = []) (words : ∀ j, B.R (saved j) = (headers j).map bitSymbol)
     (left : ∀ j, j ≠ owner → B.L j = S.L j)
     (right : ∀ j, j ≠ owner → (∀ l, j ≠ saved l) → B.R j = S.R j)
-    (out : RecordPayload owner (fun _ => blank) 0 word B) :
+    (out : result (B.L owner) (B.R owner)) :
     let scratch := (List.finRange 3).map saved
     let charge := ((List.finRange 3).map fun j => 2*(headers j).length+2).sum+1
     ∃ last G, last.user = v.user ∧ Exec body (Prog.seqList (scratch.map WordCmd.dropR)) (mk v B) charge (mk last G) ∧
-      RecordPayload owner (fun _ => blank) 0 word G ∧ ∀ j, j ≠ owner → G.L j = S.L j ∧ G.R j = S.R j := by
+      result (G.L owner) (G.R owner) ∧ ∀ j, j ≠ owner → G.L j = S.L j ∧ G.R j = S.R j := by
   intro scratch charge
   obtain ⟨last,G,same,erase,keepLeft,keepRight⟩ := retire_exec body scratch ((List.nodup_finRange _).map inject) v B
   have time : (scratch.map fun j => 2*(B.R j).length+2).sum+1 = charge := by
@@ -573,10 +573,8 @@ private theorem retireChartHeaders_exec {T Q N : ℕ} {P U : Type} (body : P →
     obtain ⟨j,_,eq⟩ := List.mem_map.mp mem
     exact apart j eq
   refine ⟨last,G,same,time ▸ erase,?_,?_⟩
-  · intro t
-    change readAt blank (G.L owner) (G.R owner) (t-0) = _
-    rw [keepLeft,keepRight,if_neg outside]
-    exact out t
+  · rw [keepLeft,keepRight,if_neg outside]
+    exact out
   · intro j ne
     refine ⟨(congrFun keepLeft j).trans (left j ne),?_⟩
     rw [keepRight]
@@ -668,7 +666,7 @@ theorem withDirectoryHeaders_exec {K T N Q : ℕ} {P U : Type}
     let saved := fun j : Fin 3 => replay (stoppedChartHeader K T (j.castAdd 3))
     let scratch := (List.finRange 3).map saved
     let eraseCost := ((List.finRange 3).map fun j => 2*(Routines.hdr batch (j.castAdd 3)).length+2).sum+1
-    ∀ (a : HS N Q prime U) (A : Stacks N prime) (x : Fin (volume prime batch) → ZMod 2),
+    ∀ (a : HS N Q prime U) (A : Stacks N prime) (x : Fin (volume prime batch) → ZMod 2) (result : List (Fin (prime+4)) → List (Fin (prime+4)) → Prop),
       (∀ j : Fin 3, (A.R (replay (place (bank (j.castAdd 9))))).length = values j) →
       (∀ j : Fin 12, 3 ≤ j.val → A.R (replay (place (bank j))) = []) →
       (∀ j : Fin 3, A.R (replay (stoppedChartHeader K T (j.natAdd 3))) = (Routines.hdr row (j.natAdd 3)).map bitSymbol) →
@@ -678,14 +676,14 @@ theorem withDirectoryHeaders_exec {K T N Q : ℕ} {P U : Type}
         (∀ j, (∀ l : Fin 3, j ≠ saved l) → F.L j = A.L j ∧ F.R j = A.R j) →
         RecordPayload owner (fun _ => blank) 0 x F →
         ∃ y B k, y.user = z.user ∧ k ≤ budget ∧ Exec host core (mk z F) k (mk y B) ∧
-          RecordPayload owner (fun _ => blank) 0 (Shared50RecursiveNodeRows.transpose (one_dvd batch.rows) x) B ∧
+          result (B.L owner) (B.R owner) ∧
           ∀ j, j ≠ owner → B.L j = F.L j ∧ B.R j = F.R j) →
       ∃ y B k, y.user = a.user ∧ k ≤ (63*LabelMask.records parent+31)+budget+eraseCost ∧
         Exec host (((embProg replay Empty.elim (embProg place Empty.elim (IntervalDescriptor.directoryOuterHeaders bank))).seq
           core).seq (Prog.seqList (scratch.map WordCmd.dropR))) (mk a A) k (mk y B) ∧
-        RecordPayload owner (fun _ => blank) 0 (Shared50RecursiveNodeRows.transpose (one_dvd batch.rows) x) B ∧
+        result (B.L owner) (B.R owner) ∧
         ∀ j, j ≠ owner → B.L j = A.L j ∧ B.R j = A.R j := by
-  intro batch row place bank values saved scratch eraseCost a A x src empty tail free payload child
+  intro batch row place bank values saved scratch eraseCost a A x result src empty tail free payload child
   obtain ⟨v,D,n,user,paid,prep,left,ready,stable⟩ := prepareStoppedChart_exec (K := K) (T := T)
     (P := Empty) Empty.elim parent hp lo hi w (embDn replay a) (embStk replay A) src empty tail free
   obtain ⟨z,F,placed,_,same,view,off⟩ := exec_emb (body' := host) (ι := Empty.elim)
@@ -724,7 +722,7 @@ theorem withDirectoryHeaders_exec {K T N Q : ℕ} {P U : Type}
     (frame (saved j) (apart (stoppedChartHeader K T (j.castAdd 3)))).2.trans (ready.1 (j.castAdd 3))
   obtain ⟨last,G,finalUser,erase,output,restored⟩ := retireChartHeaders_exec host owner saved inject
     (fun j => apart (stoppedChartHeader K T (j.castAdd 3))) (fun j => Routines.hdr batch (j.castAdd 3))
-    (Shared50RecursiveNodeRows.transpose (one_dvd batch.rows) x) y A B initial words (by
+    result y A B initial words (by
       intro j ne
       apply (frame j ne).1.trans
       by_cases inside : ∃ l, replay l = j
@@ -784,7 +782,8 @@ theorem dispatchStoppedChart_exec [M8.Machine.Net] (K : ℕ) {P U : Type}
     rw [directoryChartPlacement_owner] at sep
     exact sep
   obtain ⟨y,B,k,user,time,run,out,frame⟩ := withDirectoryHeaders_exec host replay owner apart
-    (host (.inr (.inr ()))) parent hp lo hi w ⌊price⌋₊ a A x src empty tail free payload (by
+    (host (.inr (.inr ()))) parent hp lo hi w ⌊price⌋₊ a A x (fun l r => RecordPayload owner (fun _ => blank) 0
+      (Shared50RecursiveNodeRows.transpose (one_dvd batch.rows) x) {A with L := fun _ => l, R := fun _ => r}) src empty tail free payload (by
       intro z F ready _ input
       have call := directoryChartHost_stopped_exec K room localBody node i w aligned rows z F
       rw [← rank] at call

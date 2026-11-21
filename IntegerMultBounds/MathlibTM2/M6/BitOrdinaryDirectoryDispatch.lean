@@ -289,17 +289,17 @@ open RecursiveInterchangeLayout in
 theorem withDirectorySpectator_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
     (r : Fin 12 ↪ Fin T) (owner : Fin T) (apart : ∀ i, r i ≠ owner)
     (batch : Descriptor) (hp : batch.Positive) (core : Pr P T Q prime U) (budget : ℕ)
-    (u : HS T Q prime U) (S : Stacks T prime) (input word : Fin (volume prime batch) → ZMod 2)
+    (u : HS T Q prime U) (S : Stacks T prime) (input : Fin (volume prime batch) → ZMod 2) (result : List (Fin (prime+4)) → List (Fin (prime+4)) → Prop)
     (payload : RecordPayload owner (fun _ => blank) 0 input S)
     (between : S.R (r 10) = (FlatCoordinateSchedule.bits batch.between).map bitSymbol)
     (afterD : S.R (r 11) = (FlatCoordinateSchedule.bits batch.afterD).map bitSymbol)
     (empty : ∀ i : Fin 10, S.R (r (i.castAdd 2)) = []) :
     let D := directorySpectatorState r batch.between batch.afterD S
     (∀ v : HS T Q prime U, RecordPayload owner (fun _ => blank) 0 input D → ∃ y B k, y.user = v.user ∧ k ≤ budget ∧ Exec body core (mk v D) k (mk y B) ∧
-      RecordPayload owner (fun _ => blank) 0 word B ∧ ∀ j, j ≠ owner → B.L j = D.L j ∧ B.R j = D.R j) →
+      result (B.L owner) (B.R owner) ∧ ∀ j, j ≠ owner → B.L j = D.L j ∧ B.R j = D.R j) →
     ∃ z F k, z.user = u.user ∧ k ≤ budget+133*volume prime batch ∧
       Exec body (withDirectorySpectator r core) (mk u S) k (mk z F) ∧
-      RecordPayload owner (fun _ => blank) 0 word F ∧ ∀ j, j ≠ owner → F.L j = S.L j ∧ F.R j = S.R j := by
+      result (F.L owner) (F.R owner) ∧ ∀ j, j ≠ owner → F.L j = S.L j ∧ F.R j = S.R j := by
   intro D child
   obtain ⟨v,n,user,paid,prep⟩ := directorySpectatorWord_exec body r u S _ _ hp.2.2.2.1 hp.2.2.2.2 between afterD empty
   obtain ⟨y,B,k,same,time,run,out,frame⟩ := child v (fun i => by
@@ -322,9 +322,8 @@ theorem withDirectorySpectator_exec {T Q : ℕ} {P U : Type} (body : P → Pr P 
     have pos : 0 < W := Nat.mul_pos hp.2.2.2.1 hp.2.2.2.2
     dsimp only [W] at *
     omega
-  · intro t
-    rw [show F.L owner = B.L owner from congrFun left owner,right,ite_eq_right (by simp [(apart 0).symm,(apart 1).symm,(apart 2).symm,(apart 3).symm])]
-    exact out t
+  · rw [show F.L owner = B.L owner from congrFun left owner,right,ite_eq_right (by simp [(apart 0).symm,(apart 1).symm,(apart 2).symm,(apart 3).symm])]
+    exact out
   · intro j ne
     refine ⟨(congrFun left j).trans (frame j ne).1,?_⟩
     rw [right]
@@ -354,16 +353,16 @@ open RecursiveInterchangeLayout in
 theorem withChildModulus_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
     (r : Fin 10 ↪ Fin T) (owner : Fin T) (apart : ∀ i, r i ≠ owner) (batch : Descriptor)
     (hp : batch.Positive) (width : 0 < batch.width) (core : Pr P T Q prime U) (budget : ℕ)
-    (u : HS T Q prime U) (S : Stacks T prime) (input word : Fin (volume prime batch) → ZMod 2)
+    (u : HS T Q prime U) (S : Stacks T prime) (input : Fin (volume prime batch) → ZMod 2) (result : List (Fin (prime+4)) → List (Fin (prime+4)) → Prop)
     (payload : RecordPayload owner (fun _ => blank) 0 input S)
     (clock : (S.R (r 1)).length = batch.width/64-1) (free : ∀ i : Fin 10, i ≠ 1 → S.R (r i) = []) :
     let M := prime^(batch.width/64-1+1)
     let D := {S with R := Function.update (Function.update S.R (r 2) (List.replicate M Node.tick)) (r 3) (binSyms M.size M)}
     (∀ v : HS T Q prime U, RecordPayload owner (fun _ => blank) 0 input D →
       ∃ y B k, y.user = v.user ∧ k ≤ budget ∧ Exec body core (mk v D) k (mk y B) ∧
-      RecordPayload owner (fun _ => blank) 0 word B ∧ ∀ j, j ≠ owner → B.L j = D.L j ∧ B.R j = D.R j) →
+      result (B.L owner) (B.R owner) ∧ ∀ j, j ≠ owner → B.L j = D.L j ∧ B.R j = D.R j) →
     ∃ z F k, z.user = u.user ∧ k ≤ budget+64*volume prime batch ∧
-      Exec body (withChildModulus r core) (mk u S) k (mk z F) ∧ RecordPayload owner (fun _ => blank) 0 word F ∧
+      Exec body (withChildModulus r core) (mk u S) k (mk z F) ∧ result (F.L owner) (F.R owner) ∧
       ∀ j, j ≠ owner → F.L j = S.L j ∧ F.R j = S.R j := by
   intro M D child
   obtain ⟨v,n,user,paid,prep⟩ := childModulusWord_exec body r u S _ clock free
@@ -383,9 +382,8 @@ theorem withChildModulus_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q pr
     have pos : 0 < M := pow_pos pp _
     change n ≤ 43*M+12 at paid
     omega
-  · intro t
-    rw [show F.L owner = B.L owner from congrFun left owner,right,ite_eq_right (by simp [(apart 2).symm,(apart 3).symm])]
-    exact out t
+  · rw [show F.L owner = B.L owner from congrFun left owner,right,ite_eq_right (by simp [(apart 2).symm,(apart 3).symm])]
+    exact out
   · intro j ne
     refine ⟨(congrFun left j).trans (frame j ne).1,?_⟩
     rw [right]
@@ -622,6 +620,7 @@ theorem childMetadataSources_words {K T n w rows : ℕ} (room : 16 ≤ T)
     B.R (publicPort 40) = F.R (publicPort 40) ∧
       (∀ j : Fin (66+(K+3+T)), 66 ≤ j.val → j.val < 66+K →
         B.L (replay j) = F.L (replay j) ∧ B.R (replay j) = F.R (replay j)) ∧
+      (∀ owner, (∀ j, replay j ≠ owner) → B.L owner = F.L owner ∧ B.R owner = F.R owner) ∧
       ∀ i : Fin 9, B.R (replay (childMetadataSources K T room i)) = words (ordinaryMetadataPorts i).val := by
   intro publicPort counts spectator modulus D E G M B words
   have clock : batch.width/64-1 = w := by omega
@@ -657,7 +656,7 @@ theorem childMetadataSources_words {K T n w rows : ℕ} (room : 16 ≤ T)
   have sources : (fun i => replay (childMetadataSources K T room i)) =
       ![priv 9,publicPort 29,priv 1,publicPort 31,priv 0,publicPort 58,priv 5,priv 6,publicPort 46] := by
     funext i; fin_cases i <;> rfl
-  refine ⟨by simp [Function.update_of_ne,separate,pub],?_,?_⟩
+  refine ⟨by simp [Function.update_of_ne,separate,pub],?_,?_,?_⟩
   · intro j low high
     have off (i : Fin 16) : replay j ≠ priv i := by
       apply replay.injective.ne
@@ -672,6 +671,10 @@ theorem childMetadataSources_words {K T n w rows : ℕ} (room : 16 ≤ T)
       change j.val = 58 at h
       omega
     exact ⟨rfl,by simp [Function.update_of_ne,off,publicOff]⟩
+  · intro owner outside
+    have off (i : Fin 16) : owner ≠ priv i := (outside _).symm
+    have pubOff : owner ≠ publicPort 58 := (outside _).symm
+    exact ⟨rfl,by simp only [Function.update_of_ne (off _),Function.update_of_ne pubOff]⟩
   intro i
   rw [show replay (childMetadataSources K T room i) = _ from congrFun sources i]
   fin_cases i <;> simp [words,ordinaryMetadataPorts,ordinaryEntryWords,Function.update_of_ne,
@@ -724,7 +727,7 @@ theorem selectScheduledChart_exec [M8.Machine.Net] (K : ℕ) {P R U : Type}
     let owner := (0 : Fin 5).natAdd (tapes+10)
     let host := directoryChartHost room localBody (stoppedChartChild (K+1))
     let replay := directoryChartReplayBank room
-    ∀ (recursive : R → Pr ((P ⊕ (P ⊕ Unit)) ⊕ (Fin 43 ⊕ R)) ((tapes+10)+5) columnCapacity prime U) (f : R) (recursiveBudget : ℕ),
+    ∀ (recursive : R → Pr ((P ⊕ (P ⊕ Unit)) ⊕ (Fin 43 ⊕ R)) ((tapes+10)+5) columnCapacity prime U) (f : R) (recursiveBudget reserve : ℕ),
     let procedures := scheduledChartProcedures K room localBody recursive f
     let body := recursiveChartTable host procedures
     ∀ {W H J : ℕ} {proj : Matrix (Fin 64) (Fin 64) ℚ} {weights : Fin 64 → ZMod (prime^(w+1))}
@@ -741,6 +744,7 @@ theorem selectScheduledChart_exec [M8.Machine.Net] (K : ℕ) {P R U : Type}
         batch.width = 64*(e+1) → batch.rows = 142080*rows →
         next ≤ prime^batch.width →
         B.R (replay ((40 : Fin 66).castAdd ((K+1)+3+T))) = binSyms L cutoff →
+        (B.L owner = [] ∧ (B.R owner).length = volume prime batch) →
         (B.R (replay ((40 : Fin 66).castAdd ((K+1)+3+T)))).length ≤ batch.width →
         (∀ j : Fin (K+1), let i := replay (directoryChildWorkspace (K+1) T j)
           B.L i = [] ∧ B.R i = []) →
@@ -754,15 +758,17 @@ theorem selectScheduledChart_exec [M8.Machine.Net] (K : ℕ) {P R U : Type}
         RecordPayload owner (fun _ => blank) 0 x B →
         ∃ y J, ∃ k : ℕ, y.user = z.user ∧ k ≤ recursiveBudget ∧
           Exec body (recursive f) (mk z B) k (mk y J) ∧
-          RecordPayload owner (fun _ => blank) 0 (Shared50RecursiveNodeRows.transpose (one_dvd batch.rows) x) J ∧
+          (RecordPayload owner (fun _ => blank) 0 (Shared50RecursiveNodeRows.transpose (one_dvd batch.rows) x) J ∧
+            (J.L owner).length+((J.R owner).drop (volume prime batch)).length ≤ reserve) ∧
           ∀ j, j ≠ owner → J.L j = B.L j ∧ J.R j = B.R j) →
       DirectoryChartCall room localBody body (Sum.inl ∘ Sum.inl) (Sum.inl ∘ (Sum.inr ∘ Sum.inl))
         (.inr (.inl ⟨hi-lo,rank.symm ▸ Nat.lt_succ_of_le (nodeChildren5_le i)⟩)) parent row
         (ordinaryDirectoryChild parent (hi-lo) (64-(hi-lo)) w) W H J (directoryDigits prime root path)
         (scheduledChartBudget scheduled cutoff recursiveBudget) proj weights prefixes (binSyms L cutoff)
-        (fun head tail => ∀ push, (∀ f, Fast.Main.mnProgPush (body f) ≤ push) →
-          head.length+tail.length ≤ 2*push*scheduledChartBudget scheduled cutoff recursiveBudget) := by
-  intro i interval lo hi rank L parent batch row scheduled T tapes owner host replay recursive f recursiveBudget procedures body
+        (fun head tail => if cutoff < scheduled.width then head.length+tail.length ≤ reserve
+          else ∀ push, (∀ f, Fast.Main.mnProgPush (body f) ≤ push) →
+            head.length+tail.length ≤ 2*push*scheduledChartBudget scheduled cutoff recursiveBudget) := by
+  intro i interval lo hi rank L parent batch row scheduled T tapes owner host replay recursive f recursiveBudget reserve procedures body
     W H J proj weights prefixes positive activeParent recursiveRun
   have handlers := recursiveChartTable_scan room localBody (stoppedChartChild (K+1)) procedures
   have sameBatch : ordinaryDirectoryChild parent (hi-lo) (64-(hi-lo)) w = batch :=
@@ -809,12 +815,16 @@ theorem selectScheduledChart_exec [M8.Machine.Net] (K : ℕ) {P R U : Type}
   have width : (w+1)*(hi-lo) = scheduled.width := by
     rw [rank]
     exact shape.width
+  let result := fun (l r : List (Fin (prime+4))) =>
+    RecordPayload owner (fun _ => blank) 0 (Shared50RecursiveNodeRows.transpose (one_dvd batch.rows) x)
+      {A with L := fun _ => l, R := fun _ => r} ∧ l.length+(r.drop (volume prime batch)).length ≤ reserve
   have run := chartCutoff_exec body cmp (hi-lo) w L cutoff cutFits (width.symm ▸ fits) large (stateMapProg id id Sum.inl leaf) a A clock cutWord
     (fun j hj => by
       change A.R (chartCutoffBank K T _ replay j) = []
       rw [chartCutoffBank_scratch K T _ replay j hj]
       exact (free _).2)
     (fun B => RecordPayload owner (fun _ => blank) 0 (Shared50RecursiveNodeRows.transpose (one_dvd batch.rows) x) B ∧
+      (cutoff < scheduled.width → (B.L owner).length+((B.R owner).drop (volume prime batch)).length ≤ reserve) ∧
       ∀ j, j ≠ owner → B.L j = A.L j ∧ B.R j = A.R j)
     (if cutoff < scheduled.width then (recursiveBudget : ℝ)+(419*volume prime scheduled : ℕ)+2 else leafBudget)
   rw [width] at run
@@ -825,7 +835,7 @@ theorem selectScheduledChart_exec [M8.Machine.Net] (K : ℕ) {P R U : Type}
   have atomBound : w+1 ≤ scheduled.width := by
     rw [← width]
     exact Nat.le_mul_of_pos_right _ (rank.symm ▸ (nodeChildren5_bounds i).1)
-  obtain ⟨y,B,k,user,paid,execution,out,frame⟩ := run (fun z => by
+  obtain ⟨y,B,k,user,paid,execution,out,pad,frame⟩ := run (fun z => by
     by_cases active : cutoff < scheduled.width
     · simp only [ite_eq_left active]
       have smaller : scheduled.width < node.width := by
@@ -854,12 +864,12 @@ theorem selectScheduledChart_exec [M8.Machine.Net] (K : ℕ) {P R U : Type}
       have prefixSize := (directoryReady.2.1 0 (List.mem_range.mpr recordPos)).trans prefixWidth
       change (A.R (prefixPorts 0)).length = directoryDigits prime root path at prefixSize
       have call := recurse (batchWidth.symm ▸ active) (batchWidth.symm ▸ smaller) batchPos
-      obtain ⟨y,B,k,user,paid,execution,out,frame⟩ := prepared x sources empty tail free payload (by
+      obtain ⟨y,B,k,user,paid,execution,out,frame⟩ := prepared x result sources empty tail free payload (by
         intro v F ready keep input
         have registers := directoryChildCountBank_ready (K := K+1) (T := T) ((by decide : 6 ≤ 9).trans nine_le_leaf)
           replay batch F ready
         apply withChildCounts_exec body counts owner (fun j => apart _) batch (batchSize.symm ▸ pos) (.call (.inr (.inr f)))
-          (recursiveBudget+64*volume prime batch+133*volume prime batch+28*volume prime batch+2) v F _ registers.1 registers.2.1 registers.2.2
+          (recursiveBudget+64*volume prime batch+133*volume prime batch+28*volume prime batch+2) v F result registers.1 registers.2.1 registers.2.2
         intro v'
         have childInput : RecordPayload owner (fun _ => blank) 0 x (childCountState counts batch F) := by
           intro t
@@ -874,29 +884,33 @@ theorem selectScheduledChart_exec [M8.Machine.Net] (K : ℕ) {P R U : Type}
         let modulus := (directoryModulusBank (K+1) T modulusRoom).trans replay
         obtain ⟨y,B,k,user,time,run,out,frame⟩ := withReplayPrefix_exec body replay owner apart row proj weights prefixes
           pending v' (childCountState counts batch F) (embStk replay A) directoryReady publicWords (withDirectorySpectator r (withChildModulus modulus (recursive f))) (recursiveBudget+64*volume prime batch+133*volume prime batch)
-          x (Shared50RecursiveNodeRows.transpose (one_dvd batch.rows) x) childInput
+          x result childInput
           (by change ((childCountState counts batch F).R (prefixPorts 0)).length+_ ≤ _; rwa [hclock])
           (by
             intro z archive widths word
             obtain ⟨between,afterD,empty⟩ := directorySpectatorBank_ready spectatorRoom replay batch F ready
               (((childCountState counts batch F).R (prefixPorts 0)).length+(w+1)*(64*64))
             apply withDirectorySpectator_exec body r owner (fun j => apart _) batch batchPos
-              (withChildModulus modulus (recursive f)) (recursiveBudget+64*volume prime batch) z _ x _ word between afterD empty
+              (withChildModulus modulus (recursive f)) (recursiveBudget+64*volume prime batch) z _ x result word between afterD empty
             intro v incoming
             obtain ⟨clock,free⟩ := directoryModulusBank_ready modulusRoom replay batch F ready
               (((childCountState counts batch F).R (prefixPorts 0)).length+(w+1)*(64*64))
             apply withChildModulus_exec body modulus owner (fun j => apart _) batch batchPos
-              (Nat.zero_lt_of_lt (batchWidth.symm ▸ active)) (recursive f) recursiveBudget v _ x _ incoming clock free
+              (Nat.zero_lt_of_lt (batchWidth.symm ▸ active)) (recursive f) recursiveBudget v _ x result incoming clock free
             intro y
             have length : ((childCountState counts batch F).R (prefixPorts 0)).length+(w+1)*(64*64) = directoryDigits prime root (path++[i]) := by
               rw [hclock,prefixSize,directoryDigits_append_call,pathWidth,aligned]
               simp
-            obtain ⟨cutoffKept,privateKept,metadata⟩ := childMetadataSources_words modulusRoom replay batch F ready
+            obtain ⟨cutoffKept,privateKept,ownerKept,metadata⟩ := childMetadataSources_words modulusRoom replay batch F ready
               (((childCountState counts batch F).R (prefixPorts 0)).length+(w+1)*(64*64)) childWidth childRows
               (((keep _ (public_ne_saved replay 29)).2).trans (src 0))
               (((keep _ (public_ne_saved replay 31)).2).trans (src 2))
             have cutoffWord := cutoffKept.trans (((keep _ (public_ne_saved replay 40)).2).trans cutWord)
             apply call y _ nextWidth nextRows nextLabels childWidth childRows nextFits cutoffWord
+            · have before := keep owner (fun j => (apart _).symm)
+              obtain ⟨left,right⟩ := ownerKept owner apart
+              exact ⟨left.trans (before.1.trans compact.1),
+                (congrArg List.length (right.trans before.2)).trans compact.2⟩
             · rw [cutoffWord,length_binSyms]
               exact precision.trans (batchWidth.symm ▸ active.le)
             · intro slot
@@ -928,7 +942,7 @@ theorem selectScheduledChart_exec [M8.Machine.Net] (K : ℕ) {P R U : Type}
         change _ ≤ 19*volume prime batch at erase
         rw [batchSize] at count erase paid
         omega
-      refine ⟨y,B,k,user,?_,execution,out,frame⟩
+      refine ⟨y,B,k,user,?_,execution,out.1,fun _ => out.2,frame⟩
       have realBound := (Nat.cast_le (α := ℝ)).mpr bound
       push_cast at realBound ⊢
       linarith
@@ -936,7 +950,7 @@ theorem selectScheduledChart_exec [M8.Machine.Net] (K : ℕ) {P R U : Type}
       have stopped := dispatchStoppedChart_exec (K+1) room localBody node i lo hi w aligned rows rank z A
       rw [rank] at stopped
       obtain ⟨y,B,k,user,paid,call,out,frame⟩ := stopped x positive sources empty tail free payload
-      exact ⟨y,B,k,user,paid,recursiveChartTable_exec host procedures call,out,frame⟩)
+      exact ⟨y,B,k,user,paid,recursiveChartTable_exec host procedures call,out,fun h => (active h).elim,frame⟩)
   have comparison := cutoffBudget_le (cutoff < scheduled.width) ((Nat.le_succ w).trans atomBound) size pos
     (recursive := (recursiveBudget : ℝ)+(419*volume prime scheduled : ℕ)) (leaf := leafBudget) (L := L)
   have parentBound := Nat.mul_le_mul_left 64 (atomBound.trans size)
@@ -949,8 +963,11 @@ theorem selectScheduledChart_exec [M8.Machine.Net] (K : ℕ) {P R U : Type}
     have nonneg : (0 : ℝ) ≤ volume prime scheduled := Nat.cast_nonneg _
     split_ifs at cost ⊢ <;> push_cast at cost slack ⊢ <;> linarith
   refine ⟨y,B,k,user,steps,execution,out,?_,frame⟩
+  split_ifs with active
+  · exact pad active
+  intro push bounded
   exact childPadding_of_exec body (.inr (.inl ⟨hi-lo,rank.symm ▸ Nat.lt_succ_of_le (nodeChildren5_le i)⟩))
-    owner compact execution steps
+    owner compact execution steps push bounded
 
 
 open IntegerMultBounds.Networks.Certificates.PR589.Nine RecursiveInterchangeLayout in
