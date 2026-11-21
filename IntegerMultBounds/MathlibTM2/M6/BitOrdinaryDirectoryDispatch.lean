@@ -989,4 +989,67 @@ theorem scheduledIdleTime [M8.Machine.Net] (node : Descriptor) (width : 64 ∣ n
   norm_num at selectors total ⊢
   linarith only [total,stages,selectors,branches]
 
+/-- Across a window of length n, each earlier pass contributes to the later
+passes once. A uniform growth bound therefore has a triangular coefficient. -/
+private theorem prefixGrowth_sum_le {α : Type*} (xs : List α) (growth : α → ℝ)
+    (g : ℝ) (bounded : ∀ x, growth x ≤ g) :
+    ∀ n ≤ xs.length, (∑ j : Fin n, ((xs.take j.val).map growth).sum) ≤
+      (n : ℝ)*((n : ℝ)-1)/2*g := by
+  intro n
+  induction n with
+  | zero => simp
+  | succ n ih =>
+    intro fits
+    rw [Fin.sum_univ_castSucc]
+    have prior := ih (by omega)
+    have last := List.sum_le_sum (l := xs.take n) (g := fun _ => g) (fun x _ => bounded x)
+    simp only [List.map_const',List.sum_replicate,List.length_take,min_eq_left (by omega : n ≤ xs.length),
+      nsmul_eq_mul] at last
+    simp only [Fin.val_castSucc,Fin.val_last,Nat.cast_succ]
+    linarith only [add_le_add prior last,show
+      (n : ℝ)*((n : ℝ)-1)/2*g+n*g = (n+1 : ℝ)*((n+1 : ℝ)-1)/2*g by ring]
+
+/-- The total owner growth charged by the nine idle windows, before applying
+the six-step stock normalization cost. -/
+theorem scheduledIdleGrowth (growth : Fin 9 → Fin idleCopies.length → ℝ) (g : Fin 9 → ℝ)
+    (bounded : ∀ i j, growth i j ≤ g i) :
+    (∑ i, ∑ j : Fin idleCopies.length,
+      ((idleCopies.take j.val).map (fun k => growth i (idleCopyIndex k))).sum) ≤
+        630817440 * ∑ i, g i := by
+  rw [Finset.mul_sum]
+  apply Finset.sum_le_sum
+  intro i _
+  have bound := prefixGrowth_sum_le idleCopies (fun k => growth i (idleCopyIndex k)) (g i)
+    (fun k => bounded i _) idleCopies.length le_rfl
+  convert bound using 1
+  rw [idleCopies_length]
+  norm_num
+
+open IntegerMultBounds.Networks.Certificates.PR589.Nine RecursiveInterchangeLayout in
+/-- Sum chart and entry costs, the history of the shared owners, and the
+stopped child budgets across the parent, reserving the other stage calls. -/
+theorem scheduledIdleWindowTime [M8.Machine.Net] (node : Descriptor) (width : 64 ∣ node.width)
+    (rows : 142080 ∣ node.rows) (cutoff : ℕ) (recursiveBudget : Fin nodeChildren5.length → ℕ)
+    (time g : Fin 9 → ℝ) (growth : Fin 9 → Fin idleCopies.length → ℝ)
+    (base : Fin 9 × Fin idleCopies.length → ℝ) (bounded : ∀ i j, growth i j ≤ g i) :
+    let child := scheduledChild prime node
+    let branch := fun i => scheduledBranchCost (child i) cutoff (recursiveBudget i)
+    let calls := Finset.univ.map idleDirectoryIndex
+    let prior := fun (k : Fin 9 × Fin idleCopies.length) =>
+      ((idleCopies.take k.2.val).map (fun a => growth k.1 (idleCopyIndex a))).sum
+    let localTime := fun k => let j := idleDirectoryIndex k
+      base k+6*prior k+scheduledChartBudget (child j) cutoff (recursiveBudget j)
+    (∀ i, time i ≤ (idleCopies.map (fun k => 1+localTime (i,idleCopyIndex k))).sum+1) →
+    (∑ i, time i) + (∑ j ∈ callsᶜ, branch j) ≤
+      (∑ k, base k) + 3784904640*(∑ i, g i) + (9*1907/4 : ℝ)*volume prime node +
+        (∑ j, branch j) + 319689 := by
+  intro child branch calls prior localTime passes
+  have total := scheduledIdleTime node width rows cutoff recursiveBudget time localTime
+    (fun k => base k+6*prior k) passes (fun _ => le_rfl)
+  rw [Finset.sum_add_distrib,← Finset.mul_sum] at total
+  have history : (∑ k, prior k) ≤ 630817440 * ∑ i, g i := by
+    rw [Fintype.sum_prod_type]
+    exact scheduledIdleGrowth growth g bounded
+  linarith only [total,history]
+
 end IntegerMultBounds.MathlibTM2.M6.BitNode

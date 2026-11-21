@@ -1575,7 +1575,6 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux w : ℕ} {L P U : Type}
     let p := max placedPush (Fast.Main.mnProgPush (directoryQueueInitProgram (P := L) (U := U) (Q := columnCapacity) archiveRoom queueRoom))
     let scanRate := (directoryScanCharge_clean (P := L) (U := U) (common := common) r (64-r) 127 dim rfl pool rowRoom
       archiveRoom remainderAnchorFits localPush placedPush p).choose
-    let budget := ⌊(childBudget : ℝ)+scanRate*(((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau*((R : ℝ)*N))⌋₊
     let scanOverhead := ⌊scanRate*(((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau*((R : ℝ)*N))⌋₊
     ChartPrivateReady stage seed →
     RepT (phaseOwners words) (embStk ownerSlots A).L (embStk ownerSlots A).R →
@@ -1591,7 +1590,7 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux w : ℕ} {L P U : Type}
       embProg ret (Empty.elim : Empty → P) (foreign (liftQ back.program backFits))
     let stock := (S.L (stage.slots src)).length+(S.R (stage.slots src)).length
     ∀ u, ∃ z D, ∃ n : ℕ, ∃ final, (n : ℝ) ≤ (13*packedChartRate src cert checked false layout.width +
-      packedChartRate src cert checked true layout.width)*(R*N : ℕ) + ((6*stock+directoryRowClockRate*N+setupCost+budget+91 : ℕ) : ℝ) ∧
+      packedChartRate src cert checked true layout.width)*(R*N : ℕ) + ((directoryRowClockRate*N+setupCost+scanOverhead+91 : ℕ) : ℝ) + childBudget + 6*(stock : ℝ) ∧
       Exec (fun f => embProg baseBank id (outer f)) ((embProg baseBank id enter).seq leave) (mk u A) n (mk z D) ∧
       z.user = u.user ∧
       ChartPrivateReady back (embStk ret D) ∧
@@ -1624,7 +1623,8 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux w : ℕ} {L P U : Type}
   obtain ⟨back,reverse,reverseCost,reverseRun⟩ := (packedRemainderChart_stage src cert checked true).choose_spec.choose_spec
     layout w rows B positiveLayout digits split shape
   refine ⟨stage,back,forward,reverse,?_⟩
-  intro words routed pool rowRoom archiveRoom queueRoom pairRoom localBody localPush placedPush bounded placed widths clean bank setup setupCost clock slot placement chart baseBank headers ret body incoming outgoing childLabel livePort badPort portsApart maskBank intervalMatrix program batch entryPrefix finished childBudget capacity chartFits fits backFits seedBank initial ownerSlots S p scanRate budget scanOverhead seedReady ownerInput fresh calls positive outer enter leave stock u
+  intro words routed pool rowRoom archiveRoom queueRoom pairRoom localBody localPush placedPush bounded placed widths clean bank setup setupCost clock slot placement chart baseBank headers ret body incoming outgoing childLabel livePort badPort portsApart maskBank intervalMatrix program batch entryPrefix finished childBudget capacity chartFits fits backFits seedBank initial ownerSlots S p scanRate scanOverhead seedReady ownerInput fresh calls positive outer enter leave stock u
+  let budget := childBudget+scanOverhead
   obtain ⟨inCalls,outCalls,childRun⟩ := calls
   obtain ⟨entryEq,input⟩ := ordinaryParentEntry_after_passes (T := T+10) (back := back.tapes) stage metadata seedBank seedReady words initial ownerInput fresh
   obtain ⟨ordered,upper,_⟩ := BitHosting.remainder_counts interval member
@@ -1808,7 +1808,16 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux w : ℕ} {L P U : Type}
       have weighted := (directoryScanCharge_clean (P := L) (U := U) (common := common) r (64-r) 127 dim rfl
         pool rowRoom archiveRoom remainderAnchorFits localPush placedPush p).choose_spec w R N width childBudget
         recordsPos (Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) spectators) wordFits
-      have price : prior+bound ≤ budget := (Nat.le_max_left _ _).trans (Nat.le_floor (cost.trans weighted))
+      have price : prior+bound ≤ budget := by
+        by_cases enough : prior+bound ≤ childBudget
+        · exact enough.trans (Nat.le_add_right ..)
+        have extra : prior+bound-childBudget ≤ scanOverhead := by
+          apply Nat.le_floor
+          rw [Nat.cast_sub (by omega : childBudget ≤ prior+bound)]
+          have paid := ((Nat.cast_le (α := ℝ)).mpr (Nat.le_max_left (prior+bound) (outsideSteps+childBudget))).trans (cost.trans weighted)
+          linarith only [paid]
+        dsimp [budget]
+        omega
       rw [ownerPort] at exec
       have chartStage := intervalStage_cast (W := W) dim interval weights body program c D prior bound slot tail _ routed exec
       obtain ⟨y,B,t,out,user,time,run,reads,inactive,_,done⟩ := chartStage.portReads interval weights routed records upper
@@ -1879,10 +1888,13 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux w : ℕ} {L P U : Type}
       omega
     have runtime : ((n+t : ℕ) : ℝ) ≤ 13*(stage.cost*(stage.tapes+5) : ℕ)+(back.cost*(back.tapes+5) : ℕ)+localCost := by
       exact_mod_cast actual
-    change _ ≤ ((_ : ℝ)+_)*((R*N : ℕ) : ℝ)+(localCost : ℝ)
-    unfold packedChartRate
-    dsimp only
-    linarith only [runtime,firstCost,lastCost]
+    calc
+      _ ≤ (13*packedChartRate src cert checked false layout.width +
+          packedChartRate src cert checked true layout.width)*(R*N : ℕ)+(localCost : ℝ) := by
+        unfold packedChartRate
+        dsimp only
+        linarith only [runtime,firstCost,lastCost]
+      _ = _ := by dsimp only [localCost,budget]; push_cast; ring
   have prefixFrame (j : Fin ((T+10)+5)) := frame (j.castAdd stage.tapes) (fun i eq => by
     have h := congrArg Fin.val eq
     change (T+10)+5+i.val = j.val at h
