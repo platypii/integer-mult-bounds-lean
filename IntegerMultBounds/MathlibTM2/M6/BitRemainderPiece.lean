@@ -332,6 +332,29 @@ theorem stageChildPositions :
       exact first.1.trans (by simpa only [Fin.val_cast,jobs,localSlot] using second.1)
     · exact first.2.trans (congrArg (stageChildStart s+·) second.2)
 
+/-- A positive MOVE is charged at its occurrence in the phase, including repeated pairs. -/
+theorem phaseChildPositions :
+    let edges := Geometry.Moves.phaseEdges.filter fun p => Geometry.moveRank p.1 p.2 != 0
+    ∃ locate : (Fin 9 × (Fin 32 × Fin 5) × Fin edges.length) ↪ Fin nodeChildren5.length,
+      ∀ s run j, nodeChildren5[(locate (s,run,j)).val] =
+          Geometry.moveRank edges[j.val].1 edges[j.val].2 ∧
+        (locate (s,run,j)).val = stageChildStart s+(runChildStart run+j.val) := by
+  intro edges
+  let rank := fun p : ℕ × ℕ => Geometry.moveRank p.1 p.2
+  have ranks : Geometry.Moves.localPaid = edges.map rank ++ Geometry.Moves.copyRanks := by
+    simp only [Geometry.Moves.localPaid,edges,List.filter_map,Function.comp_def,rank]
+    simp [bne,BEq.beq]
+  have bound : edges.length ≤ Geometry.Moves.localPaid.length := by simp [ranks]
+  let slot := Fin.castLEEmb bound
+  refine ⟨((Function.Embedding.refl _).prodMap ((Function.Embedding.refl _).prodMap slot)).trans
+    stageChildPositions.choose,?_⟩
+  intro s run j
+  have h := stageChildPositions.choose_spec s run (slot j)
+  refine ⟨h.1.trans ?_,h.2⟩
+  change Geometry.Moves.localPaid[j.val] = _
+  have lt : j.val < (edges.map rank).length := by simpa only [List.length_map] using j.isLt
+  simp only [ranks,List.getElem_append_left lt,List.getElem_map,rank]
+
 /-- Within each invocation the nine COPY charges follow the positive phase charges. -/
 theorem copyPaidPositions :
     ∃ slot : Fin Copy.lifecycles.length ↪ Fin Geometry.Moves.localPaid.length,
