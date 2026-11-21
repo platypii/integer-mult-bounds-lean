@@ -135,6 +135,51 @@ noncomputable def registers (n : Fin 9) (r : Fin 32) (d : Fin 5) (X : State) (j 
 noncomputable def runWord (n : Fin 9) (v : ℕ → Stream) : ℕ → Stream :=
   if n.val % 2 = 1 then reverseRun n v else Framed.execute (forwardFrame n) v
 
+private theorem windowChange (n : ℕ) (U V : Matrix (Fin 8) (Fin 8) ℚ) :
+    exchange (windowProj n U) * exchange (windowProj n V) =
+      exchange (Matrix.fromBlocks (U+V-(U*V+U*V)) 0 0 (0 : Matrix Exterior Exterior ℚ)) := by
+  have product (A B : Matrix Axis Axis ℚ) :
+      exchange A * exchange B = exchange (A+B-(A*B+A*B)) := by
+    simp only [exchange,Matrix.fromBlocks_multiply,Matrix.sub_mul,Matrix.mul_sub,Matrix.one_mul,Matrix.mul_one]
+    rw [Matrix.fromBlocks_inj]
+    exact ⟨by abel,by abel,by abel,by abel⟩
+  rw [product]
+  congr 1
+  simp only [windowProj,Matrix.fromBlocks_multiply,Matrix.zero_mul,Matrix.mul_zero,
+    zero_add,add_zero,lower_mul_self]
+  ext (i|i) (j|j) <;> simp
+
+/-- In register order the reflected call has the same endpoint as the
+forward word. Stage parity is already accounted for by the side owners. -/
+theorem runWord_forward (n : Fin 9) (v : ℕ → Stream) (high : ∀ j, 661 ≤ j → v j = 0) :
+    runWord n v = Framed.execute (forwardFrame n) v := by
+  unfold runWord
+  split
+  · funext j
+    have changes (t : Fin 111) :
+        let P := (port t.val).lineProj
+        exchange (windowProj n P) * exchange (windowProj n 1) =
+            exchange (windowProj n 0) * exchange (windowProj n (1-P)) ∧
+        exchange (windowProj n P) * exchange (windowProj n (1-P)) =
+            exchange (windowProj n 0) * exchange (windowProj n 1) := by
+      intro P
+      have idem : P*P = P := PortCertificate.lineProj_mul_self (port_checked _ t.isLt)
+      simp only [windowChange,Matrix.zero_mul,Matrix.mul_one,Matrix.mul_sub,idem,sub_self,zero_add,sub_zero]
+      constructor <;> congr 2 <;> abel
+    by_cases src : j < 111
+    · rw [reverse_source n v j src,forward_source n v high j src,(changes ⟨j,src⟩).1]
+    by_cases dst : j < 222
+    · let t : Fin 111 := ⟨j-111,by omega⟩
+      have idx : j = 111+t.val := by dsimp [t]; omega
+      rw [idx,reverse_target n v t.val t.isLt,forward_target n v high t.val t.isLt,(changes t).1,(changes t).2]
+    by_cases live : j < 661
+    · let h := j-222
+      have idx : j = 222+h := by dsimp [h]; omega
+      have bound : h < 439 := by dsimp [h]; omega
+      rw [idx,reverse_helper n v h bound,forward_helper n v high h bound]
+    · rw [reverse_high n v j (by omega),forward_high n v high j (by omega)]
+  · rfl
+
 /-- The register a role owns in the class-`d` run, if any. -/
 def ownerIndex (n : Fin 9) (r : Fin 32) (d : Fin 5) (ρ : Role) : Option ℕ :=
   (List.range 661).find? (fun j => owner n r d j = ρ)

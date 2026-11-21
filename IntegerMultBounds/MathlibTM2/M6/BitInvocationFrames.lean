@@ -136,10 +136,7 @@ theorem invoke_host (h : ℕ) (hh : h < 439) :
     rw [dif_pos hx]
   have hword : runWord n (registers n r d X) (222 + h) =
       along (exchange (windowProj n 0) * exchange (windowProj n 1)) (registers n r d X (222 + h)) := by
-    unfold runWord
-    split_ifs
-    · exact reverse_helper n _ h hh
-    · exact forward_helper n _ hz h hh
+    rw [runWord_forward n _ hz,forward_helper n _ hz h hh]
   have hc := port_checked ((slotOf n h).copy % 111) (Nat.mod_lt _ (by norm_num))
   rw [ho, invoke_owner n r d X _ (by omega), hword, registers_data n r d X _ (by omega), hchart,
     window_helper_change, along_chart _ (PortCertificate.helperChart_mul_transpose hc _ hx),

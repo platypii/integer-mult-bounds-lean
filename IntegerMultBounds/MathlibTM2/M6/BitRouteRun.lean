@@ -205,11 +205,10 @@ def ChartCall [M8.Machine.Net] {T : ℕ} (io : Fin T) (n : Fin 9) (j : ℕ)
             (price C v w budget)
 
 open IntegerMultBounds.Networks.Certificates.PR589 in
-/-- The same physical route enters and leaves each scheduled COPY destination.
+/-- The same physical route enters and leaves each data register.
 At stage zero its identity block takes zero steps. -/
-theorem copyTarget_route [M8.Machine.Net] {T : ℕ} (io : Fin T) (n : Fin 9)
-    (life : Copy.Lifecycle) (scheduled : life ∈ Copy.lifecycles)
-    (j : ℕ) (target : j ∈ life.targets) :
+theorem dataRegister_route [M8.Machine.Net] {T : ℕ} (io : Fin T) (n : Fin 9)
+    (j : ℕ) (data : j < 222) :
     ∃ (program : Graph.Block (T+24) prime) (C : ℕ), Blocks.Leading program ∧
       ∀ (v : Descriptor) (w B : ℕ), 0 < w → 0 < B →
       v.beforeH = B*prime^(64*(w*64)) → v.Positive →
@@ -224,7 +223,7 @@ theorem copyTarget_route [M8.Machine.Net] {T : ℕ} (io : Fin T) (n : Fin 9)
           (LabelCall.bank (setTape roles io (sourceWord y) 0) v d)
           (if n.val = 0 then 0 else C*volume prime v + 252*LeafCore.coreCost (volume prime v) (w*64)) := by
   let c := port (j % 111)
-  have chartEq := chart_data n j (Copy.target_bounds life scheduled j target).2
+  have chartEq := chart_data n j data
   by_cases firstStage : n.val = 0
   · refine ⟨SharedBankSkeleton.identity _ _ (by omega),0,fun _ => rfl,?_⟩
     intro v w B hw hb shape pos roles x head tape d A
@@ -245,7 +244,7 @@ theorem copyTarget_route [M8.Machine.Net] {T : ℕ} (io : Fin T) (n : Fin 9)
     obtain ⟨y,transport,run⟩ := runs v w B hw hb shape pos roles x head tape
     have entry : LabelPermutation.Transport v B w (fun g => g*A.transpose) (ext x) (ext y) := by
       simpa only [A,registerChart,chartRoute,modulus] using transport
-    have symmetric : A.transpose = A := dataChart_transpose w n (Copy.target_bounds life scheduled j target).2
+    have symmetric : A.transpose = A := dataChart_transpose w n data
     refine ⟨y,chartRead_transport entry,?_,by simpa only [ite_eq_right firstStage] using run⟩
     rwa [symmetric] at entry
 
@@ -289,7 +288,7 @@ theorem copyTargets_route [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
   | cons j js ih =>
     obtain ⟨fresh,nodup⟩ := List.nodup_cons.mp unique
     have mem := subset j List.mem_cons_self
-    obtain ⟨block,C,leading,run⟩ := copyTarget_route (io j) n life scheduled j mem
+    obtain ⟨block,C,leading,run⟩ := dataRegister_route (io j) n j (Copy.target_bounds life scheduled j mem).2
     obtain ⟨tail,D,tailLeading,rest⟩ := ih (fun k hk => subset k (List.mem_cons_of_mem _ hk)) nodup
     refine ⟨Blocks.seqB block tail,C+D,Blocks.seq_leading _ _,?_⟩
     intro v w B hw hb shape pos x bank
@@ -436,24 +435,22 @@ private theorem helper_register_chart (n : Fin 9) (h : Fin 439) :
   exact selectedAt _ _ (by omega) (by omega) _
 
 open IntegerMultBounds.MathlibTM2.M6.BitHosting IntegerMultBounds.Networks.Certificates.PR589 in
-/-- Enter or leave the source chart of a retained COPY on the designated owner tape.
+/-- Enter or leave the chart of a helper register on the designated owner tape.
 The label read and the charged graph run refer to the same output bank. -/
-theorem copySource_route [M8.Machine.Net] {T : ℕ} (io : Fin T) (n : Fin 9) (enter : Bool)
-    (life : Copy.Lifecycle)
-    (scheduled : life ∈ Copy.lifecycles) :
+theorem helperRegister_route [M8.Machine.Net] {T : ℕ} (io : Fin T) (n : Fin 9) (enter : Bool)
+    (j : Fin 661) (helper : 222 ≤ j.val) :
     ∃ (program : Graph.Block (T+24) prime) (C : ℕ), Blocks.Leading program ∧
       ∀ (v : Descriptor) (w B : ℕ), 0 < w → 0 < B →
       v.beforeH = B*prime^(64*(w*64)) → v.Positive →
       ∀ (roles : Tapes T prime) (x : Fin (volume prime v) → ZMod 2),
       roles.head io = 0 → roles.tape io = sourceWord x →
       let d := words (LabelSchedule.base v w)
-      ∃ y : Fin (volume prime v) → ZMod 2, LabelPermutation.Transport v B w (fun g => g*(if enter then (registerChart w n life.source).transpose else registerChart w n life.source))
+      ∃ y : Fin (volume prime v) → ZMod 2, LabelPermutation.Transport v B w (fun g => g*(if enter then (registerChart w n j.val).transpose else registerChart w n j.val))
         (ext x) (ext y) ∧ GraphContract.Runs program (LabelCall.bank roles v d)
           (LabelCall.bank (setTape roles io (sourceWord y) 0) v d)
           (C*volume prime v + 63*LeafCore.coreCost (volume prime v) (w*64)) := by
-  obtain ⟨lo,hi⟩ := Copy.source_bounds life scheduled
-  let h : Fin 439 := ⟨life.source-222,by omega⟩
-  have idx : life.source = 222+h.val := by dsimp [h]; omega
+  let h : Fin 439 := ⟨j.val-222,by omega⟩
+  have idx : j.val = 222+h.val := by dsimp [h]; omega
   let slot := IntegerMultBounds.MathlibTM2.M6.BitNode.slotOf n.val h.val
   let c := port (slot.copy % 111)
   obtain ⟨block,C,leading,runs⟩ := helperChart_runs io c
@@ -465,6 +462,83 @@ theorem copySource_route [M8.Machine.Net] {T : ℕ} (io : Fin T) (n : Fin 9) (en
   unfold registerChart
   rw [idx,helper_register_chart n h]
   cases enter <;> exact transport
+
+/-- Every invocation owner has a width-uniform entry and return program.
+The chart direction is opposite on the two trips. -/
+theorem register_route [M8.Machine.Net] {T : ℕ} (io : Fin T) (n : Fin 9) (enter : Bool) (j : Fin 661) :
+    ∃ (program : Graph.Block (T+24) prime) (C : ℕ), Blocks.Leading program ∧
+      ∀ (v : Descriptor) (w B : ℕ), 0 < w → 0 < B →
+      v.beforeH = B*prime^(64*(w*64)) → v.Positive →
+      ∀ (roles : Tapes T prime) (x : Fin (volume prime v) → ZMod 2),
+      roles.head io = 0 → roles.tape io = sourceWord x →
+      let d := words (LabelSchedule.base v w)
+      let A := registerChart w n j.val
+      ∃ y : Fin (volume prime v) → ZMod 2,
+        LabelPermutation.Transport v B w (fun g => g*(if enter then A.transpose else A)) (ext x) (ext y) ∧
+        GraphContract.Runs program (LabelCall.bank roles v d)
+          (LabelCall.bank (setTape roles io (sourceWord y) 0) v d)
+          (C*volume prime v + 252*LeafCore.coreCost (volume prime v) (w*64)) := by
+  by_cases data : j.val < 222
+  · obtain ⟨program,C,leading,run⟩ := dataRegister_route io n j.val data
+    refine ⟨program,C,leading,?_⟩
+    intro v w B hw hB shape pos roles x head tape d A
+    obtain ⟨y,_,move,steps⟩ := run v w B hw hB shape pos roles x head tape
+    refine ⟨y,?_,Blocks.runs_mono steps (by split <;> omega)⟩
+    simpa only [A,dataChart_transpose w n data,ite_self] using move
+  · obtain ⟨program,C,leading,run⟩ := helperRegister_route io n enter j (by omega)
+    refine ⟨program,C,leading,?_⟩
+    intro v w B hw hB shape pos roles x head tape d A
+    obtain ⟨y,move,steps⟩ := run v w B hw hB shape pos roles x head tape
+    exact ⟨y,move,Blocks.runs_mono steps (by omega)⟩
+
+/-- Enter or return from the charts on distinct owner tapes. The same
+compiled graph serves every precision and leaves all other tapes intact. -/
+theorem ownerChartRoutes [M8.Machine.Net] {T : ℕ} (io : Fin 661 ↪ Fin T) (n : Fin 9) (enter : Bool)
+    (js : List (Fin 661)) (unique : js.Nodup) :
+    ∃ (program : Graph.Block (T+24) prime) (C : ℕ), Blocks.Leading program ∧
+      ∀ (v : Descriptor) (w B : ℕ), 0 < w → 0 < B →
+      v.beforeH = B*prime^(64*(w*64)) → v.Positive →
+      ∀ x : Fin T → Fin (volume prime v) → ZMod 2,
+      let bank := fun (data : Fin T → Fin (volume prime v) → ZMod 2) =>
+        LabelCall.bank (copyOwners data) v (words (LabelSchedule.base v w))
+      ∃ y, (∀ j ∈ js, let A := registerChart w n j.val
+        LabelPermutation.Transport v B w (fun g => g*(if enter then A.transpose else A))
+          (ext (x (io j))) (ext (y (io j)))) ∧
+        (∀ k, k ∉ js.map io → y k = x k) ∧
+        GraphContract.Runs program (bank x) (bank y)
+          (C*volume prime v + js.length*(252*LeafCore.coreCost (volume prime v) (w*64)+1)) := by
+  induction js with
+  | nil =>
+    refine ⟨SharedBankSkeleton.identity _ _ (by omega),0,fun _ => rfl,?_⟩
+    intro v w B hw hb shape pos x bank
+    refine ⟨x,by simp,by simp,?_⟩
+    simp only [Nat.zero_mul,List.length_nil,Nat.add_zero]
+    exact skip_hoare _ _
+  | cons j js ih =>
+    obtain ⟨fresh,nodup⟩ := List.nodup_cons.mp unique
+    obtain ⟨block,C,leading,run⟩ := register_route (io j) n enter j
+    obtain ⟨tail,D,tailLeading,rest⟩ := ih nodup
+    refine ⟨Blocks.seqB block tail,C+D,Blocks.seq_leading _ _,?_⟩
+    intro v w B hw hb shape pos x bank
+    obtain ⟨y,move,step⟩ := run v w B hw hb shape pos (copyOwners x) (x (io j)) rfl rfl
+    let next := Function.update x (io j) y
+    have updated : setTape (copyOwners x) (io j) (sourceWord y) 0 = copyOwners next := by
+      apply congrArg₂ Tapes.mk <;> funext k <;> by_cases h : k = io j <;> simp [copyOwners,next,h]
+    rw [updated] at step
+    obtain ⟨out,moves,other,steps⟩ := rest v w B hw hb shape pos next
+    have off (k) (hk : k ∈ js) : io k ≠ io j := fun eq => fresh (io.injective eq ▸ hk)
+    refine ⟨out,?_,?_,Blocks.runs_mono (Blocks.seq_runs leading tailLeading step steps) ?_⟩
+    · intro k hk
+      rcases List.mem_cons.mp hk with eq | hk
+      · subst k
+        rw [other _ (by simpa using fresh)]
+        simpa [next] using move
+      · simpa [next,off k hk] using moves k hk
+    · intro k hk
+      simp only [List.map_cons,List.mem_cons,not_or] at hk
+      simpa [next,hk.1] using other _ hk.2
+    · simp only [List.length_cons,Nat.add_mul,Nat.one_mul]
+      omega
 
 open IntegerMultBounds.Networks.Certificates.PR589 in
 /-- Enter or leave all the charts of one COPY window on the shared owner bank.
@@ -489,7 +563,7 @@ theorem copyWindow_routes [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5) 
           (C*volume prime v + (63+252*life.targets.length)*LeafCore.coreCost (volume prime v) (w*64)
             + life.targets.length+1) := by
   intro io src
-  obtain ⟨srcBlock,C,srcLeading,sourceRun⟩ := copySource_route src n enter life scheduled
+  obtain ⟨srcBlock,C,srcLeading,sourceRun⟩ := helperRegister_route src n enter ⟨life.source,(Copy.source_bounds life scheduled).2⟩ (Copy.source_bounds life scheduled).1
   obtain ⟨targetBlock,D,targetLeading,targetRun⟩ := copyTargets_route n r d life scheduled
   refine ⟨Blocks.seqB srcBlock targetBlock,C+D,Blocks.seq_leading _ _,?_⟩
   intro v w B hw hb shape pos x bank A
