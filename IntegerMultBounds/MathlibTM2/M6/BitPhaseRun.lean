@@ -888,6 +888,18 @@ where
       (route : out ≤ mid+D*V+charts+2) :
       out ≤ a+b+(C+D)*V+9*child+charts+13 := by rw [Nat.add_mul]; omega
 
+private theorem chartedPhase_encode {w B K : ℕ} (n : Fin 9) (owner : Fin 661 ↪ Fin 142081)
+    (x) (g : Cover.LabelPadding.Label 64 w) (z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B) :
+    let stored := fun j : Fin 661 => (selectedFrame w (Frames.initialRefs j.val)).symm (chartedPhaseRead n owner x g z j.val)
+    FramedCircuit.encode (fun j => selectedFrame w (Frames.snapshot Frames.initialRefs j))
+      (Copy.extendStored stored) = chartedPhaseRead n owner x g z := by
+  intro stored
+  funext j
+  by_cases hj : j < 661
+  · simp only [FramedCircuit.encode,Frames.snapshot,Copy.extendStored,stored,hj,ite_true,↓reduceDIte,
+      LinearEquiv.apply_symm_apply]
+  · simp [FramedCircuit.encode,Copy.extendStored,chartedPhaseRead,hj]
+
 open Matrix IntegerMultBounds.Swap.Modular in
 /-- Read the actual charted invocation at a corrected target address.
 The input on this label can be any dirty bank. -/
@@ -907,13 +919,7 @@ theorem chartedTarget_read {n : Fin 9} {w B K : ℕ} {owner : Fin 661 ↪ Fin 14
       chartedPhaseRead n owner y g z (111+t.val) (s.1-delta,s.2+delta) =
         (stored ⟨111+t.val,by omega⟩ + stored ⟨t.val,by omega⟩) (M8.Exchange.exchange (1-P) s) := by
   intro R P V v normal stored s delta
-  have encoded : FramedCircuit.encode (fun j => selectedFrame w (Frames.snapshot Frames.initialRefs j))
-      (Copy.extendStored stored) = chartedPhaseRead n owner x g z := by
-    funext j
-    by_cases hj : j < 661
-    · simp only [FramedCircuit.encode,Frames.snapshot,Copy.extendStored,stored,hj,ite_true,↓reduceDIte,
-        LinearEquiv.apply_symm_apply]
-    · simp [FramedCircuit.encode,Copy.extendStored,chartedPhaseRead,hj]
+  have encoded := chartedPhase_encode n owner x g z
   have target := (portTransfer_endpoint w t stored s).2
   rw [encoded,← run] at target
   exact target
@@ -1044,9 +1050,109 @@ theorem chartedTargets_stage [M8.Machine.Net] :
   · intro x i away
     exact off (mid.transform x) i (fun t _ => away t)
 
+private theorem chartedOwner_read {n : Fin 9} {owner : Fin 661 ↪ Fin 142081} {w B K : ℕ}
+    (x) (g : Cover.LabelPadding.Label 64 w) (z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B)
+    (j : Fin 661) s :
+    chartedPhaseRead n owner x g z j.val s = x (owner j) (FlatCoordinateLayout.index
+      (AffineFieldCoordinates.embed s) (labelSpectator (g*registerChart w n j.val) z)) := by
+  simp [chartedPhaseRead,phaseRead,Copy.extendStored,j.isLt]
+
+open IntegerMultBounds.Swap.Modular M8.RevMachine in
+/-- Prepare the 111 source tapes so decoding their physical initial frames
+reads exactly the logical port exchange on the caller's original bank. -/
+theorem chartedSources_stage [M8.Machine.Net] :
+    ∃ C : ℕ, ∀ w B K, 0 < w → 0 < B*prime^(64*(w*64))*K →
+      let W := B*prime^(64*(w*64))*K
+      let V := (prime^w)^16*W
+      ∀ (owner : Fin 661 ↪ Fin 142081),
+      ∃ stage : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V)),
+        stage.cost = C*V + 111*(LeafCore.coreCost V w+7) ∧
+        (∀ n x g (z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B) (t : Fin 111),
+          let P := translatedPortProjector (ZMod (prime^w)) (4:ZMod (prime^w))⁻¹ t
+          (selectedFrame w (Frames.initialRefs t.val)).symm
+            (chartedPhaseRead n owner (stage.transform x) g z t.val) =
+              fun s => chartedPhaseRead n owner x g z t.val (M8.Exchange.exchange P s)) ∧
+        ∀ x i, (∀ t : Fin 111, owner ⟨t.val,by omega⟩ ≠ i) → stage.transform x i = x i := by
+  choose c machine run using fun t => portCorrection_owner t false true
+  let ts := List.finRange 111
+  refine ⟨(ts.map c).sum,?_⟩
+  intro w B K hw hW W V owner
+  choose port _ price read using fun t => run t w W hw hW
+  let src (t : Fin 111) : Fin 661 := ⟨t.val,by omega⟩
+  let slot : Fin 111 ↪ Fin 142081 := ⟨fun t => owner (src t),by intro a b h; exact Fin.ext (congrArg (Fin.val : Fin 661 → ℕ) (owner.injective h))⟩
+  obtain ⟨stage,cost,hits,off⟩ := compilePorts slot port ts (List.nodup_finRange _)
+  refine ⟨stage,?_,?_,fun x i away => off x i (fun t _ => away t)⟩
+  · rw [cost]
+    simp only [price,ite_true,List.sum_map_add,List.sum_map_mul_right,List.map_const',List.sum_replicate,
+      nsmul_eq_mul,ts,List.length_finRange]
+    ring
+  · intro n x g z t P
+    apply (selectedFrame w (Frames.initialRefs t.val)).injective
+    rw [LinearEquiv.apply_symm_apply]
+    funext s
+    rw [(portFrame_absorption w t).2.2.2.2.1]
+    rw [chartedOwner_read _ _ _ (src t),chartedOwner_read _ _ _ (src t)]
+    exact (congrFun (hits x t (List.mem_finRange t)) _).trans (read t (x (slot t)) s _)
+
+open Matrix in
+private theorem port_complements_swap (w : ℕ) (t : Fin 111) (s : IntegerMultBounds.Swap.Shear.State (Fin 8) (ZMod (prime^w))) :
+    let P := translatedPortProjector (ZMod (prime^w)) (4:ZMod (prime^w))⁻¹ t
+    M8.Exchange.exchange P (M8.Exchange.exchange (1-P) s) = s.swap := by
+  intro P
+  obtain ⟨up,pu,_⟩ := portFrame_absorption w t
+  have idem : P*P=P := by
+    calc P*P = P*(_*P) := congrArg (P*·) up.symm
+         _ = P := by rw [← Matrix.mul_assoc,pu,up]
+  have comp : M8.Exchange.exchange (1-P) s = M8.Exchange.exchange P s.swap := by
+    simp [M8.Exchange.exchange,add_comm]
+  rw [comp,M8.Global.exchange_involutive idem]
+
+open Matrix in
+private theorem emptyFrame_decode (w : ℕ) (f : AddressStream (ZMod (prime^w))) :
+    (selectedFrame w 0).symm f = f := by
+  apply (selectedFrame w 0).injective
+  rw [LinearEquiv.apply_symm_apply]
+  have mask := (selectedProjector_mask w (0 : Fin 636)).1
+  have dim : Geometry.Dimensions.value 0 = 0 := by decide
+  change _ * prefixMask _ (Geometry.Dimensions.value 0) = _ at mask
+  rw [dim,show prefixMask (ZMod (prime^w)) 0 = 0 by simp [prefixMask],mul_zero] at mask
+  funext s
+  have atZero := selectedFrame_rational w (0 : Fin 636) f s
+  rw [← mask] at atZero
+  simpa [M8.Exchange.exchange] using atZero.symm
+
+open Matrix in
+private theorem fullFrame_read (w : ℕ) (f : AddressStream (ZMod (prime^w))) (s) :
+    selectedFrame w 1 f s = f s.swap := by
+  have mask := (selectedProjector_mask w (1 : Fin 636)).2
+  change prefixMask _ (Geometry.Dimensions.value 1) * _ = prefixMask _ (Geometry.Dimensions.value 1) at mask
+  have full : prefixMask (ZMod (prime^w)) 8 = 1 := by
+    unfold prefixMask
+    simp only [Fin.is_lt,ite_true]
+    rfl
+  rw [Nine.full_dimension,full,one_mul] at mask
+  have read := selectedFrame_rational w (1 : Fin 636) f s
+  rw [mask] at read
+  cases s
+  simpa [M8.Exchange.exchange] using read
+
+private theorem chartedWord_retained {w B K : ℕ} {n : Fin 9} {owner : Fin 661 ↪ Fin 142081}
+    {x y} {g : Cover.LabelPadding.Label 64 w} {z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B}
+    (run : chartedPhaseRead n owner y g z = runSelected (selectedFrame w) (selectedWord w) (chartedPhaseRead n owner x g z))
+    (i : Fin 661) (nonTarget : ¬ (111 ≤ i.val ∧ i.val < 222)) :
+    chartedPhaseRead n owner y g z i.val = selectedFrame w (Frames.finalRefs i.val)
+      ((selectedFrame w (Frames.initialRefs i.val)).symm (chartedPhaseRead n owner x g z i.val)) := by
+  let stored := fun j : Fin 661 => (selectedFrame w (Frames.initialRefs j.val)).symm (chartedPhaseRead n owner x g z j.val)
+  have encoded := chartedPhase_encode n owner x g z
+  have word := ((runSelected_endpoint w).2 stored).trans (Framed.execute_endpoint (selectedFrame w) stored).symm
+  have row := (congrFun word i.val).trans (Framed.execute_dirty (selectedFrame w) stored i)
+  rw [dite_eq_right nonTarget,encoded,← run] at row
+  exact row
+
 open Cover IntegerMultBounds.Swap.Modular M8.RevMachine in
-/-- The concrete charted word followed by its target passes returns every
-decoded target sum on its physical owner tape. -/
+/-- The charged PR589 invocation on the caller’s charted tapes. Sources
+pass through their logical line frames, targets receive their transposed
+sources, and all helper streams undergo the full address interchange. -/
 theorem decodedInvocation_stage [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
     (engine : CopyTranspose := CopyTranspose.original) :
     ∃ C : ℕ, ∀ w B K, 0 < w → 0 < B → 0 < K →
@@ -1061,31 +1167,91 @@ theorem decodedInvocation_stage [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : F
       ∃ stage : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V)),
         stage.cost ≤ bill (sectionD++sectionA) (Frames.snapshot Frames.initialRefs) +
           bill (sectionB++sectionC) (Frames.scatterFinish Frames.beforeScatter) +
-          C*V + 9*engine.time (copyChild w W) hs + 2*661*(252*LeafCore.coreCost V (w*64)+1) + 111*(LeafCore.coreCost V w+7) + 14 ∧
+          C*V + 9*engine.time (copyChild w W) hs + 2*661*(252*LeafCore.coreCost V (w*64)+1) + 222*(LeafCore.coreCost V w+7) + 15 ∧
         (∀ x g (z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B) (t : Fin 111) s,
           let dst : Fin 661 := ⟨111+t.val,by omega⟩
           let src : Fin 661 := ⟨t.val,by omega⟩
-          let stored := fun j : Fin 661 => (selectedFrame w (Frames.initialRefs j.val)).symm
-            (chartedPhaseRead n owner x g z j.val)
           let P := translatedPortProjector (ZMod (prime^w)) (4:ZMod (prime^w))⁻¹ t
           stage.transform x (owner dst) (FlatCoordinateLayout.index (AffineFieldCoordinates.embed s)
             (labelSpectator (g*registerChart w n dst.val) z)) =
-            (stored dst + stored src) (M8.Exchange.exchange (1-P) s)) ∧
+            chartedPhaseRead n owner x g z dst.val (M8.Exchange.exchange (1-P) s) +
+            chartedPhaseRead n owner x g z src.val s.swap) ∧
+        (∀ x g (z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B) (t : Fin 111) s,
+          let P := translatedPortProjector (ZMod (prime^w)) (4:ZMod (prime^w))⁻¹ t
+          chartedPhaseRead n owner (stage.transform x) g z t.val s =
+            chartedPhaseRead n owner x g z t.val (M8.Exchange.exchange P s.swap)) ∧
+        (∀ x g (z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B) (h : Fin 439) s,
+          chartedPhaseRead n owner (stage.transform x) g z (222+h.val) s =
+            chartedPhaseRead n owner x g z (222+h.val) s.swap) ∧
         ∀ x i, i ≠ Fin.last 142080 → (∀ j, owner j ≠ i) → stage.transform x i = x i := by
   obtain ⟨C,word⟩ := chartedInvocation_stage n r d engine
   obtain ⟨D,finish⟩ := chartedTargets_stage
-  refine ⟨C+D,?_⟩
+  obtain ⟨E,prepare⟩ := chartedSources_stage
+  refine ⟨E+C+D,?_⟩
   intro w B K hw hB hK W V owner bill hs
   obtain ⟨mid,cost,read,keep⟩ := word w B K hw hB hK
   have hW : 0 < W := Nat.mul_pos (Nat.mul_pos hB (pow_pos Shared50ModularControl.prime_prime.pos _)) hK
   obtain ⟨stage,price,target,off⟩ := finish w B K hw hW n owner mid read
-  refine ⟨stage,?_,target,fun x i hi away => (off x i (fun _ => away _)).trans (keep x i hi away)⟩
-  change mid.cost ≤ bill (sectionD++sectionA) (Frames.snapshot Frames.initialRefs) +
-    bill (sectionB++sectionC) (Frames.scatterFinish Frames.beforeScatter) +
-    C*V + 9*engine.time (copyChild w W) hs + 2*661*(252*LeafCore.coreCost V (w*64)+1) + 13 at cost
-  change stage.cost = mid.cost+D*V+111*(LeafCore.coreCost V w+7)+1 at price
-  rw [price,Nat.add_mul]
-  omega
+  obtain ⟨pre,preCost,source,preserve⟩ := prepare w B K hw hW owner
+  have postRead (x g z) (i : Fin 661) (outside : ¬ (111 ≤ i.val ∧ i.val < 222)) :
+      chartedPhaseRead n owner (stage.transform x) g z i.val =
+        chartedPhaseRead n owner (mid.transform x) g z i.val := by
+    funext s
+    rw [chartedOwner_read _ _ _ i,chartedOwner_read _ _ _ i]
+    exact congrFun (off x (owner i) (fun t h => by
+      have eq := congrArg Fin.val (owner.injective h)
+      change 111+t.val = i.val at eq
+      omega)) _
+  refine ⟨SharedBankStage.compose pre stage,?_,?_,?_,?_,?_⟩
+  · change pre.cost + stage.cost + 1 ≤ _
+    change mid.cost ≤ bill (sectionD++sectionA) (Frames.snapshot Frames.initialRefs) +
+      bill (sectionB++sectionC) (Frames.scatterFinish Frames.beforeScatter) +
+      C*V + 9*engine.time (copyChild w W) hs + 2*661*(252*LeafCore.coreCost V (w*64)+1) + 13 at cost
+    change stage.cost = mid.cost+D*V+111*(LeafCore.coreCost V w+7)+1 at price
+    change pre.cost = E*V+111*(LeafCore.coreCost V w+7) at preCost
+    rw [preCost,price,Nat.add_mul,Nat.add_mul]
+    omega
+  · intro x g z t s dst src P
+    have raw := target (pre.transform x) g z t s
+    change stage.transform (pre.transform x) (owner dst) _ = _
+    apply raw.trans
+    change ((selectedFrame w (Frames.initialRefs dst.val)).symm
+      (chartedPhaseRead n owner (pre.transform x) g z dst.val)) (M8.Exchange.exchange (1-P) s) +
+      ((selectedFrame w (Frames.initialRefs t.val)).symm
+      (chartedPhaseRead n owner (pre.transform x) g z t.val)) (M8.Exchange.exchange (1-P) s) = _
+    rw [show Frames.initialRefs dst.val = 0 from (Nine.target_frames t.val t.isLt).1,emptyFrame_decode,source n x g z t]
+    have swap : M8.Exchange.exchange P (M8.Exchange.exchange (1-P) s) = s.swap := port_complements_swap w t s
+    change _ + chartedPhaseRead n owner x g z src.val (M8.Exchange.exchange P (M8.Exchange.exchange (1-P) s)) = _
+    rw [swap]
+    apply congrArg (· + chartedPhaseRead n owner x g z src.val s.swap)
+    rw [chartedOwner_read _ _ _ dst,chartedOwner_read _ _ _ dst]
+    have unchanged := preserve x (owner dst) (fun a h => by
+      have eq := congrArg Fin.val (owner.injective h)
+      change a.val = 111+t.val at eq
+      omega)
+    exact congrFun unchanged _
+  · intro x g z t s P
+    let i : Fin 661 := ⟨t.val,by omega⟩
+    have nt : ¬ (111 ≤ i.val ∧ i.val < 222) := by change ¬ (111 ≤ t.val ∧ t.val < 222); omega
+    change chartedPhaseRead n owner (stage.transform (pre.transform x)) g z i.val s = _
+    rw [postRead _ _ _ i nt,chartedWord_retained (read _ g z) i nt,
+      show Frames.finalRefs i.val = 1 from (Nine.source_frames t.val t.isLt).2.2,fullFrame_read,source n x g z t]
+  · intro x g z h s
+    let i : Fin 661 := ⟨222+h.val,by omega⟩
+    have nt : ¬ (111 ≤ i.val ∧ i.val < 222) := by change ¬ (111 ≤ 222+h.val ∧ 222+h.val < 222); omega
+    have refs := Nine.helper_refs h.val h.isLt
+    change chartedPhaseRead n owner (stage.transform (pre.transform x)) g z i.val s = _
+    rw [postRead _ _ _ i nt,chartedWord_retained (read _ g z) i nt,
+      show Frames.finalRefs i.val = 1 from refs.2,fullFrame_read,
+      show Frames.initialRefs i.val = 0 from refs.1,emptyFrame_decode]
+    rw [chartedOwner_read _ _ _ i,chartedOwner_read _ _ _ i]
+    exact congrFun (preserve x (owner i) (fun t eq => by
+      have val := congrArg Fin.val (owner.injective eq)
+      change t.val = 222+h.val at val
+      omega)) _
+  · intro x i hi away
+    exact (off (pre.transform x) i (fun _ => away _)).trans
+      ((keep (pre.transform x) i hi away).trans (preserve x i (fun _ => away _)))
 
 open M8.Machine in
 /-- The routed scatter runs on exactly the flat owner bank consumed by the
