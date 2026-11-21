@@ -5,6 +5,7 @@ public import IntegerMultBounds.MathlibTM2.M6.BitParentWeights
 public import IntegerMultBounds.MathlibTM2.M6.BitRemainderOrdinaryScan
 public import IntegerMultBounds.MathlibTM2.StackBankStock
 import IntegerMultBounds.MathlibTM2.Host.ForeignStock
+import IntegerMultBounds.MathlibTM2.Cover.FallbackShearCleanup
 
 /-! Execute the scheduled remainder scanner from the parent's packed prefix and owner tapes. -/
 @[expose] public section
@@ -417,6 +418,14 @@ theorem returnChartBank_private {k t T : ℕ} (slots : Fin k ↪ Fin t) (owners 
     (j : Fin t) (off : ∀ i, slots i ≠ j) : returnChartBank slots owners j = j.natAdd T := by
   simp [returnChartBank,SharedBank.slot,show ¬∃ i, slots i = j from fun ⟨i,eq⟩ => off i eq]
 
+private theorem push_of_native {P K σ : Type} {Γ : K → Type} {p : Prog P Γ σ} {c : ℕ}
+    (bound : mnNativePushBound c p) : mnProgPush p ≤ c := by
+  induction p with
+  | act => exact bound
+  | seq _ _ ih₁ ih₂ | cond _ _ _ ih₁ ih₂ => exact max_le (ih₁ bound.1) (ih₂ bound.2)
+  | loop _ _ ih => exact ih bound
+  | call => exact bound.elim
+
 /-- Append the inverse chart on the same owner and descriptor registers.
 Only its scratch registers use the appended blank bank. -/
 theorem ownerRun_returnChart {T N k Q w : ℕ} {P U : Type} {v : Descriptor}
@@ -441,6 +450,7 @@ theorem ownerRun_returnChart {T N k Q w : ℕ} {P U : Type} {v : Descriptor}
         (mk u start) (n+t) (mk z D) ∧
       z.user = last.user ∧ ChartPrivateReady back (embStk ret D) ∧
       RepT (stage.input (back.transform data)) (embStk (chart.trans bank) D).L (embStk (chart.trans bank) D).R ∧
+      (∀ j : Fin back.tapes, (D.L (j.natAdd T)).length ≤ 2*t ∧ (D.R (j.natAdd T)).length ≤ 2*t) ∧
       ∀ j, (∀ i, headerBank i ≠ j) → D.L (bank j) = F.L j ∧ D.R (bank j) = F.R j := by
   intro bank headerBank ret outer start priorRun input
   obtain ⟨y,B,firstRun,_,priorUser,view,off⟩ := exec_emb (ι := id) (body' := outer) bank.injective
@@ -480,7 +490,38 @@ theorem ownerRun_returnChart {T N k Q w : ℕ} {P U : Type} {v : Descriptor}
         simp [bank] at this
         omega)
     exact ⟨keep.1.trans (congrArg (fun A => Stacks.L A j) view),keep.2.trans (congrArg (fun A => Stacks.R A j) view)⟩
-  refine ⟨x,D,t,paid,Exec.seq firstRun exec,same.trans (user.trans priorUser),chartPrivateReady_of_input back _ _ full,?_,stable⟩
+  have stock (j : Fin back.tapes) : (D.L (j.natAdd T)).length ≤ 2*t ∧ (D.R (j.natAdd T)).length ≤ 2*t := by
+    have fresh := off (j.natAdd T) (fun i eq => by have := congrArg Fin.val eq; simp [bank] at this; omega)
+    have initL : B.L (j.natAdd T) = [] := by simpa [start] using fresh.1
+    have initR : B.R (j.natAdd T) = [] := by simpa [start] using fresh.2
+    by_cases small : j.val < k+24
+    · have avoid (i) : ret i ≠ j.natAdd T := by
+        by_cases low : i.val < k+24
+        · rw [show i = (⟨i.val,low⟩ : Fin (k+24)).castLE reverse.fits from rfl,shared]
+          intro eq
+          have := congrArg Fin.val eq
+          simp [bank] at this
+          omega
+        · rw [outside i (by omega)]
+          intro eq
+          have := congrArg Fin.val eq
+          simp at this
+          omega
+      have keep := preserved _ avoid
+      simp [keep.1,keep.2,initL,initR]
+    · have e := outside j (by omega)
+      have hp := push_of_native (foreign_native (P := Empty) (U := U) (liftQ back.program capacity))
+      have l := exec_stack_length run hp (fun f => f.elim) (.lt j)
+      have r := exec_stack_length run hp (fun f => f.elim) (.rt j)
+      change (A.L j).length ≤ (B.L (ret j)).length+2*t at l
+      change (A.R j).length ≤ (B.R (ret j)).length+2*t at r
+      have left := congrArg (fun Z => Stacks.L Z j) lastView
+      have right := congrArg (fun Z => Stacks.R Z j) lastView
+      change D.L (ret j) = A.L j at left
+      change D.R (ret j) = A.R j at right
+      rw [← e,left,right]
+      simpa [e,initL,initR] using And.intro l r
+  refine ⟨x,D,t,paid,Exec.seq firstRun exec,same.trans (user.trans priorUser),chartPrivateReady_of_input back _ _ full,?_,stock,stable⟩
   apply reverse.reuse forward _ (embStk ret D) _ full
   · intro i
     change D.L (bank (headerBank i)) = D.L (ret _) ∧ D.R (bank (headerBank i)) = D.R (ret _)
@@ -623,6 +664,7 @@ theorem chartOwner_scan {T N k Q : ℕ} {P U : Type}
       Exec outer ((embProg chart (Empty.elim : Empty → P) (foreign (liftQ stage.program chartFits))).seq (statePlacedNormalized placement fits positive id program))
         (mk u (ordinaryOwnerBank metadata S)) n (mk z D) ∧
       z.user = u.user ∧ ChartPrivateReady stage (embStk chart D) ∧
+      (D.L (slot.castAdd stage.tapes) = [] ∧ D.R (slot.castAdd stage.tapes) = []) ∧
       ∀ i j, readAt blank (D.L (chart (stage.slots i))) (D.R (chart (stage.slots i))) j =
         (phaseOwners (Function.update (stage.transform data) src word)).tape i j := by
   intro slot placement chart capacity chartFits fits outer u S input scanner
@@ -670,7 +712,16 @@ theorem chartOwner_scan {T N k Q : ℕ} {P U : Type}
     rw [stable.1,stable.2]
     simpa only [ordinaryOwnerBank,Fin.addCases_right] using reusable j unused h
   refine ⟨z,G,t+(1+n),word,project ▸ ok,Nat.add_le_add price (Nat.add_le_add_left paid 1),Exec.seq enter finish,
-    finishUser.trans (scanUser.trans (enterUser.trans chartUser)),privateReady,?_⟩
+    finishUser.trans (scanUser.trans (enterUser.trans chartUser)),privateReady,?_,?_⟩
+  · have away (j) : placement j ≠ slot.castAdd stage.tapes := by
+      change Equiv.swap _ _ (j.castAdd stage.tapes) ≠ _
+      nth_rw 2 [← Equiv.swap_apply_right (slot.castAdd stage.tapes) ((stage.slots src).natAdd (T+5))]
+      apply (Equiv.swap _ _).injective.ne
+      intro eq
+      have h := congrArg Fin.val eq
+      change j.val = T+5+(stage.slots src).val at h
+      omega
+    simpa [ordinaryOwnerBank,slot] using keep _ away
   intro i j
   by_cases h : i = src
   · subst i
@@ -1261,7 +1312,7 @@ theorem OrdinaryParentRun.chartRoundTrip [M8.Machine.Net] {common work w rows B 
       (∀ j : Fin data.records, LabelStock.live 64 (w+1) 1 j = false →
         ownerRow (R := data.records) (N := N) rfl output j = ownerRow rfl word j) ∧
       ∀ i : Fin (66+K), 58 ≤ i.val → D.L ((placement i).castAdd 5) = [] ∧ D.R ((placement i).castAdd 5) = []
-  obtain ⟨z,F,t,output,ok,paid,run,priorUser,privateReady,reads⟩ := chartOwner_scan stage src metadata words forwardMachine.restored columnCapacity_pos outer program (dispatch+clean) post cap chartFits fitsState (embDn base start) S input (by
+  obtain ⟨z,F,t,output,ok,paid,run,priorUser,privateReady,_,reads⟩ := chartOwner_scan stage src metadata words forwardMachine.restored columnCapacity_pos outer program (dispatch+clean) post cap chartFits fitsState (embDn base start) S input (by
     intro u owners chartReads _
     have reads (j : ℤ) := (chartReads src j).symm
     simp only [embStk,Function.comp_apply,phaseOwners,sub_zero] at reads
@@ -1291,7 +1342,7 @@ theorem OrdinaryParentRun.chartRoundTrip [M8.Machine.Net] {common work w rows B 
     intro i j
     simpa [phaseOwners,updated,owners,chartBank] using (reads i j).symm
   have chartInput := chartOwner_input stage updated (embStk chartBank F) (embStk chartBank F) privateReady represented (fun _ _ => ⟨rfl,rfl⟩)
-  obtain ⟨y,D,n,price,exec,returnUser,backReady,done,kept⟩ := ownerRun_returnChart forwardMachine reverseMachine
+  obtain ⟨y,D,n,price,exec,returnUser,backReady,done,_,kept⟩ := ownerRun_returnChart forwardMachine reverseMachine
     (le_max_right ..) chartBank installed prior updated initial F start z t run chartInput
   have recover := ordinaryParentEntry_recover metadata raw prefixReady suffixReady
   change Exec _ _ (mk start (ordinaryParentEntry (T := 66+(K+1)) back.tapes metadata S)) _ _ at exec

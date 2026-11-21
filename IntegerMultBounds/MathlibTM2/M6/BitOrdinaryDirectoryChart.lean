@@ -1535,6 +1535,10 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux w : ℕ} {L P U : Type}
       z.user = v.user ∧ (∀ j, (∀ i, place i ≠ j) → D.L j = B.L j ∧ D.R j = B.R j) ∧
       let D := embStk place D
       ChartPrivateReady back (embStk ret D) ∧
+      ((List.finRange 5).map (fun j => let i := baseBank ((j.natAdd (T+10)).castAdd stage.tapes)
+        (D.R i).length)).sum = N ∧
+      ((List.finRange back.tapes).map (fun j => let i := j.natAdd (((T+10)+5)+stage.tapes)
+        4*(D.L i).length+2*(D.R i).length+4)).sum ≤ back.tapes*(12*(back.cost*(back.tapes+5)+6)+4) ∧
       RepT (stage.input final) (embStk (chart.trans baseBank) D).L (embStk (chart.trans baseBank) D).R ∧
       (∀ i, i ≠ src → final i = words i) ∧ OriginalPortReads R W parents interval weights cert (words src) (final src) ∧
       ∃ F, finished (embStk placement F) ∧ ∀ j, (∀ i, headers i ≠ j) →
@@ -1557,7 +1561,7 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux w : ℕ} {L P U : Type}
   let post := fun (out : Fin (R*N) → ZMod 2) (D : Stacks ((T+10)+5) prime) =>
     finished D ∧ PortReads R W parents interval weights routed out ∧
       ∀ j : Fin R, LabelStock.live 64 (w+1) 1 j = false → ownerRow rfl out j = ownerRow rfl routed j
-  obtain ⟨z,D,n,out,⟨done,reads,inactive⟩,time,run,user,ready,owners⟩ :=
+  obtain ⟨z,D,n,out,⟨done,reads,inactive⟩,time,run,user,ready,unusedSlot,owners⟩ :=
     chartOwner_scan stage src metadata words forward.restored positive body ((((normTape slot).seq (directoryRowClock clock)).seq setup).seq program) (6*chartOwnerStock stage src S+6+directoryRowClockRate*N+setupCost+budget) post capacity chartFits fits (embDn baseBank u) S input (by
       intro a F represented stock
       let A := embStk placement (ordinaryOwnerBank metadata F)
@@ -1739,7 +1743,7 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux w : ℕ} {L P U : Type}
     apply chartOwner_input stage _ (embStk chart D) _ ready _ (fun _ _ => ⟨rfl,rfl⟩)
     intro i j
     simpa [phaseOwners,updated,embStk,chart] using (owners i j).symm
-  obtain ⟨y,F,t,price,exec,finish,privateReady,final,frame⟩ := ownerRun_returnChart forward reverse backFits chart outer
+  obtain ⟨y,F,t,price,exec,finish,privateReady,final,suffixStock,frame⟩ := ownerRun_returnChart forward reverse backFits chart outer
     enter updated (ordinaryOwnerBank metadata S) D u z n run chartInput
   obtain ⟨z,G,placedRun,_,same,view,outside⟩ := exec_emb hostPlace.injective installed exec hostEntry rfl preparedBank entryEq.symm
   refine ⟨z,G,steps+(n+t),back.transform updated,?_,Exec.seq prep placedRun,same.trans (finish.trans user),outside,?_⟩
@@ -1760,7 +1764,35 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux w : ℕ} {L P U : Type}
     dsimp only
     linarith only [runtime,firstCost,lastCost]
   rw [view]
-  refine ⟨privateReady,final,?_,?_,D,done,frame⟩
+  refine ⟨privateReady,?_,?_,final,?_,?_,D,done,frame⟩
+  · have kept (j : Fin 5) := frame ((j.natAdd (T+10)).castAdd stage.tapes) (fun i eq => by
+      have h := congrArg Fin.val eq
+      change (T+10)+5+i.val = (T+10)+j.val at h
+      omega)
+    have regs (j : Fin 5) (ne : j ≠ 0) : placement (j.natAdd (T+10)) = (j.natAdd (T+10)).castAdd stage.tapes := by
+      have apart : (j.natAdd (T+10)).castAdd stage.tapes ≠ (stage.slots src).natAdd ((T+10)+5) := by
+        intro eq
+        have h := congrArg Fin.val eq
+        change (T+10)+j.val = (T+10)+5+(stage.slots src).val at h
+        omega
+      exact Equiv.swap_apply_of_ne_of_ne ((Fin.castAddEmb stage.tapes).injective.ne ((Fin.natAddEmb (T+10)).injective.ne ne)) apart
+    obtain ⟨acc,widthReg,save,tmp,_⟩ := done
+    change D.R (placement _) = [] at acc save tmp
+    change (D.R (placement _)).length = N at widthReg
+    rw [regs 1 (by decide)] at acc
+    rw [regs 2 (by decide)] at widthReg
+    rw [regs 3 (by decide)] at save
+    rw [regs 4 (by decide)] at tmp
+    simp [List.finRange_succ]
+    dsimp only [baseBank]
+    simp only [(kept 0).2,(kept 1).2,(kept 2).2,(kept 3).2,(kept 4).2,unusedSlot.2,acc,widthReg,save,tmp,List.length_nil,Nat.zero_add,Nat.add_zero]
+  · have total := List.sum_le_sum (l := List.finRange back.tapes) (g := fun _ => 12*(back.cost*(back.tapes+5)+6)+4)
+        (f := fun j => let i := j.natAdd (((T+10)+5)+stage.tapes)
+          4*(F.L i).length+2*(F.R i).length+4) (fun j _ => by
+            obtain ⟨left,right⟩ := suffixStock j
+            dsimp only
+            omega)
+    simpa only [List.map_const',List.sum_replicate_nat,List.length_finRange] using total
   · intro i hi
     exact ((reverseRun updated).1 i hi).trans ((Function.update_of_ne hi ..).trans ((forwardRun words).1 i hi))
   · have undo := (reverseRun updated).2
