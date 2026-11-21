@@ -1682,7 +1682,8 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux w : ℕ} {L P U : Type}
         (D.R i).length)).sum = N ∧
       RepT (stage.input final) (embStk (chart.trans baseBank) D).L (embStk (chart.trans baseBank) D).R ∧
       (∃ head tail, padding head tail ∧ let j := ownerSlots src
-        (D.L j).length+(D.R j).length ≤ R*N+head.length+tail.length+2*(back.cost*(back.tapes+5)+6)) ∧
+        (((D.L j).length+(D.R j).length : ℕ) : ℝ) ≤ ((R*N+head.length+tail.length : ℕ) : ℝ)+
+          2*(packedChartRate src cert checked false layout.width+packedChartRate src cert checked true layout.width)*(R*N : ℕ)+24) ∧
       (∀ i, i ≠ src → let j := ownerSlots i
         (((D.L j).length+(D.R j).length : ℕ) : ℝ) ≤ ((A.L j).length+(A.R j).length : ℕ)+
           2*(packedChartRate src cert checked false layout.width+packedChartRate src cert checked true layout.width)*(R*N : ℕ)+24) ∧
@@ -2105,7 +2106,16 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux w : ℕ} {L P U : Type}
   · refine ⟨head,tail,pad,?_⟩
     change (D.L (placement slot)).length+(D.R (placement slot)).length = _ at extent
     rw [show placement slot = chart (stage.slots src) from payloadPlacement_shared ..] at extent
-    exact (returnedStock src).trans (Nat.add_le_add extent.le (Nat.mul_le_mul_left 2 price))
+    let newStock := (F.L (ownerSlots src)).length+(F.R (ownerSlots src)).length
+    have physical : newStock ≤ R*N+head.length+tail.length+2*(back.cost*(back.tapes+5)+6) :=
+      (returnedStock src).trans (Nat.add_le_add extent.le (Nat.mul_le_mul_left 2 price))
+    have realStock : (newStock : ℝ) ≤ ((R*N+head.length+tail.length : ℕ) : ℝ)+2*((back.cost*(back.tapes+5) : ℕ)+6) := by
+      exact_mod_cast physical
+    have forwardNonneg := (Nat.cast_nonneg (stage.cost*(stage.tapes+5)) (α := ℝ)).trans firstCost
+    change (newStock : ℝ) ≤ _
+    unfold packedChartRate
+    dsimp only
+    linarith only [realStock,forwardNonneg,lastCost]
   · intro i ne
     let old := (initial.L (ownerSlots i)).length+(initial.R (ownerSlots i)).length
     let newStock := (F.L (ownerSlots i)).length+(F.R (ownerSlots i)).length

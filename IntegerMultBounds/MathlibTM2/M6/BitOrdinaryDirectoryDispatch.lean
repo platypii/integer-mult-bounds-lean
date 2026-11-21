@@ -1079,6 +1079,30 @@ theorem idlePackedChart_cost [M8.Machine.Net] :
   dsimp only [toll]
   constructor <;> linarith only [f,b,unit,pos]
 
+open IntegerMultBounds.Networks.Certificates.PR589.Nine RecursiveInterchangeLayout in
+/-- The growth carried out of one idle window is bounded uniformly in the
+parent width and volume. This applies to every tape in its owner bank. -/
+theorem idleWindowGrowth_cost [M8.Machine.Net] :
+    ∃ C : ℝ, ∀ (node : Descriptor) (i : Fin 9), 1 ≤ node.width → 142080 ∣ node.rows →
+      0 < volume prime node →
+      let v := volume prime (role node 142080)
+      let growth := fun k => let portRole := idleRole i k
+        let rate := packedChartRate (idleTape i k) (port portRole.port.val) (port_checked _ portRole.port.isLt)
+        2*(rate false node.width+rate true node.width)*v+24
+      (idleCopies.map growth).sum ≤ C*(node.width : ℝ)^M8.Machine.BudgetBound.tau*volume prime node := by
+  obtain ⟨A,bound⟩ := idlePackedChart_cost
+  refine ⟨A/4,?_⟩
+  intro node i width rows positive v growth
+  have parent := role_volume_mul prime 142080 node rows
+  have live := Nat.pos_of_mul_pos_right (parent.symm ▸ positive)
+  have size : (v : ℝ)*142080 = volume prime node := by exact_mod_cast parent
+  have bill := List.sum_le_sum (l := idleCopies) (f := growth)
+    (g := fun _ => A*(node.width : ℝ)^M8.Machine.BudgetBound.tau*v)
+    (fun k _ => (bound i k node.width v width live).2)
+  simp only [List.map_const',List.sum_replicate,idleCopies_length,nsmul_eq_mul] at bill
+  rw [← size]
+  convert bill using 1 <;> push_cast <;> ring
+
 /-- Across a window of length n, each earlier pass contributes to the later
 passes once. A uniform growth bound therefore has a triangular coefficient. -/
 private theorem prefixGrowth_sum_le {α : Type*} (xs : List α) (growth : α → ℝ)
