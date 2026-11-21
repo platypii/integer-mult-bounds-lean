@@ -1135,7 +1135,7 @@ def OrdinaryParentRun [M8.Machine.Net] {common work w rows B : ℕ} {U : Type}
       F.R (bank 46) = raw.R (bank 46) ∧ bankStock visited (mk z F) = (raw.R (bank 46)).length+(F.R (bank 48)).length ∧
       ∀ i : Fin (66+K), 58 ≤ i.val → F.L ((placement i).castAdd 5) = [] ∧ F.R ((placement i).castAdd 5) = []
 
-private theorem packedRole_volume (layout : Descriptor) (w : ℕ) (width : layout.width = 64*(w+1)) :
+theorem packedRole_volume (layout : Descriptor) (w : ℕ) (width : layout.width = 64*(w+1)) :
     let directory := role layout 142080
     volume prime directory = LabelMask.records directory *
       ((prime^(w+1))^128*(layout.between*layout.afterD)) := by

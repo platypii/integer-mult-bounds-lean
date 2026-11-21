@@ -1489,6 +1489,40 @@ private theorem chartCleanupCost {t n : ℕ} (place : Fin t ↪ Fin n) (D : Stac
     (fun j _ => by obtain ⟨l,r⟩ := stock j; omega)
   simpa only [List.sum_map_add,List.sum_map_mul_left,List.map_const',List.sum_replicate_nat,List.length_finRange] using bound
 
+/-- Setup, the row clock and the two scanner passes share the same
+width-weighted volume bound at every recursive entry. -/
+private theorem directoryChartLocal_cost [M8.Machine.Net] (rate : ℝ) (setup R N w width : ℕ)
+    (rows : 0 < R) (symbols : 0 < N) (digits : w+1 ≤ width) :
+    let power := (width : ℝ)^M8.Machine.BudgetBound.tau
+    let scan := ⌊rate*(((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau*((R : ℝ)*N))⌋₊
+    ((directoryRowClockRate*N+setup*(R*N)+scan+91 : ℕ) : ℝ) ≤
+      (directoryRowClockRate+setup+|rate|+91)*power*(R*N : ℕ) := by
+  intro power scan
+  have tau := M8.Machine.BudgetBound.exponent_range.1.le
+  have one : 1 ≤ power := Real.one_le_rpow (by exact_mod_cast (by omega : 1 ≤ width)) tau
+  have grow := Real.rpow_le_rpow (by positivity : 0 ≤ ((w+1 : ℕ) : ℝ))
+    (show ((w+1 : ℕ) : ℝ) ≤ width by exact_mod_cast digits) tau
+  have vol : 1 ≤ (R*N : ℕ) := Nat.mul_pos rows symbols
+  have each : N ≤ R*N := Nat.le_mul_of_pos_left _ rows
+  let scale := power*((R*N : ℕ) : ℝ)
+  have full : ((R*N : ℕ) : ℝ) ≤ scale := le_mul_of_one_le_left (Nat.cast_nonneg _) one
+  have row : (N : ℝ) ≤ scale := (by exact_mod_cast each : (N : ℝ) ≤ (R*N : ℕ)).trans full
+  have unit : 1 ≤ scale := (by exact_mod_cast vol : (1 : ℝ) ≤ (R*N : ℕ)).trans full
+  have scanBound : (scan : ℝ) ≤ |rate| *scale := by
+    apply le_trans (Nat.cast_le.mpr (Nat.floor_mono (show rate*_ ≤ |rate| *scale from by
+      apply mul_le_mul (le_abs_self _) _ (by positivity) (abs_nonneg _)
+      dsimp only [scale]
+      rw [Nat.cast_mul]
+      exact mul_le_mul_of_nonneg_right grow (by positivity))))
+    exact Nat.floor_le (mul_nonneg (abs_nonneg _) (zero_le_one.trans unit))
+  have clock := mul_le_mul_of_nonneg_left row (Nat.cast_nonneg directoryRowClockRate (α := ℝ))
+  have init := mul_le_mul_of_nonneg_left full (Nat.cast_nonneg setup (α := ℝ))
+  rw [mul_assoc]
+  change _ ≤ _*scale
+  push_cast
+  push_cast at init
+  linarith only [clock,init,scanBound,unit]
+
 open IntegerMultBounds.Networks.Certificates.PR589.Nine in
 /-- Run both certified charts around the scanner from the current owner words
 and the private stacks reserved for this scheduled occurrence. -/
@@ -1590,7 +1624,8 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux w : ℕ} {L P U : Type}
       embProg ret (Empty.elim : Empty → P) (foreign (liftQ back.program backFits))
     let stock := (S.L (stage.slots src)).length+(S.R (stage.slots src)).length
     ∀ u, ∃ z D, ∃ n : ℕ, ∃ final, (n : ℝ) ≤ (13*packedChartRate src cert checked false layout.width +
-      packedChartRate src cert checked true layout.width)*(R*N : ℕ) + ((directoryRowClockRate*N+setupCost+scanOverhead+91 : ℕ) : ℝ) + childBudget + 6*(stock : ℝ) ∧
+      packedChartRate src cert checked true layout.width)*(R*N : ℕ) + (directoryRowClockRate+directoryChartSetupRate replayRole+|scanRate|+91)*
+        (layout.width : ℝ)^M8.Machine.BudgetBound.tau*(R*N : ℕ) + childBudget + 6*(stock : ℝ) ∧
       Exec (fun f => embProg baseBank id (outer f)) ((embProg baseBank id enter).seq leave) (mk u A) n (mk z D) ∧
       z.user = u.user ∧
       ChartPrivateReady back (embStk ret D) ∧
@@ -1894,7 +1929,17 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux w : ℕ} {L P U : Type}
         unfold packedChartRate
         dsimp only
         linarith only [runtime,firstCost,lastCost]
-      _ = _ := by dsimp only [localCost,budget]; push_cast; ring
+      _ = (13*packedChartRate src cert checked false layout.width + packedChartRate src cert checked true layout.width)*(R*N : ℕ) + ((directoryRowClockRate*N+setupCost+scanOverhead+91 : ℕ) : ℝ) + childBudget + 6*(stock : ℝ) := by
+        dsimp only [localCost,budget]; push_cast; ring
+      _ ≤ _ := by
+        have live := RecursiveRowsNodeLayout.role_positive 142080 layout (by decide) positiveLayout ⟨rows,split⟩
+        have h := directoryChartLocal_cost scanRate (directoryChartSetupRate replayRole) R N w layout.width
+          (Nat.mul_pos (Nat.mul_pos live.1 live.2.1) live.2.2.1)
+          (Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) spectators) (by omega)
+        have vol : RecursiveInterchangeLayout.volume prime directory = R*N := packedRole_volume layout w digits
+        dsimp only [setupCost]
+        rw [vol]
+        exact add_le_add_left (add_le_add_left (add_le_add_right h _) _) _
   have prefixFrame (j : Fin ((T+10)+5)) := frame (j.castAdd stage.tapes) (fun i eq => by
     have h := congrArg Fin.val eq
     change (T+10)+5+i.val = j.val at h

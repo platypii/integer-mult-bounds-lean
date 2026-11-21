@@ -1077,25 +1077,39 @@ private theorem idleEntry_stock (i : Fin 9) (stock : Fin 142081 → ℝ) (positi
       (fun l _ _ => positive l) : ∑ l ∈ Finset.univ.map tape, stock l ≤ ∑ l, stock l)
 
 open IntegerMultBounds.Networks.Certificates.PR589.Nine RecursiveInterchangeLayout in
-/-- The forward and reverse charts and all accumulated spectator growth fit
-one parent volume times the width exponent. Each window also pays once for
-the initial physical stock of its owner bank. -/
-theorem scheduledIdleCharts_cost [M8.Machine.Net] :
+/-- Charge the nine windows, including directory setup and scanning, to one
+width-weighted parent volume, their entry banks and the selected children. -/
+theorem scheduledIdleCharts_cost [M8.Machine.Net]
+    (scanRate : Fin 9 → ((Fin 32 × Fin 5) × Fin 222) → ℝ)
+    (replay : Fin 9 → ((Fin 32 × Fin 5) × Fin 222) → Option (Fin 142080)) :
     ∃ C : ℝ, ∀ (node : Descriptor), 1 ≤ node.width → 142080 ∣ node.rows →
       0 < volume prime node →
       let v := volume prime (role node 142080)
       let rate := fun i k => let portRole := idleRole i k
         packedChartRate (idleTape i k) (port portRole.port.val) (port_checked _ portRole.port.isLt)
       let growth := fun i k => 2*(rate i k false node.width+rate i k true node.width)*v+24
-      let chartTime := fun i k => (13*rate i k false node.width+rate i k true node.width)*v
+      let chartTime := fun i k => (13*rate i k false node.width+rate i k true node.width)*v +
+        (directoryRowClockRate+directoryChartSetupRate (replay i k)+|scanRate i k|+91)*
+          (node.width : ℝ)^M8.Machine.BudgetBound.tau*v
       ∀ entry : Fin 9 → Stacks 142081 prime,
       let stock := fun i l => (((entry i).L l).length+((entry i).R l).length : ℕ)
-      (∑ i, ∑ j : Fin idleCopies.length, let k := idleCopies[j.val]
-        chartTime i k+6*((stock i (idleTape i k) : ℝ)+((idleCopies.take j.val).map (growth i)).sum)) ≤
-        C*(node.width : ℝ)^M8.Machine.BudgetBound.tau*volume prime node + 6*(∑ i, ∑ l, (stock i l : ℝ)) := by
+      let overhead := fun (i : Fin 9) (j : Fin idleCopies.length) => let k := idleCopies[j.val]
+        chartTime i k+6*((stock i (idleTape i k) : ℝ)+((idleCopies.take j.val).map (growth i)).sum)
+      ∀ cutoff (recursiveBudget : Fin nodeChildren5.length → ℕ) (time : Fin 9 → ℝ), 64 ∣ node.width →
+      let child := scheduledChild prime node
+      let branch := fun j => scheduledBranchCost (child j) cutoff (recursiveBudget j)
+      let calls := Finset.univ.map idleDirectoryIndex
+      let localTime := fun i j => let a := idleDirectoryIndex (i,j)
+        overhead i j+scheduledChartBudget (child a) cutoff (recursiveBudget a)
+      (∀ i, time i ≤ (idleCopies.map (fun k => 1+localTime i (idleCopyIndex k))).sum+1) →
+      (∑ i, time i)+(∑ j ∈ callsᶜ, branch j) ≤
+        C*(node.width : ℝ)^M8.Machine.BudgetBound.tau*volume prime node + 6*(∑ i, ∑ l, (stock i l : ℝ)) +
+          (9*1907/4 : ℝ)*volume prime node + (∑ j, branch j) + 319689 := by
   obtain ⟨A,chart⟩ := idlePackedChart_cost
-  refine ⟨(35520+6*630817440)*9*A/142080,?_⟩
-  intro node width rows positive v rate growth chartTime entry stock
+  obtain ⟨B,scanner⟩ := Finite.exists_le (fun j : Fin 9 × ((Fin 32 × Fin 5) × Fin 222) =>
+    (directoryRowClockRate+directoryChartSetupRate (replay j.1 j.2)+|scanRate j.1 j.2|+91 : ℝ))
+  refine ⟨(35520*(A+B)+6*630817440*A)*9/142080,?_⟩
+  intro node width rows positive v rate growth chartTime entry stock overhead cutoff recursiveBudget time split child branch calls localTime passes
   have parent := role_volume_mul prime 142080 node rows
   have live := Nat.pos_of_mul_pos_right (parent.symm ▸ positive)
   let g := A*(node.width : ℝ)^M8.Machine.BudgetBound.tau*v
@@ -1103,21 +1117,32 @@ theorem scheduledIdleCharts_cost [M8.Machine.Net] :
     (fun i j => (chart i idleCopies[j.val] node.width v width live).2)
   simp only [idleCopyIndex_get,Finset.sum_const,Finset.card_univ,Fintype.card_fin,nsmul_eq_mul] at history
   have size : (v : ℝ)*142080 = volume prime node := by exact_mod_cast parent
-  have charts : (∑ i, ∑ j : Fin idleCopies.length, chartTime i idleCopies[j.val]) ≤ 9*(35520*g) := by
+  let scan := B*(node.width : ℝ)^M8.Machine.BudgetBound.tau*v
+  have charts : (∑ i, ∑ j : Fin idleCopies.length, chartTime i idleCopies[j.val]) ≤ 9*(35520*(g+scan)) := by
     calc
-      _ ≤ ∑ i : Fin 9, ∑ _j : Fin idleCopies.length, g :=
-        Finset.sum_le_sum fun i _ => Finset.sum_le_sum fun j _ => (chart i idleCopies[j.val] node.width v width live).1
+      _ ≤ ∑ i : Fin 9, ∑ _j : Fin idleCopies.length, (g+scan) :=
+        Finset.sum_le_sum fun i _ => Finset.sum_le_sum fun j _ => add_le_add
+          (chart i idleCopies[j.val] node.width v width live).1
+          (mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_right (scanner (i,idleCopies[j.val]))
+            (Real.rpow_nonneg (Nat.cast_nonneg _) _)) (Nat.cast_nonneg _))
       _ = _ := by simp only [Finset.sum_const,Finset.card_univ,Fintype.card_fin,idleCopies_length,nsmul_eq_mul]; norm_num
   have initial := Finset.sum_le_sum (s := Finset.univ) (fun i _ =>
     idleEntry_stock i (fun l => (stock i l : ℝ)) (fun l => Nat.cast_nonneg _))
-  simp only [mul_add,Finset.sum_add_distrib,← Finset.mul_sum]
-  rw [← size]
-  calc
-    _ ≤ 9*(35520*g)+(6*(∑ i, ∑ l, (stock i l : ℝ))+6*(630817440*(9*g))) := by
-      exact add_le_add charts (add_le_add (mul_le_mul_of_nonneg_left initial (by norm_num))
-        (mul_le_mul_of_nonneg_left history (by norm_num)))
-    _ = _ := by dsimp only [g]; ring
-
+  have paid := scheduledIdleTime node split rows cutoff recursiveBudget time
+    (fun k => localTime k.1 k.2) (fun k => overhead k.1 k.2) passes (fun _ => le_rfl)
+  have bill : (∑ k : Fin 9 × Fin idleCopies.length, overhead k.1 k.2) ≤
+      (35520*(A+B)+6*630817440*A)*9/142080*(node.width : ℝ)^M8.Machine.BudgetBound.tau*volume prime node +
+        6*(∑ i, ∑ l, (stock i l : ℝ)) := by
+    rw [Fintype.sum_prod_type]
+    dsimp only [overhead]
+    simp only [mul_add,Finset.sum_add_distrib,← Finset.mul_sum]
+    rw [← size]
+    calc
+      _ ≤ 9*(35520*(g+scan))+(6*(∑ i, ∑ l, (stock i l : ℝ))+6*(630817440*(9*g))) := by
+        exact add_le_add charts (add_le_add (mul_le_mul_of_nonneg_left initial (by norm_num))
+          (mul_le_mul_of_nonneg_left history (by norm_num)))
+      _ = _ := by dsimp only [g,scan]; ring
+  exact paid.trans (add_le_add_left (add_le_add_left (add_le_add_left bill _) _) _)
 
 open IntegerMultBounds.Networks.Certificates.PR589.Nine RecursiveInterchangeLayout in
 /-- Sum chart and entry costs, the history of the shared owners, and the
