@@ -499,6 +499,39 @@ private theorem ordinarySourceWord {r g w W : ℕ}
   congr 2
   exact List.ofFn_congr (ordinaryChildVolume r g w W) (SparseRoleCircuit.encode ∘ word)
 
+/-- Execute the incoming packing pass independently of the recursive call.
+The row is ready on the source tape for the directory scanner, and the
+remaining record fields are available for the return pass. -/
+theorem ordinaryIncomingPack_exec [M8.Machine.Net] {P U : Type} {T r g w W : ℕ}
+    (ports : Fin (N+35) ↪ Fin T) (body : P → Pr P T columnCapacity prime U)
+    (v : HS T columnCapacity prime U) (S : Stacks T prime)
+    (record : List (Fin (prime+4))) (dest : ℤ → Fin 4) (q : ℤ) (hW : 0 < W)
+    (before : Fin ((prime^(w+1))^((r+g)+(r+g))*W) → ZMod 2) :
+    let d := (r+g)+(r+g)
+    let M := prime^(w+1)
+    let is := ordinaryChildPackSchedule r g
+    let bank := ((Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)).trans ports
+    let clean := fun D : Stacks T prime => ∀ k : Fin (N+35), 35 ≤ k.val → D.L (ports k) = [] ∧ D.R (ports k) = []
+    let word := before ∘ ordinaryRecursivePosition r g w W
+    RecordReady (b := prime) (w := w) (W := W) (d := (r+g)+(r+g)) bank M.size W.size record SparseRoleCircuit.encode (fun _ => blank) dest 0 q before S →
+    clean S → ∃ u D n, u.user = v.user ∧
+      n ≤ 1+((is.map (fun i => completeSwapTime (P := Empty) (U := U) Empty.elim d i (i+1) w W M.size W.size)).sum+1) ∧
+      Exec body (statePlacedNormalized ports swapStates_fit swapStates_pos Empty.elim (packSchedule d is))
+        (mk v S) n (mk u D) ∧
+      RecordReady (b := prime) (w := w) (W := W) (d := (r+g)+(r+g)) bank M.size W.size record
+        SparseRoleCircuit.encode (fun _ => blank) dest 0 q (fun k => word (k.cast (ordinaryChildVolume ..).symm)) D ∧
+      (∀ z, readAt blank (D.L (bank 24)) (D.R (bank 24)) z =
+        M8.Machine.ArbitraryWidthHighExchangeShared.sourceWord word z) ∧ clean D ∧
+      ∀ j, (∀ i, ports i ≠ j) → D.L j = S.L j ∧ D.R j = S.R j := by
+  intro d M is bank clean word layout free
+  obtain ⟨u,D,n,user,cost,run,packed,clear,kept⟩ := placedPackSchedule_exec ports is
+    (fun _ => ordinaryChildPackSchedule_inside) body v S record dest q hW before id
+    ⟨before,layout,fun _ _ => rfl⟩ free
+  have stored := (ordinaryPackedWord_iff ..).1 packed
+  refine ⟨u,D,n,user,cost,run,stored,?_,clear,kept⟩
+  intro z
+  simpa only [word,ordinarySourceWord,sub_zero,Function.comp_def] using stored.src z
+
 /-- Surround a transpose on the contiguous recursive word with the two tape
 routes. The return read is in the original parent's weighted-child layout. -/
 theorem ordinaryChildRoute_exec [M8.Machine.Net] {P U : Type} {T : ℕ}
@@ -537,16 +570,13 @@ theorem ordinaryChildRoute_exec [M8.Machine.Net] {P U : Type} {T : ℕ}
   let after := ordinaryChildOutput (r := r) (g := g) (w := w) before
   have cells := (ordinaryChildOutput_eq_iff (r := r) (g := g) (w := w) before after).1 rfl
   have fits : ∀ i ∈ is, i+1 < d := fun _ => ordinaryChildPackSchedule_inside
-  obtain ⟨u,D,n,hu,hn,pack,packed,clear,kept⟩ := placedPackSchedule_exec ports is fits body v S record dest q hW
-    before id ⟨before,layout,fun _ _ => rfl⟩ free
-  have stored := (ordinaryPackedWord_iff ..).1 packed
+  obtain ⟨u,D,n,hu,hn,pack,stored,payload,clear,kept⟩ := ordinaryIncomingPack_exec
+    (r := r) (g := g) ports body v S record dest q hW before layout free
   have smaller : desc.width < (r+g)*(w+1) := by
     change (w+1)*r < (r+g)*(w+1)
     rw [Nat.mul_comm]
     exact Nat.mul_lt_mul_of_pos_right (by omega) (by omega)
-  obtain ⟨y,G,k,hy,hk,run,returned,keep,available,live⟩ := call smaller (before ∘ ordinaryRecursivePosition r g w W) u D (by
-    intro z
-    simpa only [bank,desc,ordinarySourceWord,sub_zero,Function.comp_def] using stored.src z) clear kept
+  obtain ⟨y,G,k,hy,hk,run,returned,keep,available,live⟩ := call smaller (before ∘ ordinaryRecursivePosition r g w W) u D payload clear kept
   have changed : columns after (fun x => is.foldl adjacentFields x) G := by
     apply (ordinaryPackedWord_iff ..).2
     simp only [cells]
