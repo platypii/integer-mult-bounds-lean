@@ -583,6 +583,48 @@ def childMetadataSources (K T : ℕ) (room : 16 ≤ T) : Fin 9 → Fin (66+(K+3+
   ![privatePort ⟨9,by omega⟩,publicPort 29,privatePort ⟨1,by omega⟩,publicPort 31,
     privatePort ⟨0,by omega⟩,publicPort 58,privatePort ⟨5,by omega⟩,privatePort ⟨6,by omega⟩,publicPort 46]
 
+def splitCountSlots (groups : Bool) : Fin 10 ↪ Fin 14 :=
+  ⟨if groups then ![2,3,6,7,8,9,10,11,12,13] else ![0,1,4,5,8,9,10,11,12,13],
+    by cases groups <;> decide⟩
+
+noncomputable def splitCountWord {T Q : ℕ} {P U : Type} (r : Fin 10 ↪ Fin T) : Pr P T Q prime U :=
+  (Mult.ShortConv.unaryProduct (r 0) (r 1) (r 2) (r 4) (r 5)).seq
+    (unaryBinary (r 2) (r 3) (r 4) (r 5) (r 6) (r 7) (r 8) (r 9))
+
+/-- Form the two split counters from the child's metadata. Both products use
+the same six work tapes. Multiplying by the positive label count also covers
+the empty-prefix case. -/
+theorem childRoleSplitCounts_exec {T Q w : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
+    (r : Fin 14 ↪ Fin T) (u : HS T Q prime U) (S : Stacks T prime)
+    (W a rows H width : ℕ) (positive : 0 < H) (rowCount : 0 < rows) (archive : List (Fin (prime+4))) :
+    let words := ordinaryEntryWords W a rows H true (fun _ => (1 : ZMod (prime^(w+1)))) width archive
+    S.R (r 0) = words 47 → S.R (r 1) = words 31 → S.R (r 2) = words 29 → S.R (r 3) = words 30 →
+    (∀ j : Fin 14, 4 ≤ j.val → S.R (r j) = []) →
+    let symbols := H*width
+    let groups := a*rows
+    let D := {S with R := Function.update (Function.update S.R (r 4) (List.replicate symbols Node.tick)) (r 5) (binSyms symbols.size symbols)}
+    ∃ z k, z.user = u.user ∧ k ≤ 34*(symbols+groups)+28 ∧
+      Exec body ((splitCountWord ((splitCountSlots false).trans r)).seq (splitCountWord ((splitCountSlots true).trans r)))
+        (mk u S) k (mk z {D with R := Function.update (Function.update D.R (r 6) (List.replicate groups Node.tick)) (r 7) (binSyms groups.size groups)}) := by
+  intro words widthWord labelWord outerWord rowWord free symbols groups D
+  have firstFree (j : Fin 10) (hj : 2 ≤ j.val) : 4 ≤ (splitCountSlots false j).val := by
+    revert hj; fin_cases j <;> decide
+  obtain ⟨v,n,user,paid,first⟩ := ordinarySpectatorWord_exec body ((splitCountSlots false).trans r) u S width H
+    (by change (S.R (r 0)).length = _; simp [widthWord,words,ordinaryEntryWords])
+    (by change (S.R (r 1)).length = _; simp [labelWord,words,ordinaryEntryWords]) positive
+    (fun j hj => free _ (firstFree j hj))
+  rw [Nat.mul_comm width H] at first paid
+  have same (j : Fin 10) : D.R (r (splitCountSlots true j)) = S.R (r (splitCountSlots true j)) :=
+    (Function.update_of_ne (r.injective.ne (by fin_cases j <;> decide)) ..).trans
+      (Function.update_of_ne (r.injective.ne (by fin_cases j <;> decide)) ..)
+  have secondFree (j : Fin 10) (hj : 2 ≤ j.val) : 4 ≤ (splitCountSlots true j).val := by
+    revert hj; fin_cases j <;> decide
+  obtain ⟨z,m,last,time,second⟩ := ordinarySpectatorWord_exec body ((splitCountSlots true).trans r) v D a rows
+    (by rw [show (D.R (((splitCountSlots true).trans r) 0)) = _ from same 0]; change (S.R (r 2)).length = _; simp [outerWord,words,ordinaryEntryWords])
+    (by rw [show (D.R (((splitCountSlots true).trans r) 1)) = _ from same 1]; change (S.R (r 3)).length = _; simp [rowWord,words,ordinaryEntryWords])
+    rowCount (fun j hj => (same j).trans (free _ (secondFree j hj)))
+  exact ⟨z,n+m,last.trans user,by dsimp only [symbols,groups]; omega,Exec.seq first second⟩
+
 open RecursiveInterchangeLayout in
 theorem childMetadataSources_words {K T n w rows : ℕ} (room : 16 ≤ T)
     (replay : Fin (66+(K+3+T)) ↪ Fin n) (batch : Descriptor) (F : Stacks n prime)

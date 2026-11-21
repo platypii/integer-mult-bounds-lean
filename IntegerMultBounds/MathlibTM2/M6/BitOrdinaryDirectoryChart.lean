@@ -1063,43 +1063,127 @@ private theorem chartRoleSplit_cost (groups H width N : ℕ) (positive : 0 < gro
       2*(k+6*n+7*g+16)+1 ≤ 149*V := by omega
   exact bill groups _ _ _ positive work total hg
 
+/-- The inner two controls count row symbols. The outer pair counts groups. -/
+def roleSplitControls (c : ℕ) : Fin 4 ↪ Fin (((1+c)+2)+2) :=
+  ⟨fun i => ⟨1+c+i.val,by omega⟩,fun i j eq => Fin.ext (by have := congrArg Fin.val eq; dsimp only at this; omega)⟩
+
+private theorem splitCounter_read (bits : List Bool) (z : ℤ) :
+    CountedLoopReuseAlphabet.binary bits z =
+      readAt (blank : Fin (prime+4)) [separator] (bits.map bitSymbol) (z-1) := by
+  rw [← CountedLoopReuseAlphabet.encoding_binary]
+  change RadixZeroFill.encodedBinary _ z = _
+  rw [encodedBinary_eq,readAt_single]
+
+/-- Install the four left separators on a split bank containing the literal
+archive and the two computed binary words. All heads start at the positions
+expected by the cyclic splitter. -/
+theorem prepareRoleSplit_exec {c Q : ℕ} {P U : Type}
+    (body : P → Pr P (((1+c)+2)+2) Q prime U) (u : HS (((1+c)+2)+2) Q prime U)
+    (S : Stacks (((1+c)+2)+2) prime) (archive : List (Fin (prime+4))) (symbols groups : ℕ)
+    (left : ∀ i, S.L i = []) (source : S.R (((0 : Fin (1+c)).castAdd 2).castAdd 2) = archive)
+    (roles : ∀ j : Fin c, S.R (((j.natAdd 1).castAdd 2).castAdd 2) = [])
+    (headers : ∀ i : Fin 4, S.R (roleSplitControls c i) =
+      ![[],binSyms symbols.size symbols,[],binSyms groups.size groups] i) :
+    let fields := (List.finRange 4).map (roleSplitControls c)
+    let B := {S with L := fun i => if i ∈ fields then separator :: S.L i else S.L i}
+    let bs := FlatCoordinateSchedule.bits symbols
+    let gs := FlatCoordinateSchedule.bits groups
+    let initial := CyclicRowSplit.bank (CyclicRowCopy.bank (putWord (fun _ => blank) 0 archive)
+      (fun _ _ => blank) 0 (fun _ => 0) bs) gs
+    Exec body (Prog.act (pushMarkers fields)) (mk u S) 1 (mk u B) ∧ RepT initial B.L B.R := by
+  intro fields B bs gs initial
+  have mark := Exec.act (body := body) (pushMarkers fields) (mk u S)
+  rw [pushMarkers_run _ ((List.nodup_finRange 4).map (roleSplitControls c).injective)] at mark
+  refine ⟨mark,?_⟩
+  have low (j : Fin (1+c)) : B.L ((j.castAdd 2).castAdd 2) = [] := by
+    have off : (j.castAdd 2).castAdd 2 ∉ fields := by
+      intro mem
+      obtain ⟨i,_,eq⟩ := List.mem_map.mp mem
+      have h := congrArg Fin.val eq
+      change 1+c+i.val = j.val at h
+      omega
+    simp [B,off,left]
+  have high (j : Fin 4) : B.L (roleSplitControls c j) = [separator] := by
+    have mem : roleSplitControls c j ∈ fields := List.mem_map_of_mem (List.mem_finRange j)
+    simp [B,mem,left]
+  intro i z
+  induction i using Fin.addCases with
+  | left i =>
+    induction i using Fin.addCases with
+    | left i =>
+      induction i using Fin.addCases with
+      | left i =>
+        have eq : i = 0 := Subsingleton.elim _ _
+        subst i
+        simp only [initial,CyclicRowSplit.bank,CyclicRowCopy.bank,CountedLoopReuseAlphabet.bank,
+          CyclicRowCopy.payload,Tapes.append,Fin.addCases_left,sub_zero,low,putWord_blank_zero]
+        change wordTape archive z = readAt blank [] (S.R (((0 : Fin (1+c)).castAdd 2).castAdd 2)) z
+        rw [source,readAt_nil_left]
+      | right j =>
+        simp only [initial,CyclicRowSplit.bank,CyclicRowCopy.bank,CountedLoopReuseAlphabet.bank,
+          CyclicRowCopy.payload,Tapes.append,Fin.addCases_left,Fin.addCases_right,sub_zero,low]
+        rw [show B.R (((j.natAdd 1).castAdd 2).castAdd 2) = [] from roles j,readAt_nil_left,wordTape_nil]
+    | right j =>
+      simp only [initial,CyclicRowSplit.bank,CyclicRowCopy.bank,CountedLoopReuseAlphabet.bank,
+        Tapes.append,Fin.addCases_left,Fin.addCases_right,CountedLoopReuseAlphabet.controls]
+      fin_cases j
+      · change CountedLoopReuseAlphabet.binary [] z = readAt blank (B.L (roleSplitControls c 0)) (S.R (roleSplitControls c 0)) (z-1)
+        rw [high,headers]; exact splitCounter_read [] z
+      · change CountedLoopReuseAlphabet.binary bs z = readAt blank (B.L (roleSplitControls c 1)) (S.R (roleSplitControls c 1)) (z-1)
+        rw [high,headers]; change CountedLoopReuseAlphabet.binary bs z = readAt blank [separator] (binSyms symbols.size symbols) (z-1); simpa only [bs,canonicalBits_symbols] using splitCounter_read bs z
+  | right j =>
+    simp only [initial,CyclicRowSplit.bank,CountedLoopReuseAlphabet.bank,Tapes.append,Fin.addCases_right,CountedLoopReuseAlphabet.controls]
+    fin_cases j
+    · change CountedLoopReuseAlphabet.binary [] z = readAt blank (B.L (roleSplitControls c 2)) (S.R (roleSplitControls c 2)) (z-1)
+      rw [high,headers]; exact splitCounter_read [] z
+    · change CountedLoopReuseAlphabet.binary gs z = readAt blank (B.L (roleSplitControls c 3)) (S.R (roleSplitControls c 3)) (z-1)
+      rw [high,headers]; change CountedLoopReuseAlphabet.binary gs z = readAt blank [separator] (binSyms groups.size groups) (z-1); simpa only [gs,canonicalBits_symbols] using splitCounter_read gs z
+
 /-- Split one full archive into the queues read by the role charts. The
 counters hold a row's symbol count and the number of complete role groups. -/
 theorem directoryChartRoleSplit_exec {Q : ℕ} {P U : Type}
     (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q)
     (groups H width N : ℕ) (positive : 0 < groups) (labels : 0 < H) (row : 0 < N) (fits : width ≤ N)
     (archive : ℕ → List (Fin (prime+4))) (widths : ∀ k < groups*142080*H, (archive k).length = width)
-    (clean : ∀ k < groups*142080*H, blank ∉ archive k) (source : ℤ → Fin (prime+4)) (p : ℤ) :
+    (clean : ∀ k < groups*142080*H, blank ∉ archive k) :
     let T := ((1+142080)+2)+2
     let bs := FlatCoordinateSchedule.bits (H*width)
     let gs := FlatCoordinateSchedule.bits groups
-    let src := putWord source p ((List.range (groups*142080*H)).flatMap archive)
-    let start := CyclicRowSplit.bank (CyclicRowCopy.bank src (fun _ _ => blank) p (fun _ => 0) bs) gs
+    let input := (List.range (groups*142080*H)).flatMap archive
+    let src := putWord (fun _ => blank) 0 input
+    let fields := (List.finRange 4).map (roleSplitControls 142080)
     let finish := CyclicRowSplit.bank (CyclicRowCopy.bank src
       (fun j => putWord (fun _ => blank) 0 (directoryChartQueue (some j) H 0 (groups*H) archive))
-      p (fun _ => 0) bs) gs
-    ∀ (body : P → Pr P T Q prime U) (u : HS T Q prime U) (S : Stacks T prime), RepT start S.L S.R →
-      ∃ z F t, z.user = u.user ∧ t ≤ 149*(T+5)*(groups*142080*H*N)+6 ∧
-        Exec body (foreign (liftQ (CyclicRowNormalized.splitProgram 142080 prime) capacity)) (mk u S) t (mk z F) ∧
+      0 (fun _ => 0) bs) gs
+    ∀ (body : P → Pr P T Q prime U) (u : HS T Q prime U) (S : Stacks T prime),
+      (∀ i, S.L i = []) → S.R (((0 : Fin (1+142080)).castAdd 2).castAdd 2) = input →
+      (∀ j : Fin 142080, S.R (((j.natAdd 1).castAdd 2).castAdd 2) = []) →
+      (∀ i : Fin 4, S.R (roleSplitControls 142080 i) =
+        ![[],binSyms (H*width).size (H*width),[],binSyms groups.size groups] i) →
+      ∃ z F t, z.user = u.user ∧ t ≤ 149*(T+5)*(groups*142080*H*N)+7 ∧
+        Exec body ((Prog.act (pushMarkers fields)).seq (foreign (liftQ (CyclicRowNormalized.splitProgram 142080 prime) capacity))) (mk u S) t (mk z F) ∧
         RepT finish F.L F.R ∧
         ∀ j : Fin 142080, let port := ((j.natAdd 1).castAdd 2).castAdd 2
           let queue := directoryChartQueue (some j) H 0 (groups*H) archive
           ∃ y k, y.user = z.user ∧
-            k ≤ 6*((S.L port).length+(S.R port).length+298*(groups*142080*H*N))+6 ∧
+            k ≤ 1788*(groups*142080*H*N)+6 ∧
             Exec body (normTape port) (mk z F) k
               (mk y {F with L := Function.update F.L port [], R := Function.update F.R port queue}) := by
-  intro T bs gs src start finish body u S ready
-  have split := directoryRoleSplit_hoare groups H width archive widths source (fun _ _ => blank) p (fun _ => 0) bs gs
+  intro T bs gs input src fields finish body u S left source roles headers
+  obtain ⟨mark,ready⟩ := prepareRoleSplit_exec body u S input (H*width) groups left source roles headers
+  have split := directoryRoleSplit_hoare groups H width archive widths (fun _ => blank) (fun _ _ => blank) 0 (fun _ => 0) bs gs
     (FlatCoordinateSchedule.bits_value _) (FlatCoordinateSchedule.bits_value _)
   obtain ⟨z,F,_,rfl,rep,user,_,_,stock,t,paid,run⟩ := foreign_exec (body := body)
-    (liftQ _ capacity) (HoareTime.liftQ capacity split) u S start rfl ready
+    (liftQ _ capacity) (HoareTime.liftQ capacity split) u _ _ rfl ready
   have bound := chartRoleSplit_cost groups H width N positive labels row fits
   change CyclicRowNormalized.cost 142080 groups (H*width) bs gs ≤ _ at bound
   rw [show groups*(142080*(H*N)) = groups*142080*H*N by ring] at bound
-  refine ⟨z,F,t,user,paid.trans (Nat.add_le_add_right ?_ 6),run,rep,?_⟩
-  · calc
+  refine ⟨z,F,1+t,user,?_,Exec.seq mark run,rep,?_⟩
+  · have scale : CyclicRowNormalized.cost 142080 groups (H*width) bs gs*(T+5) ≤
+        149*(T+5)*(groups*142080*H*N) := calc
       _ ≤ (149*(groups*142080*H*N))*(T+5) := Nat.mul_le_mul_right _ bound
       _ = _ := by ring
+    omega
   · intro j port queue
     have nonblank : blank ∉ queue := by
       intro h
@@ -1114,7 +1198,20 @@ theorem directoryChartRoleSplit_exec {Q : ℕ} {P U : Type}
     · have size := stock port
       have twice := Nat.mul_le_mul_left 2 bound
       rw [← Nat.mul_assoc] at twice
-      exact cost.trans (Nat.add_le_add_right (Nat.mul_le_mul_left 6 (size.trans (Nat.add_le_add_left twice _))) 6)
+      have apart : port ∉ fields := by
+        intro h
+        obtain ⟨i,_,eq⟩ := List.mem_map.mp h
+        have bad := congrArg Fin.val eq
+        change 1+142080+i.val = 1+j.val at bad
+        omega
+      change (F.L port).length+(F.R port).length ≤ (if port ∈ fields then separator :: S.L port else S.L port).length+
+        (S.R port).length+2*CyclicRowNormalized.cost 142080 groups (H*width) bs gs at size
+      simp only [ite_eq_right apart] at size
+      rw [left port,show S.R port = [] from roles j] at size
+      simp only [List.length_nil,zero_add] at size
+      have charge := Nat.mul_le_mul_left 6 (size.trans twice)
+      rw [← Nat.mul_assoc] at charge
+      exact cost.trans (Nat.add_le_add_right charge 6)
     · simpa only [sweep,filter_window _ _ 0 queue nonblank tape] using clean
 
 /-- Both chart entry paths copy at most one prefix per record. The saved
