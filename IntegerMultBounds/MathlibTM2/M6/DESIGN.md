@@ -632,8 +632,14 @@ rank and the contiguous reversed pivot block. This includes a line at source ent
 its orthogonal hyperplane at target exit. In the pinned scalar word every source first
 appears in its initial line frame and every target last appears in its final hyperplane
 frame. A machine running these original frames directly could dispense with both
-oblique-frame corrections. The physical reversed child and its embedding into the
-parent sweep still need a uniform prime-power program and cost proof.
+oblique-frame corrections. The same rational instruction lists now specialize at every power of the machine
+prime. The proof bounds each orthogonal projector by forming a Gram matrix from at
+most eight independent integral roots. Its entries have absolute value at most 32;
+the determinant and adjugate bounds also cover negative entries. The resulting program
+coefficients fit the tape supplier. `orthogonalMove_coordinates` identifies the modular
+read in the common reversed basis with the exchange of the original projector
+difference. Installing the reversed child and charging its surrounding tape scans in
+the parent sweep remain open.
 
 A concrete common basis is the Vandermonde matrix `G[i,j] = (3+i)^j` in zero-based
 coordinates. Run `python3 scripts/check-pr589-orthogonal-minors.py` to replay the pinned

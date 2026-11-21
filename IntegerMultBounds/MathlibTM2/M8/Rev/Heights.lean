@@ -179,19 +179,17 @@ theorem natAbs_det_le {A : Matrix (Fin m) (Fin m) ℤ} {x : ℕ} (hA : ∀ i j, 
   rw [AbsoluteValue.abs_apply, Int.abs_eq_natAbs, Fintype.card_fin, nsmul_eq_mul] at h
   exact_mod_cast h
 
-/-- **The inverse of a natural basis is bounded.** -/
-theorem bounded_inv_natCast {g : Matrix (Fin m) (Fin m) ℕ} {e k : ℕ} (hg : ∀ a b, g a b ≤ 2 ^ e)
-    (hm : m ≤ 2 ^ k) : Bounded (g.map (Nat.cast : ℕ → ℚ))⁻¹ (2 ^ (2 * (m * (k + e)))) := by
-  set gZ : Matrix (Fin m) (Fin m) ℤ := g.map (Nat.cast : ℕ → ℤ)
-  have hG : g.map (Nat.cast : ℕ → ℚ) = gZ.map (Int.castRingHom ℚ) := by
-    ext a b; simp [gZ]
+/-- Determinant and adjugate bounds for an integral change of coordinates. -/
+theorem bounded_inv_intCast {gZ : Matrix (Fin m) (Fin m) ℤ} {e k : ℕ}
+    (hg : ∀ a b, (gZ a b).natAbs ≤ 2 ^ e) (hm : m ≤ 2 ^ k) :
+    Bounded (gZ.map (Int.castRingHom ℚ))⁻¹ (2 ^ (2 * (m * (k + e)))) := by
   have hb : m.factorial * (2 ^ e) ^ m ≤ 2 ^ (m * (k + e)) := by
     calc m.factorial * (2 ^ e) ^ m ≤ m ^ m * (2 ^ e) ^ m := Nat.mul_le_mul_right _ (Nat.factorial_le_pow m)
       _ ≤ (2 ^ k) ^ m * (2 ^ e) ^ m := Nat.mul_le_mul_right _ (Nat.pow_le_pow_left hm m)
       _ = 2 ^ (m * (k + e)) := by rw [← pow_mul, ← pow_mul, ← pow_add]; ring_nf
   have hone : 1 ≤ 2 ^ (m * (k + e)) := Nat.one_le_two_pow
   have hdet : gZ.det.natAbs ≤ 2 ^ (m * (k + e)) :=
-    (natAbs_det_le (x := 2 ^ e) fun i j => by simpa [gZ] using hg i j).trans hb
+    (natAbs_det_le hg).trans hb
   have hadj : ∀ i j, (gZ.adjugate i j).natAbs ≤ 2 ^ (m * (k + e)) := by
     intro i j
     rw [adjugate_apply]
@@ -202,16 +200,23 @@ theorem bounded_inv_natCast {g : Matrix (Fin m) (Fin m) ℕ} {e k : ℕ} (hg : �
       by_cases hc : c = i
       · subst hc; simp [Nat.one_le_two_pow]
       · simp [hc]
-    · rw [updateRow_ne ha]; simpa [gZ] using hg a c
+    · rw [updateRow_ne ha]; exact hg a c
   have hdetQ : (gZ.map (Int.castRingHom ℚ)).det = ((gZ.det : ℤ) : ℚ) := by
     rw [← eq_intCast (Int.castRingHom ℚ), RingHom.map_det]; rfl
   have hadjQ : (gZ.map (Int.castRingHom ℚ)).adjugate = gZ.adjugate.map (Int.castRingHom ℚ) :=
     (RingHom.map_adjugate (Int.castRingHom ℚ) gZ).symm
   intro i j
-  rw [hG, Matrix.inv_def, hdetQ, hadjQ, Matrix.smul_apply, smul_eq_mul, Ring.inverse_eq_inv', map_apply]
+  rw [Matrix.inv_def, hdetQ, hadjQ, Matrix.smul_apply, smul_eq_mul, Ring.inverse_eq_inv', map_apply]
   refine (Height.ht_mul _ _).trans ?_
   rw [Height.ht_inv, eq_intCast, ht_intCast, ht_intCast, two_mul, pow_add]
   exact Nat.mul_le_mul (max_le hdet hone) (max_le (hadj i j) hone)
+
+theorem bounded_inv_natCast {g : Matrix (Fin m) (Fin m) ℕ} {e k : ℕ} (hg : ∀ a b, g a b ≤ 2 ^ e)
+    (hm : m ≤ 2 ^ k) : Bounded (g.map (Nat.cast : ℕ → ℚ))⁻¹ (2 ^ (2 * (m * (k + e)))) := by
+  let gZ := g.map (Nat.cast : ℕ → ℤ)
+  have eq : g.map (Nat.cast : ℕ → ℚ) = gZ.map (Int.castRingHom ℚ) := by ext; simp [gZ]
+  rw [eq]
+  exact bounded_inv_intCast (fun i j => by simpa [gZ] using hg i j) hm
 
 /-- A natural basis is bounded. -/
 theorem bounded_natCast {g : Matrix (Fin m) (Fin m) ℕ} {e : ℕ} (hg : ∀ a b, g a b ≤ 2 ^ e) :
