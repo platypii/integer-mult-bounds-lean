@@ -1183,6 +1183,169 @@ theorem InvocationEffect.targetRead_sum {n : Fin 9} {r : Fin 32} {d : Fin 5}
       Finset.sum_congr rfl (fun g _ => atLabel g)
     _ = _ := by rw [← map_sum,Finset.sum_add_distrib,Finset.sum_add_distrib,allWindows,add_zero]
 
+/-- The complete invocation acts on a Gram-class sum just as the scalar
+word acts on the decoded input sums, for every retained register. -/
+theorem InvocationEffect.sumEndpoint {n : Fin 9} {r : Fin 32} {d : Fin 5}
+    {w B K : ℕ} {x y} (act : InvocationEffect n r d w B K x y)
+    (z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B) (i : Fin 661) :
+    let R := Cover.LabelPadding.Label 64 w
+    ∀ keep : R → Bool,
+    let Labels := {g : Rˣ // keep (g.val*g.val.transpose) = true}
+    let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n r d,ownerTape_injective n r d⟩
+    let total := fun j => ∑ g : Labels, phaseRead owner x (labelSpectator g.val.val z) j
+    let initial := fun j => (selectedFrame w (Frames.initialRefs j)).symm (total j)
+    (∑ g : Labels, phaseRead owner y (labelSpectator g.val.val z) i.val) =
+      selectedFrame w (Frames.finalRefs i.val)
+        (if 111 ≤ i.val ∧ i.val < 222 then initial i.val + initial (i.val-111) else initial i.val) := by
+  intro R keep Labels owner total initial
+  by_cases hit : 111 ≤ i.val ∧ i.val < 222
+  · let t : Fin 111 := ⟨i.val-111,by omega⟩
+    have index : 111+t.val = i.val := by dsimp [t]; omega
+    have target := act.targetRead_sum z t keep
+    dsimp only at target
+    rw [index] at target
+    rw [target,ite_eq_left hit]
+    apply congrArg (selectedFrame w (Frames.finalRefs i.val))
+    simp only [FramedCircuit.decode,Frames.snapshot,ite_eq_left i.isLt,
+      ite_eq_left (show t.val < 661 by omega),initial,total,map_sum,t]
+    rfl
+  · rw [ite_eq_right hit]
+    simp only [initial,total,map_sum]
+    exact Finset.sum_congr rfl (fun g _ => act.otherRead g.val.val z i (by omega))
+
+/-- Place a bank in one physical label row of each inherited block,
+preserving the active address and trailing spectator. -/
+noncomputable def singleLabelBank {w B K : ℕ} (label : Cover.LabelPadding.Label 64 w)
+    (x : Fin 142081 → Fin ((prime^w)^16*(B*K)) → ZMod 2)
+    (i : Fin 142081) (p : Fin ((prime^w)^16*(B*prime^(64*(w*64))*K))) : ZMod 2 :=
+  let active := finProdFinEquiv.symm p
+  let tail : Fin (B*prime^(64*(w*64))) × Fin K := finProdFinEquiv.symm active.2
+  let block : Fin B × Fin (prime^(64*(w*64))) := finProdFinEquiv.symm tail.1
+  if block.2.val = (Cover.LabelAddress.address label).val then
+    x i (finProdFinEquiv (active.1,finProdFinEquiv (block.1,tail.2))) else 0
+
+theorem singleLabelBank_read {w B K : ℕ} (label g : Cover.LabelPadding.Label 64 w)
+    (x : Fin 142081 → Fin ((prime^w)^16*(B*K)) → ZMod 2) (i : Fin 142081)
+    (z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B) (s : Swap.Shear.State (Fin 8) (ZMod (prime^w))) :
+    singleLabelBank label x i (FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) (labelSpectator g z)) =
+      if g = label then x i (FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) (finProdFinEquiv (z.b,z.after)))
+      else 0 := by
+  classical
+  have count : (prime^w)^(64*64) = prime^(64*(w*64)) := by rw [← pow_mul]; congr 1; omega
+  let row := (Cover.LabelAddress.address g).cast count
+  let last : Fin K := z.after
+  have packed : labelSpectator g z = finProdFinEquiv (finProdFinEquiv (z.b,row),last) := by
+    apply Fin.ext
+    simp only [labelSpectator,finProdFinEquiv_apply_val,row,Fin.val_cast]
+    exact pack z.b.val (prime^(64*(w*64))) (Cover.LabelAddress.address g).val K z.after.val
+  have equal : (Cover.LabelAddress.address g).val = (Cover.LabelAddress.address label).val ↔ g = label := by
+    refine ⟨fun h => ?_,fun h => h ▸ rfl⟩
+    ext a b
+    apply ZMod.val_injective
+    rw [← Cover.LabelAddress.entry g a b,← Cover.LabelAddress.entry label a b,h]
+  simp only [singleLabelBank,FlatCoordinateLayout.index,packed,Equiv.symm_apply_apply,row,Fin.val_cast,equal]
+
+  rfl
+where
+  pack (b N row K k : ℕ) : (b*N+row)*K+k = k+K*(row+N*b) := by ring
+
+/-- Summing the physical reads of a single-row encoding recovers the
+original bank at every block and active address of the retained class. -/
+theorem singleLabelBank_sum {w B K : ℕ} (label : (Cover.LabelPadding.Label 64 w)ˣ)
+    (keep : Cover.LabelPadding.Label 64 w → Bool) (member : keep (label.val*label.val.transpose) = true)
+    (x : Fin 142081 → Fin ((prime^w)^16*(B*K)) → ZMod 2)
+    (owner : Fin 661 ↪ Fin 142081) (z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B) (i : Fin 661) :
+    let Labels := {g : (Cover.LabelPadding.Label 64 w)ˣ // keep (g.val*g.val.transpose) = true}
+    (∑ g : Labels, phaseRead owner (singleLabelBank label.val x) (labelSpectator g.val.val z) i.val) =
+      phaseRead owner x (finProdFinEquiv (z.b,z.after)) i.val := by
+  classical
+  intro Labels
+  funext s
+  rw [Finset.sum_apply,Finset.sum_eq_single (⟨label,member⟩ : Labels)]
+  · simp only [phaseRead,Copy.extendStored,dite_eq_left i.isLt,singleLabelBank_read,ite_true]
+  · intro g _ ne
+    have different : g.val.val ≠ label.val := fun eq => ne (Subtype.ext (Units.ext eq))
+    simp only [phaseRead,Copy.extendStored,dite_eq_left i.isLt,singleLabelBank_read,ite_eq_right different]
+  · simp
+
+/-- Starting with a single encoded label recovers the ordinary dirty word
+from the class sum of the actual invocation output. -/
+theorem InvocationEffect.singleLabelEndpoint {n : Fin 9} {r : Fin 32} {d : Fin 5}
+    {w B K : ℕ} (label : (Cover.LabelPadding.Label 64 w)ˣ)
+    (x : Fin 142081 → Fin ((prime^w)^16*(B*K)) → ZMod 2) {y}
+    (act : InvocationEffect n r d w B K (singleLabelBank label.val x) y)
+    (z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B) (i : Fin 661)
+    (keep : Cover.LabelPadding.Label 64 w → Bool) (member : keep (label.val*label.val.transpose) = true) :
+    let Labels := {g : (Cover.LabelPadding.Label 64 w)ˣ // keep (g.val*g.val.transpose) = true}
+    let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n r d,ownerTape_injective n r d⟩
+    let input := fun j => (selectedFrame w (Frames.initialRefs j)).symm
+      (phaseRead owner x (finProdFinEquiv (z.b,z.after)) j)
+    (∑ g : Labels, phaseRead owner y (labelSpectator g.val.val z) i.val) =
+      selectedFrame w (Frames.finalRefs i.val)
+        (if 111 ≤ i.val ∧ i.val < 222 then input i.val + input (i.val-111) else input i.val) := by
+  intro Labels owner input
+  rw [act.sumEndpoint z i keep]
+  let total := fun j => (selectedFrame w (Frames.initialRefs j)).symm
+    (∑ g : Labels, phaseRead owner (singleLabelBank label.val x) (labelSpectator g.val.val z) j)
+  have read (j : Fin 661) : total j.val = input j.val :=
+    congrArg (selectedFrame w (Frames.initialRefs j.val)).symm (singleLabelBank_sum label keep member x owner z j)
+  apply congrArg (selectedFrame w (Frames.finalRefs i.val))
+  by_cases hit : 111 ≤ i.val ∧ i.val < 222
+  · simp only [ite_eq_left hit]
+    exact congrArg₂ (· + ·) (read i) (read ⟨i.val-111,by omega⟩)
+  · exact (ite_eq_right hit).trans ((read i).trans (ite_eq_right hit).symm)
+
+/-- On a chosen union of live Gram classes every permanent tape carries the
+same stream as the reference label. Choosing one Gram class allows other
+classes to store independent data. -/
+def LiveReplicatedAt {w B K : ℕ} (keep : Cover.LabelPadding.Label 64 w → Prop)
+    (ref : Cover.LabelPadding.Label 64 w)
+    (x : Fin 142081 → Fin ((prime^w)^16*(B*prime^(64*(w*64))*K)) → ZMod 2) : Prop :=
+  ∀ i, i ≠ Fin.last 142080 → ∀ g : Cover.LabelPadding.Label 64 w, IsUnit g → keep (g*g.transpose) →
+    ∀ (z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B) (s : Swap.Shear.State (Fin 8) (ZMod (prime^w))),
+      x i (FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) (labelSpectator g z)) =
+      x i (FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) (labelSpectator ref z))
+
+theorem InvocationEffect.liveReplicatedAt {n : Fin 9} {r : Fin 32} {d : Fin 5} {w B K : ℕ} {x y}
+    {keep : Cover.LabelPadding.Label 64 w → Prop} {ref : Cover.LabelPadding.Label 64 w}
+    (unitRef : IsUnit ref) (keepRef : keep (ref*ref.transpose))
+    (act : InvocationEffect n r d w B K x y) (input : LiveReplicatedAt (B := B) (K := K) keep ref x) :
+    LiveReplicatedAt (B := B) (K := K) keep ref y := by
+  intro i permanent g live kept z s
+  let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n r d,ownerTape_injective n r d⟩
+  by_cases owned : ∃ j, owner j = i
+  · obtain ⟨j,rfl⟩ := owned
+    let stored := fun k : Fin 661 => (selectedFrame w (Frames.initialRefs k.val)).symm
+      (phaseRead owner x (labelSpectator ref z) k.val)
+    have encoded (h) (unit : IsUnit h) (inside : keep (h*h.transpose)) (k : Fin 661) : phaseRead owner x (labelSpectator h z) k.val =
+        selectedFrame w (Frames.initialRefs k.val) (stored k) := by
+      rw [show selectedFrame w (Frames.initialRefs k.val) (stored k) = _ from
+        (selectedFrame w (Frames.initialRefs k.val)).apply_symm_apply _]
+      funext a
+      simpa only [phaseRead,Copy.extendStored,dite_eq_left k.isLt] using
+        input (owner k) (Fin.castSucc_ne_last _) h unit inside z a
+    have read (h : Cover.LabelPadding.Label 64 w) (unit : IsUnit h) (inside : keep (h*h.transpose)) :=
+      act.gramEndpoint z stored h unit (fun h' u eq => encoded h' u (eq ▸ inside)) j
+    have same := (read g live kept).trans (read ref unitRef keepRef).symm
+    simpa only [phaseRead,Copy.extendStored,dite_eq_left j.isLt] using congrFun same s
+  · rw [act.2 i permanent (fun j eq => owned ⟨j,eq⟩)]
+    exact input i permanent g live kept z s
+
+/-- Replication is inherited by each successive class run, including when
+different invocations use the same permanent tape for helpers. -/
+theorem stageTrace_liveReplicatedAt {n : Fin 9} {w B K : ℕ} {x out}
+    {keep : Cover.LabelPadding.Label 64 w → Prop} {ref : Cover.LabelPadding.Label 64 w}
+    (unitRef : IsUnit ref) (keepRef : keep (ref*ref.transpose))
+    (trace : stageRuns.foldr (fun k next a => ∃ b, InvocationEffect n k.1 k.2 w B K a b ∧ next b)
+      (fun a => a = out) x) (input : LiveReplicatedAt (B := B) (K := K) keep ref x) :
+    LiveReplicatedAt (B := B) (K := K) keep ref out := by
+  generalize stageRuns = order at trace
+  induction order generalizing x with
+  | nil => exact trace ▸ input
+  | cons k rest ih =>
+    obtain ⟨y,run,tail⟩ := trace
+    exact ih (run.liveReplicatedAt unitRef keepRef input) tail
+
 /-- On each permanent tape the active stream at a live label agrees with
 the identity-label stream at the same block and spectator. -/
 def LiveReplicated {w B K : ℕ}
@@ -1194,38 +1357,16 @@ def LiveReplicated {w B K : ℕ}
 
 theorem InvocationEffect.liveReplicated {n : Fin 9} {r : Fin 32} {d : Fin 5} {w B K : ℕ} {x y}
     (act : InvocationEffect n r d w B K x y) (input : LiveReplicated (w := w) (B := B) (K := K) x) :
-    LiveReplicated (w := w) (B := B) (K := K) y := by
-  intro i permanent g live z s
-  let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n r d,ownerTape_injective n r d⟩
-  by_cases owned : ∃ j, owner j = i
-  · obtain ⟨j,rfl⟩ := owned
-    let stored := fun k : Fin 661 => (selectedFrame w (Frames.initialRefs k.val)).symm
-      (phaseRead owner x (labelSpectator 1 z) k.val)
-    have read := act.liveEndpoint z stored
-    have encoded (h) (unit : IsUnit h) (k : Fin 661) : phaseRead owner x (labelSpectator h z) k.val =
-        selectedFrame w (Frames.initialRefs k.val) (stored k) := by
-      rw [show selectedFrame w (Frames.initialRefs k.val) (stored k) = _ from
-        (selectedFrame w (Frames.initialRefs k.val)).apply_symm_apply _]
-      funext a
-      simpa only [phaseRead,Copy.extendStored,dite_eq_left k.isLt] using
-        input (owner k) (Fin.castSucc_ne_last _) h unit z a
-    have same := (read encoded g live j).trans (read encoded 1 isUnit_one j).symm
-    simpa only [phaseRead,Copy.extendStored,dite_eq_left j.isLt] using congrFun same s
-  · rw [act.2 i permanent (fun j eq => owned ⟨j,eq⟩)]
-    exact input i permanent g live z s
+    LiveReplicated (w := w) (B := B) (K := K) y :=
+  fun i h g u => act.liveReplicatedAt (keep := fun _ => True) isUnit_one trivial
+    (fun k hk a ha _ => input k hk a ha) i h g u trivial
 
-/-- Replication is inherited by each successive class run, including when
-different invocations use the same permanent tape for helpers. -/
 theorem stageTrace_liveReplicated {n : Fin 9} {w B K : ℕ} {x out}
     (trace : stageRuns.foldr (fun k next a => ∃ b, InvocationEffect n k.1 k.2 w B K a b ∧ next b)
       (fun a => a = out) x) (input : LiveReplicated (w := w) (B := B) (K := K) x) :
-    LiveReplicated (w := w) (B := B) (K := K) out := by
-  generalize stageRuns = order at trace
-  induction order generalizing x with
-  | nil => exact trace ▸ input
-  | cons k rest ih =>
-    obtain ⟨y,run,tail⟩ := trace
-    exact ih (run.liveReplicated input) tail
+    LiveReplicated (w := w) (B := B) (K := K) out :=
+  fun i h g u => stageTrace_liveReplicatedAt (keep := fun _ => True) isUnit_one trivial trace
+    (fun k hk a ha _ => input k hk a ha) i h g u trivial
 
 /-- Source and helper reads agree whenever their input label agrees. -/
 theorem InvocationEffect.otherRead_congr {n : Fin 9} {r : Fin 32} {d : Fin 5}
