@@ -1032,6 +1032,91 @@ def directoryChartQueue (replayRole : Option (Fin 142080)) (H parents records : 
   | none => (List.range parents).flatMap archive
   | some j => (List.range records).flatMap fun k => archive (directoryRoleRecord H j k)
 
+/-- Appending the next label to a blank-free prefix preserves the queue
+encoding used when materializing a role tape. -/
+theorem directoryEntry_nonblank (ancestor : ℕ → List (Fin (prime+4))) (m w i : ℕ)
+    (clean : blank ∉ ancestor i) : blank ∉ LabelDirectory.entry ancestor m w i := by
+  rw [LabelDirectory.entry,List.mem_append]
+  intro h
+  rcases h with h | h
+  · exact clean h
+  · obtain ⟨d,_,eq⟩ := List.mem_map.mp h
+    have bad := congrArg Fin.val eq
+    change d.val+4 = 0 at bad
+    omega
+
+private theorem chartRoleSplit_cost (groups H width N : ℕ) (positive : 0 < groups) (labels : 0 < H)
+    (row : 0 < N) (fits : width ≤ N) :
+    let bs := FlatCoordinateSchedule.bits (H*width)
+    let gs := FlatCoordinateSchedule.bits groups
+    CyclicRowNormalized.cost 142080 groups (H*width) bs gs ≤ 149*(groups*(142080*(H*N))) := by
+  intro bs gs
+  have hn := Nat.mul_pos labels row
+  have hw := Nat.mul_le_mul_left H fits
+  have hb : bs.length ≤ 2*(H*N) := FlatCoordinateDimensions.bits_length_le_twice hw hn
+  have hg : gs.length ≤ 2*groups := FlatCoordinateDimensions.bits_length_le_twice le_rfl positive
+  have loop : 7*(142080*(H*width))+142080*(7*bs.length+17) ≤ 38*(142080*(H*N)) := by omega
+  have total := Nat.mul_le_mul_left groups loop
+  have work : groups ≤ groups*(142080*(H*N)) := Nat.le_mul_of_pos_right _ (by positivity)
+  rw [show groups*(38*(142080*(H*N))) = 38*(groups*(142080*(H*N))) by ring] at total
+  have bill (n V k g : ℕ) (p : 0 < n) (nv : n ≤ V) (time : k ≤ 38*V) (digits : g ≤ 2*n) :
+      2*(k+6*n+7*g+16)+1 ≤ 149*V := by omega
+  exact bill groups _ _ _ positive work total hg
+
+/-- Split one full archive into the queues read by the role charts. The
+counters hold a row's symbol count and the number of complete role groups. -/
+theorem directoryChartRoleSplit_exec {Q : ℕ} {P U : Type}
+    (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q)
+    (groups H width N : ℕ) (positive : 0 < groups) (labels : 0 < H) (row : 0 < N) (fits : width ≤ N)
+    (archive : ℕ → List (Fin (prime+4))) (widths : ∀ k < groups*142080*H, (archive k).length = width)
+    (clean : ∀ k < groups*142080*H, blank ∉ archive k) (source : ℤ → Fin (prime+4)) (p : ℤ) :
+    let T := ((1+142080)+2)+2
+    let bs := FlatCoordinateSchedule.bits (H*width)
+    let gs := FlatCoordinateSchedule.bits groups
+    let src := putWord source p ((List.range (groups*142080*H)).flatMap archive)
+    let start := CyclicRowSplit.bank (CyclicRowCopy.bank src (fun _ _ => blank) p (fun _ => 0) bs) gs
+    let finish := CyclicRowSplit.bank (CyclicRowCopy.bank src
+      (fun j => putWord (fun _ => blank) 0 (directoryChartQueue (some j) H 0 (groups*H) archive))
+      p (fun _ => 0) bs) gs
+    ∀ (body : P → Pr P T Q prime U) (u : HS T Q prime U) (S : Stacks T prime), RepT start S.L S.R →
+      ∃ z F t, z.user = u.user ∧ t ≤ 149*(T+5)*(groups*142080*H*N)+6 ∧
+        Exec body (foreign (liftQ (CyclicRowNormalized.splitProgram 142080 prime) capacity)) (mk u S) t (mk z F) ∧
+        RepT finish F.L F.R ∧
+        ∀ j : Fin 142080, let port := ((j.natAdd 1).castAdd 2).castAdd 2
+          let queue := directoryChartQueue (some j) H 0 (groups*H) archive
+          ∃ y k, y.user = z.user ∧
+            k ≤ 6*((S.L port).length+(S.R port).length+298*(groups*142080*H*N))+6 ∧
+            Exec body (normTape port) (mk z F) k
+              (mk y {F with L := Function.update F.L port [], R := Function.update F.R port queue}) := by
+  intro T bs gs src start finish body u S ready
+  have split := directoryRoleSplit_hoare groups H width archive widths source (fun _ _ => blank) p (fun _ => 0) bs gs
+    (FlatCoordinateSchedule.bits_value _) (FlatCoordinateSchedule.bits_value _)
+  obtain ⟨z,F,_,rfl,rep,user,_,_,stock,t,paid,run⟩ := foreign_exec (body := body)
+    (liftQ _ capacity) (HoareTime.liftQ capacity split) u S start rfl ready
+  have bound := chartRoleSplit_cost groups H width N positive labels row fits
+  change CyclicRowNormalized.cost 142080 groups (H*width) bs gs ≤ _ at bound
+  rw [show groups*(142080*(H*N)) = groups*142080*H*N by ring] at bound
+  refine ⟨z,F,t,user,paid.trans (Nat.add_le_add_right ?_ 6),run,rep,?_⟩
+  · calc
+      _ ≤ (149*(groups*142080*H*N))*(T+5) := Nat.mul_le_mul_right _ bound
+      _ = _ := by ring
+  · intro j port queue
+    have nonblank : blank ∉ queue := by
+      intro h
+      obtain ⟨k,hk,hit⟩ := List.mem_flatMap.mp h
+      exact clean _ (directoryRoleRecord_lt (groups := groups) j (List.mem_range.mp hk)) hit
+    have tape (i : ℤ) : wordTape queue i = readAt blank (F.L port) (F.R port) (i-0) := by
+      have cell := rep port i
+      simpa only [CyclicRowSplit.bank,CyclicRowCopy.bank,CountedLoopReuseAlphabet.bank,CyclicRowCopy.payload,
+        Tapes.append,port,queue,directoryChartQueue,Fin.addCases_left,Fin.addCases_right,putWord_blank_zero] using cell
+    obtain ⟨y,k,user',cost,clean⟩ := normTape_exec body port z F
+    refine ⟨y,k,user',?_,?_⟩
+    · have size := stock port
+      have twice := Nat.mul_le_mul_left 2 bound
+      rw [← Nat.mul_assoc] at twice
+      exact cost.trans (Nat.add_le_add_right (Nat.mul_le_mul_left 6 (size.trans (Nat.add_le_add_left twice _))) 6)
+    · simpa only [sweep,filter_window _ _ 0 queue nonblank tape] using clean
+
 /-- Both chart entry paths copy at most one prefix per record. The saved
 cutoff is charged once in addition to the ordinary metadata. -/
 theorem directoryChartEntry_volume_le {w W a b h width parents : ℕ} (root : Bool)

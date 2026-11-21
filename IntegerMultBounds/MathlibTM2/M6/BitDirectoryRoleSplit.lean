@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.Machine.CyclicRowSplit
+public import IntegerMultBounds.Machine.CyclicRowNormalized
 public import Mathlib.Data.List.OfFn
 
 /-! Split the packed directory in the same cyclic row order as the payload. -/
@@ -46,12 +46,12 @@ theorem directoryRoleSplit_hoare {a c : ℕ} (groups H W : ℕ) (word : ℕ → 
     let input := (List.range (groups*c*H)).flatMap word
     let role := fun j : Fin c => (List.range (groups*H)).flatMap fun k =>
       word (directoryRoleRecord H j k)
-    HoareTime (CyclicRowSplit.program c a)
+    HoareTime (CyclicRowNormalized.splitProgram c a)
       (fun v => v = CyclicRowSplit.bank (CyclicRowCopy.bank (putWord source p input) outputs p origins bs) gs)
       (fun v => v = CyclicRowSplit.bank (CyclicRowCopy.bank (putWord source p input)
         (fun j => putWord (outputs j) (origins j) (role j))
-        (p+groups*(c*(H*W))) (fun j => origins j+groups*(H*W)) bs) gs)
-      (groups*(7*(c*(H*W))+c*(7*bs.length+17))+6*groups+7*gs.length+16) := by
+        p origins bs) gs)
+      (CyclicRowNormalized.cost c groups (H*W) bs gs) := by
   intro input role
   let row := fun (i : Fin groups) (j : Fin c) =>
     (List.ofFn fun h : Fin H => word ((i.val*c+j.val)*H+h.val)).flatten
@@ -80,6 +80,6 @@ theorem directoryRoleSplit_hoare {a c : ℕ} (groups H W : ℕ) (word : ℕ → 
     have pos : 0 < H := Nat.zero_lt_of_lt h.isLt
     simp [directoryRoleRecord,Nat.mul_comm i.val H, Nat.add_comm (H*i.val), Nat.add_mul_div_left, pos,
       Nat.div_eq_of_lt h.isLt, Nat.mod_eq_of_lt h.isLt]
-  simpa only [src,dst,Nat.cast_mul] using CyclicRowSplit.split_hoare source outputs p origins row (H*W) length bs gs hb hg
+  simpa only [src,dst,Nat.cast_mul] using CyclicRowNormalized.split_hoare source outputs p origins row (H*W) length bs gs hb hg
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
