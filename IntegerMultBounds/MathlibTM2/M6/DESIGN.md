@@ -616,6 +616,15 @@ Implementing an upper shift by offset copies takes one pass per digit of the shi
   COPY lifetimes. Completed, a class-indexed machine bootstrapped once from Shared50 would give
   `a_b = c(1 - c) = 1.697·10^-3`, `c = 17/10000`.
 
+For the decoded five-class invocation, `decodedPieces_nodeCost` eliminates the full-width
+chart passes. The two registers of a port have the same chart, and the complete dirty
+word reads only that pair at its target. The remaining 222 port corrections per call
+each use one width-`w` interchange. Counting each of those separately as a rank-one
+child would give first moment `(9041760 + 1440*222)/(64*142080) = 19503/18944`.
+The scheduled children leave room for only 51,360 additional rank-one occurrences even
+at exponent one. The present construction charges 319,680. A sharper recurrence
+therefore needs a different accounting or implementation of the port corrections.
+
 The compiled idle in `routedRemainder_stage` enters the port chart on the cover label,
 swaps a fixed interval of payload digits, and restores the label. `IdleTransport.digits`
 proves its exact action. At incoming label `g`, port chart `H`, and diagonal interval

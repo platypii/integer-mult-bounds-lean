@@ -1055,6 +1055,93 @@ theorem DecodedInvocationEffect.target {n r d w B K x y}
   rw [cancel] at eq
   exact eq
 
+/-- Read an eight-axis stream on the parent address, using its exterior digits
+and trailing position to select the spectator record. -/
+noncomputable def windowRead {Q W : ℕ} [NeZero Q]
+    (read : Fin (Q^112*W) → AddressStream (ZMod Q))
+    (s : Swap.Shear.State Nine.Axis (ZMod Q)) (j : Fin W) :=
+  let a := copyAddress (chartAddress (s,j))
+  read a.2 a.1
+
+private theorem windowRead_exchange {Q W : ℕ} [NeZero Q] (n : Fin 9)
+    (U V : Matrix (Fin 8) (Fin 8) (ZMod Q)) (read : Fin (Q^112*W) → AddressStream (ZMod Q))
+    (s : Swap.Shear.State Nine.Axis (ZMod Q)) (j : Fin W) :
+    let L := Matrix.diagonal fun i : Nine.Exterior => if i.1.val < n.val then (1 : ZMod Q) else 0
+    let frame := fun P => M8.Exchange.exchange (Matrix.fromBlocks P 0 0 L)
+    windowRead read (frame V (frame U s)) j =
+      windowRead (fun k a => read k (M8.Exchange.exchange V (M8.Exchange.exchange U a))) s j := by
+  intro L frame
+  unfold windowRead
+  rw [← chartAddress_exchange n U V s j,Equiv.apply_symm_apply]
+
+open Matrix IntegerMultBounds.Swap.Modular in
+private theorem portExchange_inverse_translation (w : ℕ) (t : Fin 111)
+    (s : Swap.Shear.State (Fin 8) (ZMod (prime^w))) :
+    let D := undoTranslation.map (Int.cast : ℤ → ZMod (prime^w))
+    let physical := M8.Exchange.transform D⁻¹ D⁻¹
+    let L := reduce (prime^w) (Nine.port t.val).lineProj
+    let P := translatedPortProjector (ZMod (prime^w)) (4:ZMod (prime^w))⁻¹ t
+    physical (M8.Exchange.exchange L s) = M8.Exchange.exchange P (physical s) ∧
+      physical (M8.Exchange.exchange (1-L) s) = M8.Exchange.exchange (1-P) (physical s) := by
+  intro D physical L P
+  have unit := (isUnit_iff_isUnit_det D).mp (translatedPort_modular w t).1
+  have cancel (a : Swap.Shear.State (Fin 8) (ZMod (prime^w))) :
+      M8.Exchange.transform D D (physical a) = a := by
+    simp [physical,M8.Exchange.transform,mulVec_mulVec,mul_nonsing_inv D unit]
+  have undo (a : Swap.Shear.State (Fin 8) (ZMod (prime^w))) :
+      physical (M8.Exchange.transform D D a) = a := by
+    simp [physical,M8.Exchange.transform,mulVec_mulVec,nonsing_inv_mul D unit]
+  obtain ⟨src,dst⟩ := portExchange_original w t (physical s)
+  change M8.Exchange.transform D D _ = M8.Exchange.exchange L (M8.Exchange.transform D D (physical s)) at src
+  change M8.Exchange.transform D D _ = M8.Exchange.exchange (1-L) (M8.Exchange.transform D D (physical s)) at dst
+  rw [cancel] at src dst
+  exact ⟨(congrArg physical src.symm).trans (undo _),(congrArg physical dst.symm).trans (undo _)⟩
+
+open IntegerMultBounds.Swap.Modular in
+/-- The decoded physical invocation acts on both full parent address halves.
+The shared exterior prefix cancels in each pair of stage frames. -/
+theorem DecodedInvocationEffect.window {n r d w B W x y}
+    (run : DecodedInvocationEffect n r d w B ((prime^w)^112*W) x y)
+    (g : Cover.LabelPadding.Label 64 w)
+    (z : Cover.LabelEntry.Cell (copyLabelLayout w B ((prime^w)^112*W)) B)
+    (s : Swap.Shear.State Nine.Axis (ZMod (prime^w))) (j : Fin W) :
+    let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n r d,ownerTape_injective n r d⟩
+    let cells := fun k => { z with after := k }
+    let D := undoTranslation.map (Int.cast : ℤ → ZMod (prime^w))
+    let physical := M8.Exchange.transform D⁻¹ D⁻¹
+    let read := fun bank i => windowRead (fun k b => chartedPhaseRead n owner bank g (cells k) i (physical b))
+    let L := Matrix.diagonal fun i : Nine.Exterior => if i.1.val < n.val then (1 : ZMod (prime^w)) else 0
+    let frame := fun (P : Matrix (Fin 8) (Fin 8) (ZMod (prime^w))) =>
+      M8.Exchange.exchange (Matrix.fromBlocks P 0 0 L)
+    (∀ t : Fin 111, let P := reduce (prime^w) (Nine.port t.val).lineProj
+      read y (111+t.val) s j = read x (111+t.val) (frame (1-P) (frame 0 s)) j +
+        read x t.val (frame 1 (frame 0 s)) j ∧
+      read y t.val s j = read x t.val (frame P (frame 1 s)) j) ∧
+    ∀ h : Fin 439, read y (222+h.val) s j = read x (222+h.val) (frame 1 (frame 0 s)) j := by
+  intro owner cells D physical read L frame
+  let a := copyAddress (chartAddress (s,j))
+  have zero (b : Swap.Shear.State (Fin 8) (ZMod (prime^w))) : M8.Exchange.exchange 0 b = b := by
+    simp [M8.Exchange.exchange]
+  have one (b : Swap.Shear.State (Fin 8) (ZMod (prime^w))) : M8.Exchange.exchange 1 b = b.swap := by
+    simp [M8.Exchange.exchange,Prod.swap]
+  constructor
+  · intro t P
+    let dst : Fin 661 := ⟨111+t.val,by omega⟩
+    have target := run.1 g (cells a.2) t (physical a.1)
+    dsimp only at target
+    rw [← chartedOwner_read (n := n) (owner := owner) y g (cells a.2) dst (physical a.1)] at target
+    simp only [read,frame, L,windowRead_exchange,zero,one,windowRead]
+    let row := chartedPhaseRead n owner x g (cells a.2)
+    change _ = row dst.val (physical (M8.Exchange.exchange (1-P) a.1)) + row t.val (physical a.1.swap) ∧
+      _ = row t.val (physical (M8.Exchange.exchange P a.1.swap))
+    exact ⟨target.trans (congrArg (fun b => row dst.val b + row t.val (physical a.1.swap))
+        (portExchange_inverse_translation w t a.1).2.symm),
+      (run.2.1 g (cells a.2) t (physical a.1)).trans
+        (congrArg (row t.val) (portExchange_inverse_translation w t a.1.swap).1.symm)⟩
+  · intro h
+    simp only [read,frame,L,windowRead_exchange,zero,one,windowRead]
+    exact run.2.2.1 g (cells a.2) h (physical a.1)
+
 /-- Each output row of the selected word depends only on itself and,
 for a target, its paired source. -/
 private theorem selectedRow (w : ℕ) (rows : Fin 661 → AddressStream (ZMod (prime^w))) (i : Fin 661) :
