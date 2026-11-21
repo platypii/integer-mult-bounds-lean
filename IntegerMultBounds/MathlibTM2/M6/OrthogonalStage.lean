@@ -469,4 +469,127 @@ theorem orthogonalStoppedMoves_bank [M8.Machine.Net] (cutoff : ℕ) :
     exact read (x dst) s k
 
 
+/-- Replay the frame updates in order on their physical registers. The
+ending address of each register reads its starting bit, including after
+repeated updates of that register. -/
+theorem orthogonalStoppedTrace [M8.Machine.Net] (cutoff : ℕ) :
+    ∃ (basis : Matrix (Fin 8) (Fin 8) ℕ) (K : ℝ),
+      (∀ a b, basis a b ≤ 2^28) ∧ (basis.map (Nat.cast : ℕ → ℚ)).det ≠ 0 ∧
+      ∀ {n : ℕ} (updates : List (Fin (n+1) × Fin 636)) (current : Fin (n+1) → Fin 636),
+        (∀ p ∈ RankTrace.edges current updates, Geometry.Moves.CheckedPair (p.1.val,p.2.val)) →
+        ∃ machine : SharedBankSkeleton.Skeleton (n+1) prime, ∀ w W : ℕ, 0 < w → w ≤ cutoff → 0 < W →
+          let m := prime^w
+          let V := m^16*W
+          let G := reduce m (basis.map (Nat.cast : ℕ → ℚ))
+          let encode := Exchange.transform G (reduce m (ReversedExchange.rev 8)*G)
+          let addr := fun (l : Fin 636) s (k : Fin W) => FlatCoordinateLayout.index (AffineFieldCoordinates.embed
+            (encode (Exchange.exchange (reduce m (Nine.labelProj l)) s))) k
+          ∃ stage : SharedBankStage.Stage _ (n+1) prime (phaseOwners (N := V)),
+            SharedBankSkeleton.ofStage stage = machine ∧
+            (stage.cost : ℝ) ≤ updates.length * (K*V+1) ∧ ∀ x t s k,
+              stage.transform x t (addr (RankTrace.finish current updates t) s k) =
+                x t (addr (current t) s k) := by
+  obtain ⟨basis,K,small,det,move⟩ := orthogonalStoppedMoves_bank cutoff
+  refine ⟨basis,K,small,det,?_⟩
+  intro n updates
+  induction updates with
+  | nil =>
+    intro current checked
+    refine ⟨SharedBankSkeleton.identity _ _ (by omega),?_⟩
+    intro w W hw stop hW m V G encode addr
+    exact ⟨SharedBankStage.identity _ (by omega),rfl,by simp [SharedBankStage.identity],fun _ _ _ _ => rfl⟩
+  | cons p rest ih =>
+    obtain ⟨dst,l⟩ := p
+    intro current checked
+    let next := Function.update current dst l
+    obtain ⟨head,step⟩ := move (current dst) l (checked _ List.mem_cons_self) dst
+    obtain ⟨tail,finish⟩ := ih next (fun p h => checked p (List.mem_cons_of_mem _ h))
+    refine ⟨SharedBankSkeleton.compose head tail,?_⟩
+    intro w W hw stop hW m V G encode addr
+    obtain ⟨A,ha,ca,idle,read⟩ := step w W hw stop hW
+    obtain ⟨B,hb,cb,reads⟩ := finish w W hw stop hW
+    refine ⟨SharedBankStage.compose A B,by simp [ha,hb],?_,?_⟩
+    · change ((A.cost+B.cost+1 : ℕ) : ℝ) ≤ _
+      simp only [List.length_cons,Nat.cast_add,Nat.cast_one,add_mul,one_mul]
+      dsimp only [V,m]
+      linarith
+    · intro x t s k
+      apply (reads (A.transform x) t s k).trans
+      by_cases eq : t = dst
+      · subst t
+        simpa only [next,Function.update_self] using read (x) s k
+      · change A.transform x t (addr (next t) s k) = _
+        simp only [idle x t eq,next,Function.update_of_ne eq]
+
+/-- Once all touched registers share the gate address, the physical XOR
+stage evaluates the logical gate at that address. Other registers retain
+their own addresses. -/
+theorem orthogonalAlignedGate {k V : ℕ} (dst : Fin k) (sources : List (Fin k))
+    (separate : dst ∉ sources) (live : 0 < V) :
+    ∃ stage : SharedBankStage.Stage _ k prime (phaseOwners (N := V)),
+      stage.cost ≤ 76*sources.length*V ∧ ∀ data (addr : Fin k → Fin V),
+      (∀ i ∈ sources, addr i = addr dst) → ∀ t,
+        stage.transform data t (addr t) =
+          Function.update (fun i => data i (addr i)) dst
+            (data dst (addr dst) + (sources.map fun i => data i (addr i)).sum) t := by
+  obtain ⟨stage,_,_,cost,run⟩ := phaseGate_stage dst sources separate live
+  refine ⟨stage,cost,?_⟩
+  intro data addr aligned t
+  rw [run]
+  by_cases eq : t = dst
+  · subst t
+    simp only [Function.update_self]
+    have reads : sources.map (fun i => data i (addr dst)) = sources.map (fun i => data i (addr i)) :=
+      List.map_congr_left fun i mem => congrArg (data i) (aligned i mem).symm
+    rw [reads]
+  · simp only [Function.update_of_ne eq]
+
+/-- Execute the frame updates and the scalar gate as one stage. Every
+source is read from its own pre-gate frame. -/
+theorem orthogonalStoppedGate [M8.Machine.Net] (cutoff : ℕ) :
+    ∃ (basis : Matrix (Fin 8) (Fin 8) ℕ) (K : ℝ),
+      (∀ a b, basis a b ≤ 2^28) ∧ (basis.map (Nat.cast : ℕ → ℚ)).det ≠ 0 ∧
+      ∀ {n : ℕ} (dst : Fin (n+1)) (sources : List (Fin (n+1))) (label : Fin 636)
+        (current : Fin (n+1) → Fin 636), dst ∉ sources →
+        let updates := (dst :: sources).map fun i => (i,label)
+        let next := RankTrace.finish current updates
+        (∀ p ∈ RankTrace.edges current updates, Geometry.Moves.CheckedPair (p.1.val,p.2.val)) →
+        ∀ w W : ℕ, 0 < w → w ≤ cutoff → 0 < W →
+          let m := prime^w
+          let V := m^16*W
+          let G := reduce m (basis.map (Nat.cast : ℕ → ℚ))
+          let encode := Exchange.transform G (reduce m (ReversedExchange.rev 8)*G)
+          let addr := fun (l : Fin 636) s (k : Fin W) => FlatCoordinateLayout.index (AffineFieldCoordinates.embed
+            (encode (Exchange.exchange (reduce m (Nine.labelProj l)) s))) k
+          ∃ stage : SharedBankStage.Stage _ (n+1) prime (phaseOwners (N := V)),
+            (stage.cost : ℝ) ≤ updates.length*(K*V+1)+76*sources.length*V+1 ∧ ∀ x s k,
+            let initial := fun t => x t (addr (current t) s k)
+            ∀ t, stage.transform x t (addr (next t) s k) =
+              Function.update initial dst (initial dst + (sources.map initial).sum) t := by
+  obtain ⟨basis,K,small,det,trace⟩ := orthogonalStoppedTrace cutoff
+  refine ⟨basis,K,small,det,?_⟩
+  intro n dst sources label current off updates next checked w W hw stop hW m V G encode addr
+  obtain ⟨_,run⟩ := trace updates current checked
+  obtain ⟨A,_,ca,moved⟩ := run w W hw stop hW
+  have live : 0 < V := Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) hW
+  obtain ⟨B,cb,gate⟩ := orthogonalAlignedGate dst sources off live
+  refine ⟨SharedBankStage.compose A B,?_,?_⟩
+  · change ((A.cost+B.cost+1 : ℕ) : ℝ) ≤ _
+    push_cast
+    have bound : (B.cost : ℝ) ≤ 76*sources.length*V := by exact_mod_cast cb
+    dsimp only [V,m] at bound ⊢
+    linarith
+  · intro x s k initial t
+    have shared (i) (mem : i ∈ dst :: sources) : next i = label :=
+      (RankTrace.finish_align current (fun _ => label) (dst :: sources) i).trans (if_pos mem)
+    have aligned (i) (mem : i ∈ sources) : addr (next i) s k = addr (next dst) s k := by
+      rw [shared i (List.mem_cons_of_mem _ mem),shared dst List.mem_cons_self]
+    have step := gate (A.transform x) (fun i => addr (next i) s k) aligned t
+    have read (i) : A.transform x i (addr (next i) s k) = initial i := moved x i s k
+    change B.transform (A.transform x) t _ = _
+    by_cases hit : t = dst
+    · subst t
+      simpa only [Function.update_self,read] using step
+    · simpa only [Function.update_of_ne hit,read] using step
+
 end IntegerMultBounds.MathlibTM2.M6.BitNode
