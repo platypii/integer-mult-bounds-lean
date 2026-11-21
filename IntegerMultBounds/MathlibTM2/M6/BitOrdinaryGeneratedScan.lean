@@ -146,10 +146,40 @@ def directoryReturnPorts {T K : ℕ} (place : Fin (K+5) ↪ Fin T) (p : Fin 6 �
       exact False.elim (p.injective.ne (by decide) h) | exact False.elim (apart _ _ (by decide) h) |
       exact False.elim (apart _ _ (by decide) h.symm)⟩
 
-/-- Execute the classified scan and retain both masks. On a complete owner tape, a framed
-recursive transpose then returns the ordinary rows and restores each bypassed row. -/
-theorem generatedIncomingDirectory_exec [M8.Machine.Net] {P U : Type} {r g d w common aux : ℕ}
-    (v directory : Descriptor) :
+/-- Input at the local bank of the generated scanner, before either pass. -/
+def GeneratedDirectoryInput [M8.Machine.Net] {K d m w W N : ℕ}
+    (room : Record.size d+(rowSwapBlock.tapes+35+2) ≤ K+1) (v directory : Descriptor)
+    (proj : Matrix (Fin m) (Fin m) ℚ) (H J : ℕ) (weights : Fin m → ZMod (prime^(w+1)))
+    (prefixes : ℕ → List (Fin (prime+4))) (archiveTail ownerTail : List (Fin (prime+4)))
+    (rs : List ℕ) (input : ℕ → Fin N → ZMod 2) (S : Stacks ((66+(K+1))+5) prime) : Prop :=
+  let start := embStk (Fin.castAddEmb 5) S
+  let raw := embStk (directoryOrdinaryBank room) start
+  let inner := Fin.castAddEmb (n := 66) K
+  let reg := Fin.natAddEmb (m := 5) (66+(K+1))
+  start.R (directoryMatrixTape room) = [] ∧
+    (∀ i : Fin (66+K), 58 ≤ i.val → raw.R i = []) ∧
+    DirectoryScanInput v proj w W H J weights prefixes archiveTail rs (fun i => raw.R (inner (i.castAdd 8))) ∧
+    (raw.R (inner 29)).length = directory.beforeRows ∧ (raw.R (inner 30)).length = directory.rows ∧
+    (raw.R (inner 31)).length = directory.beforeH ∧ raw.R (inner 50) = [] ∧
+    raw.R (inner 57) = [] ∧ raw.R (inner 56) = [] ∧ raw.R (inner 54) = [] ∧
+    S.R (reg 0) = rs.flatMap (fun j => payloadWord (SparseRoleCircuit.encode ∘ input j)) ++ ownerTail ∧
+    S.R (reg 1) = [] ∧ (S.R (reg 2)).length = N ∧ S.R (reg 3) = [] ∧ S.R (reg 4) = [] ∧
+    ∀ j, readAt blank (start.L ((24 : Fin 66).castAdd (K+1))) (start.R ((24 : Fin 66).castAdd (K+1))) j = blank
+
+/-- Execution and cost of both directory passes, including the one framed recursive call. -/
+def GeneratedDirectoryExecution [M8.Machine.Net] {P U : Type} {r g d w common aux : ℕ}
+    (v directory : Descriptor) (dimension : (r+g)+(r+g) = d+1)
+    (proj : Matrix (Fin (r+g)) (Fin (r+g)) ℚ) (weights : Fin (r+g) → ZMod (prime^(w+1)))
+    (data : ScanData (r+g) d w (directory.between*directory.afterD))
+    (pool : (RingFormula.conjugationDepth (r+g)+1)*13 ≤ aux) (room : 58+(rowSwapBlock.tapes+35+1) ≤ (common+24+31+aux))
+    (archiveRoom : Record.size d+(rowSwapBlock.tapes+35+2) ≤ (common+24+31+aux)+1)
+    (fits : (36+2*(r+g)+1+(RingFormula.conjugationDepth (r+g)+1)*13)+3 ≤ (common+24+31+aux)+1)
+    (capacity : (anchorProgram d true).1+(anchorProgram d false).1+1 ≤ columnCapacity)
+    (localBody : P → Pr P (66+(common+24+31+aux)) columnCapacity prime U) (localPush c : ℕ)
+    (prefixes : ℕ → List (Fin (prime+4))) (archiveTail ownerTail : List (Fin (prime+4)))
+    (input : ℕ → Fin ((prime^(w+1))^((r+g)+(r+g))*(directory.between*directory.afterD)) → ZMod 2)
+    (pairRoom : (r+g)*(r+g)+(r+g)*(r+g) ≤ (common+24+31+aux))
+    (u : HS ((66+((common+24+31+aux)+1))+5) columnCapacity prime U) (S : Stacks ((66+((common+24+31+aux)+1))+5) prime) : Prop :=
     let W := directory.between*directory.afterD
     let m := r+g
     let hr : r ≤ m := Nat.le_add_right ..
@@ -158,22 +188,6 @@ theorem generatedIncomingDirectory_exec [M8.Machine.Net] {P U : Type} {r g d w c
     let H := M.size
     let J := W.size
     let N := M^(m+m)*W
-    ∀ (dimension : m+m = d+1) (proj : Matrix (Fin m) (Fin m) ℚ) (_rank : proj.rank = r)
-      (_idem : proj*proj = proj) (factor : Factorization Finset.univ Finset.univ proj)
-      (_small : ∀ k ∈ factorizationDenominators factor, k < prime)
-      (weights : Fin m → ZMod M) (_unit : ∀ i, IsUnit (weights i))
-      (data : ScanData m d w W) (_binary : data.H = H) (_positive : 0 < W)
-      (pool : (RingFormula.conjugationDepth m+1)*13 ≤ aux) (room : 58+(rowSwapBlock.tapes+35+1) ≤ K)
-      (archiveRoom : Record.size d+(rowSwapBlock.tapes+35+2) ≤ K+1)
-      (fits : (36+2*m+1+(RingFormula.conjugationDepth m+1)*13)+3 ≤ K+1)
-      (capacity : (anchorProgram d true).1+(anchorProgram d false).1+1 ≤ columnCapacity)
-      (localBody : P → Pr P (66+K) columnCapacity prime U) (localPush c : ℕ)
-      (_bounded : ∀ f, mnProgPush (localBody f) ≤ localPush)
-      (_placed : ∀ f, mnProgPush (embProg (directoryOrdinaryBank archiveRoom) id (localBody f)) ≤ c)
-      (prefixes : ℕ → List (Fin (prime+4))) (archiveTail ownerTail : List (Fin (prime+4)))
-      (input : ℕ → Fin N → ZMod 2) (B : ℕ)
-      (_dirPositive : directory.Positive) (_shape : directory.beforeH = B*prime^(m*((w+1)*m)))
-      (pairRoom : m*m+m*m ≤ K) (u : HS ((66+(K+1))+5) columnCapacity prime U) (S : Stacks ((66+(K+1))+5) prime),
     let full := ordinaryCaller (by omega : 58 ≤ K)
     let machine := GoodChildLayout.parent.trans (parentWithWeights.trans full)
     let reduced := IntegerMultBounds.Swap.Modular.reduce M proj
@@ -239,19 +253,10 @@ theorem generatedIncomingDirectory_exec [M8.Machine.Net] {P U : Type} {r g d w c
     let outLocal : Pr P ((66+K)+5) columnCapacity prime U := packedOwner (inner 24) (inner 57) dispatch
     let outCost := fun j => outgoingScanRowCost m w (prefixes j).length privateTapes.length outPush
       (outgoingRowTime U machine r g w W (prefixes j).length) (active j) (live j)
-    start.R (directoryMatrixTape archiveRoom) = [] →
     let raw := embStk placement start
     let selectors := ordinarySelectorProgram localBody proj (φ ∘ weights) pairRoom
     let selectorBudget := (privateTapes.map fun i => 4*(raw.L i).length).sum +
       (140+30*(m*m)+6*privateTapes.length)*(data.records*N)
-    data.records = LabelMask.records directory →
-    (∀ i, 58 ≤ i.val → raw.R i = []) →
-    DirectoryScanInput v proj w W data.H J weights prefixes archiveTail rs (fun i => raw.R (inner (i.castAdd 8))) →
-    (raw.R (inner 29)).length = directory.beforeRows → (raw.R (inner 30)).length = directory.rows →
-    (raw.R (inner 31)).length = directory.beforeH → raw.R (inner 50) = [] →
-    raw.R (inner 57) = [] → raw.R (inner 56) = [] → raw.R (inner 54) = [] →
-    S.R (reg 0) = rs.flatMap (bits ∘ input) ++ ownerTail → S.R (reg 1) = [] → (S.R (reg 2)).length = N →
-    S.R (reg 3) = [] → S.R (reg 4) = [] → (∀ j, readAt blank (start.L (caller 24)) (start.R (caller 24)) j = blank) →
     let program := packedOwner (caller 24) (caller 57) (ownerDispatch (caller 57) (caller 56) good
       (directoryExceptionalProgram m d archiveRoom capacity) padding)
     let work := (List.finRange (66+(K+1))).filter fun i => decide (58 ≤ i.val ∧ i ≠ directoryMatrixTape archiveRoom)
@@ -366,13 +371,45 @@ theorem generatedIncomingDirectory_exec [M8.Machine.Net] {P U : Type} {r g d w c
               (∀ j : Fin 6, 2 ≤ j → D.R (p j) = []) ∧
               (∀ i : Fin (66+K), 58 ≤ i.val → D.L (place (localBank i)) = [] ∧ D.R (place (localBank i)) = []) ∧
               ∀ i, (∀ j, place j ≠ i) → (∀ j, replay j ≠ i) → p 2 ≠ i → p 3 ≠ i →
-                D.L i = A.L i ∧ D.R i = A.R i)) := by
-  intro W m hr K M H J N dimension proj rank idem factor small weights unit data binary positive pool room
+                D.L i = A.L i ∧ D.R i = A.R i))
+
+/-- Execute the classified scan and retain both masks. On a complete owner tape, a framed
+recursive transpose then returns the ordinary rows and restores each bypassed row. -/
+theorem generatedIncomingDirectory_exec [M8.Machine.Net] {P U : Type} {r g d w common aux : ℕ}
+    (v directory : Descriptor) :
+    ∀ (dimension : (r+g)+(r+g) = d+1) (proj : Matrix (Fin (r+g)) (Fin (r+g)) ℚ) (_rank : proj.rank = r)
+      (_idem : proj*proj = proj) (factor : Factorization Finset.univ Finset.univ proj)
+      (_small : ∀ k ∈ factorizationDenominators factor, k < prime)
+      (weights : Fin (r+g) → ZMod (prime^(w+1))) (_unit : ∀ i, IsUnit (weights i))
+      (data : ScanData (r+g) d w (directory.between*directory.afterD)) (_binary : data.H = (prime^(w+1)).size) (_positive : 0 < (directory.between*directory.afterD))
+      (pool : (RingFormula.conjugationDepth (r+g)+1)*13 ≤ aux) (room : 58+(rowSwapBlock.tapes+35+1) ≤ (common+24+31+aux))
+      (archiveRoom : Record.size d+(rowSwapBlock.tapes+35+2) ≤ (common+24+31+aux)+1)
+      (fits : (36+2*(r+g)+1+(RingFormula.conjugationDepth (r+g)+1)*13)+3 ≤ (common+24+31+aux)+1)
+      (capacity : (anchorProgram d true).1+(anchorProgram d false).1+1 ≤ columnCapacity)
+      (localBody : P → Pr P (66+(common+24+31+aux)) columnCapacity prime U) (localPush c : ℕ)
+      (_bounded : ∀ f, mnProgPush (localBody f) ≤ localPush)
+      (_placed : ∀ f, mnProgPush (embProg (directoryOrdinaryBank archiveRoom) id (localBody f)) ≤ c)
+      (prefixes : ℕ → List (Fin (prime+4))) (archiveTail ownerTail : List (Fin (prime+4)))
+      (input : ℕ → Fin ((prime^(w+1))^((r+g)+(r+g))*(directory.between*directory.afterD)) → ZMod 2) (B : ℕ)
+      (_dirPositive : directory.Positive) (_shape : directory.beforeH = B*prime^((r+g)*((w+1)*(r+g))))
+      (pairRoom : (r+g)*(r+g)+(r+g)*(r+g) ≤ (common+24+31+aux)) (u : HS ((66+((common+24+31+aux)+1))+5) columnCapacity prime U) (S : Stacks ((66+((common+24+31+aux)+1))+5) prime),
+    data.records = LabelMask.records directory →
+    GeneratedDirectoryInput (W := (directory.between*directory.afterD)) archiveRoom v directory proj data.H (directory.between*directory.afterD).size weights prefixes archiveTail ownerTail
+      (List.range data.records) input S →
+    GeneratedDirectoryExecution (r := r) (g := g) (common := common) v directory dimension proj weights data pool room
+      archiveRoom fits capacity localBody localPush c prefixes archiveTail ownerTail input pairRoom u S := by
+  intro dimension proj rank idem factor small weights unit data binary positive pool room
     archiveRoom fits capacity localBody localPush c bounded placed prefixes archiveTail ownerTail input B dirPositive shape pairRoom
-    u S full machine reduced localCaller prog
+    u S count entry
+  unfold GeneratedDirectoryExecution
+  intro W m hr K M H J N full machine reduced localCaller prog
     localTime privateTapes scanSlots scan skipRow goodRow push inv bad budget ordinaryEffect body length
     e physical φ code schedule ready placement caller live rs bits outer reg start inner advance good padding
-    ordinaryTime cost projected effect outProg outPush active dispatch outLocal outCost initial raw selectors selectorBudget count free inputs beforeRows rowCount beforeH parents mask mode queueFree queue acc width saved tmp blankPort
+    ordinaryTime cost projected effect outProg outPush active dispatch outLocal outCost raw selectors selectorBudget
+  change data.H = H at binary
+  obtain ⟨initial,free,inputs,beforeRows,rowCount,beforeH,parents,mask,mode,queueFree,queue,acc,width,saved,tmp,blankPort⟩ := entry
+  change S.R (reg 0) = rs.flatMap (bits ∘ input) ++ ownerTail at queue
+  change DirectoryScanInput v proj w W data.H J weights prefixes archiveTail (List.range data.records) (fun i => raw.R (inner (i.castAdd 8))) at inputs
   have adm : Admissible prime proj := by
     simpa using admissible_of_lt Shared50ModularControl.prime_prime
       (fun k (hk : k ∈ denominators proj) => small k (by simp [factorizationDenominators,hk])) 1
@@ -457,6 +494,7 @@ theorem generatedIncomingDirectory_exec [M8.Machine.Net] {P U : Type} {r g d w c
         (Nat.add_le_add_left (Nat.mul_le_mul_left _ (Nat.mul_le_mul_left _ (Nat.mul_le_mul_left p init))) _))
       refine ⟨z,F,k+n,user,(project₁.trans project) ▸ step,k,n,rows,rfl,?_,time.trans_eq (directoryScanTime_eq rs N cost),blankEnd,?_,rest⟩
       · intro p hp hc
+        dsimp only [K] at widthEq
         simpa only [widthEq] using setupBound p hp hc
       · apply List.Forall₂.imp _ ordered
         intro j tape row
@@ -733,5 +771,48 @@ theorem generatedIncomingDirectory_exec [M8.Machine.Net] {P U : Type} {r g d w c
     | false =>
       apply ordinaryProjectedRead dimension
       simpa only [b,Bool.not_false,ite_true] using row
+
+/-- The scheduled interval selects the rank, the complementary dimension and
+the certified projector. Its directory has one record per physical owner row. -/
+theorem scheduledIntervalDirectory_exec [M8.Machine.Net] {P U : Type} {w common aux : ℕ}
+    (interval : ℕ × ℕ) (member : interval ∈ BitHosting.remainderIntervals) (directory : Descriptor)
+    (weights : Fin 64 → ZMod (prime^(w+1))) (unit : ∀ i, IsUnit (weights i)) :
+    let r := interval.2-interval.1
+    let g := 64-r
+    let m := r+g
+    let dim : m = 64 := by have := (BitHosting.remainder_counts interval member).2.1; dsimp only [m,g,r]; omega
+    let dimension : m+m = 127+1 := by omega
+    let W := directory.between*directory.afterD
+    let M := prime^(w+1)
+    let N := M^(m+m)*W
+    let R := LabelMask.records directory
+    let K := common+24+31+aux
+    let child := remainderRecordChild interval.1 interval.2 (w+1) W
+    let proj : Matrix (Fin m) (Fin m) ℚ := diagonal fun i => if interval.1 ≤ i.val ∧ i.val < interval.2 then 1 else 0
+    let data : ScanData m 127 w W := {
+      records := R, H := M.size, J := W.size, table := fun _ => 0, matrix := fun _ => 0, input := fun _ _ => 0,
+      signed := [], matrixTail := [], pivotTail := [], inputTail := [], outputTail := []}
+    ∀ (blocks : ℕ), directory.Positive → directory.beforeH = blocks*prime^(64*((w+1)*64)) →
+      ∀ (pool : (RingFormula.conjugationDepth m+1)*13 ≤ aux) (room : 58+(rowSwapBlock.tapes+35+1) ≤ K)
+        (archiveRoom : Record.size 127+(rowSwapBlock.tapes+35+2) ≤ K+1)
+        (fits : (36+2*m+1+(RingFormula.conjugationDepth m+1)*13)+3 ≤ K+1) (pairRoom : m*m+m*m ≤ K)
+        (body : P → Pr P (66+K) columnCapacity prime U) (localPush placedPush : ℕ),
+      (∀ f, mnProgPush (body f) ≤ localPush) →
+      (∀ f, mnProgPush (embProg (directoryOrdinaryBank archiveRoom) id (body f)) ≤ placedPush) →
+      ∀ (prefixes : ℕ → List (Fin (prime+4))) (rows : ℕ → Fin N → ZMod 2)
+        (u : HS ((66+(K+1))+5) columnCapacity prime U) (S : Stacks ((66+(K+1))+5) prime),
+      GeneratedDirectoryInput (W := W) archiveRoom child directory proj M.size W.size (weights ∘ Fin.cast dim)
+        prefixes [] [] (List.range R) rows S →
+      GeneratedDirectoryExecution (r := r) (g := g) (common := common) child directory dimension proj
+        (weights ∘ Fin.cast dim) data pool room archiveRoom fits remainderAnchorFits body localPush placedPush
+        prefixes [] [] rows pairRoom u S := by
+  intro r g m dim dimension W M N R K child proj data blocks positive shape pool room archiveRoom fits pairRoom body
+    localPush placedPush bounded placed prefixes rows u S input
+  have upper : interval.2 ≤ m := by have := (BitHosting.remainder_counts interval member).2.1; omega
+  exact @generatedIncomingDirectory_exec _ P U r g 127 w common aux child directory dimension proj
+    (intervalDiagonal_rank upper) (intervalDiagonal_idem m interval.1 interval.2) (intervalFactor m interval.1 interval.2)
+    (intervalFactor_denominators m interval.1 interval.2) _ (fun i => unit (i.cast dim)) data rfl
+    (Nat.mul_pos positive.2.2.2.1 positive.2.2.2.2) pool room archiveRoom fits remainderAnchorFits body localPush
+    placedPush bounded placed prefixes [] [] rows blocks positive (by rwa [show r+g = 64 from dim]) pairRoom u S rfl input
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
