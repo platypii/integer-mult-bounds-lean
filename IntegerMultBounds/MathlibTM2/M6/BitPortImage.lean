@@ -14,6 +14,9 @@ open Shared50ModularControl (prime)
 
 open IntegerMultBounds.Swap.Modular Matrix
 
+private theorem source_dimension : ∀ t : Fin 111, Geometry.Dimensions.value (2+t.val) = 1 := by
+  decide +kernel
+
 /-- Fixed rational coordinate changes taking prefix digits to physical
 frame coordinates and back. -/
 noncomputable def frameBasis (l : Fin 636) (inverse : Bool) : Matrix (Fin 8) (Fin 8) ℚ :=
@@ -212,8 +215,7 @@ theorem portFrame_uniform_correction (t : Fin 111) (w : ℕ) :
   intro m l k C D J T S
   obtain ⟨left,right,_,_,source⟩ := frameBasis_spec l w
   obtain ⟨_,back,_,_,target⟩ := frameBasis_spec k w
-  have dimSource : ∀ t : Fin 111, Geometry.Dimensions.value (2+t.val) = 1 := by decide +kernel
-  rw [show Geometry.Dimensions.value l.val = 1 from dimSource t] at source
+  rw [show Geometry.Dimensions.value l.val = 1 from source_dimension t] at source
   rw [show Geometry.Dimensions.value k.val = 7 from (Nine.target_frames t t.isLt).2.2.1] at target
   change C l * prefixMask (ZMod m) 1 * D l = _ at source
   change C k * prefixMask (ZMod m) 7 * D k = _ at target
@@ -637,6 +639,34 @@ theorem portFrame_transfers (w : ℕ) (t : Fin 111) :
   have project (x : Fin 8 → R) : P *ᵥ x = ((4:R)⁻¹*(n ⬝ᵥ x)) • v := translatedPort_apply _ _ _
   simp only [neg_mulVec,← mulVec_mulVec,project,mulVec_smul,sub_neg_eq_add,← sub_eq_add_neg] at entry exit
   exact ⟨entry,exit⟩
+
+/-- Both physical shears have the same extreme pivots as the logical line
+and normal. They are units uniformly in the radix precision. -/
+theorem portShear_pivots (w : ℕ) (t : Fin 111) :
+    let R := ZMod (prime^w)
+    let v := fun i : Fin 8 => (translatedEntry t i.val : R)
+    let n := fun i : Fin 8 => (targetNormal t i : R)
+    let U := reduce (prime^w) (selectedProjector ⟨2+t.val,by omega⟩)
+    let V := reduce (prime^w) (selectedProjector ⟨525+t.val,by omega⟩)
+    IsUnit (v 0) ∧ IsUnit (n (Fin.last 7)) ∧
+      (n ᵥ* (1-U)) (Fin.last 7) = n (Fin.last 7) ∧ (V *ᵥ v) 0 = v 0 := by
+  intro R v n U V
+  have first : ∀ t : Fin 111, translatedEntry t 0 ≠ 0 := by decide +kernel
+  have size := translatedEntry_bound t (0 : Fin 8)
+  refine ⟨prefix_denominator_unit _ (first t) (size.trans (by decide)) w,targetNormal_unit w t,?_,?_⟩
+  · have mask := (selectedProjector_mask w ⟨2+t.val,by omega⟩).1
+    change U * prefixMask R (Geometry.Dimensions.value (2+t.val)) = U at mask
+    rw [source_dimension] at mask
+    have col (i : Fin 8) : U i (Fin.last 7) = 0 := by
+      have eq := congrArg (fun M : Matrix (Fin 8) (Fin 8) R => M i (Fin.last 7)) mask.symm
+      simpa [prefixMask,mul_diagonal] using eq
+    rw [vecMul_sub,vecMul_one]
+    simp only [Pi.sub_apply,Matrix.vecMul,dotProduct,col,mul_zero,Finset.sum_const_zero,sub_zero]
+  · have mask := (selectedProjector_mask w ⟨525+t.val,by omega⟩).2
+    change prefixMask R (Geometry.Dimensions.value (525+t.val)) * V = _ at mask
+    rw [(Nine.target_frames t.val t.isLt).2.2.1] at mask
+    have eq := congrFun (congrArg (fun M : Matrix (Fin 8) (Fin 8) R => M *ᵥ v) mask) 0
+    simpa [← mulVec_mulVec,prefixMask,mulVec_diagonal] using eq
 
 /-- Each port correction is a shear along a vector annihilated by its
 control row. Thus the control digit survives every transfer along that vector. -/
