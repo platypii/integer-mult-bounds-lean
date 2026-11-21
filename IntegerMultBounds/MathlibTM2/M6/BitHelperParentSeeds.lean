@@ -233,4 +233,78 @@ theorem helperArchiveTime_le (w L W : ℕ) (labels : 0 < L) (live : 0 < W) :
   simp only [List.length_map,List.length_finRange,nsmul_eq_mul] at total
   omega
 
+def parentArchive (T : ℕ) : Fin 268 ↪ Fin (T+273) := (Fin.castAddEmb 5).trans (Fin.natAddEmb T)
+
+def parentHelperHeaders (T : ℕ) (i : Fin 127) : Fin 6 → Fin (T+273) :=
+  let bank := parentArchive T
+  helperHeaderPorts i (bank 1) (bank 3) (bank 12) (bank (helperArchiveBank i 3)) (bank (helperArchiveBank i 4))
+
+noncomputable def prepareHelperHeaders (hdr : Fin 6 → Fin T) (regs : Fin 35 ↪ Fin T) : Pr P (T+273) Q prime U :=
+  .seq (prepareHelperSeeds hdr regs)
+    (helperHeaderSweep (fun i => (helperArchiveBank i).trans (parentArchive T)) (List.finRange 127))
+
+/-- The seven caller words and the row clock generate all headers at linear cost
+in the owner volume, preserving the input on every original caller tape. -/
+theorem prepareHelperHeaders_exec (body : P → Pr P (T+273) Q prime U) (hdr : Fin 6 → Fin T)
+    (regs : Fin 35 ↪ Fin T) (v : RecursiveInterchangeLayout.Descriptor) (w : ℕ)
+    (pos : v.Positive) (u : HS (T+273) Q prime U) (S : Stacks (T+273) prime) :
+    let W := v.beforeRows*v.rows*v.between*v.afterD
+    let M := prime^(w+1)
+    let V := M^128*(v.beforeH*W)
+    let read := fun (k : Fin T) => S.R (k.castAdd 273)
+    read (regs 2) = binSyms M.size M → read (regs 28) = binSyms 1 1 →
+    (read (regs 33)).length = w →
+    (∀ i, read (hdr i) = (M8.RevMachine.Routines.hdr v i).map bitSymbol) →
+    (∀ j : Fin 273, S.L (j.natAdd T) = [] ∧ S.R (j.natAdd T) = []) →
+    ∃ z F t, z.user = u.user ∧ Exec body (prepareHelperHeaders hdr regs) (mk u S) t (mk z F) ∧
+      t ≤ 152402000*V ∧
+      (∀ i j, F.R (parentHelperHeaders T i j) =
+        (M8.RevMachine.Routines.hdr (helperAdjacentView (w+1) v.beforeH W i) j).map bitSymbol) ∧
+      F.L = S.L ∧ ∀ k : Fin T, F.R (k.castAdd 273) = read k := by
+  intro W M V read base unit clock words free
+  obtain ⟨y,D,m,same,seed,charge,filled,dl,dr⟩ := prepareHelperSeeds_exec body hdr regs v w pos u S base unit clock words free
+  obtain ⟨z,F,n,user,sweep,price,fl,ready,off⟩ := helperArchive_exec body (parentArchive T) (w+1) v.beforeH W y D filled
+  have wp : 0 < W := Nat.mul_pos (Nat.mul_pos (Nat.mul_pos pos.1 pos.2.1) pos.2.2.2.1) pos.2.2.2.2
+  have mp : 0 < M := pow_pos Shared50ModularControl.prime_prime.pos _
+  have lp := Nat.mul_pos pos.2.2.1 wp
+  have vol : 1 ≤ V := Nat.mul_pos (pow_pos mp _) lp
+  have lw : v.beforeH*W ≤ V := Nat.le_mul_of_pos_left _ (pow_pos mp _)
+  have ww : W ≤ V := (Nat.le_mul_of_pos_left W pos.2.2.1).trans lw
+  have mm : M ≤ V := (by simpa only [pow_one] using
+    (Nat.pow_le_pow_right mp (by decide : 1 ≤ 128)) : M ≤ M^128).trans (Nat.le_mul_of_pos_right _ lp)
+  have atom : w+1 ≤ V := (Nat.le_of_lt (Nat.lt_pow_self Shared50ModularControl.prime_prime.one_lt)).trans mm
+  have prefixBound := (Nat.le_mul_of_pos_right (v.beforeRows*v.rows*v.between) pos.2.2.2.2).trans ww
+  have factors : ∀ j : Fin 7, (read (helperParentSources hdr regs j)).length ≤ V := by
+    have sizeBound (x : ℕ) (hx : x ≤ V) : x.size ≤ V := (Nat.size_le.mpr Nat.lt_two_pow_self).trans hx
+    have row := (Nat.le_mul_of_pos_right (v.beforeRows*v.rows) pos.2.2.2.1).trans prefixBound
+    have vals (i : Fin 6) := (words i).trans (canonicalBits_symbols _)
+    intro j
+    fin_cases j
+    · change (read (regs 2)).length ≤ V; rw [base,length_binSyms]; exact sizeBound M mm
+    · change (read (regs 28)).length ≤ V; rw [unit,length_binSyms]; exact vol
+    all_goals change (read (hdr _)).length ≤ V
+    all_goals rw [vals,length_binSyms]; apply sizeBound
+    · exact (Nat.le_mul_of_pos_right _ wp).trans lw
+    · exact (Nat.le_mul_of_pos_right _ pos.2.1).trans row
+    · exact (Nat.le_mul_of_pos_left _ pos.1).trans row
+    · exact (Nat.le_mul_of_pos_left _ (Nat.mul_pos pos.1 pos.2.1)).trans prefixBound
+    · exact (Nat.le_mul_of_pos_left _ (Nat.mul_pos (Nat.mul_pos pos.1 pos.2.1) pos.2.2.2.1)).trans ww
+  let lengths := (List.finRange 7).map fun i => 6*(read (helperParentSources hdr regs i)).length+6
+  have total := List.sum_le_length_nsmul lengths (6*V+6) (fun a ha => by
+    obtain ⟨j,_,rfl⟩ := List.mem_map.mp ha
+    exact Nat.add_le_add_right (Nat.mul_le_mul_left 6 (factors j)) 6)
+  have count : lengths.length = 7 := by simp [lengths]
+  rw [count,nsmul_eq_mul] at total
+  change m ≤ (lengths.sum+1)+((21*(w+1)+12)+(432*(v.beforeRows*v.rows*v.between)+432*W+432*(v.beforeH*W))) at charge
+  have bounded := price.trans (helperArchiveTime_le (w+1) v.beforeH W pos.2.2.1 wp)
+  refine ⟨z,F,m+n,user.trans same,Exec.seq seed sweep,?_,ready,fl.trans dl,?_⟩
+  · change n ≤ (127*1200000+1)*V at bounded
+    omega
+  · intro k
+    apply (off _ ?_).trans (dr k)
+    intro j e
+    have h := congrArg Fin.val e
+    change T+j.val = k.val at h
+    omega
+
 end IntegerMultBounds.MathlibTM2.M6.BitNode
