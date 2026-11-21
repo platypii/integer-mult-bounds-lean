@@ -263,6 +263,93 @@ theorem directoryBatchHeaders_exec {K Q : ℕ} {P U : Type} (body : P → Pr P (
     fin_cases j <;> simp [Routines.hdr,RecursiveDimensionBank.values,row,batch,
       remainderRecordChild,ordinaryDirectoryChild,ordinaryChildDescriptor,Nat.mul_comm,two_mul]
 
+/-- Chart-local placement of the six header readers, the owner, and the leaf's
+private tapes. The scanner's last three descriptor fields occupy 36–38. -/
+def stoppedChartBank (K T : ℕ) : Fin (7+T) ↪ Fin ((66+(K+3+T))+1) where
+  toFun i := ⟨if i.val < 3 then 66+K+i.val else if i.val < 6 then 33+i.val
+    else if i.val = 6 then 66+(K+3+T) else 66+K+3+(i.val-7), by split_ifs <;> omega⟩
+  inj' := by
+    intro i j eq
+    apply Fin.ext
+    have h := congrArg Fin.val eq
+    dsimp only at h
+    split_ifs at h <;> omega
+
+theorem stoppedChartBank_owner (K T : ℕ) :
+    stoppedChartBank K T ((Fin.last 6).castAdd T) = (0 : Fin 1).natAdd (66+(K+3+T)) := Fin.ext rfl
+
+def stoppedChartHeader (K T : ℕ) (j : Fin 6) : Fin (66+(K+3+T)) :=
+  ⟨if j.val < 3 then 66+K+j.val else 33+j.val, by split <;> omega⟩
+
+def stoppedChartPrivate (K T : ℕ) (j : Fin T) : Fin (66+(K+3+T)) :=
+  ⟨66+K+3+j.val,by omega⟩
+
+theorem stoppedChartBank_header (K T : ℕ) (j : Fin 6) :
+    stoppedChartBank K T (j.castSucc.castAdd T) = (stoppedChartHeader K T j).castSucc := by
+  apply Fin.ext
+  simp only [stoppedChartBank,stoppedChartHeader,Function.Embedding.coeFn_mk,Fin.val_castAdd,Fin.val_castSucc]
+  split_ifs <;> omega
+
+theorem stoppedChartBank_private (K T : ℕ) (j : Fin T) :
+    stoppedChartBank K T (j.natAdd 7) = (stoppedChartPrivate K T j).castSucc := by
+  apply Fin.ext
+  simp only [stoppedChartBank,stoppedChartPrivate,Function.Embedding.coeFn_mk,Fin.val_natAdd,Fin.val_castSucc]
+  split_ifs <;> omega
+
+noncomputable def stoppedChartChild [M8.Machine.Net] (K : ℕ) {U : Type} (_ : Unit) :
+    Pr Unit ((66+(K+3+LeafCore.small))+1) columnCapacity prime U :=
+  embProg (stoppedChartBank K LeafCore.small) Empty.elim
+    (hostedStoppedDirectory (le_refl columnCapacity) Fin.castSucc (Fin.last 6))
+
+open IntegerMultBounds.Networks.Certificates.PR589.Nine RecursiveInterchangeLayout in
+theorem stoppedChartChild_exec [M8.Machine.Net] (K : ℕ) {U : Type}
+    (node : Descriptor) (i : Fin nodeChildren5.length) (w : ℕ) (aligned : node.width = 64*(w+1))
+    (rows : 142080 ∣ node.rows) :
+    let r := nodeChildren5[i.val]
+    let batch := ordinaryDirectoryChild (role node 142080) r (64-r) w
+    let scheduled := scheduledChild prime node i
+    let e := (scheduledDirectoryCoordinates node i w aligned rows).choose
+    let T := LeafCore.small
+    let bank := stoppedChartBank K T
+    let port := (0 : Fin 1).natAdd (66+(K+3+T))
+    ∀ (word : Fin (volume prime scheduled) → ZMod 2) (v : HS ((66+(K+3+T))+1) columnCapacity prime U)
+      (S : Stacks ((66+(K+3+T))+1) prime), 0 < volume prime node →
+      (∀ j : Fin 6, S.R (bank (j.castSucc.castAdd T)) = (Routines.hdr batch j).map bitSymbol) →
+      (∀ j : Fin T, S.L (bank (j.natAdd 7)) = [] ∧ S.R (bank (j.natAdd 7)) = []) →
+      RecordPayload port (fun _ => blank) 0 (word ∘ e) S →
+      ∃ y B k, y.user = v.user ∧ Exec (stoppedChartChild K) (stoppedChartChild K ()) (mk v S) k (mk y B) ∧
+        (k : ℝ) ≤ descriptorHeaderCost batch +
+          ((T+5 : ℕ)*|LeafCore.C|+8+T*(16+8*|LeafCore.C|))*
+          ((volume prime scheduled : ℝ)*((max 1 scheduled.width : ℕ) : ℝ)^M8.Machine.BudgetBound.tau) ∧
+        RecordPayload port (fun _ => blank) 0
+          (Shared50RecursiveNodeRows.transpose (one_dvd scheduled.rows) word ∘ e) B ∧
+        ∀ j, j ≠ port → B.L j = S.L j ∧ B.R j = S.R j := by
+  intro r batch scheduled e T bank port word v S positive words free payload
+  have owner : bank ((Fin.last 6).castAdd T) = port := stoppedChartBank_owner K T
+  have input : RecordPayload (bank ((Fin.last 6).castAdd T)) (fun _ => blank) 0 (word ∘ e) S := owner.symm ▸ payload
+  obtain ⟨z,D,k,user,run,paid,out,frame,clean⟩ := hostedStoppedDirectory_exec
+    (n := 7) (le_refl columnCapacity) (P := Empty) Empty.elim Fin.castSucc (Fin.last 6)
+    node i w aligned rows word (embDn bank v) (embStk bank S) positive words input free
+  obtain ⟨y,B,installed,_,same,view,off⟩ := exec_emb (body' := stoppedChartChild K) (ι := Empty.elim)
+    bank.injective (fun f => nomatch f) run v rfl S rfl
+  simp only [embDn] at user
+  refine ⟨y,B,k,same.trans user,installed,paid,?_,?_⟩
+  · rw [← view] at out
+    rw [← owner]
+    exact out
+  · intro j ne
+    rw [← owner] at ne
+    by_cases inside : ∃ l, bank l = j
+    · obtain ⟨l,rfl⟩ := inside
+      induction l using Fin.addCases with
+      | left l =>
+        rw [← view] at frame
+        exact frame l (fun eq => ne (congrArg (fun t : Fin 7 => bank (t.castAdd T)) eq))
+      | right l =>
+        rw [← view] at clean
+        exact ⟨(clean l).1.trans (free l).1.symm,(clean l).2.trans (free l).2.symm⟩
+    · exact off j (fun l eq => inside ⟨l,eq⟩)
+
 open IntegerMultBounds.Networks.Certificates.PR589.Nine RecursiveInterchangeLayout in
 /-- Install the scheduled recursive transpose in directory tape order. It
 returns the batch transpose with the same cost and preserves every other tape. -/
@@ -313,6 +400,113 @@ theorem directoryChartHost_child_exec [M8.Machine.Net] {K : ℕ} {P C U : Type}
   exact ⟨y,B,k,user,paid,run,action.symm ▸ returned,frame⟩
 
 -- The pre-setup chart projection is available at bfe0b0b4.
+/-- The stopped call needs only the six saved words and its own blank tapes
+in the replay bank. The payload is supplied separately on the chart owner. -/
+def StoppedChartReady (K T : ℕ) (batch : RecursiveInterchangeLayout.Descriptor)
+    (S : Stacks (66+(K+3+T)) prime) : Prop :=
+  (∀ j, S.R (stoppedChartHeader K T j) = (Routines.hdr batch j).map bitSymbol) ∧
+    ∀ j, S.L (stoppedChartPrivate K T j) = [] ∧ S.R (stoppedChartPrivate K T j) = []
+
+/-- Save the outer headers beside the scanner's bank, preserving the three
+inner headers at 36–38 and the unused suffix for the leaf. -/
+theorem prepareStoppedChart_exec {K T Q : ℕ} {P U : Type}
+    (body : P → Pr P (66+(K+3+T)) Q prime U) (parent : RecursiveInterchangeLayout.Descriptor)
+    (positive : parent.Positive) (lo hi w : ℕ) (u : HS (66+(K+3+T)) Q prime U)
+    (S : Stacks (66+(K+3+T)) prime) :
+    let place := Fin.castLEEmb (show (66+K)+3 ≤ 66+(K+3+T) by omega)
+    let bank := directoryOuterHeaderBank K
+    let values : Fin 3 → ℕ := ![parent.beforeRows,parent.rows,parent.beforeH]
+    let row := remainderRecordChild lo hi (w+1) (parent.between*parent.afterD)
+    let batch := ordinaryDirectoryChild parent (hi-lo) (64-(hi-lo)) w
+    (∀ j : Fin 3, (S.R (place (bank (j.castAdd 9)))).length = values j) →
+    (∀ j : Fin 12, 3 ≤ j.val → S.R (place (bank j)) = []) →
+    (∀ j : Fin 3, S.R (stoppedChartHeader K T (j.natAdd 3)) = (Routines.hdr row (j.natAdd 3)).map bitSymbol) →
+    (∀ j, S.L (stoppedChartPrivate K T j) = [] ∧ S.R (stoppedChartPrivate K T j) = []) →
+    ∃ z F n, z.user = u.user ∧ n ≤ 63*LabelMask.records parent+31 ∧
+      Exec body (embProg place Empty.elim (IntervalDescriptor.directoryOuterHeaders bank)) (mk u S) n (mk z F) ∧
+      StoppedChartReady K T batch F ∧
+      ∀ j, (∀ i : Fin 3, j ≠ stoppedChartHeader K T (i.castAdd 3)) → F.L j = S.L j ∧ F.R j = S.R j := by
+  intro place bank values row batch src empty tail free
+  let outer := ((Fin.natAddEmb (m := 3) 3).trans (Fin.castAddEmb 6)).trans bank
+  let inner (j : Fin 3) : Fin ((66+K)+3) := ⟨36+j.val,by omega⟩
+  have first (j : Fin 3) : place (outer j) = stoppedChartHeader K T (j.castAdd 3) := by
+    apply Fin.ext
+    change (if 3+j.val < 3 then 29+(3+j.val) else if 3+j.val < 6 then 66+K+(3+j.val-3)
+      else 58+(3+j.val-6)) = (if j.val < 3 then 66+K+j.val else 33+j.val)
+    split_ifs <;> omega
+  have last (j : Fin 3) : place (inner j) = stoppedChartHeader K T (j.natAdd 3) := by
+    apply Fin.ext
+    change 36+j.val = (if 3+j.val < 3 then 66+K+(3+j.val) else 33+(3+j.val))
+    split_ifs <;> omega
+  obtain ⟨y,D,n,user,paid,run,left,keep,_,headers⟩ := directoryBatchHeaders_exec (P := Empty)
+    Empty.elim parent positive lo hi w (embDn place u) (embStk place S) src empty
+  obtain ⟨z,F,installed,_,same,view,off⟩ := exec_emb (body' := body) (ι := Empty.elim)
+    place.injective (fun f => nomatch f) run u rfl S rfl
+  have stable (j) (outside : ∀ i : Fin 3, j ≠ stoppedChartHeader K T (i.castAdd 3)) :
+      F.L j = S.L j ∧ F.R j = S.R j := by
+    by_cases inside : ∃ l, place l = j
+    · obtain ⟨l,rfl⟩ := inside
+      rw [← view] at left keep
+      exact ⟨congrFun left l,keep l (fun i eq => outside i ((congrArg place eq).trans (first i)))⟩
+    · exact off j (fun l eq => inside ⟨l,eq⟩)
+  have tailWords (j) : D.R (inner j) = (Routines.hdr row (j.natAdd 3)).map bitSymbol := by
+    rw [keep]
+    · change S.R (place (inner j)) = _
+      rw [last,tail]
+    · intro i eq
+      have h := congrArg Fin.val ((last j).symm.trans ((congrArg place eq).trans (first i)))
+      change (if 3+j.val < 3 then _ else _) = (if i.val < 3 then _ else _) at h
+      split_ifs at h <;> omega
+  have allWords := headers D inner (fun _ => rfl) tailWords
+  refine ⟨z,F,n,same.trans user,paid,installed,⟨?_,?_⟩,stable⟩
+  · intro j
+    rw [← view] at allWords
+    induction j using Fin.addCases (m := 3) (n := 3) with
+    | left j =>
+      rw [← first]
+      exact (Fin.append_left outer inner j) ▸ allWords (j.castAdd 3)
+    | right j => simpa only [Fin.append_right,embStk,Function.comp_apply,last] using allWords (j.natAdd 3)
+  · intro j
+    have kept := stable (stoppedChartPrivate K T j) (by
+      intro i eq
+      have h := congrArg Fin.val eq
+      change 66+K+3+j.val = (if i.val < 3 then _ else _) at h
+      simp only [Fin.val_castAdd] at h
+      split_ifs at h <;> omega)
+    exact ⟨kept.1.trans (free j).1,kept.2.trans (free j).2⟩
+
+open IntegerMultBounds.Networks.Certificates.PR589.Nine RecursiveInterchangeLayout in
+theorem directoryChartHost_stopped_exec [M8.Machine.Net] (K : ℕ) {P U : Type}
+    (room : Record.size 127+(rowSwapBlock.tapes+35+2) ≤ (K+3+LeafCore.small)+1)
+    (localBody : P → Pr P (66+(K+3+LeafCore.small)) columnCapacity prime U)
+    (node : Descriptor) (i : Fin nodeChildren5.length) (w : ℕ) (aligned : node.width = 64*(w+1))
+    (rows : 142080 ∣ node.rows) :
+    let r := nodeChildren5[i.val]
+    let batch := ordinaryDirectoryChild (role node 142080) r (64-r) w
+    let scheduled := scheduledChild prime node i
+    let T := LeafCore.small
+    let tapes := 66+((K+3+T)+1)
+    let owner := (0 : Fin 5).natAdd (tapes+10)
+    let host := directoryChartHost room localBody (stoppedChartChild K)
+    let price := (descriptorHeaderCost batch : ℝ) +
+      ((T+5 : ℕ)*|LeafCore.C|+8+T*(16+8*|LeafCore.C|))*
+      ((volume prime scheduled : ℝ)*((max 1 scheduled.width : ℕ) : ℝ)^M8.Machine.BudgetBound.tau)
+    ∀ (a : HS ((tapes+10)+5) columnCapacity prime U) (A : Stacks ((tapes+10)+5) prime)
+      (x : Fin (volume prime batch) → ZMod 2), 0 < volume prime node →
+      StoppedChartReady K T batch (embStk (directoryChartReplayBank room) A) →
+      RecordPayload owner (fun _ => blank) 0 x A →
+      ∃ y B k, y.user = a.user ∧ k ≤ ⌊price⌋₊ ∧ Exec host (host (.inr (.inr ()))) (mk a A) k (mk y B) ∧
+        RecordPayload owner (fun _ => blank) 0 (Shared50RecursiveNodeRows.transpose (one_dvd batch.rows) x) B ∧
+        ∀ j, j ≠ owner → B.L j = A.L j ∧ B.R j = A.R j := by
+  intro r batch scheduled T tapes owner host price a A x positive ready payload
+  apply directoryChartHost_child_exec room localBody (stoppedChartChild K) () node i w aligned rows
+    ⌊price⌋₊ (StoppedChartReady K T batch) a A x ready payload
+  intro u S prepared word input
+  obtain ⟨y,B,k,user,run,paid,out,frame⟩ := stoppedChartChild_exec K node i w aligned rows word u S
+    positive (fun j => stoppedChartBank_header K T j ▸ prepared.1 j)
+    (fun j => stoppedChartBank_private K T j ▸ prepared.2 j) input
+  exact ⟨y,B,k,user,Nat.le_floor paid,run,out,frame⟩
+
 /-- The initialized directory leaves the four mask work tapes and six replay
 tapes free. Only the two selector ports overlap the scanner's own bank. -/
 theorem directoryChart_workspace {T : ℕ} (room : 58 ≤ T) (live bad : Fin T) (apart : live ≠ bad)
