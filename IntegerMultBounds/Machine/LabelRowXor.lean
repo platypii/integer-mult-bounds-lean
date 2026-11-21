@@ -94,4 +94,97 @@ theorem run {a : ℕ} (v : Tapes 2 a) (width count : List Bool) (K N : ℕ)
       rw [PointwiseBinary.destination,(heads _ _ _).2,ite_eq_right outside]
       exact ih
 
+/-- After one reduction the source already points to the next block.
+Advance only the accumulator before starting the next reduction. -/
+def advance (i : Fin 2) : Move := if i = 0 then .stay else .right
+
+def blockProgram (a : ℕ) :=
+  seq (program a) (extend (RoleArrayStackMoves.moveProgram (a := a) advance) 2)
+
+def blocksProgram (a : ℕ) := CountedLoopReuseAlphabet.program (blockProgram a)
+
+theorem blocks_hoare {a K blocks cost : ℕ} (width count total : List Bool)
+    (hw : Counter.value width = K) (hb : Counter.value total = blocks)
+    (ready : ℕ → Tapes 2 a → Prop) (v : Tapes 2 a) (start : ready 0 v)
+    (step : ∀ i < blocks, ∀ u, ready i u → ∃ F,
+      HoareTime (program a) (· = bank u width count) (· = bank F width count) cost ∧
+      ready (i+1) (RoleArrayStackMoves.shifted F advance K)) :
+    ∃ F, ready blocks F ∧
+      HoareTime (blocksProgram a)
+        (· = CountedLoopReuseAlphabet.bank (bank v width count) CountedLoopReuseAlphabet.empty
+          (CountedLoopReuseAlphabet.binary total) 1 1)
+        (· = CountedLoopReuseAlphabet.bank (bank F width count) CountedLoopReuseAlphabet.empty
+          (CountedLoopReuseAlphabet.binary total) 1 1)
+        (blocks*(cost+7*K+7*width.length+23)+7*total.length+16) := by
+  classical
+  let next := fun i (u : Tapes 2 a) => if h : i < blocks ∧ ready i u then
+    RoleArrayStackMoves.shifted (step i h.1 u h.2).choose advance K else u
+  let state := fun i => Nat.rec (motive := fun _ => Tapes 2 a) v next i
+  have valid (i) (hi : i ≤ blocks) : ready i (state i) := by
+    induction i with
+    | zero => exact start
+    | succ i ih =>
+      have h : i < blocks ∧ ready i (state i) := ⟨by omega,ih (by omega)⟩
+      change ready (i+1) (next i (state i))
+      simp only [next,dite_eq_left h]
+      exact (step i h.1 _ h.2).choose_spec.2
+  have run := CountedLoopReuseAlphabet.loop_hoare (blockProgram a) total blocks
+    (fun i => bank (state i) width count) (fun _ => cost+7*K+7*width.length+17) hb (by
+      intro i hi
+      have h := valid i hi.le
+      obtain ⟨scan,_⟩ := (step i hi _ h).choose_spec
+      have move := hoare_extend_eq (RoleArrayStackMoves.move_hoare (step i hi _ h).choose advance width K hw)
+        (CountedLoopReuseAlphabet.controls CountedLoopReuseAlphabet.empty (CountedLoopReuseAlphabet.binary count) 1 1)
+      change HoareTime _ _ (· = bank (next i (state i)) width count) _
+      simp only [next,dite_eq_left (And.intro hi h)]
+      exact (scan.seq move).consequence (fun _ h => h) (fun _ h => h) (by omega))
+  refine ⟨state blocks,valid _ le_rfl,run.consequence (fun _ h => h) (fun _ h => h) ?_⟩
+  simp only [Finset.sum_const,Finset.card_range,nsmul_eq_mul,Nat.cast_id]
+  simp only [Nat.mul_add]; omega
+
+/-- Reduce every consecutive block into its own accumulator record. -/
+theorem blocks_run {a K N B : ℕ} (v : Tapes 2 a) (width count total : List Bool)
+    (hw : Counter.value width = K) (hn : Counter.value count = N) (hb : Counter.value total = B)
+    (x : Fin B → Fin N → Fin K → ZMod 2)
+    (input : ∀ b r j, v.tape 0 (v.head 0+b.val*(N*K)+r.val*K+j.val) = SparseRoleCircuit.encode (x b r j))
+    (zero : ∀ (b : Fin B) (j : Fin K), v.tape 1 (v.head 1+b.val*K+j.val) = SparseRoleCircuit.encode 0) :
+    let frame := fun u => CountedLoopReuseAlphabet.bank (bank u width count) CountedLoopReuseAlphabet.empty
+      (CountedLoopReuseAlphabet.binary total) 1 1
+    ∃ F, HoareTime (blocksProgram a) (· = frame v) (· = frame F)
+      (B*(N*(14*K+14*width.length+39)+7*count.length+16+7*K+7*width.length+23)+7*total.length+16) ∧
+      F.head 0 = v.head 0+B*(N*K) ∧ F.head 1 = v.head 1+B*K ∧ F.tape 0 = v.tape 0 ∧
+      ∀ b j, F.tape 1 (v.head 1+b.val*K+j.val) = SparseRoleCircuit.encode (∑ r, x b r j) := by
+  intro frame
+  let ready := fun (i : ℕ) (u : Tapes 2 a) =>
+    u.head 0 = v.head 0+i*(N*K) ∧ u.head 1 = v.head 1+i*K ∧ u.tape 0 = v.tape 0 ∧
+    ∀ (b : Fin B) (j : Fin K), u.tape 1 (v.head 1+b.val*K+j.val) =
+      (if b.val < i then SparseRoleCircuit.encode (∑ r, x b r j) else SparseRoleCircuit.encode 0)
+  obtain ⟨F,done,exec⟩ := blocks_hoare width count total hw hb ready v
+    (by simpa [ready] using zero) (fun i hi u ⟨hs,hd,src,values⟩ => by
+      let b : Fin B := ⟨i,hi⟩
+      obtain ⟨D,scan,ss,dd,st,acc,off⟩ := run u width count K N hw hn (x b) (fun _ => 0)
+        (fun r j => by rw [src,hs]; exact input b r j)
+        (fun j => by rw [hd]; simpa [b] using values b j)
+      refine ⟨D,scan,?_,?_,st.trans src,?_⟩
+      · simp [RoleArrayStackMoves.shifted,advance,Move.offset,ss,hs,add_mul,add_assoc]
+      · simp [RoleArrayStackMoves.shifted,advance,Move.offset,dd,hd,add_mul,add_assoc]
+      intro k j
+      change D.tape 1 _ = _
+      by_cases eqn : k.val = i
+      · have same : k = b := Fin.ext eqn
+        subst k
+        simpa [hd,b] using acc j
+      · have gap (m n : ℕ) (lt : m < n) : (m : ℤ)*K+K ≤ (n : ℤ)*K := by
+          have h := Nat.mul_le_mul_right K (Nat.succ_le_of_lt lt)
+          exact_mod_cast (show m*K+K ≤ n*K by simpa [Nat.succ_mul] using h)
+        have outside : ¬(u.head 1 ≤ v.head 1+k.val*K+j.val ∧ v.head 1+k.val*K+j.val < u.head 1+K) := by
+          rw [hd]
+          rcases lt_or_gt_of_ne eqn with h | h
+          · have := gap _ _ h; omega
+          · have := gap _ _ h; omega
+        rw [off _ outside,values]
+        by_cases h : k.val < i <;> simp [h,show (k.val < i+1) ↔ k.val < i by omega])
+  obtain ⟨hs,hd,src,values⟩ := done
+  exact ⟨F,exec,hs,hd,src,fun b j => by simpa [b.isLt] using values b j⟩
+
 end IntegerMultBounds.Machine.LabelRowXor

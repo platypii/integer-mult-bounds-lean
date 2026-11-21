@@ -356,8 +356,33 @@ theorem restoredStage_active (n : Fin 9) (run : Fin 32 × Fin 5) (w B W : ℕ) (
       rw [eqn]
     exact (eqn (after src)).symm.trans (read.trans (congrArg _ (congrArg _ (eqn (inputs src)))))
 
+private theorem targetScan_cost {K N D l r b : ℕ} (pos : 0 < K) (hn : 0 < N) (hd : 0 < D)
+    (lk : l ≤ 2*K) (ln : r ≤ 2*N) (ld : b ≤ 2*D) :
+    D*(N*(14*K+14*l+39)+7*r+16+7*K+7*l+23)+7*b+16 ≤ 200*(D*(N*K)) := by
+  have nk := Nat.le_mul_of_pos_right N pos
+  have kn := Nat.le_mul_of_pos_left K hn
+  have vol := Nat.mul_pos hn pos
+  have body : 14*K+14*l+39 ≤ 81*K := by
+    calc
+      _ ≤ 14*K+14*(2*K)+39*K := by gcongr; exact Nat.le_mul_of_pos_right _ pos
+      _ = _ := by ring
+  have per : N*(14*K+14*l+39)+7*r+16+7*K+7*l+23 ≤ 160*(N*K) := by
+    calc
+      _ ≤ N*(81*K)+7*(2*(N*K))+16*(N*K)+7*(N*K)+7*(2*(N*K))+23*(N*K) := by
+        gcongr
+        all_goals first | assumption | exact ln.trans (Nat.mul_le_mul_left _ nk) |
+          exact lk.trans (Nat.mul_le_mul_left _ kn) | exact Nat.le_mul_of_pos_right _ vol
+      _ ≤ _ := by ring_nf; gcongr <;> decide
+  have size := Nat.mul_pos hd vol
+  calc
+    _ ≤ D*(160*(N*K))+7*(2*(D*(N*K)))+16*(D*(N*K)) := by
+      gcongr
+      all_goals first | assumption | exact ld.trans (Nat.mul_le_mul_left _ (Nat.le_mul_of_pos_right D vol)) |
+        exact Nat.le_mul_of_pos_right _ size
+    _ ≤ _ := by ring_nf; gcongr <;> decide
+
 /-- A physical row scan on a restored target writes the certified framed
-sum of its two incoming streams throughout the spectator block. -/
+sum of its two incoming streams at every active address and inherited block. -/
 theorem restoredStage_targetScan (n : Fin 9) (run : Fin 32 × Fin 5) (w B W : ℕ)
     (label : Cover.LabelPadding.Label 64 w) (x y out)
     (trace : stageRuns.foldr (fun k next a => ∃ b, packedStageEffect n k w B W a b ∧ next b)
@@ -368,32 +393,59 @@ theorem restoredStage_targetScan (n : Fin 9) (run : Fin 32 × Fin 5) (w B W : �
     let N := prime^(64*(w*64))
     let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n run.1 run.2,ownerTape_injective ..⟩
     let dst : Fin 661 := ⟨111+t.val,by omega⟩
-    ∀ (s : Swap.Shear.State (Fin 8) (ZMod (prime^w))) (b : Fin B) (v : Tapes 2 prime), 0 < K →
-    (∀ (r : Fin N) (j : Fin K), v.tape 0 (v.head 0+r.val*K+j.val) = SparseRoleCircuit.encode
-      (out (owner dst) (FlatCoordinateLayout.index (AffineFieldCoordinates.embed s)
-        (finProdFinEquiv (finProdFinEquiv (b,r),j))))) →
-    (∀ j : Fin K, v.tape 1 (v.head 1+j.val) = SparseRoleCircuit.encode 0) →
-    ∃ F, HoareTime (LabelRowXor.program prime)
-      (fun u => u = LabelRowXor.bank v (FlatCoordinateSchedule.bits K) (FlatCoordinateSchedule.bits N))
-      (fun u => u = LabelRowXor.bank F (FlatCoordinateSchedule.bits K) (FlatCoordinateSchedule.bits N)) (111*(N*K)) ∧
-      F.head 0 = v.head 0+N*K ∧ F.head 1 = v.head 1 ∧ F.tape 0 = v.tape 0 ∧
-      (∀ j : Fin K,
+    let A := (prime^w)^16
+    let D := A*B
+    let bits := FlatCoordinateSchedule.bits
+    let frame := fun v => CountedLoopReuseAlphabet.bank (LabelRowXor.bank v (bits K) (bits N))
+      CountedLoopReuseAlphabet.empty (CountedLoopReuseAlphabet.binary (bits D)) 1 1
+    ∀ (v : Tapes 2 prime), 0 < K → 0 < B →
+    (∀ i : Fin (A*(B*N*K)), v.tape 0 (v.head 0+i.val) = SparseRoleCircuit.encode (out (owner dst) i)) →
+    (∀ i : Fin (D*K), v.tape 1 (v.head 1+i.val) = SparseRoleCircuit.encode 0) →
+    ∃ F, HoareTime (LabelRowXor.blocksProgram prime) (· = frame v) (· = frame F) (200*(D*(N*K))) ∧
+      F.head 0 = v.head 0+D*(N*K) ∧ F.head 1 = v.head 1+D*K ∧ F.tape 0 = v.tape 0 ∧
+      ∀ (s : Swap.Shear.State (Fin 8) (ZMod (prime^w))) (b : Fin B) (j : Fin K),
         let initial := fun i => (selectedFrame w (Frames.initialRefs i)).symm
           (phaseRead owner x (finProdFinEquiv (b,j)) i)
-        F.tape 1 (v.head 1+j.val) = SparseRoleCircuit.encode
-          (selectedFrame w (Frames.finalRefs dst.val) (initial dst.val + initial t.val) s)) ∧
-      ∀ i, ¬(v.head 1 ≤ i ∧ i < v.head 1+K) → F.tape 1 i = v.tape 1 i := by
-  intro K N owner dst s b v pos input zero
-  obtain ⟨F,scan,hsrc,hdst,src,acc,off⟩ := collapseLabelBlock_run (w := w) (B := B) pos out
-    (owner dst) (FlatCoordinateLayout.rank (AffineFieldCoordinates.embed s)) b v input zero
-  refine ⟨F,scan,hsrc,hdst,src,fun j => ?_,off⟩
+        F.tape 1 (v.head 1+(FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) (finProdFinEquiv (b,j))).val) =
+          SparseRoleCircuit.encode (selectedFrame w (Frames.finalRefs dst.val) (initial dst.val + initial t.val) s) := by
+  intro K N owner dst A D bits frame v pos hb input zero
+  let entry := fun (q : Fin D) (r : Fin N) (j : Fin K) =>
+    let ab : Fin A × Fin B := finProdFinEquiv.symm q
+    finProdFinEquiv (ab.1,finProdFinEquiv (finProdFinEquiv (ab.2,r),j))
+  have offset (q : Fin D) (r : Fin N) (j : Fin K) :
+      (entry q r j).val = q.val*(N*K)+r.val*K+j.val := by
+    obtain ⟨⟨a,b⟩,rfl⟩ := finProdFinEquiv.surjective q
+    simp only [entry,Equiv.symm_apply_apply]
+    simp [finProdFinEquiv]; ring
+  obtain ⟨F,scan,hsrc,hdst,src,acc⟩ := LabelRowXor.blocks_run v (bits K) (bits N) (bits D)
+    (FlatCoordinateSchedule.bits_value _) (FlatCoordinateSchedule.bits_value _) (FlatCoordinateSchedule.bits_value _)
+    (fun q r j => out (owner dst) (entry q r j)) (fun q r j => by
+      simpa only [offset,Nat.cast_add,Nat.cast_mul,add_assoc] using input (entry q r j))
+    (fun q j => by simpa [finProdFinEquiv,add_assoc,add_left_comm,add_comm,mul_comm] using zero (finProdFinEquiv (q,j)))
+  refine ⟨F,scan.consequence (fun _ h => h) (fun _ h => h) ?_,hsrc,hdst,src,?_⟩
+  · apply targetScan_cost pos (pow_pos Shared50ModularControl.prime_prime.pos _)
+      (Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) hb)
+    all_goals apply FlatCoordinateDimensions.bits_length_le_twice le_rfl <;> first | assumption | exact pow_pos Shared50ModularControl.prime_prime.pos _ | exact Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) hb
+  intro s b j
   let z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B :=
     ⟨⟨0,pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _⟩,⟨0,Nat.zero_lt_one⟩,b,
       ⟨0,by simp [copyLabelLayout,ActualAffineScaling.modulus]⟩,⟨0,Nat.zero_lt_one⟩,
       ⟨0,by simp [copyLabelLayout,ActualAffineScaling.modulus]⟩,j⟩
   have sum := congrFun (restoredStage_active n run w B W _ y out trace restore t z).1 s
   rw [collapse_singleLabelBank] at sum
-  refine (acc j).trans (congrArg SparseRoleCircuit.encode ?_)
+  let a := FlatCoordinateLayout.rank (AffineFieldCoordinates.embed s)
+  let q : Fin D := finProdFinEquiv (a,b)
+  have value := acc q j
+  have outputIndex : (FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) (finProdFinEquiv (b,j))).val =
+      q.val*K+j.val := by
+    simp [FlatCoordinateLayout.index_val,q,a,finProdFinEquiv]; ring
+  rw [outputIndex,Nat.cast_add,Nat.cast_mul,← add_assoc]
+  refine value.trans (congrArg SparseRoleCircuit.encode ?_)
+  have collapsed : collapseLabelBank out (owner dst) (finProdFinEquiv (a,finProdFinEquiv (b,j))) =
+      ∑ r : Fin N, out (owner dst) (entry q r j) := by
+    simp only [collapseLabelBank,entry,q,Equiv.symm_apply_apply]
+    rfl
+  rw [← collapsed]
   have address : FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) (finProdFinEquiv (b,j)) =
       finProdFinEquiv (FlatCoordinateLayout.rank (AffineFieldCoordinates.embed s),finProdFinEquiv (b,j)) := by
     apply Fin.ext
