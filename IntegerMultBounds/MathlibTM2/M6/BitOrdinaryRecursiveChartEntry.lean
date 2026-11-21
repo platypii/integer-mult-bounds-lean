@@ -101,6 +101,37 @@ private theorem releaseSplitWorkspace_exec {n tapes Q : ℕ} {P U : Type} (body 
     have h : i.natAdd n ∈ work := List.mem_map_of_mem (List.mem_finRange i)
     simp only [ite_eq_left h,and_self]
 
+/-- Clear entry metadata after a framed child returns. Charge the words still on the scanner
+when the child returns, including any metadata produced by the child. -/
+theorem recursiveChartReturn_exec {n s Q : ℕ} {P U : Type}
+    (body : P → Pr P n Q prime U) (entry child : Pr P n Q prime U)
+    (scanner : Fin s ↪ Fin n) (owner : Fin n) (off : ∀ i, scanner i ≠ owner)
+    {u v z : HS n Q prime U} {S F G : Stacks n prime} {t m : ℕ}
+    (entered : Exec body entry (mk u S) t (mk v F))
+    (called : Exec body child (mk v F) m (mk z G))
+    (free : ∀ i, S.L (scanner i) = [] ∧ S.R (scanner i) = [])
+    (outside : ∀ j, (∀ i, scanner i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j)
+    (framed : ∀ j, j ≠ owner → (∀ i, scanner i ≠ j) → G.L j = F.L j ∧ G.R j = F.R j) :
+    let work := (List.finRange s).map scanner
+    let k := (work.map (fun j => 4*(G.L j).length+2*(G.R j).length+4)).sum+1
+    ∃ y B, y.user = z.user ∧
+      Exec body ((entry.seq child).seq (clearWorkTapes work)) (mk u S) (t+m+k) (mk y B) ∧
+      B.L owner = G.L owner ∧ B.R owner = G.R owner ∧
+      ∀ j, j ≠ owner → B.L j = S.L j ∧ B.R j = S.R j := by
+  intro work k
+  obtain ⟨y,user,clear⟩ := clearWorkTapes_exec body work ((List.nodup_finRange _).map scanner.injective) z G
+  have mem (j) : j ∈ work ↔ ∃ i, scanner i = j := by simp [work]
+  have ownerOff : owner ∉ work := fun h => by obtain ⟨i,eq⟩ := (mem _).mp h; exact off i eq
+  refine ⟨y,_,user,Exec.seq (Exec.seq entered called) clear,
+    ite_eq_right ownerOff,ite_eq_right ownerOff,?_⟩
+  intro j ne
+  by_cases h : j ∈ work
+  · obtain ⟨i,rfl⟩ := (mem _).mp h
+    simp [h,(free i).1,(free i).2]
+  · have keep := outside j (fun i eq => h ((mem _).mpr ⟨i,eq⟩))
+    have held := framed j ne (fun i eq => h ((mem _).mpr ⟨i,eq⟩))
+    exact ⟨(ite_eq_right h).trans (held.1.trans keep.1),(ite_eq_right h).trans (held.2.trans keep.2)⟩
+
 /-- Keep the child's data on its owner tapes and take the surrounding chart
 registers from the caller's reusable workspace. -/
 def recursiveEntryPlacement {n K T s k back : ℕ}
@@ -135,7 +166,7 @@ def recursiveEntryPlacement {n K T s k back : ℕ}
 /-- Install the child chart in the caller with a fixed splitter placement.
 The nine sources and cutoff are the actual replay ports. -/
 theorem recursiveRoleChartEntry_exec {n K T Q s k back w : ℕ} {P U : Type}
-    (room : 16 ≤ T) (replay : Fin (66+(K+3+T)) ↪ Fin n)
+    {Label : Type} (room : 16 ≤ T) (replay : Fin (66+(K+3+T)) ↪ Fin n)
     (owners : Fin k ↪ Fin n) (reserve : (s+5)+back ≤ K) (space : 59 ≤ s)
     (apart : ∀ i j, owners i ≠ replay (directoryChildWorkspace K T j))
     (body : P → Pr P (n+roleSplitWorkspace) Q prime U)
@@ -153,6 +184,7 @@ theorem recursiveRoleChartEntry_exec {n K T Q s k back w : ℕ} {P U : Type}
     let H := layout.beforeH
     let lift := Fin.castAddEmb (n := n) roleSplitWorkspace
     let place := recursiveEntryPlacement replay reserve owners apart
+    let privateBank := (((Fin.castLEEmb reserve).trans (directoryChildWorkspace K T)).trans replay).trans lift
     let full := place.trans lift
     let split := recursiveRoleSplitPlacement room replay
     let sources := fun j => lift (replay (childMetadataSources K T room j))
@@ -184,8 +216,23 @@ theorem recursiveRoleChartEntry_exec {n K T Q s k back w : ℕ} {P U : Type}
         (embStk (owners.trans lift) F) = embStk full F ∧
       (∀ i, F.L (lift (owners i)) = S.L (lift (owners i)) ∧ F.R (lift (owners i)) = S.R (lift (owners i))) ∧
       (∀ j : Fin n, (∀ i, scanner i ≠ lift j) → F.L (lift j) = S.L (lift j) ∧ F.R (lift j) = S.R (lift j)) ∧
-      ∀ i : Fin roleSplitWorkspace, F.L (i.natAdd n) = [] ∧ F.R (i.natAdd n) = [] := by
-  intro W a H lift place full split sources cut scratch select localBank scanner chart dst port source load work V weights queue cutFits headers free reusable c push bodies budget
+      (∀ i : Fin roleSplitWorkspace, F.L (i.natAdd n) = [] ∧ F.R (i.natAdd n) = []) ∧
+      ∀ (i : Fin k) (programs : Label → Pr Label (((s+5)+k)+back) Q prime U) (label : Label → P)
+        (child : Pr Label (((s+5)+k)+back) Q prime U) v G m,
+        (∀ f, body (label f) = embProg full label (programs f)) →
+        Exec programs child (mk (embDn full z) (embStk full F)) m (mk v G) →
+        (∀ l, l ≠ i → let j := (l.natAdd (s+5)).castAdd back
+          G.L j = F.L (lift (owners l)) ∧ G.R j = F.R (lift (owners l))) →
+        ∃ y B d, y.user = v.user ∧
+          Exec body ((((select.seq load).seq (clearWorkTapes work)).seq (embProg full label child)).seq
+            (clearWorkTapes ((List.finRange ((s+5)+back)).map privateBank))) (mk u S) (t+m+d) (mk y B) ∧
+          B.L (lift (owners i)) = G.L ((i.natAdd (s+5)).castAdd back) ∧
+          B.R (lift (owners i)) = G.R ((i.natAdd (s+5)).castAdd back) ∧
+          d = (((List.finRange ((s+5)+back)).map (Fin.addCases
+            (fun j : Fin (s+5) => (j.castAdd k).castAdd back) (Fin.natAdd ((s+5)+k)))).map
+              (fun j => 4*(G.L j).length+2*(G.R j).length+4)).sum+1 ∧
+          ∀ j, j ≠ lift (owners i) → B.L j = S.L j ∧ B.R j = S.R j := by
+  intro W a H lift place privateBank full split sources cut scratch select localBank scanner chart dst port source load work V weights queue cutFits headers free reusable c push bodies budget
   obtain ⟨bank,h₀,h₁,h₂,h₃,privateCount⟩ := recursiveRoleSplit_layout room replay
   let bank' := (Fin.castAddEmb (n := roleSplitTapes) 12).trans split
   have high (j : Fin roleSplitTapes) : bank' j = (j.castAdd 12).natAdd n := bank j
@@ -265,7 +312,11 @@ theorem recursiveRoleChartEntry_exec {n K T Q s k back w : ℕ} {P U : Type}
     ext i
     simp [chart,full,place,recursiveEntryPlacement]
   rw [← ownerChart]
-  refine ⟨y,B,t+m,same.trans user,?_,Exec.seq exec clear,?_,?_,?_,blank⟩
+  have outside (j : Fin n) (off : ∀ i, scanner i ≠ lift j) :
+      B.L (lift j) = S.L (lift j) ∧ B.R (lift j) = S.R (lift j) := by
+    have kept := frame _ (fun i => (high i).symm ▸ disjoint _ j) off
+    exact ⟨(stay j).1.trans kept.1,(stay j).2.trans kept.2⟩
+  refine ⟨y,B,t+m,same.trans user,?_,Exec.seq exec clear,?_,?_,outside,blank,?_⟩
   · have bound : t ≤ budget := paid
     have mt := Nat.mul_le_mul_left roleSplitWorkspace
       (Nat.add_le_add_right (Nat.mul_le_mul_left 6 (Nat.mul_le_mul_left c bound)) 4)
@@ -281,8 +332,50 @@ theorem recursiveRoleChartEntry_exec {n K T Q s k back w : ℕ} {P U : Type}
     simpa only [← Function.Embedding.trans_apply,← ownerChart] using
       (show B.L (chart i) = S.L (chart i) ∧ B.R (chart i) = S.R (chart i) from
         ⟨(stay _).1.trans (live i).1,(stay _).2.trans (live i).2⟩)
-  · intro j off
-    have kept := frame _ (fun i => (high i).symm ▸ disjoint _ j) off
-    exact ⟨(stay j).1.trans kept.1,(stay j).2.trans kept.2⟩
+  · intro i programs label child v G d installed localRun otherOwners
+    obtain ⟨v',J,called,_,user',view,externalFrame⟩ := exec_emb full.injective installed localRun y rfl B rfl
+    have ownerView (l : Fin k) : J.L (lift (owners l)) = G.L ((l.natAdd (s+5)).castAdd back) ∧
+        J.R (lift (owners l)) = G.R ((l.natAdd (s+5)).castAdd back) := by
+      have eq := congrArg (fun Z : Stacks _ prime => (Z.L ((l.natAdd (s+5)).castAdd back), Z.R ((l.natAdd (s+5)).castAdd back))) view
+      simpa [embStk,full,place,recursiveEntryPlacement] using Prod.mk.inj eq
+    obtain ⟨out,Z,hu,run,left,right,frame⟩ := recursiveChartReturn_exec body ((select.seq load).seq (clearWorkTapes work)) (embProg full label child) privateBank
+      (lift (owners i)) (fun j => lift.injective.ne (apart i _).symm) (Exec.seq exec clear) called
+      (fun j => reusable (j.castLE reserve)) (by
+        intro j off
+        induction j using Fin.addCases with
+        | left j =>
+          apply outside j
+          intro l eq
+          apply off ((l.castAdd 5).castAdd back)
+          change lift (place (((l.castAdd 5).castAdd k).castAdd back)) = _ at eq
+          rw [frontTape] at eq
+          exact eq
+        | right j => exact ⟨(blank j).1.trans (free j).1.symm,(blank j).2.trans (free j).2.symm⟩) (by
+        intro j ne off
+        by_cases owner : ∃ l, lift (owners l) = j
+        · obtain ⟨l,rfl⟩ := owner
+          exact ⟨(ownerView l).1.trans (otherOwners l (fun eq => ne (eq ▸ rfl))).1,
+            (ownerView l).2.trans (otherOwners l (fun eq => ne (eq ▸ rfl))).2⟩
+        · apply externalFrame j
+          intro l
+          induction l using Fin.addCases with
+          | left l =>
+            induction l using Fin.addCases with
+            | left l =>
+              change lift (place ((l.castAdd k).castAdd back)) ≠ j
+              rw [frontTape]
+              exact off (l.castAdd back)
+            | right l =>
+              simpa [full,place,recursiveEntryPlacement] using
+                (show lift (owners l) ≠ j from fun eq => owner ⟨l,eq⟩)
+          | right l =>
+            simpa [full,place,recursiveEntryPlacement,privateBank] using off (l.natAdd (s+5)))
+    refine ⟨out,Z,_,hu.trans user',run,left.trans (ownerView i).1,right.trans (ownerView i).2,?_,frame⟩
+    congr 2
+    simp only [List.map_map]
+    apply List.map_congr_left
+    intro j _
+    induction j using Fin.addCases <;>
+      simp [Function.comp_def,privateBank,← view,embStk,full,place,recursiveEntryPlacement]
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
