@@ -738,155 +738,12 @@ private theorem flatCopyStage {k V : ℕ} {v : Descriptor} (size : volume prime 
   rw [same]
   exact ⟨stage,bill,acts⟩
 
-open Cover RecursiveInterchangeLayout M8.RevMachine in
-/-- The whole invocation bank enters or leaves its owner charts in one
-compiled sequence. Each read moves to its specified label at the same
-active address, while the other permanent tapes retain their streams. -/
-theorem invocationCharts_stage [M8.Machine.Net] (n : Fin 9) (owner : Fin 661 ↪ Fin 142081) (enter : Bool) :
-    ∃ C : ℕ, ∀ w B K, 0 < w → 0 < B → 0 < K →
-      let V := (prime^w)^16*(B*prime^(64*(w*64))*K)
-      ∃ stage : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V)),
-        stage.cost ≤ C*V + 661*(252*LeafCore.coreCost V (w*64)+1) ∧
-        (∀ x g (z : LabelEntry.Cell (copyLabelLayout w B K) B) (j : Fin 661),
-          let A := registerChart w n j.val
-          phaseRead owner (stage.transform x) (labelSpectator (g*(if enter then A.transpose else A)) z) j.val =
-            phaseRead owner x (labelSpectator g z) j.val) ∧
-        ∀ x i, (∀ j, owner j ≠ i) → stage.transform x i = x i := by
-  let js := List.finRange 661
-  obtain ⟨block,C,leading,runs⟩ := ownerChartRoutes owner n enter js (List.nodup_finRange _)
-  refine ⟨C,?_⟩
-  intro w B K hw hB hK V
-  let v := copyLabelLayout w B K
-  have hp := Shared50ModularControl.prime_prime.pos
-  have pos : v.Positive := ⟨by dsimp [v,copyLabelLayout]; positivity,Nat.zero_lt_one,Nat.mul_pos hB (pow_pos hp _),Nat.zero_lt_one,hK⟩
-  let result := runs v w B hw hB rfl pos
-  let transform := fun x => (result x).choose
-  let slots := fun i => block.slots (Fin.castAdd 24 i)
-  let d := M8.Stage2Machine.Straight.words (LabelSchedule.base v w)
-  let bank := fun (roles : Tapes 142081 prime) => SharedBankStageInput.raw (LabelCall.bank roles v d) block.tapes
-  let cost := C*volume prime v + js.length*(252*LeafCore.coreCost (volume prime v) (w*64)+1)
-  let stage : SharedBankStage.Stage _ 142081 prime (copyOwners (v := v)) :=
-    { tapes := _, states := _, program := block.program, transform := transform,
-      input := fun x => bank (copyOwners x), output := fun x => bank (copyOwners (transform x)),
-      slots := slots, slots_injective := block.slots_injective.comp (Fin.castAdd_injective ..),
-      metadata := SharedBank.strip (bank (SharedBank.empty 142081 prime)) slots, cost := cost,
-      input_payload := fun _ => copyRoute_payload block leading _ v d,
-      output_payload := fun _ => copyRoute_payload block leading _ v d,
-      strip_input := fun _ => routePrivate block leading _ _ v d,
-      realizes := fun x => (result x).choose_spec.2.2 }
-  let effect := fun (x y : Fin 142081 → Fin (volume prime v) → ZMod 2) =>
-    (∀ j : Fin 661, let A := registerChart w n j.val
-      LabelPermutation.Transport v B w (fun g => g*(if enter then A.transpose else A))
-        (ext (x (owner j))) (ext (y (owner j)))) ∧
-    ∀ i, (∀ j, owner j ≠ i) → y i = x i
-  have acts (x) : effect x (stage.transform x) := by
-    obtain ⟨move,off,_⟩ := (result x).choose_spec
-    exact ⟨fun j => move j (List.mem_finRange j),fun i h => off i (by simpa [js] using h)⟩
-  obtain ⟨flat,price,move⟩ := flatCopyStage (copyLabel_volume w B K) effect cost stage acts (le_refl _)
-  refine ⟨flat,?_,?_,?_⟩
-  · simpa only [cost,v,copyLabel_volume,js,List.length_finRange] using price
-  · intro x g z j A
-    funext s
-    let cell := {z with a := copyActive s}
-    have row := congrFun (chartRead_transport ((move x).1 j) g) cell
-    exact (phaseRead_active owner j (flat.transform x) _ z s).symm.trans
-      (row.trans (phaseRead_active owner j x g z s))
-  · intro x i off
-    have keep := (move x).2 i off
-    funext k
-    exact congrFun keep (k.cast (copyLabel_volume w B K).symm)
-
+-- The explicit entry and return chart programs are available in commit 1b183c9b.
 /-- Read each permanent register in its own invocation chart. -/
 noncomputable def chartedPhaseRead {w B K : ℕ} (n : Fin 9) (owner : Fin 661 ↪ Fin 142081)
     (x : Fin 142081 → Fin ((prime^w)^16*(B*prime^(64*(w*64))*K)) → ZMod 2)
     (g : Cover.LabelPadding.Label 64 w) (z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B) :=
   Copy.extendStored fun j => phaseRead owner x (labelSpectator (g*registerChart w n j.val) z) j.val
-
-/-- Conjugate a common-coordinate invocation by its two physical chart
-passes. All registers may carry independent inputs on every label. -/
-theorem invocationInCharts [M8.Machine.Net] (n : Fin 9) (owner : Fin 661 ↪ Fin 142081) :
-    ∃ C : ℕ, ∀ w B K, 0 < w → 0 < B → 0 < K →
-      let V := (prime^w)^16*(B*prime^(64*(w*64))*K)
-      ∀ mid : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V)),
-      (∀ x g (z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B),
-        phaseRead owner (mid.transform x) (labelSpectator g z) =
-          runSelected (selectedFrame w) (selectedWord w) (phaseRead owner x (labelSpectator g z))) →
-      (∀ x i, i ≠ Fin.last 142080 → (∀ j, owner j ≠ i) → mid.transform x i = x i) →
-      ∃ stage : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V)),
-        stage.cost ≤ mid.cost + C*V + 2*661*(252*M8.RevMachine.LeafCore.coreCost V (w*64)+1) + 2 ∧
-        (∀ x g z, chartedPhaseRead n owner (stage.transform x) g z =
-          runSelected (selectedFrame w) (selectedWord w) (chartedPhaseRead n owner x g z)) ∧
-        ∀ x i, i ≠ Fin.last 142080 → (∀ j, owner j ≠ i) → stage.transform x i = x i := by
-  obtain ⟨C,forward⟩ := invocationCharts_stage n owner true
-  obtain ⟨D,backward⟩ := invocationCharts_stage n owner false
-  refine ⟨C+D,?_⟩
-  intro w B K hw hB hK V mid run keep
-  obtain ⟨entry,entryCost,enter,entryOff⟩ := forward w B K hw hB hK
-  obtain ⟨exit,exitCost,leave,exitOff⟩ := backward w B K hw hB hK
-  refine ⟨SharedBankStage.compose (SharedBankStage.compose entry mid) exit,?_,?_,?_⟩
-  · change entry.cost+mid.cost+1+exit.cost+1 ≤ _
-    rw [Nat.add_mul]
-    dsimp only [V] at *
-    omega
-  · intro x g z
-    let y := mid.transform (entry.transform x)
-    have entered : phaseRead owner (entry.transform x) (labelSpectator g z) = chartedPhaseRead n owner x g z := by
-      funext i
-      by_cases hi : i < 661
-      · let j : Fin 661 := ⟨i,hi⟩
-        have eq := enter x (g*registerChart w n i) z j
-        simp only [j,ite_true,Matrix.mul_assoc,mul_eq_one_comm.mp (registerChart_inverse w n i),Matrix.mul_one] at eq
-        simpa only [chartedPhaseRead,Copy.extendStored,hi,↓reduceDIte] using eq
-      · simp [phaseRead,chartedPhaseRead,Copy.extendStored,hi]
-    have returned : chartedPhaseRead n owner (exit.transform y) g z = phaseRead owner y (labelSpectator g z) := by
-      funext i
-      by_cases hi : i < 661
-      · simpa only [chartedPhaseRead,Copy.extendStored,hi,↓reduceDIte,Bool.false_eq_true,ite_false] using
-          leave y g z (⟨i,hi⟩ : Fin 661)
-      · simp [phaseRead,chartedPhaseRead,Copy.extendStored,hi]
-    exact returned.trans ((run (entry.transform x) g z).trans (congrArg (runSelected (selectedFrame w) (selectedWord w)) entered))
-  · intro x i permanent outside
-    exact (exitOff _ i outside).trans ((keep _ i permanent outside).trans (entryOff x i outside))
-
-open Cover M8.RevMachine in
-/-- The concrete word on independently charted owner rows, with both
-chart passes, both phase bills, and all nine COPY children charged. -/
-theorem chartedInvocation_stage [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
-    (engine : CopyTranspose := CopyTranspose.original) :
-    ∃ C : ℕ, ∀ w B K, 0 < w → 0 < B → 0 < K →
-      let W := B*prime^(64*(w*64))*K
-      let V := (prime^w)^16*W
-      let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n r d,ownerTape_injective n r d⟩
-      let bill := fun (gates : List RawGate) (current : ℕ → ℕ) =>
-        let code := FramedCircuit.compile (fun i => selectedFrame w (current i))
-          (gates.map (Frames.framedGate (selectedFrame w)))
-        (code.map (scalarWork V)).sum + ((Frames.edges gates current).map (phaseEdgeBudget owner w W)).sum + code.length
-      let hs := fun i => FlatCoordinateSchedule.bits (RecursiveDimensionBank.values (copyChild w W) i)
-      ∃ stage : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V)),
-        stage.cost ≤ bill (sectionD++sectionA) (Frames.snapshot Frames.initialRefs) +
-          bill (sectionB++sectionC) (Frames.scatterFinish Frames.beforeScatter) +
-          C*V + 9*engine.time (copyChild w W) hs + 2*661*(252*LeafCore.coreCost V (w*64)+1) + 13 ∧
-        (∀ x g z, chartedPhaseRead n owner (stage.transform x) g z =
-          runSelected (selectedFrame w) (selectedWord w) (chartedPhaseRead n owner x g z)) ∧
-        ∀ x i, i ≠ Fin.last 142080 → (∀ j, owner j ≠ i) → stage.transform x i = x i := by
-  let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n r d,ownerTape_injective n r d⟩
-  obtain ⟨C,word⟩ := commonInvocation_stage n r d engine
-  obtain ⟨D,route⟩ := invocationInCharts n owner
-  refine ⟨C+D,?_⟩
-  intro w B K hw hB hK W V slots bill hs
-  obtain ⟨mid,price,action,keep⟩ := word w B K hw hB hK
-  obtain ⟨stage,cost,read,off⟩ := route w B K hw hB hK mid action keep
-  refine ⟨stage,?_,read,off⟩
-  change mid.cost ≤ bill (sectionD++sectionA) (Frames.snapshot Frames.initialRefs) +
-    (C*V+9*engine.time (copyChild w W) hs+9) +
-    bill (sectionB++sectionC) (Frames.scatterFinish Frames.beforeScatter)+2 at price
-  change stage.cost ≤ mid.cost+D*V+2*661*(252*LeafCore.coreCost V (w*64)+1)+2 at cost
-  exact join _ _ _ _ _ _ _ _ _ price cost
-where
-  join (mid out a b C D V child charts : ℕ)
-      (word : mid ≤ a+(C*V+9*child+9)+b+2)
-      (route : out ≤ mid+D*V+charts+2) :
-      out ≤ a+b+(C+D)*V+9*child+charts+13 := by rw [Nat.add_mul]; omega
 
 private theorem chartedPhase_encode {w B K : ℕ} (n : Fin 9) (owner : Fin 661 ↪ Fin 142081)
     (x) (g : Cover.LabelPadding.Label 64 w) (z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B) :
@@ -1171,6 +1028,82 @@ def DecodedInvocationEffect (n : Fin 9) (r : Fin 32) (d : Fin 5) (w B K : ℕ)
       chartedPhaseRead n owner x g z (222+h.val) s.swap) ∧
   ∀ i, i ≠ Fin.last 142080 → (∀ j, owner j ≠ i) → y i = x i
 
+open Cover IntegerMultBounds.Swap.Modular in
+/-- A target and its matching source share one chart, so both input streams
+are read at the unchanged physical label. -/
+theorem DecodedInvocationEffect.target {n r d w B K x y}
+    (run : DecodedInvocationEffect n r d w B K x y)
+    (g : LabelPadding.Label 64 w) (z : LabelEntry.Cell (copyLabelLayout w B K) B)
+    (t : Fin 111) s :
+    let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n r d,ownerTape_injective n r d⟩
+    let dst : Fin 661 := ⟨111+t.val,by omega⟩
+    let src : Fin 661 := ⟨t.val,by omega⟩
+    let P := translatedPortProjector (ZMod (prime^w)) (4:ZMod (prime^w))⁻¹ t
+    y (owner dst) (FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) (labelSpectator g z)) =
+      x (owner dst) (FlatCoordinateLayout.index (AffineFieldCoordinates.embed (M8.Exchange.exchange (1-P) s)) (labelSpectator g z)) +
+      x (owner src) (FlatCoordinateLayout.index (AffineFieldCoordinates.embed s.swap) (labelSpectator g z)) := by
+  intro owner dst src P
+  have charts : registerChart w n src.val = registerChart w n dst.val := by
+    unfold registerChart
+    rw [(chart_port n t).1,(chart_port n t).2]
+  have eq := run.1 (g*(registerChart w n dst.val).transpose) z t s
+  dsimp only at eq
+  change _ = chartedPhaseRead n owner x _ z dst.val _ + chartedPhaseRead n owner x _ z src.val _ at eq
+  rw [chartedOwner_read (j := dst),chartedOwner_read (j := src),charts] at eq
+  have cancel : g*(registerChart w n dst.val).transpose*registerChart w n dst.val = g := by
+    rw [Matrix.mul_assoc,registerChart_inverse,Matrix.mul_one]
+  rw [cancel] at eq
+  exact eq
+
+/-- Each output row of the selected word depends only on itself and,
+for a target, its paired source. -/
+private theorem selectedRow (w : ℕ) (rows : Fin 661 → AddressStream (ZMod (prime^w))) (i : Fin 661) :
+    let stored := fun j : Fin 661 => (selectedFrame w (Frames.initialRefs j.val)).symm (rows j)
+    runSelected (selectedFrame w) (selectedWord w) (Copy.extendStored rows) i.val =
+      selectedFrame w (Frames.finalRefs i.val)
+        (if h : 111 ≤ i.val ∧ i.val < 222 then stored i + stored ⟨i.val-111,by omega⟩ else stored i) := by
+  intro stored
+  have encoded : FramedCircuit.encode (fun j => selectedFrame w (Frames.snapshot Frames.initialRefs j))
+      (Copy.extendStored stored) = Copy.extendStored rows := by
+    funext j
+    by_cases h : j < 661 <;> simp [FramedCircuit.encode,Frames.snapshot,Copy.extendStored,stored,h]
+  have word := ((runSelected_endpoint w).2 stored).trans (Framed.execute_endpoint (selectedFrame w) stored).symm
+  have row := (congrFun word i.val).trans (Framed.execute_dirty (selectedFrame w) stored i)
+  rwa [encoded] at row
+
+private theorem common_charted_read {w B K n} {owner : Fin 661 ↪ Fin 142081} {x y}
+    (common : ∀ g (z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B),
+      phaseRead owner y (labelSpectator g z) =
+        runSelected (selectedFrame w) (selectedWord w) (phaseRead owner x (labelSpectator g z)))
+    (g : Cover.LabelPadding.Label 64 w) (z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B)
+    (i : Fin 661) :
+    chartedPhaseRead n owner y g z i.val =
+      runSelected (selectedFrame w) (selectedWord w) (chartedPhaseRead n owner x g z) i.val := by
+  let h := g*registerChart w n i.val
+  let rows : Fin 661 → AddressStream (ZMod (prime^w)) := fun j s => x (owner j) (FlatCoordinateLayout.index
+    (AffineFieldCoordinates.embed s) (labelSpectator h z))
+  let charted := fun j : Fin 661 => phaseRead owner x (labelSpectator (g*registerChart w n j.val) z) j.val
+  have read := congrFun (common h z) i.val
+  change _ = runSelected _ _ (Copy.extendStored rows) i.val at read
+  change _ = runSelected _ _ (Copy.extendStored charted) i.val
+  rw [selectedRow] at read ⊢
+  have same : charted i = rows i := by simp [charted,rows,h,phaseRead,Copy.extendStored]
+  simp only [chartedPhaseRead,Copy.extendStored,dite_eq_left i.isLt]
+  rw [read]
+  dsimp only
+  rw [same]
+  split
+  · rename_i target
+    let t : Fin 111 := ⟨i.val-111,by omega⟩
+    have idx : i.val = 111+t.val := by dsimp [t]; omega
+    have charts : registerChart w n t.val = registerChart w n i.val := by
+      unfold registerChart
+      rw [idx,(chart_port n t).1,(chart_port n t).2]
+    have src : charted ⟨t.val,by omega⟩ = rows ⟨t.val,by omega⟩ := by
+      simp [charted,rows,h,phaseRead,Copy.extendStored,charts]
+    rw [src]
+  · rfl
+
 open Cover IntegerMultBounds.Swap.Modular M8.RevMachine in
 /-- The charged PR589 invocation on the caller’s charted tapes. Sources
 pass through their logical line frames, targets receive their transposed
@@ -1189,14 +1122,26 @@ theorem decodedInvocation_stage [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : F
       ∃ stage : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V)),
         stage.cost ≤ bill (sectionD++sectionA) (Frames.snapshot Frames.initialRefs) +
           bill (sectionB++sectionC) (Frames.scatterFinish Frames.beforeScatter) +
-          C*V + 9*engine.time (copyChild w W) hs + 2*661*(252*LeafCore.coreCost V (w*64)+1) + 222*(LeafCore.coreCost V w+7) + 15 ∧
+          C*V + 9*engine.time (copyChild w W) hs + 222*(LeafCore.coreCost V w+7) + 13 ∧
         ∀ x, DecodedInvocationEffect n r d w B K x (stage.transform x) := by
-  obtain ⟨C,word⟩ := chartedInvocation_stage n r d engine
+  obtain ⟨C,word⟩ := commonInvocation_stage n r d engine
   obtain ⟨D,finish⟩ := chartedTargets_stage
   obtain ⟨E,prepare⟩ := chartedSources_stage
   refine ⟨E+C+D,?_⟩
   intro w B K hw hB hK W V owner bill hs
-  obtain ⟨mid,cost,read,keep⟩ := word w B K hw hB hK
+  obtain ⟨mid,cost,common,keep⟩ := word w B K hw hB hK
+  have read (x g z) : chartedPhaseRead n owner (mid.transform x) g z =
+      runSelected (selectedFrame w) (selectedWord w) (chartedPhaseRead n owner x g z) := by
+    funext j
+    by_cases inside : j < 661
+    · exact common_charted_read (common x) g z ⟨j,inside⟩
+    · let stored := fun i : Fin 661 => (selectedFrame w (Frames.initialRefs i.val)).symm
+            (chartedPhaseRead n owner x g z i.val)
+      have word := (runSelected_endpoint w).2 stored
+      rw [chartedPhase_encode n owner x g z] at word
+      rw [word]
+      simp [FramedCircuit.encode,Framed.moduleRun_high program Framed.program_target_lt _ j (by omega),
+        chartedPhaseRead,Copy.extendStored,inside]
   have hW : 0 < W := Nat.mul_pos (Nat.mul_pos hB (pow_pos Shared50ModularControl.prime_prime.pos _)) hK
   obtain ⟨stage,price,target,off⟩ := finish w B K hw hW n owner mid read
   obtain ⟨pre,preCost,source,preserve⟩ := prepare w B K hw hW owner
@@ -1212,8 +1157,8 @@ theorem decodedInvocation_stage [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : F
   refine ⟨SharedBankStage.compose pre stage,?_,?_⟩
   · change pre.cost + stage.cost + 1 ≤ _
     change mid.cost ≤ bill (sectionD++sectionA) (Frames.snapshot Frames.initialRefs) +
-      bill (sectionB++sectionC) (Frames.scatterFinish Frames.beforeScatter) +
-      C*V + 9*engine.time (copyChild w W) hs + 2*661*(252*LeafCore.coreCost V (w*64)+1) + 13 at cost
+      (C*V + 9*engine.time (copyChild w W) hs + 9) +
+      bill (sectionB++sectionC) (Frames.scatterFinish Frames.beforeScatter) + 2 at cost
     change stage.cost = mid.cost+D*V+111*(LeafCore.coreCost V w+7)+1 at price
     change pre.cost = E*V+111*(LeafCore.coreCost V w+7) at preCost
     rw [preCost,price,Nat.add_mul,Nat.add_mul]
@@ -2478,9 +2423,9 @@ theorem invocationTrace_agree {n : Fin 9} {w B K : ℕ}
 
 open M8.RevMachine in
 /-- The recurring part of one decoded invocation's bill, after separating
-linear-volume work. The two interchange widths stay explicit. -/
+linear-volume work. Only the width of a single port remains. -/
 noncomputable def decodedCallCost [M8.Machine.Net] (V w : ℕ) (price : ℕ → ℕ) :=
-  2*661*(252*LeafCore.coreCost V (w*64)+1) + 222*(LeafCore.coreCost V w+7) + 15 +
+  222*(LeafCore.coreCost V w+7) + 13 +
     ((Geometry.Moves.phaseValues.filter (· != 0)).map price).sum + 9*price 7
 
 open M8.Machine in
@@ -2522,7 +2467,7 @@ private theorem decodedInvocation_cost [Net] (n : Fin 9) (r : Fin 32) (d : Fin 5
   change calls a + calls b ≤ _ at e
   change stage.cost ≤ (left.map (scalarWork V)).sum + calls a + left.length +
     ((right.map (scalarWork V)).sum + calls b + right.length) + C*V + 9*engine.time (copyChild w W) hs +
-    2*661*(252*M8.RevMachine.LeafCore.coreCost V (w*64)+1) + 222*(M8.RevMachine.LeafCore.coreCost V w+7) + 15 at cost
+    222*(M8.RevMachine.LeafCore.coreCost V w+7) + 13 at cost
   simp only [decodedCallCost,Nat.add_mul]
   omega
 
@@ -2680,7 +2625,7 @@ theorem invocationPieces_nodeCost [Net] (engine : CopyTranspose := CopyTranspose
 
 open M8.Machine M8.RevMachine in
 /-- The nine decoded pieces have the selected child-price sum, plus the
-explicit routing and port charges. Remainder prices are accounted for
+width-w port corrections. Remainder prices are accounted for
 separately from execution of the pieces. -/
 theorem decodedPieces_nodeCost [Net] (engine : CopyTranspose := CopyTranspose.original) :
     ∃ D : ℕ, ∀ w B K, 0 < w → 0 < B → 0 < K →
@@ -2693,7 +2638,7 @@ theorem decodedPieces_nodeCost [Net] (engine : CopyTranspose := CopyTranspose.or
           engine.time (copyChild w W) hs ≤ price 7 →
           (∑ n, (pieces n).cost) + 160*(BitOccurrences.remainders.map price).sum ≤
             D*V + (nodeChildren5.map price).sum +
-              1440*(2*661*(252*LeafCore.coreCost V (w*64)+1) + 222*(LeafCore.coreCost V w+7) + 15)) ∧
+              1440*(222*(LeafCore.coreCost V w+7) + 13)) ∧
         ∀ n x, stageRuns.foldr (fun k next a => ∃ b, DecodedInvocationEffect n k.1 k.2 w B K a b ∧ next b)
           (fun a => a = (pieces n).transform x) x := by
   classical
