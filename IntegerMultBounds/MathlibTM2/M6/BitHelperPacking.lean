@@ -142,6 +142,70 @@ private theorem helperRecord_switch {k w W : ℕ} {t u : Fin k}
   · rw [helperRecordBank_off u t _ (by decide)]
     exact stored.dst
 
+/-- Private headers shared by every slot change at this parent width. -/
+noncomputable def helperHeader (w W : ℕ) : ℕ → List (Fin (prime+4))
+  | 2 => binSyms (prime^(w+1)).size (prime^(w+1))
+  | 27 => binSyms W.size W
+  | 28 => binSyms 1 1
+  | 32 => binSyms (prime^(w+1)).size (1 : ZMod (prime^(w+1))).val
+  | 33 => List.replicate w blank
+  | _ => []
+
+/-- Attach one header bank to the current permanent owner stacks. -/
+noncomputable def helperPackInput {k : ℕ} (w W : ℕ) (owners : Stacks k prime) :
+    Stacks ((N+35)+k) prime where
+  inp := owners.inp
+  out := owners.out
+  L := Fin.addCases (fun _ => []) owners.L
+  R := Fin.addCases (fun i => helperHeader w W i.val) owners.R
+
+theorem helperPackInput_ready {k : ℕ} (w W : ℕ) (owners : Stacks k prime)
+    (data : Fin k → Fin ((prime^(w+1))^128*W) → ZMod 2)
+    (reads : ∀ t z, readAt blank (owners.L t) (owners.R t) z =
+      M8.AtomBank.arrTape (SparseRoleCircuit.encode ∘ data t) z) :
+    let S := helperPackInput w W owners
+    (∀ t, RecordReady (b := prime) (w := w) (d := 128) (W := W) (helperRecordBank t)
+      (prime^(w+1)).size W.size [] SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0 (data t) S) ∧
+    ∀ i : Fin (N+35), 35 ≤ i.val → S.L (i.castAdd k) = [] ∧ S.R (i.castAdd k) = [] := by
+  intro S
+  have privateBank (t : Fin k) (i : Fin 35) (ne : i ≠ 24) :
+      S.L (helperRecordBank t i) = [] ∧ S.R (helperRecordBank t i) = helperHeader w W i.val := by
+    let j := ((Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)) i
+    have hj : j ≠ 24 := by
+      intro eq
+      have vals := congrArg Fin.val eq
+      change i.val = _ at vals
+      exact ne (Fin.ext (by simpa [Fin.val_natCast,Nat.mod_eq_of_lt (by omega : 24 < N+35)] using vals))
+    change S.L (payloadPlacement _ t j) = _ ∧ S.R (payloadPlacement _ t j) = _
+    rw [helperPrivatePort t j hj]
+    simp [S,helperPackInput,j]
+  constructor
+  · intro t
+    refine ⟨(privateBank t 2 (by decide)).2,(privateBank t 27 (by decide)).2,
+      (privateBank t 28 (by decide)).2,(privateBank t 32 (by decide)).2,?_,
+      (privateBank t 34 (by decide)).2,?_,?_,?_⟩
+    · rw [(privateBank t 33 (by decide)).2]; exact List.length_replicate
+    · intro i hi
+      have ne : i ≠ 24 := fun eq => (by decide : (24 : Fin 35) ∉ shearWork) (eq ▸ hi)
+      obtain ⟨l,r⟩ := privateBank t i ne
+      refine ⟨l,r.trans ?_⟩
+      have noHeader : i.val ∉ [2,27,28,32,33] := by
+        have check : ∀ j ∈ shearWork, j.val ∉ [2,27,28,32,33] := by decide
+        exact check i hi
+      unfold helperHeader
+      split <;> simp_all
+    · intro z
+      rw [show helperRecordBank t 24 = t.natAdd (N+35) from payloadPlacement_shared _ _]
+      simpa only [S,helperPackInput,Fin.addCases_right,sub_zero,M8.AtomBank.arrTape] using reads t z
+    · intro z
+      rw [(privateBank t 25 (by decide)).1,(privateBank t 25 (by decide)).2]
+      change readAt blank [] [] _ = _
+      rw [readAt_nil_left,wordTape_nil]; rfl
+  · intro i hi
+    simp only [S,helperPackInput,Fin.addCases_left,true_and]
+    unfold helperHeader
+    split <;> first | rfl | omega
+
 /-- Run a slot change on its permanent owner. All other owner tapes retain
 both stacks, and the output owner reads the old word at the new slot address. -/
 theorem helperSlotPack_exec {k : ℕ} (owner : Fin k) (x y : ℕ) (hx : x ≤ 55) (hy : y ≤ 55)
@@ -218,6 +282,14 @@ theorem helperSlotPack_exec {k : ℕ} (owner : Fin k) (x y : ℕ) (hx : x ≤ 55
       simpa only [id_eq,acts] using read (helperSlotField c x hx (w+1) s) j,
     fun t ne => off _ (payloadPlacement_off _ owner t ne)⟩
 
+/-- Ordered parent-address reads of the slot changes on the permanent bank. -/
+def HelperSlotTrace {k : ℕ} (w W : ℕ) (changes : List (Fin k × Fin 56 × Fin 56))
+    (data result : Fin k → Fin ((prime^(w+1))^128*W) → ZMod 2) : Prop :=
+  changes.foldr (fun (t,x,y) next a => ∃ word,
+    (∀ c s j, word (FlatCoordinateLayout.index (helperSlotField c y (by omega) (w+1) s) j) =
+      a t (FlatCoordinateLayout.index (helperSlotField c x (by omega) (w+1) s) j)) ∧
+    next (Function.update a t word)) (· = result) data
+
 /-- Execute a list of slot changes using one workspace. Its charge coefficient
 depends only on the list, including when the same owner occurs repeatedly. -/
 theorem helperSlotBatch_exec {k : ℕ} (changes : List (Fin k × Fin 56 × Fin 56))
@@ -235,10 +307,7 @@ theorem helperSlotBatch_exec {k : ℕ} (changes : List (Fin k × Fin 56 × Fin 5
       (∀ t, ready t (data t) S) → clean S → ∃ z F, ∃ n : ℕ, ∃ result, z.user = v.user ∧
         (n : ℝ) ≤ C*V*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau ∧
         Exec body code (mk v S) n (mk z F) ∧ (∀ t, ready t (result t) F) ∧ clean F ∧
-        changes.foldr (fun (t,x,y) next a => ∃ word,
-          (∀ c s j, word (FlatCoordinateLayout.index (helperSlotField c y (by omega) (w+1) s) j) =
-            a t (FlatCoordinateLayout.index (helperSlotField c x (by omega) (w+1) s) j)) ∧
-          next (Function.update a t word)) (· = result) data := by
+        HelperSlotTrace w W changes data result := by
   induction changes with
   | nil =>
     refine ⟨.act .done,1,?_⟩
@@ -261,5 +330,32 @@ theorem helperSlotBatch_exec {k : ℕ} (changes : List (Fin k × Fin 56 × Fin 5
     refine ⟨z,F,m+n,result,finalUser.trans user,?_,Exec.seq run exec,done,empty,word,read,trace⟩
     rw [Nat.cast_add,add_mul,add_mul]
     exact add_le_add cost bill
+
+/-- Run the batch from positioned owner words with its fixed private headers.
+The returned stacks represent the resulting words at the same owner ports. -/
+theorem helperSlotBatch_fromOwners {k : ℕ} (changes : List (Fin k × Fin 56 × Fin 56))
+    (body : P → Pr P ((N+35)+k) Q prime U) :
+    ∃ (code : Pr P ((N+35)+k) Q prime U) (C : ℝ), ∀ w W, 0 < W →
+      let M := prime^(w+1)
+      let V := M^128*W
+      ∀ (v : HS ((N+35)+k) Q prime U) (owners : Stacks k prime) (data : Fin k → Fin V → ZMod 2),
+      (∀ t z, readAt blank (owners.L t) (owners.R t) z = M8.AtomBank.arrTape (SparseRoleCircuit.encode ∘ data t) z) →
+      ∃ z F, ∃ n : ℕ, ∃ result, z.user = v.user ∧
+        (n : ℝ) ≤ C*V*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau ∧
+        Exec body code (mk v (helperPackInput w W owners)) n (mk z F) ∧
+        (∀ t : Fin k, ∀ j, readAt blank (F.L (t.natAdd (N+35))) (F.R (t.natAdd (N+35))) j =
+          M8.AtomBank.arrTape (SparseRoleCircuit.encode ∘ result t) j) ∧
+        HelperSlotTrace w W changes data result := by
+  obtain ⟨code,C,batch⟩ := helperSlotBatch_exec changes body
+  refine ⟨code,C,?_⟩
+  intro w W hW M V v owners data reads
+  obtain ⟨start,free⟩ := helperPackInput_ready w W owners data reads
+  obtain ⟨z,F,n,result,user,time,exec,stored,_,trace⟩ :=
+    batch w W hW v _ [] (fun _ => blank) 0 data start free
+  refine ⟨z,F,n,result,user,time,exec,?_,trace⟩
+  intro t j
+  have cell := (stored t).src j
+  rw [show helperRecordBank t 24 = t.natAdd (N+35) from payloadPlacement_shared _ _,sub_zero] at cell
+  exact cell
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
