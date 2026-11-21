@@ -28,8 +28,50 @@ noncomputable def hostedWeightedOrdinaryProgram [M8.Machine.Net] {P U : Type} {n
 
 local instance (w : ℕ) : NeZero (prime^(w+1)) := ⟨(pow_pos Shared50ModularControl.prime_prime.pos _).ne'⟩
 
+/-- Header loading and comparison are linear in the row volume and root precision. -/
+private theorem ordinaryHeaderBill (w W r L : ℕ) (live : 0 < W) (rank : r ≤ 64) :
+    let M := prime^(w+1)
+    let V := M^128*W
+    6*(2*M.size+W.size+1+w+2*(r*M.size)+L)+49+1 ≤ 900*(V+L) ∧
+      2+(4*w+23*((w+1)*r)+22*L+51) ≤ 1600*(V+L) := by
+  intro M V
+  have pos : 0 < M := pow_pos Shared50ModularControl.prime_prime.pos _
+  have vol : M ≤ V := (Nat.le_self_pow (by decide : 128 ≠ 0) M).trans (Nat.le_mul_of_pos_right _ live)
+  have digits := (Nat.size_le.2 Nat.lt_two_pow_self : M.size ≤ M).trans vol
+  have spectators : W.size ≤ V := (Nat.size_le.2 Nat.lt_two_pow_self : W.size ≤ W).trans (Nat.le_mul_of_pos_left _ (pow_pos pos _))
+  have clock : w+1 ≤ V := ((Nat.lt_two_pow_self (n := w+1)).le.trans
+    (Nat.pow_le_pow_left Shared50ModularControl.prime_prime.two_le _)).trans vol
+  have entries := (Nat.mul_le_mul_right M.size rank).trans (Nat.mul_le_mul_left 64 digits)
+  have width := (Nat.mul_le_mul_left (w+1) rank).trans (Nat.mul_le_mul_right 64 clock)
+  omega
+
+private theorem hostedBill {budget fee setup route direct correction V L C K : ℕ}
+    {active : Prop} [Decidable active] (headers : setup+1 ≤ 900*(V+L)) (comparison : 2+fee ≤ 1600*(V+L)) :
+    (if active then budget+2 else 0) + fee + K*(setup+(if active then route else C*direct)+correction+1) ≤
+      (if active then budget else 0) + (1600+900*K)*(V+L) + K*(route+correction) +
+        (K*C)*(if active then 0 else direct) := by
+  have h := Nat.mul_le_mul_left K headers
+  split_ifs <;> simp only [Nat.mul_add,Nat.add_mul,Nat.mul_one,Nat.mul_zero,Nat.add_zero] at * <;> nlinarith
+
+private theorem hostedBill_real {steps recursive a k b V L pairs leaf : ℕ} {power rate : ℝ}
+    (paid : steps ≤ recursive + a*(V+L) + k*pairs + b*leaf)
+    (routing : (pairs : ℝ) ≤ rate*(power*V)) (one : 1 ≤ power) :
+    (steps : ℝ) ≤ recursive + ((a : ℝ)+k*max 0 rate+b)*(power*V+L+leaf) := by
+  let total := power*(V : ℝ)+L+leaf
+  have volume : (V : ℝ) ≤ power*V := le_mul_of_one_le_left (Nat.cast_nonneg _) one
+  have header : (V : ℝ)+L ≤ total := by dsimp [total]; linarith [show (0:ℝ) ≤ leaf by positivity]
+  have part : power*(V : ℝ) ≤ total := by dsimp [total]; linarith [show (0:ℝ) ≤ L by positivity,show (0:ℝ) ≤ leaf by positivity]
+  have leafPart : (leaf : ℝ) ≤ total := by dsimp [total]; linarith [show (0:ℝ) ≤ L by positivity,show (0:ℝ) ≤ V by positivity]
+  have route := routing.trans (mul_le_mul (le_max_right 0 rate) part (by positivity) (le_max_left ..))
+  have upper : (steps : ℝ) ≤ recursive + (a : ℝ)*(V+L) + k*pairs + b*leaf := by exact_mod_cast paid
+  apply upper.trans
+  change _ ≤ _ + _*total
+  rw [add_mul,add_mul,mul_assoc]
+  linarith [mul_le_mul_of_nonneg_left header (Nat.cast_nonneg a),mul_le_mul_of_nonneg_left route (Nat.cast_nonneg k),
+    mul_le_mul_of_nonneg_left leafPart (Nat.cast_nonneg b)]
+
 /-- Run the scheduled weighted child from the record headers and return the complete caller frame. -/
-theorem hostedOrdinaryChildDispatch_exec [M8.Machine.Net] {P U : Type} {n T : ℕ}
+theorem hostedOrdinaryChildDispatch_exec [M8.Machine.Net] {P U : Type} [Fintype P] {n T : ℕ}
     (full : Fin 58 ↪ Fin n) (rootCut : Fin n) (host : Fin 64 ↪ Fin T)
     (aux : Fin ((rowSwapBlock.tapes+35)+1) ↪ Fin T) (separate : ∀ i j, aux i ≠ host j)
     (body : P → Pr P (n+T) columnCapacity prime U) :
@@ -40,7 +82,7 @@ theorem hostedOrdinaryChildDispatch_exec [M8.Machine.Net] {P U : Type} {n T : �
     let placement := correctionColumnPlacement caller work apart
     let ports := columnPorts.trans placement
     let cut := placement (Fin.last _)
-    ∃ C : ℕ, ∀ (node : Descriptor) (i : Fin nodeChildren5.length) w (aligned : node.width = 64*(w+1)),
+    ∃ A : ℝ, ∀ (node : Descriptor) (i : Fin nodeChildren5.length) w (aligned : node.width = 64*(w+1)),
       let r := nodeChildren5[i.val]
       let g := 64-r
       let parent := role node 142080
@@ -48,8 +90,6 @@ theorem hostedOrdinaryChildDispatch_exec [M8.Machine.Net] {P U : Type} {n T : �
       0 < W →
       let d := (r+g)+(r+g)
       let M := prime^(w+1)
-      let is := ordinaryChildPackSchedule r g
-      let routeTime := (is.map (fun i => completeSwapTime (P := Empty) (U := U) Empty.elim d i (i+1) w W M.size W.size)).sum+1
       let bank := ((Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)).trans ports
       let clean := fun (S : Stacks (n+T) prime) => ∀ k : Fin (rowSwapBlock.tapes+35), 35 ≤ k.val → S.L (ports k) = [] ∧ S.R (ports k) = []
       ∀ (v : HS (n+T) columnCapacity prime U) (S : Stacks (n+T) prime)
@@ -65,8 +105,6 @@ theorem hostedOrdinaryChildDispatch_exec [M8.Machine.Net] {P U : Type} {n T : �
         ∀ z, readAt blank (D.L (bank 24)) (D.R (bank 24)) z =
           M8.Machine.ArbitraryWidthHighExchangeShared.sourceWord (v := desc) (word ∘ layout) z
       ∀ pivot : Fin r → (ZMod M)ˣ,
-      let setupTime := 6*(2*M.size+W.size+1+w+2*(r*M.size)+L)+49
-      let privateTapes := (List.finRange (n+T)).filter fun j => n ≤ j.val
       S.R ((full 55).castAdd T) = (List.ofFn fun k => binSyms M.size (pivot k : ZMod M).val).flatten →
       S.R ((full 56).castAdd T) = (List.ofFn fun k => binSyms M.size (pivot k).inv.val).flatten →
       cutoff < 2^L → desc.width.size ≤ L →
@@ -81,13 +119,11 @@ theorem hostedOrdinaryChildDispatch_exec [M8.Machine.Net] {P U : Type} {n T : �
       (∀ j : Fin (n+T), n ≤ j.val → S.L j = [] ∧ S.R j = []) →
       (∀ z, readAt blank (S.L ((full 24).castAdd T)) (S.R ((full 24).castAdd T)) (z-0) =
         RadixToBinary.binaryEncoding.encode (putWord (fun _ => blank) 0 (List.ofFn (SparseRoleCircuit.encode ∘ before)) z)) →
-      let localTime := setupTime+(if cutoff < desc.width then 2*(1+routeTime) else C*(desc.width*(M^d*W))) +
-        ordinaryCorrectionTime U w W M.size W.size
       let hosted := hostedWeightedOrdinaryProgram (U := U) full rootCut host aux separate r g f
       ∃ z F steps after, z.user = v.user ∧ Exec body hosted (mk v S) steps (mk z F) ∧
-        (∀ c, Fast.Main.mnProgPush hosted ≤ c → (∀ f, Fast.Main.mnProgPush (body f) ≤ c) →
-          steps ≤ (if cutoff < desc.width then budget+2 else 0) + (4*w+23*desc.width+22*L+51) +
-            localTime + (privateTapes.length*(6*(c*localTime)+4)+1)) ∧
+        (steps : ℝ) ≤ ((if cutoff < desc.width then budget else 0 : ℕ) : ℝ) +
+          A*(((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau*(M^d*W : ℕ)+L+
+            ((if cutoff < desc.width then 0 else desc.width*(M^d*W) : ℕ) : ℝ)) ∧
         (∀ (hg tg : Fin g → ZMod M) (x : IntegerMultBounds.Swap.Shear.State (Fin r) (ZMod M)) (j : Fin W),
           let address := fun y => let t := childFields hg tg y
                                   FlatCoordinateLayout.index (Fin.append t.1 t.2) j
@@ -97,10 +133,22 @@ theorem hostedOrdinaryChildDispatch_exec [M8.Machine.Net] {P U : Type} {n T : �
         ∀ j, j ≠ (full 24).castAdd T → F.L j = S.L j ∧ F.R j = S.R j := by
   intro physical caller work apart placement ports cut
   obtain ⟨C,dispatch⟩ := weightedOrdinaryChildDispatch_exec caller work apart body
-  refine ⟨C,?_⟩
-  intro node i w aligned r g parent W hW d M is routeTime bank clean v S before f budget cutoff L
-    desc child eqn layout onTape pivot setupTime privateTapes
-    pos inv cutFits widthFits cutWord recurse modulus width one padded clock free source localTime hosted
+  classical
+  let pushes (j : Fin nodeChildren5.length) (f : P) := Fast.Main.mnProgPush (hostedWeightedOrdinaryProgram
+    (U := U) full rootCut host aux separate nodeChildren5[j.val] (64-nodeChildren5[j.val]) f)
+  let maxPush := Finset.univ.sup fun j => Finset.univ.sup (pushes j)
+  let c := max (Fast.Main.mnPushC body) maxPush
+  let privateTapes := (List.finRange (n+T)).filter fun j => n ≤ j.val
+  let K := 1+privateTapes.length*(6*c+4)
+  obtain ⟨rate,routing⟩ := ordinaryChildOverhead_le U
+  refine ⟨((1600+900*K : ℕ) : ℝ)+(K : ℝ)*max 0 rate+(K*C : ℕ),?_⟩
+  intro node i w aligned r g parent W hW d M bank clean v S before f budget cutoff L
+    desc child eqn layout onTape pivot
+    pos inv cutFits widthFits cutWord recurse modulus width one padded clock free source hosted
+  let is := ordinaryChildPackSchedule r g
+  let routeTime := (is.map (fun i => completeSwapTime (P := Empty) (U := U) Empty.elim d i (i+1) w W M.size W.size)).sum+1
+  let setupTime := 6*(2*M.size+W.size+1+w+2*(r*M.size)+L)+49
+  let localTime := setupTime+(if cutoff < desc.width then 2*(1+routeTime) else C*(desc.width*(M^d*W)))+ordinaryCorrectionTime U w W M.size W.size
   let program := weightedOrdinaryProgram (U := U) caller work apart r g f
   let src := fun i => (full (ordinaryHeaderSlots i)).castAdd T
   let slots := ordinaryHeaderSlots.trans (Fin.castLEEmb (by decide : 58 ≤ 64))
@@ -168,7 +216,12 @@ theorem hostedOrdinaryChildDispatch_exec [M8.Machine.Net] {P U : Type} {n T : �
     exact setupCost
   rw [timeEq] at setup done
   refine ⟨y,G,_,after,lastUser.trans (same.trans user),done,?_,action,?_,kept⟩
-  · intro c hp hb
+  · have hp : Fast.Main.mnProgPush hosted ≤ c := by
+      change pushes i f ≤ c
+      exact ((Finset.le_sup (f := pushes i) (Finset.mem_univ f)).trans
+        (Finset.le_sup (f := fun j => Finset.univ.sup (pushes j)) (Finset.mem_univ i))).trans (le_max_right ..)
+    have hb (f : P) : Fast.Main.mnProgPush (body f) ≤ c :=
+      (Fast.Main.mn_progPush_le_pushC body f).trans (le_max_left ..)
     have beforeClear := (max_le_iff.mp hp).1
     have loaded := StackGrowthExcept.of_exec (caller 24) setup (max_le_iff.mp beforeClear).1 hb
     have localStock := loaded.trans (growth c (max_le_iff.mp beforeClear).2 hb)
@@ -198,7 +251,24 @@ theorem hostedOrdinaryChildDispatch_exec [M8.Machine.Net] {P U : Type} {n T : �
       change _ ≤ _ + (setupTime+route+correction)
       dsimp only [route]
       split_ifs at paid ⊢ <;> omega
-    exact Nat.add_le_add running (Nat.add_le_add_right price 1)
+    have inner : setupTime+t+((privateTapes.map fun j => 4*(F.L j).length+2*(F.R j).length+4).sum+1) ≤
+        (if cutoff < desc.width then budget+2 else 0)+(4*w+23*desc.width+22*L+51)+K*(localTime+1) := by
+      apply (Nat.add_le_add running (Nat.add_le_add_right price 1)).trans
+      dsimp only [K]
+      simp only [Nat.add_mul,Nat.mul_add,Nat.mul_one,Nat.one_mul,Nat.mul_assoc]
+      nlinarith
+    have hr : r ≤ 64 := (nodeChildren5_le i).trans (by decide)
+    have dim : d = 128 := by dsimp only [d,g]; omega
+    have hdr := ordinaryHeaderBill w W r L hW hr
+    have scaled := hostedBill (budget := budget) (active := cutoff < desc.width) (route := 2*(1+routeTime))
+      (direct := desc.width*(M^d*W)) (correction := correction) (C := C) (K := K)
+      (V := M^d*W) (L := L) (setup := setupTime) (fee := 4*w+23*desc.width+22*L+51)
+      (dim ▸ hdr.1) (dim ▸ hdr.2)
+    have combined := inner.trans scaled
+    apply hostedBill_real combined
+    · have bound := routing ⟨r,Nat.lt_succ_of_le hr⟩ w W hW
+      simpa only [routeTime,is,dim,g,correction,ordinaryCorrectionTime,mul_assoc] using bound
+    · exact Real.one_le_rpow (by exact_mod_cast Nat.le_add_left 1 w) M8.Machine.BudgetBound.exponent_range.1.le
   · intro k
     rw [payloadLeft,payloadRight,← payload]
     exact readback k
