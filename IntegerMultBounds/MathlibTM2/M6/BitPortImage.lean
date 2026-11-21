@@ -148,6 +148,37 @@ private theorem portPivotSwap_square (R : Type*) [CommRing R] :
     simp only [ite_eq_right hk,ite_self]
   · simp
 
+/-- In prefix coordinates, any change of chart carrying the target mask to
+the source complement must take output digit zero entirely from input
+digit seven. This also identifies the required digit in a consumer that
+implements the chart by its address convention. -/
+theorem portChart_firstRow {R : Type*} [CommRing R] (T : Matrix (Fin 8) (Fin 8) R)
+    (chart : T * prefixMask R 7 = (1-prefixMask R 1)*T) (x : Fin 8 → R) :
+    (T *ᵥ x) 0 = T 0 (Fin.last 7) * x (Fin.last 7) := by
+  change ∑ j, T 0 j * x j = _
+  apply Finset.sum_eq_single (Fin.last 7)
+  · intro j _ ne
+    have hj : j.val < 7 := by
+      have h : j.val ≠ 7 := fun eq => ne (Fin.ext eq)
+      omega
+    have entry := congrArg (fun M : Matrix (Fin 8) (Fin 8) R => M 0 j) chart
+    rw [Matrix.sub_mul,one_mul] at entry
+    simp [prefixMask,mul_diagonal,diagonal_mul,hj] at entry
+    simp [entry]
+  · simp
+
+/-- A lower-triangular pass cannot implement this handoff on a shared
+coordinate order over any nontrivial coefficient ring. -/
+theorem portChart_not_lower {R : Type*} [CommRing R] [Nontrivial R]
+    (T S : Matrix (Fin 8) (Fin 8) R) (inv : T*S=1)
+    (chart : T * prefixMask R 7 = (1-prefixMask R 1)*T) :
+    ¬ IntegerMultBounds.Swap.Shear.LowerTriangular T := by
+  intro lower
+  have read := portChart_firstRow T chart (fun j => S j 0)
+  change (T*S) 0 0 = _ at read
+  rw [inv,Matrix.one_apply_eq,lower 0 (Fin.last 7) (by decide),zero_mul] at read
+  exact one_ne_zero read
+
 private theorem swap_targetMask (R : Type*) [CommRing R] :
     let J := portPivotSwap R
     J * prefixMask R 7 * J = 1-prefixMask R 1 := by

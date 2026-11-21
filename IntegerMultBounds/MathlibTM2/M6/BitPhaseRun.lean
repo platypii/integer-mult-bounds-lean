@@ -697,11 +697,87 @@ theorem InvocationEffect.finalRead {n : Fin 9} {r : Fin 32} {d : Fin 5} {w B K :
   rw [Frames.after_scatter] at read
   exact read.trans (fixed.symm.trans aligned)
 
+open IntegerMultBounds.Swap.Modular Matrix in
+/-- In its own prefix coordinates the target owner needs only the inverse
+basis pass. The decoded stream is read after exchanging the first seven
+digits, with the spectator unchanged. -/
+theorem InvocationEffect.targetPrefix (t : Fin 111) :
+    let k : Fin 636 := ⟨525+t.val,by omega⟩
+    ∃ (c : ℕ) (machine : SharedBankSkeleton.Skeleton 1 prime), ∀ w B K,
+      0 < B*prime^(64*(w*64))*K →
+      let W := B*prime^(64*(w*64))*K
+      let volume := (prime^w)^16*W
+      let C := reduce (prime^w) (frameBasis k false)
+      ∃ stage : SharedBankStage.Stage _ 1 prime (@portOwner volume),
+        SharedBankSkeleton.ofStage stage = machine ∧ stage.cost = c*volume ∧
+        ∀ n r d x y, InvocationEffect n r d w B K x y → ∀ g z s,
+          let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n r d,ownerTape_injective n r d⟩
+          let reg : Fin 661 := ⟨111+t.val,by omega⟩
+          let before := fun h => labelPhase w (sectionD ++ sectionA) (Frames.snapshot Frames.initialRefs)
+            (phaseRead owner x (labelSpectator h z))
+          let stored := FramedCircuit.decode (fun i => selectedFrame w (Frames.scatterFinish Frames.beforeScatter i))
+            (labelScatter n before g)
+          let output := FramedCircuit.moduleRun ((sectionB ++ sectionC).map RawGate.toCircuit) stored
+          stage.transform (y (owner reg)) (FlatCoordinateLayout.index
+            (AffineFieldCoordinates.embed s) (labelSpectator g z)) =
+            output reg.val (M8.Exchange.transform C C
+              (M8.Exchange.exchange (prefixMask (ZMod (prime^w)) 7) s)) := by
+  intro k
+  obtain ⟨c,machine,run⟩ := frameBasis_owner k true
+  refine ⟨c,machine,?_⟩
+  intro w B K hW W volume C
+  obtain ⟨stage,fixed,cost,reads⟩ := run w W hW
+  refine ⟨stage,fixed,cost,?_⟩
+  intro n r d x y act g z s owner reg before stored output
+  let D := reduce (prime^w) (frameBasis k true)
+  let E := prefixMask (ZMod (prime^w)) 7
+  let P := reduce (prime^w) (selectedProjector k)
+  obtain ⟨_,dc,_,_,conj⟩ := frameBasis_spec k w
+  rw [show Geometry.Dimensions.value k.val = 7 from (Nine.target_frames t t.isLt).2.2.1] at conj
+  change D*C=1 at dc
+  change C*E*D=P at conj
+  have pe : P*C=C*E := by rw [← conj,Matrix.mul_assoc (C*E),dc,mul_one]
+  have rest : (1-P)*C=C*(1-E) := by rw [Matrix.sub_mul,one_mul,Matrix.mul_sub,mul_one,pe]
+  let a := M8.Exchange.transform C C s
+  have back : M8.Exchange.transform D D a = s := by
+    simp [a,M8.Exchange.transform,mulVec_mulVec,dc]
+  have read := reads (y (owner reg)) a (labelSpectator g z)
+  change stage.transform _ (FlatCoordinateLayout.index
+    (AffineFieldCoordinates.embed (M8.Exchange.transform D D a)) _) = _ at read
+  rw [back] at read
+  rw [read]
+  have finish := congrFun (congrFun (act.finalRead g z) reg.val) a
+  change phaseRead owner y (labelSpectator g z) reg.val a =
+    selectedFrame w (Frames.snapshot Frames.finalRefs reg.val) (output reg.val) a at finish
+  simp only [phaseRead,Copy.extendStored,dite_eq_left reg.isLt,Frames.snapshot,ite_eq_left reg.isLt] at finish
+  rw [(Nine.target_frames t.val t.isLt).2.1] at finish
+  refine (finish.trans (selectedFrame_rational w k _ _)).trans (congrArg (output reg.val) ?_)
+  change M8.Exchange.exchange P a = M8.Exchange.transform C C (M8.Exchange.exchange E s)
+  simp only [a,M8.Exchange.exchange,M8.Exchange.transform,mulVec_add,mulVec_mulVec,pe,rest]
+
+open M8.RevMachine in
+private theorem targetPort_cost [M8.Machine.Net] {c total w V : ℕ}
+    (coeff : c ≤ total) (width : 1 ≤ w) (volume : 1 ≤ V) :
+    ((c*V + 2*LeafCore.coreCost V w + 3 : ℕ) : ℝ) ≤
+      ((total : ℝ) + 2*|LeafCore.C| + 3) * (w : ℝ)^M8.Machine.BudgetBound.tau * V := by
+  let power := (w : ℝ)^M8.Machine.BudgetBound.tau
+  have one : 1 ≤ power := Real.one_le_rpow (by exact_mod_cast width : (1 : ℝ) ≤ w)
+    M8.Machine.BudgetBound.exponent_range.1.le
+  have core := RevBudget.coreCost_le V w (L := power) (by rw [max_eq_right width])
+  have scans : (c : ℝ)*V ≤ (total : ℝ)*(power*V) :=
+    mul_le_mul (by exact_mod_cast coeff) (le_mul_of_one_le_left (Nat.cast_nonneg V) one)
+      (Nat.cast_nonneg V) (Nat.cast_nonneg total)
+  have joins : 1 ≤ power*V := one_le_mul_of_one_le_of_one_le one (by exact_mod_cast volume)
+  change _ ≤ ((total : ℝ) + 2*|LeafCore.C| + 3)*power*V
+  push_cast
+  nlinarith only [scans,core,joins]
+
 open IntegerMultBounds.Swap.Modular M8.RevMachine in
 /-- Reading a target owner after the port correction recovers the decoded
 invocation result at the target projector's exchanged address. The same
 program works at every width, for every class and every dirty input. -/
-theorem InvocationEffect.targetPort [M8.Machine.Net] (t : Fin 111) :
+theorem InvocationEffect.targetPort [M8.Machine.Net] :
+    ∃ rate : ℝ, ∀ t : Fin 111,
     let k : Fin 636 := ⟨525+t.val,by omega⟩
     let l : Fin 636 := ⟨2+t.val,by omega⟩
     ∃ (c : ℕ) (machine : SharedBankSkeleton.Skeleton 1 prime), ∀ w B K,
@@ -713,6 +789,7 @@ theorem InvocationEffect.targetPort [M8.Machine.Net] (t : Fin 111) :
       ∃ stage : SharedBankStage.Stage _ 1 prime (@portOwner volume),
         SharedBankSkeleton.ofStage stage = machine ∧
         stage.cost = c*volume + 2*LeafCore.coreCost volume w + 3 ∧
+        (stage.cost : ℝ) ≤ rate * (w : ℝ)^M8.Machine.BudgetBound.tau * volume ∧
         ∀ n r d x y, InvocationEffect n r d w B K x y → ∀ g z s,
           let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n r d,ownerTape_injective n r d⟩
           let reg : Fin 661 := ⟨111+t.val,by omega⟩
@@ -724,12 +801,19 @@ theorem InvocationEffect.targetPort [M8.Machine.Net] (t : Fin 111) :
           stage.transform (y (owner reg)) (FlatCoordinateLayout.index
             (AffineFieldCoordinates.embed (M8.Exchange.transform T T s)) (labelSpectator g z)) =
             output reg.val (M8.Exchange.exchange (reduce (prime^w) (selectedProjector k)) s) := by
-  intro k l
-  obtain ⟨c,machine,run⟩ := portChart_owner k l
-  refine ⟨c,machine,?_⟩
+  let src (t : Fin 111) : Fin 636 := ⟨2+t.val,by omega⟩
+  let dst (t : Fin 111) : Fin 636 := ⟨525+t.val,by omega⟩
+  choose c machine run using fun t => portChart_owner (dst t) (src t)
+  let total := ∑ t, c t
+  refine ⟨total + 2*|LeafCore.C| + 3,?_⟩
+  intro t k l
+  refine ⟨c t,machine t,?_⟩
   intro w B K hw hW W volume T
-  obtain ⟨stage,fixed,cost,reads⟩ := run w W hw hW
-  refine ⟨stage,fixed,cost,?_⟩
+  obtain ⟨stage,fixed,cost,reads⟩ := run t w W hw hW
+  refine ⟨stage,fixed,cost,?_,?_⟩
+  · rw [cost]
+    exact targetPort_cost (Finset.single_le_sum (fun i _ => Nat.zero_le (c i)) (Finset.mem_univ t))
+      hw (Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) hW)
   intro n r d x y act g z s owner reg before stored output
   rw [reads]
   have finish := congrFun (congrFun (act.finalRead g z) reg.val) s
