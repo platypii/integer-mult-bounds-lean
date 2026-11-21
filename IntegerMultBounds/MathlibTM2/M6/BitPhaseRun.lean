@@ -18,7 +18,7 @@ noncomputable def phaseRead {k w W : ℕ} (owner : Fin 661 ↪ Fin k)
     (data : Fin k → Fin ((prime^w)^16*W) → ZMod 2) (j : Fin W) : ℕ → AddressStream (ZMod (prime^w)) :=
   Copy.extendStored fun r s => data (owner r) (FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) j)
 
-private theorem phaseRead_gate {k w W : ℕ} (owner : Fin 661 ↪ Fin k) (g : RawGate)
+theorem phaseRead_gate {k w W : ℕ} (owner : Fin 661 ↪ Fin k) (g : RawGate)
     (scheduled : g ∈ program) (data out : Fin k → Fin ((prime^w)^16*W) → ZMod 2)
     (action : ∀ r : Fin 661, ∀ i, out (owner r) i =
       g.toCircuit.run (Copy.extendStored (fun r => data (owner r) i)) r.val) (j : Fin W) :
@@ -36,7 +36,7 @@ private theorem phaseRead_gate {k w W : ℕ} (owner : Fin 661 ↪ Fin k) (g : Ra
     rw [RawGate.run_eq,Function.update_of_ne ne]
     simp [phaseRead,Copy.extendStored,h]
 
-private theorem phaseRead_edge {k w W : ℕ} (owner : Fin 661 ↪ Fin k) (r : Fin 661) (p : ℕ × ℕ)
+theorem phaseRead_edge {k w W : ℕ} (owner : Fin 661 ↪ Fin k) (r : Fin 661) (p : ℕ × ℕ)
     (data out : Fin k → Fin ((prime^w)^16*W) → ZMod 2)
     (other : ∀ i, i ≠ owner r → out i = data i)
     (read : ∀ s j, out (owner r) (FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) j) =
@@ -184,6 +184,33 @@ private theorem compiled_valid {w : ℕ}
         exact ⟨g,raw,rfl⟩
     · exact ih _ (fun q h => scheduled q (List.mem_cons_of_mem _ h)) instr tail
 
+/-- The selected phases use only scheduled scalar gates, valid owner indices,
+and checked frame changes on both sides of the scatter. -/
+theorem invocationPhase_valid (w : ℕ) (afterScatter : Bool) :
+    let gates := if afterScatter then sectionB ++ sectionC else sectionD ++ sectionA
+    let current := if afterScatter then Frames.scatterFinish Frames.beforeScatter else Frames.snapshot Frames.initialRefs
+    let frame := selectedFrame w
+    let instructions := FramedCircuit.compile (fun i => frame (current i)) (gates.map (Frames.framedGate frame))
+    let edges := Frames.edges gates current
+    (∀ p ∈ edges, Geometry.Moves.CheckedPair p) ∧ ∀ instr ∈ instructions, match instr with
+      | .edge i _ _ => i < 661
+      | .gate gate => ∃ g ∈ program, gate = g.toCircuit := by
+  intro gates current frame instructions edges
+  have check := Geometry.Moves.phase_checked
+  rw [Geometry.Moves.phaseEdges,List.forall_mem_append] at check
+  have good : ∀ p ∈ edges, Geometry.Moves.CheckedPair p := by
+    cases afterScatter
+    · exact check.1
+    · exact check.2
+  refine ⟨good,?_⟩
+  apply compiled_valid
+  intro g mem
+  cases afterScatter <;> simp only [gates,Bool.false_eq_true,ite_false,ite_true,List.mem_append] at mem
+  · exact List.mem_append_left _ (List.mem_append_left _ (List.mem_append_left _ (List.mem_append.mpr mem)))
+  · rcases mem with b | c
+    · exact List.mem_append_left _ (List.mem_append_right _ b)
+    · exact List.mem_append_right _ c
+
 open M8.Machine in
 /-- Both literal phase lists on opposite sides of the COPY windows run on the
 same owner representation, from their respective certified frame snapshots. -/
@@ -201,20 +228,8 @@ theorem invocationPhase_stage [Net] {k w W : ℕ} (owner : Fin 661 ↪ Fin k) (h
         runPhase (selectedWord w) instructions edges (phaseRead owner data j)) ∧
       ∀ data i, (∀ r, owner r ≠ i) → stage.transform data i = data i := by
   intro gates current frame instructions edges V
-  have check := Geometry.Moves.phase_checked
-  rw [Geometry.Moves.phaseEdges,List.forall_mem_append] at check
-  have good : ∀ p ∈ edges, Geometry.Moves.CheckedPair p := by
-    cases afterScatter
-    · exact check.1
-    · exact check.2
-  apply phaseInstructions_stage owner hw hW instructions edges good
-  apply compiled_valid
-  intro g mem
-  cases afterScatter <;> simp only [gates,Bool.false_eq_true,ite_false,ite_true,List.mem_append] at mem
-  · exact List.mem_append_left _ (List.mem_append_left _ (List.mem_append_left _ (List.mem_append.mpr mem)))
-  · rcases mem with b | c
-    · exact List.mem_append_left _ (List.mem_append_right _ b)
-    · exact List.mem_append_right _ c
+  obtain ⟨checked,valid⟩ := invocationPhase_valid w afterScatter
+  exact phaseInstructions_stage owner hw hW instructions edges checked valid
 
 open IntegerMultBounds.MathlibTM2.Cover in
 noncomputable def labelSpectator {w B K : ℕ}
@@ -403,7 +418,7 @@ theorem labelScatter_read {w B K : ℕ} {n : Fin 9} {r : Fin 32} {d : Fin 5}
     simpa only [labelScatter,Copy.extendStored,hi,↓reduceDIte] using h
   · simp [labelScatter,phaseRead,Copy.extendStored,hi]
 
-private theorem phaseLogicalRead (w : ℕ) (gates : List RawGate) (current : ℕ → ℕ)
+theorem phaseLogicalRead (w : ℕ) (gates : List RawGate) (current : ℕ → ℕ)
     (checked : ∀ p ∈ Frames.edges gates current, Geometry.Moves.CheckedPair p)
     (input : ℕ → AddressStream (ZMod (prime^w))) :
     let frame := selectedFrame w
@@ -617,7 +632,7 @@ theorem invocation_stage [Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
   · intro data
     exact ⟨_,_,⟨first data,leftOff data⟩,midRead _,last _,rightOff _⟩
 
-private theorem copySchedule_other {n : Fin 9} {r : Fin 32} {d : Fin 5} {w B K : ℕ}
+theorem copySchedule_other {n : Fin 9} {r : Fin 32} {d : Fin 5} {w B K : ℕ}
     {ls : List Copy.Lifecycle} {x y} (steps : CopyScheduleEffect n r d w B K ls x y)
     (i : Fin 142081) (live : i ≠ Fin.last 142080) (outside : ∀ j, ownerTape n r d j ≠ i) :
     y i = x i := by
