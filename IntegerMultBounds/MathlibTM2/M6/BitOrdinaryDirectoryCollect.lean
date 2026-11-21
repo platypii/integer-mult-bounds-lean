@@ -51,7 +51,7 @@ theorem saveMasksAndScan_exec {ι P G U : Type} {T K Q : ℕ}
       (mk u S) (12*labels.length+12+t) (mk z F) ∧ result t (embStk e F) ∧
       F.R (p 2) = labels.map (fun j => bitSymbol (live j)) ∧
       F.R (p 3) = labels.map (fun j => bitSymbol (bad j)) ∧
-      ∀ i, (∀ k, e k ≠ i) → i ≠ p 2 → i ≠ p 3 → F.R i = S.R i := by
+      ∀ i, (∀ k, e k ≠ i) → i ≠ p 2 → i ≠ p 3 → F.L i = S.L i ∧ F.R i = S.R i := by
   intro copy
   obtain ⟨a,user,save⟩ := copyDirectoryMasks_exec host p labels live bad u S ls bs free
   let D := {S with R := Function.update (Function.update S.R (p 2) (S.R (p 0))) (p 3) (S.R (p 1))}
@@ -66,7 +66,7 @@ theorem saveMasksAndScan_exec {ι P G U : Type} {T K Q : ℕ}
       (by decide : (2 : Fin 6) ≠ 3)) ..)).trans ((Function.update_self ..).trans ls)
   · exact ((kept _ (fun i => (outside i).2)).2.trans (Function.update_self ..)).trans bs
   · intro i off h2 h3
-    exact ((kept i off).2).trans ((Function.update_of_ne h3 ..).trans (Function.update_of_ne h2 ..))
+    exact ⟨(kept i off).1,((kept i off).2).trans ((Function.update_of_ne h3 ..).trans (Function.update_of_ne h2 ..))⟩
 
 theorem collectDirectoryRows_exec {ι P U : Type} {T Q N : ℕ} (body : P → Pr P T Q prime U)
     (p : Fin 6 ↪ Fin T) (record : Pr P T Q prime U) (cost : ι → ℕ)
