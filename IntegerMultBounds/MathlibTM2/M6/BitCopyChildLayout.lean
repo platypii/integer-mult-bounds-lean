@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.M8.RevMachine.Views
+public import IntegerMultBounds.MathlibTM2.M8.RevMachine.SemViews
 public import IntegerMultBounds.MathlibTM2.M6.BitCopyRun
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackPackSchedule
 
@@ -103,6 +103,54 @@ theorem revT_changeLayout (v u : Descriptor) (n w : ℕ)
       atIndex,atIndex,RecursiveInterchangeScaling.index_val,RecursiveInterchangeScaling.index_val]
   let t := f src
   exact read _ t.beforeRows.isLt _ t.row.isLt _ t.before.isLt h hh _ t.middle.isLt d hd _ t.after.isLt
+
+theorem orthogonalVolume (w W r : ℕ) (hr : r ≤ 8) :
+    volume prime (M8.RevMachine.sub prime w 8 0 r ⟨1,1,1,8*w,1,W⟩) = (prime^w)^16*W := by
+  rw [M8.RevMachine.sub_volume _ _ _ _ _ _ rfl (by omega)]
+  simp [volume,Nat.mul_comm 8 w,pow_mul,← pow_add]
+
+/-- Physical position in the owner word of each scheduled child address. -/
+noncomputable def orthogonalChildPosition (v : Descriptor) (w rows r : ℕ) (hr : r ≤ 8)
+    (splitRows : v.rows = 142080*rows) :
+    let W := (prime^w)^112 * (v.beforeRows*rows*v.beforeH*v.between*v.afterD)
+    let child := rankDescriptor prime (r*w) ((64-r)*w) (role v 142080)
+    Fin (volume prime child) ≃ Fin ((prime^w)^16*W) := by
+  intro W child
+  let packed := M8.RevMachine.sub prime w 8 0 r ⟨1,1,1,8*w,1,W⟩
+  let f := changeLayout packed child rfl (orthogonalSpectators v w rows r hr splitRows)
+  exact (flatAddress child).symm.trans (f.symm.trans ((flatAddress packed).trans
+    (finCongr (orthogonalVolume w W r hr))))
+
+/-- A child acting in its inherited physical positions satisfies the invocation
+contract on exactly the same input and output words. -/
+theorem orthogonalChildPosition_read (v : Descriptor) (w rows r : ℕ) (hr : r ≤ 8)
+    (splitRows : v.rows = 142080*rows) :
+    let W := (prime^w)^112 * (v.beforeRows*rows*v.beforeH*v.between*v.afterD)
+    let child := rankDescriptor prime (r*w) ((64-r)*w) (role v 142080)
+    let pos := orthogonalChildPosition v w rows r hr splitRows
+    ∀ x y : Fin ((prime^w)^16*W) → ZMod 2,
+      M8.RevMachine.RevT prime w r child (M8.RevMachine.ext (x ∘ pos)) (M8.RevMachine.ext (y ∘ pos)) →
+      M8.RevMachine.RevT prime w r (M8.RevMachine.sub prime w 8 0 r ⟨1,1,1,8*w,1,W⟩)
+        (M8.RevMachine.ext x) (M8.RevMachine.ext y) := by
+  intro W child pos x y read
+  let packed := M8.RevMachine.sub prime w 8 0 r ⟨1,1,1,8*w,1,W⟩
+  let f := changeLayout packed child rfl (orthogonalSpectators v w rows r hr splitRows)
+  have key (z : Fin ((prime^w)^16*W) → ZMod 2) :
+      (fun i => if hi : i < volume prime packed then M8.RevMachine.ext (z ∘ pos)
+        (index (f ((flatAddress packed).symm ⟨i,hi⟩))).val else 0) = M8.RevMachine.ext z := by
+    funext i
+    by_cases hi : i < volume prime packed
+    · rw [dif_pos hi,M8.RevMachine.ext_apply]
+      change z (pos (flatAddress child (f ((flatAddress packed).symm ⟨i,hi⟩)))) = _
+      simp only [pos,orthogonalChildPosition,Equiv.trans_apply,Equiv.symm_apply_apply,
+        Equiv.apply_symm_apply, f, packed, child, W, M8.RevMachine.ext,finCongr_apply,
+        orthogonalVolume w W r hr ▸ hi, ↓reduceDIte]
+      rfl
+    · have off : ¬ i < (prime^w)^16*W := orthogonalVolume w W r hr ▸ hi
+      simp [hi,M8.RevMachine.ext,off]
+  have h := revT_changeLayout packed child r w rfl rfl
+    (orthogonalSpectators v w rows r hr splitRows) _ _ read
+  exact (key x) ▸ (key y) ▸ h
 
 theorem copySpectators (v : Descriptor) (w rows : ℕ) (splitRows : v.rows = 142080*rows) :
     let W := (prime^w)^112 * (v.beforeRows*rows*v.beforeH*v.between*v.afterD)

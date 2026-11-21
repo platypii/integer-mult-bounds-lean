@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.M6.BitCopyChildLayout
 public import IntegerMultBounds.MathlibTM2.M6.OrthogonalPhase
 public import IntegerMultBounds.MathlibTM2.M6.OrthogonalScatter
 
@@ -284,6 +285,55 @@ theorem orthogonalProfiledInvocation :
   simp only [Nat.add_mul,Nat.mul_add] at a b cost ⊢
   rw [Nat.mul_assoc 9 S]
   omega
+
+open RecursiveInterchangeLayout (Descriptor volume role)
+
+/-- On a five-class role stream the recursive calls use strict subwidths,
+retain the inherited physical positions, and charge their scheduled descriptors. -/
+theorem orthogonalRoleInvocation :
+    ∃ C : ℕ, ∀ (v : Descriptor) (w rows : ℕ) (hw : 0 < w)
+      (width : v.width = 64*w) (split : v.rows = 142080*rows),
+      let m := prime^w
+      let W := m^112 * (v.beforeRows*rows*v.beforeH*v.between*v.afterD)
+      let V := m^16*W
+      let desc := fun r => Cover.Fallback.rankDescriptor prime (r*w) ((64-r)*w) (role v 142080)
+      let G := Swap.Modular.reduce m (orthogonalBasis.map (Nat.cast : ℕ → ℚ))
+      let encode := M8.Exchange.transform G (Swap.Modular.reduce m (M8.ReversedExchange.rev 8)*G)
+      let addr := fun l s (k : Fin W) => FlatCoordinateLayout.index (AffineFieldCoordinates.embed
+        (encode (M8.Exchange.exchange (Swap.Modular.reduce m (Nine.labelProj l)) s))) k
+      ∀ (price : Descriptor → ℕ), 0 < W →
+      (∀ r, 0 < r → ∀ hr : r ≤ 8, (desc r).width < v.width →
+        let pos := CopyChildLayout.orthogonalChildPosition v w rows r hr split
+        ∃ child : SharedBankStage.Stage _ 1 prime (@portOwner V), child.cost ≤ price (desc r) ∧
+          ∀ x, M8.RevMachine.RevT prime w r (desc r) (M8.RevMachine.ext (x ∘ pos))
+            (M8.RevMachine.ext (child.transform x ∘ pos))) →
+      ∃ stage : SharedBankStage.Stage _ 661 prime (phaseOwners (N := V)),
+        stage.cost ≤ C * volume prime (role v 142080) + (Geometry.Moves.localPaid.map (price ∘ desc)).sum ∧
+        ∀ x s k (i : Fin 661), stage.transform x i (addr (Frames.finalRefs i) s k) =
+          Circuit.run (program.map RawGate.toCircuit) (Copy.extendStored (fun j : Fin 661 =>
+            x j (addr (Frames.snapshot Frames.initialRefs j) s k))) i := by
+  classical
+  obtain ⟨C,run⟩ := orthogonalProfiledInvocation
+  refine ⟨C,?_⟩
+  intro v w rows hw width split m W V desc G encode addr price live supply
+  have stages (r : ℕ) (positive : 0 < r) (hr : r ≤ 8) := supply r positive hr (by
+    change r*w < v.width
+    rw [width]
+    exact Nat.mul_lt_mul_of_pos_right (by omega) hw)
+  let machine := fun r => if h : 0 < r ∧ r ≤ 8 then
+    SharedBankSkeleton.ofStage (stages r h.1 h.2).choose
+    else SharedBankSkeleton.ofStage (SharedBankStage.identity (@portOwner V) (by decide))
+  obtain ⟨stage,cost,reads⟩ := run w W live machine (price ∘ desc) (by
+    intro r positive hr
+    have h := (stages r positive hr).choose_spec
+    exact ⟨_,by simp [machine,positive,hr],h.1,fun x =>
+      CopyChildLayout.orthogonalChildPosition_read v w rows r hr split _ _ (h.2 x)⟩)
+  refine ⟨stage,?_,reads⟩
+  have vol : V = volume prime (role v 142080) := by
+    simp only [V,W,m,volume,role,width,split,Nat.mul_div_cancel_left _ (by decide : 0 < 142080),
+      show 64*w = w*64 by omega,pow_mul]
+    ring
+  exact (vol ▸ (show stage.cost ≤ C*V + _ from cost) : stage.cost ≤ _)
 
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
