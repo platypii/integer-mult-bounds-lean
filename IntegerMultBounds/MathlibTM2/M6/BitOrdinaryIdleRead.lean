@@ -361,7 +361,7 @@ private theorem owners_of_returned_record {T k w d W H J : ℕ}
 
 -- The separate fifteen-field COPY host proof can be restored from 2e053b99.
 
-private theorem placedHoare_exec {k q T Q b : ℕ} {P U : Type}
+theorem placedHoare_exec {k q T Q b : ℕ} {P U : Type}
     (machine : Program k q prime) (bank : Fin k ↪ Fin T) (fits : q ≤ Q)
     (body : P → Pr P T Q prime U) {X Y : Tapes k prime}
     (run : HoareTime machine (fun x => x = X) (fun y => y = Y) b)

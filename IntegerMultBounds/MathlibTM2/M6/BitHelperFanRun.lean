@@ -19,7 +19,7 @@ def HelperFan {k T V : ℕ} (fan : Fin (k+2) ↪ Fin T) (data : Fin k → Fin V 
 private theorem fanEncoded {k V : ℕ} (data : Fin k → Fin V → ZMod 2) (j : Fin k) :
     SparseRoleCircuit.encoded (a := prime) data j = fun i => SparseRoleCircuit.encode (data j i) := rfl
 
-private theorem fanPayload {k T V : ℕ} {fan : Fin (k+2) ↪ Fin T} {data : Fin k → Fin V → ZMod 2}
+theorem fanPayload {k T V : ℕ} {fan : Fin (k+2) ↪ Fin T} {data : Fin k → Fin V → ZMod 2}
     {S : Stacks T prime} (rep : HelperFan fan data S) (owner : Fin k) :
     RecordPayload (fan (owner.castAdd 2)) (fun _ => blank) 0 (data owner) S := by
   intro z
