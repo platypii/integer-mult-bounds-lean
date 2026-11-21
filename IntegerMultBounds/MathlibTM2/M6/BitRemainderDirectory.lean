@@ -938,6 +938,13 @@ theorem remainderDirectory_prepareOwner {K Q : ℕ} {P U : Type} (room : 72 ≤ 
       omega
     exact ⟨(off _ outside).1.trans (unchanged _ (fun j _ => (outside j).symm)),(off _ outside).2.trans (congrFun leftBank _)⟩
 
+noncomputable def replayOwnerSetup {T Q : ℕ} {P U : Type} (root : Bool) (lo hi : ℕ) (bank : Fin 72 ↪ Fin T) : Pr P T Q prime U :=
+  let r := remainderDirectoryPorts.trans bank
+  let setup := (weightedDimensions root bank lo hi).seq (writeBinaryMatrix (intervalSeed lo hi) (projectorSeedPorts.trans bank))
+  let replay := (LabelSpectators.countRecords (bank 29) (bank 30) (bank 31) (r 2) (r 12) (r 3) (r 5)).seq
+    ((LabelDirectorySetup.replayFromCount 64 r (bank 71)).seq (uclear (r 12)))
+  setup.seq (replay.seq (uclear (bank 71)))
+
 open IntegerMultBounds.Swap.Modular in
 /-- Enter a recursive role scanner from the physical parameter bank and its
 routed replay stream; release the private precision tape before the scan. -/
@@ -963,17 +970,17 @@ theorem prepareReplayOwner_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q 
     raw.R (bank 28) = [] → raw.R (bank 44) = [] → raw.R (bank 49) = [] →
     (∀ i : Fin 72, 59 ≤ i.val → raw.R (bank i) = []) →
     ParentParameters root W H J parent (fun i => raw.R (scanner i)) →
-    let setup := (weightedDimensions root bank lo hi).seq (writeBinaryMatrix (intervalSeed lo hi) (projectorSeedPorts.trans bank))
-    let replay := (LabelSpectators.countRecords (bank 29) (bank 30) (bank 31) (r 2) (r 12) (r 3) (r 5)).seq
-      ((LabelDirectorySetup.replayFromCount 64 r (bank 71)).seq (uclear (r 12)))
     ∃ z D n, z.user = u.user ∧ prime^layout.width*n*142080 ≤ 1327*volume prime layout ∧
-      Exec body (setup.seq (replay.seq (uclear (bank 71)))) (mk u raw) n (mk z D) ∧
+      Exec body (replayOwnerSetup root lo hi bank) (mk u raw) n (mk z D) ∧
       DirectoryScanInput child proj w W H J parent prefixes (raw.R (bank 46))
         (List.range (LabelMask.records v)) (fun i => D.R (scanner i)) ∧
+      D.R (bank 48) = matrixWords prime H (reduce (prime^(w+1)) proj) ++ raw.R (bank 48) ∧
+      (∀ i : Fin 58, i ∉ ([28,33,34,35,36,37,38,44,46,48,55] : List (Fin 58)) →
+        D.R (scanner i) = raw.R (scanner i)) ∧
       (∀ i : Fin 72, 58 ≤ i.val → D.R (bank i) = []) ∧ D.L = raw.L ∧
       ∀ k, (∀ i : Fin 72, k ≠ bank i) → D.R k = raw.R k := by
-  intro v r scanner prefixes proj br nr bh source widths fits short padded spare clean params setup replay
-  obtain ⟨y,S,n,same,time,head,headers,atom,_,left,unchanged⟩ :=
+  intro v r scanner prefixes proj br nr bh source widths fits short padded spare clean params
+  obtain ⟨y,S,n,same,time,head,headers,atom,matrix,left,unchanged⟩ :=
     prepareDirectoryHeaders_exec body bank child lo hi w W H J root parent fields
       (precision ▸ Nat.lt_size_self _) (digits ▸ Nat.lt_size_self _) u raw params short padded spare clean
   let writes : List (Fin 72) := [28,33,34,35,36,37,38,44,48,55,71]
@@ -999,7 +1006,7 @@ theorem prepareReplayOwner_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q 
   let D := {F with R := Function.update F.R (bank 71) []}
   have size : (F.R (bank 71)).length = w+1 := by simpa [F] using atom
   rw [size] at clear
-  refine ⟨z,D,n+(k+(2*(w+1)+2)),last.trans (user.trans same),?_,Exec.seq head (Exec.seq exec clear),?_,?_,left,?_⟩
+  refine ⟨z,D,n+(k+(2*(w+1)+2)),last.trans (user.trans same),?_,Exec.seq head (Exec.seq exec clear),?_,?_,?_,?_,left,?_⟩
   · have controls := directoryHeader_charge layout positive w rows width split
     rw [← precision] at controls
     have desc := descriptor_charge layout positive w rows lo hi H J W _ width split tailSize ordered hiFits precision digits le_rfl
@@ -1017,6 +1024,14 @@ theorem prepareReplayOwner_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q 
       Function.update_of_ne (bank.injective.ne (by intro eq; have h := congrArg Fin.val eq; change i.val = 71 at h; omega)) ..
     change DirectoryScanInput _ _ _ _ _ _ _ _ (S.R (bank 46)) _ (fun i => F.R (scanner i)) at input
     simpa only [equal,frame 46 (by decide)] using input
+  · simpa [D,F] using matrix
+  · intro i keep
+    have off := (by decide : ∀ i : Fin 58, i ∉ ([28,33,34,35,36,37,38,44,46,48,55] : List (Fin 58)) →
+      i.castAdd 14 ∉ writes ∧ i.castAdd 14 ≠ 71 ∧ i.castAdd 14 ≠ 58 ∧ i.castAdd 14 ≠ 46) i keep
+    have slot : scanner i = bank (i.castAdd 14) := congrArg bank (Fin.ext rfl)
+    rw [slot]
+    simpa [D,F,Function.update_of_ne (bank.injective.ne off.2.1),Function.update_of_ne (bank.injective.ne off.2.2.1),
+      Function.update_of_ne (bank.injective.ne off.2.2.2)] using frame _ off.1
   · intro i hi
     by_cases src : i = 58
     · subst i; simp [D,F]

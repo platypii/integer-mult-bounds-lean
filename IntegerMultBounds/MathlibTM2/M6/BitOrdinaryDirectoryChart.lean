@@ -878,6 +878,101 @@ theorem directoryChartSetup_exec {T Q w : ℕ} {P U : Type} (room : 72 ≤ T)
   · intro i
     exact List.length_eq_zero_iff.mp (Nat.eq_zero_of_le_zero ((left _).trans (by rw [(cells i).1]; rfl)))
 
+def directoryChartPrefix (replayRole : Option (Fin 142080)) (H box : ℕ) (archive : ℕ → List (Fin (prime+4))) (k : ℕ) :=
+  match replayRole with
+  | none => archive (k/box)
+  | some j => archive (directoryRoleRecord H j k)
+
+def directoryChartQueue (replayRole : Option (Fin 142080)) (H parents records : ℕ) (archive : ℕ → List (Fin (prime+4))) :=
+  match replayRole with
+  | none => (List.range parents).flatMap archive
+  | some j => (List.range records).flatMap fun k => archive (directoryRoleRecord H j k)
+
+noncomputable def directoryChartOwnerSetup {T Q : ℕ} {P U : Type} (replayRole : Option (Fin 142080))
+    (root : Bool) (lo hi : ℕ) (bank : Fin 72 ↪ Fin T) : Pr P T Q prime U :=
+  match replayRole with
+  | none => remainderOwnerSetup root lo hi bank
+  | some _ => replayOwnerSetup root lo hi bank
+
+def directoryChartSetupRate : Option (Fin 142080) → ℕ
+  | none => 366+16*64*64+19*64+344
+  | some _ => 1327
+
+private theorem directoryChartOwnerSetup_exec {T Q w : ℕ} {P U : Type} (replayRole : Option (Fin 142080)) (room : 72 ≤ T)
+    (body : P → Pr P (T+5) Q prime U) (layout : RecursiveInterchangeLayout.Descriptor)
+    (rows B : ℕ) (positive : layout.Positive) (digits : layout.width = 64*(w+1))
+    (split : layout.rows = 142080*rows) (shape : layout.beforeH = B*prime^(64*((w+1)*64)))
+    (lo hi : ℕ) (ordered : lo ≤ hi) (upper : hi ≤ 64) (root : Bool)
+    (parent : Fin 64 → ZMod (prime^(w+1))) (units : root = true → ∀ i, parent i = 1)
+    (width : ℕ) (prefixes : ℕ → List (Fin (prime+4))) (fits : width ≤ prime^layout.width)
+    (u : HS (T+5) Q prime U) (S : Stacks (T+5) prime) :
+    let W := layout.between*layout.afterD
+    let M := prime^(w+1)
+    let parents := layout.beforeRows*rows*B
+    let directory := RecursiveInterchangeLayout.role layout 142080
+    let child := remainderRecordChild lo hi (w+1) W
+    let proj : Matrix (Fin 64) (Fin 64) ℚ := diagonal fun i => if lo ≤ i.val ∧ i.val < hi then 1 else 0
+    let metadata := ordinaryEntryWords W layout.beforeRows rows layout.beforeH root parent width (directoryChartQueue replayRole layout.beforeH parents (LabelMask.records directory) prefixes)
+    let bank := (Fin.castLEEmb room).trans (Fin.castAddEmb 5)
+    (∀ j < (if replayRole.isSome then layout.beforeRows*rows*142080*layout.beforeH else parents), (prefixes j).length = width) →
+    (∀ i : Fin T, S.L (i.castAdd 5) = [] ∧ S.R (i.castAdd 5) = metadata i.val) →
+    ∃ z D n, z.user = u.user ∧ n ≤ directoryChartSetupRate replayRole *RecursiveInterchangeLayout.volume prime directory ∧
+      Exec body (directoryChartOwnerSetup replayRole root lo hi bank) (mk u S) n (mk z D) ∧
+      DirectoryScanInput child proj w W M.size W.size parent (directoryChartPrefix replayRole layout.beforeH (M^(64*64)) prefixes) []
+        (List.range (LabelMask.records directory)) (fun i => D.R (bank (i.castLE (by decide)))) ∧
+      (∀ i : Fin T, 58 ≤ i.val → D.R (i.castAdd 5) = []) ∧
+      D.R (bank 48) = matrixWords prime M.size (reduce M proj) ∧
+      (∀ i : Fin 58, i ∉ ([28,33,34,35,36,37,38,44,46,48,55] : List (Fin 58)) →
+        D.R (bank (i.castLE (by decide))) = metadata i.val) ∧
+      (∀ i : Fin T, D.L (i.castAdd 5) = []) ∧
+      ∀ i : Fin 5, D.R (i.natAdd T) = S.R (i.natAdd T) ∧ D.L (i.natAdd T) = S.L (i.natAdd T) := by
+  cases replayRole with
+  | none => exact directoryChartSetup_exec room body layout rows B positive digits split shape lo hi ordered upper root parent units width prefixes fits u S
+  | some j =>
+    intro W M parents directory child proj metadata bank widths cells
+    have R (i : Fin 72) : S.R (bank i) = metadata i.val := (cells (i.castLE room)).2
+    let queue := directoryChartQueue (some j) layout.beforeH parents (LabelMask.records directory) prefixes
+    have params := ordinaryEntryWords_parameters W layout.beforeRows rows layout.beforeH root parent width queue units
+    have shape' : layout.beforeH = B*prime^(64*layout.width) := by rw [digits,Nat.mul_comm 64 (w+1)]; exact shape
+    obtain ⟨z,D,n,user,time,run,input,matrix,right,free,left,off⟩ := prepareReplayOwner_exec body bank layout child
+      w rows B W M.size W.size lo hi positive digits split shape' rfl rfl rfl ordered upper
+      (by intro i; fin_cases i <;> rfl) root parent j prefixes u S
+      (by rw [R]; exact List.length_replicate) (by rw [R]; exact List.length_replicate)
+      (by rw [R]; exact List.length_replicate) (by rw [R]; rfl)
+      (fun i hi => (widths i hi).trans (by rw [R]; exact List.length_replicate.symm))
+      (by rw [R]; simpa [metadata,ordinaryEntryWords] using fits)
+      (by rw [R]; rfl) (by rw [R]; rfl) (by rw [R]; rfl) (by
+        intro i hi
+        rw [R]; unfold metadata ordinaryEntryWords
+        split <;> first | rfl | omega) (by simpa only [R,metadata,M,queue,Fin.val_castLE] using params)
+    have empty : S.R (bank 46) = [] := (R 46).trans rfl
+    have tail : S.R (bank 48) = [] := (R 48).trans rfl
+    refine ⟨z,D,n,user,?_,run,empty ▸ input,?_,?_,fun i h => (right i h).trans (R _),
+      fun i => (congrFun left _).trans (cells i).1,?_⟩
+    · have size : RecursiveInterchangeLayout.volume prime directory*142080 = RecursiveInterchangeLayout.volume prime layout := by
+        have vr : directory.rows = rows := by simp [directory,RecursiveInterchangeLayout.role,split]
+        unfold RecursiveInterchangeLayout.volume
+        rw [vr,split]; dsimp only [directory,RecursiveInterchangeLayout.role]; ring
+      have smaller := Nat.le_mul_of_pos_left n (pow_pos Shared50ModularControl.prime_prime.pos layout.width)
+      rw [← size,← Nat.mul_assoc] at time
+      exact smaller.trans (Nat.le_of_mul_le_mul_right time (by decide : 0 < 142080))
+    · intro i hi
+      by_cases small : i.val < 72
+      · exact free ⟨i.val,small⟩ hi
+      · have away (l : Fin 72) : i.castAdd 5 ≠ bank l := by
+          intro eq
+          have h := congrArg Fin.val eq
+          change i.val = l.val at h
+          omega
+        rw [off _ away,(cells i).2]; unfold metadata ordinaryEntryWords
+        split <;> first | rfl | omega
+    · simpa only [tail,List.append_nil] using matrix
+    · intro i
+      exact ⟨off _ (fun l eq => by
+        have h := congrArg Fin.val eq
+        change T+i.val = l.val at h
+        omega),congrFun left _⟩
+
 /-- Present the same physical queue to the rank-split scanner. Reindexing its
 modular weights and row words changes neither the directory nor any tape. -/
 private theorem intervalInput_cast [M8.Machine.Net] {K d m n w W R : ℕ} (dim : m = n)
@@ -902,7 +997,7 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux k w : ℕ} {L P U : Typ
     (digits : layout.width = 64*(w+1)) (split : layout.rows = 142080*rows)
     (shape : layout.beforeH = B*prime^(64*((w+1)*64))) (root : Bool)
     (weights : Fin 64 → ZMod (prime^(w+1))) (units : root = true → ∀ i, weights i = 1) (invertible : ∀ i, IsUnit (weights i))
-    (width : ℕ) (prefixes : ℕ → List (Fin (prime+4))) (widthFits : width ≤ prime^layout.width) :
+    (width : ℕ) (prefixes : ℕ → List (Fin (prime+4))) (widthFits : width ≤ prime^layout.width) (replayRole : Option (Fin 142080) := none) :
     let r := interval.2-interval.1
     let m := r+(64-r)
     let dim : m = 64 := by have := (BitHosting.remainder_counts interval member).2.1; dsimp only [m,r]; omega
@@ -918,7 +1013,7 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux k w : ℕ} {L P U : Typ
       records := R, H := M.size, J := W.size, table := fun _ => 0, matrix := fun _ => 0, input := fun _ _ => 0,
       signed := [], matrixTail := [], pivotTail := [], inputTail := [], outputTail := []}
     let child := remainderRecordChild interval.1 interval.2 (w+1) W
-    let metadata := ordinaryEntryWords W layout.beforeRows rows layout.beforeH root weights width ((List.range parents).flatMap prefixes)
+    let metadata := ordinaryEntryWords W layout.beforeRows rows layout.beforeH root weights width (directoryChartQueue replayRole layout.beforeH parents R prefixes)
     let proj : Matrix (Fin 64) (Fin 64) ℚ := diagonal fun i => if interval.1 ≤ i.val ∧ i.val < interval.2 then 1 else 0
     ∀ (src : Fin k) (cert : Certificates.PR589.Nine.PortCertificate) (checked : cert.Checked),
     ∃ stage back : SharedBankStage.Stage _ k prime (phaseOwners (N := R*N)),
@@ -932,10 +1027,10 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux k w : ℕ} {L P U : Typ
       (pairRoom : m*m+m*m ≤ K) (localBody : L → Pr L (66+K) columnCapacity prime U) (localPush placedPush : ℕ)
       (bounded : ∀ f, Fast.Main.mnProgPush (localBody f) ≤ localPush)
       (placed : ∀ f, Fast.Main.mnProgPush (embProg (directoryOrdinaryBank archiveRoom) id (localBody f)) ≤ placedPush)
-      (widths : ∀ i < parents, (prefixes i).length = width),
+      (widths : ∀ i < (if replayRole.isSome then layout.beforeRows*rows*142080*layout.beforeH else parents), (prefixes i).length = width),
     let bank := (Fin.castLEEmb (by omega : 72 ≤ T+10)).trans (Fin.castAddEmb 5)
-    let setup := remainderOwnerSetup (P := P) (U := U) (Q := columnCapacity) root interval.1 interval.2 bank
-    let setupCost := (366+16*64*64+19*64+344)*RecursiveInterchangeLayout.volume prime directory
+    let setup := directoryChartOwnerSetup (P := P) (U := U) (Q := columnCapacity) replayRole root interval.1 interval.2 bank
+    let setupCost := directoryChartSetupRate replayRole *RecursiveInterchangeLayout.volume prime directory
     let clock := directoryChartClock (by omega : 53 < T)
     let slot := (0 : Fin 5).natAdd (T+10)
     let placement := payloadPlacement slot (stage.slots src)
@@ -957,7 +1052,7 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux k w : ℕ} {L P U : Typ
       let intervalProj : Matrix (Fin m) (Fin m) ℚ := diagonal fun i => if interval.1 ≤ i.val ∧ i.val < interval.2 then 1 else 0
       GeneratedDirectoryExecution (r := r) (g := 64-r) (common := common) child directory
         (by change m+m = 127+1; omega) intervalProj (weights ∘ Fin.cast dim) data pool rowRoom archiveRoom queueRoom
-        remainderAnchorFits localBody localPush placedPush (fun j => prefixes (j/M^(64*64))) [] []
+        remainderAnchorFits localBody localPush placedPush (directoryChartPrefix replayRole layout.beforeH (M^(64*64)) prefixes) [] []
         (fun j i => ownerRow (R := R) (N := N) rfl routed j (i.cast rowWidth)) pairRoom
         (embDn (directoryChartPlacement T) a) localState →
       localState.L ((0 : Fin 5).natAdd T) = [] →
@@ -1066,7 +1161,7 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux k w : ℕ} {L P U : Typ
       have cells (i : Fin (T+10)) : C.L (i.castAdd 5) = [] ∧ C.R (i.castAdd 5) = metadata i.val :=
         ⟨(Function.update_of_ne (privateOff i 0) ..).trans (privateTapes.1 i).1,
           (Function.update_of_ne (privateOff i 2) ..).trans (privateWord i)⟩
-      obtain ⟨c,D,s,cu,setupTime,prepare,dir,free,matrix,headers,left,regs⟩ := directoryChartSetup_exec
+      obtain ⟨c,D,s,cu,setupTime,prepare,dir,free,matrix,headers,left,regs⟩ := directoryChartOwnerSetup_exec replayRole
         (by omega : 72 ≤ T+10) body layout rows B positiveLayout digits split shape interval.1 interval.2
         ordered (by omega) root weights units width prefixes widthFits b C widths cells
       have source : C.R slot = payloadWord (SparseRoleCircuit.encode ∘ routed) := by
@@ -1099,7 +1194,7 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux k w : ℕ} {L P U : Typ
       have header (i : Fin 58) (hi : i ∉ ([28,33,34,35,36,37,38,44,46,48,55] : List (Fin 58))) :=
         (shared i).trans (headers i hi)
       have entry : GeneratedDirectoryInput (W := W) archiveRoom child directory proj M.size W.size weights
-          (fun j => prefixes (j/M^(64*64))) [] [] (List.range R) (ownerRow (R := R) (N := N) rfl routed) localState := by
+          (directoryChartPrefix replayRole layout.beforeH (M^(64*64)) prefixes) [] [] (List.range R) (ownerRow (R := R) (N := N) rfl routed) localState := by
         refine ⟨localR _ (by have := directoryMatrixTape_private archiveRoom; omega),fun i hi => (cleared i hi).2,
           ?_,?_,?_,?_,header 50 (by decide),header 57 (by decide),header 56 (by decide),header 54 (by decide),
           ?_,blankReg 1 (by decide) (by decide),?_,blankReg 3 (by decide) (by decide),blankReg 4 (by decide) (by decide),?_⟩
@@ -1125,7 +1220,7 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux k w : ℕ} {L P U : Typ
       have rolePositive := RecursiveRowsNodeLayout.role_positive 142080 layout (by decide) positiveLayout ⟨rows,split⟩
       have generated := @scheduledIntervalDirectory_exec _ L U w common aux interval member directory weights invertible
         B rolePositive shape pool rowRoom archiveRoom queueRoom pairRoom localBody localPush placedPush bounded placed
-        (fun j => prefixes (j/M^(64*64))) _ (embDn place c) localState prepared
+        (directoryChartPrefix replayRole layout.beforeH (M^(64*64)) prefixes) _ (embDn place c) localState prepared
       obtain ⟨prior,bound,tail,price,exec⟩ := scanner c D generated (by
         change D.L (place ((0 : Fin 5).natAdd T)) = []
         rw [directoryChartPlacement_owner,(regs 0).2]
