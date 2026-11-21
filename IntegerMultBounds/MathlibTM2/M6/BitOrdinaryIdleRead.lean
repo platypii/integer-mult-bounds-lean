@@ -506,6 +506,79 @@ theorem directorySpectatorWord_exec {T Q : ℕ} {P U : Type} (body : P → Pr P 
   have ld : d ≤ W := Nat.le_mul_of_pos_left _ hb
   exact ⟨z,_,zy.trans (yv.trans vu),by change k ≤ 34*W+14 at paid; omega,Exec.seq (Exec.seq first second) run⟩
 
+noncomputable def unaryModulusWord {T Q : ℕ} {P U : Type} (r : Fin 10 ↪ Fin T) : Pr P T Q prime U :=
+  (Node.expProg 0 prime (r 0) (r 1) (r 2) (r 4) (r 5) (r 6)).seq
+    (unaryBinary (r 2) (r 3) (r 4) (r 5) (r 6) (r 7) (r 8) (r 9))
+
+private theorem unaryModulusWord_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
+    (r : Fin 10 ↪ Fin T) (u : HS T Q prime U) (D : Stacks T prime) (e : ℕ)
+    (one : (D.R (r 0)).length = 1) (exponent : (D.R (r 1)).length = e)
+    (free : ∀ j : Fin 10, 2 ≤ j.val → D.R (r j) = []) :
+    let M := prime^e
+    ∃ z t, z.user = u.user ∧ t ≤ 43*M+10 ∧ Exec body (unaryModulusWord r) (mk u D) t
+      (mk z {D with R := Function.update (Function.update D.R (r 2) (List.replicate M Node.tick)) (r 3) (binSyms M.size M)}) := by
+  intro M
+  obtain ⟨b,m,user,paid,power⟩ := LabelCounts.power_exec body (one := r 0) (exponent := r 1)
+    (dst := r 2) (t₁ := r 4) (t₂ := r 5) (t₃ := r 6) (by simp) u D one (by
+      intro k hk
+      simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
+      rcases hk with rfl | rfl | rfl | rfl <;> exact free _ (by decide))
+  rw [exponent] at paid power
+  let B : Stacks T prime := {D with R := Function.update D.R (r 2) (List.replicate M Node.tick)}
+  have blank (j : Fin 10) (lo : 3 ≤ j.val) (hi : j.val ≤ 9) : B.R (r j) = [] := by
+    have ne : j ≠ 2 := fun eq => by subst j; exact (by decide : ¬3 ≤ (2 : Fin 10).val) lo
+    change Function.update _ _ _ (r j) = _
+    rw [Function.update_of_ne (r.injective.ne ne),free j (by omega)]
+  obtain ⟨z,l,last,bill,binary⟩ := unaryBinary_exec (body := body) (src := r 2) (dst := r 3) (a := r 4)
+    (h := r 5) (par := r 6) (bits := r 7) (cnt := r 8) (saved := r 9) (by simp) M b B
+    (by simp [B]) (by
+      intro k hk
+      simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
+      rcases hk with rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> exact blank _ (by decide) (by decide))
+  refine ⟨z,m+l,last.trans user,?_,Exec.seq power binary⟩
+  change m ≤ 22*M at paid
+  omega
+
+noncomputable def childModulusWord {T Q : ℕ} {P U : Type} (r : Fin 10 ↪ Fin T) : Pr P T Q prime U :=
+  (((Prog.act (.push (.rt (r 0)) (fun _ => Node.tick) (.push (.rt (r 1)) (fun _ => Node.tick) .done))).seq
+        (unaryModulusWord r)).seq (Prog.act (.pop (.rt (r 1)) (fun v _ => v) (.pop (.rt (r 0)) (fun v _ => v) .done))))
+
+/-- The recursive child has its predecessor in unary. Push a tick onto the
+clock to obtain the exponent, and restore both borrowed tapes before returning. -/
+theorem childModulusWord_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
+    (r : Fin 10 ↪ Fin T) (u : HS T Q prime U) (S : Stacks T prime) (w : ℕ)
+    (clock : (S.R (r 1)).length = w) (free : ∀ j : Fin 10, j ≠ 1 → S.R (r j) = []) :
+    let M := prime^(w+1)
+    ∃ z t, z.user = u.user ∧ t ≤ 43*M+12 ∧ Exec body
+      (childModulusWord r) (mk u S) t
+      (mk z {S with R := Function.update (Function.update S.R (r 2) (List.replicate M Node.tick)) (r 3) (binSyms M.size M)}) := by
+  intro M
+  let D := {S with R := Function.update (Function.update S.R (r 0) [Node.tick]) (r 1) (Node.tick :: S.R (r 1))}
+  have start := Exec.act (body := body) (.push (.rt (r 0)) (fun _ => Node.tick)
+    (.push (.rt (r 1)) (fun _ => Node.tick) .done)) (mk u S)
+  have seed : Exec body _ (mk u S) 1 (mk u D) := start.cast rfl (by simp [Action.run,update_rt,D,free 0 (by decide)])
+  obtain ⟨z,t,user,paid,run⟩ := unaryModulusWord_exec body r u D (w+1) (by simp [D])
+    (by simp [D,clock]) (by
+      intro j high
+      have h₀ : j ≠ 0 := fun eq => by subst j; contradiction
+      have h₁ : j ≠ 1 := fun eq => by subst j; contradiction
+      simpa [D,Function.update_of_ne (r.injective.ne h₀),Function.update_of_ne (r.injective.ne h₁)] using free j h₁)
+  let B := {D with R := Function.update (Function.update D.R (r 2) (List.replicate M Node.tick)) (r 3) (binSyms M.size M)}
+  let clear : Act T Q prime U := .pop (.rt (r 1)) (fun v _ => v) (.pop (.rt (r 0)) (fun v _ => v) .done)
+  refine ⟨z,1+t+1,user,by omega,Exec.seq (Exec.seq seed run) ((Exec.act (body := body) clear (mk z B)).cast rfl ?_)⟩
+  simp [clear,Action.run,update_rt,B,D]
+  congr 2
+  funext j
+  by_cases a : j = r 0
+  · subst j; simp [free 0 (by decide)]
+  by_cases b : j = r 1
+  · subst j; simp
+  by_cases c : j = r 2
+  · subst j; simp
+  by_cases d : j = r 3
+  · subst j; simp
+  simp [Function.update_of_ne,a,b,c,d]
+
 /-- Generate the scanner modulus from the normalized binary precision header.
 The program writes its own unit seed before exponentiation. -/
 theorem ordinaryModulusWord_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
@@ -540,27 +613,11 @@ theorem ordinaryModulusWord_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q
     have ne : j ≠ 1 := fun eq => by subst j; exact (by decide : ¬2 ≤ (1 : Fin 11).val) lo
     change Function.update _ _ _ (r j) = _
     rw [Function.update_of_ne (r.injective.ne ne),empty j (by omega) hi]
-  obtain ⟨b,m,user,paid,power⟩ := LabelCounts.power_exec body (one := r 0) (exponent := r 1)
-    (dst := r 2) (t₁ := r 4) (t₂ := r 5) (t₃ := r 6) (by simp) a D (by simpa [D] using one) (by
-      intro k hk
-      simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
-      rcases hk with rfl | rfl | rfl | rfl <;> exact free _ (by decide) (by decide))
-  have exponent : (D.R (r 1)).length = w+1 := by simp [D]
-  rw [exponent] at paid power
-  let B : Stacks T prime := {D with R := Function.update D.R (r 2) (List.replicate M Node.tick)}
-  have blank (j : Fin 11) (lo : 3 ≤ j.val) (hi : j.val ≤ 9) : B.R (r j) = [] := by
-    have ne : j ≠ 2 := fun eq => by subst j; exact (by decide : ¬3 ≤ (2 : Fin 11).val) lo
-    change Function.update _ _ _ (r j) = _
-    rw [Function.update_of_ne (r.injective.ne ne),free j (by omega) hi]
-  obtain ⟨z,l,last,bill,binary⟩ := unaryBinary_exec (body := body) (src := r 2) (dst := r 3) (a := r 4)
-    (h := r 5) (par := r 6) (bits := r 7) (cnt := r 8) (saved := r 9) (by simp) M b B
-    (by simp [B]) (by
-      intro k hk
-      simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
-      rcases hk with rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> exact blank _ (by decide) (by decide))
-  refine ⟨z,1+(t+(m+l)),last.trans (user.trans keep),?_,Exec.seq seed (Exec.seq decode (Exec.seq power binary))⟩
+  obtain ⟨z,m,user,paid,run⟩ := unaryModulusWord_exec body ((Fin.castAddEmb 1).trans r) a D (w+1)
+    (by change (D.R (r 0)).length = 1; simpa [D] using one)
+    (by change (D.R (r 1)).length = _; simp [D]) (fun j hj => free (j.castAdd 1) hj (by change j.val ≤ 9; omega))
+  refine ⟨z,1+(t+m),user.trans keep,?_,Exec.seq seed (Exec.seq decode run)⟩
   have size : w+1 ≤ M := (Nat.lt_pow_self Shared50ModularControl.prime_prime.one_lt).le
-  change m ≤ 22*M at paid
   omega
 
 /-- Place each local owner program on the same permanent owners and a
