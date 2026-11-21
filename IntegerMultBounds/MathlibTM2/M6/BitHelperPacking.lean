@@ -1,6 +1,7 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.Cover.FallbackPackSchedule
+public import IntegerMultBounds.MathlibTM2.M6.BitOrdinaryChildLayout
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackPayloadPlacement
 public import IntegerMultBounds.MathlibTM2.M6.BitRouteFactors
 import Mathlib.Data.List.FinRange
 
@@ -63,18 +64,21 @@ def helperDigits : Fin 128 ≃ Axis ⊕ Axis :=
     (@finSumFinEquiv 56 56).symm.trans (Equiv.sumCongr exterior exterior)
   (@finSumFinEquiv 16 112).symm.trans ((Equiv.sumCongr live tail).trans (Equiv.sumSumSumComm ..))
 
+/-- The physical digits of a parent address in one helper slot. -/
+noncomputable def helperSlotField (c : PortCertificate) (x : ℕ) (hx : x ≤ 55)
+    (w : ℕ) (s : IntegerMultBounds.Swap.Shear.State Axis (ZMod (prime^w))) :=
+  let H := (IntegerMultBounds.Swap.Modular.reduce (prime^w) (c.helperChart x hx)).transpose
+  (Sum.elim (H *ᵥ s.1) (H *ᵥ s.2)) ∘ helperDigits
+
 /-- The address obtained by the tape permutation reads precisely the next
 slot chart, including the digits that used to belong to the exterior. -/
 theorem helperDigits_reindex (c : PortCertificate) (x y : ℕ) (hx : x ≤ 55) (hy : y ≤ 55)
     (w : ℕ) (s : IntegerMultBounds.Swap.Shear.State Axis (ZMod (prime^w))) :
-    let field := fun k hk =>
-      let H := (IntegerMultBounds.Swap.Modular.reduce (prime^w) (c.helperChart k hk)).transpose
-      (Sum.elim (H *ᵥ s.1) (H *ᵥ s.2)) ∘ helperDigits
     let order := (helperSlotOrder y hy).trans (helperSlotOrder x hx).symm
-    field x hx ∘ helperDigits.trans ((Equiv.sumCongr order order).trans helperDigits.symm) = field y hy := by
-  intro field order
+    helperSlotField c x hx w s ∘ helperDigits.trans ((Equiv.sumCongr order order).trans helperDigits.symm) = helperSlotField c y hy w s := by
+  intro order
   funext i
-  simp only [field,Function.comp_apply,Equiv.trans_apply,Equiv.apply_symm_apply]
+  simp only [helperSlotField,Function.comp_apply,Equiv.trans_apply,Equiv.apply_symm_apply]
   cases helperDigits i with
   | inl j => exact (congrFun (helperSlot_reindex c x y hx hy w s.1) j).symm
   | inr j => exact (congrFun (helperSlot_reindex c x y hx hy w s.2) j).symm
@@ -84,31 +88,178 @@ local notation "N" => rowSwapBlock.tapes
 local notation "Q" => rowSwapBlock.states
 local instance (w : ℕ) : NeZero (prime^(w+1)) := ⟨(pow_pos prime_prime.pos _).ne'⟩
 
-/-- The same machine works at every positive digit width. It permutes the
-coordinates of both fields and leaves the trailing spectator in place. -/
-theorem helperSlotPack_exec [Fintype P] (body : P → Pr P (N+35) Q prime U)
-    (x y : ℕ) (hx : x ≤ 55) (hy : y ≤ 55) :
-    let order := (helperSlotOrder y hy).trans (helperSlotOrder x hx).symm
-    let perm := helperDigits.trans ((Equiv.sumCongr order order).trans helperDigits.symm)
-    ∃ (code : Pr P (N+35) Q prime U) (setup swaps : ℕ), ∀ w W, 0 < W →
+noncomputable def helperRecordBank {k : ℕ} (t : Fin k) : Fin 35 ↪ Fin ((N+35)+k) :=
+  ((Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)).trans
+    (payloadPlacement (24 : Fin (N+35)) t)
+
+private theorem helperPrivatePort {k : ℕ} (t : Fin k) (i : Fin (N+35)) (ne : i ≠ 24) :
+    payloadPlacement (24 : Fin (N+35)) t i = i.castAdd k := by
+  apply Equiv.swap_apply_of_ne_of_ne
+  · exact (Fin.castAddEmb k).injective.ne ne
+  · intro eq
+    have h := congrArg Fin.val eq
+    simp at h
+    omega
+
+private theorem helperRecordBank_off {k : ℕ} (t u : Fin k) (i : Fin 35) (ne : i ≠ 24) :
+    helperRecordBank t i = helperRecordBank u i := by
+  let j := ((Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)) i
+  have hj : j ≠ 24 := by
+    intro eq
+    apply ne
+    have vals := congrArg Fin.val eq
+    change i.val = _ at vals
+    exact Fin.ext (by simpa [Fin.val_natCast,Nat.mod_eq_of_lt (by omega : 24 < N+35)] using vals)
+  exact (helperPrivatePort t j hj).trans (helperPrivatePort u j hj).symm
+
+/-- The returned headers and scratch serve every owner. Switching owners
+requires just the positioned source read of the selected tape. -/
+private theorem helperRecord_switch {k w W : ℕ} {t u : Fin k}
+    {record : List (Fin (prime+4))} {dest : ℤ → Fin 4} {q : ℤ}
+    {a b : Fin ((prime^(w+1))^128*W) → ZMod 2} {F : Stacks ((N+35)+k) prime}
+    (stored : RecordReady (b := prime) (w := w) (d := 128) (W := W) (helperRecordBank t)
+      (prime^(w+1)).size W.size record SparseRoleCircuit.encode (fun _ => blank) dest 0 q a F)
+    (src : ∀ z, readAt blank (F.L (helperRecordBank u 24)) (F.R (helperRecordBank u 24)) (z-0) =
+      RadixToBinary.binaryEncoding.encode (putWord (fun _ => blank) 0 (List.ofFn (SparseRoleCircuit.encode ∘ b)) z)) :
+    RecordReady (b := prime) (w := w) (d := 128) (W := W) (helperRecordBank u)
+      (prime^(w+1)).size W.size record SparseRoleCircuit.encode (fun _ => blank) dest 0 q b F := by
+  refine ⟨?_,?_,?_,?_,?_,?_,?_,src,?_⟩
+  · rw [helperRecordBank_off u t _ (by decide)]
+    exact stored.modulus
+  · rw [helperRecordBank_off u t _ (by decide)]
+    exact stored.width
+  · rw [helperRecordBank_off u t _ (by decide)]
+    exact stored.one
+  · rw [helperRecordBank_off u t _ (by decide)]
+    exact stored.padded
+  · rw [helperRecordBank_off u t _ (by decide)]
+    exact stored.clock
+  · rw [helperRecordBank_off u t _ (by decide)]
+    exact stored.archive
+  · intro i hi
+    rw [helperRecordBank_off u t i (fun eq => (by decide : (24 : Fin 35) ∉ shearWork) (eq ▸ hi))]
+    exact stored.scratch i hi
+  · rw [helperRecordBank_off u t _ (by decide)]
+    exact stored.dst
+
+/-- Run a slot change on its permanent owner. All other owner tapes retain
+both stacks, and the output owner reads the old word at the new slot address. -/
+theorem helperSlotPack_exec {k : ℕ} (owner : Fin k) (x y : ℕ) (hx : x ≤ 55) (hy : y ≤ 55)
+    (body : P → Pr P ((N+35)+k) Q prime U) :
+    let clean := fun (S : Stacks ((N+35)+k) prime) => ∀ i : Fin (N+35), 35 ≤ i.val →
+      S.L (i.castAdd k) = [] ∧ S.R (i.castAdd k) = []
+    ∃ (code : Pr P ((N+35)+k) Q prime U) (C : ℝ), ∀ w W, 0 < W →
       let M := prime^(w+1)
-      let bank := (Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)
-      let clean := fun (S : Stacks (N+35) prime) => ∀ k : Fin (N+35), 35 ≤ k.val → S.L k = [] ∧ S.R k = []
-      ∀ (v : HS (N+35) Q prime U) (S : Stacks (N+35) prime)
+      ∀ (v : HS ((N+35)+k) Q prime U) (S : Stacks ((N+35)+k) prime)
         (record : List (Fin (prime+4))) (dest : ℤ → Fin 4) (q : ℤ)
-        (original : Fin (M^128*W) → ZMod 2) (addr : (Fin 128 → ZMod M) → Fin 128 → ZMod M),
-      let ready := ColumnRecordReady bank M.size W.size record SparseRoleCircuit.encode
-        (fun _ => blank) dest 0 q original
-      ready addr S → clean S → ∃ z F n, z.user = v.user ∧
-        n ≤ (setup+swaps*swapVolumeRate w)*(M^128*W) ∧
-        Exec body code (mk v S) n (mk z F) ∧ ready (fun a => addr a ∘ perm) F ∧ clean F := by
-  intro order perm
+        (data : Fin k → Fin (M^128*W) → ZMod 2),
+      let ready := fun t => RecordReady (b := prime) (w := w) (d := 128) (W := W) (helperRecordBank t) M.size W.size record
+        SparseRoleCircuit.encode (fun _ => blank) dest 0 q
+      (∀ t, ready t (data t) S) → clean S → ∃ z F, ∃ n : ℕ, ∃ out, z.user = v.user ∧
+        (n : ℝ) ≤ C * ((M^128*W : ℕ) : ℝ) * ((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau ∧
+        Exec body code (mk v S) n (mk z F) ∧ (∀ t, ready t (Function.update data owner out t) F) ∧ clean F ∧
+        (∀ c s j, out (FlatCoordinateLayout.index (helperSlotField c y hy (w+1) s) j) =
+          data owner (FlatCoordinateLayout.index (helperSlotField c x hx (w+1) s) j)) ∧
+        ∀ t : Fin k, t ≠ owner → F.L (t.natAdd (N+35)) = S.L (t.natAdd (N+35)) ∧
+          F.R (t.natAdd (N+35)) = S.R (t.natAdd (N+35)) := by
+  intro clean
+  let ports := payloadPlacement (24 : Fin (N+35)) owner
+  let order := (helperSlotOrder y hy).trans (helperSlotOrder x hx).symm
+  let perm := helperDigits.trans ((Equiv.sumCongr order order).trans helperDigits.symm)
   obtain ⟨is,fits,acts⟩ := fieldSchedule perm
-  obtain ⟨setup,swaps,bound⟩ := packTime_le body 128 is (by decide)
-  refine ⟨packSchedule 128 is,setup,swaps,?_⟩
-  intro w W hW M bank clean v S record dest q original addr ready start free
-  obtain ⟨z,F,n,user,cost,run,placed,clear⟩ := packSchedule_exec is fits M.size W.size
-    (Nat.size_le.mp le_rfl) (Nat.size_le.mp le_rfl) hW body v S record dest q original addr start free
-  exact ⟨z,F,n,user,cost.trans (bound w W hW),run,by simpa only [acts] using placed,clear⟩
+  obtain ⟨setup,swaps,bound⟩ := packTime_le (P := Empty) (U := U) Empty.elim 128 is (by decide)
+  let C := ((setup+1 : ℕ) : ℝ) + (swaps : ℝ)*(3808275+M8.RevMachine.LeafCore.C)
+  refine ⟨statePlacedNormalized ports le_rfl swapStates_pos Empty.elim (packSchedule 128 is),C,?_⟩
+  intro w W hW M v S record dest q data ready start free
+  have privatePort (i : Fin (N+35)) (hi : 35 ≤ i.val) : ports i = i.castAdd k := by
+    apply helperPrivatePort
+    rintro rfl
+    have bound : (24 : Fin (N+35)).val ≤ 24 := Nat.mod_le _ _
+    omega
+  obtain ⟨z,F,n,user,cost,run,⟨out,stored,read⟩,clear,off⟩ := placedPackSchedule_exec le_rfl ports is fits
+    body v S record dest q hW (data owner) id ⟨data owner,start owner,fun _ _ => rfl⟩ (fun i hi => by rw [privatePort i hi]; exact free i hi)
+  let V := M^128*W
+  have live : 1 ≤ V := Nat.mul_pos (pow_pos (pow_pos prime_prime.pos _) _) hW
+  have paid := cost.trans (Nat.add_le_add_left (bound w W hW) 1)
+  have bill : n ≤ (setup+1+swaps*swapVolumeRate w)*V := by
+    change n ≤ 1+(setup+swaps*swapVolumeRate w)*V at paid
+    simp only [Nat.add_mul,Nat.one_mul] at paid ⊢
+    omega
+  let power := ((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau
+  have one : 1 ≤ power := Real.one_le_rpow (by exact_mod_cast Nat.le_add_left 1 w)
+    M8.Machine.BudgetBound.exponent_range.1.le
+  have coeff : ((setup+1+swaps*swapVolumeRate w : ℕ) : ℝ) ≤ C*power := by
+    rw [Nat.cast_add,Nat.cast_mul]
+    unfold C
+    rw [add_mul,mul_assoc]
+    exact add_le_add (le_mul_of_one_le_right (Nat.cast_nonneg _) one)
+      (mul_le_mul_of_nonneg_left (swapVolumeRate_le w) (Nat.cast_nonneg _))
+  have time : (n : ℝ) ≤ C*V*power := by
+    rw [mul_right_comm C]
+    exact ((Nat.cast_le (α := ℝ)).mpr bill).trans (by
+      rw [Nat.cast_mul]; exact mul_le_mul_of_nonneg_right coeff (Nat.cast_nonneg _))
+  have records : ∀ t, ready t (Function.update data owner out t) F := by
+    intro t
+    by_cases same : t = owner
+    · subst t
+      rw [Function.update_self]
+      exact stored
+    · rw [Function.update_of_ne same]
+      apply helperRecord_switch (t := owner) stored
+      intro z
+      have kept := off _ (payloadPlacement_off _ owner t same)
+      have port : helperRecordBank t 24 = t.natAdd (N+35) := payloadPlacement_shared _ _
+      rw [← port] at kept
+      rw [kept.1,kept.2]
+      exact (start t).src z
+  exact ⟨z,F,n,out,user,time,run,records,(fun i hi => by rw [← privatePort i hi]; exact clear i hi),
+    fun c s j => by
+      rw [← helperDigits_reindex c x y hx hy (w+1) s]
+      simpa only [id_eq,acts] using read (helperSlotField c x hx (w+1) s) j,
+    fun t ne => off _ (payloadPlacement_off _ owner t ne)⟩
+
+/-- Execute a list of slot changes using one workspace. Its charge coefficient
+depends only on the list, including when the same owner occurs repeatedly. -/
+theorem helperSlotBatch_exec {k : ℕ} (changes : List (Fin k × Fin 56 × Fin 56))
+    (body : P → Pr P ((N+35)+k) Q prime U) :
+    ∃ (code : Pr P ((N+35)+k) Q prime U) (C : ℝ), ∀ w W, 0 < W →
+      let M := prime^(w+1)
+      let V := M^128*W
+      ∀ (v : HS ((N+35)+k) Q prime U) (S : Stacks ((N+35)+k) prime)
+        (record : List (Fin (prime+4))) (dest : ℤ → Fin 4) (q : ℤ)
+        (data : Fin k → Fin V → ZMod 2),
+      let ready := fun t => RecordReady (b := prime) (w := w) (d := 128) (W := W) (helperRecordBank t)
+        M.size W.size record SparseRoleCircuit.encode (fun _ => blank) dest 0 q
+      let clean := fun (D : Stacks ((N+35)+k) prime) => ∀ i : Fin (N+35), 35 ≤ i.val →
+        D.L (i.castAdd k) = [] ∧ D.R (i.castAdd k) = []
+      (∀ t, ready t (data t) S) → clean S → ∃ z F, ∃ n : ℕ, ∃ result, z.user = v.user ∧
+        (n : ℝ) ≤ C*V*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau ∧
+        Exec body code (mk v S) n (mk z F) ∧ (∀ t, ready t (result t) F) ∧ clean F ∧
+        changes.foldr (fun (t,x,y) next a => ∃ word,
+          (∀ c s j, word (FlatCoordinateLayout.index (helperSlotField c y (by omega) (w+1) s) j) =
+            a t (FlatCoordinateLayout.index (helperSlotField c x (by omega) (w+1) s) j)) ∧
+          next (Function.update a t word)) (· = result) data := by
+  induction changes with
+  | nil =>
+    refine ⟨.act .done,1,?_⟩
+    intro w W hW M V v S record dest q data ready clean start free
+    refine ⟨v,S,1,data,rfl,?_,Exec.act _ _,start,free,rfl⟩
+    have live : 1 ≤ V := Nat.mul_pos (pow_pos (pow_pos prime_prime.pos _) _) hW
+    have power := Real.one_le_rpow (by exact_mod_cast Nat.le_add_left 1 w : (1:ℝ) ≤ ((w+1 : ℕ) : ℝ))
+      M8.Machine.BudgetBound.exponent_range.1.le
+    simpa using one_le_mul_of_one_le_of_one_le (show (1:ℝ) ≤ V by exact_mod_cast live) power
+  | cons step rest ih =>
+    obtain ⟨t,x,y⟩ := step
+    obtain ⟨A,C,one⟩ := helperSlotPack_exec t x y (by omega) (by omega) body
+    obtain ⟨B,D,tail⟩ := ih
+    refine ⟨.seq A B,C+D,?_⟩
+    intro w W hW M V v S record dest q data ready clean start free
+    obtain ⟨u,E,m,word,user,cost,run,stored,clear,read,_⟩ :=
+      one w W hW v S record dest q data start free
+    obtain ⟨z,F,n,result,finalUser,bill,exec,done,empty,trace⟩ :=
+      tail w W hW u E record dest q _ stored clear
+    refine ⟨z,F,m+n,result,finalUser.trans user,?_,Exec.seq run exec,done,empty,word,read,trace⟩
+    rw [Nat.cast_add,add_mul,add_mul]
+    exact add_le_add cost bill
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
