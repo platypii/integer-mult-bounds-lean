@@ -821,6 +821,10 @@ def idleCopyIndex (k : (Fin 32 × Fin 5) × Fin 222) : Fin idleCopies.length :=
 theorem idleCopyIndex_get (k : (Fin 32 × Fin 5) × Fin 222) :
     idleCopies[(idleCopyIndex k).val] = k := List.getElem_idxOf ..
 
+theorem idleCopyIndex_at (j : Fin idleCopies.length) : idleCopyIndex idleCopies[j.val] = j := by
+  apply Fin.ext
+  exact (show idleCopies.Nodup from stageRuns_nodup.product (List.nodup_finRange _)).idxOf_getElem j j.isLt
+
 /-- Local interval runs suffice to execute the idle on a common owner bank. -/
 def PlacedIdleExecution {w R W parents jobs : ℕ} {P U : Type} (i : Fin 9)
     (parent : Fin 64 → ZMod (prime^(w+1)))

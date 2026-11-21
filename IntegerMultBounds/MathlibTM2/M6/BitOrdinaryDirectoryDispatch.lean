@@ -960,19 +960,22 @@ open IntegerMultBounds.Networks.Certificates.PR589.Nine RecursiveInterchangeLayo
 occurrences retain their entire branch budgets for the stage pieces. -/
 theorem scheduledIdleTime [M8.Machine.Net] (node : Descriptor) (width : 64 ∣ node.width) (rows : 142080 ∣ node.rows)
     (cutoff : ℕ) (recursiveBudget : Fin nodeChildren5.length → ℕ) (time : Fin 9 → ℝ)
-    (bill : Fin 9 → (Fin 32 × Fin 5) × Fin 222 → ℝ) (overhead : Fin 9 × Fin idleCopies.length → ℝ) :
+    (localTime : Fin 9 × Fin idleCopies.length → ℝ) (overhead : Fin 9 × Fin idleCopies.length → ℝ) :
     let child := scheduledChild prime node
     let branch := fun i => scheduledBranchCost (child i) cutoff (recursiveBudget i)
     let calls := Finset.univ.map idleDirectoryIndex
-    (∀ i, time i ≤ (idleCopies.map (bill i)).sum+1) →
+    (∀ i, time i ≤ (idleCopies.map (fun k => 1+localTime (i,idleCopyIndex k))).sum+1) →
     (∀ k : Fin 9 × Fin idleCopies.length, let i := idleDirectoryIndex k
-      bill k.1 idleCopies[k.2.val] ≤ overhead k+scheduledChartBudget (child i) cutoff (recursiveBudget i)) →
+      localTime k ≤ overhead k+scheduledChartBudget (child i) cutoff (recursiveBudget i)) →
     (∑ i, time i) + (∑ j ∈ callsᶜ, branch j) ≤
-      (∑ k, overhead k) + (9*1907/4 : ℝ)*volume prime node + (∑ j, branch j) + 9 := by
+      (∑ k, overhead k) + (9*1907/4 : ℝ)*volume prime node + (∑ j, branch j) + 319689 := by
   classical
   intro child branch calls passes paid
   let budget := fun j => (scheduledChartBudget (child j) cutoff (recursiveBudget j) : ℝ)
-  have total := idleDirectoryTime time bill overhead budget passes paid
+  let bill := fun (i : Fin 9) k => 1+localTime (i,idleCopyIndex k)
+  have total := idleDirectoryTime time bill (fun k => 1+overhead k) budget passes (by
+    intro k
+    simpa only [bill,idleCopyIndex_at,add_assoc] using add_le_add_right (paid k) 1)
   have stages := Finset.sum_add_sum_compl calls budget
   have selectors := scheduledChartDispatch_sum node width rows calls cutoff recursiveBudget
   change (∑ i ∈ calls, budget i) ≤ _ + ∑ i ∈ calls, branch i at selectors
@@ -981,7 +984,9 @@ theorem scheduledIdleTime [M8.Machine.Net] (node : Descriptor) (width : 64 ∣ n
   have card : calls.card = 319680 := by
     simp only [calls,Finset.card_map,Finset.card_univ,Fintype.card_prod,Fintype.card_fin,idleCopies_length]
   rw [card] at selectors
-  norm_num at selectors ⊢
+  simp only [Finset.sum_add_distrib,Finset.sum_const,Finset.card_univ,Fintype.card_prod,
+    Fintype.card_fin,idleCopies_length,nsmul_eq_mul] at total
+  norm_num at selectors total ⊢
   linarith only [total,stages,selectors,branches]
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
