@@ -8,6 +8,31 @@ namespace IntegerMultBounds.MathlibTM2.M6.BitNode
 open IntegerMultBounds.Machine IntegerMultBounds.Networks Cover Cover.Fallback Stack Host
 open Shared50ModularControl (prime)
 
+/-- The incoming scan consumes the two copies. The original masks retain
+directory order for the return pass. Both copies share the temporary tapes. -/
+theorem copyDirectoryMasks_exec {ι P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U)
+    (p : Fin 6 ↪ Fin T) (labels : List ι) (live bad : ι → Bool)
+    (v : HS T Q prime U) (S : Stacks T prime)
+    (ls : S.R (p 0) = labels.map (fun j => bitSymbol (live j)))
+    (bs : S.R (p 1) = labels.map (fun j => bitSymbol (bad j)))
+    (free : ∀ k : Fin 6, 2 ≤ k → S.R (p k) = []) :
+    let D := {S with R := Function.update (Function.update S.R (p 2) (S.R (p 0))) (p 3) (S.R (p 1))}
+    ∃ z, z.user = v.user ∧ Exec body
+      ((bcopy (p 0) (p 2) (p 4) (p 5)).seq (bcopy (p 1) (p 3) (p 4) (p 5)))
+      (mk v S) (12*labels.length+12) (mk z D) := by
+  intro D
+  obtain ⟨u,user,first⟩ := bcopy_exec body ((by decide : ([0,2,4,5] : List (Fin 6)).Nodup).map p.injective)
+    v S (free 4 (by decide)) (free 5 (by decide))
+  rw [free 2 (by decide),List.append_nil] at first
+  let B := {S with R := Function.update S.R (p 2) (S.R (p 0))}
+  have kept (j : Fin 6) (h : j ≠ 2) : B.R (p j) = S.R (p j) := Function.update_of_ne (p.injective.ne h) ..
+  obtain ⟨z,hz,last⟩ := bcopy_exec body ((by decide : ([1,3,4,5] : List (Fin 6)).Nodup).map p.injective)
+    u B ((kept 4 (by decide)).trans (free 4 (by decide))) ((kept 5 (by decide)).trans (free 5 (by decide)))
+  rw [kept 1 (by decide),kept 3 (by decide),free 3 (by decide),List.append_nil] at last
+  refine ⟨z,hz.trans user,Exec.cast (Exec.seq first last) ?_ rfl⟩
+  simp only [ls,bs,List.length_map]
+  omega
+
 theorem collectDirectoryRows_exec {ι P U : Type} {T Q N : ℕ} (body : P → Pr P T Q prime U)
     (p : Fin 6 ↪ Fin T) (record : Pr P T Q prime U) (cost : ι → ℕ)
     (valid : ι → (Fin N → ZMod 2) → Prop) (ready : List ι → Stacks T prime → Prop)
@@ -65,5 +90,54 @@ theorem collectDirectoryRows_exec {ι P U : Type} {T Q N : ℕ} (body : P → Pr
   · simp [p.injective.eq_iff]
   · intro k h₃ h₅
     simp [Function.update_of_ne,h₃,h₅]
+
+/-- Collect one packed word per label, dispatching with the two working
+masks. Each branch sees both selectors advanced past its own label. -/
+theorem collectClassifiedRows_exec {ι P U : Type} {T Q N : ℕ} (body : P → Pr P T Q prime U)
+    (p : Fin 7 ↪ Fin T) (good exceptional padding : Pr P T Q prime U) (cost : ι → ℕ)
+    (live bad : ι → Bool) (valid : ι → (Fin N → ZMod 2) → Prop)
+    (ready : List ι → Stacks T prime → Prop) (labels : List ι) (u : HS T Q prime U) (S : Stacks T prime) :
+    let bits := fun (f : ι → Bool) (rs : List ι) => rs.map (fun j => bitSymbol (a := prime) (f j))
+    let dispatch := ownerDispatch (p 0) (p 6) good exceptional padding
+    let collect := Mult.ShortConv.transfer (p 1) (p 2) (p 3) (p 4)
+    let inspect : Pr P T Q prime U := .act (peekR (p 0))
+    let scan := inspect.seq (.loop (·.flag) ((dispatch.seq collect).seq inspect))
+    let next := fun (D : Stacks T prime) (word : Fin N → ZMod 2) =>
+      {D with R := Function.update (Function.update D.R (p 2) ((D.R (p 2)).drop N)) (p 3) ((payloadWord (SparseRoleCircuit.encode ∘ word)).reverse ++ D.R (p 3))}
+    (∀ j rs (v : HS T Q prime U) A, ready (j::rs) A →
+      let B := {A with R := Function.update (Function.update A.R (p 0) (bits live rs)) (p 6) (bits bad rs)}
+      ∃ y D n word, y.user = v.user ∧ n ≤ cost j ∧
+        Exec body (if live j then (if bad j then exceptional else good) else padding)
+          (mk {v with flag := bad j} B) n (mk y D) ∧ valid j word ∧
+        RecordPayload (p 2) (fun _ => blank) 0 word D ∧ (D.R (p 1)).length = N ∧ D.R (p 4) = [] ∧
+        D.R (p 3) = A.R (p 3) ∧ D.R (p 0) = bits live rs ∧ D.R (p 6) = bits bad rs ∧ ready rs (next D word)) →
+    ready labels S → S.R (p 3) = [] → S.R (p 0) = bits live labels → S.R (p 6) = bits bad labels →
+    (∀ A, ready [] A → A.R (p 5) = [] ∧ A.L (p 5) = []) →
+    ∃ z F n rows, z.user = u.user ∧
+      n ≤ (labels.map (fun j => (cost j+4)+(4*N+4))).sum + 2*labels.length + 2 + (2*(labels.length*N)+2) ∧
+      Exec body (scan.seq (moveR (p 3) (p 5) id)) (mk u S) n (mk z F) ∧
+      List.Forall₂ (fun j tape => ∃ word, valid j word ∧ tape = payloadWord (SparseRoleCircuit.encode ∘ word))
+        labels rows ∧ F.R (p 5) = rows.flatten ∧ F.L (p 5) = [] ∧ F.R (p 0) = [] ∧ F.R (p 6) = [] ∧
+      ∃ D, ready [] D ∧ ∀ k, k ≠ p 3 → k ≠ p 5 → F.L k = D.L k ∧ F.R k = D.R k := by
+  intro bits dispatch collect inspect scan next step start empty ls bs dest
+  let inv := fun rs (A : Stacks T prime) => ready rs A ∧ A.R (p 0) = bits live rs ∧ A.R (p 6) = bits bad rs
+  obtain ⟨z,F,n,rows,user,time,run,ordered,queue,left,_,D,done,frame⟩ := collectDirectoryRows_exec body
+    ((Fin.castLEEmb (by decide : 6 ≤ 7)).trans p) dispatch (fun j => cost j+4) valid inv labels u S
+    (fun rs A h => by change (A.R (p 0)).head?.isSome = _; rw [h.2.1]; cases rs <;> rfl) (by
+      intro j rs v A h
+      obtain ⟨y,D,n,word,user,time,branch,ok,payload,width,tmp,stack,ls,bs,done⟩ := step j rs v A h.1
+      have run := ownerDispatch_exec body (p 0) (p 6) (p.injective.ne (by decide)) good exceptional padding
+        (live j) (bad j) v A (bits live rs) (bits bad rs) h.2.1 h.2.2 branch
+      refine ⟨y,D,_,word,user,?_,run,ok,payload,width,tmp,stack,done,?_,?_⟩
+      · split <;> omega
+      · change (next D word).R (p 0) = _
+        simpa [next,Function.update_of_ne,p.injective.eq_iff] using ls
+      · change (next D word).R (p 6) = _
+        simpa [next,Function.update_of_ne,p.injective.eq_iff] using bs)
+    ⟨start,ls,bs⟩ empty (fun A h => dest A h.1)
+  exact ⟨z,F,n,rows,user,time,run,ordered,queue,left,
+    (frame _ (p.injective.ne (by decide : (0 : Fin 7) ≠ 3)) (p.injective.ne (by decide))).2.trans done.2.1,
+    (frame _ (p.injective.ne (by decide : (6 : Fin 7) ≠ 3)) (p.injective.ne (by decide))).2.trans done.2.2,
+    D,done.1,frame⟩
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode

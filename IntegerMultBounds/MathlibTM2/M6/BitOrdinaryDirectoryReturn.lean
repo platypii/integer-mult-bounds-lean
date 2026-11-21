@@ -280,4 +280,69 @@ theorem preparedDirectoryCall_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T
     have outside : k ≠ p 1 := fun eq => off (by simp [eq])
     exact ⟨(frame k off).1,(frame k off).2.trans (Function.update_of_ne outside ..)⟩
 
+/-- Feed physical scan results to the shared call. A bypass row may contain
+a repaired exceptional value or an unchanged padding value. Its witness is
+reindexed logically, so neither bypass branch needs a tape permutation. -/
+theorem scannedDirectoryCall_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U)
+    (f : P) (p : Fin 7 ↪ Fin T) (parent : RecursiveInterchangeLayout.Descriptor) (r g w : ℕ) :
+    let W := parent.between*parent.afterD
+    let packed := ordinaryChildDescriptor r g w W
+    let batch := ordinaryDirectoryChild parent r g w
+    let R := LabelMask.records parent
+    let V := RecursiveInterchangeLayout.volume prime batch
+    let N := RecursiveInterchangeLayout.volume prime packed
+    let raw := (prime^(w+1))^((r+g)+(r+g))*W
+    let size := ordinaryDirectoryChild_volume parent r g w
+    let pos := ordinaryRecursivePosition r g w W
+    ∀ (incoming : ℕ → (Fin raw → ZMod 2) → Prop) (bypass : ℕ → (Fin N → ZMod 2) → Prop)
+      (rows : List (List (Fin (prime+4)))) (live bad : ℕ → Bool)
+      (u : HS T Q prime U) (S : Stacks T prime) (budget : ℕ),
+    let active := fun j => live j && !bad j
+    List.Forall₂ (fun j tape => ∃ physical : Fin N → ZMod 2,
+      (if active j then ∃ word, incoming j word ∧ physical = word ∘ pos else bypass j physical) ∧
+      tape = payloadWord (SparseRoleCircuit.encode ∘ physical)) (List.range R) rows →
+    S.L (p 0) = [] → S.R (p 0) = rows.flatten → S.R (p 1) = [] →
+    S.R (p 2) = [] → (S.R (p 3)).length = N → S.R (p 4) = [] →
+    S.R (p 5) = (List.finRange R).map (fun j : Fin R => bitSymbol (live j)) →
+    S.R (p 6) = (List.finRange R).map (fun j : Fin R => bitSymbol (bad j)) →
+    let D := {S with R := Function.update S.R (p 1) rows.flatten}
+    (∀ v : HS T Q prime U, v.user = u.user → ∀ word : Fin V → ZMod 2, RecordPayload (p 0) (fun _ => blank) 0 word D →
+      ∃ y F t, y.user = v.user ∧ t ≤ budget ∧ Exec body (body f) (mk v D) t (mk y F) ∧
+        RecordPayload (p 0) (fun _ => blank) 0 (Shared50RecursiveNodeRows.transpose (one_dvd batch.rows) word) F ∧
+        (∀ k, k ≠ p 0 → F.L k = D.L k ∧ F.R k = D.R k)) →
+    ∃ z F t, ∃ out : Fin V → ZMod 2, z.user = u.user ∧ t ≤ budget+R*(16*N+14)+12 ∧
+      Exec body ((bcopy (p 0) (p 1) (p 2) (p 4)).seq ((.call f : Pr P T Q prime U).seq (directoryReturn p)))
+        (mk u S) t (mk z F) ∧ RecordPayload (p 0) (fun _ => blank) 0 out F ∧
+      (∀ j : Fin R, if active j then ∃ word, incoming j word ∧
+        ownerRow size out j = ordinaryChildOutput (r := r) (g := g) (w := w) word ∘ pos
+        else bypass j (ownerRow size out j)) ∧
+      F.R (p 1) = [] ∧ F.R (p 2) = [] ∧ F.R (p 5) = [] ∧ F.R (p 6) = [] ∧
+      ∀ k, k ∉ [p 0,p 1,p 2,p 5,p 6] → F.L k = S.L k ∧ F.R k = S.R k := by
+  intro W packed batch R V N raw size pos incoming bypass rows live bad u S budget active scanned left queue
+    free empty width tmp ls bs D child
+  let ready := fun j (word : Fin raw → ZMod 2) => if active j then incoming j word else bypass j (word ∘ pos)
+  obtain ⟨z,F,t,out,user,time,run,payload,returned,frame⟩ := preparedDirectoryCall_exec body f p parent r g w
+    ready rows (fun j => live j) (fun j => bad j) u S budget (by
+      apply scanned.imp
+      rintro j tape ⟨physical,ok,rfl⟩
+      cases h : active j with
+      | true =>
+        obtain ⟨word,hw,rfl⟩ := (show ∃ word, incoming j word ∧ physical = word ∘ pos from by simpa [h] using ok)
+        exact ⟨word,by simpa [ready,h] using hw,rfl⟩
+      | false =>
+        let e := ordinaryChildLayoutEquiv r g w W
+        have back : (physical ∘ e.symm) ∘ pos = physical := by
+          funext i
+          exact congrArg physical (e.symm_apply_apply i)
+        exact ⟨physical ∘ e.symm,by simpa [ready,h,back] using ok,by change payloadWord _ = payloadWord (SparseRoleCircuit.encode ∘ ((physical ∘ e.symm) ∘ pos)); rw [back]⟩)
+    left queue free empty width tmp ls bs child
+  refine ⟨z,F,t,out,user,time,run,payload,?_,frame⟩
+  intro j
+  obtain ⟨word,ok,eqn⟩ := returned j
+  change ownerRow size out j = (if active j then _ else word) ∘ pos at eqn
+  cases h : active j <;> simp only [h,Bool.false_eq_true,ite_false,ite_true] at eqn ⊢
+  · rw [eqn]
+    simpa [ready,h] using ok
+  · exact ⟨word,by simpa [ready,h] using ok,eqn⟩
+
 end IntegerMultBounds.MathlibTM2.M6.BitNode
