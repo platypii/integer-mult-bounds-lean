@@ -77,6 +77,201 @@ theorem frameBasis_owner (l : Fin 636) (inverse : Bool) :
     input_payload := payload, output_payload := fun x => payload (out x),
     strip_input := fun x => (strip x).trans (basisWorkspace_eq stages x 0), realizes := exec },rfl,rfl,read⟩
 
+open Matrix in
+/-- In this basis column `i` is the direction of a shear. The remaining
+columns, apart from `j`, lie in the kernel of its control row. -/
+def shearBasis {d : ℕ} {R : Type*} [CommRing R] (i j : Fin d)
+    (v n : Fin d → R) (q : R) : Matrix (Fin d) (Fin d) R := fun a b =>
+  if b = i then v a else if b = j then (Pi.single j 1 : Fin d → R) a
+  else ((Pi.single b 1 : Fin d → R) - (Pi.single j (q*n b) : Fin d → R)) a
+
+open Matrix in
+theorem shearBasis_spec {d : ℕ} {R : Type*} [CommRing R] {i j : Fin d}
+    {v n : Fin d → R} {q : R} (order : i < j)
+    (direction : ∀ a, a < i → v a = 0) (control : ∀ b, j < b → n b = 0)
+    (pivot : IsUnit (v i)) (inv : n j * q = 1) (zero : n ⬝ᵥ v = 0) :
+    let B := shearBasis i j v n q
+    IntegerMultBounds.Swap.Shear.LowerTriangular B ∧ IsUnit B ∧
+      (∀ a, B a i = v a) ∧ n ᵥ* B = Pi.single j (n j) := by
+  intro B
+  have lower : IntegerMultBounds.Swap.Shear.LowerTriangular B := by
+    intro a b hab
+    by_cases hi : b = i
+    · subst b; simpa [B,shearBasis] using direction a hab
+    by_cases hj : b = j
+    · subst b; simp [B,shearBasis,hi,Pi.single_eq_of_ne hab.ne]
+    by_cases eq : a = j
+    · subst a; simp [B,shearBasis,hi,hj,control b hab,Pi.single_eq_of_ne hab.ne]
+    · simp [B,shearBasis,hi,hj,Pi.single_eq_of_ne hab.ne,Pi.single_eq_of_ne eq]
+  have diag (a : Fin d) : IsUnit (B a a) := by
+    by_cases hi : a = i
+    · subst a; simpa [B,shearBasis] using pivot
+    by_cases hj : a = j <;> simp [B,shearBasis,hi,hj,order.ne.symm,Pi.single_eq_of_ne]
+  refine ⟨lower,(Matrix.isUnit_iff_isUnit_det _).mpr ?_,by simp [B,shearBasis],?_⟩
+  · rw [B.det_of_isLowerTriangular lower]
+    suffices h : ∀ s : Finset (Fin d), IsUnit (∏ a ∈ s, B a a) from h _
+    intro s
+    induction s using Finset.induction_on with
+    | empty => simp
+    | insert a s fresh ih => simpa [Finset.prod_insert fresh] using (diag a).mul ih
+  · funext b
+    by_cases hi : b = i
+    · subst b
+      simpa [B,shearBasis,Matrix.vecMul,Pi.single_eq_of_ne order.ne] using zero
+    by_cases hj : b = j
+    · subst b; simp [B,shearBasis,Matrix.vecMul,hi,dotProduct_single]
+    · change n ⬝ᵥ (fun a => B a b) = _
+      simp only [B,shearBasis,if_neg hi,if_neg hj,Pi.single_eq_of_ne hj]
+      change n ⬝ᵥ (Pi.single b 1 - Pi.single j (q*n b)) = 0
+      rw [dotProduct_sub,dotProduct_single,dotProduct_single,mul_one,← mul_assoc,inv,one_mul,sub_self]
+
+open Matrix in
+/-- Updating one digit in the shear basis performs the full rank-one
+update on packed addresses. -/
+theorem shearBasis_shift {d : ℕ} {R : Type*} [CommRing R]
+    {B : Matrix (Fin d) (Fin d) R} {n v : Fin d → R} {i j : Fin d}
+    (column : ∀ a, B a i = v a) (row : n ᵥ* B = Pi.single j (n j))
+    (c : R) (x : Fin d → R) :
+    B *ᵥ OrderedAffine.execute (.shift i j (c*n j)) x =
+      B *ᵥ x + (c * (n ⬝ᵥ (B *ᵥ x))) • v := by
+  let k := (c*n j)*x j
+  have shift : OrderedAffine.execute (.shift i j (c*n j)) x = x + Pi.single i k := by
+    funext a
+    by_cases eq : a = i
+    · subst a; simp [OrderedAffine.execute,k]
+    · simp [OrderedAffine.execute,Function.update_of_ne eq,Pi.single_eq_of_ne eq]
+  rw [shift,mulVec_add,dotProduct_mulVec,row,single_dotProduct]
+  congr 1
+  funext a
+  change (fun b => B a b) ⬝ᵥ Pi.single i k = c * (n j * x j) * v a
+  rw [dotProduct_single,column,mul_comm (v a)]
+  simp only [k,mul_assoc]
+
+open Matrix AffineFieldCoordinates in
+/-- On the packed tape the two address halves give a single control row
+and a single direction column for both port shears. -/
+theorem embed_portShear {R : Type*} [CommRing R] (c : R) (n v : Fin 8 → R)
+    (zero : n ⬝ᵥ v = 0) (s : Swap.Shear.State (Fin 8) R) :
+    let row := embed (n,-n)
+    let direction := embed (-v,v)
+    embed (portShearEquiv c n v zero s) = embed s + (c*(row ⬝ᵥ embed s)) • direction := by
+  intro row direction
+  have control : row ⬝ᵥ embed s = n ⬝ᵥ (s.1-s.2) := by
+    change (∑ i : Fin (8+8), embed (n,-n) i * embed s i) = _
+    rw [Fin.sum_univ_add,dotProduct_sub]
+    simp only [embed,Fin.addCases_left,Fin.addCases_right,Pi.neg_apply,neg_mul,Finset.sum_neg_distrib,
+      dotProduct,sub_eq_add_neg]
+  rw [control]
+  funext i
+  induction i using Fin.addCases <;>
+    simp only [direction,embed,portShearEquiv,Equiv.coe_fn_mk,Pi.add_apply,Pi.smul_apply,
+      Fin.addCases_left,Fin.addCases_right,Pi.sub_apply,Pi.neg_apply,smul_eq_mul,mul_neg,sub_eq_add_neg]
+
+open Matrix AffineFieldCoordinates in
+/-- The sole nontriangular operation is a shift from the second half into
+the first. Its pivots are the first direction digit and last control digit. -/
+theorem portShear_shift {R : Type*} [CommRing R] (c : R) (n v : Fin 8 → R)
+    (zero : n ⬝ᵥ v = 0) (i j : Fin 8) (q : R)
+    (direction : ∀ a, a < i → v a = 0) (control : ∀ b, j < b → n b = 0)
+    (pivot : IsUnit (v i)) (inv : n j * q = 1) :
+    let B := shearBasis (hIndex i) (dIndex j) (embed (-v,v)) (embed (n,-n)) (-q)
+    IntegerMultBounds.Swap.Shear.LowerTriangular B ∧ IsUnit B ∧
+      ∀ x s, B *ᵥ x = embed s →
+        B *ᵥ OrderedAffine.execute (.shift (hIndex i) (dIndex j) (c * -(n j))) x =
+          embed (portShearEquiv c n v zero s) := by
+  intro B
+  let u := embed (-v,v)
+  let r := embed (n,-n)
+  have lead (a : Fin (8+8)) (h : a < hIndex i) : u a = 0 := by
+    induction a using Fin.addCases with
+    | left a => simpa only [u,embed,Fin.addCases_left,Pi.neg_apply,neg_eq_zero] using
+        direction a (show a.val < i.val from h)
+    | right a => exact False.elim ((h_before_d i a).asymm h)
+  have tail (b : Fin (8+8)) (h : dIndex j < b) : r b = 0 := by
+    induction b using Fin.addCases with
+    | left b => exact False.elim ((h_before_d b j).asymm h)
+    | right b =>
+      have lt : j < b := by change 8+j.val < 8+b.val at h; omega
+      simpa only [r,embed,Fin.addCases_right,Pi.neg_apply,neg_eq_zero] using control b lt
+  have orth : r ⬝ᵥ u = 0 := by
+    change (∑ k : Fin (8+8), embed (n,-n) k * embed (-v,v) k) = 0
+    rw [Fin.sum_univ_add]
+    simp only [embed,Fin.addCases_left,Fin.addCases_right,Pi.neg_apply,mul_neg,neg_mul,Finset.sum_neg_distrib]
+    change -(n ⬝ᵥ v) + -(n ⬝ᵥ v) = 0
+    rw [zero,neg_zero,add_zero]
+  obtain ⟨lower,unit,col,row⟩ := shearBasis_spec (q := -q) (h_before_d i j) lead tail
+    (by simpa only [u,embed_h,Pi.neg_apply] using pivot.neg)
+    (by simpa only [r,embed_d,Pi.neg_apply,neg_mul_neg] using inv) orth
+  refine ⟨lower,unit,fun x s coord => ?_⟩
+  have shift := shearBasis_shift col row c x
+  change B *ᵥ _ = B *ᵥ x + (c*(r ⬝ᵥ (B *ᵥ x))) • u at shift
+  rw [coord] at shift
+  simpa only [r,embed_d,Pi.neg_apply] using shift.trans (embed_portShear c n v zero s).symm
+
+open Matrix IntegerMultBounds.Swap.Modular in
+/-- One lower-triangular factor acts on all sixteen packed digits in a
+linear pass. The trailing spectator record keeps its address. -/
+theorem triangularPort_owner (E : Matrix (Fin 16) (Fin 16) ℚ)
+    (support : ∀ op ∈ OrderedAffine.program E, FlatCoordinateSchedule.Supported op)
+    (valid : ∀ w, let M := reduce (prime^w) E
+      IntegerMultBounds.Swap.Shear.LowerTriangular M ∧ IsUnit M) :
+    ∃ (C : ℕ) (machine : SharedBankSkeleton.Skeleton 1 prime), ∀ w W, 0 < W →
+      let V := (prime^w)^16*W
+      ∃ stage : SharedBankStage.Stage _ 1 prime (@portOwner V),
+        SharedBankSkeleton.ofStage stage = machine ∧ stage.cost = C*V ∧ ∀ x a j,
+          stage.transform x (FlatCoordinateLayout.index ((reduce (prime^w) E) *ᵥ a) j) =
+            x (FlatCoordinateLayout.index a j) := by
+  let ops := FlatCoordinateSchedule.ofList (OrderedAffine.program E) support
+  let machine : SharedBankSkeleton.Skeleton 1 prime :=
+    ⟨_,_,FlatCoordinateCleanSchedule.program ops,fun _ => segmentSource ops,fun _ _ _ => Subsingleton.elim _ _⟩
+  refine ⟨FlatCoordinateCleanSchedule.constant ops,machine,?_⟩
+  intro w W hW V
+  let M := reduce (prime^w) E
+  let addr := (FlatCoordinateLayout.rankEquiv (Q := prime^w) (d := 16)).prodCongr (Equiv.refl (Fin W))
+  let pack := addr.trans finProdFinEquiv
+  let out := fun (x : Fin V → ZMod 2) i => x (pack ((M⁻¹ *ᵥ (pack.symm i).1),(pack.symm i).2))
+  have move (x a j) : out x (pack (M *ᵥ a,j)) = x (pack (a,j)) := by
+    have inv : M⁻¹ * M = 1 := nonsing_inv_mul _ ((isUnit_iff_isUnit_det _).mp (valid w).2)
+    simp only [out,Equiv.symm_apply_apply,mulVec_mulVec,inv,one_mulVec]
+  have actions : ops.map (fun op => op.action w) = OrderedAffine.program M := by
+    change ops.map ((OrderedAffine.mapOp (ratMod (prime^w))) ∘ FlatCoordinateSchedule.Op.rational) = _
+    rw [← List.map_map,FlatCoordinateSchedule.rational_ofList _]
+    exact (OrderedAffine.program_map _ E).symm
+  let bank := fun (x : Fin V → ZMod 2) => SharedBankStageInput.raw
+    (FlatCoordinateShiftSharedBank.common (d := 16) (b := w) (W := W)
+      (fun i => SparseRoleCircuit.encode (x i))) (FlatCoordinateCleanSchedule.tapeCount ops)
+  have exec (x : Fin V → ZMod 2) : HoareTime machine.program (fun z => z = bank x)
+      (fun z => z = bank (out x)) (FlatCoordinateCleanSchedule.constant ops*V) := by
+    let bits : FlatCoordinateStages.Array 16 w W := fun i => SparseRoleCircuit.encode (a := 0) (x i)
+    have output : FlatCoordinateInitializedSchedule.array ops w W hW bits =
+        fun i => SparseRoleCircuit.encode (out x i) := by
+      funext i
+      obtain ⟨⟨a,j⟩,rfl⟩ := pack.surjective i
+      obtain ⟨a,rfl⟩ := (mulVec_surjective_iff_isUnit.mpr (valid w).2) a
+      rw [move]
+      have read := FlatCoordinateInitializedSchedule.array_entry ops w W hW bits a j
+      have lower : IntegerMultBounds.Swap.Shear.LowerTriangular M := (valid w).1
+      rw [actions] at read
+      exact (congrArg (fun z => FlatCoordinateInitializedSchedule.array ops w W hW bits (FlatCoordinateLayout.index (Q := prime^w) z j)) (OrderedAffine.program_run lower a)).symm.trans read
+    apply (FlatCoordinateCleanSchedule.realizes ops w W hW bits).consequence (fun _ h => h) _ le_rfl
+    intro z h
+    exact h.1.trans (congrArg (fun a => SharedBankStageInput.raw
+      (FlatCoordinateShiftSharedBank.common a) (FlatCoordinateCleanSchedule.tapeCount ops)) output)
+  let slot := fun _ : Fin 1 => segmentSource ops
+  have payload (x) : SharedBank.payload (bank x) slot = portOwner x := by
+    obtain ⟨head,tape⟩ := copySegment_source ops x
+    exact congrArg₂ Tapes.mk (funext fun _ => head) (funext fun _ => tape.trans (sourceWord_cast _ x))
+  have strip (x) : SharedBank.strip (bank x) slot = basisWorkspace ops x := by
+    apply congrArg₂ Tapes.mk <;> funext j <;> by_cases eq : segmentSource ops = j
+    all_goals first
+      | subst j; simp [SharedBank.strip,slot,basisWorkspace,SharedPlacementAlphabet.setTape]
+      | simp [SharedBank.strip,slot,eq,basisWorkspace,SharedPlacementAlphabet.setTape,Function.update_of_ne (Ne.symm eq),bank]
+  exact ⟨{ tapes := _, states := _, program := machine.program, transform := out, input := bank,
+           output := fun x => bank (out x),slots := slot,slots_injective := fun _ _ _ => Subsingleton.elim _ _,
+           cost := FlatCoordinateCleanSchedule.constant ops*V,metadata := basisWorkspace ops (0 : Fin V → ZMod 2),
+           input_payload := payload,output_payload := fun x => payload _,realizes := exec,
+           strip_input := fun x => (strip x).trans (basisWorkspace_eq ops x 0) },rfl,rfl,move⟩
+
 open Cover RecursiveInterchangeLayout M8.RevMachine SharedPlacementAlphabet in
 /-- A packed digit swap on the same source tape used by the basis passes. -/
 theorem digitSwap_owner [M8.Machine.Net] (i j : Fin 16) (lt : i < j) :

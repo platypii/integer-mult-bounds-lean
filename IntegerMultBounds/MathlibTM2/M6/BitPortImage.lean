@@ -638,6 +638,64 @@ theorem portFrame_transfers (w : ℕ) (t : Fin 111) :
   simp only [neg_mulVec,← mulVec_mulVec,project,mulVec_smul,sub_neg_eq_add,← sub_eq_add_neg] at entry exit
   exact ⟨entry,exit⟩
 
+/-- Each port correction is a shear along a vector annihilated by its
+control row. Thus the control digit survives every transfer along that vector. -/
+theorem portShear_controls (w : ℕ) (t : Fin 111) :
+    let R := ZMod (prime^w)
+    let v := fun i : Fin 8 => (translatedEntry t i.val : R)
+    let n := fun i : Fin 8 => (targetNormal t i : R)
+    let U := reduce (prime^w) (selectedProjector ⟨2+t.val,by omega⟩)
+    let V := reduce (prime^w) (selectedProjector ⟨525+t.val,by omega⟩)
+    let entry := n ᵥ* (1-U)
+    let exit := V *ᵥ v
+    entry ⬝ᵥ v = 0 ∧ n ⬝ᵥ exit = 0 := by
+  intro R v n U V entry exit
+  obtain ⟨_,rfl,idem,image,_⟩ := sourceFrame_projector w t
+  obtain ⟨_,rfl,_,plane,_⟩ := targetFrame_projector w t
+  have fixed : U *ᵥ v = v := fixes_image idem (image ▸ Submodule.subset_span (Set.mem_singleton _))
+  have source : entry ⬝ᵥ v = 0 := by
+    change (n ᵥ* (1-U)) ⬝ᵥ v = 0
+    rw [← dotProduct_mulVec,sub_mulVec,one_mulVec,fixed,sub_self,dotProduct_zero]
+  exact ⟨source,(plane _).mp ⟨v,rfl⟩⟩
+
+/-- The inverse port pass reads the same control as the forward pass
+and subtracts its transfer. -/
+def portShearEquiv {R : Type*} [CommRing R] (c : R) (n v : Fin 8 → R)
+    (zero : n ⬝ᵥ v = 0) : Equiv.Perm (Swap.Shear.State (Fin 8) R) :=
+  let delta := fun s : Swap.Shear.State (Fin 8) R => (c * (n ⬝ᵥ (s.1-s.2))) • v
+  let invariant (s : Swap.Shear.State (Fin 8) R) (k : R) :
+      delta (s.1-k • v,s.2+k • v) = delta s := by
+    simp only [delta,dotProduct_sub,dotProduct_add,dotProduct_smul,zero,smul_zero,sub_zero,add_zero]
+  { toFun := fun s => (s.1-delta s,s.2+delta s)
+    invFun := fun s => (s.1+delta s,s.2-delta s)
+    left_inv := fun s => by
+      have keep : delta (s.1-delta s,s.2+delta s) = delta s := invariant s _
+      apply Prod.ext <;> simp only [keep,sub_add_cancel,add_sub_cancel_right]
+    right_inv := fun s => by
+      have back := invariant s (-(c * (n ⬝ᵥ (s.1-s.2))))
+      simp only [neg_smul,sub_neg_eq_add,← sub_eq_add_neg] at back
+      change delta (s.1+delta s,s.2-delta s) = delta s at back
+      apply Prod.ext <;> simp only [back,sub_add_cancel,add_sub_cancel_right] }
+
+/-- The two physical corrections are instances of the same reversible
+address shear. Both inverses are explicit at every width. -/
+theorem portFrame_shears (w : ℕ) (t : Fin 111) :
+    let R := ZMod (prime^w)
+    let P := translatedPortProjector R (4:R)⁻¹ t
+    let U := reduce (prime^w) (selectedProjector ⟨2+t.val,by omega⟩)
+    let V := reduce (prime^w) (selectedProjector ⟨525+t.val,by omega⟩)
+    let n := fun i : Fin 8 => (targetNormal t i : R)
+    let v := fun i : Fin 8 => (translatedEntry t i.val : R)
+    ∀ s, M8.Exchange.exchange P (M8.Exchange.exchange U s) =
+        portShearEquiv (4:R)⁻¹ (n ᵥ* (1-U)) v (portShear_controls w t).1 s ∧
+      M8.Exchange.exchange V (M8.Exchange.exchange (1-P) s) =
+        portShearEquiv (4:R)⁻¹ n (V *ᵥ v) (portShear_controls w t).2 s := by
+  intro R P U V n v s
+  obtain ⟨entry,exit⟩ := (portFrame_transfers w t).2.2 s
+  refine ⟨entry.trans ?_,exit⟩
+  exact congrArg (fun z : R => (s.1-((4:R)⁻¹*z) • v,s.2+((4:R)⁻¹*z) • v))
+    (dotProduct_mulVec n (1-U) (s.1-s.2))
+
 /-- The entry correction encodes the logical source in the machine frame.
 At the corrected target address the complete selected word returns the
 logical target and source sum, for arbitrary stored registers. -/
