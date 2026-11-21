@@ -69,6 +69,11 @@ theorem directoryChartPlacement_ne_work {T : ℕ} (i : Fin (T+5)) (j : Fin 10) :
   change (if i.val < T then i.val else i.val+10) = T+j.val at h
   split at h <;> omega
 
+theorem directoryChartPlacement_ne_mask {T : ℕ} (live bad : Fin T) (apart : live ≠ bad)
+    (j : Fin 6) (high : 2 ≤ j) (i : Fin (T+5)) :
+    directoryChartPlacement T i ≠ directoryChartMasks live bad apart j := by
+  fin_cases j <;> first | contradiction | exact directoryChartPlacement_ne_work i _
+
 /-- The child reads the saved directory and both masks at their original
 local indices. Its other metadata and scratch stay on the scanner tapes. -/
 noncomputable def directoryChartReplayBank [M8.Machine.Net] {K : ℕ}
@@ -802,8 +807,7 @@ theorem directoryChart_workspace {T : ℕ} (room : 58 ≤ T) (live bad : Fin T) 
   have blankWork (j : Fin 10) : A.R (work j) = [] :=
     free (j.natAdd T) (by change 58 ≤ T+j.val; omega)
   refine ⟨rfl,rfl,?_,?_,fun i j => sep i (j.natAdd 4),?_,fun j => blankWork (j.natAdd 4)⟩
-  · intro j hj i
-    fin_cases j <;> first | contradiction | exact sep i _
+  · exact directoryChartPlacement_ne_mask live bad apart
   · intro j hj
     fin_cases j <;> first | contradiction | exact blankWork _
   · intro i j
@@ -1338,6 +1342,32 @@ private theorem intervalInput_cast [M8.Machine.Net] {K d m n w W R : ℕ} (dim :
   subst n
   exact fun _ input => input
 
+/-- Transport the scanner's projected row action back to the chart dimensions.
+The owner port and the physical execution stay on the same tapes. -/
+private theorem intervalStage_cast [M8.Machine.Net] {T R m n w W : ℕ} {P U : Type}
+    (dim : m = n) (interval : ℕ × ℕ) (weights : Fin n → ZMod (prime^(w+1)))
+    (host : P → Pr P T columnCapacity prime U) (program : Pr P T columnCapacity prime U)
+    (a : HS T columnCapacity prime U) (A : Stacks T prime) (prior bound : ℕ)
+    (port : Fin T) (tail : List (Fin (prime+4))) (finished : Stacks T prime → Prop) :
+    let M := prime^(w+1)
+    let size : M^(m+m)*W = M^(n+n)*W := by rw [dim]
+    let e := finSumFinEquiv.trans (finCongr (show m+m = n+n by rw [dim]))
+    let proj (k : ℕ) : Matrix (Fin k) (Fin k) ℚ := diagonal fun i => if interval.1 ≤ i.val ∧ i.val < interval.2 then 1 else 0
+    let parent := weights ∘ Fin.cast dim
+    ∀ routed : Fin (R*(M^(n+n)*W)) → ZMod 2,
+    DirectoryStageResult (R := R) host program a A prior bound port tail
+      (fun j word => if LabelStock.live m (w+1) 1 j then ∀ x (h : Fin W),
+        word ((index ((projectorResidual e (reduce M (proj m)) parent (fun i => Ring.inverse (parent i))
+          (physicalLabel m (w+1) j)).mulVec x) h).cast size.symm) = ownerRow rfl routed j (index x h)
+        else (fun i => ownerRow rfl routed j (i.cast size)) = word) finished →
+    DirectoryStageResult (R := R) host program a A prior bound port tail
+      (fun j word => if LabelStock.live n (w+1) 1 j then ∀ x (h : Fin W),
+        word (index ((projectorResidual finSumFinEquiv (reduce M (proj n)) weights (fun i => Ring.inverse (weights i))
+          (physicalLabel n (w+1) j)).mulVec x) h) = ownerRow rfl routed j (index x h)
+        else ownerRow rfl routed j = word) finished := by
+  subst n
+  exact fun _ stage => stage
+
 private theorem outerWords_of_headers {K a b h : ℕ} (S : Stacks (66+K) prime)
     (outer : S.R ((29 : Fin 66).castAdd K) = List.replicate a Node.tick)
     (rows : S.R ((30 : Fin 66).castAdd K) = List.replicate b Node.tick)
@@ -1395,18 +1425,24 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux k w : ℕ} {L P U : Typ
     let baseBank := Fin.castAddEmb (n := ((T+10)+5)+stage.tapes) back.tapes
     let headers := (Fin.castLEEmb forward.fits).trans chart
     let ret := returnChartBank (Fin.castLEEmb reverse.fits) headers
-    ∀ (body : P → Pr P ((T+10)+5) columnCapacity prime U) (program : Pr P ((T+10)+5) columnCapacity prime U)
-      (budget capacity : ℕ) (chartFits : stage.states ≤ capacity) (fits : columnCapacity ≤ capacity) (backFits : back.states ≤ capacity)
+    ∀ (body : P → Pr P ((T+10)+5) columnCapacity prime U) (incoming outgoing : L → P) (childLabel : P),
+    let live := (57 : Fin 66).castAdd (K+1)
+    let bad := (56 : Fin 66).castAdd (K+1)
+    let apart := (Fin.castAddEmb (K+1)).injective.ne (by decide : (57 : Fin 66) ≠ 56)
+    let masks := directoryChartMasks live bad apart
+    let intervalProj : Matrix (Fin m) (Fin m) ℚ := diagonal fun i => if interval.1 ≤ i.val ∧ i.val < interval.2 then 1 else 0
+    let program := directoryScanProgram (common := common) r (64-r) (by change m+m = 127+1; omega) intervalProj
+      (LabelRing.res prime (w+1) (by omega) ∘ weights ∘ Fin.cast dim) pool rowRoom archiveRoom queueRoom
+      remainderAnchorFits localBody pairRoom (directoryChartPlacement T) masks (directoryChartReplay T)
+      (directoryChartPlacement_ne_mask live bad apart) (fun i _ => directoryChartPlacement_ne_work i _) incoming outgoing childLabel
+    ∀ (budget capacity : ℕ) (chartFits : stage.states ≤ capacity) (fits : columnCapacity ≤ capacity) (backFits : back.states ≤ capacity)
       (S : Stacks stage.tapes prime)
       (finished : Stacks ((T+10)+5) prime → Prop),
     RepT (stage.input words) S.L S.R →
     (∀ (a : HS ((T+10)+5) columnCapacity prime U) (D : Stacks ((T+10)+5) prime),
       let localState := embStk (directoryChartPlacement T) D
       let localBank := (directoryOrdinaryBank archiveRoom).trans (Fin.castAddEmb 5)
-      let masks := directoryChartMasks ((57 : Fin 66).castAdd (K+1)) ((56 : Fin 66).castAdd (K+1))
-        ((Fin.castAddEmb (K+1)).injective.ne (by decide))
       let rowWidth : M^(m+m)*W = N := by rw [dim]
-      let intervalProj : Matrix (Fin m) (Fin m) ℚ := diagonal fun i => if interval.1 ≤ i.val ∧ i.val < interval.2 then 1 else 0
       GeneratedDirectoryExecution (r := r) (g := 64-r) (common := common) child directory
         (by change m+m = 127+1; omega) intervalProj (weights ∘ Fin.cast dim) data pool rowRoom archiveRoom queueRoom
         remainderAnchorFits localBody localPush placedPush (directoryChartPrefix replayRole layout.beforeH (M^(64*64)) prefixes) [] []
@@ -1420,11 +1456,14 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux k w : ℕ} {L P U : Typ
       localState.R (localBank ((48 : Fin 66).castAdd K)) = matrixWords prime M.size (reduce M proj) →
       (∀ j : Fin 6, 2 ≤ j → D.R (masks j) = []) → (∀ j, D.R (directoryChartReplay T j) = []) →
       ∃ prior bound tail, prior+bound ≤ budget ∧
-        DirectoryStageResult (R := R) (N := N) body program a D
-          prior bound slot tail (fun j word => if LabelStock.live 64 (w+1) 1 j then ∀ x h,
-            word (index ((projectorResidual finSumFinEquiv (reduce M proj) weights (fun i => Ring.inverse (weights i))
-              (physicalLabel 64 (w+1) j)).mulVec x) h) = ownerRow rfl routed j (index x h)
-            else ownerRow rfl routed j = word) finished) →
+        DirectoryStageResult (R := R) body program a D
+          prior bound slot tail (N := M^(m+m)*W) (fun j word =>
+            let parent := weights ∘ Fin.cast dim
+            let e := finSumFinEquiv.trans (finCongr (show m+m = 127+1 by omega))
+            if LabelStock.live m (w+1) 1 j then ∀ x (h : Fin W),
+              word ((index ((projectorResidual e (reduce M intervalProj) parent (fun i => Ring.inverse (parent i))
+                (physicalLabel m (w+1) j)).mulVec x) h).cast rowWidth.symm) = ownerRow rfl routed j (index x h)
+            else (fun i => ownerRow rfl routed j (i.cast rowWidth)) = word) finished) →
     let positive : 0 < columnCapacity := columnCapacity_pos
     let outer := fun f => statePlacedPr placement fits positive id (body f)
     let enter := (embProg chart (Empty.elim : Empty → P) (foreign (liftQ stage.program chartFits))).seq
@@ -1455,7 +1494,7 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux k w : ℕ} {L P U : Typ
   obtain ⟨back,reverse,reverseCost,reverseRun⟩ := (packedRemainderChart_stage src cert checked true).choose_spec.choose_spec
     layout w rows B positiveLayout digits split shape
   refine ⟨stage,back,forward,reverse,?_⟩
-  intro words routed pool rowRoom archiveRoom queueRoom pairRoom localBody localPush placedPush bounded placed widths bank setup setupCost clock slot placement chart baseBank headers ret body program budget capacity chartFits fits backFits S finished input scanner positive outer enter leave stock hostT Label hostPlace label host installed prepare hostStart hostEntry initial preparedBank steps prep entryEq
+  intro words routed pool rowRoom archiveRoom queueRoom pairRoom localBody localPush placedPush bounded placed widths bank setup setupCost clock slot placement chart baseBank headers ret body incoming outgoing childLabel livePort badPort portsApart maskBank intervalMatrix program budget capacity chartFits fits backFits S finished input scanner positive outer enter leave stock hostT Label hostPlace label host installed prepare hostStart hostEntry initial preparedBank steps prep entryEq
   let u := embDn hostPlace hostEntry
   obtain ⟨ordered,upper,_⟩ := BitHosting.remainder_counts interval member
   have room : 53 < T := by omega
@@ -1594,7 +1633,8 @@ theorem chartDirectory_exec [M8.Machine.Net] {common aux k w : ℕ} {L P U : Typ
         simp [C,normalized,slot]) (fun i => localL _) (header 40 (by decide))
         (outerWords_of_headers raw (header 29 (by decide)) (header 30 (by decide)) (header 31 (by decide)))
         ((shared 48).trans matrix) maskFree replayFree
-      obtain ⟨y,B,t,out,user,time,run,reads,inactive,_,done⟩ := exec.portReads interval weights routed records upper
+      have chartStage := intervalStage_cast (W := W) dim interval weights body program c D prior bound slot tail finished routed exec
+      obtain ⟨y,B,t,out,user,time,run,reads,inactive,_,done⟩ := chartStage.portReads interval weights routed records upper
       exact ⟨y,B,((m+l)+s)+(prior+t),out,by change s ≤ setupCost at setupTime; omega,⟨done,reads,inactive⟩,user.trans (cu.trans (bu.trans hu)),⟨Exec.seq (Exec.seq (Exec.seq normalize init) prepare) run.run,run.reads⟩⟩)
   let updated := Function.update (stage.transform words) src out
   have chartInput : RepT (stage.input updated) (embStk chart D).L (embStk chart D).R := by

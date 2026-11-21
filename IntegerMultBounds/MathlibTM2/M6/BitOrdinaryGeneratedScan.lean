@@ -236,6 +236,60 @@ def GeneratedDirectoryInput [M8.Machine.Net] {K d m w W N : ℕ}
     S.R (reg 1) = [] ∧ (S.R (reg 2)).length = N ∧ S.R (reg 3) = [] ∧ S.R (reg 4) = [] ∧
     ∀ j, readAt blank (start.L ((24 : Fin 66).castAdd (K+1))) (start.R ((24 : Fin 66).castAdd (K+1))) j = blank
 
+/-- The complete directory scanner on a fixed placement. The only weight data in
+the program are residues at the fixed prime. Record counts, precision, archives
+and the payload are runtime inputs. -/
+noncomputable def directoryScanProgram [M8.Machine.Net] {P G U : Type} {common aux T d : ℕ}
+    (r g : ℕ) (dimension : (r+g)+(r+g) = d+1)
+    (proj : Matrix (Fin (r+g)) (Fin (r+g)) ℚ) (residues : Fin (r+g) → ZMod prime)
+    (pool : (RingFormula.conjugationDepth (r+g)+1)*13 ≤ aux) (room : 58+(rowSwapBlock.tapes+35+1) ≤ (common+24+31+aux))
+    (archiveRoom : Record.size d+(rowSwapBlock.tapes+35+2) ≤ (common+24+31+aux)+1)
+    (fits : (36+2*(r+g)+1+(RingFormula.conjugationDepth (r+g)+1)*13)+3 ≤ (common+24+31+aux)+1)
+    (capacity : (anchorProgram d true).1+(anchorProgram d false).1+1 ≤ columnCapacity)
+    (localBody : P → Pr P (66+(common+24+31+aux)) columnCapacity prime U)
+    (pairRoom : (r+g)*(r+g)+(r+g)*(r+g) ≤ common+24+31+aux)
+    (place : Fin ((66+((common+24+31+aux)+1))+5) ↪ Fin T) (p replay : Fin 6 ↪ Fin T)
+    (outside : ∀ k : Fin 6, 2 ≤ k → ∀ i, place i ≠ p k)
+    (separate : ∀ i j, place i ≠ replay j) (label outLabel : P → G) (f : G) :
+    Pr G T columnCapacity prime U :=
+    let m := r+g
+    let K := common+24+31+aux
+    let localCaller := Fin.castAddEmb (n := 66) K
+    let prog := incomingRowProgram (P := P) (U := U) (common := common) r g pool room
+    let privateTapes := (List.finRange (66+K)).filter (fun i => 58 ≤ i.val)
+    let scanSlots : Fin 7 ↪ Fin 58 := ⟨![45,46,2,47,48,44,49],by decide⟩
+    let scan := ((goodRecordScanPorts.trans scanSlots).trans (Fin.castAddEmb 8)).trans localCaller
+    let skipRow : Pr P (66+K) columnCapacity prime U := readWithSuccessorClock (scan 1) (advanceDirectory m scan)
+    let goodRow := (prog.seq (clearWorkTapes privateTapes)).seq skipRow
+    let e := finSumFinEquiv.trans (finCongr dimension)
+    let placement := directoryOrdinaryBank archiveRoom
+    let caller := Fin.castAddEmb (n := 66) (K+1)
+    let outer := fun i : Fin (66+(K+1)) => i.castAdd 5
+    let inner := Fin.castAddEmb (n := 66) K
+    let advance := dropWords (placement (inner 2)) (directoryMatrixTape archiveRoom) (placement (inner 59)) ((d+1)*(d+1))
+    let good := (embProg placement id goodRow).seq advance
+    let padding := (embProg placement id skipRow).seq advance
+    let outProg := outgoingRowProgram (P := P) (U := U) (common := common) r g pool room
+    let dispatch : Pr P (66+K) columnCapacity prime U := ownerDispatch (inner 57) (inner 56) ((outProg.seq (clearWorkTapes privateTapes)).seq skipRow) skipRow skipRow
+    let outLocal : Pr P ((66+K)+5) columnCapacity prime U := packedOwner (inner 24) (inner 57) dispatch
+    let selectors := ordinarySelectorProgram localBody proj residues pairRoom
+    let program := packedOwner (caller 24) (caller 57) (ownerDispatch (caller 57) (caller 56) good
+      (directoryExceptionalProgram m d archiveRoom capacity) padding)
+    let controls := embProg outer id (embProg placement id selectors)
+    let prepare : Pr P (66+(K+1)) columnCapacity prime U := directoryQueueProgram archiveRoom fits e
+    let suffix := (embProg outer id prepare).seq program
+    let localBank := placement.trans (Fin.castAddEmb 5)
+    let slots := replaySlots.trans inner
+    let copied := (Fin.castLEEmb (by decide : 4 ≤ 6)).trans replay
+    let pairs := (List.finRange 4).map fun j => (place (localBank (slots j)),copied j)
+    let snapshot : Pr G T columnCapacity prime U := Mult.PhaseCellToeplitz.copyWordHeaders (replay 4) (replay 5) pairs
+    let copy : Pr G T columnCapacity prime U := (bcopy (p 0) (p 2) (p 4) (p 5)).seq (bcopy (p 1) (p 3) (p 4) (p 5))
+    let q := directoryReturnPorts place p outside
+    let incoming := (embProg place label controls).seq (snapshot.seq (copy.seq (embProg place label suffix)))
+    let throughReturn : Pr G T columnCapacity prime U := incoming.seq ((bcopy (q 0) (q 1) (q 2) (q 4)).seq ((.call f : Pr G T columnCapacity prime U).seq (directoryReturn q)))
+    let outPlace := directoryOutgoingPlacement placement place slots copied (fun _ _ => separate _ _)
+    (((throughReturn.seq (embProg outPlace outLabel outLocal)).seq (Fast.clearR (copied 0))).seq (Fast.clearR (copied 1)))
+
 /-- Execution and cost of both directory passes, including the one framed recursive call. -/
 def GeneratedDirectoryExecution [M8.Machine.Net] {P U : Type} {r g d w common aux : ℕ}
     (v directory : Descriptor) (dimension : (r+g)+(r+g) = d+1)
@@ -442,7 +496,8 @@ def GeneratedDirectoryExecution [M8.Machine.Net] {P U : Type} {r g d w common au
                 ((selectorBudget+setupBudget p+childBudget+72*(R*N)+8*archiveTail.length+2*(prefixes 0).length+53 : ℕ) : ℝ) +
                   (inRate+outRate)*weightedVolume+8) ∧
           DirectoryStageResult (R := R) (N := N) host
-            (((throughReturn.seq (embProg outPlace outLabel outLocal)).seq (Fast.clearR (copied 0))).seq (Fast.clearR (copied 1)))
+            (directoryScanProgram (common := common) r g dimension proj (φ ∘ weights) pool room archiveRoom fits
+              capacity localBody pairRoom place p replay outside separate label outLabel f)
             a A ((s+(copyTime+(12*rs.length+12+elapsed)))+k)
             (outBill+2*archiveTail.length+2*(prefixes 0).length+4)
             (q 0) ((B.R (q 0)).drop V) (fun j word => if live j then projected j word else input j = word)
