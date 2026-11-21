@@ -141,6 +141,52 @@ theorem packedStageEffect_helper (n : Fin 9) (p : Fin 32 × Fin 5) (w B W : ℕ)
   exact read
 
 open Swap.Modular Matrix in
+/-- A stage's inactive-family exchange is its own inverse at every width. -/
+theorem familyExchange_involutive (n : Fin 9) (ρ : Role) (w : ℕ) :
+    Function.Involutive (M8.Exchange.exchange (reduce (prime^w) (familySum n ρ))) := by
+  let P := fun h => if FamilyHosts n ρ h then helperSpan n h else 0
+  have adm : ∀ hs : List ℕ, Admissible (prime^w) (hs.map P).sum := by
+    intro hs
+    induction hs with
+    | nil => intro i j; simp
+    | cons h hs ih =>
+      apply ModularFrameSchedule.admissible_add _ _ ih
+      dsimp only [P]
+      split
+      · exact portSpan_admissible _ (Nine.port_checked _ (Nat.mod_lt _ (by decide))) _ _ w
+      · intro i j; simp
+  have idem : familySum n ρ * familySum n ρ = familySum n ρ := by
+    have sum : familySum n ρ = ∑ i ∈ Finset.range 439, P i := by
+      change ((List.range 439).map P).sum = _
+      rw [← List.sum_toFinset _ (List.nodup_range (n := 439)),List.toFinset_range]
+    rw [sum,Finset.sum_mul]
+    apply Finset.sum_congr rfl
+    intro i hi
+    rw [Finset.mul_sum, Finset.sum_eq_single i]
+    · dsimp only [P]
+      split
+      · exact PortCertificate.span_mul_self (Nine.port_checked _ (Nat.mod_lt _ (by decide))) _ _
+      · simp
+    · intro j hj ne
+      dsimp only [P]
+      split_ifs with a b
+      · apply helperSpan_mul n i j (Finset.mem_range.mp hi) (Finset.mem_range.mp hj)
+          (a.1.trans b.1.symm) (a.2.trans b.2.symm)
+        intro eq
+        exact ne ((slotOf_spec n n.isLt j (Finset.mem_range.mp hj)).2.2.symm.trans
+          ((congrArg (fun s => s.helper) eq.symm).trans (slotOf_spec n n.isLt i (Finset.mem_range.mp hi)).2.2))
+      all_goals simp
+    · exact fun h => False.elim (h hi)
+  let U := reduce (prime^w) (familySum n ρ)
+  have ok : Admissible (prime^w) (familySum n ρ) := adm (List.range 439)
+  have proj : U * U = U := (reduce_mul _ ok ok).symm.trans (congrArg _ idem)
+  intro s
+  change M8.Exchange.exchange U (M8.Exchange.exchange U s) = s
+  apply Prod.ext <;> simp only [M8.Exchange.exchange,mulVec_add,mulVec_mulVec,
+    Matrix.sub_mul,Matrix.mul_sub,Matrix.one_mul,Matrix.mul_one,proj,sub_mulVec,mulVec_sub,
+    one_mulVec] <;> abel
+
+open Swap.Modular Matrix in
 private theorem hostedExchange_fold (n : Fin 9) (ρ : Role) (w : ℕ) :
     let P := fun k : Fin 32 × Fin 5 => hostSpan n k.1 k.2 ρ
     ∀ s, stageRuns.foldl (fun a k => M8.Exchange.exchange (reduce (prime^w) (P k)) a) s =
@@ -293,6 +339,117 @@ theorem restoredStage_inactive (n : Fin 9) (w B W : ℕ) (x y out)
   exact (restoreSlot_read (k := 142081) (w := w) (L := B*prime^(64*(w*64))) (W := W) (stageFinalSlot n) restore tape c _ label j).trans
     (packedStage_inactive n w B W x y trace ρ inactive g z j s)
 
+/-- Decode an ordinary labeled bank in the inactive helper's physical digit order. -/
+theorem singleLabelBank_helperCell {w B W : ℕ} (label : Cover.LabelPadding.Label 64 w)
+    (x : Fin 142081 → Fin ((prime^w)^16*(B*((prime^w)^112*W))) → ZMod 2)
+    (i : Fin 142081) (digits : Fin 128 → ZMod (prime^w)) (b : Fin B)
+    (row : Fin (prime^(64*(w*64)))) (j : Fin W) :
+    let live := FlatCoordinateLayout.rank (digits ∘ Fin.castAdd 112)
+    let tail := FlatCoordinateLayout.rank (digits ∘ Fin.natAdd 16)
+    ext (singleLabelBank label x i) (helperFieldCell digits (finProdFinEquiv (b,row)) j) =
+      if row.val = (Cover.LabelAddress.address label).val then
+        x i (finProdFinEquiv (live,finProdFinEquiv (b,finProdFinEquiv (tail,j)))) else 0 := by
+  intro live tail
+  let p := finProdFinEquiv (live,finProdFinEquiv (finProdFinEquiv (b,row),finProdFinEquiv (tail,j)))
+  have addr : helperFieldCell digits (finProdFinEquiv (b,row)) j = p.val := by
+    simp only [helperFieldCell,helperLabelCell,p,live,tail,finProdFinEquiv_apply_val]
+    ring
+  rw [addr,ext_apply]
+  simp only [p,singleLabelBank,Equiv.symm_apply_apply]
+
+open Cover Swap.Modular in
+/-- Inactive exchange moves the parent coordinates within each row. A row
+outside the initial support still reads zero after slot restoration. -/
+theorem restoredStage_inactiveRow (n : Fin 9) (w B W : ℕ)
+    (label : LabelPadding.Label 64 w) (x y out)
+    (trace : stageRuns.foldr (fun p next a => ∃ b, packedStageEffect n p w B W a b ∧ next b)
+      (fun a => a = y) (singleLabelBank label x))
+    (restore : HelperLabelTrace w (B*prime^(64*(w*64))) W (restoreSlotChanges (stageFinalSlot n)) y out)
+    (ρ : Role) (inactive : ρ.bank.val / 2 ≠ BitHosting.activePair n.val)
+    (g : LabelPadding.Label 64 w)
+    (z : LabelEntry.Cell (copyLabelLayout w B ((prime^w)^112*W)) B) (j : Fin W) :
+    let c := Nine.port ρ.port.val
+    let tape := ((Fin.cast card_role) (Fintype.equivFin Role ρ)).castSucc
+    let row := (LabelAddress.address g).cast (by rw [← pow_mul]; congr 1; omega :
+      (prime^w)^(64*64) = prime^(64*(w*64)))
+    ∀ s, let digits := helperSlotField c none w s
+    let live := FlatCoordinateLayout.rank (digits ∘ Fin.castAdd 112)
+    let tail := FlatCoordinateLayout.rank (digits ∘ Fin.natAdd 16)
+    ext (out tape) (helperFieldCell (helperSlotField c none w
+      (M8.Exchange.exchange (reduce (prime^w) (familySum n ρ)) s)) (finProdFinEquiv (z.b,row)) j) =
+      if row.val = (LabelAddress.address label).val then
+        x tape (finProdFinEquiv (live,finProdFinEquiv (z.b,finProdFinEquiv (tail,j)))) else 0 := by
+  intro c tape row s digits live tail
+  have h := restoredStage_inactive n w B W _ y out trace restore ρ inactive g z j s
+  have packed : (finProdFinEquiv (z.b,row)).val = z.b.val*prime^(64*(w*64))+(LabelAddress.address g).val := by
+    simp only [finProdFinEquiv_apply_val,row,Fin.val_cast]
+    ring
+  let idx : Fin (B*prime^(64*(w*64))) := ⟨z.b.val*prime^(64*(w*64))+(LabelAddress.address g).val, LabelShift.pack_lt z.b.isLt (by simpa only [← pow_mul,show w*(64*64) = 64*(w*64) by omega] using (LabelAddress.address g).isLt)⟩
+  have eq : finProdFinEquiv (z.b,row) = idx := Fin.ext packed
+  have read := singleLabelBank_helperCell label x tape digits z.b row j
+  rw [eq] at read ⊢
+  exact h.trans read
+
+
+open Cover Swap.Modular in
+/-- Off-label reads vanish for arbitrary physical helper digits after restoration. -/
+theorem restoredStage_inactiveSupport (n : Fin 9) (w B W : ℕ)
+    (label : LabelPadding.Label 64 w) (x y out)
+    (trace : stageRuns.foldr (fun p next a => ∃ b, packedStageEffect n p w B W a b ∧ next b)
+      (fun a => a = y) (singleLabelBank label x))
+    (restore : HelperLabelTrace w (B*prime^(64*(w*64))) W (restoreSlotChanges (stageFinalSlot n)) y out)
+    (ρ : Role) (inactive : ρ.bank.val / 2 ≠ BitHosting.activePair n.val)
+    (g : LabelPadding.Label 64 w) (off : (LabelAddress.address g).val ≠ (LabelAddress.address label).val)
+    (z : LabelEntry.Cell (copyLabelLayout w B ((prime^w)^112*W)) B) (j : Fin W)
+    (digits : Fin 128 → ZMod (prime^w)) :
+    let tape := ((Fin.cast card_role) (Fintype.equivFin Role ρ)).castSucc
+    let row := (LabelAddress.address g).cast (by rw [← pow_mul]; congr 1; omega :
+      (prime^w)^(64*64) = prime^(64*(w*64)))
+    ext (out tape) (helperFieldCell digits (finProdFinEquiv (z.b,row)) j) = 0 := by
+  intro tape row
+  let c := Nine.port ρ.port.val
+  let swap := M8.Exchange.exchange (reduce (prime^w) (familySum n ρ))
+  have onto : Function.Surjective (helperSlotField c none w ∘ swap) :=
+    (helperSlotField_surjective c (Nine.port_checked _ ρ.port.isLt) none w).comp
+      (familyExchange_involutive n ρ w).surjective
+  obtain ⟨s,hs⟩ := onto digits
+  rw [← hs]
+  change ext (out tape) (helperFieldCell (helperSlotField c none w (swap s)) (finProdFinEquiv (z.b,row)) j) = 0
+  rw [restoredStage_inactiveRow n w B W label x y out trace restore ρ inactive g z j s]
+  simp only [Fin.val_cast,ite_eq_right off]
+
+
+open Cover in
+/-- The inactive owner already holds its next padded word at all flat tape addresses. -/
+theorem restoredStage_inactiveWord (n : Fin 9) (w B W : ℕ)
+    (label : LabelPadding.Label 64 w) (x y out)
+    (trace : stageRuns.foldr (fun p next a => ∃ b, packedStageEffect n p w B W a b ∧ next b)
+      (fun a => a = y) (singleLabelBank label x))
+    (restore : HelperLabelTrace w (B*prime^(64*(w*64))) W (restoreSlotChanges (stageFinalSlot n)) y out)
+    (ρ : Role) (inactive : ρ.bank.val / 2 ≠ BitHosting.activePair n.val) :
+    let tape := ((Fin.cast card_role) (Fintype.equivFin Role ρ)).castSucc
+    out tape = singleLabelBank label (collapseLabelBank (K := (prime^w)^112*W) (B := B) out) tape := by
+  intro tape
+  apply paddedWord_of_offRow
+  intro a z g off
+  let pair := finProdFinEquiv.symm (z.after : Fin ((prime^w)^112*W))
+  let digits := Fin.append (FlatCoordinateLayout.coordinates a) (FlatCoordinateLayout.coordinates pair.1)
+  have live : digits ∘ Fin.castAdd 112 = FlatCoordinateLayout.coordinates a := by funext j; simp [digits]
+  have tail : digits ∘ Fin.natAdd 16 = FlatCoordinateLayout.coordinates pair.1 := by funext j; simp [digits]
+  have h := restoredStage_inactiveSupport n w B W label x y out trace restore ρ inactive g off z pair.2 digits
+  let p := finProdFinEquiv (a,labelSpectator g z)
+  let row := (LabelAddress.address g).cast (by rw [← pow_mul]; congr 1; omega : (prime^w)^(64*64) = prime^(64*(w*64)))
+  have addr : helperFieldCell digits (finProdFinEquiv (z.b,row)) pair.2 = p.val := by
+    simp only [helperFieldCell,helperLabelCell,live,tail,FlatCoordinateLayout.rank_coordinates,p,
+      labelSpectator,row,finProdFinEquiv_apply_val,Fin.val_cast]
+    have split := congrArg Fin.val (finProdFinEquiv.apply_symm_apply (z.after : Fin ((prime^w)^112*W)))
+    change (finProdFinEquiv pair).val = z.after.val at split
+    rw [← split,finProdFinEquiv_apply_val]
+    ring
+  change ext (out tape) (helperFieldCell digits (finProdFinEquiv (z.b,row)) pair.2) = 0 at h
+  rw [addr,ext_apply] at h
+  exact h
+
 theorem restoredStage_activePort (n : Fin 9) (run : Fin 32 × Fin 5) (j : Fin 222)
     {w L W V : ℕ} {data out : Fin 142081 → Fin V → ZMod 2}
     (restore : HelperLabelTrace w L W (restoreSlotChanges (stageFinalSlot n)) data out) :
@@ -380,6 +537,49 @@ private theorem targetScan_cost {K N D l r b : ℕ} (pos : 0 < K) (hn : 0 < N) (
       all_goals first | assumption | exact ld.trans (Nat.mul_le_mul_left _ (Nat.le_mul_of_pos_right D vol)) |
         exact Nat.le_mul_of_pos_right _ size
     _ ≤ _ := by ring_nf; gcongr <;> decide
+
+/-- Active source owners retain their single label through a restored stage.
+The occupied row carries the frame change of the ordinary source stream. -/
+theorem restoredStage_sourceLabel (n : Fin 9) (run : Fin 32 × Fin 5) (w B W : ℕ)
+    (label : Cover.LabelPadding.Label 64 w) (x y out)
+    (trace : stageRuns.foldr (fun k next a => ∃ b, packedStageEffect n k w B W a b ∧ next b)
+      (fun a => a = y) (singleLabelBank label x))
+    (restore : HelperLabelTrace w (B*prime^(64*(w*64))) W (restoreSlotChanges (stageFinalSlot n)) y out)
+    (t : Fin 111) :
+    let K := (prime^w)^112*W
+    let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n run.1 run.2,ownerTape_injective ..⟩
+    ∀ (z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B) (g : Cover.LabelPadding.Label 64 w),
+      phaseRead owner out (labelSpectator g z) t.val =
+        if g = label then selectedFrame w (Frames.finalRefs t.val)
+          ((selectedFrame w (Frames.initialRefs t.val)).symm
+            (phaseRead owner x (finProdFinEquiv (z.b,z.after)) t.val)) else 0 := by
+  classical
+  intro K owner z g
+  rw [((restoredStage_active n run w B W _ y out trace restore t z).2 g)]
+  have ht : t.val < 661 := by omega
+  have input : phaseRead owner (singleLabelBank label x) (labelSpectator g z) t.val =
+      if g = label then phaseRead owner x (finProdFinEquiv (z.b,z.after)) t.val else 0 := by
+    funext s
+    simp only [phaseRead, Copy.extendStored, ht, dite_eq_left]
+    rw [singleLabelBank_read]
+    split <;> rfl
+  rw [input]
+  split <;> simp
+
+/-- The permanent source tape can serve directly as the next padded owner. -/
+theorem restoredStage_sourceWord (n : Fin 9) (run : Fin 32 × Fin 5) (w B W : ℕ)
+    (label : Cover.LabelPadding.Label 64 w) (x y out)
+    (trace : stageRuns.foldr (fun k next a => ∃ b, packedStageEffect n k w B W a b ∧ next b)
+      (fun a => a = y) (singleLabelBank label x))
+    (restore : HelperLabelTrace w (B*prime^(64*(w*64))) W (restoreSlotChanges (stageFinalSlot n)) y out)
+    (t : Fin 111) :
+    let src := ownerTape n run.1 run.2 (t.castLE (by decide))
+    out src = singleLabelBank label (collapseLabelBank (K := (prime^w)^112*W) (B := B) out) src := by
+  intro src
+  let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n run.1 run.2,ownerTape_injective ..⟩
+  apply singleLabelBank_of_support label out owner (t.castLE (by decide))
+  intro z g ne
+  exact (restoredStage_sourceLabel n run w B W label x y out trace restore t z g).trans (if_neg ne)
 
 /-- A physical row scan on a restored target writes the certified framed
 sum of its two incoming streams at every active address and inherited block. -/

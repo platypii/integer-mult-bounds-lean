@@ -106,6 +106,23 @@ theorem remainderExchange_line (c : PortCertificate) (hc : c.Checked) (lo hi : �
 
 open IntegerMultBounds.Swap.Modular
 
+private theorem chart_admissible (c : PortCertificate) (hc : c.Checked) (w : ℕ) :
+    Admissible (prime^w) c.fullChart := by
+  intro i j
+  exact Nat.Coprime.pow_right w ((Nat.coprime_of_lt_prime (c.fullChart i j).den_pos.ne'
+    ((fullChart_entry c hc i j).2.trans_lt Shared50ModularControl.prime_odd)
+    Shared50ModularControl.prime_prime).symm)
+
+/-- The reduced port chart has a right inverse on chart coordinates. -/
+theorem reducedChart_orthonormal (c : PortCertificate) (hc : c.Checked) (w : ℕ) :
+    let F := reduce (prime^w) c.fullChart
+    Fᵀ * F = 1 := by
+  intro F
+  have chart := chart_admissible c hc w
+  change reduce (prime^w) c.fullChartᵀ * reduce (prime^w) c.fullChart = 1
+  have chartT : Admissible (prime^w) c.fullChartᵀ := fun i j => chart j i
+  rw [← reduce_mul _ chartT chart,c.fullChart_orthonormal hc,reduce_one]
+
 /-- Projecting the reduced parent exchange onto its full port chart exchanges the
 same interval on arbitrary modular digits, at every tape width. -/
 theorem remainderExchange_chart (c : PortCertificate) (hc : c.Checked) (lo hi w : ℕ)
@@ -118,17 +135,10 @@ theorem remainderExchange_chart (c : PortCertificate) (hc : c.Checked) (lo hi w 
       else ((Fᵀ *ᵥ x.1) p, (Fᵀ *ᵥ x.2) p) := by
   intro F S y p
   let m := prime^w
-  have chart : Admissible m c.fullChart := by
-    intro i j
-    have bound := (fullChart_entry c hc i j).2
-    exact Nat.Coprime.pow_right w ((Nat.coprime_of_lt_prime (c.fullChart i j).den_pos.ne'
-      (bound.trans_lt Shared50ModularControl.prime_odd) Shared50ModularControl.prime_prime).symm)
+  have chart := chart_admissible c hc w
   have flag : Admissible m c.flag := fun i j => chart i (.inr j)
   let J := reduce m c.flag
-  have chartT : Admissible m c.fullChartᵀ := fun i j => chart j i
-  have orth : Fᵀ * F = 1 := by
-    change reduce m c.fullChartᵀ * reduce m c.fullChart = 1
-    rw [← reduce_mul m chartT chart, c.fullChart_orthonormal hc, reduce_one]
+  have orth := reducedChart_orthonormal c hc w
   let D : Matrix Pending Pending (ZMod m) := diagonal fun j =>
     if lo ≤ pendingIndex j ∧ pendingIndex j < hi then 1 else 0
   have sel : Admissible m (interval lo hi) := by

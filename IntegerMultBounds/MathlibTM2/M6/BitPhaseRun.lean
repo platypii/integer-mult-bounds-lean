@@ -2436,20 +2436,27 @@ private theorem physicalLabelRow_val {w : ℕ} (g : Cover.LabelPadding.Label 64 
     (physicalLabelRow w g).val = (Cover.LabelAddress.address g).val :=
   castRow_val _ (address_bijective w) (labelRowCount w) g
 
+theorem exists_firstRowLabel (w : ℕ) :
+    ∃ g : Cover.LabelPadding.Label 64 w, (Cover.LabelAddress.address g).val = 0 := by
+  refine ⟨(physicalLabelRow w).symm 0, ?_⟩
+  rw [← physicalLabelRow_val]
+  simp
+
+/-- The common label at physical row zero for all stages of a given width. -/
+noncomputable def firstRowLabel (w : ℕ) : Cover.LabelPadding.Label 64 w :=
+  (exists_firstRowLabel w).choose
+
 /-- The ordinary one-row padding machine implements placement in physical row zero. -/
 theorem singleLabelBank_pad {w B K : ℕ} :
-    ∃ label : Cover.LabelPadding.Label 64 w,
+    let label := firstRowLabel w
     ∀ (x : Fin 142081 → Fin ((prime^w)^16*(B*K)) → ZMod 2) i p,
       singleLabelBank label x i p =
         RecursiveRowPadding.pad (A := (prime^w)^16*B) (R := 1) (L := K)
           (prime^(64*(w*64))) 0 (fun z => x i (Fin.cast (by simp [Nat.mul_assoc]) z))
           (Fin.cast (by simp [Nat.mul_assoc]) p) := by
-  let label := (physicalLabelRow w).symm 0
-  refine ⟨label, ?_⟩
+  intro label
   intro x i p
-  have addr : (Cover.LabelAddress.address label).val = 0 := by
-    rw [← physicalLabelRow_val]
-    simp [label]
+  have addr : (Cover.LabelAddress.address label).val = 0 := (exists_firstRowLabel w).choose_spec
   obtain ⟨⟨a,t⟩,rfl⟩ := finProdFinEquiv.surjective p
   obtain ⟨⟨br,k⟩,rfl⟩ := finProdFinEquiv.surjective t
   obtain ⟨⟨b,r⟩,rfl⟩ := finProdFinEquiv.surjective br
@@ -2477,7 +2484,7 @@ open FlatCoordinateSchedule (bits bits_value bits_canonical) in
 theorem singleLabelBank_pad_hoare {w B K : ℕ} (hB : 0 < B) (hK : 0 < K) :
     let A := (prime^w)^16
     let N := prime^(64*(w*64))
-    ∃ label : Cover.LabelPadding.Label 64 w,
+    let label := firstRowLabel w
     ∀ (x : Fin 142081 → Fin (A*(B*K)) → ZMod 2) i,
     let word := List.ofFn (SparseRoleCircuit.encoded (a := prime) x i)
     let output := List.ofFn (SparseRoleCircuit.encoded (a := prime) (singleLabelBank label x) i)
@@ -2488,9 +2495,8 @@ theorem singleLabelBank_pad_hoare {w B K : ℕ} (hB : 0 < B) (hK : 0 < K) :
         (putWord (fun _ => blank) 0 output) 0 0 (bits (A*B)) (bits 1) (bits N) (bits K))
       (413*(A*B)*(N*K)) := by
   intro A N
-  obtain ⟨label,placement⟩ := singleLabelBank_pad (w := w) (B := B) (K := K)
-  refine ⟨label, ?_⟩
-  intro x i
+  have placement :=  singleLabelBank_pad (w := w) (B := B) (K := K)
+  intro label x i
   let hs : A*B*1*K = A*(B*K) := by simp [Nat.mul_assoc]
   let hd : A*(B*N*K) = A*B*N*K := by simp [Nat.mul_assoc]
   let source := fun z => x i (Fin.cast hs z)
@@ -2880,6 +2886,51 @@ private theorem labelSpectator_surjective {w B K : ℕ} (j : Fin (B*prime^(64*(w
   simp only [finProdFinEquiv_apply_val] at inner packed
   rw [Nat.mul_comm block.1.val,← Nat.add_comm block.2.val,inner,Nat.mul_comm, Nat.add_comm]
   exact packed
+
+/-- A tape supported on one matrix row already represents its padded row sum. -/
+theorem singleLabelBank_of_support {w B K : ℕ} (label : Cover.LabelPadding.Label 64 w)
+    (x : Fin 142081 → Fin ((prime^w)^16*(B*prime^(64*(w*64))*K)) → ZMod 2)
+    (owner : Fin 661 ↪ Fin 142081) (i : Fin 661)
+    (support : ∀ (z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B) g, g ≠ label →
+      phaseRead owner x (labelSpectator g z) i.val = 0) :
+    x (owner i) = singleLabelBank label (collapseLabelBank x) (owner i) := by
+  classical
+  funext p
+  obtain ⟨⟨s,j⟩,rfl⟩ := copyAddress.symm.surjective p
+  obtain ⟨g,z,rfl⟩ := labelSpectator_surjective j
+  rw [copyAddress_index,singleLabelBank_read]
+  by_cases eq : g = label
+  · subst g
+    rw [ite_eq_left rfl]
+    have h := collapseLabelBank_read x owner z i
+    rw [Finset.sum_eq_single label (fun g _ ne => support z g ne) (by simp)] at h
+    simpa only [phaseRead,Copy.extendStored,dite_eq_left i.isLt] using congrFun h.symm s
+  · rw [ite_eq_right eq]
+    simpa only [phaseRead,Copy.extendStored,dite_eq_left i.isLt,Pi.zero_apply] using
+      congrFun (support z g eq) s
+
+/-- A tape supported on one matrix row already represents its padded row sum. -/
+theorem paddedWord_of_offRow {w B K : ℕ} (label : Cover.LabelPadding.Label 64 w)
+    (x : Fin 142081 → Fin ((prime^w)^16*(B*prime^(64*(w*64))*K)) → ZMod 2) (i : Fin 142081)
+    (zero : ∀ (a : Fin ((prime^w)^16)) (z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B)
+      (g : Cover.LabelPadding.Label 64 w), (Cover.LabelAddress.address g).val ≠ (Cover.LabelAddress.address label).val →
+      x i (finProdFinEquiv (a,labelSpectator g z)) = 0) :
+    x i = singleLabelBank label (collapseLabelBank x) i := by
+  classical
+  let base := Fin.castLEEmb (show 661 ≤ 142081 by decide)
+  let owner := base.trans (Equiv.swap (base 0) i).toEmbedding
+  have pos : owner 0 = i := by simp [owner,base]
+  rw [← pos]
+  apply singleLabelBank_of_support label x owner 0
+  intro z g ne
+  funext s
+  simp only [phaseRead,Copy.extendStored,dite_eq_left (0 : Fin 661).isLt,Pi.zero_apply]
+  rw [pos]
+  apply zero
+  intro eq
+  apply ne
+  apply (physicalLabelRow w).injective
+  exact Fin.ext (by simpa only [physicalLabelRow_val] using eq)
 
 /-- Two realizations of a class invocation with the same permanent inputs give
 the same permanent outputs, even when their temporary tapes differ. -/

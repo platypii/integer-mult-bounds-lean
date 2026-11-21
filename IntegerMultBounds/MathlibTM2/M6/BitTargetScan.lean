@@ -697,7 +697,8 @@ private theorem ownerPad_aux (src dst : ℤ → Fin (prime+4)) (D N K : ℕ)
 ports change their represented words; the dimension counters are reusable. -/
 theorem placedOwnerPad {w B K T Q : ℕ} {P U : Type} (hB : 0 < B) (hK : 0 < K)
     (fits : 215 ≤ Q) (body : P → Pr P T Q prime U) :
-    ∃ label : Cover.LabelPadding.Label 64 w, ∀ port : Fin 12 ↪ Fin T,
+    let label := firstRowLabel w
+    ∀ port : Fin 12 ↪ Fin T,
     let A := (prime^w)^16
     let N := prime^(64*(w*64))
     let frame := ownerPadFrame (A*B) N K
@@ -711,9 +712,8 @@ theorem placedOwnerPad {w B K T Q : ℕ} {P U : Type} (hB : 0 < B) (hK : 0 < K)
         steps ≤ 7021*(A*B)*(N*K)+6 ∧ z.user = u.user ∧
         Cover.Fallback.RecordPayload (port 1) (fun _ => blank) 0 (singleLabelBank label x i) F ∧
         aux F ∧ ∀ j, (∀ i, port i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
-  obtain ⟨label,pad⟩ := singleLabelBank_pad_hoare (w := w) hB hK
-  refine ⟨label,?_⟩
-  intro port A N frame aux code x i u S payload empty ready
+  have pad := singleLabelBank_pad_hoare (w := w) hB hK
+  intro label port A N frame aux code x i u S payload empty ready
   obtain ⟨z,F,steps,exec,paid,user,done,off⟩ := placedHoare_exec _ port fits body (pad x i) u S (by
     intro j z
     by_cases hs : j = 0
@@ -782,7 +782,7 @@ theorem placedOwnerPads {w B K T Q : ℕ} {P U : Type} (hB : 0 < B) (hK : 0 < K)
       frame.tape j z = readAt blank (S.L (port 0 j)) (S.R (port 0 j)) (z-frame.head j)
     let code := fun i => embProg (port i) (Empty.elim : Empty → P)
       (foreign (liftQ RowPaddingConstructedAlphabet.program fits))
-    ∃ label : Cover.LabelPadding.Label 64 w,
+    let label := firstRowLabel w
     ∀ (x : Fin 142081 → Fin (A*(B*K)) → ZMod 2) (order : List (Fin 142081)), order.Nodup → ∀ u S, aux S →
       (∀ i ∈ order, Cover.Fallback.RecordPayload (port i 0) (fun _ => blank) 0 (x i) S) →
       (∀ i ∈ order, ∀ z, readAt blank (S.L (port i 1)) (S.R (port i 1)) z = blank) →
@@ -793,9 +793,8 @@ theorem placedOwnerPads {w B K T Q : ℕ} {P U : Type} (hB : 0 < B) (hK : 0 < K)
   intro port A N frame aux code
   have shared := stagePadPort_shared fan
   have apart := stagePadPort_apart fan
-  obtain ⟨label,pad⟩ := placedOwnerPad (w := w) hB hK fits body
-  refine ⟨label,?_⟩
-  intro x order
+  have pad := placedOwnerPad (w := w) hB hK fits body
+  intro label x order
   induction order with
   | nil =>
     intro _ u S auxS _ _
@@ -851,7 +850,7 @@ theorem stageTargets_pad {T Q : ℕ} {P U : Type} (n : Fin 9)
     let frame := ownerPadFrame (A*B) N K
     let aux := fun (S : Stacks ((T+142081*7)+142081+10) prime) => ∀ j : Fin 12, j ≠ 0 → j ≠ 1 → ∀ z,
       frame.tape j z = readAt blank (S.L (port 0 j)) (S.R (port 0 j)) (z-frame.head j)
-    ∃ label : Cover.LabelPadding.Label 64 w,
+    let label := firstRowLabel w
     ∀ (x next : Fin 142081 → Fin (A*(B*K)) → ZMod 2),
       (∀ k, next (targetOwner n k) = stageTargetWord n k w B K x) →
       ∀ u S, aux S →
@@ -869,9 +868,8 @@ theorem stageTargets_pad {T Q : ℕ} {P U : Type} (n : Fin 9)
     (foreign (liftQ RowPaddingConstructedAlphabet.program fits))
   refine ⟨Prog.seqList (order.map pad),?_⟩
   intro w B K hb hk A N port frame aux
-  obtain ⟨label,run⟩ := placedOwnerPads (w := w) hb hk fan fits body
-  refine ⟨label,?_⟩
-  intro x next targetWords u S ready inputs empty
+  have run := placedOwnerPads (w := w) hb hk fan fits body
+  intro label x next targetWords u S ready inputs empty
   have unique : order.Nodup := (stageRuns_nodup.product (List.nodup_finRange _)).map (targetOwner_injective n)
   obtain ⟨z,F,t,exec,paid,user,headers,out,off⟩ := run next order unique u S ready (by
     intro i hi

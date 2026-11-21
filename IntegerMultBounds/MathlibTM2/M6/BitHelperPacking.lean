@@ -109,6 +109,22 @@ noncomputable def helperSlotField (c : PortCertificate) (slot : Option (Fin 56))
   let H := (IntegerMultBounds.Swap.Modular.reduce (prime^w) c.fullChart).transpose
   (Sum.elim (H *ᵥ s.1) (H *ᵥ s.2)) ∘ helperFieldOrder slot
 
+/-- Every physical helper digit string comes from a parent state, in any slot. -/
+theorem helperSlotField_surjective (c : PortCertificate) (hc : c.Checked)
+    (slot : Option (Fin 56)) (w : ℕ) : Function.Surjective (helperSlotField c slot w) := by
+  intro digits
+  let order := helperFieldOrder slot
+  let F := IntegerMultBounds.Swap.Modular.reduce (prime^w) c.fullChart
+  let x := fun i => digits (order.symm (.inl i))
+  let y := fun i => digits (order.symm (.inr i))
+  refine ⟨(F *ᵥ x,F *ᵥ y),?_⟩
+  change (Sum.elim (Fᵀ *ᵥ (F *ᵥ x)) (Fᵀ *ᵥ (F *ᵥ y))) ∘ order = digits
+  rw [Matrix.mulVec_mulVec,Matrix.mulVec_mulVec,reducedChart_orthonormal c hc w,
+    Matrix.one_mulVec,Matrix.one_mulVec]
+  funext j
+  obtain ⟨k,rfl⟩ := order.symm.surjective j
+  cases k <;> simp [Function.comp_apply,x,y]
+
 /-- At entry, the two parent fields are rows of the port's actual
 pending-first label matrix, in descriptor order. -/
 theorem helperSlotField_none_rows (c : PortCertificate) (w : ℕ)
