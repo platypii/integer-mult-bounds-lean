@@ -1,5 +1,6 @@
 module
 public import IntegerMultBounds.MathlibTM2.Host.StateLift
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackShearCleanup
 
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackGoodChildPayload
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackGoodOutgoing
@@ -96,6 +97,13 @@ noncomputable def goodOutgoingTime [Fintype P] (body : P → Pr P T 217 A U) (ma
       (8*((rank-a.val)/2*(d*d*H))+14*(d*d*H)+22 + tailPivotTime b w H a.val) +
         (group true + group false + (2*(d*d*H+3*H)+9))
     (((List.finRange rank).map crossCost).sum+1) + (dimensionTime H J d + ((as.map cost).sum+1) + (2*(d*H+J)+2) + ((tailOrder.map tailCost).sum+1))
+
+/-- Stack growth outside the payload comes only from the incoming and outgoing passes. -/
+noncomputable def goodRecordStackGrowth (machine : Fin 55 ↪ Fin T) (b w W H J rank : ℕ) (hr : rank ≤ d) : ℕ :=
+  Fast.Main.mnProgPush (goodIncoming (P := Empty) (U := U) (A := A) b rank hr machine) *
+    goodIncomingTime (P := Empty) (U := U) (A := A) Empty.elim machine b w W H J rank hr +
+  Fast.Main.mnProgPush (goodOutgoing (P := Empty) (U := U) (A := A) b rank hr machine) *
+    goodOutgoingTime (P := Empty) (U := U) (A := A) Empty.elim machine b w W H J rank hr
 
 /-- Rank is fixed by the selected projector. A zero-rank record takes one
 machine step and requires neither archive traversal nor a recursive call. -/
@@ -312,6 +320,9 @@ theorem hostedGoodRecord_exec {Q : ℕ} (cap : 217 ≤ Q) (body : P → Pr P T Q
         n ≤ 1 + goodIncomingTime (P := Empty) (U := U) (A := A) Empty.elim machine b w W H J rank hr + middleCost + (1 + goodOutgoingTime (P := Empty) (U := U) (A := A) Empty.elim machine b w W H J rank hr) ∧
         Exec body (hostedGoodRecordAt cap full middleHost f b rank g hr) (mk v S) n (mk z F) ∧ ready out F ∧ F.R (bank 27) = [] ∧
         (∀ j, (∀ i, s i ≠ j) → (∀ i, ts i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j) ∧
+        (∀ j, j ≠ full 24 →
+          let growth := goodRecordStackGrowth (U := U) (A := A) machine b w W H J rank hr
+          (F.L j).length ≤ (S.L j).length+growth ∧ (F.R j).length ≤ (S.R j).length+growth) ∧
         ∀ x j, let y := transform (diagonal weights) 1 (revExchangeOf (rev d) G (transform (diagonal inv) 1 x))
                out (index (Fin.append y.1 y.2) j) = word (index (Fin.append x.1 x.2) j) := by
   subst d
@@ -322,7 +333,7 @@ theorem hostedGoodRecord_exec {Q : ℕ} (cap : 217 ≤ Q) (body : P → Pr P T Q
     (List.ofFn fun i => binSyms H (childInv i).val).flatten) (full 57) (binSyms ((g+g)*H+K) (rankDescriptor M rank g desc).between)}
   by_cases zero : rank = 0
   · subst rank
-    refine ⟨v,S,1,word,rfl,?_,?_,initial,free,fun _ _ _ => ⟨rfl,rfl⟩,?_⟩
+    refine ⟨v,S,1,word,rfl,?_,?_,initial,free,fun _ _ _ => ⟨rfl,rfl⟩,fun _ _ => ⟨Nat.le_add_right ..,Nat.le_add_right ..⟩,?_⟩
     · dsimp only [middleCost]
       omega
     · exact Exec.act _ _
@@ -402,7 +413,24 @@ theorem hostedGoodRecord_exec {Q : ℕ} (cap : 217 ≤ Q) (body : P → Pr P T Q
     by simpa only [hostedGoodRecordAt,ite_eq_right zero,goodIncoming,goodOutgoing,machine] using Exec.seq (Exec.seq first' call) last',done,blank,
     fun j hs ht => ⟨(outer j hs ht).1.trans ((saved j (ht 24).symm).1.trans (frame j hs ht).1),
       (outer j hs ht).2.trans ((saved j (ht 24).symm).2.trans (frame j hs ht).2)⟩,
-    goodRecord_effect stage L R factor idem weights inv inverse word before after out inc (fun hg tg x j => by
+    ?_,goodRecord_effect stage L R factor idem weights inv inverse word before after out inc (fun hg tg x j => by
       simpa only [childWeight,childInv,units,piv,stage,Fin.castLE,Fin.castAdd] using act hg tg x j) outgoing⟩
+  intro j off
+  have kept := saved j off
+  have leftIn := exec_stack_length first le_rfl (fun f => nomatch f) (.lt j)
+  have rightIn := exec_stack_length first le_rfl (fun f => nomatch f) (.rt j)
+  have leftOut := exec_stack_length last le_rfl (fun f => nomatch f) (.lt j)
+  have rightOut := exec_stack_length last le_rfl (fun f => nomatch f) (.rt j)
+  change (D.L j).length ≤ (S.L j).length+_ at leftIn
+  change (D.R j).length ≤ (S.R j).length+_ at rightIn
+  change (F.L j).length ≤ (E.L j).length+_ at leftOut
+  change (F.R j).length ≤ (E.R j).length+_ at rightOut
+  rw [kept.1] at leftOut
+  rw [kept.2] at rightOut
+  have incBound := Nat.mul_le_mul_left (Fast.Main.mnProgPush (goodIncoming (P := Empty) (U := U) (A := A) b rank hr machine)) hl
+  have outBound := Nat.mul_le_mul_left (Fast.Main.mnProgPush (goodOutgoing (P := Empty) (U := U) (A := A) b rank hr machine)) hn
+  constructor
+  · exact leftOut.trans ((Nat.add_le_add (leftIn.trans (Nat.add_le_add_left incBound _)) outBound).trans_eq (Nat.add_assoc ..))
+  · exact rightOut.trans ((Nat.add_le_add (rightIn.trans (Nat.add_le_add_left incBound _)) outBound).trans_eq (Nat.add_assoc ..))
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback

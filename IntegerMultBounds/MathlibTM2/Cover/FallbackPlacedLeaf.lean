@@ -45,7 +45,8 @@ theorem clearPrivateAfter {T A : ℕ} (firstPrivate : ℕ) (body : P → Pr P T 
     (hp : Fast.Main.mnProgPush prog ≤ push) (hb : ∀ f, Fast.Main.mnProgPush (body f) ≤ push)
     (free : ∀ i : Fin T, firstPrivate ≤ i.val → S.L i = [] ∧ S.R i = []) :
     let work := (List.finRange T).filter fun i => firstPrivate ≤ i.val
-    ∃ z F l, z.user = u.user ∧ l ≤ n+(4*work.length+1+work.length*(6*(push*n))) ∧
+    ∃ z F l, z.user = u.user ∧ l = n+((work.map fun i => 4*(D.L i).length+2*(D.R i).length+4).sum+1) ∧
+      l ≤ n+(4*work.length+1+work.length*(6*(push*n))) ∧
       Exec body (.seq prog (clearWorkTapes work)) (mk v S) l (mk z F) ∧
       (∀ i : Fin T, i.val < firstPrivate → F.L i = D.L i ∧ F.R i = D.R i) ∧
       ∀ i : Fin T, firstPrivate ≤ i.val → F.L i = [] ∧ F.R i = [] := by
@@ -60,7 +61,7 @@ theorem clearPrivateAfter {T A : ℕ} (firstPrivate : ℕ) (body : P → Pr P T 
     rw [eq]
     simp [Nat.mul_comm]
   rw [base] at bound
-  exact ⟨z,_,_,hz,Nat.add_le_add_left bound n,Exec.seq run clear,
+  exact ⟨z,_,_,hz,rfl,Nat.add_le_add_left bound n,Exec.seq run clear,
     fun i hi => by simp [work,Nat.not_le.mpr hi],fun i hi => by simp [work,hi]⟩
 
 theorem placedPackedLeaf_exec (rank g : ℕ) (dim : fields = rank+g) (weight inv : Fin rank → ZMod M)

@@ -449,6 +449,14 @@ theorem ordinarySetup_exec {K m w W H J Q : ℕ} {P U : Type} (room : 58 ≤ K)
     exact ⟨(congrFun left i).trans blank.1,(Function.update_of_ne (apart 33) ..).trans
       ((unchanged i (apart 51) (apart 54)).trans ((frame i (apart 47) (apart 49) (apart 50)).trans blank.2))⟩
 
+noncomputable def ordinarySetupTime (m r w H prefixLength : ℕ) : ℕ :=
+    let C : ℕ := 48*H*H+152*H+66
+    let cost := fun i : Fin m => (8*(i.val*H)+14*H+22) +
+      (6*w+6+(14*H+16+(prime-2)*C+C+w*(12*H+15+prime*C))) + (2*H+2) + (4*H+4)
+    ((RingFormula.conjugationDepth m+1)*(6*H+6)+1 +
+          ((4*H+4)+(recordConjugationTime m w H prefixLength+(2*H+2))+((RingFormula.conjugationDepth m+1)*(2*H+2)+1)) +
+          (4*(m*m*H)+4) + (r*(4*w+4+columnTime m prime w H)+1+(r*(8*(m*m*H)+14*H+22)+1))) + (((List.finRange m).map cost).sum+1+(4*H+4)+(6*H+6))
+
 theorem ordinaryGeneratedSetup_exec {m w W H J Q common work : ℕ} {P U : Type}
     (v : RecursiveInterchangeLayout.Descriptor) (proj : Matrix (Fin m) (Fin m) ℚ)
     (weights : Fin m → ZMod (prime^(w+1))) (prefixes : ℕ → List (Fin (prime+4)))
@@ -484,14 +492,9 @@ theorem ordinaryGeneratedSetup_exec {m w W H J Q common work : ℕ} {P U : Type}
     let ports := entry.trans bank
     let parentWords := (List.ofFn fun i => binSyms (A := prime) H (weights i).val).flatten
     let invWords := (List.ofFn fun i => binSyms (A := prime) H (Ring.inverse (weights i)).val).flatten
-    let C : ℕ := 48*H*H+152*H+66
-    let cost := fun i : Fin m => (8*(i.val*H)+14*H+22) +
-      (6*w+6+(14*H+16+(prime-2)*C+C+w*(12*H+15+prime*C))) + (2*H+2) + (4*H+4)
     let load : Pr P (66+K) Q prime U := packReciprocals prime (ordinaryReciprocalPorts.trans full) (full 54) (List.finRange m)
     let childBank := child.trans (head.trans bank)
-    ∃ (z : HS (66+K) Q prime U) (D : Stacks (66+K) prime) (t : ℕ), z.user = u.user ∧ t ≤ ((RingFormula.conjugationDepth m+1)*(6*H+6)+1 +
-          ((4*H+4)+(recordConjugationTime m w H (prefixes j).length+(2*H+2))+((RingFormula.conjugationDepth m+1)*(2*H+2)+1)) +
-          (4*(m*m*H)+4) + (r*(4*w+4+columnTime m prime w H)+1+(r*(8*(m*m*H)+14*H+22)+1))) + (((List.finRange m).map cost).sum+1+(4*H+4)+(6*H+6)) ∧
+    ∃ (z : HS (66+K) Q prime U) (D : Stacks (66+K) prime) (t : ℕ), z.user = u.user ∧ t ≤ ordinarySetupTime m r w H (prefixes j).length ∧
       Exec body (program.seq (load.seq ((Node.umul (m*m) (full 2) (full 51) (full 0)).seq
         (bcopy (full 2) (full 33) (full 0) (full 1))))) (mk u S) t (mk z D) ∧
       HeadColumnReady (d := m+m) (W := W) coeffs ports H J [] parentWords [] SparseRoleCircuit.encode
@@ -509,7 +512,7 @@ theorem ordinaryGeneratedSetup_exec {m w W H J Q common work : ℕ} {P U : Type}
   obtain ⟨minor,generated⟩ :=
     ordinaryGeneratedArchive_exec v proj weights prefixes tail schedules hm poolFits room body u S j js ready live clear
   refine ⟨minor,?_⟩
-  intro words stage bank coeffs ports parentWords invWords C cost load childBank
+  intro words stage bank coeffs ports parentWords invWords load childBank
   obtain ⟨y,B,n,hy,archive,hn,pivots,pair,left,frame⟩ := generated
   have payloadB : B.R (full 24) = S.R (full 24) := frame _ (full.injective.ne (by decide))
     (full.injective.ne (by decide)) (full.injective.ne (by decide))
@@ -565,6 +568,9 @@ def OrdinaryRecordExec [M8.Machine.Net] {N Q m w W H J rank : ℕ} {P U : Type}
         ready out F ∧ F.R (bank 27) = [] ∧
         (∀ j, (∀ i, (shear.trans host) i ≠ j) → (∀ i, (shear.trans (ordinaryHead.trans bank)) i ≠ j) →
           F.L j = S.L j ∧ F.R j = S.R j) ∧
+        (∀ j, j ≠ full 24 →
+          let growth := goodRecordStackGrowth (U := U) (A := prime) (GoodChildLayout.parent.trans (parentWithWeights.trans full)) prime w W H J rank hr
+          (F.L j).length ≤ (S.L j).length+growth ∧ (F.R j).length ≤ (S.R j).length+growth) ∧
         ∀ x j, let y := transform (diagonal weights) 1 (revExchangeOf (rev m) G
                 (transform (diagonal fun i => Ring.inverse (weights i)) 1 x))
                out (index (Fin.append y.1 y.2) j) = word (index (Fin.append x.1 x.2) j)
@@ -586,13 +592,15 @@ theorem ordinaryPreparedRun_exec [M8.Machine.Net] {n T Q d w W H J rank : ℕ} {
   unfold OrdinaryRecordExec
   let full := caller.trans (Fin.castAddEmb T)
   intro M bank host c parentWords ready words stage v S word _ headReady empty one clock free temps extra inverses length pivots pair
-  obtain ⟨z,F,t,out,user,_,price,exec,restored,blankPort,frame,correct⟩ := run v S word
+  obtain ⟨z,F,t,out,user,_,price,exec,restored,blankPort,frame,growth,correct⟩ := run v S word
     (by simpa only [List.append_nil] using headReady) empty (by rw [List.append_nil]; exact inverses)
     (by rw [List.append_nil]; exact pair) length (by rw [List.append_nil]; exact pivots)
     one clock free temps (Or.inl ⟨rfl,by simp⟩) (fun i hi => extra i (enough.trans hi))
   exact ⟨z,F,t,out,user,(price width digits).1,exec,by simpa only [List.append_nil] using restored,
-    blankPort,frame,correct⟩
+    blankPort,frame,growth,correct⟩
 
+
+open IntegerMultBounds.MathlibTM2.Fast.Main in
 theorem ordinaryGeneratedRecord_exec [M8.Machine.Net] {d w W H J Q common work : ℕ} {P U : Type}
     (cap : 217 ≤ Q) (overhead budget : ℕ)
     (v : RecursiveInterchangeLayout.Descriptor) (proj : Matrix (Fin (d+1)) (Fin (d+1)) ℚ)
@@ -626,30 +634,47 @@ theorem ordinaryGeneratedRecord_exec [M8.Machine.Net] {d w W H J Q common work :
     (∀ z, RadixToBinary.binaryEncoding.encode (putWord (fun _ => blank) 0
       (List.ofFn (SparseRoleCircuit.encode ∘ word)) z) = readAt blank (S.L (full 24)) (S.R (full 24)) z) →
     (∀ minor, OrdinaryRecordExec (W := W) (H := H) (J := J) cap proj.rank_le_height full body overhead budget G minor weights proc context) →
-    let C : ℕ := 48*H*H+152*H+66
-    let cost := fun i : Fin m => (8*(i.val*H)+14*H+22) +
-      (6*w+6+(14*H+16+(prime-2)*C+C+w*(12*H+15+prime*C))) + (2*H+2) + (4*H+4)
     let load : Pr P (66+K) Q prime U := packReciprocals prime (ordinaryReciprocalPorts.trans full) (full 54) (List.finRange m)
-    ∃ (z : HS (66+K) Q prime U) (D : Stacks (66+K) prime) (t : ℕ) (out : Fin ((prime^(w+1))^(m+m)*W) → ZMod 2), z.user = u.user ∧ t ≤ ((RingFormula.conjugationDepth m+1)*(6*H+6)+1 +
-          ((4*H+4)+(recordConjugationTime m w H (prefixes j).length+(2*H+2))+((RingFormula.conjugationDepth m+1)*(2*H+2)+1)) +
-          (4*(m*m*H)+4) + (r*(4*w+4+columnTime m prime w H)+1+(r*(8*(m*m*H)+14*H+22)+1))) + (((List.finRange m).map cost).sum+1+(4*H+4)+(6*H+6)) + (budget+overhead*((prime^(w+1))^(m+m)*W)) ∧
-      Exec body ((program.seq (load.seq ((Node.umul (m*m) (full 2) (full 51) (full 0)).seq
-        (bcopy (full 2) (full 33) (full 0) (full 1))))).seq (hostedGoodRecordAt cap full full proc prime r (m-r) proj.rank_le_height)) (mk u S) t (mk z D) ∧
+    let prepare := program.seq (load.seq ((Node.umul (m*m) (full 2) (full 51) (full 0)).seq
+      (bcopy (full 2) (full 33) (full 0) (full 1))))
+    ∃ (z : HS (66+K) Q prime U) (D : Stacks (66+K) prime) (t : ℕ) (out : Fin ((prime^(w+1))^(m+m)*W) → ZMod 2), z.user = u.user ∧ t ≤ ordinarySetupTime m r w H (prefixes j).length + (budget+overhead*((prime^(w+1))^(m+m)*W)) ∧
+      Exec body (prepare.seq (hostedGoodRecordAt cap full full proc prime r (m-r) proj.rank_le_height)) (mk u S) t (mk z D) ∧
       let bank := adapterBank.trans (parent.trans (parentWithWeights.trans full))
       let host := head.trans bank
       HeadColumnReady (d := m+m) (W := W) ((coeff true).trans host) (entry.trans bank) H J []
         (List.ofFn fun i => binSyms H (weights i).val).flatten [] SparseRoleCircuit.encode
         (fun _ => blank) (fun _ => blank) 0 0 out D ∧ D.R (bank 27) = [] ∧
+      (∀ push, mnProgPush prepare ≤ push → (∀ f, mnProgPush (body f) ≤ push) →
+        ∀ i, 58 ≤ i.val →
+          let growth := push*ordinarySetupTime m r w H (prefixes j).length +
+            goodRecordStackGrowth (U := U) (A := prime) (GoodChildLayout.parent.trans (parentWithWeights.trans full))
+              prime w W H J r proj.rank_le_height
+          (D.L i).length ≤ growth ∧ (D.R i).length ≤ growth) ∧
       (∀ i, i.val < 58 → i ≠ full 24 → D.R i = S.R i) ∧
       ∀ x j, let y := transform (diagonal weights) 1 (revExchangeOf (rev m) G
               (transform (diagonal fun i => Ring.inverse (weights i)) 1 x))
              out (index (Fin.append y.1 y.2) j) = word (index (Fin.append x.1 x.2) j) := by
-  intro m K src full r slots tmp program g M G clear word payload installed C cost load
+  intro m K src full r slots tmp program g M G clear word payload installed load prepare
   obtain ⟨minor,y,B,l,hy,hl,setup,headReady,empty,one,clock,free,temps,extra,inverses,length,pivots,pair,publicFrame⟩ :=
     ordinaryGeneratedSetup_exec v proj weights prefixes tail schedules hm poolFits unit room body u S j js ready live clear word payload
-  obtain ⟨z,F,n,out,hz,hn,run,restored,blankPort,childFrame,correct⟩ := installed minor y B word (preserved B publicFrame)
+  obtain ⟨z,F,n,out,hz,hn,run,restored,blankPort,childFrame,childGrowth,correct⟩ := installed minor y B word (preserved B publicFrame)
     headReady empty one clock free temps extra inverses length pivots pair
-  refine ⟨z,F,_,out,hz.trans hy,Nat.add_le_add hl hn,Exec.seq setup run,restored,blankPort,?_,correct⟩
+  refine ⟨z,F,_,out,hz.trans hy,Nat.add_le_add hl hn,Exec.seq setup run,restored,blankPort,?_,?_,correct⟩
+  · intro push hp hb i hi
+    have off : i ≠ full 24 := by
+      intro eq
+      subst i
+      change 58 ≤ 24 at hi
+      omega
+    obtain ⟨left,right⟩ := childGrowth i off
+    have preL := exec_stack_length setup hp hb (.lt i)
+    have preR := exec_stack_length setup hp hb (.rt i)
+    change (B.L i).length ≤ (S.L i).length+push*l at preL
+    change (B.R i).length ≤ (S.R i).length+push*l at preR
+    obtain ⟨emptyL,emptyR⟩ := ready.2.2.1 i hi
+    simp only [emptyL,emptyR,List.length_nil,Nat.zero_add] at preL preR
+    exact ⟨left.trans (Nat.add_le_add_right (preL.trans (Nat.mul_le_mul_left push hl)) _),
+      right.trans (Nat.add_le_add_right (preR.trans (Nat.mul_le_mul_left push hl)) _)⟩
   intro i hi off
   by_cases base : i = full 2
   · subst i; exact restored.base.trans (headReady.base.symm.trans (publicFrame _ hi))
@@ -740,7 +765,8 @@ theorem ordinaryFinish_exec {K Q m w W H J N : ℕ} {P U : Type}
     mnProgPush step ≤ push → (∀ f, mnProgPush (body f) ≤ push) →
     (∀ i, i.val < 58 → i ≠ caller 24 → D.R i = S.R i) →
     RecordPayload (caller 24) (fun _ => blank) 0 word D →
-    ∃ z F t, z.user = u.user ∧ t ≤ elapsed+(4*work.length+1+work.length*(6*(push*elapsed))) ∧
+    ∃ z F t, z.user = u.user ∧ t = elapsed+((work.map fun i => 4*(D.L i).length+2*(D.R i).length+4).sum+1) ∧
+      t ≤ elapsed+(4*work.length+1+work.length*(6*(push*elapsed))) ∧
       Exec body (step.seq (clearWorkTapes work)) (mk u S) t (mk z F) ∧
       DirectoryReady v proj w W H J weights prefixes tail schedule F js ∧
       RecordPayload (caller 24) (fun _ => blank) 0 word F ∧
@@ -756,10 +782,21 @@ theorem ordinaryFinish_exec {K Q m w W H J N : ℕ} {P U : Type}
   let rest := js.flatMap (LabelDirectory.entry prefixes m (w+1)) ++ tail
   let B := {D with R := Function.update D.R (caller 46) rest}
   have exec : Exec body step (mk u S) elapsed (mk x B) := Exec.seq run advance
-  obtain ⟨z,F,t,hz,price,finish,publicTape,privateTape⟩ := Record.clearPrivateAfter 58 body step u x S B elapsed push exec hp hb clean
+  obtain ⟨z,F,t,hz,exactTime,price,finish,publicTape,privateTape⟩ := Record.clearPrivateAfter 58 body step u x S B elapsed push exec hp hb clean
+  have stock := List.map_congr_left (l := work)
+    (f := fun i => 4*(B.L i).length+2*(B.R i).length+4)
+    (g := fun i => 4*(D.L i).length+2*(D.R i).length+4) (fun i hi => by
+      have privateTape : 58 ≤ i.val := (List.mem_filter.mp hi).2 |> of_decide_eq_true
+      have off : i ≠ caller 46 := by
+        intro eq
+        subst i
+        change 58 ≤ 46 at privateTape
+        omega
+      simp only [B,Function.update_of_ne off])
+  rw [stock] at exactTime
   have same (k : Fin 66) (h : k.val < 58) (cursor : k ≠ 46) (off : k ≠ 24) :=
     ((publicTape (caller k) h).2.trans (Function.update_of_ne (caller.injective.ne cursor) ..)).trans (kept k h off)
-  refine ⟨z,F,t,hz.trans (hx.trans user),price,finish,?_,?_,same⟩
+  refine ⟨z,F,t,hz.trans (hx.trans user),exactTime,price,finish,?_,?_,same⟩
   · obtain ⟨suffix,mat⟩ := matrix
     refine ⟨((publicTape (caller 46) (by change 46 < 58; decide)).2.trans (Function.update_self (caller 46) rest D.R)),
       fun k hk => (congrArg List.length (same 47 (by decide) (by decide) (by decide))).trans (lens k (List.mem_cons_of_mem _ hk)),
@@ -796,12 +833,7 @@ noncomputable def ordinaryRowCore [M8.Machine.Net] {Q common work : ℕ} {P U : 
         (bcopy (full 2) (full 33) (full 0) (full 1))))).seq (hostedGoodRecordAt cap full full proc prime r (m-r) hr))
 
 noncomputable def ordinaryRowTime (m r w W H prefixLength overhead budget : ℕ) : ℕ :=
-    let C : ℕ := 48*H*H+152*H+66
-    let cost := fun i : Fin m => (8*(i.val*H)+14*H+22) +
-      (6*w+6+(14*H+16+(prime-2)*C+C+w*(12*H+15+prime*C))) + (2*H+2) + (4*H+4)
-    ((RingFormula.conjugationDepth m+1)*(6*H+6)+1 +
-          ((4*H+4)+(recordConjugationTime m w H prefixLength+(2*H+2))+((RingFormula.conjugationDepth m+1)*(2*H+2)+1)) +
-          (4*(m*m*H)+4) + (r*(4*w+4+columnTime m prime w H)+1+(r*(8*(m*m*H)+14*H+22)+1))) + (((List.finRange m).map cost).sum+1+(4*H+4)+(6*H+6)) + (budget+overhead*((prime^(w+1))^(m+m)*W))
+  ordinarySetupTime m r w H prefixLength + (budget+overhead*((prime^(w+1))^(m+m)*W))
 
 open IntegerMultBounds.MathlibTM2.Fast.Main in
 theorem ordinaryRow_exec [M8.Machine.Net] {d w W H J Q common work : ℕ} {P U : Type}
@@ -838,7 +870,11 @@ theorem ordinaryRow_exec [M8.Machine.Net] {d w W H J Q common work : ℕ} {P U :
     let elapsed := ordinaryRowTime m proj.rank w W H (prefixes j).length overhead budget +
       (1+(4*(prefixes j).length+4+(m*m*(4*(w+1)+4)+1)+1))
     let push := max (mnProgPush step) bodyPush
+    let growth := push*ordinarySetupTime m proj.rank w H (prefixes j).length +
+      goodRecordStackGrowth (U := U) (A := prime) (GoodChildLayout.parent.trans (parentWithWeights.trans full))
+        prime w W H J proj.rank proj.rank_le_height
     ∃ z F t out, z.user = u.user ∧ t ≤ elapsed+(4*scratch.length+1+scratch.length*(6*(push*elapsed))) ∧
+      t ≤ elapsed+(scratch.length*(6*growth+4)+1) ∧
       Exec body (step.seq (clearWorkTapes scratch)) (mk u S) t (mk z F) ∧
       DirectoryReady v proj w W H J weights prefixes tail schedules F js ∧
       RecordPayload (caller 24) (fun _ => blank) 0 out F ∧
@@ -846,20 +882,31 @@ theorem ordinaryRow_exec [M8.Machine.Net] {d w W H J Q common work : ℕ} {P U :
       ∀ x j, let y := transform (diagonal weights) 1 (revExchangeOf (rev m) G
               (transform (diagonal fun i => Ring.inverse (weights i)) 1 x))
              out (index (Fin.append y.1 y.2) j) = word (index (Fin.append x.1 x.2) j) := by
-  intro m K caller full g M G clear word payload installed core ports step scratch elapsed push
-  obtain ⟨y,D,n,out,hy,hn,exec,restored,_,frame,correct⟩ :=
+  intro m K caller full g M G clear word payload installed core ports step scratch elapsed push growth
+  obtain ⟨y,D,n,out,hy,hn,exec,restored,_,stock,frame,correct⟩ :=
     ordinaryGeneratedRecord_exec cap overhead budget v proj weights prefixes tail schedules hm poolFits unit room
       body u S j js ready live proc context preserved clear word (by
         intro k
         change _ = readAt blank (S.L (caller 24)) (S.R (caller 24)) k
         simpa only [sub_zero,List.map_ofFn] using (payload k).symm) installed
-  obtain ⟨z,F,t,hz,ht,finish,next,output,kept⟩ := ordinaryFinish_exec body core v proj weights prefixes tail
+  obtain ⟨z,F,t,hz,exactTime,ht,finish,next,output,kept⟩ := ordinaryFinish_exec body core v proj weights prefixes tail
     schedules j js queue u y S D n push out hy exec ready (le_max_left ..) (fun f => (pushBound f).trans (le_max_right ..)) frame
     (by intro k
         have output := (restored.src k).symm
         change readAt blank (D.L (caller 24)) (D.R (caller 24)) (k-0) = _ at output
         simpa only [List.map_ofFn] using output)
-  refine ⟨z,F,t,out,hz,ht.trans ?_,finish,next,output,kept,correct⟩
+  have cleanBound : ∀ i ∈ scratch, 4*(D.L i).length+2*(D.R i).length+4 ≤ 6*growth+4 := by
+    intro i hi
+    have before := stock push (le_trans (le_max_left ..) (le_trans (le_max_left ..) (le_max_left ..)))
+      (fun f => (pushBound f).trans (le_max_right ..)) i (of_decide_eq_true (List.mem_filter.mp hi).2)
+    change (D.L i).length ≤ growth ∧ (D.R i).length ≤ growth at before
+    omega
+  have cleared := List.sum_le_sum cleanBound
+  simp only [List.map_const',List.sum_replicate,smul_eq_mul] at cleared
+  have localTime : t ≤ elapsed+(scratch.length*(6*growth+4)+1) := by
+    rw [exactTime]
+    exact Nat.add_le_add (Nat.add_le_add_right hn _) (Nat.add_le_add_right cleared 1)
+  refine ⟨z,F,t,out,hz,ht.trans ?_,localTime,finish,next,output,kept,correct⟩
   have bound : n ≤ ordinaryRowTime m proj.rank w W H (prefixes j).length overhead budget := hn
   apply Nat.add_le_add (Nat.add_le_add_right bound _)
   exact Nat.add_le_add_left (Nat.mul_le_mul_left _ (Nat.mul_le_mul_left _ (Nat.mul_le_mul_left _
@@ -949,8 +996,9 @@ theorem ordinaryOrPadding_exec [M8.Machine.Net] {d w W H J Q common work : ℕ} 
   cases active : live with
   | true =>
     simp only [active,ite_true]
-    exact ordinaryRow_exec proc cap overhead budget v proj weights prefixes tail schedules hm poolFits unit room body u S
+    obtain ⟨z,F,t,out,user,time,_,exec,next,payload,frame,action⟩ := ordinaryRow_exec proc cap overhead budget v proj weights prefixes tail schedules hm poolFits unit room body u S
       j js bodyPush pushBound context preserved ready queue active (accepted active) word payload (installed active)
+    exact ⟨z,F,t,out,user,time,exec,next,payload,frame,action⟩
   | false =>
     simp only [active,Bool.false_eq_true,ite_false]
     obtain ⟨z,user,run,next⟩ := ordinaryPadding_exec body v proj weights prefixes tail schedules j js queue u S ready

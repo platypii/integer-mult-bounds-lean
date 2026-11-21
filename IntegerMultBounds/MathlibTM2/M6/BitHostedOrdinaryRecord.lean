@@ -161,7 +161,7 @@ theorem hostedScheduledRecord_exec [M8.Machine.Net] {P U : Type} [Fintype P] {n 
     (by simpa only [List.append_nil] using start) empty (by rw [List.append_nil]; exact invWords)
     (by rw [List.append_nil]; exact archive) count (by rw [List.append_nil]; exact pivots)
     one clock scratch fresh (Or.inl ⟨rfl,rfl⟩)
-  obtain ⟨z,F,t,out,user,paid,run,done,blankPort,frame,effect⟩ := outer (by
+  obtain ⟨z,F,t,out,user,paid,run,done,blankPort,frame,growth,effect⟩ := outer (by
     intro positive units u D before payload base width unitWord pos _ _ neg padded clockLen off
     let piv := fun j : Fin r => stage.M (j.castLE hr) (j.castLE hr)
     let pivot := pivotWeights hr weights inv inverse piv (fun j => stage.unit _ j.isLt)
@@ -177,6 +177,6 @@ theorem hostedScheduledRecord_exec [M8.Machine.Net] {P U : Type} [Fintype P] {n 
       pos neg cutFits widthFits (cutSaved.2.trans cutWord) recurse base width unitWord padded clockLen freeD payload
     refine ⟨z,F,t,after,user,Nat.le_floor paid,run,?_,frame,returned⟩
     exact action)
-  exact ⟨z,F,t,out,user,paid.trans (parentBound ⟨r,(nodeChildren5_le i).trans_lt (by decide)⟩ w W childBudget hW),by simpa only [m,Nat.add_sub_cancel_left] using run,by simpa only [List.append_nil] using done,blankPort,frame,effect⟩
+  exact ⟨z,F,t,out,user,paid.trans (parentBound ⟨r,(nodeChildren5_le i).trans_lt (by decide)⟩ w W childBudget hW),by simpa only [m,Nat.add_sub_cancel_left] using run,by simpa only [List.append_nil] using done,blankPort,frame,growth,effect⟩
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode

@@ -249,7 +249,7 @@ theorem privateLeaf_return {Q' : ℕ} (capacity : Q ≤ Q') (positive : 0 < Q)
   refine ⟨u,D,hu,left,keep,loaded,empty,?_⟩
   intro z F steps push inner hp hb ticks
   obtain ⟨a,G,ha,placed,proj,frame⟩ := payloadFrame_exec capacity payload localPayload positive body prog u D z F steps inner
-  obtain ⟨a',G',l,ha',bound,finished,small,clean⟩ := clearPrivateAfter n body run v a S G ticks push
+  obtain ⟨a',G',l,ha',_,bound,finished,small,clean⟩ := clearPrivateAfter n body run v a S G ticks push
     (Exec.seq init placed) hp hb free
   have shared := small (payload.castAdd T) payload.isLt
   have lhit := congrArg (fun B : Stacks T A => B.L localPayload) proj

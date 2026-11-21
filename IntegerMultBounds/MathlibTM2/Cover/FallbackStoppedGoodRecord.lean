@@ -62,6 +62,9 @@ def StoppedRecordRun {T rank g digits w W H J : ℕ} (cap : 217 ≤ Q) (hr : ran
           (n : ℝ) ≤ (C+overhead)*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau*(M^(fields+fields)*W : ℕ)) ∧
         Exec body (hostedGoodRecordAt cap full middleHost () prime rank g hr) (mk v S) n (mk z F) ∧ ready out F ∧ F.R (bank 27) = [] ∧
         (∀ j, (∀ i, s i ≠ j) → (∀ i, ts i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j) ∧
+        (∀ j, j ≠ full 24 →
+          let growth := goodRecordStackGrowth (U := U) (A := prime) machine prime w W H J rank hr
+          (F.L j).length ≤ (S.L j).length+growth ∧ (F.R j).length ≤ (S.R j).length+growth) ∧
         ∀ x j, let y := transform (diagonal weights) 1 (revExchangeOf (rev fields) G (transform (diagonal inv) 1 x))
                out (index (Fin.append y.1 y.2) j) = word (index (Fin.append x.1 x.2) j)
 
@@ -102,7 +105,7 @@ theorem stoppedGoodRecord_exec (cap : 217 ≤ Q) (fits : leafCapacity ((fields+d
     desc K fitsMiddle () budget G g dim hr minor idem L R factor weights inv inverse
     prime_prime H J hm hw hW tail dest rest invRest pivotTail SparseRoleCircuit.encode (fun _ => blank)
     target 0 q empty v S word initial free stored packed count pivots one clock scratch fresh seed
-  obtain ⟨z,F,l,out,hz,hl,run,readyOut,clean,frame,effect⟩ := parentRun (by
+  obtain ⟨z,F,l,out,hz,hl,run,readyOut,clean,frame,growth,effect⟩ := parentRun (by
     intro _ units u D before payload base widthWord unitWord _ _ _ archive padded clockLen off
     apply leaf _ _ units hm hw hW u D before payload base widthWord unitWord archive padded clockLen
     intro j hj
@@ -112,7 +115,7 @@ theorem stoppedGoodRecord_exec (cap : 217 ≤ Q) (fits : leafCapacity ((fields+d
       have := (caller i).isLt
       omega)
     exact ⟨kept.1.trans (privateFree j hj).1,kept.2.trans (privateFree j hj).2⟩)
-  refine ⟨z,F,l,out,hz,hl,?_,run,readyOut,clean,frame,effect⟩
+  refine ⟨z,F,l,out,hz,hl,?_,run,readyOut,clean,frame,growth,effect⟩
   rintro rfl rfl
   have total := hl.trans (parentBound w W budget hW)
   refine ⟨total,?_⟩
