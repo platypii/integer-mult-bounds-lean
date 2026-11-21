@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.M6.BitPhaseRun
 public import IntegerMultBounds.MathlibTM2.M6.BitRouteFactors
 public import IntegerMultBounds.MathlibTM2.M6.BitNodeCost
 public import IntegerMultBounds.MathlibTM2.M6.BitCopyChildLayout
@@ -691,5 +692,52 @@ theorem OrthogonalPortReads.helperSlot {V W : ℕ} (n : Fin 9) (h : Fin 439) (w 
   apply (congrArg (fun z => output helper (pos (copyAddress z).1 (copyAddress z).2)) shift).trans
   simp only [Equiv.apply_symm_apply]
   exact read.helper h _ _
+
+/-- The covered sweep starts with the original labels and interleaves each
+chart preparation with its actual PR589 invocation. -/
+theorem orthogonalPreparedSweep [M8.Machine.Net] (n : Fin 9) :
+    ∃ C : ℕ, ∀ w B K : ℕ, 0 < w → 0 < B → 0 < K →
+      let m := prime^w
+      let W := B*prime^(64*(w*64))*K
+      let V := m^16*W
+      let G := Swap.Modular.reduce m (orthogonalBasis.map (Nat.cast : ℕ → ℚ))
+      let encode := M8.Exchange.transform G (Swap.Modular.reduce m (M8.ReversedExchange.rev 8)*G)
+      let pos := fun s (j : Fin W) => FlatCoordinateLayout.index (AffineFieldCoordinates.embed (encode s)) j
+          ∀ (children : ℕ → SharedBankSkeleton.Skeleton 1 prime) (price : ℕ → ℕ),
+          (∀ r, 0 < r → r ≤ 8 → ∃ child : SharedBankStage.Stage _ 1 prime (@portOwner V),
+            SharedBankSkeleton.ofStage child = children r ∧ child.cost ≤ price r ∧
+            ∀ x, M8.RevMachine.RevT prime w r (M8.RevMachine.sub prime w 8 0 r ⟨1,1,1,8*w,1,W⟩)
+              (M8.RevMachine.ext x) (M8.RevMachine.ext (child.transform x))) →
+      ∃ stage : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V)),
+        stage.cost ≤ C*V + helperChangeCount n stageRuns (fun _ => none)*
+          (63*M8.RevMachine.LeafCore.coreCost V (w*64)+1) + 160*(Geometry.Moves.localPaid.map price).sum + 320 ∧
+        ∃ invoke, (∀ p x, OrthogonalPortReads w pos (x ∘ ownerTape n p.1 p.2)
+          (invoke p x ∘ ownerTape n p.1 p.2) ∧
+          ∀ t, (∀ i, ownerTape n p.1 p.2 i ≠ t) → invoke p x t = x t) ∧
+          ∀ x, PreparedHelperTrace n w B K invoke stageRuns (fun _ => none) x (stage.transform x) := by
+  obtain ⟨P,word⟩ := orthogonalProfiledInvocation
+  obtain ⟨Q,schedule⟩ := preparedHelperSchedule n stageRuns (fun _ => none)
+  refine ⟨Q+160*P,?_⟩
+  intro w B K hw hb hk m W V G encode pos children price supply
+  have live : 0 < W := Nat.mul_pos (Nat.mul_pos hb (pow_pos Shared50ModularControl.prime_prime.pos _)) hk
+  obtain ⟨localRun,lc,reads⟩ := word w W live children price supply
+  choose calls cost action using fun p : Fin 32 × Fin 5 => orthogonalHostedRun n p.1 p.2 localRun
+  obtain ⟨stage,bill,trace⟩ := schedule w B K hw hb hk calls
+  refine ⟨stage,?_,fun p => (calls p).transform,?_,trace⟩
+  · have sum : (stageRuns.map (fun p => (calls p).cost)).sum = 160*localRun.cost := by
+      simp only [cost,List.map_const',stageRuns_length,List.sum_replicate,smul_eq_mul]
+    rw [sum,stageRuns_length] at bill
+    change localRun.cost ≤ P*V + _ at lc
+    rw [Nat.add_mul,Nat.mul_assoc]
+    change stage.cost ≤ Q*V + _ + 160*localRun.cost + 2*160 at bill
+    dsimp only [V,W,m] at lc bill ⊢
+    omega
+  · intro p x
+    refine ⟨?_,(action p x).2⟩
+    apply portReads_of_word
+    intro s k i
+    simp only [Function.comp_apply]
+    rw [(action p x).1 i]
+    exact reads _ s k i
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode

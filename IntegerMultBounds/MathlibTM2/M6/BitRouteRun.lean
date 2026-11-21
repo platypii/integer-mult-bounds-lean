@@ -522,6 +522,39 @@ theorem helperWindowTransition [M8.Machine.Net] {T : ℕ} (io : Fin T)
   change chartRead y ((g*(registerChart w n src).transpose)*reduce (prime^w) route) = _ at out
   rwa [red,← Matrix.mul_assoc,Matrix.mul_assoc g,registerChart_inverse,Matrix.mul_one] at out
 
+/-- An owner that has never hosted a helper still uses the original label. -/
+noncomputable def helperLabel (w : ℕ) (c : Option (Fin 9 × Fin 439))
+    (g : Matrix (Fin 64) (Fin 64) (ZMod (prime^w))) : Matrix (Fin 64) (Fin 64) (ZMod (prime^w)) :=
+  match c with
+  | none => g
+  | some (n,h) => g*(registerChart w n (222+h.val)).transpose
+
+/-- Enter a helper window from either the original tape or its last scheduled window. -/
+theorem helperWindowEntry [M8.Machine.Net] {T : ℕ} (io : Fin T)
+    (previous : Option (Fin 9 × Fin 439)) (m : Fin 9) (k : Fin 439) :
+    let dst : Fin 661 := ⟨222+k.val,by omega⟩
+    ∃ (program : Graph.Block (T+24) prime) (C : ℕ), Blocks.Leading program ∧
+      ∀ (v : Descriptor) (w B : ℕ), 0 < w → 0 < B →
+      v.beforeH = B*prime^(64*(w*64)) → v.Positive →
+      ∀ (roles : Tapes T prime) (x : Fin (volume prime v) → ZMod 2),
+      roles.head io = 0 → roles.tape io = sourceWord x →
+      let d := words (LabelSchedule.base v w)
+      ∃ y : Fin (volume prime v) → ZMod 2,
+        (∀ g : Matrix (Fin 64) (Fin 64) (ZMod (prime^w)), chartRead (B := B) y (g*(registerChart w m dst).transpose) =
+          chartRead x (helperLabel w previous g)) ∧
+        GraphContract.Runs program (LabelCall.bank roles v d)
+          (LabelCall.bank (setTape roles io (sourceWord y) 0) v d)
+          (C*volume prime v + 63*LeafCore.coreCost (volume prime v) (w*64)) := by
+  cases previous with
+  | some c => exact helperWindowTransition io c.1 m c.2 k
+  | none =>
+    intro dst
+    obtain ⟨block,C,leading,run⟩ := helperRegister_route io m true dst (by dsimp [dst]; omega)
+    refine ⟨block,C,leading,?_⟩
+    intro v w B hw hb shape pos roles x head tape d
+    obtain ⟨y,move,steps⟩ := run v w B hw hb shape pos roles x head tape
+    exact ⟨y,fun g => chartRead_transport move g,steps⟩
+
 /-- Every invocation owner has a width-uniform entry and return program.
 The chart direction is opposite on the two trips. -/
 theorem register_route [M8.Machine.Net] {T : ℕ} (io : Fin T) (n : Fin 9) (enter : Bool) (j : Fin 661) :
