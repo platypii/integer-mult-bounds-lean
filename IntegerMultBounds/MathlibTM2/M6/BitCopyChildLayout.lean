@@ -418,6 +418,29 @@ private theorem copyPack_fields {α : Type} (h d : Fin 7 → α) (u : Fin 1 → 
     (List.ofFn h) (List.ofFn u) (List.ofFn d) (by rw [List.ofFn_fin_append,List.ofFn_fin_append])
   simpa only [List.length_ofFn,copyPackSchedule,List.ofFn_fin_append] using layout
 
+open FlatCoordinateLayout (index) in
+/-- Transport a packed seven-field swap back to the caller's coordinates. -/
+theorem copySwap_reads {M W : ℕ} [NeZero M] {α : Type*}
+    {input output word changed : Fin (M^15*W) → α}
+    (read : ∀ x j, word (index (copyPackSchedule.foldl adjacentFields x) j) = input (index x j))
+    (swap : ∀ (h d : Fin 7 → ZMod M) (u : Fin 1 → ZMod M) (j : Fin W),
+      changed (index (Fin.append (Fin.append d h) u) j) = word (index (Fin.append (Fin.append h d) u) j))
+    (logical : ∀ (h d : Fin 7 → ZMod M) (u : Fin 1 → ZMod M) (j : Fin W),
+      output (index (Fin.append (Fin.append d u) h) j) = input (index (Fin.append (Fin.append h u) d) j)) :
+    ∀ x j, changed (index (copyPackSchedule.foldl adjacentFields x) j) = output (index x j) := by
+  intro x j
+  let pre := fun i : Fin 8 => x (i.castAdd 7)
+  let h := fun i : Fin 7 => pre (i.castAdd 1)
+  let u := fun i : Fin 1 => pre (i.natAdd 7)
+  let d := fun i : Fin 7 => x (i.natAdd 8)
+  have split : Fin.append (Fin.append h u) d = x := by
+    rw [show Fin.append h u = pre from Fin.append_castAdd_natAdd (m := 7) (n := 1)]
+    exact Fin.append_castAdd_natAdd (m := 8) (n := 7)
+  rw [← split]
+  rw [copyPack_fields h d u,swap d h u j]
+  apply Eq.trans _ (logical d h u j).symm
+  simpa only [id_eq,copyPack_fields] using read (Fin.append (Fin.append d u) h) j
+
 /-- The descriptor transpose satisfies the logical output equation of the
 host wrapper at every suffix position. -/
 theorem copyPacking_transpose {w W : ℕ}
@@ -519,20 +542,7 @@ theorem withCopyTranspose_exec [M8.Machine.Net] {P U : Type} [Fintype P]
     obtain ⟨word,hw,read⟩ := prepared
     obtain ⟨z,F,n,changed,hz,hn,exec,placed,clear,swap⟩ := call v D word hw available
     refine ⟨z,F,n,hz,hn,exec,⟨changed,placed,?_⟩,clear⟩
-    intro x j
-    let pre := fun i : Fin 8 => x (i.castAdd 7)
-    let h := fun i : Fin 7 => pre (i.castAdd 1)
-    let u := fun i : Fin 1 => pre (i.natAdd 7)
-    let d := fun i : Fin 7 => x (i.natAdd 8)
-    have split : Fin.append (Fin.append h u) d = x := by
-      rw [show Fin.append h u = pre from Fin.append_castAdd_natAdd (m := 7) (n := 1)]
-      exact Fin.append_castAdd_natAdd (m := 8) (n := 7)
-    rw [← split]
-    change changed (FlatCoordinateLayout.index (copyPackSchedule.foldl adjacentFields _) j) = _
-    simp only [id_eq]
-    rw [copyPack_fields h d u,swap d h u j]
-    apply Eq.trans _ (logical d h u j).symm
-    simpa only [id_eq,copyPack_fields] using read (Fin.append (Fin.append d u) h) j
+    exact copySwap_reads read swap logical
     ) ⟨input,start,fun _ _ => rfl⟩ free
   have same : out = output := by
     funext i

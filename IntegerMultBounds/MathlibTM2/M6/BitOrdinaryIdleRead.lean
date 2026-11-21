@@ -339,6 +339,280 @@ theorem phasePackedCall_exec [M8.Machine.Net] {P U : Type} {T Q : ℕ} (capacity
     exact ⟨l''.trans (l'.trans l),r''.trans (r'.trans r)⟩
 
 open Cover.Fallback in
+/-- Run the packing passes on their assigned tapes around a child on the shared machine. -/
+theorem placedPacking_exec [M8.Machine.Net] {P U : Type} {T Q : ℕ} (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T) (capacity : rowSwapBlock.states ≤ Q) (body : P → Pr P T Q prime U)
+    (d : ℕ) (is : List ℕ) (positive : 0 < d) (fits : ∀ i ∈ is, i+1 < d) :
+    ∃ setup swaps : ℕ, ∀ w W, 0 < W →
+      let M := prime^(w+1)
+      let bank := ((Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)).trans ports
+      let clean := fun (S : Stacks T prime) => ∀ k : Fin (rowSwapBlock.tapes+35), 35 ≤ k.val → S.L (ports k) = [] ∧ S.R (ports k) = []
+      let frame := fun (D F : Stacks T prime) => ∀ j, (∀ i, ports i ≠ j) → F.L j = D.L j ∧ F.R j = D.R j
+      let pack := fun js => statePlacedNormalized ports capacity swapStates_pos Empty.elim (packSchedule d js)
+      ∀ (v : HS T Q prime U) (S : Stacks T prime)
+        (record : List (Fin (prime+4))) (dest : ℤ → Fin 4) (q : ℤ)
+        (input output : Fin (M^d*W) → ZMod 2) (addr : (Fin d → ZMod M) → Fin d → ZMod M)
+        (child : Pr P T Q prime U) (budget : ℕ),
+      let ready := ColumnRecordReady bank (Nat.size M) (Nat.size W) record SparseRoleCircuit.encode
+        (fun _ => blank) dest 0 q
+      let packed := fun x => is.foldl adjacentFields (addr x)
+      (∀ u D, ready input packed D → clean D → ∃ y G t, y.user = u.user ∧ t ≤ budget ∧
+        Exec body child (mk u D) t (mk y G) ∧ ready output packed G ∧ clean G ∧ frame D G) →
+      ready input addr S → clean S → ∃ z F n, z.user = v.user ∧
+        n ≤ budget + 2 + 2*((setup+swaps*swapVolumeRate w)*(M^d*W)) ∧
+        Exec body (.seq (pack is) (.seq child (pack is.reverse)))
+          (mk v S) n (mk z F) ∧ ready output addr F ∧ clean F ∧ frame S F
+    := by
+  obtain ⟨setup,swaps,bill⟩ := packTime_le (P := Empty) (U := U) Empty.elim d is positive
+  refine ⟨setup,swaps,?_⟩
+  intro w W hW M bank clean frame pack v S record dest q input output addr child budget ready packed call start free
+  obtain ⟨u,D,t,userA,timeA,runA,placed,clear,offA⟩ :=
+    placedPackSchedule_exec capacity ports is fits body v S record dest q hW input addr start free
+  obtain ⟨y,G,k,user,time,run,changed,available,off⟩ := call u D placed clear
+  obtain ⟨z,F,n,userB,timeB,runB,restored,empty,offB⟩ :=
+    placedPackSchedule_exec capacity ports is.reverse (fun _ hi => fits _ (List.mem_reverse.mp hi))
+      body y G record dest q hW output packed changed available
+  refine ⟨z,F,_,userB.trans (user.trans userA),?_,Exec.seq runA (Exec.seq run runB),?_,empty,?_⟩
+  · simp only [List.map_reverse,List.sum_reverse] at timeB
+    have price := bill w W hW
+    dsimp only [M] at *
+    omega
+  · simpa only [packed,reverse_adjacentFields] using restored
+  · intro j hj
+    obtain ⟨l,r⟩ := offA j hj
+    obtain ⟨l',r'⟩ := off j hj
+    obtain ⟨l'',r''⟩ := offB j hj
+    exact ⟨l''.trans (l'.trans l),r''.trans (r'.trans r)⟩
+
+open Cover.Fallback in
+private theorem owners_of_returned_record {T k w d W H J : ℕ}
+    (slots : Fin k ↪ Fin T) (src : Fin k) (bank : Fin 35 ↪ Fin T) (shared : slots src = bank 24)
+    (data : Fin k → Fin ((prime^(w+1))^d*W) → ZMod 2) (y : Fin ((prime^(w+1))^d*W) → ZMod 2)
+    {S G : Stacks T prime} {record dest q}
+    (initial : RepT (phaseOwners data) (embStk slots S).L (embStk slots S).R)
+    (finalRecord : RecordReady (b := prime) (w := w) (d := d) (W := W) bank H J record
+      SparseRoleCircuit.encode (fun _ => blank) dest 0 q y G)
+    (outside : ∀ i, i ≠ src → G.L (slots i) = S.L (slots i) ∧ G.R (slots i) = S.R (slots i)) :
+    RepT (phaseOwners (Function.update data src y)) (embStk slots G).L (embStk slots G).R := by
+  intro i l
+  by_cases eq : i = src
+  · subst i
+    have cell := finalRecord.src l
+    simp only [phaseOwners,Function.update_self,embStk,Function.comp_apply,sub_zero,shared]
+    have read := (encodedOwnerCell y l).symm
+    simp only [List.map_ofFn] at read
+    exact read.trans (by simpa only [sub_zero] using cell.symm)
+  · obtain ⟨l',r'⟩ := outside i eq
+    simpa only [phaseOwners,Function.update_of_ne eq,embStk,Function.comp_apply,l',r'] using initial i l
+
+open Cover.Fallback RecursiveInterchangeLayout in
+/-- A rank-seven COPY transpose on its assigned host tapes, preserving every outside stack. -/
+theorem placedCopyTranspose_exec [M8.Machine.Net] {P U : Type} {T Q k : ℕ}
+    (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T) (capacity : rowSwapBlock.states ≤ Q)
+    (body : P → Pr P T Q prime U) (f : P) :
+    ∃ setup swaps : ℕ, ∀ (parent : Descriptor) (w rows : ℕ),
+      parent.width = 64*(w+1) → ∀ splitRows : parent.rows = 142080*rows,
+      let M := prime^(w+1)
+      let W := M^112*(parent.beforeRows*rows*parent.beforeH*parent.between*parent.afterD)
+      let desc := rankDescriptor prime (7*(w+1)) (57*(w+1)) (role parent 142080)
+      let position := copyRecursivePosition parent w rows splitRows
+      0 < W →
+      let suffix := M*W
+      let size : M^15*suffix = volume prime (copyChild (w+1) W) := by
+        rw [copyChild_volume]; change M^15*(M*W) = M^16*W; ring
+      let bank : Fin 35 ↪ Fin T := ((Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)).trans ports
+      let clean := fun (D : Stacks T prime) => ∀ k : Fin (rowSwapBlock.tapes+35), 35 ≤ k.val → D.L (ports k) = [] ∧ D.R (ports k) = []
+      let frame := fun (D F : Stacks T prime) => ∀ j, (∀ i, ports i ≠ j) → F.L j = D.L j ∧ F.R j = D.R j
+      let pack := fun js => statePlacedNormalized ports capacity swapStates_pos Empty.elim (packSchedule 15 js)
+      ∀ (slots : Fin k ↪ Fin T) (src : Fin k), slots src = bank 24 →
+      (∀ i, i ≠ src → ∀ j, ports j ≠ slots i) →
+      ∀ (v : HS T Q prime U) (S : Stacks T prime)
+        (record : List (Fin (prime+4))) (dest : ℤ → Fin 4) (q : ℤ)
+        (data : Fin k → Fin (M^15*suffix) → ZMod 2) (budget : ℕ),
+      let x := fun j => data src (Fin.cast size.symm j)
+      let input := fun i => x (Fin.cast size i)
+      let output := fun i => Shared50RecursiveNodeRows.transpose (one_dvd _) x (Fin.cast size i)
+      let stored := RecordReady (b := prime) (w := w) (d := 15) (W := suffix)
+        bank (Nat.size M) (Nat.size suffix) record SparseRoleCircuit.encode (fun _ => blank) dest 0 q
+      (desc.width < parent.width → ∀ v D word, stored word D → clean D → ∃ z F n changed, z.user = v.user ∧ n ≤ budget ∧
+        Exec body (body f) (mk v D) n (mk z F) ∧ stored changed F ∧ clean F ∧ frame D F ∧
+        ∀ i, changed (position i) = Shared50RecursiveNodeRows.transpose (one_dvd desc.rows) (word ∘ position) i) →
+      RepT (phaseOwners data) (embStk slots S).L (embStk slots S).R →
+      stored input S → clean S → ∃ z F n, z.user = v.user ∧
+        n ≤ budget + 4 + 2*((setup+swaps*swapVolumeRate w)*(M^15*suffix)) ∧
+        Exec body (.seq (pack copyPackSchedule) (.seq (.call f) (pack copyPackSchedule.reverse)))
+          (mk v S) n (mk z F) ∧ stored output F ∧ clean F ∧ frame S F ∧
+          RepT (phaseOwners (Function.update data src output)) (embStk slots F).L (embStk slots F).R := by
+  obtain ⟨setup,swaps,run⟩ := placedPacking_exec ports capacity body 15 copyPackSchedule (by decide) (by decide +kernel)
+  refine ⟨setup,swaps,?_⟩
+  intro parent w rows width splitRows M W desc position hW suffix size bank clean frame pack slots src shared outside v S record dest q data budget x input output stored call initial start free
+  have logical := copyPacking_transpose x
+  have positive : 0 < suffix := Nat.mul_pos (pow_pos Shared50ModularControl.prime_prime.pos _) hW
+  have step := run w suffix positive v S record dest q input output id (.call f) (budget+2)
+  obtain ⟨z,F,n,user,bound,exec,⟨out,layout,reads⟩,clear,off⟩ := step (by
+    intro v D prepared available
+    obtain ⟨word,hw,read⟩ := prepared
+    obtain ⟨z,F,n,changed,hz,hn,exec,placed,clear,off,transposed⟩ := call (by
+      change 7*(w+1) < parent.width
+      omega) v D word hw available
+    have swap := copyRecursivePacked_swap parent w rows splitRows word changed transposed
+    refine ⟨z,F,n+2,hz,Nat.add_le_add_right hn 2,Exec.call exec,⟨changed,placed,?_⟩,clear,off⟩
+    exact copySwap_reads read swap logical
+    ) ⟨input,start,fun _ _ => rfl⟩ free
+  have same : out = output := by
+    funext i
+    obtain ⟨⟨k,j⟩,rfl⟩ := finProdFinEquiv.surjective i
+    obtain ⟨x,rfl⟩ := (FlatCoordinateLayout.rankEquiv : (Fin 15 → ZMod M) ≃ Fin (M^15)).surjective k
+    exact reads x j
+  subst out
+  exact ⟨z,F,n,user,bound,exec,layout,clear,off,
+    owners_of_returned_record slots src bank shared data output initial layout (fun i hi => off _ (outside i hi))⟩
+
+private theorem placedHoare_exec {k q T Q b : ℕ} {P U : Type}
+    (machine : Program k q prime) (bank : Fin k ↪ Fin T) (fits : q ≤ Q)
+    (body : P → Pr P T Q prime U) {X Y : Tapes k prime}
+    (run : HoareTime machine (fun x => x = X) (fun y => y = Y) b)
+    (u : HS T Q prime U) (S : Stacks T prime) (ready : RepT X (embStk bank S).L (embStk bank S).R) :
+    ∃ z F n, Exec body (embProg bank (Empty.elim : Empty → P) (foreign (liftQ machine fits)))
+      (mk u S) n (mk z F) ∧ n ≤ b*(k+5)+6 ∧ z.user = u.user ∧
+      RepT Y (embStk bank F).L (embStk bank F).R ∧
+      ∀ j, (∀ i, bank i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  obtain ⟨v,A,_,rfl,full,user,_,_,_,n,time,exec⟩ := foreign_exec (body := (Empty.elim : Empty → _))
+    (liftQ _ fits) (HoareTime.liftQ fits run) (embDn bank u) (embStk bank S) _ rfl ready
+  obtain ⟨z,F,placed,_,same,view,off⟩ := exec_emb (ι := (Empty.elim : Empty → P))
+    (body' := body) bank.injective (fun f => f.elim) exec u rfl S rfl
+  subst A
+  exact ⟨z,F,n,placed,time,same.trans user,full,off⟩
+
+open M8.RevMachine RecursiveInterchangeLayout IntegerMultBounds.Networks.Certificates.PR589 in
+/-- Execute either chart route of a COPY window on its assigned host tapes. The
+returned bank includes the route controls and the untouched owners. -/
+theorem copyRoute_host [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
+    (enter : Bool) (life : Copy.Lifecycle) (scheduled : life ∈ Copy.lifecycles) :
+    let io := fun j : ℕ => ownerTape n r d (Fin.ofNat 661 j)
+    let src := io life.source
+    ∃ (route : Graph.Block (142081+24) prime) (C : ℕ), Blocks.Leading route ∧
+    ∀ {T Q : ℕ} {P U : Type} (ports : Fin route.tapes ↪ Fin T) (fits : route.states ≤ Q)
+      (body : P → Pr P T Q prime U) (v : Descriptor) (w B : ℕ), 0 < w → 0 < B →
+      v.beforeH = B*prime^(64*(w*64)) → v.Positive →
+    let V := volume prime v
+    let A := registerChart w n life.source
+    let bank := fun x => SharedBankStageInput.raw
+      (LabelCall.bank (copyOwners (v := v) x) v (M8.Stage2Machine.Straight.words (LabelSchedule.base v w))) route.tapes
+    ∀ (x : Fin 142081 → Fin V → ZMod 2) (u : HS T Q prime U) (S : Stacks T prime),
+      RepT (bank x) (embStk ports S).L (embStk ports S).R →
+      ∃ y z F t, Exec body (embProg ports (Empty.elim : Empty → P) (foreign (liftQ route.program fits)))
+          (mk u S) t (mk z F) ∧
+        t ≤ (C*V+(63+252*life.targets.length)*LeafCore.coreCost V (w*64)+life.targets.length+1)*(route.tapes+5)+6 ∧
+        z.user = u.user ∧ RepT (bank y) (embStk ports F).L (embStk ports F).R ∧
+        LabelPermutation.Transport v B w (fun g => g*(if enter then A.transpose else A)) (ext (x src)) (ext (y src)) ∧
+        (∀ j ∈ life.targets, LabelPermutation.Transport v B w
+          (fun g => g*registerChart w n j) (ext (x (io j))) (ext (y (io j)))) ∧
+        (∀ k, k ≠ src → k ∉ life.targets.map io → y k = x k) ∧
+        ∀ j, (∀ i, ports i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  intro io src
+  obtain ⟨route,C,leading,run⟩ := copyWindow_routes n r d enter life scheduled
+  refine ⟨route,C,leading,?_⟩
+  intro T Q P U ports fits body v w B hw hB shape pos V A bank x u S ready
+  obtain ⟨y,source,targets,unchanged,exec⟩ := run v w B hw hB shape pos x
+  obtain ⟨z,F,t,placed,time,user,done,off⟩ := placedHoare_exec _ ports fits body exec u S ready
+  exact ⟨y,z,F,t,placed,time,user,done,source,targets,unchanged,off⟩
+
+private theorem word_of_involutive_scatter {I A J R : Type*} (addr : I ≃ A × J)
+    (move : A → A) (invol : Function.Involutive move) (x y : I → R)
+    (scatter : ∀ s j, y (addr.symm (move s,j)) = x (addr.symm (s,j))) :
+    y = fun i => x (addr.symm (move (addr i).1,(addr i).2)) := by
+  funext i
+  obtain ⟨⟨s,j⟩,rfl⟩ := addr.symm.surjective i
+  simpa only [invol s,Equiv.apply_symm_apply] using scatter (move s) j
+
+open IntegerMultBounds.Networks.Certificates.PR589 in
+/-- Copy the retained source onto the temporary, run the host conversion once, add the
+converted word to the scheduled targets, and clear the temporary for the next window. -/
+theorem copyFanout_host (n : Fin 9) (r : Fin 32) (d : Fin 5) (life : Copy.Lifecycle)
+    (scheduled : life ∈ Copy.lifecycles) :
+    let src := ownerTape n r d ⟨life.source,(Copy.source_bounds life scheduled).2⟩
+    let tmp := Fin.last 142080
+    let regs := life.targets.attach.map fun j =>
+      (⟨j.val,((Copy.target_bounds life scheduled _ j.property).2.trans (by decide : 222 < 661))⟩ : Fin 661)
+    let targets := regs.map (ownerTape n r d)
+    ∃ (q s : ℕ) (load : Program (142081+2) q prime) (finish : Program (142081+2) s prime),
+    ∀ {T Q w W : ℕ} {P U : Type} (ports : Fin (142081+2) ↪ Fin T) (fitsLoad : q ≤ Q) (fitsFinish : s ≤ Q)
+      (body : P → Pr P T Q prime U) (convert : Pr P T Q prime U) (budget : ℕ) (keep : Fin T → Prop)
+      (data : Fin 142081 → Fin ((prime^(w+1))^16*W) → ZMod 2) (hW : 0 < W)
+      (u : HS T Q prime U) (S : Stacks T prime),
+    let V := (prime^(w+1))^16*W
+    let addr := copyAddress (Q := prime^(w+1)) (W := W)
+    let move := AffineFieldProgram.run (selectedWord (w+1) (life.sourceFrame,0))
+    let common := fun i => data src (addr.symm (move (addr i).1,(addr i).2))
+    let bank := fun X => PointwiseRoleGate.bank (a := prime) (fun _ _ => blank) (fun _ => 0)
+      (SparseRoleCircuit.encoded X) (FlatCoordinateSchedule.bits V)
+    let ready := fun X (D : Stacks T prime) => RepT (bank X) (embStk ports D).L (embStk ports D).R
+    let outside := fun (D F : Stacks T prime) => ∀ j, (∀ i, ports i ≠ j) → F.L j = D.L j ∧ F.R j = D.R j
+    let output := Function.update (fun j i => if j ∈ targets then data j i + common i else data j i) tmp 0
+    ready data S →
+    (∀ v D, ready (Function.update data tmp (data src)) D → outside S D →
+      ∃ z F t y, Exec body convert (mk v D) t (mk z F) ∧ t ≤ budget ∧ z.user = v.user ∧
+        ready (Function.update data tmp y) F ∧
+        (∀ s j, y (addr.symm (move s,j)) = data src (addr.symm (s,j))) ∧
+        ∀ j, keep j → (∀ i, ports i ≠ j) → F.L j = D.L j ∧ F.R j = D.R j) →
+    ∃ z F t, Exec body ((embProg ports (Empty.elim : Empty → P) (foreign (liftQ load fitsLoad))).seq
+        (convert.seq (embProg ports (Empty.elim : Empty → P) (foreign (liftQ finish fitsFinish)))))
+      (mk u S) t (mk z F) ∧ t ≤ budget+76*(life.targets.length+2)*V*142088+12 ∧
+      z.user = u.user ∧ ready output F ∧
+      ∀ j, keep j → (∀ i, ports i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  intro src tmp regs targets
+  let gate : PointwiseRoleGate.Gate 142081 := ⟨src,tmp,Fin.castSucc_ne_last _⟩
+  let copy := fun (s _ : Fin (prime+4)) => s
+  let erase := fun (_ _ : Fin (prime+4)) => SparseRoleCircuit.encode (a := prime) 0
+  obtain ⟨_,adds,addRun⟩ := copyAdds_hoare (a := prime) n r d life scheduled
+  refine ⟨_,_,PointwiseRoleGate.program gate copy,seq adds (PointwiseRoleGate.program gate erase),?_⟩
+  intro T Q w W P U ports fitsLoad fitsFinish body convert budget keep data hW u S V addr move common bank ready outside output start mid
+  have hV : 0 < V := Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) hW
+  let bs := FlatCoordinateSchedule.bits V
+  have count := FlatCoordinateSchedule.bits_value V
+  have write (X : Fin 142081 → Fin V → ZMod 2) (op : Fin (prime+4) → Fin (prime+4) → Fin (prime+4))
+      (value : Fin V → ZMod 2) (action : ∀ i, op (SparseRoleCircuit.encode (X src i))
+        (SparseRoleCircuit.encode (X tmp i)) = SparseRoleCircuit.encode (value i)) :
+      HoareTime (PointwiseRoleGate.program gate op) (fun w => w = bank X)
+        (fun w => w = bank (Function.update X tmp value)) (14*V+14*bs.length+33) := by
+    have step := PointwiseRoleGate.gate_hoare gate op (fun _ _ => blank) (fun _ => 0) (SparseRoleCircuit.encoded X) bs count
+    have eq : PointwiseRoleGate.applyGate gate op (SparseRoleCircuit.encoded X) =
+        SparseRoleCircuit.encoded (Function.update X tmp value) := by
+      funext j i
+      by_cases h : j = tmp
+      · subst j
+        simpa [PointwiseRoleGate.applyGate,gate,SparseRoleCircuit.encoded] using action i
+      · simp [PointwiseRoleGate.applyGate,gate,SparseRoleCircuit.encoded,h]
+    rw [eq] at step
+    exact step
+  obtain ⟨v,D,t,enter,timeA,userA,loaded,off⟩ := placedHoare_exec _ ports fitsLoad body
+    (write data copy (data src) (fun _ => rfl)) u S start
+  obtain ⟨y,G,m,word,run,time,user,moved,action,offM⟩ := mid v D loaded off
+  have same : word = common := word_of_involutive_scatter addr move
+    (((copyAddress_word (w+1)).2 life scheduled).2.1) (data src) word action
+  subst word
+  let X := Function.update data tmp common
+  let added := fun j i => if j ∈ targets then X j i + X tmp i else X j i
+  have add := addRun X (fun _ _ => blank) (fun _ => 0) bs count
+  change HoareTime adds (fun w => w = bank X) (fun w => w = bank added) _ at add
+  have finish := add.seq (write added erase 0 (fun _ => rfl))
+  have cleaned : Function.update added tmp 0 = output := by
+    funext j i
+    by_cases eq : j = tmp <;> simp [eq,added,X,output]
+  rw [cleaned] at finish
+  obtain ⟨z,F,l,leave,timeB,userB,done,offB⟩ := placedHoare_exec _ ports fitsFinish body finish y G moved
+  refine ⟨z,F,_,Exec.seq enter (Exec.seq run leave),?_,userB.trans (user.trans userA),done,?_⟩
+  · have price := SparseRoleCircuit.cost_linear (life.targets.length+2) V bs count (FlatCoordinateSchedule.bits_canonical V) hV
+    have bound := Nat.mul_le_mul_right 142088 price
+    simp only [V,Nat.add_mul,Nat.mul_add] at bound timeA timeB ⊢
+    omega
+  · intro j kept hj
+    obtain ⟨l,r⟩ := off j hj
+    obtain ⟨lm,rm⟩ := offM j kept hj
+    obtain ⟨lb,rb⟩ := offB j hj
+    exact ⟨lb.trans (lm.trans l),rb.trans (rm.trans r)⟩
+
+open Cover.Fallback in
 /-- Allocate the two basis workspaces after the parent bank. The only tape
 shared by either pass and the parent is the chosen payload. -/
 theorem phaseBasisPlacement {T : ℕ} (owner : Fin T) (m n : ℕ) :
@@ -506,17 +780,10 @@ theorem scheduledPhasePacked_host [M8.Machine.Net] {P U : Type} {T Q k : ℕ}
     obtain ⟨l'',r''⟩ := offB j hb
     exact ⟨l''.trans (l'.trans l),r''.trans (r'.trans r)⟩
   have owners : RepT (phaseOwners (Function.update data src y)) (embStk slots G).L (embStk slots G).R := by
-    intro i l
-    by_cases eq : i = src
-    · subst i
-      have cell := finalRecord.src l
-      simp only [phaseOwners,Function.update_self,embStk,Function.comp_apply,sub_zero,shared]
-      have read := (encodedOwnerCell y l).symm
-      simp only [List.map_ofFn] at read
-      exact read.trans (by simpa only [sub_zero] using cell.symm)
-    · obtain ⟨ha,hm,hb⟩ := outside i eq
-      obtain ⟨l',r'⟩ := untouched (slots i) ha hm hb
-      simpa only [phaseOwners,Function.update_of_ne eq,embStk,Function.comp_apply,l',r'] using initial i l
+    apply owners_of_returned_record slots src bank shared data y initial finalRecord
+    intro i eq
+    obtain ⟨ha,hm,hb⟩ := outside i eq
+    exact untouched (slots i) ha hm hb
   refine ⟨mid,y,z,G,_,Exec.seq runA (Exec.seq exec runB),?_,userB.trans (userM.trans userA),owners,finalRecord,?_,done,untouched,?_⟩
   · change t ≤ FlatCoordinateCleanSchedule.constant A*V*(1+FlatCoordinateCleanSchedule.tapeCount A+5)+6 at timeA
     change n ≤ FlatCoordinateCleanSchedule.constant B'*V*(1+FlatCoordinateCleanSchedule.tapeCount B'+5)+6 at timeB
