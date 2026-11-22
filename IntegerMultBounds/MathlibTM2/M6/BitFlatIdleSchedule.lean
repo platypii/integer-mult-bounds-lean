@@ -37,6 +37,55 @@ theorem parentIdleSchedule_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q 
   apply (Nat.cast_le (α := ℝ)).mp
   simpa only [Nat.cast_add,Nat.cast_one,Nat.cast_list_sum,List.map_map,Function.comp_apply,Function.comp_def] using paid
 
+def ParentIdlePositions (i : Fin 9) (j : Fin 222) (w W : ℕ) (child : Descriptor)
+    (position : Fin (volume prime child) ≃ Fin ((prime^w)^128*W)) : Prop :=
+  let e := idleInterval i j
+  let lane := phaseIntervalChild (e.1+1) (e.2+1) w W 64
+  let size : volume prime lane = (prime^w)^128*W :=
+    intervalChild_volume (Nat.succ_le_succ (idleBounds i j).1) (Nat.succ_le_succ (idleBounds i j).2) w W
+  lane.width = child.width ∧ InheritedIntervalPositions child lane size position
+
+/-- Call the directory's strictly smaller children on the shifted parent
+intervals. The child prices are indexed by their original occurrences. -/
+theorem parentIdleCalls_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
+    (node : Descriptor) (i : Fin 9) (w rows : ℕ) (hw : 0 < w)
+    (width : node.width = 64*w) (split : node.rows = 142080*rows)
+    (fan : Fin (142081+2) ↪ Fin T) (privateReady : Stacks T prime → Prop)
+    (proc : (Fin 32 × Fin 5) × Fin 222 → P) (budget : Fin nodeChildren5.length → ℕ) :
+    let W := node.beforeRows*rows*node.beforeH*node.between*node.afterD
+    let V := (prime^w)^128*W
+    let index := fun k => idleDirectoryIndex (i,idleCopyIndex k)
+    let child := fun k => scheduledChild prime node (index k)
+    ∃ position : ∀ k, Fin (volume prime (child k)) ≃ Fin V,
+      (∀ k, ParentIdlePositions i k.2 w W (child k) (position k)) ∧
+      ((∀ k x u S, (child k).width < node.width → HelperFan fan x S → privateReady S →
+        ∃ word F z n, Exec body (body (proc k)) (mk u S) n (mk z F) ∧ n ≤ budget (index k) ∧
+          z.user = u.user ∧ HelperFan fan (Function.update x (idleTape i k) word) F ∧ privateReady F ∧
+          ∀ a, word (position k a) = Shared50RecursiveNodeRows.transpose (one_dvd (child k).rows)
+            (x (idleTape i k) ∘ position k) a) →
+      ∀ x S u, HelperFan fan x S → privateReady S →
+        ∃ y F z n, Exec body (Prog.seqList (idleCopies.map fun k => .call (proc k))) (mk u S) n (mk z F) ∧
+          n ≤ (idleCopies.map fun k => budget (index k)+2).sum+1 ∧ z.user = u.user ∧
+          HelperFan fan y F ∧ privateReady F ∧ ∀ j : Fin W,
+            let addr := fun v => flatWindowEquiv w W (windowState w v,j)
+            readRoles addr y = (Piece.remainder i.val).run (readRoles addr x)) := by
+  intro W V index child
+  have pos (k : (Fin 32 × Fin 5) × Fin 222) := idleChildPositions_offset node i (idleCopyIndex k)
+    w rows 1 (by simpa only [idleCopyIndex_get] using Nat.succ_le_succ (idleBounds i k.2).2) hw width split
+  simp only [idleCopyIndex_get] at pos
+  choose position same smaller coords using pos
+  refine ⟨position,fun k => ⟨same k,coords k⟩,?_⟩
+  intro recurse
+  apply parentIdleSchedule_exec body i w W fan _ _ privateReady
+  intro k x u S live fresh
+  obtain ⟨word,F,z,n,run,paid,user,out,prepared,reads⟩ := recurse k x u S (smaller k) live fresh
+  refine ⟨word,F,z,_,Exec.call run,by omega,user,out,prepared,?_⟩
+  have result := ((coords k).transpose_iff (same k) _ word).1 reads
+  intro a
+  let size := intervalChild_volume (Nat.succ_le_succ (idleBounds i k.2).1)
+    (Nat.succ_le_succ (idleBounds i k.2).2) w W
+  simpa only [Fin.cast_cast,Fin.cast_eq_self] using congrFun result (a.cast size)
+
 theorem flatIdleSchedule_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
     (node : Descriptor) (i : Fin 9) (w rows : ℕ) (hw : 0 < w)
     (width : node.width = 64*w) (split : node.rows = 142080*rows)
