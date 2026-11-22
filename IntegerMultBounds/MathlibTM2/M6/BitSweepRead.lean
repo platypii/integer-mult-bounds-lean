@@ -189,12 +189,13 @@ open AffineFieldCoordinates FlatCoordinateLayout Matrix in
 /-- The physical entry correction on the compact source and exit correction
 on the compact target convert a completed sweep to the translated port frame. -/
 theorem sweepEffect_correctedPort [M8.Machine.Net] (t : Fin 111) :
-    ∃ c preTapes postTapes : ℕ, ∀ w B W, 0 < w → 0 < B*((prime^w)^112*W) →
+    ∃ c preTapes postTapes preStates postStates : ℕ, ∀ w B W, 0 < w → 0 < B*((prime^w)^112*W) →
       let K := (prime^w)^112*W
       let V := (prime^w)^16*(B*K)
       let P := translatedPortProjector (ZMod (prime^w)) (4 : ZMod (prime^w))⁻¹ t
       ∃ enter leave : SharedBankStage.Stage _ 1 prime (@portOwner V),
         enter.tapes = preTapes ∧ leave.tapes = postTapes ∧
+        enter.states = preStates ∧ leave.states = postStates ∧
         enter.cost+leave.cost = c*V + 2*LeafCore.coreCost V w+12 ∧
         ∀ n (run : Fin 32 × Fin 5) (x a y : OwnerArray w B W),
           let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n run.1 run.2,ownerTape_injective ..⟩
@@ -208,11 +209,12 @@ theorem sweepEffect_correctedPort [M8.Machine.Net] (t : Fin 111) :
               x dst (cell (M8.Exchange.exchange (1-P) s)) + x src (cell s.swap) := by
   obtain ⟨a,preMachine,pre⟩ := portCorrection_owner t false true
   obtain ⟨b,postMachine,post⟩ := portCorrection_owner t true true
-  refine ⟨a+b,preMachine.tapes,postMachine.tapes,?_⟩
+  refine ⟨a+b,preMachine.tapes,postMachine.tapes,preMachine.states,postMachine.states,?_⟩
   intro w B W hw hW K V P
   obtain ⟨enter,hpre,entryCost,entry⟩ := pre w (B*K) hw hW
   obtain ⟨leave,hpost,exitCost,exitRow⟩ := post w (B*K) hw hW
-  refine ⟨enter,leave,congrArg SharedBankSkeleton.Skeleton.tapes hpre,congrArg SharedBankSkeleton.Skeleton.tapes hpost,?_,?_⟩
+  refine ⟨enter,leave,congrArg SharedBankSkeleton.Skeleton.tapes hpre,congrArg SharedBankSkeleton.Skeleton.tapes hpost,
+    congrArg SharedBankSkeleton.Skeleton.states hpre,congrArg SharedBankSkeleton.Skeleton.states hpost,?_,?_⟩
   · rw [entryCost,exitCost]
     simp only [ite_true,V]
     ring

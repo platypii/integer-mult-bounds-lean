@@ -21,8 +21,8 @@ private theorem chartVolume [M8.Machine.Net] (w : ℕ) :
       ((Nat.pow_le_pow_left Shared50ModularControl.prime_prime.two_le _).trans
         (Nat.pow_le_pow_right Shared50ModularControl.prime_prime.pos (by omega))))
 
-theorem placedStage_exec [M8.Machine.Net] {P U : Type} {t Q : ℕ} (n : Fin 9) (src dst : Fin (142081+2) ↪ Fin t)
-    (fits : 215 ≤ Q) :
+theorem placedStage_exec [M8.Machine.Net] {P U : Type} {t : ℕ} (n : Fin 9) (src dst : Fin (142081+2) ↪ Fin t) :
+    ∃ states : ℕ, ∀ {Q : ℕ}, states ≤ Q →
     ∃ C : ℕ, ∀ w H B W (parent : Fin 64 → ZMod (prime^(w+1))) (units : ∀ i, IsUnit (parent i)),
     let M := prime^(w+1)
     let K := M^112*W
@@ -31,8 +31,6 @@ theorem placedStage_exec [M8.Machine.Net] {P U : Type} {t Q : ℕ} (n : Fin 9) (
     let V := A*(B*N*K)
     M^128 < 2^H → H ≤ M^128+1 → 0 < B → 0 < W →
     ∃ enter leave : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := A*(B*K))),
-
-    enter.states ≤ Q → leave.states ≤ Q →
     ∀ (inner : P → Pr P t Q prime U) worker prepared price,
     StageHandoffExec n (w+1) B W inner worker src dst prepared price →
     let recBank := recursive t leave.tapes
@@ -66,13 +64,16 @@ theorem placedStage_exec [M8.Machine.Net] {P U : Type} {t Q : ℕ} (n : Fin 9) (
         readRoles address (nodeArray parent units n (leave.transform y)) = (Piece.stage n).run (readRoles address x)) ∧
       ∀ r, F.R (outer (sw (owners (sweepRoleTape r)))) = List.ofFn fun i =>
         SparseRoleCircuit.encode (nodeArray parent units n (leave.transform y) (sweepRoleTape r) i) := by
+  obtain ⟨rate,tapes,states,correct⟩ := correctedSweep_read
+  refine ⟨max 215 states,?_⟩
+  intro Q boundQ
+  have fits := (le_max_left 215 states).trans boundQ
   obtain ⟨D,finish⟩ := recursiveStageExit_exec (P := P) (U := U) n src dst fits
   obtain ⟨C,build⟩ := stageEntry_exec (P := P) (U := U) n fits
-  obtain ⟨rate,tapes,correct⟩ := correctedSweep_read
   let chartPrice := ⌈|rate|⌉₊*(tapes+5)
   refine ⟨142080*(C+D)+chartPrice+2100000000,?_⟩
   intro w H B W parent units M K A N V hw bound hb width
-  obtain ⟨enter,leave,et,lt,charts,acts⟩ := correct n (w+1) B W (by omega)
+  obtain ⟨enter,leave,et,lt,es,ls,charts,acts⟩ := correct n (w+1) B W (by omega)
     (Nat.mul_pos hb (Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) width))
   have perChart : enter.cost + leave.cost ≤ ⌈|rate|⌉₊*V := by
     apply Nat.cast_le (α := ℝ) |>.mp
@@ -90,7 +91,9 @@ theorem placedStage_exec [M8.Machine.Net] {P U : Type} {t Q : ℕ} (n : Fin 9) (
     _ ≤ (⌈|rate|⌉₊*V)*(tapes+5) := Nat.mul_le_mul_right _ perChart
     _ = _ := by dsimp only [chartPrice]; ring
   refine ⟨enter,leave,?_⟩
-  intro ein lout inner worker prepared price handoff
+  have ein := es.trans ((le_max_right 215 states).trans boundQ)
+  have lout := ls.trans ((le_max_right 215 states).trans boundQ)
+  intro inner worker prepared price handoff
     recBank mid outer fan body slots input forward sw crop
   obtain ⟨entry,entryRun⟩ := build fan w H B W parent units hw bound hb width enter ein body
   obtain ⟨back,backRun⟩ := finish w H B W parent units hw bound hb width leave lout inner worker prepared price handoff
