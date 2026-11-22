@@ -11,6 +11,18 @@ open IntegerMultBounds.Machine.RecursiveInterchangeLayout
 open IntegerMultBounds.MathlibTM2.Cover.Fallback
 open IntegerMultBounds.MathlibTM2.Layer.SelectedMoments
 
+/-- A PR589 stage with a full matrix label box fits one parent role when
+the role supplies its label rows. The remaining spectator factors form the tail. -/
+theorem stageVolume_eq_roleVolume (q w B : ℕ) (v : Descriptor)
+    (width : v.width = 64*w)
+    (rows : v.rows = 142080*(B*q^(64*(w*64)))) :
+    let M := q^w
+    let W := v.beforeRows*v.beforeH*v.between*v.afterD
+    M^16*(B*q^(64*(w*64))*(M^112*W))*142080 = volume q v := by
+  dsimp only [volume]
+  rw [width,rows,show 64*w = w*64 by omega,pow_mul]
+  ring
+
 /-- Select the scheduled rank within one of the five-class node's role streams. -/
 noncomputable def scheduledChild (q : ℕ) (v : Descriptor) (i : Fin nodeChildren5.length) : Descriptor :=
   let b := v.width / 64
