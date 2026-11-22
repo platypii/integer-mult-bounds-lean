@@ -56,12 +56,12 @@ theorem correctionBanks {t V : ℕ} (localFan : Fin (142081+2) ↪ Fin t)
   have eq : (⇑((Fin.castAddEmb 2).trans fan)) = shared := funext (align none)
   simpa only [eq] using proj
 
-theorem borrowedCorrectionRun {T t Q w B K : ℕ} {P U : Type}
-    (n : Fin 9) (fan : Fin (142081+2) ↪ Fin T) (localFan : Fin (142081+2) ↪ Fin t)
+theorem chartWorker_exec {T t Q V : ℕ} {P U : Type}
+    (effect : (Fin 142081 → Fin V → ZMod 2) → (Fin 142081 → Fin V → ZMod 2) → Prop)
+    (fan : Fin (142081+2) ↪ Fin T) (localFan : Fin (142081+2) ↪ Fin t)
     (worker : Fin t ↪ Fin T) (owners : ∀ i, worker (localFan i) = fan i)
     (body : P → Pr P t Q prime U) (code : Pr P t Q prime U) (price : ℕ)
     (initial : Stacks t prime) :
-    let V := (prime^w)^16*((prime^w)^112*B*prime^(64*(w*64))*K)
     let host := fun f => embProg worker id (body f)
     ∀ (enter leave : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V)))
       (a : Fin enter.tapes ↪ Fin T) (b : Fin leave.tapes ↪ Fin T)
@@ -73,14 +73,14 @@ theorem borrowedCorrectionRun {T t Q w B K : ℕ} {P U : Type}
     (∀ x u S, HelperFan localFan x S →
       (∀ j, (∀ i, localFan i ≠ j) → S.L j = initial.L j ∧ S.R j = initial.R j) →
       ∃ z F k y, Exec body code (mk u S) k (mk z F) ∧ k ≤ price ∧ z.user = u.user ∧
-        HelperFan localFan y F ∧ RestoredBorrowedStage n w B K x y) →
+        HelperFan localFan y F ∧ effect x y) →
     ∀ x u S, HelperFan fan x S → ChartPrivateReady enter (embStk a S) → ChartPrivateReady leave (embStk b S) →
     (∀ j, (∀ i, localFan i ≠ j) → S.L (worker j) = initial.L j ∧ S.R (worker j) = initial.R j) →
     ∃ z F k y, Exec host ((embProg a Empty.elim (foreign (liftQ enter.program qa))).seq
       ((embProg worker id code).seq (embProg b Empty.elim (foreign (liftQ leave.program qb)))))
       (mk u S) k (mk z F) ∧ k ≤ enter.cost*(enter.tapes+5)+price+leave.cost*(leave.tapes+5)+12 ∧
-      z.user = u.user ∧ HelperFan fan (leave.transform y) F ∧ RestoredBorrowedStage n w B K (enter.transform x) y := by
-  intro V host enter leave a b qa qb shareA shareB ctrlA ctrlB apart privateB sweep x u S live readyA readyB fresh
+      z.user = u.user ∧ HelperFan fan (leave.transform y) F ∧ effect (enter.transform x) y := by
+  intro host enter leave a b qa qb shareA shareB ctrlA ctrlB apart privateB sweep x u S live readyA readyB fresh
   obtain ⟨v,D,i,entry,it,vu,inFan,offA⟩ := ownerStage_fan_exec enter a fan shareA ctrlA qa host x u S readyA live
   have project (G : Stacks T prime) : embStk localFan (embStk worker G) = embStk fan G := by
     simp only [embStk,Function.comp_def,owners]
@@ -106,17 +106,17 @@ theorem borrowedCorrectionRun {T t Q w B K : ℕ} {P U : Type}
 
 /-- An allocated sweep uses a single private-stack seed. Its live fan may
 contain arbitrary owner words independently of that seed. -/
-theorem allocatedBorrowedCorrection_exec {t Q w B K : ℕ} {P U : Type}
-    (n : Fin 9) (localFan : Fin (142081+2) ↪ Fin t)
+theorem allocatedChartWorker_exec {t Q V : ℕ} {P U : Type}
+    (effect : (Fin 142081 → Fin V → ZMod 2) → (Fin 142081 → Fin V → ZMod 2) → Prop)
+    (localFan : Fin (142081+2) ↪ Fin t)
     (body : P → Pr P t Q prime U) (code : Pr P t Q prime U) (price : ℕ) (initial : Stacks t prime) :
-    let V := (prime^w)^16*((prime^w)^112*B*prime^(64*(w*64))*K)
     ∀ (enter leave : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V))),
     enter.states ≤ Q → leave.states ≤ Q →
     (∃ A, ChartPrivateReady enter A) → (∃ B, ChartPrivateReady leave B) →
     (∀ x u S, HelperFan localFan x S →
       (∀ j, (∀ i, localFan i ≠ j) → S.L j = initial.L j ∧ S.R j = initial.R j) →
       ∃ z F k y, Exec body code (mk u S) k (mk z F) ∧ k ≤ price ∧ z.user = u.user ∧
-        HelperFan localFan y F ∧ RestoredBorrowedStage n w B K x y) →
+        HelperFan localFan y F ∧ effect x y) →
     ∃ (T : ℕ) (worker : Fin t ↪ Fin T) (program : Pr P T Q prime U),
     let fan := localFan.trans worker
     ∀ X : Stacks 142081 prime, ∃ prepared : Stacks T prime,
@@ -125,8 +125,8 @@ theorem allocatedBorrowedCorrection_exec {t Q w B K : ℕ} {P U : Type}
       (∀ j, (∀ i, fan i ≠ j) → S.L j = prepared.L j ∧ S.R j = prepared.R j) →
       ∃ z F k y, Exec (fun f => embProg worker id (body f)) program (mk u S) k (mk z F) ∧
         k ≤ enter.cost*(enter.tapes+5)+price+leave.cost*(leave.tapes+5)+12 ∧
-        z.user = u.user ∧ HelperFan fan (leave.transform y) F ∧ RestoredBorrowedStage n w B K (enter.transform x) y := by
-  intro V enter leave qa qb ⟨A,readyA⟩ ⟨L,readyL⟩ sweep
+        z.user = u.user ∧ HelperFan fan (leave.transform y) F ∧ effect (enter.transform x) y := by
+  intro enter leave qa qb ⟨A,readyA⟩ ⟨L,readyL⟩ sweep
   obtain ⟨T,worker,a,b,shareA,shareB,ctrlA,ctrlB,apart,priv,seed⟩ := correctionBanks localFan enter leave
   let fan := localFan.trans worker
   refine ⟨T,worker,(embProg a Empty.elim (foreign (liftQ enter.program qa))).seq ((embProg worker id code).seq (embProg b Empty.elim (foreign (liftQ leave.program qb)))),?_⟩
@@ -148,7 +148,7 @@ theorem allocatedBorrowedCorrection_exec {t Q w B K : ℕ} {P U : Type}
     obtain ⟨sl,sr⟩ := fresh _ away
     obtain ⟨pl,pr⟩ := stock j outside
     simpa only [embStk,Function.comp_apply,sl,pl,sr,pr] using ready j outside h
-  apply borrowedCorrectionRun n fan localFan worker (fun _ => rfl) body code price initial
+  apply chartWorker_exec effect fan localFan worker (fun _ => rfl) body code price initial
     enter leave a b qa qb shareA shareB ctrlA ctrlB apart priv sweep x u S live
     (chartReady a A readyA shareA ctrlA sa) (chartReady b L readyL shareB ctrlB sb)
   intro j outside
@@ -226,7 +226,7 @@ theorem correctedBorrowedSweep_exec [M8.Machine.Net] :
   refine ⟨base,tapes,states,?_⟩
   intro t Q w B K P U n localFan body code price initial rows V hw positive fits sweep
   obtain ⟨enter,leave,et,lt,es,ls,sa,sb,exactCost,_,entryOff,exitOff,correct⟩ := build n w rows K hw positive
-  obtain ⟨T,worker,program,prepare⟩ := allocatedBorrowedCorrection_exec n localFan body code price initial
+  obtain ⟨T,worker,program,prepare⟩ := allocatedChartWorker_exec (RestoredBorrowedStage n w B K) localFan body code price initial
     enter leave (es.trans fits) (ls.trans fits) sa sb sweep
   refine ⟨T,worker,program,?_⟩
   intro fan X
