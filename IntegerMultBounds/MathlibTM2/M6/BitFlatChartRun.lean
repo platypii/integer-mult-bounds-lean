@@ -75,4 +75,69 @@ theorem flatChart_owner [M8.Machine.Net] {d : ℕ} (U : Matrix (Fin d) (Fin d) �
     rw [action]
     exact (readA _ _ j).trans ((readP _ _ j).trans (readB x v j))
 
+open Matrix IntegerMultBounds.Swap.Modular in
+/-- Recover flat addresses after a chart change by undoing its three factors. -/
+theorem flatChartReturn_owner [M8.Machine.Net] {d : ℕ} (U : Matrix (Fin d) (Fin d) ℚ) (unit : IsUnit U)
+    (pos : 1 ≤ d) (size : d ≤ 529)
+    (entries : ∀ i j, (U i j).num.natAbs ≤ 10^10000 ∧ (U i j).den ≤ 10^10000) :
+    ∃ (c k : ℕ) (machine : SharedBankSkeleton.Skeleton 1 prime), ∀ w W, 0 < w → 0 < W →
+      let V := (prime^w)^d*W
+      ∃ stage : SharedBankStage.Stage _ 1 prime (@portOwner V),
+        SharedBankSkeleton.ofStage stage = machine ∧
+        stage.cost = c*V + k*(3808274*V + LeafCore.coreCost V w + 1) + 2 ∧
+        HasStackSeed stage.metadata ∧ ∀ x a j,
+          stage.transform x (FlatCoordinateLayout.index a j) =
+            x (FlatCoordinateLayout.index (reduce (prime^w) U *ᵥ a) j) := by
+  obtain ⟨A,B,π,factors,action⟩ := chartFactors U unit pos size entries
+  have left := factors A (by simp)
+  have right := factors B (by simp)
+  obtain ⟨ca,ma,ra⟩ := triangularPort_owner A left.1 left.2 true
+  obtain ⟨cb,mb,rb⟩ := triangularPort_owner B right.1 right.2 true
+  obtain ⟨k,mp,rp⟩ := digitPerm_owner π.symm
+  refine ⟨ca+cb,k,SharedBankSkeleton.compose (SharedBankSkeleton.compose ma mp) mb,?_⟩
+  intro w W hw hW V
+  obtain ⟨a,fa,ta,sa,readA⟩ := ra w W hW
+  obtain ⟨b,fb,tb,sb,readB⟩ := rb w W hW
+  obtain ⟨p,fp,tp,sp,readP⟩ := rp w W hw hW
+  refine ⟨SharedBankStage.compose (SharedBankStage.compose a p) b,?_,?_,compose_seed (compose_seed sa sp) sb,?_⟩
+  · simp only [SharedBankSkeleton.ofStage_compose,fa,fb,fp]
+  · change a.cost+p.cost+1+b.cost+1 = _
+    rw [ta,tb,tp]; ring
+  · intro x v j
+    rw [action]
+    let M := reduce (prime^w) B
+    let y := M *ᵥ v
+    let z := y ∘ π
+    have undo (E : Matrix (Fin d) (Fin d) (ZMod (prime^w))) (unit : IsUnit E) (u : Fin d → _) :
+        E⁻¹ *ᵥ (E *ᵥ u) = u := by rw [mulVec_mulVec,nonsing_inv_mul _ ((isUnit_iff_isUnit_det _).mp unit),one_mulVec]
+    have rA := readA x (reduce (prime^w) A *ᵥ z) j
+    have rP := readP (a.transform x) z j
+    have rB := readB (p.transform (a.transform x)) y j
+    simp only [ite_true,undo _ (left.2 w).2] at rA
+    simp only [ite_true,y,M,undo _ (right.2 w).2] at rB
+    have cancel : z ∘ π.symm = y := by funext i; exact congrArg y (π.apply_symm_apply i)
+    rw [cancel] at rP
+    exact rB.trans (rP.trans rA)
+
+/-- Reading a moved word uses the image address going forward and the preimage
+address on return. -/
+def routedCell {α β : Type*} (backward : Bool) (x y : α → β) (src dst : α) : Prop :=
+  if backward then y src = x dst else y dst = x src
+
+open Matrix IntegerMultBounds.Swap.Modular in
+theorem flatChartDirection_owner [M8.Machine.Net] {d : ℕ} (U : Matrix (Fin d) (Fin d) ℚ) (unit : IsUnit U)
+    (pos : 1 ≤ d) (size : d ≤ 529)
+    (entries : ∀ i j, (U i j).num.natAbs ≤ 10^10000 ∧ (U i j).den ≤ 10^10000) (backward : Bool) :
+    ∃ (c k : ℕ) (machine : SharedBankSkeleton.Skeleton 1 prime), ∀ w W, 0 < w → 0 < W →
+      let V := (prime^w)^d*W
+      ∃ stage : SharedBankStage.Stage _ 1 prime (@portOwner V),
+        SharedBankSkeleton.ofStage stage = machine ∧
+        stage.cost = c*V + k*(3808274*V + LeafCore.coreCost V w + 1) + 2 ∧
+        HasStackSeed stage.metadata ∧ ∀ x a j,
+          routedCell backward x (stage.transform x) (FlatCoordinateLayout.index a j)
+            (FlatCoordinateLayout.index (reduce (prime^w) U *ᵥ a) j) := by
+  cases backward with
+  | false => exact flatChart_owner U unit pos size entries
+  | true => exact flatChartReturn_owner U unit pos size entries
+
 end IntegerMultBounds.MathlibTM2.M6.BitNode

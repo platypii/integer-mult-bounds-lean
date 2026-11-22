@@ -73,18 +73,18 @@ private theorem activeSweep_cell {w W : ℕ} (n : Fin 9) (r : Role)
 
 /-- Each stage role reaches its certified sweep address on one fixed owner
 tape. The live case adds the inverse polynomial translation on the local axes. -/
-theorem sweepChart_owner [M8.Machine.Net] (n : Fin 9) (r : Role) :
+theorem sweepChart_owner [M8.Machine.Net] (n : Fin 9) (r : Role) (backward : Bool := false) :
     ∃ (a k : ℕ) (machine : SharedBankSkeleton.Skeleton 1 prime), ∀ w W, 0 < w → 0 < W →
       let V := (prime^w)^128*W
       ∃ stage : SharedBankStage.Stage _ 1 prime (@portOwner V),
         SharedBankSkeleton.ofStage stage = machine ∧
         stage.cost ≤ a*V+k*(3808274*V+LeafCore.coreCost V w+1)+5 ∧
         HasStackSeed stage.metadata ∧ ∀ x i,
-          stage.transform x ((flatToSweep w W n r i).cast
-            (by simpa only [Nat.one_mul] using ordinaryCompact_width (prime^w) W)) = x i := by
+          routedCell backward x (stage.transform x) i ((flatToSweep w W n r i).cast
+            (by simpa only [Nat.one_mul] using ordinaryCompact_width (prime^w) W)) := by
   by_cases active : r.bank.val / 2 = BitHosting.activePair n.val
   swap
-  · obtain ⟨a,k,m,build⟩ := inactiveChart_owner n r active
+  · obtain ⟨a,k,m,build⟩ := inactiveChart_owner n r active backward
     refine ⟨a,k,m,?_⟩
     intro w W hw hW V
     obtain ⟨stage,fixed,cost,seed,read⟩ := build w W hw hW
@@ -94,20 +94,25 @@ theorem sweepChart_owner [M8.Machine.Net] (n : Fin 9) (r : Role) :
   let H := c.stageRoute n
   obtain ⟨a,k,m,route⟩ := pairedChart_owner H H (c.stageRoute_mul_self checked n)
     (fun i j => ⟨(stageRoute_entry c checked n i j).1.trans (by decide),
-      (stageRoute_entry c checked n i j).2.trans (by decide)⟩) flatParentOrder
+      (stageRoute_entry c checked n i j).2.trans (by decide)⟩) flatParentOrder backward
   have cancel : localShift shiftBack * localShift undoTranslation = 1 := by
     simp [localShift,fromBlocks_multiply,shift_cast_cancel]
-  obtain ⟨b,l,p,translate⟩ := pairedChart_owner _ _ cancel localShift_bound helperDigits
-  refine ⟨a+b,k+l,SharedBankSkeleton.compose m p,?_⟩
+  obtain ⟨b,l,p,translate⟩ := pairedChart_owner _ _ cancel localShift_bound helperDigits backward
+  refine ⟨a+b,k+l,(if backward then SharedBankSkeleton.compose p m else SharedBankSkeleton.compose m p),?_⟩
   intro w W hw hW V
   obtain ⟨A,fa,ca,sa,ra⟩ := route w W hw hW
   obtain ⟨B,fb,cb,sb,rb⟩ := translate w W hw hW
-  refine ⟨SharedBankStage.compose A B,?_,?_,compose_seed sa sb,?_⟩
-  · simp [fa,fb]
-  · change A.cost+B.cost+1 ≤ _
-    dsimp only [V]
-    rw [ca,cb,Nat.add_mul,Nat.add_mul]
-    omega
+  refine ⟨(if backward then SharedBankStage.compose B A else SharedBankStage.compose A B),?_,?_,?_,?_⟩
+  · cases backward <;> simp [fa,fb]
+  · cases backward <;> simp only [Bool.false_eq_true,↓reduceIte] <;>
+        first | change A.cost+B.cost+1 ≤ _ | change B.cost+A.cost+1 ≤ _
+    all_goals
+      dsimp only [V]
+      rw [ca,cb,Nat.add_mul,Nat.add_mul]
+      omega
+  · cases backward
+    · exact compose_seed sa sb
+    · exact compose_seed sb sa
   · intro x i
     obtain ⟨⟨s,j⟩,rfl⟩ := (flatWindowEquiv w W).surjective i
     let y := M8.Exchange.transform (reduce (prime^w) H) (reduce (prime^w) H) s
@@ -117,6 +122,48 @@ theorem sweepChart_owner [M8.Machine.Net] (n : Fin 9) (r : Role) :
         (by simpa only [Nat.one_mul] using ordinaryCompact_width (prime^w) W) = cell :=
       Fin.ext (activeSweep_cell n r active s j)
     rw [dst]
-    exact (rb (A.transform x) y j).trans (ra x s j)
+    cases backward with
+    | false => exact (rb (A.transform x) y j).trans (ra x s j)
+    | true => exact (ra (B.transform x) s j).trans (rb x y j)
+
+/-- One rate covers entry and return for every stage and port, at every
+precision and spectator count. -/
+theorem sweepChart_cost [M8.Machine.Net] :
+    ∃ C : ℝ, ∀ (n : Fin 9) (r : Role) (backward : Bool),
+      ∃ machine : SharedBankSkeleton.Skeleton 1 prime, ∀ (w W : ℕ), 0 < w → 0 < W →
+      let V := (prime^w)^128*W
+      ∃ stage : SharedBankStage.Stage _ 1 prime (@portOwner V),
+        SharedBankSkeleton.ofStage stage = machine ∧
+        (stage.cost : ℝ) ≤ C * V * (w : ℝ)^M8.Machine.BudgetBound.tau ∧
+        HasStackSeed stage.metadata ∧ ∀ x i,
+          routedCell backward x (stage.transform x) i ((flatToSweep w W n r i).cast
+            (by simpa only [Nat.one_mul] using ordinaryCompact_width (prime^w) W)) := by
+  choose a k machine build using fun p : Fin 9 × Role × Bool => sweepChart_owner p.1 p.2.1 p.2.2
+  let rate := fun p => (a p : ℝ) + (k p : ℝ)*(3808275+|LeafCore.C|) + 5
+  obtain ⟨C,bound⟩ := Finite.exists_le rate
+  refine ⟨C,?_⟩
+  intro n r backward
+  let p := (n,r,backward)
+  refine ⟨machine p,?_⟩
+  intro w W hw hW V
+  obtain ⟨stage,fixed,price,seed,read⟩ := build p w W hw hW
+  refine ⟨stage,fixed,?_,seed,read⟩
+  let power := (w : ℝ)^M8.Machine.BudgetBound.tau
+  have one : 1 ≤ power := Real.one_le_rpow (by exact_mod_cast hw : (1 : ℝ) ≤ w)
+    M8.Machine.BudgetBound.exponent_range.1.le
+  have volume : 0 < V := Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) hW
+  have scans : (V : ℝ) ≤ V*power := le_mul_of_one_le_right (Nat.cast_nonneg _) one
+  have joins : 1 ≤ (V : ℝ)*power := one_le_mul_of_one_le_of_one_le (by exact_mod_cast volume) one
+  have core := RevBudget.coreCost_le V w (L := power) (by rw [max_eq_right hw])
+  have swap : 3808274*(V : ℝ)+LeafCore.coreCost V w+1 ≤ (3808275+|LeafCore.C|)*(V*power) := by
+    nlinarith only [scans,core,joins]
+  calc
+    (stage.cost : ℝ) ≤ ((a p*V + k p*(3808274*V+LeafCore.coreCost V w+1)+5 : ℕ) : ℝ) := by exact_mod_cast price
+    _ ≤ rate p * (V*power) := by
+      push_cast
+      dsimp only [rate]
+      nlinarith only [mul_le_mul_of_nonneg_left scans (Nat.cast_nonneg (a p)),
+        mul_le_mul_of_nonneg_left swap (Nat.cast_nonneg (k p)),joins]
+    _ ≤ C * V * power := by rw [mul_assoc]; exact mul_le_mul_of_nonneg_right (bound p) (by positivity)
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode

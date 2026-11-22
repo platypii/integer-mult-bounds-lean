@@ -19,15 +19,16 @@ fields, then serialize the output in the given digit order. -/
 theorem pairedChart_owner [M8.Machine.Net] {ι : Type} [Fintype ι] [DecidableEq ι]
     (H : Matrix ι Axis ℚ) (J : Matrix Axis ι ℚ) (hJ : H*J = 1)
     (bounded : ∀ i j, (H i j).num.natAbs ≤ 10000 ∧ (H i j).den ≤ 10000)
-    (order : Fin 128 ≃ ι ⊕ ι) :
+    (order : Fin 128 ≃ ι ⊕ ι) (backward : Bool := false) :
     ∃ (a k : ℕ) (machine : SharedBankSkeleton.Skeleton 1 prime), ∀ w W, 0 < w → 0 < W →
       let V := (prime^w)^128*W
       ∃ stage : SharedBankStage.Stage _ 1 prime (@portOwner V),
         SharedBankSkeleton.ofStage stage = machine ∧
         stage.cost = a*V+k*(3808274*V+M8.RevMachine.LeafCore.coreCost V w+1)+2 ∧
         HasStackSeed stage.metadata ∧ ∀ x (s : Swap.Shear.State Axis (ZMod (prime^w))) j,
-          stage.transform x (FlatCoordinateLayout.index ((Sum.elim (reduce (prime^w) H *ᵥ s.1) (reduce (prime^w) H *ᵥ s.2) ∘ order)) j) =
-            x (FlatCoordinateLayout.index (Sum.elim s.1 s.2 ∘ flatParentOrder) j) := by
+          routedCell backward x (stage.transform x)
+            (FlatCoordinateLayout.index (Sum.elim s.1 s.2 ∘ flatParentOrder) j)
+            (FlatCoordinateLayout.index (Sum.elim (reduce (prime^w) H *ᵥ s.1) (reduce (prime^w) H *ᵥ s.2) ∘ order) j) := by
   let D := fromBlocks H 0 0 H
   let U := D.submatrix order flatParentOrder
   let inv := (fromBlocks J 0 0 J).submatrix flatParentOrder order
@@ -44,8 +45,8 @@ theorem pairedChart_owner [M8.Machine.Net] {ι : Type} [Fintype ι] [DecidableEq
     all_goals first
       | exact ⟨(bounded _ _).1.trans big,(bounded _ _).2.trans big⟩
       | exact ⟨(by decide : (0:ℚ).num.natAbs ≤ 10000).trans big,(by decide : (0:ℚ).den ≤ 10000).trans big⟩
-  obtain ⟨a,k,m,run⟩ := flatChart_owner U (isUnit_iff_exists.mpr ⟨_,cancel,mul_eq_one_comm.mp cancel⟩)
-    (by decide) (by decide) entries
+  obtain ⟨a,k,m,run⟩ := flatChartDirection_owner U (isUnit_iff_exists.mpr ⟨_,cancel,mul_eq_one_comm.mp cancel⟩)
+    (by decide) (by decide) entries backward
   refine ⟨a,k,m,?_⟩
   intro w W hw hW V
   obtain ⟨stage,fixed,cost,seed,read⟩ := run w W hw hW
@@ -65,17 +66,18 @@ theorem pairedChart_owner [M8.Machine.Net] {ι : Type} [Fintype ι] [DecidableEq
 /-- The selected port and slot determine a fixed machine. Both halves are
 charted together while the trailing spectator retains its position. -/
 theorem helperChart_owner [M8.Machine.Net] (c : PortCertificate) (hc : c.Checked)
-    (slot : Option (Fin 56)) :
+    (slot : Option (Fin 56)) (backward : Bool := false) :
     ∃ (a k : ℕ) (machine : SharedBankSkeleton.Skeleton 1 prime), ∀ w W, 0 < w → 0 < W →
       let V := (prime^w)^128*W
       ∃ stage : SharedBankStage.Stage _ 1 prime (@portOwner V),
         SharedBankSkeleton.ofStage stage = machine ∧
         stage.cost = a*V+k*(3808274*V+M8.RevMachine.LeafCore.coreCost V w+1)+2 ∧
         HasStackSeed stage.metadata ∧ ∀ x (s : Swap.Shear.State Axis (ZMod (prime^w))) j,
-          stage.transform x (FlatCoordinateLayout.index (helperSlotField c slot w s) j) =
-            x (FlatCoordinateLayout.index (Sum.elim s.1 s.2 ∘ flatParentOrder) j) := by
+          routedCell backward x (stage.transform x)
+            (FlatCoordinateLayout.index (Sum.elim s.1 s.2 ∘ flatParentOrder) j)
+            (FlatCoordinateLayout.index (helperSlotField c slot w s) j) := by
   exact pairedChart_owner c.fullChart.transpose c.fullChart (c.fullChart_orthonormal hc)
     (fun i j => ⟨(fullChart_entry c hc j i).1.trans (by decide),
-      (fullChart_entry c hc j i).2.trans (by decide)⟩) (helperFieldOrder slot)
+      (fullChart_entry c hc j i).2.trans (by decide)⟩) (helperFieldOrder slot) backward
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
