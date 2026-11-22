@@ -521,6 +521,23 @@ private theorem owners_of_returned_record {T k w d W H J : ℕ}
 
 -- The separate fifteen-field COPY host proof can be restored from 2e053b99.
 
+private theorem placedHoare_growth_exec {k q T Q b : ℕ} {P U : Type}
+    (machine : Program k q prime) (bank : Fin k ↪ Fin T) (fits : q ≤ Q)
+    (body : P → Pr P T Q prime U) {X Y : Tapes k prime}
+    (run : HoareTime machine (fun x => x = X) (fun y => y = Y) b)
+    (u : HS T Q prime U) (S : Stacks T prime) (ready : RepT X (embStk bank S).L (embStk bank S).R) :
+    ∃ z F n, Exec body (embProg bank (Empty.elim : Empty → P) (foreign (liftQ machine fits)))
+      (mk u S) n (mk z F) ∧ n ≤ b*(k+5)+6 ∧ z.user = u.user ∧
+      RepT Y (embStk bank F).L (embStk bank F).R ∧
+      (∀ i, (F.L (bank i)).length+(F.R (bank i)).length ≤ (S.L (bank i)).length+(S.R (bank i)).length+2*b) ∧
+      ∀ j, (∀ i, bank i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  obtain ⟨v,A,_,rfl,full,user,_,_,stock,n,time,exec⟩ := foreign_exec (body := (Empty.elim : Empty → _))
+    (liftQ _ fits) (HoareTime.liftQ fits run) (embDn bank u) (embStk bank S) _ rfl ready
+  obtain ⟨z,F,placed,_,same,view,off⟩ := exec_emb (ι := (Empty.elim : Empty → P))
+    (body' := body) bank.injective (fun f => f.elim) exec u rfl S rfl
+  subst A
+  exact ⟨z,F,n,placed,time,same.trans user,full,stock,off⟩
+
 theorem placedHoare_exec {k q T Q b : ℕ} {P U : Type}
     (machine : Program k q prime) (bank : Fin k ↪ Fin T) (fits : q ≤ Q)
     (body : P → Pr P T Q prime U) {X Y : Tapes k prime}
@@ -530,12 +547,8 @@ theorem placedHoare_exec {k q T Q b : ℕ} {P U : Type}
       (mk u S) n (mk z F) ∧ n ≤ b*(k+5)+6 ∧ z.user = u.user ∧
       RepT Y (embStk bank F).L (embStk bank F).R ∧
       ∀ j, (∀ i, bank i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
-  obtain ⟨v,A,_,rfl,full,user,_,_,_,n,time,exec⟩ := foreign_exec (body := (Empty.elim : Empty → _))
-    (liftQ _ fits) (HoareTime.liftQ fits run) (embDn bank u) (embStk bank S) _ rfl ready
-  obtain ⟨z,F,placed,_,same,view,off⟩ := exec_emb (ι := (Empty.elim : Empty → P))
-    (body' := body) bank.injective (fun f => f.elim) exec u rfl S rfl
-  subst A
-  exact ⟨z,F,n,placed,time,same.trans user,full,off⟩
+  obtain ⟨z,F,n,run,time,user,rep,_,off⟩ := placedHoare_growth_exec machine bank fits body run u S ready
+  exact ⟨z,F,n,run,time,user,rep,off⟩
 
 open M8.Machine.ArbitraryWidthOriginalRun M8.Machine.ArbitraryWidthHighExchangeShared
   M8.RevMachine SharedPlacementAlphabet RecursiveInterchangeLayout in
@@ -586,34 +599,57 @@ private theorem inheritedCopyLeaf_runs [M8.Machine.Net] {w W : ℕ} {child : Des
   have move := run.consequence (fun _ h => h) (fun _ h => h) price
   exact ⟨changed, prepare.seq move, (coords.transpose_iff sameWidth word changed).2 rfl⟩
 
-open M8.Machine.ArbitraryWidthOriginalRun M8.Machine.ArbitraryWidthHighExchangeShared
-  M8.RevMachine SharedPlacementAlphabet RecursiveInterchangeLayout in
-/-- Build the rank-seven interval headers beside the payload and run the
-stopped child in place, preserving its inherited physical order. -/
-theorem inheritedCopyLeaf_exec [M8.Machine.Net] {T Q w W : ℕ} {P U : Type} {child : Descriptor}
-    {position : Fin (volume prime child) ≃ Fin ((prime^w)^16*W)}
-    (coords : CopyIntervalPositions child w W position) (width : child.width = 7*w)
-    (hw : 0 < w) (hW : 0 < W) (word : Fin ((prime^w)^16*W) → ZMod 2) :
-    let view := phaseIntervalChild 0 7 w W
-    let size := phaseIntervalChild_volume (by decide : 0 ≤ 7) (by decide : 7 ≤ 8) w W
-    let payload := fun x : Fin ((prime^w)^16*W) → ZMod 2 =>
-      (⟨fun _ => 0, fun _ => sourceWord (v := view) (fun j => x (j.cast size))⟩ : Tapes 1 prime)
-    let setup := extendBanks (extend (extend (extend (phaseHeaderProgram 0 7) 1) 16) 19)
-    let leaf := M8.Machine.ArbitraryWidthOriginalTotalRun.program (fun i => (phaseHeaderSlots i).castAdd 1) ((0 : Fin 1).natAdd 24)
-    let machine := seq setup leaf
-    let V := (prime^w)^16*W
-    let tapes := M8.Machine.ArbitraryWidthOriginalZeroBranch.count 25
-    ∀ (ports : Fin tapes ↪ Fin T) (fits : _ ≤ Q) (body : P → Pr P T Q prime U) (u : HS T Q prime U) (S : Stacks T prime),
-      RepT (input ((phaseHeaderInput 0 7 w W).append (payload word))) (embStk ports S).L (embStk ports S).R →
-      ∃ changed : Fin V → ZMod 2, ∃ z F n, Exec body (embProg ports (Empty.elim : Empty → P) (foreign (liftQ machine fits)))
-        (mk u S) n (mk z F) ∧ n ≤ (1300*V+1+LeafCore.coreCost V child.width)*(tapes+5)+6 ∧ z.user = u.user ∧
-        RepT (input ((phaseHeaderOutput 0 7 w W).append (payload changed))) (embStk ports F).L (embStk ports F).R ∧
-        (∀ j, (∀ l, ports l ≠ j) → F.L j = S.L j ∧ F.R j = S.R j) ∧
-        ∀ k, changed (position k) = Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (word ∘ position) k := by
-  intro view size payload setup leaf machine V tapes ports fits body u S ready
-  obtain ⟨changed,run,action⟩ := inheritedCopyLeaf_runs coords width hw hW word
-  obtain ⟨z,F,n,exec,time,user,done,off⟩ := placedHoare_exec machine ports fits body run u S ready
-  exact ⟨changed,z,F,n,exec,time,user,done,off,action⟩
+theorem copyLeafCallerFits [M8.Machine.Net] : 25 ≤ M8.Machine.ArbitraryWidthOriginalZeroBranch.count 25 := by
+  simp only [M8.Machine.ArbitraryWidthOriginalZeroBranch.count, M8.Machine.ArbitraryWidthOriginalZeroBranch.highCount]
+  omega
+
+private theorem castLEHeader_ne {k T : ℕ} (fits : 25 ≤ k) (ports : Fin k ↪ Fin T)
+    {i : Fin k} (outside : 25 ≤ i.val) (j : Fin 24) :
+    ports (Fin.castLE fits (j.castAdd 1)) ≠ ports i := by
+  intro eq
+  have h := congrArg Fin.val (ports.injective eq)
+  change j.val = i.val at h
+  omega
+
+open M8.RevMachine Cover.Fallback in
+/-- Join the represented header and payload banks, then extend them by blank leaf scratch. -/
+private theorem copyLeafInput_rep {k T : ℕ} (fits : 25 ≤ k) (headers : Tapes 24 prime) (payload : Tapes 1 prime)
+    (ports : Fin k ↪ Fin T) (S : Stacks T prime) :
+    let slot := Fin.castLEEmb fits
+    let bank := slot.trans ports
+    RepT headers (fun i => S.L (bank (i.castAdd 1))) (fun i => S.R (bank (i.castAdd 1))) →
+    RepT payload (fun i => S.L (bank (i.natAdd 24))) (fun i => S.R (bank (i.natAdd 24))) →
+    (∀ i, 25 ≤ i.val → S.L (ports i) = [] ∧ S.R (ports i) = []) →
+    RepT (SharedBankStageInput.raw (headers.append payload) k)
+      (embStk ports S).L (embStk ports S).R := by
+  intro slot bank hs hp free
+  have read : RepT (headers.append payload) (S.L ∘ bank) (S.R ∘ bank) := by
+    intro i z
+    induction i using Fin.addCases with
+    | left i => simpa only [Tapes.append,Fin.addCases_left,Function.comp_apply] using hs i z
+    | right i => simpa only [Tapes.append,Fin.addCases_right,Function.comp_apply] using hp i z
+  intro i z
+  by_cases inside : i.val < 25
+  · have atSlot : slot ⟨i.val,inside⟩ = i := Fin.ext rfl
+    simpa only [SharedBankStageInput.raw,dite_eq_left inside,Function.comp_apply,bank,
+      Function.Embedding.trans_apply,atSlot,embStk] using read ⟨i.val,inside⟩ z
+  · obtain ⟨l,r⟩ := free i (by omega)
+    simp [SharedBankStageInput.raw,inside,embStk,l,r,Function.comp_def,readAt_nil_left,wordTape_nil]
+
+open M8.RevMachine in
+private theorem copyLeafPayload_rep [M8.Machine.Net] {T : ℕ} (headers : Tapes 24 prime) (payload : Tapes 1 prime)
+    (ports : Fin (M8.Machine.ArbitraryWidthOriginalZeroBranch.count 25) ↪ Fin T) (F : Stacks T prime)
+    (rep : RepT (M8.Machine.ArbitraryWidthOriginalTotalRun.input (headers.append payload))
+      (embStk ports F).L (embStk ports F).R) :
+    let bank := (Fin.castLEEmb copyLeafCallerFits).trans ports
+    RepT payload (fun i => F.L (bank (i.natAdd 24))) (fun i => F.R (bank (i.natAdd 24))) := by
+  intro bank i z
+  rw [LeafCore.input_eq] at rep
+  let j := i.natAdd 24
+  have inside : ((Fin.castLEEmb copyLeafCallerFits) j).val < 25 := j.isLt
+  have cell := rep ((Fin.castLEEmb copyLeafCallerFits) j) z
+  simpa only [SharedBankStageInput.raw,dite_eq_left inside,show (⟨_,inside⟩ : Fin 25) = j from rfl,
+    j,Tapes.append,Fin.addCases_right,embStk,Function.comp_apply,bank,Function.Embedding.trans_apply] using cell
 
 open M8.RevMachine RecursiveInterchangeLayout IntegerMultBounds.Networks.Certificates.PR589 in
 /-- Execute either chart route of a COPY window on its assigned host tapes. The
@@ -1497,6 +1533,260 @@ theorem copyLeafHeader_rep (w W : ℕ) :
   have empty : (blank : Fin (prime+4)) = readAt blank [] [] (z-0) := by
     simp [readAt_nil_left,wordTape_nil]
   fin_cases i <;> first | exact empty | exact binary _
+
+/-- The two dimension banks and the product bank share the same atom width. -/
+def copyLeafVariableSlots : Fin 4 ↪ Fin 24 := ⟨![2,3,11,21], by decide⟩
+
+open Cover.Fallback in
+theorem copyLeafVariableHeaders_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
+    (bank : Fin 24 ↪ Fin T) (width suffix tmp aux : Fin T) (w W : ℕ)
+    (u : HS T Q prime U) (S : Stacks T prime) :
+    let src := fun i : Fin 4 => if i = 1 then suffix else width
+    let dst := copyLeafVariableSlots.trans bank
+    let slots := List.finRange 4
+    (∀ i j, src i ≠ dst j) → (∀ i, [src i,dst i,tmp,aux].Nodup) →
+    S.R width = (FlatCoordinateSchedule.bits w).map bitSymbol →
+    S.R suffix = (FlatCoordinateSchedule.bits W).map bitSymbol →
+    S.R tmp = [] → S.R aux = [] → (∀ i, S.R (dst i) = []) →
+    ∃ z F, z.user = u.user ∧ Exec body (Record.copyLeafHeaders src dst tmp aux slots)
+      (mk u S) (18*(FlatCoordinateSchedule.bits w).length+6*(FlatCoordinateSchedule.bits W).length+25) (mk z F) ∧
+      F.L = S.L ∧ (∀ i, F.R (dst i) = ((copyLeafHeader w W (copyLeafVariableSlots i)).elim [] (List.map bitSymbol))) ∧
+      ∀ j, (∀ i, dst i ≠ j) → F.R j = S.R j := by
+  intro src dst slots apart ports hw hW temp scratch empty
+  obtain ⟨z,F,user,run,left,loaded,off⟩ := Record.copyLeafHeaders_exec body src dst tmp aux apart ports
+    slots (List.nodup_finRange _) u S temp scratch (fun i _ => empty i)
+  have ticks : (slots.map fun i => 6*(S.R (src i)).length+6).sum+1 =
+      18*(FlatCoordinateSchedule.bits w).length+6*(FlatCoordinateSchedule.bits W).length+25 := by
+    change (6*(S.R width).length+6)+((6*(S.R suffix).length+6)+((6*(S.R width).length+6)+((6*(S.R width).length+6)+0)))+1 = _
+    rw [hw,hW]; simp only [List.length_map]; omega
+  rw [ticks] at run
+  refine ⟨z,F,user,run,left,?_,fun j away => off j (fun i _ => away i)⟩
+  intro i
+  rw [loaded i (List.mem_finRange i)]
+  fin_cases i <;> first | exact hw | exact hW
+
+open Cover.Fallback in
+/-- Constants and separators for the stopping leaf fit in one fixed host action. -/
+noncomputable def markCopyLeafHeaders {T Q : ℕ} {U : Type} (bank : Fin 24 ↪ Fin T) : Act T Q prime U :=
+  LabelCycle.pushWord (bank 12) ((FlatCoordinateSchedule.bits 1).map bitSymbol)
+    (LabelCycle.pushWord (bank 23) ((FlatCoordinateSchedule.bits 7).map bitSymbol)
+      (pushMarkers (([2,3,11,12,21,23] : List (Fin 24)).map bank)))
+
+open Cover.Fallback in
+theorem markCopyLeafHeaders_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
+    (bank : Fin 24 ↪ Fin T) (w W : ℕ) (u : HS T Q prime U) (S : Stacks T prime)
+    (left : ∀ i, S.L (bank i) = [])
+    (right : ∀ i, S.R (bank i) = if i = 12 ∨ i = 23 then []
+      else (copyLeafHeader w W i).elim [] (List.map bitSymbol)) :
+    ∃ F, Exec body (.act (markCopyLeafHeaders bank)) (mk u S) 1 (mk u F) ∧
+      RepT (phaseHeaderInput 0 7 w W) (F.L ∘ bank) (F.R ∘ bank) ∧
+      (∀ i, (F.L (bank i)).length+(F.R (bank i)).length ≤
+        (FlatCoordinateSchedule.bits w).length+(FlatCoordinateSchedule.bits W).length+4) ∧
+      ∀ j, (∀ i, bank i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  let slots := ([2,3,11,12,21,23] : List (Fin 24))
+  have mark := Exec.act (body := body) (markCopyLeafHeaders bank) (mk u S)
+  unfold markCopyLeafHeaders at mark
+  rw [LabelCycle.pushWord_run, LabelCycle.pushWord_run,
+    pushMarkers_run _ ((by decide : slots.Nodup).map bank.injective)] at mark
+  refine ⟨_,mark,?_,?_,?_⟩
+  · intro i z
+    have cell := copyLeafHeader_rep w W i z
+    simp only [Function.comp_apply, List.mem_map_of_injective bank.injective,
+      left, Function.update_apply, bank.injective.eq_iff, right]
+    fin_cases i <;> simpa [copyLeafHeader,slots] using cell
+  · intro i
+    simp only [List.mem_map_of_injective bank.injective,left, Function.update_apply,bank.injective.eq_iff,right]
+    have one : (FlatCoordinateSchedule.bits 1).length = 1 := by decide
+    have seven : (FlatCoordinateSchedule.bits 7).length = 3 := by decide
+    fin_cases i <;> simp [copyLeafHeader,slots,one,seven] <;> omega
+  · intro j off
+    have outside : j ∉ slots.map bank := fun h => by
+      obtain ⟨i,_,eq⟩ := List.mem_map.mp h
+      exact off i eq
+    constructor <;> simp only [ite_eq_right outside, Function.update_of_ne (off 23).symm,
+      Function.update_of_ne (off 12).symm]
+
+open Cover.Fallback in
+/-- Prepare all 24 input tapes from the worker's two binary words and blank workspace. -/
+theorem loadCopyLeafHeaders_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
+    (bank : Fin 24 ↪ Fin T) (width suffix tmp aux : Fin T) (w W : ℕ)
+    (u : HS T Q prime U) (S : Stacks T prime) :
+    let src := fun i : Fin 4 => if i = 1 then suffix else width
+    let dst := copyLeafVariableSlots.trans bank
+    let copy := Record.copyLeafHeaders src dst tmp aux (List.finRange 4)
+    (∀ i j, src i ≠ dst j) → (∀ i, [src i,dst i,tmp,aux].Nodup) →
+    S.R width = (FlatCoordinateSchedule.bits w).map bitSymbol →
+    S.R suffix = (FlatCoordinateSchedule.bits W).map bitSymbol →
+    S.R tmp = [] → S.R aux = [] → (∀ i, S.L (bank i) = [] ∧ S.R (bank i) = []) →
+    ∃ z F, z.user = u.user ∧ Exec body (copy.seq (.act (markCopyLeafHeaders bank)))
+      (mk u S) (18*(FlatCoordinateSchedule.bits w).length+6*(FlatCoordinateSchedule.bits W).length+26) (mk z F) ∧
+      RepT (phaseHeaderInput 0 7 w W) (F.L ∘ bank) (F.R ∘ bank) ∧
+      (∀ i, (F.L (bank i)).length+(F.R (bank i)).length ≤
+        (FlatCoordinateSchedule.bits w).length+(FlatCoordinateSchedule.bits W).length+4) ∧
+      ∀ j, (∀ i, bank i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  intro src dst copy apart ports hw hW temp scratch empty
+  obtain ⟨v,D,user,run,left,loaded,off⟩ := copyLeafVariableHeaders_exec body bank width suffix tmp aux w W u S
+    apart ports hw hW temp scratch (fun i => (empty (copyLeafVariableSlots i)).2)
+  obtain ⟨F,mark,rep,size,frame⟩ := markCopyLeafHeaders_exec body bank w W v D
+    (fun i => left ▸ (empty i).1) (by
+      intro i
+      by_cases hit : ∃ h, copyLeafVariableSlots h = i
+      · obtain ⟨h,rfl⟩ := hit
+        have different : ∀ h, ¬(copyLeafVariableSlots h = 12 ∨ copyLeafVariableSlots h = 23) := by decide
+        rw [ite_eq_right (different h)]
+        exact loaded h
+      · rw [off _ (fun h eq => hit ⟨h,bank.injective eq⟩),(empty i).2]
+        fin_cases i <;> first | rfl | exact False.elim (hit (by decide)))
+  have combined := Exec.seq run mark
+  exact ⟨v,F,user,combined,rep,size,fun j away =>
+    ⟨(frame j away).1.trans (congrFun left j),
+      (frame j away).2.trans (off j (fun h => away (copyLeafVariableSlots h)))⟩⟩
+
+open Cover.Fallback in
+private theorem loadCopyLeafInput_exec {k T Q : ℕ} (fits : 25 ≤ k) {P U : Type}
+    (ports : Fin k ↪ Fin T)
+    (body : P → Pr P T Q prime U) (u : HS T Q prime U) (S : Stacks T prime)
+    (w W : ℕ) (payload : Tapes 1 prime) :
+    let slot := Fin.castLEEmb fits
+    let bank := slot.trans ports
+    let headers := (Fin.castAddEmb (n := 24) 1).trans bank
+    ∀ (atom suffix tmp aux : Fin T),
+    let src := fun i : Fin 4 => if i = 1 then suffix else atom
+    let dst := copyLeafVariableSlots.trans headers
+    let load := (Record.copyLeafHeaders src dst tmp aux (List.finRange 4)).seq (.act (markCopyLeafHeaders headers))
+    (∀ i j, src i ≠ dst j) → (∀ i, [src i,dst i,tmp,aux].Nodup) →
+    S.R atom = (FlatCoordinateSchedule.bits w).map bitSymbol →
+    S.R suffix = (FlatCoordinateSchedule.bits W).map bitSymbol →
+    S.R tmp = [] → S.R aux = [] → (∀ i, S.L (headers i) = [] ∧ S.R (headers i) = []) →
+    RepT payload (fun i => S.L (bank (i.natAdd 24))) (fun i => S.R (bank (i.natAdd 24))) →
+    (∀ i, 25 ≤ i.val → S.L (ports i) = [] ∧ S.R (ports i) = []) →
+    ∃ v D, v.user = u.user ∧ Exec body load (mk u S)
+      (18*(FlatCoordinateSchedule.bits w).length+6*(FlatCoordinateSchedule.bits W).length+26) (mk v D) ∧
+      RepT (SharedBankStageInput.raw ((phaseHeaderInput 0 7 w W).append payload) k)
+        (embStk ports D).L (embStk ports D).R ∧
+      (∀ i : Fin k, i.val ≠ 24 → (D.L (ports i)).length+(D.R (ports i)).length ≤
+        (FlatCoordinateSchedule.bits w).length+(FlatCoordinateSchedule.bits W).length+4) ∧
+      ∀ j, (∀ i, ports i ≠ j) → D.L j = S.L j ∧ D.R j = S.R j := by
+  intro slot bank headers atom suffix tmp aux src dst load apart regs hatom hsuffix temp scratch empty owner free
+  obtain ⟨v,D,userA,start,rep,stock,keep⟩ := loadCopyLeafHeaders_exec body headers atom suffix tmp aux w W u S
+    apart regs hatom hsuffix temp scratch empty
+  have ownerKeep (i : Fin 1) := keep (bank (i.natAdd 24)) (fun j eq => by
+    change bank (j.castAdd 1) = bank (i.natAdd 24) at eq
+    have h := congrArg Fin.val (bank.injective eq)
+    change j.val = 24+i.val at h
+    omega)
+  have ownerD : RepT payload (fun i => D.L (bank (i.natAdd 24))) (fun i => D.R (bank (i.natAdd 24))) := by
+    intro i z
+    change payload.tape i z = readAt blank (D.L (bank (i.natAdd 24))) (D.R (bank (i.natAdd 24))) (z-payload.head i)
+    rw [(ownerKeep i).1,(ownerKeep i).2]
+    exact owner i z
+  have freeD (i : Fin k) (outside : 25 ≤ i.val) : D.L (ports i) = [] ∧ D.R (ports i) = [] := by
+    have frame := keep (ports i) (castLEHeader_ne fits ports outside)
+    exact ⟨frame.1.trans (free i outside).1,frame.2.trans (free i outside).2⟩
+  refine ⟨v,D,userA,start,copyLeafInput_rep fits _ _ ports D rep ownerD freeD,?_,
+    fun j outside => keep j (fun i => outside (slot (i.castAdd 1)))⟩
+  intro i ne
+  by_cases small : i.val < 24
+  · let j : Fin 24 := ⟨i.val,small⟩
+    have eq : slot (j.castAdd 1) = i := Fin.ext rfl
+    simpa only [headers,bank,Function.Embedding.trans_apply,Fin.castAddEmb_apply,eq] using stock j
+  · obtain ⟨l,r⟩ := freeD i (by omega)
+    simp [l,r]
+
+open Cover.Fallback in
+private theorem clearCopyLeaf_exec {k T Q : ℕ} {P U : Type} (ports : Fin k ↪ Fin T)
+    (body : P → Pr P T Q prime U) (v : HS T Q prime U) (F : Stacks T prime) (bound : ℕ)
+    (stock : ∀ i : Fin k, i.val ≠ 24 → (F.L (ports i)).length+(F.R (ports i)).length ≤ bound) :
+    let work := ((List.finRange k).filter fun i => i.val ≠ 24).map ports
+    ∃ y G t, Exec body (clearWorkTapes work) (mk v F) t (mk y G) ∧
+      t ≤ k*(4*bound+4)+1 ∧ y.user = v.user ∧
+      (∀ i : Fin k, i.val ≠ 24 → G.L (ports i) = [] ∧ G.R (ports i) = []) ∧
+      ∀ j, (∀ i : Fin k, i.val ≠ 24 → ports i ≠ j) → G.L j = F.L j ∧ G.R j = F.R j := by
+  intro work
+  obtain ⟨y,user,clear⟩ := clearWorkTapes_exec body work (((List.nodup_finRange k).filter _).map ports.injective) v F
+  have price (j) (mem : j ∈ work) : 4*(F.L j).length+2*(F.R j).length+4 ≤ 4*bound+4 := by
+    obtain ⟨i,hi,rfl⟩ := List.mem_map.mp mem
+    have h := stock i (by simpa using (List.mem_filter.mp hi).2)
+    omega
+  have bill := List.sum_le_sum price
+  simp only [List.map_const',List.sum_replicate_nat] at bill
+  have count : work.length ≤ k := by
+    simpa [work] using (List.length_filter_le (fun i : Fin k => decide (i.val ≠ 24)) (List.finRange k))
+  refine ⟨y,_,_,clear,Nat.add_le_add_right (bill.trans (Nat.mul_le_mul_right _ count)) 1,user,?_,?_⟩
+  · intro i ne
+    have mem : ports i ∈ work := List.mem_map_of_mem (by simp [ne] : i ∈ (List.finRange k).filter fun h => h.val ≠ 24)
+    simp [mem]
+  · intro j off
+    have absent : j ∉ work := by
+      intro mem
+      obtain ⟨i,hi,eq⟩ := List.mem_map.mp mem
+      exact off i (by simpa using (List.mem_filter.mp hi).2) eq
+    simp [absent]
+
+open M8.Machine.ArbitraryWidthOriginalRun M8.Machine.ArbitraryWidthHighExchangeShared
+  M8.RevMachine SharedPlacementAlphabet RecursiveInterchangeLayout Cover.Fallback in
+/-- Build the rank-seven interval headers beside the payload and run the
+stopped child in place, preserving its inherited physical order. -/
+theorem inheritedCopyLeaf_exec [M8.Machine.Net] {T Q w W : ℕ} {P U : Type} {child : Descriptor}
+    {position : Fin (volume prime child) ≃ Fin ((prime^w)^16*W)}
+    (coords : CopyIntervalPositions child w W position) (width : child.width = 7*w)
+    (hw : 0 < w) (hW : 0 < W) (word : Fin ((prime^w)^16*W) → ZMod 2) :
+    let view := phaseIntervalChild 0 7 w W
+    let size := phaseIntervalChild_volume (by decide : 0 ≤ 7) (by decide : 7 ≤ 8) w W
+    let payload := fun x : Fin ((prime^w)^16*W) → ZMod 2 =>
+      (⟨fun _ => 0, fun _ => sourceWord (v := view) (fun j => x (j.cast size))⟩ : Tapes 1 prime)
+    let setup := extendBanks (extend (extend (extend (phaseHeaderProgram 0 7) 1) 16) 19)
+    let leaf := M8.Machine.ArbitraryWidthOriginalTotalRun.program (fun i => (phaseHeaderSlots i).castAdd 1) ((0 : Fin 1).natAdd 24)
+    let machine := seq setup leaf
+    let V := (prime^w)^16*W
+    let tapes := M8.Machine.ArbitraryWidthOriginalZeroBranch.count 25
+    ∀ (ports : Fin tapes ↪ Fin T) (fits : _ ≤ Q) (body : P → Pr P T Q prime U) (u : HS T Q prime U) (S : Stacks T prime),
+      let slot := (Fin.castLEEmb copyLeafCallerFits)
+      let bank := slot.trans ports
+      let headers := (Fin.castAddEmb (n := 24) 1).trans bank
+      ∀ (atom suffix tmp aux : Fin T),
+      let src := fun i : Fin 4 => if i = 1 then suffix else atom
+      let dst := copyLeafVariableSlots.trans headers
+      let load := (Record.copyLeafHeaders src dst tmp aux (List.finRange 4)).seq (.act (markCopyLeafHeaders headers))
+      (∀ i j, src i ≠ dst j) → (∀ i, [src i,dst i,tmp,aux].Nodup) →
+      S.R atom = (FlatCoordinateSchedule.bits w).map bitSymbol →
+      S.R suffix = (FlatCoordinateSchedule.bits W).map bitSymbol →
+      S.R tmp = [] → S.R aux = [] → (∀ i, S.L (headers i) = [] ∧ S.R (headers i) = []) →
+      RepT (payload word) (fun i => S.L (bank (i.natAdd 24))) (fun i => S.R (bank (i.natAdd 24))) →
+      (∀ i, 25 ≤ i.val → S.L (ports i) = [] ∧ S.R (ports i) = []) →
+      let work := ((List.finRange tapes).filter fun i => i.val ≠ 24).map ports
+      let cost := 1300*V+1+LeafCore.coreCost V child.width
+      let headerSize := (FlatCoordinateSchedule.bits w).length+(FlatCoordinateSchedule.bits W).length+4
+      ∃ changed : Fin V → ZMod 2, ∃ z F n, Exec body ((load.seq (embProg ports (Empty.elim : Empty → P) (foreign (liftQ machine fits)))).seq (clearWorkTapes work))
+        (mk u S) n (mk z F) ∧ n ≤ (18*(FlatCoordinateSchedule.bits w).length+6*(FlatCoordinateSchedule.bits W).length+26) + (cost*(tapes+5)+6) + (tapes*(4*(headerSize+2*cost)+4)+1) ∧ z.user = u.user ∧
+        RepT (payload changed) (fun i => F.L (bank (i.natAdd 24))) (fun i => F.R (bank (i.natAdd 24))) ∧
+        (∀ i : Fin tapes, i.val ≠ 24 → F.L (ports i) = [] ∧ F.R (ports i) = []) ∧
+        (∀ j, (∀ l, ports l ≠ j) → F.L j = S.L j ∧ F.R j = S.R j) ∧
+        ∀ k, changed (position k) = Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (word ∘ position) k := by
+  intro view size payload setup leaf machine V tapes ports fits body u S slot bank headers atom suffix tmp aux src dst load
+  intro apart regs hatom hsuffix temp scratch empty owner free work cost headerSize
+  obtain ⟨v,D,userA,start,ready,stock,keep⟩ := loadCopyLeafInput_exec copyLeafCallerFits ports body u S w W (payload word)
+    atom suffix tmp aux apart regs hatom hsuffix temp scratch empty owner free
+  rw [← LeafCore.input_eq] at ready
+  obtain ⟨changed,run,action⟩ := inheritedCopyLeaf_runs coords width hw hW word
+  obtain ⟨z,F,n,exec,time,user,done,growth,off⟩ := placedHoare_growth_exec machine ports fits body run v D ready
+  obtain ⟨y,G,l,clear,paid,same,reset,frame⟩ := clearCopyLeaf_exec ports body z F (headerSize+2*cost)
+    (fun i ne => (growth i).trans (Nat.add_le_add_right (stock i ne) _))
+  have payloadF := copyLeafPayload_rep _ _ ports F done
+  refine ⟨changed,y,G,_,Exec.seq (Exec.seq start exec) clear,
+    Nat.add_le_add (Nat.add_le_add_left time _) paid,same.trans (user.trans userA),?_,reset,?_,action⟩
+  · intro i z
+    have kept := frame (bank (i.natAdd 24)) (fun j ne eq => by
+      have h : j = slot (i.natAdd 24) := ports.injective eq
+      obtain rfl := Subsingleton.elim i (0 : Fin 1)
+      exact ne (congrArg Fin.val h))
+    change (payload changed).tape i z = readAt blank (G.L (bank (i.natAdd 24))) (G.R (bank (i.natAdd 24))) _
+    rw [kept.1,kept.2]
+    exact payloadF i z
+  · intro j outside
+    have clean := frame j (fun i _ => outside i)
+    exact ⟨clean.1.trans ((off j outside).1.trans (keep j outside).1),
+      clean.2.trans ((off j outside).2.trans (keep j outside).2)⟩
 
 /-- The basis workspace needs only its two marked binary headers. The caller
 holds the payload, so all other private tapes start empty. -/
