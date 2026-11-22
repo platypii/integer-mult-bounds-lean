@@ -646,6 +646,47 @@ theorem placedRemainderChart_runs [M8.Machine.Net] {T : ℕ} (io : Fin T)
   push_cast at bill ⊢
   linarith only [paid,last,bill,one]
 
+/-- The two placed charts sandwich one recursive call. The child's effect
+and budget are carried through the composition on the same descriptor bank. -/
+theorem placedRemainderChild_runs [M8.Machine.Net] {T : ℕ} (io : Fin T)
+    (c : PortCertificate) (hc : c.Checked) (child : Graph.Block (T+24) prime)
+    (childLeading : Blocks.Leading child) :
+    let H := c.fullChart.submatrix stageAxis.symm remainderAxis
+    ∃ block : Graph.Block (T+24) prime, ∃ C : ℝ, Blocks.Leading block ∧
+      ∀ (v : Descriptor) (w B : ℕ), 0 < w → 0 < B →
+        v.beforeH = B*prime^((128+64*64)*w) → v.Positive →
+        let Word := Fin (volume prime v) → ZMod 2
+        let chartReads := fun σ (x y : Word) => ∃ p q : Word,
+          RemainderPlacementReads v w B (ext x) (ext p) ∧
+          LabelPermutation.Transport v (B*(prime^w)^128) w (fun g => g*reduce (modulus w) σ)
+            (ext p) (ext q) ∧ RemainderPlacementReads v w B (ext q) (ext y)
+        let bank := fun roles => LabelCall.bank roles v (words (LabelSchedule.base v w))
+        ∀ (effect : Word → Word) (price : ℕ),
+          (∀ (roles : Tapes T prime) (x : Word), roles.head io = 0 → roles.tape io = sourceWord x →
+            GraphContract.Runs child (bank roles) (bank (setTape roles io (sourceWord (effect x)) 0)) price) →
+          ∀ (roles : Tapes T prime) (x : Word), roles.head io = 0 → roles.tape io = sourceWord x →
+            ∃ (z y : Word) (t : ℕ), chartReads H x z ∧ chartReads Hᵀ (effect z) y ∧
+              GraphContract.Runs block (bank roles) (bank (setTape roles io (sourceWord y) 0)) t ∧
+              (t : ℝ) ≤ C*volume prime v*(w : ℝ)^M8.Machine.BudgetBound.tau+price := by
+  intro H
+  obtain ⟨enter,P,enterLead,forward⟩ := placedRemainderChart_runs io c hc false
+  obtain ⟨leave,Q,leaveLead,backward⟩ := placedRemainderChart_runs io c hc true
+  refine ⟨Blocks.seqB (Blocks.seqB enter child) leave,P+Q+2,Blocks.seq_leading _ _,?_⟩
+  intro v w B hw hb shape pos Word chartReads bank effect price call roles x head word
+  obtain ⟨p,q,z,t,placed,charted,exposed,entry,paid⟩ := forward v w B hw hb shape pos roles x head word
+  have step := call (setTape roles io (sourceWord z) 0) z (by simp [setTape]) (by simp [setTape])
+  obtain ⟨p',q',y,u,restaged,uncharted,restored,exitRow,last⟩ := backward v w B hw hb shape pos
+    (setTape roles io (sourceWord (effect z)) 0) (effect z) (by simp [setTape]) (by simp [setTape])
+  simp only [SharedPlacementAlphabet.setTape_setTape] at step exitRow
+  have first := Blocks.seq_runs enterLead childLeading entry step
+  have both := Blocks.seq_runs (Blocks.seq_leading _ _) leaveLead first exitRow
+  refine ⟨z,y,_,⟨p,q,placed,charted,exposed⟩,⟨p',q',restaged,uncharted,restored⟩,both,?_⟩
+  have one : 1 ≤ (volume prime v : ℝ)*(w : ℝ)^M8.Machine.BudgetBound.tau :=
+    one_le_mul_of_one_le_of_one_le (by exact_mod_cast (RecursiveAffinePrepare.volume_positive Shared50ModularControl.prime_prime.two_le v pos))
+      (Real.one_le_rpow (by exact_mod_cast hw) M8.Machine.BudgetBound.exponent_range.1.le)
+  push_cast
+  linarith only [paid,last,one]
+
 end
 
 /-- After the forward pass relabels a record from g to gH, the cover
@@ -1275,6 +1316,122 @@ theorem remainderChart_stage [M8.Machine.Net] {k : ℕ} (src : Fin k) (c : PortC
   · intro data
     exact ⟨fun j off => Function.update_of_ne off .., by
       simpa only [transform,Function.update_self] using (result data).choose_spec.1⟩
+
+/-- The placed chart shares the owner tapes with a child using its own header bank. -/
+theorem placedRemainderChart_stage [M8.Machine.Net] {k : ℕ} (src : Fin k) (c : PortCertificate)
+    (hc : c.Checked) (inverse : Bool) :
+    let H := c.fullChart.submatrix stageAxis.symm remainderAxis
+    let σ := if inverse then H.transpose else H
+    ∃ (C : ℝ) (machine : SharedBankSkeleton.Skeleton k prime), ∀ (v : Descriptor) (w B : ℕ), 0 < w → 0 < B →
+      v.beforeH = B*prime^((128+64*64)*w) → v.Positive →
+      ∃ stage : SharedBankStage.Stage _ k prime (phaseOwners (N := volume prime v)),
+        RemainderChartFrame machine v w stage ∧
+        stage.cost = ⌈C*volume prime v*(w : ℝ)^M8.Machine.BudgetBound.tau⌉₊ ∧
+        ∀ data, (∀ j, j ≠ src → stage.transform data j = data j) ∧
+          ∃ p q : Fin (volume prime v) → ZMod 2, RemainderPlacementReads v w B (ext (data src)) (ext p) ∧
+            LabelPermutation.Transport v (B*(prime^w)^128) w (fun g => g*reduce (modulus w) σ)
+              (ext p) (ext q) ∧ RemainderPlacementReads v w B (ext q) (ext (stage.transform data src)) := by
+  intro H σ
+  obtain ⟨block,C,leading,runs⟩ := placedRemainderChart_runs src c hc inverse
+  let machine : SharedBankSkeleton.Skeleton k prime :=
+    {block with slots := fun i => block.slots (Fin.castAdd 24 i),
+                slots_injective := block.slots_injective.comp (Fin.castAdd_injective k 24)}
+  refine ⟨C,machine,?_⟩
+  intro v w B hw hb shape positive
+  let result := fun data : Fin k → Fin (volume prime v) → ZMod 2 =>
+    runs v w B hw hb shape positive (phaseOwners data) (data src) rfl
+      (sourceWord_cast (v := v) rfl (data src)).symm
+  let moved := fun data => (result data).choose_spec.choose_spec.choose
+  let transform := fun data => Function.update data src (moved data)
+  let slots := fun i => block.slots (Fin.castAdd 24 i)
+  let d := words (LabelSchedule.base v w)
+  let bank := fun (roles : Tapes k prime) => SharedBankStageInput.raw (LabelCall.bank roles v d) block.tapes
+  have updated (data) : setTape (phaseOwners data) src (sourceWord (moved data)) 0 =
+      phaseOwners (transform data) := by
+    rw [show sourceWord (moved data) = _ from sourceWord_cast (v := v) rfl (moved data)]
+    apply congrArg₂ Tapes.mk <;> funext j <;> by_cases eq : j = src <;>
+      simp [phaseOwners,transform,eq]
+  refine ⟨{ tapes := _, states := _, program := block.program, transform := transform,
+            input := fun data => bank (phaseOwners data),
+            output := fun data => bank (phaseOwners (transform data)),
+            slots := slots, slots_injective := fun i j eq => Fin.ext ((leading (Fin.castAdd 24 i)).symm.trans ((congrArg Fin.val eq).trans (leading (Fin.castAdd 24 j)))),
+            metadata := SharedBank.strip (bank (SharedBank.empty k prime)) slots,
+            cost := _, input_payload := fun _ => copyRoute_payload block leading _ v d,
+            output_payload := fun _ => copyRoute_payload block leading _ v d,
+            strip_input := fun _ => routePrivate block leading _ _ v d, realizes := ?_ },⟨rfl,SharedBankFamily.common_le block,(fun i => leading (Fin.castAdd 24 i)),(fun _ => rfl),(fun _ => rfl)⟩,rfl,?_⟩
+  · intro data
+    obtain ⟨t,_,_,_,act,paid⟩ := (result data).choose_spec.choose_spec.choose_spec
+    change GraphContract.Runs block _ (LabelCall.bank (setTape _ src (sourceWord (moved data)) 0) v d) t at act
+    rw [updated] at act
+    exact Blocks.runs_mono act (by exact_mod_cast paid.trans (Nat.le_ceil _))
+  · intro data
+    obtain ⟨_,entry,chart,exitRow,_,_⟩ := (result data).choose_spec.choose_spec.choose_spec
+    exact ⟨fun j off => Function.update_of_ne off ..,_,_,entry,chart,by simpa only [transform,moved,Function.update_self] using exitRow⟩
+
+/-- The interval program acts on the same array through either volume index. -/
+private theorem remainderOwner_cast [M8.Machine.Net] {k w W V : ℕ} (src : Fin k)
+    (e : ℕ × ℕ) (he : e ∈ BitHosting.remainderIntervals) (hw : 0 < w) (hW : 0 < W)
+    (size : volume prime (phaseIntervalChild e.1 e.2 w W 64) = V) :
+    let child := phaseIntervalChild e.1 e.2 w W 64
+    ∃ mid : SharedBankStage.Stage _ k prime (phaseOwners (N := V)),
+      mid.cost = (2*(24*64+333)+250)*((prime^w)^128*W)+1+
+        cost child (fun i => FlatCoordinateSchedule.bits (RecursiveDimensionBank.values child i)) ∧
+      ∀ data, mid.transform data = Function.update data src (fun j =>
+        Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (fun i => data src (i.cast size)) (j.cast size.symm)) := by
+  subst V
+  exact remainderOwner_stage src e he hw hW
+
+/-- Run both placed charts around the prepared interval transpose on a shared
+owner word. Each stage retains its private registers across the two joins. -/
+theorem placedRemainderInterval_stage [M8.Machine.Net] {k : ℕ} (src : Fin k)
+    (c : PortCertificate) (hc : c.Checked) (e : ℕ × ℕ) (member : e ∈ BitHosting.remainderIntervals) :
+    ∃ P Q : ℝ, ∀ w K : ℕ, 0 < w → 0 < K →
+      let M := prime^w
+      let W := M^(64*64)*K
+      let v : Descriptor := ⟨1,1,prime^((128+64*64)*w),0,1,K⟩
+      let child := phaseIntervalChild e.1 e.2 w W 64
+      let V := volume prime v
+      let bill := (2*(24*64+333)+250)*(M^128*W)+1+
+        cost child (fun i => FlatCoordinateSchedule.bits (RecursiveDimensionBank.values child i))
+      ∃ size : volume prime child = V,
+      ∃ entry back stage : SharedBankStage.Stage _ k prime (phaseOwners (N := V)),
+        stage.cost = ⌈P*V*(w : ℝ)^M8.Machine.BudgetBound.tau⌉₊+bill+1+
+          ⌈Q*V*(w : ℝ)^M8.Machine.BudgetBound.tau⌉₊+1 ∧
+        (∀ (inverse : Bool) data, let chart := if inverse then back else entry
+          let H := c.fullChart.submatrix stageAxis.symm remainderAxis
+          (∀ j, j ≠ src → chart.transform data j = data j) ∧
+          ∃ p q : Fin V → ZMod 2, RemainderPlacementReads v w 1 (ext (data src)) (ext p) ∧
+            LabelPermutation.Transport v (1*M^128) w
+              (fun g => g*reduce (modulus w) (if inverse then H.transpose else H)) (ext p) (ext q) ∧
+            RemainderPlacementReads v w 1 (ext q) (ext (chart.transform data src))) ∧
+        ∀ data, let z := entry.transform data
+                let move := Shared50RecursiveNodeRows.transpose (one_dvd child.rows)
+                  (fun j => z src (j.cast size))
+                stage.transform data = back.transform (Function.update z src (fun j => move (j.cast size.symm))) := by
+  obtain ⟨P,_,forward⟩ := placedRemainderChart_stage src c hc false
+  obtain ⟨Q,_,backward⟩ := placedRemainderChart_stage src c hc true
+  refine ⟨P,Q,?_⟩
+  intro w K hw hK M W v child V bill
+  have pos : v.Positive := ⟨Nat.zero_lt_one,Nat.zero_lt_one,pow_pos Shared50ModularControl.prime_prime.pos _,Nat.zero_lt_one,hK⟩
+  have shape : v.beforeH = 1*prime^((128+64*64)*w) := (one_mul _).symm
+  obtain ⟨entry,_,entryCost,enterReads⟩ := forward v w 1 hw (by decide) shape pos
+  obtain ⟨back,_,backCost,backReads⟩ := backward v w 1 hw (by decide) shape pos
+  obtain ⟨lo,hi,_⟩ := BitHosting.remainder_counts e member
+  have size : volume prime child = V := by
+    rw [show volume prime child = _ from intervalChild_volume lo (show e.2 ≤ 64 by omega) w W]
+    simp only [V,v,volume,M,W,one_mul,pow_zero,mul_one,← Nat.mul_assoc,← pow_add,← pow_mul]
+    congr 2 <;> ring
+  obtain ⟨mid,midCost,action⟩ := remainderOwner_cast src e member hw
+    (Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) hK) size
+  refine ⟨size,entry,back,SharedBankStage.compose (SharedBankStage.compose entry mid) back,?_,?_,?_⟩
+  · change entry.cost+mid.cost+1+back.cost+1 = _
+    rw [entryCost,midCost,backCost]
+  · intro inverse data
+    cases inverse
+    · exact enterReads data
+    · exact backReads data
+  · intro data
+    exact congrArg back.transform (action (entry.transform data))
 
 /-- Both directions of the scheduled chart act on the packed record word consumed by the parent. -/
 theorem packedRemainderChart_stage [M8.Machine.Net] {k : ℕ} (src : Fin k) (c : PortCertificate)
