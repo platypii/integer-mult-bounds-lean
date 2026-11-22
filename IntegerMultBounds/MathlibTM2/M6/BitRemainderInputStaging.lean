@@ -69,6 +69,7 @@ theorem stagingInputTranspose_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T
       ∃ v F t, Exec body code (mk u S) t (mk v F) ∧ t ≤ 7081*(A*(B*N*K))+18 ∧ v.user = u.user ∧
         F.R (bank 0) = List.ofFn (fun j => SparseRoleCircuit.encode (compactTranspose (x i) j)) ∧
         F.L (bank 0) = S.L (bank 0) ∧ F.R (bank 3) = (List.replicate A record.reverse).flatten ∧
+        (∀ l, readAt blank (F.L (port 0)) (F.R (port 0)) l = blank) ∧
         ∀ j, (∀ i, port i ≠ j) → (∀ i, bank i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
   obtain ⟨forward,run⟩ := forwardCompactTape_exec body bank (port 1) (apart 1)
   let crop : Pr P T Q prime U := embProg port Empty.elim (foreign (liftQ RowPaddingConstructedAlphabet.cropProgram fits))
@@ -99,10 +100,26 @@ theorem stagingInputTranspose_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T
   change t ≤ (413*(A*B)*(N*K))*17+6 at time
   rw [show 413*(A*B)*(N*K)*17 = 7021*(A*(B*N*K)) by ring] at time
   change k ≤ 60*(A*(B*N*K))+12 at paid
-  refine ⟨z,F,_,Exec.seq cut ins,by omega,same.trans user,?_,?_,?_,?_⟩
+  refine ⟨z,F,_,Exec.seq cut ins,by omega,same.trans user,?_,?_,?_,?_,?_⟩
   · exact congrArg (fun D : Stacks 8 prime => D.R 0) view
   · exact (congrArg (fun D : Stacks 8 prime => D.L 0) view).trans (keep 0).1
   · exact congrArg (fun D : Stacks 8 prime => D.R 3) view
+  · intro l
+    have unchanged := outside (port 0) (fun j => (apart 0 j).symm)
+    rw [unchanged.1,unchanged.2]
+    have h := (done 0 l).symm
+    let xs := List.ofFn (SparseRoleCircuit.encoded (a := prime) (singleLabelBank (firstRowLabel w) x) i)
+    change readAt blank (D.L (port 0)) (D.R (port 0)) (l-0) =
+      RowPaddingConstructedAlphabet.erased (putWord (fun _ => blank) 0 xs) 0 (A*B*N*K) l at h
+    rw [sub_zero] at h
+    rw [h]
+    unfold RowPaddingConstructedAlphabet.erased
+    split <;> rename_i location
+    · rfl
+    · apply putWord_outside
+      have len : xs.length = A*B*N*K := by simp [xs,Nat.mul_assoc,A,N]
+      rw [len]
+      omega
   · intro j hp ht
     exact ⟨(outside j ht).1.trans (off j hp).1,(outside j ht).2.trans (off j hp).2⟩
 

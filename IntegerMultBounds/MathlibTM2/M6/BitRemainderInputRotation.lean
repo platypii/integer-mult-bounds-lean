@@ -104,12 +104,13 @@ theorem stagingToIdentity_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T Q p
       ∃ v F t, Exec body code (mk u S) t (mk v F) ∧ t ≤ 22944*(A*(B*N*K))+583 ∧
         v.user = u.user ∧ WordAtZero (fun j => singleLabelBank (firstRowLabel w) x i
           ((ordinaryRowLayout (Equiv.swap 0 g)).symm j)) (F.L (bank 11)) (F.R (bank 11)) ∧
+        (∀ l, readAt blank (F.L (crop 0)) (F.R (crop 0)) l = blank) ∧
         ∀ j, (∀ i, crop i ≠ j) → (∀ i, trans i ≠ j) → (∀ i, pad i ≠ j) → (∀ i, bank i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
   obtain ⟨forward,stage⟩ := stagingInputTranspose_exec body (by omega) crop trans distinct
   obtain ⟨rotate,turn⟩ := ordinaryInputRotation_exec body fits pad bank headers apart saved shared privateBank
   refine ⟨forward.seq rotate,?_⟩
   intro w B K hb hk A N g x i u S source empty counters record rowWidth width rowLen left tmp regs padBlank padReady words free dest
-  obtain ⟨v,D,t,cut,time,user,compact,head,_,off⟩ := stage w B K hb hk x i u S record rowWidth source empty counters
+  obtain ⟨v,D,t,cut,time,user,compact,head,_,erased,off⟩ := stage w B K hb hk x i u S record rowWidth source empty counters
     width rowLen tmp regs
   have keep j (hj : j ≠ 0) := off _ (sparePad j hj).1 (sparePad j hj).2
   have scratch j (hj : j ≠ 10) := off _ (spareBank j hj).1 (spareBank j hj).2
@@ -125,9 +126,19 @@ theorem stagingToIdentity_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T Q p
   change t ≤ 7081*(A*(B*N*K))+18 at time
   change k ≤ 15863*(B*(N*(A*K)))+565 at paid
   rw [show B*(N*(A*K)) = A*(B*N*K) by ring] at paid
-  refine ⟨z,F,_,Exec.seq cut rot,by omega,same.trans user,out,?_⟩
-  intro j hc ht hp hr
-  exact ⟨(frame j hp hr).1.trans (off j hc ht).1,(frame j hp hr).2.trans (off j hc ht).2⟩
+  refine ⟨z,F,_,Exec.seq cut rot,by omega,same.trans user,out,?_,?_⟩
+  · have hp (j) : pad j ≠ crop 0 := by
+      by_cases h : j = 0
+      · subst j; rw [port]; exact (distinct 0 0).symm
+      · exact ((sparePad j h).1 0).symm
+    have hr (j) : bank j ≠ crop 0 := by
+      by_cases h : j = 10
+      · subst j; rw [shared]; exact hp 1
+      · exact ((spareBank j h).1 0).symm
+    have unchanged := frame _ hp hr
+    rw [unchanged.1,unchanged.2]; exact erased
+  · intro j hc ht hp hr
+    exact ⟨(frame j hp hr).1.trans (off j hc ht).1,(frame j hp hr).2.trans (off j hc ht).2⟩
 
 /-- Reindexing the physical identity-row tape at scanner dimensions preserves
 every cell and identifies the unique label which can contain data. -/
