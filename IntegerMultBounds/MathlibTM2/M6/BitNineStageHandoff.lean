@@ -35,11 +35,11 @@ def sweepEffect (i : Fin 9) (w B tail : ℕ) (x y : OwnerArray w B tail) : Prop 
     y = Function.update (collapseLabelBank out) (Fin.last 142080) (fun _ => 0)
 
 theorem StageHandoffExec.toPiece {P U : Type} {t q : ℕ} {i w B tail}
-    {body : P → Pr P t q prime U} {code src dst prepared price}
-    (run : StageHandoffExec i w B tail body code src dst prepared price) :
+    {body : P → Pr P t q prime U} {code src dst prepared price post}
+    (run : StageHandoffExec i w B tail body code src dst prepared price post) :
     PieceHandoff w B tail (sweepEffect i w B tail) body code src dst prepared price := by
   intro x u S live frame
-  obtain ⟨z,F,t,p,out,ran,cost,user,rep,trace⟩ := run x u S live frame
+  obtain ⟨z,F,t,p,out,ran,cost,user,rep,trace,_⟩ := run x u S live frame
   exact ⟨z,F,t,_,ran,cost,user,rep,p,out,trace,rfl⟩
 
 private theorem handoffList {U : Type} {q : ℕ} (w B tail : ℕ)

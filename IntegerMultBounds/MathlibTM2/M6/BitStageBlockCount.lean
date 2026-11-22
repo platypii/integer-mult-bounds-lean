@@ -108,6 +108,7 @@ theorem stageHeadersFromLabels_exec (body : P → Pr P T Q Shared50ModularContro
       Exec body (stageHeadersFromLabels r)
         (mk u S) t (mk z F) ∧
       (∀ i, F.L (dst i) = [separator] ∧ F.R (dst i) = binSyms (values i).size (values i)) ∧
+      F.R (r 5) = binSyms B.size B ∧
       ∀ j, j ≠ r 5 → (∀ i, dst i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
   intro M N values dst base unit tailWord labels left free
   let bank := (Fin.castAddEmb 1 (n := 14)).trans r
@@ -137,7 +138,7 @@ theorem stageHeadersFromLabels_exec (body : P → Pr P T Q Shared50ModularContro
   let F := {C with R := Function.update C.R (r 2) (word (M^16*B))}
   have mark := Exec.act (body := body) (pushMarkers ((List.finRange 3).map dst)) (mk z F)
   rw [pushMarkers_run _ ((List.nodup_finRange 3).map dst.injective)] at mark
-  refine ⟨z,_,k+(m+(n+1)),last.trans (same.trans user),?_,Exec.seq rows (Exec.seq width (Exec.seq blocks mark)),?_,?_⟩
+  refine ⟨z,_,k+(m+(n+1)),last.trans (same.trans user),?_,Exec.seq rows (Exec.seq width (Exec.seq blocks mark)),?_,?_,?_⟩
   · change k ≤ stagePowerTime M 1 4096+153*(B*N) at paid
     change m ≤ stagePowerTime M W 112 at price
     change n ≤ stagePowerTime M B 16 at cost
@@ -151,6 +152,8 @@ theorem stageHeadersFromLabels_exec (body : P → Pr P T Q Shared50ModularContro
     · change F.R (r 1) = _
       simp [F,C,A,word,values,r.injective.eq_iff]
     · exact Function.update_self ..
+  · change F.R (r 5) = _
+    simp [F,C,A,word,Function.update_apply,r.injective.eq_iff]
   · intro j blockOff outside
     refine ⟨by simp [F,C,A,outside],?_⟩
     exact (Function.update_of_ne (outside 2).symm _ _).trans
@@ -190,14 +193,15 @@ theorem stageHeaderBank_exec {J G : ℕ} (body : P → Pr P (J+14+G) Q Shared50M
       Exec body (stageHeadersFromLabels (stageHeaderBank frame)) (mk u S) t (mk z F) ∧
       (∀ i : Fin 3, F.L (reg (i.castAdd 11)) = [separator] ∧
         F.R (reg (i.castAdd 11)) = binSyms (values i).size (values i)) ∧
+      F.R (reg 12) = binSyms B.size B ∧
       ∀ j, reg 12 ≠ j → (∀ i : Fin 3, reg (i.castAdd 11) ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
   intro reg parent M N seed values radix unit tail labels blockFree hdr scratch
-  obtain ⟨z,F,t,user,paid,exec,ready,keep⟩ := stageHeadersFromLabels_exec body (stageHeaderBank frame) w B W hb u S
+  obtain ⟨z,F,t,user,paid,exec,ready,blockWord,keep⟩ := stageHeadersFromLabels_exec body (stageHeaderBank frame) w B W hb u S
     radix unit tail labels (fun i => by fin_cases i <;> first | exact (hdr 0).1 | exact (hdr 1).1 | exact (hdr 2).1)
     (fun j hj => by
       fin_cases j <;> simp at hj
       all_goals first | exact (hdr 0).2 | exact (hdr 1).2 | exact (hdr 2).2 | exact blockFree | (first | exact scratch 0 | exact scratch 1 | exact scratch 2 | exact scratch 3 | exact scratch 4 | exact scratch 5 | exact scratch 6))
-  refine ⟨z,F,t,user,?_,exec,?_,?_⟩
+  refine ⟨z,F,t,user,?_,exec,?_,blockWord,?_⟩
   · rw [threePrices]
     change t ≤ stagePowerTime M W 112+(stagePowerTime M 1 4096+stagePowerTime M B 16)+2+153*(B*N)
     change t ≤ stagePowerTime M W 112+stagePowerTime M 1 4096+stagePowerTime M B 16+153*(B*N)+1 at paid
