@@ -4397,17 +4397,21 @@ theorem ordinaryChildComparison_volume_le (root : RecursiveInterchangeLayout.Des
 
 /-- Turn the parent's predecessor clock into the child's binary width. The
 cutoff register sets the padding. Only the comparison operand survives. -/
-theorem ordinaryChildWidth_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
-    (r : Fin 10 ↪ Fin T) (rank w L : ℕ) (fits : ((w+1)*rank).size ≤ L)
+private theorem childWidthWithEncoder {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
+    (r : Fin 10 ↪ Fin T) (rank w : ℕ)
     (u : HS T Q prime U) (S : Stacks T prime) (clock : (S.R (r 0)).length = w)
-    (precision : (S.R (r 1)).length = L) (empty : ∀ j : Fin 10, 2 ≤ j.val → S.R (r j) = []) :
+    (empty : ∀ j : Fin 10, 2 ≤ j.val → S.R (r j) = [])
+    (encode : Pr P T Q prime U) (word : List (Fin (prime+4))) (price : ℕ)
+    (encodeRun : ∀ (v : HS T Q prime U) (D : Stacks T prime), (D.R (r 2)).length = (w+1)*rank →
+      (∀ j : Fin 10, 3 ≤ j.val → D.R (r j) = []) → D.R (r 1) = S.R (r 1) →
+      ∃ (y : HS T Q prime U) (t : ℕ), y.user = v.user ∧ t ≤ price ∧ Exec body encode (mk v D) t (mk y {D with R := Function.update D.R (r 3) word})) :
     let width := (w+1)*rank
     let push := Prog.act (.push (.rt (r 0)) (fun _ => Node.tick) .done)
     let pop := Prog.act (.pop (.rt (r 0)) (fun v _ => v) .done)
-    ∃ z n, z.user = u.user ∧ n ≤ 4*w+23*width+12*L+40 ∧
+    ∃ z n, z.user = u.user ∧ n ≤ 4*w+2*width+price+12 ∧
       Exec body (((push.seq (Node.umul rank (r 0) (r 2) (r 4))).seq pop).seq
-        ((unaryBinaryWidth (r 2) (r 1) (r 3) (r 4) (r 5) (r 6) (r 7) (r 8) (r 9)).seq (bclear (r 2))))
-        (mk u S) n (mk z {S with R := Function.update S.R (r 3) (binSyms L width)}) := by
+        (encode.seq (bclear (r 2))))
+        (mk u S) n (mk z {S with R := Function.update S.R (r 3) word}) := by
   intro width push pop
   let A : Stacks T prime := {S with R := Function.update S.R (r 0) (Node.tick :: S.R (r 0))}
   have start : Exec body push (mk u S) 1 (mk u A) := by
@@ -4425,13 +4429,8 @@ theorem ordinaryChildWidth_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q 
   have free (j : Fin 10) (hj : 3 ≤ j.val) : B.R (r j) = [] := by
     have ne : j ≠ 2 := fun eq => by subst j; contradiction
     simpa [B,Function.update_of_ne (r.injective.ne ne)] using empty j (by omega)
-  obtain ⟨y,t,same,cost,binary⟩ := unaryBinaryWidth_exec (body := body) (src := r 2) (width := r 1) (dst := r 3)
-    (a := r 4) (h := r 5) (par := r 6) (bits := r 7) (cnt := r 8) (saved := r 9) (by simp)
-    width L fits v B (by simp [B]) (by simpa [B] using precision) (by
-      intro k hk
-      simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
-      rcases hk with rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> exact free _ (by decide))
-  let D : Stacks T prime := {B with R := Function.update B.R (r 3) (binSyms L width)}
+  obtain ⟨y,t,same,cost,binary⟩ := encodeRun v B (by simp [B,width]) free (by simp [B])
+  let D : Stacks T prime := {B with R := Function.update B.R (r 3) word}
   obtain ⟨z,final,_,erase⟩ := bclear_exec (body := body) (r 2) y D
   have len : (D.R (r 2)).length = width := by simp [D,B]
   rw [len] at erase
@@ -4441,6 +4440,48 @@ theorem ordinaryChildWidth_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q 
   · have reset : Function.update S.R (r 2) [] = S.R := by
       rw [← empty 2 (by decide),Function.update_eq_self]
     simp [D,B,Function.update_comm (show r 3 ≠ r 2 by simp),reset]
+
+theorem ordinaryChildWidth_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
+    (r : Fin 10 ↪ Fin T) (rank w L : ℕ) (fits : ((w+1)*rank).size ≤ L)
+    (u : HS T Q prime U) (S : Stacks T prime) (clock : (S.R (r 0)).length = w)
+    (precision : (S.R (r 1)).length = L) (empty : ∀ j : Fin 10, 2 ≤ j.val → S.R (r j) = []) :
+    let width := (w+1)*rank
+    let push := Prog.act (.push (.rt (r 0)) (fun _ => Node.tick) .done)
+    let pop := Prog.act (.pop (.rt (r 0)) (fun v _ => v) .done)
+    ∃ z n, z.user = u.user ∧ n ≤ 4*w+23*width+12*L+40 ∧
+      Exec body (((push.seq (Node.umul rank (r 0) (r 2) (r 4))).seq pop).seq
+        ((unaryBinaryWidth (r 2) (r 1) (r 3) (r 4) (r 5) (r 6) (r 7) (r 8) (r 9)).seq (bclear (r 2))))
+        (mk u S) n (mk z {S with R := Function.update S.R (r 3) (binSyms L width)}) := by
+  intro width push pop
+  obtain ⟨z,n,user,time,run⟩ := childWidthWithEncoder body r rank w u S clock empty (unaryBinaryWidth (r 2) (r 1) (r 3) (r 4) (r 5) (r 6) (r 7) (r 8) (r 9)) (binSyms L width)
+    (21*width+12*L+28) (by
+      intro v D length free same
+      apply unaryBinaryWidth_exec (by simp) width L fits v D length (same ▸ precision)
+      intro k hk
+      simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
+      rcases hk with rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> exact free _ (by decide))
+  exact ⟨z,n,user,by omega,run⟩
+
+theorem packedMoveWidth_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
+    (r : Fin 10 ↪ Fin T) (rank w : ℕ)
+    (u : HS T Q prime U) (S : Stacks T prime) (clock : (S.R (r 0)).length = w)
+    (empty : ∀ j : Fin 10, 2 ≤ j.val → S.R (r j) = []) :
+    let width := (w+1)*rank
+    let push := Prog.act (.push (.rt (r 0)) (fun _ => Node.tick) .done)
+    let pop := Prog.act (.pop (.rt (r 0)) (fun v _ => v) .done)
+    ∃ z n, z.user = u.user ∧ n ≤ 4*w+23*width+22 ∧
+      Exec body (((push.seq (Node.umul rank (r 0) (r 2) (r 4))).seq pop).seq
+        ((unaryBinary (r 2) (r 3) (r 4) (r 5) (r 6) (r 7) (r 8) (r 9)).seq (bclear (r 2))))
+        (mk u S) n (mk z {S with R := Function.update S.R (r 3) (binSyms width.size width)}) := by
+  intro width push pop
+  obtain ⟨z,n,user,time,run⟩ := childWidthWithEncoder body r rank w u S clock empty (unaryBinary (r 2) (r 3) (r 4) (r 5) (r 6) (r 7) (r 8) (r 9)) (binSyms width.size width)
+    (21*width+10) (by
+      intro v D length free _
+      apply unaryBinary_exec (by simp) width v D length
+      intro k hk
+      simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
+      rcases hk with rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> exact free _ (by decide))
+  exact ⟨z,n,user,by omega,run⟩
 
 /-- Compare from the live predecessor clock and restore the full stack bank
 before either child branch starts. The comparison bit survives cleanup. -/

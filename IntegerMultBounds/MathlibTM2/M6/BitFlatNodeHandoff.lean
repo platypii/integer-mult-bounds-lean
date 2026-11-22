@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.M6.BitCopyChildLayout
+public import IntegerMultBounds.MathlibTM2.M6.BitPackedChildLayout
 public import IntegerMultBounds.Machine.Shared50RecursiveNodeTranspose
 public import IntegerMultBounds.MathlibTM2.M6.BitPackedStageHandoff
 public import IntegerMultBounds.MathlibTM2.M6.BitScheduledFlatRuns
@@ -28,16 +28,8 @@ theorem flatNodeVolume (w W : ℕ) :
 /-- Once the inherited fields are packed, the resulting offset already is the
 flat node offset. No further permutation of the spectator is required. -/
 theorem packActive_flatNode (w W : ℕ) (i : Fin (volume prime (flatNodeDescriptor w W))) :
-    (CopyChildLayout.packActive (flatNodeDescriptor w W) i).val = i.val := by
-  obtain ⟨a,rfl⟩ := (CopyChildLayout.flatAddress (flatNodeDescriptor w W)).surjective i
-  change (CopyChildLayout.packActive _ (index a)).val = (index a).val
-  rw [CopyChildLayout.packActive_index,RecursiveInterchangeScaling.index_val]
-  have zero (k : Fin 1) : k.val = 0 := Nat.lt_one_iff.mp k.isLt
-  change (a.after.val + W*(a.middle.val + 1*(a.before.val + 1*(a.row.val + 1*a.beforeRows.val)))) +
-    (1*1*1*1*W)*(a.d.val + prime^(64*w)*a.h.val) = _
-  simp only [RecursiveInterchangeLayout.index,flatNodeDescriptor,zero,zero_mul,zero_add,
-    mul_one,one_mul,add_zero]
-  ring
+    (CopyChildLayout.packActive (flatNodeDescriptor w W) i).val = i.val :=
+  packActive_packed (64*w) W i
 
 /-- Packing an inherited address gives exactly the flat node's physical
 address under the spectator-preserving layout change. -/
