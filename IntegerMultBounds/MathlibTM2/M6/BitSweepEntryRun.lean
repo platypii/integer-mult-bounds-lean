@@ -53,6 +53,51 @@ theorem forwardChartOwners_exec {U : Type} {Q : ℕ} (n : Fin 9) :
       exact (right i).trans (frame i (fun r h => hj r (congrArg sw h)))
     · exact (off j (not_exists.mp inside)).2
 
+/-- Convert the flat owner words, materialize them in the allocated sweep
+registers and execute the forward chart route on those very stacks. -/
+theorem flatForwardOwners_exec [M8.Machine.Net] {T Q : ℕ} {P U : Type}
+    (body : P → Pr P T Q prime U) (n : Fin 9) (sw : Fin tapes ↪ Fin T)
+    (pack : Fin ((Fallback.rowSwapBlock.tapes+35)+142081) ↪ Fin T)
+    (capacity : Fallback.rowSwapBlock.states ≤ Q) (tmp : Fin T)
+    (separate : ∀ i j, pack i ≠ sw j) (scratch : ∀ i, pack i ≠ tmp)
+    (fresh : ∀ i, sw (owners i) ≠ tmp) :
+    let src := (Fin.natAddEmb (Fallback.rowSwapBlock.tapes+35) (m := 142081)).trans pack
+    ∃ code, ∃ (C : ℝ) (D : ℕ), ∀ w H W, let M := prime^(w+1)
+      let V := M^128*W
+      M^128 < 2^H → H ≤ M^128+1 → 0 < W →
+      ∀ (data : Fin 142081 → Fin V → ZMod 2) u S,
+      embStk pack S = helperPackInput w W (embStk src S) →
+      RepT (phaseOwners data) (embStk src S).L (embStk src S).R →
+      ReturnHeaders w H (fun _ => 1) W 1 (embStk sw S).R →
+      S.L tmp = [] → S.R tmp = [] → (∀ i, S.R (sw (owners i)) = []) →
+      ∃ z F, ∃ time : ℕ, ∃ y : OwnerArray (w+1) 1 W,
+        Exec body code (mk u S) time (mk z F) ∧ z.user = u.user ∧
+        (time : ℝ) ≤ C*V*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau +
+          ((142080*(D*(M^16*(1*prime^(64*((w+1)*64))*(M^112*W)))+8)+1 : ℕ) : ℝ) ∧
+        (∀ r, F.R (sw (owners (sweepRoleTape r))) = List.ofFn fun j =>
+          SparseRoleCircuit.encode (y (sweepRoleTape r) j)) ∧
+        ∀ r a, y (sweepRoleTape r) (flatToSweep (w+1) W n r a) = data (sweepRoleTape r) a := by
+  intro src
+  let dest := owners.trans sw
+  obtain ⟨prepare,C,load⟩ := flatFrameWords_exec body (List.finRange 142081) (List.nodup_finRange _)
+    pack capacity dest tmp (fun i j => separate i _) scratch fresh
+  obtain ⟨D,build⟩ := forwardChartOwners_exec (U := U) (Q := Q) n
+  obtain ⟨forward,route⟩ := build body sw
+  refine ⟨prepare.seq forward,C,D,?_⟩
+  intro w H W M V fits width hW data u S init rep headers left right empty
+  obtain ⟨v,A,m,out,placed,user,paid,words,off,_,_,frame⟩ := load w W hW data u S init rep left right empty
+  let framed : OwnerArray (w+1) 1 W := fun i j => M8.RevMachine.ext (out i) j.val
+  have size : M^16*(1*(M^112*W)) = V := by simp only [V,one_mul,← Nat.mul_assoc,← pow_add]
+  have ready : ReturnHeaders w H (fun _ => 1) W 1 (embStk sw A).R := headers.of_off (by
+    intro j away
+    exact (off _ (fun i => separate i j) (fun i h => away i (sw.injective h))).2)
+  obtain ⟨z,F,l,exec,bill,same,_,done,_⟩ := route w H 1 W (fun _ => 1) (fun _ => isUnit_one)
+    fits width (by decide) hW framed v A ready (fun r => (words _).trans (encodedFrameWord size _).symm)
+  refine ⟨z,F,m+l,_,Exec.seq placed exec,same.trans user,?_,done,?_⟩
+  · rw [Nat.cast_add]
+    exact add_le_add paid (by exact_mod_cast bill)
+  · exact sweepArray_flat n data out (fun r a => (frame _ (List.mem_finRange _) a).1)
+
 /-- The complete physical entry from node-order words to the recursive input fan. -/
 theorem stageEntry_exec {P U : Type} {Q : ℕ} (n : Fin 9) (fits : 215 ≤ Q) :
     ∃ C : ℕ, ∀ {t : ℕ} (fan : Fin (142081+2) ↪ Fin t), ∀ w H B W (parent : Fin 64 → ZMod (prime^(w+1))) (units : ∀ i, IsUnit (parent i)),

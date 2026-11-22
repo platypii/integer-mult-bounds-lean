@@ -28,6 +28,33 @@ structure ReturnHeaders (w H : ℕ) (parent : Fin 64 → ZMod (prime^(w+1))) (W 
     row.length = B*((prime^(w+1))^112*W) ∧ ∀ r i, i ≠ (6 : Fin 8) →
       R (bank r i) = (transposeStacks (⟨[],[],fun _ => [],fun _ => []⟩ : Stacks 8 prime) [] [] [] record row).R i
 
+/-- The sweep headers occupy only non-owner registers, so loading owner
+words preserves every counter and the archived parent. -/
+theorem ReturnHeaders.of_off {w H W B : ℕ} {parent : Fin 64 → ZMod (prime^(w+1))} {R F}
+    (headers : ReturnHeaders w H parent W B R)
+    (off : ∀ j, (∀ i, owners i ≠ j) → F j = R j) : ReturnHeaders w H parent W B F := by
+  have workKept i := off (work i) (by intro h eqn; cases (Fintype.equivFin File).injective eqn)
+  have atP i : F (p i) = R (p i) := workKept _
+  obtain ⟨tail,archive⟩ := headers.archive
+  obtain ⟨record,row,len,rowLen,prepared⟩ := headers.transpose
+  refine ⟨(congrArg List.length (atP _)).trans headers.exponent,
+    (congrArg List.length (atP _)).trans headers.bits,(congrArg List.length (atP _)).trans headers.unit,
+    (congrArg List.length (atP _)).trans headers.archiveSize,⟨tail,(atP _).trans archive⟩,
+    fun i hi => (atP _).trans (headers.blank i hi),?_,?_,?_,
+    fun i hi => (workKept _).trans (headers.maskFree i hi),
+    (congrArg List.length (workKept _)).trans headers.recordWidth,(workKept _).trans headers.empty,
+    fun i hi => (workKept _).trans (headers.gatherFree i hi),
+    fun i hi => (workKept _).trans (headers.scanFree i hi),record,row,len,rowLen,?_⟩
+  · intro i
+    exact (off _ (by intro h eqn; cases (Fintype.equivFin File).injective eqn)).trans (headers.matrixFree i)
+  · intro i
+    exact (off _ (by intro h eqn; cases (Fintype.equivFin File).injective eqn)).trans (headers.rankFree i)
+  · intro i
+    exact (off _ (by intro h eqn; cases (Fintype.equivFin File).injective eqn)).trans (headers.coordFree i)
+  · intro r i hi
+    have eqn : bank r i = work (transposeSlot i) := by simp [bank,work,address,transReg,hi]; rfl
+    exact (show F (bank r i) = R (bank r i) by rw [eqn]; exact workKept _).trans (prepared r i hi)
+
 /-- Return exact owner words to node order. A producer may fill the owners
 while the return headers stay on the other registers. -/
 theorem placedWordReturn_exec {P U : Type} {Q : ℕ} (n : Fin 9) :
@@ -51,30 +78,18 @@ theorem placedWordReturn_exec {P U : Type} {Q : ℕ} (n : Fin 9) :
   refine ⟨embProg sw Empty.elim back,?_⟩
   intro w H B W parent units M hw bound hb hwid x v S D headers frame written
   let F := embStk sw D
-  have keep (j) (apart : ∀ i, owners i ≠ j) : F.R j = (embStk sw S).R j := frame j apart
-  have workKept i := keep (work i) (by intro h eqn; cases (Fintype.equivFin File).injective eqn)
-  have matrixKept i := keep (pool i) (by intro h eqn; cases (Fintype.equivFin File).injective eqn)
-  have rankKept i := keep (rankPool i) (by intro h eqn; cases (Fintype.equivFin File).injective eqn)
-  have coordKept i := keep (coordPool i) (by intro h eqn; cases (Fintype.equivFin File).injective eqn)
-  obtain ⟨tail,archive⟩ := headers.archive
-  obtain ⟨record,row,len,rowLen,prepared⟩ := headers.transpose
-  have atP i : F.R (p i) = (embStk sw S).R (p i) := workKept _
+  have current := headers.of_off frame
+  obtain ⟨tail,archive⟩ := current.archive
+  obtain ⟨record,row,len,rowLen,prepared⟩ := current.transpose
   obtain ⟨a,R,l,same,bill,ret,done,off⟩ := restore w H W B parent units tail hw bound hwid hb
-    x (embDn sw v) F (by rw [atP]; exact headers.exponent) (by rw [atP]; exact headers.bits)
-    (by rw [atP]; exact headers.unit) (by rw [atP]; exact headers.archiveSize) ((atP _).trans archive)
-    (fun i hi => (atP _).trans (headers.blank i hi)) (fun i => (matrixKept i).trans (headers.matrixFree i))
-    (fun i => (rankKept i).trans (headers.rankFree i)) (fun i => (coordKept i).trans (headers.coordFree i))
-    (fun i hi => (workKept _).trans (headers.maskFree i hi)) (by rw [show F.R (g 3) = _ from workKept (gatherSlot 3)]; exact headers.recordWidth)
-    ((workKept _).trans headers.empty) (fun i hi => (workKept _).trans (headers.gatherFree i hi))
-    (fun i hi => (workKept _).trans (headers.scanFree i hi)) record row len rowLen (by
+    x (embDn sw v) F current.exponent current.bits current.unit current.archiveSize archive
+    current.blank current.matrixFree current.rankFree current.coordFree current.maskFree current.recordWidth
+    current.empty current.gatherFree current.scanFree record row len rowLen (by
       intro r
       refine Stacks.ext rfl rfl rfl ?_
       funext i
       by_cases h : i = 6
       · subst i; exact written r
-      have eqn : bank r i = work (transposeSlot i) := by simp [bank,work,address,transReg,h]; rfl
-      change F.R (bank r i) = _
-      rw [show F.R (bank r i) = (embStk sw S).R (bank r i) by rw [eqn]; exact workKept _]
       exact (prepared r i h).trans (by fin_cases i <;> first | contradiction | rfl))
   obtain ⟨z,G,placed,_,hz,view,outside⟩ := exec_emb (ι := (Empty.elim : Empty → P)) (body' := body)
     sw.injective (fun e => nomatch e) ret v rfl D rfl
