@@ -266,6 +266,50 @@ private theorem moveOverhead_volume (child : Descriptor) (w W rank L digits : �
   have := size (CopyChildLayout.spectators child)
   omega
 
+/-- Produce the sweep's helper headers inside a caller placement. Every
+tape outside the archive producer retains both stacks, including a shared
+payload or cutoff on the surrounding host. -/
+theorem placedMoveHeaders {H Q : ℕ} {P U : Type}
+    (e : Fin (80+273) ↪ Fin H) (body : P → Pr P H Q prime U)
+    (capacity : (fun {q : ℕ} (_ : Program 38 q prime) => q) (RecursiveRowsNodeHeaders.program 142080) ≤ Q) :
+    ∃ code, ∀ (node : Descriptor) (w B rows : ℕ),
+      node.width = 64*(w+1) → node.rows = 142080*rows → node.beforeH = B*prime^(64*((w+1)*64)) →
+      ({node with rows := rows} : Descriptor).Positive →
+      let W := node.beforeRows*rows*node.beforeH*node.between*node.afterD
+      let M := prime^(w+1)
+      ∀ u S, ParentArchiveInput node w (embStk e S) →
+      ∃ z F t, Exec body code (mk u S) t (mk z F) ∧ z.user = u.user ∧
+        t ≤ ((RecursiveRowsQuotient.constant 142080+30)*142080*43+152402152)*(M^16*(M^112*W)) ∧
+        (∀ i j, F.R (e (borrowedHeaders 80 i j)) =
+          (Routines.hdr (helperAdjacentView (w+1) 1 W i) j).map bitSymbol) ∧
+        ∀ j, (∀ k, e k ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  let slots := Fin.castAddEmb 42 (n := 38)
+  let hdr := (Fin.natAddEmb 38 (m := 6)).trans (Fin.castAddEmb 36)
+  let tmp := (44 : Fin 80)
+  let regs := Fin.natAddEmb 45 (m := 35)
+  obtain ⟨prog,prepare⟩ := parentRoleArchive_exec (P := Empty) (U := U) Empty.elim slots hdr tmp regs
+    (by intro i j eq; have h := congrArg Fin.val eq; change i.val = 38+j.val at h; omega)
+    (by intro i eq; have h := congrArg Fin.val eq; change i.val = 44 at h; omega)
+    (by intro j eq; have h := congrArg Fin.val eq; change 44 = 38+j.val at h; omega)
+    (by intro i j eq; have h := congrArg Fin.val eq; change i.val = 45+j.val at h; omega)
+    (by intro i j eq; have h := congrArg Fin.val eq; change 38+i.val = 45+j.val at h; omega) capacity
+  refine ⟨embProg e Empty.elim prog,?_⟩
+  intro node w B rows width split label pos W M u S input
+  obtain ⟨rep,tl,tr,empty,base,unit,clock,free⟩ := input
+  obtain ⟨v,D,t,user,run,bill,headers,_⟩ := prepare node w B rows width split label pos (embDn e u) (embStk e S)
+    rep tl tr empty base unit clock free
+  obtain ⟨z,F,exec,_,same,view,off⟩ := exec_emb (body' := body) (ι := Empty.elim) e.injective (fun f => nomatch f)
+    run u rfl S rfl
+  have eq : B*prime^(64*((w+1)*64))*(node.beforeRows*rows*node.between*node.afterD) = W := by
+    dsimp only [W]; rw [label]; ring
+  refine ⟨z,F,t,exec,same.trans user,?_,?_,off⟩
+  · rw [← eq]
+    convert bill using 1
+    dsimp only [M]
+    ring
+  · intro i j
+    exact (congrArg (fun X => Stacks.R X (borrowedHeaders 80 i j)) view).trans (by simpa only [eq] using headers i j)
+
 open Certificates.PR589 in
 /-- Prepare and dispatch a packed MOVE from the caller's cutoff. Only the
 above-cutoff branch requires a child execution witness. -/
@@ -281,18 +325,23 @@ theorem packedMixedMoveCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
     let ports := workerPorts.trans worker
     let cut := parent 34
     let headers := fun i j => stage (borrowedHeaders T i j)
+    ∀ (e : Fin (80+273) ↪ Fin H),
+    (∀ i j, e (borrowedHeaders 80 i j) = headers i j) →
+    (∀ k j, e k ≠ ports j) → (∀ k j, e k ≠ parent j) →
+    (fun {q : ℕ} (_ : Program 38 q prime) => q) (RecursiveRowsNodeHeaders.program 142080) ≤ Q →
     ∃ leaf : Pr P H Q prime U, ∀ (body : P → Pr P H Q prime U) (large f : P), body f = leaf →
     let localPort := (Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)
     let bank := localPort.trans ports
-    ∃ code, ∀ (node : Descriptor) (w rows L cutoff recursiveTime : ℕ),
+    ∃ code, ∀ (node : Descriptor) (w B rows L cutoff recursiveTime : ℕ),
     let W := node.beforeRows*rows*node.beforeH*node.between*node.afterD
     let desc := scheduledChild prime node occurrence
     let M := prime^(w+1)
     let suffix := M^112*W
-    node.width = 64*(w+1) → node.rows = 142080*rows → cutoff < 2^L → desc.width.size ≤ L → L ≤ 64*(w+1) → 0 < W → ∃ position : Fin (volume prime desc) ≃ Fin (M^16*suffix),
+    node.width = 64*(w+1) → node.rows = 142080*rows → node.beforeH = B*prime^(64*((w+1)*64)) →
+    ({node with rows := rows} : Descriptor).Positive → cutoff < 2^L → desc.width.size ≤ L → L ≤ 64*(w+1) → 0 < W → ∃ position : Fin (volume prime desc) ≃ Fin (M^16*suffix),
     (∀ h, (position h).val = (CopyChildLayout.packActive desc h).val) ∧ ∀ (x : Fin (M^16*suffix) → ZMod 2) (u : HS H Q prime U) (S : Stacks H prime),
     S.R cut = binSyms L cutoff → S.R (bank 34) = [] →
-    (∀ i j, S.R (headers i j) = (Routines.hdr (helperAdjacentView (w+1) 1 W i) j).map bitSymbol) →
+    ParentArchiveInput node w (embStk e S) →
     (∀ i : Fin 35, i ≠ 24 → i ≠ 34 → S.L (bank i) = [] ∧ S.R (bank i) = []) →
     (∀ i : Fin (rowSwapBlock.tapes+35), 35 ≤ i.val → S.L (ports i) = [] ∧ S.R (ports i) = []) →
     (∀ z, readAt blank (S.L (parent 24)) (S.R (parent 24)) z = RadixToBinary.binaryEncoding.encode
@@ -304,16 +353,16 @@ theorem packedMixedMoveCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
     let price := if active then recursiveTime else budget
     (active → ScheduledChildExec node desc w suffix ports (binSyms L cutoff) position body large recursiveTime) →
     ∃ z F t y, Exec body code (mk u S) t (mk z F) ∧
-      t ≤ 5000*volume prime desc+price ∧ z.user = u.user ∧
+      t ≤ (((RecursiveRowsQuotient.constant 142080+30)*142080*43+152402152)+5000)*volume prime desc+price ∧ z.user = u.user ∧
       (∀ k ∈ ([2,27,28,32,33,34] : List (Fin 35)), F.R (bank k) = []) ∧
       (∀ z, readAt blank (F.L (parent 24)) (F.R (parent 24)) z = RadixToBinary.binaryEncoding.encode
         (putWord (fun _ => blank) 0 (List.ofFn (SparseRoleCircuit.encode ∘ y)) z)) ∧
       (∀ i : Fin (rowSwapBlock.tapes+35), 35 ≤ i.val → F.L (ports i) = [] ∧ F.R (ports i) = []) ∧
-      (∀ j, (∀ i, ports i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j) ∧
+      (∀ j, (∀ k, e k ≠ j) → (∀ i, ports i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j) ∧
       (∀ H J, let caller := RecordReady (b := prime) (w := w) (d := 16) (W := suffix) parent H J (binSyms L cutoff) SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0
         caller x S → caller y F) ∧
       ∀ h, y (position h) = Shared50RecursiveNodeRows.transpose (one_dvd desc.rows) (x ∘ position) h := by
-  intro occurrence parent payload stage worker ports cut headers
+  intro occurrence parent payload stage worker ports cut headers e headerAt offWorker offParent headerCapacity
   let rank := nodeChildren5[occurrence.val]
   obtain ⟨positive,rankBound⟩ := nodeChildren5_bounds occurrence
   have bound : rank ≤ 64 := rankBound.trans (by decide)
@@ -342,8 +391,9 @@ theorem packedMixedMoveCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
   obtain ⟨dispatch,call⟩ := moveCutoffCall body large f ports cut (headers i 5) cutOff (fun k => (apart i 5 k).symm) rank
   let fields : List (Fin 35) := [2,27,28,32,33]
   let controls := fields.map bank
-  refine ⟨prepare.seq (dispatch.seq (Mult.ShortConv.clearWords controls)),?_⟩
-  intro node w rows L cutoff recursiveTime W desc M suffix aligned split cutFits fits precision pos
+  obtain ⟨produce,produceRun⟩ := placedMoveHeaders e body headerCapacity
+  refine ⟨produce.seq (prepare.seq (dispatch.seq (Mult.ShortConv.clearWords controls))),?_⟩
+  intro node w B rows L cutoff recursiveTime W desc M suffix aligned split label positiveRole cutFits fits precision pos
   have measure := (scheduledChild_measures prime node ⟨_,aligned⟩ ⟨_,split⟩ occurrence).2
   have total : (M^16*suffix)*142080 = volume prime node := by
     unfold volume
@@ -365,9 +415,17 @@ theorem packedMixedMoveCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
     rw [width,aligned,Nat.mul_comm 64]
     exact Nat.mul_lt_mul_of_pos_left (rankBound.trans_lt (by decide : 42 < 64)) (Nat.succ_pos w)
   let digits := if active then L else (CopyChildLayout.spectators desc).size
-  obtain ⟨v,D,m,user,run,cost,stored,left,off⟩ := setup w W x u S ready empty (by simpa only [show bank 24 = parent 24 from shared] using payload)
-  rw [archive] at stored
-  have spectator := ((off (headers i 5) (fun k => (apart i 5 (localPort k)).symm)).trans (ready i 5)).trans
+  obtain ⟨v₀,S₀,m₀,run₀,user₀,cost₀,generated,frame₀⟩ := produceRun node w B rows aligned split label positiveRole u S ready
+  have workerFrame j := frame₀ (ports j) (fun k => offWorker k j)
+  have parentFrame j := frame₀ (parent j) (fun k => offParent k j)
+  have words i j := (headerAt i j) ▸ generated i j
+  have src : ∀ z, readAt blank (S₀.L (parent 24)) (S₀.R (parent 24)) z = RadixToBinary.binaryEncoding.encode (putWord (fun _ => blank) 0 (List.ofFn (SparseRoleCircuit.encode ∘ x)) z) := by
+    rw [(parentFrame 24).1,(parentFrame 24).2]; exact payload
+  obtain ⟨v,D,m,user,run,cost,stored,left,off⟩ := setup w W x v₀ S₀ words
+    (fun j hn hm => ⟨(workerFrame (localPort j)).1.trans (empty j hn hm).1,(workerFrame (localPort j)).2.trans (empty j hn hm).2⟩)
+    (by simpa only [show bank 24 = parent 24 from shared] using src)
+  rw [show S₀.R (bank 34) = [] from (workerFrame (localPort 34)).2.trans archive] at stored
+  have spectator := ((off (headers i 5) (fun k => (apart i 5 (localPort k)).symm)).trans (words i 5)).trans
     (moveSpectatorHeader desc w W rank positive bound width size)
   have clear (j : Fin (rowSwapBlock.tapes+35)) (hj : 35 ≤ j.val) : D.L (ports j) = [] ∧ D.R (ports j) = [] := by
     have outside (k : Fin 35) : bank k ≠ ports j := by
@@ -376,12 +434,12 @@ theorem packedMixedMoveCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
       have h := congrArg Fin.val (ports.injective eq)
       change k.val = j.val at h
       omega
-    exact ⟨(congrFun left _).trans (clean j hj).1,(off _ outside).trans (clean j hj).2⟩
+    exact ⟨(congrFun left _).trans ((workerFrame j).1.trans (clean j hj).1),(off _ outside).trans ((workerFrame j).2.trans (clean j hj).2)⟩
   obtain ⟨z,F,n,y,exec,paid,same,out,free,frame,read⟩ := call node desc w suffix L cutoff recursiveTime budget position
     width cutFits fits recurse (fun _ => move body f installed node desc w suffix width position coords
       (Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) pos) rate room)
-    smaller v D x ((off cut (fun k => cutOff (localPort k))).trans header) spectator stored clear
-  have keep (j) (outside : ∀ i, ports i ≠ j) : F.L j = S.L j ∧ F.R j = S.R j :=
+    smaller v D x ((off cut (fun k => cutOff (localPort k))).trans ((parentFrame 34).2.trans header)) spectator stored clear
+  have keep (j) (outside : ∀ i, ports i ≠ j) : F.L j = S₀.L j ∧ F.R j = S₀.R j :=
     ⟨(frame j outside).1.trans (congrFun left j),(frame j outside).2.trans (off j (fun k => outside (localPort k)))⟩
   obtain ⟨q,final,erase⟩ := retireWorkerControls body bank w suffix [] y z F out
   let G := {F with R := fun k => if k ∈ controls then [] else F.R k}
@@ -390,7 +448,7 @@ theorem packedMixedMoveCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
     intro mem
     obtain ⟨k,hk,eq⟩ := List.mem_map.mp mem
     exact away k hk eq
-  have preserved (j) (outside : ∀ i, ports i ≠ j) : G.L j = S.L j ∧ G.R j = S.R j :=
+  have preserved (j) (outside : ∀ i, ports i ≠ j) : G.L j = S₀.L j ∧ G.R j = S₀.R j :=
     ⟨(keep j outside).1,(untouched j (fun k _ => outside (localPort k))).trans (keep j outside).2⟩
   have payloadAt : G.R (parent 24) = F.R (parent 24) := by
     apply untouched
@@ -399,13 +457,16 @@ theorem packedMixedMoveCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
     exact bank.injective.ne (fun eq => (by decide : (24 : Fin 35) ∉ [2,27,28,32,33]) (eq ▸ hk))
   have result z := out.src z
   simp only [shared,sub_zero] at result
-  refine ⟨q,G,_,y,Exec.seq run (Exec.seq exec erase),?_,final.trans (same.trans user),?_,?_,?_,preserved,?_,read⟩
+  refine ⟨q,G,_,y,Exec.seq run₀ (Exec.seq run (Exec.seq exec erase)),?_,final.trans (same.trans (user.trans user₀)),?_,?_,?_,?_,?_,read⟩
   · change m ≤ 14*M.size+6*suffix.size+6*(w+1)+11*(w+1).size+50 at cost
     change n ≤ price+8*digits+4*w+23*desc.width+22*L+61 at paid
     have overhead := moveOverhead_volume desc w W rank L digits pos bound width precision
       (by dsimp only [digits]; split <;> first | exact le_max_left .. | exact le_max_right ..) size
     change 18*M.size+8*suffix.size+6*(w+1)+11*(w+1).size+124+8*digits+6*w+23*desc.width+22*L ≤ _ at overhead
-    change m+(n+(2*(2*M.size+suffix.size+w)+13)) ≤ _
+    change m₀+(m+(n+(2*(2*M.size+suffix.size+w)+13))) ≤ _
+    change m₀ ≤ _*(M^16*suffix) at cost₀
+    rw [← size] at cost₀
+    rw [Nat.add_mul]
     omega
   · intro k hk
     by_cases h : k ∈ fields
@@ -423,8 +484,12 @@ theorem packedMixedMoveCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
     have val := congrArg Fin.val (ports.injective eq)
     change j.val = k.val at val
     omega
+  · intro j away outside
+    exact ⟨(preserved j outside).1.trans (frame₀ j away).1,(preserved j outside).2.trans (frame₀ j away).2⟩
   · intro H J caller start
-    apply start.returnPayload (fun j hj => preserved (parent j) (fun k => apartParent (workerPorts k) j hj))
+    apply start.returnPayload (fun j hj => by
+      have h := preserved (parent j) (fun k => apartParent (workerPorts k) j hj)
+      exact ⟨h.1.trans (parentFrame j).1,h.2.trans (parentFrame j).2⟩)
     intro z
     rw [payloadAt,sub_zero]
     exact (result z).symm
