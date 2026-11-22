@@ -262,4 +262,103 @@ theorem packedNodeHandoffs {U : Type} {q w B W : ℕ}
   simpa only [cost,Function.update_of_ne exchange,Function.update_of_ne terminal] using available i mem exchange terminal
 
 
+private noncomputable def packedBridgeStates : Piece → ℕ
+  | .bridge d s => if h : Piece.bridge d s ∈ nodeProgram then (packedBridgeHandoff d s h).choose else 0
+  | _ => 0
+
+private def isBridge : Piece → Bool
+  | .bridge .. => true
+  | _ => false
+
+private theorem sumBridgeCopies (ps : List Piece) (f : Piece → ℕ) (copy : ℕ) :
+    (ps.map (fun p => f p + if isBridge p then copy else 0)).sum =
+      (ps.map f).sum + ps.countP isBridge * copy := by
+  induction ps with
+  | nil => simp
+  | cons p ps ih => cases h : isBridge p <;> simp [h,ih,Nat.add_mul] <;> omega
+
+private theorem bridgeCount : nodeProgram.countP isBridge = 9 := by decide +kernel
+
+/-- Assemble all nine physical bridges, including their copies, at a capacity
+fixed before the word volume and the sweep and remainder budgets. -/
+theorem assembledPackedNode {U : Type} :
+    ∃ states : ℕ, ∀ {q : ℕ}, states ≤ q → ∀ w B tail : ℕ,
+    let V := (prime^w)^16*(B*((prime^w)^112*tail))
+    0 < V → ∀ (stage idle : Fin 9 → OwnerArray w B tail → OwnerArray w B tail → Prop)
+      (sweepCost idleCost : Fin 9 → ℕ),
+    (∀ i, ∃ (P : Type) (t : ℕ) (body : P → Pr P t q prime U) (code : Pr P t q prime U)
+      (src dst : Fin (142081+2) ↪ Fin t) (prepared : Stacks t prime),
+      PackedPieceHandoff V (stage i) body code src dst prepared (sweepCost i)) →
+    (∀ i, ∃ (P : Type) (t : ℕ) (body : P → Pr P t q prime U) (code : Pr P t q prime U)
+      (src dst : Fin (142081+2) ↪ Fin t) (prepared : Stacks t prime),
+      PackedPieceHandoff V (idle i) body code src dst prepared (idleCost i)) →
+    ∃ (P : Type) (t : ℕ) (body : P → Pr P t q prime U) (code : Pr P t q prime U)
+      (src dst : Fin (142081+2) ↪ Fin t) (prepared : Stacks t prime),
+      PackedPieceHandoff V (fun x y => nodeProgram.foldr
+        (fun i cont a => ∃ b, nodePieceEffect w B tail idle stage i a b ∧ cont b)
+        (fun a => a = y) x) body code src dst prepared
+        ((∑ i, sweepCost i) + (∑ i, idleCost i) + 9*(2*(76*17760*V*(142081+7)+6)+1+(142081*(8*V+10)+1))+2) := by
+  refine ⟨(nodeProgram.map packedBridgeStates).sum,?_⟩
+  intro q fits w B tail V pos stage idle sweepCost idleCost sweep remainder
+  let price : Piece → ℕ := fun p => nodeHandoffCost V sweepCost idleCost p +
+    (if isBridge p then 142081*(8*V+10)+1 else 0)
+  let cost := Function.update (Function.update price (.remainder 9) 1) .exchangeSides 1
+  have total : (nodeProgram.map cost).sum = (∑ i, sweepCost i) + (∑ i, idleCost i) +
+      9*(2*(76*17760*V*(142081+7)+6)+1+(142081*(8*V+10)+1))+2 := by
+    have same : cost = price := by
+      funext p
+      by_cases ex : p = .exchangeSides
+      · subst p; rfl
+      by_cases term : p = .remainder 9
+      · subst p; rfl
+      simp only [cost,Function.update_of_ne ex,Function.update_of_ne term]
+    rw [same,sumBridgeCopies nodeProgram (nodeHandoffCost V sweepCost idleCost),bridgeCount,nodeHandoffCost_sum]
+    ring
+  rw [← total]
+  apply packedNodeHandoffs idle stage price
+  intro p mem exchange terminal
+  cases p with
+  | stage i => simpa [price,nodeHandoffCost,isBridge,nodePieceEffect] using sweep i
+  | remainder i =>
+    have ne : i ≠ 9 := fun eq => terminal (eq ▸ rfl)
+    have h : i < 9 := by simp [nodeProgram] at mem; omega
+    simpa [price,nodeHandoffCost,isBridge,nodePieceEffect,h] using remainder ⟨i,h⟩
+  | bridge d s =>
+    have cap := (List.le_sum_of_mem (List.mem_map_of_mem (f := packedBridgeStates) mem)).trans fits
+    simp only [packedBridgeStates,dite_eq_left mem] at cap
+    obtain ⟨t,c,src,dst,D,run⟩ := (packedBridgeHandoff d s mem).choose_spec (U := U) cap pos
+    exact ⟨Empty,t,Empty.elim,c,src,dst,D,by simpa [price,nodeHandoffCost,isBridge,nodePieceEffect] using run⟩
+  | exchangeSides => exact (exchange rfl).elim
+
+
+/-- The assembled physical program interchanges the two fields on every
+role tape, for all inherited blocks, matrix labels and trailing positions. -/
+theorem packedNodeInterchange {U : Type} :
+    ∃ states : ℕ, ∀ {q : ℕ}, states ≤ q → ∀ w B K (parent : Fin 64 → ZMod (prime^w))
+      (units : ∀ i, IsUnit (parent i)),
+    let W := B*prime^(64*(w*64))*K
+    let V := (prime^w)^16*(1*((prime^w)^112*W))
+    let chart := nodeWindowEquiv w 1 W parent units
+    let read := fun j => readRoles (fun z => chart (0,windowState w z,j))
+    0 < V → ∀ (sweepCost idleCost : Fin 9 → ℕ),
+    (∀ i, ∃ (P : Type) (t : ℕ) (body : P → Pr P t q prime U), ∃ code src dst prepared,
+      PackedPieceHandoff V (borrowedStageHandoff w B K parent units i) body code src dst prepared (sweepCost i)) →
+    (∀ i, ∃ (P : Type) (t : ℕ) (body : P → Pr P t q prime U), ∃ code src dst prepared,
+      PackedPieceHandoff V (fun a d => ∀ j, read j d = (Piece.remainder i.val).run (read j a))
+        body code src dst prepared (idleCost i)) →
+    ∃ (P : Type) (t : ℕ) (body : P → Pr P t q prime U), ∃ code src dst prepared,
+      PackedPieceHandoff V (fun x y => ∀ (r : Role) i, let (b,s,j) := chart.symm i
+        let tape := bankTape r.bank (r.replica,r.port,r.cls)
+        y tape i = x tape (chart (b,(s.2,s.1),j))) body code src dst prepared
+        ((∑ i, sweepCost i) + (∑ i, idleCost i) + 9*(2*(76*17760*V*(142081+7)+6)+1+(142081*(8*V+10)+1))+2) := by
+  obtain ⟨states,assemble⟩ := assembledPackedNode (U := U)
+  refine ⟨states,?_⟩
+  intro q fits w B K parent units W V chart read pos sweepCost idleCost sweep remainder
+  obtain ⟨P,t,body,code,src,dst,prepared,run⟩ := assemble fits w 1 W pos _ _ sweepCost idleCost sweep remainder
+  refine ⟨P,t,body,code,src,dst,prepared,?_⟩
+  intro x u S words fresh
+  obtain ⟨z,G,k,y,exec,paid,user,out,trace⟩ := run x u S words fresh
+  exact ⟨z,G,k,y,exec,paid,user,out,fun r => borrowedNodeHandoff_cell parent units r _ x y
+    (fun _ _ _ h => h) trace⟩
+
 end IntegerMultBounds.MathlibTM2.M6.BitNode
