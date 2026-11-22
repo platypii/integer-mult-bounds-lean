@@ -13,7 +13,7 @@ local instance (w : ℕ) : NeZero (prime^w) := ⟨(pow_pos Shared50ModularContro
 
 /-- Read a full modular state through the same address map used by all the
 node pieces, including the weighted parent chart. -/
-private theorem modularEndpoint {w V : ℕ} (r : Role)
+theorem modularEndpoint {w V : ℕ} (r : Role)
     (address : BankLane → Swap.Shear.State Axis (ZMod (prime^w)) → Fin V)
     (x y : Fin 142081 → Fin V → ZMod 2)
     (reads : let atLane := fun lane z => address lane (windowState w z)
