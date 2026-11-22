@@ -13,11 +13,11 @@ noncomputable def sweepRoleTape : Role ↪ Fin 142081 :=
 
 theorem sweepRoleTape_eq (r : Role) : sweepRoleTape r = bankTape r.bank (r.replica,r.port,r.cls) := rfl
 
-private theorem distinctTapeSequence {ι P U : Type} {T Q A : ℕ} (body : P → Pr P T Q A U)
+theorem distinctTapeSequence {ι P U : Type} {T Q A : ℕ} (body : P → Pr P T Q A U)
     (tape : ι ↪ Fin T) (code : ι → Pr P T Q A U) (xs : List ι) (unique : xs.Nodup)
     (input output : ι → List (Fin (A+4))) (cost : ι → ℕ) (u : HS T Q A U) (S : Stacks T A)
     (start : ∀ i, S.R (tape i) = input i)
-    (step : ∀ i (v : HS T Q A U) (F : Stacks T A), F.R (tape i) = input i →
+    (step : ∀ i (v : HS T Q A U) (F : Stacks T A), F.L = S.L → F.R (tape i) = input i →
       (∀ j, (∀ a, tape a ≠ j) → F.R j = S.R j) →
       ∃ y l, y.user = v.user ∧ l ≤ cost i ∧ Exec body (code i) (mk v F) l
         (mk y {F with R := Function.update F.R (tape i) (output i)})) :
@@ -29,7 +29,7 @@ private theorem distinctTapeSequence {ι P U : Type} {T Q A : ℕ} (body : P →
     obtain ⟨absent,nd⟩ := List.nodup_cons.mp unique
     obtain ⟨v,R,k,hv,hk,prev,done,frame⟩ := ih nd
     have original := (frame (tape i) (fun j hj => tape.injective.ne (fun eqn => absent (eqn ▸ hj)))).trans (start i)
-    obtain ⟨y,l,hy,hl,run⟩ := step i v {S with R := R} original (fun j hj => frame j (fun a _ => hj a))
+    obtain ⟨y,l,hy,hl,run⟩ := step i v {S with R := R} rfl original (fun j hj => frame j (fun a _ => hj a))
     refine ⟨y,_,_,hy.trans hv,by simp only [List.map_cons,List.sum_cons]; omega,Exec.seq prev run,?_,?_⟩
     · intro j hj
       rcases List.mem_cons.mp hj with rfl | hj
@@ -61,7 +61,7 @@ theorem sweepOwnerSchedule_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T Q 
   have nd : roles.Nodup := (List.nodup_finRange _).map e.symm.injective
   have allRoles (r : Role) : r ∈ roles := List.mem_map.mpr ⟨e r,List.mem_finRange _,e.symm_apply_apply _⟩
   obtain ⟨z,R,t,hz,ht,run,done,frame⟩ := distinctTapeSequence body tape code roles nd input output
-    (fun _ => C*volume+8) u S start step
+    (fun _ => C*volume+8) u S start (fun i v F _ => step i v F)
   exact ⟨z,R,t,hz,by simpa only [List.map_const',List.sum_replicate_nat,roles,List.length_map,List.length_finRange,card_role] using ht,run,fun r => done r (allRoles r),fun j hj => frame j (fun r _ => hj r)⟩
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
