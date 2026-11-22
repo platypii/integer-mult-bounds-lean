@@ -332,6 +332,61 @@ theorem MovePrivateStock.frame {H K : ℕ} {archive : Fin (80+273) ↪ Fin H} {p
     have h := keep _ (privateFree k hk)
     exact ⟨h.1.trans (stock.2 k hk).1,h.2.trans (stock.2 k hk).2⟩
 
+open Certificates.PR589
+
+/-- Pair each paid MOVE with the scalar gates since the previous MOVE.
+The second component holds the gates after the final paid edge. -/
+noncomputable def phaseMoveBlocks : List RawGate → (ℕ → ℕ) →
+    List (List RawGate × (ℕ × ℕ)) × List RawGate
+  | [], _ => ([], [])
+  | g :: gs, current =>
+    let moves := ((Frames.edges [g] current).filter positiveMove).map fun edge => ([],edge)
+    let (blocks,suffix) := phaseMoveBlocks gs (Frames.run [g] current)
+    match blocks with
+    | [] => (moves,g :: suffix)
+    | (gates,edge) :: rest => (moves ++ (g :: gates,edge) :: rest,suffix)
+
+/-- Projecting the block schedule recovers every original scalar gate
+and exactly the positive-rank edge list, both in execution order. -/
+theorem phaseMoveBlocks_spec (gs : List RawGate) (current : ℕ → ℕ) :
+    let (blocks,suffix) := phaseMoveBlocks gs current
+    blocks.map Prod.snd = (Frames.edges gs current).filter positiveMove ∧
+      blocks.flatMap Prod.fst ++ suffix = gs := by
+  induction gs generalizing current with
+  | nil => exact ⟨rfl,rfl⟩
+  | cons g gs ih =>
+    have edges := Frames.edges_append [g] gs current
+    simp only [List.singleton_append] at edges
+    have emptyBlocks (es : List (ℕ × ℕ)) :
+        (es.map (fun e => (([] : List RawGate),e))).flatMap Prod.fst = [] := by
+      induction es with
+      | nil => rfl
+      | cons _ _ ih => simpa only [List.map_cons,List.flatMap_cons,List.nil_append] using ih
+    have tail := ih (Frames.run [g] current)
+    cases eq : phaseMoveBlocks gs (Frames.run [g] current) with
+    | mk blocks suffix =>
+      rw [eq] at tail
+      cases blocks with
+      | nil =>
+        obtain ⟨moveOrder,gateOrder⟩ := tail
+        change suffix = gs at gateOrder
+        simp [phaseMoveBlocks,eq,edges,List.filter_append,Function.comp_def,← moveOrder,gateOrder,emptyBlocks]
+      | cons head rest =>
+        obtain ⟨gates,edge⟩ := head
+        obtain ⟨moveOrder,gateOrder⟩ := tail
+        simp only [List.map_cons,List.flatMap_cons,List.append_assoc] at moveOrder gateOrder
+        simp [phaseMoveBlocks,eq,edges,List.filter_append,Function.comp_def,← moveOrder,gateOrder,List.append_assoc,emptyBlocks]
+
+/-- The two scalar phases meet at the COPY boundary with precisely the
+MOVE order indexed by the invocation directory. -/
+theorem invocationMoveBlocks_order :
+    let before := phaseMoveBlocks (sectionD ++ sectionA) (Frames.snapshot Frames.initialRefs)
+    let after := phaseMoveBlocks (sectionB ++ sectionC) (Frames.scatterFinish Frames.beforeScatter)
+    (before.1 ++ after.1).map Prod.snd = Geometry.Moves.phaseEdges.filter positiveMove := by
+  dsimp only
+  rw [List.map_append,(phaseMoveBlocks_spec _ _).1,(phaseMoveBlocks_spec _ _).1]
+  exact (List.filter_append ..).symm
+
 open Certificates.PR589 in
 /-- Compile a block of the selected PR589 scalar word on the shared
 owner tapes, with the state transition needed between scheduled MOVEs. -/
@@ -447,25 +502,27 @@ theorem moveStockSequence {I α P U : Type} [Fintype I] {owners K Q : ℕ} (tape
     (archiveFree : ∀ i k j, owner i j ≠ archive i k)
     (privateFree : ∀ i (k : Fin K), k.val ≠ 24 → ∀ j, owner i j ≠ ports i k)
     (body : ∀ i, P → Pr P (tapes i) Q prime U) (code : ∀ i, Pr P (tapes i) Q prime U)
-    (gates : I → Pr Empty owners Q prime U) (order : List I) (distinct : order.Nodup) :
+    (gates : I → Pr Empty owners Q prime U) (lastGates : Pr Empty owners Q prime U) (order : List I) (distinct : order.Nodup) :
     ∃ (T : ℕ) (fan : Fin owners ↪ Fin T) (host : I × P → Pr (I × P) T Q prime U)
       (program : Pr (I × P) T Q prime U),
-    ∀ (rep : α → Stacks owners prime → Prop) (gateStep step : α → I → α) (gateBudget budget : I → ℕ)
+    ∀ (rep : α → Stacks owners prime → Prop) (gateStep step : α → I → α) (lastStep : α → α) (gateBudget budget : I → ℕ) (lastBudget : ℕ)
       (seed : ∀ i, Stacks (tapes i) prime),
+    (∀ x u S, rep x S → ∃ z F n, Exec Empty.elim lastGates (mk u S) n (mk z F) ∧
+      n ≤ lastBudget ∧ z.user = u.user ∧ rep (lastStep x) F) →
     (∀ i ∈ order, ∀ x u S, rep x S → ∃ z F n, Exec Empty.elim (gates i) (mk u S) n (mk z F) ∧
       n ≤ gateBudget i ∧ z.user = u.user ∧ rep (gateStep x i) F) →
     (∀ i ∈ order, ∀ x u S, rep x (embStk (owner i) S) → MovePrivateStock (archive i) (ports i) (seed i) S →
       ∃ z F n, Exec (body i) (code i) (mk u S) n (mk z F) ∧ n ≤ budget i ∧ z.user = u.user ∧
         rep (step x i) (embStk (owner i) F)) →
     ∀ shared, ∃ S, embStk fan S = shared ∧ ∀ x u, rep x shared →
-      ∃ z F n, Exec host program (mk u S) n (mk z F) ∧ n ≤ (order.map fun i => gateBudget i+budget i).sum+1 ∧
-        z.user = u.user ∧ rep (order.foldl (fun x i => step (gateStep x i) i) x) (embStk fan F) := by
+      ∃ z F n, Exec host program (mk u S) n (mk z F) ∧ n ≤ (order.map fun i => gateBudget i+budget i).sum+lastBudget ∧
+        z.user = u.user ∧ rep (lastStep (order.foldl (fun x i => step (gateStep x i) i) x)) (embStk fan F) := by
   obtain ⟨T,fan,bank,shared,allocate⟩ := allocateMoveStock tapes owner archive ports archiveFree privateFree
   let host := fun f : I × P => embProg (bank f.1) (Prod.mk f.1) (body f.1 f.2)
   let block := fun i => (embProg (owner i) Empty.elim (gates i)).seq (code i)
-  let seq := fun (is : List I) => is.foldr (fun i tail => (embProg (bank i) (Prod.mk i) (block i)).seq tail) (.act .done)
+  let seq := fun (is : List I) => is.foldr (fun i tail => (embProg (bank i) (Prod.mk i) (block i)).seq tail) (embProg fan Empty.elim lastGates)
   refine ⟨T,fan,host,seq order,?_⟩
-  intro rep gateStep step gateBudget budget seed gateRun localRun X
+  intro rep gateStep step lastStep gateBudget budget lastBudget seed lastRun gateRun localRun X
   obtain ⟨join,place⟩ := allocate seed
   obtain ⟨S,view,stock⟩ := join X
   refine ⟨S,view,?_⟩
@@ -476,7 +533,11 @@ theorem moveStockSequence {I α P U : Type} [Fintype I] {owners K Q : ℕ} (tape
   have ready (i) (_ : i ∈ order) := stock i
   clear stock view
   induction order generalizing u S x with
-  | nil => exact ⟨u,S,1,Exec.act _ _,by simp,rfl,live⟩
+  | nil =>
+    obtain ⟨z,F,n,run,cost,user,out⟩ := lastRun x (embDn fan u) (embStk fan S) live
+    obtain ⟨v,G,placed,_,same,view,_⟩ := exec_emb (body' := host) (ι := Empty.elim) fan.injective
+      (fun f => nomatch f) run u rfl S rfl
+    exact ⟨v,G,n,placed,by simpa using cost,same.trans user,view ▸ out⟩
   | cons i rest ih =>
     obtain ⟨fresh,nodup⟩ := List.nodup_cons.mp distinct
     obtain ⟨z,F,n,run,cost,user,next⟩ := moveAfterOwnerGates (body i) (owner i) (archive i) (ports i)
@@ -488,6 +549,44 @@ theorem moveStockSequence {I α P U : Type} [Fintype I] {owners K Q : ℕ} (tape
     obtain ⟨q,G,m,tail,paid,final,out⟩ := ih nodup (fun j hj => gateRun j (List.mem_cons_of_mem _ hj)) (fun j hj => localRun j (List.mem_cons_of_mem _ hj))
       D (step (gateStep x i) i) v next (fun j hj => kept j (fun eq => fresh (eq ▸ hj)) (ready j (List.mem_cons_of_mem _ hj)))
     exact ⟨q,G,_,Exec.seq placed tail,by simp only [List.map_cons,List.sum_cons]; omega,final.trans (same.trans user),out⟩
+
+open Certificates.PR589 in
+/-- Execute PR589 scalar blocks interleaved with MOVE occurrences, including
+the scalar suffix after the last MOVE. Only the MOVE executions are premises. -/
+theorem scalarMoveSequence {I P U : Type} [Fintype I] {k K : ℕ} (layout : Fin 661 ↪ Fin k)
+    (tapes : I → ℕ) (owner : ∀ i, Fin (k+2) ↪ Fin (tapes i)) (archive : ∀ i, Fin (80+273) ↪ Fin (tapes i))
+    (ports : ∀ i, Fin K ↪ Fin (tapes i)) (archiveFree : ∀ i a j, owner i j ≠ archive i a)
+    (privateFree : ∀ i (a : Fin K), a.val ≠ 24 → ∀ j, owner i j ≠ ports i a) :
+    ∃ states, ∀ {Q V : ℕ}, states ≤ Q → 0 < V →
+    let rep := HelperFan (V := V) (Function.Embedding.refl (Fin (k+2)))
+    ∃ effect : (Fin k → Fin V → ZMod 2) → RawGate → Fin k → Fin V → ZMod 2,
+    (∀ x g j h, effect x g (layout j) h = g.toCircuit.run (Copy.extendStored (fun j => x (layout j) h)) j.val) ∧
+    (∀ x g j, (∀ r, layout r ≠ j) → effect x g j = x j) ∧
+    ∀ (body : ∀ i, P → Pr P (tapes i) Q prime U) (move : ∀ i, Pr P (tapes i) Q prime U)
+      (blocks : I → List RawGate) (suffix : List RawGate) (order : List I), order.Nodup →
+      (∀ i g, g ∈ blocks i → g ∈ program) → (∀ g ∈ suffix, g ∈ program) →
+    ∃ T fan host code, ∀ (step : (Fin k → Fin V → ZMod 2) → I → Fin k → Fin V → ZMod 2) (budget : I → ℕ) (seed : ∀ i, Stacks (tapes i) prime),
+      (∀ i ∈ order, ∀ x u S, rep x (embStk (owner i) S) → MovePrivateStock (archive i) (ports i) (seed i) S →
+        ∃ z F n, Exec (body i) (move i) (mk u S) n (mk z F) ∧ n ≤ budget i ∧ z.user = u.user ∧ rep (step x i) (embStk (owner i) F)) →
+      let bill := fun gs : List RawGate => (gs.map fun g => 76*g.toCircuit.terms.length*V*(k+7)+6).sum+1
+      ∀ shared, ∃ S : Stacks T prime, embStk fan S = shared ∧ ∀ x u, rep x shared →
+        ∃ z F n, Exec (host : I × P → Pr (I × P) T Q prime U) code (mk u S) n (mk z F) ∧
+          n ≤ (order.map fun i => bill (blocks i)+budget i).sum+bill suffix ∧ z.user = u.user ∧
+          rep (suffix.foldl effect (order.foldl (fun x i => step ((blocks i).foldl effect x) i) x)) (embStk fan F) := by
+  classical
+  obtain ⟨states,build⟩ := scalarOwnerBlock layout
+  refine ⟨states,?_⟩
+  intro Q V capacity pos rep
+  obtain ⟨effect,act,off,compile⟩ := build (U := U) capacity pos
+  refine ⟨effect,act,off,?_⟩
+  intro body move blocks suffix order distinct allowed lastAllowed
+  choose gates runs using fun i => compile (blocks i) (allowed i)
+  obtain ⟨last,lastRun⟩ := compile suffix lastAllowed
+  obtain ⟨T,fan,host,code,run⟩ := moveStockSequence tapes owner archive ports archiveFree privateFree body move gates last order distinct
+  refine ⟨T,fan,host,code,?_⟩
+  intro step budget seed moves bill
+  exact run rep (fun x i => (blocks i).foldl effect x) step (fun x => suffix.foldl effect x)
+    (fun i => bill (blocks i)) budget (bill suffix) seed lastRun (fun i _ => runs i) moves
 
 open Certificates.PR589 in
 /-- Prepare and dispatch a packed MOVE from the caller's cutoff. Only the
