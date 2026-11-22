@@ -630,6 +630,7 @@ theorem digitSwap_view_owner_cost [M8.Machine.Net] (i j : Fin 16) (lt : i < j)
     let V := (prime^w)^16*W
     ∃ stage : SharedBankStage.Stage _ 1 prime (@portOwner V),
       SharedBankSkeleton.ofStage stage = machine ∧ stage.cost = 3808274*V + price w W ∧
+      (∃ S : Stacks stage.tapes prime, RepT (stage.input 0) S.L S.R) ∧
       ∀ x, LabelView.Swapped prime (swapView prime w W i j) (ext x) (ext (stage.transform x)) := by
   let io : Fin 1 := 0
   let block := LabelSwap.program io
@@ -660,12 +661,18 @@ theorem digitSwap_view_owner_cost [M8.Machine.Net] (i j : Fin 16) (lt : i < j)
     metadata := SharedBank.strip (bank 0) slots, cost := 3808274*V + price w W,
     input_payload := fun x => copyRoute_payload block leading _ v d,
     output_payload := fun x => copyRoute_payload block leading _ v d,
-    strip_input := fun x => routePrivate block leading _ _ v d, realizes := ?_ },rfl,rfl,?_⟩
+    strip_input := fun x => routePrivate block leading _ _ v d, realizes := ?_ },rfl,rfl,?_,?_⟩
   · intro x
     have run := (result x).choose_spec.2
     change GraphContract.Runs block _ (LabelCall.bank (setTape _ io _ 0) v d) _ at run
     rw [word,same,size,view] at run
     exact Blocks.runs_mono run (Nat.add_le_add_left (paid w W hw hW) _)
+  · let payload := List.ofFn fun _ : Fin V => SparseRoleCircuit.encode (a := prime) (0 : ZMod 2)
+    let owners : Stacks 1 prime := ⟨[],[],fun _ => [],fun _ => payload⟩
+    apply swap_bank_seed (by simpa using Fintype.card_le_of_injective block.slots block.slots_injective)
+      (portOwner 0) v d owners
+    intro i z
+    simp [portOwner,owners,payload,readAt_nil_left,putWord_blank_zero]
   · intro x
     have swap := (result x).choose_spec.1
     let y := (result x).choose
@@ -682,12 +689,16 @@ theorem digitSwap_view_owner [M8.Machine.Net] (i j : Fin 16) (lt : i < j) :
     ∃ stage : SharedBankStage.Stage _ 1 prime (@portOwner V),
       SharedBankSkeleton.ofStage stage = machine ∧ stage.cost = 3808274*V + LeafCore.coreCost V w ∧
       ∀ x, LabelView.Swapped prime (swapView prime w W i j) (ext x) (ext (stage.transform x)) := by
-  apply digitSwap_view_owner_cost i j lt (fun w W => LeafCore.coreCost ((prime^w)^16*W) w)
-  intro w W hw hW u
-  have size : volume prime u = (prime^w)^16*W := swapView_volume i j lt
-  have positive : u.Positive := LeafCore.positive_of_volume
-    (size ▸ Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) hW)
-  simpa only [size,show u.width = w from rfl] using LeafCore.cost_le positive
+  obtain ⟨machine,build⟩ := digitSwap_view_owner_cost i j lt (fun w W => LeafCore.coreCost ((prime^w)^16*W) w) (by
+    intro w W hw hW u
+    have size : volume prime u = (prime^w)^16*W := swapView_volume i j lt
+    have positive : u.Positive := LeafCore.positive_of_volume
+      (size ▸ Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) hW)
+    simpa only [size,show u.width = w from rfl] using LeafCore.cost_le positive)
+  refine ⟨machine,?_⟩
+  intro w W hw hW
+  obtain ⟨stage,fixed,price,_,swap⟩ := build w W hw hW
+  exact ⟨stage,fixed,price,swap⟩
 
 open Cover RecursiveInterchangeLayout M8.RevMachine in
 theorem digitSwap_owner [M8.Machine.Net] (i j : Fin 16) (lt : i < j) :

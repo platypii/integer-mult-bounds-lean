@@ -1179,32 +1179,30 @@ private theorem executePorts {k V : ℕ} {α : Type*} (slot : α ↪ Fin (k+1))
       exact (off i (fun b hb => away b (List.mem_cons_of_mem _ hb))).trans
         (Function.update_of_ne (away t List.mem_cons_self).symm ..)
 
-theorem compilePortsSized {k V : ℕ} {α : Type*} (slot : α ↪ Fin (k+1))
+theorem compiledPorts_spec {k V : ℕ} {α : Type*} (slot : α ↪ Fin (k+1))
     (port : α → SharedBankStage.Stage _ 1 prime (@portOwner V)) (ts : List α) (unique : ts.Nodup) :
-    ∃ post : SharedBankStage.Stage _ (k+1) prime (phaseOwners (N := V)),
-      post.tapes = k+1 + (ts.map fun t => k+1+((port t).tapes+k)).sum ∧
-      post.states = (ts.map fun t => (port t).states).sum + 1 ∧
-      post.cost = (ts.map fun t => (port t).cost).sum + ts.length ∧
-      (∀ data t, t ∈ ts → post.transform data (slot t) = (port t).transform (data (slot t))) ∧
-      ∀ data i, (∀ t ∈ ts, slot t ≠ i) → post.transform data i = data i := by
-  let stages := ts.map fun t => placePort (slot t) (port t)
-  refine ⟨SharedBankStage.compile _ (Nat.zero_lt_succ _) stages,?_,?_,?_,?_,?_⟩
+    let post := SharedBankStage.compile _ (Nat.zero_lt_succ k) (ts.map fun t => placePort (slot t) (port t))
+    post.tapes = k+1 + (ts.map fun t => k+1+((port t).tapes+k)).sum ∧
+    post.states = (ts.map fun t => (port t).states).sum + 1 ∧
+    post.cost = (ts.map fun t => (port t).cost).sum + ts.length ∧
+    (∀ data t, t ∈ ts → post.transform data (slot t) = (port t).transform (data (slot t))) ∧
+    ∀ data i, (∀ t ∈ ts, slot t ≠ i) → post.transform data i = data i := by
+  change _ ∧ _ ∧ _ ∧ _ ∧ _
+  refine ⟨?_,?_,?_,?_,?_⟩
   · clear unique
     induction ts with
     | nil => rfl
     | cons t ts ih =>
       change (k+1+((port t).tapes+k)) + (SharedBankStage.compile _ _ (ts.map _)).tapes = _
       simp only [List.map_cons,List.sum_cons]
-      dsimp only [stages] at ih
       rw [ih]; omega
   · clear unique
     induction ts with
     | nil => rfl
     | cons t ts ih =>
       change (port t).states + (SharedBankStage.compile _ _ (ts.map _)).states = _
-      dsimp only [stages] at ih
       rw [ih]; simp [Nat.add_assoc]
-  · simp only [SharedBankStage.compile_cost,stages,List.map_map,List.length_map]
+  · simp only [SharedBankStage.compile_cost,List.map_map,List.length_map]
     rfl
   · intro data t ht
     rw [SharedBankStage.compile_transform]
@@ -1212,6 +1210,16 @@ theorem compilePortsSized {k V : ℕ} {α : Type*} (slot : α ↪ Fin (k+1))
   · intro data i away
     rw [SharedBankStage.compile_transform]
     exact (executePorts slot port ts unique data).2 i away
+
+theorem compilePortsSized {k V : ℕ} {α : Type*} (slot : α ↪ Fin (k+1))
+    (port : α → SharedBankStage.Stage _ 1 prime (@portOwner V)) (ts : List α) (unique : ts.Nodup) :
+    ∃ post : SharedBankStage.Stage _ (k+1) prime (phaseOwners (N := V)),
+      post.tapes = k+1 + (ts.map fun t => k+1+((port t).tapes+k)).sum ∧
+      post.states = (ts.map fun t => (port t).states).sum + 1 ∧
+      post.cost = (ts.map fun t => (port t).cost).sum + ts.length ∧
+      (∀ data t, t ∈ ts → post.transform data (slot t) = (port t).transform (data (slot t))) ∧
+      ∀ data i, (∀ t ∈ ts, slot t ≠ i) → post.transform data i = data i :=
+  ⟨_,compiledPorts_spec slot port ts unique⟩
 
 theorem compilePorts {k V : ℕ} {α : Type*} (slot : α ↪ Fin (k+1))
     (port : α → SharedBankStage.Stage _ 1 prime (@portOwner V)) (ts : List α) (unique : ts.Nodup) :

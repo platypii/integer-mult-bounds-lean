@@ -335,25 +335,14 @@ theorem RemainderChartFrame.privateSeed {k N w : ℕ} {v : Descriptor}
     {machine : SharedBankSkeleton.Skeleton k prime}
     {stage : SharedBankStage.Stage _ k prime (phaseOwners (N := N))}
     (frame : RemainderChartFrame machine v w stage) : ∃ S, ChartPrivateReady stage S := by
-  let words : Fin (2+22) → Option (List Bool) := Fin.addCases
-    (fun i : Fin 2 => some (Routines.hdr v (i.castLE (by decide : 2 ≤ 6))))
-    (M8.Stage2Machine.Straight.words (LabelSchedule.base v w))
   let payload := List.ofFn fun _ : Fin N => SparseRoleCircuit.encode (a := prime) (0 : ZMod 2)
-  let pad (f : Fin (k+24) → List (Fin (prime+4))) (j : Fin stage.tapes) :=
-    if h : j.val < k+24 then f ⟨j.val,h⟩ else []
-  have inside (f) (i : Fin (k+24)) : pad f (i.castLE frame.fits) = f i := dif_pos i.isLt
-  let S : Stacks stage.tapes prime := ⟨[],[],
-    pad (Fin.addCases (fun _ : Fin k => []) (fun i => (words i).toList.map (fun _ => separator))),
-    pad (Fin.addCases (fun _ : Fin k => payload) (fun i => ((words i).getD []).map bitSymbol))⟩
-  refine ⟨S,chartPrivateReady_of_input stage (fun _ _ => 0) S (frame.input_rep _ S ?_ ?_ ?_)⟩
-  · intro i z
-    have slot : stage.slots i = (i.castAdd 24).castLE frame.fits := Fin.ext (frame.leading i)
-    change putWord (fun _ => blank) 0 payload z = readAt blank (S.L (stage.slots i)) (S.R (stage.slots i)) (z-0)
-    simp only [slot,S,inside,Fin.addCases_left,sub_zero,readAt_nil_left,putWord_blank_zero]
-  · intro i
-    simp only [S,inside,Fin.addCases_right,words,and_self]
-  · intro j hj
-    simp [S,pad,Nat.not_lt.mpr hj]
+  let owners : Stacks k prime := ⟨[],[],fun _ => [],fun _ => payload⟩
+  obtain ⟨S,rep⟩ := swap_bank_seed frame.fits (phaseOwners (N := N) (fun _ _ => 0))
+    v (M8.Stage2Machine.Straight.words (LabelSchedule.base v w)) owners (by
+      intro i z
+      change putWord (fun _ => blank) 0 payload z = readAt blank [] payload (z-0)
+      simp only [sub_zero,readAt_nil_left,putWord_blank_zero])
+  exact ⟨S,chartPrivateReady_of_input stage (fun _ _ => 0) S (by rw [frame.input]; exact rep)⟩
 
 /-- A forward chart can use the represented caller bank in place. Only
 workspace beyond its owner and descriptor slots needs blank tape contents. -/

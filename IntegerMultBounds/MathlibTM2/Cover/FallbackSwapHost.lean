@@ -80,6 +80,28 @@ theorem swap_bank_rep {T N : ℕ} (fits : T+24 ≤ N) (roles : Tapes T prime)
   · obtain ⟨left,right⟩ := privateTapes i (by omega)
     simp [raw,small,left,right,readAt_nil_left,wordTape_nil]
 
+/-- Extend represented owner tapes with the two row words, the descriptor words,
+and blank workspace of the swap machine. -/
+theorem swap_bank_seed {T N : ℕ} (fits : T+24 ≤ N) (roles : Tapes T prime)
+    (view : RecursiveInterchangeLayout.Descriptor) (headers : Fin 22 → Option (List Bool))
+    (owners : Stacks T prime) (represented : RepT roles owners.L owners.R) :
+    ∃ S : Stacks N prime, RepT (raw (LabelCall.bank roles view headers) N) S.L S.R := by
+  let words : Fin (2+22) → Option (List Bool) := Fin.addCases
+    (fun i : Fin 2 => some (Routines.hdr view ((Fin.castLEEmb (by decide : 2 ≤ 6)) i))) headers
+  let pad (f : Fin (T+24) → List (Fin (prime+4))) (j : Fin N) :=
+    if h : j.val < T+24 then f ⟨j.val,h⟩ else []
+  have inside (f) (i : Fin (T+24)) : pad f (i.castLE fits) = f i := dif_pos i.isLt
+  let S : Stacks N prime := ⟨[],[],
+    pad (Fin.addCases owners.L (fun i => (words i).toList.map (fun _ => separator))),
+    pad (Fin.addCases owners.R (fun i => ((words i).getD []).map bitSymbol))⟩
+  refine ⟨S,swap_bank_rep fits roles view headers S ?_ ?_ ?_⟩
+  · intro i pos
+    simpa only [S,inside,Fin.addCases_left] using represented i pos
+  · intro i
+    simp only [S,inside,Fin.addCases_right,words,and_self]
+  · intro j hj
+    simp [S,pad,Nat.not_lt.mpr hj]
+
 theorem swapPayload_exec [M8.Machine.Net] {T d w W : ℕ} {P U : Type}
     (i j : Fin d) (h : i < j) (hw : 0 < w) (hW : 0 < W)
     (roles : Tapes T prime) (io : Fin T)
