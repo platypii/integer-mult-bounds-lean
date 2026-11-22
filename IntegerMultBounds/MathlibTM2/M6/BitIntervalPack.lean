@@ -135,9 +135,73 @@ noncomputable def packedChildPosition {V : ℕ} (child : Descriptor) (size : vol
     simp only [Fintype.card_fin] at card
     exact card.symm.trans size))
 
+private theorem intervalPack_index {lo hi w W : ℕ} (ordered : lo ≤ hi) (fits : hi ≤ 64)
+    (x : Fin 128 → ZMod (prime^(w+1))) (j : Fin W) :
+    let size := intervalChild_volume ordered fits (w+1) W
+    let is := intervalPackSchedule lo (hi-lo) (64-hi+lo)
+    FlatCoordinateLayout.index (is.foldl adjacentFields x) j =
+      packedChildPosition _ size ((FlatCoordinateLayout.index x j).cast size.symm) := by
+  intro size is
+  obtain ⟨a,b,h,d,u,v,layout⟩ := intervalDigits ordered fits x
+  have entry : (FlatCoordinateLayout.index x j).cast (intervalChild_volume ordered fits (w+1) W).symm =
+      RecursiveInterchangeScaling.index (intervalAddress 64 a b h d u v j) := by
+    apply Fin.ext
+    rw [Fin.val_cast,intervalAddress_index]
+    apply index_ofFn
+    change List.ofFn x = List.ofFn (Fin.append (Fin.append (Fin.append a h) u) (Fin.append (Fin.append b d) v))
+    simpa only [List.ofFn_fin_append,List.append_assoc] using layout
+  let mid := List.ofFn u ++ List.ofFn b
+  have order := intervalPackSchedule_fields x (List.ofFn a) (List.ofFn h) mid (List.ofFn d)
+    (List.ofFn v) (by simp) (by simpa only [mid,List.append_assoc] using layout)
+  apply Fin.ext
+  change _ = (CopyChildLayout.packActive _ ((FlatCoordinateLayout.index x j).cast _)).val
+  rw [entry]
+  apply intervalPacked_offset a b h d u v j
+  simpa only [mid,List.length_append,List.length_ofFn,is,List.append_assoc] using order
+
 variable [M8.Machine.Net] {P U : Type}
 local notation "N" => rowSwapBlock.tapes
 local notation "Q" => rowSwapBlock.states
+
+/-- Pack a split owner row at the exact positions read by the recursive child. -/
+theorem intervalForward_exec {T capacity : ℕ} (fitsStates : Q ≤ capacity)
+    (ports : Fin (N+35) ↪ Fin T) (body : P → Pr P T capacity prime U)
+    (lo hi : ℕ) (ordered : lo ≤ hi) (fits : hi ≤ 64) :
+    ∃ setup swaps : ℕ, ∀ w W, 0 < W →
+      let M := prime^(w+1)
+      let is := intervalPackSchedule lo (hi-lo) (64-hi+lo)
+      let bank := ((Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)).trans ports
+      let clean := fun D : Stacks T prime => ∀ k : Fin (N+35), 35 ≤ k.val → D.L (ports k) = [] ∧ D.R (ports k) = []
+      ∀ (u : HS T capacity prime U) (S : Stacks T prime) record dest q
+        (input : Fin (volume prime (phaseIntervalChild lo hi (w+1) W 64)) → ZMod 2),
+      let size := intervalChild_volume ordered fits (w+1) W
+      let position := packedChildPosition _ size
+      let ready := RecordReady (b := prime) (w := w) (W := W) (d := 128) bank M.size W.size
+        record SparseRoleCircuit.encode (fun _ => blank) dest 0 q
+      ready (fun i => input (i.cast size.symm)) S → clean S → ∃ z F n, z.user = u.user ∧
+        n ≤ 1+(setup+swaps*swapVolumeRate w)*(M^128*W) ∧
+        Exec body (statePlacedNormalized ports fitsStates swapStates_pos Empty.elim (packSchedule 128 is))
+          (mk u S) n (mk z F) ∧ ready (input ∘ position.symm) F ∧ clean F ∧
+        ∀ j, (∀ i, ports i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  let is := intervalPackSchedule lo (hi-lo) (64-hi+lo)
+  have inside (i) (used : i ∈ is) : i+1 < 128 := by
+    have := intervalPackSchedule_inside used
+    omega
+  obtain ⟨setup,swaps,price⟩ := packTime_le (P := Empty) (U := U) Empty.elim 128 is (by decide)
+  refine ⟨setup,swaps,?_⟩
+  intro w W hW M schedule bank clean u S record dest q input size position ready stored free
+  obtain ⟨z,F,n,user,cost,exec,⟨word,out,read⟩,clear,frame⟩ := placedPackSchedule_exec fitsStates ports
+    is inside body u S record dest q hW (fun i => input (i.cast size.symm)) id ⟨_,stored,fun _ _ => rfl⟩ free
+  refine ⟨z,F,n,user,cost.trans (Nat.add_le_add_left (price w W hW) 1),exec,?_,clear,frame⟩
+  suffices eq : word = input ∘ position.symm from eq ▸ out
+  funext k
+  obtain ⟨a,rfl⟩ := position.surjective k
+  obtain ⟨i,rfl⟩ := (finCongr size.symm).surjective a
+  obtain ⟨⟨digits,j⟩,rfl⟩ := finProdFinEquiv.surjective i
+  obtain ⟨x,rfl⟩ := (FlatCoordinateLayout.rankEquiv : (Fin 128 → ZMod M) ≃ _).surjective digits
+  change word (position ((FlatCoordinateLayout.index x j).cast size.symm)) = _
+  rw [Function.comp_apply,Equiv.symm_apply_apply]
+  exact (congrArg word (intervalPack_index ordered fits x j)).symm.trans (read x j)
 
 /-- Unpack one returned row on a placed record bank.  The returned word is
 read at the forward packing offset; every tape outside the bank is preserved. -/
@@ -175,27 +239,34 @@ theorem intervalReturn_exec {T capacity : ℕ} (fitsStates : Q ≤ capacity)
     funext i
     obtain ⟨⟨digits,j⟩,rfl⟩ := finProdFinEquiv.surjective i
     obtain ⟨x,rfl⟩ := (FlatCoordinateLayout.rankEquiv : (Fin 128 → ZMod M) ≃ _).surjective digits
-    obtain ⟨a,b,h,d,u,v,layout⟩ := intervalDigits ordered fits x
-    have entry : (FlatCoordinateLayout.index x j).cast (intervalChild_volume ordered fits (w+1) W).symm =
-        RecursiveInterchangeScaling.index (intervalAddress 64 a b h d u v j) := by
-      apply Fin.ext
-      rw [Fin.val_cast,intervalAddress_index]
-      apply index_ofFn
-      change List.ofFn x = List.ofFn (Fin.append (Fin.append (Fin.append a h) u) (Fin.append (Fin.append b d) v))
-      simpa only [List.ofFn_fin_append,List.append_assoc] using layout
-    let mid := List.ofFn u ++ List.ofFn b
-    have order := intervalPackSchedule_fields x (List.ofFn a) (List.ofFn h) mid (List.ofFn d)
-      (List.ofFn v) (by simp) (by simpa only [mid,List.append_assoc] using layout)
     have moved : FlatCoordinateLayout.index (is.foldl adjacentFields x) j =
-        position ((FlatCoordinateLayout.index x j).cast size.symm) := by
-      apply Fin.ext
-      change _ = (CopyChildLayout.packActive _ ((FlatCoordinateLayout.index x j).cast _)).val
-      rw [entry]
-      apply intervalPacked_offset a b h d u v j
-      simpa only [mid,List.length_append,List.length_ofFn,is,List.append_assoc] using order
+        position ((FlatCoordinateLayout.index x j).cast size.symm) := intervalPack_index ordered fits x j
     change word (FlatCoordinateLayout.index x j) = output ((FlatCoordinateLayout.index x j).cast size.symm)
     simpa only [id_eq,reverse_adjacentFields,Function.comp_apply,moved,Equiv.symm_apply_apply]
       using read (is.foldl adjacentFields x) j
+
+theorem intervalPass_exec {T capacity : ℕ} (fitsStates : Q ≤ capacity)
+    (ports : Fin (N+35) ↪ Fin T) (body : P → Pr P T capacity prime U)
+    (lo hi : ℕ) (ordered : lo ≤ hi) (fits : hi ≤ 64) (unpack : Bool) :
+    ∃ setup swaps : ℕ, ∀ w W, 0 < W →
+      let M := prime^(w+1)
+      let is := intervalPackSchedule lo (hi-lo) (64-hi+lo)
+      let bank := ((Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)).trans ports
+      let clean := fun D : Stacks T prime => ∀ k : Fin (N+35), 35 ≤ k.val → D.L (ports k) = [] ∧ D.R (ports k) = []
+      ∀ (u : HS T capacity prime U) (S : Stacks T prime) record dest q
+        (output : Fin (volume prime (phaseIntervalChild lo hi (w+1) W 64)) → ZMod 2),
+      let size := intervalChild_volume ordered fits (w+1) W
+      let position := packedChildPosition _ size
+      let ready := RecordReady (b := prime) (w := w) (W := W) (d := 128) bank M.size W.size
+        record SparseRoleCircuit.encode (fun _ => blank) dest 0 q
+      ready (if unpack then output ∘ position.symm else fun i => output (i.cast size.symm)) S → clean S → ∃ z F n, z.user = u.user ∧
+        n ≤ 1+(setup+swaps*swapVolumeRate w)*(M^128*W) ∧
+        Exec body (statePlacedNormalized ports fitsStates swapStates_pos Empty.elim (packSchedule 128 (if unpack then is.reverse else is)))
+          (mk u S) n (mk z F) ∧ ready (if unpack then fun i => output (i.cast size.symm) else output ∘ position.symm) F ∧ clean F ∧
+        ∀ j, (∀ i, ports i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  cases unpack with
+  | false => exact intervalForward_exec fitsStates ports body lo hi ordered fits
+  | true => exact intervalReturn_exec fitsStates ports body lo hi ordered fits
 
 omit [M8.Machine.Net] in
 /-- Sequence the unpackers on disjoint record banks. Each completed row and
@@ -272,12 +343,11 @@ theorem intervalRecordBank_outside {c T B : ℕ} (fan : Fin (c+2) ↪ Fin T) (p 
 
 end
 
-/-- Unpack all cyclic owner rows, summing their execution bills and leaving
-the merger's tapes outside the record banks unchanged. -/
-theorem intervalReturnBank_exec {T capacity : ℕ} (fitsStates : Q ≤ capacity)
+/-- Run either direction of interval packing across the cyclic owner rows. -/
+theorem intervalPassBank_exec {T capacity : ℕ} (fitsStates : Q ≤ capacity)
     (ports : Fin 142080 → Fin (N+35) ↪ Fin T)
     (apart : ∀ i j, i ≠ j → ∀ a b, ports i a ≠ ports j b)
-    (body : P → Pr P T capacity prime U) (lo hi : ℕ) (ordered : lo ≤ hi) (fits : hi ≤ 64) :
+    (body : P → Pr P T capacity prime U) (lo hi : ℕ) (ordered : lo ≤ hi) (fits : hi ≤ 64) (unpack : Bool) :
     ∃ setup swaps : Fin 142080 → ℕ, ∀ w W, 0 < W →
       let M := prime^(w+1)
       let is := intervalPackSchedule lo (hi-lo) (64-hi+lo)
@@ -287,6 +357,10 @@ theorem intervalReturnBank_exec {T capacity : ℕ} (fitsStates : Q ≤ capacity)
       ∀ (u : HS T capacity prime U) (S : Stacks T prime) (record : Fin 142080 → List (Fin (prime+4)))
         (dest : Fin 142080 → ℤ → Fin 4) (q : Fin 142080 → ℤ)
         (output : Fin 142080 → Fin (volume prime (phaseIntervalChild lo hi (w+1) W 64)) → ZMod 2),
+      let inherited := fun r (i : Fin (M^128*W)) => output r (i.cast size.symm)
+      let packedRows := fun r => output r ∘ position.symm
+      let fromRow := fun r => if unpack then packedRows r else inherited r
+      let toRow := fun r => if unpack then inherited r else packedRows r
       let stored := fun r word F => RecordReady (b := prime) (w := w) (W := W) (d := 128)
         (small.trans (ports r)) M.size W.size (record r) SparseRoleCircuit.encode (fun _ => blank)
         (dest r) 0 (q r) word F ∧ ∀ k : Fin (N+35), 35 ≤ k.val →
@@ -294,18 +368,18 @@ theorem intervalReturnBank_exec {T capacity : ℕ} (fitsStates : Q ≤ capacity)
       ∀ fan : Fin (142080+2) ↪ Fin T,
       (∀ r : Fin 142080, ports r (small 24) = fan (r.castAdd 2)) →
       (∀ j : Fin 2, ∀ r k, ports r k ≠ fan (j.natAdd 142080)) →
-      HelperFan fan (fun r => output r ∘ position.symm) S →
+      HelperFan fan fromRow S →
       (∀ r, ∃ word D, stored r word D ∧ ∀ k, k ≠ small 24 →
         S.L (ports r k) = D.L (ports r k) ∧ S.R (ports r k) = D.R (ports r k)) →
-      let code := fun r => statePlacedNormalized (ports r) fitsStates swapStates_pos Empty.elim (packSchedule 128 is.reverse)
+      let code := fun r => statePlacedNormalized (ports r) fitsStates swapStates_pos Empty.elim (packSchedule 128 (if unpack then is.reverse else is))
       ∃ z F n, Exec body (Prog.seqList ((List.finRange 142080).map code)) (mk u S) n (mk z F) ∧
         n ≤ ((List.finRange 142080).map (fun r => 1+(setup r+swaps r*swapVolumeRate w)*(M^128*W))).sum+1 ∧
-        z.user = u.user ∧ HelperFan fan (fun r i => output r (i.cast size.symm)) F ∧
-        (∀ r, stored r (fun i => output r (i.cast size.symm)) F) ∧
+        z.user = u.user ∧ HelperFan fan toRow F ∧
+        (∀ r, stored r (toRow r) F) ∧
         ∀ j, (∀ r k, ports r k ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
-  choose setup swaps run using fun r => intervalReturn_exec fitsStates (ports r) body lo hi ordered fits
+  choose setup swaps run using fun r => intervalPass_exec fitsStates (ports r) body lo hi ordered fits unpack
   refine ⟨setup,swaps,?_⟩
-  intro w W hW M is small size position u S record dest q output stored fan shared counters live saved code
+  intro w W hW M is small size position u S record dest q output inherited packedRows fromRow toRow stored fan shared counters live saved code
   have transfer r word (D F : Stacks T prime)
       (keep : ∀ k, F.L (ports r k) = D.L (ports r k) ∧ F.R (ports r k) = D.R (ports r k))
       (ready : stored r word D) : stored r word F := by
@@ -315,7 +389,7 @@ theorem intervalReturnBank_exec {T capacity : ℕ} (fitsStates : Q ≤ capacity)
       exact (ready.1.src z).symm
     · intro k hk
       exact ⟨(keep k).1.trans (ready.2 k hk).1,(keep k).2.trans (ready.2 k hk).2⟩
-  have inputs r : stored r (output r ∘ position.symm) S := by
+  have inputs r : stored r (fromRow r) S := by
     obtain ⟨word,D,old,keep⟩ := saved r
     refine ⟨old.1.returnPayload (fun i ne => keep (small i) (small.injective.ne ne)) (fun z => ?_),?_⟩
     · change _ = readAt blank (S.L (ports r (small 24))) (S.R (ports r (small 24))) _
@@ -329,7 +403,7 @@ theorem intervalReturnBank_exec {T capacity : ℕ} (fitsStates : Q ≤ capacity)
         omega
       exact ⟨(keep k ne).1.trans (old.2 k hk).1,(keep k ne).2.trans (old.2 k hk).2⟩
   obtain ⟨z,F,n,exec,paid,user,doneRows,frame⟩ := returnRows_exec body ports apart code _
-    (fun r => stored r (output r ∘ position.symm)) (fun r => stored r (fun i => output r (i.cast size.symm)))
+    (fun r => stored r (fromRow r)) (fun r => stored r (toRow r))
     (fun r => transfer r _) (fun r => transfer r _) (fun r v D ready => by
       obtain ⟨z,F,n,user,paid,exec,out,clear,frame⟩ := run r w W hW v D (record r) (dest r) (q r)
         (output r) ready.1 ready.2
@@ -341,11 +415,11 @@ theorem intervalReturnBank_exec {T capacity : ℕ} (fitsStates : Q ≤ capacity)
   induction i using Fin.addCases with
   | left r =>
     have cell := (doneRows r (List.mem_finRange r)).1.src z
-    have encoded := encodedOwnerCell (fun i => output r (i.cast size.symm)) z
+    have encoded := encodedOwnerCell (toRow r) z
     rw [List.map_ofFn] at encoded
     rw [encoded] at cell
     simp only [PointwiseRoleGate.bank,Tapes.append,Fin.addCases_left,embStk,Function.comp_apply]
-    change putWord _ 0 (List.ofFn fun i => SparseRoleCircuit.encode (output r (i.cast size.symm))) z =
+    change putWord _ 0 (List.ofFn fun i => SparseRoleCircuit.encode (toRow r i)) z =
       readAt blank _ _ _
     simpa only [Function.Embedding.trans_apply,shared] using cell.symm
   | right j =>
@@ -353,9 +427,9 @@ theorem intervalReturnBank_exec {T capacity : ℕ} (fitsStates : Q ≤ capacity)
     simpa only [PointwiseRoleGate.bank,Tapes.append,Fin.addCases_right,embStk,Function.comp_apply,
       keep.1,keep.2,CountedLoopReuseAlphabet.controls,ite_self] using live (j.natAdd 142080) z
 
-theorem placedIntervalReturn_exec {T capacity : ℕ} (fitsStates : Q ≤ capacity)
+theorem placedIntervalPass_exec {T capacity : ℕ} (fitsStates : Q ≤ capacity)
     (live : Fin (142080+2) ↪ Fin T)
-    (body : P → Pr P (T+142080*(N+35)) capacity prime U) (lo hi : ℕ) (ordered : lo ≤ hi) (fits : hi ≤ 64) :
+    (body : P → Pr P (T+142080*(N+35)) capacity prime U) (lo hi : ℕ) (ordered : lo ≤ hi) (fits : hi ≤ 64) (unpack : Bool) :
     let small := (Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)
     let ports := intervalRecordBank live (small 24)
     let fan := live.trans (Fin.castAddEmb (142080*(N+35)))
@@ -367,26 +441,30 @@ theorem placedIntervalReturn_exec {T capacity : ℕ} (fitsStates : Q ≤ capacit
       ∀ (u : HS (T+142080*(N+35)) capacity prime U) (S : Stacks (T+142080*(N+35)) prime) (record : Fin 142080 → List (Fin (prime+4)))
         (dest : Fin 142080 → ℤ → Fin 4) (q : Fin 142080 → ℤ)
         (output : Fin 142080 → Fin (volume prime (phaseIntervalChild lo hi (w+1) W 64)) → ZMod 2),
+      let inherited := fun r (i : Fin (M^128*W)) => output r (i.cast size.symm)
+      let packedRows := fun r => output r ∘ position.symm
+      let fromRow := fun r => if unpack then packedRows r else inherited r
+      let toRow := fun r => if unpack then inherited r else packedRows r
       let stored := fun r word F => RecordReady (b := prime) (w := w) (W := W) (d := 128)
         (small.trans (ports r)) M.size W.size (record r) SparseRoleCircuit.encode (fun _ => blank)
         (dest r) 0 (q r) word F ∧ ∀ k : Fin (N+35), 35 ≤ k.val →
           F.L (ports r k) = [] ∧ F.R (ports r k) = []
-      HelperFan fan (fun r => output r ∘ position.symm) S →
+      HelperFan fan fromRow S →
       (∀ r, ∃ word D, stored r word D ∧ ∀ k, k ≠ small 24 →
         S.L (ports r k) = D.L (ports r k) ∧ S.R (ports r k) = D.R (ports r k)) →
-      let code := fun r => statePlacedNormalized (ports r) fitsStates swapStates_pos Empty.elim (packSchedule 128 is.reverse)
+      let code := fun r => statePlacedNormalized (ports r) fitsStates swapStates_pos Empty.elim (packSchedule 128 (if unpack then is.reverse else is))
       ∃ z F n, Exec body (Prog.seqList ((List.finRange 142080).map code)) (mk u S) n (mk z F) ∧
         n ≤ ((List.finRange 142080).map (fun r => 1+(setup r+swaps r*swapVolumeRate w)*(M^128*W))).sum+1 ∧
-        z.user = u.user ∧ HelperFan fan (fun r i => output r (i.cast size.symm)) F ∧
-        (∀ r, stored r (fun i => output r (i.cast size.symm)) F) ∧
+        z.user = u.user ∧ HelperFan fan toRow F ∧
+        (∀ r, stored r (toRow r) F) ∧
         ∀ j, (∀ r : Fin 142080, live (r.castAdd 2) ≠ j) →
           let t := j.castAdd (142080*(N+35))
           F.L t = S.L t ∧ F.R t = S.R t := by
   intro small ports fan
-  obtain ⟨setup,swaps,run⟩ := intervalReturnBank_exec fitsStates ports
-    (fun _ _ ne => intervalRecordBank_apart live _ ne) body lo hi ordered fits
+  obtain ⟨setup,swaps,run⟩ := intervalPassBank_exec fitsStates ports
+    (fun _ _ ne => intervalRecordBank_apart live _ ne) body lo hi ordered fits unpack
   refine ⟨setup,swaps,?_⟩
-  intro w W hW M is size position u S record dest q output stored packed saved code
+  intro w W hW M is size position u S record dest q output inherited packedRows fromRow toRow stored packed saved code
   obtain ⟨z,F,n,exec,paid,user,returned,records,frame⟩ :=
     run w W hW u S record dest q output fan (intervalRecordBank_payload live _)
       (fun j r k => intervalRecordBank_outside live _ _ (fun i => live.injective.ne (by

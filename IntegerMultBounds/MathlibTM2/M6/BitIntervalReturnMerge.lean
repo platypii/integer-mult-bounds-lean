@@ -55,7 +55,7 @@ theorem unpackMerge_exec {T capacity : ℕ} (fitsStates : Q ≤ capacity)
           +(149*(M^128*W*142080)*(intervalSplitTapes+5)+6) ∧ z.user = u.user ∧
         RepT (intervalOwnerBank (putWord target 0 (List.ofFn word)) data) (embStk mergeBank F).L (embStk mergeBank F).R := by
   intro live mergeBank small ports fan
-  obtain ⟨setup,swaps,unpack⟩ := placedIntervalReturn_exec fitsStates live body lo hi ordered fits
+  obtain ⟨setup,swaps,unpack⟩ := placedIntervalPass_exec fitsStates live body lo hi ordered fits true
   refine ⟨setup,swaps,?_⟩
   intro w W hW M is size position u S record dest q output stored packed saved code target original before split source inner data word
   obtain ⟨v,D,t,unpacked,paid,user,returned,_,frame⟩ :=
