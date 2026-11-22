@@ -160,6 +160,53 @@ def InheritedIntervalPositions {V : ℕ} (child interval : Descriptor)
     (CopyChildLayout.packActive interval ((position k).cast size.symm)).val
 
 open RecursiveInterchangeLayout in
+/-- Transposing the physical interval supplies exactly the scheduled child's
+read equation at every inherited offset, in either direction. -/
+theorem InheritedIntervalPositions.transpose_iff {V : ℕ} {child interval : Descriptor}
+    {size : volume prime interval = V} {position : Fin (volume prime child) ≃ Fin V}
+    (coords : InheritedIntervalPositions child interval size position)
+    (width : interval.width = child.width)
+    {α : Type} (word changed : Fin V → α) :
+    (∀ k, changed (position k) = Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (word ∘ position) k) ↔
+      changed = fun k => Shared50RecursiveNodeRows.transpose (v := interval) (one_dvd _)
+        (fun j => word (j.cast size)) (k.cast size.symm) := by
+  have volumeEq := Fintype.card_congr (position.trans (finCongr size.symm))
+  simp only [Fintype.card_fin] at volumeEq
+  have count (v : Descriptor) : volume prime v = prime^v.width*prime^v.width*CopyChildLayout.spectators v := by
+    unfold volume CopyChildLayout.spectators
+    ring
+  rw [count,count,width] at volumeEq
+  have spectators := Nat.eq_of_mul_eq_mul_left (Nat.mul_pos (pow_pos Shared50ModularControl.prime_prime.pos _)
+    (pow_pos Shared50ModularControl.prime_prime.pos _)) volumeEq.symm
+  let f := CopyChildLayout.changeLayout interval child width spectators
+  let e := (CopyChildLayout.flatAddress interval).symm.trans (f.trans (CopyChildLayout.flatAddress child))
+  have offset (j : Fin (volume prime interval)) : position (e j) = j.cast size := by
+    obtain ⟨a,rfl⟩ := (CopyChildLayout.flatAddress interval).surjective j
+    have atChild : e (CopyChildLayout.flatAddress interval a) = CopyChildLayout.flatAddress child (f a) := by
+      simp [e]
+    have h := coords (e (CopyChildLayout.flatAddress interval a))
+    rw [atChild] at h ⊢
+    have same := (CopyChildLayout.packActive interval).injective
+      (Fin.ext (h.symm.trans (CopyChildLayout.packActive_change interval child width spectators a)))
+    have eq := congrArg Fin.val same
+    exact Fin.ext eq
+  have inputs : (word ∘ position) ∘ e = fun j => word (j.cast size) := by
+    funext j
+    exact congrArg word (offset j)
+  have read (j) := transpose_changeLayout interval child width spectators (word ∘ position) j
+  change ∀ j, Shared50RecursiveNodeRows.transpose (one_dvd interval.rows) ((word ∘ position) ∘ e) j =
+    Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (word ∘ position) (e j) at read
+  rw [inputs] at read
+  constructor
+  · intro returned
+    funext k
+    let j := k.cast size.symm
+    simpa only [offset,j,Fin.cast_cast,Fin.cast_eq_self] using (returned (e j)).trans (read j).symm
+  · rintro rfl k
+    obtain ⟨j,rfl⟩ := e.surjective k
+    simpa only [offset,Fin.cast_cast,Fin.cast_eq_self] using read j
+
+open RecursiveInterchangeLayout in
 abbrev CopyIntervalPositions (child : Descriptor) (w W : ℕ)
     (position : Fin (volume prime child) ≃ Fin ((prime^w)^16*W)) : Prop :=
   InheritedIntervalPositions child (phaseIntervalChild 0 7 w W)
@@ -194,27 +241,22 @@ theorem scheduledIntervalCall_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T
         stored (fun k => Shared50RecursiveNodeRows.transpose (v := interval) (one_dvd _)
           (fun j => word (j.cast size)) (k.cast size.symm)) F := by
   intro M W a b interval child size
-  obtain ⟨e,coords,action⟩ := scheduledPhaseCoordinates node i p checked (w+1) B rows rank width split label
+  obtain ⟨e,coords,_⟩ := scheduledPhaseCoordinates node i p checked (w+1) B rows rank width split label
   let position := e.symm.trans (finCongr size)
-  refine ⟨position,?_,?_⟩
-  · intro k
+  have inherited : InheritedIntervalPositions child interval size position := by
+    intro k
     simpa [position] using coords (e.symm k)
+  refine ⟨position,inherited,?_⟩
   intro stored u S word budget run
   have smaller : child.width < node.width := by
     have scaled := Nat.mul_lt_mul_of_pos_right ((nodeChildren5_le i).trans_lt (by decide : 42 < 64)) (Nat.succ_pos w)
     simpa only [child,scheduledChild,Fallback.rankDescriptor,width,Nat.mul_div_cancel_left _ (by decide : 0 < 64)] using scaled
   obtain ⟨z,F,n,changed,exec,time,user,ready,swap⟩ := run smaller
   refine ⟨z,F,_,Exec.call exec,by omega,user,?_⟩
-  convert ready using 2
-  rename_i k
-  let j := k.cast size.symm
-  have back (l : Fin (volume prime interval)) : position (e l) = l.cast size := by simp [position]
-  have inputs : (word ∘ position) ∘ e = fun l => word (l.cast size) := by
-    funext l
-    exact congrArg word (back l)
-  have read := congrFun (action (word ∘ position)) j
-  rw [inputs] at read
-  exact read.trans ((swap (e j)).symm.trans (congrArg changed (by simp [back,j])))
+  have sameWidth : interval.width = child.width := by
+    simpa only [interval,a,b,child,scheduledChild,Fallback.rankDescriptor,width,rank,
+      Nat.mul_div_cancel_left _ (by decide : 0 < 64)] using phaseIntervalChild_width checked (w+1) W
+  exact (inherited.transpose_iff sameWidth word changed).1 swap ▸ ready
 
 private theorem digits_of_length {α : Type*} {n : ℕ} (xs : List α) (size : xs.length = n) :
     ∃ x : Fin n → α, List.ofFn x = xs := by
@@ -494,6 +536,84 @@ theorem placedHoare_exec {k q T Q b : ℕ} {P U : Type}
     (body' := body) bank.injective (fun f => f.elim) exec u rfl S rfl
   subst A
   exact ⟨z,F,n,placed,time,same.trans user,full,off⟩
+
+open M8.Machine.ArbitraryWidthOriginalRun M8.Machine.ArbitraryWidthHighExchangeShared
+  M8.RevMachine SharedPlacementAlphabet RecursiveInterchangeLayout in
+/-- Build the rank-seven interval headers beside the payload and run the
+stopped child in place, preserving its inherited physical order. -/
+private theorem inheritedCopyLeaf_runs [M8.Machine.Net] {w W : ℕ} {child : Descriptor}
+    {position : Fin (volume prime child) ≃ Fin ((prime^w)^16*W)}
+    (coords : CopyIntervalPositions child w W position) (width : child.width = 7*w)
+    (hw : 0 < w) (hW : 0 < W) (word : Fin ((prime^w)^16*W) → ZMod 2) :
+    let view := phaseIntervalChild 0 7 w W
+    let size := phaseIntervalChild_volume (by decide : 0 ≤ 7) (by decide : 7 ≤ 8) w W
+    let payload := fun x : Fin ((prime^w)^16*W) → ZMod 2 =>
+      (⟨fun _ => 0, fun _ => sourceWord (v := view) (fun j => x (j.cast size))⟩ : Tapes 1 prime)
+    let setup := extendBanks (extend (extend (extend (phaseHeaderProgram 0 7) 1) 16) 19)
+    let leaf := M8.Machine.ArbitraryWidthOriginalTotalRun.program (fun i => (phaseHeaderSlots i).castAdd 1) ((0 : Fin 1).natAdd 24)
+    let V := (prime^w)^16*W
+    ∃ changed : Fin V → ZMod 2, HoareTime (seq setup leaf)
+      (fun z => z = input ((phaseHeaderInput 0 7 w W).append (payload word)))
+      (fun z => z = input ((phaseHeaderOutput 0 7 w W).append (payload changed)))
+      (1300*V+1+LeafCore.coreCost V child.width) ∧
+      ∀ k, changed (position k) = Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (word ∘ position) k := by
+  intro view size payload setup leaf V
+  let initial := (phaseHeaderInput 0 7 w W).append (payload word)
+  let caller := (phaseHeaderOutput 0 7 w W).append (payload word)
+  obtain ⟨build,valid,fields⟩ := phaseHeader_runs (by decide : 0 ≤ 7) (by decide : 7 ≤ 8) hw hW
+  have prepare := extend_banks_hoare (hoare_extend_eq (hoare_extend_eq (hoare_extend_eq build (payload word))
+    (FixedHeaderBankCopy.empty 16)) M8.Machine.ArbitraryWidthHighPrepareShared.privateInput)
+  change HoareTime setup (fun z => z = input initial) (fun z => z = input caller) (1300*V) at prepare
+  have pos : view.Positive := LeafCore.positive_of_volume (size ▸ Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) hW)
+  let x := fun j => word (Fin.cast size j)
+  let owner := (0 : Fin 1).natAdd 24
+  have run := M8.Machine.ArbitraryWidthOriginalTotalRun.runs caller (fun i => (phaseHeaderSlots i).castAdd 1)
+    owner view (Routines.hdr view) pos valid (fun i => by simpa [caller,Tapes.append,Routines.hdr] using (fields i).2)
+    (fun i => by simpa [caller,Tapes.append] using (fields i).1) x (by simp only [caller, owner, Tapes.append, Fin.addCases_right]; rfl)
+    (by simp only [caller, owner, Tapes.append, Fin.addCases_right]; rfl)
+  let changed := fun k : Fin V => Shared50RecursiveNodeRows.transpose (one_dvd view.rows) x (k.cast size.symm)
+  have update : setTape caller owner (sourceWord (Shared50RecursiveNodeRows.transpose (one_dvd view.rows) x)) 0 =
+      (phaseHeaderOutput 0 7 w W).append (payload changed) := by
+    unfold caller owner
+    rw [setTape_append_right]
+    congr 1
+    apply congrArg₂ Tapes.mk <;> funext i <;> obtain rfl := Subsingleton.elim i (0 : Fin 1) <;>
+      simp [payload,setTape,changed,x]
+  rw [update] at run
+  have sameWidth : view.width = child.width := width.symm
+  have price := LeafCore.cost_le pos
+  rw [size,sameWidth] at price
+  have move := run.consequence (fun _ h => h) (fun _ h => h) price
+  exact ⟨changed, prepare.seq move, (coords.transpose_iff sameWidth word changed).2 rfl⟩
+
+open M8.Machine.ArbitraryWidthOriginalRun M8.Machine.ArbitraryWidthHighExchangeShared
+  M8.RevMachine SharedPlacementAlphabet RecursiveInterchangeLayout in
+/-- Build the rank-seven interval headers beside the payload and run the
+stopped child in place, preserving its inherited physical order. -/
+theorem inheritedCopyLeaf_exec [M8.Machine.Net] {T Q w W : ℕ} {P U : Type} {child : Descriptor}
+    {position : Fin (volume prime child) ≃ Fin ((prime^w)^16*W)}
+    (coords : CopyIntervalPositions child w W position) (width : child.width = 7*w)
+    (hw : 0 < w) (hW : 0 < W) (word : Fin ((prime^w)^16*W) → ZMod 2) :
+    let view := phaseIntervalChild 0 7 w W
+    let size := phaseIntervalChild_volume (by decide : 0 ≤ 7) (by decide : 7 ≤ 8) w W
+    let payload := fun x : Fin ((prime^w)^16*W) → ZMod 2 =>
+      (⟨fun _ => 0, fun _ => sourceWord (v := view) (fun j => x (j.cast size))⟩ : Tapes 1 prime)
+    let setup := extendBanks (extend (extend (extend (phaseHeaderProgram 0 7) 1) 16) 19)
+    let leaf := M8.Machine.ArbitraryWidthOriginalTotalRun.program (fun i => (phaseHeaderSlots i).castAdd 1) ((0 : Fin 1).natAdd 24)
+    let machine := seq setup leaf
+    let V := (prime^w)^16*W
+    let tapes := M8.Machine.ArbitraryWidthOriginalZeroBranch.count 25
+    ∀ (ports : Fin tapes ↪ Fin T) (fits : _ ≤ Q) (body : P → Pr P T Q prime U) (u : HS T Q prime U) (S : Stacks T prime),
+      RepT (input ((phaseHeaderInput 0 7 w W).append (payload word))) (embStk ports S).L (embStk ports S).R →
+      ∃ changed : Fin V → ZMod 2, ∃ z F n, Exec body (embProg ports (Empty.elim : Empty → P) (foreign (liftQ machine fits)))
+        (mk u S) n (mk z F) ∧ n ≤ (1300*V+1+LeafCore.coreCost V child.width)*(tapes+5)+6 ∧ z.user = u.user ∧
+        RepT (input ((phaseHeaderOutput 0 7 w W).append (payload changed))) (embStk ports F).L (embStk ports F).R ∧
+        (∀ j, (∀ l, ports l ≠ j) → F.L j = S.L j ∧ F.R j = S.R j) ∧
+        ∀ k, changed (position k) = Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (word ∘ position) k := by
+  intro view size payload setup leaf machine V tapes ports fits body u S ready
+  obtain ⟨changed,run,action⟩ := inheritedCopyLeaf_runs coords width hw hW word
+  obtain ⟨z,F,n,exec,time,user,done,off⟩ := placedHoare_exec machine ports fits body run u S ready
+  exact ⟨changed,z,F,n,exec,time,user,done,off,action⟩
 
 open M8.RevMachine RecursiveInterchangeLayout IntegerMultBounds.Networks.Certificates.PR589 in
 /-- Execute either chart route of a COPY window on its assigned host tapes. The
@@ -1355,6 +1475,28 @@ private theorem disjointStackBanks {t m n T a : ℕ} (p : Fin t ↪ Fin T) (q : 
     simp [all,embExt_off _ _ (fun i => pq i j),embExt_apply q.injective]
   · intro j
     simp [all,embExt_off _ _ (fun i => pr i j),embExt_off _ _ (fun i => qr i j),embExt_apply r.injective]
+
+/-- Marked input words for the two dimension banks and the product bank. -/
+def copyLeafHeader (w W : ℕ) (i : Fin 24) : Option (List Bool) :=
+  match i.val with
+  | 2 | 11 | 21 => some (FlatCoordinateSchedule.bits w)
+  | 3 => some (FlatCoordinateSchedule.bits W)
+  | 12 => some (FlatCoordinateSchedule.bits 1)
+  | 23 => some (FlatCoordinateSchedule.bits 7)
+  | _ => none
+
+open Cover.Fallback in
+theorem copyLeafHeader_rep (w W : ℕ) :
+    let header := copyLeafHeader w W
+    RepT (phaseHeaderInput 0 7 w W)
+      (fun i => ((header i).toList.map fun _ => separator))
+      (fun i => (header i).elim [] (List.map bitSymbol)) := by
+  intro header i z
+  have binary (bs : List Bool) : RadixZeroFill.encodedBinary (q := prime) bs z =
+      readAt blank [separator] (bs.map bitSymbol) (z-1) := by rw [encodedBinary_eq,readAt_single]
+  have empty : (blank : Fin (prime+4)) = readAt blank [] [] (z-0) := by
+    simp [readAt_nil_left,wordTape_nil]
+  fin_cases i <;> first | exact empty | exact binary _
 
 /-- The basis workspace needs only its two marked binary headers. The caller
 holds the payload, so all other private tapes start empty. -/
