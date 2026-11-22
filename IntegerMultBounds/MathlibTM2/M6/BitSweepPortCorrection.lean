@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.M6.BitSweepRead
+public import IntegerMultBounds.MathlibTM2.M6.BitPortCorrectionSeed
 
 /-! Place the active port corrections around one compact sweep. -/
 @[expose] public section
@@ -91,6 +92,7 @@ theorem framedPortCorrections [M8.Machine.Net] :
       let V := (prime^w)^16*W
       ∃ enter leave : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V)),
         enter.tapes ≤ tapes ∧ leave.tapes ≤ tapes ∧ enter.states ≤ states ∧ leave.states ≤ states ∧
+        (∃ S, ChartPrivateReady enter S) ∧ (∃ S, ChartPrivateReady leave S) ∧
         enter.cost + leave.cost = base*V + 17760*(2*LeafCore.coreCost V w+14) ∧
         ((enter.cost+leave.cost : ℕ) : ℝ) ≤ C*(w : ℝ)^M8.Machine.BudgetBound.tau*V ∧
         (∀ x i, (∀ k, sourceOwner n k ≠ i) → enter.transform x i = x i) ∧
@@ -120,9 +122,9 @@ theorem framedPortCorrections [M8.Machine.Net] :
   refine ⟨(base : ℝ)+17760*(2*|LeafCore.C|+14),base,max (total preSize) (total postSize),
     max (controls preStates) (controls postStates),?_⟩
   intro n w W hw hW V
-  choose pre post preFixed postFixed preControl postControl price correct using fun t => build t w W hw hW
-  obtain ⟨enter,enterTapes,enterStates,paid,entry,keep⟩ := compilePortsSized ⟨sourceOwner n,source_injective n⟩ (fun k => pre k.2) jobs unique
-  obtain ⟨leave,leaveTapes,leaveStates,cost,exitRow,off⟩ := compilePortsSized ⟨targetOwner n,targetOwner_injective n⟩ (fun k => post k.2) jobs unique
+  choose pre post preFixed postFixed preControl postControl price preSeed postSeed correct using fun t => build t w W hw hW
+  obtain ⟨enter,readyEnter,enterTapes,enterStates,paid,entry,keep⟩ := compileSeededPorts ⟨sourceOwner n,source_injective n⟩ (fun k => pre k.2) jobs unique (fun k _ => preSeed k.2)
+  obtain ⟨leave,readyLeave,leaveTapes,leaveStates,cost,exitRow,off⟩ := compileSeededPorts ⟨targetOwner n,targetOwner_injective n⟩ (fun k => post k.2) jobs unique (fun k _ => postSeed k.2)
   have exactCost : enter.cost + leave.cost = base*V + 17760*(2*LeafCore.coreCost V w+14) := by
     rw [paid,cost,count]
     have total := congrArg (fun f : ((Fin 32 × Fin 5) × Fin 111 → ℕ) => (jobs.map f).sum)
@@ -134,7 +136,7 @@ theorem framedPortCorrections [M8.Machine.Net] :
   refine ⟨enter,leave,by simpa only [enterTapes,preFixed,total] using le_max_left (total preSize) (total postSize),
     by simpa only [leaveTapes,postFixed,total] using le_max_right (total preSize) (total postSize),
     by simpa only [enterStates,preControl,controls] using le_max_left (controls preStates) (controls postStates),
-    by simpa only [leaveStates,postControl,controls] using le_max_right (controls preStates) (controls postStates),exactCost,?_,fun x i away => keep x i (fun k _ => away k),
+    by simpa only [leaveStates,postControl,controls] using le_max_right (controls preStates) (controls postStates),readyEnter,readyLeave,exactCost,?_,fun x i away => keep x i (fun k _ => away k),
     fun y i away => off y i (fun k _ => away k),?_⟩
   · rw [exactCost]
     let power := (w : ℝ)^M8.Machine.BudgetBound.tau
@@ -180,7 +182,7 @@ theorem sweepPortCorrections [M8.Machine.Net] :
   obtain ⟨C,_,tapes,states,build⟩ := framedPortCorrections
   refine ⟨C,tapes,states,?_⟩
   intro n w B W hw hW K V
-  obtain ⟨enter,leave,et,lt,es,ls,_,bill,keep,off,correct⟩ := build n w (B*K) hw hW
+  obtain ⟨enter,leave,et,lt,es,ls,_,_,_,bill,keep,off,correct⟩ := build n w (B*K) hw hW
   refine ⟨enter,leave,et,lt,es,ls,bill,keep,off,?_⟩
   intro x y step k b s j cell L frame P src dst
   let row := fun (bank : OwnerArray w B W) i (l : Fin K) (v : Swap.Shear.State (Fin 8) (ZMod (prime^w))) =>

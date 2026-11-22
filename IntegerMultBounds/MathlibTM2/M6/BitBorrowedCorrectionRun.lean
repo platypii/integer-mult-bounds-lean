@@ -155,4 +155,55 @@ theorem allocatedBorrowedCorrection_exec {t Q w B K : ℕ} {P U : Type}
   have stored := base j (fun i => outside (i.castAdd 2))
   exact ⟨keep.1.trans stored.1,keep.2.trans stored.2⟩
 
+local instance (w : ℕ) : NeZero (prime^w) := ⟨(pow_pos Shared50ModularControl.prime_prime.pos _).ne'⟩
+
+open AffineFieldCoordinates FlatCoordinateLayout Cover in
+/-- The concrete entry and exit machines correct every active port on the worker's
+shared bank. The caller supplies only the worker's private initialization. -/
+theorem correctedBorrowedSweep_exec [M8.Machine.Net] :
+    ∃ base tapes states : ℕ, ∀ {t Q w B K : ℕ} {P U : Type}
+      (n : Fin 9) (localFan : Fin (142081+2) ↪ Fin t)
+      (body : P → Pr P t Q prime U) (code : Pr P t Q prime U) (price : ℕ) (initial : Stacks t prime),
+    let rows := (prime^w)^112*B
+    let V := (prime^w)^16*(rows*prime^(64*(w*64))*K)
+    0 < w → 0 < rows*prime^(64*(w*64))*K → states ≤ Q →
+    (∀ x u S, HelperFan localFan x S →
+      (∀ j, (∀ i, localFan i ≠ j) → S.L j = initial.L j ∧ S.R j = initial.R j) →
+      ∃ z F k y, Exec body code (mk u S) k (mk z F) ∧ k ≤ price ∧ z.user = u.user ∧
+        HelperFan localFan y F ∧ RestoredBorrowedStage n w B K x y) →
+    ∃ (T : ℕ) (worker : Fin t ↪ Fin T) (program : Pr P T Q prime U),
+    let fan := localFan.trans worker
+    ∀ X : Stacks 142081 prime, ∃ prepared : Stacks T prime,
+      embStk ((Fin.castAddEmb 2).trans fan) prepared = X ∧
+      ∀ x u S, HelperFan fan x S →
+      (∀ j, (∀ i, fan i ≠ j) → S.L j = prepared.L j ∧ S.R j = prepared.R j) →
+      ∃ z F k y, Exec (fun f => embProg worker id (body f)) program (mk u S) k (mk z F) ∧
+        k ≤ (base*V+17760*(2*LeafCore.coreCost V w+14))*(tapes+5)+price+12 ∧
+        z.user = u.user ∧ HelperFan fan y F ∧
+        ∀ (p : (Fin 32 × Fin 5) × Fin 111) (g : LabelPadding.Label 64 w)
+          (cell : LabelEntry.Cell (copyLabelLayout w rows K) rows) s,
+          let P := translatedPortProjector (ZMod (prime^w)) (4 : ZMod (prime^w))⁻¹ p.2
+          let pos := fun v => index (embed v) (labelSpectator g cell)
+          let src := sourceOwner n p
+          let dst := targetOwner n p
+          y src (pos s) = x src (pos (M8.Exchange.exchange P s.swap)) ∧
+          y dst (pos s) = x dst (pos (M8.Exchange.exchange (1-P) s)) + x src (pos s.swap) := by
+  obtain ⟨_,base,tapes,states,build⟩ := borrowedPortCorrections
+  refine ⟨base,tapes,states,?_⟩
+  intro t Q w B K P U n localFan body code price initial rows V hw positive fits sweep
+  obtain ⟨enter,leave,et,lt,es,ls,sa,sb,exactCost,_,_,_,correct⟩ := build n w rows K hw positive
+  obtain ⟨T,worker,program,prepare⟩ := allocatedBorrowedCorrection_exec n localFan body code price initial
+    enter leave (es.trans fits) (ls.trans fits) sa sb sweep
+  refine ⟨T,worker,program,?_⟩
+  intro fan X
+  obtain ⟨prepared,owners,run⟩ := prepare X
+  refine ⟨prepared,owners,?_⟩
+  intro x u S live fresh
+  obtain ⟨z,F,k,y,exec,time,user,output,action⟩ := run x u S live fresh
+  refine ⟨z,F,k,leave.transform y,exec,?_,user,output,correct x y action.1⟩
+  have entry := Nat.mul_le_mul_left enter.cost (Nat.add_le_add_right et 5)
+  have exit := Nat.mul_le_mul_left leave.cost (Nat.add_le_add_right lt 5)
+  rw [← exactCost,Nat.add_mul]
+  omega
+
 end IntegerMultBounds.MathlibTM2.M6.BitNode

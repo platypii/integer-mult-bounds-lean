@@ -196,6 +196,7 @@ theorem framed_correctedPort [M8.Machine.Net] (t : Fin 111) :
         enter.tapes = preTapes ∧ leave.tapes = postTapes ∧
         enter.states = preStates ∧ leave.states = postStates ∧
         enter.cost+leave.cost = c*V + 2*LeafCore.coreCost V w+12 ∧
+        HasStackSeed enter.metadata ∧ HasStackSeed leave.metadata ∧
         ∀ n (run : Fin 32 × Fin 5) (x a y : Fin 142081 → Fin V → ZMod 2),
           let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n run.1 run.2,ownerTape_injective ..⟩
           let src := owner ⟨t.val,by omega⟩
@@ -213,10 +214,10 @@ theorem framed_correctedPort [M8.Machine.Net] (t : Fin 111) :
   obtain ⟨b,postMachine,post⟩ := portCorrection_owner t true true
   refine ⟨a+b,preMachine.tapes,postMachine.tapes,preMachine.states,postMachine.states,?_⟩
   intro w W hw hW V P
-  obtain ⟨enter,hpre,entryCost,entry⟩ := pre w W hw hW
-  obtain ⟨leave,hpost,exitCost,exitRow⟩ := post w W hw hW
+  obtain ⟨enter,hpre,entryCost,preSeed,entry⟩ := pre w W hw hW
+  obtain ⟨leave,hpost,exitCost,postSeed,exitRow⟩ := post w W hw hW
   refine ⟨enter,leave,congrArg SharedBankSkeleton.Skeleton.tapes hpre,congrArg SharedBankSkeleton.Skeleton.tapes hpost,
-    congrArg SharedBankSkeleton.Skeleton.states hpre,congrArg SharedBankSkeleton.Skeleton.states hpost,?_,?_⟩
+    congrArg SharedBankSkeleton.Skeleton.states hpre,congrArg SharedBankSkeleton.Skeleton.states hpost,?_,preSeed,postSeed,?_⟩
   · rw [entryCost,exitCost]
     simp only [ite_true,V]
     ring
@@ -281,7 +282,7 @@ theorem sweepEffect_correctedPort [M8.Machine.Net] (t : Fin 111) :
   obtain ⟨c,et,lt,es,ls,build⟩ := framed_correctedPort t
   refine ⟨c,et,lt,es,ls,?_⟩
   intro w B W hw hW K V P
-  obtain ⟨enter,leave,he,hl,qe,ql,cost,correct⟩ := build w (B*K) hw hW
+  obtain ⟨enter,leave,he,hl,qe,ql,cost,_,_,correct⟩ := build w (B*K) hw hW
   refine ⟨enter,leave,he,hl,qe,ql,cost,?_⟩
   intro n run x a y owner src dst source target step z
   obtain ⟨outT,outS⟩ := sweepEffect_active step run t z

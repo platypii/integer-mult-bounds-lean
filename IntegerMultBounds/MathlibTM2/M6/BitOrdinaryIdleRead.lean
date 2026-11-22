@@ -1983,44 +1983,6 @@ def copyLeafPlacement {k n : ℕ} (fits : k ≤ n) : Fin k ↪ Fin (n+35) where
     apply Fin.ext
     split at h <;> split at h <;> omega
 
-/-- The basis workspace needs only its two marked binary headers. The caller
-holds the payload, so all other private tapes start empty. -/
-noncomputable def basisHeaderStacks (stages : List (FlatCoordinateSchedule.Op 16)) (w W : ℕ) :
-    Stacks (FlatCoordinateCleanSchedule.tapeCount stages) prime :=
-  ⟨[],[],fun i => if i.val = 2 ∨ i.val = 3 then [separator] else [],
-    fun i => if i.val = 2 then (FlatCoordinateSchedule.bits w).map bitSymbol
-      else if i.val = 3 then (FlatCoordinateSchedule.bits W).map bitSymbol else []⟩
-
-open Cover.Fallback SharedPlacementAlphabet in
-theorem basisHeaderStacks_rep {w W : ℕ} (stages : List (FlatCoordinateSchedule.Op 16))
-    (x : Fin ((prime^w)^16*W) → ZMod 2) :
-    let S := basisHeaderStacks stages w W
-    RepT (basisWorkspace stages x) S.L S.R := by
-  intro S i z
-  by_cases src : i = segmentSource stages
-  · subst i
-    simp [basisWorkspace,setTape,S,basisHeaderStacks,segmentSource,readAt_nil_left,wordTape_nil]
-  · by_cases h : i.val < 4
-    · simp only [basisWorkspace,setTape,Function.update_of_ne src,SharedBankStageInput.raw,dite_eq_left h]
-      have nz : i.val ≠ 0 := fun eq => src (Fin.ext eq)
-      let j : Fin 4 := ⟨i.val,h⟩
-      have cases : j = 1 ∨ j = 2 ∨ j = 3 := by simp only [Fin.ext_iff]; dsimp [j]; omega
-      change (FlatCoordinateShiftSharedBank.common _).tape j z = _
-      rcases cases with eq | eq | eq
-      all_goals have val := congrArg Fin.val eq
-      all_goals simp only [j] at val
-      all_goals simp only [S,basisHeaderStacks,val]
-      all_goals rw [eq]
-      · change blank = readAt blank [] [] (z-0)
-        simp [readAt_nil_left,wordTape_nil]
-      all_goals change RadixZeroFill.encodedBinary _ z = readAt blank [separator] _ (z-1)
-      all_goals rw [encodedBinary_eq,readAt_single]
-      all_goals rfl
-    · have h2 : i.val ≠ 2 := by omega
-      have h3 : i.val ≠ 3 := by omega
-      simp [basisWorkspace,setTape,Function.update_of_ne src,SharedBankStageInput.raw,h,S,basisHeaderStacks,
-        h2,h3,readAt_nil_left,wordTape_nil]
-
 open M8.RevMachine RecursiveInterchangeLayout SharedPlacementAlphabet Cover.Fallback in
 theorem copyChartStacks (v : Descriptor) (d : Fin 22 → Option (List Bool)) (k t : ℕ) :
     let common := LabelCall.bank (copyOwners (T := k) (v := v) 0) v d

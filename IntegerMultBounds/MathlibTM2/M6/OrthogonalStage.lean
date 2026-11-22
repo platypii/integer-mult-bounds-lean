@@ -96,7 +96,7 @@ private theorem orthogonalChild_one [M8.Machine.Net] (k : ℕ) (hk : k < 8) :
   obtain ⟨machine,runs⟩ := digitSwap_view_owner i j (by change k < 15-k; omega)
   refine ⟨machine,?_⟩
   intro w W hw hW V
-  obtain ⟨stage,control,cost,swap⟩ := runs w W hw hW
+  obtain ⟨stage,control,cost,_,swap⟩ := runs w W hw hW
   refine ⟨stage,control,cost,?_⟩
   have gap : j.val-i.val-1 = (8-k-1)+(8-k-1) := by dsimp [i,j]; omega
   have suffix : FlatCoordinateLayout.suffixFields j = k := by
@@ -226,8 +226,8 @@ theorem orthogonalMove_owner (U : Matrix (Fin 8) (Fin 8) ℚ) (spec : Orthogonal
   refine ⟨a+b,beforeMachine,afterMachine,?_⟩
   intro w W hW V addr child hchild
   have move x := orthogonalChild_read r w W hr x (child.transform x) (hchild x)
-  obtain ⟨A,hA,ca,ra⟩ := before w W hW
-  obtain ⟨B,hB,cb,rb⟩ := after w W hW
+  obtain ⟨A,hA,ca,_,ra⟩ := before w W hW
+  obtain ⟨B,hB,cb,_,rb⟩ := after w W hW
   refine ⟨SharedBankStage.compose (SharedBankStage.compose A child) B,?_,?_,?_⟩
   · simp only [SharedBankSkeleton.ofStage_compose,hA,hB]
   · change A.cost + child.cost + 1 + B.cost + 1 = _

@@ -44,6 +44,79 @@ noncomputable def portOwner {V : ℕ} (x : Fin V → ZMod 2) : Tapes 1 prime :=
   ⟨fun _ => 0,fun _ => putWord (fun _ => blank) 0
     (List.ofFn fun i => SparseRoleCircuit.encode (a := prime) (x i))⟩
 
+/-- The tape contents at the current heads admit finite left and right stacks. -/
+def HasStackSeed {n : ℕ} (bank : Tapes n prime) : Prop :=
+  ∃ S : Stacks n prime, RepT bank S.L S.R
+
+theorem HasStackSeed.empty (n : ℕ) : HasStackSeed (SharedBank.empty n prime) := by
+  refine ⟨⟨[],[],fun _ => [],fun _ => []⟩,?_⟩
+  intro i z
+  simp [SharedBank.empty,readAt_nil_left,wordTape_nil]
+
+theorem HasStackSeed.append {n m : ℕ} {a : Tapes n prime} {b : Tapes m prime}
+    (left : HasStackSeed a) (right : HasStackSeed b) : HasStackSeed (a.append b) := by
+  obtain ⟨S,hs⟩ := left
+  obtain ⟨D,hd⟩ := right
+  refine ⟨⟨[],[],Fin.addCases S.L D.L,Fin.addCases S.R D.R⟩,?_⟩
+  intro i z
+  induction i using Fin.addCases with
+  | left i => simpa only [Tapes.append,Fin.addCases_left] using hs i z
+  | right i => simpa only [Tapes.append,Fin.addCases_right] using hd i z
+
+theorem HasStackSeed.strip {n k : ℕ} {a : Tapes n prime} (seed : HasStackSeed a)
+    (slot : Fin k → Fin n) : HasStackSeed (SharedBank.strip a slot) := by
+  classical
+  obtain ⟨S,rep⟩ := seed
+  let clear (f : Fin n → List (Fin (prime+4))) (j : Fin n) := if ∃ i, slot i = j then [] else f j
+  refine ⟨⟨[],[],clear S.L,clear S.R⟩,?_⟩
+  intro j z
+  by_cases h : ∃ i, slot i = j
+  · simp [SharedBank.strip,clear,h,readAt_nil_left,wordTape_nil]
+  · simpa only [SharedBank.strip,clear,h,ite_false] using rep j z
+
+private theorem compose_seed {V : ℕ} {a b : SharedBankStage.Stage _ 1 prime (@portOwner V)}
+    (sa : HasStackSeed a.metadata) (sb : HasStackSeed b.metadata) :
+    HasStackSeed (SharedBankStage.compose a b).metadata :=
+  ((HasStackSeed.empty 1).append sa).append sb
+
+/-- The basis workspace needs only its two marked binary headers. The caller
+holds the payload, so all other private tapes start empty. -/
+noncomputable def basisHeaderStacks (stages : List (FlatCoordinateSchedule.Op 16)) (w W : ℕ) :
+    Stacks (FlatCoordinateCleanSchedule.tapeCount stages) prime :=
+  ⟨[],[],fun i => if i.val = 2 ∨ i.val = 3 then [separator] else [],
+    fun i => if i.val = 2 then (FlatCoordinateSchedule.bits w).map bitSymbol
+      else if i.val = 3 then (FlatCoordinateSchedule.bits W).map bitSymbol else []⟩
+
+open Cover.Fallback SharedPlacementAlphabet in
+theorem basisHeaderStacks_rep {w W : ℕ} (stages : List (FlatCoordinateSchedule.Op 16))
+    (x : Fin ((prime^w)^16*W) → ZMod 2) :
+    let S := basisHeaderStacks stages w W
+    RepT (basisWorkspace stages x) S.L S.R := by
+  intro S i z
+  by_cases src : i = segmentSource stages
+  · subst i
+    simp [basisWorkspace,setTape,S,basisHeaderStacks,segmentSource,readAt_nil_left,wordTape_nil]
+  · by_cases h : i.val < 4
+    · simp only [basisWorkspace,setTape,Function.update_of_ne src,SharedBankStageInput.raw,dite_eq_left h]
+      have nz : i.val ≠ 0 := fun eq => src (Fin.ext eq)
+      let j : Fin 4 := ⟨i.val,h⟩
+      have cases : j = 1 ∨ j = 2 ∨ j = 3 := by simp only [Fin.ext_iff]; dsimp [j]; omega
+      change (FlatCoordinateShiftSharedBank.common _).tape j z = _
+      rcases cases with eq | eq | eq
+      all_goals have val := congrArg Fin.val eq
+      all_goals simp only [j] at val
+      all_goals simp only [S,basisHeaderStacks,val]
+      all_goals rw [eq]
+      · change blank = readAt blank [] [] (z-0)
+        simp [readAt_nil_left,wordTape_nil]
+      all_goals change RadixZeroFill.encodedBinary _ z = readAt blank [separator] _ (z-1)
+      all_goals rw [encodedBinary_eq,readAt_single]
+      all_goals rfl
+    · have h2 : i.val ≠ 2 := by omega
+      have h3 : i.val ≠ 3 := by omega
+      simp [basisWorkspace,setTape,Function.update_of_ne src,SharedBankStageInput.raw,h,S,basisHeaderStacks,
+        h2,h3,readAt_nil_left,wordTape_nil]
+
 private theorem fieldPass_owner
     (act : ∀ w : ℕ, IntegerMultBounds.Swap.Shear.State (Fin 8) (ZMod (prime^w)) →
       IntegerMultBounds.Swap.Shear.State (Fin 8) (ZMod (prime^w)))
@@ -58,7 +131,7 @@ private theorem fieldPass_owner
           x (FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) j)) :
     ∃ (c : ℕ) (machine : SharedBankSkeleton.Skeleton 1 prime), ∀ w W, 0 < W →
       let V := (prime^w)^16*W
-      ∃ stage : SharedBankStage.Stage _ 1 prime (@portOwner V), SharedBankSkeleton.ofStage stage = machine ∧ stage.cost = c*V ∧
+      ∃ stage : SharedBankStage.Stage _ 1 prime (@portOwner V), SharedBankSkeleton.ofStage stage = machine ∧ stage.cost = c*V ∧ HasStackSeed stage.metadata ∧
         ∀ x s j, stage.transform x (FlatCoordinateLayout.index
           (AffineFieldCoordinates.embed (act w s)) j) =
           x (FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) j) := by
@@ -85,7 +158,7 @@ private theorem fieldPass_owner
     transform := out, input := bank, output := fun x => bank (out x), slots := slot,
     slots_injective := fun _ _ _ => Subsingleton.elim _ _, cost := _, metadata := basisWorkspace stages (0 : Fin V → ZMod 2),
     input_payload := payload, output_payload := fun x => payload (out x),
-    strip_input := fun x => (strip x).trans (basisWorkspace_eq stages x 0), realizes := exec },rfl,rfl,read⟩
+    strip_input := fun x => (strip x).trans (basisWorkspace_eq stages x 0), realizes := exec },rfl,rfl,⟨_,basisHeaderStacks_rep stages 0⟩,read⟩
 
 open M8.Machine.Segments IntegerMultBounds.Swap.Modular in
 /-- A fixed nonrecursive field segment acts on the owner tape at linear
@@ -96,7 +169,7 @@ theorem fieldSegment_owner (ops : List (AffineFieldProgram.Op (Fin 8) ℚ)) (goo
       let V := (prime^w)^16*W
       let run := AffineFieldProgram.run (ops.map (AffineFieldProgram.mapOp (ratMod (prime^w))))
       ∃ stage : SharedBankStage.Stage _ 1 prime (@portOwner V),
-        SharedBankSkeleton.ofStage stage = machine ∧ stage.cost = c*V ∧ ∀ x s j,
+        SharedBankSkeleton.ofStage stage = machine ∧ stage.cost = c*V ∧ HasStackSeed stage.metadata ∧ ∀ x s j,
           stage.transform x (FlatCoordinateLayout.index (AffineFieldCoordinates.embed (run s)) j) =
             x (FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) j) := by
   apply fieldPass_owner _ (description ops good)
@@ -107,7 +180,7 @@ theorem frameBasis_owner (l : Fin 636) (inverse : Bool) :
     ∃ (c : ℕ) (machine : SharedBankSkeleton.Skeleton 1 prime), ∀ w W, 0 < W →
       let V := (prime^w)^16*W
       let M := reduce (prime^w) (frameBasis l inverse)
-      ∃ stage : SharedBankStage.Stage _ 1 prime (@portOwner V), SharedBankSkeleton.ofStage stage = machine ∧ stage.cost = c*V ∧
+      ∃ stage : SharedBankStage.Stage _ 1 prime (@portOwner V), SharedBankSkeleton.ofStage stage = machine ∧ stage.cost = c*V ∧ HasStackSeed stage.metadata ∧
         ∀ x s j, stage.transform x (FlatCoordinateLayout.index
           (AffineFieldCoordinates.embed (M8.Exchange.transform M M s)) j) =
           x (FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) j) := by
@@ -120,7 +193,7 @@ private theorem forwardDigit_owner (reflect : Bool) :
     ∃ (c : ℕ) (machine : SharedBankSkeleton.Skeleton 1 prime), ∀ w W, 0 < W →
       let V := (prime^w)^16*W
       ∃ stage : SharedBankStage.Stage _ 1 prime (@portOwner V),
-        SharedBankSkeleton.ofStage stage = machine ∧ stage.cost = c*V ∧
+        SharedBankSkeleton.ofStage stage = machine ∧ stage.cost = c*V ∧ HasStackSeed stage.metadata ∧
         ∀ x s j, let op : AffineFieldProgram.Op (Fin 8) (ZMod (prime^w)) :=
                    if reflect then .subFromD 0 7 else .addToD 0 7
           stage.transform x (FlatCoordinateLayout.index (AffineFieldCoordinates.embed
@@ -499,7 +572,8 @@ private theorem flatMatrix_owner (word : List (PortInverse.Op 16))
     ∃ (C : ℕ) (machine : SharedBankSkeleton.Skeleton 1 prime), ∀ w W, 0 < W →
       let V := (prime^w)^16*W
       ∃ stage : SharedBankStage.Stage _ 1 prime (@portOwner V),
-        SharedBankSkeleton.ofStage stage = machine ∧ stage.cost = C*V ∧ ∀ x a j,
+        SharedBankSkeleton.ofStage stage = machine ∧ stage.cost = C*V ∧
+        HasStackSeed stage.metadata ∧ ∀ x a j,
           stage.transform x (FlatCoordinateLayout.index (matrix w *ᵥ a) j) =
             x (FlatCoordinateLayout.index a j) := by
   let ops := FlatCoordinateSchedule.ofList word support
@@ -549,7 +623,7 @@ private theorem flatMatrix_owner (word : List (PortInverse.Op 16))
            output := fun x => bank (out x),slots := slot,slots_injective := fun _ _ _ => Subsingleton.elim _ _,
            cost := FlatCoordinateCleanSchedule.constant ops*V,metadata := basisWorkspace ops (0 : Fin V → ZMod 2),
            input_payload := payload,output_payload := fun x => payload _,realizes := exec,
-           strip_input := fun x => (strip x).trans (basisWorkspace_eq ops x 0) },rfl,rfl,move⟩
+           strip_input := fun x => (strip x).trans (basisWorkspace_eq ops x 0) },rfl,rfl,⟨_,basisHeaderStacks_rep ops 0⟩,move⟩
 
 open Matrix IntegerMultBounds.Swap.Modular in
 private theorem triangularPort_owner (E : Matrix (Fin 16) (Fin 16) ℚ)
@@ -560,7 +634,8 @@ private theorem triangularPort_owner (E : Matrix (Fin 16) (Fin 16) ℚ)
       let V := (prime^w)^16*W
       let M := reduce (prime^w) E
       ∃ stage : SharedBankStage.Stage _ 1 prime (@portOwner V),
-        SharedBankSkeleton.ofStage stage = machine ∧ stage.cost = C*V ∧ ∀ x a j,
+        SharedBankSkeleton.ofStage stage = machine ∧ stage.cost = C*V ∧
+        HasStackSeed stage.metadata ∧ ∀ x a j,
           stage.transform x (FlatCoordinateLayout.index ((if inverse then M⁻¹ else M) *ᵥ a) j) =
             x (FlatCoordinateLayout.index a j) := by
   let ops := OrderedAffine.program E
@@ -594,7 +669,8 @@ theorem rationalPortBasis_owner (t : Fin 111) (atExit inverse : Bool) :
       let V := (prime^w)^16*W
       let B := reduce (prime^w) (rationalPortBasis t atExit)
       ∃ stage : SharedBankStage.Stage _ 1 prime (@portOwner V),
-        SharedBankSkeleton.ofStage stage = machine ∧ stage.cost = c*V ∧ ∀ x a j,
+        SharedBankSkeleton.ofStage stage = machine ∧ stage.cost = c*V ∧
+        HasStackSeed stage.metadata ∧ ∀ x a j,
           stage.transform x (FlatCoordinateLayout.index ((if inverse then B⁻¹ else B) *ᵥ a) j) = x (FlatCoordinateLayout.index a j) := by
   let E := rationalPortBasis t atExit
   have valid (w : ℕ) : IntegerMultBounds.Swap.Shear.LowerTriangular (reduce (prime^w) E) ∧
@@ -687,7 +763,7 @@ theorem digitSwap_view_owner [M8.Machine.Net] (i j : Fin 16) (lt : i < j) :
     ∃ machine : SharedBankSkeleton.Skeleton 1 prime, ∀ w W, 0 < w → 0 < W →
     let V := (prime^w)^16*W
     ∃ stage : SharedBankStage.Stage _ 1 prime (@portOwner V),
-      SharedBankSkeleton.ofStage stage = machine ∧ stage.cost = 3808274*V + LeafCore.coreCost V w ∧
+      SharedBankSkeleton.ofStage stage = machine ∧ stage.cost = 3808274*V + LeafCore.coreCost V w ∧ HasStackSeed stage.metadata ∧
       ∀ x, LabelView.Swapped prime (swapView prime w W i j) (ext x) (ext (stage.transform x)) := by
   obtain ⟨machine,build⟩ := digitSwap_view_owner_cost i j lt (fun w W => LeafCore.coreCost ((prime^w)^16*W) w) (by
     intro w W hw hW u
@@ -697,22 +773,22 @@ theorem digitSwap_view_owner [M8.Machine.Net] (i j : Fin 16) (lt : i < j) :
     simpa only [size,show u.width = w from rfl] using LeafCore.cost_le positive)
   refine ⟨machine,?_⟩
   intro w W hw hW
-  obtain ⟨stage,fixed,price,_,swap⟩ := build w W hw hW
-  exact ⟨stage,fixed,price,swap⟩
+  obtain ⟨stage,fixed,price,seed,swap⟩ := build w W hw hW
+  exact ⟨stage,fixed,price,stage.strip_input 0 ▸ HasStackSeed.strip seed stage.slots,swap⟩
 
 open Cover RecursiveInterchangeLayout M8.RevMachine in
 theorem digitSwap_owner [M8.Machine.Net] (i j : Fin 16) (lt : i < j) :
     ∃ machine : SharedBankSkeleton.Skeleton 1 prime, ∀ w W, 0 < w → 0 < W →
     let V := (prime^w)^16*W
     ∃ stage : SharedBankStage.Stage _ 1 prime (@portOwner V),
-      SharedBankSkeleton.ofStage stage = machine ∧ stage.cost = 3808274*V + LeafCore.coreCost V w ∧
+      SharedBankSkeleton.ofStage stage = machine ∧ stage.cost = 3808274*V + LeafCore.coreCost V w ∧ HasStackSeed stage.metadata ∧
       ∀ x coords k, stage.transform x (FlatCoordinateLayout.index (coords ∘ Equiv.swap i j) k) =
         x (FlatCoordinateLayout.index coords k) := by
   obtain ⟨machine,runs⟩ := digitSwap_view_owner i j lt
   refine ⟨machine,?_⟩
   intro w W hw hW V
-  obtain ⟨stage,fixed,cost,swap⟩ := runs w W hw hW
-  exact ⟨stage,fixed,cost,fun x coords k => by
+  obtain ⟨stage,fixed,cost,seed,swap⟩ := runs w W hw hW
+  exact ⟨stage,fixed,cost,seed,fun x coords k => by
     simpa only [ext_apply] using swapView_apply i j lt (swap x) coords k⟩
 
 open AffineFieldCoordinates M8.RevMachine in
@@ -723,7 +799,7 @@ theorem backwardDigit_owner [M8.Machine.Net] :
     ∃ (c : ℕ) (machine : SharedBankSkeleton.Skeleton 1 prime), ∀ w W, 0 < w → 0 < W →
       let V := (prime^w)^16*W
       ∃ stage : SharedBankStage.Stage _ 1 prime (@portOwner V),
-        SharedBankSkeleton.ofStage stage = machine ∧ stage.cost = c*V + LeafCore.coreCost V w + 2 ∧
+        SharedBankSkeleton.ofStage stage = machine ∧ stage.cost = c*V + LeafCore.coreCost V w + 2 ∧ HasStackSeed stage.metadata ∧
         ∀ x coords j, stage.transform x (FlatCoordinateLayout.index
           (OrderedAffine.execute (.shift (hIndex (0 : Fin 8)) (dIndex (Fin.last 7)) 1) coords) j) =
           x (FlatCoordinateLayout.index coords j) := by
@@ -732,10 +808,10 @@ theorem backwardDigit_owner [M8.Machine.Net] :
   obtain ⟨swap,swaps⟩ := digitSwap_owner 0 15 (by decide)
   refine ⟨a+b+3808274,SharedBankSkeleton.compose (SharedBankSkeleton.compose add swap) sub,?_⟩
   intro w W hw hW V
-  obtain ⟨A,fa,ca,ar⟩ := adds w W hW
-  obtain ⟨S,fs,cs,sr⟩ := swaps w W hw hW
-  obtain ⟨B,fb,cb,br⟩ := subs w W hW
-  refine ⟨SharedBankStage.compose (SharedBankStage.compose A S) B,?_,?_,?_⟩
+  obtain ⟨A,fa,ca,sa,ar⟩ := adds w W hW
+  obtain ⟨S,fs,cs,ss,sr⟩ := swaps w W hw hW
+  obtain ⟨B,fb,cb,sb,br⟩ := subs w W hW
+  refine ⟨SharedBankStage.compose (SharedBankStage.compose A S) B,?_,?_,compose_seed (compose_seed sa ss) sb,?_⟩
   · simp only [SharedBankSkeleton.ofStage_compose,fa,fs,fb]
   · change A.cost+S.cost+1+B.cost+1 = _
     rw [ca,cs,cb]
@@ -771,7 +847,8 @@ private theorem negateDigit_owner (i : Fin 16) :
       let V := (prime^w)^16*W
       let D : Matrix (Fin 16) (Fin 16) (ZMod (prime^w)) := diagonal (fun a => if a=i then -1 else 1)
       ∃ stage : SharedBankStage.Stage _ 1 prime (@portOwner V),
-        SharedBankSkeleton.ofStage stage = machine ∧ stage.cost = c*V ∧ ∀ x a j,
+        SharedBankSkeleton.ofStage stage = machine ∧ stage.cost = c*V ∧
+        HasStackSeed stage.metadata ∧ ∀ x a j,
           stage.transform x (FlatCoordinateLayout.index (D *ᵥ a) j) = x (FlatCoordinateLayout.index a j) := by
   apply flatMatrix_owner [.scale i (-1)] _ (fun w => diagonal (fun a => if a=i then (-1 : ZMod (prime^w)) else 1))
   · intro w
@@ -794,7 +871,7 @@ theorem backwardDigit_inverse_owner [M8.Machine.Net] :
     ∃ (c : ℕ) (machine : SharedBankSkeleton.Skeleton 1 prime), ∀ w W, 0 < w → 0 < W →
       let V := (prime^w)^16*W
       ∃ stage : SharedBankStage.Stage _ 1 prime (@portOwner V),
-        SharedBankSkeleton.ofStage stage = machine ∧ stage.cost = c*V + LeafCore.coreCost V w + 4 ∧
+        SharedBankSkeleton.ofStage stage = machine ∧ stage.cost = c*V + LeafCore.coreCost V w + 4 ∧ HasStackSeed stage.metadata ∧
         ∀ x coords j, stage.transform x (FlatCoordinateLayout.index coords j) = x (FlatCoordinateLayout.index
           (OrderedAffine.execute (.shift (hIndex (0 : Fin 8)) (dIndex (Fin.last 7)) 1) coords) j) := by
   let i := hIndex (0 : Fin 8)
@@ -803,9 +880,9 @@ theorem backwardDigit_inverse_owner [M8.Machine.Net] :
   obtain ⟨b,shift,shifts⟩ := backwardDigit_owner
   refine ⟨a+b+a,SharedBankSkeleton.compose (SharedBankSkeleton.compose neg shift) neg,?_⟩
   intro w W hw hW V
-  obtain ⟨A,fa,ca,ar⟩ := negates w W hW
-  obtain ⟨S,fs,cs,sr⟩ := shifts w W hw hW
-  refine ⟨SharedBankStage.compose (SharedBankStage.compose A S) A,?_,?_,?_⟩
+  obtain ⟨A,fa,ca,sa,ar⟩ := negates w W hW
+  obtain ⟨S,fs,cs,ss,sr⟩ := shifts w W hw hW
+  refine ⟨SharedBankStage.compose (SharedBankStage.compose A S) A,?_,?_,compose_seed (compose_seed sa ss) sa,?_⟩
   · simp only [SharedBankSkeleton.ofStage_compose,fa,fs]
   · change A.cost+S.cost+1+A.cost+1 = _
     rw [ca,cs]
@@ -835,7 +912,7 @@ theorem portCorrection_owner [M8.Machine.Net] (t : Fin 111) (atExit : Bool) (inv
       let U := reduce (prime^w) (selectedProjector ⟨2+t.val,by omega⟩)
       let T := reduce (prime^w) (selectedProjector ⟨525+t.val,by omega⟩)
       ∃ stage : SharedBankStage.Stage _ 1 prime (@portOwner V),
-        SharedBankSkeleton.ofStage stage = machine ∧ stage.cost = c*V + LeafCore.coreCost V w + (if inverse then 6 else 4) ∧
+        SharedBankSkeleton.ofStage stage = machine ∧ stage.cost = c*V + LeafCore.coreCost V w + (if inverse then 6 else 4) ∧ HasStackSeed stage.metadata ∧
         ∀ x s j, let moved := if atExit then M8.Exchange.exchange T (M8.Exchange.exchange (1-P) s)
           else M8.Exchange.exchange P (M8.Exchange.exchange U s)
           stage.transform x (FlatCoordinateLayout.index (embed (if inverse then s else moved)) j) =
@@ -844,7 +921,7 @@ theorem portCorrection_owner [M8.Machine.Net] (t : Fin 111) (atExit : Bool) (inv
   have digit : ∃ (b : ℕ) (machine : SharedBankSkeleton.Skeleton 1 prime), ∀ w W, 0 < w → 0 < W →
       let V := (prime^w)^16*W
       ∃ stage : SharedBankStage.Stage _ 1 prime (@portOwner V),
-        SharedBankSkeleton.ofStage stage = machine ∧ stage.cost = b*V + LeafCore.coreCost V w + (if inverse then 4 else 2) ∧
+        SharedBankSkeleton.ofStage stage = machine ∧ stage.cost = b*V + LeafCore.coreCost V w + (if inverse then 4 else 2) ∧ HasStackSeed stage.metadata ∧
         ∀ x coords j, let moved := OrderedAffine.execute (.shift (hIndex (0 : Fin 8)) (dIndex (Fin.last 7)) 1) coords
           stage.transform x (FlatCoordinateLayout.index (if inverse then coords else moved) j) =
             x (FlatCoordinateLayout.index (if inverse then moved else coords) j) := by
@@ -855,10 +932,10 @@ theorem portCorrection_owner [M8.Machine.Net] (t : Fin 111) (atExit : Bool) (inv
   obtain ⟨c,fromChart,after⟩ := rationalPortBasis_owner t atExit false
   refine ⟨a+b+c,SharedBankSkeleton.compose (SharedBankSkeleton.compose toChart shift) fromChart,?_⟩
   intro w W hw hW V P U T
-  obtain ⟨A,fa,ca,ar⟩ := before w W hW
-  obtain ⟨S,fs,cs,sr⟩ := middle w W hw hW
-  obtain ⟨D,fd,cd,dr⟩ := after w W hW
-  refine ⟨SharedBankStage.compose (SharedBankStage.compose A S) D,?_,?_,?_⟩
+  obtain ⟨A,fa,ca,sa,ar⟩ := before w W hW
+  obtain ⟨S,fs,cs,ss,sr⟩ := middle w W hw hW
+  obtain ⟨D,fd,cd,sd,dr⟩ := after w W hW
+  refine ⟨SharedBankStage.compose (SharedBankStage.compose A S) D,?_,?_,compose_seed (compose_seed sa ss) sd,?_⟩
   · simp only [SharedBankSkeleton.ofStage_compose,fa,fs,fd]
   · change A.cost+S.cost+1+D.cost+1 = _
     rw [ca,cs,cd]
@@ -980,10 +1057,10 @@ theorem portChart_owner [M8.Machine.Net] (k l : Fin 636) :
   let machine := SharedBankSkeleton.compose (SharedBankSkeleton.compose (SharedBankSkeleton.compose first hi) di) last
   refine ⟨a+b+2*3808274,machine,?_⟩
   intro w W hw hW V T
-  obtain ⟨A,fa,ac,ar⟩ := before w W hW
-  obtain ⟨B,fb,bc,br⟩ := after w W hW
-  obtain ⟨H,fh,hc,hr⟩ := hswap w W hw hW
-  obtain ⟨D,fd,dc,dr⟩ := dswap w W hw hW
+  obtain ⟨A,fa,ac,_,ar⟩ := before w W hW
+  obtain ⟨B,fb,bc,_,br⟩ := after w W hW
+  obtain ⟨H,fh,hc,_,hr⟩ := hswap w W hw hW
+  obtain ⟨D,fd,dc,_,dr⟩ := dswap w W hw hW
   refine ⟨SharedBankStage.compose (SharedBankStage.compose (SharedBankStage.compose A H) D) B,?_,?_,?_⟩
   · simp only [SharedBankSkeleton.ofStage_compose,fa,fb,fh,fd,machine]
   · change A.cost+H.cost+1+D.cost+1+B.cost+1 = _

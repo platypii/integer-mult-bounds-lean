@@ -100,7 +100,7 @@ theorem borrowedSweep_correctedPort [M8.Machine.Net] (t : Fin 111) :
   obtain ⟨c,et,lt,es,ls,build⟩ := framed_correctedPort t
   refine ⟨c,et,lt,es,ls,?_⟩
   intro w B K hw positive W V P
-  obtain ⟨enter,leave,he,hl,qe,ql,cost,correct⟩ := build w W hw positive
+  obtain ⟨enter,leave,he,hl,qe,ql,cost,_,_,correct⟩ := build w W hw positive
   refine ⟨enter,leave,he,hl,qe,ql,cost,?_⟩
   intro n run x a y src dst source target ports g z
   obtain ⟨outS,outT⟩ := ports run t g z
@@ -115,6 +115,7 @@ theorem borrowedPortCorrections [M8.Machine.Net] :
       let V := (prime^w)^16*W
       ∃ enter leave : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V)),
         enter.tapes ≤ tapes ∧ leave.tapes ≤ tapes ∧ enter.states ≤ states ∧ leave.states ≤ states ∧
+        (∃ S, ChartPrivateReady enter S) ∧ (∃ S, ChartPrivateReady leave S) ∧
         enter.cost + leave.cost = base*V + 17760*(2*M8.RevMachine.LeafCore.coreCost V w+14) ∧
         ((enter.cost+leave.cost : ℕ) : ℝ) ≤ C*(w : ℝ)^M8.Machine.BudgetBound.tau*V ∧
         (∀ x i, (∀ k, sourceOwner n k ≠ i) → enter.transform x i = x i) ∧
@@ -132,8 +133,8 @@ theorem borrowedPortCorrections [M8.Machine.Net] :
   obtain ⟨C,base,tapes,states,build⟩ := framedPortCorrections
   refine ⟨C,base,tapes,states,?_⟩
   intro n w B K hw positive W V
-  obtain ⟨enter,leave,et,lt,es,ls,exactCost,cost,keep,off,correct⟩ := build n w W hw positive
-  refine ⟨enter,leave,et,lt,es,ls,exactCost,cost,keep,off,?_⟩
+  obtain ⟨enter,leave,et,lt,es,ls,readyEnter,readyLeave,exactCost,cost,keep,off,correct⟩ := build n w W hw positive
+  refine ⟨enter,leave,et,lt,es,ls,readyEnter,readyLeave,exactCost,cost,keep,off,?_⟩
   intro x y ports k g z s
   obtain ⟨source,target⟩ := ports k.1 k.2 g z
   exact correct x y k (labelSpectator g z) target source s

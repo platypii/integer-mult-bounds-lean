@@ -1139,7 +1139,7 @@ theorem chartedTarget_owner [M8.Machine.Net] (t : Fin 111) :
   obtain ⟨c,machine,correct⟩ := portCorrection_owner t true true
   refine ⟨c,machine,?_⟩
   intro w B K hw hW W V P
-  obtain ⟨stage,fixed,cost,read⟩ := correct w W hw hW
+  obtain ⟨stage,fixed,cost,_,read⟩ := correct w W hw hW
   refine ⟨stage,fixed,cost,?_⟩
   intro n owner x y g z run dst src stored s
   apply (read (y (owner dst)) s (labelSpectator (g*registerChart w n dst.val) z)).trans
@@ -1302,7 +1302,7 @@ theorem chartedSources_stage [M8.Machine.Net] :
   let ts := List.finRange 111
   refine ⟨(ts.map c).sum,?_⟩
   intro w B K hw hW W V owner
-  choose port _ price read using fun t => run t w W hw hW
+  choose port _ price _ read using fun t => run t w W hw hW
   let src (t : Fin 111) : Fin 661 := ⟨t.val,by omega⟩
   let slot : Fin 111 ↪ Fin 142081 := ⟨fun t => owner (src t),by intro a b h; exact Fin.ext (congrArg (Fin.val : Fin 661 → ℕ) (owner.injective h))⟩
   obtain ⟨stage,cost,hits,off⟩ := compilePorts slot port ts (List.nodup_finRange _)
@@ -2818,7 +2818,7 @@ theorem InvocationEffect.targetPrefix (t : Fin 111) :
   obtain ⟨c,machine,run⟩ := frameBasis_owner k true
   refine ⟨c,machine,?_⟩
   intro w B K hW W volume C
-  obtain ⟨stage,fixed,cost,reads⟩ := run w W hW
+  obtain ⟨stage,fixed,cost,_,reads⟩ := run w W hW
   refine ⟨stage,fixed,cost,?_⟩
   intro n r d x y act g z s owner reg before stored output
   let D := reduce (prime^w) (frameBasis k true)
