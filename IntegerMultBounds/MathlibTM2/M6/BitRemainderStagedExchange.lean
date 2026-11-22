@@ -54,6 +54,24 @@ theorem OriginalPortReads.stagedLabelExchange {w W B : ℕ} {interval parent c} 
   have exchange := reads.exchange units b label live rfl x k
   simpa only [Matrix.mul_one,Fin.cast_refl,id_eq] using exchange
 
+private theorem OriginalPortReads.singularCell {w W B : ℕ} {interval parent c} :
+    let M := prime^(w+1)
+    let N := M^(64*64)
+    ∀ {input output : Fin ((B*N)*(M^128*W)) → ZMod 2},
+      OriginalPortReads _ W B interval parent c input output →
+      ∀ (label : LabelPadding.Label 64 (w+1)), ¬ IsUnit label →
+      let g := LabelAddress.address label
+      ∀ (b : Fin B) j, output (finProdFinEquiv (finProdFinEquiv (b,g),j)) =
+        input (finProdFinEquiv (finProdFinEquiv (b,g),j)) := by
+  intro M N input output reads label singular g b j
+  let row : Fin (B*N) := finProdFinEquiv (b,g)
+  have number : row.val = b.val*M^(64*64)+g.val := by
+    simp [row,N,M,finProdFinEquiv_apply_val,Nat.mul_comm,Nat.add_comm]
+  have same := congrFun ((reads b label).2 singular) j
+  rw [← number] at same
+  simp only [ownerRow,dite_eq_left row.isLt] at same
+  exact same
+
 /-- A singular label retains every cell of its staged owner word. -/
 theorem OriginalPortReads.stagedSingularRow {w W B : ℕ} {interval parent c} :
     let M := prime^(w+1)
@@ -70,13 +88,54 @@ theorem OriginalPortReads.stagedSingularRow {w W B : ℕ} {interval parent c} :
       ∀ b j, dst (stagedOwnerIndex b j) = src (stagedOwnerIndex b j) := by
   intro M N label singular g input output src dst reads incoming outgoing b j
   rw [stagedRowRead g output dst outgoing,stagedRowRead g input src incoming]
-  let row : Fin (B*N) := finProdFinEquiv (b,g)
-  have number : row.val = b.val*M^(64*64)+g.val := by
-    simp [row,N,M,finProdFinEquiv_apply_val,Nat.mul_comm,Nat.add_comm]
-  have same := congrFun ((reads b label).2 singular) j
-  rw [← number] at same
-  simp only [ownerRow,dif_pos row.isLt] at same
-  exact same
+  exact reads.singularCell label singular b j
+
+/-- On a retained row, entry and return charts implement a requested address
+map for arbitrary bits exactly when the two physical addresses agree. -/
+theorem retainedRow_exchange_iff {ι κ : Type*} (entry exitRow : ι → κ) (exchange : ι → ι) :
+    (∀ (row : κ → ZMod 2) (x : ι), row (exitRow (exchange x)) = row (entry x)) ↔
+      ∀ x, exitRow (exchange x) = entry x := by
+  classical
+  constructor
+  · intro reads x
+    by_contra different
+    have h := reads (fun j => if j = entry x then 1 else 0) x
+    simp [different] at h
+  · intro addresses row x
+    rw [addresses]
+
+/-- For a permutation, the exit chart of a retained row is uniquely
+determined by its entry chart and the inverse of the desired exchange. -/
+theorem retainedRow_exit_iff {ι κ : Type*} (entry exitRow : ι → κ) (exchange : ι ≃ ι) :
+    (∀ (row : κ → ZMod 2) (x : ι), row (exitRow (exchange x)) = row (entry x)) ↔
+      exitRow = entry ∘ exchange.symm := by
+  rw [retainedRow_exchange_iff]
+  constructor
+  · intro addresses
+    funext y
+    simpa using addresses (exchange.symm y)
+  · rintro rfl x
+    simp
+
+/-- Entry and return transpose use inverse physical offsets. At a singular
+label the complete round trip therefore fixes each parent-order cell. -/
+theorem OriginalPortReads.parentSingularRow {w W B : ℕ} {interval parent c} :
+    let M := prime^(w+1)
+    let N := M^(64*64)
+    ∀ (label : LabelPadding.Label 64 (w+1)), ¬ IsUnit label →
+    let g := LabelAddress.address label
+    ∀ (input output : Fin ((B*N)*(M^128*W)) → ZMod 2)
+      (src dst : Fin (M^128*((B*N)*W)) → ZMod 2),
+      OriginalPortReads _ W B interval parent c input output →
+      (∀ a (b : Fin B) k, input (finProdFinEquiv (finProdFinEquiv (b,g),finProdFinEquiv (a,k))) =
+        src (finProdFinEquiv (a,finProdFinEquiv (finProdFinEquiv (b,g),k)))) →
+      (∀ a (b : Fin B) k, dst (finProdFinEquiv (a,finProdFinEquiv (finProdFinEquiv (b,g),k))) =
+        output (finProdFinEquiv (finProdFinEquiv (b,g),finProdFinEquiv (a,k)))) →
+      ∀ a (b : Fin B) k, dst (finProdFinEquiv (a,finProdFinEquiv (finProdFinEquiv (b,g),k))) =
+        src (finProdFinEquiv (a,finProdFinEquiv (finProdFinEquiv (b,g),k))) := by
+  intro M N label singular g input output src dst reads incoming outgoing a b k
+  rw [outgoing, ← incoming]
+  exact reads.singularCell label singular b (finProdFinEquiv (a,k))
 
 theorem OriginalPortReads.stagedExchange {w W B : ℕ} {interval parent c} :
     let M := prime^(w+1)
