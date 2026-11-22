@@ -62,12 +62,13 @@ theorem allocatedIdleWindow_exec {Q V : ℕ} {U : Type} (i : Fin 9) :
       ∃ z F n y, Exec (inner k) (code k) (mk v D) n (mk z F) ∧ n ≤ price k ∧
         z.user = v.user ∧ Cover.Fallback.RecordPayload (slot k) (fun _ => blank) 0 y F ∧ effect k word y) →
     ∃ (H : ℕ) (fan : Fin (142081+2) ↪ Fin H) (host : (Σ k, P k) → Pr (Σ k, P k) H Q prime U)
-      (program : Pr (Σ k, P k) H Q prime U),
-    ∀ (x : Fin 142081 → Fin V → ZMod 2) (S : Stacks (142081+2) prime)
-      (u : HS H Q prime U), HelperFan (Function.Embedding.refl _) x S →
-      (∀ k, let t := (idleTape i k).castAdd 2
-        S.L t = [] ∧ S.R t = List.ofFn (fun j => SparseRoleCircuit.encode (x (idleTape i k) j))) →
-      ∃ D F z n y, embStk fan D = S ∧ Exec host program (mk u D) n (mk z F) ∧
+      (program : Pr (Σ k, P k) H Q prime U) (initial : Stacks H prime),
+    ∀ (x : Fin 142081 → Fin V → ZMod 2) (D : Stacks H prime)
+      (u : HS H Q prime U), HelperFan fan x D →
+      (∀ k, let t := fan ((idleTape i k).castAdd 2)
+        D.L t = [] ∧ D.R t = List.ofFn (fun j => SparseRoleCircuit.encode (x (idleTape i k) j))) →
+      (∀ t, (∀ j, fan j ≠ t) → D.L t = initial.L t ∧ D.R t = initial.R t) →
+      ∃ F z n y, Exec host program (mk u D) n (mk z F) ∧
         n ≤ (idleCopies.map price).sum+1 ∧ z.user = u.user ∧ HelperFan fan y F ∧
         (∀ k, effect k (x (idleTape i k)) (y (idleTape i k))) ∧
         ∀ j, (∀ k, j ≠ idleTape i k) → y j = x j := by
@@ -77,22 +78,27 @@ theorem allocatedIdleWindow_exec {Q V : ℕ} {U : Type} (i : Fin 9) :
   obtain ⟨H,fan,place,shared,outside,apart,prepare⟩ := idleWorkspace (A := prime) T owner slot
   let host : (Σ k, P k) → Pr (Σ k, P k) H Q prime U :=
     fun p => embProg (place p.1) (Sigma.mk p.1) (inner p.1 p.2)
-  refine ⟨H,fan,host,Prog.seqList (idleCopies.map fun k => embProg (place k) (Sigma.mk k) (code k)),?_⟩
-  intro x S u live words
-  obtain ⟨D,view,privateTapes⟩ := prepare S seed
-  have ready : HelperFan fan x D := by
-    change HelperFan (Function.Embedding.refl _) x (embStk fan D)
-    rwa [view]
+  obtain ⟨initial,_,privateTapes⟩ := prepare ⟨[],[],fun _ => [],fun _ => []⟩ seed
+  refine ⟨H,fan,host,Prog.seqList (idleCopies.map fun k => embProg (place k) (Sigma.mk k) (code k)),initial,?_⟩
+  intro x D u ready words stock
   obtain ⟨y,F,z,n,exec,paid,user,final,acts,off⟩ := placedIdleWindow_exec i host fan x D u ready
     T P place slot inner Sigma.mk code price effect shared outside apart (fun _ _ => rfl) (by
       intro k v E keep
       obtain ⟨left,right⟩ := keep (slot k)
       rw [shared] at left right
-      have hl := congrArg (fun A => A.L (owner k)) view
-      have hr := congrArg (fun A => A.R (owner k)) view
-      exact run k _ v E (left.trans (hl.trans (words k).1)) (right.trans (hr.trans (words k).2))
-        (fun j ne => ⟨(keep j).1.trans (privateTapes k j ne).1,(keep j).2.trans (privateTapes k j ne).2⟩))
-  exact ⟨D,F,z,n,y,view,exec,paid,user,final,acts,off⟩
+      apply run k _ v E (left.trans (words k).1) (right.trans (words k).2)
+      intro j ne
+      have free : ∀ t, fan t ≠ place k j := by
+        intro t
+        by_cases h : t = owner k
+        · subst t
+          rw [← shared]
+          exact (place k).injective.ne ne.symm
+        · exact (outside k t h j).symm
+      obtain ⟨hl,hr⟩ := stock _ free
+      exact ⟨(keep j).1.trans (hl.trans (privateTapes k j ne).1),
+        (keep j).2.trans (hr.trans (privateTapes k j ne).2)⟩)
+  exact ⟨F,z,n,y,exec,paid,user,final,acts,off⟩
 
 private theorem castWord {m n : ℕ} (h : m = n) (x : Fin n → Fin (prime+4)) :
     List.ofFn (fun k => x (k.cast h)) = List.ofFn x := by
@@ -175,6 +181,17 @@ private theorem transportWorker {a b H Q price : ℕ} {P U : Type} (size : a = b
   subst b
   exact id
 
+private theorem windowCharge {ι : Type} (jobs : List ι) (price : ι → ℕ) (T V : ℕ) :
+    (jobs.map fun k => (149*(T+5)+5)*(V*142080)+24+
+      ((142081*(8*V+10)+1+price k)+(149*(V*142080)*(T+5)+6))).sum =
+    (jobs.map price).sum + jobs.length *
+      (((298*(T+5)+5)*142080+142081*8)*V + (142081*10+31)) := by
+  induction jobs with
+  | nil => simp
+  | cons k jobs ih =>
+    simp only [List.map_cons,List.sum_cons,List.length_cons,ih]
+    ring
+
 /-- All selected idle owners execute their inherited interval child, with the
 split and merge charged once per occurrence. -/
 theorem inheritedWindow_exec {U : Type} {Q : ℕ} (i : Fin 9) (w W : ℕ) (positive : 0 < W)
@@ -192,14 +209,13 @@ theorem inheritedWindow_exec {U : Type} {Q : ℕ} (i : Fin 9) (w W : ℕ) (posit
       (body k) (code k) (src k) (dst k) (seed k) (price k)) →
     ∃ (H : ℕ) (fan : Fin (142081+2) ↪ Fin H)
       (host : (Σ k, Empty ⊕ P k) → Pr (Σ k, Empty ⊕ P k) H Q prime U)
-      (program : Pr (Σ k, Empty ⊕ P k) H Q prime U),
-    ∀ (x : Fin 142081 → Fin m → ZMod 2) (S : Stacks (142081+2) prime)
-      (u : HS H Q prime U), HelperFan (Function.Embedding.refl _) x S →
-      (∀ k, let t := (idleTape i k).castAdd 2
-        S.L t = [] ∧ S.R t = List.ofFn (fun j => SparseRoleCircuit.encode (x (idleTape i k) j))) →
-      ∃ D F z n y, embStk fan D = S ∧ Exec host program (mk u D) n (mk z F) ∧
-        n ≤ (idleCopies.map fun k => (149*(T+5)+5)*(V*142080)+24+
-          ((142081*(8*V+10)+1+price k)+(149*(V*142080)*(T+5)+6))).sum+1 ∧
+      (program : Pr (Σ k, Empty ⊕ P k) H Q prime U) (initial : Stacks H prime),
+    ∀ (x : Fin 142081 → Fin m → ZMod 2) (D : Stacks H prime)
+      (u : HS H Q prime U), ParentStageWords (fun j => fan (j.castAdd 2)) fan m x D →
+      (∀ t, (∀ j, fan j ≠ t) → D.L t = initial.L t ∧ D.R t = initial.R t) →
+      ∃ F z n y, Exec host program (mk u D) n (mk z F) ∧
+        n ≤ (idleCopies.map price).sum + 35520 *
+          (((298*(T+5)+5)*142080+142081*8)*V + (142081*10+31)) + 1 ∧
         z.user = u.user ∧ HelperFan fan y F ∧
         (∀ k, intervalChildRead i k.2 w (W*142080) (x (idleTape i k)) (y (idleTape i k))) ∧
         ∀ j, (∀ k, j ≠ idleTape i k) → y j = x j := by
@@ -207,17 +223,29 @@ theorem inheritedWindow_exec {U : Type} {Q : ℕ} (i : Fin 9) (w W : ℕ) (posit
   have worker k := inheritedSeededWorker_exec (lane k)
     (inheritedIdleCopy_exec i k.2 w W positive capacity (child k))
   choose host program initial run using worker
-  apply allocatedIdleWindow_exec i _ _ _ host program initial
-  intro k
-  have size : volume prime (lane k) = V :=
-    intervalChild_volume (idleBounds i k.2).1 ((idleBounds i k.2).2.trans (by decide : 63 ≤ 64)) w W
-  have physical : volume prime {lane k with afterD := (lane k).afterD*142080} = m := by
-    change _ = (prime^w)^128*(W*142080)
-    rw [← Nat.mul_assoc]
-    change _ = V*142080
-    rw [← size]
-    simp [volume,Nat.mul_assoc]
-  apply transportWorker physical _ _ _ _ (intervalChildRead i k.2 w (W*142080))
-  simpa only [size] using run k
+  let charge := fun k => (149*(T+5)+5)*(V*142080)+24+
+    ((142081*(8*V+10)+1+price k)+(149*(V*142080)*(T+5)+6))
+  obtain ⟨H,fan,bodyWindow,window,prepared,execute⟩ := allocatedIdleWindow_exec i _ _ _ host program initial
+    charge (fun k => intervalChildRead i k.2 w (W*142080)) (by
+    intro k
+    have size : volume prime (lane k) = V :=
+      intervalChild_volume (idleBounds i k.2).1 ((idleBounds i k.2).2.trans (by decide : 63 ≤ 64)) w W
+    have physical : volume prime {lane k with afterD := (lane k).afterD*142080} = m := by
+      change _ = (prime^w)^128*(W*142080)
+      rw [← Nat.mul_assoc]
+      change _ = V*142080
+      rw [← size]
+      simp [volume,Nat.mul_assoc]
+    apply transportWorker physical _ _ _ _ (intervalChildRead i k.2 w (W*142080))
+    simpa only [size] using run k)
+  refine ⟨H,fan,bodyWindow,window,prepared,?_⟩
+  intro x D u words stock
+  obtain ⟨F,z,n,y,exec,paid,result⟩ := execute x D u words.helperFan
+    (fun k => ⟨words.left (idleTape i k),words.right (idleTape i k)⟩) stock
+  refine ⟨F,z,n,y,exec,?_,result⟩
+  have bill := windowCharge idleCopies price T V
+  change (idleCopies.map charge).sum = _ at bill
+  rwa [bill,idleCopies_length] at paid
+
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
