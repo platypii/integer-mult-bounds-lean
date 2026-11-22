@@ -151,7 +151,7 @@ theorem uniformRoleDispatch [M8.Machine.Net] {T Q : ℕ} {P U : Type}
       let effect := fun (x y : Fin 142081 → Fin V → ZMod 2) => ∀ (r : Fin 142080) j,
         y r.castSucc (position j) = Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (x r.castSucc ∘ position) j
       0 < child.width →
-      (child.width ≤ cutoff → ⌊(C*child.width)*(V*142080 : ℕ)⌋₊ ≤ price) →
+      (child.width ≤ cutoff → ⌊(C*(child.width : ℝ)^M8.Machine.BudgetBound.tau)*(V*142080 : ℕ)⌋₊ ≤ price) →
       (cutoff < child.width → PackedPieceHandoff V effect body large src dst A price) →
       ∃ seed, PackedPieceHandoff V effect host code input output seed
         ((4*w+23*child.width+22*L+51)+(price+(142081*(8*V+10)+1))) := by
@@ -159,11 +159,11 @@ theorem uniformRoleDispatch [M8.Machine.Net] {T Q : ℕ} {P U : Type}
   obtain ⟨host,code,input,output,dispatch⟩ := fixedRoleCutoff body leafBody large leaf src dst s d rank
   let rate : ℝ := (LeafCore.small+5 : ℕ)*|LeafCore.C|+8+LeafCore.small*(16+8*|LeafCore.C|)
   have nonneg : 0 ≤ rate := roleRate_nonneg
-  refine ⟨2*(130+rate),mul_nonneg (by norm_num) (add_nonneg (by norm_num) nonneg),_,host,code,input,output,?_⟩
+  refine ⟨130+rate,add_nonneg (by norm_num) nonneg,_,host,code,input,output,?_⟩
   intro child lane w L cutoff price A cut fits width V position positive same coords effect widthPos allowance active
   obtain ⟨B,stopped⟩ := run child lane positive position same coords
-  have bill := leafBill_linear V child.width (descriptorHeaderCost lane) rate _ positive widthPos
-    (descriptorHeaderCost_le lane (LeafCore.positive_of_volume positive)) nonneg M8.Machine.BudgetBound.exponent_range.2.le
+  have bill := leafBill_bound V child.width (descriptorHeaderCost lane) rate _ positive widthPos
+    (descriptorHeaderCost_le lane (LeafCore.positive_of_volume positive)) nonneg M8.Machine.BudgetBound.exponent_range.1.le
   rw [width]
   apply dispatch w L cutoff cut fits effect price A B
   · exact fun h => active (width.symm ▸ h)

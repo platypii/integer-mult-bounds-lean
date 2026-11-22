@@ -1,7 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.M6.BitChildDirectoryBill
-public import IntegerMultBounds.MathlibTM2.M6.BitIdleChartHandoff
+public import IntegerMultBounds.MathlibTM2.M6.BitStoppedRoleHandoff
 public import IntegerMultBounds.MathlibTM2.M6.BitPackedFlatStage
 
 /-! Present a packed stage in the flat node's word length and address order. -/
@@ -215,7 +215,7 @@ theorem activeFlatDimensions (root : Descriptor) (depth cutoff blocks : ℕ)
 /-- At two aligned row levels the packed stage and the recursive interval
 window see the same spectator cells. Their bills use one child directory. -/
 theorem alignedFlatNode [M8.Machine.Net] {U : Type} :
-    ∃ (C : ℝ) (base nt states : ℕ), ∀ {Q h B groups : ℕ}, states ≤ Q →
+    ∃ (C leafRate : ℝ) (base nt states : ℕ), 0 ≤ leafRate ∧ ∀ {Q h B groups cutoff : ℕ}, states ≤ Q →
     ∀ (node : Descriptor), node.width = 64*(h+1) → node.rows = 142080*(142080*groups) →
     node.beforeH = B*prime^(64*((h+1)*64)) →
     let w := h+1
@@ -235,9 +235,12 @@ theorem alignedFlatNode [M8.Machine.Net] {U : Type} :
     let sweep : Fin 9 → ℕ := fun i =>
       ⌊(stageSetupCost base nt m w : ℝ)+(C+|stagePackingRate i+(stageRuns.map (coeff i)).sum|)*m*(w : ℝ)^M8.Machine.BudgetBound.tau⌋₊+
         142081*(8*m+10)+1
+    (∀ i j, let k := idleDirectoryIndex (i,idleCopyIndex j)
+      let child := scheduledChild prime node k
+      child.width ≤ cutoff → ⌊(leafRate*(child.width : ℝ)^M8.Machine.BudgetBound.tau)*volume prime child⌋₊ ≤ budget k) →
     (∀ i (j : (Fin 32 × Fin 5) × Fin 222),
       let child := scheduledChild prime node (idleDirectoryIndex (i,idleCopyIndex j))
-      (lane i j.2).width = child.width → (lane i j.2).width < node.width →
+      cutoff < child.width → (lane i j.2).width = child.width → (lane i j.2).width < node.width →
       volume prime (lane i j.2)*142080 = volume prime child →
       let stream := role child 142080
       ∀ position : Fin (volume prime stream) ≃ Fin (volume prime (lane i j.2)),
@@ -254,10 +257,13 @@ theorem alignedFlatNode [M8.Machine.Net] {U : Type} :
   obtain ⟨C,base,nt,stageStates,stage⟩ := flatSweepFromPacked
   obtain ⟨nodeStates,assemble⟩ := flatNodeFromIntervals (U := U)
   let divStates := (fun {q : ℕ} (_ : Program 38 q prime) => q) (RecursiveRowsNodeHeaders.program 142080)
-  refine ⟨|C|,base,nt,max nodeStates (max divStates stageStates),?_⟩
-  intro Q h B groups fits node width split label w rows K W V m lane hB hK pos P t body coeff required budget time runs ready sweep children idle
+  obtain ⟨leafRate,nonneg,atCutoff⟩ := roleHandoffAtCutoff (U := U)
+  refine ⟨|C|,leafRate,base,nt,max Cover.Fallback.columnCapacity (max nodeStates (max divStates stageStates)),nonneg,?_⟩
+  intro Q h B groups cutoff fits node width split label w rows K W V m lane hB hK pos P t body coeff required budget time runs ready sweep allowance children idle
   have shape : B*prime^(64*(w*64))*K = W*142080 := by dsimp only [K,W,rows]; ac_rfl
   have positive : 0 < W*142080 := shape ▸ Nat.mul_pos (Nat.mul_pos hB (pow_pos Shared50ModularControl.prime_prime.pos _)) hK
+  have capacity := (le_max_left _ _).trans fits
+  have fits := (le_max_right _ _).trans fits
   have caps := (le_max_right _ _).trans fits
   let charged (i : Fin 9) := ((List.range' (stageChildStart i)
     (stageRuns.flatMap (fun _ => Geometry.Moves.localPaid)).length).map time).sum
@@ -275,7 +281,20 @@ theorem alignedFlatNode [M8.Machine.Net] {U : Type} :
   apply handoff_le (nodeRun ?_ (fun i j => by
     obtain ⟨same,smaller,size⟩ := alignedIntervalMeasures node w groups W (Nat.succ_pos h) width split spectator i j
     obtain ⟨position,coords⟩ := intervalRolePositions node groups split _ _ size
-    obtain ⟨L,T,b,c,src,dst,seed,exec⟩ := children i j same smaller size position coords
+    let child := scheduledChild prime node (idleDirectoryIndex (i,idleCopyIndex j))
+    have childWidth : 0 < child.width := by
+      have rank := (nodeChildren5_bounds (idleDirectoryIndex (i,idleCopyIndex j))).1
+      change 0 < nodeChildren5.get _ * (node.width/64)
+      rw [width,Nat.mul_div_cancel_left _ (by decide)]
+      exact Nat.mul_pos rank (Nat.succ_pos h)
+    have laneVolume : 0 < volume prime (lane i j.2) := by
+      have bounds := idleBounds i j.2
+      rw [show volume prime (lane i j.2) = (prime^w)^128*W from
+        intervalChild_volume (Nat.succ_le_succ bounds.1) (Nat.succ_le_succ bounds.2) w W]
+      exact Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) (Nat.pos_of_mul_pos_right positive)
+    obtain ⟨L,T,b,c,src,dst,seed,exec⟩ := atCutoff capacity child (lane i j.2) cutoff _
+      position laneVolume childWidth same size coords (allowance i j)
+      (fun active => children i j active same smaller size position coords)
     refine ⟨L,T,b,c,src,dst,seed,?_⟩
     intro x u S words fresh
     obtain ⟨z,F,n,y,ran,paid,user,out,reads⟩ := exec x u S words fresh

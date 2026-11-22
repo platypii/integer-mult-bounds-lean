@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.M6.BitFlatSweepHandoff
+public import IntegerMultBounds.MathlibTM2.M6.BitIdleChartHandoff
 public import IntegerMultBounds.MathlibTM2.M6.BitFlatIdleLeaf
 
 /-! Execute a stopped interval transpose on the role bank, sharing one leaf workspace. -/
@@ -77,7 +77,7 @@ theorem stoppedRoleHandoff [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity : col
         ((V : ℝ)*((max 1 child.width : ℕ) : ℝ)^M8.Machine.BudgetBound.tau)
     ∃ prepared, PackedPieceHandoff V (fun x y => ∀ (r : Fin 142080) j, y r.castSucc (position j) =
       Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (x r.castSucc ∘ position) j)
-      host program input output prepared (⌊142081*price+1⌋₊+142081*(8*V+10)+1) := by
+      host program input output prepared (⌊142080*price+1⌋₊+142081*(8*V+10)+1) := by
   let B := 142081+2
   let n := B+6
   let fan := (Fin.castAddEmb 6 (n := B)).trans (Fin.castAddEmb LeafCore.small)
@@ -85,7 +85,8 @@ theorem stoppedRoleHandoff [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity : col
   let port := fun i : Fin 142081 => (i.castAdd 2).castAdd 6
   let body : Empty → Pr Empty (n+LeafCore.small) Q prime U := Empty.elim
   let code := fun i => hostedStoppedDirectory (P := Empty) (U := U) capacity src (port i)
-  obtain ⟨program,materialize⟩ := uniformWordStageHandoff fan body (Prog.seqList ((List.finRange 142081).map code))
+  let roles := (List.finRange 142080).map Fin.castSucc
+  obtain ⟨program,materialize⟩ := uniformWordStageHandoff fan body (Prog.seqList (roles.map code))
   refine ⟨_,fun f => embProg (SweepFile.Exit.chart 0 _) id (body f),program,fan.trans (SweepFile.Exit.chart 0 _),returnedFan fan,?_⟩
   intro child lane positive position width coords V price
   obtain ⟨seed,prepare⟩ := leafStock (B := B) (scratch := LeafCore.small)
@@ -96,7 +97,7 @@ theorem stoppedRoleHandoff [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity : col
   apply materialize
     seed (fun x y => ∀ (r : Fin 142080) j, y r.castSucc (position j) =
       Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (x r.castSucc ∘ position) j)
-    (142081*price+1)
+    (142080*price+1)
   · intro x u S words stock
     have live := words.helperFan
     obtain ⟨z,F,n',y,ran,paid,user,out,acts,_⟩ := runOwnerList fan body code step price ready (by
@@ -110,49 +111,47 @@ theorem stoppedRoleHandoff [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity : col
       intro t away
       obtain ⟨l,r⟩ := off t (away (i.castAdd 2)).symm
       exact ⟨l.trans (fresh _ away).1,r.trans (fresh _ away).2⟩)
-      _ (List.nodup_finRange _) x u S live stock
-    refine ⟨z,F,n',y,ran,by simpa only [List.length_finRange,Nat.cast_ofNat] using paid,user,out,?_⟩
+      _ ((List.nodup_finRange _).map (Fin.castSucc_injective _)) x u S live stock
+    refine ⟨z,F,n',y,ran,by simpa only [List.length_map,List.length_finRange,Nat.cast_ofNat] using paid,user,out,?_⟩
     intro r
-    exact (coords.transpose_iff width _ _).2 (acts r.castSucc (List.mem_finRange _))
+    exact (coords.transpose_iff width _ _).2 (acts r.castSucc (List.mem_map.mpr ⟨r,List.mem_finRange _,rfl⟩))
 
-theorem leafBill_linear (V width header : ℕ) (rate tau : ℝ)
+theorem leafBill_bound (V width header : ℕ) (rate tau : ℝ)
     (vol : 0 < V) (active : 0 < width) (headers : header ≤ 110*V) (nonneg : 0 ≤ rate)
-    (exponent : tau ≤ 1) :
-    ((⌊142081*((header : ℝ)+rate*(V*((max 1 width : ℕ) : ℝ)^tau))+1⌋₊+
+    (exponent : 0 ≤ tau) :
+    ((⌊142080*((header : ℝ)+rate*(V*((max 1 width : ℕ) : ℝ)^tau))+1⌋₊+
       142081*(8*V+10)+1 : ℕ) : ℝ) ≤
-      (2*(130+rate)*width)*(V*142080 : ℕ) := by
+      ((130+rate)*(width : ℝ)^tau)*(V*142080 : ℕ) := by
   rw [max_eq_right active]
   have v : (1 : ℝ) ≤ V := by exact_mod_cast vol
   have w : (1 : ℝ) ≤ width := by exact_mod_cast active
-  have power : (width : ℝ)^tau ≤ width := by
-    simpa only [Real.rpow_one] using Real.rpow_le_rpow_of_exponent_le w exponent
-  have hv := le_mul_of_one_le_right (Nat.cast_nonneg (α := ℝ) V) w
+  have power := Real.one_le_rpow w exponent
+  have hv := le_mul_of_one_le_right (Nat.cast_nonneg (α := ℝ) V) power
   have hh : (header : ℝ) ≤ 110*V := by exact_mod_cast headers
   have floorBound := Nat.floor_le (by positivity :
-    0 ≤ 142081*((header : ℝ)+rate*(V*(width : ℝ)^tau))+1)
-  have scaled := mul_le_mul_of_nonneg_left (mul_le_mul_of_nonneg_left power (Nat.cast_nonneg V)) nonneg
+    0 ≤ 142080*((header : ℝ)+rate*(V*(width : ℝ)^tau))+1)
   push_cast
-  nlinarith only [floorBound,hh,v,hv,scaled,mul_nonneg nonneg (mul_nonneg (Nat.cast_nonneg (α := ℝ) V) (Nat.cast_nonneg (α := ℝ) width))]
+  nlinarith only [floorBound,hh,v,hv]
 
 /-- A single leaf constant covers all positive stopped widths. The volume
 in the bound counts the entire scheduled child, including every role. -/
-theorem stoppedRoleLinear [M8.Machine.Net] {U : Type} :
+theorem stoppedRoleCost [M8.Machine.Net] {U : Type} :
     ∃ C : ℝ, 0 ≤ C ∧ ∀ {Q : ℕ}, columnCapacity ≤ Q → ∀ (child lane : Descriptor)
       (positive : 0 < volume prime lane) (active : 0 < child.width)
       (position : Fin (volume prime child) ≃ Fin (volume prime lane)),
       lane.width = child.width → InheritedIntervalPositions child lane rfl position →
-      ∃ price : ℕ, (price : ℝ) ≤ (C*child.width)*(volume prime lane*142080 : ℕ) ∧
+      ∃ price : ℕ, (price : ℝ) ≤ (C*(child.width : ℝ)^M8.Machine.BudgetBound.tau)*(volume prime lane*142080 : ℕ) ∧
       PackedWindowHandoff U Q (volume prime lane) (fun x y => ∀ (r : Fin 142080) j, y r.castSucc (position j) =
         Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (x r.castSucc ∘ position) j) price := by
   let rate : ℝ := (LeafCore.small+5 : ℕ)*|LeafCore.C|+8+LeafCore.small*(16+8*|LeafCore.C|)
   have pos : 0 ≤ rate := by dsimp [rate]; positivity
-  refine ⟨2*(130+rate),by positivity,?_⟩
+  refine ⟨130+rate,by positivity,?_⟩
   intro Q capacity child lane positive active position width coords
   obtain ⟨T,host,program,input,output,run⟩ := stoppedRoleHandoff (U := U) capacity
   obtain ⟨prepared,ran⟩ := run child lane positive position width coords
   refine ⟨_,?_,Empty,T,host,program,input,output,prepared,ran⟩
-  exact leafBill_linear _ _ _ rate _ positive active
-    (descriptorHeaderCost_le lane (LeafCore.positive_of_volume positive)) pos M8.Machine.BudgetBound.exponent_range.2.le
+  exact leafBill_bound _ _ _ rate _ positive active
+    (descriptorHeaderCost_le lane (LeafCore.positive_of_volume positive)) pos M8.Machine.BudgetBound.exponent_range.1.le
 
 /-- Only active scheduled children require a recursive handoff. Below the
 cutoff the role program fits the ordinary linear leaf allowance. -/
@@ -165,10 +164,10 @@ theorem roleHandoffAtCutoff [M8.Machine.Net] {U : Type} :
       InheritedIntervalPositions stream lane rfl position →
       let effect := fun (x y : Fin 142081 → Fin (volume prime lane) → ZMod 2) => ∀ (r : Fin 142080) j, y r.castSucc (position j) =
         Shared50RecursiveNodeRows.transpose (one_dvd stream.rows) (x r.castSucc ∘ position) j
-      (scheduled.width ≤ cutoff → ⌊(C*scheduled.width)*volume prime scheduled⌋₊ ≤ budget) →
+      (scheduled.width ≤ cutoff → ⌊(C*(scheduled.width : ℝ)^M8.Machine.BudgetBound.tau)*volume prime scheduled⌋₊ ≤ budget) →
       (cutoff < scheduled.width → PackedWindowHandoff U Q (volume prime lane) effect budget) →
       PackedWindowHandoff U Q (volume prime lane) effect budget := by
-  obtain ⟨C,pos,leaf⟩ := stoppedRoleLinear (U := U)
+  obtain ⟨C,pos,leaf⟩ := stoppedRoleCost (U := U)
   refine ⟨C,pos,?_⟩
   intro Q capacity scheduled lane cutoff budget stream position vol width same size coords effect allowance recurse
   by_cases active : cutoff < scheduled.width

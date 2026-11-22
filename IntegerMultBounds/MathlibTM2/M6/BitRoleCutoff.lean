@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.M6.BitStoppedRoleHandoff
+public import IntegerMultBounds.MathlibTM2.M6.BitFlatSweepHandoff
 public import IntegerMultBounds.MathlibTM2.M6.BitChartCutoff
 
 /-! Tape-level cutoff dispatch for a pair of programs with common owner ports. -/
