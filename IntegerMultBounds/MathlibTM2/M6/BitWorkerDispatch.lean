@@ -137,6 +137,149 @@ theorem inheritedPackedChildCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
     have h := frame j outside
     exact ⟨h.1.trans (congrFun left j),h.2.trans (off j (fun k => outside (localPort k)))⟩
 
+/-- The trailing header for adjacent exchange number twice the rank minus
+two already holds the MOVE leaf's spectator count. -/
+theorem moveSpectatorHeader (child : Descriptor) (w W rank : ℕ) (positive : 0 < rank) (bound : rank ≤ 64)
+    (width : child.width = (w+1)*rank)
+    (size : volume prime child = (prime^(w+1))^16*((prime^(w+1))^112*W)) :
+    let i : Fin 127 := ⟨2*rank-2,by omega⟩
+    let count := CopyChildLayout.spectators child
+    (Routines.hdr (helperAdjacentView (w+1) 1 W i) 5).map (bitSymbol (a := prime)) =
+      binSyms count.size count := by
+  intro i count
+  let M := prime^(w+1)
+  have exp : 2*rank + (126-i.val) = 128 := by dsimp [i]; omega
+  have eq : M^(2*rank)*count = M^(2*rank)*(M^(126-i.val)*W) := by
+    calc
+      _ = volume prime child := by
+        rw [show 2*rank = rank+rank by omega,pow_add,show M^rank = prime^child.width by rw [width,pow_mul]]
+        unfold count volume CopyChildLayout.spectators
+        ring
+      _ = _ := by
+        rw [size]
+        change M^16*(M^112*W) = _
+        simp only [← Nat.mul_assoc,← pow_add,exp]
+  have same := Nat.eq_of_mul_eq_mul_left (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) eq
+  rw [same]
+  simpa [Routines.hdr,RecursiveDimensionBank.values,helperAdjacentView,M] using
+    canonicalBits_symbols (A := prime) (M^(126-i.val)*W)
+
+/-- On a prepared MOVE record, select the worker and its archive source
+together. Both branches return the archive empty. -/
+theorem moveCutoffCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
+    (body : P → Pr P T Q prime U) (large leaf : P) (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T)
+    (cut spectatorPort : Fin T) (off : ∀ i, ports i ≠ cut) (apart : ∀ i, ports i ≠ spectatorPort)
+    (rank : ℕ) :
+    ∃ code, ∀ (node child : Descriptor) (w W L cutoff recursiveTime leafTime : ℕ)
+      (position : Fin (volume prime child) ≃ Fin ((prime^(w+1))^16*W)),
+    child.width = (w+1)*rank → cutoff < 2^L → child.width.size ≤ L →
+    let bank := scheduledRecordPorts ports
+    let spectators := CopyChildLayout.spectators child
+    let active := cutoff < child.width
+    let price := if active then recursiveTime else leafTime
+    let digits := if active then L else spectators.size
+    (active → ScheduledChildExec node child w W ports (binSyms L cutoff) position body large recursiveTime) →
+    (¬active → ScheduledChildExec node child w W ports (binSyms spectators.size spectators) position body leaf leafTime) →
+    let stored := RecordReady (b := prime) (w := w) (d := 16) (W := W) bank (prime^(w+1)).size W.size []
+      SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0
+    let clean := fun (S : Stacks T prime) => ∀ i : Fin (rowSwapBlock.tapes+35), 35 ≤ i.val →
+      S.L (ports i) = [] ∧ S.R (ports i) = []
+    child.width < node.width → ∀ u S word, S.R cut = binSyms L cutoff → S.R spectatorPort = binSyms spectators.size spectators → stored word S → clean S →
+      ∃ z F n y, Exec body code (mk u S) n (mk z F) ∧ n ≤ price+8*digits+4*w+23*child.width+22*L+61 ∧ z.user = u.user ∧
+        stored y F ∧ clean F ∧ (∀ j, (∀ i, ports i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j) ∧
+        ∀ h, y (position h) = Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (word ∘ position) h := by
+  let bank := scheduledRecordPorts ports
+  let cmp := ordinaryCutoffPorts bank cut (fun i => off _)
+  let call : Fin T → P → Pr P T Q prime U := fun src f => (bcopy src (bank 34) (bank 0) (bank 1)).seq ((Prog.call f).seq (bclear (bank 34)))
+  refine ⟨(ordinaryCutoffTest cmp rank).seq (.cond (fun z => symBit (z.scan (cmp 7))) (call cut large) (call spectatorPort leaf)),?_⟩
+  intro node child w W L cutoff recursiveTime leafTime position width cutFits fits _ spectators active price digits recurse stop stored clean smaller u S word header spectator ready free
+  have scratch : ∀ k : Fin 10, 2 ≤ k.val → cutoffColumnSlots k ∈ shearWork := by decide
+  have clear (k : Fin 10) (hk : 2 ≤ k.val) : S.R (cmp k) = [] := by
+    have ne : k ≠ 1 := by intro eq; subst k; contradiction
+    simpa [cmp,ordinaryCutoffPorts,ne] using (ready.scratch _ (scratch k hk)).2
+  obtain ⟨v,m,user,flag,paid,test⟩ := ordinaryCutoffTest_exec body cmp rank w L cutoff cutFits
+    (width ▸ fits) u S ready.clock (by simpa [cmp,ordinaryCutoffPorts] using header) clear
+  rw [← width] at flag paid
+  by_cases h : active
+  · obtain ⟨z,F,n,y,run,cost,same,rest⟩ := inheritedWorkerCall body large ports cut off node child w W L cutoff
+      recursiveTime position (recurse h) smaller v S word header ready free
+    refine ⟨z,F,_,y,Exec.seq test (Exec.cond_true (by simpa [mk_var,flag,active] using h) run),?_,same.trans user,rest⟩
+    simp only [price,digits,ite_eq_left h]
+    omega
+  · obtain ⟨z,F,n,y,run,cost,same,rest⟩ := inheritedWorkerCall body leaf ports spectatorPort apart node child w W spectators.size spectators
+      leafTime position (stop h) smaller v S word spectator ready free
+    refine ⟨z,F,_,y,Exec.seq test (Exec.cond_false (by simpa [mk_var,flag,active] using h) run),?_,same.trans user,rest⟩
+    simp only [price,digits,ite_eq_right h]
+    omega
+
+/-- Prepare and dispatch a packed MOVE from the caller's cutoff. Only the
+above-cutoff branch requires a child execution witness. -/
+theorem packedMixedMoveCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
+    (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T) (capacity : columnCapacity ≤ Q)
+    (rank : ℕ) (positive : 0 < rank) (bound : rank ≤ 64)
+    (cut : Fin T) (cutOff : ∀ i, ports i ≠ cut)
+    (headers : Fin 127 → Fin 6 → Fin T) (apart : ∀ i j k, headers i j ≠ ports k) :
+    ∃ leaf : Pr P T Q prime U, ∀ (body : P → Pr P T Q prime U) (large f : P), body f = leaf →
+    let localPort := (Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)
+    let bank := localPort.trans ports
+    ∃ code, ∀ (node desc : Descriptor) (w W L cutoff recursiveTime : ℕ),
+    let M := prime^(w+1)
+    let suffix := M^112*W
+    let spectators := CopyChildLayout.spectators desc
+    desc.width = (w+1)*rank → cutoff < 2^L → desc.width.size ≤ L → 0 < W → ∀ (position : Fin (volume prime desc) ≃ Fin (M^16*suffix))
+      (x : Fin (M^16*suffix) → ZMod 2) (u : HS T Q prime U) (S : Stacks T prime), desc.width < node.width →
+    (∀ h, (position h).val = (CopyChildLayout.packActive desc h).val) → S.R cut = binSyms L cutoff → S.R (bank 34) = [] →
+    (∀ i j, S.R (headers i j) = (Routines.hdr (helperAdjacentView (w+1) 1 W i) j).map bitSymbol) →
+    (∀ i : Fin 35, i ≠ 24 → i ≠ 34 → S.L (bank i) = [] ∧ S.R (bank i) = []) →
+    (∀ i : Fin (rowSwapBlock.tapes+35), 35 ≤ i.val → S.L (ports i) = [] ∧ S.R (ports i) = []) →
+    (∀ z, readAt blank (S.L (bank 24)) (S.R (bank 24)) z = RadixToBinary.binaryEncoding.encode
+      (putWord (fun _ => blank) 0 (List.ofFn (SparseRoleCircuit.encode ∘ x)) z)) →
+    let core : ℝ := (LeafCore.small+5 : ℕ)*|LeafCore.C|+8+LeafCore.small*(16+8*|LeafCore.C|)
+    ∀ rate : ℝ, 163+core ≤ rate →
+    let budget := ⌊(rate*(desc.width : ℝ)^M8.Machine.BudgetBound.tau)*volume prime desc⌋₊
+    let active := cutoff < desc.width
+    let price := if active then recursiveTime else budget
+    let digits := if active then L else spectators.size
+    (active → ScheduledChildExec node desc w suffix ports (binSyms L cutoff) position body large recursiveTime) →
+    ∃ z F t y, Exec body code (mk u S) t (mk z F) ∧
+      t ≤ 14*M.size+6*suffix.size+6*(w+1)+11*(w+1).size+111+8*digits+4*w+23*desc.width+22*L+price ∧ z.user = u.user ∧
+      RecordReady (b := prime) (w := w) (d := 16) (W := suffix) bank M.size suffix.size []
+        SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0 y F ∧
+      (∀ i : Fin (rowSwapBlock.tapes+35), 35 ≤ i.val → F.L (ports i) = [] ∧ F.R (ports i) = []) ∧
+      (∀ j, (∀ i, ports i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j) ∧
+      ∀ h, y (position h) = Shared50RecursiveNodeRows.transpose (one_dvd desc.rows) (x ∘ position) h := by
+  obtain ⟨leaf,move⟩ := stoppedMoveProgram (P := P) (U := U) ports capacity rank positive
+  refine ⟨leaf,?_⟩
+  intro body large f installed localPort bank
+  let i : Fin 127 := ⟨2*rank-2,by omega⟩
+  obtain ⟨prepare,setup⟩ := prepareWorkerRecord_exec body bank headers (fun i j k => apart i j (localPort k))
+  obtain ⟨dispatch,call⟩ := moveCutoffCall body large f ports cut (headers i 5) cutOff (fun k => (apart i 5 k).symm) rank
+  refine ⟨prepare.seq dispatch,?_⟩
+  intro node desc w W L cutoff recursiveTime M suffix spectators width cutFits fits pos position x u S smaller coords header archive ready empty clean payload core rate room budget active price digits recurse
+  obtain ⟨v,D,m,user,run,cost,stored,left,off⟩ := setup w W x u S ready empty payload
+  rw [archive] at stored
+  have size := Fintype.card_congr position
+  simp only [Fintype.card_fin] at size
+  have spectator := ((off (headers i 5) (fun k => (apart i 5 (localPort k)).symm)).trans (ready i 5)).trans
+    (moveSpectatorHeader desc w W rank positive bound width size)
+  have clear (j : Fin (rowSwapBlock.tapes+35)) (hj : 35 ≤ j.val) : D.L (ports j) = [] ∧ D.R (ports j) = [] := by
+    have outside (k : Fin 35) : bank k ≠ ports j := by
+      intro eq
+      have h := congrArg Fin.val (ports.injective eq)
+      change k.val = j.val at h
+      omega
+    exact ⟨(congrFun left _).trans (clean j hj).1,(off _ outside).trans (clean j hj).2⟩
+  obtain ⟨z,F,n,y,exec,paid,same,out,free,frame,read⟩ := call node desc w suffix L cutoff recursiveTime budget position
+    width cutFits fits recurse (fun _ => move body f installed node desc w suffix width position coords
+      (Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) pos) rate room)
+    smaller v D x ((off cut (fun k => cutOff (localPort k))).trans header) spectator stored clear
+  refine ⟨z,F,_,y,Exec.seq run exec,?_,same.trans user,out,free,?_,read⟩
+  · change m ≤ 14*M.size+6*suffix.size+6*(w+1)+11*(w+1).size+50 at cost
+    change n ≤ price+8*digits+4*w+23*desc.width+22*L+61 at paid
+    omega
+  · intro j outside
+    exact ⟨(frame j outside).1.trans (congrFun left j),(frame j outside).2.trans (off j (fun k => outside (localPort k)))⟩
+
 /-- Compute the worker tag from its predecessor clock and an external cutoff
 word, then prepend it to the archive. The comparison restores all its tapes. -/
 theorem prepareWorkerTag {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
