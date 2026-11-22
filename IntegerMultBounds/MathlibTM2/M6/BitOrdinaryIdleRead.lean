@@ -2229,6 +2229,124 @@ private theorem phaseGateProgram {k : ℕ} (owner : Fin 661 ↪ Fin k) (g : RawG
       simp [entries,dst,Ne.symm eq,Function.update_of_ne ne,Copy.extendStored,j.isLt]
 
 open IntegerMultBounds.Networks.Certificates.PR589 in
+/-- Place the scalar gates on the owner ports while preserving any stock
+whose representation depends only on private tape words. -/
+theorem scheduledGates_host {k : ℕ} (owner : Fin 661 ↪ Fin k) :
+    ∃ states : ℕ, ∀ {T Q V : ℕ} {P U : Type}, states ≤ Q → 0 < V →
+    ∀ (ports : Fin (k+2) ↪ Fin T) (body : P → Pr P T Q prime U) (stock : Stacks T prime → Prop),
+    (∀ S F, stock S → (∀ l, (∀ h, ports h ≠ l) → F.L l = S.L l ∧ F.R l = S.R l) → stock F) →
+    let ready := fun (data : Fin k → Fin V → ZMod 2) (S : Stacks T prime) =>
+      RepT (PointwiseRoleGate.bank (a := prime) (fun _ _ => blank) (fun _ => 0)
+        (SparseRoleCircuit.encoded data) (FlatCoordinateSchedule.bits V)) (embStk ports S).L (embStk ports S).R ∧ stock S
+    ∀ g ∈ program, ∃ code, ∀ data u S, ready data S → ∃ z F t out,
+      Exec body code (mk u S) t (mk z F) ∧ t ≤ 76*g.toCircuit.terms.length*V*(k+7)+6 ∧
+      z.user = u.user ∧ ready out F ∧ (∀ i, (∀ j, owner j ≠ i) → out i = data i) ∧
+      ∀ j : Fin 661, ∀ i, out (owner j) i = g.toCircuit.run (Copy.extendStored (fun j => data (owner j) i)) j.val := by
+  let gate (g : {g // g ∈ program}) := phaseGateProgram owner g.val g.property
+  let states := program.attach.map fun g => (gate g).choose
+  refine ⟨states.sum,?_⟩
+  intro T Q V P U capacity pos ports body stock frame ready
+  intro g mem
+  let h := gate ⟨g,mem⟩
+  obtain ⟨machine,run⟩ := h.choose_spec
+  have fits : h.choose ≤ Q := (List.le_sum_of_mem (show h.choose ∈ states from
+    List.mem_map.mpr ⟨⟨g,mem⟩,List.mem_attach _ _,rfl⟩)).trans capacity
+  refine ⟨embProg ports (Empty.elim : Empty → P) (foreign (liftQ machine fits)),?_⟩
+  intro data u S ok
+  obtain ⟨out,hoare,other,reads⟩ := run V pos data
+  obtain ⟨z,F,t,exec,time,user,rep,off⟩ := placedHoare_exec machine ports fits body
+    hoare u S ok.1
+  refine ⟨z,F,t,out,exec,time,user,⟨rep,?_⟩,other,reads⟩
+  exact frame _ _ ok.2 off
+
+open IntegerMultBounds.Networks.Certificates.PR589 in
+/-- Price either scalar phase against its positions in the full invocation schedule. -/
+theorem scheduledScalarPhase_host {T Q w W : ℕ} {P U : Type} (n : Fin 9) (r : Fin 32) (d : Fin 5)
+    (body : P → Pr P T Q prime U)
+    (ready : (Fin 142081 → Fin ((prime^(w+1))^16*W) → ZMod 2) → Stacks T prime → Prop)
+    (moveTime : ℕ → ℕ × ℕ → ℕ) :
+    let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n r d,ownerTape_injective n r d⟩
+    let gateTime := fun g : Circuit.Gate ℕ (ZMod 2) => 76*g.terms.length*((prime^(w+1))^16*W)*(142081+7)+6
+    (∀ g ∈ program, ∃ code, ∀ data u S, ready data S →
+      ∃ z F n out, Exec body code (mk u S) n (mk z F) ∧ n ≤ gateTime g.toCircuit ∧ z.user = u.user ∧
+        ready out F ∧ (∀ i, (∀ r, owner r ≠ i) → out i = data i) ∧ ∀ r : Fin 661, ∀ i, out (owner r) i =
+          g.toCircuit.run (Copy.extendStored (fun r => data (owner r) i)) r.val) →
+    let edges := Geometry.Moves.phaseEdges.filter positiveMove
+    (∀ i : Fin edges.length,
+      let p := edges[i.val]'i.isLt
+      let child := phaseChildPositions.choose (n,(r,d),i)
+      let j := paidRegister i.val
+      ∃ code, ∀ data u S, ready data S → ∃ z F t y,
+        Exec body code (mk u S) t (mk z F) ∧ t ≤ moveTime child.val p ∧ z.user = u.user ∧
+        ready (Function.update data (owner j) y) F ∧ ∀ s l,
+          y (index (AffineFieldCoordinates.embed (AffineFieldProgram.run (selectedWord (w+1) p) s)) l) =
+            data (owner j) (index (AffineFieldCoordinates.embed s) l)) →
+    ∀ afterScatter : Bool,
+    let gates := if afterScatter then sectionB ++ sectionC else sectionD ++ sectionA
+    let current := if afterScatter then Frames.scatterFinish Frames.beforeScatter else Frames.snapshot Frames.initialRefs
+    let start := stageChildStart n + runChildStart (r,d) + (if afterScatter then
+      ((Frames.edges (sectionD ++ sectionA) (Frames.snapshot Frames.initialRefs)).filter positiveMove).length else 0)
+    let frame := selectedFrame (w+1)
+    let edges := Frames.edges gates current
+    ∃ code, ∀ data u S, ready data S → ∃ z F n out, Exec body code (mk u S) n (mk z F) ∧
+      n ≤ (gates.map (fun g => gateTime g.toCircuit)).sum +
+        indexedBill moveTime start (edges.filter positiveMove)+1 ∧
+      z.user = u.user ∧ ready out F ∧ (∀ i, (∀ r, owner r ≠ i) → out i = data i) ∧ ∀ j, phaseRead owner out j =
+        FramedCircuit.encode (fun i => frame (Frames.run gates current i))
+          (FramedCircuit.moduleRun (gates.map RawGate.toCircuit)
+            (FramedCircuit.decode (fun i => frame (current i)) (phaseRead owner data j))) := by
+  intro owner gateTime gates paidEdges moves
+  have moveAt (j : Fin 661) (pre : List (ℕ × ℕ)) p post (split : Geometry.Moves.phaseEdges = pre ++ p :: post)
+      (aligned : invocationRegister pre.length = some j.val)
+      (checked : Geometry.Moves.CheckedPair p) (paid : Geometry.moveRank p.1 p.2 ≠ 0) :
+      ∃ code, ∀ data u S, ready data S → ∃ z F t y,
+        Exec body code (mk u S) t (mk z F) ∧ t ≤ moveTime (stageChildStart n + runChildStart (r,d) + (pre.filter positiveMove).length) p ∧ z.user = u.user ∧
+        ready (Function.update data (owner j) y) F ∧ ∀ s l,
+          y (index (AffineFieldCoordinates.embed (AffineFieldProgram.run (selectedWord (w+1) p) s)) l) =
+            data (owner j) (index (AffineFieldCoordinates.embed s) l) := by
+    have trace : paidEdges = pre.filter positiveMove ++ p :: post.filter positiveMove := by
+      have keep : positiveMove p = true := by simpa [positiveMove] using paid
+      simp only [paidEdges,split,List.filter_append,List.filter_cons_of_pos keep]
+    let k : Fin paidEdges.length := ⟨(pre.filter positiveMove).length,by rw [trace]; simp⟩
+    have atPos : paidEdges[k.val]'k.isLt = p := by
+      simp only [k,trace,List.getElem_append_right (Nat.le_refl _),Nat.sub_self,List.getElem_cons_zero]
+    have offset := (phaseChildPositions.choose_spec n (r,d) k).2
+    have reg := paidRegister_at pre p post split (by simpa [positiveMove] using paid) j aligned
+    obtain ⟨code,execute⟩ := moves k
+    refine ⟨code,?_⟩
+    intro data u S ready
+    obtain ⟨z,F,t,y,exec,time,user,out,reads⟩ := execute data u S ready
+    have ownerEq : paidRegister k.val = j := reg
+    rw [ownerEq] at out reads
+    rw [atPos] at reads time
+    rw [offset] at time
+    exact ⟨z,F,t,y,exec,by simpa only [Nat.add_assoc] using time,user,out,reads⟩
+  intro afterScatter
+  cases afterScatter
+  · exact invocationPhase_host owner body false ready moveTime (stageChildStart n + runChildStart (r,d)) gates
+      (fun j pre p post split aligned => moveAt j pre p (post ++ Frames.edges (sectionB ++ sectionC) (Frames.scatterFinish Frames.beforeScatter)) (by
+        simp only [Bool.false_eq_true,ite_false] at split
+        unfold Geometry.Moves.phaseEdges
+        rw [split]
+        simp only [List.append_assoc,List.cons_append]) (by
+          have lt : pre.length < (Frames.edges (sectionD ++ sectionA) (Frames.snapshot Frames.initialRefs)).length := by
+            simp only [Bool.false_eq_true,ite_false] at split
+            rw [split]
+            simp
+          simpa only [invocationRegister,if_pos lt,phaseRegisters_compile,Bool.false_eq_true,ite_false] using aligned))
+  · exact invocationPhase_host owner body true ready moveTime ((stageChildStart n + runChildStart (r,d)) + ((Frames.edges (sectionD ++ sectionA) (Frames.snapshot Frames.initialRefs)).filter positiveMove).length) gates
+      (fun j pre p post split aligned => by
+        have step := moveAt j (Frames.edges (sectionD ++ sectionA) (Frames.snapshot Frames.initialRefs) ++ pre) p post (by
+        simp only [ite_true] at split
+        unfold Geometry.Moves.phaseEdges
+        rw [split,List.append_assoc]) (by
+          have right (a b : ℕ) : ¬ a+b < a := by omega
+          have offset (a b : ℕ) : a+b-a = b := by omega
+          simpa only [invocationRegister,List.length_append,if_neg (right _ _),offset,
+            ite_true,phaseRegisters_compile] using aligned)
+        simpa only [List.filter_append,List.length_append,Nat.add_assoc] using step)
+
+open IntegerMultBounds.Networks.Certificates.PR589 in
 /-- One class invocation executes the two literal phases around the nine COPY
 lifecycles and returns the selected register action at every cover label. -/
 theorem invocation_host
@@ -2288,9 +2406,8 @@ theorem invocation_host
         ((List.range' start Geometry.Moves.localPaid.length).map childTime).sum+3 ∧ z.user = u.user ∧ copyReady out F ∧ stock (embStk (bank none) F) ∧
         InvocationEffect n r d (w+1) B K data out := by
   let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n r d,ownerTape_injective n r d⟩
-  let gate (g : {g // g ∈ program}) := phaseGateProgram owner g.val g.property
-  let states := program.attach.map fun g => (gate g).choose
-  refine ⟨states.sum,?_⟩
+  obtain ⟨states,gateRuns⟩ := scheduledGates_host owner
+  refine ⟨states,?_⟩
   intro tapes ports
   obtain ⟨T,fan,bank,selected,collect,off⟩ := copyWindowBanks tapes ports
   refine ⟨T,fan,bank,selected,?_⟩
@@ -2299,72 +2416,13 @@ theorem invocation_host
   refine ⟨prepared,base,localInit,?_⟩
   intro region workspace
   intro w B K P U Q capacity localBody proc body W V _ view gateTime pos moveWork copyWork childTime start moveTime copyTime represented copyReady saved stock stockInit frame phaseReady paidEdges moves copies
-  have gates : ∀ (g : RawGate), g ∈ program → ∃ code, ∀ data u S, phaseReady data S →
-      ∃ z F t out, Exec (localBody none) code (mk u S) t (mk z F) ∧ t ≤ gateTime g.toCircuit ∧ z.user = u.user ∧
-        phaseReady out F ∧ (∀ i, (∀ j, owner j ≠ i) → out i = data i) ∧ ∀ j : Fin 661, ∀ k,
-          out (owner j) k = g.toCircuit.run (Copy.extendStored (fun j => data (owner j) k)) j.val := by
-    intro g mem
-    let h := gate ⟨g,mem⟩
-    obtain ⟨machine,run⟩ := h.choose_spec
-    have fits : h.choose ≤ Q := (List.le_sum_of_mem (show h.choose ∈ states from
-      List.mem_map.mpr ⟨⟨g,mem⟩,List.mem_attach _ _,rfl⟩)).trans capacity
-    refine ⟨embProg (ports none) (Empty.elim : Empty → P) (foreign (liftQ machine fits)),?_⟩
-    intro data u S ok
-    obtain ⟨out,hoare,other,reads⟩ := run V pos data
-    obtain ⟨z,F,t,exec,time,user,rep,off⟩ := placedHoare_exec machine (ports none) fits (localBody none)
-      hoare u S ok.1
-    refine ⟨z,F,t,out,exec,time,user,⟨rep,?_⟩,other,reads⟩
-    exact frame _ _ ok.2 off
+  have gates := gateRuns capacity pos (ports none) (localBody none) stock frame
   have outside (i j) (ne : i ≠ j) (k) (h : region i k) : ∀ l, bank j l ≠ k := by
     obtain ⟨l,hl,rfl⟩ := h
     exact (off i l hl).2 j ne.symm
-  have moveAt (j : Fin 661) (pre : List (ℕ × ℕ)) p post (split : Geometry.Moves.phaseEdges = pre ++ p :: post)
-      (aligned : invocationRegister pre.length = some j.val)
-      (checked : Geometry.Moves.CheckedPair p) (paid : Geometry.moveRank p.1 p.2 ≠ 0) :
-      ∃ code, ∀ data u S, phaseReady data S → ∃ z F t y,
-        Exec (localBody none) code (mk u S) t (mk z F) ∧ t ≤ moveTime (stageChildStart n + runChildStart (r,d) + (pre.filter positiveMove).length) p ∧ z.user = u.user ∧
-        phaseReady (Function.update data (owner j) y) F ∧ ∀ s l,
-          y (index (AffineFieldCoordinates.embed (AffineFieldProgram.run (selectedWord (w+1) p) s)) l) =
-            data (owner j) (index (AffineFieldCoordinates.embed s) l) := by
-    have trace : paidEdges = pre.filter positiveMove ++ p :: post.filter positiveMove := by
-      have keep : positiveMove p = true := by simpa [positiveMove] using paid
-      simp only [paidEdges,split,List.filter_append,List.filter_cons_of_pos keep]
-    let k : Fin paidEdges.length := ⟨(pre.filter positiveMove).length,by rw [trace]; simp⟩
-    have atPos : paidEdges[k.val]'k.isLt = p := by
-      simp only [k,trace,List.getElem_append_right (Nat.le_refl _),Nat.sub_self,List.getElem_cons_zero]
-    have offset := (phaseChildPositions.choose_spec n (r,d) k).2
-    have reg := paidRegister_at pre p post split (by simpa [positiveMove] using paid) j aligned
-    obtain ⟨code,execute⟩ := moves k
-    refine ⟨code,?_⟩
-    intro data u S ready
-    obtain ⟨z,F,t,y,exec,time,user,out,reads⟩ := execute data u S ready
-    have ownerEq : paidRegister k.val = j := reg
-    rw [ownerEq] at out reads
-    rw [atPos] at reads time
-    rw [offset] at time
-    exact ⟨z,F,t,y,exec,by simpa only [Nat.add_assoc] using time,user,out,reads⟩
-  obtain ⟨left,enter⟩ := invocationPhase_host owner (localBody none) false phaseReady moveTime (stageChildStart n + runChildStart (r,d)) gates
-    (fun j pre p post split aligned => moveAt j pre p (post ++ Frames.edges (sectionB ++ sectionC) (Frames.scatterFinish Frames.beforeScatter)) (by
-      simp only [Bool.false_eq_true,ite_false] at split
-      unfold Geometry.Moves.phaseEdges
-      rw [split]
-      simp only [List.append_assoc,List.cons_append]) (by
-        have lt : pre.length < (Frames.edges (sectionD ++ sectionA) (Frames.snapshot Frames.initialRefs)).length := by
-          simp only [Bool.false_eq_true,ite_false] at split
-          rw [split]
-          simp
-        simpa only [invocationRegister,if_pos lt,phaseRegisters_compile,Bool.false_eq_true,ite_false] using aligned))
-  obtain ⟨right,leave⟩ := invocationPhase_host owner (localBody none) true phaseReady moveTime ((stageChildStart n + runChildStart (r,d)) + ((Frames.edges (sectionD ++ sectionA) (Frames.snapshot Frames.initialRefs)).filter positiveMove).length) gates
-    (fun j pre p post split aligned => by
-      have step := moveAt j (Frames.edges (sectionD ++ sectionA) (Frames.snapshot Frames.initialRefs) ++ pre) p post (by
-      simp only [ite_true] at split
-      unfold Geometry.Moves.phaseEdges
-      rw [split,List.append_assoc]) (by
-        have right (a b : ℕ) : ¬ a+b < a := by omega
-        have offset (a b : ℕ) : a+b-a = b := by omega
-        simpa only [invocationRegister,List.length_append,if_neg (right _ _),offset,
-          ite_true,phaseRegisters_compile] using aligned)
-      simpa only [List.filter_append,List.length_append,Nat.add_assoc] using step)
+  have phases := scheduledScalarPhase_host n r d (localBody none) phaseReady moveTime gates moves
+  obtain ⟨left,enter⟩ := phases false
+  obtain ⟨right,leave⟩ := phases true
   have project (i) (S : Stacks T prime) : embStk (ports i) (embStk (bank i) S) = embStk fan S := by
     simp only [embStk,Function.comp_def,selected]
   have phase (data S) : phaseReady data (embStk (bank none) S) ↔ copyReady data S ∧ stock (embStk (bank none) S) := by
@@ -2455,7 +2513,7 @@ theorem invocation_host
     rw [total,← List.range'_append_1,List.map_append,List.sum_append]
     rw [copiesCost] at hb
     simp only [edges,start,Geometry.Moves.phaseEdges,List.filter_append,indexedBill_append,List.map_append,
-      List.sum_append,Bool.false_eq_true,ite_false,ite_true] at moveCost ha hb hc ⊢
+      List.sum_append,Bool.false_eq_true,ite_false,ite_true,Nat.add_zero] at moveCost ha hb hc ⊢
     omega
   · intro g cell
     change phaseRead owner out (labelSpectator g cell) = _
