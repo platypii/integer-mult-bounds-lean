@@ -46,19 +46,19 @@ theorem borrowedScatter_read {w B K : ℕ} (n : Fin 9) (r : Fin 32) (d : Fin 5)
 
 /-- Move the entire live register bank into or out of its scatter charts.
 The same block serves every atom width and every batch size. -/
-theorem borrowedRoute_stage [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5) (enter : Bool) :
-    ∃ C : ℕ, ∀ w B K, 0 < w → 0 < B → 0 < K →
+theorem borrowedRoute_fixed [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5) (enter : Bool) :
+    ∃ C tapes : ℕ, ∀ w B K, 0 < w → 0 < B → 0 < K →
     let v := copyLabelLayout w B K
     let V := volume prime v
     ∃ stage : SharedBankStage.Stage _ 142081 prime (copyOwners (v := v)),
-      stage.cost ≤ C*V + 661*(252*LeafCore.coreCost V (w*64)+1) ∧
+      stage.tapes = tapes ∧ stage.cost ≤ C*V + 661*(252*LeafCore.coreCost V (w*64)+1) ∧
       (∀ x (i : Fin 661), let A := registerChart w n i.val
         LabelPermutation.Transport v B w (fun g => g*(if enter then A.transpose else A))
           (ext (x (ownerTape n r d i))) (ext (stage.transform x (ownerTape n r d i)))) ∧
       ∀ x k, (∀ i, ownerTape n r d i ≠ k) → stage.transform x k = x k := by
   let io := (⟨ownerTape n r d,ownerTape_injective n r d⟩ : Fin 661 ↪ Fin 142081)
   obtain ⟨block,C,leading,runs⟩ := ownerChartRoutes io n enter (List.finRange 661) (List.nodup_finRange _)
-  refine ⟨C,?_⟩
+  refine ⟨C,block.tapes,?_⟩
   intro w B K hw hb hk v V
   have hp := Shared50ModularControl.prime_prime.pos
   have positive : v.Positive := by
@@ -76,12 +76,27 @@ theorem borrowedRoute_stage [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5
             output_payload := fun _ => copyRoute_payload block leading _ _ _,
             strip_input := fun _ => routePrivate block leading _ _ _ _,
             realizes := fun x => by simpa only [List.length_finRange] using (result x).choose_spec.2.2 },
-          le_rfl,fun x i => (result x).choose_spec.1 i (List.mem_finRange _),?_⟩
+          rfl,le_rfl,fun x i => (result x).choose_spec.1 i (List.mem_finRange _),?_⟩
   intro x k off
   exact (result x).choose_spec.2.1 k (by
     rintro h
     obtain ⟨i,_,eqn⟩ := List.mem_map.mp h
     exact off i eqn)
+
+theorem borrowedRoute_stage [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5) (enter : Bool) :
+    ∃ C : ℕ, ∀ w B K, 0 < w → 0 < B → 0 < K →
+    let v := copyLabelLayout w B K
+    let V := volume prime v
+    ∃ stage : SharedBankStage.Stage _ 142081 prime (copyOwners (v := v)),
+      stage.cost ≤ C*V + 661*(252*LeafCore.coreCost V (w*64)+1) ∧
+      (∀ x (i : Fin 661), let A := registerChart w n i.val
+        LabelPermutation.Transport v B w (fun g => g*(if enter then A.transpose else A))
+          (ext (x (ownerTape n r d i))) (ext (stage.transform x (ownerTape n r d i)))) ∧
+      ∀ x k, (∀ i, ownerTape n r d i ≠ k) → stage.transform x k = x k := by
+  obtain ⟨C,_,build⟩ := borrowedRoute_fixed n r d enter
+  exact ⟨C,fun w B K hw hb hk => by
+    obtain ⟨stage,_,bill,read,off⟩ := build w B K hw hb hk
+    exact ⟨stage,bill,read,off⟩⟩
 
 /-- One charged stage executes all COPY windows on independent borrowed rows. -/
 theorem borrowedScatter_stage [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
