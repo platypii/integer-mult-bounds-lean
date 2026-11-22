@@ -38,7 +38,7 @@ theorem runs [M8.Machine.Net] {v : Descriptor} {k s t c B : ℕ} (hs : s < t) (h
       HoareTime (M8.Machine.ArbitraryWidthOriginalTotalRun.program ports (Fin.castAdd 24 io))
         (fun w => w = M8.Machine.ArbitraryWidthOriginalTotalRun.input (bank roles v d))
         (fun w => w = M8.Machine.ArbitraryWidthOriginalTotalRun.input
-          (bank (setTape roles io (sourceWord y) 0) v d)) (LeafCore.coreCost (volume prime v) c) := by
+          (bank (setTape roles io (sourceWord y) 0) v d)) (M8.Machine.ArbitraryWidthOriginalTotalRun.cost u (Routines.hdr u)) := by
   let d := LabelPrepareClean.output prime v k s t c B
   let u := colView prime c k s t B v
   have hvol : volume prime u = volume prime v := LabelView.colView_volume _ _ _ _ _ _ _ hv hs ht
@@ -60,7 +60,7 @@ theorem runs [M8.Machine.Net] {v : Descriptor} {k s t c B : ℕ} (hs : s < t) (h
   · intro w hw
     rw [hw, ← hout]
     simp only [bank, d, SharedPlacementAlphabet.setTape_append_left]
-  · simpa only [hvol, show u.width = c from rfl] using LeafCore.cost_le hu
+  · exact le_rfl
 
 end
 end IntegerMultBounds.MathlibTM2.Cover.LabelCall

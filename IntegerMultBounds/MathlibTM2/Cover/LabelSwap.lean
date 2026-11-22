@@ -127,6 +127,21 @@ theorem withView_runs {v : Descriptor} {k s t c B cost : ℕ} (hs : s < t) (ht :
   dsimp only [u] at h₁ h₂ h₃
   omega
 
+theorem runs_at_view_cost [M8.Machine.Net] {v : Descriptor} {k s t c B : ℕ} (hs : s < t) (ht : t < k)
+    (hc : 0 < c) (hb : 0 < B) (hv : v.beforeH = B*prime^(k*c)) (hp : v.Positive)
+    (roles : Tapes T prime) (io : Fin T) (x : Fin (volume prime v) → ZMod 2)
+    (hh : roles.head io = 0) (hx : roles.tape io = sourceWord x) :
+    let d := LabelPrepare.input v k s t c
+    let u := LabelView.colView prime c k s t B v
+    ∃ y : Fin (volume prime v) → ZMod 2, LabelView.Swapped prime u (ext x) (ext y) ∧
+      Runs (program io) (bank roles v d)
+        (bank (SharedPlacementAlphabet.setTape roles io (sourceWord y) 0) v d)
+        (3808274 * volume prime v + M8.Machine.ArbitraryWidthOriginalTotalRun.cost u (Routines.hdr u)) := by
+  obtain ⟨y, hy, hcall⟩ := LabelCall.runs hs ht hv hp roles io x hh hx
+  rw [LeafCore.input_eq, LeafCore.input_eq] at hcall
+  have hsup := leadingBlock_runs fits _ hcall
+  exact ⟨y, hy, withView_runs hs ht hc hb hv hp (leadingBlock_leading _ _) hsup⟩
+
 theorem runs [M8.Machine.Net] {v : Descriptor} {k s t c B : ℕ} (hs : s < t) (ht : t < k)
     (hc : 0 < c) (hb : 0 < B) (hv : v.beforeH = B*prime^(k*c)) (hp : v.Positive)
     (roles : Tapes T prime) (io : Fin T) (x : Fin (volume prime v) → ZMod 2)
@@ -137,10 +152,14 @@ theorem runs [M8.Machine.Net] {v : Descriptor} {k s t c B : ℕ} (hs : s < t) (h
       Runs (program io) (bank roles v d)
         (bank (SharedPlacementAlphabet.setTape roles io (sourceWord y) 0) v d)
         (3808274 * volume prime v + LeafCore.coreCost (volume prime v) c) := by
-  obtain ⟨y, hy, hcall⟩ := LabelCall.runs hs ht hv hp roles io x hh hx
-  rw [LeafCore.input_eq, LeafCore.input_eq] at hcall
-  have hsup := leadingBlock_runs fits _ hcall
-  exact ⟨y, hy, withView_runs hs ht hc hb hv hp (leadingBlock_leading _ _) hsup⟩
+  obtain ⟨y, swap, run⟩ := runs_at_view_cost hs ht hc hb hv hp roles io x hh hx
+  let u := LabelView.colView prime c k s t B v
+  have volume_eq := LabelView.colView_volume prime c k s t B v hv hs ht
+  have positive : u.Positive := LeafCore.positive_of_volume
+    (volume_eq ▸ RecursiveAffinePrepare.volume_positive prime_prime.two_le v hp)
+  refine ⟨y, swap, Blocks.runs_mono run (Nat.add_le_add_left ?_ _)⟩
+  simpa only [u, volume_eq, show (LabelView.colView prime c k s t B v).width = c from rfl]
+    using LeafCore.cost_le positive
 
 end
 end IntegerMultBounds.MathlibTM2.Cover.LabelSwap

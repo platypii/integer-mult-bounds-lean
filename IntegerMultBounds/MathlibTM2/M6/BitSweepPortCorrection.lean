@@ -87,10 +87,11 @@ theorem inactiveWindowEquiv_read {w B W : ℕ} (lane : BankLane) (b : Fin B) (j 
 /-- All 17,760 source/target pairs receive their two corrections.
 Other owners are preserved by each pass. -/
 theorem framedPortCorrections [M8.Machine.Net] :
-    ∃ (C : ℝ) (tapes states : ℕ), ∀ (n : Fin 9) (w W : ℕ), 0 < w → 0 < W →
+    ∃ (C : ℝ) (base tapes states : ℕ), ∀ (n : Fin 9) (w W : ℕ), 0 < w → 0 < W →
       let V := (prime^w)^16*W
       ∃ enter leave : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V)),
         enter.tapes ≤ tapes ∧ leave.tapes ≤ tapes ∧ enter.states ≤ states ∧ leave.states ≤ states ∧
+        enter.cost + leave.cost = base*V + 17760*(2*LeafCore.coreCost V w+14) ∧
         ((enter.cost+leave.cost : ℕ) : ℝ) ≤ C*(w : ℝ)^M8.Machine.BudgetBound.tau*V ∧
         (∀ x i, (∀ k, sourceOwner n k ≠ i) → enter.transform x i = x i) ∧
         (∀ y i, (∀ k, targetOwner n k ≠ i) → leave.transform y i = y i) ∧
@@ -116,27 +117,26 @@ theorem framedPortCorrections [M8.Machine.Net] :
   let base := (jobs.map fun k => c k.2).sum
   let total := fun (size : Fin 111 → ℕ) => 142081+(jobs.map fun k => 142081+(size k.2+142080)).sum
   let controls := fun (size : Fin 111 → ℕ) => (jobs.map fun k => size k.2).sum+1
-  refine ⟨(base : ℝ)+17760*(2*|LeafCore.C|+14),max (total preSize) (total postSize),
+  refine ⟨(base : ℝ)+17760*(2*|LeafCore.C|+14),base,max (total preSize) (total postSize),
     max (controls preStates) (controls postStates),?_⟩
   intro n w W hw hW V
   choose pre post preFixed postFixed preControl postControl price correct using fun t => build t w W hw hW
   obtain ⟨enter,enterTapes,enterStates,paid,entry,keep⟩ := compilePortsSized ⟨sourceOwner n,source_injective n⟩ (fun k => pre k.2) jobs unique
   obtain ⟨leave,leaveTapes,leaveStates,cost,exitRow,off⟩ := compilePortsSized ⟨targetOwner n,targetOwner_injective n⟩ (fun k => post k.2) jobs unique
-  refine ⟨enter,leave,by simpa only [enterTapes,preFixed,total] using le_max_left (total preSize) (total postSize),
-    by simpa only [leaveTapes,postFixed,total] using le_max_right (total preSize) (total postSize),
-    by simpa only [enterStates,preControl,controls] using le_max_left (controls preStates) (controls postStates),
-    by simpa only [leaveStates,postControl,controls] using le_max_right (controls preStates) (controls postStates),?_,fun x i away => keep x i (fun k _ => away k),
-    fun y i away => off y i (fun k _ => away k),?_⟩
-  · rw [paid,cost,count]
+  have exactCost : enter.cost + leave.cost = base*V + 17760*(2*LeafCore.coreCost V w+14) := by
+    rw [paid,cost,count]
     have total := congrArg (fun f : ((Fin 32 × Fin 5) × Fin 111 → ℕ) => (jobs.map f).sum)
       (funext fun k => price k.2)
     simp only [List.sum_map_add,List.sum_map_mul_right,List.map_const',List.sum_replicate,
       nsmul_eq_mul,count] at total
-    have exactCost : ((jobs.map fun k => (pre k.2).cost).sum+17760) +
-        ((jobs.map fun k => (post k.2).cost).sum+17760) = base*V+17760*(2*LeafCore.coreCost V w+14) := by
-      dsimp only [base,V] at total ⊢
-      omega
-    rw [exactCost]
+    dsimp only [base,V] at total ⊢
+    omega
+  refine ⟨enter,leave,by simpa only [enterTapes,preFixed,total] using le_max_left (total preSize) (total postSize),
+    by simpa only [leaveTapes,postFixed,total] using le_max_right (total preSize) (total postSize),
+    by simpa only [enterStates,preControl,controls] using le_max_left (controls preStates) (controls postStates),
+    by simpa only [leaveStates,postControl,controls] using le_max_right (controls preStates) (controls postStates),exactCost,?_,fun x i away => keep x i (fun k _ => away k),
+    fun y i away => off y i (fun k _ => away k),?_⟩
+  · rw [exactCost]
     let power := (w : ℝ)^M8.Machine.BudgetBound.tau
     have one : 1 ≤ power := Real.one_le_rpow (by exact_mod_cast (show 1 ≤ w from hw))
       M8.Machine.BudgetBound.exponent_range.1.le
@@ -177,10 +177,10 @@ theorem sweepPortCorrections [M8.Machine.Net] :
             leave.transform y src (cell s) = x src (cell (frame P (frame 1 s))) ∧
             leave.transform y dst (cell s) =
               x dst (cell (frame (1-P) (frame 0 s))) + x src (cell (frame 1 (frame 0 s))) := by
-  obtain ⟨C,tapes,states,build⟩ := framedPortCorrections
+  obtain ⟨C,_,tapes,states,build⟩ := framedPortCorrections
   refine ⟨C,tapes,states,?_⟩
   intro n w B W hw hW K V
-  obtain ⟨enter,leave,et,lt,es,ls,bill,keep,off,correct⟩ := build n w (B*K) hw hW
+  obtain ⟨enter,leave,et,lt,es,ls,_,bill,keep,off,correct⟩ := build n w (B*K) hw hW
   refine ⟨enter,leave,et,lt,es,ls,bill,keep,off,?_⟩
   intro x y step k b s j cell L frame P src dst
   let row := fun (bank : OwnerArray w B W) i (l : Fin K) (v : Swap.Shear.State (Fin 8) (ZMod (prime^w))) =>
