@@ -22,7 +22,7 @@ private theorem matrixWords_split {M : ℕ} [NeZero M] (A H : ℕ)
   rw [List.ofFn_add (m := 62) (n := 2),List.flatten_append]
   rfl
 
-private theorem destinationRows_length {M : ℕ} [NeZero M] (A H : ℕ)
+theorem destinationRows_length {M : ℕ} [NeZero M] (A H : ℕ)
     (mat : Matrix (Fin 64) (Fin 64) (ZMod M)) :
     (destinationRows A H mat).length = 128*H := by
   have size {d e : ℕ} (m : Matrix (Fin d) (Fin e) (ZMod M)) : (matrixWords A H m).length = d*(e*H) := by
