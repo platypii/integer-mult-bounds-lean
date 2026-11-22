@@ -9,6 +9,143 @@ open IntegerMultBounds.Machine IntegerMultBounds.Networks Stack Host Cover.Fallb
 open Shared50ModularControl (prime)
 open RecursiveInterchangeLayout Certificates.PR589
 
+/-- Place two charts around a worker with shared payload and control tapes.
+Only payload slots overlap a chart. Its private slots are disjoint from both
+the worker and the opposite chart. -/
+theorem chartWindowBanks {k t : ℕ} (sizes : Bool → ℕ)
+    (slots : ∀ b, Fin k ↪ Fin (sizes b)) (owner : Fin (k+2) ↪ Fin t) :
+    ∃ (T : ℕ) (fan : Fin (k+2) ↪ Fin T) (worker : Fin t ↪ Fin T)
+      (chart : ∀ b, Fin (sizes b) ↪ Fin T),
+      (∀ i, worker (owner i) = fan i) ∧
+      (∀ b i, chart b (slots b i) = fan (i.castAdd 2)) ∧
+      (∀ b i (j : Fin 2), chart b i ≠ fan (j.natAdd k)) ∧
+      (∀ b i, (∀ j, slots b j ≠ i) →
+        (∀ l, worker l ≠ chart b i) ∧ ∀ l, chart (!b) l ≠ chart b i) ∧
+      (∀ i, (∀ j, owner j ≠ i) → ∀ b l, chart b l ≠ worker i) ∧
+      (∀ X : Stacks (k+2) prime, ∀ Y : Stacks t prime, ∀ Z : (b : Bool) → Stacks (sizes b) prime,
+        ∃ S : Stacks T prime, embStk fan S = X ∧
+          (∀ i, (∀ j, owner j ≠ i) → S.L (worker i) = Y.L i ∧ S.R (worker i) = Y.R i) ∧
+          ∀ b i, (∀ j, slots b j ≠ i) → S.L (chart b i) = (Z b).L i ∧ S.R (chart b i) = (Z b).R i) := by
+  let tapes : Option Bool → ℕ := fun x => x.elim t (fun b => sizes b + 2)
+  let owners : (i : Option Bool) → Fin (k+2) ↪ Fin (tapes i)
+    | none => owner
+    | some b => stageFan (slots b)
+  obtain ⟨T,fan,bank,atOwner,prepare,apart⟩ := copyWindowBanks tapes owners
+  let chart (b : Bool) : Fin (sizes b) ↪ Fin T := ⟨fun i => bank (some b) (i.castAdd 2), fun i j e => Fin.ext (congrArg (fun l : Fin (sizes b+2) => l.val) ((bank (some b)).injective e))⟩
+  have left (b : Bool) (j : Fin k) : owners (some b) (j.castAdd 2) = (slots b j).castAdd 2 := by
+    change finSumFinEquiv (Sum.map (slots b) id (finSumFinEquiv.symm (j.castAdd 2))) = _
+    simp [@finSumFinEquiv_symm_apply_castAdd k 2]
+  have right (b : Bool) (j : Fin 2) : owners (some b) (j.natAdd k) = j.natAdd (sizes b) := by
+    change finSumFinEquiv (Sum.map (slots b) id (finSumFinEquiv.symm (j.natAdd k))) = _
+    simp [@finSumFinEquiv_symm_apply_natAdd k 2]
+  have privateSlot (b : Bool) (i : Fin (sizes b)) (h : ∀ j, slots b j ≠ i) :
+      ∀ j, owners (some b) j ≠ i.castAdd 2 := by
+    intro j
+    refine Fin.addCases (fun j => ?_) (fun j => ?_) j
+    · rw [left]; exact fun e => h j (Fin.ext (congrArg (fun l : Fin (sizes b+2) => l.val) e))
+    · rw [right]; intro e; have := congrArg Fin.val e; simp only [Fin.val_natAdd,Fin.val_castAdd] at this; omega
+  refine ⟨T,fan,bank none,chart,atOwner none,?_,?_,?_,?_,?_⟩
+  · intro b i
+    change bank (some b) ((slots b i).castAdd 2) = _
+    simpa only [left] using atOwner (some b) (i.castAdd 2)
+  · intro b i j
+    rw [← atOwner (some b) (j.natAdd k)]
+    intro eq
+    have same := (bank (some b)).injective eq
+    rw [right] at same
+    have := congrArg Fin.val same
+    change i.val = sizes b + j.val at this
+    omega
+  · intro b i h
+    have other := (apart (some b) _ (privateSlot b i h)).2
+    exact ⟨other none (by simp), fun l => other (some (!b)) (by cases b <;> decide) (l.castAdd 2)⟩
+  · intro i h b l
+    exact (apart none i h).2 (some b) (by simp) (l.castAdd 2)
+  · intro X Y Z
+    let init : (i : Option Bool) → Stacks (tapes i) prime
+      | none => Y
+      | some b => ⟨[],[],Fin.addCases (Z b).L (fun _ => []),Fin.addCases (Z b).R (fun _ => [])⟩
+    obtain ⟨S,rep,stored⟩ := prepare X init
+    refine ⟨S,rep,stored none,?_⟩
+    intro b i h
+    change S.L (bank (some b) (i.castAdd 2)) = _ ∧ S.R (bank (some b) (i.castAdd 2)) = _
+    simpa [init,chart] using stored (some b) (i.castAdd 2) (privateSlot b i h)
+
+/-- Execute a complete hosted COPY schedule between its two physical charts.
+All private words can be seeded simultaneously before the entry pass. -/
+theorem chartedSchedule_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) :
+    ∃ C : ℝ, ∀ w B K : ℕ, 0 < w → 0 < B → 0 < K →
+    let V := volume prime (copyLabelLayout w B K)
+    ∀ {t : ℕ} (owner : Fin (142081+2) ↪ Fin t),
+    ∃ (T states : ℕ) (fan : Fin (142081+2) ↪ Fin T) (worker : Fin t ↪ Fin T),
+    ∀ (shared : Stacks (142081+2) prime) (seed : Stacks t prime),
+    ∃ initial : Stacks T prime, embStk fan initial = shared ∧
+    ∀ {P U : Type} {Q : ℕ}, states ≤ Q → ∀ (body : P → Pr P t Q prime U)
+      (middle : Pr P t Q prime U) (price : ℕ),
+      (∀ x u S, HelperFan owner x S →
+        (∀ i, (∀ j, owner j ≠ i) → S.L i = seed.L i ∧ S.R i = seed.R i) →
+        ∃ z F m y, Exec body middle (mk u S) m (mk z F) ∧ m ≤ price ∧ z.user = u.user ∧
+          HelperFan owner y F ∧ CopyScheduleEffect n p.1 p.2 w B K Copy.lifecycles x y) →
+      ∃ code, ∀ (data : Fin 142081 → Fin V → ZMod 2) u S, HelperFan fan data S →
+        (∀ i, (∀ j, fan j ≠ i) → S.L i = initial.L i ∧ S.R i = initial.R i) →
+        ∃ z F m out, Exec (fun f => embProg worker id (body f)) code (mk u S) m (mk z F) ∧
+          (m : ℝ) ≤ C*V*(w : ℝ)^M8.Machine.BudgetBound.tau + price ∧ z.user = u.user ∧ HelperFan fan out F ∧
+          (∀ g z, borrowedRead (B := B) (K := K) n p.1 p.2 g z out = borrowedScatter w (borrowedRead n p.1 p.2 g z data)) ∧
+          ∀ k, k ≠ Fin.last 142080 → (∀ i, ownerTape n p.1 p.2 i ≠ k) → out k = data k := by
+  obtain ⟨C,build⟩ := borrowedCopy_host n p
+  refine ⟨C,?_⟩
+  intro w B K hw hb hk V t owner
+  obtain ⟨stage,prepare,run⟩ := build w B K hw hb hk
+  let slots (b : Bool) : Fin 142081 ↪ Fin (stage b).tapes := ⟨(stage b).slots,(stage b).slots_injective⟩
+  obtain ⟨T,fan,worker,chart,sharedAt,chartAt,controls,privateChart,privateWorker,init⟩ :=
+    chartWindowBanks (fun b => (stage b).tapes) slots owner
+  refine ⟨T,max (stage false).states (stage true).states,fan,worker,?_⟩
+  intro shared seed
+  choose chartSeed seeded using prepare
+  obtain ⟨initial,sharedEq,stored,metadata⟩ := init shared seed chartSeed
+  refine ⟨initial,sharedEq,?_⟩
+  intro P U Q cap body middle price copies
+  let host := fun f => embProg worker id (body f)
+  let saved (S : Stacks T prime) := ∀ i, (∀ j, owner j ≠ i) →
+    S.L (worker i) = seed.L i ∧ S.R (worker i) = seed.R i
+  have fits (b) : (stage b).states ≤ Q := (by cases b <;> simp : (stage b).states ≤ max _ _).trans cap
+  have project (S : Stacks T prime) : embStk owner (embStk worker S) = embStk fan S := by
+    simp only [embStk,Function.comp_def,sharedAt]
+  have whole := run chart fan chartAt (fun b j i => controls b i j) fits host price saved (embProg worker id middle)
+  dsimp only at whole
+  specialize whole (by
+    intro x u S rep ready fresh
+    obtain ⟨v,D,m,y,exec,paid,user,done,effect⟩ := copies x (embDn worker u) (embStk worker S)
+      (by simpa only [HelperFan,project] using rep) fresh
+    obtain ⟨z,F,placed,_,same,projection,off⟩ := exec_emb (ι := id) (body' := host) worker.injective
+      (fun _ => rfl) exec u rfl S rfl
+    rw [← projection] at done
+    refine ⟨z,F,m,y,placed,paid,same.trans user,by simpa only [HelperFan,project] using done,?_,effect⟩
+    intro j priv h
+    obtain ⟨l,r⟩ := off _ (privateChart true j priv).1
+    simpa only [l,r] using ready j priv h)
+  let pass (b : Bool) : Pr P T Q prime U := embProg (chart b) (Empty.elim : Empty → P) (foreign (liftQ (stage b).program (fits b)))
+  refine ⟨.seq (pass false) (.seq (embProg worker id middle) (pass true)),?_⟩
+  intro data u S rep fresh
+  have chartFresh b j (priv : ∀ i, slots b i ≠ j) := fresh (chart b j) (fun i eq =>
+    (privateChart b j priv).1 (owner i) ((sharedAt i).trans eq))
+  have ready b j (priv : ∀ i, slots b i ≠ j) (h : ℤ) : (stage b).metadata.tape j h =
+      readAt blank (S.L (chart b j)) (S.R (chart b j)) (h-(stage b).metadata.head j) := by
+    obtain ⟨l,r⟩ := chartFresh b j priv
+    obtain ⟨ll,rr⟩ := metadata b j priv
+    exact (seeded b j priv h).trans (by rw [l,r,ll,rr])
+  apply whole data u S (ready false) rep
+  intro D keep
+  constructor
+  · intro j priv h
+    obtain ⟨l,r⟩ := keep _ ((privateChart true j priv).2)
+    simpa only [l,r] using ready true j priv h
+  · intro i priv
+    obtain ⟨l,r⟩ := keep _ (privateWorker i priv false)
+    obtain ⟨ll,rr⟩ := fresh _ (fun j eq => priv j (worker.injective ((sharedAt j).trans eq)))
+    obtain ⟨sl,sr⟩ := stored i priv
+    exact ⟨l.trans (ll.trans sl),r.trans (rr.trans sr)⟩
+
 /-- All COPY workers share the permanent payload and controls. Each worker's
 private initialization survives the earlier windows, and each scheduled
 child is charged once in its own window. -/

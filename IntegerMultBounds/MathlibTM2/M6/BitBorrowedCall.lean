@@ -182,19 +182,18 @@ theorem borrowedCopy_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) :
       (∀ k i, bank k ((stages k).slots i) = fan (i.castAdd 2)) →
       (∀ k (j : Fin 2) i, bank k i ≠ fan (j.natAdd 142081)) →
       ∀ (fits : ∀ k, (stages k).states ≤ Q) (body : P → Pr P T Q prime U)
-        (price : Fin Copy.lifecycles.length → ℕ) (saved : Fin Copy.lifecycles.length → Stacks T prime → Prop),
+        (price : ℕ) (saved : Stacks T prime → Prop) (middle : Pr P T Q prime U),
       let ready := fun k (S : Stacks T prime) => ∀ j, (∀ i, (stages k).slots i ≠ j) → ∀ h,
         (stages k).metadata.tape j h = readAt blank (S.L (bank k j)) (S.R (bank k j)) (h-(stages k).metadata.head j)
       let chart := fun k => embProg (bank k) (Empty.elim : Empty → P) (foreign (liftQ (stages k).program (fits k)))
-      (∀ i, ∃ code, ∀ x u S, HelperFan fan x S → ready true S → saved i S →
-        ∃ z F m y, Exec body code (mk u S) m (mk z F) ∧ m ≤ price i ∧ z.user = u.user ∧
-          HelperFan fan y F ∧ ready true F ∧ CopyWindowEffect n p.1 p.2 Copy.lifecycles[i.val] w B K x y ∧
-          ∀ j, j ≠ i → saved j S → saved j F) →
-      ∃ middle, ∀ (data : Fin 142081 → Fin V → ZMod 2) u S, ready false S → HelperFan fan data S →
+      (∀ x u S, HelperFan fan x S → ready true S → saved S →
+        ∃ z F m y, Exec body middle (mk u S) m (mk z F) ∧ m ≤ price ∧ z.user = u.user ∧
+          HelperFan fan y F ∧ ready true F ∧ CopyScheduleEffect n p.1 p.2 w B K Copy.lifecycles x y) →
+      ∀ (data : Fin 142081 → Fin V → ZMod 2) u S, ready false S → HelperFan fan data S →
       (∀ D : Stacks T prime, (∀ j, (∀ i, bank false i ≠ j) → D.L j = S.L j ∧ D.R j = S.R j) →
-        ready true D ∧ ∀ j, saved j D) →
+        ready true D ∧ saved D) →
       ∃ z F m out, Exec body (.seq (chart false) (.seq middle (chart true))) (mk u S) m (mk z F) ∧
-        (m : ℝ) ≤ C*V*(w : ℝ)^M8.Machine.BudgetBound.tau + ((List.ofFn price).sum+1 : ℕ) ∧ z.user = u.user ∧ HelperFan fan out F ∧
+        (m : ℝ) ≤ C*V*(w : ℝ)^M8.Machine.BudgetBound.tau + price ∧ z.user = u.user ∧ HelperFan fan out F ∧
         (∀ g z, borrowedRead (B := B) (K := K) n p.1 p.2 g z out = borrowedScatter w (borrowedRead n p.1 p.2 g z data)) ∧
         ∀ k, k ≠ Fin.last 142080 → (∀ i, ownerTape n p.1 p.2 i ≠ k) → out k = data k := by
   choose coeff build using borrowedChart_host n p
@@ -202,26 +201,16 @@ theorem borrowedCopy_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) :
   intro w B K hw hb hk v V
   choose stages seed transport off run using fun k => build k w B K hw hb hk
   refine ⟨stages,seed,?_⟩
-  intro P U T Q bank fan shared apart fits body price saved ready chart windows
-  let ok := fun (x : Fin 142081 → Fin V → ZMod 2) S => HelperFan fan x S ∧ ready true S
-  obtain ⟨middle,copies⟩ := copyWindows_exec body n p.1 p.2 w B K id ok saved price (fun i => by
-    obtain ⟨code,step⟩ := windows i
-    refine ⟨code,?_⟩
-    rintro x u S ⟨rep,guard⟩ fresh
-    obtain ⟨z,F,m,y,exec,paid,user,done,stock,act,keep⟩ := step x u S rep guard fresh
-    exact ⟨z,F,m,y,exec,paid,user,⟨done,stock⟩,act,keep⟩) (List.finRange _) (List.nodup_finRange _)
-  rw [← List.ofFn_eq_map,← List.ofFn_eq_map,List.ofFn_getElem] at copies
-  refine ⟨middle,?_⟩
-  intro data u S start rep fresh
+  intro P U T Q bank fan shared apart fits body price saved middle ready chart copies data u S start rep fresh
   obtain ⟨a,D,l,entry,li,au,atEntry,keep⟩ := run false (bank false) fan (shared false) (apart false)
     (fits false) body data u S start rep
-  obtain ⟨b,G,m,mid,copy,mi,ba,⟨atExit,exitReady⟩,effect⟩ := copies _ a D ⟨atEntry,(fresh D keep).1⟩ (fun i _ => (fresh D keep).2 i)
+  obtain ⟨b,G,m,mid,copy,mi,ba,atExit,exitReady,effect⟩ := copies _ a D atEntry (fresh D keep).1 (fresh D keep).2
   obtain ⟨z,F,r,leave,ri,zb,done,_⟩ := run true (bank true) fan (shared true) (apart true)
     (fits true) body mid b G exitReady atExit
   refine ⟨z,F,_,_,Exec.seq entry (Exec.seq copy leave),?_,zb.trans (ba.trans au),done,?_,?_⟩
-  · simp only [Nat.cast_add,Nat.cast_one]
+  · simp only [Nat.cast_add]
     rw [add_mul,add_mul]
-    have bound : (m : ℝ) ≤ ((List.ofFn price).sum : ℝ)+1 := by exact_mod_cast mi
+    have bound : (m : ℝ) ≤ price := by exact_mod_cast mi
     linarith
   · intro g cell
     funext i
