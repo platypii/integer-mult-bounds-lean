@@ -183,7 +183,7 @@ by the borrowed sweep. Each window retains its own child record and budget. -/
 theorem borrowedWindow_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) (j : Fin Copy.lifecycles.length) :
     ∃ (T states : ℕ) (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T) (fan : Fin (142081+2) ↪ Fin T),
     ∀ {P U : Type} {Q : ℕ}, states ≤ Q → ∀ (body : P → Pr P T Q prime U) (f : P),
-    ∃ base swaps : ℕ, ∀ (node : Descriptor) (w B rows : ℕ),
+    ∃ base : ℕ, ∀ (node : Descriptor) (w B rows : ℕ),
     node.width = 64*(w+1) → node.rows = 142080*rows → node.beforeH = B*prime^(64*((w+1)*64)) →
     let M := prime^(w+1)
     let K := node.beforeRows*rows*node.between*node.afterD
@@ -192,21 +192,31 @@ theorem borrowedWindow_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) (
     let V := M^16*W
     let desc := scheduledChild prime node (copyChildPosition (n,p,j))
     0 < W → ∃ position : Fin (volume prime desc) ≃ Fin V,
-      (∀ k, (position k).val = (CopyChildLayout.packActive desc k).val) ∧
+      CopyIntervalPositions desc (w+1) W position ∧
       ∀ record, ∃ prepared : Stacks T prime, ∀ budget,
       ScheduledChildExec node desc w W ports record position body f budget →
       ∃ code, ∀ data u S, HelperFan fan data S →
         (∀ k, (∀ h, fan h ≠ k) → S.L k = prepared.L k ∧ S.R k = prepared.R k) →
         ∃ z F t out, Exec body code (mk u S) t (mk z F) ∧
-          t ≤ (base+swaps*swapVolumeRate w)*V + 12 + budget ∧
+          t ≤ base*V + 12 + budget ∧
           z.user = u.user ∧ HelperFan fan out F ∧
           CopyFanoutEffect n p.1 p.2 Copy.lifecycles[j.val] (List.getElem_mem ..) (w+1) blocks K data out := by
-  obtain ⟨T,states,ports,fan,build⟩ := commonCopyWindow_layout n p.1 p.2 j
+  obtain ⟨T,states,ports,fan,build⟩ := commonCopyWindow_layout true n p.1 p.2 j
   refine ⟨T,states,ports,fan,?_⟩
   intro P U Q fits body f
   obtain ⟨base,swaps,run⟩ := build fits body f
-  refine ⟨base,swaps,?_⟩
+  refine ⟨base,?_⟩
   intro node w B rows width split label M K blocks W V desc pos
-  exact run node w B rows blocks K width split label (by dsimp [blocks,K,M]; ring) pos
+  obtain ⟨position,coords,worker⟩ := run node w B rows blocks K width split label (by dsimp [blocks,K,M]; ring) pos
+  refine ⟨position,coords,?_⟩
+  intro record
+  obtain ⟨prepared,build⟩ := worker record
+  refine ⟨prepared,?_⟩
+  intro budget child
+  obtain ⟨code,execute⟩ := build budget child
+  refine ⟨code,?_⟩
+  intro data u S live saved
+  obtain ⟨z,F,t,out,exec,paid,user,done,act⟩ := execute data u S live saved
+  exact ⟨z,F,t,out,exec,by simpa only [ite_true,Nat.zero_mul,Nat.add_zero] using paid,user,done,act⟩
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode

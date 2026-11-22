@@ -359,7 +359,7 @@ def ScheduledStageRuns [M8.Machine.Net] (n : Fin 9)
     ∃ (mp : ∀ p i, Fin (volume prime (md p i)) ≃ Fin V) (cp : ∀ p j, Fin (volume prime (cd p j)) ≃ Fin V)
       (banks : ∀ p, InvocationBanks (mT p) (cT p)),
     (∀ p i h, (mp p i h).val = (CopyChildLayout.packActive (md p i) h).val) ∧
-    (∀ p j h, (cp p j h).val = (CopyChildLayout.packActive (cd p j) h).val) ∧
+    (∀ p j, CopyIntervalPositions (cd p j) (w+1) W (cp p j)) ∧
     PackedStageExecution (w := w+1) (B := B) (K := K) n (fun p => (banks p).tapes)
       (fun p => (banks p).body (mBank p) (cBank p) (mb p) (cb p)) coeff (fun childTime =>
       (∀ p i, ScheduledChildExec node (md p i) w W (mr p i) (record p i) (mp p i) (mb p i) (mf p i) (childTime (moveChild p i).val)) ∧

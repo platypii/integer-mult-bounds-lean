@@ -152,6 +152,70 @@ theorem scheduledPhaseCoordinates (node : Descriptor) (i : Fin nodeChildren5.len
   exact (CopyChildLayout.packActive_change packed child sameWidth size addr).trans
     (congrArg (fun z => (CopyChildLayout.packActive packed z).val) src)
 
+open RecursiveInterchangeLayout in
+/-- The child sees the parent's interval without physically regrouping its spectator fields. -/
+def InheritedIntervalPositions {V : ℕ} (child interval : Descriptor)
+    (size : volume prime interval = V) (position : Fin (volume prime child) ≃ Fin V) : Prop :=
+  ∀ k, (CopyChildLayout.packActive child k).val =
+    (CopyChildLayout.packActive interval ((position k).cast size.symm)).val
+
+open RecursiveInterchangeLayout in
+abbrev CopyIntervalPositions (child : Descriptor) (w W : ℕ)
+    (position : Fin (volume prime child) ≃ Fin ((prime^w)^16*W)) : Prop :=
+  InheritedIntervalPositions child (phaseIntervalChild 0 7 w W)
+    (phaseIntervalChild_volume (by decide : 0 ≤ 7) (by decide : 7 ≤ 8) w W) position
+
+open IntegerMultBounds.Networks.Certificates.PR589 RecursiveInterchangeLayout in
+/-- A child that reads the interval in its inherited order can be called
+directly on the parent's word. Its address map retains the spectator digits
+between the active fields. -/
+theorem scheduledIntervalCall_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U) (f : P)
+    (node : Descriptor) (i : Fin nodeChildren5.length) (p : ℕ × ℕ)
+    (checked : Geometry.Moves.CheckedPair p) (paid : 0 < Geometry.moveRank p.1 p.2)
+    (w B rows : ℕ) (rank : nodeChildren5[i.val] = Geometry.moveRank p.1 p.2)
+    (width : node.width = 64*(w+1)) (split : node.rows = 142080*rows)
+    (label : node.beforeH = B*prime^(64*((w+1)*64))) :
+    let M := prime^(w+1)
+    let W := B*prime^(64*((w+1)*64))*(M^112*(node.beforeRows*rows*node.between*node.afterD))
+    let a := Geometry.Dimensions.value p.1
+    let b := Geometry.Dimensions.value p.2
+    let interval := phaseIntervalChild (min a b) (max a b) (w+1) W
+    let child := scheduledChild prime node i
+    let size := phaseIntervalChild_volume (phaseInterval_bounds checked paid).1.le
+      (phaseInterval_bounds checked paid).2 (w+1) W
+    ∃ position : Fin (volume prime child) ≃ Fin (M^16*W),
+      InheritedIntervalPositions child interval size position ∧
+      ∀ (stored : (Fin (M^16*W) → ZMod 2) → Stacks T prime → Prop)
+        (u : HS T Q prime U) S (word : Fin (M^16*W) → ZMod 2) budget,
+      (child.width < node.width → ∃ z F n changed, Exec body (body f) (mk u S) n (mk z F) ∧
+        n ≤ budget ∧ z.user = u.user ∧ stored changed F ∧ ∀ k, changed (position k) =
+          Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (word ∘ position) k) →
+      ∃ z F n, Exec body (.call f) (mk u S) n (mk z F) ∧ n ≤ budget+2 ∧ z.user = u.user ∧
+        stored (fun k => Shared50RecursiveNodeRows.transpose (v := interval) (one_dvd _)
+          (fun j => word (j.cast size)) (k.cast size.symm)) F := by
+  intro M W a b interval child size
+  obtain ⟨e,coords,action⟩ := scheduledPhaseCoordinates node i p checked (w+1) B rows rank width split label
+  let position := e.symm.trans (finCongr size)
+  refine ⟨position,?_,?_⟩
+  · intro k
+    simpa [position] using coords (e.symm k)
+  intro stored u S word budget run
+  have smaller : child.width < node.width := by
+    have scaled := Nat.mul_lt_mul_of_pos_right ((nodeChildren5_le i).trans_lt (by decide : 42 < 64)) (Nat.succ_pos w)
+    simpa only [child,scheduledChild,Fallback.rankDescriptor,width,Nat.mul_div_cancel_left _ (by decide : 0 < 64)] using scaled
+  obtain ⟨z,F,n,changed,exec,time,user,ready,swap⟩ := run smaller
+  refine ⟨z,F,_,Exec.call exec,by omega,user,?_⟩
+  convert ready using 2
+  rename_i k
+  let j := k.cast size.symm
+  have back (l : Fin (volume prime interval)) : position (e l) = l.cast size := by simp [position]
+  have inputs : (word ∘ position) ∘ e = fun l => word (l.cast size) := by
+    funext l
+    exact congrArg word (back l)
+  have read := congrFun (action (word ∘ position)) j
+  rw [inputs] at read
+  exact read.trans ((swap (e j)).symm.trans (congrArg changed (by simp [back,j])))
+
 private theorem digits_of_length {α : Type*} {n : ℕ} (xs : List α) (size : xs.length = n) :
     ∃ x : Fin n → α, List.ofFn x = xs := by
   subst n
@@ -337,6 +401,60 @@ theorem phasePackedCall_exec [M8.Machine.Net] {P U : Type} {T Q : ℕ} (capacity
     obtain ⟨l',r'⟩ := off j hj
     obtain ⟨l'',r''⟩ := offB j hj
     exact ⟨l''.trans (l'.trans l),r''.trans (r'.trans r)⟩
+
+open Cover.Fallback IntegerMultBounds.Networks.Certificates.PR589 RecursiveInterchangeLayout in
+private theorem phaseLayoutCall_exec [M8.Machine.Net] {P U : Type} {T Q : ℕ} (inherited : Bool) (capacity : rowSwapBlock.states ≤ Q)
+    (p : ℕ × ℕ) (checked : Geometry.Moves.CheckedPair p) (paid : 0 < Geometry.moveRank p.1 p.2)
+    (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T)
+    (body : P → Pr P T Q prime U) (f : P) :
+    let lo := min (Geometry.Dimensions.value p.1) (Geometry.Dimensions.value p.2)
+    let hi := max (Geometry.Dimensions.value p.1) (Geometry.Dimensions.value p.2)
+    ∃ setup swaps : ℕ, ∀ (node : Descriptor) (i : Fin nodeChildren5.length) (w B rows : ℕ),
+    nodeChildren5[i.val] = Geometry.moveRank p.1 p.2 → node.width = 64*(w+1) →
+    node.rows = 142080*rows → node.beforeH = B*prime^(64*((w+1)*64)) →
+    let M := prime^(w+1)
+    let K := M^112*(node.beforeRows*rows*node.between*node.afterD)
+    let W := B*prime^(64*((w+1)*64))*K
+    0 < W →
+    let desc := scheduledChild prime node i
+    ∃ position : Fin (volume prime desc) ≃ Fin (M^16*W),
+    (if inherited then InheritedIntervalPositions desc (phaseIntervalChild lo hi (w+1) W)
+        (phaseIntervalChild_volume (phaseInterval_bounds checked paid).1.le (phaseInterval_bounds checked paid).2 _ _) position
+      else ∀ k, (position k).val = (CopyChildLayout.packActive desc k).val) ∧
+    let is := phasePackSchedule lo hi
+    let bank := ((Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)).trans ports
+    let clean := fun D : Stacks T prime => ∀ k : Fin (rowSwapBlock.tapes+35), 35 ≤ k.val → D.L (ports k) = [] ∧ D.R (ports k) = []
+    let pack := fun js => statePlacedNormalized ports capacity swapStates_pos Empty.elim (packSchedule 16 js)
+    ∀ (v : HS T Q prime U) (S : Stacks T prime) record dest q (before : Fin (M^16*W) → ZMod 2) budget,
+    let stored := RecordReady (b := prime) (w := w) (d := 16) (W := W) bank M.size W.size record
+      SparseRoleCircuit.encode (fun _ => blank) dest 0 q
+    (desc.width < node.width → ∀ (u : HS T Q prime U) D word, stored word D → clean D →
+      ∃ z F n changed, Exec body (body f) (mk u D) n (mk z F) ∧ n ≤ budget ∧ z.user = u.user ∧
+        stored changed F ∧ clean F ∧ (∀ j, (∀ i, ports i ≠ j) → F.L j = D.L j ∧ F.R j = D.R j) ∧
+        ∀ k, changed (position k) = Shared50RecursiveNodeRows.transpose (one_dvd desc.rows) (word ∘ position) k) →
+    let size := phaseIntervalChild_volume (phaseInterval_bounds checked paid).1.le
+      (phaseInterval_bounds checked paid).2 (w+1) W
+    let after := fun k => Shared50RecursiveNodeRows.transpose (v := phaseIntervalChild lo hi (w+1) W)
+      (one_dvd _) (fun j => before (j.cast size)) (Fin.cast size.symm k)
+    stored before S → clean S → ∃ z F n, z.user = v.user ∧
+      n ≤ budget+4+(if inherited then 0 else setup+swaps*swapVolumeRate w)*(M^16*W) ∧
+      Exec body (if inherited then Prog.call f else (pack is).seq ((Prog.call f).seq (pack is.reverse))) (mk v S) n (mk z F) ∧
+      stored after F ∧ clean F ∧ ∀ j, (∀ i, ports i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  cases inherited with
+  | false => exact phasePackedCall_exec capacity p checked paid ports body f
+  | true =>
+    intro lo hi
+    refine ⟨0,0,?_⟩
+    intro node i w B rows rank width split label M K W pos desc
+    obtain ⟨position,coords,run⟩ := scheduledIntervalCall_exec body f node i p checked paid w B rows rank width split label
+    refine ⟨position,coords,?_⟩
+    intro is bank clean pack u S record dest q before budget stored child size after ready free
+    let result := fun word F => stored word F ∧ clean F ∧ ∀ j, (∀ i, ports i ≠ j) →
+      F.L j = S.L j ∧ F.R j = S.R j
+    obtain ⟨z,F,n,exec,time,user,out,clear,off⟩ := run result u S before budget (fun smaller => by
+      obtain ⟨z,F,n,y,exec,time,user,out,clear,off,swap⟩ := child smaller u S before ready free
+      exact ⟨z,F,n,y,exec,time,user,⟨out,clear,off⟩,swap⟩)
+    exact ⟨z,F,n,user,by simpa using time.trans (Nat.add_le_add_left (by decide : 2 ≤ 4) budget),exec,out,clear,off⟩
 
 open Cover.Fallback in
 private theorem owners_of_returned_record {T k w d W H J : ℕ}
@@ -953,7 +1071,7 @@ open M8.Machine.ArbitraryWidthHighExchangeShared (sourceWord) in
 open Cover.Fallback IntegerMultBounds.Networks.Certificates.PR589 RecursiveInterchangeLayout in
 /-- Pack a live phase record, call the child once, and restore the parent's
 digit order. Both basis passes share the payload port with the recursive call. -/
-theorem scheduledPhasePacked_host [M8.Machine.Net]
+theorem scheduledPhaseBasis_host (inherited : Bool) [M8.Machine.Net]
     (p : ℕ × ℕ) (checked : Geometry.Moves.CheckedPair p) (paid : 0 < Geometry.moveRank p.1 p.2) :
     let lo := min (Geometry.Dimensions.value p.1) (Geometry.Dimensions.value p.2)
     let hi := max (Geometry.Dimensions.value p.1) (Geometry.Dimensions.value p.2)
@@ -969,12 +1087,14 @@ theorem scheduledPhasePacked_host [M8.Machine.Net]
     0 < W →
     let desc := scheduledChild prime node i
     ∃ position : Fin (volume prime desc) ≃ Fin (M^16*W),
-    (∀ k, (position k).val = (CopyChildLayout.packActive desc k).val) ∧
+    (if inherited then InheritedIntervalPositions desc (phaseIntervalChild lo hi (w+1) W)
+        (phaseIntervalChild_volume (phaseInterval_bounds checked paid).1.le (phaseInterval_bounds checked paid).2 _ _) position
+      else ∀ k, (position k).val = (CopyChildLayout.packActive desc k).val) ∧
     let is := phasePackSchedule lo hi
     let bank := ((Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)).trans ports
     let clean := fun D : Stacks T prime => ∀ k : Fin (rowSwapBlock.tapes+35), 35 ≤ k.val → D.L (ports k) = [] ∧ D.R (ports k) = []
     let pack := fun js => statePlacedNormalized ports capacity swapStates_pos Empty.elim (packSchedule 16 js)
-    let middle := (pack is).seq ((Prog.call f).seq (pack is.reverse))
+    let middle := if inherited then Prog.call f else (pack is).seq ((Prog.call f).seq (pack is.reverse))
     let V := M^16*W
     let view := phaseIntervalChild lo hi (w+1) W
     let size := phaseIntervalChild_volume (phaseInterval_bounds checked paid).1.le (phaseInterval_bounds checked paid).2 (w+1) W
@@ -1015,7 +1135,7 @@ theorem scheduledPhasePacked_host [M8.Machine.Net]
     ∃ y z G n, Exec body
         ((embProg a (Empty.elim : Empty → P) (foreign (liftQ (machine A) fitsA))).seq
           (middle.seq (embProg b (Empty.elim : Empty → P) (foreign (liftQ (machine B) fitsB)))))
-        (mk u S) n (mk z G) ∧ n ≤ budget+(basisRate A+basisRate B+setup+16+swaps*swapVolumeRate w)*V ∧
+        (mk u S) n (mk z G) ∧ n ≤ budget+(basisRate A+basisRate B+(if inherited then 0 else setup)+16+(if inherited then 0 else swaps)*swapVolumeRate w)*V ∧
       z.user = u.user ∧ live (Function.update data src y) G ∧ stock G ∧
       (∀ j, (∀ k, a k ≠ j) → (∀ k, ports k ≠ j) → (∀ k, b k ≠ j) → G.L j = S.L j ∧ G.R j = S.R j) ∧
       ∀ s j, y (index (AffineFieldCoordinates.embed (AffineFieldProgram.run (selectedWord (w+1) p) s)) j) =
@@ -1024,7 +1144,7 @@ theorem scheduledPhasePacked_host [M8.Machine.Net]
   obtain ⟨C,shape,rev,fwd⟩ := modular_move_profile.choose_spec.1 p checked
   refine ⟨C,rev,fwd,?_⟩
   intro P U T Q k ports body f capacity
-  obtain ⟨setup,swaps,prepare⟩ := phasePackedCall_exec capacity p checked paid ports body f
+  obtain ⟨setup,swaps,prepare⟩ := phaseLayoutCall_exec inherited capacity p checked paid ports body f
   refine ⟨setup,swaps,?_⟩
   intro node i w B rows rank width split label M K W hW desc
   obtain ⟨position,offset,route⟩ := prepare node i w B rows rank width split label hW
@@ -1207,12 +1327,11 @@ theorem scheduledPhasePacked_host [M8.Machine.Net]
   refine ⟨y,z,G,_,Exec.seq runA (Exec.seq exec runB),?_,userB.trans (userM.trans userA),result,⟨G,⟨y,readyReverse,readyForward,finalRecord,?_⟩,fun _ _ => ⟨rfl,rfl⟩⟩,untouched,?_⟩
   · change t ≤ FlatCoordinateCleanSchedule.constant A*V*(1+FlatCoordinateCleanSchedule.tapeCount A+5)+6 at timeA
     change n ≤ FlatCoordinateCleanSchedule.constant B'*V*(1+FlatCoordinateCleanSchedule.tapeCount B'+5)+6 at timeB
-    change m ≤ budget+4+(setup+swaps*swapVolumeRate w)*V at timeM
+    change m ≤ budget+4+(if inherited then 0 else setup+swaps*swapVolumeRate w)*V at timeM
     have pos : 0 < V := Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) hW
     rw [Nat.mul_right_comm] at timeA timeB
     dsimp only [basisRate]
-    simp only [Nat.add_mul] at timeM ⊢
-    omega
+    cases inherited <;> simp only [Bool.false_eq_true,if_false,if_true,Nat.zero_mul,Nat.add_mul] at timeM ⊢ <;> omega
   · intro k hk
     have ne : ports k ≠ bank 24 := ports.injective.ne (fun eq => by have := congrArg Fin.val eq; change k.val = 24 at this; omega)
     obtain ⟨l,r⟩ := backOff k ne
@@ -1455,7 +1574,7 @@ theorem allocatedPhaseMove_host [M8.Machine.Net] {k : ℕ} (src : Fin k)
       t ≤ budget+(base+swaps*swapVolumeRate w)*V ∧ z.user = u.user ∧ live (Function.update data src y) F ∧
       stock F ∧ ∀ s (j : Fin W), y (index (AffineFieldCoordinates.embed (AffineFieldProgram.run (selectedWord (w+1) p) s)) j) =
         data src (index (AffineFieldCoordinates.embed s) j) := by
-  obtain ⟨C,rev,fwd,build⟩ := scheduledPhasePacked_host p checked paid
+  obtain ⟨C,rev,fwd,build⟩ := scheduledPhaseBasis_host false p checked paid
   let A := description _ rev.good
   let B' := description _ fwd.good
   let recordPort : Fin (rowSwapBlock.tapes+35) := (Fin.castLEEmb swapHostFits) ((Fin.castLEEmb (by decide : 35 ≤ 59)) 24)
@@ -1662,7 +1781,7 @@ open M8.Machine.Segments SharedPlacementAlphabet in
 open M8.Machine.ArbitraryWidthHighExchangeShared (sourceWord) in
 open Cover.Fallback IntegerMultBounds.Networks.Certificates.PR589 RecursiveInterchangeLayout in
 /-- Execute one common-coordinate COPY window on its assigned tapes and charge its distinct rank-seven child. -/
-theorem commonCopyWindow_layout [M8.Machine.Net]
+theorem commonCopyWindow_layout (inherited : Bool) [M8.Machine.Net]
     (stage : Fin 9) (r : Fin 32) (d : Fin 5) (window : Fin Copy.lifecycles.length) :
     let life := Copy.lifecycles[window.val]
     ∃ (T states : ℕ) (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T) (fan : Fin (142081+2) ↪ Fin T),
@@ -1677,7 +1796,9 @@ theorem commonCopyWindow_layout [M8.Machine.Net]
     0 < W →
     let desc := scheduledChild prime node i
     ∃ position : Fin (volume prime desc) ≃ Fin (M^16*W),
-    (∀ k, (position k).val = (CopyChildLayout.packActive desc k).val) ∧
+    (if inherited then InheritedIntervalPositions desc (phaseIntervalChild 0 7 (w+1) W)
+        (phaseIntervalChild_volume (by decide : 0 ≤ 7) (by decide : 7 ≤ 8) _ _) position
+      else ∀ k, (position k).val = (CopyChildLayout.packActive desc k).val) ∧
     let bank := ((Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)).trans ports
     let clean := fun D : Stacks T prime => ∀ k : Fin (rowSwapBlock.tapes+35), 35 ≤ k.val → D.L (ports k) = [] ∧ D.R (ports k) = []
     let V := M^16*W
@@ -1697,7 +1818,7 @@ theorem commonCopyWindow_layout [M8.Machine.Net]
     (∀ j, (∀ h, fan h ≠ j) → S.L j = prepared.L j ∧ S.R j = prepared.R j) →
     ∃ z F t out, Exec body code
       (mk u S) t (mk z F) ∧
-      t ≤ (base+swaps*swapVolumeRate w)*V + 12 + budget ∧
+      t ≤ (base+(if inherited then 0 else swaps)*swapVolumeRate w)*V + 12 + budget ∧
       z.user = u.user ∧ fanReady out F ∧ CopyFanoutEffect stage r d life (List.getElem_mem ..) (w+1) B K data out := by
   intro life
   have scheduled : life ∈ Copy.lifecycles := List.getElem_mem ..
@@ -1717,7 +1838,7 @@ theorem commonCopyWindow_layout [M8.Machine.Net]
     exact (List.mem_replicate.mp h).2
   have paid : 0 < Geometry.moveRank p.1 p.2 := by omega
   obtain ⟨q,s,load,finish,fanout⟩ := copyFanout_host stage r d life scheduled
-  obtain ⟨C,rev,fwd,packed⟩ := scheduledPhasePacked_host p checked paid
+  obtain ⟨C,rev,fwd,packed⟩ := scheduledPhaseBasis_host inherited p checked paid
   let A := description _ rev.good
   let B' := description _ fwd.good
   let recordPort : Fin (rowSwapBlock.tapes+35) := (Fin.castLEEmb swapHostFits) ((Fin.castLEEmb (by decide : 35 ≤ 59)) 24)
@@ -1733,7 +1854,7 @@ theorem commonCopyWindow_layout [M8.Machine.Net]
   obtain ⟨setup,swaps,run⟩ := packed (k := 142081) ports body f capacity
   let basisRate := fun (stages : List (FlatCoordinateSchedule.Op 16)) =>
     FlatCoordinateCleanSchedule.constant stages*(1+FlatCoordinateCleanSchedule.tapeCount stages+5)
-  let base := basisRate A+basisRate B'+setup+16+76*(life.targets.length+2)*142088
+  let base := basisRate A+basisRate B'+(if inherited then 0 else setup)+16+76*(life.targets.length+2)*142088
   refine ⟨base,swaps,?_⟩
   intro node w parentB rows B K i width split label M W layout hW desc
   have seven := copyChildPosition_rank stage r d window
@@ -1741,7 +1862,13 @@ theorem commonCopyWindow_layout [M8.Machine.Net]
   dsimp only at atParent
   rw [← layout] at atParent
   obtain ⟨position,offset,step⟩ := atParent hW
-  refine ⟨position,offset,?_⟩
+  have dims : Geometry.Dimensions.value p.1 = 7 := by
+    have h : ∀ l ∈ Copy.lifecycles, Geometry.Dimensions.value l.sourceFrame = 7 := by decide +kernel
+    exact h life scheduled
+  refine ⟨position,?_,?_⟩
+  · cases inherited
+    · exact offset
+    · simpa only [dims,show Geometry.Dimensions.value p.2 = 0 from rfl,Nat.min_zero,Nat.max_zero] using offset
   intro bank clean V
   let view := phaseIntervalChild (min (Geometry.Dimensions.value p.1) (Geometry.Dimensions.value p.2))
     (max (Geometry.Dimensions.value p.1) (Geometry.Dimensions.value p.2)) (w+1) W
@@ -1764,7 +1891,7 @@ theorem commonCopyWindow_layout [M8.Machine.Net]
   let pack := fun js => statePlacedNormalized (U := U) ports capacity swapStates_pos (Empty.elim : Empty → P) (packSchedule 16 js)
   let is := phasePackSchedule (min (Geometry.Dimensions.value p.1) (Geometry.Dimensions.value p.2))
     (max (Geometry.Dimensions.value p.1) (Geometry.Dimensions.value p.2))
-  let middle := (pack is).seq ((Prog.call f).seq (pack is.reverse))
+  let middle := if inherited then Prog.call f else (pack is).seq ((Prog.call f).seq (pack is.reverse))
   let machine := fun (stages : List (FlatCoordinateSchedule.Op 16)) =>
     Placement.placed (FlatCoordinateCleanSchedule.program stages) (sharedPlacement (0 : Fin 1) (segmentSource stages))
   let convert := (embProg a (Empty.elim : Empty → P) (foreign (liftQ (machine A) fitsA))).seq
@@ -1775,7 +1902,7 @@ theorem commonCopyWindow_layout [M8.Machine.Net]
   intro data u S ready saved
   let x := data src
   obtain ⟨z,F,t,exec,time,user,done,_⟩ := fanout fan loadFits finishFits body convert
-    (budget+(basisRate A+basisRate B'+setup+16+swaps*swapVolumeRate w)*V) privatePort data hW u S ready (by
+    (budget+(basisRate A+basisRate B'+(if inherited then 0 else setup)+16+(if inherited then 0 else swaps)*swapVolumeRate w)*V) privatePort data hW u S ready (by
         intro v D loaded outside
         let X := Function.update data tmp x
         have kept (j) (separate : j ≠ bank 24) (used : ¬ privatePort j) : D.L j = core.L j ∧ D.R j = core.R j := by
@@ -1864,7 +1991,7 @@ theorem scheduledCopyWindow_layout [M8.Machine.Net]
     exact (List.mem_replicate.mp h).2
   have paid : 0 < Geometry.moveRank p.1 p.2 := by omega
   obtain ⟨q,s,load,finish,fanout⟩ := copyFanout_host stage r d life scheduled
-  obtain ⟨C,rev,fwd,packed⟩ := scheduledPhasePacked_host p checked paid
+  obtain ⟨C,rev,fwd,packed⟩ := scheduledPhaseBasis_host false p checked paid
   let A := description _ rev.good
   let B' := description _ fwd.good
   let recordPort : Fin (rowSwapBlock.tapes+35) := (Fin.castLEEmb swapHostFits) ((Fin.castLEEmb (by decide : 35 ≤ 59)) 24)

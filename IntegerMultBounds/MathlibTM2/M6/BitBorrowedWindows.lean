@@ -87,7 +87,7 @@ theorem borrowedWindows_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) 
       (T states : ℕ) (fan : Fin (142081+2) ↪ Fin T) (bank : ∀ j, Fin (tapes j) ↪ Fin T),
     ∀ {P U : Type} {Q : ℕ}, states ≤ Q → ∀ (localBody : ∀ j, P → Pr P (tapes j) Q prime U) (proc : J → P),
     let body := fun f : J × P => embProg (bank f.1) (fun g => (f.1,g)) (localBody f.1 f.2)
-    ∃ base swaps : J → ℕ, ∀ (node : Descriptor) (w B rows : ℕ),
+    ∃ base : J → ℕ, ∀ (node : Descriptor) (w B rows : ℕ),
     node.width = 64*(w+1) → node.rows = 142080*rows → node.beforeH = B*prime^(64*((w+1)*64)) →
     let M := prime^(w+1)
     let K := node.beforeRows*rows*node.between*node.afterD
@@ -96,11 +96,11 @@ theorem borrowedWindows_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) 
     let V := M^16*W
     let desc := fun j : J => scheduledChild prime node (copyChildPosition (n,p,j))
     0 < W → ∃ position : ∀ j, Fin (volume prime (desc j)) ≃ Fin V,
-      (∀ j k, (position j k).val = (CopyChildLayout.packActive (desc j) k).val) ∧
+      (∀ j, CopyIntervalPositions (desc j) (w+1) W (position j)) ∧
       ∀ record : J → List (Fin (prime+4)), ∀ shared : Stacks (142081+2) prime,
       ∃ prepared : Stacks T prime, embStk fan prepared = shared ∧ ∀ budget : J → ℕ,
       (∀ j, ScheduledChildExec node (desc j) w W (regs j) (record j) (position j) (localBody j) (proc j) (budget j)) →
-      let work := fun j => (base j+swaps j*swapVolumeRate w)*V + 12
+      let work := fun j => base j*V + 12
       ∃ code, ∀ data u S, HelperFan fan data S →
         (∀ k, (∀ h, fan h ≠ k) → S.L k = prepared.L k ∧ S.R k = prepared.R k) →
         ∃ z F t out, Exec body code (mk u S) t (mk z F) ∧
@@ -116,9 +116,9 @@ theorem borrowedWindows_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) 
   obtain ⟨T,fan,bank,sharedAt,prepare,apart⟩ := copyWindowBanks tapes owners
   refine ⟨tapes,regs,T,Finset.univ.sup qs,fan,bank,?_⟩
   intro P U Q cap localBody proc body
-  choose base swaps build using fun j : J =>
+  choose base build using fun j : J =>
     window j ((Finset.le_sup (Finset.mem_univ j)).trans cap) (localBody j) (proc j)
-  refine ⟨base,swaps,?_⟩
+  refine ⟨base,?_⟩
   intro node w B rows width split label M K blocks W V desc pos
   choose position coords run using fun j => build j node w B rows width split label pos
   refine ⟨position,coords,?_⟩
@@ -172,7 +172,7 @@ theorem borrowedScatterSchedule_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 ×
     let view := fun (x : Fin 142081 → Fin V → ZMod 2) k i => x k (Fin.cast (copyLabel_volume (w+1) blocks K) i)
     0 < W →
     ∃ (H : ℕ) (owners : Fin (142081+2) ↪ Fin H) (worker : Fin T ↪ Fin H) (position : ∀ j, Fin (volume prime (desc j)) ≃ Fin V),
-      (∀ j k, (position j k).val = (CopyChildLayout.packActive (desc j) k).val) ∧
+      (∀ j, CopyIntervalPositions (desc j) (w+1) W (position j)) ∧
       ∀ record : J → List (Fin (prime+4)), ∀ shared : Stacks (142081+2) prime,
       ∃ prepared : Stacks H prime, embStk owners prepared = shared ∧ ∀ budget : J → ℕ,
       (∀ j, ScheduledChildExec node (desc j) w W (regs j) (record j) (position j) (localBody j) (proc j) (budget j)) →
@@ -190,8 +190,8 @@ theorem borrowedScatterSchedule_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 ×
   obtain ⟨tapes,regs,T,states,fan,bank,windows⟩ := borrowedWindows_host n p
   refine ⟨0,tapes,regs,T,states,bank,?_⟩
   intro P U Q cap localBody proc body
-  obtain ⟨base,swaps,build⟩ := windows cap localBody proc
-  refine ⟨base,swaps,fun _ => 0,fun _ => 12,?_⟩
+  obtain ⟨base,build⟩ := windows cap localBody proc
+  refine ⟨base,fun _ => 0,fun _ => 0,fun _ => 12,?_⟩
   intro node w B rows width split label M K blocks W V desc view pos
   obtain ⟨position,coords,run⟩ := build node w B rows width split label pos
   refine ⟨T,fan,Function.Embedding.refl _,position,coords,?_⟩
@@ -511,7 +511,7 @@ def ScheduledBorrowedRun [M8.Machine.Net]
     ∃ (mp : ∀ i : (Fin edges.length), Fin (volume prime (md i)) ≃ Fin V) (cp : ∀ j : (Fin Copy.lifecycles.length), Fin (volume prime (cd j)) ≃ Fin V)
       (banks : InvocationBanks mT cT),
     (∀ i h, (mp i h).val = (CopyChildLayout.packActive (md i) h).val) ∧
-    (∀ j h, (cp j h).val = (CopyChildLayout.packActive (cd j) h).val) ∧
+    (∀ j, CopyIntervalPositions (cd j) (w+1) W (cp j)) ∧
     ∀ childTime : ℕ → ℕ,
     (∀ i, ScheduledChildExec node (md i) w W (mr i) (record i) (mp i) (mb i) (mf i) (childTime (moveChild i).val)) →
     (∀ j, ScheduledChildExec node (cd j) w W (cr j) (copyRecord j) (cp j) (cb j) (cf j) (childTime (copyChild j).val)) →
