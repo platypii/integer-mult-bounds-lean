@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.M6.BitIntervalPack
 public import IntegerMultBounds.MathlibTM2.M6.BitIntervalRows
 public import IntegerMultBounds.MathlibTM2.M6.BitOrdinaryChildCost
 public import IntegerMultBounds.MathlibTM2.M6.BitScheduledChildQueue
@@ -87,27 +88,6 @@ theorem phaseIncomingPack_exec [M8.Machine.Net] {P U : Type} {T Q lo hi : ℕ} (
     exact phasePackSchedule_fields pre h mid d suffix hp hh hm hd
   rw [← eqn]
   exact reads x j
-
-/-- The packed phase tape and the active-first recursive descriptor assign the
-same physical offset to the two interval fields and their four spectators. -/
-theorem phasePacked_index {w W lo hi : ℕ}
-    (a b : Fin lo → ZMod (prime^(w+1))) (h d : Fin (hi-lo) → ZMod (prime^(w+1)))
-    (u v : Fin (8-hi) → ZMod (prime^(w+1))) (j : Fin W) :
-    (CopyChildLayout.packActive (phaseIntervalChild lo hi (w+1) W)
-      (RecursiveInterchangeScaling.index (phaseIntervalAddress a b h d u v j))).val =
-      (index (Fin.addCases (Fin.addCases h d) (Fin.addCases a (Fin.addCases (Fin.addCases u b) v))) j).val := by
-  rw [CopyChildLayout.packActive_index,FlatCoordinateLayout.index_val]
-  let M := prime^(w+1)
-  change ((j.val+W*(rank v).val)+(M^(8-hi)*W)*((rank (Fin.addCases u b)).val+
-    M^(8-hi+lo)*((rank a).val+M^lo*(0+1*0))))+
-    CopyChildLayout.spectators (phaseIntervalChild lo hi (w+1) W)*
-      ((rank d).val+prime^((hi-lo)*(w+1))*(rank h).val) = _
-  have width : prime^((hi-lo)*(w+1)) = M^(hi-lo) := by dsimp only [M]; rw [← pow_mul,Nat.mul_comm]
-  rw [width]
-  simp only [CopyChildLayout.spectators,phaseIntervalChild,one_mul,zero_mul,mul_zero,zero_add,add_zero,
-    ArbitraryWidthSliceTranspose.rank_append,pow_add]
-  dsimp only [M]
-  ring
 
 open IntegerMultBounds.Networks.Certificates.PR589 RecursiveInterchangeLayout in
 /-- A phase interval has one physical row. Regroup its spectators into the
@@ -406,7 +386,7 @@ theorem scheduledPhasePacked_swap (node : Descriptor) (i : Fin nodeChildren5.len
     have lists : List.ofFn z = List.ofFn (digits h d) := by
       simp only [digits,parts,List.ofFn_fin_append,layout]
     exact (index_eq_of_digits z (digits h d) lists j).trans
-      ((phasePacked_index a b h d u v j).symm.trans (route (addr h d)).symm)
+      ((intervalPacked_index 8 a b h d u v j).symm.trans (route (addr h d)).symm)
   rw [loc d h y hy,loc h d x hx,returned]
   have eqn := congrFun (action (word ∘ position)) (addr d h)
   exact eqn.symm.trans (intervalAddress_transpose 8 ((word ∘ position) ∘ e) a b h d u v j)
