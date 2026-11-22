@@ -86,6 +86,21 @@ theorem packedResultWords_exec {P U : Type} {T Q : ℕ} (localFan : Fin (142081+
   simpa only [PointwiseRoleGate.bank,Tapes.append,Fin.addCases_right,CountedLoopReuseAlphabet.controls,
     ite_self,embStk,Function.comp_apply] using live (j.natAdd 142081) z
 
+theorem ParentStageWords.helperFan {T V : ℕ} {fan : Fin (142081+2) ↪ Fin T}
+    {x : Fin 142081 → Fin V → ZMod 2} {S : Stacks T prime}
+    (words : ParentStageWords (fun i => fan (i.castAdd 2)) fan V x S) : HelperFan fan x S := by
+  intro i
+  induction i using Fin.addCases with
+  | left i =>
+    intro j
+    simp only [PointwiseRoleGate.bank,Tapes.append,Fin.addCases_left,embStk,Function.comp_apply]
+    change putWord _ 0 (List.ofFn fun l => SparseRoleCircuit.encode (x i l)) j = readAt blank _ _ (j-0)
+    rw [words.left i,words.right i,sub_zero,readAt_nil_left,putWord_blank_zero]
+  | right j =>
+    intro z
+    simpa only [PointwiseRoleGate.bank,Tapes.append,Fin.addCases_right,CountedLoopReuseAlphabet.controls,
+      ite_self,embStk,Function.comp_apply] using words.controls j z
+
 /-- Execute a scheduled bridge and materialize the entire output bank. -/
 theorem packedBridgeHandoff (d s : ℕ) (scheduled : Piece.bridge d s ∈ nodeProgram) :
     ∃ states : ℕ, ∀ {q V : ℕ} {U : Type}, states ≤ q → 0 < V →
@@ -104,18 +119,7 @@ theorem packedBridgeHandoff (d s : ℕ) (scheduled : Piece.bridge d s ∈ nodePr
   obtain ⟨copy,materialize⟩ := packedResultWords_exec idFan body
   refine ⟨_,code.seq copy,fan,dst,⟨[],[],fun _ => [],fun _ => []⟩,?_⟩
   intro x u S words fresh
-  have live : HelperFan fan x S := by
-    intro i
-    induction i using Fin.addCases with
-    | left i =>
-      intro j
-      simp only [PointwiseRoleGate.bank,Tapes.append,Fin.addCases_left,embStk,Function.comp_apply]
-      change putWord _ 0 (List.ofFn fun l => SparseRoleCircuit.encode (x i l)) j = readAt blank _ _ (j-0)
-      rw [words.left i,words.right i,sub_zero,readAt_nil_left,putWord_blank_zero]
-    | right j =>
-      intro z
-      simpa only [PointwiseRoleGate.bank,Tapes.append,Fin.addCases_right,CountedLoopReuseAlphabet.controls,
-        ite_self,embStk,Function.comp_apply] using words.controls j z
+  have live := words.helperFan
   obtain ⟨v,D,k,ran,bill,user,ready,off⟩ := run pos x u S live
   have blank j (outside : ∀ i, fan i ≠ j) : D.L j = [] ∧ D.R j = [] :=
     ⟨(off j outside).1.trans (fresh j outside).1,(off j outside).2.trans (fresh j outside).2⟩

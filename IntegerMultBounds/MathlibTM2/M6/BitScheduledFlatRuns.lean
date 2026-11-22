@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.M6.BitPackedFlatStage
+public import IntegerMultBounds.MathlibTM2.M6.BitFlatStageHandoff
 
 /-! Physical sweeps supplied by the scheduled MOVE and COPY child procedures. -/
 @[expose] public section
@@ -47,16 +48,16 @@ def ScheduledFlatRuns [M8.Machine.Net] (n : Fin 9)
     let children := ((List.range' (stageChildStart n) (stageRuns.flatMap (fun _ => Geometry.Moves.localPaid)).length).map childTime).sum
     let suffix := B*prime^(64*((w+1)*64))*K
     let size : M^128*suffix = V := (ordinaryCompact_width M suffix).symm.trans (by simp [V,W,blocks,suffix,Nat.mul_assoc])
-    ∃ (t₁ t₂ : ℕ) (mid : Fin (80+((T+273)+LeafCore.small)) ↪ Fin t₁) (outer : Fin t₁ ↪ Fin t₂)
-      (code : Pr ((_ : StageRun) × ((b : Bool) × InvocationProc (Geometry.Moves.phaseEdges.filter positiveMove).length P b)) t₂ Q prime U),
-      let live := (full.trans mid).trans outer
-      ∃ seed : Stacks t₂ prime, ∀ x u S, HelperFan live x S →
-        (∀ j, (∀ i, live i ≠ j) → S.L j = seed.L j ∧ S.R j = seed.R j) →
-        ∃ z F k y, Exec (fun f => embProg outer id (embProg mid id (host f))) code (mk u S) k (mk z F) ∧
-          (k : ℝ) ≤ (C+|stagePackingRate n+(stageRuns.map coeff).sum|)*V*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau+children ∧
-          z.user = u.user ∧ HelperFan live y F ∧ ∀ j : Fin suffix,
-            let address := fun z => (flatWindowEquiv (w+1) suffix (windowState (w+1) z,j)).cast size
-            readRoles address y = (Piece.stage n).run (readRoles address x)
+    ∃ (t₁ t₂ : ℕ) (mid : Fin (80+((T+273)+LeafCore.small)) ↪ Fin t₁) (outer : Fin t₁ ↪ Fin t₂),
+        let live := (full.trans mid).trans outer
+        let place := SweepFile.Exit.chart 0 t₂
+        let parent := fun f => embProg place id (embProg outer id (embProg mid id (host f)))
+        let effect := fun x y => ∀ j : Fin suffix,
+          let address := fun z => (flatWindowEquiv (w+1) suffix (windowState (w+1) z,j)).cast size
+          readRoles address y = (Piece.stage n).run (readRoles address x)
+        let price := (C+|stagePackingRate n+(stageRuns.map coeff).sum|)*V*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau+children
+        ∃ code seed, PackedPieceHandoff V effect parent code (live.trans place) (returnedFan live) seed
+          (⌊price⌋₊+142081*(8*V+10)+1)
 
 theorem scheduledFlatRuns [M8.Machine.Net] (n : Fin 9) :
     let R := Fin 32 × Fin 5
@@ -91,6 +92,12 @@ theorem scheduledFlatRuns [M8.Machine.Net] (n : Fin 9) :
   have pos : 0 < W := by dsimp [W,blocks,M]; positivity
   obtain ⟨mp,cp,banks,mcoords,ccoords,packed⟩ := build node w B rows width split label pos record copyRecord
   refine ⟨mp,cp,banks,mcoords,ccoords,?_⟩
-  exact physical node n _ _ coeff _ dcap width split label ((le_max_left ..).trans caps) hB hK positive packed
+  obtain ⟨T,fan,bank,build⟩ := physical node n _ _ coeff _ dcap width split label ((le_max_left ..).trans caps) hB hK positive packed
+  refine ⟨T,fan,bank,?_⟩
+  intro stage owner full worker host time ready children suffix size
+  obtain ⟨t₁,t₂,mid,outer,code,seed,run⟩ := build time ready
+  refine ⟨t₁,t₂,mid,outer,?_⟩
+  intro live place parent effect price
+  exact flatStageHandoff live _ code seed effect price run
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
