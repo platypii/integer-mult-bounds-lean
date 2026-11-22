@@ -147,6 +147,56 @@ theorem intervalSplit_exec {P U : Type} {Q m : ℕ}
 
 /-- Execute a host worker on the separated roles and merge its output into
 the original payload tape, charging the worker's own price exactly once. -/
+theorem intervalWorkerSpace_exec {P U : Type} {Q m b : ℕ}
+    (body : P → Pr P intervalSplitTapes Q prime U) (worker : Pr P intervalSplitTapes Q prime U)
+    (returned : Stacks intervalSplitTapes prime → Prop)
+    (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q)
+    (positive : 0 < m) (x y : Fin (m*142080) → Fin (prime+4))
+    (u : HS intervalSplitTapes Q prime U) (S : Stacks intervalSplitTapes prime)
+    (source : S.R 0 = List.ofFn x) (left : ∀ i, S.L i = [])
+    (empty : ∀ i, i ≠ 0 → S.R i = []) :
+    let src := fun (word : Fin (m*142080) → Fin (prime+4)) => putWord (fun _ => blank) 0 (List.ofFn word)
+    let bank := fun dest (word : Fin (m*142080) → Fin (prime+4)) =>
+      CyclicRowSplit.bank (CyclicRowCopy.bank dest
+        (fun j => putWord (fun _ => blank) 0 (List.ofFn fun i => word (finProdFinEquiv (i,j))))
+        0 (fun _ => 0) (FlatCoordinateSchedule.bits 1)) (FlatCoordinateSchedule.bits m)
+    (∀ (v : HS intervalSplitTapes Q prime U) (D : Stacks intervalSplitTapes prime), RepT (bank (src x) x) D.L D.R →
+      ∃ (w : HS intervalSplitTapes Q prime U) (E : Stacks intervalSplitTapes prime) (k : ℕ), w.user = v.user ∧ k ≤ b ∧ Exec body worker (mk v D) k (mk w E) ∧ RepT (bank (src x) y) E.L E.R ∧
+        returned E) →
+    ∃ z F t, z.user = u.user ∧ t ≤ (298*(intervalSplitTapes+5)+5)*(m*142080)+b+30 ∧
+      Exec body ((intervalPrepare.seq (foreign (liftQ (CyclicRowNormalized.splitProgram 142080 prime) capacity))).seq
+        (worker.seq (foreign (liftQ (CyclicRowNormalized.mergeProgram 142080 prime) capacity))))
+        (mk u S) t (mk z F) ∧ RepT (bank (src y) y) F.L F.R ∧
+      ∃ E, returned E ∧ ∀ j, (F.L j).length+(F.R j).length ≤ (E.L j).length+(E.R j).length+298*(m*142080) := by
+  intro src bank inner
+  obtain ⟨v,D,s,vu,st,split,parts⟩ := intervalSplit_exec body capacity positive x u S source left empty
+  obtain ⟨w,E,k,wu,kt,run,ready,room⟩ := inner v D parts
+  let rows := fun (i : Fin m) (j : Fin 142080) => [y (finProdFinEquiv (i,j))]
+  let bs := FlatCoordinateSchedule.bits 1
+  let gs := FlatCoordinateSchedule.bits m
+  have merge := CyclicRowNormalized.merge_hoare (src x) (fun _ _ => blank) 0 (fun _ => 0)
+    rows 1 (fun _ _ => rfl) bs gs (FlatCoordinateSchedule.bits_value _) (FlatCoordinateSchedule.bits_value _)
+  obtain ⟨sy,py⟩ := singletonRows y
+  change CyclicRowSplit.sourceWord rows = _ at sy
+  change ∀ j, CyclicRowSplit.roleWord rows j = _ at py
+  have overwrite : putWord (src x) 0 (List.ofFn y) = src y :=
+    FlatControlledShiftArray.overwrite _ _ _ _ (by simp)
+  simp only [sy,py,overwrite] at merge
+  obtain ⟨z,F,_,rfl,rep,zu,_,_,growth,t,paid,finish⟩ := foreign_exec (body := body)
+    (liftQ _ capacity) (HoareTime.liftQ capacity merge) w _ _ rfl ready
+  have bound := CyclicRowNormalized.cost_linear 1 bs gs (by decide : 0 < 142080) positive (by decide)
+    (FlatCoordinateSchedule.bits_value _) (FlatCoordinateSchedule.bits_value _)
+    (FlatCoordinateSchedule.bits_canonical _) (FlatCoordinateSchedule.bits_canonical _)
+  rw [Nat.mul_one] at bound
+  have scale := Nat.mul_le_mul_right (intervalSplitTapes+5) bound
+  refine ⟨z,F,_,zu.trans (wu.trans vu),?_,Exec.seq split (Exec.seq run finish),rep,?_⟩
+  · change t ≤ CyclicRowNormalized.cost 142080 m 1 bs gs*(intervalSplitTapes+5)+6 at paid
+    dsimp only [intervalSplitTapes] at *
+    omega
+  · refine ⟨E,room,fun j => ?_⟩
+    have h := growth j
+    omega
+
 theorem intervalWorker_exec {P U : Type} {Q m b : ℕ}
     (body : P → Pr P intervalSplitTapes Q prime U) (worker : Pr P intervalSplitTapes Q prime U)
     (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q)
@@ -166,29 +216,11 @@ theorem intervalWorker_exec {P U : Type} {Q m b : ℕ}
         (worker.seq (foreign (liftQ (CyclicRowNormalized.mergeProgram 142080 prime) capacity))))
         (mk u S) t (mk z F) ∧ RepT (bank (src y) y) F.L F.R := by
   intro src bank inner
-  obtain ⟨v,D,s,vu,st,split,parts⟩ := intervalSplit_exec body capacity positive x u S source left empty
-  obtain ⟨w,E,k,wu,kt,run,ready⟩ := inner v D parts
-  let rows := fun (i : Fin m) (j : Fin 142080) => [y (finProdFinEquiv (i,j))]
-  let bs := FlatCoordinateSchedule.bits 1
-  let gs := FlatCoordinateSchedule.bits m
-  have merge := CyclicRowNormalized.merge_hoare (src x) (fun _ _ => blank) 0 (fun _ => 0)
-    rows 1 (fun _ _ => rfl) bs gs (FlatCoordinateSchedule.bits_value _) (FlatCoordinateSchedule.bits_value _)
-  obtain ⟨sy,py⟩ := singletonRows y
-  change CyclicRowSplit.sourceWord rows = _ at sy
-  change ∀ j, CyclicRowSplit.roleWord rows j = _ at py
-  have overwrite : putWord (src x) 0 (List.ofFn y) = src y :=
-    FlatControlledShiftArray.overwrite _ _ _ _ (by simp)
-  simp only [sy,py,overwrite] at merge
-  obtain ⟨z,F,_,rfl,rep,zu,_,_,_,t,paid,finish⟩ := foreign_exec (body := body)
-    (liftQ _ capacity) (HoareTime.liftQ capacity merge) w _ _ rfl ready
-  have bound := CyclicRowNormalized.cost_linear 1 bs gs (by decide : 0 < 142080) positive (by decide)
-    (FlatCoordinateSchedule.bits_value _) (FlatCoordinateSchedule.bits_value _)
-    (FlatCoordinateSchedule.bits_canonical _) (FlatCoordinateSchedule.bits_canonical _)
-  rw [Nat.mul_one] at bound
-  have scale := Nat.mul_le_mul_right (intervalSplitTapes+5) bound
-  refine ⟨z,F,_,zu.trans (wu.trans vu),?_,Exec.seq split (Exec.seq run finish),rep⟩
-  change t ≤ CyclicRowNormalized.cost 142080 m 1 bs gs*(intervalSplitTapes+5)+6 at paid
-  dsimp only [intervalSplitTapes] at *
-  omega
+  obtain ⟨z,F,t,user,paid,run,out,_⟩ := intervalWorkerSpace_exec body worker (fun _ => True)
+    capacity positive x y u S source left empty (by
+      intro v D ready
+      obtain ⟨w,E,k,same,time,exec,rep⟩ := inner v D ready
+      exact ⟨w,E,k,same,time,exec,rep,trivial⟩)
+  exact ⟨z,F,t,user,paid,run,out⟩
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode

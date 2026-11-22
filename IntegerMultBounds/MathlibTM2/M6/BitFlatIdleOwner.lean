@@ -8,6 +8,21 @@ namespace IntegerMultBounds.MathlibTM2.M6.BitNode
 open IntegerMultBounds.Machine IntegerMultBounds.Networks Cover.Fallback Stack Host Node Mult.PhaseCellToeplitz
 open Shared50ModularControl (prime)
 
+/-- The merge growth estimate converts the lane worker's retained cells into
+the cleanup budget consumed by the owner wrapper. -/
+theorem mergedOwnerCleanup_le {T : ℕ} (bank : List (Fin T)) (E F : Stacks T prime) (V : ℕ)
+    (growth : ∀ j ∈ bank, (F.L j).length+(F.R j).length ≤ (E.L j).length+(E.R j).length+298*V) :
+    (bank.map fun j => 4*(F.L j).length+2*(F.R j).length+4).sum ≤
+      4*(bank.map fun j => (E.L j).length+(E.R j).length).sum + bank.length*(1192*V+4) := by
+  induction bank with
+  | nil => simp
+  | cons j rest ih =>
+    have head := growth j List.mem_cons_self
+    have tail := ih (fun t ht => growth t (List.mem_cons_of_mem _ ht))
+    rw [Nat.mul_add] at tail
+    simp only [List.map_cons,List.sum_cons,List.length_cons,Nat.add_mul,Nat.mul_add,one_mul]
+    omega
+
 theorem idleOwnerWorker_exec {P U : Type} {T Q V m : ℕ} (body : P → Pr P T Q prime U)
     (worker : Pr P T Q prime U) (bank : Fin intervalSplitTapes ↪ Fin T)
     (owner count saved tmp : Fin T) (apart : [count,bank 0,owner,saved,tmp].Nodup)
