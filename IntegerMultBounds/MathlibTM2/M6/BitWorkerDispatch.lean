@@ -662,7 +662,7 @@ theorem scalarMoveSequence {P U : Type} {k : ℕ} (layout : Fin 661 ↪ Fin k)
       (fun f => nomatch f) run u rfl S rfl
     have away (i : Fin (k+2)) : dataBank i ≠ Fin.last (k+2) := by
       intro eq
-      exact i.isLt.ne (congrArg Fin.val eq)
+      exact by have h := congrArg Fin.val eq; exact i.isLt.ne h
     refine ⟨z,F,n,placed,paid,same.trans user,?_,(frame _ away).2.trans live.2⟩
     change HelperFan (Function.Embedding.refl _) y (embStk dataBank F)
     exact view ▸ out
@@ -987,36 +987,11 @@ theorem restoreMoveArchive {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime
     intro j
     simpa only [F,Function.update_of_ne (apart 24),sub_zero] using (updated.src j).symm
 
-/-- Run a dispatcher with both fields available and return the original
-archive around the resulting payload. The code is independent of both words. -/
-theorem withMoveArchive {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
-    (bank : Fin 35 ↪ Fin T) (spectator : Fin T) (apart : ∀ i, bank i ≠ spectator)
-    (dispatch : Pr P T Q prime U) :
-    ∃ code, ∀ (w W L cutoff spectators budget : ℕ),
-    let count := binSyms (A := prime) spectators.size spectators
-    let header := binSyms (A := prime) L cutoff
-    let archive := count ++ separator :: header
-    let stored := fun archive => RecordReady (b := prime) (w := w) (d := 16) (W := W)
-      bank (prime^(w+1)).size W.size archive SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0
-    ∀ (step : (Fin ((prime^(w+1))^16*W) → ZMod 2) → Fin ((prime^(w+1))^16*W) → ZMod 2),
-    (∀ x u S, stored header x S → S.R spectator = count →
-      ∃ z F n, Exec body dispatch (mk u S) n (mk z F) ∧ n ≤ budget ∧ z.user = u.user ∧
-        stored header (step x) F ∧ F.R spectator = count) →
-    ∀ x u S, stored archive x S → S.R spectator = [] →
-      ∃ z F n, Exec body code (mk u S) n (mk z F) ∧ n ≤ budget+8*spectators.size+10 ∧
-        z.user = u.user ∧ stored archive (step x) F ∧ F.R spectator = [] := by
-  refine ⟨(DFT.takeField (bank 34) spectator (bank 0)).seq (dispatch.seq ((Prog.act (DFT.pushSep (bank 34))).seq ((moveR spectator (bank 0) id).seq (moveR (bank 0) (bank 34) id)))),?_⟩
-  intro w W L cutoff spectators budget count header archive stored step branch x u S ready empty
-  obtain ⟨v,start,user,opened,available⟩ := unpackMoveArchive body bank spectator apart w W L cutoff spectators x u S ready empty
-  obtain ⟨z,F,n,run,paid,same,out,kept⟩ := branch x v _ opened available
-  obtain ⟨q,finish,final,closed⟩ := restoreMoveArchive body bank spectator apart w W L cutoff spectators (step x) z F out kept
-  exact ⟨q,_,_,Exec.seq start (Exec.seq run finish),by omega,final.trans (same.trans user),closed,Function.update_self ..⟩
-
 /-- Run the stopped leaf on the extracted spectator field. Swapping its
 archive port onto that field keeps the inherited cutoff in the parent record. -/
-theorem stoppedMoveWithSpectator [M8.Machine.Net] {T Q : ℕ} {P U : Type}
-    (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T) (spectator : Fin T)
-    (apart : ∀ i, ports i ≠ spectator) (capacity : columnCapacity ≤ Q) (rank : ℕ) (positive : 0 < rank) :
+theorem stoppedMoveWithSpectator [M8.Machine.Net] {work T Q : ℕ} {P U : Type}
+    (ports : Fin (work+35) ↪ Fin T) (spectator : Fin T)
+    (apart : ∀ i, ports i ≠ spectator) (fitsLeaf : 44+LeafCore.small ≤ work+35) (capacity : columnCapacity ≤ Q) (rank : ℕ) (positive : 0 < rank) :
     ∃ code : Pr P T Q prime U, ∀ (body : P → Pr P T Q prime U) (f : P), body f = code →
     ∀ (node child : Descriptor) (w W : ℕ), child.width = (w+1)*rank →
     ∀ position : Fin (volume prime child) ≃ Fin ((prime^(w+1))^16*W),
@@ -1028,25 +1003,25 @@ theorem stoppedMoveWithSpectator [M8.Machine.Net] {T Q : ℕ} {P U : Type}
     ∀ archive word u S,
     let stored := RecordReady (b := prime) (w := w) (d := 16) (W := W) bank
       (prime^(w+1)).size W.size archive SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0
-    let clean := fun D : Stacks T prime => ∀ i : Fin (rowSwapBlock.tapes+35), 35 ≤ i.val →
+    let clean := fun D : Stacks T prime => ∀ i : Fin (work+35), 35 ≤ i.val →
       D.L (ports i) = [] ∧ D.R (ports i) = []
     stored word S → clean S → S.R spectator = count →
     ∃ z F t y, Exec body (body f) (mk u S) t (mk z F) ∧
       t ≤ ⌊(rate*(child.width : ℝ)^M8.Machine.BudgetBound.tau)*volume prime child⌋₊ ∧ z.user = u.user ∧
-      stored y F ∧ clean F ∧ F.R spectator = count ∧
+      stored y F ∧ clean F ∧ F.R spectator = count ∧ F.L spectator = S.L spectator ∧
       (∀ j, j ≠ spectator → (∀ i, ports i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j) ∧
       ∀ h, y (position h) = Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (word ∘ position) h := by
-  let idx : Fin (rowSwapBlock.tapes+35) := ⟨34,by omega⟩
+  let idx : Fin (work+35) := ⟨34,by omega⟩
   let placed := ports.trans (Equiv.swap (ports idx) spectator).toEmbedding
   have atField : placed idx = spectator := Equiv.swap_apply_left ..
   have same i (ne : i ≠ idx) : placed i = ports i :=
     Equiv.swap_apply_of_ne_of_ne (ports.injective.ne ne) (apart i)
-  obtain ⟨code,leaf⟩ := stoppedMoveProgram (P := P) (U := U) placed capacity rank positive
+  obtain ⟨code,leaf⟩ := stoppedMoveOnBank (P := P) (U := U) placed fitsLeaf capacity rank positive
   refine ⟨code,?_⟩
   intro body f installed node child w W width position packed pos core rate room smaller bank count archive word u S stored clean ready free field
   let other := scheduledRecordPorts placed
   have bankEq (j : Fin 35) (ne : j ≠ 34) : other j = bank j := same _ (fun eq => by have h := congrArg Fin.val eq; exact ne (Fin.ext h))
-  have outside (i : Fin (rowSwapBlock.tapes+35)) (hi : 35 ≤ i.val) : placed i = ports i :=
+  have outside (i : Fin (work+35)) (hi : 35 ≤ i.val) : placed i = ports i :=
     same i (fun eq => by have h := congrArg Fin.val eq; change i.val = 34 at h; omega)
   have switchBank (b c : Fin 35 ↪ Fin T) (agree : ∀ j, j ≠ 34 → b j = c j)
       (x : Fin ((prime^(w+1))^16*W) → ZMod 2) (D : Stacks T prime) (a a' : List (Fin (prime+4)))
@@ -1059,15 +1034,16 @@ theorem stoppedMoveWithSpectator [M8.Machine.Net] {T Q : ℕ} {P U : Type}
       | rw [← agree _ (by decide)]; first | exact h.modulus | exact h.width | exact h.one | exact h.padded | exact h.clock | exact h.src | exact h.dst
       | intro j hj; rw [← agree j (fun eq => (by decide : (34 : Fin 35) ∉ shearWork) (eq ▸ hj))]; exact h.scratch j hj
   have start := switchBank bank other (fun j ne => (bankEq j ne).symm) word S archive count ready (atField ▸ field)
-  obtain ⟨z,F,t,y,run,paid,user,out,blank,frame,read⟩ := leaf body f installed node child w W width position packed pos rate room smaller u S word start (fun i hi => outside i hi ▸ free i hi)
+  obtain ⟨z,F,t,y,run,paid,user,out,blank,left,frame,read⟩ := leaf body f installed node child w W width position packed pos rate room smaller u S word start (fun i hi => outside i hi ▸ free i hi)
   have keep := frame (ports idx) (fun i => by
     by_cases eq : i = idx
     · simpa only [eq,atField] using (apart idx).symm
     · exact (same i eq) ▸ ports.injective.ne eq)
-  refine ⟨z,F,t,y,run,paid,user,switchBank other bank bankEq y F count archive out (keep.2.trans ready.archive),?_,?_,?_,read⟩
+  refine ⟨z,F,t,y,run,paid,user,switchBank other bank bankEq y F count archive out (keep.2.trans ready.archive),?_,?_,?_,?_,read⟩
   · intro i hi
     exact outside i hi ▸ blank i hi
   · exact atField ▸ out.archive
+  · exact atField ▸ left
   · intro j ne off
     apply frame
     intro i
@@ -1075,13 +1051,23 @@ theorem stoppedMoveWithSpectator [M8.Machine.Net] {T Q : ℕ} {P U : Type}
     · simpa only [eq,atField] using ne.symm
     · rw [same i eq]; exact off i
 
+noncomputable def twoFieldDispatch {work T Q : ℕ} {P U : Type}
+    (ports : Fin (work+35) ↪ Fin T) (spectator : Fin T) (rank : ℕ)
+    (large leaf : Pr P T Q prime U) : Pr P T Q prime U :=
+  let bank := scheduledRecordPorts ports
+  let cmp := cutoffColumnSlots.trans bank
+  let select := Prog.cond (fun z => symBit (z.scan (cmp 7))) large leaf
+  let finish := (Prog.act (DFT.pushSep (bank 34))).seq
+    ((moveR spectator (bank 0) id).seq (moveR (bank 0) (bank 34) id))
+  (DFT.takeField (bank 34) spectator (bank 0)).seq ((ordinaryCutoffTest cmp rank).seq (select.seq finish))
+
 /-- Dispatch a MOVE from the two-field archive. Both branches restore
 the original record, and only an active child requires recursion. -/
-theorem twoFieldMoveProgram [M8.Machine.Net] {T Q : ℕ} {P U : Type}
-    (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T) (spectator : Fin T)
-    (apart : ∀ i, ports i ≠ spectator) (capacity : columnCapacity ≤ Q) (rank : ℕ) (positive : 0 < rank) :
+theorem twoFieldMoveProgram [M8.Machine.Net] {work T Q : ℕ} {P U : Type}
+    (ports : Fin (work+35) ↪ Fin T) (spectator : Fin T)
+    (apart : ∀ i, ports i ≠ spectator) (fitsLeaf : 44+LeafCore.small ≤ work+35) (capacity : columnCapacity ≤ Q) (rank : ℕ) (positive : 0 < rank) :
     ∃ leafCode : Pr P T Q prime U, ∀ (body : P → Pr P T Q prime U) (large leaf : P), body leaf = leafCode →
-    ∃ code, ∀ (node child : Descriptor) (w W L cutoff time : ℕ), child.width = (w+1)*rank →
+    ∀ (node child : Descriptor) (w W L cutoff time : ℕ), child.width = (w+1)*rank →
     cutoff < 2^L → child.width.size ≤ L → ∀ position : Fin (volume prime child) ≃ Fin ((prime^(w+1))^16*W),
     (∀ i, (position i).val = (CopyChildLayout.packActive child i).val) → 0 < W →
     let core : ℝ := (LeafCore.small+5 : ℕ)*|LeafCore.C|+8+LeafCore.small*(16+8*|LeafCore.C|)
@@ -1092,30 +1078,28 @@ theorem twoFieldMoveProgram [M8.Machine.Net] {T Q : ℕ} {P U : Type}
     let archive := binSyms n.size n ++ separator :: header
     let active := cutoff < child.width
     let price := if active then time else ⌊(rate*(child.width : ℝ)^M8.Machine.BudgetBound.tau)*volume prime child⌋₊
-    (active → ScheduledChildExec node child w W ports header position body large time) →
+    (active → MoveOnBankExec node child w W ports header position body (body large) time) →
     let stored := RecordReady (b := prime) (w := w) (d := 16) (W := W) bank
       (prime^(w+1)).size W.size archive SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0
-    let clean := fun D : Stacks T prime => ∀ i : Fin (rowSwapBlock.tapes+35), 35 ≤ i.val →
+    let clean := fun D : Stacks T prime => ∀ i : Fin (work+35), 35 ≤ i.val →
       D.L (ports i) = [] ∧ D.R (ports i) = []
     ∀ word u S, stored word S → clean S → S.R spectator = [] →
-    ∃ z F t y, Exec body code (mk u S) t (mk z F) ∧
+    ∃ z F t y, Exec body (twoFieldDispatch ports spectator rank (body large) (body leaf)) (mk u S) t (mk z F) ∧
       t ≤ price+4*w+23*child.width+22*L+8*n.size+61 ∧ z.user = u.user ∧
-      stored y F ∧ clean F ∧ F.R spectator = [] ∧
+      stored y F ∧ clean F ∧ F.R spectator = [] ∧ F.L spectator = S.L spectator ∧
       (∀ j, j ≠ spectator → (∀ i, ports i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j) ∧
       ∀ h, y (position h) = Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (word ∘ position) h := by
-  obtain ⟨leafCode,stop⟩ := stoppedMoveWithSpectator (P := P) (U := U) ports spectator apart capacity rank positive
+  obtain ⟨leafCode,stop⟩ := stoppedMoveWithSpectator (P := P) (U := U) ports spectator apart fitsLeaf capacity rank positive
   refine ⟨leafCode,?_⟩
   intro body large leaf installed
   let bank := scheduledRecordPorts ports
   let cmp := cutoffColumnSlots.trans bank
   let select : Pr P T Q prime U := .cond (fun z => symBit (z.scan (cmp 7))) (body large) (body leaf)
-  let finish : Pr P T Q prime U := (Prog.act (DFT.pushSep (bank 34))).seq ((moveR spectator (bank 0) id).seq (moveR (bank 0) (bank 34) id))
-  refine ⟨(DFT.takeField (bank 34) spectator (bank 0)).seq ((ordinaryCutoffTest cmp rank).seq (select.seq finish)),?_⟩
   intro node child w W L cutoff time width fits digits position coords pos core rate room smaller _ n header archive active price recurse stored clean word u S ready free empty
-  have away j := apart ((Fin.castLEEmb (Nat.le_add_left 35 rowSwapBlock.tapes)) j)
+  have away j := apart ((Fin.castLEEmb (Nat.le_add_left 35 work)) j)
   obtain ⟨v,openRun,user,opened,count⟩ := unpackMoveArchive body bank spectator away w W L cutoff n word u S ready empty
   let D := {S with R := Function.update (Function.update S.R (bank 34) header) spectator (binSyms n.size n)}
-  have high (i : Fin (rowSwapBlock.tapes+35)) (hi : 35 ≤ i.val) : ports i ≠ bank 34 := by
+  have high (i : Fin (work+35)) (hi : 35 ≤ i.val) : ports i ≠ bank 34 := by
     intro eq
     have h := congrArg Fin.val (ports.injective eq)
     change i.val = 34 at h
@@ -1127,54 +1111,73 @@ theorem twoFieldMoveProgram [M8.Machine.Net] {T Q : ℕ} {P U : Type}
   rw [← width] at flag cost
   have branch : ∃ z F t y, Exec body select (mk q D) (t+1) (mk z F) ∧ t ≤ price ∧ z.user = q.user ∧
       RecordReady (b := prime) (w := w) (d := 16) (W := W) bank (prime^(w+1)).size W.size header SparseRoleCircuit.encode
-        (fun _ => blank) (fun _ => blank) 0 0 y F ∧ clean F ∧ F.R spectator = binSyms n.size n ∧
+        (fun _ => blank) (fun _ => blank) 0 0 y F ∧ clean F ∧ F.R spectator = binSyms n.size n ∧ F.L spectator = S.L spectator ∧
       (∀ j, j ≠ spectator → (∀ i, ports i ≠ j) → F.L j = D.L j ∧ F.R j = D.R j) ∧
       ∀ h, y (position h) = Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (word ∘ position) h := by
     by_cases h : active
-    · obtain ⟨z,F,t,y,run,paid,ret,out,blank,frame,read⟩ := recurse h smaller q D word opened clear
+    · obtain ⟨z,F,t,y,run,paid,ret,out,blank,_,frame,read⟩ := recurse h smaller q D word opened clear
       exact ⟨z,F,t,y,Exec.cond_true (by simp [mk_var,flag,show cutoff < child.width from h]) run,
-        by simpa [price,h] using paid,ret,out,blank,(frame spectator apart).2.trans count,fun j _ => frame j,read⟩
-    · obtain ⟨z,F,t,y,run,paid,ret,out,blank,field,frame,read⟩ := stop body leaf installed node child w W width position coords pos rate room smaller header word q D opened clear count
+        by simpa [price,h] using paid,ret,out,blank,(frame spectator apart).2.trans count,(frame spectator apart).1,fun j _ => frame j,read⟩
+    · obtain ⟨z,F,t,y,run,paid,ret,out,blank,field,left,frame,read⟩ := stop body leaf installed node child w W width position coords pos rate room smaller header word q D opened clear count
       exact ⟨z,F,t,y,Exec.cond_false (by simp [mk_var,flag,show ¬cutoff < child.width from h]) run,
-        by simpa [price,h] using paid,ret,out,blank,field,frame,read⟩
-  obtain ⟨z,F,t,y,run,paid,ret,out,blank,field,frame,read⟩ := branch
+        by simpa [price,h] using paid,ret,out,blank,field,left,frame,read⟩
+  obtain ⟨z,F,t,y,run,paid,ret,out,blank,field,left,frame,read⟩ := branch
   obtain ⟨v',closeRun,final,closed⟩ := restoreMoveArchive body bank spectator away w W L cutoff n y z F out field
   refine ⟨v',_,_,y,Exec.seq openRun (Exec.seq test (Exec.seq run closeRun)),by omega,
-    final.trans (ret.trans (same.trans user)),closed,?_,Function.update_self ..,?_,read⟩
+    final.trans (ret.trans (same.trans user)),closed,?_,Function.update_self ..,left,?_,read⟩
   · intro i hi
     exact ⟨(blank i hi).1,by simpa [Function.update_of_ne (apart i),Function.update_of_ne (high i hi)] using (blank i hi).2⟩
   · intro j ne off
     have diff : j ≠ bank 34 := (off _).symm
     simpa only [D,Function.update_of_ne ne,Function.update_of_ne diff] using frame j ne off
 
-/-- Compute the worker tag from its predecessor clock and an external cutoff
-word, then prepend it to the archive. The comparison restores all its tapes. -/
-theorem prepareWorkerTag {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
-    (bank : Fin 35 ↪ Fin T) (cut : Fin T) (off : ∀ i, bank i ≠ cut) (rank : ℕ) :
-    ∃ code, ∀ (w W L cutoff : ℕ) (record : List (Fin (prime+4)))
-      (word : Fin ((prime^(w+1))^16*W) → ZMod 2) (u : HS T Q prime U) (S : Stacks T prime),
-      cutoff < 2^L → ((w+1)*rank).size ≤ L → S.R cut = binSyms L cutoff →
-      let stored := RecordReady (b := prime) (w := w) (d := 16) (W := W) bank (prime^(w+1)).size W.size
-      let tag : Fin (prime+4) := bitSymbol (decide (cutoff < (w+1)*rank))
-      let F := {S with R := Function.update S.R (bank 34) (tag :: record)}
-      stored record SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0 word S →
-      ∃ z n, Exec body code (mk u S) n (mk z F) ∧ z.user = u.user ∧
-        n ≤ 4*w+23*((w+1)*rank)+22*L+51 ∧
-        stored (tag :: record) SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0 word F := by
-  let cmp := ordinaryCutoffPorts bank cut off
-  let push : Pr P T Q prime U := .act (.push (.rt (bank 34)) (fun v => v.scan (cmp 7)) .done)
-  refine ⟨(ordinaryCutoffTest cmp rank).seq push,?_⟩
-  intro w W L cutoff record word u S cutFits fits header stored tag F ready
-  have scratch : ∀ k : Fin 10, 2 ≤ k.val → cutoffColumnSlots k ∈ shearWork := by decide
-  have clear (k : Fin 10) (hk : 2 ≤ k.val) : S.R (cmp k) = [] := by
-    have ne : k ≠ 1 := by intro eq; subst k; contradiction
-    simpa [cmp,ordinaryCutoffPorts,ne] using (ready.scratch _ (scratch k hk)).2
-  obtain ⟨z,n,user,flag,paid,test⟩ := ordinaryCutoffTest_exec body cmp rank w L cutoff cutFits fits u S
-    ready.clock (by simpa [cmp,ordinaryCutoffPorts] using header) clear
-  have append : Exec body push (mk z S) 1 (mk z F) := by
-    apply (Exec.act _ _).cast rfl
-    simp [Action.run,F,tag,update_rt,flag,ready.archive]
-  exact ⟨z,_,Exec.seq test append,user,by omega,replaceArchive bank _ _ _ _ ready⟩
+/-- Reserve the last row-swap port for the spectator field. -/
+theorem movePrefixFits [M8.Machine.Net] : rowSwapBlock.tapes-1+35 < rowSwapBlock.tapes+35 := by
+  have := rowSwapFits
+  omega
+
+noncomputable def movePrefix [M8.Machine.Net] : Fin (rowSwapBlock.tapes-1+35) ↪ Fin (rowSwapBlock.tapes+35) :=
+  Fin.castLEEmb movePrefixFits.le
+
+noncomputable def moveSpectatorPort [M8.Machine.Net] : Fin (rowSwapBlock.tapes+35) := ⟨_,movePrefixFits⟩
+
+theorem scheduledTwoFieldMove [M8.Machine.Net] {T Q : ℕ} {P U : Type}
+    (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T) (capacity : columnCapacity ≤ Q)
+    (rank : ℕ) (positive : 0 < rank) :
+    let prefixBank := movePrefix.trans ports
+    let spectator := ports moveSpectatorPort
+    ∃ leafCode : Pr P T Q prime U, ∀ (body : P → Pr P T Q prime U) (entry large leaf : P), body leaf = leafCode →
+    body entry = twoFieldDispatch prefixBank spectator rank (body large) (body leaf) →
+    ∀ (node child : Descriptor) (w W L cutoff time : ℕ), child.width = (w+1)*rank →
+    cutoff < 2^L → child.width.size ≤ L → ∀ position : Fin (volume prime child) ≃ Fin ((prime^(w+1))^16*W),
+    (∀ i, (position i).val = (CopyChildLayout.packActive child i).val) → 0 < W →
+    let core : ℝ := (LeafCore.small+5 : ℕ)*|LeafCore.C|+8+LeafCore.small*(16+8*|LeafCore.C|)
+    ∀ rate : ℝ, 163+core ≤ rate →
+    let n := CopyChildLayout.spectators child
+    let header := binSyms (A := prime) L cutoff
+    let active := cutoff < child.width
+    let price := if active then time else ⌊(rate*(child.width : ℝ)^M8.Machine.BudgetBound.tau)*volume prime child⌋₊
+    (active → MoveOnBankExec node child w W prefixBank header position body (body large) time) →
+    ScheduledChildExec node child w W ports (binSyms n.size n ++ separator :: header) position body entry
+      (price+4*w+23*child.width+22*L+8*n.size+61) := by
+  intro prefixBank spectator
+  have apart (i) : prefixBank i ≠ spectator := ports.injective.ne (fun eq => by have h := congrArg Fin.val eq; exact i.isLt.ne h)
+  have fits := moveLeafFitsWithSpare
+  have size := rowSwapFits
+  obtain ⟨code,mixed⟩ := twoFieldMoveProgram (P := P) (U := U) prefixBank spectator apart (by omega) capacity rank positive
+  refine ⟨code,?_⟩
+  intro body entry large leaf installed dispatch node child w W L cutoff time width fitsCut digits position coords pos core rate room n header active price recurse smaller u S word ready free
+  have high : 35 ≤ moveSpectatorPort.val := by change 35 ≤ rowSwapBlock.tapes-1+35; omega
+  obtain ⟨z,F,t,y,run,paid,user,out,clean,empty,left,frame,read⟩ :=
+    mixed body large leaf installed node child w W L cutoff time width fitsCut digits position coords pos rate room smaller recurse
+      word u S ready (fun i hi => free (movePrefix i) hi) (free moveSpectatorPort high).2
+  refine ⟨z,F,t,y,dispatch ▸ run,paid,user,out,?_,fun j off => frame j (off _).symm (fun i => off (movePrefix i)),read⟩
+  intro i hi
+  by_cases bound : i.val < rowSwapBlock.tapes-1+35
+  · exact clean ⟨i.val,bound⟩ hi
+  · have eq : i = moveSpectatorPort := Fin.ext (by have := i.isLt; change i.val = rowSwapBlock.tapes-1+35; omega)
+    subst i
+    exact ⟨left.trans (free moveSpectatorPort high).1,empty⟩
 
 /-- COPY accepts arbitrary archive contents. With the cutoff itself as
 the archive, its worker can compare and branch in place. -/
@@ -1206,89 +1209,7 @@ theorem archiveCutoffDispatch [M8.Machine.Net] {P U : Type} {T Q : ℕ}
   rw [← width] at paid
   omega
 
-noncomputable def scheduledDispatch {T Q : ℕ} {P U : Type} (archive : Fin T) (large leaf : Pr P T Q prime U) : Pr P T Q prime U :=
-  let select := Prog.act (.pop (.rt archive) (fun v o => { v with flag := symBit (o.getD blank) }) .done)
-  let restore := fun b => Prog.act (.push (.rt archive) (fun _ => bitSymbol b) .done)
-  select.seq (.cond (·.flag) (large.seq (restore true)) (leaf.seq (restore false)))
-
-/-- The branch sees its original record. The caller gets its tagged record back
-with three steps charged for reading, selecting and restoring the tag. -/
-theorem scheduledDispatch_exec [M8.Machine.Net] {T Q : ℕ} {P U : Type}
-    (body : P → Pr P T Q prime U) (entry large leaf : P)
-    (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T)
-    (installed : body entry = scheduledDispatch (scheduledRecordPorts ports 34) (body large) (body leaf))
-    (node child : Descriptor) (w W cutoff : ℕ) (record : List (Fin (prime+4)))
-    (position : Fin (volume prime child) ≃ Fin ((prime^(w+1))^16*W)) (price : ℕ)
-    (branch : ScheduledChildExec node child w W ports record position body
-      (if cutoff < child.width then large else leaf) price) :
-    ScheduledChildExec node child w W ports (bitSymbol (decide (cutoff < child.width)) :: record)
-      position body entry (price+3) := by
-  intro smaller u S word ready clean
-  let bank := scheduledRecordPorts ports
-  let active := decide (cutoff < child.width)
-  let src := bank 34
-  let D := {S with R := Function.update S.R src record}
-  let v := {u with flag := active}
-  have pop : Exec body (.act (.pop (.rt src) (fun v o => {v with flag := symBit (o.getD blank)}) .done))
-      (mk u S) 1 (mk v D) := by
-    apply (Exec.act _ _).cast rfl
-    simp [Action.run,src,bank,ready.archive,v,D,active,update_rt]
-  have off (j : Fin (rowSwapBlock.tapes+35)) (hj : 35 ≤ j.val) : ports j ≠ src := by
-    intro eq
-    have h := congrArg Fin.val (ports.injective eq)
-    change j.val = 34 at h
-    omega
-  obtain ⟨z,F,t,y,run,paid,user,out,free,frame,read⟩ := branch smaller v D word
-    (replaceArchive bank _ _ _ _ ready) (fun j hj => ⟨(clean j hj).1,(Function.update_of_ne (off j hj) ..).trans (clean j hj).2⟩)
-  let G := {F with R := Function.update F.R src (bitSymbol active :: record)}
-  have push : Exec body (.act (.push (.rt src) (fun _ => bitSymbol active) .done)) (mk z F) 1 (mk z G) := by
-    apply (Exec.act _ _).cast rfl
-    simp [Action.run,G,src,bank,out.archive,update_rt]
-  refine ⟨z,G,1+(t+1+1),y,?_,by omega,user,replaceArchive bank _ _ _ _ out,?_,?_,read⟩
-  · rw [installed]
-    apply Exec.seq pop
-    by_cases above : cutoff < child.width
-    · apply Exec.cond_true (by simp [mk_var,v,active,above])
-      simp only [active,above,decide_true,ite_true] at run push ⊢
-      exact Exec.seq run push
-    · apply Exec.cond_false (by simp [mk_var,v,active,above])
-      simp only [active,above,decide_false,ite_false] at run push ⊢
-      exact Exec.seq run push
-  · intro j hj
-    exact ⟨(free j hj).1,(Function.update_of_ne (off j hj) ..).trans (free j hj).2⟩
-  · intro j away
-    have ne : j ≠ src := (away ⟨34,by omega⟩).symm
-    have keep := frame j away
-    exact ⟨keep.1,(Function.update_of_ne ne ..).trans (keep.2.trans (Function.update_of_ne ne ..))⟩
-
-/-- The MOVE table installs a single dispatcher per rank. Only the branch
-above the cutoff needs a recursive execution witness. -/
-theorem mixedMoveProgram [M8.Machine.Net] {T Q : ℕ} {P U : Type}
-    (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T) (capacity : columnCapacity ≤ Q)
-    (rank : ℕ) (positive : 0 < rank) :
-    ∃ leafCode : Pr P T Q prime U, ∀ (body : P → Pr P T Q prime U) (entry large leaf : P),
-      body leaf = leafCode →
-      body entry = scheduledDispatch (scheduledRecordPorts ports 34) (body large) leafCode →
-      ∀ (node child : Descriptor) (w W cutoff : ℕ), child.width = (w+1)*rank →
-      ∀ position : Fin (volume prime child) ≃ Fin ((prime^(w+1))^16*W),
-      (∀ i, (position i).val = (CopyChildLayout.packActive child i).val) → 0 < W →
-      let core : ℝ := (LeafCore.small+5 : ℕ)*|LeafCore.C|+8+LeafCore.small*(16+8*|LeafCore.C|)
-      ∀ (rate : ℝ) (recursiveTime : ℕ) (recursiveRecord : List (Fin (prime+4))), 163+core ≤ rate →
-      let active := cutoff < child.width
-      let record := if active then recursiveRecord else
-        binSyms (CopyChildLayout.spectators child).size (CopyChildLayout.spectators child)
-      let price := if active then recursiveTime else
-        ⌊(rate*(child.width : ℝ)^M8.Machine.BudgetBound.tau)*volume prime child⌋₊
-      (active → ScheduledChildExec node child w W ports recursiveRecord position body large recursiveTime) →
-      ScheduledChildExec node child w W ports (bitSymbol (decide active)::record) position body entry (price+3) := by
-  obtain ⟨code,stopped⟩ := stoppedMoveProgram (P := P) (U := U) ports capacity rank positive
-  refine ⟨code,?_⟩
-  intro body entry large leaf installed dispatch node child w W cutoff width position packed pos core rate time archive room active record price recurse
-  apply scheduledDispatch_exec body entry large leaf ports (installed ▸ dispatch) node child w W cutoff
-  by_cases h : cutoff < child.width
-  · simpa only [record,price,active,ite_eq_left h] using recurse h
-  · simpa only [record,price,active,ite_eq_right h] using
-      stopped body leaf installed node child w W width position packed pos rate room
+-- The tagged MOVE dispatcher and generic archive wrapper are available in 21524d7e.
 
 open Certificates.PR589
 
@@ -1369,10 +1290,10 @@ theorem mixedPackedSweep [M8.Machine.Net] (n : Fin 9) :
       (∀ p j, CopyIntervalPositions (child (ci p j)) (w+1) W (cp p j)) ∧
       ∃ (Label : Type) (tapes : StageRun → ℕ) (body : ∀ p, Label → Pr Label (tapes p) Q prime U),
         PackedStageExecution (w := w+1) (B := B) (K := K) n tapes body coeff (fun time =>
-          ((∀ p i, time (mi p i).val = price (mi p i)+3) ∧
+          ((∀ p i, let k := mi p i; time k.val = price k+4*w+23*(child k).width+22*L+8*(CopyChildLayout.spectators (child k)).size+61) ∧
            (∀ p j, let k := ci p j; time k.val = 4*w+23*(child k).width+22*L+51+price k)) ∧
           (∀ p i, let k := mi p i; cutoff < (child k).width → (child k).width < node.width →
-            ScheduledChildExec node (child k) w W (mr p i) (binSyms L cutoff) (mp p i) (mb p i) (.active (mf p i)) (budget k)) ∧
+            MoveOnBankExec node (child k) w W (movePrefix.trans (mr p i)) (binSyms L cutoff) (mp p i) (mb p i) (mb p i (.active (mf p i))) (budget k)) ∧
           (∀ p j, let k := ci p j; cutoff < (child k).width → (child k).width < node.width →
             ScheduledChildExec node (child k) w W (cr p j) (binSyms L cutoff) (cp p j) (cb p j) (.active (cf p j)) (budget k))) := by
   classical
@@ -1385,9 +1306,9 @@ theorem mixedPackedSweep [M8.Machine.Net] (n : Fin 9) :
   let mi := fun (p : StageRun) (i : MoveIndex) => phaseChildPositions.choose (n,p,i)
   let ci := fun (p : StageRun) (j : CopyIndex) => copyChildPosition (n,p,j)
   choose leaf move using fun (p : StageRun) (i : MoveIndex) =>
-    mixedMoveProgram (P := WorkerLabel P) (U := U) (mr p i) ((le_max_left _ _).trans caps)
+    scheduledTwoFieldMove (P := WorkerLabel P) (U := U) (mr p i) ((le_max_left _ _).trans caps)
       (nodeChildren5[(mi p i).val]) (nodeChildren5_bounds (mi p i)).1
-  let mb := fun p i => workerTable (scheduledDispatch (scheduledRecordPorts (mr p i) 34)) (leaf p i) (ml p i) (mf p i)
+  let mb := fun p i => workerTable (twoFieldDispatch (movePrefix.trans (mr p i)) (mr p i moveSpectatorPort) nodeChildren5[(mi p i).val]) (leaf p i) (ml p i) (mf p i)
   let cb := fun p j => let cmp := cutoffColumnSlots.trans (scheduledRecordPorts (cr p j))
                        workerTable (fun large leaf => (ordinaryCutoffTest cmp 7).seq (.cond (fun z => symBit (z.scan (cmp 7))) large leaf))
                          (stoppedCopyProgram (cr p j) ((le_max_right _ _).trans caps)) (cl p j) (cf p j)
@@ -1398,9 +1319,8 @@ theorem mixedPackedSweep [M8.Machine.Net] (n : Fin 9) :
     change nodeChildren5[i.val]*(node.width/64) < node.width
     rw [width,Nat.mul_div_cancel_left _ (by decide)]
     exact Nat.mul_lt_mul_of_pos_right ((nodeChildren5_bounds i).2.trans_lt (by decide : 42 < 64)) (Nat.succ_pos w)
-  let active := fun k => cutoff < (child k).width
-  let mrec := fun p i => let k := mi p i; let s := CopyChildLayout.spectators (child k)
-                         bitSymbol (decide (active k)) :: (if active k then binSyms (A := prime) L cutoff else binSyms s.size s)
+  let mrec := fun p i => let s := CopyChildLayout.spectators (child (mi p i))
+                         binSyms (A := prime) s.size s ++ separator :: binSyms L cutoff
   let crec := fun (_ : StageRun) (_ : CopyIndex) => binSyms (A := prime) L cutoff
   obtain ⟨mp,cp,banks,mc,cc,T,fan,bank,run⟩ := stage node w B rows width split label pos mrec crec
   refine ⟨mp,cp,mc,cc,_,fun p => (banks p).tapes,fun p => (banks p).body (mBank p) (cBank p) (mb p) (cb p),T,fan,bank,?_⟩
@@ -1412,8 +1332,9 @@ theorem mixedPackedSweep [M8.Machine.Net] (n : Fin 9) :
     have shape : (child (mi p i)).width = (w+1)*nodeChildren5[(mi p i).val] := by
       change nodeChildren5[(mi p i).val]*(node.width/64) = _
       rw [width,Nat.mul_div_cancel_left _ (by decide),Nat.mul_comm]
-    exact move p i (mb p i) .entry (.active (mf p i)) .leaf rfl rfl node _ w W cutoff shape
-      (mp p i) (mc p i) pos rate _ _ ((le_max_left _ _).trans large) (fun h => ready.2.1 p i h (smaller _))
+    exact move p i (mb p i) .entry (.active (mf p i)) .leaf rfl rfl node _ w W L cutoff _ shape
+      cutFits ((Nat.size_le_size (smaller _).le).trans parentFits) (mp p i) (mc p i) pos rate
+      ((le_max_left _ _).trans large) (fun h => ready.2.1 p i h (smaller _))
   · intro p j
     rw [ready.1.2 p j]
     exact copy (cr p j) _ (cb p j) .entry (.active (cf p j)) .leaf rfl rfl node n p j w W rows L cutoff

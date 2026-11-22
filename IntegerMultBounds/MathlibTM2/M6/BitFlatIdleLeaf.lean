@@ -160,7 +160,7 @@ private theorem placedScratch {m k T : ℕ} (fits : m ≤ k) (ports : Fin k ↪ 
         (show (i.castLE fits).val < m from i.isLt)))
   exact ⟨restored.1.trans (clean j hj).1,restored.2.trans (clean j hj).2⟩
 
-private theorem moveLeafFits [M8.Machine.Net] : 44+LeafCore.small ≤ rowSwapBlock.tapes+35 := by
+theorem moveLeafFitsWithSpare [M8.Machine.Net] : 44+LeafCore.small ≤ rowSwapBlock.tapes+34 := by
   have h := copyLeafFitsRowSwap
   unfold LeafCore.small M8.Machine.ArbitraryWidthOriginalZeroBranch.count
       M8.Machine.ArbitraryWidthOriginalZeroBranch.highCount at *
@@ -195,24 +195,39 @@ private theorem moveLeafBill [M8.Machine.Net] (child : Descriptor) (w : ℕ) (po
   change _ + core*(V*power) ≤ rate*power*V
   linarith only [fixed,base,bound]
 
+/-- Child execution restricted to the given record and scratch bank. -/
+def MoveOnBankExec {n T Q : ℕ} {P U : Type} (node child : Descriptor) (w W : ℕ)
+    (ports : Fin (n+35) ↪ Fin T) (archive : List (Fin (prime+4)))
+    (position : Fin (volume prime child) ≃ Fin ((prime^(w+1))^16*W))
+    (body : P → Pr P T Q prime U) (code : Pr P T Q prime U) (budget : ℕ) : Prop :=
+  child.width < node.width →
+  let bank := scheduledRecordPorts ports
+  let stored := RecordReady (b := prime) (w := w) (d := 16) (W := W) bank (prime^(w+1)).size W.size
+    archive
+    SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0
+  let clean := fun S : Stacks T prime => ∀ i : Fin (n+35), 35 ≤ i.val → S.L (ports i) = [] ∧ S.R (ports i) = []
+  ∀ u S word, stored word S → clean S → ∃ z F t y, Exec body code (mk u S) t (mk z F) ∧
+    t ≤ budget ∧ z.user = u.user ∧
+    stored y F ∧ clean F ∧ F.L (bank 34) = S.L (bank 34) ∧ (∀ j, (∀ i, ports i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j) ∧
+    ∀ h, y (position h) = Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (word ∘ position) h
+
 /-- Place the stopped MOVE on the caller's record and row-swap workspace.
 The installed code depends only on rank, ports and state capacity. -/
-theorem stoppedMoveProgram [M8.Machine.Net] {P U : Type} {T Q : ℕ}
-    (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T) (capacity : columnCapacity ≤ Q) (rank : ℕ) (positiveRank : 0 < rank) :
+theorem stoppedMoveOnBank [M8.Machine.Net] {P U : Type} {n T Q : ℕ}
+    (ports : Fin (n+35) ↪ Fin T) (fits : 44+LeafCore.small ≤ n+35) (capacity : columnCapacity ≤ Q) (rank : ℕ) (positiveRank : 0 < rank) :
     ∃ code : Pr P T Q prime U, ∀ (body : P → Pr P T Q prime U) (f : P), body f = code →
       ∀ (node child : Descriptor) (w W : ℕ), child.width = (w+1)*rank →
       ∀ position : Fin (volume prime child) ≃ Fin ((prime^(w+1))^16*W),
       (∀ i, (position i).val = (CopyChildLayout.packActive child i).val) → 0 < W →
       let core : ℝ := (LeafCore.small+5 : ℕ)*|LeafCore.C|+8+LeafCore.small*(16+8*|LeafCore.C|)
-      ∀ rate : ℝ, 163+core ≤ rate → ScheduledChildExec node child w W ports
-        (binSyms (CopyChildLayout.spectators child).size (CopyChildLayout.spectators child)) position body f
+      ∀ rate : ℝ, 163+core ≤ rate → MoveOnBankExec node child w W ports
+        (binSyms (CopyChildLayout.spectators child).size (CopyChildLayout.spectators child)) position body (body f)
         ⌊(rate*(child.width : ℝ)^M8.Machine.BudgetBound.tau)*volume prime child⌋₊ := by
   let bank := Fin.castAddEmb 9 (n := 35)
   let r : Fin 10 ↪ Fin 44 := ⟨fun i => ⟨33+i.val,by omega⟩,fun i j eq => Fin.ext (by
     have h := congrArg Fin.val eq
     change 33+i.val = 33+j.val at h
     omega)⟩
-  let fits := moveLeafFits
   let slot :=  Fin.castLEEmb fits
   let place := slot.trans ports
   let work := r.trans (Fin.castAddEmb LeafCore.small)
@@ -221,10 +236,10 @@ theorem stoppedMoveProgram [M8.Machine.Net] {P U : Type} {T Q : ℕ}
     ((moveWidthProgram work rank).seq (hostedStoppedDirectory capacity src (bank 24))).seq (bclear (work 3))
   refine ⟨embProg place Empty.elim leaf,?_⟩
   intro body f installed node child w W width position packed pos core rate room
-  letI : NeZero (prime^(w+1)) := ⟨(pow_pos Shared50ModularControl.prime_prime.pos _).ne'⟩
-  intro smaller u S word stored clean
+  let : NeZero (prime^(w+1)) := ⟨(pow_pos Shared50ModularControl.prime_prime.pos _).ne'⟩
+  intro smaller _ _ _ u S word stored clean
   let regs := bank.trans (Fin.castAddEmb LeafCore.small)
-  have align := recordPlacement (n := rowSwapBlock.tapes) fits ports
+  have align := recordPlacement (n := n) fits ports
   have size := Fintype.card_congr position
   simp only [Fintype.card_fin] at size
   obtain ⟨v,D,t,y,run,paid,user,out,rest,reads⟩ := packedMoveLeaf_exec capacity
@@ -244,12 +259,35 @@ theorem stoppedMoveProgram [M8.Machine.Net] {P U : Type} {T Q : ℕ}
   have bill := moveLeafBill child w live clock core rate room
   dsimp only [core] at bill
   rw [← size] at paid
-  refine ⟨z,F,t,y,?_,Nat.le_floor (paid.trans bill),same.trans user,?_,?_,?_,reads⟩
+  refine ⟨z,F,t,y,?_,Nat.le_floor (paid.trans bill),same.trans user,?_,?_,?_,?_,reads⟩
   · rw [installed]
     exact exec
   · exact (recordOnBank place regs _ align _ y F).1 out
   · exact placedScratch fits ports S F ((bank 24).castAdd LeafCore.small) (show 24 < 35 by decide) clean rest frame
+  · have ne : regs 34 ≠ (bank 24).castAdd LeafCore.small := (Fin.castAddEmb _).injective.ne (bank.injective.ne (by decide))
+    change F.L (scheduledRecordPorts ports 34) = S.L (scheduledRecordPorts ports 34)
+    rw [← align]
+    exact (rest (regs 34) ne).1
   · intro j away
     exact frame j (fun i => away (slot i))
+
+/-- The standard row-swap placement has room for the stopped leaf and a
+separate spectator tape. -/
+theorem stoppedMoveProgram [M8.Machine.Net] {P U : Type} {T Q : ℕ}
+    (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T) (capacity : columnCapacity ≤ Q) (rank : ℕ) (positiveRank : 0 < rank) :
+    ∃ code : Pr P T Q prime U, ∀ (body : P → Pr P T Q prime U) (f : P), body f = code →
+      ∀ (node child : Descriptor) (w W : ℕ), child.width = (w+1)*rank →
+      ∀ position : Fin (volume prime child) ≃ Fin ((prime^(w+1))^16*W),
+      (∀ i, (position i).val = (CopyChildLayout.packActive child i).val) → 0 < W →
+      let core : ℝ := (LeafCore.small+5 : ℕ)*|LeafCore.C|+8+LeafCore.small*(16+8*|LeafCore.C|)
+      ∀ rate : ℝ, 163+core ≤ rate → ScheduledChildExec node child w W ports
+        (binSyms (CopyChildLayout.spectators child).size (CopyChildLayout.spectators child)) position body f
+        ⌊(rate*(child.width : ℝ)^M8.Machine.BudgetBound.tau)*volume prime child⌋₊ := by
+  obtain ⟨code,leaf⟩ := stoppedMoveOnBank (P := P) (U := U) ports (moveLeafFitsWithSpare.trans (by omega)) capacity rank positiveRank
+  refine ⟨code,?_⟩
+  intro body f installed node child w W width position coords pos core rate room smaller u S word ready free
+  obtain ⟨z,F,t,y,run,paid,user,out,clean,_,frame,read⟩ :=
+    leaf body f installed node child w W width position coords pos rate room smaller u S word ready free
+  exact ⟨z,F,t,y,run,paid,user,out,clean,frame,read⟩
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
