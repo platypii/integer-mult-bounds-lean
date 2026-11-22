@@ -10,6 +10,21 @@ open IntegerMultBounds.Machine IntegerMultBounds.Networks Cover.Fallback Stack H
 open RecursiveInterchangeLayout (Descriptor volume)
 open Shared50ModularControl (prime)
 
+private theorem mergedPayload {m c V : ℕ} (span : m*c = V) (word : Fin V → ZMod 2)
+    (data : Fin c → Fin m → ZMod 2) (S : Stacks (((1+c)+2)+2) prime)
+    (rep : RepT (intervalOwnerBank (putWord (fun _ => blank) 0
+      (List.ofFn fun a : Fin (m*c) => SparseRoleCircuit.encode (a := prime) (word (a.cast span)))) data) S.L S.R) :
+    RecordPayload 0 (fun _ => blank) 0 word S := by
+  subst V
+  intro j
+  rw [encodedOwnerCell]
+  let src := (((0 : Fin 1).castAdd c).castAdd 2).castAdd 2
+  have h := (rep src j).symm
+  have zero : src = 0 := Fin.ext (by simp [src])
+  rw [← zero]
+  simpa only [src,intervalOwnerBank,CyclicRowSplit.bank,CyclicRowCopy.bank,CyclicRowCopy.payload,
+    CountedLoopReuseAlphabet.bank,Tapes.append,Fin.addCases_left,Fin.cast_eq_self] using h
+
 theorem flatIdleMerge_exec {P U : Type} {Q b : ℕ} (body : P → Pr P intervalSplitTapes Q prime U)
     (worker : Pr P intervalSplitTapes Q prime U)
     (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q)
@@ -34,7 +49,7 @@ theorem flatIdleMerge_exec {P U : Type} {Q b : ℕ} (body : P → Pr P intervalS
       ∃ z F k changed, Exec body ((intervalPrepare.seq (foreign (liftQ (CyclicRowNormalized.splitProgram 142080 prime) capacity))).seq
           (worker.seq (foreign (liftQ (CyclicRowNormalized.mergeProgram 142080 prime) capacity)))) (mk u S) k (mk z F) ∧
         k ≤ (298*(intervalSplitTapes+5)+5)*V+b+30 ∧ z.user = u.user ∧
-        RepT (intervalOwnerBank (putWord (fun _ => blank) 0 (source changed)) output) F.L F.R ∧
+        RecordPayload 0 (fun _ => blank) 0 changed F ∧
         ∀ a, changed (position a) = Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (word ∘ position) a := by
   intro tail W V e lane m position coords
   obtain ⟨span,reads⟩ := coords.internalRows_iff parent i j w rows stock position
@@ -61,6 +76,6 @@ theorem flatIdleMerge_exec {P U : Type} {Q b : ℕ} (body : P → Pr P intervalS
   refine ⟨z,F,k,changed,exec,by simpa only [← span] using paid,user,?_,(reads word changed).2 (fun a r => cell r a)⟩
   change RepT (intervalOwnerBank _ (fun r a => changed ((finProdFinEquiv (a,r)).cast span))) F.L F.R at out
   rw [lanes] at out
-  exact out
+  exact mergedPayload span changed output F out
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
