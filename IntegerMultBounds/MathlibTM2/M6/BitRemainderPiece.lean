@@ -159,6 +159,16 @@ private theorem idleExchange_admissible (c : PortCertificate) (hc : c.Checked) (
   cases i <;> cases j <;> first | apply complement | apply span
 
 open Matrix IntegerMultBounds.Swap.Modular in
+private theorem idleExchange_blocks (c : PortCertificate) (hc : c.Checked) (lo hi w : ℕ) :
+    let S := c.span lo hi
+    let P := reduce (prime^w) S
+    reduce (prime^w) (exchange S) = fromBlocks (1-P) P P (1-P) := by
+  intro S P
+  have sub := ModularFrameSchedule.reduce_sub (prime^w) (admissible_one _) (portSpan_admissible c hc lo hi w)
+  rw [reduce_one] at sub
+  ext (i | i) (j | j) <;> first | rfl | exact congrFun (congrFun sub i) j
+
+open Matrix IntegerMultBounds.Swap.Modular in
 /-- Numbering the two port banks by their stage axes gives the scanner's block exchange. -/
 theorem idleExchange_axes (c : PortCertificate) (hc : c.Checked) (lo hi w : ℕ)
     (x : Axis ⊕ Axis → ZMod (prime^w)) :
@@ -169,26 +179,9 @@ theorem idleExchange_axes (c : PortCertificate) (hc : c.Checked) (lo hi w : ℕ)
   intro axes P
   let S := c.span lo hi
   let m := prime^w
-  have adm : Admissible m S := fun i j => idleExchange_admissible c hc lo hi w (.inl i) (.inr j)
-  have sub := ModularFrameSchedule.reduce_sub m (admissible_one m) adm
-  rw [reduce_one] at sub
   have blocks : (reduce m (exchange S)).submatrix axes axes = fromBlocks (1-P) P P (1-P) := by
-    ext i j
-    cases i with
-    | inl i =>
-      cases j with
-      | inr j => rfl
-      | inl j =>
-        change reduce m (1-S) _ _ = _
-        rw [sub]
-        simp [P,S,Matrix.one_apply] <;> rfl
-    | inr i =>
-      cases j with
-      | inl j => rfl
-      | inr j =>
-        change reduce m (1-S) _ _ = _
-        rw [sub]
-        simp [P,S,Matrix.one_apply] <;> rfl
+    rw [idleExchange_blocks c hc lo hi w]
+    ext (i | i) (j | j) <;> simp [axes,P,S,Matrix.one_apply] <;> rfl
   rw [← blocks,submatrix_mulVec_equiv]
   simp [Function.comp_assoc,m,S]
 
@@ -684,6 +677,67 @@ def IdleParentReads (i : Fin 9) (k : (Fin 32 × Fin 5) × Fin 222) (w B K : ℕ)
         (M8.Exchange.exchange (reduce M (cert.span e.1 e.2)) x) label ∘ finSumFinEquiv) b t) =
         ext input (inheritedDigitCell (remainderParentDigits x label ∘ finSumFinEquiv) b t)
 
+/-- The inherited field, block, label and trailing coordinates form one
+bounded address for the logical remainder operation. -/
+noncomputable def inheritedParentAddress {w B K : ℕ} (label : LabelPadding.Label 64 w)
+    (b : Fin B) (t : Fin K) (x : Axis ⊕ Axis → ZMod (prime^w)) :
+    Fin ((prime^w)^128*B*(prime^w)^(64*64)*K) :=
+  let digits := remainderParentDigits (x ∘ Sum.inl,x ∘ Sum.inr) label ∘ finSumFinEquiv
+  ⟨inheritedDigitCell digits b t,LabelShift.pack_lt (LabelShift.pack_lt
+    (LabelShift.pack_lt (FlatCoordinateLayout.rank (digits ∘ Sum.inl)).isLt b.isLt)
+    (FlatCoordinateLayout.rank (digits ∘ Sum.inr)).isLt) t.isLt⟩
+
+/-- The parent address is the flat stage-axis field index with the block,
+column-major matrix label and trailing cell packed as one spectator. -/
+theorem inheritedParentAddress_index {w B K : ℕ} (label : LabelPadding.Label 64 w)
+    (b : Fin B) (t : Fin K) (x : Axis ⊕ Axis → ZMod (prime^w)) :
+    let axes := Equiv.sumCongr stageAxis.symm stageAxis.symm
+    let fields := (x ∘ axes) ∘ (@finSumFinEquiv 64 64).symm
+    let tail := finProdFinEquiv (finProdFinEquiv (b,LabelAddress.address label),t)
+    (inheritedParentAddress label b t x).val = (FlatCoordinateLayout.index fields tail).val := by
+  intro axes fields tail
+  let digits := remainderParentDigits (x ∘ Sum.inl,x ∘ Sum.inr) label ∘ finSumFinEquiv
+  have head : digits ∘ Sum.inl = fields := by
+    funext j
+    refine Fin.addCases (m := 64) (n := 64) (fun i => ?_) (fun i => ?_) j
+    · have h : Fin.castAdd 64 i = finProdFinEquiv ((0 : Fin 2),i) := by
+        apply Fin.ext; change i.val = i.val + 64*0; omega
+      simp only [digits,Function.comp_apply,remainderParentDigits,finSumFinEquiv_apply_left,Fin.addCases_left,
+        fields,axes,finSumFinEquiv_symm_apply_castAdd,Equiv.sumCongr_apply,Sum.map_inl]
+      rw [h,Equiv.symm_apply_apply]
+      rfl
+    · have h : Fin.natAdd 64 i = finProdFinEquiv ((1 : Fin 2),i) := by
+        apply Fin.ext; change 64+i.val = i.val + 64*1; omega
+      simp only [digits,Function.comp_apply,remainderParentDigits,finSumFinEquiv_apply_left,Fin.addCases_left,
+        fields,axes,finSumFinEquiv_symm_apply_natAdd,Equiv.sumCongr_apply,Sum.map_inr]
+      rw [h,Equiv.symm_apply_apply]
+      rfl
+  have matrix : digits ∘ Sum.inr = M8.AtomOps.refine (Route.cols label) := by
+    funext j
+    simp only [digits,Function.comp_apply,remainderParentDigits,@finSumFinEquiv_apply_right 128 (64*64),Fin.addCases_right]
+  change (((FlatCoordinateLayout.rank (digits ∘ Sum.inl)).val*B+b.val)*(prime^w)^(64*64)+
+    (FlatCoordinateLayout.rank (digits ∘ Sum.inr)).val)*K+t.val = _
+  rw [head,matrix,FlatCoordinateLayout.index_val]
+  simp only [tail,LabelAddress.address,finProdFinEquiv_apply_val]
+  ring
+
+/-- On each inherited label the simultaneous physical owner reads implement
+the logical remainder instruction on the entire role bank. -/
+theorem inheritedIdle_read {w B K : ℕ} (i : Fin 9) {before after}
+    (owners : ∀ k, IdleParentReads i k w B K (before (idleTape i k)) (after (idleTape i k)))
+    (off : ∀ j, (∀ k, j ≠ idleTape i k) → after j = before j)
+    (label : LabelPadding.Label 64 w) (b : Fin B) (t : Fin K) :
+    let address := inheritedParentAddress label b t ∘ addressMod (prime^w)
+    readRoles address after = (Piece.remainder i.val).run (readRoles address before) := by
+  apply idleCopies_modular_read w i _ _ _ _ off
+  intro k e P x
+  let c := port (idleRole i k).port.val
+  have blocks := idleExchange_blocks c (port_checked _ (idleRole i k).port.isLt) e.1 e.2 w
+  have read := owners k (x ∘ Sum.inl,x ∘ Sum.inr) label b t
+  rw [show reduce (prime^w) (exchange P) = _ from blocks,Matrix.fromBlocks_mulVec]
+  rw [← ext_apply (after _) _,← ext_apply (before _) _]
+  exact read
+
 /-- Compile the placed parent exchanges for an entire idle window. Every
 selected owner reads its own port exchange and contributes its interval rank
 once to the recursive bill. -/
@@ -770,6 +824,12 @@ private theorem remainderRanks_sum (price : ℕ → ℕ) :
   rw [Fin.sum_univ_eq_sum_range (fun i => ((remainderRanks i).map price).sum)]
   rw [← List.sum_toFinset _ List.nodup_range,List.toFinset_range]
 
+private theorem address_physicalLabel {m w : ℕ} (l : Fin ((prime^w)^(m*m))) :
+    LabelAddress.address (Fallback.physicalLabel m w l.val) = l := by
+  apply Fin.ext
+  simpa only [Nat.div_eq_of_lt l.isLt,Nat.zero_mul,Nat.zero_add] using
+    (Fallback.physicalLabel_index (m := m) (w := w) l.val)
+
 /-- Install the nine inherited remainder windows in the compiled node. Their
 recursive charges add to the price of the scheduled remainder ranks, while
 the invocation stages retain their own cost and action. -/
@@ -787,8 +847,14 @@ theorem compiledNode_inheritedWindows [M8.Machine.Net] :
           ((compiledNode inv idle bridge exchange).cost : ℝ) ≤
             (∑ n, (inv n).cost : ℕ) + D*V*(w : ℝ)^M8.Machine.BudgetBound.tau +
               (160*(remainders.map price).sum : ℕ)) ∧
-        ∀ i data, (∀ k, IdleParentReads i k w B K (data (idleTape i k)) ((idle i).transform data (idleTape i k))) ∧
-          ∀ j, (∀ k, j ≠ idleTape i k) → (idle i).transform data j = data j := by
+        (∀ i data, (∀ k, IdleParentReads i k w B K (data (idleTape i k)) ((idle i).transform data (idleTape i k))) ∧
+          ∀ j, (∀ k, j ≠ idleTape i k) → (idle i).transform data j = data j) ∧
+        ∀ j : Fin W, let address := fun z : Axis ⊕ Axis → ℚ =>
+          let fields := (addressMod M z ∘ Equiv.sumCongr stageAxis.symm stageAxis.symm) ∘ (@finSumFinEquiv 64 64).symm
+          (FlatCoordinateLayout.index fields j).cast (by simp only [W,V,Nat.mul_assoc])
+          (∀ n data, readRoles address ((inv n).transform data) = (Piece.stage n).run (readRoles address data)) →
+          ∀ data, readRoles address ((compiledNode inv idle bridge exchange).transform data) =
+            runNode (readRoles address data) := by
   classical
   choose coeff build using inheritedIdlePiece_stage
   let bank := 30*(76*17760)+49
@@ -798,7 +864,22 @@ theorem compiledNode_inheritedWindows [M8.Machine.Net] :
   have hp := Shared50ModularControl.prime_prime.pos
   have pos : 0 < V := by dsimp [V,M]; positivity
   obtain ⟨bridge,exchange,assembly,act⟩ := compiledNode_linear pos inv idle
-  refine ⟨idle,bridge,exchange,act,?_,actions⟩
+  refine ⟨idle,bridge,exchange,act,?_,actions,?_⟩
+  case refine_2 =>
+    intro j address sweep data
+    apply compiledNode_read inv idle act address sweep _ data
+    intro i input
+    obtain ⟨⟨row,t⟩,rfl⟩ := (@finProdFinEquiv (B*M^(64*64)) K).surjective j
+    obtain ⟨⟨b,l⟩,rfl⟩ := (@finProdFinEquiv B (M^(64*64))).surjective row
+    let label := Fallback.physicalLabel 64 w l.val
+    have packed : LabelAddress.address label = l := address_physicalLabel l
+    have same : inheritedParentAddress label b t ∘ addressMod M = address := by
+      funext z
+      apply Fin.ext
+      simp only [Function.comp_apply,inheritedParentAddress_index,packed]
+      rfl
+    rw [← same]
+    exact inheritedIdle_read i (actions i input).1 (actions i input).2 label b t
   intro price priced
   have windows := Finset.sum_le_sum (s := Finset.univ) (fun i _ => bills i price (priced i))
   change (∑ i, ((idle i).cost : ℝ)) ≤ ∑ i, (coeff i*V*(w : ℝ)^M8.Machine.BudgetBound.tau +
