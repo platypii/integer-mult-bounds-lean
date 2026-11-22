@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.M6.BitHelperFanRun
 public import IntegerMultBounds.MathlibTM2.M6.BitOrdinaryChildLayout
 
 /-! Stable packing of the two active blocks of a remainder row. -/
@@ -195,6 +196,126 @@ theorem intervalReturn_exec {T capacity : ℕ} (fitsStates : Q ≤ capacity)
     change word (FlatCoordinateLayout.index x j) = output ((FlatCoordinateLayout.index x j).cast size.symm)
     simpa only [id_eq,reverse_adjacentFields,Function.comp_apply,moved,Equiv.symm_apply_apply]
       using read (is.foldl adjacentFields x) j
+
+omit [M8.Machine.Net] in
+/-- Sequence the unpackers on disjoint record banks. Each completed row and
+each pending input retains both stacks while another row is unpacked. -/
+theorem returnRows_exec {ι : Type} {T A capacity B : ℕ} (body : P → Pr P T capacity A U)
+    (ports : ι → Fin B ↪ Fin T) (apart : ∀ i j, i ≠ j → ∀ a b, ports i a ≠ ports j b)
+    (code : ι → Pr P T capacity A U) (price : ι → ℕ)
+    (ready doneRow : ι → Stacks T A → Prop)
+    (localReady : ∀ i S F, (∀ k, F.L (ports i k) = S.L (ports i k) ∧
+      F.R (ports i k) = S.R (ports i k)) → ready i S → ready i F)
+    (localDone : ∀ i S F, (∀ k, F.L (ports i k) = S.L (ports i k) ∧
+      F.R (ports i k) = S.R (ports i k)) → doneRow i S → doneRow i F)
+    (step : ∀ i u S, ready i S → ∃ z F n, Exec body (code i) (mk u S) n (mk z F) ∧
+      n ≤ price i ∧ z.user = u.user ∧ doneRow i F ∧
+      ∀ j, (∀ k, ports i k ≠ j) → F.L j = S.L j ∧ F.R j = S.R j)
+    (rows : List ι) (unique : rows.Nodup) (u : HS T capacity A U) (S : Stacks T A)
+    (inputs : ∀ i ∈ rows, ready i S) :
+    ∃ z F n, Exec body (Prog.seqList (rows.map code)) (mk u S) n (mk z F) ∧
+      n ≤ (rows.map price).sum+1 ∧ z.user = u.user ∧ (∀ i ∈ rows, doneRow i F) ∧
+      ∀ j, (∀ i ∈ rows, ∀ k, ports i k ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  induction rows generalizing u S with
+  | nil => exact ⟨u,S,1,Exec.act .done _,by simp,rfl,by simp,fun _ _ => ⟨rfl,rfl⟩⟩
+  | cons i rows ih =>
+    obtain ⟨fresh,distinct⟩ := List.nodup_cons.mp unique
+    obtain ⟨v,D,t,run,paid,user,finished,keep⟩ := step i u S (inputs i List.mem_cons_self)
+    obtain ⟨z,F,n,tail,cost,same,returned,frame⟩ := ih distinct v D (fun j hj =>
+      localReady j S D (fun k => keep _ (fun a => apart i j (fun eq => fresh (eq ▸ hj)) a k))
+        (inputs j (List.mem_cons_of_mem _ hj)))
+    refine ⟨z,F,t+n,Exec.seq run tail,by simp only [List.map_cons,List.sum_cons]; omega,
+      same.trans user,?_,?_⟩
+    · intro j hj
+      rcases List.mem_cons.mp hj with rfl | member
+      · exact localDone _ D F (fun k => frame _ (fun a ha b =>
+          apart a j (fun eq => fresh (eq ▸ ha)) b k)) finished
+      · exact returned j member
+    · intro j outside
+      have after := frame j (fun a ha => outside a (List.mem_cons_of_mem _ ha))
+      have before := keep j (outside i List.mem_cons_self)
+      exact ⟨after.1.trans before.1,after.2.trans before.2⟩
+
+/-- Unpack all cyclic owner rows, summing their execution bills and leaving
+the merger's tapes outside the record banks unchanged. -/
+theorem intervalReturnBank_exec {T capacity : ℕ} (fitsStates : Q ≤ capacity)
+    (ports : Fin 142080 → Fin (N+35) ↪ Fin T)
+    (apart : ∀ i j, i ≠ j → ∀ a b, ports i a ≠ ports j b)
+    (body : P → Pr P T capacity prime U) (lo hi : ℕ) (ordered : lo ≤ hi) (fits : hi ≤ 64) :
+    ∃ setup swaps : Fin 142080 → ℕ, ∀ w W, 0 < W →
+      let M := prime^(w+1)
+      let is := intervalPackSchedule lo (hi-lo) (64-hi+lo)
+      let small := (Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)
+      let size := intervalChild_volume ordered fits (w+1) W
+      let position := packedChildPosition _ size
+      ∀ (u : HS T capacity prime U) (S : Stacks T prime) (record : Fin 142080 → List (Fin (prime+4)))
+        (dest : Fin 142080 → ℤ → Fin 4) (q : Fin 142080 → ℤ)
+        (output : Fin 142080 → Fin (volume prime (phaseIntervalChild lo hi (w+1) W 64)) → ZMod 2),
+      let stored := fun r word F => RecordReady (b := prime) (w := w) (W := W) (d := 128)
+        (small.trans (ports r)) M.size W.size (record r) SparseRoleCircuit.encode (fun _ => blank)
+        (dest r) 0 (q r) word F ∧ ∀ k : Fin (N+35), 35 ≤ k.val →
+          F.L (ports r k) = [] ∧ F.R (ports r k) = []
+      ∀ fan : Fin (142080+2) ↪ Fin T,
+      (∀ r : Fin 142080, ports r (small 24) = fan (r.castAdd 2)) →
+      (∀ j : Fin 2, ∀ r k, ports r k ≠ fan (j.natAdd 142080)) →
+      HelperFan fan (fun r => output r ∘ position.symm) S →
+      (∀ r, ∃ word D, stored r word D ∧ ∀ k, k ≠ small 24 →
+        S.L (ports r k) = D.L (ports r k) ∧ S.R (ports r k) = D.R (ports r k)) →
+      let code := fun r => statePlacedNormalized (ports r) fitsStates swapStates_pos Empty.elim (packSchedule 128 is.reverse)
+      ∃ z F n, Exec body (Prog.seqList ((List.finRange 142080).map code)) (mk u S) n (mk z F) ∧
+        n ≤ ((List.finRange 142080).map (fun r => 1+(setup r+swaps r*swapVolumeRate w)*(M^128*W))).sum+1 ∧
+        z.user = u.user ∧ HelperFan fan (fun r i => output r (i.cast size.symm)) F ∧
+        (∀ r, stored r (fun i => output r (i.cast size.symm)) F) ∧
+        ∀ j, (∀ r k, ports r k ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  choose setup swaps run using fun r => intervalReturn_exec fitsStates (ports r) body lo hi ordered fits
+  refine ⟨setup,swaps,?_⟩
+  intro w W hW M is small size position u S record dest q output stored fan shared counters live saved code
+  have transfer r word (D F : Stacks T prime)
+      (keep : ∀ k, F.L (ports r k) = D.L (ports r k) ∧ F.R (ports r k) = D.R (ports r k))
+      (ready : stored r word D) : stored r word F := by
+    refine ⟨ready.1.returnPayload (fun i _ => keep (small i)) (fun z => ?_),?_⟩
+    · change _ = readAt blank (F.L (ports r (small 24))) (F.R (ports r (small 24))) _
+      rw [(keep _).1,(keep _).2]
+      exact (ready.1.src z).symm
+    · intro k hk
+      exact ⟨(keep k).1.trans (ready.2 k hk).1,(keep k).2.trans (ready.2 k hk).2⟩
+  have inputs r : stored r (output r ∘ position.symm) S := by
+    obtain ⟨word,D,old,keep⟩ := saved r
+    refine ⟨old.1.returnPayload (fun i ne => keep (small i) (small.injective.ne ne)) (fun z => ?_),?_⟩
+    · change _ = readAt blank (S.L (ports r (small 24))) (S.R (ports r (small 24))) _
+      rw [shared]
+      simpa only [List.map_ofFn] using (fanPayload live r z).symm
+    · intro k hk
+      have ne : k ≠ small 24 := by
+        intro eq
+        have h := congrArg Fin.val eq
+        change k.val = 24 at h
+        omega
+      exact ⟨(keep k ne).1.trans (old.2 k hk).1,(keep k ne).2.trans (old.2 k hk).2⟩
+  obtain ⟨z,F,n,exec,paid,user,doneRows,frame⟩ := returnRows_exec body ports apart code _
+    (fun r => stored r (output r ∘ position.symm)) (fun r => stored r (fun i => output r (i.cast size.symm)))
+    (fun r => transfer r _) (fun r => transfer r _) (fun r v D ready => by
+      obtain ⟨z,F,n,user,paid,exec,out,clear,frame⟩ := run r w W hW v D (record r) (dest r) (q r)
+        (output r) ready.1 ready.2
+      exact ⟨z,F,n,exec,paid,user,⟨out,clear⟩,frame⟩)
+    (List.finRange 142080) (List.nodup_finRange _) u S (fun r _ => inputs r)
+  refine ⟨z,F,n,exec,paid,user,?_,fun r => doneRows r (List.mem_finRange r),fun j h => frame j (fun r _ => h r)⟩
+
+  intro i z
+  induction i using Fin.addCases with
+  | left r =>
+    have cell := (doneRows r (List.mem_finRange r)).1.src z
+    have encoded := encodedOwnerCell (fun i => output r (i.cast size.symm)) z
+    rw [List.map_ofFn] at encoded
+    rw [encoded] at cell
+    simp only [PointwiseRoleGate.bank,Tapes.append,Fin.addCases_left,embStk,Function.comp_apply]
+    change putWord _ 0 (List.ofFn fun i => SparseRoleCircuit.encode (output r (i.cast size.symm))) z =
+      readAt blank _ _ _
+    simpa only [Function.Embedding.trans_apply,shared] using cell.symm
+  | right j =>
+    have keep := frame (fan (j.natAdd 142080)) (fun r _ k => counters j r k)
+    simpa only [PointwiseRoleGate.bank,Tapes.append,Fin.addCases_right,embStk,Function.comp_apply,
+      keep.1,keep.2,CountedLoopReuseAlphabet.controls,ite_self] using live (j.natAdd 142080) z
 
 /-- Run a child on the stable active-first row, charging the incoming and
 outgoing exchanges and restoring the original record layout. -/
