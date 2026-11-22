@@ -63,7 +63,7 @@ theorem packedCutoff_exec {T Q V : ℕ} {P U : Type} (body : P → Pr P T Q prim
     split_ifs at placed ⊢ <;> exact placed)
   exact ⟨z,F,n,y,ran,by exact_mod_cast paid,user,out,result⟩
 
-private theorem placeHandoff {m T Q V price : ℕ} {P R U : Type}
+theorem placeHandoff {m T Q V price : ℕ} {P R U : Type}
     (bank : Fin m ↪ Fin T) (label : P → R) (body : P → Pr P m Q prime U) (host : R → Pr R T Q prime U)
     (calls : ∀ f, host (label f) = embProg bank label (body f))
     (src dst : Fin (142081+2) ↪ Fin m) (input : Fin (142081+2) ↪ Fin T)
