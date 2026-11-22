@@ -51,15 +51,17 @@ def PackedBorrowedSweep [M8.Machine.Net] {T Q : ℕ} {U : Type} {P : Option (Fin
     let blocks := (prime^w)^112*B
     let V := (prime^w)^16*(blocks*prime^(64*(w*64))*K)
     0 < V → ∀ shared : Stacks (142081+2) prime, ∀ seed : (j : Option (Fin 32 × Fin 5)) → Stacks (tapes j) prime,
-    ∃ initial : Stacks T prime, embStk fan initial = shared ∧ ∀ price : Fin 32 × Fin 5 → ℝ,
+    ∃ initial : Stacks T prime, embStk fan initial = shared ∧ ∀ (coeff : Fin 32 × Fin 5 → ℝ) (childTime : ℕ → ℕ),
+    let children := fun p => ((List.range' (stageChildStart n+runChildStart p) Geometry.Moves.localPaid.length).map childTime).sum
     (∀ p, ∃ call, ∀ (x : Fin 142081 → Fin V → ZMod 2) u D, HelperFan (ports (some p)) x D →
       (∀ i, (∀ h, ports (some p) h ≠ i) → D.L i = (seed (some p)).L i ∧ D.R i = (seed (some p)).R i) →
-      ∃ z F m y, Exec (body (some p)) call (mk u D) m (mk z F) ∧ (m : ℝ) ≤ price p ∧
+      ∃ z F m y, Exec (body (some p)) call (mk u D) m (mk z F) ∧ (m : ℝ) ≤ coeff p*V*((max 1 w : ℕ) : ℝ)^M8.Machine.BudgetBound.tau + children p ∧
         z.user = u.user ∧ HelperFan (ports (some p)) y F ∧ BorrowedStep n w blocks K p x y) →
     ∃ code, ∀ x u S, HelperFan fan x S →
       (∀ i, (∀ h, fan h ≠ i) → S.L i = initial.L i ∧ S.R i = initial.R i) →
       ∃ z F t out, Exec host code (mk u S) t (mk z F) ∧
-        (t : ℝ) ≤ C*((V : ℝ)*((max 1 w : ℕ) : ℝ)^M8.Machine.BudgetBound.tau)+(stageRuns.map price).sum ∧
+        (t : ℝ) ≤ (C+(stageRuns.map coeff).sum)*((V : ℝ)*((max 1 w : ℕ) : ℝ)^M8.Machine.BudgetBound.tau) +
+          ((List.range' (stageChildStart n) (stageRuns.flatMap (fun _ => Geometry.Moves.localPaid)).length).map childTime).sum ∧
         z.user = u.user ∧ HelperFan fan out F ∧
         RestoredBorrowedStage n w B K x out
 
@@ -93,7 +95,9 @@ theorem packedBorrowedSweep_host [M8.Machine.Net] (n : Fin 9) :
   let initialAt : (j : J) → Stacks (size j) prime := Option.rec (motive := fun j => Stacks (size j) prime) lastSeed localSeed
   obtain ⟨initial,view,assemble⟩ := layout shared initialAt
   refine ⟨initial,view,?_⟩
-  intro price calls
+  intro coeff childTime children calls
+  let localCost := fun p => coeff p*V*((max 1 w : ℕ) : ℝ)^M8.Machine.BudgetBound.tau
+  let price := fun p => localCost p + (children p : ℝ)
   let volumeTime := (V : ℝ)*((max 1 w : ℕ) : ℝ)^M8.Machine.BudgetBound.tau
   let charge : J → ℝ := Option.rec (restoreCost*volumeTime) (fun p => cost p*volumeTime+price p)
   obtain ⟨code,execute⟩ := assemble (w := w) (B := B) (K := K) worker charge (by
@@ -109,8 +113,17 @@ theorem packedBorrowedSweep_host [M8.Machine.Net] (n : Fin 9) :
   refine ⟨z,F,t,out,exec,?_,user,done,restoredBorrowedStage_of_trace trace last⟩
   change (t : ℝ) ≤ (stageRuns.map (fun p => cost p*volumeTime+price p)).sum + restoreCost*volumeTime at paid
   rw [List.sum_map_add,List.sum_map_mul_right] at paid
+  have total := scheduledChildBill (fun _ => Geometry.Moves.localPaid) childTime stageRuns stageRuns_nodup (stageChildStart n)
+  change (stageRuns.map children).sum = _ at total
+  have castSum (ls : List (Fin 32 × Fin 5)) :
+      (ls.map fun p => (children p : ℝ)).sum = ((ls.map children).sum : ℕ) := by
+    induction ls with
+    | nil => simp
+    | cons p ls ih => simp only [List.map_cons,List.sum_cons,Nat.cast_add,ih]
+  simp only [price,List.sum_map_add,castSum,total] at paid
   dsimp only [volumeTime] at paid
-  rw [add_mul]
+  simp only [localCost,List.sum_map_mul_right] at paid
+  rw [add_mul,add_mul]
   linarith only [paid]
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode

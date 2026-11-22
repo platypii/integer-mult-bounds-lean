@@ -460,6 +460,84 @@ structure InvocationBanks (mT cT : ℕ) where
   worker : Fin cT ↪ Fin scatterTapes
   outer : (b : Bool) → Fin (Bool.rec (motive := fun _ => ℕ) mT scatterTapes b) ↪ Fin tapes
 
+/-- Uniform local charge for a MOVE or COPY worker, including its leaf
+exchange at the full 64-atom width. -/
+theorem borrowedWorkerCost [M8.Machine.Net] (base swaps leaf fixed : ℕ) :
+    ∃ C : ℝ, ∀ w V : ℕ, 0 < V →
+      (((base+swaps*swapVolumeRate w)*V + leaf*LeafCore.coreCost V ((w+1)*64)+fixed : ℕ) : ℝ) ≤
+        C*(V*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau) := by
+  let rate := 3808275 + LeafCore.C
+  let factor := (64 : ℝ)^M8.Machine.BudgetBound.tau
+  refine ⟨base+swaps*rate+leaf * |LeafCore.C| * factor+fixed,?_⟩
+  intro w V pos
+  let power := ((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau
+  have one : 1 ≤ power := Real.one_le_rpow (by exact_mod_cast Nat.le_add_left 1 w)
+    M8.Machine.BudgetBound.exponent_range.1.le
+  have size : (1 : ℝ) ≤ V := by exact_mod_cast pos
+  have cores := RevBudget.coreCost_le V ((w+1)*64) (L := power*factor) (by
+    rw [max_eq_right (by omega : 1 ≤ (w+1)*64),Nat.cast_mul,Real.mul_rpow (by positivity) (by positivity)]
+    rfl)
+  have swapsBound := mul_le_mul_of_nonneg_right
+    (mul_le_mul_of_nonneg_left (swapVolumeRate_le w) (Nat.cast_nonneg swaps)) (Nat.cast_nonneg V)
+  have leafBound := mul_le_mul_of_nonneg_left cores (Nat.cast_nonneg leaf)
+  have baseBound := mul_le_mul_of_nonneg_left one (mul_nonneg (Nat.cast_nonneg base) (Nat.cast_nonneg V))
+  have fixedBound := mul_le_mul_of_nonneg_left (one_le_mul_of_one_le_of_one_le size one) (Nat.cast_nonneg fixed)
+  change _ ≤ (_+_ * rate+_ * |LeafCore.C| * factor+_)*(V*power)
+  change _ ≤ ((swaps : ℝ)*(rate*power))*V at swapsBound
+  push_cast
+  nlinarith only [swapsBound,leafBound,baseBound,fixedBound]
+
+private theorem borrowedFamilyCost [M8.Machine.Net] {k : ℕ} (base swaps leaf fixed : Fin k → ℕ) :
+    ∃ C : ℝ, ∀ w V : ℕ, 0 < V →
+      ((List.ofFn (fun i => (base i+swaps i*swapVolumeRate w)*V +
+        leaf i*LeafCore.coreCost V ((w+1)*64)+fixed i)).sum : ℝ) ≤
+        C*(V*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau) := by
+  choose coeff bound using fun i => borrowedWorkerCost (base i) (swaps i) (leaf i) (fixed i)
+  refine ⟨∑ i, coeff i,?_⟩
+  intro w V pos
+  rw [List.sum_ofFn,Nat.cast_sum,Finset.sum_mul]
+  exact Finset.sum_le_sum (fun i _ => bound i w V pos)
+
+/-- All nonrecursive work of one scheduled invocation fits a single
+width-independent coefficient times the stage volume and width power. -/
+theorem borrowedInvocationCost [M8.Machine.Net] {k l : ℕ}
+    (base swaps : Fin k → ℕ) (copyBase copySwaps leaf fixed : Fin l → ℕ) :
+    ∃ C : ℝ, ∀ start w V : ℕ, 0 < V →
+    let work := fun j => if h : j-start < k then (base ⟨j-start,h⟩+swaps ⟨j-start,h⟩*swapVolumeRate w)*V else 0
+    let copyWork := fun j => (copyBase j+copySwaps j*swapVolumeRate w)*V + leaf j*LeafCore.coreCost V ((w+1)*64)+fixed j
+    ((((sectionD++sectionA++(sectionB++sectionC)).map (fun g => 76*g.toCircuit.terms.length*V*(142081+7)+6)).sum +
+      ((List.range' start k).map work).sum + (List.ofFn copyWork).sum + 3 : ℕ) : ℝ) ≤
+        C*(V*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau) := by
+  let gates := sectionD++sectionA++(sectionB++sectionC)
+  let scan := fun (g : RawGate) => 76*g.toCircuit.terms.length*(142081+7)
+  obtain ⟨G,gateBound⟩ := borrowedWorkerCost (gates.map scan).sum 0 0 (6*gates.length+3)
+  obtain ⟨M,moveBound⟩ := borrowedFamilyCost base swaps (fun _ => 0) (fun _ => 0)
+  obtain ⟨L,copyBound⟩ := borrowedFamilyCost copyBase copySwaps leaf fixed
+  refine ⟨G+M+L,?_⟩
+  intro start w V pos work copyWork
+  have aligned : (List.range' start k).map work =
+      List.ofFn (fun i : Fin k => (base i+swaps i*swapVolumeRate w)*V) := by
+    apply List.ext_getElem
+    · simp
+    · intro j hj hk
+      have lt : j < k := by simpa using hk
+      simp [work,List.getElem_range',lt]
+  have scans (gs : List RawGate) : (gs.map (fun g => 76*g.toCircuit.terms.length*V*(142081+7)+6)).sum =
+      (gs.map scan).sum*V+6*gs.length := by
+    induction gs with
+    | nil => simp
+    | cons g gs ih => simp only [List.map_cons,List.sum_cons,List.length_cons,ih,scan]; ring
+  have gb := gateBound w V pos
+  have mb := moveBound w V pos
+  have cb := copyBound w V pos
+  simp only [zero_mul,add_zero] at gb mb
+  rw [aligned,scans]
+  change _ ≤ (G+M+L)*_
+  push_cast at gb mb cb ⊢
+  dsimp only [copyWork] at *
+  dsimp only [gates] at gb
+  linarith only [gb,mb,cb]
+
 def ScheduledBorrowedRun [M8.Machine.Net]
     (n : Fin 9) (p : Fin 32 × Fin 5) (C : ℝ) (edges : List (ℕ × ℕ))
     (moveChild : (Fin edges.length) → Fin nodeChildren5.length) (copyChild : (Fin Copy.lifecycles.length) → Fin nodeChildren5.length)
@@ -469,7 +547,6 @@ def ScheduledBorrowedRun [M8.Machine.Net]
     (chartStates : ℕ → ℕ → ℕ → ℕ) {P U : Type} {Q : ℕ}
     (mb : ∀ i, P → Pr P (mt i) Q prime U) (mf : (Fin edges.length) → P)
     (cb : ∀ j, P → Pr P (ct j) Q prime U) (cf : (Fin Copy.lifecycles.length) → P)
-    (base swaps : (Fin edges.length) → ℕ) (copyBase copySwaps leaf fixed : (Fin Copy.lifecycles.length) → ℕ)
     (node : Descriptor) (w B rows : ℕ) : Prop :=
     let M := prime^(w+1)
     let K := node.beforeRows*rows*node.between*node.afterD
@@ -494,15 +571,11 @@ def ScheduledBorrowedRun [M8.Machine.Net]
       (fun f : (Fin Copy.lifecycles.length) × P => embProg banks.worker id (embProg (cBank f.1) (fun g => (f.1,g)) (cb f.1 f.2)))
     let body := fun f : (b : Bool) × proc b => embProg (banks.outer f.1) (Sigma.mk f.1) (localBody f.1 f.2)
     let start := stageChildStart n + runChildStart p
-    let work := fun j => if h : j-start < edges.length then (base ⟨j-start,h⟩+swaps ⟨j-start,h⟩*swapVolumeRate w)*V else 0
-    let copyWork := fun j => (copyBase j+copySwaps j*swapVolumeRate w)*V + leaf j*LeafCore.coreCost V ((w+1)*64)+fixed j
     ∃ code, ∀ data u S, HelperFan banks.fan data S →
       (∀ k, (∀ h, banks.fan h ≠ k) → S.L k = initial.L k ∧ S.R k = initial.R k) →
       ∃ z F t out, Exec body code (mk u S) t (mk z F) ∧
         (t : ℝ) ≤ C*V*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau +
-          (((sectionD++sectionA++(sectionB++sectionC)).map (fun g => 76*g.toCircuit.terms.length*V*(142081+7)+6)).sum +
-            ((List.range' start edges.length).map work).sum + (List.ofFn copyWork).sum +
-            ((List.range' start Geometry.Moves.localPaid.length).map childTime).sum + 3 : ℕ) ∧
+          ((List.range' start Geometry.Moves.localPaid.length).map childTime).sum ∧
         z.user = u.user ∧ HelperFan banks.fan out F ∧ BorrowedStep n (w+1) blocks K p data out
 
 /-- Allocate the scheduled scalar and COPY workers for one invocation at a parent node. -/
@@ -512,27 +585,28 @@ theorem scheduledBorrowedInvocation_host [M8.Machine.Net] (n : Fin 9) (p : Fin 3
     let J := Fin Copy.lifecycles.length
     let moveChild := fun i : I => phaseChildPositions.choose (n,p,i)
     let copyChild := fun j : J => copyChildPosition (n,p,j)
-    ∃ (C : ℝ) (mt : I → ℕ) (ct : J → ℕ)
+    ∃ (mt : I → ℕ) (ct : J → ℕ)
       (mr : ∀ i, Fin (rowSwapBlock.tapes+35) ↪ Fin (mt i))
       (cr : ∀ j, Fin (rowSwapBlock.tapes+35) ↪ Fin (ct j))
       (mT cT : ℕ) (mBank : ∀ i, Fin (mt i) ↪ Fin mT) (cBank : ∀ j, Fin (ct j) ↪ Fin cT) (states : ℕ) (chartStates : ℕ → ℕ → ℕ → ℕ),
     ∀ {P U : Type} {Q : ℕ}, states ≤ Q →
     ∀ (mb : ∀ i, P → Pr P (mt i) Q prime U) (mf : I → P)
       (cb : ∀ j, P → Pr P (ct j) Q prime U) (cf : J → P),
-    ∃ (base swaps : I → ℕ) (copyBase copySwaps leaf fixed : J → ℕ),
+    ∃ C : ℝ,
     ∀ (node : Descriptor) (w B rows : ℕ),
     node.width = 64*(w+1) → node.rows = 142080*rows → node.beforeH = B*prime^(64*((w+1)*64)) →
     ScheduledBorrowedRun n p C edges moveChild copyChild mr cr mBank cBank chartStates mb mf cb cf
-      base swaps copyBase copySwaps leaf fixed node w B rows := by
+      node w B rows := by
   classical
   intro edges I J moveChild copyChild
   obtain ⟨mt,mT,mq,mr,mfan,mBank,phases⟩ := alignedPhases_host n p
   obtain ⟨C,ct,cr,cT,cq,cBank,chartStates,scatters⟩ := borrowedScatterSchedule_host n p
-  refine ⟨C,mt,ct,mr,cr,mT,cT,mBank,cBank,max mq cq,chartStates,?_⟩
+  refine ⟨mt,ct,mr,cr,mT,cT,mBank,cBank,max mq cq,chartStates,?_⟩
   intro P U Q cap mb mf cb cf
   obtain ⟨base,swaps,mrun⟩ := phases ((le_max_left ..).trans cap) mb mf
   obtain ⟨copyBase,copySwaps,leaf,fixed,crun⟩ := scatters ((le_max_right ..).trans cap) cb cf
-  refine ⟨base,swaps,copyBase,copySwaps,leaf,fixed,?_⟩
+  obtain ⟨D,localBill⟩ := borrowedInvocationCost base swaps copyBase copySwaps leaf fixed
+  refine ⟨C+D,?_⟩
   intro node w B rows width split label
   unfold ScheduledBorrowedRun
   intro M K blocks W V pos fits md cd record copyRecord
@@ -548,7 +622,9 @@ theorem scheduledBorrowedInvocation_host [M8.Machine.Net] (n : Fin 9) (p : Fin 3
   let seeds : (b : Bool) → Stacks (tapes b) prime := Bool.rec (motive := fun b => Stacks (tapes b) prime) moveSeed copySeed
   obtain ⟨initial,rep,join⟩ := prepare shared seeds
   refine ⟨initial,rep,?_⟩
-  intro proc localBody body start work copyWork
+  intro proc localBody body start
+  let work := fun j => if h : j-start < edges.length then (base ⟨j-start,h⟩+swaps ⟨j-start,h⟩*swapVolumeRate w)*V else 0
+  let copyWork := fun j => (copyBase j+copySwaps j*swapVolumeRate w)*V + leaf j*LeafCore.coreCost V ((w+1)*64)+fixed j
   let budget := fun j => childTime (copyChild j).val
   obtain ⟨copy,copyStep⟩ := scatter budget copyRec
   choose phase phaseStep using ms childTime moveRec
@@ -566,12 +642,15 @@ theorem scheduledBorrowedInvocation_host [M8.Machine.Net] (n : Fin 9) (p : Fin 3
   intro data u S live fresh
   obtain ⟨z,F,t,out,exec,paid,user,done,action⟩ := execute data u S live fresh
   refine ⟨z,F,t,out,exec,?_,user,done,action⟩
+  have overhead := localBill start w V (Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) pos)
+  dsimp only at overhead
+  change (((sectionD++sectionA++(sectionB++sectionC)).map (fun g => 76*g.toCircuit.terms.length*V*(142081+7)+6)).sum + ((List.range' start edges.length).map work).sum + (List.ofFn copyWork).sum + 3 : ℕ) ≤ (_ : ℝ) at overhead
   have bills := invocationChildBill n p work childTime
   dsimp only at bills
   simp only [price,gates,current,offset,scatterPrice,start,edges,Geometry.Moves.phaseEdges,List.filter_append,
-    indexedBill_append,List.map_append,List.sum_append,Bool.false_eq_true,ite_false,ite_true,Nat.add_zero] at bills paid ⊢
+    indexedBill_append,List.map_append,List.sum_append,Bool.false_eq_true,ite_false,ite_true,Nat.add_zero] at bills paid overhead ⊢
   dsimp only [budget,copyChild] at paid
-  push_cast at paid ⊢
+  push_cast at paid overhead ⊢
   have realBills := congrArg (Nat.cast : ℕ → ℝ) bills
   push_cast at realBills
   linarith
