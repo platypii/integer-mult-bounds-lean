@@ -77,12 +77,17 @@ theorem helperLabelProgram_exec {w L W : ℕ} {v : Descriptor}
     · intro j hj
       exact ⟨(other j hj).1.trans (keep j hj).1,(other j hj).2.trans (keep j hj).2⟩
 
+/-- The slot-change coefficient depends only on its adjacent-swap schedule. -/
+noncomputable def helperSlotRate (src dst : Option (Fin 56)) : ℝ :=
+  let A : ℝ := (LeafCore.small+5 : ℕ)*|LeafCore.C|+8+LeafCore.small*(16+8*|LeafCore.C|)
+  (helperLabelPacking src dst).choose.length*(110+A)+1
+
 /-- Choose a single hosted program and coefficient from the slot change. Both work
 for every positive caller volume, including the first use of a pending helper. -/
 theorem helperLabelSlot_exec (src dst : Option (Fin 56)) (capacity : columnCapacity ≤ Q)
     (body : P → Pr P (n+LeafCore.small) Q prime U) (headers : ℕ → Fin 6 → Fin n) (owner : Fin n)
     (separate : ∀ i j, headers i j ≠ owner) :
-    ∃ (code : Pr P (n+LeafCore.small) Q prime U) (C : ℝ), ∀ {w L W : ℕ} {v : Descriptor}
+    ∃ (code : Pr P (n+LeafCore.small) Q prime U), ∀ {w L W : ℕ} {v : Descriptor}
       (size : volume prime v = (prime^w)^16*(L*((prime^w)^112*W))) (positive : 0 < volume prime v)
       (word : Fin (volume prime v) → ZMod 2) (u : HS (n+LeafCore.small) Q prime U) (S : Stacks (n+LeafCore.small) prime),
       (∀ i : Fin 127, ∀ j, S.R ((headers i.val j).castAdd LeafCore.small) =
@@ -90,16 +95,17 @@ theorem helperLabelSlot_exec (src dst : Option (Fin 56)) (capacity : columnCapac
       RecordPayload (owner.castAdd LeafCore.small) (fun _ => blank) 0 word S →
       (∀ j : Fin LeafCore.small, S.L (j.natAdd n) = [] ∧ S.R (j.natAdd n) = []) →
       ∃ z F k, ∃ out : Fin (volume prime v) → ZMod 2, z.user = u.user ∧ Exec body code (mk u S) k (mk z F) ∧
-        (k : ℝ) ≤ C*((volume prime v : ℝ)*((max 1 w : ℕ) : ℝ)^M8.Machine.BudgetBound.tau) ∧
+        (k : ℝ) ≤ helperSlotRate src dst *((volume prime v : ℝ)*((max 1 w : ℕ) : ℝ)^M8.Machine.BudgetBound.tau) ∧
         RecordPayload (owner.castAdd LeafCore.small) (fun _ => blank) 0 out F ∧
         (∀ c s label j, ext out (helperFieldCell (helperSlotField c dst w s) label j) =
           ext word (helperFieldCell (helperSlotField c src w s) (label : Fin L) (j : Fin W))) ∧
         (∀ j : Fin n, j ≠ owner → F.L (j.castAdd LeafCore.small) = S.L (j.castAdd LeafCore.small) ∧
           F.R (j.castAdd LeafCore.small) = S.R (j.castAdd LeafCore.small)) ∧
         ∀ j : Fin LeafCore.small, F.L (j.natAdd n) = [] ∧ F.R (j.natAdd n) = [] := by
-  obtain ⟨is,fits,reads⟩ := helperLabelPacking src dst
+  let is := (helperLabelPacking src dst).choose
+  obtain ⟨fits,reads⟩ := (helperLabelPacking src dst).choose_spec
   let A : ℝ := (LeafCore.small+5 : ℕ)*|LeafCore.C|+8+LeafCore.small*(16+8*|LeafCore.C|)
-  refine ⟨helperLabelProgram capacity headers owner is,is.length*(110+A)+1,?_⟩
+  refine ⟨helperLabelProgram capacity headers owner is,?_⟩
   intro w L W v size positive word u S stored payload free
   have valid (i) (h : i ∈ is) : i < 127 := by have := fits i h; omega
   obtain ⟨z,F,k,user,run,cost,out,keep,clean⟩ := helperLabelProgram_exec size positive capacity body
@@ -125,7 +131,7 @@ theorem helperLabelSlot_exec (src dst : Option (Fin 56)) (capacity : columnCapac
     (fun x hx => by obtain ⟨i,_,rfl⟩ := List.mem_map.mp hx; exact each i)
   simp only [List.length_map,nsmul_eq_mul] at total
   change (k : ℝ) ≤ (is.map bill).sum+1 at cost
-  change (k : ℝ) ≤ (_+1)*unit
+  change (k : ℝ) ≤ (is.length*(110+A)+1)*unit
   rw [add_mul,one_mul,mul_assoc]
   exact cost.trans (add_le_add total (vol.trans base))
 

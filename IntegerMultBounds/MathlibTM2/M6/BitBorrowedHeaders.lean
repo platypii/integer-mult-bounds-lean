@@ -99,4 +99,229 @@ theorem prepareBorrowedHeaders_exec {T Q : ℕ} {P U : Type} (body : P → Pr P 
     change T+j.val = k.val at h
     omega
 
+/-- Divide the parent row header once for all nine stages. The divider
+returns its private tapes empty and the other five headers unchanged. -/
+theorem prepareRoleRows_hoare (node : RecursiveInterchangeLayout.Descriptor) (rows : ℕ)
+    (split : node.rows = 142080*rows) (live : 0 < rows) :
+    let role := { node with rows := rows }
+    HoareTime (RecursiveRowsNodeHeaders.program (q := prime) 142080)
+      (fun S => S = RecursiveChildQuotients.input (Routines.hdr node))
+      (fun S => S = RecursiveChildQuotients.input (Routines.hdr role))
+      ((RecursiveRowsQuotient.constant 142080+30)*node.rows) := by
+  intro role
+  let hs := Routines.hdr node
+  obtain ⟨rs,canonical,value,len,run⟩ :=
+    RecursiveRowsNodeHeaders.constructs_hoare (q := prime) 142080 (by decide) hs
+  have words := Routines.hdr_headers node
+  have rowValue : Counter.value (hs 1) = node.rows := words.1 1
+  have reduced := RecursiveRowsNodeHeaders.headers_correct node hs rs 142080 words canonical
+    (value.trans (congrArg (· /142080) rowValue))
+  have desc : RecursiveInterchangeLayout.role node 142080 = role := by
+    simp [RecursiveInterchangeLayout.role,role,split]
+  rw [desc] at reduced
+  rw [Routines.hdr_eq reduced] at run
+  exact run.consequence (fun _ h => h) (fun _ h => h)
+    (RecursiveRowsNodeHeaders.cost_linear _ _ _ _ (by omega) (words.2 1) rowValue.le len)
+
+/-- Install the reduced row header on a placed divider bank. Owner tapes
+and the registers used by the archive builder can lie outside that bank. -/
+theorem prepareRoleRows_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U)
+    (slots : Fin 38 ↪ Fin T) :
+    let machine := RecursiveRowsNodeHeaders.program (q := prime) 142080
+    let positive := Nat.zero_lt_of_lt machine.start.isLt
+    ∀ (capacity : _ ≤ Q) (node : RecursiveInterchangeLayout.Descriptor) (rows : ℕ),
+    node.rows = 142080*rows → 0 < rows →
+    ∀ (u : HS T Q prime U) (S : Stacks T prime),
+    RepT (RecursiveChildQuotients.input (Routines.hdr node)) (embStk slots S).L (embStk slots S).R →
+    ∃ z F t, z.user = u.user ∧ t ≤ 1+((RecursiveRowsQuotient.constant 142080+30)*node.rows*43+6) ∧
+      Exec body (statePlacedNormalized slots capacity positive Empty.elim (foreign machine))
+        (mk u S) t (mk z F) ∧
+      RepT (RecursiveChildQuotients.input (Routines.hdr { node with rows := rows }))
+        (embStk slots F).L (embStk slots F).R ∧
+      ∀ j, (∀ i, slots i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  intro machine positive capacity node rows split live u S rep
+  obtain ⟨v,D,_,rfl,next,user,_,_,_,m,time,run⟩ := foreign_exec (P := Empty) Empty.elim
+    machine (prepareRoleRows_hoare node rows split live) (stateLiftDown positive (embDn slots u))
+    (embStk slots S) _ rfl rep
+  obtain ⟨z,_,same,placed⟩ := statePlaced_exec_normalized slots slots.injective capacity positive
+    Empty.elim (body' := body) (fun e => nomatch e) u S run
+  exact ⟨z,_,_,same.trans user,Nat.add_le_add_left time 1,placed,
+    by rwa [embStk_ovr slots.injective],fun j off => embOvr_off _ _ off⟩
+
+/-- The six physical header ports returned by the divider satisfy the
+read condition of the descriptor copying routine, including its end markers. -/
+theorem roleRows_reads {T : ℕ} (slots : Fin 38 ↪ Fin T)
+    (hs : Fin 6 → List Bool) (S : Stacks T prime)
+    (rep : RepT (RecursiveChildQuotients.input hs) (embStk slots S).L (embStk slots S).R)
+    (i : Fin 6) :
+    let src := slots (⟨3+i.val,by omega⟩ : Fin 38)
+    ∀ z, readAt blank (S.L src) (S.R src) (z-1) = RadixZeroFill.encodedBinary (hs i) z := by
+  intro src z
+  have h := (rep (⟨3+i.val,by omega⟩ : Fin 38) z).symm
+  fin_cases i <;> exact h.trans (congrFun (BinaryDescriptorStackRoundtrip.descriptor_encoded _) z)
+
+/-- Divide the row count and materialize the six canonical role words in
+the source registers of the header archive. -/
+theorem loadRoleHeaders_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U)
+    (slots : Fin 38 ↪ Fin T) (dst : Fin 6 ↪ Fin T) (tmp : Fin T)
+    (apart : ∀ i j, slots i ≠ dst j) (scratch : ∀ i, slots i ≠ tmp)
+    (fresh : ∀ j, tmp ≠ dst j) :
+    let machine := RecursiveRowsNodeHeaders.program (q := prime) 142080
+    let positive := Nat.zero_lt_of_lt machine.start.isLt
+    let src := fun i : Fin 6 => slots (⟨3+i.val,by omega⟩ : Fin 38)
+    ∀ (capacity : _ ≤ Q) (node : RecursiveInterchangeLayout.Descriptor) (rows : ℕ),
+    node.rows = 142080*rows → 0 < rows →
+    let hs := Routines.hdr { node with rows := rows }
+    ∀ (u : HS T Q prime U) (S : Stacks T prime),
+    RepT (RecursiveChildQuotients.input (Routines.hdr node)) (embStk slots S).L (embStk slots S).R →
+    S.L tmp = [] → S.R tmp = [] → (∀ i, S.R (dst i) = []) →
+    ∃ z F t, z.user = u.user ∧
+      Exec body (.seq (statePlacedNormalized slots capacity positive Empty.elim (foreign machine))
+        (loadDimensions src dst tmp (List.finRange 6))) (mk u S) t (mk z F) ∧
+      t ≤ (RecursiveRowsQuotient.constant 142080+30)*node.rows*43+
+        ((List.finRange 6).map (fun i => 8*(hs i).length+8)).sum+8 ∧
+      (∀ i, F.R (dst i) = (hs i).map bitSymbol) ∧
+      ∀ j, (∀ i, slots i ≠ j) → (∀ i, dst i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  intro machine positive src capacity node rows split live hs u S rep left right empty
+  obtain ⟨v,D,m,user,price,divide,words,off⟩ :=
+    prepareRoleRows_exec body slots capacity node rows split live u S rep
+  have ports (i : Fin 6) : [src i,tmp,dst i].Nodup := by
+    simp [src,scratch,apart,fresh]
+  obtain ⟨z,F,same,load,keep,filled,frame⟩ := loadDimensions_exec body src dst tmp hs
+    (fun i j => apart _ _) ports _ (List.nodup_finRange 6) v D (roleRows_reads slots hs D words)
+    ⟨(off tmp scratch).1.trans left,(off tmp scratch).2.trans right⟩
+    (fun i _ => (off _ (fun k => apart k i)).2.trans (empty i))
+  refine ⟨z,F,_,same.trans user,Exec.seq divide load,by omega,fun i => filled i (List.mem_finRange i),?_⟩
+  intro j outside untouched
+  exact ⟨(congrFun keep j).trans (off j outside).1,
+    (frame j (fun i _ => untouched i)).trans (off j outside).2⟩
+
+/-- With the row register reduced to one role's row count, the archive
+contains precisely the trailing dimensions used by the scheduled packer. -/
+theorem prepareRoleHeaders_exec {T Q : ℕ} {P U : Type}
+    (body : P → Pr P (T+273) Q prime U) (hdr : Fin 6 → Fin T) (regs : Fin 35 ↪ Fin T)
+    (node : RecursiveInterchangeLayout.Descriptor) (w B rows : ℕ)
+    (label : node.beforeH = B*prime^(64*((w+1)*64))) :
+    let role := { node with rows := rows }
+    let K := node.beforeRows*rows*node.between*node.afterD
+    let W := B*prime^(64*((w+1)*64))*K
+    let M := prime^(w+1)
+    ∀ (_ : role.Positive) (u : HS (T+273) Q prime U) (S : Stacks (T+273) prime),
+    let read := fun (k : Fin T) => S.R (k.castAdd 273)
+    read (regs 2) = binSyms M.size M → read (regs 28) = binSyms 1 1 →
+    (read (regs 33)).length = w →
+    (∀ i, read (hdr i) = (M8.RevMachine.Routines.hdr role i).map bitSymbol) →
+    (∀ j : Fin 273, S.L (j.natAdd T) = [] ∧ S.R (j.natAdd T) = []) →
+    ∃ z F t, z.user = u.user ∧
+      Exec body (.seq (prepareHelperSeeds hdr regs) (helperHeaderSweep
+        (fun i => (borrowedArchiveBank i).trans (parentArchive T)) (List.finRange 127)))
+        (mk u S) t (mk z F) ∧
+      t ≤ 152402000*(M^16*((M^112*B)*prime^(64*((w+1)*64))*K)) ∧
+      (∀ i j, F.R (borrowedHeaders T i j) =
+        (M8.RevMachine.Routines.hdr (helperAdjacentView (w+1) 1 W i) j).map bitSymbol) ∧
+      F.L = S.L ∧ ∀ k : Fin T, F.R (k.castAdd 273) = read k := by
+  intro role K W M pos u S read base unit clock words free
+  obtain ⟨z,F,t,user,run,price,ready,left,keep⟩ :=
+    prepareBorrowedHeaders_exec body hdr regs role w pos u S base unit clock words free
+  have suffix : role.beforeH*K = W := congrArg (· * K) label
+  refine ⟨z,F,t,user,run,?_,?_,left,keep⟩
+  · change t ≤ 152402000*(M^128*(role.beforeH*K)) at price
+    rw [suffix] at price
+    convert price using 1
+    dsimp [W]
+    ring
+  · simpa only [← suffix] using ready
+
+private theorem archiveCost_le (C rows V copies m n : ℕ) (live : 0 < V)
+    (rowBound : rows ≤ V) (headerBound : copies ≤ 6*(24*V))
+    (load : m ≤ C*(142080*rows)*43+copies+8) (build : n ≤ 152402000*V) :
+    m+n ≤ (C*142080*43+152402152)*V := by
+  have divCost := Nat.mul_le_mul_left (C*142080*43) rowBound
+  rw [show C*(142080*rows)*43 = C*142080*43*rows by ring] at load
+  rw [Nat.add_mul]
+  omega
+
+/-- Prepare the entire exchange archive on the host from full parent headers. -/
+theorem parentRoleArchive_exec {P U : Type} {T Q : ℕ} (body : P → Pr P (T+273) Q prime U)
+    (slots : Fin 38 ↪ Fin T) (hdr : Fin 6 ↪ Fin T) (tmp : Fin T) (regs : Fin 35 ↪ Fin T)
+    (apart : ∀ i j, slots i ≠ hdr j) (scratch : ∀ i, slots i ≠ tmp) (fresh : ∀ j, tmp ≠ hdr j)
+    (regSlots : ∀ i j, slots i ≠ regs j) (regHdr : ∀ i j, hdr i ≠ regs j)
+    (capacity : (fun {q : ℕ} (_ : Program 38 q prime) => q) (RecursiveRowsNodeHeaders.program 142080) ≤ Q)
+    : ∃ prog : Pr P (T+273) Q prime U, ∀ (node : RecursiveInterchangeLayout.Descriptor) (w B rows : ℕ),
+    node.width = 64*(w+1) → node.rows = 142080*rows → node.beforeH = B*prime^(64*((w+1)*64)) →
+    let role := { node with rows := rows }
+    let K := node.beforeRows*rows*node.between*node.afterD
+    let W := B*prime^(64*((w+1)*64))*K
+    let M := prime^(w+1)
+    ∀ (_ : role.Positive) (u : HS (T+273) Q prime U) (S : Stacks (T+273) prime),
+    let bank := Fin.castAddEmb 273 (n := T)
+    let read := fun i => S.R (bank i)
+    RepT (RecursiveChildQuotients.input (Routines.hdr node)) (embStk (slots.trans bank) S).L
+      (embStk (slots.trans bank) S).R →
+    S.L (bank tmp) = [] → read tmp = [] → (∀ i, read (hdr i) = []) →
+    read (regs 2) = binSyms M.size M → read (regs 28) = binSyms 1 1 →
+    (read (regs 33)).length = w →
+    (∀ j : Fin 273, S.L (j.natAdd T) = [] ∧ S.R (j.natAdd T) = []) →
+    ∃ z F t, z.user = u.user ∧ Exec body prog (mk u S) t (mk z F) ∧
+      t ≤ ((RecursiveRowsQuotient.constant 142080+30)*142080*43+152402152)*
+        (M^16*((M^112*B)*prime^(64*((w+1)*64))*K)) ∧
+      (∀ i j, F.R (borrowedHeaders T i j) =
+        (Routines.hdr (helperAdjacentView (w+1) 1 W i) j).map bitSymbol) ∧
+      ∀ k, (∀ i, slots i ≠ k) → (∀ i, hdr i ≠ k) →
+        F.L (bank k) = S.L (bank k) ∧ F.R (bank k) = read k := by
+  let bank := Fin.castAddEmb 273 (n := T)
+  have load := loadRoleHeaders_exec body (slots.trans bank) (hdr.trans bank) (bank tmp)
+    (fun i j => bank.injective.ne (apart i j)) (fun i => bank.injective.ne (scratch i))
+    (fun j => bank.injective.ne (fresh j)) capacity
+  let machine := RecursiveRowsNodeHeaders.program (q := prime) 142080
+  let src := fun i : Fin 6 => bank (slots (⟨3+i.val,by omega⟩ : Fin 38))
+  refine ⟨.seq (.seq (statePlacedNormalized (slots.trans bank) capacity
+    (Nat.zero_lt_of_lt machine.start.isLt) Empty.elim (foreign machine))
+    (loadDimensions src (hdr.trans bank) (bank tmp) (List.finRange 6)))
+    (.seq (prepareHelperSeeds hdr regs) (helperHeaderSweep
+      (fun i => (borrowedArchiveBank i).trans (parentArchive T)) (List.finRange 127))),?_⟩
+  intro node w B rows width split label role K W M pos u S _ read rep tl tr empty base unit clock free
+  obtain ⟨v,D,m,same,divide,price,filled,off⟩ := load node rows split pos.2.1 u S rep tl tr empty
+  have keep k (a : ∀ i, slots i ≠ k) (b : ∀ i, hdr i ≠ k) :=
+    off (bank k) (fun i => bank.injective.ne (a i)) (fun i => bank.injective.ne (b i))
+  have retained j := (keep (regs j) (fun i => regSlots i j) (fun i => regHdr i j)).2
+  have high (i : Fin T) (j : Fin 273) : bank i ≠ j.natAdd T := by
+    intro eq
+    have e := congrArg Fin.val eq
+    change i.val = T+j.val at e
+    omega
+  obtain ⟨z,F,n,user,archive,time,ready,left,right⟩ := prepareRoleHeaders_exec body hdr regs node w B rows
+    label pos v D ((retained 2).trans base) ((retained 28).trans unit)
+    ((congrArg List.length (retained 33)).trans clock) filled (fun j => by
+      obtain ⟨l,r⟩ := off _ (fun i => high (slots i) j) (fun i => high (hdr i) j)
+      exact ⟨l.trans (free j).1,r.trans (free j).2⟩)
+  let V := M^16*((M^112*B)*prime^(64*((w+1)*64))*K)
+  have vol : RecursiveInterchangeLayout.volume prime role = V := by
+    dsimp [RecursiveInterchangeLayout.volume,role,V,K,M]
+    rw [label,width,show 64*(w+1) = (w+1)*64 by omega,pow_mul]
+    ring
+  have value (i : Fin 6) := (RecursiveHeaderBounds.values_le_volume
+    Shared50ModularControl.prime_prime.two_le role pos i).trans_eq vol
+  have rowBound : rows ≤ V := value 1
+  have nonzero : 0 < V := lt_of_lt_of_le pos.2.1 rowBound
+  have bits (i : Fin 6) : (Routines.hdr role i).length ≤ V+1 := by
+    have h := GrowingCounterData.canonical_width _ ((Routines.hdr_headers role).2 i)
+    rw [(Routines.hdr_headers role).1 i] at h
+    exact h.trans (Nat.add_le_add_right ((Nat.log2_le_self _).trans (value i)) 1)
+  have sum (is : List (Fin 6)) :
+      (is.map (fun i => 8*(Routines.hdr role i).length+8)).sum ≤ is.length*(24*V) := by
+    induction is with
+    | nil => simp
+    | cons i is ih =>
+      simp only [List.map_cons,List.sum_cons,List.length_cons]
+      rw [Nat.succ_mul is.length]
+      have := bits i
+      omega
+  have copies := sum (List.finRange 6)
+  rw [List.length_finRange] at copies
+  rw [split] at price
+  refine ⟨z,F,_,user.trans same,Exec.seq divide archive,?_,ready,
+    fun k a b => ⟨(congrFun left _).trans (keep k a b).1,(right k).trans (keep k a b).2⟩⟩
+  exact archiveCost_le _ rows V _ m n nonzero rowBound copies price time
+
 end IntegerMultBounds.MathlibTM2.M6.BitNode

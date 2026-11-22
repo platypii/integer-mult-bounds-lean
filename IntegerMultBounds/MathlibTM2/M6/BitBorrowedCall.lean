@@ -74,11 +74,11 @@ open RecursiveInterchangeLayout (volume) in
 Their interpreter overhead is uniform in the width and does not involve a
 recursive call. -/
 theorem borrowedChart_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) (enter : Bool) :
-    ∃ C : ℝ, ∀ w B K : ℕ, 0 < w → 0 < B → 0 < K →
+    ∃ (C : ℝ) (states : ℕ), ∀ w B K : ℕ, 0 < w → 0 < B → 0 < K →
     let v := copyLabelLayout w B K
     let V := volume prime v
     ∃ stage : SharedBankStage.Stage _ 142081 prime (copyOwners (v := v)),
-      (∃ S : Stacks stage.tapes prime, ∀ j, (∀ i, stage.slots i ≠ j) → ∀ h, stage.metadata.tape j h =
+      stage.states = states ∧ (∃ S : Stacks stage.tapes prime, ∀ j, (∀ i, stage.slots i ≠ j) → ∀ h, stage.metadata.tape j h =
         readAt blank (S.L j) (S.R j) (h-stage.metadata.head j)) ∧
       (∀ x (i : Fin 661), let A := registerChart w n i.val
         Cover.LabelPermutation.Transport v B w (fun g => g*(if enter then A.transpose else A))
@@ -96,15 +96,15 @@ theorem borrowedChart_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) (e
           (mk u S) m (mk z F) ∧ (m : ℝ) ≤ C*V*(w : ℝ)^M8.Machine.BudgetBound.tau ∧
           z.user = u.user ∧ HelperFan fan (stage.transform data) F ∧
           ∀ j, (∀ i, bank i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
-  obtain ⟨coeff,tapes,build⟩ := borrowedRoute_fixed n p.1 p.2 enter
+  obtain ⟨coeff,tapes,states,build⟩ := borrowedRoute_fixed n p.1 p.2 enter
   let factor := tapes+5
   obtain ⟨C,bound⟩ := labelRoute_cost_bound ((coeff+661)*factor+6) (661*252*factor)
-  refine ⟨C,?_⟩
+  refine ⟨C,states,?_⟩
   intro w B K hw hb hk v V
-  obtain ⟨stage,count,initial,bill,reads,off⟩ := build w B K hw hb hk
+  obtain ⟨stage,count,stateEq,initial,bill,reads,off⟩ := build w B K hw hb hk
   obtain ⟨seed,repSeed⟩ := copyChartStacks v (M8.Stage2Machine.Straight.words (Cover.LabelSchedule.base v w)) 142081 stage.tapes
   rw [← initial] at repSeed
-  refine ⟨stage,⟨seed,?_⟩,reads,off,?_⟩
+  refine ⟨stage,stateEq,⟨seed,?_⟩,reads,off,?_⟩
   · intro j unused h
     have away : ¬∃ i, stage.slots i = j := fun ⟨i,eq⟩ => unused i eq
     have tape := congrArg (fun A : Tapes stage.tapes prime => A.tape j h) (stage.strip_input 0)
@@ -172,11 +172,11 @@ open M8.RevMachine Certificates.PR589 in
 /-- Surround a COPY schedule on the permanent bank with its entry and exit
 charts. The middle program's whole time allowance occurs once. -/
 theorem borrowedCopy_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) :
-    ∃ C : ℝ, ∀ w B K : ℕ, 0 < w → 0 < B → 0 < K →
+    ∃ (C : ℝ) (states : ℕ), ∀ w B K : ℕ, 0 < w → 0 < B → 0 < K →
     let v := copyLabelLayout w B K
     let V := volume prime v
     ∃ stages : Bool → SharedBankStage.Stage _ 142081 prime (copyOwners (v := v)),
-    (∀ k, ∃ S : Stacks (stages k).tapes prime, ∀ j, (∀ i, (stages k).slots i ≠ j) → ∀ h,
+    (∀ k, (stages k).states ≤ states) ∧ (∀ k, ∃ S : Stacks (stages k).tapes prime, ∀ j, (∀ i, (stages k).slots i ≠ j) → ∀ h,
       (stages k).metadata.tape j h = readAt blank (S.L j) (S.R j) (h-(stages k).metadata.head j)) ∧
     ∀ {P U : Type} {T Q : ℕ} (bank : ∀ k, Fin (stages k).tapes ↪ Fin T) (fan : Fin (142081+2) ↪ Fin T),
       (∀ k i, bank k ((stages k).slots i) = fan (i.castAdd 2)) →
@@ -196,11 +196,11 @@ theorem borrowedCopy_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) :
         (m : ℝ) ≤ C*V*(w : ℝ)^M8.Machine.BudgetBound.tau + price ∧ z.user = u.user ∧ HelperFan fan out F ∧
         (∀ g z, borrowedRead (B := B) (K := K) n p.1 p.2 g z out = borrowedScatter w (borrowedRead n p.1 p.2 g z data)) ∧
         ∀ k, k ≠ Fin.last 142080 → (∀ i, ownerTape n p.1 p.2 i ≠ k) → out k = data k := by
-  choose coeff build using borrowedChart_host n p
-  refine ⟨coeff false + coeff true,?_⟩
+  choose coeff qs build using borrowedChart_host n p
+  refine ⟨coeff false + coeff true,max (qs false) (qs true),?_⟩
   intro w B K hw hb hk v V
-  choose stages seed transport off run using fun k => build k w B K hw hb hk
-  refine ⟨stages,seed,?_⟩
+  choose stages stateEq seed transport off run using fun k => build k w B K hw hb hk
+  refine ⟨stages,fun k => by rw [stateEq]; cases k <;> simp,seed,?_⟩
   intro P U T Q bank fan shared apart fits body price saved middle ready chart copies data u S start rep fresh
   obtain ⟨a,D,l,entry,li,au,atEntry,keep⟩ := run false (bank false) fan (shared false) (apart false)
     (fits false) body data u S start rep

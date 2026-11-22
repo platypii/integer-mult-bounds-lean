@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.M6.BitBorrowedHeaders
 public import IntegerMultBounds.MathlibTM2.M6.BitBorrowedCall
 
 /-! Place the allocated COPY workers on a shared borrowed-row owner bank. -/
@@ -74,10 +75,10 @@ theorem chartWindowBanks {k t : ℕ} (sizes : Bool → ℕ)
 /-- Execute a complete hosted COPY schedule between its two physical charts.
 All private words can be seeded simultaneously before the entry pass. -/
 theorem chartedSchedule_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) :
-    ∃ C : ℝ, ∀ w B K : ℕ, 0 < w → 0 < B → 0 < K →
+    ∃ (C : ℝ) (states : ℕ), ∀ w B K : ℕ, 0 < w → 0 < B → 0 < K →
     let V := volume prime (copyLabelLayout w B K)
     ∀ {t : ℕ} (owner : Fin (142081+2) ↪ Fin t),
-    ∃ (T states : ℕ) (fan : Fin (142081+2) ↪ Fin T) (worker : Fin t ↪ Fin T),
+    ∃ (T : ℕ) (fan : Fin (142081+2) ↪ Fin T) (worker : Fin t ↪ Fin T),
     ∀ (shared : Stacks (142081+2) prime) (seed : Stacks t prime),
     ∃ initial : Stacks T prime, embStk fan initial = shared ∧
     ∀ {P U : Type} {Q : ℕ}, states ≤ Q → ∀ (body : P → Pr P t Q prime U)
@@ -92,14 +93,14 @@ theorem chartedSchedule_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) 
           (m : ℝ) ≤ C*V*(w : ℝ)^M8.Machine.BudgetBound.tau + price ∧ z.user = u.user ∧ HelperFan fan out F ∧
           (∀ g z, borrowedRead (B := B) (K := K) n p.1 p.2 g z out = borrowedScatter w (borrowedRead n p.1 p.2 g z data)) ∧
           ∀ k, k ≠ Fin.last 142080 → (∀ i, ownerTape n p.1 p.2 i ≠ k) → out k = data k := by
-  obtain ⟨C,build⟩ := borrowedCopy_host n p
-  refine ⟨C,?_⟩
+  obtain ⟨C,states,build⟩ := borrowedCopy_host n p
+  refine ⟨C,states,?_⟩
   intro w B K hw hb hk V t owner
-  obtain ⟨stage,prepare,run⟩ := build w B K hw hb hk
+  obtain ⟨stage,stateBound,prepare,run⟩ := build w B K hw hb hk
   let slots (b : Bool) : Fin 142081 ↪ Fin (stage b).tapes := ⟨(stage b).slots,(stage b).slots_injective⟩
   obtain ⟨T,fan,worker,chart,sharedAt,chartAt,controls,privateChart,privateWorker,init⟩ :=
     chartWindowBanks (fun b => (stage b).tapes) slots owner
-  refine ⟨T,max (stage false).states (stage true).states,fan,worker,?_⟩
+  refine ⟨T,fan,worker,?_⟩
   intro shared seed
   choose chartSeed seeded using prepare
   obtain ⟨initial,sharedEq,stored,metadata⟩ := init shared seed chartSeed
@@ -108,7 +109,7 @@ theorem chartedSchedule_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) 
   let host := fun f => embProg worker id (body f)
   let saved (S : Stacks T prime) := ∀ i, (∀ j, owner j ≠ i) →
     S.L (worker i) = seed.L i ∧ S.R (worker i) = seed.R i
-  have fits (b) : (stage b).states ≤ Q := (by cases b <;> simp : (stage b).states ≤ max _ _).trans cap
+  have fits (b) : (stage b).states ≤ Q := (stateBound b).trans cap
   have project (S : Stacks T prime) : embStk owner (embStk worker S) = embStk fan S := by
     simp only [embStk,Function.comp_def,sharedAt]
   have whole := run chart fan chartAt (fun b j i => controls b i j) fits host price saved (embProg worker id middle)
@@ -225,7 +226,6 @@ theorem borrowedScatterSchedule_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 ×
     let J := Fin Copy.lifecycles.length
     ∃ (C : ℝ) (tapes : J → ℕ) (regs : ∀ j, Fin (rowSwapBlock.tapes+35) ↪ Fin (tapes j))
       (T states : ℕ) (bank : ∀ j, Fin (tapes j) ↪ Fin T),
-    ∃ chartStates : ℕ → ℕ → ℕ → ℕ,
     ∀ {P U : Type} {Q : ℕ}, states ≤ Q → ∀ (localBody : ∀ j, P → Pr P (tapes j) Q prime U) (proc : J → P),
     let body := fun f : J × P => embProg (bank f.1) (fun g => (f.1,g)) (localBody f.1 f.2)
     ∃ base swaps leaf fixed : J → ℕ, ∀ (node : Descriptor) (w B rows : ℕ),
@@ -237,7 +237,7 @@ theorem borrowedScatterSchedule_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 ×
     let V := M^16*W
     let desc := fun j : J => scheduledChild prime node (copyChildPosition (n,p,j))
     let view := fun (x : Fin 142081 → Fin V → ZMod 2) k i => x k (Fin.cast (copyLabel_volume (w+1) blocks K) i)
-    0 < W → chartStates (w+1) blocks K ≤ Q →
+    0 < W →
     ∃ (H : ℕ) (owners : Fin (142081+2) ↪ Fin H) (worker : Fin T ↪ Fin H) (position : ∀ j, Fin (volume prime (desc j)) ≃ Fin V),
       (∀ j k, (position j k).val = (CopyChildLayout.packActive (desc j) k).val) ∧
       ∀ record : J → List (Fin (prime+4)), ∀ shared : Stacks (142081+2) prime,
@@ -255,20 +255,17 @@ theorem borrowedScatterSchedule_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 ×
   classical
   intro J
   obtain ⟨tapes,regs,T,states,fan,bank,windows⟩ := borrowedWindows_host n p
-  obtain ⟨C,charts⟩ := chartedSchedule_host n p
-  let chooseCharts (w B K : ℕ) := charts (w+1) (B+1) (K+1) (by omega) (by omega) (by omega) fan
-  choose H qs owners worker place using chooseCharts
-  refine ⟨C,tapes,regs,T,states,bank,fun w B K => qs (w-1) (B-1) (K-1),?_⟩
+  obtain ⟨C,chartStates,charts⟩ := chartedSchedule_host n p
+  refine ⟨C,tapes,regs,T,max states chartStates,bank,?_⟩
   intro P U Q cap localBody proc body
-  obtain ⟨base,swaps,leaf,fixed,build⟩ := windows cap localBody proc
+  obtain ⟨base,swaps,leaf,fixed,build⟩ := windows ((le_max_left ..).trans cap) localBody proc
   refine ⟨base,swaps,leaf,fixed,?_⟩
-  intro node w B rows width split label M K blocks W V desc view pos fits
+  intro node w B rows width split label M K blocks W V desc view pos
   obtain ⟨position,coords,run⟩ := build node w B rows width split label pos
   have hb := (Nat.pos_of_mul_pos_right (Nat.pos_of_mul_pos_right pos) : 0 < blocks)
   have hk := (Nat.pos_of_mul_pos_left pos : 0 < K)
-  have chart := place w (blocks-1) (K-1)
-  rw [Nat.sub_add_cancel hb,Nat.sub_add_cancel hk] at chart
-  refine ⟨H w (blocks-1) (K-1),owners w (blocks-1) (K-1),worker w (blocks-1) (K-1),position,coords,?_⟩
+  obtain ⟨H,owners,worker,chart⟩ := charts (w+1) blocks K (Nat.succ_pos _) hb hk fan
+  refine ⟨H,owners,worker,position,coords,?_⟩
   intro record shared
   obtain ⟨seed,_,middle⟩ := run record shared
   obtain ⟨initial,rep,host⟩ := chart shared seed
@@ -278,7 +275,7 @@ theorem borrowedScatterSchedule_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 ×
   have vol : volume prime (copyLabelLayout (w+1) blocks K) = V := copyLabel_volume ..
   have castRep {t a b : ℕ} (e : Fin (142081+2) ↪ Fin t) (eq : a = b) (x : Fin 142081 → Fin a → ZMod 2) (D : Stacks t prime) :
         HelperFan e (fun k (i : Fin b) => x k (Fin.cast eq.symm i)) D ↔ HelperFan e x D := by subst b; rfl
-  specialize host fits body code ((List.ofFn work).sum+(List.ofFn budget).sum+1) (by
+  specialize host ((le_max_right ..).trans cap) body code ((List.ofFn work).sum+(List.ofFn budget).sum+1) (by
     intro x u S rep fresh
     let data := fun k (i : Fin V) => x k (Fin.cast vol.symm i)
     obtain ⟨z,F,m,out,exec,paid,user,done,effect⟩ := copies data u S ((castRep fan vol x S).2 rep) fresh
@@ -569,7 +566,7 @@ def ScheduledBorrowedRun [M8.Machine.Net]
     {mt : (Fin edges.length) → ℕ} {ct : (Fin Copy.lifecycles.length) → ℕ} (mr : ∀ i, Fin (rowSwapBlock.tapes+35) ↪ Fin (mt i))
     (cr : ∀ j, Fin (rowSwapBlock.tapes+35) ↪ Fin (ct j)) {mT cT : ℕ}
     (mBank : ∀ i, Fin (mt i) ↪ Fin mT) (cBank : ∀ j, Fin (ct j) ↪ Fin cT)
-    (chartStates : ℕ → ℕ → ℕ → ℕ) {P U : Type} {Q : ℕ}
+    {P U : Type} {Q : ℕ}
     (mb : ∀ i, P → Pr P (mt i) Q prime U) (mf : (Fin edges.length) → P)
     (cb : ∀ j, P → Pr P (ct j) Q prime U) (cf : (Fin Copy.lifecycles.length) → P)
     (node : Descriptor) (w B rows : ℕ) : Prop :=
@@ -578,7 +575,7 @@ def ScheduledBorrowedRun [M8.Machine.Net]
     let blocks := M^112*B
     let W := blocks*prime^(64*((w+1)*64))*K
     let V := M^16*W
-    0 < W → chartStates (w+1) blocks K ≤ Q →
+    0 < W →
     let md := fun i : (Fin edges.length) => scheduledChild prime node (moveChild i)
     let cd := fun j : (Fin Copy.lifecycles.length) => scheduledChild prime node (copyChild j)
     ∀ (record : (Fin edges.length) → List (Fin (prime+4))) (copyRecord : (Fin Copy.lifecycles.length) → List (Fin (prime+4))),
@@ -601,20 +598,20 @@ theorem scheduledBorrowedInvocation_host [M8.Machine.Net] (n : Fin 9) (p : Fin 3
     ∃ (mt : I → ℕ) (ct : J → ℕ)
       (mr : ∀ i, Fin (rowSwapBlock.tapes+35) ↪ Fin (mt i))
       (cr : ∀ j, Fin (rowSwapBlock.tapes+35) ↪ Fin (ct j))
-      (mT cT : ℕ) (mBank : ∀ i, Fin (mt i) ↪ Fin mT) (cBank : ∀ j, Fin (ct j) ↪ Fin cT) (states : ℕ) (chartStates : ℕ → ℕ → ℕ → ℕ),
+      (mT cT : ℕ) (mBank : ∀ i, Fin (mt i) ↪ Fin mT) (cBank : ∀ j, Fin (ct j) ↪ Fin cT) (states : ℕ),
     ∀ {P U : Type} {Q : ℕ}, states ≤ Q →
     ∀ (mb : ∀ i, P → Pr P (mt i) Q prime U) (mf : I → P)
       (cb : ∀ j, P → Pr P (ct j) Q prime U) (cf : J → P),
     ∃ C : ℝ,
     ∀ (node : Descriptor) (w B rows : ℕ),
     node.width = 64*(w+1) → node.rows = 142080*rows → node.beforeH = B*prime^(64*((w+1)*64)) →
-    ScheduledBorrowedRun n p C edges moveChild copyChild mr cr mBank cBank chartStates mb mf cb cf
+    ScheduledBorrowedRun n p C edges moveChild copyChild mr cr mBank cBank mb mf cb cf
       node w B rows := by
   classical
   intro edges I J moveChild copyChild
   obtain ⟨mt,mT,mq,mr,mfan,mBank,phases⟩ := alignedPhases_host n p
-  obtain ⟨C,ct,cr,cT,cq,cBank,chartStates,scatters⟩ := borrowedScatterSchedule_host n p
-  refine ⟨mt,ct,mr,cr,mT,cT,mBank,cBank,max mq cq,chartStates,?_⟩
+  obtain ⟨C,ct,cr,cT,cq,cBank,scatters⟩ := borrowedScatterSchedule_host n p
+  refine ⟨mt,ct,mr,cr,mT,cT,mBank,cBank,max mq cq,?_⟩
   intro P U Q cap mb mf cb cf
   obtain ⟨base,swaps,mrun⟩ := phases ((le_max_left ..).trans cap) mb mf
   obtain ⟨copyBase,copySwaps,leaf,fixed,crun⟩ := scatters ((le_max_right ..).trans cap) cb cf
@@ -622,9 +619,9 @@ theorem scheduledBorrowedInvocation_host [M8.Machine.Net] (n : Fin 9) (p : Fin 3
   refine ⟨C+D,?_⟩
   intro node w B rows width split label
   unfold ScheduledBorrowedRun
-  intro M K blocks W V pos fits md cd record copyRecord
+  intro M K blocks W V pos md cd record copyRecord
   obtain ⟨mp,stock,mcoords,seed,frame,ms⟩ := mrun node w B rows width split label pos record
-  obtain ⟨H,cfan,worker,cp,ccoords,cs⟩ := crun node w B rows width split label pos fits
+  obtain ⟨H,cfan,worker,cp,ccoords,cs⟩ := crun node w B rows width split label pos
   let tapes := Bool.rec (motive := fun _ => ℕ) mT H
   let ports : (b : Bool) → Fin 142083 ↪ Fin (tapes b) := Bool.rec (motive := fun b => Fin 142083 ↪ Fin (tapes b)) mfan cfan
   obtain ⟨T,fan,outer,prepare⟩ := borrowedInvocationBanks n p tapes ports
@@ -750,6 +747,99 @@ theorem borrowedSweepBanks (n : Fin 9) :
   exact run x u S live (ready none) (fun p => ready (some p))
 
 open Cover in
+theorem archivedPacking_exec [M8.Machine.Net] {T Q : ℕ} {P U : Type}
+    (n : Fin 9) (p : Fin 32 × Fin 5) (fan : Fin (142081+2) ↪ Fin T)
+    (capacity : columnCapacity ≤ Q) (outer : P → Pr P ((T+273)+LeafCore.small) Q prime U) :
+    let bank := Fin.castAddEmb 273 (n := T)
+    let scratch := Fin.castAddEmb LeafCore.small (n := T+273)
+    let full := (fan.trans bank).trans scratch
+    let before := (stageRuns.take (stageRuns.idxOf p)).foldl (fun c r => helperChartsAfter n r c) (fun _ => none)
+    ∃ pack, ∀ w B K : ℕ,
+      let W := B*prime^(64*(w*64))*K
+      let V := (prime^w)^16*((prime^w)^112*B*prime^(64*(w*64))*K)
+      0 < V → ∀ (data : Fin 142081 → Fin V → ZMod 2) u S,
+      (∀ i j, S.R (scratch (borrowedHeaders T i j)) =
+        (Routines.hdr (helperAdjacentView w 1 W i) j).map bitSymbol) →
+      HelperFan full data S →
+      (∀ j : Fin LeafCore.small, S.L (j.natAdd (T+273)) = [] ∧ S.R (j.natAdd (T+273)) = []) →
+      ∃ v D k x, v.user = u.user ∧ Exec outer pack (mk u S) k (mk v D) ∧
+        (k : ℝ) ≤ borrowedPackRate n p*((V : ℝ)*((max 1 w : ℕ) : ℝ)^M8.Machine.BudgetBound.tau) ∧
+        HelperFan full x D ∧ HelperLabelTrace w 1 W (scheduledSlotChanges n p before) data x ∧
+        (∀ j : Fin (T+273), (∀ o : Fin 142081, j ≠ bank (fan (o.castAdd 2))) →
+          D.L (scratch j) = S.L (scratch j) ∧ D.R (scratch j) = S.R (scratch j)) ∧
+        ∀ j : Fin LeafCore.small, D.L (j.natAdd (T+273)) = [] ∧ D.R (j.natAdd (T+273)) = [] := by
+  intro bank scratch full before
+  let port (i : ℕ) := borrowedHeaders T ⟨i%127,Nat.mod_lt _ (by decide)⟩
+  obtain ⟨pack,run⟩ := helperFanChanges_exec (fan.trans bank) (scheduledSlotChanges n p before)
+    capacity outer port (fun i j o => borrowedHeaders_apart _ j _)
+  refine ⟨pack,?_⟩
+  intro w B K W V pos data u S ready live free
+  let desc : Descriptor := ⟨V,1,1,0,1,1⟩
+  have size : volume prime desc = V := by simp [volume,desc]
+  have atVolume := @run w 1 W desc
+  rw [size] at atVolume
+  have dims : V = (prime^w)^16*(1*((prime^w)^112*W)) := by dsimp [V,W]; ring
+  exact atVolume dims pos data u S
+    (fun i j => by simpa [port,scratch,Nat.mod_eq_of_lt i.isLt] using ready i j) live free
+
+open Cover in
+/-- Run a packed step with the six header ports pointing directly into the
+parent-built archive. The invocation runs on the original owner bank. -/
+theorem archivedBorrowedCall_host [M8.Machine.Net] {T Q : ℕ} {P U : Type}
+    (n : Fin 9) (p : Fin 32 × Fin 5) (fan : Fin (142081+2) ↪ Fin T)
+    (capacity : columnCapacity ≤ Q) (body : P → Pr P T Q prime U) :
+    let bank := Fin.castAddEmb 273 (n := T)
+    let scratch := Fin.castAddEmb LeafCore.small (n := T+273)
+    let full := (fan.trans bank).trans scratch
+    let owner := bank.trans scratch
+    let outer := fun f => embProg owner id (body f)
+    ∃ pack, ∀ w B K : ℕ,
+      let W := B*prime^(64*(w*64))*K
+      let blocks := (prime^w)^112*B
+      let V := (prime^w)^16*(blocks*prime^(64*(w*64))*K)
+      0 < V → ∀ (data : Fin 142081 → Fin V → ZMod 2) u S call (price : ℝ),
+      (∀ i j, S.R (scratch (borrowedHeaders T i j)) =
+        (Routines.hdr (helperAdjacentView w 1 W i) j).map bitSymbol) →
+      HelperFan full data S →
+      (∀ j : Fin LeafCore.small, S.L (j.natAdd (T+273)) = [] ∧ S.R (j.natAdd (T+273)) = []) →
+      (∀ a y D, HelperFan fan a D →
+        (∀ j, (∀ h, fan h ≠ j) → D.L j = S.L (scratch (bank j)) ∧ D.R j = S.R (scratch (bank j))) →
+        ∃ z F m b, Exec body call (mk y D) m (mk z F) ∧ (m : ℝ) ≤ price ∧ z.user = y.user ∧
+          HelperFan fan b F ∧ BorrowedStep n w blocks K p a b) →
+      ∃ z F t b, Exec outer (.seq pack (embProg owner id call)) (mk u S) t (mk z F) ∧
+        (t : ℝ) ≤ borrowedPackRate n p*((V : ℝ)*((max 1 w : ℕ) : ℝ)^M8.Machine.BudgetBound.tau)+price ∧
+        z.user = u.user ∧ HelperFan full b F ∧ borrowedPackedStep n w B K p data b ∧
+        (∀ i j, F.R (scratch (borrowedHeaders T i j)) = S.R (scratch (borrowedHeaders T i j))) ∧
+        ∀ j : Fin LeafCore.small, F.L (j.natAdd (T+273)) = [] ∧ F.R (j.natAdd (T+273)) = [] := by
+  intro bank scratch full owner outer
+  obtain ⟨pack,run⟩ := archivedPacking_exec n p fan capacity outer
+  refine ⟨pack,?_⟩
+  intro w B K W blocks V pos data u S call price ready live free invoke
+  obtain ⟨v,D,k,x,user,packed,charge,rep,trace,keep,clean⟩ := run w B K pos data u S ready live free
+  obtain ⟨z,F,m,y,exec,paid,same,done,act⟩ := invoke x (embDn owner v) (embStk owner D) rep
+    (fun j outside => keep (bank j) (fun o eq => outside (o.castAdd 2) (bank.injective eq.symm)))
+  obtain ⟨z',F',hosted,_,state,view,off⟩ := exec_emb (ι := id) (body' := outer)
+    owner.injective (fun _ => rfl) exec v rfl D rfl
+  have fanDone : HelperFan full y F' := by
+    change HelperFan fan y (embStk owner F')
+    rw [view]
+    exact done
+  refine ⟨z',F',k+m,y,Exec.seq packed hosted,?_,state.trans (same.trans user),fanDone,⟨x,trace,act⟩,?_,?_⟩
+  · rw [Nat.cast_add]
+    exact add_le_add charge paid
+  · intro i j
+    have outside h : owner h ≠ scratch (borrowedHeaders T i j) :=
+      fun eq => borrowedHeaders_apart i j h (scratch.injective eq).symm
+    exact (off _ outside).2.trans (keep _ (fun o => borrowedHeaders_apart i j (fan (o.castAdd 2)))).2
+  · intro j
+    have outside (i : Fin T) : owner i ≠ j.natAdd (T+273) := by
+      intro eq
+      have e := congrArg Fin.val eq
+      change i.val = T+273+j.val at e
+      omega
+    exact ⟨(off _ outside).1.trans (clean j).1,(off _ outside).2.trans (clean j).2⟩
+
+open Cover in
 /-- Place the helper headers and leaf scratch beside the invocation's tapes.
 Private agreement with the resulting seed suffices for the packed sweep step. -/
 theorem seededBorrowedCall_host [M8.Machine.Net] {T Q : ℕ} {P U : Type}
@@ -759,7 +849,7 @@ theorem seededBorrowedCall_host [M8.Machine.Net] {T Q : ℕ} {P U : Type}
     let scratch := Fin.castAddEmb LeafCore.small (n := T+127*6)
     let full := (fan.trans headers).trans scratch
     let outer := fun f => embProg scratch id (embProg headers id (body f))
-    ∃ pack C, ∀ w B K : ℕ,
+    ∃ pack, ∀ w B K : ℕ,
       let blocks := (prime^w)^112*B
       let V := (prime^w)^16*(blocks*prime^(64*(w*64))*K)
       0 < V → ∀ seed : Stacks T prime, ∃ initial : Stacks ((T+127*6)+LeafCore.small) prime,
@@ -771,7 +861,7 @@ theorem seededBorrowedCall_host [M8.Machine.Net] {T Q : ℕ} {P U : Type}
       ∀ data u S, HelperFan full data S →
         (∀ j, (∀ h, full h ≠ j) → S.L j = initial.L j ∧ S.R j = initial.R j) →
         ∃ z F t y, Exec outer (.seq pack (embProg scratch id (embProg headers id call))) (mk u S) t (mk z F) ∧
-          (t : ℝ) ≤ C*((V : ℝ)*((max 1 w : ℕ) : ℝ)^M8.Machine.BudgetBound.tau)+price ∧
+          (t : ℝ) ≤ borrowedPackRate n p *((V : ℝ)*((max 1 w : ℕ) : ℝ)^M8.Machine.BudgetBound.tau)+price ∧
           z.user = u.user ∧ HelperFan full y F ∧ borrowedPackedStep n w B K p data y := by
   intro headers scratch full outer
   let slot (i : ℕ) (j : Fin 6) := (finProdFinEquiv (⟨i%127,Nat.mod_lt _ (by decide)⟩,j)).natAdd T
@@ -780,9 +870,9 @@ theorem seededBorrowedCall_host [M8.Machine.Net] {T Q : ℕ} {P U : Type}
     have e := congrArg Fin.val eq
     change T + _ = (fan h).val at e
     omega
-  obtain ⟨pack,C,run⟩ := borrowedPackedCall_exec n p (fan.trans headers) capacity
+  obtain ⟨pack,run⟩ := borrowedPackedCall_exec n p (fan.trans headers) capacity
     (fun f => embProg headers id (body f)) slot (fun i j o => disjoint i j (o.castAdd 2))
-  refine ⟨pack,C,?_⟩
+  refine ⟨pack,?_⟩
   intro w B K blocks V pos seed
   let W := B*prime^(64*(w*64))*K
   let words : Fin (127*6) → List (Fin (prime+4)) := fun i : Fin (127*6) => (Routines.hdr (helperAdjacentView w 1 W (finProdFinEquiv.symm i).1)
@@ -829,13 +919,13 @@ theorem seededBorrowedRestore_host [M8.Machine.Net] {T Q : ℕ} {P U : Type}
     let headers := Fin.castAddEmb (127*6) (n := T)
     let scratch := Fin.castAddEmb LeafCore.small (n := T+127*6)
     let full := (fan.trans headers).trans scratch
-    ∃ code C, ∀ w B K : ℕ,
+    ∃ code, ∀ w B K : ℕ,
       let W := B*prime^(64*(w*64))*K
       let V := (prime^w)^16*((prime^w)^112*B*prime^(64*(w*64))*K)
       0 < V → ∀ seed : Stacks T prime, ∃ initial : Stacks ((T+127*6)+LeafCore.small) prime,
       embStk full initial = embStk fan seed ∧ ∀ (data : Fin 142081 → Fin V → ZMod 2) u S, HelperFan full data S →
       (∀ j, (∀ h, full h ≠ j) → S.L j = initial.L j ∧ S.R j = initial.R j) →
-      ∃ z F t y, Exec body code (mk u S) t (mk z F) ∧ (t : ℝ) ≤ C*((V : ℝ)*((max 1 w : ℕ) : ℝ)^M8.Machine.BudgetBound.tau) ∧
+      ∃ z F t y, Exec body code (mk u S) t (mk z F) ∧ (t : ℝ) ≤ helperChangesRate (restoreSlotChanges (stageFinalSlot n)) *((V : ℝ)*((max 1 w : ℕ) : ℝ)^M8.Machine.BudgetBound.tau) ∧
         z.user = u.user ∧ HelperFan full y F ∧ HelperLabelTrace w 1 W (restoreSlotChanges (stageFinalSlot n)) data y := by
   intro headers scratch full
   let slot (i : ℕ) (j : Fin 6) := (finProdFinEquiv (⟨i%127,Nat.mod_lt _ (by decide)⟩,j)).natAdd T
@@ -844,9 +934,9 @@ theorem seededBorrowedRestore_host [M8.Machine.Net] {T Q : ℕ} {P U : Type}
     have e := congrArg Fin.val eq
     change T + _ = (fan h).val at e
     omega
-  obtain ⟨code,C,run⟩ := borrowedRestore_exec n (fan.trans headers) capacity body slot
+  obtain ⟨code,run⟩ := borrowedRestore_exec n (fan.trans headers) capacity body slot
     (fun i j o => disjoint i j (o.castAdd 2))
-  refine ⟨code,C,?_⟩
+  refine ⟨code,?_⟩
   intro w B K W V pos seed
   let words : Fin (127*6) → List (Fin (prime+4)) := fun i : Fin (127*6) => (Routines.hdr (helperAdjacentView w 1 W (finProdFinEquiv.symm i).1)
     (finProdFinEquiv.symm i).2).map bitSymbol

@@ -55,7 +55,7 @@ theorem helperFanSlot_exec [M8.Machine.Net] {k T Q : ℕ} {P U : Type}
     (capacity : columnCapacity ≤ Q) (body : P → Pr P (T+LeafCore.small) Q prime U)
     (headers : ℕ → Fin 6 → Fin T) (separate : ∀ i j, headers i j ≠ fan (owner.castAdd 2)) :
     let full := fan.trans (Fin.castAddEmb LeafCore.small)
-    ∃ (code : Pr P (T+LeafCore.small) Q prime U) (C : ℝ), ∀ {w L W : ℕ} {v : Descriptor},
+    ∃ (code : Pr P (T+LeafCore.small) Q prime U), ∀ {w L W : ℕ} {v : Descriptor},
       volume prime v = (prime^w)^16*(L*((prime^w)^112*W)) → 0 < volume prime v →
       ∀ (data : Fin k → Fin (volume prime v) → ZMod 2) u S,
       (∀ i : Fin 127, ∀ j, S.R ((headers i.val j).castAdd LeafCore.small) =
@@ -63,7 +63,7 @@ theorem helperFanSlot_exec [M8.Machine.Net] {k T Q : ℕ} {P U : Type}
       HelperFan full data S →
       (∀ j : Fin LeafCore.small, S.L (j.natAdd T) = [] ∧ S.R (j.natAdd T) = []) →
       ∃ z F t, ∃ word : Fin (volume prime v) → ZMod 2, z.user = u.user ∧
-        Exec body code (mk u S) t (mk z F) ∧ (t : ℝ) ≤ C*((volume prime v : ℝ)*((max 1 w : ℕ) : ℝ)^M8.Machine.BudgetBound.tau) ∧
+        Exec body code (mk u S) t (mk z F) ∧ (t : ℝ) ≤ helperSlotRate src dst *((volume prime v : ℝ)*((max 1 w : ℕ) : ℝ)^M8.Machine.BudgetBound.tau) ∧
         HelperFan full (Function.update data owner word) F ∧
         (∀ c s (label : Fin L) (j : Fin W), ext word (helperFieldCell (helperSlotField c dst w s) label j) =
           ext (data owner) (helperFieldCell (helperSlotField c src w s) label j)) ∧
@@ -71,8 +71,8 @@ theorem helperFanSlot_exec [M8.Machine.Net] {k T Q : ℕ} {P U : Type}
           F.R (j.castAdd LeafCore.small) = S.R (j.castAdd LeafCore.small)) ∧
         ∀ j : Fin LeafCore.small, F.L (j.natAdd T) = [] ∧ F.R (j.natAdd T) = [] := by
   intro full
-  obtain ⟨code,C,run⟩ := helperLabelSlot_exec src dst capacity body headers (fan (owner.castAdd 2)) separate
-  refine ⟨code,C,?_⟩
+  obtain ⟨code,run⟩ := helperLabelSlot_exec src dst capacity body headers (fan (owner.castAdd 2)) separate
+  refine ⟨code,?_⟩
   intro w L W v size pos data u S stored rep free
   obtain ⟨z,F,t,word,user,exec,paid,out,read,keep,clean⟩ :=
     run size pos (data owner) u S stored (fanPayload rep owner) free
@@ -85,6 +85,11 @@ def HelperLabelTrace {k V : ℕ} (w L W : ℕ) (changes : List (Fin k × Option 
       ext (a owner) (helperFieldCell (helperSlotField c src w s) label j)) ∧
       next (Function.update a owner word)) (· = result) data
 
+noncomputable def helperChangesRate {k : ℕ} [M8.Machine.Net] :
+    List (Fin k × Option (Fin 56) × Option (Fin 56)) → ℝ
+  | [] => 1
+  | (_,src,dst)::rest => helperSlotRate src dst + helperChangesRate rest
+
 /-- Run the ordered helper changes against a single represented invocation bank.
 Archive and leaf workspace are reused at each change. -/
 theorem helperFanChanges_exec [M8.Machine.Net] {k T Q : ℕ} {P U : Type}
@@ -92,7 +97,7 @@ theorem helperFanChanges_exec [M8.Machine.Net] {k T Q : ℕ} {P U : Type}
     (capacity : columnCapacity ≤ Q) (body : P → Pr P (T+LeafCore.small) Q prime U)
     (headers : ℕ → Fin 6 → Fin T) (apart : ∀ i j (o : Fin k), headers i j ≠ fan (o.castAdd 2)) :
     let full := fan.trans (Fin.castAddEmb LeafCore.small)
-    ∃ (code : Pr P (T+LeafCore.small) Q prime U) (C : ℝ), ∀ {w L W : ℕ} {v : Descriptor},
+    ∃ (code : Pr P (T+LeafCore.small) Q prime U), ∀ {w L W : ℕ} {v : Descriptor},
       volume prime v = (prime^w)^16*(L*((prime^w)^112*W)) → 0 < volume prime v →
       ∀ (data : Fin k → Fin (volume prime v) → ZMod 2) u S,
       (∀ i : Fin 127, ∀ j, S.R ((headers i.val j).castAdd LeafCore.small) =
@@ -100,7 +105,7 @@ theorem helperFanChanges_exec [M8.Machine.Net] {k T Q : ℕ} {P U : Type}
       HelperFan full data S →
       (∀ j : Fin LeafCore.small, S.L (j.natAdd T) = [] ∧ S.R (j.natAdd T) = []) →
       ∃ z F t result, z.user = u.user ∧ Exec body code (mk u S) t (mk z F) ∧
-        (t : ℝ) ≤ C*((volume prime v : ℝ)*((max 1 w : ℕ) : ℝ)^M8.Machine.BudgetBound.tau) ∧
+        (t : ℝ) ≤ helperChangesRate changes *((volume prime v : ℝ)*((max 1 w : ℕ) : ℝ)^M8.Machine.BudgetBound.tau) ∧
         HelperFan full result F ∧ HelperLabelTrace w L W changes data result ∧
         (∀ j : Fin T, (∀ o : Fin k, j ≠ fan (o.castAdd 2)) → F.L (j.castAdd LeafCore.small) = S.L (j.castAdd LeafCore.small) ∧
           F.R (j.castAdd LeafCore.small) = S.R (j.castAdd LeafCore.small)) ∧
@@ -108,23 +113,23 @@ theorem helperFanChanges_exec [M8.Machine.Net] {k T Q : ℕ} {P U : Type}
   intro full
   induction changes with
   | nil =>
-    refine ⟨.act .done,1,?_⟩
+    refine ⟨.act .done,?_⟩
     intro w L W v _ pos data u S _ rep free
     refine ⟨u,S,1,data,rfl,Exec.act ..,?_,rep,rfl,fun _ _ => ⟨rfl,rfl⟩,free⟩
     have vol : (1 : ℝ) ≤ volume prime v := by exact_mod_cast (show 1 ≤ volume prime v from pos)
-    simpa using one_le_mul_of_one_le_of_one_le vol (Real.one_le_rpow
+    simpa [helperChangesRate] using one_le_mul_of_one_le_of_one_le vol (Real.one_le_rpow
       (by exact_mod_cast le_max_left 1 w) M8.Machine.BudgetBound.exponent_range.1.le)
   | cons change changes ih =>
     obtain ⟨o,src,dst⟩ := change
-    obtain ⟨pack,A,step⟩ := helperFanSlot_exec fan o src dst capacity body headers (fun i j => apart i j o)
-    obtain ⟨tail,B,rest⟩ := ih
-    refine ⟨.seq pack tail,A+B,?_⟩
+    obtain ⟨pack,step⟩ := helperFanSlot_exec fan o src dst capacity body headers (fun i j => apart i j o)
+    obtain ⟨tail,rest⟩ := ih
+    refine ⟨.seq pack tail,?_⟩
     intro w L W v size pos data u S stored rep free
     obtain ⟨y,D,m,word,same,run,price,represented,read,keep,clear⟩ := step size pos data u S stored rep free
     obtain ⟨z,F,n,result,user,exec,paid,done,trace,off,clean⟩ := rest size pos _ y D
       (fun i j => ((keep _ (apart _ _ o)).2).trans (stored i j)) represented clear
     refine ⟨z,F,m+n,result,user.trans same,Exec.seq run exec,?_,done,⟨word,read,trace⟩,?_,clean⟩
-    · rw [Nat.cast_add,add_mul]; exact add_le_add price paid
+    · rw [Nat.cast_add,helperChangesRate,add_mul]; exact add_le_add price paid
     · intro j hj
       exact ⟨(off j hj).1.trans (keep j (hj o)).1,(off j hj).2.trans (keep j (hj o)).2⟩
 
@@ -220,7 +225,7 @@ theorem scheduledLabelTrace_exec [M8.Machine.Net] {T Q : ℕ} {P U : Type}
     let full := fan.trans bank
     let outer := fun f => embProg bank id (body f)
     let before := prefixRuns.foldl (fun c r => helperChartsAfter n r c) (fun _ => none)
-    ∃ pack, ∃ C : ℝ, ∀ {w L W : ℕ} {v : Descriptor},
+    ∃ pack, ∀ {w L W : ℕ} {v : Descriptor},
       volume prime v = (prime^w)^16*(L*((prime^w)^112*W)) → 0 < volume prime v →
       ∀ (data : Fin 142081 → Fin (volume prime v) → ZMod 2) u S call (price : ℝ)
         (effect : (Fin 142081 → Fin (volume prime v) → ZMod 2) → (Fin 142081 → Fin (volume prime v) → ZMod 2) → Prop),
@@ -231,12 +236,12 @@ theorem scheduledLabelTrace_exec [M8.Machine.Net] {T Q : ℕ} {P U : Type}
         (∀ j, (∀ h, fan h ≠ j) → D.L j = S.L (bank j) ∧ D.R j = S.R (bank j)) →
         ∃ z F m b, Exec body call (mk y D) m (mk z F) ∧ (m : ℝ) ≤ price ∧ z.user = y.user ∧ HelperFan fan b F ∧ effect a b) →
       ∃ z F t a b, Exec outer (.seq pack (embProg bank id call)) (mk u S) t (mk z F) ∧
-        (t : ℝ) ≤ C*((volume prime v : ℝ)*((max 1 w : ℕ) : ℝ)^M8.Machine.BudgetBound.tau)+price ∧
+        (t : ℝ) ≤ helperChangesRate (scheduledSlotChanges n p before) *((volume prime v : ℝ)*((max 1 w : ℕ) : ℝ)^M8.Machine.BudgetBound.tau)+price ∧
         z.user = u.user ∧ HelperFan full b F ∧ effect a b ∧
         HelperLabelTrace w L W (scheduledSlotChanges n p before) data a := by
   intro bank full outer before
-  obtain ⟨pack,C,run⟩ := helperFanChanges_exec fan (scheduledSlotChanges n p before) capacity outer headers apart
-  refine ⟨pack,C,?_⟩
+  obtain ⟨pack,run⟩ := helperFanChanges_exec fan (scheduledSlotChanges n p before) capacity outer headers apart
+  refine ⟨pack,?_⟩
   intro w L W v size pos data u S call price effect stored rep free invoke
   obtain ⟨y,D,k,a,user,packed,paid,ready,trace,keep,_⟩ := run size pos data u S stored rep free
   obtain ⟨z,F,m,b,exec,bill,same,done,act⟩ := invoke a (embDn bank y) (embStk bank D) ready
@@ -274,8 +279,8 @@ theorem scheduledLabelCall_exec [M8.Machine.Net] {T Q : ℕ} {P U : Type}
           ∀ c s (label : Fin L) (j : Fin W), ext (a change.1) (helperFieldCell (helperSlotField c change.2.2 w s) label j) =
             ext (data change.1) (helperFieldCell (helperSlotField c change.2.1 w s) label j) := by
   intro bank full outer before
-  obtain ⟨pack,C,run⟩ := scheduledLabelTrace_exec n p prefixRuns fan capacity body headers apart
-  refine ⟨pack,C,?_⟩
+  obtain ⟨pack,run⟩ := scheduledLabelTrace_exec n p prefixRuns fan capacity body headers apart
+  refine ⟨pack,helperChangesRate (scheduledSlotChanges n p before),?_⟩
   intro w L W v size pos data u S call price effect stored rep free invoke
   obtain ⟨z,F,t,a,b,exec,paid,same,done,act,trace⟩ := run size pos data u S call price effect stored rep free (by
     intro x u D live fresh

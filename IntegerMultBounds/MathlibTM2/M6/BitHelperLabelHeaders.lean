@@ -257,7 +257,8 @@ theorem preparedHelperSlot_exec [M8.Machine.Net] (src dst : Option (Fin 56))
   let head := fun (i : Fin 127) => helperHeaderPorts i (1 : Fin 268) 3 12 (helperArchiveBank i 3) (helperArchiveBank i 4)
   let headers := fun (i : ℕ) j => bank (head (Fin.ofNat 127 i) j)
   let full := bank.trans (Fin.castAddEmb N)
-  obtain ⟨pack,C,exec⟩ := helperLabelSlot_exec src dst capacity body headers owner (fun _ _ => apart _)
+  let C := helperSlotRate src dst
+  obtain ⟨pack,exec⟩ := helperLabelSlot_exec src dst capacity body headers owner (fun _ _ => apart _)
   refine ⟨.seq (helperHeaderSweep (fun i => (helperArchiveBank i).trans full) (List.finRange 127)) pack,C,?_⟩
   intro w L W v size pos word u S seed payload clean
   obtain ⟨y,D,k,user,setup,bill,left,stored,off⟩ := helperArchive_exec body full w L W u S seed

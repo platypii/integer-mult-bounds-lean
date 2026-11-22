@@ -84,7 +84,8 @@ theorem parentSlotChanges_exec [M8.Machine.Net] {P U : Type} {T Q : ℕ}
   let shared := fan.trans (Fin.castAddEmb 273)
   let headers := fun i : ℕ => parentHelperHeaders T (Fin.ofNat 127 i)
   have distinct (i j o) : headers i j ≠ shared (Fin.castAdd 2 o) := parentHeader_ne (Fin.ofNat 127 i) j (fan (o.castAdd 2))
-  obtain ⟨pack,C,run⟩ := helperFanChanges_exec shared changes capacity body headers distinct
+  let C := helperChangesRate changes
+  obtain ⟨pack,run⟩ := helperFanChanges_exec shared changes capacity body headers distinct
   let prep : Pr Empty (T+273) Q prime U := prepareHelperHeaders hdr regs
   refine ⟨.seq (embProg bank Empty.elim prep) pack,152402000+C,?_⟩
   intro row w V pos W M size
