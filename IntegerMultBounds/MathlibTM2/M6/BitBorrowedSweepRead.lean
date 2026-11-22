@@ -59,11 +59,18 @@ theorem borrowedSweep_modular {n w B K x y out}
   intro tape read v
   exact borrowedRestored_inactive trace restore r inactive b t g (v ∘ Sum.inl,v ∘ Sum.inr)
 
-private theorem stage_inactive_of_read (n : Fin 9) (r : Role) (a b : State)
-    (inactive : r.bank.val / 2 ≠ BitHosting.activePair n.val)
-    (read : b r = along (exchange (familySum n r)) (a r)) :
-    b r = (Piece.stage n).run a r :=
-  read.trans (stagePiece_inactive n a r inactive).symm
+theorem borrowedRoleRead_inactive_of_exchange {n : Fin 9} {w B K V : ℕ}
+    (r : Role) (inactive : r.bank.val / 2 ≠ BitHosting.activePair n.val)
+    (b : Fin B) (t : Fin K) (g : LabelPadding.Label 64 w)
+    (x y : Fin 142081 → Fin V → ZMod 2) :
+    let tape := bankTape r.bank (r.replica,r.port,r.cls)
+    let read := fun (a : Fin V → ZMod 2) v => M8.RevMachine.ext a (borrowedRoleCell b t g r v)
+    (∀ v, let s := M8.Exchange.exchange (reduce (prime^w) (familySum n r)) (v ∘ Sum.inl,v ∘ Sum.inr)
+          read (y tape) (Sum.elim s.1 s.2) = read (x tape) v) →
+    borrowedRoleRead b t g y r = (Piece.stage n).run (borrowedRoleRead b t g x) r := by
+  intro tape read physical
+  exact (family_read r (read (x tape)) (read (y tape)) physical).trans
+    (stagePiece_inactive n (borrowedRoleRead b t g x) r inactive).symm
 
 theorem borrowedSweep_inactive_read {n w B K x y out}
     (trace : stageRuns.foldr (fun p next a => ∃ b, borrowedPackedStep n w B K p a b ∧ next b) (· = y) x)
@@ -71,11 +78,8 @@ theorem borrowedSweep_inactive_read {n w B K x y out}
     (r : Role) (inactive : r.bank.val / 2 ≠ BitHosting.activePair n.val)
     (b : Fin B) (t : Fin K) (g : LabelPadding.Label 64 w) :
     borrowedRoleRead b t g out r = (Piece.stage n).run (borrowedRoleRead b t g x) r := by
-  apply stage_inactive_of_read n r (borrowedRoleRead b t g x) (borrowedRoleRead b t g out) inactive
-  let tape := bankTape r.bank (r.replica,r.port,r.cls)
-  let read := fun (a : Fin ((prime^w)^16*((prime^w)^112*B*prime^(64*(w*64))*K)) → ZMod 2) v => M8.RevMachine.ext a (borrowedRoleCell b t g r v)
-  apply family_read r (read (x tape)) (read (out tape))
-  exact borrowedSweep_modular trace restore r inactive b t g
+  exact borrowedRoleRead_inactive_of_exchange r inactive b t g x out
+    (borrowedSweep_modular trace restore r inactive b t g)
 
 open AffineFieldCoordinates FlatCoordinateLayout Matrix M8.RevMachine in
 /-- Correct the active source and target on all borrowed labels with the

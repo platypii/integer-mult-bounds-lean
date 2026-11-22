@@ -126,6 +126,64 @@ theorem activeSweepAddress_modular {w B W : ℕ} (n : Fin 9) (b : Fin B) (j : Fi
   rw [addressMod_involution _ legal (bar_mul_self (c.stageRoute_mul_self checked n)),red,fromBlocks_mulVec]
   simp [M8.Exchange.transform,R,c]
 
+/-- Interpret modular window streams in the rational chart of each active port. -/
+noncomputable def activeRoleRead {w : ℕ} (n : Fin 9)
+    (x : Fin 142081 → Swap.Shear.State Axis (ZMod (prime^w)) → ZMod 2) : State := fun r =>
+  along (bar ((port r.port.val).stageRoute n).transpose)
+    (x (bankTape r.bank (r.replica,r.port,r.cls)) ∘ windowState w)
+
+theorem activeRoleRead_stage {w : ℕ} (n : Fin 9) (k : (Fin 32 × Fin 5) × Fin 111)
+    (x out : Fin 142081 → Swap.Shear.State Axis (ZMod (prime^w)) → ZMod 2)
+    (step : ∀ s, let L := diagonal fun i : Exterior => if i.1.val < n.val then (1 : ZMod (prime^w)) else 0
+      let frame := fun (P : Matrix (Fin 8) (Fin 8) (ZMod (prime^w))) => M8.Exchange.exchange (fromBlocks P 0 0 L)
+      let P := reduce (prime^w) (port k.2.val).lineProj
+      out (sourceOwner n k) s = x (sourceOwner n k) (frame P (frame 1 s)) ∧
+      out (targetOwner n k) s = x (targetOwner n k) (frame (1-P) (frame 0 s)) +
+        x (sourceOwner n k) (frame 1 (frame 0 s))) :
+    let read := activeRoleRead (w := w) n
+    let agrees := fun i => read out (owner n k.1.1 k.1.2 i) =
+      (Piece.stage n).run (read x) (owner n k.1.1 k.1.2 i)
+    agrees k.2.val ∧ agrees (111+k.2.val) := by
+  intro read agrees
+  let t := k.2
+  let R := (port t.val).stageRoute n
+  let reg := registers n k.1.1 k.1.2 (read x)
+  have route : R.transpose = R := PortCertificate.stageRoute_transpose n
+  have cancel : bar R * bar R = 1 := bar_mul_self (PortCertificate.stageRoute_mul_self (port_checked _ t.isLt) n)
+  have get (a : Fin 142081 → Swap.Shear.State Axis (ZMod (prime^w)) → ZMod 2)
+      (i : Fin 661) (portAt : (owner n k.1.1 k.1.2 i.val).port = t) :
+      read a (owner n k.1.1 k.1.2 i.val) =
+        along (bar R.transpose) (a (ownerTape n k.1.1 k.1.2 i) ∘ windowState w) := by
+    unfold read activeRoleRead
+    dsimp only [R]
+    rw [← portAt]
+    rfl
+  have installed (i : Fin 661) (portAt : (owner n k.1.1 k.1.2 i.val).port = t) (chartAt : chart n i.val = R) :
+      reg i.val = x (ownerTape n k.1.1 k.1.2 i) ∘ windowState w := by
+    rw [show reg i.val = _ from registers_data n k.1.1 k.1.2 (read x) i.val i.isLt,chartAt,get x i portAt]
+    funext z
+    simp only [along_apply,route,mulVec_mulVec,cancel,one_mulVec]
+  let src : Fin 661 := ⟨t.val,by omega⟩
+  let dst : Fin 661 := ⟨111+t.val,by omega⟩
+  have srcPort : (owner n k.1.1 k.1.2 src.val).port = t := by
+    change (owner n k.1.1 k.1.2 t.val).port = t
+    rw [owner_source]; rfl
+  have dstPort : (owner n k.1.1 k.1.2 dst.val).port = t := by
+    change (owner n k.1.1 k.1.2 (111+t.val)).port = t
+    rw [owner_target]; rfl
+  obtain ⟨cs,cd⟩ := chart_port n t
+  obtain ⟨source,target⟩ := activeWord_read n t w (x (sourceOwner n k)) (x (targetOwner n k))
+    (out (sourceOwner n k)) (out (targetOwner n k)) step
+    reg (registers_high n k.1.1 k.1.2 (read x)) (installed src srcPort cs) (installed dst dstPort cd)
+  have finish (i : Fin 661) (portAt : (owner n k.1.1 k.1.2 i.val).port = t) (chartAt : chart n i.val = R)
+      (side : ℕ) (hs : side < 2) (role : owner n k.1.1 k.1.2 i.val = sideRole n k.1.1 k.1.2 side t)
+      (word : out (ownerTape n k.1.1 k.1.2 i) ∘ windowState w = runWord n reg i.val) : agrees i.val := by
+    change read out _ = stagePiece n (read x) _
+    rw [get out i portAt,role,stagePiece_side n (read x) _ _ _ side hs,← role,invoke_owner _ _ _ _ _ i.isLt,
+      chartAt,word]
+  exact ⟨finish src srcPort cs _ (by omega) (owner_source ..) source,
+    finish dst dstPort cd _ (by omega) (owner_target ..) target⟩
+
 /-- Both active roles read the certified stage at every rational address
 after the two charged sweeps over the port corrections. -/
 theorem correctedSweep_active_read [M8.Machine.Net] :
@@ -148,45 +206,32 @@ theorem correctedSweep_active_read [M8.Machine.Net] :
   obtain ⟨enter,leave,et,lt,es,ls,paid,kept,off,ports⟩ := build n w B W hw hW
   refine ⟨enter,leave,et,lt,es,ls,paid,kept,off,?_⟩
   intro x y step k b j read agrees
-  let out := leave.transform y
-  let t := k.2
-  let R := (port t.val).stageRoute n
-  let reg := registers n k.1.1 k.1.2 (read x)
   let raw := fun (a : OwnerArray w B W) i s => a i (activeWindowAddress b s j)
-  have route : R.transpose = R := PortCertificate.stageRoute_transpose n
-  have cancel : bar R * bar R = 1 := bar_mul_self (PortCertificate.stageRoute_mul_self (port_checked _ t.isLt) n)
-  have get (a : OwnerArray w B W) (i : Fin 661) (portAt : (owner n k.1.1 k.1.2 i.val).port = t) :
-      read a (owner n k.1.1 k.1.2 i.val) =
-        along (bar R.transpose) (raw a (ownerTape n k.1.1 k.1.2 i) ∘ windowState w) := by
-    funext z
-    simp only [read,readLanes,readRoles,activeSweepAddress,portAt,R,along_apply,Function.comp_apply,raw]
-    rw [← portAt]
-    rfl
-  have installed (i : Fin 661) (portAt : (owner n k.1.1 k.1.2 i.val).port = t) (chartAt : chart n i.val = R) :
-      reg i.val = raw x (ownerTape n k.1.1 k.1.2 i) ∘ windowState w := by
-    rw [show reg i.val = _ from registers_data n k.1.1 k.1.2 (read x) i.val i.isLt,chartAt,get x i portAt]
-    funext z
-    simp only [along_apply,route,mulVec_mulVec,cancel,one_mulVec]
-  let src : Fin 661 := ⟨t.val,by omega⟩
-  let dst : Fin 661 := ⟨111+t.val,by omega⟩
-  have srcPort : (owner n k.1.1 k.1.2 src.val).port = t := by
-    change (owner n k.1.1 k.1.2 t.val).port = t
-    rw [owner_source]; rfl
-  have dstPort : (owner n k.1.1 k.1.2 dst.val).port = t := by
-    change (owner n k.1.1 k.1.2 (111+t.val)).port = t
-    rw [owner_target]; rfl
-  obtain ⟨cs,cd⟩ := chart_port n t
-  obtain ⟨source,target⟩ := activeWord_read n t w (raw x (sourceOwner n k)) (raw x (targetOwner n k))
-    (raw out (sourceOwner n k)) (raw out (targetOwner n k)) (fun s => ports x y step k b s j)
-    reg (registers_high n k.1.1 k.1.2 (read x)) (installed src srcPort cs) (installed dst dstPort cd)
-  have finish (i : Fin 661) (portAt : (owner n k.1.1 k.1.2 i.val).port = t) (chartAt : chart n i.val = R)
-      (side : ℕ) (hs : side < 2) (role : owner n k.1.1 k.1.2 i.val = sideRole n k.1.1 k.1.2 side t)
-      (word : raw out (ownerTape n k.1.1 k.1.2 i) ∘ windowState w = runWord n reg i.val) : agrees i.val := by
-    change read out _ = stagePiece n (read x) _
-    rw [get out i portAt,role,stagePiece_side n (read x) _ _ _ side hs,← role,invoke_owner _ _ _ _ _ i.isLt,
-      chartAt,word]
-  exact ⟨finish src srcPort cs _ (by omega) (owner_source ..) source,
-    finish dst dstPort cd _ (by omega) (owner_target ..) target⟩
+  exact activeRoleRead_stage n k (raw x) (raw (leave.transform y)) (fun s => ports x y step k b s j)
+
+/-- On an active bank, the stage at a role depends only on the source and
+target of its replica, class and port. -/
+theorem stage_at_active_port (n : Fin 9) (r : Role) (hr : r.bank.val / 2 = BitHosting.activePair n.val)
+    (x y initial : State)
+    (ports : let agrees := fun i => y (owner n r.replica r.cls i) = stagePiece n x (owner n r.replica r.cls i)
+             agrees r.port.val ∧ agrees (111+r.port.val))
+    (same : ∀ i, i < 2 → initial (sideRole n r.replica r.cls i r.port) = x (sideRole n r.replica r.cls i r.port)) :
+    y r = stagePiece n initial r := by
+  have side := role_side n r hr
+  have action : y r = stagePiece n x r := by
+    by_cases h : r.bank.val % 2 = n.val % 2
+    · rw [h] at side
+      simpa only [owner_source,← side] using ports.1
+    · rw [show r.bank.val % 2 = 1-n.val % 2 by omega] at side
+      simpa only [owner_target,← side] using ports.2
+  rw [action]
+  rcases Nat.mod_two_eq_zero_or_one r.bank.val with e|e <;> rw [e] at side
+  · conv => lhs; rw [side,stagePiece_side_zero]
+    conv => rhs; rw [side,stagePiece_side_zero]
+    rw [same 0 (by decide),same 1 (by decide)]
+  · conv => lhs; rw [side,stagePiece_side_one]
+    conv => rhs; rw [side,stagePiece_side_one]
+    rw [same 0 (by decide),same 1 (by decide)]
 
 /-- Interpret the active window and the inactive port charts on the same
 bank of compact physical owners. -/
@@ -244,26 +289,9 @@ theorem correctedSweep_read [M8.Machine.Net] :
   let inactive := readLanes (sweepAddress (w := w) b j)
   funext r
   by_cases hr : r.bank.val / 2 = BitHosting.activePair n.val
-  · have side := role_side n r hr
-    let k := ((r.replica,r.cls),r.port)
-    obtain ⟨src,dst⟩ := acts x y step k b j
-    have eqn : active (leave.transform y) r = stagePiece n (active x) r := by
-      by_cases h : r.bank.val % 2 = n.val % 2
-      · rw [h] at side
-        simpa only [k,owner_source,← side,active,Piece.run] using src
-      · rw [show r.bank.val % 2 = 1-n.val % 2 by omega] at side
-        simpa only [k,owner_target,← side,active,Piece.run] using dst
-    rw [show sweepRoles n b j (leave.transform y) r = active (leave.transform y) r from ite_eq_left hr,eqn]
-    change stagePiece n (active x) r = stagePiece n (sweepRoles n b j x) r
-    have val (side : ℕ) (h : side < 2) : sweepRoles n b j x (sideRole n r.replica r.cls side r.port) =
-        active x (sideRole n r.replica r.cls side r.port) := ite_eq_left (side_pair _ _ _ _ h _)
-    rcases Nat.mod_two_eq_zero_or_one r.bank.val with e|e <;> rw [e] at side
-    · conv => lhs; rw [side,stagePiece_side_zero]
-      conv => rhs; rw [side,stagePiece_side_zero]
-      rw [val 0 (by decide),val 1 (by decide)]
-    · conv => lhs; rw [side,stagePiece_side_one]
-      conv => rhs; rw [side,stagePiece_side_one]
-      rw [val 0 (by decide),val 1 (by decide)]
+  · rw [show sweepRoles n b j (leave.transform y) r = active (leave.transform y) r from ite_eq_left hr]
+    exact stage_at_active_port n r hr (active x) (active (leave.transform y)) (sweepRoles n b j x)
+      (acts x y step ((r.replica,r.cls),r.port) b j) (fun side h => ite_eq_left (side_pair _ _ _ _ h _))
   · let tape := bankTape r.bank (r.replica,r.port,r.cls)
     have outside (k : (Fin 32 × Fin 5) × Fin 111) (i : Fin 661) (hi : i.val < 222) :
         ownerTape n k.1.1 k.1.2 i ≠ tape := by

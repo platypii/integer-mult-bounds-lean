@@ -2,6 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.M6.BitBorrowedSweep
 public import IntegerMultBounds.MathlibTM2.M6.BitBorrowedSweepRead
+public import IntegerMultBounds.MathlibTM2.M6.BitSweepWindowRead
 
 /-! Execute the two corrections around a borrowed sweep on shared owner tapes. -/
 @[expose] public section
@@ -157,9 +158,48 @@ theorem allocatedBorrowedCorrection_exec {t Q w B K : ℕ} {P U : Type}
 
 local instance (w : ℕ) : NeZero (prime^w) := ⟨(pow_pos Shared50ModularControl.prime_prime.pos _).ne'⟩
 
+private theorem port_misses_inactive (n : Fin 9) (run : Fin 32 × Fin 5)
+    (j : Fin 661) (data : j.val < 222) (r : Role) (inactive : r.bank.val / 2 ≠ BitHosting.activePair n.val) :
+    ownerTape n run.1 run.2 j ≠ bankTape r.bank (r.replica,r.port,r.cls) := by
+  intro eq
+  have same : owner n run.1 run.2 j = r :=
+    (Fintype.equivFin Role).injective (Fin.cast_injective _ (Fin.castSucc_injective _ eq))
+  apply inactive
+  rw [← same]
+  simp only [owner,data,ite_true]
+  apply side_pair
+  unfold regSide
+  split <;> omega
+
+open AffineFieldCoordinates FlatCoordinateLayout Cover Certificates.PR589.Nine
+
+def borrowedWindowCell {w rows K : ℕ} (row : Fin rows) (t : Fin K) :
+    LabelEntry.Cell (copyLabelLayout w rows K) rows :=
+  ⟨⟨0,pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _⟩,⟨0,Nat.zero_lt_one⟩,row,
+    ⟨0,by simp [copyLabelLayout,ActualAffineScaling.modulus]⟩,⟨0,Nat.zero_lt_one⟩,
+    ⟨0,by simp [copyLabelLayout,ActualAffineScaling.modulus]⟩,t⟩
+
+noncomputable def borrowedWindowRow {w B K : ℕ} (t : Fin K) (g : LabelPadding.Label 64 w)
+    (word : Fin ((prime^w)^16*((prime^w)^112*B*prime^(64*(w*64))*K)) → ZMod 2)
+    (row : Fin ((prime^w)^112*B)) (v : Swap.Shear.State (Fin 8) (ZMod (prime^w))) : ZMod 2 :=
+  word (index (embed v) (labelSpectator g (borrowedWindowCell row t)))
+
+noncomputable def borrowedActiveWindow {w B K : ℕ} (b : Fin B) (t : Fin K) (g : LabelPadding.Label 64 w)
+    (word : Fin ((prime^w)^16*((prime^w)^112*B*prime^(64*(w*64))*K)) → ZMod 2)
+    (s : Swap.Shear.State Axis (ZMod (prime^w))) : ZMod 2 :=
+  let D := undoTranslation.map (Int.cast : ℤ → ZMod (prime^w))
+  windowRead (fun row a => borrowedWindowRow t g word row (M8.Exchange.transform D⁻¹ D⁻¹ a)) s b
+
+/-- Read a logical stage at one inherited block, trailing position and label.
+The active pair uses the routed port window and all other roles use their restored chart. -/
+noncomputable def borrowedStageRead {w B K : ℕ} (n : Fin 9) (b : Fin B) (t : Fin K) (g : LabelPadding.Label 64 w)
+    (x : Fin 142081 → Fin ((prime^w)^16*((prime^w)^112*B*prime^(64*(w*64))*K)) → ZMod 2) : State := fun r =>
+  if r.bank.val / 2 = BitHosting.activePair n.val then activeRoleRead n (fun i => borrowedActiveWindow b t g (x i)) r
+  else borrowedRoleRead b t g x r
+
 open AffineFieldCoordinates FlatCoordinateLayout Cover in
-/-- The concrete entry and exit machines correct every active port on the worker's
-shared bank. The caller supplies only the worker's private initialization. -/
+/-- The corrected worker realizes one logical stage on every inherited block,
+trailing position and label of the same execution. -/
 theorem correctedBorrowedSweep_exec [M8.Machine.Net] :
     ∃ base tapes states : ℕ, ∀ {t Q w B K : ℕ} {P U : Type}
       (n : Fin 9) (localFan : Fin (142081+2) ↪ Fin t)
@@ -180,18 +220,12 @@ theorem correctedBorrowedSweep_exec [M8.Machine.Net] :
       ∃ z F k y, Exec (fun f => embProg worker id (body f)) program (mk u S) k (mk z F) ∧
         k ≤ (base*V+17760*(2*LeafCore.coreCost V w+14))*(tapes+5)+price+12 ∧
         z.user = u.user ∧ HelperFan fan y F ∧
-        ∀ (p : (Fin 32 × Fin 5) × Fin 111) (g : LabelPadding.Label 64 w)
-          (cell : LabelEntry.Cell (copyLabelLayout w rows K) rows) s,
-          let P := translatedPortProjector (ZMod (prime^w)) (4 : ZMod (prime^w))⁻¹ p.2
-          let pos := fun v => index (embed v) (labelSpectator g cell)
-          let src := sourceOwner n p
-          let dst := targetOwner n p
-          y src (pos s) = x src (pos (M8.Exchange.exchange P s.swap)) ∧
-          y dst (pos s) = x dst (pos (M8.Exchange.exchange (1-P) s)) + x src (pos s.swap) := by
+        ∀ (b : Fin B) (t : Fin K) (g : LabelPadding.Label 64 w),
+          borrowedStageRead n b t g y = (Piece.stage n).run (borrowedStageRead n b t g x) := by
   obtain ⟨_,base,tapes,states,build⟩ := borrowedPortCorrections
   refine ⟨base,tapes,states,?_⟩
   intro t Q w B K P U n localFan body code price initial rows V hw positive fits sweep
-  obtain ⟨enter,leave,et,lt,es,ls,sa,sb,exactCost,_,_,_,correct⟩ := build n w rows K hw positive
+  obtain ⟨enter,leave,et,lt,es,ls,sa,sb,exactCost,_,entryOff,exitOff,correct⟩ := build n w rows K hw positive
   obtain ⟨T,worker,program,prepare⟩ := allocatedBorrowedCorrection_exec n localFan body code price initial
     enter leave (es.trans fits) (ls.trans fits) sa sb sweep
   refine ⟨T,worker,program,?_⟩
@@ -200,10 +234,41 @@ theorem correctedBorrowedSweep_exec [M8.Machine.Net] :
   refine ⟨prepared,owners,?_⟩
   intro x u S live fresh
   obtain ⟨z,F,k,y,exec,time,user,output,action⟩ := run x u S live fresh
-  refine ⟨z,F,k,leave.transform y,exec,?_,user,output,correct x y action.1⟩
-  have entry := Nat.mul_le_mul_left enter.cost (Nat.add_le_add_right et 5)
-  have exit := Nat.mul_le_mul_left leave.cost (Nat.add_le_add_right lt 5)
-  rw [← exactCost,Nat.add_mul]
-  omega
+  refine ⟨z,F,k,leave.transform y,exec,?_,user,output,?_⟩
+  · have entry := Nat.mul_le_mul_left enter.cost (Nat.add_le_add_right et 5)
+    have exit := Nat.mul_le_mul_left leave.cost (Nat.add_le_add_right lt 5)
+    rw [← exactCost,Nat.add_mul]
+    omega
+  · intro b t g
+    let out := leave.transform y
+    let active := fun (bank : Fin 142081 → Fin V → ZMod 2) => activeRoleRead n (fun i => borrowedActiveWindow b t g (bank i))
+    funext r
+    by_cases hr : r.bank.val / 2 = BitHosting.activePair n.val
+    · let p := ((r.replica,r.cls),r.port)
+      let raw := fun (bank : Fin 142081 → Fin V → ZMod 2) i => borrowedActiveWindow b t g (bank i)
+      obtain ⟨src,dst⟩ := activeRoleRead_stage n p (raw x) (raw out) (by
+        intro s
+        apply activePort_window n p.2 (borrowedWindowRow t g (x (sourceOwner n p)))
+          (borrowedWindowRow t g (x (targetOwner n p))) (borrowedWindowRow t g (out (sourceOwner n p)))
+          (borrowedWindowRow t g (out (targetOwner n p))) _ s b
+        intro row v
+        exact correct x y action.1 p g (borrowedWindowCell row t) v)
+      rw [show borrowedStageRead n b t g out r = active out r from ite_eq_left hr]
+      exact stage_at_active_port n r hr (active x) (active out) (borrowedStageRead n b t g x)
+        ⟨src,dst⟩ (fun side h => ite_eq_left (side_pair _ _ _ _ h _))
+    · rw [show borrowedStageRead n b t g out r = borrowedRoleRead b t g out r from ite_eq_right hr]
+      change _ = stagePiece n (borrowedStageRead n b t g x) r
+      rw [stagePiece_inactive _ _ _ hr,show borrowedStageRead n b t g x r = borrowedRoleRead b t g x r from ite_eq_right hr]
+      rw [← stagePiece_inactive n (borrowedRoleRead b t g x) r hr]
+      let tape := bankTape r.bank (r.replica,r.port,r.cls)
+      have pre : enter.transform x tape = x tape := entryOff x tape (fun p =>
+        port_misses_inactive n p.1 (p.2.castLE (by decide)) (by change p.2.val < 222; omega) r hr)
+      have post : leave.transform y tape = y tape := exitOff y tape (fun p =>
+        port_misses_inactive n p.1 ⟨111+p.2.val,by omega⟩ (by dsimp; omega) r hr)
+      apply borrowedRoleRead_inactive_of_exchange r hr b t g
+      intro v
+      dsimp only [out]
+      rw [show leave.transform y (bankTape r.bank (r.replica,r.port,r.cls)) = _ from post, ← pre]
+      exact action.2 r hr b t g (v ∘ Sum.inl,v ∘ Sum.inr)
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
