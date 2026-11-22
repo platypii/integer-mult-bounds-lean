@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.M6.BitStagePlacement
 public import IntegerMultBounds.MathlibTM2.M6.BitTargetScan
 public import IntegerMultBounds.MathlibTM2.M6.BitStageBlockCount
 public import IntegerMultBounds.MathlibTM2.M6.BitStageExterior
@@ -11,6 +12,11 @@ open IntegerMultBounds.Machine IntegerMultBounds.Networks Stack Host Cover.Fallb
 open Shared50ModularControl (prime)
 open Certificates.PR589 Certificates.PR589.Nine RecursiveInterchangeLayout
 local instance (w : ℕ) : NeZero (prime^w) := ⟨(pow_pos Shared50ModularControl.prime_prime.pos _).ne'⟩
+
+private theorem projectedFan {k V a b c : ℕ} (fan : Fin (k+2) ↪ Fin a)
+    (inner : Fin a ↪ Fin b) (ext : Fin b ↪ Fin c) (S : Stacks c prime)
+    (x : Fin k → Fin V → ZMod 2) (rep : HelperFan ((fan.trans inner).trans ext) x S) :
+    HelperFan fan x (embStk inner (embStk ext S)) := rep
 
 private theorem projectedUser {a b q f : ℕ} {U : Type} (e : Fin a → Fin b) (u : HS b q f U) :
     (embDn e u).user = u.user := rfl
@@ -69,6 +75,77 @@ private theorem stageEntryFrame {t a : ℕ} (full : Fin (142081+2) ↪ Fin t)
   exact ⟨priv,fun i => blankAt _ (show t ≤ t+i.val by omega),
     fun o j => blankAt _ (show t ≤ t+14+(finProdFinEquiv (o,j)).val by omega),
     fun j hj => blankAt j (by omega)⟩
+
+/-- The packed runs and final owner-frame changes performed by one stage. -/
+def StageTrace (n : Fin 9) (w B tail : ℕ) :=
+  fun input packed out =>
+    stageRuns.foldr (fun k cont a => ∃ b, packedStageEffect n k w B tail a b ∧ cont b)
+      (fun a => a = packed) input ∧
+    HelperLabelTrace w (B*prime^(64*(w*64))) tail
+      (restoreSlotChanges (stageFinalSlot n)) packed out
+
+/-- Host endpoint with the stage's physical ports and budget already fixed. -/
+def StageHandoffExec {P U : Type} {t q : ℕ} (n : Fin 9) (w B tail : ℕ)
+    (body : P → Pr P t q prime U) (code : Pr P t q prime U)
+    (src dst : Fin (142081+2) ↪ Fin t) (prepared : Stacks t prime) (budget : ℕ) : Prop :=
+  let K := (prime^w)^112*tail
+  let entry := singleLabelBank (B := B) (K := K) (firstRowLabel w)
+  ∀ x u S, HelperFan src (entry x) S →
+    (∀ j, (∀ i, src i ≠ j) → S.L j = prepared.L j ∧ S.R j = prepared.R j) →
+    ∃ z F steps packed out, Exec body code (mk u S) steps (mk z F) ∧ steps ≤ budget ∧
+      z.user = u.user ∧ HelperFan dst (entry (Function.update (collapseLabelBank out)
+        (Fin.last 142080) (fun _ => 0))) F ∧ StageTrace n w B tail (entry x) packed out
+
+private theorem stageHandoff_of_projected {P U : Type} {m n t q : ℕ}
+    (i : Fin 9) (w B tail : ℕ) (body : P → Pr P t q prime U) (code : Pr P t q prime U)
+    (fan : Fin (142081+2) ↪ Fin m) (inner : Fin m ↪ Fin n) (ext : Fin n ↪ Fin t)
+    (dst : Fin (142081+2) ↪ Fin t) (prepared : Stacks t prime) (budget : ℕ) :
+    let K := (prime^w)^112*tail
+    let entry := singleLabelBank (B := B) (K := K) (firstRowLabel w)
+    (∀ x u S, let C := embStk ext S
+      HelperFan fan (entry x) (embStk inner C) →
+      (∀ j, (∀ h, ext (inner (fan h)) ≠ j) → S.L j = prepared.L j ∧ S.R j = prepared.R j) →
+      ∃ z F steps packed out, Exec body code (mk u S) steps (mk z F) ∧ steps ≤ budget ∧
+        z.user = u.user ∧ HelperFan dst (entry (Function.update (collapseLabelBank out)
+          (Fin.last 142080) (fun _ => 0))) F ∧ StageTrace i w B tail (entry x) packed out) →
+    StageHandoffExec i w B tail body code ((fan.trans inner).trans ext) dst prepared budget := by
+  intro K entry run x u S live frame
+  exact run x u S (projectedFan fan inner ext S _ live) frame
+
+/-- Adjacent PR589 stages execute on the same labeled row. Each retains its
+packed trace and restoration trace, and their charged budgets add. -/
+theorem consecutiveStageHandoffs {P R U : Type} {m n q : ℕ} (i : Fin 8) (w B tail : ℕ)
+    (left : P → Pr P m q prime U) (right : R → Pr R n q prime U)
+    (src mid : Fin (142081+2) ↪ Fin m) (input dst : Fin (142081+2) ↪ Fin n)
+    {a b L D price fee}
+    (firstRun : StageHandoffExec i.castSucc w B tail left a src mid L price)
+    (nextRun : StageHandoffExec i.succ w B tail right b input dst D fee) :
+    ∃ bank : Fin n ↪ Fin (m+n),
+    let leftBank := Fin.castAdd n (n := m)
+    let body := Sum.elim (fun g => embProg leftBank Sum.inl (left g))
+      (fun g => embProg bank Sum.inr (right g))
+    let K := (prime^w)^112*tail
+    let entry := singleLabelBank (B := B) (K := K) (firstRowLabel w)
+    let carry := fun out => entry (Function.update (collapseLabelBank out) (Fin.last 142080) (fun _ => 0))
+    ∀ x u S, HelperFan src (entry x) S →
+      (∀ j, (∀ h, src h ≠ j) → S.L j = L.L j ∧ S.R j = L.R j) →
+      ∃ z F steps p y r out, Exec body ((embProg leftBank Sum.inl a).seq (embProg bank Sum.inr b))
+        (mk u (adjacentStageStacks S D)) steps (mk z F) ∧ steps ≤ price+fee ∧ z.user = u.user ∧
+        HelperFan (dst.trans bank) (carry out) F ∧ StageTrace i.castSucc w B tail (entry x) p y ∧
+        StageTrace i.succ w B tail (carry y) r out := by
+  obtain ⟨bank,compose⟩ := runAdjacentHelperFans (P := P) (R := R) (U := U) (q := q)
+    (V := (prime^w)^16*(B*prime^(64*(w*64))*((prime^w)^112*tail))) mid input
+  refine ⟨bank,?_⟩
+  intro leftBank body K entry carry x u S live frame
+  obtain ⟨v,C,t,p,y,run,paid,same,ready,firstTrace⟩ := firstRun x (embDn leftBank u) S live frame
+  let post := fun (user : U) (F : Stacks n prime) => user = u.user ∧
+    ∃ r out, HelperFan dst (carry out) F ∧ StageTrace i.succ w B tail (carry y) r out
+  obtain ⟨z,F,steps,done,bill,user,r,out,rep,trace⟩ :=
+    compose left right a b u S D v C t fee (carry y) post run ready (by
+      intro v' C' user live frame
+      obtain ⟨z,F,s,r,out,ran,cost,preserved,rep,trace⟩ := nextRun _ v' C' live frame
+      exact ⟨z,F,s,ran,cost,preserved.trans (user.trans same),r,out,rep,trace⟩)
+  exact ⟨z,F,steps,p,y,r,out,done,bill.trans (Nat.add_le_add_right paid _),user,rep,firstTrace,trace⟩
 
 def AllocatedStageTargets [M8.Machine.Net] (n : Fin 9) (handoff : Bool := false) : Prop :=
     let edges := Geometry.Moves.phaseEdges.filter positiveMove
@@ -137,23 +214,12 @@ def AllocatedStageTargets [M8.Machine.Net] (n : Fin 9) (handoff : Bool := false)
     if handoff then
       let extBank := (Fin.castAddEmb 142081 (n := total+14+142081*7)).trans (Fin.castAddEmb 10)
       let placedFan := full.trans (Fin.castAddEmb 14)
-      let label := firstRowLabel (w+1)
-      ∃ code, ∀ (x : Fin 142081 → Fin (M^16*(B*K)) → ZMod 2) u S,
-      let C := embStk extBank S
-      represented full (singleLabelBank (B := B) (K := K) label x) (embStk inner C) →
-      (∀ j, (∀ i, extBank (inner (full i)) ≠ j) →
-        S.L j = (extendStageStacks _ prepared).L j ∧ S.R j = (extendStageStacks _ prepared).R j) →
-      ∃ z F steps packed out, Exec (fun g => embProg extBank id (embProg inner id (outer g))) code (mk u S) steps (mk z F) ∧
-        steps ≤ budget+(4300*order.length+1530001223)*V+
+      ∃ code, StageHandoffExec n (w+1) B (node.beforeRows*rows*node.between*node.afterD)
+        (fun g => embProg extBank id (embProg inner id (outer g))) code
+        ((full.trans inner).trans extBank) (stageOutputFan n placedFan) (extendStageStacks _ prepared)
+        (budget+(4300*order.length+1530001223)*V+
           (scanCounterCost ![K,N,D]+1+(17760*(7021*D*(N*K)+6)+1+
-          (14*V+14*(FlatCoordinateSchedule.bits V).length+33)*(142081+7)+6)) ∧ z.user = u.user ∧
-        HelperFan (stageOutputFan n placedFan) (singleLabelBank label
-          (Function.update (collapseLabelBank (B := B) (K := K) out) (Fin.last 142080) (fun _ => 0))) F ∧
-        stageRuns.foldr (fun k cont a => ∃ b, packedStageEffect n k (w+1) B
-          (node.beforeRows*rows*node.between*node.afterD) a b ∧ cont b)
-          (fun a => a = packed) (singleLabelBank (B := B) (K := K) label x) ∧
-        HelperLabelTrace (w+1) (B*N) (node.beforeRows*rows*node.between*node.afterD)
-          (restoreSlotChanges (stageFinalSlot n)) packed out
+          (14*V+14*(FlatCoordinateSchedule.bits V).length+33)*(142081+7)+6)))
     else
       ∃ code, ∀ (label : Cover.LabelPadding.Label 64 (w+1)) (x : Fin 142081 → Fin (M^16*(B*K)) → ZMod 2) u S,
       represented full (singleLabelBank (B := B) (K := K) label x) (embStk inner S) →
@@ -374,11 +440,13 @@ private theorem allocatedStageEndpoint_host [M8.Machine.Net] (n : Fin 9) (handof
   | false => exact ⟨rawCode,executeRaw⟩
   | true =>
     rw [ite_eq_left rfl]
-    intro extBank placedFan label
+    intro extBank placedFan
+    let label := firstRowLabel (w+1)
     let src := fun i : Fin 3 => (i.castAdd 11).natAdd total
     obtain ⟨code,finish⟩ := stageWithHandoff_host n placedFan ((le_max_right ..).trans fits) src
       (fun g => embProg inner id (outer g)) rawCode
     refine ⟨code,?_⟩
+    apply stageHandoff_of_projected
     intro x u S C live frame
     obtain ⟨privateRegs,regBlank,empty,fresh⟩ := stageEntryFrame full prepared S frame
     obtain ⟨v,A,m,exec,paid,user,targets,controls,dims,packed,out,ownersOut,trace,restore⟩ :=
