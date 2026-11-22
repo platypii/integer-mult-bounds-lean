@@ -12,10 +12,10 @@ open Shared50ModularControl (prime)
 def extendPermutation {k : ℕ} (p : Equiv.Perm (Fin k)) (n : ℕ) : Equiv.Perm (Fin (k+n)) :=
   finSumFinEquiv.symm.trans ((p.sumCongr (Equiv.refl (Fin n))).trans finSumFinEquiv)
 
-private theorem extendLeft {k n} (p : Equiv.Perm (Fin k)) (i : Fin k) :
+theorem extendLeft {k n} (p : Equiv.Perm (Fin k)) (i : Fin k) :
     extendPermutation p n (i.castAdd n) = (p i).castAdd n := by simp [extendPermutation]
 
-private theorem extendRight {k n} (p : Equiv.Perm (Fin k)) (i : Fin n) :
+theorem extendRight {k n} (p : Equiv.Perm (Fin k)) (i : Fin n) :
     extendPermutation p n (i.natAdd k) = i.natAdd k := by simp [extendPermutation]
 
 private theorem permuteFan {k t V : ℕ} (p : Equiv.Perm (Fin k)) (fan : Fin (k+2) ↪ Fin t)
