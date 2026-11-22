@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.M6.BitFlatStageHandoff
 public import IntegerMultBounds.MathlibTM2.M6.BitInheritedIdleRead
 
 /-! Allocate disjoint private registers for a window of single-owner programs. -/
@@ -207,18 +208,14 @@ theorem inheritedWindow_exec {U : Type} {Q : ℕ} (i : Fin 9) (w W : ℕ) (posit
     (∀ k, PackedPieceHandoff (volume prime (lane k)) (fun x y =>
       ∀ r : Fin 142080, y r.castSucc = Shared50RecursiveNodeRows.transpose (one_dvd (lane k).rows) (x r.castSucc))
       (body k) (code k) (src k) (dst k) (seed k) (price k)) →
-    ∃ (H : ℕ) (fan : Fin (142081+2) ↪ Fin H)
+    ∃ (H : ℕ) (input output : Fin (142081+2) ↪ Fin H)
       (host : (Σ k, Empty ⊕ P k) → Pr (Σ k, Empty ⊕ P k) H Q prime U)
       (program : Pr (Σ k, Empty ⊕ P k) H Q prime U) (initial : Stacks H prime),
-    ∀ (x : Fin 142081 → Fin m → ZMod 2) (D : Stacks H prime)
-      (u : HS H Q prime U), ParentStageWords (fun j => fan (j.castAdd 2)) fan m x D →
-      (∀ t, (∀ j, fan j ≠ t) → D.L t = initial.L t ∧ D.R t = initial.R t) →
-      ∃ F z n y, Exec host program (mk u D) n (mk z F) ∧
-        n ≤ (idleCopies.map price).sum + 35520 *
-          (((298*(T+5)+5)*142080+142081*8)*V + (142081*10+31)) + 1 ∧
-        z.user = u.user ∧ HelperFan fan y F ∧
+      PackedPieceHandoff m (fun x y =>
         (∀ k, intervalChildRead i k.2 w (W*142080) (x (idleTape i k)) (y (idleTape i k))) ∧
-        ∀ j, (∀ k, j ≠ idleTape i k) → y j = x j := by
+        ∀ j, (∀ k, j ≠ idleTape i k) → y j = x j) host program input output initial
+        ((idleCopies.map price).sum + 35520 *
+          (((298*(T+5)+5)*142080+142081*8)*V + (142081*10+31)) + 1 + 142081*(8*m+10)+1) := by
   intro Job T V m lane N P price body code src dst seed child
   have worker k := inheritedSeededWorker_exec (lane k)
     (inheritedIdleCopy_exec i k.2 w W positive capacity (child k))
@@ -238,14 +235,20 @@ theorem inheritedWindow_exec {U : Type} {Q : ℕ} (i : Fin 9) (w W : ℕ) (posit
       simp [volume,Nat.mul_assoc]
     apply transportWorker physical _ _ _ _ (intervalChildRead i k.2 w (W*142080))
     simpa only [size] using run k)
-  refine ⟨H,fan,bodyWindow,window,prepared,?_⟩
-  intro x D u words stock
-  obtain ⟨F,z,n,y,exec,paid,result⟩ := execute x D u words.helperFan
-    (fun k => ⟨words.left (idleTape i k),words.right (idleTape i k)⟩) stock
-  refine ⟨F,z,n,y,exec,?_,result⟩
-  have bill := windowCharge idleCopies price T V
-  change (idleCopies.map charge).sum = _ at bill
-  rwa [bill,idleCopies_length] at paid
+  let budget := (idleCopies.map price).sum + 35520 *
+    (((298*(T+5)+5)*142080+142081*8)*V + (142081*10+31)) + 1
+  obtain ⟨codeOut,initialOut,handoff⟩ := flatWordStageHandoff fan bodyWindow window prepared
+    (fun x y => (∀ k, intervalChildRead i k.2 w (W*142080) (x (idleTape i k)) (y (idleTape i k))) ∧
+      ∀ j, (∀ k, j ≠ idleTape i k) → y j = x j) (budget : ℝ) (by
+    intro x u D words stock
+    obtain ⟨F,z,n,y,exec,paid,result⟩ := execute x D u words.helperFan
+      (fun k => ⟨words.left (idleTape i k),words.right (idleTape i k)⟩) stock
+    refine ⟨z,F,n,y,exec,?_,result⟩
+    have bill := windowCharge idleCopies price T V
+    change (idleCopies.map charge).sum = _ at bill
+    rw [bill,idleCopies_length] at paid
+    exact_mod_cast paid)
+  exact ⟨_,_,_,_,codeOut,initialOut,by simpa only [Nat.floor_natCast] using handoff⟩
 
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
