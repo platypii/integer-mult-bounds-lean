@@ -15,6 +15,39 @@ open IntegerMultBounds.Swap.Modular (reduce)
 open M8.Machine.ArbitraryWidthOriginalTotalRun (cost)
 local instance (w : ℕ) : NeZero (prime^w) := ⟨(pow_pos Shared50ModularControl.prime_prime.pos _).ne'⟩
 
+/-- A remainder on another bank pair preserves the full source and target
+equations of a sweep, including its independent label coordinates. -/
+theorem BorrowedPorts.afterIdle {n : Fin 9} {w B K : ℕ} {x y z}
+    (ports : BorrowedPorts n w B K x y) (i : Fin 9) (distinct : activePair n.val ≠ pairOf i)
+    (off : ∀ j, (∀ k, j ≠ idleTape i k) → z j = y j) : BorrowedPorts n w B K x z := by
+  intro run t g cell owner j src dst read input
+  have same (a : Fin 661) (data : a.val < 222) : z (owner a) = y (owner a) := by
+    apply off
+    intro k eqn
+    have roles : BitNode.owner n run.1 run.2 a = idleRole i k :=
+      (Fintype.equivFin Role).injective (Fin.cast_injective _ (Fin.castSucc_injective _ eqn))
+    have pair := (idleRole_coverage i _).mp ⟨k,roles.symm⟩
+    simp only [BitNode.owner,data,ite_true] at pair
+    exact distinct ((side_pair n run.1 run.2 _ (by unfold regSide; split <;> omega) _).symm.trans pair)
+  have kept (a : Fin 661) (data : a.val < 222) : read z a = read y a := by
+    funext s
+    simpa only [read,phaseRead,Copy.extendStored,dite_eq_left a.isLt] using
+      congrFun (same a data) (FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) j)
+  rw [kept src (by dsimp [src]; omega),kept dst (by dsimp [dst]; omega)]
+  exact ports run t g cell
+
+/-- Follow an active pair across a sequence of remainders on other pairs. -/
+theorem BorrowedPorts.afterIdles {n : Fin 9} {w B K : ℕ} {x y}
+    (ports : BorrowedPorts n w B K x y) (idle : Fin 9 → OwnerStage _)
+    (off : ∀ i a j, (∀ k, j ≠ idleTape i k) → (idle i).transform a j = a j)
+    (windows : List (Fin 9)) (apart : ∀ i ∈ windows, activePair n.val ≠ pairOf i) :
+    BorrowedPorts n w B K x (windows.foldl (fun a i => (idle i).transform a) y) := by
+  induction windows generalizing y with
+  | nil => exact ports
+  | cons i rest ih =>
+    exact ih (ports.afterIdle i (apart i List.mem_cons_self) (off i y))
+      (fun k hk => apart k (List.mem_cons_of_mem _ hk))
+
 /-- Cost of the borrowed-row sweeps and physical idle schedule on one aligned parent descriptor. -/
 theorem borrowedNode_parentCost [M8.Machine.Net] (engine : CopyTranspose := CopyTranspose.original) :
     ∃ D : ℝ, ∀ (parent : Descriptor) (w B rows : ℕ), parent.Positive → 0 < w → 0 < B →
@@ -42,17 +75,23 @@ theorem borrowedNode_parentCost [M8.Machine.Net] (engine : CopyTranspose := Copy
         (∀ n x, stageRuns.foldr (fun k cont a => ∃ b, BorrowedStep n w B spectators k a b ∧ cont b)
           (fun a => a = (inv n).transform x) x ∧ BorrowedPorts n w B spectators x ((inv n).transform x) ∧
           BorrowedHelpers n w B spectators x ((inv n).transform x)) ∧
+        (∀ n x (windows : List (Fin 9)), (∀ i ∈ windows, activePair n.val ≠ pairOf i) →
+          BorrowedPorts n w B spectators x (windows.foldl (fun a i => (idle i).transform a) ((inv n).transform x))) ∧
         ∀ i x, (∀ k, IdleTransport i k w B K (fun t => x (idleTape i k) (Fin.cast size t))
           (fun t => (idle i).transform x (idleTape i k) (Fin.cast size t))) ∧
           ∀ j, (∀ k, j ≠ idleTape i k) → (idle i).transform x j = x j := by
-  apply compiledNode_cost_of_sweeps engine (2*(63*9+252*527)+1322*252) (fun w B K inv =>
+  have assemble := compiledNode_cost_of_sweeps engine (2*(63*9+252*527)+1322*252) (fun w B K inv =>
     ∀ n x, stageRuns.foldr (fun k cont a => ∃ b, BorrowedStep n w B K k a b ∧ cont b)
       (fun a => a = (inv n).transform x) x ∧ BorrowedPorts n w B K x ((inv n).transform x) ∧
         BorrowedHelpers n w B K x ((inv n).transform x))
   obtain ⟨C,build⟩ := borrowedPieces_nodeCost engine
-  refine ⟨C,?_⟩
-  intro w B K hw hb hk W V hs
-  obtain ⟨inv,bill,trace⟩ := build w B K hw hb hk
-  exact ⟨inv,bill,fun n x => ⟨trace n x,borrowedSweep_ports (trace n x),borrowedSweep_helpers (trace n x)⟩⟩
+  obtain ⟨D,node⟩ := assemble ⟨C,fun w B K hw hb hk => by
+    obtain ⟨inv,bill,trace⟩ := build w B K hw hb hk
+    exact ⟨inv,bill,fun n x => ⟨trace n x,borrowedSweep_ports (trace n x),borrowedSweep_helpers (trace n x)⟩⟩⟩
+  refine ⟨D,?_⟩
+  intro parent w B rows positive hw hb width split label K W spectators phaseW V v
+  obtain ⟨size,inv,idle,bridge,exchange,bank,bill,sweep,rest⟩ := node parent w B rows positive hw hb width split label
+  exact ⟨size,inv,idle,bridge,exchange,bank,bill,sweep,fun n x windows apart =>
+    (sweep n x).2.1.afterIdles idle (fun i a => (rest i a).2) windows apart,rest⟩
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
