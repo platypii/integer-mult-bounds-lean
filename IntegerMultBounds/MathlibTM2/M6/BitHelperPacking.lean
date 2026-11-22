@@ -297,9 +297,9 @@ theorem helperPackInput_ready {k : ℕ} (w W : ℕ) (owners : Stacks k prime)
     unfold helperHeader
     split <;> first | rfl | omega
 
-/-- Run a slot change on its permanent owner. All other owner tapes retain
-both stacks, and the output owner reads the old word at the new slot address. -/
-theorem helperSlotPack_exec {k : ℕ} (owner : Fin k) (x y : Option (Fin 56))
+/-- Permute the 128 field coordinates on one permanent owner. All other
+owner stacks and the spectator position are preserved. -/
+theorem ownerFieldPerm_exec {k : ℕ} (owner : Fin k) (perm : Equiv.Perm (Fin 128))
     (body : P → Pr P ((N+35)+k) Q prime U) :
     let clean := fun (S : Stacks ((N+35)+k) prime) => ∀ i : Fin (N+35), 35 ≤ i.val →
       S.L (i.castAdd k) = [] ∧ S.R (i.castAdd k) = []
@@ -313,13 +313,12 @@ theorem helperSlotPack_exec {k : ℕ} (owner : Fin k) (x y : Option (Fin 56))
       (∀ t, ready t (data t) S) → clean S → ∃ z F, ∃ n : ℕ, ∃ out, z.user = v.user ∧
         (n : ℝ) ≤ C * ((M^128*W : ℕ) : ℝ) * ((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau ∧
         Exec body code (mk v S) n (mk z F) ∧ (∀ t, ready t (Function.update data owner out t) F) ∧ clean F ∧
-        (∀ c s j, out (FlatCoordinateLayout.index (helperSlotField c y (w+1) s) j) =
-          data owner (FlatCoordinateLayout.index (helperSlotField c x (w+1) s) j)) ∧
+        (∀ digits j, out (FlatCoordinateLayout.index (digits ∘ perm) j) =
+          data owner (FlatCoordinateLayout.index digits j)) ∧
         ∀ t : Fin k, t ≠ owner → F.L (t.natAdd (N+35)) = S.L (t.natAdd (N+35)) ∧
           F.R (t.natAdd (N+35)) = S.R (t.natAdd (N+35)) := by
   intro clean
   let ports := payloadPlacement (24 : Fin (N+35)) owner
-  let perm := (helperFieldOrder y).trans (helperFieldOrder x).symm
   obtain ⟨is,fits,acts⟩ := fieldSchedule perm
   obtain ⟨setup,swaps,bound⟩ := packTime_le (P := Empty) (U := U) Empty.elim 128 is (by decide)
   let C := ((setup+1 : ℕ) : ℝ) + (swaps : ℝ)*(3808275+M8.RevMachine.LeafCore.C)
@@ -367,10 +366,36 @@ theorem helperSlotPack_exec {k : ℕ} (owner : Fin k) (x y : Option (Fin 56))
       rw [kept.1,kept.2]
       exact (start t).src z
   exact ⟨z,F,n,out,user,time,run,records,(fun i hi => by rw [← privatePort i hi]; exact clear i hi),
-    fun c s j => by
-      rw [← helperDigits_reindex c x y (w+1) s]
-      simpa only [id_eq,acts] using read (helperSlotField c x (w+1) s) j,
+    fun digits j => by simpa only [id_eq,acts] using read digits j,
     fun t ne => off _ (payloadPlacement_off _ owner t ne)⟩
+
+theorem helperSlotPack_exec {k : ℕ} (owner : Fin k) (x y : Option (Fin 56))
+    (body : P → Pr P ((N+35)+k) Q prime U) :
+    let clean := fun (S : Stacks ((N+35)+k) prime) => ∀ i : Fin (N+35), 35 ≤ i.val →
+      S.L (i.castAdd k) = [] ∧ S.R (i.castAdd k) = []
+    ∃ (code : Pr P ((N+35)+k) Q prime U) (C : ℝ), ∀ w W, 0 < W →
+      let M := prime^(w+1)
+      ∀ (v : HS ((N+35)+k) Q prime U) (S : Stacks ((N+35)+k) prime)
+        (record : List (Fin (prime+4))) (dest : ℤ → Fin 4) (q : ℤ)
+        (data : Fin k → Fin (M^128*W) → ZMod 2),
+      let ready := fun t => RecordReady (b := prime) (w := w) (d := 128) (W := W) (helperRecordBank t) M.size W.size record
+        SparseRoleCircuit.encode (fun _ => blank) dest 0 q
+      (∀ t, ready t (data t) S) → clean S → ∃ z F, ∃ n : ℕ, ∃ out, z.user = v.user ∧
+        (n : ℝ) ≤ C * ((M^128*W : ℕ) : ℝ) * ((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau ∧
+        Exec body code (mk v S) n (mk z F) ∧ (∀ t, ready t (Function.update data owner out t) F) ∧ clean F ∧
+        (∀ c s j, out (FlatCoordinateLayout.index (helperSlotField c y (w+1) s) j) =
+          data owner (FlatCoordinateLayout.index (helperSlotField c x (w+1) s) j)) ∧
+        ∀ t : Fin k, t ≠ owner → F.L (t.natAdd (N+35)) = S.L (t.natAdd (N+35)) ∧
+          F.R (t.natAdd (N+35)) = S.R (t.natAdd (N+35)) := by
+  intro clean
+  obtain ⟨code,C,run⟩ := ownerFieldPerm_exec owner ((helperFieldOrder y).trans (helperFieldOrder x).symm) body
+  refine ⟨code,C,?_⟩
+  intro w W hW M v S record dest q data ready start free
+  obtain ⟨z,F,n,out,user,time,exec,stored,clear,read,off⟩ := run w W hW v S record dest q data start free
+  refine ⟨z,F,n,out,user,time,exec,stored,clear,?_,off⟩
+  intro c s j
+  rw [← helperDigits_reindex c x y (w+1) s]
+  exact read _ j
 
 /-- Ordered parent-address reads of the slot changes on the permanent bank. -/
 def HelperSlotTrace {k : ℕ} (w W : ℕ) (changes : List (Fin k × Option (Fin 56) × Option (Fin 56)))
