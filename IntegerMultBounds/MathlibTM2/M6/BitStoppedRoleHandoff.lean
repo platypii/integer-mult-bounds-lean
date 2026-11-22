@@ -67,34 +67,38 @@ private theorem leafStock {B scratch : ℕ} (headers : Fin 6 → List (Fin (prim
 /-- All role words are transposed at the inherited interval addresses. Headers
 and scratch are shared by successive owners, then the output is materialized. -/
 theorem stoppedRoleHandoff [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity : columnCapacity ≤ Q)
-    (child lane : Descriptor) (positive : 0 < volume prime lane)
-    (position : Fin (volume prime child) ≃ Fin (volume prime lane))
-    (width : lane.width = child.width) (coords : InheritedIntervalPositions child lane rfl position) :
+    : ∃ (T : ℕ) (host : Empty → Pr Empty T Q prime U) (program : Pr Empty T Q prime U)
+      (input output : Fin (142081+2) ↪ Fin T), ∀ (child lane : Descriptor), 0 < volume prime lane →
+    ∀ (position : Fin (volume prime child) ≃ Fin (volume prime lane)),
+    lane.width = child.width → InheritedIntervalPositions child lane rfl position →
     let V := volume prime lane
     let price := (descriptorHeaderCost lane : ℝ) +
       ((LeafCore.small+5 : ℕ)*|LeafCore.C|+8+LeafCore.small*(16+8*|LeafCore.C|))*
         ((V : ℝ)*((max 1 child.width : ℕ) : ℝ)^M8.Machine.BudgetBound.tau)
-    PackedWindowHandoff U Q V (fun x y => ∀ (r : Fin 142080) j, y r.castSucc (position j) =
+    ∃ prepared, PackedPieceHandoff V (fun x y => ∀ (r : Fin 142080) j, y r.castSucc (position j) =
       Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (x r.castSucc ∘ position) j)
-      (⌊142081*price+1⌋₊+142081*(8*V+10)+1) := by
-  intro V price
+      host program input output prepared (⌊142081*price+1⌋₊+142081*(8*V+10)+1) := by
   let B := 142081+2
   let n := B+6
   let fan := (Fin.castAddEmb 6 (n := B)).trans (Fin.castAddEmb LeafCore.small)
   let src := Fin.natAddEmb B (m := 6)
   let port := fun i : Fin 142081 => (i.castAdd 2).castAdd 6
-  obtain ⟨seed,prepare⟩ := leafStock (B := B) (scratch := LeafCore.small)
-    (fun j => (Routines.hdr lane j).map bitSymbol)
   let body : Empty → Pr Empty (n+LeafCore.small) Q prime U := Empty.elim
   let code := fun i => hostedStoppedDirectory (P := Empty) (U := U) capacity src (port i)
+  obtain ⟨program,materialize⟩ := uniformWordStageHandoff fan body (Prog.seqList ((List.finRange 142081).map code))
+  refine ⟨_,fun f => embProg (SweepFile.Exit.chart 0 _) id (body f),program,fan.trans (SweepFile.Exit.chart 0 _),returnedFan fan,?_⟩
+  intro child lane positive position width coords V price
+  obtain ⟨seed,prepare⟩ := leafStock (B := B) (scratch := LeafCore.small)
+    (fun j => (Routines.hdr lane j).map bitSymbol)
   let step := Shared50RecursiveNodeRows.transpose (α := ZMod 2) (one_dvd lane.rows)
   let ready (S : Stacks (n+LeafCore.small) prime) := ∀ t, (∀ j, fan j ≠ t) →
     S.L t = seed.L t ∧ S.R t = seed.R t
-  obtain ⟨program,prepared,handoff⟩ := flatStageHandoff fan body (Prog.seqList ((List.finRange 142081).map code))
+  apply materialize
     seed (fun x y => ∀ (r : Fin 142080) j, y r.castSucc (position j) =
       Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (x r.castSucc ∘ position) j)
-    (142081*price+1) (by
-    intro x u S live stock
+    (142081*price+1)
+  · intro x u S words stock
+    have live := words.helperFan
     obtain ⟨z,F,n',y,ran,paid,user,out,acts,_⟩ := runOwnerList fan body code step price ready (by
       intro i data v D owners fresh
       obtain ⟨b,G,m,changed,exec,cost,same,payload,off,reads⟩ := inheritedLeaf_exec capacity body src (port i)
@@ -109,10 +113,9 @@ theorem stoppedRoleHandoff [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity : col
       _ (List.nodup_finRange _) x u S live stock
     refine ⟨z,F,n',y,ran,by simpa only [List.length_finRange,Nat.cast_ofNat] using paid,user,out,?_⟩
     intro r
-    exact (coords.transpose_iff width _ _).2 (acts r.castSucc (List.mem_finRange _)))
-  exact ⟨_,_,_,program,_,_,prepared,handoff⟩
+    exact (coords.transpose_iff width _ _).2 (acts r.castSucc (List.mem_finRange _))
 
-private theorem leafBill_linear (V width header : ℕ) (rate tau : ℝ)
+theorem leafBill_linear (V width header : ℕ) (rate tau : ℝ)
     (vol : 0 < V) (active : 0 < width) (headers : header ≤ 110*V) (nonneg : 0 ≤ rate)
     (exponent : tau ≤ 1) :
     ((⌊142081*((header : ℝ)+rate*(V*((max 1 width : ℕ) : ℝ)^tau))+1⌋₊+
@@ -145,7 +148,9 @@ theorem stoppedRoleLinear [M8.Machine.Net] {U : Type} :
   have pos : 0 ≤ rate := by dsimp [rate]; positivity
   refine ⟨2*(130+rate),by positivity,?_⟩
   intro Q capacity child lane positive active position width coords
-  refine ⟨_,?_,stoppedRoleHandoff capacity child lane positive position width coords⟩
+  obtain ⟨T,host,program,input,output,run⟩ := stoppedRoleHandoff (U := U) capacity
+  obtain ⟨prepared,ran⟩ := run child lane positive position width coords
+  refine ⟨_,?_,Empty,T,host,program,input,output,prepared,ran⟩
   exact leafBill_linear _ _ _ rate _ positive active
     (descriptorHeaderCost_le lane (LeafCore.positive_of_volume positive)) pos M8.Machine.BudgetBound.exponent_range.2.le
 
