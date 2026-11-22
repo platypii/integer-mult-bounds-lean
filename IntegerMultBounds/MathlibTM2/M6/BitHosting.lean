@@ -308,6 +308,15 @@ def remainderIntervals : List (ℕ × ℕ) :=
   (List.range 9).flatMap fun i => (copyCounts i).map fun k =>
     (7 * idleSource i + 8 * k, 7 * idleTarget i)
 
+private theorem all_remainders_exterior : ∀ e ∈ remainderIntervals, 7 ≤ e.1 := by
+  decide +kernel
+
+/-- Every scheduled remainder is already an interval of physical parent axes. -/
+theorem remainder_parent_span (c : PortCertificate) (e : ℕ × ℕ) (he : e ∈ remainderIntervals) :
+    c.span e.1 e.2 = Matrix.diagonal fun a =>
+      if e.1+1 ≤ axisIndex a ∧ axisIndex a < e.2+1 then (1 : ℚ) else 0 :=
+  c.span_exterior_parent _ _ (all_remainders_exterior e he)
+
 theorem remainder_counts_strict : ∀ e ∈ remainderIntervals, e.1 < e.2 ∧ e.2 ≤ 63 ∧
     Fintype.card {p : Pending // (if e.1 ≤ pendingIndex p ∧ pendingIndex p < e.2 then (1 : ℚ)
       else 0) ≠ 0} = e.2 - e.1 := by

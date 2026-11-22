@@ -122,6 +122,38 @@ theorem span_zero_zero : c.span 0 0 = 0 := by
     congr 1
   rw [span, this, Matrix.mul_zero, Matrix.zero_mul]
 
+/-- Beyond the seven complement columns the port flag is the parent exterior
+basis, so an interval exchange there needs no port-dependent chart. -/
+theorem span_exterior (lo hi : ℕ) (outside : 7 ≤ lo) :
+    c.span lo hi = fromBlocks 0 0 0 (diagonal fun k : Exterior =>
+      if lo ≤ pendingIndex (.inr k) ∧ pendingIndex (.inr k) < hi then (1 : ℚ) else 0) := by
+  let E := diagonal fun k : Exterior =>
+    if lo ≤ pendingIndex (.inr k) ∧ pendingIndex (.inr k) < hi then (1 : ℚ) else 0
+  have coords : interval lo hi = fromBlocks 0 0 0 E := by
+    ext (i | i) (j | j)
+    · have skip : ¬lo ≤ i.val := by omega
+      simp [interval, diagonal_apply, pendingIndex, skip]
+    · simp [interval]
+    · simp [interval]
+    · simp [interval, E, diagonal_apply]
+  rw [span, coords, flag, fromBlocks_transpose, fromBlocks_multiply, fromBlocks_multiply]
+  simp [E]
+
+/-- Parent addresses have eight local digits, one more than the pending
+prefix. Both endpoints of an exterior child therefore shift by one. -/
+theorem span_exterior_parent (lo hi : ℕ) (outside : 7 ≤ lo) :
+    c.span lo hi = diagonal fun a => if lo+1 ≤ axisIndex a ∧ axisIndex a < hi+1
+      then (1 : ℚ) else 0 := by
+  rw [span_exterior lo hi outside]
+  ext (i | i) (j | j)
+  · have skip : ¬lo < i.val := by omega
+    simp [diagonal_apply, axisIndex, skip]
+  · simp
+  · simp
+  · have shift : axisIndex (.inr i) = pendingIndex (.inr i)+1 := by
+      simp only [axisIndex, pendingIndex]; omega
+    simp [diagonal_apply, shift]
+
 /-- The flag prefix of `7(n + 1)` positions is the side-one frame after `n + 1` stages. -/
 theorem span_prefix (h : c.Checked) (n : ℕ) :
     c.span 0 (7 * (n + 1)) = fromBlocks (1 - c.lineProj) 0 0 (lower n) := by

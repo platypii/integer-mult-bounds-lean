@@ -9,6 +9,34 @@ open IntegerMultBounds.Machine IntegerMultBounds.Networks Stack Host Cover.Fallb
 open RecursiveInterchangeLayout
 open Shared50ModularControl (prime)
 
+/-- Direct interval workers execute the remainder on the original fan. The
+sequence charges each worker once and one final instruction. -/
+theorem parentIdleSchedule_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
+    (i : Fin 9) (w W : ℕ) (fan : Fin (142081+2) ↪ Fin T)
+    (program : (Fin 32 × Fin 5) × Fin 222 → Pr P T Q prime U)
+    (price : (Fin 32 × Fin 5) × Fin 222 → ℕ) (privateReady : Stacks T prime → Prop)
+    (pass : ∀ k x u S, HelperFan fan x S → privateReady S →
+      ∃ word F z n, Exec body (program k) (mk u S) n (mk z F) ∧ n ≤ price k ∧ z.user = u.user ∧
+        HelperFan fan (Function.update x (idleTape i k) word) F ∧ privateReady F ∧
+        parentIntervalRead i k.2 w W (x (idleTape i k)) word)
+    (x : Fin 142081 → Fin ((prime^w)^128*W) → ZMod 2) (S : Stacks T prime) (u : HS T Q prime U)
+    (input : HelperFan fan x S) (fresh : privateReady S) :
+    ∃ y F z n, Exec body (Prog.seqList (idleCopies.map program)) (mk u S) n (mk z F) ∧
+      n ≤ (idleCopies.map price).sum+1 ∧ z.user = u.user ∧ HelperFan fan y F ∧ privateReady F ∧
+      ∀ j : Fin W, let addr := fun v => flatWindowEquiv w W (windowState w v,j)
+        readRoles addr y = (Piece.remainder i.val).run (readRoles addr x) := by
+  obtain ⟨y,F,z,n,run,paid,user,ready,acts,off⟩ := idleCopies_exec i body program (fun k => price k)
+    (fun _ _ _ => True) (fun _ data A => HelperFan fan data A ∧ privateReady A)
+    (fun k => parentIntervalRead i k.2 w W) (by
+      intro k past rest data A ctrl order live _
+      obtain ⟨word,F,z,n,run,cost,user,fanReady,privateF,act⟩ := pass k data ctrl A live.1 live.2
+      exact ⟨_,F,z,n,run,by exact_mod_cast cost,user,⟨fanReady,privateF⟩,fun _ _ _ => trivial,
+        by simpa only [Function.update_self] using act,fun t ne => Function.update_of_ne ne ..⟩)
+    x S u ⟨input,fresh⟩ (fun _ => trivial)
+  refine ⟨y,F,z,n,run,?_,user,ready.1,ready.2,parentIdleWindow_read i w W x y acts off⟩
+  apply (Nat.cast_le (α := ℝ)).mp
+  simpa only [Nat.cast_add,Nat.cast_one,Nat.cast_list_sum,List.map_map,Function.comp_apply,Function.comp_def] using paid
+
 theorem flatIdleSchedule_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
     (node : Descriptor) (i : Fin 9) (w rows : ℕ) (hw : 0 < w)
     (width : node.width = 64*w) (split : node.rows = 142080*rows)

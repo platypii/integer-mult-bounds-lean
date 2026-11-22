@@ -29,6 +29,39 @@ def intervalChildRead (i : Fin 9) (j : Fin 222) (w W : ℕ)
     intervalChild_volume (idleBounds i j).1 ((idleBounds i j).2.trans (by decide)) w W
   ∀ a, y (a.cast size) = Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (fun b => x (b.cast size)) a
 
+def parentIntervalRead (i : Fin 9) (k : Fin 222) (w W : ℕ)
+    (x y : Fin ((prime^w)^128*W) → ZMod 2) : Prop :=
+  let e := idleInterval i k
+  let child := phaseIntervalChild (e.1+1) (e.2+1) w W 64
+  let size : volume prime child = (prime^w)^128*W :=
+    intervalChild_volume (Nat.succ_le_succ (idleBounds i k).1) (Nat.succ_le_succ (idleBounds i k).2) w W
+  ∀ a, y (a.cast size) = Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (fun b => x (b.cast size)) a
+
+/-- Scheduled children in parent order directly realize the whole remainder
+window. Owners outside the schedule keep their words. -/
+theorem parentIdleWindow_read (i : Fin 9) (w W : ℕ)
+    (x y : Fin 142081 → Fin ((prime^w)^128*W) → ZMod 2)
+    (children : ∀ t : (Fin 32 × Fin 5) × Fin 222,
+      parentIntervalRead i t.2 w W (x (idleTape i t)) (y (idleTape i t)))
+    (off : ∀ t, (∀ j, t ≠ idleTape i j) → y t = x t) (j : Fin W) :
+    let addr := fun v => flatWindowEquiv w W (windowState w v,j)
+    readRoles addr y = (Piece.remainder i.val).run (readRoles addr x) := by
+  let pack := fun (v : Axis ⊕ Axis → ZMod (prime^w)) => flatWindowEquiv w W ((v ∘ Sum.inl,v ∘ Sum.inr),j)
+  apply idleCopies_modular_read w i pack x y _ off
+  intro t e P v
+  let size := intervalChild_volume (Nat.succ_le_succ (idleBounds i t.2).1)
+    (Nat.succ_le_succ (idleBounds i t.2).2) w W
+  let tape := idleTape i t
+  have eq := funext (children t)
+  have read := parentInterval_read (port (idleRole i t).port.val) e (idleInterval_mem i t.2)
+    (fun b => x tape (b.cast size)) (v ∘ Sum.inl,v ∘ Sum.inr) j
+  rw [← eq] at read
+  rw [ext_cast size (y tape)] at read
+  simp only [ext_cast, ext_apply] at read
+  dsimp only [pack,P,e]
+  rw [idleExchange_blocks _ (port_checked _ (idleRole i t).port.isLt),Matrix.fromBlocks_mulVec]
+  simpa only [flatWindowEquiv_fields,Fin.append,tape,e,M8.Exchange.exchange,Function.comp_def,Sum.elim_inl,Sum.elim_inr] using read
+
 theorem flatIdleWindow_charts [M8.Machine.Net] (i : Fin 9) :
     ∃ a k tapes states : ℕ, ∀ w W, 0 < w → 0 < W →
       let V := (prime^w)^128*W
