@@ -1661,18 +1661,18 @@ open M8.Machine.Segments SharedPlacementAlphabet in
 open M8.Machine.ArbitraryWidthHighExchangeShared (sourceWord) in
 open Cover.Fallback IntegerMultBounds.Networks.Certificates.PR589 RecursiveInterchangeLayout in
 /-- Execute one routed COPY window on its assigned tapes and charge its distinct rank-seven child. -/
-theorem scheduledCopyWindow_host [M8.Machine.Net]
+theorem scheduledCopyWindow_layout [M8.Machine.Net]
     (stage : Fin 9) (r : Fin 32) (d : Fin 5) (window : Fin Copy.lifecycles.length) :
     let life := Copy.lifecycles[window.val]
     ∃ (T states : ℕ) (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T) (fan : Fin (142081+2) ↪ Fin T),
     ∀ {P U : Type} {Q : ℕ}, states ≤ Q → ∀ (body : P → Pr P T Q prime U) (f : P),
-    ∃ base swaps leaf fixed : ℕ, ∀ (node : Descriptor) (w B rows : ℕ),
+    ∃ base swaps leaf fixed : ℕ, ∀ (node : Descriptor) (w parentB rows B K : ℕ),
     let i := copyChildPosition (stage,(r,d),window)
     node.width = 64*(w+1) →
-    node.rows = 142080*rows → node.beforeH = B*prime^(64*((w+1)*64)) →
+    node.rows = 142080*rows → node.beforeH = parentB*prime^(64*((w+1)*64)) →
     let M := prime^(w+1)
-    let K := M^112*(node.beforeRows*rows*node.between*node.afterD)
     let W := B*prime^(64*((w+1)*64))*K
+    W = parentB*prime^(64*((w+1)*64))*(M^112*(node.beforeRows*rows*node.between*node.afterD)) →
     0 < W →
     let desc := scheduledChild prime node i
     ∃ position : Fin (volume prime desc) ≃ Fin (M^16*W),
@@ -1741,9 +1741,12 @@ theorem scheduledCopyWindow_host [M8.Machine.Net]
   let leaf := (63+252*life.targets.length)*(enter.tapes+5+ (leave.tapes+5))
   let fixed := (life.targets.length+1)*(enter.tapes+5+(leave.tapes+5))+24
   refine ⟨base,swaps,leaf,fixed,?_⟩
-  intro node w B rows i width split label M K W hW desc
+  intro node w parentB rows B K i width split label M W layout hW desc
   have seven := copyChildPosition_rank stage r d window
-  obtain ⟨position,offset,step⟩ := run node i w B rows (seven.trans rank.symm) width split label hW
+  have atParent := run node i w parentB rows (seven.trans rank.symm) width split label
+  dsimp only at atParent
+  rw [← layout] at atParent
+  obtain ⟨position,offset,step⟩ := atParent hW
   refine ⟨position,offset,?_⟩
   intro bank clean V
   let view := phaseIntervalChild (min (Geometry.Dimensions.value p.1) (Geometry.Dimensions.value p.2))
@@ -1914,6 +1917,57 @@ theorem scheduledCopyWindow_host [M8.Machine.Net]
     exact rfan
   · rw [back]
     exact effect
+
+open Cover.Fallback IntegerMultBounds.Networks.Certificates.PR589 RecursiveInterchangeLayout in
+theorem scheduledCopyWindow_host [M8.Machine.Net]
+    (stage : Fin 9) (r : Fin 32) (d : Fin 5) (window : Fin Copy.lifecycles.length) :
+    let life := Copy.lifecycles[window.val]
+    ∃ (T states : ℕ) (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T) (fan : Fin (142081+2) ↪ Fin T),
+    ∀ {P U : Type} {Q : ℕ}, states ≤ Q → ∀ (body : P → Pr P T Q prime U) (f : P),
+    ∃ base swaps leaf fixed : ℕ, ∀ (node : Descriptor) (w B rows : ℕ),
+    let i := copyChildPosition (stage,(r,d),window)
+    node.width = 64*(w+1) →
+    node.rows = 142080*rows → node.beforeH = B*prime^(64*((w+1)*64)) →
+    let M := prime^(w+1)
+    let K := M^112*(node.beforeRows*rows*node.between*node.afterD)
+    let W := B*prime^(64*((w+1)*64))*K
+    0 < W →
+    let desc := scheduledChild prime node i
+    ∃ position : Fin (volume prime desc) ≃ Fin (M^16*W),
+    (∀ k, (position k).val = (CopyChildLayout.packActive desc k).val) ∧
+    let bank := ((Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)).trans ports
+    let clean := fun D : Stacks T prime => ∀ k : Fin (rowSwapBlock.tapes+35), 35 ≤ k.val → D.L (ports k) = [] ∧ D.R (ports k) = []
+    let V := M^16*W
+    let v := copyLabelLayout (w+1) B K
+    let sizeV := copyLabel_volume (w+1) B K
+    let labels := fun (x : Fin 142081 → Fin V → ZMod 2) k i => x k (Fin.cast sizeV i)
+    ∀ record, ∃ prepared : Stacks T prime, ∀ budget,
+    let fanReady := fun X (D : Stacks T prime) => RepT (PointwiseRoleGate.bank (a := prime)
+      (fun _ _ => blank) (fun _ => 0) (SparseRoleCircuit.encoded X) (FlatCoordinateSchedule.bits V))
+      (embStk fan D).L (embStk fan D).R
+    let stored := RecordReady (b := prime) (w := w) (d := 16) (W := W) bank M.size W.size record
+      SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0
+    (desc.width < node.width → ∀ (u : HS T Q prime U) D word, stored word D → clean D →
+      ∃ z F n changed, Exec body (body f) (mk u D) n (mk z F) ∧ n ≤ budget ∧ z.user = u.user ∧
+        stored changed F ∧ clean F ∧ (∀ j, (∀ i, ports i ≠ j) → F.L j = D.L j ∧ F.R j = D.R j) ∧
+        ∀ k, changed (position k) = Shared50RecursiveNodeRows.transpose (one_dvd desc.rows) (word ∘ position) k) →
+    ∃ code : Pr P T Q prime U,
+    ∀ (data : Fin 142081 → Fin V → ZMod 2) (u : HS T Q prime U) (S : Stacks T prime),
+    fanReady data S →
+    (∀ j, (∀ h, fan h ≠ j) → S.L j = prepared.L j ∧ S.R j = prepared.R j) →
+    ∃ z F t out, Exec body code
+      (mk u S) t (mk z F) ∧
+      t ≤ (base+swaps*swapVolumeRate w)*V + leaf*M8.RevMachine.LeafCore.coreCost V ((w+1)*64) + fixed + budget ∧
+      z.user = u.user ∧ fanReady out F ∧ CopyWindowEffect stage r d life (w+1) B K (labels data) (labels out) := by
+  intro life
+  obtain ⟨T,states,ports,fan,build⟩ := scheduledCopyWindow_layout stage r d window
+  refine ⟨T,states,ports,fan,?_⟩
+  intro P U Q fits body f
+  obtain ⟨base,swaps,leaf,fixed,run⟩ := build fits body f
+  refine ⟨base,swaps,leaf,fixed,?_⟩
+  intro node w B rows i width split label M K W
+  exact run node w B rows B K width split label rfl
+
 
 def indexedBill {α : Type} (cost : ℕ → α → ℕ) (i : ℕ) : List α → ℕ
   | [] => 0
