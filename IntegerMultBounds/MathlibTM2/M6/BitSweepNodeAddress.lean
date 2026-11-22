@@ -89,6 +89,21 @@ noncomputable def flatWindowEquiv (w W : ℕ) :
   let digits := halves.trans (Equiv.arrowCongr axes (Equiv.refl _))
   ((digits.trans FlatCoordinateLayout.rankEquiv).prodCongr (Equiv.refl _)).trans finProdFinEquiv
 
+/-- The physical flat word stores each complete field contiguously before the spectator. -/
+theorem flatWindowEquiv_fields {w W : ℕ} (s : Swap.Shear.State Axis (ZMod (prime^w)))
+    (j : Fin W) :
+    flatWindowEquiv w W (s,j) = FlatCoordinateLayout.index
+      (Fin.append (s.1 ∘ stageAxis.symm) (s.2 ∘ stageAxis.symm)) j := by
+  apply congrArg (fun digits => FlatCoordinateLayout.index digits j)
+  funext i
+  obtain ⟨i,rfl⟩ := (@finSumFinEquiv 64 64).surjective i
+  change Sum.elim s.1 s.2 ((Equiv.sumCongr stageAxis.symm stageAxis.symm)
+    (finSumFinEquiv.symm (finSumFinEquiv i))) = _
+  rw [Equiv.symm_apply_apply]
+  cases i with
+  | inl i => exact (Fin.append_left (s.1 ∘ stageAxis.symm) (s.2 ∘ stageAxis.symm) i).symm
+  | inr i => exact (Fin.append_right (s.1 ∘ stageAxis.symm) (s.2 ∘ stageAxis.symm) i).symm
+
 theorem flatWindowEquiv_read {w W : ℕ} (z : Axis ⊕ Axis → ℚ) (j : Fin W) :
     flatWindowEquiv w W (windowState w z,j) = FlatCoordinateLayout.index
       ((addressMod (prime^w) z ∘ Equiv.sumCongr stageAxis.symm stageAxis.symm) ∘

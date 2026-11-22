@@ -1,5 +1,7 @@
 module
 
+public import IntegerMultBounds.Machine.ArbitraryWidthSliceTranspose
+public import IntegerMultBounds.Machine.Shared50RecursiveNodeTranspose
 public import IntegerMultBounds.MathlibTM2.M6.BitPackedStageHandoff
 public import IntegerMultBounds.MathlibTM2.M6.BitScheduledFlatRuns
 
@@ -10,6 +12,47 @@ open IntegerMultBounds.Machine IntegerMultBounds.Networks Stack Host
 open Certificates.PR589.Nine
 open Shared50ModularControl (prime)
 local instance (w : ℕ) : NeZero (prime^w) := ⟨(pow_pos Shared50ModularControl.prime_prime.pos _).ne'⟩
+
+open RecursiveInterchangeLayout (Descriptor volume)
+open RecursiveInterchangeScaling (Address index)
+
+/-- One contiguous pair of active fields followed by the spectator word. -/
+def flatNodeDescriptor (w W : ℕ) : Descriptor := ⟨1,1,1,64*w,1,W⟩
+
+theorem flatNodeVolume (w W : ℕ) :
+    volume prime (flatNodeDescriptor w W) = (prime^w)^128*W := by
+  simp only [volume,flatNodeDescriptor,one_mul,mul_one,← pow_add,← pow_mul]
+  congr 2
+  omega
+
+/-- The flat node's physical field swap is the recursive descriptor transpose
+at the same serialized cells. -/
+theorem flatNodeTranspose {w W : ℕ} {α : Type} (x : Fin ((prime^w)^128*W) → α)
+    (h d : Fin 64 → ZMod (prime^w)) (j : Fin W) :
+    Shared50RecursiveNodeRows.transpose (one_dvd (flatNodeDescriptor w W).rows)
+      (fun i => x (i.cast (flatNodeVolume w W)))
+      ((FlatCoordinateLayout.index (Fin.append h d) j).cast (flatNodeVolume w W).symm) =
+      x (FlatCoordinateLayout.index (Fin.append d h) j) := by
+  have width : (prime^w)^64 = prime^(64*w) := by rw [← pow_mul,Nat.mul_comm]
+  let addr (a b : Fin 64 → ZMod (prime^w)) : Address (flatNodeDescriptor w W) :=
+    ⟨(0 : Fin 1),(0 : Fin 1),(0 : Fin 1),(FlatCoordinateLayout.rank a).cast width,(0 : Fin 1),(FlatCoordinateLayout.rank b).cast width,j⟩
+  have cell (a b) : index (addr a b) =
+      (FlatCoordinateLayout.index (Fin.append a b) j).cast (flatNodeVolume w W).symm := by
+    apply Fin.ext
+    rw [RecursiveInterchangeScaling.index_val,Fin.val_cast,FlatCoordinateLayout.index_val]
+    have digits : (FlatCoordinateLayout.rank (Fin.append a b)).val =
+        (FlatCoordinateLayout.rank a).val*(prime^w)^64+(FlatCoordinateLayout.rank b).val :=
+      ArbitraryWidthSliceTranspose.rank_append a b
+    rw [digits]
+    simp only [addr,flatNodeDescriptor,RecursiveInterchangeLayout.index,Fin.val_zero,
+      zero_mul,zero_add,mul_one,add_zero,width]
+    rfl
+  rw [← cell]
+  have swap := Shared50RecursiveNodeTranspose.transpose_all (by decide : 0 < 1)
+    (one_dvd (flatNodeDescriptor w W).rows) (fun i => x (i.cast (flatNodeVolume w W))) (addr d h)
+  calc
+    _ = x ((index (addr d h)).cast (flatNodeVolume w W)) := swap
+    _ = _ := by rw [cell]; rfl
 
 /-- Sweeps and idle windows on exact flat words compose to interchange the two
 parent fields on every role. The spectator and the two piece-cost sums are preserved. -/
@@ -25,8 +68,12 @@ theorem assembledFlatNode {U : Type} :
       (∀ n, ∃ (P : Type) (T : ℕ) (body : P → Pr P T Q prime U), ∃ code src dst seed,
         PackedPieceHandoff V (reads (.remainder n.val)) body code src dst seed (idleCost n)) →
       ∃ (P : Type) (T : ℕ) (body : P → Pr P T Q prime U), ∃ code src dst seed,
-        PackedPieceHandoff V (fun x y => ∀ (r : Role) j s, let tape := sweepRoleTape r
-          y tape (address j s) = x tape (address j (s.2,s.1))) body code src dst seed
+        PackedPieceHandoff V (fun x y => ∀ (r : Role) (i : Fin ((prime^w)^128*W)),
+          let tape := sweepRoleTape r
+          y tape (i.cast size) = Shared50RecursiveNodeRows.transpose
+            (one_dvd (flatNodeDescriptor w W).rows)
+            (fun k => x tape (k.cast ((flatNodeVolume w W).trans size)))
+            (i.cast (flatNodeVolume w W).symm)) body code src dst seed
           ((∑ i, sweepCost i)+(∑ i, idleCost i)+9*(2*(76*17760*V*(142081+7)+6)+1+(142081*(8*V+10)+1))+2) := by
   obtain ⟨states,build⟩ := assembledPackedNode (U := U)
   refine ⟨states,?_⟩
@@ -40,8 +87,14 @@ theorem assembledFlatNode {U : Type} :
   intro x u S words privateTapes
   obtain ⟨z,F,k,y,exec,paid,user,out,trace⟩ := run x u S words privateTapes
   refine ⟨z,F,k,y,exec,paid,user,out,?_⟩
-  intro r j s
-  apply modularEndpoint r (fun _ => address j) x y _ s
-  exact nodePieceEffect_read _ (fun n a d h => h j) (fun n a d h => h j) trace
+  intro r i
+  obtain ⟨⟨s,j⟩,rfl⟩ := (flatWindowEquiv w W).surjective i
+  have swapped := modularEndpoint r (fun _ => address j) x y
+    (nodePieceEffect_read _ (fun n a d h => h j) (fun n a d h => h j) trace) s
+  have transposed := flatNodeTranspose (fun k => x (sweepRoleTape r) (k.cast size))
+    (s.1 ∘ stageAxis.symm) (s.2 ∘ stageAxis.symm) j
+  rw [flatWindowEquiv_fields]
+  exact (by simpa only [address,flatWindowEquiv_fields,sweepRoleTape_eq] using swapped :
+    y (sweepRoleTape r) _ = x (sweepRoleTape r) _).trans transposed.symm
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
