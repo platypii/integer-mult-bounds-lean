@@ -1718,6 +1718,81 @@ theorem placedRemainderInterval_stage [M8.Machine.Net] {k : ℕ} (src : Fin k)
   · intro data
     exact congrArg back.transform (action (entry.transform data))
 
+section
+local instance (w : ℕ) : NeZero (prime^w) := ⟨pow_ne_zero _ Shared50ModularControl.prime_prime.ne_zero⟩
+
+private theorem oneBlockChart_read {w K : ℕ} {x p q y : ℕ → ZMod 2}
+    {f : LabelPadding.Label 64 w → LabelPadding.Label 64 w} :
+    let v : Descriptor := ⟨1,1,prime^((128+64*64)*w),0,1,K⟩
+    RemainderPlacementReads v w 1 x p →
+    LabelPermutation.Transport v (1*(prime^w)^128) w f p q → RemainderPlacementReads v w 1 q y →
+    ∀ digits (t : Fin K), y (FlatCoordinateLayout.index (placedChartDigits f digits) t).val =
+      x (FlatCoordinateLayout.index digits t).val := by
+  intro v enter act leave digits t
+  let zero : Fin (prime^v.width) := ⟨0,pow_pos Shared50ModularControl.prime_prime.pos _⟩
+  have read := placedChartDigits_read enter act leave (a := (0 : Fin 1)) (r := (0 : Fin 1)) 0
+    zero zero (0 : Fin 1) t digits
+  let cell := fun u : Fin (128+64*64) → ZMod (prime^w) => RecursiveInterchangeLayout.index prime v
+    0 0 (0*prime^((128+64*64)*w)+(FlatCoordinateLayout.rank u).val) 0 0 0 t
+  have eq u : cell u = (FlatCoordinateLayout.index u t).val := by
+    simp [cell,v,RecursiveInterchangeLayout.index,FlatCoordinateLayout.index_val]
+  change y (cell (placedChartDigits f digits)) = x (cell digits) at read
+  rwa [eq,eq] at read
+
+/-- The composed one-block stage implements the parent exchange on the selected
+owner and preserves every other owner, for all matrix labels and trailing cells. -/
+theorem placedRemainder_parent_stage [M8.Machine.Net] {k : ℕ} (src : Fin k)
+    (c : PortCertificate) (hc : c.Checked) (e : ℕ × ℕ) (member : e ∈ BitHosting.remainderIntervals) :
+    ∃ P Q : ℝ, ∀ w K : ℕ, 0 < w → 0 < K →
+      let M := prime^w
+      let W := M^(64*64)*K
+      let v : Descriptor := ⟨1,1,prime^((128+64*64)*w),0,1,K⟩
+      let child := phaseIntervalChild e.1 e.2 w W 64
+      let V := volume prime v
+      ∃ stage : SharedBankStage.Stage _ k prime (phaseOwners (N := V)),
+        stage.cost = ⌈P*V*(w : ℝ)^M8.Machine.BudgetBound.tau⌉₊+
+          ((2*(24*64+333)+250)*(M^128*W)+1+
+          cost child (fun i => FlatCoordinateSchedule.bits (RecursiveDimensionBank.values child i)))+1+
+          ⌈Q*V*(w : ℝ)^M8.Machine.BudgetBound.tau⌉₊+1 ∧
+        ∀ data, (∀ j, j ≠ src → stage.transform data j = data j) ∧
+          ∀ (x : IntegerMultBounds.Swap.Shear.State Axis (ZMod M)) (label : LabelPadding.Label 64 w) (t : Fin K),
+          let y := M8.Exchange.exchange (reduce M (c.span e.1 e.2)) x
+          ext (stage.transform data src) (FlatCoordinateLayout.index (remainderParentDigits y label) t).val =
+            ext (data src) (FlatCoordinateLayout.index (remainderParentDigits x label) t).val := by
+  obtain ⟨P,Q,build⟩ := placedRemainderInterval_stage src c hc e member
+  refine ⟨P,Q,?_⟩
+  intro w K hw hK M W v child V
+  obtain ⟨size,entry,back,stage,bill,charts,result⟩ := build w K hw hK
+  refine ⟨stage,bill,?_⟩
+  intro data
+  let z := entry.transform data
+  let word := fun j => z src (Fin.cast size j)
+  let move := Shared50RecursiveNodeRows.transpose (one_dvd child.rows) word
+  let updated := Function.update z src (fun j => move (Fin.cast size.symm j))
+  obtain ⟨off,p,q,place,forward,expose⟩ := charts false data
+  obtain ⟨keep,p',q',unplace,inverse,restore⟩ := charts true updated
+  rw [result data]
+  change (∀ j, j ≠ src → back.transform updated j = data j) ∧ _
+  refine ⟨fun j hj => (keep j hj).trans ((Function.update_of_ne hj ..).trans (off j hj)),?_⟩
+  intro x label t y
+  obtain ⟨lo,hi,_⟩ := BitHosting.remainder_counts e member
+  obtain ⟨mid,read,parent⟩ := placedRemainder_childEndpoint c hc lo hi word x label t
+  have first := oneBlockChart_read place forward expose (remainderParentDigits x label) t
+  have last := oneBlockChart_read unplace inverse restore mid t
+  let H := reduce M (c.fullChart.submatrix stageAxis.symm remainderAxis)
+  let before := placedChartDigits (fun g => g*H) (remainderParentDigits x label)
+  change placedChartDigits (fun g => g*Hᵀ) mid = remainderParentDigits y label at parent
+  change ext (back.transform updated src) (FlatCoordinateLayout.index (placedChartDigits (fun g => g*Hᵀ) mid) t).val =
+    ext (updated src) (FlatCoordinateLayout.index mid t).val at last
+  rw [parent] at last
+  simp only [updated,Function.update_self,ext_cast] at last
+  change ext move (FlatCoordinateLayout.index mid t).val = ext word (FlatCoordinateLayout.index before t).val at read
+  change ext (z src) (FlatCoordinateLayout.index before t).val = _ at first
+  rw [show ext word = ext (z src) from ext_cast size _] at read
+  exact last.trans (read.trans first)
+
+end
+
 /-- Both directions of the scheduled chart act on the packed record word consumed by the parent. -/
 theorem packedRemainderChart_stage [M8.Machine.Net] {k : ℕ} (src : Fin k) (c : PortCertificate)
     (hc : c.Checked) (inverse : Bool) :
