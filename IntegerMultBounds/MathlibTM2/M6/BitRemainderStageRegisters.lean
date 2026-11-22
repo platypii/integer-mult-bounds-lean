@@ -191,7 +191,7 @@ theorem runStageScanner {P U : Type} {m T q : ℕ} (reg : Fin 14 ↪ Fin m)
   let out := appendPorts (stageWordPorts.trans reg) (single payload) (fun i _ => apart i)
   let input := appendPorts (retainedStagePorts T) (single (aroundScanner owner 0))
     (fun _ _ => retainedPort_private owner _ 0)
-  obtain ⟨bank,sharedPorts,compose⟩ := runAdjacentStages (P := P) (R := Unit) (U := U) (q := q) (A := prime) out input
+  obtain ⟨bank,sharedPorts,_,compose⟩ := runAdjacentStages (P := P) (R := Unit) (U := U) (q := q) (A := prime) out input
   refine ⟨bank,sharedPorts ((0 : Fin 1).natAdd 4),?_⟩
   intro left right a b leftBank body u L R₀ v F t budget tail N D B post exec dims block next
   obtain ⟨z,C,s,run,cost,result,keep⟩ := compose left right a b u L R₀ v F t budget post exec (by

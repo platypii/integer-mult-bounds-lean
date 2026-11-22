@@ -161,4 +161,36 @@ theorem trailingRows_exec {a m c q b : ℕ} (groups : 0 < m) (lanes : 0 < c)
   rw [overwrite] at merge
   exact ((split.seq run).seq merge).consequence (fun _ h => h) (fun _ h => h) (by omega)
 
+open RecursiveInterchangeLayout in
+/-- A child transpose on each cyclic row realizes the transpose on their
+interleaved parent tape, including when spectator digits separate the active
+fields. Splitting and merging cost at most 298 steps per parent symbol. -/
+theorem trailingTranspose_exec {a c q b : ℕ} (v : Descriptor) (groups : 0 < volume prime v)
+    (lanes : 0 < c) (common : ℤ → Fin (a+4)) (roles : Fin c → ℤ → Fin (a+4))
+    (inner : Program (((1+c)+2)+2) q a) :
+    let m := volume prime v
+    let wide := {v with afterD := v.afterD*c}
+    let size : m*c = volume prime wide := by simp [wide,m,volume,Nat.mul_assoc]
+    ∀ word : Fin (volume prime wide) → Fin (a+4),
+      let x := fun i : Fin (m*c) => word (i.cast size)
+      let y := fun i : Fin (m*c) => Shared50RecursiveNodeRows.transpose (one_dvd wide.rows) word (i.cast size)
+      let row := fun (j : Fin c) (i : Fin m) => x (finProdFinEquiv (i,j))
+      let streams := fun (data : Fin c → Fin m → Fin (a+4)) j => putWord (roles j) 0 (List.ofFn (data j))
+      let bank := fun src parts => CyclicRowSplit.bank
+        (CyclicRowCopy.bank src parts 0 (fun _ => 0) (FlatCoordinateSchedule.bits 1)) (FlatCoordinateSchedule.bits m)
+      let src := putWord common 0 (List.ofFn x)
+      let changed := fun j => Shared50RecursiveNodeRows.transpose (one_dvd v.rows) (row j)
+      HoareTime inner (fun z => z = bank src (streams row)) (fun z => z = bank src (streams changed)) b →
+      HoareTime (seq (seq (CyclicRowNormalized.splitProgram c a) inner) (CyclicRowNormalized.mergeProgram c a))
+        (fun z => z = bank src roles)
+        (fun z => z = bank (putWord common 0 (List.ofFn y)) (streams changed)) (298*(m*c)+b+2) := by
+  intro m wide size word x y row streams bank src changed run
+  have merged : (fun j (i : Fin m) => y (finProdFinEquiv (i,j))) = changed := by
+    funext j i
+    exact transpose_trailingRows v c word i j
+  have physical := trailingRows_exec (b := b) groups lanes common roles x y inner
+  change (HoareTime inner _ (fun z => z = bank src (streams (fun j i => y (finProdFinEquiv (i,j))))) b → _) at physical
+  rw [← merged] at run ⊢
+  exact physical run
+
 end IntegerMultBounds.MathlibTM2.M6.BitNode

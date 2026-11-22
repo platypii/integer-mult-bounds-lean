@@ -64,7 +64,7 @@ program's output on their common bank and its original private workspace.
 Its procedure calls dispatch to its own table, and both step counts are charged. -/
 theorem runAdjacentStages {P R U : Type} {k m n q A : ℕ}
     (out : Fin k ↪ Fin m) (input : Fin k ↪ Fin n) :
-    ∃ bank : Fin n ↪ Fin (m+n), (∀ i, bank (input i) = (out i).castAdd n) ∧ ∀ (left : P → Pr P m q A U) (right : R → Pr R n q A U) a b,
+    ∃ bank : Fin n ↪ Fin (m+n), (∀ i, bank (input i) = (out i).castAdd n) ∧ (∀ j, (∀ i, out i ≠ j) → ∀ h, bank h ≠ j.castAdd n) ∧ ∀ (left : P → Pr P m q A U) (right : R → Pr R n q A U) a b,
     let leftBank := Fin.castAdd n (n := m)
     let body := Sum.elim (fun g => embProg leftBank Sum.inl (left g))
       (fun g => embProg bank Sum.inr (right g))
@@ -79,7 +79,18 @@ theorem runAdjacentStages {P R U : Type} {k m n q A : ℕ}
         (mk u (adjacentStageStacks L R₀)) steps (mk z B) ∧ steps ≤ t+budget ∧ post z.user (embStk bank B) ∧
         ∀ j, (∀ i, out i ≠ j) → B.L (leftBank j) = F.L j ∧ B.R (leftBank j) = F.R j := by
   obtain ⟨bank, shared, privateTape⟩ := adjacentStagePlacement out input
-  refine ⟨bank,shared,?_⟩
+  have disjoint (j : Fin m) (outside : ∀ i, out i ≠ j) : ∀ h, bank h ≠ j.castAdd n := by
+    intro h
+    by_cases hit : ∃ i, input i = h
+    · obtain ⟨i,rfl⟩ := hit
+      rw [shared]
+      exact (Fin.castAddEmb n).injective.ne (outside i)
+    · rw [privateTape h (fun i eq => hit ⟨i,eq⟩)]
+      intro eq
+      have e := congrArg Fin.val eq
+      change m+h.val = j.val at e
+      omega
+  refine ⟨bank,shared,disjoint,?_⟩
   intro left right a b leftBank body u L R₀ v F t budget post exec next
   obtain ⟨w,D,ran,_,user,view,frame⟩ := exec_emb (ι := Sum.inl) (body' := body)
     (Fin.castAddEmb n (n := m)).injective (fun _ => rfl) exec u rfl (adjacentStageStacks L R₀) (adjacentStageStacks_left L R₀)
@@ -101,18 +112,7 @@ theorem runAdjacentStages {P R U : Type} {k m n q A : ℕ}
     bank.injective (fun _ => rfl) ranNext w rfl D rfl
   refine ⟨z',B',t+s,Exec.seq ran placed,Nat.add_le_add_left paid t,same ▸ endView ▸ result,?_⟩
   intro j outside
-  have untouched : ∀ h, bank h ≠ leftBank j := by
-    intro h
-    by_cases hit : ∃ i, input i = h
-    · obtain ⟨i,rfl⟩ := hit
-      rw [shared]
-      exact (Fin.castAddEmb n).injective.ne (outside i)
-    · rw [privateTape h (fun i eq => hit ⟨i,eq⟩)]
-      intro eq
-      have e := congrArg Fin.val eq
-      change m+h.val = j.val at e
-      omega
-  obtain ⟨hl,hr⟩ := preserved _ untouched
+  obtain ⟨hl,hr⟩ := preserved _ (disjoint j outside)
   exact ⟨hl.trans (congrArg (fun C => C.L j) view),hr.trans (congrArg (fun C => C.R j) view)⟩
 
 open IntegerMultBounds.Networks
@@ -134,7 +134,7 @@ theorem runAdjacentHelperFans {P R U : Type} {k m n q V : ℕ}
         ∃ z B s, Exec right b (mk w D) s (mk z B) ∧ s ≤ budget ∧ post z.user B) →
       ∃ z B steps, Exec body ((embProg leftBank Sum.inl a).seq (embProg bank Sum.inr b))
         (mk u (adjacentStageStacks L R₀)) steps (mk z B) ∧ steps ≤ t+budget ∧ post z.user (embStk bank B) := by
-  obtain ⟨bank,_,compose⟩ := runAdjacentStages (P := P) (R := R) (U := U) (A := prime) (q := q) out input
+  obtain ⟨bank,_,_,compose⟩ := runAdjacentStages (P := P) (R := R) (U := U) (A := prime) (q := q) out input
   refine ⟨bank, ?_⟩
   intro left right a b leftBank body u L R₀ v F t budget data post exec rep next
   obtain ⟨z,B,s,run,cost,result,_⟩ := compose left right a b u L R₀ v F t budget post exec (by

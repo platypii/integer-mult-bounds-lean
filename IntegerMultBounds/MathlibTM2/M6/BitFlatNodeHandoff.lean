@@ -225,7 +225,7 @@ theorem prepareRunChild {P U : Type} {T N Q V price : ℕ} {body : P → Pr P N 
     (dstTmp : ∀ i : Fin 142081, out (i.castAdd 2) ≠ tmp)
     (controls : ∀ j : Fin 2, out (j.natAdd 142081) = live (j.natAdd 142080)) :
     ∃ (bank : Fin N ↪ Fin (T+N)) (host : Empty ⊕ P → Pr (Empty ⊕ P) (T+N) Q prime U) (program : Pr (Empty ⊕ P) (T+N) Q prime U),
-    ∀ (data : Fin 142080 → Fin V → ZMod 2) u S,
+    (∀ j, (∀ i, out i ≠ j) → ∀ h, bank h ≠ j.castAdd N) ∧ ∀ (data : Fin 142080 → Fin V → ZMod 2) u S,
       HelperFan live data S →
       S.L tmp = [] → S.R tmp = [] →
       (∀ i : Fin 142081, S.L (out (i.castAdd 2)) = [] ∧ S.R (out (i.castAdd 2)) = []) →
@@ -236,9 +236,9 @@ theorem prepareRunChild {P U : Type} {T N Q V price : ℕ} {body : P → Pr P N 
         ∀ j, (∀ i, out i ≠ j) → F.L (j.castAdd N) = S.L j ∧ F.R (j.castAdd N) = S.R j := by
   obtain ⟨prep,prepare⟩ := prepareChildOwners_exec (P := Empty) (U := U) (Q := Q)
     Empty.elim live out tmp apart srcTmp dstTmp
-  obtain ⟨bank,_,join⟩ := runAdjacentStages (P := Empty) (R := P) (U := U) (q := Q) (A := prime) out src
+  obtain ⟨bank,_,disjoint,join⟩ := runAdjacentStages (P := Empty) (R := P) (U := U) (q := Q) (A := prime) out src
   let left := Fin.castAdd N (n := T)
-  refine ⟨bank,Sum.elim (fun e : Empty => embProg left Sum.inl (Empty.elim e)) (fun p => embProg bank Sum.inr (body p)),(embProg left Sum.inl prep).seq (embProg bank Sum.inr code),?_⟩
+  refine ⟨bank,Sum.elim (fun e : Empty => embProg left Sum.inl (Empty.elim e)) (fun p => embProg bank Sum.inr (body p)),(embProg left Sum.inl prep).seq (embProg bank Sum.inr code),disjoint,?_⟩
   intro data u S rep tl tr empty
   obtain ⟨v,R,t,loaded,paid,user,words,preparedFrame⟩ := prepare _ (embDn left u) S rep controls tl tr empty
   let row : Fin 142081 → Fin 142080 := Fin.lastCases 0 id
@@ -348,6 +348,7 @@ theorem runSplitOwners {P U : Type} {T N Q V price : ℕ} {body : P → Pr P N Q
     let caller := (Fin.natAddEmb 142082 (m := T)).trans (Fin.castAddEmb N)
     ∃ (bank : Fin N ↪ Fin H) (host : Empty ⊕ P → Pr (Empty ⊕ P) H Q prime U)
       (program : Pr (Empty ⊕ P) H Q prime U),
+    (∀ j, (∀ i : Fin 2, live (i.natAdd 142080) ≠ j) → ∀ h, bank h ≠ caller j) ∧
     ∀ (data : Fin 142080 → Fin V → ZMod 2) u S,
       HelperFan (live.trans caller) data S →
       (∀ i : Fin 142082, let j := (i.castAdd T).castAdd N
@@ -370,11 +371,11 @@ theorem runSplitOwners {P U : Type} {T N Q V price : ℕ} {body : P → Pr P N Q
     have h := congrArg Fin.val eq
     change 142082+i.val = j.val at h
     omega
-  obtain ⟨bank,host,program,exec⟩ := prepareRunChild run raised (childInputFan live) tmp
+  obtain ⟨bank,host,program,disjoint,exec⟩ := prepareRunChild run raised (childInputFan live) tmp
     (fun i j => by rw [childInputFan_owner]; exact separate _ _) (fun _ => separate _ _)
     (fun j => by rw [childInputFan_owner]; exact (Fin.castAddEmb T).injective.ne (Fin.castSucc_ne_last j))
     (childInputFan_control live)
-  refine ⟨bank,host,program,?_⟩
+  refine ⟨bank,host,program,fun j outside => disjoint _ (childInputFan_outside live j outside),?_⟩
   intro data u D rep empty privateTapes
   let S := embStk caller D
   have shape := splitChildStacks_eq D seed empty privateTapes
@@ -415,7 +416,7 @@ theorem runSplitChild {P U : Type} {T N Q V w price : ℕ} {body : P → Pr P N 
           let t := (j.natAdd 142082).castAdd N
           F.L t = S.L t ∧ F.R t = S.R t := by
   intro H caller
-  obtain ⟨bank,host,program,exec⟩ := runSplitOwners run live
+  obtain ⟨bank,host,program,_,exec⟩ := runSplitOwners run live
   refine ⟨bank,host,program,?_⟩
   intro lane width size data u S position rep empty privateTapes
   obtain ⟨z,F,n,y,ran,paid,user,words,reads,owners,keep⟩ :=
@@ -439,6 +440,7 @@ theorem runInheritedChild {P U : Type} {T N Q price : ℕ} (lane : Descriptor) {
     let caller := (Fin.natAddEmb 142082 (m := T)).trans (Fin.castAddEmb N)
     ∃ (bank : Fin N ↪ Fin H) (host : Empty ⊕ P → Pr (Empty ⊕ P) H Q prime U)
       (program : Pr (Empty ⊕ P) H Q prime U),
+    (∀ j, (∀ i : Fin 2, live (i.natAdd 142080) ≠ j) → ∀ h, bank h ≠ caller j) ∧
     let V := volume prime lane
     ∀ (data : Fin 142080 → Fin (volume prime lane) → ZMod 2) u S,
       HelperFan (live.trans caller) data S →
@@ -455,8 +457,8 @@ theorem runInheritedChild {P U : Type} {T N Q price : ℕ} (lane : Descriptor) {
           let t := (j.natAdd 142082).castAdd N
           F.L t = S.L t ∧ F.R t = S.R t := by
   intro H caller
-  obtain ⟨bank,host,program,exec⟩ := runSplitOwners run live
-  refine ⟨bank,host,program,?_⟩
+  obtain ⟨bank,host,program,disjoint,exec⟩ := runSplitOwners run live
+  refine ⟨bank,host,program,disjoint,?_⟩
   intro V data u S rep empty privateTapes
   obtain ⟨z,F,n,y,ran,paid,user,words,reads,owners,keep⟩ :=
     exec data u S rep empty privateTapes

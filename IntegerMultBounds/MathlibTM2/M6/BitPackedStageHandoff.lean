@@ -27,7 +27,7 @@ theorem runAfterPackedStage {T N Q V D : ℕ} {P R U : Type}
       ∃ z G k, Exec body ((embProg leftBank Sum.inl a).seq (embProg bank Sum.inr b))
         (mk u (adjacentStageStacks L seed)) k (mk z G) ∧ k ≤ t+budget ∧ post z.user (embStk bank G) := by
   intro m
-  obtain ⟨bank,_,sequence⟩ := runAdjacentStages (A := prime) (P := P) (R := R) (U := U) (q := Q) (returnedFan fan) input
+  obtain ⟨bank,_,_,sequence⟩ := runAdjacentStages (A := prime) (P := P) (R := R) (U := U) (q := Q) (returnedFan fan) input
   refine ⟨bank,?_⟩
   intro left right a b leftBank body u L seed v F t budget x post exec words next
   obtain ⟨z,G,k,ran,paid,done,_⟩ := sequence left right a b u L seed v F t budget post exec (by
@@ -153,7 +153,7 @@ theorem packedHandoffList {Job U : Type} {q : ℕ} (V : ℕ)
   | cons i stages ih =>
     obtain ⟨P,m,left,a,src,mid,L,firstRun⟩ := available i (by simp)
     obtain ⟨R,n,right,b,input,dst,D,nextRun⟩ := ih (fun j hj => available j (List.mem_cons_of_mem _ hj))
-    obtain ⟨bank,_,compose⟩ := runAdjacentStages (P := P) (R := R) (U := U) (q := q)
+    obtain ⟨bank,_,_,compose⟩ := runAdjacentStages (P := P) (R := R) (U := U) (q := q)
       (A := prime) mid input
     let front := Fin.castAddEmb n (n := m)
     refine ⟨P ⊕ R,m+n,Sum.elim (fun g => embProg front Sum.inl (left g)) (fun g => embProg bank Sum.inr (right g)),

@@ -18,6 +18,50 @@ def intervalOwners (c : ℕ) : Fin (c+2) ↪ Fin (((1+c)+2)+2) where
       have eq := congrArg Fin.val h <;> simp only [Fin.val_castAdd,Fin.val_natAdd] at eq
     all_goals first | congr 1; exact Fin.ext (by omega) | omega
 
+/-- Reattach the original target and two inner counters to the child output
+owners and their two volume counters. This placement requires no tape moves. -/
+def returnedMergeBank {c T : ℕ} (saved : Fin 3 ↪ Fin T) (fan : Fin (c+2) ↪ Fin T)
+    (apart : ∀ i j, saved i ≠ fan j) : Fin (((1+c)+2)+2) ↪ Fin T where
+  toFun := Fin.addCases (Fin.addCases (Fin.addCases (fun _ => saved 0)
+    (fun r => fan (r.castAdd 2))) (fun j => saved j.succ)) (fun j => fan (j.natAdd c))
+  inj' := by
+    have split (P : Fin (((1+c)+2)+2) → Prop)
+        (src : ∀ i : Fin 1, P (((i.castAdd c).castAdd 2).castAdd 2))
+        (owner : ∀ r : Fin c, P (((r.natAdd 1).castAdd 2).castAdd 2))
+        (inner : ∀ j : Fin 2, P ((j.natAdd (1+c)).castAdd 2))
+        (outer : ∀ j : Fin 2, P (j.natAdd ((1+c)+2))) : ∀ i, P i :=
+      Fin.addCases (Fin.addCases (Fin.addCases src owner) inner) outer
+    intro i j
+    revert j i
+    apply split <;> intro i <;> apply split <;> intro j
+    all_goals simp only [Fin.addCases_left,Fin.addCases_right]
+    all_goals intro eq
+    all_goals first
+      | apply Fin.ext; simp only [Fin.val_castAdd]; omega
+      | exact False.elim (apart _ _ eq)
+      | exact False.elim (apart _ _ eq.symm)
+      | apply Fin.ext
+        first | have h := congrArg Fin.val (saved.injective eq)
+              | have h := congrArg Fin.val (fan.injective eq)
+        simp only [Fin.val_castAdd,Fin.val_natAdd,Fin.val_succ,Fin.val_zero] at *
+        omega
+
+theorem returnedMergeBank_owners {c T : ℕ} (saved : Fin 3 ↪ Fin T) (fan : Fin (c+2) ↪ Fin T)
+    (apart : ∀ i j, saved i ≠ fan j) :
+    (intervalOwners c).trans (returnedMergeBank saved fan apart) = fan := by
+  ext i
+  induction i using Fin.addCases <;> simp [returnedMergeBank,intervalOwners]
+
+theorem returnedMergeBank_target {c T : ℕ} (saved : Fin 3 ↪ Fin T) (fan : Fin (c+2) ↪ Fin T)
+    (apart : ∀ i j, saved i ≠ fan j) : returnedMergeBank saved fan apart 0 = saved 0 := by
+  change returnedMergeBank saved fan apart ((((0 : Fin 1).castAdd c).castAdd 2).castAdd 2) = _
+  simp [returnedMergeBank]
+
+theorem returnedMergeBank_inner {c T : ℕ} (saved : Fin 3 ↪ Fin T) (fan : Fin (c+2) ↪ Fin T)
+    (apart : ∀ i j, saved i ≠ fan j) (j : Fin 2) :
+    returnedMergeBank saved fan apart ((j.natAdd (1+c)).castAdd 2) = saved j.succ := by
+  simp [returnedMergeBank]
+
 noncomputable def intervalOwnerBank {m c : ℕ} (src : ℤ → Fin (prime+4)) (data : Fin c → Fin m → ZMod 2) :=
   CyclicRowSplit.bank (CyclicRowCopy.bank src
     (fun j => putWord (fun _ => blank) 0 (List.ofFn (SparseRoleCircuit.encoded data j)))
