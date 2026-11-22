@@ -264,7 +264,7 @@ theorem phaseRead_label {k w B K : ℕ} (owner : Fin 661 ↪ Fin k) (r : Fin 661
   simp [phaseRead,Copy.extendStored,r.isLt,i]
 
 open IntegerMultBounds.MathlibTM2.Cover in
-private theorem phaseRead_active {k w B K : ℕ} (owner : Fin 661 ↪ Fin k) (r : Fin 661)
+theorem phaseRead_active {k w B K : ℕ} (owner : Fin 661 ↪ Fin k) (r : Fin 661)
     (data : Fin k → Fin ((prime^w)^16*(B*prime^(64*(w*64))*K)) → ZMod 2)
     (g : LabelPadding.Label 64 w) (z : LabelEntry.Cell (copyLabelLayout w B K) B)
     (s : Swap.Shear.State (Fin 8) (ZMod (prime^w))) :
@@ -721,7 +721,7 @@ theorem phaseLogicalRead (w : ℕ) (gates : List RawGate) (current : ℕ → ℕ
     Frames.compile_semantics frame gates current (FramedCircuit.decode (fun i => frame (current i)) input)
 
 open RecursiveInterchangeLayout (Descriptor volume) in
-private theorem flatCopyStage {k V : ℕ} {v : Descriptor} (size : volume prime v = V)
+theorem flatCopyStage {k V : ℕ} {v : Descriptor} (size : volume prime v = V)
     (effect : (Fin k → Fin (volume prime v) → ZMod 2) → (Fin k → Fin (volume prime v) → ZMod 2) → Prop)
     (budget : ℕ) (stage : SharedBankStage.Stage _ k prime (copyOwners (v := v)))
     (acts : ∀ data, effect data (stage.transform data)) (bill : stage.cost ≤ budget) :

@@ -116,4 +116,106 @@ theorem borrowedScatter_stage [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin
   · intro x k live off
     exact (fOff _ _ off).trans ((copySchedule_other (acts _) k live off).trans (aOff _ _ off))
 
+/-- The copy descriptor and the flat scalar machine read the same register
+at each matrix label, including the zero extension above the live bank. -/
+theorem borrowedRead_flat {w B K : ℕ} (n : Fin 9) (r : Fin 32) (d : Fin 5)
+    (x : Fin 142081 → Fin ((prime^w)^16*(B*prime^(64*(w*64))*K)) → ZMod 2)
+    (g : LabelPadding.Label 64 w) (z : LabelEntry.Cell (copyLabelLayout w B K) B) :
+    borrowedRead n r d g z (fun k i => x k (Fin.cast (copyLabel_volume w B K) i)) =
+      phaseRead ⟨ownerTape n r d,ownerTape_injective n r d⟩ x (labelSpectator g z) := by
+  funext j
+  by_cases h : j < 661
+  · let i : Fin 661 := ⟨j,h⟩
+    funext s
+    change borrowedRead n r d g z _ i.val s = _
+    simp only [borrowedRead,Copy.extendStored,dite_eq_left i.isLt]
+    convert phaseRead_active (⟨ownerTape n r d,ownerTape_injective n r d⟩ : Fin 661 ↪ Fin 142081) i x g z s using 1
+  · simp [borrowedRead,phaseRead,Copy.extendStored,h]
+
+noncomputable def borrowedScatter (w : ℕ) (x : ℕ → AddressStream (ZMod (prime^w))) :=
+  let frame := fun j => selectedFrame w (Frames.beforeScatter j)
+  Copy.extendStored fun i => frame i.val (FramedCircuit.moduleRun (sectionscatter.map RawGate.toCircuit)
+    (FramedCircuit.decode frame x) i.val)
+
+theorem borrowedScatter_flat [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
+    (engine : CopyTranspose := CopyTranspose.original) :
+    ∃ C : ℕ, ∀ w B K, 0 < w → 0 < B → 0 < K →
+    let W := B*prime^(64*(w*64))*K
+    let V := (prime^w)^16*W
+    let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n r d,ownerTape_injective n r d⟩
+    let hs := fun i => FlatCoordinateSchedule.bits (RecursiveDimensionBank.values (copyChild w W) i)
+    ∃ stage : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V)),
+      stage.cost ≤ C*V + (2*(63*9+252*527)+1322*252)*LeafCore.coreCost V (w*64) +
+        9*engine.time (copyChild w W) hs + 1333 ∧
+      (∀ x g z, let j := labelSpectator g z
+        phaseRead owner (stage.transform x) j = borrowedScatter w (phaseRead owner x j)) ∧
+      ∀ x k, k ≠ Fin.last 142080 → (∀ i, owner i ≠ k) → stage.transform x k = x k := by
+  obtain ⟨C,build⟩ := borrowedScatter_stage n r d engine
+  refine ⟨C,?_⟩
+  intro w B K hw hb hk W V owner hs
+  obtain ⟨stage,paid,run,off⟩ := build w B K hw hb hk
+  let size := copyLabel_volume w B K
+  let effect := fun (x y : Fin 142081 → Fin (volume prime (copyLabelLayout w B K)) → ZMod 2) =>
+    (∀ g z, borrowedRead (B := B) (K := K) n r d g z y = borrowedScatter w (borrowedRead n r d g z x)) ∧
+    ∀ k, k ≠ Fin.last 142080 → (∀ i, owner i ≠ k) → y k = x k
+  have acts x : effect x (stage.transform x) := by
+    refine ⟨?_,off x⟩
+    intro g z
+    funext j
+    by_cases hj : j < 661
+    · simpa only [borrowedScatter,Copy.extendStored,dite_eq_left hj] using run x g z ⟨j,hj⟩
+    · simp [borrowedRead,borrowedScatter,Copy.extendStored,hj]
+  obtain ⟨flat,cost,read⟩ := flatCopyStage size effect _ stage acts paid
+  refine ⟨flat,by rwa [copyLabel_volume] at cost,?_,?_⟩
+  · intro x g z
+    simpa only [borrowedRead_flat] using (read x).1 g z
+  · intro x k live outside
+    funext i
+    exact congrFun ((read x).2 k live outside) (Fin.cast size.symm i)
+
+/-- Execute both scalar phases and COPY on each independent borrowed row. -/
+theorem borrowedInvocation_stage [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
+    (engine : CopyTranspose := CopyTranspose.original) :
+    ∃ C : ℕ, ∀ w B K, 0 < w → 0 < B → 0 < K →
+    let W := B*prime^(64*(w*64))*K
+    let V := (prime^w)^16*W
+    let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n r d,ownerTape_injective n r d⟩
+    let gates := fun done : Bool => if done then sectionB++sectionC else sectionD++sectionA
+    let current := fun done : Bool => if done then Frames.scatterFinish Frames.beforeScatter else Frames.snapshot Frames.initialRefs
+    let frame := selectedFrame w
+    let instr := fun done => FramedCircuit.compile (fun i => frame (current done i)) ((gates done).map (Frames.framedGate frame))
+    let phaseCost := fun done => ((instr done).map (scalarWork V)).sum +
+      ((Frames.edges (gates done) (current done)).map (phaseEdgeBudget owner w W)).sum + (instr done).length
+    let hs := fun i => FlatCoordinateSchedule.bits (RecursiveDimensionBank.values (copyChild w W) i)
+    ∃ stage : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V)),
+      stage.cost ≤ phaseCost false + (C*V + (2*(63*9+252*527)+1322*252)*LeafCore.coreCost V (w*64) +
+        9*engine.time (copyChild w W) hs + 1333) + phaseCost true + 2 ∧
+      (∀ x g z, let j := labelSpectator g z
+        phaseRead owner (stage.transform x) j = labelPhase w (gates true) (current true)
+          (borrowedScatter w (labelPhase w (gates false) (current false) (phaseRead owner x j)))) ∧
+      ∀ x k, k ≠ Fin.last 142080 → (∀ i, owner i ≠ k) → stage.transform x k = x k := by
+  obtain ⟨C,scatter⟩ := borrowedScatter_flat n r d engine
+  refine ⟨C,?_⟩
+  intro w B K hw hb hk W V owner gates current frame instr phaseCost hs
+  have positive : 0 < W := Nat.mul_pos (Nat.mul_pos hb (pow_pos Shared50ModularControl.prime_prime.pos _)) hk
+  obtain ⟨a,ac,first,aOff⟩ := invocationPhase_stage owner hw positive false
+  obtain ⟨b,bc,middle,bOff⟩ := scatter w B K hw hb hk
+  obtain ⟨f,fc,last,fOff⟩ := invocationPhase_stage owner hw positive true
+  have checked := Geometry.Moves.phase_checked
+  rw [Geometry.Moves.phaseEdges,List.forall_mem_append] at checked
+  refine ⟨SharedBankStage.compose (SharedBankStage.compose a b) f,?_,?_,?_⟩
+  · change a.cost+b.cost+1+f.cost+1 ≤ _
+    change a.cost ≤ phaseCost false at ac
+    change f.cost ≤ phaseCost true at fc
+    change b.cost ≤ C*V + (2*(63*9+252*527)+1322*252)*LeafCore.coreCost V (w*64) + 9*engine.time (copyChild w W) hs + 1333 at bc
+    omega
+  · intro x g z j
+    change phaseRead owner (f.transform (b.transform (a.transform x))) j = _
+    rw [(last _ j).trans (phaseLogicalRead w _ _ checked.2 _)]
+    change labelPhase w (gates true) (current true) _ = _
+    rw [middle _ g z,(first x j).trans (phaseLogicalRead w _ _ checked.1 _)]
+    rfl
+  · intro x k live off
+    exact (fOff _ _ off).trans ((bOff _ _ live off).trans (aOff _ _ off))
+
 end IntegerMultBounds.MathlibTM2.M6.BitNode
