@@ -316,18 +316,17 @@ above-cutoff branch requires a child execution witness. -/
 theorem packedMixedMoveCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
     (workerPorts : Fin (rowSwapBlock.tapes+35) ↪ Fin T) (capacity : columnCapacity ≤ Q)
     (n : Fin 9) (p : StageRun) (moveIndex : MoveIndex)
-    {N H : ℕ} (record : Fin 35 ↪ Fin N) (host : Fin (N+(T+273)) ↪ Fin H) :
+    {N H : ℕ} (record : Fin 35 ↪ Fin N) (host : Fin (N+(80+((T+273)+0))) ↪ Fin H) :
     let occurrence := phaseChildPositions.choose (n,p,moveIndex)
-    let parent := record.trans ((Fin.castAddEmb (T+273)).trans host)
+    let parent := record.trans ((Fin.castAddEmb (80+((T+273)+0))).trans host)
     let payload := ((scheduledRecordPorts workerPorts) 24).castAdd 273
-    let stage := (Record.payloadBank (record 24) payload).trans host
+    let slots := (Fin.castAddEmb 0 (n := T+273)).trans (Fin.natAddEmb 80)
+    let placed := (Record.payloadBank (record 24) (slots payload)).trans host
+    let stage := slots.trans placed
     let worker := (Fin.castAddEmb 273 (n := T)).trans stage
     let ports := workerPorts.trans worker
     let cut := parent 34
-    let headers := fun i j => stage (borrowedHeaders T i j)
-    ∀ (e : Fin (80+273) ↪ Fin H),
-    (∀ i j, e (borrowedHeaders 80 i j) = headers i j) →
-    (∀ k j, e k ≠ ports j) → (∀ k j, e k ≠ parent j) →
+    let e := (archiveSetupPlacement 80 T 0).trans placed
     (fun {q : ℕ} (_ : Program 38 q prime) => q) (RecursiveRowsNodeHeaders.program 142080) ≤ Q →
     ∃ leaf : Pr P H Q prime U, ∀ (body : P → Pr P H Q prime U) (large f : P), body f = leaf →
     let localPort := (Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)
@@ -339,7 +338,10 @@ theorem packedMixedMoveCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
     let suffix := M^112*W
     node.width = 64*(w+1) → node.rows = 142080*rows → node.beforeH = B*prime^(64*((w+1)*64)) →
     ({node with rows := rows} : Descriptor).Positive → cutoff < 2^L → desc.width.size ≤ L → L ≤ 64*(w+1) → 0 < W → ∃ position : Fin (volume prime desc) ≃ Fin (M^16*suffix),
-    (∀ h, (position h).val = (CopyChildLayout.packActive desc h).val) ∧ ∀ (x : Fin (M^16*suffix) → ZMod 2) (u : HS H Q prime U) (S : Stacks H prime),
+    (∀ h, (position h).val = (CopyChildLayout.packActive desc h).val) ∧
+    (∀ initial : Stacks 35 prime, ∃ seed : Stacks H prime,
+      (∀ j, seed.L (parent j) = initial.L j ∧ seed.R (parent j) = initial.R j) ∧ ParentArchiveInput node w (embStk e seed) ∧
+      ∀ j : Fin (rowSwapBlock.tapes+35), j.val ≠ 24 → seed.L (ports j) = [] ∧ seed.R (ports j) = []) ∧ ∀ (x : Fin (M^16*suffix) → ZMod 2) (u : HS H Q prime U) (S : Stacks H prime),
     S.R cut = binSyms L cutoff → S.R (bank 34) = [] →
     ParentArchiveInput node w (embStk e S) →
     (∀ i : Fin 35, i ≠ 24 → i ≠ 34 → S.L (bank i) = [] ∧ S.R (bank i) = []) →
@@ -362,15 +364,34 @@ theorem packedMixedMoveCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
       (∀ H J, let caller := RecordReady (b := prime) (w := w) (d := 16) (W := suffix) parent H J (binSyms L cutoff) SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0
         caller x S → caller y F) ∧
       ∀ h, y (position h) = Shared50RecursiveNodeRows.transpose (one_dvd desc.rows) (x ∘ position) h := by
-  intro occurrence parent payload stage worker ports cut headers e headerAt offWorker offParent headerCapacity
+  intro occurrence parent payload slots placed stage worker ports cut e headerCapacity
+  let headers := fun i j => stage (borrowedHeaders T i j)
+  have headerAt (i : Fin 127) (j : Fin 6) : e (borrowedHeaders 80 i j) = headers i j := by
+    calc
+      _ = placed (archiveSetupPlacement 80 T 0 (borrowedHeaders 80 i j)) := rfl
+      _ = placed (((borrowedHeaders T i j).castAdd 0).natAdd 80) := congrArg placed (archiveSetupPlacement_header 80 T 0 i j)
+      _ = _ := rfl
+  have offWorker (k j) : e k ≠ ports j := by
+    change placed (archiveSetupPlacement 80 T 0 k) ≠ placed ((((workerPorts j).castAdd 273).castAdd 0).natAdd 80)
+    exact placed.injective.ne ((archiveSetupPlacement_frame k).1 (workerPorts j))
+  have offParent (k j) : e k ≠ parent j := by
+    have ne : archiveSetupPlacement 80 T 0 k ≠ slots payload := (archiveSetupPlacement_frame (T := T) (L := 0) k).1 (scheduledRecordPorts workerPorts 24)
+    change host (Record.payloadBank (record 24) (slots payload) (archiveSetupPlacement 80 T 0 k)) ≠ host ((record j).castAdd _)
+    apply host.injective.ne
+    rw [Record.payloadBank_private _ _ _ ne]
+    intro eq
+    have h := congrArg Fin.val eq
+    simp only [Fin.val_natAdd,Fin.val_castAdd] at h
+    have := (record j).isLt
+    omega
   let rank := nodeChildren5[occurrence.val]
   obtain ⟨positive,rankBound⟩ := nodeChildren5_bounds occurrence
   have bound : rank ≤ 64 := rankBound.trans (by decide)
-  have shared : scheduledRecordPorts ports 24 = parent 24 := congrArg host (Record.payloadBank_shared (record 24) payload)
+  have shared : scheduledRecordPorts ports 24 = parent 24 := congrArg host (Record.payloadBank_shared (record 24) (slots payload))
   have apartParent (i : Fin T) (j : Fin 35) (hj : j ≠ 24) : stage (i.castAdd 273) ≠ parent j := by
-    change host (Record.payloadBank (record 24) payload (i.castAdd 273)) ≠ host ((record j).castAdd _)
+    change host (Record.payloadBank (record 24) (slots payload) (slots (i.castAdd 273))) ≠ host ((record j).castAdd _)
     apply host.injective.ne
-    by_cases eq : i.castAdd 273 = payload
+    by_cases eq : slots (i.castAdd 273) = slots payload
     · rw [eq,Record.payloadBank_shared]
       exact (Fin.castAddEmb _).injective.ne (record.injective.ne hj.symm)
     · rw [Record.payloadBank_private _ _ _ eq]
@@ -406,7 +427,30 @@ theorem packedMixedMoveCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
   simp only [Fintype.card_fin] at card
   let position := pack.trans (finCongr (card.symm.trans size))
   have coords (h) : (position h).val = (CopyChildLayout.packActive desc h).val := rfl
-  refine ⟨position,coords,?_⟩
+  refine ⟨position,coords,?_,?_⟩
+  · intro initial
+    obtain ⟨archive,input⟩ := parentArchiveInput_exists node w
+    let blankHost : Stacks H prime := ⟨[],[],fun _ => [],fun _ => []⟩
+    let seeded := embOvr parent initial.get blankHost
+    let seed := embOvr e archive.get seeded
+    have parentView := embStk_ovr parent.injective initial blankHost
+    have retained (j : Fin 35) := embOvr_off archive.get seeded (fun k => offParent k j)
+    refine ⟨seed,?_,by simpa only [seed,embStk_ovr e.injective] using input,?_⟩
+    · intro j
+      exact ⟨(retained j).1.trans (congrArg (fun D => Stacks.L D j) parentView),
+        (retained j).2.trans (congrArg (fun D => Stacks.R D j) parentView)⟩
+    · intro j hj
+      have outside (k : Fin 35) : parent k ≠ ports j := by
+        by_cases eq : k = 24
+        · subst k
+          rw [← shared]
+          intro same
+          change ports (localPort 24) = ports j at same
+          exact hj (congrArg Fin.val (ports.injective same).symm)
+        · exact (apartParent (workerPorts j) k eq).symm
+      have archived := embOvr_off archive.get seeded (fun k => offWorker k j)
+      have empty := embOvr_off initial.get blankHost outside
+      exact ⟨archived.1.trans empty.1,archived.2.trans empty.2⟩
   intro x u S header archive ready empty clean payload core rate room budget active price recurse
   have width : desc.width = (w+1)*rank := by
     change rank*(node.width/64) = _
