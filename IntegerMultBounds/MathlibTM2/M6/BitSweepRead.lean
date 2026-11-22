@@ -188,45 +188,46 @@ theorem sweepEffect_active {n : Fin 9} {w B W : ℕ} {x y : OwnerArray w B W}
 open AffineFieldCoordinates FlatCoordinateLayout Matrix in
 /-- The physical entry correction on the compact source and exit correction
 on the compact target convert a completed sweep to the translated port frame. -/
-theorem sweepEffect_correctedPort [M8.Machine.Net] (t : Fin 111) :
-    ∃ c preTapes postTapes preStates postStates : ℕ, ∀ w B W, 0 < w → 0 < B*((prime^w)^112*W) →
-      let K := (prime^w)^112*W
-      let V := (prime^w)^16*(B*K)
+theorem framed_correctedPort [M8.Machine.Net] (t : Fin 111) :
+    ∃ c preTapes postTapes preStates postStates : ℕ, ∀ w W, 0 < w → 0 < W →
+      let V := (prime^w)^16*W
       let P := translatedPortProjector (ZMod (prime^w)) (4 : ZMod (prime^w))⁻¹ t
       ∃ enter leave : SharedBankStage.Stage _ 1 prime (@portOwner V),
         enter.tapes = preTapes ∧ leave.tapes = postTapes ∧
         enter.states = preStates ∧ leave.states = postStates ∧
         enter.cost+leave.cost = c*V + 2*LeafCore.coreCost V w+12 ∧
-        ∀ n (run : Fin 32 × Fin 5) (x a y : OwnerArray w B W),
+        ∀ n (run : Fin 32 × Fin 5) (x a y : Fin 142081 → Fin V → ZMod 2),
           let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n run.1 run.2,ownerTape_injective ..⟩
           let src := owner ⟨t.val,by omega⟩
           let dst := owner ⟨111+t.val,by omega⟩
-          a src = enter.transform (x src) → a dst = x dst → sweepEffect n w B W a y →
-          ∀ (z : LabelEntry.Cell (copyLabelLayout w B K) B) s,
-            let cell := fun v => index (embed v) (@finProdFinEquiv B K (z.b,z.after))
+          a src = enter.transform (x src) → a dst = x dst →
+          ∀ (j : Fin W),
+          let initial := fun i => (selectedFrame w (Frames.initialRefs i)).symm (phaseRead owner a j i)
+          phaseRead owner y j (111+t.val) = selectedFrame w (Frames.finalRefs (111+t.val)) (initial (111+t.val) + initial t.val) →
+          phaseRead owner y j t.val = selectedFrame w (Frames.finalRefs t.val) (initial t.val) → ∀ s,
+            let cell := fun v => index (embed v) j
             y src (cell s) = x src (cell (M8.Exchange.exchange P s.swap)) ∧
             leave.transform (y dst) (cell s) =
               x dst (cell (M8.Exchange.exchange (1-P) s)) + x src (cell s.swap) := by
   obtain ⟨a,preMachine,pre⟩ := portCorrection_owner t false true
   obtain ⟨b,postMachine,post⟩ := portCorrection_owner t true true
   refine ⟨a+b,preMachine.tapes,postMachine.tapes,preMachine.states,postMachine.states,?_⟩
-  intro w B W hw hW K V P
-  obtain ⟨enter,hpre,entryCost,entry⟩ := pre w (B*K) hw hW
-  obtain ⟨leave,hpost,exitCost,exitRow⟩ := post w (B*K) hw hW
+  intro w W hw hW V P
+  obtain ⟨enter,hpre,entryCost,entry⟩ := pre w W hw hW
+  obtain ⟨leave,hpost,exitCost,exitRow⟩ := post w W hw hW
   refine ⟨enter,leave,congrArg SharedBankSkeleton.Skeleton.tapes hpre,congrArg SharedBankSkeleton.Skeleton.tapes hpost,
     congrArg SharedBankSkeleton.Skeleton.states hpre,congrArg SharedBankSkeleton.Skeleton.states hpost,?_,?_⟩
   · rw [entryCost,exitCost]
     simp only [ite_true,V]
     ring
-  intro n run x a y owner src dst source target step z s cell
-  let j : Fin (B*K) := @finProdFinEquiv B K (z.b,z.after)
+  intro n run x a y owner src dst source target j initial outT outS s cell
   let U := reduce (prime^w) (selectedProjector ⟨2+t.val,by omega⟩)
   let T := reduce (prime^w) (selectedProjector ⟨525+t.val,by omega⟩)
   obtain ⟨up,pu,tc,ct,srcFrame,dstFrame⟩ := portFrame_absorption w t
   have readSrc (v) : phaseRead owner a j t.val v = a src (cell v) := by
-    simp only [phaseRead,Copy.extendStored,dite_eq_left (show t.val < 661 by omega),src,cell,j]
+    simp only [phaseRead,Copy.extendStored,dite_eq_left (show t.val < 661 by omega),src,cell]
   have readDst (v) : phaseRead owner a j (111+t.val) v = a dst (cell v) := by
-    simp only [phaseRead,Copy.extendStored,dite_eq_left (show 111+t.val < 661 by omega),dst,cell,j]
+    simp only [phaseRead,Copy.extendStored,dite_eq_left (show 111+t.val < 661 by omega),dst,cell]
   have decoded : (selectedFrame w (Frames.initialRefs t.val)).symm (phaseRead owner a j t.val) =
       fun v => x src (cell (M8.Exchange.exchange P v)) := by
     apply (selectedFrame w _).injective
@@ -234,8 +235,7 @@ theorem sweepEffect_correctedPort [M8.Machine.Net] (t : Fin 111) :
     funext v
     rw [srcFrame,readSrc,source]
     exact entry (x src) v j
-  obtain ⟨outT,outS⟩ := sweepEffect_active step run t z
-  dsimp only at outT outS
+  dsimp only [initial] at outT outS
   rw [(source_frames _ t.isLt).2.2] at outS
   rw [(target_frames _ t.isLt).1,emptyFrame_decode] at outT
   have tt : T*T=T := by calc
@@ -256,6 +256,35 @@ theorem sweepEffect_correctedPort [M8.Machine.Net] (t : Fin 111) :
     rw [dstFrame,show M8.Exchange.exchange T (M8.Exchange.exchange T v) = v from M8.Global.exchange_involutive tt v,
       Pi.add_apply,decoded,readDst,target] at h
     apply (exitRow (y dst) s j).trans
-    simpa only [phaseRead,Copy.extendStored,dite_eq_left (show 111+t.val < 661 by omega),v,swap,ite_true,T,dst,j,P] using h
+    simpa only [phaseRead,Copy.extendStored,dite_eq_left (show 111+t.val < 661 by omega),v,swap,ite_true,T,dst,P] using h
+
+open AffineFieldCoordinates FlatCoordinateLayout Matrix in
+theorem sweepEffect_correctedPort [M8.Machine.Net] (t : Fin 111) :
+    ∃ c preTapes postTapes preStates postStates : ℕ, ∀ w B W, 0 < w → 0 < B*((prime^w)^112*W) →
+      let K := (prime^w)^112*W
+      let V := (prime^w)^16*(B*K)
+      let P := translatedPortProjector (ZMod (prime^w)) (4 : ZMod (prime^w))⁻¹ t
+      ∃ enter leave : SharedBankStage.Stage _ 1 prime (@portOwner V),
+        enter.tapes = preTapes ∧ leave.tapes = postTapes ∧
+        enter.states = preStates ∧ leave.states = postStates ∧
+        enter.cost+leave.cost = c*V + 2*LeafCore.coreCost V w+12 ∧
+        ∀ n (run : Fin 32 × Fin 5) (x a y : OwnerArray w B W),
+          let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n run.1 run.2,ownerTape_injective ..⟩
+          let src := owner ⟨t.val,by omega⟩
+          let dst := owner ⟨111+t.val,by omega⟩
+          a src = enter.transform (x src) → a dst = x dst → sweepEffect n w B W a y →
+          ∀ (z : LabelEntry.Cell (copyLabelLayout w B K) B) s,
+            let cell := fun v => index (embed v) (@finProdFinEquiv B K (z.b,z.after))
+            y src (cell s) = x src (cell (M8.Exchange.exchange P s.swap)) ∧
+            leave.transform (y dst) (cell s) =
+              x dst (cell (M8.Exchange.exchange (1-P) s)) + x src (cell s.swap) := by
+  obtain ⟨c,et,lt,es,ls,build⟩ := framed_correctedPort t
+  refine ⟨c,et,lt,es,ls,?_⟩
+  intro w B W hw hW K V P
+  obtain ⟨enter,leave,he,hl,qe,ql,cost,correct⟩ := build w (B*K) hw hW
+  refine ⟨enter,leave,he,hl,qe,ql,cost,?_⟩
+  intro n run x a y owner src dst source target step z
+  obtain ⟨outT,outS⟩ := sweepEffect_active step run t z
+  exact correct n run x a y source target _ outT outS
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
