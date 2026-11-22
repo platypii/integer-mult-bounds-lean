@@ -279,11 +279,14 @@ theorem returnRows_exec {ι : Type} {T A capacity B : ℕ} (body : P → Pr P T 
       F.R (ports i k) = S.R (ports i k)) → ready i S → ready i F)
     (localDone : ∀ i S F, (∀ k, F.L (ports i k) = S.L (ports i k) ∧
       F.R (ports i k) = S.R (ports i k)) → doneRow i S → doneRow i F)
-    (step : ∀ i u S, ready i S → ∃ z F n, Exec body (code i) (mk u S) n (mk z F) ∧
+    (shared : Stacks T A → Prop)
+    (preserve : ∀ i S F, (∀ j, (∀ k, ports i k ≠ j) →
+      F.L j = S.L j ∧ F.R j = S.R j) → shared S → shared F)
+    (step : ∀ i u S, shared S → ready i S → ∃ z F n, Exec body (code i) (mk u S) n (mk z F) ∧
       n ≤ price i ∧ z.user = u.user ∧ doneRow i F ∧
       ∀ j, (∀ k, ports i k ≠ j) → F.L j = S.L j ∧ F.R j = S.R j)
     (rows : List ι) (unique : rows.Nodup) (u : HS T capacity A U) (S : Stacks T A)
-    (inputs : ∀ i ∈ rows, ready i S) :
+    (common : shared S) (inputs : ∀ i ∈ rows, ready i S) :
     ∃ z F n, Exec body (Prog.seqList (rows.map code)) (mk u S) n (mk z F) ∧
       n ≤ (rows.map price).sum+1 ∧ z.user = u.user ∧ (∀ i ∈ rows, doneRow i F) ∧
       ∀ j, (∀ i ∈ rows, ∀ k, ports i k ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
@@ -291,8 +294,8 @@ theorem returnRows_exec {ι : Type} {T A capacity B : ℕ} (body : P → Pr P T 
   | nil => exact ⟨u,S,1,Exec.act .done _,by simp,rfl,by simp,fun _ _ => ⟨rfl,rfl⟩⟩
   | cons i rows ih =>
     obtain ⟨fresh,distinct⟩ := List.nodup_cons.mp unique
-    obtain ⟨v,D,t,run,paid,user,finished,keep⟩ := step i u S (inputs i List.mem_cons_self)
-    obtain ⟨z,F,n,tail,cost,same,returned,frame⟩ := ih distinct v D (fun j hj =>
+    obtain ⟨v,D,t,run,paid,user,finished,keep⟩ := step i u S common (inputs i List.mem_cons_self)
+    obtain ⟨z,F,n,tail,cost,same,returned,frame⟩ := ih distinct v D (preserve i S D keep common) (fun j hj =>
       localReady j S D (fun k => keep _ (fun a => apart i j (fun eq => fresh (eq ▸ hj)) a k))
         (inputs j (List.mem_cons_of_mem _ hj)))
     refine ⟨z,F,t+n,Exec.seq run tail,by simp only [List.map_cons,List.sum_cons]; omega,
@@ -404,11 +407,12 @@ theorem intervalPassBank_exec {T capacity : ℕ} (fitsStates : Q ≤ capacity)
       exact ⟨(keep k ne).1.trans (old.2 k hk).1,(keep k ne).2.trans (old.2 k hk).2⟩
   obtain ⟨z,F,n,exec,paid,user,doneRows,frame⟩ := returnRows_exec body ports apart code _
     (fun r => stored r (fromRow r)) (fun r => stored r (toRow r))
-    (fun r => transfer r _) (fun r => transfer r _) (fun r v D ready => by
+    (fun r => transfer r _) (fun r => transfer r _) (fun _ => True)
+    (fun _ _ _ _ h => h) (fun r v D _ ready => by
       obtain ⟨z,F,n,user,paid,exec,out,clear,frame⟩ := run r w W hW v D (record r) (dest r) (q r)
         (output r) ready.1 ready.2
       exact ⟨z,F,n,exec,paid,user,⟨out,clear⟩,frame⟩)
-    (List.finRange 142080) (List.nodup_finRange _) u S (fun r _ => inputs r)
+    (List.finRange 142080) (List.nodup_finRange _) u S trivial (fun r _ => inputs r)
   refine ⟨z,F,n,exec,paid,user,?_,fun r => doneRows r (List.mem_finRange r),fun j h => frame j (fun r _ => h r)⟩
 
   intro i z

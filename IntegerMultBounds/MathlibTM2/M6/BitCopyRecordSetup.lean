@@ -57,6 +57,42 @@ theorem loadDimensions_exec {P U : Type} {T Q A k : ℕ} (body : P → Pr P T Q 
 
 /-- The modulus, full record suffix and unit are already present in the
 six child dimensions. Copy their binary words, preserving the caller's payload. -/
+theorem intervalRecordHeaders_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U)
+    (headers : Fin 6 ↪ Fin T) (bank : Fin 35 ↪ Fin T) (apart : ∀ i j, headers i ≠ bank j)
+    (w W : ℕ) (u : HS T Q prime U) (S : Stacks T prime)
+    (words : ∀ i : Fin 3, ∀ z, readAt blank (S.L (headers (copyRecordSources i))) (S.R (headers (copyRecordSources i))) (z-1) =
+      RadixZeroFill.encodedBinary (FlatCoordinateSchedule.bits (![prime^(w+1),W,1] i)) z)
+    (empty : ∀ i : Fin 3, S.R (bank (copyRecordTargets i)) = [])
+    (tmp : S.L (bank 0) = [] ∧ S.R (bank 0) = []) :
+    let M := prime^(w+1)
+    let src := copyRecordSources.trans headers
+    let dst := copyRecordTargets.trans bank
+    ∃ v F n, v.user = u.user ∧ n = 8*(M.size+W.size)+33 ∧
+      Exec body (loadDimensions src dst (bank 0) (List.finRange 3))
+        (mk u S) n (mk v F) ∧ F.L = S.L ∧
+      F.R (bank 2) = binSyms M.size M ∧ F.R (bank 27) = binSyms W.size W ∧
+      F.R (bank 28) = binSyms 1 1 ∧ ∀ j, (∀ i, dst i ≠ j) → F.R j = S.R j := by
+  intro M src dst
+  have ports (i : Fin 3) : [src i,bank 0,dst i].Nodup := by
+    have nd := ((by decide : ∀ i, [0,copyRecordTargets i].Nodup) i).map bank.injective
+    exact List.nodup_cons.mpr ⟨by simp [src,dst,apart],nd⟩
+  let bits := fun i => FlatCoordinateSchedule.bits (![prime^(w+1),W,1] i)
+  obtain ⟨v,F,user,run,left,loaded,off⟩ := loadDimensions_exec body src dst (bank 0) bits
+    (fun i j => apart _ _) ports _ (List.nodup_finRange 3) u S (fun i => words _) tmp (fun i _ => empty i)
+  have base : (bits 0).map (bitSymbol (a := prime)) = binSyms M.size M := canonicalBits_symbols _
+  have suffix : (bits 1).map (bitSymbol (a := prime)) = binSyms W.size W := canonicalBits_symbols _
+  have unit : (bits 2).map (bitSymbol (a := prime)) = binSyms 1 1 := by
+    change (FlatCoordinateSchedule.bits 1).map bitSymbol = _
+    simpa using canonicalBits_symbols (A := prime) 1
+  refine ⟨v,F,_,user,?_,run,left,(loaded 0 (List.mem_finRange _)).trans base,
+    (loaded 1 (List.mem_finRange _)).trans suffix,(loaded 2 (List.mem_finRange _)).trans unit,
+    fun j h => off j (fun i _ => h i)⟩
+  have len (i : Fin 3) : ((bits i).map (bitSymbol (a := prime))).length = (bits i).length := by simp
+  change (8*(bits 0).length+8)+((8*(bits 1).length+8)+((8*(bits 2).length+8)+0))+1 = _
+  rw [←len 0,←len 1,←len 2,base,suffix,unit]
+  simp only [length_binSyms]
+  omega
+
 theorem copyRecordHeaders_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U)
     (headers : Fin 6 ↪ Fin T) (bank : Fin 35 ↪ Fin T) (apart : ∀ i j, headers i ≠ bank j)
     (w W : ℕ) (u : HS T Q prime U) (S : Stacks T prime)
@@ -72,26 +108,11 @@ theorem copyRecordHeaders_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T Q p
         (mk u S) n (mk v F) ∧ F.L = S.L ∧
       F.R (bank 2) = binSyms M.size M ∧ F.R (bank 27) = binSyms (M*W).size (M*W) ∧
       F.R (bank 28) = binSyms 1 1 ∧ ∀ j, (∀ i, dst i ≠ j) → F.R j = S.R j := by
-  intro M src dst
-  have ports (i : Fin 3) : [src i,bank 0,dst i].Nodup := by
-    have nd := ((by decide : ∀ i, [0,copyRecordTargets i].Nodup) i).map bank.injective
-    exact List.nodup_cons.mpr ⟨by simp [src,dst,apart],nd⟩
-  let bits := fun i => FlatCoordinateSchedule.bits (RecursiveDimensionBank.values (copyChild (w+1) W) (copyRecordSources i))
-  obtain ⟨v,F,user,run,left,loaded,off⟩ := loadDimensions_exec body src dst (bank 0) bits
-    (fun i j => apart _ _) ports _ (List.nodup_finRange 3) u S (fun i => words _) tmp (fun i _ => empty i)
-  have base : (bits 0).map (bitSymbol (a := prime)) = binSyms M.size M := canonicalBits_symbols _
-  have suffix : (bits 1).map (bitSymbol (a := prime)) = binSyms (M*W).size (M*W) := canonicalBits_symbols _
-  have unit : (bits 2).map (bitSymbol (a := prime)) = binSyms 1 1 := by
-    change (FlatCoordinateSchedule.bits 1).map bitSymbol = _
-    simpa using canonicalBits_symbols (A := prime) 1
-  refine ⟨v,F,_,user,?_,run,left,(loaded 0 (List.mem_finRange _)).trans base,
-    (loaded 1 (List.mem_finRange _)).trans suffix,(loaded 2 (List.mem_finRange _)).trans unit,
-    fun j h => off j (fun i _ => h i)⟩
-  have len (i : Fin 3) : ((bits i).map (bitSymbol (a := prime))).length = (bits i).length := by simp
-  change (8*(bits 0).length+8)+((8*(bits 1).length+8)+((8*(bits 2).length+8)+0))+1 = _
-  rw [←len 0,←len 1,←len 2,base,suffix,unit]
-  simp only [length_binSyms]
-  omega
+  apply intervalRecordHeaders_exec body headers bank apart w _ u S
+  · intro i
+    fin_cases i <;> exact words _
+  · exact empty
+  · exact tmp
 
 /-- Prepare the padded unit and predecessor clock from the loaded modulus,
 unit and the caller's binary atom width. Only the two destination stacks change. -/
@@ -142,25 +163,25 @@ noncomputable def copyRecordSetup {P U : Type} {T Q : ℕ} (headers : Fin 6 ↪ 
 
 /-- With the payload already on port 24, the child dimension words and atom-width
 word suffice to start the record packer. The caller registers remain available. -/
-theorem copyRecordSetup_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U)
+theorem intervalRecordSetup_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U)
     (headers : Fin 6 ↪ Fin T) (bank : Fin 35 ↪ Fin T) (apart : ∀ i j, headers i ≠ bank j)
     (width : Fin T) (outside : ∀ i, width ≠ bank i)
-    (w W : ℕ) (v : HS T Q prime U) (S : Stacks T prime)
-    (words : ∀ i z, readAt blank (S.L (headers i)) (S.R (headers i)) (z-1) =
-      RadixZeroFill.encodedBinary (FlatCoordinateSchedule.bits (RecursiveDimensionBank.values (copyChild (w+1) W) i)) z)
+    (d w W : ℕ) (v : HS T Q prime U) (S : Stacks T prime)
+    (words : ∀ i : Fin 3, ∀ z, readAt blank (S.L (headers (copyRecordSources i))) (S.R (headers (copyRecordSources i))) (z-1) =
+      RadixZeroFill.encodedBinary (FlatCoordinateSchedule.bits (![prime^(w+1),W,1] i)) z)
     (bits : S.R width = binSyms (w+1).size (w+1))
     (empty : ∀ i : Fin 35, i ≠ 24 → S.L (bank i) = [] ∧ S.R (bank i) = []) :
     let M := prime^(w+1)
-    ∀ x : Fin (M^15*(M*W)) → ZMod 2,
+    ∀ x : Fin (M^d*W) → ZMod 2,
       (∀ z, readAt blank (S.L (bank 24)) (S.R (bank 24)) z = RadixToBinary.binaryEncoding.encode
         (putWord (fun _ => blank) 0 (List.ofFn (SparseRoleCircuit.encode ∘ x)) z)) →
-      ∃ u F n, u.user = v.user ∧ n ≤ 16*M.size + 8*(M*W).size + 6*(w+1) + 11*(w+1).size + 58 ∧
+      ∃ u F n, u.user = v.user ∧ n ≤ 16*M.size + 8*W.size + 6*(w+1) + 11*(w+1).size + 58 ∧
         Exec body (copyRecordSetup headers bank width) (mk v S) n (mk u F) ∧
-        RecordReady (b := prime) (w := w) (d := 15) (W := M*W) bank M.size (M*W).size []
+        RecordReady (b := prime) (w := w) (d := d) (W := W) bank M.size W.size []
           SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0 x F ∧
         ∀ j, (∀ i, bank i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
   intro M x payload
-  obtain ⟨v₁,D,n₁,hv₁,cost₁,load,left,base,suffix,one,off⟩ := copyRecordHeaders_exec body headers bank apart w W v S words
+  obtain ⟨v₁,D,n₁,hv₁,cost₁,load,left,base,suffix,one,off⟩ := intervalRecordHeaders_exec body headers bank apart w W v S words
     (fun i => (empty _ ((by decide : ∀ i, copyRecordTargets i ≠ 24) i)).2)
     (empty 0 (by decide))
   have keep (i : Fin 35) (h : i ∉ [2,27,28]) : D.R (bank i) = S.R (bank i) := by
@@ -193,6 +214,29 @@ theorem copyRecordSetup_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T Q pri
   · intro j hj
     exact ⟨congrFun left j,by
       simpa [Function.update_of_ne (hj 33).symm,Function.update_of_ne (hj 32).symm] using off j (fun i => hj _)⟩
+
+theorem copyRecordSetup_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U)
+    (headers : Fin 6 ↪ Fin T) (bank : Fin 35 ↪ Fin T) (apart : ∀ i j, headers i ≠ bank j)
+    (width : Fin T) (outside : ∀ i, width ≠ bank i)
+    (w W : ℕ) (v : HS T Q prime U) (S : Stacks T prime)
+    (words : ∀ i z, readAt blank (S.L (headers i)) (S.R (headers i)) (z-1) =
+      RadixZeroFill.encodedBinary (FlatCoordinateSchedule.bits (RecursiveDimensionBank.values (copyChild (w+1) W) i)) z)
+    (bits : S.R width = binSyms (w+1).size (w+1))
+    (empty : ∀ i : Fin 35, i ≠ 24 → S.L (bank i) = [] ∧ S.R (bank i) = []) :
+    let M := prime^(w+1)
+    ∀ x : Fin (M^15*(M*W)) → ZMod 2,
+      (∀ z, readAt blank (S.L (bank 24)) (S.R (bank 24)) z = RadixToBinary.binaryEncoding.encode
+        (putWord (fun _ => blank) 0 (List.ofFn (SparseRoleCircuit.encode ∘ x)) z)) →
+      ∃ u F n, u.user = v.user ∧ n ≤ 16*M.size + 8*(M*W).size + 6*(w+1) + 11*(w+1).size + 58 ∧
+        Exec body (copyRecordSetup headers bank width) (mk v S) n (mk u F) ∧
+        RecordReady (b := prime) (w := w) (d := 15) (W := M*W) bank M.size (M*W).size []
+          SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0 x F ∧
+        ∀ j, (∀ i, bank i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  apply intervalRecordSetup_exec body headers bank apart width outside 15 w _ v S
+  · intro i
+    fin_cases i <;> exact words _
+  · exact bits
+  · exact empty
 
 /-- Run header arithmetic on the represented caller bank. The host embedding
 leaves both stacks of every private child tape untouched. -/
