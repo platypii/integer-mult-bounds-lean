@@ -239,27 +239,32 @@ private theorem hostedExchange_fold (n : Fin 9) (ρ : Role) (w : ℕ) :
       zero_mulVec,one_mulVec] <;> abel
 
 open Cover Swap.Modular M8.Exchange in
-/-- Across a stage an inactive owner's parent coordinates undergo exactly the
-span exchanges of its helper uses. Its last slot locates the final read. -/
-theorem packedStage_inactive (n : Fin 9) (w B W : ℕ) (x y)
-    (trace : stageRuns.foldr (fun p next a => ∃ b, packedStageEffect n p w B W a b ∧ next b)
-      (fun a => a = y) x) (ρ : Role) (inactive : ρ.bank.val / 2 ≠ BitHosting.activePair n.val)
-    (g : LabelPadding.Label 64 w)
-    (z : LabelEntry.Cell (copyLabelLayout w B ((prime^w)^112*W)) B) (j : Fin W) :
+/-- Compose the local helper reads in schedule order. Each use updates its
+chart, and the hosted spans combine to the family projector. -/
+theorem helperSweep_read {V w : ℕ} (n : Fin 9) (ρ : Role)
+    (inactive : ρ.bank.val / 2 ≠ BitHosting.activePair n.val)
+    (effect : (Fin 32 × Fin 5) → (Fin 142081 → Fin V → ZMod 2) → (Fin 142081 → Fin V → ZMod 2) → Prop)
+    (x y) (trace : stageRuns.foldr (fun p next a => ∃ b, effect p a b ∧ next b) (· = y) x)
+    {L W : ℕ} (label : Fin L) (j : Fin W) :
     let c := Nine.port ρ.port.val
     let tape := ((Fin.cast card_role) (Fintype.equivFin Role ρ)).castSucc
-    let label : Fin (B*prime^(64*(w*64))) := ⟨z.b.val*prime^(64*(w*64))+(LabelAddress.address g).val,
-      LabelShift.pack_lt z.b.isLt (by simpa only [← pow_mul,show w*(64*64) = 64*(w*64) by omega]
-        using (LabelAddress.address g).isLt)⟩
     let chart := fun (runs : List (Fin 32 × Fin 5)) =>
       (runs.foldl (fun a k => helperChartsAfter n k a) (fun _ => none) tape).map helperPosition
     let read := fun word slot s => ext word (helperFieldCell (helperSlotField c slot w s) label j)
-    ∀ s, read (y tape) (chart stageRuns) (M8.Exchange.exchange (reduce (prime^w) (familySum n ρ)) s) = read (x tape) none s := by
+    (∀ p a b, effect p a b → ∀ (h : Fin 439) s,
+      let before := (stageRuns.take (stageRuns.idxOf p)).foldl (fun a k => helperChartsAfter n k a) (fun _ => none)
+      let change := helperSlotChange n p before h
+      let slot := helperPosition (n,h)
+      read (b change.1) (some slot) (M8.Exchange.exchange (reduce (prime^w) (c.span slot (slot+8 : ℕ))) s) =
+        read (a change.1) change.2.1 s) →
+    (∀ p a b, effect p a b → (∀ i, ownerTape n p.1 p.2 i ≠ tape) → b tape = a tape) →
+    ∀ s, read (y tape) (chart stageRuns) (M8.Exchange.exchange (reduce (prime^w) (familySum n ρ)) s) =
+      read (x tape) none s := by
   classical
-  intro c tape label chart read
+  intro c tape chart read touched untouched
   let move := fun s (p : Fin 32 × Fin 5) => M8.Exchange.exchange (reduce (prime^w) (hostSpan n p.1 p.2 ρ)) s
   suffices follow : ∀ past runs, past ++ runs = stageRuns → ∀ a,
-      runs.foldr (fun p next u => ∃ b, packedStageEffect n p w B W u b ∧ next b) (· = y) a →
+      runs.foldr (fun p next u => ∃ b, effect p u b ∧ next b) (· = y) a →
       ∀ s, read (y tape) (chart stageRuns) (runs.foldl move s) = read (a tape) (chart past) s from
     fun s => (hostedExchange_fold n ρ w s) ▸ follow [] stageRuns rfl x trace s
   intro past runs
@@ -293,7 +298,7 @@ theorem packedStage_inactive (n : Fin 9) (w B W : ℕ) (x y)
         unfold helperSpan
         rw [show (IntegerMultBounds.MathlibTM2.M6.BitNode.slotOf n hit.choose).copy % 111 = ρ.port.val from portEq]
         rfl
-      have atSlot := packedStageEffect_helper n p w B W a b step hit.choose c (Nine.port_checked _ ρ.port.isLt) s g z j
+      have atSlot := touched p a b step hit.choose s
       dsimp only [helperSlotChange] at atSlot
       simp only [pre,eqn] at atSlot
       simpa only [read,move,chart,List.foldl_append,List.foldl_cons,List.foldl_nil,
@@ -308,11 +313,7 @@ theorem packedStage_inactive (n : Fin 9) (w B W : ℕ) (x y)
         · apply hit
           refine ⟨⟨i.val-222,by omega⟩,?_⟩
           convert eqn using 2 <;> apply Fin.ext <;> dsimp <;> omega
-      obtain ⟨packed,pack,act⟩ := step
-      have fixed := (act.2 tape (Fin.castSucc_ne_last _) miss).trans (labelTrace_off _ _ _ pack tape (by
-        rintro q mem
-        obtain ⟨h,_,rfl⟩ := List.mem_map.mp mem
-        exact miss _))
+      have fixed := untouched p a b step miss
       have zero : hostSpan n p.1 p.2 ρ = 0 := by
         apply sum_none
         intro h mem hosted
@@ -322,6 +323,34 @@ theorem packedStage_inactive (n : Fin 9) (w B W : ℕ) (x y)
         ext a b
         simp [reduce,ratMod]
       simp only [fixed,zero,reduced,chart,List.foldl_append,List.foldl_cons,List.foldl_nil,helperChartsAfter,move,dif_neg hit,M8.Exchange.exchange,Matrix.zero_mulVec,sub_zero,Matrix.one_mulVec,zero_add,add_zero,Prod.mk.eta]
+
+open Cover Swap.Modular M8.Exchange in
+/-- Across a stage an inactive owner's parent coordinates undergo exactly the
+span exchanges of its helper uses. Its last slot locates the final read. -/
+theorem packedStage_inactive (n : Fin 9) (w B W : ℕ) (x y)
+    (trace : stageRuns.foldr (fun p next a => ∃ b, packedStageEffect n p w B W a b ∧ next b)
+      (fun a => a = y) x) (ρ : Role) (inactive : ρ.bank.val / 2 ≠ BitHosting.activePair n.val)
+    (g : LabelPadding.Label 64 w)
+    (z : LabelEntry.Cell (copyLabelLayout w B ((prime^w)^112*W)) B) (j : Fin W) :
+    let c := Nine.port ρ.port.val
+    let tape := ((Fin.cast card_role) (Fintype.equivFin Role ρ)).castSucc
+    let label : Fin (B*prime^(64*(w*64))) := ⟨z.b.val*prime^(64*(w*64))+(LabelAddress.address g).val,
+      LabelShift.pack_lt z.b.isLt (by simpa only [← pow_mul,show w*(64*64) = 64*(w*64) by omega]
+        using (LabelAddress.address g).isLt)⟩
+    let chart := fun (runs : List (Fin 32 × Fin 5)) =>
+      (runs.foldl (fun a k => helperChartsAfter n k a) (fun _ => none) tape).map helperPosition
+    let read := fun word slot s => ext word (helperFieldCell (helperSlotField c slot w s) label j)
+    ∀ s, read (y tape) (chart stageRuns) (M8.Exchange.exchange (reduce (prime^w) (familySum n ρ)) s) = read (x tape) none s := by
+  classical
+  intro c tape label chart read
+  apply helperSweep_read n ρ inactive _ x y trace label j
+  · intro p a b step h s
+    exact packedStageEffect_helper n p w B W a b step h c (Nine.port_checked _ ρ.port.isLt) s g z j
+  · rintro p a b ⟨packed,pack,act⟩ miss
+    exact (act.2 tape (Fin.castSucc_ne_last _) miss).trans (labelTrace_off _ _ _ pack tape (by
+      rintro q mem
+      obtain ⟨h,_,rfl⟩ := List.mem_map.mp mem
+      exact miss _))
 
 noncomputable def stageFinalSlot (n : Fin 9) (t : Fin 142081) : Option (Fin 56) :=
   (stageRuns.foldl (fun a k => helperChartsAfter n k a) (fun _ => none) t).map helperPosition
