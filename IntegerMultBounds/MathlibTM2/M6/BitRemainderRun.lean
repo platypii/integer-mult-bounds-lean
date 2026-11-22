@@ -518,6 +518,71 @@ theorem remainderPlacement_childRead {lo hi w K : ℕ}
     ext_apply,ext_apply]
   exact intervalAddress_transpose 64 x a b h d u v (finProdFinEquiv (LabelAddress.address g,t))
 
+/-- Read the three contiguous slices of a field from its absolute digit
+positions. Ranking the slices recovers the original field rank. -/
+private theorem intervalSlices_rank {n lo hi M : ℕ} [NeZero M]
+    (ordered : lo ≤ hi) (fits : hi ≤ n) (x : Fin n → ZMod M) :
+    let a := fun i : Fin lo => x ⟨i.val,by omega⟩
+    let h := fun i : Fin (hi-lo) => x ⟨lo+i.val,by omega⟩
+    let u := fun i : Fin (n-hi) => x ⟨hi+i.val,by omega⟩
+    (FlatCoordinateLayout.rank (Fin.addCases (Fin.addCases a h) u)).val =
+      (FlatCoordinateLayout.rank x).val := by
+  intro a h u
+  have size : lo+(hi-lo)+(n-hi) = n := by omega
+  have same : Fin.addCases (motive := fun _ => ZMod M) (Fin.addCases a h) u = x ∘ Fin.cast size := by
+    funext j
+    induction j using Fin.addCases with
+    | left j =>
+      induction j using Fin.addCases with
+      | left j => simp only [Fin.addCases_left]; rfl
+      | right j => simp only [Fin.addCases_right,Fin.addCases_left]; rfl
+    | right j =>
+      simp only [Fin.addCases_right,Function.comp_apply,u]
+      congr 1
+      apply Fin.ext
+      simp only [Fin.val_cast,Fin.val_natAdd]
+      omega
+  rw [same]
+  have castRank {m : ℕ} (e : m = n) : (FlatCoordinateLayout.rank (x ∘ Fin.cast e)).val = (FlatCoordinateLayout.rank x).val := by subst m; rfl
+  exact castRank size
+
+/-- The concrete child reads arbitrary full fields in absolute coordinates.
+Only digits in the scheduled interval cross between the two fields. -/
+theorem remainderPlacement_fullChildRead {lo hi w K : ℕ} (ordered : lo ≤ hi) (fits : hi ≤ 64)
+    (x : Fin (volume prime (phaseIntervalChild lo hi w ((prime^w)^(64*64)*K) 64)) → ZMod 2)
+    (h d : Fin 64 → ZMod (prime^w)) (g : LabelPadding.Label 64 w) (t : Fin K) :
+    let swap := fun (a b : Fin 64 → ZMod (prime^w)) (i : Fin 64) =>
+      if lo ≤ i.val ∧ i.val < hi then b i else a i
+    let cell := fun (a b : Fin 64 → ZMod (prime^w)) => FlatCoordinateLayout.index
+      (Fin.addCases (Fin.addCases a b) (M8.AtomOps.refine (Route.cols g))) t
+    ext (Shared50RecursiveNodeRows.transpose (one_dvd _) x) (cell (swap h d) (swap d h)).val =
+      ext x (cell h d).val := by
+  intro swap cell
+  let pre (a : Fin 64 → ZMod (prime^w)) (i : Fin lo) := a ⟨i.val,by omega⟩
+  let active (a : Fin 64 → ZMod (prime^w)) (i : Fin (hi-lo)) := a ⟨lo+i.val,by omega⟩
+  let tail (a : Fin 64 → ZMod (prime^w)) (i : Fin (64-hi)) := a ⟨hi+i.val,by omega⟩
+  have pack (a : Fin 64 → ZMod (prime^w)) := intervalSlices_rank ordered fits a
+  have crossed (a b : Fin 64 → ZMod (prime^w)) :
+      (FlatCoordinateLayout.rank (Fin.addCases (Fin.addCases (pre a) (active b)) (tail a))).val =
+        (FlatCoordinateLayout.rank (swap a b)).val := by
+    have left : pre (swap a b) = pre a := by funext i; simp [pre,swap,show ¬ lo ≤ i.val by omega]
+    have middle : active (swap a b) = active b := by
+      funext i; simp [active,swap,show lo ≤ lo+i.val ∧ lo+i.val < hi by omega]
+    have right : tail (swap a b) = tail a := by funext i; simp [tail,swap,show ¬ hi+i.val < hi by omega]
+    have eq := pack (swap a b)
+    change (FlatCoordinateLayout.rank (Fin.addCases (Fin.addCases (pre _) (active _)) (tail _))).val = _ at eq
+    rwa [left,middle,right] at eq
+  have read := remainderPlacement_childRead x (pre h) (pre d) (active h) (active d) (tail h) (tail d) g t
+  have size : lo+(hi-lo)+(64-hi) = 64 := by omega
+  have hh := pack h
+  have dd := pack d
+  change (FlatCoordinateLayout.rank (Fin.addCases (Fin.addCases (pre h) (active h)) (tail h))).val = _ at hh
+  change (FlatCoordinateLayout.rank (Fin.addCases (Fin.addCases (pre d) (active d)) (tail d))).val = _ at dd
+  have hd := crossed h d
+  have dh := crossed d h
+  simp only [ArbitraryWidthSliceTranspose.rank_append] at hh dd hd dh
+  simpa only [cell,FlatCoordinateLayout.index_val,ArbitraryWidthSliceTranspose.rank_append,hh,dd,hd,dh,size] using read
+
 /-- Follow an arbitrary packed atom vector through the physical digit swaps,
 keeping the enclosing descriptor's prefix and suffix at the same addresses. -/
 private theorem packedAtoms_read {n w B : ℕ} {v : Descriptor}
@@ -679,6 +744,111 @@ theorem placedRemainder_label_restored {w : ℕ} (H : LabelPadding.Label 64 w) (
   apply (placedChartDigits_label_congr Hᵀ child l).trans
   exact congrFun (placedChartDigits_inverse (f := fun g => g*H) (g := fun g => g*Hᵀ)
     (fun g => by change g*H*Hᵀ = g; rw [Matrix.mul_assoc,orth,Matrix.mul_one]) x) _
+
+/-- Parent field digits in stage-axis order followed by an independent label. -/
+def remainderParentDigits {w : ℕ} (x : IntegerMultBounds.Swap.Shear.State Axis (ZMod (prime^w)))
+    (label : LabelPadding.Label 64 w) : Fin (128+64*64) → ZMod (prime^w) :=
+  Fin.addCases (fun j => let p := (@finProdFinEquiv 2 64).symm j
+                         (if p.1 = 0 then x.1 else x.2) (stageAxis.symm p.2))
+    (M8.AtomOps.refine (Route.cols label))
+
+private theorem placedParentField (c : PortCertificate) {w : ℕ}
+    (x : IntegerMultBounds.Swap.Shear.State Axis (ZMod (prime^w))) (label : LabelPadding.Label 64 w)
+    (r : Fin 2) (i : Fin 64) :
+    let H := reduce (prime^w) (c.fullChart.submatrix stageAxis.symm remainderAxis)
+    placedChartDigits (fun g => g*H) (remainderParentDigits x label)
+        (Fin.castAdd (64*64) (finProdFinEquiv (r,i))) =
+      ((reduce (prime^w) c.fullChart)ᵀ *ᵥ (if r = 0 then x.1 else x.2)) (remainderAxis i) := by
+  intro H
+  rw [placedChartDigits_field]
+  let A : LabelPadding.Label 64 w := fun _ j => (if r = 0 then x.1 else x.2) (stageAxis.symm j)
+  have row := remainderChart_row c w A 0 i
+  rw [Matrix.mul_apply] at row
+  simpa only [remainderParentDigits,Fin.addCases_left,Equiv.symm_apply_apply,A,H] using row
+
+/-- If the child exchanges the two charted slices at a parent address and
+preserves its label, the inverse chart returns exactly the parent port exchange. -/
+theorem placedRemainder_parentDigits (c : PortCertificate) (hc : c.Checked) {lo hi w : ℕ}
+    (fits : hi ≤ 63) (x : IntegerMultBounds.Swap.Shear.State Axis (ZMod (prime^w)))
+    (label : LabelPadding.Label 64 w) (mid : Fin (128+64*64) → ZMod (prime^w)) :
+    let H := reduce (prime^w) (c.fullChart.submatrix stageAxis.symm remainderAxis)
+    let before := placedChartDigits (fun g => g*H) (remainderParentDigits x label)
+    let field := fun (r : Fin 2) (i : Fin 64) => Fin.castAdd (64*64) (finProdFinEquiv (r,i))
+    (∀ i, (mid (field 0 i), mid (field 1 i)) =
+      if lo ≤ i.val ∧ i.val < hi then (before (field 1 i),before (field 0 i)) else
+        (before (field 0 i),before (field 1 i))) →
+    (∀ l, mid (Fin.natAdd 128 l) = before (Fin.natAdd 128 l)) →
+    placedChartDigits (fun g => g*Hᵀ) mid =
+      remainderParentDigits (M8.Exchange.exchange (reduce (prime^w) (c.span lo hi)) x) label := by
+  intro H before field active spectator
+  let y := M8.Exchange.exchange (reduce (prime^w) (c.span lo hi)) x
+  have aligned : mid = placedChartDigits (fun g => g*H) (remainderParentDigits y label) := by
+    funext j
+    induction j using Fin.addCases with
+    | left j =>
+      obtain ⟨⟨r,i⟩,rfl⟩ := (@finProdFinEquiv 2 64).surjective j
+      have pair := active i
+      simp only [before,field,H,placedParentField,ite_true,one_ne_zero,ite_false] at pair
+      have ys := pair.trans (remainderExchange_tapeDigits c hc lo hi w fits x i).symm
+      fin_cases r
+      · exact (congrArg Prod.fst ys).trans (by simpa [H,y] using (placedParentField c y label 0 i).symm)
+      · exact (congrArg Prod.snd ys).trans (by simpa [H,y] using (placedParentField c y label 1 i).symm)
+    | right l =>
+      exact (spectator l).trans (placedChartDigits_label_congr H
+        (x := remainderParentDigits x label) (y := remainderParentDigits y label)
+        (fun i => by simp [remainderParentDigits]) l)
+  rw [aligned]
+  apply placedChartDigits_inverse
+  intro g
+  change g*H*Hᵀ = g
+  rw [Matrix.mul_assoc,(remainderChart_reduced c hc w).2,Matrix.mul_one]
+
+/-- Follow an arbitrary parent address through the actual interval child:
+the same intermediate digits give its physical output read and the inverse
+chart's parent exchange. -/
+theorem placedRemainder_childEndpoint (c : PortCertificate) (hc : c.Checked) {lo hi w K : ℕ}
+    (ordered : lo ≤ hi) (fits : hi ≤ 63)
+    (word : Fin (volume prime (phaseIntervalChild lo hi w ((prime^w)^(64*64)*K) 64)) → ZMod 2)
+    (x : IntegerMultBounds.Swap.Shear.State Axis (ZMod (prime^w)))
+    (label : LabelPadding.Label 64 w) (t : Fin K) :
+    let H := reduce (prime^w) (c.fullChart.submatrix stageAxis.symm remainderAxis)
+    let before := placedChartDigits (fun g => g*H) (remainderParentDigits x label)
+    ∃ mid, ext (Shared50RecursiveNodeRows.transpose (one_dvd _) word) (FlatCoordinateLayout.index mid t).val =
+      ext word (FlatCoordinateLayout.index before t).val ∧
+      placedChartDigits (fun g => g*Hᵀ) mid =
+        remainderParentDigits (M8.Exchange.exchange (reduce (prime^w) (c.span lo hi)) x) label := by
+  intro H before
+  let h := fun i : Fin 64 => before (Fin.castAdd (64*64) (Fin.castAdd 64 i))
+  let d := fun i : Fin 64 => before (Fin.castAdd (64*64) (Fin.natAdd 64 i))
+  let g : LabelPadding.Label 64 w := fun r i => before (Fin.natAdd 128 (finProdFinEquiv (i,r)))
+  let pack := fun (a b : Fin 64 → ZMod (prime^w)) =>
+    Fin.addCases (motive := fun _ => ZMod (prime^w)) (Fin.addCases a b) (M8.AtomOps.refine (Route.cols g))
+  have unpack : pack h d = before := by
+    funext j
+    induction j using Fin.addCases with
+    | left j =>
+      induction j using Fin.addCases (m := 64) (n := 64) with
+      | left i => simp [pack,h]
+      | right i => simp only [pack,Fin.addCases_left,Fin.addCases_right,d]
+    | right j =>
+      obtain ⟨⟨i,r⟩,rfl⟩ := (@finProdFinEquiv 64 64).surjective j
+      simp [pack,M8.AtomOps.refine,Route.cols,g]
+  let swap := fun (a b : Fin 64 → ZMod (prime^w)) (i : Fin 64) =>
+    if lo ≤ i.val ∧ i.val < hi then b i else a i
+  let mid := pack (swap h d) (swap d h)
+  refine ⟨mid,?_,placedRemainder_parentDigits c hc fits x label mid ?_ ?_⟩
+  · rw [← unpack]
+    exact remainderPlacement_fullChildRead ordered (by omega) word h d g t
+  · intro i
+    have h0 : finProdFinEquiv ((0 : Fin 2),i) = Fin.castAdd 64 i := by
+      apply Fin.ext; change i.val + 64*0 = i.val; omega
+    have h1 : finProdFinEquiv ((1 : Fin 2),i) = Fin.natAdd 64 i := by
+      apply Fin.ext; change i.val + 64*1 = 64+i.val; omega
+    change (mid _,mid _) = ite _ (before _,before _) (before _,before _)
+    by_cases live : lo ≤ i.val ∧ i.val < hi <;> simp only [h0,h1,live,mid,pack,swap,h,d,Fin.addCases_left,Fin.addCases_right,and_self,ite_true,ite_false]
+  · intro l
+    obtain ⟨⟨i,r⟩,rfl⟩ := (@finProdFinEquiv 64 64).surjective l
+    simp only [mid,pack,Fin.addCases_right,M8.AtomOps.refine,Route.cols,Equiv.symm_apply_apply,g,before,H]
 
 /-- A single physical schedule exchanges the external fields with the two
 label rows at every precision. Its setup and all digit moves are absorbed
