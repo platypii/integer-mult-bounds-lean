@@ -123,7 +123,8 @@ theorem sweepSourceRank_writes {T Q A : ℕ} {P U : Type} (body : P → Pr P T Q
     (fun i d => compile_from_matrices body ports coordBank mat H
       ((Nat.le_self_pow (by decide : 128 ≠ 0) _).trans_lt fits) (f i) d) out
 
-private theorem quadraticFormulaTime {ι : Type} (C : ℕ) (f : RingFormula ι) :
+/-- A fixed arithmetic formula preserves a quadratic bound on leaf reads. -/
+theorem quadraticFormulaTime {ι : Type} (C : ℕ) (f : RingFormula ι) :
     ∃ K : ℕ, ∀ H cost, (∀ a, cost a ≤ C*(H+1)^2) → time H cost f ≤ K*(H+1)^2 := by
   induction f with
   | input i => exact ⟨C,fun _ _ cap => cap _⟩
