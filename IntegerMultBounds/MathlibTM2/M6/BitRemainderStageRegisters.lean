@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.M6.BitRemainderScheduledRoundTrip
+public import IntegerMultBounds.MathlibTM2.M6.BitAllocatedStageTargets
 
 /-! Identify the four binary words on the allocated stage with their ordinary handoff inputs. -/
 @[expose] public section
@@ -165,6 +166,7 @@ its four dimensions. All private scanner tapes start from their entry bank. -/
 theorem runStageScanner {P U : Type} {m T q : ℕ} (reg : Fin 14 ↪ Fin m)
     (payload : Fin m) (owner : Fin T) (apart : ∀ i, reg (stageWordPorts i) ≠ payload) :
     ∃ bank : Fin (T+99) ↪ Fin (m+(T+99)),
+    bank (aroundScanner owner 0) = payload.castAdd (T+99) ∧
     ∀ (left : P → Pr P m q prime U) (right : Unit → Pr Unit (T+99) q prime U) a b,
     let leftBank := Fin.castAdd (T+99) (n := m)
     let body := Sum.elim (fun g => embProg leftBank Sum.inl (left g))
@@ -181,33 +183,42 @@ theorem runStageScanner {P U : Type} {m T q : ℕ} (reg : Fin 14 ↪ Fin m)
           S.L j = R₀.L j ∧ S.R j = R₀.R j) →
         ∃ z C s, Exec right b (mk w S) s (mk z C) ∧ s ≤ budget ∧ post z.user C) →
       ∃ z C steps, Exec body ((embProg leftBank Sum.inl a).seq (embProg bank Sum.inr b))
-        (mk u (adjacentStageStacks L R₀)) steps (mk z C) ∧ steps ≤ t+budget ∧ post z.user (embStk bank C) := by
+        (mk u (adjacentStageStacks L R₀)) steps (mk z C) ∧ steps ≤ t+budget ∧ post z.user (embStk bank C) ∧
+        ∀ j, j ≠ payload → (∀ i, reg (stageWordPorts i) ≠ j) →
+          C.L (leftBank j) = F.L j ∧ C.R (leftBank j) = F.R j := by
   let single {k : ℕ} (j : Fin k) : Fin 1 ↪ Fin k := ⟨fun _ => j,fun _ _ _ => Subsingleton.elim _ _⟩
   let out := appendPorts (stageWordPorts.trans reg) (single payload) (fun i _ => apart i)
   let input := appendPorts (retainedStagePorts T) (single (aroundScanner owner 0))
     (fun _ _ => retainedPort_private owner _ 0)
-  obtain ⟨bank,compose⟩ := runAdjacentStages (P := P) (R := Unit) (U := U) (q := q) (A := prime) out input
-  refine ⟨bank,?_⟩
+  obtain ⟨bank,sharedPorts,compose⟩ := runAdjacentStages (P := P) (R := Unit) (U := U) (q := q) (A := prime) out input
+  refine ⟨bank,sharedPorts ((0 : Fin 1).natAdd 4),?_⟩
   intro left right a b leftBank body u L R₀ v F t budget tail N D B post exec dims block next
-  apply compose left right a b u L R₀ v F t budget post exec
-  intro w S user shared privateTape
-  have ownerWord := shared ((0 : Fin 1).natAdd 4)
-  refine next w S user ?_ ownerWord.1 ownerWord.2 ?_
-  · intro i
-    have word := (shared (i.castAdd 1)).2
-    simp only [input,out,appendPorts,Function.Embedding.coeFn_mk,Fin.addCases_left] at word
-    apply word.trans
-    fin_cases i
-    · exact (dims 0).2
-    · exact (dims 1).2
-    · exact (dims 2).2
-    · exact block
-  · intro j h hs
-    apply privateTape
-    intro i
-    induction i using Fin.addCases with
-    | left i => simpa only [input,appendPorts,Function.Embedding.coeFn_mk,Fin.addCases_left] using hs i
-    | right i => fin_cases i; exact h
+  obtain ⟨z,C,s,run,cost,result,keep⟩ := compose left right a b u L R₀ v F t budget post exec (by
+    intro w S user shared privateTape
+    have ownerWord := shared ((0 : Fin 1).natAdd 4)
+    refine next w S user ?_ ownerWord.1 ownerWord.2 ?_
+    · intro i
+      have word := (shared (i.castAdd 1)).2
+      simp only [input,out,appendPorts,Function.Embedding.coeFn_mk,Fin.addCases_left] at word
+      apply word.trans
+      fin_cases i
+      · exact (dims 0).2
+      · exact (dims 1).2
+      · exact (dims 2).2
+      · exact block
+    · intro j h hs
+      apply privateTape
+      intro i
+      induction i using Fin.addCases with
+      | left i => simpa only [input,appendPorts,Function.Embedding.coeFn_mk,Fin.addCases_left] using hs i
+      | right i => fin_cases i; exact h)
+  refine ⟨z,C,s,run,cost,result,?_⟩
+  intro j hp hd
+  apply keep
+  intro i
+  induction i using Fin.addCases with
+  | left i => simpa only [out,appendPorts,Function.Embedding.coeFn_mk,Fin.addCases_left,Function.Embedding.trans_apply] using hd i
+  | right i => fin_cases i; exact hp.symm
 
 open IntegerMultBounds.Swap.Modular Matrix
 local instance (w : ℕ) : NeZero (prime^w) := ⟨(pow_pos Shared50ModularControl.prime_prime.pos _).ne'⟩
@@ -228,6 +239,7 @@ theorem OwnerRoundTrip.afterStage [M8.Machine.Net] {P U : Type} {m V size back Q
     let A := M^16
     let tail := M^112*W
     ∃ bank : Fin (T+99) ↪ Fin (m+(T+99)), ∃ scan : Pr Unit (T+99) Q prime U,
+    bank (slots 0) = leftBank payload ∧
     ∀ (left : P → Pr P m Q prime U) a u L R₀ v F t
       (x : Fin 142081 → Fin (A*(B*tail)) → ZMod 2) i,
       Exec left a (mk (embDn leftBank u) L) t (mk v F) →
@@ -240,7 +252,9 @@ theorem OwnerRoundTrip.afterStage [M8.Machine.Net] {P U : Type} {m V size back Q
       let body := Sum.elim (fun g => embProg leftBank Sum.inl (left g)) (fun g => embProg bank Sum.inr (right g))
       ∃ z C steps, Exec body ((embProg leftBank Sum.inl a).seq (embProg bank Sum.inr scan))
         (mk u (adjacentStageStacks L R₀)) steps (mk z C) ∧
-        steps ≤ t+⌊ownerRoundTripTime w B W rate c checked⌋₊ ∧ z.user = v.user ∧
+        steps ≤ t+⌊ownerRoundTripTime w B W rate c checked⌋₊ ∧
+        (∀ j, j ≠ payload → (∀ h, reg (stageWordPorts h) ≠ j) →
+          C.L (leftBank j) = F.L j ∧ C.R (leftBank j) = F.R j) ∧ z.user = v.user ∧
         ∃ staged, WordAtZero (singleLabelBank (firstRowLabel (w+1)) (fun _ => staged) 0)
           (C.L (bank (slots 0))) (C.R (bank (slots 0))) ∧
           let proj := IntegerMultBounds.Swap.Modular.reduce M ((c.span interval.1 interval.2).submatrix stageAxis.symm stageAxis.symm)
@@ -250,21 +264,141 @@ theorem OwnerRoundTrip.afterStage [M8.Machine.Net] {P U : Type} {m V size back Q
           ∀ b y k, staged (addr b ((Matrix.fromBlocks (1-proj) proj proj (1-proj)).mulVec y) k) = x i (addr b y k) := by
   intro T slots leftBank M A tail
   obtain ⟨scan,run⟩ := trip
-  obtain ⟨bank,compose⟩ := runStageScanner (P := P) (U := U) (q := Q) reg payload (((stage.slots 0).natAdd size).castAdd back) apart
-  refine ⟨bank,scan,?_⟩
+  obtain ⟨bank,placedOwner,compose⟩ := runStageScanner (P := P) (U := U) (q := Q) reg payload (((stage.slots 0).natAdd size).castAdd back) apart
+  refine ⟨bank,scan,placedOwner,?_⟩
   intro left a u L R₀ v F t x i exec dims block live ready fresh empty body
-  apply compose left right a scan u L R₀ v F t _ tail _ _ B
+  obtain ⟨z,C,s,ran,paid,result,keep⟩ := compose left right a scan u L R₀ v F t ⌊ownerRoundTripTime w B W rate c checked⌋₊ tail _ _ B
     (fun user C => user = v.user ∧ ∃ staged : Fin (A*(B*tail)) → ZMod 2, WordAtZero (singleLabelBank (firstRowLabel (w+1)) (fun _ => staged) 0)
       (C.L (slots 0)) (C.R (slots 0)) ∧
           let proj := IntegerMultBounds.Swap.Modular.reduce M ((c.span interval.1 interval.2).submatrix stageAxis.symm stageAxis.symm)
           let frame := Matrix.fromBlocks (Matrix.diagonal parent) 0 0 (M8.ReversedExchange.rev 64)
           let addr := fun b y (k : Fin W) => stagedOwnerIndex b (FlatCoordinateLayout.index
             ((frame.mulVec y) ∘ (finSumFinEquiv : (Fin 64 ⊕ Fin 64) ≃ Fin 128).symm) k)
-          ∀ b y k, staged (addr b ((Matrix.fromBlocks (1-proj) proj proj (1-proj)).mulVec y) k) = x i (addr b y k)) exec dims block
-  intro y S user headers hl hr frame
-  obtain ⟨entry,scratch,blank⟩ := scannerReadyAfterStage R₀ S ready fresh empty frame
-  obtain ⟨z,C,s,staged,ran,paid,zu,word,cells⟩ := run x i y S entry (blank 0 (by decide))
-    (blank 2 (by decide)) (blank 4 (by decide)) headers (hl ▸ hr ▸ live) scratch
-  exact ⟨z,C,s,ran,Nat.le_floor paid,zu.trans user,staged,word,cells⟩
+          ∀ b y k, staged (addr b ((Matrix.fromBlocks (1-proj) proj proj (1-proj)).mulVec y) k) = x i (addr b y k)) exec dims block (by
+    intro y S user headers hl hr frame
+    obtain ⟨entry,scratch,blank⟩ := scannerReadyAfterStage R₀ S ready fresh empty frame
+    obtain ⟨z,C,s,staged,ran,paid,zu,word,cells⟩ := run x i y S entry (blank 0 (by decide))
+      (blank 2 (by decide)) (blank 4 (by decide)) headers (hl ▸ hr ▸ live) scratch
+    exact ⟨z,C,s,ran,Nat.le_floor paid,zu.trans user,staged,word,cells⟩)
+  exact ⟨z,C,s,ran,paid,keep,result⟩
+
+/-- Read the selected ordinary owner from the allocated stage's final fan.
+The stage trace and its original budget accompany the scanner inputs. -/
+theorem stageHandoffOwner_exec {P U : Type} {m q : ℕ} {n : Fin 9} {w B W : ℕ}
+    {left : P → Pr P m q prime U} {code : Pr P m q prime U}
+    {src dst : Fin (142081+2) ↪ Fin m} {prepared : Stacks m prime} {budget : ℕ}
+    (reg : Fin 14 ↪ Fin m) :
+    let M := prime^(w+1)
+    let tail := M^112*W
+    let entry := singleLabelBank (B := B) (K := tail) (firstRowLabel (w+1))
+    StageHandoffExec n (w+1) B W left code src dst prepared budget
+      (fun F => StageDimensionWords (fun j => reg (j.castAdd 11)) tail (prime^(64*((w+1)*64))) (M^16*B) F ∧
+        F.R (reg 12) = binSyms B.size B) →
+    ∀ x u S, HelperFan src (entry x) S →
+      (∀ j, (∀ h, src h ≠ j) → S.L j = prepared.L j ∧ S.R j = prepared.R j) →
+      ∃ v F t packed out, Exec left code (mk u S) t (mk v F) ∧ t ≤ budget ∧ v.user = u.user ∧
+        StageTrace n (w+1) B W (entry x) packed out ∧
+        StageDimensionWords (fun j => reg (j.castAdd 11)) tail (M^(64*64)) (M^16*B) F ∧
+        F.R (reg 12) = binSyms B.size B ∧
+        StageControls dst (M^16*(B*prime^(64*((w+1)*64))*tail)) F ∧
+        ∀ i, let word := entry (Function.update (collapseLabelBank out) (Fin.last 142080) (fun _ => 0)) i
+          WordAtZero word (F.L (dst (i.castAdd 2))) (F.R (dst (i.castAdd 2))) := by
+  intro M tail entry run x u S live frame
+  obtain ⟨v,F,t,p,y,exec,time,user,fan,trace,dims,block⟩ := run x u S live frame
+  have rows : M^(64*64) = prime^(64*((w+1)*64)) := by
+    dsimp [M]
+    rw [← pow_mul]
+    congr 1
+    omega
+  refine ⟨v,F,t,p,y,exec,time,user,trace,rows ▸ dims,block,?_,?_⟩
+  · intro j z
+    simpa only [PointwiseRoleGate.bank,Tapes.append,Fin.addCases_right,CountedLoopReuseAlphabet.controls,
+      ite_self,embStk,Function.comp_apply] using fan (j.natAdd 142081) z
+  intro i word z
+  have cell := fanPayload fan i z
+  rw [encodedOwnerCell] at cell
+  simpa only [sub_zero,word,entry] using cell
+
+/-- Run an allocated stage handoff and scan one of its output owners. -/
+theorem OwnerRoundTrip.afterAllocatedStage [M8.Machine.Net] {P U : Type} {total V size back Q w B W : ℕ}
+    {stage : SharedBankStage.Stage _ 1 prime (phaseOwners (N := V))}
+    {words : Fin size → List (Fin (prime+4))} {interval : ℕ × ℕ}
+    {parent : Fin 64 → ZMod (prime^(w+1))} {c : Certificates.PR589.Nine.PortCertificate} {checked : c.Checked}
+    {right : Unit → Pr Unit ((size+stage.tapes+back)+99) Q prime U} {rate : ℝ}
+    (trip : OwnerRoundTrip (stage := stage) (words := words) (interval := interval) (parent := parent)
+      (c := c) (checked := checked) (B := B) (W := W) right rate)
+    (n : Fin 9) (fan : Fin (142081+2) ↪ Fin total) (i : Fin 142081) :
+    let m := total+14+142081*7+142081+10
+    let reg := (((Fin.natAddEmb total (m := 14)).trans (Fin.castAddEmb (142081*7))).trans
+      (Fin.castAddEmb 142081)).trans (Fin.castAddEmb 10)
+    let dst := stageOutputFan n (fan.trans (Fin.castAddEmb 14))
+    let T := size+stage.tapes+back
+    let slots := aroundScanner (((stage.slots 0).natAdd size).castAdd back)
+    let leftBank := Fin.castAdd (T+99) (n := m)
+    let M := prime^(w+1)
+    let A := M^16
+    let tail := M^112*W
+    ∃ bank : Fin (T+99) ↪ Fin (m+(T+99)), ∃ scan : Pr Unit (T+99) Q prime U,
+    ∀ (left : P → Pr P m Q prime U) a src prepared budget,
+      StageHandoffExec n (w+1) B W left a src dst prepared budget
+        (fun F => StageDimensionWords (fun j => reg (j.castAdd 11)) tail (prime^(64*((w+1)*64))) (A*B) F ∧
+          F.R (reg 12) = binSyms B.size B) →
+      ∀ (x : Fin 142081 → Fin (A*(B*tail)) → ZMod 2) u L R₀, HelperFan src (singleLabelBank (firstRowLabel (w+1)) x) L →
+      (∀ j, (∀ h, src h ≠ j) → L.L j = prepared.L j ∧ L.R j = prepared.R j) →
+      ScannerReady stage size back words (embStk (Fin.castAddEmb 99) R₀) →
+      (∀ j, j ≠ 0 → R₀.L (slots j) = [] ∧ R₀.R (slots j) = []) →
+      (∀ j, j = 0 ∨ j = 2 ∨ j = 4 → R₀.R (retainedPort T j) = []) →
+      let body := Sum.elim (fun g => embProg leftBank Sum.inl (left g)) (fun g => embProg bank Sum.inr (right g))
+      ∃ z C steps, Exec body ((embProg leftBank Sum.inl a).seq (embProg bank Sum.inr scan))
+        (mk u (adjacentStageStacks L R₀)) steps (mk z C) ∧
+        steps ≤ budget+⌊ownerRoundTripTime w B W rate c checked⌋₊ ∧ z.user = u.user ∧
+        ∃ packed out staged, StageTrace n (w+1) B W (singleLabelBank (firstRowLabel (w+1)) x) packed out ∧
+          HelperFan (dst.trans (Fin.castAddEmb (T+99)))
+            (singleLabelBank (firstRowLabel (w+1))
+              (Function.update (Function.update (collapseLabelBank out) (Fin.last 142080) (fun _ => 0)) i staged)) C ∧
+          let proj := IntegerMultBounds.Swap.Modular.reduce M ((c.span interval.1 interval.2).submatrix stageAxis.symm stageAxis.symm)
+          let frame := Matrix.fromBlocks (Matrix.diagonal parent) 0 0 (M8.ReversedExchange.rev 64)
+          let addr := fun b y (k : Fin W) => stagedOwnerIndex b (FlatCoordinateLayout.index
+            ((frame.mulVec y) ∘ (finSumFinEquiv : (Fin 64 ⊕ Fin 64) ≃ Fin 128).symm) k)
+          ∀ b y k, staged (addr b ((Matrix.fromBlocks (1-proj) proj proj (1-proj)).mulVec y) k) = Function.update (collapseLabelBank out) (Fin.last 142080) (fun _ => 0) i (addr b y k) := by
+  intro m reg dst T slots leftBank M A tail
+  have apart (h : Fin (142081+2)) (j : Fin 4) : reg (stageWordPorts j) ≠ dst h := by
+    apply Ne.symm
+    apply stageOutputFan_off_original
+    intro k eq
+    have h := congrArg Fin.val eq
+    simp at h
+    omega
+  obtain ⟨bank,scan,placedOwner,compose⟩ := trip.afterStage (P := P) reg (dst (i.castAdd 2)) (apart (i.castAdd 2))
+  refine ⟨bank,scan,?_⟩
+  intro left a src prepared budget stageRun x u L R₀ represented frame ready fresh empty body
+  obtain ⟨v,F,t,packed,out,exec,time,user,trace,dims,block,controls,words⟩ :=
+    stageHandoffOwner_exec reg stageRun x (embDn leftBank u) L represented frame
+  obtain ⟨z,C,s,ran,paid,keep,preserved,staged,word,cells⟩ := compose left a u L R₀ v F t _ i
+    exec dims block (words i) ready fresh empty
+  refine ⟨z,C,s,ran,paid.trans (Nat.add_le_add_right time _),preserved.trans user,
+    packed,out,staged,trace,?_,cells⟩
+  intro h
+  refine Fin.addCases (fun j p => ?_) (fun j p => ?_) h
+  · simp only [PointwiseRoleGate.bank,Tapes.append,Fin.addCases_left,embStk,Function.comp_apply,sub_zero]
+    change putWord _ 0 (List.ofFn fun l => SparseRoleCircuit.encode _) p = _
+    by_cases same : j = i
+    · subst j
+      rw [placedOwner] at word
+      simpa only [singleLabelBank,Function.update_self,Function.Embedding.trans_apply,Fin.castAddEmb_apply]
+        using (word p).symm
+    · have distinct := dst.injective.ne ((Fin.castAddEmb 2).injective.ne same)
+      obtain ⟨hl,hr⟩ := keep (dst (j.castAdd 2)) distinct (apart (j.castAdd 2))
+      simpa only [singleLabelBank,Function.update_of_ne same,Function.Embedding.trans_apply,Fin.castAddEmb_apply,
+        ← hl,← hr] using (words j p).symm
+  · have distinct : j.natAdd 142081 ≠ i.castAdd 2 := by
+      intro eq
+      have h := congrArg Fin.val eq
+      simp at h
+      omega
+    obtain ⟨hl,hr⟩ := keep _ (dst.injective.ne distinct) (apart (j.natAdd 142081))
+    simpa only [PointwiseRoleGate.bank,Tapes.append,Fin.addCases_right,CountedLoopReuseAlphabet.controls,
+      ite_self,embStk,Function.comp_apply,Function.Embedding.trans_apply,Fin.castAddEmb_apply,← hl,← hr]
+      using controls j p
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode.OrdinaryHandoff

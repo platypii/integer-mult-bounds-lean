@@ -1232,7 +1232,7 @@ theorem stageTargets_pad {T Q : ℕ} {P U : Type} (n : Fin 9)
     exact outside k
 
 /-- Finish the stage with a represented single-label bank, including its reset extra owner. -/
-private theorem stageOutputFan_off_original {T : ℕ} (n : Fin 9) (fan : Fin (142081+2) ↪ Fin T)
+theorem stageOutputFan_off_original {T : ℕ} (n : Fin 9) (fan : Fin (142081+2) ↪ Fin T)
     (j : Fin T) (outside : ∀ i, fan i ≠ j) (i : Fin (142081+2)) :
     stageOutputFan n fan i ≠ ((j.castAdd (142081*7)).castAdd 142081).castAdd 10 := by
   classical

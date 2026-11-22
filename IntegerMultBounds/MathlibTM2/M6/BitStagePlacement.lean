@@ -64,7 +64,7 @@ program's output on their common bank and its original private workspace.
 Its procedure calls dispatch to its own table, and both step counts are charged. -/
 theorem runAdjacentStages {P R U : Type} {k m n q A : ℕ}
     (out : Fin k ↪ Fin m) (input : Fin k ↪ Fin n) :
-    ∃ bank : Fin n ↪ Fin (m+n), ∀ (left : P → Pr P m q A U) (right : R → Pr R n q A U) a b,
+    ∃ bank : Fin n ↪ Fin (m+n), (∀ i, bank (input i) = (out i).castAdd n) ∧ ∀ (left : P → Pr P m q A U) (right : R → Pr R n q A U) a b,
     let leftBank := Fin.castAdd n (n := m)
     let body := Sum.elim (fun g => embProg leftBank Sum.inl (left g))
       (fun g => embProg bank Sum.inr (right g))
@@ -76,9 +76,10 @@ theorem runAdjacentStages {P R U : Type} {k m n q A : ℕ}
         (∀ j, (∀ i, input i ≠ j) → D.L j = R₀.L j ∧ D.R j = R₀.R j) →
         ∃ z B s, Exec right b (mk w D) s (mk z B) ∧ s ≤ budget ∧ post z.user B) →
       ∃ z B steps, Exec body ((embProg leftBank Sum.inl a).seq (embProg bank Sum.inr b))
-        (mk u (adjacentStageStacks L R₀)) steps (mk z B) ∧ steps ≤ t+budget ∧ post z.user (embStk bank B) := by
+        (mk u (adjacentStageStacks L R₀)) steps (mk z B) ∧ steps ≤ t+budget ∧ post z.user (embStk bank B) ∧
+        ∀ j, (∀ i, out i ≠ j) → B.L (leftBank j) = F.L j ∧ B.R (leftBank j) = F.R j := by
   obtain ⟨bank, shared, privateTape⟩ := adjacentStagePlacement out input
-  refine ⟨bank, ?_⟩
+  refine ⟨bank,shared,?_⟩
   intro left right a b leftBank body u L R₀ v F t budget post exec next
   obtain ⟨w,D,ran,_,user,view,frame⟩ := exec_emb (ι := Sum.inl) (body' := body)
     (Fin.castAddEmb n (n := m)).injective (fun _ => rfl) exec u rfl (adjacentStageStacks L R₀) (adjacentStageStacks_left L R₀)
@@ -96,9 +97,23 @@ theorem runAdjacentStages {P R U : Type} {k m n q A : ℕ}
     change D.L (bank j) = _ ∧ D.R (bank j) = _
     rw [privateTape j off]
     simpa [adjacentStageStacks] using frame _ outside)
-  obtain ⟨z',B',placed,_,same,endView,_⟩ := exec_emb (ι := Sum.inr) (body' := body)
+  obtain ⟨z',B',placed,_,same,endView,preserved⟩ := exec_emb (ι := Sum.inr) (body' := body)
     bank.injective (fun _ => rfl) ranNext w rfl D rfl
-  exact ⟨z',B',t+s,Exec.seq ran placed,Nat.add_le_add_left paid t,same ▸ endView ▸ result⟩
+  refine ⟨z',B',t+s,Exec.seq ran placed,Nat.add_le_add_left paid t,same ▸ endView ▸ result,?_⟩
+  intro j outside
+  have untouched : ∀ h, bank h ≠ leftBank j := by
+    intro h
+    by_cases hit : ∃ i, input i = h
+    · obtain ⟨i,rfl⟩ := hit
+      rw [shared]
+      exact (Fin.castAddEmb n).injective.ne (outside i)
+    · rw [privateTape h (fun i eq => hit ⟨i,eq⟩)]
+      intro eq
+      have e := congrArg Fin.val eq
+      change m+h.val = j.val at e
+      omega
+  obtain ⟨hl,hr⟩ := preserved _ untouched
+  exact ⟨hl.trans (congrArg (fun C => C.L j) view),hr.trans (congrArg (fun C => C.R j) view)⟩
 
 open IntegerMultBounds.Networks
 open Shared50ModularControl (prime)
@@ -119,13 +134,14 @@ theorem runAdjacentHelperFans {P R U : Type} {k m n q V : ℕ}
         ∃ z B s, Exec right b (mk w D) s (mk z B) ∧ s ≤ budget ∧ post z.user B) →
       ∃ z B steps, Exec body ((embProg leftBank Sum.inl a).seq (embProg bank Sum.inr b))
         (mk u (adjacentStageStacks L R₀)) steps (mk z B) ∧ steps ≤ t+budget ∧ post z.user (embStk bank B) := by
-  obtain ⟨bank,compose⟩ := runAdjacentStages (P := P) (R := R) (U := U) (A := prime) (q := q) out input
+  obtain ⟨bank,_,compose⟩ := runAdjacentStages (P := P) (R := R) (U := U) (A := prime) (q := q) out input
   refine ⟨bank, ?_⟩
   intro left right a b leftBank body u L R₀ v F t budget data post exec rep next
-  apply compose left right a b u L R₀ v F t budget post exec
-  intro w D user ports off
-  apply next w D user _ off
-  intro i z
-  simpa only [embStk, Function.comp_apply, (ports i).1, (ports i).2] using rep i z
+  obtain ⟨z,B,s,run,cost,result,_⟩ := compose left right a b u L R₀ v F t budget post exec (by
+    intro w D user ports off
+    apply next w D user _ off
+    intro i z
+    simpa only [embStk, Function.comp_apply, (ports i).1, (ports i).2] using rep i z)
+  exact ⟨z,B,s,run,cost,result⟩
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
