@@ -89,6 +89,9 @@ theorem labelRotationStream_exec {P U : Type} {Q N W : ℕ} [NeZero N]
     ∀ u S, RepT (Alphabet.mapTapes enc start) S.L S.R →
       ∃ z D t, Exec body (foreign machine) (mk u S) t (mk z D) ∧
         t ≤ (461*(count*(N*W))+25)*19+6 ∧ z.user = u.user ∧ RepT (Alphabet.mapTapes enc finish) D.L D.R ∧
+        S.inp = D.inp ∧ S.out = D.out ∧
+        (∀ i, (D.L i).length + (D.R i).length ≤ (S.L i).length + (S.R i).length +
+          2*(461*(count*(N*W))+25)) ∧
         finish.tape 11 = putWord dest q (TranslationStream.fibers N count (payload dst)).flatten := by
   intro enc machine payload a start finish u S live
   have width (i j) : (payload src i j).length = W := by
@@ -99,9 +102,9 @@ theorem labelRotationStream_exec {P U : Type} {Q N W : ℕ} [NeZero N]
     (bits_canonical _) (payload src) width
   rw [TranslationStream.source_length N W count _ width] at run
   have mapped := HoareTime.liftQ fits (Alphabet.map_hoare enc run)
-  obtain ⟨z,D,_,⟨_,rfl,rfl⟩,ready,user,_,_,_,t,cost,exec⟩ :=
+  obtain ⟨z,D,_,⟨_,rfl,rfl⟩,ready,user,inp,out,stock,t,cost,exec⟩ :=
     foreign_exec (body := body) machine mapped u S _ ⟨start,rfl,rfl⟩ live
-  refine ⟨z,D,t,exec,cost,user,ready,?_⟩
+  refine ⟨z,D,t,exec,cost,user,ready,inp.symm,out.symm,stock,?_⟩
   change putWord dest q (TranslationStream.outputPrefix a N count (payload src)) = _
   apply congrArg (putWord dest q)
   unfold TranslationStream.outputPrefix TranslationStream.fibers
