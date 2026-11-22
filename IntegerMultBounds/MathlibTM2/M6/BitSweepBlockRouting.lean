@@ -162,6 +162,27 @@ theorem sweepPhysicalBlock_volume (w B W C : ℕ) (hw : 0 < W) :
     _ ≤ B*(C*n*(labels*W))+62*(M^16*(B*labels*(M^112*W))) := Nat.add_le_add build run
     _ = _ := by rw [size]; ring
 
+/-- Include the in-place scan's consumption and final ordered writeback. -/
+theorem sweepBlockScan_volume (w B W C : ℕ) (hw : 0 < W) :
+    let M := prime^w
+    let n := M^128
+    let labels := prime^(64*(w*64))
+    let cost := C*n^3+n*(n*(16*W+18)+26)+2
+    B*(cost+10*(n*W)+12)+4 ≤ (C+84)*(M^16*(B*labels*(M^112*W)))+4 := by
+  intro M n labels cost
+  have physical := sweepPhysicalBlock_volume w B W C hw
+  have bill : B*cost ≤ (C+62)*(M^16*(B*labels*(M^112*W))) := by
+    simpa only [cost,Nat.add_assoc] using physical
+  have positive : 1 ≤ n*W := Nat.mul_pos (pow_pos (pow_pos prime_prime.pos _) _) hw
+  have perBlock : 10*(n*W)+12 ≤ 22*(n*W) := by omega
+  have fit : n*W ≤ labels*(n*W) := Nat.le_mul_of_pos_left _ (pow_pos prime_prime.pos _)
+  have extra := Nat.mul_le_mul_left B (perBlock.trans (Nat.mul_le_mul_left 22 fit))
+  have split : n = M^16*M^112 := by rw [← pow_add]
+  calc
+    _ = B*cost+B*(10*(n*W)+12)+4 := by ring
+    _ ≤ (C+62)*(M^16*(B*labels*(M^112*W)))+B*(22*(labels*(n*W)))+4 := by gcongr
+    _ = _ := by rw [split]; ring
+
 /-- Compiling a fresh mask stream and consuming it in each inherited block
 still costs a constant times the padded node volume. -/
 theorem sweepCompiledGather_volume (w B W L : ℕ) (hw : 0 < W) (width : L ≤ (prime^w)^128+1) :
