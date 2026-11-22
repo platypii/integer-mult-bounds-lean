@@ -13,29 +13,32 @@ open Host Node RadixCounterData RadixDigits
 
 variable {T Q : ℕ} {P U : Type} {body : P → Pr P T Q prime U}
 
-def setup (m : ℕ) (r : Fin 15 ↪ Fin T) (atom one : Fin T) : Pr P T Q prime U :=
-  .seq (umul (m*m) atom (r 11) (r 2))
-    (.seq (umulSym (m*m) (digitSymbol (zeroDigit prime_prime.two_le)) atom (r 10) (r 2))
+def setupFields (fields : ℕ) (r : Fin 15 ↪ Fin T) (atom one : Fin T) : Pr P T Q prime U :=
+  .seq (umul fields atom (r 11) (r 2))
+    (.seq (umulSym fields (digitSymbol (zeroDigit prime_prime.two_le)) atom (r 10) (r 2))
       (expProg 0 prime one (r 11) (r 4) (r 2) (r 3) (r 5)))
+
+def setup (m : ℕ) (r : Fin 15 ↪ Fin T) (atom one : Fin T) : Pr P T Q prime U :=
+  setupFields (m*m) r atom one
 
 def prepared (R : Regs T prime) (r : Fin 15 ↪ Fin T) (L : ℕ) :=
   Function.update (Function.update (Function.update R (r 11) (List.replicate L tick))
     (r 10) ((zeros prime_prime.two_le L).map digitSymbol)) (r 4) (List.replicate (prime^L) tick)
 
-theorem setup_exec (m : ℕ) (r : Fin 15 ↪ Fin T) (atom one : Fin T)
+theorem setupFields_exec (fields : ℕ) (r : Fin 15 ↪ Fin T) (atom one : Fin T)
     (ha : ∀ i, atom ≠ r i) (ho : ∀ i, one ≠ r i) (v : HS T Q prime U) (S : Stacks T prime)
     (h1 : (S.R one).length = 1)
     (hf : ∀ i ∈ ([2,3,4,5,10,11] : List (Fin 15)), S.R (r i) = []) :
     let w := (S.R atom).length
-    let L := w*(m*m)
-    ∃ u n, u.user = v.user ∧ n ≤ 8*w+8+22*prime^L ∧ Exec body (setup m r atom one)
+    let L := w*fields
+    ∃ u n, u.user = v.user ∧ n ≤ 8*w+8+22*prime^L ∧ Exec body (setupFields fields r atom one)
       (mk v S) n (mk u {S with R := prepared S.R r L}) := by
   intro w L
-  obtain ⟨u,hu,he⟩ := umul_exec body (m*m) (ha 11) (ha 2) (by simp) v S (hf 2 (by simp))
-  have mul : m*m*(S.R atom).length = L := Nat.mul_comm _ _
+  obtain ⟨u,hu,he⟩ := umul_exec body fields (ha 11) (ha 2) (by simp) v S (hf 2 (by simp))
+  have mul : fields*(S.R atom).length = L := Nat.mul_comm _ _
   rw [mul,hf 11 (by simp),List.append_nil] at he
   let M : Stacks T prime := {S with R := Function.update S.R (r 11) (List.replicate L tick)}
-  obtain ⟨u',hu',he'⟩ := umulSym_exec body (m*m) (digitSymbol (zeroDigit prime_prime.two_le))
+  obtain ⟨u',hu',he'⟩ := umulSym_exec body fields (digitSymbol (zeroDigit prime_prime.two_le))
     (ha 10) (ha 2) (by simp) u M (by simp [M,hf 2 (by simp)])
   have width : M.R atom = S.R atom := by simp [M,ha]
   have empty : M.R (r 10) = [] := by simp [M,hf 10 (by simp)]
@@ -53,6 +56,16 @@ theorem setup_exec (m : ℕ) (r : Fin 15 ↪ Fin T) (atom one : Fin T)
   have len : (H.R (r 11)).length = L := by simp [H,M]
   rw [len] at run hn
   exact ⟨u'',_,hu''.trans (hu'.trans hu),by dsimp [w]; omega,Exec.seq he (Exec.seq he' run)⟩
+
+theorem setup_exec (m : ℕ) (r : Fin 15 ↪ Fin T) (atom one : Fin T)
+    (ha : ∀ i, atom ≠ r i) (ho : ∀ i, one ≠ r i) (v : HS T Q prime U) (S : Stacks T prime)
+    (h1 : (S.R one).length = 1)
+    (hf : ∀ i ∈ ([2,3,4,5,10,11] : List (Fin 15)), S.R (r i) = []) :
+    let w := (S.R atom).length
+    let L := w*(m*m)
+    ∃ u n, u.user = v.user ∧ n ≤ 8*w+8+22*prime^L ∧ Exec body (setup m r atom one)
+      (mk v S) n (mk u {S with R := prepared S.R r L}) :=
+  setupFields_exec (m*m) r atom one ha ho v S h1 hf
 
 /-- Read the unary precision, extend the replay stream and retire the label
 counter and its width tape. -/
