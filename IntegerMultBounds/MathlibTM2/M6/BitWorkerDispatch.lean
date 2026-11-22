@@ -2,6 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.M6.BitBorrowedSweep
 public import IntegerMultBounds.MathlibTM2.M6.BitFlatIdleLeaf
+public import IntegerMultBounds.MathlibTM2.DFT.Fields
 
 /-! Select the recursive or stopped worker from the tag on its scheduled record. -/
 @[expose] public section
@@ -926,6 +927,90 @@ theorem packedMixedMoveCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
           (eq.trans (phaseWorkerRecord_shared target).1))
       exact ⟨(preserved _ away).1.trans (frame₀ _ archiveFree).1,
         (preserved _ away).2.trans (frame₀ _ archiveFree).2⟩
+
+/-- Read the spectator count from the front of a MOVE archive, leaving
+the inherited cutoff in the record for the ordinary width comparison. -/
+theorem unpackMoveArchive {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
+    (bank : Fin 35 ↪ Fin T) (spectator : Fin T) (apart : ∀ i, bank i ≠ spectator)
+    (w W L cutoff spectators : ℕ) (word : Fin ((prime^(w+1))^16*W) → ZMod 2)
+    (u : HS T Q prime U) (S : Stacks T prime) :
+    let count := binSyms (A := prime) spectators.size spectators
+    let header := binSyms (A := prime) L cutoff
+    let stored := fun archive => RecordReady (b := prime) (w := w) (d := 16) (W := W)
+      bank (prime^(w+1)).size W.size archive SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0 word
+    let F := {S with R := Function.update (Function.update S.R (bank 34) header) spectator count}
+    stored (count ++ separator :: header) S → S.R spectator = [] →
+    ∃ z, Exec body (DFT.takeField (bank 34) spectator (bank 0)) (mk u S) (4*spectators.size+5) (mk z F) ∧
+      z.user = u.user ∧ stored header F ∧ F.R spectator = count := by
+  intro count header stored F ready empty
+  obtain ⟨z,user,run⟩ := DFT.takeField_exec body (apart 34) (bank.injective.ne (by decide : (34 : Fin 35) ≠ 0))
+    (apart 0).symm (DFT.separator_not_mem_binSyms spectators.size spectators) u S ready.archive (ready.scratch 0 (by decide)).2 empty
+  refine ⟨z,by simpa only [count,length_binSyms] using run,user,?_,Function.update_self ..⟩
+  have updated := replaceArchive bank _ header word S ready
+  apply updated.returnPayload (F := F) (outBank := bank) (fun j _ => ⟨rfl,Function.update_of_ne (apart j) ..⟩)
+  intro z
+  simpa only [F,Function.update_of_ne (apart 24),sub_zero] using (updated.src z).symm
+
+/-- Restore the combined archive after dispatch. Two transfers preserve the
+order of the spectator digits and empty the temporary registers. -/
+theorem restoreMoveArchive {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
+    (bank : Fin 35 ↪ Fin T) (spectator : Fin T) (apart : ∀ i, bank i ≠ spectator)
+    (w W L cutoff spectators : ℕ) (word : Fin ((prime^(w+1))^16*W) → ZMod 2)
+    (u : HS T Q prime U) (S : Stacks T prime) :
+    let count := binSyms (A := prime) spectators.size spectators
+    let header := binSyms (A := prime) L cutoff
+    let stored := fun archive => RecordReady (b := prime) (w := w) (d := 16) (W := W)
+      bank (prime^(w+1)).size W.size archive SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0 word
+    let archive := count ++ separator :: header
+    let F := {S with R := Function.update (Function.update S.R (bank 34) archive) spectator []}
+    stored header S → S.R spectator = count →
+    ∃ z, Exec body ((Prog.act (DFT.pushSep (bank 34))).seq
+      ((moveR spectator (bank 0) id).seq (moveR (bank 0) (bank 34) id))) (mk u S) (4*spectators.size+5) (mk z F) ∧
+      z.user = u.user ∧ stored archive F := by
+  intro count header stored archive F ready countAt
+  have sep := Exec.act (body := body) (DFT.pushSep (bank 34)) (mk u S)
+  rw [DFT.pushSep_run,ready.archive] at sep
+  have different := bank.injective.ne (by decide : (0 : Fin 35) ≠ 34)
+  obtain ⟨v,user,reverse⟩ := moveR_exec body spectator (bank 0) (apart 0).symm id u _
+  obtain ⟨z,same,restore⟩ := moveR_exec body (bank 0) (bank 34) different id v _
+  have run := Exec.seq sep (Exec.seq reverse restore)
+  have empty := (ready.scratch 0 (by decide)).2
+  simp [movedR,Function.update_of_ne,Ne.symm (apart 34),different,Ne.symm different,apart,
+    countAt,empty,count,length_binSyms,Function.update_idem] at run
+  refine ⟨z,run.cast (by omega) ?_,same.trans user,?_⟩
+  · congr 2
+    funext j
+    by_cases h : j = spectator <;> by_cases a : j = bank 34 <;> by_cases b : j = bank 0 <;>
+      simp_all [archive,count,Function.update_apply]
+  · have updated := replaceArchive bank _ archive word S ready
+    apply updated.returnPayload (F := F) (outBank := bank) (fun j _ => ⟨rfl,Function.update_of_ne (apart j) ..⟩)
+    intro j
+    simpa only [F,Function.update_of_ne (apart 24),sub_zero] using (updated.src j).symm
+
+/-- Run a dispatcher with both fields available and return the original
+archive around the resulting payload. The code is independent of both words. -/
+theorem withMoveArchive {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
+    (bank : Fin 35 ↪ Fin T) (spectator : Fin T) (apart : ∀ i, bank i ≠ spectator)
+    (dispatch : Pr P T Q prime U) :
+    ∃ code, ∀ (w W L cutoff spectators budget : ℕ),
+    let count := binSyms (A := prime) spectators.size spectators
+    let header := binSyms (A := prime) L cutoff
+    let archive := count ++ separator :: header
+    let stored := fun archive => RecordReady (b := prime) (w := w) (d := 16) (W := W)
+      bank (prime^(w+1)).size W.size archive SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0
+    ∀ (step : (Fin ((prime^(w+1))^16*W) → ZMod 2) → Fin ((prime^(w+1))^16*W) → ZMod 2),
+    (∀ x u S, stored header x S → S.R spectator = count →
+      ∃ z F n, Exec body dispatch (mk u S) n (mk z F) ∧ n ≤ budget ∧ z.user = u.user ∧
+        stored header (step x) F ∧ F.R spectator = count) →
+    ∀ x u S, stored archive x S → S.R spectator = [] →
+      ∃ z F n, Exec body code (mk u S) n (mk z F) ∧ n ≤ budget+8*spectators.size+10 ∧
+        z.user = u.user ∧ stored archive (step x) F ∧ F.R spectator = [] := by
+  refine ⟨(DFT.takeField (bank 34) spectator (bank 0)).seq (dispatch.seq ((Prog.act (DFT.pushSep (bank 34))).seq ((moveR spectator (bank 0) id).seq (moveR (bank 0) (bank 34) id)))),?_⟩
+  intro w W L cutoff spectators budget count header archive stored step branch x u S ready empty
+  obtain ⟨v,start,user,opened,available⟩ := unpackMoveArchive body bank spectator apart w W L cutoff spectators x u S ready empty
+  obtain ⟨z,F,n,run,paid,same,out,kept⟩ := branch x v _ opened available
+  obtain ⟨q,finish,final,closed⟩ := restoreMoveArchive body bank spectator apart w W L cutoff spectators (step x) z F out kept
+  exact ⟨q,_,_,Exec.seq start (Exec.seq run finish),by omega,final.trans (same.trans user),closed,Function.update_self ..⟩
 
 /-- Compute the worker tag from its predecessor clock and an external cutoff
 word, then prepend it to the archive. The comparison restores all its tapes. -/
