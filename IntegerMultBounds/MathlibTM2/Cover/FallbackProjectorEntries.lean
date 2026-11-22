@@ -35,13 +35,13 @@ open IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2.Stack Host Node
 
 /-- Assemble a matrix directly on the output stack. Reverse execution order
 of the entry writers puts row zero and its first column at the tape head. -/
-theorem matrixWords_writes (body : P → Pr P T Q A U) (out : Fin T) (ok : Regs T A → Prop)
+theorem matrixWords_writes {e : ℕ} (body : P → Pr P T Q A U) (out : Fin T) (ok : Regs T A → Prop)
     (stable : ∀ R xs, ok R → ok (Function.update R out xs))
-    (entry : Fin d → Fin d → Pr P T Q A U) (matrix : Matrix (Fin d) (Fin d) (ZMod M)) (H c : ℕ)
+    (entry : Fin d → Fin e → Pr P T Q A U) (matrix : Matrix (Fin d) (Fin e) (ZMod M)) (H c : ℕ)
     (run : ∀ i j, Writes body ok out (entry i j) (binSyms H (matrix i j).val) c) :
-    Writes body ok out (sequence (fun i => sequence (entry i) (List.finRange d)) (List.finRange d))
-      (matrixWords A H matrix) (d*(d*c+1)+1) := by
-  have row (i : Fin d) := sequence_writes stable (run i) (List.finRange d)
+    Writes body ok out (sequence (fun i => sequence (entry i) (List.finRange e)) (List.finRange d))
+      (matrixWords A H matrix) (d*(e*c+1)+1) := by
+  have row (i : Fin d) := sequence_writes stable (run i) (List.finRange e)
   simpa [matrixWords,List.flatMap_def,List.finRange,List.map_ofFn,Function.comp_def] using sequence_writes stable row (List.finRange d)
 
 theorem projectorWords_writes (body : P → Pr P T Q A U) (out : Fin T) (ok : Regs T A → Prop)

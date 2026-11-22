@@ -11,6 +11,28 @@ open Mult.PhaseCellToeplitz
 open IntegerMultBounds.Networks.Shared50ModularControl (prime)
 variable {T Q : ℕ} {P U : Type}
 
+theorem radixFieldBinary_exec (body : P → Pr P T Q prime U) (b : Fin 6 ↪ Fin T)
+    (xs : List (Fin prime)) (H : ℕ) (pos : 0 < H)
+    (u : HS T Q prime U) (S : Stacks T prime) (empty : S.R (b 0) = [])
+    (bits : (S.R (b 4)).length = H) (zero : S.R (b 2) = binSyms H 0)
+    (free : ∀ i : Fin 6, i = 1 ∨ i = 3 ∨ i = 5 → S.R (b i) = []) :
+    ∃ z n, z.user = u.user ∧ n ≤ xs.length*(7*H+prime+17)+6 ∧
+      Exec body (.seq (radixWord b) (bclear (b 0)))
+        (mk u {S with R := Function.update S.R (b 0) (xs.map digitSymbol)}) n
+        (mk z {S with R := Function.update S.R (b 2) (binSyms H (value xs))}) := by
+  let B := {S with R := Function.update S.R (b 0) (xs.map digitSymbol)}
+  have keep (i : Fin 6) (hi : i ≠ 0) : B.R (b i) = S.R (b i) := Function.update_of_ne (b.injective.ne hi) _ _
+  obtain ⟨y,n,hy,hn,convert⟩ := radixWord_exec body b xs H pos u B (Function.update_self ..)
+    (by rwa [keep 4 (by decide)]) ((keep 2 (by decide)).trans zero)
+    (fun i hi => (keep i (by omega)).trans (free i hi))
+  let F := {B with R := Function.update B.R (b 2) (binSyms H (value xs))}
+  obtain ⟨z,hz,_,clear⟩ := bclear_exec body (b 0) y F
+  have size : (F.R (b 0)).length = xs.length := by simp [F,B]
+  refine ⟨z,n+(2*(F.R (b 0)).length+2),hz.trans hy,?_,Exec.seq convert ?_⟩
+  · rw [size]; nlinarith only [hn]
+  · simpa only [F,B,Function.update_comm (b.injective.ne (by decide : (2 : Fin 6) ≠ 0)),
+      Function.update_idem,← empty,Function.update_eq_self] using clear
+
 theorem directoryBinary_exec (body : P → Pr P T Q prime U) (a : Fin 7 ↪ Fin T) (b : Fin 6 ↪ Fin T)
     (shared : a 3 = b 0) (m w j H : ℕ) (pos : 0 < H) (r c : Fin m)
     (ancestor tail : List (Fin (prime+4))) (v : HS T Q prime U) (S : Stacks T prime) :
@@ -29,19 +51,12 @@ theorem directoryBinary_exec (body : P → Pr P T Q prime U) (a : Fin 7 ↪ Fin 
   have empty := scratch 3 (by decide)
   rw [empty,List.append_nil,shared] at read
   rw [shared] at empty
-  let B := {S with R := Function.update S.R (b 0) (xs.map digitSymbol)}
-  have keep (i : Fin 6) (hi : i ≠ 0) : B.R (b i) = S.R (b i) := Function.update_of_ne (b.injective.ne hi) _ _
-  obtain ⟨y,n,hy,hn,convert⟩ := radixWord_exec body b xs H pos u B (Function.update_self ..)
-    (by rwa [keep 4 (by decide)]) ((keep 2 (by decide)).trans zero)
-    (fun i hi => (keep i (by omega)).trans (free i hi))
+  obtain ⟨z,n,hz,hn,convert⟩ := radixFieldBinary_exec body b xs H pos u S empty bits zero free
   rw [val] at convert
-  let F := {B with R := Function.update B.R (b 2) (binSyms H (physicalLabel m w j r c).val)}
-  obtain ⟨z,hz,_,clear⟩ := bclear_exec body (b 0) y F
-  have size : (F.R (b 0)).length = w := by simp [F,B,len]
   rw [shared]
-  refine ⟨z,(6*(ancestor.length+offset)+10*w+16)+(n+(2*(F.R (b 0)).length+2)),hz.trans (hy.trans hu),?_,Exec.seq read (Exec.seq convert ?_)⟩
-  · rw [size]; rw [len] at hn; nlinarith only [hn]
-  · simpa only [F,B,Function.update_comm (b.injective.ne (by decide : (2 : Fin 6) ≠ 0)),
-      Function.update_idem,← empty,Function.update_eq_self] using clear
+  refine ⟨z,_,hz.trans hu,?_,Exec.seq read convert⟩
+  rw [len] at hn
+  dsimp [offset]
+  nlinarith only [hn]
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback
