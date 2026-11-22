@@ -823,7 +823,7 @@ theorem copyChild_runs [M8.Machine.Net] {t : ℕ} (caller : Tapes t prime)
         x (FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) j) := by
   exact ⟨_, engine.run caller headers source w W hs hw hW valid tapes heads _ payload origin, copyChild_interval x⟩
 
-def segmentSource (stages : List (FlatCoordinateSchedule.Op 16)) :
+def segmentSource {d : ℕ} (stages : List (FlatCoordinateSchedule.Op d)) :
     Fin (FlatCoordinateCleanSchedule.tapeCount stages) :=
   ⟨0, by
     have h := FlatCoordinateInitializedSchedule.skeleton_tapes_ge stages
@@ -846,14 +846,14 @@ theorem copySegment_source (stages : List (FlatCoordinateSchedule.Op 16))
   exact List.ofFn_congr (copyChild_volume w W).symm (fun i => SparseRoleCircuit.encode (a := 0) (x i))
 
 
-noncomputable def basisWorkspace (stages : List (FlatCoordinateSchedule.Op 16))
-    (x : Fin ((prime^w)^16*W) → ZMod 2) :=
+noncomputable def basisWorkspace {d : ℕ} (stages : List (FlatCoordinateSchedule.Op d))
+    (x : Fin ((prime^w)^d*W) → ZMod 2) :=
   SharedPlacementAlphabet.setTape (SharedBankStageInput.raw (FlatCoordinateShiftSharedBank.common
-    (d := 16) (b := w) (W := W) (fun i => SparseRoleCircuit.encode (x i)))
+    (d := d) (b := w) (W := W) (fun i => SparseRoleCircuit.encode (x i)))
     (FlatCoordinateCleanSchedule.tapeCount stages)) (segmentSource stages) (fun _ => blank) 0
 
-theorem basisWorkspace_eq (stages : List (FlatCoordinateSchedule.Op 16))
-    (x y : Fin ((prime^w)^16*W) → ZMod 2) : basisWorkspace stages x = basisWorkspace stages y := by
+theorem basisWorkspace_eq {d : ℕ} (stages : List (FlatCoordinateSchedule.Op d))
+    (x y : Fin ((prime^w)^d*W) → ZMod 2) : basisWorkspace stages x = basisWorkspace stages y := by
   apply congrArg₂ Tapes.mk
   · rfl
   · funext k

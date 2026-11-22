@@ -13,7 +13,7 @@ open Networks
 open Shared50ModularControl (prime)
 open RecursiveInterchangeLayout (Descriptor volume)
 
-private theorem encoded_word (f : ℤ → Fin 4) (z : ℤ) (xs : List (Fin 4)) :
+theorem encoded_word (f : ℤ → Fin 4) (z : ℤ) (xs : List (Fin 4)) :
     FlatRepeatedControlNormalize.encoded (radix := prime) (putWord f z xs) =
       putWord (FlatRepeatedControlNormalize.encoded f) z
         (xs.map (RadixToBinary.binaryEncoding (q := prime)).encode) := by
