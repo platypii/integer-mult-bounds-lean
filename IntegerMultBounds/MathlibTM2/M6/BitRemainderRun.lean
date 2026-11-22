@@ -486,37 +486,7 @@ theorem remainderPlacement_chartRead {v : Descriptor} {w B : ℕ} {x y : ℕ →
   rw [remainderPlacement_chartAddress b.val out,remainderPlacement_chartAddress b.val digits]
   simpa only [out,Fin.addCases_left,Fin.addCases_right,M8.AtomOps.refine,Equiv.symm_apply_apply,Route.cols] using read
 
-/-- In interval order the whole label is a spectator. Packing it after the
-two fields gives the very same offset as the recursive child's descriptor. -/
-theorem remainderPlacement_childAddress {lo hi w K : ℕ}
-    (a b : Fin lo → ZMod (prime^w)) (h d : Fin (hi-lo) → ZMod (prime^w))
-    (u v : Fin (64-hi) → ZMod (prime^w)) (g : LabelPadding.Label 64 w) (t : Fin K) :
-    let fields := Fin.addCases (Fin.addCases (Fin.addCases a h) u) (Fin.addCases (Fin.addCases b d) v)
-    let digits := Fin.addCases fields (M8.AtomOps.refine (Route.cols g))
-    let tail := finProdFinEquiv (LabelAddress.address g,t)
-    (FlatCoordinateLayout.index digits t).val =
-      (RecursiveInterchangeScaling.index (intervalAddress 64 a b h d u v tail)).val := by
-  intro fields digits tail
-  rw [intervalAddress_index]
-  simp only [FlatCoordinateLayout.index_val,digits,ArbitraryWidthSliceTranspose.rank_append,
-    tail,finProdFinEquiv_apply_val,LabelAddress.address,fields]
-  ring
-
-/-- The interval child's transpose gives the packed owner read on both sides
-of the exchange, with the same independent matrix label and trailing cell. -/
-theorem remainderPlacement_childRead {lo hi w K : ℕ}
-    (x : Fin (volume prime (phaseIntervalChild lo hi w ((prime^w)^(64*64)*K) 64)) → ZMod 2)
-    (a b : Fin lo → ZMod (prime^w)) (h d : Fin (hi-lo) → ZMod (prime^w))
-    (u v : Fin (64-hi) → ZMod (prime^w)) (g : LabelPadding.Label 64 w) (t : Fin K) :
-    let cell := fun (h d : Fin (hi-lo) → ZMod (prime^w)) => FlatCoordinateLayout.index
-      (Fin.addCases (Fin.addCases (Fin.addCases (Fin.addCases a h) u) (Fin.addCases (Fin.addCases b d) v))
-        (M8.AtomOps.refine (Route.cols g))) t
-    ext (Shared50RecursiveNodeRows.transpose (one_dvd _) x) (cell d h).val = ext x (cell h d).val := by
-  intro cell
-  rw [show (cell d h).val = _ from remainderPlacement_childAddress a b d h u v g t,
-    show (cell h d).val = _ from remainderPlacement_childAddress a b h d u v g t,
-    ext_apply,ext_apply]
-  exact intervalAddress_transpose 64 x a b h d u v (finProdFinEquiv (LabelAddress.address g,t))
+-- The specialized sliced label address proof is available in db8abe1f.
 
 /-- Read the three contiguous slices of a field from its absolute digit
 positions. Ranking the slices recovers the original field rank. -/
@@ -548,13 +518,13 @@ private theorem intervalSlices_rank {n lo hi M : ℕ} [NeZero M]
 
 /-- The concrete child reads arbitrary full fields in absolute coordinates.
 Only digits in the scheduled interval cross between the two fields. -/
-theorem remainderPlacement_fullChildRead {lo hi w K : ℕ} (ordered : lo ≤ hi) (fits : hi ≤ 64)
-    (x : Fin (volume prime (phaseIntervalChild lo hi w ((prime^w)^(64*64)*K) 64)) → ZMod 2)
-    (h d : Fin 64 → ZMod (prime^w)) (g : LabelPadding.Label 64 w) (t : Fin K) :
+theorem remainderInterval_fullRead {lo hi w K : ℕ} (ordered : lo ≤ hi) (fits : hi ≤ 64)
+    (x : Fin (volume prime (phaseIntervalChild lo hi w K 64)) → ZMod 2)
+    (h d : Fin 64 → ZMod (prime^w)) (t : Fin K) :
     let swap := fun (a b : Fin 64 → ZMod (prime^w)) (i : Fin 64) =>
       if lo ≤ i.val ∧ i.val < hi then b i else a i
     let cell := fun (a b : Fin 64 → ZMod (prime^w)) => FlatCoordinateLayout.index
-      (Fin.addCases (Fin.addCases a b) (M8.AtomOps.refine (Route.cols g))) t
+      (Fin.addCases a b) t
     ext (Shared50RecursiveNodeRows.transpose (one_dvd _) x) (cell (swap h d) (swap d h)).val =
       ext x (cell h d).val := by
   intro swap cell
@@ -572,7 +542,9 @@ theorem remainderPlacement_fullChildRead {lo hi w K : ℕ} (ordered : lo ≤ hi)
     have eq := pack (swap a b)
     change (FlatCoordinateLayout.rank (Fin.addCases (Fin.addCases (pre _) (active _)) (tail _))).val = _ at eq
     rwa [left,middle,right] at eq
-  have read := remainderPlacement_childRead x (pre h) (pre d) (active h) (active d) (tail h) (tail d) g t
+  have read := intervalAddress_transpose 64 x (pre h) (pre d) (active h) (active d) (tail h) (tail d) t
+  rw [← ext_apply (Shared50RecursiveNodeRows.transpose (one_dvd _) x) (RecursiveInterchangeScaling.index (intervalAddress 64 (pre h) (pre d) (active d) (active h) (tail h) (tail d) t)), ← ext_apply x _] at read
+  simp only [intervalAddress_index] at read
   have size : lo+(hi-lo)+(64-hi) = 64 := by omega
   have hh := pack h
   have dd := pack d
@@ -582,6 +554,26 @@ theorem remainderPlacement_fullChildRead {lo hi w K : ℕ} (ordered : lo ≤ hi)
   have dh := crossed d h
   simp only [ArbitraryWidthSliceTranspose.rank_append] at hh dd hd dh
   simpa only [cell,FlatCoordinateLayout.index_val,ArbitraryWidthSliceTranspose.rank_append,hh,dd,hd,dh,size] using read
+
+/-- A matrix label and its trailing cell form one spectator index. -/
+theorem remainderPlacement_fullChildRead {lo hi w K : ℕ} (ordered : lo ≤ hi) (fits : hi ≤ 64)
+    (x : Fin (volume prime (phaseIntervalChild lo hi w ((prime^w)^(64*64)*K) 64)) → ZMod 2)
+    (h d : Fin 64 → ZMod (prime^w)) (g : LabelPadding.Label 64 w) (t : Fin K) :
+    let swap := fun (a b : Fin 64 → ZMod (prime^w)) (i : Fin 64) =>
+      if lo ≤ i.val ∧ i.val < hi then b i else a i
+    let cell := fun (a b : Fin 64 → ZMod (prime^w)) => FlatCoordinateLayout.index
+      (Fin.addCases (Fin.addCases a b) (M8.AtomOps.refine (Route.cols g))) t
+    ext (Shared50RecursiveNodeRows.transpose (one_dvd _) x) (cell (swap h d) (swap d h)).val =
+      ext x (cell h d).val := by
+  intro swap cell
+  have read := remainderInterval_fullRead ordered fits x h d (finProdFinEquiv (LabelAddress.address g,t))
+  have address (a b : Fin 64 → ZMod (prime^w)) : (cell a b).val =
+      (FlatCoordinateLayout.index (Fin.addCases a b) (finProdFinEquiv (LabelAddress.address g,t))).val := by
+    simp only [cell,FlatCoordinateLayout.index_val,ArbitraryWidthSliceTranspose.rank_append,
+      LabelAddress.address,finProdFinEquiv_apply_val]
+    ring
+  rw [address,address]
+  exact read
 
 /-- Follow an arbitrary packed atom vector through the physical digit swaps,
 keeping the enclosing descriptor's prefix and suffix at the same addresses. -/
@@ -806,15 +798,20 @@ theorem placedRemainder_parentDigits (c : PortCertificate) (hc : c.Checked) {lo 
 /-- Follow an arbitrary parent address through the actual interval child:
 the same intermediate digits give its physical output read and the inverse
 chart's parent exchange. -/
-theorem placedRemainder_childEndpoint (c : PortCertificate) (hc : c.Checked) {lo hi w K : ℕ}
-    (ordered : lo ≤ hi) (fits : hi ≤ 63)
-    (word : Fin (volume prime (phaseIntervalChild lo hi w ((prime^w)^(64*64)*K) 64)) → ZMod 2)
+private theorem placedRemainder_endpointOfRead (c : PortCertificate) (hc : c.Checked) {lo hi w : ℕ}
+    (fits : hi ≤ 63)
+    (read : (Fin (128+64*64) → ZMod (prime^w)) → (Fin (128+64*64) → ZMod (prime^w)) → Prop)
+    (exchange : ∀ (h d : Fin 64 → ZMod (prime^w)) (g : LabelPadding.Label 64 w),
+      let swap := fun (a b : Fin 64 → ZMod (prime^w)) (i : Fin 64) =>
+        if lo ≤ i.val ∧ i.val < hi then b i else a i
+      let pack := fun (a b : Fin 64 → ZMod (prime^w)) =>
+        Fin.addCases (motive := fun _ => ZMod (prime^w)) (Fin.addCases a b) (M8.AtomOps.refine (Route.cols g))
+      read (pack (swap h d) (swap d h)) (pack h d))
     (x : IntegerMultBounds.Swap.Shear.State Axis (ZMod (prime^w)))
-    (label : LabelPadding.Label 64 w) (t : Fin K) :
+    (label : LabelPadding.Label 64 w) :
     let H := reduce (prime^w) (c.fullChart.submatrix stageAxis.symm remainderAxis)
     let before := placedChartDigits (fun g => g*H) (remainderParentDigits x label)
-    ∃ mid, ext (Shared50RecursiveNodeRows.transpose (one_dvd _) word) (FlatCoordinateLayout.index mid t).val =
-      ext word (FlatCoordinateLayout.index before t).val ∧
+    ∃ mid, read mid before ∧
       placedChartDigits (fun g => g*Hᵀ) mid =
         remainderParentDigits (M8.Exchange.exchange (reduce (prime^w) (c.span lo hi)) x) label := by
   intro H before
@@ -838,7 +835,7 @@ theorem placedRemainder_childEndpoint (c : PortCertificate) (hc : c.Checked) {lo
   let mid := pack (swap h d) (swap d h)
   refine ⟨mid,?_,placedRemainder_parentDigits c hc fits x label mid ?_ ?_⟩
   · rw [← unpack]
-    exact remainderPlacement_fullChildRead ordered (by omega) word h d g t
+    exact exchange h d g
   · intro i
     have h0 : finProdFinEquiv ((0 : Fin 2),i) = Fin.castAdd 64 i := by
       apply Fin.ext; change i.val + 64*0 = i.val; omega
@@ -849,6 +846,22 @@ theorem placedRemainder_childEndpoint (c : PortCertificate) (hc : c.Checked) {lo
   · intro l
     obtain ⟨⟨i,r⟩,rfl⟩ := (@finProdFinEquiv 64 64).surjective l
     simp only [mid,pack,Fin.addCases_right,M8.AtomOps.refine,Route.cols,Equiv.symm_apply_apply,g,before,H]
+
+theorem placedRemainder_childEndpoint (c : PortCertificate) (hc : c.Checked) {lo hi w K : ℕ}
+    (ordered : lo ≤ hi) (fits : hi ≤ 63)
+    (word : Fin (volume prime (phaseIntervalChild lo hi w ((prime^w)^(64*64)*K) 64)) → ZMod 2)
+    (x : IntegerMultBounds.Swap.Shear.State Axis (ZMod (prime^w)))
+    (label : LabelPadding.Label 64 w) (t : Fin K) :
+    let H := reduce (prime^w) (c.fullChart.submatrix stageAxis.symm remainderAxis)
+    let before := placedChartDigits (fun g => g*H) (remainderParentDigits x label)
+    ∃ mid, ext (Shared50RecursiveNodeRows.transpose (one_dvd _) word) (FlatCoordinateLayout.index mid t).val =
+      ext word (FlatCoordinateLayout.index before t).val ∧
+      placedChartDigits (fun g => g*Hᵀ) mid =
+        remainderParentDigits (M8.Exchange.exchange (reduce (prime^w) (c.span lo hi)) x) label := by
+  exact placedRemainder_endpointOfRead (lo := lo) c hc fits (fun mid before =>
+    ext (Shared50RecursiveNodeRows.transpose (one_dvd _) word) (FlatCoordinateLayout.index mid t).val =
+      ext word (FlatCoordinateLayout.index before t).val) (fun h d g =>
+    remainderPlacement_fullChildRead ordered (by omega) word h d g t) x label
 
 /-- A single physical schedule exchanges the external fields with the two
 label rows at every precision. Its setup and all digit moves are absorbed
@@ -1856,6 +1869,56 @@ noncomputable def inheritedDigitCell {w B K : ℕ} (x : Fin 128 ⊕ Fin (64*64) 
     (b : Fin B) (t : Fin K) : ℕ :=
   (((rank (x ∘ Sum.inl)).val*B+b.val)*(prime^w)^(64*64)+(rank (x ∘ Sum.inr)).val)*K+t.val
 
+/-- The inherited interval child exchanges the active field digits while the
+block, matrix coordinates and trailing cell remain fixed. -/
+theorem inheritedInterval_fullRead {lo hi w B K : ℕ} (ordered : lo ≤ hi) (fits : hi ≤ 64)
+    (x : Fin (volume prime (phaseIntervalChild lo hi w (B*(prime^w)^(64*64)*K) 64)) → ZMod 2)
+    (h d : Fin 64 → ZMod (prime^w)) (g : Fin (64*64) → ZMod (prime^w))
+    (b : Fin B) (t : Fin K) :
+    let swap := fun (a c : Fin 64 → ZMod (prime^w)) (i : Fin 64) =>
+      if lo ≤ i.val ∧ i.val < hi then c i else a i
+    let cell := fun (a c : Fin 64 → ZMod (prime^w)) =>
+      inheritedDigitCell (Sum.elim (Fin.addCases (motive := fun _ => ZMod (prime^w)) a c) g) b t
+    ext (Shared50RecursiveNodeRows.transpose (one_dvd _) x) (cell (swap h d) (swap d h)) =
+      ext x (cell h d) := by
+  intro swap cell
+  let j := finProdFinEquiv (finProdFinEquiv (b,rank g),t)
+  have address (a c : Fin 64 → ZMod (prime^w)) : cell a c =
+      (FlatCoordinateLayout.index (Fin.addCases a c) j).val := by
+    change (((rank (Fin.addCases (motive := fun _ => ZMod (prime^w)) a c)).val*B+b.val)*(prime^w)^(64*64)+(rank g).val)*K+t.val = _
+    rw [FlatCoordinateLayout.index_val]
+    simp only [j,finProdFinEquiv_apply_val]
+    ring
+  rw [address,address]
+  exact remainderInterval_fullRead ordered fits x h d j
+
+private theorem addCases_sum {m n : ℕ} {α : Type*} (a : Fin m → α) (b : Fin n → α) :
+    (Fin.addCases (motive := fun _ => α) a b) ∘ finSumFinEquiv = Sum.elim a b := by
+  funext i
+  cases i <;> simp only [Function.comp_apply,finSumFinEquiv_apply_left,finSumFinEquiv_apply_right,
+    Fin.addCases_left,Fin.addCases_right,Sum.elim_inl,Sum.elim_inr]
+
+theorem inheritedRemainder_childEndpoint (c : PortCertificate) (hc : c.Checked) {lo hi w B K : ℕ}
+    (ordered : lo ≤ hi) (fits : hi ≤ 63)
+    (word : Fin (volume prime (phaseIntervalChild lo hi w (B*(prime^w)^(64*64)*K) 64)) → ZMod 2)
+    (x : IntegerMultBounds.Swap.Shear.State Axis (ZMod (prime^w)))
+    (label : LabelPadding.Label 64 w) (b : Fin B) (t : Fin K) :
+    let H := reduce (prime^w) (c.fullChart.submatrix stageAxis.symm remainderAxis)
+    let before := placedChartDigits (fun g => g*H) (remainderParentDigits x label)
+    ∃ mid, ext (Shared50RecursiveNodeRows.transpose (one_dvd _) word) (inheritedDigitCell (mid ∘ finSumFinEquiv) b t) =
+      ext word (inheritedDigitCell (before ∘ finSumFinEquiv) b t) ∧
+      placedChartDigits (fun g => g*Hᵀ) mid =
+        remainderParentDigits (M8.Exchange.exchange (reduce (prime^w) (c.span lo hi)) x) label := by
+  apply placedRemainder_endpointOfRead c hc fits (fun mid before =>
+    ext (Shared50RecursiveNodeRows.transpose (one_dvd _) word) (inheritedDigitCell (mid ∘ finSumFinEquiv) b t) =
+      ext word (inheritedDigitCell (before ∘ finSumFinEquiv) b t)) _ x label
+  intro h d g swap pack
+  have split (a c : Fin 64 → ZMod (prime^w)) : pack a c ∘ finSumFinEquiv =
+      Sum.elim (Fin.addCases (motive := fun _ => ZMod (prime^w)) a c) (M8.AtomOps.refine (Route.cols g)) :=
+    addCases_sum _ _
+  rw [split,split]
+  exact inheritedInterval_fullRead ordered (by omega) word h d _ b t
+
 theorem inheritedRowSwap_digits {w B K : ℕ} (s : Fin 128) (l : Fin (64*64))
     (word : Fin (volume prime (inheritedRowSwap w B K s l)) → ZMod 2)
     (x : Fin 128 ⊕ Fin (64*64) → ZMod (prime^w)) (b : Fin B) (t : Fin K) :
@@ -2312,6 +2375,27 @@ theorem inheritedPlacedChart_read {w B K : ℕ} {x p q y : ℕ → ZMod 2}
   rw [twice] at start
   exact leave.trans ((inheritedChart_read chart parked b t).trans start)
 
+/-- Flattening the two banks commutes with the complete placed chart. -/
+private theorem placedChartDigits_sum {w : ℕ} (f : LabelPadding.Label 64 w → LabelPadding.Label 64 w)
+    (digits : Fin (128+64*64) → ZMod (prime^w)) :
+    let parked := (digits ∘ finSumFinEquiv) ∘ remainderRowPlacement
+    let g : LabelPadding.Label 64 w := fun r i => parked (.inr (finProdFinEquiv (i,r)))
+    let charted := Sum.elim (parked ∘ Sum.inl) (M8.AtomOps.refine (Route.cols (f g)))
+    placedChartDigits f digits ∘ finSumFinEquiv = charted ∘ remainderRowPlacement := by
+  intro parked g charted
+  funext i
+  simp only [placedChartDigits,Function.comp_apply,Equiv.trans_apply,Equiv.symm_symm,
+    Equiv.symm_apply_apply]
+  cases h : remainderRowPlacement i with
+  | inl j =>
+    rw [@finSumFinEquiv_apply_left 128 (64*64) j]
+    simp only [remainderChartDigits,Fin.addCases_left,Function.comp_apply,Equiv.trans_apply,
+      finSumFinEquiv_symm_apply_castAdd,charted,Sum.elim_inl,parked,Equiv.symm_symm]
+  | inr j =>
+    rw [@finSumFinEquiv_apply_right 128 (64*64) j]
+    simp only [remainderChartDigits,Fin.addCases_right,Function.comp_apply,Equiv.trans_apply,
+      finSumFinEquiv_symm_apply_natAdd,charted,Sum.elim_inr,parked,g,Equiv.symm_symm]
+
 /-- Execute a chart between the two inherited placements, on the same owner
 tape and at every block index. Both joins and all crossing headers are charged. -/
 theorem inheritedPlacedChart_stage [M8.Machine.Net] {k : ℕ} (src : Fin k)
@@ -2324,12 +2408,10 @@ theorem inheritedPlacedChart_stage [M8.Machine.Net] {k : ℕ} (src : Fin k)
       ∃ stage : SharedBankStage.Stage _ k prime (phaseOwners (N := V)),
         (stage.cost : ℝ) ≤ C*V*(w : ℝ)^M8.Machine.BudgetBound.tau ∧
         ∀ data, (∀ j, j ≠ src → stage.transform data j = data j) ∧
-          ∀ (digits : Fin 128 ⊕ Fin (64*64) → ZMod M) (b : Fin B) (t : Fin K),
-            let parked := digits ∘ remainderRowPlacement
-            let g : LabelPadding.Label 64 w := fun r i => parked (.inr (finProdFinEquiv (i,r)))
-            let charted := Sum.elim (parked ∘ Sum.inl) (M8.AtomOps.refine (Route.cols (g*σ)))
-            ext (stage.transform data src) (inheritedDigitCell (charted ∘ remainderRowPlacement) b t) =
-              ext (data src) (inheritedDigitCell digits b t) := by
+          ∀ (digits : Fin (128+64*64) → ZMod M) (b : Fin B) (t : Fin K),
+            ext (stage.transform data src)
+              (inheritedDigitCell (placedChartDigits (fun g => g*σ) digits ∘ finSumFinEquiv) b t) =
+              ext (data src) (inheritedDigitCell (digits ∘ finSumFinEquiv) b t) := by
   obtain ⟨P,place⟩ := inheritedRowPlacement_read src
   obtain ⟨A,_,chart⟩ := remainderChart_stage src c hc inverse
   obtain ⟨Q,bound⟩ := scaledRoute_cost_bound A 63 64 (by decide)
@@ -2366,8 +2448,74 @@ theorem inheritedPlacedChart_stage [M8.Machine.Net] {k : ℕ} (src : Fin k)
     obtain ⟨off,enter⟩ := placed data
     obtain ⟨keep,run⟩ := transport (swap.transform data)
     obtain ⟨outside,back⟩ := placed (middle.transform (swap.transform data))
-    exact ⟨fun j hj => (outside j hj).trans ((keep j hj).trans (off j hj)),
-      inheritedPlacedChart_read (w := w) (B := B) (K := K) (f := fun g => g*σ) (x := ext (data src)) (p := ext (swap.transform data src)) (q := ext (middle.transform (swap.transform data) src)) (y := ext (swap.transform (middle.transform (swap.transform data)) src)) enter run back⟩
+    refine ⟨fun j hj => (outside j hj).trans ((keep j hj).trans (off j hj)),?_⟩
+    intro digits b t
+    rw [placedChartDigits_sum (fun g => g*σ) digits]
+    exact inheritedPlacedChart_read (w := w) (B := B) (K := K) (f := fun g => g*σ) (x := ext (data src)) (p := ext (swap.transform data src)) (q := ext (middle.transform (swap.transform data) src)) (y := ext (swap.transform (middle.transform (swap.transform data)) src)) enter run back (digits ∘ finSumFinEquiv) b t
+
+/-- On every inherited block the two charts around one interval transpose
+implement the certified parent exchange, with a single recursive child bill. -/
+theorem inheritedRemainder_parent_stage [M8.Machine.Net] {k : ℕ} (src : Fin k)
+    (c : PortCertificate) (hc : c.Checked) (e : ℕ × ℕ) (member : e ∈ BitHosting.remainderIntervals) :
+    ∃ C : ℝ, ∀ w B K : ℕ, 0 < w → 0 < B → 0 < K →
+      let M := prime^w
+      let W := B*M^(64*64)*K
+      let V := M^128*B*M^(64*64)*K
+      let child := phaseIntervalChild e.1 e.2 w W 64
+      ∃ stage : SharedBankStage.Stage _ k prime (phaseOwners (N := V)),
+        (stage.cost : ℝ) ≤ C*V*(w : ℝ)^M8.Machine.BudgetBound.tau +
+          ((2*(24*64+333)+250)*(M^128*W)+3+
+            cost child (fun i => FlatCoordinateSchedule.bits (RecursiveDimensionBank.values child i)) : ℕ) ∧
+        ∀ data, (∀ j, j ≠ src → stage.transform data j = data j) ∧
+          ∀ (x : IntegerMultBounds.Swap.Shear.State Axis (ZMod M)) (label : LabelPadding.Label 64 w)
+            (b : Fin B) (t : Fin K),
+          let y := M8.Exchange.exchange (reduce M (c.span e.1 e.2)) x
+          ext (stage.transform data src) (inheritedDigitCell (remainderParentDigits y label ∘ finSumFinEquiv) b t) =
+            ext (data src) (inheritedDigitCell (remainderParentDigits x label ∘ finSumFinEquiv) b t) := by
+  obtain ⟨P,forward⟩ := inheritedPlacedChart_stage src c hc false
+  obtain ⟨Q,backward⟩ := inheritedPlacedChart_stage src c hc true
+  refine ⟨P+Q,?_⟩
+  intro w B K hw hB hK M W V child
+  obtain ⟨entry,entryCost,enter⟩ := forward w B K hw hB hK
+  obtain ⟨back,backCost,leave⟩ := backward w B K hw hB hK
+  obtain ⟨lo,hi,_⟩ := BitHosting.remainder_counts e member
+  have size : volume prime child = V := by
+    rw [show volume prime child = _ from intervalChild_volume lo (show e.2 ≤ 64 by omega) w W]
+    simp only [W,V,M,Nat.mul_assoc]
+  have pos : 0 < W := Nat.mul_pos (Nat.mul_pos hB (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _)) hK
+  obtain ⟨mid,midCost,act⟩ := remainderOwner_cast src e member hw pos size
+  refine ⟨SharedBankStage.compose (SharedBankStage.compose entry mid) back,?_,?_⟩
+  · change ((entry.cost+mid.cost+1+back.cost+1 : ℕ) : ℝ) ≤ _
+    rw [midCost]
+    simp only [Nat.cast_add,Nat.cast_one,Nat.cast_ofNat,add_mul]
+    linarith only [entryCost,backCost]
+  intro data
+  let z := entry.transform data
+  let word := fun i => z src (Fin.cast size i)
+  let move := Shared50RecursiveNodeRows.transpose (one_dvd child.rows) word
+  let updated := Function.update z src (fun j => move (Fin.cast size.symm j))
+  change (∀ j, j ≠ src → back.transform (mid.transform z) j = data j) ∧ _
+  rw [show mid.transform z = updated from act z]
+  obtain ⟨off,first⟩ := enter data
+  obtain ⟨keep,last⟩ := leave updated
+  refine ⟨fun j hj => (keep j hj).trans ((Function.update_of_ne hj ..).trans (off j hj)),?_⟩
+  intro x label b t y
+  let H := reduce M (c.fullChart.submatrix stageAxis.symm remainderAxis)
+  let before := placedChartDigits (fun g => g*H) (remainderParentDigits x label)
+  obtain ⟨digits,read,parent⟩ := inheritedRemainder_childEndpoint c hc lo hi word x label b t
+  have firstRead := first (remainderParentDigits x label) b t
+  have lastRead := last digits b t
+  change ext (back.transform updated src)
+      (inheritedDigitCell (placedChartDigits (fun g => g*Hᵀ) digits ∘ finSumFinEquiv) b t) = _ at lastRead
+  change placedChartDigits (fun g => g*Hᵀ) digits = remainderParentDigits y label at parent
+  rw [parent] at lastRead
+  simp only [updated,Function.update_self,ext_cast] at lastRead
+  change ext move (inheritedDigitCell (digits ∘ finSumFinEquiv) b t) =
+    ext word (inheritedDigitCell (before ∘ finSumFinEquiv) b t) at read
+  rw [show ext word = ext (z src) from ext_cast size _] at read
+  change ext (back.transform (mid.transform z) src) _ = _
+  rw [show mid.transform z = updated from act z]
+  exact lastRead.trans (read.trans firstRead)
 
 end
 
