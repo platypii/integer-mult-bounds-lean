@@ -98,9 +98,103 @@ theorem intervalPacked_offset {w W lo hi axes n : ℕ}
   subst n
   exact congrArg (fun z => (index z j).val) (List.ofFn_injective same)
 
+private theorem splitDigits {α : Type*} {n p q : ℕ} (size : p+q = n) (x : Fin n → α) :
+    ∃ (a : Fin p → α) (b : Fin q → α), List.ofFn x = List.ofFn a ++ List.ofFn b := by
+  subst n
+  refine ⟨fun i => x (i.castAdd q),fun i => x (i.natAdd p),?_⟩
+  rw [← List.ofFn_fin_append,Fin.append_castAdd_natAdd]
+
+private theorem intervalDigits {α : Type*} {lo hi : ℕ} (ordered : lo ≤ hi) (fits : hi ≤ 64)
+    (x : Fin 128 → α) :
+    ∃ (a b : Fin lo → α) (h d : Fin (hi-lo) → α) (u v : Fin (64-hi) → α),
+      List.ofFn x = List.ofFn a ++ List.ofFn h ++ List.ofFn u ++ List.ofFn b ++ List.ofFn d ++ List.ofFn v := by
+  obtain ⟨left,right,halves⟩ := splitDigits (by decide : 64+64 = 128) x
+  have half (y : Fin 64 → α) := splitDigits (by omega : (lo+(hi-lo))+(64-hi) = 64) y
+  obtain ⟨ah,u,l⟩ := half left
+  obtain ⟨bd,v,r⟩ := half right
+  obtain ⟨a,h,l'⟩ := splitDigits rfl ah
+  obtain ⟨b,d,r'⟩ := splitDigits rfl bd
+  exact ⟨a,b,h,d,u,v,by simp only [halves,l,r,l',r',List.append_assoc]⟩
+
+open FlatCoordinateLayout in
+private theorem index_ofFn {M W m n : ℕ} [NeZero M] (x : Fin m → ZMod M) (y : Fin n → ZMod M)
+    (eqn : List.ofFn x = List.ofFn y) (j : Fin W) : (index x j).val = (index y j).val := by
+  have size := congrArg List.length eqn
+  simp only [List.length_ofFn] at size
+  subst n
+  rw [List.ofFn_injective eqn]
+
+open RecursiveInterchangeLayout (Descriptor volume)
+
+/-- Address a packed child by its physical tape volume. -/
+noncomputable def packedChildPosition {V : ℕ} (child : Descriptor) (size : volume prime child = V) :
+    Fin (volume prime child) ≃ Fin V :=
+  (CopyChildLayout.packActive child).trans (finCongr (by
+    have card := Fintype.card_congr (CopyChildLayout.packActive child)
+    simp only [Fintype.card_fin] at card
+    exact card.symm.trans size))
+
 variable [M8.Machine.Net] {P U : Type}
 local notation "N" => rowSwapBlock.tapes
 local notation "Q" => rowSwapBlock.states
+
+/-- Unpack one returned row on a placed record bank.  The returned word is
+read at the forward packing offset; every tape outside the bank is preserved. -/
+theorem intervalReturn_exec {T capacity : ℕ} (fitsStates : Q ≤ capacity)
+    (ports : Fin (N+35) ↪ Fin T) (body : P → Pr P T capacity prime U)
+    (lo hi : ℕ) (ordered : lo ≤ hi) (fits : hi ≤ 64) :
+    ∃ setup swaps : ℕ, ∀ w W, 0 < W →
+      let M := prime^(w+1)
+      let is := intervalPackSchedule lo (hi-lo) (64-hi+lo)
+      let bank := ((Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)).trans ports
+      let clean := fun D : Stacks T prime => ∀ k : Fin (N+35), 35 ≤ k.val → D.L (ports k) = [] ∧ D.R (ports k) = []
+      ∀ (u : HS T capacity prime U) (S : Stacks T prime) record dest q
+        (output : Fin (volume prime (phaseIntervalChild lo hi (w+1) W 64)) → ZMod 2),
+      let size := intervalChild_volume ordered fits (w+1) W
+      let position := packedChildPosition _ size
+      let ready := RecordReady (b := prime) (w := w) (W := W) (d := 128) bank M.size W.size
+        record SparseRoleCircuit.encode (fun _ => blank) dest 0 q
+      ready (output ∘ position.symm) S → clean S → ∃ z F n, z.user = u.user ∧
+        n ≤ 1+(setup+swaps*swapVolumeRate w)*(M^128*W) ∧
+        Exec body (statePlacedNormalized ports fitsStates swapStates_pos Empty.elim (packSchedule 128 is.reverse))
+          (mk u S) n (mk z F) ∧ ready (fun i => output (i.cast size.symm)) F ∧ clean F ∧
+        ∀ j, (∀ i, ports i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  let is := intervalPackSchedule lo (hi-lo) (64-hi+lo)
+  have inside (i) (used : i ∈ is.reverse) : i+1 < 128 := by
+    have := intervalPackSchedule_inside (List.mem_reverse.mp used)
+    omega
+  obtain ⟨setup,swaps,price⟩ := packTime_le (P := Empty) (U := U) Empty.elim 128 is (by decide)
+  refine ⟨setup,swaps,?_⟩
+  intro w W hW M schedule bank clean u S record dest q output size position ready stored free
+  obtain ⟨z,F,n,user,cost,exec,⟨word,out,read⟩,clear,frame⟩ := placedPackSchedule_exec fitsStates ports
+    is.reverse inside body u S record dest q hW (output ∘ position.symm) id ⟨_,stored,fun _ _ => rfl⟩ free
+  refine ⟨z,F,n,user,?_,exec,?_,clear,frame⟩
+  · exact cost.trans (Nat.add_le_add_left (by simpa only [List.map_reverse,List.sum_reverse] using price w W hW) 1)
+  · suffices eq : word = fun i => output (i.cast size.symm) from eq ▸ out
+    funext i
+    obtain ⟨⟨digits,j⟩,rfl⟩ := finProdFinEquiv.surjective i
+    obtain ⟨x,rfl⟩ := (FlatCoordinateLayout.rankEquiv : (Fin 128 → ZMod M) ≃ _).surjective digits
+    obtain ⟨a,b,h,d,u,v,layout⟩ := intervalDigits ordered fits x
+    have entry : (FlatCoordinateLayout.index x j).cast (intervalChild_volume ordered fits (w+1) W).symm =
+        RecursiveInterchangeScaling.index (intervalAddress 64 a b h d u v j) := by
+      apply Fin.ext
+      rw [Fin.val_cast,intervalAddress_index]
+      apply index_ofFn
+      change List.ofFn x = List.ofFn (Fin.append (Fin.append (Fin.append a h) u) (Fin.append (Fin.append b d) v))
+      simpa only [List.ofFn_fin_append,List.append_assoc] using layout
+    let mid := List.ofFn u ++ List.ofFn b
+    have order := intervalPackSchedule_fields x (List.ofFn a) (List.ofFn h) mid (List.ofFn d)
+      (List.ofFn v) (by simp) (by simpa only [mid,List.append_assoc] using layout)
+    have moved : FlatCoordinateLayout.index (is.foldl adjacentFields x) j =
+        position ((FlatCoordinateLayout.index x j).cast size.symm) := by
+      apply Fin.ext
+      change _ = (CopyChildLayout.packActive _ ((FlatCoordinateLayout.index x j).cast _)).val
+      rw [entry]
+      apply intervalPacked_offset a b h d u v j
+      simpa only [mid,List.length_append,List.length_ofFn,is,List.append_assoc] using order
+    change word (FlatCoordinateLayout.index x j) = output ((FlatCoordinateLayout.index x j).cast size.symm)
+    simpa only [id_eq,reverse_adjacentFields,Function.comp_apply,moved,Equiv.symm_apply_apply]
+      using read (is.foldl adjacentFields x) j
 
 /-- Run a child on the stable active-first row, charging the incoming and
 outgoing exchanges and restoring the original record layout. -/
