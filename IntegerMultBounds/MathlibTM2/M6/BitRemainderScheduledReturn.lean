@@ -115,8 +115,9 @@ theorem ScannerReady.after_entry {V size back : ℕ}
   exact frame (old j) (fun _ _ _ => miss _) (fun _ => miss _) (fun _ => miss _)
     (fun _ => miss _) (fun _ => miss _)
 
-/-- The scheduled parent and private return share a scan rate for every width and block count. -/
-theorem scheduledReturn_exec [M8.Machine.Net] {common work : ℕ} {U : Type}
+/-- The native scanner accepts an arbitrary represented owner word, with one
+independent payload per directory row. -/
+theorem scheduledFullRowScan_exec [M8.Machine.Net] {common work : ℕ} {U : Type}
     (interval : ℕ × ℕ) (member : interval ∈ BitHosting.remainderIntervals)
     (space : 58 ≤ common+24+31+work) (pool : (RingFormula.conjugationDepth 64+1)*13 ≤ work)
     (room : Record.size 127+(rowSwapBlock.tapes+35+2) ≤ (common+24+31+work)+1)
@@ -138,12 +139,19 @@ theorem scheduledReturn_exec [M8.Machine.Net] {common work : ℕ} {U : Type}
       let base := Fin.castAddEmb back.tapes (n := size+stage.tapes)
       let T := size+stage.tapes+back.tapes
       let Q := max (max stage.states columnCapacity) back.states
-      let host := T+99
-      let program := Pr Unit host Q prime U
       let ready := ScannerReady stage size back.tapes (Fin.addCases
         (fun i : Fin (66+(common+24+31+(work+extra)+1)) => entryWords i.val) (fun _ : Fin 5 => []))
-      ∃ body : Unit → program, ∃ code : program,
-        ScheduledReturn (w := w) (B := B) (W := W) interval parent c checked (base (chart (stage.slots 0))) ready body code rate := by
+      let owner := base (chart (stage.slots 0))
+      let V := LabelMask.records (role layout 142080)*(M^128*(layout.between*layout.afterD))
+      ∃ body : Unit → Pr Unit T Q prime U, ∃ code, ∀ (x : Fin 1 → Fin V → ZMod 2) u S,
+        ready S → RepT (phaseOwners x) (fun _ => S.L owner) (fun _ => S.R owner) →
+        ∃ v F t, ∃ y : Fin 1 → Fin V → ZMod 2, Exec body code (mk u S) t (mk v F) ∧ v.user = u.user ∧
+          (t : ℝ) ≤ (packedChartRate (0 : Fin 1) c checked false layout.width +
+          packedChartRate (0 : Fin 1) c checked true layout.width + (366+16*64*64+19*64+344) +
+          rate*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau + 64*(8*64+21+28+(prime.size : ℝ)))*
+          volume prime (role layout 142080) + 13 ∧
+          RepT (phaseOwners y) (fun _ => F.L owner) (fun _ => F.R owner) ∧
+          OriginalPortReads _ (layout.between*layout.afterD) (layout.beforeRows*1*B) interval parent c (x 0) (y 0) := by
   obtain ⟨extra,localBody,C,overhead,scheduled⟩ := stagedOrdinaryParent_exec (U := U) interval member space pool room fits pairRoom
   let K := common+24+31+(work+extra)
   have enlarged : common+24+31+work ≤ K := by dsimp [K]; omega
@@ -174,28 +182,155 @@ theorem scheduledReturn_exec [M8.Machine.Net] {common work : ℕ} {U : Type}
   extract_lets at trip
   obtain ⟨stage,back,forward,reverse,execute⟩ := trip (0 : Fin 1) c checked
   refine ⟨stage,back,forward.privateSeed,?_⟩
-  intro chart base T Q host program ready
-  let old := Fin.castAddEmb 99 (n := T)
-  let slots := aroundScanner (base (chart (stage.slots 0)))
+  intro chart base T Q ready owner V
   extract_lets share chartBank owners ret nativeBase cap fitsState installed enter prior leave at execute
   let nativeBody := fun f => embProg nativeBase id (installed f)
   let scan := (embProg nativeBase id prior).seq leave
+  refine ⟨nativeBody,scan,?_⟩
+  intro x u S prepared live
+  obtain ⟨priv,metadata,empty⟩ := prepared
+  obtain ⟨v,F,t,y,paid,exec,user,_,_,rep,_,_,reads⟩ := execute x S u (by
+    intro j z
+    obtain rfl : j = 0 := Subsingleton.elim _ _
+    exact live 0 z) priv metadata empty
+  refine ⟨v,F,t,y,exec,user,paid,?_,reads⟩
+  intro j z
+  obtain rfl : j = 0 := Subsingleton.elim _ _
+  exact rep 0 z
+
+/-- Run the native scanner and copy its represented output into the inverse
+transpose on eight disjoint tapes. The resulting parent-order word is exact. -/
+theorem scheduledFullRowReturn_exec [M8.Machine.Net] {common work : ℕ} {U : Type}
+    (interval : ℕ × ℕ) (member : interval ∈ BitHosting.remainderIntervals)
+    (space : 58 ≤ common+24+31+work) (pool : (RingFormula.conjugationDepth 64+1)*13 ≤ work)
+    (room : Record.size 127+(rowSwapBlock.tapes+35+2) ≤ (common+24+31+work)+1)
+    (fits : (36+2*64+1+(RingFormula.conjugationDepth 64+1)*13)+3 ≤ (common+24+31+work)+1)
+    (pairRoom : 64*64+64*64 ≤ common+24+31+work) :
+    ∃ extra : ℕ, ∃ rate : ℝ, ∀ (w B W : ℕ), 0 < B → 0 < W →
+      let layout := stagedScannerLayout w B W
+      ∀ root (parent : Fin 64 → ZMod (prime^(w+1))), (∀ i, IsUnit (parent i)) →
+        (root = true → ∀ i, parent i = 1) → ∀ (prefixWidth : ℕ) (prefixes : ℕ → List (Fin (prime+4))),
+        (∀ i < B, (prefixes i).length = prefixWidth) → prefixWidth ≤ prime^layout.width →
+        ∀ (c : Certificates.PR589.Nine.PortCertificate) (checked : c.Checked),
+    let M := prime^(w+1)
+    let size := (66+(common+24+31+(work+extra)+1))+5
+    let entryWords := ordinaryEntryWords (layout.between*layout.afterD) layout.beforeRows 1 layout.beforeH root parent prefixWidth
+      ((List.range (layout.beforeRows*1*B)).flatMap prefixes)
+    ∃ stage back : SharedBankStage.Stage _ 1 prime (phaseOwners (N := LabelMask.records (role layout 142080)*(M^128*(layout.between*layout.afterD)))),
+      (∃ seed, ChartPrivateReady stage seed) ∧
+      let chart := Fin.natAddEmb size (m := stage.tapes)
+      let base := Fin.castAddEmb back.tapes (n := size+stage.tapes)
+      let T := size+stage.tapes+back.tapes
+      let Q := max (max stage.states columnCapacity) back.states
+      let ready := ScannerReady stage size back.tapes (Fin.addCases
+        (fun i : Fin (66+(common+24+31+(work+extra)+1)) => entryWords i.val) (fun _ : Fin 5 => []))
+      let owner := base (chart (stage.slots 0))
+      let V := LabelMask.records (role layout 142080)*(M^128*(layout.between*layout.afterD))
+      let old := Fin.castAddEmb 8 (n := T)
+      let bank := Fin.natAddEmb T (m := 8)
+      let N := M^(64*64)
+      let A := M^128
+      ∃ body : Unit → Pr Unit (T+8) Q prime U, ∃ code, ∀ (x : Fin 1 → Fin V → ZMod 2) u S (record rowWidth : List (Fin (prime+4))),
+        ready (embStk old S) → RepT (phaseOwners x) (fun _ => S.L (old owner)) (fun _ => S.R (old owner)) →
+        record.length = W → S.L (bank 1) = [] →
+        embStk bank S = transposeStacks (embStk bank S) [] [] (List.replicate A record.reverse).flatten record rowWidth →
+        ∃ v F t, ∃ y : Fin (A*((B*N)*W)) → ZMod 2, Exec body code (mk u S) t (mk v F) ∧ v.user = u.user ∧
+          (t : ℝ) ≤ (packedChartRate (0 : Fin 1) c checked false layout.width +
+          packedChartRate (0 : Fin 1) c checked true layout.width + (366+16*64*64+19*64+344) +
+          rate*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau + 64*(8*64+21+28+(prime.size : ℝ)))*
+          volume prime (role layout 142080) + 13 + (8*((B*N)*(A*W))+10+(A*(compactPassCost (B*N) W A+2)+2) : ℕ) ∧
+          F.L (bank 6) = S.L (bank 6) ∧ F.R (bank 6) = List.ofFn (fun j => SparseRoleCircuit.encode (y j)) ∧
+          ∃ input output, List.ofFn input = List.ofFn (x 0) ∧ OriginalPortReads (B*N) W B interval parent c input output ∧
+            ∀ a (b : Fin B) (g : Fin N) k, y (finProdFinEquiv (a,finProdFinEquiv (finProdFinEquiv (b,g),k))) =
+              output (finProdFinEquiv (finProdFinEquiv (b,g),finProdFinEquiv (a,k))) := by
+  obtain ⟨extra,rate,build⟩ := scheduledFullRowScan_exec (U := U) interval member space pool room fits pairRoom
+  refine ⟨extra,rate,?_⟩
+  intro w B W hb hw layout root parent units unitRoot prefixWidth prefixes sizes widthFits c checked M size entryWords
+  obtain ⟨stage,back,seed,body,scan,execute⟩ := build w B W hb hw root parent units unitRoot prefixWidth prefixes sizes widthFits c checked
+  refine ⟨stage,back,seed,?_⟩
+  intro chart base T Q ready owner V old bank N A
+  let host := fun f => embProg old id (body f)
+  have apart j (i : Fin T) : old i ≠ bank j := by
+    intro eq
+    have bad := congrArg Fin.val eq
+    change i.val = T+j.val at bad
+    omega
+  obtain ⟨ret,restore⟩ := returnLabeledRows_exec host bank (old owner) (fun j => apart j owner)
+  refine ⟨host,(embProg old id scan).seq ret,?_⟩
+  intro x u S record rowWidth prepared live len scratch regs
+  obtain ⟨v,D,t,out,ran,user,bill,represented,reads⟩ := execute x (embDn old u) (embStk old S) prepared live
+  obtain ⟨q,E,placed,_,same,view,off⟩ := exec_emb old.injective (body' := host) (ι := id) (fun _ => rfl) ran u rfl S rfl
+  obtain ⟨input,output,src,dst,action⟩ := stagedScanner_reads (w := w) (B := B) (W := W) (x 0) (out 0) reads
+  have outputWord : WordAtZero output (E.L (old owner)) (E.R (old owner)) := by
+    intro j
+    have h := (represented 0 j).symm
+    rw [← view] at h
+    have eq := congrArg (List.map (SparseRoleCircuit.encode (a := prime))) dst
+    simp only [List.map_ofFn] at eq
+    simpa only [phaseOwners,sub_zero,embStk,Function.comp_apply,Function.comp_def] using
+      (by rw [show (List.ofFn fun i => SparseRoleCircuit.encode (a := prime) (output i)) = _ from eq]; exact h :
+        readAt blank (E.L (old owner)) (E.R (old owner)) (j-0) = putWord (fun _ => blank) 0 (List.ofFn fun i => SparseRoleCircuit.encode (output i)) j)
+  have keep i := off (bank i) (apart i)
+  obtain ⟨z,G,k,y,returned,paid,zu,left,right,cells,_⟩ := restore M B N W
+    (Nat.mul_pos hb (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _)) hw output q E record rowWidth
+    outputWord len ((keep 1).1.trans scratch) (by
+      refine Stacks.ext rfl rfl rfl ?_
+      funext j
+      exact (keep j).2.trans (congrArg (fun D : Stacks 8 prime => D.R j) regs))
+  refine ⟨z,G,t+k,y,Exec.seq placed returned,zu.trans (same.trans user),?_,left.trans (keep 6).1,right,input,output,src,action,cells⟩
+  rw [Nat.cast_add]
+  exact add_le_add bill (by exact_mod_cast paid)
+
+/-- The scheduled parent and private return share a scan rate for every width and block count. -/
+theorem scheduledReturn_exec [M8.Machine.Net] {common work : ℕ} {U : Type}
+    (interval : ℕ × ℕ) (member : interval ∈ BitHosting.remainderIntervals)
+    (space : 58 ≤ common+24+31+work) (pool : (RingFormula.conjugationDepth 64+1)*13 ≤ work)
+    (room : Record.size 127+(rowSwapBlock.tapes+35+2) ≤ (common+24+31+work)+1)
+    (fits : (36+2*64+1+(RingFormula.conjugationDepth 64+1)*13)+3 ≤ (common+24+31+work)+1)
+    (pairRoom : 64*64+64*64 ≤ common+24+31+work) :
+    ∃ extra : ℕ, ∃ rate : ℝ, ∀ (w B W : ℕ), 0 < B → 0 < W →
+      let layout := stagedScannerLayout w B W
+      ∀ root (parent : Fin 64 → ZMod (prime^(w+1))), (∀ i, IsUnit (parent i)) →
+        (root = true → ∀ i, parent i = 1) → ∀ (prefixWidth : ℕ) (prefixes : ℕ → List (Fin (prime+4))),
+        (∀ i < B, (prefixes i).length = prefixWidth) → prefixWidth ≤ prime^layout.width →
+        ∀ (c : Certificates.PR589.Nine.PortCertificate) (checked : c.Checked),
+    let M := prime^(w+1)
+    let size := (66+(common+24+31+(work+extra)+1))+5
+    let entryWords := ordinaryEntryWords (layout.between*layout.afterD) layout.beforeRows 1 layout.beforeH root parent prefixWidth
+      ((List.range (layout.beforeRows*1*B)).flatMap prefixes)
+    ∃ stage back : SharedBankStage.Stage _ 1 prime (phaseOwners (N := LabelMask.records (role layout 142080)*(M^128*(layout.between*layout.afterD)))),
+      (∃ seed, ChartPrivateReady stage seed) ∧
+      let chart := Fin.natAddEmb size (m := stage.tapes)
+      let base := Fin.castAddEmb back.tapes (n := size+stage.tapes)
+      let T := size+stage.tapes+back.tapes
+      let Q := max (max stage.states columnCapacity) back.states
+      let host := T+99
+      let program := Pr Unit host Q prime U
+      let ready := ScannerReady stage size back.tapes (Fin.addCases
+        (fun i : Fin (66+(common+24+31+(work+extra)+1)) => entryWords i.val) (fun _ : Fin 5 => []))
+      ∃ body : Unit → program, ∃ code : program,
+        ScheduledReturn (w := w) (B := B) (W := W) interval parent c checked (base (chart (stage.slots 0))) ready body code rate := by
+  obtain ⟨extra,rate,build⟩ := scheduledFullRowScan_exec (U := U) interval member space pool room fits pairRoom
+  refine ⟨extra,rate,?_⟩
+  intro w B W hb hw layout root parent units unitRoot prefixWidth prefixes sizes widthFits c checked M size entryWords
+  obtain ⟨stage,back,seed,nativeBody,scan,execute⟩ := build w B W hb hw root parent units unitRoot
+    prefixWidth prefixes sizes widthFits c checked
+  refine ⟨stage,back,seed,?_⟩
+  intro chart base T Q host program ready
+  let old := Fin.castAddEmb 99 (n := T)
+  let slots := aroundScanner (base (chart (stage.slots 0)))
+  have capacity : 235 ≤ columnCapacity := (by decide : 235 ≤ 11192).trans remainderStates_fit
   obtain ⟨code,restore⟩ := scanAndLeave_exec (T := T) (Q := Q) nativeBody (capacity.trans ((le_max_right ..).trans (le_max_left ..))) scan (base (chart (stage.slots 0)))
   refine ⟨fun f => embProg old id (nativeBody f),code,?_⟩
   unfold ScheduledReturn
   intro _ _ _ _ _ _ _ x i u S raw prepared entry
-  obtain ⟨privateReady,metadata,empty⟩ := prepared
   apply restore hb hw x i u S _ checked units entry
   intro words represented
-  have rep : RepT (phaseOwners words) (embStk stage.slots (embStk (chart.trans base) raw)).L
-      (embStk stage.slots (embStk (chart.trans base) raw)).R := by
+  obtain ⟨v,F,t,final,run,user,paid,result,reads⟩ := execute words (embDn old u) raw prepared (by
     intro j z
-    have h := represented 0 z
-    have eq : j = 0 := Subsingleton.elim _ _
-    subst j
+    obtain rfl : j = 0 := Subsingleton.elim _ _
     change (phaseOwners words).tape 0 z = readAt blank (S.L (old (base (chart (stage.slots 0))))) (S.R (old (base (chart (stage.slots 0))))) _
-    simpa only [slots,old,Fin.castAddEmb_apply,aroundScanner_owner] using h
-  obtain ⟨v,F,t,final,paid,run,user,_,_,result,_,_,reads⟩ := execute words raw (embDn old u) rep privateReady metadata empty
+    simpa only [slots,old,Fin.castAddEmb_apply,aroundScanner_owner] using represented 0 z)
   refine ⟨v,F,t,final,run,⟨user,?_⟩,?_,reads⟩
   · exact paid
   intro j z
