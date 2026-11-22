@@ -494,21 +494,30 @@ theorem scalarOwnerBlock {k : ℕ} (owner : Fin 661 ↪ Fin k) :
     obtain ⟨z,F,m,exec,cost,same,out⟩ := rest (effect x g) v D (eq ▸ ready.1)
     exact ⟨z,F,_,Exec.seq run exec,by simp only [List.map_cons,List.sum_cons]; omega,same.trans user,by simpa only [List.foldl_cons] using out⟩
 
+/-- The private tapes of an occurrence still contain its initial stock,
+outside the shared owner and cutoff bank. -/
+def PrivateTapes {k T : ℕ} (owner : Fin k ↪ Fin T) (seed S : Stacks T prime) : Prop :=
+  ∀ j, (∀ i, owner i ≠ j) → S.L j = seed.L j ∧ S.R j = seed.R j
+
+theorem PrivateTapes.moveStock {k T K : ℕ} {owner : Fin k ↪ Fin T}
+    (archive : Fin (80+273) ↪ Fin T) (ports : Fin K ↪ Fin T)
+    (archiveFree : ∀ a j, owner j ≠ archive a) (portsFree : ∀ i : Fin K, i.val ≠ 24 → ∀ j, owner j ≠ ports i)
+    {seed S : Stacks T prime} (ready : PrivateTapes owner seed S) : MovePrivateStock archive ports seed S :=
+  ⟨fun a => ready _ (archiveFree a),fun i hi => ready _ (portsFree i hi)⟩
+
 /-- Run a scalar gate block on the shared owners before a MOVE. The MOVE
 sees the gate output and the original private seed. -/
-theorem moveAfterOwnerGates {α P U : Type} {T K owners Q : ℕ}
+theorem moveAfterOwnerGates {α P U : Type} {T owners Q : ℕ}
     (body : P → Pr P T Q prime U) (owner : Fin owners ↪ Fin T)
-    (archive : Fin (80+273) ↪ Fin T) (ports : Fin K ↪ Fin T)
-    (archiveFree : ∀ k j, owner j ≠ archive k) (privateFree : ∀ k : Fin K, k.val ≠ 24 → ∀ j, owner j ≠ ports k)
     (gates : Pr Empty owners Q prime U) (move : Pr P T Q prime U)
     (rep : α → Stacks owners prime → Prop) (gateEffect moveEffect : α → α)
     (gateBudget moveBudget : ℕ) (seed : Stacks T prime)
     (gateRun : ∀ x u S, rep x S → ∃ z F n, Exec Empty.elim gates (mk u S) n (mk z F) ∧
       n ≤ gateBudget ∧ z.user = u.user ∧ rep (gateEffect x) F)
-    (moveRun : ∀ x u S, rep x (embStk owner S) → MovePrivateStock archive ports seed S →
+    (moveRun : ∀ x u S, rep x (embStk owner S) → PrivateTapes owner seed S →
       ∃ z F n, Exec body move (mk u S) n (mk z F) ∧ n ≤ moveBudget ∧
         z.user = u.user ∧ rep (moveEffect x) (embStk owner F)) :
-    ∀ x u S, rep x (embStk owner S) → MovePrivateStock archive ports seed S →
+    ∀ x u S, rep x (embStk owner S) → PrivateTapes owner seed S →
       ∃ z F n, Exec body ((embProg owner Empty.elim gates).seq move) (mk u S) n (mk z F) ∧
         n ≤ gateBudget+moveBudget ∧ z.user = u.user ∧ rep (moveEffect (gateEffect x)) (embStk owner F) := by
   intro x u S live stock
@@ -516,20 +525,17 @@ theorem moveAfterOwnerGates {α P U : Type} {T K owners Q : ℕ}
   obtain ⟨q,G,placed,_,same,view,off⟩ := exec_emb (body' := body) (ι := Empty.elim) owner.injective
     (fun f => nomatch f) run u rfl S rfl
   obtain ⟨z,F,m,exec,cost,final,out⟩ := moveRun (gateEffect x) q G (view ▸ next)
-    (stock.frame (fun j => ∀ k, owner k ≠ j) off archiveFree privateFree)
+    (fun j outside => ⟨(off j outside).1.trans (stock j outside).1, (off j outside).2.trans (stock j outside).2⟩)
   exact ⟨z,F,_,Exec.seq placed exec,Nat.add_le_add paid cost,final.trans (same.trans user),out⟩
 
 /-- Allocate the MOVE occurrences together. Their owner tapes coincide;
 all not-yet-run occurrences retain their seed across an embedded call. -/
-theorem allocateMoveStock {I : Type} [Fintype I] {owners K : ℕ} (tapes : I → ℕ)
-    (owner : ∀ i, Fin owners ↪ Fin (tapes i)) (archive : ∀ i, Fin (80+273) ↪ Fin (tapes i))
-    (ports : ∀ i, Fin K ↪ Fin (tapes i))
-    (archiveFree : ∀ i k j, owner i j ≠ archive i k)
-    (privateFree : ∀ i (k : Fin K), k.val ≠ 24 → ∀ j, owner i j ≠ ports i k) :
+theorem allocateMoveStock {I : Type} [Fintype I] {owners : ℕ} (tapes : I → ℕ)
+    (owner : ∀ i, Fin owners ↪ Fin (tapes i)) :
     ∃ (T : ℕ) (fan : Fin owners ↪ Fin T) (bank : ∀ i, Fin (tapes i) ↪ Fin T),
       (∀ i j, bank i (owner i j) = fan j) ∧
       ∀ seed : ∀ i, Stacks (tapes i) prime,
-      let ready := fun i (S : Stacks T prime) => MovePrivateStock (archive i) (ports i) (seed i) (embStk (bank i) S)
+      let ready := fun i (S : Stacks T prime) => PrivateTapes (owner i) (seed i) (embStk (bank i) S)
       (∀ shared, ∃ S, embStk fan S = shared ∧ ∀ i, ready i S) ∧
       ∀ {P U : Type} {Q : ℕ} (body : ∀ i, P → Pr P (tapes i) Q prime U) i code u S z F n,
         Exec (body i) code (mk (embDn (bank i) u) (embStk (bank i) S)) n (mk z F) →
@@ -542,23 +548,20 @@ theorem allocateMoveStock {I : Type} [Fintype I] {owners K : ℕ} (tapes : I →
   constructor
   · intro X
     obtain ⟨S,view,loaded⟩ := join X seed
-    exact ⟨S,view,fun i => ⟨fun k => loaded i _ (archiveFree i k),fun k hk => loaded i _ (privateFree i k hk)⟩⟩
+    exact ⟨S,view,loaded⟩
   · intro P U Q body i code u S z F n run host
     obtain ⟨v,G,exec,_,user,view,off⟩ := exec_emb (body' := host) (ι := Prod.mk i) (bank i).injective
       (fun _ => rfl) run u rfl S rfl
     refine ⟨v,G,exec,user,view,?_⟩
     intro j ne stock
     have keep (k : Fin (tapes j)) (outside : ∀ h, owner j h ≠ k) := off (bank j k) ((apart j k outside).2 i ne.symm)
-    exact stock.frame (fun k => ∀ h, owner j h ≠ k) keep (archiveFree j) (privateFree j)
+    exact fun k outside => ⟨(keep k outside).1.trans (stock k outside).1, (keep k outside).2.trans (stock k outside).2⟩
 
 /-- Sequence allocated MOVE calls in the supplied order. Only occurrences
 remaining in the list need their private seed. The shared owner state follows
 the same left fold, and each local execution budget is charged once. -/
-theorem moveStockSequence {I α P U : Type} [Fintype I] {owners K Q : ℕ} (tapes : I → ℕ)
-    (owner : ∀ i, Fin owners ↪ Fin (tapes i)) (archive : ∀ i, Fin (80+273) ↪ Fin (tapes i))
-    (ports : ∀ i, Fin K ↪ Fin (tapes i))
-    (archiveFree : ∀ i k j, owner i j ≠ archive i k)
-    (privateFree : ∀ i (k : Fin K), k.val ≠ 24 → ∀ j, owner i j ≠ ports i k)
+theorem moveStockSequence {I α P U : Type} [Fintype I] {owners Q : ℕ} (tapes : I → ℕ)
+    (owner : ∀ i, Fin owners ↪ Fin (tapes i))
     (body : ∀ i, P → Pr P (tapes i) Q prime U) (code : ∀ i, Pr P (tapes i) Q prime U)
     (gates : I → Pr Empty owners Q prime U) (lastGates : Pr Empty owners Q prime U) (order : List I) (distinct : order.Nodup) :
     ∃ (T : ℕ) (fan : Fin owners ↪ Fin T) (host : I × P → Pr (I × P) T Q prime U)
@@ -569,13 +572,13 @@ theorem moveStockSequence {I α P U : Type} [Fintype I] {owners K Q : ℕ} (tape
       n ≤ lastBudget ∧ z.user = u.user ∧ rep (lastStep x) F) →
     (∀ i ∈ order, ∀ x u S, rep x S → ∃ z F n, Exec Empty.elim (gates i) (mk u S) n (mk z F) ∧
       n ≤ gateBudget i ∧ z.user = u.user ∧ rep (gateStep x i) F) →
-    (∀ i ∈ order, ∀ x u S, rep x (embStk (owner i) S) → MovePrivateStock (archive i) (ports i) (seed i) S →
+    (∀ i ∈ order, ∀ x u S, rep x (embStk (owner i) S) → PrivateTapes (owner i) (seed i) S →
       ∃ z F n, Exec (body i) (code i) (mk u S) n (mk z F) ∧ n ≤ budget i ∧ z.user = u.user ∧
         rep (step x i) (embStk (owner i) F)) →
     ∀ shared, ∃ S, embStk fan S = shared ∧ ∀ x u, rep x shared →
       ∃ z F n, Exec host program (mk u S) n (mk z F) ∧ n ≤ (order.map fun i => gateBudget i+budget i).sum+lastBudget ∧
         z.user = u.user ∧ rep (lastStep (order.foldl (fun x i => step (gateStep x i) i) x)) (embStk fan F) := by
-  obtain ⟨T,fan,bank,shared,allocate⟩ := allocateMoveStock tapes owner archive ports archiveFree privateFree
+  obtain ⟨T,fan,bank,shared,allocate⟩ := allocateMoveStock tapes owner
   let host := fun f : I × P => embProg (bank f.1) (Prod.mk f.1) (body f.1 f.2)
   let block := fun i => (embProg (owner i) Empty.elim (gates i)).seq (code i)
   let seq := fun (is : List I) => is.foldr (fun i tail => (embProg (bank i) (Prod.mk i) (block i)).seq tail) (embProg fan Empty.elim lastGates)
@@ -598,8 +601,7 @@ theorem moveStockSequence {I α P U : Type} [Fintype I] {owners K Q : ℕ} (tape
     exact ⟨v,G,n,placed,by simpa using cost,same.trans user,view ▸ out⟩
   | cons i rest ih =>
     obtain ⟨fresh,nodup⟩ := List.nodup_cons.mp distinct
-    obtain ⟨z,F,n,run,cost,user,next⟩ := moveAfterOwnerGates (body i) (owner i) (archive i) (ports i)
-      (archiveFree i) (privateFree i) (gates i) (code i) rep (fun x => gateStep x i) (fun x => step x i)
+    obtain ⟨z,F,n,run,cost,user,next⟩ := moveAfterOwnerGates (body i) (owner i) (gates i) (code i) rep (fun x => gateStep x i) (fun x => step x i)
       (gateBudget i) (budget i) (seed i) (gateRun i (by simp)) (localRun i (by simp)) x (embDn (bank i) u) (embStk (bank i) S)
       (by rwa [project]) (ready i (by simp))
     obtain ⟨v,D,placed,same,returned,kept⟩ := place body i (block i) u S z F n run
@@ -611,46 +613,63 @@ theorem moveStockSequence {I α P U : Type} [Fintype I] {owners K Q : ℕ} (tape
 open Certificates.PR589 in
 /-- Execute PR589 scalar blocks interleaved with MOVE occurrences, including
 the scalar suffix after the last MOVE. Only the MOVE executions are premises. -/
-theorem scalarMoveSequence {P U : Type} {k K : ℕ} (layout : Fin 661 ↪ Fin k)
+theorem scalarMoveSequence {P U : Type} {k : ℕ} (layout : Fin 661 ↪ Fin k)
     (gs : List RawGate) (current : ℕ → ℕ) (allowed : ∀ g ∈ gs, g ∈ program)
-    (tapes : Fin (phaseMoveBlocks gs current).1.length → ℕ) (owner : ∀ i, Fin (k+2) ↪ Fin (tapes i)) (archive : ∀ i, Fin (80+273) ↪ Fin (tapes i))
-    (ports : ∀ i, Fin K ↪ Fin (tapes i)) (archiveFree : ∀ i a j, owner i j ≠ archive i a)
-    (privateFree : ∀ i (a : Fin K), a.val ≠ 24 → ∀ j, owner i j ≠ ports i a) :
+    (tapes : Fin (phaseMoveBlocks gs current).1.length → ℕ) (owner : ∀ i, Fin (k+2+1) ↪ Fin (tapes i)) :
     let schedule := phaseMoveBlocks gs current
     let I := Fin schedule.1.length
     let blocks := fun i : I => schedule.1[i].1
     let suffix := schedule.2
     let order := List.finRange schedule.1.length
     ∃ states, ∀ {Q V : ℕ}, states ≤ Q → 0 < V →
-    let rep := HelperFan (V := V) (Function.Embedding.refl (Fin (k+2)))
+    let dataBank := Fin.castAddEmb 1 (n := k+2)
+    let rep := fun word (x : Fin k → Fin V → ZMod 2) (S : Stacks (k+2+1) prime) =>
+      HelperFan dataBank x S ∧ S.R (Fin.last (k+2)) = word
     ∃ effect : (Fin k → Fin V → ZMod 2) → RawGate → Fin k → Fin V → ZMod 2,
     (∀ x g j h, effect x g (layout j) h = g.toCircuit.run (Copy.extendStored (fun j => x (layout j) h)) j.val) ∧
     (∀ x g j, (∀ r, layout r ≠ j) → effect x g j = x j) ∧
     ∀ (body : ∀ i, P → Pr P (tapes i) Q prime U) (move : ∀ i, Pr P (tapes i) Q prime U),
-    ∃ T fan host code, ∀ (step : (Fin k → Fin V → ZMod 2) → I → Fin k → Fin V → ZMod 2) (budget : I → ℕ) (seed : ∀ i, Stacks (tapes i) prime),
-      (∀ i, ∀ x u S, rep x (embStk (owner i) S) → MovePrivateStock (archive i) (ports i) (seed i) S →
-        ∃ z F n, Exec (body i) (move i) (mk u S) n (mk z F) ∧ n ≤ budget i ∧ z.user = u.user ∧ rep (step x i) (embStk (owner i) F)) →
+    ∃ T fan host code, ∀ word (step : (Fin k → Fin V → ZMod 2) → I → Fin k → Fin V → ZMod 2) (budget : I → ℕ) (seed : ∀ i, Stacks (tapes i) prime),
+      (∀ i, ∀ x u S, rep word x (embStk (owner i) S) → PrivateTapes (owner i) (seed i) S →
+        ∃ z F n, Exec (body i) (move i) (mk u S) n (mk z F) ∧ n ≤ budget i ∧ z.user = u.user ∧ rep word (step x i) (embStk (owner i) F)) →
       let bill := fun gs : List RawGate => (gs.map fun g => 76*g.toCircuit.terms.length*V*(k+7)+6).sum+1
-      ∀ shared, ∃ S : Stacks T prime, embStk fan S = shared ∧ ∀ x u, rep x shared →
+      ∀ shared, ∃ S : Stacks T prime, embStk fan S = shared ∧ ∀ x u, rep word x shared →
         ∃ z F n, Exec (host : I × P → Pr (I × P) T Q prime U) code (mk u S) n (mk z F) ∧
           n ≤ (order.map fun i => bill (blocks i)+budget i).sum+bill suffix ∧ z.user = u.user ∧
-          rep (suffix.foldl effect (order.foldl (fun x i => step ((blocks i).foldl effect x) i) x)) (embStk fan F) := by
+          rep word (suffix.foldl effect (order.foldl (fun x i => step ((blocks i).foldl effect x) i) x)) (embStk fan F) := by
   classical
   intro schedule I blocks suffix order
   obtain ⟨states,build⟩ := scalarOwnerBlock layout
   refine ⟨states,?_⟩
-  intro Q V capacity pos rep
+  intro Q V capacity pos dataBank rep
   obtain ⟨effect,act,off,compile⟩ := build (U := U) capacity pos
   refine ⟨effect,act,off,?_⟩
   intro body move
   obtain ⟨blockAllowed,lastAllowed⟩ := phaseMoveBlocks_allowed gs current allowed
   choose gates runs using fun i => compile (blocks i) (blockAllowed i)
   obtain ⟨last,lastRun⟩ := compile suffix lastAllowed
-  obtain ⟨T,fan,host,code,run⟩ := moveStockSequence tapes owner archive ports archiveFree privateFree body move gates last order (List.nodup_finRange _)
+  let lift : Pr Empty (k+2) Q prime U → Pr Empty (k+2+1) Q prime U := embProg dataBank (id : Empty → Empty)
+  have keep {g : Pr Empty (k+2) Q prime U} {x y : Fin k → Fin V → ZMod 2} {cost : ℕ}
+      (localRun : ∀ u S, HelperFan (Function.Embedding.refl _) x S →
+        ∃ z F n, Exec Empty.elim g (mk u S) n (mk z F) ∧ n ≤ cost ∧ z.user = u.user ∧
+          HelperFan (Function.Embedding.refl _) y F) :
+      ∀ word u S, rep word x S → ∃ z F n, Exec Empty.elim (lift g) (mk u S) n (mk z F) ∧
+        n ≤ cost ∧ z.user = u.user ∧ rep word y F := by
+    intro word u S live
+    obtain ⟨v,D,n,run,paid,user,out⟩ := localRun (embDn dataBank u) (embStk dataBank S) live.1
+    obtain ⟨z,F,placed,_,same,view,frame⟩ := exec_emb (body' := Empty.elim) (ι := id) dataBank.injective
+      (fun f => nomatch f) run u rfl S rfl
+    have away (i : Fin (k+2)) : dataBank i ≠ Fin.last (k+2) := by
+      intro eq
+      exact i.isLt.ne (congrArg Fin.val eq)
+    refine ⟨z,F,n,placed,paid,same.trans user,?_,(frame _ away).2.trans live.2⟩
+    change HelperFan (Function.Embedding.refl _) y (embStk dataBank F)
+    exact view ▸ out
+  obtain ⟨T,fan,host,code,run⟩ := moveStockSequence tapes owner body move (fun i => lift (gates i)) (lift last) order (List.nodup_finRange _)
   refine ⟨T,fan,host,code,?_⟩
-  intro step budget seed moves bill
-  exact run rep (fun x i => (blocks i).foldl effect x) step (fun x => suffix.foldl effect x)
-    (fun i => bill (blocks i)) budget (bill suffix) seed lastRun (fun i _ => runs i) (fun i _ => moves i)
+  intro word step budget seed moves bill
+  exact run (rep word) (fun x i => (blocks i).foldl effect x) step (fun x => suffix.foldl effect x)
+    (fun i => bill (blocks i)) budget (bill suffix) seed (fun x => keep (lastRun x) word) (fun i _ x => keep (runs i x) word) (fun i _ => moves i)
 
 open Certificates.PR589 in
 /-- Prepare and dispatch a packed MOVE from the caller's cutoff. Only the
@@ -695,6 +714,7 @@ theorem packedMixedMoveCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
     (active → ScheduledChildExec node desc w suffix ports (binSyms L cutoff) position body large recursiveTime) →
     ∃ z F t y, Exec body code (mk u S) t (mk z F) ∧
       t ≤ (((RecursiveRowsQuotient.constant 142080+30)*142080*43+152402152)+5000)*volume prime desc+price ∧ z.user = u.user ∧
+      F.R cut = binSyms L cutoff ∧
       (∀ k ∈ ([2,27,28,32,33,34] : List (Fin 35)), F.R (bank k) = []) ∧
       (∀ z, readAt blank (F.L (parent 24)) (F.R (parent 24)) z = RadixToBinary.binaryEncoding.encode
         (putWord (fun _ => blank) 0 (List.ofFn (SparseRoleCircuit.encode ∘ y)) z)) ∧
@@ -853,7 +873,7 @@ theorem packedMixedMoveCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
     exact bank.injective.ne (fun eq => (by decide : (24 : Fin 35) ∉ [2,27,28,32,33]) (eq ▸ hk))
   have result z := out.src z
   simp only [shared,sub_zero] at result
-  refine ⟨q,G,_,y,Exec.seq run₀ (Exec.seq run (Exec.seq exec erase)),?_,final.trans (same.trans (user.trans user₀)),?_,?_,?_,?_,?_,?_,?_,read⟩
+  refine ⟨q,G,_,y,Exec.seq run₀ (Exec.seq run (Exec.seq exec erase)),?_,final.trans (same.trans (user.trans user₀)),?_,?_,?_,?_,?_,?_,?_,?_,read⟩
   · change m ≤ 14*M.size+6*suffix.size+6*(w+1)+11*(w+1).size+50 at cost
     change n ≤ price+8*digits+4*w+23*desc.width+22*L+61 at paid
     have overhead := moveOverhead_volume desc w W rank L digits pos bound width precision
@@ -864,6 +884,7 @@ theorem packedMixedMoveCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
     rw [← size] at cost₀
     rw [Nat.add_mul]
     omega
+  · exact (preserved cut cutOff).2.trans ((parentFrame 34).2.trans header)
   · intro k hk
     by_cases h : k ∈ fields
     · exact ite_eq_left (List.mem_map.mpr ⟨k,h,rfl⟩)
