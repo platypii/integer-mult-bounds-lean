@@ -463,6 +463,40 @@ theorem portBasis_shift (w : ℕ) (t : Fin 111) (atExit : Bool) :
   rw [row,col] at action
   exact action
 
+open Matrix AffineFieldCoordinates IntegerMultBounds.Swap.Modular in
+/-- At every positive width both corrections move a parent address on every
+selected port. In the triangular basis a single backward digit shift suffices
+to witness this uniformly. -/
+theorem portCorrection_moves (w : ℕ) (t : Fin 111) (atExit : Bool) :
+    let R := ZMod (prime^(w+1))
+    let P := translatedPortProjector R (4:R)⁻¹ t
+    let U := reduce (prime^(w+1)) (selectedProjector ⟨2+t.val,by omega⟩)
+    let V := reduce (prime^(w+1)) (selectedProjector ⟨525+t.val,by omega⟩)
+    ∃ s, (if atExit then M8.Exchange.exchange V (M8.Exchange.exchange (1-P) s)
+      else M8.Exchange.exchange P (M8.Exchange.exchange U s)) ≠ s := by
+  intro R P U V
+  let B := portBasis t atExit (translatedEntry t 0 : R)⁻¹ (targetNormal t (Fin.last 7) : R)⁻¹ (4:R)⁻¹
+  let x := fun _ : Fin 16 => (1 : R)
+  let a := B *ᵥ x
+  let s : IntegerMultBounds.Swap.Shear.State (Fin 8) R := (a ∘ hIndex, a ∘ dIndex)
+  have packed : B *ᵥ x = embed s := by
+    funext k
+    induction k using Fin.addCases (m := 8) (n := 8) with
+    | left i => exact (embed_h s i).symm
+    | right i => exact (embed_d s i).symm
+  obtain ⟨_,unit,shift⟩ := portBasis_shift (w+1) t atExit
+  refine ⟨s,fun fixed => ?_⟩
+  have moved := shift x s packed
+  rw [fixed,← packed] at moved
+  have cancel := congrArg (fun z => B⁻¹ *ᵥ z) moved
+  change B⁻¹ *ᵥ (B *ᵥ _) = B⁻¹ *ᵥ (B *ᵥ x) at cancel
+  have undo (v : Fin 16 → R) : B⁻¹ *ᵥ (B *ᵥ v) = v := by
+    rw [mulVec_mulVec,nonsing_inv_mul _ ((isUnit_iff_isUnit_det _).mp unit),one_mulVec]
+  rw [undo,undo] at cancel
+  have digit := congrFun cancel (hIndex (0 : Fin 8))
+  haveI : Fact (1 < prime^(w+1)) := ⟨one_lt_pow₀ Shared50ModularControl.prime_prime.one_lt (Nat.succ_ne_zero _)⟩
+  simpa [OrderedAffine.execute,x,R] using digit
+
 open IntegerMultBounds.Swap.Modular in
 private theorem lift_port_inverse {m : ℕ} (z : ℤ) (unit : IsUnit (z : ZMod m)) :
     ∃ a : denCoprime m, (a : ℚ) = (z : ℚ)⁻¹ ∧ toZMod m a = (z : ZMod m)⁻¹ := by
@@ -868,43 +902,82 @@ private theorem negateDigit_owner (i : Fin 16) :
     have one : 1 ≤ coefficientBound := Nat.one_le_two_pow
     exact Or.inr ⟨by decide,by simpa using one,by simpa using one⟩
 
+open AffineFieldCoordinates in
+/-- Inverting the backward shift on packed fields needs one swap. Reflection
+before and after it restores the high digit and negates the low digit. -/
+theorem inverseShift_reflect_swap {R : Type*} [CommRing R] (s : IntegerMultBounds.Swap.Shear.State (Fin 8) R) :
+    let add := OrderedAffine.execute (.shift (hIndex (0 : Fin 8)) (dIndex (Fin.last 7)) (1 : R)) (embed s)
+    let input := (add ∘ hIndex, add ∘ dIndex)
+    let entered := AffineFieldProgram.execute (.subFromD 0 7) input
+    let swapped := AffineFieldProgram.execute (.interchange 0 7) entered
+    let reflected := AffineFieldProgram.execute (.subFromD 0 7) swapped
+    OrderedAffine.execute (.scale (dIndex (Fin.last 7)) (-1 : R)) (embed reflected) = embed s := by
+  intro add input entered swapped reflected
+  funext i
+  fin_cases i <;> first
+    | rfl
+    | (change (s.1 0 + 1*s.2 7) - s.2 7 = s.1 0; ring)
+    | (change (-1)*(((s.1 0 + 1*s.2 7) - s.2 7) - (s.1 0 + 1*s.2 7)) = s.2 7; ring)
+
 open Matrix AffineFieldCoordinates M8.RevMachine in
-/-- The inverse read uses the same digit addition between two first-digit
-negations. Both negations are linear-volume scans. -/
+/-- Two reflections and a last-digit negation implement the inverse shift
+around a single swap. -/
 theorem backwardDigit_inverse_owner [M8.Machine.Net] :
     ∃ (c : ℕ) (machine : SharedBankSkeleton.Skeleton 1 prime), ∀ w W, 0 < w → 0 < W →
       let V := (prime^w)^16*W
       ∃ stage : SharedBankStage.Stage _ 1 prime (@portOwner V),
-        SharedBankSkeleton.ofStage stage = machine ∧ stage.cost = c*V + LeafCore.coreCost V w + 4 ∧ HasStackSeed stage.metadata ∧
+        SharedBankSkeleton.ofStage stage = machine ∧ stage.cost = c*V + LeafCore.coreCost V w + 3 ∧ HasStackSeed stage.metadata ∧
         ∀ x coords j, stage.transform x (FlatCoordinateLayout.index coords j) = x (FlatCoordinateLayout.index
           (OrderedAffine.execute (.shift (hIndex (0 : Fin 8)) (dIndex (Fin.last 7)) 1) coords) j) := by
-  let i := hIndex (0 : Fin 8)
-  let k := dIndex (Fin.last 7)
-  obtain ⟨a,neg,negates⟩ := negateDigit_owner i
-  obtain ⟨b,shift,shifts⟩ := backwardDigit_owner
-  refine ⟨a+b+a,SharedBankSkeleton.compose (SharedBankSkeleton.compose neg shift) neg,?_⟩
+  obtain ⟨a,reflect,reflects⟩ := forwardDigit_owner true
+  obtain ⟨swap,swaps⟩ := digitSwap_owner (0 : Fin 16) 15 (by decide)
+  obtain ⟨b,neg,negates⟩ := negateDigit_owner (dIndex (Fin.last 7))
+  refine ⟨a+3808274+a+b,SharedBankSkeleton.compose (SharedBankSkeleton.compose
+    (SharedBankSkeleton.compose reflect swap) reflect) neg,?_⟩
   intro w W hw hW V
-  obtain ⟨A,fa,ca,sa,ar⟩ := negates w W hW
-  obtain ⟨S,fs,cs,ss,sr⟩ := shifts w W hw hW
-  refine ⟨SharedBankStage.compose (SharedBankStage.compose A S) A,?_,?_,compose_seed (compose_seed sa ss) sa,?_⟩
-  · simp only [SharedBankSkeleton.ofStage_compose,fa,fs]
-  · change A.cost+S.cost+1+A.cost+1 = _
-    rw [ca,cs]
-    ring
+  obtain ⟨A,fa,ca,sa,ar⟩ := reflects w W hW
+  obtain ⟨S,fs,cs,ss,sr⟩ := swaps w W hw hW
+  obtain ⟨B,fb,cb,sb,br⟩ := negates w W hW
+  refine ⟨SharedBankStage.compose (SharedBankStage.compose (SharedBankStage.compose A S) A) B,?_,?_,
+    compose_seed (compose_seed (compose_seed sa ss) sa) sb,?_⟩
+  · simp only [SharedBankSkeleton.ofStage_compose,fa,fs,fb]
+  · change A.cost+S.cost+1+A.cost+1+B.cost+1 = _
+    rw [ca,cs,cb]; ring
   · intro x coords j
-    let D : Matrix (Fin 16) (Fin 16) (ZMod (prime^w)) := diagonal (fun a => if a=i then -1 else 1)
-    let add := OrderedAffine.execute (.shift i k (1 : ZMod (prime^w)))
-    have restore : D *ᵥ add (D *ᵥ add coords) = coords := by
-      funext l
-      by_cases eq : l=i
-      · subst l
-        simp [D,add,OrderedAffine.execute,mulVec_diagonal,Function.update_apply,show k ≠ i by decide]
-      · simp [D,add,OrderedAffine.execute,mulVec_diagonal,Function.update_apply,eq]
-    change A.transform (S.transform (A.transform x)) _ = _
-    calc
-      _ = A.transform (S.transform (A.transform x)) (FlatCoordinateLayout.index (D *ᵥ add (D *ᵥ add coords)) j) :=
-        congrArg (fun v => A.transform (S.transform (A.transform x)) (FlatCoordinateLayout.index v j)) restore.symm
-      _ = _ := (ar _ _ j).trans ((sr _ _ j).trans (ar _ _ j))
+    let s : IntegerMultBounds.Swap.Shear.State (Fin 8) (ZMod (prime^w)) := (coords ∘ hIndex,coords ∘ dIndex)
+    have packed : embed s = coords := by
+      funext i
+      induction i using Fin.addCases (m := 8) (n := 8) with
+      | left i => exact embed_h s i
+      | right i => exact embed_d s i
+    rw [← packed]
+    let add := OrderedAffine.execute (.shift (hIndex (0 : Fin 8)) (dIndex (Fin.last 7)) 1) (embed s)
+    let input : IntegerMultBounds.Swap.Shear.State (Fin 8) (ZMod (prime^w)) := (add ∘ hIndex,add ∘ dIndex)
+    let entered := AffineFieldProgram.execute (.subFromD 0 7) input
+    let swapped := AffineFieldProgram.execute (.interchange 0 7) entered
+    let reflected := AffineFieldProgram.execute (.subFromD 0 7) swapped
+    have ex : embed swapped = embed entered ∘ Equiv.swap 0 15 := by funext i; fin_cases i <;> rfl
+    have inp : embed input = add := by
+      funext i
+      induction i using Fin.addCases (m := 8) (n := 8) with
+      | left i => exact embed_h input i
+      | right i => exact embed_d input i
+    have finish := br (A.transform (S.transform (A.transform x))) (embed reflected) j
+    have diag : (diagonal fun a => if a=dIndex (Fin.last 7) then (-1 : ZMod (prime^w)) else 1) *ᵥ
+        embed reflected = embed s := by
+      refine Eq.trans ?_ (inverseShift_reflect_swap s)
+      funext i
+      change (diagonal (fun a : Fin 16 => if a=15 then (-1 : ZMod (prime^w)) else 1) *ᵥ embed reflected) i =
+        OrderedAffine.execute (.scale (15 : Fin 16) (-1)) (embed reflected) i
+      by_cases h : i = 15 <;> simp [mulVec_diagonal,OrderedAffine.execute,Function.update_apply,h]
+    rw [diag] at finish
+    have mid := ar (S.transform (A.transform x)) swapped j
+    change A.transform _ (FlatCoordinateLayout.index (embed reflected) j) = _ at mid
+    rw [ex] at mid
+    have start := ar x input j
+    change A.transform x (FlatCoordinateLayout.index (embed entered) j) = x (FlatCoordinateLayout.index (embed input) j) at start
+    rw [inp] at start
+    exact finish.trans (mid.trans ((sr _ (embed entered) j).trans start))
 
 open Matrix AffineFieldCoordinates IntegerMultBounds.Swap.Modular M8.RevMachine in
 /-- The complete physical port correction has one charged interchange
@@ -931,7 +1004,12 @@ theorem portCorrection_owner [M8.Machine.Net] (t : Fin 111) (atExit : Bool) (inv
             x (FlatCoordinateLayout.index (if inverse then moved else coords) j) := by
     cases inverse
     · exact backwardDigit_owner
-    · exact backwardDigit_inverse_owner
+    · obtain ⟨b,m,build⟩ := backwardDigit_inverse_owner
+      refine ⟨b,m,?_⟩
+      intro w W hw hW V
+      obtain ⟨A,fixed,paid,seed,read⟩ := build w W hw hW
+      let B := { A with cost := A.cost+1, realizes := fun x => (A.realizes x).consequence (fun _ h => h) (fun _ h => h) (Nat.le_succ _) }
+      exact ⟨B,fixed,by change A.cost+1 = _; rw [paid]; rfl,seed,read⟩
   obtain ⟨b,shift,middle⟩ := digit
   obtain ⟨c,fromChart,after⟩ := rationalPortBasis_owner t atExit false
   refine ⟨a+b+c,SharedBankSkeleton.compose (SharedBankSkeleton.compose toChart shift) fromChart,?_⟩
