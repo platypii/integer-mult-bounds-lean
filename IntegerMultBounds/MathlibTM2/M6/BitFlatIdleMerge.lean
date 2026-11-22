@@ -43,6 +43,7 @@ theorem flatIdleMergeSpace_exec {P U : Type} {Q b : ℕ} (body : P → Pr P inte
       let output := fun r => Shared50RecursiveNodeRows.transpose (one_dvd lane.rows) (data r)
       0 < m → S.R 0 = source word → (∀ t, S.L t = []) → (∀ t, t ≠ 0 → S.R t = []) →
       (∀ v D, HelperFan (intervalOwners 142080) data D →
+        (∀ j, (D.L j).length+(D.R j).length ≤ 301*V+2) →
         ∃ z F k, Exec body worker (mk v D) k (mk z F) ∧ k ≤ b ∧ z.user = v.user ∧
           HelperFan (intervalOwners 142080) output F ∧ (F.L 0 = D.L 0 ∧ F.R 0 = D.R 0) ∧
           (∀ l : Fin 2, let t := (l.natAdd (1+142080)).castAdd 2
@@ -67,10 +68,10 @@ theorem flatIdleMergeSpace_exec {P U : Type} {Q b : ℕ} (body : P → Pr P inte
   let enc := fun (x : Fin V → ZMod 2) (a : Fin (m*142080)) => SparseRoleCircuit.encode (a := prime) (x (a.cast span))
   obtain ⟨z,F,k,user,paid,exec,out,growth⟩ := intervalWorkerSpace_exec body worker returned capacity pos (enc word) (enc changed)
     u S stored left empty (by
-      intro v D ready
+      intro v D ready roomIn
       let src := putWord (fun _ => blank) 0 (source word)
       change RepT (intervalOwnerBank src data) D.L D.R at ready
-      obtain ⟨z,F,k,exec,paid,user,result,keep,inner,room⟩ := run v D (intervalOwners_ready _ _ _ ready)
+      obtain ⟨z,F,k,exec,paid,user,result,keep,inner,room⟩ := run v D (intervalOwners_ready _ _ _ ready) (by simpa only [← span] using roomIn)
       refine ⟨z,F,k,user,paid,exec,?_,room⟩
       have bank := intervalOwners_return src data output D F ready result keep inner
       change RepT (intervalOwnerBank src (fun r a => changed ((finProdFinEquiv (a,r)).cast span))) F.L F.R
@@ -112,7 +113,7 @@ theorem flatIdleMerge_exec {P U : Type} {Q b : ℕ} (body : P → Pr P intervalS
   refine ⟨span,?_⟩
   intro word u S source data output pos stored left empty run
   obtain ⟨z,F,k,changed,exec,paid,user,out,_,act⟩ := build word u S pos stored left empty (by
-    intro v D ready
+    intro v D ready _
     obtain ⟨y,G,l,ran,time,same,rep,source,inner⟩ := run v D ready
     exact ⟨y,G,l,ran,time,same,rep,source,inner,trivial⟩)
   exact ⟨z,F,k,changed,exec,paid,user,out,act⟩
