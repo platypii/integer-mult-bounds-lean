@@ -9,14 +9,63 @@ open IntegerMultBounds.Machine IntegerMultBounds.Networks Cover Cover.Fallback S
 open RecursiveInterchangeLayout (Descriptor volume)
 open Shared50ModularControl (prime)
 
-theorem mixedIdleSchedule_exec [M8.Machine.Net] {n Q : ℕ} {P U : Type}
+namespace MixedIdleBank
+
+abbrev owners := 142081+2
+abbrev n := (owners+222*6)+10
+def bank : Fin owners ↪ Fin n := (Fin.castAddEmb (222*6)).trans (Fin.castAddEmb 10)
+noncomputable def cmp [M8.Machine.Net] : Fin 10 ↪ Fin (n+LeafCore.small) :=
+  (Fin.natAddEmb (owners+222*6)).trans (Fin.castAddEmb LeafCore.small)
+def src (j : Fin 222) (l : Fin 6) : Fin n := ((finProdFinEquiv (j,l)).natAdd owners).castAdd 10
+
+private theorem prepare [M8.Machine.Net] (interval : Fin 222 → Descriptor) (w L cutoff : ℕ) :
+    ∃ initial : Stacks (n+LeafCore.small) prime, ∀ S : Stacks (n+LeafCore.small) prime,
+      (∀ t, (∀ l, (bank.trans (Fin.castAddEmb LeafCore.small)) l ≠ t) →
+        S.L t = initial.L t ∧ S.R t = initial.R t) →
+      (S.R (cmp 0)).length = w ∧ S.R (cmp 1) = binSyms L cutoff ∧
+      (∀ l : Fin 10, 2 ≤ l.val → S.R (cmp l) = []) ∧
+      (∀ j l, S.R ((src j l).castAdd LeafCore.small) = (Routines.hdr (interval j) l).map bitSymbol) ∧
+      ∀ l : Fin LeafCore.small, S.L (l.natAdd n) = [] ∧ S.R (l.natAdd n) = [] := by
+  let header : Fin (222*6) → List (Fin (prime+4)) := fun a =>
+    let p := finProdFinEquiv.symm a
+    (Routines.hdr (interval p.1) p.2).map bitSymbol
+  let test : Fin 10 → List (Fin (prime+4)) := fun j =>
+    if j = 0 then List.replicate w (bitSymbol false) else if j = 1 then binSyms L cutoff else []
+  let initial : Stacks (n+LeafCore.small) prime :=
+    ⟨[],[],fun _ => [],Fin.addCases (Fin.addCases (Fin.addCases (fun _ => []) header) test) (fun _ => [])⟩
+  refine ⟨initial,?_⟩
+  intro S fresh
+  have off (t : Fin (n+LeafCore.small)) (high : owners ≤ t.val) := fresh t (by
+    intro l eq
+    have val := congrArg (fun a : Fin (n+LeafCore.small) => a.val) eq
+    simp only [bank,Function.Embedding.trans_apply,Fin.castAddEmb_apply,Fin.val_castAdd] at val
+    exact (Nat.not_le_of_gt l.isLt) (val ▸ high))
+  have atCmp (j : Fin 10) : S.R (cmp j) = test j := by
+    have h := off (cmp j) (by change owners ≤ (owners+222*6)+j.val; omega)
+    simpa [cmp,initial] using h.2
+  refine ⟨by simp [atCmp,test],by simp [atCmp,test],?_,?_,?_⟩
+  · intro j high
+    have zero : j ≠ 0 := by intro eq; subst j; contradiction
+    have one : j ≠ 1 := by intro eq; subst j; contradiction
+    simp [atCmp,test,zero,one]
+  · intro j l
+    have h := off ((src j l).castAdd LeafCore.small) (by
+      change owners ≤ owners+(finProdFinEquiv (j,l)).val
+      omega)
+    simpa [initial,src,header] using h.2
+  · intro l
+    have h := off (l.natAdd n) (by change owners ≤ ((owners+222*6)+10)+l.val; omega)
+    simpa [initial] using h
+
+end MixedIdleBank
+
+open MixedIdleBank in
+theorem mixedIdleSchedule_exec [M8.Machine.Net] {Q : ℕ} {P U : Type}
     (capacity : columnCapacity ≤ Q) (body : P → Pr P (n+LeafCore.small) Q prime U)
     (node : Descriptor) (i : Fin 9) (w rows L cutoff : ℕ) (aligned : node.width = 64*(w+1))
     (wide : node.width.size ≤ L) (cutFits : cutoff < 2^L)
-    (split : node.rows = 142080*rows) (bank : Fin (142081+2) ↪ Fin n)
-    (cmp : Fin 10 ↪ Fin (n+LeafCore.small)) (src : Fin 222 → Fin 6 → Fin n)
-    (proc : (Fin 32 × Fin 5) × Fin 222 → P) (budget : Fin nodeChildren5.length → ℕ)
-    (initial : Stacks (n+LeafCore.small) prime) :
+    (split : node.rows = 142080*rows)
+    (proc : (Fin 32 × Fin 5) × Fin 222 → P) (budget : Fin nodeChildren5.length → ℕ) :
     let fan := bank.trans (Fin.castAddEmb LeafCore.small)
     let W := node.beforeRows*rows*node.beforeH*node.between*node.afterD
     let V := (prime^(w+1))^128*W
@@ -25,8 +74,6 @@ theorem mixedIdleSchedule_exec [M8.Machine.Net] {n Q : ℕ} {P U : Type}
     let interval := fun j => let e := idleInterval i j
       phaseIntervalChild e.1 e.2 (w+1) W 64
     let rank := fun j => (idleInterval i j).2-(idleInterval i j).1
-    let outside := fun (S : Stacks (n+LeafCore.small) prime) => ∀ t, (∀ l, fan l ≠ t) →
-      S.L t = initial.L t ∧ S.R t = initial.R t
     let port := fun k => bank ((idleTape i k).castAdd 2)
     let code := fun k => (ordinaryCutoffTest cmp (rank k.2)).seq (.cond (fun z => symBit (z.scan (cmp 7)))
       (.call (proc k)) (hostedStoppedDirectory capacity (src k.2) (port k)))
@@ -35,10 +82,9 @@ theorem mixedIdleSchedule_exec [M8.Machine.Net] {n Q : ℕ} {P U : Type}
         ((LeafCore.small+5 : ℕ)*|LeafCore.C|+8+LeafCore.small*(16+8*|LeafCore.C|))*
         ((V : ℝ)*((max 1 (child k).width : ℕ) : ℝ)^M8.Machine.BudgetBound.tau))
     0 < V →
-    (∀ S, outside S → (S.R (cmp 0)).length = w ∧ S.R (cmp 1) = binSyms L cutoff ∧
-      (∀ l : Fin 10, 2 ≤ l.val → S.R (cmp l) = []) ∧
-      (∀ j l, S.R ((src j l).castAdd LeafCore.small) = (Routines.hdr (interval j) l).map bitSymbol) ∧
-      ∀ l : Fin LeafCore.small, S.L (l.natAdd n) = [] ∧ S.R (l.natAdd n) = []) →
+    ∃ initial : Stacks (n+LeafCore.small) prime,
+    let outside := fun (S : Stacks (n+LeafCore.small) prime) => ∀ t, (∀ l, fan l ≠ t) →
+      S.L t = initial.L t ∧ S.R t = initial.R t
     ∃ position : ∀ k, Fin (volume prime (child k)) ≃ Fin V,
       (∀ k, IdleChildPositions i k.2 (w+1) W (child k) (position k)) ∧
       ((∀ k x u S, cutoff < (child k).width → (child k).width < node.width → HelperFan fan x S → outside S →
@@ -52,7 +98,10 @@ theorem mixedIdleSchedule_exec [M8.Machine.Net] {n Q : ℕ} {P U : Type}
           (m : ℝ) ≤ (idleCopies.map charge).sum+1 ∧ z.user = u.user ∧ HelperFan fan y F ∧
           (∀ k, intervalChildRead i k.2 (w+1) W (x (idleTape i k)) (y (idleTape i k))) ∧
           ∀ t, (∀ k, t ≠ idleTape i k) → y t = x t) := by
-  intro fan W V index child interval rank outside port code charge pos metadata
+  intro fan W V index child interval rank port code charge pos
+  obtain ⟨initial,metadata⟩ := MixedIdleBank.prepare interval w L cutoff
+  refine ⟨initial,?_⟩
+  intro outside
   choose position coords _ using fun k => flatIdleCall_exec body (proc k) node i (idleCopyIndex k)
     (w+1) rows (Nat.succ_pos _) aligned split
   have coord k : IdleChildPositions i k.2 (w+1) W (child k) (position k) := by

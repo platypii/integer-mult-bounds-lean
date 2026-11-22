@@ -33,7 +33,7 @@ theorem flatIdleParentCost (localCost : Fin 9 → ℕ) (budget : Fin nodeChildre
   rw [Finset.sum_add_distrib,Nat.add_assoc,split]
 
 open M8.RevMachine in
-private theorem idleLocalCost_bound [M8.Machine.Net] (a b tapes n : ℕ) :
+theorem idleLocalCost_bound [M8.Machine.Net] (a b tapes n : ℕ) :
     ∃ C : ℝ, ∀ V w : ℕ, 0 < V → 0 < w →
       let charts := a*V+b*(3808274*V+LeafCore.coreCost V w+1)+6*n
       ((charts*(tapes+5)+2*n+14+142081*(8*V+10) : ℕ) : ℝ) ≤
