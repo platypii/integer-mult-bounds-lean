@@ -310,6 +310,28 @@ theorem placedMoveHeaders {H Q : ℕ} {P U : Type}
   · intro i j
     exact (congrArg (fun X => Stacks.R X (borrowedHeaders 80 i j)) view).trans (by simpa only [eq] using headers i j)
 
+/-- The private stacks read by one scheduled MOVE before dispatch. Port
+24 belongs to the live payload and may have changed since initialization. -/
+def MovePrivateStock {H K : ℕ} (archive : Fin (80+273) ↪ Fin H) (ports : Fin K ↪ Fin H)
+    (seed S : Stacks H prime) : Prop :=
+  (∀ k, S.L (archive k) = seed.L (archive k) ∧ S.R (archive k) = seed.R (archive k)) ∧
+  ∀ k : Fin K, k.val ≠ 24 → S.L (ports k) = seed.L (ports k) ∧ S.R (ports k) = seed.R (ports k)
+
+/-- A completed occurrence preserves a later occurrence's stock whenever
+its writes miss that occurrence's archive and private ports. -/
+theorem MovePrivateStock.frame {H K : ℕ} {archive : Fin (80+273) ↪ Fin H} {ports : Fin K ↪ Fin H}
+    {seed S F : Stacks H prime} (stock : MovePrivateStock archive ports seed S)
+    (untouched : Fin H → Prop) (keep : ∀ j, untouched j → F.L j = S.L j ∧ F.R j = S.R j)
+    (archiveFree : ∀ k, untouched (archive k)) (privateFree : ∀ k : Fin K, k.val ≠ 24 → untouched (ports k)) :
+    MovePrivateStock archive ports seed F := by
+  constructor
+  · intro k
+    have h := keep _ (archiveFree k)
+    exact ⟨h.1.trans (stock.1 k).1,h.2.trans (stock.1 k).2⟩
+  · intro k hk
+    have h := keep _ (privateFree k hk)
+    exact ⟨h.1.trans (stock.2 k hk).1,h.2.trans (stock.2 k hk).2⟩
+
 open Certificates.PR589 in
 /-- Prepare and dispatch a packed MOVE from the caller's cutoff. Only the
 above-cutoff branch requires a child execution witness. -/
@@ -339,13 +361,9 @@ theorem packedMixedMoveCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
     node.width = 64*(w+1) → node.rows = 142080*rows → node.beforeH = B*prime^(64*((w+1)*64)) →
     ({node with rows := rows} : Descriptor).Positive → cutoff < 2^L → desc.width.size ≤ L → L ≤ 64*(w+1) → 0 < W → ∃ position : Fin (volume prime desc) ≃ Fin (M^16*suffix),
     (∀ h, (position h).val = (CopyChildLayout.packActive desc h).val) ∧
-    (∀ initial : Stacks 35 prime, ∃ seed : Stacks H prime,
-      (∀ j, seed.L (parent j) = initial.L j ∧ seed.R (parent j) = initial.R j) ∧ ParentArchiveInput node w (embStk e seed) ∧
-      ∀ j : Fin (rowSwapBlock.tapes+35), j.val ≠ 24 → seed.L (ports j) = [] ∧ seed.R (ports j) = []) ∧ ∀ (x : Fin (M^16*suffix) → ZMod 2) (u : HS H Q prime U) (S : Stacks H prime),
-    S.R cut = binSyms L cutoff → S.R (bank 34) = [] →
-    ParentArchiveInput node w (embStk e S) →
-    (∀ i : Fin 35, i ≠ 24 → i ≠ 34 → S.L (bank i) = [] ∧ S.R (bank i) = []) →
-    (∀ i : Fin (rowSwapBlock.tapes+35), 35 ≤ i.val → S.L (ports i) = [] ∧ S.R (ports i) = []) →
+    ∃ seed : Stacks H prime, ∀ (x : Fin (M^16*suffix) → ZMod 2) (u : HS H Q prime U) (S : Stacks H prime),
+    MovePrivateStock e ports seed S →
+    S.R cut = binSyms L cutoff →
     (∀ z, readAt blank (S.L (parent 24)) (S.R (parent 24)) z = RadixToBinary.binaryEncoding.encode
       (putWord (fun _ => blank) 0 (List.ofFn (SparseRoleCircuit.encode ∘ x)) z)) →
     let core : ℝ := (LeafCore.small+5 : ℕ)*|LeafCore.C|+8+LeafCore.small*(16+8*|LeafCore.C|)
@@ -361,6 +379,10 @@ theorem packedMixedMoveCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
         (putWord (fun _ => blank) 0 (List.ofFn (SparseRoleCircuit.encode ∘ y)) z)) ∧
       (∀ i : Fin (rowSwapBlock.tapes+35), 35 ≤ i.val → F.L (ports i) = [] ∧ F.R (ports i) = []) ∧
       (∀ j, (∀ k, e k ≠ j) → (∀ i, ports i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j) ∧
+      (∀ {K} (nextArchive : Fin (80+273) ↪ Fin H) (nextPorts : Fin K ↪ Fin H) nextSeed,
+        let untouched := fun j => (∀ k, e k ≠ j) ∧ (∀ k, ports k ≠ j)
+        (∀ k, untouched (nextArchive k)) → (∀ k : Fin K, k.val ≠ 24 → untouched (nextPorts k)) →
+        MovePrivateStock nextArchive nextPorts nextSeed S → MovePrivateStock nextArchive nextPorts nextSeed F) ∧
       (∀ H J, let caller := RecordReady (b := prime) (w := w) (d := 16) (W := suffix) parent H J (binSyms L cutoff) SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0
         caller x S → caller y F) ∧
       ∀ h, y (position h) = Shared50RecursiveNodeRows.transpose (one_dvd desc.rows) (x ∘ position) h := by
@@ -427,31 +449,28 @@ theorem packedMixedMoveCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
   simp only [Fintype.card_fin] at card
   let position := pack.trans (finCongr (card.symm.trans size))
   have coords (h) : (position h).val = (CopyChildLayout.packActive desc h).val := rfl
-  refine ⟨position,coords,?_,?_⟩
-  · intro initial
-    obtain ⟨archive,input⟩ := parentArchiveInput_exists node w
-    let blankHost : Stacks H prime := ⟨[],[],fun _ => [],fun _ => []⟩
-    let seeded := embOvr parent initial.get blankHost
-    let seed := embOvr e archive.get seeded
-    have parentView := embStk_ovr parent.injective initial blankHost
-    have retained (j : Fin 35) := embOvr_off archive.get seeded (fun k => offParent k j)
-    refine ⟨seed,?_,by simpa only [seed,embStk_ovr e.injective] using input,?_⟩
-    · intro j
-      exact ⟨(retained j).1.trans (congrArg (fun D => Stacks.L D j) parentView),
-        (retained j).2.trans (congrArg (fun D => Stacks.R D j) parentView)⟩
-    · intro j hj
-      have outside (k : Fin 35) : parent k ≠ ports j := by
-        by_cases eq : k = 24
-        · subst k
-          rw [← shared]
-          intro same
-          change ports (localPort 24) = ports j at same
-          exact hj (congrArg Fin.val (ports.injective same).symm)
-        · exact (apartParent (workerPorts j) k eq).symm
-      have archived := embOvr_off archive.get seeded (fun k => offWorker k j)
-      have empty := embOvr_off initial.get blankHost outside
-      exact ⟨archived.1.trans empty.1,archived.2.trans empty.2⟩
-  intro x u S header archive ready empty clean payload core rate room budget active price recurse
+  obtain ⟨initial,input⟩ := parentArchiveInput_exists node w
+  let blankHost : Stacks H prime := ⟨[],[],fun _ => [],fun _ => []⟩
+  let seed := embOvr e initial.get blankHost
+  refine ⟨position,coords,seed,?_⟩
+  intro x u S stock header payload core rate room budget active price recurse
+  have view := embStk_ovr e.injective initial blankHost
+  have archiveStacks (k) := stock.1 k
+  have l : (embStk e S).L = initial.L := funext fun k =>
+    (archiveStacks k).1.trans (congrArg (fun D => Stacks.L D k) view)
+  have r : (embStk e S).R = initial.R := funext fun k =>
+    (archiveStacks k).2.trans (congrArg (fun D => Stacks.R D k) view)
+  have ready : ParentArchiveInput node w (embStk e S) := by
+    change ParentArchiveInput node w ⟨_,_,(embStk e S).L,(embStk e S).R⟩
+    rw [l,r]
+    exact input
+  have privatePort (j : Fin (rowSwapBlock.tapes+35)) (hj : j.val ≠ 24) : S.L (ports j) = [] ∧ S.R (ports j) = [] := by
+    have kept := stock.2 j hj
+    have blank := embOvr_off initial.get blankHost (fun k => offWorker k j)
+    exact ⟨kept.1.trans blank.1,kept.2.trans blank.2⟩
+  have archive := (privatePort (localPort 34) (by change 34 ≠ 24; decide)).2
+  have empty (j : Fin 35) (hj : j ≠ 24) (_ : j ≠ 34) := privatePort (localPort j) (fun eq => hj (Fin.ext eq))
+  have clean (j : Fin (rowSwapBlock.tapes+35)) (hj : 35 ≤ j.val) := privatePort j (by omega)
   have width : desc.width = (w+1)*rank := by
     change rank*(node.width/64) = _
     rw [aligned,Nat.mul_div_cancel_left _ (by decide),Nat.mul_comm]
@@ -501,7 +520,7 @@ theorem packedMixedMoveCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
     exact bank.injective.ne (fun eq => (by decide : (24 : Fin 35) ∉ [2,27,28,32,33]) (eq ▸ hk))
   have result z := out.src z
   simp only [shared,sub_zero] at result
-  refine ⟨q,G,_,y,Exec.seq run₀ (Exec.seq run (Exec.seq exec erase)),?_,final.trans (same.trans (user.trans user₀)),?_,?_,?_,?_,?_,read⟩
+  refine ⟨q,G,_,y,Exec.seq run₀ (Exec.seq run (Exec.seq exec erase)),?_,final.trans (same.trans (user.trans user₀)),?_,?_,?_,?_,?_,?_,read⟩
   · change m ≤ 14*M.size+6*suffix.size+6*(w+1)+11*(w+1).size+50 at cost
     change n ≤ price+8*digits+4*w+23*desc.width+22*L+61 at paid
     have overhead := moveOverhead_volume desc w W rank L digits pos bound width precision
@@ -530,6 +549,10 @@ theorem packedMixedMoveCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
     omega
   · intro j away outside
     exact ⟨(preserved j outside).1.trans (frame₀ j away).1,(preserved j outside).2.trans (frame₀ j away).2⟩
+  · intro K nextArchive nextPorts nextSeed untouched archiveFree portsFree stock
+    apply stock.frame untouched _ archiveFree portsFree
+    intro j away
+    exact ⟨(preserved j away.2).1.trans (frame₀ j away.1).1,(preserved j away.2).2.trans (frame₀ j away.1).2⟩
   · intro H J caller start
     apply start.returnPayload (fun j hj => by
       have h := preserved (parent j) (fun k => apartParent (workerPorts k) j hj)
