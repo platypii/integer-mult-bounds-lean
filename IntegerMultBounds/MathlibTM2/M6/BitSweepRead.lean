@@ -163,4 +163,74 @@ theorem sweepEffect_active {n : Fin 9} {w B W : ℕ} {x y : OwnerArray w B W}
             restoredStage_sourceLabel n run w B W label x packed out trace restore t z g
       _ = _ := by simp
 
+open AffineFieldCoordinates FlatCoordinateLayout Matrix in
+/-- The physical entry correction on the compact source and exit correction
+on the compact target convert a completed sweep to the translated port frame. -/
+theorem sweepEffect_correctedPort [M8.Machine.Net] (t : Fin 111) :
+    ∃ c : ℕ, ∀ w B W, 0 < w → 0 < B*((prime^w)^112*W) →
+      let K := (prime^w)^112*W
+      let V := (prime^w)^16*(B*K)
+      let P := translatedPortProjector (ZMod (prime^w)) (4 : ZMod (prime^w))⁻¹ t
+      ∃ enter leave : SharedBankStage.Stage _ 1 prime (@portOwner V),
+        enter.cost+leave.cost = c*V + 2*LeafCore.coreCost V w+12 ∧
+        ∀ n (run : Fin 32 × Fin 5) (x a y : OwnerArray w B W),
+          let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n run.1 run.2,ownerTape_injective ..⟩
+          let src := owner ⟨t.val,by omega⟩
+          let dst := owner ⟨111+t.val,by omega⟩
+          a src = enter.transform (x src) → a dst = x dst → sweepEffect n w B W a y →
+          ∀ (z : LabelEntry.Cell (copyLabelLayout w B K) B) s,
+            let cell := fun v => index (embed v) (@finProdFinEquiv B K (z.b,z.after))
+            y src (cell s) = x src (cell (M8.Exchange.exchange P s.swap)) ∧
+            leave.transform (y dst) (cell s) =
+              x dst (cell (M8.Exchange.exchange (1-P) s)) + x src (cell s.swap) := by
+  obtain ⟨a,_,pre⟩ := portCorrection_owner t false true
+  obtain ⟨b,_,post⟩ := portCorrection_owner t true true
+  refine ⟨a+b,?_⟩
+  intro w B W hw hW K V P
+  obtain ⟨enter,_,entryCost,entry⟩ := pre w (B*K) hw hW
+  obtain ⟨leave,_,exitCost,exitRow⟩ := post w (B*K) hw hW
+  refine ⟨enter,leave,?_,?_⟩
+  · rw [entryCost,exitCost]
+    simp only [ite_true,V]
+    ring
+  intro n run x a y owner src dst source target step z s cell
+  let j : Fin (B*K) := @finProdFinEquiv B K (z.b,z.after)
+  let U := reduce (prime^w) (selectedProjector ⟨2+t.val,by omega⟩)
+  let T := reduce (prime^w) (selectedProjector ⟨525+t.val,by omega⟩)
+  obtain ⟨up,pu,tc,ct,srcFrame,dstFrame⟩ := portFrame_absorption w t
+  have readSrc (v) : phaseRead owner a j t.val v = a src (cell v) := by
+    simp only [phaseRead,Copy.extendStored,dite_eq_left (show t.val < 661 by omega),src,cell,j]
+  have readDst (v) : phaseRead owner a j (111+t.val) v = a dst (cell v) := by
+    simp only [phaseRead,Copy.extendStored,dite_eq_left (show 111+t.val < 661 by omega),dst,cell,j]
+  have decoded : (selectedFrame w (Frames.initialRefs t.val)).symm (phaseRead owner a j t.val) =
+      fun v => x src (cell (M8.Exchange.exchange P v)) := by
+    apply (selectedFrame w _).injective
+    rw [LinearEquiv.apply_symm_apply]
+    funext v
+    rw [srcFrame,readSrc,source]
+    exact entry (x src) v j
+  obtain ⟨outT,outS⟩ := sweepEffect_active step run t z
+  dsimp only at outT outS
+  rw [(source_frames _ t.isLt).2.2] at outS
+  rw [(target_frames _ t.isLt).1,emptyFrame_decode] at outT
+  have tt : T*T=T := by calc
+    T*T = T*((1-P)*T) := congrArg (T*·) ct.symm
+    _ = T := by rw [← mul_assoc,tc,ct]
+  have pp : P*P=P := by calc
+    P*P = P*(U*P) := congrArg (P*·) up.symm
+    _ = P := by rw [← mul_assoc,pu,up]
+  have swap : M8.Exchange.exchange P (M8.Exchange.exchange (1-P) s) = s.swap := by
+    rw [show M8.Exchange.exchange (1-P) s = M8.Exchange.exchange P s.swap by simp [M8.Exchange.exchange,add_comm],
+      M8.Global.exchange_involutive pp]
+  constructor
+  · have h := congrFun outS s
+    rw [fullFrame_read,decoded] at h
+    simpa only [phaseRead,Copy.extendStored,dite_eq_left (show t.val < 661 by omega)] using h
+  · let v := M8.Exchange.exchange (1-P) s
+    have h := congrFun outT (M8.Exchange.exchange T v)
+    rw [dstFrame,show M8.Exchange.exchange T (M8.Exchange.exchange T v) = v from M8.Global.exchange_involutive tt v,
+      Pi.add_apply,decoded,readDst,target] at h
+    apply (exitRow (y dst) s j).trans
+    simpa only [phaseRead,Copy.extendStored,dite_eq_left (show 111+t.val < 661 by omega),v,swap,ite_true,T,dst,j,P] using h
+
 end IntegerMultBounds.MathlibTM2.M6.BitNode

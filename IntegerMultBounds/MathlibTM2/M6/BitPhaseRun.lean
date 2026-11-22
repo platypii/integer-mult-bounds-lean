@@ -1179,7 +1179,7 @@ private theorem executePorts {k V : ℕ} {α : Type*} (slot : α ↪ Fin (k+1))
       exact (off i (fun b hb => away b (List.mem_cons_of_mem _ hb))).trans
         (Function.update_of_ne (away t List.mem_cons_self).symm ..)
 
-private theorem compilePorts {k V : ℕ} {α : Type*} (slot : α ↪ Fin (k+1))
+theorem compilePorts {k V : ℕ} {α : Type*} (slot : α ↪ Fin (k+1))
     (port : α → SharedBankStage.Stage _ 1 prime (@portOwner V)) (ts : List α) (unique : ts.Nodup) :
     ∃ post : SharedBankStage.Stage _ (k+1) prime (phaseOwners (N := V)),
       post.cost = (ts.map fun t => (port t).cost).sum + ts.length ∧
