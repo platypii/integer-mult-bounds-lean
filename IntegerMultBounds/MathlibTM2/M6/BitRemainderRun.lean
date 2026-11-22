@@ -1793,6 +1793,140 @@ theorem placedRemainder_parent_stage [M8.Machine.Net] {k : ℕ} (src : Fin k)
 
 end
 
+/-- In inherited order the block index lies between the external fields and
+the label. To exchange one digit across it, include that index in the middle
+register of an ordinary equal-width transpose. -/
+noncomputable def inheritedRowSwap (w B K : ℕ) (s : Fin 128) (l : Fin (64*64)) : Descriptor :=
+  let M := prime^w
+  ⟨1,1,M^s.val,w,(M^(127-s.val)*B)*M^l.val,M^(4095-l.val)*K⟩
+
+theorem inheritedRowSwap_volume (w B K : ℕ) (s : Fin 128) (l : Fin (64*64)) :
+    volume prime (inheritedRowSwap w B K s l) =
+      (prime^w)^128*B*(prime^w)^(64*64)*K := by
+  let M := prime^w
+  change 1*1*M^s.val*M*((M^(127-s.val)*B)*M^l.val)*M*(M^(4095-l.val)*K) = _
+  have split {n : ℕ} (i : Fin (n+1)) : M^i.val*M*M^(n-i.val) = M^(n+1) := by
+    rw [← pow_succ,← pow_add]
+    congr 1
+    omega
+  calc
+    _ = (M^s.val*M*M^(127-s.val))*B*(M^l.val*M*M^(4095-l.val))*K := by ring
+    _ = _ := by rw [split s,split l]
+
+/-- Exact offset of the crossing transpose. Prefixes and suffixes are the
+radix pieces around each selected digit in its original word. -/
+theorem inheritedRowSwap_read {w B K : ℕ} (s : Fin 128) (l : Fin (64*64)) :
+    let M := prime^w
+    let v := inheritedRowSwap w B K s l
+    ∀ (word : Fin (volume prime v) → ZMod 2) (p : Fin (M^s.val)) (h d : Fin M)
+      (u : Fin (M^(127-s.val))) (b : Fin B) (q : Fin (M^l.val))
+      (v' : Fin (M^(4095-l.val))) (t : Fin K),
+      let cell := fun (h d : Fin M) =>
+        ((((((p.val*M+h.val)*M^(127-s.val)+u.val)*B+b.val)*M^l.val+q.val)*M+d.val)*
+          M^(4095-l.val)+v'.val)*K+t.val
+      ext (Shared50RecursiveNodeRows.transpose (one_dvd v.rows) word) (cell d h) =
+        ext word (cell h d) := by
+  intro M v word p h d u b q v' t cell
+  let addr : RecursiveInterchangeScaling.Address v :=
+    ⟨(0 : Fin 1),(0 : Fin 1),p,h,finProdFinEquiv (finProdFinEquiv (u,b),q),d,finProdFinEquiv (v',t)⟩
+  have atCell (h d : Fin M) :
+      (RecursiveInterchangeScaling.index ({addr with h := h, d := d} : RecursiveInterchangeScaling.Address v)).val =
+        cell h d := by
+    simp only [RecursiveInterchangeScaling.index_val,RecursiveInterchangeLayout.index,addr,cell,v,inheritedRowSwap,
+      Fin.val_zero,Nat.zero_mul,Nat.zero_add,finProdFinEquiv_apply_val,M]
+    ring
+  rw [← atCell d h,← atCell h d,ext_apply,ext_apply]
+  exact Shared50RecursiveNodeTranspose.transpose_all (by decide : 0 < 1) (one_dvd _) word addr
+
+/-- Column-major label digit paired with an external field digit. -/
+def inheritedLabelDigit (s : Fin 128) : Fin (64*64) :=
+  let p := (@finProdFinEquiv 2 64).symm s
+  finProdFinEquiv (p.2,Fin.castAdd 62 p.1)
+
+private theorem inheritedLabelDigit_injective : Function.Injective inheritedLabelDigit := by
+  intro s t eq
+  obtain ⟨⟨r,i⟩,rfl⟩ := (@finProdFinEquiv 2 64).surjective s
+  obtain ⟨⟨u,j⟩,rfl⟩ := (@finProdFinEquiv 2 64).surjective t
+  simp [inheritedLabelDigit] at eq
+  exact congrArg finProdFinEquiv (Prod.ext ((Fin.castAdd_injective 2 62 eq.2)) eq.1)
+
+/-- The 128 disjoint digit crossings implement the full placement. No crossing
+involves a digit of the inherited block. -/
+theorem inheritedRowSwap_schedule :
+    let step := fun (i : Fin 128) => Equiv.swap (Sum.inl i) (Sum.inr (inheritedLabelDigit i))
+    ∀ j, (List.finRange 128).foldl (fun a i => step i a) j = remainderRowPlacement j := by
+  intro step
+  have fixed (xs : List (Fin 128)) (j : Fin 128 ⊕ Fin (64*64))
+      (left : ∀ i ∈ xs, j ≠ Sum.inl i) (right : ∀ i ∈ xs, j ≠ Sum.inr (inheritedLabelDigit i)) :
+      xs.foldl (fun a i => step i a) j = j := by
+    induction xs with
+    | nil => rfl
+    | cons i xs ih =>
+      rw [List.foldl_cons,show step i j = j from Equiv.swap_apply_of_ne_of_ne (left i (by simp)) (right i (by simp))]
+      exact ih (fun t ht => left t (by simp [ht])) (fun t ht => right t (by simp [ht]))
+  have pair (xs : List (Fin 128)) (nd : xs.Nodup) (s : Fin 128) (mem : s ∈ xs) :
+      let run := xs.foldl (fun a i => step i a)
+      run (Sum.inl s) = Sum.inr (inheritedLabelDigit s) ∧ run (Sum.inr (inheritedLabelDigit s)) = Sum.inl s := by
+    induction xs with
+    | nil => simp at mem
+    | cons i xs ih =>
+      obtain ⟨fresh,nd⟩ := List.nodup_cons.mp nd
+      by_cases eq : s = i
+      · subst s
+        simp only [List.foldl_cons,step,Equiv.swap_apply_left,Equiv.swap_apply_right]
+        constructor
+        · exact fixed xs _ (by simp) (fun j hj eq => fresh (inheritedLabelDigit_injective (Sum.inr.inj eq) ▸ hj))
+        · exact fixed xs _ (fun j hj eq => fresh (Sum.inl.inj eq ▸ hj)) (by simp)
+      · have ne := inheritedLabelDigit_injective.ne eq
+        simpa [List.foldl_cons,step,Equiv.swap_apply_def,eq,ne] using ih nd ((List.mem_cons.mp mem).resolve_left eq)
+  intro j
+  cases j with
+  | inl s =>
+    exact (pair _ (List.nodup_finRange _) s (List.mem_finRange s)).1
+  | inr l =>
+    obtain ⟨⟨i,r⟩,rfl⟩ := (@finProdFinEquiv 64 64).surjective l
+    induction r using Fin.addCases (m := 2) (n := 62) with
+    | left r =>
+      let s := finProdFinEquiv (r,i)
+      have eq : inheritedLabelDigit s = finProdFinEquiv (i,Fin.castAdd 62 r) := by simp [inheritedLabelDigit,s]
+      rw [remainderRowPlacement_row,← eq]
+      exact (pair _ (List.nodup_finRange _) s (List.mem_finRange s)).2
+    | right r =>
+      rw [remainderRowPlacement_spectator]
+      apply fixed _ _ (by simp)
+      intro s _ eq
+      obtain ⟨⟨u,j⟩,rfl⟩ := (@finProdFinEquiv 2 64).surjective s
+      have bad := congrArg Prod.snd (finProdFinEquiv.injective (Sum.inr.inj eq))
+      simp only [inheritedLabelDigit,Equiv.symm_apply_apply] at bad
+      have := congrArg Fin.val bad
+      simp only [Fin.val_natAdd,Fin.val_castAdd] at this
+      omega
+
+/-- With their six descriptor headers supplied, the 128 crossings have one
+uniform atom-width cost bound, including one sequencing step per crossing. -/
+theorem inheritedRowSwap_cost [M8.Machine.Net] :
+    ∃ C : ℝ, ∀ w B K : ℕ, 0 < w → 0 < B → 0 < K →
+      let V := (prime^w)^128*B*(prime^w)^(64*64)*K
+      let view := fun s => inheritedRowSwap w B K s (inheritedLabelDigit s)
+      ((∑ s : Fin 128, (cost (view s) (M8.RevMachine.Routines.hdr (view s))+1) : ℕ) : ℝ) ≤
+        C*V*(w : ℝ)^M8.Machine.BudgetBound.tau := by
+  obtain ⟨C,bound⟩ := scaledRoute_cost_bound 128 128 1 (by decide)
+  refine ⟨C,?_⟩
+  intro w B K hw hb hk V view
+  have positive (s) : (view s).Positive :=
+    ⟨Nat.zero_lt_one,Nat.zero_lt_one,pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _,
+      Nat.mul_pos (Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) hb)
+        (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _),
+      Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) hk⟩
+  have each (s) : cost (view s) (M8.RevMachine.Routines.hdr (view s)) ≤ LeafCore.coreCost V w := by
+    simpa only [view,inheritedRowSwap_volume,V,show (inheritedRowSwap w B K s (inheritedLabelDigit s)).width = w from rfl] using LeafCore.cost_le (positive s)
+  have total := Finset.sum_le_sum (s := Finset.univ) (fun s _ => Nat.add_le_add_right (each s) 1)
+  simp only [Finset.sum_const,Finset.card_univ,Fintype.card_fin,smul_eq_mul] at total
+  have hv : 0 < V := Nat.mul_pos (Nat.mul_pos (Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) hb) (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _)) hk
+  apply le_trans ?_ (bound V w hw)
+  have paid := total.trans (show 128*(LeafCore.coreCost V w+1) ≤ 128*V+128*LeafCore.coreCost V (w*1) by rw [Nat.mul_one]; omega)
+  exact_mod_cast paid
+
 /-- Both directions of the scheduled chart act on the packed record word consumed by the parent. -/
 theorem packedRemainderChart_stage [M8.Machine.Net] {k : ℕ} (src : Fin k) (c : PortCertificate)
     (hc : c.Checked) (inverse : Bool) :
