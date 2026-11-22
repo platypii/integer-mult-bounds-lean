@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.M6.BitIntervalRows
 public import IntegerMultBounds.MathlibTM2.M6.BitOrdinaryChildCost
 public import IntegerMultBounds.MathlibTM2.M6.BitScheduledChildQueue
 public import IntegerMultBounds.MathlibTM2.Cover.LabelCallerHeaders
@@ -211,6 +212,85 @@ abbrev CopyIntervalPositions (child : Descriptor) (w W : ℕ)
     (position : Fin (volume prime child) ≃ Fin ((prime^w)^16*W)) : Prop :=
   InheritedIntervalPositions child (phaseIntervalChild 0 7 w W)
     (phaseIntervalChild_volume (by decide : 0 ≤ 7) (by decide : 7 ≤ 8) w W) position
+
+open RecursiveInterchangeLayout in
+/-- A child transpose in inherited order is equivalent to transposing every
+cyclic role stream after dividing the trailing spectator field by the role count. -/
+theorem InheritedIntervalPositions.trailingRows_iff {V : ℕ} {child wide : Descriptor}
+    {size : volume prime wide = V} {position : Fin (volume prime child) ≃ Fin V}
+    (coords : InheritedIntervalPositions child wide size position) (width : wide.width = child.width)
+    (v : Descriptor) (rows : ℕ) (shape : wide = {v with afterD := v.afterD*rows})
+    {α : Type} (word changed : Fin V → α) :
+    let span : volume prime v * rows = V := by rw [← size,shape]; simp [volume,Nat.mul_assoc]
+    let lane := fun (i : Fin (volume prime v)) (j : Fin rows) => (finProdFinEquiv (i,j)).cast span
+    (∀ k, changed (position k) = Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (word ∘ position) k) ↔
+      ∀ i j, changed (lane i j) = Shared50RecursiveNodeRows.transpose (one_dvd v.rows) (fun k => word (lane k j)) i := by
+  subst wide
+  subst V
+  intro span lane
+  rw [coords.transpose_iff width]
+  have rowsRead := transpose_trailingRows v rows word
+  constructor
+  · rintro rfl i j
+    exact rowsRead i j
+  · intro perRow
+    funext k
+    obtain ⟨⟨i,j⟩,eq⟩ := finProdFinEquiv.surjective (k.cast span.symm)
+    have atLane : lane i j = k := by
+      have h := congrArg Fin.val eq
+      exact Fin.ext h
+    rw [← atLane]
+    exact (perRow i j).trans (rowsRead i j).symm
+
+open RecursiveInterchangeLayout in
+/-- For a scheduled rank-seven COPY, a factor of the trailing spectator stock
+supplies independent rows without moving either active field. -/
+theorem CopyIntervalPositions.trailingRows_iff {child : Descriptor} {w W rows : ℕ}
+    {position : Fin (volume prime child) ≃ Fin ((prime^w)^16*(W*rows))}
+    (coords : CopyIntervalPositions child w (W*rows) position) (width : child.width = 7*w)
+    {α : Type} (word changed : Fin ((prime^w)^16*(W*rows)) → α) :
+    let v := phaseIntervalChild 0 7 w W
+    let span : volume prime v * rows = (prime^w)^16*(W*rows) := by
+      rw [phaseIntervalChild_volume (by decide) (by decide),Nat.mul_assoc]
+    let lane := fun (i : Fin (volume prime v)) (j : Fin rows) => (finProdFinEquiv (i,j)).cast span
+    (∀ k, changed (position k) = Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (word ∘ position) k) ↔
+      ∀ i j, changed (lane i j) = Shared50RecursiveNodeRows.transpose (one_dvd v.rows) (fun k => word (lane k j)) i := by
+  apply InheritedIntervalPositions.trailingRows_iff coords
+  · simpa [phaseIntervalChild] using width.symm
+  · simp [phaseIntervalChild,Nat.mul_assoc]
+
+open RecursiveInterchangeLayout in
+/-- At an internal COPY window the inherited row stock supplies all 142080
+role tapes. Each tape has the same physical interval with the stock divided once. -/
+theorem CopyIntervalPositions.internalRows_iff {child parent : Descriptor} {w blocks rows : ℕ}
+    (stock : 142080 ∣ rows) :
+    let labels := prime^(64*(w*64))
+    let tail := fun r => blocks*labels*(parent.beforeRows*r*parent.between*parent.afterD)
+    let W := tail rows
+    let v := phaseIntervalChild 0 7 w (tail (rows/142080))
+    ∀ (position : Fin (volume prime child) ≃ Fin ((prime^w)^16*W)),
+      CopyIntervalPositions child w W position → child.width = 7*w →
+      ∃ span : volume prime v * 142080 = (prime^w)^16*W,
+        ∀ {α : Type} (word changed : Fin ((prime^w)^16*W) → α),
+        let lane := fun (i : Fin (volume prime v)) (j : Fin 142080) => (finProdFinEquiv (i,j)).cast span
+        (∀ k, changed (position k) = Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (word ∘ position) k) ↔
+          ∀ i j, changed (lane i j) = Shared50RecursiveNodeRows.transpose (one_dvd v.rows) (fun k => word (lane k j)) i := by
+  intro labels tail W v
+  have split : W = tail (rows/142080)*142080 := by
+    dsimp [W,tail]
+    have h := Nat.div_mul_cancel stock
+    calc
+      _ = blocks*labels*(parent.beforeRows*((rows/142080)*142080)*parent.between*parent.afterD) := by rw [h]
+      _ = _ := by ac_rfl
+  have span : volume prime v * 142080 = (prime^w)^16*W := by
+    rw [split,← Nat.mul_assoc]
+    exact congrArg (· * 142080) (phaseIntervalChild_volume (by decide) (by decide) _ _)
+  intro position coords width
+  refine ⟨span,?_⟩
+  intro α word changed
+  apply InheritedIntervalPositions.trailingRows_iff coords
+  · simpa [phaseIntervalChild] using width.symm
+  · simp [v,split,phaseIntervalChild,Nat.mul_assoc]
 
 open IntegerMultBounds.Networks.Certificates.PR589 RecursiveInterchangeLayout in
 /-- A child that reads the interval in its inherited order can be called
