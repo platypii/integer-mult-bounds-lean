@@ -49,9 +49,9 @@ theorem ScheduledReturn.roundTrip [M8.Machine.Net] {V size back Q w B W : ℕ} {
       (∀ b j, 2 ≤ j.val → S.L (slots (paddingBanks b j)) = [] ∧ S.R (slots (paddingBanks b j)) = []) →
       WordAtZero (singleLabelBank (firstRowLabel (w+1)) x i) (S.L (slots 0)) (S.R (slots 0)) →
       (∀ z, readAt blank (S.L ((inputCrop.trans slots) 1)) (S.R ((inputCrop.trans slots) 1)) z = blank) →
-      ∀ (record rowWidth : List (Fin (prime+4))), record.length = tail → rowWidth.length = B*tail →
+      S.R (slots (inputHeaders 3)) = binSyms B.size B →
       S.L ((inputTranspose.trans slots) 0) = [] → S.L ((inputTranspose.trans slots) 1) = [] →
-      (∀ j, S.R ((inputTranspose.trans slots) j) = (transposeStacks (embStk (inputTranspose.trans slots) S) [] [] [] record rowWidth).R j) →
+      (∀ j, S.R ((inputTranspose.trans slots) j) = []) →
       (∀ z, readAt blank (S.L ((inputPad.trans slots) 1)) (S.R ((inputPad.trans slots) 1)) z = blank) →
       (∀ j z, readAt blank (S.L ((inputHeaders.trans slots) j)) (S.R ((inputHeaders.trans slots) j)) (z-1) =
         RadixZeroFill.encodedBinary (bits (![A*tail,N,g.val,B] j)) z) →
@@ -70,7 +70,7 @@ theorem ScheduledReturn.roundTrip [M8.Machine.Net] {V size back Q w B W : ℕ} {
         (t : ℝ) ≤ (packedChartRate (0 : Fin 1) c checked false layout.width +
           packedChartRate (0 : Fin 1) c checked true layout.width + (366+16*64*64+19*64+344) +
           rate*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau + 64*(8*64+21+28+(prime.size : ℝ)))*
-          volume prime (role layout 142080) + 13 + 46227*(B*(N*K) : ℕ)+1182 ∧ v.user = u.user ∧
+          volume prime (role layout 142080) + 13 + 46444*(B*(N*K) : ℕ)+1182 ∧ v.user = u.user ∧
         WordAtZero (singleLabelBank (firstRowLabel (w+1)) (fun _ => staged) 0) (F.L (slots 0)) (F.R (slots 0)) ∧
       let proj := IntegerMultBounds.Swap.Modular.reduce M ((c.span interval.1 interval.2).submatrix stageAxis.symm stageAxis.symm)
       let frame := Matrix.fromBlocks (Matrix.diagonal parent) 0 0 (M8.ReversedExchange.rev 64)
@@ -80,8 +80,8 @@ theorem ScheduledReturn.roundTrip [M8.Machine.Net] {V size back Q w B W : ℕ} {
   let slots := aroundScanner (((stage.slots 0).natAdd size).castAdd back)
   obtain ⟨enter,forward⟩ := prepareAndEnter_exec body fits slots staging apart
   refine ⟨enter.seq scan,?_⟩
-  intro _ _ _ _ layout M A tail N K g idRow x i u S initial dims fresh ownerWord cropBlank record rowWidth
-    recordLen rowLen left₀ left₁ transpose padBlank headers rotFree scannerBlank
+  intro _ _ _ _ layout M A tail N K g idRow x i u S initial dims fresh ownerWord cropBlank blockDigits
+    left₀ left₁ transpose padBlank headers rotFree scannerBlank
     outHeaders outRot outDest cropDest tailDigits rowDigits outTranspose outLeft₁ outLeft₆
   have rows : prime^(64*((w+1)*64)) = N := by
     change _ = (prime^(w+1))^(64*64)
@@ -89,7 +89,7 @@ theorem ScheduledReturn.roundTrip [M8.Machine.Net] {V size back Q w B W : ℕ} {
   have width : A*tail = K := ordinaryCompact_width M W
   obtain ⟨v,D,n,enterRun,enterTime,same,live,blankOwner,crop,pad,frame⟩ :=
     forward (w+1) B tail hb (Nat.mul_pos (pow_pos (pow_pos IntegerMultBounds.Networks.Shared50ModularControl.prime_prime.pos _) _) hw)
-      x i u S (by rwa [rows]) fresh ownerWord cropBlank record rowWidth recordLen rowLen left₀ left₁ transpose padBlank
+      x i u S (by rwa [rows]) fresh ownerWord cropBlank blockDigits tailDigits left₀ left₁ transpose padBlank
       (by simpa only [rows] using headers) rotFree scannerBlank
   have keep (j : Fin 95) (h : returnSlot j) : D.L (slots j) = S.L (slots j) ∧ D.R (slots j) = S.R (slots j) := by
     apply frame
@@ -123,9 +123,9 @@ theorem ScheduledReturn.roundTrip [M8.Machine.Net] {V size back Q w B W : ℕ} {
     (fun j => (tr j).2.trans (outTranspose j)) ((tr 1).1.trans outLeft₁) ((tr 6).1.trans outLeft₆)
     pad blankOwner
   refine ⟨z,F,_,result,Exec.seq enterRun run,?_,user.trans same,word,cells⟩
-  change n ≤ 23245*(A*(B*prime^(64*((w+1)*64))*tail))+583 at enterTime
+  change n ≤ 23462*(A*(B*prime^(64*((w+1)*64))*tail))+583 at enterTime
   rw [rows,show A*(B*N*tail) = B*(N*K) by rw [← width]; ac_rfl] at enterTime
-  have fee : (n : ℝ) ≤ 23245*(B*(N*K) : ℕ)+583 := by exact_mod_cast enterTime
+  have fee : (n : ℝ) ≤ 23462*(B*(N*K) : ℕ)+583 := by exact_mod_cast enterTime
   change (m : ℝ) ≤ _ + 22982*(B*(N*K) : ℕ)+599 at time
   push_cast at time fee ⊢
   linarith

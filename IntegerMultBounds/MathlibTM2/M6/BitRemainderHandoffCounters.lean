@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.M6.BitRemainderHandoffPlacement
+public import IntegerMultBounds.MathlibTM2.M6.BitRemainderInputCounters
 
 /-! Install both the staging and the ordinary padding counters for the two handoffs. -/
 @[expose] public section
@@ -119,15 +119,15 @@ theorem prepareAndEnter_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T Q pri
       (∀ b j, 2 ≤ j.val → S.L (slots (paddingBanks b j)) = [] ∧ S.R (slots (paddingBanks b j)) = []) →
       WordAtZero (singleLabelBank (firstRowLabel w) x i) (S.L (slots 0)) (S.R (slots 0)) →
       (∀ z, readAt blank (S.L ((inputCrop.trans slots) 1)) (S.R ((inputCrop.trans slots) 1)) z = blank) →
-      ∀ (record rowWidth : List (Fin (prime+4))), record.length = K → rowWidth.length = B*K →
+      S.R (slots (inputHeaders 3)) = binSyms B.size B → S.R (slots 94) = binSyms K.size K →
       S.L ((inputTranspose.trans slots) 0) = [] → S.L ((inputTranspose.trans slots) 1) = [] →
-      (∀ j, S.R ((inputTranspose.trans slots) j) = (transposeStacks (embStk (inputTranspose.trans slots) S) [] [] [] record rowWidth).R j) →
+      (∀ j, S.R ((inputTranspose.trans slots) j) = []) →
       (∀ z, readAt blank (S.L ((inputPad.trans slots) 1)) (S.R ((inputPad.trans slots) 1)) z = blank) →
       (∀ j z, readAt blank (S.L ((inputHeaders.trans slots) j)) (S.R ((inputHeaders.trans slots) j)) (z-1) =
         RadixZeroFill.encodedBinary (bits (![A*K,N,g.val,B] j)) z) →
       (∀ j : Fin 14, j ≠ 10 → j ≠ 11 → S.L ((inputRotation.trans slots) j) = [] ∧ S.R ((inputRotation.trans slots) j) = []) →
       (∀ z, readAt blank (S.L (slots 1)) (S.R (slots 1)) z = blank) →
-      ∃ v F t, Exec body code (mk u S) t (mk v F) ∧ t ≤ 23245*(A*(B*N*K))+583 ∧
+      ∃ v F t, Exec body code (mk u S) t (mk v F) ∧ t ≤ 23462*(A*(B*N*K))+583 ∧
         v.user = u.user ∧ WordAtZero (fun j => singleLabelBank (firstRowLabel w) x i
           ((ordinaryRowLayout (Equiv.swap 0 g)).symm j)) (F.L (slots 1)) (F.R (slots 1)) ∧
         (∀ l, readAt blank (F.L (slots 0)) (F.R (slots 0)) l = blank) ∧
@@ -137,8 +137,11 @@ theorem prepareAndEnter_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T Q pri
           (∀ i, (inputCrop.trans slots) i ≠ j) → (∀ i, (inputTranspose.trans slots) i ≠ j) → (∀ i, (inputPad.trans slots) i ≠ j) → (∀ i, (inputRotation.trans slots) i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
   obtain ⟨setup,install⟩ := preparePadding_exec body slots staging apart
   obtain ⟨enter,move⟩ := enter_exec body fits slots
-  refine ⟨setup.seq enter,?_⟩
-  intro w B K hb hk A N g x i u S dims fresh owner cropBlank record rowWidth recLen rowLen
+  obtain ⟨clocks,build⟩ := inputCounters_exec body (inputTranspose.trans slots) (slots (inputHeaders 3)) (slots 94)
+    (slots.injective.ne (by decide)) (fun i => ⟨slots.injective.ne ((by decide : ∀ i, inputHeaders 3 ≠ inputTranspose i) i),
+      slots.injective.ne ((by decide : ∀ i, (94 : Fin 95) ≠ inputTranspose i) i)⟩)
+  refine ⟨setup.seq (clocks.seq enter),?_⟩
+  intro w B K hb hk A N g x i u S dims fresh owner cropBlank blockDigits widthDigits
     left₀ left₁ transpose padBlank headers rotFree scannerBlank
   obtain ⟨v,D,t,load,time,user,c₀,c₁,c₂,c₃,off⟩ := install A B N K g.val u S dims headers fresh
   have keep (j : Fin 95) (h : ∀ b k, 2 ≤ k.val → paddingBanks b k ≠ j) :=
@@ -153,38 +156,58 @@ theorem prepareAndEnter_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T Q pri
   have one := keep 1 (by decide +kernel)
   have crop := keep (inputCrop 1) (by decide +kernel)
   have pad := keep (inputPad 1) (by decide +kernel)
-  obtain ⟨z,F,m,run,paid,same,out,cleared,frame⟩ := move w B K hb hk x i v D
-    (by rwa [zero.1,zero.2]) (by simpa only [Function.Embedding.trans_apply,crop.1,crop.2] using cropBlank)
-    c₀ record rowWidth recLen rowLen ((tr 0).1.trans left₀) ((tr 1).1.trans left₁)
-    (fun j => ((tr j).2.trans (transpose j))) (by simpa only [Function.Embedding.trans_apply,pad.1,pad.2] using padBlank)
-    c₁ (fun j l => by simpa only [Function.Embedding.trans_apply,(hd j).1,(hd j).2] using headers j l)
-    (fun j h₀ h₁ => ⟨(rot j).1.trans (rotFree j h₀ h₁).1,(rot j).2.trans (rotFree j h₀ h₁).2⟩)
-    (by simpa only [one.1,one.2] using scannerBlank)
+  obtain ⟨y,E,r,clockRun,clockCost,clockUser,left,clockWords,clockOff⟩ := build B K v D
+    ((hd 3).2.trans blockDigits) ((keep 94 (by decide +kernel)).2.trans widthDigits)
+    (fun j => (tr j).2.trans (transpose j))
+  have kept (j : Fin 95) (h : j ≠ inputTranspose 4 ∧ j ≠ inputTranspose 7) :
+      E.R (slots j) = D.R (slots j) := clockOff _ (slots.injective.ne h.1) (slots.injective.ne h.2)
+  have counters (b : Fin 4) {d n k} (ready : CropCounters ((paddingBanks b).trans slots) d n k D) :
+      CropCounters ((paddingBanks b).trans slots) d n k E := by
+    intro j h₀ h₁ z
+    have eq := kept _ ((by decide +kernel : ∀ b j, paddingBanks b j ≠ inputTranspose 4 ∧ paddingBanks b j ≠ inputTranspose 7) b j)
+    simpa only [Function.Embedding.trans_apply,left,eq] using ready j h₀ h₁ z
+  have unchanged (j : Fin 95) (a : j ≠ inputTranspose 4 ∧ j ≠ inputTranspose 7)
+      (b : D.R (slots j) = S.R (slots j)) := (kept j a).trans b
+  have rotR (j : Fin 14) := unchanged _ ((by decide : ∀ j, inputRotation j ≠ inputTranspose 4 ∧ inputRotation j ≠ inputTranspose 7) j) (rot j).2
+  have hdR (j : Fin 4) := unchanged _ ((by decide : ∀ j, inputHeaders j ≠ inputTranspose 4 ∧ inputHeaders j ≠ inputTranspose 7) j) (hd j).2
+  obtain ⟨z,F,m,run,paid,same,out,cleared,frame⟩ := move w B K hb hk x i y E
+    (by rwa [left,zero.1,unchanged 0 (by decide) zero.2])
+    (by simpa only [Function.Embedding.trans_apply,left,crop.1,unchanged _ (by decide : inputCrop 1 ≠ inputTranspose 4 ∧ inputCrop 1 ≠ inputTranspose 7) crop.2] using cropBlank)
+    (counters 0 c₀) _ _ (List.length_replicate ..) (List.length_replicate ..)
+    (by rw [left]; exact (tr 0).1.trans left₀) (by rw [left]; exact (tr 1).1.trans left₁)
+    clockWords
+    (by simpa only [Function.Embedding.trans_apply,left,pad.1,unchanged _ (by decide : inputPad 1 ≠ inputTranspose 4 ∧ inputPad 1 ≠ inputTranspose 7) pad.2] using padBlank)
+    (counters 1 c₁) (fun j l => by simpa only [Function.Embedding.trans_apply,left,(hd j).1,hdR j] using headers j l)
+    (fun j h₀ h₁ => ⟨by rw [left]; exact (rot j).1.trans (rotFree j h₀ h₁).1,(rotR j).trans (rotFree j h₀ h₁).2⟩)
+    (by simpa only [left,one.1,unchanged 1 (by decide) one.2] using scannerBlank)
   have returnFrame (b : Fin 4) (hb : 2 ≤ b.val) (k : Fin 12) (hk : 2 ≤ k.val) :=
     frame (slots (paddingBanks b k))
       (fun j => slots.injective.ne ((by decide +kernel : ∀ b : Fin 4, 2 ≤ b.val → ∀ k : Fin 12, 2 ≤ k.val → ∀ j, inputCrop j ≠ paddingBanks b k) b hb k hk j))
       (fun j => slots.injective.ne ((by decide +kernel : ∀ b : Fin 4, 2 ≤ b.val → ∀ k : Fin 12, 2 ≤ k.val → ∀ j, inputTranspose j ≠ paddingBanks b k) b hb k hk j))
       (fun j => slots.injective.ne ((by decide +kernel : ∀ b : Fin 4, 2 ≤ b.val → ∀ k : Fin 12, 2 ≤ k.val → ∀ j, inputPad j ≠ paddingBanks b k) b hb k hk j))
       (fun j => slots.injective.ne ((by decide +kernel : ∀ b : Fin 4, 2 ≤ b.val → ∀ k : Fin 12, 2 ≤ k.val → ∀ j, inputRotation j ≠ paddingBanks b k) b hb k hk j))
-  refine ⟨z,F,_,Exec.seq load run,?_,same.trans user,out,cleared,?_,?_,?_⟩
+  refine ⟨z,F,_,Exec.seq load (Exec.seq clockRun run),?_,same.trans (clockUser.trans user),out,cleared,?_,?_,?_⟩
   · have bound := preparePadding_cost_le (A := A) (N := N) (pow_pos (pow_pos IntegerMultBounds.Networks.Shared50ModularControl.prime_prime.pos _) _) hb
         (pow_pos IntegerMultBounds.Networks.Shared50ModularControl.prime_prime.pos _) hk
     rw [show A*B*(N*K) = A*(B*N*K) by ac_rfl] at bound
     change m ≤ 22944*(A*(B*N*K))+583 at paid
+    have clockBound := clockCost.trans (inputCounters_cost_le hb hk)
+    have small : B*K ≤ A*(B*N*K) := (Nat.mul_le_mul_right K (Nat.le_mul_of_pos_right B (pow_pos IntegerMultBounds.Networks.Shared50ModularControl.prime_prime.pos _))).trans
+      (Nat.le_mul_of_pos_left _ (pow_pos (pow_pos IntegerMultBounds.Networks.Shared50ModularControl.prime_prime.pos _) _))
     omega
   · intro k h₀ h₁ l
     have keep := returnFrame 2 (by decide) k ((by decide : ∀ k : Fin 12, k ≠ 0 → k ≠ 1 → 2 ≤ k.val) k h₀ h₁)
     rw [show F.L ((outputCrop.trans slots) k) = _ from keep.1,
       show F.R ((outputCrop.trans slots) k) = _ from keep.2]
-    exact c₂ k h₀ h₁ l
+    exact counters 2 c₂ k h₀ h₁ l
   · intro k h₀ h₁ l
     have keep := returnFrame 3 (by decide) k ((by decide : ∀ k : Fin 12, k ≠ 0 → k ≠ 1 → 2 ≤ k.val) k h₀ h₁)
     rw [show F.L ((outputPad.trans slots) k) = _ from keep.1,
       show F.R ((outputPad.trans slots) k) = _ from keep.2]
-    exact c₃ k h₀ h₁ l
+    exact counters 3 c₃ k h₀ h₁ l
   · intro j banks a b c d
     have endFrame := frame j a b c d
     have startFrame := off j banks
-    exact ⟨endFrame.1.trans startFrame.1,endFrame.2.trans startFrame.2⟩
+    exact ⟨endFrame.1.trans (by rw [left]; exact startFrame.1),endFrame.2.trans ((clockOff j (b 4).symm (b 7).symm).trans startFrame.2)⟩
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode.OrdinaryHandoff
