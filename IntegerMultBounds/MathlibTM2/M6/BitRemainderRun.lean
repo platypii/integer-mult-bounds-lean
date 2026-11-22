@@ -362,6 +362,78 @@ theorem remainderChart_twoRows (c : PortCertificate) (hc : c.Checked)
   change swapped*Hᵀ = out
   rw [← show out*H = swapped from Matrix.ext read,Matrix.mul_assoc,(remainderChart_reduced c hc w).2,Matrix.mul_one]
 
+def placeRemainderRow : Fin 128 ⊕ Fin (64*64) → Fin 128 ⊕ Fin (64*64)
+    | .inl j =>
+      let p := (@finProdFinEquiv 2 64).symm j
+      .inr (finProdFinEquiv (p.2,Fin.castAdd 62 p.1))
+    | .inr j =>
+      let p := (@finProdFinEquiv 64 64).symm j
+      Fin.addCases (m := 2) (n := 62) (fun r => .inl (finProdFinEquiv (r,p.1)))
+        (fun _ => .inr j) p.2
+
+/-- Exchange the external pair of fields with rows zero and one of a
+column-major label. Applying the same placement after the chart exposes
+the two charted fields contiguously for the interval child. -/
+def remainderRowPlacement : Equiv.Perm (Fin 128 ⊕ Fin (64*64)) :=
+  have twice : Function.Involutive placeRemainderRow := by
+    intro j
+    cases j with
+    | inl j =>
+      obtain ⟨⟨r,i⟩,rfl⟩ := (@finProdFinEquiv 2 64).surjective j
+      simp [placeRemainderRow]
+    | inr j =>
+      obtain ⟨⟨i,r⟩,rfl⟩ := (@finProdFinEquiv 64 64).surjective j
+      induction r using Fin.addCases (m := 2) (n := 62) with
+      | left r => simp [placeRemainderRow]
+      | right r => simp [placeRemainderRow]
+  ⟨placeRemainderRow,placeRemainderRow,twice,twice⟩
+
+@[simp] theorem remainderRowPlacement_field (r : Fin 2) (i : Fin 64) :
+    remainderRowPlacement (.inl (finProdFinEquiv (r,i))) =
+      .inr (finProdFinEquiv (i,Fin.castAdd 62 r)) := by
+  change placeRemainderRow (.inl (finProdFinEquiv (r,i))) = _
+  simp [placeRemainderRow]
+
+@[simp] theorem remainderRowPlacement_spectator (r : Fin 62) (i : Fin 64) :
+    remainderRowPlacement (.inr (finProdFinEquiv (i,Fin.natAdd 2 r))) =
+      .inr (finProdFinEquiv (i,Fin.natAdd 2 r)) := by
+  change placeRemainderRow (.inr (finProdFinEquiv (i,Fin.natAdd 2 r))) = _
+  simp [placeRemainderRow]
+
+/-- A single physical schedule exchanges the external fields with the two
+label rows at every precision. Its setup and all digit moves are absorbed
+by the parent volume times the atom-width power. -/
+theorem remainderRowPlacement_runs [M8.Machine.Net] {T : ℕ} (io : Fin T) :
+    let n := 128+64*64
+    let flat := (@finSumFinEquiv 128 (64*64)).symm
+    ∃ ps : List (LabelSchedule.Pair n), ∃ C : ℝ,
+      (ps.map fun p => Equiv.swap p.val.1 p.val.2).prod =
+        flat.trans (remainderRowPlacement.trans flat.symm) ∧
+      ∀ (v : Descriptor) (w B : ℕ), 0 < w → 0 < B →
+        v.beforeH = B*prime^(n*w) → v.Positive →
+        ∀ (roles : Tapes T prime) (x : Fin (volume prime v) → ZMod 2),
+          roles.head io = 0 → roles.tape io = sourceWord x →
+          ∃ (y : Fin (volume prime v) → ZMod 2) (t : ℕ), LabelSchedule.Swaps v w B ps (ext x) (ext y) ∧
+            GraphContract.Runs (LabelSchedule.schedule io ps)
+              (LabelCall.bank roles v (words (LabelSchedule.base v w)))
+              (LabelCall.bank (setTape roles io (sourceWord y) 0) v (words (LabelSchedule.base v w))) t ∧
+            (t : ℝ) ≤ C * volume prime v * (w : ℝ)^M8.Machine.BudgetBound.tau := by
+  intro n flat
+  obtain ⟨ps,route,_,run⟩ := LabelSchedule.permutation_schedule
+    (flat.trans (remainderRowPlacement.trans flat.symm)) io
+  let k := n-1
+  let setup := LabelSchedule.countCost ps
+  obtain ⟨C,bound⟩ := scaledRoute_cost_bound (setup+k*3808274) k 1 (by decide)
+  refine ⟨ps,C,route.symm,?_⟩
+  intro v w B hw hb shape pos roles x head word
+  obtain ⟨y,steps,exec⟩ := run v w B hw hb shape pos roles x head word
+  refine ⟨y,_,steps,exec,le_trans ?_ (bound (volume prime v) w hw)⟩
+  simp only [Nat.mul_one]
+  exact_mod_cast (show setup+k*(3808274*volume prime v+LeafCore.coreCost (volume prime v) w) ≤ _ by
+    rw [Nat.add_mul,Nat.mul_add,Nat.mul_assoc]
+    have := Nat.le_mul_of_pos_right setup (RecursiveAffinePrepare.volume_positive Shared50ModularControl.prime_prime.two_le v pos)
+    omega)
+
 /-- After the forward pass relabels a record from g to gH, the cover
 normalizer for the diagonal interval gives the parent's conjugated projector. -/
 theorem remainderProjector_atLabel (c : PortCertificate) (hc : c.Checked) (lo hi w : ℕ)
