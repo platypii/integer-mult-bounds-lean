@@ -48,6 +48,124 @@ of the recursive workers' tapes, state budgets, and parent dimensions. -/
 noncomputable def stagePackingRate [M8.Machine.Net] (n : Fin 9) : ℝ :=
   (stageRuns.map (borrowedPackRate n)).sum + helperChangesRate (restoreSlotChanges (stageFinalSlot n))
 
+/-- Sequence all stage workers and restoration on a single physical archive.
+Each unwrapped worker consumes its own private data and preserves later workers' data. -/
+theorem archivedSweep_exec [M8.Machine.Net] {T Q : ℕ} {P U : Type} (n : Fin 9)
+    (fan : Fin (142081+2) ↪ Fin T) (capacity : columnCapacity ≤ Q) (body : P → Pr P T Q prime U)
+    (w B K : ℕ) :
+    let bank := Fin.castAddEmb 273 (n := T)
+    let scratch := Fin.castAddEmb LeafCore.small (n := T+273)
+    let owner := bank.trans scratch
+    let full := (fan.trans bank).trans scratch
+    let outer := fun f => embProg owner id (body f)
+    let W := B*prime^(64*(w*64))*K
+    let blocks := (prime^w)^112*B
+    let V := (prime^w)^16*(blocks*prime^(64*(w*64))*K)
+    let scale := (V : ℝ)*((max 1 w : ℕ) : ℝ)^M8.Machine.BudgetBound.tau
+    0 < V → ∀ (saved : Fin 32 × Fin 5 → Stacks T prime → Prop) (price : Fin 32 × Fin 5 → ℝ),
+    (∀ p, ∃ call, ∀ (S : Stacks T prime), saved p S →
+      ∀ (a : Fin 142081 → Fin V → ZMod 2) v D, HelperFan fan a D →
+      (∀ j, (∀ h, fan h ≠ j) → D.L j = S.L j ∧ D.R j = S.R j) →
+      ∃ z F m b, Exec body call (mk v D) m (mk z F) ∧ (m : ℝ) ≤ price p ∧ z.user = v.user ∧
+        HelperFan fan b F ∧ BorrowedStep n w blocks K p a b ∧ ∀ j, j ≠ p → saved j S → saved j F) →
+    ∃ code, ∀ x u S, HelperFan full x S →
+      (∀ i j, S.R (scratch (borrowedHeaders T i j)) = (Routines.hdr (helperAdjacentView w 1 W i) j).map bitSymbol) →
+      (∀ j : Fin LeafCore.small, S.L (j.natAdd (T+273)) = [] ∧ S.R (j.natAdd (T+273)) = []) →
+      (∀ j, saved j (embStk owner S)) →
+      ∃ z F t out, Exec outer code (mk u S) t (mk z F) ∧
+        (t : ℝ) ≤ (stageRuns.map (fun p => borrowedPackRate n p*scale+price p)).sum+
+          helperChangesRate (restoreSlotChanges (stageFinalSlot n))*scale ∧
+        z.user = u.user ∧ HelperFan full out F ∧ RestoredBorrowedStage n w B K x out := by
+  intro bank scratch owner full outer W blocks V scale pos saved price calls
+  let ready (S : Stacks ((T+273)+LeafCore.small) prime) :=
+    (∀ i j, S.R (scratch (borrowedHeaders T i j)) = (Routines.hdr (helperAdjacentView w 1 W i) j).map bitSymbol) ∧
+    ∀ j : Fin LeafCore.small, S.L (j.natAdd (T+273)) = [] ∧ S.R (j.natAdd (T+273)) = []
+  obtain ⟨code,run⟩ := borrowedSweep_exec (w := w) (B := B) (K := K) n outer full
+    (fun j S => saved j (embStk owner S)) ready (fun p => borrowedPackRate n p*scale+price p)
+    (helperChangesRate (restoreSlotChanges (stageFinalSlot n))*scale) (by
+      intro p
+      obtain ⟨call,invoke⟩ := calls p
+      obtain ⟨pack,step⟩ := archivedBorrowedCall_host n p fan capacity body
+      refine ⟨.seq pack (embProg owner id call),?_⟩
+      intro x u S live guard fresh
+      obtain ⟨z,F,t,y,exec,bill,user,done,act,keep,headers,clear⟩ := step w B K pos x u S call (price p)
+        (fun F => ∀ j, j ≠ p → saved j (embStk owner S) → saved j F)
+        guard.1 live guard.2 (invoke (embStk owner S) fresh)
+      exact ⟨z,F,t,y,exec,bill,user,done,act,⟨fun i j => (headers i j).trans (guard.1 i j),clear⟩,keep⟩) (by
+      obtain ⟨restore,finish⟩ := archivedBorrowedRestore_host n fan capacity outer
+      refine ⟨restore,?_⟩
+      intro x u S live guard
+      obtain ⟨z,F,t,y,exec,bill,user,done,act,_,_⟩ := finish w B K pos x u S guard.1 live guard.2
+      exact ⟨z,F,t,y,exec,bill,user,done,act⟩)
+  refine ⟨code,?_⟩
+  intro x u S live headers free fresh
+  obtain ⟨z,F,t,y,out,exec,bill,user,done,steps,restore⟩ := run x u S live ⟨headers,free⟩ fresh
+  exact ⟨z,F,t,out,exec,bill,user,done,restoredBorrowedStage_of_trace steps restore⟩
+
+/-- Allocate disjoint private tapes for the invocation workers and one archive
+for the whole stage. Only the owner words are shared between worker banks. -/
+theorem allocatedArchiveSweep_host [M8.Machine.Net] (n : Fin 9) :
+    let J := Fin 32 × Fin 5
+    ∀ (tapes : J → ℕ) (ports : ∀ p, Fin (142081+2) ↪ Fin (tapes p)),
+    ∃ (T : ℕ) (fan : Fin (142081+2) ↪ Fin T) (banks : ∀ p, Fin (tapes p) ↪ Fin T),
+    ∀ {P : J → Type} {U : Type} {Q : ℕ}, columnCapacity ≤ Q →
+    ∀ (body : ∀ p, P p → Pr (P p) (tapes p) Q prime U) (w B K : ℕ),
+    let blocks := (prime^w)^112*B
+    let W := B*prime^(64*(w*64))*K
+    let V := (prime^w)^16*(blocks*prime^(64*(w*64))*K)
+    let scale := (V : ℝ)*((max 1 w : ℕ) : ℝ)^M8.Machine.BudgetBound.tau
+    let scratch := Fin.castAddEmb LeafCore.small (n := T+273)
+    let owner := (Fin.castAddEmb 273 (n := T)).trans scratch
+    let host := fun f : (p : J) × P p => embProg (banks f.1) (Sigma.mk f.1) (body f.1 f.2)
+    let outer := fun f => embProg owner id (host f)
+    0 < V → ∀ (coeff : J → ℝ) (childTime : ℕ → ℕ),
+    (∀ p, SeededInvocation (w := w) (B := blocks) (K := K) n p (ports p) (body p) (coeff p) childTime) →
+    ∀ shared : Stacks (142081+2) prime, ∃ initial : Stacks T prime, embStk fan initial = shared ∧
+    ∃ code, ∀ x u S, HelperFan (fan.trans owner) x S →
+      (∀ i j, S.R (scratch (borrowedHeaders T i j)) = (Routines.hdr (helperAdjacentView w 1 W i) j).map bitSymbol) →
+      (∀ j : Fin LeafCore.small, S.L (j.natAdd (T+273)) = [] ∧ S.R (j.natAdd (T+273)) = []) →
+      (∀ j, (∀ h, fan h ≠ j) → S.L (owner j) = initial.L j ∧ S.R (owner j) = initial.R j) →
+      ∃ z F t out, Exec outer code (mk u S) t (mk z F) ∧
+        (t : ℝ) ≤ (stageRuns.map (fun p => borrowedPackRate n p*scale+
+          (coeff p*V*(w : ℝ)^M8.Machine.BudgetBound.tau+
+          ((List.range' (stageChildStart n+runChildStart p) Geometry.Moves.localPaid.length).map childTime).sum))).sum+
+          helperChangesRate (restoreSlotChanges (stageFinalSlot n))*scale ∧
+        z.user = u.user ∧ HelperFan (fan.trans owner) out F ∧ RestoredBorrowedStage n w B K x out := by
+  intro J tapes ports
+  obtain ⟨T,fan,banks,select,prepare,apart⟩ := copyWindowBanks tapes ports
+  refine ⟨T,fan,banks,?_⟩
+  intro P U Q cap body w B K blocks W V scale scratch owner host outer pos coeff childTime supplied shared
+  choose seed _ call runs using fun p => supplied p shared
+  obtain ⟨initial,owners,stored⟩ := prepare shared seed
+  let saved (p : J) (S : Stacks T prime) := ∀ i, (∀ h, ports p h ≠ i) →
+    S.L (banks p i) = (seed p).L i ∧ S.R (banks p i) = (seed p).R i
+  have project p (S : Stacks T prime) : embStk (ports p) (embStk (banks p) S) = embStk fan S := by
+    simp only [embStk,Function.comp_def,select]
+  refine ⟨initial,owners,?_⟩
+  obtain ⟨code,run⟩ := archivedSweep_exec n fan cap host w B K pos saved
+    (fun p => coeff p*V*(w : ℝ)^M8.Machine.BudgetBound.tau+
+      ((List.range' (stageChildStart n+runChildStart p) Geometry.Moves.localPaid.length).map childTime).sum) (by
+      intro p
+      refine ⟨embProg (banks p) (Sigma.mk p) (call p),?_⟩
+      intro S ready a v D live held
+      have privateAt j i (h : ∀ k, ports j k ≠ i) := held (banks j i) (apart j i h).1
+      obtain ⟨z,F,m,b,exec,paid,user,done,act⟩ := runs p a (embDn (banks p) v) (embStk (banks p) D)
+        (by simpa only [HelperFan,project] using live) (fun i h =>
+          ⟨(privateAt p i h).1.trans (ready i h).1,(privateAt p i h).2.trans (ready i h).2⟩)
+      obtain ⟨y,E,placed,_,same,view,off⟩ := exec_emb (ι := Sigma.mk p) (body' := host)
+        (banks p).injective (fun _ => rfl) exec v rfl D rfl
+      rw [← view] at done
+      refine ⟨y,E,m,b,placed,paid,same.trans user,by simpa only [HelperFan,project] using done,act,?_⟩
+      intro j ne valid i h
+      obtain ⟨l,r⟩ := off _ ((apart j i h).2 p ne.symm)
+      exact ⟨l.trans ((privateAt j i h).1.trans (valid i h).1),r.trans ((privateAt j i h).2.trans (valid i h).2)⟩)
+  refine ⟨code,?_⟩
+  intro x u S live headers free fresh
+  apply run x u S live headers free
+  intro p i h
+  have held := fresh _ (apart p i h).1
+  exact ⟨held.1.trans (stored p i h).1,held.2.trans (stored p i h).2⟩
+
 def PackedBorrowedSweep [M8.Machine.Net] {T Q : ℕ} {U : Type} {P : Option (Fin 32 × Fin 5) → Type}
     (n : Fin 9) (tapes : Option (Fin 32 × Fin 5) → ℕ) (ports : ∀ j, Fin (142081+2) ↪ Fin (tapes j))
     (fan : Fin (142081+2) ↪ Fin T) (body : ∀ j, P j → Pr (P j) (tapes j) Q prime U)

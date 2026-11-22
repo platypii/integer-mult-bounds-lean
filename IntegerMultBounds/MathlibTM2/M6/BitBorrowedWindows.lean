@@ -797,7 +797,7 @@ theorem archivedBorrowedCall_host [M8.Machine.Net] {T Q : ℕ} {P U : Type}
       let W := B*prime^(64*(w*64))*K
       let blocks := (prime^w)^112*B
       let V := (prime^w)^16*(blocks*prime^(64*(w*64))*K)
-      0 < V → ∀ (data : Fin 142081 → Fin V → ZMod 2) u S call (price : ℝ),
+      0 < V → ∀ (data : Fin 142081 → Fin V → ZMod 2) u S call (price : ℝ) (saved : Stacks T prime → Prop),
       (∀ i j, S.R (scratch (borrowedHeaders T i j)) =
         (Routines.hdr (helperAdjacentView w 1 W i) j).map bitSymbol) →
       HelperFan full data S →
@@ -805,18 +805,18 @@ theorem archivedBorrowedCall_host [M8.Machine.Net] {T Q : ℕ} {P U : Type}
       (∀ a y D, HelperFan fan a D →
         (∀ j, (∀ h, fan h ≠ j) → D.L j = S.L (scratch (bank j)) ∧ D.R j = S.R (scratch (bank j))) →
         ∃ z F m b, Exec body call (mk y D) m (mk z F) ∧ (m : ℝ) ≤ price ∧ z.user = y.user ∧
-          HelperFan fan b F ∧ BorrowedStep n w blocks K p a b) →
+          HelperFan fan b F ∧ BorrowedStep n w blocks K p a b ∧ saved F) →
       ∃ z F t b, Exec outer (.seq pack (embProg owner id call)) (mk u S) t (mk z F) ∧
         (t : ℝ) ≤ borrowedPackRate n p*((V : ℝ)*((max 1 w : ℕ) : ℝ)^M8.Machine.BudgetBound.tau)+price ∧
-        z.user = u.user ∧ HelperFan full b F ∧ borrowedPackedStep n w B K p data b ∧
+        z.user = u.user ∧ HelperFan full b F ∧ borrowedPackedStep n w B K p data b ∧ saved (embStk owner F) ∧
         (∀ i j, F.R (scratch (borrowedHeaders T i j)) = S.R (scratch (borrowedHeaders T i j))) ∧
         ∀ j : Fin LeafCore.small, F.L (j.natAdd (T+273)) = [] ∧ F.R (j.natAdd (T+273)) = [] := by
   intro bank scratch full owner outer
   obtain ⟨pack,run⟩ := archivedPacking_exec n p fan capacity outer
   refine ⟨pack,?_⟩
-  intro w B K W blocks V pos data u S call price ready live free invoke
+  intro w B K W blocks V pos data u S call price saved ready live free invoke
   obtain ⟨v,D,k,x,user,packed,charge,rep,trace,keep,clean⟩ := run w B K pos data u S ready live free
-  obtain ⟨z,F,m,y,exec,paid,same,done,act⟩ := invoke x (embDn owner v) (embStk owner D) rep
+  obtain ⟨z,F,m,y,exec,paid,same,done,act,retained⟩ := invoke x (embDn owner v) (embStk owner D) rep
     (fun j outside => keep (bank j) (fun o eq => outside (o.castAdd 2) (bank.injective eq.symm)))
   obtain ⟨z',F',hosted,_,state,view,off⟩ := exec_emb (ι := id) (body' := outer)
     owner.injective (fun _ => rfl) exec v rfl D rfl
@@ -824,7 +824,7 @@ theorem archivedBorrowedCall_host [M8.Machine.Net] {T Q : ℕ} {P U : Type}
     change HelperFan fan y (embStk owner F')
     rw [view]
     exact done
-  refine ⟨z',F',k+m,y,Exec.seq packed hosted,?_,state.trans (same.trans user),fanDone,⟨x,trace,act⟩,?_,?_⟩
+  refine ⟨z',F',k+m,y,Exec.seq packed hosted,?_,state.trans (same.trans user),fanDone,⟨x,trace,act⟩,view.symm ▸ retained,?_,?_⟩
   · rw [Nat.cast_add]
     exact add_le_add charge paid
   · intro i j
@@ -910,6 +910,40 @@ theorem seededBorrowedCall_host [M8.Machine.Net] {T Q : ℕ} {P U : Type}
       headers.injective (fun _ => rfl) exec v rfl D rfl
     rw [← view] at done
     exact ⟨z',F',m,y,placed,paid,same.trans user,done,act⟩
+
+open Cover in
+/-- Restore the final helper slots from the same archive carried through
+the invocations. Restoration preserves the archive and empties leaf scratch. -/
+theorem archivedBorrowedRestore_host [M8.Machine.Net] {T Q : ℕ} {P U : Type}
+    (n : Fin 9) (fan : Fin (142081+2) ↪ Fin T) (capacity : columnCapacity ≤ Q)
+    (body : P → Pr P ((T+273)+LeafCore.small) Q prime U) :
+    let bank := Fin.castAddEmb 273 (n := T)
+    let scratch := Fin.castAddEmb LeafCore.small (n := T+273)
+    let full := (fan.trans bank).trans scratch
+    ∃ code, ∀ w B K : ℕ,
+      let W := B*prime^(64*(w*64))*K
+      let V := (prime^w)^16*((prime^w)^112*B*prime^(64*(w*64))*K)
+      0 < V → ∀ (data : Fin 142081 → Fin V → ZMod 2) u S,
+      (∀ i j, S.R (scratch (borrowedHeaders T i j)) =
+        (Routines.hdr (helperAdjacentView w 1 W i) j).map bitSymbol) →
+      HelperFan full data S →
+      (∀ j : Fin LeafCore.small, S.L (j.natAdd (T+273)) = [] ∧ S.R (j.natAdd (T+273)) = []) →
+      ∃ z F t y, Exec body code (mk u S) t (mk z F) ∧
+        (t : ℝ) ≤ helperChangesRate (restoreSlotChanges (stageFinalSlot n)) *
+          ((V : ℝ)*((max 1 w : ℕ) : ℝ)^M8.Machine.BudgetBound.tau) ∧
+        z.user = u.user ∧ HelperFan full y F ∧ HelperLabelTrace w 1 W (restoreSlotChanges (stageFinalSlot n)) data y ∧
+        (∀ i j, F.R (scratch (borrowedHeaders T i j)) = S.R (scratch (borrowedHeaders T i j))) ∧
+        ∀ j : Fin LeafCore.small, F.L (j.natAdd (T+273)) = [] ∧ F.R (j.natAdd (T+273)) = [] := by
+  intro bank scratch full
+  let port (i : ℕ) := borrowedHeaders T ⟨i%127,Nat.mod_lt _ (by decide)⟩
+  obtain ⟨code,run⟩ := borrowedRestore_exec n (fan.trans bank) capacity body port
+    (fun i j o => borrowedHeaders_apart _ j _)
+  refine ⟨code,?_⟩
+  intro w B K W V pos data u S ready rep free
+  obtain ⟨z,F,t,y,exec,paid,user,done,trace,keep,clean⟩ := run w B K pos data u S
+    (fun i j => by simpa [port,scratch,W,Nat.mod_eq_of_lt i.isLt] using ready i j) rep free
+  exact ⟨z,F,t,y,exec,paid,user,done,trace,
+    fun i j => (keep _ (fun o => borrowedHeaders_apart i j (fan (o.castAdd 2)))).2,clean⟩
 
 open Cover in
 /-- The restoration worker uses the same header layout as a packed invocation. -/
