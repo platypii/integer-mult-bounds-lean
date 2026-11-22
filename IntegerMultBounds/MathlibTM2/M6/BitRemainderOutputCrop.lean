@@ -13,6 +13,11 @@ def CropCounters {T : ℕ} (port : Fin 12 ↪ Fin T) (B N K : ℕ) (S : Stacks T
   ∀ j : Fin 12, j ≠ 0 → j ≠ 1 → ∀ z, (ownerPadFrame B N K).tape j z =
     readAt blank (S.L (port j)) (S.R (port j)) (z-(ownerPadFrame B N K).head j)
 
+theorem padFrame_aux (B N K : ℕ) (f g : ℤ → Fin (prime+4)) (j : Fin 12) (hs : j ≠ 0) (hd : j ≠ 1) :
+      let frame := RowPaddingConstructedAlphabet.bank f g 0 0 (bits B) (bits 1) (bits N) (bits K)
+      frame.tape j = (ownerPadFrame B N K).tape j ∧ frame.head j = (ownerPadFrame B N K).head j := by
+  fin_cases j <;> first | contradiction | exact ⟨rfl,rfl⟩
+
 theorem placedOrdinaryCrop_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U)
     (fits : 215 ≤ Q) (port : Fin 12 ↪ Fin T) {B N K : ℕ}
     (hb : 0 < B) (hn : 0 < N) (hk : 0 < K) (x : Fin ((B*N)*K) → ZMod 2)
@@ -28,17 +33,13 @@ theorem placedOrdinaryCrop_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T Q 
     0 0 _ _ _ _ B 1 N K (fun j => decide (x j = 1)) (bits_value _) (bits_value _) (bits_value _)
     (bits_value _) (bits_canonical _) (bits_canonical _) (bits_canonical _) (bits_canonical _)
     hb Nat.zero_lt_one hn hk
-  have aux (f g : ℤ → Fin (prime+4)) (j : Fin 12) (hs : j ≠ 0) (hd : j ≠ 1) :
-      let frame := RowPaddingConstructedAlphabet.bank f g 0 0 (bits B) (bits 1) (bits N) (bits K)
-      frame.tape j = (ownerPadFrame B N K).tape j ∧ frame.head j = (ownerPadFrame B N K).head j := by
-    fin_cases j <;> first | contradiction | exact ⟨rfl,rfl⟩
   obtain ⟨v,F,t,exec,time,user,done,off⟩ := placedHoare_exec _ port fits body crop u S (by
     intro j z
     by_cases hs : j = 0
     · subst j; exact (source z).symm.trans (congrArg (readAt blank (S.L (port 0)) (S.R (port 0))) (sub_zero z).symm)
     by_cases hd : j = 1
     · subst j; exact (dest z).symm.trans (congrArg (readAt blank (S.L (port 1)) (S.R (port 1))) (sub_zero z).symm)
-    rw [(aux _ _ j hs hd).1,(aux _ _ j hs hd).2]
+    rw [(padFrame_aux B N K _ _ j hs hd).1,(padFrame_aux B N K _ _ j hs hd).2]
     exact ready j hs hd z)
   refine ⟨v,F,t,exec,time.trans_eq (by ring),user,?_,?_,off⟩
   · intro z
@@ -50,7 +51,7 @@ theorem placedOrdinaryCrop_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T Q 
     exact h
   · intro j hs hd z
     have h := done j z
-    rw [(aux _ _ j hs hd).1,(aux _ _ j hs hd).2] at h
+    rw [(padFrame_aux B N K _ _ j hs hd).1,(padFrame_aux B N K _ _ j hs hd).2] at h
     exact h
 
 local instance (w : ℕ) : NeZero (prime^w) := ⟨(pow_pos IntegerMultBounds.Networks.Shared50ModularControl.prime_prime.pos _).ne'⟩
