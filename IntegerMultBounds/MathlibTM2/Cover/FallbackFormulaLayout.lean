@@ -29,7 +29,7 @@ theorem separate (pool : Fin ((D+1)*13) ↪ Fin T) {l k : ℕ} (hl : l < k) (hk 
   rw [Nat.mod_eq_of_lt (by omega),Nat.mod_eq_of_lt (by omega)] at eq
   omega
 
-theorem layout_prepared (pool : Fin ((D+1)*13) ↪ Fin T) (read : ι → ZMod M) (H : ℕ)
+theorem layout_prepared_of_invariant (pool : Fin ((D+1)*13) ↪ Fin T) (read : ι → ZMod M) (H : ℕ)
     (ready : Leaf ι → Fin T → Regs T A → Prop) (R : Regs T A) (f : RingFormula ι) (l : ℕ) (out : Fin T)
     (fits : l+f.depth ≤ D) (empty : R out = [])
     (outside : ∀ k, l ≤ k → k ≤ D → ∀ i, frame pool k i ≠ out)
@@ -37,14 +37,14 @@ theorem layout_prepared (pool : Fin ((D+1)*13) ↪ Fin T) (read : ι → ZMod M)
     (free : ∀ k, l ≤ k → k ≤ D → ∀ i : Fin 13, i ≠ 2 → R (frame pool k i) = [])
     (allowed : Fin T → Prop) (target : allowed out)
     (operand : ∀ k, k < D → ∀ i : Fin 13, i ≤ 1 → allowed (frame pool k i))
-    (leaves : ∀ a dst, allowed dst → ready a dst R)
-    (retain : ∀ a dst k xs (S : Regs T A), allowed dst → ready a dst S →
-      ready a dst (Function.update S (frame pool k 0) xs)) :
+    (ok : Regs T A → Prop) (initial : ok R)
+    (leaves : ∀ S, ok S → ∀ a dst, allowed dst → S dst = [] → ready a dst S)
+    (retain : ∀ S, ok S → ∀ k xs, ok (Function.update S (frame pool k 0) xs)) :
     prepared (registerBank pool) read H ready f l out R := by
   induction f generalizing l out R with
-  | input i => exact leaves _ _ target
-  | zero => exact leaves _ _ target
-  | one => exact leaves _ _ target
+  | input i => exact leaves R initial _ _ target empty
+  | zero => exact leaves R initial _ _ target empty
+  | one => exact leaves R initial _ _ target empty
   | sub x y ix iy | mul x y ix iy =>
     simp only [depth] at fits
     have hl : l ≤ D := by omega
@@ -59,7 +59,7 @@ theorem layout_prepared (pool : Fin ((D+1)*13) ↪ Fin T) (read : ι → ZMod M)
     · rw [slot 0 (by decide)]
       exact ix R (l+1) _ (by omega) (free _ le_rfl hl _ (by decide))
         (fun k hk hd i => separate pool hk hd i 0)
-        (fun k hk => modulus k (by omega)) (fun k hk => free k (by omega)) (operand l (by omega) 0 (by decide)) leaves
+        (fun k hk => modulus k (by omega)) (fun k hk => free k (by omega)) (operand l (by omega) 0 (by decide)) initial
     · rw [slot 0 (by decide),slot 1 (by decide)]
       apply iy _ (l+1) _ (by omega)
       · rw [Function.update_of_ne ((frame pool l).injective.ne (by decide : (1 : Fin 13) ≠ 0))]
@@ -72,7 +72,26 @@ theorem layout_prepared (pool : Fin ((D+1)*13) ↪ Fin T) (read : ι → ZMod M)
         rw [Function.update_of_ne (separate pool hk hd i 0)]
         exact free k (by omega) hd i hi
       · exact operand l (by omega) 1 (by decide)
-      · exact fun a dst hd => retain a dst l _ _ hd (leaves a dst hd)
+      · exact retain R initial l _
+
+theorem layout_prepared (pool : Fin ((D+1)*13) ↪ Fin T) (read : ι → ZMod M) (H : ℕ)
+    (ready : Leaf ι → Fin T → Regs T A → Prop) (R : Regs T A) (f : RingFormula ι) (l : ℕ) (out : Fin T)
+    (fits : l+f.depth ≤ D) (empty : R out = [])
+    (outside : ∀ k, l ≤ k → k ≤ D → ∀ i, frame pool k i ≠ out)
+    (modulus : ∀ k, l ≤ k → k ≤ D → R (frame pool k 2) = binSyms H M)
+    (free : ∀ k, l ≤ k → k ≤ D → ∀ i : Fin 13, i ≠ 2 → R (frame pool k i) = [])
+    (allowed : Fin T → Prop) (target : allowed out)
+    (operand : ∀ k, k < D → ∀ i : Fin 13, i ≤ 1 → allowed (frame pool k i))
+    (leaves : ∀ a dst, allowed dst → ready a dst R)
+    (retain : ∀ a dst k xs (S : Regs T A), allowed dst → ready a dst S →
+      ready a dst (Function.update S (frame pool k 0) xs)) :
+    prepared (registerBank pool) read H ready f l out R := by
+  apply layout_prepared_of_invariant pool read H ready R f l out fits empty outside modulus free allowed
+    target operand (fun S => ∀ a dst, allowed dst → ready a dst S) leaves
+  · intro S allLeaves a dst hd _
+    exact allLeaves a dst hd
+  · intro S allLeaves k xs a dst hd
+    exact retain a dst k xs S hd (allLeaves a dst hd)
 
 variable {m : ℕ} [NeZero M] {P U : Type} {Q : ℕ}
 
