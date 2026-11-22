@@ -271,7 +271,7 @@ theorem scheduledRemainderPiece [M8.Machine.Net] {common work : ℕ} {U : Type} 
       let addr := fun (b : Fin B) x (k : Fin W) => stagedOwnerIndex b (FlatCoordinateLayout.index
         ((frame.mulVec x) ∘ (finSumFinEquiv : (Fin 64 ⊕ Fin 64) ≃ Fin 128).symm) k)
       let price := fun job => ⌊ownerRoundTripTime w B W (rate job) _ (port_checked _ (idleRole i job).port.isLt)⌋₊
-      ∃ (q : ℕ) (P : Type) (t : ℕ) (body : P → Pr P t q prime U), ∃ code src dst prepared,
+      ∃ states : ℕ, ∀ q ≥ states, ∃ (P : Type) (t : ℕ) (body : P → Pr P t q prime U), ∃ code src dst prepared,
         PieceHandoff (w+1) B W (fun x y => ∀ b k,
           let address := fun v => addr b ((addressMod M v) ∘ Equiv.sumCongr stageAxis.symm stageAxis.symm) k
           readRoles address y = (Piece.remainder i.val).run (readRoles address x))
@@ -288,8 +288,9 @@ theorem scheduledRemainderPiece [M8.Machine.Net] {common work : ℕ} {U : Type} 
   let back := fun job => (pass job).choose_spec.choose
   let states := fun job => max (max (stage job).states columnCapacity) (back job).states
   refine ⟨Finset.univ.sup states,?_⟩
+  intro q capacity
   apply stagedRemainderPiece i parent states price (fun _ => lt_of_lt_of_le columnCapacity_pos
-    ((le_max_right ..).trans (le_max_left ..))) le_rfl
+    ((le_max_right ..).trans (le_max_left ..))) capacity
   intro job
   obtain ⟨⟨D,ready⟩,body,trip⟩ := (pass job).choose_spec.choose_spec
   obtain ⟨fan,code,prepared,exec⟩ := trip.ownerPiece (idleTape i job) D ready

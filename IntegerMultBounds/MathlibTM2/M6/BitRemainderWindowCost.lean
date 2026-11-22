@@ -106,7 +106,7 @@ theorem scheduledRemainderPiece_bound [M8.Machine.Net] {common work : ℕ} {U : 
       let addr := fun (b : Fin B) x (k : Fin W) => stagedOwnerIndex b (FlatCoordinateLayout.index
         ((frame.mulVec x) ∘ (finSumFinEquiv : (Fin 64 ⊕ Fin 64) ≃ Fin 128).symm) k)
       let layout := stagedScannerLayout w B W
-      ∃ (q : ℕ) (P : Type) (t : ℕ) (body : P → Pr P t q prime U), ∃ code src dst prepared,
+      ∃ states : ℕ, ∀ q ≥ states, ∃ (P : Type) (t : ℕ) (body : P → Pr P t q prime U), ∃ code src dst prepared,
         PieceHandoff (w+1) B W (fun x y => ∀ b k,
           let address := fun v => addr b ((addressMod M v) ∘ Equiv.sumCongr stageAxis.symm stageAxis.symm) k
           readRoles address y = (Piece.remainder i.val).run (readRoles address x))
@@ -120,9 +120,12 @@ theorem scheduledRemainderPiece_bound [M8.Machine.Net] {common work : ℕ} {U : 
   obtain ⟨c,largest⟩ := Finite.exists_le coeff
   refine ⟨35520*(max c 0+1),?_⟩
   intro i w B W hb hw root parent units atRoot prefixWidth prefixes lengths small M frame addr layout
-  obtain ⟨q,P,t,body,code,src,dst,prepared,exec⟩ := run i w B W hb hw root parent units atRoot
+  obtain ⟨states,available⟩ := run i w B W hb hw root parent units atRoot
     prefixWidth prefixes lengths small
-  refine ⟨q,P,t,body,code,src,dst,prepared,?_⟩
+  refine ⟨states,?_⟩
+  intro q capacity
+  obtain ⟨P,t,body,code,src,dst,prepared,exec⟩ := available q capacity
+  refine ⟨P,t,body,code,src,dst,prepared,?_⟩
   intro x u S live stock
   obtain ⟨z,F,n,y,steps,time,rest⟩ := exec x u S live stock
   refine ⟨z,F,n,y,steps,time.trans ?_,rest⟩
