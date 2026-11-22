@@ -40,6 +40,47 @@ noncomputable def activeWindowAddress {w B W : ℕ} (b : Fin B)
   let a := copyAddress (chartAddress (s,j))
   index (embed (M8.Exchange.transform D⁻¹ D⁻¹ a.1)) (finProdFinEquiv (b,a.2))
 
+/-- The active port chart enumerates the compact owner exactly once, including
+the inherited block and every spectator position. -/
+noncomputable def activeWindowEquiv (w B W : ℕ) :
+    Fin B × (Swap.Shear.State Axis (ZMod (prime^w)) × Fin W) ≃
+      Fin ((prime^w)^16*(B*((prime^w)^112*W))) :=
+  let D := undoTranslation.map (Int.cast : ℤ → ZMod (prime^w))
+  let unit := (Matrix.isUnit_iff_isUnit_det D).mp (translatedPort_modular w 0).1
+  let basis : Equiv.Perm (Swap.Shear.State (Fin 8) (ZMod (prime^w))) :=
+    ⟨M8.Exchange.transform D⁻¹ D⁻¹,M8.Exchange.transform D D,
+      fun s => by simp [M8.Exchange.transform,Matrix.mulVec_mulVec,Matrix.mul_nonsing_inv D unit],
+      fun s => by simp [M8.Exchange.transform,Matrix.mulVec_mulVec,Matrix.nonsing_inv_mul D unit]⟩
+  let split := chartAddress.trans copyAddress
+  let swap : Fin B × (_ × Fin ((prime^w)^112*W)) ≃ _ × (Fin B × Fin ((prime^w)^112*W)) :=
+    ⟨fun (b,s,k) => (s,b,k),fun (s,b,k) => (b,s,k),fun _ => rfl,fun _ => rfl⟩
+  ((Equiv.refl _).prodCongr split).trans <| swap.trans <|
+    (basis.prodCongr finProdFinEquiv).trans copyAddress.symm
+
+@[simp] theorem activeWindowEquiv_apply {w B W : ℕ} (b : Fin B)
+    (s : Swap.Shear.State Axis (ZMod (prime^w))) (k : Fin W) :
+    activeWindowEquiv w B W (b,s,k) = activeWindowAddress b s k := rfl
+
+/-- Inactive ports enumerate the same owner through their own chart. -/
+noncomputable def inactiveWindowEquiv (w B W : ℕ) (lane : BankLane) :
+    Fin B × (Swap.Shear.State Axis (ZMod (prime^w)) × Fin W) ≃
+      Fin ((prime^w)^16*(B*((prime^w)^112*W))) := by
+  let address := fun (p : Fin B × (Swap.Shear.State Axis (ZMod (prime^w)) × Fin W)) =>
+    stagedCoordinateEquiv (prime^w) B W
+      (p.1,helperSlotField (port lane.2.1.val) none w p.2.1,p.2.2)
+  have onto : Function.Surjective address := by
+    intro i
+    obtain ⟨⟨b,x,k⟩,rfl⟩ := (stagedCoordinateEquiv (prime^w) B W).surjective i
+    obtain ⟨s,rfl⟩ := helperSlotField_surjective _ (port_checked _ lane.2.1.isLt) none w x
+    exact ⟨(b,s,k),rfl⟩
+  exact Equiv.ofBijective address
+    ⟨(Finite.injective_iff_surjective_of_equiv (activeWindowEquiv w B W)).mpr onto,onto⟩
+
+theorem inactiveWindowEquiv_read {w B W : ℕ} (lane : BankLane) (b : Fin B) (j : Fin W)
+    (z : Axis ⊕ Axis → ℚ) :
+    let v := addressMod (prime^w) z
+    inactiveWindowEquiv w B W lane (b,(v ∘ Sum.inl,v ∘ Sum.inr),j) = sweepAddress b j lane z := rfl
+
 /-- All 17,760 source/target pairs receive their two corrections.
 Other owners are preserved by each pass. -/
 theorem sweepPortCorrections [M8.Machine.Net] :

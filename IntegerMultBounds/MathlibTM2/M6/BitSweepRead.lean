@@ -38,6 +38,28 @@ theorem sweepEffect_inactive {n : Fin 9} {w B W : ℕ} {x y : OwnerArray w B W}
   rw [supported,singleLabelBank_helperCell] at read
   simpa only [Fin.val_cast,ite_true] using read
 
+/-- Decode a staged owner cell into its unique inherited block, coordinate
+vector and spectator. The forward map is the scanner's ordinary address. -/
+def stagedCoordinateEquiv (M B W : ℕ) [NeZero M] :
+    Fin B × ((Fin 128 → ZMod M) × Fin W) ≃ Fin (M^16*(B*(M^112*W))) where
+  toFun := fun (b,x,k) => stagedOwnerIndex b (FlatCoordinateLayout.index x k)
+  invFun := fun i =>
+    let (a,t) := finProdFinEquiv.symm i
+    let (b,v) := finProdFinEquiv.symm t
+    let j := (finProdFinEquiv (a,v)).cast (ordinaryCompact_width M W)
+    let (r,k) := finProdFinEquiv.symm j
+    (b,FlatCoordinateLayout.coordinates r,k)
+  left_inv := by
+    rintro ⟨b,x,k⟩
+    simp only [stagedOwnerIndex,FlatCoordinateLayout.index,Equiv.symm_apply_apply,
+      Prod.mk.eta,Equiv.apply_symm_apply,Fin.cast_cast,Fin.cast_refl,id_eq,
+      FlatCoordinateLayout.coordinates_rank]
+  right_inv := by
+    intro i
+    simp only [stagedOwnerIndex,FlatCoordinateLayout.index,Equiv.symm_apply_apply,
+      Prod.mk.eta,Equiv.apply_symm_apply,Fin.cast_cast,Fin.cast_refl,id_eq,
+      FlatCoordinateLayout.rank_coordinates]
+
 /-- The sweep and scanner store the inherited block at the same split
 between active and spectator digits. -/
 theorem stagedOwnerIndex_index {M B W : ℕ} [NeZero M] (digits : Fin 128 → ZMod M)
