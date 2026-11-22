@@ -32,6 +32,27 @@ theorem stageRoute_quarter (c : PortCertificate) (checked : c.Checked) (n : Fin 
         · exact ⟨4,by simp [avoid,active]⟩
       · exact ⟨0,by simp [avoid,diagonal_apply_ne _ same]⟩
 
+/-- Each routed coordinate is a quarter-integer of absolute value at most one. -/
+theorem stageRoute_entry (c : PortCertificate) (checked : c.Checked) (n : Fin 9) (i j : Axis) :
+    let q := c.stageRoute n i j
+    q.num.natAbs ≤ 4 ∧ q.den ≤ 4 := by
+  let R := c.stageRoute n
+  have orth : R.transpose * R = 1 := by
+    rw [show R.transpose = R from c.stageRoute_transpose n,c.stageRoute_mul_self checked]
+  have norm := congrFun (congrFun orth j) j
+  simp only [mul_apply,transpose_apply,one_apply_eq] at norm
+  have sq := Finset.single_le_sum (f := fun k => R k j * R k j)
+    (fun k _ => mul_self_nonneg _) (Finset.mem_univ i)
+  rw [norm] at sq
+  obtain ⟨z,eqn⟩ := stageRoute_quarter c checked n i j
+  change R i j = _ at eqn
+  rw [eqn] at sq
+  have lo : (-4 : ℤ) ≤ z := by exact_mod_cast (show (-4 : ℚ) ≤ z by nlinarith)
+  have hi : z ≤ (4 : ℤ) := by exact_mod_cast (show (z : ℚ) ≤ 4 by nlinarith)
+  change (R i j).num.natAbs ≤ 4 ∧ (R i j).den ≤ 4
+  rw [eqn]
+  interval_cases z <;> decide +kernel
+
 theorem fullChart_quarter (c : PortCertificate) (checked : c.Checked) (a : Axis) (b : ChartAxis) :
     ∃ z : ℤ, c.fullChart a b = (z : ℚ)/4 := by
   let q := c.fullChart a b

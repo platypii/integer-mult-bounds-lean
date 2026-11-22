@@ -137,7 +137,7 @@ private theorem reverseSecondField_twice (i : Fin 128) :
   obtain ⟨j,rfl⟩ := (@finSumFinEquiv 64 64).surjective i
   cases j <;> simp [reverseSecondField,Equiv.trans_apply,Fin.revPerm_apply]
 
-private theorem staged_single_val {M W : ℕ} (i : Fin (M^128*W)) :
+theorem staged_single_val {M W : ℕ} (i : Fin (M^128*W)) :
     (stagedOwnerIndex (0 : Fin 1) i).val = i.val := by
   let h := ordinaryCompact_width M W
   obtain ⟨⟨a,b⟩,split⟩ := finProdFinEquiv.surjective (i.cast h.symm)
