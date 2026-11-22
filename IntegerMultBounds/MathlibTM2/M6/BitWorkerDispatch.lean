@@ -702,7 +702,8 @@ above-cutoff branch requires a child execution witness. -/
 theorem packedMixedMoveCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
     (workerPorts : Fin (rowSwapBlock.tapes+35) ↪ Fin T) (capacity : columnCapacity ≤ Q)
     (n : Fin 9) (p : StageRun) (moveIndex : MoveIndex)
-    {k H : ℕ} (target : Fin k) (host : Fin (((k+2+1)+35)+(80+((T+273)+0))) ↪ Fin H) :
+    {k H : ℕ} (layout : Fin 661 ↪ Fin k) (host : Fin (((k+2+1)+35)+(80+((T+273)+0))) ↪ Fin H) :
+    let target := layout (paidRegister moveIndex.val)
     let occurrence := phaseChildPositions.choose (n,p,moveIndex)
     let base := (Fin.castAddEmb (80+((T+273)+0))).trans host
     let record := phaseWorkerRecord target
@@ -732,11 +733,11 @@ theorem packedMixedMoveCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
     let active := cutoff < desc.width
     let price := if active then recursiveTime else budget
     (active → ScheduledChildExec node desc w suffix ports (binSyms L cutoff) position body large recursiveTime) →
-    ∃ z F t y, Exec body code (mk u S) t (mk z F) ∧
+    let next := Shared50RecursiveNodeRows.transpose (one_dvd desc.rows) (data target ∘ position) ∘ position.symm
+    ∃ z F t, Exec body code (mk u S) t (mk z F) ∧
       t ≤ (((RecursiveRowsQuotient.constant 142080+30)*142080*43+152402152)+5000)*volume prime desc+price ∧ z.user = u.user ∧
-      F.R (phase (Fin.last (k+2))) = binSyms L cutoff ∧ HelperFan fan (Function.update data target y) F ∧
-      ∀ h, y (position h) = Shared50RecursiveNodeRows.transpose (one_dvd desc.rows) (data target ∘ position) h := by
-  intro occurrence base record phase fan payload slots placed stage worker ports headerCapacity
+      F.R (phase (Fin.last (k+2))) = binSyms L cutoff ∧ HelperFan fan (Function.update data target next) F := by
+  intro target occurrence base record phase fan payload slots placed stage worker ports headerCapacity
   let parent := record.trans base
   let cut := parent 34
   let e := (archiveSetupPlacement 80 T 0).trans placed
@@ -818,7 +819,7 @@ theorem packedMixedMoveCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
   let blankHost : Stacks H prime := ⟨[],[],fun _ => [],fun _ => []⟩
   let seed := embOvr e initial.get blankHost
   refine ⟨position,coords,seed,?_⟩
-  intro data u S privateStock live cutoffWord core rate room budget active price recurse
+  intro data u S privateStock live cutoffWord core rate room budget active price recurse next
   let x := data target
   have atOwner : parent 24 = fan (target.castAdd 2) := congrArg base (phaseWorkerRecord_shared target).1
   have atCut : cut = phase (Fin.last (k+2)) := congrArg base (phaseWorkerRecord_shared target).2
@@ -894,7 +895,10 @@ theorem packedMixedMoveCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
     exact bank.injective.ne (fun eq => (by decide : (24 : Fin 35) ∉ [2,27,28,32,33]) (eq ▸ hk))
   have result z := out.src z
   simp only [shared,sub_zero] at result
-  refine ⟨q,G,_,y,Exec.seq run₀ (Exec.seq run (Exec.seq exec erase)),?_,final.trans (same.trans (user.trans user₀)),?_,?_,read⟩
+  have value : y = next := by
+    funext j
+    simpa only [next,Function.comp_apply,Equiv.apply_symm_apply] using read (position.symm j)
+  refine ⟨q,G,_,Exec.seq run₀ (Exec.seq run (Exec.seq exec erase)),?_,final.trans (same.trans (user.trans user₀)),?_,?_⟩
   · change m ≤ 14*M.size+6*suffix.size+6*(w+1)+11*(w+1).size+50 at cost
     change n ≤ price+8*digits+4*w+23*desc.width+22*L+61 at paid
     have overhead := moveOverhead_volume desc w W rank L digits pos bound width precision
@@ -907,7 +911,8 @@ theorem packedMixedMoveCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
     omega
   · rw [← atCut]
     exact (preserved cut cutOff).2.trans ((parentFrame 34).2.trans header)
-  · apply fanUpdate target y live
+  · rw [← value]
+    apply fanUpdate target y live
     · intro z
       rw [← atOwner,payloadAt]
       simpa only [G,List.map_ofFn,Function.comp_def,sub_zero] using result z
@@ -1134,8 +1139,8 @@ theorem mixedPackedSweep [M8.Machine.Net] (n : Fin 9) :
       let mi := fun (p : StageRun) (i : MoveIndex) => phaseChildPositions.choose (n,p,i)
       let ci := fun (p : StageRun) (j : CopyIndex) => copyChildPosition (n,p,j)
       let child := scheduledChild prime node
-      ∀ (record : Fin nodeChildren5.length → List (Fin (prime+4))) (budget : Fin nodeChildren5.length → ℕ),
-      ∀ L : ℕ, cutoff < 2^L → (∀ p j, (child (ci p j)).width.size ≤ L) →
+      ∀ (budget : Fin nodeChildren5.length → ℕ),
+      ∀ L : ℕ, cutoff < 2^L → node.width.size ≤ L →
       let price := fun i => if cutoff < (child i).width then budget i else
         ⌊(rate*((child i).width : ℝ)^M8.Machine.BudgetBound.tau)*volume prime (child i)⌋₊
       ∃ (mp : ∀ p i, Fin (volume prime (child (mi p i))) ≃ Fin ((prime^(w+1))^16*W))
@@ -1146,9 +1151,9 @@ theorem mixedPackedSweep [M8.Machine.Net] (n : Fin 9) :
         PackedStageExecution (w := w+1) (B := B) (K := K) n tapes body coeff (fun time =>
           ((∀ p i, time (mi p i).val = price (mi p i)+3) ∧
            (∀ p j, let k := ci p j; time k.val = 4*w+23*(child k).width+22*L+51+price k)) ∧
-          (∀ p i, let k := mi p i; cutoff < (child k).width →
-            ScheduledChildExec node (child k) w W (mr p i) (record k) (mp p i) (mb p i) (.active (mf p i)) (budget k)) ∧
-          (∀ p j, let k := ci p j; cutoff < (child k).width →
+          (∀ p i, let k := mi p i; cutoff < (child k).width → (child k).width < node.width →
+            ScheduledChildExec node (child k) w W (mr p i) (binSyms L cutoff) (mp p i) (mb p i) (.active (mf p i)) (budget k)) ∧
+          (∀ p j, let k := ci p j; cutoff < (child k).width → (child k).width < node.width →
             ScheduledChildExec node (child k) w W (cr p j) (binSyms L cutoff) (cp p j) (cb p j) (.active (cf p j)) (budget k))) := by
   classical
   obtain ⟨mt,ct,mr,cr,mT,cT,mBank,cBank,states,build⟩ := scheduledInvocationFamily n
@@ -1168,10 +1173,14 @@ theorem mixedPackedSweep [M8.Machine.Net] (n : Fin 9) :
                          (stoppedCopyProgram (cr p j) ((le_max_right _ _).trans caps)) (cl p j) (cf p j)
   obtain ⟨coeff,stage⟩ := build ((le_max_left _ _).trans room) mb (fun _ _ => .entry) cb (fun _ _ => .entry)
   refine ⟨mb,cb,coeff,fun _ _ _ => rfl,fun _ _ _ => rfl,?_⟩
-  intro node w B rows cutoff width split label K W pos rate large _ _ child record budget L cutFits copyFits price
+  intro node w B rows cutoff width split label K W pos rate large _ _ child budget L cutFits parentFits price
+  have smaller (i : Fin nodeChildren5.length) : (child i).width < node.width := by
+    change nodeChildren5[i.val]*(node.width/64) < node.width
+    rw [width,Nat.mul_div_cancel_left _ (by decide)]
+    exact Nat.mul_lt_mul_of_pos_right ((nodeChildren5_bounds i).2.trans_lt (by decide : 42 < 64)) (Nat.succ_pos w)
   let active := fun k => cutoff < (child k).width
   let mrec := fun p i => let k := mi p i; let s := CopyChildLayout.spectators (child k)
-                         bitSymbol (decide (active k)) :: (if active k then record k else binSyms s.size s)
+                         bitSymbol (decide (active k)) :: (if active k then binSyms (A := prime) L cutoff else binSyms s.size s)
   let crec := fun (_ : StageRun) (_ : CopyIndex) => binSyms (A := prime) L cutoff
   obtain ⟨mp,cp,banks,mc,cc,T,fan,bank,run⟩ := stage node w B rows width split label pos mrec crec
   refine ⟨mp,cp,mc,cc,_,fun p => (banks p).tapes,fun p => (banks p).body (mBank p) (cBank p) (mb p) (cb p),T,fan,bank,?_⟩
@@ -1184,10 +1193,10 @@ theorem mixedPackedSweep [M8.Machine.Net] (n : Fin 9) :
       change nodeChildren5[(mi p i).val]*(node.width/64) = _
       rw [width,Nat.mul_div_cancel_left _ (by decide),Nat.mul_comm]
     exact move p i (mb p i) .entry (.active (mf p i)) .leaf rfl rfl node _ w W cutoff shape
-      (mp p i) (mc p i) pos rate _ _ ((le_max_left _ _).trans large) (ready.2.1 p i)
+      (mp p i) (mc p i) pos rate _ _ ((le_max_left _ _).trans large) (fun h => ready.2.1 p i h (smaller _))
   · intro p j
     rw [ready.1.2 p j]
     exact copy (cr p j) _ (cb p j) .entry (.active (cf p j)) .leaf rfl rfl node n p j w W rows L cutoff
-      width split cutFits (copyFits p j) (cp p j) (cc p j) pos rate _ ((le_max_right _ _).trans large) (ready.2.2 p j)
+      width split cutFits ((Nat.size_le_size (smaller _).le).trans parentFits) (cp p j) (cc p j) pos rate _ ((le_max_right _ _).trans large) (fun h => ready.2.2 p j h (smaller _))
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
