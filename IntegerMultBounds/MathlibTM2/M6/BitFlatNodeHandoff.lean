@@ -216,47 +216,43 @@ theorem childInputFan_outside {T : ℕ} (live : Fin (142080+2) ↪ Fin T) (t : F
 
 /-- Prepare the live rows and execute the child on an adjacent private bank.
 Only the owner words and the two volume counters cross the bank boundary. -/
-theorem prepareRunPackedChild {P U : Type} {T N Q V w price : ℕ} {body : P → Pr P N Q prime U}
-    {code src dst seed} (run : PackedPieceHandoff V (packedChildOutput w V) body code src dst seed price)
+theorem prepareRunChild {P U : Type} {T N Q V price : ℕ} {body : P → Pr P N Q prime U}
+    {code src dst seed} {effect : (Fin 142081 → Fin V → ZMod 2) → (Fin 142081 → Fin V → ZMod 2) → Prop}
+    (run : PackedPieceHandoff V effect body code src dst seed price)
     (live : Fin (142080+2) ↪ Fin T) (out : Fin (142081+2) ↪ Fin T) (tmp : Fin T)
     (apart : ∀ (i : Fin 142080) (j : Fin 142081), live (i.castAdd 2) ≠ out (j.castAdd 2))
     (srcTmp : ∀ i : Fin 142080, live (i.castAdd 2) ≠ tmp)
     (dstTmp : ∀ i : Fin 142081, out (i.castAdd 2) ≠ tmp)
     (controls : ∀ j : Fin 2, out (j.natAdd 142081) = live (j.natAdd 142080)) :
     ∃ (bank : Fin N ↪ Fin (T+N)) (host : Empty ⊕ P → Pr (Empty ⊕ P) (T+N) Q prime U) (program : Pr (Empty ⊕ P) (T+N) Q prime U),
-    ∀ (lane : Descriptor) (_width : lane.width = 64*w) (size : volume prime lane = V)
-      (data : Fin 142080 → Fin (volume prime lane) → ZMod 2) u S,
-      let position := packedChildPosition lane size
-      HelperFan live (fun r => data r ∘ position.symm) S →
+    ∀ (data : Fin 142080 → Fin V → ZMod 2) u S,
+      HelperFan live data S →
       S.L tmp = [] → S.R tmp = [] →
       (∀ i : Fin 142081, S.L (out (i.castAdd 2)) = [] ∧ S.R (out (i.castAdd 2)) = []) →
       ∃ z F n y, Exec host program (mk u (adjacentStageStacks S seed)) n (mk z F) ∧
         n ≤ 142081*(8*V+10)+1+price ∧ z.user = u.user ∧
         ParentStageWords (fun i => dst (i.castAdd 2)) dst V y (embStk bank F) ∧
-        (∀ r : Fin 142080, y r.castSucc ∘ position =
-          Shared50RecursiveNodeRows.transpose (one_dvd lane.rows) (data r)) ∧
+        effect (data ∘ Fin.lastCases 0 id) y ∧
         ∀ j, (∀ i, out i ≠ j) → F.L (j.castAdd N) = S.L j ∧ F.R (j.castAdd N) = S.R j := by
   obtain ⟨prep,prepare⟩ := prepareChildOwners_exec (P := Empty) (U := U) (Q := Q)
     Empty.elim live out tmp apart srcTmp dstTmp
   obtain ⟨bank,_,join⟩ := runAdjacentStages (P := Empty) (R := P) (U := U) (q := Q) (A := prime) out src
   let left := Fin.castAdd N (n := T)
   refine ⟨bank,Sum.elim (fun e : Empty => embProg left Sum.inl (Empty.elim e)) (fun p => embProg bank Sum.inr (body p)),(embProg left Sum.inl prep).seq (embProg bank Sum.inr code),?_⟩
-  intro lane width size data u S position rep tl tr empty
+  intro data u S rep tl tr empty
   obtain ⟨v,R,t,loaded,paid,user,words,preparedFrame⟩ := prepare _ (embDn left u) S rep controls tl tr empty
   let row : Fin 142081 → Fin 142080 := Fin.lastCases 0 id
   let post := fun (a : U) (F : Stacks N prime) => a = u.user ∧ ∃ y,
-    ParentStageWords (fun i => dst (i.castAdd 2)) dst V y F ∧ ∀ r : Fin 142080,
-      y r.castSucc ∘ position = Shared50RecursiveNodeRows.transpose (one_dvd lane.rows) (data r)
+    ParentStageWords (fun i => dst (i.castAdd 2)) dst V y F ∧ effect (data ∘ row) y
   obtain ⟨z,F,n,exec,bill,⟨same,y,returned,reads⟩,childFrame⟩ :=
     join Empty.elim body prep code u S seed v _ t price post loaded (by
       intro a D state shared privateTapes
-      obtain ⟨b,G,k,y,exec,bill,hb,returned,reads⟩ := runPackedChild run lane width size (data ∘ row) a D (by
+      obtain ⟨b,G,k,y,exec,bill,hb,returned,reads⟩ := run (data ∘ row) a D (by
         constructor
         · intro i; exact (shared _).1.trans (words.left i)
         · intro i; exact (shared _).2.trans (words.right i)
         · intro j l; rw [(shared _).1,(shared _).2]; exact words.controls j l) privateTapes
-      exact ⟨b,G,k,exec,bill,hb.trans (state.trans user),y,returned,fun r => by
-        simpa only [Function.comp_apply,row,Fin.lastCases_castSucc,id_eq,position] using reads r⟩)
+      exact ⟨b,G,k,exec,bill,hb.trans (state.trans user),y,returned,reads⟩)
   refine ⟨z,F,n,y,exec,bill.trans (Nat.add_le_add_right paid _),same,returned,reads,?_⟩
   intro j outside
   have keep := childFrame j outside
@@ -344,6 +340,57 @@ theorem splitChildStacks_eq {T N : ℕ} (D : Stacks (142082+T+N) prime) (seed : 
         simp only [adjacentStageStacks,Fin.addCases_right]
         first | exact (privateTapes i).1 | exact (privateTapes i).2
 
+theorem runSplitOwners {P U : Type} {T N Q V price : ℕ} {body : P → Pr P N Q prime U}
+    {code src dst seed} {effect : (Fin 142081 → Fin V → ZMod 2) → (Fin 142081 → Fin V → ZMod 2) → Prop}
+    (run : PackedPieceHandoff V effect body code src dst seed price)
+    (live : Fin (142080+2) ↪ Fin T) :
+    let H := 142082+T+N
+    let caller := (Fin.natAddEmb 142082 (m := T)).trans (Fin.castAddEmb N)
+    ∃ (bank : Fin N ↪ Fin H) (host : Empty ⊕ P → Pr (Empty ⊕ P) H Q prime U)
+      (program : Pr (Empty ⊕ P) H Q prime U),
+    ∀ (data : Fin 142080 → Fin V → ZMod 2) u S,
+      HelperFan (live.trans caller) data S →
+      (∀ i : Fin 142082, let j := (i.castAdd T).castAdd N
+        S.L j = [] ∧ S.R j = []) →
+      (∀ i : Fin N, let j := i.natAdd (142082+T)
+        S.L j = seed.L i ∧ S.R j = seed.R i) →
+      ∃ z F n, ∃ y : Fin 142081 → Fin V → ZMod 2, Exec host program (mk u S) n (mk z F) ∧
+        n ≤ 142081*(8*V+10)+1+price ∧ z.user = u.user ∧
+        ParentStageWords (fun i => dst (i.castAdd 2)) dst V y (embStk bank F) ∧
+        effect (data ∘ Fin.lastCases 0 id) y ∧
+        HelperFan ((childReturnFan dst).trans bank) (fun r => y r.castSucc) F ∧
+        ∀ j, (∀ i : Fin 2, live (i.natAdd 142080) ≠ j) →
+          let t := (j.natAdd 142082).castAdd N
+          F.L t = S.L t ∧ F.R t = S.R t := by
+  intro H caller
+  let raised := live.trans (Fin.natAddEmb 142082)
+  let tmp := (Fin.last 142081).castAdd T
+  have separate (i : Fin T) (j : Fin 142082) : i.natAdd 142082 ≠ j.castAdd T := by
+    intro eq
+    have h := congrArg Fin.val eq
+    change 142082+i.val = j.val at h
+    omega
+  obtain ⟨bank,host,program,exec⟩ := prepareRunChild run raised (childInputFan live) tmp
+    (fun i j => by rw [childInputFan_owner]; exact separate _ _) (fun _ => separate _ _)
+    (fun j => by rw [childInputFan_owner]; exact (Fin.castAddEmb T).injective.ne (Fin.castSucc_ne_last j))
+    (childInputFan_control live)
+  refine ⟨bank,host,program,?_⟩
+  intro data u D rep empty privateTapes
+  let S := embStk caller D
+  have shape := splitChildStacks_eq D seed empty privateTapes
+  have projected : HelperFan live data S := rep
+  have placed : HelperFan raised data (childOwnerStacks S) := by
+    intro i z
+    simpa [raised,embStk,childOwnerStacks,adjacentStageStacks,Function.comp_def] using projected i z
+  obtain ⟨z,F,n,y,ran,paid,user,words,reads,keep⟩ := exec data u (childOwnerStacks S)
+    placed (by simp [tmp,childOwnerStacks,adjacentStageStacks]) (by simp [tmp,childOwnerStacks,adjacentStageStacks])
+    (fun i => by simp [childInputFan_owner,childOwnerStacks,adjacentStageStacks])
+  refine ⟨z,F,n,y,?_,paid,user,words,reads,words.returnFan,?_⟩
+  · rw [shape]
+    exact ran
+  intro j outside
+  simpa [childOwnerStacks,adjacentStageStacks,S,caller,embStk] using keep _ (childInputFan_outside live j outside)
+
 theorem runSplitChild {P U : Type} {T N Q V w price : ℕ} {body : P → Pr P N Q prime U}
     {code src dst seed} (run : PackedPieceHandoff V (packedChildOutput w V) body code src dst seed price)
     (live : Fin (142080+2) ↪ Fin T) :
@@ -368,44 +415,63 @@ theorem runSplitChild {P U : Type} {T N Q V w price : ℕ} {body : P → Pr P N 
           let t := (j.natAdd 142082).castAdd N
           F.L t = S.L t ∧ F.R t = S.R t := by
   intro H caller
-  let raised := live.trans (Fin.natAddEmb 142082)
-  let tmp := (Fin.last 142081).castAdd T
-  have separate (i : Fin T) (j : Fin 142082) : i.natAdd 142082 ≠ j.castAdd T := by
-    intro eq
-    have h := congrArg Fin.val eq
-    change 142082+i.val = j.val at h
-    omega
-  obtain ⟨bank,host,program,exec⟩ := prepareRunPackedChild run raised (childInputFan live) tmp
-    (fun i j => by rw [childInputFan_owner]; exact separate _ _) (fun _ => separate _ _)
-    (fun j => by rw [childInputFan_owner]; exact (Fin.castAddEmb T).injective.ne (Fin.castSucc_ne_last j))
-    (childInputFan_control live)
+  obtain ⟨bank,host,program,exec⟩ := runSplitOwners run live
   refine ⟨bank,host,program,?_⟩
-  intro lane width size data u D position rep empty privateTapes
-  let S := embStk caller D
-  have shape := splitChildStacks_eq D seed empty privateTapes
-  have projected : HelperFan live (fun r => data r ∘ position.symm) S := rep
-  have placed : HelperFan raised (fun r => data r ∘ position.symm) (childOwnerStacks S) := by
-    intro i z
-    simpa [raised,embStk,childOwnerStacks,adjacentStageStacks,Function.comp_def] using projected i z
-  obtain ⟨z,F,n,y,ran,paid,user,words,reads,keep⟩ := exec lane width size data u (childOwnerStacks S)
-    placed (by simp [tmp,childOwnerStacks,adjacentStageStacks]) (by simp [tmp,childOwnerStacks,adjacentStageStacks])
-    (fun i => by simp [childInputFan_owner,childOwnerStacks,adjacentStageStacks])
-  refine ⟨z,F,n,y,?_,paid,user,words,?_,?_⟩
-  · rw [shape]
-    exact ran
-  · have owners : (fun r : Fin 142080 => y r.castSucc) =
-        fun r => Shared50RecursiveNodeRows.transpose (one_dvd lane.rows) (data r) ∘ position.symm := by
-      funext r i
-      simpa only [position,Function.comp_apply,Equiv.apply_symm_apply] using congrFun (reads r) (position.symm i)
-    exact owners ▸ words.returnFan
-  intro j outside
-  simpa [childOwnerStacks,adjacentStageStacks,S,caller,embStk] using keep _ (childInputFan_outside live j outside)
+  intro lane width size data u S position rep empty privateTapes
+  obtain ⟨z,F,n,y,ran,paid,user,words,reads,owners,keep⟩ :=
+    exec _ u S rep empty privateTapes
+  refine ⟨z,F,n,y,ran,paid,user,words,?_,keep⟩
+  have rows : (fun r : Fin 142080 => y r.castSucc) = fun r =>
+      Shared50RecursiveNodeRows.transpose (one_dvd lane.rows) (data r) ∘ position.symm := by
+    funext r i
+    have read := congrFun (reads r lane width size) (position.symm i)
+    simpa [position,Function.comp_def] using read
+  exact rows ▸ owners
+
+/-- Supply the live owner rows in inherited order and return their transposes
+on the child output tapes. Only the linear owner-copy preparation is charged. -/
+theorem runInheritedChild {P U : Type} {T N Q price : ℕ} (lane : Descriptor) {body : P → Pr P N Q prime U}
+    {code src dst seed} (run : PackedPieceHandoff (volume prime lane) (fun x y =>
+      ∀ r : Fin 142080, y r.castSucc = Shared50RecursiveNodeRows.transpose (one_dvd lane.rows) (x r.castSucc))
+      body code src dst seed price)
+    (live : Fin (142080+2) ↪ Fin T) :
+    let H := 142082+T+N
+    let caller := (Fin.natAddEmb 142082 (m := T)).trans (Fin.castAddEmb N)
+    ∃ (bank : Fin N ↪ Fin H) (host : Empty ⊕ P → Pr (Empty ⊕ P) H Q prime U)
+      (program : Pr (Empty ⊕ P) H Q prime U),
+    let V := volume prime lane
+    ∀ (data : Fin 142080 → Fin (volume prime lane) → ZMod 2) u S,
+      HelperFan (live.trans caller) data S →
+      (∀ i : Fin 142082, let j := (i.castAdd T).castAdd N
+        S.L j = [] ∧ S.R j = []) →
+      (∀ i : Fin N, let j := i.natAdd (142082+T)
+        S.L j = seed.L i ∧ S.R j = seed.R i) →
+      ∃ z F n, ∃ y : Fin 142081 → Fin V → ZMod 2, Exec host program (mk u S) n (mk z F) ∧
+        n ≤ 142081*(8*V+10)+1+price ∧ z.user = u.user ∧
+        ParentStageWords (fun i => dst (i.castAdd 2)) dst V y (embStk bank F) ∧
+        HelperFan ((childReturnFan dst).trans bank) (fun r =>
+          Shared50RecursiveNodeRows.transpose (one_dvd lane.rows) (data r)) F ∧
+        ∀ j, (∀ i : Fin 2, live (i.natAdd 142080) ≠ j) →
+          let t := (j.natAdd 142082).castAdd N
+          F.L t = S.L t ∧ F.R t = S.R t := by
+  intro H caller
+  obtain ⟨bank,host,program,exec⟩ := runSplitOwners run live
+  refine ⟨bank,host,program,?_⟩
+  intro V data u S rep empty privateTapes
+  obtain ⟨z,F,n,y,ran,paid,user,words,reads,owners,keep⟩ :=
+    exec data u S rep empty privateTapes
+  refine ⟨z,F,n,y,ran,paid,user,words,?_,keep⟩
+  have eq : (fun r : Fin 142080 => y r.castSucc) = fun r =>
+      Shared50RecursiveNodeRows.transpose (one_dvd lane.rows) (data r) := by
+    funext r
+    simpa only [Function.comp_apply, Fin.lastCases_castSucc, id_eq] using reads r
+  exact eq ▸ owners
 
 /-- Sweeps and idle windows on exact flat words compose to interchange the two
 parent fields on every role. The spectator and the two piece-cost sums are preserved. -/
 theorem assembledFlatNode {U : Type} :
-    ∃ states : ℕ, ∀ {Q w W V : ℕ}, states ≤ Q → (size : (prime^w)^128*W = V) → 0 < V →
-      let address := fun (j : Fin W) s => (flatWindowEquiv w W (s,j)).cast size
+    ∃ states : ℕ, ∀ {Q w W V : ℕ}, states ≤ Q → (size : (prime^w)^128*W = V) → 0 < V → ∀ place : Fin V ≃ Fin V,
+      let address := fun (j : Fin W) s => place ((flatWindowEquiv w W (s,j)).cast size)
       let reads := fun (piece : Piece) (x y : Fin 142081 → Fin V → ZMod 2) =>
         ∀ j, let addr := fun z => address j (windowState w z)
           readRoles addr y = piece.run (readRoles addr x)
@@ -415,11 +481,11 @@ theorem assembledFlatNode {U : Type} :
       (∀ n, ∃ (P : Type) (T : ℕ) (body : P → Pr P T Q prime U), ∃ code src dst seed,
         PackedPieceHandoff V (reads (.remainder n.val)) body code src dst seed (idleCost n)) →
       ∃ (P : Type) (T : ℕ) (body : P → Pr P T Q prime U), ∃ code src dst seed,
-        PackedPieceHandoff V (packedChildOutput w V) body code src dst seed
+        PackedPieceHandoff V (fun x y => packedChildOutput w V (fun r => x r ∘ place) (fun r => y r ∘ place)) body code src dst seed
           ((∑ i, sweepCost i)+(∑ i, idleCost i)+9*(2*(76*17760*V*(142081+7)+6)+1+(142081*(8*V+10)+1))+2) := by
   obtain ⟨states,build⟩ := assembledPackedNode (U := U)
   refine ⟨states,?_⟩
-  intro Q w W V fits size pos address reads sweepCost idleCost sweeps windows
+  intro Q w W V fits size pos place address reads sweepCost idleCost sweeps windows
   have volume : (prime^w)^16*(1*((prime^w)^112*W)) = V := by
     simpa only [Nat.one_mul] using (ordinaryCompact_width (prime^w) W).trans size
   cases volume
@@ -433,16 +499,49 @@ theorem assembledFlatNode {U : Type} :
   let roles := (Fintype.equivFin Role).trans (finCongr card_role)
   obtain ⟨r,rfl⟩ := roles.surjective lane
   apply funext
-  change ∀ k, y (sweepRoleTape r) _ = _
+  change ∀ k, (y (sweepRoleTape r) ∘ place) _ = _
   apply (flatNodeOutput_iff size child width (packedChildPosition child childSize) (fun _ => rfl) _ _).2
   intro i
   obtain ⟨⟨s,j⟩,rfl⟩ := (flatWindowEquiv w W).surjective i
   have swapped := modularEndpoint r (fun _ => address j) x y
     (nodePieceEffect_read _ (fun n a d h => h j) (fun n a d h => h j) trace) s
-  have transposed := flatNodeTranspose (fun k => x (sweepRoleTape r) (k.cast size))
+  have transposed := flatNodeTranspose (fun k => x (sweepRoleTape r) (place (k.cast size)))
     (s.1 ∘ stageAxis.symm) (s.2 ∘ stageAxis.symm) j
   rw [flatWindowEquiv_fields]
   exact (by simpa only [address,flatWindowEquiv_fields,sweepRoleTape_eq] using swapped :
     y (sweepRoleTape r) _ = x (sweepRoleTape r) _).trans transposed.symm
+
+/-- If each sweep and remainder reads the inherited cells, the assembled node
+transposes the physical owner words in place in that address order. -/
+theorem assembledInheritedNode {U : Type} :
+    ∃ states : ℕ, ∀ {Q w W : ℕ} (child : Descriptor), states ≤ Q → child.width = 64*w →
+      (size : (prime^w)^128*W = volume prime child) → 0 < volume prime child →
+      let V := volume prime child
+      let position := packedChildPosition child rfl
+      let address := fun (j : Fin W) s => position.symm ((flatWindowEquiv w W (s,j)).cast size)
+      let reads := fun (piece : Piece) (x y : Fin 142081 → Fin V → ZMod 2) =>
+        ∀ j, let addr := fun z => address j (windowState w z)
+          readRoles addr y = piece.run (readRoles addr x)
+      ∀ (sweepCost idleCost : Fin 9 → ℕ),
+      (∀ n, ∃ (P : Type) (T : ℕ) (body : P → Pr P T Q prime U), ∃ code src dst seed,
+        PackedPieceHandoff V (reads (.stage n)) body code src dst seed (sweepCost n)) →
+      (∀ n, ∃ (P : Type) (T : ℕ) (body : P → Pr P T Q prime U), ∃ code src dst seed,
+        PackedPieceHandoff V (reads (.remainder n.val)) body code src dst seed (idleCost n)) →
+      ∃ (P : Type) (T : ℕ) (body : P → Pr P T Q prime U), ∃ code src dst seed,
+        PackedPieceHandoff V (fun x y => ∀ r : Fin 142080, y r.castSucc =
+          Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (x r.castSucc)) body code src dst seed
+          ((∑ i, sweepCost i)+(∑ i, idleCost i)+9*(2*(76*17760*V*(142081+7)+6)+1+(142081*(8*V+10)+1))+2) := by
+  obtain ⟨states,assemble⟩ := assembledFlatNode (U := U)
+  refine ⟨states,?_⟩
+  intro Q w W child fits width size positive V position address reads sweepCost idleCost sweeps windows
+  obtain ⟨P,T,body,code,src,dst,seed,run⟩ :=
+    assemble fits size positive position.symm sweepCost idleCost sweeps windows
+  refine ⟨P,T,body,code,src,dst,seed,?_⟩
+  intro x u S words privateTapes
+  obtain ⟨z,F,k,y,exec,paid,user,out,changed⟩ := run x u S words privateTapes
+  refine ⟨z,F,k,y,exec,paid,user,out,?_⟩
+  intro r
+  simpa only [position,Function.comp_assoc,Equiv.symm_comp_self,Function.comp_id] using
+    changed r child width rfl
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
