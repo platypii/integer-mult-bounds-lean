@@ -35,6 +35,34 @@ theorem ParentStageWords.next {T A N V : ℕ} {port : Fin 142081 → Fin T}
   · intro j z
     simpa only [embStk,Function.comp_apply,counters] using words.controls j z
 
+noncomputable def returnedFan {T : ℕ} (fan : Fin (142081+2) ↪ Fin T) :
+    Fin (142081+2) ↪ Fin (Exit.size 0 T) :=
+  finSumFinEquiv.symm.toEmbedding.trans (Exit.place
+    (Sum.elim (fun i => Exit.Register.sweep (owners i))
+      (fun j : Fin 2 => Exit.Register.chart (fan (j.natAdd 142081))))
+    (by rintro (i|i) (j|j) eq <;> simp_all [owners.injective.eq_iff,fan.injective.eq_iff]
+        exact (Fin.natAddEmb 142081).injective eq))
+
+theorem returnedFan_owner {T : ℕ} (fan : Fin (142081+2) ↪ Fin T) (i : Fin 142081) : returnedFan fan (i.castAdd 2) = Exit.sweep 0 T (owners i) := by
+    change (Fintype.equivFin _) (Sum.elim _ _ (finSumFinEquiv.symm (i.castAdd 2))) = _
+    rw [finSumFinEquiv_symm_apply_castAdd]
+    rfl
+
+theorem returnedFan_counter {T : ℕ} (fan : Fin (142081+2) ↪ Fin T) (j : Fin 2) : returnedFan fan (j.natAdd 142081) = Exit.chart 0 T (fan (j.natAdd 142081)) := by
+    change (Fintype.equivFin _) (Sum.elim _ _ (finSumFinEquiv.symm (j.natAdd 142081))) = _
+    rw [finSumFinEquiv_symm_apply_natAdd]
+    rfl
+
+/-- A physical piece acts on exact parent words with a prepared private workspace. -/
+def PackedPieceHandoff {P U : Type} {t q : ℕ} (V : ℕ)
+    (effect : (Fin 142081 → Fin V → ZMod 2) → (Fin 142081 → Fin V → ZMod 2) → Prop)
+    (body : P → Pr P t q prime U) (code : Pr P t q prime U)
+    (src dst : Fin (142081+2) ↪ Fin t) (prepared : Stacks t prime) (price : ℕ) : Prop :=
+  ∀ x u S, ParentStageWords (fun i => src (i.castAdd 2)) src V x S →
+    (∀ j, (∀ i, src i ≠ j) → S.L j = prepared.L j ∧ S.R j = prepared.R j) →
+    ∃ z F steps y, Exec body code (mk u S) steps (mk z F) ∧ steps ≤ price ∧ z.user = u.user ∧
+      ParentStageWords (fun i => dst (i.castAdd 2)) dst V y F ∧ effect x y
+
 /-- Execute the packed invocation family, corrections, and both owner permutations
 with the recursive child bill charged once. -/
 theorem packedPhysicalStage_exec [M8.Machine.Net] :
@@ -63,20 +91,15 @@ theorem packedPhysicalStage_exec [M8.Machine.Net] :
     ∃ (N : ℕ) (worker : Fin (80+((T+273)+LeafCore.small)) ↪ Fin N),
     let place := Exit.chart 0 N
     let fan := (full.trans worker).trans place
-    let back := Exit.sweep 0 N
     let host := fun f => embProg place id (embProg worker id (host f))
     let labels := prime^(64*((h+1)*64))
     let W := B*labels*K
     let bill := (base*V+17760*(2*M8.RevMachine.LeafCore.coreCost V (h+1)+14))*(correctionTapes+5)+price+12
     ∃ code C, ∀ H (parent : Fin 64 → ZMod M) (units : ∀ i, IsUnit (parent i)),
     M^128 < 2^H → H ≤ M^128+1 → 0 < W → ∃ prepared : Stacks (Exit.size 0 N) prime,
-    ∀ (x : OwnerArray (h+1) 1 W) (u : HS (Exit.size 0 N) Q prime U) (S : Stacks (Exit.size 0 N) prime),
-    ParentStageWords (fun i => fan (i.castAdd 2)) fan V x S →
-    (∀ j, (∀ i, fan i ≠ j) → S.L j = prepared.L j ∧ S.R j = prepared.R j) →
-    ∃ (z : HS (Exit.size 0 N) Q prime U) (G : Stacks (Exit.size 0 N) prime) (k : ℕ) (d : OwnerArray (h+1) 1 W), Exec host code (mk u S) k (mk z G) ∧
-      k ≤ bill + (142081*(8*V+10)+1) + (142080*(C*(M^16*(labels*(M^112*W)))+16)+2) ∧
-      z.user = u.user ∧ borrowedStageHandoff (h+1) B K parent units n x d ∧
-      ParentStageWords (fun i => back (owners i)) fan V d G := by
+      PackedPieceHandoff (M^16*(1*(M^112*W))) (borrowedStageHandoff (h+1) B K parent units n)
+        host code fan (returnedFan (full.trans worker)) prepared
+        (bill + (142081*(8*V+10)+1) + (142080*(C*(M^16*(labels*(M^112*W)))+16)+2)) := by
   obtain ⟨base,correctionTapes,states,physical⟩ := correctedPhysicalStage_exec
   refine ⟨base,correctionTapes,states,?_⟩
   intro Q h B rows P U node n tapes body coeff required capacity width split label role K M V fits positive pos packed
@@ -98,14 +121,21 @@ theorem packedPhysicalStage_exec [M8.Machine.Net] :
   have spare := words.right (Fin.last 142080)
   obtain ⟨z,G,k,d,done,bound,same,handoff,controls,left,last,roles⟩ :=
     execute H parent units height bits widthPos x u S headers (fun r => words.left _) (fun r => words.right _)
-      (by intro j; rw [words.left _,spare,readAt_nil_left,putWord_blank_zero]) words.controls privateTapes
+      (by intro j; rw [words.left _,spare,readAt_nil_left,putWord_blank_zero]) (borrowedOwnerVolume (h+1) B K ▸ words.controls) privateTapes
       tmpL tmpR (fun i => (empty i).2)
-  refine ⟨z,G,k,d,done,bound,same,handoff,fun i => (left i).trans (empty i).1,?_,controls⟩
-  intro i
-  induction i using Fin.lastCases with
-  | last => exact last
-  | cast i =>
-    obtain ⟨r,rfl⟩ := ((Fintype.equivFin Role).trans (finCongr card_role)).surjective i
-    exact roles r
+  refine ⟨z,G,k,d,done,bound,same,⟨?_,?_,?_⟩,handoff⟩
+  · intro i
+    rw [returnedFan_owner]
+    exact (left i).trans (empty i).1
+  · intro i
+    rw [returnedFan_owner]
+    induction i using Fin.lastCases with
+    | last => exact last
+    | cast i =>
+      obtain ⟨r,rfl⟩ := ((Fintype.equivFin Role).trans (finCongr card_role)).surjective i
+      exact roles r
+  · intro j z
+    rw [returnedFan_counter,borrowedOwnerVolume (h+1) B K]
+    exact controls j z
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode

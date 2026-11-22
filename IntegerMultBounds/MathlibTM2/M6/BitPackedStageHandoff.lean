@@ -10,24 +10,6 @@ namespace IntegerMultBounds.MathlibTM2.M6.BitNode
 open IntegerMultBounds.Machine IntegerMultBounds.Networks Stack Host SweepFile
 open Shared50ModularControl (prime)
 
-noncomputable def returnedFan {T : ℕ} (fan : Fin (142081+2) ↪ Fin T) :
-    Fin (142081+2) ↪ Fin (Exit.size 0 T) :=
-  finSumFinEquiv.symm.toEmbedding.trans (Exit.place
-    (Sum.elim (fun i => Exit.Register.sweep (owners i))
-      (fun j : Fin 2 => Exit.Register.chart (fan (j.natAdd 142081))))
-    (by rintro (i|i) (j|j) eq <;> simp_all [owners.injective.eq_iff,fan.injective.eq_iff]
-        exact (Fin.natAddEmb 142081).injective eq))
-
-private theorem returnedFan_owner {T : ℕ} (fan : Fin (142081+2) ↪ Fin T) (i : Fin 142081) : returnedFan fan (i.castAdd 2) = Exit.sweep 0 T (owners i) := by
-    change (Fintype.equivFin _) (Sum.elim _ _ (finSumFinEquiv.symm (i.castAdd 2))) = _
-    rw [finSumFinEquiv_symm_apply_castAdd]
-    rfl
-
-private theorem returnedFan_counter {T : ℕ} (fan : Fin (142081+2) ↪ Fin T) (j : Fin 2) : returnedFan fan (j.natAdd 142081) = Exit.chart 0 T (fan (j.natAdd 142081)) := by
-    change (Fintype.equivFin _) (Sum.elim _ _ (finSumFinEquiv.symm (j.natAdd 142081))) = _
-    rw [finSumFinEquiv_symm_apply_natAdd]
-    rfl
-
 /-- Sequence the packed stage with a continuation on its own tape bank.
 The continuation sees its original private stacks and all returned parent words. -/
 theorem runAfterPackedStage {T N Q V D : ℕ} {P R U : Type}
@@ -60,16 +42,6 @@ theorem runAfterPackedStage {T N Q V D : ℕ} {P R U : Type}
       rw [(shared (j.natAdd 142081)).1,(shared (j.natAdd 142081)).2]
       rw [returnedFan_counter]; exact words.controls j z)
   exact ⟨z,G,k,ran,paid,done⟩
-
-/-- A physical piece acts on exact parent words with a prepared private workspace. -/
-def PackedPieceHandoff {P U : Type} {t q : ℕ} (V : ℕ)
-    (effect : (Fin 142081 → Fin V → ZMod 2) → (Fin 142081 → Fin V → ZMod 2) → Prop)
-    (body : P → Pr P t q prime U) (code : Pr P t q prime U)
-    (src dst : Fin (142081+2) ↪ Fin t) (prepared : Stacks t prime) (price : ℕ) : Prop :=
-  ∀ x u S, ParentStageWords (fun i => src (i.castAdd 2)) src V x S →
-    (∀ j, (∀ i, src i ≠ j) → S.L j = prepared.L j ∧ S.R j = prepared.R j) →
-    ∃ z F steps y, Exec body code (mk u S) steps (mk z F) ∧ steps ≤ price ∧ z.user = u.user ∧
-      ParentStageWords (fun i => dst (i.castAdd 2)) dst V y F ∧ effect x y
 
 /-- Copy a represented result to fresh owner words, keeping the two live
 counters on the chart. The cost includes every owner and the spare. -/
