@@ -30,6 +30,45 @@ private theorem workerSetup_volume (w W : ℕ) (pos : 0 < W) :
   have := sizeBound (w+1) wBound
   omega
 
+/-- With a fixed stopping width, record preparation, leaf execution and cleanup
+together cost a constant times the child's physical volume. -/
+theorem stoppedCopyBudget_linear [M8.Machine.Net] (tapes cutoff : ℕ) :
+    ∃ C : ℕ, ∀ w W width : ℕ, 0 < W → width ≤ cutoff →
+      let V := (prime^w)^16*W
+      stoppedCopyBudget tapes w W V width ≤ C*V := by
+  let power := ((max 1 cutoff : ℕ) : ℝ)^M8.Machine.BudgetBound.tau
+  obtain ⟨K,hK⟩ := exists_nat_ge (|LeafCore.C| * power)
+  let rate := 1301+K
+  refine ⟨113+rate*(tapes+5)+6+tapes*(36+8*rate)+1,?_⟩
+  intro w W width pos stop V
+  have base : 0 < prime^w := pow_pos Shared50ModularControl.prime_prime.pos _
+  have volume : 0 < V := Nat.mul_pos (pow_pos base _) pos
+  have radix : prime^w ≤ V := (Nat.le_self_pow (by decide : 16 ≠ 0) _).trans (Nat.le_mul_of_pos_right _ pos)
+  have atom : w ≤ V := (Nat.lt_two_pow_self.le.trans
+    (Nat.pow_le_pow_left Shared50ModularControl.prime_prime.two_le w)).trans radix
+  have suffix : W ≤ V := Nat.le_mul_of_pos_left _ (pow_pos base _)
+  have h := FlatCoordinateDimensions.bits_length_le_twice atom volume
+  have s := FlatCoordinateDimensions.bits_length_le_twice suffix volume
+  have core := RevBudget.coreCost_le V width (L := power)
+    (Real.rpow_le_rpow (by positivity) (by exact_mod_cast max_le_max_left 1 stop)
+      M8.Machine.BudgetBound.exponent_range.1.le)
+  have coreNat : LeafCore.coreCost V width ≤ K*V := by
+    have bound : (LeafCore.coreCost V width : ℝ) ≤ (K : ℝ)*V := core.trans (by
+      calc |LeafCore.C| * (V : ℝ) * power = (|LeafCore.C| * power)*V := by ring
+           _ ≤ (K : ℝ)*V := mul_le_mul_of_nonneg_right hK (Nat.cast_nonneg _))
+    exact_mod_cast bound
+  let cost := 1300*V+1+LeafCore.coreCost V width
+  have costBound : cost ≤ rate*V := by dsimp [cost,rate]; rw [Nat.add_mul]; omega
+  let header := (FlatCoordinateSchedule.bits w).length+(FlatCoordinateSchedule.bits W).length+4
+  have cleanup : 4*(header+2*cost)+4 ≤ (36+8*rate)*V := by
+    dsimp [header]; rw [Nat.add_mul,Nat.mul_assoc]; omega
+  have load : 21*w+20*(FlatCoordinateSchedule.bits w).length+6*(FlatCoordinateSchedule.bits W).length+40 ≤ 113*V := by omega
+  change _ + (cost*(tapes+5)+6) + (tapes*(4*(header+2*cost)+4)+1) ≤ _
+  calc
+    _ ≤ 113*V+(rate*V*(tapes+5)+6*V)+(tapes*((36+8*rate)*V)+1*V) := by
+      gcongr <;> omega
+    _ = _ := by ring
+
 /-- Prepare an allocated child record and call its recursive procedure on
 the live packed payload. All tapes outside this occurrence are preserved. -/
 theorem archiveChildCall_exec [M8.Machine.Net] {T Q : ℕ} {P U : Type}
@@ -153,6 +192,67 @@ theorem borrowedWindows_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) 
     exact ⟨l.trans (stored i k priv).1,r.trans (stored i k priv).2⟩)
   refine ⟨z,F,t,out,run,?_,user,done,act⟩
   simpa only [price,List.sum_ofFn,Finset.sum_add_distrib] using paid
+
+/-- When the rank-seven children stop, the whole COPY sweep executes with
+one fixed table of leaf procedures and linear cost in the role volume. -/
+theorem stoppedBorrowedWindows_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) (cutoff : ℕ) :
+    let J := Fin Copy.lifecycles.length
+    ∃ (T states : ℕ) (fan : Fin (142081+2) ↪ Fin T), ∀ {U : Type} {Q : ℕ}, states ≤ Q →
+    ∃ (body : J × Unit → Pr (J × Unit) T Q prime U) (C : ℕ), ∀ (node : Descriptor) (w B rows : ℕ),
+    node.width = 64*(w+1) → node.rows = 142080*rows → node.beforeH = B*prime^(64*((w+1)*64)) →
+    7*(w+1) ≤ cutoff →
+    let M := prime^(w+1)
+    let K := node.beforeRows*rows*node.between*node.afterD
+    let blocks := M^112*B
+    let W := blocks*prime^(64*((w+1)*64))*K
+    let V := M^16*W
+    0 < W → ∀ record : J → List (Fin (prime+4)), ∀ shared : Stacks (142081+2) prime,
+      ∃ prepared : Stacks T prime, embStk fan prepared = shared ∧
+      ∃ code, ∀ data u S, HelperFan fan data S →
+        (∀ k, (∀ h, fan h ≠ k) → S.L k = prepared.L k ∧ S.R k = prepared.R k) →
+        ∃ z F t out, Exec body code (mk u S) t (mk z F) ∧
+          t ≤ C*V ∧ z.user = u.user ∧ HelperFan fan out F ∧
+        (∀ g (cell : Cover.LabelEntry.Cell (copyLabelLayout (w+1) blocks K) blocks),
+            let owner := (⟨ownerTape n p.1 p.2,ownerTape_injective n p.1 p.2⟩ : Fin 661 ↪ Fin 142081)
+            phaseRead owner out (labelSpectator g cell) = Copy.run (selectedFrame (w+1)) Copy.lifecycles
+              (phaseRead owner data (labelSpectator g cell))) ∧
+          ∀ k, k ≠ Fin.last 142080 → (∀ i, ownerTape n p.1 p.2 i ≠ k) → out k = data k := by
+  classical
+  intro J
+  obtain ⟨tapes,regs,T,states,fan,bank,windows⟩ := borrowedWindows_host n p
+  obtain ⟨L,linear⟩ := stoppedCopyBudget_linear (M8.Machine.ArbitraryWidthOriginalZeroBranch.count 25) cutoff
+  refine ⟨T,max states stoppedCopyMachine.1,fan,?_⟩
+  intro U Q cap
+  have fits := (le_max_right states stoppedCopyMachine.1).trans cap
+  let localBody (j : J) (_ : Unit) : Pr Unit (tapes j) Q prime U := stoppedCopyProgram (regs j) fits
+  obtain ⟨base,build⟩ := windows ((le_max_left ..).trans cap) localBody (fun _ => ())
+  refine ⟨fun g => embProg (bank g.1) (fun x => (g.1,x)) (localBody g.1 g.2),(∑ j, base j)+Copy.lifecycles.length*(12+L)+1,?_⟩
+  intro node w B rows width split label stop M K blocks W V pos record shared
+  let desc := fun j : J => scheduledChild prime node (copyChildPosition (n,p,j))
+  obtain ⟨position,coords,run⟩ := build node w B rows width split label pos
+  obtain ⟨prepared,eq,execute⟩ := run record shared
+  let budget := stoppedCopyBudget (M8.Machine.ArbitraryWidthOriginalZeroBranch.count 25) (w+1) W V (7*(w+1))
+  have rank (j : J) : (desc j).width = 7*(w+1) := by
+    have sizes := (scheduledChild_measures prime node ⟨_,width⟩ ⟨_,split⟩ (copyChildPosition (n,p,j))).1
+    rw [copyChildPosition_rank n p.1 p.2 j,width] at sizes
+    change (desc j).width*64 = _ at sizes
+    omega
+  have child (j : J) := stoppedCopyChild_exec (regs j) fits (localBody j) () rfl node (desc j) w W
+    (record j) (position j) (coords j) (rank j) pos
+  obtain ⟨code,steps⟩ := execute (fun _ => budget) (fun j => by simpa only [rank j] using child j)
+  refine ⟨prepared,eq,code,?_⟩
+  intro data u S live ready
+  obtain ⟨z,F,t,out,exec,paid,user,done,action,off⟩ := steps data u S live ready
+  refine ⟨z,F,t,out,exec,paid.trans ?_,user,done,action,off⟩
+  have vpos : 0 < V := Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) pos
+  have leaf : budget ≤ L*V := linear (w+1) W (7*(w+1)) pos stop
+  change (List.ofFn (fun j : J => base j*V+12)).sum+(List.ofFn (fun _ : J => budget)).sum+1 ≤ _
+  simp only [List.sum_ofFn,Finset.sum_add_distrib,← Finset.sum_mul,Finset.sum_const,Finset.card_univ,
+    Fintype.card_fin,smul_eq_mul]
+  have count := Nat.mul_le_mul_left Copy.lifecycles.length leaf
+  have fixed := Nat.mul_le_mul_left (Copy.lifecycles.length*12) (show 1 ≤ V from vpos)
+  dsimp only [J] at *
+  nlinarith only [count,fixed,vpos]
 
 /-- Execute the nine fanouts in common coordinates, charging each scheduled child once. -/
 theorem borrowedScatterSchedule_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) :
