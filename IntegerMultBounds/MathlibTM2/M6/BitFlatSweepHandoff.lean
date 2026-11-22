@@ -77,8 +77,8 @@ private theorem sumNodeCosts (s i a b : Fin 9 → ℕ) (total : ℕ)
   simp only [Finset.sum_add_distrib]
   omega
 
-private theorem collectIdle (r a b c d : ℕ) :
-    r+a+1+b+1+c+d ≤ r+(a+1+b+1+c+d) := by omega
+private theorem collectIdle (r a b : ℕ) :
+    r+a+1+b+1 ≤ r+(a+1+b+1) := by omega
 
 private theorem collectSweep (C rate power : ℝ) (v child copy : ℕ) (positive : 0 ≤ power) :
     ⌊(C+|rate|)*v*power+child⌋₊+copy+1 ≤ ⌊(|C|+|rate|)*v*power⌋₊+copy+1+child := by
@@ -95,7 +95,7 @@ theorem alignedIntervalMeasures (node : Descriptor) (w groups W : ℕ) (hw : 0 <
     (spectator : W = node.beforeRows*groups*node.beforeH*node.between*node.afterD)
     (i : Fin 9) (j : (Fin 32 × Fin 5) × Fin 222) :
     let e := idleInterval i j.2
-    let lane := phaseIntervalChild e.1 e.2 w W 64
+    let lane := phaseIntervalChild (e.1+1) (e.2+1) w W 64
     let child := scheduledChild prime node (idleDirectoryIndex (i,idleCopyIndex j))
     lane.width = child.width ∧ lane.width < node.width ∧ volume prime lane*142080 = volume prime child := by
   intro e lane child
@@ -103,14 +103,14 @@ theorem alignedIntervalMeasures (node : Descriptor) (w groups W : ℕ) (hw : 0 <
   rw [idleCopyIndex_get] at rank
   have bounds := idleBounds i j.2
   refine ⟨?_,?_,?_⟩
-  · change (e.2-e.1)*w = nodeChildren5.get _*(node.width/64)
-    rw [width,Nat.mul_div_cancel_left _ (by decide : 0 < 64),rank]
+  · change ((e.2+1)-(e.1+1))*w = nodeChildren5.get _*(node.width/64)
+    rw [Nat.add_sub_add_right,width,Nat.mul_div_cancel_left _ (by decide : 0 < 64),rank]
   · rw [width]
     exact Nat.mul_lt_mul_of_pos_right (by dsimp [lane,e,phaseIntervalChild]; omega) hw
   · apply Nat.eq_of_mul_eq_mul_right (by decide : 0 < 142080)
     rw [(scheduledChild_measures prime node ⟨w,width⟩ ⟨142080*groups,split⟩ _).2]
     rw [show volume prime lane = (prime^w)^128*W from
-      intervalChild_volume bounds.1 (bounds.2.trans (by decide : 63 ≤ 64)) w W]
+      intervalChild_volume (Nat.succ_le_succ bounds.1) (Nat.succ_le_succ bounds.2) w W]
     rw [spectator,volume,width,split,Nat.mul_comm 64 w,pow_mul,show 128 = 64+64 by decide,pow_add]
     ring
 
@@ -215,7 +215,7 @@ theorem activeFlatDimensions (root : Descriptor) (depth cutoff blocks : ℕ)
 /-- At two aligned row levels the packed stage and the recursive interval
 window see the same spectator cells. Their bills use one child directory. -/
 theorem alignedFlatNode [M8.Machine.Net] {U : Type} :
-    ∃ (C : ℝ) (a k tapes : Fin 9 → ℕ) (states : ℕ), ∀ {Q h B groups : ℕ}, states ≤ Q →
+    ∃ (C : ℝ) (states : ℕ), ∀ {Q h B groups : ℕ}, states ≤ Q →
     ∀ (node : Descriptor), node.width = 64*(h+1) → node.rows = 142080*(142080*groups) →
     node.beforeH = B*prime^(64*((h+1)*64)) →
     let w := h+1
@@ -224,7 +224,7 @@ theorem alignedFlatNode [M8.Machine.Net] {U : Type} :
     let W := B*prime^(64*(w*64))*(node.beforeRows*groups*node.between*node.afterD)
     let V := (prime^w)^128*W
     let m : ℕ := (prime^w)^128*(W*142080)
-    let lane := fun i j => let e := idleInterval i j; phaseIntervalChild e.1 e.2 w W 64
+    let lane := fun i j => let e := idleInterval i j; phaseIntervalChild (e.1+1) (e.2+1) w W 64
     0 < B → 0 < K → ({node with rows := rows} : Descriptor).Positive →
     ∀ (P : Fin 9 → Type) (t : Fin 9 → StageRun → ℕ)
       (body : ∀ i j, P i → Pr (P i) (t i j) Q prime U) (coeff : Fin 9 → StageRun → ℝ)
@@ -246,16 +246,15 @@ theorem alignedFlatNode [M8.Machine.Net] {U : Type} :
         ∀ (r : Fin 142080) j, y r.castSucc (position j) =
           Shared50RecursiveNodeRows.transpose (one_dvd stream.rows) (x r.castSucc ∘ position) j)
       (budget (idleDirectoryIndex (i,idleCopyIndex j)))) →
-    let idle := fun i =>
+    let idle := fun _ : Fin 9 =>
       35520 * (((298*(intervalSplitTapes+5)+5)*142080+142081*8)*V + (142081*10+31)) +
-      1 + 142081*(8*m+10)+1 + (a i*m+k i*(3808274*m+LeafCore.coreCost m w+1)+6*idleCopies.length)*(tapes i+5) +
-      2*(6+142081*(8*m+10)+1)
+      1 + 142081*(8*m+10)+1
     PackedWindowHandoff U Q m (packedChildOutput w m)
       ((∑ i, sweep i)+(∑ i, idle i)+(∑ j, budget j)+9*(2*(76*17760*m*(142081+7)+6)+1+(142081*(8*m+10)+1))+2) := by
   obtain ⟨C,stageStates,stage⟩ := flatSweepFromPacked
-  obtain ⟨a,k,tapes,nodeStates,assemble⟩ := flatNodeFromIntervals (U := U)
+  obtain ⟨nodeStates,assemble⟩ := flatNodeFromIntervals (U := U)
   let divStates := (fun {q : ℕ} (_ : Program 38 q prime) => q) (RecursiveRowsNodeHeaders.program 142080)
-  refine ⟨|C|,a,k,tapes,max nodeStates (max divStates stageStates),?_⟩
+  refine ⟨|C|,max nodeStates (max divStates stageStates),?_⟩
   intro Q h B groups fits node width split label w rows K W V m lane hB hK pos P t body coeff required budget time runs ready sweep children idle
   have shape : B*prime^(64*(w*64))*K = W*142080 := by dsimp only [K,W,rows]; ac_rfl
   have positive : 0 < W*142080 := shape ▸ Nat.mul_pos (Nat.mul_pos hB (pow_pos Shared50ModularControl.prime_prime.pos _)) hK
@@ -267,7 +266,7 @@ theorem alignedFlatNode [M8.Machine.Net] {U : Type} :
   simp only [time,Fin.isLt,dite_eq_left,Fin.eta] at partition
   have total := sumNodeCosts sweep idle charged rest _ partition
   rw [← total]
-  have nodeRun := assemble ((le_max_left _ _).trans fits) (Nat.succ_pos h)
+  have nodeRun := assemble (w := w) ((le_max_left _ _).trans fits)
     (Nat.pos_of_mul_pos_right positive) budget (fun i => sweep i + charged i)
   have spectator : W = node.beforeRows*groups*node.beforeH*node.between*node.afterD := by
     rw [label]
@@ -286,7 +285,7 @@ theorem alignedFlatNode [M8.Machine.Net] {U : Type} :
     apply Nat.add_le_add_left
     apply Finset.sum_le_sum
     intro i _
-    exact collectIdle (rest i) _ _ _ _
+    exact collectIdle (rest i) _ _
   · intro i
     have call := stage node i (t i) (body i) (coeff i) (required i) ((le_max_left _ _).trans caps)
       width split label ((le_max_right _ _).trans caps) hB hK pos (runs i) time (ready i)

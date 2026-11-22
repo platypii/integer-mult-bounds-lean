@@ -20,14 +20,14 @@ private theorem castTransposeRead {v u : Descriptor} (same : v = u) {V : ℕ}
 
 theorem idleInterleaved_read (i : Fin 9) (j : Fin 222) (w W : ℕ) :
     let e := idleInterval i j
-    let lane := phaseIntervalChild e.1 e.2 w W 64
+    let lane := phaseIntervalChild (e.1+1) (e.2+1) w W 64
     let wide := {lane with afterD := lane.afterD*142080}
-    let size := intervalChild_volume (idleBounds i j).1 ((idleBounds i j).2.trans (by decide : 63 ≤ 64)) w (W*142080)
-    let shape : wide = phaseIntervalChild e.1 e.2 w (W*142080) 64 := by
+    let size := intervalChild_volume (Nat.succ_le_succ (idleBounds i j).1) (Nat.succ_le_succ (idleBounds i j).2) w (W*142080)
+    let shape : wide = phaseIntervalChild (e.1+1) (e.2+1) w (W*142080) 64 := by
       simp only [wide,lane,phaseIntervalChild,Nat.mul_assoc]
     let physical := (congrArg (volume prime) shape).trans size
     ∀ x : Fin (volume prime wide) → ZMod 2,
-      intervalChildRead i j w (W*142080) (fun k => x (k.cast physical.symm)) (fun k =>
+      parentIntervalRead i j w (W*142080) (fun k => x (k.cast physical.symm)) (fun k =>
         Shared50RecursiveNodeRows.transpose (one_dvd wide.rows) x
           (k.cast physical.symm)) := by
   intro e lane wide size shape physical x a
@@ -106,20 +106,20 @@ theorem inheritedIdleCopy_exec {P U : Type} {N Q price : ℕ}
     (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q)
     {body : P → Pr P N Q prime U} {code src dst seed} :
     let e := idleInterval i j
-    let lane := phaseIntervalChild e.1 e.2 w W 64
+    let lane := phaseIntervalChild (e.1+1) (e.2+1) w W 64
     PackedPieceHandoff (volume prime lane) (fun x y =>
       ∀ r : Fin 142080, y r.castSucc = Shared50RecursiveNodeRows.transpose (one_dvd lane.rows) (x r.castSucc))
       body code src dst seed price →
     let wide := {lane with afterD := lane.afterD*142080}
-    let shape : wide = phaseIntervalChild e.1 e.2 w (W*142080) 64 := by
+    let shape : wide = phaseIntervalChild (e.1+1) (e.2+1) w (W*142080) 64 := by
       simp only [wide,lane,phaseIntervalChild,Nat.mul_assoc]
     let physical := (congrArg (volume prime) shape).trans
-      (intervalChild_volume (idleBounds i j).1 ((idleBounds i j).2.trans (by decide : 63 ≤ 64)) w (W*142080))
+      (intervalChild_volume (Nat.succ_le_succ (idleBounds i j).1) (Nat.succ_le_succ (idleBounds i j).2) w (W*142080))
     IntervalRun (P := P) (U := U) (Q := Q) seed price lane (fun x y =>
-      intervalChildRead i j w (W*142080) (fun k => x (k.cast physical.symm)) (fun k => y (k.cast physical.symm))) := by
+      parentIntervalRead i j w (W*142080) (fun k => x (k.cast physical.symm)) (fun k => y (k.cast physical.symm))) := by
   intro e lane child wide shape physical
-  have positiveV := intervalVolume_pos (idleBounds i j).1
-    ((idleBounds i j).2.trans (by decide : 63 ≤ 64)) w positive
+  have positiveV := intervalVolume_pos (Nat.succ_le_succ (idleBounds i j).1)
+    (Nat.succ_le_succ (idleBounds i j).2) w positive
   apply intervalRun_of_transpose lane positiveV capacity child
   intro x
   exact idleInterleaved_read i j w W x

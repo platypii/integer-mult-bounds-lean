@@ -201,7 +201,7 @@ theorem inheritedWindow_exec {U : Type} {Q : ℕ} (i : Fin 9) (w W : ℕ) (posit
     let T := intervalSplitTapes
     let V := (prime^w)^128*W
     let m := (prime^w)^128*(W*142080)
-    let lane := fun (k : Job) => let e := idleInterval i k.2; phaseIntervalChild e.1 e.2 w W 64
+    let lane := fun (k : Job) => let e := idleInterval i k.2; phaseIntervalChild (e.1+1) (e.2+1) w W 64
     ∀ (N : Job → ℕ) (P : Job → Type) (price : Job → ℕ)
       (body : ∀ k, P k → Pr (P k) (N k) Q prime U) (code : ∀ k, Pr (P k) (N k) Q prime U)
       (src dst : ∀ k, Fin (142081+2) ↪ Fin (N k)) (seed : ∀ k, Stacks (N k) prime),
@@ -212,7 +212,7 @@ theorem inheritedWindow_exec {U : Type} {Q : ℕ} (i : Fin 9) (w W : ℕ) (posit
       (host : (Σ k, Empty ⊕ P k) → Pr (Σ k, Empty ⊕ P k) H Q prime U)
       (program : Pr (Σ k, Empty ⊕ P k) H Q prime U) (initial : Stacks H prime),
       PackedPieceHandoff m (fun x y =>
-        (∀ k, intervalChildRead i k.2 w (W*142080) (x (idleTape i k)) (y (idleTape i k))) ∧
+        (∀ k, parentIntervalRead i k.2 w (W*142080) (x (idleTape i k)) (y (idleTape i k))) ∧
         ∀ j, (∀ k, j ≠ idleTape i k) → y j = x j) host program input output initial
         ((idleCopies.map price).sum + 35520 *
           (((298*(T+5)+5)*142080+142081*8)*V + (142081*10+31)) + 1 + 142081*(8*m+10)+1) := by
@@ -223,22 +223,22 @@ theorem inheritedWindow_exec {U : Type} {Q : ℕ} (i : Fin 9) (w W : ℕ) (posit
   let charge := fun k => (149*(T+5)+5)*(V*142080)+24+
     ((142081*(8*V+10)+1+price k)+(149*(V*142080)*(T+5)+6))
   obtain ⟨H,fan,bodyWindow,window,prepared,execute⟩ := allocatedIdleWindow_exec i _ _ _ host program initial
-    charge (fun k => intervalChildRead i k.2 w (W*142080)) (by
+    charge (fun k => parentIntervalRead i k.2 w (W*142080)) (by
     intro k
     have size : volume prime (lane k) = V :=
-      intervalChild_volume (idleBounds i k.2).1 ((idleBounds i k.2).2.trans (by decide : 63 ≤ 64)) w W
+      intervalChild_volume (Nat.succ_le_succ (idleBounds i k.2).1) (Nat.succ_le_succ (idleBounds i k.2).2) w W
     have physical : volume prime {lane k with afterD := (lane k).afterD*142080} = m := by
       change _ = (prime^w)^128*(W*142080)
       rw [← Nat.mul_assoc]
       change _ = V*142080
       rw [← size]
       simp [volume,Nat.mul_assoc]
-    apply transportWorker physical _ _ _ _ (intervalChildRead i k.2 w (W*142080))
+    apply transportWorker physical _ _ _ _ (parentIntervalRead i k.2 w (W*142080))
     simpa only [size] using run k)
   let budget := (idleCopies.map price).sum + 35520 *
     (((298*(T+5)+5)*142080+142081*8)*V + (142081*10+31)) + 1
   obtain ⟨codeOut,initialOut,handoff⟩ := flatWordStageHandoff fan bodyWindow window prepared
-    (fun x y => (∀ k, intervalChildRead i k.2 w (W*142080) (x (idleTape i k)) (y (idleTape i k))) ∧
+    (fun x y => (∀ k, parentIntervalRead i k.2 w (W*142080) (x (idleTape i k)) (y (idleTape i k))) ∧
       ∀ j, (∀ k, j ≠ idleTape i k) → y j = x j) (budget : ℝ) (by
     intro x u D words stock
     obtain ⟨F,z,n,y,exec,paid,result⟩ := execute x D u words.helperFan
