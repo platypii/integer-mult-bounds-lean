@@ -68,13 +68,16 @@ noncomputable def inactiveWindowEquiv (w B W : ℕ) (lane : BankLane) :
   let address := fun (p : Fin B × (Swap.Shear.State Axis (ZMod (prime^w)) × Fin W)) =>
     stagedCoordinateEquiv (prime^w) B W
       (p.1,helperSlotField (port lane.2.1.val) none w p.2.1,p.2.2)
-  have onto : Function.Surjective address := by
+  let decode := fun i =>
+    let (b,x,j) := (stagedCoordinateEquiv (prime^w) B W).symm i
+    (b,decodeHelperField (port lane.2.1.val) none w x,j)
+  have back : Function.RightInverse decode address := by
     intro i
-    obtain ⟨⟨b,x,k⟩,rfl⟩ := (stagedCoordinateEquiv (prime^w) B W).surjective i
-    obtain ⟨s,rfl⟩ := helperSlotField_surjective _ (port_checked _ lane.2.1.isLt) none w x
-    exact ⟨(b,s,k),rfl⟩
-  exact Equiv.ofBijective address
-    ⟨(Finite.injective_iff_surjective_of_equiv (activeWindowEquiv w B W)).mpr onto,onto⟩
+    obtain ⟨⟨b,x,j⟩,rfl⟩ := (stagedCoordinateEquiv (prime^w) B W).surjective i
+    simp only [decode,address,Equiv.symm_apply_apply,
+      decodeHelperField_rightInverse _ (port_checked _ lane.2.1.isLt) none w x]
+  have inj := (Finite.injective_iff_surjective_of_equiv (activeWindowEquiv w B W)).mpr back.surjective
+  exact ⟨address,decode,fun x => inj (back (address x)),back⟩
 
 theorem inactiveWindowEquiv_read {w B W : ℕ} (lane : BankLane) (b : Fin B) (j : Fin W)
     (z : Axis ⊕ Axis → ℚ) :

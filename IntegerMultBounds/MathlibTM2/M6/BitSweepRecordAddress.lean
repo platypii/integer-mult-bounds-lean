@@ -24,6 +24,44 @@ noncomputable def nodeSourceRank (w : ℕ) (parent : Fin 64 → ZMod (prime^w))
   let s := ((sweepRoleEquiv w 1 1 n r).symm cell).2.1
   FlatCoordinateLayout.rank (nodeDigitsEquiv w parent units s)
 
+/-- At an inactive port, unpack the destination digits, undo the helper chart
+and apply the parent frame to obtain the ordinary source rank. -/
+theorem nodeSourceRank_inactive (w : ℕ) (parent : Fin 64 → ZMod (prime^w))
+    (units : ∀ i, IsUnit (parent i)) (n : Fin 9) (r : Role)
+    (inactive : r.bank.val / 2 ≠ BitHosting.activePair n.val) (dest : Fin ((prime^w)^128)) :
+    nodeSourceRank w parent units n r dest = FlatCoordinateLayout.rank (nodeDigitsEquiv w parent units
+      (decodeHelperField (port r.port.val) none w (FlatCoordinateLayout.coordinates dest))) := by
+  let M := prime^w
+  obtain ⟨⟨a,t⟩,rfl⟩ := (sweepRank (prime^w)).surjective dest
+  simp only [nodeSourceRank,Equiv.symm_apply_apply,sweepRoleEquiv,inactive,↓reduceIte]
+  let j := (finProdFinEquiv (a,finProdFinEquiv (t,(0 : Fin 1)))).cast (ordinaryCompact_width M 1)
+  have rank : (finProdFinEquiv.symm j).1 = sweepRank M (a,t) := by
+    apply Fin.ext
+    change j.val / 1 = _
+    simp [j,M,sweepRank,finProdFinEquiv_apply_val]
+  simp only [inactiveWindowEquiv,stagedCoordinateEquiv,Equiv.coe_fn_symm_mk,Equiv.symm_apply_apply]
+  rw [rank]
+
+/-- For an active port, undo the eight-axis translation and the stage route.
+The exterior rank passes through the translation unchanged. -/
+theorem nodeSourceRank_active (w : ℕ) (parent : Fin 64 → ZMod (prime^w))
+    (units : ∀ i, IsUnit (parent i)) (n : Fin 9) (r : Role)
+    (active : r.bank.val / 2 = BitHosting.activePair n.val) (dest : Fin ((prime^w)^128)) :
+    let (a,t) := (sweepRank (prime^w)).symm dest
+    let D := undoTranslation.map (Int.cast : ℤ → ZMod (prime^w))
+    let H := Swap.Modular.reduce (prime^w) ((port r.port.val).stageRoute n)
+    let localState := M8.Exchange.transform D D ((copyActive (Q := prime^w)).symm a)
+    let s := (chartAddress.symm (copyAddress.symm (localState,finProdFinEquiv (t,(0 : Fin 1))))).1
+    nodeSourceRank w parent units n r dest =
+      FlatCoordinateLayout.rank (nodeDigitsEquiv w parent units (M8.Exchange.transform H H s)) := by
+  obtain ⟨⟨a,t⟩,rfl⟩ := (sweepRank (prime^w)).surjective dest
+  simp only [nodeSourceRank,Equiv.symm_apply_apply,sweepRoleEquiv,active,↓reduceIte,
+    activeWindowEquiv,Equiv.symm_trans,Equiv.trans_apply,Equiv.prodCongr_symm,Equiv.prodCongr_apply,
+    Prod.map_apply,Equiv.symm_symm,Equiv.coe_fn_symm_mk]
+  simp only [copyAddress,Equiv.symm_symm,Equiv.symm_trans,Equiv.trans_apply,Equiv.symm_apply_apply,
+    Equiv.prodCongr_symm,Equiv.prodCongr_apply,Prod.map_apply,Equiv.refl_symm,Equiv.refl_apply]
+  rfl
+
 /-- The same record permutation implements the full physical address change
 for every inherited block and every offset inside a record. -/
 theorem nodeToSweep_recordPermutation (w : ℕ) (parent : Fin 64 → ZMod (prime^w))
