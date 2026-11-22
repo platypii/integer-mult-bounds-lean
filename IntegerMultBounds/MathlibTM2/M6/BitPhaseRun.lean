@@ -2407,7 +2407,7 @@ theorem collapse_singleLabelBank {w B K : ℕ} (label : Cover.LabelPadding.Label
 private theorem labelRowCount (w : ℕ) : (prime^w)^(64*64) = prime^(64*(w*64)) := by
   rw [← pow_mul]; congr 1; omega
 
-private theorem address_bijective (w : ℕ) :
+theorem address_bijective (w : ℕ) :
     Function.Bijective (Cover.LabelAddress.address (m := 64) (Q := prime^w)) := by
   constructor
   · intro g h heq
