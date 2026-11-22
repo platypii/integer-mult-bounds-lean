@@ -41,7 +41,11 @@ theorem scheduledNodeHandoff [M8.Machine.Net] {common work : ℕ} {U : Type}
         ∃ (P : Type) (t : ℕ) (body : P → Pr P t q prime U), ∃ code src dst prepared,
           PieceHandoff (w+1) B W (fun x y => nodeProgram.foldr
             (fun i cont a => ∃ b, nodeHandoffEffect (w+1) B W idle i a b ∧ cont b)
-            (fun a => a = y) x) body code src dst prepared
+            (fun a => a = y) x ∧ ∀ b k,
+              let address := fun v => addr b ((addressMod M v) ∘ Equiv.sumCongr stageAxis.symm stageAxis.symm) k
+              (∀ i a c, sweepEffect i (w+1) B W a c →
+                readRoles address c = (Piece.stage i).run (readRoles address a)) →
+              readRoles address y = runNode (readRoles address x)) body code src dst prepared
             ((∑ i, sweepCost i) + price) := by
   classical
   obtain ⟨C,windows⟩ := scheduledRemainderPiece_bound (U := U) space pool room fits pairRoom
@@ -65,13 +69,16 @@ theorem scheduledNodeHandoff [M8.Machine.Net] {common work : ℕ} {U : Type}
     ac_rfl
   let power := (layout.width : ℝ)^M8.Machine.BudgetBound.tau
   let fee := ⌊C*power*volume prime (role layout 142080)⌋₊
-  obtain ⟨P,t,body,code,src,dst,prepared,runNode⟩ := assemble ((le_max_left ..).trans fitsQ)
+  obtain ⟨P,t,body,code,src,dst,prepared,assembled⟩ := assemble ((le_max_left ..).trans fitsQ)
     (w+1) B W positive idle sweepCost (fun _ => fee) sweeps (fun i =>
       run i q ((Finset.le_sup (Finset.mem_univ i)).trans ((le_max_right ..).trans fitsQ)))
   refine ⟨P,t,body,code,src,dst,prepared,?_⟩
   intro x u S live stock
-  obtain ⟨z,F,n,y,exec,paid,rest⟩ := runNode x u S live stock
-  refine ⟨z,F,n,y,exec,paid.trans ?_,rest⟩
+  obtain ⟨z,F,n,y,exec,paid,user,liveOut,trace⟩ := assembled x u S live stock
+  refine ⟨z,F,n,y,exec,paid.trans ?_,user,liveOut,trace,?_⟩
+  case refine_2 =>
+    intro b k address sweepsRead
+    exact nodeHandoffEffect_read address sweepsRead (fun _ _ _ effect => effect b k) trace
   rw [Finset.sum_const,Finset.card_univ,Fintype.card_fin,nsmul_eq_mul]
   change (∑ i, sweepCost i) + 9*fee+9*(2*(76*17760*V*(142081+7)+6)+1)+2 ≤ _
   rw [Nat.add_assoc,Nat.add_assoc]

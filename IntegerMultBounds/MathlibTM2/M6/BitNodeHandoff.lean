@@ -17,6 +17,54 @@ def nodeHandoffEffect (w B tail : ℕ)
   | .bridge d s => fun x y => y = fun j z => bridgeColumn d s (fun l => x l z) j
   | .exchangeSides => fun x y => y = x ∘ exchangeOwner
 
+open Certificates.PR589.Nine in
+/-- Reading the physical handoff trace in execution order yields the logical
+node action whenever its sweeps and remainders realize their role reads. -/
+theorem nodeHandoffEffect_read {w B tail : ℕ}
+    {idle : Fin 9 → OwnerArray w B tail → OwnerArray w B tail → Prop}
+    (address : (Axis ⊕ Axis → ℚ) → Fin ((prime^w)^16*(B*((prime^w)^112*tail))))
+    (sweep : ∀ i x y, sweepEffect i w B tail x y →
+      readRoles address y = (Piece.stage i).run (readRoles address x))
+    (rest : ∀ i x y, idle i x y →
+      readRoles address y = (Piece.remainder i.val).run (readRoles address x))
+    {x y} (trace : nodeProgram.foldr
+      (fun p cont a => ∃ b, nodeHandoffEffect w B tail idle p a b ∧ cont b)
+      (fun a => a = y) x) : readRoles address y = runNode (readRoles address x) := by
+  have piece (p : Piece) (hp : p ∈ nodeProgram) (a b) (step : nodeHandoffEffect w B tail idle p a b) :
+      readRoles address b = p.run (readRoles address a) := by
+    cases p with
+    | stage i => exact sweep i a b step
+    | remainder i =>
+      by_cases hi : i < 9
+      · exact rest ⟨i,hi⟩ a b (by simpa [nodeHandoffEffect,hi] using step)
+      · have last : i = 9 := by simp [nodeProgram] at hp; omega
+        subst i
+        simpa [nodeHandoffEffect,terminalIdle_run] using congrArg (readRoles address)
+          (show b = a from step)
+    | exchangeSides =>
+      subst b
+      funext r z
+      exact congrArg (fun j => a j (address z)) (exchangeOwner_role r)
+    | bridge d s =>
+      subst b
+      funext r z
+      let index := (Fintype.equivFin Role).trans (finCongr card_role)
+      change bridgeColumn d s (fun j => a j (address z)) (index r).castSucc = _
+      simp only [bridgeColumn,Fin.lastCases_castSucc,show ((Fintype.equivFin Role).trans
+        (finCongr card_role)).symm (index r) = r from index.symm_apply_apply r,Piece.run]
+      split <;> first | rfl | split <;> rfl
+  have go (ps : List Piece) (inside : ∀ p ∈ ps, p ∈ nodeProgram) (a)
+      (h : ps.foldr (fun p cont x => ∃ b, nodeHandoffEffect w B tail idle p x b ∧ cont b)
+        (fun x => x = y) a) : readRoles address y = runPieces ps (readRoles address a) := by
+    induction ps generalizing a with
+    | nil => exact congrArg (readRoles address) h.symm
+    | cons p ps ih =>
+      obtain ⟨b,step,h⟩ := h
+      change readRoles address y = runPieces ps (p.run (readRoles address a))
+      rw [← piece p (inside p List.mem_cons_self) a b step]
+      exact ih (fun j hj => inside j (List.mem_cons_of_mem _ hj)) b h
+  exact go nodeProgram (fun _ h => h) x trace
+
 def nodeHandoffCost (V : ℕ) (sweep idle : Fin 9 → ℕ) : Piece → ℕ
   | .stage i => sweep i
   | .remainder i => if h : i < 9 then idle ⟨i,h⟩ else 1
