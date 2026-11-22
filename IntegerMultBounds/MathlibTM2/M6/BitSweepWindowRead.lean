@@ -101,6 +101,31 @@ noncomputable def activeSweepAddress {w B W : ℕ} (n : Fin 9) (b : Fin B) (j : 
   let route := (port lane.2.1.val).stageRoute n
   activeWindowAddress b (windowState w ((bar route.transpose).mulVec z)) j
 
+/-- The active port reads the modular stage route on both field halves,
+including rational points outside the denominator-coprime lattice. -/
+theorem activeSweepAddress_modular {w B W : ℕ} (n : Fin 9) (b : Fin B) (j : Fin W)
+    (lane : BankLane) (z : Axis ⊕ Axis → ℚ) :
+    let H := reduce (prime^w) ((port lane.2.1.val).stageRoute n)
+    activeSweepAddress n b j lane z =
+      activeWindowEquiv w B W (b,M8.Exchange.transform H H (windowState w z),j) := by
+  let c := port lane.2.1.val
+  let R := c.stageRoute n
+  have checked := port_checked _ lane.2.1.isLt
+  have adm := stageRoute_admissible c checked n w
+  have legal : Admissible (prime^w) (bar R) := by
+    rintro (i|i) (j|j) <;> first | exact adm i j | simp [bar]
+  have red : reduce (prime^w) (bar R) =
+      fromBlocks (reduce (prime^w) R) 0 0 (reduce (prime^w) R) := by
+    ext (i|i) (j|j) <;> simp [bar,reduce,ratMod_zero]
+  dsimp only
+  rw [activeWindowEquiv_apply]
+  dsimp only [activeSweepAddress]
+  rw [PortCertificate.stageRoute_transpose]
+  congr 1
+  unfold windowState
+  rw [addressMod_involution _ legal (bar_mul_self (c.stageRoute_mul_self checked n)),red,fromBlocks_mulVec]
+  simp [M8.Exchange.transform,R,c]
+
 /-- Both active roles read the certified stage at every rational address
 after the two charged sweeps over the port corrections. -/
 theorem correctedSweep_active_read [M8.Machine.Net] :
@@ -168,6 +193,35 @@ noncomputable def sweepRoles {w B W : ℕ} (n : Fin 9) (b : Fin B) (j : Fin W)
     (a : OwnerArray w B W) : State := fun r =>
   if r.bank.val / 2 = BitHosting.activePair n.val then readLanes (activeSweepAddress n b j) a r
   else readLanes (sweepAddress b j) a r
+
+/-- Each role in a stage addresses its compact owner by a permutation of
+the same modular parent states, inherited blocks and spectator positions. -/
+noncomputable def sweepRoleEquiv (w B W : ℕ) (n : Fin 9) (r : Role) :
+    Fin B × (Swap.Shear.State Axis (ZMod (prime^w)) × Fin W) ≃
+      Fin ((prime^w)^16*(B*((prime^w)^112*W))) :=
+  let lane : BankLane := (r.replica,r.port,r.cls)
+  if r.bank.val / 2 = BitHosting.activePair n.val then
+    let c := port r.port.val
+    let H := reduce (prime^w) (c.stageRoute n)
+    let checked := port_checked _ r.port.isLt
+    let adm := stageRoute_admissible c checked n w
+    let invol := reduce_inverse _ adm adm (c.stageRoute_mul_self checked n)
+    let route := M8.Exchange.transform H H
+    let undo : Function.Involutive route := fun s => by
+      simp [route,M8.Exchange.transform,mulVec_mulVec,show H*H=1 from invol]
+    ((Equiv.refl _).prodCongr ((undo.toPerm route).prodCongr (Equiv.refl _))).trans (activeWindowEquiv w B W)
+  else inactiveWindowEquiv w B W lane
+
+theorem sweepRoles_eq_read {w B W : ℕ} (n : Fin 9) (b : Fin B) (j : Fin W)
+    (a : OwnerArray w B W) (r : Role) :
+    sweepRoles n b j a r =
+      readRoles (fun z => sweepRoleEquiv w B W n r (b,windowState w z,j)) a r := by
+  by_cases active : r.bank.val / 2 = BitHosting.activePair n.val
+  · simp only [sweepRoles,sweepRoleEquiv,active,↓reduceIte,readLanes]
+    funext z
+    exact congrArg (a (bankTape r.bank (r.replica,r.port,r.cls)))
+      (activeSweepAddress_modular n b j (r.replica,r.port,r.cls) z)
+  · simp only [sweepRoles,active,↓reduceIte,readLanes,sweepRoleEquiv,windowState,inactiveWindowEquiv_read]
 
 /-- One corrected physical sweep realizes the logical stage simultaneously
 on every role at every inherited block and spectator. -/

@@ -86,6 +86,13 @@ private theorem route_admissible (c : PortCertificate) (checked : c.Checked) (s 
   rw [c.route_triangular_factors checked s]
   exact admissible_mul _ hl (admissible_mul _ hm hr)
 
+theorem stageRoute_admissible (c : PortCertificate) (checked : c.Checked) (n : Fin 9) (w : ℕ) :
+    Admissible (prime^w) (c.stageRoute n) := by
+  unfold PortCertificate.stageRoute
+  split
+  · exact admissible_one _
+  · exact route_admissible c checked _ w
+
 /-- The modular product is the certified stage involution. Each pass is
 invertible in any numbering of the axes, including the reversed numbering. -/
 theorem stageFactor_reduce (c : PortCertificate) (checked : c.Checked) (s : Fin 8)
@@ -176,11 +183,7 @@ theorem stageProjector_atLabel (c : PortCertificate) (checked : c.Checked) (n : 
     g * reduce m (c.stageLift n U) * g⁻¹ =
       (g*H) * fromBlocks (reduce m U) 0 0 L * (g*H)⁻¹ := by
   intro m H L
-  have route : Admissible m (c.stageRoute n) := by
-    unfold PortCertificate.stageRoute
-    split
-    · exact admissible_one _
-    · exact route_admissible c checked _ w
+  have route := stageRoute_admissible c checked n w
   have window : Admissible m (windowProj n U) := by
     rintro (i|i) (j|j)
     · exact legal i j
