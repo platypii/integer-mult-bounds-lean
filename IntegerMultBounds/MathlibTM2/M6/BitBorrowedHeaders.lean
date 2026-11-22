@@ -57,6 +57,56 @@ def borrowedHeaders (T : ℕ) (i : Fin 127) : Fin 6 → Fin (T+273) :=
   let bank := parentArchive T
   helperHeaderPorts i (bank 1) (bank 3) (bank 1) (bank (borrowedArchiveBank i 3)) (bank (borrowedArchiveBank i 4))
 
+/-- The setup bank shares the archive suffix with the stage. Its own source
+registers precede the stage, whose worker tapes and leaf scratch are disjoint. -/
+def archiveSetupPlacement (R T L : ℕ) : Fin (R+273) ↪ Fin (R+((T+273)+L)) :=
+  (finSumFinEquiv.symm.toEmbedding.trans ((Function.Embedding.refl (Fin R)).sumMap
+    ((Fin.natAddEmb T (m := 273)).trans (Fin.castAddEmb L)))).trans finSumFinEquiv.toEmbedding
+
+theorem archiveSetupPlacement_header (R T L : ℕ) (i : Fin 127) (j : Fin 6) :
+    archiveSetupPlacement R T L (borrowedHeaders R i j) =
+      ((borrowedHeaders T i j).castAdd L).natAdd R := by
+  have atArchive (a : Fin 268) : archiveSetupPlacement R T L (parentArchive R a) =
+      ((parentArchive T a).castAdd L).natAdd R := by
+    simp [archiveSetupPlacement,parentArchive,Function.Embedding.sumMap]
+  fin_cases j <;> first | exact atArchive _ | simpa [borrowedHeaders,helperHeaderPorts] using atArchive 1
+
+theorem archiveSetupPlacement_frame {R T L : ℕ} (i : Fin (R+273)) :
+    (∀ k : Fin T, archiveSetupPlacement R T L i ≠ ((k.castAdd 273).castAdd L).natAdd R) ∧
+    ∀ k : Fin L, archiveSetupPlacement R T L i ≠ (k.natAdd (T+273)).natAdd R := by
+  induction i using Fin.addCases with
+  | left i =>
+    simp [archiveSetupPlacement,Function.Embedding.sumMap]
+    constructor <;> intro k eq <;> have e := congrArg Fin.val eq <;> simp at e <;> omega
+  | right j =>
+    simp [archiveSetupPlacement,Function.Embedding.sumMap]
+    constructor <;> intro k eq <;> have e := congrArg Fin.val eq <;> simp at e <;> omega
+
+/-- Lift a completed archive setup onto the sweep host. The stage sees the
+prepared words at its own header ports, with worker and scratch stacks preserved. -/
+theorem archiveSetupPlacement_exec {R T L Q : ℕ} {P H U : Type} {ι : P → H}
+    (body : P → Pr P (R+273) Q prime U)
+    (host : H → Pr H (R+((T+273)+L)) Q prime U)
+    (calls : ∀ f, host (ι f) = embProg (archiveSetupPlacement R T L) ι (body f))
+    (code : Pr P (R+273) Q prime U) (u : HS _ Q prime U) (S : Stacks _ prime)
+    (words : Fin 127 → Fin 6 → List (Fin (prime+4))) :
+    let e := archiveSetupPlacement R T L
+    ∀ v D t, Exec body code (mk (embDn e u) (embStk e S)) t (mk v D) →
+    (∀ i j, D.R (borrowedHeaders R i j) = words i j) →
+    ∃ z F, Exec host (embProg e ι code) (mk u S) t (mk z F) ∧ z.user = v.user ∧
+      (∀ i j, F.R (((borrowedHeaders T i j).castAdd L).natAdd R) = words i j) ∧
+      (∀ k : Fin T, let p := ((k.castAdd 273).castAdd L).natAdd R
+        F.L p = S.L p ∧ F.R p = S.R p) ∧
+      ∀ k : Fin L, let p := (k.natAdd (T+273)).natAdd R
+        F.L p = S.L p ∧ F.R p = S.R p := by
+  intro e v D t run ready
+  obtain ⟨z,F,exec,_,user,view,off⟩ := exec_emb (ι := ι) e.injective calls run u rfl S rfl
+  refine ⟨z,F,exec,user,?_,fun k => off _ (fun i => (archiveSetupPlacement_frame i).1 k),
+    fun k => off _ (fun i => (archiveSetupPlacement_frame i).2 k)⟩
+  intro i j
+  rw [← archiveSetupPlacement_header]
+  exact (congrArg (fun X : Stacks (R+273) prime => X.R (borrowedHeaders R i j)) view).trans (ready i j)
+
 theorem borrowedHeaders_apart {T : ℕ} (i : Fin 127) (j : Fin 6) (k : Fin T) :
     borrowedHeaders T i j ≠ k.castAdd 273 := by
   have apart (a : Fin 268) : parentArchive T a ≠ k.castAdd 273 := by
@@ -323,5 +373,71 @@ theorem parentRoleArchive_exec {P U : Type} {T Q : ℕ} (body : P → Pr P (T+27
   refine ⟨z,F,_,user.trans same,Exec.seq divide archive,?_,ready,
     fun k a b => ⟨(congrFun left _).trans (keep k a b).1,(right k).trans (keep k a b).2⟩⟩
   exact archiveCost_le _ rows V _ m n nonzero rowBound copies price time
+
+/-- Initial contents of the divider, arithmetic registers and blank archive
+on the fixed 80-tape setup bank. -/
+def ParentArchiveInput (node : RecursiveInterchangeLayout.Descriptor) (w : ℕ)
+    (D : Stacks (80+273) prime) : Prop :=
+    let M := prime^(w+1)
+    let slots := Fin.castAddEmb 42 (n := 38)
+    let hdr := (Fin.natAddEmb 38 (m := 6)).trans (Fin.castAddEmb 36)
+    let tmp := (44 : Fin 80)
+    let regs := Fin.natAddEmb 45 (m := 35)
+    let bank := Fin.castAddEmb 273 (n := 80)
+    let read := fun i => D.R (bank i)
+    RepT (RecursiveChildQuotients.input (Routines.hdr node)) (embStk (slots.trans bank) D).L
+      (embStk (slots.trans bank) D).R ∧
+    D.L (bank tmp) = [] ∧ read tmp = [] ∧ (∀ i, read (hdr i) = []) ∧
+    read (regs 2) = binSyms M.size M ∧ read (regs 28) = binSyms 1 1 ∧
+    (read (regs 33)).length = w ∧
+    (∀ j : Fin 273, D.L (j.natAdd 80) = [] ∧ D.R (j.natAdd 80) = [])
+
+/-- Run the parent archive producer before a host stage. The continuation
+receives the physical headers and the original worker and scratch stacks. -/
+theorem parentArchiveThen_exec {T L Q : ℕ} {P U : Type}
+    (host : P → Pr P (80+((T+273)+L)) Q prime U)
+    (capacity : (fun {q : ℕ} (_ : Program 38 q prime) => q) (RecursiveRowsNodeHeaders.program 142080) ≤ Q) :
+    ∃ setup, ∀ (node : RecursiveInterchangeLayout.Descriptor) (w B rows : ℕ),
+    node.width = 64*(w+1) → node.rows = 142080*rows → node.beforeH = B*prime^(64*((w+1)*64)) →
+    let role := {node with rows := rows}
+    let K := node.beforeRows*rows*node.between*node.afterD
+    let W := B*prime^(64*((w+1)*64))*K
+    let M := prime^(w+1)
+    ∀ (_ : role.Positive) (u : HS _ Q prime U) (S : Stacks _ prime),
+    ParentArchiveInput node w (embStk (archiveSetupPlacement 80 T L) S) →
+    ∀ code (price : ℝ) (post : Stacks _ prime → Prop),
+    (∀ v (F : Stacks (80+((T+273)+L)) prime), (∀ i j, F.R (((borrowedHeaders T i j).castAdd L).natAdd 80) =
+        (Routines.hdr (helperAdjacentView (w+1) 1 W i) j).map bitSymbol) →
+      (∀ k : Fin T, let p := ((k.castAdd 273).castAdd L).natAdd 80
+        F.L p = S.L p ∧ F.R p = S.R p) →
+      (∀ k : Fin L, let p := (k.natAdd (T+273)).natAdd 80
+        F.L p = S.L p ∧ F.R p = S.R p) →
+      ∃ z G t, Exec host code (mk v F) t (mk z G) ∧ (t : ℝ) ≤ price ∧ z.user = v.user ∧ post G) →
+    ∃ z G t, Exec host (.seq setup code) (mk u S) t (mk z G) ∧
+      (t : ℝ) ≤ (((RecursiveRowsQuotient.constant 142080+30)*142080*43+152402152)*
+        (M^16*((M^112*B)*prime^(64*((w+1)*64))*K)) : ℕ)+price ∧ z.user = u.user ∧ post G := by
+  let slots := Fin.castAddEmb 42 (n := 38)
+  let hdr := (Fin.natAddEmb 38 (m := 6)).trans (Fin.castAddEmb 36)
+  let tmp := (44 : Fin 80)
+  let regs := Fin.natAddEmb 45 (m := 35)
+  let e := archiveSetupPlacement 80 T L
+  obtain ⟨prog,prepare⟩ := parentRoleArchive_exec (P := Empty) (U := U) Empty.elim slots hdr tmp regs
+    (by intro i j eq; have h := congrArg Fin.val eq; change i.val = 38+j.val at h; omega)
+    (by intro i eq; have h := congrArg Fin.val eq; change i.val = 44 at h; omega)
+    (by intro j eq; have h := congrArg Fin.val eq; change 44 = 38+j.val at h; omega)
+    (by intro i j eq; have h := congrArg Fin.val eq; change i.val = 45+j.val at h; omega)
+    (by intro i j eq; have h := congrArg Fin.val eq; change 38+i.val = 45+j.val at h; omega) capacity
+  refine ⟨embProg e Empty.elim prog,?_⟩
+  intro node w B rows width split label role K W M pos u S input code price post stage
+  let D := embStk e S
+  obtain ⟨rep,tl,tr,empty,base,unit,clock,free⟩ := input
+  obtain ⟨v,F,m,user,run,bill,ready,_⟩ := prepare node w B rows width split label pos (embDn e u) D
+    rep tl tr empty base unit clock free
+  obtain ⟨y,E,placed,same,headers,workers,leaf⟩ := archiveSetupPlacement_exec (ι := Empty.elim)
+    Empty.elim host (fun x => nomatch x) prog u S _ v F m run ready
+  obtain ⟨z,G,n,exec,paid,last,done⟩ := stage y E headers workers leaf
+  refine ⟨z,G,m+n,Exec.seq placed exec,?_,last.trans (same.trans user),done⟩
+  rw [Nat.cast_add]
+  exact add_le_add (Nat.cast_le.mpr bill) paid
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
