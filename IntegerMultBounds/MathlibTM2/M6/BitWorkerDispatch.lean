@@ -420,6 +420,31 @@ theorem invocationMoveBlocks_order :
   rw [List.map_append,(phaseMoveBlocks_spec _ _).1,(phaseMoveBlocks_spec _ _).1]
   exact (List.filter_append ..).symm
 
+/-- Locate each phase-local MOVE in the worker directory. Positions after
+COPY start immediately after the last pre-COPY occurrence. -/
+theorem invocationMoveIndices :
+    let before := (phaseMoveBlocks (sectionD ++ sectionA) (Frames.snapshot Frames.initialRefs)).1
+    let after := (phaseMoveBlocks (sectionB ++ sectionC) (Frames.scatterFinish Frames.beforeScatter)).1
+    let edges := Geometry.Moves.phaseEdges.filter positiveMove
+    ∃ (pre : Fin before.length → MoveIndex) (post : Fin after.length → MoveIndex),
+      (∀ i, (pre i).val = i.val ∧ edges[pre i] = before[i].2) ∧
+      (∀ i, (post i).val = before.length+i.val ∧ edges[post i] = after[i].2) := by
+  intro before after edges
+  have order : (before ++ after).map Prod.snd = edges := invocationMoveBlocks_order
+  have size := congrArg List.length order
+  simp only [List.length_map,List.length_append] at size
+  let pre (i : Fin before.length) : Fin edges.length := ⟨i.val,by rw [← size]; omega⟩
+  let post (i : Fin after.length) : Fin edges.length := ⟨before.length+i.val,by rw [← size]; omega⟩
+  have atIndex (i : Fin edges.length) :
+      edges[i] = ((before ++ after)[i.val]'(by rw [List.length_append,size]; exact i.isLt)).2 := by
+    change edges[i.val] = _
+    exact (List.getElem_of_eq order.symm i.isLt).trans (List.getElem_map Prod.snd)
+  refine ⟨pre,post,fun i => ⟨rfl,?_⟩,fun i => ⟨rfl,?_⟩⟩
+  · rw [atIndex, List.getElem_append_left i.isLt]
+    rfl
+  · rw [atIndex, List.getElem_append_right (show before.length ≤ (post i).val by dsimp [post]; omega)]
+    simp [post]
+
 open Certificates.PR589 in
 /-- Compile a block of the selected PR589 scalar word on the shared
 owner tapes, with the state transition needed between scheduled MOVEs. -/
@@ -679,6 +704,10 @@ theorem packedMixedMoveCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
         let untouched := fun j => (∀ k, e k ≠ j) ∧ (∀ k, ports k ≠ j)
         (∀ k, untouched (nextArchive k)) → (∀ k : Fin K, k.val ≠ 24 → untouched (nextPorts k)) →
         MovePrivateStock nextArchive nextPorts nextSeed S → MovePrivateStock nextArchive nextPorts nextSeed F) ∧
+      (∀ {k} (fan : Fin (k+2) ↪ Fin H) (owner : Fin k) data,
+        fan (owner.castAdd 2) = parent 24 →
+        (∀ j, j ≠ owner.castAdd 2 → (∀ a, e a ≠ fan j) ∧ (∀ i, ports i ≠ fan j)) →
+        HelperFan fan data S → HelperFan fan (Function.update data owner y) F) ∧
       (∀ H J, let caller := RecordReady (b := prime) (w := w) (d := 16) (W := suffix) parent H J (binSyms L cutoff) SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0
         caller x S → caller y F) ∧
       ∀ h, y (position h) = Shared50RecursiveNodeRows.transpose (one_dvd desc.rows) (x ∘ position) h := by
@@ -824,7 +853,7 @@ theorem packedMixedMoveCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
     exact bank.injective.ne (fun eq => (by decide : (24 : Fin 35) ∉ [2,27,28,32,33]) (eq ▸ hk))
   have result z := out.src z
   simp only [shared,sub_zero] at result
-  refine ⟨q,G,_,y,Exec.seq run₀ (Exec.seq run (Exec.seq exec erase)),?_,final.trans (same.trans (user.trans user₀)),?_,?_,?_,?_,?_,?_,read⟩
+  refine ⟨q,G,_,y,Exec.seq run₀ (Exec.seq run (Exec.seq exec erase)),?_,final.trans (same.trans (user.trans user₀)),?_,?_,?_,?_,?_,?_,?_,read⟩
   · change m ≤ 14*M.size+6*suffix.size+6*(w+1)+11*(w+1).size+50 at cost
     change n ≤ price+8*digits+4*w+23*desc.width+22*L+61 at paid
     have overhead := moveOverhead_volume desc w W rank L digits pos bound width precision
@@ -857,6 +886,15 @@ theorem packedMixedMoveCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
     apply stock.frame untouched _ archiveFree portsFree
     intro j away
     exact ⟨(preserved j away.2).1.trans (frame₀ j away.1).1,(preserved j away.2).2.trans (frame₀ j away.1).2⟩
+  · intro k fan owner data atOwner apart live
+    apply fanUpdate owner y live
+    · intro z
+      rw [atOwner,payloadAt]
+      simpa only [G,List.map_ofFn,Function.comp_def,sub_zero] using result z
+    · intro j ne
+      obtain ⟨archiveFree,portsFree⟩ := apart j ne
+      exact ⟨(preserved _ portsFree).1.trans (frame₀ _ archiveFree).1,
+        (preserved _ portsFree).2.trans (frame₀ _ archiveFree).2⟩
   · intro H J caller start
     apply start.returnPayload (fun j hj => by
       have h := preserved (parent j) (fun k => apartParent (workerPorts k) j hj)
