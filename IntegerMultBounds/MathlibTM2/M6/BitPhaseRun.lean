@@ -1710,7 +1710,7 @@ noncomputable def labelPhase (w : ℕ) (gates : List RawGate) (current : ℕ →
 
 /-- Scalar gates and instruction joins cost a fixed multiple of the volume.
 The coefficient depends only on the literal gates, including repeated inputs. -/
-private theorem compiled_overhead {w : ℕ} (V : ℕ) (positive : 0 < V)
+theorem compiled_overhead {w : ℕ} (V : ℕ) (positive : 0 < V)
     (gs : List RawGate) (frame current : ℕ → FramedCircuit.Frame (ZMod 2) (AddressStream (ZMod (prime^w)))) :
     let code := FramedCircuit.compile current (gs.map (Frames.framedGate frame))
     (code.map (scalarWork V)).sum + code.length ≤
@@ -1743,7 +1743,7 @@ private theorem compiled_overhead {w : ℕ} (V : ℕ) (positive : 0 < V)
     nlinarith only [tail,h,positive]
 
 open M8.Machine in
-private theorem phaseEdgeBudget_sum [Net] {k : ℕ} (owner : Fin 661 ↪ Fin k) (w W : ℕ) (price : ℕ → ℕ)
+theorem phaseEdgeBudget_sum [Net] {k : ℕ} (owner : Fin 661 ↪ Fin k) (w W : ℕ) (price : ℕ → ℕ)
     (positive : 0 < (prime^w)^16*W)
     (bound : ∀ p ∈ Geometry.Moves.phaseEdges, Geometry.moveRank p.1 p.2 ≠ 0 →
       phaseChildCost w W p ≤ price (Geometry.moveRank p.1 p.2)) :
