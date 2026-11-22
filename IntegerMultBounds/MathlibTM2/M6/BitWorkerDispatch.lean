@@ -332,6 +332,84 @@ theorem MovePrivateStock.frame {H K : ℕ} {archive : Fin (80+273) ↪ Fin H} {p
     have h := keep _ (privateFree k hk)
     exact ⟨h.1.trans (stock.2 k hk).1,h.2.trans (stock.2 k hk).2⟩
 
+/-- Allocate the MOVE occurrences together. Their owner tapes coincide;
+all not-yet-run occurrences retain their seed across an embedded call. -/
+theorem allocateMoveStock {I : Type} [Fintype I] {owners K : ℕ} (tapes : I → ℕ)
+    (owner : ∀ i, Fin owners ↪ Fin (tapes i)) (archive : ∀ i, Fin (80+273) ↪ Fin (tapes i))
+    (ports : ∀ i, Fin K ↪ Fin (tapes i))
+    (archiveFree : ∀ i k j, owner i j ≠ archive i k)
+    (privateFree : ∀ i (k : Fin K), k.val ≠ 24 → ∀ j, owner i j ≠ ports i k) :
+    ∃ (T : ℕ) (fan : Fin owners ↪ Fin T) (bank : ∀ i, Fin (tapes i) ↪ Fin T),
+      (∀ i j, bank i (owner i j) = fan j) ∧
+      ∀ seed : ∀ i, Stacks (tapes i) prime,
+      let ready := fun i (S : Stacks T prime) => MovePrivateStock (archive i) (ports i) (seed i) (embStk (bank i) S)
+      (∀ shared, ∃ S, embStk fan S = shared ∧ ∀ i, ready i S) ∧
+      ∀ {P U : Type} {Q : ℕ} (body : ∀ i, P → Pr P (tapes i) Q prime U) i code u S z F n,
+        Exec (body i) code (mk (embDn (bank i) u) (embStk (bank i) S)) n (mk z F) →
+        let host := fun f : I × P => embProg (bank f.1) (Prod.mk f.1) (body f.1 f.2)
+        ∃ v G, Exec host (embProg (bank i) (Prod.mk i) code) (mk u S) n (mk v G) ∧
+          v.user = z.user ∧ embStk (bank i) G = F ∧ ∀ j, j ≠ i → ready j S → ready j G := by
+  obtain ⟨T,fan,bank,shared,join,apart⟩ := copyWindowBanks tapes owner
+  refine ⟨T,fan,bank,shared,?_⟩
+  intro seed ready
+  constructor
+  · intro X
+    obtain ⟨S,view,loaded⟩ := join X seed
+    exact ⟨S,view,fun i => ⟨fun k => loaded i _ (archiveFree i k),fun k hk => loaded i _ (privateFree i k hk)⟩⟩
+  · intro P U Q body i code u S z F n run host
+    obtain ⟨v,G,exec,_,user,view,off⟩ := exec_emb (body' := host) (ι := Prod.mk i) (bank i).injective
+      (fun _ => rfl) run u rfl S rfl
+    refine ⟨v,G,exec,user,view,?_⟩
+    intro j ne stock
+    have keep (k : Fin (tapes j)) (outside : ∀ h, owner j h ≠ k) := off (bank j k) ((apart j k outside).2 i ne.symm)
+    exact stock.frame (fun k => ∀ h, owner j h ≠ k) keep (archiveFree j) (privateFree j)
+
+/-- Sequence allocated MOVE calls in the supplied order. Only occurrences
+remaining in the list need their private seed. The shared owner state follows
+the same left fold, and each local execution budget is charged once. -/
+theorem moveStockSequence {I α P U : Type} [Fintype I] {owners K Q : ℕ} (tapes : I → ℕ)
+    (owner : ∀ i, Fin owners ↪ Fin (tapes i)) (archive : ∀ i, Fin (80+273) ↪ Fin (tapes i))
+    (ports : ∀ i, Fin K ↪ Fin (tapes i))
+    (archiveFree : ∀ i k j, owner i j ≠ archive i k)
+    (privateFree : ∀ i (k : Fin K), k.val ≠ 24 → ∀ j, owner i j ≠ ports i k)
+    (body : ∀ i, P → Pr P (tapes i) Q prime U) (code : ∀ i, Pr P (tapes i) Q prime U)
+    (order : List I) (distinct : order.Nodup) :
+    ∃ (T : ℕ) (fan : Fin owners ↪ Fin T) (host : I × P → Pr (I × P) T Q prime U)
+      (program : Pr (I × P) T Q prime U),
+    ∀ (rep : α → Stacks owners prime → Prop) (step : α → I → α) (budget : I → ℕ)
+      (seed : ∀ i, Stacks (tapes i) prime),
+    (∀ i ∈ order, ∀ x u S, rep x (embStk (owner i) S) → MovePrivateStock (archive i) (ports i) (seed i) S →
+      ∃ z F n, Exec (body i) (code i) (mk u S) n (mk z F) ∧ n ≤ budget i ∧ z.user = u.user ∧
+        rep (step x i) (embStk (owner i) F)) →
+    ∀ shared, ∃ S, embStk fan S = shared ∧ ∀ x u, rep x shared →
+      ∃ z F n, Exec host program (mk u S) n (mk z F) ∧ n ≤ (order.map budget).sum+1 ∧
+        z.user = u.user ∧ rep (order.foldl step x) (embStk fan F) := by
+  obtain ⟨T,fan,bank,shared,allocate⟩ := allocateMoveStock tapes owner archive ports archiveFree privateFree
+  let host := fun f : I × P => embProg (bank f.1) (Prod.mk f.1) (body f.1 f.2)
+  let seq := fun (is : List I) => is.foldr (fun i tail => (embProg (bank i) (Prod.mk i) (code i)).seq tail) (.act .done)
+  refine ⟨T,fan,host,seq order,?_⟩
+  intro rep step budget seed localRun X
+  obtain ⟨join,place⟩ := allocate seed
+  obtain ⟨S,view,stock⟩ := join X
+  refine ⟨S,view,?_⟩
+  intro x u live
+  rw [← view] at live
+  have project (i) (D : Stacks T prime) : embStk (owner i) (embStk (bank i) D) = embStk fan D := by
+    simp only [embStk,Function.comp_def,shared]
+  have ready (i) (_ : i ∈ order) := stock i
+  clear stock view
+  induction order generalizing u S x with
+  | nil => exact ⟨u,S,1,Exec.act _ _,by simp,rfl,live⟩
+  | cons i rest ih =>
+    obtain ⟨fresh,nodup⟩ := List.nodup_cons.mp distinct
+    obtain ⟨z,F,n,run,cost,user,next⟩ := localRun i (by simp) x (embDn (bank i) u) (embStk (bank i) S)
+      (by rwa [project]) (ready i (by simp))
+    obtain ⟨v,D,placed,same,returned,kept⟩ := place body i (code i) u S z F n run
+    rw [← returned,project] at next
+    obtain ⟨q,G,m,tail,paid,final,out⟩ := ih nodup (fun j hj => localRun j (List.mem_cons_of_mem _ hj))
+      D (step x i) v next (fun j hj => kept j (fun eq => fresh (eq ▸ hj)) (ready j (List.mem_cons_of_mem _ hj)))
+    exact ⟨q,G,_,Exec.seq placed tail,by simp only [List.map_cons,List.sum_cons]; omega,final.trans (same.trans user),out⟩
+
 open Certificates.PR589 in
 /-- Prepare and dispatch a packed MOVE from the caller's cutoff. Only the
 above-cutoff branch requires a child execution witness. -/
@@ -350,6 +428,7 @@ theorem packedMixedMoveCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
     let cut := parent 34
     let e := (archiveSetupPlacement 80 T 0).trans placed
     (fun {q : ℕ} (_ : Program 38 q prime) => q) (RecursiveRowsNodeHeaders.program 142080) ≤ Q →
+    (∀ k j, parent j ≠ e k) ∧ (∀ k : Fin (rowSwapBlock.tapes+35), k.val ≠ 24 → ∀ j, parent j ≠ ports k) ∧
     ∃ leaf : Pr P H Q prime U, ∀ (body : P → Pr P H Q prime U) (large f : P), body f = leaf →
     let localPort := (Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)
     let bank := localPort.trans ports
@@ -427,7 +506,15 @@ theorem packedMixedMoveCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
     intro eq
     exact borrowedHeaders_apart i j (workerPorts k) (stage.injective eq)
   obtain ⟨leaf,move⟩ := stoppedMoveProgram (P := P) (U := U) ports capacity rank positive
-  refine ⟨leaf,?_⟩
+  refine ⟨fun k j => (offParent k j).symm,?_,leaf,?_⟩
+  · intro k hk j
+    by_cases eq : j = 24
+    · subst j
+      rw [← shared]
+      intro same
+      change ports ((Fin.castLEEmb (Nat.le_add_left 35 rowSwapBlock.tapes)) (24 : Fin 35)) = ports k at same
+      exact hk (congrArg Fin.val (ports.injective same).symm)
+    · exact (apartParent (workerPorts k) j eq).symm
   intro body large f installed localPort bank
   let i : Fin 127 := ⟨2*rank-2,by omega⟩
   obtain ⟨prepare,setup⟩ := prepareWorkerRecord_exec body bank headers (fun i j k => apart i j (localPort k))
