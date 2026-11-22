@@ -112,13 +112,13 @@ theorem sweepRecordPermutation (w : ℕ) (n : Fin 9) (r : Role) :
       exact ⟨s,inj eqn⟩
   exact ⟨Equiv.ofBijective f bij,fun s b j => cell s b j⟩
 
-/-- Reading every record by a separate linear gather stays within the
+/-- Consuming the selector stream and gathering every record stays within the
 padded node volume, uniformly in the inherited block count and width. -/
 theorem sweepRecordGather_volume (w B W : ℕ) (hw : 0 < W) :
     let M := prime^w
     let rows := M^128
     let labels := prime^(64*(w*64))
-    B*rows*(rows*(16*W+10)+16) ≤ 42*(M^16*(B*labels*(M^112*W))) := by
+    B*(rows*(rows*(16*W+18)+26)+2) ≤ 62*(M^16*(B*labels*(M^112*W))) := by
   intro M rows labels
   have hm : 0 < M := pow_pos prime_prime.pos _
   have hr : 1 ≤ rows := pow_pos hm _
@@ -126,14 +126,15 @@ theorem sweepRecordGather_volume (w B W : ℕ) (hw : 0 < W) :
     change (prime^w)^128 ≤ prime^(64*(w*64))
     rw [← pow_mul]
     exact Nat.pow_le_pow_right prime_prime.pos (by omega)
-  have cost : rows*(16*W+10)+16 ≤ 42*(labels*W) := by
+  have cost : rows*(16*W+18)+26 ≤ 60*(labels*W) := by
     have hrow : 1 ≤ rows*W := Nat.mul_pos hr hw
     calc
-      _ ≤ rows*(26*W)+16*(rows*W) := by gcongr <;> omega
-      _ = 42*(rows*W) := by ring
+      _ ≤ rows*(34*W)+26*(rows*W) := by gcongr <;> omega
+      _ = 60*(rows*W) := by ring
       _ ≤ _ := by gcongr
+  have large : 1 ≤ rows*(labels*W) := Nat.mul_pos hr (Nat.mul_pos (hr.trans room) hw)
   calc
-    _ ≤ B*rows*(42*(labels*W)) := Nat.mul_le_mul_left _ cost
+    _ ≤ B*(rows*(60*(labels*W))+2*(rows*(labels*W))) := by gcongr <;> omega
     _ = _ := by rw [show rows = M^16*M^112 by rw [← pow_add]]; ring
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
