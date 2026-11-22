@@ -928,6 +928,42 @@ theorem packedMixedMoveCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
       exact ⟨(preserved _ away).1.trans (frame₀ _ archiveFree).1,
         (preserved _ away).2.trans (frame₀ _ archiveFree).2⟩
 
+/-- Populate an empty occurrence archive from the parent's cutoff and
+the trailing header of the rank-selected adjacent exchange. -/
+theorem prepareMoveArchive {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
+    (bank : Fin 35 ↪ Fin T) (cut : Fin T) (headers : Fin 127 → Fin 6 → Fin T)
+    (offCut : ∀ j, bank j ≠ cut) (offHeader : ∀ i j, bank j ≠ headers i 5)
+    (rank : ℕ) (positive : 0 < rank) (bound : rank ≤ 64) :
+    let i : Fin 127 := ⟨2*rank-2,by omega⟩
+    ∃ code, ∀ (child : Descriptor) (w W L cutoff : ℕ),
+    child.width = (w+1)*rank → volume prime child = (prime^(w+1))^16*((prime^(w+1))^112*W) →
+    let n := CopyChildLayout.spectators child
+    let archive := binSyms (A := prime) n.size n ++ separator :: binSyms L cutoff
+    ∀ (u : HS T Q prime U) (S : Stacks T prime), S.R cut = binSyms L cutoff →
+    S.R (headers i 5) = (Routines.hdr (helperAdjacentView (w+1) 1 W i) 5).map bitSymbol →
+    S.R (bank 34) = [] → S.R (bank 0) = [] → S.R (bank 1) = [] →
+    ∃ z, Exec body code (mk u S) (6*(L+n.size)+13)
+      (mk z {S with R := Function.update S.R (bank 34) archive}) ∧ z.user = u.user := by
+  intro i
+  let copy : Fin T → Pr P T Q prime U := fun source => bcopy source (bank 34) (bank 0) (bank 1)
+  refine ⟨(copy cut).seq ((Prog.act (DFT.pushSep (bank 34))).seq (copy (headers i 5))),?_⟩
+  intro child w W L cutoff width size n archive u S header field empty a b
+  have count := field.trans (moveSpectatorHeader child w W rank positive bound width size)
+  obtain ⟨v,user,first⟩ := bcopy_exec (body := body) (a := cut) (c := bank 34) (t₁ := bank 0) (t₂ := bank 1)
+    (by simp [Ne.symm (offCut _)]) u S a b
+  rw [header,empty,List.append_nil,length_binSyms] at first
+  let D := {S with R := Function.update S.R (bank 34) (binSyms L cutoff)}
+  have mark := Exec.act (body := body) (DFT.pushSep (bank 34)) (mk v D)
+  rw [DFT.pushSep_run] at mark
+  let F := {D with R := Function.update D.R (bank 34) (separator :: D.R (bank 34))}
+  have read : F.R (headers i 5) = binSyms n.size n := by
+    simpa [F,D,Function.update_of_ne (offHeader i 34).symm] using count
+  obtain ⟨z,same,last⟩ := bcopy_exec (body := body) (a := headers i 5) (c := bank 34) (t₁ := bank 0) (t₂ := bank 1)
+    (by simp [Ne.symm (offHeader i _)]) v F (by simpa [F,D] using a) (by simpa [F,D] using b)
+  rw [read,length_binSyms] at last
+  refine ⟨z,(Exec.seq first (Exec.seq mark last)).cast (by omega) ?_,same.trans user⟩
+  simp [F,D,archive,Function.update_idem]
+
 /-- Read the spectator count from the front of a MOVE archive, leaving
 the inherited cutoff in the record for the ordinary width comparison. -/
 theorem unpackMoveArchive {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
@@ -1178,6 +1214,75 @@ theorem scheduledTwoFieldMove [M8.Machine.Net] {T Q : ℕ} {P U : Type}
   · have eq : i = moveSpectatorPort := Fin.ext (by have := i.isLt; change i.val = rowSwapBlock.tapes-1+35; omega)
     subst i
     exact ⟨left.trans (free moveSpectatorPort high).1,empty⟩
+
+/-- Call a scheduled MOVE from an empty archive, produce both fields on
+the machine, and release the occurrence archive after the child returns. -/
+theorem callPreparedMove [M8.Machine.Net] {T Q : ℕ} {P U : Type}
+    (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T) (capacity : columnCapacity ≤ Q)
+    (cut : Fin T) (headers : Fin 127 → Fin 6 → Fin T)
+    (offCut : ∀ j, scheduledRecordPorts ports j ≠ cut)
+    (offHeader : ∀ i j, scheduledRecordPorts ports j ≠ headers i 5)
+    (rank : ℕ) (positive : 0 < rank) (bound : rank ≤ 64) :
+    let bank := scheduledRecordPorts ports
+    let i : Fin 127 := ⟨2*rank-2,by omega⟩
+    ∃ leafCode : Pr P T Q prime U, ∀ (body : P → Pr P T Q prime U) (entry large leaf : P), body leaf = leafCode →
+    body entry = twoFieldDispatch (movePrefix.trans ports) (ports moveSpectatorPort) rank (body large) (body leaf) →
+    ∃ code, ∀ (node child : Descriptor) (w W L cutoff time : ℕ),
+    let suffix := (prime^(w+1))^112*W
+    child.width = (w+1)*rank → volume prime child = (prime^(w+1))^16*suffix →
+    ∀ position : Fin (volume prime child) ≃ Fin ((prime^(w+1))^16*suffix),
+    (∀ h, (position h).val = (CopyChildLayout.packActive child h).val) → 0 < W → cutoff < 2^L →
+    child.width.size ≤ L → L ≤ 64*(w+1) →
+    let core : ℝ := (LeafCore.small+5 : ℕ)*|LeafCore.C|+8+LeafCore.small*(16+8*|LeafCore.C|)
+    ∀ rate : ℝ, 163+core ≤ rate → child.width < node.width →
+    let active := cutoff < child.width
+    let price := if active then time else ⌊(rate*(child.width : ℝ)^M8.Machine.BudgetBound.tau)*volume prime child⌋₊
+    (active → MoveOnBankExec node child w suffix (movePrefix.trans ports) (binSyms L cutoff) position body (body large) time) →
+    let stored := RecordReady (b := prime) (w := w) (d := 16) (W := suffix) bank (prime^(w+1)).size suffix.size []
+      SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0
+    let clean := fun S : Stacks T prime => ∀ j : Fin (rowSwapBlock.tapes+35), 35 ≤ j.val →
+      S.L (ports j) = [] ∧ S.R (ports j) = []
+    ∀ word u S, stored word S → clean S → S.R cut = binSyms L cutoff →
+    S.R (headers i 5) = (Routines.hdr (helperAdjacentView (w+1) 1 W i) 5).map bitSymbol →
+    ∃ z F t y, Exec body code (mk u S) t (mk z F) ∧ t ≤ price+10000*volume prime child ∧
+      z.user = u.user ∧ stored y F ∧ clean F ∧
+      (∀ j, (∀ l, ports l ≠ j) → F.L j = S.L j ∧ F.R j = S.R j) ∧
+      ∀ h, y (position h) = Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (word ∘ position) h := by
+  intro bank i
+  obtain ⟨leafCode,dispatch⟩ := scheduledTwoFieldMove (P := P) (U := U) ports capacity rank positive
+  refine ⟨leafCode,?_⟩
+  intro body entry large leaf installed table
+  obtain ⟨prep,prepare⟩ := prepareMoveArchive body bank cut headers offCut offHeader rank positive bound
+  refine ⟨prep.seq ((Prog.call entry).seq (bclear (bank 34))),?_⟩
+  intro node child w W L cutoff time suffix width size position coords pos fits digits precision core rate room smaller active price recurse stored clean word u S ready free header field
+  let n := CopyChildLayout.spectators child
+  let archive := binSyms (A := prime) n.size n ++ separator :: binSyms L cutoff
+  obtain ⟨v,start,user⟩ := prepare child w W L cutoff width size u S header field ready.archive
+    (ready.scratch 0 (by decide)).2 (ready.scratch 1 (by decide)).2
+  have high (j : Fin (rowSwapBlock.tapes+35)) (hj : 35 ≤ j.val) : ports j ≠ bank 34 := by
+    intro eq
+    have h := congrArg Fin.val (ports.injective eq)
+    change j.val = 34 at h
+    omega
+  have worker := dispatch body entry large leaf installed table node child w suffix L cutoff time width fits digits position coords
+    (Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) pos) rate room recurse
+  obtain ⟨q,D,t,y,run,paid,same,out,blank,frame,read⟩ := worker smaller v _ word
+    (replaceArchive bank [] archive word S ready)
+    (fun j hj => ⟨(free j hj).1,(Function.update_of_ne (high j hj) ..).trans (free j hj).2⟩)
+  obtain ⟨z,final,_,finish⟩ := bclear_exec (body := body) (bank 34) q D
+  rw [out.archive] at finish
+  refine ⟨z,_,_,y,Exec.seq start (Exec.seq (Exec.call run) finish),?_,final.trans (same.trans user),
+    replaceArchive bank archive [] y D out,?_,?_,read⟩
+  · simp only [List.length_append,List.length_cons,length_binSyms]
+    have overhead := moveOverhead_volume child w W rank L n.size pos bound width precision (le_max_right ..) size
+    change t ≤ price+4*w+23*child.width+22*L+8*n.size+61 at paid
+    dsimp only [n] at paid overhead
+    omega
+  · intro j hj
+    exact ⟨(blank j hj).1,(Function.update_of_ne (high j hj) ..).trans (blank j hj).2⟩
+  · intro j outside
+    have ne : j ≠ bank 34 := (outside _).symm
+    exact ⟨(frame j outside).1,(Function.update_of_ne ne ..).trans ((frame j outside).2.trans (Function.update_of_ne ne ..))⟩
 
 /-- COPY accepts arbitrary archive contents. With the cutoff itself as
 the archive, its worker can compare and branch in place. -/
