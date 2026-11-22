@@ -135,7 +135,7 @@ noncomputable def registers (n : Fin 9) (r : Fin 32) (d : Fin 5) (X : State) (j 
 noncomputable def runWord (n : Fin 9) (v : ℕ → Stream) : ℕ → Stream :=
   if n.val % 2 = 1 then reverseRun n v else Framed.execute (forwardFrame n) v
 
-private theorem windowChange (n : ℕ) (U V : Matrix (Fin 8) (Fin 8) ℚ) :
+theorem windowChange (n : ℕ) (U V : Matrix (Fin 8) (Fin 8) ℚ) :
     exchange (windowProj n U) * exchange (windowProj n V) =
       exchange (Matrix.fromBlocks (U+V-(U*V+U*V)) 0 0 (0 : Matrix Exterior Exterior ℚ)) := by
   have product (A B : Matrix Axis Axis ℚ) :

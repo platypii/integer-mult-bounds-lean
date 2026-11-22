@@ -33,6 +33,13 @@ private theorem source_ne_target (n : Fin 9) (k l : (Fin 32 × Fin 5) × Fin 111
     omega
   · exact otherRunMissesPort n p q same _ ⟨111+u.val,by omega⟩ (by dsimp; omega)
 
+/-- Physical active-port cell for a full modular window, inherited block and spectator. -/
+noncomputable def activeWindowAddress {w B W : ℕ} (b : Fin B)
+    (s : Swap.Shear.State Axis (ZMod (prime^w))) (j : Fin W) : Fin ((prime^w)^16*(B*((prime^w)^112*W))) :=
+  let D := undoTranslation.map (Int.cast : ℤ → ZMod (prime^w))
+  let a := copyAddress (chartAddress (s,j))
+  index (embed (M8.Exchange.transform D⁻¹ D⁻¹ a.1)) (finProdFinEquiv (b,a.2))
+
 /-- All 17,760 source/target pairs receive their two corrections.
 Other owners are preserved by each pass. -/
 theorem sweepPortCorrections [M8.Machine.Net] :
@@ -44,14 +51,18 @@ theorem sweepPortCorrections [M8.Machine.Net] :
         (∀ x i, (∀ k, sourceOwner n k ≠ i) → enter.transform x i = x i) ∧
         (∀ y i, (∀ k, targetOwner n k ≠ i) → leave.transform y i = y i) ∧
         ∀ x y, sweepEffect n w B W (enter.transform x) y →
-          ∀ (k : (Fin 32 × Fin 5) × Fin 111) (z : LabelEntry.Cell (copyLabelLayout w B K) B) s,
-            let cell := fun v => index (embed v) (@finProdFinEquiv B K (z.b,z.after))
-            let P := translatedPortProjector (ZMod (prime^w)) (4 : ZMod (prime^w))⁻¹ k.2
+          ∀ (k : (Fin 32 × Fin 5) × Fin 111) (b : Fin B)
+            (s : Swap.Shear.State Axis (ZMod (prime^w))) (j : Fin W),
+            let cell := fun v => activeWindowAddress b v j
+            let L := Matrix.diagonal fun i : Exterior => if i.1.val < n.val then (1 : ZMod (prime^w)) else 0
+            let frame := fun (P : Matrix (Fin 8) (Fin 8) (ZMod (prime^w))) =>
+              M8.Exchange.exchange (Matrix.fromBlocks P 0 0 L)
+            let P := Swap.Modular.reduce (prime^w) (port k.2.val).lineProj
             let src := sourceOwner n k
             let dst := targetOwner n k
-            leave.transform y src (cell s) = x src (cell (M8.Exchange.exchange P s.swap)) ∧
+            leave.transform y src (cell s) = x src (cell (frame P (frame 1 s))) ∧
             leave.transform y dst (cell s) =
-              x dst (cell (M8.Exchange.exchange (1-P) s)) + x src (cell s.swap) := by
+              x dst (cell (frame (1-P) (frame 0 s))) + x src (cell (frame 1 (frame 0 s))) := by
   classical
   choose c build using sweepEffect_correctedPort
   let jobs := stageRuns.product (List.finRange 111)
@@ -89,9 +100,18 @@ theorem sweepPortCorrections [M8.Machine.Net] :
     change _ ≤ (_+17760*(2*|LeafCore.C|+14))*power*V
     push_cast
     linarith only [linear,core,joins]
-  · intro x y step k z s cell P src dst
+  · intro x y step k b s j cell L frame P src dst
+    let row := fun (bank : OwnerArray w B W) i (l : Fin K) (v : Swap.Shear.State (Fin 8) (ZMod (prime^w))) =>
+      bank i (index (embed v) (finProdFinEquiv (b,l)))
+    apply activePort_window n k.2 (row x src) (row x dst) (row (leave.transform y) src)
+      (row (leave.transform y) dst) _ s j
+    intro l v
+    let z : LabelEntry.Cell (copyLabelLayout w B K) B :=
+      ⟨⟨0,pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _⟩,⟨0,Nat.zero_lt_one⟩,b,
+        ⟨0,by simp [copyLabelLayout,ActualAffineScaling.modulus]⟩,⟨0,Nat.zero_lt_one⟩,
+        ⟨0,by simp [copyLabelLayout,ActualAffineScaling.modulus]⟩,l⟩
     have result := correct k.2 n k.1 x (enter.transform x) y (entry x k (mem k))
-      (keep x dst (fun l _ => source_ne_target n l k)) step z s
+      (keep x dst (fun l _ => source_ne_target n l k)) step z v
     constructor
     · exact (congrFun (off y src (fun l _ => (source_ne_target n k l).symm)) _).trans result.1
     · exact (congrFun (exitRow y k (mem k)) _).trans result.2
