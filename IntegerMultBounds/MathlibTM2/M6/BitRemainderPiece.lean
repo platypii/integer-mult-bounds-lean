@@ -159,7 +159,7 @@ private theorem idleExchange_admissible (c : PortCertificate) (hc : c.Checked) (
   cases i <;> cases j <;> first | apply complement | apply span
 
 open Matrix IntegerMultBounds.Swap.Modular in
-private theorem idleExchange_blocks (c : PortCertificate) (hc : c.Checked) (lo hi w : ℕ) :
+theorem idleExchange_blocks (c : PortCertificate) (hc : c.Checked) (lo hi w : ℕ) :
     let S := c.span lo hi
     let P := reduce (prime^w) S
     reduce (prime^w) (exchange S) = fromBlocks (1-P) P P (1-P) := by
