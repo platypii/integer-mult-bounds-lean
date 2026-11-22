@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.M6.BitBorrowedStageEntry
+public import IntegerMultBounds.MathlibTM2.M6.BitPackedReturnHeaders
 
 /-! Execute the packed PR589 stage from physical parent-order owner words. -/
 @[expose] public section
@@ -63,18 +64,15 @@ theorem packedPhysicalStage_exec [M8.Machine.Net] :
     let place := Exit.chart 0 N
     let fan := (full.trans worker).trans place
     let back := Exit.sweep 0 N
-    let tmp := Exit.tmp 0 N
     let host := fun f => embProg place id (embProg worker id (host f))
     let labels := prime^(64*((h+1)*64))
     let W := B*labels*K
     let bill := (base*V+17760*(2*M8.RevMachine.LeafCore.coreCost V (h+1)+14))*(correctionTapes+5)+price+12
-    ∃ code C, ∃ seed : Stacks N prime, ∀ H (parent : Fin 64 → ZMod M) (units : ∀ i, IsUnit (parent i)),
-    M^128 < 2^H → H ≤ M^128+1 → 0 < W →
+    ∃ code C, ∀ H (parent : Fin 64 → ZMod M) (units : ∀ i, IsUnit (parent i)),
+    M^128 < 2^H → H ≤ M^128+1 → 0 < W → ∃ prepared : Stacks (Exit.size 0 N) prime,
     ∀ (x : OwnerArray (h+1) 1 W) (u : HS (Exit.size 0 N) Q prime U) (S : Stacks (Exit.size 0 N) prime),
-    ReturnHeaders h H parent W 1 (embStk back S).R →
     ParentStageWords (fun i => fan (i.castAdd 2)) fan V x S →
-    (∀ j, (∀ i, (full.trans worker) i ≠ j) → S.L (place j) = seed.L j ∧ S.R (place j) = seed.R j) →
-    S.L tmp = [] → S.R tmp = [] → (∀ i, S.L (back (owners i)) = [] ∧ S.R (back (owners i)) = []) →
+    (∀ j, (∀ i, fan i ≠ j) → S.L j = prepared.L j ∧ S.R j = prepared.R j) →
     ∃ (z : HS (Exit.size 0 N) Q prime U) (G : Stacks (Exit.size 0 N) prime) (k : ℕ) (d : OwnerArray (h+1) 1 W), Exec host code (mk u S) k (mk z G) ∧
       k ≤ bill + (142081*(8*V+10)+1) + (142080*(C*(M^16*(labels*(M^112*W)))+16)+2) ∧
       z.user = u.user ∧ borrowedStageHandoff (h+1) B K parent units n x d ∧
@@ -91,8 +89,12 @@ theorem packedPhysicalStage_exec [M8.Machine.Net] :
     obtain ⟨z,F,t,y,exec,paid,user,out,action⟩ := run x u S live fresh
     exact ⟨z,F,t,y,exec,Nat.cast_le.mp (paid.trans (Nat.le_ceil _)),user,out,action⟩)
   obtain ⟨N,inner,code,C,seed,execute⟩ := sweep
-  refine ⟨N,inner,code,C,seed,?_⟩
-  intro H parent units height bits widthPos x u S headers words privateTapes tmpL tmpR empty
+  refine ⟨N,inner,code,C,?_⟩
+  intro H parent units height bits widthPos
+  obtain ⟨prepared,placed⟩ := packedStageSeed (full.trans inner) seed h H _ parent
+  refine ⟨prepared,?_⟩
+  intro x u S words fresh
+  obtain ⟨headers,privateTapes,tmpL,tmpR,empty⟩ := placed S fresh
   have spare := words.right (Fin.last 142080)
   obtain ⟨z,G,k,d,done,bound,same,handoff,controls,left,last,roles⟩ :=
     execute H parent units height bits widthPos x u S headers (fun r => words.left _) (fun r => words.right _)
