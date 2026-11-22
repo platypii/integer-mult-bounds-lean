@@ -531,6 +531,59 @@ def ParentArchiveInput (node : RecursiveInterchangeLayout.Descriptor) (w : ℕ)
     (read (regs 33)).length = w ∧
     (∀ j : Fin 273, D.L (j.natAdd 80) = [] ∧ D.R (j.natAdd 80) = [])
 
+/-- Realize the parent archive input using its six descriptor words and
+three arithmetic registers. Every archive destination starts empty. -/
+theorem parentArchiveInput_exists (node : RecursiveInterchangeLayout.Descriptor) (w : ℕ) :
+    ∃ D, ParentArchiveInput node w D := by
+  let M := prime^(w+1)
+  let hs := Routines.hdr node
+  let left (i : Fin 80) : List (Fin (prime+4)) :=
+    if 3 ≤ i.val ∧ i.val < 9 then [separator] else []
+  let right (i : Fin 80) : List (Fin (prime+4)) :=
+    if h : 3 ≤ i.val ∧ i.val < 9 then (hs ⟨i.val-3,by omega⟩).map bitSymbol
+    else if i.val = 47 then binSyms M.size M
+    else if i.val = 73 then binSyms 1 1
+    else if i.val = 78 then List.replicate w blank else []
+  let D : Stacks (80+273) prime := ⟨[],[],Fin.addCases left (fun _ => []),Fin.addCases right (fun _ => [])⟩
+  refine ⟨D,?_,rfl,rfl,?_,rfl,rfl,List.length_replicate,?_⟩
+  · intro i z
+    have word (xs : List Bool) : BinaryDescriptorStack.descriptor xs z =
+        readAt (blank : Fin (prime+4)) [separator] (xs.map bitSymbol) (z-1) := by
+      rw [BinaryDescriptorStackRoundtrip.descriptor_encoded,encodedBinary_eq,readAt_single]
+    have empty : (blank : Fin (prime+4)) = readAt blank [] [] (z-0) := by
+      simp [readAt]
+    fin_cases i <;> first | exact word _ | exact empty
+  · intro i
+    fin_cases i <;> rfl
+  · intro j
+    simp [D,Fin.addCases_right]
+
+/-- Place the parent descriptor beside a seeded worker on a blank host. -/
+theorem parentArchiveHost_exists {T L : ℕ} (node : RecursiveInterchangeLayout.Descriptor)
+    (w : ℕ) (initial : Stacks T prime) :
+    let stage := Fin.natAddEmb 80 (m := (T+273)+L)
+    let owner := (Fin.castAddEmb 273 (n := T)).trans (Fin.castAddEmb L)
+    ∃ seed : Stacks (80+((T+273)+L)) prime,
+      ParentArchiveInput node w (embStk (archiveSetupPlacement 80 T L) seed) ∧
+      (∀ j : Fin L, seed.L (stage (j.natAdd (T+273))) = [] ∧ seed.R (stage (j.natAdd (T+273))) = []) ∧
+      ∀ j, seed.L (stage (owner j)) = initial.L j ∧ seed.R (stage (owner j)) = initial.R j := by
+  intro stage owner
+  let port := owner.trans stage
+  let archive := archiveSetupPlacement 80 T L
+  obtain ⟨D,ready⟩ := parentArchiveInput_exists node w
+  let empty : Stacks (80+((T+273)+L)) prime := ⟨[],[],fun _ => [],fun _ => []⟩
+  let worker := embOvr port initial.get empty
+  refine ⟨embOvr archive D.get worker,by rwa [embStk_ovr archive.injective],?_,?_⟩
+  · intro j
+    have outside := embOvr_off D.get worker (fun i => (archiveSetupPlacement_frame i).2 j)
+    have free := embOvr_off initial.get empty (e := port) (j := stage (j.natAdd (T+273))) (fun i =>
+      stage.injective.ne (by intro eq; have h := congrArg Fin.val eq; change i.val = T+273+j.val at h; omega))
+    exact ⟨outside.1.trans free.1,outside.2.trans free.2⟩
+  · intro j
+    have outside := embOvr_off D.get worker (fun i => (archiveSetupPlacement_frame i).1 j)
+    have view := embStk_ovr port.injective initial empty
+    exact ⟨outside.1.trans (congrArg (fun S => S.L j) view),outside.2.trans (congrArg (fun S => S.R j) view)⟩
+
 /-- Run the parent archive producer before a host stage. The continuation
 receives the physical headers and the original worker and scratch stacks. -/
 theorem parentArchiveThen_exec {T L Q : ℕ} {P U : Type}

@@ -266,6 +266,41 @@ private theorem stageAfterSetup {T L Q V : ℕ} {P U : Type}
     (fun j => ⟨(leaf j).1.trans (free j).1,(leaf j).2.trans (free j).2⟩)
     (fun i h => ⟨(keep i).1.trans (fresh i h).1,(keep i).2.trans (fresh i h).2⟩)
 
+/-- Archive input, leaf scratch and private worker tapes can all be read
+from one prepared host outside the live owner and counter tapes. -/
+private theorem parentPackedStage_frame {T L w : ℕ} (fan : Fin (142081+2) ↪ Fin T)
+    (node : RecursiveInterchangeLayout.Descriptor) (seed S : Stacks (80+((T+273)+L)) prime) :
+    let stage := Fin.natAddEmb 80 (m := (T+273)+L)
+    let owner := (Fin.castAddEmb 273 (n := T)).trans (Fin.castAddEmb L)
+    let full := (fan.trans owner).trans stage
+    let archive := archiveSetupPlacement 80 T L
+    ParentArchiveInput node w (embStk archive seed) →
+    (∀ j : Fin L, seed.L (stage (j.natAdd (T+273))) = [] ∧ seed.R (stage (j.natAdd (T+273))) = []) →
+    (∀ j, (∀ i, full i ≠ j) → S.L j = seed.L j ∧ S.R j = seed.R j) →
+    ParentArchiveInput node w (embStk archive S) ∧
+      (∀ j : Fin L, S.L (stage (j.natAdd (T+273))) = [] ∧ S.R (stage (j.natAdd (T+273))) = []) ∧
+      ∀ j, (∀ i, fan i ≠ j) → S.L (stage (owner j)) = seed.L (stage (owner j)) ∧
+        S.R (stage (owner j)) = seed.R (stage (owner j)) := by
+  intro stage owner full archive prepared blank fresh
+  have same j := fresh (archive j) (fun i => Ne.symm ((archiveSetupPlacement_frame j).1 (fan i)))
+  have left : (embStk archive S).L = (embStk archive seed).L := funext fun j => (same j).1
+  have right : (embStk archive S).R = (embStk archive seed).R := funext fun j => (same j).2
+  refine ⟨?_,?_,fun j off => fresh _ (fun i => stage.injective.ne (owner.injective.ne (off i)))⟩
+  · unfold ParentArchiveInput at prepared ⊢
+    unfold embStk at prepared ⊢
+    dsimp only at prepared ⊢
+    change S.L ∘ archive = seed.L ∘ archive at left
+    change S.R ∘ archive = seed.R ∘ archive at right
+    simpa only [left,right] using prepared
+  · intro j
+    have eq := fresh (stage (j.natAdd (T+273))) (fun i => stage.injective.ne (by
+      intro h
+      have bad := congrArg Fin.val h
+      change (fan i).val = T+273+j.val at bad
+      have := (fan i).isLt
+      omega))
+    exact ⟨eq.1.trans (blank j).1,eq.2.trans (blank j).2⟩
+
 /-- Execute the packed stage after constructing its entire archive from
 the parent. Private invocation records are the only worker seed required. -/
 theorem parentPackedStage_exec [M8.Machine.Net] {Q w B rows : ℕ} {P U : Type}
@@ -286,12 +321,10 @@ theorem parentPackedStage_exec [M8.Machine.Net] {Q w B rows : ℕ} {P U : Type}
     let full := (fan.trans owner).trans stage
     let worker := fun f : (_ : StageRun) × P => embProg (bank f.1) (Sigma.mk f.1) (body f.1 f.2)
     let host := fun f => embProg stage id (embProg owner id (worker f))
-    ∀ childTime, required childTime → ∀ shared : Stacks (142081+2) prime,
-    ∃ initial : Stacks T prime, embStk fan initial = shared ∧ ∃ code, ∀ x u S,
-      ParentArchiveInput node w (embStk (archiveSetupPlacement 80 T LeafCore.small) S) →
+    ∀ childTime, required childTime →
+    ∃ seed : Stacks (80+((T+273)+LeafCore.small)) prime, ∃ code, ∀ x u S,
       HelperFan full x S →
-      (∀ j : Fin LeafCore.small, S.L (stage (j.natAdd (T+273))) = [] ∧ S.R (stage (j.natAdd (T+273))) = []) →
-      (∀ i, (∀ h, fan h ≠ i) → S.L (stage (owner i)) = initial.L i ∧ S.R (stage (owner i)) = initial.R i) →
+      (∀ j, (∀ i, full i ≠ j) → S.L j = seed.L j ∧ S.R j = seed.R j) →
       ∃ z F t out, Exec host code (mk u S) t (mk z F) ∧
         (t : ℝ) ≤ (((RecursiveRowsQuotient.constant 142080+30)*142080*43+152402152)*V : ℕ)+
           ((stagePackingRate n+(stageRuns.map coeff).sum)*(V*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau)+
@@ -300,11 +333,15 @@ theorem parentPackedStage_exec [M8.Machine.Net] {Q w B rows : ℕ} {P U : Type}
   intro role K M V pos packed
   obtain ⟨T,fan,bank,build⟩ := packed
   refine ⟨T,fan,bank,?_⟩
-  intro stage owner full worker host time ready shared
-  obtain ⟨initial,owners,code,run⟩ := build time ready shared
+  intro stage owner full worker host time ready
+  obtain ⟨initial,_,code,run⟩ := build time ready ⟨[],[],fun _ => [],fun _ => []⟩
+  obtain ⟨seed,archive,blank,stored⟩ := parentArchiveHost_exists (L := LeafCore.small) node w initial
   obtain ⟨setup,prepare⟩ := parentArchiveThen_exec host capacity
-  refine ⟨initial,owners,.seq setup (embProg stage id code),?_⟩
-  intro x u S input live free fresh
+  refine ⟨seed,.seq setup (embProg stage id code),?_⟩
+  intro x u S live agrees
+  obtain ⟨input,free,privateTapes⟩ := parentPackedStage_frame fan node seed S archive blank agrees
+  have fresh i off := And.intro ((privateTapes i off).1.trans (stored i).1)
+    ((privateTapes i off).2.trans (stored i).2)
   let price := (stagePackingRate n+(stageRuns.map coeff).sum)*(V*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau)+
     (((List.range' (stageChildStart n) (stageRuns.flatMap (fun _ => Geometry.Moves.localPaid)).length).map time).sum : ℕ)
   let post :=  fun F => ∃ out, HelperFan full out F ∧ RestoredBorrowedStage n (w+1) B K x out
