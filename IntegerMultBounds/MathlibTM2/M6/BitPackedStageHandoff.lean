@@ -10,13 +10,23 @@ namespace IntegerMultBounds.MathlibTM2.M6.BitNode
 open IntegerMultBounds.Machine IntegerMultBounds.Networks Stack Host SweepFile
 open Shared50ModularControl (prime)
 
-private noncomputable def returnedFan {T : ℕ} (fan : Fin (142081+2) ↪ Fin T) :
+noncomputable def returnedFan {T : ℕ} (fan : Fin (142081+2) ↪ Fin T) :
     Fin (142081+2) ↪ Fin (Exit.size 0 T) :=
   finSumFinEquiv.symm.toEmbedding.trans (Exit.place
     (Sum.elim (fun i => Exit.Register.sweep (owners i))
       (fun j : Fin 2 => Exit.Register.chart (fan (j.natAdd 142081))))
     (by rintro (i|i) (j|j) eq <;> simp_all [owners.injective.eq_iff,fan.injective.eq_iff]
         exact (Fin.natAddEmb 142081).injective eq))
+
+private theorem returnedFan_owner {T : ℕ} (fan : Fin (142081+2) ↪ Fin T) (i : Fin 142081) : returnedFan fan (i.castAdd 2) = Exit.sweep 0 T (owners i) := by
+    change (Fintype.equivFin _) (Sum.elim _ _ (finSumFinEquiv.symm (i.castAdd 2))) = _
+    rw [finSumFinEquiv_symm_apply_castAdd]
+    rfl
+
+private theorem returnedFan_counter {T : ℕ} (fan : Fin (142081+2) ↪ Fin T) (j : Fin 2) : returnedFan fan (j.natAdd 142081) = Exit.chart 0 T (fan (j.natAdd 142081)) := by
+    change (Fintype.equivFin _) (Sum.elim _ _ (finSumFinEquiv.symm (j.natAdd 142081))) = _
+    rw [finSumFinEquiv_symm_apply_natAdd]
+    rfl
 
 /-- Sequence the packed stage with a continuation on its own tape bank.
 The continuation sees its original private stacks and all returned parent words. -/
@@ -38,25 +48,17 @@ theorem runAfterPackedStage {T N Q V D : ℕ} {P R U : Type}
   obtain ⟨bank,_,sequence⟩ := runAdjacentStages (A := prime) (P := P) (R := R) (U := U) (q := Q) (returnedFan fan) input
   refine ⟨bank,?_⟩
   intro left right a b leftBank body u L seed v F t budget x post exec words next
-  have owner (i : Fin 142081) : returnedFan fan (i.castAdd 2) = Exit.sweep 0 T (owners i) := by
-    change (Fintype.equivFin _) (Sum.elim _ _ (finSumFinEquiv.symm (i.castAdd 2))) = _
-    rw [finSumFinEquiv_symm_apply_castAdd]
-    rfl
-  have counter (j : Fin 2) : returnedFan fan (j.natAdd 142081) = Exit.chart 0 T (fan (j.natAdd 142081)) := by
-    change (Fintype.equivFin _) (Sum.elim _ _ (finSumFinEquiv.symm (j.natAdd 142081))) = _
-    rw [finSumFinEquiv_symm_apply_natAdd]
-    rfl
   obtain ⟨z,G,k,ran,paid,done,_⟩ := sequence left right a b u L seed v F t budget post exec (by
     intro w S user shared privateTapes
     apply next w S user _ privateTapes
     constructor
     · intro i
-      rw [(shared (i.castAdd 2)).1,owner]; exact words.left i
+      rw [(shared (i.castAdd 2)).1,returnedFan_owner]; exact words.left i
     · intro i
-      rw [(shared (i.castAdd 2)).2,owner]; exact words.right i
+      rw [(shared (i.castAdd 2)).2,returnedFan_owner]; exact words.right i
     · intro j z
       rw [(shared (j.natAdd 142081)).1,(shared (j.natAdd 142081)).2]
-      rw [counter]; exact words.controls j z)
+      rw [returnedFan_counter]; exact words.controls j z)
   exact ⟨z,G,k,ran,paid,done⟩
 
 /-- A physical piece acts on exact parent words with a prepared private workspace. -/
@@ -68,6 +70,90 @@ def PackedPieceHandoff {P U : Type} {t q : ℕ} (V : ℕ)
     (∀ j, (∀ i, src i ≠ j) → S.L j = prepared.L j ∧ S.R j = prepared.R j) →
     ∃ z F steps y, Exec body code (mk u S) steps (mk z F) ∧ steps ≤ price ∧ z.user = u.user ∧
       ParentStageWords (fun i => dst (i.castAdd 2)) dst V y F ∧ effect x y
+
+/-- Copy a represented result to fresh owner words, keeping the two live
+counters on the chart. The cost includes every owner and the spare. -/
+theorem packedResultWords_exec {P U : Type} {T Q : ℕ} (localFan : Fin (142081+2) ↪ Fin T)
+    (body : P → Pr P (Exit.size 0 T) Q prime U) :
+    let fan := localFan.trans (Exit.chart 0 T)
+    let dst := returnedFan localFan
+    let tmp := Exit.tmp 0 T
+    ∃ code, ∀ {V : ℕ} (x : Fin 142081 → Fin V → ZMod 2) u S,
+      HelperFan fan x S → S.L tmp = [] → S.R tmp = [] →
+      (∀ i : Fin 142081, S.L (dst (i.castAdd 2)) = [] ∧ S.R (dst (i.castAdd 2)) = []) →
+      ∃ z G k, Exec body code (mk u S) k (mk z G) ∧ k ≤ 142081*(8*V+10)+1 ∧
+        z.user = u.user ∧ ParentStageWords (fun i => dst (i.castAdd 2)) dst V x G := by
+  intro fan dst tmp
+  let source := (Fin.castAddEmb 2).trans fan
+  let dest := (Fin.castAddEmb 2).trans dst
+  let e := Fintype.equivFin (Exit.Register 0 T)
+  have apart i j : source i ≠ dest j := by
+    change fan (i.castAdd 2) ≠ returnedFan localFan (j.castAdd 2)
+    rw [returnedFan_owner]
+    exact e.injective.ne (by intro h; cases h)
+  have dt i : dest i ≠ tmp := by
+    change returnedFan localFan (i.castAdd 2) ≠ tmp
+    rw [returnedFan_owner]
+    exact e.injective.ne (by intro h; cases h)
+  obtain ⟨code,copy⟩ := materializeOwners_exec body source dest tmp apart
+    (fun i => e.injective.ne (by intro h; cases h)) dt
+  refine ⟨code,?_⟩
+  intro V x u S live tl tr empty
+  obtain ⟨z,R,k,run,paid,user,words,off⟩ := copy x u S (by
+    intro i j
+    have h := fanPayload live i j
+    rw [encodedOwnerCell,sub_zero] at h
+    simpa only [source,Function.Embedding.trans_apply,Fin.castAddEmb_apply,phaseOwners,embStk,
+      Function.comp_apply,sub_zero] using h.symm) tl tr (fun i => (empty i).2)
+  refine ⟨z,_,k,run,paid,user,fun i => (empty i).1,words,?_⟩
+  intro j z
+  have keep := off (dst (j.natAdd 142081)) (fun i => dst.injective.ne (by
+    intro eq; have h := congrArg Fin.val eq; change i.val = 142081+j.val at h; omega))
+  change _ = readAt blank (S.L _) (R _) _
+  rw [keep,show dst (j.natAdd 142081) = fan (j.natAdd 142081) from returnedFan_counter localFan j]
+  simpa only [PointwiseRoleGate.bank,Tapes.append,Fin.addCases_right,CountedLoopReuseAlphabet.controls,
+    ite_self,embStk,Function.comp_apply] using live (j.natAdd 142081) z
+
+/-- Execute a scheduled bridge and materialize the entire output bank. -/
+theorem packedBridgeHandoff (d s : ℕ) (scheduled : Piece.bridge d s ∈ nodeProgram) :
+    ∃ states : ℕ, ∀ {q V : ℕ} {U : Type}, states ≤ q → 0 < V →
+      ∃ (t : ℕ) (code : Pr Empty t q prime U), ∃ src dst prepared,
+        PackedPieceHandoff V (fun x y => y = fun j z => bridgeColumn d s (fun l => x l z) j)
+          Empty.elim code src dst prepared (2*(76*17760*V*(142081+7)+6)+1 + (142081*(8*V+10)+1)) := by
+  obtain ⟨states,bridge⟩ := bridgeColumns_exec d s scheduled
+  refine ⟨states,?_⟩
+  intro q V U room pos
+  let idFan := Function.Embedding.refl (Fin (142081+2))
+  let fan := idFan.trans (Exit.chart 0 (142081+2))
+  let dst := returnedFan idFan
+  let tmp := Exit.tmp 0 (142081+2)
+  let body : Empty → Pr Empty (Exit.size 0 (142081+2)) q prime U := Empty.elim
+  obtain ⟨code,run⟩ := bridge fan body room
+  obtain ⟨copy,materialize⟩ := packedResultWords_exec idFan body
+  refine ⟨_,code.seq copy,fan,dst,⟨[],[],fun _ => [],fun _ => []⟩,?_⟩
+  intro x u S words fresh
+  have live : HelperFan fan x S := by
+    intro i
+    induction i using Fin.addCases with
+    | left i =>
+      intro j
+      simp only [PointwiseRoleGate.bank,Tapes.append,Fin.addCases_left,embStk,Function.comp_apply]
+      change putWord _ 0 (List.ofFn fun l => SparseRoleCircuit.encode (x i l)) j = readAt blank _ _ (j-0)
+      rw [words.left i,words.right i,sub_zero,readAt_nil_left,putWord_blank_zero]
+    | right j =>
+      intro z
+      simpa only [PointwiseRoleGate.bank,Tapes.append,Fin.addCases_right,CountedLoopReuseAlphabet.controls,
+        ite_self,embStk,Function.comp_apply] using words.controls j z
+  obtain ⟨v,D,k,ran,bill,user,ready,off⟩ := run pos x u S live
+  have blank j (outside : ∀ i, fan i ≠ j) : D.L j = [] ∧ D.R j = [] :=
+    ⟨(off j outside).1.trans (fresh j outside).1,(off j outside).2.trans (fresh j outside).2⟩
+  let e := Fintype.equivFin (Exit.Register 0 (142081+2))
+  have scratch := blank tmp (fun i => e.injective.ne (by intro h; cases h))
+  obtain ⟨z,G,l,copied,paid,same,result⟩ := materialize _ v D ready scratch.1 scratch.2 (by
+    intro i
+    rw [returnedFan_owner]
+    exact blank _ (fun j => e.injective.ne (by intro h; cases h)))
+  exact ⟨z,G,k+l,_,Exec.seq ran copied,Nat.add_le_add bill paid,same.trans user,result,rfl⟩
 
 /-- Chain physical pieces in execution order and sum their individual budgets. -/
 theorem packedHandoffList {Job U : Type} {q : ℕ} (V : ℕ)

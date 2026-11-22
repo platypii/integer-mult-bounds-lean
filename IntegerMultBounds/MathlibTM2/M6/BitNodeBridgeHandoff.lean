@@ -53,6 +53,24 @@ private theorem column_read {V : ℕ} (d s : ℕ) (x y : Fin 142081 → Fin V �
     by_cases even : r.bank.val = 2*d <;> by_cases odd : r.bank.val = 2*s+1 <;>
       simp only [Piece.run,even,odd,parity,↓reduceIte,Pi.add_apply] at atRole ⊢ <;> exact atRole
 
+/-- A bridge acts pointwise on every occupied column of the represented bank. -/
+theorem bridgeColumns_exec (d s : ℕ) (scheduled : Piece.bridge d s ∈ nodeProgram) :
+    ∃ states : ℕ, ∀ {t q : ℕ} {P U : Type} (fan : Fin (142081+2) ↪ Fin t)
+      (body : P → Pr P t q prime U), states ≤ q → ∃ code, ∀ {V : ℕ}, 0 < V →
+      ∀ (x : Fin 142081 → Fin V → ZMod 2) u S, HelperFan fan x S →
+      ∃ v D k, Exec body code (mk u S) k (mk v D) ∧ k ≤ 2*(76*17760*V*(142081+7)+6)+1 ∧
+        v.user = u.user ∧ HelperFan fan (fun j z => bridgeColumn d s (fun l => x l z) j) D ∧
+        ∀ j, (∀ i, fan i ≠ j) → D.L j = S.L j ∧ D.R j = S.R j := by
+  obtain ⟨states,build⟩ := nodeBankPiece_host (.bridge d s) scheduled (Or.inl ⟨d,s,rfl⟩)
+  refine ⟨states,?_⟩
+  intro t q P U fan body fits
+  obtain ⟨code,run⟩ := build fan body fits
+  refine ⟨code,?_⟩
+  intro V pos x u S live
+  obtain ⟨v,D,k,out,exec,bill,user,ready,read,scratch,off⟩ := run pos x u S live
+  have cols : out = _ := funext fun j => funext fun z => column_read d s x out read scratch j z
+  exact ⟨v,D,k,exec,bill,user,cols ▸ ready,off⟩
+
 /-- Every scheduled directed bridge executes both additions on the owner's
 occupied row and restores the count controls for the next piece. -/
 theorem bridgeHandoff (d s : ℕ) (scheduled : Piece.bridge d s ∈ nodeProgram) :
@@ -62,7 +80,7 @@ theorem bridgeHandoff (d s : ℕ) (scheduled : Piece.bridge d s ∈ nodeProgram)
       0 < V → ∀ prepared, PieceHandoff w B tail
         (fun x y => y = fun j z => bridgeColumn d s (fun l => x l z) j)
         body code fan fan prepared (2*(76*17760*V*(142081+7)+6)+1) := by
-  obtain ⟨states,build⟩ := nodeBankPiece_host (.bridge d s) scheduled (Or.inl ⟨d,s,rfl⟩)
+  obtain ⟨states,build⟩ := bridgeColumns_exec d s scheduled
   refine ⟨states,?_⟩
   intro t q P U fan body fits
   obtain ⟨code,run⟩ := build fan body fits
@@ -70,11 +88,11 @@ theorem bridgeHandoff (d s : ℕ) (scheduled : Piece.bridge d s ∈ nodeProgram)
   intro w B tail V pos prepared x u S live _
   let label := firstRowLabel w
   let entry := singleLabelBank (B := B) (K := (prime^w)^112*tail) label
-  obtain ⟨v,D,steps,out,ran,bill,user,ready,read,scratch,_⟩ := run pos (entry x) u S live
+  obtain ⟨v,D,steps,ran,bill,user,ready,_⟩ := run pos (entry x) u S live
   let y := fun j z => bridgeColumn d s (fun l => x l z) j
-  have eq : entry y = out := by
+  have eq : entry y = fun j z => bridgeColumn d s (fun l => entry x l z) j := by
     funext j z
-    exact (row_bridge label d s x j z).trans (column_read d s _ _ read scratch j z).symm
+    exact row_bridge label d s x j z
   refine ⟨v,D,steps,y,ran,bill,user,?_,rfl⟩
   change HelperFan fan (entry y) D
   rw [eq]
