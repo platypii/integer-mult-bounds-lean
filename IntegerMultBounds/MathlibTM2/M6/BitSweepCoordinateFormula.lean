@@ -105,7 +105,7 @@ noncomputable def activeCoordinateCode (k : Fin 128) : RingFormula (Entry Bool 6
   parentDigitFormula (matrixInput true 2) (activeHalfFormula 0) (activeHalfFormula 1) k
 
 open RingFormula in
-private theorem activeHalf_eval (w : ℕ) (mat : Bool → Matrix (Fin 64) (Fin 64) (ZMod (prime^w)))
+theorem activeHalf_eval (w : ℕ) (mat : Bool → Matrix (Fin 64) (Fin 64) (ZMod (prime^w)))
     (H : Matrix Axis Axis (ZMod (prime^w))) (side : Fin 64) (x : Axis → ZMod (prime^w))
     (route : ∀ i j, mat false (stageAxis i) (stageAxis j) = H i j)
     (translate : ∀ a b : Fin 8, mat true ⟨3+a.val,by omega⟩ (stageAxis (.inl b)) =
