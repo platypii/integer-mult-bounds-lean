@@ -10,6 +10,73 @@ open IntegerMultBounds.Machine IntegerMultBounds.Networks Stack Host Cover.Fallb
 open Shared50ModularControl (prime)
 open RecursiveInterchangeLayout Certificates.PR589
 
+private theorem workerSetup_volume (w W : ℕ) (pos : 0 < W) :
+    let M := prime^(w+1)
+    let suffix := M^112*W
+    14*M.size+6*suffix.size+6*(w+1)+11*(w+1).size+52 ≤ 89*(M^16*suffix) := by
+  intro M suffix
+  let V := M^16*suffix
+  have base : 0 < M := pow_pos Shared50ModularControl.prime_prime.pos _
+  have tail : 0 < suffix := Nat.mul_pos (pow_pos base _) pos
+  have volume : 0 < V := Nat.mul_pos (pow_pos base _) tail
+  have mBound : M ≤ V := (Nat.le_self_pow (by decide : 16 ≠ 0) M).trans (Nat.le_mul_of_pos_right _ tail)
+  have sBound : suffix ≤ V := Nat.le_mul_of_pos_left _ (pow_pos base _)
+  have wBound : w+1 ≤ V := (Nat.lt_two_pow_self.le.trans
+    (Nat.pow_le_pow_left Shared50ModularControl.prime_prime.two_le (w+1))).trans mBound
+  have sizeBound (k : ℕ) (h : k ≤ V) : k.size ≤ V := (Nat.size_le.mpr Nat.lt_two_pow_self).trans h
+  change _ ≤ 89*V
+  have := sizeBound M mBound
+  have := sizeBound suffix sBound
+  have := sizeBound (w+1) wBound
+  omega
+
+/-- Prepare an allocated child record and call its recursive procedure on
+the live packed payload. All tapes outside this occurrence are preserved. -/
+theorem archiveChildCall_exec [M8.Machine.Net] {T Q : ℕ} {P U : Type}
+    (body : P → Pr P T Q prime U) (f : P) (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T)
+    (headers : Fin 127 → Fin 6 → Fin T) (apart : ∀ i j k, headers i j ≠ ports k) :
+    let localPort := (Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)
+    let bank := localPort.trans ports
+    ∃ code, ∀ (node desc : Descriptor) (w W budget : ℕ),
+    let M := prime^(w+1)
+    let suffix := M^112*W
+    0 < W → ∀ (position : Fin (volume prime desc) ≃ Fin (M^16*suffix))
+      (x : Fin (M^16*suffix) → ZMod 2) (u : HS T Q prime U) (S : Stacks T prime), desc.width < node.width →
+    (∀ i j, S.R (headers i j) = (Routines.hdr (helperAdjacentView (w+1) 1 W i) j).map bitSymbol) →
+    (∀ i : Fin 35, i ≠ 24 → i ≠ 34 → S.L (bank i) = [] ∧ S.R (bank i) = []) →
+    (∀ i : Fin (rowSwapBlock.tapes+35), 35 ≤ i.val → S.L (ports i) = [] ∧ S.R (ports i) = []) →
+    (∀ z, readAt blank (S.L (bank 24)) (S.R (bank 24)) z = RadixToBinary.binaryEncoding.encode
+      (putWord (fun _ => blank) 0 (List.ofFn (SparseRoleCircuit.encode ∘ x)) z)) →
+    ScheduledChildExec node desc w suffix ports (S.R (bank 34)) position body f budget →
+    ∃ z F t y, Exec body code (mk u S) t (mk z F) ∧
+      t ≤ 89*(M^16*suffix)+budget ∧ z.user = u.user ∧
+      RecordReady (b := prime) (w := w) (d := 16) (W := suffix) bank M.size suffix.size (S.R (bank 34))
+        SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0 y F ∧
+      (∀ i : Fin (rowSwapBlock.tapes+35), 35 ≤ i.val → F.L (ports i) = [] ∧ F.R (ports i) = []) ∧
+      (∀ j, (∀ i, ports i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j) ∧
+      ∀ h, y (position h) = Shared50RecursiveNodeRows.transpose (one_dvd desc.rows) (x ∘ position) h := by
+  intro localPort bank
+  obtain ⟨prepare,run⟩ := prepareWorkerRecord_exec body bank headers (fun i j k => apart i j (localPort k))
+  refine ⟨.seq prepare (.call f),?_⟩
+  intro node desc w W budget M suffix pos position x u S smaller ready empty clean payload recurse
+  obtain ⟨v,D,m,user,setup,cost,stored,left,off⟩ := run w W x u S ready empty payload
+  have clear (i : Fin (rowSwapBlock.tapes+35)) (hi : 35 ≤ i.val) : D.L (ports i) = [] ∧ D.R (ports i) = [] := by
+    have outside (k : Fin 35) : bank k ≠ ports i := by
+      intro eq
+      have h := congrArg Fin.val (ports.injective eq)
+      change k.val = i.val at h
+      omega
+    exact ⟨(congrFun left _).trans (clean i hi).1,(off _ outside).trans (clean i hi).2⟩
+  obtain ⟨z,F,n,y,exec,paid,same,done,blank,frame,action⟩ := recurse smaller v D x stored clear
+  refine ⟨z,F,_,y,Exec.seq setup (Exec.call exec),?_,same.trans user,done,blank,?_,action⟩
+  · have bound := workerSetup_volume w W pos
+    change 14*M.size+6*suffix.size+6*(w+1)+11*(w+1).size+52 ≤ 89*(M^16*suffix) at bound
+    change m ≤ 14*M.size+6*suffix.size+6*(w+1)+11*(w+1).size+50 at cost
+    omega
+  · intro j outside
+    have h := frame j outside
+    exact ⟨h.1.trans (congrFun left j),h.2.trans (off j (fun k => outside (localPort k)))⟩
+
 /-- Place two charts around a worker with shared payload and control tapes.
 Only payload slots overlap a chart. Its private slots are disjoint from both
 the worker and the opposite chart. -/

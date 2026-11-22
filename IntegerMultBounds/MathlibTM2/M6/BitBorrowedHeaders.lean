@@ -57,6 +57,145 @@ def borrowedHeaders (T : ℕ) (i : Fin 127) : Fin 6 → Fin (T+273) :=
   let bank := parentArchive T
   helperHeaderPorts i (bank 1) (bank 3) (bank 1) (bank (borrowedArchiveBank i 3)) (bank (borrowedArchiveBank i 4))
 
+/-- Adjacent exchanges at positions 1 and 14 already store the modulus
+and the 112-digit spectator suffix needed by every recursive worker. -/
+theorem loadWorkerDimensions_exec {T Q : ℕ} {P U : Type}
+    (body : P → Pr P T Q prime U) (bank : Fin 35 ↪ Fin T) (headers : Fin 127 → Fin 6 → Fin T)
+    (apart : ∀ i j k, headers i j ≠ bank k) (w W : ℕ)
+    (u : HS T Q prime U) (S : Stacks T prime) :
+    let src : Fin 3 → Fin T := ![headers 1 2,headers 14 5,headers 0 0]
+    let dst : Fin 3 ↪ Fin 35 := ⟨![2,27,28],by decide⟩
+    let M := prime^(w+1)
+    let suffix := M^112*W
+    (∀ i j, S.R (headers i j) =
+      (Routines.hdr (helperAdjacentView (w+1) 1 W i) j).map bitSymbol) →
+    (∀ j ∈ ([0,1,2,27,28] : List (Fin 35)), S.R (bank j) = []) →
+    ∃ z F t, z.user = u.user ∧
+      Exec body (Record.copyLeafHeaders src (dst.trans bank)
+        (bank 0) (bank 1) (List.finRange 3)) (mk u S) t (mk z F) ∧
+      t = 6*(M.size+suffix.size)+25 ∧ F.L = S.L ∧
+      (∀ j, (∀ i, bank i ≠ j) → F.R j = S.R j) ∧
+      F.R (bank 2) = binSyms M.size M ∧ F.R (bank 27) = binSyms suffix.size suffix ∧
+      F.R (bank 28) = binSyms 1 1 ∧
+      ∀ j, (∀ i, dst i ≠ j) → F.R (bank j) = S.R (bank j) := by
+  intro src dst M suffix ready free
+  have separate (i : Fin 3) (k) : src i ≠ bank k := by
+    fin_cases i <;> exact apart _ _ _
+  have ports (i : Fin 3) : [src i,bank (dst i),bank 0,bank 1].Nodup :=
+    List.nodup_cons.mpr ⟨by simp [separate],((by decide : ∀ i, [dst i,0,1].Nodup) i).map bank.injective⟩
+  obtain ⟨z,F,user,run,left,loaded,off⟩ := Record.copyLeafHeaders_exec body
+    src (dst.trans bank) (bank 0) (bank 1) (fun i j => separate i (dst j)) ports
+    (List.finRange 3) (List.nodup_finRange _) u S (free 0 (by decide)) (free 1 (by decide))
+    (fun i _ => free (dst i) ((by decide : ∀ i, dst i ∈ ([0,1,2,27,28] : List (Fin 35))) i))
+  have base : S.R (src 0) = binSyms M.size M := by
+    rw [show src 0 = headers 1 2 from rfl,ready]
+    simpa [Routines.hdr,RecursiveDimensionBank.values,helperAdjacentView,M] using canonicalBits_symbols (A := prime) M
+  have width : S.R (src 1) = binSyms suffix.size suffix := by
+    rw [show src 1 = headers 14 5 from rfl,ready]
+    simpa [Routines.hdr,RecursiveDimensionBank.values,helperAdjacentView,suffix,M] using canonicalBits_symbols (A := prime) suffix
+  have unit : S.R (src 2) = binSyms 1 1 := by
+    rw [show src 2 = headers 0 0 from rfl,ready]
+    exact canonicalBits_symbols 1
+  refine ⟨z,F,_,user,run,?_,left,fun j outside => off _ (fun i _ => outside (dst i)),
+    (loaded 0 (List.mem_finRange _)).trans base,(loaded 1 (List.mem_finRange _)).trans width,
+    (loaded 2 (List.mem_finRange _)).trans unit,fun j h => off _ (fun i _ => bank.injective.ne (h i))⟩
+  change (6*(S.R (src 0)).length+6)+((6*(S.R (src 1)).length+6)+
+    ((6*(S.R (src 2)).length+6)+0))+1 = _
+  rw [base,width,unit]
+  simp only [length_binSyms]
+  omega
+
+/-- Initialize the five dimension and control registers of a recursive
+worker directly from the shared archive, preserving its payload and every other register. -/
+theorem prepareWorkerControls_exec {T Q : ℕ} {P U : Type}
+    (body : P → Pr P T Q prime U) (bank : Fin 35 ↪ Fin T) (headers : Fin 127 → Fin 6 → Fin T)
+    (apart : ∀ i j k, headers i j ≠ bank k) :
+    ∃ code, ∀ w W : ℕ, let M := prime^(w+1)
+    let suffix := M^112*W
+    ∀ (u : HS T Q prime U) (S : Stacks T prime),
+    (∀ i j, S.R (headers i j) =
+      (Routines.hdr (helperAdjacentView (w+1) 1 W i) j).map bitSymbol) →
+    (∀ j ∈ ([0,1,2,3,27,28,32,33] : List (Fin 35)), S.R (bank j) = []) →
+    ∃ z F t, z.user = u.user ∧ Exec body code (mk u S) t (mk z F) ∧
+      t ≤ 14*M.size+6*suffix.size+6*(w+1)+11*(w+1).size+50 ∧ F.L = S.L ∧
+      (∀ j, (∀ i, bank i ≠ j) → F.R j = S.R j) ∧
+      F.R (bank 2) = binSyms M.size M ∧ F.R (bank 27) = binSyms suffix.size suffix ∧
+      F.R (bank 28) = binSyms 1 1 ∧ F.R (bank 32) = binSyms M.size 1 ∧
+      F.R (bank 33) = List.replicate w Node.tick ∧
+      ∀ i : Fin 35, i ∉ [2,27,28,32,33] → F.R (bank i) = S.R (bank i) := by
+  let width := headers 0 3
+  let src : Fin 3 → Fin T := ![headers 1 2,headers 14 5,headers 0 0]
+  let dst : Fin 3 ↪ Fin 35 := ⟨![2,27,28],by decide⟩
+  refine ⟨.seq (Record.copyLeafHeaders src (dst.trans bank) (bank 0) (bank 1)
+    (List.finRange 3)) (.seq (toBinary (bank 28) (bank 2) (bank 32) (bank 0) (bank 1) (bank 3))
+    (.seq (toUnary width (bank 33) (bank 0) (bank 1) (bank 3)) (.act (.pop (.rt (bank 33)) (fun v _ => v) .done)))),?_⟩
+  intro w W M suffix u S ready free
+  obtain ⟨v,D,m,user,load,price,left,keep,base,tail,one,off⟩ := loadWorkerDimensions_exec body bank headers apart w W u S ready
+    (fun j hj => free j ((by decide : ∀ j : Fin 35, j ∈ [0,1,2,27,28] → j ∈ [0,1,2,3,27,28,32,33]) j hj))
+  have bits : D.R width = binSyms (w+1).size (w+1) := by
+    rw [keep width (fun k => (apart 0 3 k).symm),ready]
+    exact canonicalBits_symbols _
+  obtain ⟨z,n,same,bill,controls⟩ := copyRecordControls_exec body bank width (apart 0 3) w v D base one bits
+    (fun i hi => (off i (by
+      have disj : ∀ k : Fin 35, k ∈ [0,1,3,32,33] → ∀ j, dst j ≠ k := by decide
+      exact disj i hi)).trans (free i ((by decide : ∀ i : Fin 35, i ∈ [0,1,3,32,33] → i ∈ [0,1,2,3,27,28,32,33]) i hi)))
+  refine ⟨z,_,m+n,same.trans user,Exec.seq load controls,by dsimp only [suffix,M]; omega,left,?_,?_,?_,?_,?_,?_,?_⟩
+  · intro j outside
+    simpa [Function.update_of_ne (outside 32).symm,Function.update_of_ne (outside 33).symm] using keep j outside
+  · simpa [bank.injective.eq_iff] using base
+  · simpa [bank.injective.eq_iff] using tail
+  · simpa [bank.injective.eq_iff] using one
+  · simp [bank.injective.eq_iff,M]
+  · simp
+  · intro i hi
+    simp only [List.mem_cons,not_or] at hi
+    change Function.update (Function.update D.R (bank 32) (binSyms M.size 1)) (bank 33) (List.replicate w Node.tick) (bank i) = S.R (bank i)
+    rw [Function.update_of_ne (bank.injective.ne hi.2.2.2.2.1),Function.update_of_ne (bank.injective.ne hi.2.2.2.1)]
+    apply off
+    intro j
+    fin_cases j <;> first | exact Ne.symm hi.1 | exact Ne.symm hi.2.1 | exact Ne.symm hi.2.2.1
+
+/-- The archive initializer supplies exactly the sixteen-digit record contract
+of scheduled MOVE and COPY. Both the live payload and saved record survive. -/
+theorem prepareWorkerRecord_exec {T Q : ℕ} {P U : Type}
+    (body : P → Pr P T Q prime U) (bank : Fin 35 ↪ Fin T) (headers : Fin 127 → Fin 6 → Fin T)
+    (apart : ∀ i j k, headers i j ≠ bank k) :
+    ∃ code, ∀ w W : ℕ, let M := prime^(w+1)
+    let suffix := M^112*W
+    ∀ (x : Fin (M^16*suffix) → ZMod 2) (u : HS T Q prime U) (S : Stacks T prime),
+    (∀ i j, S.R (headers i j) =
+      (Routines.hdr (helperAdjacentView (w+1) 1 W i) j).map bitSymbol) →
+    (∀ i : Fin 35, i ≠ 24 → i ≠ 34 → S.L (bank i) = [] ∧ S.R (bank i) = []) →
+    (∀ z, readAt blank (S.L (bank 24)) (S.R (bank 24)) z = RadixToBinary.binaryEncoding.encode
+      (putWord (fun _ => blank) 0 (List.ofFn (SparseRoleCircuit.encode ∘ x)) z)) →
+    ∃ z F t, z.user = u.user ∧ Exec body code (mk u S) t (mk z F) ∧
+      t ≤ 14*M.size+6*suffix.size+6*(w+1)+11*(w+1).size+50 ∧
+      RecordReady (b := prime) (w := w) (d := 16) (W := suffix) bank M.size suffix.size (S.R (bank 34))
+        SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0 x F ∧
+      F.L = S.L ∧ ∀ j, (∀ i, bank i ≠ j) → F.R j = S.R j := by
+  obtain ⟨code,run⟩ := prepareWorkerControls_exec body bank headers apart
+  refine ⟨code,?_⟩
+  intro w W M suffix x u S ready empty payload
+  obtain ⟨z,F,t,user,exec,bill,left,keep,base,tail,one,padded,clock,off⟩ := run w W u S ready
+    (fun i hi => by
+      have h := (by decide : ∀ i : Fin 35, i ∈ [0,1,2,3,27,28,32,33] → i ≠ 24 ∧ i ≠ 34) i hi
+      exact (empty i h.1 h.2).2)
+  have modulus : (1 : ZMod M).val = 1 := ZMod.val_one'' (Nat.ne_of_gt
+    (Shared50ModularControl.prime_prime.one_lt.trans_le (Nat.le_self_pow (by omega : w+1 ≠ 0) prime)))
+  refine ⟨z,F,t,user,exec,bill,⟨base,tail,one,?_,?_,off 34 (by decide),?_,?_,?_⟩,left,keep⟩
+  · simpa only [modulus] using padded
+  · rw [clock,List.length_replicate]
+  · intro i hi
+    have h := (by decide : ∀ i ∈ shearWork, i ∉ ([2,27,28,32,33] : List (Fin 35)) ∧ i ≠ 24 ∧ i ≠ 34) i hi
+    rw [left,off i h.1]
+    exact empty i h.2.1 h.2.2
+  · have h : F.R (bank 24) = S.R (bank 24) := off 24 (by decide)
+    simpa only [left,h,sub_zero] using payload
+  · intro j
+    have h : F.R (bank 25) = [] := (off 25 (by decide)).trans (empty 25 (by decide) (by decide)).2
+    simp [left,h,empty 25 (by decide) (by decide),readAt]
+    rfl
+
 /-- The setup bank shares the archive suffix with the stage. Its own source
 registers precede the stage, whose worker tapes and leaf scratch are disjoint. -/
 def archiveSetupPlacement (R T L : ℕ) : Fin (R+273) ↪ Fin (R+((T+273)+L)) :=

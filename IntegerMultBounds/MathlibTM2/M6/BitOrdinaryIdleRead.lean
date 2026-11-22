@@ -1237,44 +1237,43 @@ private theorem disjointStackBanks {t m n T a : ℕ} (p : Fin t ↪ Fin T) (q : 
   · intro j
     simp [all,embExt_off _ _ (fun i => pr i j),embExt_off _ _ (fun i => qr i j),embExt_apply r.injective]
 
+/-- The basis workspace needs only its two marked binary headers. The caller
+holds the payload, so all other private tapes start empty. -/
+noncomputable def basisHeaderStacks (stages : List (FlatCoordinateSchedule.Op 16)) (w W : ℕ) :
+    Stacks (FlatCoordinateCleanSchedule.tapeCount stages) prime :=
+  ⟨[],[],fun i => if i.val = 2 ∨ i.val = 3 then [separator] else [],
+    fun i => if i.val = 2 then (FlatCoordinateSchedule.bits w).map bitSymbol
+      else if i.val = 3 then (FlatCoordinateSchedule.bits W).map bitSymbol else []⟩
+
 open Cover.Fallback SharedPlacementAlphabet in
-/-- Concrete host stacks for a basis pass, with the payload kept on the caller's tape. -/
-private theorem basisWorkspaceStacks {w W : ℕ} (stages : List (FlatCoordinateSchedule.Op 16))
+theorem basisHeaderStacks_rep {w W : ℕ} (stages : List (FlatCoordinateSchedule.Op 16))
     (x : Fin ((prime^w)^16*W) → ZMod 2) :
-    ∃ S : Stacks (FlatCoordinateCleanSchedule.tapeCount stages) prime, RepT (basisWorkspace (w := w) (W := W) stages x) S.L S.R := by
-  classical
-  let bits := fun i => SparseRoleCircuit.encode (a := 0) (x i)
-  let common := FlatCoordinateShiftSharedBank.common (d := 16) (b := w) (W := W) bits
-  have four (i : Fin 4) : ∃ L R, ∀ z, common.tape i z = readAt blank L R (z-common.head i) := by
-    change Fin (2+2) at i
-    induction i using Fin.addCases with
-    | left i =>
-      simp only [common,FlatCoordinateShiftSharedBank.common,Tapes.append,Fin.addCases_left]
-      fin_cases i
-      · refine ⟨[],payloadWord bits,fun z => ?_⟩
-        change M8.AtomBank.arrTape bits z = readAt blank [] _ (z-0)
-        simpa only [sub_zero] using payload_reads bits z
-      · refine ⟨[],[],fun z => ?_⟩
-        change blank = readAt blank [] [] (z-0)
+    let S := basisHeaderStacks stages w W
+    RepT (basisWorkspace stages x) S.L S.R := by
+  intro S i z
+  by_cases src : i = segmentSource stages
+  · subst i
+    simp [basisWorkspace,setTape,S,basisHeaderStacks,segmentSource,readAt_nil_left,wordTape_nil]
+  · by_cases h : i.val < 4
+    · simp only [basisWorkspace,setTape,Function.update_of_ne src,SharedBankStageInput.raw,dite_eq_left h]
+      have nz : i.val ≠ 0 := fun eq => src (Fin.ext eq)
+      let j : Fin 4 := ⟨i.val,h⟩
+      have cases : j = 1 ∨ j = 2 ∨ j = 3 := by simp only [Fin.ext_iff]; dsimp [j]; omega
+      change (FlatCoordinateShiftSharedBank.common _).tape j z = _
+      rcases cases with eq | eq | eq
+      all_goals have val := congrArg Fin.val eq
+      all_goals simp only [j] at val
+      all_goals simp only [S,basisHeaderStacks,val]
+      all_goals rw [eq]
+      · change blank = readAt blank [] [] (z-0)
         simp [readAt_nil_left,wordTape_nil]
-    | right i =>
-      simp only [common,FlatCoordinateShiftSharedBank.common,Tapes.append,Fin.addCases_right]
-      have header (bs : List Bool) (z : ℤ) : RadixZeroFill.encodedBinary (q := prime) bs z =
-          readAt blank [separator] (bs.map bitSymbol) (z-1) := by rw [encodedBinary_eq,readAt_single]
-      fin_cases i
-      · exact ⟨_,_,header (FlatCoordinateSchedule.bits w)⟩
-      · exact ⟨_,_,header (FlatCoordinateSchedule.bits W)⟩
-  have tape (i : Fin (FlatCoordinateCleanSchedule.tapeCount stages)) :
-      ∃ L R, ∀ z, (basisWorkspace (w := w) (W := W) stages x).tape i z = readAt blank L R (z-(basisWorkspace (w := w) (W := W) stages x).head i) := by
-    by_cases src : i = segmentSource stages
-    · exact ⟨[],[],fun z => by simp [basisWorkspace,setTape,src,readAt_nil_left,wordTape_nil]⟩
-    · by_cases h : i.val < 4
-      · simp only [basisWorkspace,setTape,Function.update_of_ne src,SharedBankStageInput.raw,dite_eq_left h]
-        exact four ⟨i.val,h⟩
-      · exact ⟨[],[],fun z => by simp [basisWorkspace,setTape,Function.update_of_ne src,SharedBankStageInput.raw,h,
-          readAt_nil_left,wordTape_nil]⟩
-  choose L R rep using tape
-  exact ⟨⟨[],[],L,R⟩,rep⟩
+      all_goals change RadixZeroFill.encodedBinary _ z = readAt blank [separator] _ (z-1)
+      all_goals rw [encodedBinary_eq,readAt_single]
+      all_goals rfl
+    · have h2 : i.val ≠ 2 := by omega
+      have h3 : i.val ≠ 3 := by omega
+      simp [basisWorkspace,setTape,Function.update_of_ne src,SharedBankStageInput.raw,h,S,basisHeaderStacks,
+        h2,h3,readAt_nil_left,wordTape_nil]
 
 open M8.RevMachine RecursiveInterchangeLayout SharedPlacementAlphabet Cover.Fallback in
 theorem copyChartStacks (v : Descriptor) (d : Fin 22 → Option (List Bool)) (k t : ℕ) :
@@ -1364,8 +1363,10 @@ private theorem basisRecordSeed [M8.Machine.Net] {w W T : ℕ}
       ∀ l : Fin (rowSwapBlock.tapes+35), 35 ≤ l.val → D.L (ports l) = [] ∧ D.R (ports l) = [] := by
   intro recordPort srcA srcB apart privateB view size record dest q L R readDest bank M stored input
   obtain ⟨X,recX,freeX⟩ := moveRecordStacks (w := w) (W := W) record dest q L R readDest
-  obtain ⟨Y,repY⟩ := basisWorkspaceStacks (w := w+1) (W := W) A 0
-  obtain ⟨Z,repZ⟩ := basisWorkspaceStacks (w := w+1) (W := W) B' 0
+  let Y := basisHeaderStacks A (w+1) W
+  have repY := basisHeaderStacks_rep (w := w+1) (W := W) A 0
+  let Z := basisHeaderStacks B' (w+1) W
+  have repZ := basisHeaderStacks_rep (w := w+1) (W := W) B' 0
   let pa := (Fin.natAddEmb 1).trans a
   let pb := (Fin.natAddEmb 1).trans b
   have paOff (i j) : ports i ≠ pa j := by
