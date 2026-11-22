@@ -16,7 +16,7 @@ theorem sweepGeneratedBlock_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q
     (rankPool : Fin ((sweepBinaryRankCode.depth+1)*13) ↪ Fin T) (coordPool : Fin ((sweepCoordDepth+1)*13) ↪ Fin T)
     (disjoint : ∀ i j, coordPool i ≠ rankPool j) (off : ∀ i j, p i ≠ pool j)
     (hr : ∀ i j, p i ≠ rankPool j) (hc : ∀ i j, p i ≠ coordPool j)
-    (rg : BinaryMaskReg ↪ Fin T) (g : Fin 10 ↪ Fin T) (maskOff : ∀ i j, p i ≠ rg j)
+    (rg : BinaryMaskReg ↪ Fin T) (g : Fin 10 ↪ Fin T) (maskOff : ∀ i ∈ ([1,2,22,28] : List (Fin 39)), ∀ j, p i ≠ rg j)
     (outOff : ∀ j, g 0 ≠ p j) (gOff : ∀ i, g i ≠ p 22 ∧ g i ≠ p 28) (outMask : ∀ j, g 0 ≠ rg j) (n : Fin 9) (role : Role) :
     ∃ (program : Pr P T Q prime U) (C : ℕ), ∀ (w H : ℕ) (parent : Fin 64 → ZMod (prime^(w+1)))
       (units : ∀ i, IsUnit (parent i)) (archiveTail : List (Fin (prime+4))) (v : HS T Q prime U) (S : Stacks T prime),
@@ -42,7 +42,7 @@ theorem sweepGeneratedBlock_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q
   obtain ⟨I,build⟩ := sweepPlacedMatrices_exec body
   obtain ⟨setup,prepare⟩ := build p pool off n role
   obtain ⟨permute,K,block⟩ := sweepPhysicalBlock_exec body base rankPool coordPool disjoint
-    (fun i => hr _) (fun i => hc _) rg g (fun i => maskOff _) (fun i => outOff _) outMask n role
+    (fun i => hr _) (fun i => hc _) rg g (fun i hi => maskOff _ (by decide +revert)) (fun i => outOff _) outMask n role
   refine ⟨.seq setup (.seq permute (.seq (bclear (p 22)) (bclear (p 28)))),I+K+32772,?_⟩
   intro w H parent units archiveTail v S M N fits field ticks counter digits exponent bits clock rankWord modulus zeroWord oneWord
     radix size archive blank poolFree rankFree coordFree ready W rows tail sizes data count record empty fresh
@@ -55,7 +55,7 @@ theorem sweepGeneratedBlock_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q
   have keep (i) (a : i ≠ p 22) (b : i ≠ p 28) : B.R i = S.R i := by simp [B,a,b]
   have slot (i : Fin 39) (a : i ≠ 22) (b : i ≠ 28) := keep (p i) (p.injective.ne a) (p.injective.ne b)
   have gather i := keep (g i) (gOff i).1 (gOff i).2
-  have mask i := keep (rg i) (maskOff 22 i).symm (maskOff 28 i).symm
+  have mask i := keep (rg i) (maskOff 22 (by decide) i).symm (maskOff 28 (by decide) i).symm
   have read (i : Fin 39) (a : i ≠ 22) (b : i ≠ 28) := congrArg List.length (slot i a b)
   obtain ⟨y,l,hy,hl,run⟩ := block (w+1) H parent units [] u B (by omega) fits
     ((read 7 (by decide) (by decide)).trans ticks) ((slot 0 (by decide) (by decide)).trans counter)

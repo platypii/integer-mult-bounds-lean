@@ -15,7 +15,7 @@ theorem sweepPhysicalBlock_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q 
     (coordPool : Fin ((sweepCoordDepth+1)*13) ↪ Fin T)
     (disjoint : ∀ i j, coordPool i ≠ rankPool j)
     (hr : ∀ i j, p i ≠ rankPool j) (hc : ∀ i j, p i ≠ coordPool j)
-    (rg : BinaryMaskReg ↪ Fin T) (g : Fin 10 ↪ Fin T) (maskOff : ∀ i j, p i ≠ rg j)
+    (rg : BinaryMaskReg ↪ Fin T) (g : Fin 10 ↪ Fin T) (maskOff : ∀ i ∈ ([1,2] : List (Fin 37)), ∀ j, p i ≠ rg j)
     (outOff : ∀ i, g 0 ≠ p i) (outMask : ∀ j, g 0 ≠ rg j) (n : Fin 9) (role : Role) :
     ∃ (program : Pr P T Q prime U) (C : ℕ), ∀ (w H : ℕ) (parent : Fin 64 → ZMod (prime^w))
       (units : ∀ i, IsUnit (parent i)) (suffix : List (Fin (prime+4))) (v : HS T Q prime U) (S : Stacks T prime),

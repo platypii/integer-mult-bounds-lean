@@ -15,7 +15,7 @@ theorem sweepPhysicalMasks_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q 
     (coordPool : Fin ((sweepCoordDepth+1)*13) ↪ Fin T)
     (disjoint : ∀ i j, coordPool i ≠ rankPool j)
     (hr : ∀ i j, p i ≠ rankPool j) (hc : ∀ i j, p i ≠ coordPool j)
-    (rg : BinaryMaskReg ↪ Fin T) (out : Fin T) (maskOff : ∀ i j, p i ≠ rg j)
+    (rg : BinaryMaskReg ↪ Fin T) (out : Fin T) (maskOff : ∀ i ∈ ([1,2] : List (Fin 37)), ∀ j, p i ≠ rg j)
     (outOff : ∀ i, out ≠ p i) (outMask : ∀ j, out ≠ rg j) (n : Fin 9) (role : Role) :
     ∃ (program : Pr P T Q prime U) (C : ℕ), ∀ (w H : ℕ) (parent : Fin 64 → ZMod (prime^w))
       (units : ∀ i, IsUnit (parent i)) (suffix : List (Fin (prime+4))) (v : HS T Q prime U) (S : Stacks T prime),
@@ -65,9 +65,9 @@ theorem sweepPhysicalMasks_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q 
     · simp [F,movedR,h₇,h₈,h₂,keep i h₇ h₈ h₂]
   change Exec _ _ _ (2*(R (p 8)).length+2) (mk y {S with R := movedR R (p 8) (p 7) id (R (p 8))}) at rewind
   rw [restore,stock,saved,List.append_nil,List.length_reverse,ticks] at rewind
-  have same i : F.R (rg i) = S.R (rg i) := Function.update_of_ne (maskOff 2 i).symm _ _
+  have same i : F.R (rg i) = S.R (rg i) := Function.update_of_ne (maskOff 2 (by decide) i).symm _ _
   obtain ⟨z,l,hz,hl,compile⟩ := compileSweepBuffer_exec body rg (p 2) (p 1) out
-    (by simp [List.nodup_cons,Ne.symm (outOff 1),Ne.symm (outOff 2)]) (maskOff 1) (maskOff 2) outMask H fits perm y F
+    (by simp [List.nodup_cons,Ne.symm (outOff 1),Ne.symm (outOff 2)]) (maskOff 1 (by decide)) (maskOff 2 (by decide)) outMask H fits perm y F
     ⟨(same _).trans ready.width,fun i hi => (same i).trans (ready.blank i hi)⟩
     (by simpa [F] using blank 1 (by decide)) (Function.update_self ..)
   refine ⟨perm,z,k+(2*M+2+l),correct,hz.trans (hy.trans hu),?_,Exec.seq run (Exec.seq rewind ?_)⟩
