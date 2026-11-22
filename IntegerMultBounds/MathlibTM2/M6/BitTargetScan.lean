@@ -352,6 +352,15 @@ noncomputable def scanCounters {T Q : ℕ} {P U : Type} (bank : Fin 8 ↪ Fin T)
 def scanCounterCost (dims : Fin 3 → ℕ) :=
   ((List.finRange 3).map (fun i => 8*(FlatCoordinateSchedule.bits (dims i)).length+8)).sum+2
 
+theorem scanCounterCost_le {K N D V : ℕ} (k : K ≤ V) (n : N ≤ V) (d : D ≤ V) (pos : 0 < V) :
+    scanCounterCost ![K,N,D] ≤ 74*V := by
+  change (8*(FlatCoordinateSchedule.bits K).length+8)+
+    ((8*(FlatCoordinateSchedule.bits N).length+8)+((8*(FlatCoordinateSchedule.bits D).length+8)+0))+2 ≤ _
+  have := FlatCoordinateDimensions.bits_length_le_twice k pos
+  have := FlatCoordinateDimensions.bits_length_le_twice n pos
+  have := FlatCoordinateDimensions.bits_length_le_twice d pos
+  omega
+
 private theorem scanCounters_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
     (bank : Fin 8 ↪ Fin T) (src : Fin 3 → Fin T) (apart : ∀ i j, src i ≠ bank j)
     (K N D : ℕ) (v : HS T Q prime U) (S : Stacks T prime)
@@ -401,13 +410,7 @@ theorem stageScanCost_le (targets K N D : ℕ) (hk : 0 < K) (hn : 0 < N) (hd : 0
   have cross := (Nat.mul_le_mul (size D) (size K)).trans dk
   have sq : D.size*D.size ≤ 4*V := by
     simpa only [pow_two] using (Cover.Fallback.size_square_le D hd).trans (Nat.mul_le_mul_left 4 d)
-  have headers : scanCounterCost ![K,N,D] ≤ 74*V := by
-    change (8*(FlatCoordinateSchedule.bits K).length+8)+
-      ((8*(FlatCoordinateSchedule.bits N).length+8)+((8*(FlatCoordinateSchedule.bits D).length+8)+0))+2 ≤ _
-    have := FlatCoordinateDimensions.bits_length_le_twice k pos
-    have := FlatCoordinateDimensions.bits_length_le_twice n pos
-    have := FlatCoordinateDimensions.bits_length_le_twice d pos
-    omega
+  have headers := scanCounterCost_le k n d pos
   have ds := (size D).trans d
   have ks := (size K).trans k
   have each : 3900*V+6+(8*(D*K)+11*(D.size+K.size)+8)+scanCounterCost ![K,N,D] ≤ 4300*V := by omega
@@ -628,6 +631,12 @@ def StageControls {T : ℕ} (fan : Fin (142081+2) ↪ Fin T) (V : ℕ) (S : Stac
 def StageDimensionWords {T : ℕ} (src : Fin 3 → Fin T) (K N D : ℕ) (S : Stacks T prime) : Prop :=
   ∀ i, S.L (src i) = [separator] ∧ S.R (src i) = binSyms (![K,N,D] i).size (![K,N,D] i)
 
+theorem StageDimensionWords.read {T K N D : ℕ} {src : Fin 3 → Fin T} {S : Stacks T prime}
+    (h : StageDimensionWords src K N D S) (i : Fin 3) (z : ℤ) :
+    readAt blank (S.L (src i)) (S.R (src i)) (z-1) =
+      RadixZeroFill.encodedBinary (FlatCoordinateSchedule.bits (![K,N,D] i)) z := by
+  rw [(h i).1,(h i).2,← Cover.Fallback.canonicalBits_symbols,encodedBinary_eq,readAt_single]
+
 /-- Run the packed stage on its original tapes, then scan the restored owners.
 The additional shared tapes hold the three dimensions and arithmetic workspace. -/
 theorem packedStageTargets_host (n : Fin 9) :
@@ -750,7 +759,8 @@ private def padDimensionPort : Fin 3 ↪ Fin 12 :=
 and install the one-row counter. All six scratch tapes are returned empty. -/
 theorem prepareOwnerPad_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
     (bank : Fin 12 ↪ Fin T) (src : Fin 3 → Fin T) (apart : ∀ i j, src i ≠ bank j) :
-    ∃ code, ∀ K N D u S, StageDimensionWords src K N D S →
+    ∃ code, ∀ K N D u S, (∀ i z, readAt blank (S.L (src i)) (S.R (src i)) (z-1) =
+        RadixZeroFill.encodedBinary (FlatCoordinateSchedule.bits (![K,N,D] i)) z) →
       (∀ j : Fin 12, 2 ≤ j.val → S.L (bank j) = [] ∧ S.R (bank j) = []) →
       ∃ v F, Exec body code (mk u S) (scanCounterCost ![K,N,D]+1) (mk v F) ∧ v.user = u.user ∧
         (∀ j : Fin 12, 2 ≤ j.val → ∀ z, (ownerPadFrame D N K).tape j z =
@@ -767,8 +777,7 @@ theorem prepareOwnerPad_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q pri
     exact List.nodup_cons.mpr ⟨by simp [dst,apart],nd⟩
   obtain ⟨v,A,user,load,left,loaded,off⟩ := loadDimensions_exec body src dst (bank 6)
     (fun i => FlatCoordinateSchedule.bits (![K,N,D] i)) (fun i j => apart i _) ports _
-    (List.nodup_finRange 3) u S (fun i z => by
-      rw [(stored i).1,(stored i).2,← Cover.Fallback.canonicalBits_symbols,encodedBinary_eq,readAt_single])
+    (List.nodup_finRange 3) u S stored
     (free 6 (by decide)) (fun i _ => (free _ ((by decide : ∀ i, 2 ≤ (padDimensionPort i).val) i)).2)
   have nd : markers.Nodup := (by decide : ([2,3,4,5] : List (Fin 12)).Nodup).map bank.injective
   have mark := Exec.act (body := body) (Cover.Fallback.pushMarkers markers) (mk v A)
@@ -1274,7 +1283,7 @@ private theorem setupStagePorts {T Q : ℕ} {P U : Type} (fan : Fin (142081+2) �
       (port 0 j).val = T+142081*7+142081+(j.val-2) := by
     change (if j.val = 0 then _ else if j.val = 1 then _ else _) = _
     rw [ite_eq_right (by omega),ite_eq_right (by omega)]
-  obtain ⟨v₀,C₀,make,user₀,ready,off⟩ := prepare K N D u S dims
+  obtain ⟨v₀,C₀,make,user₀,ready,off⟩ := prepare K N D u S dims.read
     (fun j hj => fresh _ (by rw [auxIndex j hj]; omega))
   have kept (j : Fin ((T+142081*7)+142081+10)) (bound : j.val < T+142081*7+142081) :=
     off j (fun i hi eq => by have h := congrArg Fin.val eq; rw [auxIndex i hi] at h; omega)
