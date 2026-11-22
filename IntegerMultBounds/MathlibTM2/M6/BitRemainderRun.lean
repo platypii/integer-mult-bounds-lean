@@ -2240,6 +2240,137 @@ theorem inheritedRowPlacement_read [M8.Machine.Net] {k : ℕ} (src : Fin k) :
       exact (ih (move v s) digits).trans (single v s _)
   simpa only [swap,inheritedRowSwap_schedule,Function.comp_def] using fold (List.finRange 128) (data src) x
 
+section
+local instance (w : ℕ) : NeZero (prime^w) := ⟨pow_ne_zero _ Shared50ModularControl.prime_prime.ne_zero⟩
+
+/-- The chart sees the external field rank as its outer row and the block
+as its label prefix. Thus chart transport uses the inherited owner offset. -/
+private theorem inheritedChart_general {n m w B K : ℕ} {x y : ℕ → ZMod 2}
+    {f : LabelPadding.Label m w → LabelPadding.Label m w} :
+    let M := prime^w
+    let v : Descriptor := ⟨M^n,1,B*prime^(m*(w*m)),0,1,K⟩
+    LabelPermutation.Transport v B w f x y →
+    ∀ (digits : Fin n ⊕ Fin (m*m) → ZMod M) (b : Fin B) (t : Fin K),
+      let g : LabelPadding.Label m w := fun r i => digits (.inr (finProdFinEquiv (i,r)))
+      let out := Sum.elim (digits ∘ Sum.inl) (M8.AtomOps.refine (Route.cols (f g)))
+      let cell := fun (z : Fin n ⊕ Fin (m*m) → ZMod M) =>
+        (((FlatCoordinateLayout.rank (z ∘ Sum.inl)).val*B+b.val)*M^(m*m)+(FlatCoordinateLayout.rank (z ∘ Sum.inr)).val)*K+t.val
+      y (cell out) = x (cell digits) := by
+  intro M v run digits b t g out cell
+  let field := FlatCoordinateLayout.rank (digits ∘ Sum.inl)
+  have same : M8.AtomOps.refine (Route.cols g) = digits ∘ Sum.inr := by
+    funext j
+    obtain ⟨⟨i,r⟩,rfl⟩ := (@finProdFinEquiv m m).surjective j
+    simp [M8.AtomOps.refine,Route.cols,g]
+  have radix : prime^(m*(w*m)) = M^(m*m) := by
+    dsimp [M]; rw [← pow_mul]; congr 1; ring
+  have read := run g field.val field.isLt 0 Nat.zero_lt_one b.val b.isLt 0 (by simp [v])
+    0 Nat.zero_lt_one 0 (by simp [v]) t.val t.isLt
+  have left : out ∘ Sum.inl = digits ∘ Sum.inl := rfl
+  have right : out ∘ Sum.inr = M8.AtomOps.refine (Route.cols (f g)) := rfl
+  simp only [cell,left,right]
+  simp only [RecursiveInterchangeLayout.index,v,radix,field,LabelAddress.address,same,
+    pow_zero,Nat.mul_one,Nat.add_zero] at read
+  have join (a n z : ℕ) : a*(B*n)+(b.val*n+z) = (a*B+b.val)*n+z := by ring
+  simp only [join] at read
+  exact read
+
+/-- The chart sees the external field rank as its outer row and the block
+as its label prefix. Thus chart transport uses the inherited owner offset. -/
+theorem inheritedChart_read {w B K : ℕ} {x y : ℕ → ZMod 2}
+    {f : LabelPadding.Label 64 w → LabelPadding.Label 64 w} :
+    let M := prime^w
+    let v : Descriptor := ⟨M^128,1,B*prime^(64*(w*64)),0,1,K⟩
+    LabelPermutation.Transport v B w f x y →
+    ∀ (digits : Fin 128 ⊕ Fin (64*64) → ZMod M) (b : Fin B) (t : Fin K),
+      let g : LabelPadding.Label 64 w := fun r i => digits (.inr (finProdFinEquiv (i,r)))
+      let out := Sum.elim (digits ∘ Sum.inl) (M8.AtomOps.refine (Route.cols (f g)))
+      y (inheritedDigitCell out b t) = x (inheritedDigitCell digits b t) := inheritedChart_general (n := 128) (m := 64)
+
+/-- Both placements and the intervening chart read the same physical block
+and trailing position throughout the three stages. -/
+theorem inheritedPlacedChart_read {w B K : ℕ} {x p q y : ℕ → ZMod 2}
+    {f : LabelPadding.Label 64 w → LabelPadding.Label 64 w} :
+    let M := prime^w
+    let v : Descriptor := ⟨M^128,1,B*prime^(64*(w*64)),0,1,K⟩
+    let placement := fun (u v : ℕ → ZMod 2) => ∀ (d : Fin 128 ⊕ Fin (64*64) → ZMod M)
+      (b : Fin B) (t : Fin K), v (inheritedDigitCell d b t) = u (inheritedDigitCell (d ∘ remainderRowPlacement) b t)
+    placement x p → LabelPermutation.Transport v B w f p q → placement q y →
+    ∀ (digits : Fin 128 ⊕ Fin (64*64) → ZMod M) (b : Fin B) (t : Fin K),
+      let parked := digits ∘ remainderRowPlacement
+      let g : LabelPadding.Label 64 w := fun r i => parked (.inr (finProdFinEquiv (i,r)))
+      let charted := Sum.elim (parked ∘ Sum.inl) (M8.AtomOps.refine (Route.cols (f g)))
+      y (inheritedDigitCell (charted ∘ remainderRowPlacement) b t) = x (inheritedDigitCell digits b t) := by
+  intro M v placement enter chart back digits b t parked g charted
+  have twice (d : Fin 128 ⊕ Fin (64*64) → ZMod M) :
+      (d ∘ remainderRowPlacement) ∘ remainderRowPlacement = d := by
+    funext j
+    exact congrArg d (remainderRowPlacement.symm_apply_apply j)
+  have leave := back (charted ∘ remainderRowPlacement) b t
+  rw [twice] at leave
+  have start := enter (digits ∘ remainderRowPlacement) b t
+  rw [twice] at start
+  exact leave.trans ((inheritedChart_read chart parked b t).trans start)
+
+/-- Execute a chart between the two inherited placements, on the same owner
+tape and at every block index. Both joins and all crossing headers are charged. -/
+theorem inheritedPlacedChart_stage [M8.Machine.Net] {k : ℕ} (src : Fin k)
+    (c : PortCertificate) (hc : c.Checked) (inverse : Bool) :
+    ∃ C : ℝ, ∀ w B K : ℕ, 0 < w → 0 < B → 0 < K →
+      let M := prime^w
+      let V := M^128*B*M^(64*64)*K
+      let H := c.fullChart.submatrix stageAxis.symm remainderAxis
+      let σ := reduce M (if inverse then H.transpose else H)
+      ∃ stage : SharedBankStage.Stage _ k prime (phaseOwners (N := V)),
+        (stage.cost : ℝ) ≤ C*V*(w : ℝ)^M8.Machine.BudgetBound.tau ∧
+        ∀ data, (∀ j, j ≠ src → stage.transform data j = data j) ∧
+          ∀ (digits : Fin 128 ⊕ Fin (64*64) → ZMod M) (b : Fin B) (t : Fin K),
+            let parked := digits ∘ remainderRowPlacement
+            let g : LabelPadding.Label 64 w := fun r i => parked (.inr (finProdFinEquiv (i,r)))
+            let charted := Sum.elim (parked ∘ Sum.inl) (M8.AtomOps.refine (Route.cols (g*σ)))
+            ext (stage.transform data src) (inheritedDigitCell (charted ∘ remainderRowPlacement) b t) =
+              ext (data src) (inheritedDigitCell digits b t) := by
+  obtain ⟨P,place⟩ := inheritedRowPlacement_read src
+  obtain ⟨A,_,chart⟩ := remainderChart_stage src c hc inverse
+  obtain ⟨Q,bound⟩ := scaledRoute_cost_bound A 63 64 (by decide)
+  refine ⟨2*P+Q+2,?_⟩
+  intro w B K hw hb hk M V H σ
+  let v : Descriptor := ⟨M^128,1,B*prime^(64*(w*64)),0,1,K⟩
+  have pos : v.Positive := ⟨pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _,
+    Nat.zero_lt_one,Nat.mul_pos hb (pow_pos Shared50ModularControl.prime_prime.pos _),Nat.zero_lt_one,hk⟩
+  have radix : prime^(64*(w*64)) = M^(64*64) := by
+    dsimp [M]; rw [← pow_mul]; congr 1; ring
+  have size : volume prime v = V := by
+    simp only [volume,v,V,radix,pow_zero,mul_one]; ring
+  let spec := fun N => ∃ stage : SharedBankStage.Stage _ k prime (phaseOwners (N := N)),
+    stage.cost = A*N+63*LeafCore.coreCost N (w*64) ∧
+    ∀ data, (∀ j, j ≠ src → stage.transform data j = data j) ∧
+      LabelPermutation.Transport v B w (fun g => g*σ) (ext (data src)) (ext (stage.transform data src))
+  have supplied : spec (volume prime v) := by
+    obtain ⟨stage,_,bill,_,reads⟩ := chart v w B hw hb rfl pos
+    exact ⟨stage,bill,reads⟩
+  rw [size] at supplied
+  obtain ⟨middle,costEq,transport⟩ := supplied
+  obtain ⟨swap,paid,placed⟩ := place w B K hw hb hk
+  refine ⟨SharedBankStage.compose (SharedBankStage.compose swap middle) swap,?_,?_⟩
+  · change ((swap.cost+middle.cost+1+swap.cost+1 : ℕ) : ℝ) ≤ _
+    have bill := bound V w hw
+    rw [← costEq] at bill
+    have hv : 0 < V := size ▸ RecursiveAffinePrepare.volume_positive Shared50ModularControl.prime_prime.two_le v pos
+    have one : 1 ≤ (V : ℝ)*(w : ℝ)^M8.Machine.BudgetBound.tau :=
+      one_le_mul_of_one_le_of_one_le (by exact_mod_cast hv)
+        (Real.one_le_rpow (by exact_mod_cast hw) M8.Machine.BudgetBound.exponent_range.1.le)
+    push_cast
+    linarith only [bill,paid,one]
+  · intro data
+    obtain ⟨off,enter⟩ := placed data
+    obtain ⟨keep,run⟩ := transport (swap.transform data)
+    obtain ⟨outside,back⟩ := placed (middle.transform (swap.transform data))
+    exact ⟨fun j hj => (outside j hj).trans ((keep j hj).trans (off j hj)),
+      inheritedPlacedChart_read (w := w) (B := B) (K := K) (f := fun g => g*σ) (x := ext (data src)) (p := ext (swap.transform data src)) (q := ext (middle.transform (swap.transform data) src)) (y := ext (swap.transform (middle.transform (swap.transform data)) src)) enter run back⟩
+
+end
+
 /-- Both directions of the scheduled chart act on the packed record word consumed by the parent. -/
 theorem packedRemainderChart_stage [M8.Machine.Net] {k : ℕ} (src : Fin k) (c : PortCertificate)
     (hc : c.Checked) (inverse : Bool) :
