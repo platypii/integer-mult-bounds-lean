@@ -128,10 +128,10 @@ theorem correctedNodeStage_exec [M8.Machine.Net] :
             let addr := fun v => nodeWindowEquiv w B W parent units (b,windowState w v,j)
             readRoles addr (nodeArray parent units n (leave.transform y)) =
               (Piece.stage n).run (readRoles addr x) := by
-  obtain ⟨C,correct⟩ := correctedSweep_read
+  obtain ⟨C,_,correct⟩ := correctedSweep_read
   refine ⟨C,?_⟩
   intro n w B W hw size V
-  obtain ⟨enter,leave,paid,acts⟩ := correct n w B W hw size
+  obtain ⟨enter,leave,_,_,paid,acts⟩ := correct n w B W hw size
   refine ⟨enter,leave,paid,?_⟩
   intro parent units P U t q body code src dst prepared price post run x u S entry live frame
   obtain ⟨z,F,steps,packed,out,exec,cost,user,ready,trace,done⟩ := run _ u S live frame

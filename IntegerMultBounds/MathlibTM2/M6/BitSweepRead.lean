@@ -189,11 +189,12 @@ open AffineFieldCoordinates FlatCoordinateLayout Matrix in
 /-- The physical entry correction on the compact source and exit correction
 on the compact target convert a completed sweep to the translated port frame. -/
 theorem sweepEffect_correctedPort [M8.Machine.Net] (t : Fin 111) :
-    ∃ c : ℕ, ∀ w B W, 0 < w → 0 < B*((prime^w)^112*W) →
+    ∃ c preTapes postTapes : ℕ, ∀ w B W, 0 < w → 0 < B*((prime^w)^112*W) →
       let K := (prime^w)^112*W
       let V := (prime^w)^16*(B*K)
       let P := translatedPortProjector (ZMod (prime^w)) (4 : ZMod (prime^w))⁻¹ t
       ∃ enter leave : SharedBankStage.Stage _ 1 prime (@portOwner V),
+        enter.tapes = preTapes ∧ leave.tapes = postTapes ∧
         enter.cost+leave.cost = c*V + 2*LeafCore.coreCost V w+12 ∧
         ∀ n (run : Fin 32 × Fin 5) (x a y : OwnerArray w B W),
           let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n run.1 run.2,ownerTape_injective ..⟩
@@ -205,13 +206,13 @@ theorem sweepEffect_correctedPort [M8.Machine.Net] (t : Fin 111) :
             y src (cell s) = x src (cell (M8.Exchange.exchange P s.swap)) ∧
             leave.transform (y dst) (cell s) =
               x dst (cell (M8.Exchange.exchange (1-P) s)) + x src (cell s.swap) := by
-  obtain ⟨a,_,pre⟩ := portCorrection_owner t false true
-  obtain ⟨b,_,post⟩ := portCorrection_owner t true true
-  refine ⟨a+b,?_⟩
+  obtain ⟨a,preMachine,pre⟩ := portCorrection_owner t false true
+  obtain ⟨b,postMachine,post⟩ := portCorrection_owner t true true
+  refine ⟨a+b,preMachine.tapes,postMachine.tapes,?_⟩
   intro w B W hw hW K V P
-  obtain ⟨enter,_,entryCost,entry⟩ := pre w (B*K) hw hW
-  obtain ⟨leave,_,exitCost,exitRow⟩ := post w (B*K) hw hW
-  refine ⟨enter,leave,?_,?_⟩
+  obtain ⟨enter,hpre,entryCost,entry⟩ := pre w (B*K) hw hW
+  obtain ⟨leave,hpost,exitCost,exitRow⟩ := post w (B*K) hw hW
+  refine ⟨enter,leave,congrArg SharedBankSkeleton.Skeleton.tapes hpre,congrArg SharedBankSkeleton.Skeleton.tapes hpost,?_,?_⟩
   · rw [entryCost,exitCost]
     simp only [ite_true,V]
     ring

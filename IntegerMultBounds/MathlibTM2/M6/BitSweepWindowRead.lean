@@ -129,9 +129,10 @@ theorem activeSweepAddress_modular {w B W : ℕ} (n : Fin 9) (b : Fin B) (j : Fi
 /-- Both active roles read the certified stage at every rational address
 after the two charged sweeps over the port corrections. -/
 theorem correctedSweep_active_read [M8.Machine.Net] :
-    ∃ C : ℝ, ∀ (n : Fin 9) (w B W : ℕ), 0 < w → 0 < B*((prime^w)^112*W) →
+    ∃ (C : ℝ) (tapes : ℕ), ∀ (n : Fin 9) (w B W : ℕ), 0 < w → 0 < B*((prime^w)^112*W) →
       let V := (prime^w)^16*(B*((prime^w)^112*W))
       ∃ enter leave : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V)),
+        enter.tapes ≤ tapes ∧ leave.tapes ≤ tapes ∧
         ((enter.cost+leave.cost : ℕ) : ℝ) ≤ C*(w : ℝ)^M8.Machine.BudgetBound.tau*V ∧
         (∀ x i, (∀ k, sourceOwner n k ≠ i) → enter.transform x i = x i) ∧
         (∀ y i, (∀ k, targetOwner n k ≠ i) → leave.transform y i = y i) ∧
@@ -141,11 +142,11 @@ theorem correctedSweep_active_read [M8.Machine.Net] :
             let agrees := fun i => read (leave.transform y) (owner n k.1.1 k.1.2 i) =
               (Piece.stage n).run (read x) (owner n k.1.1 k.1.2 i)
             agrees k.2.val ∧ agrees (111+k.2.val) := by
-  obtain ⟨C,build⟩ := sweepPortCorrections
-  refine ⟨C,?_⟩
+  obtain ⟨C,tapes,build⟩ := sweepPortCorrections
+  refine ⟨C,tapes,?_⟩
   intro n w B W hw hW V
-  obtain ⟨enter,leave,paid,kept,off,ports⟩ := build n w B W hw hW
-  refine ⟨enter,leave,paid,kept,off,?_⟩
+  obtain ⟨enter,leave,et,lt,paid,kept,off,ports⟩ := build n w B W hw hW
+  refine ⟨enter,leave,et,lt,paid,kept,off,?_⟩
   intro x y step k b j read agrees
   let out := leave.transform y
   let t := k.2
@@ -226,17 +227,18 @@ theorem sweepRoles_eq_read {w B W : ℕ} (n : Fin 9) (b : Fin B) (j : Fin W)
 /-- One corrected physical sweep realizes the logical stage simultaneously
 on every role at every inherited block and spectator. -/
 theorem correctedSweep_read [M8.Machine.Net] :
-    ∃ C : ℝ, ∀ (n : Fin 9) (w B W : ℕ), 0 < w → 0 < B*((prime^w)^112*W) →
+    ∃ (C : ℝ) (tapes : ℕ), ∀ (n : Fin 9) (w B W : ℕ), 0 < w → 0 < B*((prime^w)^112*W) →
       let V := (prime^w)^16*(B*((prime^w)^112*W))
       ∃ enter leave : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V)),
+        enter.tapes ≤ tapes ∧ leave.tapes ≤ tapes ∧
         ((enter.cost+leave.cost : ℕ) : ℝ) ≤ C*(w : ℝ)^M8.Machine.BudgetBound.tau*V ∧
         ∀ x y, sweepEffect n w B W (enter.transform x) y → ∀ b j,
           sweepRoles n b j (leave.transform y) = (Piece.stage n).run (sweepRoles n b j x) := by
-  obtain ⟨C,build⟩ := correctedSweep_active_read
-  refine ⟨C,?_⟩
+  obtain ⟨C,tapes,build⟩ := correctedSweep_active_read
+  refine ⟨C,tapes,?_⟩
   intro n w B W hw hW V
-  obtain ⟨enter,leave,paid,kept,off,acts⟩ := build n w B W hw hW
-  refine ⟨enter,leave,paid,?_⟩
+  obtain ⟨enter,leave,et,lt,paid,kept,off,acts⟩ := build n w B W hw hW
+  refine ⟨enter,leave,et,lt,paid,?_⟩
   intro x y step b j
   let active := readLanes (activeSweepAddress (w := w) n b j)
   let inactive := readLanes (sweepAddress (w := w) b j)

@@ -87,10 +87,11 @@ theorem inactiveWindowEquiv_read {w B W : ℕ} (lane : BankLane) (b : Fin B) (j 
 /-- All 17,760 source/target pairs receive their two corrections.
 Other owners are preserved by each pass. -/
 theorem sweepPortCorrections [M8.Machine.Net] :
-    ∃ C : ℝ, ∀ (n : Fin 9) (w B W : ℕ), 0 < w → 0 < B*((prime^w)^112*W) →
+    ∃ (C : ℝ) (tapes : ℕ), ∀ (n : Fin 9) (w B W : ℕ), 0 < w → 0 < B*((prime^w)^112*W) →
       let K := (prime^w)^112*W
       let V := (prime^w)^16*(B*K)
       ∃ enter leave : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V)),
+        enter.tapes ≤ tapes ∧ leave.tapes ≤ tapes ∧
         ((enter.cost+leave.cost : ℕ) : ℝ) ≤ C*(w : ℝ)^M8.Machine.BudgetBound.tau*V ∧
         (∀ x i, (∀ k, sourceOwner n k ≠ i) → enter.transform x i = x i) ∧
         (∀ y i, (∀ k, targetOwner n k ≠ i) → leave.transform y i = y i) ∧
@@ -108,7 +109,7 @@ theorem sweepPortCorrections [M8.Machine.Net] :
             leave.transform y dst (cell s) =
               x dst (cell (frame (1-P) (frame 0 s))) + x src (cell (frame 1 (frame 0 s))) := by
   classical
-  choose c build using sweepEffect_correctedPort
+  choose c preSize postSize build using sweepEffect_correctedPort
   let jobs := stageRuns.product (List.finRange 111)
   have unique := stageRuns_nodup.product (List.nodup_finRange 111)
   have mem (k : (Fin 32 × Fin 5) × Fin 111) : k ∈ jobs :=
@@ -116,12 +117,14 @@ theorem sweepPortCorrections [M8.Machine.Net] :
   have count : jobs.length = 17760 := by
     exact (List.length_product stageRuns (List.finRange 111)).trans (by rw [stageRuns_length,List.length_finRange])
   let base := (jobs.map fun k => c k.2).sum
-  refine ⟨(base : ℝ)+17760*(2*|LeafCore.C|+14),?_⟩
+  let total := fun (size : Fin 111 → ℕ) => 142081+(jobs.map fun k => 142081+(size k.2+142080)).sum
+  refine ⟨(base : ℝ)+17760*(2*|LeafCore.C|+14),max (total preSize) (total postSize),?_⟩
   intro n w B W hw hW K V
-  choose pre post price correct using fun t => build t w B W hw hW
-  obtain ⟨enter,paid,entry,keep⟩ := compilePorts ⟨sourceOwner n,source_injective n⟩ (fun k => pre k.2) jobs unique
-  obtain ⟨leave,cost,exitRow,off⟩ := compilePorts ⟨targetOwner n,targetOwner_injective n⟩ (fun k => post k.2) jobs unique
-  refine ⟨enter,leave,?_,fun x i away => keep x i (fun k _ => away k),
+  choose pre post preFixed postFixed price correct using fun t => build t w B W hw hW
+  obtain ⟨enter,enterTapes,paid,entry,keep⟩ := compilePortsSized ⟨sourceOwner n,source_injective n⟩ (fun k => pre k.2) jobs unique
+  obtain ⟨leave,leaveTapes,cost,exitRow,off⟩ := compilePortsSized ⟨targetOwner n,targetOwner_injective n⟩ (fun k => post k.2) jobs unique
+  refine ⟨enter,leave,by simpa only [enterTapes,preFixed,total] using le_max_left (total preSize) (total postSize),
+    by simpa only [leaveTapes,postFixed,total] using le_max_right (total preSize) (total postSize),?_,fun x i away => keep x i (fun k _ => away k),
     fun y i away => off y i (fun k _ => away k),?_⟩
   · rw [paid,cost,count]
     have total := congrArg (fun f : ((Fin 32 × Fin 5) × Fin 111 → ℕ) => (jobs.map f).sum)

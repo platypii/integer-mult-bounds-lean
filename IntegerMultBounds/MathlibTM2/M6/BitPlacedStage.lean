@@ -9,9 +9,21 @@ namespace IntegerMultBounds.MathlibTM2.M6.BitNode.SweepFile.Exit
 open IntegerMultBounds.Machine IntegerMultBounds.Networks Stack Host Cover
 open Shared50ModularControl (prime)
 
+/-- The padded label count absorbs the chart's sublinear width factor. -/
+private theorem chartVolume [M8.Machine.Net] (w : ℕ) :
+    ((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau ≤ (prime^(64*((w+1)*64)) : ℕ) := by
+  have one : 1 ≤ ((w+1 : ℕ) : ℝ) := by exact_mod_cast (show 1 ≤ w+1 by omega)
+  have power : ((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau ≤ (w+1 : ℕ) := by
+    simpa using Real.rpow_le_rpow_of_exponent_le one M8.Machine.BudgetBound.exponent_range.2.le
+  apply power.trans
+  exact_mod_cast (show w+1 ≤ prime^(64*((w+1)*64)) from
+    (Nat.le_of_lt (show w+1 < 2^(w+1) from Nat.lt_two_pow_self)).trans
+      ((Nat.pow_le_pow_left Shared50ModularControl.prime_prime.two_le _).trans
+        (Nat.pow_le_pow_right Shared50ModularControl.prime_prime.pos (by omega))))
+
 theorem placedStage_exec [M8.Machine.Net] {P U : Type} {t Q : ℕ} (n : Fin 9) (src dst : Fin (142081+2) ↪ Fin t)
     (fits : 215 ≤ Q) :
-    ∃ (C : ℕ) (chartRate : ℝ), ∀ w H B W (parent : Fin 64 → ZMod (prime^(w+1))) (units : ∀ i, IsUnit (parent i)),
+    ∃ C : ℕ, ∀ w H B W (parent : Fin 64 → ZMod (prime^(w+1))) (units : ∀ i, IsUnit (parent i)),
     let M := prime^(w+1)
     let K := M^112*W
     let A := M^16
@@ -19,8 +31,7 @@ theorem placedStage_exec [M8.Machine.Net] {P U : Type} {t Q : ℕ} (n : Fin 9) (
     let V := A*(B*N*K)
     M^128 < 2^H → H ≤ M^128+1 → 0 < B → 0 < W →
     ∃ enter leave : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := A*(B*K))),
-    ((enter.cost+leave.cost : ℕ) : ℝ) ≤ chartRate*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau*((A*(B*K) : ℕ) : ℝ) ∧
-    (
+
     enter.states ≤ Q → leave.states ≤ Q →
     ∀ (inner : P → Pr P t Q prime U) worker prepared price,
     StageHandoffExec n (w+1) B W inner worker src dst prepared price →
@@ -49,21 +60,36 @@ theorem placedStage_exec [M8.Machine.Net] {P U : Type} {t Q : ℕ} (n : Fin 9) (
     D.L (tmp t leave.tapes) = [] → D.R (tmp t leave.tapes) = [] → (∀ i, D.R (sw (owners i)) = []) →
     ReturnHeaders w H parent W B (embStk sw D).R →
     ∃ z F l y, Exec body code (mk u S) l (mk z F) ∧
-      l ≤ price + 142080*(C*V+16)+2 + 2*(142081*(7021*(A*B)*(N*K)+6)+1) +
-        (enter.cost*(enter.tapes+5)+6) + (leave.cost*(leave.tapes+5)+6) + (142081*(8*(A*(B*K))+10)+1) ∧
+      l ≤ price + C*V ∧
       z.user = u.user ∧
       (∀ b j, let address := fun v => nodeWindowEquiv (w+1) B W parent units (b,windowState (w+1) v,j)
         readRoles address (nodeArray parent units n (leave.transform y)) = (Piece.stage n).run (readRoles address x)) ∧
       ∀ r, F.R (outer (sw (owners (sweepRoleTape r)))) = List.ofFn fun i =>
-        SparseRoleCircuit.encode (nodeArray parent units n (leave.transform y) (sweepRoleTape r) i)) := by
+        SparseRoleCircuit.encode (nodeArray parent units n (leave.transform y) (sweepRoleTape r) i) := by
   obtain ⟨D,finish⟩ := recursiveStageExit_exec (P := P) (U := U) n src dst fits
   obtain ⟨C,build⟩ := stageEntry_exec (P := P) (U := U) n fits
-  obtain ⟨rate,correct⟩ := correctedSweep_read
-  refine ⟨C+D,rate,?_⟩
+  obtain ⟨rate,tapes,correct⟩ := correctedSweep_read
+  let chartPrice := ⌈|rate|⌉₊*(tapes+5)
+  refine ⟨142080*(C+D)+chartPrice+2100000000,?_⟩
   intro w H B W parent units M K A N V hw bound hb width
-  obtain ⟨enter,leave,charts,acts⟩ := correct n (w+1) B W (by omega)
+  obtain ⟨enter,leave,et,lt,charts,acts⟩ := correct n (w+1) B W (by omega)
     (Nat.mul_pos hb (Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) width))
-  refine ⟨enter,leave,charts,?_⟩
+  have perChart : enter.cost + leave.cost ≤ ⌈|rate|⌉₊*V := by
+    apply Nat.cast_le (α := ℝ) |>.mp
+    apply charts.trans
+    have nonneg : 0 ≤ ((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau := by positivity
+    calc
+      _ ≤ (⌈|rate|⌉₊ : ℝ)*(N : ℝ)*((A*(B*K) : ℕ) : ℝ) := by
+        apply mul_le_mul_of_nonneg_right _ (Nat.cast_nonneg _)
+        exact mul_le_mul ((le_abs_self _).trans (Nat.le_ceil _)) (chartVolume w) nonneg (Nat.cast_nonneg _)
+      _ = _ := by dsimp only [V]; push_cast; ring
+  have hosted : enter.cost*(enter.tapes+5)+leave.cost*(leave.tapes+5) ≤ chartPrice*V := calc
+    _ ≤ (enter.cost+leave.cost)*(tapes+5) := by
+      rw [Nat.add_mul]
+      exact Nat.add_le_add (Nat.mul_le_mul_left _ (by omega)) (Nat.mul_le_mul_left _ (by omega))
+    _ ≤ (⌈|rate|⌉₊*V)*(tapes+5) := Nat.mul_le_mul_right _ perChart
+    _ = _ := by dsimp only [chartPrice]; ring
+  refine ⟨enter,leave,?_⟩
   intro ein lout inner worker prepared price handoff
     recBank mid outer fan body slots input forward sw crop
   obtain ⟨entry,entryRun⟩ := build fan w H B W parent units hw bound hb width enter ein body
@@ -102,8 +128,18 @@ theorem placedStage_exec [M8.Machine.Net] {P U : Type} {t Q : ℕ} (n : Fin 9) (
   obtain ⟨z,F,placed,_,hz,view,_⟩ := exec_emb (ι := id) (body' := body) outer.injective (fun _ => rfl) exec v rfl E rfl
   refine ⟨z,F,k+l,y,Exec.seq run placed,?_,hz.trans (same.trans user),?_,?_⟩
   · apply (Nat.add_le_add paid bill).trans
-    dsimp only [V,A,N,K,M]
-    exact le_of_eq (by ring)
+    have padded : A*B*(N*K) = V := by dsimp only [V]; ring
+    have compact : A*(B*K) ≤ V := by
+      exact Nat.mul_le_mul_left A (Nat.mul_le_mul_right K (Nat.le_mul_of_pos_right B (pow_pos Shared50ModularControl.prime_prime.pos _)))
+    have positive : 0 < V := Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _)
+      (Nat.mul_pos (Nat.mul_pos hb (pow_pos Shared50ModularControl.prime_prime.pos _))
+        (Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) width))
+    change 142080*(C*V+8)+1 + (enter.cost*(enter.tapes+5)+6 + (142081*(7021*(A*B)*(N*K)+6)+1)) +
+      (price + (142081*(7021*(A*B)*(N*K)+6)+1 + (leave.cost*(leave.tapes+5)+6) +
+      (142081*(8*(A*(B*K))+10)+1) + (142080*(D*V+8)+1))) ≤ _
+    rw [show 7021*(A*B)*(N*K) = 7021*V by rw [← padded]; ring]
+    simp only [Nat.add_mul,Nat.mul_add,Nat.mul_assoc] at hosted ⊢
+    omega
   · intro b j address
     exact (nodeArray_read parent units n _ b j).trans
       ((acts _ _ effect b j).trans (congrArg (Piece.stage n).run (sweepArray_read parent units n x b j)))
