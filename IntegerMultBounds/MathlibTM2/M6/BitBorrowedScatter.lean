@@ -162,33 +162,32 @@ theorem borrowedScatter_flat [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 
     let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n r d,ownerTape_injective n r d⟩
     let hs := fun i => FlatCoordinateSchedule.bits (RecursiveDimensionBank.values (copyChild w W) i)
     ∃ stage : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V)),
-      stage.cost ≤ C*V + (2*(63*9+252*527)+1322*252)*LeafCore.coreCost V (w*64) +
-        9*engine.time (copyChild w W) hs + 1333 ∧
+      stage.cost ≤ C*V + 9*engine.time (copyChild w W) hs + 9 ∧
       (∀ x g z, let j := labelSpectator g z
         phaseRead owner (stage.transform x) j = borrowedScatter w (phaseRead owner x j)) ∧
       ∀ x k, k ≠ Fin.last 142080 → (∀ i, owner i ≠ k) → stage.transform x k = x k := by
-  obtain ⟨C,build⟩ := borrowedScatter_stage n r d engine
+  obtain ⟨C,build⟩ := commonScatter_stage n r d engine
   refine ⟨C,?_⟩
   intro w B K hw hb hk W V owner hs
   obtain ⟨stage,paid,run,off⟩ := build w B K hw hb hk
-  let size := copyLabel_volume w B K
-  let effect := fun (x y : Fin 142081 → Fin (volume prime (copyLabelLayout w B K)) → ZMod 2) =>
-    (∀ g z, borrowedRead (B := B) (K := K) n r d g z y = borrowedScatter w (borrowedRead n r d g z x)) ∧
-    ∀ k, k ≠ Fin.last 142080 → (∀ i, owner i ≠ k) → y k = x k
-  have acts x : effect x (stage.transform x) := by
-    refine ⟨?_,off x⟩
-    intro g z
-    funext j
-    by_cases hj : j < 661
-    · simpa only [borrowedScatter,Copy.extendStored,dite_eq_left hj] using run x g z ⟨j,hj⟩
-    · simp [borrowedRead,borrowedScatter,Copy.extendStored,hj]
-  obtain ⟨flat,cost,read⟩ := flatCopyStage size effect _ stage acts paid
-  refine ⟨flat,by rwa [copyLabel_volume] at cost,?_,?_⟩
-  · intro x g z
-    simpa only [borrowedRead_flat] using (read x).1 g z
-  · intro x k live outside
+  refine ⟨stage,paid,?_,off⟩
+  intro x g z j
+  let input := phaseRead owner x (labelSpectator g z)
+  let frame := fun i => selectedFrame w (Frames.beforeScatter i)
+  let stored := FramedCircuit.decode frame input
+  have full : Copy.extendStored (fun i => stored i.val) = stored := by
     funext i
-    exact congrFun ((read x).2 k live outside) (Fin.cast size.symm i)
+    by_cases live : i < 661
+    · simp [Copy.extendStored,live]
+    · simp [stored,FramedCircuit.decode,input,phaseRead,Copy.extendStored,live]
+  funext i
+  by_cases live : i < 661
+  · have step := Copy.decoded_scatter (selectedFrame w) (fun k => stored k.val) ⟨i,live⟩
+    change Copy.run (selectedFrame w) Copy.lifecycles (FramedCircuit.encode frame _) i = _ at step
+    rw [full,FramedCircuit.encode_decode] at step
+    simpa only [borrowedScatter,Copy.extendStored,dite_eq_left live] using
+      (congrFun (run x g z) i).trans step
+  · simp [phaseRead,borrowedScatter,Copy.extendStored,live]
 
 /-- Execute both scalar phases and COPY on each independent borrowed row. -/
 theorem borrowedInvocation_stage [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
@@ -205,7 +204,7 @@ theorem borrowedInvocation_stage [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : 
         (∀ p ∈ Geometry.Moves.phaseEdges, Geometry.moveRank p.1 p.2 ≠ 0 →
           phaseChildCost w W p ≤ price (Geometry.moveRank p.1 p.2)) →
         engine.time (copyChild w W) hs ≤ price 7 →
-        stage.cost ≤ C*V + (2*(63*9+252*527)+1322*252)*LeafCore.coreCost V (w*64) +
+        stage.cost ≤ C*V +
           ((Geometry.Moves.phaseValues.filter (· != 0)).map price).sum + 9*price 7) ∧
       (∀ x g z, let j := labelSpectator g z
         phaseRead owner (stage.transform x) j = labelPhase w (gates true) (current true)
@@ -216,7 +215,7 @@ theorem borrowedInvocation_stage [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : 
   let scalar := fun gs : List RawGate => (gs.map (fun g => 77*g.sources.length+2)).sum
   let moves := ((Geometry.Moves.phaseEdges.filter (fun p => Geometry.moveRank p.1 p.2 != 0)).map
     (fun p => 1303+edgeBasis slots p)).sum
-  refine ⟨scalar (sectionD++sectionA)+scalar (sectionB++sectionC)+moves+C+1335,?_⟩
+  refine ⟨scalar (sectionD++sectionA)+scalar (sectionB++sectionC)+moves+C+11,?_⟩
   intro w B K hw hb hk W V owner gates current hs
   let frame := selectedFrame w
   let instr := fun done => FramedCircuit.compile (fun i => frame (current done i)) ((gates done).map (Frames.framedGate frame))
@@ -238,10 +237,10 @@ theorem borrowedInvocation_stage [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : 
     change (Geometry.Moves.phaseEdges.map (phaseEdgeBudget owner w W)).sum ≤ moves*V + _ at childBill
     rw [Geometry.Moves.phaseEdges,List.map_append,List.sum_append] at childBill
     change calls false + calls true ≤ _ at childBill
-    change a.cost+b.cost+1+f.cost+1 ≤ (scalar (gates false)+scalar (gates true)+moves+C+1335)*V + _ + _ + _
+    change a.cost+b.cost+1+f.cost+1 ≤ (scalar (gates false)+scalar (gates true)+moves+C+11)*V + _ + _
     change a.cost ≤ phaseCost false at ac
     change f.cost ≤ phaseCost true at fc
-    change b.cost ≤ C*V + (2*(63*9+252*527)+1322*252)*LeafCore.coreCost V (w*64) + 9*engine.time (copyChild w W) hs + 1333 at bc
+    change b.cost ≤ C*V + 9*engine.time (copyChild w W) hs + 9 at bc
     have left : a.cost ≤ work false + calls false := ac.trans (Nat.le_of_eq (Nat.add_right_comm _ _ _))
     have right : f.cost ≤ work true + calls true := fc.trans (Nat.le_of_eq (Nat.add_right_comm _ _ _))
     have before := overhead false
@@ -278,8 +277,7 @@ theorem borrowedSweep_stage [M8.Machine.Net] (n : Fin 9)
         (∀ p ∈ Geometry.Moves.phaseEdges, Geometry.moveRank p.1 p.2 ≠ 0 →
           phaseChildCost w W p ≤ price (Geometry.moveRank p.1 p.2)) →
         engine.time (copyChild w W) hs ≤ price 7 →
-        stage.cost ≤ C*V + 160*((2*(63*9+252*527)+1322*252)*LeafCore.coreCost V (w*64) +
-          ((Geometry.Moves.phaseValues.filter (· != 0)).map price).sum + 9*price 7)) ∧
+        stage.cost ≤ C*V + 160*(((Geometry.Moves.phaseValues.filter (· != 0)).map price).sum + 9*price 7)) ∧
       ∀ x, stageRuns.foldr (fun k cont a => ∃ b, BorrowedStep n w B K k a b ∧ cont b)
         (fun a => a = stage.transform x) x := by
   choose coeff build using fun k : Fin 32 × Fin 5 => borrowedInvocation_stage n k.1 k.2 engine
@@ -289,8 +287,7 @@ theorem borrowedSweep_stage [M8.Machine.Net] (n : Fin 9)
   let compile := fun (jobs : List (Fin 32 × Fin 5)) => SharedBankStage.compile _ (by decide : 0 < 142081) (jobs.map block)
   refine ⟨compile stageRuns,?_,?_⟩
   · intro price phase copy
-    let extra := (2*(63*9+252*527)+1322*252)*LeafCore.coreCost V (w*64) +
-      ((Geometry.Moves.phaseValues.filter (· != 0)).map price).sum + 9*price 7
+    let extra := ((Geometry.Moves.phaseValues.filter (· != 0)).map price).sum + 9*price 7
     have bill (jobs) : (compile jobs).cost ≤ (jobs.map coeff).sum*V + jobs.length*(extra+1) := by
       induction jobs with
       | nil => simp [compile,SharedBankStage.compile_cost]
@@ -328,7 +325,7 @@ theorem borrowedPieces_nodeCost [M8.Machine.Net] (engine : CopyTranspose := Copy
         phaseChildCost w W p ≤ price (Geometry.moveRank p.1 p.2)) →
         engine.time (copyChild w W) hs ≤ price 7 →
         (∑ n, (pieces n).cost) + 160*(BitOccurrences.remainders.map price).sum ≤ C*V +
-          1440*((2*(63*9+252*527)+1322*252)*LeafCore.coreCost V (w*64)) + (nodeChildren5.map price).sum) ∧
+          (nodeChildren5.map price).sum) ∧
       ∀ n x, stageRuns.foldr (fun k cont a => ∃ b, BorrowedStep n w B K k a b ∧ cont b)
         (fun a => a = (pieces n).transform x) x := by
   choose coeff make using fun n => borrowedSweep_stage n engine
@@ -341,8 +338,7 @@ theorem borrowedPieces_nodeCost [M8.Machine.Net] (engine : CopyTranspose := Copy
   rw [Finset.sum_add_distrib,← Finset.sum_mul] at sum
   simp only [Finset.sum_const,Finset.card_univ,Fintype.card_fin,nsmul_eq_mul] at sum
   rw [nodeChildren5_split_price]
-  change (∑ n, (pieces n).cost) ≤ (∑ n, coeff n)*V + 9*(160*((2*(63*9+252*527)+1322*252)*LeafCore.coreCost V (w*64) +
-    ((Geometry.Moves.phaseValues.filter (· != 0)).map price).sum + 9*price 7)) at sum
+  change (∑ n, (pieces n).cost) ≤ (∑ n, coeff n)*V + 9*(160*(((Geometry.Moves.phaseValues.filter (· != 0)).map price).sum + 9*price 7)) at sum
   rw [show (fun x : ℕ => decide (x ≠ 0)) = (fun x => x != 0) by funext x; cases x <;> rfl]
   omega
 

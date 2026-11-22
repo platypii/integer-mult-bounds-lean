@@ -176,14 +176,15 @@ theorem borrowedNode_parentCost [M8.Machine.Net] (engine : CopyTranspose := Copy
         ∀ i x, (∀ k, IdleTransport i k w B K (fun t => x (idleTape i k) (Fin.cast size t))
           (fun t => (idle i).transform x (idleTape i k) (Fin.cast size t))) ∧
           ∀ j, (∀ k, j ≠ idleTape i k) → (idle i).transform x j = x j := by
-  have assemble := compiledNode_cost_of_sweeps engine (2*(63*9+252*527)+1322*252) (fun w B K inv =>
+  have assemble := compiledNode_cost_of_sweeps engine 0 (fun w B K inv =>
     ∀ n x, stageRuns.foldr (fun k cont a => ∃ b, BorrowedStep n w B K k a b ∧ cont b)
       (fun a => a = (inv n).transform x) x ∧ BorrowedPorts n w B K x ((inv n).transform x) ∧
         BorrowedHelpers n w B K x ((inv n).transform x))
   obtain ⟨C,build⟩ := borrowedPieces_nodeCost engine
   obtain ⟨D,node⟩ := assemble ⟨C,fun w B K hw hb hk => by
     obtain ⟨inv,bill,trace⟩ := build w B K hw hb hk
-    exact ⟨inv,bill,fun n x => ⟨trace n x,borrowedSweep_ports (trace n x),borrowedSweep_helpers (trace n x)⟩⟩⟩
+    refine ⟨inv,?_,fun n x => ⟨trace n x,borrowedSweep_ports (trace n x),borrowedSweep_helpers (trace n x)⟩⟩
+    simpa only [Nat.zero_mul,Nat.mul_zero,Nat.add_zero] using bill⟩
   refine ⟨D,?_⟩
   intro parent w B rows positive hw hb width split label K W blocks phaseW V v
   obtain ⟨size,inv,idle,bridge,exchange,bank,bill,sweep,rest⟩ := node parent w B rows positive hw hb width split label
