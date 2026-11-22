@@ -112,4 +112,52 @@ theorem borrowedSweep_ports {n w B K x y}
       simpa only [read,phaseRead,Copy.extendStored,dite_eq_left i.isLt] using congrFun eqn (FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) j)
     exact Prod.ext (kept src (by dsimp [src]; omega)) (kept dst (by dsimp [dst]; omega))
 
+theorem BorrowedStep.helperRead {n w B K k x y} (step : BorrowedStep n w B K k x y)
+    (g : Cover.LabelPadding.Label 64 w) (z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B)
+    (h : Fin 439) (s : Swap.Shear.State (Fin 8) (ZMod (prime^w))) :
+    let i : Fin 661 := ⟨222+h.val,by omega⟩
+    let tape := ownerTape n k.1 k.2 i
+    let pos := fun a => FlatCoordinateLayout.index (AffineFieldCoordinates.embed a) (labelSpectator g z)
+    y tape (pos s.swap) = x tape (pos s) := by
+  intro i tape pos
+  have read := step.dirtyRead g z i
+  have outside : ¬(111 ≤ i.val ∧ i.val < 222) := by dsimp [i]; omega
+  have frames : Frames.initialRefs i.val = 0 ∧ Frames.finalRefs i.val = 1 := BitHosting.helper_frames h.val h.isLt
+  simp only [dite_eq_right outside,frames.1,frames.2,emptyFrame_decode] at read
+  have cell := congrFun read s.swap
+  rw [fullFrame_read,Prod.swap_swap] at cell
+  simp only [phaseRead,Copy.extendStored,dite_eq_left i.isLt] at cell
+  convert cell using 1
+
+/-- At every borrowed label an inactive role swaps its two active fields
+once per helper use. Its spectator coordinates stay fixed throughout. -/
+def BorrowedHelpers (n : Fin 9) (w B K : ℕ)
+    (x y : Fin 142081 → Fin ((prime^w)^16*(B*prime^(64*(w*64))*K)) → ZMod 2) : Prop :=
+  ∀ (ρ : Role), ρ.bank.val / 2 ≠ BitHosting.activePair n.val →
+    ∀ (g : Cover.LabelPadding.Label 64 w) (z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B)
+      (s : Swap.Shear.State (Fin 8) (ZMod (prime^w))),
+    let tape := ((Fin.cast card_role) (Fintype.equivFin Role ρ)).castSucc
+    let uses := stageRuns.filter fun k => decide (∃ h : Fin 439, hostRole n k.1 k.2 h = ρ)
+    let pos := fun a => FlatCoordinateLayout.index (AffineFieldCoordinates.embed a) (labelSpectator g z)
+    y tape (pos (if uses.length % 2 = 1 then s.swap else s)) = x tape (pos s)
+
+theorem borrowedSweep_helpers {n w B K x y}
+    (trace : stageRuns.foldr (fun k cont a => ∃ b, BorrowedStep n w B K k a b ∧ cont b)
+      (fun a => a = y) x) : BorrowedHelpers n w B K x y := by
+  intro ρ inactive g z s tape uses pos
+  let swap := fun (a : Swap.Shear.State (Fin 8) (ZMod (prime^w))) (k : Fin 32 × Fin 5) =>
+    if decide (∃ h : Fin 439, hostRole n k.1 k.2 h = ρ) then a.swap else a
+  have follow (ks : List (Fin 32 × Fin 5)) (a)
+      (steps : ks.foldr (fun k cont a => ∃ b, BorrowedStep n w B K k a b ∧ cont b) (fun a => a = y) a)
+      (state) : y tape (pos (ks.foldl swap state)) = a tape (pos state) := by
+    induction ks generalizing a state with
+    | nil => cases steps; rfl
+    | cons k ks ih =>
+      obtain ⟨b,step,rest⟩ := steps
+      rw [List.foldl_cons,ih b rest]
+      simpa only [swap,decide_eq_true_eq] using inactiveRunRead n w (fun u (_ : Fin 1) => pos u) a b k
+        (fun h u _ => step.helperRead g z h u) step.2 ρ inactive state 0
+  have parity := helperSwap_parity n ρ stageRuns s
+  exact (congrArg (fun a => y tape (pos a)) parity.symm).trans (follow stageRuns x trace s)
+
 end IntegerMultBounds.MathlibTM2.M6.BitNode

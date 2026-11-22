@@ -40,17 +40,19 @@ theorem borrowedNode_parentCost [M8.Machine.Net] (engine : CopyTranspose := Copy
           ((compiledNode inv idle bridge exchange).cost : ℝ) ≤
             volume prime parent*(D*(w : ℝ)^M8.Machine.BudgetBound.tau + (nodeChildren5.map rate).sum/142080)) ∧
         (∀ n x, stageRuns.foldr (fun k cont a => ∃ b, BorrowedStep n w B spectators k a b ∧ cont b)
-          (fun a => a = (inv n).transform x) x ∧ BorrowedPorts n w B spectators x ((inv n).transform x)) ∧
+          (fun a => a = (inv n).transform x) x ∧ BorrowedPorts n w B spectators x ((inv n).transform x) ∧
+          BorrowedHelpers n w B spectators x ((inv n).transform x)) ∧
         ∀ i x, (∀ k, IdleTransport i k w B K (fun t => x (idleTape i k) (Fin.cast size t))
           (fun t => (idle i).transform x (idleTape i k) (Fin.cast size t))) ∧
           ∀ j, (∀ k, j ≠ idleTape i k) → (idle i).transform x j = x j := by
   apply compiledNode_cost_of_sweeps engine (2*(63*9+252*527)+1322*252) (fun w B K inv =>
     ∀ n x, stageRuns.foldr (fun k cont a => ∃ b, BorrowedStep n w B K k a b ∧ cont b)
-      (fun a => a = (inv n).transform x) x ∧ BorrowedPorts n w B K x ((inv n).transform x))
+      (fun a => a = (inv n).transform x) x ∧ BorrowedPorts n w B K x ((inv n).transform x) ∧
+        BorrowedHelpers n w B K x ((inv n).transform x))
   obtain ⟨C,build⟩ := borrowedPieces_nodeCost engine
   refine ⟨C,?_⟩
   intro w B K hw hb hk W V hs
   obtain ⟨inv,bill,trace⟩ := build w B K hw hb hk
-  exact ⟨inv,bill,fun n x => ⟨trace n x,borrowedSweep_ports (trace n x)⟩⟩
+  exact ⟨inv,bill,fun n x => ⟨trace n x,borrowedSweep_ports (trace n x),borrowedSweep_helpers (trace n x)⟩⟩
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode

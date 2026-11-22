@@ -608,12 +608,13 @@ theorem orthogonalSweep_activePorts {V W : ℕ} (n : Fin 9) (w : ℕ)
       (h.2 src (fun i => otherRunMissesPort n p run other i ⟨t.val,by omega⟩ (by dsimp; omega))))
     stageRuns stageRuns_nodup x y trace).1 (mem_stageRuns run)
 
-private theorem inactiveRunRead {V W : ℕ} (n : Fin 9) (w : ℕ)
+theorem inactiveRunRead {V W : ℕ} (n : Fin 9) (w : ℕ)
     (pos : Swap.Shear.State (Fin 8) (ZMod (prime^w)) → Fin W → Fin V)
     (x y : Fin 142081 → Fin V → ZMod 2)
     (p : Fin 32 × Fin 5)
-    (reads : OrthogonalPortReads w pos (x ∘ ownerTape n p.1 p.2) (y ∘ ownerTape n p.1 p.2))
-    (off : ∀ t, (∀ i, ownerTape n p.1 p.2 i ≠ t) → y t = x t)
+    (helper : ∀ (h : Fin 439) s k, let i : Fin 661 := ⟨222+h.val,by omega⟩
+      y (ownerTape n p.1 p.2 i) (pos s.swap k) = x (ownerTape n p.1 p.2 i) (pos s k))
+    (off : ∀ t, t ≠ Fin.last 142080 → (∀ i, ownerTape n p.1 p.2 i ≠ t) → y t = x t)
     (ρ : Role) (inactive : ρ.bank.val / 2 ≠ BitHosting.activePair n.val) :
     let tape := ((Fin.cast card_role) (Fintype.equivFin Role ρ)).castSucc
     let swaps := fun (s : Swap.Shear.State (Fin 8) (ZMod (prime^w))) (p : Fin 32 × Fin 5) =>
@@ -626,9 +627,9 @@ private theorem inactiveRunRead {V W : ℕ} (n : Fin 9) (w : ℕ)
     obtain ⟨h,host⟩ := hit
     have eqn : ownerTape n p.1 p.2 ⟨222+h.val,by omega⟩ = tape := by
       simp [ownerTape,owner,host,tape]
-    simpa only [Function.comp_apply,eqn] using reads.helper h s k
+    simpa only [Function.comp_apply,eqn] using helper h s k
   · rw [show swaps s p = s by simp [swaps,hit]]
-    apply congrFun (off tape ?_)
+    apply congrFun (off tape (Fin.castSucc_ne_last _) ?_)
     intro i eqn
     have same : owner n p.1 p.2 i = ρ :=
       (Fintype.equivFin Role).injective (Fin.cast_injective _ (Fin.castSucc_injective _ eqn))
@@ -659,7 +660,7 @@ theorem orthogonalSweep_inactive {V W : ℕ} (n : Fin 9) (w : ℕ)
     intro a tr s k
     obtain ⟨b,⟨reads,off⟩,tail⟩ := tr
     rw [List.foldl_cons,ih b tail]
-    exact inactiveRunRead n w pos a b p reads off ρ inactive s k
+    exact inactiveRunRead n w pos a b p reads.helper (fun t _ => off t) ρ inactive s k
 
 open Matrix Swap.Modular M8.Exchange in
 /-- Reading the charted parent at a helper's actual slot exchange changes only
@@ -758,7 +759,7 @@ theorem preparedSweep_inactive (n : Fin 9) (w B K : ℕ)
     obtain ⟨ready,_,shift,tail⟩ := tr
     obtain ⟨reads,off⟩ := action p ready
     rw [List.foldl_cons,List.foldl_cons,ih _ _ tail]
-    exact (inactiveRunRead n w pos ready (invoke p ready) p reads off ρ inactive s
+    exact (inactiveRunRead n w pos ready (invoke p ready) p reads.helper (fun t _ => off t) ρ inactive s
       (key (helperChartsAfter n p c tape))).trans (shift tape g z (encode s))
 
 open Cover M8.RevMachine in
