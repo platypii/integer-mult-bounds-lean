@@ -898,7 +898,7 @@ noncomputable def stagePadPort {T : ℕ} (fan : Fin (142081+2) ↪ Fin T)
     have hs := (targetScanBank fan i 1).isLt
     split_ifs at eq <;> omega
 
-private theorem stagePadPort_shared {T : ℕ} (fan : Fin (142081+2) ↪ Fin T)
+theorem stagePadPort_shared {T : ℕ} (fan : Fin (142081+2) ↪ Fin T)
     (i k : Fin 142081) (j : Fin 12) (h0 : j ≠ 0) (h1 : j ≠ 1) :
     stagePadPort fan i j = stagePadPort fan k j := by
   apply Fin.ext
@@ -918,14 +918,15 @@ theorem stagePadPort_apart {T : ℕ} (fan : Fin (142081+2) ↪ Fin T)
       ite_true, Nat.one_ne_zero, ite_false] at eq <;> split_ifs at eq <;> omega
 
 /-- Pad a list of distinct owners, reusing the same four counters and scratch tapes. -/
-theorem placedOwnerPads {w B K T Q : ℕ} {P U : Type} (hB : 0 < B) (hK : 0 < K)
-    (fan : Fin (142081+2) ↪ Fin T) (fits : 215 ≤ Q)
-    (body : P → Pr P ((T+142081*7)+142081+10) Q prime U) :
-    let port := stagePadPort fan
+theorem ownerPads_exec {w B K T Q : ℕ} {P U : Type} (hB : 0 < B) (hK : 0 < K)
+    (port : Fin 142081 → Fin 12 ↪ Fin T)
+    (shared : ∀ i k j, j ≠ 0 → j ≠ 1 → port i j = port k j)
+    (apart : ∀ i k, i ≠ k → ∀ j, port i j ≠ port k 0 ∧ port i j ≠ port k 1) (fits : 215 ≤ Q)
+    (body : P → Pr P T Q prime U) :
     let A := (prime^w)^16
     let N := prime^(64*(w*64))
     let frame := ownerPadFrame (A*B) N K
-    let aux := fun (S : Stacks ((T+142081*7)+142081+10) prime) => ∀ j : Fin 12, j ≠ 0 → j ≠ 1 → ∀ z,
+    let aux := fun (S : Stacks T prime) => ∀ j : Fin 12, j ≠ 0 → j ≠ 1 → ∀ z,
       frame.tape j z = readAt blank (S.L (port 0 j)) (S.R (port 0 j)) (z-frame.head j)
     let code := fun i => embProg (port i) (Empty.elim : Empty → P)
       (foreign (liftQ RowPaddingConstructedAlphabet.program fits))
@@ -937,9 +938,7 @@ theorem placedOwnerPads {w B K T Q : ℕ} {P U : Type} (hB : 0 < B) (hK : 0 < K)
         steps ≤ order.length*(7021*(A*B)*(N*K)+6)+1 ∧ z.user = u.user ∧ aux F ∧
         (∀ i ∈ order, Cover.Fallback.RecordPayload (port i 1) (fun _ => blank) 0 (singleLabelBank label x i) F) ∧
         ∀ j, (∀ i ∈ order, ∀ h, port i h ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
-  intro port A N frame aux code
-  have shared := stagePadPort_shared fan
-  have apart := stagePadPort_apart fan
+  intro A N frame aux code
   have pad := placedOwnerPad (w := w) hB hK fits body
   intro label x order
   induction order with
@@ -984,6 +983,27 @@ theorem placedOwnerPads {w B K T Q : ℕ} {P U : Type} (hB : 0 < B) (hK : 0 < K)
       obtain ⟨hl,hr⟩ := keep j (fun k hk => outside k (List.mem_cons_of_mem _ hk))
       obtain ⟨ll,rr⟩ := off j (outside i List.mem_cons_self)
       exact ⟨hl.trans ll,hr.trans rr⟩
+
+theorem placedOwnerPads {w B K T Q : ℕ} {P U : Type} (hB : 0 < B) (hK : 0 < K)
+    (fan : Fin (142081+2) ↪ Fin T) (fits : 215 ≤ Q)
+    (body : P → Pr P ((T+142081*7)+142081+10) Q prime U) :
+    let port := stagePadPort fan
+    let A := (prime^w)^16
+    let N := prime^(64*(w*64))
+    let frame := ownerPadFrame (A*B) N K
+    let aux := fun (S : Stacks ((T+142081*7)+142081+10) prime) => ∀ j : Fin 12, j ≠ 0 → j ≠ 1 → ∀ z,
+      frame.tape j z = readAt blank (S.L (port 0 j)) (S.R (port 0 j)) (z-frame.head j)
+    let code := fun i => embProg (port i) (Empty.elim : Empty → P)
+      (foreign (liftQ RowPaddingConstructedAlphabet.program fits))
+    let label := firstRowLabel w
+    ∀ (x : Fin 142081 → Fin (A*(B*K)) → ZMod 2) (order : List (Fin 142081)), order.Nodup → ∀ u S, aux S →
+      (∀ i ∈ order, Cover.Fallback.RecordPayload (port i 0) (fun _ => blank) 0 (x i) S) →
+      (∀ i ∈ order, ∀ z, readAt blank (S.L (port i 1)) (S.R (port i 1)) z = blank) →
+      ∃ z F steps, Exec body (Prog.seqList (order.map code)) (mk u S) steps (mk z F) ∧
+        steps ≤ order.length*(7021*(A*B)*(N*K)+6)+1 ∧ z.user = u.user ∧ aux F ∧
+        (∀ i ∈ order, Cover.Fallback.RecordPayload (port i 1) (fun _ => blank) 0 (singleLabelBank label x i) F) ∧
+        ∀ j, (∀ i ∈ order, ∀ h, port i h ≠ j) → F.L j = S.L j ∧ F.R j = S.R j :=
+  ownerPads_exec hB hK (stagePadPort fan) (stagePadPort_shared fan) (stagePadPort_apart fan) fits body
 
 theorem stagePadPort_off_original {T : ℕ} (fan : Fin (142081+2) ↪ Fin T)
     (i : Fin 142081) (j : Fin 12) (k : Fin T) :

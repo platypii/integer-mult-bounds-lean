@@ -46,6 +46,47 @@ theorem correctionAfterSweep_exec {w B W T Q : ℕ} {P U : Type}
 
 /-- Pad the corrected compact bank into the recursive stage's input fan,
 including the extra owner. All owners reuse one set of padding counters. -/
+theorem padPlacedCorrection_exec {T Q w B K : ℕ} {P U : Type}
+    (port : Fin 142081 → Fin 12 ↪ Fin T)
+    (shared : ∀ i k j, j ≠ 0 → j ≠ 1 → port i j = port k j)
+    (separate : ∀ i k, i ≠ k → ∀ j, port i j ≠ port k 0 ∧ port i j ≠ port k 1) (fits : 215 ≤ Q)
+    (body : P → Pr P T Q prime U) (hb : 0 < B) (hk : 0 < K) :
+    let A := (prime^w)^16
+    let N := prime^(64*(w*64))
+    let frame := ownerPadFrame (A*B) N K
+    ∃ code, ∀ (dst : Fin (142081+2) ↪ Fin T)
+      (x : Fin 142081 → Fin (A*(B*K)) → ZMod 2) u S,
+      (∀ i, dst (i.castAdd 2) = port i 1) →
+      (∀ (j : Fin 2) i h, port i h ≠ dst (j.natAdd 142081)) →
+      StageControls dst (A*(B*N*K)) S →
+      (∀ j : Fin 12, j ≠ 0 → j ≠ 1 → ∀ z,
+        frame.tape j z = readAt blank (S.L (port 0 j)) (S.R (port 0 j)) (z-frame.head j)) →
+      RepT (phaseOwners x) (fun i => S.L (port i 0)) (fun i => S.R (port i 0)) →
+      (∀ i z, readAt blank (S.L (port i 1)) (S.R (port i 1)) z = blank) →
+      ∃ z F t, Exec body code (mk u S) t (mk z F) ∧ t ≤ 142081*(7021*(A*B)*(N*K)+6)+1 ∧
+        z.user = u.user ∧ HelperFan dst (singleLabelBank (firstRowLabel w) x) F ∧
+        ∀ j, (∀ i h, port i h ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  intro A N frame
+  let order := List.finRange 142081
+  refine ⟨Prog.seqList (order.map (fun i => embProg (port i) (Empty.elim : Empty → P)
+    (foreign (liftQ RowPaddingConstructedAlphabet.program fits)))),?_⟩
+  intro dst x u S placed apart ctrl headers compact empty
+  obtain ⟨z,F,t,run,paid,user,_,payload,off⟩ :=
+    ownerPads_exec (w := w) hb hk port shared separate fits body x order (List.nodup_finRange _) u S headers
+      (by intro i _ j; rw [encodedOwnerCell]; exact (compact i j).symm) (fun i _ => empty i)
+  refine ⟨z,F,t,run,by simpa [order] using paid,user,?_,fun j h => off j (fun i _ => h i)⟩
+  intro i
+  refine Fin.addCases (fun j z => ?_) (fun j z => ?_) i
+  · have read := payload j (List.mem_finRange j) z
+    rw [encodedOwnerCell] at read
+    simp only [PointwiseRoleGate.bank,Tapes.append,Fin.addCases_left,embStk,Function.comp_apply,placed]
+    change putWord _ 0 (List.ofFn fun i => SparseRoleCircuit.encode (a := prime)
+      (singleLabelBank (B := B) (K := K) (firstRowLabel w) x j i)) z = _
+    exact read.symm
+  · obtain ⟨hl,hr⟩ := off _ (fun i _ h => apart j i h)
+    simpa only [PointwiseRoleGate.bank,Tapes.append,Fin.addCases_right,CountedLoopReuseAlphabet.controls,
+      ite_self,embStk,Function.comp_apply,hl,hr] using ctrl j z
+
 theorem padCorrectionOwners_exec {T Q w B K : ℕ} {P U : Type}
     (fan : Fin (142081+2) ↪ Fin T) (fits : 215 ≤ Q)
     (body : P → Pr P ((T+142081*7)+142081+10) Q prime U) (hb : 0 < B) (hk : 0 < K) :
@@ -64,27 +105,8 @@ theorem padCorrectionOwners_exec {T Q w B K : ℕ} {P U : Type}
       (∀ i z, readAt blank (S.L (port i 1)) (S.R (port i 1)) z = blank) →
       ∃ z F t, Exec body code (mk u S) t (mk z F) ∧ t ≤ 142081*(7021*(A*B)*(N*K)+6)+1 ∧
         z.user = u.user ∧ HelperFan dst (singleLabelBank (firstRowLabel w) x) F ∧
-        ∀ j, (∀ i h, port i h ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
-  intro port A N frame
-  let order := List.finRange 142081
-  refine ⟨Prog.seqList (order.map (fun i => embProg (port i) (Empty.elim : Empty → P)
-    (foreign (liftQ RowPaddingConstructedAlphabet.program fits)))),?_⟩
-  intro dst x u S placed apart ctrl headers compact empty
-  obtain ⟨z,F,t,run,paid,user,_,payload,off⟩ :=
-    placedOwnerPads (w := w) hb hk fan fits body x order (List.nodup_finRange _) u S headers
-      (by intro i _ j; rw [encodedOwnerCell]; exact (compact i j).symm) (fun i _ => empty i)
-  refine ⟨z,F,t,run,by simpa [order] using paid,user,?_,fun j h => off j (fun i _ => h i)⟩
-  intro i
-  refine Fin.addCases (fun j z => ?_) (fun j z => ?_) i
-  · have read := payload j (List.mem_finRange j) z
-    rw [encodedOwnerCell] at read
-    simp only [PointwiseRoleGate.bank,Tapes.append,Fin.addCases_left,embStk,Function.comp_apply,placed]
-    change putWord _ 0 (List.ofFn fun i => SparseRoleCircuit.encode (a := prime)
-      (singleLabelBank (B := B) (K := K) (firstRowLabel w) x j i)) z = _
-    exact read.symm
-  · obtain ⟨hl,hr⟩ := off _ (fun i _ h => apart j i h)
-    simpa only [PointwiseRoleGate.bank,Tapes.append,Fin.addCases_right,CountedLoopReuseAlphabet.controls,
-      ite_self,embStk,Function.comp_apply,hl,hr] using ctrl j z
+        ∀ j, (∀ i h, port i h ≠ j) → F.L j = S.L j ∧ F.R j = S.R j :=
+  padPlacedCorrection_exec (stagePadPort fan) (stagePadPort_shared fan) (stagePadPort_apart fan) fits body hb hk
 
 /-- The same entry and exit corrections work for every parent and every node
 array. The recursive stage runs on the occupied label row and its output,
