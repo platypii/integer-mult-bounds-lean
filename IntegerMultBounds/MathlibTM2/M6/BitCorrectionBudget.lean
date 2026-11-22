@@ -112,17 +112,39 @@ private theorem lower_moment (rows : List (ℕ × ℕ × ℕ)) (ok : rows.all lo
            apply mul_le_mul_of_nonneg_left _ (Nat.cast_nonneg e.2.1)
            simpa only [Real.rpow_sub base, Real.rpow_one] using power
 
-/-- Even one additional rank-one child in the entire single-class profile exceeds
-the budget at the selected exponent, before the bad-residue surcharge. -/
-theorem bit_one_extra_child_over_budget :
-    28416 < histMoment bitHistogram 64 (1 - bitSaving) + (1 / 64 : ℝ) ^ (1 - bitSaving) := by
+/-- A correction confined to half of one child's volume fits even with the
+five-class bad-residue surcharge. The weight is the aggregate across the node. -/
+theorem bit_five_half_child_fits :
+    5 * (histMoment bitHistogram 64 (1 - bitSaving) + surcharge bitHistogram 64 (1 - bitSaving)) +
+      (1 / 2 : ℝ) * (1 / 64 : ℝ) ^ (1 - bitSaving) < 142080 := by
+  have row := List.all_eq_true.mp bitCertificate_ok (1,381024,10072350666) List.mem_cons_self
+  simp only [certOk,Bool.and_eq_true,decide_eq_true_eq] at row
+  have unit := child_power_le (r := 1) (m := 64) (p := 10) (q := 5769) (D := 10)
+    Nat.one_pos (by decide) (by decide) (U := 10072350666) row.2
+  rw [← bitSaving_eq] at unit
+  have bill := add_le_add (mul_le_mul_of_nonneg_left (add_le_add bit_histMoment_le bit_surcharge_le)
+    (by norm_num : (0 : ℝ) ≤ 5)) (mul_le_mul_of_nonneg_left unit (by norm_num : (0 : ℝ) ≤ 1/2))
+  norm_num at bill
+  linarith
+
+/-- The five-class node cannot pay even one additional rank-one child at
+the selected exponent, including when the classes share the call. -/
+theorem bit_five_one_extra_child_over_budget :
+    142080 < 5 * histMoment bitHistogram 64 (1 - bitSaving) + (1 / 64 : ℝ) ^ (1 - bitSaving) := by
   have h := lower_moment bitCertificate lower_checked
   rw [bitCertificate_histogram] at h
   have extra : (1 / 64 : ℝ) ≤ (1 / 64 : ℝ) ^ (1 - bitSaving) := by
     nth_rw 1 [← Real.rpow_one (1 / 64 : ℝ)]
     apply Real.rpow_le_rpow_of_exponent_ge (by norm_num) (by norm_num)
     norm_num [bitSaving]
-  apply lt_of_lt_of_le _ (add_le_add h extra)
+  apply lt_of_lt_of_le _ (add_le_add (mul_le_mul_of_nonneg_left h (by norm_num : (0 : ℝ) ≤ 5)) extra)
   norm_num [bitCertificate]
+
+/-- A single class likewise cannot add a rank-one child. -/
+theorem bit_one_extra_child_over_budget :
+    28416 < histMoment bitHistogram 64 (1 - bitSaving) + (1 / 64 : ℝ) ^ (1 - bitSaving) := by
+  have := bit_five_one_extra_child_over_budget
+  have extra : 0 ≤ (1 / 64 : ℝ) ^ (1 - bitSaving) := by positivity
+  linarith
 
 end IntegerMultBounds.MathlibTM2.M6

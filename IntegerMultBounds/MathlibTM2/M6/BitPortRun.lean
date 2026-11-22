@@ -464,6 +464,41 @@ theorem portBasis_shift (w : ℕ) (t : Fin 111) (atExit : Bool) :
   exact action
 
 open Matrix AffineFieldCoordinates IntegerMultBounds.Swap.Modular in
+/-- In the port basis a correction fixes exactly the addresses whose last
+digit vanishes. All other digits are unrestricted. -/
+theorem portCorrection_fixed_iff (w : ℕ) (t : Fin 111) (atExit : Bool) :
+    let R := ZMod (prime^w)
+    let B := portBasis t atExit (translatedEntry t 0 : R)⁻¹ (targetNormal t (Fin.last 7) : R)⁻¹ (4:R)⁻¹
+    let P := translatedPortProjector R (4:R)⁻¹ t
+    let U := reduce (prime^w) (selectedProjector ⟨2+t.val,by omega⟩)
+    let V := reduce (prime^w) (selectedProjector ⟨525+t.val,by omega⟩)
+    ∀ x s, B *ᵥ x = embed s →
+      ((if atExit then M8.Exchange.exchange V (M8.Exchange.exchange (1-P) s)
+        else M8.Exchange.exchange P (M8.Exchange.exchange U s)) = s ↔ x (dIndex (Fin.last 7)) = 0) := by
+  intro R B P U V x s packed
+  obtain ⟨_,unit,shift⟩ := portBasis_shift w t atExit
+  have moved := shift x s packed
+  let add := OrderedAffine.execute (.shift (hIndex (0 : Fin 8)) (dIndex (Fin.last 7)) (1:R)) x
+  constructor
+  · intro fixed
+    rw [fixed,← packed] at moved
+    have undo (v : Fin 16 → R) : B⁻¹ *ᵥ (B *ᵥ v) = v := by
+      rw [mulVec_mulVec,nonsing_inv_mul _ ((isUnit_iff_isUnit_det _).mp unit),one_mulVec]
+    change B *ᵥ add = B *ᵥ x at moved
+    have cancel := congrArg (fun z => B⁻¹ *ᵥ z) moved
+    rw [undo,undo] at cancel
+    simpa [add,OrderedAffine.execute] using congrFun cancel (hIndex (0 : Fin 8))
+  · intro zero
+    have same : add = x := by
+      change x (15 : Fin 16) = 0 at zero
+      simp [add,OrderedAffine.execute,zero]
+    change B *ᵥ add = _ at moved
+    rw [same,packed] at moved
+    apply Prod.ext <;> funext k
+    · simpa only [embed_h] using congrFun moved.symm (hIndex k)
+    · simpa only [embed_d] using congrFun moved.symm (dIndex k)
+
+open Matrix AffineFieldCoordinates IntegerMultBounds.Swap.Modular in
 /-- At every positive width both corrections move a parent address on every
 selected port. In the triangular basis a single backward digit shift suffices
 to witness this uniformly. -/
@@ -484,18 +519,10 @@ theorem portCorrection_moves (w : ℕ) (t : Fin 111) (atExit : Bool) :
     induction k using Fin.addCases (m := 8) (n := 8) with
     | left i => exact (embed_h s i).symm
     | right i => exact (embed_d s i).symm
-  obtain ⟨_,unit,shift⟩ := portBasis_shift (w+1) t atExit
   refine ⟨s,fun fixed => ?_⟩
-  have moved := shift x s packed
-  rw [fixed,← packed] at moved
-  have cancel := congrArg (fun z => B⁻¹ *ᵥ z) moved
-  change B⁻¹ *ᵥ (B *ᵥ _) = B⁻¹ *ᵥ (B *ᵥ x) at cancel
-  have undo (v : Fin 16 → R) : B⁻¹ *ᵥ (B *ᵥ v) = v := by
-    rw [mulVec_mulVec,nonsing_inv_mul _ ((isUnit_iff_isUnit_det _).mp unit),one_mulVec]
-  rw [undo,undo] at cancel
-  have digit := congrFun cancel (hIndex (0 : Fin 8))
+  have digit := (portCorrection_fixed_iff (w+1) t atExit x s packed).1 fixed
   haveI : Fact (1 < prime^(w+1)) := ⟨one_lt_pow₀ Shared50ModularControl.prime_prime.one_lt (Nat.succ_ne_zero _)⟩
-  simpa [OrderedAffine.execute,x,R] using digit
+  exact one_ne_zero (α := ZMod (prime^(w+1))) digit
 
 open IntegerMultBounds.Swap.Modular in
 private theorem lift_port_inverse {m : ℕ} (z : ℤ) (unit : IsUnit (z : ZMod m)) :
@@ -813,6 +840,31 @@ theorem digitSwap_view_owner [M8.Machine.Net] {arity : ℕ} (i j : Fin arity) (l
   intro w W hw hW
   obtain ⟨stage,fixed,price,seed,swap⟩ := build w W hw hW
   exact ⟨stage,fixed,price,stage.strip_input 0 ▸ HasStackSeed.strip seed stage.slots,swap⟩
+
+open Cover RecursiveInterchangeLayout M8.RevMachine in
+/-- A rank-one recursive transpose of the physical swap view has the digit
+action required by the port program, at the original payload offsets. -/
+theorem digitSwap_transpose {d w W : ℕ} (i j : Fin d) (lt : i < j)
+    (x : Fin ((prime^w)^d*W) → ZMod 2) :
+    let v := swapView prime w W i j
+    let size : volume prime v = (prime^w)^d*W := swapView_volume i j lt
+    let y := Shared50RecursiveNodeRows.transpose (one_dvd v.rows) (fun k => x (k.cast size))
+    ∀ a k, y ((FlatCoordinateLayout.index (a ∘ Equiv.swap i j) k).cast size.symm) =
+      x (FlatCoordinateLayout.index a k) := by
+  intro v size y a k
+  let src := fun t : Fin (volume prime v) => x (t.cast size)
+  have moves := M8.Stage2Machine.Transpose.transpose_moves src
+  have swapped : LabelView.Swapped prime v (ext src) (ext y) := by
+    intro b hb row hr p hp h hh mid hm d hd s hs
+    exact moves b hb row hr p hp d hd mid hm h hh s hs
+  have read := swapView_apply i j lt swapped a k
+  let dst := FlatCoordinateLayout.index (a ∘ Equiv.swap i j) k
+  let source := FlatCoordinateLayout.index a k
+  calc
+    _ = ext y dst.val := (ext_apply y (dst.cast size.symm)).symm
+    _ = ext src source.val := read
+    _ = src (source.cast size.symm) := ext_apply src (source.cast size.symm)
+    _ = _ := by simp only [src,Fin.cast_cast,Fin.cast_eq_self,source]
 
 open Cover RecursiveInterchangeLayout M8.RevMachine in
 theorem digitSwap_owner [M8.Machine.Net] {arity : ℕ} (i j : Fin arity) (lt : i < j) :
