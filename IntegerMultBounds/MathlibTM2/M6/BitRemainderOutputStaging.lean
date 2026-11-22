@@ -34,7 +34,7 @@ theorem ordinaryOutputStaging_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T
       (∀ i, S.R (trans i) = (transposeStacks (embStk trans S) [] []
         (List.replicate (M^16) record.reverse).flatten record rowWidth).R i) →
       ∃ v F t, ∃ staged : Fin (M^16*(B*(M^112*W))) → ZMod 2, Exec body code (mk u S) t (mk v F) ∧ t ≤ 15923*(B*(N*K))+577 ∧ v.user = u.user ∧
-        F.R (trans 6) = List.ofFn (fun j => SparseRoleCircuit.encode (staged j)) ∧
+        F.L (trans 6) = S.L (trans 6) ∧ F.R (trans 6) = List.ofFn (fun j => SparseRoleCircuit.encode (staged j)) ∧
         (∀ (a : Fin (M^16)) (b : Fin B) (k : Fin (M^112*W)),
           staged (finProdFinEquiv (a,finProdFinEquiv (b,k))) = output (finProdFinEquiv
             (finProdFinEquiv (b,idRow),(finProdFinEquiv (a,k)).cast (ordinaryCompact_width M W)))) ∧
@@ -62,7 +62,8 @@ theorem ordinaryOutputStaging_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T
   change k ≤ 60*(M^16*(B*prime^(64*((w+1)*64))*(M^112*W)))+12 at cost
   rw [labels,volume] at cost
   change t ≤ 15863*(B*(N*K))+565 at time
-  refine ⟨z,F,_,compactTranspose (ordinaryCompactView compact),Exec.seq cut returned,by omega,same.trans user,?_,?_,?_⟩
+  refine ⟨z,F,_,compactTranspose (ordinaryCompactView compact),Exec.seq cut returned,by omega,same.trans user,?_,?_,?_,?_⟩
+  · exact (congrArg (fun D : Stacks 8 prime => D.L 6) view).trans (keep 6).1
   · exact congrArg (fun D : Stacks 8 prime => D.R 6) view
   · intro a b k
     exact (ordinaryCompactView_cell compact a b k).trans (row b _)
