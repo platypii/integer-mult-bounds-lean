@@ -77,143 +77,7 @@ theorem archiveChildCall_exec [M8.Machine.Net] {T Q : ℕ} {P U : Type}
     have h := frame j outside
     exact ⟨h.1.trans (congrFun left j),h.2.trans (off j (fun k => outside (localPort k)))⟩
 
-/-- Place two charts around a worker with shared payload and control tapes.
-Only payload slots overlap a chart. Its private slots are disjoint from both
-the worker and the opposite chart. -/
-theorem chartWindowBanks {k t : ℕ} (sizes : Bool → ℕ)
-    (slots : ∀ b, Fin k ↪ Fin (sizes b)) (owner : Fin (k+2) ↪ Fin t) :
-    ∃ (T : ℕ) (fan : Fin (k+2) ↪ Fin T) (worker : Fin t ↪ Fin T)
-      (chart : ∀ b, Fin (sizes b) ↪ Fin T),
-      (∀ i, worker (owner i) = fan i) ∧
-      (∀ b i, chart b (slots b i) = fan (i.castAdd 2)) ∧
-      (∀ b i (j : Fin 2), chart b i ≠ fan (j.natAdd k)) ∧
-      (∀ b i, (∀ j, slots b j ≠ i) →
-        (∀ l, worker l ≠ chart b i) ∧ ∀ l, chart (!b) l ≠ chart b i) ∧
-      (∀ i, (∀ j, owner j ≠ i) → ∀ b l, chart b l ≠ worker i) ∧
-      (∀ X : Stacks (k+2) prime, ∀ Y : Stacks t prime, ∀ Z : (b : Bool) → Stacks (sizes b) prime,
-        ∃ S : Stacks T prime, embStk fan S = X ∧
-          (∀ i, (∀ j, owner j ≠ i) → S.L (worker i) = Y.L i ∧ S.R (worker i) = Y.R i) ∧
-          ∀ b i, (∀ j, slots b j ≠ i) → S.L (chart b i) = (Z b).L i ∧ S.R (chart b i) = (Z b).R i) := by
-  let tapes : Option Bool → ℕ := fun x => x.elim t (fun b => sizes b + 2)
-  let owners : (i : Option Bool) → Fin (k+2) ↪ Fin (tapes i)
-    | none => owner
-    | some b => stageFan (slots b)
-  obtain ⟨T,fan,bank,atOwner,prepare,apart⟩ := copyWindowBanks tapes owners
-  let chart (b : Bool) : Fin (sizes b) ↪ Fin T := ⟨fun i => bank (some b) (i.castAdd 2), fun i j e => Fin.ext (congrArg (fun l : Fin (sizes b+2) => l.val) ((bank (some b)).injective e))⟩
-  have left (b : Bool) (j : Fin k) : owners (some b) (j.castAdd 2) = (slots b j).castAdd 2 := by
-    change finSumFinEquiv (Sum.map (slots b) id (finSumFinEquiv.symm (j.castAdd 2))) = _
-    simp [@finSumFinEquiv_symm_apply_castAdd k 2]
-  have right (b : Bool) (j : Fin 2) : owners (some b) (j.natAdd k) = j.natAdd (sizes b) := by
-    change finSumFinEquiv (Sum.map (slots b) id (finSumFinEquiv.symm (j.natAdd k))) = _
-    simp [@finSumFinEquiv_symm_apply_natAdd k 2]
-  have privateSlot (b : Bool) (i : Fin (sizes b)) (h : ∀ j, slots b j ≠ i) :
-      ∀ j, owners (some b) j ≠ i.castAdd 2 := by
-    intro j
-    refine Fin.addCases (fun j => ?_) (fun j => ?_) j
-    · rw [left]; exact fun e => h j (Fin.ext (congrArg (fun l : Fin (sizes b+2) => l.val) e))
-    · rw [right]; intro e; have := congrArg Fin.val e; simp only [Fin.val_natAdd,Fin.val_castAdd] at this; omega
-  refine ⟨T,fan,bank none,chart,atOwner none,?_,?_,?_,?_,?_⟩
-  · intro b i
-    change bank (some b) ((slots b i).castAdd 2) = _
-    simpa only [left] using atOwner (some b) (i.castAdd 2)
-  · intro b i j
-    rw [← atOwner (some b) (j.natAdd k)]
-    intro eq
-    have same := (bank (some b)).injective eq
-    rw [right] at same
-    have := congrArg Fin.val same
-    change i.val = sizes b + j.val at this
-    omega
-  · intro b i h
-    have other := (apart (some b) _ (privateSlot b i h)).2
-    exact ⟨other none (by simp), fun l => other (some (!b)) (by cases b <;> decide) (l.castAdd 2)⟩
-  · intro i h b l
-    exact (apart none i h).2 (some b) (by simp) (l.castAdd 2)
-  · intro X Y Z
-    let init : (i : Option Bool) → Stacks (tapes i) prime
-      | none => Y
-      | some b => ⟨[],[],Fin.addCases (Z b).L (fun _ => []),Fin.addCases (Z b).R (fun _ => [])⟩
-    obtain ⟨S,rep,stored⟩ := prepare X init
-    refine ⟨S,rep,stored none,?_⟩
-    intro b i h
-    change S.L (bank (some b) (i.castAdd 2)) = _ ∧ S.R (bank (some b) (i.castAdd 2)) = _
-    simpa [init,chart] using stored (some b) (i.castAdd 2) (privateSlot b i h)
-
-/-- Execute a complete hosted COPY schedule between its two physical charts.
-All private words can be seeded simultaneously before the entry pass. -/
-theorem chartedSchedule_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) :
-    ∃ (C : ℝ) (states : ℕ), ∀ w B K : ℕ, 0 < w → 0 < B → 0 < K →
-    let V := volume prime (copyLabelLayout w B K)
-    ∀ {t : ℕ} (owner : Fin (142081+2) ↪ Fin t),
-    ∃ (T : ℕ) (fan : Fin (142081+2) ↪ Fin T) (worker : Fin t ↪ Fin T),
-    ∀ (shared : Stacks (142081+2) prime) (seed : Stacks t prime),
-    ∃ initial : Stacks T prime, embStk fan initial = shared ∧
-    ∀ {P U : Type} {Q : ℕ}, states ≤ Q → ∀ (body : P → Pr P t Q prime U)
-      (middle : Pr P t Q prime U) (price : ℕ),
-      (∀ x u S, HelperFan owner x S →
-        (∀ i, (∀ j, owner j ≠ i) → S.L i = seed.L i ∧ S.R i = seed.R i) →
-        ∃ z F m y, Exec body middle (mk u S) m (mk z F) ∧ m ≤ price ∧ z.user = u.user ∧
-          HelperFan owner y F ∧ CopyScheduleEffect n p.1 p.2 w B K Copy.lifecycles x y) →
-      ∃ code, ∀ (data : Fin 142081 → Fin V → ZMod 2) u S, HelperFan fan data S →
-        (∀ i, (∀ j, fan j ≠ i) → S.L i = initial.L i ∧ S.R i = initial.R i) →
-        ∃ z F m out, Exec (fun f => embProg worker id (body f)) code (mk u S) m (mk z F) ∧
-          (m : ℝ) ≤ C*V*(w : ℝ)^M8.Machine.BudgetBound.tau + price ∧ z.user = u.user ∧ HelperFan fan out F ∧
-          (∀ g z, borrowedRead (B := B) (K := K) n p.1 p.2 g z out = borrowedScatter w (borrowedRead n p.1 p.2 g z data)) ∧
-          ∀ k, k ≠ Fin.last 142080 → (∀ i, ownerTape n p.1 p.2 i ≠ k) → out k = data k := by
-  obtain ⟨C,states,build⟩ := borrowedCopy_host n p
-  refine ⟨C,states,?_⟩
-  intro w B K hw hb hk V t owner
-  obtain ⟨stage,stateBound,prepare,run⟩ := build w B K hw hb hk
-  let slots (b : Bool) : Fin 142081 ↪ Fin (stage b).tapes := ⟨(stage b).slots,(stage b).slots_injective⟩
-  obtain ⟨T,fan,worker,chart,sharedAt,chartAt,controls,privateChart,privateWorker,init⟩ :=
-    chartWindowBanks (fun b => (stage b).tapes) slots owner
-  refine ⟨T,fan,worker,?_⟩
-  intro shared seed
-  choose chartSeed seeded using prepare
-  obtain ⟨initial,sharedEq,stored,metadata⟩ := init shared seed chartSeed
-  refine ⟨initial,sharedEq,?_⟩
-  intro P U Q cap body middle price copies
-  let host := fun f => embProg worker id (body f)
-  let saved (S : Stacks T prime) := ∀ i, (∀ j, owner j ≠ i) →
-    S.L (worker i) = seed.L i ∧ S.R (worker i) = seed.R i
-  have fits (b) : (stage b).states ≤ Q := (stateBound b).trans cap
-  have project (S : Stacks T prime) : embStk owner (embStk worker S) = embStk fan S := by
-    simp only [embStk,Function.comp_def,sharedAt]
-  have whole := run chart fan chartAt (fun b j i => controls b i j) fits host price saved (embProg worker id middle)
-  dsimp only at whole
-  specialize whole (by
-    intro x u S rep ready fresh
-    obtain ⟨v,D,m,y,exec,paid,user,done,effect⟩ := copies x (embDn worker u) (embStk worker S)
-      (by simpa only [HelperFan,project] using rep) fresh
-    obtain ⟨z,F,placed,_,same,projection,off⟩ := exec_emb (ι := id) (body' := host) worker.injective
-      (fun _ => rfl) exec u rfl S rfl
-    rw [← projection] at done
-    refine ⟨z,F,m,y,placed,paid,same.trans user,by simpa only [HelperFan,project] using done,?_,effect⟩
-    intro j priv h
-    obtain ⟨l,r⟩ := off _ (privateChart true j priv).1
-    simpa only [l,r] using ready j priv h)
-  let pass (b : Bool) : Pr P T Q prime U := embProg (chart b) (Empty.elim : Empty → P) (foreign (liftQ (stage b).program (fits b)))
-  refine ⟨.seq (pass false) (.seq (embProg worker id middle) (pass true)),?_⟩
-  intro data u S rep fresh
-  have chartFresh b j (priv : ∀ i, slots b i ≠ j) := fresh (chart b j) (fun i eq =>
-    (privateChart b j priv).1 (owner i) ((sharedAt i).trans eq))
-  have ready b j (priv : ∀ i, slots b i ≠ j) (h : ℤ) : (stage b).metadata.tape j h =
-      readAt blank (S.L (chart b j)) (S.R (chart b j)) (h-(stage b).metadata.head j) := by
-    obtain ⟨l,r⟩ := chartFresh b j priv
-    obtain ⟨ll,rr⟩ := metadata b j priv
-    exact (seeded b j priv h).trans (by rw [l,r,ll,rr])
-  apply whole data u S (ready false) rep
-  intro D keep
-  constructor
-  · intro j priv h
-    obtain ⟨l,r⟩ := keep _ ((privateChart true j priv).2)
-    simpa only [l,r] using ready true j priv h
-  · intro i priv
-    obtain ⟨l,r⟩ := keep _ (privateWorker i priv false)
-    obtain ⟨ll,rr⟩ := fresh _ (fun j eq => priv j (worker.injective ((sharedAt j).trans eq)))
-    obtain ⟨sl,sr⟩ := stored i priv
-    exact ⟨l.trans (ll.trans sl),r.trans (rr.trans sr)⟩
-
+-- The separate chart banks and their execution proof are available in 116e7160.
 /-- All COPY workers share the permanent payload and controls. Each worker's
 private initialization survives the earlier windows, and each scheduled
 child is charged once in its own window. -/
@@ -223,7 +87,7 @@ theorem borrowedWindows_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) 
       (T states : ℕ) (fan : Fin (142081+2) ↪ Fin T) (bank : ∀ j, Fin (tapes j) ↪ Fin T),
     ∀ {P U : Type} {Q : ℕ}, states ≤ Q → ∀ (localBody : ∀ j, P → Pr P (tapes j) Q prime U) (proc : J → P),
     let body := fun f : J × P => embProg (bank f.1) (fun g => (f.1,g)) (localBody f.1 f.2)
-    ∃ base swaps leaf fixed : J → ℕ, ∀ (node : Descriptor) (w B rows : ℕ),
+    ∃ base swaps : J → ℕ, ∀ (node : Descriptor) (w B rows : ℕ),
     node.width = 64*(w+1) → node.rows = 142080*rows → node.beforeH = B*prime^(64*((w+1)*64)) →
     let M := prime^(w+1)
     let K := node.beforeRows*rows*node.between*node.afterD
@@ -231,28 +95,31 @@ theorem borrowedWindows_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) 
     let W := blocks*prime^(64*((w+1)*64))*K
     let V := M^16*W
     let desc := fun j : J => scheduledChild prime node (copyChildPosition (n,p,j))
-    let view := fun (x : Fin 142081 → Fin V → ZMod 2) k i => x k (Fin.cast (copyLabel_volume (w+1) blocks K) i)
     0 < W → ∃ position : ∀ j, Fin (volume prime (desc j)) ≃ Fin V,
       (∀ j k, (position j k).val = (CopyChildLayout.packActive (desc j) k).val) ∧
       ∀ record : J → List (Fin (prime+4)), ∀ shared : Stacks (142081+2) prime,
       ∃ prepared : Stacks T prime, embStk fan prepared = shared ∧ ∀ budget : J → ℕ,
       (∀ j, ScheduledChildExec node (desc j) w W (regs j) (record j) (position j) (localBody j) (proc j) (budget j)) →
-      let work := fun j => (base j+swaps j*swapVolumeRate w)*V + leaf j*LeafCore.coreCost V ((w+1)*64) + fixed j
+      let work := fun j => (base j+swaps j*swapVolumeRate w)*V + 12
       ∃ code, ∀ data u S, HelperFan fan data S →
         (∀ k, (∀ h, fan h ≠ k) → S.L k = prepared.L k ∧ S.R k = prepared.R k) →
         ∃ z F t out, Exec body code (mk u S) t (mk z F) ∧
           t ≤ (List.ofFn work).sum+(List.ofFn budget).sum+1 ∧ z.user = u.user ∧ HelperFan fan out F ∧
-          CopyScheduleEffect n p.1 p.2 (w+1) blocks K Copy.lifecycles (view data) (view out) := by
+          (∀ g (cell : Cover.LabelEntry.Cell (copyLabelLayout (w+1) blocks K) blocks),
+            let owner := (⟨ownerTape n p.1 p.2,ownerTape_injective n p.1 p.2⟩ : Fin 661 ↪ Fin 142081)
+            phaseRead owner out (labelSpectator g cell) = Copy.run (selectedFrame (w+1)) Copy.lifecycles
+              (phaseRead owner data (labelSpectator g cell))) ∧
+          ∀ k, k ≠ Fin.last 142080 → (∀ i, ownerTape n p.1 p.2 i ≠ k) → out k = data k := by
   classical
   intro J
   choose tapes qs regs owners window using borrowedWindow_host n p
   obtain ⟨T,fan,bank,sharedAt,prepare,apart⟩ := copyWindowBanks tapes owners
   refine ⟨tapes,regs,T,Finset.univ.sup qs,fan,bank,?_⟩
   intro P U Q cap localBody proc body
-  choose base swaps leaf fixed build using fun j : J =>
+  choose base swaps build using fun j : J =>
     window j ((Finset.le_sup (Finset.mem_univ j)).trans cap) (localBody j) (proc j)
-  refine ⟨base,swaps,leaf,fixed,?_⟩
-  intro node w B rows width split label M K blocks W V desc view pos
+  refine ⟨base,swaps,?_⟩
+  intro node w B rows width split label M K blocks W V desc pos
   choose position coords run using fun j => build j node w B rows width split label pos
   refine ⟨position,coords,?_⟩
   intro record shared
@@ -266,7 +133,7 @@ theorem borrowedWindows_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) 
   have project (j : J) (S : Stacks T prime) : embStk (owners j) (embStk (bank j) S) = embStk fan S := by
     simp only [embStk,Function.comp_def,sharedAt]
   let price := fun j => work j + budget j
-  obtain ⟨all,exec⟩ := copyWindows_exec body n p.1 p.2 (w+1) blocks K view (HelperFan fan) saved price (fun j => by
+  obtain ⟨all,exec⟩ := commonWindows_exec (w := w+1) (B := blocks) (K := K) body n p.1 p.2 fan saved price (fun j => by
     refine ⟨embProg (bank j) (fun g => (j,g)) (code j),?_⟩
     intro data u S rep fresh
     obtain ⟨v,D,t,out,run,paid,user,done,act⟩ := step j data (embDn (bank j) u) (embStk (bank j) S)
@@ -278,17 +145,16 @@ theorem borrowedWindows_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) 
     · simpa only [HelperFan,project] using done
     · intro i ne keep k priv
       obtain ⟨l,r⟩ := off (bank i k) ((apart i k priv).2 j ne.symm)
-      exact ⟨l.trans (keep k priv).1,r.trans (keep k priv).2⟩) (List.finRange _) (List.nodup_finRange _)
-  rw [← List.ofFn_eq_map,← List.ofFn_eq_map,List.ofFn_getElem] at exec
+      exact ⟨l.trans (keep k priv).1,r.trans (keep k priv).2⟩)
   refine ⟨all,?_⟩
   intro data u S rep fresh
-  obtain ⟨z,F,t,out,run,paid,user,done,act⟩ := exec data u S rep (fun i _ k priv => by
+  obtain ⟨z,F,t,out,run,paid,user,done,act⟩ := exec data u S rep (fun i k priv => by
     obtain ⟨l,r⟩ := fresh _ (apart i k priv).1
     exact ⟨l.trans (stored i k priv).1,r.trans (stored i k priv).2⟩)
   refine ⟨z,F,t,out,run,?_,user,done,act⟩
   simpa only [price,List.sum_ofFn,Finset.sum_add_distrib] using paid
 
-/-- Chart the nine scheduled child calls, charging their budgets once per invocation. -/
+/-- Execute the nine fanouts in common coordinates, charging each scheduled child once. -/
 theorem borrowedScatterSchedule_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) :
     let J := Fin Copy.lifecycles.length
     ∃ (C : ℝ) (tapes : J → ℕ) (regs : ∀ j, Fin (rowSwapBlock.tapes+35) ↪ Fin (tapes j))
@@ -322,41 +188,37 @@ theorem borrowedScatterSchedule_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 ×
   classical
   intro J
   obtain ⟨tapes,regs,T,states,fan,bank,windows⟩ := borrowedWindows_host n p
-  obtain ⟨C,chartStates,charts⟩ := chartedSchedule_host n p
-  refine ⟨C,tapes,regs,T,max states chartStates,bank,?_⟩
+  refine ⟨0,tapes,regs,T,states,bank,?_⟩
   intro P U Q cap localBody proc body
-  obtain ⟨base,swaps,leaf,fixed,build⟩ := windows ((le_max_left ..).trans cap) localBody proc
-  refine ⟨base,swaps,leaf,fixed,?_⟩
+  obtain ⟨base,swaps,build⟩ := windows cap localBody proc
+  refine ⟨base,swaps,fun _ => 0,fun _ => 12,?_⟩
   intro node w B rows width split label M K blocks W V desc view pos
   obtain ⟨position,coords,run⟩ := build node w B rows width split label pos
-  have hb := (Nat.pos_of_mul_pos_right (Nat.pos_of_mul_pos_right pos) : 0 < blocks)
-  have hk := (Nat.pos_of_mul_pos_left pos : 0 < K)
-  obtain ⟨H,owners,worker,chart⟩ := charts (w+1) blocks K (Nat.succ_pos _) hb hk fan
-  refine ⟨H,owners,worker,position,coords,?_⟩
+  refine ⟨T,fan,Function.Embedding.refl _,position,coords,?_⟩
   intro record shared
-  obtain ⟨seed,_,middle⟩ := run record shared
-  obtain ⟨initial,rep,host⟩ := chart shared seed
+  obtain ⟨initial,rep,host⟩ := run record shared
   refine ⟨initial,rep,?_⟩
   intro budget recurse work
-  obtain ⟨code,copies⟩ := middle budget recurse
-  have vol : volume prime (copyLabelLayout (w+1) blocks K) = V := copyLabel_volume ..
-  have castRep {t a b : ℕ} (e : Fin (142081+2) ↪ Fin t) (eq : a = b) (x : Fin 142081 → Fin a → ZMod 2) (D : Stacks t prime) :
-        HelperFan e (fun k (i : Fin b) => x k (Fin.cast eq.symm i)) D ↔ HelperFan e x D := by subst b; rfl
-  specialize host ((le_max_right ..).trans cap) body code ((List.ofFn work).sum+(List.ofFn budget).sum+1) (by
-    intro x u S rep fresh
-    let data := fun k (i : Fin V) => x k (Fin.cast vol.symm i)
-    obtain ⟨z,F,m,out,exec,paid,user,done,effect⟩ := copies data u S ((castRep fan vol x S).2 rep) fresh
-    refine ⟨z,F,m,_,exec,paid,user,(castRep fan vol.symm out F).2 done,?_⟩
-    simpa [data] using effect)
-  obtain ⟨compiled,execute⟩ := host
-  refine ⟨compiled,?_⟩
+  obtain ⟨code,copies⟩ := host budget recurse
+  refine ⟨embProg (Function.Embedding.refl _) id code,?_⟩
   intro data u S live fresh
-  obtain ⟨z,F,m,out,exec,paid,user,done,action,off⟩ := execute (view data) u S
-    ((castRep _ vol.symm data S).2 live) fresh
-  let result := fun k (i : Fin V) => out k (Fin.cast vol.symm i)
-  refine ⟨z,F,m,result,exec,by simpa only [vol] using paid,user,(castRep _ vol out F).2 done,?_,?_⟩
-  · simpa [view,result] using action
-  · simpa [view,result] using off
+  obtain ⟨z,F,m,out,exec,paid,user,done,action,off⟩ := copies data (embDn (Function.Embedding.refl (Fin T)) u) S live fresh
+  obtain ⟨v,G,placed,_,same,projection,_⟩ := exec_emb (ι := id)
+    (body' := fun f => embProg (Function.Embedding.refl _) id (body f))
+    (Function.Embedding.refl (Fin T)).injective (fun _ => rfl) exec u rfl S rfl
+  refine ⟨v,G,m,out,placed,?_,same.trans user,?_,?_,?_⟩
+  · simp only [work,zero_mul,Nat.add_zero,zero_add]
+    exact_mod_cast paid
+  · rw [← projection] at done
+    exact done
+  · intro g cell
+    simp only [view,borrowedRead_flat]
+    funext i
+    by_cases hi : i < 661
+    · exact (congrFun (action g cell) i).trans (commonScatter_eq_borrowedScatter _ _ _ ⟨i,hi⟩)
+    · simp [phaseRead,borrowedScatter,Copy.extendStored,hi]
+  · intro k live outside
+    exact congrArg (fun word i => word (Fin.cast (copyLabel_volume (w+1) blocks K) i)) (off k live outside)
 
 local instance (w : ℕ) : NeZero (prime^(w+1)) := ⟨(pow_pos Shared50ModularControl.prime_prime.pos _).ne'⟩
 

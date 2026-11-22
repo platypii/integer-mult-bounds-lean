@@ -69,92 +69,27 @@ theorem borrowedCall_exec [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5)
   obtain ⟨z,F,m,exec,paid,user,done,_⟩ := ownerStage_fan_exec stage bank fan shared apart fits body data u S ready rep
   exact ⟨z,F,m,stage.transform data,exec,paid,user,done,act data,off data⟩
 
-open RecursiveInterchangeLayout (volume) in
-/-- The two chart passes surrounding allocated COPY can be hosted separately.
-Their interpreter overhead is uniform in the width and does not involve a
-recursive call. -/
-theorem borrowedChart_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) (enter : Bool) :
-    ∃ (C : ℝ) (states : ℕ), ∀ w B K : ℕ, 0 < w → 0 < B → 0 < K →
-    let v := copyLabelLayout w B K
-    let V := volume prime v
-    ∃ stage : SharedBankStage.Stage _ 142081 prime (copyOwners (v := v)),
-      stage.states = states ∧ (∃ S : Stacks stage.tapes prime, ∀ j, (∀ i, stage.slots i ≠ j) → ∀ h, stage.metadata.tape j h =
-        readAt blank (S.L j) (S.R j) (h-stage.metadata.head j)) ∧
-      (∀ x (i : Fin 661), let A := registerChart w n i.val
-        Cover.LabelPermutation.Transport v B w (fun g => g*(if enter then A.transpose else A))
-          (M8.RevMachine.ext (x (ownerTape n p.1 p.2 i)))
-          (M8.RevMachine.ext (stage.transform x (ownerTape n p.1 p.2 i)))) ∧
-      (∀ x k, (∀ i, ownerTape n p.1 p.2 i ≠ k) → stage.transform x k = x k) ∧
-      ∀ {P U : Type} {T Q : ℕ} (bank : Fin stage.tapes ↪ Fin T) (fan : Fin (142081+2) ↪ Fin T),
-        (∀ i, bank (stage.slots i) = fan (i.castAdd 2)) →
-        (∀ j : Fin 2, ∀ i, bank i ≠ fan (j.natAdd 142081)) →
-        ∀ (fits : stage.states ≤ Q) (body : P → Pr P T Q prime U) data u S,
-        (∀ j, (∀ i, stage.slots i ≠ j) → ∀ h, stage.metadata.tape j h =
-          readAt blank (S.L (bank j)) (S.R (bank j)) (h-stage.metadata.head j)) →
-        HelperFan fan data S →
-        ∃ z F m, Exec body (embProg bank (Empty.elim : Empty → P) (foreign (liftQ stage.program fits)))
-          (mk u S) m (mk z F) ∧ (m : ℝ) ≤ C*V*(w : ℝ)^M8.Machine.BudgetBound.tau ∧
-          z.user = u.user ∧ HelperFan fan (stage.transform data) F ∧
-          ∀ j, (∀ i, bank i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
-  obtain ⟨coeff,tapes,states,build⟩ := borrowedRoute_fixed n p.1 p.2 enter
-  let factor := tapes+5
-  obtain ⟨C,bound⟩ := labelRoute_cost_bound ((coeff+661)*factor+6) (661*252*factor)
-  refine ⟨C,states,?_⟩
-  intro w B K hw hb hk v V
-  obtain ⟨stage,count,stateEq,initial,bill,reads,off⟩ := build w B K hw hb hk
-  obtain ⟨seed,repSeed⟩ := copyChartStacks v (M8.Stage2Machine.Straight.words (Cover.LabelSchedule.base v w)) 142081 stage.tapes
-  rw [← initial] at repSeed
-  refine ⟨stage,stateEq,⟨seed,?_⟩,reads,off,?_⟩
-  · intro j unused h
-    have away : ¬∃ i, stage.slots i = j := fun ⟨i,eq⟩ => unused i eq
-    have tape := congrArg (fun A : Tapes stage.tapes prime => A.tape j h) (stage.strip_input 0)
-    have head := congrArg (fun A : Tapes stage.tapes prime => A.head j) (stage.strip_input 0)
-    simp only [SharedBank.strip,away,ite_false] at tape head
-    rw [← tape,← head]
-    exact repSeed j h
-  intro P U T Q bank fan shared apart fits body data u S ready rep
-  have same : @phaseOwners 142081 V = copyOwners (v := v) := by
-    funext x
-    apply congrArg₂ Tapes.mk
-    · rfl
-    · funext j
-      exact (sourceWord_cast (v := v) rfl (x j)).symm
-  have host := @ownerStage_fan_exec V 142081 T Q P U
-  unfold ChartPrivateReady at host
-  rw [same] at host
-  obtain ⟨z,F,m,exec,paid,user,done,keep⟩ := host stage bank fan shared apart fits body data u S ready rep
-  refine ⟨z,F,m,exec,le_trans ?_ (bound V w hw),user,done,keep⟩
-  have pos : 1 ≤ V := by
-    change 0 < V
-    dsimp [V,v,copyLabelLayout,volume]
-    have := Shared50ModularControl.prime_prime.pos
-    positivity
-  rw [count] at paid
-  have time := paid.trans (Nat.add_le_add_right (Nat.mul_le_mul_right (tapes+5) bill) 6)
-  change m ≤ (coeff*V+661*(252*LeafCore.coreCost V (w*64)+1))*factor+6 at time
-  exact_mod_cast (show m ≤ ((coeff+661)*factor+6)*V+661*252*factor*LeafCore.coreCost V (w*64) by
-    have scale := Nat.mul_le_mul_left (661*factor+6) pos
-    ring_nf at time scale ⊢
-    omega)
-
 open IntegerMultBounds.Networks.Certificates.PR589 in
+-- The routed COPY wrappers are available in 116e7160.
 /-- Execute allocated COPY windows in order. Only unvisited windows need
 their private initialization; the common invariant survives every call. -/
-theorem copyWindows_exec {T Q : ℕ} {P U X : Type} (body : P → Pr P T Q prime U)
-    (n : Fin 9) (r : Fin 32) (d : Fin 5) (w B K : ℕ)
-    (view : X → Fin 142081 → Fin (RecursiveInterchangeLayout.volume prime (copyLabelLayout w B K)) → ZMod 2)
+theorem scheduledWindows_exec {T Q : ℕ} {P U X : Type} (body : P → Pr P T Q prime U)
+    (effect : Fin Copy.lifecycles.length → X → X → Prop)
+    (trace : List (Fin Copy.lifecycles.length) → X → X → Prop)
+    (empty : ∀ x, trace [] x x)
+    (cons : ∀ i ls x y z, effect i x y → trace ls y z → trace (i :: ls) x z)
     (ready : X → Stacks T prime → Prop) (saved : Fin Copy.lifecycles.length → Stacks T prime → Prop)
     (price : Fin Copy.lifecycles.length → ℕ)
     (window : ∀ i, ∃ code, ∀ x u S, ready x S → saved i S →
       ∃ z F t y, Exec body code (mk u S) t (mk z F) ∧ t ≤ price i ∧ z.user = u.user ∧ ready y F ∧
-        CopyWindowEffect n r d Copy.lifecycles[i.val] w B K (view x) (view y) ∧
+        effect i x y ∧
         ∀ j, j ≠ i → saved j S → saved j F)
     (ls : List (Fin Copy.lifecycles.length)) (unique : ls.Nodup) :
     ∃ code, ∀ x u S, ready x S → (∀ i ∈ ls, saved i S) →
       ∃ z F t y, Exec body code (mk u S) t (mk z F) ∧ t ≤ (ls.map price).sum+1 ∧ z.user = u.user ∧ ready y F ∧
-        CopyScheduleEffect n r d w B K (ls.map fun i => Copy.lifecycles[i.val]) (view x) (view y) := by
+        trace ls x y := by
   induction ls with
-  | nil => exact ⟨.act .done,fun x u S ok _ => ⟨u,S,1,x,Exec.act ..,by simp,rfl,ok,rfl⟩⟩
+  | nil => exact ⟨.act .done,fun x u S ok _ => ⟨u,S,1,x,Exec.act ..,by simp,rfl,ok,empty x⟩⟩
   | cons i ls ih =>
     obtain ⟨code,run⟩ := window i
     obtain ⟨tail,rest⟩ := ih (List.nodup_cons.mp unique).2
@@ -163,63 +98,51 @@ theorem copyWindows_exec {T Q : ℕ} {P U X : Type} (body : P → Pr P T Q prime
     obtain ⟨v,D,k,a,exec,charge,user,mid,act,keep⟩ := run x u S ok (fresh i List.mem_cons_self)
     obtain ⟨z,F,m,y,done,paid,same,final,trace⟩ := rest a v D mid (fun j hj =>
       keep j (fun eq => (List.nodup_cons.mp unique).1 (eq ▸ hj)) (fresh j (List.mem_cons_of_mem _ hj)))
-    refine ⟨z,F,_,y,Exec.seq exec done,?_,same.trans user,final,view a,act,trace⟩
+    refine ⟨z,F,_,y,Exec.seq exec done,?_,same.trans user,final,cons i ls x a y act trace⟩
     simp only [List.map_cons,List.sum_cons]
     omega
 
-open RecursiveInterchangeLayout (volume) in
-open M8.RevMachine Certificates.PR589 in
-/-- Surround a COPY schedule on the permanent bank with its entry and exit
-charts. The middle program's whole time allowance occurs once. -/
-theorem borrowedCopy_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) :
-    ∃ (C : ℝ) (states : ℕ), ∀ w B K : ℕ, 0 < w → 0 < B → 0 < K →
-    let v := copyLabelLayout w B K
-    let V := volume prime v
-    ∃ stages : Bool → SharedBankStage.Stage _ 142081 prime (copyOwners (v := v)),
-    (∀ k, (stages k).states ≤ states) ∧ (∀ k, ∃ S : Stacks (stages k).tapes prime, ∀ j, (∀ i, (stages k).slots i ≠ j) → ∀ h,
-      (stages k).metadata.tape j h = readAt blank (S.L j) (S.R j) (h-(stages k).metadata.head j)) ∧
-    ∀ {P U : Type} {T Q : ℕ} (bank : ∀ k, Fin (stages k).tapes ↪ Fin T) (fan : Fin (142081+2) ↪ Fin T),
-      (∀ k i, bank k ((stages k).slots i) = fan (i.castAdd 2)) →
-      (∀ k (j : Fin 2) i, bank k i ≠ fan (j.natAdd 142081)) →
-      ∀ (fits : ∀ k, (stages k).states ≤ Q) (body : P → Pr P T Q prime U)
-        (price : ℕ) (saved : Stacks T prime → Prop) (middle : Pr P T Q prime U),
-      let ready := fun k (S : Stacks T prime) => ∀ j, (∀ i, (stages k).slots i ≠ j) → ∀ h,
-        (stages k).metadata.tape j h = readAt blank (S.L (bank k j)) (S.R (bank k j)) (h-(stages k).metadata.head j)
-      let chart := fun k => embProg (bank k) (Empty.elim : Empty → P) (foreign (liftQ (stages k).program (fits k)))
-      (∀ x u S, HelperFan fan x S → ready true S → saved S →
-        ∃ z F m y, Exec body middle (mk u S) m (mk z F) ∧ m ≤ price ∧ z.user = u.user ∧
-          HelperFan fan y F ∧ ready true F ∧ CopyScheduleEffect n p.1 p.2 w B K Copy.lifecycles x y) →
-      ∀ (data : Fin 142081 → Fin V → ZMod 2) u S, ready false S → HelperFan fan data S →
-      (∀ D : Stacks T prime, (∀ j, (∀ i, bank false i ≠ j) → D.L j = S.L j ∧ D.R j = S.R j) →
-        ready true D ∧ saved D) →
-      ∃ z F m out, Exec body (.seq (chart false) (.seq middle (chart true))) (mk u S) m (mk z F) ∧
-        (m : ℝ) ≤ C*V*(w : ℝ)^M8.Machine.BudgetBound.tau + price ∧ z.user = u.user ∧ HelperFan fan out F ∧
-        (∀ g z, borrowedRead (B := B) (K := K) n p.1 p.2 g z out = borrowedScatter w (borrowedRead n p.1 p.2 g z data)) ∧
-        ∀ k, k ≠ Fin.last 142080 → (∀ i, ownerTape n p.1 p.2 i ≠ k) → out k = data k := by
-  choose coeff qs build using borrowedChart_host n p
-  refine ⟨coeff false + coeff true,max (qs false) (qs true),?_⟩
-  intro w B K hw hb hk v V
-  choose stages stateEq seed transport off run using fun k => build k w B K hw hb hk
-  refine ⟨stages,fun k => by rw [stateEq]; cases k <;> simp,seed,?_⟩
-  intro P U T Q bank fan shared apart fits body price saved middle ready chart copies data u S start rep fresh
-  obtain ⟨a,D,l,entry,li,au,atEntry,keep⟩ := run false (bank false) fan (shared false) (apart false)
-    (fits false) body data u S start rep
-  obtain ⟨b,G,m,mid,copy,mi,ba,atExit,exitReady,effect⟩ := copies _ a D atEntry (fresh D keep).1 (fresh D keep).2
-  obtain ⟨z,F,r,leave,ri,zb,done,_⟩ := run true (bank true) fan (shared true) (apart true)
-    (fits true) body mid b G exitReady atExit
-  refine ⟨z,F,_,_,Exec.seq entry (Exec.seq copy leave),?_,zb.trans (ba.trans au),done,?_,?_⟩
-  · simp only [Nat.cast_add]
-    rw [add_mul,add_mul]
-    have bound : (m : ℝ) ≤ price := by exact_mod_cast mi
-    linarith
-  · intro g cell
-    funext i
-    by_cases live : i < 661
-    · simpa only [borrowedScatter,Copy.extendStored,dite_eq_left live] using
-        borrowedScatter_read n p.1 p.2 (transport false data) effect (transport true mid) g cell ⟨i,live⟩
-    · simp [borrowedRead,borrowedScatter,Copy.extendStored,live]
-  · intro k live outside
-    exact (off true mid k outside).trans ((copySchedule_other effect k live outside).trans (off false data k outside))
+open Certificates.PR589 Cover in
+/-- Sequence the recursive fanouts directly on the permanent owner bank.
+Every label sees the selected COPY word, and unrelated owners retain their data. -/
+theorem commonWindows_exec {T Q w B K : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
+    (n : Fin 9) (r : Fin 32) (d : Fin 5) (fan : Fin (142081+2) ↪ Fin T)
+    (saved : Fin Copy.lifecycles.length → Stacks T prime → Prop)
+    (price : Fin Copy.lifecycles.length → ℕ) :
+    let V := (prime^w)^16*(B*prime^(64*(w*64))*K)
+    let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n r d,ownerTape_injective n r d⟩
+    let X := Fin 142081 → Fin V → ZMod 2
+    (∀ i, ∃ code, ∀ (x : X) u S, HelperFan fan x S → saved i S →
+      ∃ z F t y, Exec body code (mk u S) t (mk z F) ∧ t ≤ price i ∧ z.user = u.user ∧ HelperFan fan y F ∧
+        CopyFanoutEffect n r d _ (List.getElem_mem (l := Copy.lifecycles) i.isLt) w B K x y ∧
+        ∀ j, j ≠ i → saved j S → saved j F) →
+    ∃ code, ∀ (x : X) u S, HelperFan fan x S → (∀ i, saved i S) →
+      ∃ z F t y, Exec body code (mk u S) t (mk z F) ∧ t ≤ (List.ofFn price).sum+1 ∧
+        z.user = u.user ∧ HelperFan fan y F ∧
+        (∀ g (cell : LabelEntry.Cell (copyLabelLayout w B K) B),
+          phaseRead owner y (labelSpectator g cell) =
+            Copy.run (selectedFrame w) Copy.lifecycles (phaseRead owner x (labelSpectator g cell))) ∧
+        ∀ k, k ≠ Fin.last 142080 → (∀ j, owner j ≠ k) → y k = x k := by
+  intro V owner X window
+  let trace := fun (ls : List (Fin Copy.lifecycles.length)) (x y : X) =>
+    (∀ g (cell : LabelEntry.Cell (copyLabelLayout w B K) B),
+      phaseRead owner y (labelSpectator g cell) = ls.foldl
+        (fun a i => scatterWindow (selectedWord w) Copy.lifecycles[i.val] a) (phaseRead owner x (labelSpectator g cell))) ∧
+    ∀ k, k ≠ Fin.last 142080 → (∀ j, owner j ≠ k) → y k = x k
+  obtain ⟨code,run⟩ := scheduledWindows_exec body _ trace (fun _ => ⟨fun _ _ => rfl,fun _ _ _ => rfl⟩)
+    (fun i ls x y z act tail => by
+      refine ⟨fun g cell => ?_,fun k live off => (tail.2 k live off).trans (act.2.2.1 k live (fun j _ => off j))⟩
+      rw [tail.1 g cell,phaseRead_fanout _ act]
+      rfl) (HelperFan fan) saved price window (List.finRange _) (List.nodup_finRange _)
+  refine ⟨code,?_⟩
+  intro x u S rep fresh
+  obtain ⟨z,F,t,y,exec,paid,user,done,action,off⟩ := run x u S rep (fun i _ => fresh i)
+  refine ⟨z,F,t,y,exec,by simpa only [List.ofFn_eq_map] using paid,user,done,?_,off⟩
+  intro g cell
+  have h := action g cell
+  rw [← List.foldl_map (g := fun a life => scatterWindow (selectedWord w) life a) (f := fun i : Fin Copy.lifecycles.length => Copy.lifecycles[i.val]),
+    ← List.ofFn_eq_map,List.ofFn_getElem] at h
+  exact h.trans ((modular_scatter w).choose_spec.2.2.2.1 _)
 
 open Certificates.PR589 in
 /-- Join the allocated scalar phases to the charted COPY on one host.
@@ -260,7 +183,7 @@ by the borrowed sweep. Each window retains its own child record and budget. -/
 theorem borrowedWindow_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) (j : Fin Copy.lifecycles.length) :
     ∃ (T states : ℕ) (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T) (fan : Fin (142081+2) ↪ Fin T),
     ∀ {P U : Type} {Q : ℕ}, states ≤ Q → ∀ (body : P → Pr P T Q prime U) (f : P),
-    ∃ base swaps leaf fixed : ℕ, ∀ (node : Descriptor) (w B rows : ℕ),
+    ∃ base swaps : ℕ, ∀ (node : Descriptor) (w B rows : ℕ),
     node.width = 64*(w+1) → node.rows = 142080*rows → node.beforeH = B*prime^(64*((w+1)*64)) →
     let M := prime^(w+1)
     let K := node.beforeRows*rows*node.between*node.afterD
@@ -268,7 +191,6 @@ theorem borrowedWindow_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) (
     let W := blocks*prime^(64*((w+1)*64))*K
     let V := M^16*W
     let desc := scheduledChild prime node (copyChildPosition (n,p,j))
-    let view := fun (x : Fin 142081 → Fin V → ZMod 2) k i => x k (Fin.cast (copyLabel_volume (w+1) blocks K) i)
     0 < W → ∃ position : Fin (volume prime desc) ≃ Fin V,
       (∀ k, (position k).val = (CopyChildLayout.packActive desc k).val) ∧
       ∀ record, ∃ prepared : Stacks T prime, ∀ budget,
@@ -276,15 +198,15 @@ theorem borrowedWindow_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) (
       ∃ code, ∀ data u S, HelperFan fan data S →
         (∀ k, (∀ h, fan h ≠ k) → S.L k = prepared.L k ∧ S.R k = prepared.R k) →
         ∃ z F t out, Exec body code (mk u S) t (mk z F) ∧
-          t ≤ (base+swaps*swapVolumeRate w)*V + leaf*M8.RevMachine.LeafCore.coreCost V ((w+1)*64) + fixed + budget ∧
+          t ≤ (base+swaps*swapVolumeRate w)*V + 12 + budget ∧
           z.user = u.user ∧ HelperFan fan out F ∧
-          CopyWindowEffect n p.1 p.2 Copy.lifecycles[j.val] (w+1) blocks K (view data) (view out) := by
-  obtain ⟨T,states,ports,fan,build⟩ := scheduledCopyWindow_layout n p.1 p.2 j
+          CopyFanoutEffect n p.1 p.2 Copy.lifecycles[j.val] (List.getElem_mem ..) (w+1) blocks K data out := by
+  obtain ⟨T,states,ports,fan,build⟩ := commonCopyWindow_layout n p.1 p.2 j
   refine ⟨T,states,ports,fan,?_⟩
   intro P U Q fits body f
-  obtain ⟨base,swaps,leaf,fixed,run⟩ := build fits body f
-  refine ⟨base,swaps,leaf,fixed,?_⟩
-  intro node w B rows width split label M K blocks W V desc view pos
+  obtain ⟨base,swaps,run⟩ := build fits body f
+  refine ⟨base,swaps,?_⟩
+  intro node w B rows width split label M K blocks W V desc pos
   exact run node w B rows blocks K width split label (by dsimp [blocks,K,M]; ring) pos
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode

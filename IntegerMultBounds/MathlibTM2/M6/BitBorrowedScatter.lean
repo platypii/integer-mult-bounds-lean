@@ -154,6 +154,23 @@ noncomputable def borrowedScatter (w : ℕ) (x : ℕ → AddressStream (ZMod (pr
   Copy.extendStored fun i => frame i.val (FramedCircuit.moduleRun (sectionscatter.map RawGate.toCircuit)
     (FramedCircuit.decode frame x) i.val)
 
+theorem commonScatter_eq_borrowedScatter {k w W : ℕ} (owner : Fin 661 ↪ Fin k)
+    (x : Fin k → Fin ((prime^w)^16*W) → ZMod 2) (j : Fin W) (i : Fin 661) :
+    Copy.run (selectedFrame w) Copy.lifecycles (phaseRead owner x j) i.val =
+      borrowedScatter w (phaseRead owner x j) i.val := by
+  let input := phaseRead owner x j
+  let frame := fun i => selectedFrame w (Frames.beforeScatter i)
+  let stored := FramedCircuit.decode frame input
+  have full : Copy.extendStored (fun i => stored i.val) = stored := by
+    funext i
+    by_cases live : i < 661
+    · simp [Copy.extendStored,live]
+    · simp [stored,FramedCircuit.decode,input,phaseRead,Copy.extendStored,live]
+  have step := Copy.decoded_scatter (selectedFrame w) (fun k => stored k.val) i
+  change Copy.run (selectedFrame w) Copy.lifecycles (FramedCircuit.encode frame _) i.val = _ at step
+  rw [full,FramedCircuit.encode_decode] at step
+  simpa only [borrowedScatter,Copy.extendStored,dite_eq_left i.isLt] using step
+
 theorem borrowedScatter_flat [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
     (engine : CopyTranspose := CopyTranspose.original) :
     ∃ C : ℕ, ∀ w B K, 0 < w → 0 < B → 0 < K →
@@ -172,21 +189,9 @@ theorem borrowedScatter_flat [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 
   obtain ⟨stage,paid,run,off⟩ := build w B K hw hb hk
   refine ⟨stage,paid,?_,off⟩
   intro x g z j
-  let input := phaseRead owner x (labelSpectator g z)
-  let frame := fun i => selectedFrame w (Frames.beforeScatter i)
-  let stored := FramedCircuit.decode frame input
-  have full : Copy.extendStored (fun i => stored i.val) = stored := by
-    funext i
-    by_cases live : i < 661
-    · simp [Copy.extendStored,live]
-    · simp [stored,FramedCircuit.decode,input,phaseRead,Copy.extendStored,live]
   funext i
   by_cases live : i < 661
-  · have step := Copy.decoded_scatter (selectedFrame w) (fun k => stored k.val) ⟨i,live⟩
-    change Copy.run (selectedFrame w) Copy.lifecycles (FramedCircuit.encode frame _) i = _ at step
-    rw [full,FramedCircuit.encode_decode] at step
-    simpa only [borrowedScatter,Copy.extendStored,dite_eq_left live] using
-      (congrFun (run x g z) i).trans step
+  · exact (congrFun (run x g z) i).trans (commonScatter_eq_borrowedScatter owner x j ⟨i,live⟩)
   · simp [phaseRead,borrowedScatter,Copy.extendStored,live]
 
 /-- Execute both scalar phases and COPY on each independent borrowed row. -/
