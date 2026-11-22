@@ -94,6 +94,12 @@ theorem flatRemainderHandoff [M8.Machine.Net] (i : Fin 9) :
 
 open RecursiveInterchangeLayout
 
+private theorem sumIndexed {α : Type} (xs : List α) (index : α → Fin xs.length)
+    (atIndex : ∀ j : Fin xs.length, index xs[j.val] = j) (price : Fin xs.length → ℕ) :
+    (xs.map (fun x => price (index x))).sum = ∑ j, price j := by
+  conv_lhs => rw [← List.ofFn_getElem (xs := xs)]
+  simp only [List.map_ofFn,List.sum_ofFn,Function.comp_apply,atIndex]
+
 /-- A recursive handoff at each selected interval suffices for the complete
 flat remainder, including the two physical chart executions. -/
 theorem inheritedRemainderHandoff [M8.Machine.Net] (i : Fin 9) :
@@ -105,7 +111,9 @@ theorem inheritedRemainderHandoff [M8.Machine.Net] (i : Fin 9) :
     let V := (prime^w)^128*W
     let m := (prime^w)^128*(W*142080)
     let lane := fun (k : Job) => let e := idleInterval i k.2; phaseIntervalChild e.1 e.2 w W 64
-    ∀ (N : Job → ℕ) (P : Job → Type) (price : Job → ℕ)
+    ∀ (budget : Fin nodeChildren5.length → ℕ),
+    let price := fun j => budget (idleDirectoryIndex (i,idleCopyIndex j))
+    ∀ (N : Job → ℕ) (P : Job → Type)
       (body : ∀ k, P k → Pr (P k) (N k) Q prime U) (code : ∀ k, Pr (P k) (N k) Q prime U)
       (src dst : ∀ k, Fin (142081+2) ↪ Fin (N k)) (seed : ∀ k, Stacks (N k) prime),
     (∀ k, PackedPieceHandoff (volume prime (lane k)) (fun x y =>
@@ -114,16 +122,67 @@ theorem inheritedRemainderHandoff [M8.Machine.Net] (i : Fin 9) :
     PackedWindowHandoff U Q m (fun x y => ∀ j : Fin (W*142080),
       let addr := fun z => flatWindowEquiv w (W*142080) (windowState w z,j)
       readRoles addr y = (Piece.remainder i.val).run (readRoles addr x))
-      ((idleCopies.map price).sum + 35520 *
+      ((∑ j : Fin idleCopies.length, budget (idleDirectoryIndex (i,j))) + 35520 *
         (((298*(T+5)+5)*142080+142081*8)*V + (142081*10+31)) + 1 + 142081*(8*m+10)+1 +
         (a*m+k*(3808274*m+LeafCore.coreCost m w+1)+6*idleCopies.length)*(tapes+5) +
         2*(6+142081*(8*m+10)+1)) := by
   obtain ⟨a,k,tapes,states,run⟩ := flatRemainderHandoff i
   refine ⟨a,k,tapes,states,?_⟩
-  intro U Q fits capacity w W hw hW Job T V m lane N P price body code src dst seed child
+  intro U Q fits capacity w W hw hW Job T V m lane budget price N P body code src dst seed child
   obtain ⟨H,input,output,host,program,initial,window⟩ :=
     inheritedWindow_exec i w W hW capacity N P price body code src dst seed child
+  have listed := sumIndexed idleCopies idleCopyIndex idleCopyIndex_at (fun j => budget (idleDirectoryIndex (i,j)))
+  change (idleCopies.map price).sum = _ at listed
+  rw [← listed]
   apply run fits w (W*142080) hw (Nat.mul_pos hW (by decide))
   exact ⟨_,H,host,program,input,output,initial,window⟩
+
+/-- Adding the nine physical remainders leaves exactly the complementary
+child budgets available for the sweeps. -/
+theorem inheritedRemainderTotal (localWork : Fin 9 → ℕ) (budget : Fin nodeChildren5.length → ℕ) :
+    (∑ i : Fin 9, ((∑ j : Fin idleCopies.length, budget (idleDirectoryIndex (i,j))) + localWork i)) +
+      (∑ j ∈ (Finset.univ.map idleDirectoryIndex)ᶜ, budget j) =
+      (∑ i, localWork i) + ∑ j, budget j := by
+  classical
+  have partition := Finset.sum_add_sum_compl (Finset.univ.map idleDirectoryIndex) budget
+  rw [Finset.sum_map] at partition
+  rw [Finset.sum_add_distrib,← Fintype.sum_prod_type']
+  simpa only [Function.comp_apply,add_assoc,add_left_comm,add_comm] using
+    congrArg ((∑ i, localWork i) + ·) partition
+
+/-- Assemble the flat node from the nine sweeps and the actual interval
+children. The chart coefficients and control capacity are uniform in size. -/
+theorem flatNodeFromIntervals [M8.Machine.Net] {U : Type} :
+    ∃ (a k tapes : Fin 9 → ℕ) (states : ℕ), ∀ {Q w W : ℕ}, states ≤ Q → 0 < w → 0 < W →
+    let V := (prime^w)^128*W
+    let m := (prime^w)^128*(W*142080)
+    let lane := fun i j => let e := idleInterval i j; phaseIntervalChild e.1 e.2 w W 64
+    ∀ (budget : Fin nodeChildren5.length → ℕ) (sweep : Fin 9 → ℕ),
+    (∀ i, PackedWindowHandoff U Q m (fun x y => ∀ j : Fin (W*142080),
+      let addr := fun z => flatWindowEquiv w (W*142080) (windowState w z,j)
+      readRoles addr y = (Piece.stage i).run (readRoles addr x)) (sweep i)) →
+    (∀ i (j : (Fin 32 × Fin 5) × Fin 222), PackedWindowHandoff U Q (volume prime (lane i j.2)) (fun x y =>
+      ∀ r : Fin 142080, y r.castSucc = Shared50RecursiveNodeRows.transpose (one_dvd (lane i j.2).rows) (x r.castSucc))
+      (budget (idleDirectoryIndex (i,idleCopyIndex j)))) →
+    let idle := fun i => (∑ j : Fin idleCopies.length, budget (idleDirectoryIndex (i,j))) +
+      35520 * (((298*(intervalSplitTapes+5)+5)*142080+142081*8)*V + (142081*10+31)) +
+      1 + 142081*(8*m+10)+1 + (a i*m+k i*(3808274*m+LeafCore.coreCost m w+1)+6*idleCopies.length)*(tapes i+5) +
+      2*(6+142081*(8*m+10)+1)
+    PackedWindowHandoff U Q m (packedChildOutput w m)
+      ((∑ i, sweep i)+(∑ i, idle i)+9*(2*(76*17760*m*(142081+7)+6)+1+(142081*(8*m+10)+1))+2) := by
+  choose a k tapes states windows using inheritedRemainderHandoff
+  obtain ⟨bridge,assemble⟩ := assembledFlatNode (U := U)
+  let q := 7+(CyclicRowCycle.states 142080+5)+4
+  refine ⟨a,k,tapes,max bridge (max (q+q) (∑ i, states i)),?_⟩
+  intro Q w W fits hw hW V m lane budget sweep sweeps children idle
+  have rest := (le_max_right _ _).trans fits
+  have capacity := (le_max_left _ _).trans rest
+  have available i : states i ≤ Q := (Finset.single_le_sum (f := states)
+    (fun _ _ => Nat.zero_le _) (Finset.mem_univ i)).trans ((le_max_right _ _).trans rest)
+  have pos : 0 < m := Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) (Nat.mul_pos hW (by decide))
+  apply assemble (w := w) (W := W*142080) ((le_max_left _ _).trans fits) rfl pos (Equiv.refl _) sweep idle sweeps
+  intro i
+  choose P N body code src dst seed child using children i
+  exact windows i (available i) capacity w W hw hW budget N P body code src dst seed child
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
