@@ -26,7 +26,7 @@ theorem fanPayload {k T V : ℕ} {fan : Fin (k+2) ↪ Fin T} {data : Fin k → F
   rw [encodedOwnerCell]
   simpa only [PointwiseRoleGate.bank,Tapes.append,Fin.addCases_left,embStk,Function.comp_apply,fanEncoded] using (rep (owner.castAdd 2) z).symm
 
-private theorem fanUpdate {k T V : ℕ} {fan : Fin (k+2) ↪ Fin T} {data : Fin k → Fin V → ZMod 2}
+theorem fanUpdate {k T V : ℕ} {fan : Fin (k+2) ↪ Fin T} {data : Fin k → Fin V → ZMod 2}
     {S F : Stacks T prime} (owner : Fin k) (word : Fin V → ZMod 2) (rep : HelperFan fan data S)
     (payload : RecordPayload (fan (owner.castAdd 2)) (fun _ => blank) 0 word F)
     (keep : ∀ j, j ≠ owner.castAdd 2 → F.L (fan j) = S.L (fan j) ∧ F.R (fan j) = S.R (fan j)) :
