@@ -88,6 +88,56 @@ private theorem collectSweep (C rate power : ℝ) (v child copy : ℕ) (positive
   rw [Nat.floor_add_natCast (by positivity : 0 ≤ (|C|+|rate|)*(v : ℝ)*power)] at paid
   omega
 
+/-- The recursive interval has the directory width and occupies one of
+the 142080 owner words of that directory child. -/
+theorem alignedIntervalMeasures (node : Descriptor) (w groups W : ℕ) (hw : 0 < w)
+    (width : node.width = 64*w) (split : node.rows = 142080*(142080*groups))
+    (spectator : W = node.beforeRows*groups*node.beforeH*node.between*node.afterD)
+    (i : Fin 9) (j : (Fin 32 × Fin 5) × Fin 222) :
+    let e := idleInterval i j.2
+    let lane := phaseIntervalChild e.1 e.2 w W 64
+    let child := scheduledChild prime node (idleDirectoryIndex (i,idleCopyIndex j))
+    lane.width = child.width ∧ lane.width < node.width ∧ volume prime lane*142080 = volume prime child := by
+  intro e lane child
+  have rank := idleDirectoryIndex_rank i (idleCopyIndex j)
+  rw [idleCopyIndex_get] at rank
+  have bounds := idleBounds i j.2
+  refine ⟨?_,?_,?_⟩
+  · change (e.2-e.1)*w = nodeChildren5.get _*(node.width/64)
+    rw [width,Nat.mul_div_cancel_left _ (by decide : 0 < 64),rank]
+  · rw [width]
+    exact Nat.mul_lt_mul_of_pos_right (by dsimp [lane,e,phaseIntervalChild]; omega) hw
+  · apply Nat.eq_of_mul_eq_mul_right (by decide : 0 < 142080)
+    rw [(scheduledChild_measures prime node ⟨w,width⟩ ⟨142080*groups,split⟩ _).2]
+    rw [show volume prime lane = (prime^w)^128*W from
+      intervalChild_volume bounds.1 (bounds.2.trans (by decide : 63 ≤ 64)) w W]
+    rw [spectator,volume,width,split,Nat.mul_comm 64 w,pow_mul,show 128 = 64+64 by decide,pow_add]
+    ring
+
+/-- The scheduled child's role stream and the physical interval use the
+same packed active coordinates after splitting off the child rows. -/
+theorem intervalRolePositions (node : Descriptor) (groups : ℕ)
+    (split : node.rows = 142080*(142080*groups)) (i : Fin nodeChildren5.length)
+    (lane : Descriptor) (size : volume prime lane*142080 = volume prime (scheduledChild prime node i)) :
+    let child := role (scheduledChild prime node i) 142080
+    ∃ position : Fin (volume prime child) ≃ Fin (volume prime lane),
+      InheritedIntervalPositions child lane rfl position := by
+  intro child
+  have rows : (scheduledChild prime node i).rows = 142080*groups := by
+    change node.rows/142080 = _
+    rw [split,Nat.mul_div_cancel_left _ (by decide)]
+  have equal : volume prime child = volume prime lane := by
+    apply Nat.eq_of_mul_eq_mul_right (by decide : 0 < 142080)
+    rw [size]
+    simp only [child,role,volume,rows,Nat.mul_div_cancel_left _ (by decide : 0 < 142080)]
+    ring
+  have card := Fintype.card_congr ((CopyChildLayout.packActive child).symm.trans
+    ((finCongr equal).trans (CopyChildLayout.packActive lane)))
+  simp only [Fintype.card_fin] at card
+  let position := (CopyChildLayout.packActive child).trans
+    ((finCongr card).trans (CopyChildLayout.packActive lane).symm)
+  exact ⟨position,fun j => by simp [position]⟩
+
 /-- At two aligned row levels the packed stage and the recursive interval
 window see the same spectator cells. Their bills use one child directory. -/
 theorem alignedFlatNode [M8.Machine.Net] {U : Type} :
@@ -111,8 +161,16 @@ theorem alignedFlatNode [M8.Machine.Net] {U : Type} :
     let sweep : Fin 9 → ℕ := fun i =>
       ⌊(C+|stagePackingRate i+(stageRuns.map (coeff i)).sum|)*m*(w : ℝ)^M8.Machine.BudgetBound.tau⌋₊+
         142081*(8*m+10)+1
-    (∀ i (j : (Fin 32 × Fin 5) × Fin 222), PackedWindowHandoff U Q (volume prime (lane i j.2)) (fun x y =>
-      ∀ r : Fin 142080, y r.castSucc = Shared50RecursiveNodeRows.transpose (one_dvd (lane i j.2).rows) (x r.castSucc))
+    (∀ i (j : (Fin 32 × Fin 5) × Fin 222),
+      let child := scheduledChild prime node (idleDirectoryIndex (i,idleCopyIndex j))
+      (lane i j.2).width = child.width → (lane i j.2).width < node.width →
+      volume prime (lane i j.2)*142080 = volume prime child →
+      let stream := role child 142080
+      ∀ position : Fin (volume prime stream) ≃ Fin (volume prime (lane i j.2)),
+      InheritedIntervalPositions stream (lane i j.2) rfl position →
+      PackedWindowHandoff U Q (volume prime (lane i j.2)) (fun x y =>
+        ∀ (r : Fin 142080) j, y r.castSucc (position j) =
+          Shared50RecursiveNodeRows.transpose (one_dvd stream.rows) (x r.castSucc ∘ position) j)
       (budget (idleDirectoryIndex (i,idleCopyIndex j)))) →
     let idle := fun i =>
       35520 * (((298*(intervalSplitTapes+5)+5)*142080+142081*8)*V + (142081*10+31)) +
@@ -137,7 +195,18 @@ theorem alignedFlatNode [M8.Machine.Net] {U : Type} :
   rw [← total]
   have nodeRun := assemble ((le_max_left _ _).trans fits) (Nat.succ_pos h)
     (Nat.pos_of_mul_pos_right positive) budget (fun i => sweep i + charged i)
-  apply handoff_le (nodeRun ?_ children)
+  have spectator : W = node.beforeRows*groups*node.beforeH*node.between*node.afterD := by
+    rw [label]
+    dsimp only [W,w]
+    ac_rfl
+  apply handoff_le (nodeRun ?_ (fun i j => by
+    obtain ⟨same,smaller,size⟩ := alignedIntervalMeasures node w groups W (Nat.succ_pos h) width split spectator i j
+    obtain ⟨position,coords⟩ := intervalRolePositions node groups split _ _ size
+    obtain ⟨L,T,b,c,src,dst,seed,exec⟩ := children i j same smaller size position coords
+    refine ⟨L,T,b,c,src,dst,seed,?_⟩
+    intro x u S words fresh
+    obtain ⟨z,F,n,y,ran,paid,user,out,reads⟩ := exec x u S words fresh
+    exact ⟨z,F,n,y,ran,paid,user,out,fun r => (coords.transpose_iff same _ _).1 (reads r)⟩))
   · apply Nat.add_le_add_right
     apply Nat.add_le_add_right
     apply Nat.add_le_add_left
