@@ -516,11 +516,12 @@ theorem assembledFlatNode {U : Type} :
 /-- If each sweep and remainder reads the inherited cells, the assembled node
 transposes the physical owner words in place in that address order. -/
 theorem assembledInheritedNode {U : Type} :
-    ∃ states : ℕ, ∀ {Q w W : ℕ} (child : Descriptor), states ≤ Q → child.width = 64*w →
-      (size : (prime^w)^128*W = volume prime child) → 0 < volume prime child →
-      let V := volume prime child
-      let position := packedChildPosition child rfl
-      let address := fun (j : Fin W) s => position.symm ((flatWindowEquiv w W (s,j)).cast size)
+    ∃ states : ℕ, ∀ {Q w W V : ℕ} (child : Descriptor), states ≤ Q → child.width = 64*w →
+      (size : (prime^w)^128*W = V) → 0 < V →
+      ∀ inherited : Fin (volume prime child) ≃ Fin V,
+      let childSize := Fin.equiv_iff_eq.mp ⟨inherited⟩
+      let position := (packedChildPosition child childSize).symm.trans inherited
+      let address := fun (j : Fin W) s => position ((flatWindowEquiv w W (s,j)).cast size)
       let reads := fun (piece : Piece) (x y : Fin 142081 → Fin V → ZMod 2) =>
         ∀ j, let addr := fun z => address j (windowState w z)
           readRoles addr y = piece.run (readRoles addr x)
@@ -530,20 +531,22 @@ theorem assembledInheritedNode {U : Type} :
       (∀ n, ∃ (P : Type) (T : ℕ) (body : P → Pr P T Q prime U), ∃ code src dst seed,
         PackedPieceHandoff V (reads (.remainder n.val)) body code src dst seed (idleCost n)) →
       ∃ (P : Type) (T : ℕ) (body : P → Pr P T Q prime U), ∃ code src dst seed,
-        PackedPieceHandoff V (fun x y => ∀ r : Fin 142080, y r.castSucc =
-          Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (x r.castSucc)) body code src dst seed
-          ((∑ i, sweepCost i)+(∑ i, idleCost i)+9*(2*(76*17760*V*(142081+7)+6)+1+(142081*(8*V+10)+1))+2) := by
+        PackedPieceHandoff V (fun x y => ∀ (r : Fin 142080) j, y r.castSucc (inherited j) =
+          Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (x r.castSucc ∘ inherited) j) body code src dst seed
+          ((∑ i, sweepCost i)+(∑ i, idleCost i)+3452147597090*V) := by
   obtain ⟨states,assemble⟩ := assembledFlatNode (U := U)
   refine ⟨states,?_⟩
-  intro Q w W child fits width size positive V position address reads sweepCost idleCost sweeps windows
+  intro Q w W V child fits width size positive inherited childSize position address reads sweepCost idleCost sweeps windows
   obtain ⟨P,T,body,code,src,dst,seed,run⟩ :=
-    assemble fits size positive position.symm sweepCost idleCost sweeps windows
+    assemble fits size positive position sweepCost idleCost sweeps windows
   refine ⟨P,T,body,code,src,dst,seed,?_⟩
   intro x u S words privateTapes
   obtain ⟨z,F,k,y,exec,paid,user,out,changed⟩ := run x u S words privateTapes
-  refine ⟨z,F,k,y,exec,paid,user,out,?_⟩
-  intro r
-  simpa only [position,Function.comp_assoc,Equiv.symm_comp_self,Function.comp_id] using
-    changed r child width rfl
+  have overhead : 9*(2*(76*17760*V*(142081+7)+6)+1+(142081*(8*V+10)+1))+2 ≤
+      3452147597090*V := by omega
+  refine ⟨z,F,k,y,exec,paid.trans ((Nat.add_assoc _ _ _).le.trans (Nat.add_le_add_left overhead _)),user,out,?_⟩
+  intro r j
+  have result := congrFun (changed r child width childSize) j
+  simpa only [position,Equiv.coe_trans,Function.comp_assoc,Equiv.symm_comp_self,Function.comp_id,Function.comp_apply,Equiv.symm_apply_apply] using result
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
