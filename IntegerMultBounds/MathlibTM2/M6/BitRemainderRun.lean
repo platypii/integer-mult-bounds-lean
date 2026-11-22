@@ -565,6 +565,121 @@ def RemainderPlacementReads (v : Descriptor) (w B : ℕ) (x y : ℕ → ZMod 2) 
     a r (b.val*prime^(n*w)+(FlatCoordinateLayout.rank u).val) h mid d j
   y (cell (digits ∘ flat.trans (remainderRowPlacement.trans flat.symm))) = x (cell digits)
 
+/-- Change only the matrix-label digits in a packed address. -/
+def remainderChartDigits {w : ℕ} (f : LabelPadding.Label 64 w → LabelPadding.Label 64 w)
+    (digits : Fin (128+64*64) → ZMod (prime^w)) : Fin (128+64*64) → ZMod (prime^w) :=
+  let g : LabelPadding.Label 64 w := fun r i => digits (Fin.natAdd 128 (finProdFinEquiv (i,r)))
+  Fin.addCases (fun i => digits (Fin.castAdd (64*64) i)) (M8.AtomOps.refine (Route.cols (f g)))
+
+/-- The address reached by an entire placed chart, including both placements. -/
+def placedChartDigits {w : ℕ} (f : LabelPadding.Label 64 w → LabelPadding.Label 64 w)
+    (digits : Fin (128+64*64) → ZMod (prime^w)) :=
+  let flat := (@finSumFinEquiv 128 (64*64)).symm
+  let swap := flat.trans (remainderRowPlacement.trans flat.symm)
+  remainderChartDigits f (digits ∘ swap) ∘ swap
+
+private theorem remainderRowPlacement_row (r : Fin 2) (i : Fin 64) :
+    remainderRowPlacement (.inr (finProdFinEquiv (i,Fin.castAdd 62 r))) =
+      .inl (finProdFinEquiv (r,i)) := by
+  change placeRemainderRow (.inr (finProdFinEquiv (i,Fin.castAdd 62 r))) = _
+  simp [placeRemainderRow]
+
+/-- Each exposed external field undergoes right multiplication by the chart,
+independently of all label digits. -/
+theorem placedChartDigits_field {w : ℕ} (H : LabelPadding.Label 64 w)
+    (digits : Fin (128+64*64) → ZMod (prime^w)) (r : Fin 2) (i : Fin 64) :
+    let field := fun (j : Fin 64) => Fin.castAdd (64*64) (finProdFinEquiv (r,j))
+    placedChartDigits (fun g => g*H) digits (field i) =
+      ∑ j, digits (field j)*H j i := by
+  intro field
+  simp only [placedChartDigits,Function.comp_apply,Equiv.trans_apply,field,
+    finSumFinEquiv_symm_apply_castAdd,remainderRowPlacement_field,Equiv.symm_symm,
+    finSumFinEquiv_apply_right,remainderChartDigits,Fin.addCases_right,M8.AtomOps.refine,
+    Equiv.symm_apply_apply,Route.cols,finSumFinEquiv_symm_apply_natAdd]
+  let A : Matrix (Fin 64) (Fin 64) (ZMod (prime^w)) := fun r i =>
+    digits (finSumFinEquiv (remainderRowPlacement (.inr (finProdFinEquiv (i,r)))))
+  change (A*H) (Fin.castAdd 62 r) i = _
+  rw [Matrix.mul_apply]
+  simp only [A,remainderRowPlacement_row,finSumFinEquiv_apply_left]
+
+/-- Changing the external fields cannot affect a label digit after a placed
+chart: rows zero and one are parked, and all other rows mix only within themselves. -/
+theorem placedChartDigits_label_congr {w : ℕ} (H : LabelPadding.Label 64 w)
+    {x y : Fin (128+64*64) → ZMod (prime^w)}
+    (same : ∀ l, x (Fin.natAdd 128 l) = y (Fin.natAdd 128 l)) (l : Fin (64*64)) :
+    placedChartDigits (fun g => g*H) x (Fin.natAdd 128 l) =
+      placedChartDigits (fun g => g*H) y (Fin.natAdd 128 l) := by
+  obtain ⟨⟨i,r⟩,rfl⟩ := (@finProdFinEquiv 64 64).surjective l
+  induction r using Fin.addCases (m := 2) (n := 62) with
+  | left r =>
+    simpa only [placedChartDigits,Function.comp_apply,Equiv.trans_apply,Equiv.symm_symm,
+      finSumFinEquiv_symm_apply_natAdd,remainderRowPlacement_row,finSumFinEquiv_apply_left,
+      remainderChartDigits,Fin.addCases_left,finSumFinEquiv_symm_apply_castAdd,
+      remainderRowPlacement_field,finSumFinEquiv_apply_right] using same (finProdFinEquiv (i,Fin.castAdd 62 r))
+  | right r =>
+    simp only [placedChartDigits,Function.comp_apply,Equiv.trans_apply,Equiv.symm_symm,
+      finSumFinEquiv_symm_apply_natAdd,remainderRowPlacement_spectator,finSumFinEquiv_apply_right,
+      remainderChartDigits,Fin.addCases_right,M8.AtomOps.refine,Equiv.symm_apply_apply,Route.cols]
+    let A (z : Fin (128+64*64) → ZMod (prime^w)) : LabelPadding.Label 64 w := fun r i =>
+      z (finSumFinEquiv (remainderRowPlacement (.inr (finProdFinEquiv (i,r)))))
+    change (A x*H) (Fin.natAdd 2 r) i = (A y*H) (Fin.natAdd 2 r) i
+    rw [Matrix.mul_apply,Matrix.mul_apply]
+    simp only [A,remainderRowPlacement_spectator,finSumFinEquiv_apply_right,same]
+
+theorem placedChartDigits_read {v : Descriptor} {w B : ℕ} {x p q y : ℕ → ZMod 2}
+    {f : LabelPadding.Label 64 w → LabelPadding.Label 64 w}
+    (place : RemainderPlacementReads v w B x p)
+    (chart : LabelPermutation.Transport v (B*(prime^w)^128) w f p q)
+    (returnRows : RemainderPlacementReads v w B q y)
+    (a : Fin v.beforeRows) (r : Fin v.rows) (b : Fin B) (h d : Fin (prime^v.width))
+    (mid : Fin v.between) (j : Fin v.afterD) (digits : Fin (128+64*64) → ZMod (prime^w)) :
+    let cell := fun u : Fin (128+64*64) → ZMod (prime^w) => RecursiveInterchangeLayout.index prime v
+      a r (b.val*prime^((128+64*64)*w)+(FlatCoordinateLayout.rank u).val) h mid d j
+    y (cell (placedChartDigits f digits)) = x (cell digits) := by
+  intro cell
+  let flat := (@finSumFinEquiv 128 (64*64)).symm
+  let placed := digits ∘ flat.trans (remainderRowPlacement.trans flat.symm)
+  have move := returnRows a r b h d mid j (remainderChartDigits f placed)
+  have run := remainderPlacement_chartRead chart a r b h d mid j placed
+  exact move.trans (run.trans (place a r b h d mid j digits))
+
+/-- Inverse chart passes cancel on every packed digit, including the external
+fields and singular labels. -/
+theorem placedChartDigits_inverse {w : ℕ} {f g : LabelPadding.Label 64 w → LabelPadding.Label 64 w}
+    (undo : Function.LeftInverse g f) (digits : Fin (128+64*64) → ZMod (prime^w)) :
+    placedChartDigits g (placedChartDigits f digits) = digits := by
+  let flat := (@finSumFinEquiv 128 (64*64)).symm
+  let swap := flat.trans (remainderRowPlacement.trans flat.symm)
+  have twice (i) : swap (swap i) = i := by
+    simp only [swap,Equiv.trans_apply,Equiv.apply_symm_apply]
+    change flat.symm (remainderRowPlacement.symm (remainderRowPlacement (flat i))) = i
+    simp
+  have cancel (x : Fin (128+64*64) → ZMod (prime^w)) : (x ∘ swap) ∘ swap = x := by
+    funext i
+    simp only [Function.comp_apply,twice]
+  have chartUndo (x : Fin (128+64*64) → ZMod (prime^w)) :
+      remainderChartDigits g (remainderChartDigits f x) = x := by
+    funext i
+    induction i using Fin.addCases with
+    | left i => simp [remainderChartDigits]
+    | right i =>
+      obtain ⟨⟨c,r⟩,rfl⟩ := (@finProdFinEquiv 64 64).surjective i
+      simp only [remainderChartDigits,Fin.addCases_right,M8.AtomOps.refine,Equiv.symm_apply_apply,Route.cols]
+      exact congrFun (congrFun (undo (fun r i => x (Fin.natAdd 128 (finProdFinEquiv (i,r))))) r) c
+  change (remainderChartDigits g ((remainderChartDigits f (digits ∘ swap) ∘ swap) ∘ swap)) ∘ swap = digits
+  rw [cancel,chartUndo,cancel]
+
+/-- The inverse chart restores the original independent label even after a
+child changes both external fields. No invertibility of that label is needed. -/
+theorem placedRemainder_label_restored {w : ℕ} (H : LabelPadding.Label 64 w) (orth : H*Hᵀ = 1)
+    (x mid : Fin (128+64*64) → ZMod (prime^w))
+    (child : ∀ l, mid (Fin.natAdd 128 l) = placedChartDigits (fun g => g*H) x (Fin.natAdd 128 l))
+    (l : Fin (64*64)) :
+    placedChartDigits (fun g => g*Hᵀ) mid (Fin.natAdd 128 l) = x (Fin.natAdd 128 l) := by
+  apply (placedChartDigits_label_congr Hᵀ child l).trans
+  exact congrFun (placedChartDigits_inverse (f := fun g => g*H) (g := fun g => g*Hᵀ)
+    (fun g => by change g*H*Hᵀ = g; rw [Matrix.mul_assoc,orth,Matrix.mul_one]) x) _
+
 /-- A single physical schedule exchanges the external fields with the two
 label rows at every precision. Its setup and all digit moves are absorbed
 by the parent volume times the atom-width power. -/
