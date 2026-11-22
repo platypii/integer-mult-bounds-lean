@@ -377,6 +377,39 @@ theorem phaseMoveBlocks_spec (gs : List RawGate) (current : ℕ → ℕ) :
         simp only [List.map_cons,List.flatMap_cons,List.append_assoc] at moveOrder gateOrder
         simp [phaseMoveBlocks,eq,edges,List.filter_append,Function.comp_def,← moveOrder,gateOrder,List.append_assoc,emptyBlocks]
 
+/-- Every block selected by its MOVE occurrence, and the final suffix,
+can be passed directly to the selected-word gate compiler. -/
+theorem phaseMoveBlocks_allowed (gs : List RawGate) (current : ℕ → ℕ)
+    (allowed : ∀ g ∈ gs, g ∈ program) :
+    let schedule := phaseMoveBlocks gs current
+    (∀ i : Fin schedule.1.length, ∀ g ∈ schedule.1[i].1, g ∈ program) ∧
+      (∀ g ∈ schedule.2, g ∈ program) := by
+  have gates := (phaseMoveBlocks_spec gs current).2
+  constructor
+  · intro i g hg
+    apply allowed
+    rw [← gates]
+    exact List.mem_append_left _ (List.mem_flatMap.mpr
+      ⟨_,List.getElem_mem (n := i.val) i.isLt,hg⟩)
+  · intro g hg
+    apply allowed
+    rw [← gates]
+    exact List.mem_append_right _ hg
+
+/-- Splitting the scalar word at MOVE boundaries charges every gate once. -/
+theorem phaseMoveBlocks_charge (gs : List RawGate) (current : ℕ → ℕ) (charge : RawGate → ℕ) :
+    let schedule := phaseMoveBlocks gs current
+    (schedule.1.map (fun block => (block.1.map charge).sum)).sum +
+      (schedule.2.map charge).sum = (gs.map charge).sum := by
+  have sumBlocks (blocks : List (List RawGate × (ℕ × ℕ))) :
+      (blocks.map (fun block => (block.1.map charge).sum)).sum =
+        ((blocks.flatMap Prod.fst).map charge).sum := by
+    induction blocks with
+    | nil => rfl
+    | cons block rest ih => simp [ih]
+  dsimp only
+  rw [sumBlocks,← List.sum_append,← List.map_append,(phaseMoveBlocks_spec gs current).2]
+
 /-- The two scalar phases meet at the COPY boundary with precisely the
 MOVE order indexed by the invocation directory. -/
 theorem invocationMoveBlocks_order :
@@ -553,20 +586,24 @@ theorem moveStockSequence {I α P U : Type} [Fintype I] {owners K Q : ℕ} (tape
 open Certificates.PR589 in
 /-- Execute PR589 scalar blocks interleaved with MOVE occurrences, including
 the scalar suffix after the last MOVE. Only the MOVE executions are premises. -/
-theorem scalarMoveSequence {I P U : Type} [Fintype I] {k K : ℕ} (layout : Fin 661 ↪ Fin k)
-    (tapes : I → ℕ) (owner : ∀ i, Fin (k+2) ↪ Fin (tapes i)) (archive : ∀ i, Fin (80+273) ↪ Fin (tapes i))
+theorem scalarMoveSequence {P U : Type} {k K : ℕ} (layout : Fin 661 ↪ Fin k)
+    (gs : List RawGate) (current : ℕ → ℕ) (allowed : ∀ g ∈ gs, g ∈ program)
+    (tapes : Fin (phaseMoveBlocks gs current).1.length → ℕ) (owner : ∀ i, Fin (k+2) ↪ Fin (tapes i)) (archive : ∀ i, Fin (80+273) ↪ Fin (tapes i))
     (ports : ∀ i, Fin K ↪ Fin (tapes i)) (archiveFree : ∀ i a j, owner i j ≠ archive i a)
     (privateFree : ∀ i (a : Fin K), a.val ≠ 24 → ∀ j, owner i j ≠ ports i a) :
+    let schedule := phaseMoveBlocks gs current
+    let I := Fin schedule.1.length
+    let blocks := fun i : I => schedule.1[i].1
+    let suffix := schedule.2
+    let order := List.finRange schedule.1.length
     ∃ states, ∀ {Q V : ℕ}, states ≤ Q → 0 < V →
     let rep := HelperFan (V := V) (Function.Embedding.refl (Fin (k+2)))
     ∃ effect : (Fin k → Fin V → ZMod 2) → RawGate → Fin k → Fin V → ZMod 2,
     (∀ x g j h, effect x g (layout j) h = g.toCircuit.run (Copy.extendStored (fun j => x (layout j) h)) j.val) ∧
     (∀ x g j, (∀ r, layout r ≠ j) → effect x g j = x j) ∧
-    ∀ (body : ∀ i, P → Pr P (tapes i) Q prime U) (move : ∀ i, Pr P (tapes i) Q prime U)
-      (blocks : I → List RawGate) (suffix : List RawGate) (order : List I), order.Nodup →
-      (∀ i g, g ∈ blocks i → g ∈ program) → (∀ g ∈ suffix, g ∈ program) →
+    ∀ (body : ∀ i, P → Pr P (tapes i) Q prime U) (move : ∀ i, Pr P (tapes i) Q prime U),
     ∃ T fan host code, ∀ (step : (Fin k → Fin V → ZMod 2) → I → Fin k → Fin V → ZMod 2) (budget : I → ℕ) (seed : ∀ i, Stacks (tapes i) prime),
-      (∀ i ∈ order, ∀ x u S, rep x (embStk (owner i) S) → MovePrivateStock (archive i) (ports i) (seed i) S →
+      (∀ i, ∀ x u S, rep x (embStk (owner i) S) → MovePrivateStock (archive i) (ports i) (seed i) S →
         ∃ z F n, Exec (body i) (move i) (mk u S) n (mk z F) ∧ n ≤ budget i ∧ z.user = u.user ∧ rep (step x i) (embStk (owner i) F)) →
       let bill := fun gs : List RawGate => (gs.map fun g => 76*g.toCircuit.terms.length*V*(k+7)+6).sum+1
       ∀ shared, ∃ S : Stacks T prime, embStk fan S = shared ∧ ∀ x u, rep x shared →
@@ -574,19 +611,21 @@ theorem scalarMoveSequence {I P U : Type} [Fintype I] {k K : ℕ} (layout : Fin 
           n ≤ (order.map fun i => bill (blocks i)+budget i).sum+bill suffix ∧ z.user = u.user ∧
           rep (suffix.foldl effect (order.foldl (fun x i => step ((blocks i).foldl effect x) i) x)) (embStk fan F) := by
   classical
+  intro schedule I blocks suffix order
   obtain ⟨states,build⟩ := scalarOwnerBlock layout
   refine ⟨states,?_⟩
   intro Q V capacity pos rep
   obtain ⟨effect,act,off,compile⟩ := build (U := U) capacity pos
   refine ⟨effect,act,off,?_⟩
-  intro body move blocks suffix order distinct allowed lastAllowed
-  choose gates runs using fun i => compile (blocks i) (allowed i)
+  intro body move
+  obtain ⟨blockAllowed,lastAllowed⟩ := phaseMoveBlocks_allowed gs current allowed
+  choose gates runs using fun i => compile (blocks i) (blockAllowed i)
   obtain ⟨last,lastRun⟩ := compile suffix lastAllowed
-  obtain ⟨T,fan,host,code,run⟩ := moveStockSequence tapes owner archive ports archiveFree privateFree body move gates last order distinct
+  obtain ⟨T,fan,host,code,run⟩ := moveStockSequence tapes owner archive ports archiveFree privateFree body move gates last order (List.nodup_finRange _)
   refine ⟨T,fan,host,code,?_⟩
   intro step budget seed moves bill
   exact run rep (fun x i => (blocks i).foldl effect x) step (fun x => suffix.foldl effect x)
-    (fun i => bill (blocks i)) budget (bill suffix) seed lastRun (fun i _ => runs i) moves
+    (fun i => bill (blocks i)) budget (bill suffix) seed lastRun (fun i _ => runs i) (fun i _ => moves i)
 
 open Certificates.PR589 in
 /-- Prepare and dispatch a packed MOVE from the caller's cutoff. Only the
