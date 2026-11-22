@@ -329,6 +329,39 @@ theorem remainderChart_reduced (c : PortCertificate) (hc : c.Checked) (w : ℕ) 
     rw [submatrix_mul_equiv,c.fullChart_orthonormal hc,submatrix_one_equiv]
   exact ⟨chart,reduce_inverse _ chart tr (mul_eq_one_comm.mp orth)⟩
 
+/-- Use two rows of the physical chart matrix as the active fields. One
+interval swap between these rows, followed by the inverse chart, realizes
+the port exchange and restores every spectator row even on singular matrices. -/
+theorem remainderChart_twoRows (c : PortCertificate) (hc : c.Checked)
+    (lo hi w : ℕ) (fits : hi ≤ 63) (g : LabelPadding.Label 64 w)
+    (h d : Fin 64) (apart : h ≠ d) :
+    let H := reduce (prime^w) (c.fullChart.submatrix stageAxis.symm remainderAxis)
+    let charted := g*H
+    let swapped : LabelPadding.Label 64 w := fun r i =>
+      if lo ≤ i.val ∧ i.val < hi then charted (Equiv.swap h d r) i else charted r i
+    let fields := (fun a => g h (stageAxis a), fun a => g d (stageAxis a))
+    let y := M8.Exchange.exchange (reduce (prime^w) (c.span lo hi)) fields
+    swapped*Hᵀ = fun r j => if r = h then y.1 (stageAxis.symm j) else
+      if r = d then y.2 (stageAxis.symm j) else g r j := by
+  intro H charted swapped fields y
+  let out : LabelPadding.Label 64 w := fun r j => if r = h then y.1 (stageAxis.symm j) else
+    if r = d then y.2 (stageAxis.symm j) else g r j
+  have read : ∀ r i, (out*H) r i = swapped r i := by
+    intro r i
+    have digits := remainderExchange_tapeDigits c hc lo hi w fits fields i
+    rw [show (out*H) r i = _ from remainderChart_row c w out r i]
+    by_cases a : r = h
+    · subst r
+      by_cases live : lo ≤ i.val ∧ i.val < hi <;>
+        simpa [live,out,swapped,charted,H,remainderChart_row,fields,y] using congrArg Prod.fst digits
+    by_cases b : r = d
+    · subst r
+      by_cases live : lo ≤ i.val ∧ i.val < hi <;>
+        simpa [live,out,apart.symm,swapped,charted,H,remainderChart_row,fields,y] using congrArg Prod.snd digits
+    simp [out,a,b,swapped,charted,H,Equiv.swap_apply_of_ne_of_ne a b,remainderChart_row]
+  change swapped*Hᵀ = out
+  rw [← show out*H = swapped from Matrix.ext read,Matrix.mul_assoc,(remainderChart_reduced c hc w).2,Matrix.mul_one]
+
 /-- After the forward pass relabels a record from g to gH, the cover
 normalizer for the diagonal interval gives the parent's conjugated projector. -/
 theorem remainderProjector_atLabel (c : PortCertificate) (hc : c.Checked) (lo hi w : ℕ)
@@ -361,6 +394,50 @@ theorem remainderProjector_atLabel (c : PortCertificate) (hc : c.Checked) (lo hi
   have inv : H⁻¹ = Hᵀ := Matrix.inv_eq_right_inv undo
   rw [factor,Matrix.mul_inv_rev,inv]
   simp only [Matrix.mul_assoc]
+
+/-- Every scheduled remainder has a nonidentity exchange at every positive atom
+width. In the certificate chart the first digit of the interval witnesses it. -/
+theorem remainderExchange_ne_one (c : PortCertificate) (hc : c.Checked)
+    (e : ℕ × ℕ) (member : e ∈ BitHosting.remainderIntervals) (w : ℕ) :
+    let M := prime^(w+1)
+    let P := reduce M ((c.span e.1 e.2).submatrix stageAxis.symm stageAxis.symm)
+    fromBlocks (1-P) P P (1-P) ≠ 1 := by
+  intro M P same
+  obtain ⟨active,fits,_⟩ := BitHosting.remainder_counts_strict e member
+  let H := reduce M (c.fullChart.submatrix stageAxis.symm remainderAxis)
+  have undo : Hᵀ*H = 1 := mul_eq_one_comm.mp (remainderChart_reduced c hc (w+1)).2
+  have zero : P = 0 := by
+    ext i j
+    have entry := congrArg (fun A : Matrix (Fin 64 ⊕ Fin 64) (Fin 64 ⊕ Fin 64) (ZMod M) =>
+      A (Sum.inl i) (Sum.inr j)) same
+    simpa [Matrix.fromBlocks,Matrix.one_apply] using entry
+  have routed := remainderProjector_atLabel c hc e.1 e.2 (w+1) fits Hᵀ
+  change Hᵀ*P*(Hᵀ)⁻¹ = (Hᵀ*H)*_*(Hᵀ*H)⁻¹ at routed
+  rw [zero,undo] at routed
+  let a : Fin 64 := ⟨e.1,by omega⟩
+  have entry := congrArg (fun A : Matrix (Fin 64) (Fin 64) (ZMod M) => A a a) routed
+  have inside : e.1 ≤ a.val ∧ a.val < e.2 := ⟨le_rfl,active⟩
+  haveI : Fact (1 < M) := ⟨one_lt_pow₀ (by exact Shared50ModularControl.prime_prime.one_lt) (by omega)⟩
+  simpa [inside] using entry
+
+/-- With the same injective chart at entry and exit, a single set bit
+distinguishes the required exchange from retaining a singular row. -/
+theorem remainderExchange_moved_bit {κ : Type*} (c : PortCertificate) (hc : c.Checked)
+    (e : ℕ × ℕ) (member : e ∈ BitHosting.remainderIntervals) (w : ℕ) :
+    let M := prime^(w+1)
+    let P := reduce M ((c.span e.1 e.2).submatrix stageAxis.symm stageAxis.symm)
+    ∀ chart : ((Fin 64 ⊕ Fin 64) → ZMod M) → κ, Function.Injective chart →
+      ∃ (row : κ → ZMod 2) (x : (Fin 64 ⊕ Fin 64) → ZMod M), row (chart ((fromBlocks (1-P) P P (1-P)).mulVec x)) ≠
+        row (chart x) := by
+  classical
+  intro M P chart inj
+  have moved := remainderExchange_ne_one c hc e member w
+  change fromBlocks (1-P) P P (1-P) ≠ 1 at moved
+  rw [ne_eq,Matrix.ext_iff_mulVec] at moved
+  push_neg at moved
+  obtain ⟨x,hx⟩ := moved
+  rw [Matrix.one_mulVec] at hx
+  exact ⟨fun j => if j = chart x then 1 else 0,x,by simp [inj.ne hx]⟩
 
 /-- A fixed interval swap cannot implement the routed projector at every live label.
 Swap a digit inside the interval with the final digit, which lies outside every idle. -/
