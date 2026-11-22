@@ -79,6 +79,69 @@ theorem compactTranspose_pad {A B K N : ℕ} {α : Type} (zero : α)
     simp [compactTranspose]
   · rw [ite_eq_right (by omega)]
 
+/-- Ordinary padding treats the whole active field as one record, preserving the
+compact transpose on the first label of every inherited block. -/
+theorem compactTranspose_pad_hoare {A B K N : ℕ} (hB : 0 < B) (hW : 0 < A*K) (hN : 1 ≤ N)
+    (x : Fin (A*(B*K)) → ZMod 2) :
+    let compact := List.ofFn (fun j => SparseRoleCircuit.encode (a := prime) (compactTranspose x j))
+    let padded := RecursiveRowPadding.pad (A := B) (R := 1) (L := A*K) N 0
+      (fun j => compactTranspose x (j.cast (by simp)))
+    let output := List.ofFn (fun j => SparseRoleCircuit.encode (a := prime) (padded j))
+    HoareTime RowPaddingConstructedAlphabet.program
+      (fun v => v = RowPaddingConstructedAlphabet.bank (putWord (fun _ => blank) 0 compact) (fun _ => blank)
+        0 0 (bits B) (bits 1) (bits N) (bits (A*K)))
+      (fun v => v = RowPaddingConstructedAlphabet.bank
+        (RowPaddingConstructedAlphabet.erased (putWord (fun _ => blank) 0 compact) 0 (B*1*(A*K)))
+        (putWord (fun _ => blank) 0 output) 0 0 (bits B) (bits 1) (bits N) (bits (A*K)))
+      (413*B*(N*(A*K))) := by
+  intro compact padded output
+  let source := fun j : Fin (B*1*(A*K)) => compactTranspose x (j.cast (by simp))
+  have run := RowPaddingConstructedAlphabet.pad_bits_hoare (a := prime) (fun _ => blank) (fun _ => blank)
+    0 0 _ _ _ _ B 1 N (A*K) (fun z => decide (source z = 1)) (bits_value _) (bits_value _)
+    (bits_value _) (bits_value _) (bits_canonical _) (bits_canonical _) (bits_canonical _) (bits_canonical _)
+    hB Nat.zero_lt_one hN hW
+  have src : compact = List.ofFn (fun z => SparseRoleCircuit.encode (a := prime) (source z)) :=
+    (castWord (show B*1*(A*K) = B*(A*K) by simp) _).symm
+  have dst : output = List.ofFn (RecursiveRowPadding.pad (A := B) (R := 1) (L := A*K) N
+      (bitSymbol false) (fun z => SparseRoleCircuit.encode (a := prime) (source z))) := by
+    apply congrArg List.ofFn
+    funext z
+    dsimp only [padded,RecursiveRowPadding.pad]
+    split <;> rfl
+  rw [src,dst]
+  exact run
+
+/-- Crop the restored first label back to the compact return-transpose input. -/
+theorem compactTranspose_crop_hoare {A B K N : ℕ} (hB : 0 < B) (hW : 0 < A*K) (hN : 1 ≤ N)
+    (x : Fin (A*(B*K)) → ZMod 2) :
+    let compact := List.ofFn (fun j => SparseRoleCircuit.encode (a := prime) (compactTranspose x j))
+    let padded := RecursiveRowPadding.pad (A := B) (R := 1) (L := A*K) N 0
+      (fun j => compactTranspose x (j.cast (by simp)))
+    let output := List.ofFn (fun j => SparseRoleCircuit.encode (a := prime) (padded j))
+    HoareTime RowPaddingConstructedAlphabet.cropProgram
+      (fun v => v = RowPaddingConstructedAlphabet.bank (putWord (fun _ => blank) 0 output) (fun _ => blank)
+        0 0 (bits B) (bits 1) (bits N) (bits (A*K)))
+      (fun v => v = RowPaddingConstructedAlphabet.bank
+        (RowPaddingConstructedAlphabet.erased (putWord (fun _ => blank) 0 output) 0 (B*N*(A*K)))
+        (putWord (fun _ => blank) 0 compact) 0 0 (bits B) (bits 1) (bits N) (bits (A*K)))
+      (413*B*(N*(A*K))) := by
+  intro compact padded output
+  let source := fun j : Fin (B*1*(A*K)) => compactTranspose x (j.cast (by simp))
+  have run := RowPaddingConstructedAlphabet.crop_bits_hoare (a := prime) (fun _ => blank) (fun _ => blank)
+    0 0 _ _ _ _ B 1 N (A*K) (fun z => decide (padded z = 1)) (bits_value _) (bits_value _)
+    (bits_value _) (bits_value _) (bits_canonical _) (bits_canonical _) (bits_canonical _) (bits_canonical _)
+    hB Nat.zero_lt_one hN hW
+  have inverse := RecursiveRowPadding.crop_pad (A := B) (L := A*K) hN (0 : ZMod 2) source
+  have dst : compact = List.ofFn (RecursiveRowPadding.crop hN
+      (fun z => SparseRoleCircuit.encode (a := prime) (padded z))) := by
+    unfold compact
+    rw [← castWord (show B*1*(A*K) = B*(A*K) by simp) _]
+    apply congrArg List.ofFn
+    funext z
+    exact congrArg SparseRoleCircuit.encode (congrFun inverse z).symm
+  rw [dst]
+  exact run
+
 /-- One complete compact scan per active row fits within the original
 padded volume, even when the inherited block count is unrelated to the radix. -/
 theorem compactTranspose_scan_bound (w B K : ℕ) :
