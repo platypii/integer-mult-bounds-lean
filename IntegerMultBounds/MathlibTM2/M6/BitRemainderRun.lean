@@ -400,6 +400,38 @@ def remainderRowPlacement : Equiv.Perm (Fin 128 ⊕ Fin (64*64)) :=
   change placeRemainderRow (.inr (finProdFinEquiv (i,Fin.natAdd 2 r))) = _
   simp [placeRemainderRow]
 
+/-- Conjugating the external interval exchange by placement swaps the same
+interval on label rows zero and one and restores every external field. -/
+theorem remainderRowPlacement_interval (lo hi : ℕ) :
+    let fieldSwap : Fin 128 ⊕ Fin (64*64) → Fin 128 ⊕ Fin (64*64)
+      | .inl j =>
+        let p := (@finProdFinEquiv 2 64).symm j
+        if lo ≤ p.2.val ∧ p.2.val < hi then .inl (finProdFinEquiv (Equiv.swap 0 1 p.1,p.2)) else .inl j
+      | .inr j => .inr j
+    ∀ j, remainderRowPlacement (fieldSwap (remainderRowPlacement j)) =
+      match j with
+      | .inl f => .inl f
+      | .inr l =>
+        let p := (@finProdFinEquiv 64 64).symm l
+        if lo ≤ p.1.val ∧ p.1.val < hi then .inr (finProdFinEquiv (p.1,Equiv.swap 0 1 p.2)) else .inr l := by
+  intro fieldSwap j
+  change placeRemainderRow (fieldSwap (placeRemainderRow j)) = _
+  cases j with
+  | inl f =>
+    obtain ⟨⟨r,i⟩,rfl⟩ := (@finProdFinEquiv 2 64).surjective f
+    simp [placeRemainderRow,fieldSwap]
+  | inr l =>
+    obtain ⟨⟨i,r⟩,rfl⟩ := (@finProdFinEquiv 64 64).surjective l
+    induction r using Fin.addCases (m := 2) (n := 62) with
+    | left r =>
+      simp only [placeRemainderRow,Equiv.symm_apply_apply,Fin.addCases_left,fieldSwap]
+      fin_cases r <;> by_cases live : lo ≤ i.val ∧ i.val < hi <;>
+        simp [placeRemainderRow,fieldSwap,live,Equiv.swap_apply_def]
+    | right r =>
+      have h0 : Fin.natAdd 2 r ≠ (0 : Fin 64) := by intro h; have := congrArg Fin.val h; simp at this
+      have h1 : Fin.natAdd 2 r ≠ (1 : Fin 64) := by intro h; have := congrArg Fin.val h; change 2+r.val = 1 at this; omega
+      simp [fieldSwap,placeRemainderRow,Equiv.swap_apply_of_ne_of_ne h0 h1]
+
 section
 local instance (w : ℕ) : NeZero (prime^w) := ⟨pow_ne_zero _ Shared50ModularControl.prime_prime.ne_zero⟩
 
@@ -454,6 +486,38 @@ theorem remainderPlacement_chartRead {v : Descriptor} {w B : ℕ} {x y : ℕ →
   rw [remainderPlacement_chartAddress b.val out,remainderPlacement_chartAddress b.val digits]
   simpa only [out,Fin.addCases_left,Fin.addCases_right,M8.AtomOps.refine,Equiv.symm_apply_apply,Route.cols] using read
 
+/-- In interval order the whole label is a spectator. Packing it after the
+two fields gives the very same offset as the recursive child's descriptor. -/
+theorem remainderPlacement_childAddress {lo hi w K : ℕ}
+    (a b : Fin lo → ZMod (prime^w)) (h d : Fin (hi-lo) → ZMod (prime^w))
+    (u v : Fin (64-hi) → ZMod (prime^w)) (g : LabelPadding.Label 64 w) (t : Fin K) :
+    let fields := Fin.addCases (Fin.addCases (Fin.addCases a h) u) (Fin.addCases (Fin.addCases b d) v)
+    let digits := Fin.addCases fields (M8.AtomOps.refine (Route.cols g))
+    let tail := finProdFinEquiv (LabelAddress.address g,t)
+    (FlatCoordinateLayout.index digits t).val =
+      (RecursiveInterchangeScaling.index (intervalAddress 64 a b h d u v tail)).val := by
+  intro fields digits tail
+  rw [intervalAddress_index]
+  simp only [FlatCoordinateLayout.index_val,digits,ArbitraryWidthSliceTranspose.rank_append,
+    tail,finProdFinEquiv_apply_val,LabelAddress.address,fields]
+  ring
+
+/-- The interval child's transpose gives the packed owner read on both sides
+of the exchange, with the same independent matrix label and trailing cell. -/
+theorem remainderPlacement_childRead {lo hi w K : ℕ}
+    (x : Fin (volume prime (phaseIntervalChild lo hi w ((prime^w)^(64*64)*K) 64)) → ZMod 2)
+    (a b : Fin lo → ZMod (prime^w)) (h d : Fin (hi-lo) → ZMod (prime^w))
+    (u v : Fin (64-hi) → ZMod (prime^w)) (g : LabelPadding.Label 64 w) (t : Fin K) :
+    let cell := fun (h d : Fin (hi-lo) → ZMod (prime^w)) => FlatCoordinateLayout.index
+      (Fin.addCases (Fin.addCases (Fin.addCases (Fin.addCases a h) u) (Fin.addCases (Fin.addCases b d) v))
+        (M8.AtomOps.refine (Route.cols g))) t
+    ext (Shared50RecursiveNodeRows.transpose (one_dvd _) x) (cell d h).val = ext x (cell h d).val := by
+  intro cell
+  rw [show (cell d h).val = _ from remainderPlacement_childAddress a b d h u v g t,
+    show (cell h d).val = _ from remainderPlacement_childAddress a b h d u v g t,
+    ext_apply,ext_apply]
+  exact intervalAddress_transpose 64 x a b h d u v (finProdFinEquiv (LabelAddress.address g,t))
+
 /-- Follow an arbitrary packed atom vector through the physical digit swaps,
 keeping the enclosing descriptor's prefix and suffix at the same addresses. -/
 private theorem packedAtoms_read {n w B : ℕ} {v : Descriptor}
@@ -490,6 +554,17 @@ private theorem packedAtoms_read {n w B : ℕ} {v : Descriptor}
     change z (cell (digits ∘ Equiv.swap s t)) = x (cell digits)
     simpa only [cell,update,new,old,LabelView.label,Nat.mul_one,Nat.one_mul,radix] using read
 
+/-- Packed reads when the external fields exchange places with the two chart rows. -/
+def RemainderPlacementReads (v : Descriptor) (w B : ℕ) (x y : ℕ → ZMod 2) :=
+  let n := 128+64*64
+  let flat := (@finSumFinEquiv 128 (64*64)).symm
+  ∀ (a : Fin v.beforeRows) (r : Fin v.rows) (b : Fin B)
+  (h d : Fin (prime^v.width)) (mid : Fin v.between) (j : Fin v.afterD)
+  (digits : Fin n → ZMod (prime^w)),
+  let cell := fun u : Fin n → ZMod (prime^w) => RecursiveInterchangeLayout.index prime v
+    a r (b.val*prime^(n*w)+(FlatCoordinateLayout.rank u).val) h mid d j
+  y (cell (digits ∘ flat.trans (remainderRowPlacement.trans flat.symm))) = x (cell digits)
+
 /-- A single physical schedule exchanges the external fields with the two
 label rows at every precision. Its setup and all digit moves are absorbed
 by the parent volume times the atom-width power. -/
@@ -503,12 +578,7 @@ theorem remainderRowPlacement_runs [M8.Machine.Net] {T : ℕ} (io : Fin T) :
         v.beforeH = B*prime^(n*w) → v.Positive →
         ∀ (roles : Tapes T prime) (x : Fin (volume prime v) → ZMod 2),
           roles.head io = 0 → roles.tape io = sourceWord x →
-          ∃ (y : Fin (volume prime v) → ZMod 2) (t : ℕ), (∀ (a : Fin v.beforeRows) (r : Fin v.rows) (b : Fin B)
-            (h d : Fin (prime^v.width)) (mid : Fin v.between) (j : Fin v.afterD)
-            (digits : Fin n → ZMod (prime^w)),
-            let cell := fun u : Fin n → ZMod (prime^w) => RecursiveInterchangeLayout.index prime v
-              a r (b.val*prime^(n*w)+(FlatCoordinateLayout.rank u).val) h mid d j
-            ext y (cell (digits ∘ flat.trans (remainderRowPlacement.trans flat.symm))) = ext x (cell digits)) ∧
+          ∃ (y : Fin (volume prime v) → ZMod 2) (t : ℕ), RemainderPlacementReads v w B (ext x) (ext y) ∧
             GraphContract.Runs (LabelSchedule.schedule io ps)
               (LabelCall.bank roles v (words (LabelSchedule.base v w)))
               (LabelCall.bank (setTape roles io (sourceWord y) 0) v (words (LabelSchedule.base v w))) t ∧
@@ -522,12 +592,59 @@ theorem remainderRowPlacement_runs [M8.Machine.Net] {T : ℕ} (io : Fin T) :
   refine ⟨ps,C,route.symm,?_⟩
   intro v w B hw hb shape pos roles x head word
   obtain ⟨y,steps,exec⟩ := run v w B hw hb shape pos roles x head word
-  refine ⟨y,_,by rw [route]; exact packedAtoms_read shape ps steps,exec,le_trans ?_ (bound (volume prime v) w hw)⟩
+  refine ⟨y,_,by unfold RemainderPlacementReads; dsimp only; rw [route]; exact packedAtoms_read shape ps steps,exec,le_trans ?_ (bound (volume prime v) w hw)⟩
   simp only [Nat.mul_one]
   exact_mod_cast (show setup+k*(3808274*volume prime v+LeafCore.coreCost (volume prime v) w) ≤ _ by
     rw [Nat.add_mul,Nat.mul_add,Nat.mul_assoc]
     have := Nat.le_mul_of_pos_right setup (RecursiveAffinePrepare.volume_positive Shared50ModularControl.prime_prime.two_le v pos)
     omega)
+
+/-- Place, chart, and expose the fields on the same owner tape. All three
+blocks use the same descriptor registers, including for the inverse chart. -/
+theorem placedRemainderChart_runs [M8.Machine.Net] {T : ℕ} (io : Fin T)
+    (c : PortCertificate) (hc : c.Checked) (inverse : Bool) :
+    let H := c.fullChart.submatrix stageAxis.symm remainderAxis
+    let σ := if inverse then H.transpose else H
+    ∃ block : Graph.Block (T+24) prime, ∃ C : ℝ, Blocks.Leading block ∧
+      ∀ (v : Descriptor) (w B : ℕ), 0 < w → 0 < B →
+        v.beforeH = B*prime^((128+64*64)*w) → v.Positive →
+        ∀ (roles : Tapes T prime) (x : Fin (volume prime v) → ZMod 2),
+          roles.head io = 0 → roles.tape io = sourceWord x →
+          ∃ (placed charted y : Fin (volume prime v) → ZMod 2) (t : ℕ),
+            RemainderPlacementReads v w B (ext x) (ext placed) ∧
+            LabelPermutation.Transport v (B*(prime^w)^128) w (fun g => g*reduce (modulus w) σ)
+              (ext placed) (ext charted) ∧ RemainderPlacementReads v w B (ext charted) (ext y) ∧
+            GraphContract.Runs block (LabelCall.bank roles v (words (LabelSchedule.base v w)))
+              (LabelCall.bank (setTape roles io (sourceWord y) 0) v (words (LabelSchedule.base v w))) t ∧
+            (t : ℝ) ≤ C*volume prime v*(w : ℝ)^M8.Machine.BudgetBound.tau := by
+  intro H σ
+  obtain ⟨ps,P,_,place⟩ := remainderRowPlacement_runs io
+  obtain ⟨chart,A,leading,run⟩ := remainderChart_runs io c hc inverse
+  obtain ⟨Q,chartBound⟩ := scaledRoute_cost_bound A 63 64 (by decide)
+  let swap := LabelSchedule.schedule io ps
+  have lead := LabelSchedule.schedule_leading io ps
+  refine ⟨Blocks.seqB (Blocks.seqB swap chart) swap,2*P+Q+2,Blocks.seq_leading _ _,?_⟩
+  intro v w B hw hb shape pos roles x head word
+  obtain ⟨placed,t,entry,enter,paid⟩ := place v w B hw hb shape pos roles x head word
+  have chartShape : v.beforeH = B*(prime^w)^128*prime^(64*(w*64)) := by
+    rw [shape,Nat.mul_assoc,← pow_mul,← pow_add]
+    congr 2
+    ring
+  obtain ⟨charted,middle,act,_⟩ := run v w _ hw (Nat.mul_pos hb (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _))
+    chartShape pos (setTape roles io (sourceWord placed) 0) placed (by simp [setTape]) (by simp [setTape])
+  obtain ⟨y,u,exitRow,leave,last⟩ := place v w B hw hb shape pos
+    (setTape roles io (sourceWord charted) 0) charted (by simp [setTape]) (by simp [setTape])
+  simp only [SharedPlacementAlphabet.setTape_setTape] at act leave
+  have first := Blocks.seq_runs lead leading enter act
+  have both := Blocks.seq_runs (Blocks.seq_leading _ _) lead first leave
+  refine ⟨placed,charted,y,_,entry,middle,exitRow,both,?_⟩
+  have vol := RecursiveAffinePrepare.volume_positive Shared50ModularControl.prime_prime.two_le v pos
+  have power := Real.one_le_rpow (show 1 ≤ (w : ℝ) by exact_mod_cast hw) M8.Machine.BudgetBound.exponent_range.1.le
+  have one : 1 ≤ (volume prime v : ℝ)*(w : ℝ)^M8.Machine.BudgetBound.tau :=
+    one_le_mul_of_one_le_of_one_le (by exact_mod_cast vol) power
+  have bill := chartBound (volume prime v) w hw
+  push_cast at bill ⊢
+  linarith only [paid,last,bill,one]
 
 end
 
