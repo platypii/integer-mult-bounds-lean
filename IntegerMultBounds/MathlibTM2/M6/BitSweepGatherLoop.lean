@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Host.GatherRecords
+public import IntegerMultBounds.MathlibTM2.Routing.DescriptorTableCompile
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellMovePrefix
 
 /-! Stream record selectors from a single tape, preserving the source block. -/
@@ -144,6 +145,59 @@ private theorem gather_recordMask {α : Type} (rows : List α) (i : Fin rows.len
 each copied record. The permutation maps source indices to destinations. -/
 def permutationMasks {n : ℕ} (p : Equiv.Perm (Fin n)) : List (List Bool) :=
   (List.ofFn fun j => recordMask (p.symm j)).reverse
+
+private theorem recordMask_eq_ofFn {n : ℕ} (i : Fin n) :
+    recordMask i = List.ofFn (fun j => decide (j = i)) := by
+  induction n with
+  | zero => exact Fin.elim0 i
+  | succ n ih =>
+    refine Fin.cases ?_ (fun k => ?_) i
+    · rw [List.ofFn_succ]
+      simp [recordMask,List.ofFn_const]
+    · rw [List.ofFn_succ]
+      simp only [Fin.succ_inj,(Fin.succ_ne_zero k).symm,decide_false,← ih k]
+      simp [recordMask,List.replicate_succ,Nat.succ_sub_succ_eq_sub]
+
+/-- Compare the forward image of each source with the desired destination.
+This emits the selector stream without evaluating the inverse permutation. -/
+theorem permutationMasks_forward {n : ℕ} (p : Equiv.Perm (Fin n)) :
+    permutationMasks p = (List.ofFn fun j => List.ofFn fun i => decide (p i = j)).reverse := by
+  unfold permutationMasks
+  simp only [recordMask_eq_ofFn,Equiv.eq_symm_apply]
+
+open Routing in
+/-- Compile binary source ranks listed in destination order to the exact
+reversed mask tape consumed by the gather loop. The rank tape is restored. -/
+theorem sweepPermutationMasks_exec {T Q A n : ℕ} {P U : Type}
+    (body : P → Pr P T Q A U) (rg : BinaryMaskReg → Fin T) (hrg : Function.Injective rg)
+    (src saved out : Fin T) (hss : src ≠ saved) (hso : src ≠ out) (hao : saved ≠ out)
+    (hsrc : ∀ r, src ≠ rg r) (hsaved : ∀ r, saved ≠ rg r) (hout : ∀ r, out ≠ rg r)
+    (L : ℕ) (fits : n < 2^L) (p : Equiv.Perm (Fin n))
+    (v : HS T Q A U) (S : Stacks T A) (ready : DescriptorCompileReady rg S.R L n)
+    (input : S.R src = descriptorSelectorFrames L (List.ofFn p.symm)) (free : S.R saved = []) :
+    ∃ z steps, z.user = v.user ∧
+      steps ≤ n*(descriptorCompileCallCost L n+2)+2*(n*(L+1))+4 ∧
+      Exec body (descriptorCompileProgram rg src saved out) (mk v S) steps
+        (mk z {S with R := Function.update S.R out
+                             ((permutationMasks p).flatten.map (bitSymbol (a := A)) ++ S.R out)}) := by
+  have table : sourceTable (List.ofFn p.symm).reverse = permutationMasks p := by
+    simp [sourceTable,permutationMasks,recordMask_eq_ofFn,List.map_ofFn,Function.comp_def]
+  simpa only [table,List.length_reverse,List.length_ofFn] using
+    sourceTableCompile_exec body rg hrg src saved out hss hso hao hsrc hsaved hout L fits
+      (List.ofFn p.symm).reverse v S ready (by simpa using input) free
+
+/-- The binary-rank compiler fits a cubic record budget even when the
+binary word is padded to one more bit than the record count. -/
+theorem sweepPermutationMasks_cost {n L : ℕ} (positive : 0 < n) (width : L ≤ n+1) :
+    n*(Routing.descriptorCompileCallCost L n+2)+2*(n*(L+1))+4 ≤ 300*n^3 := by
+  unfold Routing.descriptorCompileCallCost
+  calc
+    _ ≤ n*(6*(n+1)+8+(2*((n+1)*(4*n+33)+2*n+31)+16*n+28)+2)+2*(n*((n+1)+1))+4 := by gcongr
+    _ ≤ _ := by
+      obtain ⟨k,rfl⟩ := Nat.exists_eq_succ_of_ne_zero positive.ne'
+      simp only [Nat.succ_eq_add_one]
+      ring_nf
+      omega
 
 theorem sweepGatherPermutation_exec {P U : Type} {Q A W n : ℕ} (body : P → Pr P 10 Q A U)
     (p : Equiv.Perm (Fin n)) (rows : Fin n → List (Fin (A+4))) (nonempty : 0 < n)

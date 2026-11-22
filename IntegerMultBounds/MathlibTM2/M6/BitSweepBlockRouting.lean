@@ -2,6 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.M6.BitRemainderReturnTranspose
 public import IntegerMultBounds.MathlibTM2.M6.BitSweepWindowRead
+public import IntegerMultBounds.MathlibTM2.M6.BitSweepGatherLoop
 
 /-! Run a sweep address conversion on contiguous inherited blocks. -/
 @[expose] public section
@@ -136,5 +137,33 @@ theorem sweepRecordGather_volume (w B W : ℕ) (hw : 0 < W) :
   calc
     _ ≤ B*(rows*(60*(labels*W))+2*(rows*(labels*W))) := by gcongr <;> omega
     _ = _ := by rw [show rows = M^16*M^112 by rw [← pow_add]]; ring
+
+/-- Compiling a fresh mask stream and consuming it in each inherited block
+still costs a constant times the padded node volume. -/
+theorem sweepCompiledGather_volume (w B W L : ℕ) (hw : 0 < W) (width : L ≤ (prime^w)^128+1) :
+    let M := prime^w
+    let n := M^128
+    let labels := prime^(64*(w*64))
+    let compile := n*(Routing.descriptorCompileCallCost L n+2)+2*(n*(L+1))+4
+    let gather := n*(n*(16*W+18)+26)+2
+    B*(compile+gather) ≤ 362*(M^16*(B*labels*(M^112*W))) := by
+  intro M n labels compile gather
+  have hn : 0 < n := pow_pos (pow_pos prime_prime.pos _) _
+  have room : n^2 ≤ labels := by
+    change ((prime^w)^128)^2 ≤ prime^(64*(w*64))
+    rw [← pow_mul,← pow_mul]
+    exact Nat.pow_le_pow_right prime_prime.pos (by omega)
+  have bound : compile ≤ 300*n*(labels*W) := calc
+    _ ≤ 300*n^3 := sweepPermutationMasks_cost hn width
+    _ = 300*n*n^2 := by ring
+    _ ≤ _ := Nat.mul_le_mul_left _ (room.trans (Nat.le_mul_of_pos_right _ hw))
+  have size : n = M^16*M^112 := by rw [← pow_add]
+  have build := Nat.mul_le_mul_left B bound
+  have run := sweepRecordGather_volume w B W hw
+  change B*gather ≤ 62*(M^16*(B*labels*(M^112*W))) at run
+  rw [Nat.mul_add]
+  calc
+    _ ≤ B*(300*n*(labels*W))+62*(M^16*(B*labels*(M^112*W))) := Nat.add_le_add build run
+    _ = _ := by rw [size]; ring
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode

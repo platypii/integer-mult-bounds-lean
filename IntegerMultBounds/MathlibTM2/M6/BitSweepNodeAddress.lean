@@ -11,10 +11,9 @@ open Cover Matrix Swap.Modular M8.RevMachine
 local instance (w : ℕ) : NeZero (prime^w) := ⟨(pow_pos Shared50ModularControl.prime_prime.pos _).ne'⟩
 
 /-- The node applies the parent weights on the first half and reverses the second half. -/
-noncomputable def nodeWindowEquiv (w B W : ℕ) (parent : Fin 64 → ZMod (prime^w))
+noncomputable def nodeDigitsEquiv (w : ℕ) (parent : Fin 64 → ZMod (prime^w))
     (units : ∀ i, IsUnit (parent i)) :
-    Fin B × (Swap.Shear.State Axis (ZMod (prime^w)) × Fin W) ≃
-      Fin ((prime^w)^16*(B*((prime^w)^112*W))) :=
+    Swap.Shear.State Axis (ZMod (prime^w)) ≃ (Fin 128 → ZMod (prime^w)) :=
   let R := M8.ReversedExchange.rev (R := ZMod (prime^w)) 64
   let F := fromBlocks (diagonal parent) 0 0 R
   let G := fromBlocks (diagonal (Ring.inverse ∘ parent)) 0 0 R
@@ -29,7 +28,13 @@ noncomputable def nodeWindowEquiv (w B W : ℕ) (parent : Fin 64 → ZMod (prime
   let halves := (Equiv.sumArrowEquivProdArrow Axis Axis (ZMod (prime^w))).symm
   let axes := Equiv.arrowCongr (Equiv.sumCongr stageAxis stageAxis) (Equiv.refl (ZMod (prime^w)))
   let flat := Equiv.arrowCongr (@finSumFinEquiv 64 64) (Equiv.refl (ZMod (prime^w)))
-  let digits := ((halves.trans axes).trans frame).trans flat
+  ((halves.trans axes).trans frame).trans flat
+
+noncomputable def nodeWindowEquiv (w B W : ℕ) (parent : Fin 64 → ZMod (prime^w))
+    (units : ∀ i, IsUnit (parent i)) :
+    Fin B × (Swap.Shear.State Axis (ZMod (prime^w)) × Fin W) ≃
+      Fin ((prime^w)^16*(B*((prime^w)^112*W))) :=
+  let digits := nodeDigitsEquiv w parent units
   ((Equiv.refl _).prodCongr (digits.prodCongr (Equiv.refl _))).trans (stagedCoordinateEquiv _ B W)
 
 theorem nodeWindowEquiv_read {w B W : ℕ} (parent : Fin 64 → ZMod (prime^w))
