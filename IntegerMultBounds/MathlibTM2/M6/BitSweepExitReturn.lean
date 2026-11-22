@@ -40,6 +40,8 @@ theorem placedWordReturn_exec {P U : Type} {Q : ℕ} (n : Fin 9) :
     (∀ r, D.R (sw (owners (sweepRoleTape r))) = List.ofFn fun i => SparseRoleCircuit.encode (a := prime) (x (sweepRoleTape r) i)) →
     ∃ z G l, Exec body back (mk v D) l (mk z G) ∧
       l ≤ 142080*(C*(M^16*(B*prime^(64*((w+1)*64))*(M^112*W)))+8)+1 ∧ z.user = v.user ∧
+      (∀ i, G.L (sw (owners i)) = D.L (sw (owners i))) ∧
+      G.R (sw (owners (Fin.last 142080))) = D.R (sw (owners (Fin.last 142080))) ∧
       ∀ r, G.R (sw (owners (sweepRoleTape r))) = List.ofFn fun i =>
         SparseRoleCircuit.encode (nodeArray parent units n x (sweepRoleTape r) i) := by
   obtain ⟨back,C,restore⟩ := sweepAllocatedReturn_exec (P := Empty) (U := U) (Q := Q) Empty.elim n
@@ -56,7 +58,7 @@ theorem placedWordReturn_exec {P U : Type} {Q : ℕ} (n : Fin 9) :
   obtain ⟨tail,archive⟩ := headers.archive
   obtain ⟨record,row,len,rowLen,prepared⟩ := headers.transpose
   have atP i : F.R (p i) = (embStk sw S).R (p i) := workKept _
-  obtain ⟨a,R,l,same,bill,ret,done,_⟩ := restore w H W B parent units tail hw bound hwid hb
+  obtain ⟨a,R,l,same,bill,ret,done,off⟩ := restore w H W B parent units tail hw bound hwid hb
     x (embDn sw v) F (by rw [atP]; exact headers.exponent) (by rw [atP]; exact headers.bits)
     (by rw [atP]; exact headers.unit) (by rw [atP]; exact headers.archiveSize) ((atP _).trans archive)
     (fun i hi => (atP _).trans (headers.blank i hi)) (fun i => (matrixKept i).trans (headers.matrixFree i))
@@ -75,7 +77,9 @@ theorem placedWordReturn_exec {P U : Type} {Q : ℕ} (n : Fin 9) :
       exact (prepared r i h).trans (by fin_cases i <;> first | contradiction | rfl))
   obtain ⟨z,G,placed,_,hz,view,_⟩ := exec_emb (ι := (Empty.elim : Empty → P)) (body' := body)
     sw.injective (fun e => nomatch e) ret v rfl D rfl
-  refine ⟨z,G,l,placed,bill,hz.trans same,?_⟩
+  refine ⟨z,G,l,placed,bill,hz.trans same,fun i => congrArg (fun E : Stacks tapes prime => E.L (owners i)) view,?_,?_⟩
+  · exact (congrArg (fun E : Stacks tapes prime => E.R (owners (Fin.last 142080))) view).trans
+      (off _ (fun r => owners.injective.ne (Fin.castSucc_ne_last _)))
   intro r
   exact (congrArg (fun E : Stacks tapes prime => E.R (owners (sweepRoleTape r))) view).trans (done r)
 
@@ -112,7 +116,7 @@ theorem stageExitReturn_exec {P U : Type} {Q t : ℕ} (n : Fin 9) (fan : Fin (14
   refine ⟨code.seq back,?_⟩
   intro x u S live privateReady counters empty left right fresh headers
   obtain ⟨v,D,k,exitRun,paid,user,words,frame⟩ := run x u S live privateReady counters empty left right fresh
-  obtain ⟨z,G,l,placed,bill,same,done⟩ := finish w H B W parent units hw bound hb hwid
+  obtain ⟨z,G,l,placed,bill,same,_,_,done⟩ := finish w H B W parent units hw bound hb hwid
     (leave.transform x) v S D headers (fun j apart => (frame j apart).2) (fun r => words (sweepRoleTape r))
   exact ⟨z,G,k+l,Exec.seq exitRun placed,Nat.add_le_add paid bill,same.trans user,done⟩
 
