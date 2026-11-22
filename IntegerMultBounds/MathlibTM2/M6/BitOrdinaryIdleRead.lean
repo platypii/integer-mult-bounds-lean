@@ -1277,7 +1277,7 @@ private theorem basisWorkspaceStacks {w W : ℕ} (stages : List (FlatCoordinateS
   exact ⟨⟨[],[],L,R⟩,rep⟩
 
 open M8.RevMachine RecursiveInterchangeLayout SharedPlacementAlphabet Cover.Fallback in
-private theorem copyChartStacks (v : Descriptor) (d : Fin 22 → Option (List Bool)) (k t : ℕ) :
+theorem copyChartStacks (v : Descriptor) (d : Fin 22 → Option (List Bool)) (k t : ℕ) :
     let common := LabelCall.bank (copyOwners (T := k) (v := v) 0) v d
     ∃ S : Stacks t prime, RepT (SharedBankStageInput.raw common t) S.L S.R := by
   intro common

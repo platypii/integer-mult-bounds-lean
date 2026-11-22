@@ -78,6 +78,8 @@ theorem borrowedChart_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) (e
     let v := copyLabelLayout w B K
     let V := volume prime v
     ∃ stage : SharedBankStage.Stage _ 142081 prime (copyOwners (v := v)),
+      (∃ S : Stacks stage.tapes prime, ∀ j, (∀ i, stage.slots i ≠ j) → ∀ h, stage.metadata.tape j h =
+        readAt blank (S.L j) (S.R j) (h-stage.metadata.head j)) ∧
       (∀ x (i : Fin 661), let A := registerChart w n i.val
         Cover.LabelPermutation.Transport v B w (fun g => g*(if enter then A.transpose else A))
           (M8.RevMachine.ext (x (ownerTape n p.1 p.2 i)))
@@ -99,8 +101,17 @@ theorem borrowedChart_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) (e
   obtain ⟨C,bound⟩ := labelRoute_cost_bound ((coeff+661)*factor+6) (661*252*factor)
   refine ⟨C,?_⟩
   intro w B K hw hb hk v V
-  obtain ⟨stage,count,bill,reads,off⟩ := build w B K hw hb hk
-  refine ⟨stage,reads,off,?_⟩
+  obtain ⟨stage,count,initial,bill,reads,off⟩ := build w B K hw hb hk
+  obtain ⟨seed,repSeed⟩ := copyChartStacks v (M8.Stage2Machine.Straight.words (Cover.LabelSchedule.base v w)) 142081 stage.tapes
+  rw [← initial] at repSeed
+  refine ⟨stage,⟨seed,?_⟩,reads,off,?_⟩
+  · intro j unused h
+    have away : ¬∃ i, stage.slots i = j := fun ⟨i,eq⟩ => unused i eq
+    have tape := congrArg (fun A : Tapes stage.tapes prime => A.tape j h) (stage.strip_input 0)
+    have head := congrArg (fun A : Tapes stage.tapes prime => A.head j) (stage.strip_input 0)
+    simp only [SharedBank.strip,away,ite_false] at tape head
+    rw [← tape,← head]
+    exact repSeed j h
   intro P U T Q bank fan shared apart fits body data u S ready rep
   have same : @phaseOwners 142081 V = copyOwners (v := v) := by
     funext x
@@ -165,6 +176,8 @@ theorem borrowedCopy_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) :
     let v := copyLabelLayout w B K
     let V := volume prime v
     ∃ stages : Bool → SharedBankStage.Stage _ 142081 prime (copyOwners (v := v)),
+    (∀ k, ∃ S : Stacks (stages k).tapes prime, ∀ j, (∀ i, (stages k).slots i ≠ j) → ∀ h,
+      (stages k).metadata.tape j h = readAt blank (S.L j) (S.R j) (h-(stages k).metadata.head j)) ∧
     ∀ {P U : Type} {T Q : ℕ} (bank : ∀ k, Fin (stages k).tapes ↪ Fin T) (fan : Fin (142081+2) ↪ Fin T),
       (∀ k i, bank k ((stages k).slots i) = fan (i.castAdd 2)) →
       (∀ k (j : Fin 2) i, bank k i ≠ fan (j.natAdd 142081)) →
@@ -187,8 +200,8 @@ theorem borrowedCopy_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) :
   choose coeff build using borrowedChart_host n p
   refine ⟨coeff false + coeff true,?_⟩
   intro w B K hw hb hk v V
-  choose stages transport off run using fun k => build k w B K hw hb hk
-  refine ⟨stages,?_⟩
+  choose stages seed transport off run using fun k => build k w B K hw hb hk
+  refine ⟨stages,seed,?_⟩
   intro P U T Q bank fan shared apart fits body price saved ready chart windows
   let ok := fun (x : Fin 142081 → Fin V → ZMod 2) S => HelperFan fan x S ∧ ready true S
   obtain ⟨middle,copies⟩ := copyWindows_exec body n p.1 p.2 w B K id ok saved price (fun i => by
