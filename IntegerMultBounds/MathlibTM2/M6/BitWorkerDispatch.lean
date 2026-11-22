@@ -31,6 +31,25 @@ private theorem replaceArchive {T w W : ℕ} [NeZero (prime^(w+1))] (bank : Fin 
   have ne : i ≠ 34 := fun eq => (by decide : (34 : Fin 35) ∉ shearWork) (eq ▸ hi)
   simpa [Function.update_of_ne (bank.injective.ne ne)] using ready.scratch i hi
 
+/-- Retire the five generated right-stack controls after a child returns.
+The cost depends on their recorded lengths, independently of child runtime. -/
+theorem retireWorkerControls {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
+    (bank : Fin 35 ↪ Fin T) (w W : ℕ) (record : List (Fin (prime+4)))
+    (word : Fin ((prime^(w+1))^16*W) → ZMod 2) (u : HS T Q prime U) (S : Stacks T prime)
+    (ready : RecordReady (b := prime) (w := w) (d := 16) (W := W) bank (prime^(w+1)).size W.size record
+      SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0 word S) :
+    let controls := ([2,27,28,32,33] : List (Fin 35)).map bank
+    ∃ z, z.user = u.user ∧ Exec body (Mult.ShortConv.clearWords controls) (mk u S)
+      (2*(2*(prime^(w+1)).size+W.size+w)+13)
+      (mk z {S with R := fun k => if k ∈ controls then [] else S.R k}) := by
+  intro controls
+  obtain ⟨z,user,run⟩ := Mult.ShortConv.clearWords_exec (body := body) controls
+    ((by decide : ([2,27,28,32,33] : List (Fin 35)).Nodup).map bank.injective) u S
+  refine ⟨z,user,run.cast ?_ rfl⟩
+  simp only [controls,List.map_cons,List.map_nil,List.sum_cons,List.sum_nil,List.length_cons,List.length_nil,
+    ready.modulus,ready.width,ready.one,ready.padded,ready.clock,length_binSyms]
+  omega
+
 /-- Copy the inherited cutoff into an empty worker archive. The source and
 the rest of the prepared record survive, including the live payload. -/
 theorem inheritWorkerCutoff {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
@@ -248,9 +267,10 @@ theorem packedMixedMoveCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
     let digits := if active then L else spectators.size
     (active → ScheduledChildExec node desc w suffix ports (binSyms L cutoff) position body large recursiveTime) →
     ∃ z F t y, Exec body code (mk u S) t (mk z F) ∧
-      t ≤ 14*M.size+6*suffix.size+6*(w+1)+11*(w+1).size+111+8*digits+4*w+23*desc.width+22*L+price ∧ z.user = u.user ∧
-      RecordReady (b := prime) (w := w) (d := 16) (W := suffix) bank M.size suffix.size []
-        SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0 y F ∧
+      t ≤ 18*M.size+8*suffix.size+6*(w+1)+11*(w+1).size+124+8*digits+6*w+23*desc.width+22*L+price ∧ z.user = u.user ∧
+      (∀ k ∈ ([2,27,28,32,33,34] : List (Fin 35)), F.R (bank k) = []) ∧
+      (∀ z, readAt blank (F.L (parent 24)) (F.R (parent 24)) z = RadixToBinary.binaryEncoding.encode
+        (putWord (fun _ => blank) 0 (List.ofFn (SparseRoleCircuit.encode ∘ y)) z)) ∧
       (∀ i : Fin (rowSwapBlock.tapes+35), 35 ≤ i.val → F.L (ports i) = [] ∧ F.R (ports i) = []) ∧
       (∀ j, (∀ i, ports i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j) ∧
       (∀ H J, let caller := RecordReady (b := prime) (w := w) (d := 16) (W := suffix) parent H J (binSyms L cutoff) SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0
@@ -280,7 +300,9 @@ theorem packedMixedMoveCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
   let i : Fin 127 := ⟨2*rank-2,by omega⟩
   obtain ⟨prepare,setup⟩ := prepareWorkerRecord_exec body bank headers (fun i j k => apart i j (localPort k))
   obtain ⟨dispatch,call⟩ := moveCutoffCall body large f ports cut (headers i 5) cutOff (fun k => (apart i 5 k).symm) rank
-  refine ⟨prepare.seq dispatch,?_⟩
+  let fields : List (Fin 35) := [2,27,28,32,33]
+  let controls := fields.map bank
+  refine ⟨prepare.seq (dispatch.seq (Mult.ShortConv.clearWords controls)),?_⟩
   intro node desc w W L cutoff recursiveTime M suffix spectators width cutFits fits pos position x u S smaller coords header archive ready empty clean payload core rate room budget active price digits recurse
   obtain ⟨v,D,m,user,run,cost,stored,left,off⟩ := setup w W x u S ready empty (by simpa only [show bank 24 = parent 24 from shared] using payload)
   rw [archive] at stored
@@ -302,14 +324,48 @@ theorem packedMixedMoveCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
     smaller v D x ((off cut (fun k => cutOff (localPort k))).trans header) spectator stored clear
   have keep (j) (outside : ∀ i, ports i ≠ j) : F.L j = S.L j ∧ F.R j = S.R j :=
     ⟨(frame j outside).1.trans (congrFun left j),(frame j outside).2.trans (off j (fun k => outside (localPort k)))⟩
-  refine ⟨z,F,_,y,Exec.seq run exec,?_,same.trans user,out,free,keep,?_,read⟩
+  obtain ⟨q,final,erase⟩ := retireWorkerControls body bank w suffix [] y z F out
+  let G := {F with R := fun k => if k ∈ controls then [] else F.R k}
+  have untouched (j) (away : ∀ k ∈ fields, bank k ≠ j) : G.R j = F.R j := by
+    apply ite_eq_right
+    intro mem
+    obtain ⟨k,hk,eq⟩ := List.mem_map.mp mem
+    exact away k hk eq
+  have preserved (j) (outside : ∀ i, ports i ≠ j) : G.L j = S.L j ∧ G.R j = S.R j :=
+    ⟨(keep j outside).1,(untouched j (fun k _ => outside (localPort k))).trans (keep j outside).2⟩
+  have payloadAt : G.R (parent 24) = F.R (parent 24) := by
+    apply untouched
+    intro k hk
+    rw [← shared]
+    exact bank.injective.ne (fun eq => (by decide : (24 : Fin 35) ∉ [2,27,28,32,33]) (eq ▸ hk))
+  have result z := out.src z
+  simp only [shared,sub_zero] at result
+  refine ⟨q,G,_,y,Exec.seq run (Exec.seq exec erase),?_,final.trans (same.trans user),?_,?_,?_,preserved,?_,read⟩
   · change m ≤ 14*M.size+6*suffix.size+6*(w+1)+11*(w+1).size+50 at cost
     change n ≤ price+8*digits+4*w+23*desc.width+22*L+61 at paid
+    change m+(n+(2*(2*M.size+suffix.size+w)+13)) ≤ _
+    omega
+  · intro k hk
+    by_cases h : k ∈ fields
+    · exact ite_eq_left (List.mem_map.mpr ⟨k,h,rfl⟩)
+    · have eq : k = 34 := by simp [fields] at h hk; tauto
+      subst k
+      exact (untouched (bank 34) (fun k hk => bank.injective.ne (fun eq => h (eq ▸ hk)))).trans out.archive
+  · intro z
+    rw [payloadAt]
+    exact result z
+  · intro k hk
+    refine ⟨(free k hk).1,(untouched _ ?_).trans (free k hk).2⟩
+    intro j _ eq
+    change ports (localPort j) = ports k at eq
+    have val := congrArg Fin.val (ports.injective eq)
+    change j.val = k.val at val
     omega
   · intro H J caller start
-    apply start.returnPayload (fun j hj => keep (parent j) (fun k => apartParent (workerPorts k) j hj))
+    apply start.returnPayload (fun j hj => preserved (parent j) (fun k => apartParent (workerPorts k) j hj))
     intro z
-    simpa only [shared] using (out.src z).symm
+    rw [payloadAt,sub_zero]
+    exact (result z).symm
 
 /-- Compute the worker tag from its predecessor clock and an external cutoff
 word, then prepend it to the archive. The comparison restores all its tapes. -/
