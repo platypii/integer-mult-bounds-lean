@@ -1,6 +1,9 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.M6.BitRemainderScheduledReturn
+public import IntegerMultBounds.MathlibTM2.M6.BitRemainderRowAddress
+
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackRecordVolumeHeaders
 
 /-! Compose preparation, scheduled scanning and return on one staged owner. -/
 @[expose] public section
@@ -252,13 +255,80 @@ private theorem headerCharge {w B W : ℕ} (hb : 0 < B) (hw : 0 < W) :
     rw [← pow_mul,show (w+1)*(64*64) = 64*((w+1)*64) by omega]; exact h.le
   exact sevenHeaderCharge k n (grow.trans n) b ((0-idRow).isLt.le.trans n) ab small
 
-theorem ScheduledReturn.roundTrip [M8.Machine.Net] {V size back Q w B W : ℕ} {U : Type}
+/-- Once the forward shift is written at row-count width, one subtraction
+and two trims produce both canonical rotation headers. -/
+theorem rotationHeaders_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
+    (r : Fin 7 ↪ Fin T) :
+    ∃ code, ∀ (N g : ℕ) (hg : g ≤ N) (u : HS T Q prime U) (S : Stacks T prime),
+      S.R (r 0) = binSyms N.size N → S.R (r 1) = binSyms N.size g →
+      (∀ i : Fin 7, 2 ≤ i → i < 6 → S.R (r i) = []) →
+      ∃ z, z.user = u.user ∧ Exec body code (mk u S) (16*N.size+20)
+        (mk z {S with R := Function.update (Function.update S.R (r 2)
+          (binSyms (N-g).size (N-g))) (r 1) (binSyms g.size g)}) := by
+  refine ⟨(bsub (r 0) (r 1) (r 2) (r 3) (r 4) (r 5) (r 6)).seq
+    ((Routing.binaryCanonicalProgram (r 2) (r 3)).seq (Routing.binaryCanonicalProgram (r 1) (r 3))),?_⟩
+  intro N g hg u S rows shift free
+  have hn := Nat.lt_size_self N
+  obtain ⟨v,vu,_,_,sub⟩ := bsub_exec body (a := r 0) (b := r 1) (c := r 2)
+    (tx := r 3) (ty := r 4) (tz := r 5) (cy := r 6) (by simp [List.nodup_cons,r.injective.eq_iff])
+    (r.injective.ne (by decide)) (r.injective.ne (by decide)) hn (hg.trans_lt hn) u S rows shift
+    (free 3 (by decide) (by decide)) (free 4 (by decide) (by decide)) (free 5 (by decide) (by decide))
+  rw [free 2 (by decide) (by decide),List.append_nil,show N+2^N.size-g = (N-g)+2^N.size by omega,
+    Nat.add_mod_right,Nat.mod_eq_of_lt ((Nat.sub_le N g).trans_lt hn)] at sub
+  let D : Stacks T prime := {S with R := Function.update S.R (r 2) (binSyms N.size (N-g))}
+  obtain ⟨bs,y,hc,hv,_,yv,back⟩ := Routing.binaryCanonical_exec body (r 2) (r 3)
+    (r.injective.ne (by decide)) _ _ ((Nat.sub_le N g).trans_lt hn) v D (by simp [D])
+    (by simp [D,r.injective.eq_iff,free 3 (by decide) (by decide)])
+  have canonical {bs : List Bool} {x : ℕ} (hc : GrowingCounterData.Canonical bs) (hv : Counter.value bs = x) :
+      bs.map (bitSymbol (a := prime)) = binSyms x.size x := by
+    rw [BinaryCanonicalData.value_injective bs (bits x) hc (FlatCoordinateSchedule.bits_canonical _)
+      (hv.trans (FlatCoordinateSchedule.bits_value _).symm),canonicalBits_symbols]
+  simp only [canonical hc hv,D,Function.update_idem] at back
+  let E : Stacks T prime := {S with R := Function.update S.R (r 2) (binSyms (N-g).size (N-g))}
+  obtain ⟨bs,z,hc,hv,_,zy,fwd⟩ := Routing.binaryCanonical_exec body (r 1) (r 3)
+    (r.injective.ne (by decide)) _ _ (hg.trans_lt hn) y E (by simp [E,r.injective.eq_iff,shift])
+    (by simp [E,r.injective.eq_iff,free 3 (by decide) (by decide)])
+  rw [canonical hc hv] at fwd
+  exact ⟨z,zy.trans (yv.trans vu),(Exec.seq sub (Exec.seq back fwd)).cast (by omega) rfl⟩
+
+/-- Construct the ordinary row width from the retained tail and the modulus.
+The dimension program restores both inputs and every temporary register. -/
+theorem ordinaryRowWidth_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
+    (r : Fin 10 ↪ Fin T) (M W : ℕ) (u : HS T Q prime U) (S : Stacks T prime)
+    (base : S.R (r 0) = binSyms M.size M)
+    (tail : S.R (r 1) = binSyms (M^112*W).size (M^112*W))
+    (free : ∀ i : Fin 10, 2 ≤ i → i < 9 → S.R (r i) = []) :
+    let J := (M^112*W).size
+    let K := M^128*W
+    ∃ v t, v.user = u.user ∧ t ≤ Cover.Fallback.dimensionTime M.size J 16 + (4*(16*M.size+J)+6) ∧
+      Exec body (Cover.Fallback.swapPrefix r 16) (mk u S) t
+        (mk v {S with R := Function.update S.R (r 2) (binSyms K.size K)}) := by
+  have width : M^16*(M^112*W) = M^128*W := by rw [← Nat.mul_assoc,← pow_add]
+  simpa only [Cover.Fallback.canonicalBits_symbols,width] using
+    Cover.Fallback.scaledPrefix_exec body r 16 M.size (M^112*W).size M (M^112*W)
+      (Nat.lt_size_self _) (Nat.lt_size_self _) u S base tail free
+
+/-- Read the modulus in the scanner entry bank. The tail and result use retained
+ports 6 and 0. The remaining seven tapes borrow idle handoff slots. -/
+def widthRegisters {T : ℕ} (base : Fin T) : Fin 10 ↪ Fin (T+99) where
+  toFun := Fin.cases (base.castAdd 99) (fun i : Fin 9 =>
+    ((![98,92,1,2,3,4,5,6,7] : Fin 9 → Fin 99) i).natAdd T)
+  inj' := by
+    intro i j
+    cases i using Fin.cases <;> cases j using Fin.cases <;> simp
+    all_goals intro h
+    all_goals first
+      | exact (by decide : Function.Injective (![98,92,1,2,3,4,5,6,7] : Fin 9 → Fin 99)) h
+      | have e := congrArg Fin.val h; simp at e; omega
+
+private theorem ScheduledReturn.roundTripWithOffsets [M8.Machine.Net] {V size back Q w B W : ℕ} {U : Type}
     {stage : SharedBankStage.Stage _ 1 prime (phaseOwners (N := V))} {words : Fin size → List (Fin (prime+4))}
     {interval : ℕ × ℕ} {parent : Fin 64 → ZMod (prime^(w+1))}
     {c : Certificates.PR589.Nine.PortCertificate} {checked : c.Checked}
     {body : Unit → Pr Unit ((size+stage.tapes+back)+99) Q prime U} {scan rate}
     (scheduled : ScheduledReturn (w := w) (B := B) (W := W) interval parent c checked
       (((stage.slots 0).natAdd size).castAdd back) (ScannerReady stage size back words) body scan rate)
+    (modulus : Fin size) (modulusWord : words modulus = binSyms (prime^(w+1)).size (prime^(w+1)))
     (hb : 0 < B) (hw : 0 < W) (fits : 235 ≤ Q) :
     ∃ code : Pr Unit ((size+stage.tapes+back)+99) Q prime U,
     let T := size+stage.tapes+back
@@ -271,11 +341,11 @@ theorem ScheduledReturn.roundTrip [M8.Machine.Net] {V size back Q w B W : ℕ} {
     let tail := M^112*W
     let N := M^(64*64)
     let K := M^128*W
-    let g := ordinaryIdentityRow (w+1)
-    let idRow := LabelAddress.address (1 : LabelPadding.Label 64 (w+1))
+    let offset := diagonalPrefix (M^65) 64
     ∀ (x : Fin 142081 → Fin (A*(B*tail)) → ZMod 2) i u S,
       ScannerReady stage size back words (embStk old S) →
-      (∀ j : Fin 7, let n := (![K,N,g.val,B,(0-idRow).val,A*B,tail] : Fin 7 → ℕ) j
+      S.R (retainedPort T 0) = [] →
+      (∀ j : Fin 7, j ≠ 0 → let n := (![K,N,offset,B,N-offset,A*B,tail] : Fin 7 → ℕ) j
         S.R (retainedPort T j) = binSyms n.size n) →
       WordAtZero (singleLabelBank (firstRowLabel (w+1)) x i) (S.L (slots 0)) (S.R (slots 0)) →
       (∀ j, j ≠ 0 → S.L (slots j) = [] ∧ S.R (slots j) = []) →
@@ -283,7 +353,7 @@ theorem ScheduledReturn.roundTrip [M8.Machine.Net] {V size back Q w B W : ℕ} {
         (t : ℝ) ≤ (packedChartRate (0 : Fin 1) c checked false layout.width +
           packedChartRate (0 : Fin 1) c checked true layout.width + (366+16*64*64+19*64+344) +
           rate*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau + 64*(8*64+21+28+(prime.size : ℝ)))*
-          volume prime (role layout 142080) + 13 + 46486*(B*(N*K) : ℕ)+1226 ∧ v.user = u.user ∧
+          volume prime (role layout 142080) + 13 + 46486*(B*(N*K) : ℕ)+1226 + (dimensionTime M.size tail.size 16 + (4*(16*M.size+tail.size)+6) : ℕ) ∧ v.user = u.user ∧
         WordAtZero (singleLabelBank (firstRowLabel (w+1)) (fun _ => staged) 0) (F.L (slots 0)) (F.R (slots 0)) ∧
       let proj := IntegerMultBounds.Swap.Modular.reduce M ((c.span interval.1 interval.2).submatrix stageAxis.symm stageAxis.symm)
       let frame := Matrix.fromBlocks (Matrix.diagonal parent) 0 0 (M8.ReversedExchange.rev 64)
@@ -294,27 +364,72 @@ theorem ScheduledReturn.roundTrip [M8.Machine.Net] {V size back Q w B W : ℕ} {
   let slots := aroundScanner owner
   obtain ⟨load,copy⟩ := loadHeaders_exec body slots (retainedPort _) (retainedPort_private owner)
   obtain ⟨code,execute⟩ := scheduled.roundTripPrepared hb hw fits
-  refine ⟨load.seq code,?_⟩
-  intro T _ _ old layout M A tail N K g idRow x i u S initial sources live fresh
+  let src := (modulus.castAdd stage.tapes).castAdd back
+  let r := widthRegisters src
+  have seedPort : r 1 = retainedPort _ 6 := rfl
+  have widthPort : r 2 = retainedPort _ 0 := rfl
+  refine ⟨(swapPrefix r 16).seq (load.seq code),?_⟩
+  intro T _ _ old layout M A tail N K offset x i u S initial widthEmpty sources live fresh
+  have base : S.R (r 0) = binSyms M.size M := (initial.2.1 modulus).2.trans modulusWord
+  have free (j : Fin 10) (lo : 2 ≤ j) (hi : j < 9) : S.R (r j) = [] := by
+    fin_cases j <;> first | exact False.elim (by revert lo hi; decide) | exact widthEmpty | first
+      | exact (fresh 2 (by decide)).2
+      | exact (fresh 3 (by decide)).2
+      | exact (fresh 4 (by decide)).2
+      | exact (fresh 5 (by decide)).2
+      | exact (fresh 6 (by decide)).2
+      | exact (fresh 7 (by decide)).2
+  let g := ordinaryIdentityRow (w+1)
+  let idRow := LabelAddress.address (1 : LabelPadding.Label 64 (w+1))
   let vals : Fin 7 → ℕ := ![K,N,g.val,B,(0-idRow).val,A*B,tail]
-  obtain ⟨y,D,loadRun,same,headers,off⟩ := copy vals u S sources
-    (fun i => fresh _ ((by decide : ∀ i, headerPorts i ≠ 0) i)) (fresh 13 (by decide)).2 (fresh 14 (by decide)).2
+  obtain ⟨v,s,vu,hs,widthRun⟩ := ordinaryRowWidth_exec body r M W u S base
+    (seedPort ▸ sources 6 (by decide)) free
+  let C : Stacks _ prime := {S with R := Function.update S.R (r 2) (binSyms K.size K)}
+  have kept (j : Fin 93) : C.R (slots j) = S.R (slots j) := by
+    exact Function.update_of_ne ((widthPort ▸ retainedPort_private owner 0 j).symm) _ _
+  obtain ⟨y,D,loadRun,same,headers,off⟩ := copy vals v C (by
+    intro j
+    by_cases zero : j = 0
+    · subst j
+      simp [C,widthPort,vals,K]
+    have distinct : retainedPort T j ≠ r 2 := by
+      rw [widthPort]
+      intro eq
+      apply zero
+      apply Fin.ext
+      have h := congrArg Fin.val eq
+      simp [retainedPort,T] at h
+      omega
+    rw [show C.R (retainedPort T j) = _ from Function.update_of_ne distinct _ _]
+    have h := ordinaryRotationOffsets w
+    dsimp only [vals,g,idRow]
+    rw [h.1,h.2]
+    exact sources j zero)
+    (fun j => ⟨(fresh _ ((by decide : ∀ i, headerPorts i ≠ 0) j)).1,
+      (kept _).trans (fresh _ ((by decide : ∀ i, headerPorts i ≠ 0) j)).2⟩)
+    ((kept _).trans (fresh 13 (by decide)).2) ((kept _).trans (fresh 14 (by decide)).2)
   have untouched (j : Fin 93) (h : ∀ i, headerPorts i ≠ j) := off (slots j) (fun i => slots.injective.ne (h i))
   have empty (j : Fin 93) (h : j ≠ 0 ∧ ∀ i, headerPorts i ≠ j) : D.L (slots j) = [] ∧ D.R (slots j) = [] :=
-    ⟨(untouched j h.2).1.trans (fresh j h.1).1,(untouched j h.2).2.trans (fresh j h.1).2⟩
+    ⟨(untouched j h.2).1.trans (fresh j h.1).1,(untouched j h.2).2.trans ((kept j).trans (fresh j h.1).2)⟩
   have blankAt (j : Fin 93) (h : j ≠ 0 ∧ ∀ i, headerPorts i ≠ j) (z : ℤ) :
       readAt blank (D.L (slots j)) (D.R (slots j)) z = blank := by
     rw [(empty j h).1,(empty j h).2,readAt_nil_left,wordTape_nil]
   have ready : ScannerReady stage size back words (embStk old D) := by
     apply initial.of_owner_change
     intro j _
-    exact off _ (fun i => (aroundScanner_private owner _ ((by decide : ∀ i, headerPorts i ≠ 1) i) j).symm)
+    have h := off _ (fun i => (aroundScanner_private owner _ ((by decide : ∀ i, headerPorts i ≠ 1) i) j).symm)
+    refine ⟨h.1,h.2.trans (Function.update_of_ne ?_ _ _)⟩
+    rw [widthPort]
+    intro eq
+    have e := congrArg Fin.val eq
+    simp [retainedPort] at e
+    omega
   have srcLive := untouched 0 (by decide)
   have trans (j : Fin 8) := empty _ ((by decide : ∀ j, inputTranspose j ≠ 0 ∧ ∀ i, headerPorts i ≠ inputTranspose j) j)
   have ret (j : Fin 8) := empty _ ((by decide : ∀ j, outputTranspose j ≠ 0 ∧ ∀ i, headerPorts i ≠ outputTranspose j) j)
   obtain ⟨z,F,t,staged,run,time,user,word,cells⟩ := execute x i y D ready headers
     (fun b j hj => empty _ ((by decide +kernel : ∀ b (j : Fin 12), 2 ≤ j.val → paddingBanks b j ≠ 0 ∧ ∀ i, headerPorts i ≠ paddingBanks b j) b j hj))
-    (by change WordAtZero _ (D.L (slots 0)) (D.R (slots 0)); rwa [srcLive.1,srcLive.2])
+    (by change WordAtZero _ (D.L (slots 0)) (D.R (slots 0)); rwa [srcLive.1,srcLive.2,kept])
     (blankAt _ (by decide : inputCrop 1 ≠ 0 ∧ ∀ i, headerPorts i ≠ inputCrop 1))
     (trans 0).1 (trans 1).1 (fun j => (trans j).2)
     (blankAt _ (by decide : inputPad 1 ≠ 0 ∧ ∀ i, headerPorts i ≠ inputPad 1))
@@ -324,13 +439,141 @@ theorem ScheduledReturn.roundTrip [M8.Machine.Net] {V size back Q w B W : ℕ} {
     (blankAt _ (by decide : outputRotation 11 ≠ 0 ∧ ∀ i, headerPorts i ≠ outputRotation 11))
     (blankAt _ (by decide : outputCrop 1 ≠ 0 ∧ ∀ i, headerPorts i ≠ outputCrop 1))
     (fun j => (ret j).2) (ret 1).1 (ret 6).1
-  refine ⟨z,F,_,staged,Exec.seq loadRun run,?_,user.trans same,word,cells⟩
+  refine ⟨z,F,_,staged,Exec.seq widthRun (Exec.seq loadRun run),?_,user.trans (same.trans vu),word,cells⟩
   let V := B*(N*K)
   have charge := headerCharge (w := w) hb hw
   have fee : ((((List.finRange 7).map (fun i => 6*(vals i).size+6)).sum+2 : ℕ) : ℝ) ≤ 42*(V : ℝ)+44 := by exact_mod_cast charge
   change (t : ℝ) ≤ _ + 46444*(V : ℝ)+1182 at time
-  change (((_ + t : ℕ) : ℝ)) ≤ _ + 46486*(V : ℝ)+1226
-  rw [Nat.cast_add]
+  change (((s + (_ + t) : ℕ) : ℝ)) ≤ _ + 46486*(V : ℝ)+1226 + _
+  rw [Nat.cast_add,Nat.cast_add]
+  have widthCost : (s : ℝ) ≤ (dimensionTime M.size tail.size 16 + (4*(16*M.size+tail.size)+6) : ℕ) := by exact_mod_cast hs
+  linarith
+
+private def clockRegisters {T : ℕ} (clock : Fin T) : Fin 7 ↪ Fin (T+99) where
+  toFun := Fin.cases (clock.castAdd 99) (fun i : Fin 6 =>
+    ((![1,2,94,3,93,4] : Fin 6 → Fin 99) i).natAdd T)
+  inj' := by
+    intro i j
+    cases i using Fin.cases <;> cases j using Fin.cases <;> simp
+    all_goals intro h
+    all_goals first
+      | exact (by decide : Function.Injective (![1,2,94,3,93,4] : Fin 6 → Fin 99)) h
+      | have hc := clock.isLt; have e := congrArg Fin.val h; simp at e; omega
+
+private def forwardRegisters {T : ℕ} (clock : Fin T) : Fin 7 ↪ Fin (T+99) :=
+  (⟨![1,2,3,4,5,6,0],by decide⟩ : Fin 7 ↪ Fin 7).trans (clockRegisters clock)
+
+theorem ScheduledReturn.roundTrip [M8.Machine.Net] {V size back Q w B W : ℕ} {U : Type}
+    {stage : SharedBankStage.Stage _ 1 prime (phaseOwners (N := V))} {words : Fin size → List (Fin (prime+4))}
+    {interval : ℕ × ℕ} {parent : Fin 64 → ZMod (prime^(w+1))}
+    {c : Certificates.PR589.Nine.PortCertificate} {checked : c.Checked}
+    {body : Unit → Pr Unit ((size+stage.tapes+back)+99) Q prime U} {scan rate}
+    (scheduled : ScheduledReturn (w := w) (B := B) (W := W) interval parent c checked
+      (((stage.slots 0).natAdd size).castAdd back) (ScannerReady stage size back words) body scan rate)
+    (modulus : Fin size) (modulusWord : words modulus = binSyms (prime^(w+1)).size (prime^(w+1)))
+    (precision : Fin size) (precisionWord : (words precision).length = w+1)
+    (hb : 0 < B) (hw : 0 < W) (fits : 235 ≤ Q) :
+    ∃ code : Pr Unit ((size+stage.tapes+back)+99) Q prime U,
+    let T := size+stage.tapes+back
+    let owner := ((stage.slots 0).natAdd size).castAdd back
+    let slots := aroundScanner owner
+    let old := Fin.castAddEmb 99 (n := T)
+    let layout := stagedScannerLayout w B W
+    let M := prime^(w+1)
+    let A := M^16
+    let tail := M^112*W
+    let N := M^(64*64)
+    let K := M^128*W
+    let offset := diagonalPrefix (M^65) 64
+    ∀ (x : Fin 142081 → Fin (A*(B*tail)) → ZMod 2) i u S,
+      ScannerReady stage size back words (embStk old S) →
+      S.R (retainedPort T 0) = [] →
+      S.R (retainedPort T 2) = [] → S.R (retainedPort T 4) = [] →
+      (∀ j : Fin 7, j ≠ 0 → j ≠ 2 → j ≠ 4 → let n := (![K,N,offset,B,N-offset,A*B,tail] : Fin 7 → ℕ) j
+        S.R (retainedPort T j) = binSyms n.size n) →
+      WordAtZero (singleLabelBank (firstRowLabel (w+1)) x i) (S.L (slots 0)) (S.R (slots 0)) →
+      (∀ j, j ≠ 0 → S.L (slots j) = [] ∧ S.R (slots j) = []) →
+      ∃ v F t, ∃ staged : Fin (M^16*(B*(M^112*W))) → ZMod 2, Exec body code (mk u S) t (mk v F) ∧
+        (t : ℝ) ≤ (packedChartRate (0 : Fin 1) c checked false layout.width +
+          packedChartRate (0 : Fin 1) c checked true layout.width + (366+16*64*64+19*64+344) +
+          rate*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau + 64*(8*64+21+28+(prime.size : ℝ)))*
+          volume prime (role layout 142080) + 13 + 46486*(B*(N*K) : ℕ)+1226 + (dimensionTime M.size tail.size 16 + (4*(16*M.size+tail.size)+6) : ℕ) + (16*N.size+20 : ℕ) +
+            (1+64*(4*(w+1)+5)+(4*N.size+4)+64*(65*(w+1))*(7*N.size+prime+17)+6 : ℕ) ∧ v.user = u.user ∧
+        WordAtZero (singleLabelBank (firstRowLabel (w+1)) (fun _ => staged) 0) (F.L (slots 0)) (F.R (slots 0)) ∧
+      let proj := IntegerMultBounds.Swap.Modular.reduce M ((c.span interval.1 interval.2).submatrix stageAxis.symm stageAxis.symm)
+      let frame := Matrix.fromBlocks (Matrix.diagonal parent) 0 0 (M8.ReversedExchange.rev 64)
+      let addr := fun b y (k : Fin W) => stagedOwnerIndex b (FlatCoordinateLayout.index
+        ((frame.mulVec y) ∘ (finSumFinEquiv : (Fin 64 ⊕ Fin 64) ≃ Fin 128).symm) k)
+      ∀ b y k, staged (addr b ((Matrix.fromBlocks (1-proj) proj proj (1-proj)).mulVec y) k) = x i (addr b y k) := by
+  let T := size+stage.tapes+back
+  let owner := ((stage.slots 0).natAdd size).castAdd back
+  let regs := (⟨![93,94,96,1,2,3,4],by decide⟩ : Fin 7 ↪ Fin 99).trans (Fin.natAddEmb T)
+  obtain ⟨prepare,subtract⟩ := rotationHeaders_exec body regs
+  obtain ⟨code,run⟩ := scheduled.roundTripWithOffsets modulus modulusWord hb hw fits
+  let bank := forwardRegisters ((precision.castAdd stage.tapes).castAdd back)
+  obtain ⟨generate,write⟩ := generateForwardOffset_exec body bank
+  refine ⟨generate.seq (prepare.seq code),?_⟩
+  intro _ _ slots old layout M A tail N K offset x i u S ready width shift backEmpty sources live fresh
+  have forward : regs 1 = retainedPort T 2 := rfl
+  have reverse : regs 2 = retainedPort T 4 := rfl
+  have fitsOffset : offset ≤ N := by
+    dsimp only [offset,M]
+    rw [← (ordinaryRotationOffsets w).1]
+    have lt := (ordinaryIdentityRow (w+1)).isLt
+    apply lt.le.trans
+    dsimp [N,M]
+    rw [← pow_mul]
+    apply Nat.pow_le_pow_right Shared50ModularControl.prime_prime.pos
+    omega
+  have row := sources 1 (by decide) (by decide) (by decide)
+  have positive : 0 < N := pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _
+  have sizePos : 0 < N.size := by
+    by_contra! h
+    have bound := Nat.lt_size_self N
+    rw [show N.size = 0 by omega] at bound
+    simp at bound
+    omega
+  obtain ⟨y,m,yu,hm,generated⟩ := write w N.size sizePos u S
+    ((congrArg List.length (ready.2.1 precision).2).trans precisionWord)
+    (by change (S.R (retainedPort T 1)).length = N.size; rw [row,length_binSyms]; rfl) (by
+      intro j a b
+      fin_cases j <;> first | exact False.elim (by revert a b; decide) | exact shift
+                            | exact (fresh 2 (by decide)).2 | exact (fresh 3 (by decide)).2
+                            | exact (fresh 4 (by decide)).2 | exact (fresh 5 (by decide)).2)
+  let C : Stacks _ prime := {S with R := Function.update S.R (regs 1) (binSyms N.size offset)}
+  have genKeep (j : Fin 7) (h : j ≠ 1) : C.R (regs j) = S.R (regs j) := Function.update_of_ne (regs.injective.ne h) _ _
+  obtain ⟨v,vu,prepared⟩ := subtract N offset fitsOffset y C ((genKeep 0 (by decide)).trans row) (Function.update_self ..) (by
+    intro j lo hi
+    rw [genKeep j (by omega)]
+    fin_cases j <;> first | exact False.elim (by revert lo hi; decide) | exact backEmpty
+                          | exact (fresh 2 (by decide)).2 | exact (fresh 3 (by decide)).2 | exact (fresh 4 (by decide)).2)
+  let D : Stacks _ prime := {C with R := Function.update (Function.update C.R (regs 2)
+    (binSyms (N-offset).size (N-offset))) (regs 1) (binSyms offset.size offset)}
+  have off (j) (hf : j ≠ retainedPort T 2) (hb : j ≠ retainedPort T 4) : D.R j = S.R j := by
+    simp [D,C,forward,reverse,Function.update_of_ne,hf,hb]
+  have retained : Function.Injective (retainedPort T) := by
+    intro j k h
+    apply Fin.ext
+    simpa [retainedPort] using congrArg Fin.val h
+  have keep (j) := off (slots j) (retainedPort_private owner 2 j).symm (retainedPort_private owner 4 j).symm
+  have entry : embStk old D = embStk old S := by
+    unfold embStk
+    congr 1
+    funext j
+    apply off <;> intro eq <;> have e := congrArg Fin.val eq <;> simp [old,retainedPort,T] at e <;> omega
+  obtain ⟨z,F,t,staged,execute,time,user,word,cells⟩ := run x i v D (entry ▸ ready)
+    ((off _ (retained.ne (by decide)) (retained.ne (by decide))).trans width) (by
+      intro j nz
+      by_cases f : j = 2
+      · subst j; change D.R (regs 1) = binSyms offset.size offset; simp [D]
+      by_cases b : j = 4
+      · subst j; change D.R (regs 2) = binSyms (N-offset).size (N-offset); simp [D,regs.injective.eq_iff]
+      exact (off _ (retained.ne f) (retained.ne b)).trans (sources j nz f b))
+    (by change WordAtZero _ _ (D.R (slots 0)); rwa [keep])
+    (fun j hj => ⟨(fresh j hj).1,(keep j).trans (fresh j hj).2⟩)
+  refine ⟨z,F,_,staged,Exec.seq generated (Exec.seq prepared execute),?_,user.trans (vu.trans yu),word,cells⟩
+  rw [Nat.cast_add,Nat.cast_add]
+  have cost := Nat.cast_le (α := ℝ).mpr hm
   linarith
 
 end OrdinaryHandoff
