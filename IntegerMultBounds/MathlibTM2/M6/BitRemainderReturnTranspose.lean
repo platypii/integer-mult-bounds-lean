@@ -69,6 +69,32 @@ private theorem returnLoop_exec {P U : Type} {Q A B K : ℕ} (body : P → Pr P 
     · simp only [List.length_append,List.length_singleton,Nat.add_mul,Nat.one_mul]
       omega
 
+/-- Transpose all blocks of records. The step bound counts the actual passes
+and is independent of how the block index splits into parents and labels. -/
+theorem returnRecordBlocks_exec {P U : Type} {q alphabet : ℕ}
+    (body : P → Pr P 8 q alphabet U) (A B K : ℕ) (hb : 0 < B) (hk : 0 < K) :
+    ∀ (x : Fin (B*(A*K)) → Fin (alphabet+4)) (S : Stacks 8 alphabet)
+      (u : HS 8 q alphabet U) (record rowWidth : List (Fin (alphabet+4))), record.length = K →
+      ∃ v steps, v.user = u.user ∧ Exec body (.seq (.act (peekR 3)) returnTransposeLoop)
+        (mk u (transposeStacks S (List.ofFn x) [] (List.replicate A record.reverse).flatten record rowWidth))
+        steps (mk v (transposeStacks S [] (List.ofFn (compactTranspose x)) [] record rowWidth)) ∧
+        steps ≤ A*(compactPassCost B K A+2)+2 := by
+  intro x S u record rowWidth hw
+  let r := fun (a : Fin A) (b : Fin B) => List.ofFn (fun j : Fin K => x (finProdFinEquiv (b,finProdFinEquiv (a,j))))
+  let rows := List.ofFn r
+  let start := transposeStacks S (columns rows) [] (widthClock record rows.length) record rowWidth
+  let next := {u with flag := (widthClock record rows.length).head?.isSome}
+  have peek : Exec body (.act (peekR 3)) (mk u start) 1 (mk next start) := Exec.act _ _
+  obtain ⟨v,t,same,run,bill⟩ := returnLoop_exec body S record rowWidth hw hk hb A rows
+    (by simp [rows]) (by intro row mem b; obtain ⟨a,rfl⟩ := List.mem_ofFn.mp mem; exact List.length_ofFn)
+    [] next rfl
+  have full := Exec.seq peek run
+  simp only [rows,List.length_ofFn] at bill
+  refine ⟨v,1+t,same,?_,by omega⟩
+  rw [serialized x,serialized (compactTranspose x)]
+  simpa only [start,rows,r,columns,unread,widthClock,List.length_ofFn,List.append_nil,
+    List.flatMap_def,List.map_ofFn,Function.comp_def,compactTranspose,Equiv.symm_apply_apply] using full
+
 /-- Restore the compact staging word on the eight-register host within the padded volume. -/
 theorem remainderCompactReturn_exec {P U : Type} {q alphabet : ℕ}
     (body : P → Pr P 8 q alphabet U) (w B K : ℕ) (hb : 0 < B) (hk : 0 < K) :
@@ -81,20 +107,7 @@ theorem remainderCompactReturn_exec {P U : Type} {q alphabet : ℕ}
         steps (mk v (transposeStacks S [] (List.ofFn (compactTranspose x)) [] record rowWidth)) ∧
         steps ≤ 52*(A*(B*N*K))+2 := by
   intro A N x S u record rowWidth hw
-  let r := fun (a : Fin A) (b : Fin B) => List.ofFn (fun j : Fin K => x (finProdFinEquiv (b,finProdFinEquiv (a,j))))
-  let rows := List.ofFn r
-  let start := transposeStacks S (columns rows) [] (widthClock record rows.length) record rowWidth
-  let next := {u with flag := (widthClock record rows.length).head?.isSome}
-  have peek : Exec body (.act (peekR 3)) (mk u start) 1 (mk next start) := Exec.act _ _
-  obtain ⟨v,t,same,run,bill⟩ := returnLoop_exec body S record rowWidth hw hk hb A rows
-    (by simp [rows]) (by intro row mem b; obtain ⟨a,rfl⟩ := List.mem_ofFn.mp mem; exact List.length_ofFn)
-    [] next rfl
-  have full := Exec.seq peek run
-  simp only [rows,List.length_ofFn] at bill
-  refine ⟨v,_,same,?_,(show 1+t ≤ A*(compactPassCost B K A+2)+2 by omega).trans
-    (compactTranspose_volume_bound w B K hb hk)⟩
-  rw [serialized x,serialized (compactTranspose x)]
-  simpa only [start,rows,r,columns,unread,widthClock,List.length_ofFn,List.append_nil,
-    List.flatMap_def,List.map_ofFn,Function.comp_def,compactTranspose,Equiv.symm_apply_apply] using full
+  obtain ⟨v,k,user,run,paid⟩ := returnRecordBlocks_exec body A B K hb hk x S u record rowWidth hw
+  exact ⟨v,k,user,run,paid.trans (compactTranspose_volume_bound w B K hb hk)⟩
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode

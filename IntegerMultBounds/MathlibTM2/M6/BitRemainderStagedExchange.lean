@@ -17,7 +17,7 @@ def stagedOwnerIndex {M B W : ℕ} (b : Fin B) (j : Fin (M^128*W)) : Fin (M^16*(
   let cell := finProdFinEquiv.symm (j.cast (ordinaryCompact_width M W).symm)
   finProdFinEquiv (cell.1,finProdFinEquiv (b,cell.2))
 
-private theorem identityRead {M B N W : ℕ} (g : Fin N)
+private theorem stagedRowRead {M B N W : ℕ} (g : Fin N)
     (owner : Fin ((B*N)*(M^128*W)) → ZMod 2) (staged : Fin (M^16*(B*(M^112*W))) → ZMod 2)
     (cells : ∀ a b k, staged (finProdFinEquiv (a,finProdFinEquiv (b,k))) =
       owner (finProdFinEquiv (finProdFinEquiv (b,g),(finProdFinEquiv (a,k)).cast (ordinaryCompact_width M W)))) :
@@ -26,6 +26,57 @@ private theorem identityRead {M B N W : ℕ} (g : Fin N)
   simpa only [stagedOwnerIndex,Prod.mk.eta,Equiv.apply_symm_apply,Fin.cast_cast,Fin.cast_refl,id_eq] using
     cells (finProdFinEquiv.symm (j.cast (ordinaryCompact_width M W).symm)).1 b
       (finProdFinEquiv.symm (j.cast (ordinaryCompact_width M W).symm)).2
+
+/-- Read any live label directly from a pair of staged owner words. Other
+rows may carry independent data. -/
+theorem OriginalPortReads.stagedLabelExchange {w W B : ℕ} {interval parent c} :
+    let M := prime^(w+1)
+    let N := M^(64*64)
+    ∀ (label : LabelPadding.Label 64 (w+1)), IsUnit label →
+    let g := LabelAddress.address label
+    ∀ (input output : Fin ((B*N)*(M^128*W)) → ZMod 2)
+      (src dst : Fin (M^16*(B*(M^112*W))) → ZMod 2),
+      OriginalPortReads _ W B interval parent c input output → (∀ i, IsUnit (parent i)) →
+      (∀ a b k, input (finProdFinEquiv (finProdFinEquiv (b,g),
+        (finProdFinEquiv (a,k)).cast (ordinaryCompact_width M W))) =
+        src (finProdFinEquiv (a,finProdFinEquiv (b,k)))) →
+      (∀ a b k, dst (finProdFinEquiv (a,finProdFinEquiv (b,k))) = output (finProdFinEquiv
+        (finProdFinEquiv (b,g),(finProdFinEquiv (a,k)).cast (ordinaryCompact_width M W)))) →
+      let P := reduce M ((c.span interval.1 interval.2).submatrix stageAxis.symm stageAxis.symm)
+      let frame := fromBlocks (diagonal parent*label) 0 0 (M8.ReversedExchange.rev 64*label)
+      let address := fun b x (k : Fin W) => stagedOwnerIndex b (index ((frame.mulVec x) ∘ (finSumFinEquiv : (Fin 64 ⊕ Fin 64) ≃ Fin 128).symm) k)
+      ∀ b x k, dst (address b ((fromBlocks (1-P) P P (1-P)).mulVec x) k) = src (address b x k) := by
+  intro M N label live g input output src dst reads units incoming outgoing P frame address b x k
+  have entry := stagedRowRead g input src (fun a b j => (incoming a b j).symm)
+  have exitRow := stagedRowRead g output dst outgoing
+  dsimp only [address]
+  rw [exitRow,entry]
+  have exchange := reads.exchange units b label live rfl x k
+  simpa only [Matrix.mul_one,Fin.cast_refl,id_eq] using exchange
+
+/-- A singular label retains every cell of its staged owner word. -/
+theorem OriginalPortReads.stagedSingularRow {w W B : ℕ} {interval parent c} :
+    let M := prime^(w+1)
+    let N := M^(64*64)
+    ∀ (label : LabelPadding.Label 64 (w+1)), ¬ IsUnit label →
+    let g := LabelAddress.address label
+    ∀ (input output : Fin ((B*N)*(M^128*W)) → ZMod 2)
+      (src dst : Fin (M^16*(B*(M^112*W))) → ZMod 2),
+      OriginalPortReads _ W B interval parent c input output →
+      (∀ a b k, src (finProdFinEquiv (a,finProdFinEquiv (b,k))) = input (finProdFinEquiv
+        (finProdFinEquiv (b,g),(finProdFinEquiv (a,k)).cast (ordinaryCompact_width M W)))) →
+      (∀ a b k, dst (finProdFinEquiv (a,finProdFinEquiv (b,k))) = output (finProdFinEquiv
+        (finProdFinEquiv (b,g),(finProdFinEquiv (a,k)).cast (ordinaryCompact_width M W)))) →
+      ∀ b j, dst (stagedOwnerIndex b j) = src (stagedOwnerIndex b j) := by
+  intro M N label singular g input output src dst reads incoming outgoing b j
+  rw [stagedRowRead g output dst outgoing,stagedRowRead g input src incoming]
+  let row : Fin (B*N) := finProdFinEquiv (b,g)
+  have number : row.val = b.val*M^(64*64)+g.val := by
+    simp [row,N,M,finProdFinEquiv_apply_val,Nat.mul_comm,Nat.add_comm]
+  have same := congrFun ((reads b label).2 singular) j
+  rw [← number] at same
+  simp only [ownerRow,dif_pos row.isLt] at same
+  exact same
 
 theorem OriginalPortReads.stagedExchange {w W B : ℕ} {interval parent c} :
     let M := prime^(w+1)
@@ -44,12 +95,9 @@ theorem OriginalPortReads.stagedExchange {w W B : ℕ} {interval parent c} :
       let address := fun b x (k : Fin W) => stagedOwnerIndex b (index ((frame.mulVec x) ∘ (finSumFinEquiv : (Fin 64 ⊕ Fin 64) ≃ Fin 128).symm) k)
       ∀ b x k, dst (address b ((fromBlocks (1-P) P P (1-P)).mulVec x) k) = src (address b x k) := by
   intro M N g input output src dst reads units incoming outgoing P frame address b x k
-  have entry := identityRead g input src (fun a b j => by simpa using (incoming b g a j).symm)
-  have exitRow := identityRead g output dst outgoing
-  dsimp only [address]
-  rw [exitRow,entry]
-  have exchange := reads.exchange units b (1 : LabelPadding.Label 64 (w+1)) isUnit_one rfl x k
-  simpa only [Matrix.mul_one,Fin.cast_refl,id_eq] using exchange
+  simpa only [Matrix.mul_one] using
+      OriginalPortReads.stagedLabelExchange (1 : LabelPadding.Label 64 (w+1)) isUnit_one input output src dst
+        reads units (fun a b j => by simpa using incoming b g a j) outgoing b x k
 
 open RecursiveInterchangeLayout (Descriptor volume role)
 
