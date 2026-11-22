@@ -21,7 +21,8 @@ theorem flatIdleSchedule_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q pr
     let outside := fun (S : Stacks T prime) => ∀ t, (∀ l, fan l ≠ t) →
       S.L t = initial.L t ∧ S.R t = initial.R t
     ∃ position : ∀ k, Fin (volume prime (child k)) ≃ Fin V,
-      (∀ k (x : Fin 142081 → Fin V → ZMod 2) u S, let port := fan ((idleTape i k).castAdd 2)
+      (∀ k, IdleChildPositions i k.2 w W (child k) (position k)) ∧
+      ((∀ k (x : Fin 142081 → Fin V → ZMod 2) u S, let port := fan ((idleTape i k).castAdd 2)
         (child k).width < node.width → HelperFan fan x S → outside S →
         ∃ z F n changed, Exec body (body (proc k)) (mk u S) n (mk z F) ∧ n ≤ budget (index k) ∧
           z.user = u.user ∧ RecordPayload port (fun _ => blank) 0 changed F ∧
@@ -33,10 +34,11 @@ theorem flatIdleSchedule_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q pr
           n ≤ (idleCopies.map fun k => budget (index k)+2).sum+1 ∧
           z.user = u.user ∧ HelperFan fan y F ∧
           (∀ k, intervalChildRead i k.2 w W (x (idleTape i k)) (y (idleTape i k))) ∧
-          ∀ t, (∀ k, t ≠ idleTape i k) → y t = x t := by
+          ∀ t, (∀ k, t ≠ idleTape i k) → y t = x t) := by
   intro W V index child outside
-  choose position call using fun k => flatIdleCall_exec body (proc k) node i (idleCopyIndex k) w rows hw width split
-  refine ⟨position,?_⟩
+  choose position coords call using fun k => flatIdleCall_exec body (proc k) node i (idleCopyIndex k) w rows hw width split
+  refine ⟨position,fun k => ?_,?_⟩
+  · simpa only [idleCopyIndex_get] using coords k
   intro recurse x u S rep fresh
   obtain ⟨y,D,z,n,exec,cost,user,ready,acts,off⟩ := idleCopies_exec i body (fun k => .call (proc k))
     (fun k => ((budget (index k)+2 : ℕ) : ℝ)) (fun _ _ _ => True)

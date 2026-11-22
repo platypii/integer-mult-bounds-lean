@@ -10,13 +10,21 @@ open IntegerMultBounds.Machine IntegerMultBounds.Networks Stack Host Cover
 open RecursiveInterchangeLayout
 open Shared50ModularControl (prime)
 
+/-- The physical port keeps the active pair and spectator index of the scheduled child. -/
+def IdleChildPositions (i : Fin 9) (j : Fin 222) (w W : ℕ) (child : Descriptor)
+    (position : Fin (volume prime child) ≃ Fin ((prime^w)^128*W)) : Prop :=
+  let e := idleInterval i j
+  let size := intervalChild_volume (idleBounds i j).1 ((idleBounds i j).2.trans (by decide : 63 ≤ 64)) w W
+  (phaseIntervalChild e.1 e.2 w W 64).width = child.width ∧
+    InheritedIntervalPositions child (phaseIntervalChild e.1 e.2 w W 64) size position
+
 theorem flatIdleCall_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U) (f : P)
     (node : Descriptor) (i : Fin 9) (j : Fin idleCopies.length) (w rows : ℕ)
     (hw : 0 < w) (width : node.width = 64*w) (split : node.rows = 142080*rows) :
     let W := node.beforeRows*rows*node.beforeH*node.between*node.afterD
     let V := (prime^w)^128*W
     let child := scheduledChild prime node (idleDirectoryIndex (i,j))
-    ∃ position : Fin (volume prime child) ≃ Fin V,
+    ∃ position : Fin (volume prime child) ≃ Fin V, IdleChildPositions i idleCopies[j.val].2 w W child position ∧
       ∀ (stored : (Fin V → ZMod 2) → Stacks T prime → Prop)
         (u : HS T Q prime U) S (word : Fin V → ZMod 2) budget,
       (child.width < node.width → ∃ z F n changed, Exec body (body f) (mk u S) n (mk z F) ∧
@@ -51,7 +59,7 @@ theorem flatIdleCall_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime 
   have coords : InheritedIntervalPositions child interval size position := by
     intro k
     simp [position]
-  refine ⟨position,?_⟩
+  refine ⟨position,⟨sameWidth,coords⟩,?_⟩
   intro stored u S word budget run
   obtain ⟨z,F,n,changed,exec,paid,user,out,read⟩ := run smaller
   refine ⟨z,F,_,changed,Exec.call exec,by omega,user,out,?_⟩

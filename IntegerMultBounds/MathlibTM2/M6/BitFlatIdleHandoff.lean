@@ -72,7 +72,8 @@ theorem flatIdleHandoff [M8.Machine.Net] (i : Fin 9) :
       S.L t = initial.L t ∧ S.R t = initial.R t
     0 < W → states ≤ Q →
     ∃ position : ∀ k, Fin (volume prime (child k)) ≃ Fin V,
-      (∀ k (x : Fin 142081 → Fin V → ZMod 2) u S, let port := fan ((idleTape i k).castAdd 2)
+      (∀ k, IdleChildPositions i k.2 w W (child k) (position k)) ∧
+      ((∀ k (x : Fin 142081 → Fin V → ZMod 2) u S, let port := fan ((idleTape i k).castAdd 2)
         (child k).width < node.width → HelperFan fan x S → outside S →
         ∃ z F n changed, Exec body (body (proc k)) (mk u S) n (mk z F) ∧ n ≤ budget (index k) ∧
           z.user = u.user ∧ RecordPayload port (fun _ => blank) 0 changed F ∧
@@ -87,13 +88,13 @@ theorem flatIdleHandoff [M8.Machine.Net] (i : Fin 9) :
         PackedPieceHandoff V (fun x y => ∀ j : Fin W,
           let addr := fun v => flatWindowEquiv w W (windowState w v,j)
           readRoles addr y = (Piece.remainder i.val).run (readRoles addr x))
-          host code (live.trans place) (returnedFan live) prepared (localCost+∑ j : Fin idleCopies.length, budget (idleDirectoryIndex (i,j))) := by
+          host code (live.trans place) (returnedFan live) prepared (localCost+∑ j : Fin idleCopies.length, budget (idleDirectoryIndex (i,j)))) := by
   obtain ⟨a,b,tapes,states,chart⟩ := flatIdleWindow_exec i
   obtain ⟨C,bound⟩ := idleLocalCost_bound a b tapes idleCopies.length
   refine ⟨C,states,?_⟩
   intro T Q P U body node w rows hw width split fan initial proc budget W V index child outside hW fits
-  obtain ⟨position,schedule⟩ := flatIdleSchedule_exec body node i w rows hw width split fan initial proc budget
-  refine ⟨position,?_⟩
+  obtain ⟨position,coords,schedule⟩ := flatIdleSchedule_exec body node i w rows hw width split fan initial proc budget
+  refine ⟨position,coords,?_⟩
   intro recurse
   let charts := a*V+b*(3808274*V+M8.RevMachine.LeafCore.coreCost V w+1)+6*idleCopies.length
   let localCost := charts*(tapes+5)+2*idleCopies.length+14+142081*(8*V+10)
