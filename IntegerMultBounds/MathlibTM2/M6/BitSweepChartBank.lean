@@ -8,6 +8,7 @@ public import IntegerMultBounds.MathlibTM2.M6.BitSweepOwnerSchedule
 namespace IntegerMultBounds.MathlibTM2.M6.BitNode
 open IntegerMultBounds.Machine IntegerMultBounds.Networks
 open Shared50ModularControl (prime)
+open M8.RevMachine
 local instance (w : ℕ) : NeZero (prime^w) := ⟨(pow_pos Shared50ModularControl.prime_prime.pos _).ne'⟩
 
 private theorem placePort_fixed {k v w : ℕ} (dst : Fin (k+1))
@@ -34,42 +35,55 @@ private theorem sweepChartList [M8.Machine.Net] (roles : List Role) (unique : ro
           i ((flatToSweep w W n r i).cast (by simpa only [Nat.one_mul] using ordinaryCompact_width (prime^w) W))) ∧
         ∀ x j, (∀ r ∈ roles, sweepRoleTape r ≠ j) → stage.transform x j = x j := by
   classical
-  obtain ⟨C,route⟩ := sweepChart_cost
-  refine ⟨roles.length*(C+1),?_⟩
+  choose scans swaps machine port fixed paid seed read using
+    fun (n : Fin 9) (backward : Bool) (r : Role) => sweepChart_owner n r backward
+  let rate := fun (p : Fin 9 × Bool) (r : Role) =>
+    (scans p.1 p.2 r : ℝ) + swaps p.1 p.2 r * (3808275 + |LeafCore.C|) + 3
+  obtain ⟨C,bound⟩ := Finite.exists_le fun p => (roles.map (rate p)).sum
+  refine ⟨C,?_⟩
   intro n backward
-  choose machine port fixed paid seed read using fun r => route n r backward
   let bank (w W : ℕ) (hw : 0 < w) (hW : 0 < W) := SharedBankStage.compile _ (Nat.zero_lt_succ 142080)
-    (roles.map fun r => placePort (sweepRoleTape r) (port r w W hw hW))
+    (roles.map fun r => placePort (sweepRoleTape r) (port n backward r w W hw hW))
   refine ⟨SharedBankSkeleton.ofStage (bank 1 1 (by decide) (by decide)),?_⟩
   intro w W hw hW V
   let stage := bank w W hw hW
-  obtain ⟨_,_,cost,cell,frame⟩ := compiledPorts_spec sweepRoleTape (fun r => port r w W hw hW) roles unique
-  refine ⟨stage,?_,compiledPortSeed _ _ _ (fun r _ => seed r w W hw hW),?_,?_,?_⟩
+  obtain ⟨_,_,cost,cell,frame⟩ := compiledPorts_spec sweepRoleTape (fun r => port n backward r w W hw hW) roles unique
+  refine ⟨stage,?_,compiledPortSeed _ _ _ (fun r _ => seed n backward r w W hw hW),?_,?_,?_⟩
   · simp only [stage,bank,SharedBankSkeleton.ofStage_compile,List.map_map]
     apply congrArg (SharedBankSkeleton.compile 142081 prime _)
     apply List.map_congr_left
     intro r _
-    exact placePort_fixed _ _ _ ((fixed r w W hw hW).trans (fixed r 1 1 (by decide) (by decide)).symm)
+    exact placePort_fixed _ _ _ ((fixed n backward r w W hw hW).trans (fixed n backward r 1 1 (by decide) (by decide)).symm)
   · let power := (w : ℝ)^M8.Machine.BudgetBound.tau
     have one : 1 ≤ power := Real.one_le_rpow (by exact_mod_cast hw : (1 : ℝ) ≤ w)
       M8.Machine.BudgetBound.exponent_range.1.le
     have vol : 0 < V := Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) hW
     have join : 1 ≤ (V : ℝ)*power := one_le_mul_of_one_le_of_one_le (by exact_mod_cast vol) one
-    let bill := fun r => (port r w W hw hW).cost
-    have sum := List.sum_le_length_nsmul (roles.map fun r => (bill r : ℝ)) (C*V*power) (by
-      intro u hu
-      obtain ⟨r,_,rfl⟩ := List.mem_map.mp hu
-      exact paid r w W hw hW)
-    simp only [List.length_map,nsmul_eq_mul] at sum
+    have scans_le : (V : ℝ) ≤ V*power := le_mul_of_one_le_right (Nat.cast_nonneg _) one
+    have core := RevBudget.coreCost_le V w (L := power) (by rw [max_eq_right hw])
+    have swap_le : 3808274*(V : ℝ)+LeafCore.coreCost V w+1 ≤ (3808275+|LeafCore.C|)*(V*power) := by
+      nlinarith only [scans_le,core,join]
+    let bill := fun r => (port n backward r w W hw hW).cost
+    have total (rs : List Role) : (((rs.map bill).sum + rs.length : ℕ) : ℝ) ≤
+        (rs.map (rate (n,backward))).sum * (V*power) := by
+      induction rs with
+      | nil => simp
+      | cons r rs ih =>
+        have price := paid n backward r w W hw hW
+        change bill r = scans n backward r * V + swaps n backward r * (3808274*V+LeafCore.coreCost V w+1)+2 at price
+        simp only [List.map_cons,List.sum_cons,List.length_cons]
+        rw [price]
+        push_cast at ih ⊢
+        dsimp only [rate] at ih ⊢
+        nlinarith only [ih,mul_le_mul_of_nonneg_left scans_le (Nat.cast_nonneg (scans n backward r)),
+          mul_le_mul_of_nonneg_left swap_le (Nat.cast_nonneg (swaps n backward r)),join]
     change ((bank w W hw hW).cost : ℝ) ≤ _
-    rw [show (bank w W hw hW).cost = (roles.map bill).sum + roles.length from cost]
-    push_cast
-    simp only [List.map_map,Function.comp_def] at *
-    nlinarith only [sum,mul_le_mul_of_nonneg_left join (Nat.cast_nonneg roles.length)]
+    rw [show (bank w W hw hW).cost = (roles.map bill).sum + roles.length from cost,mul_assoc]
+    exact (total roles).trans (mul_le_mul_of_nonneg_right (bound (n,backward)) (by positivity))
   · intro x r hr i
     have same := cell x r hr
     exact (congrArg (fun f => routedCell backward (x (sweepRoleTape r)) f i _) same).mpr
-      (read r w W hw hW _ i)
+      (read n backward r w W hw hW _ i)
   · exact frame
 
 theorem sweepChartBank [M8.Machine.Net] :

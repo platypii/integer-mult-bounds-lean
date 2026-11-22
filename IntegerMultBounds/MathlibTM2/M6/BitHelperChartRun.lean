@@ -16,15 +16,17 @@ def flatParentOrder : Fin 128 ≃ Axis ⊕ Axis :=
 
 /-- Apply the same rectangularly indexed change of basis to both parent
 fields, then serialize the output in the given digit order. -/
-theorem pairedChart_owner [M8.Machine.Net] {ι : Type} [Fintype ι] [DecidableEq ι]
+theorem pairedChart_from_swaps {ι : Type} [Fintype ι] [DecidableEq ι]
     (H : Matrix ι Axis ℚ) (J : Matrix Axis ι ℚ) (hJ : H*J = 1)
-    (bounded : ∀ i j, (H i j).num.natAbs ≤ 10000 ∧ (H i j).den ≤ 10000)
-    (order : Fin 128 ≃ ι ⊕ ι) (backward : Bool := false) :
+    {height : ℕ} (bounded : ∀ i j, (H i j).num.natAbs ≤ height ∧ (H i j).den ≤ height)
+    (order : Fin 128 ≃ ι ⊕ ι) (backward : Bool)
+    (price : ℕ → ℕ → ℕ) (swaps : DigitSwapCost 128 price)
+    (height_le : height ≤ 10^10000) :
     ∃ (a k : ℕ) (machine : SharedBankSkeleton.Skeleton 1 prime), ∀ w W, 0 < w → 0 < W →
       let V := (prime^w)^128*W
       ∃ stage : SharedBankStage.Stage _ 1 prime (@portOwner V),
         SharedBankSkeleton.ofStage stage = machine ∧
-        stage.cost = a*V+k*(3808274*V+M8.RevMachine.LeafCore.coreCost V w+1)+2 ∧
+        stage.cost = a*V+k*(price w W+1)+2 ∧
         HasStackSeed stage.metadata ∧ ∀ x (s : Swap.Shear.State Axis (ZMod (prime^w))) j,
           routedCell backward x (stage.transform x)
             (FlatCoordinateLayout.index (Sum.elim s.1 s.2 ∘ flatParentOrder) j)
@@ -37,16 +39,14 @@ theorem pairedChart_owner [M8.Machine.Net] {ι : Type} [Fintype ι] [DecidableEq
     rw [submatrix_mul_equiv]
     simp [D,fromBlocks_multiply,hJ,submatrix_one_equiv]
   have entries (i j) : (U i j).num.natAbs ≤ 10^10000 ∧ (U i j).den ≤ 10^10000 := by
-    have big : 10000 ≤ (10:ℕ)^10000 := (by decide : 10000 ≤ 10^4).trans
-      (pow_le_pow_right₀ (by decide : 1 ≤ (10:ℕ)) (by decide : 4 ≤ 10000))
     change ((fromBlocks H 0 0 H) (order i) (flatParentOrder j)).num.natAbs ≤ _ ∧ _
     dsimp only [U,D,submatrix_apply]
     cases order i <;> cases flatParentOrder j
     all_goals first
-      | exact ⟨(bounded _ _).1.trans big,(bounded _ _).2.trans big⟩
-      | exact ⟨(by decide : (0:ℚ).num.natAbs ≤ 10000).trans big,(by decide : (0:ℚ).den ≤ 10000).trans big⟩
-  obtain ⟨a,k,m,run⟩ := flatChartDirection_owner U (isUnit_iff_exists.mpr ⟨_,cancel,mul_eq_one_comm.mp cancel⟩)
-    (by decide) (by decide) entries backward
+      | exact ⟨(bounded _ _).1.trans height_le,(bounded _ _).2.trans height_le⟩
+      | exact ⟨Nat.zero_le _, Nat.one_le_pow _ _ (by decide)⟩
+  obtain ⟨a,k,m,run⟩ := flatChartDirection_from_swaps U (isUnit_iff_exists.mpr ⟨_,cancel,mul_eq_one_comm.mp cancel⟩)
+    (by decide) (by decide) entries backward price swaps
   refine ⟨a,k,m,?_⟩
   intro w W hw hW V
   obtain ⟨stage,fixed,cost,seed,read⟩ := run w W hw hW
@@ -63,8 +63,42 @@ theorem pairedChart_owner [M8.Machine.Net] {ι : Type} [Fintype ι] [DecidableEq
   rw [← action]
   exact read x _ j
 
+theorem pairedChart_owner [M8.Machine.Net] {ι : Type} [Fintype ι] [DecidableEq ι]
+    (H : Matrix ι Axis ℚ) (J : Matrix Axis ι ℚ) (hJ : H*J = 1)
+    {height : ℕ} (bounded : ∀ i j, (H i j).num.natAbs ≤ height ∧ (H i j).den ≤ height)
+    (order : Fin 128 ≃ ι ⊕ ι) (backward : Bool := false)
+    (height_le : height ≤ 10^10000) :
+    ∃ (a k : ℕ) (machine : SharedBankSkeleton.Skeleton 1 prime), ∀ w W, 0 < w → 0 < W →
+      let V := (prime^w)^128*W
+      ∃ stage : SharedBankStage.Stage _ 1 prime (@portOwner V),
+        SharedBankSkeleton.ofStage stage = machine ∧
+        stage.cost = a*V+k*(3808274*V+M8.RevMachine.LeafCore.coreCost V w+1)+2 ∧
+        HasStackSeed stage.metadata ∧ ∀ x (s : Swap.Shear.State Axis (ZMod (prime^w))) j,
+          routedCell backward x (stage.transform x)
+            (FlatCoordinateLayout.index (Sum.elim s.1 s.2 ∘ flatParentOrder) j)
+            (FlatCoordinateLayout.index (Sum.elim (reduce (prime^w) H *ᵥ s.1) (reduce (prime^w) H *ᵥ s.2) ∘ order) j) := by
+  exact pairedChart_from_swaps H J hJ bounded order backward
+    (fun w W => let V := (prime^w)^128*W; 3808274*V+M8.RevMachine.LeafCore.coreCost V w) digitSwap_owner height_le
+
 /-- The selected port and slot determine a fixed machine. Both halves are
 charted together while the trailing spectator retains its position. -/
+theorem helperChart_from_swaps (c : PortCertificate) (hc : c.Checked)
+    (slot : Option (Fin 56)) (backward : Bool)
+    (price : ℕ → ℕ → ℕ) (swaps : DigitSwapCost 128 price) :
+    ∃ (a k : ℕ) (machine : SharedBankSkeleton.Skeleton 1 prime), ∀ w W, 0 < w → 0 < W →
+      let V := (prime^w)^128*W
+      ∃ stage : SharedBankStage.Stage _ 1 prime (@portOwner V),
+        SharedBankSkeleton.ofStage stage = machine ∧
+        stage.cost = a*V+k*(price w W+1)+2 ∧
+        HasStackSeed stage.metadata ∧ ∀ x (s : Swap.Shear.State Axis (ZMod (prime^w))) j,
+          routedCell backward x (stage.transform x)
+            (FlatCoordinateLayout.index (Sum.elim s.1 s.2 ∘ flatParentOrder) j)
+            (FlatCoordinateLayout.index (helperSlotField c slot w s) j) := by
+  exact pairedChart_from_swaps (height := 2) c.fullChart.transpose c.fullChart (c.fullChart_orthonormal hc)
+    (fun i j => fullChart_entry c hc j i) (helperFieldOrder slot) backward price swaps
+    ((by decide : 2 ≤ 10^1).trans (pow_le_pow_right₀ (by decide : 1 ≤ (10:ℕ)) (by decide)))
+
+
 theorem helperChart_owner [M8.Machine.Net] (c : PortCertificate) (hc : c.Checked)
     (slot : Option (Fin 56)) (backward : Bool := false) :
     ∃ (a k : ℕ) (machine : SharedBankSkeleton.Skeleton 1 prime), ∀ w W, 0 < w → 0 < W →
@@ -76,8 +110,7 @@ theorem helperChart_owner [M8.Machine.Net] (c : PortCertificate) (hc : c.Checked
           routedCell backward x (stage.transform x)
             (FlatCoordinateLayout.index (Sum.elim s.1 s.2 ∘ flatParentOrder) j)
             (FlatCoordinateLayout.index (helperSlotField c slot w s) j) := by
-  exact pairedChart_owner c.fullChart.transpose c.fullChart (c.fullChart_orthonormal hc)
-    (fun i j => ⟨(fullChart_entry c hc j i).1.trans (by decide),
-      (fullChart_entry c hc j i).2.trans (by decide)⟩) (helperFieldOrder slot) backward
+  exact helperChart_from_swaps c hc slot backward
+    (fun w W => let V := (prime^w)^128*W; 3808274*V+M8.RevMachine.LeafCore.coreCost V w) digitSwap_owner
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
