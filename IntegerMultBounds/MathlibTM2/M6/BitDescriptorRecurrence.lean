@@ -230,6 +230,24 @@ theorem scheduledLeafWork_exact (q n : ℕ) (v : Descriptor)
     rw [← Finset.sum_mul]
     rw [Nat.mul_right_comm _ _ 18944, step, Nat.mul_right_comm _ 18837]
 
+/-- Every path still above the cutoff is strictly shorter than the reserved depth. -/
+theorem scheduledPath_length_lt (q : ℕ) (v : Descriptor) (depth u : ℕ)
+    (stop : v.width * 42^depth ≤ u * 64^depth) (path : List (Fin nodeChildren5.length))
+    (internal : u < (path.foldl (scheduledChild q) v).width) : path.length < depth := by
+  by_contra! long
+  let initialPath := path.take depth
+  have len : initialPath.length = depth := by simp [initialPath,List.length_take,Nat.min_eq_left long]
+  have cut := scheduledPath_width_le q v initialPath
+  rw [len] at cut
+  have leaf := Nat.le_of_mul_le_mul_right (cut.trans stop) (by positivity : 0 < 64^depth)
+  have shrink := scheduledPath_width_le q (initialPath.foldl (scheduledChild q) v) (path.drop depth)
+  have power := Nat.pow_le_pow_left (by decide : 42 ≤ 64) (path.drop depth).length
+  have bound := Nat.le_of_mul_le_mul_right
+    (shrink.trans (Nat.mul_le_mul leaf power)) (by positivity : 0 < 64^(path.drop depth).length)
+  have eq := List.foldl_append (f := scheduledChild q) (l := initialPath) (l' := path.drop depth) (b := v)
+  simp only [initialPath,List.take_append_drop] at eq
+  exact (Nat.not_lt_of_ge (eq ▸ bound)) internal
+
 /-- A single root alignment suffices at every nonleaf along a scheduled path
 when the rank bound reaches the stopping width within the reserved depth. -/
 theorem scheduledPath_internal_alignment (q : ℕ) (v : Descriptor) (depth u : ℕ)
@@ -239,20 +257,7 @@ theorem scheduledPath_internal_alignment (q : ℕ) (v : Descriptor) (depth u : �
     (internal : u < (path.foldl (scheduledChild q) v).width) :
     let child := path.foldl (scheduledChild q) v
     64 ∣ child.width ∧ 142080 ∣ child.rows := by
-  have short : path.length < depth := by
-    by_contra! long
-    let initialPath := path.take depth
-    have len : initialPath.length = depth := by simp [initialPath,List.length_take,Nat.min_eq_left long]
-    have cut := scheduledPath_width_le q v initialPath
-    rw [len] at cut
-    have leaf := Nat.le_of_mul_le_mul_right (cut.trans stop) (by positivity : 0 < 64^depth)
-    have shrink := scheduledPath_width_le q (initialPath.foldl (scheduledChild q) v) (path.drop depth)
-    have power := Nat.pow_le_pow_left (by decide : 42 ≤ 64) (path.drop depth).length
-    have bound := Nat.le_of_mul_le_mul_right
-      (shrink.trans (Nat.mul_le_mul leaf power)) (by positivity : 0 < 64^(path.drop depth).length)
-    have eq := List.foldl_append (f := scheduledChild q) (l := initialPath) (l' := path.drop depth) (b := v)
-    simp only [initialPath,List.take_append_drop] at eq
-    exact (Nat.not_lt_of_ge (eq ▸ bound)) internal
+  have short := scheduledPath_length_lt q v depth u stop path internal
   have room : 1+path.length ≤ depth := by omega
   simpa using scheduledPath_alignment q v path 1
     ((pow_dvd_pow 64 room).trans width) ((pow_dvd_pow 142080 room).trans rows)

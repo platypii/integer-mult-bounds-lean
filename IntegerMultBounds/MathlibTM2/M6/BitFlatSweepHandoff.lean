@@ -138,6 +138,80 @@ theorem intervalRolePositions (node : Descriptor) (groups : ℕ)
     ((finCongr card).trans (CopyChildLayout.packActive lane).symm)
   exact ⟨position,fun j => by simp [position]⟩
 
+/-- Root alignment supplies the sweep dimensions at every active path.
+The extra row factor reserves the recursive interval's role stream. -/
+theorem scheduledFlatDimensions (root : Descriptor) (path : List (Fin nodeChildren5.length))
+    (rootPos : root.Positive) (rootWidth : 0 < root.width)
+    (widthStock : 64^(1+path.length) ∣ root.width)
+    (rowStock : 142080^(2+path.length) ∣ root.rows)
+    (blocks : ℕ) (labels : root.beforeH = blocks*prime^(64*root.width)) :
+    let node := path.foldl (scheduledChild prime) root
+    ∃ h groups B : ℕ, node.width = 64*(h+1) ∧ node.rows = 142080*(142080*groups) ∧
+      node.beforeH = B*prime^(64*((h+1)*64)) ∧ 0 < B ∧
+      0 < node.beforeRows*(142080*groups)*node.between*node.afterD ∧
+      ({node with rows := 142080*groups} : Descriptor).Positive := by
+  induction path generalizing root blocks with
+  | nil =>
+    simp only [List.length_nil,Nat.add_zero,pow_one] at widthStock rowStock
+    obtain ⟨w,width⟩ := widthStock
+    obtain ⟨groups,rows⟩ := rowStock
+    cases w with
+    | zero => omega
+    | succ h =>
+      have split : root.rows = 142080*(142080*groups) := by simpa only [pow_two,Nat.mul_assoc] using rows
+      obtain ⟨pr,rr,ph,pb,pd⟩ := rootPos
+      have rg : 0 < 142080*groups := Nat.pos_of_mul_pos_left (split ▸ rr)
+      refine ⟨h,groups,blocks,width,split,?_,?_,?_,pr,rg,ph,pb,pd⟩
+      · change root.beforeH = blocks*prime^(64*((h+1)*64))
+        rw [labels,width,Nat.mul_comm (h+1) 64]
+      · exact Nat.pos_of_mul_pos_right (labels ▸ ph)
+      · exact Nat.mul_pos (Nat.mul_pos (Nat.mul_pos pr rg) pb) pd
+  | cons i path ih =>
+    let child := scheduledChild prime root i
+    have nextW := (scheduledChild_alignment prime root (1+path.length)
+      (by simpa [Nat.add_assoc] using widthStock)
+      (by apply dvd_trans (pow_dvd_pow 142080 (by simp only [List.length_cons]; omega : 1+path.length+1 ≤ 2+(i::path).length)) rowStock) i).1
+    have rowPower : 142080^((2+path.length)+1) ∣ root.rows := by simpa [Nat.add_assoc] using rowStock
+    obtain ⟨count,hcount⟩ := rowPower
+    have nextR : 142080^(2+path.length) ∣ child.rows := by
+      change _ ∣ root.rows/142080
+      rw [hcount,pow_succ',Nat.mul_assoc,Nat.mul_div_cancel_left _ (by decide : 0 < 142080)]
+      exact dvd_mul_right _ _
+    have widthD : 64 ∣ root.width := dvd_trans (dvd_pow_self _ (by simp)) widthStock
+    have rowsD : 142080 ∣ root.rows := dvd_trans (dvd_pow_self _ (by simp)) rowStock
+    obtain ⟨measure,vol⟩ := scheduledChild_measures prime root widthD rowsD i
+    have positive : child.Positive := LeafCore.positive_of_volume (Nat.pos_of_mul_pos_right
+      (vol.symm ▸ (show 0 < volume prime root by
+        obtain ⟨pr,rr,ph,pb,pd⟩ := rootPos
+        dsimp [volume]; have := Shared50ModularControl.prime_prime.pos; positivity)))
+    have cw : 0 < child.width := Nat.pos_of_mul_pos_right
+      (measure.symm ▸ Nat.mul_pos (nodeChildren5_bounds i).1 rootWidth)
+    have le : child.width ≤ root.width := by
+      have bound := Nat.mul_le_mul_right root.width (nodeChildren5_le i)
+      change child.width*64 = _ at measure
+      omega
+    apply ih child positive cw nextW nextR (blocks*prime^(64*(root.width-child.width)))
+    change root.beforeH = _
+    rw [labels,Nat.mul_assoc,← pow_add,← Nat.mul_add,Nat.sub_add_cancel le]
+
+/-- A root with one spare row-splitting level supplies both row splits at
+every node that actually recurses above the cutoff. -/
+theorem activeFlatDimensions (root : Descriptor) (depth cutoff blocks : ℕ)
+    (positive : root.Positive) (width : 0 < root.width)
+    (widthStock : 64^depth ∣ root.width) (rowStock : 142080^(depth+1) ∣ root.rows)
+    (labels : root.beforeH = blocks*prime^(64*root.width))
+    (stop : root.width*42^depth ≤ cutoff*64^depth) (path : List (Fin nodeChildren5.length))
+    (active : cutoff < (path.foldl (scheduledChild prime) root).width) :
+    let node := path.foldl (scheduledChild prime) root
+    ∃ h groups B : ℕ, node.width = 64*(h+1) ∧ node.rows = 142080*(142080*groups) ∧
+      node.beforeH = B*prime^(64*((h+1)*64)) ∧ 0 < B ∧
+      0 < node.beforeRows*(142080*groups)*node.between*node.afterD ∧
+      ({node with rows := 142080*groups} : Descriptor).Positive := by
+  have short := scheduledPath_length_lt prime root depth cutoff stop path active
+  exact scheduledFlatDimensions root path positive width
+    ((pow_dvd_pow 64 (by omega)).trans widthStock)
+    ((pow_dvd_pow 142080 (by omega)).trans rowStock) blocks labels
+
 /-- At two aligned row levels the packed stage and the recursive interval
 window see the same spectator cells. Their bills use one child directory. -/
 theorem alignedFlatNode [M8.Machine.Net] {U : Type} :
