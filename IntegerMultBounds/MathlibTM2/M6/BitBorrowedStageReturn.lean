@@ -36,6 +36,7 @@ theorem borrowedReturn_exec {P U : Type} {Q T : ℕ} (n : Fin 9) (body : P → P
     ReturnHeaders w H parent W 1 (embStk sw S).R →
     ∃ z G l, Exec body code (mk v S) l (mk z G) ∧
       l ≤ 142081*(8*V+10)+1 + (142080*(C*(M^16*(labels*(M^112*W)))+8)+1) ∧ z.user = v.user ∧
+      (∀ j, (∀ i, sw i ≠ j) → G.L j = S.L j ∧ G.R j = S.R j) ∧
       (∀ i, G.L (sw (owners i)) = S.L (sw (owners i))) ∧
       G.R (sw (owners (Fin.last 142080))) = List.ofFn (fun j => SparseRoleCircuit.encode
         (borrowedNodeArray n parent units x (Fin.last 142080) j)) ∧
@@ -50,10 +51,11 @@ theorem borrowedReturn_exec {P U : Type} {Q T : ℕ} (n : Fin 9) (body : P → P
   intro w H B K parent units M labels W V fits bits positive x v S live left right empty headers
   let a : OwnerArray (w+1) 1 W := fun i j => x i (j.cast (borrowedOwnerVolume (w+1) B K))
   obtain ⟨u,R,k,copied,bill,user,words,off⟩ := load a v S (fan_owner_rep fan x S live _) left right empty
-  obtain ⟨z,G,l,done,paid,same,heads,spare,out⟩ := restore w H 1 W parent units fits bits Nat.one_pos positive
+  obtain ⟨z,G,l,done,paid,same,frame,heads,spare,out⟩ := restore w H 1 W parent units fits bits Nat.one_pos positive
     a u S {S with R := R} headers (fun j apart => off (sw j) (fun i eq => apart i (sw.injective eq)))
     (fun r => words (sweepRoleTape r))
-  refine ⟨z,G,k+l,Exec.seq copied done,?_,same.trans user,heads,?_,out⟩
+  refine ⟨z,G,k+l,Exec.seq copied done,?_,same.trans user,fun j hj =>
+    ⟨(frame j hj).1,(frame j hj).2.trans (off j (fun i => hj (owners i)))⟩,heads,?_,out⟩
   rotate_left
   · simpa only [borrowedNodeArray,nodeArray,Fin.lastCases_last] using spare.trans (words (Fin.last 142080))
   apply Nat.add_le_add _ (by simpa only [Nat.one_mul] using paid)
@@ -112,7 +114,7 @@ theorem borrowedStageReturn_exec {P U : Type} {Q T : ℕ} (n : Fin 9)
     exact live
   have keep (j) := off (sw j) (fun i => apart i j)
   have held : (embStk sw D').R = (embStk sw S).R := funext fun j => (keep j).2
-  obtain ⟨z,F,l,done,paid,same,_,_,words⟩ := ret w H B K parent units fits bits positive y v' D' represented
+  obtain ⟨z,F,l,done,paid,same,_,_,_,words⟩ := ret w H B K parent units fits bits positive y v' D' represented
     ((off tmp separate).1.trans left) ((off tmp separate).2.trans right)
     (fun i => (keep _).2.trans (empty i)) (held ▸ headers)
   exact ⟨z,F,k+l,borrowedNodeArray n parent units y,Exec.seq middle done,Nat.add_le_add bill paid,

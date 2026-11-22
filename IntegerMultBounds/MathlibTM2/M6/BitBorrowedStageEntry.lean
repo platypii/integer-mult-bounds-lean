@@ -155,6 +155,7 @@ theorem borrowedStageRoundTrip_exec {P U : Type} {T Q : ℕ} (n : Fin 9)
     ∃ (z : HS (Exit.size 0 T) Q prime U) (G : Stacks (Exit.size 0 T) prime) (k : ℕ) (d : OwnerArray (w+1) 1 W), Exec host code (mk u S) k (mk z G) ∧
       k ≤ price + (142081*(8*V+10)+1) + (142080*(C*(M^16*(labels*(M^112*W)))+16)+2) ∧
       z.user = u.user ∧ borrowedStageHandoff (w+1) B K parent units n x d ∧
+      StageControls fan V G ∧
       (∀ i, G.L (back (owners i)) = S.L (back (owners i))) ∧
       G.R (back (owners (Fin.last 142080))) = List.ofFn (fun j => SparseRoleCircuit.encode (d (Fin.last 142080) j)) ∧
       ∀ r, G.R (back (owners (sweepRoleTape r))) = List.ofFn fun j => SparseRoleCircuit.encode (d (sweepRoleTape r) j) := by
@@ -182,12 +183,18 @@ theorem borrowedStageRoundTrip_exec {P U : Type} {T Q : ℕ} (n : Fin 9)
     have h := frame j (fun i => outside _)
     exact ⟨(off j outside).1.trans h.1,(off j outside).2.trans h.2⟩
   have held : (embStk back E').R = (embStk back S).R := funext fun j => (keep _ (fun i => apart i j)).2
-  obtain ⟨z,G,m,done,paid,zu,heads,spare,finalWords⟩ := ret w H B K parent units fits bits pos y q' E' ready
+  obtain ⟨z,G,m,done,paid,zu,kept,heads,spare,finalWords⟩ := ret w H B K parent units fits bits pos y q' E' ready
     ((keep tmp scratch).1.trans tl) ((keep tmp scratch).2.trans tr)
     (fun i => (keep _ (fun j => apart j _)).2.trans (empty i)) (held ▸ bh)
   refine ⟨z,G,k+(l+m),borrowedNodeArray n parent units y,Exec.seq run (Exec.seq middle done),?_,
-    zu.trans (qu.trans (same.trans user)),⟨a,y,input.symm,rfl,step⟩,
+    zu.trans (qu.trans (same.trans user)),⟨a,y,input.symm,rfl,step⟩,?_,
     fun i => (heads i).trans (keep _ (fun j => apart j _)).1,spare,finalWords⟩
+  rotate_left
+  · intro j z
+    have eq := kept (fan (j.natAdd 142081)) (fun i => (apart _ i).symm)
+    rw [eq.1,eq.2]
+    simpa only [PointwiseRoleGate.bank,Tapes.append,Fin.addCases_right,CountedLoopReuseAlphabet.controls,
+      ite_self,embStk,Function.comp_apply] using ready (j.natAdd 142081) z
   calc
     _ ≤ (142080*(A*(M^16*(labels*(M^112*W)))+8)+1) +
         (price + (142081*(8*V+10)+1 + (142080*(C*(M^16*(labels*(M^112*W)))+8)+1))) :=
@@ -230,6 +237,7 @@ theorem correctedPhysicalStage_exec [M8.Machine.Net] :
     ∃ (z : HS (Exit.size 0 T) Q prime U) (G : Stacks (Exit.size 0 T) prime) (k : ℕ) (d : OwnerArray w 1 W), Exec host code (mk u S) k (mk z G) ∧
       k ≤ bill + (142081*(8*V+10)+1) + (142080*(C*(M^16*(labels*(M^112*W)))+16)+2) ∧
       z.user = u.user ∧ borrowedStageHandoff w B K parent units n x d ∧
+      StageControls fan V G ∧
       (∀ i, G.L (back (owners i)) = S.L (back (owners i))) ∧
       G.R (back (owners (Fin.last 142080))) = List.ofFn (fun j => SparseRoleCircuit.encode (d (Fin.last 142080) j)) ∧
       ∀ r, G.R (back (owners (sweepRoleTape r))) = List.ofFn fun j => SparseRoleCircuit.encode (d (sweepRoleTape r) j) := by

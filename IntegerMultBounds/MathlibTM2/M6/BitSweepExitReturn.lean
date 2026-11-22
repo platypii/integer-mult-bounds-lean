@@ -40,6 +40,7 @@ theorem placedWordReturn_exec {P U : Type} {Q : ℕ} (n : Fin 9) :
     (∀ r, D.R (sw (owners (sweepRoleTape r))) = List.ofFn fun i => SparseRoleCircuit.encode (a := prime) (x (sweepRoleTape r) i)) →
     ∃ z G l, Exec body back (mk v D) l (mk z G) ∧
       l ≤ 142080*(C*(M^16*(B*prime^(64*((w+1)*64))*(M^112*W)))+8)+1 ∧ z.user = v.user ∧
+      (∀ j, (∀ i, sw i ≠ j) → G.L j = D.L j ∧ G.R j = D.R j) ∧
       (∀ i, G.L (sw (owners i)) = D.L (sw (owners i))) ∧
       G.R (sw (owners (Fin.last 142080))) = D.R (sw (owners (Fin.last 142080))) ∧
       ∀ r, G.R (sw (owners (sweepRoleTape r))) = List.ofFn fun i =>
@@ -75,9 +76,9 @@ theorem placedWordReturn_exec {P U : Type} {Q : ℕ} (n : Fin 9) :
       change F.R (bank r i) = _
       rw [show F.R (bank r i) = (embStk sw S).R (bank r i) by rw [eqn]; exact workKept _]
       exact (prepared r i h).trans (by fin_cases i <;> first | contradiction | rfl))
-  obtain ⟨z,G,placed,_,hz,view,_⟩ := exec_emb (ι := (Empty.elim : Empty → P)) (body' := body)
+  obtain ⟨z,G,placed,_,hz,view,outside⟩ := exec_emb (ι := (Empty.elim : Empty → P)) (body' := body)
     sw.injective (fun e => nomatch e) ret v rfl D rfl
-  refine ⟨z,G,l,placed,bill,hz.trans same,fun i => congrArg (fun E : Stacks tapes prime => E.L (owners i)) view,?_,?_⟩
+  refine ⟨z,G,l,placed,bill,hz.trans same,outside,fun i => congrArg (fun E : Stacks tapes prime => E.L (owners i)) view,?_,?_⟩
   · exact (congrArg (fun E : Stacks tapes prime => E.R (owners (Fin.last 142080))) view).trans
       (off _ (fun r => owners.injective.ne (Fin.castSucc_ne_last _)))
   intro r
@@ -116,7 +117,7 @@ theorem stageExitReturn_exec {P U : Type} {Q t : ℕ} (n : Fin 9) (fan : Fin (14
   refine ⟨code.seq back,?_⟩
   intro x u S live privateReady counters empty left right fresh headers
   obtain ⟨v,D,k,exitRun,paid,user,words,frame⟩ := run x u S live privateReady counters empty left right fresh
-  obtain ⟨z,G,l,placed,bill,same,_,_,done⟩ := finish w H B W parent units hw bound hb hwid
+  obtain ⟨z,G,l,placed,bill,same,_,_,_,done⟩ := finish w H B W parent units hw bound hb hwid
     (leave.transform x) v S D headers (fun j apart => (frame j apart).2) (fun r => words (sweepRoleTape r))
   exact ⟨z,G,k+l,Exec.seq exitRun placed,Nat.add_le_add paid bill,same.trans user,done⟩
 

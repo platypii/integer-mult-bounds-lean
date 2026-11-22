@@ -9,6 +9,31 @@ open IntegerMultBounds.Machine IntegerMultBounds.Networks Stack Host Cover.Fallb
 open M8.RevMachine Certificates.PR589
 open Shared50ModularControl (prime)
 
+/-- Physical inputs shared across stage boundaries. The owner words begin
+at their left ends and the two controls describe their common volume. -/
+structure ParentStageWords {T N : ℕ} (port : Fin 142081 → Fin T)
+    (fan : Fin (142081+2) ↪ Fin T) (V : ℕ) (x : Fin 142081 → Fin N → ZMod 2)
+    (S : Stacks T prime) : Prop where
+  left : ∀ i, S.L (port i) = []
+  right : ∀ i, S.R (port i) = List.ofFn fun j => SparseRoleCircuit.encode (x i j)
+  controls : StageControls fan V S
+
+/-- Read a preceding stage's output as the next embedded stage's input
+when its owner and counter ports occupy the same host tapes. -/
+theorem ParentStageWords.next {T A N V : ℕ} {port : Fin 142081 → Fin T}
+    {fan : Fin (142081+2) ↪ Fin T} {x : Fin 142081 → Fin N → ZMod 2} {S : Stacks T prime}
+    (words : ParentStageWords port fan V x S) (place : Fin A ↪ Fin T) (nextFan : Fin (142081+2) ↪ Fin A)
+    (owners : ∀ i, place (nextFan (i.castAdd 2)) = port i)
+    (counters : ∀ j : Fin 2, place (nextFan (j.natAdd 142081)) = fan (j.natAdd 142081)) :
+    ParentStageWords (fun i => nextFan (i.castAdd 2)) nextFan V x (embStk place S) := by
+  constructor
+  · intro i
+    exact (congrArg S.L (owners i)).trans (words.left i)
+  · intro i
+    exact (congrArg S.R (owners i)).trans (words.right i)
+  · intro j z
+    simpa only [embStk,Function.comp_apply,counters] using words.controls j z
+
 /-- Execute the packed invocation family, corrections, and both owner permutations
 with the recursive child bill charged once. -/
 theorem packedPhysicalStage_exec [M8.Machine.Net] :
@@ -47,18 +72,13 @@ theorem packedPhysicalStage_exec [M8.Machine.Net] :
     M^128 < 2^H → H ≤ M^128+1 → 0 < W →
     ∀ (x : OwnerArray (h+1) 1 W) (u : HS (Exit.size 0 N) Q prime U) (S : Stacks (Exit.size 0 N) prime),
     ReturnHeaders h H parent W 1 (embStk back S).R →
-    (∀ r, S.L (fan ((sweepRoleTape r).castAdd 2)) = []) →
-    (∀ r, S.R (fan ((sweepRoleTape r).castAdd 2)) = List.ofFn fun j => SparseRoleCircuit.encode (x (sweepRoleTape r) j)) →
-    WordAtZero (x (Fin.last 142080)) (S.L (fan ((Fin.last 142080).castAdd 2))) (S.R (fan ((Fin.last 142080).castAdd 2))) →
-    StageControls fan V S →
+    ParentStageWords (fun i => fan (i.castAdd 2)) fan V x S →
     (∀ j, (∀ i, (full.trans worker) i ≠ j) → S.L (place j) = seed.L j ∧ S.R (place j) = seed.R j) →
-    S.L tmp = [] → S.R tmp = [] → (∀ i, S.R (back (owners i)) = []) →
+    S.L tmp = [] → S.R tmp = [] → (∀ i, S.L (back (owners i)) = [] ∧ S.R (back (owners i)) = []) →
     ∃ (z : HS (Exit.size 0 N) Q prime U) (G : Stacks (Exit.size 0 N) prime) (k : ℕ) (d : OwnerArray (h+1) 1 W), Exec host code (mk u S) k (mk z G) ∧
       k ≤ bill + (142081*(8*V+10)+1) + (142080*(C*(M^16*(labels*(M^112*W)))+16)+2) ∧
       z.user = u.user ∧ borrowedStageHandoff (h+1) B K parent units n x d ∧
-      (∀ i, G.L (back (owners i)) = S.L (back (owners i))) ∧
-      G.R (back (owners (Fin.last 142080))) = List.ofFn (fun j => SparseRoleCircuit.encode (d (Fin.last 142080) j)) ∧
-      ∀ r, G.R (back (owners (sweepRoleTape r))) = List.ofFn fun j => SparseRoleCircuit.encode (d (sweepRoleTape r) j) := by
+      ParentStageWords (fun i => back (owners i)) fan V d G := by
   obtain ⟨base,correctionTapes,states,physical⟩ := correctedPhysicalStage_exec
   refine ⟨base,correctionTapes,states,?_⟩
   intro Q h B rows P U node n tapes body coeff required capacity width split label role K M V fits positive pos packed
@@ -66,9 +86,24 @@ theorem packedPhysicalStage_exec [M8.Machine.Net] :
   refine ⟨T,fan,bank,?_⟩
   intro stage owner full worker host time ready price
   obtain ⟨initial,program,run⟩ := build time ready
-  apply physical n full host program price initial positive fits
-  intro x u S live fresh
-  obtain ⟨z,F,t,y,exec,paid,user,out,action⟩ := run x u S live fresh
-  exact ⟨z,F,t,y,exec,Nat.cast_le.mp (paid.trans (Nat.le_ceil _)),user,out,action⟩
+  have sweep := physical n full host program price initial positive fits (by
+    intro x u S live fresh
+    obtain ⟨z,F,t,y,exec,paid,user,out,action⟩ := run x u S live fresh
+    exact ⟨z,F,t,y,exec,Nat.cast_le.mp (paid.trans (Nat.le_ceil _)),user,out,action⟩)
+  obtain ⟨N,inner,code,C,seed,execute⟩ := sweep
+  refine ⟨N,inner,code,C,seed,?_⟩
+  intro H parent units height bits widthPos x u S headers words privateTapes tmpL tmpR empty
+  have spare := words.right (Fin.last 142080)
+  obtain ⟨z,G,k,d,done,bound,same,handoff,controls,left,last,roles⟩ :=
+    execute H parent units height bits widthPos x u S headers (fun r => words.left _) (fun r => words.right _)
+      (by intro j; rw [words.left _,spare,readAt_nil_left,putWord_blank_zero]) words.controls privateTapes
+      tmpL tmpR (fun i => (empty i).2)
+  refine ⟨z,G,k,d,done,bound,same,handoff,fun i => (left i).trans (empty i).1,?_,controls⟩
+  intro i
+  induction i using Fin.lastCases with
+  | last => exact last
+  | cast i =>
+    obtain ⟨r,rfl⟩ := ((Fintype.equivFin Role).trans (finCongr card_role)).surjective i
+    exact roles r
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
