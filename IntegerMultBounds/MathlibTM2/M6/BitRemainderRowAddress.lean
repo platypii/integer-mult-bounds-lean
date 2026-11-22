@@ -134,7 +134,7 @@ theorem forwardOffset_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime
 
 /-- Generate the identity address from the precision clock and the row-count
 word, releasing the digit tape after conversion. -/
-theorem generateForwardOffset_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
+private theorem generateForwardOffset_succ_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
     (r : Fin 7 ↪ Fin T) :
     ∃ code, ∀ (w H : ℕ) (_ : 0 < H) (u : HS T Q prime U) (S : Stacks T prime),
       (S.R (r 6)).length = w+1 → (S.R (r 4)).length = H →
@@ -167,6 +167,37 @@ theorem generateForwardOffset_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T
       simp_all [E,D,Function.update_of_ne,r.injective.eq_iff]
   rw [len,final] at clear
   exact ⟨z,_,zy.trans (yv.trans vu),by nlinarith only [time],Exec.seq write (Exec.seq convert clear)⟩
+
+/-- Entry tape 45 has w ticks. Lend the generator one tick and return the
+entry word intact before the scanner starts. -/
+theorem generateForwardOffset_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
+    (r : Fin 7 ↪ Fin T) :
+    ∃ code, ∀ (w H : ℕ) (_ : 0 < H) (u : HS T Q prime U) (S : Stacks T prime),
+      (S.R (r 6)).length = w → (S.R (r 4)).length = H →
+      (∀ i : Fin 7, i ≠ 4 → i ≠ 6 → S.R (r i) = []) →
+      ∃ z n, z.user = u.user ∧ n ≤ 1+64*(4*(w+1)+5) + (4*H+4) +
+        64*(65*(w+1))*(7*H+prime+17)+8 ∧ Exec body code (mk u S) n
+        (mk z {S with R := Function.update S.R (r 2) (binSyms H (diagonalPrefix ((prime^(w+1))^65) 64))}) := by
+  obtain ⟨generate,run⟩ := generateForwardOffset_succ_exec body r
+  let push : Act T Q prime U := .push (.rt (r 6)) (fun _ => Node.tick) .done
+  let pop : Act T Q prime U := .pop (.rt (r 6)) (fun v _ => v) .done
+  refine ⟨.seq (.act push) (generate.seq (.act pop)),?_⟩
+  intro w H pos u S clock width free
+  let D : Stacks T prime := {S with R := Function.update S.R (r 6) (Node.tick :: S.R (r 6))}
+  have start : Exec body (.act push) (mk u S) 1 (mk u D) := by
+    simpa [push,D,Action.run,update_rt] using Exec.act (body := body) push (mk u S)
+  obtain ⟨z,n,zu,hn,gen⟩ := run w H pos u D (by simp [D,clock])
+    (by simp [D,r.injective.eq_iff,width]) (fun i h k => by simp [D,Function.update_of_ne (r.injective.ne k),free i h k])
+  let word := binSyms (A := prime) H (diagonalPrefix ((prime^(w+1))^65) 64)
+  let E : Stacks T prime := {D with R := Function.update D.R (r 2) word}
+  have finish : Exec body (.act pop) (mk z E) 1 (mk z {S with R := Function.update S.R (r 2) word}) := by
+    have h := Exec.act (body := body) pop (mk z E)
+    apply h.cast rfl
+    simp [pop,E,D,Action.run,update_rt,r.injective.eq_iff]
+    congr 2
+    funext j
+    by_cases a : j = r 6 <;> by_cases b : j = r 2 <;> simp_all [Function.update_of_ne,r.injective.eq_iff]
+  exact ⟨z,1+(n+1),zu,by omega,Exec.seq start (Exec.seq gen finish)⟩
 
 local instance (w : ℕ) : NeZero (prime^w) := ⟨(pow_pos IntegerMultBounds.Networks.Shared50ModularControl.prime_prime.pos _).ne'⟩
 

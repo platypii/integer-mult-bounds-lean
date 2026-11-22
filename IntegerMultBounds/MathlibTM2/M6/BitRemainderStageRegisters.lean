@@ -8,16 +8,63 @@ namespace IntegerMultBounds.MathlibTM2.M6.BitNode.OrdinaryHandoff
 open IntegerMultBounds.Machine Stack Host
 open IntegerMultBounds.Networks.Shared50ModularControl (prime)
 
+/-- The scheduled scanner supplies the modulus and precision clock even
+after the five return tapes have been appended to its entry bank. -/
+theorem ordinaryEntryDimensions {w : ℕ} (extra W beforeRows rows beforeH : ℕ) (root : Bool)
+    (parent : Fin 64 → ZMod (prime^(w+1))) (width : ℕ) (prefixes : List (Fin (prime+4))) :
+    let entry := ordinaryEntryWords W beforeRows rows beforeH root parent width prefixes
+    let words : Fin ((66+extra)+5) → List (Fin (prime+4)) := Fin.addCases (fun i : Fin (66+extra) => entry i.val) (fun _ : Fin 5 => [])
+    ∃ modulus precision, words modulus = binSyms (prime^(w+1)).size (prime^(w+1)) ∧
+      (words precision).length = w := by
+  intro entry words
+  let modulus : Fin (66+extra) := ⟨2,by omega⟩
+  let precision : Fin (66+extra) := ⟨45,by omega⟩
+  refine ⟨modulus.castAdd 5,precision.castAdd 5,?_,?_⟩
+  · simp only [words,Fin.addCases_left]; rfl
+  · simp only [words,Fin.addCases_left]
+    exact List.length_replicate
+
+open IntegerMultBounds.Networks Cover M8.RevMachine Cover.Fallback IntegerMultBounds.MathlibTM2.Fast.Main
+open RecursiveInterchangeLayout (role)
+
+/-- Run the actual scheduled scanner inside the one-owner round trip. -/
+theorem scheduledOwnerRoundTrip_exec [M8.Machine.Net] {common work : ℕ} {U : Type}
+    (interval : ℕ × ℕ) (member : interval ∈ BitHosting.remainderIntervals)
+    (space : 58 ≤ common+24+31+work) (pool : (RingFormula.conjugationDepth 64+1)*13 ≤ work)
+    (room : Record.size 127+(rowSwapBlock.tapes+35+2) ≤ (common+24+31+work)+1)
+    (fits : (36+2*64+1+(RingFormula.conjugationDepth 64+1)*13)+3 ≤ (common+24+31+work)+1)
+    (pairRoom : 64*64+64*64 ≤ common+24+31+work) :
+    ∃ extra : ℕ, ∃ rate : ℝ, ∀ (w B W : ℕ), 0 < B → 0 < W →
+      let layout := stagedScannerLayout w B W
+      ∀ root (parent : Fin 64 → ZMod (prime^(w+1))), (∀ i, IsUnit (parent i)) →
+        (root = true → ∀ i, parent i = 1) → ∀ (prefixWidth : ℕ) (prefixes : ℕ → List (Fin (prime+4))),
+        (∀ i < B, (prefixes i).length = prefixWidth) → prefixWidth ≤ prime^layout.width →
+        ∀ (c : Certificates.PR589.Nine.PortCertificate) (checked : c.Checked),
+    let M := prime^(w+1)
+    let size := (66+(common+24+31+(work+extra)+1))+5
+    let entryWords := ordinaryEntryWords (layout.between*layout.afterD) layout.beforeRows 1 layout.beforeH root parent prefixWidth
+      ((List.range (layout.beforeRows*1*B)).flatMap prefixes)
+    ∃ stage back : SharedBankStage.Stage _ 1 prime (phaseOwners (N := LabelMask.records (role layout 142080)*(M^128*(layout.between*layout.afterD)))),
+      let Q := max (max stage.states columnCapacity) back.states
+      let words : Fin size → List (Fin (prime+4)) := Fin.addCases
+        (fun i : Fin (66+(common+24+31+(work+extra)+1)) => entryWords i.val) (fun _ : Fin 5 => [])
+      ∃ body : Unit → Pr Unit ((size+stage.tapes+back.tapes)+99) Q prime U,
+        OwnerRoundTrip (stage := stage) (words := words) (interval := interval) (parent := parent)
+          (c := c) (checked := checked) (B := B) (W := W) body rate := by
+  obtain ⟨extra,rate,scanner⟩ := scheduledReturn_exec (U := U) interval member space pool room fits pairRoom
+  refine ⟨extra,rate,?_⟩
+  intro w B W hb hw layout root parent units atRoot prefixWidth prefixes lengths small c checked M size entryWords
+  obtain ⟨stage,back,body,scan,scheduled⟩ := scanner w B W hb hw root parent units atRoot prefixWidth prefixes lengths small c checked
+  obtain ⟨modulus,precision,modulusWord,precisionWord⟩ := ordinaryEntryDimensions
+    (common+24+31+(work+extra)+1) (layout.between*layout.afterD) layout.beforeRows 1 layout.beforeH root parent
+    prefixWidth ((List.range (layout.beforeRows*1*B)).flatMap prefixes)
+  have capacity : 235 ≤ columnCapacity := (by decide : 235 ≤ 11192).trans remainderStates_fit
+  exact ⟨stage,back,body,scheduled.roundTrip modulus modulusWord precision precisionWord hb hw
+    (capacity.trans ((le_max_right ..).trans (le_max_left ..)))⟩
+
 /-- Stage registers 0, 1, 2 and 12 hold the tail width, row count, staging
 block count and inherited block count, respectively. -/
 def stageWordPorts : Fin 4 ↪ Fin 14 := ⟨![0,1,2,12],by decide⟩
-
-def retainedStagePorts (T : ℕ) : Fin 4 ↪ Fin (T+99) :=
-  (⟨![6,1,5,3],by decide⟩ : Fin 4 ↪ Fin 7).trans
-    ⟨retainedPort T,fun _ _ h => Fin.ext (by
-      have eq := congrArg Fin.val h
-      simp [retainedPort] at eq
-      simpa using eq)⟩
 
 /-- At the boundary between programs, the four retained inputs can be the
 stage's actual registers. Every other scanner tape stays in its own bank. -/
@@ -58,5 +105,166 @@ theorem stageRegisterPlacement {T m : ℕ} (reg : Fin 14 ↪ Fin m) (payload : F
   · exact (dims 1).2
   · exact (dims 2).2
   · exact block
+
+/-- The preceding stage can only affect the payload and its four retained
+words. In particular all scanner entry words, scratch tapes and the three
+header destinations read directly from the private bank. -/
+private theorem stageScannerPrivate {T : ℕ} (owner : Fin T) (keep : Fin (T+99) → Prop)
+    (privateTape : ∀ j, aroundScanner owner 0 ≠ j → (∀ i, retainedStagePorts T i ≠ j) → keep j) :
+    (∀ j : Fin T, keep (j.castAdd 99)) ∧
+    (∀ j : Fin 93, j ≠ 0 → keep (aroundScanner owner j)) ∧
+    ∀ j : Fin 7, j = 0 ∨ j = 2 ∨ j = 4 → keep (retainedPort T j) := by
+  let idx : Fin 4 ↪ Fin 7 := ⟨![6,1,5,3],by decide⟩
+  have port (i : Fin 4) : retainedStagePorts T i = retainedPort T (idx i) := rfl
+  refine ⟨?_,?_,?_⟩
+  · intro j
+    apply privateTape _ (aroundScanner_private owner 0 (by decide) j).symm
+    intro i eq
+    rw [port] at eq
+    have h := congrArg Fin.val eq
+    simp [retainedPort] at h
+    omega
+  · intro j hj
+    exact privateTape _ ((aroundScanner owner).injective.ne hj.symm)
+      (fun i => port i ▸ retainedPort_private owner (idx i) j)
+  · intro j hj
+    apply privateTape _ (retainedPort_private owner j 0).symm
+    intro i eq
+    rw [port] at eq
+    have h := congrArg Fin.val eq
+    have same : idx i = j := Fin.ext (by simpa [retainedPort] using h)
+    have distinct : ∀ i, idx i ≠ 0 ∧ idx i ≠ 2 ∧ idx i ≠ 4 := by decide
+    obtain ⟨a,b,c⟩ := distinct i
+    rcases hj with h|h|h <;> subst j <;> contradiction
+
+/-- The private scanner bank supplies all readiness and scratch conditions
+after the stage writes its owner payload and retained dimensions. -/
+theorem scannerReadyAfterStage {V size back : ℕ}
+    {stage : SharedBankStage.Stage _ 1 prime (phaseOwners (N := V))}
+    {words : Fin size → List (Fin (prime+4))} :
+    let T := size+stage.tapes+back
+    let slots := aroundScanner (((stage.slots 0).natAdd size).castAdd back)
+    let old := Fin.castAddEmb 99 (n := T)
+    ∀ (R₀ S : Stacks (T+99) prime), ScannerReady stage size back words (embStk old R₀) →
+      (∀ j, j ≠ 0 → R₀.L (slots j) = [] ∧ R₀.R (slots j) = []) →
+      (∀ j, j = 0 ∨ j = 2 ∨ j = 4 → R₀.R (retainedPort T j) = []) →
+      (∀ j, slots 0 ≠ j → (∀ i, retainedStagePorts T i ≠ j) → S.L j = R₀.L j ∧ S.R j = R₀.R j) →
+      ScannerReady stage size back words (embStk old S) ∧
+      (∀ j, j ≠ 0 → S.L (slots j) = [] ∧ S.R (slots j) = []) ∧
+      ∀ j, j = 0 ∨ j = 2 ∨ j = 4 → S.R (retainedPort T j) = [] := by
+  intro T slots old R₀ S ready free blanks frame
+  obtain ⟨entry,scratch,headers⟩ := stageScannerPrivate _ _ frame
+  refine ⟨ready.of_owner_change (fun j _ => entry j),?_,?_⟩
+  · intro j hj
+    exact ⟨(scratch j hj).1.trans (free j hj).1,(scratch j hj).2.trans (free j hj).2⟩
+  · intro j hj
+    exact (headers j hj).2.trans (blanks j hj)
+
+/-- Sequence a stage and a scanner on the same host, sharing the owner and
+its four dimensions. All private scanner tapes start from their entry bank. -/
+theorem runStageScanner {P U : Type} {m T q : ℕ} (reg : Fin 14 ↪ Fin m)
+    (payload : Fin m) (owner : Fin T) (apart : ∀ i, reg (stageWordPorts i) ≠ payload) :
+    ∃ bank : Fin (T+99) ↪ Fin (m+(T+99)),
+    ∀ (left : P → Pr P m q prime U) (right : Unit → Pr Unit (T+99) q prime U) a b,
+    let leftBank := Fin.castAdd (T+99) (n := m)
+    let body := Sum.elim (fun g => embProg leftBank Sum.inl (left g))
+      (fun g => embProg bank Sum.inr (right g))
+    ∀ u L (R₀ : Stacks (T+99) prime) v F t budget (tail N D B : ℕ) (post : U → Stacks (T+99) prime → Prop),
+      Exec left a (mk (embDn leftBank u) L) t (mk v F) →
+      StageDimensionWords (fun i => reg (i.castAdd 11)) tail N D F →
+      F.R (reg 12) = binSyms B.size B →
+      (∀ (w : HS (T+99) q prime U) (S : Stacks (T+99) prime), w.user = v.user →
+        (∀ i, let n := (![tail,N,D,B] : Fin 4 → ℕ) i
+          S.R (retainedStagePorts T i) = binSyms n.size n) →
+        S.L (aroundScanner owner 0) = F.L payload → S.R (aroundScanner owner 0) = F.R payload →
+        (∀ j, aroundScanner owner 0 ≠ j → (∀ i, retainedStagePorts T i ≠ j) →
+          S.L j = R₀.L j ∧ S.R j = R₀.R j) →
+        ∃ z C s, Exec right b (mk w S) s (mk z C) ∧ s ≤ budget ∧ post z.user C) →
+      ∃ z C steps, Exec body ((embProg leftBank Sum.inl a).seq (embProg bank Sum.inr b))
+        (mk u (adjacentStageStacks L R₀)) steps (mk z C) ∧ steps ≤ t+budget ∧ post z.user (embStk bank C) := by
+  let single {k : ℕ} (j : Fin k) : Fin 1 ↪ Fin k := ⟨fun _ => j,fun _ _ _ => Subsingleton.elim _ _⟩
+  let out := appendPorts (stageWordPorts.trans reg) (single payload) (fun i _ => apart i)
+  let input := appendPorts (retainedStagePorts T) (single (aroundScanner owner 0))
+    (fun _ _ => retainedPort_private owner _ 0)
+  obtain ⟨bank,compose⟩ := runAdjacentStages (P := P) (R := Unit) (U := U) (q := q) (A := prime) out input
+  refine ⟨bank,?_⟩
+  intro left right a b leftBank body u L R₀ v F t budget tail N D B post exec dims block next
+  apply compose left right a b u L R₀ v F t budget post exec
+  intro w S user shared privateTape
+  have ownerWord := shared ((0 : Fin 1).natAdd 4)
+  refine next w S user ?_ ownerWord.1 ownerWord.2 ?_
+  · intro i
+    have word := (shared (i.castAdd 1)).2
+    simp only [input,out,appendPorts,Function.Embedding.coeFn_mk,Fin.addCases_left] at word
+    apply word.trans
+    fin_cases i
+    · exact (dims 0).2
+    · exact (dims 1).2
+    · exact (dims 2).2
+    · exact block
+  · intro j h hs
+    apply privateTape
+    intro i
+    induction i using Fin.addCases with
+    | left i => simpa only [input,appendPorts,Function.Embedding.coeFn_mk,Fin.addCases_left] using hs i
+    | right i => fin_cases i; exact h
+
+open IntegerMultBounds.Swap.Modular Matrix
+local instance (w : ℕ) : NeZero (prime^w) := ⟨(pow_pos Shared50ModularControl.prime_prime.pos _).ne'⟩
+
+/-- Follow a completed stage by the scheduled owner scan in one execution. -/
+theorem OwnerRoundTrip.afterStage [M8.Machine.Net] {P U : Type} {m V size back Q w B W : ℕ}
+    {stage : SharedBankStage.Stage _ 1 prime (phaseOwners (N := V))}
+    {words : Fin size → List (Fin (prime+4))} {interval : ℕ × ℕ}
+    {parent : Fin 64 → ZMod (prime^(w+1))} {c : Certificates.PR589.Nine.PortCertificate} {checked : c.Checked}
+    {right : Unit → Pr Unit ((size+stage.tapes+back)+99) Q prime U} {rate : ℝ}
+    (trip : OwnerRoundTrip (stage := stage) (words := words) (interval := interval) (parent := parent)
+      (c := c) (checked := checked) (B := B) (W := W) right rate)
+    (reg : Fin 14 ↪ Fin m) (payload : Fin m) (apart : ∀ i, reg (stageWordPorts i) ≠ payload) :
+    let T := size+stage.tapes+back
+    let slots := aroundScanner (((stage.slots 0).natAdd size).castAdd back)
+    let leftBank := Fin.castAdd (T+99) (n := m)
+    let M := prime^(w+1)
+    let A := M^16
+    let tail := M^112*W
+    ∃ bank : Fin (T+99) ↪ Fin (m+(T+99)), ∃ scan : Pr Unit (T+99) Q prime U,
+    ∀ (left : P → Pr P m Q prime U) a u L R₀ v F t
+      (x : Fin 142081 → Fin (A*(B*tail)) → ZMod 2) i,
+      Exec left a (mk (embDn leftBank u) L) t (mk v F) →
+      StageDimensionWords (fun j => reg (j.castAdd 11)) tail (M^(64*64)) (A*B) F →
+      F.R (reg 12) = binSyms B.size B →
+      WordAtZero (singleLabelBank (firstRowLabel (w+1)) x i) (F.L payload) (F.R payload) →
+      ScannerReady stage size back words (embStk (Fin.castAddEmb 99) R₀) →
+      (∀ j, j ≠ 0 → R₀.L (slots j) = [] ∧ R₀.R (slots j) = []) →
+      (∀ j, j = 0 ∨ j = 2 ∨ j = 4 → R₀.R (retainedPort T j) = []) →
+      let body := Sum.elim (fun g => embProg leftBank Sum.inl (left g)) (fun g => embProg bank Sum.inr (right g))
+      ∃ z C steps, Exec body ((embProg leftBank Sum.inl a).seq (embProg bank Sum.inr scan))
+        (mk u (adjacentStageStacks L R₀)) steps (mk z C) ∧
+        steps ≤ t+⌊ownerRoundTripTime w B W rate c checked⌋₊ ∧ z.user = v.user ∧
+        ∃ staged, WordAtZero (singleLabelBank (firstRowLabel (w+1)) (fun _ => staged) 0)
+          (C.L (bank (slots 0))) (C.R (bank (slots 0))) ∧
+          let proj := IntegerMultBounds.Swap.Modular.reduce M ((c.span interval.1 interval.2).submatrix stageAxis.symm stageAxis.symm)
+          let frame := Matrix.fromBlocks (Matrix.diagonal parent) 0 0 (M8.ReversedExchange.rev 64)
+          let addr := fun b y (k : Fin W) => stagedOwnerIndex b (FlatCoordinateLayout.index
+            ((frame.mulVec y) ∘ (finSumFinEquiv : (Fin 64 ⊕ Fin 64) ≃ Fin 128).symm) k)
+          ∀ b y k, staged (addr b ((Matrix.fromBlocks (1-proj) proj proj (1-proj)).mulVec y) k) = x i (addr b y k) := by
+  intro T slots leftBank M A tail
+  obtain ⟨scan,run⟩ := trip
+  obtain ⟨bank,compose⟩ := runStageScanner (P := P) (U := U) (q := Q) reg payload (((stage.slots 0).natAdd size).castAdd back) apart
+  refine ⟨bank,scan,?_⟩
+  intro left a u L R₀ v F t x i exec dims block live ready fresh empty body
+  apply compose left right a scan u L R₀ v F t _ tail _ _ B
+    (fun user C => user = v.user ∧ ∃ staged : Fin (A*(B*tail)) → ZMod 2, WordAtZero (singleLabelBank (firstRowLabel (w+1)) (fun _ => staged) 0)
+      (C.L (slots 0)) (C.R (slots 0)) ∧
+          let proj := IntegerMultBounds.Swap.Modular.reduce M ((c.span interval.1 interval.2).submatrix stageAxis.symm stageAxis.symm)
+          let frame := Matrix.fromBlocks (Matrix.diagonal parent) 0 0 (M8.ReversedExchange.rev 64)
+          let addr := fun b y (k : Fin W) => stagedOwnerIndex b (FlatCoordinateLayout.index
+            ((frame.mulVec y) ∘ (finSumFinEquiv : (Fin 64 ⊕ Fin 64) ≃ Fin 128).symm) k)
+          ∀ b y k, staged (addr b ((Matrix.fromBlocks (1-proj) proj proj (1-proj)).mulVec y) k) = x i (addr b y k)) exec dims block
+  intro y S user headers hl hr frame
+  obtain ⟨entry,scratch,blank⟩ := scannerReadyAfterStage R₀ S ready fresh empty frame
+  obtain ⟨z,C,s,staged,ran,paid,zu,word,cells⟩ := run x i y S entry (blank 0 (by decide))
+    (blank 2 (by decide)) (blank 4 (by decide)) headers (hl ▸ hr ▸ live) scratch
+  exact ⟨z,C,s,ran,Nat.le_floor paid,zu.trans user,staged,word,cells⟩
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode.OrdinaryHandoff

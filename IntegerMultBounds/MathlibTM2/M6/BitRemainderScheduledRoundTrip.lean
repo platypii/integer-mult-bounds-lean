@@ -463,16 +463,31 @@ private def clockRegisters {T : ℕ} (clock : Fin T) : Fin 7 ↪ Fin (T+99) wher
 private def forwardRegisters {T : ℕ} (clock : Fin T) : Fin 7 ↪ Fin (T+99) :=
   (⟨![1,2,3,4,5,6,0],by decide⟩ : Fin 7 ↪ Fin 7).trans (clockRegisters clock)
 
-theorem ScheduledReturn.roundTrip [M8.Machine.Net] {V size back Q w B W : ℕ} {U : Type}
+def retainedStagePorts (T : ℕ) : Fin 4 ↪ Fin (T+99) :=
+  (⟨![6,1,5,3],by decide⟩ : Fin 4 ↪ Fin 7).trans
+    ⟨retainedPort T,fun _ _ h => Fin.ext (by
+      have eq := congrArg Fin.val h
+      simp [retainedPort] at eq
+      simpa using eq)⟩
+
+noncomputable def ownerRoundTripTime [M8.Machine.Net] (w B W : ℕ) (rate : ℝ)
+    (c : Certificates.PR589.Nine.PortCertificate) (checked : c.Checked) : ℝ :=
+  let layout := stagedScannerLayout w B W
+  let M := prime^(w+1)
+  let tail := M^112*W
+  let N := M^(64*64)
+  let K := M^128*W
+  (packedChartRate (0 : Fin 1) c checked false layout.width +
+          packedChartRate (0 : Fin 1) c checked true layout.width + (366+16*64*64+19*64+344) +
+          rate*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau + 64*(8*64+21+28+(prime.size : ℝ)))*
+          volume prime (role layout 142080) + 13 + 46486*(B*(N*K) : ℕ)+1226 + (dimensionTime M.size tail.size 16 + (4*(16*M.size+tail.size)+6) : ℕ) + (16*N.size+20 : ℕ) +
+            (1+64*(4*(w+1)+5)+(4*N.size+4)+64*(65*(w+1))*(7*N.size+prime+17)+8 : ℕ)
+
+def OwnerRoundTrip [M8.Machine.Net] {V size back Q w B W : ℕ} {U : Type}
     {stage : SharedBankStage.Stage _ 1 prime (phaseOwners (N := V))} {words : Fin size → List (Fin (prime+4))}
     {interval : ℕ × ℕ} {parent : Fin 64 → ZMod (prime^(w+1))}
     {c : Certificates.PR589.Nine.PortCertificate} {checked : c.Checked}
-    {body : Unit → Pr Unit ((size+stage.tapes+back)+99) Q prime U} {scan rate}
-    (scheduled : ScheduledReturn (w := w) (B := B) (W := W) interval parent c checked
-      (((stage.slots 0).natAdd size).castAdd back) (ScannerReady stage size back words) body scan rate)
-    (modulus : Fin size) (modulusWord : words modulus = binSyms (prime^(w+1)).size (prime^(w+1)))
-    (precision : Fin size) (precisionWord : (words precision).length = w+1)
-    (hb : 0 < B) (hw : 0 < W) (fits : 235 ≤ Q) :
+    (body : Unit → Pr Unit ((size+stage.tapes+back)+99) Q prime U) (rate : ℝ) : Prop :=
     ∃ code : Pr Unit ((size+stage.tapes+back)+99) Q prime U,
     let T := size+stage.tapes+back
     let owner := ((stage.slots 0).natAdd size).castAdd back
@@ -484,27 +499,35 @@ theorem ScheduledReturn.roundTrip [M8.Machine.Net] {V size back Q w B W : ℕ} {
     let tail := M^112*W
     let N := M^(64*64)
     let K := M^128*W
-    let offset := diagonalPrefix (M^65) 64
     ∀ (x : Fin 142081 → Fin (A*(B*tail)) → ZMod 2) i u S,
       ScannerReady stage size back words (embStk old S) →
       S.R (retainedPort T 0) = [] →
       S.R (retainedPort T 2) = [] → S.R (retainedPort T 4) = [] →
-      (∀ j : Fin 7, j ≠ 0 → j ≠ 2 → j ≠ 4 → let n := (![K,N,offset,B,N-offset,A*B,tail] : Fin 7 → ℕ) j
-        S.R (retainedPort T j) = binSyms n.size n) →
+      (∀ j : Fin 4, let n := (![tail,N,A*B,B] : Fin 4 → ℕ) j
+        S.R (retainedStagePorts T j) = binSyms n.size n) →
       WordAtZero (singleLabelBank (firstRowLabel (w+1)) x i) (S.L (slots 0)) (S.R (slots 0)) →
       (∀ j, j ≠ 0 → S.L (slots j) = [] ∧ S.R (slots j) = []) →
       ∃ v F t, ∃ staged : Fin (M^16*(B*(M^112*W))) → ZMod 2, Exec body code (mk u S) t (mk v F) ∧
-        (t : ℝ) ≤ (packedChartRate (0 : Fin 1) c checked false layout.width +
-          packedChartRate (0 : Fin 1) c checked true layout.width + (366+16*64*64+19*64+344) +
-          rate*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau + 64*(8*64+21+28+(prime.size : ℝ)))*
-          volume prime (role layout 142080) + 13 + 46486*(B*(N*K) : ℕ)+1226 + (dimensionTime M.size tail.size 16 + (4*(16*M.size+tail.size)+6) : ℕ) + (16*N.size+20 : ℕ) +
-            (1+64*(4*(w+1)+5)+(4*N.size+4)+64*(65*(w+1))*(7*N.size+prime+17)+6 : ℕ) ∧ v.user = u.user ∧
+        (t : ℝ) ≤ ownerRoundTripTime w B W rate c checked ∧ v.user = u.user ∧
         WordAtZero (singleLabelBank (firstRowLabel (w+1)) (fun _ => staged) 0) (F.L (slots 0)) (F.R (slots 0)) ∧
       let proj := IntegerMultBounds.Swap.Modular.reduce M ((c.span interval.1 interval.2).submatrix stageAxis.symm stageAxis.symm)
       let frame := Matrix.fromBlocks (Matrix.diagonal parent) 0 0 (M8.ReversedExchange.rev 64)
       let addr := fun b y (k : Fin W) => stagedOwnerIndex b (FlatCoordinateLayout.index
         ((frame.mulVec y) ∘ (finSumFinEquiv : (Fin 64 ⊕ Fin 64) ≃ Fin 128).symm) k)
-      ∀ b y k, staged (addr b ((Matrix.fromBlocks (1-proj) proj proj (1-proj)).mulVec y) k) = x i (addr b y k) := by
+      ∀ b y k, staged (addr b ((Matrix.fromBlocks (1-proj) proj proj (1-proj)).mulVec y) k) = x i (addr b y k)
+
+theorem ScheduledReturn.roundTrip [M8.Machine.Net] {V size back Q w B W : ℕ} {U : Type}
+    {stage : SharedBankStage.Stage _ 1 prime (phaseOwners (N := V))} {words : Fin size → List (Fin (prime+4))}
+    {interval : ℕ × ℕ} {parent : Fin 64 → ZMod (prime^(w+1))}
+    {c : Certificates.PR589.Nine.PortCertificate} {checked : c.Checked}
+    {body : Unit → Pr Unit ((size+stage.tapes+back)+99) Q prime U} {scan rate}
+    (scheduled : ScheduledReturn (w := w) (B := B) (W := W) interval parent c checked
+      (((stage.slots 0).natAdd size).castAdd back) (ScannerReady stage size back words) body scan rate)
+    (modulus : Fin size) (modulusWord : words modulus = binSyms (prime^(w+1)).size (prime^(w+1)))
+    (precision : Fin size) (precisionWord : (words precision).length = w)
+    (hb : 0 < B) (hw : 0 < W) (fits : 235 ≤ Q) :
+    OwnerRoundTrip (stage := stage) (words := words) (interval := interval) (parent := parent)
+      (c := c) (checked := checked) (B := B) (W := W) body rate := by
   let T := size+stage.tapes+back
   let owner := ((stage.slots 0).natAdd size).castAdd back
   let regs := (⟨![93,94,96,1,2,3,4],by decide⟩ : Fin 7 ↪ Fin 99).trans (Fin.natAddEmb T)
@@ -513,7 +536,12 @@ theorem ScheduledReturn.roundTrip [M8.Machine.Net] {V size back Q w B W : ℕ} {
   let bank := forwardRegisters ((precision.castAdd stage.tapes).castAdd back)
   obtain ⟨generate,write⟩ := generateForwardOffset_exec body bank
   refine ⟨generate.seq (prepare.seq code),?_⟩
-  intro _ _ slots old layout M A tail N K offset x i u S ready width shift backEmpty sources live fresh
+  intro _ _ slots old layout M A tail N K x i u S ready width shift backEmpty retainedWords live fresh
+  let offset := diagonalPrefix (M^65) 64
+  have sources (j : Fin 7) (nz : j ≠ 0) (nf : j ≠ 2) (nb : j ≠ 4) :
+      let n := (![K,N,offset,B,N-offset,A*B,tail] : Fin 7 → ℕ) j
+      S.R (retainedPort T j) = binSyms n.size n := by
+    fin_cases j <;> first | contradiction | exact retainedWords 0 | exact retainedWords 1 | exact retainedWords 2 | exact retainedWords 3
   have forward : regs 1 = retainedPort T 2 := rfl
   have reverse : regs 2 = retainedPort T 4 := rfl
   have fitsOffset : offset ≤ N := by
@@ -574,6 +602,7 @@ theorem ScheduledReturn.roundTrip [M8.Machine.Net] {V size back Q w B W : ℕ} {
   refine ⟨z,F,_,staged,Exec.seq generated (Exec.seq prepared execute),?_,user.trans (vu.trans yu),word,cells⟩
   rw [Nat.cast_add,Nat.cast_add]
   have cost := Nat.cast_le (α := ℝ).mpr hm
+  unfold ownerRoundTripTime
   linarith
 
 end OrdinaryHandoff
