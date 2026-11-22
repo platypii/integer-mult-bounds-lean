@@ -688,6 +688,110 @@ private theorem remainderRanks_sum (price : ℕ → ℕ) :
   rw [← List.sum_toFinset _ List.nodup_range,List.toFinset_range]
 
 /-- Cost of the complete compiled schedule on one aligned parent descriptor. -/
+theorem compiledNode_cost_of_sweeps [M8.Machine.Net] (engine : CopyTranspose) (routes : ℕ)
+    (action : ∀ w B K : ℕ, (Fin 9 → OwnerStage ((prime^w)^16*(B*prime^(64*(w*64))*K))) → Prop)
+    (supplier : ∃ C : ℕ, ∀ w B K, 0 < w → 0 < B → 0 < K →
+      let W := B*prime^(64*(w*64))*K
+      let V := (prime^w)^16*W
+      let hs := fun i => FlatCoordinateSchedule.bits (RecursiveDimensionBank.values (copyChild w W) i)
+      ∃ inv : Fin 9 → OwnerStage V,
+        (∀ price : ℕ → ℕ, (∀ p ∈ Geometry.Moves.phaseEdges, Geometry.moveRank p.1 p.2 ≠ 0 →
+          phaseChildCost w W p ≤ price (Geometry.moveRank p.1 p.2)) →
+          engine.time (copyChild w W) hs ≤ price 7 →
+          (∑ n, (inv n).cost) + 160*(remainders.map price).sum ≤ C*V +
+            1440*(routes*LeafCore.coreCost V (w*64)) + (nodeChildren5.map price).sum) ∧ action w B K inv) :
+    ∃ D : ℝ, ∀ (parent : Descriptor) (w B rows : ℕ), parent.Positive → 0 < w → 0 < B →
+      parent.width = 64*w → parent.rows = 142080*rows → parent.beforeH = B*prime^(64*(w*64)) →
+      let K := parent.beforeRows*rows*parent.between*parent.afterD
+      let W := B*prime^(64*(w*64))*K
+      let spectators := (prime^w)^112*K
+      let phaseW := B*prime^(64*(w*64))*spectators
+      let V := (prime^w)^16*phaseW
+      let v : Descriptor := ⟨(prime^w)^128,1,B*prime^(64*(w*64)),0,1,K⟩
+      ∃ (size : volume prime v = V)
+        (inv idle : Fin 9 → OwnerStage V) (bridge : ℕ → ℕ → OwnerStage V) (exchange : OwnerStage V),
+        BankActions bridge exchange ∧
+        (∀ (price : ℕ → ℕ) (rate : ℕ → ℝ),
+          (∀ p ∈ Geometry.Moves.phaseEdges, Geometry.moveRank p.1 p.2 ≠ 0 →
+            phaseChildCost w phaseW p ≤ price (Geometry.moveRank p.1 p.2)) →
+          engine.time (copyChild w phaseW) (fun j => FlatCoordinateSchedule.bits
+            (RecursiveDimensionBank.values (copyChild w phaseW) j)) ≤ price 7 →
+          (∀ (i : Fin 9) (c : Fin 222), let e := idleInterval i c
+            let child := phaseIntervalChild e.1 e.2 w W 64
+            cost child (fun j => FlatCoordinateSchedule.bits (RecursiveDimensionBank.values child j)) ≤ price (e.2-e.1)) →
+          (∀ j ∈ nodeChildren5, (price j : ℝ) ≤ V*rate j) →
+          ((compiledNode inv idle bridge exchange).cost : ℝ) ≤
+            volume prime parent*(D*(w : ℝ)^M8.Machine.BudgetBound.tau + (nodeChildren5.map rate).sum/142080)) ∧
+        action w B spectators inv ∧
+        ∀ i x, (∀ k, IdleTransport i k w B K (fun t => x (idleTape i k) (Fin.cast size t))
+          (fun t => (idle i).transform x (idleTape i k) (Fin.cast size t))) ∧
+          ∀ j, (∀ k, j ≠ idleTape i k) → (idle i).transform x j = x j := by
+  classical
+  obtain ⟨C,make⟩ := supplier
+  choose coeff build using idlePiece_stage
+  let overhead := 1440*(routes) + 9*idleCopies.length*126
+  let bankCoeff := 30*(76*17760)+49
+  obtain ⟨D,route⟩ := labelRoute_cost_bound (C+(∑ i, coeff i)+bankCoeff) overhead
+  refine ⟨D/142080,?_⟩
+  intro parent w B rows positive hw hB width split label K W spectators phaseW V v
+  have hr : 0 < rows := by have := positive.2.1; rw [split] at this; omega
+  have hK : 0 < K := Nat.mul_pos (Nat.mul_pos (Nat.mul_pos positive.1 hr) positive.2.2.2.1) positive.2.2.2.2
+  have hp := Shared50ModularControl.prime_prime.pos
+  have hs : 0 < spectators := by dsimp [spectators]; positivity
+  have size : volume prime v = V := by
+    simp only [v,V,phaseW,spectators,volume,pow_zero,mul_one]
+    rw [show (prime^w)^128 = (prime^w)^16*(prime^w)^112 from pow_add (prime^w) 16 112]
+    ac_rfl
+  obtain ⟨inv,phaseCost,phaseAction⟩ := make w B spectators hw hB hs
+  choose parts costs actions using fun i => build i w B K hw hB hK
+  let effect := fun i (x y : Fin 142081 → Fin (volume prime v) → ZMod 2) =>
+    (∀ k, IdleTransport i k w B K (x (idleTape i k)) (y (idleTape i k))) ∧
+    ∀ j, (∀ k, j ≠ idleTape i k) → y j = x j
+  choose idle same action using fun i => reindexIdle size (parts i) (effect i) (actions i)
+  have hV : 0 < V := by dsimp only [V,phaseW]; positivity
+  obtain ⟨bridge,exchange,assembly,bankAction⟩ := compiledNode_linear hV inv idle
+  refine ⟨size,inv,idle,bridge,exchange,bankAction,?_,phaseAction,?_⟩
+  · intro price rate phase copy remainder childRates
+    let core := LeafCore.coreCost V (w*64)
+    have phaseBill := phaseCost price phase copy
+    change (∑ n, (inv n).cost) + 160*(remainders.map price).sum ≤ C*V +
+      1440*(routes*core) + (nodeChildren5.map price).sum at phaseBill
+    have bills := Finset.sum_le_sum (s := Finset.univ) (fun i _ => costs i price (remainder i))
+    change (∑ i, (parts i).cost) ≤ ∑ i, (coeff i*volume prime v +
+      idleCopies.length*(126*LeafCore.coreCost (volume prime v) (w*64)) + 160*((remainderRanks i).map price).sum) at bills
+    conv at bills => rhs; rw [size]
+    simp only [Finset.sum_add_distrib,Finset.sum_const,Finset.card_univ,Fintype.card_fin,nsmul_eq_mul,
+      ← Finset.mul_sum,← Finset.sum_mul,remainderRanks_sum] at bills
+    have integerBill : (∑ n, (inv n).cost) + (∑ i, (idle i).cost) ≤
+        ((C + ∑ i, coeff i)*V + overhead*core) + (nodeChildren5.map price).sum := by
+      simp only [same]
+      calc
+        _ ≤ (C*V + 1440*(routes*core) + (nodeChildren5.map price).sum) +
+            ((∑ i, coeff i)*V + 9*(idleCopies.length*(126*core))) := by dsimp only [core] at *; omega
+        _ = _ := by dsimp only [overhead]; ring
+    have parentSize : (volume prime parent : ℝ) = V*142080 := by
+      exact_mod_cast (invocationVolume parent w B rows width split label).symm
+    have children (xs : List ℕ) (bound : ∀ j ∈ xs, (price j : ℝ) ≤ V*rate j) :
+        ((xs.map price).sum : ℝ) ≤ V*(xs.map rate).sum := by
+      induction xs with
+      | nil => simp
+      | cons j xs ih =>
+        simp only [List.map_cons,List.sum_cons,Nat.cast_add,mul_add]
+        exact add_le_add (bound j List.mem_cons_self) (ih (fun k hk => bound k (List.mem_cons_of_mem _ hk)))
+    have whole : (compiledNode inv idle bridge exchange).cost ≤
+        ((C+(∑ i, coeff i)+bankCoeff)*V + overhead*core) + (nodeChildren5.map price).sum := by
+      dsimp only [bankCoeff]
+      rw [Nat.add_mul]
+      omega
+    have paid := (Nat.cast_le (α := ℝ)).mpr whole
+    conv at paid => rhs; rw [Nat.cast_add]
+    exact (paid.trans (add_le_add (route V w hw) (children _ childRates))).trans_eq (by rw [parentSize]; ring)
+  · intro i x
+    obtain ⟨active,off⟩ := action i x
+    refine ⟨active,fun j away => funext fun t => ?_⟩
+    exact congrFun (off j away) (Fin.cast size.symm t) |>.trans (by simp)
+
+/-- Cost of the complete compiled schedule on one aligned parent descriptor. -/
 theorem compiledNode_parentCost [M8.Machine.Net] (engine : CopyTranspose := CopyTranspose.original) :
     ∃ D : ℝ, ∀ (parent : Descriptor) (w B rows : ℕ), parent.Positive → 0 < w → 0 < B →
       parent.width = 64*w → parent.rows = 142080*rows → parent.beforeH = B*prime^(64*(w*64)) →
@@ -717,69 +821,10 @@ theorem compiledNode_parentCost [M8.Machine.Net] (engine : CopyTranspose := Copy
         ∀ i x, (∀ k, IdleTransport i k w B K (fun t => x (idleTape i k) (Fin.cast size t))
           (fun t => (idle i).transform x (idleTape i k) (Fin.cast size t))) ∧
           ∀ j, (∀ k, j ≠ idleTape i k) → (idle i).transform x j = x j := by
-  classical
-  obtain ⟨C,make⟩ := invocationPieces_nodeCost engine
-  choose coeff build using idlePiece_stage
-  let overhead := 1440*(2*(63*9+252*527)) + 9*idleCopies.length*126
-  let bankCoeff := 30*(76*17760)+49
-  obtain ⟨D,route⟩ := labelRoute_cost_bound (C+(∑ i, coeff i)+bankCoeff) overhead
-  refine ⟨D/142080,?_⟩
-  intro parent w B rows positive hw hB width split label K W spectators phaseW V v
-  have hr : 0 < rows := by have := positive.2.1; rw [split] at this; omega
-  have hK : 0 < K := Nat.mul_pos (Nat.mul_pos (Nat.mul_pos positive.1 hr) positive.2.2.2.1) positive.2.2.2.2
-  have hp := Shared50ModularControl.prime_prime.pos
-  have hs : 0 < spectators := by dsimp [spectators]; positivity
-  have size : volume prime v = V := by
-    simp only [v,V,phaseW,spectators,volume,pow_zero,mul_one]
-    rw [show (prime^w)^128 = (prime^w)^16*(prime^w)^112 from pow_add (prime^w) 16 112]
-    ac_rfl
-  obtain ⟨inv,phaseCost,phaseAction⟩ := make w B spectators hw hB hs
-  choose parts costs actions using fun i => build i w B K hw hB hK
-  let effect := fun i (x y : Fin 142081 → Fin (volume prime v) → ZMod 2) =>
-    (∀ k, IdleTransport i k w B K (x (idleTape i k)) (y (idleTape i k))) ∧
-    ∀ j, (∀ k, j ≠ idleTape i k) → y j = x j
-  choose idle same action using fun i => reindexIdle size (parts i) (effect i) (actions i)
-  have hV : 0 < V := by dsimp only [V,phaseW]; positivity
-  obtain ⟨bridge,exchange,assembly,bankAction⟩ := compiledNode_linear hV inv idle
-  refine ⟨size,inv,idle,bridge,exchange,bankAction,?_,phaseAction,?_⟩
-  · intro price rate phase copy remainder childRates
-    let core := LeafCore.coreCost V (w*64)
-    have phaseBill := phaseCost price phase copy
-    change (∑ n, (inv n).cost) + 160*(remainders.map price).sum ≤ C*V +
-      1440*(2*(63*9+252*527)*core) + (nodeChildren5.map price).sum at phaseBill
-    have bills := Finset.sum_le_sum (s := Finset.univ) (fun i _ => costs i price (remainder i))
-    change (∑ i, (parts i).cost) ≤ ∑ i, (coeff i*volume prime v +
-      idleCopies.length*(126*LeafCore.coreCost (volume prime v) (w*64)) + 160*((remainderRanks i).map price).sum) at bills
-    conv at bills => rhs; rw [size]
-    simp only [Finset.sum_add_distrib,Finset.sum_const,Finset.card_univ,Fintype.card_fin,nsmul_eq_mul,
-      ← Finset.mul_sum,← Finset.sum_mul,remainderRanks_sum] at bills
-    have integerBill : (∑ n, (inv n).cost) + (∑ i, (idle i).cost) ≤
-        ((C + ∑ i, coeff i)*V + overhead*core) + (nodeChildren5.map price).sum := by
-      simp only [same]
-      calc
-        _ ≤ (C*V + 1440*(2*(63*9+252*527)*core) + (nodeChildren5.map price).sum) +
-            ((∑ i, coeff i)*V + 9*(idleCopies.length*(126*core))) := by dsimp only [core] at *; omega
-        _ = _ := by dsimp only [overhead]; ring
-    have parentSize : (volume prime parent : ℝ) = V*142080 := by
-      exact_mod_cast (invocationVolume parent w B rows width split label).symm
-    have children (xs : List ℕ) (bound : ∀ j ∈ xs, (price j : ℝ) ≤ V*rate j) :
-        ((xs.map price).sum : ℝ) ≤ V*(xs.map rate).sum := by
-      induction xs with
-      | nil => simp
-      | cons j xs ih =>
-        simp only [List.map_cons,List.sum_cons,Nat.cast_add,mul_add]
-        exact add_le_add (bound j List.mem_cons_self) (ih (fun k hk => bound k (List.mem_cons_of_mem _ hk)))
-    have whole : (compiledNode inv idle bridge exchange).cost ≤
-        ((C+(∑ i, coeff i)+bankCoeff)*V + overhead*core) + (nodeChildren5.map price).sum := by
-      dsimp only [bankCoeff]
-      rw [Nat.add_mul]
-      omega
-    have paid := (Nat.cast_le (α := ℝ)).mpr whole
-    conv at paid => rhs; rw [Nat.cast_add]
-    exact (paid.trans (add_le_add (route V w hw) (children _ childRates))).trans_eq (by rw [parentSize]; ring)
-  · intro i x
-    obtain ⟨active,off⟩ := action i x
-    refine ⟨active,fun j away => funext fun t => ?_⟩
-    exact congrFun (off j away) (Fin.cast size.symm t) |>.trans (by simp)
+  exact compiledNode_cost_of_sweeps engine (2*(63*9+252*527)) (fun w B spectators inv =>
+    ∀ n, ∃ run : (Fin 32 × Fin 5) → (Fin 142081 → Fin ((prime^w)^16*(B*prime^(64*(w*64))*spectators)) → ZMod 2) → (Fin 142081 → Fin ((prime^w)^16*(B*prime^(64*(w*64))*spectators)) → ZMod 2),
+          (∀ k x, InvocationEffect n k.1 k.2 w B spectators x (run k x)) ∧
+          ∀ x, (inv n).transform x = stageRuns.foldl (fun y k => run k y) x)
+    (invocationPieces_nodeCost engine)
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
