@@ -11,19 +11,6 @@ open Shared50ModularControl (prime)
 open Certificates.PR589 Certificates.PR589.Nine Swap.Modular Matrix
 local instance (w : ℕ) : NeZero (prime^w) := ⟨(pow_pos Shared50ModularControl.prime_prime.pos _).ne'⟩
 
-/-- Integer representatives give a simultaneous rational lift of every finite
-coordinate vector, including points with zero coordinates. -/
-private theorem addressMod_lift {ι : Type*} [Fintype ι] (m : ℕ) [NeZero m] (v : ι → ZMod m) :
-    addressMod m (fun i => ((v i).val : ℚ)) = v := by
-  classical
-  funext i
-  have h : ∀ j, ((v j).val : ℚ).den.Coprime m := fun j => by rw [Rat.den_natCast]; simp
-  unfold addressMod
-  rw [if_pos h]
-  simp only [Function.comp_apply,ratMod,Rat.den_natCast,Rat.num_natCast,
-    Nat.cast_one,inv_one,mul_one,Int.cast_natCast,ZMod.natCast_zmod_val]
-  simp
-
 /-- Read a full modular state through the same address map used by all the
 node pieces, including the weighted parent chart. -/
 private theorem modularEndpoint {w V : ℕ} (r : Role)

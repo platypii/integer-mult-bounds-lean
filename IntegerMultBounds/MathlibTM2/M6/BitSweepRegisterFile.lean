@@ -89,6 +89,19 @@ theorem sweepArray_read {w B W : ℕ} (parent : Fin 64 → ZMod (prime^w))
   simp only [Function.comp_apply,Equiv.symm_apply_apply]
   rfl
 
+/-- The owner array written by the allocated sweep route reads the original
+flat word after the shared all-one frame conversion. -/
+theorem sweepArray_flat {w W : ℕ} (n : Fin 9)
+    (flat framed : Fin 142081 → Fin ((prime^w)^128*W) → ZMod 2)
+    (frame : ∀ r a, M8.RevMachine.ext (framed (sweepRoleTape r))
+      (flatToNode w W (fun _ => 1) (fun _ => isUnit_one) a).val = flat (sweepRoleTape r) a) :
+    let words : OwnerArray w 1 W := fun t i => M8.RevMachine.ext (framed t) i.val
+    ∀ r a, sweepArray (fun _ => 1) (fun _ => isUnit_one) n words (sweepRoleTape r)
+      (flatToSweep w W n r a) = flat (sweepRoleTape r) a := by
+  intro words r a
+  rw [sweepArray_role,← flatToSweep_factor (fun _ => 1) (fun _ => isUnit_one)]
+  simpa only [Function.comp_apply,Equiv.trans_apply,Equiv.symm_apply_apply] using frame r a
+
 theorem sweepAllocatedOwners_exec {P U : Type} {Q : ℕ} (body : P → Pr P tapes Q prime U)
     (n : Fin 9) :
     ∃ (program : Pr P tapes Q prime U) (C : ℕ), ∀ (w H W B : ℕ) (parent : Fin 64 → ZMod (prime^(w+1)))

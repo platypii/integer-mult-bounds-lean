@@ -35,6 +35,39 @@ theorem nodeArray_read {w B W : ℕ} (parent : Fin 64 → ZMod (prime^w))
       (nodeArray parent units n y) = sweepRoles n b j y := by
   rw [← sweepArray_read, sweepArray_nodeArray]
 
+/-- After the allocated route writes the node-order words, the same field
+reversal returns every role to its flat physical address. -/
+theorem nodeArray_flat {w W : ℕ} (n : Fin 9) (y : OwnerArray w 1 W)
+    (flat : Fin 142081 → Fin ((prime^w)^128*W) → ZMod 2)
+    (frame : ∀ r a, flat (sweepRoleTape r) a =
+      nodeArray (fun _ => 1) (fun _ => isUnit_one) n y (sweepRoleTape r)
+        (flatToNode w W (fun _ => 1) (fun _ => isUnit_one) a)) :
+    ∀ r a, y (sweepRoleTape r) (flatToSweep w W n r a) = flat (sweepRoleTape r) a := by
+  intro r a
+  have roundTrip := congrFun (sweepArray_nodeArray (fun _ => 1) (fun _ => isUnit_one) n y) (sweepRoleTape r)
+  rw [sweepArray_role] at roundTrip
+  rw [← roundTrip,← flatToSweep_factor (fun _ => 1) (fun _ => isUnit_one)]
+  simpa only [Function.comp_apply,Equiv.trans_apply,Equiv.symm_apply_apply] using (frame r a).symm
+
+/-- Read a completed sweep through its allocated entry and return routes.
+Only the common field-frame reads are needed at their outer boundaries. -/
+theorem routedSweep_flat_read {w W : ℕ} (n : Fin 9)
+    (input framed output : Fin 142081 → Fin ((prime^w)^128*W) → ZMod 2) (y : OwnerArray w 1 W)
+    (entry : ∀ r a, M8.RevMachine.ext (framed (sweepRoleTape r))
+      (flatToNode w W (fun _ => 1) (fun _ => isUnit_one) a).val = input (sweepRoleTape r) a)
+    (back : ∀ r a, output (sweepRoleTape r) a =
+      nodeArray (fun _ => 1) (fun _ => isUnit_one) n y (sweepRoleTape r)
+        (flatToNode w W (fun _ => 1) (fun _ => isUnit_one) a)) :
+    let words : OwnerArray w 1 W := fun t i => M8.RevMachine.ext (framed t) i.val
+    let x := sweepArray (fun _ => 1) (fun _ => isUnit_one) n words
+    ∀ j, sweepRoles n 0 j y = (Piece.stage n).run (sweepRoles n 0 j x) →
+      let addr := fun z => flatWindowEquiv w W (windowState w z,j)
+      readRoles addr output = (Piece.stage n).run (readRoles addr input) := by
+  intro words x j sweep addr
+  have first := sweepRoles_of_flat n input x (sweepArray_flat n input framed entry) j
+  have last := sweepRoles_of_flat n output y (nodeArray_flat n y output back) j
+  simpa only [addr,flatWindowEquiv_read] using last.symm.trans (sweep.trans (congrArg (Piece.stage n).run first))
+
 theorem sweepAllocatedReturn_exec {P U : Type} {Q : ℕ} (body : P → Pr P tapes Q prime U)
     (n : Fin 9) :
     ∃ (program : Pr P tapes Q prime U) (C : ℕ), ∀ (w H W B : ℕ) (parent : Fin 64 → ZMod (prime^(w+1)))
