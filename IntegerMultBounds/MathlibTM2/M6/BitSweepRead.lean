@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.M6.BitNineStageHandoff
+public import IntegerMultBounds.MathlibTM2.M6.BitRemainderStagedExchange
 
 /-! Logical reads from the collapsed PR589 sweep output. -/
 @[expose] public section
@@ -36,6 +37,97 @@ theorem sweepEffect_inactive {n : Fin 9} {w B W : ℕ} {x y : OwnerArray w B W}
   dsimp only at read supported
   rw [supported,singleLabelBank_helperCell] at read
   simpa only [Fin.val_cast,ite_true] using read
+
+/-- The sweep and scanner store the inherited block at the same split
+between active and spectator digits. -/
+theorem stagedOwnerIndex_index {M B W : ℕ} [NeZero M] (digits : Fin 128 → ZMod M)
+    (b : Fin B) (j : Fin W) :
+    stagedOwnerIndex b (FlatCoordinateLayout.index digits j) =
+      finProdFinEquiv (FlatCoordinateLayout.rank (digits ∘ Fin.castAdd 112),
+        finProdFinEquiv (b,finProdFinEquiv (FlatCoordinateLayout.rank (digits ∘ Fin.natAdd 16),j))) := by
+  let live := digits ∘ Fin.castAdd 112
+  let tail : Fin 112 → ZMod M := digits ∘ Fin.natAdd 16
+  have rank := ArbitraryWidthSliceTranspose.rank_append live tail
+  have joined : (fun i => Fin.addCases live tail i) = digits := by
+    funext i
+    induction i using Fin.addCases (m := 16) (n := 112) <;> simp [live,tail]
+  rw [joined] at rank
+  have split : (FlatCoordinateLayout.index digits j).cast (ordinaryCompact_width M W).symm =
+      finProdFinEquiv (FlatCoordinateLayout.rank live,finProdFinEquiv (FlatCoordinateLayout.rank tail,j)) := by
+    apply Fin.ext
+    simp only [Fin.val_cast,FlatCoordinateLayout.index_val,rank,finProdFinEquiv_apply_val]
+    ring
+  simp only [stagedOwnerIndex,split,Equiv.symm_apply_apply,live,tail]
+
+/-- Read a logical address in the entry chart for its port. The eight banks
+of a replica, port and class use the same address. -/
+noncomputable def sweepAddress {w B W : ℕ} (b : Fin B) (j : Fin W) (lane : BankLane)
+    (z : Axis ⊕ Axis → ℚ) : Fin ((prime^w)^16*(B*((prime^w)^112*W))) :=
+  let v := addressMod (prime^w) z
+  let digits := helperSlotField (port lane.2.1.val) none w (v ∘ Sum.inl,v ∘ Sum.inr)
+  stagedOwnerIndex b (FlatCoordinateLayout.index digits j)
+
+open Matrix in
+/-- Change the node's weighted and reversed fields into the common port
+chart used by the two halves of an inactive sweep. -/
+theorem sweepAddress_from_parent {w B W : ℕ} (parent : Fin 64 → ZMod (prime^w))
+    (units : ∀ i, IsUnit (parent i)) (b : Fin B) (j : Fin W) (lane : BankLane) (z : Axis ⊕ Axis → ℚ) :
+    let c := port lane.2.1.val
+    let H := (reduce (prime^w) (c.fullChart.submatrix stageAxis.symm remainderAxis)).transpose
+    let v := addressMod (prime^w) z ∘ Equiv.sumCongr stageAxis.symm stageAxis.symm
+    let D := diagonal parent
+    let R := M8.ReversedExchange.rev (R := ZMod (prime^w)) 64
+    let node := (fromBlocks D 0 0 R).mulVec v
+    let changeBasis := fromBlocks (H * diagonal (Ring.inverse ∘ parent)) 0 0 (H * R)
+    sweepAddress (w := w) b j lane z =
+      stagedOwnerIndex b (FlatCoordinateLayout.index ((changeBasis.mulVec node) ∘ (@finSumFinEquiv 64 64).symm) j) := by
+  intro c H v D R node changeBasis
+  have weights := Weighted.diagonal_inv_mul (Ring.inverse ∘ parent) parent
+    (fun i => Ring.inverse_mul_cancel _ (units i))
+  have cancel : changeBasis * fromBlocks D 0 0 R = fromBlocks H 0 0 H := by
+    simp [changeBasis,D,R,fromBlocks_multiply,mul_assoc,weights,M8.ReversedExchange.rev_mul_rev]
+  change _ = stagedOwnerIndex b (FlatCoordinateLayout.index ((changeBasis *ᵥ ((fromBlocks D 0 0 R) *ᵥ v)) ∘ _) j)
+  rw [mulVec_mulVec,cancel,fromBlocks_mulVec]
+  have field (f : Axis → ZMod (prime^w)) (k : Fin 64) :
+      (((reduce (prime^w) c.fullChart).transpose *ᵥ f) (remainderAxis k)) =
+        (H *ᵥ (f ∘ stageAxis.symm)) k := by
+    change _ = (((reduce (prime^w) c.fullChart).transpose.submatrix remainderAxis stageAxis.symm) *ᵥ _) k
+    rw [submatrix_mulVec_equiv]
+    simp [Function.comp_assoc]
+  apply congrArg (fun digits => stagedOwnerIndex b (FlatCoordinateLayout.index digits j))
+  funext k
+  obtain ⟨k,rfl⟩ := (@finSumFinEquiv 64 64).surjective k
+  cases k <;> simp [helperSlotField,helperFieldOrder,Function.comp_def,field,c,v]
+
+/-- The inactive sweep realizes the rational stage action in the port's
+entry chart, including addresses outside the denominator-coprime lattice. -/
+theorem sweepEffect_inactive_read {n : Fin 9} {w B W : ℕ} {x y : OwnerArray w B W}
+    (step : sweepEffect n w B W x y) (r : Role) (inactive : r.bank.val / 2 ≠ BitHosting.activePair n.val)
+    (b : Fin B) (j : Fin W) :
+    readLanes (sweepAddress (w := w) b j) y r =
+      (Piece.stage n).run (readLanes (sweepAddress (w := w) b j) x) r := by
+  let addr := fun (v : Axis ⊕ Axis → ZMod (prime^w)) =>
+    let digits := helperSlotField (port r.port.val) none w (v ∘ Sum.inl,v ∘ Sum.inr)
+    stagedOwnerIndex b (FlatCoordinateLayout.index digits j)
+  let P := familySum n r
+  let m := prime^w
+  obtain ⟨adm,idem⟩ := familySum_projector n r w
+  have comp := ModularFrameSchedule.admissible_sub m (admissible_one m) adm
+  have legal : Admissible m (exchange P) := by
+    intro i k
+    cases i <;> cases k <;> first | apply comp | apply adm
+  have reduced : reduce m (exchange P) = Matrix.fromBlocks (1-reduce m P) (reduce m P) (reduce m P) (1-reduce m P) := by
+    have sub := ModularFrameSchedule.reduce_sub m (admissible_one m) adm
+    rw [reduce_one] at sub
+    ext i k
+    cases i <;> cases k <;> first | rfl | exact congrFun (congrFun sub _) _
+  rw [Piece.run,stagePiece_inactive _ _ _ inactive]
+  let tape := bankTape r.bank (r.replica,r.port,r.cls)
+  apply modularExchange_read m P idem legal (fun v => x tape (addr v)) (fun v => y tape (addr v))
+  intro v
+  rw [reduced,Matrix.fromBlocks_mulVec]
+  simpa only [m,P,tape,bankTape,addr,stagedOwnerIndex_index,Function.comp_def,Sum.elim_inl,Sum.elim_inr,M8.Exchange.exchange] using
+    sweepEffect_inactive step r inactive b j (v ∘ Sum.inl,v ∘ Sum.inr)
 
 /-- On the active copy the source undergoes its frame change and the target
 receives the framed XOR, after collapsing the label rows. -/

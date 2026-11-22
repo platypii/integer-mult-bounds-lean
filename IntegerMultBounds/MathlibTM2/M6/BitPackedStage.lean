@@ -141,9 +141,10 @@ theorem packedStageEffect_helper (n : Fin 9) (p : Fin 32 × Fin 5) (w B W : ℕ)
   exact read
 
 open Swap.Modular Matrix in
-/-- A stage's inactive-family exchange is its own inverse at every width. -/
-theorem familyExchange_involutive (n : Fin 9) (ρ : Role) (w : ℕ) :
-    Function.Involutive (M8.Exchange.exchange (reduce (prime^w) (familySum n ρ))) := by
+/-- The residuals hosted by an inactive family sum to an admissible
+rational projector at every machine precision. -/
+theorem familySum_projector (n : Fin 9) (ρ : Role) (w : ℕ) :
+    Admissible (prime^w) (familySum n ρ) ∧ familySum n ρ * familySum n ρ = familySum n ρ := by
   let P := fun h => if FamilyHosts n ρ h then helperSpan n h else 0
   have adm : ∀ hs : List ℕ, Admissible (prime^w) (hs.map P).sum := by
     intro hs
@@ -177,8 +178,14 @@ theorem familyExchange_involutive (n : Fin 9) (ρ : Role) (w : ℕ) :
           ((congrArg (fun s => s.helper) eq.symm).trans (slotOf_spec n n.isLt i (Finset.mem_range.mp hi)).2.2))
       all_goals simp
     · exact fun h => False.elim (h hi)
+  exact ⟨adm (List.range 439),idem⟩
+
+open Swap.Modular Matrix in
+/-- A stage's inactive-family exchange is its own inverse at every width. -/
+theorem familyExchange_involutive (n : Fin 9) (ρ : Role) (w : ℕ) :
+    Function.Involutive (M8.Exchange.exchange (reduce (prime^w) (familySum n ρ))) := by
   let U := reduce (prime^w) (familySum n ρ)
-  have ok : Admissible (prime^w) (familySum n ρ) := adm (List.range 439)
+  obtain ⟨ok,idem⟩ := familySum_projector n ρ w
   have proj : U * U = U := (reduce_mul _ ok ok).symm.trans (congrArg _ idem)
   intro s
   change M8.Exchange.exchange U (M8.Exchange.exchange U s) = s
