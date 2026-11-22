@@ -153,6 +153,43 @@ theorem initializePackBank_exec {T Q : ℕ} (capacity : rowSwapBlock.states ≤ 
   · intro j
     exact frame _ (fun r _ k => counters j r k)
 
+omit [M8.Machine.Net] in
+private theorem liftFan {c T B V : ℕ} (e : Fin T ↪ Fin B) (dst : Fin (c+2) ↪ Fin T)
+    (output : Fin c → Fin V → ZMod 2) (D : Stacks B prime) (F : Stacks T prime)
+    (view : embStk e D = F) (owners : HelperFan dst output F) :
+    HelperFan (dst.trans e) output D := by
+  subst F
+  exact owners
+
+/-- Lift a child running on the caller tapes past the private row records.
+The returned fan is visible on the enlarged host and every private record
+stack is preserved, regardless of its contents. -/
+theorem liftIntervalChild_exec {c B T Q V : ℕ} (payload : Fin B) (body : P → Pr P T Q prime U)
+    (code : Pr P T Q prime U) (src dst : Fin (c+2) ↪ Fin T)
+    (output : Fin c → Fin V → ZMod 2) :
+    let extend := Fin.castAddEmb (n := T) (c*B)
+    let ports := intervalRecordBank src payload
+    ∀ u S z F n,
+    Exec body code (mk (embDn extend u) (embStk extend S)) n (mk z F) →
+    HelperFan dst output F →
+    ∃ v D, Exec (fun p => embProg extend id (body p)) (embProg extend id code) (mk u S) n (mk v D) ∧
+      v.user = z.user ∧ HelperFan (dst.trans extend) output D ∧
+      (∀ r k, k ≠ payload → D.L (ports r k) = S.L (ports r k) ∧ D.R (ports r k) = S.R (ports r k)) ∧
+      ∀ j, D.L (extend j) = F.L j ∧ D.R (extend j) = F.R j := by
+  intro extend ports u S z F n run owners
+  obtain ⟨v,D,exec,_,user,view,frame⟩ := exec_emb (ι := id)
+    (body' := fun p => embProg extend id (body p)) extend.injective (fun _ => rfl) run u rfl S rfl
+  refine ⟨v,D,exec,user,?_,?_,?_⟩
+  · exact liftFan extend dst output D F view owners
+  · intro r k ne
+    apply frame
+    intro j eq
+    change finSumFinEquiv (Sum.inl j) = finSumFinEquiv _ at eq
+    have same := finSumFinEquiv.injective eq
+    simp [ne] at same
+  · intro j
+    exact ⟨congrArg (fun E => E.L j) view,congrArg (fun E => E.R j) view⟩
+
 /-- Execute both layout passes around a child on the extended host. The child
 can return its owners on a different fan while leaving private records intact. -/
 theorem withIntervalBank_exec {T Q : ℕ} (capacity : rowSwapBlock.states ≤ Q)

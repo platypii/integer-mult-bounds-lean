@@ -303,13 +303,13 @@ theorem ParentStageWords.returnFan {T N V : ℕ} {dst : Fin (142081+2) ↪ Fin N
 open Cover.Fallback in
 /-- A returned owner supplies the payload field of the unpacker's record.
 The other record registers may be reused from the incoming packing pass. -/
-theorem HelperFan.unpackRecord {T w W : ℕ} {fan : Fin (142080+2) ↪ Fin T}
-    {bank : Fin 35 ↪ Fin T} {x : Fin 142080 → Fin ((prime^(w+1))^128*W) → ZMod 2}
-    {S F : Stacks T prime} (returned : HelperFan fan x F) (r : Fin 142080)
+theorem HelperFan.unpackRecord {T B w W : ℕ} {fan : Fin (142080+2) ↪ Fin T}
+    {saved : Fin 35 ↪ Fin B} {bank : Fin 35 ↪ Fin T} {x : Fin 142080 → Fin ((prime^(w+1))^128*W) → ZMod 2}
+    {S : Stacks B prime} {F : Stacks T prime} (returned : HelperFan fan x F) (r : Fin 142080)
     (shared : bank 24 = fan (r.castAdd 2)) {record dest q original}
-    (start : RecordReady (b := prime) (w := w) (d := 128) (W := W) bank
+    (start : RecordReady (b := prime) (w := w) (d := 128) (W := W) saved
       (prime^(w+1)).size W.size record SparseRoleCircuit.encode (fun _ => blank) dest 0 q original S)
-    (keep : ∀ i : Fin 35, i ≠ 24 → F.L (bank i) = S.L (bank i) ∧ F.R (bank i) = S.R (bank i)) :
+    (keep : ∀ i : Fin 35, i ≠ 24 → F.L (bank i) = S.L (saved i) ∧ F.R (bank i) = S.R (saved i)) :
     RecordReady (b := prime) (w := w) (d := 128) (W := W) bank
       (prime^(w+1)).size W.size record SparseRoleCircuit.encode (fun _ => blank) dest 0 q (x r) F := by
   apply start.returnPayload keep
@@ -317,25 +317,57 @@ theorem HelperFan.unpackRecord {T w W : ℕ} {fan : Fin (142080+2) ↪ Fin T}
   rw [shared]
   simpa only [List.map_ofFn] using (fanPayload returned r z).symm
 
+/-- Recover the input layout of the split child after an enclosing pass has
+updated the live tapes. The fresh owner registers and the child's private
+seed suffice, and the live projection carries the current input and output stacks. -/
+theorem splitChildStacks_eq {T N : ℕ} (D : Stacks (142082+T+N) prime) (seed : Stacks N prime)
+    (empty : ∀ i : Fin 142082, let j := (i.castAdd T).castAdd N
+      D.L j = [] ∧ D.R j = [])
+    (privateTapes : ∀ i : Fin N, let j := i.natAdd (142082+T)
+      D.L j = seed.L i ∧ D.R j = seed.R i) :
+    let live := (Fin.natAddEmb 142082 (m := T)).trans (Fin.castAddEmb N)
+    D = adjacentStageStacks (childOwnerStacks (embStk live D)) seed := by
+  intro live
+  cases D with
+  | mk inp out L R =>
+    congr 1
+    all_goals
+      funext j
+      induction j using Fin.addCases with
+      | left j =>
+        induction j using Fin.addCases with
+        | left i =>
+          simp only [adjacentStageStacks,childOwnerStacks,Fin.addCases_left]
+          first | exact (empty i).1 | exact (empty i).2
+        | right i => simp [adjacentStageStacks,childOwnerStacks,embStk,live]
+      | right i =>
+        simp only [adjacentStageStacks,Fin.addCases_right]
+        first | exact (privateTapes i).1 | exact (privateTapes i).2
+
 theorem runSplitChild {P U : Type} {T N Q V w price : ℕ} {body : P → Pr P N Q prime U}
     {code src dst seed} (run : PackedPieceHandoff V (packedChildOutput w V) body code src dst seed price)
     (live : Fin (142080+2) ↪ Fin T) :
     let H := 142082+T+N
+    let caller := (Fin.natAddEmb 142082 (m := T)).trans (Fin.castAddEmb N)
     ∃ (bank : Fin N ↪ Fin H) (host : Empty ⊕ P → Pr (Empty ⊕ P) H Q prime U)
       (program : Pr (Empty ⊕ P) H Q prime U),
     ∀ (lane : Descriptor) (_width : lane.width = 64*w) (size : volume prime lane = V)
       (data : Fin 142080 → Fin (volume prime lane) → ZMod 2) u S,
       let position := packedChildPosition lane size
-      HelperFan live (fun r => data r ∘ position.symm) S →
-      ∃ z F n, ∃ y : Fin 142081 → Fin V → ZMod 2, Exec host program (mk u (adjacentStageStacks (childOwnerStacks S) seed)) n (mk z F) ∧
+      HelperFan (live.trans caller) (fun r => data r ∘ position.symm) S →
+      (∀ i : Fin 142082, let j := (i.castAdd T).castAdd N
+        S.L j = [] ∧ S.R j = []) →
+      (∀ i : Fin N, let j := i.natAdd (142082+T)
+        S.L j = seed.L i ∧ S.R j = seed.R i) →
+      ∃ z F n, ∃ y : Fin 142081 → Fin V → ZMod 2, Exec host program (mk u S) n (mk z F) ∧
         n ≤ 142081*(8*V+10)+1+price ∧ z.user = u.user ∧
         ParentStageWords (fun i => dst (i.castAdd 2)) dst V y (embStk bank F) ∧
         HelperFan ((childReturnFan dst).trans bank) (fun r =>
           Shared50RecursiveNodeRows.transpose (one_dvd lane.rows) (data r) ∘ position.symm) F ∧
         ∀ j, (∀ i : Fin 2, live (i.natAdd 142080) ≠ j) →
           let t := (j.natAdd 142082).castAdd N
-          F.L t = S.L j ∧ F.R t = S.R j := by
-  intro H
+          F.L t = S.L t ∧ F.R t = S.R t := by
+  intro H caller
   let raised := live.trans (Fin.natAddEmb 142082)
   let tmp := (Fin.last 142081).castAdd T
   have separate (i : Fin T) (j : Fin 142082) : i.natAdd 142082 ≠ j.castAdd T := by
@@ -348,21 +380,26 @@ theorem runSplitChild {P U : Type} {T N Q V w price : ℕ} {body : P → Pr P N 
     (fun j => by rw [childInputFan_owner]; exact (Fin.castAddEmb T).injective.ne (Fin.castSucc_ne_last j))
     (childInputFan_control live)
   refine ⟨bank,host,program,?_⟩
-  intro lane width size data u S position rep
+  intro lane width size data u D position rep empty privateTapes
+  let S := embStk caller D
+  have shape := splitChildStacks_eq D seed empty privateTapes
+  have projected : HelperFan live (fun r => data r ∘ position.symm) S := rep
   have placed : HelperFan raised (fun r => data r ∘ position.symm) (childOwnerStacks S) := by
     intro i z
-    simpa [raised,embStk,childOwnerStacks,adjacentStageStacks,Function.comp_def] using rep i z
+    simpa [raised,embStk,childOwnerStacks,adjacentStageStacks,Function.comp_def] using projected i z
   obtain ⟨z,F,n,y,ran,paid,user,words,reads,keep⟩ := exec lane width size data u (childOwnerStacks S)
     placed (by simp [tmp,childOwnerStacks,adjacentStageStacks]) (by simp [tmp,childOwnerStacks,adjacentStageStacks])
     (fun i => by simp [childInputFan_owner,childOwnerStacks,adjacentStageStacks])
-  refine ⟨z,F,n,y,ran,paid,user,words,?_,?_⟩
+  refine ⟨z,F,n,y,?_,paid,user,words,?_,?_⟩
+  · rw [shape]
+    exact ran
   · have owners : (fun r : Fin 142080 => y r.castSucc) =
         fun r => Shared50RecursiveNodeRows.transpose (one_dvd lane.rows) (data r) ∘ position.symm := by
       funext r i
       simpa only [position,Function.comp_apply,Equiv.apply_symm_apply] using congrFun (reads r) (position.symm i)
     exact owners ▸ words.returnFan
   intro j outside
-  simpa [childOwnerStacks,adjacentStageStacks] using keep _ (childInputFan_outside live j outside)
+  simpa [childOwnerStacks,adjacentStageStacks,S,caller,embStk] using keep _ (childInputFan_outside live j outside)
 
 /-- Sweeps and idle windows on exact flat words compose to interchange the two
 parent fields on every role. The spectator and the two piece-cost sums are preserved. -/
