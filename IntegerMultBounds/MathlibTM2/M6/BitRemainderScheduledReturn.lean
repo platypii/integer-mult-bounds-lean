@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.M6.BitRemainderHandoffPlacement
+public import IntegerMultBounds.MathlibTM2.M6.BitRemainderHandoffCounters
 
 /-! Apply the private return handoff to the one-owner scheduled parent scanner. -/
 @[expose] public section
@@ -56,6 +56,65 @@ def ScheduledReturn [M8.Machine.Net] {T Q w B W : ℕ} {U : Type}
         ((frame.mulVec y) ∘ (finSumFinEquiv : (Fin 64 ⊕ Fin 64) ≃ Fin 128).symm) k)
       ∀ b y k, staged (addr b ((Matrix.fromBlocks (1-proj) proj proj (1-proj)).mulVec y) k) = x i (addr b y k)
 
+/-- The scanner reads its entry words before the chart bank and starts with a
+blank return bank after it. Only the chart's owner tape carries the payload. -/
+def ScannerReady {V : ℕ} (stage : SharedBankStage.Stage _ 1 prime (phaseOwners (N := V)))
+    (size back : ℕ) (words : Fin size → List (Fin (prime+4)))
+    (S : Stacks (size+stage.tapes+back) prime) : Prop :=
+  let base := Fin.castAddEmb back (n := size+stage.tapes)
+  let chart := Fin.natAddEmb size (m := stage.tapes)
+  ChartPrivateReady stage (embStk (chart.trans base) S) ∧
+    (∀ j : Fin size, let h := base (j.castAdd stage.tapes)
+      S.L h = [] ∧ S.R h = words j) ∧
+    ∀ j : Fin back, let h := j.natAdd (size+stage.tapes)
+      S.L h = [] ∧ S.R h = []
+
+theorem ScannerReady.of_owner_change {V size back : ℕ}
+    {stage : SharedBankStage.Stage _ 1 prime (phaseOwners (N := V))}
+    {words : Fin size → List (Fin (prime+4))} {S F : Stacks (size+stage.tapes+back) prime}
+    (initial : ScannerReady stage size back words S)
+    (off : ∀ j, j ≠ ((stage.slots 0).natAdd size).castAdd back → F.L j = S.L j ∧ F.R j = S.R j) :
+    ScannerReady stage size back words F := by
+  obtain ⟨chart,entry,empty⟩ := initial
+  refine ⟨?_,?_,?_⟩
+  · intro j unused z
+    have keep := off ((j.natAdd size).castAdd back) (by simpa using (unused 0).symm)
+    exact (chart j unused z).trans (by simp only [embStk,Function.comp_apply,Function.Embedding.trans_apply,
+      Fin.castAddEmb_apply,Fin.natAddEmb_apply,keep.1,keep.2])
+  · intro j
+    have keep := off ((j.castAdd stage.tapes).castAdd back) (by
+      intro eq; have h := congrArg Fin.val eq; simp at h; omega)
+    exact ⟨keep.1.trans (entry j).1,keep.2.trans (entry j).2⟩
+  · intro j
+    have keep := off (j.natAdd (size+stage.tapes)) (by
+      intro eq; have h := congrArg Fin.val eq; simp at h; have := (stage.slots 0).isLt; omega)
+    exact ⟨keep.1.trans (empty j).1,keep.2.trans (empty j).2⟩
+
+/-- The write footprint of counter preparation and entry leaves every scanner
+metadata tape intact, including both chart banks. -/
+theorem ScannerReady.after_entry {V size back : ℕ}
+    {stage : SharedBankStage.Stage _ 1 prime (phaseOwners (N := V))}
+    {words : Fin size → List (Fin (prime+4))} :
+    let T := size+stage.tapes+back
+    let owner := ((stage.slots 0).natAdd size).castAdd back
+    let slots := aroundScanner owner
+    let old := Fin.castAddEmb 94 (n := T)
+    ∀ {S F : Stacks (T+94) prime}, ScannerReady stage size back words (embStk old S) →
+      (∀ j, (∀ b k, 2 ≤ k.val → slots (paddingBanks b k) ≠ j) →
+        (∀ i, (inputCrop.trans slots) i ≠ j) → (∀ i, (inputTranspose.trans slots) i ≠ j) →
+        (∀ i, (inputPad.trans slots) i ≠ j) → (∀ i, (inputRotation.trans slots) i ≠ j) →
+        F.L j = S.L j ∧ F.R j = S.R j) →
+      ScannerReady stage size back words (embStk old F) := by
+  intro T owner slots old S F initial frame
+  apply initial.of_owner_change
+  intro j hj
+  have miss (i : Fin 95) : slots i ≠ old j := by
+    by_cases h : i = 1
+    · subst i; simpa [slots,old,owner] using hj.symm
+    · exact (aroundScanner_private owner i h j).symm
+  exact frame (old j) (fun _ _ _ => miss _) (fun _ => miss _) (fun _ => miss _)
+    (fun _ => miss _) (fun _ => miss _)
+
 /-- The scheduled parent and private return share a scan rate for every width and block count. -/
 theorem scheduledReturn_exec [M8.Machine.Net] {common work : ℕ} {U : Type}
     (interval : ℕ × ℕ) (member : interval ∈ BitHosting.remainderIntervals)
@@ -80,12 +139,8 @@ theorem scheduledReturn_exec [M8.Machine.Net] {common work : ℕ} {U : Type}
       let Q := max (max stage.states columnCapacity) back.states
       let host := T+94
       let program := Pr Unit host Q prime U
-      let ready := fun raw : Stacks T prime =>
-        ChartPrivateReady stage (embStk (chart.trans base) raw) ∧
-      (∀ j : Fin size, let h := base (j.castAdd stage.tapes)
-        raw.L h = [] ∧ raw.R h = Fin.addCases (fun i : Fin (66+(common+24+31+(work+extra)+1)) => entryWords i.val) (fun _ : Fin 5 => []) j) ∧
-      (∀ j : Fin back.tapes, let h := j.natAdd (size+stage.tapes)
-        raw.L h = [] ∧ raw.R h = [])
+      let ready := ScannerReady stage size back.tapes (Fin.addCases
+        (fun i : Fin (66+(common+24+31+(work+extra)+1)) => entryWords i.val) (fun _ : Fin 5 => []))
       ∃ body : Unit → program, ∃ code : program,
         ScheduledReturn (w := w) (B := B) (W := W) interval parent c checked (base (chart (stage.slots 0))) ready body code rate := by
   obtain ⟨extra,localBody,C,overhead,scheduled⟩ := stagedOrdinaryParent_exec (U := U) interval member space pool room fits pairRoom
