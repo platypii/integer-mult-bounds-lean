@@ -72,6 +72,76 @@ theorem intervalOwners_return {m c : ℕ} (src : ℤ → Fin (prime+4))
         rw [source.1,source.2]
         exact ready (((0 : Fin (1+c)).castAdd 2).castAdd 2) z
 
+/-- Merge the returned rows into a single interleaved word while retaining
+the owner tapes. The entry bank may contain either the original or an empty
+destination, as specified by its tape function. -/
+theorem mergeReturnedOwners_exec {P U : Type} {Q m : ℕ}
+    (body : P → Pr P intervalSplitTapes Q prime U)
+    (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q)
+    (positive : 0 < m) (dst : ℤ → Fin (prime+4)) (data : Fin 142080 → Fin m → ZMod 2)
+    (u : HS intervalSplitTapes Q prime U) (S : Stacks intervalSplitTapes prime)
+    (ready : RepT (intervalOwnerBank dst data) S.L S.R) :
+    let word := fun k : Fin (m*142080) => let p := finProdFinEquiv.symm k
+                                         SparseRoleCircuit.encode (a := prime) (data p.2 p.1)
+    ∃ z F t, Exec body (foreign (liftQ (CyclicRowNormalized.mergeProgram 142080 prime) capacity))
+      (mk u S) t (mk z F) ∧ t ≤ 149*(m*142080)*(intervalSplitTapes+5)+6 ∧ z.user = u.user ∧
+      RepT (intervalOwnerBank (putWord dst 0 (List.ofFn word)) data) F.L F.R ∧
+      ∀ j, (F.L j).length+(F.R j).length ≤ (S.L j).length+(S.R j).length+298*(m*142080) := by
+  intro word
+  let rows := fun (i : Fin m) (r : Fin 142080) => [word (finProdFinEquiv (i,r))]
+  let bs := FlatCoordinateSchedule.bits 1
+  let gs := FlatCoordinateSchedule.bits m
+  have hm := CyclicRowNormalized.merge_hoare dst (fun _ _ => blank) 0 (fun _ => 0) rows 1
+    (fun _ _ => rfl) bs gs (FlatCoordinateSchedule.bits_value _) (FlatCoordinateSchedule.bits_value _)
+  obtain ⟨src,parts⟩ := singletonRows word
+  change CyclicRowSplit.sourceWord rows = _ at src
+  change ∀ j, CyclicRowSplit.roleWord rows j = _ at parts
+  have lanes (j : Fin 142080) : CyclicRowSplit.roleWord rows j =
+      List.ofFn (SparseRoleCircuit.encoded (a := prime) data j) := by
+    change _ = List.ofFn (fun i => SparseRoleCircuit.encode (data j i))
+    simpa only [word,Equiv.symm_apply_apply] using parts j
+  simp only [src,lanes] at hm
+  obtain ⟨z,F,_,rfl,rep,user,_,_,growth,t,paid,run⟩ := foreign_exec (body := body)
+    (liftQ _ capacity) (HoareTime.liftQ capacity hm) u _ _ rfl ready
+  have bound := CyclicRowNormalized.cost_linear 1 bs gs (by decide : 0 < 142080) positive (by decide)
+    (FlatCoordinateSchedule.bits_value _) (FlatCoordinateSchedule.bits_value _)
+    (FlatCoordinateSchedule.bits_canonical _) (FlatCoordinateSchedule.bits_canonical _)
+  rw [Nat.mul_one] at bound
+  refine ⟨z,F,t,run,paid.trans (Nat.add_le_add_right (Nat.mul_le_mul_right _ bound) _),user,rep,?_⟩
+  intro j
+  have h := growth j
+  omega
+
+/-- Execute the merger on the returned fan and the three retained splitter
+tapes, leaving the surrounding record workspaces untouched. -/
+theorem placedMergeReturnedOwners_exec {P U : Type} {T Q m : ℕ}
+    (body : P → Pr P T Q prime U) (place : Fin intervalSplitTapes ↪ Fin T)
+    (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q)
+    (positive : 0 < m) (dst : ℤ → Fin (prime+4)) (original data : Fin 142080 → Fin m → ZMod 2)
+    (before : Stacks intervalSplitTapes prime) (u : HS T Q prime U) (S : Stacks T prime)
+    (split : RepT (intervalOwnerBank dst original) before.L before.R)
+    (rows : HelperFan ((intervalOwners 142080).trans place) data S)
+    (source : S.L (place 0) = before.L 0 ∧ S.R (place 0) = before.R 0)
+    (inner : ∀ j : Fin 2, let k := (j.natAdd (1+142080)).castAdd 2
+      S.L (place k) = before.L k ∧ S.R (place k) = before.R k) :
+    let word := fun k : Fin (m*142080) => let p := finProdFinEquiv.symm k
+                                         SparseRoleCircuit.encode (a := prime) (data p.2 p.1)
+    ∃ z F n, Exec body (embProg place Empty.elim (foreign (liftQ
+      (CyclicRowNormalized.mergeProgram 142080 prime) capacity))) (mk u S) n (mk z F) ∧
+      n ≤ 149*(m*142080)*(intervalSplitTapes+5)+6 ∧ z.user = u.user ∧
+      RepT (intervalOwnerBank (putWord dst 0 (List.ofFn word)) data) (embStk place F).L (embStk place F).R ∧
+      (∀ j, (F.L (place j)).length+(F.R (place j)).length ≤
+        (S.L (place j)).length+(S.R (place j)).length+298*(m*142080)) ∧
+      ∀ j, (∀ i, place i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  intro word
+  have ready := intervalOwners_return dst original data before (embStk place S) split rows source inner
+  obtain ⟨v,D,n,run,paid,user,result,growth⟩ := mergeReturnedOwners_exec (P := Empty) Empty.elim
+    capacity positive dst data (embDn place u) (embStk place S) ready
+  obtain ⟨z,F,exec,_,same,view,keep⟩ := exec_emb (body' := body) (ι := Empty.elim)
+    place.injective (fun e => nomatch e) run u rfl S rfl
+  rw [← view] at growth result
+  exact ⟨z,F,n,exec,paid,same.trans user,result,growth,keep⟩
+
 /-- Insert one private helper before the physical bank. In the logical owner
 order it follows the data and precedes both controls. -/
 def withHelperPort {c T : ℕ} (fan : Fin (c+2) ↪ Fin T) : Fin ((c+1)+2) ↪ Fin (T+1) where

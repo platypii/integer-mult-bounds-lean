@@ -236,6 +236,42 @@ theorem returnRows_exec {ι : Type} {T A capacity B : ℕ} (body : P → Pr P T 
       have before := keep j (outside i List.mem_cons_self)
       exact ⟨after.1.trans before.1,after.2.trans before.2⟩
 
+section
+omit [M8.Machine.Net]
+
+/-- Route each record's payload port to its existing owner. All other
+ports use a separate block of registers indexed by owner and local port. -/
+def intervalRecordBank {c T B : ℕ} (fan : Fin (c+2) ↪ Fin T) (payload : Fin B) (r : Fin c) :
+    Fin B ↪ Fin (T+c*B) :=
+  let place := fun k : Fin B => if k = payload then Sum.inl (fan (r.castAdd 2))
+    else Sum.inr (finProdFinEquiv (r,k))
+  (⟨place,by
+    intro i j eq
+    by_cases hi : i = payload <;> by_cases hj : j = payload <;>
+      simp_all [place]⟩ : Fin B ↪ Fin T ⊕ Fin (c*B)).trans finSumFinEquiv.toEmbedding
+
+theorem intervalRecordBank_payload {c T B : ℕ} (fan : Fin (c+2) ↪ Fin T) (p : Fin B) (r : Fin c) :
+    intervalRecordBank fan p r p = (fan (r.castAdd 2)).castAdd (c*B) := by
+  simp [intervalRecordBank]
+
+theorem intervalRecordBank_apart {c T B : ℕ} (fan : Fin (c+2) ↪ Fin T) (p : Fin B)
+    {r s : Fin c} (ne : r ≠ s) (i j : Fin B) :
+    intervalRecordBank fan p r i ≠ intervalRecordBank fan p s j := by
+  intro eq
+  have same := finSumFinEquiv.injective eq
+  by_cases hi : i = p <;> by_cases hj : j = p <;>
+    simp_all [intervalRecordBank,fan.injective.eq_iff]
+
+theorem intervalRecordBank_outside {c T B : ℕ} (fan : Fin (c+2) ↪ Fin T) (p : Fin B)
+    (t : Fin T) (outside : ∀ r : Fin c, fan (r.castAdd 2) ≠ t) (r : Fin c) (i : Fin B) :
+    intervalRecordBank fan p r i ≠ t.castAdd (c*B) := by
+  intro eq
+  change finSumFinEquiv _ = finSumFinEquiv (Sum.inl t) at eq
+  have same := finSumFinEquiv.injective eq
+  by_cases hi : i = p <;> simp_all
+
+end
+
 /-- Unpack all cyclic owner rows, summing their execution bills and leaving
 the merger's tapes outside the record banks unchanged. -/
 theorem intervalReturnBank_exec {T capacity : ℕ} (fitsStates : Q ≤ capacity)
@@ -316,6 +352,50 @@ theorem intervalReturnBank_exec {T capacity : ℕ} (fitsStates : Q ≤ capacity)
     have keep := frame (fan (j.natAdd 142080)) (fun r _ k => counters j r k)
     simpa only [PointwiseRoleGate.bank,Tapes.append,Fin.addCases_right,embStk,Function.comp_apply,
       keep.1,keep.2,CountedLoopReuseAlphabet.controls,ite_self] using live (j.natAdd 142080) z
+
+theorem placedIntervalReturn_exec {T capacity : ℕ} (fitsStates : Q ≤ capacity)
+    (live : Fin (142080+2) ↪ Fin T)
+    (body : P → Pr P (T+142080*(N+35)) capacity prime U) (lo hi : ℕ) (ordered : lo ≤ hi) (fits : hi ≤ 64) :
+    let small := (Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)
+    let ports := intervalRecordBank live (small 24)
+    let fan := live.trans (Fin.castAddEmb (142080*(N+35)))
+    ∃ setup swaps : Fin 142080 → ℕ, ∀ w W, 0 < W →
+      let M := prime^(w+1)
+      let is := intervalPackSchedule lo (hi-lo) (64-hi+lo)
+      let size := intervalChild_volume ordered fits (w+1) W
+      let position := packedChildPosition _ size
+      ∀ (u : HS (T+142080*(N+35)) capacity prime U) (S : Stacks (T+142080*(N+35)) prime) (record : Fin 142080 → List (Fin (prime+4)))
+        (dest : Fin 142080 → ℤ → Fin 4) (q : Fin 142080 → ℤ)
+        (output : Fin 142080 → Fin (volume prime (phaseIntervalChild lo hi (w+1) W 64)) → ZMod 2),
+      let stored := fun r word F => RecordReady (b := prime) (w := w) (W := W) (d := 128)
+        (small.trans (ports r)) M.size W.size (record r) SparseRoleCircuit.encode (fun _ => blank)
+        (dest r) 0 (q r) word F ∧ ∀ k : Fin (N+35), 35 ≤ k.val →
+          F.L (ports r k) = [] ∧ F.R (ports r k) = []
+      HelperFan fan (fun r => output r ∘ position.symm) S →
+      (∀ r, ∃ word D, stored r word D ∧ ∀ k, k ≠ small 24 →
+        S.L (ports r k) = D.L (ports r k) ∧ S.R (ports r k) = D.R (ports r k)) →
+      let code := fun r => statePlacedNormalized (ports r) fitsStates swapStates_pos Empty.elim (packSchedule 128 is.reverse)
+      ∃ z F n, Exec body (Prog.seqList ((List.finRange 142080).map code)) (mk u S) n (mk z F) ∧
+        n ≤ ((List.finRange 142080).map (fun r => 1+(setup r+swaps r*swapVolumeRate w)*(M^128*W))).sum+1 ∧
+        z.user = u.user ∧ HelperFan fan (fun r i => output r (i.cast size.symm)) F ∧
+        (∀ r, stored r (fun i => output r (i.cast size.symm)) F) ∧
+        ∀ j, (∀ r : Fin 142080, live (r.castAdd 2) ≠ j) →
+          let t := j.castAdd (142080*(N+35))
+          F.L t = S.L t ∧ F.R t = S.R t := by
+  intro small ports fan
+  obtain ⟨setup,swaps,run⟩ := intervalReturnBank_exec fitsStates ports
+    (fun _ _ ne => intervalRecordBank_apart live _ ne) body lo hi ordered fits
+  refine ⟨setup,swaps,?_⟩
+  intro w W hW M is size position u S record dest q output stored packed saved code
+  obtain ⟨z,F,n,exec,paid,user,returned,records,frame⟩ :=
+    run w W hW u S record dest q output fan (intervalRecordBank_payload live _)
+      (fun j r k => intervalRecordBank_outside live _ _ (fun i => live.injective.ne (by
+        intro eq
+        have h := congrArg Fin.val eq
+        change i.val = 142080+j.val at h
+        omega)) r k) packed saved
+  exact ⟨z,F,n,exec,paid,user,returned,records,fun j outside =>
+    frame _ (intervalRecordBank_outside live _ j outside)⟩
 
 /-- Run a child on the stable active-first row, charging the incoming and
 outgoing exchanges and restoring the original record layout. -/
