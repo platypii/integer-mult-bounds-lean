@@ -1838,6 +1838,59 @@ theorem inheritedRowSwap_read {w B K : ℕ} (s : Fin 128) (l : Fin (64*64)) :
   rw [← atCell d h,← atCell h d,ext_apply,ext_apply]
   exact Shared50RecursiveNodeTranspose.transpose_all (by decide : 0 < 1) (one_dvd _) word addr
 
+section
+open FlatCoordinateLayout
+local instance (w : ℕ) : NeZero (prime^w) := ⟨pow_ne_zero _ Shared50ModularControl.prime_prime.ne_zero⟩
+
+private theorem rank_update_parts {n M : ℕ} [NeZero M] (x : Fin n → ZMod M) (i : Fin n) :
+    ∃ p : Fin (M^i.val), ∃ u : Fin (M^suffixFields i), ∀ z : ZMod M,
+      (rank (Function.update x i z)).val = (p.val*M+z.val)*M^suffixFields i+u.val := by
+  refine ⟨⟨_,prefix_lt x i⟩,⟨(rank x).val%M^suffixFields i,Nat.mod_lt _ (pow_pos (NeZero.pos M) _)⟩,?_⟩
+  intro z
+  have h := index_update x i z (0 : Fin 1)
+  simpa only [index_val,suffixSize,suffix,Nat.mul_one,Fin.val_zero,Nat.add_zero,Nat.add_mul,Nat.mul_assoc] using h
+
+/-- Address a parent bit in inherited order, with the independent block
+between the field digits and the label digits. -/
+noncomputable def inheritedDigitCell {w B K : ℕ} (x : Fin 128 ⊕ Fin (64*64) → ZMod (prime^w))
+    (b : Fin B) (t : Fin K) : ℕ :=
+  (((rank (x ∘ Sum.inl)).val*B+b.val)*(prime^w)^(64*64)+(rank (x ∘ Sum.inr)).val)*K+t.val
+
+theorem inheritedRowSwap_digits {w B K : ℕ} (s : Fin 128) (l : Fin (64*64))
+    (word : Fin (volume prime (inheritedRowSwap w B K s l)) → ZMod 2)
+    (x : Fin 128 ⊕ Fin (64*64) → ZMod (prime^w)) (b : Fin B) (t : Fin K) :
+    ext (Shared50RecursiveNodeRows.transpose (one_dvd _) word)
+      (inheritedDigitCell (x ∘ Equiv.swap (.inl s) (.inr l)) b t) =
+      ext word (inheritedDigitCell x b t) := by
+  let M := prime^w
+  obtain ⟨p,u,field⟩ := rank_update_parts (x ∘ Sum.inl) s
+  obtain ⟨q,v,label⟩ := rank_update_parts (x ∘ Sum.inr) l
+  have fields : (x ∘ Equiv.swap (.inl s) (.inr l)) ∘ Sum.inl =
+      Function.update (x ∘ Sum.inl) s (x (.inr l)) := by
+    funext j
+    by_cases eq : j = s <;> simp [eq,Equiv.swap_apply_def]
+  have labels : (x ∘ Equiv.swap (.inl s) (.inr l)) ∘ Sum.inr =
+      Function.update (x ∘ Sum.inr) l (x (.inl s)) := by
+    funext j
+    by_cases eq : j = l <;> simp [eq,Equiv.swap_apply_def]
+  have oldF := field (x (.inl s))
+  have oldL := label (x (.inr l))
+  rw [show x (.inl s) = (x ∘ Sum.inl) s from rfl,Function.update_eq_self] at oldF
+  rw [show x (.inr l) = (x ∘ Sum.inr) l from rfl,Function.update_eq_self] at oldL
+  have size : M^(64*64) = M^l.val*M*M^(4095-l.val) := by
+    rw [← pow_succ,← pow_add]
+    apply congrArg (M^·)
+    have bound : l.val < 4096 := l.isLt
+    omega
+  have read := inheritedRowSwap_read s l word p ⟨_,ZMod.val_lt (x (.inl s))⟩
+    ⟨_,ZMod.val_lt (x (.inr l))⟩ u b q v t
+  unfold inheritedDigitCell
+  rw [fields,labels,field,label,oldF,oldL]
+  simp only [Function.comp_apply,suffixFields,← show M = prime^w from rfl,size] at read ⊢
+  convert read using 2 <;> ring
+
+end
+
 /-- Column-major label digit paired with an external field digit. -/
 def inheritedLabelDigit (s : Fin 128) : Fin (64*64) :=
   let p := (@finProdFinEquiv 2 64).symm s
@@ -2084,6 +2137,108 @@ theorem inheritedRowSwap_prepared_cost [M8.Machine.Net] :
   have one : 1 ≤ (V : ℝ) := by exact_mod_cast hv
   push_cast at core ⊢
   linarith only [core,scale,one]
+
+private theorem inheritedRowSwap_cast [M8.Machine.Net] {k w B K V : ℕ} (src : Fin k)
+    (s : Fin 128) (l : Fin (64*64)) (hb : 0 < B) (hk : 0 < K)
+    (size : volume prime (inheritedRowSwap w B K s l) = V) :
+    let v := inheritedRowSwap w B K s l
+    ∃ stage : SharedBankStage.Stage _ k prime (phaseOwners (N := V)),
+      stage.cost = (2*(24*4224+333)+1)*V+1+cost v (Routines.hdr v) ∧
+      ∀ data, stage.transform data = Function.update data src (fun j =>
+        Shared50RecursiveNodeRows.transpose (one_dvd v.rows)
+          (fun i => data src (i.cast size)) (j.cast size.symm)) := by
+  subst V
+  exact inheritedRowSwap_stage src s l hb hk
+
+/-- Execute every prepared crossing on one common owner bank. Only the
+selected owner is updated, by the ordered fold of the 128 transposes. -/
+theorem inheritedRowPlacement_stage [M8.Machine.Net] {k : ℕ} (src : Fin k) :
+    ∃ C : ℝ, ∀ w B K : ℕ, 0 < w → 0 < B → 0 < K →
+      let M := prime^w
+      let V := M^128*B*M^(64*64)*K
+      let view := fun s => inheritedRowSwap w B K s (inheritedLabelDigit s)
+      let size := fun s => inheritedRowSwap_volume w B K s (inheritedLabelDigit s)
+      let move := fun (x : Fin V → ZMod 2) s (j : Fin V) =>
+        Shared50RecursiveNodeRows.transpose (one_dvd (view s).rows)
+          (fun i => x (i.cast (size s))) (j.cast (size s).symm)
+      ∃ stage : SharedBankStage.Stage _ k prime (phaseOwners (N := V)),
+        (stage.cost : ℝ) ≤ C*V*(w : ℝ)^M8.Machine.BudgetBound.tau ∧
+        ∀ data, stage.transform data = Function.update data src ((List.finRange 128).foldl move (data src)) := by
+  obtain ⟨C,bound⟩ := inheritedRowSwap_prepared_cost
+  refine ⟨C,?_⟩
+  intro w B K hw hb hk M V view size move
+  choose stages paid act using fun s => inheritedRowSwap_cast src s (inheritedLabelDigit s) hb hk (size s)
+  let hk' : 0 < k := Nat.zero_lt_of_lt src.isLt
+  refine ⟨SharedBankStage.compile _ hk' (List.ofFn stages),?_,?_⟩
+  · rw [SharedBankStage.compile_cost,List.length_ofFn,List.map_ofFn,List.sum_ofFn]
+    let prep := (2*(24*4224+333)+1)*V+1
+    let price := fun s => cost (view s) (Routines.hdr (view s))
+    have costs : SharedBankStage.Stage.cost ∘ stages = fun s => prep+price s := funext paid
+    rw [costs]
+    have sumCosts {n : ℕ} (f : Fin n → ℕ) (a : ℕ) :
+        (∑ i, (a+f i))+n = n*a+∑ i, (f i+1) := by
+      simp [Finset.sum_add_distrib,Nat.add_assoc]
+    rw [sumCosts]
+    exact bound w B K hw hb hk
+  · intro data
+    rw [SharedBankStage.compile_transform,SharedBankStage.execute,List.ofFn_eq_map,List.foldl_map]
+    have fold (ss : List (Fin 128)) (x : Fin V → ZMod 2) :
+        ss.foldl (fun d s => (stages s).transform d) (Function.update data src x) =
+          Function.update data src (ss.foldl move x) := by
+      induction ss generalizing x with
+      | nil => rfl
+      | cons s ss ih =>
+        simp only [List.foldl_cons]
+        rw [act s (Function.update data src x)]
+        simp only [Function.update_self,Function.update_idem]
+        exact ih (move x s)
+    simpa only [Function.update_eq_self] using fold (List.finRange 128) (data src)
+
+/-- Read the compiled placement at an arbitrary inherited address. The block
+and trailing cell retain their positions while the two label rows change places
+with the external fields. -/
+theorem inheritedRowPlacement_read [M8.Machine.Net] {k : ℕ} (src : Fin k) :
+    ∃ C : ℝ, ∀ w B K : ℕ, 0 < w → 0 < B → 0 < K →
+      let V := (prime^w)^128*B*(prime^w)^(64*64)*K
+      ∃ stage : SharedBankStage.Stage _ k prime (phaseOwners (N := V)),
+        (stage.cost : ℝ) ≤ C*V*(w : ℝ)^M8.Machine.BudgetBound.tau ∧
+        ∀ data, (∀ j, j ≠ src → stage.transform data j = data j) ∧
+          ∀ (x : Fin 128 ⊕ Fin (64*64) → ZMod (prime^w)) (b : Fin B) (t : Fin K), ext (stage.transform data src) (inheritedDigitCell x b t) =
+            ext (data src) (inheritedDigitCell (x ∘ remainderRowPlacement) b t) := by
+  obtain ⟨C,compile⟩ := inheritedRowPlacement_stage src
+  refine ⟨C,?_⟩
+  intro w B K hw hb hk V
+  obtain ⟨stage,paid,action⟩ := compile w B K hw hb hk
+  refine ⟨stage,paid,?_⟩
+  intro data
+  rw [action]
+  refine ⟨fun j hj => Function.update_of_ne hj ..,?_⟩
+  intro x b t
+  rw [Function.update_self]
+  let view := fun s => inheritedRowSwap w B K s (inheritedLabelDigit s)
+  let size := fun s => inheritedRowSwap_volume w B K s (inheritedLabelDigit s)
+  let move := fun (v : Fin V → ZMod 2) s (j : Fin V) =>
+    Shared50RecursiveNodeRows.transpose (one_dvd (view s).rows) (fun i => v (i.cast (size s))) (j.cast (size s).symm)
+  let swap := fun s => Equiv.swap (Sum.inl s) (Sum.inr (inheritedLabelDigit s))
+  have single (v : Fin V → ZMod 2) s (digits : Fin 128 ⊕ Fin (64*64) → ZMod (prime^w)) :
+      ext (move v s) (inheritedDigitCell digits b t) =
+        ext v (inheritedDigitCell (digits ∘ swap s) b t) := by
+    have read := inheritedRowSwap_digits s (inheritedLabelDigit s) (fun i => v (i.cast (size s)))
+      (digits ∘ swap s) b t
+    have undo : (digits ∘ swap s) ∘ swap s = digits := by funext j; simp [swap]
+    change ext _ (inheritedDigitCell ((digits ∘ swap s) ∘ swap s) b t) = _ at read
+    rw [undo,ext_cast] at read
+    unfold move
+    rwa [ext_cast]
+  have fold (ss : List (Fin 128)) (v : Fin V → ZMod 2) (digits : Fin 128 ⊕ Fin (64*64) → ZMod (prime^w)) :
+      ext (ss.foldl move v) (inheritedDigitCell digits b t) =
+        ext v (inheritedDigitCell (fun j => digits (ss.foldl (fun a s => swap s a) j)) b t) := by
+    induction ss generalizing v digits with
+    | nil => rfl
+    | cons s ss ih =>
+      simp only [List.foldl_cons]
+      exact (ih (move v s) digits).trans (single v s _)
+  simpa only [swap,inheritedRowSwap_schedule,Function.comp_def] using fold (List.finRange 128) (data src) x
 
 /-- Both directions of the scheduled chart act on the packed record word consumed by the parent. -/
 theorem packedRemainderChart_stage [M8.Machine.Net] {k : ℕ} (src : Fin k) (c : PortCertificate)
