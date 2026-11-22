@@ -231,6 +231,41 @@ theorem moveCutoffCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
     simp only [price,digits,ite_eq_right h]
     omega
 
+/-- At an active aligned parent the inherited precision fits the parent
+width. All MOVE dispatch and return work is then linear in child volume. -/
+private theorem moveOverhead_volume (child : Descriptor) (w W rank L digits : ℕ)
+    (pos : 0 < W) (rankBound : rank ≤ 64) (width : child.width = (w+1)*rank)
+    (precision : L ≤ 64*(w+1)) (word : digits ≤ max L (CopyChildLayout.spectators child).size) :
+    let M := prime^(w+1)
+    let suffix := M^112*W
+    volume prime child = M^16*suffix →
+    18*M.size+8*suffix.size+6*(w+1)+11*(w+1).size+124+8*digits+6*w+23*child.width+22*L ≤
+      5000*volume prime child := by
+  intro M suffix eq
+  let V := volume prime child
+  have base : 0 < M := pow_pos Shared50ModularControl.prime_prime.pos _
+  have tail : 0 < suffix := Nat.mul_pos (pow_pos base _) pos
+  have live : 0 < V := by rw [show V = M^16*suffix from eq]; exact Nat.mul_pos (pow_pos base _) tail
+  have mBound : M ≤ V := by rw [show V = M^16*suffix from eq]; exact (Nat.le_self_pow (by decide : 16 ≠ 0) M).trans (Nat.le_mul_of_pos_right _ tail)
+  have sBound : suffix ≤ V := by rw [show V = M^16*suffix from eq]; exact Nat.le_mul_of_pos_left _ (pow_pos base _)
+  have atom : w+1 ≤ V := (Nat.lt_two_pow_self.le.trans
+    (Nat.pow_le_pow_left Shared50ModularControl.prime_prime.two_le (w+1))).trans mBound
+  have spec : CopyChildLayout.spectators child ≤ V := by
+    have factor : V = (prime^child.width*prime^child.width)*CopyChildLayout.spectators child := by
+      dsimp [V,volume,CopyChildLayout.spectators]
+      ring
+    rw [factor]
+    exact Nat.le_mul_of_pos_left _ (Nat.mul_pos (pow_pos Shared50ModularControl.prime_prime.pos _) (pow_pos Shared50ModularControl.prime_prime.pos _))
+  have size (k : ℕ) : k.size ≤ k := Nat.size_le.mpr Nat.lt_two_pow_self
+  have cw := Nat.mul_le_mul_left (w+1) rankBound
+  rw [← width,Nat.mul_comm] at cw
+  change _ ≤ 5000*V
+  have := size M
+  have := size suffix
+  have := size (w+1)
+  have := size (CopyChildLayout.spectators child)
+  omega
+
 /-- Prepare and dispatch a packed MOVE from the caller's cutoff. Only the
 above-cutoff branch requires a child execution witness. -/
 theorem packedMixedMoveCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
@@ -250,8 +285,7 @@ theorem packedMixedMoveCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
     ∃ code, ∀ (node desc : Descriptor) (w W L cutoff recursiveTime : ℕ),
     let M := prime^(w+1)
     let suffix := M^112*W
-    let spectators := CopyChildLayout.spectators desc
-    desc.width = (w+1)*rank → cutoff < 2^L → desc.width.size ≤ L → 0 < W → ∀ (position : Fin (volume prime desc) ≃ Fin (M^16*suffix))
+    desc.width = (w+1)*rank → cutoff < 2^L → desc.width.size ≤ L → L ≤ 64*(w+1) → 0 < W → ∀ (position : Fin (volume prime desc) ≃ Fin (M^16*suffix))
       (x : Fin (M^16*suffix) → ZMod 2) (u : HS H Q prime U) (S : Stacks H prime), desc.width < node.width →
     (∀ h, (position h).val = (CopyChildLayout.packActive desc h).val) → S.R cut = binSyms L cutoff → S.R (bank 34) = [] →
     (∀ i j, S.R (headers i j) = (Routines.hdr (helperAdjacentView (w+1) 1 W i) j).map bitSymbol) →
@@ -264,10 +298,9 @@ theorem packedMixedMoveCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
     let budget := ⌊(rate*(desc.width : ℝ)^M8.Machine.BudgetBound.tau)*volume prime desc⌋₊
     let active := cutoff < desc.width
     let price := if active then recursiveTime else budget
-    let digits := if active then L else spectators.size
     (active → ScheduledChildExec node desc w suffix ports (binSyms L cutoff) position body large recursiveTime) →
     ∃ z F t y, Exec body code (mk u S) t (mk z F) ∧
-      t ≤ 18*M.size+8*suffix.size+6*(w+1)+11*(w+1).size+124+8*digits+6*w+23*desc.width+22*L+price ∧ z.user = u.user ∧
+      t ≤ 5000*volume prime desc+price ∧ z.user = u.user ∧
       (∀ k ∈ ([2,27,28,32,33,34] : List (Fin 35)), F.R (bank k) = []) ∧
       (∀ z, readAt blank (F.L (parent 24)) (F.R (parent 24)) z = RadixToBinary.binaryEncoding.encode
         (putWord (fun _ => blank) 0 (List.ofFn (SparseRoleCircuit.encode ∘ y)) z)) ∧
@@ -303,7 +336,8 @@ theorem packedMixedMoveCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
   let fields : List (Fin 35) := [2,27,28,32,33]
   let controls := fields.map bank
   refine ⟨prepare.seq (dispatch.seq (Mult.ShortConv.clearWords controls)),?_⟩
-  intro node desc w W L cutoff recursiveTime M suffix spectators width cutFits fits pos position x u S smaller coords header archive ready empty clean payload core rate room budget active price digits recurse
+  intro node desc w W L cutoff recursiveTime M suffix width cutFits fits precision pos position x u S smaller coords header archive ready empty clean payload core rate room budget active price recurse
+  let digits := if active then L else (CopyChildLayout.spectators desc).size
   obtain ⟨v,D,m,user,run,cost,stored,left,off⟩ := setup w W x u S ready empty (by simpa only [show bank 24 = parent 24 from shared] using payload)
   rw [archive] at stored
   have size := Fintype.card_congr position
@@ -343,6 +377,9 @@ theorem packedMixedMoveCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
   refine ⟨q,G,_,y,Exec.seq run (Exec.seq exec erase),?_,final.trans (same.trans user),?_,?_,?_,preserved,?_,read⟩
   · change m ≤ 14*M.size+6*suffix.size+6*(w+1)+11*(w+1).size+50 at cost
     change n ≤ price+8*digits+4*w+23*desc.width+22*L+61 at paid
+    have overhead := moveOverhead_volume desc w W rank L digits pos bound width precision
+      (by dsimp only [digits]; split <;> first | exact le_max_left .. | exact le_max_right ..) size
+    change 18*M.size+8*suffix.size+6*(w+1)+11*(w+1).size+124+8*digits+6*w+23*desc.width+22*L ≤ _ at overhead
     change m+(n+(2*(2*M.size+suffix.size+w)+13)) ≤ _
     omega
   · intro k hk

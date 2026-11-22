@@ -60,15 +60,16 @@ theorem scheduledLeafMoment (node : Descriptor) (width : 64 ∣ node.width) (row
       ring
 
 /-- A mixed level obeys the same rank moment when the induction hypothesis
-pays for each active child. Dispatch adds three steps per occurrence. -/
+pays for each active child. Each occurrence charges its own local work per unit of child volume. -/
 theorem scheduledMixedMoment (node : Descriptor) (width : 64 ∣ node.width) (rows : 142080 ∣ node.rows)
-    (cutoff : ℕ) (rate exponent : ℝ) (nonneg : 0 ≤ rate) (recursiveTime : Fin nodeChildren5.length → ℕ) :
+    (cutoff : ℕ) (rate exponent : ℝ) (nonneg : 0 ≤ rate) (recursiveTime overhead : Fin nodeChildren5.length → ℕ) :
     let child := scheduledChild prime node
     let budget := fun i => ⌊(rate*((child i).width : ℝ)^exponent)*volume prime (child i)⌋₊
     (∀ i, cutoff < (child i).width → recursiveTime i ≤ budget i) →
-    (((∑ i, ((if cutoff < (child i).width then recursiveTime i else budget i) + 3)) : ℕ) : ℝ) ≤
+    (((∑ i, ((if cutoff < (child i).width then recursiveTime i else budget i) + overhead i * volume prime (child i))) : ℕ) : ℝ) ≤
       (rate*(node.width : ℝ)^exponent*volume prime node) *
-        (Layer.SelectedMoments.histMoment fiveHistogram 64 exponent / 142080) + nodeChildren5.length * 3 := by
+        (Layer.SelectedMoments.histMoment fiveHistogram 64 exponent / 142080) +
+      ((∑ i, overhead i : ℕ) : ℝ) * (volume prime node / 142080 : ℝ) := by
   intro child budget paid
   have bound : (∑ i, if cutoff < (child i).width then recursiveTime i else budget i) ≤ ∑ i, budget i := by
     apply Finset.sum_le_sum
@@ -77,8 +78,16 @@ theorem scheduledMixedMoment (node : Descriptor) (width : 64 ∣ node.width) (ro
     next h => exact paid i h
     next => exact le_rfl
   rw [Finset.sum_add_distrib]
-  simp only [Finset.sum_const,Finset.card_univ,Fintype.card_fin,smul_eq_mul,Nat.cast_add,Nat.cast_mul,Nat.cast_ofNat]
-  exact add_le_add ((Nat.cast_le.mpr bound).trans (scheduledLeafMoment node width rows rate exponent nonneg)) le_rfl
+  rw [Nat.cast_add]
+  apply add_le_add ((Nat.cast_le.mpr bound).trans (scheduledLeafMoment node width rows rate exponent nonneg))
+  apply le_of_eq
+  rw [Nat.cast_sum,Nat.cast_sum,Finset.sum_mul]
+  apply Finset.sum_congr rfl
+  intro i _
+  have measure := (scheduledChild_measures prime node width rows i).2
+  have size : (volume prime (child i) : ℝ)*142080 = volume prime node := by exact_mod_cast measure
+  rw [Nat.cast_mul,← size]
+  ring
 
 /-- Dividing the physical recursive bill by parent volume gives precisely
 the child weights used in the variable-width recurrence. -/
