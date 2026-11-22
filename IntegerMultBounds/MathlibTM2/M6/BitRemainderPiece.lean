@@ -671,6 +671,89 @@ theorem idlePiece_stage [M8.Machine.Net] (i : Fin 9) :
     simp only [compile,SharedBankStage.compile_transform,SharedBankStage.execute,List.foldl_map]
     exact endpoint
 
+/-- The port exchange observed on one scheduled owner in parent coordinates. -/
+def IdleParentReads (i : Fin 9) (k : (Fin 32 × Fin 5) × Fin 222) (w B K : ℕ) :=
+  let M := prime^w
+  let V := M^128*B*M^(64*64)*K
+  let e := idleInterval i k.2
+  let cert := port (idleRole i k).port.val
+  fun (input output : Fin V → ZMod 2) =>
+    ∀ (x : IntegerMultBounds.Swap.Shear.State Axis (ZMod M)) (label : LabelPadding.Label 64 w)
+      (b : Fin B) (t : Fin K),
+      ext output (inheritedDigitCell (remainderParentDigits
+        (M8.Exchange.exchange (reduce M (cert.span e.1 e.2)) x) label ∘ finSumFinEquiv) b t) =
+        ext input (inheritedDigitCell (remainderParentDigits x label ∘ finSumFinEquiv) b t)
+
+/-- Compile the placed parent exchanges for an entire idle window. Every
+selected owner reads its own port exchange and contributes its interval rank
+once to the recursive bill. -/
+theorem inheritedIdlePiece_stage [M8.Machine.Net] (i : Fin 9) :
+    ∃ C : ℝ, ∀ w B K, 0 < w → 0 < B → 0 < K →
+      let M := prime^w
+      let W := B*M^(64*64)*K
+      let V := M^128*B*M^(64*64)*K
+      let child := fun c => let e := idleInterval i c; phaseIntervalChild e.1 e.2 w W 64
+      ∃ piece : OwnerStage V,
+        (∀ price : ℕ → ℕ, (∀ c, cost (child c) (fun j =>
+          FlatCoordinateSchedule.bits (RecursiveDimensionBank.values (child c) j)) ≤
+            price ((idleInterval i c).2-(idleInterval i c).1)) →
+          (piece.cost : ℝ) ≤ C*V*(w : ℝ)^M8.Machine.BudgetBound.tau +
+            (160*((remainderRanks i).map price).sum : ℕ)) ∧
+        ∀ data, (∀ k, IdleParentReads i k w B K (data (idleTape i k)) (piece.transform data (idleTape i k))) ∧
+          ∀ j, (∀ k, j ≠ idleTape i k) → piece.transform data j = data j := by
+  classical
+  let spec := fun k => inheritedRemainder_parent_stage (idleTape i k) (port (idleRole i k).port.val)
+    (port_checked _ (idleRole i k).port.isLt) _ (idleInterval_mem i k.2)
+  let coeff := fun k => (spec k).choose + 3992
+  refine ⟨(idleCopies.map coeff).sum,?_⟩
+  intro w B K hw hB hK M W V child
+  let impl := fun k => (spec k).choose_spec w B K hw hB hK
+  let stages := fun k => (impl k).choose
+  let compile := fun ks : List ((Fin 32 × Fin 5) × Fin 222) =>
+    SharedBankStage.compile (phaseOwners (N := V)) (by decide : 0 < 142081) (ks.map stages)
+  refine ⟨compile idleCopies,?_,?_⟩
+  · intro price priced
+    let rate := (V : ℝ)*(w : ℝ)^M8.Machine.BudgetBound.tau
+    have hp := Shared50ModularControl.prime_prime.pos
+    have volumePos : 0 < V := by dsimp [V,M]; positivity
+    have factor : 1 ≤ (w : ℝ)^M8.Machine.BudgetBound.tau :=
+      Real.one_le_rpow (by exact_mod_cast hw) M8.Machine.BudgetBound.exponent_range.1.le
+    have cover : (V : ℝ) ≤ rate := le_mul_of_one_le_right (by positivity) factor
+    have one : (1 : ℝ) ≤ rate := (show (1 : ℝ) ≤ V by exact_mod_cast volumePos).trans cover
+    have size : M^128*W = V := by simp only [W,V,Nat.mul_assoc]
+    let bill := fun k : (Fin 32 × Fin 5) × Fin 222 => price ((idleInterval i k.2).2-(idleInterval i k.2).1)
+    have bound (ks : List ((Fin 32 × Fin 5) × Fin 222)) :
+        ((compile ks).cost : ℝ) ≤ (ks.map coeff).sum*rate + ((ks.map bill).sum : ℕ) := by
+      induction ks with
+      | nil => simp [compile,SharedBankStage.compile_cost]
+      | cons k ks ih =>
+        have time := (impl k).choose_spec.1
+        let fee := cost (child k.2) (fun j => FlatCoordinateSchedule.bits (RecursiveDimensionBank.values (child k.2) j))
+        change ((stages k).cost : ℝ) ≤ (spec k).choose*V*(w : ℝ)^M8.Machine.BudgetBound.tau +
+          ((3988*(M^128*W)+3+fee : ℕ) : ℝ) at time
+        rw [size] at time
+        have row : (fee : ℝ) ≤ bill k := by exact_mod_cast priced k.2
+        change (((stages k).cost+(compile ks).cost+1 : ℕ) : ℝ) ≤ _
+        simp only [List.map_cons,List.sum_cons,Nat.cast_add,Nat.cast_one]
+        have step {a d v r p q f u z : ℝ} (time : a ≤ p*r + (3988*v+3+f))
+            (rest : d ≤ q*r + z) (fee : f ≤ u) (volume : v ≤ r) (unit : 1 ≤ r) :
+            a+d+1 ≤ (p+3992+q)*r + (u+z) := by
+          linear_combination time + rest + fee + 3988 * volume + 4 * unit
+        refine step (p := (spec k).choose) (f := (fee : ℝ)) (v := (V : ℝ)) ?_ ih row cover one
+        calc
+          _ ≤ _ := time
+          _ = _ := by
+            apply congrArg₂ (·+·) (mul_assoc _ _ _)
+            simp only [Nat.cast_add,Nat.cast_mul,Nat.cast_ofNat,rate]
+    simpa only [rate,← mul_assoc,bill,idleCopies_prices] using bound idleCopies
+  · intro data
+    simp only [compile,SharedBankStage.compile_transform,SharedBankStage.execute,List.foldl_map]
+    refine idleCopies_fold i (fun k => (stages k).transform) (fun k => IdleParentReads i k w B K) ?_ ?_ data
+    · intro k x
+      exact ((impl k).choose_spec.2 x).2
+    · intro k x
+      exact ((impl k).choose_spec.2 x).1
+
 private theorem reindexIdle {N V : ℕ} (size : V = N)
     (stage : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V)))
     (effect : (Fin 142081 → Fin V → ZMod 2) → (Fin 142081 → Fin V → ZMod 2) → Prop)
@@ -686,6 +769,52 @@ private theorem remainderRanks_sum (price : ℕ → ℕ) :
   simp only [List.map_singleton,List.sum_singleton,remainderRanks_eq.2,List.map_nil,List.sum_nil,add_zero]
   rw [Fin.sum_univ_eq_sum_range (fun i => ((remainderRanks i).map price).sum)]
   rw [← List.sum_toFinset _ List.nodup_range,List.toFinset_range]
+
+/-- Install the nine inherited remainder windows in the compiled node. Their
+recursive charges add to the price of the scheduled remainder ranks, while
+the invocation stages retain their own cost and action. -/
+theorem compiledNode_inheritedWindows [M8.Machine.Net] :
+    ∃ D : ℝ, ∀ w B K, 0 < w → 0 < B → 0 < K →
+      let M := prime^w
+      let W := B*M^(64*64)*K
+      let V := M^128*B*M^(64*64)*K
+      ∀ inv : Fin 9 → OwnerStage V, ∃ (idle : Fin 9 → OwnerStage V)
+        (bridge : ℕ → ℕ → OwnerStage V) (exchange : OwnerStage V),
+        BankActions bridge exchange ∧
+        (∀ price : ℕ → ℕ, (∀ (i : Fin 9) (c : Fin 222), let e := idleInterval i c
+          let child := phaseIntervalChild e.1 e.2 w W 64
+          cost child (fun j => FlatCoordinateSchedule.bits (RecursiveDimensionBank.values child j)) ≤ price (e.2-e.1)) →
+          ((compiledNode inv idle bridge exchange).cost : ℝ) ≤
+            (∑ n, (inv n).cost : ℕ) + D*V*(w : ℝ)^M8.Machine.BudgetBound.tau +
+              (160*(remainders.map price).sum : ℕ)) ∧
+        ∀ i data, (∀ k, IdleParentReads i k w B K (data (idleTape i k)) ((idle i).transform data (idleTape i k))) ∧
+          ∀ j, (∀ k, j ≠ idleTape i k) → (idle i).transform data j = data j := by
+  classical
+  choose coeff build using inheritedIdlePiece_stage
+  let bank := 30*(76*17760)+49
+  refine ⟨(∑ i, coeff i)+bank,?_⟩
+  intro w B K hw hB hK M W V inv
+  choose idle bills actions using fun i => build i w B K hw hB hK
+  have hp := Shared50ModularControl.prime_prime.pos
+  have pos : 0 < V := by dsimp [V,M]; positivity
+  obtain ⟨bridge,exchange,assembly,act⟩ := compiledNode_linear pos inv idle
+  refine ⟨idle,bridge,exchange,act,?_,actions⟩
+  intro price priced
+  have windows := Finset.sum_le_sum (s := Finset.univ) (fun i _ => bills i price (priced i))
+  change (∑ i, ((idle i).cost : ℝ)) ≤ ∑ i, (coeff i*V*(w : ℝ)^M8.Machine.BudgetBound.tau +
+    ((160*((remainderRanks i).map price).sum : ℕ) : ℝ)) at windows
+  simp only [Finset.sum_add_distrib,← Finset.sum_mul,← Nat.cast_sum,← Finset.mul_sum,remainderRanks_sum] at windows
+  have join : (compiledNode inv idle bridge exchange).cost ≤
+      (∑ n, (inv n).cost) + (∑ i, (idle i).cost) + bank*V := by
+    dsimp only [bank]
+    omega
+  have paid := (Nat.cast_le (α := ℝ)).mpr join
+  simp only [Nat.cast_add,Nat.cast_mul] at paid
+  have factor : 1 ≤ (w : ℝ)^M8.Machine.BudgetBound.tau :=
+    Real.one_le_rpow (by exact_mod_cast hw) M8.Machine.BudgetBound.exponent_range.1.le
+  have cover := le_mul_of_one_le_right (show 0 ≤ (bank : ℝ)*V by positivity) factor
+  simp only [add_mul]
+  linarith only [paid,windows,cover]
 
 /-- Cost of the complete compiled schedule on one aligned parent descriptor. -/
 theorem compiledNode_cost_of_sweeps [M8.Machine.Net] (engine : CopyTranspose) (routes : ℕ)
