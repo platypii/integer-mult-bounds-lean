@@ -8,7 +8,7 @@ public import IntegerMultBounds.MathlibTM2.M6.BitSweepPlacedGather
 namespace IntegerMultBounds.MathlibTM2.M6.BitNode
 open IntegerMultBounds.Machine Stack Host Node
 
-private theorem singletonRows {α : Type} {n : ℕ} (f : Fin n → α) :
+private theorem inverseMaskRows {α : Type} {n : ℕ} (f : Fin n → α) :
     (List.ofFn fun i => [f i]).flatten = List.ofFn f := by
   induction n with
   | zero => simp
@@ -39,7 +39,7 @@ private theorem transposePermutationMasks_exec {P U : Type} {A Q n : ℕ}
   rw [hclock,len] at run
   have input : rows.flatMap (fun r => (List.ofFn r).flatten) = stream p := by
     simp [rows,stream,permutationMasks_forward,List.flatMap_def,List.map_reverse,
-      List.map_flatten,List.map_ofFn,Function.comp_def,cell,singletonRows]
+      List.map_flatten,List.map_ofFn,Function.comp_def,cell,inverseMaskRows]
   have output : (List.ofFn (fun i => rows.flatMap (fun r => r i))).flatten =
       (stream p.symm).reverse := by
     simp only [rows,stream,permutationMasks_forward,List.flatMap_def,List.map_reverse,
@@ -49,7 +49,7 @@ private theorem transposePermutationMasks_exec {P U : Type} {A Q n : ℕ}
     apply congrArg List.flatten
     apply congrArg List.ofFn
     funext i
-    rw [← singletonRows (fun j => bitSymbol (a := A) (decide (j = p i))),List.reverse_flatten]
+    rw [← inverseMaskRows (fun j => bitSymbol (a := A) (decide (j = p i))),List.reverse_flatten]
     simp [List.map_ofFn,Function.comp_def,eq_comm]
   simpa only [input,output] using run
 
