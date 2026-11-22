@@ -1973,7 +1973,7 @@ def indexedBill {α : Type} (cost : ℕ → α → ℕ) (i : ℕ) : List α → 
   | [] => 0
   | x :: xs => cost i x + indexedBill cost (i+1) xs
 
-private theorem indexedBill_append {α : Type} (cost : ℕ → α → ℕ) (xs ys : List α) (i : ℕ) :
+theorem indexedBill_append {α : Type} (cost : ℕ → α → ℕ) (xs ys : List α) (i : ℕ) :
     indexedBill cost i (xs ++ ys) = indexedBill cost i xs + indexedBill cost (i+xs.length) ys := by
   induction xs generalizing i with
   | nil => simp [indexedBill]
@@ -2347,6 +2347,36 @@ theorem scheduledScalarPhase_host {T Q w W : ℕ} {P U : Type} (n : Fin 9) (r : 
         simpa only [List.filter_append,List.length_append,Nat.add_assoc] using step)
 
 open IntegerMultBounds.Networks.Certificates.PR589 in
+/-- The MOVE prefix and COPY suffix exhaust exactly the scheduled child charges. -/
+theorem invocationChildBill (n : Fin 9) (p : Fin 32 × Fin 5) (work childTime : ℕ → ℕ) :
+    let start := stageChildStart n + runChildStart p
+    let edges := Geometry.Moves.phaseEdges.filter positiveMove
+    indexedBill (fun j _ => work j + childTime j) start edges +
+      (List.ofFn (fun j : Fin Copy.lifecycles.length => childTime (copyChildPosition (n,p,j)).val)).sum =
+      ((List.range' start edges.length).map work).sum +
+      ((List.range' start Geometry.Moves.localPaid.length).map childTime).sum := by
+  rcases p with ⟨r,d⟩
+  intro start edges
+  have count : edges.length = (Geometry.Moves.phaseValues.filter (· ≠ 0)).length := by
+    rw [← Geometry.Moves.phase_ranks,List.filter_map,List.length_map]
+    have h : positiveMove = fun p => decide (Geometry.moveRank p.1 p.2 ≠ 0) := by
+      funext p
+      simp [positiveMove,bne,BEq.beq]
+    change (Geometry.Moves.phaseEdges.filter positiveMove).length = _
+    rw [h]
+    rfl
+  have total : Geometry.Moves.localPaid.length = edges.length + Copy.lifecycles.length := by
+    rw [Geometry.Moves.localPaid,List.length_append,Geometry.Moves.phase_ranks,Geometry.Moves.copyRanks_eq,
+      List.length_replicate,Copy.copy_count,count]
+  have cost (j : Fin Copy.lifecycles.length) :
+      childTime (copyChildPosition (n,(r,d),j)).val = childTime (start+edges.length+j.val) := by
+    simp only [copyChildPosition_offset,start,count,Nat.add_assoc]
+  rw [show (fun j : Fin Copy.lifecycles.length => childTime (copyChildPosition (n,(r,d),j)).val) = _ from funext cost]
+  have suffix := windowBill_split (fun _ : Fin Copy.lifecycles.length => 0) childTime (start+edges.length)
+  simp only [Nat.zero_add,List.ofFn_const,List.sum_replicate,nsmul_zero] at suffix
+  rw [indexedBill_split,suffix,total,← List.range'_append_1,List.map_append,List.sum_append,Nat.add_assoc]
+
+open IntegerMultBounds.Networks.Certificates.PR589 in
 /-- One class invocation executes the two literal phases around the nine COPY
 lifecycles and returns the selected register action at every cover label. -/
 theorem invocation_host
@@ -2490,30 +2520,13 @@ theorem invocation_host
   refine ⟨q,F,_,out,Exec.seq first (Exec.seq copy last),?_,uq.trans (uc.trans (ub.trans (uv.trans ua))),result,restored,?_,?_⟩
   · change a ≤ ((sectionD++sectionA).map (fun g => gateTime g.toCircuit)).sum+_+1 at ha
     change c ≤ ((sectionB++sectionC).map (fun g => gateTime g.toCircuit)).sum+_+1 at hc
-    let edges := Geometry.Moves.phaseEdges.filter positiveMove
-    have count : edges.length = (Geometry.Moves.phaseValues.filter (· ≠ 0)).length := by
-      rw [← Geometry.Moves.phase_ranks,List.filter_map,List.length_map]
-      have h : positiveMove = fun p => decide (Geometry.moveRank p.1 p.2 ≠ 0) := by
-        funext p
-        simp [positiveMove,bne,BEq.beq]
-      change (Geometry.Moves.phaseEdges.filter positiveMove).length = _
-      rw [h]
-      rfl
-    have total : Geometry.Moves.localPaid.length = edges.length + Copy.lifecycles.length := by
-      rw [Geometry.Moves.localPaid,List.length_append,Geometry.Moves.phase_ranks,Geometry.Moves.copyRanks_eq,
-        List.length_replicate,Copy.copy_count,count]
+    have bills := invocationChildBill n (r,d) moveWork childTime
     have copiesCost : (List.ofFn copyTime).sum = (List.ofFn copyWork).sum +
-        ((List.range' (start+edges.length) Copy.lifecycles.length).map childTime).sum := by
-      have eq (j : Fin Copy.lifecycles.length) : copyTime j = copyWork j + childTime (start+edges.length+j.val) := by
-        simp only [copyTime,copyChildPosition_offset,start,count,Nat.add_assoc]
-      rw [show copyTime = _ from funext eq]
-      exact windowBill_split copyWork childTime (start+edges.length)
-    have moveCost := indexedBill_split moveWork childTime edges start
-    change indexedBill moveTime start edges = _ at moveCost
-    rw [total,← List.range'_append_1,List.map_append,List.sum_append]
+        (List.ofFn (fun j => childTime (copyChildPosition (n,(r,d),j)).val)).sum := by
+      simp only [copyTime,List.sum_ofFn,Finset.sum_add_distrib]
     rw [copiesCost] at hb
-    simp only [edges,start,Geometry.Moves.phaseEdges,List.filter_append,indexedBill_append,List.map_append,
-      List.sum_append,Bool.false_eq_true,ite_false,ite_true,Nat.add_zero] at moveCost ha hb hc ⊢
+    simp only [moveTime,start,Geometry.Moves.phaseEdges,List.filter_append,indexedBill_append,List.map_append,
+      List.sum_append,Bool.false_eq_true,ite_false,ite_true,Nat.add_zero] at bills ha hb hc ⊢
     omega
   · intro g cell
     change phaseRead owner out (labelSpectator g cell) = _
