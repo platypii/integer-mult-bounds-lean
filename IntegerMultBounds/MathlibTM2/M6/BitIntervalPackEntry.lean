@@ -94,8 +94,11 @@ theorem initializePackBank_exec {T Q : ℕ} (capacity : rowSwapBlock.states ≤ 
       let position := packedChildPosition _ size
       ∀ (u : HS T Q prime U) (S : Stacks T prime)
         (input : Fin 142080 → Fin (volume prime (phaseIntervalChild lo hi (w+1) W 64)) → ZMod 2),
-      let ready := fun r (D : Stacks T prime) => (∀ k, k ≠ small 24 → D.L (ports r k) = [] ∧ D.R (ports r k) = []) ∧
-        RecordPayload (ports r (small 24)) (fun _ => blank) 0 (fun i => input r (i.cast size.symm)) D
+      ∀ fan : Fin (142080+2) ↪ Fin T,
+      (∀ r : Fin 142080, ports r (small 24) = fan (r.castAdd 2)) →
+      (∀ j : Fin 2, ∀ r k, ports r k ≠ fan (j.natAdd 142080)) →
+      let inherited := fun r (i : Fin (M^128*W)) => input r (i.cast size.symm)
+      let packedRows := fun r => input r ∘ position.symm
       let packed := fun r F => RecordReady (b := prime) (w := w) (W := W) (d := 128)
         (small.trans (ports r)) M.size W.size [] SparseRoleCircuit.encode (fun _ => blank)
         (fun _ => blank) 0 0 (input r ∘ position.symm) F ∧
@@ -103,17 +106,24 @@ theorem initializePackBank_exec {T Q : ℕ} (capacity : rowSwapBlock.states ≤ 
       let code := fun r => (copyRecordSetup headers (small.trans (ports r)) width).seq
         (statePlacedNormalized (ports r) capacity swapStates_pos Empty.elim
           (packSchedule 128 (intervalPackSchedule lo (hi-lo) (64-hi+lo))))
-      IntervalHeaderInputs headers width w W S → (∀ r, ready r S) →
+      IntervalHeaderInputs headers width w W S → HelperFan fan inherited S →
+      (∀ r k, k ≠ small 24 → S.L (ports r k) = [] ∧ S.R (ports r k) = []) →
       ∃ z F n, Exec body (Prog.seqList ((List.finRange 142080).map code)) (mk u S) n (mk z F) ∧
         n ≤ ((List.finRange 142080).map (fun r =>
           (16*M.size+8*W.size+6*(w+1)+11*(w+1).size+58) +
           (1+(setup r+swaps r*swapVolumeRate w)*(M^128*W)))).sum+1 ∧
-        z.user = u.user ∧ (∀ r, packed r F) ∧
+        z.user = u.user ∧ HelperFan fan packedRows F ∧ (∀ r, packed r F) ∧
         ∀ j, (∀ r k, ports r k ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
   choose setup swaps run using fun r => initializePackRow_exec capacity (ports r) headers width
     (disjoint r) (outside r) body lo hi ordered fits
   refine ⟨setup,swaps,?_⟩
-  intro w W hW M small size position u S input ready packed code common inputs
+  intro w W hW M small size position u S input fan shared counters inherited packedRows packed code common live free
+  let ready := fun r (D : Stacks T prime) => (∀ k, k ≠ small 24 → D.L (ports r k) = [] ∧ D.R (ports r k) = []) ∧
+        RecordPayload (ports r (small 24)) (fun _ => blank) 0 (fun i => input r (i.cast size.symm)) D
+  have inputs r : ready r S := by
+    refine ⟨free r,?_⟩
+    rw [shared]
+    exact fanPayload live r
   obtain ⟨z,F,n,exec,paid,user,rows,frame⟩ := returnRows_exec body ports apart code _
     ready packed (fun r D F keep row => by
       refine ⟨fun k hk => ⟨(keep k).1.trans (row.1 k hk).1,(keep k).2.trans (row.1 k hk).2⟩,?_⟩
@@ -133,6 +143,85 @@ theorem initializePackBank_exec {T Q : ℕ} (capacity : rowSwapBlock.states ≤ 
         run r w W hW v D (input r) h row.1 row.2
       exact ⟨z,F,n,exec,paid,user,⟨result,free⟩,frame⟩)
     (List.finRange 142080) (List.nodup_finRange _) u S common (fun r _ => inputs r)
-  exact ⟨z,F,n,exec,paid,user,fun r => rows r (List.mem_finRange r),fun j h => frame j (fun r _ => h r)⟩
+  refine ⟨z,F,n,exec,paid,user,?_,fun r => rows r (List.mem_finRange r),fun j h => frame j (fun r _ => h r)⟩
+
+  apply helperFan_of_payloads live
+  · intro r z
+    rw [← shared]
+    simpa only [Function.Embedding.trans_apply,sub_zero,List.map_ofFn] using
+      (rows r (List.mem_finRange r)).1.src z
+  · intro j
+    exact frame _ (fun r _ k => counters j r k)
+
+/-- Execute both layout passes around a child on the extended host. The child
+can return its owners on a different fan while leaving private records intact. -/
+theorem withIntervalBank_exec {T Q : ℕ} (capacity : rowSwapBlock.states ≤ Q)
+    (src dst : Fin (142080+2) ↪ Fin T)
+    (headers : Fin 6 ↪ Fin T) (width : Fin T)
+    (separate : ∀ r : Fin 142080, ∀ i, src (r.castAdd 2) ≠ headers i)
+    (widthFree : ∀ r : Fin 142080, src (r.castAdd 2) ≠ width)
+    (body : P → Pr P (T+142080*(N+35)) Q prime U)
+    (lo hi : ℕ) (ordered : lo ≤ hi) (fits : hi ≤ 64) :
+    let extend := Fin.castAddEmb (142080*(N+35)) (n := T)
+    let small := (Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)
+    let ports := intervalRecordBank src (small 24)
+    ∃ setupIn swapsIn setupOut swapsOut : Fin 142080 → ℕ,
+    ∃ enter leave : Pr P (T+142080*(N+35)) Q prime U,
+    ∀ w W, 0 < W →
+      let M := prime^(w+1)
+      let V := M^128*W
+      let size := intervalChild_volume ordered fits (w+1) W
+      let position := packedChildPosition _ size
+      ∀ (input output : Fin 142080 → Fin (volume prime (phaseIntervalChild lo hi (w+1) W 64)) → ZMod 2)
+        (child : Pr P (T+142080*(N+35)) Q prime U) (price : ℕ) (preserved : Fin T → Prop) u S,
+      (∀ j, preserved j → ∀ r : Fin 142080, src (r.castAdd 2) ≠ j ∧ dst (r.castAdd 2) ≠ j) →
+      IntervalHeaderInputs (headers.trans extend) (extend width) w W S →
+      HelperFan (src.trans extend) (fun r i => input r (i.cast size.symm)) S →
+      (∀ r k, k ≠ small 24 → S.L (ports r k) = [] ∧ S.R (ports r k) = []) →
+      (∀ v D, HelperFan (src.trans extend) (fun r => input r ∘ position.symm) D →
+        (∀ j, (∀ r k, ports r k ≠ j) → D.L j = S.L j ∧ D.R j = S.R j) →
+        ∃ z F n, Exec body child (mk v D) n (mk z F) ∧ n ≤ price ∧ z.user = v.user ∧
+          HelperFan (dst.trans extend) (fun r => output r ∘ position.symm) F ∧
+          (∀ r k, k ≠ small 24 → F.L (ports r k) = D.L (ports r k) ∧ F.R (ports r k) = D.R (ports r k)) ∧
+          ∀ j, preserved j → F.L (extend j) = D.L (extend j) ∧ F.R (extend j) = D.R (extend j)) →
+      ∃ z F n, Exec body ((enter.seq child).seq leave) (mk u S) n (mk z F) ∧
+        n ≤ ((List.finRange 142080).map (fun r =>
+          (16*M.size+8*W.size+6*(w+1)+11*(w+1).size+58)+(1+(setupIn r+swapsIn r*swapVolumeRate w)*V))).sum+1
+          + price + (((List.finRange 142080).map (fun r => 1+(setupOut r+swapsOut r*swapVolumeRate w)*V)).sum+1) ∧
+        z.user = u.user ∧ HelperFan (dst.trans extend) (fun r i => output r (i.cast size.symm)) F ∧
+        ∀ j, preserved j → F.L (extend j) = S.L (extend j) ∧ F.R (extend j) = S.R (extend j) := by
+  intro extend small ports
+  obtain ⟨a,b,pack⟩ := initializePackBank_exec capacity ports
+    (fun _ _ ne => intervalRecordBank_apart src _ ne) (headers.trans extend) (extend width)
+    (fun r i k => (intervalRecordBank_outside src _ _ (fun s => separate s i) r k).symm)
+    (fun r k => (intervalRecordBank_outside src _ _ widthFree r k).symm) body lo hi ordered fits
+  obtain ⟨c,d,unpack⟩ := placedIntervalPass_exec capacity dst body lo hi ordered fits true
+  let schedule := intervalPackSchedule lo (hi-lo) (64-hi+lo)
+  let enter : Fin 142080 → Pr P (T+142080*(N+35)) Q prime U := fun r => (copyRecordSetup (headers.trans extend) (small.trans (ports r)) (extend width)).seq
+    (statePlacedNormalized (ports r) capacity swapStates_pos Empty.elim (packSchedule 128 schedule))
+  let leave : Fin 142080 → Pr P (T+142080*(N+35)) Q prime U := fun r => statePlacedNormalized (intervalRecordBank dst (small 24) r) capacity
+    swapStates_pos Empty.elim (packSchedule 128 schedule.reverse)
+  refine ⟨a,b,c,d,Prog.seqList ((List.finRange 142080).map enter),
+    Prog.seqList ((List.finRange 142080).map leave),?_⟩
+  intro w W hW M V size position input output child price preserved u S off dimensions live free call
+  obtain ⟨v,D,t,entry,first,user,packed,records,keep⟩ :=
+    pack w W hW u S input (src.trans extend) (intervalRecordBank_payload src _)
+      (fun j r k => intervalRecordBank_outside src _ _ (fun i => src.injective.ne (by
+        intro eq
+        have h := congrArg Fin.val eq
+        change i.val = 142080+j.val at h
+        omega)) r k) dimensions live free
+  obtain ⟨z,F,n,ran,paid,same,returned,frame,childKeep⟩ := call v D packed keep
+  obtain ⟨y,G,m,exit,last,after,owners,_,leaveKeep⟩ := unpack w W hW z F (fun _ => [])
+    (fun _ _ => blank) (fun _ => 0) output returned (fun r => by
+      refine ⟨_,F,intervalReturnedRecord src dst r D F _ _ (records r) returned (frame r),?_⟩
+      exact fun _ _ => ⟨rfl,rfl⟩)
+  refine ⟨y,G,t+n+m,(entry.seq ran).seq exit,Nat.add_le_add (Nat.add_le_add first paid) last,
+    after.trans (same.trans user),owners,?_⟩
+  intro j hj
+  have before := keep (extend j) (intervalRecordBank_outside src _ j (fun r => (off j hj r).1))
+  have middle := childKeep j hj
+  have afterCall := leaveKeep j (fun r => (off j hj r).2)
+  exact ⟨afterCall.1.trans (middle.1.trans before.1),afterCall.2.trans (middle.2.trans before.2)⟩
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode

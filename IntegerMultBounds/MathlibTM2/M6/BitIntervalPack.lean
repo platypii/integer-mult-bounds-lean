@@ -328,6 +328,13 @@ theorem intervalRecordBank_payload {c T B : ℕ} (fan : Fin (c+2) ↪ Fin T) (p 
     intervalRecordBank fan p r p = (fan (r.castAdd 2)).castAdd (c*B) := by
   simp [intervalRecordBank]
 
+/-- Changing the owner fan redirects only the payload. Both passes address
+the same private record and scratch registers for each row. -/
+theorem intervalRecordBank_private {c T B : ℕ} (src dst : Fin (c+2) ↪ Fin T)
+    (p : Fin B) (r : Fin c) {k : Fin B} (privatePort : k ≠ p) :
+    intervalRecordBank dst p r k = intervalRecordBank src p r k := by
+  simp [intervalRecordBank, privatePort]
+
 theorem intervalRecordBank_apart {c T B : ℕ} (fan : Fin (c+2) ↪ Fin T) (p : Fin B)
     {r s : Fin c} (ne : r ≠ s) (i j : Fin B) :
     intervalRecordBank fan p r i ≠ intervalRecordBank fan p s j := by
@@ -345,6 +352,27 @@ theorem intervalRecordBank_outside {c T B : ℕ} (fan : Fin (c+2) ↪ Fin T) (p 
   by_cases hi : i = p <;> simp_all
 
 end
+
+omit [M8.Machine.Net] in
+/-- Updating every payload on a fan of the same volume preserves its counter representation. -/
+theorem helperFan_of_payloads {c T V : ℕ} {fan : Fin (c+2) ↪ Fin T}
+    {input output : Fin c → Fin V → ZMod 2} {S F : Stacks T prime}
+    (live : HelperFan fan input S)
+    (payload : ∀ r : Fin c, RecordPayload (fan (r.castAdd 2)) (fun _ => blank) 0 (output r) F)
+    (counters : ∀ j : Fin 2, let t := fan (j.natAdd c)
+      F.L t = S.L t ∧ F.R t = S.R t) : HelperFan fan output F := by
+  intro i z
+  induction i using Fin.addCases with
+  | left r =>
+    have cell := payload r z
+    rw [encodedOwnerCell] at cell
+    simp only [PointwiseRoleGate.bank,Tapes.append,Fin.addCases_left,embStk,Function.comp_apply]
+    change putWord _ 0 (List.ofFn fun i => SparseRoleCircuit.encode (output r i)) z = _
+    simpa only [sub_zero] using cell.symm
+  | right j =>
+    have keep := counters j
+    simpa only [PointwiseRoleGate.bank,Tapes.append,Fin.addCases_right,embStk,Function.comp_apply,
+      keep.1,keep.2,CountedLoopReuseAlphabet.controls,ite_self] using live (j.natAdd c) z
 
 /-- Run either direction of interval packing across the cyclic owner rows. -/
 theorem intervalPassBank_exec {T capacity : ℕ} (fitsStates : Q ≤ capacity)
@@ -415,21 +443,48 @@ theorem intervalPassBank_exec {T capacity : ℕ} (fitsStates : Q ≤ capacity)
     (List.finRange 142080) (List.nodup_finRange _) u S trivial (fun r _ => inputs r)
   refine ⟨z,F,n,exec,paid,user,?_,fun r => doneRows r (List.mem_finRange r),fun j h => frame j (fun r _ => h r)⟩
 
-  intro i z
-  induction i using Fin.addCases with
-  | left r =>
-    have cell := (doneRows r (List.mem_finRange r)).1.src z
-    have encoded := encodedOwnerCell (toRow r) z
-    rw [List.map_ofFn] at encoded
-    rw [encoded] at cell
-    simp only [PointwiseRoleGate.bank,Tapes.append,Fin.addCases_left,embStk,Function.comp_apply]
-    change putWord _ 0 (List.ofFn fun i => SparseRoleCircuit.encode (toRow r i)) z =
-      readAt blank _ _ _
-    simpa only [Function.Embedding.trans_apply,shared] using cell.symm
-  | right j =>
-    have keep := frame (fan (j.natAdd 142080)) (fun r _ k => counters j r k)
-    simpa only [PointwiseRoleGate.bank,Tapes.append,Fin.addCases_right,embStk,Function.comp_apply,
-      keep.1,keep.2,CountedLoopReuseAlphabet.controls,ite_self] using live (j.natAdd 142080) z
+  apply helperFan_of_payloads live
+  · intro r z
+    rw [← shared]
+    simpa only [Function.Embedding.trans_apply,sub_zero,List.map_ofFn] using
+      (doneRows r (List.mem_finRange r)).1.src z
+  · intro j
+    exact frame _ (fun r _ k => counters j r k)
+
+/-- A child may return on a different owner fan. Reuse the initialized
+private registers and read the new payload directly on the returned owner. -/
+theorem intervalReturnedRecord {T w W : ℕ} (src dst : Fin (142080+2) ↪ Fin T)
+    (r : Fin 142080) (S F : Stacks (T+142080*(N+35)) prime) :
+    let M := prime^(w+1)
+    let small := (Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)
+    let saved := intervalRecordBank src (small 24) r
+    let returned := intervalRecordBank dst (small 24) r
+    let fan := dst.trans (Fin.castAddEmb (142080*(N+35)))
+    ∀ (input : Fin (M^128*W) → ZMod 2) (output : Fin 142080 → Fin (M^128*W) → ZMod 2),
+    let stored := fun (ports : Fin (N+35) ↪ _) word D =>
+      RecordReady (b := prime) (w := w) (W := W) (d := 128) (small.trans ports) M.size W.size []
+        SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0 word D ∧
+      ∀ k : Fin (N+35), 35 ≤ k.val → D.L (ports k) = [] ∧ D.R (ports k) = []
+    stored saved input S → HelperFan fan output F →
+    (∀ k, k ≠ small 24 → F.L (saved k) = S.L (saved k) ∧ F.R (saved k) = S.R (saved k)) →
+    stored returned (output r) F := by
+  intro M small saved returned fan input output stored ready rows frame
+  have keep k (ne : k ≠ small 24) :
+      F.L (returned k) = S.L (saved k) ∧ F.R (returned k) = S.R (saved k) := by
+    simpa only [returned,saved,intervalRecordBank_private src dst _ r ne] using frame k ne
+  refine ⟨ready.1.returnPayload (fun i ne => keep (small i) (small.injective.ne ne)) ?_,?_⟩
+  · intro z
+    change _ = readAt blank (F.L (intervalRecordBank dst (small 24) r (small 24)))
+      (F.R (intervalRecordBank dst (small 24) r (small 24))) _
+    rw [intervalRecordBank_payload]
+    simpa only [fan,Function.Embedding.trans_apply,Fin.castAddEmb_apply,List.map_ofFn] using (fanPayload rows r z).symm
+  · intro k hk
+    have ne : k ≠ small 24 := by
+      intro eq
+      have h := congrArg Fin.val eq
+      change k.val = 24 at h
+      omega
+    exact ⟨(keep k ne).1.trans (ready.2 k hk).1,(keep k ne).2.trans (ready.2 k hk).2⟩
 
 theorem placedIntervalPass_exec {T capacity : ℕ} (fitsStates : Q ≤ capacity)
     (live : Fin (142080+2) ↪ Fin T)

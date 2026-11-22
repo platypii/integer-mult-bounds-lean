@@ -29,14 +29,14 @@ omit [NeZero (b^(w+1))] in
 /-- A child sharing the payload port can replace the word in place.
 The positioned read on that port and preservation of the other bank
 registers suffice to resume operations using the same headers. -/
-theorem RecordReady.returnPayload {bank : Fin 35 ↪ Fin T} {H J : ℕ}
+theorem RecordReady.returnPayload {T₁ : ℕ} {bank : Fin 35 ↪ Fin T} {outBank : Fin 35 ↪ Fin T₁} {H J : ℕ}
     {record : List (Fin (A+4))} {sym : α → Fin 4} {source dest : ℤ → Fin 4} {p q : ℤ}
-    {input output : Fin (M^d*W) → α} {S F : Stacks T A}
+    {input output : Fin (M^d*W) → α} {S : Stacks T A} {F : Stacks T₁ A}
     (start : RecordReady bank H J record sym source dest p q input S)
-    (keep : ∀ i : Fin 35, i ≠ 24 → F.L (bank i) = S.L (bank i) ∧ F.R (bank i) = S.R (bank i))
+    (keep : ∀ i : Fin 35, i ≠ 24 → F.L (outBank i) = S.L (bank i) ∧ F.R (outBank i) = S.R (bank i))
     (returned : ∀ z, RadixToBinary.binaryEncoding.encode (putWord source p (List.ofFn (sym ∘ output)) z) =
-      readAt blank (F.L (bank 24)) (F.R (bank 24)) (z-p)) :
-    RecordReady bank H J record sym source dest p q output F := by
+      readAt blank (F.L (outBank 24)) (F.R (outBank 24)) (z-p)) :
+    RecordReady outBank H J record sym source dest p q output F := by
   refine ⟨(keep 2 (by decide)).2.trans start.modulus,(keep 27 (by decide)).2.trans start.width,
     (keep 28 (by decide)).2.trans start.one,(keep 32 (by decide)).2.trans start.padded,
     (congrArg List.length (keep 33 (by decide)).2).trans start.clock,
