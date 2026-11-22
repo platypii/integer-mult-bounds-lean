@@ -1365,6 +1365,15 @@ noncomputable def workerTable {P U : Type} {T Q : ℕ} (dispatch : Pr (WorkerLab
   | .leaf => leaf
   | .active g => large g
 
+private theorem ScheduledChildExec.weaken {P U : Type} [M8.Machine.Net] {T Q w W a b : ℕ}
+    {node child : Descriptor} {ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T} {record position}
+    {body : P → Pr P T Q prime U} {f : P}
+    (worker : ScheduledChildExec node child w W ports record position body f a) (le : a ≤ b) :
+    ScheduledChildExec node child w W ports record position body f b := by
+  intro smaller u S word ready free
+  obtain ⟨z,F,t,y,run,paid,rest⟩ := worker smaller u S word ready free
+  exact ⟨z,F,t,y,run,paid.trans le,rest⟩
+
 /-- Install mixed workers throughout the stage. The stage needs execution
 witnesses only for the occurrences above the cutoff. -/
 theorem mixedPackedSweep [M8.Machine.Net] (n : Fin 9) :
@@ -1395,8 +1404,7 @@ theorem mixedPackedSweep [M8.Machine.Net] (n : Fin 9) :
       (∀ p j, CopyIntervalPositions (child (ci p j)) (w+1) W (cp p j)) ∧
       ∃ (Label : Type) (tapes : StageRun → ℕ) (body : ∀ p, Label → Pr Label (tapes p) Q prime U),
         PackedStageExecution (w := w+1) (B := B) (K := K) n tapes body coeff (fun time =>
-          ((∀ p i, let k := mi p i; time k.val = price k+4*w+23*(child k).width+22*L+8*(CopyChildLayout.spectators (child k)).size+61) ∧
-           (∀ p j, let k := ci p j; time k.val = 4*w+23*(child k).width+22*L+51+price k)) ∧
+          (∀ k, price k + 22*(L-node.width) ≤ time k.val) ∧
           (∀ p i, let k := mi p i; cutoff < (child k).width → (child k).width < node.width →
             MoveOnBankExec node (child k) w W (movePrefix.trans (mr p i)) (binSyms L cutoff) (mp p i) (mb p i) (mb p i (.active (mf p i))) (budget k)) ∧
           (∀ p j, let k := ci p j; cutoff < (child k).width → (child k).width < node.width →
@@ -1418,7 +1426,7 @@ theorem mixedPackedSweep [M8.Machine.Net] (n : Fin 9) :
                        workerTable (fun large leaf => (ordinaryCutoffTest cmp 7).seq (.cond (fun z => symBit (z.scan (cmp 7))) large leaf))
                          (stoppedCopyProgram (cr p j) ((le_max_right _ _).trans caps)) (cl p j) (cf p j)
   obtain ⟨coeff,stage⟩ := build ((le_max_left _ _).trans room) mb (fun _ _ => .entry) cb (fun _ _ => .entry)
-  refine ⟨mb,cb,coeff,fun _ _ _ => rfl,fun _ _ _ => rfl,?_⟩
+  refine ⟨mb,cb,fun p => coeff p+5000*(Geometry.Moves.localPaid.length : ℝ),fun _ _ _ => rfl,fun _ _ _ => rfl,?_⟩
   intro node w B rows cutoff width split label K W pos rate large _ _ child budget L cutFits parentFits price
   have smaller (i : Fin nodeChildren5.length) : (child i).width < node.width := by
     change nodeChildren5[i.val]*(node.width/64) < node.width
@@ -1428,21 +1436,79 @@ theorem mixedPackedSweep [M8.Machine.Net] (n : Fin 9) :
                          binSyms (A := prime) s.size s ++ separator :: binSyms L cutoff
   let crec := fun (_ : StageRun) (_ : CopyIndex) => binSyms (A := prime) L cutoff
   obtain ⟨mp,cp,banks,mc,cc,T,fan,bank,run⟩ := stage node w B rows width split label pos mrec crec
+  have overhead (k : Fin nodeChildren5.length) (position : Fin (volume prime (child k)) ≃ Fin ((prime^(w+1))^16*W)) :
+      4*w+23*(child k).width+22*L+8*(CopyChildLayout.spectators (child k)).size+61 ≤ 5000*volume prime (child k)+22*(L-node.width) := by
+    let tailWidth := B*prime^(64*((w+1)*64))*K
+    have regroup : W = (prime^(w+1))^112*tailWidth := by dsimp only [W,tailWidth]; ring
+    have vol := Fintype.card_congr position
+    simp only [Fintype.card_fin,regroup] at vol
+    have tailPos : 0 < tailWidth := by rw [regroup] at pos; exact Nat.pos_of_mul_pos_left pos
+    have shape : (child k).width = (w+1)*nodeChildren5[k.val] := by
+      change nodeChildren5[k.val]*(node.width/64) = _
+      rw [width,Nat.mul_div_cancel_left _ (by decide),Nat.mul_comm]
+    have prec : min L node.width ≤ 64*(w+1) := (min_le_right ..).trans width.le
+    have bill := moveOverhead_volume (child k) w tailWidth _ (min L node.width) _ tailPos ((nodeChildren5_bounds k).2.trans (by decide : 42 ≤ 64))
+      shape prec (le_max_right ..) vol
+    omega
   refine ⟨mp,cp,mc,cc,_,fun p => (banks p).tapes,fun p => (banks p).body (mBank p) (cBank p) (mb p) (cb p),T,fan,bank,?_⟩
   intro scratch owner worker host blocks V time ready
-  apply run time
+  let charged := fun j => time j+5000*V
+  have execute := run charged
+  suffices works : _ by
+    intro shared
+    obtain ⟨initial,view,code,exec⟩ := execute works shared
+    refine ⟨initial,view,code,?_⟩
+    intro x u S live headers free fresh
+    obtain ⟨z,F,t,out,step,paid,ret,done⟩ := exec x u S live headers free fresh
+    refine ⟨z,F,t,out,step,paid.trans ?_,ret,done⟩
+    let jobs := (stageRuns.flatMap (fun _ => Geometry.Moves.localPaid)).length
+    let indices := List.range' (stageChildStart n) jobs
+    have lengthJobs (ls : List StageRun) : (ls.flatMap (fun _ => Geometry.Moves.localPaid)).length =
+        ls.length*Geometry.Moves.localPaid.length := by
+      induction ls with
+      | nil => simp
+      | cons a ls ih => simp [ih,Nat.add_mul,Nat.add_comm]
+    have extra : (indices.map charged).sum = (indices.map time).sum+jobs*(5000*V) := by
+      simp [charged,List.sum_map_add,List.map_const',indices]
+    have one : 1 ≤ ((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau :=
+      Real.one_le_rpow (by exact_mod_cast Nat.le_add_left 1 w) M8.Machine.BudgetBound.exponent_range.1.le
+    let scale := (V : ℝ)*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau
+    change (stagePackingRate n+(stageRuns.map coeff).sum)*scale + ((indices.map charged).sum : ℝ) ≤
+      (stagePackingRate n+(stageRuns.map (fun p => coeff p+5000*(Geometry.Moves.localPaid.length : ℝ))).sum)*scale +
+        ((indices.map time).sum : ℝ)
+    rw [extra]
+    simp only [jobs,lengthJobs,List.sum_map_add,List.map_const',List.sum_replicate,nsmul_eq_mul,
+      Nat.cast_add,Nat.cast_mul,Nat.cast_ofNat,add_mul]
+    dsimp only [scale]
+    nlinarith only [mul_nonneg (show 0 ≤ (stageRuns.length : ℝ)*Geometry.Moves.localPaid.length*(5000*(V : ℝ)) by positivity) (sub_nonneg.mpr one)]
   constructor
   · intro p i
-    rw [ready.1.1 p i]
     have shape : (child (mi p i)).width = (w+1)*nodeChildren5[(mi p i).val] := by
       change nodeChildren5[(mi p i).val]*(node.width/64) = _
       rw [width,Nat.mul_div_cancel_left _ (by decide),Nat.mul_comm]
-    exact move p i (mb p i) .entry (.active (mf p i)) .leaf rfl rfl node _ w W L cutoff _ shape
+    apply ScheduledChildExec.weaken (move p i (mb p i) .entry (.active (mf p i)) .leaf rfl rfl node _ w W L cutoff _ shape
       cutFits ((Nat.size_le_size (smaller _).le).trans parentFits) (mp p i) (mc p i) pos rate
-      ((le_max_left _ _).trans large) (fun h => ready.2.1 p i h (smaller _))
+      ((le_max_left _ _).trans large) (fun h => ready.2.1 p i h (smaller _)))
+    let k := mi p i
+    change price k+4*w+23*(child k).width+22*L+8*(CopyChildLayout.spectators (child k)).size+61 ≤ time k.val+5000*V
+    have room := ready.1 k
+    have vol := Fintype.card_congr (mp p i)
+    simp only [Fintype.card_fin] at vol
+    change volume prime (child k) = V at vol
+    have bill := overhead k (mp p i)
+    rw [vol] at bill
+    omega
   · intro p j
-    rw [ready.1.2 p j]
-    exact copy (cr p j) _ (cb p j) .entry (.active (cf p j)) .leaf rfl rfl node n p j w W rows L cutoff
-      width split cutFits ((Nat.size_le_size (smaller _).le).trans parentFits) (cp p j) (cc p j) pos rate _ ((le_max_right _ _).trans large) (fun h => ready.2.2 p j h (smaller _))
+    apply ScheduledChildExec.weaken (copy (cr p j) _ (cb p j) .entry (.active (cf p j)) .leaf rfl rfl node n p j w W rows L cutoff
+      width split cutFits ((Nat.size_le_size (smaller _).le).trans parentFits) (cp p j) (cc p j) pos rate _ ((le_max_right _ _).trans large) (fun h => ready.2.2 p j h (smaller _)))
+    let k := ci p j
+    change 4*w+23*(child k).width+22*L+51+price k ≤ time k.val+5000*V
+    have room := ready.1 k
+    have vol := Fintype.card_congr (cp p j)
+    simp only [Fintype.card_fin] at vol
+    change volume prime (child k) = V at vol
+    have bill := overhead k (cp p j)
+    rw [vol] at bill
+    omega
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
