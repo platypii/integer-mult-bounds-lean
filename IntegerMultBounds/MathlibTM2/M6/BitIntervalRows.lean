@@ -37,7 +37,7 @@ theorem transpose_trailingRows {α : Type} (v : Descriptor) (rows : ℕ) :
   rw [physical,full]
   exact (congrArg word (physical (Shared50RecursiveNodeTranspose.swapAddress a)).symm).trans old.symm
 
-private theorem singletonRows {a m c : ℕ} (word : Fin (m*c) → Fin (a+4)) :
+theorem singletonRows {a m c : ℕ} (word : Fin (m*c) → Fin (a+4)) :
     let rows := fun (i : Fin m) (j : Fin c) => [word (finProdFinEquiv (i,j))]
     CyclicRowSplit.sourceWord rows = List.ofFn word ∧
     ∀ j, CyclicRowSplit.roleWord rows j = List.ofFn fun i => word (finProdFinEquiv (i,j)) := by
