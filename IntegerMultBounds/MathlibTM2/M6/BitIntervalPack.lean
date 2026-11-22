@@ -163,11 +163,24 @@ variable [M8.Machine.Net] {P U : Type}
 local notation "N" => rowSwapBlock.tapes
 local notation "Q" => rowSwapBlock.states
 
+/-- Both directions traverse the same exchanges and pay the same per-row cost. -/
+noncomputable def intervalPassTime (U : Type) (lo hi w W : ℕ) : ℕ :=
+  1+(((intervalPackSchedule lo (hi-lo) (64-hi+lo)).map (fun i =>
+    completeSwapTime (U := U) (P := Empty) Empty.elim 128 i (i+1) w W
+      (prime^(w+1)).size W.size)).sum+1)
+
+theorem intervalPassTime_le (U : Type) (lo hi : ℕ) :
+    ∃ setup swaps : ℕ, ∀ w W, 0 < W → intervalPassTime U lo hi w W ≤
+      1+(setup+swaps*swapVolumeRate w)*((prime^(w+1))^128*W) := by
+  obtain ⟨a,b,bound⟩ := packTime_le (P := Empty) (U := U) Empty.elim 128
+    (intervalPackSchedule lo (hi-lo) (64-hi+lo)) (by decide)
+  exact ⟨a,b,fun w W pos => Nat.add_le_add_left (bound w W pos) 1⟩
+
 /-- Pack a split owner row at the exact positions read by the recursive child. -/
 theorem intervalForward_exec {T capacity : ℕ} (fitsStates : Q ≤ capacity)
     (ports : Fin (N+35) ↪ Fin T) (body : P → Pr P T capacity prime U)
     (lo hi : ℕ) (ordered : lo ≤ hi) (fits : hi ≤ 64) :
-    ∃ setup swaps : ℕ, ∀ w W, 0 < W →
+    ∀ w W, 0 < W →
       let M := prime^(w+1)
       let is := intervalPackSchedule lo (hi-lo) (64-hi+lo)
       let bank := ((Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)).trans ports
@@ -179,7 +192,7 @@ theorem intervalForward_exec {T capacity : ℕ} (fitsStates : Q ≤ capacity)
       let ready := RecordReady (b := prime) (w := w) (W := W) (d := 128) bank M.size W.size
         record SparseRoleCircuit.encode (fun _ => blank) dest 0 q
       ready (fun i => input (i.cast size.symm)) S → clean S → ∃ z F n, z.user = u.user ∧
-        n ≤ 1+(setup+swaps*swapVolumeRate w)*(M^128*W) ∧
+        n ≤ intervalPassTime U lo hi w W ∧
         Exec body (statePlacedNormalized ports fitsStates swapStates_pos Empty.elim (packSchedule 128 is))
           (mk u S) n (mk z F) ∧ ready (input ∘ position.symm) F ∧ clean F ∧
         ∀ j, (∀ i, ports i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
@@ -187,12 +200,10 @@ theorem intervalForward_exec {T capacity : ℕ} (fitsStates : Q ≤ capacity)
   have inside (i) (used : i ∈ is) : i+1 < 128 := by
     have := intervalPackSchedule_inside used
     omega
-  obtain ⟨setup,swaps,price⟩ := packTime_le (P := Empty) (U := U) Empty.elim 128 is (by decide)
-  refine ⟨setup,swaps,?_⟩
   intro w W hW M schedule bank clean u S record dest q input size position ready stored free
   obtain ⟨z,F,n,user,cost,exec,⟨word,out,read⟩,clear,frame⟩ := placedPackSchedule_exec fitsStates ports
     is inside body u S record dest q hW (fun i => input (i.cast size.symm)) id ⟨_,stored,fun _ _ => rfl⟩ free
-  refine ⟨z,F,n,user,cost.trans (Nat.add_le_add_left (price w W hW) 1),exec,?_,clear,frame⟩
+  refine ⟨z,F,n,user,cost,exec,?_,clear,frame⟩
   suffices eq : word = input ∘ position.symm from eq ▸ out
   funext k
   obtain ⟨a,rfl⟩ := position.surjective k
@@ -208,7 +219,7 @@ read at the forward packing offset; every tape outside the bank is preserved. -/
 theorem intervalReturn_exec {T capacity : ℕ} (fitsStates : Q ≤ capacity)
     (ports : Fin (N+35) ↪ Fin T) (body : P → Pr P T capacity prime U)
     (lo hi : ℕ) (ordered : lo ≤ hi) (fits : hi ≤ 64) :
-    ∃ setup swaps : ℕ, ∀ w W, 0 < W →
+    ∀ w W, 0 < W →
       let M := prime^(w+1)
       let is := intervalPackSchedule lo (hi-lo) (64-hi+lo)
       let bank := ((Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)).trans ports
@@ -220,7 +231,7 @@ theorem intervalReturn_exec {T capacity : ℕ} (fitsStates : Q ≤ capacity)
       let ready := RecordReady (b := prime) (w := w) (W := W) (d := 128) bank M.size W.size
         record SparseRoleCircuit.encode (fun _ => blank) dest 0 q
       ready (output ∘ position.symm) S → clean S → ∃ z F n, z.user = u.user ∧
-        n ≤ 1+(setup+swaps*swapVolumeRate w)*(M^128*W) ∧
+        n ≤ intervalPassTime U lo hi w W ∧
         Exec body (statePlacedNormalized ports fitsStates swapStates_pos Empty.elim (packSchedule 128 is.reverse))
           (mk u S) n (mk z F) ∧ ready (fun i => output (i.cast size.symm)) F ∧ clean F ∧
         ∀ j, (∀ i, ports i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
@@ -228,13 +239,11 @@ theorem intervalReturn_exec {T capacity : ℕ} (fitsStates : Q ≤ capacity)
   have inside (i) (used : i ∈ is.reverse) : i+1 < 128 := by
     have := intervalPackSchedule_inside (List.mem_reverse.mp used)
     omega
-  obtain ⟨setup,swaps,price⟩ := packTime_le (P := Empty) (U := U) Empty.elim 128 is (by decide)
-  refine ⟨setup,swaps,?_⟩
   intro w W hW M schedule bank clean u S record dest q output size position ready stored free
   obtain ⟨z,F,n,user,cost,exec,⟨word,out,read⟩,clear,frame⟩ := placedPackSchedule_exec fitsStates ports
     is.reverse inside body u S record dest q hW (output ∘ position.symm) id ⟨_,stored,fun _ _ => rfl⟩ free
   refine ⟨z,F,n,user,?_,exec,?_,clear,frame⟩
-  · exact cost.trans (Nat.add_le_add_left (by simpa only [List.map_reverse,List.sum_reverse] using price w W hW) 1)
+  · simpa only [intervalPassTime,is,List.map_reverse,List.sum_reverse] using cost
   · suffices eq : word = fun i => output (i.cast size.symm) from eq ▸ out
     funext i
     obtain ⟨⟨digits,j⟩,rfl⟩ := finProdFinEquiv.surjective i
@@ -248,7 +257,7 @@ theorem intervalReturn_exec {T capacity : ℕ} (fitsStates : Q ≤ capacity)
 theorem intervalPass_exec {T capacity : ℕ} (fitsStates : Q ≤ capacity)
     (ports : Fin (N+35) ↪ Fin T) (body : P → Pr P T capacity prime U)
     (lo hi : ℕ) (ordered : lo ≤ hi) (fits : hi ≤ 64) (unpack : Bool) :
-    ∃ setup swaps : ℕ, ∀ w W, 0 < W →
+    ∀ w W, 0 < W →
       let M := prime^(w+1)
       let is := intervalPackSchedule lo (hi-lo) (64-hi+lo)
       let bank := ((Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)).trans ports
@@ -260,7 +269,7 @@ theorem intervalPass_exec {T capacity : ℕ} (fitsStates : Q ≤ capacity)
       let ready := RecordReady (b := prime) (w := w) (W := W) (d := 128) bank M.size W.size
         record SparseRoleCircuit.encode (fun _ => blank) dest 0 q
       ready (if unpack then output ∘ position.symm else fun i => output (i.cast size.symm)) S → clean S → ∃ z F n, z.user = u.user ∧
-        n ≤ 1+(setup+swaps*swapVolumeRate w)*(M^128*W) ∧
+        n ≤ intervalPassTime U lo hi w W ∧
         Exec body (statePlacedNormalized ports fitsStates swapStates_pos Empty.elim (packSchedule 128 (if unpack then is.reverse else is)))
           (mk u S) n (mk z F) ∧ ready (if unpack then fun i => output (i.cast size.symm) else output ∘ position.symm) F ∧ clean F ∧
         ∀ j, (∀ i, ports i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
@@ -379,7 +388,7 @@ theorem intervalPassBank_exec {T capacity : ℕ} (fitsStates : Q ≤ capacity)
     (ports : Fin 142080 → Fin (N+35) ↪ Fin T)
     (apart : ∀ i j, i ≠ j → ∀ a b, ports i a ≠ ports j b)
     (body : P → Pr P T capacity prime U) (lo hi : ℕ) (ordered : lo ≤ hi) (fits : hi ≤ 64) (unpack : Bool) :
-    ∃ setup swaps : Fin 142080 → ℕ, ∀ w W, 0 < W →
+    ∀ w W, 0 < W →
       let M := prime^(w+1)
       let is := intervalPackSchedule lo (hi-lo) (64-hi+lo)
       let small := (Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)
@@ -404,12 +413,11 @@ theorem intervalPassBank_exec {T capacity : ℕ} (fitsStates : Q ≤ capacity)
         S.L (ports r k) = D.L (ports r k) ∧ S.R (ports r k) = D.R (ports r k)) →
       let code := fun r => statePlacedNormalized (ports r) fitsStates swapStates_pos Empty.elim (packSchedule 128 (if unpack then is.reverse else is))
       ∃ z F n, Exec body (Prog.seqList ((List.finRange 142080).map code)) (mk u S) n (mk z F) ∧
-        n ≤ ((List.finRange 142080).map (fun r => 1+(setup r+swaps r*swapVolumeRate w)*(M^128*W))).sum+1 ∧
+        n ≤ ((List.finRange 142080).map (fun _ => intervalPassTime U lo hi w W)).sum+1 ∧
         z.user = u.user ∧ HelperFan fan toRow F ∧
         (∀ r, stored r (toRow r) F) ∧
         ∀ j, (∀ r k, ports r k ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
-  choose setup swaps run using fun r => intervalPass_exec fitsStates (ports r) body lo hi ordered fits unpack
-  refine ⟨setup,swaps,?_⟩
+  have run := fun r => intervalPass_exec fitsStates (ports r) body lo hi ordered fits unpack
   intro w W hW M is small size position u S record dest q output inherited packedRows fromRow toRow stored fan shared counters live saved code
   have transfer r word (D F : Stacks T prime)
       (keep : ∀ k, F.L (ports r k) = D.L (ports r k) ∧ F.R (ports r k) = D.R (ports r k))
@@ -492,7 +500,7 @@ theorem placedIntervalPass_exec {T capacity : ℕ} (fitsStates : Q ≤ capacity)
     let small := (Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)
     let ports := intervalRecordBank live (small 24)
     let fan := live.trans (Fin.castAddEmb (142080*(N+35)))
-    ∃ setup swaps : Fin 142080 → ℕ, ∀ w W, 0 < W →
+    ∀ w W, 0 < W →
       let M := prime^(w+1)
       let is := intervalPackSchedule lo (hi-lo) (64-hi+lo)
       let size := intervalChild_volume ordered fits (w+1) W
@@ -513,16 +521,15 @@ theorem placedIntervalPass_exec {T capacity : ℕ} (fitsStates : Q ≤ capacity)
         S.L (ports r k) = D.L (ports r k) ∧ S.R (ports r k) = D.R (ports r k)) →
       let code := fun r => statePlacedNormalized (ports r) fitsStates swapStates_pos Empty.elim (packSchedule 128 (if unpack then is.reverse else is))
       ∃ z F n, Exec body (Prog.seqList ((List.finRange 142080).map code)) (mk u S) n (mk z F) ∧
-        n ≤ ((List.finRange 142080).map (fun r => 1+(setup r+swaps r*swapVolumeRate w)*(M^128*W))).sum+1 ∧
+        n ≤ ((List.finRange 142080).map (fun _ => intervalPassTime U lo hi w W)).sum+1 ∧
         z.user = u.user ∧ HelperFan fan toRow F ∧
         (∀ r, stored r (toRow r) F) ∧
         ∀ j, (∀ r : Fin 142080, live (r.castAdd 2) ≠ j) →
           let t := j.castAdd (142080*(N+35))
           F.L t = S.L t ∧ F.R t = S.R t := by
   intro small ports fan
-  obtain ⟨setup,swaps,run⟩ := intervalPassBank_exec fitsStates ports
+  have run := intervalPassBank_exec fitsStates ports
     (fun _ _ ne => intervalRecordBank_apart live _ ne) body lo hi ordered fits unpack
-  refine ⟨setup,swaps,?_⟩
   intro w W hW M is size position u S record dest q output inherited packedRows fromRow toRow stored packed saved code
   obtain ⟨z,F,n,exec,paid,user,returned,records,frame⟩ :=
     run w W hW u S record dest q output fan (intervalRecordBank_payload live _)

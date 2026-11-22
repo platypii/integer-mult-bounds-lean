@@ -23,7 +23,7 @@ theorem unpackMerge_exec {T capacity : ℕ} (fitsStates : Q ≤ capacity)
     let small := (Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)
     let ports := intervalRecordBank live (small 24)
     let fan := live.trans (Fin.castAddEmb (142080*(N+35)))
-    ∃ setup swaps : Fin 142080 → ℕ, ∀ w W, 0 < W →
+    ∀ w W, 0 < W →
       let M := prime^(w+1)
       let is := intervalPackSchedule lo (hi-lo) (64-hi+lo)
       let size := intervalChild_volume ordered fits (w+1) W
@@ -51,12 +51,11 @@ theorem unpackMerge_exec {T capacity : ℕ} (fitsStates : Q ≤ capacity)
       ∃ z F n, Exec body ((Prog.seqList ((List.finRange 142080).map code)).seq
         (embProg mergeBank Empty.elim (foreign (liftQ (CyclicRowNormalized.mergeProgram 142080 prime) mergeStates))))
         (mk u S) n (mk z F) ∧
-        n ≤ ((List.finRange 142080).map (fun r => 1+(setup r+swaps r*swapVolumeRate w)*(M^128*W))).sum+1
+        n ≤ ((List.finRange 142080).map (fun _ => intervalPassTime U lo hi w W)).sum+1
           +(149*(M^128*W*142080)*(intervalSplitTapes+5)+6) ∧ z.user = u.user ∧
         RepT (intervalOwnerBank (putWord target 0 (List.ofFn word)) data) (embStk mergeBank F).L (embStk mergeBank F).R := by
   intro live mergeBank small ports fan
-  obtain ⟨setup,swaps,unpack⟩ := placedIntervalPass_exec fitsStates live body lo hi ordered fits true
-  refine ⟨setup,swaps,?_⟩
+  have unpack := placedIntervalPass_exec fitsStates live body lo hi ordered fits true
   intro w W hW M is size position u S record dest q output stored packed saved code target original before split source inner data word
   obtain ⟨v,D,t,unpacked,paid,user,returned,_,frame⟩ :=
     unpack w W hW u S record dest q output packed saved

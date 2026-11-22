@@ -38,7 +38,7 @@ theorem initializePackRow_exec {T Q : ℕ} (capacity : rowSwapBlock.states ≤ Q
     (ports : Fin (N+35) ↪ Fin T) (headers : Fin 6 ↪ Fin T) (width : Fin T)
     (apart : ∀ i j, headers i ≠ ports j) (outside : ∀ i, width ≠ ports i)
     (body : P → Pr P T Q prime U) (lo hi : ℕ) (ordered : lo ≤ hi) (fits : hi ≤ 64) :
-    ∃ setup swaps : ℕ, ∀ w W, 0 < W →
+    ∀ w W, 0 < W →
       let M := prime^(w+1)
       let small := (Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)
       let bank := small.trans ports
@@ -53,13 +53,12 @@ theorem initializePackRow_exec {T Q : ℕ} (capacity : rowSwapBlock.states ≤ Q
         (statePlacedNormalized ports capacity swapStates_pos Empty.elim
           (packSchedule 128 (intervalPackSchedule lo (hi-lo) (64-hi+lo))))) (mk u S) n (mk z F) ∧
         n ≤ (16*M.size+8*W.size+6*(w+1)+11*(w+1).size+58) +
-          (1+(setup+swaps*swapVolumeRate w)*(M^128*W)) ∧ z.user = u.user ∧
+          (intervalPassTime U lo hi w W) ∧ z.user = u.user ∧
         RecordReady (b := prime) (w := w) (W := W) (d := 128) bank M.size W.size []
           SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0 (input ∘ position.symm) F ∧
         (∀ k : Fin (N+35), 35 ≤ k.val → F.L (ports k) = [] ∧ F.R (ports k) = []) ∧
         ∀ j, (∀ i, ports i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
-  obtain ⟨setup,swaps,pack⟩ := intervalForward_exec capacity ports body lo hi ordered fits
-  refine ⟨setup,swaps,?_⟩
+  have pack := intervalForward_exec capacity ports body lo hi ordered fits
   intro w W hW M small bank size position u S input headersReady free payload
   obtain ⟨v,D,t,user,cost,init,ready,keep⟩ := intervalRecordSetup_exec body headers bank
     (fun i j => apart i (small j)) width (fun j => outside (small j)) 128 w W u S headersReady.1 headersReady.2
@@ -87,7 +86,7 @@ theorem initializePackBank_exec {T Q : ℕ} (capacity : rowSwapBlock.states ≤ 
     (headers : Fin 6 ↪ Fin T) (width : Fin T)
     (disjoint : ∀ r i j, headers i ≠ ports r j) (outside : ∀ r i, width ≠ ports r i)
     (body : P → Pr P T Q prime U) (lo hi : ℕ) (ordered : lo ≤ hi) (fits : hi ≤ 64) :
-    ∃ setup swaps : Fin 142080 → ℕ, ∀ w W, 0 < W →
+    ∀ w W, 0 < W →
       let M := prime^(w+1)
       let small := (Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)
       let size := intervalChild_volume ordered fits (w+1) W
@@ -109,14 +108,13 @@ theorem initializePackBank_exec {T Q : ℕ} (capacity : rowSwapBlock.states ≤ 
       IntervalHeaderInputs headers width w W S → HelperFan fan inherited S →
       (∀ r k, k ≠ small 24 → S.L (ports r k) = [] ∧ S.R (ports r k) = []) →
       ∃ z F n, Exec body (Prog.seqList ((List.finRange 142080).map code)) (mk u S) n (mk z F) ∧
-        n ≤ ((List.finRange 142080).map (fun r =>
+        n ≤ ((List.finRange 142080).map (fun _ =>
           (16*M.size+8*W.size+6*(w+1)+11*(w+1).size+58) +
-          (1+(setup r+swaps r*swapVolumeRate w)*(M^128*W)))).sum+1 ∧
+          (intervalPassTime U lo hi w W))).sum+1 ∧
         z.user = u.user ∧ HelperFan fan packedRows F ∧ (∀ r, packed r F) ∧
         ∀ j, (∀ r k, ports r k ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
-  choose setup swaps run using fun r => initializePackRow_exec capacity (ports r) headers width
+  have run := fun r => initializePackRow_exec capacity (ports r) headers width
     (disjoint r) (outside r) body lo hi ordered fits
-  refine ⟨setup,swaps,?_⟩
   intro w W hW M small size position u S input fan shared counters inherited packedRows packed code common live free
   let ready := fun r (D : Stacks T prime) => (∀ k, k ≠ small 24 → D.L (ports r k) = [] ∧ D.R (ports r k) = []) ∧
         RecordPayload (ports r (small 24)) (fun _ => blank) 0 (fun i => input r (i.cast size.symm)) D
@@ -161,6 +159,7 @@ private theorem liftFan {c T B V : ℕ} (e : Fin T ↪ Fin B) (dst : Fin (c+2) �
   subst F
   exact owners
 
+omit [M8.Machine.Net] in
 /-- Lift a child running on the caller tapes past the private row records.
 The returned fan is visible on the enlarged host and every private record
 stack is preserved, regardless of its contents. -/
@@ -202,11 +201,9 @@ theorem withIntervalBank_exec {T Q : ℕ} (capacity : rowSwapBlock.states ≤ Q)
     let extend := Fin.castAddEmb (142080*(N+35)) (n := T)
     let small := (Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)
     let ports := intervalRecordBank src (small 24)
-    ∃ setupIn swapsIn setupOut swapsOut : Fin 142080 → ℕ,
     ∃ enter leave : Pr P (T+142080*(N+35)) Q prime U,
     ∀ w W, 0 < W →
       let M := prime^(w+1)
-      let V := M^128*W
       let size := intervalChild_volume ordered fits (w+1) W
       let position := packedChildPosition _ size
       ∀ (input output : Fin 142080 → Fin (volume prime (phaseIntervalChild lo hi (w+1) W 64)) → ZMod 2)
@@ -222,25 +219,25 @@ theorem withIntervalBank_exec {T Q : ℕ} (capacity : rowSwapBlock.states ≤ Q)
           (∀ r k, k ≠ small 24 → F.L (ports r k) = D.L (ports r k) ∧ F.R (ports r k) = D.R (ports r k)) ∧
           ∀ j, preserved j → F.L (extend j) = D.L (extend j) ∧ F.R (extend j) = D.R (extend j)) →
       ∃ z F n, Exec body ((enter.seq child).seq leave) (mk u S) n (mk z F) ∧
-        n ≤ ((List.finRange 142080).map (fun r =>
-          (16*M.size+8*W.size+6*(w+1)+11*(w+1).size+58)+(1+(setupIn r+swapsIn r*swapVolumeRate w)*V))).sum+1
-          + price + (((List.finRange 142080).map (fun r => 1+(setupOut r+swapsOut r*swapVolumeRate w)*V)).sum+1) ∧
+        n ≤ ((List.finRange 142080).map (fun _ =>
+          (16*M.size+8*W.size+6*(w+1)+11*(w+1).size+58)+intervalPassTime U lo hi w W)).sum+1
+          + price + (((List.finRange 142080).map (fun _ => intervalPassTime U lo hi w W)).sum+1) ∧
         z.user = u.user ∧ HelperFan (dst.trans extend) (fun r i => output r (i.cast size.symm)) F ∧
         ∀ j, preserved j → F.L (extend j) = S.L (extend j) ∧ F.R (extend j) = S.R (extend j) := by
   intro extend small ports
-  obtain ⟨a,b,pack⟩ := initializePackBank_exec capacity ports
+  have pack := initializePackBank_exec capacity ports
     (fun _ _ ne => intervalRecordBank_apart src _ ne) (headers.trans extend) (extend width)
     (fun r i k => (intervalRecordBank_outside src _ _ (fun s => separate s i) r k).symm)
     (fun r k => (intervalRecordBank_outside src _ _ widthFree r k).symm) body lo hi ordered fits
-  obtain ⟨c,d,unpack⟩ := placedIntervalPass_exec capacity dst body lo hi ordered fits true
+  have unpack := placedIntervalPass_exec capacity dst body lo hi ordered fits true
   let schedule := intervalPackSchedule lo (hi-lo) (64-hi+lo)
   let enter : Fin 142080 → Pr P (T+142080*(N+35)) Q prime U := fun r => (copyRecordSetup (headers.trans extend) (small.trans (ports r)) (extend width)).seq
     (statePlacedNormalized (ports r) capacity swapStates_pos Empty.elim (packSchedule 128 schedule))
   let leave : Fin 142080 → Pr P (T+142080*(N+35)) Q prime U := fun r => statePlacedNormalized (intervalRecordBank dst (small 24) r) capacity
     swapStates_pos Empty.elim (packSchedule 128 schedule.reverse)
-  refine ⟨a,b,c,d,Prog.seqList ((List.finRange 142080).map enter),
+  refine ⟨Prog.seqList ((List.finRange 142080).map enter),
     Prog.seqList ((List.finRange 142080).map leave),?_⟩
-  intro w W hW M V size position input output child price preserved u S off dimensions live free call
+  intro w W hW M size position input output child price preserved u S off dimensions live free call
   obtain ⟨v,D,t,entry,first,user,packed,records,keep⟩ :=
     pack w W hW u S input (src.trans extend) (intervalRecordBank_payload src _)
       (fun j r k => intervalRecordBank_outside src _ _ (fun i => src.injective.ne (by
