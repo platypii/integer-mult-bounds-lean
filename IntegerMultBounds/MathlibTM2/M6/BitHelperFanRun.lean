@@ -211,6 +211,42 @@ theorem scheduledLabelRead (n : Fin 9) (p : Fin 32 × Fin 5) (before) {V w L W :
 
 /-- Run the changes selected by the sweep history, then enter the supplied
 invocation on its original tapes. Its recursive time allowance is added once. -/
+theorem scheduledLabelTrace_exec [M8.Machine.Net] {T Q : ℕ} {P U : Type}
+    (n : Fin 9) (p : Fin 32 × Fin 5) (prefixRuns : List (Fin 32 × Fin 5))
+    (fan : Fin (142081+2) ↪ Fin T) (capacity : columnCapacity ≤ Q)
+    (body : P → Pr P T Q prime U) (headers : ℕ → Fin 6 → Fin T)
+    (apart : ∀ i j (o : Fin 142081), headers i j ≠ fan (o.castAdd 2)) :
+    let bank := Fin.castAddEmb LeafCore.small (n := T)
+    let full := fan.trans bank
+    let outer := fun f => embProg bank id (body f)
+    let before := prefixRuns.foldl (fun c r => helperChartsAfter n r c) (fun _ => none)
+    ∃ pack, ∃ C : ℝ, ∀ {w L W : ℕ} {v : Descriptor},
+      volume prime v = (prime^w)^16*(L*((prime^w)^112*W)) → 0 < volume prime v →
+      ∀ (data : Fin 142081 → Fin (volume prime v) → ZMod 2) u S call (price : ℕ)
+        (effect : (Fin 142081 → Fin (volume prime v) → ZMod 2) → (Fin 142081 → Fin (volume prime v) → ZMod 2) → Prop),
+      (∀ i : Fin 127, ∀ j, S.R (bank (headers i.val j)) = (Routines.hdr (helperAdjacentView w L W i) j).map bitSymbol) →
+      HelperFan full data S →
+      (∀ j : Fin LeafCore.small, S.L (j.natAdd T) = [] ∧ S.R (j.natAdd T) = []) →
+      (∀ a y D, HelperFan fan a D →
+        (∀ j, (∀ h, fan h ≠ j) → D.L j = S.L (bank j) ∧ D.R j = S.R (bank j)) →
+        ∃ z F m b, Exec body call (mk y D) m (mk z F) ∧ m ≤ price ∧ z.user = y.user ∧ HelperFan fan b F ∧ effect a b) →
+      ∃ z F t a b, Exec outer (.seq pack (embProg bank id call)) (mk u S) t (mk z F) ∧
+        (t : ℝ) ≤ C*((volume prime v : ℝ)*((max 1 w : ℕ) : ℝ)^M8.Machine.BudgetBound.tau)+price ∧
+        z.user = u.user ∧ HelperFan full b F ∧ effect a b ∧
+        HelperLabelTrace w L W (scheduledSlotChanges n p before) data a := by
+  intro bank full outer before
+  obtain ⟨pack,C,run⟩ := helperFanChanges_exec fan (scheduledSlotChanges n p before) capacity outer headers apart
+  refine ⟨pack,C,?_⟩
+  intro w L W v size pos data u S call price effect stored rep free invoke
+  obtain ⟨y,D,k,a,user,packed,paid,ready,trace,keep,_⟩ := run size pos data u S stored rep free
+  obtain ⟨z,F,m,b,exec,bill,same,done,act⟩ := invoke a (embDn bank y) (embStk bank D) ready
+    (fun j off => keep j (fun o => (off (o.castAdd 2)).symm))
+  obtain ⟨z',F',placed,_,state,view,_⟩ := exec_emb (ι := id) (body' := outer) bank.injective
+    (fun _ => rfl) exec y rfl D rfl
+  refine ⟨z',F',k+m,a,b,Exec.seq packed placed,?_,state.trans (same.trans user),?_,act,trace⟩
+  · rw [Nat.cast_add]; exact add_le_add paid (by exact_mod_cast bill)
+  · rw [← view] at done; exact done
+
 theorem scheduledLabelCall_exec [M8.Machine.Net] {T Q : ℕ} {P U : Type}
     (n : Fin 9) (p : Fin 32 × Fin 5) (prefixRuns : List (Fin 32 × Fin 5))
     (fan : Fin (142081+2) ↪ Fin T) (capacity : columnCapacity ≤ Q)
@@ -238,22 +274,15 @@ theorem scheduledLabelCall_exec [M8.Machine.Net] {T Q : ℕ} {P U : Type}
           ∀ c s (label : Fin L) (j : Fin W), ext (a change.1) (helperFieldCell (helperSlotField c change.2.2 w s) label j) =
             ext (data change.1) (helperFieldCell (helperSlotField c change.2.1 w s) label j) := by
   intro bank full outer before
-  obtain ⟨pack,C,run⟩ := helperFanChanges_exec fan (scheduledSlotChanges n p before) capacity outer headers apart
+  obtain ⟨pack,C,run⟩ := scheduledLabelTrace_exec n p prefixRuns fan capacity body headers apart
   refine ⟨pack,C,?_⟩
   intro w L W v size pos data u S call price effect stored rep free invoke
-  obtain ⟨y,D,k,a,user,packed,paid,ready,trace,keep,_⟩ := run size pos data u S stored rep free
-  obtain ⟨z,F,m,b,exec,bill,same,done,act⟩ := invoke a (embDn bank y) (embStk bank D) ready
-    (fun j off => keep j (fun o => (off (o.castAdd 2)).symm))
-  obtain ⟨z',F',placed,_,state,view,_⟩ := exec_emb (ι := id) (body' := outer) bank.injective
-    (fun _ => rfl) exec y rfl D rfl
-  refine ⟨z',F',k+m,a,b,Exec.seq packed placed,?_,state.trans (same.trans user),?_,act,?_,
-    scheduledLabelRead n p before _ _ trace⟩
-  · rw [Nat.cast_add]; exact add_le_add paid (by exact_mod_cast bill)
-  · rw [← view] at done; exact done
-  · intro j off
-    apply labelTrace_off _ _ _ trace
-    rintro q mem
-    obtain ⟨h,_,rfl⟩ := List.mem_map.mp mem
-    exact off h
+  obtain ⟨z,F,t,a,b,exec,paid,same,done,act,trace⟩ := run size pos data u S call price effect stored rep free invoke
+  refine ⟨z,F,t,a,b,exec,paid,same,done,act,?_,scheduledLabelRead n p before _ _ trace⟩
+  intro j off
+  apply labelTrace_off _ _ _ trace
+  rintro q mem
+  obtain ⟨h,_,rfl⟩ := List.mem_map.mp mem
+  exact off h
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode

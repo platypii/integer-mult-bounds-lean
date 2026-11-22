@@ -138,4 +138,78 @@ theorem borrowedRestored_inactive {n w B K x y out}
       exact miss _))
 
 
+open Stack Host Cover.Fallback M8.RevMachine in
+/-- Pack the scheduled helpers and enter the borrowed invocation. The
+resulting machine trace supplies the step consumed by the sweep proof. -/
+theorem borrowedPackedCall_exec [M8.Machine.Net] {T Q : ℕ} {P U : Type}
+    (n : Fin 9) (p : Fin 32 × Fin 5) (fan : Fin (142081+2) ↪ Fin T)
+    (capacity : columnCapacity ≤ Q) (body : P → Pr P T Q prime U)
+    (headers : ℕ → Fin 6 → Fin T) (apart : ∀ i j (o : Fin 142081), headers i j ≠ fan (o.castAdd 2)) :
+    let bank := Fin.castAddEmb LeafCore.small (n := T)
+    let full := fan.trans bank
+    let outer := fun f => embProg bank id (body f)
+    ∃ pack, ∃ C : ℝ, ∀ w B K : ℕ,
+      let W := B*prime^(64*(w*64))*K
+      let blocks := (prime^w)^112*B
+      let V := (prime^w)^16*(blocks*prime^(64*(w*64))*K)
+      0 < V → ∀ (data : Fin 142081 → Fin V → ZMod 2) u S call (price : ℕ),
+      (∀ i : Fin 127, ∀ j, S.R (bank (headers i.val j)) = (Routines.hdr (helperAdjacentView w 1 W i) j).map bitSymbol) →
+      HelperFan full data S →
+      (∀ j : Fin LeafCore.small, S.L (j.natAdd T) = [] ∧ S.R (j.natAdd T) = []) →
+      (∀ a y D, HelperFan fan a D →
+        (∀ j, (∀ h, fan h ≠ j) → D.L j = S.L (bank j) ∧ D.R j = S.R (bank j)) →
+        ∃ z F m b, Exec body call (mk y D) m (mk z F) ∧ m ≤ price ∧ z.user = y.user ∧
+          HelperFan fan b F ∧ BorrowedStep n w blocks K p a b) →
+      ∃ z F t b, Exec outer (.seq pack (embProg bank id call)) (mk u S) t (mk z F) ∧
+        (t : ℝ) ≤ C*((V : ℝ)*((max 1 w : ℕ) : ℝ)^M8.Machine.BudgetBound.tau)+price ∧
+        z.user = u.user ∧ HelperFan full b F ∧ borrowedPackedStep n w B K p data b := by
+  intro bank full outer
+  obtain ⟨pack,C,run⟩ := scheduledLabelTrace_exec n p (stageRuns.take (stageRuns.idxOf p))
+    fan capacity body headers apart
+  refine ⟨pack,C,?_⟩
+  intro w B K W blocks V pos data u S call price stored rep free invoke
+  let v : RecursiveInterchangeLayout.Descriptor := ⟨V,1,1,0,1,1⟩
+  have size : RecursiveInterchangeLayout.volume prime v = V := by simp [RecursiveInterchangeLayout.volume,v]
+  have atVolume := @run w 1 W v
+  rw [size] at atVolume
+  have dims : V = (prime^w)^16*(1*((prime^w)^112*W)) := by dsimp [V,blocks,W]; ring
+  obtain ⟨z,F,t,a,b,exec,paid,same,done,act,trace⟩ := atVolume dims pos data u S call price
+    (BorrowedStep n w blocks K p) stored rep free invoke
+  exact ⟨z,F,t,b,exec,paid,same,done,a,trace,act⟩
+
+open Stack Host Cover.Fallback M8.RevMachine in
+/-- Execute the stage's final slot restoration on the aligned bank. The
+same owner tapes hold the output, and the leaf workspace is ready to reuse. -/
+theorem borrowedRestore_exec [M8.Machine.Net] {T Q : ℕ} {P U : Type}
+    (n : Fin 9) (fan : Fin (142081+2) ↪ Fin T) (capacity : columnCapacity ≤ Q)
+    (body : P → Pr P (T+LeafCore.small) Q prime U) (headers : ℕ → Fin 6 → Fin T)
+    (apart : ∀ i j (o : Fin 142081), headers i j ≠ fan (o.castAdd 2)) :
+    let bank := Fin.castAddEmb LeafCore.small (n := T)
+    let full := fan.trans bank
+    ∃ code, ∃ C : ℝ, ∀ w B K : ℕ,
+      let W := B*prime^(64*(w*64))*K
+      let V := (prime^w)^16*((prime^w)^112*B*prime^(64*(w*64))*K)
+      0 < V → ∀ (data : Fin 142081 → Fin V → ZMod 2) u S,
+      (∀ i : Fin 127, ∀ j, S.R (bank (headers i.val j)) = (Routines.hdr (helperAdjacentView w 1 W i) j).map bitSymbol) →
+      HelperFan full data S →
+      (∀ j : Fin LeafCore.small, S.L (j.natAdd T) = [] ∧ S.R (j.natAdd T) = []) →
+      ∃ z F t out, Exec body code (mk u S) t (mk z F) ∧
+        (t : ℝ) ≤ C*((V : ℝ)*((max 1 w : ℕ) : ℝ)^M8.Machine.BudgetBound.tau) ∧
+        z.user = u.user ∧ HelperFan full out F ∧
+        HelperLabelTrace w 1 W (restoreSlotChanges (stageFinalSlot n)) data out ∧
+        (∀ j : Fin T, (∀ o : Fin 142081, j ≠ fan (o.castAdd 2)) →
+          F.L (bank j) = S.L (bank j) ∧ F.R (bank j) = S.R (bank j)) ∧
+        ∀ j : Fin LeafCore.small, F.L (j.natAdd T) = [] ∧ F.R (j.natAdd T) = [] := by
+  intro bank full
+  obtain ⟨code,C,run⟩ := helperFanChanges_exec fan (restoreSlotChanges (stageFinalSlot n)) capacity body headers apart
+  refine ⟨code,C,?_⟩
+  intro w B K W V pos data u S stored rep free
+  let v : RecursiveInterchangeLayout.Descriptor := ⟨V,1,1,0,1,1⟩
+  have size : RecursiveInterchangeLayout.volume prime v = V := by simp [RecursiveInterchangeLayout.volume,v]
+  have atVolume := @run w 1 W v
+  rw [size] at atVolume
+  have dims : V = (prime^w)^16*(1*((prime^w)^112*W)) := by dsimp [V,W]; ring
+  obtain ⟨z,F,t,out,same,exec,paid,done,trace,keep,clear⟩ := atVolume dims pos data u S stored rep free
+  exact ⟨z,F,t,out,exec,paid,same,done,trace,keep,clear⟩
+
 end IntegerMultBounds.MathlibTM2.M6.BitNode

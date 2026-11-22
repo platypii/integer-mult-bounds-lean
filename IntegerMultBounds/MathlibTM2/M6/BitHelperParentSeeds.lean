@@ -245,7 +245,7 @@ noncomputable def prepareHelperHeaders (hdr : Fin 6 → Fin T) (regs : Fin 35 �
 
 /-- The seven caller words and the row clock generate all headers at linear cost
 in the owner volume, preserving the input on every original caller tape. -/
-theorem prepareHelperHeaders_exec (body : P → Pr P (T+273) Q prime U) (hdr : Fin 6 → Fin T)
+theorem prepareHelperSeeds_linear (body : P → Pr P (T+273) Q prime U) (hdr : Fin 6 → Fin T)
     (regs : Fin 35 ↪ Fin T) (v : RecursiveInterchangeLayout.Descriptor) (w : ℕ)
     (pos : v.Positive) (u : HS (T+273) Q prime U) (S : Stacks (T+273) prime) :
     let W := v.beforeRows*v.rows*v.between*v.afterD
@@ -256,14 +256,12 @@ theorem prepareHelperHeaders_exec (body : P → Pr P (T+273) Q prime U) (hdr : F
     (read (regs 33)).length = w →
     (∀ i, read (hdr i) = (M8.RevMachine.Routines.hdr v i).map bitSymbol) →
     (∀ j : Fin 273, S.L (j.natAdd T) = [] ∧ S.R (j.natAdd T) = []) →
-    ∃ z F t, z.user = u.user ∧ Exec body (prepareHelperHeaders hdr regs) (mk u S) t (mk z F) ∧
-      t ≤ 152402000*V ∧
-      (∀ i j, F.R (parentHelperHeaders T i j) =
-        (M8.RevMachine.Routines.hdr (helperAdjacentView (w+1) v.beforeH W i) j).map bitSymbol) ∧
+    ∃ z F t, z.user = u.user ∧ Exec body (prepareHelperSeeds hdr regs) (mk u S) t (mk z F) ∧
+      t ≤ 1999*V ∧
+      (∀ k : Fin 268, F.R ((k.castAdd 5).natAdd T) = helperArchiveSeed (w+1) v.beforeH W k) ∧
       F.L = S.L ∧ ∀ k : Fin T, F.R (k.castAdd 273) = read k := by
   intro W M V read base unit clock words free
   obtain ⟨y,D,m,same,seed,charge,filled,dl,dr⟩ := prepareHelperSeeds_exec body hdr regs v w pos u S base unit clock words free
-  obtain ⟨z,F,n,user,sweep,price,fl,ready,off⟩ := helperArchive_exec body (parentArchive T) (w+1) v.beforeH W y D filled
   have wp : 0 < W := Nat.mul_pos (Nat.mul_pos (Nat.mul_pos pos.1 pos.2.1) pos.2.2.2.1) pos.2.2.2.2
   have mp : 0 < M := pow_pos Shared50ModularControl.prime_prime.pos _
   have lp := Nat.mul_pos pos.2.2.1 wp
@@ -296,9 +294,32 @@ theorem prepareHelperHeaders_exec (body : P → Pr P (T+273) Q prime U) (hdr : F
   have count : lengths.length = 7 := by simp [lengths]
   rw [count,nsmul_eq_mul] at total
   change m ≤ (lengths.sum+1)+((21*(w+1)+12)+(432*(v.beforeRows*v.rows*v.between)+432*W+432*(v.beforeH*W))) at charge
+  exact ⟨y,D,m,same,seed,by omega,filled,dl,dr⟩
+
+theorem prepareHelperHeaders_exec (body : P → Pr P (T+273) Q prime U) (hdr : Fin 6 → Fin T)
+    (regs : Fin 35 ↪ Fin T) (v : RecursiveInterchangeLayout.Descriptor) (w : ℕ)
+    (pos : v.Positive) (u : HS (T+273) Q prime U) (S : Stacks (T+273) prime) :
+    let W := v.beforeRows*v.rows*v.between*v.afterD
+    let M := prime^(w+1)
+    let V := M^128*(v.beforeH*W)
+    let read := fun (k : Fin T) => S.R (k.castAdd 273)
+    read (regs 2) = binSyms M.size M → read (regs 28) = binSyms 1 1 →
+    (read (regs 33)).length = w →
+    (∀ i, read (hdr i) = (M8.RevMachine.Routines.hdr v i).map bitSymbol) →
+    (∀ j : Fin 273, S.L (j.natAdd T) = [] ∧ S.R (j.natAdd T) = []) →
+    ∃ z F t, z.user = u.user ∧ Exec body (prepareHelperHeaders hdr regs) (mk u S) t (mk z F) ∧
+      t ≤ 152402000*V ∧
+      (∀ i j, F.R (parentHelperHeaders T i j) =
+        (M8.RevMachine.Routines.hdr (helperAdjacentView (w+1) v.beforeH W i) j).map bitSymbol) ∧
+      F.L = S.L ∧ ∀ k : Fin T, F.R (k.castAdd 273) = read k := by
+  intro W M V read base unit clock words free
+  obtain ⟨y,D,m,same,seed,charge,filled,dl,dr⟩ := prepareHelperSeeds_linear body hdr regs v w pos u S base unit clock words free
+  obtain ⟨z,F,n,user,sweep,price,fl,ready,off⟩ := helperArchive_exec body (parentArchive T) (w+1) v.beforeH W y D filled
+  have wp : 0 < W := Nat.mul_pos (Nat.mul_pos (Nat.mul_pos pos.1 pos.2.1) pos.2.2.2.1) pos.2.2.2.2
   have bounded := price.trans (helperArchiveTime_le (w+1) v.beforeH W pos.2.2.1 wp)
   refine ⟨z,F,m+n,user.trans same,Exec.seq seed sweep,?_,ready,fl.trans dl,?_⟩
   · change n ≤ (127*1200000+1)*V at bounded
+    change m ≤ 1999*V at charge
     omega
   · intro k
     apply (off _ ?_).trans (dr k)
