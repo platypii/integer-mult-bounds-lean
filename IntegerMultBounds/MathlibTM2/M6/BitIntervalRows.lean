@@ -9,6 +9,75 @@ namespace IntegerMultBounds.MathlibTM2.M6.BitNode
 open IntegerMultBounds.Machine IntegerMultBounds.Networks
 open Shared50ModularControl (prime)
 
+section
+open RecursiveInterchangeLayout
+/-- Select the same contiguous field in each active word, retaining the
+parent's prefix, middle and trailing spectator tapes in physical order. -/
+noncomputable def inheritedInterval (v : Descriptor) (p width s : ℕ) : Descriptor :=
+  { v with
+    beforeH := v.beforeH*prime^p
+    width := width
+    between := prime^s*v.between*prime^p
+    afterD := prime^s*v.afterD }
+
+theorem inheritedInterval_volume (v : Descriptor) (p w s : ℕ) (split : v.width = p+w+s) :
+    volume prime (inheritedInterval v p w s) = volume prime v := by
+  simp only [volume,inheritedInterval,split,pow_add]
+  ring
+
+theorem inheritedInterval_nested (v : Descriptor) (p w s p' w' s' : ℕ) :
+    inheritedInterval (inheritedInterval v p w s) p' w' s' =
+      inheritedInterval v (p+p') w' (s'+s) := by
+  simp only [inheritedInterval,pow_add,Nat.mul_assoc]
+
+theorem inheritedInterval_flat (lo hi axes w W : ℕ) :
+    inheritedInterval ⟨1,1,1,axes*w,1,W⟩ (lo*w) ((hi-lo)*w) ((axes-hi)*w) =
+      phaseIntervalChild lo hi w W axes := by
+  simp only [inheritedInterval,phaseIntervalChild,Nat.one_mul,Nat.mul_one,pow_add,
+    ← pow_mul,Nat.mul_comm w]
+
+/-- Regrouping the spectator digits and narrowing both active fields retains
+the same serialized cell, including on a parent with a nontrivial middle. -/
+theorem inheritedInterval_index (v : Descriptor) (p w s : ℕ) (split : v.width = p+w+s)
+    (a row before middle after hp h hs dp d ds : ℕ) :
+    index prime (inheritedInterval v p w s) a row (before*prime^p+hp) h
+      ((hs*v.between+middle)*prime^p+dp) d (ds*v.afterD+after) =
+    index prime v a row before ((hp*prime^w+h)*prime^s+hs) middle
+      ((dp*prime^w+d)*prime^s+ds) after := by
+  simp only [index,inheritedInterval,split,pow_add]
+  ring
+
+/-- In the parent word, the child's transpose exchanges only the selected
+digits. Both prefixes, both suffixes and the middle spectator stay fixed. -/
+theorem inheritedInterval_transpose {α : Type*} (v : Descriptor) (p w s : ℕ)
+    (split : v.width = p+w+s) (word : Fin (volume prime v) → α)
+    (a : RecursiveInterchangeScaling.Address v) (hp dp : Fin (prime^p))
+    (hs ds : Fin (prime^s)) (h d : Fin (prime^w)) :
+    let child := inheritedInterval v p w s
+    let size := inheritedInterval_volume v p w s split
+    let fieldSize : prime^p*prime^w*prime^s = prime^v.width := by rw [split,pow_add,pow_add]
+    let field := fun u x z => (finProdFinEquiv (finProdFinEquiv (u,x),z)).cast fieldSize
+    let locate := fun x y => RecursiveInterchangeScaling.index
+      {a with h := field hp x hs, d := field dp y ds}
+    Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (fun i => word (i.cast size))
+      ((locate d h).cast size.symm) = word (locate h d) := by
+  intro child size fieldSize field locate
+  let addr (x y : Fin (prime^w)) : RecursiveInterchangeScaling.Address child :=
+    ⟨a.beforeRows,a.row,finProdFinEquiv (a.before,hp),x,
+      finProdFinEquiv (finProdFinEquiv (hs,a.middle),dp),y,finProdFinEquiv (ds,a.after)⟩
+  have physical (x y : Fin (prime^w)) :
+      RecursiveInterchangeScaling.index (addr x y) = (locate x y).cast size.symm := by
+    apply Fin.ext
+    simp only [Fin.val_cast,locate,RecursiveInterchangeScaling.index_val,addr,field,
+      finProdFinEquiv,Equiv.coe_fn_mk,Fin.val_cast]
+    simpa only [Nat.add_comm,Nat.mul_comm] using
+      inheritedInterval_index v p w s split a.beforeRows a.row a.before a.middle a.after hp x hs dp y ds
+  have swap := Shared50RecursiveNodeTranspose.transpose_all (by decide : 0 < 1) (one_dvd child.rows)
+    (fun i => word (i.cast size)) (addr h d)
+  change Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (fun i => word (i.cast size)) (RecursiveInterchangeScaling.index (addr d h)) = word ((RecursiveInterchangeScaling.index (addr h d)).cast size) at swap
+  simpa only [physical,Fin.cast_cast,Fin.cast_refl,id_eq] using swap
+end
+
 open RecursiveInterchangeLayout RecursiveInterchangeScaling in
 /-- A subgroup of the trailing spectator field can serve as the cyclic row
 index. Its physical offset is the remainder modulo the number of rows. -/
