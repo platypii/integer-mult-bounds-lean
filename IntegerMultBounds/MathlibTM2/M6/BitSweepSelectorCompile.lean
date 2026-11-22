@@ -11,18 +11,18 @@ open IntegerMultBounds.Machine Stack Host Node Routing
 theorem compileSweepBuffer_exec {T Q A M : ℕ} {P U : Type} (body : P → Pr P T Q A U)
     (rg : BinaryMaskReg ↪ Fin T) (buf src out : Fin T) (ports : [src,buf,out].Nodup)
     (srcOff : ∀ i, src ≠ rg i) (bufOff : ∀ i, buf ≠ rg i) (outOff : ∀ i, out ≠ rg i)
-    (H : ℕ) (fits : M < 2^H) (p : Equiv.Perm (Fin M)) (rank : ℕ → Fin M)
-    (correct : ∀ i : Fin M, rank i.val = p.symm i) (v : HS T Q A U) (S : Stacks T A)
+    (H : ℕ) (fits : M < 2^H) (p : Equiv.Perm (Fin M)) (v : HS T Q A U) (S : Stacks T A)
     (ready : DescriptorCompileReady rg S.R H M) (empty : S.R src = [])
-    (stream : S.R buf = (descriptorSelectorFrames H ((List.range M).map rank)).reverse) :
+    (stream : S.R buf = (descriptorSelectorFrames H (List.ofFn p.symm)).reverse) :
     ∃ z n, z.user = v.user ∧ n ≤ M*(descriptorCompileCallCost H M+2)+6*(M*(H+1))+8 ∧
       Exec body (.seq (moveR buf src id) (.seq (descriptorCompileProgram rg src buf out) (bclear src)))
         (mk v S) n (mk z {S with
           R := Function.update (Function.update S.R buf []) out
             ((permutationMasks p).flatten.map bitSymbol ++ S.R out)}) := by
   regs_ne ports
-  obtain ⟨u,hu,move⟩ := finishSweepSelectors_exec body buf src ‹src ≠ buf›.symm H rank p.symm correct v S stream
-  rw [empty,List.append_nil] at move
+  obtain ⟨u,hu,move⟩ := moveR_exec body buf src ‹src ≠ buf›.symm id v S
+  simp only [stream,List.length_reverse,descriptorSelectorFrames_length,List.length_ofFn,movedR,
+    List.map_id,List.reverse_reverse,empty,List.append_nil] at move
   let frames := descriptorSelectorFrames (A := A) H (List.ofFn p.symm)
   let B := {S with R := Function.update (Function.update S.R buf []) src frames}
   have keep (i) : B.R (rg i) = S.R (rg i) := by simp [B,(srcOff i).symm,(bufOff i).symm]
