@@ -101,12 +101,12 @@ theorem copyLabel_window_read {w B K : ℕ} (p : ℕ × ℕ)
 
 /-- The phase header bank precedes the permanent caller tapes. All subsequent
 workspaces are private, including the basis passes and recursive transpose. -/
-private def PhaseFrame {k t : ℕ} (bank : Tapes 24 prime → Tapes k prime → Tapes t prime) : Prop :=
+private def PhaseFrame {k t n : ℕ} (bank : Tapes n prime → Tapes k prime → Tapes t prime) : Prop :=
   ∃ slots : Fin k ↪ Fin t, ∀ h x,
     SharedBank.payload (bank h x) slots = x ∧
     SharedBank.strip (bank h x) slots = SharedBank.strip (bank h (SharedBank.empty k prime)) slots
 
-private theorem phaseFrame_append {k t u : ℕ} {bank : Tapes 24 prime → Tapes k prime → Tapes t prime}
+private theorem phaseFrame_append {k t u n : ℕ} {bank : Tapes n prime → Tapes k prime → Tapes t prime}
     (work : Tapes u prime) (frame : PhaseFrame bank) :
     PhaseFrame (fun h x => (bank h x).append work) := by
   obtain ⟨slots,frame⟩ := frame
@@ -119,10 +119,10 @@ private theorem phaseFrame_append {k t u : ℕ} {bank : Tapes 24 prime → Tapes
     SharedBankFrames.strip_append_left,(frame h x).1,(frame h x).2]
   exact ⟨rfl,rfl⟩
 
-private theorem headerOwner_frame {k : ℕ} : PhaseFrame (fun h (v : Tapes k prime) => h.append v) := by
-  refine ⟨⟨Fin.natAdd 24,fun i j eq => Fin.ext (by simpa using congrArg Fin.val eq)⟩,?_⟩
+private theorem headerOwner_frame {k n : ℕ} : PhaseFrame (fun (h : Tapes n prime) (v : Tapes k prime) => h.append v) := by
+  refine ⟨⟨Fin.natAdd n,fun i j eq => Fin.ext (by simpa using congrArg Fin.val eq)⟩,?_⟩
   intro h v
-  change SharedBank.payload (h.append v) (Fin.natAdd 24) = v ∧ SharedBank.strip (h.append v) (Fin.natAdd 24) = SharedBank.strip (h.append (SharedBank.empty k prime)) (Fin.natAdd 24)
+  change SharedBank.payload (h.append v) (Fin.natAdd n) = v ∧ SharedBank.strip (h.append v) (Fin.natAdd n) = SharedBank.strip (h.append (SharedBank.empty k prime)) (Fin.natAdd n)
   constructor
   · apply congrArg₂ Tapes.mk <;> funext i <;> simp [SharedBank.payload,Tapes.append]
   · apply congrArg₂ Tapes.mk <;> funext i <;> induction i using Fin.addCases with
@@ -130,8 +130,8 @@ private theorem headerOwner_frame {k : ℕ} : PhaseFrame (fun h (v : Tapes k pri
     | right j => simp [SharedBank.strip,Tapes.append]
 
 open M8.Machine in
-theorem intervalPrepared_frame [Net] {k : ℕ} :
-    ∃ slots : Fin k ↪ Fin _, ∀ (h : Tapes 24 prime) (v : Tapes k prime),
+theorem intervalPrepared_frame [Net] {k : ℕ} (n : ℕ := 24) :
+    ∃ slots : Fin k ↪ Fin _, ∀ (h : Tapes n prime) (v : Tapes k prime),
       SharedBank.payload (ArbitraryWidthOriginalRun.input (h.append v)) slots = v ∧
       SharedBank.strip (ArbitraryWidthOriginalRun.input (h.append v)) slots =
         SharedBank.strip (ArbitraryWidthOriginalRun.input (h.append (SharedBank.empty k prime))) slots := by

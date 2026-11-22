@@ -1927,6 +1927,164 @@ theorem inheritedRowSwap_cost [M8.Machine.Net] :
   have paid := total.trans (show 128*(LeafCore.coreCost V w+1) ≤ 128*V+128*LeafCore.coreCost V (w*1) by rw [Nat.mul_one]; omega)
   exact_mod_cast paid
 
+/-- Construct the six inherited crossing headers from two copies of the atom
+width and the independent trailing and block lengths. -/
+theorem inheritedRowSwap_headers (s : Fin 128) (l : Fin (64*64)) :
+    let outer := phaseField s.val (4095-l.val)
+    let middle := phaseField 0 (127-s.val+l.val)
+    let setup := FamilyPlacementAlphabet.sequence (FlatCoordinateDimensions.program outer)
+      (FlatCoordinateDimensions.program middle)
+    let slots : Fin 6 → Fin 18 := ![14,14,5,2,16,7]
+    ∀ w B K, 0 < B → 0 < K →
+      let M := prime^w
+      let V := M^128*B*M^(64*64)*K
+      let start := (FlatCoordinateDimensions.input w K).append (FlatCoordinateDimensions.input w B)
+      let ready := (FlatCoordinateDimensions.output outer w K).append (FlatCoordinateDimensions.output middle w B)
+      let headers := fun i => FlatCoordinateSchedule.bits (RecursiveDimensionBank.values (inheritedRowSwap w B K s l) i)
+      HoareTime setup (fun z => z = start) (fun z => z = ready) ((2*(24*4224+333)+1)*V) ∧
+      RecursiveDimensionBank.Headers (inheritedRowSwap w B K s l) headers ∧
+      ∀ i, ready.head (slots i) = 1 ∧ ready.tape (slots i) = RadixZeroFill.encodedBinary (headers i) := by
+  intro outer middle setup slots w B K hb hk M V start ready headers
+  have suffix (a b : ℕ) : FlatCoordinateLayout.suffixFields (phaseField a b) = b := by
+    unfold FlatCoordinateLayout.suffixFields phaseField
+    simp only
+    omega
+  have hp : 0 < M := pow_pos Shared50ModularControl.prime_prime.pos _
+  have volume : V = M^4224*(B*K) := by
+    dsimp only [V]
+    rw [show (4224 : ℕ) = 128+64*64 by decide,pow_add]
+    ring
+  have big : 0 < V := by rw [volume]; exact Nat.mul_pos (pow_pos hp _) (Nat.mul_pos hb hk)
+  have outerV : M^(s.val+1+(4095-l.val))*K ≤ V := by
+    rw [volume]
+    exact Nat.mul_le_mul (Nat.pow_le_pow_right hp (by omega)) (Nat.le_mul_of_pos_left K hb)
+  have middleV : M^(0+1+(127-s.val+l.val))*B ≤ V := by
+    rw [volume]
+    exact Nat.mul_le_mul (Nat.pow_le_pow_right hp (by have := l.isLt; change l.val < 4096 at this; omega))
+      (Nat.le_mul_of_pos_right B hk)
+  have run := FamilyPlacementAlphabet.sequence_hoare (FlatCoordinateDimensions.construct_hoare outer w K hk)
+    (FlatCoordinateDimensions.construct_hoare middle w B hb)
+  refine ⟨run.consequence (fun _ h => h) (fun _ h => h) ?_,
+    ⟨fun _ => FlatCoordinateSchedule.bits_value _,fun _ => FlatCoordinateSchedule.bits_canonical _⟩,?_⟩
+  · have first := Nat.mul_le_mul (show 24*s.val+24*(4095-l.val)+333 ≤ 24*4224+333 by omega) outerV
+    have second := Nat.mul_le_mul (show 24*0+24*(127-s.val+l.val)+333 ≤ 24*4224+333 by
+      have := l.isLt; change l.val < 4096 at this; omega) middleV
+    simp only [outer,middle,suffix,phaseField,ActualAffineScaling.modulus,M] at *
+    omega
+  · obtain ⟨_,pre,tail⟩ := FlatCoordinateDimensions.output_descriptors outer w K
+    obtain ⟨_,one,gap⟩ := FlatCoordinateDimensions.output_descriptors middle w B
+    have width := (FlatCoordinateDimensions.inputs_preserved outer w K).2.1
+    have gapSize : M^(127-s.val+l.val)*B = (M^(127-s.val)*B)*M^l.val := by rw [pow_add]; ring
+    have os : FlatCoordinateLayout.suffixFields outer = 4095-l.val := suffix _ _
+    have ms : FlatCoordinateLayout.suffixFields middle = 127-s.val+l.val := suffix _ _
+    simp only [FlatCoordinateLayout.prefixSize,FlatCoordinateLayout.suffixSize,os,ms,ActualAffineScaling.modulus] at pre tail one gap
+    simp only [
+      outer,middle,phaseField,ActualAffineScaling.modulus,pow_zero] at pre tail one gap
+    rw [show prime^w = M from rfl,gapSize] at gap
+    intro i
+    fin_cases i <;> constructor <;> first | rfl | exact pre | exact tail | exact one | exact gap | exact width
+
+/-- Build the crossing headers and immediately exchange the two digits on
+the caller's owner. The private header bank is disjoint from every owner. -/
+theorem inheritedRowSwap_runs [M8.Machine.Net] {n w B K : ℕ} (s : Fin 128) (l : Fin (64*64))
+    (hb : 0 < B) (hk : 0 < K) (caller : Tapes n prime) (src : Fin n) :
+    let outer := phaseField s.val (4095-l.val)
+    let middle := phaseField 0 (127-s.val+l.val)
+    let setup := FamilyPlacementAlphabet.sequence (FlatCoordinateDimensions.program outer)
+      (FlatCoordinateDimensions.program middle)
+    let slots : Fin 6 → Fin 18 := ![14,14,5,2,16,7]
+    let headers := fun i => Fin.castAdd n (slots i)
+    let site := Fin.natAdd 18 src
+    let start := (FlatCoordinateDimensions.input w K).append (FlatCoordinateDimensions.input w B)
+    let ready := (FlatCoordinateDimensions.output outer w K).append (FlatCoordinateDimensions.output middle w B)
+    let v := inheritedRowSwap w B K s l
+    ∀ x : Fin (volume prime v) → ZMod 2, caller.tape src = sourceWord x → caller.head src = 0 →
+      HoareTime (seq (M8.Machine.ArbitraryWidthOriginalRun.extendBanks
+          (extend (extend (extend setup n) 16) 19)) (program headers site))
+        (fun z => z = input (start.append caller))
+        (fun z => z = input (ready.append (setTape caller src
+          (sourceWord (Shared50RecursiveNodeRows.transpose (one_dvd v.rows) x)) 0)))
+        ((2*(24*4224+333)+1)*(volume prime v)+1+cost v (Routines.hdr v)) := by
+  intro outer middle setup slots headers site start ready v x payload head
+  obtain ⟨build,valid,ports⟩ := inheritedRowSwap_headers s l w B K hb hk
+  have hp := pow_pos Shared50ModularControl.prime_prime.pos w
+  have pos : v.Positive := ⟨Nat.zero_lt_one,Nat.zero_lt_one,pow_pos hp _,
+    Nat.mul_pos (Nat.mul_pos (pow_pos hp _) hb) (pow_pos hp _),Nat.mul_pos (pow_pos hp _) hk⟩
+  have act := M8.Machine.ArbitraryWidthOriginalTotalRun.runs (ready.append caller) headers site v
+    (Routines.hdr v) pos valid
+    (fun i => by simpa only [headers,ready,slots,outer,middle,v,Routines.hdr,Tapes.append,Fin.addCases_left] using (ports i).2)
+    (fun i => by simpa only [headers,ready,slots,outer,middle,v,Routines.hdr,Tapes.append,Fin.addCases_left] using (ports i).1)
+    x (by simpa [site,Tapes.append] using payload) (by simpa [site,Tapes.append] using head)
+  have prepare := M8.Machine.ArbitraryWidthOriginalRun.extend_banks_hoare
+    (hoare_extend_eq (hoare_extend_eq (hoare_extend_eq build caller)
+      (FixedHeaderBankCopy.empty 16)) M8.Machine.ArbitraryWidthHighPrepareShared.privateInput)
+  rw [SharedPlacementAlphabet.setTape_append_right] at act
+  rw [show volume prime v = _ from inheritedRowSwap_volume w B K s l]
+  exact prepare.seq act
+
+/-- A prepared crossing is a composable owner stage, including its header cost. -/
+theorem inheritedRowSwap_stage [M8.Machine.Net] {k w B K : ℕ} (src : Fin k)
+    (s : Fin 128) (l : Fin (64*64)) (hb : 0 < B) (hk : 0 < K) :
+    let child := inheritedRowSwap w B K s l
+    ∃ stage : SharedBankStage.Stage _ k prime (phaseOwners (N := volume prime child)),
+      stage.cost = (2*(24*4224+333)+1)*volume prime child+1+cost child (Routines.hdr child) ∧
+      ∀ data, stage.transform data = Function.update data src
+        (Shared50RecursiveNodeRows.transpose (one_dvd _) (data src)) := by
+  intro child
+  let transform := fun data : Fin k → Fin (volume prime child) → ZMod 2 =>
+    Function.update data src (Shared50RecursiveNodeRows.transpose (one_dvd _) (data src))
+  let initial := (FlatCoordinateDimensions.input w K).append (FlatCoordinateDimensions.input w B)
+  let finalBank := (FlatCoordinateDimensions.output (phaseField s.val (4095-l.val)) w K).append
+    (FlatCoordinateDimensions.output (phaseField 0 (127-s.val+l.val)) w B)
+  let bank := fun (h : Tapes 18 prime) (owners : Tapes k prime) => input (h.append owners)
+  obtain ⟨slots,frame⟩ := intervalPrepared_frame (k := k) 18
+  have run (data : Fin k → Fin (volume prime child) → ZMod 2) :=
+    inheritedRowSwap_runs s l hb hk (phaseOwners data) src (data src) (sourceWord_cast (v := child) rfl (data src)).symm rfl
+  let machineOf {t q b : ℕ} {g : Program t q prime} {pre post : Tapes t prime → Prop}
+      (_ : HoareTime g pre post b) := g
+  let machine := machineOf (run 0)
+  refine ⟨{ tapes := _, states := _, program := machine, transform := transform,
+            input := fun data => bank initial (phaseOwners data),
+            output := fun data => bank finalBank (phaseOwners (transform data)),
+            slots := slots, slots_injective := slots.injective,
+            metadata := SharedBank.strip (bank initial (SharedBank.empty k prime)) slots,
+            cost := _, input_payload := fun data => (frame _ _).1,
+            output_payload := fun data => (frame _ _).1,
+            strip_input := fun data => (frame _ _).2, realizes := ?_ },rfl,fun _ => rfl⟩
+  intro data
+  have step := run data
+  have updated : setTape (phaseOwners data) src
+      (sourceWord (Shared50RecursiveNodeRows.transpose (one_dvd _) (data src))) 0 =
+      phaseOwners (transform data) := by
+    rw [show sourceWord (Shared50RecursiveNodeRows.transpose (one_dvd _) (data src)) = _ from sourceWord_cast (v := child) rfl (Shared50RecursiveNodeRows.transpose (one_dvd _) (data src))]
+    apply congrArg₂ Tapes.mk <;> funext j <;> by_cases eq : j = src <;>
+      simp [phaseOwners,transform,eq]
+  rw [updated] at step
+  exact step
+
+/-- Charge all 128 header constructions, their joins to the transpose cores,
+and the sequenced core calls at the same parent-volume rate. -/
+theorem inheritedRowSwap_prepared_cost [M8.Machine.Net] :
+    ∃ C : ℝ, ∀ w B K : ℕ, 0 < w → 0 < B → 0 < K →
+      let M := prime^w
+      let V := M^128*B*M^(64*64)*K
+      let view := fun s => inheritedRowSwap w B K s (inheritedLabelDigit s)
+      ((128*((2*(24*4224+333)+1)*V+1)+
+        ∑ s : Fin 128, (cost (view s) (Routines.hdr (view s))+1) : ℕ) : ℝ) ≤
+        C*V*(w : ℝ)^M8.Machine.BudgetBound.tau := by
+  obtain ⟨C,bound⟩ := inheritedRowSwap_cost
+  refine ⟨C+128*(2*(24*4224+333)+2),?_⟩
+  intro w B K hw hb hk M V view
+  have core := bound w B K hw hb hk
+  change ((∑ s : Fin 128, (cost (view s) (Routines.hdr (view s))+1) : ℕ) : ℝ) ≤
+    C*V*(w : ℝ)^M8.Machine.BudgetBound.tau at core
+  have hv : 0 < V := Nat.mul_pos (Nat.mul_pos (Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) hb) (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _)) hk
+  have power := Real.one_le_rpow (show 1 ≤ (w : ℝ) by exact_mod_cast hw) M8.Machine.BudgetBound.exponent_range.1.le
+  have scale := le_mul_of_one_le_right (show 0 ≤ (V : ℝ) by positivity) power
+  have one : 1 ≤ (V : ℝ) := by exact_mod_cast hv
+  push_cast at core ⊢
+  linarith only [core,scale,one]
+
 /-- Both directions of the scheduled chart act on the packed record word consumed by the parent. -/
 theorem packedRemainderChart_stage [M8.Machine.Net] {k : ℕ} (src : Fin k) (c : PortCertificate)
     (hc : c.Checked) (inverse : Bool) :
