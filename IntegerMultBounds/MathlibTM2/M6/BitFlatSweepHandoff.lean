@@ -228,16 +228,17 @@ theorem alignedFlatNode [M8.Machine.Net] {U : Type} :
     0 < B → 0 < K → ({node with rows := rows} : Descriptor).Positive →
     ∀ (P : Fin 9 → Type) (t : Fin 9 → StageRun → ℕ)
       (body : ∀ i j, P i → Pr (P i) (t i j) Q prime U) (coeff : Fin 9 → StageRun → ℝ)
-      (required : Fin 9 → (ℕ → ℕ) → Prop) (budget : Fin nodeChildren5.length → ℕ),
+      (required : Fin 9 → (ℕ → ℕ) → Prop) (recursiveBudget : Fin nodeChildren5.length → ℕ)
+      (rate : ℝ), leafRate ≤ rate →
+    let budget := fun k => let child := scheduledChild prime node k
+      if child.width ≤ cutoff then ⌊(rate*(child.width : ℝ)^M8.Machine.BudgetBound.tau)*volume prime child⌋₊
+      else recursiveBudget k
     let time := fun n => if h : n < nodeChildren5.length then budget ⟨n,h⟩ else 0
     (∀ i, PackedStageExecution (w := w) (B := B) (K := K) i (t i) (body i) (coeff i) (required i)) →
     (∀ i, required i time) →
     let sweep : Fin 9 → ℕ := fun i =>
       ⌊(stageSetupCost base nt m w : ℝ)+(C+|stagePackingRate i+(stageRuns.map (coeff i)).sum|)*m*(w : ℝ)^M8.Machine.BudgetBound.tau⌋₊+
         142081*(8*m+10)+1
-    (∀ i j, let k := idleDirectoryIndex (i,idleCopyIndex j)
-      let child := scheduledChild prime node k
-      child.width ≤ cutoff → ⌊(leafRate*(child.width : ℝ)^M8.Machine.BudgetBound.tau)*volume prime child⌋₊ ≤ budget k) →
     (∀ i (j : (Fin 32 × Fin 5) × Fin 222),
       let child := scheduledChild prime node (idleDirectoryIndex (i,idleCopyIndex j))
       cutoff < child.width → (lane i j.2).width = child.width → (lane i j.2).width < node.width →
@@ -248,7 +249,7 @@ theorem alignedFlatNode [M8.Machine.Net] {U : Type} :
       PackedWindowHandoff U Q (volume prime (lane i j.2)) (fun x y =>
         ∀ (r : Fin 142080) j, y r.castSucc (position j) =
           Shared50RecursiveNodeRows.transpose (one_dvd stream.rows) (x r.castSucc ∘ position) j)
-      (budget (idleDirectoryIndex (i,idleCopyIndex j)))) →
+      (recursiveBudget (idleDirectoryIndex (i,idleCopyIndex j)))) →
     let idle := fun _ : Fin 9 =>
       35520 * (((298*(intervalSplitTapes+5)+5)*142080+142081*8)*V + (142081*10+31)) +
       1 + 142081*(8*m+10)+1
@@ -259,7 +260,7 @@ theorem alignedFlatNode [M8.Machine.Net] {U : Type} :
   let divStates := (fun {q : ℕ} (_ : Program 38 q prime) => q) (RecursiveRowsNodeHeaders.program 142080)
   obtain ⟨leafRate,nonneg,atCutoff⟩ := roleHandoffAtCutoff (U := U)
   refine ⟨|C|,leafRate,base,nt,max Cover.Fallback.columnCapacity (max nodeStates (max divStates stageStates)),nonneg,?_⟩
-  intro Q h B groups cutoff fits node width split label w rows K W V m lane hB hK pos P t body coeff required budget time runs ready sweep allowance children idle
+  intro Q h B groups cutoff fits node width split label w rows K W V m lane hB hK pos P t body coeff required recursiveBudget rate rateBound budget time runs ready sweep children idle
   have shape : B*prime^(64*(w*64))*K = W*142080 := by dsimp only [K,W,rows]; ac_rfl
   have positive : 0 < W*142080 := shape ▸ Nat.mul_pos (Nat.mul_pos hB (pow_pos Shared50ModularControl.prime_prime.pos _)) hK
   have capacity := (le_max_left _ _).trans fits
@@ -292,9 +293,16 @@ theorem alignedFlatNode [M8.Machine.Net] {U : Type} :
       rw [show volume prime (lane i j.2) = (prime^w)^128*W from
         intervalChild_volume (Nat.succ_le_succ bounds.1) (Nat.succ_le_succ bounds.2) w W]
       exact Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) (Nat.pos_of_mul_pos_right positive)
-    obtain ⟨L,T,b,c,src,dst,seed,exec⟩ := atCutoff capacity child (lane i j.2) cutoff _
-      position laneVolume childWidth same size coords (allowance i j)
-      (fun active => children i j active same smaller size position coords)
+    obtain ⟨L,T,b,c,src,dst,seed,exec⟩ := atCutoff capacity child (lane i j.2) cutoff (budget (idleDirectoryIndex (i,idleCopyIndex j)))
+      position laneVolume childWidth same size coords (by
+        intro stopped
+        change _ ≤ (if child.width ≤ cutoff then _ else _)
+        rw [if_pos stopped]
+        exact Nat.floor_le_floor (mul_le_mul_of_nonneg_right
+          (mul_le_mul_of_nonneg_right rateBound (by positivity)) (Nat.cast_nonneg _))) (by
+        intro active
+        simpa only [budget,child,if_neg (Nat.not_le_of_lt active)] using
+          children i j active same smaller size position coords)
     refine ⟨L,T,b,c,src,dst,seed,?_⟩
     intro x u S words fresh
     obtain ⟨z,F,n,y,ran,paid,user,out,reads⟩ := exec x u S words fresh

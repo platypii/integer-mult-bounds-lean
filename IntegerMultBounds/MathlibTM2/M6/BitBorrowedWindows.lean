@@ -30,17 +30,17 @@ private theorem workerSetup_volume (w W : ℕ) (pos : 0 < W) :
   have := sizeBound (w+1) wBound
   omega
 
-/-- With a fixed stopping width, record preparation, leaf execution and cleanup
-together cost a constant times the child's physical volume. -/
-theorem stoppedCopyBudget_linear [M8.Machine.Net] (tapes cutoff : ℕ) :
-    ∃ C : ℕ, ∀ w W width : ℕ, 0 < W → width ≤ cutoff →
+/-- Header preparation and cleanup cost linear volume plus a fixed number of
+leaf-core calls. The coefficient is independent of the stopping width. -/
+theorem stoppedCopyBudget_bound [M8.Machine.Net] (tapes : ℕ) :
+    ∃ C : ℝ, 0 ≤ C ∧ ∀ w W width : ℕ, 0 < W →
       let V := (prime^w)^16*W
-      stoppedCopyBudget tapes w W V width ≤ C*V := by
-  let power := ((max 1 cutoff : ℕ) : ℝ)^M8.Machine.BudgetBound.tau
-  obtain ⟨K,hK⟩ := exists_nat_ge (|LeafCore.C| * power)
-  let rate := 1301+K
-  refine ⟨113+rate*(tapes+5)+6+tapes*(36+8*rate)+1,?_⟩
-  intro w W width pos stop V
+      (stoppedCopyBudget tapes w W V width : ℝ) ≤
+        (C*((max 1 width : ℕ) : ℝ)^M8.Machine.BudgetBound.tau)*V := by
+  let A := 113+1301*(tapes+5)+6+tapes*(36+8*1301)+1
+  let B := tapes+5+8*tapes
+  refine ⟨(A : ℝ)+(B : ℝ)*|LeafCore.C|,by positivity,?_⟩
+  intro w W width pos V
   have base : 0 < prime^w := pow_pos Shared50ModularControl.prime_prime.pos _
   have volume : 0 < V := Nat.mul_pos (pow_pos base _) pos
   have radix : prime^w ≤ V := (Nat.le_self_pow (by decide : 16 ≠ 0) _).trans (Nat.le_mul_of_pos_right _ pos)
@@ -49,25 +49,64 @@ theorem stoppedCopyBudget_linear [M8.Machine.Net] (tapes cutoff : ℕ) :
   have suffix : W ≤ V := Nat.le_mul_of_pos_left _ (pow_pos base _)
   have h := FlatCoordinateDimensions.bits_length_le_twice atom volume
   have s := FlatCoordinateDimensions.bits_length_le_twice suffix volume
-  have core := RevBudget.coreCost_le V width (L := power)
-    (Real.rpow_le_rpow (by positivity) (by exact_mod_cast max_le_max_left 1 stop)
-      M8.Machine.BudgetBound.exponent_range.1.le)
-  have coreNat : LeafCore.coreCost V width ≤ K*V := by
-    have bound : (LeafCore.coreCost V width : ℝ) ≤ (K : ℝ)*V := core.trans (by
-      calc |LeafCore.C| * (V : ℝ) * power = (|LeafCore.C| * power)*V := by ring
-           _ ≤ (K : ℝ)*V := mul_le_mul_of_nonneg_right hK (Nat.cast_nonneg _))
-    exact_mod_cast bound
-  let cost := 1300*V+1+LeafCore.coreCost V width
-  have costBound : cost ≤ rate*V := by dsimp [cost,rate]; rw [Nat.add_mul]; omega
-  let header := (FlatCoordinateSchedule.bits w).length+(FlatCoordinateSchedule.bits W).length+4
-  have cleanup : 4*(header+2*cost)+4 ≤ (36+8*rate)*V := by
-    dsimp [header]; rw [Nat.add_mul,Nat.mul_assoc]; omega
-  have load : 21*w+20*(FlatCoordinateSchedule.bits w).length+6*(FlatCoordinateSchedule.bits W).length+40 ≤ 113*V := by omega
-  change _ + (cost*(tapes+5)+6) + (tapes*(4*(header+2*cost)+4)+1) ≤ _
+  let core := LeafCore.coreCost V width
+  have localCost : stoppedCopyBudget tapes w W V width ≤ A*V+B*core := by
+    unfold stoppedCopyBudget
+    dsimp only [core]
+    dsimp only [A,B]
+    nlinarith only [atom,h,s,volume,Nat.mul_le_mul_left tapes h,Nat.mul_le_mul_left tapes s,
+      Nat.mul_le_mul_left tapes (show 1 ≤ V from volume)]
+  let power := ((max 1 width : ℕ) : ℝ)^M8.Machine.BudgetBound.tau
+  have one : 1 ≤ power := Real.one_le_rpow (by exact_mod_cast le_max_left 1 width)
+    M8.Machine.BudgetBound.exponent_range.1.le
+  have scaled := mul_le_mul_of_nonneg_left (le_mul_of_one_le_right (Nat.cast_nonneg (α := ℝ) V) one)
+    (Nat.cast_nonneg (α := ℝ) A)
+  have kernel := mul_le_mul_of_nonneg_left (RevBudget.coreCost_le V width (L := power) le_rfl)
+    (Nat.cast_nonneg (α := ℝ) B)
   calc
-    _ ≤ 113*V+(rate*V*(tapes+5)+6*V)+(tapes*((36+8*rate)*V)+1*V) := by
-      gcongr <;> omega
-    _ = _ := by ring
+    _ ≤ ((A*V+B*core : ℕ) : ℝ) := by exact_mod_cast localCost
+    _ ≤ _ := by simp only [Nat.cast_add,Nat.cast_mul]; dsimp only [core,power] at *; linarith only [scaled,kernel]
+
+/-- An installed COPY leaf meets the assembled node's stopped-child budget
+in the scheduled descriptor's own width and volume. -/
+theorem stoppedCopyChild_budget [M8.Machine.Net] :
+    ∃ C : ℝ, ∀ {P U : Type} {T Q : ℕ} (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T)
+      (fits : stoppedCopyMachine.1 ≤ Q) (body : P → Pr P T Q prime U) (f : P),
+      body f = stoppedCopyProgram ports fits →
+      ∀ (node desc : Descriptor) (w W : ℕ) (record : List (Fin (prime+4)))
+        (position : Fin (volume prime desc) ≃ Fin ((prime^(w+1))^16*W)),
+      CopyIntervalPositions desc (w+1) W position → desc.width = 7*(w+1) → 0 < W →
+      ∀ rate : ℝ, C ≤ rate → ScheduledChildExec node desc w W ports record position body f
+        ⌊(rate*(desc.width : ℝ)^M8.Machine.BudgetBound.tau)*volume prime desc⌋₊ := by
+  obtain ⟨C,_,bound⟩ := stoppedCopyBudget_bound (M8.Machine.ArbitraryWidthOriginalZeroBranch.count 25)
+  refine ⟨C,?_⟩
+  intro P U T Q ports fits body f installed node desc w W record position coords width pos rate room
+  have run := stoppedCopyChild_exec ports fits body f installed node desc w W record position coords width pos
+  have size := Fintype.card_congr position
+  simp only [Fintype.card_fin] at size
+  have cost := bound (w+1) W desc.width pos
+  rw [max_eq_right (show 1 ≤ desc.width by omega)] at cost
+  have paid := Nat.le_floor (cost.trans (mul_le_mul_of_nonneg_right
+    (mul_le_mul_of_nonneg_right room (by positivity : 0 ≤ (desc.width : ℝ)^M8.Machine.BudgetBound.tau)) (Nat.cast_nonneg _)))
+  intro smaller u D word stored clean
+  obtain ⟨z,F,t,y,exec,price,rest⟩ := run smaller u D word stored clean
+  exact ⟨z,F,t,y,exec,price.trans (by simpa only [size] using paid),rest⟩
+
+/-- With a fixed stopping width, record preparation, leaf execution and cleanup
+together cost a constant times the child's physical volume. -/
+theorem stoppedCopyBudget_linear [M8.Machine.Net] (tapes cutoff : ℕ) :
+    ∃ C : ℕ, ∀ w W width : ℕ, 0 < W → width ≤ cutoff →
+      let V := (prime^w)^16*W
+      stoppedCopyBudget tapes w W V width ≤ C*V := by
+  obtain ⟨rate,nonneg,bound⟩ := stoppedCopyBudget_bound tapes
+  obtain ⟨C,cap⟩ := exists_nat_ge (rate*((max 1 cutoff : ℕ) : ℝ)^M8.Machine.BudgetBound.tau)
+  refine ⟨C,?_⟩
+  intro w W width pos stop V
+  have power := Real.rpow_le_rpow (by positivity : (0 : ℝ) ≤ (max 1 width : ℕ))
+    (by exact_mod_cast max_le_max_left 1 stop : ((max 1 width : ℕ) : ℝ) ≤ (max 1 cutoff : ℕ)) M8.Machine.BudgetBound.exponent_range.1.le
+  have paid := (bound w W width pos).trans (mul_le_mul_of_nonneg_right
+    ((mul_le_mul_of_nonneg_left power nonneg).trans cap) (Nat.cast_nonneg V))
+  exact_mod_cast paid
 
 /-- Prepare an allocated child record and call its recursive procedure on
 the live packed payload. All tapes outside this occurrence are preserved. -/
