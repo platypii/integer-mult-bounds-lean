@@ -266,12 +266,14 @@ private theorem moveOverhead_volume (child : Descriptor) (w W rank L digits : �
   have := size (CopyChildLayout.spectators child)
   omega
 
+open Certificates.PR589 in
 /-- Prepare and dispatch a packed MOVE from the caller's cutoff. Only the
 above-cutoff branch requires a child execution witness. -/
 theorem packedMixedMoveCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
     (workerPorts : Fin (rowSwapBlock.tapes+35) ↪ Fin T) (capacity : columnCapacity ≤ Q)
-    (rank : ℕ) (positive : 0 < rank) (bound : rank ≤ 64)
+    (n : Fin 9) (p : StageRun) (moveIndex : MoveIndex)
     {N H : ℕ} (record : Fin 35 ↪ Fin N) (host : Fin (N+(T+273)) ↪ Fin H) :
+    let occurrence := phaseChildPositions.choose (n,p,moveIndex)
     let parent := record.trans ((Fin.castAddEmb (T+273)).trans host)
     let payload := ((scheduledRecordPorts workerPorts) 24).castAdd 273
     let stage := (Record.payloadBank (record 24) payload).trans host
@@ -282,12 +284,14 @@ theorem packedMixedMoveCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
     ∃ leaf : Pr P H Q prime U, ∀ (body : P → Pr P H Q prime U) (large f : P), body f = leaf →
     let localPort := (Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)
     let bank := localPort.trans ports
-    ∃ code, ∀ (node desc : Descriptor) (w W L cutoff recursiveTime : ℕ),
+    ∃ code, ∀ (node : Descriptor) (w rows L cutoff recursiveTime : ℕ),
+    let W := node.beforeRows*rows*node.beforeH*node.between*node.afterD
+    let desc := scheduledChild prime node occurrence
     let M := prime^(w+1)
     let suffix := M^112*W
-    desc.width = (w+1)*rank → cutoff < 2^L → desc.width.size ≤ L → L ≤ 64*(w+1) → 0 < W → ∀ (position : Fin (volume prime desc) ≃ Fin (M^16*suffix))
-      (x : Fin (M^16*suffix) → ZMod 2) (u : HS H Q prime U) (S : Stacks H prime), desc.width < node.width →
-    (∀ h, (position h).val = (CopyChildLayout.packActive desc h).val) → S.R cut = binSyms L cutoff → S.R (bank 34) = [] →
+    node.width = 64*(w+1) → node.rows = 142080*rows → cutoff < 2^L → desc.width.size ≤ L → L ≤ 64*(w+1) → 0 < W → ∃ position : Fin (volume prime desc) ≃ Fin (M^16*suffix),
+    (∀ h, (position h).val = (CopyChildLayout.packActive desc h).val) ∧ ∀ (x : Fin (M^16*suffix) → ZMod 2) (u : HS H Q prime U) (S : Stacks H prime),
+    S.R cut = binSyms L cutoff → S.R (bank 34) = [] →
     (∀ i j, S.R (headers i j) = (Routines.hdr (helperAdjacentView (w+1) 1 W i) j).map bitSymbol) →
     (∀ i : Fin 35, i ≠ 24 → i ≠ 34 → S.L (bank i) = [] ∧ S.R (bank i) = []) →
     (∀ i : Fin (rowSwapBlock.tapes+35), 35 ≤ i.val → S.L (ports i) = [] ∧ S.R (ports i) = []) →
@@ -309,7 +313,10 @@ theorem packedMixedMoveCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
       (∀ H J, let caller := RecordReady (b := prime) (w := w) (d := 16) (W := suffix) parent H J (binSyms L cutoff) SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0
         caller x S → caller y F) ∧
       ∀ h, y (position h) = Shared50RecursiveNodeRows.transpose (one_dvd desc.rows) (x ∘ position) h := by
-  intro parent payload stage worker ports cut headers
+  intro occurrence parent payload stage worker ports cut headers
+  let rank := nodeChildren5[occurrence.val]
+  obtain ⟨positive,rankBound⟩ := nodeChildren5_bounds occurrence
+  have bound : rank ≤ 64 := rankBound.trans (by decide)
   have shared : scheduledRecordPorts ports 24 = parent 24 := congrArg host (Record.payloadBank_shared (record 24) payload)
   have apartParent (i : Fin T) (j : Fin 35) (hj : j ≠ 24) : stage (i.castAdd 273) ≠ parent j := by
     change host (Record.payloadBank (record 24) payload (i.castAdd 273)) ≠ host ((record j).castAdd _)
@@ -336,12 +343,30 @@ theorem packedMixedMoveCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
   let fields : List (Fin 35) := [2,27,28,32,33]
   let controls := fields.map bank
   refine ⟨prepare.seq (dispatch.seq (Mult.ShortConv.clearWords controls)),?_⟩
-  intro node desc w W L cutoff recursiveTime M suffix width cutFits fits precision pos position x u S smaller coords header archive ready empty clean payload core rate room budget active price recurse
+  intro node w rows L cutoff recursiveTime W desc M suffix aligned split cutFits fits precision pos
+  have measure := (scheduledChild_measures prime node ⟨_,aligned⟩ ⟨_,split⟩ occurrence).2
+  have total : (M^16*suffix)*142080 = volume prime node := by
+    unfold volume
+    rw [aligned,split,Nat.mul_comm 64 (w+1),pow_mul]
+    dsimp only [M,suffix,W]
+    ring
+  have size : volume prime desc = M^16*suffix := Nat.eq_of_mul_eq_mul_right (by decide : 0 < 142080) (measure.trans total.symm)
+  let pack := CopyChildLayout.packActive desc
+  have card := Fintype.card_congr pack
+  simp only [Fintype.card_fin] at card
+  let position := pack.trans (finCongr (card.symm.trans size))
+  have coords (h) : (position h).val = (CopyChildLayout.packActive desc h).val := rfl
+  refine ⟨position,coords,?_⟩
+  intro x u S header archive ready empty clean payload core rate room budget active price recurse
+  have width : desc.width = (w+1)*rank := by
+    change rank*(node.width/64) = _
+    rw [aligned,Nat.mul_div_cancel_left _ (by decide),Nat.mul_comm]
+  have smaller : desc.width < node.width := by
+    rw [width,aligned,Nat.mul_comm 64]
+    exact Nat.mul_lt_mul_of_pos_left (rankBound.trans_lt (by decide : 42 < 64)) (Nat.succ_pos w)
   let digits := if active then L else (CopyChildLayout.spectators desc).size
   obtain ⟨v,D,m,user,run,cost,stored,left,off⟩ := setup w W x u S ready empty (by simpa only [show bank 24 = parent 24 from shared] using payload)
   rw [archive] at stored
-  have size := Fintype.card_congr position
-  simp only [Fintype.card_fin] at size
   have spectator := ((off (headers i 5) (fun k => (apart i 5 (localPort k)).symm)).trans (ready i 5)).trans
     (moveSpectatorHeader desc w W rank positive bound width size)
   have clear (j : Fin (rowSwapBlock.tapes+35)) (hj : 35 ≤ j.val) : D.L (ports j) = [] ∧ D.R (ports j) = [] := by
