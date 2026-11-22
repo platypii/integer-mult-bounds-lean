@@ -31,6 +31,112 @@ private theorem replaceArchive {T w W : ℕ} [NeZero (prime^(w+1))] (bank : Fin 
   have ne : i ≠ 34 := fun eq => (by decide : (34 : Fin 35) ∉ shearWork) (eq ▸ hi)
   simpa [Function.update_of_ne (bank.injective.ne ne)] using ready.scratch i hi
 
+/-- Copy the inherited cutoff into an empty worker archive. The source and
+the rest of the prepared record survive, including the live payload. -/
+theorem inheritWorkerCutoff {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
+    (bank : Fin 35 ↪ Fin T) (cut : Fin T) (off : ∀ i, bank i ≠ cut)
+    (w W L cutoff : ℕ) (word : Fin ((prime^(w+1))^16*W) → ZMod 2)
+    (u : HS T Q prime U) (S : Stacks T prime) (header : S.R cut = binSyms L cutoff) :
+    let stored := RecordReady (b := prime) (w := w) (d := 16) (W := W) bank (prime^(w+1)).size W.size
+    let F := {S with R := Function.update S.R (bank 34) (binSyms L cutoff)}
+    stored [] SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0 word S →
+    ∃ z, Exec body (bcopy cut (bank 34) (bank 0) (bank 1)) (mk u S) (6*L+6) (mk z F) ∧
+      z.user = u.user ∧ stored (binSyms L cutoff) SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0 word F := by
+  intro stored F ready
+  obtain ⟨z,user,copy⟩ := bcopy_exec (body := body) (a := cut) (c := bank 34) (t₁ := bank 0) (t₂ := bank 1)
+    (by simp [Ne.symm (off _)]) u S (ready.scratch 0 (by decide)).2 (ready.scratch 1 (by decide)).2
+  rw [header,length_binSyms,ready.archive,List.append_nil] at copy
+  exact ⟨z,copy,user,replaceArchive bank _ _ _ _ ready⟩
+
+/-- A call on an empty archive borrows the caller's cutoff for the
+duration of the execution. The return clears the archive and restores all
+tapes outside the worker, including the inherited header. -/
+theorem inheritedWorkerCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
+    (body : P → Pr P T Q prime U) (f : P) (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T)
+    (cut : Fin T) (apart : ∀ i, ports i ≠ cut)
+    (node child : Descriptor) (w W L cutoff budget : ℕ)
+    (position : Fin (volume prime child) ≃ Fin ((prime^(w+1))^16*W))
+    (worker : ScheduledChildExec node child w W ports (binSyms L cutoff) position body f budget) :
+    let bank := scheduledRecordPorts ports
+    let code := (bcopy cut (bank 34) (bank 0) (bank 1)).seq ((Prog.call f).seq (bclear (bank 34)))
+    let stored := RecordReady (b := prime) (w := w) (d := 16) (W := W) bank (prime^(w+1)).size W.size []
+      SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0
+    let clean := fun (S : Stacks T prime) => ∀ i : Fin (rowSwapBlock.tapes+35), 35 ≤ i.val →
+      S.L (ports i) = [] ∧ S.R (ports i) = []
+    child.width < node.width → ∀ u S word, S.R cut = binSyms L cutoff → stored word S → clean S →
+      ∃ z F n y, Exec body code (mk u S) n (mk z F) ∧ n ≤ budget+8*L+10 ∧ z.user = u.user ∧
+        stored y F ∧ clean F ∧ (∀ j, (∀ i, ports i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j) ∧
+        ∀ h, y (position h) = Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (word ∘ position) h := by
+  intro bank code stored clean smaller u S word header ready free
+  let D := {S with R := Function.update S.R (bank 34) (binSyms L cutoff)}
+  have off (i : Fin (rowSwapBlock.tapes+35)) (hi : 35 ≤ i.val) : ports i ≠ bank 34 := by
+    intro eq
+    have h := congrArg Fin.val (ports.injective eq)
+    change i.val = 34 at h
+    omega
+  obtain ⟨v,copy,user,loaded⟩ := inheritWorkerCutoff body bank cut (fun i => apart _) w W L cutoff word u S header ready
+  obtain ⟨z,F,n,y,run,paid,same,out,blank,frame,read⟩ := worker smaller v D word loaded
+    (fun i hi => ⟨(free i hi).1,(Function.update_of_ne (off i hi) ..).trans (free i hi).2⟩)
+  obtain ⟨q,done,_,erase⟩ := bclear_exec (body := body) (bank 34) z F
+  rw [out.archive,length_binSyms] at erase
+  refine ⟨q,_,_,y,Exec.seq copy (Exec.seq (Exec.call run) erase),by omega,done.trans (same.trans user),
+    replaceArchive bank _ _ _ _ out,?_,?_,read⟩
+  · exact fun i hi => ⟨(blank i hi).1,(Function.update_of_ne (off i hi) ..).trans (blank i hi).2⟩
+  · intro j away
+    have ne : j ≠ bank 34 := (away _).symm
+    exact ⟨(frame j away).1,(Function.update_of_ne ne ..).trans ((frame j away).2.trans (Function.update_of_ne ne ..))⟩
+
+/-- Prepare controls for a packed child, borrow the cutoff, and return the
+transposed payload with an empty archive. -/
+theorem inheritedPackedChildCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
+    (body : P → Pr P T Q prime U) (f : P) (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T)
+    (cut : Fin T) (outsideCut : ∀ i, ports i ≠ cut)
+    (headers : Fin 127 → Fin 6 → Fin T) (apart : ∀ i j k, headers i j ≠ ports k) :
+    let localPort := (Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)
+    let bank := localPort.trans ports
+    ∃ code, ∀ (node desc : Descriptor) (w W L cutoff budget : ℕ),
+    let M := prime^(w+1)
+    let suffix := M^112*W
+    ∀ (position : Fin (volume prime desc) ≃ Fin (M^16*suffix))
+      (x : Fin (M^16*suffix) → ZMod 2) (u : HS T Q prime U) (S : Stacks T prime), desc.width < node.width →
+    S.R cut = binSyms L cutoff → S.R (bank 34) = [] →
+    (∀ i j, S.R (headers i j) = (Routines.hdr (helperAdjacentView (w+1) 1 W i) j).map bitSymbol) →
+    (∀ i : Fin 35, i ≠ 24 → i ≠ 34 → S.L (bank i) = [] ∧ S.R (bank i) = []) →
+    (∀ i : Fin (rowSwapBlock.tapes+35), 35 ≤ i.val → S.L (ports i) = [] ∧ S.R (ports i) = []) →
+    (∀ z, readAt blank (S.L (bank 24)) (S.R (bank 24)) z = RadixToBinary.binaryEncoding.encode
+      (putWord (fun _ => blank) 0 (List.ofFn (SparseRoleCircuit.encode ∘ x)) z)) →
+    ScheduledChildExec node desc w suffix ports (binSyms L cutoff) position body f budget →
+    ∃ z F t y, Exec body code (mk u S) t (mk z F) ∧
+      t ≤ 14*M.size+6*suffix.size+6*(w+1)+11*(w+1).size+60+8*L+budget ∧ z.user = u.user ∧
+      RecordReady (b := prime) (w := w) (d := 16) (W := suffix) bank M.size suffix.size []
+        SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0 y F ∧
+      (∀ i : Fin (rowSwapBlock.tapes+35), 35 ≤ i.val → F.L (ports i) = [] ∧ F.R (ports i) = []) ∧
+      (∀ j, (∀ i, ports i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j) ∧
+      ∀ h, y (position h) = Shared50RecursiveNodeRows.transpose (one_dvd desc.rows) (x ∘ position) h := by
+  intro localPort bank
+  obtain ⟨prepare,run⟩ := prepareWorkerRecord_exec body bank headers (fun i j k => apart i j (localPort k))
+  refine ⟨.seq prepare ((bcopy cut (bank 34) (bank 0) (bank 1)).seq ((Prog.call f).seq (bclear (bank 34)))),?_⟩
+  intro node desc w W L cutoff budget M suffix position x u S smaller header archive ready empty clean payload recurse
+  obtain ⟨v,D,m,user,setup,cost,stored,left,off⟩ := run w W x u S ready empty payload
+  have clear (i : Fin (rowSwapBlock.tapes+35)) (hi : 35 ≤ i.val) : D.L (ports i) = [] ∧ D.R (ports i) = [] := by
+    have outside (k : Fin 35) : bank k ≠ ports i := by
+      intro eq
+      have h := congrArg Fin.val (ports.injective eq)
+      change k.val = i.val at h
+      omega
+    exact ⟨(congrFun left _).trans (clean i hi).1,(off _ outside).trans (clean i hi).2⟩
+  rw [archive] at stored
+  have saved := (off cut (fun k => outsideCut (localPort k))).trans header
+  obtain ⟨z,F,n,y,exec,paid,same,done,blank,frame,action⟩ :=
+    inheritedWorkerCall body f ports cut outsideCut node desc w suffix L cutoff budget position recurse
+      smaller v D x saved stored clear
+  refine ⟨z,F,_,y,Exec.seq setup exec,?_,same.trans user,done,blank,?_,action⟩
+  · change m ≤ 14*M.size+6*suffix.size+6*(w+1)+11*(w+1).size+50 at cost
+    omega
+  · intro j outside
+    have h := frame j outside
+    exact ⟨h.1.trans (congrFun left j),h.2.trans (off j (fun k => outside (localPort k)))⟩
+
 /-- Compute the worker tag from its predecessor clock and an external cutoff
 word, then prepend it to the archive. The comparison restores all its tapes. -/
 theorem prepareWorkerTag {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
@@ -244,7 +350,7 @@ theorem mixedPackedSweep [M8.Machine.Net] (n : Fin 9) :
       let ci := fun (p : StageRun) (j : CopyIndex) => copyChildPosition (n,p,j)
       let child := scheduledChild prime node
       ∀ (record : Fin nodeChildren5.length → List (Fin (prime+4))) (budget : Fin nodeChildren5.length → ℕ),
-      let L := max cutoff.size (7*(w+1)).size
+      ∀ L : ℕ, cutoff < 2^L → (∀ p j, (child (ci p j)).width.size ≤ L) →
       let price := fun i => if cutoff < (child i).width then budget i else
         ⌊(rate*((child i).width : ℝ)^M8.Machine.BudgetBound.tau)*volume prime (child i)⌋₊
       ∃ (mp : ∀ p i, Fin (volume prime (child (mi p i))) ≃ Fin ((prime^(w+1))^16*W))
@@ -277,7 +383,7 @@ theorem mixedPackedSweep [M8.Machine.Net] (n : Fin 9) :
                          (stoppedCopyProgram (cr p j) ((le_max_right _ _).trans caps)) (cl p j) (cf p j)
   obtain ⟨coeff,stage⟩ := build ((le_max_left _ _).trans room) mb (fun _ _ => .entry) cb (fun _ _ => .entry)
   refine ⟨mb,cb,coeff,fun _ _ _ => rfl,fun _ _ _ => rfl,?_⟩
-  intro node w B rows cutoff width split label K W pos rate large _ _ child record budget L price
+  intro node w B rows cutoff width split label K W pos rate large _ _ child record budget L cutFits copyFits price
   let active := fun k => cutoff < (child k).width
   let mrec := fun p i => let k := mi p i; let s := CopyChildLayout.spectators (child k)
                          bitSymbol (decide (active k)) :: (if active k then record k else binSyms s.size s)
@@ -297,12 +403,6 @@ theorem mixedPackedSweep [M8.Machine.Net] (n : Fin 9) :
   · intro p j
     rw [ready.1.2 p j]
     exact copy (cr p j) _ (cb p j) .entry (.active (cf p j)) .leaf rfl rfl node n p j w W rows L cutoff
-      width split (Nat.size_le.mp (le_max_left ..)) (by
-        have h := (scheduledChild_measures prime node ⟨_,width⟩ ⟨_,split⟩ (ci p j)).1
-        dsimp only [ci] at h
-        rw [copyChildPosition_rank n p.1 p.2 j,width] at h
-        change (child (ci p j)).width*64 = _ at h
-        rw [show (child (ci p j)).width = 7*(w+1) by omega]
-        exact le_max_right ..) (cp p j) (cc p j) pos rate _ ((le_max_right _ _).trans large) (ready.2.2 p j)
+      width split cutFits (copyFits p j) (cp p j) (cc p j) pos rate _ ((le_max_right _ _).trans large) (ready.2.2 p j)
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
