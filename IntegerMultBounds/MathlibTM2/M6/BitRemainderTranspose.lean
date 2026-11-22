@@ -7,23 +7,25 @@ public import IntegerMultBounds.MathlibTM2.M6.BitRemainderRowMerge
 namespace IntegerMultBounds.MathlibTM2.M6.BitNode
 open IntegerMultBounds.Machine Stack Host
 
-private def columns {B : ℕ} {α : Type} (past : List (Fin B → List α)) :=
+namespace CompactRows
+
+def columns {B : ℕ} {α : Type} (past : List (Fin B → List α)) :=
   (List.ofFn (fun b => past.flatMap (fun row => row b))).flatten
 
-private def rowPairs {B : ℕ} {α : Type} (past : List (Fin B → List α)) (row : Fin B → List α) :=
+def rowPairs {B : ℕ} {α : Type} (past : List (Fin B → List α)) (row : Fin B → List α) :=
   List.ofFn (fun b => (past.flatMap (fun old => old b),row b))
 
-private theorem rowPairs_prefix {B : ℕ} {α : Type} (past : List (Fin B → List α)) (row : Fin B → List α) :
+theorem rowPairs_prefix {B : ℕ} {α : Type} (past : List (Fin B → List α)) (row : Fin B → List α) :
     (rowPairs past row).flatMap Prod.fst = columns past := by
   simp [rowPairs,columns,List.flatMap_def,List.map_ofFn,Function.comp_def]
-private theorem rowPairs_incoming {B : ℕ} {α : Type} (past : List (Fin B → List α)) (row : Fin B → List α) :
+theorem rowPairs_incoming {B : ℕ} {α : Type} (past : List (Fin B → List α)) (row : Fin B → List α) :
     (rowPairs past row).flatMap Prod.snd = (List.ofFn row).flatten := by
   simp [rowPairs,List.flatMap_def,List.map_ofFn,Function.comp_def]
-private theorem rowPairs_output {B : ℕ} {α : Type} (past : List (Fin B → List α)) (row : Fin B → List α) :
+theorem rowPairs_output {B : ℕ} {α : Type} (past : List (Fin B → List α)) (row : Fin B → List α) :
     (rowPairs past row).flatMap (fun r => r.1++r.2) = columns (past++[row]) := by
   simp [rowPairs,columns,List.flatMap_def,List.map_ofFn,Function.comp_def]
 
-private theorem recordLengths {B K : ℕ} {α : Type} (rows : List (Fin B → List α))
+theorem recordLengths {B K : ℕ} {α : Type} (rows : List (Fin B → List α))
     (width : ∀ row ∈ rows, ∀ b, (row b).length = K) (b : Fin B) :
     (rows.flatMap (fun row => row b)).length = rows.length*K := by
   induction rows with
@@ -33,7 +35,7 @@ private theorem recordLengths {B K : ℕ} {α : Type} (rows : List (Fin B → Li
     rw [width row List.mem_cons_self,ih (fun r h => width r (List.mem_cons_of_mem _ h))]
     omega
 
-private theorem blockLength {B K : ℕ} {α : Type} (row : Fin B → List α)
+theorem blockLength {B K : ℕ} {α : Type} (row : Fin B → List α)
     (width : ∀ b, (row b).length = K) : (List.ofFn row).flatten.length = B*K := by
   rw [BlockRotationData.uniform_volume K]
   · simp
@@ -41,8 +43,11 @@ private theorem blockLength {B K : ℕ} {α : Type} (row : Fin B → List α)
     obtain ⟨b,rfl⟩ := List.mem_ofFn.mp mem
     exact width b
 
-private def unread {B : ℕ} {α : Type} (rows : List (Fin B → List α)) :=
+def unread {B : ℕ} {α : Type} (rows : List (Fin B → List α)) :=
   rows.flatMap (fun r => (List.ofFn r).flatten)
+
+end CompactRows
+open CompactRows
 
 def compactPassCost (B K active : ℕ) :=
   6*(B*K)+B*(4*(active*K+K)+10)+2*(B*((active+1)*K))+4*K+14
@@ -61,13 +66,13 @@ private theorem transposeLoop_exec {P U : Type} {A Q B K : ℕ} (body : P → Pr
     (width : ∀ r ∈ rows, ∀ b, (r b).length = K) (oldWidth : ∀ r ∈ past, ∀ b, (r b).length = K)
     (hp : prefixWidth.length = past.length*K) (u : HS 8 Q A U)
     (flag : u.flag = (unread rows).head?.isSome) :
-    ∃ v width', v.user = u.user ∧ Exec body transposeLoop
+    ∃ v width', width' = (List.replicate rows.length recordWidth.reverse).flatten ++ prefixWidth ∧ v.user = u.user ∧ Exec body transposeLoop
       (mk u (transposeStacks S (columns past) (unread rows) prefixWidth recordWidth rowWidth))
       (compactPassSum B K rows.length past.length)
       (mk v (transposeStacks S (columns (past++rows)) [] width' recordWidth rowWidth)) := by
   induction rows generalizing past prefixWidth u with
   | nil =>
-    refine ⟨u,prefixWidth,rfl,?_⟩
+    refine ⟨u,prefixWidth,rfl,rfl,?_⟩
     simpa only [List.append_nil,List.length_nil,compactPassSum,unread,List.flatMap_nil,transposeLoop] using (Exec.loop_false (body := body)
       (p := insertActiveRow.seq (.act (peekR 6))) (s := mk u (transposeStacks S (columns past) [] prefixWidth recordWidth rowWidth))
       (f := (·.flag)) flag)
@@ -90,7 +95,7 @@ private theorem transposeLoop_exec {P U : Type} {A Q B K : ℕ} (body : P → Pr
     let F := transposeStacks S (columns (past++[r])) (unread rs) (recordWidth.reverse++prefixWidth) recordWidth rowWidth
     let next := {v with flag := (unread rs).head?.isSome}
     have peek : Exec body (.act (peekR 6)) (mk v F) 1 (mk next F) := Exec.act _ _
-    obtain ⟨z,ws,same,rest⟩ := ih (past++[r]) (recordWidth.reverse++prefixWidth) (fun z h => width z (List.mem_cons_of_mem _ h))
+    obtain ⟨z,ws,clock,same,rest⟩ := ih (past++[r]) (recordWidth.reverse++prefixWidth) (fun z h => width z (List.mem_cons_of_mem _ h))
       old' (by simp [hp,hk,Nat.add_mul]; omega) next rfl
     have full : ((List.ofFn r).flatten).length > 0 := count ▸ Nat.mul_pos hB hK
     have on : u.flag = true := by
@@ -99,7 +104,7 @@ private theorem transposeLoop_exec {P U : Type} {A Q B K : ℕ} (body : P → Pr
       | cons a l => simpa [unread,eq] using flag
     have outLen := blockLength (fun b => (past++[r]).flatMap (fun z => z b))
       (recordLengths _ old')
-    refine ⟨z,ws,same.trans user,(Exec.loop_true on (Exec.seq step peek) rest).cast ?_ ?_⟩
+    refine ⟨z,ws,by simpa [List.replicate_succ',List.append_assoc] using clock,same.trans user,(Exec.loop_true on (Exec.seq step peek) rest).cast ?_ ?_⟩
     · simp only [columns] at time
       rw [outLen] at time
       simp only [rowPairs,List.length_ofFn,hp,hk,hb,List.length_append,List.length_singleton] at time
@@ -115,13 +120,13 @@ theorem compactTranspose_exec {P U : Type} {A Q B K : ℕ} (body : P → Pr P 8 
     (rows : List (Fin B → List (Fin (A+4)))) (width : ∀ r ∈ rows, ∀ b, (r b).length = K) :
     let start := transposeStacks S [] (rows.flatMap (fun r => (List.ofFn r).flatten)) [] recordWidth rowWidth
     let output := (List.ofFn (fun b => rows.flatMap (fun r => r b))).flatten
-    ∃ v width' steps, v.user = u.user ∧ Exec body (.seq (.act (peekR 6)) transposeLoop)
+    ∃ v width' steps, width' = (List.replicate rows.length recordWidth.reverse).flatten ∧ v.user = u.user ∧ Exec body (.seq (.act (peekR 6)) transposeLoop)
       (mk u start) steps (mk v (transposeStacks S output [] width' recordWidth rowWidth)) ∧
       steps ≤ rows.length*(compactPassCost B K rows.length+2)+2 := by
   intro start output
   let v := {u with flag := (unread rows).head?.isSome}
   have read : Exec body (.act (peekR 6)) (mk u start) 1 (mk v start) := Exec.act _ _
-  obtain ⟨z,ws,same,run⟩ := transposeLoop_exec body S recordWidth rowWidth hK hB hk hb
+  obtain ⟨z,ws,clock,same,run⟩ := transposeLoop_exec body S recordWidth rowWidth hK hB hk hb
     rows [] [] width (by simp) (by simp) v rfl
   have empty : columns ([] : List (Fin B → List (Fin (A+4)))) = [] := by simp [columns]
   rw [empty] at run
@@ -136,7 +141,7 @@ theorem compactTranspose_exec {P U : Type} {A Q B K : ℕ} (body : P → Pr P 8 
         gcongr <;> omega
       simp only [compactPassSum,Nat.add_mul,Nat.one_mul]
       omega
-  exact ⟨z,ws,_,same,Exec.seq read run,by simp only [List.length_nil]; have := bound rows.length 0 (by simp); omega⟩
+  exact ⟨z,ws,_,by simpa using clock,same,Exec.seq read run,by simp only [List.length_nil]; have := bound rows.length 0 (by simp); omega⟩
 
 /-- The entire insertion loop costs at most a constant times the padded
 volume. This uses the staging label count only for the bound. -/
@@ -160,7 +165,7 @@ theorem compactTranspose_volume_bound (w B K : ℕ) (hb : 0 < B) (hk : 0 < K) :
     _ = 52*(A*(A*(B*K)))+2 := by ring
     _ ≤ _ := Nat.add_le_add_right (Nat.mul_le_mul_left _ scans) _
 
-private theorem serialized {α : Type} {m n k : ℕ} (x : Fin (m*(n*k)) → α) :
+theorem CompactRows.serialized {α : Type} {m n k : ℕ} (x : Fin (m*(n*k)) → α) :
     List.ofFn x = (List.ofFn (fun a : Fin m => (List.ofFn (fun b : Fin n =>
       List.ofFn fun j : Fin k => x (finProdFinEquiv (a,finProdFinEquiv (b,j))))).flatten)).flatten := by
   have pack {u v : ℕ} (f : Fin (u*v) → α) :
@@ -181,16 +186,16 @@ theorem remainderCompactTranspose_exec {P U : Type} {q alphabet : ℕ}
     ∀ (x : Fin (A*(B*K)) → Fin (alphabet+4)) (S : Stacks 8 alphabet)
       (u : HS 8 q alphabet U) (recordWidth rowWidth : List (Fin (alphabet+4))),
       recordWidth.length = K → rowWidth.length = B*K →
-      ∃ v width' steps, v.user = u.user ∧ Exec body (.seq (.act (peekR 6)) transposeLoop)
+      ∃ v width' steps, width' = (List.replicate A recordWidth.reverse).flatten ∧ v.user = u.user ∧ Exec body (.seq (.act (peekR 6)) transposeLoop)
         (mk u (transposeStacks S [] (List.ofFn x) [] recordWidth rowWidth)) steps
         (mk v (transposeStacks S (List.ofFn (compactTranspose x)) [] width' recordWidth rowWidth)) ∧
         steps ≤ 52*(A*(B*N*K))+2 := by
   intro A N x S u recordWidth rowWidth hw hrow
   let r := fun (a : Fin A) (b : Fin B) => List.ofFn (fun j : Fin K => x (finProdFinEquiv (a,finProdFinEquiv (b,j))))
-  obtain ⟨v,ws,t,same,run,bill⟩ := compactTranspose_exec body S recordWidth rowWidth u hk hb hw hrow (List.ofFn r)
+  obtain ⟨v,ws,t,clock,same,run,bill⟩ := compactTranspose_exec body S recordWidth rowWidth u hk hb hw hrow (List.ofFn r)
     (by intro row mem b; obtain ⟨a,rfl⟩ := List.mem_ofFn.mp mem; exact List.length_ofFn)
   simp only [List.length_ofFn] at bill
-  refine ⟨v,ws,t,same,?_,bill.trans (compactTranspose_volume_bound w B K hb hk)⟩
+  refine ⟨v,ws,t,by simpa using clock,same,?_,bill.trans (compactTranspose_volume_bound w B K hb hk)⟩
   rw [serialized x,serialized (compactTranspose x)]
   simpa only [r,List.flatMap_def,List.map_ofFn,Function.comp_def,compactTranspose,Equiv.symm_apply_apply] using run
 
