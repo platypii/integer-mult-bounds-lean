@@ -152,13 +152,13 @@ theorem borrowedPackedCall_exec [M8.Machine.Net] {T Q : ℕ} {P U : Type}
       let W := B*prime^(64*(w*64))*K
       let blocks := (prime^w)^112*B
       let V := (prime^w)^16*(blocks*prime^(64*(w*64))*K)
-      0 < V → ∀ (data : Fin 142081 → Fin V → ZMod 2) u S call (price : ℕ),
+      0 < V → ∀ (data : Fin 142081 → Fin V → ZMod 2) u S call (price : ℝ),
       (∀ i : Fin 127, ∀ j, S.R (bank (headers i.val j)) = (Routines.hdr (helperAdjacentView w 1 W i) j).map bitSymbol) →
       HelperFan full data S →
       (∀ j : Fin LeafCore.small, S.L (j.natAdd T) = [] ∧ S.R (j.natAdd T) = []) →
       (∀ a y D, HelperFan fan a D →
         (∀ j, (∀ h, fan h ≠ j) → D.L j = S.L (bank j) ∧ D.R j = S.R (bank j)) →
-        ∃ z F m b, Exec body call (mk y D) m (mk z F) ∧ m ≤ price ∧ z.user = y.user ∧
+        ∃ z F m b, Exec body call (mk y D) m (mk z F) ∧ (m : ℝ) ≤ price ∧ z.user = y.user ∧
           HelperFan fan b F ∧ BorrowedStep n w blocks K p a b) →
       ∃ z F t b, Exec outer (.seq pack (embProg bank id call)) (mk u S) t (mk z F) ∧
         (t : ℝ) ≤ C*((V : ℝ)*((max 1 w : ℕ) : ℝ)^M8.Machine.BudgetBound.tau)+price ∧
@@ -211,5 +211,55 @@ theorem borrowedRestore_exec [M8.Machine.Net] {T Q : ℕ} {P U : Type}
   have dims : V = (prime^w)^16*(1*((prime^w)^112*W)) := by dsimp [V,W]; ring
   obtain ⟨z,F,t,out,same,exec,paid,done,trace,keep,clear⟩ := atVolume dims pos data u S stored rep free
   exact ⟨z,F,t,out,exec,paid,same,done,trace,keep,clear⟩
+
+open Stack Host Cover.Fallback M8.RevMachine in
+/-- Run the borrowed stage in occurrence order, with restoration as the final
+program. Each private initialization is needed only until its own call. -/
+theorem borrowedSweep_exec {T Q w B K : ℕ} {P U : Type} (n : Fin 9)
+    (body : P → Pr P T Q prime U) (fan : Fin (142081+2) ↪ Fin T) :
+    let W := B*prime^(64*(w*64))*K
+    let V := (prime^w)^16*((prime^w)^112*B*prime^(64*(w*64))*K)
+    ∀ (saved : Fin 32 × Fin 5 → Stacks T prime → Prop) (ready : Stacks T prime → Prop)
+      (price : Fin 32 × Fin 5 → ℝ) (restorePrice : ℝ),
+    (∀ p, ∃ code, ∀ (x : Fin 142081 → Fin V → ZMod 2) u S, HelperFan fan x S → ready S → saved p S →
+      ∃ z F t y, Exec body code (mk u S) t (mk z F) ∧ (t : ℝ) ≤ price p ∧ z.user = u.user ∧
+        HelperFan fan y F ∧ borrowedPackedStep n w B K p x y ∧ ready F ∧
+        ∀ j, j ≠ p → saved j S → saved j F) →
+    (∃ code, ∀ (x : Fin 142081 → Fin V → ZMod 2) u S, HelperFan fan x S → ready S →
+      ∃ z F t y, Exec body code (mk u S) t (mk z F) ∧ (t : ℝ) ≤ restorePrice ∧ z.user = u.user ∧
+        HelperFan fan y F ∧ HelperLabelTrace w 1 W (restoreSlotChanges (stageFinalSlot n)) x y) →
+    ∃ code, ∀ x u S, HelperFan fan x S → ready S → (∀ j, saved j S) →
+      ∃ z F t y out, Exec body code (mk u S) t (mk z F) ∧ (t : ℝ) ≤ (stageRuns.map price).sum+restorePrice ∧
+        z.user = u.user ∧ HelperFan fan out F ∧
+        stageRuns.foldr (fun p next a => ∃ b, borrowedPackedStep n w B K p a b ∧ next b) (· = y) x ∧
+        HelperLabelTrace w 1 W (restoreSlotChanges (stageFinalSlot n)) y out := by
+  intro W V saved ready price restorePrice calls restore
+  obtain ⟨last,finish⟩ := restore
+  suffices fold : ∀ ls : List (Fin 32 × Fin 5), ls.Nodup → ∃ code, ∀ x u S, HelperFan fan x S →
+      ready S → (∀ j ∈ ls, saved j S) → ∃ z F t y out, Exec body code (mk u S) t (mk z F) ∧
+        (t : ℝ) ≤ (ls.map price).sum+restorePrice ∧ z.user = u.user ∧ HelperFan fan out F ∧
+        ls.foldr (fun p next a => ∃ b, borrowedPackedStep n w B K p a b ∧ next b) (· = y) x ∧
+        HelperLabelTrace w 1 W (restoreSlotChanges (stageFinalSlot n)) y out by
+    obtain ⟨code,run⟩ := fold stageRuns stageRuns_nodup
+    exact ⟨code,fun x u S live ok fresh => run x u S live ok (fun j _ => fresh j)⟩
+  intro ls
+  induction ls with
+  | nil =>
+    intro _
+    refine ⟨last,?_⟩
+    intro x u S live ok _
+    obtain ⟨z,F,t,out,exec,paid,user,done,trace⟩ := finish x u S live ok
+    exact ⟨z,F,t,x,out,exec,by simpa using paid,user,done,rfl,trace⟩
+  | cons p ls ih =>
+    intro unique
+    obtain ⟨head,run⟩ := calls p
+    obtain ⟨tail,rest⟩ := ih (List.nodup_cons.mp unique).2
+    refine ⟨.seq head tail,?_⟩
+    intro x u S live ok fresh
+    obtain ⟨v,D,l,a,exec,paid,user,mid,step,valid,keep⟩ := run x u S live ok (fresh p List.mem_cons_self)
+    obtain ⟨z,F,r,y,out,done,cost,same,rep,trace,restored⟩ := rest a v D mid valid (fun j hj =>
+      keep j (fun eq => (List.nodup_cons.mp unique).1 (eq ▸ hj)) (fresh j (List.mem_cons_of_mem _ hj)))
+    refine ⟨z,F,_,y,out,Exec.seq exec done,?_,same.trans user,rep,⟨a,step,trace⟩,restored⟩
+    simpa only [Nat.cast_add,List.map_cons,List.sum_cons,add_assoc] using add_le_add paid cost
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode

@@ -222,14 +222,14 @@ theorem scheduledLabelTrace_exec [M8.Machine.Net] {T Q : ℕ} {P U : Type}
     let before := prefixRuns.foldl (fun c r => helperChartsAfter n r c) (fun _ => none)
     ∃ pack, ∃ C : ℝ, ∀ {w L W : ℕ} {v : Descriptor},
       volume prime v = (prime^w)^16*(L*((prime^w)^112*W)) → 0 < volume prime v →
-      ∀ (data : Fin 142081 → Fin (volume prime v) → ZMod 2) u S call (price : ℕ)
+      ∀ (data : Fin 142081 → Fin (volume prime v) → ZMod 2) u S call (price : ℝ)
         (effect : (Fin 142081 → Fin (volume prime v) → ZMod 2) → (Fin 142081 → Fin (volume prime v) → ZMod 2) → Prop),
       (∀ i : Fin 127, ∀ j, S.R (bank (headers i.val j)) = (Routines.hdr (helperAdjacentView w L W i) j).map bitSymbol) →
       HelperFan full data S →
       (∀ j : Fin LeafCore.small, S.L (j.natAdd T) = [] ∧ S.R (j.natAdd T) = []) →
       (∀ a y D, HelperFan fan a D →
         (∀ j, (∀ h, fan h ≠ j) → D.L j = S.L (bank j) ∧ D.R j = S.R (bank j)) →
-        ∃ z F m b, Exec body call (mk y D) m (mk z F) ∧ m ≤ price ∧ z.user = y.user ∧ HelperFan fan b F ∧ effect a b) →
+        ∃ z F m b, Exec body call (mk y D) m (mk z F) ∧ (m : ℝ) ≤ price ∧ z.user = y.user ∧ HelperFan fan b F ∧ effect a b) →
       ∃ z F t a b, Exec outer (.seq pack (embProg bank id call)) (mk u S) t (mk z F) ∧
         (t : ℝ) ≤ C*((volume prime v : ℝ)*((max 1 w : ℕ) : ℝ)^M8.Machine.BudgetBound.tau)+price ∧
         z.user = u.user ∧ HelperFan full b F ∧ effect a b ∧
@@ -244,7 +244,7 @@ theorem scheduledLabelTrace_exec [M8.Machine.Net] {T Q : ℕ} {P U : Type}
   obtain ⟨z',F',placed,_,state,view,_⟩ := exec_emb (ι := id) (body' := outer) bank.injective
     (fun _ => rfl) exec y rfl D rfl
   refine ⟨z',F',k+m,a,b,Exec.seq packed placed,?_,state.trans (same.trans user),?_,act,trace⟩
-  · rw [Nat.cast_add]; exact add_le_add paid (by exact_mod_cast bill)
+  · rw [Nat.cast_add]; exact add_le_add paid bill
   · rw [← view] at done; exact done
 
 theorem scheduledLabelCall_exec [M8.Machine.Net] {T Q : ℕ} {P U : Type}
@@ -277,7 +277,10 @@ theorem scheduledLabelCall_exec [M8.Machine.Net] {T Q : ℕ} {P U : Type}
   obtain ⟨pack,C,run⟩ := scheduledLabelTrace_exec n p prefixRuns fan capacity body headers apart
   refine ⟨pack,C,?_⟩
   intro w L W v size pos data u S call price effect stored rep free invoke
-  obtain ⟨z,F,t,a,b,exec,paid,same,done,act,trace⟩ := run size pos data u S call price effect stored rep free invoke
+  obtain ⟨z,F,t,a,b,exec,paid,same,done,act,trace⟩ := run size pos data u S call price effect stored rep free (by
+    intro x u D live fresh
+    obtain ⟨y,E,k,out,step,cost,user,ready,act⟩ := invoke x u D live fresh
+    exact ⟨y,E,k,out,step,by exact_mod_cast cost,user,ready,act⟩)
   refine ⟨z,F,t,a,b,exec,paid,same,done,act,?_,scheduledLabelRead n p before _ _ trace⟩
   intro j off
   apply labelTrace_off _ _ _ trace
