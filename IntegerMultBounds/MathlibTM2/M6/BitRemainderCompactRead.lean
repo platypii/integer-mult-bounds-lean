@@ -86,6 +86,79 @@ theorem returnRecordTape_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q pr
   intro j h
   exact ⟨(off j h).1,(off j h).2.trans (Function.update_of_ne (h 0).symm ..)⟩
 
+/-- Move a parent-order word into scanner order, keeping every parent-label
+pair as a separate row. The width clock is ready for the return pass. -/
+theorem enterLabeledRows_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
+    (bank : Fin 8 ↪ Fin T) :
+    ∃ code, ∀ (M B N K : ℕ), 0 < B*N → 0 < K →
+      let A := M^128
+      ∀ (x : Fin (A*((B*N)*K)) → ZMod 2) (u : HS T Q prime U) (S : Stacks T prime)
+        (record rowWidth : List (Fin (prime+4))), record.length = K → rowWidth.length = (B*N)*K →
+      embStk bank S = transposeStacks (embStk bank S) [] (List.ofFn fun i => SparseRoleCircuit.encode (x i))
+        [] record rowWidth →
+      ∃ z F steps, ∃ y : Fin ((B*N)*(A*K)) → ZMod 2, Exec body code (mk u S) steps (mk z F) ∧
+        steps ≤ A*(compactPassCost (B*N) K A+2)+2 ∧ z.user = u.user ∧
+        embStk bank F = transposeStacks (embStk bank S) (List.ofFn fun i => SparseRoleCircuit.encode (y i))
+          [] (List.replicate A record.reverse).flatten record rowWidth ∧
+        (∀ a (b : Fin B) (g : Fin N) k, y (finProdFinEquiv (finProdFinEquiv (b,g),finProdFinEquiv (a,k))) =
+          x (finProdFinEquiv (a,finProdFinEquiv (finProdFinEquiv (b,g),k)))) ∧
+        ∀ j, (∀ i, bank i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  let localCode : Pr Empty 8 Q prime U := .seq (.act (peekR 6)) transposeLoop
+  refine ⟨embProg bank Empty.elim localCode,?_⟩
+  intro M B N K rows width A x u S record rowWidth len rowLen start
+  obtain ⟨v,clock,t,rfl,user,run,paid⟩ := transposeRecordBlocks_exec (P := Empty) Empty.elim
+    A (B*N) K rows width (fun i => SparseRoleCircuit.encode (x i)) (embStk bank S) (embDn bank u)
+    record rowWidth len rowLen
+  obtain ⟨z,F,placed,_,same,view,off⟩ := exec_emb (ι := (Empty.elim : Empty → P)) (body' := body)
+    bank.injective (fun e => nomatch e) run u rfl S start
+  refine ⟨z,F,t,compactTranspose x,placed,paid,same.trans user,view,?_,off⟩
+  intro a b g k
+  simp only [compactTranspose,Equiv.symm_apply_apply]
+
+/-- If the scanner replaces its input word on port zero, the saved clock
+drives the inverse pass directly. Both transposes share one register bank. -/
+theorem scanLabeledRows_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
+    (bank : Fin 8 ↪ Fin T) (scan : Pr P T Q prime U) :
+    ∃ code, ∀ (M B N K : ℕ), 0 < B*N → 0 < K →
+      let A := M^128
+      let pass := A*(compactPassCost (B*N) K A+2)+2
+      let row := fun (b : Fin B) (g : Fin N) => finProdFinEquiv (b,g)
+      let cell := fun (a : Fin A) b g (k : Fin K) => finProdFinEquiv (a,finProdFinEquiv (row b g,k))
+      ∀ (x : Fin (A*((B*N)*K)) → ZMod 2) (u : HS T Q prime U) (S : Stacks T prime)
+        (record rowWidth : List (Fin (prime+4))) (price : ℕ)
+        (effect : (Fin ((B*N)*(A*K)) → ZMod 2) → (Fin ((B*N)*(A*K)) → ZMod 2) → Prop),
+      record.length = K → rowWidth.length = (B*N)*K →
+      embStk bank S = transposeStacks (embStk bank S) [] (List.ofFn fun i => SparseRoleCircuit.encode (x i))
+        [] record rowWidth →
+      (∀ y v F, embStk bank F = transposeStacks (embStk bank S)
+          (List.ofFn fun i => SparseRoleCircuit.encode (y i)) [] (List.replicate A record.reverse).flatten record rowWidth →
+        (∀ j, (∀ i, bank i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j) →
+        ∃ z D k out, Exec body scan (mk v F) k (mk z D) ∧ k ≤ price ∧ z.user = v.user ∧ effect y out ∧
+          embStk bank D = transposeStacks (embStk bank S) (List.ofFn fun i => SparseRoleCircuit.encode (out i))
+            [] (List.replicate A record.reverse).flatten record rowWidth) →
+      ∃ z G steps, ∃ d : Fin (A*((B*N)*K)) → ZMod 2, Exec body code (mk u S) steps (mk z G) ∧ steps ≤ pass+price+pass ∧ z.user = u.user ∧
+        embStk bank G = transposeStacks (embStk bank S) [] (List.ofFn fun i => SparseRoleCircuit.encode (d i)) [] record rowWidth ∧
+        ∃ y out, effect y out ∧ ∀ a b g k, let j := finProdFinEquiv (row b g,finProdFinEquiv (a,k))
+          y j = x (cell a b g k) ∧ out j = d (cell a b g k) := by
+  obtain ⟨enter,forward⟩ := enterLabeledRows_exec body bank
+  let leave : Pr Empty 8 Q prime U := .seq (.act (peekR 3)) returnTransposeLoop
+  refine ⟨enter.seq (scan.seq (embProg bank Empty.elim leave)),?_⟩
+  intro M B N K rows width A pass row cell x u S record rowWidth price effect len rowLen start worker
+  obtain ⟨v,F,t,y,entered,firstBill,vu,view,incoming,off⟩ :=
+    forward M B N K rows width x u S record rowWidth len rowLen start
+  obtain ⟨q,D,m,out,scanned,scanBill,qv,action,ready⟩ := worker y v F view off
+  obtain ⟨a,l,aq,back,lastBill⟩ := returnRecordBlocks_exec (P := Empty) Empty.elim A (B*N) K rows width
+    (fun i => SparseRoleCircuit.encode (out i)) (embStk bank S) (embDn bank q) record rowWidth len
+  obtain ⟨z,G,placed,_,za,final,_⟩ := exec_emb (ι := (Empty.elim : Empty → P)) (body' := body)
+    bank.injective (fun e => nomatch e) back q rfl D ready
+  refine ⟨z,G,t+(m+l),compactTranspose out,Exec.seq entered (Exec.seq scanned placed),?_,
+    za.trans (aq.trans (qv.trans vu)),final,y,out,action,?_⟩
+  · change t ≤ pass at firstBill
+    change l ≤ pass at lastBill
+    omega
+  · intro a b g k
+    exact ⟨incoming a b g k,by simp [cell,row,compactTranspose]⟩
+
 /-- Return every scanner row to parent order. Coordinates precede the
 parent and label indices, and each trailing record stays contiguous. -/
 theorem returnLabeledRows_exec {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)

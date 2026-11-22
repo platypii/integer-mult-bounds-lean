@@ -177,6 +177,25 @@ theorem CompactRows.serialized {α : Type} {m n k : ℕ} (x : Fin (m*(n*k)) → 
   funext a
   exact pack _
 
+/-- Transpose arbitrary complete records and retain the width clock for the inverse pass. -/
+theorem transposeRecordBlocks_exec {P U : Type} {q alphabet : ℕ}
+    (body : P → Pr P 8 q alphabet U) (A B K : ℕ) (hb : 0 < B) (hk : 0 < K) :
+    ∀ (x : Fin (A*(B*K)) → Fin (alphabet+4)) (S : Stacks 8 alphabet)
+      (u : HS 8 q alphabet U) (recordWidth rowWidth : List (Fin (alphabet+4))),
+      recordWidth.length = K → rowWidth.length = B*K →
+      ∃ v width' steps, width' = (List.replicate A recordWidth.reverse).flatten ∧ v.user = u.user ∧ Exec body (.seq (.act (peekR 6)) transposeLoop)
+        (mk u (transposeStacks S [] (List.ofFn x) [] recordWidth rowWidth)) steps
+        (mk v (transposeStacks S (List.ofFn (compactTranspose x)) [] width' recordWidth rowWidth)) ∧
+        steps ≤ A*(compactPassCost B K A+2)+2 := by
+  intro x S u recordWidth rowWidth hw hrow
+  let r := fun (a : Fin A) (b : Fin B) => List.ofFn (fun j : Fin K => x (finProdFinEquiv (a,finProdFinEquiv (b,j))))
+  obtain ⟨v,ws,t,clock,same,run,bill⟩ := compactTranspose_exec body S recordWidth rowWidth u hk hb hw hrow (List.ofFn r)
+    (by intro row mem b; obtain ⟨a,rfl⟩ := List.mem_ofFn.mp mem; exact List.length_ofFn)
+  simp only [List.length_ofFn] at bill
+  refine ⟨v,ws,t,by simpa using clock,same,?_,bill⟩
+  rw [serialized x,serialized (compactTranspose x)]
+  simpa only [r,List.flatMap_def,List.map_ofFn,Function.comp_def,compactTranspose,Equiv.symm_apply_apply] using run
+
 /-- Transpose the actual compact word for a PR589 remainder, within the
 original padded volume and on a fixed eight-register host. -/
 theorem remainderCompactTranspose_exec {P U : Type} {q alphabet : ℕ}
@@ -191,12 +210,7 @@ theorem remainderCompactTranspose_exec {P U : Type} {q alphabet : ℕ}
         (mk v (transposeStacks S (List.ofFn (compactTranspose x)) [] width' recordWidth rowWidth)) ∧
         steps ≤ 52*(A*(B*N*K))+2 := by
   intro A N x S u recordWidth rowWidth hw hrow
-  let r := fun (a : Fin A) (b : Fin B) => List.ofFn (fun j : Fin K => x (finProdFinEquiv (a,finProdFinEquiv (b,j))))
-  obtain ⟨v,ws,t,clock,same,run,bill⟩ := compactTranspose_exec body S recordWidth rowWidth u hk hb hw hrow (List.ofFn r)
-    (by intro row mem b; obtain ⟨a,rfl⟩ := List.mem_ofFn.mp mem; exact List.length_ofFn)
-  simp only [List.length_ofFn] at bill
-  refine ⟨v,ws,t,by simpa using clock,same,?_,bill.trans (compactTranspose_volume_bound w B K hb hk)⟩
-  rw [serialized x,serialized (compactTranspose x)]
-  simpa only [r,List.flatMap_def,List.map_ofFn,Function.comp_def,compactTranspose,Equiv.symm_apply_apply] using run
+  obtain ⟨v,clock,t,stock,user,run,paid⟩ := transposeRecordBlocks_exec body A B K hb hk x S u recordWidth rowWidth hw hrow
+  exact ⟨v,clock,t,stock,user,run,paid.trans (compactTranspose_volume_bound w B K hb hk)⟩
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
