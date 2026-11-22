@@ -128,5 +128,99 @@ theorem scan_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U)
     (fun _ => rfl) run u rfl S rfl
   exact ⟨z,F,placed,same,view,fun j hj => off _ (aroundScanner_private owner j hj)⟩
 
+/-- Run the native scanner, then restore the staged owner using the private return workspace. -/
+theorem scanAndLeave_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U)
+    (fits : 235 ≤ Q) (scan : Pr P T Q prime U) (owner : Fin T) :
+    let slots := aroundScanner owner
+    let old := Fin.castAddEmb 94 (n := T)
+    let outer := fun p => embProg old id (body p)
+    ∃ code, ∀ {w B W : ℕ} {interval parent c}, 0 < B → 0 < W →
+      let M := prime^(w+1)
+      let N := M^(64*64)
+      let K := M^128*W
+      let idRow := LabelAddress.address (1 : LabelPadding.Label 64 (w+1))
+      let layout := stagedScannerLayout w B W
+      let R := LabelMask.records (RecursiveInterchangeLayout.role layout 142080)
+      let width := M^128*(layout.between*layout.afterD)
+      ∀ (x : Fin 142081 → Fin (M^16*(B*(M^112*W))) → ZMod 2) i u S (budget : ℝ),
+      c.Checked → (∀ i, IsUnit (parent i)) →
+      WordAtZero (fun j => singleLabelBank (firstRowLabel (w+1)) x i
+        ((ordinaryRowLayout (Equiv.swap 0 (ordinaryIdentityRow (w+1)))).symm j)) (S.L (slots 1)) (S.R (slots 1)) →
+      (∀ words : Fin 1 → Fin (R*width) → ZMod 2,
+        RepT (phaseOwners words) (fun _ => S.L (slots 1)) (fun _ => S.R (slots 1)) →
+        ∃ z F n, ∃ final : Fin 1 → Fin (R*width) → ZMod 2,
+          Exec body scan (mk (embDn old u) (embStk old S)) n (mk z F) ∧
+          (z.user = u.user ∧ (n : ℝ) ≤ budget) ∧
+          RepT (phaseOwners final) (fun _ => F.L owner) (fun _ => F.R owner) ∧
+          OriginalPortReads R (layout.between*layout.afterD) (layout.beforeRows*1*B) interval parent c (words 0) (final 0)) →
+      (∀ i z, readAt blank (S.L ((outputHeaders.trans slots) i)) (S.R ((outputHeaders.trans slots) i)) (z-1) =
+        RadixZeroFill.encodedBinary (bits (![K,N,(0-idRow).val,B] i)) z) →
+      (∀ j : Fin 14, j ≠ 10 → j ≠ 11 → S.L ((outputRotation.trans slots) j) = [] ∧ S.R ((outputRotation.trans slots) j) = []) →
+      (∀ z, readAt blank (S.L ((outputRotation.trans slots) 11)) (S.R ((outputRotation.trans slots) 11)) z = blank) →
+      CropCounters (outputCrop.trans slots) B N K S →
+      (∀ z, readAt blank (S.L ((outputCrop.trans slots) 1)) (S.R ((outputCrop.trans slots) 1)) z = blank) →
+      S.R (slots 94) = binSyms (M^112*W).size (M^112*W) →
+      S.R (slots (outputHeaders 0)) = binSyms K.size K →
+      (∀ i, S.R ((outputTranspose.trans slots) i) = []) → S.L ((outputTranspose.trans slots) 1) = [] →
+      S.L ((outputTranspose.trans slots) 6) = [] →
+      CropCounters (outputPad.trans slots) (M^16*B) (prime^(64*((w+1)*64))) (M^112*W) S →
+      (∀ z, readAt blank (S.L (slots 0)) (S.R (slots 0)) z = blank) →
+      ∃ v F t, ∃ staged : Fin (M^16*(B*(M^112*W))) → ZMod 2, Exec outer code (mk u S) t (mk v F) ∧ (t : ℝ) ≤ budget + 22982*(B*(N*K) : ℕ)+599 ∧ v.user = u.user ∧
+        WordAtZero (singleLabelBank (firstRowLabel (w+1)) (fun _ => staged) 0) (F.L (slots 0)) (F.R (slots 0)) ∧
+      let proj := IntegerMultBounds.Swap.Modular.reduce M ((c.span interval.1 interval.2).submatrix stageAxis.symm stageAxis.symm)
+      let frame := Matrix.fromBlocks (Matrix.diagonal parent) 0 0 (M8.ReversedExchange.rev 64)
+      let addr := fun b y (k : Fin W) => stagedOwnerIndex b (FlatCoordinateLayout.index
+        ((frame.mulVec y) ∘ (finSumFinEquiv : (Fin 64 ⊕ Fin 64) ≃ Fin 128).symm) k)
+      ∀ b y k, staged (addr b ((Matrix.fromBlocks (1-proj) proj proj (1-proj)).mulVec y) k) = x i (addr b y k) := by
+  intro slots old outer
+  obtain ⟨leave,exit⟩ := leave_exec outer fits slots
+  refine ⟨(embProg old id scan).seq leave,?_⟩
+  intro w B W interval parent c hb hw M N K idRow layout R width x i u S budget checked units entry execute
+    headers rotation dest crop cropDest tailWidth rowWidth transpose left₁ left₆ pad staging
+  have slot : slots 1 = old owner := aroundScanner_owner owner
+  rw [slot] at entry execute
+  obtain ⟨scannerState,D,time,input,output,native,⟨sameUser,timeBound⟩,word,reads,cells⟩ :=
+    stagedScannerTape_exec (interval := interval) (parent := parent) (c := c) body scan owner (embDn old u) (embStk old S)
+      (fun z _ n => z.user = u.user ∧ (n : ℝ) ≤ budget) x i entry execute
+  have supported : ∀ b j k, j ≠ idRow → input (finProdFinEquiv (finProdFinEquiv (b,j),k)) = 0 := by
+    intro b j k hj
+    obtain ⟨small,h⟩ := (finCongr (ordinaryCompact_width M W)).surjective k
+    obtain ⟨⟨a,k⟩,rfl⟩ := finProdFinEquiv.surjective small
+    change (finProdFinEquiv (a,k)).cast (ordinaryCompact_width M W) = _ at h
+    rw [← h,cells,ite_eq_right hj]
+  obtain ⟨y,E,run,user,view,privateTape⟩ := scan_exec body scan owner u S native
+  have left (j : Fin 95) (h : j ≠ 1) : E.L (slots j) = S.L (slots j) := (privateTape j h).1
+  have right (j : Fin 95) (h : j ≠ 1) : E.R (slots j) = S.R (slots j) := (privateTape j h).2
+  have counters (bank : Fin 12 ↪ Fin 95) (apart : ∀ k, k ≠ 0 → k ≠ 1 → bank k ≠ 1)
+      {b n k} (ready : CropCounters (bank.trans slots) b n k S) : CropCounters (bank.trans slots) b n k E := by
+    intro j h₀ h₁ z
+    simp only [Function.Embedding.trans_apply,left _ (apart j h₀ h₁),right _ (apart j h₀ h₁)]
+    exact ready j h₀ h₁ z
+  have live : WordAtZero output (E.L (slots 1)) (E.R (slots 1)) := by
+    rw [← view] at word
+    simpa only [slots,aroundScanner_owner,embStk,Function.comp_apply,Fin.castAddEmb_apply] using word
+  obtain ⟨z,F,m,staged,finish,paid,same,out,action,_⟩ :=
+    exit hb hw input output reads checked units supported y E
+      (fun j l => by
+        have h := (by decide : ∀ j, outputHeaders j ≠ 1) j
+        simpa only [Function.Embedding.trans_apply,left _ h,right _ h] using headers j l)
+      (fun j h₀ h₁ => by
+        have h := (by decide : ∀ j : Fin 14, j ≠ 10 → outputRotation j ≠ 1) j h₀
+        exact ⟨(left _ h).trans (rotation j h₀ h₁).1,(right _ h).trans (rotation j h₀ h₁).2⟩)
+      live (fun l => by simpa only [Function.Embedding.trans_apply,left _ (by decide : outputRotation 11 ≠ 1),right _ (by decide : outputRotation 11 ≠ 1)] using dest l)
+      (counters _ (by decide) crop)
+      (fun l => by simpa only [Function.Embedding.trans_apply,left _ (by decide : outputCrop 1 ≠ 1),right _ (by decide : outputCrop 1 ≠ 1)] using cropDest l)
+      ((right 94 (by decide)).trans tailWidth) ((right (outputHeaders 0) (by decide)).trans rowWidth)
+      (fun j => (right _ ((by decide : ∀ j, outputTranspose j ≠ 1) j)).trans (transpose j))
+      ((left (outputTranspose 1) (by decide)).trans left₁) ((left (outputTranspose 6) (by decide)).trans left₆)
+      (counters _ (by decide) pad)
+      (fun l => by simpa only [left _ (by decide : (0 : Fin 95) ≠ 1),right _ (by decide : (0 : Fin 95) ≠ 1)] using staging l)
+  change m ≤ 22982*(B*(N*K))+599 at paid
+  refine ⟨z,F,_,staged,Exec.seq run finish,?_,same.trans (user.trans sameUser),out,
+    reads.stagedExchange input output (x i) staged units cells action⟩
+  have fee : (m : ℝ) ≤ 22982*(B*(N*K) : ℕ)+599 := by exact_mod_cast paid
+  push_cast at fee ⊢
+  linarith
+
 end OrdinaryHandoff
 end IntegerMultBounds.MathlibTM2.M6.BitNode
