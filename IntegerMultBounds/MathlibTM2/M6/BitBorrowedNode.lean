@@ -48,14 +48,31 @@ theorem BorrowedPorts.afterIdles {n : Fin 9} {w B K : ℕ} {x y}
     exact ih (ports.afterIdle i (apart i List.mem_cons_self) (off i y))
       (fun k hk => apart k (List.mem_cons_of_mem _ hk))
 
+/-- Fold the exterior digits into the sweep block, so the phase and the idle
+read the same flat offset for every independent matrix label. -/
+theorem alignedSweep_read {w B K : ℕ} (active : Fin 16 → ZMod (prime^w))
+    (exterior : Fin 112 → ZMod (prime^w)) (b : Fin B) (t : Fin K)
+    (g : LabelPadding.Label 64 w) (x : Fin (volume prime (idleLayout w B K)) → ZMod 2) :
+    let z : LabelEntry.Cell (copyLabelLayout w ((prime^w)^112*B) K) ((prime^w)^112*B) :=
+      ⟨FlatCoordinateLayout.rank active,⟨0,by simp [copyLabelLayout]⟩,finProdFinEquiv (FlatCoordinateLayout.rank exterior,b),
+        ⟨0,by simp [copyLabelLayout,modulus]⟩,⟨0,by simp [copyLabelLayout]⟩,⟨0,by simp [copyLabelLayout,modulus]⟩,t⟩
+    chartRead x g (idleDigitCell rfl (fun j => Fin.addCases (motive := fun _ => ZMod (prime^w)) active exterior j) b t) =
+      ext x (FlatCoordinateLayout.index active (labelSpectator g z)).val := by
+  intro z
+  apply congrArg (ext x)
+  simp only [idleDigitCell,RecursiveInterchangeLayout.index,idleLayout,Fin.val_cast,
+    FlatCoordinateLayout.index_val,labelSpectator,z,finProdFinEquiv,Equiv.coe_fn_mk,
+    ArbitraryWidthSliceTranspose.rank_append active exterior,pow_zero,Fin.val_zero,mul_one,add_zero]
+  ring
+
 /-- Cost of the borrowed-row sweeps and physical idle schedule on one aligned parent descriptor. -/
 theorem borrowedNode_parentCost [M8.Machine.Net] (engine : CopyTranspose := CopyTranspose.original) :
     ∃ D : ℝ, ∀ (parent : Descriptor) (w B rows : ℕ), parent.Positive → 0 < w → 0 < B →
       parent.width = 64*w → parent.rows = 142080*rows → parent.beforeH = B*prime^(64*(w*64)) →
       let K := parent.beforeRows*rows*parent.between*parent.afterD
       let W := B*prime^(64*(w*64))*K
-      let spectators := (prime^w)^112*K
-      let phaseW := B*prime^(64*(w*64))*spectators
+      let blocks := (prime^w)^112*B
+      let phaseW := blocks*prime^(64*(w*64))*K
       let V := (prime^w)^16*phaseW
       let v : Descriptor := ⟨(prime^w)^128,1,B*prime^(64*(w*64)),0,1,K⟩
       ∃ (size : volume prime v = V)
@@ -72,11 +89,11 @@ theorem borrowedNode_parentCost [M8.Machine.Net] (engine : CopyTranspose := Copy
           (∀ j ∈ nodeChildren5, (price j : ℝ) ≤ V*rate j) →
           ((compiledNode inv idle bridge exchange).cost : ℝ) ≤
             volume prime parent*(D*(w : ℝ)^M8.Machine.BudgetBound.tau + (nodeChildren5.map rate).sum/142080)) ∧
-        (∀ n x, stageRuns.foldr (fun k cont a => ∃ b, BorrowedStep n w B spectators k a b ∧ cont b)
-          (fun a => a = (inv n).transform x) x ∧ BorrowedPorts n w B spectators x ((inv n).transform x) ∧
-          BorrowedHelpers n w B spectators x ((inv n).transform x)) ∧
+        (∀ n x, stageRuns.foldr (fun k cont a => ∃ b, BorrowedStep n w blocks K k a b ∧ cont b)
+          (fun a => a = (inv n).transform x) x ∧ BorrowedPorts n w blocks K x ((inv n).transform x) ∧
+          BorrowedHelpers n w blocks K x ((inv n).transform x)) ∧
         (∀ n x (windows : List (Fin 9)), (∀ i ∈ windows, activePair n.val ≠ pairOf i) →
-          BorrowedPorts n w B spectators x (windows.foldl (fun a i => (idle i).transform a) ((inv n).transform x))) ∧
+          BorrowedPorts n w blocks K x (windows.foldl (fun a i => (idle i).transform a) ((inv n).transform x))) ∧
         ∀ i x, (∀ k, IdleTransport i k w B K (fun t => x (idleTape i k) (Fin.cast size t))
           (fun t => (idle i).transform x (idleTape i k) (Fin.cast size t))) ∧
           ∀ j, (∀ k, j ≠ idleTape i k) → (idle i).transform x j = x j := by
@@ -89,7 +106,7 @@ theorem borrowedNode_parentCost [M8.Machine.Net] (engine : CopyTranspose := Copy
     obtain ⟨inv,bill,trace⟩ := build w B K hw hb hk
     exact ⟨inv,bill,fun n x => ⟨trace n x,borrowedSweep_ports (trace n x),borrowedSweep_helpers (trace n x)⟩⟩⟩
   refine ⟨D,?_⟩
-  intro parent w B rows positive hw hb width split label K W spectators phaseW V v
+  intro parent w B rows positive hw hb width split label K W blocks phaseW V v
   obtain ⟨size,inv,idle,bridge,exchange,bank,bill,sweep,rest⟩ := node parent w B rows positive hw hb width split label
   exact ⟨size,inv,idle,bridge,exchange,bank,bill,sweep,fun n x windows apart =>
     (sweep n x).2.1.afterIdles idle (fun i a => (rest i a).2) windows apart,rest⟩

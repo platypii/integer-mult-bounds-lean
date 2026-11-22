@@ -704,8 +704,8 @@ theorem compiledNode_cost_of_sweeps [M8.Machine.Net] (engine : CopyTranspose) (r
       parent.width = 64*w → parent.rows = 142080*rows → parent.beforeH = B*prime^(64*(w*64)) →
       let K := parent.beforeRows*rows*parent.between*parent.afterD
       let W := B*prime^(64*(w*64))*K
-      let spectators := (prime^w)^112*K
-      let phaseW := B*prime^(64*(w*64))*spectators
+      let blocks := (prime^w)^112*B
+      let phaseW := blocks*prime^(64*(w*64))*K
       let V := (prime^w)^16*phaseW
       let v : Descriptor := ⟨(prime^w)^128,1,B*prime^(64*(w*64)),0,1,K⟩
       ∃ (size : volume prime v = V)
@@ -722,7 +722,7 @@ theorem compiledNode_cost_of_sweeps [M8.Machine.Net] (engine : CopyTranspose) (r
           (∀ j ∈ nodeChildren5, (price j : ℝ) ≤ V*rate j) →
           ((compiledNode inv idle bridge exchange).cost : ℝ) ≤
             volume prime parent*(D*(w : ℝ)^M8.Machine.BudgetBound.tau + (nodeChildren5.map rate).sum/142080)) ∧
-        action w B spectators inv ∧
+        action w blocks K inv ∧
         ∀ i x, (∀ k, IdleTransport i k w B K (fun t => x (idleTape i k) (Fin.cast size t))
           (fun t => (idle i).transform x (idleTape i k) (Fin.cast size t))) ∧
           ∀ j, (∀ k, j ≠ idleTape i k) → (idle i).transform x j = x j := by
@@ -733,16 +733,16 @@ theorem compiledNode_cost_of_sweeps [M8.Machine.Net] (engine : CopyTranspose) (r
   let bankCoeff := 30*(76*17760)+49
   obtain ⟨D,route⟩ := labelRoute_cost_bound (C+(∑ i, coeff i)+bankCoeff) overhead
   refine ⟨D/142080,?_⟩
-  intro parent w B rows positive hw hB width split label K W spectators phaseW V v
+  intro parent w B rows positive hw hB width split label K W blocks phaseW V v
   have hr : 0 < rows := by have := positive.2.1; rw [split] at this; omega
   have hK : 0 < K := Nat.mul_pos (Nat.mul_pos (Nat.mul_pos positive.1 hr) positive.2.2.2.1) positive.2.2.2.2
   have hp := Shared50ModularControl.prime_prime.pos
-  have hs : 0 < spectators := by dsimp [spectators]; positivity
+  have hs : 0 < blocks := by dsimp [blocks]; positivity
   have size : volume prime v = V := by
-    simp only [v,V,phaseW,spectators,volume,pow_zero,mul_one]
+    simp only [v,V,phaseW,blocks,volume,pow_zero,mul_one]
     rw [show (prime^w)^128 = (prime^w)^16*(prime^w)^112 from pow_add (prime^w) 16 112]
     ac_rfl
-  obtain ⟨inv,phaseCost,phaseAction⟩ := make w B spectators hw hB hs
+  obtain ⟨inv,phaseCost,phaseAction⟩ := make w blocks K hw hs hK
   choose parts costs actions using fun i => build i w B K hw hB hK
   let effect := fun i (x y : Fin 142081 → Fin (volume prime v) → ZMod 2) =>
     (∀ k, IdleTransport i k w B K (x (idleTape i k)) (y (idleTape i k))) ∧
@@ -770,7 +770,8 @@ theorem compiledNode_cost_of_sweeps [M8.Machine.Net] (engine : CopyTranspose) (r
             ((∑ i, coeff i)*V + 9*(idleCopies.length*(126*core))) := by dsimp only [core] at *; omega
         _ = _ := by dsimp only [overhead]; ring
     have parentSize : (volume prime parent : ℝ) = V*142080 := by
-      exact_mod_cast (invocationVolume parent w B rows width split label).symm
+      have vol := (invocationVolume parent w B rows width split label).symm
+      exact_mod_cast vol.trans (by dsimp [V,phaseW,blocks,K]; ac_rfl)
     have children (xs : List ℕ) (bound : ∀ j ∈ xs, (price j : ℝ) ≤ V*rate j) :
         ((xs.map price).sum : ℝ) ≤ V*(xs.map rate).sum := by
       induction xs with
@@ -797,8 +798,8 @@ theorem compiledNode_parentCost [M8.Machine.Net] (engine : CopyTranspose := Copy
       parent.width = 64*w → parent.rows = 142080*rows → parent.beforeH = B*prime^(64*(w*64)) →
       let K := parent.beforeRows*rows*parent.between*parent.afterD
       let W := B*prime^(64*(w*64))*K
-      let spectators := (prime^w)^112*K
-      let phaseW := B*prime^(64*(w*64))*spectators
+      let blocks := (prime^w)^112*B
+      let phaseW := blocks*prime^(64*(w*64))*K
       let V := (prime^w)^16*phaseW
       let v : Descriptor := ⟨(prime^w)^128,1,B*prime^(64*(w*64)),0,1,K⟩
       ∃ (size : volume prime v = V)
@@ -816,7 +817,7 @@ theorem compiledNode_parentCost [M8.Machine.Net] (engine : CopyTranspose := Copy
           ((compiledNode inv idle bridge exchange).cost : ℝ) ≤
             volume prime parent*(D*(w : ℝ)^M8.Machine.BudgetBound.tau + (nodeChildren5.map rate).sum/142080)) ∧
         (∀ n, ∃ run : (Fin 32 × Fin 5) → (Fin 142081 → Fin V → ZMod 2) → (Fin 142081 → Fin V → ZMod 2),
-          (∀ k x, InvocationEffect n k.1 k.2 w B spectators x (run k x)) ∧
+          (∀ k x, InvocationEffect n k.1 k.2 w blocks K x (run k x)) ∧
           ∀ x, (inv n).transform x = stageRuns.foldl (fun y k => run k y) x) ∧
         ∀ i x, (∀ k, IdleTransport i k w B K (fun t => x (idleTape i k) (Fin.cast size t))
           (fun t => (idle i).transform x (idleTape i k) (Fin.cast size t))) ∧
