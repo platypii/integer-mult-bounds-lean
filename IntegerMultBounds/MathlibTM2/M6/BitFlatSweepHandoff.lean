@@ -27,7 +27,7 @@ private theorem sweepCast {U : Type} {Q w W V price : ℕ} (n : Fin 9)
   exact id
 
 theorem flatSweepFromPacked [M8.Machine.Net] :
-    ∃ (C : ℝ) (states : ℕ), ∀ {Q h B rows : ℕ} {P U : Type}
+    ∃ (C : ℝ) (base nt states : ℕ), ∀ {Q h B rows : ℕ} {P U : Type}
     (node : RecursiveInterchangeLayout.Descriptor) (n : Fin 9)
     (tapes : StageRun → ℕ) (body : ∀ p, P → Pr P (tapes p) Q prime U)
     (coeff : StageRun → ℝ) (required : (ℕ → ℕ) → Prop),
@@ -45,10 +45,10 @@ theorem flatSweepFromPacked [M8.Machine.Net] :
     PackedWindowHandoff U Q V (fun x y => ∀ j : Fin W,
       let addr := fun z => flatWindowEquiv w W (windowState w z,j)
       readRoles addr y = (Piece.stage n).run (readRoles addr x))
-      (⌊(C+|stagePackingRate n+(stageRuns.map coeff).sum|)*V*(w : ℝ)^M8.Machine.BudgetBound.tau+children⌋₊+
+      (⌊(stageSetupCost base nt V w : ℝ)+(C+|stagePackingRate n+(stageRuns.map coeff).sum|)*V*(w : ℝ)^M8.Machine.BudgetBound.tau+children⌋₊+
         142081*(8*V+10)+1) := by
-  obtain ⟨C,states,execute⟩ := packedFlatStage_exec
-  refine ⟨C,states,?_⟩
+  obtain ⟨C,base,nt,states,execute⟩ := packedFlatStage_cost
+  refine ⟨C,base,nt,states,?_⟩
   intro Q h B rows P U node n tapes body coeff required cap width split label w K W V fits hB hK positive packed time ready children
   obtain ⟨T,fan,bank,run⟩ := execute node n tapes body coeff required cap width split label fits hB hK positive packed
   obtain ⟨t₁,t₂,mid,outer,code,seed,work⟩ := run time ready
@@ -56,7 +56,7 @@ theorem flatSweepFromPacked [M8.Machine.Net] :
   have size : V = packedV := (ordinaryCompact_width (prime^w) W).symm.trans (by simp [packedV,W,Nat.mul_assoc])
   apply sweepCast n size
   obtain ⟨program,initial,handoff⟩ := flatStageHandoff _ _ code seed _ _ work
-  let bill (v : ℕ) := ⌊(C+|stagePackingRate n+(stageRuns.map coeff).sum|)*v*(w : ℝ)^M8.Machine.BudgetBound.tau+children⌋₊+142081*(8*v+10)+1
+  let bill (v : ℕ) := ⌊(stageSetupCost base nt v w : ℝ)+(C+|stagePackingRate n+(stageRuns.map coeff).sum|)*v*(w : ℝ)^M8.Machine.BudgetBound.tau+children⌋₊+142081*(8*v+10)+1
   change PackedWindowHandoff U Q packedV _ (bill V)
   rw [congrArg bill size]
   exact pack handoff
@@ -80,12 +80,12 @@ private theorem sumNodeCosts (s i a b : Fin 9 → ℕ) (total : ℕ)
 private theorem collectIdle (r a b : ℕ) :
     r+a+1+b+1 ≤ r+(a+1+b+1) := by omega
 
-private theorem collectSweep (C rate power : ℝ) (v child copy : ℕ) (positive : 0 ≤ power) :
-    ⌊(C+|rate|)*v*power+child⌋₊+copy+1 ≤ ⌊(|C|+|rate|)*v*power⌋₊+copy+1+child := by
+private theorem collectSweep (C rate power : ℝ) (setup v child copy : ℕ) (positive : 0 ≤ power) :
+    ⌊(setup : ℝ)+(C+|rate|)*v*power+child⌋₊+copy+1 ≤ ⌊(setup : ℝ)+(|C|+|rate|)*v*power⌋₊+copy+1+child := by
   have scaled := mul_le_mul_of_nonneg_right
     (mul_le_mul_of_nonneg_right (add_le_add (le_abs_self C) (le_refl |rate|)) (Nat.cast_nonneg v)) positive
-  have paid := Nat.floor_mono (add_le_add scaled (le_refl (child : ℝ)))
-  rw [Nat.floor_add_natCast (by positivity : 0 ≤ (|C|+|rate|)*(v : ℝ)*power)] at paid
+  have paid := Nat.floor_mono (add_le_add (add_le_add (le_refl (setup : ℝ)) scaled) (le_refl (child : ℝ)))
+  rw [Nat.floor_add_natCast (by positivity : 0 ≤ (setup : ℝ)+(|C|+|rate|)*(v : ℝ)*power)] at paid
   omega
 
 /-- The recursive interval has the directory width and occupies one of
@@ -215,7 +215,7 @@ theorem activeFlatDimensions (root : Descriptor) (depth cutoff blocks : ℕ)
 /-- At two aligned row levels the packed stage and the recursive interval
 window see the same spectator cells. Their bills use one child directory. -/
 theorem alignedFlatNode [M8.Machine.Net] {U : Type} :
-    ∃ (C : ℝ) (states : ℕ), ∀ {Q h B groups : ℕ}, states ≤ Q →
+    ∃ (C : ℝ) (base nt states : ℕ), ∀ {Q h B groups : ℕ}, states ≤ Q →
     ∀ (node : Descriptor), node.width = 64*(h+1) → node.rows = 142080*(142080*groups) →
     node.beforeH = B*prime^(64*((h+1)*64)) →
     let w := h+1
@@ -233,7 +233,7 @@ theorem alignedFlatNode [M8.Machine.Net] {U : Type} :
     (∀ i, PackedStageExecution (w := w) (B := B) (K := K) i (t i) (body i) (coeff i) (required i)) →
     (∀ i, required i time) →
     let sweep : Fin 9 → ℕ := fun i =>
-      ⌊(C+|stagePackingRate i+(stageRuns.map (coeff i)).sum|)*m*(w : ℝ)^M8.Machine.BudgetBound.tau⌋₊+
+      ⌊(stageSetupCost base nt m w : ℝ)+(C+|stagePackingRate i+(stageRuns.map (coeff i)).sum|)*m*(w : ℝ)^M8.Machine.BudgetBound.tau⌋₊+
         142081*(8*m+10)+1
     (∀ i (j : (Fin 32 × Fin 5) × Fin 222),
       let child := scheduledChild prime node (idleDirectoryIndex (i,idleCopyIndex j))
@@ -251,10 +251,10 @@ theorem alignedFlatNode [M8.Machine.Net] {U : Type} :
       1 + 142081*(8*m+10)+1
     PackedWindowHandoff U Q m (packedChildOutput w m)
       ((∑ i, sweep i)+(∑ i, idle i)+(∑ j, budget j)+9*(2*(76*17760*m*(142081+7)+6)+1+(142081*(8*m+10)+1))+2) := by
-  obtain ⟨C,stageStates,stage⟩ := flatSweepFromPacked
+  obtain ⟨C,base,nt,stageStates,stage⟩ := flatSweepFromPacked
   obtain ⟨nodeStates,assemble⟩ := flatNodeFromIntervals (U := U)
   let divStates := (fun {q : ℕ} (_ : Program 38 q prime) => q) (RecursiveRowsNodeHeaders.program 142080)
-  refine ⟨|C|,max nodeStates (max divStates stageStates),?_⟩
+  refine ⟨|C|,base,nt,max nodeStates (max divStates stageStates),?_⟩
   intro Q h B groups fits node width split label w rows K W V m lane hB hK pos P t body coeff required budget time runs ready sweep children idle
   have shape : B*prime^(64*(w*64))*K = W*142080 := by dsimp only [K,W,rows]; ac_rfl
   have positive : 0 < W*142080 := shape ▸ Nat.mul_pos (Nat.mul_pos hB (pow_pos Shared50ModularControl.prime_prime.pos _)) hK
@@ -293,10 +293,10 @@ theorem alignedFlatNode [M8.Machine.Net] {U : Type} :
       PackedWindowHandoff U Q v (fun x y => ∀ j : Fin suffix,
         let addr := fun z => flatWindowEquiv w suffix (windowState w z,j)
         readRoles addr y = (Piece.stage i).run (readRoles addr x))
-        (⌊(C+|stagePackingRate i+(stageRuns.map (coeff i)).sum|)*v*(w : ℝ)^M8.Machine.BudgetBound.tau+charged i⌋₊+
+        (⌊(stageSetupCost base nt v w : ℝ)+(C+|stagePackingRate i+(stageRuns.map (coeff i)).sum|)*v*(w : ℝ)^M8.Machine.BudgetBound.tau+charged i⌋₊+
           142081*(8*v+10)+1)
     apply handoff_le ((congrArg result shape).mp call)
-    exact collectSweep C _ _ m (charged i) _ (Real.rpow_nonneg (Nat.cast_nonneg w) _)
+    exact collectSweep C _ _ _ m (charged i) _ (Real.rpow_nonneg (Nat.cast_nonneg w) _)
 
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
