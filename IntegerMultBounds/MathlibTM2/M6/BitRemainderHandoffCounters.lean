@@ -10,7 +10,7 @@ open IntegerMultBounds.Networks.Shared50ModularControl (prime)
 open FlatCoordinateSchedule (bits)
 local instance (w : ℕ) : NeZero (prime^w) := ⟨(pow_pos IntegerMultBounds.Networks.Shared50ModularControl.prime_prime.pos _).ne'⟩
 
-def paddingBanks : Fin 4 → Fin 12 ↪ Fin 95 := ![inputCrop,inputPad,outputCrop,outputPad]
+def paddingBanks : Fin 4 → Fin 12 ↪ Fin 93 := ![inputCrop,inputPad,outputCrop,outputPad]
 
 private theorem privateBanks : ∀ i j, i ≠ j → ∀ a b : Fin 12, 2 ≤ a.val → 2 ≤ b.val →
     paddingBanks i a ≠ paddingBanks j b := by decide +kernel
@@ -18,7 +18,7 @@ private theorem privateBanks : ∀ i j, i ≠ j → ∀ a b : Fin 12, 2 ≤ a.va
 /-- Staging crop and return padding use the same three retained dimensions.
 Ordinary padding and return crop share a second triple. -/
 theorem preparePadding_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U)
-    (slots : Fin 95 ↪ Fin T) (staging : Fin 3 → Fin T)
+    (slots : Fin 93 ↪ Fin T) (staging : Fin 3 → Fin T)
     (apart : ∀ i j k, staging i ≠ slots (paddingBanks j k)) :
     let port := fun i => (paddingBanks i).trans slots
     ∃ code, ∀ A B N K (shift : ℕ) u S,
@@ -108,7 +108,7 @@ theorem preparePadding_cost_le {A B N K : ℕ}
 
 /-- Prepare both directions before entering the scanner, retaining its return counters. -/
 theorem prepareAndEnter_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U)
-    (fits : 235 ≤ Q) (slots : Fin 95 ↪ Fin T) (staging : Fin 3 → Fin T)
+    (fits : 235 ≤ Q) (slots : Fin 93 ↪ Fin T) (staging : Fin 3 → Fin T)
     (apart : ∀ i j k, staging i ≠ slots (paddingBanks j k)) :
     ∃ code, ∀ w B K, 0 < B → 0 < K →
       let A := (prime^w)^16
@@ -119,7 +119,7 @@ theorem prepareAndEnter_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T Q pri
       (∀ b j, 2 ≤ j.val → S.L (slots (paddingBanks b j)) = [] ∧ S.R (slots (paddingBanks b j)) = []) →
       WordAtZero (singleLabelBank (firstRowLabel w) x i) (S.L (slots 0)) (S.R (slots 0)) →
       (∀ z, readAt blank (S.L ((inputCrop.trans slots) 1)) (S.R ((inputCrop.trans slots) 1)) z = blank) →
-      S.R (slots (inputHeaders 3)) = binSyms B.size B → S.R (slots 94) = binSyms K.size K →
+      S.R (slots (inputHeaders 3)) = binSyms B.size B → S.R (slots 92) = binSyms K.size K →
       S.L ((inputTranspose.trans slots) 0) = [] → S.L ((inputTranspose.trans slots) 1) = [] →
       (∀ j, S.R ((inputTranspose.trans slots) j) = []) →
       (∀ z, readAt blank (S.L ((inputPad.trans slots) 1)) (S.R ((inputPad.trans slots) 1)) z = blank) →
@@ -137,14 +137,14 @@ theorem prepareAndEnter_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T Q pri
           (∀ i, (inputCrop.trans slots) i ≠ j) → (∀ i, (inputTranspose.trans slots) i ≠ j) → (∀ i, (inputPad.trans slots) i ≠ j) → (∀ i, (inputRotation.trans slots) i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
   obtain ⟨setup,install⟩ := preparePadding_exec body slots staging apart
   obtain ⟨enter,move⟩ := enter_exec body fits slots
-  obtain ⟨clocks,build⟩ := inputCounters_exec body (inputTranspose.trans slots) (slots (inputHeaders 3)) (slots 94)
+  obtain ⟨clocks,build⟩ := inputCounters_exec body (inputTranspose.trans slots) (slots (inputHeaders 3)) (slots 92)
     (slots.injective.ne (by decide)) (fun i => ⟨slots.injective.ne ((by decide : ∀ i, inputHeaders 3 ≠ inputTranspose i) i),
-      slots.injective.ne ((by decide : ∀ i, (94 : Fin 95) ≠ inputTranspose i) i)⟩)
+      slots.injective.ne ((by decide : ∀ i, (92 : Fin 93) ≠ inputTranspose i) i)⟩)
   refine ⟨setup.seq (clocks.seq enter),?_⟩
   intro w B K hb hk A N g x i u S dims fresh owner cropBlank blockDigits widthDigits
     left₀ left₁ transpose padBlank headers rotFree scannerBlank
   obtain ⟨v,D,t,load,time,user,c₀,c₁,c₂,c₃,off⟩ := install A B N K g.val u S dims headers fresh
-  have keep (j : Fin 95) (h : ∀ b k, 2 ≤ k.val → paddingBanks b k ≠ j) :=
+  have keep (j : Fin 93) (h : ∀ b k, 2 ≤ k.val → paddingBanks b k ≠ j) :=
     off (slots j) (fun b k hk => slots.injective.ne (h b k hk))
   have tr (j : Fin 8) := keep (inputTranspose j)
     ((by decide +kernel : ∀ j b k, 2 ≤ k.val → paddingBanks b k ≠ inputTranspose j) j)
@@ -157,16 +157,16 @@ theorem prepareAndEnter_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T Q pri
   have crop := keep (inputCrop 1) (by decide +kernel)
   have pad := keep (inputPad 1) (by decide +kernel)
   obtain ⟨y,E,r,clockRun,clockCost,clockUser,left,clockWords,clockOff⟩ := build B K v D
-    ((hd 3).2.trans blockDigits) ((keep 94 (by decide +kernel)).2.trans widthDigits)
+    ((hd 3).2.trans blockDigits) ((keep 92 (by decide +kernel)).2.trans widthDigits)
     (fun j => (tr j).2.trans (transpose j))
-  have kept (j : Fin 95) (h : j ≠ inputTranspose 4 ∧ j ≠ inputTranspose 7) :
+  have kept (j : Fin 93) (h : j ≠ inputTranspose 4 ∧ j ≠ inputTranspose 7) :
       E.R (slots j) = D.R (slots j) := clockOff _ (slots.injective.ne h.1) (slots.injective.ne h.2)
   have counters (b : Fin 4) {d n k} (ready : CropCounters ((paddingBanks b).trans slots) d n k D) :
       CropCounters ((paddingBanks b).trans slots) d n k E := by
     intro j h₀ h₁ z
     have eq := kept _ ((by decide +kernel : ∀ b j, paddingBanks b j ≠ inputTranspose 4 ∧ paddingBanks b j ≠ inputTranspose 7) b j)
     simpa only [Function.Embedding.trans_apply,left,eq] using ready j h₀ h₁ z
-  have unchanged (j : Fin 95) (a : j ≠ inputTranspose 4 ∧ j ≠ inputTranspose 7)
+  have unchanged (j : Fin 93) (a : j ≠ inputTranspose 4 ∧ j ≠ inputTranspose 7)
       (b : D.R (slots j) = S.R (slots j)) := (kept j a).trans b
   have rotR (j : Fin 14) := unchanged _ ((by decide : ∀ j, inputRotation j ≠ inputTranspose 4 ∧ inputRotation j ≠ inputTranspose 7) j) (rot j).2
   have hdR (j : Fin 4) := unchanged _ ((by decide : ∀ j, inputHeaders j ≠ inputTranspose 4 ∧ inputHeaders j ≠ inputTranspose 7) j) (hd j).2

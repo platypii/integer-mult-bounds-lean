@@ -15,19 +15,19 @@ namespace OrdinaryHandoff
 /-- Slot zero holds the staging owner and slot one holds the scanner owner.
 The remaining slots separate the two sets of scratch tapes so that a scan
 can use its own metadata while the return workspace stays prepared. -/
-def inputCrop : Fin 12 ↪ Fin 95 := ⟨![0,2,3,4,5,6,7,8,9,10,11,12],by decide⟩
-def inputTranspose : Fin 8 ↪ Fin 95 := ⟨![13,14,15,16,17,18,19,20],by decide⟩
-def inputPad : Fin 12 ↪ Fin 95 := ⟨![13,21,22,23,24,25,26,27,28,29,30,31],by decide⟩
-def inputRotation : Fin 14 ↪ Fin 95 := ⟨![32,33,34,35,36,37,38,39,40,41,21,1,42,43],by decide⟩
-def inputHeaders : Fin 4 ↪ Fin 95 := ⟨![44,45,46,47],by decide⟩
-def outputRotation : Fin 14 ↪ Fin 95 := ⟨![48,49,50,51,52,53,54,55,56,57,1,58,59,60],by decide⟩
-def outputCrop : Fin 12 ↪ Fin 95 := ⟨![58,61,62,63,64,65,66,67,68,69,70,71],by decide⟩
-def outputTranspose : Fin 8 ↪ Fin 95 := ⟨![72,73,74,75,76,77,78,79],by decide⟩
-def outputPad : Fin 12 ↪ Fin 95 := ⟨![78,0,80,81,82,83,84,85,86,87,88,89],by decide⟩
-def outputHeaders : Fin 4 ↪ Fin 95 := ⟨![90,91,92,93],by decide⟩
+def inputCrop : Fin 12 ↪ Fin 93 := ⟨![0,2,3,4,5,6,7,8,9,10,11,12],by decide⟩
+def inputTranspose : Fin 8 ↪ Fin 93 := ⟨![13,14,15,16,17,18,19,20],by decide⟩
+def inputPad : Fin 12 ↪ Fin 93 := ⟨![13,21,22,23,24,25,26,27,28,29,30,31],by decide⟩
+def inputRotation : Fin 14 ↪ Fin 93 := ⟨![32,33,34,35,36,37,38,39,40,41,21,1,42,43],by decide⟩
+def inputHeaders : Fin 4 ↪ Fin 93 := ⟨![44,45,46,47],by decide⟩
+def outputRotation : Fin 14 ↪ Fin 93 := ⟨![48,49,50,51,52,53,54,55,56,57,1,58,59,60],by decide⟩
+def outputCrop : Fin 12 ↪ Fin 93 := ⟨![58,61,62,63,64,65,66,67,68,69,70,71],by decide⟩
+def outputTranspose : Fin 8 ↪ Fin 93 := ⟨![72,73,74,75,76,77,78,79],by decide⟩
+def outputPad : Fin 12 ↪ Fin 93 := ⟨![78,0,80,81,82,83,84,85,86,87,88,89],by decide⟩
+def outputHeaders : Fin 4 ↪ Fin 93 := ⟨![44,45,90,47],by decide⟩
 
 theorem enter_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U)
-    (fits : 235 ≤ Q) (slots : Fin 95 ↪ Fin T) :
+    (fits : 235 ≤ Q) (slots : Fin 93 ↪ Fin T) :
     ∃ code, ∀ w B K, 0 < B → 0 < K →
       let A := (prime^w)^16
       let N := prime^(64*(w*64))
@@ -55,7 +55,7 @@ theorem enter_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U)
   all_goals decide +kernel
 
 theorem leave_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U)
-    (fits : 235 ≤ Q) (slots : Fin 95 ↪ Fin T) :
+    (fits : 235 ≤ Q) (slots : Fin 93 ↪ Fin T) :
     ∃ code, ∀ {w B W : ℕ} {interval parent c}, 0 < B → 0 < W →
       let M := prime^(w+1)
       let N := M^(64*64)
@@ -71,7 +71,7 @@ theorem leave_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U)
       (∀ z, readAt blank (S.L ((outputRotation.trans slots) 11)) (S.R ((outputRotation.trans slots) 11)) z = blank) →
       CropCounters (outputCrop.trans slots) B N K S →
       (∀ z, readAt blank (S.L ((outputCrop.trans slots) 1)) (S.R ((outputCrop.trans slots) 1)) z = blank) →
-      S.R (slots 94) = binSyms (M^112*W).size (M^112*W) →
+      S.R (slots 92) = binSyms (M^112*W).size (M^112*W) →
       S.R (slots (outputHeaders 0)) = binSyms K.size K →
       (∀ i, S.R ((outputTranspose.trans slots) i) = []) → S.L ((outputTranspose.trans slots) 1) = [] →
       S.L ((outputTranspose.trans slots) 6) = [] →
@@ -86,27 +86,27 @@ theorem leave_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U)
           F.L j = S.L j ∧ F.R j = S.R j := by
   apply ordinaryReturn_exec body fits (outputRotation.trans slots) (outputHeaders.trans slots) _
     (outputCrop.trans slots) _ _ (outputTranspose.trans slots) _ (outputPad.trans slots) _ _
-    (slots 94) (slots (outputHeaders 0))
+    (slots 92) (slots (outputHeaders 0))
   all_goals simp only [Function.Embedding.trans_apply,ne_eq,slots.injective.eq_iff]
   all_goals decide +kernel
 
 /-- Share slot one with the scanner owner. Every other handoff slot is placed
 after the scanner's last tape, including the caller's staging owner. -/
-def aroundScanner {T : ℕ} (owner : Fin T) : Fin 95 ↪ Fin (T+94) where
-  toFun i := Fin.succAboveCases (1 : Fin 95) (owner.castAdd 94) (Fin.natAdd T) i
+def aroundScanner {T : ℕ} (owner : Fin T) : Fin 93 ↪ Fin (T+99) where
+  toFun i := Fin.succAboveCases (1 : Fin 93) (owner.castAdd 99) (fun k : Fin 92 => (k.castAdd 7).natAdd T) i
   inj' := by
     intro i j
-    induction i using Fin.succAboveCases (1 : Fin 95) <;>
-      induction j using Fin.succAboveCases (1 : Fin 95) <;>
+    induction i using Fin.succAboveCases (1 : Fin 93) <;>
+      induction j using Fin.succAboveCases (1 : Fin 93) <;>
       simp
     all_goals intro eq; have h := congrArg Fin.val eq; simp only [Fin.val_castAdd,Fin.val_natAdd] at h; omega
 
 @[simp] theorem aroundScanner_owner {T : ℕ} (owner : Fin T) :
-    aroundScanner owner 1 = owner.castAdd 94 := by simp [aroundScanner]
+    aroundScanner owner 1 = owner.castAdd 99 := by simp [aroundScanner]
 
-theorem aroundScanner_private {T : ℕ} (owner : Fin T) (j : Fin 95) (hj : j ≠ 1) :
-    ∀ i : Fin T, i.castAdd 94 ≠ aroundScanner owner j := by
-  induction j using Fin.succAboveCases (1 : Fin 95) with
+theorem aroundScanner_private {T : ℕ} (owner : Fin T) (j : Fin 93) (hj : j ≠ 1) :
+    ∀ i : Fin T, i.castAdd 99 ≠ aroundScanner owner j := by
+  induction j using Fin.succAboveCases (1 : Fin 93) with
   | x => contradiction
   | p k =>
     intro i eq
@@ -114,17 +114,25 @@ theorem aroundScanner_private {T : ℕ} (owner : Fin T) (j : Fin 95) (hj : j ≠
     simp [aroundScanner] at h
     omega
 
+/-- The final seven tapes receive retained stage words before the round trip. -/
+def retainedPort (T : ℕ) (i : Fin 7) : Fin (T+99) := (i.natAdd 92).natAdd T
+
+theorem retainedPort_private {T : ℕ} (owner : Fin T) (i : Fin 7) (j : Fin 93) :
+    retainedPort T i ≠ aroundScanner owner j := by
+  induction j using Fin.succAboveCases (1 : Fin 93) <;>
+    intro eq <;> have h := congrArg Fin.val eq <;> simp [retainedPort,aroundScanner] at h <;> omega
+
 /-- Place a native scanner execution in the shared host. The execution costs
 the same number of steps and preserves every private handoff tape. -/
 theorem scan_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U)
-    (code : Pr P T Q prime U) (owner : Fin T) (u : HS (T+94) Q prime U) (S : Stacks (T+94) prime)
-    {v D t} (run : Exec body code (mk (embDn (Fin.castAddEmb 94) u) (embStk (Fin.castAddEmb 94) S)) t (mk v D)) :
-    ∃ z F, Exec (fun p => embProg (Fin.castAddEmb 94) id (body p))
-        (embProg (Fin.castAddEmb 94) id code) (mk u S) t (mk z F) ∧ z.user = v.user ∧
-      embStk (Fin.castAddEmb 94) F = D ∧
-      ∀ j : Fin 95, j ≠ 1 → F.L (aroundScanner owner j) = S.L (aroundScanner owner j) ∧
+    (code : Pr P T Q prime U) (owner : Fin T) (u : HS (T+99) Q prime U) (S : Stacks (T+99) prime)
+    {v D t} (run : Exec body code (mk (embDn (Fin.castAddEmb 99) u) (embStk (Fin.castAddEmb 99) S)) t (mk v D)) :
+    ∃ z F, Exec (fun p => embProg (Fin.castAddEmb 99) id (body p))
+        (embProg (Fin.castAddEmb 99) id code) (mk u S) t (mk z F) ∧ z.user = v.user ∧
+      embStk (Fin.castAddEmb 99) F = D ∧
+      ∀ j : Fin 93, j ≠ 1 → F.L (aroundScanner owner j) = S.L (aroundScanner owner j) ∧
         F.R (aroundScanner owner j) = S.R (aroundScanner owner j) := by
-  obtain ⟨z,F,placed,_,same,view,off⟩ := exec_emb (ι := id) (body' := fun p => embProg (Fin.castAddEmb 94) id (body p)) (Fin.castAddEmb 94).injective
+  obtain ⟨z,F,placed,_,same,view,off⟩ := exec_emb (ι := id) (body' := fun p => embProg (Fin.castAddEmb 99) id (body p)) (Fin.castAddEmb 99).injective
     (fun _ => rfl) run u rfl S rfl
   exact ⟨z,F,placed,same,view,fun j hj => off _ (aroundScanner_private owner j hj)⟩
 
@@ -132,7 +140,7 @@ theorem scan_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U)
 theorem scanAndLeave_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U)
     (fits : 235 ≤ Q) (scan : Pr P T Q prime U) (owner : Fin T) :
     let slots := aroundScanner owner
-    let old := Fin.castAddEmb 94 (n := T)
+    let old := Fin.castAddEmb 99 (n := T)
     let outer := fun p => embProg old id (body p)
     ∃ code, ∀ {w B W : ℕ} {interval parent c}, 0 < B → 0 < W →
       let M := prime^(w+1)
@@ -159,7 +167,7 @@ theorem scanAndLeave_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime 
       (∀ z, readAt blank (S.L ((outputRotation.trans slots) 11)) (S.R ((outputRotation.trans slots) 11)) z = blank) →
       CropCounters (outputCrop.trans slots) B N K S →
       (∀ z, readAt blank (S.L ((outputCrop.trans slots) 1)) (S.R ((outputCrop.trans slots) 1)) z = blank) →
-      S.R (slots 94) = binSyms (M^112*W).size (M^112*W) →
+      S.R (slots 92) = binSyms (M^112*W).size (M^112*W) →
       S.R (slots (outputHeaders 0)) = binSyms K.size K →
       (∀ i, S.R ((outputTranspose.trans slots) i) = []) → S.L ((outputTranspose.trans slots) 1) = [] →
       S.L ((outputTranspose.trans slots) 6) = [] →
@@ -189,9 +197,9 @@ theorem scanAndLeave_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime 
     change (finProdFinEquiv (a,k)).cast (ordinaryCompact_width M W) = _ at h
     rw [← h,cells,ite_eq_right hj]
   obtain ⟨y,E,run,user,view,privateTape⟩ := scan_exec body scan owner u S native
-  have left (j : Fin 95) (h : j ≠ 1) : E.L (slots j) = S.L (slots j) := (privateTape j h).1
-  have right (j : Fin 95) (h : j ≠ 1) : E.R (slots j) = S.R (slots j) := (privateTape j h).2
-  have counters (bank : Fin 12 ↪ Fin 95) (apart : ∀ k, k ≠ 0 → k ≠ 1 → bank k ≠ 1)
+  have left (j : Fin 93) (h : j ≠ 1) : E.L (slots j) = S.L (slots j) := (privateTape j h).1
+  have right (j : Fin 93) (h : j ≠ 1) : E.R (slots j) = S.R (slots j) := (privateTape j h).2
+  have counters (bank : Fin 12 ↪ Fin 93) (apart : ∀ k, k ≠ 0 → k ≠ 1 → bank k ≠ 1)
       {b n k} (ready : CropCounters (bank.trans slots) b n k S) : CropCounters (bank.trans slots) b n k E := by
     intro j h₀ h₁ z
     simp only [Function.Embedding.trans_apply,left _ (apart j h₀ h₁),right _ (apart j h₀ h₁)]
@@ -210,11 +218,11 @@ theorem scanAndLeave_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime 
       live (fun l => by simpa only [Function.Embedding.trans_apply,left _ (by decide : outputRotation 11 ≠ 1),right _ (by decide : outputRotation 11 ≠ 1)] using dest l)
       (counters _ (by decide) crop)
       (fun l => by simpa only [Function.Embedding.trans_apply,left _ (by decide : outputCrop 1 ≠ 1),right _ (by decide : outputCrop 1 ≠ 1)] using cropDest l)
-      ((right 94 (by decide)).trans tailWidth) ((right (outputHeaders 0) (by decide)).trans rowWidth)
+      ((right 92 (by decide)).trans tailWidth) ((right (outputHeaders 0) (by decide)).trans rowWidth)
       (fun j => (right _ ((by decide : ∀ j, outputTranspose j ≠ 1) j)).trans (transpose j))
       ((left (outputTranspose 1) (by decide)).trans left₁) ((left (outputTranspose 6) (by decide)).trans left₆)
       (counters _ (by decide) pad)
-      (fun l => by simpa only [left _ (by decide : (0 : Fin 95) ≠ 1),right _ (by decide : (0 : Fin 95) ≠ 1)] using staging l)
+      (fun l => by simpa only [left _ (by decide : (0 : Fin 93) ≠ 1),right _ (by decide : (0 : Fin 93) ≠ 1)] using staging l)
   change m ≤ 22982*(B*(N*K))+599 at paid
   refine ⟨z,F,_,staged,Exec.seq run finish,?_,same.trans (user.trans sameUser),out,
     reads.stagedExchange input output (x i) staged units cells action⟩

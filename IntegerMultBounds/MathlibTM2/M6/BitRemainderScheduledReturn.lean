@@ -19,15 +19,15 @@ def ScheduledReturn [M8.Machine.Net] {T Q w B W : ℕ} {U : Type}
     (interval : ℕ × ℕ) (parent : Fin 64 → ZMod (prime^(w+1)))
     (c : Certificates.PR589.Nine.PortCertificate) (checked : c.Checked)
     (owner : Fin T) (ready : Stacks T prime → Prop)
-    (body : Unit → Pr Unit (T+94) Q prime U) (code : Pr Unit (T+94) Q prime U) (rate : ℝ) : Prop :=
+    (body : Unit → Pr Unit (T+99) Q prime U) (code : Pr Unit (T+99) Q prime U) (rate : ℝ) : Prop :=
     let layout := stagedScannerLayout w B W
     let M := prime^(w+1)
     let N := M^(64*64)
     let K := M^128*W
     let idRow := LabelAddress.address (1 : LabelPadding.Label 64 (w+1))
     let slots := aroundScanner owner
-    let old := Fin.castAddEmb 94 (n := T)
-    ∀ (x : Fin 142081 → Fin (M^16*(B*(M^112*W))) → ZMod 2) (i : Fin 142081) (u : HS (T+94) Q prime U) (S : Stacks (T+94) prime),
+    let old := Fin.castAddEmb 99 (n := T)
+    ∀ (x : Fin 142081 → Fin (M^16*(B*(M^112*W))) → ZMod 2) (i : Fin 142081) (u : HS (T+99) Q prime U) (S : Stacks (T+99) prime),
       let raw := embStk old S
       ready raw →
       WordAtZero (fun j => singleLabelBank (firstRowLabel (w+1)) x i
@@ -38,7 +38,7 @@ def ScheduledReturn [M8.Machine.Net] {T Q w B W : ℕ} {U : Type}
       (∀ z, readAt blank (S.L ((outputRotation.trans slots) 11)) (S.R ((outputRotation.trans slots) 11)) z = blank) →
       CropCounters (outputCrop.trans slots) B N K S →
       (∀ z, readAt blank (S.L ((outputCrop.trans slots) 1)) (S.R ((outputCrop.trans slots) 1)) z = blank) →
-      S.R (slots 94) = binSyms (M^112*W).size (M^112*W) →
+      S.R (slots 92) = binSyms (M^112*W).size (M^112*W) →
       S.R (slots (outputHeaders 0)) = binSyms K.size K →
       (∀ i, S.R ((outputTranspose.trans slots) i) = []) → S.L ((outputTranspose.trans slots) 1) = [] →
       S.L ((outputTranspose.trans slots) 6) = [] →
@@ -98,8 +98,8 @@ theorem ScannerReady.after_entry {V size back : ℕ}
     let T := size+stage.tapes+back
     let owner := ((stage.slots 0).natAdd size).castAdd back
     let slots := aroundScanner owner
-    let old := Fin.castAddEmb 94 (n := T)
-    ∀ {S F : Stacks (T+94) prime}, ScannerReady stage size back words (embStk old S) →
+    let old := Fin.castAddEmb 99 (n := T)
+    ∀ {S F : Stacks (T+99) prime}, ScannerReady stage size back words (embStk old S) →
       (∀ j, (∀ b k, 2 ≤ k.val → slots (paddingBanks b k) ≠ j) →
         (∀ i, (inputCrop.trans slots) i ≠ j) → (∀ i, (inputTranspose.trans slots) i ≠ j) →
         (∀ i, (inputPad.trans slots) i ≠ j) → (∀ i, (inputRotation.trans slots) i ≠ j) →
@@ -108,7 +108,7 @@ theorem ScannerReady.after_entry {V size back : ℕ}
   intro T owner slots old S F initial frame
   apply initial.of_owner_change
   intro j hj
-  have miss (i : Fin 95) : slots i ≠ old j := by
+  have miss (i : Fin 93) : slots i ≠ old j := by
     by_cases h : i = 1
     · subst i; simpa [slots,old,owner] using hj.symm
     · exact (aroundScanner_private owner i h j).symm
@@ -137,7 +137,7 @@ theorem scheduledReturn_exec [M8.Machine.Net] {common work : ℕ} {U : Type}
       let base := Fin.castAddEmb back.tapes (n := size+stage.tapes)
       let T := size+stage.tapes+back.tapes
       let Q := max (max stage.states columnCapacity) back.states
-      let host := T+94
+      let host := T+99
       let program := Pr Unit host Q prime U
       let ready := ScannerReady stage size back.tapes (Fin.addCases
         (fun i : Fin (66+(common+24+31+(work+extra)+1)) => entryWords i.val) (fun _ : Fin 5 => []))
@@ -174,7 +174,7 @@ theorem scheduledReturn_exec [M8.Machine.Net] {common work : ℕ} {U : Type}
   obtain ⟨stage,back,forward,reverse,execute⟩ := trip (0 : Fin 1) c checked
   refine ⟨stage,back,?_⟩
   intro chart base T Q host program ready
-  let old := Fin.castAddEmb 94 (n := T)
+  let old := Fin.castAddEmb 99 (n := T)
   let slots := aroundScanner (base (chart (stage.slots 0)))
   extract_lets share chartBank owners ret nativeBase cap fitsState installed enter prior leave at execute
   let nativeBody := fun f => embProg nativeBase id (installed f)
