@@ -1,7 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.M6.BitBorrowedHelper
-public import IntegerMultBounds.MathlibTM2.M6.BitSweepRead
+public import IntegerMultBounds.MathlibTM2.M6.BitSweepPortCorrection
 
 /-! Logical role reads on independently occupied labels of a packed sweep. -/
 @[expose] public section
@@ -105,5 +105,36 @@ theorem borrowedSweep_correctedPort [M8.Machine.Net] (t : Fin 111) :
   intro n run x a y src dst source target ports g z
   obtain ⟨outS,outT⟩ := ports run t g z
   exact correct n run x a y source target (labelSpectator g z) outT outS
+
+open AffineFieldCoordinates FlatCoordinateLayout in
+/-- A shared entry pass and exit pass correct all 17760 port pairs on the
+borrowed bank. The price is charged on the full volume once per pass. -/
+theorem borrowedPortCorrections [M8.Machine.Net] :
+    ∃ (C : ℝ) (tapes states : ℕ), ∀ (n : Fin 9) (w B K : ℕ), 0 < w → 0 < B*prime^(64*(w*64))*K →
+      let W := B*prime^(64*(w*64))*K
+      let V := (prime^w)^16*W
+      ∃ enter leave : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V)),
+        enter.tapes ≤ tapes ∧ leave.tapes ≤ tapes ∧ enter.states ≤ states ∧ leave.states ≤ states ∧
+        ((enter.cost+leave.cost : ℕ) : ℝ) ≤ C*(w : ℝ)^M8.Machine.BudgetBound.tau*V ∧
+        (∀ x i, (∀ k, sourceOwner n k ≠ i) → enter.transform x i = x i) ∧
+        (∀ y i, (∀ k, targetOwner n k ≠ i) → leave.transform y i = y i) ∧
+        ∀ x y, BorrowedPorts n w B K (enter.transform x) y →
+          ∀ (k : (Fin 32 × Fin 5) × Fin 111) (g : LabelPadding.Label 64 w)
+            (z : LabelEntry.Cell (copyLabelLayout w B K) B) s,
+          let j := labelSpectator g z
+          let P := translatedPortProjector (ZMod (prime^w)) (4 : ZMod (prime^w))⁻¹ k.2
+          let cell := fun v => index (embed v) j
+          let src := sourceOwner n k
+          let dst := targetOwner n k
+          leave.transform y src (cell s) = x src (cell (M8.Exchange.exchange P s.swap)) ∧
+          leave.transform y dst (cell s) = x dst (cell (M8.Exchange.exchange (1-P) s)) + x src (cell s.swap) := by
+  obtain ⟨C,tapes,states,build⟩ := framedPortCorrections
+  refine ⟨C,tapes,states,?_⟩
+  intro n w B K hw positive W V
+  obtain ⟨enter,leave,et,lt,es,ls,cost,keep,off,correct⟩ := build n w W hw positive
+  refine ⟨enter,leave,et,lt,es,ls,cost,keep,off,?_⟩
+  intro x y ports k g z s
+  obtain ⟨source,target⟩ := ports k.1 k.2 g z
+  exact correct x y k (labelSpectator g z) target source s
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode

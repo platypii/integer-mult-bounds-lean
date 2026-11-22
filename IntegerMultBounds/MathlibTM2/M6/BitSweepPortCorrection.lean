@@ -86,6 +86,75 @@ theorem inactiveWindowEquiv_read {w B W : ℕ} (lane : BankLane) (b : Fin B) (j 
 
 /-- All 17,760 source/target pairs receive their two corrections.
 Other owners are preserved by each pass. -/
+theorem framedPortCorrections [M8.Machine.Net] :
+    ∃ (C : ℝ) (tapes states : ℕ), ∀ (n : Fin 9) (w W : ℕ), 0 < w → 0 < W →
+      let V := (prime^w)^16*W
+      ∃ enter leave : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V)),
+        enter.tapes ≤ tapes ∧ leave.tapes ≤ tapes ∧ enter.states ≤ states ∧ leave.states ≤ states ∧
+        ((enter.cost+leave.cost : ℕ) : ℝ) ≤ C*(w : ℝ)^M8.Machine.BudgetBound.tau*V ∧
+        (∀ x i, (∀ k, sourceOwner n k ≠ i) → enter.transform x i = x i) ∧
+        (∀ y i, (∀ k, targetOwner n k ≠ i) → leave.transform y i = y i) ∧
+        ∀ x y (k : (Fin 32 × Fin 5) × Fin 111) (j : Fin W),
+          let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n k.1.1 k.1.2,ownerTape_injective ..⟩
+          let initial := fun i => (selectedFrame w (Frames.initialRefs i)).symm (phaseRead owner (enter.transform x) j i)
+          phaseRead owner y j (111+k.2.val) = selectedFrame w (Frames.finalRefs (111+k.2.val)) (initial (111+k.2.val) + initial k.2.val) →
+          phaseRead owner y j k.2.val = selectedFrame w (Frames.finalRefs k.2.val) (initial k.2.val) → ∀ s,
+          let P := translatedPortProjector (ZMod (prime^w)) (4 : ZMod (prime^w))⁻¹ k.2
+          let cell := fun v => index (embed v) j
+          let src := sourceOwner n k
+          let dst := targetOwner n k
+          leave.transform y src (cell s) = x src (cell (M8.Exchange.exchange P s.swap)) ∧
+          leave.transform y dst (cell s) = x dst (cell (M8.Exchange.exchange (1-P) s)) + x src (cell s.swap) := by
+  classical
+  choose c preSize postSize preStates postStates build using framed_correctedPort
+  let jobs := stageRuns.product (List.finRange 111)
+  have unique := stageRuns_nodup.product (List.nodup_finRange 111)
+  have mem (k : (Fin 32 × Fin 5) × Fin 111) : k ∈ jobs :=
+    List.mem_flatMap.mpr ⟨k.1,mem_stageRuns _,List.mem_map.mpr ⟨k.2,List.mem_finRange _,rfl⟩⟩
+  have count : jobs.length = 17760 := by
+    exact (List.length_product stageRuns (List.finRange 111)).trans (by rw [stageRuns_length,List.length_finRange])
+  let base := (jobs.map fun k => c k.2).sum
+  let total := fun (size : Fin 111 → ℕ) => 142081+(jobs.map fun k => 142081+(size k.2+142080)).sum
+  let controls := fun (size : Fin 111 → ℕ) => (jobs.map fun k => size k.2).sum+1
+  refine ⟨(base : ℝ)+17760*(2*|LeafCore.C|+14),max (total preSize) (total postSize),
+    max (controls preStates) (controls postStates),?_⟩
+  intro n w W hw hW V
+  choose pre post preFixed postFixed preControl postControl price correct using fun t => build t w W hw hW
+  obtain ⟨enter,enterTapes,enterStates,paid,entry,keep⟩ := compilePortsSized ⟨sourceOwner n,source_injective n⟩ (fun k => pre k.2) jobs unique
+  obtain ⟨leave,leaveTapes,leaveStates,cost,exitRow,off⟩ := compilePortsSized ⟨targetOwner n,targetOwner_injective n⟩ (fun k => post k.2) jobs unique
+  refine ⟨enter,leave,by simpa only [enterTapes,preFixed,total] using le_max_left (total preSize) (total postSize),
+    by simpa only [leaveTapes,postFixed,total] using le_max_right (total preSize) (total postSize),
+    by simpa only [enterStates,preControl,controls] using le_max_left (controls preStates) (controls postStates),
+    by simpa only [leaveStates,postControl,controls] using le_max_right (controls preStates) (controls postStates),?_,fun x i away => keep x i (fun k _ => away k),
+    fun y i away => off y i (fun k _ => away k),?_⟩
+  · rw [paid,cost,count]
+    have total := congrArg (fun f : ((Fin 32 × Fin 5) × Fin 111 → ℕ) => (jobs.map f).sum)
+      (funext fun k => price k.2)
+    simp only [List.sum_map_add,List.sum_map_mul_right,List.map_const',List.sum_replicate,
+      nsmul_eq_mul,count] at total
+    have exactCost : ((jobs.map fun k => (pre k.2).cost).sum+17760) +
+        ((jobs.map fun k => (post k.2).cost).sum+17760) = base*V+17760*(2*LeafCore.coreCost V w+14) := by
+      dsimp only [base,V] at total ⊢
+      omega
+    rw [exactCost]
+    let power := (w : ℝ)^M8.Machine.BudgetBound.tau
+    have one : 1 ≤ power := Real.one_le_rpow (by exact_mod_cast (show 1 ≤ w from hw))
+      M8.Machine.BudgetBound.exponent_range.1.le
+    have volume : 1 ≤ V := Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) hW
+    have core := RevBudget.coreCost_le V w (L := power) (by rw [max_eq_right hw])
+    have joins : 1 ≤ power*(V : ℝ) := one_le_mul_of_one_le_of_one_le one (by exact_mod_cast volume)
+    have linear := mul_le_mul_of_nonneg_left (le_mul_of_one_le_left (Nat.cast_nonneg V (α := ℝ)) one)
+      (Nat.cast_nonneg base (α := ℝ))
+    change _ ≤ (_+17760*(2*|LeafCore.C|+14))*power*V
+    push_cast
+    linarith only [linear,core,joins]
+  · intro x y k j owner initial outT outS s P cell src dst
+    have result := correct k.2 n k.1 x (enter.transform x) y (entry x k (mem k))
+      (keep x dst (fun l _ => source_ne_target n l k)) j outT outS s
+    constructor
+    · exact (congrFun (off y src (fun l _ => (source_ne_target n k l).symm)) _).trans result.1
+    · exact (congrFun (exitRow y k (mem k)) _).trans result.2
+
 theorem sweepPortCorrections [M8.Machine.Net] :
     ∃ (C : ℝ) (tapes states : ℕ), ∀ (n : Fin 9) (w B W : ℕ), 0 < w → 0 < B*((prime^w)^112*W) →
       let K := (prime^w)^112*W
@@ -108,63 +177,22 @@ theorem sweepPortCorrections [M8.Machine.Net] :
             leave.transform y src (cell s) = x src (cell (frame P (frame 1 s))) ∧
             leave.transform y dst (cell s) =
               x dst (cell (frame (1-P) (frame 0 s))) + x src (cell (frame 1 (frame 0 s))) := by
-  classical
-  choose c preSize postSize preStates postStates build using sweepEffect_correctedPort
-  let jobs := stageRuns.product (List.finRange 111)
-  have unique := stageRuns_nodup.product (List.nodup_finRange 111)
-  have mem (k : (Fin 32 × Fin 5) × Fin 111) : k ∈ jobs :=
-    List.mem_flatMap.mpr ⟨k.1,mem_stageRuns _,List.mem_map.mpr ⟨k.2,List.mem_finRange _,rfl⟩⟩
-  have count : jobs.length = 17760 := by
-    exact (List.length_product stageRuns (List.finRange 111)).trans (by rw [stageRuns_length,List.length_finRange])
-  let base := (jobs.map fun k => c k.2).sum
-  let total := fun (size : Fin 111 → ℕ) => 142081+(jobs.map fun k => 142081+(size k.2+142080)).sum
-  let controls := fun (size : Fin 111 → ℕ) => (jobs.map fun k => size k.2).sum+1
-  refine ⟨(base : ℝ)+17760*(2*|LeafCore.C|+14),max (total preSize) (total postSize),
-    max (controls preStates) (controls postStates),?_⟩
+  obtain ⟨C,tapes,states,build⟩ := framedPortCorrections
+  refine ⟨C,tapes,states,?_⟩
   intro n w B W hw hW K V
-  choose pre post preFixed postFixed preControl postControl price correct using fun t => build t w B W hw hW
-  obtain ⟨enter,enterTapes,enterStates,paid,entry,keep⟩ := compilePortsSized ⟨sourceOwner n,source_injective n⟩ (fun k => pre k.2) jobs unique
-  obtain ⟨leave,leaveTapes,leaveStates,cost,exitRow,off⟩ := compilePortsSized ⟨targetOwner n,targetOwner_injective n⟩ (fun k => post k.2) jobs unique
-  refine ⟨enter,leave,by simpa only [enterTapes,preFixed,total] using le_max_left (total preSize) (total postSize),
-    by simpa only [leaveTapes,postFixed,total] using le_max_right (total preSize) (total postSize),
-    by simpa only [enterStates,preControl,controls] using le_max_left (controls preStates) (controls postStates),
-    by simpa only [leaveStates,postControl,controls] using le_max_right (controls preStates) (controls postStates),?_,fun x i away => keep x i (fun k _ => away k),
-    fun y i away => off y i (fun k _ => away k),?_⟩
-  · rw [paid,cost,count]
-    have total := congrArg (fun f : ((Fin 32 × Fin 5) × Fin 111 → ℕ) => (jobs.map f).sum)
-      (funext fun k => price k.2)
-    simp only [List.sum_map_add,List.sum_map_mul_right,List.map_const',List.sum_replicate,
-      nsmul_eq_mul,count] at total
-    have exactCost : ((jobs.map fun k => (pre k.2).cost).sum+17760) +
-        ((jobs.map fun k => (post k.2).cost).sum+17760) = base*V+17760*(2*LeafCore.coreCost V w+14) := by
-      dsimp only [base,V,K] at total ⊢
-      omega
-    rw [exactCost]
-    let power := (w : ℝ)^M8.Machine.BudgetBound.tau
-    have one : 1 ≤ power := Real.one_le_rpow (by exact_mod_cast (show 1 ≤ w from hw))
-      M8.Machine.BudgetBound.exponent_range.1.le
-    have volume : 1 ≤ V := Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) hW
-    have core := RevBudget.coreCost_le V w (L := power) (by rw [max_eq_right hw])
-    have joins : 1 ≤ power*(V : ℝ) := one_le_mul_of_one_le_of_one_le one (by exact_mod_cast volume)
-    have linear := mul_le_mul_of_nonneg_left (le_mul_of_one_le_left (Nat.cast_nonneg V (α := ℝ)) one)
-      (Nat.cast_nonneg base (α := ℝ))
-    change _ ≤ (_+17760*(2*|LeafCore.C|+14))*power*V
-    push_cast
-    linarith only [linear,core,joins]
-  · intro x y step k b s j cell L frame P src dst
-    let row := fun (bank : OwnerArray w B W) i (l : Fin K) (v : Swap.Shear.State (Fin 8) (ZMod (prime^w))) =>
-      bank i (index (embed v) (finProdFinEquiv (b,l)))
-    apply activePort_window n k.2 (row x src) (row x dst) (row (leave.transform y) src)
-      (row (leave.transform y) dst) _ s j
-    intro l v
-    let z : LabelEntry.Cell (copyLabelLayout w B K) B :=
-      ⟨⟨0,pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _⟩,⟨0,Nat.zero_lt_one⟩,b,
-        ⟨0,by simp [copyLabelLayout,ActualAffineScaling.modulus]⟩,⟨0,Nat.zero_lt_one⟩,
-        ⟨0,by simp [copyLabelLayout,ActualAffineScaling.modulus]⟩,l⟩
-    have result := correct k.2 n k.1 x (enter.transform x) y (entry x k (mem k))
-      (keep x dst (fun l _ => source_ne_target n l k)) step z v
-    constructor
-    · exact (congrFun (off y src (fun l _ => (source_ne_target n k l).symm)) _).trans result.1
-    · exact (congrFun (exitRow y k (mem k)) _).trans result.2
+  obtain ⟨enter,leave,et,lt,es,ls,bill,keep,off,correct⟩ := build n w (B*K) hw hW
+  refine ⟨enter,leave,et,lt,es,ls,bill,keep,off,?_⟩
+  intro x y step k b s j cell L frame P src dst
+  let row := fun (bank : OwnerArray w B W) i (l : Fin K) (v : Swap.Shear.State (Fin 8) (ZMod (prime^w))) =>
+    bank i (index (embed v) (finProdFinEquiv (b,l)))
+  apply activePort_window n k.2 (row x src) (row x dst) (row (leave.transform y) src)
+    (row (leave.transform y) dst) _ s j
+  intro l v
+  let z : LabelEntry.Cell (copyLabelLayout w B K) B :=
+    ⟨⟨0,pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _⟩,⟨0,Nat.zero_lt_one⟩,b,
+      ⟨0,by simp [copyLabelLayout,ActualAffineScaling.modulus]⟩,⟨0,Nat.zero_lt_one⟩,
+      ⟨0,by simp [copyLabelLayout,ActualAffineScaling.modulus]⟩,l⟩
+  obtain ⟨outT,outS⟩ := sweepEffect_active step k.1 k.2 z
+  exact correct x y k _ outT outS v
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
