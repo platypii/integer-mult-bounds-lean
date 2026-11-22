@@ -1,7 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.M6.BitRemainderScheduledRoundTrip
-public import IntegerMultBounds.MathlibTM2.M6.BitAllocatedStageTargets
+public import IntegerMultBounds.MathlibTM2.M6.BitNineStageHandoff
 
 /-! Identify the four binary words on the allocated stage with their ordinary handoff inputs. -/
 @[expose] public section
@@ -46,6 +46,7 @@ theorem scheduledOwnerRoundTrip_exec [M8.Machine.Net] {common work : ℕ} {U : T
     let entryWords := ordinaryEntryWords (layout.between*layout.afterD) layout.beforeRows 1 layout.beforeH root parent prefixWidth
       ((List.range (layout.beforeRows*1*B)).flatMap prefixes)
     ∃ stage back : SharedBankStage.Stage _ 1 prime (phaseOwners (N := LabelMask.records (role layout 142080)*(M^128*(layout.between*layout.afterD)))),
+      (∃ seed, ChartPrivateReady stage seed) ∧
       let Q := max (max stage.states columnCapacity) back.states
       let words : Fin size → List (Fin (prime+4)) := Fin.addCases
         (fun i : Fin (66+(common+24+31+(work+extra)+1)) => entryWords i.val) (fun _ : Fin 5 => [])
@@ -55,12 +56,12 @@ theorem scheduledOwnerRoundTrip_exec [M8.Machine.Net] {common work : ℕ} {U : T
   obtain ⟨extra,rate,scanner⟩ := scheduledReturn_exec (U := U) interval member space pool room fits pairRoom
   refine ⟨extra,rate,?_⟩
   intro w B W hb hw layout root parent units atRoot prefixWidth prefixes lengths small c checked M size entryWords
-  obtain ⟨stage,back,body,scan,scheduled⟩ := scanner w B W hb hw root parent units atRoot prefixWidth prefixes lengths small c checked
+  obtain ⟨stage,back,seed,body,scan,scheduled⟩ := scanner w B W hb hw root parent units atRoot prefixWidth prefixes lengths small c checked
   obtain ⟨modulus,precision,modulusWord,precisionWord⟩ := ordinaryEntryDimensions
     (common+24+31+(work+extra)+1) (layout.between*layout.afterD) layout.beforeRows 1 layout.beforeH root parent
     prefixWidth ((List.range (layout.beforeRows*1*B)).flatMap prefixes)
   have capacity : 235 ≤ columnCapacity := (by decide : 235 ≤ 11192).trans remainderStates_fit
-  exact ⟨stage,back,body,scheduled.roundTrip modulus modulusWord precision precisionWord hb hw
+  exact ⟨stage,back,seed,body,scheduled.roundTrip modulus modulusWord precision precisionWord hb hw
     (capacity.trans ((le_max_right ..).trans (le_max_left ..)))⟩
 
 /-- Stage registers 0, 1, 2 and 12 hold the tail width, row count, staging
@@ -400,5 +401,67 @@ theorem OwnerRoundTrip.afterAllocatedStage [M8.Machine.Net] {P U : Type} {total 
     simpa only [PointwiseRoleGate.bank,Tapes.append,Fin.addCases_right,CountedLoopReuseAlphabet.controls,
       ite_self,embStk,Function.comp_apply,Function.Embedding.trans_apply,Fin.castAddEmb_apply,← hl,← hr]
       using controls j p
+
+/-- Package the stage followed by one owner pass in the node schedule interface. -/
+theorem OwnerRoundTrip.allocatedPiece [M8.Machine.Net] {P U : Type} {total V size back Q w B W : ℕ}
+    {stage : SharedBankStage.Stage _ 1 prime (phaseOwners (N := V))}
+    {words : Fin size → List (Fin (prime+4))} {interval : ℕ × ℕ}
+    {parent : Fin 64 → ZMod (prime^(w+1))} {c : Certificates.PR589.Nine.PortCertificate} {checked : c.Checked}
+    {right : Unit → Pr Unit ((size+stage.tapes+back)+99) Q prime U} {rate : ℝ}
+    (trip : OwnerRoundTrip (stage := stage) (words := words) (interval := interval) (parent := parent)
+      (c := c) (checked := checked) (B := B) (W := W) right rate)
+    (n : Fin 9) (fan : Fin (142081+2) ↪ Fin total) (i : Fin 142081) :
+    let m := total+14+142081*7+142081+10
+    let reg := (((Fin.natAddEmb total (m := 14)).trans (Fin.castAddEmb (142081*7))).trans
+      (Fin.castAddEmb 142081)).trans (Fin.castAddEmb 10)
+    let dst := stageOutputFan n (fan.trans (Fin.castAddEmb 14))
+    let T := size+stage.tapes+back
+    let slots := aroundScanner (((stage.slots 0).natAdd size).castAdd back)
+    let leftBank := Fin.castAddEmb (T+99) (n := m)
+    let M := prime^(w+1)
+    let A := M^16
+    let tail := M^112*W
+    ∃ bank : Fin (T+99) ↪ Fin (m+(T+99)), ∃ scan : Pr Unit (T+99) Q prime U,
+    ∀ (left : P → Pr P m Q prime U) a src prepared budget,
+      StageHandoffExec n (w+1) B W left a src dst prepared budget
+        (fun F => StageDimensionWords (fun j => reg (j.castAdd 11)) tail (prime^(64*((w+1)*64))) (A*B) F ∧
+          F.R (reg 12) = binSyms B.size B) →
+      ∀ R₀, ScannerReady stage size back words (embStk (Fin.castAddEmb 99) R₀) →
+      (∀ j, j ≠ 0 → R₀.L (slots j) = [] ∧ R₀.R (slots j) = []) →
+      (∀ j, j = 0 ∨ j = 2 ∨ j = 4 → R₀.R (retainedPort T j) = []) →
+      let body := Sum.elim (fun g => embProg leftBank Sum.inl (left g)) (fun g => embProg bank Sum.inr (right g))
+      PieceHandoff (w+1) B W (fun x y => ∃ packed out staged,
+        StageTrace n (w+1) B W (singleLabelBank (firstRowLabel (w+1)) x) packed out ∧
+        let carry := Function.update (collapseLabelBank out) (Fin.last 142080) (fun _ => 0)
+        y = Function.update carry i staged ∧
+        let proj := IntegerMultBounds.Swap.Modular.reduce M ((c.span interval.1 interval.2).submatrix stageAxis.symm stageAxis.symm)
+        let frame := Matrix.fromBlocks (Matrix.diagonal parent) 0 0 (M8.ReversedExchange.rev 64)
+        let addr := fun b y (k : Fin W) => stagedOwnerIndex b (FlatCoordinateLayout.index
+          ((frame.mulVec y) ∘ (finSumFinEquiv : (Fin 64 ⊕ Fin 64) ≃ Fin 128).symm) k)
+        ∀ b y k, staged (addr b ((Matrix.fromBlocks (1-proj) proj proj (1-proj)).mulVec y) k) = carry i (addr b y k))
+        body ((embProg leftBank Sum.inl a).seq (embProg bank Sum.inr scan)) (src.trans leftBank)
+        (dst.trans leftBank) (adjacentStageStacks prepared R₀) (budget+⌊ownerRoundTripTime w B W rate c checked⌋₊) := by
+  intro m reg dst T slots leftBank M A tail
+  obtain ⟨bank,scan,run⟩ := trip.afterAllocatedStage (P := P) n fan i
+  refine ⟨bank,scan,?_⟩
+  intro left a src prepared budget stageRun R₀ ready fresh empty body x u S rep frame
+  let R := embStk (Fin.natAdd m) S
+  have privateRead (j : Fin (T+99)) : R.L j = R₀.L j ∧ R.R j = R₀.R j := by
+    have h := frame (j.natAdd m) (by
+      intro k eq
+      have e := congrArg Fin.val eq
+      change (src k).val = m+j.val at e
+      omega)
+    simpa only [adjacentStageStacks,Fin.addCases_right,R,embStk,Function.comp_apply] using h
+  obtain ⟨z,C,t,exec,paid,user,p,out,y,trace,updated,cells⟩ := run left a src prepared budget stageRun
+    x u (embStk leftBank S) R rep (by
+      intro j hj
+      have h := frame (leftBank j) (fun k eq => hj k (leftBank.injective eq))
+      simpa [adjacentStageStacks,leftBank,embStk] using h)
+    (ready.of_owner_change (fun j _ => privateRead _))
+    (fun j hj => ⟨(privateRead _).1.trans (fresh j hj).1,(privateRead _).2.trans (fresh j hj).2⟩)
+    (fun j hj => (privateRead _).2.trans (empty j hj))
+  rw [show adjacentStageStacks (embStk leftBank S) R = S from splitStacks S] at exec
+  exact ⟨z,C,t,_,exec,paid,user,updated,p,out,y,trace,rfl,cells⟩
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode.OrdinaryHandoff

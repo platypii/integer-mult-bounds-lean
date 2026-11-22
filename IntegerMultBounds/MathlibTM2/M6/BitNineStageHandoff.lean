@@ -8,7 +8,7 @@ namespace IntegerMultBounds.MathlibTM2.M6.BitNode
 open IntegerMultBounds.Machine IntegerMultBounds.Networks Stack Host
 open Shared50ModularControl (prime)
 
-private theorem splitStacks {m n A : ℕ} (S : Stacks (m+n) A) :
+theorem splitStacks {m n A : ℕ} (S : Stacks (m+n) A) :
     adjacentStageStacks (embStk (Fin.castAdd n) S) (embStk (Fin.natAdd m) S) = S := by
   cases S with
   | mk inp out L R =>
@@ -42,9 +42,9 @@ theorem StageHandoffExec.toPiece {P U : Type} {t q : ℕ} {i w B tail}
   obtain ⟨z,F,t,p,out,ran,cost,user,rep,trace,_⟩ := run x u S live frame
   exact ⟨z,F,t,_,ran,cost,user,rep,p,out,trace,rfl⟩
 
-private theorem handoffList {U : Type} {q : ℕ} (w B tail : ℕ)
-    (effect : Piece → OwnerArray w B tail → OwnerArray w B tail → Prop)
-    (price : Piece → ℕ) (stages : List Piece) (last : Piece)
+theorem handoffList {Job U : Type} {q : ℕ} (w B tail : ℕ)
+    (effect : Job → OwnerArray w B tail → OwnerArray w B tail → Prop)
+    (price : Job → ℕ) (stages : List Job) (last : Job)
     (available : ∀ i ∈ stages++[last], ∃ (P : Type) (t : ℕ) (body : P → Pr P t q prime U) (code : Pr P t q prime U)
       (src dst : Fin (142081+2) ↪ Fin t) (prepared : Stacks t prime),
       PieceHandoff w B tail (effect i) body code src dst prepared (price i)) :

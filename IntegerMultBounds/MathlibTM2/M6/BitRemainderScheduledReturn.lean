@@ -133,6 +133,7 @@ theorem scheduledReturn_exec [M8.Machine.Net] {common work : ℕ} {U : Type}
     let entryWords := ordinaryEntryWords (layout.between*layout.afterD) layout.beforeRows 1 layout.beforeH root parent prefixWidth
       ((List.range (layout.beforeRows*1*B)).flatMap prefixes)
     ∃ stage back : SharedBankStage.Stage _ 1 prime (phaseOwners (N := LabelMask.records (role layout 142080)*(M^128*(layout.between*layout.afterD)))),
+      (∃ seed, ChartPrivateReady stage seed) ∧
       let chart := Fin.natAddEmb size (m := stage.tapes)
       let base := Fin.castAddEmb back.tapes (n := size+stage.tapes)
       let T := size+stage.tapes+back.tapes
@@ -172,7 +173,7 @@ theorem scheduledReturn_exec [M8.Machine.Net] {common work : ℕ} {U : Type}
   unfold OrdinaryParentRoundTrip at trip
   extract_lets at trip
   obtain ⟨stage,back,forward,reverse,execute⟩ := trip (0 : Fin 1) c checked
-  refine ⟨stage,back,?_⟩
+  refine ⟨stage,back,forward.privateSeed,?_⟩
   intro chart base T Q host program ready
   let old := Fin.castAddEmb 99 (n := T)
   let slots := aroundScanner (base (chart (stage.slots 0)))
