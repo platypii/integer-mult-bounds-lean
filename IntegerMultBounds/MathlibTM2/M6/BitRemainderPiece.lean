@@ -21,6 +21,20 @@ local instance (w : ℕ) : NeZero (prime^w) := ⟨(pow_pos Shared50ModularContro
 def idleInterval (i : Fin 9) (c : Fin 222) : ℕ × ℕ :=
   (7*idleSource i+8*copyCount i c,7*idleTarget i)
 
+/-- Every idle ending before the last level leaves the same remaining
+interval on both banks of each active port. -/
+theorem idleInterval_paired (i : Fin 9) (nextLevel : idleTarget i < 9) (t : Fin 111) :
+    idleInterval i ⟨111+t.val,by omega⟩ = idleInterval i ⟨t.val,by omega⟩ := by
+  have uniform : ∀ j : Fin 9, idleTarget j < 9 →
+      copyCounts j = List.replicate 222 (copyCount j 0) := by decide +kernel
+  have count (c : ℕ) (hc : c < 222) : copyCount i c = copyCount i 0 := by
+    change (copyCounts i).getD c 0 = _
+    exact (congrArg (fun xs : List ℕ => xs.getD c 0) (uniform i nextLevel)).trans
+      (by rw [List.getD_eq_getElem?_getD,List.getElem?_replicate_of_lt hc]; rfl)
+  unfold idleInterval
+  rw [count (111+t.val) (by omega),count t.val (by omega)]
+
+
 theorem idleInterval_mem (i : Fin 9) (c : Fin 222) : idleInterval i c ∈ remainderIntervals := by
   apply List.mem_flatMap.mpr
   refine ⟨i.val,List.mem_range.mpr i.isLt,List.mem_map.mpr ⟨copyCount i c,?_,rfl⟩⟩

@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.M6.BitIntervalRows
 public import IntegerMultBounds.MathlibTM2.M6.BitHelperPacking
 public import IntegerMultBounds.MathlibTM2.M6.OrthogonalInvocation
 
@@ -29,6 +30,95 @@ theorem helperPosition_of_runClass (n : Fin 9) (r : Fin 32) (d : Fin 5) (h : Fin
   congr 1
   have hd := d.isLt
   omega
+
+/-- Narrowing a scheduled eight-axis helper to a MOVE or COPY subinterval
+selects that same interval directly on the parent's physical words. -/
+theorem helperSubinterval_descriptor (v : RecursiveInterchangeLayout.Descriptor)
+    (n : Fin 9) (r : Fin 32) (d : Fin 5) (h : Fin 439) (w lo hi : ℕ)
+    (fits : hi ≤ 8) :
+    let slot := IntegerMultBounds.MathlibTM2.M6.BitNode.slotOf n.val h.val
+    let start := 7*idleSource slot.idle + 8*(((hostRole n r d h).cls.val+5-d.val)%5)
+    let p := (helperPosition (n,h)).val
+    inheritedInterval (inheritedInterval v (p*w) (8*w) ((64-(p+8))*w))
+      (lo*w) ((hi-lo)*w) ((8-hi)*w) =
+      inheritedInterval v ((start+lo)*w) ((hi-lo)*w) ((64-(start+hi))*w) := by
+  intro slot start p
+  have pos : p = start := helperPosition_of_runClass n r d h
+  have bound : p < 56 := (helperPosition (n,h)).isLt
+  rw [inheritedInterval_nested,← pos,← Nat.add_mul,← Nat.add_mul]
+  congr 2
+  omega
+
+/-- The physical child selected inside a helper retains the full role volume,
+including the parent's existing middle and trailing spectators. -/
+theorem helperSubinterval_volume (v : RecursiveInterchangeLayout.Descriptor)
+    (n : Fin 9) (h : Fin 439) (w lo hi : ℕ) (width : v.width = 64*w)
+    (ordered : lo ≤ hi) (fits : hi ≤ 8) :
+    let p := (helperPosition (n,h)).val
+    let lane := inheritedInterval v (p*w) (8*w) ((64-(p+8))*w)
+    RecursiveInterchangeLayout.volume prime
+      (inheritedInterval lane (lo*w) ((hi-lo)*w) ((8-hi)*w)) =
+      RecursiveInterchangeLayout.volume prime v := by
+  intro p lane
+  have bound : p < 56 := (helperPosition (n,h)).isLt
+  have inner : lane.width = lo*w+(hi-lo)*w+(8-hi)*w := by
+    change 8*w = _
+    rw [← Nat.add_mul,← Nat.add_mul]
+    congr 1
+    omega
+  rw [inheritedInterval_volume _ _ _ _ inner]
+  apply inheritedInterval_volume
+  rw [width,← Nat.add_mul,← Nat.add_mul]
+  congr 1
+  omega
+
+/-- On a flat owner the interval builder accepts the original compact input.
+Moving the slot changes the program's prefix and suffix, but its runtime
+inputs still contain the same atom width, child rank and spectator count. -/
+theorem helperSubinterval_header (n : Fin 9) (h : Fin 439) (w W lo hi : ℕ) :
+    let p := (helperPosition (n,h)).val
+    let child := inheritedInterval ⟨1,1,1,64*w,1,W⟩ ((p+lo)*w) ((hi-lo)*w) ((64-(p+hi))*w)
+    child = phaseIntervalChild (p+lo) (p+hi) w W 64 ∧
+      phaseHeaderInput (p+lo) (p+hi) w W = phaseHeaderInput lo hi w W := by
+  intro p child
+  have rank : p+hi-(p+lo) = hi-lo := by omega
+  constructor
+  · simpa only [rank] using inheritedInterval_flat (p+lo) (p+hi) 64 w W
+  · simp only [phaseHeaderInput,rank]
+
+open RecursiveInterchangeLayout M8.RevMachine in
+/-- With its interval header installed, a stopping helper child exchanges the
+scheduled fields on the owner's tape at a fixed linear rate below cutoff. -/
+theorem stoppedHelperSubinterval_runs [M8.Machine.Net] {T : ℕ}
+    (v : Descriptor) (positive : v.Positive) (n : Fin 9) (r : Fin 32) (d : Fin 5) (h : Fin 439)
+    (w lo hi cutoff : ℕ) (width : v.width = 64*w) (ordered : lo ≤ hi) (fits : hi ≤ 8)
+    (live : 0 < (hi-lo)*w) (stop : (hi-lo)*w ≤ cutoff)
+    (io : Fin T) (roles : Tapes T prime) (x : Fin (volume prime v) → ZMod 2)
+    (head : roles.head io = 0)
+    (stored : roles.tape io = M8.Machine.ArbitraryWidthHighExchangeShared.sourceWord x)
+    (f : ℤ → Fin (prime+4)) (p : ℤ) (node scalar : Tapes 1 prime)
+    (ctr : Fin CommonBank.K → Option ℕ) (st : Tapes 2 prime) :
+    let slot := IntegerMultBounds.MathlibTM2.M6.BitNode.slotOf n.val h.val
+    let start := 7*idleSource slot.idle + 8*(((hostRole n r d h).cls.val+5-d.val)%5)
+    let child := inheritedInterval v ((start+lo)*w) ((hi-lo)*w) ((64-(start+hi))*w)
+    ∃ (y : Fin (volume prime v) → ZMod 2) (cost : ℕ), GraphContract.Runs (LeafCore.core io)
+      (CommonBank.bank roles (Routines.hdr child) f p node scalar ctr st)
+      (CommonBank.bank (SharedPlacementAlphabet.setTape roles io
+        (M8.Machine.ArbitraryWidthHighExchangeShared.sourceWord y) 0)
+        (Routines.hdr child) f p node scalar ctr st) cost ∧
+      (cost : ℝ) ≤ |LeafCore.C| * volume prime v * cutoff ∧
+      Cover.LabelView.Swapped prime child (ext x) (ext y) := by
+  intro slot start child
+  have size := helperSubinterval_volume v n h w lo hi width ordered fits
+  dsimp only at size
+  rw [helperSubinterval_descriptor v n r d h w lo hi fits] at size
+  obtain ⟨y,run,effect⟩ := Cover.LabelExchange.realizes_view size positive io roles x head stored f p node scalar ctr st
+  refine ⟨y,_,run,?_,effect⟩
+  apply RevBudget.coreCost_le
+  change ((max 1 ((hi-lo)*w) : ℕ) : ℝ)^M8.Machine.BudgetBound.tau ≤ cutoff
+  rw [max_eq_right live]
+  exact (Real.rpow_le_self_of_one_le (by exact_mod_cast live : (1 : ℝ) ≤ ((hi-lo)*w : ℕ))
+    M8.Machine.BudgetBound.exponent_range.2.le).trans (by exact_mod_cast stop)
 
 open IntegerMultBounds.Swap.Modular M8.Exchange in
 /-- The invocation exchanges the scheduled parent span when its helper word

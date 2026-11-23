@@ -1468,6 +1468,42 @@ theorem remainderInterval_runs [M8.Machine.Net] {t w W : ℕ}
   exact ⟨_, M8.Machine.ArbitraryWidthOriginalTotalRun.runs caller headers src child hs
     positive valid words heads x data origin, rfl, intervalAddress_transpose 64 x⟩
 
+/-- Compute the selected child's headers, then run its exchange on the same owner.
+The arithmetic bank takes the binary width, spectator count and fixed interval length. -/
+theorem intervalPrepared_runs [M8.Machine.Net] {t w W : ℕ}
+    (e : ℕ × ℕ) (ordered : e.1 ≤ e.2) (fits : e.2 ≤ 64) (hw : 0 < w) (hW : 0 < W)
+    (caller : Tapes t prime) (src : Fin t)
+    (x : Fin (volume prime (phaseIntervalChild e.1 e.2 w W 64)) → ZMod 2)
+    (payload : caller.tape src = sourceWord x) (head : caller.head src = 0) :
+    let child := phaseIntervalChild e.1 e.2 w W 64
+    let hs := fun i => FlatCoordinateSchedule.bits (RecursiveDimensionBank.values child i)
+    let headers := fun i => Fin.castAdd t (phaseHeaderSlots i)
+    let site := Fin.natAdd 24 src
+    let setup := M8.Machine.ArbitraryWidthOriginalRun.extendBanks
+      (extend (extend (extend (phaseHeaderProgram e.1 e.2 64) t) 16) 19)
+    ∃ y : Fin (volume prime child) → ZMod 2,
+      HoareTime (seq setup (program headers site))
+        (fun z => z = input ((phaseHeaderInput e.1 e.2 w W).append caller))
+        (fun z => z = input (SharedPlacementAlphabet.setTape
+          ((phaseHeaderOutput e.1 e.2 w W 64).append caller) site (sourceWord y) 0))
+        ((2*(24*64+333)+250)*((prime^w)^128*W) + 1 + cost child hs) ∧
+      y = Shared50RecursiveNodeRows.transpose (one_dvd _) x ∧
+      ∀ a b h d u v j,
+        y (RecursiveInterchangeScaling.index (intervalAddress 64 a b d h u v j)) =
+        x (RecursiveInterchangeScaling.index (intervalAddress 64 a b h d u v j)) := by
+  intro child hs headers site setup
+  obtain ⟨build, valid, slots⟩ := intervalHeader_runs (by decide : 0 < 64) ordered
+    fits hw hW
+  let output := phaseHeaderOutput e.1 e.2 w W 64
+  obtain ⟨y, move, action⟩ := remainderInterval_runs e hW (output.append caller) headers site hs valid
+    (fun i => by simpa [headers,Tapes.append,output] using (slots i).2)
+    (fun i => by simpa [headers,Tapes.append,output] using (slots i).1)
+    x (by simpa [site,Tapes.append] using payload) (by simpa [site,Tapes.append] using head)
+  have prepare := M8.Machine.ArbitraryWidthOriginalRun.extend_banks_hoare
+    (hoare_extend_eq (hoare_extend_eq (hoare_extend_eq build caller)
+      (FixedHeaderBankCopy.empty 16)) M8.Machine.ArbitraryWidthHighPrepareShared.privateInput)
+  exact ⟨y, prepare.seq move, action⟩
+
 /-- Compute the idle child's headers, then run its exchange on the same owner.
 The arithmetic bank takes the binary width, spectator count and fixed interval length. -/
 theorem remainderPrepared_runs [M8.Machine.Net] {t w W : ℕ}
@@ -1491,19 +1527,8 @@ theorem remainderPrepared_runs [M8.Machine.Net] {t w W : ℕ}
       ∀ a b h d u v j,
         y (RecursiveInterchangeScaling.index (intervalAddress 64 a b d h u v j)) =
         x (RecursiveInterchangeScaling.index (intervalAddress 64 a b h d u v j)) := by
-  intro child hs headers site setup
-  obtain ⟨ordered, fits, _⟩ := BitHosting.remainder_counts e he
-  obtain ⟨build, valid, slots⟩ := intervalHeader_runs (by decide : 0 < 64) ordered
-    (show e.2 ≤ 64 by omega) hw hW
-  let output := phaseHeaderOutput e.1 e.2 w W 64
-  obtain ⟨y, move, action⟩ := remainderInterval_runs e hW (output.append caller) headers site hs valid
-    (fun i => by simpa [headers,Tapes.append,output] using (slots i).2)
-    (fun i => by simpa [headers,Tapes.append,output] using (slots i).1)
-    x (by simpa [site,Tapes.append] using payload) (by simpa [site,Tapes.append] using head)
-  have prepare := M8.Machine.ArbitraryWidthOriginalRun.extend_banks_hoare
-    (hoare_extend_eq (hoare_extend_eq (hoare_extend_eq build caller)
-      (FixedHeaderBankCopy.empty 16)) M8.Machine.ArbitraryWidthHighPrepareShared.privateInput)
-  exact ⟨y, prepare.seq move, action⟩
+  obtain ⟨ordered,fits,_⟩ := BitHosting.remainder_counts e he
+  exact intervalPrepared_runs e ordered (by omega) hw hW caller src x payload head
 
 /-- The prepared interval run is a composable stage on the permanent owner bank.
 Only the selected owner is updated, by exactly the child transpose. -/
