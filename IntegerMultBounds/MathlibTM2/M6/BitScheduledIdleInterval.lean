@@ -293,4 +293,112 @@ theorem scheduledIdleDispatch [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity : 
         by simpa only [ite_eq_right active] using embedded,y,out,act,frame⟩)
   exact ⟨z,F,t,exec,same,out,paid⟩
 
+/-- Along an aligned root path the shared comparison precision and directory setup
+fit in two child volumes, uniformly over the cutoff and recursion depth. -/
+theorem alignedIdleDispatch [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity : columnCapacity ≤ Q)
+    (mergeCap : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q) :
+    ∃ (C : ℝ) (N : ℕ) (table : Unit → Pr Unit (72+N) Q prime U), 0 ≤ C ∧
+    let bank := Fin.castAddEmb N (n := 72)
+    ∀ {P : Type} (body : P → Pr P (72+N) Q prime U) (leafLabel : Unit → P),
+    (∀ f, body (leafLabel f) = embProg (Function.Embedding.refl _) leafLabel (table f)) →
+    ∀ (i : Fin 9) (j : Fin idleCopies.length) (cmp : Fin 10 ↪ Fin (72+N)) (recursiveLabel : P), ∃ code : Pr P (72+N) Q prime U,
+    ∀ (root : Descriptor) (path : List (Fin nodeChildren5.length)) (depth b cutoff w groups : ℕ),
+      0 < depth → 0 < b → root.width = 64^depth*b → 42^depth*b ≤ cutoff →
+      let node := path.foldl (scheduledChild prime) root
+      let L := root.width.size
+      let a := w+1
+      cutoff ≤ node.width →
+      node.width = 64*a →
+      node.rows = 142080*(142080*groups) →
+      let W := node.beforeRows*groups*node.beforeH*node.between*node.afterD
+      let M := prime^a
+      let e := idleInterval i idleCopies[j.val].2
+      let lane := phaseIntervalChild (e.1+1) (e.2+1) a W 64
+      let wide := {lane with afterD := lane.afterD*142080}
+      let child := scheduledChild prime node (idleDirectoryIndex (i,j))
+      0 < W → ∃ position : Fin (volume prime child) ≃ Fin (volume prime wide),
+      child.width < node.width ∧ InheritedIntervalPositions child wide rfl position ∧
+      ∀ (word : Fin (volume prime wide) → ZMod 2) u S,
+      S.R (bank 2) = binSyms M.size M → S.R (bank 28) = binSyms 1 1 →
+      S.R (bank 53) = binSyms W.size W → (S.R (bank 71)).length = a →
+      (∀ i : Fin 72, 59 ≤ i.val → i.val ≤ 65 → S.R (bank i) = []) →
+      RecordPayload (bank 24) (fun _ => blank) 0 word S → S.L (bank 59) = [] →
+      (∀ i, S.L (bank (descriptorPorts i)) = [] ∧ S.R (bank (descriptorPorts i)) = []) →
+      (∀ j : Fin N, S.L (j.natAdd 72) = [] ∧ S.R (j.natAdd 72) = []) →
+      ∀ recursiveBudget : ℕ,
+      (S.R (cmp 0)).length = w → S.R (cmp 1) = binSyms L cutoff →
+      (∀ k : Fin 10, 2 ≤ k.val → S.R (cmp k) = []) →
+      let result := fun (start F : Stacks (72+N) prime) => ∃ changed, RecordPayload (bank 24) (fun _ => blank) 0 changed F ∧
+        (∀ k, changed (position k) = Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (word ∘ position) k) ∧
+        ∀ k, k ≠ bank 24 → F.L k = start.L k ∧ F.R k = start.R k
+      (cutoff < child.width → IntervalWorkerExec body recursiveLabel lane a W recursiveBudget) →
+      ∃ z F t, Exec body code (mk u S) t (mk z F) ∧ z.user = u.user ∧ result S F ∧
+        ∀ js : List _, js.Nodup → t+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+2*volume prime child + if cutoff < child.width then recursiveBudget
+          else ⌊C*(child.width : ℝ)^M8.Machine.BudgetBound.tau*volume prime child⌋₊ := by
+  obtain ⟨C,N,table,pos,dispatch⟩ := scheduledIdleDispatch (U := U) capacity mergeCap
+  refine ⟨C,N,table,pos,?_⟩
+  intro bank P body leaf installed i j cmp label
+  obtain ⟨code,run⟩ := dispatch body leaf installed i j cmp label
+  refine ⟨code,?_⟩
+  intro root path depth b cutoff w groups levels base alignment stop node L a active width split W M e lane wide child positive
+  obtain ⟨position,smaller,coords,call⟩ := run node w groups width split positive
+  refine ⟨position,smaller,coords,?_⟩
+  intro word u S radix unit suffix atom scratch payload left headers unused recursiveBudget clock stored free result recurse
+  have inherited := directoryDigits_bound prime root path
+  have nodeBound : node.width ≤ root.width := by dsimp only [node]; omega
+  obtain ⟨z,F,t,exec,user,out,paid⟩ := call word u S radix unit suffix atom scratch payload left headers unused
+    L cutoff recursiveBudget ((active.trans nodeBound).trans_lt (Nat.lt_size_self _))
+    (Nat.size_le_size (smaller.le.trans nodeBound)) clock stored free recurse
+  refine ⟨z,F,t,exec,user,out,?_⟩
+  let rank := nodeChildren5.get (idleDirectoryIndex (i,j))
+  have scaled : (w+1)*rank = child.width := by
+    change _ = rank*(node.width/64)
+    rw [width,Nat.mul_div_cancel_left _ (by decide),Nat.mul_comm]
+  have compare := ordinaryChildComparison_volume_le root depth b cutoff rank w W levels base alignment stop
+    (width ▸ active) ((nodeChildren5_bounds (idleDirectoryIndex (i,j))).2.trans (by decide : 42 ≤ 64)) positive
+  rw [scaled] at compare
+  have bounds := idleBounds i idleCopies[j.val].2
+  have laneSize : volume prime lane = M^128*W := intervalChild_volume (Nat.succ_le_succ bounds.1) (Nat.succ_le_succ bounds.2) a W
+  have size := Fintype.card_congr position
+  simp only [Fintype.card_fin] at size
+  have mass : volume prime child = M^128*W*142080 := by
+    rw [size,← laneSize]
+    change volume prime {lane with afterD := lane.afterD*142080} = volume prime lane*142080
+    simp only [volume,Nat.mul_assoc]
+  have live : 0 < M^128*W := Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) positive
+  intro js unique
+  have bill := paid js unique
+  change 4*w+23*child.width+22*L+51 ≤ 2940*(M^128*W) at compare
+  change t+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+(4*w+23*child.width+22*L+51)+(if cutoff < child.width then recursiveBudget+volume prime child+2 else ⌊C*(child.width : ℝ)^M8.Machine.BudgetBound.tau*volume prime child⌋₊) at bill
+  split_ifs at bill ⊢ <;> omega
+
+/-- Sum the aligned dispatch bills at their directory occurrences. The
+35,520 idle calls in each of nine stages contribute at most five parent
+volumes of local work, in addition to the selected child bills. -/
+theorem alignedIdleDispatch_sum (node : Descriptor) (width : 64 ∣ node.width)
+    (rows : 142080 ∣ node.rows) (elapsed selected : Fin 9 → Fin idleCopies.length → ℕ)
+    (paid : ∀ i j, elapsed i j ≤
+      2*volume prime (scheduledChild prime node (idleDirectoryIndex (i,j)))+selected i j) :
+    (∑ i, ∑ j, elapsed i j) ≤ 5*volume prime node + ∑ i, ∑ j, selected i j := by
+  let cells := volume prime node / 142080
+  have mass (i j) := (scheduledChild_measures prime node width rows (idleDirectoryIndex (i,j))).2
+  have localCells (i j) : volume prime (scheduledChild prime node (idleDirectoryIndex (i,j))) = cells := by
+    dsimp only [cells]
+    rw [← mass i j,Nat.mul_div_cancel _ (by decide)]
+  have overhead : 9*(35520*(2*cells)) ≤ 5*volume prime node := by
+    have total := mass 0 ⟨0,by rw [idleCopies_length]; decide⟩
+    rw [localCells] at total
+    omega
+  calc
+    _ ≤ ∑ i, ∑ j, (2*cells+selected i j) := by
+      apply Finset.sum_le_sum
+      intro i _
+      apply Finset.sum_le_sum
+      intro j _
+      simpa only [localCells] using paid i j
+    _ = 9*(35520*(2*cells)) + ∑ i, ∑ j, selected i j := by
+      simp only [Finset.sum_add_distrib,Finset.sum_const,Finset.card_univ,Fintype.card_fin,
+        idleCopies_length,nsmul_eq_mul,Nat.cast_id]
+    _ ≤ _ := Nat.add_le_add_right overhead _
+
 end IntegerMultBounds.MathlibTM2.M6.BitNode
