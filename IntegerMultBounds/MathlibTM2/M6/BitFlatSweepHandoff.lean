@@ -63,7 +63,7 @@ theorem flatSweepFromPacked [M8.Machine.Net] :
 
 open RecursiveInterchangeLayout
 
-private theorem handoff_le {U : Type} {Q V p q : ℕ} {effect}
+theorem handoff_le {U : Type} {Q V p q : ℕ} {effect}
     (run : PackedWindowHandoff U Q V effect p) (paid : p ≤ q) : PackedWindowHandoff U Q V effect q := by
   obtain ⟨P,T,body,code,src,dst,seed,exec⟩ := run
   refine ⟨P,T,body,code,src,dst,seed,?_⟩
@@ -80,7 +80,7 @@ private theorem sumNodeCosts (s i a b : Fin 9 → ℕ) (total : ℕ)
 private theorem collectIdle (r a b : ℕ) :
     r+a+1+b+1 ≤ r+(a+1+b+1) := by omega
 
-private theorem collectSweep (C rate power : ℝ) (setup v child copy : ℕ) (positive : 0 ≤ power) :
+theorem collectSweep (C rate power : ℝ) (setup v child copy : ℕ) (positive : 0 ≤ power) :
     ⌊(setup : ℝ)+(C+|rate|)*v*power+child⌋₊+copy+1 ≤ ⌊(setup : ℝ)+(|C|+|rate|)*v*power⌋₊+copy+1+child := by
   have scaled := mul_le_mul_of_nonneg_right
     (mul_le_mul_of_nonneg_right (add_le_add (le_abs_self C) (le_refl |rate|)) (Nat.cast_nonneg v)) positive

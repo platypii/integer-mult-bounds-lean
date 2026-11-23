@@ -50,8 +50,8 @@ theorem packedIdleWorker {P U : Type} {B Q atom price : ℕ} (i : Fin 9) (j : Fi
 
 /-- The ordinary leaf supplies the same scheduled owner read at a stopped
 width, including widths that do not split into another 64-axis node. -/
-theorem stoppedIdleWorker [M8.Machine.Net] {U : Type} :
-    ∃ rate : ℝ, 0 ≤ rate ∧ ∀ {Q : ℕ} (i : Fin 9) (j : Fin 222) (w W : ℕ),
+theorem stoppedIdleWorker [M8.Machine.Net] {U : Type} (minimum : ℝ := 0) :
+    ∃ rate : ℝ, 0 ≤ rate ∧ minimum ≤ rate ∧ ∀ {Q : ℕ} (i : Fin 9) (j : Fin 222) (w W : ℕ),
     0 < W → columnCapacity ≤ Q →
     (let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q) →
     let e := idleInterval i j
@@ -70,7 +70,7 @@ theorem stoppedIdleWorker [M8.Machine.Net] {U : Type} :
           ((142081*(8*V+10)+1+leaf)+(149*(V*142080)*(intervalSplitTapes+5)+6)) ∧
         z.user = u.user ∧ RecordPayload slot (fun _ => blank) 0 y F ∧ parentIntervalRead i j (w+1) (W*142080) x y := by
   obtain ⟨rate,nonneg,build⟩ := stoppedRoleCost (U := U)
-  refine ⟨rate,nonneg,?_⟩
+  refine ⟨max rate minimum,nonneg.trans (le_max_left _ _),le_max_right _ _,?_⟩
   intro Q i j w W positive capacity mergeCap e lane V m width leaf
   have size : volume prime lane = V := intervalChild_volume
     (Nat.succ_le_succ (idleBounds i j).1) (Nat.succ_le_succ (idleBounds i j).2) (w+1) W
@@ -83,7 +83,8 @@ theorem stoppedIdleWorker [M8.Machine.Net] {U : Type} :
     obtain ⟨z,F,n,y,ran,bill,user,out,reads⟩ := run x u S words fresh
     refine ⟨z,F,n,y,ran,bill.trans (Nat.le_floor ?_),user,out,fun r => funext (reads r)⟩
     rw [← size]
-    exact paid
+    exact paid.trans (mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_right (le_max_left _ _)
+      (Real.rpow_nonneg (Nat.cast_nonneg _) _)) (Nat.cast_nonneg _))
   obtain ⟨host,program,stock,execute⟩ := inheritedSeededWorker_exec lane
     (inheritedIdleCopy_exec i j (w+1) W positive mergeCap child)
   let wide := {lane with afterD := lane.afterD*142080}
@@ -129,8 +130,8 @@ theorem idleLaneWidth (i : Fin 9) (k : (Fin 32 × Fin 5) × Fin 222) (w W : ℕ)
 
 /-- Install stopped or packed children at the cutoff and return the exact words
 needed by the following node stage. -/
-theorem mixedIdleWindow {U : Type} :
-    ∃ rate : ℝ, 0 ≤ rate ∧ ∀ {Q : ℕ} (i : Fin 9) (w W : ℕ), 0 < W → columnCapacity ≤ Q →
+theorem mixedIdleWindow {U : Type} (minimum : ℝ := 0) :
+    ∃ rate : ℝ, 0 ≤ rate ∧ minimum ≤ rate ∧ ∀ {Q : ℕ} (i : Fin 9) (w W : ℕ), 0 < W → columnCapacity ≤ Q →
     rowSwapBlock.states ≤ Q → (let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q) →
     let Job := (Fin 32 × Fin 5) × Fin 222
     let V := (prime^(w+1))^128*W
@@ -145,8 +146,8 @@ theorem mixedIdleWindow {U : Type} :
         let addr := fun z => flatWindowEquiv (w+1) (W*142080) (windowState (w+1) z,j)
         readRoles addr y = (Piece.remainder i.val).run (readRoles addr x))
         ((idleCopies.map charge).sum+1+142081*(8*m+10)+1) := by
-  obtain ⟨rate,nonneg,leaf⟩ := stoppedIdleWorker (U := U)
-  refine ⟨rate,nonneg,?_⟩
+  obtain ⟨rate,nonneg,enough,leaf⟩ := stoppedIdleWorker (U := U) minimum
+  refine ⟨rate,nonneg,enough,?_⟩
   intro Q i w W positive leafCap capacity mergeCap Job V m lane cutoff atom price widths children charge
   have worker (k : Job) : ∃ (P : Type) (H : ℕ) (slot : Fin H) (host : P → Pr P H Q prime U)
       (program : Pr P H Q prime U) (stock : Stacks H prime),
@@ -179,8 +180,8 @@ theorem mixedIdleWindow {U : Type} :
 
 /-- Assemble the nine sweeps with their cutoff-selected idle remainders.
 The leaf coefficient and state capacity apply at every aligned width. -/
-theorem mixedFlatNode {U : Type} :
-    ∃ (states : ℕ) (rate : ℝ), 0 ≤ rate ∧ ∀ {Q w W : ℕ}, states ≤ Q → 0 < W →
+theorem mixedFlatNode {U : Type} (minimum : ℝ := 0) :
+    ∃ (states : ℕ) (rate : ℝ), 0 ≤ rate ∧ minimum ≤ rate ∧ ∀ {Q w W : ℕ}, states ≤ Q → 0 < W →
     let Job := (Fin 32 × Fin 5) × Fin 222
     let V := (prime^(w+1))^128*W
     let m := (prime^(w+1))^128*(W*142080)
@@ -196,9 +197,9 @@ theorem mixedFlatNode {U : Type} :
       PackedWindowHandoff U Q m (packedChildOutput (w+1) m)
         ((∑ i, sweep i)+(∑ i, idle i)+9*(2*(76*17760*m*(142081+7)+6)+1+(142081*(8*m+10)+1))+2) := by
   obtain ⟨bridge,assemble⟩ := assembledFlatNode (U := U)
-  obtain ⟨rate,nonneg,window⟩ := mixedIdleWindow (U := U)
+  obtain ⟨rate,nonneg,enough,window⟩ := mixedIdleWindow (U := U) minimum
   let q := 7+(CyclicRowCycle.states 142080+5)+4
-  refine ⟨max (max bridge columnCapacity) (max rowSwapBlock.states (q+q)),rate,nonneg,?_⟩
+  refine ⟨max (max bridge columnCapacity) (max rowSwapBlock.states (q+q)),rate,nonneg,enough,?_⟩
   intro Q w W fits pos Job V m lane cutoff atom price sweep aligned children sweeps idle
   have left := (le_max_left _ _).trans fits
   have right := (le_max_right _ _).trans fits

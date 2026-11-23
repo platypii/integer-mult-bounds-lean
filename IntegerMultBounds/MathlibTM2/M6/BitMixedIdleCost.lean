@@ -136,8 +136,8 @@ private theorem nodeBill_reorder (overhead sweep idle : Fin 9 → ℕ) (own call
 open Certificates.PR589 in
 /-- Assemble the physical mixed node with one budget per directory entry.
 The sweep suppliers expose their own overhead separately from their calls. -/
-theorem mixedDirectoryHandoff {U : Type} :
-    ∃ (states : ℕ) (rate : ℝ), 0 ≤ rate ∧ ∀ {Q : ℕ}, states ≤ Q →
+theorem mixedDirectoryHandoff {U : Type} (minimum : ℝ := 0) :
+    ∃ (states : ℕ) (rate : ℝ), 0 ≤ rate ∧ minimum ≤ rate ∧ ∀ {Q : ℕ}, states ≤ Q →
     ∀ (node : Descriptor) (w groups W cutoff : ℕ),
       node.width = 64*(w+1) → node.rows = 142080*(142080*groups) →
       W = node.beforeRows*groups*node.beforeH*node.between*node.afterD → 0 < W →
@@ -164,8 +164,8 @@ theorem mixedDirectoryHandoff {U : Type} :
     PackedWindowHandoff U Q m (packedChildOutput (w+1) m)
       ((∑ i, overhead i)+localIdle+9*(1+142081*(8*m+10)+1)+
         9*(2*(76*17760*m*(142081+7)+6)+1+(142081*(8*m+10)+1))+2+∑ j, budget j) := by
-  obtain ⟨states,rate,pos,assemble⟩ := mixedFlatNode (U := U)
-  refine ⟨states,rate,pos,?_⟩
+  obtain ⟨states,rate,pos,enough,assemble⟩ := mixedFlatNode (U := U) minimum
+  refine ⟨states,rate,pos,enough,?_⟩
   intro Q room node w groups W cutoff width rows spectator live Job V m lane atom time overhead
     child budget atPos sweep aligned children sweeps localIdle
   have run := assemble room live cutoff atom (fun i k => time (idleDirectoryIndex (i,idleCopyIndex k)))
@@ -173,5 +173,66 @@ theorem mixedDirectoryHandoff {U : Type} :
   have bill := mixedNodeDirectoryBill U node w groups W cutoff width rows spectator rate time
   exact (congrArg (PackedWindowHandoff U Q m (packedChildOutput (w+1) m))
     (nodeBill_reorder overhead sweep _ localIdle _ _ _ bill)).mp run
+
+open Certificates.PR589 Stack Host M8.RevMachine in
+/-- Execute the mixed directory node from nine packed stage contracts. -/
+theorem mixedPackedNode {U : Type} (minimum : ℝ := 0) :
+    ∃ (states : ℕ) (rate C : ℝ) (base nt : ℕ), 0 ≤ rate ∧ minimum ≤ rate ∧ ∀ {Q : ℕ}, states ≤ Q →
+    ∀ (node : Descriptor) (w groups W B cutoff : ℕ),
+      node.width = 64*(w+1) → node.rows = 142080*(142080*groups) →
+      W = node.beforeRows*groups*node.beforeH*node.between*node.afterD → 0 < W → node.beforeH = B*prime^(64*((w+1)*64)) →
+    let rows := 142080*groups
+    let K := node.beforeRows*rows*node.between*node.afterD
+    0 < B → 0 < K → ({node with rows := rows} : Descriptor).Positive →
+    let Job := (Fin 32 × Fin 5) × Fin 222
+    let V := (prime^(w+1))^128*W
+    let m := (prime^(w+1))^128*(W*142080)
+    let lane := fun i (k : Job) => let e := idleInterval i k.2
+      phaseIntervalChild (e.1+1) (e.2+1) (w+1) W 64
+    ∀ (atom : Fin 9 → Job → ℕ) (time : Fin nodeChildren5.length → ℕ) (P : Fin 9 → Type)
+      (t : Fin 9 → StageRun → ℕ) (body : ∀ i j, P i → Pr (P i) (t i j) Q prime U)
+      (coeff : Fin 9 → StageRun → ℝ) (required : Fin 9 → (ℕ → ℕ) → Prop),
+    let overhead := fun i => ⌊(stageSetupCost base nt m (w+1) : ℝ)+
+      (C+|stagePackingRate i+(stageRuns.map (coeff i)).sum|)*m*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau⌋₊+
+      142081*(8*m+10)+1
+    let child := scheduledChild prime node
+    let budget := fun j => if cutoff < (child j).width then time j else
+      ⌊(rate*((child j).width : ℝ)^M8.Machine.BudgetBound.tau)*volume prime (child j)⌋₊
+    let atPos := fun n => if h : n < nodeChildren5.length then budget ⟨n,h⟩ else 0
+    (∀ i k, cutoff < (lane i k).width → (lane i k).width = 64*atom i k) →
+    (∀ i k, cutoff < (lane i k).width → (lane i k).width < 64*(w+1) →
+      PackedWindowHandoff U Q V (packedChildOutput (atom i k) V)
+        (time (idleDirectoryIndex (i,idleCopyIndex k)))) →
+    (∀ i, PackedStageExecution (w := w+1) (B := B) (K := K) i (t i) (body i) (coeff i) (required i)) →
+    (∀ i, required i atPos) →
+    let localIdle := ∑ i, (idleCopies.map (fun k => idleCutoffCharge U i w W cutoff 0 k 0)).sum
+    PackedWindowHandoff U Q m (packedChildOutput (w+1) m)
+      ((∑ i, overhead i)+localIdle+9*(1+142081*(8*m+10)+1)+
+        9*(2*(76*17760*m*(142081+7)+6)+1+(142081*(8*m+10)+1))+2+∑ j, budget j) := by
+  obtain ⟨states,rate,pos,enough,assemble⟩ := mixedDirectoryHandoff (U := U) minimum
+  obtain ⟨C,base,nt,stageStates,stage⟩ := flatSweepFromPacked
+  let divStates := (fun {q : ℕ} (_ : Program 38 q prime) => q) (RecursiveRowsNodeHeaders.program 142080)
+  refine ⟨max states (max divStates stageStates),rate,|C|,base,nt,pos,enough,?_⟩
+  intro Q room node w groups W B cutoff width split spectator live label rows K hB hK positive Job V m lane
+    atom time P t body coeff required overhead child budget atPos aligned children runs ready localIdle
+  refine assemble ((le_max_left _ _).trans room) node w groups W cutoff width split spectator live atom time overhead aligned children ?_
+  intro i
+  have caps := (le_max_right _ _).trans room
+  have call := stage node i (t i) (body i) (coeff i) (required i) ((le_max_left _ _).trans caps)
+    width split label ((le_max_right _ _).trans caps) hB hK positive (runs i) atPos (ready i)
+  have shape : B*prime^(64*((w+1)*64))*K = W*142080 := by
+    rw [spectator,label]
+    dsimp only [K,rows]
+    ac_rfl
+  let calls := ((List.range' (stageChildStart i)
+    (stageRuns.flatMap (fun _ => Geometry.Moves.localPaid)).length).map atPos).sum
+  let result (suffix : ℕ) := let v := (prime^(w+1))^128*suffix
+    PackedWindowHandoff U Q v (fun x y => ∀ j : Fin suffix,
+      let addr := fun z => flatWindowEquiv (w+1) suffix (windowState (w+1) z,j)
+      readRoles addr y = (Piece.stage i).run (readRoles addr x))
+      (⌊(stageSetupCost base nt v (w+1) : ℝ)+(C+|stagePackingRate i+(stageRuns.map (coeff i)).sum|)*
+        v*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau+calls⌋₊+142081*(8*v+10)+1)
+  apply handoff_le ((congrArg result shape).mp call)
+  exact collectSweep C _ _ _ m calls _ (Real.rpow_nonneg (Nat.cast_nonneg _) _)
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
