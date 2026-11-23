@@ -137,20 +137,27 @@ private theorem intervalWidth_exec (body : P → Pr P T Q prime U) (r : Fin 9 �
     · subst i; simp [D,B,r.injective.eq_iff,canonicalBits_symbols]
     · simp [D,B,Function.update_of_ne saved,Function.update_of_ne out]
 
-noncomputable def fieldPrograms (bank : Fin 72 ↪ Fin T) (lo hi : ℕ) : Fin 6 → Pr P T Q prime U :=
+noncomputable def fieldProgramsFor (bank : Fin 72 ↪ Fin T) (lo hi : ℕ) (physical : Bool := false) : Fin 6 → Pr P T Q prime U :=
   ![.act (pushBit (bank 33) true),.act (pushBit (bank 34) true),
-    .act (pushBit (bank 35) true),intervalWidth (widthPorts.trans bank) (hi-lo),
-    swapPrefix ((powerPorts 1).trans bank) (2*(64-(hi-lo))),swapPrefix ((powerPorts 2).trans bank) 0]
+    (if physical then swapPrefix ((powerPorts 0).trans bank) lo else .act (pushBit (bank 35) true)),intervalWidth (widthPorts.trans bank) (hi-lo),
+    swapPrefix ((powerPorts 1).trans bank) (if physical then 64-hi+lo else 2*(64-(hi-lo))),swapPrefix ((powerPorts 2).trans bank) (if physical then 64-hi else 0)]
 
-noncomputable def intervalHeaders (bank : Fin 72 ↪ Fin T) (lo hi : ℕ) : Pr P T Q prime U :=
-  LabelTraversal.sequence (fieldPrograms bank lo hi) (List.finRange 6)
+noncomputable def intervalHeadersFor (bank : Fin 72 ↪ Fin T) (lo hi : ℕ) (physical : Bool := false) : Pr P T Q prime U :=
+  LabelTraversal.sequence (fieldProgramsFor bank lo hi physical) (List.finRange 6)
 
-def intervalValues (lo hi a M W : ℕ) : Fin 6 → ℕ :=
-  ![1,1,1,(hi-lo)*a,M^(2*(64-(hi-lo))),W]
+def intervalValuesFor (lo hi a M W : ℕ) (physical : Bool := false) : Fin 6 → ℕ :=
+  ![1,1,(if physical then M^lo else 1),(hi-lo)*a,M^(if physical then 64-hi+lo else 2*(64-(hi-lo))),if physical then M^(64-hi)*W else W]
 
-def intervalHeaderCosts (lo hi a H J : ℕ) : Fin 6 → ℕ :=
+def intervalHeaderCostsFor (lo hi a H J : ℕ) (physical : Bool := false) : Fin 6 → ℕ :=
   let power := fun d B => dimensionTime H B d + (4*(d*H+B)+6)
-  ![1,1,1,4*a+4+(21*((hi-lo)*a)+10+(2*((hi-lo)*a)+2)),power (2*(64-(hi-lo))) 1,power 0 J]
+  ![1,1,(if physical then power lo 1 else 1),4*a+4+(21*((hi-lo)*a)+10+(2*((hi-lo)*a)+2)),power (if physical then 64-hi+lo else 2*(64-(hi-lo))) 1,power (if physical then 64-hi else 0) J]
+
+abbrev intervalValues (lo hi a M W : ℕ) := intervalValuesFor lo hi a M W false
+abbrev intervalHeaderCosts (lo hi a H J : ℕ) := intervalHeaderCostsFor lo hi a H J false
+noncomputable abbrev fieldPrograms (bank : Fin 72 ↪ Fin T) (lo hi : ℕ) : Fin 6 → Pr P T Q prime U :=
+  fieldProgramsFor bank lo hi false
+noncomputable abbrev intervalHeaders (bank : Fin 72 ↪ Fin T) (lo hi : ℕ) : Pr P T Q prime U :=
+  intervalHeadersFor bank lo hi false
 
 /-- Generate every descriptor field from the modulus, suffix and atom width.
 The indexed program depends only on the selected interval. -/
@@ -159,10 +166,10 @@ theorem intervalHeaders_exec (body : P → Pr P T Q prime U) (bank : Fin 72 ↪ 
     (base : S.R (bank 2) = binSyms H M) (unit : S.R (bank 28) = binSyms 1 1)
     (suffix : S.R (bank 53) = binSyms J W) (atom : (S.R (bank 71)).length = a)
     (scratch : ∀ i : Fin 72, 59 ≤ i.val → i.val ≤ 65 → S.R (bank i) = [])
-    (empty : ∀ i, S.R (bank (descriptorPorts i)) = []) :
-    ∃ z D t, z.user = u.user ∧ t ≤ ((List.finRange 6).map (intervalHeaderCosts lo hi a H J)).sum+1 ∧
-      Exec body (intervalHeaders bank lo hi) (mk u S) t (mk z D) ∧ D.L = S.L ∧
-      (∀ i, D.R (bank (descriptorPorts i)) = (bits (intervalValues lo hi a M W i)).map bitSymbol) ∧
+    (empty : ∀ i, S.R (bank (descriptorPorts i)) = []) (physical : Bool := false) :
+    ∃ z D t, z.user = u.user ∧ t ≤ ((List.finRange 6).map (intervalHeaderCostsFor lo hi a H J physical)).sum+1 ∧
+      Exec body (intervalHeadersFor bank lo hi physical) (mk u S) t (mk z D) ∧ D.L = S.L ∧
+      (∀ i, D.R (bank (descriptorPorts i)) = (bits (intervalValuesFor lo hi a M W physical i)).map bitSymbol) ∧
       ∀ k, (∀ i, k ≠ bank (descriptorPorts i)) → D.R k = S.R k := by
   let dst := descriptorPorts.trans bank
   let ok := fun (R : Fin T → List (Fin (prime+4))) => R (bank 2) = binSyms H M ∧ R (bank 28) = binSyms 1 1 ∧
@@ -179,8 +186,8 @@ theorem intervalHeaders_exec (body : P → Pr P T Q prime U) (bank : Fin 72 ↪ 
     exact ⟨(keep 2 (by decide)).trans h.1,(keep 28 (by decide)).trans h.2.1,(keep 53 (by decide)).trans h.2.2.1,
       (congrArg List.length (keep 71 (by decide))).trans h.2.2.2.1,fun i low high => (keep i (by omega)).trans (h.2.2.2.2 i low high)⟩
   have step (i : Fin 6) (y : HS T Q prime U) (B : Stacks T prime) (h : ok B.R) (fresh : B.R (dst i) = []) :
-      ∃ z n, z.user = y.user ∧ n ≤ intervalHeaderCosts lo hi a H J i ∧
-        Exec body (fieldPrograms bank lo hi i) (mk y B) n (mk z {B with R := Function.update B.R (dst i) ((bits (intervalValues lo hi a M W i)).map bitSymbol)}) := by
+      ∃ z n, z.user = y.user ∧ n ≤ intervalHeaderCostsFor lo hi a H J physical i ∧
+        Exec body (fieldProgramsFor bank lo hi physical i) (mk y B) n (mk z {B with R := Function.update B.R (dst i) ((bits (intervalValuesFor lo hi a M W physical i)).map bitSymbol)}) := by
     obtain ⟨base,one,trailing,clock,work⟩ := h
     have power (j : Fin 3) (d L b : ℕ) (hb : b < 2^L)
         (seed : B.R (bank (powerPorts j 1)) = binSyms L b) (out : B.R (bank (powerPorts j 2)) = []) :=
@@ -200,19 +207,25 @@ theorem intervalHeaders_exec (body : P → Pr P T Q prime U) (bank : Fin 72 ↪ 
     fin_cases i
     · exact ⟨y,1,rfl,le_rfl,short _ fresh⟩
     · exact ⟨y,1,rfl,le_rfl,short _ fresh⟩
-    · exact ⟨y,1,rfl,le_rfl,short _ fresh⟩
+    · cases physical
+      · exact ⟨y,1,rfl,le_rfl,short _ fresh⟩
+      · have run := power 0 lo 1 1 (by decide) one fresh
+        rw [Nat.mul_one] at run
+        exact run
     · apply intervalWidth_exec body (widthPorts.trans bank) (hi-lo) a y B clock
       intro j ne
       by_cases atOut : j = 1
       · exact atOut ▸ fresh
       · have limits := (by decide : ∀ j, j ≠ 0 → j ≠ 1 → 59 ≤ (widthPorts j).val ∧ (widthPorts j).val ≤ 65) j ne atOut
         exact work _ limits.1 limits.2
-    · have run := power 1 (2*(64-(hi-lo))) 1 1 (by decide) one fresh
+    · have run := power 1 (if physical then 64-hi+lo else 2*(64-(hi-lo))) 1 1 (by decide) one fresh
       rw [Nat.mul_one] at run
       exact run
-    · have run := power 2 0 J W hw trailing fresh
-      rw [pow_zero,one_mul] at run
-      exact run
+    · cases physical
+      · have run := power 2 0 J W hw trailing fresh
+        rw [pow_zero,one_mul] at run
+        exact run
+      · exact power 2 (64-hi) J W hw trailing fresh
   obtain ⟨z,D,t,user,time,run,left,done,frame⟩ := sequenceHeaders_exec body _ dst _ _ ok stable step
     (List.finRange 6) (List.nodup_finRange _) u S ⟨base,unit,suffix,atom,scratch⟩ (fun i _ => empty i)
   exact ⟨z,D,t,user,time,run,left,fun i => done i (List.mem_finRange _),fun k off => frame k (fun j _ => off j)⟩
@@ -232,8 +245,8 @@ private theorem powerHeaderCost_le (d H B M W : ℕ) (degree : d ≤ 128) (width
 
 /-- All six header writes fit in one parent-volume unit after the role split. -/
 theorem intervalHeaderCost_le (lo hi a H J M W : ℕ) (ordered : lo ≤ hi) (fits : hi ≤ 64)
-    (atom : a ≤ M) (width : H ≤ M) (seed : J ≤ W) (radix : 2 ≤ M) (positive : 0 < W) :
-    ((List.finRange 6).map (intervalHeaderCosts lo hi a H J)).sum+1 ≤ M^64*W := by
+    (atom : a ≤ M) (width : H ≤ M) (seed : J ≤ W) (radix : 2 ≤ M) (positive : 0 < W) (physical : Bool := false) :
+    ((List.finRange 6).map (intervalHeaderCostsFor lo hi a H J physical)).sum+1 ≤ M^64*W := by
   let C := M*M*W
   have m2 : M ≤ M*M := Nat.le_mul_of_pos_right _ (by omega)
   have weight : M*M ≤ C := Nat.le_mul_of_pos_right _ positive
@@ -243,12 +256,24 @@ theorem intervalHeaderCost_le (lo hi a H J M W : ℕ) (ordered : lo ≤ hi) (fit
   have q := power (2*(64-(hi-lo))) (by omega) 1 unit
   have r := power 0 (by omega) J seed
   have rank : (hi-lo)*a ≤ 64*M := Nat.mul_le_mul (by omega) atom
-  change 1+(1+(1+
-    ((4*a+4+(21*((hi-lo)*a)+10+(2*((hi-lo)*a)+2)))+
-    ((dimensionTime H 1 (2*(64-(hi-lo)))+(4*((2*(64-(hi-lo)))*H+1)+6))+
-    ((dimensionTime H J 0+(4*(0*H+J)+6))+0)))))+1 ≤ _
+  have leading := power lo (by omega) 1 unit
+  have middle := power (64-hi+lo) (by omega) 1 unit
+  have suffix := power (64-hi) (by omega) J seed
   calc
-    _ ≤ 4194304*C := by dsimp only [C] at *; omega
+    _ ≤ 4194304*C := by
+      cases physical
+      · change 1+(1+(1+
+        ((4*a+4+(21*((hi-lo)*a)+10+(2*((hi-lo)*a)+2)))+
+        ((dimensionTime H 1 (2*(64-(hi-lo)))+(4*((2*(64-(hi-lo)))*H+1)+6))+
+        ((dimensionTime H J 0+(4*(0*H+J)+6))+0)))))+1 ≤ _
+        dsimp only [C] at *
+        omega
+      · change 1+(1+((dimensionTime H 1 lo+(4*(lo*H+1)+6))+
+          ((4*a+4+(21*((hi-lo)*a)+10+(2*((hi-lo)*a)+2)))+
+          ((dimensionTime H 1 (64-hi+lo)+(4*((64-hi+lo)*H+1)+6))+
+          ((dimensionTime H J (64-hi)+(4*((64-hi)*H+J)+6))+0)))))+1 ≤ _
+        dsimp only [C] at *
+        omega
     _ ≤ (M^22)*(M*M*W) := Nat.mul_le_mul_right _ (show 2^22 ≤ M^22 from Nat.pow_le_pow_left radix _)
     _ = M^24*W := by rw [show M^24 = M^22*M^2 from pow_add M 22 2,pow_two]; ring
     _ ≤ _ := Nat.mul_le_mul_right _ (Nat.pow_le_pow_right (by omega) (by decide))
