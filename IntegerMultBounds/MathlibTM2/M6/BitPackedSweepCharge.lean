@@ -443,4 +443,115 @@ theorem restoredStageRunsWithCharge [M8.Machine.Net] (n : Fin 9) (tapes : Fin 32
   obtain ⟨z,F,t,y,out,exec,paid,user,rep,acts,trace⟩ := execute x u S live fresh
   exact ⟨z,F,t,y,out,exec,by simpa only [Nat.add_assoc] using paid,user,rep,acts,by simpa only [span] using trace⟩
 
+private theorem handoffLinear {A B N K : ℕ} (ha : 0 < A) (hb : 0 < B) (hn : 0 < N) (hk : 0 < K) :
+    let V := A*(B*N*K)
+    scanCounterCost ![K,N,A*B]+1+(17760*(7021*(A*B)*(N*K)+6)+1+
+      (14*V+14*(FlatCoordinateSchedule.bits V).length+33)*(142081+7)+6) ≤ 150000000*V := by
+  intro V
+  have eqn : A*B*(N*K) = V := by dsimp only [V]; ac_rfl
+  have hd := Nat.mul_pos ha hb
+  have hnk := Nat.mul_pos hn hk
+  have hv : 0 < V := eqn ▸ Nat.mul_pos hd hnk
+  have h₁ : N*K ≤ V := eqn ▸ Nat.le_mul_of_pos_left _ hd
+  have h₂ : A*B ≤ V := eqn ▸ Nat.le_mul_of_pos_right _ hnk
+  have counters := scanCounterCost_le ((Nat.le_mul_of_pos_left _ hn).trans h₁)
+    ((Nat.le_mul_of_pos_right _ hk).trans h₁) h₂ hv
+  have bits := FlatCoordinateDimensions.bits_length_le_twice (le_refl V) hv
+  rw [Nat.mul_assoc 7021,eqn]
+  omega
+
+/-- Materialize the parent sweep output from restored owners and scanned target words, with linear cleanup cost. -/
+theorem stageHandoffWithCharge {T Q : ℕ} {P U : Type} (n : Fin 9)
+    (fan : Fin (142081+2) ↪ Fin T) (fits : 215 ≤ Q) (src : Fin 3 → Fin T)
+    (body : P → Pr P ((T+142081*7)+142081+10) Q prime U) :
+    ∃ code, ∃ rate : ℕ, ∀ w B W : ℕ, 0 < B → 0 < (prime^w)^112*W →
+    let K := (prime^w)^112*W
+    let A := (prime^w)^16
+    let N := prime^(64*(w*64))
+    let port := stagePadPort fan
+    let old := ((Fin.castAddEmb (142081*7) (n := T)).trans (Fin.castAddEmb 142081)).trans (Fin.castAddEmb 10)
+    let label := firstRowLabel w
+    let retained := fan.trans (((Fin.castAddEmb (142081*7)).trans (Fin.castAddEmb 142081)).trans (Fin.castAddEmb 10))
+    ∀ x y out,
+      stageRuns.foldr (fun p cont a => ∃ b, packedStageEffect n p w B W a b ∧ cont b)
+        (fun a => a = y) (singleLabelBank label x) →
+      HelperLabelTrace w (B*N) W (restoreSlotChanges (stageFinalSlot n)) y out →
+      let next := collapseLabelBank (B := B) (K := K) out
+      ∀ u S, StageDimensionWords (fun i => old (src i)) K N (A*B) S →
+      (∀ j, T+142081*7 ≤ j.val → S.L j = [] ∧ S.R j = []) → StageControls retained (A*(B*N*K)) S → RestoredOwnerPayloads n retained out S →
+      (∀ k, Cover.Fallback.RecordPayload (port (targetOwner n k) 0) (fun _ => blank) 0
+        (stageTargetWord n k w B K x) S) →
+      ∃ z F steps, Exec body code (mk u S) steps (mk z F) ∧
+        (∀ js : List _, js.Nodup → steps+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+rate*(A*(B*N*K))) ∧
+        z.user = u.user ∧ HelperFan (stageOutputFan n fan)
+          (singleLabelBank label (Function.update next (Fin.last 142080) (fun _ => 0))) F ∧
+          (∀ j, (∀ i, fan i ≠ j) → F.L (old j) = S.L (old j) ∧ F.R (old j) = S.R (old j)) := by
+  obtain ⟨code,run⟩ := stageHandoff_host (P := Empty) (U := U) n fan fits src Empty.elim
+  let factor := 1+6*Fast.Main.mnProgPush code
+  refine ⟨embProg id Empty.elim code,factor*150000000,?_⟩
+  intro w B W hb hk K A N port old label retained x y out trace restore next u S dims fresh controls live inputs
+  obtain ⟨z,F,t,exec,paid,user,ready,off⟩ := run w B W hb hk x y out trace restore u S dims fresh controls live inputs
+  obtain ⟨placed,charge⟩ := placeClosedWithCharge body code exec
+  refine ⟨z,F,t,placed,?_,user,ready,off⟩
+  intro js unique
+  have hA : 0 < A := pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _
+  have hN : 0 < N := pow_pos Shared50ModularControl.prime_prime.pos _
+  have bound := handoffLinear hA hb hN hk
+  have price := Nat.mul_le_mul_left factor (paid.trans bound)
+  rw [← Nat.mul_assoc] at price
+  exact (charge js unique).trans (Nat.add_le_add_left price _)
+
+/-- Scan just the restored target bank, preserving the recursive sweep budget already paid. -/
+theorem scanRestoredTargetsWithCharge (n : Fin 9) :
+    let I := (Fin 32 × Fin 5) × Fin 111
+    ∃ states : ℕ, ∀ {T Q : ℕ} {P U : Type} (fan : Fin (142081+2) ↪ Fin T), states ≤ Q →
+    let inner := (Fin.castAddEmb 14 (n := T)).trans (Fin.castAddEmb (142081*7))
+    let placedFan := fan.trans (Fin.castAddEmb 14)
+    let bank := fun k : I => targetScanBank placedFan (targetOwner n k)
+    let reg := (Fin.castAddEmb 4 (n := 10)).trans ((Fin.natAddEmb T (m := 14)).trans (Fin.castAddEmb (142081*7)))
+    ∀ (body : P → Pr P ((T+14)+142081*7) Q prime U), ∃ code, ∃ rate : ℕ,
+    ∀ (w B W : ℕ) (label : Cover.LabelPadding.Label 64 w) (x),
+    let K := (prime^w)^112*W
+    let N := prime^(64*(w*64))
+    let D := (prime^w)^16*B
+    0 < K → 0 < B → ∀ u S y out, HelperFan (fan.trans inner) out S →
+    stageRuns.foldr (fun k next a => ∃ b, packedStageEffect n k w B W a b ∧ next b)
+      (fun a => a = y) (singleLabelBank label x) →
+    HelperLabelTrace w (B*N) W (restoreSlotChanges (stageFinalSlot n)) y out →
+    (∀ i : Fin 3, S.L (reg (i.castAdd 7)) = [separator] ∧
+      S.R (reg (i.castAdd 7)) = binSyms (![K,N,D] i).size (![K,N,D] i)) →
+    (∀ i : Fin 7, S.R (reg (i.natAdd 3)) = []) →
+    (∀ k (j : Fin 7), S.L (bank k j.succ) = [] ∧ S.R (bank k j.succ) = []) →
+    let result := fun k => WordAtZero (stageTargetWord n k w B K x)
+    ∃ z F steps, Exec body code (mk u S) steps (mk z F) ∧
+      (∀ js : List _, js.Nodup → steps+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+rate*(D*(N*K))) ∧ z.user = u.user ∧
+      (∀ k, result k (F.L (bank k 1)) (F.R (bank k 1))) ∧
+      StageControls (fan.trans inner) ((prime^w)^16*(B*N*K)) F ∧
+      StageDimensionWords (fun i => reg (i.castAdd 7)) K N D F ∧
+      F.R ((12 : Fin 14).natAdd T |>.castAdd (142081*7)) = S.R ((12 : Fin 14).natAdd T |>.castAdd (142081*7)) ∧
+      RestoredOwnerPayloads n (fan.trans inner) out F := by
+  intro I
+  let order := stageRuns.product (List.finRange 111)
+  obtain ⟨states,build⟩ := packedStageTargets_host n
+  refine ⟨states,?_⟩
+  intro T Q P U fan fits inner placedFan bank reg body
+  obtain ⟨scan,run⟩ := build (P := Empty) (U := U) fan fits Empty.elim (.act .done)
+  let factor := 1+6*Fast.Main.mnProgPush scan
+  refine ⟨embProg id Empty.elim scan,factor*(4300*order.length+201),?_⟩
+  intro w B W label x K N D hk hb u S y out ready trace restore dims free scratch result
+  obtain ⟨z,F,t,exec,paid,user,words,controls,headers,saved,retained⟩ := run w B W label x hk hb u S
+    (embDn inner u) (embStk inner S) 1 y out (Exec.act .done _) rfl ready trace restore dims free scratch
+  have closed : Exec Empty.elim scan (mk u S) t (mk z F) := by
+    convert exec using 1
+  obtain ⟨placed,charge⟩ := placeClosedWithCharge body scan closed
+  refine ⟨z,F,t,placed,?_,user,words,controls,headers,saved,retained⟩
+  have positive : 0 < D*(N*K) := Nat.mul_pos (Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) hb)
+    (Nat.mul_pos (pow_pos Shared50ModularControl.prime_prime.pos _) hk)
+  change t ≤ 1+(4300*order.length+200)*(D*(N*K)) at paid
+  have cost : t ≤ (4300*order.length+201)*(D*(N*K)) := by
+    rw [show 4300*order.length+201 = (4300*order.length+200)+1 by omega,Nat.add_mul,Nat.one_mul]
+    omega
+  intro js unique
+  exact (charge js unique).trans (Nat.add_le_add_left (by simpa only [Nat.mul_assoc] using Nat.mul_le_mul_left factor cost) _)
+
 end IntegerMultBounds.MathlibTM2.M6.BitNode
