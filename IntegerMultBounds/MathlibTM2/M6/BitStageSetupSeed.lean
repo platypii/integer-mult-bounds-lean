@@ -1,7 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.M6.BitInitializedRestoredStage
-public import IntegerMultBounds.MathlibTM2.M6.BitActiveArchiveClock
+public import IntegerMultBounds.MathlibTM2.M6.BitArchiveModulus
 
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.M6.BitNode
@@ -36,8 +36,8 @@ private theorem stageSetupSeed_private {T R k : ℕ} (shared : Fin k ↪ Fin T) 
           empty j (fun i eq => h ⟨i,eq⟩) (fun i eq => ha ⟨i,eq⟩))
 
 private theorem stageArchiveCost (c : CutoffNodeInput) :
-    (18*(c.w+1)+11*(c.w+1).size+17)+(seedLoadBill (fun i => (parentArchiveSeed c.node c.w).R (parentArchivePorts i))+31) ≤
-      252*RecursiveInterchangeLayout.volume prime c.node := by
+    ((18*(c.w+1)+11*(c.w+1).size+17)+(47*prime^(c.w+1)+15))+(seedLoadBill (fun i => (parentArchiveSeed c.node c.w).R (parentArchivePorts i))+31) ≤
+      314*RecursiveInterchangeLayout.volume prime c.node := by
   let V := RecursiveInterchangeLayout.volume prime c.node
   let M := prime^(c.w+1)
   have radix : 0 < M := pow_pos Shared50ModularControl.prime_prime.pos _
@@ -53,41 +53,48 @@ private theorem stageArchiveCost (c : CutoffNodeInput) :
   have headers := descriptorSeedBill c.node positive
   rw [parentArchiveSeed_bill]
   have ticks : (c.w+1).size ≤ c.w+1 := Nat.size_le.mpr Nat.lt_two_pow_self
-  change (18*(c.w+1)+11*(c.w+1).size+17)+(_+8*(M.size+1+c.w)+18+31) ≤ 252*V
+  change ((18*(c.w+1)+11*(c.w+1).size+17)+(47*M+15))+(_+8*(M.size+1+c.w)+18+31) ≤ 314*V
   change _ ≤ 133*V at headers
   omega
 
 /-- Install the archive part of the stage's private seed on an enclosing caller.
-The shared payload, prepared worker banks, and external tapes apart from the two clocks are preserved. -/
+The shared payload, prepared worker banks, and external tapes apart from the clock, unit and modulus outputs are preserved. -/
 theorem loadStageSetupSeed {P U : Type} {T R H Q k : ℕ} (body : P → Pr P H Q prime U)
     (shared : Fin k ↪ Fin T) (place : Fin (80+((T+273)+R)) ↪ Fin H)
-    (source : Fin 8 → Fin H) (r : Fin 7 ↪ Fin H) (tmp saved : Fin H) :
+    (source : Fin 6 → Fin H) (r : Fin 7 ↪ Fin H) (power : Fin 10 ↪ Fin H) (tmp saved : Fin H) :
     let owner := ((Fin.castAddEmb 273 (n := T)).trans (Fin.castAddEmb R)).trans (Fin.natAddEmb 80)
     let archive := archiveSetupPlacement 80 T R
     let bank := archive.trans place
-    r 0 = source 3 → (∀ i, source i ≠ r 1 ∧ source i ≠ r 2) →
-    (∀ i, place i ≠ r 1 ∧ place i ≠ r 2) →
-    (tmp ≠ r 1 ∧ tmp ≠ r 2) → (saved ≠ r 1 ∧ saved ≠ r 2) →
-    (∀ i j, bank (parentArchivePorts i) ≠ activeArchiveSources source r j) →
-    (∀ i, [activeArchiveSources source r i,bank (parentArchivePorts i),tmp,saved].Nodup) →
+    r 0 = source 3 → power 0 = r 1 → (∀ i, r 2 ≠ power i) →
+    (∀ i, outsideArchiveOutputs r power (source i)) →
+    (∀ i, outsideArchiveOutputs r power (place i)) →
+    outsideArchiveOutputs r power tmp → outsideArchiveOutputs r power saved →
+    (∀ i j, bank (parentArchivePorts i) ≠ descriptorArchiveSources source r power j) →
+    (∀ i, [descriptorArchiveSources source r power i,bank (parentArchivePorts i),tmp,saved].Nodup) →
     ∃ code, ∀ (c : CutoffNodeInput) (initial : Stacks T prime) u S,
-      (∀ i : Fin 8, S.R (source i) = (parentArchiveSeed c.node c.w).R (parentArchivePorts i.castSucc)) →
-      (∀ i : Fin 7, i ≠ 0 → S.R (r i) = []) →
+      (∀ i : Fin 6, S.R (source i) = (Routines.hdr c.node i).map bitSymbol) →
+      (∀ i : Fin 7, i ≠ 0 → S.R (r i) = []) → (∀ i : Fin 10, i ≠ 0 → S.R (power i) = []) →
       (∀ j, S.L (bank j) = [] ∧ S.R (bank j) = []) → S.R tmp = [] → S.R saved = [] →
       PrivateTapes shared initial (embStk (owner.trans place) S) →
       (∀ j, (∀ i, owner i ≠ j) → (∀ i, archive i ≠ j) → S.L (place j) = [] ∧ S.R (place j) = []) →
       ∃ z F t, Exec body code (mk u S) t (mk z F) ∧ z.user = u.user ∧
-        CleanupBound S F t (252*RecursiveInterchangeLayout.volume prime c.node) ∧
+        CleanupBound S F t (314*RecursiveInterchangeLayout.volume prime c.node) ∧
         PrivateTapes (shared.trans owner) (stageSetupSeed R initial c) (embStk place F) ∧
         ∀ j, (∀ i, archive i ≠ j) → F.L (place j) = S.L (place j) ∧ F.R (place j) = S.R (place j) := by
-  intro owner archive bank width sourceOff placeOff tmpOff savedOff apart regs
-  obtain ⟨code,load⟩ := loadActiveArchive body bank source r tmp saved width sourceOff (fun i => placeOff (archive i)) tmpOff savedOff apart regs
-  refine ⟨code,?_⟩
-  intro c initial u S words clocks free ht hs workers empty
-  obtain ⟨z,F,t,exec,user,paid,ready,_,_,allFrame⟩ := load c.node c.w c.width u S words clocks free ht hs
-  have frame j (away : ∀ i, archive i ≠ j) :=
-    allFrame (place j) (placeOff j).1 (placeOff j).2 (fun i => place.injective.ne (away i))
-  refine ⟨z,F,t,exec,user,(fun js nd => (paid js nd).trans (Nat.add_le_add_left (stageArchiveCost c) _)),stageSetupSeed_private shared initial c (embStk place F) ?_ ready ?_,frame⟩
+  intro owner archive bank width long short sourceOff placeOff tmpOff savedOff apart regs
+  obtain ⟨gen,make⟩ := descriptorArchiveWords body source r power width long short sourceOff
+  obtain ⟨copy,load⟩ := loadParentArchiveSeed body bank _ tmp saved apart regs
+  refine ⟨gen.seq copy,?_⟩
+  intro c initial u S words clocks temps free ht hs workers empty
+  obtain ⟨v,D,n,start,user,paid,digits,kept⟩ := make c.node c.w c.width u S words clocks temps
+  have keep j (off : outsideArchiveOutputs r power j) := kept j off.1 off.2.1 off.2.2.1 off.2.2.2
+  obtain ⟨z,F,t,exec,same,charge,ready,allFrame⟩ := load c.node c.w v D digits
+    (fun i => ⟨(keep _ (placeOff (archive i))).1.trans (free i).1,(keep _ (placeOff (archive i))).2.trans (free i).2⟩)
+    ((keep _ tmpOff).2.trans ht) ((keep _ savedOff).2.trans hs)
+  have frame j (away : ∀ i, archive i ≠ j) := And.intro
+    ((allFrame (place j) (fun i => place.injective.ne (away i))).1.trans (keep _ (placeOff j)).1)
+    ((allFrame (place j) (fun i => place.injective.ne (away i))).2.trans (keep _ (placeOff j)).2)
+  refine ⟨z,F,n+t,start.seq exec,same.trans user,(fun js nd => ((paid.seq charge) js nd).trans (Nat.add_le_add_left (stageArchiveCost c) _)),stageSetupSeed_private shared initial c (embStk place F) ?_ ready ?_,frame⟩
   · intro i off
     have keep := frame (owner i) (fun j => (archiveSetupPlacement_frame j).1 i)
     have was := workers i off
@@ -111,7 +118,7 @@ private theorem projectedUser {T H Q : ℕ} {U : Type} (place : Fin T ↪ Fin H)
     (embDn place v).user = v.user := rfl
 
 /-- Run the selected restored stage on the caller's host after copying its archive
-from eight source words and deriving the clock from the inherited width. -/
+from six inherited descriptor fields. -/
 theorem callerRestoredStage [M8.Machine.Net] (n : Fin 9) :
     let l := (selectedPhaseSchedule false).1.length
     let r := (selectedPhaseSchedule true).1.length
@@ -127,14 +134,15 @@ theorem callerRestoredStage [M8.Machine.Net] (n : Fin 9) :
     let owner := ((Fin.castAddEmb 273 (n := T)).trans (Fin.castAddEmb LeafCore.small)).trans (Fin.natAddEmb 80)
     let fan := shared.trans owner
     ∃ (body' : I × P → Pr (I × P) H Q prime U) (rate : ℝ),
-    ∀ {M : ℕ} (place : Fin H ↪ Fin M) (source : Fin 8 → Fin M) (r : Fin 7 ↪ Fin M) (tmp saved : Fin M),
+    ∀ {M : ℕ} (place : Fin H ↪ Fin M) (source : Fin 6 → Fin M) (r : Fin 7 ↪ Fin M) (power : Fin 10 ↪ Fin M) (tmp saved : Fin M),
     let bank := (archiveSetupPlacement 80 T LeafCore.small).trans place
     let host := fun g => embProg place id (body' g)
-    r 0 = source 3 → (∀ i, source i ≠ r 1 ∧ source i ≠ r 2) →
-    (∀ i, place i ≠ r 1 ∧ place i ≠ r 2) →
-    (tmp ≠ r 1 ∧ tmp ≠ r 2) → (saved ≠ r 1 ∧ saved ≠ r 2) →
-    (∀ i j, bank (parentArchivePorts i) ≠ activeArchiveSources source r j) →
-    (∀ i, [activeArchiveSources source r i,bank (parentArchivePorts i),tmp,saved].Nodup) →
+    r 0 = source 3 → power 0 = r 1 → (∀ i, r 2 ≠ power i) →
+    (∀ i, outsideArchiveOutputs r power (source i)) →
+    (∀ i, outsideArchiveOutputs r power (place i)) →
+    outsideArchiveOutputs r power tmp → outsideArchiveOutputs r power saved →
+    (∀ i j, bank (parentArchivePorts i) ≠ descriptorArchiveSources source r power j) →
+    (∀ i, [descriptorArchiveSources source r power i,bank (parentArchivePorts i),tmp,saved].Nodup) →
     ∃ code, ∀ c : CutoffNodeInput,
     let w := c.w+1
     let V := (prime^w)^16*c.stageWidth
@@ -148,8 +156,8 @@ theorem callerRestoredStage [M8.Machine.Net] (n : Fin 9) :
       (position i) (body i) (f i) (time (child i).val) true) →
     ∀ x u S, HelperFan ((Fin.castAddEmb 1).trans fan) x (embStk place S) →
       S.R (place (fan (Fin.last k))) = binSyms c.root.width.size c.cutoff →
-      (∀ i : Fin 8, S.R (source i) = (parentArchiveSeed c.node c.w).R (parentArchivePorts i.castSucc)) →
-      (∀ i : Fin 7, i ≠ 0 → S.R (r i) = []) →
+      (∀ i : Fin 6, S.R (source i) = (Routines.hdr c.node i).map bitSymbol) →
+      (∀ i : Fin 7, i ≠ 0 → S.R (r i) = []) → (∀ i : Fin 10, i ≠ 0 → S.R (power i) = []) →
       (∀ j, S.L (bank j) = [] ∧ S.R (bank j) = []) → S.R tmp = [] → S.R saved = [] →
       (∀ i l, (∀ j, owners i j ≠ l) →
         S.L (place (owner (banks i l))) = (seeds i).L l ∧ S.R (place (owner (banks i l))) =
@@ -158,7 +166,7 @@ theorem callerRestoredStage [M8.Machine.Net] (n : Fin 9) :
         S.L (place j) = [] ∧ S.R (place j) = []) →
       ∃ z F t y, Exec host code (mk u S) t (mk z F) ∧
         (∀ js : List _, js.Nodup → (t : ℝ)+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+
-          (252*volume prime c.node : ℕ)+rate*((c.cells : ℝ)*(w : ℝ)^M8.Machine.BudgetBound.tau)+
+          (314*volume prime c.node : ℕ)+rate*((c.cells : ℝ)*(w : ℝ)^M8.Machine.BudgetBound.tau)+
           (((List.range' (stageChildStart n) (stageRuns.flatMap (fun _ => Geometry.Moves.localPaid)).length).map time).sum : ℕ)) ∧
         z.user = u.user ∧ HelperFan ((Fin.castAddEmb 1).trans fan) y (embStk place F) ∧ RestoredBorrowedStage n w c.B c.stageFactor x y := by
   intro l r I k
@@ -167,17 +175,17 @@ theorem callerRestoredStage [M8.Machine.Net] (n : Fin 9) :
   intro P U Q cap body f
   obtain ⟨T,shared,owners,banks,inner,program,rate,stage⟩ := build cap body f
   refine ⟨T,shared,owners,banks,inner,rate,?_⟩
-  intro M place source r tmp saved bank host width sourceOff placeOff tmpOff savedOff apart regs
-  obtain ⟨setup,load⟩ := loadStageSetupSeed (T := T) (R := LeafCore.small) (H := M) host shared place source r tmp saved width sourceOff placeOff tmpOff savedOff apart regs
+  intro M place source r power tmp saved bank host width long short sourceOff placeOff tmpOff savedOff apart regs
+  obtain ⟨setup,load⟩ := loadStageSetupSeed (T := T) (R := LeafCore.small) (H := M) host shared place source r power tmp saved width long short sourceOff placeOff tmpOff savedOff apart regs
   refine ⟨setup.seq (embProg place id program),?_⟩
   intro c w V desc record
   obtain ⟨position,seeds,entry,coords,prepare⟩ := stage c
   refine ⟨position,seeds,entry,coords,?_⟩
-  intro time recurse x u S live cut words clocks free ht hs stock empty
+  intro time recurse x u S live cut words clocks temps free ht hs stock empty
   let owner := ((Fin.castAddEmb 273 (n := T)).trans (Fin.castAddEmb LeafCore.small)).trans (Fin.natAddEmb 80)
   obtain ⟨initial,cert,_,run⟩ := prepare (embStk ((shared.trans owner).trans place) S)
   have stocked := cert (embStk (owner.trans place) S) stock
-  obtain ⟨v,D,a,start,user,paid,ready,frame⟩ := load c initial u S (fun i => words i) clocks
+  obtain ⟨v,D,a,start,user,paid,ready,frame⟩ := load c initial u S (fun i => words i) clocks temps
     (fun j => free j) ht hs (fun i off => stocked i off) (fun j a b => empty j a b)
   have keep := archiveFrameOwner (T := T) (R := LeafCore.small) place S D frame
   let data := (Fin.castAddEmb 1 (n := k)).trans (shared.trans owner)
@@ -195,9 +203,9 @@ theorem callerRestoredStage [M8.Machine.Net] (n : Fin 9) :
   let cost := rate*((c.cells : ℝ)*(w : ℝ)^M8.Machine.BudgetBound.tau)
   have after := placedStageCharge place D F t (cost+(children : ℝ)) untouched (fun is hi =>
     (bill is hi).trans_eq (add_assoc ..)) js nd
-  have setupCost : a+tapeCharge cleanupWeight js D ≤ tapeCharge cleanupWeight js S+252*volume prime c.node := paid js nd
+  have setupCost : a+tapeCharge cleanupWeight js D ≤ tapeCharge cleanupWeight js S+314*volume prime c.node := paid js nd
   have before := (Nat.cast_le (α := ℝ)).mpr setupCost
-  change ((a+t : ℕ) : ℝ)+_ ≤ _+((252*volume prime c.node : ℕ) : ℝ)+cost+(children : ℝ)
+  change ((a+t : ℕ) : ℝ)+_ ≤ _+((314*volume prime c.node : ℕ) : ℝ)+cost+(children : ℝ)
   rw [Nat.cast_add] at before ⊢
   rw [Nat.cast_add] at before
   linarith only [before,after]
