@@ -51,6 +51,79 @@ theorem phaseMoveBlocks_spec (gs : List RawGate) (current : ℕ → ℕ) :
         simp only [List.map_cons,List.flatMap_cons,List.append_assoc] at moveOrder gateOrder
         simp [phaseMoveBlocks,eq,edges,List.filter_append,Function.comp_def,← moveOrder,gateOrder,List.append_assoc,emptyBlocks]
 
+/-- Executing the grouped scalar/MOVE schedule preserves their interleaving.
+The state may carry the occurrence index used to select the MOVE register. -/
+private theorem phaseMoveBlocks_fold {α : Type*} (gate : α → RawGate → α) (move : α → ℕ × ℕ → α)
+    (gs : List RawGate) (current : ℕ → ℕ) (x : α) :
+    let schedule := phaseMoveBlocks gs current
+    let block := fun x (b : List RawGate × (ℕ × ℕ)) => move (b.1.foldl gate x) b.2
+    schedule.2.foldl gate (schedule.1.foldl block x) =
+      (gs.foldl (fun (state : α × (ℕ → ℕ)) g =>
+        (gate (((Frames.edges [g] state.2).filter positiveMove).foldl move state.1) g,
+         Frames.run [g] state.2)) (x,current)).1 := by
+  have emptyBlocks (es : List (ℕ × ℕ)) (y : α) :
+      (es.map (fun e => (([] : List RawGate),e))).foldl (fun x b => move (b.1.foldl gate x) b.2) y = es.foldl move y := by
+    induction es generalizing y with
+    | nil => rfl
+    | cons e es ih => exact ih (move y e)
+  induction gs generalizing current x with
+  | nil => rfl
+  | cons g gs ih =>
+    let es := (Frames.edges [g] current).filter positiveMove
+    have tail := ih (Frames.run [g] current) (gate (es.foldl move x) g)
+    cases eq : phaseMoveBlocks gs (Frames.run [g] current) with
+    | mk blocks suffix =>
+      rw [eq] at tail
+      cases blocks with
+      | nil =>
+        simpa only [phaseMoveBlocks,eq,List.foldl_cons,List.foldl_nil,emptyBlocks,es] using tail
+      | cons b rest =>
+        obtain ⟨gates,e⟩ := b
+        simpa only [phaseMoveBlocks,eq,List.foldl_append,List.foldl_cons,emptyBlocks,es] using tail
+
+private theorem foldOccurrences {α β : Type*} (f : α → ℕ → β → α)
+    (xs : List β) (x : α) (start : ℕ) :
+    xs.foldl (fun (s : α × ℕ) b => (f s.1 s.2 b,s.2+1)) (x,start) =
+      ((List.finRange xs.length).foldl (fun y i => f y (start+i.val) xs[i.val]) x,start+xs.length) := by
+  induction xs generalizing x start with
+  | nil => simp
+  | cons b bs ih =>
+    rw [List.foldl_cons,ih]
+    simp only [List.length_cons,List.finRange_succ,List.foldl_cons,List.foldl_map,Fin.val_zero,
+      Nat.add_zero,List.getElem_cons_zero,Fin.val_succ,List.getElem_cons_succ,Nat.add_right_comm start 1,
+      Nat.add_assoc]
+
+/-- Process the moves attached to a gate in the active frame before applying
+the scalar gate. The directory index advances once per paid edge. -/
+noncomputable def runIndexedPhase {α : Type*} (gate : α → RawGate → α) (move : α → ℕ → ℕ × ℕ → α)
+    (gs : List RawGate) (current : ℕ → ℕ) (x : α) (start : ℕ) : α :=
+  ((gs.foldl (fun (state : (α × ℕ) × (ℕ → ℕ)) g =>
+    let s := ((Frames.edges [g] state.2).filter positiveMove).foldl
+      (fun (s : α × ℕ) e => (move s.1 s.2 e,s.2+1)) state.1
+    ((gate s.1 g,s.2),Frames.run [g] state.2)) ((x,start),current)).1).1
+
+/-- The finite-index fold produced by the phase machine agrees with executing
+each gate after its positive-rank moves, starting at the phase's directory offset. -/
+theorem indexedPhase_fold {α : Type*} (gate : α → RawGate → α) (move : α → ℕ → ℕ × ℕ → α)
+    (gs : List RawGate) (current : ℕ → ℕ) (x : α) (start : ℕ) :
+    let schedule := phaseMoveBlocks gs current
+    let blocks := schedule.1
+    schedule.2.foldl gate ((List.finRange blocks.length).foldl
+      (fun y i => move (blocks[i.val].1.foldl gate y) (start+i.val) blocks[i.val].2) x) =
+      runIndexedPhase gate move gs current x start := by
+  intro schedule blocks
+  let scalar := fun (s : α × ℕ) g => (gate s.1 g,s.2)
+  let paid := fun (s : α × ℕ) e => (move s.1 s.2 e,s.2+1)
+  have gates (hs : List RawGate) (s : α × ℕ) : hs.foldl scalar s = (hs.foldl gate s.1,s.2) := by
+    induction hs generalizing s with
+    | nil => rfl
+    | cons g hs ih => exact ih (scalar s g)
+  have order := congrArg Prod.fst (phaseMoveBlocks_fold scalar paid gs current (x,start))
+  simp only [gates] at order
+  dsimp only [paid] at order
+  rw [foldOccurrences (fun y j (b : List RawGate × (ℕ × ℕ)) => move (b.1.foldl gate y) j b.2)] at order
+  exact order
+
 /-- Every block selected by its MOVE occurrence, and the final suffix,
 can be passed directly to the selected-word gate compiler. -/
 theorem phaseMoveBlocks_allowed (gs : List RawGate) (current : ℕ → ℕ)
@@ -311,8 +384,9 @@ private theorem sumScaled {α : Type} (xs : List α) (f g : α → ℕ) (V : ℕ
 
 /-- A fixed phase program with a linear scalar charge and one budget per MOVE. -/
 def ScalarPhaseExecution (P U : Type) {k : ℕ} (layout : Fin 661 ↪ Fin k)
-    (schedule : List (List RawGate × (ℕ × ℕ)) × List RawGate)
-    (tapes : Fin schedule.1.length → ℕ) (owner : ∀ i, Fin (k+2+1) ↪ Fin (tapes i)) : Prop :=
+    (gs : List RawGate) (current : ℕ → ℕ)
+    (tapes : Fin (phaseMoveBlocks gs current).1.length → ℕ) (owner : ∀ i, Fin (k+2+1) ↪ Fin (tapes i)) : Prop :=
+    let schedule := phaseMoveBlocks gs current
     let I := Fin schedule.1.length
     let blocks := fun i : I => schedule.1[i].1
     let suffix := schedule.2
@@ -323,13 +397,13 @@ def ScalarPhaseExecution (P U : Type) {k : ℕ} (layout : Fin 661 ↪ Fin k)
     let dataBank := Fin.castAddEmb 1 (n := k+2)
     let rep := fun word (x : Fin k → Fin V → ZMod 2) (S : Stacks (k+2+1) prime) =>
       HelperFan dataBank x S ∧ S.R (Fin.last (k+2)) = word
-    ∀ word (step : (Fin k → Fin V → ZMod 2) → I → Fin k → Fin V → ZMod 2) (budget : I → ℕ) (seed : ∀ i, Stacks (tapes i) prime),
+    ∀ word start (step : (Fin k → Fin V → ZMod 2) → ℕ → ℕ × ℕ → Fin k → Fin V → ZMod 2) (budget : I → ℕ) (seed : ∀ i, Stacks (tapes i) prime),
       (∀ i, ∀ x u S, rep word x (embStk (owner i) S) → PrivateTapes (owner i) (seed i) S →
-        ∃ z F n, Exec (body i) (move i) (mk u S) n (mk z F) ∧ CleanupBound S F n (budget i) ∧ z.user = u.user ∧ rep word (step x i) (embStk (owner i) F)) →
+        ∃ z F n, Exec (body i) (move i) (mk u S) n (mk z F) ∧ CleanupBound S F n (budget i) ∧ z.user = u.user ∧ rep word (step x (start+i.val) schedule.1[i.val].2) (embStk (owner i) F)) →
       ∀ shared, ∃ S : Stacks T prime, embStk fan S = shared ∧ ∀ x u, rep word x shared →
         ∃ z F n, Exec (host : I × P → Pr (I × P) T Q prime U) code (mk u S) n (mk z F) ∧
           CleanupBound S F n (overhead*V+(order.map budget).sum) ∧ z.user = u.user ∧
-          rep word (suffix.foldl (scalarOwnerEffect layout) (order.foldl (fun x i => step ((blocks i).foldl (scalarOwnerEffect layout) x) i) x)) (embStk fan F)
+          rep word (runIndexedPhase (scalarOwnerEffect layout) step gs current x start) (embStk fan F)
 
 open Certificates.PR589 in
 /-- Execute PR589 scalar blocks interleaved with MOVE occurrences, including
@@ -337,11 +411,11 @@ the scalar suffix after the last MOVE. Only the MOVE executions are premises. -/
 theorem scalarMoveSequence {P U : Type} {k : ℕ} (layout : Fin 661 ↪ Fin k)
     (gs : List RawGate) (current : ℕ → ℕ) (allowed : ∀ g ∈ gs, g ∈ program)
     (tapes : Fin (phaseMoveBlocks gs current).1.length → ℕ) (owner : ∀ i, Fin (k+2+1) ↪ Fin (tapes i)) :
-    ScalarPhaseExecution P U layout (phaseMoveBlocks gs current) tapes owner := by
+    ScalarPhaseExecution P U layout gs current tapes owner := by
   classical
   let schedule := phaseMoveBlocks gs current
   unfold ScalarPhaseExecution
-  intro I blocks suffix order
+  intro _ I blocks suffix order
   obtain ⟨states,build⟩ := scalarOwnerBlock layout
   refine ⟨states,?_⟩
   intro Q capacity
@@ -382,8 +456,8 @@ theorem scalarMoveSequence {P U : Type} {k : ℕ} (layout : Fin 661 ↪ Fin k)
     intro g
     simp only [Nat.mul_one,Nat.add_mul]
     nlinarith only [pos]
-  intro word step budget seed moves shared
-  obtain ⟨S,view,execute⟩ := run (rep word) (fun x i => (blocks i).foldl (scalarOwnerEffect layout) x) step (fun x => suffix.foldl (scalarOwnerEffect layout) x)
+  intro word start step budget seed moves shared
+  obtain ⟨S,view,execute⟩ := run (rep word) (fun x i => (blocks i).foldl (scalarOwnerEffect layout) x) (fun x i => step x (start+i.val) schedule.1[i.val].2) (fun x => suffix.foldl (scalarOwnerEffect layout) x)
     (fun i => rate i*bill V (blocks i)) budget (lastRate*bill V suffix) seed (fun x => keep (fun u S h => by
       obtain ⟨z,F,n,exec,_,paid,user,out⟩ := lastRun pos x u S h
       exact ⟨z,F,n,exec,paid,user,out⟩) word) (fun i _ x => keep (fun u S h => by
@@ -392,6 +466,7 @@ theorem scalarMoveSequence {P U : Type} {k : ℕ} (layout : Fin 661 ↪ Fin k)
   refine ⟨S,view,?_⟩
   intro x u live
   obtain ⟨z,F,n,exec,paid,user,out⟩ := execute x u live
+  rw [← indexedPhase_fold]
   refine ⟨z,F,n,exec,?_,user,out⟩
   have scaled (r : ℕ) (gs : List RawGate) : r*bill V gs ≤ (r*bill 1 gs)*V := by
     simpa only [Nat.mul_assoc] using Nat.mul_le_mul_left r (scale gs)
@@ -408,20 +483,22 @@ theorem scalarMoveSequence {P U : Type} {k : ℕ} (layout : Fin 661 ↪ Fin k)
 
 /-- Phase programs indexed by one ordered MOVE directory, split at COPY. -/
 def IndexedScalarPhases (P U : Type) {k : ℕ} (layout : Fin 661 ↪ Fin k)
-    (before after : List (List RawGate × (ℕ × ℕ)) × List RawGate) (edges : List (ℕ × ℕ))
+    (gs hs : List RawGate) (cur next : ℕ → ℕ) (edges : List (ℕ × ℕ))
     (tapes : Fin edges.length → ℕ) (owner : ∀ i, Fin (k+2+1) ↪ Fin (tapes i)) : Prop :=
+    let before := phaseMoveBlocks gs cur
+    let after := phaseMoveBlocks hs next
     ∃ (pre : Fin before.1.length → Fin edges.length) (post : Fin after.1.length → Fin edges.length),
       (∀ i, (pre i).val = i.val ∧ edges[pre i] = before.1[i].2) ∧
       (∀ i, (post i).val = before.1.length+i.val ∧ edges[post i] = after.1[i].2) ∧
-      ScalarPhaseExecution P U layout before (tapes ∘ pre) (fun i => owner (pre i)) ∧
-      ScalarPhaseExecution P U layout after (tapes ∘ post) (fun i => owner (post i))
+      ScalarPhaseExecution P U layout gs cur (tapes ∘ pre) (fun i => owner (pre i)) ∧
+      ScalarPhaseExecution P U layout hs next (tapes ∘ post) (fun i => owner (post i))
 
 private theorem scalarPhasePair (P U : Type) {k : ℕ} (layout : Fin 661 ↪ Fin k)
     (gs hs : List RawGate) (cur next : ℕ → ℕ) (edges : List (ℕ × ℕ))
     (ordered : ((phaseMoveBlocks gs cur).1 ++ (phaseMoveBlocks hs next).1).map Prod.snd = edges)
     (leftAllowed : ∀ g ∈ gs, g ∈ program) (rightAllowed : ∀ g ∈ hs, g ∈ program)
     (tapes : Fin edges.length → ℕ) (owner : ∀ i, Fin (k+2+1) ↪ Fin (tapes i)) :
-    IndexedScalarPhases P U layout (phaseMoveBlocks gs cur) (phaseMoveBlocks hs next) edges tapes owner := by
+    IndexedScalarPhases P U layout gs hs cur next edges tapes owner := by
   obtain ⟨pre,post,left,right⟩ := appendMoveIndices _ _ edges ordered
   unfold IndexedScalarPhases
   exact ⟨pre,post,left,right,scalarMoveSequence layout gs cur leftAllowed _ _,
@@ -432,8 +509,8 @@ the same invocation directory. -/
 theorem invocationScalarPhases (P U : Type) {k : ℕ} (layout : Fin 661 ↪ Fin k)
     (tapes : MoveIndex → ℕ) (owner : ∀ i, Fin (k+2+1) ↪ Fin (tapes i)) :
     IndexedScalarPhases P U layout
-      (phaseMoveBlocks (sectionD++sectionA) (Frames.snapshot Frames.initialRefs))
-      (phaseMoveBlocks (sectionB++sectionC) (Frames.scatterFinish Frames.beforeScatter))
+      (sectionD++sectionA) (sectionB++sectionC) (Frames.snapshot Frames.initialRefs)
+      (Frames.scatterFinish Frames.beforeScatter)
       (Geometry.Moves.phaseEdges.filter positiveMove) tapes owner := by
   have included {α : Type} (x y z t : List α) :
       (∀ g ∈ x, g ∈ x++y++z++t) ∧ (∀ g ∈ z++t, g ∈ x++y++z++t) := by
