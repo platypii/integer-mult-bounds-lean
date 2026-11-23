@@ -19,14 +19,15 @@ theorem packedRowEntry {T N Q : ℕ} {P A U : Type} (body : P → Pr P N Q prime
     (srcTmp : ∀ r : Fin 142080, live (r.castAdd 2) ≠ tmp)
     (dstTmp : ∀ i : Fin 142081, place (src (i.castAdd 2)) ≠ tmp)
     (controls : ∀ j : Fin 2, place (src (j.natAdd 142081)) = live (j.natAdd 142080))
-    (entry : P) :
+    (entry : A) (program : Pr P N Q prime U)
+    (dispatch : host entry = embProg place label program) :
     let privatePorts := (List.finRange N).filter (fun j => ∀ i, childReturnFan dst i ≠ j)
     let scratch := privatePorts.map place
     ∃ code : Pr A T Q prime U, ∀ (lane : Descriptor) (seed : Stacks N prime) price,
       let V := volume prime lane
       PackedPieceHandoffWithCharge cleanupWeight V (fun x y => ∀ r : Fin 142080,
         y r.castSucc = Shared50RecursiveNodeRows.transpose (one_dvd lane.rows) (x r.castSucc))
-        body (body entry) src dst seed price →
+        body program src dst seed price →
       ∀ (data : Fin 142080 → Fin V → ZMod 2) u S, HelperFan live data S →
       S.L tmp = [] → S.R tmp = [] →
       (∀ i : Fin 142081, S.L (place (src (i.castAdd 2))) = [] ∧ S.R (place (src (i.castAdd 2))) = []) →
@@ -42,7 +43,7 @@ theorem packedRowEntry {T N Q : ℕ} {P A U : Type} (body : P → Pr P N Q prime
     simp [scratch,privatePorts,place.injective.eq_iff]
   have retain (i) : place (childReturnFan dst i) ∉ scratch := fun h => (mem _).mp h i rfl
   obtain ⟨prep,prepare⟩ := prepareChildOwners_exec host live (src.trans place) tmp apart srcTmp dstTmp
-  refine ⟨(prep.seq (.call (label entry))).seq (clearWorkTapes scratch),?_⟩
+  refine ⟨(prep.seq (.call entry)).seq (clearWorkTapes scratch),?_⟩
   intro lane seed price V child data u S represented left right empty privateTapes
   obtain ⟨v,R,a,setup,paid,user,words,keep,prepBill⟩ := prepare data u S represented controls left right empty
   let D := {S with R := R}
@@ -51,7 +52,7 @@ theorem packedRowEntry {T N Q : ℕ} {P A U : Type} (body : P → Pr P N Q prime
     intro j off
     exact ⟨(privateTapes j off).1,(keep (place j) (fun i => place.injective.ne (off (i.castAdd 2)))).trans (privateTapes j off).2⟩)
   obtain ⟨q,G,lifted,_,same,view,frame⟩ := exec_emb place.injective installed run v rfl D rfl
-  have called := Exec.call (installed entry ▸ lifted : Exec host (host (label entry)) (mk v D) b (mk q G))
+  have called := Exec.call (dispatch ▸ lifted : Exec host (host entry) (mk v D) b (mk q G))
   obtain ⟨last,lastUser,erase⟩ := clearWorkTapes_exec host scratch distinct q G
   have childBill := placedCleanup_cost_le place D G cleanupWeight b price frame
     (view ▸ cost) scratch distinct
@@ -184,14 +185,15 @@ theorem seededPackedRowEntry {k T N Q : ℕ} {P A U : Type} (body : P → Pr P N
     (privateSlots : ∀ i j, slots i ≠ src j)
     (ownerOff : ∀ i j, place (slots i) ≠ live j)
     (masterOff : ∀ i j, place (slots i) ≠ master j)
-    (regs : ∀ i, [master i,place (slots i),tmp,aux].Nodup) (entry : P) :
+    (regs : ∀ i, [master i,place (slots i),tmp,aux].Nodup) (entry : A) (program : Pr P N Q prime U)
+    (dispatch : host entry = embProg place label program) :
     let privatePorts := (List.finRange N).filter (fun j => ∀ i, childReturnFan dst i ≠ j)
     let scratch := privatePorts.map place
     ∃ code : Pr A T Q prime U, ∀ (lane : Descriptor) (seed : Stacks N prime) price,
       let V := volume prime lane
       PackedPieceHandoffWithCharge cleanupWeight V (fun x y => ∀ r : Fin 142080,
         y r.castSucc = Shared50RecursiveNodeRows.transpose (one_dvd lane.rows) (x r.castSucc))
-        body (body entry) src dst seed price →
+        body program src dst seed price →
       ∀ (data : Fin 142080 → Fin V → ZMod 2) u S, HelperFan live data S →
       S.L tmp = [] → S.R tmp = [] →
       (∀ i : Fin 142081, S.L (place (src (i.castAdd 2))) = [] ∧ S.R (place (src (i.castAdd 2))) = []) →
@@ -208,7 +210,7 @@ theorem seededPackedRowEntry {k T N Q : ℕ} {P A U : Type} (body : P → Pr P N
   classical
   intro privatePorts scratch
   obtain ⟨load,loadRun⟩ := reloadChildSeed host (slots.trans place) master tmp aux masterOff regs
-  obtain ⟨call,callRun⟩ := packedRowEntry body host place label installed live src dst tmp apart srcTmp dstTmp controls entry
+  obtain ⟨call,callRun⟩ := packedRowEntry body host place label installed live src dst tmp apart srcTmp dstTmp controls entry program dispatch
   refine ⟨load.seq call,?_⟩
   intro lane seed price V child data u S liveRows tl tr empty auxFree masters vacant prepared
   obtain ⟨v,R,a,setup,paid,user,loaded,off⟩ := loadRun (fun i => seed.R (slots i)) u S masters vacant tr auxFree
@@ -264,14 +266,15 @@ theorem descriptorPackedRowEntry {T N Q : ℕ} {P A U : Type} (body : P → Pr P
     (privateSlots : ∀ i j, slots i ≠ src j)
     (ownerOff : ∀ i j, place (slots i) ≠ live j)
     (masterOff : ∀ i j, place (slots i) ≠ master j)
-    (regs : ∀ i, [master i,place (slots i),tmp,aux].Nodup) (entry : P) :
+    (regs : ∀ i, [master i,place (slots i),tmp,aux].Nodup) (entry : A) (program : Pr P N Q prime U)
+    (dispatch : host entry = embProg place label program) :
     ∃ code : Pr A T Q prime U, ∀ (lane : Descriptor) (seed : Stacks N prime) price,
       let V := volume prime lane
       0 < V → (∀ i, seed.R (slots i) = (Routines.hdr lane i).map bitSymbol) →
       (∀ j, (∀ i, src i ≠ j) → seed.L j = [] ∧ ((∀ i, slots i ≠ j) → seed.R j = [])) →
       PackedPieceHandoffWithCharge cleanupWeight V (fun x y => ∀ r : Fin 142080,
         y r.castSucc = Shared50RecursiveNodeRows.transpose (one_dvd lane.rows) (x r.castSucc))
-        body (body entry) src dst seed price →
+        body program src dst seed price →
       ∀ (data : Fin 142080 → Fin V → ZMod 2) u S, HelperFan live data S →
       S.L tmp = [] → S.R tmp = [] →
       S.R aux = [] → (∀ i, S.R (master i) = (Routines.hdr lane i).map bitSymbol) →
@@ -284,7 +287,7 @@ theorem descriptorPackedRowEntry {T N Q : ℕ} {P A U : Type} (body : P → Pr P
         ∀ j, (∀ i, place i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
   classical
   obtain ⟨code,run⟩ := seededPackedRowEntry body host place label installed live src dst tmp apart
-    srcTmp dstTmp controls slots master aux privateSlots ownerOff masterOff regs entry
+    srcTmp dstTmp controls slots master aux privateSlots ownerOff masterOff regs entry program dispatch
   refine ⟨code,?_⟩
   intro lane seed price V pos headers seedBlank child data u S represented tl tr auxFree words free
   have rowsFree (r : Fin 142081) := free (src (r.castAdd 2)) (fun i => src.injective.ne (by
@@ -324,6 +327,79 @@ theorem descriptorPackedRowEntry {T N Q : ℕ} {P A U : Type} (body : P → Pr P
   change 0 < V at pos
   change seedLoadBill _ ≤ 133*V at hdr
   rw [Nat.add_mul,Nat.add_mul,Nat.add_mul]
+  omega
+
+/-- Install the flat worker as a recursive procedure, load its six descriptor
+words, and clear its private tapes after returning the transposed rows. -/
+theorem flatDescriptorRowEntry {N Q : ℕ} {P U : Type}
+    (body : P → Pr P N Q prime U) (worker : Pr P N Q prime U)
+    (fan : Fin (142081+2) ↪ Fin N) (slots : Fin 6 ↪ Fin N)
+    (privateSlots : ∀ i j, slots i ≠ fan j) :
+    let chart := SweepFile.Exit.chart 0 N
+    let table := fun p => embProg chart id (body p)
+    let src := fan.trans chart
+    let dst := returnedFan fan
+    ∃ program : Pr P (SweepFile.Exit.size 0 N) Q prime U, ∀ {T : ℕ} {A : Type}
+      (host : A → Pr A T Q prime U) (place : Fin (SweepFile.Exit.size 0 N) ↪ Fin T) (label : P → A)
+      (_installed : ∀ p, host (label p) = embProg place label (table p))
+      (entry : A) (_dispatch : host entry = embProg place label program)
+      (live : Fin (142080+2) ↪ Fin T) (tmp aux : Fin T) (master : Fin 6 → Fin T),
+      (∀ (r : Fin 142080) (i : Fin 142081), live (r.castAdd 2) ≠ place (src (i.castAdd 2))) →
+      (∀ r : Fin 142080, live (r.castAdd 2) ≠ tmp) →
+      (∀ i : Fin 142081, place (src (i.castAdd 2)) ≠ tmp) →
+      (∀ j : Fin 2, place (src (j.natAdd 142081)) = live (j.natAdd 142080)) →
+      (∀ i j, place (chart (slots i)) ≠ live j) →
+      (∀ i j, place (chart (slots i)) ≠ master j) →
+      (∀ i, [master i,place (chart (slots i)),tmp,aux].Nodup) →
+      ∃ code, ∀ (lane : Descriptor) price,
+      let V := volume prime lane
+      0 < V →
+      (∀ x u S, ParentStageWords (fun i => fan (i.castAdd 2)) fan V x S →
+        (∀ i, S.R (slots i) = (Routines.hdr lane i).map bitSymbol) →
+        (∀ j, (∀ i, fan i ≠ j) → S.L j = [] ∧ ((∀ i, slots i ≠ j) → S.R j = [])) →
+        ∃ z F k y, Exec body worker (mk u S) k (mk z F) ∧
+          (∀ js : List (Fin N), js.Nodup → k+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+price) ∧
+          z.user = u.user ∧ HelperFan fan y F ∧ ∀ r : Fin 142080,
+            y r.castSucc = Shared50RecursiveNodeRows.transpose (one_dvd lane.rows) (x r.castSucc)) →
+      ∀ (data : Fin 142080 → Fin V → ZMod 2) u S, HelperFan live data S →
+      S.L tmp = [] → S.R tmp = [] → S.R aux = [] →
+      (∀ i, S.R (master i) = (Routines.hdr lane i).map bitSymbol) →
+      (∀ j, (∀ i : Fin 2, src (i.natAdd 142081) ≠ j) → S.L (place j) = [] ∧ S.R (place j) = []) →
+      ∃ z F t, Exec host code (mk u S) t (mk z F) ∧
+        t ≤ price+(4*SweepFile.Exit.size 0 N+133+142081*40+5)*V ∧
+        z.user = u.user ∧ HelperFan ((childReturnFan dst).trans place) (fun r =>
+          Shared50RecursiveNodeRows.transpose (one_dvd lane.rows) (data r)) F ∧
+        (∀ j, (∀ i, childReturnFan dst i ≠ j) → F.L (place j) = [] ∧ F.R (place j) = []) ∧
+        ∀ j, (∀ i, place i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  intro chart table src dst
+  obtain ⟨program,handoff⟩ := flatWordStageWithSeedCharge fan body worker
+  refine ⟨program,?_⟩
+  intro T A host place label installed entry dispatch live tmp aux master apart srcTmp dstTmp controls ownerOff masterOff regs
+  obtain ⟨code,call⟩ := descriptorPackedRowEntry table host place label installed live src dst tmp apart srcTmp dstTmp
+    controls (returnedFan_counter fan) (slots.trans chart) master aux (fun i j => chart.injective.ne (privateSlots i j))
+    ownerOff masterOff regs entry program dispatch
+  refine ⟨code,?_⟩
+  intro lane price V positive run data u S liveRows tl tr auxFree words free
+  classical
+  let header i := (Routines.hdr lane i).map (bitSymbol (a := prime))
+  let seed : Stacks N prime := ⟨[],[],fun _ => [],Function.extend slots header (fun _ => [])⟩
+  have headers i : seed.R (slots i) = header i := slots.injective.extend_apply header (fun _ => []) i
+  have blank j (_ : ∀ i, fan i ≠ j) : seed.L j = [] ∧ ((∀ i, slots i ≠ j) → seed.R j = []) := by
+    refine ⟨rfl,fun away => ?_⟩
+    have absent : ¬ ∃ i, slots i = j := by simpa using away
+    simp [seed,Function.extend,absent]
+  obtain ⟨placed,empty⟩ := flatStageSeed_private seed fan slots _ headers blank
+  obtain ⟨z,F,t,exec,paid,same,out,clean,frame⟩ := call lane (flatStageSeed seed) _ positive placed empty
+    (handoff seed _ price (by
+      intro x v D rows fresh
+      apply run x v D rows
+      · exact fun i => (fresh (slots i) (fun j => (privateSlots i j).symm)).2.trans (headers i)
+      · intro j outside
+        have state := fresh j outside
+        exact ⟨state.1,fun away => state.2.trans ((blank j outside).2 away)⟩)) data u S liveRows tl tr auxFree words free
+  refine ⟨z,F,t,exec,?_,same,out,clean,frame⟩
+  change t ≤ price+(142081*(10*V+10)+1)+(4*SweepFile.Exit.size 0 N+133+142081*20+4)*V at paid
+  simp only [Nat.add_mul] at paid ⊢
   omega
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
