@@ -12,7 +12,7 @@ open Shared50ModularControl (prime)
 
 theorem stoppedRowEntry [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity : columnCapacity ≤ Q) :
     ∃ (C : ℝ) (N : ℕ) (program : Pr Empty N Q prime U)
-      (src dst : Fin (142081+2) ↪ Fin N) (slots : Fin 6 ↪ Fin N), 0 ≤ C ∧
+      (src dst : Fin (142081+2) ↪ Fin N) (slots : Fin 6 ↪ Fin N), 0 ≤ C ∧ (∀ i j, slots i ≠ src j) ∧
     ∀ {T : ℕ} {A : Type} (host : A → Pr A T Q prime U) (place : Fin N ↪ Fin T)
       (entry : A) (_dispatch : host entry = embProg place Empty.elim program)
       (live : Fin (142080+2) ↪ Fin T) (tmp aux : Fin T) (master : Fin 6 → Fin T),
@@ -36,7 +36,7 @@ theorem stoppedRowEntry [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity : column
   obtain ⟨C,N,table,program,src,dst,slots,pos,privateSlots,sameControls,leaf⟩ :=
     stoppedRoleSeedCleanupCost (U := U) capacity
   let extra := 4*N+133+142081*20+4
-  refine ⟨C+extra,N,program,src,dst,slots,by positivity,?_⟩
+  refine ⟨C+extra,N,program,src,dst,slots,by positivity,privateSlots,?_⟩
   intro T A host place entry dispatch live tmp aux master apart srcTmp dstTmp controls ownerOff masterOff regs
   obtain ⟨code,run⟩ := descriptorPackedRowEntry table host place Empty.elim (fun p => nomatch p)
     live src dst tmp apart srcTmp dstTmp controls sameControls slots master aux privateSlots ownerOff masterOff regs entry program dispatch
@@ -67,7 +67,7 @@ theorem stoppedRowEntry [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity : column
 theorem stoppedIntervalEntry [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity : columnCapacity ≤ Q)
     (mergeCap : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q) :
     ∃ (C : ℝ) (N : ℕ) (program : Pr Empty N Q prime U)
-      (src : Fin (142081+2) ↪ Fin N) (slots : Fin 6 ↪ Fin N), 0 ≤ C ∧
+      (src : Fin (142081+2) ↪ Fin N) (slots : Fin 6 ↪ Fin N), 0 ≤ C ∧ (∀ i j, slots i ≠ src j) ∧
     ∀ {T : ℕ} {A : Type} (host : A → Pr A T Q prime U) (place : Fin N ↪ Fin T)
       (entry : A) (_dispatch : host entry = embProg place Empty.elim program)
       (splitter : Fin intervalSplitTapes ↪ Fin T) (tmp aux : Fin T) (master : Fin 6 → Fin T),
@@ -97,9 +97,9 @@ theorem stoppedIntervalEntry [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity : c
         t ≤ ⌊(C*(lane.width : ℝ)^M8.Machine.BudgetBound.tau)*(V*142080 : ℕ)⌋₊ ∧
         z.user = u.user ∧ RepT (intervalOwnerBank (putWord (fun _ => blank) 0
           (List.ofFn fun k => SparseRoleCircuit.encode (y k))) rows) (embStk bank F).L (embStk bank F).R := by
-  obtain ⟨C,N,program,src,dst,slots,pos,leaf⟩ := stoppedRowEntry (U := U) capacity
+  obtain ⟨C,N,program,src,dst,slots,pos,privateSlots,leaf⟩ := stoppedRowEntry (U := U) capacity
   let overhead := 2*(149*(intervalSplitTapes+5))+35
-  refine ⟨C+overhead,N,program,src,slots,by positivity,?_⟩
+  refine ⟨C+overhead,N,program,src,slots,by positivity,privateSlots,?_⟩
   intro T A host place entry dispatch splitter tmp aux master live saved outside apart srcTmp dstTmp controls ownerOff masterOff regs splitAux splitMaster splitPrivate
   obtain ⟨call,run⟩ := leaf host place entry dispatch live tmp aux master apart srcTmp dstTmp controls ownerOff masterOff regs
   let returned := (childReturnFan dst).trans place
@@ -159,5 +159,105 @@ theorem stoppedIntervalEntry [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity : c
     _ ≤ C*power*mass+((overhead : ℝ)*power)*mass :=
       add_le_add (Nat.floor_le base) (mul_le_mul_of_nonneg_right scale (Nat.cast_nonneg mass))
     _ = _ := by ring
+
+private theorem prefix_ne_suffix {a b : ℕ} (i : Fin a) (j : Fin b) :
+    i.castAdd b ≠ j.natAdd a := by
+  intro eq
+  have h := congrArg Fin.val eq
+  change i.val = a+j.val at h
+  omega
+
+/-- A fixed stopped machine reads one input tape and the six descriptor words.
+The two splitter controls are the only tapes shared with the child. -/
+theorem allocatedStoppedInterval [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity : columnCapacity ≤ Q)
+    (mergeCap : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q) :
+    ∃ (C : ℝ) (T : ℕ) (host : Unit → Pr Unit T Q prime U) (code : Pr Unit T Q prime U)
+      (inputPort : Fin T) (master : Fin 6 ↪ Fin T) (bank : Fin intervalSplitTapes ↪ Fin T),
+      0 ≤ C ∧ bank 0 = inputPort ∧ (∀ i, master i ≠ inputPort) ∧ ∀ (lane : Descriptor),
+      let V := volume prime lane
+      let wide := {lane with afterD := lane.afterD*142080}
+      let size : V*142080 = volume prime wide := by simp [V,wide,volume,Nat.mul_assoc]
+      0 < V → 0 < lane.width → ∀ (input : Fin (volume prime wide) → ZMod 2) u S,
+      S.R inputPort = List.ofFn (fun k => SparseRoleCircuit.encode (a := prime) (input (k.cast size))) →
+      (∀ i, S.R (master i) = (Routines.hdr lane i).map bitSymbol) →
+      (∀ j, S.L j = []) → (∀ j, j ≠ inputPort → (∀ i, master i ≠ j) → S.R j = []) →
+      let y := fun k : Fin (V*142080) => Shared50RecursiveNodeRows.transpose (one_dvd wide.rows) input (k.cast size)
+      let rows := fun r (i : Fin V) => y (finProdFinEquiv (i,r))
+      ∃ z F t, Exec host code (mk u S) t (mk z F) ∧
+        (∀ js : List (Fin T), js.Nodup →
+          t+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+
+            ⌊(C*(lane.width : ℝ)^M8.Machine.BudgetBound.tau)*(V*142080 : ℕ)⌋₊) ∧
+        z.user = u.user ∧ RepT (intervalOwnerBank (putWord (fun _ => blank) 0
+          (List.ofFn fun k => SparseRoleCircuit.encode (y k))) rows) (embStk bank F).L (embStk bank F).R := by
+  obtain ⟨C,N,program,src,slots,pos,slotOff,build⟩ := stoppedIntervalEntry (U := U) capacity mergeCap
+  let m := intervalSplitTapes
+  let controls := (Fin.natAddEmb 142081 (m := 2)).trans src
+  let shared := (Fin.natAddEmb 142080 (m := 2)).trans (intervalOwners 142080)
+  obtain ⟨child,atControl,privateTape⟩ := adjacentStagePlacement shared controls
+  let outer := Fin.castAddEmb 8 (n := m+N)
+  let splitter := (Fin.castAddEmb N (n := m)).trans outer
+  let place := child.trans outer
+  let extra := Fin.natAddEmb (m+N) (m := 8)
+  let master := (Fin.castAddEmb 2 (n := 6)).trans extra
+  let tmp := extra 6
+  let aux := extra 7
+  have distinct (i : Fin (m+N)) (j : Fin 8) : outer i ≠ extra j := prefix_ne_suffix i j
+  have separate j (away : ∀ k, controls k ≠ j) (i : Fin m) : splitter i ≠ place j := by
+    apply outer.injective.ne
+    change i.castAdd N ≠ child j
+    rw [privateTape j away]
+    exact prefix_ne_suffix _ _
+  have controlAt (k : Fin 2) : child (src (k.natAdd 142081)) = (intervalOwners 142080 (k.natAdd 142080)).castAdd N := by
+    simpa only [controls,shared,Function.Embedding.trans_apply,Fin.natAddEmb_apply] using atControl k
+  have savedOff i j : splitter (mergeSaved 142080 i) ≠ place j := by
+    by_cases hit : ∃ k, controls k = j
+    · obtain ⟨k,rfl⟩ := hit
+      apply outer.injective.ne
+      change (mergeSaved 142080 i).castAdd N ≠ child (src (k.natAdd 142081))
+      rw [controlAt]
+      exact (Fin.castAddEmb N (n := m)).injective.ne (mergeSaved_outsideFan 142080 i (k.natAdd 142080)).symm
+    · exact separate j (fun k eq => hit ⟨k,eq⟩) _
+  have ownerPrivate (i : Fin 142081) (k : Fin 2) : controls k ≠ src (i.castAdd 2) :=
+    src.injective.ne (prefix_ne_suffix i k).symm
+  have reserved (i : Fin 6) : (i.castAdd 2) ≠ (6 : Fin 8) ∧ (i.castAdd 2) ≠ 7 :=
+    (by decide : ∀ i : Fin 6, i.castAdd 2 ≠ (6 : Fin 8) ∧ i.castAdd 2 ≠ 7) i
+  have share (j : Fin 2) : place (src (j.natAdd 142081)) = splitter (intervalOwners 142080 (j.natAdd 142080)) :=
+    congrArg (fun k : Fin (m+N) => outer k) (controlAt j)
+  have slotPrivate (i : Fin 6) (j : Fin (142080+2)) :
+      place (slots i) ≠ splitter (intervalOwners 142080 j) :=
+    (separate (slots i) (fun k => (slotOff i (k.natAdd 142081)).symm) (intervalOwners 142080 j)).symm
+  let host : Unit → Pr Unit ((m+N)+8) Q prime U := fun _ => embProg place Empty.elim program
+  obtain ⟨code,bank,target,run⟩ := build host place () rfl splitter tmp aux master savedOff
+    (fun _ i => separate _ (ownerPrivate i) _) (fun _ => distinct _ 6) (fun _ => distinct _ 6)
+    share slotPrivate
+    (fun i j => distinct _ _) (fun i => by
+      have c := extra.injective.ne (by decide : (6 : Fin 8) ≠ 7)
+      simp [List.nodup_cons,master,tmp,aux,place,distinct,fun j k => (distinct j k).symm,c]
+      exact reserved i)
+    (fun _ => ⟨distinct _ _,distinct _ _⟩) (fun _ _ => distinct _ _) separate
+  let push := max (Fast.Main.mnProgPush code) (Fast.Main.mnProgPush (host ()))
+  let factor := 1+6*push
+  refine ⟨(factor : ℝ)*C,_,host,code,splitter 0,master,bank,mul_nonneg (Nat.cast_nonneg _) pos,target,
+    fun i => (distinct _ _).symm,?_⟩
+  intro lane V wide size positive width input u S source headers left blank
+  obtain ⟨z,F,t,exec,paid,user,out⟩ := run lane positive width input u S source (fun _ => left _)
+    (fun j h => blank _ (splitter.injective.ne h) (fun i => (distinct _ _).symm))
+    (left _) (blank _ (distinct _ _).symm (fun i => extra.injective.ne (reserved i).1))
+    (blank _ (distinct _ _).symm (fun i => extra.injective.ne (reserved i).2)) headers
+    (fun j off => ⟨left _,blank _ (separate _ off 0).symm (fun i => (distinct _ _).symm)⟩)
+  refine ⟨z,F,t,exec,?_,user,out⟩
+  intro js nodup
+  have growth := recordCleanup_cost_le js nodup exec (c := push) (le_max_left ..)
+    (fun f => by cases f; exact le_max_right ..)
+  change tapeCharge cleanupWeight js F+1 ≤ tapeCharge cleanupWeight js S+1+6*(push*t) at growth
+  have total : t+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+factor*t := by
+    dsimp only [factor]
+    rw [Nat.add_mul,Nat.one_mul,Nat.mul_assoc]
+    omega
+  apply total.trans (Nat.add_le_add_left (Nat.le_floor _) _)
+  have raw := (Nat.cast_le (α := ℝ)).mpr paid
+  have base : 0 ≤ (C*(lane.width : ℝ)^M8.Machine.BudgetBound.tau)*(V*142080 : ℕ) := by positivity
+  have bill := raw.trans (Nat.floor_le base)
+  simpa only [Nat.cast_mul,mul_assoc] using mul_le_mul_of_nonneg_left bill (Nat.cast_nonneg (α := ℝ) factor)
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
