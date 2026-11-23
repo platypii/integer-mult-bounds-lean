@@ -26,6 +26,35 @@ def rowPivot (k : ℕ) (io : Fin T) (ps : List (Pair m)) :=
   Blocks.seqB (Blocks.seqB (LabelSwap.onHeaders (p := 0) (program k widen))
     (LabelSchedule.schedule io ps)) (LabelSwap.onHeaders (p := 0) (program k narrow))
 
+def listedPivotCost (k : ℕ) (v : Descriptor) (w : ℕ) (ps : List (Pair m)) :=
+  cost v w k widen + (LabelSchedule.countCost ps + ps.length *
+    (3808274 * volume prime v + LeafCore.coreCost (volume prime v) (w*k))) + 1 +
+    cost v (w*k) k narrow + 1
+
+theorem listedPivot_runs (k : ℕ) (π : Equiv.Perm (Fin m)) (io : Fin T) (ps : List (Pair m))
+    (order : (ps.map fun p => Equiv.swap p.val.1 p.val.2).prod = π) :
+      ∀ (v : Descriptor) (w B : ℕ), 0 < w*k → 0 < B →
+        v.beforeH = B*prime^(m*(w*k)) → v.Positive → ∀ (roles : Tapes T prime)
+        (x : Fin (volume prime v) → ZMod 2), roles.head io = 0 → roles.tape io = sourceWord x →
+        let d := words (base v w)
+        ∃ y : Fin (volume prime v) → ZMod 2,
+          LabelPermutation.RowMoves v B w k π (ext x) (ext y) ∧
+          GraphContract.Runs (rowPivot k io ps) (bank roles v d)
+            (bank (setTape roles io (sourceWord y) 0) v d) (listedPivotCost k v w ps) := by
+  intro v w B hw hb hv hp roles x hh hx
+  obtain ⟨y,swaps,h⟩ := LabelSchedule.schedule_runs ps hw hb hv hp roles io x hh hx
+  have hy := LabelPermutation.swaps_move_rows hv ps swaps
+  rw [order] at hy
+  have hm : 0 < k := Nat.pos_of_mul_pos_left hw
+  have h₁ := LabelSwap.onHeaders_runs (p := 0) roles v
+    (d := words (base v w)) (e := words (base v (w*k)))
+    (by simpa only [LabelSwap.append_zero] using LabelWidth.widen_runs v w k hm)
+  have h₂ := LabelSwap.onHeaders_runs (p := 0) (setTape roles io (sourceWord y) 0) v
+    (d := words (base v (w*k))) (e := words (base v w))
+    (by simpa only [LabelSwap.append_zero] using LabelWidth.narrow_runs v w k hm)
+  exact ⟨y, hy, Blocks.seq_runs (Blocks.seq_leading _ _) (LabelSwap.headers_leading _)
+    (Blocks.seq_runs (LabelSwap.headers_leading _) (LabelSchedule.schedule_leading io ps) h₁ h) h₂⟩
+
 def rowPivotCost (k : ℕ) (v : Descriptor) (w : ℕ) (ps : List (Pair m)) :=
   cost v w k widen + (LabelSchedule.countCost ps + (m-1) *
     (3808274 * volume prime v + LeafCore.coreCost (volume prime v) (w*k))) + 1 +
@@ -81,6 +110,51 @@ open IntegerMultBounds.Swap.Shear (LowerTriangular pivotMatrix)
 
 /-- Reverse the columns, execute the upper factor in descending index order,
 and return to the caller's column order using the same permutation circuit. -/
+theorem ordered_rows_runs {k : ℕ} (hkpos : 0 < k) (hk : 2 ≤ m*k) (io : Fin T) (E : Matrix (Fin m) (Fin m) ℚ)
+    (π : Equiv.Perm (Fin m)) (inv : Function.Involutive π) (ps : List (Pair m))
+    (order : (ps.map fun p => Equiv.swap p.val.1 p.val.2).prod = π)
+    (lower : LowerTriangular (E.submatrix π π))
+    (hs : ∀ op ∈ LabelAddress.rowPass k (E.submatrix π π), FlatCoordinateSchedule.Supported op) :
+    let A := E.submatrix π π
+    let ops := LabelProgram.rowPass hk A hs
+    ∀ (v : Descriptor) (w B : ℕ),
+      0 < w → 0 < B → v.beforeH = B*prime^(m*(w*k)) → v.Positive →
+      IsUnit (reduce (modulus w) A) →
+      ∀ (roles : Tapes T prime) (x : Fin (volume prime v) → ZMod 2),
+      roles.head io = 0 → roles.tape io = sourceWord x →
+      let d := words (base v w)
+      ∃ y : Fin (volume prime v) → ZMod 2,
+        LabelPermutation.RowTransport v B w k (fun g => g * (reduce (modulus w) E).transpose) (ext x) (ext y) ∧
+        GraphContract.Runs (Blocks.seqB (Blocks.seqB (rowPivot k io ps) (LabelProgram.program io ops)) (rowPivot k io ps))
+          (bank roles v d) (bank (setTape roles io (sourceWord y) 0) v d)
+          (listedPivotCost k v w ps + LabelProgram.coefficient ops * volume prime v + 1 + listedPivotCost k v w ps + 1) := by
+  intro A ops
+  intro v w B hw hb shape pos unit roles x head tape d
+  have run := listedPivot_runs k π io ps order v w B (Nat.mul_pos hw hkpos) hb shape pos
+  obtain ⟨y,xy,r₁⟩ := run roles x head tape
+  obtain ⟨z,r₂,yz⟩ := LabelBits.rowPass_runs hk A hs lower unit shape hw hb pos io
+    (setTape roles io (sourceWord y) 0) y (by simp [setTape]) (by simp [setTape])
+  obtain ⟨out,zo,r₃⟩ := run (setTape roles io (sourceWord z) 0) z (by simp [setTape]) (by simp [setTape])
+  simp only [SharedPlacementAlphabet.setTape_setTape] at r₂ r₃
+  refine ⟨out,?_,Blocks.seq_runs (Blocks.seq_leading _ _) (Blocks.seq_leading _ _)
+    (Blocks.seq_runs (Blocks.seq_leading _ _) (LabelProgram.leading _ _) r₁ r₂) r₃⟩
+  intro g a ha row hr b hB h hh mid hm d hd after he
+  let R := Matrix (Fin k) (Fin m) (ZMod (modulus w))
+  change Matrix (Fin k) (Fin m) (ZMod (modulus w)) at g
+  let rev : R → R := fun g i j => g i (π j)
+  have undo : rev ((rev g : Matrix (Fin k) (Fin m) (ZMod (modulus w))) * (reduce (modulus w) A).transpose) = g * (reduce (modulus w) E).transpose := by
+    funext i j
+    change (∑ k : Fin m, g i (π k) * (reduce (modulus w) E) (π (π j)) (π k)) = _
+    rw [inv j]
+    exact Equiv.sum_comp π (fun k => g i k * (reduce (modulus w) E) j k)
+  have back := zo ((rev g : Matrix (Fin k) (Fin m) (ZMod (modulus w))) * (reduce (modulus w) A).transpose) a ha row hr b hB h hh mid hm d hd after he
+  let : NeZero (prime^w) := ⟨pow_ne_zero _ Shared50ModularControl.prime_prime.ne_zero⟩
+  let read := fun label : R => ext out (RecursiveInterchangeLayout.index prime v a row
+    (b*prime^(m*(w*k))+(LabelColumns.rowAddress (Q := prime^w) label).val) h mid d after)
+  apply (congrArg read undo.symm).trans
+  exact back.trans ((yz (rev g) a ha row hr b hB h hh mid hm d hd after he).trans
+    (xy g a ha row hr b hB h hh mid hm d hd after he))
+
 theorem upper_rows_runs {k : ℕ} (hkpos : 0 < k) (hk : 2 ≤ m*k) (io : Fin T) (E : Matrix (Fin m) (Fin m) ℚ)
     (upper : ∀ i j, j < i → E i j = 0)
     (hs : ∀ op ∈ LabelAddress.rowPass k (E.submatrix Fin.rev Fin.rev), FlatCoordinateSchedule.Supported op) :

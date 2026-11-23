@@ -22,13 +22,15 @@ open IntegerMultBounds.Swap.Modular
 open IntegerMultBounds.Swap.LowerTriangular (Factorization)
 variable {T m : ℕ} [M8.Machine.Net]
 
-theorem rowOverhead (k : ℕ) (hk : 0 < k) (ps : List (LabelSchedule.Pair m)) :
+private theorem pivotOverhead (k : ℕ) (calls : ℕ) (hk : 0 < k) (ps : List (LabelSchedule.Pair m)) :
     ∃ C : ℕ, ∀ (v : Descriptor) (w B : ℕ), 0 < m → 0 < w → 0 < B →
       v.beforeH = B*prime^(m*(w*k)) → v.Positive →
-      LabelRoute.rowPivotCost k v w ps + 2 ≤
-        C * volume prime v + (m-1)*LeafCore.coreCost (volume prime v) (w*k) := by
+      (LabelWidth.cost v w k LabelWidth.widen + (LabelSchedule.countCost ps + calls *
+        (3808274 * volume prime v + LeafCore.coreCost (volume prime v) (w*k))) + 1 +
+        LabelWidth.cost v (w*k) k LabelWidth.narrow + 1) + 2 ≤
+        C * volume prime v + calls*LeafCore.coreCost (volume prime v) (w*k) := by
   let K := 2 * RecursiveChildQuotientsConstant.cost k + LabelSchedule.countCost ps + 110017
-  refine ⟨K + 110011 + (m-1)*3808274, ?_⟩
+  refine ⟨K + 110011 + calls*3808274, ?_⟩
   intro v w B hm hw hb hv hp
   let V := volume prime v
   have hV : 0 < V := RecursiveAffinePrepare.volume_positive prime_prime.two_le v hp
@@ -44,10 +46,21 @@ theorem rowOverhead (k : ℕ) (hk : 0 < k) (ps : List (LabelSchedule.Pair m)) :
   have h₂ := LabelWidth.narrow_cost v w k hk
   have hK := Nat.le_mul_of_pos_right K hV
   dsimp [K] at hK ⊢
-  unfold LabelRoute.rowPivotCost
   simp only [Nat.add_mul, Nat.mul_add, Nat.mul_assoc] at hK ⊢
   dsimp [V] at *
   omega
+
+theorem rowOverhead (k : ℕ) (hk : 0 < k) (ps : List (LabelSchedule.Pair m)) :
+    ∃ C : ℕ, ∀ (v : Descriptor) (w B : ℕ), 0 < m → 0 < w → 0 < B →
+      v.beforeH = B*prime^(m*(w*k)) → v.Positive →
+      LabelRoute.rowPivotCost k v w ps + 2 ≤
+        C * volume prime v + (m-1)*LeafCore.coreCost (volume prime v) (w*k) := pivotOverhead k (m-1) hk ps
+
+theorem listedOverhead (k : ℕ) (hk : 0 < k) (ps : List (LabelSchedule.Pair m)) :
+    ∃ C : ℕ, ∀ (v : Descriptor) (w B : ℕ), 0 < m → 0 < w → 0 < B →
+      v.beforeH = B*prime^(m*(w*k)) → v.Positive →
+      LabelRoute.listedPivotCost k v w ps + 2 ≤
+        C * volume prime v + ps.length*LeafCore.coreCost (volume prime v) (w*k) := pivotOverhead k ps.length hk ps
 
 theorem overhead (ps : List (LabelSchedule.Pair m)) :
     ∃ C : ℕ, ∀ (v : Descriptor) (w B : ℕ), 0 < m → 0 < w → 0 < B →

@@ -69,6 +69,73 @@ exterior blocks. -/
 def stageAxis : Axis ≃ Fin 64 :=
   (Equiv.sumCongr (Equiv.refl (Fin 8)) finProdFinEquiv).trans finSumFinEquiv
 
+/-- Move just the seven exterior coordinates used by a stage to the front.
+The eighth local coordinate stays behind them. -/
+def stageColumnNumber (s : Fin 8) (j : Fin 64) : Fin 64 :=
+  let start := 8 + 7*s.val
+  if h : j.val < 7 then ⟨start+j.val, by have := s.isLt; omega⟩
+  else if start ≤ j.val ∧ j.val < start+7 then ⟨j.val-start, by omega⟩ else j
+
+theorem stageColumn_involutive : ∀ (s : Fin 8) (j : Fin 64),
+    stageColumnNumber s (stageColumnNumber s j) = j := by decide +kernel
+
+def stageColumns (s : Fin 8) : Equiv.Perm (Fin 64) :=
+  ⟨stageColumnNumber s,stageColumnNumber s,stageColumn_involutive s,stageColumn_involutive s⟩
+
+def stageColumnPairs (s : Fin 8) : List {p : Fin 64 × Fin 64 // p.1 < p.2} :=
+  List.ofFn fun j : Fin 7 =>
+    ⟨(⟨j.val, by omega⟩, ⟨8+7*s.val+j.val, by have := s.isLt; have := j.isLt; omega⟩), by
+      change j.val < 8+7*s.val+j.val
+      omega⟩
+
+theorem stageColumnPairs_length (s : Fin 8) : (stageColumnPairs s).length = 7 := List.length_ofFn
+
+theorem stageColumnPairs_prod (s : Fin 8) :
+    ((stageColumnPairs s).map fun p => Equiv.swap p.val.1 p.val.2).prod = stageColumns s := by
+  have entries : ∀ (s : Fin 8) (j : Fin 64),
+      ((stageColumnPairs s).map fun p => Equiv.swap p.val.1 p.val.2).prod j = stageColumns s j := by
+    decide +kernel
+  exact Equiv.ext (entries s)
+
+private theorem stageColumns_before : ∀ (s : Fin 8) (i : Fin 8) (j : Fin 7),
+    stageColumns s (stageAxis (.inr (s,j))) < stageColumns s (stageAxis (.inl i)) := by
+  decide +kernel
+
+/-- In the seven-swap column order both formerly upper factors are lower. -/
+theorem stageFactor_seven_order (c : PortCertificate) (s : Fin 8) :
+    let e := (stageColumns s).trans stageAxis.symm
+    let A := c.spread s
+    let lower := fun E : Matrix Axis Axis ℚ => IntegerMultBounds.Swap.Shear.LowerTriangular (E.submatrix e e)
+    lower (fromBlocks 1 (-A) 0 1) ∧ lower (fromBlocks 1 A 0 (avoid s - block s)) := by
+  intro e A lower
+  have zero (i j : Fin 64) (lt : i < j) : (e i) ≠ (e j) := fun h => lt.ne (e.injective h)
+  have above (i j : Fin 64) (lt : i < j) (a : Fin 8) (x : Exterior)
+      (hi : e i = .inl a) (hj : e j = .inr x) : A a x = 0 := by
+    change (if x.1 = s then _ else _) = 0
+    apply if_neg
+    rintro eq
+    have key := stageColumns_before s a x.2
+    have left := congrArg e.symm hi
+    have right := congrArg e.symm hj
+    simp only [Equiv.symm_apply_apply] at left right
+    rw [left,right] at lt
+    exact (not_lt_of_gt (by simpa [e,stageColumns,← eq] using key)) lt
+  constructor <;> intro i j lt
+  all_goals
+    have ne := zero i j lt
+    change (fromBlocks _ _ _ _) (e i) (e j) = 0
+    cases hi : e i with
+    | inl a =>
+      cases hj : e j with
+      | inl b => simpa [hi,hj,Matrix.one_apply] using (show a ≠ b by simpa [hi,hj] using ne)
+      | inr x => simp [above i j lt a x hi hj]
+    | inr x =>
+      cases hj : e j with
+      | inl a => rfl
+      | inr y =>
+        have hxy : x ≠ y := by simpa [hi,hj] using ne
+        simp [Matrix.one_apply,avoid,block,hxy]
+
 theorem stageFactor_order (c : PortCertificate) (s : Fin 8) :
     let A := c.spread s
     let upper := fun E : Matrix Axis Axis ℚ => ∀ i j, stageAxis j < stageAxis i → E i j = 0

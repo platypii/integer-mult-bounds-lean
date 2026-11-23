@@ -66,35 +66,38 @@ theorem stageRoute_rows_runs (r : ℕ) (hrpos : 0 < r) [M8.Machine.Net] {T : ℕ
         LabelPermutation.RowTransport v B w r (fun g => g * route.transpose) (ext x) (ext y) ∧
         GraphContract.Runs program (LabelCall.bank roles v d)
           (LabelCall.bank (setTape roles io (sourceWord y) 0) v d)
-          (C * volume prime v + 252 * LeafCore.coreCost (volume prime v) (w*r)) := by
+          (C * volume prime v + 28 * LeafCore.coreCost (volume prime v) (w*r)) := by
   let e := stageAxis.symm
-  let rev := Fin.revPerm.trans e
+  let π := stageColumns s
+  let rev := π.trans e
   let A := c.spread s
   let L := (fromBlocks 1 (-A) 0 1).submatrix e e
   let M := (fromBlocks 1 0 Aᵀ 1).submatrix e e
   let R := (fromBlocks 1 A 0 (avoid s - block s)).submatrix e e
-  obtain ⟨ol,om,orr⟩ := stageFactor_order c s
+  obtain ⟨_,om,_⟩ := stageFactor_order c s
   have order (i j : Fin 64) (h : i < j) : stageAxis (e i) < stageAxis (e j) := by simpa [e]
   have hk : 2 ≤ 64*r := by omega
   have hl := (stageFactor_supported_rows r c checked s rev 0).1.2
   have hm := (stageFactor_supported_rows r c checked s e 0).2.1.2
   have hr := (stageFactor_supported_rows r c checked s rev 0).2.2.2
-  obtain ⟨ls,_,left⟩ := LabelRoute.upper_rows_runs hrpos hk io L (fun i j h => ol _ _ (order j i h)) hl
-  obtain ⟨rs,_,right⟩ := LabelRoute.upper_rows_runs hrpos hk io R (fun i j h => orr _ _ (order j i h)) hr
-  obtain ⟨lc,lb⟩ := LabelFactorization.rowOverhead r hrpos ls
-  obtain ⟨rc,rb⟩ := LabelFactorization.rowOverhead r hrpos rs
+  let ps := stageColumnPairs s
+  have inv : Function.Involutive π := fun j => stageColumn_involutive s j
+  obtain ⟨ol,orr⟩ := stageFactor_seven_order c s
+  have left := LabelRoute.ordered_rows_runs hrpos hk io L π inv ps (stageColumnPairs_prod s) ol hl
+  have right := LabelRoute.ordered_rows_runs hrpos hk io R π inv ps (stageColumnPairs_prod s) orr hr
+  obtain ⟨pc,pb⟩ := LabelFactorization.listedOverhead r hrpos ps
   let coeff := fun (E : Matrix (Fin 64) (Fin 64) ℚ) (hs : ∀ op ∈ LabelAddress.rowPass r E,
     FlatCoordinateSchedule.Supported op) => LabelProgram.coefficient (LabelProgram.rowPass hk E hs)
   let upperBlock := fun (ps : List (LabelSchedule.Pair 64)) (E : Matrix (Fin 64) (Fin 64) ℚ) hs =>
     Blocks.seqB (Blocks.seqB (LabelRoute.rowPivot r io ps) (LabelProgram.program io (LabelProgram.rowPass hk E hs)))
       (LabelRoute.rowPivot r io ps)
-  let program := Blocks.seqB (Blocks.seqB (upperBlock rs (R.submatrix Fin.rev Fin.rev) hr)
-    (LabelProgram.program io (LabelProgram.rowPass hk M hm))) (upperBlock ls (L.submatrix Fin.rev Fin.rev) hl)
-  refine ⟨program,2*lc+2*rc+coeff (R.submatrix Fin.rev Fin.rev) hr+coeff M hm+
-    coeff (L.submatrix Fin.rev Fin.rev) hl+2,Blocks.seq_leading _ _,?_⟩
+  let program := Blocks.seqB (Blocks.seqB (upperBlock ps (R.submatrix π π) hr)
+    (LabelProgram.program io (LabelProgram.rowPass hk M hm))) (upperBlock ps (L.submatrix π π) hl)
+  refine ⟨program,4*pc+coeff (R.submatrix π π) hr+coeff M hm+
+    coeff (L.submatrix π π) hl+2,Blocks.seq_leading _ _,?_⟩
   intro v w B hw hb shape pos roles x head tape d route
-  have budgetL := lb v w B (by decide) hw hb shape pos
-  have budgetR := rb v w B (by decide) hw hb shape pos
+  have budget := pb v w B (by decide) hw hb shape pos
+  rw [show ps.length = 7 from stageColumnPairs_length s] at budget
   have u := stageFactor_reduce c checked s rev w
   have mid := stageFactor_reduce c checked s e w
   obtain ⟨y,xy,r₁⟩ := right v w B hw hb shape pos u.2.2.2.1 roles x head tape
@@ -140,8 +143,12 @@ theorem stageRoute_runs [M8.Machine.Net] {T : ℕ} (io : Fin T) (c : PortCertifi
         LabelPermutation.Transport v B w (fun g => g * route.transpose) (ext x) (ext y) ∧
         GraphContract.Runs program (LabelCall.bank roles v d)
           (LabelCall.bank (setTape roles io (sourceWord y) 0) v d)
-          (C * volume prime v + 252 * LeafCore.coreCost (volume prime v) (w*64)) :=
-  stageRoute_rows_runs 64 (by decide) io c checked s
+          (C * volume prime v + 252 * LeafCore.coreCost (volume prime v) (w*64)) := by
+  obtain ⟨program,C,leading,run⟩ := stageRoute_rows_runs 64 (by decide) io c checked s
+  refine ⟨program,C,leading,?_⟩
+  intro v w B hw hb hv hp roles x head tape d route
+  obtain ⟨y,read,h⟩ := run v w B hw hb hv hp roles x head tape
+  exact ⟨y,read,Blocks.runs_mono h (by omega)⟩
 
 local instance (w : ℕ) : NeZero (prime^w) :=
   ⟨pow_ne_zero _ Shared50ModularControl.prime_prime.ne_zero⟩
