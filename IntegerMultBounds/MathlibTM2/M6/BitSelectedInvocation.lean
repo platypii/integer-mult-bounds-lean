@@ -40,7 +40,7 @@ private def ComponentDirectory [M8.Machine.Net] (P U : Type) (n : Fin 9) (p : Fi
       z.user = u.user ∧ HelperFan (Fin.castAddEmb 1) y (embStk fan F) ∧
       F.R (fan (Fin.last (142081+2))) = word ∧ InvocationComponentEffect n p (w+1) blocks K slot x y
 
-private theorem sumRates [M8.Machine.Net] {I : Type} (xs : List I) (cost : I → ℕ → ℕ → ℕ)
+theorem sumRates [M8.Machine.Net] {I : Type} (xs : List I) (cost : I → ℕ → ℕ → ℕ)
     (rates : ∀ i, ∃ a b c : ℕ, ∀ w V, cost i w V = (a+b*swapVolumeRate w)*V+c) :
     ∃ a b c : ℕ, ∀ w V, (xs.map (fun i => cost i w V)).sum = (a+b*swapVolumeRate w)*V+c := by
   induction xs with

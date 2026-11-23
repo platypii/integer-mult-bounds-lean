@@ -891,37 +891,47 @@ private theorem runWithCutoff {α P U : Type} {k T Q : ℕ} (fan : Fin k ↪ Fin
   exact ⟨v,G,t,y,h,CleanupBound.place bank off paid,same.trans user,out,(off _ cut).2.trans header,acts⟩
 
 open RecursiveInterchangeLayout in
-/-- Execute one selected COPY window with its private seed and shared cutoff. -/
-theorem invocationCopyWindow [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) (j : Fin Copy.lifecycles.length) :
+/-- One selected worker, with a fixed layout and a local charge additive in the child budget. -/
+def SelectedOccurrenceWorker [M8.Machine.Net] (child : Fin nodeChildren5.length)
+    (coords : ∀ (desc : Descriptor) (w W : ℕ), (Fin (volume prime desc) ≃ Fin ((prime^w)^16*W)) → Prop)
+    (effect : ∀ w B K : ℕ, let X := Fin 142081 → Fin ((prime^w)^16*(B*prime^(64*(w*64))*K)) → ZMod 2
+      X → X → Prop) : Prop :=
     ∃ (T states : ℕ) (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T) (fan : Fin (142081+2) ↪ Fin T),
     (∀ j : Fin (rowSwapBlock.tapes+35), j.val ≠ 24 → ∀ h, fan h ≠ ports j) ∧
     ∀ {P U : Type} {Q : ℕ}, states ≤ Q → ∀ (body : P → Pr P T Q prime U) (f : P),
     let bank := Fin.castAddEmb 1 (n := T)
     let host := fun f => embProg bank id (body f)
     let owners := withCutoffPort fan
-    ∃ (base : ℕ) (code : Pr P (T+1) Q prime U), ∀ (node : Descriptor) (w B rows : ℕ),
+    ∃ (base swaps fixed : ℕ) (code : Pr P (T+1) Q prime U), ∀ (node : Descriptor) (w B rows : ℕ),
     node.width = 64*(w+1) → node.rows = 142080*rows → node.beforeH = B*prime^(64*((w+1)*64)) →
     let M := prime^(w+1)
     let K := node.beforeRows*rows*node.between*node.afterD
     let blocks := M^112*B
     let W := blocks*prime^(64*((w+1)*64))*K
     let V := M^16*W
-    let desc := scheduledChild prime node (copyChildPosition (n,p,j))
+    let desc := scheduledChild prime node child
     0 < W → ∃ position : Fin (volume prime desc) ≃ Fin V,
-      CopyIntervalPositions desc (w+1) W position ∧
+      coords desc (w+1) W position ∧
       ∀ record, ∃ prepared : Stacks (T+1) prime, WorkerEntryWords (fun j => (scheduledRecordPorts ports j).castAdd 1) record prepared ∧ ∀ budget word,
       ScheduledChildExec node desc w W ports record position body f budget true →
       let rep := fun x (D : Stacks (T+1) prime) => HelperFan (Fin.castAddEmb 1) x (embStk owners D) ∧
         D.R (owners (Fin.last (142081+2))) = word
       ∀ data u S, PrivateTapes owners prepared S → rep data S →
         ∃ z F t out, Exec host code (mk u S) t (mk z F) ∧
-          CleanupBound S F t (nativePrice true (base*V+12)+budget) ∧ z.user = u.user ∧ rep out F ∧
-          CopyFanoutEffect n p.1 p.2 Copy.lifecycles[j.val] (List.getElem_mem ..) (w+1) blocks K data out := by
+          CleanupBound S F t ((base+swaps*swapVolumeRate w)*V+fixed+budget) ∧ z.user = u.user ∧ rep out F ∧
+          effect (w+1) blocks K data out
+
+open RecursiveInterchangeLayout in
+/-- Execute one selected COPY window with its private seed and shared cutoff. -/
+theorem invocationCopyWindow [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) (j : Fin Copy.lifecycles.length) :
+    SelectedOccurrenceWorker (copyChildPosition (n,p,j)) CopyIntervalPositions
+      (CopyFanoutEffect n p.1 p.2 Copy.lifecycles[j.val] (List.getElem_mem ..)) := by
+  unfold SelectedOccurrenceWorker
   obtain ⟨T,states,ports,fan,apart,build⟩ := borrowedWindow_host true n p j
   refine ⟨T,states,ports,fan,apart,?_⟩
   intro P U Q cap body f bank host owners
   obtain ⟨base,code,run⟩ := build cap body f
-  refine ⟨base,embProg bank id code,?_⟩
+  refine ⟨13*base,0,156,embProg bank id code,?_⟩
   intro node w B rows width split label M K blocks W V desc pos
   obtain ⟨position,coords,prepare⟩ := run node w B rows width split label pos
   refine ⟨position,coords,?_⟩
@@ -937,7 +947,8 @@ theorem invocationCopyWindow [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) 
     have h := live.1
     change stored data (embStk (Fin.castAddEmb 1) (embStk owners S)) at h
     rwa [withCutoffPort_view] at h) live.2
-  exact ⟨z,F,t,y,exec,paid,user,⟨show stored y (embStk (Fin.castAddEmb 1) (embStk owners F)) from
+  have price : nativePrice true (base*V+12)+budget = (13*base+0*swapVolumeRate w)*V+156+budget := by unfold nativePrice; simp; ring
+  exact ⟨z,F,t,y,exec,price ▸ paid,user,⟨show stored y (embStk (Fin.castAddEmb 1) (embStk owners F)) from
     withCutoffPort_view fan F ▸ out,cut⟩,act⟩
 
 open RecursiveInterchangeLayout in
@@ -1444,43 +1455,26 @@ open RecursiveInterchangeLayout Certificates.PR589 in
 /-- Compile each MOVE in either literal PR589 phase on its occurrence bank.
 The directory selects the recursive child and the final worker also runs the suffix. -/
 theorem invocationScalarMove [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) (afterCopy : Bool) :
-    let layout : Fin 661 ↪ Fin 142081 := ⟨ownerTape n p.1 p.2,ownerTape_injective ..⟩
-    let phase := if afterCopy then sectionB++sectionC else sectionD++sectionA
-    let cur := if afterCopy then Frames.scatterFinish Frames.beforeScatter else Frames.snapshot Frames.initialRefs
     let start := if afterCopy then ((Frames.edges (sectionD++sectionA) (Frames.snapshot Frames.initialRefs)).filter positiveMove).length else 0
-    let schedule := phaseMoveBlocks phase cur
+    let schedule := selectedPhaseSchedule afterCopy
     let blocks := schedule.1
     ∃ select : Fin blocks.length → MoveIndex, ∀ j,
     (select j).val = start+j.val ∧ (Geometry.Moves.phaseEdges.filter positiveMove)[(select j).val] = blocks[j.val].2 ∧
     let i := select j
     let edge := (Geometry.Moves.phaseEdges.filter positiveMove)[i.val]'i.isLt
     let child := phaseChildPositions.choose (n,p,i)
-    ∃ (T states : ℕ) (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T) (fan : Fin (142081+2) ↪ Fin T),
-    (∀ j : Fin (rowSwapBlock.tapes+35), j.val ≠ 24 → ∀ h, fan h ≠ ports j) ∧
-    ∀ {P U : Type} {Q : ℕ}, states ≤ Q → ∀ (body : P → Pr P T Q prime U) (f : P),
-    let host := fun label => embProg (Fin.castAddEmb 1) id (body label)
-    ∃ (rate base swaps : ℕ) (code : Pr P (T+1) Q prime U), ∀ (node : Descriptor) (w B rows : ℕ),
-    node.width = 64*(w+1) → node.rows = 142080*rows → node.beforeH = B*prime^(64*((w+1)*64)) →
-    let M := prime^(w+1)
-    let K := node.beforeRows*rows*node.between*node.afterD
-    let W := (M^112*B)*prime^(64*((w+1)*64))*K
-    let V := M^16*W
-    let desc := scheduledChild prime node child
-    0 < W → ∃ position : Fin (volume prime desc) ≃ Fin V,
-    (∀ h, (position h).val = (CopyChildLayout.packActive desc h).val) ∧
-    ∀ record, ∃ initial : Stacks (T+1) prime, WorkerEntryWords (fun j => (scheduledRecordPorts ports j).castAdd 1) record initial ∧ ∀ budget word,
-    ScheduledChildExec node desc w W ports record position body f budget true →
-    let owners := withCutoffPort fan
-    let rep := fun x (S : Stacks (T+1) prime) => HelperFan (Fin.castAddEmb 1) x (embStk owners S) ∧
-      S.R (owners (Fin.last (142081+2))) = word
-    ∀ (x : Fin 142081 → Fin V → ZMod 2) u S, PrivateTapes owners initial S → rep x S →
-      ∃ z F t, Exec host code (mk u S) t (mk z F) ∧
-        CleanupBound S F t (rate*V+(budget+nativePrice true ((base+swaps*swapVolumeRate w)*V))) ∧ z.user = u.user ∧
-        rep (selectedMoveOutput (w := w+1) (W := W) n p afterCopy (Fin.cast (by unfold selectedPhaseSchedule; rfl) j) x) F := by
-  intro layout phase cur start schedule blocks
+    SelectedOccurrenceWorker child (fun desc _ _ pos => ∀ h, (pos h).val = (CopyChildLayout.packActive desc h).val)
+      (fun w B K x y => y = selectedMoveOutput (w := w) (W := B*prime^(64*(w*64))*K) n p afterCopy
+        j x) := by
+  unfold selectedPhaseSchedule
+  intro start schedule blocks
+  let layout : Fin 661 ↪ Fin 142081 := ⟨ownerTape n p.1 p.2,ownerTape_injective ..⟩
+  let phase := if afterCopy then sectionB++sectionC else sectionD++sectionA
+  let cur := if afterCopy then Frames.scatterFinish Frames.beforeScatter else Frames.snapshot Frames.initialRefs
   obtain ⟨select,atIndex⟩ := phaseDirectory afterCopy
   refine ⟨select,fun j => ⟨(atIndex j).1,(atIndex j).2,?_⟩⟩
   intro i edge child
+  unfold SelectedOccurrenceWorker
   let gs := blocks[j.val].1
   let suffix := if j.val+1 = blocks.length then schedule.2 else []
   obtain ⟨prefixAllowed,lastAllowed⟩ := phaseMoveBlocks_allowed phase cur (invocationPhase_allowed afterCopy)
@@ -1493,27 +1487,28 @@ theorem invocationScalarMove [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) 
   obtain ⟨T,states,ports,fan,apart,build⟩ := invocationMoveComponent layout n p i
   obtain ⟨scalar,compile⟩ := scalarWorkerBlocks layout
   refine ⟨T,max states scalar,ports,fan,apart,?_⟩
-  intro P U Q capacity body f host
+  intro P U Q capacity body f bank host owners
   obtain ⟨base,swaps,worker,run⟩ := build ((Nat.le_max_left ..).trans capacity) body f
   obtain ⟨code,rate,execute⟩ := compile ((Nat.le_max_right ..).trans capacity) gs allowed suffix suffixAllowed
     (withCutoffPort fan) host worker
-  refine ⟨rate,base,swaps,code,?_⟩
-  intro node w B rows width split label M K W V desc pos
+  refine ⟨rate+13*base,13*swaps,0,code,?_⟩
+  intro node w B rows width split label M K blocksCount W V desc pos
   obtain ⟨position,coords,prepare⟩ := run node w B rows width split label pos
   refine ⟨position,coords,?_⟩
   intro record
   obtain ⟨initial,archive,step⟩ := prepare record
   refine ⟨initial,archive,?_⟩
-  intro budget word call owners rep x u S privateSeed live
+  intro budget word call rep x u S privateSeed live
   have positive : 0 < V := Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) pos
   obtain ⟨z,F,t,h,cost,user,out⟩ := execute positive word _ _ initial (fun y v D h stock => step budget word call y v D stock h)
     x u S live privateSeed
-  refine ⟨z,F,t,h,cost,user,?_⟩
+  have price : rate*V+(budget+nativePrice true ((base+swaps*swapVolumeRate w)*V)) =
+      ((rate+13*base)+(13*swaps)*swapVolumeRate w)*V+0+budget := by unfold nativePrice; simp; ring
+  refine ⟨z,F,t,_,h,price ▸ cost,user,out,?_⟩
   unfold selectedMoveOutput selectedPhaseSchedule
-  change rep (suffix.foldl (scalarOwnerEffect layout)
-    (moveOwnerEffect layout (gs.foldl (scalarOwnerEffect layout) x) (start+j.val) blocks[j.val].2)) F
+  change _ = suffix.foldl (scalarOwnerEffect layout)
+    (moveOwnerEffect layout (gs.foldl (scalarOwnerEffect layout) x) (start+j.val) blocks[j.val].2)
   rw [← (atIndex j).1,← (atIndex j).2]
-  exact out
 
 open RecursiveInterchangeLayout in
 def ChargedPhaseComponent [M8.Machine.Net] (P U : Type) (n : Fin 9) (p : Fin 32 × Fin 5)
