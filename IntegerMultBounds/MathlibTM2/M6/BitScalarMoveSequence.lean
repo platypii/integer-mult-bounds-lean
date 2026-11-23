@@ -298,6 +298,205 @@ theorem indexedPhase_off_owner {k w W : ℕ} (owner : Fin 661 ↪ Fin k)
   intro data i
   exact (Function.update_of_ne (outside (paidRegister (start+i.val))).symm ..).trans (gates _ data)
 
+private def phaseAligned (start : ℕ) (edges : List (ℕ × ℕ)) (registers : List ℕ) : Prop :=
+  ∀ pre p post, edges = pre ++ p :: post → positiveMove p = true →
+    registers[pre.length]? = some (paidRegister (start+(pre.filter positiveMove).length)).val
+
+private noncomputable def readMove (w : ℕ) (bank : ℕ → AddressStream (ZMod (prime^w)))
+    (i : ℕ) (p : ℕ × ℕ) :=
+  Function.update bank (paidRegister i).val
+    (fun x => bank (paidRegister i).val (AffineFieldProgram.run (selectedWord w p) x))
+
+private def nextMove {α : Type*} (move : α → ℕ → ℕ × ℕ → α) (s : α × ℕ) (p : ℕ × ℕ) :=
+  (move s.1 s.2 p,s.2+1)
+
+/-- Align all incidences in order. A repeated wire uses the frame left by its
+previous incidence, including when that edge has zero rank. -/
+private theorem alignFrameReads (w : ℕ) (updates : List (ℕ × ℕ)) (current : ℕ → ℕ)
+    (x : ℕ → AddressStream (ZMod (prime^w))) (start : ℕ) :
+    let edges := RankTrace.edges current updates
+    (∀ p ∈ edges, Geometry.Moves.CheckedPair p) → phaseAligned start edges (updates.map Prod.fst) →
+    (edges.filter positiveMove).foldl (nextMove (readMove w))
+      (FramedCircuit.encode (fun i => selectedFrame w (current i)) x,start) =
+      (FramedCircuit.encode (fun i => selectedFrame w (RankTrace.finish current updates i)) x,
+       start+(edges.filter positiveMove).length) := by
+  induction updates generalizing current start with
+  | nil => intro _ _ _; rfl
+  | cons u us ih =>
+    obtain ⟨r,next⟩ := u
+    intro edges checked aligned
+    let p := (current r,next)
+    let cur := Function.update current r next
+    let tail := RankTrace.edges cur us
+    change ∀ q ∈ p :: tail, _ at checked
+    change phaseAligned start (p :: tail) (r :: us.map Prod.fst) at aligned
+    have valid := checked p List.mem_cons_self
+    have after : Function.update (FramedCircuit.encode (fun i => selectedFrame w (current i)) x) r
+          (fun s => selectedFrame w (current r) (x r) (AffineFieldProgram.run (selectedWord w p) s)) =
+        FramedCircuit.encode (fun i => selectedFrame w (cur i)) x := by
+      rw [(modular_scatter w).choose_spec.1 p valid]
+      funext i
+      by_cases h : i = r
+      · subst i
+        simp [p,cur,FramedCircuit.encode,selectedFrame]
+      · simp [FramedCircuit.encode,cur,Function.update_of_ne h]
+    have rest (n : ℕ) (eq : n = start+(if positiveMove p then 1 else 0)) :
+        (tail.filter positiveMove).foldl (nextMove (readMove w))
+          (FramedCircuit.encode (fun i => selectedFrame w (cur i)) x,n) = _ :=
+      ih cur n (fun q h => checked q (List.mem_cons_of_mem _ h)) (fun pre q post split paid => by
+        have h := aligned (p :: pre) q post (congrArg (p :: ·) split) paid
+        cases keep : positiveMove p <;> simpa [eq,keep,Nat.add_assoc,Nat.add_comm 1] using h)
+    change ((p :: tail).filter positiveMove).foldl _ _ = (_,start+((p :: tail).filter positiveMove).length)
+    rw [RankTrace.finish]
+    cases keep : positiveMove p with
+    | false =>
+      have zero : Geometry.moveRank p.1 p.2 = 0 := by simpa [positiveMove] using keep
+      have idMove := (modular_scatter w).choose_spec.2.2.1.zero p valid zero
+      simp only [idMove] at after
+      have same : FramedCircuit.encode (fun i => selectedFrame w (current i)) x =
+          FramedCircuit.encode (fun i => selectedFrame w (cur i)) x := by
+        convert after using 1
+        exact (Function.update_eq_self ..).symm
+      simpa only [List.filter_cons_of_neg (by simp [keep] : ¬ positiveMove p = true),same] using
+        rest start (by simp [keep])
+    | true =>
+      have reg := aligned [] p tail rfl keep
+      simp only [List.length_nil,List.getElem?_cons_zero,List.filter_nil,Nat.add_zero,Option.some.injEq] at reg
+      simp only [List.filter_cons_of_pos keep,List.foldl_cons,List.length_cons,nextMove,readMove,← reg]
+      change Function.update (FramedCircuit.encode (fun i => selectedFrame w (current i)) x) r (fun s => FramedCircuit.encode (fun i => selectedFrame w (current i)) x r
+        (AffineFieldProgram.run (selectedWord w p) s)) = _ at after
+      rw [after]
+      simpa only [Nat.add_assoc,Nat.add_comm 1] using rest (start+1) (by simp [keep])
+
+private theorem phaseAligned_append {start : ℕ} {a b : List (ℕ × ℕ)} {rs ss : List ℕ}
+    (len : a.length = rs.length) (aligned : phaseAligned start (a++b) (rs++ss)) :
+    phaseAligned start a rs ∧ phaseAligned (start+(a.filter positiveMove).length) b ss := by
+  constructor
+  · intro pre p post split paid
+    have h := aligned pre p (post++b) (by simp [split,List.append_assoc]) paid
+    rw [List.getElem?_append_left (by rw [← len,split]; simp)] at h
+    exact h
+  · intro pre p post split paid
+    have h := aligned (a++pre) p post (by simp [split,List.append_assoc]) paid
+    simp only [List.length_append,List.filter_append] at h
+    rw [List.getElem?_append_right (by omega)] at h
+    simpa only [len,Nat.add_sub_cancel_left,Nat.add_assoc] using h
+
+private theorem runIndexedPhase_cons {α : Type*} (gate : α → RawGate → α) (move : α → ℕ → ℕ × ℕ → α)
+    (g : RawGate) (gs : List RawGate) (current : ℕ → ℕ) (x : α) (start : ℕ) :
+    let s := ((Frames.edges [g] current).filter positiveMove).foldl
+      (fun (s : α × ℕ) p => (move s.1 s.2 p,s.2+1)) (x,start)
+    runIndexedPhase gate move (g::gs) current x start =
+      runIndexedPhase gate move gs (Frames.step g current) (gate s.1 g) s.2 := rfl
+
+private theorem phaseRegisterCount (gs : List RawGate) (cur : ℕ → ℕ) :
+    (Frames.edges gs cur).length = (gs.flatMap Frames.touched).length := by
+  have count (us : List (ℕ × ℕ)) (c : ℕ → ℕ) : (RankTrace.edges c us).length = us.length := by
+    induction us generalizing c with
+    | nil => rfl
+    | cons u us ih => obtain ⟨r,n⟩ := u; simp [RankTrace.edges,ih]
+  rw [Frames.edges,count]
+  induction gs with
+  | nil => rfl
+  | cons g gs ih =>
+    simpa only [Frames.updates,List.flatMap_cons,List.length_append,List.length_map] using
+      congrArg ((Frames.touched g).length + ·) ih
+
+private theorem indexedPhase_encode (w : ℕ) (gs : List RawGate) (current : ℕ → ℕ)
+    (x : ℕ → AddressStream (ZMod (prime^w))) (start : ℕ)
+    (checked : ∀ p ∈ Frames.edges gs current, Geometry.Moves.CheckedPair p)
+    (aligned : phaseAligned start (Frames.edges gs current) (gs.flatMap Frames.touched)) :
+    runIndexedPhase (fun bank g => FramedCircuit.moduleGate g.toCircuit bank)
+      (readMove w)
+      gs current (FramedCircuit.encode (fun i => selectedFrame w (current i)) x) start =
+      FramedCircuit.encode (fun i => selectedFrame w (Frames.run gs current i))
+        (FramedCircuit.moduleRun (gs.map RawGate.toCircuit) x) := by
+  induction gs generalizing current x start with
+  | nil => rfl
+  | cons g gs ih =>
+    let es := Frames.edges [g] current
+    let cur := Frames.step g current
+    have trace : Frames.edges (g :: gs) current = es ++ Frames.edges gs cur := Frames.edges_append [g] gs current
+    rw [trace] at checked aligned
+    rw [List.flatMap_cons] at aligned
+    have size : es.length = (Frames.touched g).length := by
+      simpa only [List.flatMap_cons,List.flatMap_nil,List.append_nil] using phaseRegisterCount [g] current
+    obtain ⟨head,tail⟩ := phaseAligned_append size aligned
+    let updates := (Frames.touched g).map fun i => (i,g.frame)
+    have eq : es = RankTrace.edges current updates := by simp [es,Frames.edges,Frames.updates,updates]
+    have first := alignFrameReads w updates current x start (fun p h => checked p (List.mem_append_left _ (eq.symm ▸ h)))
+      (by simpa [updates,List.map_map,Function.comp_def,← eq] using head)
+    rw [← eq,← Frames.step_eq_finish] at first
+    have gate := FramedCircuit.gate_invariant g.toCircuit (fun i => selectedFrame w (cur i)) (selectedFrame w g.frame)
+      (fun i h => by rw [Frames.touched_toCircuit] at h; simp [cur,Frames.step,h]) x
+    rw [runIndexedPhase_cons]
+    unfold nextMove at first
+    simp only [← show es = Frames.edges [g] current from rfl,first]
+    dsimp only [cur] at gate
+    rw [gate]
+    exact ih cur _ _ (fun p h => checked p (List.mem_append_right _ h)) tail
+
+private theorem invocationPhase_allowed (b : Bool) :
+    ∀ g ∈ (if b then sectionB++sectionC else sectionD++sectionA), g ∈ program := by
+  intro g h
+  cases b
+  · exact List.mem_append_left _ (List.mem_append_left _ (List.mem_append_left _ h))
+  · rcases List.mem_append.mp h with h | h
+    · exact List.mem_append_left _ (List.mem_append_right _ h)
+    · exact List.mem_append_right _ h
+
+private theorem invocationPhase_aligned (b : Bool) :
+    let gs := if b then sectionB++sectionC else sectionD++sectionA
+    let cur := if b then Frames.scatterFinish Frames.beforeScatter else Frames.snapshot Frames.initialRefs
+    let first := Frames.edges (sectionD++sectionA) (Frames.snapshot Frames.initialRefs)
+    phaseAligned (if b then (first.filter positiveMove).length else 0) (Frames.edges gs cur)
+      (gs.flatMap Frames.touched) := by
+  intro gs cur first pre p post split paid
+  have hi : pre.length < (gs.flatMap Frames.touched).length := by
+    rw [← phaseRegisterCount gs cur,split]; simp
+  let r := (gs.flatMap Frames.touched)[pre.length]
+  have mem : r ∈ gs.flatMap Frames.touched := List.getElem_mem hi
+  obtain ⟨g,hg,hr⟩ := List.mem_flatMap.mp mem
+  let j : Fin 661 := ⟨r,Frames.bounded_touched program program_bounded g (invocationPhase_allowed b g hg) r hr⟩
+  have lookup : (gs.flatMap Frames.touched)[pre.length]? = some j.val := List.getElem?_eq_getElem hi
+  rw [lookup]
+  cases b
+  · have bound : pre.length < first.length := by change pre.length < (Frames.edges gs cur).length; rw [split]; simp
+    simp only [gs,cur,Bool.false_eq_true,ite_false] at split lookup
+    have full := congrArg (· ++ Frames.edges (sectionB++sectionC) (Frames.scatterFinish Frames.beforeScatter)) split
+    have eq := paidRegister_at pre p _ (by simpa only [Geometry.Moves.phaseEdges,List.append_assoc,List.cons_append] using full)
+      paid j (by unfold invocationRegister; rw [ite_eq_left bound]; exact lookup)
+    simp only [Bool.false_eq_true,ite_false,Nat.zero_add,eq]
+  · simp only [gs,cur,ite_true] at split lookup
+    have full := congrArg (first ++ ·) split
+    have eq := paidRegister_at (first++pre) p post (by simpa only [first,Geometry.Moves.phaseEdges,List.append_assoc] using full)
+      paid j (by
+        unfold invocationRegister
+        rw [List.length_append]
+        change (if first.length+pre.length < first.length then _ else
+          ((sectionB++sectionC).flatMap Frames.touched)[first.length+pre.length-first.length]?) = _
+        rw [ite_eq_right (by omega),Nat.add_sub_cancel_left]
+        exact lookup)
+    simpa only [ite_true,List.filter_append,List.length_append] using congrArg (fun j : Fin 661 => some j.val) eq.symm
+
+/-- A complete physical phase, read at any spectator, realizes the selected
+frame semantics from the manuscript. The second phase resumes after COPY at
+the first phase's paid-edge count. -/
+theorem invocationIndexedPhase_read {k w W : ℕ} (owner : Fin 661 ↪ Fin k) (b : Bool)
+    (x : Fin k → Fin ((prime^w)^16*W) → ZMod 2) (j : Fin W) :
+    let gs := if b then sectionB++sectionC else sectionD++sectionA
+    let cur := if b then Frames.scatterFinish Frames.beforeScatter else Frames.snapshot Frames.initialRefs
+    let start := if b then ((Frames.edges (sectionD++sectionA) (Frames.snapshot Frames.initialRefs)).filter positiveMove).length else 0
+    phaseRead owner (runIndexedPhase (scalarOwnerEffect owner) (moveOwnerEffect owner) gs cur x start) j =
+      labelPhase w gs cur (phaseRead owner x j) := by
+  intro gs cur start
+  rw [phaseRead_indexedPhase owner gs cur (invocationPhase_allowed b)]
+  have eq := indexedPhase_encode w gs cur (FramedCircuit.decode (fun i => selectedFrame w (cur i)) (phaseRead owner x j))
+    start (invocationPhase_valid w b).1 (invocationPhase_aligned b)
+  rw [FramedCircuit.encode_decode] at eq
+  unfold readMove at eq
+  exact eq
+
 /-- Compile a scalar block once for every positive owner volume. -/
 theorem scalarOwnerBlock {k : ℕ} (owner : Fin 661 ↪ Fin k) :
     ∃ states, ∀ {Q : ℕ} {U : Type}, states ≤ Q →
@@ -599,17 +798,8 @@ theorem invocationScalarPhases (P U : Type) {k : ℕ} (layout : Fin 661 ↪ Fin 
       (sectionD++sectionA) (sectionB++sectionC) (Frames.snapshot Frames.initialRefs)
       (Frames.scatterFinish Frames.beforeScatter)
       (Geometry.Moves.phaseEdges.filter positiveMove) tapes owner := by
-  have included {α : Type} (x y z t : List α) :
-      (∀ g ∈ x, g ∈ x++y++z++t) ∧ (∀ g ∈ z++t, g ∈ x++y++z++t) := by
-    constructor
-    · exact fun _ h => List.mem_append_left _ (List.mem_append_left _ (List.mem_append_left _ h))
-    · intro g h
-      rcases List.mem_append.mp h with hz | ht
-      · exact List.mem_append_left _ (List.mem_append_right _ hz)
-      · exact List.mem_append_right _ ht
-  have membership := included (sectionD++sectionA) sectionscatter sectionB sectionC
   exact scalarPhasePair P U layout (sectionD++sectionA) (sectionB++sectionC)
     (Frames.snapshot Frames.initialRefs) (Frames.scatterFinish Frames.beforeScatter)
-    (Geometry.Moves.phaseEdges.filter positiveMove) invocationMoveBlocks_order membership.1 membership.2 tapes owner
+    (Geometry.Moves.phaseEdges.filter positiveMove) invocationMoveBlocks_order (invocationPhase_allowed false) (invocationPhase_allowed true) tapes owner
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
