@@ -49,7 +49,7 @@ theorem parkedLeafSplit {c T : ℕ} (saved : Fin 3 ↪ Fin T) (fan : Fin (c+2) �
       | left i =>
         induction i using Fin.addCases <;> simp [returnedMergeBank,ext]
 
-private theorem splitAvoids {c T : ℕ} (saved : Fin 3 ↪ Fin T) (fan : Fin (c+2) ↪ Fin T)
+theorem splitAvoids {c T : ℕ} (saved : Fin 3 ↪ Fin T) (fan : Fin (c+2) ↪ Fin T)
     (apart : ∀ i j, saved i ≠ fan j) (j : Fin T)
     (hs : ∀ i, saved i ≠ j) (hf : ∀ i, fan i ≠ j) :
     ∀ k, ownerSplitBank saved fan apart k ≠ j.succ := by
