@@ -217,6 +217,7 @@ theorem callerRestoredStage [M8.Machine.Net] (n : Fin 9) :
     (∀ i g, body i (.active g) = large i g) ∧
     ∃ (T : ℕ) (shared : Fin (k+1) ↪ Fin T),
     ∃ (owners : ∀ i, Fin (k+1) ↪ Fin (ts i+1)) (banks : ∀ i, Fin (ts i+1) ↪ Fin T),
+    (∀ i j, banks i (owners i j) = shared j) ∧
     let H := 80+((T+273)+LeafCore.small)
     let owner := ((Fin.castAddEmb 273 (n := T)).trans (Fin.castAddEmb LeafCore.small)).trans (Fin.natAddEmb 80)
     let fan := shared.trans owner
@@ -291,7 +292,7 @@ theorem callerRestoredStage [M8.Machine.Net] (n : Fin 9) :
   let calls := (stageRuns.flatMap (fun _ => Geometry.Moves.localPaid)).length
   let owners := fun i => withCutoffPort (data i)
   let setupRate : ℝ := 178*count+314*142080+52
-  refine ⟨body,active,T,shared,owners,banks,inner,setupRate+2000255+rate+calls*5000,?_⟩
+  refine ⟨body,active,T,shared,owners,banks,align,inner,setupRate+2000255+rate+calls*5000,?_⟩
   intro M place source r power tmp saved dimensions division outside bank host widthPort divisionAway divisionSafe modPort unitPort dimFrame atomAway atomRegs dimOff width long short sourceOff placeOff tmpOff savedOff apart regs
   obtain ⟨setup,load⟩ := loadStageArchive (T := T) (R := LeafCore.small) (H := M) host place source r power tmp saved width long short sourceOff placeOff tmpOff savedOff apart regs
   let owner := ((Fin.castAddEmb 273 (n := T)).trans (Fin.castAddEmb LeafCore.small)).trans (Fin.natAddEmb 80)

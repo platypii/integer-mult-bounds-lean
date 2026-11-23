@@ -9,6 +9,39 @@ open IntegerMultBounds.Machine IntegerMultBounds.Networks Stack Host Cover.Fallb
 open Shared50ModularControl (prime)
 open Cover Certificates.PR589 Certificates.PR589.Nine RecursiveInterchangeLayout
 
+/-- The two charts and the stage setup have a uniform local cost. -/
+theorem packedStageCost_bound [M8.Machine.Net] (base tapes : ℕ) (rate C : ℝ) :
+    let overhead := fun w V => 13*((base*V+17760*(2*LeafCore.coreCost V w+14))*(tapes+5)+12)
+    let localCost := fun (w V : ℕ) => overhead w V+⌈rate*((V : ℝ)*(w : ℝ)^M8.Machine.BudgetBound.tau)⌉₊+
+      ⌈C*V*(w : ℝ)^M8.Machine.BudgetBound.tau⌉₊+(142081*(10*V+10)+1)
+    ∃ D : ℝ, ∀ w V : ℕ, 0 < w → 0 < V → (localCost w V : ℝ) ≤
+      D*((V : ℝ)*(w : ℝ)^M8.Machine.BudgetBound.tau) := by
+  intro overhead localCost
+  obtain ⟨D,bound⟩ := stageSetupCost_bound base tapes
+  refine ⟨13*D+|rate|+|C|+142081*20+3,?_⟩
+  intro w V hw hv
+  let power := (w : ℝ)^M8.Machine.BudgetBound.tau
+  let scale := (V : ℝ)*power
+  have one : 1 ≤ power := Real.one_le_rpow (by exact_mod_cast hw) M8.Machine.BudgetBound.exponent_range.1.le
+  have vol : (V : ℝ) ≤ scale := le_mul_of_one_le_right (Nat.cast_nonneg _) one
+  have unit : 1 ≤ scale := (show (1 : ℝ) ≤ V by exact_mod_cast hv).trans vol
+  have ceil (a : ℝ) : (⌈a*scale⌉₊ : ℝ) ≤ |a| *scale+1 := by
+    apply (Nat.cast_le.mpr (Nat.ceil_mono (mul_le_mul_of_nonneg_right (le_abs_self a) (zero_le_one.trans unit)))).trans
+    exact (Nat.ceil_lt_add_one (mul_nonneg (abs_nonneg _) (zero_le_one.trans unit))).le
+  have small : overhead w V ≤ 13*stageSetupCost base tapes V w := by
+    apply Nat.mul_le_mul_left
+    unfold stageSetupCost
+    omega
+  have h : (overhead w V : ℝ) ≤ 13*(D*scale) := by
+    have setup := bound V w hv hw
+    rw [mul_assoc] at setup
+    exact (Nat.cast_le.mpr small).trans (by push_cast; exact mul_le_mul_of_nonneg_left setup (by norm_num))
+  dsimp only [localCost]
+  rw [mul_assoc C]
+  change ((overhead w V+⌈rate*scale⌉₊+⌈C*scale⌉₊+(142081*(10*V+10)+1) : ℕ) : ℝ) ≤ _*scale
+  push_cast
+  linarith only [h,ceil rate,ceil C,vol,unit]
+
 /-- The packed stage returns the selected word on every spectator row. Its
 local cost is independent of the recursive budgets. -/
 theorem initializedPackedStage [M8.Machine.Net] (n : Fin 9) :
@@ -53,30 +86,7 @@ theorem initializedPackedStage [M8.Machine.Net] (n : Fin 9) :
   let localCost := fun (w V : ℕ) => overhead w V+⌈rate*((V : ℝ)*(w : ℝ)^M8.Machine.BudgetBound.tau)⌉₊+
     ⌈C*V*(w : ℝ)^M8.Machine.BudgetBound.tau⌉₊+(142081*(10*V+10)+1)
   refine ⟨H,src,dst,outer,code,localCost,?_,?_⟩
-  · obtain ⟨D,bound⟩ := stageSetupCost_bound base tapes
-    refine ⟨13*D+|rate|+|C|+142081*20+3,?_⟩
-    intro w V hw hv
-    let power := (w : ℝ)^M8.Machine.BudgetBound.tau
-    let scale := (V : ℝ)*power
-    have one : 1 ≤ power := Real.one_le_rpow (by exact_mod_cast hw) M8.Machine.BudgetBound.exponent_range.1.le
-    have vol : (V : ℝ) ≤ scale := le_mul_of_one_le_right (Nat.cast_nonneg _) one
-    have unit : 1 ≤ scale := (show (1 : ℝ) ≤ V by exact_mod_cast hv).trans vol
-    have ceil (a : ℝ) : (⌈a*scale⌉₊ : ℝ) ≤ |a| *scale+1 := by
-      apply (Nat.cast_le.mpr (Nat.ceil_mono (mul_le_mul_of_nonneg_right (le_abs_self a) (zero_le_one.trans unit)))).trans
-      exact (Nat.ceil_lt_add_one (mul_nonneg (abs_nonneg _) (zero_le_one.trans unit))).le
-    have small : overhead w V ≤ 13*stageSetupCost base tapes V w := by
-      apply Nat.mul_le_mul_left
-      unfold stageSetupCost
-      omega
-    have h : (overhead w V : ℝ) ≤ 13*(D*scale) := by
-      have setup := bound V w hv hw
-      rw [mul_assoc] at setup
-      exact (Nat.cast_le.mpr small).trans (by push_cast; exact mul_le_mul_of_nonneg_left setup (by norm_num))
-    dsimp only [localCost]
-    rw [mul_assoc C]
-    change ((overhead w V+⌈rate*scale⌉₊+⌈C*scale⌉₊+(142081*(10*V+10)+1) : ℕ) : ℝ) ≤ _*scale
-    push_cast
-    linarith only [h,ceil rate,ceil C,vol,unit]
+  · exact packedStageCost_bound base tapes rate C
   intro c w V desc record
   obtain ⟨position,_,coords,prepare⟩ := stage c
   refine ⟨position,coords,?_⟩

@@ -1,13 +1,45 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.M6.BitInitializedPackedStage
-import IntegerMultBounds.MathlibTM2.M6.BitStageChildDispatch
+import IntegerMultBounds.MathlibTM2.M6.BitStageCallerLayout
 
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.M6.BitNode
 open IntegerMultBounds.Machine IntegerMultBounds.Networks Stack Host Cover.Fallback M8.RevMachine
 open Shared50ModularControl (prime)
 open Cover Certificates.PR589 Certificates.PR589.Nine RecursiveInterchangeLayout
+
+private def callerSeed {k H : ℕ} (fan : Fin (k+1) ↪ Fin H) (cutoff : List (Fin (prime+4)))
+    (external : Fin 37 → List (Fin (prime+4))) : Stacks (H+37) prime :=
+  ⟨[],[],fun _ => [],Fin.append (Function.update (fun _ => []) (fan (Fin.last k)) cutoff) external⟩
+
+private theorem callerSeed_ready {k H : ℕ} (fan : Fin (k+1) ↪ Fin H) (cutoff : List (Fin (prime+4)))
+    (external : Fin 37 → List (Fin (prime+4))) (S : Stacks (H+37) prime) :
+    let place := Fin.castAddEmb 37 (n := H)
+    let data := (Fin.castAddEmb 1 (n := k)).trans fan
+    PrivateTapes (data.trans place) (callerSeed fan cutoff external) S →
+    (∀ i : Fin 37, S.R (i.natAdd H) = external i) ∧
+    (∀ j, (∀ i, fan i ≠ j) → S.L (place j) = [] ∧ S.R (place j) = []) ∧
+    S.R (place (fan (Fin.last k))) = cutoff := by
+  intro place data fresh
+  refine ⟨?_,?_,?_⟩
+  · intro i
+    have h := fresh (i.natAdd H) (fun j eq => by
+      have val := congrArg Fin.val eq
+      change (data j).val = H+i.val at val
+      have := (data j).isLt
+      omega)
+    simpa only [callerSeed,Fin.append_right] using h.2
+  · intro j off
+    have h := fresh (place j) (fun i => place.injective.ne (off (i.castAdd 1)))
+    simpa only [callerSeed,place,Fin.coe_castAddEmb,Fin.append_left,Function.update_of_ne (off _).symm] using h
+  · have h := fresh (place (fan (Fin.last k))) (fun i eq =>
+      ne_of_lt i.castSucc_lt_last (fan.injective (place.injective eq)))
+    simpa only [callerSeed,place,Fin.coe_castAddEmb,Fin.append_left,Function.update_self] using h.2
+
+private theorem helperFan_trans {k V H M : ℕ} (fan : Fin (k+2) ↪ Fin H) (place : Fin H ↪ Fin M)
+    (x : Fin k → Fin V → ZMod 2) (S : Stacks M prime) :
+    HelperFan (fan.trans place) x S ↔ HelperFan fan x (embStk place S) := Iff.rfl
 
 /-- Install stopped-leaf dispatch in each selected occurrence. Only the active
 children require recursive execution contracts. -/
@@ -47,41 +79,67 @@ theorem dispatchedPackedStage [M8.Machine.Net] (n : Fin 9) :
       (localCost w V+((List.range' (stageChildStart n) (stageRuns.flatMap (fun _ => Geometry.Moves.localPaid)).length).map time).sum) := by
   classical
   intro l r I k
-  obtain ⟨pre,post,ts,qs,ports,build⟩ := initializedPackedStage n
-  obtain ⟨leafRate,install⟩ := installStageWorker
-  refine ⟨pre,post,ts,max qs (max columnCapacity stoppedCopyMachine.1),ports,leafRate,?_⟩
+  obtain ⟨pre,post,ts,states,ports,leafRate,build⟩ := callerRestoredStage n
+  obtain ⟨C,base,tapes,chartStates,chart⟩ := borrowedFlatHandoffWithCharge
+  refine ⟨pre,post,ts,max states chartStates,ports,leafRate,?_⟩
   intro P U Q cap large f
-  let child := fun i : I => invocationChildren n i.1 (pre i.1) (post i.1) i.2.1 i.2.2
-  have copy (i : I) : i.2.1 = 1 → ∃ j, child i = copyChildPosition (n,i.1,j) := by
-    obtain ⟨p,j,i⟩ := i
-    rintro rfl
-    exact ⟨i,rfl⟩
-  choose body active dispatch using fun i => install (ports i) ((Nat.le_max_right ..).trans cap) n i.1 i.2.1
-    (child i) (copy i) (large i) (f i)
-  obtain ⟨T,src,dst,host,code,work,⟨D,bound⟩,stage⟩ := build ((Nat.le_max_left ..).trans cap) body (fun _ => .entry)
-  let length := (stageRuns.flatMap (fun _ => Geometry.Moves.localPaid)).length
-  let localCost := fun w V => work w V+length*(5000*V)
-  refine ⟨body,active,T,src,dst,host,code,localCost,⟨D+length*5000,?_⟩,?_⟩
-  · intro w V hw hv
-    have unit := Real.one_le_rpow (show (1 : ℝ) ≤ w by exact_mod_cast hw) M8.Machine.BudgetBound.exponent_range.1.le
-    have vol := le_mul_of_one_le_right (Nat.cast_nonneg V : (0 : ℝ) ≤ V) unit
-    dsimp only [localCost]
-    push_cast
-    linarith only [bound w V hw hv,mul_le_mul_of_nonneg_left vol (Nat.cast_nonneg length : (0 : ℝ) ≤ length)]
+  obtain ⟨body,active,T,shared,owners,banks,align,inner,rate,compile⟩ :=
+    build ((Nat.le_max_left ..).trans cap) large f
+  let H := 80+((T+273)+LeafCore.small)
+  let owner := ((Fin.castAddEmb 273 (n := T)).trans (Fin.castAddEmb LeafCore.small)).trans (Fin.natAddEmb 80)
+  let archive := archiveSetupPlacement 80 T LeafCore.small
+  let place := Fin.castAddEmb 37 (n := H)
+  let fan := shared.trans owner
+  let data := (Fin.castAddEmb 1 (n := k)).trans fan
+  obtain ⟨source,r,power,tmp,saved,dimensions,division,input,quotientPort,divisionOff,divisionSafe,radixPort,unitPort,dimensionFrame,
+    atomOff,atomPorts,privateDimensions,clockWidth,powerClock,clockOff,sourceSafe,placeSafe,tmpSafe,savedSafe,apart,regs⟩ :=
+    stageCallerLayout owner archive (fun i => (archiveSetupPlacement_frame (R := 80) (T := T) (L := LeafCore.small) i).1)
+  obtain ⟨worker,stage⟩ := compile place source r power tmp saved dimensions division
+    quotientPort divisionOff divisionSafe radixPort unitPort dimensionFrame atomOff atomPorts privateDimensions
+    clockWidth powerClock clockOff sourceSafe placeSafe tmpSafe savedSafe apart regs
+  let table := fun f => embProg place id (inner f)
+  obtain ⟨N,host,code,src,dst,pack⟩ := chart n (data.trans place) table worker ((Nat.le_max_right ..).trans cap)
+  let overhead := fun w V => 13*((base*V+17760*(2*LeafCore.coreCost V w+14))*(tapes+5)+12)
+  let localCost := fun (w V : ℕ) => overhead w V+⌈rate*((V : ℝ)*(w : ℝ)^M8.Machine.BudgetBound.tau)⌉₊+
+    ⌈C*V*(w : ℝ)^M8.Machine.BudgetBound.tau⌉₊+(142081*(10*V+10)+1)
+  refine ⟨body,active,N,src,dst,host,code,localCost,packedStageCost_bound base tapes rate C,?_⟩
   intro c w V desc
-  obtain ⟨position,coords,run⟩ := stage c
+  obtain ⟨position,_,_,coords,run⟩ := stage c
   refine ⟨position,coords,?_⟩
-  intro budget rate enough time recurse W size
-  let charged := fun i => time i+5000*V
-  obtain ⟨seed,handoff⟩ := run charged (fun i =>
-    dispatch i c (position i) (coords i) budget rate enough (recurse i))
+  intro budget childRate enough time recurse W size
+  let word := binSyms (A := prime) c.root.width.size c.cutoff
+  let words := fun i => (Routines.hdr c.node i).map (bitSymbol (a := prime))
+  obtain ⟨external,externalReady⟩ := input words
+  let initial := callerSeed fan word external
+  let kids := ((List.range' (stageChildStart n) (stageRuns.flatMap (fun _ => Geometry.Moves.localPaid)).length).map time).sum
+  let fee := rate*((V : ℝ)*(w : ℝ)^M8.Machine.BudgetBound.tau)
+  have hb : 0 < c.B := Nat.pos_of_mul_pos_right (c.label ▸ c.stagePositive.2.2.1)
+  have hk : 0 < c.stageFactor := Nat.mul_pos (Nat.mul_pos (Nat.mul_pos c.stagePositive.1 c.stagePositive.2.1)
+    c.stagePositive.2.2.2.1) c.stagePositive.2.2.2.2
+  obtain ⟨seed,handoff⟩ := pack (w := w) (B := c.B) (K := c.stageFactor) (⌈fee⌉₊+kids) initial
+    (Nat.succ_pos _) hb hk (by
+      intro x u S live fresh
+      obtain ⟨readExt,empty,cutoff⟩ := callerSeed_ready fan word external S fresh
+      obtain ⟨headers,clocks,temps,ht,hs,divide,atom,t₄,t₅⟩ := externalReady S.R readExt
+      have invoke := run budget childRate enough recurse
+      have start := invoke x u S ((helperFan_trans data place x S).mp live) cutoff headers clocks temps
+      have prepared := start (fun j => empty (archive j) (fun i => ((archiveSetupPlacement_frame (R := 80) (T := T) (L := LeafCore.small) j).1 (shared i)).symm))
+        ht hs divide atom t₄ t₅
+      obtain ⟨z,F,t,y,exec,bill,user,out,done⟩ := prepared
+        (fun i l priv => empty (owner (banks i l)) (fun h eq => priv h ((banks i).injective
+          ((align i h).trans (owner.injective eq)))))
+        (fun j off _ => empty j (fun i => off (shared i)))
+      refine ⟨z,F,t,y,exec,?_,user,(helperFan_trans data place y F).mpr out,done⟩
+      intro js nd
+      have paid := bill js nd
+      rw [← c.stageCells] at paid
+      change (t : ℝ)+_ ≤ _+fee+(kids : ℝ) at paid
+      exact_mod_cast (show (t : ℝ)+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+
+        (((⌈fee⌉₊+kids : ℕ) : ℝ)) by push_cast; linarith only [paid,Nat.le_ceil fee]))
   refine ⟨seed,?_⟩
-  let interval := List.range' (stageChildStart n) length
-  have total : (interval.map charged).sum = (interval.map time).sum+length*(5000*V) := by
-    simp only [charged,List.sum_map_add,List.map_const',List.sum_replicate,smul_eq_mul,interval,List.length_range']
-  have price : localCost w V+(interval.map time).sum = work w V+(interval.map charged).sum := by
-    rw [total]
-    dsimp only [localCost]
+  have price : localCost w V+kids = overhead w V+(⌈fee⌉₊+kids)+
+      ⌈C*V*(w : ℝ)^M8.Machine.BudgetBound.tau⌉₊+(142081*(10*V+10)+1) := by
+    dsimp only [localCost,fee]
     omega
   rw [price]
   exact handoff
