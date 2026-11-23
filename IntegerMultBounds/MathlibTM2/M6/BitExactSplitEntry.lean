@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.M6.BitFreshMoveMerge
+public import IntegerMultBounds.MathlibTM2.M6.BitFlatNodeHandoff
 public import IntegerMultBounds.MathlibTM2.M6.BitInPlaceOwnerWords
 
 /-! Split a serialized MOVE input into the exact words of the packed child. -/
@@ -201,6 +202,62 @@ theorem exactSplitReturn {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U
   rw [initial] at bill
   change b ≤ tapeCharge cleanupWeight slots D+149*(m*142080)*(intervalSplitTapes+5)+8 at cost
   refine ⟨z,F,_,_,call.seq exec,same.trans user,action,out,?_⟩
+  dsimp only [intervalSplitTapes] at *
+  omega
+
+/-- Place the merger on the actual output of the child. Only its data rows
+and two counters are retained; the destination and inner controls may be
+chosen independently of the child's input and output fans. -/
+theorem exactSplitReturnOn {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U) (entry : P)
+    (bank : Fin (intervalSplitTapes+1) ↪ Fin T) (tmp buf : Fin T)
+    (tmpOff : ∀ i, bank i ≠ tmp) (bufOff : ∀ i, bank i ≠ buf) (distinct : tmp ≠ buf)
+    (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q) :
+    let fan := (withHelperPort (intervalOwners 142080)).trans bank
+    ∀ (dst : Fin (142081+2) ↪ Fin T) (saved : Fin 3 ↪ Fin T),
+    (∀ j i, saved j ≠ childReturnFan dst i) → (∀ j i, saved j ≠ fan i) →
+    ∃ code : Pr P T Q prime U, ∀ {m price} effect seed,
+      PackedPieceHandoffWithCharge cleanupWeight m effect body (body entry) fan dst seed price →
+      0 < m → ∀ (x : Fin (m*142080) → ZMod 2) u (S : Stacks T prime),
+      S.R (bank (Fin.succ 0)) = List.ofFn (fun i => SparseRoleCircuit.encode (x i)) →
+      (∀ i, S.L (bank i) = []) → (∀ i, i ≠ Fin.succ 0 → S.R (bank i) = []) →
+      S.L tmp = [] → S.R tmp = [] → S.R buf = [] →
+      (∀ j, (∀ i, fan i ≠ bank j) → seed.L (bank j) = [] ∧ seed.R (bank j) = []) →
+      (∀ j, (∀ i, bank i ≠ j) → S.L j = seed.L j ∧ S.R j = seed.R j) →
+      ∃ z F t y, Exec body code (mk u S) t (mk z F) ∧ z.user = u.user ∧
+        effect (Fin.lastCases (fun _ => 0) (fun row i => x (finProdFinEquiv (i,row)))) y ∧
+        RecordPayload (saved 0) (fun _ => blank) 0
+          (fun k : Fin (m*142080) => let p := finProdFinEquiv.symm k; y p.2.castSucc p.1) F ∧
+        t ≤ price+tapeCharge cleanupWeight ((List.finRange 3).map saved) S+
+          (298*(intervalSplitTapes+5)+5)*(m*142080)+36+
+          142081*(12*m+19+4*(301*(m*142080)+2))+3*(4*(301*(m*142080)+2)+4) := by
+  intro fan dst saved disjoint away
+  let output := childReturnFan dst
+  let ports := returnedMergeBank saved output disjoint
+  obtain ⟨start,run⟩ := exactSplitCall body entry bank tmp buf tmpOff bufOff distinct capacity
+  obtain ⟨finish,merge⟩ := mergeReusedOwners body ports capacity
+  refine ⟨start.seq finish,?_⟩
+  intro m price effect seed worker pos x u S source left empty tl tr br localSeed outerSeed
+  obtain ⟨v,D,a,y,call,user,words,action,paid⟩ := run dst effect seed worker pos x u S source left empty tl tr br localSeed outerSeed
+  have returned : HelperFan output (fun r => y r.castSucc) D := by
+    have h := ParentStageWords.returnFan (bank := Function.Embedding.refl (Fin T)) (F := D) words
+    exact h
+  have owners : (intervalOwners 142080).trans ports = output := returnedMergeBank_owners saved output disjoint
+  obtain ⟨z,F,b,exec,cost,same,out,_⟩ := merge pos _ v D (owners ▸ returned)
+  let slots := (List.finRange 3).map saved
+  have slotEq : [0,mergeInnerPort 0,mergeInnerPort 1].map ports = slots := by
+    change [ports 0,ports (mergeInnerPort 0),ports (mergeInnerPort 1)] = [saved 0,saved 1,saved 2]
+    rw [show ports 0 = saved 0 from returnedMergeBank_target ..,
+      show ports (mergeInnerPort 0) = saved 1 from returnedMergeBank_inner saved output disjoint 0,
+      show ports (mergeInnerPort 1) = saved 2 from returnedMergeBank_inner saved output disjoint 1]
+  rw [slotEq] at cost
+  have bill := paid slots ((List.nodup_finRange _).map saved.injective) (by
+    intro j mem i
+    obtain ⟨k,_,rfl⟩ := List.mem_map.mp mem
+    exact (away k i).symm)
+  change b ≤ tapeCharge cleanupWeight slots D+149*(m*142080)*(intervalSplitTapes+5)+8 at cost
+  rw [show ports 0 = saved 0 from returnedMergeBank_target ..] at out
+  refine ⟨z,F,_,y,call.seq exec,same.trans user,action,out,?_⟩
+  change _ ≤ price+tapeCharge cleanupWeight slots S+_+_+_+_
   dsimp only [intervalSplitTapes] at *
   omega
 
