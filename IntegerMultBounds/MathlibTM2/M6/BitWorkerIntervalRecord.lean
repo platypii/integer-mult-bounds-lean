@@ -32,6 +32,8 @@ theorem workerRecordTranspose {T Q : ℕ} {P U : Type} (body : P → Pr P T Q pr
       S.L tmp = [] → S.R tmp = [] → (∀ i, S.L (splitter i) = [] ∧ S.R (splitter i) = []) →
       (∀ v D, RepT (intervalOwnerBank target data) (embStk splitter D).L (embStk splitter D).R →
         (∀ j, (∀ i, splitter i ≠ j) → D.L j = S.L j ∧ D.R j = S.R j) →
+        (∀ js : List _, js.Nodup → tapeCharge cleanupWeight js D ≤ tapeCharge cleanupWeight js S+
+          2*(V*142080)+6*(Fast.Main.mnProgPush split*((149*(intervalSplitTapes+5)+5)*(V*142080)+24))) →
         ∃ z F t, Exec body merge (mk v D) t (mk z F) ∧ t + reserve F ≤ price ∧ z.user = v.user ∧
           RepT (intervalOwnerBank (putWord target 0 (List.ofFn output)) rows) (embStk returned F).L (embStk returned F).R ∧
           ∀ j, preserved j → F.L j = S.L j ∧ F.R j = S.R j) →
@@ -52,11 +54,18 @@ theorem workerRecordTranspose {T Q : ℕ} {P U : Type} (body : P → Pr P T Q pr
   obtain ⟨v,user,load⟩ := loadCompactWord_exec body src tmp (splitter 0) apart input u S payload tl tr
   rw [(empty 0).2,List.append_nil] at load
   let B := {S with R := Function.update S.R (splitter 0) (List.ofFn (SparseRoleCircuit.encode (a := prime) ∘ input))}
-  obtain ⟨a,D,k,prepare,initial,paid,rep,off⟩ := splitEncoded_exec body splitter capacity positive input v B
+  obtain ⟨a,D,k,prepare,initial,paid,rep,off,growth⟩ := splitEncodedWithCharge body splitter capacity positive input v B
     (Function.update_self ..) (fun i => (empty i).1)
     (fun i ne => (Function.update_of_ne (splitter.injective.ne ne) ..).trans (empty i).2)
   obtain ⟨z,F,t,ran,bill,same,result,frame⟩ := run a D rep (fun j away =>
-    ⟨(off j away).1,(off j away).2.trans (Function.update_of_ne (away 0).symm ..)⟩)
+    ⟨(off j away).1,(off j away).2.trans (Function.update_of_ne (away 0).symm ..)⟩) (by
+      intro js unique
+      have copied := prependedWordCharge S (splitter 0) (List.ofFn (SparseRoleCircuit.encode (a := prime) ∘ input)) js unique
+      simp only [(empty 0).2,List.append_nil,List.length_ofFn] at copied
+      have splitGrowth := growth js unique
+      have bound := Nat.mul_le_mul_left (6*Fast.Main.mnProgPush split) paid
+      change tapeCharge cleanupWeight js B ≤ _ at copied
+      linarith only [copied,splitGrowth,bound])
   let y := Shared50RecursiveNodeRows.transpose (one_dvd wide.rows) word
   have eq (k : Fin (V*142080)) : rows (finProdFinEquiv.symm k).2 (finProdFinEquiv.symm k).1 = y (k.cast size) := by
     obtain ⟨⟨i,r⟩,rfl⟩ := finProdFinEquiv.surjective k
@@ -229,7 +238,7 @@ theorem recursiveIntervalRecord {P U : Type} {T B Q w W atom price lo hi axes : 
     exact Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) positive
   let preserved j := ∃ t, j = extend (caller t) ∧ (∀ i, splitter i ≠ t) ∧ (∀ i, directory i ≠ t)
   obtain ⟨z,F,n,exec,paid,user,read,frame⟩ := wrapper word u S _ (fun _ => 0) preserved vol payload tl tr freshSplit (by
-    intro v D rep off
+    intro v D rep off _
     have rawSame j := off (raw j) (fun i => rawOff i j)
     obtain ⟨y,G,t,ran,bill,same,result,keep⟩ := run _ _ v D rep
       ((rawSame 2).2.trans base) ((rawSame 53).2.trans suffix) ((rawSame 28).2.trans unit)
@@ -282,5 +291,143 @@ theorem recursiveIntervalRecord {P U : Type} {T B Q w W atom price lo hi axes : 
   have original := right (extend (caller j)) (extend.injective.ne (caller.injective.ne ne))
     (by rw [targetBank]; exact extend.injective.ne (caller.injective.ne (hs 0).symm))
   exact ⟨(left _).trans keep.1,original.trans keep.2⟩
+
+/-- Return the ordinary-order transpose to its caller and reclaim the selected private tapes. -/
+theorem recursiveIntervalRecordClean {P U : Type} {T B Q w W atom price lo hi axes : ℕ}
+    (capacity : rowSwapBlock.states ≤ Q)
+    (mergeCap : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q)
+    (ordered : lo ≤ hi) (fits : hi ≤ axes) (positive : 0 < W)
+    (widthAt : (phaseIntervalChild lo hi (w+1) W axes).width = 64*atom)
+    {body : P → Pr P B Q prime U} {code src dst seed}
+    (child : PackedPieceHandoffWithCharge cleanupWeight ((prime^(w+1))^(axes+axes)*W) (packedChildOutput atom _) body code src dst seed price)
+    (splitter : Fin intervalSplitTapes ↪ Fin T) (directory : Fin 72 ↪ Fin T)
+    (apart : ∀ i j, splitter i ≠ directory j) (source : Fin 72 ↪ Fin T)
+    (separate : ∀ i j, directory i ≠ source j) (outside : ∀ i j, splitter i ≠ source j) :
+    let live := (intervalOwners 142080).trans splitter
+    let H := 142082+T+B
+    let caller := (Fin.natAddEmb 142082 (m := T)).trans (Fin.castAddEmb B)
+    let extend := Fin.castAddEmb (n := H) (142080*(N+35))
+    let initial := (splitter.trans caller).trans extend
+    let regs := (directory.trans caller).trans extend
+    let raw := (source.trans caller).trans extend
+    let small := (Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)
+    let ports := intervalRecordBank (live.trans caller) (small 24)
+    let lane := phaseIntervalChild lo hi (w+1) W axes
+    let V := volume prime lane
+    let wide := {lane with afterD := lane.afterD*142080}
+    ∀ work : List (Fin (H+142080*(N+35))), work.Nodup → initial 0 ∈ work → raw 24 ∉ work →
+    ∃ (host : Empty ⊕ P → Pr (Empty ⊕ P) (H+142080*(N+35)) Q prime U)
+      (program : Pr (Empty ⊕ P) (H+142080*(N+35)) Q prime U)
+      (bank : Fin intervalSplitTapes ↪ Fin (H+142080*(N+35))) (setupRate passRate : ℕ),
+    bank 0 = initial 0 ∧ ∀ (word : Fin (volume prime wide) → ZMod 2) u S,
+      RecordPayload (raw 24) (fun _ => blank) 0 word S → S.L (raw 59) = [] → S.R (raw 59) = [] → S.R (raw 60) = [] → S.R (raw 61) = [] →
+      (∀ i, S.L (initial i) = [] ∧ S.R (initial i) = []) →
+      S.R (raw 2) = binSyms (prime^(w+1)).size (prime^(w+1)) →
+      S.R (raw 53) = binSyms W.size W → S.R (raw 28) = binSyms 1 1 →
+      (S.R (raw 71)).length = w+1 →
+      (∀ i, S.L (regs i) = [] ∧ S.R (regs i) = []) →
+      (∀ r k, k ≠ small 24 → S.L (ports r k) = [] ∧ S.R (ports r k) = []) →
+      (∀ i : Fin 142082, let j := extend ((i.castAdd T).castAdd B)
+        S.L j = [] ∧ S.R j = []) →
+      (∀ i : Fin B, let j := extend (i.natAdd (142082+T))
+        S.L j = seed.L i ∧ S.R j = seed.R i) →
+      let split : Pr Empty intervalSplitTapes Q prime U := intervalPrepare.seq
+        (foreign (liftQ (CyclicRowNormalized.splitProgram 142080 prime) mergeCap))
+      let M := prime^(w+1)
+        let pass := intervalPassTime U lo hi w W axes
+        let header := 16*M.size+8*W.size+6*(w+1)+11*(w+1).size+58
+        let volume := V*142080
+        let entryGrowth := 2*volume+6*(Fast.Main.mnProgPush split*((149*(intervalSplitTapes+5)+5)*volume+24))
+        let localCost := setupRate*(6*(M.size+W.size)+27*(w+1)+44)+
+          passRate*(142080*(header+pass)+1+(142080*pass+1))+
+          (142081*(8*V+10+2*V)+1+price)+13*(149*volume*(intervalSplitTapes+5)+6)
+      ∃ z F n, Exec host program (mk u S) n (mk z F) ∧
+        n ≤ (149*(intervalSplitTapes+5)+13)*volume+34+
+          (tapeCharge cleanupWeight work S+entryGrowth+localCost)+18*volume+23 ∧
+        z.user = u.user ∧ RecordPayload (raw 24) (fun _ => blank) 0 (Shared50RecursiveNodeRows.transpose (one_dvd wide.rows) word) F ∧
+        (∀ j ∈ work, F.L j = [] ∧ F.R j = []) ∧
+        ∀ j, extend (caller j) ∉ work → j ≠ source 24 → (∀ i, splitter i ≠ j) → (∀ i, directory i ≠ j) →
+          F.L (extend (caller j)) = S.L (extend (caller j)) ∧ F.R (extend (caller j)) = S.R (extend (caller j)) := by
+  intro live H caller extend initial regs raw small ports lane V wide work unique inside away
+  obtain ⟨host,merge,bank,setupRate,passRate,targetBank,run⟩ := workerIntervalMergeWithCharge capacity mergeCap ordered fits positive
+    widthAt child splitter directory apart source separate
+  have rawOff (i j) : initial i ≠ raw j := extend.injective.ne (caller.injective.ne (outside i j))
+  have distinct : [raw 24,raw 59,initial 0].Nodup := by
+    simp [raw.injective.eq_iff,(rawOff 0 24).symm,(rawOff 0 59).symm]
+  have wrapper := workerRecordTranspose host initial bank merge (raw 24) (raw 59) distinct mergeCap lane
+  let split : Pr Empty intervalSplitTapes Q prime U := intervalPrepare.seq
+    (foreign (liftQ (CyclicRowNormalized.splitProgram 142080 prime) mergeCap))
+  let copy : Pr (Empty ⊕ P) _ Q prime U := (loadCompactWord (raw 24) (raw 59) (initial 0)).seq (embProg initial Empty.elim split)
+  let write : Pr (Empty ⊕ P) _ Q prime U := (loadCompactWord (bank 0) (raw 59) (raw 60)).seq
+    (((usub (raw 60) (raw 24) (raw 59)).seq (movePrefix (raw 60) (bank 0) (raw 24) (raw 61) (raw 59))).seq (bclear (raw 60)))
+  refine ⟨host,((copy.seq merge).seq (write.seq (clearWorkTapes work))),bank,setupRate,passRate,targetBank,?_⟩
+  intro word u S payload tl tr hc hs freshSplit base suffix unit atom dims free fresh seedReady _ M pass header volume entryGrowth localCost
+  have vol : 0 < V := by
+    change 0 < RecursiveInterchangeLayout.volume prime (phaseIntervalChild lo hi (w+1) W axes)
+    rw [intervalChild_volume ordered fits]
+    exact Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) positive
+  let preserved j := ∃ t, j = extend (caller t) ∧ (∀ i, splitter i ≠ t) ∧ (∀ i, directory i ≠ t)
+  obtain ⟨z,F,n,exec,paid,user,read,frame⟩ := wrapper word u S (tapeCharge cleanupWeight work S+entryGrowth+localCost) (tapeCharge cleanupWeight work) preserved vol payload tl tr freshSplit (by
+    intro v D rep off stock
+    have rawSame j := off (raw j) (fun i => rawOff i j)
+    obtain ⟨y,G,t,ran,bill,same,result,keep⟩ := run _ _ v D rep
+      ((rawSame 2).2.trans base) ((rawSame 53).2.trans suffix) ((rawSame 28).2.trans unit)
+      ((congrArg List.length (rawSame 71).2).trans atom)
+      (fun j => by
+        have h := off (regs j) (fun i => extend.injective.ne (caller.injective.ne (apart i j)))
+        exact ⟨h.1.trans (dims j).1,h.2.trans (dims j).2⟩)
+      (fun r k ne => by
+        have h := off (ports r k) (by
+          intro i eq
+          change (caller (splitter i)).castAdd _ = intervalRecordBank _ (small 24) r k at eq
+          change k ≠ small 24 at ne
+          change finSumFinEquiv (Sum.inl (caller (splitter i))) = finSumFinEquiv _ at eq
+          have contra := finSumFinEquiv.injective eq
+          simp [ne] at contra)
+        exact ⟨h.1.trans (free r k ne).1,h.2.trans (free r k ne).2⟩)
+      (fun i => by
+        have h := off (extend ((i.castAdd T).castAdd B)) (fun j => extend.injective.ne (by
+          intro eq
+          have e := congrArg Fin.val eq
+          change 142082+(splitter j).val = i.val at e
+          omega))
+        exact ⟨h.1.trans (fresh i).1,h.2.trans (fresh i).2⟩)
+      (fun i => by
+        have h := off (extend (i.natAdd (142082+T))) (fun j => extend.injective.ne (by
+          intro eq
+          have e := congrArg Fin.val eq
+          change 142082+(splitter j).val = 142082+T+i.val at e
+          omega))
+        exact ⟨h.1.trans (seedReady i).1,h.2.trans (seedReady i).2⟩)
+    refine ⟨y,G,t,ran,?_,same,result,?_⟩
+    · have h := bill work unique
+      have g := stock work unique
+      dsimp only at h
+      have g' : tapeCharge cleanupWeight work D ≤ tapeCharge cleanupWeight work S+entryGrowth := by
+        simpa only [entryGrowth,Nat.add_assoc] using g
+      have h' : t+tapeCharge cleanupWeight work G ≤ tapeCharge cleanupWeight work D+localCost := by
+        have group {x a b c d e : ℕ} (le : x ≤ a+b+c+d+e) : x ≤ a+(b+c+d+e) := by omega
+        exact group h
+      exact h'.trans (Nat.add_le_add_right g' _)
+    rintro j ⟨k,rfl,notSplit,notWork⟩
+    have h := off _ (fun i => extend.injective.ne (caller.injective.ne (notSplit i)))
+    exact ⟨(keep k notSplit notWork).1.trans h.1,(keep k notSplit notWork).2.trans h.2⟩)
+  have rawSame (i) := frame (raw i) ⟨source i,rfl,fun j => outside j i,fun j => separate j i⟩
+  have payloadF : RecordPayload (raw 24) (fun _ => blank) 0 word F := by
+    intro j
+    simpa only [(rawSame 24).1,(rawSame 24).2] using payload j
+  have portsApart : [raw 60,bank 0,raw 24,raw 61,raw 59].Nodup := by
+    rw [targetBank]
+    simp [raw.injective.eq_iff]
+    exact ⟨(rawOff 0 60).symm,rawOff 0 24,rawOff 0 61,rawOff 0 59⟩
+  obtain ⟨v,G,t,done,cost,same,result,clean,keep⟩ := finishIntervalRecord host portsApart work unique
+    (by rw [targetBank]; exact inside) away exec paid payloadF read ((rawSame 60).2.trans hc)
+    ((rawSame 61).2.trans hs) ((rawSame 59).1.trans tl) ((rawSame 59).2.trans tr)
+  have size : RecursiveInterchangeLayout.volume prime wide = V*142080 := by simp [wide,RecursiveInterchangeLayout.volume,V,Nat.mul_assoc]
+  refine ⟨v,G,t,done,by simpa only [size] using cost,same.trans user,result,clean,?_⟩
+  intro j outside ne hs hd
+  have h := keep _ (extend.injective.ne (caller.injective.ne ne)) outside
+  have original := frame _ ⟨j,rfl,hs,hd⟩
+  exact ⟨h.1.trans original.1,h.2.trans original.2⟩
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode

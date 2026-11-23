@@ -631,7 +631,7 @@ theorem packedIntervalFromWord_exec {P U : Type} {M N Q price w : ℕ} (lane : D
       (h.2.trans (Function.update_of_ne (away 0).symm ..))⟩
 
 
-private theorem prependedWordCharge {M : ℕ} (S : Stacks M prime) (dst : Fin M)
+theorem prependedWordCharge {M : ℕ} (S : Stacks M prime) (dst : Fin M)
     (word : List (Fin (prime+4))) (js : List (Fin M)) (distinct : js.Nodup) :
     let D := {S with R := Function.update S.R dst (word ++ S.R dst)}
     tapeCharge cleanupWeight js D ≤ tapeCharge cleanupWeight js S+2*word.length := by
