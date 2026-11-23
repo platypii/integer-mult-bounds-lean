@@ -240,7 +240,7 @@ theorem inheritedChildMerge {c T N H : ℕ} (place : Fin (((1+c)+2)+2) ↪ Fin T
     (volumeFresh : ∀ i, place i ≠ live ((1 : Fin 2).natAdd c))
     (apart : ∀ t, (∀ j : Fin 2, live (j.natAdd c) ≠ t) → ∀ k, bank k ≠ caller t) :
     let fan := returned.trans bank
-    ∃ mergePlace : Fin (((1+c)+2)+2) ↪ Fin H,
+    ∃ mergePlace : Fin (((1+c)+2)+2) ↪ Fin H, mergePlace 0 = caller (place 0) ∧
       ∀ {V : ℕ} (owner : ℤ → Fin (prime+4)) (input output : Fin c → Fin V → ZMod 2)
         (bs gs : List Bool) (S F : Stacks H prime),
       let roles := fun data j => putWord (fun _ => blank) 0 (List.ofFn (SparseRoleCircuit.encoded (a := prime) data j))
@@ -260,7 +260,15 @@ theorem inheritedChildMerge {c T N H : ℕ} (place : Fin (((1+c)+2)+2) ↪ Fin T
     · exact (volumeFresh i).symm
   obtain ⟨mergePlace,atRole,atClock,kept⟩ :=
     helperMergePlacement (place.trans caller) fan (fun i hi k => (apart _ (off i hi.2) (returned k)).symm)
-  refine ⟨mergePlace,?_⟩
+  refine ⟨mergePlace,kept 0 ⟨?_,?_⟩,?_⟩
+  · intro j h
+    have eq := congrArg Fin.val h
+    change 0 = 1+j.val at eq
+    omega
+  · intro h
+    have eq := congrArg Fin.val h
+    change 0 = 1+c+2+0 at eq
+    omega
   intro V owner input output bs gs S F roles rows ready result frame
   apply splitRows_of_helperFan (place.trans caller) mergePlace fan owner input output bs gs S F
     atRole atClock ready result
