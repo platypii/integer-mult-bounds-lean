@@ -27,9 +27,9 @@ theorem parkedRowDispatch [M8.Machine.Net] {c T Q : ℕ} {P U : Type}
         S.L t = [] ∧ S.R t = []) →
       (S.R (cmp 0)).length = w → S.R (cmp 1) = binSyms L cutoff →
       (∀ j : Fin 10, 2 ≤ j.val → S.R (cmp j) = []) →
-      let result := fun F : Stacks ((T+work)+1) prime => HelperFan full (Fin.lastCases helper (fun r =>
-          Shared50RecursiveNodeRows.transpose (one_dvd lane.rows) (data r))) F ∧
-        ∀ j, (∀ r : Fin c, full (r.castSucc.castAdd 2) ≠ j) → F.L j = S.L j ∧ F.R j = S.R j
+      let result := fun F : Stacks ((T+work)+1) prime => HelperFan ((fan.trans ext).trans (Fin.succEmb _)) (fun r =>
+          Shared50RecursiveNodeRows.transpose (one_dvd lane.rows) (data r)) F ∧
+        ∀ j, (∀ k, full k ≠ j) → F.L j = S.L j ∧ F.R j = S.R j
       (cutoff < lane.width → ∀ z, ∃ y F t, Exec body (body entry) (mk z S) t (mk y F) ∧
         t ≤ budget ∧ y.user = z.user ∧ result F) →
       ∃ y F t, Exec body code (mk u S) t (mk y F) ∧ y.user = u.user ∧ result F ∧
@@ -51,7 +51,8 @@ theorem parkedRowDispatch [M8.Machine.Net] {c T Q : ℕ} {P U : Type}
       exact ⟨y,F,t+2,user,by exact_mod_cast Nat.add_le_add_right paid 2,Exec.call exec,out⟩
     · simp only [if_neg active]
       obtain ⟨y,F,t,exec,paid,user,out,frame⟩ := stop body lane data helper z S pos live (hdr (Nat.le_of_not_gt active)) (free (Nat.le_of_not_gt active))
-      exact ⟨y,F,t,user,paid,exec,out,frame⟩)
+      refine ⟨y,F,t,user,paid,exec,?_,fun j off => frame j (fun r => off (r.castSucc.castAdd 2))⟩
+      exact returnedRowFan (fan.trans ext) _ _ F out)
   exact ⟨y,F,t,run,user,out,paid⟩
 
 theorem parkedMoveDispatch [M8.Machine.Net] {T Q : ℕ} {P U : Type}
@@ -84,8 +85,8 @@ theorem parkedMoveDispatch [M8.Machine.Net] {T Q : ℕ} {P U : Type}
       (cutoff < lane.width → ∀ v D, HelperFan full (Fin.lastCases (fun _ => 0) data) D →
         (∀ j, (∀ i, bank i ≠ j) → D.L j = S.L j ∧ D.R j = S.R j) →
         ∃ z F n, Exec body (body active) (mk v D) n (mk z F) ∧ n ≤ budget ∧ z.user = v.user ∧
-          HelperFan full (Fin.lastCases (fun _ => 0) rows) F ∧
-          ∀ j, (∀ r : Fin 142080, full (r.castSucc.castAdd 2) ≠ j) → F.L j = D.L j ∧ F.R j = D.R j) →
+          HelperFan ((fan.trans ext).trans (Fin.succEmb _)) rows F ∧
+          ∀ j, (∀ k, full k ≠ j) → F.L j = D.L j ∧ F.R j = D.R j) →
       let price := (4*w+23*lane.width+22*L+51 : ℕ) +
         (if cutoff < lane.width then (budget : ℝ)+2 else 142080*stoppedRowCost lane+1)
       ∃ z F t, Exec body code (mk u S) t (mk z F) ∧
@@ -98,30 +99,27 @@ theorem parkedMoveDispatch [M8.Machine.Net] {T Q : ℕ} {P U : Type}
   refine ⟨dispatch,?_⟩
   intro body entry installed
   have separate i j := ext.injective.ne (apart i j)
-  obtain ⟨wrap,run⟩ := parkedMoveTranspose body (saved.trans ext) (fan.trans ext) separate splitCapacity
+  obtain ⟨wrap,run⟩ := parkedMoveTranspose body (saved.trans ext) (fan.trans ext) separate (fan.trans ext) separate splitCapacity
   refine ⟨wrap entry,?_⟩
   intro lane w L cutoff budget scaled cutFits fits m wide size x u S pos source left empty headers free clock cut clear data rows recur price
-  apply run entry ⌊price⌋₊ lane x (fun _ => 0) u S pos source left empty
-  intro v D live off
-  have cmpRight (i) := (off (cmp i) (fun j => outside j i)).2
-  have ready (small : lane.width ≤ cutoff) :=
-    parkedLeafReady saved fan apart fields hs hf lane S D ⟨headers small,free small⟩ off
-  obtain ⟨z,F,n,exec,user,⟨out,keep⟩,paid⟩ := child body lane w L cutoff budget scaled cutFits fits
-    data (fun _ => 0) v D pos live (fun small => (ready small).1) (fun small => (ready small).2)
-    (by rw [cmpRight]; exact clock) ((cmpRight 1).trans cut) (fun i hi => (cmpRight i).trans (clear i hi))
-    (fun large z => recur large z D live off)
-  refine ⟨z,F,n,installed ▸ exec,Nat.le_floor paid,user,out,?_,?_⟩
-  · intro j
-    apply keep
-    intro r
-    simp only [withHelperPort,Function.Embedding.coeFn_mk,Fin.addCases_left,Fin.lastCases_castSucc]
-    change (ext (fan (r.castAdd 2))).succ ≠ (ext (saved j)).succ
-    exact Fin.succ_injective _ |>.ne (ext.injective.ne (apart j _).symm)
-  · intro j outside
-    apply keep
-    intro r
-    have ports := DFunLike.congr_fun (ownerSplitBank_fan (saved.trans ext) (fan.trans ext) separate)
-      (r.castSucc.castAdd 2)
-    exact ports ▸ outside _
+  obtain ⟨z,F,t,exec,paid,user,out,frame⟩ := run entry ⌊price⌋₊ lane x u S pos source left empty (by
+    intro v D live off
+    have cmpRight (i) := (off (cmp i) (fun j => outside j i)).2
+    have ready (small : lane.width ≤ cutoff) :=
+      parkedLeafReady saved fan apart fields hs hf lane S D ⟨headers small,free small⟩ off
+    obtain ⟨z,F,n,exec,user,⟨out,keep⟩,paid⟩ := child body lane w L cutoff budget scaled cutFits fits
+      data (fun _ => 0) v D pos live (fun small => (ready small).1) (fun small => (ready small).2)
+      (by rw [cmpRight]; exact clock) ((cmpRight 1).trans cut) (fun i hi => (cmpRight i).trans (clear i hi))
+      (fun large z => recur large z D live off)
+    refine ⟨z,F,n,installed ▸ exec,Nat.le_floor paid,user,out,?_,?_⟩
+    · intro j
+      exact keep _ (withHelperPort_avoids (fan.trans ext) _ (fun i => (separate j i).symm))
+    · intro j outside _
+      apply keep
+      intro r
+      have ports := DFunLike.congr_fun (ownerSplitBank_fan (saved.trans ext) (fan.trans ext) separate)
+        r
+      exact ports ▸ outside _)
+  exact ⟨z,F,t,exec,paid,user,out,fun j off => frame j off (mergeOutside _ _ separate j off)⟩
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode

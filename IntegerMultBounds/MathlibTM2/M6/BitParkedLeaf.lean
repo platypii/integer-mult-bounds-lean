@@ -174,27 +174,28 @@ theorem parkedStoppedMove [M8.Machine.Net] {T Q : ℕ} {P U : Type}
   refine ⟨leaf,?_⟩
   intro body entry installed
   have separate i j := ext.injective.ne (apart i j)
-  obtain ⟨wrap,run⟩ := parkedMoveTranspose body (saved.trans ext) (fan.trans ext) separate splitCapacity
+  obtain ⟨wrap,run⟩ := parkedMoveTranspose body (saved.trans ext) (fan.trans ext) separate (fan.trans ext) separate splitCapacity
   refine ⟨wrap entry,?_⟩
   intro lane m wide size x u S pos source left empty headers free
-  obtain ⟨z,F,t,exec,paid,user,out,frame⟩ := run entry ⌊142080*stoppedRowCost lane+1⌋₊ lane x (fun _ => 0) u S pos source left empty (by
+  obtain ⟨z,F,t,exec,paid,user,out,frame⟩ := run entry ⌊142080*stoppedRowCost lane+1⌋₊ lane x u S pos source left empty (by
     intro v D live off
     obtain ⟨hdr,clean⟩ := parkedLeafReady saved fan apart fields hs hf lane S D ⟨headers,free⟩ off
     obtain ⟨z,F,n,exec,paid,user,out,keep⟩ := child body lane _ _ v D pos live hdr clean
-    refine ⟨z,F,n,installed ▸ exec,Nat.le_floor paid,user,out,?_,?_⟩
+    refine ⟨z,F,n,installed ▸ exec,Nat.le_floor paid,user,?_,?_,?_⟩
+    · exact returnedRowFan (fan.trans ext) _ _ F out
     · intro j
       apply keep
       intro r
       simp only [withHelperPort,Function.Embedding.coeFn_mk,Fin.addCases_left,Fin.lastCases_castSucc]
       change (ext (fan (r.castAdd 2))).succ ≠ (ext (saved j)).succ
       exact Fin.succ_injective _ |>.ne (ext.injective.ne (apart j _).symm)
-    · intro j outside
+    · intro j outside _
       apply keep
       intro r
       have ports := DFunLike.congr_fun (ownerSplitBank_fan (saved.trans ext) (fan.trans ext) separate)
         (r.castSucc.castAdd 2)
       exact ports ▸ outside _)
-  refine ⟨z,F,t,exec,?_,user,out,frame⟩
+  refine ⟨z,F,t,exec,?_,user,out,fun j off => frame j off (mergeOutside _ _ separate j off)⟩
   apply (Nat.cast_le.mpr paid).trans
   rw [← size]
   unfold parkedStoppedRate stoppedRowCost
