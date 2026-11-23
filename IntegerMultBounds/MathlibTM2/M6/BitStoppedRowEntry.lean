@@ -275,7 +275,7 @@ theorem cleanStoppedInterval [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity : c
       (∀ j, S.L j = []) → (∀ j, j ≠ inputPort → (∀ i, master i ≠ j) → S.R j = []) →
       let y := Shared50RecursiveNodeRows.transpose (one_dvd wide.rows) input
       ∃ z F t, Exec host code (mk u S) t (mk z F) ∧
-        t ≤ ⌊(C*(lane.width : ℝ)^M8.Machine.BudgetBound.tau)*(V*142080 : ℕ)⌋₊ ∧
+        t+cleanupWeight (F.L inputPort) (F.R inputPort) ≤ ⌊(C*(lane.width : ℝ)^M8.Machine.BudgetBound.tau)*(V*142080 : ℕ)⌋₊ ∧
         z.user = u.user ∧ RecordPayload inputPort (fun _ => blank) 0 y F ∧
         ∀ j, j ≠ inputPort → F.L j = [] ∧ F.R j = [] := by
   classical
@@ -283,7 +283,7 @@ theorem cleanStoppedInterval [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity : c
   let scratch := (List.finRange T).filter (fun j => j ≠ port)
   have distinct : scratch.Nodup := (List.nodup_finRange T).filter _
   have mem (j) : j ∈ scratch ↔ j ≠ port := by simp [scratch]
-  let extra := 8*T+1
+  let extra := 8*T+7
   refine ⟨C+extra,T,host,worker.seq (clearWorkTapes scratch),port,master,by positivity,apart,?_⟩
   intro lane V wide size positive width input u S source headers left blank y
   obtain ⟨v,D,a,exec,paid,user,rep⟩ := run lane positive width input u S source headers left blank
@@ -308,17 +308,20 @@ theorem cleanStoppedInterval [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity : c
     have room := Nat.mul_le_mul_right (8*V) count
     change tapeCharge cleanupWeight scratch S ≤ scratch.length * (8*V) at stock
     have bounded := stock.trans room
-    have leaf := paid scratch distinct
+    have leaf := paid (port::scratch) (List.nodup_cons.mpr ⟨fun h => (mem port).mp h rfl,distinct⟩)
     let mass := V*142080
     let power := (lane.width : ℝ)^M8.Machine.BudgetBound.tau
-    have total : a+(tapeCharge cleanupWeight scratch D+1) ≤ ⌊C*power*mass⌋₊+extra*mass := by
-      change a+tapeCharge cleanupWeight scratch D ≤ tapeCharge cleanupWeight scratch S+⌊C*power*mass⌋₊ at leaf
+    have origin : cleanupWeight (S.L port) (S.R port) = 2*mass+4 := by
+      simp [cleanupWeight,left,source,mass]
+    have total : a+(tapeCharge cleanupWeight scratch D+1)+cleanupWeight (D.L port) (D.R port) ≤ ⌊C*power*mass⌋₊+extra*mass := by
+      change a+(cleanupWeight (D.L port) (D.R port)+tapeCharge cleanupWeight scratch D) ≤ (cleanupWeight (S.L port) (S.R port)+tapeCharge cleanupWeight scratch S)+⌊C*power*mass⌋₊ at leaf
       have vcost : T*(8*V) = (8*T)*V := by ring
       have mpos : 0 < mass := Nat.mul_pos positive (by decide)
       have scale := Nat.mul_le_mul_left (8*T) (show V ≤ mass from Nat.le_mul_of_pos_right _ (by decide))
       dsimp only [extra]
-      rw [Nat.add_mul,Nat.one_mul]
+      rw [Nat.add_mul]
       omega
+    simp only [ite_eq_right (fun h => (mem port).mp h rfl)]
     apply total.trans
     apply Nat.le_floor
     have one : 1 ≤ power := Real.one_le_rpow (by exact_mod_cast width) M8.Machine.BudgetBound.exponent_range.1.le
