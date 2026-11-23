@@ -39,14 +39,26 @@ private theorem runOwnerList {T Q V c : ℕ} {P U : Type} (fan : Fin (c+2) ↪ F
 
 private theorem leafStock {B scratch : ℕ} (headers : Fin 6 → List (Fin (prime+4))) :
     let fan := (Fin.castAddEmb 6 (n := B)).trans (Fin.castAddEmb scratch)
-    ∃ seed : Stacks ((B+6)+scratch) prime, ∀ D : Stacks ((B+6)+scratch) prime,
+    let slots := (Fin.natAddEmb B (m := 6)).trans (Fin.castAddEmb scratch)
+    ∃ seed : Stacks ((B+6)+scratch) prime,
+      (∀ i, seed.R (slots i) = headers i) ∧
+      (∀ j, (∀ i, fan i ≠ j) → seed.L j = [] ∧ ((∀ i, slots i ≠ j) → seed.R j = [])) ∧ ∀ D : Stacks ((B+6)+scratch) prime,
       (∀ t, (∀ j, fan j ≠ t) → D.L t = seed.L t ∧ D.R t = seed.R t) →
       (∀ j : Fin 6, D.R ((j.natAdd B).castAdd scratch) = headers j) ∧
       ∀ j : Fin scratch, D.L (j.natAdd (B+6)) = [] ∧ D.R (j.natAdd (B+6)) = [] := by
-  intro fan
+  intro fan slots
   let seed : Stacks ((B+6)+scratch) prime := ⟨[],[],fun _ => [],
     Fin.addCases (Fin.addCases (fun _ => []) headers) (fun _ => [])⟩
-  refine ⟨seed,?_⟩
+  refine ⟨seed,fun i => by simp [seed,slots],?_,?_⟩
+  · intro j _
+    refine ⟨rfl,fun away => ?_⟩
+    revert away
+    induction j using Fin.addCases with
+    | right j => simp [seed]
+    | left j =>
+      induction j using Fin.addCases with
+      | left j => simp [seed]
+      | right j => exact fun away => (away j rfl).elim
   intro D stock
   constructor
   · intro j
@@ -64,18 +76,30 @@ private theorem leafStock {B scratch : ℕ} (headers : Fin 6 → List (Fin (prim
       omega)
     simpa [seed] using h
 
+private theorem leafSlots_apart {B scratch T : ℕ} (place : Fin ((B+6)+scratch) ↪ Fin T)
+    (i : Fin 6) (j : Fin B) :
+    place ((i.natAdd B).castAdd scratch) ≠ place ((j.castAdd 6).castAdd scratch) := by
+  apply place.injective.ne
+  intro eq
+  have h := congrArg Fin.val eq
+  change B+i.val = j.val at h
+  omega
+
 /-- All role words are transposed at the inherited interval addresses. Headers
 and scratch are shared by successive owners, then the output is materialized. -/
-theorem stoppedRoleHandoff [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity : columnCapacity ≤ Q)
+theorem stoppedRoleSeedHandoff [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity : columnCapacity ≤ Q)
     : ∃ (T : ℕ) (host : Empty → Pr Empty T Q prime U) (program : Pr Empty T Q prime U)
-      (input output : Fin (142081+2) ↪ Fin T), ∀ (child lane : Descriptor), 0 < volume prime lane →
+      (input output : Fin (142081+2) ↪ Fin T) (slots : Fin 6 ↪ Fin T),
+    (∀ i j, slots i ≠ input j) ∧ (∀ j : Fin 2, output (j.natAdd 142081) = input (j.natAdd 142081)) ∧ ∀ (child lane : Descriptor), 0 < volume prime lane →
     ∀ (position : Fin (volume prime child) ≃ Fin (volume prime lane)),
     lane.width = child.width → InheritedIntervalPositions child lane rfl position →
     let V := volume prime lane
     let price := (descriptorHeaderCost lane : ℝ) +
       ((LeafCore.small+5 : ℕ)*|LeafCore.C|+8+LeafCore.small*(16+8*|LeafCore.C|))*
         ((V : ℝ)*((max 1 child.width : ℕ) : ℝ)^M8.Machine.BudgetBound.tau)
-    ∃ prepared, PackedPieceHandoff V (fun x y => ∀ (r : Fin 142080) j, y r.castSucc (position j) =
+    ∃ prepared : Stacks T prime, (∀ i, prepared.R (slots i) = (Routines.hdr lane i).map bitSymbol) ∧
+      (∀ j, (∀ i, input i ≠ j) → prepared.L j = [] ∧ ((∀ i, slots i ≠ j) → prepared.R j = [])) ∧
+      PackedPieceHandoff V (fun x y => ∀ (r : Fin 142080) j, y r.castSucc (position j) =
       Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (x r.castSucc ∘ position) j)
       host program input output prepared (⌊142080*price+1⌋₊+142081*(8*V+10)+1) := by
   let B := 142081+2
@@ -86,14 +110,19 @@ theorem stoppedRoleHandoff [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity : col
   let body : Empty → Pr Empty (n+LeafCore.small) Q prime U := Empty.elim
   let code := fun i => hostedStoppedDirectory (P := Empty) (U := U) capacity src (port i)
   let roles := (List.finRange 142080).map Fin.castSucc
-  obtain ⟨program,materialize⟩ := uniformWordStageHandoff fan body (Prog.seqList (roles.map code))
-  refine ⟨_,fun f => embProg (SweepFile.Exit.chart 0 _) id (body f),program,fan.trans (SweepFile.Exit.chart 0 _),returnedFan fan,?_⟩
+  obtain ⟨program,materialize⟩ := uniformWordStageSeedHandoff fan body (Prog.seqList (roles.map code))
+  let slots := src.trans (Fin.castAddEmb LeafCore.small)
+  let place := SweepFile.Exit.chart 0 (n+LeafCore.small)
+  refine ⟨_,fun f => embProg (SweepFile.Exit.chart 0 _) id (body f),program,fan.trans (SweepFile.Exit.chart 0 _),returnedFan fan,slots.trans place,?_,returnedFan_counter fan,?_⟩
+  · exact leafSlots_apart place
   intro child lane positive position width coords V price
-  obtain ⟨seed,prepare⟩ := leafStock (B := B) (scratch := LeafCore.small)
+  obtain ⟨seed,headers,blank,prepare⟩ := leafStock (B := B) (scratch := LeafCore.small)
     (fun j => (Routines.hdr lane j).map bitSymbol)
   let step := Shared50RecursiveNodeRows.transpose (α := ZMod 2) (one_dvd lane.rows)
   let ready (S : Stacks (n+LeafCore.small) prime) := ∀ t, (∀ j, fan j ≠ t) →
     S.L t = seed.L t ∧ S.R t = seed.R t
+  have placed := flatStageSeed_private seed fan slots _ headers blank
+  refine ⟨flatStageSeed seed,placed.1,placed.2,?_⟩
   apply materialize
     seed (fun x y => ∀ (r : Fin 142080) j, y r.castSucc (position j) =
       Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (x r.castSucc ∘ position) j)
@@ -115,6 +144,24 @@ theorem stoppedRoleHandoff [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity : col
     refine ⟨z,F,n',y,ran,by simpa only [List.length_map,List.length_finRange,Nat.cast_ofNat] using paid,user,out,?_⟩
     intro r
     exact (coords.transpose_iff width _ _).2 (acts r.castSucc (List.mem_map.mpr ⟨r,List.mem_finRange _,rfl⟩))
+
+theorem stoppedRoleHandoff [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity : columnCapacity ≤ Q)
+    : ∃ (T : ℕ) (host : Empty → Pr Empty T Q prime U) (program : Pr Empty T Q prime U)
+      (input output : Fin (142081+2) ↪ Fin T), ∀ (child lane : Descriptor), 0 < volume prime lane →
+    ∀ (position : Fin (volume prime child) ≃ Fin (volume prime lane)),
+    lane.width = child.width → InheritedIntervalPositions child lane rfl position →
+    let V := volume prime lane
+    let price := (descriptorHeaderCost lane : ℝ) +
+      ((LeafCore.small+5 : ℕ)*|LeafCore.C|+8+LeafCore.small*(16+8*|LeafCore.C|))*
+        ((V : ℝ)*((max 1 child.width : ℕ) : ℝ)^M8.Machine.BudgetBound.tau)
+    ∃ prepared, PackedPieceHandoff V (fun x y => ∀ (r : Fin 142080) j, y r.castSucc (position j) =
+      Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (x r.castSucc ∘ position) j)
+      host program input output prepared (⌊142080*price+1⌋₊+142081*(8*V+10)+1) := by
+  obtain ⟨T,body,code,src,dst,_,_,_,run⟩ := stoppedRoleSeedHandoff (U := U) capacity
+  refine ⟨T,body,code,src,dst,?_⟩
+  intro child lane pos position width coords
+  obtain ⟨seed,_,_,exec⟩ := run child lane pos position width coords
+  exact ⟨seed,exec⟩
 
 theorem leafBill_bound (V width header : ℕ) (rate tau : ℝ)
     (vol : 0 < V) (active : 0 < width) (headers : header ≤ 110*V) (nonneg : 0 ≤ rate)
@@ -156,27 +203,30 @@ theorem stoppedRoleCost [M8.Machine.Net] {U : Type} :
 /-- At a stopped child the same finite program works at every descriptor width.
 Its push bound can therefore be absorbed once into the leaf coefficient,
 including the cleanup of any selected private tapes. -/
-theorem stoppedRoleCleanupCost [M8.Machine.Net] {U : Type} {Q : ℕ} (capacity : columnCapacity ≤ Q) :
+theorem stoppedRoleSeedCleanupCost [M8.Machine.Net] {U : Type} {Q : ℕ} (capacity : columnCapacity ≤ Q) :
     ∃ (C : ℝ) (T : ℕ) (host : Empty → Pr Empty T Q prime U) (program : Pr Empty T Q prime U)
-      (src dst : Fin (142081+2) ↪ Fin T), 0 ≤ C ∧
+      (src dst : Fin (142081+2) ↪ Fin T) (slots : Fin 6 ↪ Fin T), 0 ≤ C ∧
+    (∀ i j, slots i ≠ src j) ∧ (∀ j : Fin 2, dst (j.natAdd 142081) = src (j.natAdd 142081)) ∧
     ∀ (child lane : Descriptor) (position : Fin (volume prime child) ≃ Fin (volume prime lane)),
       0 < volume prime lane → 0 < child.width → lane.width = child.width →
       InheritedIntervalPositions child lane rfl position →
       let V := volume prime lane
-      ∃ seed : Stacks T prime, PackedPieceHandoffWithCharge cleanupWeight V
+      ∃ seed : Stacks T prime, (∀ i, seed.R (slots i) = (Routines.hdr lane i).map bitSymbol) ∧
+      (∀ j, (∀ i, src i ≠ j) → seed.L j = [] ∧ ((∀ i, slots i ≠ j) → seed.R j = [])) ∧
+      PackedPieceHandoffWithCharge cleanupWeight V
         (fun x y => ∀ (r : Fin 142080) j, y r.castSucc (position j) =
           Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (x r.castSucc ∘ position) j)
         host program src dst seed ⌊(C*(child.width : ℝ)^M8.Machine.BudgetBound.tau)*(V*142080 : ℕ)⌋₊ := by
-  obtain ⟨T,host,program,src,dst,worker⟩ := stoppedRoleHandoff (U := U) capacity
+  obtain ⟨T,host,program,src,dst,slots,privateSlots,controls,worker⟩ := stoppedRoleSeedHandoff (U := U) capacity
   let rate : ℝ := (LeafCore.small+5 : ℕ)*|LeafCore.C|+8+LeafCore.small*(16+8*|LeafCore.C|)
   let push := Fast.Main.mnProgPush program
   let factor := 1+6*push
   have rate_nonneg (m : ℕ) (r : ℝ) : 0 ≤ ((m+5 : ℕ) : ℝ)*|r|+8+m*(16+8*|r|) := by positivity
   have nonneg : 0 ≤ rate := rate_nonneg _ _
-  refine ⟨(factor : ℝ)*(130+rate),T,host,program,src,dst,mul_nonneg (Nat.cast_nonneg _) (add_nonneg (by norm_num) nonneg),?_⟩
+  refine ⟨(factor : ℝ)*(130+rate),T,host,program,src,dst,slots,mul_nonneg (Nat.cast_nonneg _) (add_nonneg (by norm_num) nonneg),privateSlots,controls,?_⟩
   intro child lane position positive active width coords V
-  obtain ⟨seed,run⟩ := worker child lane positive position width coords
-  refine ⟨seed,?_⟩
+  obtain ⟨seed,headers,blank,run⟩ := worker child lane positive position width coords
+  refine ⟨seed,headers,blank,?_⟩
   intro x u S ready prepared
   obtain ⟨z,F,n,y,exec,paid,user,out,effect⟩ := run x u S ready prepared
   refine ⟨z,F,n,y,exec,?_,user,out,effect⟩
@@ -194,6 +244,23 @@ theorem stoppedRoleCleanupCost [M8.Machine.Net] {U : Type} {Q : ℕ} (capacity :
   have scaled := mul_le_mul_of_nonneg_left bill (Nat.cast_nonneg (α := ℝ) factor)
   apply joint.trans (Nat.add_le_add_left (Nat.le_floor _) _)
   simpa only [Nat.cast_mul,mul_assoc] using scaled
+
+theorem stoppedRoleCleanupCost [M8.Machine.Net] {U : Type} {Q : ℕ} (capacity : columnCapacity ≤ Q) :
+    ∃ (C : ℝ) (T : ℕ) (host : Empty → Pr Empty T Q prime U) (program : Pr Empty T Q prime U)
+      (src dst : Fin (142081+2) ↪ Fin T), 0 ≤ C ∧
+    ∀ (child lane : Descriptor) (position : Fin (volume prime child) ≃ Fin (volume prime lane)),
+      0 < volume prime lane → 0 < child.width → lane.width = child.width →
+      InheritedIntervalPositions child lane rfl position →
+      let V := volume prime lane
+      ∃ seed : Stacks T prime, PackedPieceHandoffWithCharge cleanupWeight V
+        (fun x y => ∀ (r : Fin 142080) j, y r.castSucc (position j) =
+          Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (x r.castSucc ∘ position) j)
+        host program src dst seed ⌊(C*(child.width : ℝ)^M8.Machine.BudgetBound.tau)*(V*142080 : ℕ)⌋₊ := by
+  obtain ⟨C,T,body,code,src,dst,_,pos,_,_,run⟩ := stoppedRoleSeedCleanupCost (U := U) capacity
+  refine ⟨C,T,body,code,src,dst,pos,?_⟩
+  intro child lane position live width same coords
+  obtain ⟨seed,_,_,exec⟩ := run child lane position live width same coords
+  exact ⟨seed,exec⟩
 
 /-- Only active scheduled children require a recursive handoff. Below the
 cutoff the role program fits the ordinary linear leaf allowance. -/

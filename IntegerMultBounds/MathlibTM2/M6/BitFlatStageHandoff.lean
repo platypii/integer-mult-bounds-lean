@@ -39,7 +39,7 @@ theorem flatStageSeed_private {T k : ℕ} (seed : Stacks T prime)
 
 /-- Embed the worker on private tapes and copy its result once. The next
 piece receives the same two controls and exact left-aligned owner words. -/
-theorem uniformWordStageHandoff {P U : Type} {T Q : ℕ} (fan : Fin (142081+2) ↪ Fin T)
+theorem uniformWordStageSeedHandoff {P U : Type} {T Q : ℕ} (fan : Fin (142081+2) ↪ Fin T)
     (body : P → Pr P T Q prime U) (worker : Pr P T Q prime U) :
     let place := Exit.chart 0 T
     let host := fun f => embProg place id (body f)
@@ -50,15 +50,14 @@ theorem uniformWordStageHandoff {P U : Type} {T Q : ℕ} (fan : Fin (142081+2) �
       (∀ j, (∀ i, fan i ≠ j) → S.L j = seed.L j ∧ S.R j = seed.R j) →
       ∃ z F k y, Exec body worker (mk u S) k (mk z F) ∧ (k : ℝ) ≤ price ∧
         z.user = u.user ∧ HelperFan fan y F ∧ effect x y) →
-    ∃ prepared, PackedPieceHandoff V effect host code (fan.trans place) (returnedFan fan)
-      prepared (⌊price⌋₊+142081*(8*V+10)+1) := by
+    PackedPieceHandoff V effect host code (fan.trans place) (returnedFan fan)
+      (flatStageSeed seed) (⌊price⌋₊+142081*(8*V+10)+1) := by
   classical
   intro place host
   obtain ⟨copy,materialize⟩ := packedResultWords_exec fan host
   refine ⟨(embProg place id worker).seq copy,?_⟩
   intro V seed effect price run
   let prepared := flatStageSeed seed
-  refine ⟨prepared,?_⟩
   intro x u S words fresh
   have live : ParentStageWords (fun i => fan (i.castAdd 2)) fan V x (embStk place S) :=
     ⟨words.left,words.right,words.controls⟩
@@ -83,6 +82,22 @@ theorem uniformWordStageHandoff {P U : Type} {T Q : ℕ} (fan : Fin (142081+2) �
     exact blank _ (fun i => e.injective.ne (by intro h; cases h)))
   exact ⟨z,G,m+l,y,Exec.seq ran copied,by have := Nat.le_floor time; omega,
     hz.trans (same.trans user),result,act⟩
+
+theorem uniformWordStageHandoff {P U : Type} {T Q : ℕ} (fan : Fin (142081+2) ↪ Fin T)
+    (body : P → Pr P T Q prime U) (worker : Pr P T Q prime U) :
+    let place := Exit.chart 0 T
+    let host := fun f => embProg place id (body f)
+    ∃ code, ∀ {V : ℕ} (seed : Stacks T prime)
+    (effect : (Fin 142081 → Fin V → ZMod 2) → (Fin 142081 → Fin V → ZMod 2) → Prop)
+    (price : ℝ),
+    (∀ x u S, ParentStageWords (fun i => fan (i.castAdd 2)) fan V x S →
+      (∀ j, (∀ i, fan i ≠ j) → S.L j = seed.L j ∧ S.R j = seed.R j) →
+      ∃ z F k y, Exec body worker (mk u S) k (mk z F) ∧ (k : ℝ) ≤ price ∧
+        z.user = u.user ∧ HelperFan fan y F ∧ effect x y) →
+    ∃ prepared, PackedPieceHandoff V effect host code (fan.trans place) (returnedFan fan)
+      prepared (⌊price⌋₊+142081*(8*V+10)+1) := by
+  obtain ⟨code,run⟩ := uniformWordStageSeedHandoff fan body worker
+  exact ⟨code,fun seed effect price exec => ⟨flatStageSeed seed,run seed effect price exec⟩⟩
 
 theorem flatWordStageWithSeedCharge {P U : Type} {T Q : ℕ} (fan : Fin (142081+2) ↪ Fin T)
     (body : P → Pr P T Q prime U) (worker : Pr P T Q prime U) :
