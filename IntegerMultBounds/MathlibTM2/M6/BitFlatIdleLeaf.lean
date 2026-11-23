@@ -3,6 +3,8 @@ module
 public import IntegerMultBounds.MathlibTM2.M6.BitPackedChildLayout
 public import IntegerMultBounds.MathlibTM2.M6.BitFlatIdleCall
 public import IntegerMultBounds.MathlibTM2.M6.BitOrdinaryDirectoryLeaf
+import IntegerMultBounds.MathlibTM2.Host.ForeignStock
+import IntegerMultBounds.MathlibTM2.NativePushBoundMono
 
 /-! Execute a stopped child directly at the physical interval of its remainder owner. -/
 @[expose] public section
@@ -41,6 +43,63 @@ noncomputable def moveWidthProgram {P U : Type} {T Q : ℕ} (r : Fin 10 ↪ Fin 
   let pop := Prog.act (.pop (.rt (r 0)) (fun v _ => v) .done)
   (((push.seq (Node.umul rank (r 0) (r 2) (r 4))).seq pop).seq
     ((unaryBinary (r 2) (r 3) (r 4) (r 5) (r 6) (r 7) (r 8) (r 9)).seq (bclear (r 2))))
+
+open Fast.Main Node in
+/-- The rank multiplier pushes one owner symbol and at most one rank's worth
+of ticks per step. Binary conversion has a constant atomic push bound. -/
+theorem moveWidth_native {P U : Type} {T Q : ℕ} (r : Fin 10 ↪ Fin T) (rank : ℕ) (bound : rank ≤ 64) :
+    mnNativePushBound 65 (moveWidthProgram (P := P) (U := U) (Q := Q) r rank) := by
+  have pushes (a : Act T Q prime U) (k : ℕ) :
+      mnActPush (pushN (r 2) (fun _ => tick) k a) = mnActPush a+k := by
+    induction k generalizing a with
+    | zero => rfl
+    | succ k ih => simp [pushN,mnActPush,ih,Nat.add_assoc]
+  have mult : mnNativePushBound 65 (umul (P := P) (Q := Q) (A := prime) (U := U) rank (r 0) (r 2) (r 4)) := by
+    simp [umul,umulSym,scanR,drainR,popDo,keepIn,moveR,moveStep,whileR,peekR,mnNativePushBound,mnActPush,pushes]
+    omega
+  unfold moveWidthProgram
+  refine ⟨⟨⟨?_,mult⟩,?_⟩,?_⟩
+  all_goals repeat first | apply And.intro | (change _ ≤ (65 : ℕ); exact of_decide_eq_true rfl)
+
+open Fast.Main in
+private theorem placedLeaf_native {P U : Type} {T H Q q : ℕ}
+    (bank : Fin T ↪ Fin H) (capacity : q ≤ Q) (pos : 0 < q)
+    (leaf : Pr Empty T q prime U) (native : mnNativePushBound 65 leaf) :
+    mnNativePushBound 65 (statePlacedNormalized bank capacity pos (Empty.elim : Empty → P) leaf) := by
+  apply embProg_native
+  refine ⟨Nat.zero_le _,?_⟩
+  have action (a : Act T q prime U) :
+      mnActPush (stateMapAct (stateLiftUp capacity) (stateLiftDown pos) a) = mnActPush a := by
+    induction a <;> simp_all [stateMapAct,mnActPush]
+  unfold stateLiftPr
+  induction leaf <;> simp_all [stateMapProg,mnNativePushBound]
+
+open Fast.Main in
+private theorem directoryCore_native {P U : Type} {T Q : ℕ} (M : Program T Q prime)
+    (fields work : List (Fin T)) (count : fields.length ≤ 65) :
+    mnNativePushBound 65 (((Prog.act (pushMarkers fields)).seq (foreign (U := U) M)).seq
+      (clearWorkTapes (P := P) work)) := by
+  have markers (js : List (Fin T)) : mnActPush (pushMarkers (Q := Q) (A := prime) (U := U) js) = js.length := by
+    induction js with
+    | nil => rfl
+    | cons j js ih => simpa only [pushMarkers,mnActPush,List.length_cons] using congrArg (·+1) ih
+  refine ⟨⟨(markers fields).le.trans count,mnNativePushBound_mono (by decide : 2 ≤ 65) (foreign_native M)⟩,?_⟩
+  induction work with
+  | nil => exact Nat.zero_le _
+  | cons j js ih =>
+    exact ⟨by repeat first | apply And.intro | (change _ ≤ (65 : ℕ); exact of_decide_eq_true rfl),ih⟩
+
+open Fast.Main in
+private theorem hostedDirectory_native [M8.Machine.Net] {P U : Type} {n Q : ℕ}
+    (capacity : columnCapacity ≤ Q) (src : Fin 6 → Fin n) (port : Fin n) :
+    mnNativePushBound 65 (hostedStoppedDirectory (P := P) (U := U) capacity src port) := by
+  unfold hostedStoppedDirectory
+  apply And.intro
+  · unfold copyDirectoryHeaders
+    repeat first | apply And.intro | (change _ ≤ (65 : ℕ); exact of_decide_eq_true rfl)
+  · apply placedLeaf_native
+    apply directoryCore_native
+    simp
 
 /-- A stopped MOVE reads the two leading packed fields directly. Four descriptor fields
 share the unit register; only width and spectator count vary. -/
@@ -199,7 +258,7 @@ private theorem moveLeafBill [M8.Machine.Net] (child : Descriptor) (w : ℕ) (po
 def MoveOnBankExec {n T Q : ℕ} {P U : Type} (node child : Descriptor) (w W : ℕ)
     (ports : Fin (n+35) ↪ Fin T) (archive : List (Fin (prime+4)))
     (position : Fin (volume prime child) ≃ Fin ((prime^(w+1))^16*W))
-    (body : P → Pr P T Q prime U) (code : Pr P T Q prime U) (budget : ℕ) : Prop :=
+    (body : P → Pr P T Q prime U) (code : Pr P T Q prime U) (budget : ℕ) (charged : Bool := false) : Prop :=
   child.width < node.width →
   let bank := scheduledRecordPorts ports
   let stored := RecordReady (b := prime) (w := w) (d := 16) (W := W) bank (prime^(w+1)).size W.size
@@ -207,22 +266,23 @@ def MoveOnBankExec {n T Q : ℕ} {P U : Type} (node child : Descriptor) (w W : �
     SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0
   let clean := fun S : Stacks T prime => ∀ i : Fin (n+35), 35 ≤ i.val → S.L (ports i) = [] ∧ S.R (ports i) = []
   ∀ u S word, stored word S → clean S → ∃ z F t y, Exec body code (mk u S) t (mk z F) ∧
-    t ≤ budget ∧ z.user = u.user ∧
+    workerCost charged S F t budget ∧ z.user = u.user ∧
     stored y F ∧ clean F ∧ F.L (bank 34) = S.L (bank 34) ∧ (∀ j, (∀ i, ports i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j) ∧
     ∀ h, y (position h) = Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (word ∘ position) h
 
 /-- Place the stopped MOVE on the caller's record and row-swap workspace.
 The installed code depends only on rank, ports and state capacity. -/
 theorem stoppedMoveOnBank [M8.Machine.Net] {P U : Type} {n T Q : ℕ}
-    (ports : Fin (n+35) ↪ Fin T) (fits : 44+LeafCore.small ≤ n+35) (capacity : columnCapacity ≤ Q) (rank : ℕ) (positiveRank : 0 < rank) :
+    (ports : Fin (n+35) ↪ Fin T) (fits : 44+LeafCore.small ≤ n+35) (capacity : columnCapacity ≤ Q) (rank : ℕ) (positiveRank : 0 < rank)
+    (charged : Bool := false) (rankBound : charged = true → rank ≤ 64 := by simp) :
     ∃ code : Pr P T Q prime U, ∀ (body : P → Pr P T Q prime U) (f : P), body f = code →
       ∀ (node child : Descriptor) (w W : ℕ), child.width = (w+1)*rank →
       ∀ position : Fin (volume prime child) ≃ Fin ((prime^(w+1))^16*W),
       (∀ i, (position i).val = (CopyChildLayout.packActive child i).val) → 0 < W →
       let core : ℝ := (LeafCore.small+5 : ℕ)*|LeafCore.C|+8+LeafCore.small*(16+8*|LeafCore.C|)
-      ∀ rate : ℝ, 163+core ≤ rate → MoveOnBankExec node child w W ports
+      ∀ rate : ℝ, (if charged then 391*(163+core) else 163+core) ≤ rate → MoveOnBankExec node child w W ports
         (binSyms (CopyChildLayout.spectators child).size (CopyChildLayout.spectators child)) position body (body f)
-        ⌊(rate*(child.width : ℝ)^M8.Machine.BudgetBound.tau)*volume prime child⌋₊ := by
+        ⌊(rate*(child.width : ℝ)^M8.Machine.BudgetBound.tau)*volume prime child⌋₊ charged := by
   let bank := Fin.castAddEmb 9 (n := 35)
   let r : Fin 10 ↪ Fin 44 := ⟨fun i => ⟨33+i.val,by omega⟩,fun i j eq => Fin.ext (by
     have h := congrArg Fin.val eq
@@ -256,12 +316,23 @@ theorem stoppedMoveOnBank [M8.Machine.Net] {P U : Type} {n T Q : ℕ}
   have clock : w < child.width := by
     rw [width]
     exact Nat.lt_of_lt_of_le (Nat.lt_succ_self _) (Nat.le_mul_of_pos_right _ positiveRank)
-  have bill := moveLeafBill child w live clock core rate room
-  dsimp only [core] at bill
   rw [← size] at paid
-  refine ⟨z,F,t,y,?_,Nat.le_floor (paid.trans bill),same.trans user,?_,?_,?_,?_,reads⟩
+  refine ⟨z,F,t,y,?_,?_,same.trans user,?_,?_,?_,?_,reads⟩
   · rw [installed]
     exact exec
+  · cases charged
+    · exact Nat.le_floor (paid.trans (moveLeafBill child w live clock core rate room))
+    · have smallerRate : 163+core ≤ rate/391 := by
+        change 391*(163+core) ≤ rate at room
+        linarith
+      have time := paid.trans (moveLeafBill child w live clock core (rate/391) smallerRate)
+      have native : Fast.Main.mnNativePushBound 65 leaf :=
+        ⟨⟨moveWidth_native _ _ (rankBound rfl),hostedDirectory_native _ _ _⟩,
+          by repeat first | apply And.intro | (change _ ≤ (65 : ℕ); exact of_decide_eq_true rfl)⟩
+      apply workerCost.weaken (charged := true) (nativeCleanupBound exec (embProg_native (e := place.toFun) Empty.elim _ native))
+      apply Nat.le_floor
+      push_cast
+      linarith only [time]
   · exact (recordOnBank place regs _ align _ y F).1 out
   · exact placedScratch fits ports S F ((bank 24).castAdd LeafCore.small) (show 24 < 35 by decide) clean rest frame
   · have ne : regs 34 ≠ (bank 24).castAdd LeafCore.small := (Fin.castAddEmb _).injective.ne (bank.injective.ne (by decide))
