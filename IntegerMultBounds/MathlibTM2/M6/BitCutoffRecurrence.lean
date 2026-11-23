@@ -47,10 +47,11 @@ private theorem stopped_treeBudget [M8.Machine.Net] (D rate : ℝ) (cutoff fuel 
 its child's budget. Stopped children already have that price in the tree. -/
 theorem cutoffNodeCharge_le [M8.Machine.Net] (v : CutoffNodeInput) (work : Fin 9 → ℕ → ℕ → ℕ)
     (assemble : ℕ) (D rate : ℝ) (fuel : ℕ) (active : v.cutoff < v.node.width)
-    (localBound : (v.localCharge work assemble : ℝ) ≤ D*((volume prime v.node : ℝ)*(v.node.width : ℝ)^M8.Machine.BudgetBound.tau)) :
+    (reserve : ℕ := 0)
+    (localBound : ((v.localCharge work assemble+reserve : ℕ) : ℝ) ≤ D*((volume prime v.node : ℝ)*(v.node.width : ℝ)^M8.Machine.BudgetBound.tau)) :
     let next := fun i => if h : i < nodeChildren5.length then
       cutoffTreeBudget D rate v.cutoff fuel (scheduledChild prime v.node ⟨i,h⟩) else 0
-    v.localCharge work assemble + ∑ k : Fin nodeChildren5.length, stageBranchTime v.node v.cutoff rate next k.val ≤
+    (v.localCharge work assemble+reserve) + ∑ k : Fin nodeChildren5.length, stageBranchTime v.node v.cutoff rate next k.val ≤
       cutoffTreeBudget D rate v.cutoff (fuel+1) v.node := by
   intro next
   rw [cutoffTreeBudget,ite_eq_left active]
@@ -107,7 +108,7 @@ theorem cutoffTreeBudget_closed [M8.Machine.Net] (root : Descriptor) (depth cuto
 
 /-- The physical node contract with the child allowances fixed by the
 recurrence, uniformly over all active inputs of one procedure table. -/
-def CutoffTreeExecution [M8.Machine.Net] (P U Config : Type) : Prop :=
+def CutoffTreeExecution [M8.Machine.Net] (P U Config : Type) (entryRate : ℝ := 0) : Prop :=
     let l := (phaseMoveBlocks (sectionD++sectionA) (Frames.snapshot Frames.initialRefs)).1.length
     let r := (phaseMoveBlocks (sectionB++sectionC) (Frames.scatterFinish Frames.beforeScatter)).1.length
     let count := invocationCounts l r
@@ -125,7 +126,7 @@ def CutoffTreeExecution [M8.Machine.Net] (P U Config : Type) : Prop :=
       (idleBody : Unit ⊕ P → Pr (Unit ⊕ P) (72+N) Q prime U),
     (∀ n p j i g, body n p j i (.active g) = large n p j i g) ∧
     (∀ g, idleBody (.inr g) = idleLarge g) ∧
-    ∃ D : ℝ, 0 ≤ D ∧ ∀ (input : Config → CutoffNodeInput), (∀ c, (input c).cutoff < (input c).node.width) →
+    ∃ D : ℝ, 0 ≤ D ∧ entryRate ≤ D ∧ ∀ (input : Config → CutoffNodeInput), (∀ c, (input c).cutoff < (input c).node.width) →
     let d := fun c n p j i => scheduledChild prime (input c).node (child n p j i)
     ∃ position : ∀ c n p j i, Fin (volume prime (d c n p j i)) ≃ Fin ((prime^((input c).w+1))^16*(input c).stageWidth),
     (∀ c n p j i, invocationCoordinates j ((input c).w+1) (input c).stageWidth (position c n p j i)) ∧
@@ -151,9 +152,11 @@ def CutoffTreeExecution [M8.Machine.Net] (P U Config : Type) : Prop :=
       (src dst : Fin (142081+2) ↪ Fin T) (seed : Config → Stacks T prime),
     ∀ (c : Config), let v := input c
       PackedPieceHandoffWithCharge cleanupWeight v.cells (packedChildOutput (v.w+1) v.cells)
-        host code src dst (seed c) (cutoffTreeBudget D rate v.cutoff (v.depth-v.path.length) v.node)
+        host code src dst (seed c) (cutoffTreeBudget D rate v.cutoff (v.depth-v.path.length) v.node -
+          ⌊entryRate*((volume prime v.node : ℝ)*(v.node.width : ℝ)^M8.Machine.BudgetBound.tau)⌋₊)
 
-theorem selectedCutoffTree [M8.Machine.Net] (P U Config : Type) : CutoffTreeExecution P U Config := by
+theorem selectedCutoffTree [M8.Machine.Net] (P U Config : Type) (entryRate : ℝ := 0) :
+    CutoffTreeExecution P U Config entryRate := by
   classical
   unfold CutoffTreeExecution
   intro l r count
@@ -164,8 +167,9 @@ theorem selectedCutoffTree [M8.Machine.Net] (P U Config : Type) : CutoffTreeExec
   refine ⟨N,max 0 leaf,?_⟩
   intro large entry idleLarge idleEntry
   obtain ⟨body,idle,installed,labels,work,assemble,⟨C,localBound⟩,run⟩ := install large entry idleLarge idleEntry
-  let D := max 0 C
-  refine ⟨body,idle,installed,labels,D,le_max_left ..,?_⟩
+  let D := max 0 C + max 0 entryRate
+  refine ⟨body,idle,installed,labels,D,add_nonneg (le_max_left ..) (le_max_left ..),
+    (le_max_right 0 entryRate).trans (le_add_of_nonneg_left (le_max_left ..)),?_⟩
   intro input active d
   obtain ⟨positions,geometry,call⟩ := run input
   refine ⟨positions,geometry,?_⟩
@@ -185,9 +189,24 @@ theorem selectedCutoffTree [M8.Machine.Net] (P U Config : Type) : CutoffTreeExec
   have short := scheduledPath_length_lt prime v.root v.depth v.cutoff shrink v.path (active c)
   have fuel : v.depth-v.path.length = (v.depth-(v.path.length+1))+1 := by omega
   rw [fuel]
-  apply (paid js unique).trans
-  apply Nat.add_le_add_left
-  apply cutoffNodeCharge_le v work assemble D rate _ (active c)
-  exact (localBound v).trans (mul_le_mul_of_nonneg_right (le_max_right _ _) (by positivity))
+  let scale := (volume prime v.node : ℝ)*(v.node.width : ℝ)^M8.Machine.BudgetBound.tau
+  have hs : 0 ≤ scale := by dsimp [scale]; positivity
+  have allowance : (⌊entryRate*scale⌋₊ : ℝ) ≤ max 0 entryRate*scale := by
+    have h := Nat.floor_mono (mul_le_mul_of_nonneg_right (le_max_right 0 entryRate) hs)
+    exact (Nat.cast_le.mpr h).trans (Nat.floor_le (mul_nonneg (le_max_left ..) hs))
+  have combined : ((v.localCharge work assemble+⌊entryRate*scale⌋₊ : ℕ) : ℝ) ≤ D*scale := by
+    rw [Nat.cast_add]
+    unfold D
+    rw [add_mul]
+    exact add_le_add ((localBound v).trans (mul_le_mul_of_nonneg_right (le_max_right ..) hs)) allowance
+  let remaining := v.depth-(v.path.length+1)
+  let children := ∑ k : Fin nodeChildren5.length, stageBranchTime v.node v.cutoff rate (next c) k.val
+  let total := cutoffTreeBudget D rate v.cutoff (remaining+1) v.node
+  have charged := cutoffNodeCharge_le v work assemble D rate remaining (active c) _ combined
+  have core := paid js unique
+  change _ ≤ tapeCharge cleanupWeight js S+(v.localCharge work assemble+children) at core
+  change (v.localCharge work assemble+⌊entryRate*scale⌋₊)+children ≤ total at charged
+  change _ ≤ tapeCharge cleanupWeight js S+(total-⌊entryRate*scale⌋₊)
+  omega
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
