@@ -9,8 +9,8 @@ namespace IntegerMultBounds.MathlibTM2.M6.BitNode
 open IntegerMultBounds.Machine IntegerMultBounds.Networks Cover.Fallback Stack Host
 open Shared50ModularControl (prime)
 
-theorem loadIdleSplit_exec {T Q V m : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
-    (bank : Fin intervalSplitTapes ↪ Fin T) (src tmp : Fin T) (apart : [src,tmp,bank 0].Nodup)
+theorem loadIdleSplit_exec {T Q V m B : ℕ} [NeZero B] {P U : Type} (body : P → Pr P T Q prime U)
+    (bank : Fin B ↪ Fin T) (src tmp : Fin T) (apart : [src,tmp,bank 0].Nodup)
     (span : m*142080 = V) (word : Fin V → ZMod 2) (u : HS T Q prime U) (S : Stacks T prime)
     (payload : RecordPayload src (fun _ => blank) 0 word S)
     (scratch : S.L tmp = [] ∧ S.R tmp = [])

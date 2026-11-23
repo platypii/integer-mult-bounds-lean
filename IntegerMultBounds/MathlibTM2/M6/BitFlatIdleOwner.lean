@@ -23,12 +23,12 @@ theorem mergedOwnerCleanup_le {T : ℕ} (bank : List (Fin T)) (E F : Stacks T pr
     simp only [List.map_cons,List.sum_cons,List.length_cons,Nat.add_mul,Nat.mul_add,one_mul]
     omega
 
-theorem idleOwnerWorker_exec {P U : Type} {T Q V m : ℕ} (body : P → Pr P T Q prime U)
-    (worker : Pr P T Q prime U) (bank : Fin intervalSplitTapes ↪ Fin T)
+theorem idleOwnerWorker_exec {P U : Type} {T Q V m B : ℕ} [NeZero B] (body : P → Pr P T Q prime U)
+    (worker : Pr P T Q prime U) (bank : Fin B ↪ Fin T)
     (owner count saved tmp : Fin T) (apart : [count,bank 0,owner,saved,tmp].Nodup)
     (span : m*142080 = V) (word : Fin V → ZMod 2)
-    (effect : (Fin V → ZMod 2) → Prop) (price stock : ℕ) :
-    let slots := (List.finRange intervalSplitTapes).map bank
+    (effect : (Fin V → ZMod 2) → Prop) (price : ℕ) :
+    let slots := (List.finRange B).map bank
     owner ∉ slots → count ∉ slots → saved ∉ slots → tmp ∉ slots →
     let write := (loadCompactWord (bank 0) tmp count).seq
       (((usub count owner tmp).seq (movePrefix count (bank 0) owner saved tmp)).seq (bclear count))
@@ -37,12 +37,12 @@ theorem idleOwnerWorker_exec {P U : Type} {T Q V m : ℕ} (body : P → Pr P T Q
       S.R count = [] → S.R saved = [] → S.L tmp = [] → S.R tmp = [] →
       (∀ v D, D.R (bank 0) = List.ofFn (fun a : Fin (m*142080) => SparseRoleCircuit.encode (word (a.cast span))) →
         (∀ j, D.L (bank j) = []) → (∀ j, j ≠ 0 → D.R (bank j) = []) →
-        ∃ z F n changed, Exec body worker (mk v D) n (mk z F) ∧ n ≤ price ∧ z.user = v.user ∧
+        ∃ z F n changed, Exec body worker (mk v D) n (mk z F) ∧ z.user = v.user ∧
           effect changed ∧ RecordPayload (bank 0) (fun _ => blank) 0 changed F ∧
-          (slots.map fun j => 4*(F.L j).length+2*(F.R j).length+4).sum ≤ stock ∧
+          n+(slots.map fun j => 4*(F.L j).length+2*(F.R j).length+4).sum ≤ price ∧
           ∀ j, j ∉ slots → F.L j = D.L j ∧ F.R j = D.R j) →
       ∃ z F n changed, Exec body ((loadCompactWord owner tmp (bank 0)).seq (worker.seq (write.seq (clearWorkTapes slots))))
-        (mk u S) n (mk z F) ∧ n ≤ price+stock+28*V+33 ∧ z.user = u.user ∧
+        (mk u S) n (mk z F) ∧ n ≤ price+28*V+33 ∧ z.user = u.user ∧
         effect changed ∧ RecordPayload owner (fun _ => blank) 0 changed F ∧
         ∀ j, j ≠ owner → F.L j = S.L j ∧ F.R j = S.R j := by
   intro slots ho hc hs ht write u S input free count0 saved0 tmpL tmpR act
@@ -51,7 +51,7 @@ theorem idleOwnerWorker_exec {P U : Type} {T Q V m : ℕ} (body : P → Pr P T Q
   have member (j) : bank j ∈ slots := List.mem_map.mpr ⟨j,List.mem_finRange _,rfl⟩
   obtain ⟨v,D,load,user,exactWord,left,right,unchanged⟩ := loadIdleSplit_exec body bank owner tmp
     (by simp [‹owner ≠ tmp›,‹bank 0 ≠ owner›.symm,‹bank 0 ≠ tmp›.symm]) span word u S input ⟨tmpL,tmpR⟩ free
-  obtain ⟨y,G,k,changed,run,speed,same,correct,merged,space,off⟩ := act v D exactWord left right
+  obtain ⟨y,G,k,changed,run,same,correct,merged,space,off⟩ := act v D exactWord left right
   have keep j (h : j ∉ slots) : G.L j = S.L j ∧ G.R j = S.R j := by
     have a := off j h
     have b := unchanged j (fun eq => h (eq ▸ member 0))
