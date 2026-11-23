@@ -71,6 +71,31 @@ theorem scheduledIdleInterval [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity : 
   obtain ⟨position,inherited⟩ := physicalPositions shape _ p coords
   exact ⟨position,smaller,inherited,run a W live positive child position inherited same⟩
 
+private theorem scheduledRead {child wide : Descriptor}
+    {position : Fin (volume prime child) ≃ Fin (volume prime wide)}
+    (coords : InheritedIntervalPositions child wide rfl position) (width : wide.width = child.width)
+    (word : Fin (volume prime wide) → ZMod 2) :
+    ∀ k, Shared50RecursiveNodeRows.transpose (one_dvd wide.rows) word (position k) =
+      Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (word ∘ position) k :=
+  (coords.transpose_iff width word _).2 rfl
+
+/-- A recursive interval call uses the lane descriptor and the interleaved payload.
+Every other tape, including the descriptor, is returned at its entry position. -/
+def IntervalWorkerExec {P U : Type} {N Q : ℕ} (body : P → Pr P (72+N) Q prime U)
+    (worker : P) (lane : Descriptor) (a W budget : ℕ) : Prop :=
+  let bank := Fin.castAddEmb N (n := 72)
+  let wide := {lane with afterD := lane.afterD*142080}
+  ∀ (word : Fin (volume prime wide) → ZMod 2) v D,
+    D.R (bank 2) = binSyms (prime^a).size (prime^a) → D.R (bank 53) = binSyms W.size W →
+    D.R (bank 28) = binSyms 1 1 → (D.R (bank 71)).length = a →
+    RecordPayload (bank 24) (fun _ => blank) 0 word D →
+    (∀ i, D.L (bank (descriptorPorts i)) = [] ∧ D.R (bank (descriptorPorts i)) = (Routines.hdr lane i).map bitSymbol) →
+    D.L (bank 59) = [] → (∀ i : Fin 72, 59 ≤ i.val → i.val ≤ 65 → D.R (bank i) = []) →
+    (∀ j : Fin N, D.L (j.natAdd 72) = [] ∧ D.R (j.natAdd 72) = []) →
+    ∃ z F t, Exec body (body worker) (mk v D) t (mk z F) ∧ t ≤ budget ∧ z.user = v.user ∧
+      RecordPayload (bank 24) (fun _ => blank) 0 (Shared50RecursiveNodeRows.transpose (one_dvd wide.rows) word) F ∧
+      ∀ j, j ≠ bank 24 → F.L j = D.L j ∧ F.R j = D.R j
+
 /-- Compare the scheduled rank width at runtime and charge only the selected child. -/
 theorem scheduledIdleDispatch [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity : columnCapacity ≤ Q)
     (mergeCap : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q) :
@@ -103,11 +128,7 @@ theorem scheduledIdleDispatch [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity : 
       let result := fun (start F : Stacks (72+N) prime) => ∃ changed, RecordPayload (bank 24) (fun _ => blank) 0 changed F ∧
         (∀ k, changed (position k) = Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (word ∘ position) k) ∧
         ∀ k, k ≠ bank 24 → F.L k = start.L k ∧ F.R k = start.R k
-      (cutoff < child.width → ∀ v D, D.L = S.L →
-        (∀ h, D.R (bank (descriptorPorts h)) = (Routines.hdr lane h).map bitSymbol) →
-        (∀ k, (∀ h, k ≠ bank (descriptorPorts h)) → D.R k = S.R k) →
-        ∃ z F t, Exec body (body recursiveLabel) (mk v D) t (mk z F) ∧
-        t ≤ recursiveBudget ∧ z.user = v.user ∧ result D F) →
+      (cutoff < child.width → IntervalWorkerExec body recursiveLabel lane a W recursiveBudget) →
       ∃ z F t, Exec body code (mk u S) t (mk z F) ∧ z.user = u.user ∧ result S F ∧
         t ≤ (4*w+23*child.width+22*L+51) + if cutoff < child.width then recursiveBudget+volume prime child+2
           else ⌊C*(child.width : ℝ)^M8.Machine.BudgetBound.tau*volume prime child⌋₊ := by
@@ -143,9 +164,36 @@ theorem scheduledIdleDispatch [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity : 
       obtain ⟨v₁,D,k,setup,headerTime,initial,dl,fields,off⟩ := physicalIntervalHeaders_exec body bank
         (interval.1+1) (interval.2+1) a W (Nat.succ_le_succ bounds.1) (Nat.succ_le_succ bounds.2)
         (Nat.succ_pos _) positive v S base unit suffix atom scratch (fun i => (headers i).2)
-      obtain ⟨z,F,t,ran,time,user,y,read,act,frame⟩ := recurse active v₁ D dl fields off
       have disjoint (h : Fin 6) : ports h ≠ bank 24 :=
         bank.injective.ne ((by decide : ∀ h, descriptorPorts h ≠ 24) h)
+      have keep (j) (away : ∀ i, j ≠ ports i) := off j away
+      have payloadD : RecordPayload (bank 24) (fun _ => blank) 0 word D := by
+        intro q
+        simpa only [dl,keep _ (fun i => (disjoint i).symm)] using payload q
+      have scratchD (j : Fin 72) (lo : 59 ≤ j.val) (hi : j.val ≤ 65) : D.R (bank j) = [] := by
+        apply (off _ ?_).trans (scratch j lo hi)
+        intro h
+        apply bank.injective.ne
+        exact (by decide : ∀ j : Fin 72, 59 ≤ j.val → ∀ i, j ≠ descriptorPorts i) j lo h
+      have unusedD (j : Fin N) : D.L (j.natAdd 72) = [] ∧ D.R (j.natAdd 72) = [] := by
+        refine ⟨dl ▸ (unused j).1,(off _ ?_).trans (unused j).2⟩
+        intro i eq
+        have h := congrArg Fin.val eq
+        change 72+j.val = (descriptorPorts i).val at h
+        exact (Nat.not_lt_of_ge (Nat.le_add_right 72 j.val)) (h.symm ▸ (descriptorPorts i).isLt)
+      obtain ⟨z,F,t,ran,time,user,read,frame⟩ := recurse active word v₁ D
+        ((off _ (fun i => bank.injective.ne ((by decide : ∀ i, 2 ≠ descriptorPorts i) i))).trans base)
+        ((off _ (fun i => bank.injective.ne ((by decide : ∀ i, 53 ≠ descriptorPorts i) i))).trans suffix)
+        ((off _ (fun i => bank.injective.ne ((by decide : ∀ i, 28 ≠ descriptorPorts i) i))).trans unit)
+        ((congrArg List.length (off _ (fun i => bank.injective.ne ((by decide : ∀ i, 71 ≠ descriptorPorts i) i)))).trans atom)
+        payloadD
+        (fun i => ⟨dl ▸ (headers i).1,fields i⟩) (dl ▸ left) scratchD unusedD
+      let y := Shared50RecursiveNodeRows.transpose (one_dvd wide.rows) word
+      have sameWidth : wide.width = child.width := by
+        change ((interval.2+1)-(interval.1+1))*a = _
+        rw [Nat.add_sub_add_right,← scaled,Nat.mul_comm]
+        exact congrArg (a * ·) (idleDirectoryIndex_rank i j).symm
+      have act := scheduledRead coords sameWidth word
       have noPayload : bank 24 ∉ slots := fun mem => by
         obtain ⟨h,_,eq⟩ := List.mem_map.mp mem
         exact disjoint h eq
