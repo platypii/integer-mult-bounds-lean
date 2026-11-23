@@ -53,7 +53,8 @@ theorem labelRoute_cost_bound [M8.Machine.Net] (P k : ℕ) :
         C * V * (w : ℝ) ^ M8.Machine.BudgetBound.tau :=
   scaledRoute_cost_bound P k 64 (by decide)
 
-theorem stageRoute_rows_runs (r : ℕ) (hrpos : 0 < r) [M8.Machine.Net] {T : ℕ} (io : Fin T) (c : PortCertificate)
+/-- With both endpoints in the stage column order, only the middle factor needs two permutations. -/
+theorem stageRoute_ordered_rows_runs (r : ℕ) (hrpos : 0 < r) [M8.Machine.Net] {T : ℕ} (io : Fin T) (c : PortCertificate)
     (checked : c.Checked) (s : Fin 8) :
     ∃ (program : Graph.Block (T+24) prime) (C : ℕ), Blocks.Leading program ∧
       ∀ (v : Descriptor) (w B : ℕ), 0 < w → 0 < B →
@@ -61,19 +62,19 @@ theorem stageRoute_rows_runs (r : ℕ) (hrpos : 0 < r) [M8.Machine.Net] {T : ℕ
       ∀ (roles : Tapes T prime) (x : Fin (volume prime v) → ZMod 2),
       roles.head io = 0 → roles.tape io = sourceWord x →
       let d := words (LabelSchedule.base v w)
-      let route := (reduce (modulus w) (c.route s)).submatrix stageAxis.symm stageAxis.symm
+      let route := (reduce (modulus w) (c.route s)).submatrix ((stageColumns s).trans stageAxis.symm) ((stageColumns s).trans stageAxis.symm)
       ∃ y : Fin (volume prime v) → ZMod 2,
         LabelPermutation.RowTransport v B w r (fun g => g * route.transpose) (ext x) (ext y) ∧
         GraphContract.Runs program (LabelCall.bank roles v d)
           (LabelCall.bank (setTape roles io (sourceWord y) 0) v d)
-          (C * volume prime v + 28 * LeafCore.coreCost (volume prime v) (w*r)) := by
+          (C * volume prime v + 14 * LeafCore.coreCost (volume prime v) (w*r)) := by
   let e := stageAxis.symm
   let π := stageColumns s
   let rev := π.trans e
   let A := c.spread s
-  let L := (fromBlocks 1 (-A) 0 1).submatrix e e
-  let M := (fromBlocks 1 0 Aᵀ 1).submatrix e e
-  let R := (fromBlocks 1 A 0 (avoid s - block s)).submatrix e e
+  let L := (fromBlocks 1 (-A) 0 1).submatrix rev rev
+  let M := (fromBlocks 1 0 Aᵀ 1).submatrix rev rev
+  let R := (fromBlocks 1 A 0 (avoid s - block s)).submatrix rev rev
   obtain ⟨_,om,_⟩ := stageFactor_order c s
   have order (i j : Fin 64) (h : i < j) : stageAxis (e i) < stageAxis (e j) := by simpa [e]
   have hk : 2 ≤ 64*r := by omega
@@ -83,34 +84,42 @@ theorem stageRoute_rows_runs (r : ℕ) (hrpos : 0 < r) [M8.Machine.Net] {T : ℕ
   let ps := stageColumnPairs s
   have inv : Function.Involutive π := fun j => stageColumn_involutive s j
   obtain ⟨ol,orr⟩ := stageFactor_seven_order c s
-  have left := LabelRoute.ordered_rows_runs hrpos hk io L π inv ps (stageColumnPairs_prod s) ol hl
-  have right := LabelRoute.ordered_rows_runs hrpos hk io R π inv ps (stageColumnPairs_prod s) orr hr
+  have undo : M.submatrix π π = (fromBlocks 1 0 Aᵀ 1).submatrix e e := by
+    ext i j
+    change (fromBlocks 1 0 Aᵀ 1) (e (π (π i))) (e (π (π j))) = _
+    rw [inv i,inv j]
+    rfl
+  have lower : IntegerMultBounds.Swap.Shear.LowerTriangular (M.submatrix π π) := by
+    rw [undo]
+    exact fun i j h => om _ _ (order i j h)
+  have support : ∀ op ∈ LabelAddress.rowPass r (M.submatrix π π), FlatCoordinateSchedule.Supported op := undo ▸ hm
+  have middle := LabelRoute.ordered_rows_runs hrpos hk io M π inv ps (stageColumnPairs_prod s) lower support
   obtain ⟨pc,pb⟩ := LabelFactorization.listedOverhead r hrpos ps
   let coeff := fun (E : Matrix (Fin 64) (Fin 64) ℚ) (hs : ∀ op ∈ LabelAddress.rowPass r E,
     FlatCoordinateSchedule.Supported op) => LabelProgram.coefficient (LabelProgram.rowPass hk E hs)
   let upperBlock := fun (ps : List (LabelSchedule.Pair 64)) (E : Matrix (Fin 64) (Fin 64) ℚ) hs =>
     Blocks.seqB (Blocks.seqB (LabelRoute.rowPivot r io ps) (LabelProgram.program io (LabelProgram.rowPass hk E hs)))
       (LabelRoute.rowPivot r io ps)
-  let program := Blocks.seqB (Blocks.seqB (upperBlock ps (R.submatrix π π) hr)
-    (LabelProgram.program io (LabelProgram.rowPass hk M hm))) (upperBlock ps (L.submatrix π π) hl)
-  refine ⟨program,4*pc+coeff (R.submatrix π π) hr+coeff M hm+
-    coeff (L.submatrix π π) hl+2,Blocks.seq_leading _ _,?_⟩
+  let program := Blocks.seqB (Blocks.seqB (LabelProgram.program io (LabelProgram.rowPass hk R hr))
+    (upperBlock ps (M.submatrix π π) support)) (LabelProgram.program io (LabelProgram.rowPass hk L hl))
+  refine ⟨program,2*pc+coeff R hr+coeff (M.submatrix π π) support+coeff L hl+2,Blocks.seq_leading _ _,?_⟩
   intro v w B hw hb shape pos roles x head tape d route
   have budget := pb v w B (by decide) hw hb shape pos
   rw [show ps.length = 7 from stageColumnPairs_length s] at budget
   have u := stageFactor_reduce c checked s rev w
   have mid := stageFactor_reduce c checked s e w
-  obtain ⟨y,xy,r₁⟩ := right v w B hw hb shape pos u.2.2.2.1 roles x head tape
-  obtain ⟨z,r₂,yz⟩ := LabelBits.rowPass_runs hk M hm (fun i j h => om _ _ (order i j h))
-    mid.2.2.1 shape hw hb pos io (setTape roles io (sourceWord y) 0) y (by simp [setTape]) (by simp [setTape])
-  obtain ⟨out,zo,r₃⟩ := left v w B hw hb shape pos u.2.1
+  obtain ⟨y,r₁,xy⟩ := LabelBits.rowPass_runs hk R hr orr u.2.2.2.1 shape hw hb pos io roles x head tape
+  have unit : IsUnit (reduce (modulus w) (M.submatrix π π)) := undo ▸ mid.2.2.1
+  obtain ⟨z,yz,r₂⟩ := middle v w B hw hb shape pos unit
+    (setTape roles io (sourceWord y) 0) y (by simp [setTape]) (by simp [setTape])
+  obtain ⟨out,r₃,zo⟩ := LabelBits.rowPass_runs hk L hl ol u.2.1 shape hw hb pos io
     (setTape roles io (sourceWord z) 0) z (by simp [setTape]) (by simp [setTape])
   simp only [SharedPlacementAlphabet.setTape_setTape] at r₂ r₃
-  refine ⟨out,?_,Blocks.runs_mono (Blocks.seq_runs (Blocks.seq_leading _ _) (Blocks.seq_leading _ _)
-    (Blocks.seq_runs (Blocks.seq_leading _ _) (LabelProgram.leading _ _) r₁ r₂) r₃) ?_⟩
+  refine ⟨out,?_,Blocks.runs_mono (Blocks.seq_runs (Blocks.seq_leading _ _) (LabelProgram.leading _ _)
+    (Blocks.seq_runs (LabelProgram.leading _ _) (Blocks.seq_leading _ _) r₁ r₂) r₃) ?_⟩
   · have product : route = reduce (modulus w) L * (reduce (modulus w) M * reduce (modulus w) R) := by
-      change ((reduce (prime^w) (c.route s)).submatrix e e) = _
-      rw [mid.1,← submatrix_mul_equiv _ _ e e e,← submatrix_mul_equiv _ _ e e e]
+      change ((reduce (prime^w) (c.route s)).submatrix rev rev) = _
+      rw [u.1,← submatrix_mul_equiv _ _ rev rev rev,← submatrix_mul_equiv _ _ rev rev rev]
       rfl
     intro g a ha row hrow b hB h hh m hm' k hk' t ht
     change Matrix (Fin r) (Fin 64) (ZMod (modulus w)) at g
@@ -127,6 +136,101 @@ theorem stageRoute_rows_runs (r : ℕ) (hrpos : 0 < r) [M8.Machine.Net] {T : ℕ
       ((yz yLabel a ha row hrow b hB h hh m hm' k hk' t ht).trans (xy g a ha row hrow b hB h hh m hm' k hk' t ht))
   · have live := RecursiveAffinePrepare.volume_positive Shared50ModularControl.prime_prime.two_le v pos
     dsimp only [coeff]
+    simp only [Nat.add_mul,Nat.mul_assoc] at *
+    omega
+
+theorem stageRoute_ordered_list_runs (r : ℕ) (hrpos : 0 < r) [M8.Machine.Net] {T : ℕ} (io : Fin T) (cs : List PortCertificate)
+    (checked : ∀ c ∈ cs, c.Checked) (s : Fin 8) :
+    ∃ (program : Graph.Block (T+24) prime) (C : ℕ), Blocks.Leading program ∧
+      ∀ (v : Descriptor) (w B : ℕ), 0 < w → 0 < B →
+      v.beforeH = B*prime^(64*(w*r)) → v.Positive →
+      ∀ (roles : Tapes T prime) (x : Fin (volume prime v) → ZMod 2),
+      roles.head io = 0 → roles.tape io = sourceWord x →
+      let d := words (LabelSchedule.base v w)
+      let e := (stageColumns s).trans stageAxis.symm
+      let route := fun (c : PortCertificate) => ((reduce (modulus w) (c.route s)).submatrix e e).transpose
+      ∃ y : Fin (volume prime v) → ZMod 2,
+        LabelPermutation.RowTransport v B w r (fun g => cs.foldl (fun a c => a * route c) g) (ext x) (ext y) ∧
+        GraphContract.Runs program (LabelCall.bank roles v d)
+          (LabelCall.bank (setTape roles io (sourceWord y) 0) v d)
+          (C * volume prime v + cs.length * 14 * LeafCore.coreCost (volume prime v) (w*r)) := by
+  induction cs with
+  | nil =>
+    refine ⟨SharedBankSkeleton.identity _ _ (by omega),0,fun _ => rfl,?_⟩
+    intro v w B hw hb hv hp roles x head tape d e route
+    have kept : setTape roles io (sourceWord x) 0 = roles := by
+      rw [← head,← tape]; simp [setTape,Function.update_eq_self]
+    refine ⟨x,fun _ => by intros; rfl,?_⟩
+    rw [kept]
+    simp only [List.length_nil,Nat.zero_mul,Nat.add_zero]
+    exact skip_hoare _ _
+  | cons c cs ih =>
+    obtain ⟨a,C,la,first⟩ := stageRoute_ordered_rows_runs r hrpos io c (checked c List.mem_cons_self) s
+    obtain ⟨b,D,lb,rest⟩ := ih (fun t ht => checked t (List.mem_cons_of_mem _ ht))
+    refine ⟨Blocks.seqB a b,C+D+1,Blocks.seq_leading _ _,?_⟩
+    intro v w B hw hb hv hp roles x head tape d e route
+    obtain ⟨y,xy,r₁⟩ := first v w B hw hb hv hp roles x head tape
+    obtain ⟨z,yz,r₂⟩ := rest v w B hw hb hv hp (setTape roles io (sourceWord y) 0) y
+      (by simp [setTape]) (by simp [setTape])
+    simp only [SharedPlacementAlphabet.setTape_setTape] at r₂
+    refine ⟨z,?_,Blocks.runs_mono (Blocks.seq_runs la lb r₁ r₂) ?_⟩
+    · intro g a ha row hr b hb h hh mid hm d hd after he
+      change Matrix (Fin r) (Fin 64) (ZMod (modulus w)) at g
+      exact (yz (g * route c) a ha row hr b hb h hh mid hm d hd after he).trans
+        (xy g a ha row hr b hb h hh mid hm d hd after he)
+    · have live := RecursiveAffinePrepare.volume_positive Shared50ModularControl.prime_prime.two_le v hp
+      simp only [List.length_cons,Nat.add_mul,Nat.one_mul] at *
+      omega
+
+theorem stageRoute_rows_runs (r : ℕ) (hrpos : 0 < r) [M8.Machine.Net] {T : ℕ} (io : Fin T) (c : PortCertificate)
+    (checked : c.Checked) (s : Fin 8) :
+    ∃ (program : Graph.Block (T+24) prime) (C : ℕ), Blocks.Leading program ∧
+      ∀ (v : Descriptor) (w B : ℕ), 0 < w → 0 < B →
+      v.beforeH = B*prime^(64*(w*r)) → v.Positive →
+      ∀ (roles : Tapes T prime) (x : Fin (volume prime v) → ZMod 2),
+      roles.head io = 0 → roles.tape io = sourceWord x →
+      let d := words (LabelSchedule.base v w)
+      let route := (reduce (modulus w) (c.route s)).submatrix stageAxis.symm stageAxis.symm
+      ∃ y : Fin (volume prime v) → ZMod 2,
+        LabelPermutation.RowTransport v B w r (fun g => g * route.transpose) (ext x) (ext y) ∧
+        GraphContract.Runs program (LabelCall.bank roles v d)
+          (LabelCall.bank (setTape roles io (sourceWord y) 0) v d)
+          (C * volume prime v + 28 * LeafCore.coreCost (volume prime v) (w*r)) := by
+  let π := stageColumns s
+  let ps := stageColumnPairs s
+  obtain ⟨body,C,leading,run⟩ := stageRoute_ordered_rows_runs r hrpos io c checked s
+  obtain ⟨P,overhead⟩ := LabelFactorization.listedOverhead r hrpos ps
+  let pivot := LabelRoute.rowPivot r io ps
+  refine ⟨Blocks.seqB (Blocks.seqB pivot body) pivot,2*P+C,Blocks.seq_leading _ _,?_⟩
+  intro v w B hw hb shape pos roles x head tape d route
+  have move := LabelRoute.listedPivot_runs r π io ps (stageColumnPairs_prod s)
+    v w B (Nat.mul_pos hw hrpos) hb shape pos
+  obtain ⟨y,xy,r₁⟩ := move roles x head tape
+  obtain ⟨z,yz,r₂⟩ := run v w B hw hb shape pos (setTape roles io (sourceWord y) 0) y
+    (by simp [setTape]) (by simp [setTape])
+  obtain ⟨out,zo,r₃⟩ := move (setTape roles io (sourceWord z) 0) z
+    (by simp [setTape]) (by simp [setTape])
+  simp only [SharedPlacementAlphabet.setTape_setTape] at r₂ r₃
+  refine ⟨out,?_,Blocks.runs_mono (Blocks.seq_runs (Blocks.seq_leading _ _) (Blocks.seq_leading _ _)
+    (Blocks.seq_runs (Blocks.seq_leading _ _) leading r₁ r₂) r₃) ?_⟩
+  · intro g a ha row hr b hB h hh mid hm d hd after he
+    change Matrix (Fin r) (Fin 64) (ZMod (modulus w)) at g
+    let perm : Matrix (Fin r) (Fin 64) (ZMod (modulus w)) → Matrix (Fin r) (Fin 64) (ZMod (modulus w)) := fun g i j => g i (π j)
+    let A := route.submatrix π π
+    have eq : perm (perm g * A.transpose) = g * route.transpose := by
+      funext i j
+      change (∑ t : Fin 64, g i (π t) * route (π (π j)) (π t)) = _
+      rw [show π (π j) = j from stageColumn_involutive s j]
+      exact Equiv.sum_comp π (fun t => g i t * route j t)
+    have back := zo (perm g * A.transpose) a ha row hr b hB h hh mid hm d hd after he
+    let : NeZero (prime^w) := ⟨pow_ne_zero _ Shared50ModularControl.prime_prime.ne_zero⟩
+    change ext out (RecursiveInterchangeLayout.index prime v a row
+      (b*prime^(64*(w*r))+(LabelColumns.rowAddress (Q := prime^w) (perm (perm g * A.transpose))).val) h mid d after) = _ at back
+    rw [eq] at back
+    exact back.trans ((yz (perm g) a ha row hr b hB h hh mid hm d hd after he).trans
+      (xy g a ha row hr b hB h hh mid hm d hd after he))
+  · have paid := overhead v w B (by decide) hw hb shape pos
+    rw [show ps.length = 7 from stageColumnPairs_length s] at paid
     simp only [Nat.add_mul,Nat.mul_assoc] at *
     omega
 
