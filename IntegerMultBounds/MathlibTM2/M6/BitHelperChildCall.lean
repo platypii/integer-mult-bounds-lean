@@ -139,6 +139,45 @@ theorem helperFan_of_splitRows {T c V : ℕ} (place : Fin (((1+c)+2)+2) ↪ Fin 
     simpa only [PointwiseRoleGate.bank,Tapes.append,Fin.addCases_right,controls,controlPorts,
       embStk,Function.comp_apply,Function.Embedding.trans_apply,Fin.natAddEmb_apply] using counters j z
 
+/-- Recover the merge bank from the returned roles and their shared clock.
+Only the owner, the inner controls and the group descriptor need a frame. -/
+theorem splitRows_of_helperFan {T c V : ℕ} (place : Fin (((1+c)+2)+2) ↪ Fin T)
+    (fan : Fin (c+2) ↪ Fin T) (owner : ℤ → Fin (prime+4)) (input output : Fin c → Fin V → ZMod 2)
+    (bs gs : List Bool) (S F : Stacks T prime)
+    (atRole : ∀ j : Fin c, fan (j.castAdd 2) = place (((j.natAdd 1).castAdd 2).castAdd 2))
+    (atClock : fan ((0 : Fin 2).natAdd c) = place ((0 : Fin 2).natAdd ((1+c)+2))) :
+    let roles := fun data j => putWord (fun _ => blank) 0 (List.ofFn (SparseRoleCircuit.encoded (a := prime) data j))
+    let bank := fun data => CyclicRowSplit.bank (CyclicRowCopy.bank owner (roles data) 0 (fun _ => 0) bs) gs
+    RepT (bank input) (embStk place S).L (embStk place S).R → HelperFan fan output F →
+    (∀ i, (∀ j : Fin c, i ≠ ((j.natAdd 1).castAdd 2).castAdd 2) →
+      i ≠ (0 : Fin 2).natAdd ((1+c)+2) →
+      F.L (place i) = S.L (place i) ∧ F.R (place i) = S.R (place i)) →
+    RepT (bank output) (embStk place F).L (embStk place F).R := by
+  intro roles bank ready returned frame i z
+  by_cases payload : ∃ j : Fin c, i = ((j.natAdd 1).castAdd 2).castAdd 2
+  · obtain ⟨j,rfl⟩ := payload
+    simpa only [bank,roles,CyclicRowSplit.bank,CyclicRowCopy.bank,CyclicRowCopy.payload,
+      CountedLoopReuseAlphabet.bank,PointwiseRoleGate.bank,Tapes.append,Fin.addCases_left,Fin.addCases_right,
+      embStk,Function.comp_apply,atRole] using returned (j.castAdd 2) z
+  by_cases clock : i = (0 : Fin 2).natAdd ((1+c)+2)
+  · subst i
+    simpa [bank,CyclicRowSplit.bank,CountedLoopReuseAlphabet.bank,PointwiseRoleGate.bank,Tapes.append,
+      CountedLoopReuseAlphabet.controls,embStk,atClock] using returned ((0 : Fin 2).natAdd c) z
+  obtain ⟨left,right⟩ := frame i (fun j h => payload ⟨j,h⟩) clock
+  have old := ready i z
+  simp only [embStk,Function.comp_apply,left,right]
+  induction i using Fin.addCases
+  case left i =>
+    induction i using Fin.addCases
+    case left i =>
+      induction i using Fin.addCases
+      case right j => exact (payload ⟨j,rfl⟩).elim
+      case left j => simpa [bank,CyclicRowSplit.bank,CyclicRowCopy.bank,CyclicRowCopy.payload,
+        CountedLoopReuseAlphabet.bank,Tapes.append,embStk] using old
+    case right j => simpa [bank,CyclicRowSplit.bank,CyclicRowCopy.bank,CountedLoopReuseAlphabet.bank,
+      Tapes.append,embStk] using old
+  case right j => simpa [bank,CyclicRowSplit.bank,CountedLoopReuseAlphabet.bank,Tapes.append,embStk] using old
+
 private theorem helperRows_place {P U : Type} {t T q Q bound : ℕ} (body : P → Pr P T Q prime U)
     (place : Fin t ↪ Fin T) (machine : Program t q prime) (capacity : q ≤ Q) {input output}
     (run : HoareTime machine (· = input) (· = output) bound) (u : HS T Q prime U) (S : Stacks T prime)
@@ -159,9 +198,11 @@ theorem helperFanVolume_exec {P U : Type} {T Q c : ℕ} (body : P → Pr P T Q p
     (place : Fin (((1+c)+2)+2) ↪ Fin T) (fan : Fin (c+2) ↪ Fin T) (product : Fin 6 ↪ Fin T)
     (v : Descriptor) (positive : v.Positive) (capacity : 40 ≤ Q)
     (atRole : ∀ j : Fin c, fan (j.castAdd 2) = place (((j.natAdd 1).castAdd 2).castAdd 2))
+    (atRow : product 3 = place (((1 : Fin 2).natAdd (1+c)).castAdd 2))
+    (atGroups : product 5 = place ((1 : Fin 2).natAdd ((1+c)+2)))
+    (atClock : fan ((0 : Fin 2).natAdd c) = place ((0 : Fin 2).natAdd ((1+c)+2)))
     (atVolume : fan ((1 : Fin 2).natAdd c) = product 1)
-    (offRole : ∀ j : Fin c, ∀ k, product k ≠ fan (j.castAdd 2))
-    (offClock : ∀ k, product k ≠ fan ((0 : Fin 2).natAdd c)) :
+    (volumeFresh : ∀ i, place i ≠ product 1) :
     let B := rowLength prime v
     let G := groups c v
     let V := volume prime (role v c)
@@ -169,35 +210,110 @@ theorem helperFanVolume_exec {P U : Type} {T Q c : ℕ} (body : P → Pr P T Q p
     ∀ (owner : ℤ → Fin (prime+4)) (data : Fin c → Fin V → ZMod 2) u S,
     let roles := fun j => putWord (fun _ => blank) 0 (List.ofFn (SparseRoleCircuit.encoded (a := prime) data j))
     let bank := CyclicRowSplit.bank (CyclicRowCopy.bank owner roles 0 (fun _ => 0) (bits B)) (bits G)
-    let clock := fan ((0 : Fin 2).natAdd c)
     RepT bank (embStk place S).L (embStk place S).R →
-    RepT (DimensionProductDescriptor.input (bits B) (bits G)) (embStk product S).L (embStk product S).R →
-    (∀ z, CountedLoopReuseAlphabet.empty (a := prime) z = readAt blank (S.L clock) (S.R clock) (z-1)) →
+    (∀ k : Fin 6, k ≠ 3 → k ≠ 5 → S.L (product k) = [] ∧ S.R (product k) = []) →
     ∃ z F n, Exec body code (mk u S) n (mk z F) ∧ n ≤ (53*V+28)*11+6 ∧ z.user = u.user ∧
-      HelperFan fan data F ∧ ∀ j, (∀ k, product k ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
-  intro B G V code owner data u S roles bank clock split input marked
+      HelperFan fan data F ∧ RepT bank (embStk place F).L (embStk place F).R ∧
+      ∀ j, (∀ k, product k ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  intro B G V code owner data u S roles bank split free
+  have row := split (((1 : Fin 2).natAdd (1+c)).castAdd 2)
+  have groupsReady := split ((1 : Fin 2).natAdd ((1+c)+2))
+  simp only [bank,CyclicRowSplit.bank,CyclicRowCopy.bank,CountedLoopReuseAlphabet.bank,
+    Tapes.append,Fin.addCases_left,Fin.addCases_right,CountedLoopReuseAlphabet.controls,
+    embStk,Function.comp_apply] at row groupsReady
+  have encoding : RadixZeroFill.encodedBinary (q := prime) = CountedLoopReuseAlphabet.binary :=
+    funext (fun bs => CountedLoopReuseAlphabet.encoding_binary bs)
+  have input : RepT (DimensionProductDescriptor.input (bits B) (bits G))
+      (embStk product S).L (embStk product S).R := by
+    intro k z
+    by_cases hr : k = 3
+    · subst k
+      simpa [DimensionProductDescriptor.input,embStk,atRow,encoding] using row z
+    by_cases hg : k = 5
+    · subst k
+      simpa [DimensionProductDescriptor.input,embStk,atGroups,encoding] using groupsReady z
+    obtain ⟨left,right⟩ := free k hr hg
+    fin_cases k <;> simp_all [DimensionProductDescriptor.input,embStk,readAt]
   obtain ⟨construct,head,tape⟩ := helperRoleVolume_runs v positive c
   obtain ⟨z,F,n,run,cost,user,out,frame⟩ := helperRows_place body product _ capacity construct u S input
-  refine ⟨z,F,n,run,cost,user,?_,frame⟩
-  intro i a
-  induction i using Fin.addCases with
-  | left j =>
-    obtain ⟨left,right⟩ := frame _ (offRole j)
-    have h := split (((j.natAdd 1).castAdd 2).castAdd 2) a
-    simpa only [bank,roles,CyclicRowSplit.bank,CyclicRowCopy.bank,CyclicRowCopy.payload,
-      CountedLoopReuseAlphabet.bank,PointwiseRoleGate.bank,Tapes.append,Fin.addCases_left,Fin.addCases_right,
-      embStk,Function.comp_apply,left,right,← atRole] using h
-  | right j =>
-    fin_cases j
-    · obtain ⟨left,right⟩ := frame _ offClock
-      simpa [PointwiseRoleGate.bank,Tapes.append,embStk,CountedLoopReuseAlphabet.controls,left,right,clock]
-        using marked a
-    · have h := out 1 a
-      rw [head,tape] at h
-      rw [show RadixZeroFill.encodedBinary (q := prime) = CountedLoopReuseAlphabet.binary from
-        funext (fun bs => CountedLoopReuseAlphabet.encoding_binary bs)] at h
-      simpa [PointwiseRoleGate.bank,Tapes.append,embStk,CountedLoopReuseAlphabet.controls,atVolume,V]
-        using h
+  have retained : RepT bank (embStk place F).L (embStk place F).R := by
+    intro i a
+    have old := split i a
+    change bank.tape i a = readAt blank (F.L (place i)) (F.R (place i)) (a-bank.head i)
+    by_cases shared : ∃ k, product k = place i
+    · obtain ⟨k,hk⟩ := shared
+      have other : k ≠ 1 := fun h => volumeFresh i (h ▸ hk.symm)
+      let src := DimensionProductDescriptor.input (q := prime) (bits B) (bits G)
+      let dst := DimensionProductDescriptor.output (q := prime) (bits B) (bits G) G B
+      have heads : dst.head k = src.head k := by fin_cases k <;> first | rfl | exact (other rfl).elim
+      have cells : dst.tape k = src.tape k := by fin_cases k <;> first | rfl | exact (other rfl).elim
+      let d := a-bank.head i
+      have before := input k (d+src.head k)
+      have after := out k (d+src.head k)
+      change dst.tape k _ = readAt blank (F.L (product k)) (F.R (product k)) (_-dst.head k) at after
+      change src.tape k _ = readAt blank (S.L (product k)) (S.R (product k)) (_-src.head k) at before
+      rw [heads,cells,hk,add_sub_cancel_right] at after
+      rw [hk,add_sub_cancel_right] at before
+      exact old.trans (before.symm.trans after)
+    · obtain ⟨left,right⟩ := frame _ (fun k h => shared ⟨k,h⟩)
+      rw [left,right]
+      exact old
+  refine ⟨z,F,n,run,cost,user,?_,retained,frame⟩
+  apply helperFan_of_splitRows place fan owner data (bits B) (bits G) F atRole retained
+  intro j a
+  fin_cases j
+  · have marked := retained ((0 : Fin 2).natAdd ((1+c)+2)) a
+    simpa [bank,CyclicRowSplit.bank,CountedLoopReuseAlphabet.bank,Tapes.append,
+      embStk,CountedLoopReuseAlphabet.controls,atClock] using marked
+  · have h := out 1 a
+    rw [head,tape,encoding] at h
+    simpa [embStk,CountedLoopReuseAlphabet.controls,atVolume,V] using h
+
+open RecursiveInterchangeRows FlatCoordinateSchedule in
+/-- Prepare the volume controls, run the role worker and return the split bank
+with its new payloads in the form consumed by the merge. -/
+theorem helperFanWorker_exec {P U : Type} {T Q c : ℕ} (body : P → Pr P T Q prime U)
+    (worker : Pr P T Q prime U) (budget : ℕ) (framed : Fin T → Prop)
+    (place : Fin (((1+c)+2)+2) ↪ Fin T) (fan : Fin (c+2) ↪ Fin T) (product : Fin 6 ↪ Fin T)
+    (v : Descriptor) (positive : v.Positive) (capacity : 40 ≤ Q)
+    (atRole : ∀ j : Fin c, fan (j.castAdd 2) = place (((j.natAdd 1).castAdd 2).castAdd 2))
+    (atRow : product 3 = place (((1 : Fin 2).natAdd (1+c)).castAdd 2))
+    (atGroups : product 5 = place ((1 : Fin 2).natAdd ((1+c)+2)))
+    (atClock : fan ((0 : Fin 2).natAdd c) = place ((0 : Fin 2).natAdd ((1+c)+2)))
+    (atVolume : fan ((1 : Fin 2).natAdd c) = product 1)
+    (volumeFresh : ∀ i, place i ≠ product 1) :
+    let B := rowLength prime v
+    let G := groups c v
+    let V := volume prime (role v c)
+    let code := embProg product Empty.elim (foreign (liftQ (DimensionProductDescriptor.program (q := prime)) capacity))
+    ∀ (owner : ℤ → Fin (prime+4)) (input output : Fin c → Fin V → ZMod 2) u S,
+    let roles := fun data j => putWord (fun _ => blank) 0 (List.ofFn (SparseRoleCircuit.encoded (a := prime) data j))
+    let bank := fun data => CyclicRowSplit.bank (CyclicRowCopy.bank owner (roles data) 0 (fun _ => 0) (bits B)) (bits G)
+    RepT (bank input) (embStk place S).L (embStk place S).R →
+    (∀ k : Fin 6, k ≠ 3 → k ≠ 5 → S.L (product k) = [] ∧ S.R (product k) = []) →
+    (∀ j, framed j → ∀ k, product k ≠ j) →
+    (∀ x D, HelperFan fan input D →
+      (∀ j, (∀ k, product k ≠ j) → D.L j = S.L j ∧ D.R j = S.R j) →
+      ∃ y F m, Exec body worker (mk x D) m (mk y F) ∧ m ≤ budget ∧ y.user = x.user ∧
+        HelperFan fan output F ∧
+        (∀ i, (∀ j : Fin c, i ≠ ((j.natAdd 1).castAdd 2).castAdd 2) →
+          i ≠ (0 : Fin 2).natAdd ((1+c)+2) →
+          F.L (place i) = D.L (place i) ∧ F.R (place i) = D.R (place i)) ∧
+        ∀ j, framed j → F.L j = D.L j ∧ F.R j = D.R j) →
+    ∃ y F n, Exec body (code.seq worker) (mk u S) n (mk y F) ∧ n ≤ (53*V+28)*11+6+budget ∧
+      y.user = u.user ∧ RepT (bank output) (embStk place F).L (embStk place F).R ∧
+      ∀ j, framed j → F.L j = S.L j ∧ F.R j = S.R j := by
+  intro B G V code owner input output u S roles bank ready free outside work
+  obtain ⟨x,D,k,setup,paid,xu,fanReady,retained,preserved⟩ :=
+    helperFanVolume_exec body place fan product v positive capacity atRole atRow atGroups atClock
+      atVolume volumeFresh owner input u S ready free
+  obtain ⟨y,F,m,run,cost,yx,returned,headers,frame⟩ := work x D fanReady preserved
+  refine ⟨y,F,_,setup.seq run,Nat.add_le_add paid cost,yx.trans xu,?_,?_⟩
+  · exact splitRows_of_helperFan place fan owner input output (bits B) (bits G) D F
+      atRole atClock retained returned headers
+  · intro j hj
+    obtain ⟨left,right⟩ := preserved j (outside j hj)
+    exact ⟨(frame j hj).1.trans left,(frame j hj).2.trans right⟩
 
 open RecursiveInterchangeRows Shared50RecursiveNodeRows FlatCoordinateSchedule in
 /-- Run the role computation between a normalized split and merge. The same owner
