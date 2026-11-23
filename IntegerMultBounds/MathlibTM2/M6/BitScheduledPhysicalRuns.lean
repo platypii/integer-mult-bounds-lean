@@ -56,6 +56,7 @@ def ScheduledPhysicalRuns [M8.Machine.Net] (n : Fin 9)
     let bill := (base*V+17760*(2*M8.RevMachine.LeafCore.coreCost V (w+1)+14))*(correctionTapes+5)+price+12
     ∃ code C, ∀ H (parent : Fin 64 → ZMod M) (units : ∀ i, IsUnit (parent i)),
     M^128 < 2^H → H ≤ M^128+1 → 0 < W → ∃ prepared : Stacks (Exit.size 0 N) prime,
+      ((∑ j, (8*(prepared.R (Exit.sweep 0 N (work (returnSeedSlots j)))).length+6))+1 ≤ 625*(M^128*W)) ∧
       PackedPieceHandoff (M^16*(1*(M^112*W))) (borrowedStageHandoff (w+1) B K parent units n)
         host code fan (returnedFan (full.trans worker)) prepared
         (bill + (142081*(8*V+10)+1) + (142080*(C*(M^16*(labels*(M^112*W)))+16)+2))

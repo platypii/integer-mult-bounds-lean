@@ -97,6 +97,7 @@ theorem packedPhysicalStage_exec [M8.Machine.Net] :
     let bill := (base*V+17760*(2*M8.RevMachine.LeafCore.coreCost V (h+1)+14))*(correctionTapes+5)+price+12
     ∃ code C, ∀ H (parent : Fin 64 → ZMod M) (units : ∀ i, IsUnit (parent i)),
     M^128 < 2^H → H ≤ M^128+1 → 0 < W → ∃ prepared : Stacks (Exit.size 0 N) prime,
+      ((∑ j, (8*(prepared.R (Exit.sweep 0 N (work (returnSeedSlots j)))).length+6))+1 ≤ 625*(M^128*W)) ∧
       PackedPieceHandoff (M^16*(1*(M^112*W))) (borrowedStageHandoff (h+1) B K parent units n)
         host code fan (returnedFan (full.trans worker)) prepared
         (bill + (142081*(8*V+10)+1) + (142080*(C*(M^16*(labels*(M^112*W)))+16)+2)) := by
@@ -114,8 +115,10 @@ theorem packedPhysicalStage_exec [M8.Machine.Net] :
   obtain ⟨N,inner,code,C,seed,execute⟩ := sweep
   refine ⟨N,inner,code,C,?_⟩
   intro H parent units height bits widthPos
-  obtain ⟨prepared,placed⟩ := packedStageSeed (full.trans inner) seed h H _ parent
-  refine ⟨prepared,?_⟩
+  let W := B*prime^(64*((h+1)*64))*K
+  let prepared := packedStageStacks seed h H W parent
+  have placed := packedStageSeed (full.trans inner) seed h H W parent
+  refine ⟨prepared,packedStageStacks_returnCost seed h H W parent widthPos bits,?_⟩
   intro x u S words fresh
   obtain ⟨headers,privateTapes,tmpL,tmpR,empty⟩ := placed S fresh
   have spare := words.right (Fin.last 142080)

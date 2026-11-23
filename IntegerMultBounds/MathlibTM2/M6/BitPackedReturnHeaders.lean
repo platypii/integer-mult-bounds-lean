@@ -123,13 +123,47 @@ theorem returnSeed_copyCost_le (w H W : ℕ) (parent : Fin 64 → ZMod (prime^(w
   change 8*((w+1)+H+1+65*M.size+W+M^112*W+M^112*W)+8*6+1 ≤ 625*V
   omega
 
+noncomputable def packedStageStacks {N : ℕ} (seed : Stacks N prime)
+    (w H W : ℕ) (parent : Fin 64 → ZMod (prime^(w+1))) : Stacks (size 0 N) prime :=
+  let R := returnSeed w H W 1 parent
+  let e := Fintype.equivFin (Register 0 N)
+  let left : Register 0 N → List (Fin (prime+4))
+    | .chart j => seed.L j
+    | _ => []
+  let right : Register 0 N → List (Fin (prime+4))
+    | .chart j => seed.R j
+    | .sweep j => R j
+    | _ => []
+  ⟨seed.inp,seed.out,left ∘ e.symm,right ∘ e.symm⟩
+
+theorem packedStageStacks_sweep {N : ℕ} (seed : Stacks N prime)
+    (w H W : ℕ) (parent : Fin 64 → ZMod (prime^(w+1))) (r : File) :
+    let j := sweep 0 N (Fintype.equivFin File r)
+    (packedStageStacks seed w H W parent).R j = returnFileWord w H W 1 parent r := by
+  simp [packedStageStacks,sweep,place,returnSeed,Function.comp_def]
+  exact congrArg (returnFileWord w H W 1 parent) ((Fintype.equivFin File).symm_apply_apply r)
+
+theorem packedStageStacks_returnCost {N : ℕ} (seed : Stacks N prime)
+    (w H W : ℕ) (parent : Fin 64 → ZMod (prime^(w+1)))
+    (hW : 0 < W) (height : H ≤ (prime^(w+1))^128+1) :
+    let prepared := packedStageStacks seed w H W parent
+    (∑ j, (8*(prepared.R (sweep 0 N (work (returnSeedSlots j)))).length+6))+1 ≤
+      625*((prime^(w+1))^128*W) := by
+  intro prepared
+  have word (j : Fin 8) : prepared.R (sweep 0 N (work (returnSeedSlots j))) =
+      returnSlotWord w H W 1 parent (returnSeedSlots j) :=
+    packedStageStacks_sweep seed w H W parent (.work _)
+  simp only [word]
+  exact returnSeed_copyCost_le w H W parent hW height
+
 /-- A single private seed supplies the chart worker, the return file and
 the temporary tape. Only the worker's live fan can vary at stage entry. -/
 theorem packedStageSeed {N : ℕ} (fan : Fin (142081+2) ↪ Fin N) (seed : Stacks N prime)
     (w H W : ℕ) (parent : Fin 64 → ZMod (prime^(w+1))) :
     let place := chart 0 N
     let back := sweep 0 N
-    ∃ prepared : Stacks (size 0 N) prime, ∀ S : Stacks (size 0 N) prime,
+    let prepared := packedStageStacks seed w H W parent
+    ∀ S : Stacks (size 0 N) prime,
       (∀ j, (∀ i, place (fan i) ≠ j) → S.L j = prepared.L j ∧ S.R j = prepared.R j) →
       ReturnHeaders w H parent W 1 (embStk back S).R ∧
       (∀ j, (∀ i, fan i ≠ j) → S.L (place j) = seed.L j ∧ S.R (place j) = seed.R j) ∧
@@ -146,9 +180,7 @@ theorem packedStageSeed {N : ℕ} (fan : Fin (142081+2) ↪ Fin N) (seed : Stack
     | .chart j => seed.R j
     | .sweep j => R j
     | _ => []
-  let prepared : Stacks (size 0 N) prime := ⟨seed.inp,seed.out,left ∘ e.symm,right ∘ e.symm⟩
-  refine ⟨prepared,?_⟩
-  intro S fresh
+  intro prepared S fresh
   have atReg r (off : ∀ i, place (fan i) ≠ e r) : S.L (e r) = left r ∧ S.R (e r) = right r :=
     ⟨(fresh _ off).1.trans (congrArg left (e.symm_apply_apply r)),
       (fresh _ off).2.trans (congrArg right (e.symm_apply_apply r))⟩
