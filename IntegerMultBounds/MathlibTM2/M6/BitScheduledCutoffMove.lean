@@ -121,7 +121,8 @@ theorem chargedCutoffMove [M8.Machine.Net] {P U : Type} {T Q : ℕ} (body : P �
         RecordPayload (bank (Fin.succ 0)) (fun _ => blank) 0
           ((Shared50RecursiveNodeRows.transpose (one_dvd child.rows) x) ∘ position) F ∧
         ∀ js, js.Nodup → (∀ i, bank (moveReturnPorts i) ∈ js) →
-          t+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+budget := by
+          t+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+
+            min budget (budget-⌊entryRate*scale⌋₊+1000000000*volume prime child) := by
   intro fan dst disjoint
   obtain ⟨code,run⟩ := chargedPackedMoveTranspose body entry bank tmp buf tmpOff bufOff distinct capacity dst disjoint
   refine ⟨code,?_⟩
@@ -151,14 +152,15 @@ theorem chargedCutoffMove [M8.Machine.Net] {P U : Type} {T Q : ℕ} (body : P �
   omega
 
 /-- Return a cutoff transpose to the scheduled record and clear its borrowed bank. -/
-theorem cutoffMoveRecord [M8.Machine.Net] {P U : Type} {B T Q n w W : ℕ} [NeZero B]
+theorem cutoffMoveRecord [M8.Machine.Net] {P U : Type} {B T Q n : ℕ} [NeZero B]
     (body : P → Pr P B Q prime U) (entry : P)
     (bank : Fin (intervalSplitTapes+1) ↪ Fin B) (tmp buf : Fin B)
     (tmpOff : ∀ i, bank i ≠ tmp) (bufOff : ∀ i, bank i ≠ buf) (distinct : tmp ≠ buf)
     (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q)
     (dst : Fin (142081+2) ↪ Fin B) (apart : ∀ j i, bank (moveReturnPorts j) ≠ childReturnFan dst i)
-    (ports : Fin (n+35) ↪ Fin T) (room : B+3 ≤ n) (parent : Descriptor)
-    (record : List (Fin (prime+4))) (c : CutoffNodeInput) :
+    (ports : Fin (n+35) ↪ Fin T) (room : B+3 ≤ n) :
+    ∃ (workspace : Fin B ↪ Fin T) (code : Pr P T Q prime U),
+    ∀ (charged : Bool) {w W : ℕ} (parent : Descriptor) (record : List (Fin (prime+4))) (c : CutoffNodeInput),
     let child := c.node
     let atom := c.w+1
     let groups : 142080 ∣ child.rows := ⟨_,c.rows⟩
@@ -168,28 +170,52 @@ theorem cutoffMoveRecord [M8.Machine.Net] {P U : Type} {B T Q n w W : ℕ} [NeZe
     let logical := (CopyChildLayout.flatAddress wide).symm.trans (layout.trans (CopyChildLayout.flatAddress child))
     ∀ (size : volume prime wide = (prime^(w+1))^16*W),
     let position := logical.symm.trans (finCongr size)
-    ∃ (workspace : Fin B ↪ Fin T) (code : Pr P T Q prime U), ∀ seed (D rate entryRate : ℝ),
+    ∀ seed (D rate entryRate : ℝ),
       let fan := (withHelperPort (intervalOwners 142080)).trans bank
       let budget := cutoffTreeBudget D rate c.cutoff (c.depth-c.path.length) child
       let scale := (volume prime child : ℝ)*(child.width : ℝ)^M8.Machine.BudgetBound.tau
-      c.path.length < c.depth → c.cutoff < child.width → 1000000000 ≤ entryRate → entryRate ≤ D →
+      c.path.length < c.depth → c.cutoff < child.width → ((1000000063+4*B : ℕ) : ℝ) ≤ entryRate → entryRate ≤ D →
       (∀ j, (∀ i, fan i ≠ j) → seed.L j = [] ∧ seed.R j = []) →
       PackedPieceHandoffWithCharge cleanupWeight c.cells (packedChildOutput atom c.cells)
         body (body entry) fan dst seed (budget-⌊entryRate*scale⌋₊) →
       MoveOnBankExec parent child w W ports record position (fun f => embProg workspace id (body f)) code
-        (budget+30*((prime^(w+1))^16*W)+4*B+33) := by
-  intro child atom groups spectators wide layout logical size position
+        budget charged := by
+  obtain ⟨workspace,wrap,restore⟩ := activeBankReturn (P := P) (U := U) (Q := Q)
+    ports room (bank (Fin.succ 0))
+  obtain ⟨move,run⟩ := chargedCutoffMove body entry bank tmp buf tmpOff bufOff distinct capacity dst apart
+  refine ⟨workspace,wrap move,?_⟩
+  intro charged w W parent record c child atom groups spectators wide layout logical size position
   let lane := packedDescriptor (64*atom) spectators
   have split : volume prime lane*142080 = volume prime wide := by
     simp [lane,wide,packedDescriptor,volume,Nat.mul_assoc]
-  obtain ⟨workspace,wrap,restore⟩ := activeBankReturn (P := P) (U := U) (Q := Q)
-    ports room (bank (Fin.succ 0)) parent child record position (split.trans size)
-  obtain ⟨move,run⟩ := chargedCutoffMove body entry bank tmp buf tmpOff bufOff distinct capacity dst apart
-  refine ⟨workspace,wrap move,?_⟩
   intro seed D rate entryRate fan budget scale short active enough localRate clean worker
-  apply restore body move budget
+  let runtime := budget-⌊entryRate*scale⌋₊+1000000000*volume prime child
+  have volumeEq := Fintype.card_congr position
+  simp only [Fintype.card_fin] at volumeEq
+  have positive : 0 < volume prime child := by
+    rw [← c.cells_share]
+    have := c.idlePositive
+    have := Shared50ModularControl.prime_prime.pos
+    unfold CutoffNodeInput.cells
+    positivity
+  have space := Nat.le_mul_of_pos_right (4*B+33) positive
+  obtain ⟨reserve,fits⟩ := cutoffMoveReserve c D rate entryRate (1000000063+4*B) short active enough localRate
+  change (1000000063+4*B)*volume prime child ≤ ⌊entryRate*scale⌋₊ at reserve
+  change ⌊entryRate*scale⌋₊ ≤ budget at fits
+  have total : runtime+30*((prime^(w+1))^16*W)+4*B+33 ≤ budget := by
+    rw [← volumeEq]
+    dsimp only [runtime]
+    rw [Nat.add_mul] at space reserve
+    omega
+  suffices runRecord : MoveOnBankExec parent child w W ports record position
+      (fun f => embProg workspace id (body f)) (wrap move)
+      (runtime+30*((prime^(w+1))^16*W)+4*B+33) charged by
+    intro smaller _ _ _ u S word ready cleanBank
+    obtain ⟨z,F,t,y,exec,paid,rest⟩ := runRecord smaller u S word ready cleanBank
+    exact ⟨z,F,t,y,exec,paid.weaken total,rest⟩
+  apply restore parent child record position (split.trans size) body move runtime charged
   intro x u S source left right
-  obtain ⟨z,F,t,exec,user,out,bill⟩ := run c seed D rate entryRate short active enough localRate
+  obtain ⟨z,F,t,exec,user,out,bill⟩ := run c seed D rate entryRate short active (by push_cast at enough; linarith) localRate
     worker (x ∘ position) u S (by
       change S.R (bank (Fin.succ 0)) = List.ofFn (fun k : Fin (volume prime lane*142080) =>
         SparseRoleCircuit.encode (x (position (logical (k.cast split)))))
@@ -203,7 +229,8 @@ theorem cutoffMoveRecord [M8.Machine.Net] {P U : Type} {B T Q n w W : ℕ} [NeZe
   change RecordPayload (bank (Fin.succ 0)) (fun _ => blank) 0
     (Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (x ∘ position) ∘ logical) F at out
   let y := Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (x ∘ position) ∘ position.symm
-  refine ⟨z,F,t,y,exec,user,?_,?_,bill _ (List.nodup_finRange _) (fun i => List.mem_finRange _)⟩
+  refine ⟨z,F,t,y,exec,user,?_,?_,(bill _ (List.nodup_finRange _) (fun i => List.mem_finRange _)).trans
+    (Nat.add_le_add_left (Nat.min_le_right budget runtime) _)⟩
   · intro k
     simp [y]
   · apply castPayload size

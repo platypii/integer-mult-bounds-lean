@@ -44,6 +44,7 @@ theorem idleOwnerWorker_exec {P U : Type} {T Q V m B : ℕ} [NeZero B] (body : P
       ∃ z F n changed, Exec body ((loadCompactWord owner tmp (bank 0)).seq (worker.seq (write.seq (clearWorkTapes slots))))
         (mk u S) n (mk z F) ∧ n ≤ price+28*V+33 ∧ z.user = u.user ∧
         effect changed ∧ RecordPayload owner (fun _ => blank) 0 changed F ∧
+        ((F.L owner).length ≤ (S.L owner).length ∧ (F.R owner).length ≤ (S.R owner).length) ∧
         ∀ j, j ≠ owner → F.L j = S.L j ∧ F.R j = S.R j := by
   intro slots ho hc hs ht write u S input free count0 saved0 tmpL tmpR act
   have regs := apart
@@ -58,11 +59,12 @@ theorem idleOwnerWorker_exec {P U : Type} {T Q V m B : ℕ} [NeZero B] (body : P
     exact ⟨a.1.trans b.1,a.2.trans b.2⟩
   have old : RecordPayload owner (fun _ => blank) 0 word G := by
     simpa only [RecordPayload,(keep owner ho).1,(keep owner ho).2] using input
-  obtain ⟨z,F,l,finish,paid,hz,out,clean,rest⟩ := returnIdleBank_exec body apart slots
+  obtain ⟨z,F,l,finish,paid,hz,out,lengths,clean,rest⟩ := returnIdleBankWithStock_exec body apart slots
     ((List.nodup_finRange _).map bank.injective) (member 0) ho word changed y G old merged
     ((keep count hc).2.trans count0) ((keep saved hs).2.trans saved0)
     ((keep tmp ht).1.trans tmpL) ((keep tmp ht).2.trans tmpR)
-  refine ⟨z,F,_,changed,Exec.seq load (Exec.seq run finish),by omega,hz.trans (same.trans user),correct,out,?_⟩
+  refine ⟨z,F,_,changed,Exec.seq load (Exec.seq run finish),by omega,hz.trans (same.trans user),correct,out,?_,?_⟩
+  · simpa only [(keep owner ho).1,(keep owner ho).2] using lengths owner
   intro j ne
   by_cases inside : j ∈ slots
   · obtain ⟨a,_,rfl⟩ := List.mem_map.mp inside
