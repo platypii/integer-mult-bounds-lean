@@ -44,9 +44,12 @@ theorem runAfterPackedStage {T N Q V D : ℕ} {P R U : Type}
       rw [returnedFan_counter]; exact words.controls j z)
   exact ⟨z,G,k,ran,paid,done⟩
 
+/-- Cost of clearing both stacks of a tape. -/
+def cleanupWeight (l r : List (Fin (prime+4))) : ℕ := 4*l.length+2*r.length+4
+
 /-- Copy a represented result to fresh owner words, keeping the two live
 counters on the chart. The cost includes every owner and the spare. -/
-theorem packedResultWords_exec {P U : Type} {T Q : ℕ} (localFan : Fin (142081+2) ↪ Fin T)
+theorem packedResultWordsWithCharge {P U : Type} {T Q : ℕ} (localFan : Fin (142081+2) ↪ Fin T)
     (body : P → Pr P (Exit.size 0 T) Q prime U) :
     let fan := localFan.trans (Exit.chart 0 T)
     let dst := returnedFan localFan
@@ -55,7 +58,9 @@ theorem packedResultWords_exec {P U : Type} {T Q : ℕ} (localFan : Fin (142081+
       HelperFan fan x S → S.L tmp = [] → S.R tmp = [] →
       (∀ i : Fin 142081, S.L (dst (i.castAdd 2)) = [] ∧ S.R (dst (i.castAdd 2)) = []) →
       ∃ z G k, Exec body code (mk u S) k (mk z G) ∧ k ≤ 142081*(8*V+10)+1 ∧
-        z.user = u.user ∧ ParentStageWords (fun i => dst (i.castAdd 2)) dst V x G := by
+        z.user = u.user ∧ ParentStageWords (fun i => dst (i.castAdd 2)) dst V x G ∧
+        ∀ js : List (Fin (Exit.size 0 T)), js.Nodup → k+tapeCharge cleanupWeight js G ≤
+          tapeCharge cleanupWeight js S+(142081*(10*V+10)+1) := by
   intro fan dst tmp
   let source := (Fin.castAddEmb 2).trans fan
   let dest := (Fin.castAddEmb 2).trans dst
@@ -78,14 +83,48 @@ theorem packedResultWords_exec {P U : Type} {T Q : ℕ} (localFan : Fin (142081+
     rw [encodedOwnerCell,sub_zero] at h
     simpa only [source,Function.Embedding.trans_apply,Fin.castAddEmb_apply,phaseOwners,embStk,
       Function.comp_apply,sub_zero] using h.symm) tl tr (fun i => (empty i).2)
-  refine ⟨z,_,k,run,paid,user,fun i => (empty i).1,words,?_⟩
-  intro j z
-  have keep := off (dst (j.natAdd 142081)) (fun i => dst.injective.ne (by
-    intro eq; have h := congrArg Fin.val eq; change i.val = 142081+j.val at h; omega))
-  change _ = readAt blank (S.L _) (R _) _
-  rw [keep,show dst (j.natAdd 142081) = fan (j.natAdd 142081) from returnedFan_counter localFan j]
-  simpa only [PointwiseRoleGate.bank,Tapes.append,Fin.addCases_right,CountedLoopReuseAlphabet.controls,
-    ite_self,embStk,Function.comp_apply] using live (j.natAdd 142081) z
+  refine ⟨z,_,k,run,paid,user,⟨fun i => (empty i).1,words,?_⟩,?_⟩
+  · intro j z
+    have keep := off (dst (j.natAdd 142081)) (fun i => dst.injective.ne (by
+      intro eq; have h := congrArg Fin.val eq; change i.val = 142081+j.val at h; omega))
+    change _ = readAt blank (S.L _) (R _) _
+    rw [keep,show dst (j.natAdd 142081) = fan (j.natAdd 142081) from returnedFan_counter localFan j]
+    simpa only [PointwiseRoleGate.bank,Tapes.append,Fin.addCases_right,CountedLoopReuseAlphabet.controls,
+      ite_self,embStk,Function.comp_apply] using live (j.natAdd 142081) z
+  · intro js distinct
+    apply placedCleanup_cost_le dest S {S with R := R} cleanupWeight k _ (fun j away => ⟨rfl,off j away⟩) _ js distinct
+    intro is unique
+    have before (i) : cleanupWeight (S.L (dest i)) (S.R (dest i)) = 4 := by
+      rw [show S.L (dest i) = [] from (empty i).1,show S.R (dest i) = [] from (empty i).2]
+      rfl
+    have after (i) : cleanupWeight (S.L (dest i)) (R (dest i)) = 2*V+4 := by
+      change cleanupWeight (S.L (dst (i.castAdd 2))) (R (dest i)) = _
+      rw [(empty i).1,words i]
+      simp [cleanupWeight]
+    change k+(is.map fun i => cleanupWeight (S.L (dest i)) (R (dest i))).sum ≤
+      (is.map fun i => cleanupWeight (S.L (dest i)) (S.R (dest i))).sum+_
+    simp only [before,after,List.map_const',List.sum_replicate_nat,Nat.mul_add]
+    have count : is.length ≤ 142081 := by simpa only [Fintype.card_fin] using unique.length_le_card
+    have bound := Nat.mul_le_mul_right (2*V) count
+    omega
+
+/-- Copy a represented result to fresh owner words, keeping the two live
+counters on the chart. The cost includes every owner and the spare. -/
+theorem packedResultWords_exec {P U : Type} {T Q : ℕ} (localFan : Fin (142081+2) ↪ Fin T)
+    (body : P → Pr P (Exit.size 0 T) Q prime U) :
+    let fan := localFan.trans (Exit.chart 0 T)
+    let dst := returnedFan localFan
+    let tmp := Exit.tmp 0 T
+    ∃ code, ∀ {V : ℕ} (x : Fin 142081 → Fin V → ZMod 2) u S,
+      HelperFan fan x S → S.L tmp = [] → S.R tmp = [] →
+      (∀ i : Fin 142081, S.L (dst (i.castAdd 2)) = [] ∧ S.R (dst (i.castAdd 2)) = []) →
+      ∃ z G k, Exec body code (mk u S) k (mk z G) ∧ k ≤ 142081*(8*V+10)+1 ∧
+        z.user = u.user ∧ ParentStageWords (fun i => dst (i.castAdd 2)) dst V x G := by
+  obtain ⟨code,run⟩ := packedResultWordsWithCharge localFan body
+  refine ⟨code,?_⟩
+  intro V x u S live tl tr empty
+  obtain ⟨z,G,k,ran,paid,user,out,_⟩ := run x u S live tl tr empty
+  exact ⟨z,G,k,ran,paid,user,out⟩
 
 theorem ParentStageWords.helperFan {T V : ℕ} {fan : Fin (142081+2) ↪ Fin T}
     {x : Fin 142081 → Fin V → ZMod 2} {S : Stacks T prime}
@@ -101,9 +140,6 @@ theorem ParentStageWords.helperFan {T V : ℕ} {fan : Fin (142081+2) ↪ Fin T}
     intro z
     simpa only [PointwiseRoleGate.bank,Tapes.append,Fin.addCases_right,CountedLoopReuseAlphabet.controls,
       ite_self,embStk,Function.comp_apply] using words.controls j z
-
-/-- Cost of clearing both stacks of a tape. -/
-def cleanupWeight (l r : List (Fin (prime+4))) : ℕ := 4*l.length+2*r.length+4
 
 def PackedPieceHandoffWithCharge {P U : Type} {t q : ℕ} (weight : List (Fin (prime+4)) → List (Fin (prime+4)) → ℕ) (V : ℕ)
     (effect : (Fin 142081 → Fin V → ZMod 2) → (Fin 142081 → Fin V → ZMod 2) → Prop)

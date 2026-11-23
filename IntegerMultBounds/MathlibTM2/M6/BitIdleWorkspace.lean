@@ -362,18 +362,13 @@ theorem inheritedWindowWithCharge {U : Type} {Q : ℕ} (i : Fin 9) (w W : ℕ) (
       (body k) (code k) (src k) (dst k) (seed k) (price k)) →
     let overhead := (1+6*Fast.Main.mnProgPush split)*((149*(T+5)+5)*(V*142080)+24)+
       (142081*(8*V+10+2*V)+1)+13*(149*(V*142080)*(T+5)+6)
-    ∃ (H : ℕ) (fan : Fin (142081+2) ↪ Fin H)
+    ∃ (H : ℕ) (src dst : Fin (142081+2) ↪ Fin H)
       (host : (Σ k, Empty ⊕ P k) → Pr (Σ k, Empty ⊕ P k) H Q prime U)
       (program : Pr (Σ k, Empty ⊕ P k) H Q prime U) (initial : Stacks H prime),
-    ∀ x (S : Stacks H prime) (u : HS H Q prime U),
-      ParentStageWords (fun r => fan (r.castAdd 2)) fan m x S →
-      (∀ t, (∀ j, fan j ≠ t) → S.L t = initial.L t ∧ S.R t = initial.R t) →
-      ∃ F z n y, Exec host program (mk u S) n (mk z F) ∧
-        (∀ js : List (Fin H), js.Nodup → n+tapeCharge cleanupWeight js F ≤
-          tapeCharge cleanupWeight js S+(idleCopies.map price).sum+35520*overhead+1) ∧
-        z.user = u.user ∧ HelperFan fan y F ∧
+      PackedPieceHandoffWithCharge cleanupWeight m (fun x y =>
         (∀ k, parentIntervalRead i k.2 w (W*142080) (x (idleTape i k)) (y (idleTape i k))) ∧
-        ∀ j, (∀ k, j ≠ idleTape i k) → y j = x j := by
+        ∀ j, (∀ k, j ≠ idleTape i k) → y j = x j) host program src dst initial
+        ((idleCopies.map price).sum+35520*overhead+1+(142081*(10*m+10)+1)) := by
   intro Job T split V m lane N P price body code src dst seed child overhead
   have worker (k : Job) := inheritedIdleWorkerWithCharge i k.2 w W positive capacity (child k)
   choose inner machine stock run using worker
@@ -391,15 +386,20 @@ theorem inheritedWindowWithCharge {U : Type} {Q : ℕ} (i : Fin 9) (w W : ℕ) (
       rw [size] at h
       dsimp only [split,T,bill,overhead] at *
       omega)
-  refine ⟨H,fan,host,program,initial,?_⟩
-  intro x S u words fresh
-  obtain ⟨F,z,n,y,ran,paid,rest⟩ := execute x S u words.helperFan
-    (fun k => ⟨words.left (idleTape i k),words.right (idleTape i k)⟩) fresh
-  refine ⟨F,z,n,y,ran,?_,rest⟩
-  intro js distinct
-  have h := paid js distinct
-  dsimp only [bill] at h
-  rw [sumWithOverhead,idleCopies_length] at h
-  simpa only [Nat.add_assoc] using h
+  obtain ⟨codeOut,pack⟩ := uniformWordStageWithCharge fan host program
+  let budget := (idleCopies.map price).sum+35520*overhead+1
+  obtain ⟨prepared,packed⟩ := pack initial (fun x y =>
+    (∀ k, parentIntervalRead i k.2 w (W*142080) (x (idleTape i k)) (y (idleTape i k))) ∧
+    ∀ j, (∀ k, j ≠ idleTape i k) → y j = x j) budget (by
+    intro x u S words fresh
+    obtain ⟨F,z,n,y,ran,paid,rest⟩ := execute x S u words.helperFan
+      (fun k => ⟨words.left (idleTape i k),words.right (idleTape i k)⟩) fresh
+    refine ⟨z,F,n,y,ran,?_,rest⟩
+    intro js distinct
+    have h := paid js distinct
+    dsimp only [bill] at h
+    rw [sumWithOverhead,idleCopies_length] at h
+    simpa only [budget,Nat.add_assoc] using h)
+  exact ⟨_,_,_,_,codeOut,prepared,packed⟩
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode

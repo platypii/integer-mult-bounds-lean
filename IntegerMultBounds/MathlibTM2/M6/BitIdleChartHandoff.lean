@@ -58,6 +58,42 @@ theorem inheritedRemainderHandoff (i : Fin 9) {U : Type} {Q : ℕ} :
   obtain ⟨z,F,n,y,ran,paid,user,out,acts,off⟩ := window x u S words fresh
   exact ⟨z,F,n,y,ran,paid,user,out,parentIdleWindow_read i w (W*142080) x y acts off⟩
 
+theorem inheritedRemainderWithCharge (i : Fin 9) {U : Type} {Q : ℕ} :
+    ∀ (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q),
+    let split : Pr Empty intervalSplitTapes Q prime U := intervalPrepare.seq (foreign (liftQ (CyclicRowNormalized.splitProgram 142080 prime) capacity))
+    ∀ w W, 0 < W →
+    let Job := (Fin 32 × Fin 5) × Fin 222
+    let T := intervalSplitTapes
+    let V := (prime^w)^128*W
+    let m := (prime^w)^128*(W*142080)
+    let lane := fun (k : Job) => let e := idleInterval i k.2; phaseIntervalChild (e.1+1) (e.2+1) w W 64
+    ∀ (budget : Fin nodeChildren5.length → ℕ),
+    let price := fun j => budget (idleDirectoryIndex (i,idleCopyIndex j))
+    ∀ (N : Job → ℕ) (P : Job → Type)
+      (body : ∀ k, P k → Pr (P k) (N k) Q prime U) (code : ∀ k, Pr (P k) (N k) Q prime U)
+      (src dst : ∀ k, Fin (142081+2) ↪ Fin (N k)) (seed : ∀ k, Stacks (N k) prime),
+    (∀ k, PackedPieceHandoffWithCharge cleanupWeight (volume prime (lane k)) (fun x y =>
+      ∀ r : Fin 142080, y r.castSucc = Shared50RecursiveNodeRows.transpose (one_dvd (lane k).rows) (x r.castSucc))
+      (body k) (code k) (src k) (dst k) (seed k) (price k)) →
+    ∃ (R : Type) (H : ℕ) (host : R → Pr R H Q prime U), ∃ program input output initial,
+    PackedPieceHandoffWithCharge cleanupWeight m (fun x y => ∀ j : Fin (W*142080),
+      let addr := fun z => flatWindowEquiv w (W*142080) (windowState w z,j)
+      readRoles addr y = (Piece.remainder i.val).run (readRoles addr x))
+      host program input output initial
+      ((∑ j : Fin idleCopies.length, budget (idleDirectoryIndex (i,j))) + 35520 *
+        ((1+6*Fast.Main.mnProgPush split)*((149*(T+5)+5)*(V*142080)+24)+
+          (142081*(8*V+10+2*V)+1)+13*(149*(V*142080)*(T+5)+6)) + 1 + (142081*(10*m+10)+1)) := by
+  intro capacity split w W hW Job T V m lane budget price N P body code src dst seed child
+  obtain ⟨H,input,output,host,program,initial,window⟩ :=
+    inheritedWindowWithCharge i w W hW capacity N P price body code src dst seed child
+  have listed := sumIndexed idleCopies idleCopyIndex idleCopyIndex_at (fun j => budget (idleDirectoryIndex (i,j)))
+  change (idleCopies.map price).sum = _ at listed
+  rw [← listed]
+  refine ⟨_,H,host,program,input,output,initial,?_⟩
+  intro x u S words fresh
+  obtain ⟨z,F,n,y,ran,paid,user,out,acts,off⟩ := window x u S words fresh
+  exact ⟨z,F,n,y,ran,paid,user,out,parentIdleWindow_read i w (W*142080) x y acts off⟩
+
 /-- Adding the nine physical remainders leaves exactly the complementary
 child budgets available for the sweeps. -/
 theorem inheritedRemainderTotal (localWork : Fin 9 → ℕ) (budget : Fin nodeChildren5.length → ℕ) :
