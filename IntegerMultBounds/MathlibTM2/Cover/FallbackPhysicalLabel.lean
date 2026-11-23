@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackBank
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackDiagonal
 public import Mathlib.LinearAlgebra.Matrix.GeneralLinearGroup.Card
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackClass
@@ -421,6 +422,37 @@ theorem physicalProjector_spec (hw : 0 < w) (j : ℕ) (live : LabelStock.live m 
   have liftAdm : Admissible M P := fun r c => (adm r c).pow_right w
   exact ⟨projectorResidual_sign hw e _ (by rw [← IntegerMultBounds.Swap.Modular.reduce_mul _ liftAdm liftAdm,hp]) α α' ha g det,
     by rw [physicalLabel_residue hw]; exact projectorResidual_class hw e P adm α α' g det⟩
+
+/-- The table itinerary gives a single bank word for every payload width at
+this physical address, including six exchanges for each reciprocal pair. -/
+theorem physicalProjector_word (hw : 0 < w) (j : ℕ) (live : LabelStock.live m w 1 j = true)
+    (e : (Fin m ⊕ Fin m) ≃ Fin (n+1)) (P : Matrix (Fin m) (Fin m) ℚ) (hp : P*P = P)
+    (adm : Admissible prime P) (α α' : Fin m → ZMod M) (ha : ∀ i, α i * α' i = 1) :
+    let φ := LabelRing.res prime w hw
+    let C := projectorResidual e (reduce prime P) (φ ∘ α) (φ ∘ α') (LabelStock.residue m w 1 j)
+    let G := projectorResidual e (reduce M P) α α' (physicalLabel m w j)
+    let s : (ZMod M)ˣ := if negativeAnchor (classPivots C) C then -1 else 1
+    ∃ (d : Fin n → (ZMod M)ˣ) (ops : List (RowOp (n+1) (ZMod M))),
+      (ops.map RowOp.children).sum + 6*n < 32*m^2 ∧
+      ∀ b (x : Fin b → Fin (n+1) → ZMod M),
+        fallbackBank b s d ops (bankFields (List.finRange (n+1)) x) =
+          bankFields (List.finRange (n+1)) (fun k => G.mulVec (x k)) := by
+  intro φ C G s
+  let : Fact prime.Prime := ⟨prime_prime⟩
+  obtain ⟨sign,lift⟩ := physicalProjector_spec hw j live e P hp adm α α' ha
+  have unit : IsUnit C.det := by
+    change φ.mapMatrix G = C at lift
+    rw [← lift, ← RingHom.map_det]
+    rcases sign with h | h <;> change G.det = _ at h <;> simp [h]
+  obtain ⟨d,ops,cost,action⟩ := itinerary_onBank Networks.Shared50ModularControl.prime_odd hw
+    (classPivots C) C (classPivots_valid C unit) G lift sign
+  refine ⟨d,ops,?_,action⟩
+  have dim := Fintype.card_congr e
+  simp only [Fintype.card_sum,Fintype.card_fin] at dim
+  have hm : 0 < m := by omega
+  have bound := Weighted.fallback_children m hm
+  rw [show 2*m = n+1 by omega] at bound
+  simpa using (Nat.add_le_add_right cost (6*n)).trans_lt (by simpa using bound)
 
 end
 end IntegerMultBounds.MathlibTM2.Cover.Fallback

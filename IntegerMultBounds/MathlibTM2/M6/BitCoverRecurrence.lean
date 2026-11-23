@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackPhysicalLabel
+public import IntegerMultBounds.MathlibTM2.Cover.ProjectorWitness
 public import IntegerMultBounds.MathlibTM2.M6.BitNodeCost
 public import IntegerMultBounds.MathlibTM2.M8.StoppedRecurrence
 
@@ -15,19 +16,21 @@ open Cover.Fallback Cover
 open scoped Classical in
 /-- Even charging every bad physical record the full fallback child count,
 one request spends at most its share of the recurrence's fallback allowance. -/
-theorem fallbackRequestWeight (w r parents : ℕ) (hr : r ≤ 64) (P : LabelPadding.Label 64 (w+1))
-    (g : Matrix (Fin 64) (Fin 64) (ZMod prime)) (unit : g.det ≠ 0)
-    (good : ∀ k (hk : k < r), (GoodForm.lead (k+1) (lt_of_lt_of_le hk hr)
-      (g * (LabelRing.res prime (w+1) (by omega)).mapMatrix P * g⁻¹)).det ≠ 0) :
+theorem fallbackRequestWeight (w parents : ℕ) (P : Matrix (Fin 64) (Fin 64) ℚ)
+    (idem : P*P = P) (f : Swap.LowerTriangular.Factorization Finset.univ Finset.univ P)
+    (hd : ∀ d ∈ Swap.Modular.factorizationDenominators f, d < prime) :
+    let hr : P.rank ≤ 64 := (Matrix.rank_le_card_width P).trans_eq (Fintype.card_fin 64)
     let records := parents*(prime^(w+1))^(64*64)
-    let bad := (List.range records).countP (fun j => fallbackBit hr P (physicalLabel 64 (w+1) j))
+    let bad := (List.range records).countP (fun j => fallbackBit hr
+      (Swap.Modular.reduce (prime^(w+1)) P) (physicalLabel 64 (w+1) j))
     ((32*64^2 : ℝ)*bad)/records ≤ 1/(2^25*2^24) := by
-  intro records bad
-  have count := fallbackRecordCount w r parents hr P g unit good
+  intro hr records bad
+  obtain ⟨g, unit, good⟩ := LabelProjector.residue_witness (Nat.zero_lt_succ w) P idem f hd hr
+  have count := fallbackRecordCount w P.rank parents hr _ g unit good
   change bad*prime ≤ _*records at count
-  have degree : (∑ k ∈ Finset.range r, (k+1)*(64+1)) ≤ 64*(64*65) := by
+  have degree : (∑ k ∈ Finset.range P.rank, (k+1)*(64+1)) ≤ 64*(64*65) := by
     calc
-      _ ≤ ∑ _k ∈ Finset.range r, (64*65) := Finset.sum_le_sum fun k hk =>
+      _ ≤ ∑ _k ∈ Finset.range P.rank, (64*65) := Finset.sum_le_sum fun k hk =>
         Nat.mul_le_mul_right 65 ((Finset.mem_range.mp hk).trans_le hr)
       _ ≤ _ := by simp; omega
   have budget : 2^25*2^24*(32*64^2)*(64*(64*65)) ≤ prime := by
@@ -52,6 +55,31 @@ theorem fallbackRequestWeight (w r parents : ℕ) (hr : r ≤ 64) (P : LabelPadd
   push_cast at *
   exact_mod_cast (show 32*64^2*bad*(2^25*2^24) ≤ 1*records by
     convert raw using 1 <;> ring)
+
+private theorem sum_bad_calls (bad : ℕ → Bool) (calls : ℕ → ℕ) (cap : ℕ)
+    (bound : ∀ j, bad j = true → calls j ≤ cap) (records : List ℕ) :
+    (records.map (fun j => if bad j then calls j else 0)).sum ≤ cap*records.countP bad := by
+  induction records with
+  | nil => simp
+  | cons j records ih =>
+    cases h : bad j with
+    | false => simpa [List.countP_cons,h] using ih
+    | true => simpa [List.countP_cons,h,Nat.mul_add,Nat.add_comm] using Nat.add_le_add (bound j h) ih
+
+open scoped Classical in
+/-- Charge the actual fallback calls at each bad record, summed over the physical scan. -/
+theorem fallbackCallWeight (w parents : ℕ) (P : Matrix (Fin 64) (Fin 64) ℚ)
+    (idem : P*P = P) (f : Swap.LowerTriangular.Factorization Finset.univ Finset.univ P)
+    (hd : ∀ d ∈ Swap.Modular.factorizationDenominators f, d < prime) (calls : ℕ → ℕ) :
+    let hr : P.rank ≤ 64 := (Matrix.rank_le_card_width P).trans_eq (Fintype.card_fin 64)
+    let records := parents*(prime^(w+1))^(64*64)
+    let bad := fun j => fallbackBit hr (Swap.Modular.reduce (prime^(w+1)) P) (physicalLabel 64 (w+1) j)
+    (∀ j, bad j = true → calls j ≤ 32*64^2) →
+      (((List.range records).map (fun j => if bad j then calls j else 0)).sum : ℝ)/records ≤ 1/(2^25*2^24) := by
+  intro hr records bad bound
+  apply le_trans _ (fallbackRequestWeight w parents P idem f hd)
+  apply div_le_div_of_nonneg_right _ (Nat.cast_nonneg records)
+  exact_mod_cast sum_bad_calls bad calls (32*64^2) bound (List.range records)
 
 /-- Sum the per-request allowance on the actual five-class occurrence list. -/
 theorem fallbackScheduleWeight (mass : Fin nodeChildren5.length → ℝ)
@@ -79,7 +107,7 @@ theorem coverStoppedCost {Node : Type*} (atoms : Node → ℕ) (bad : Node → �
     (∀ x i, 0 ≤ badWeight x i) →
     (∀ x, u ≤ atoms x → ∀ i, badRank x i < 64) →
     (∀ x, u ≤ atoms x → ∀ i, (atoms (next x i) : ℝ) ≤ ((rank x i : ℝ)/64)*atoms x) →
-    (∀ x, u ≤ atoms x → ∑ i, badWeight x i*((badRank x i : ℝ)/64)^(1-bitSaving) ≤ 1/2^25) →
+    (∀ x, u ≤ atoms x → ∑ i, badWeight x i ≤ 1/2^25) →
     (∀ x, u ≤ atoms x → cost x ≤ (∑ i, weight x i*cost (next x i))+C*atoms x+C*L) →
     ∀ x, cost x ≤ (2^25*C)*atoms x+(2^25*C)*((atoms x : ℝ)^(1-bitSaving)*L) := by
   intro rank weight nonneg badSmall scale fallback node
@@ -103,7 +131,13 @@ theorem coverStoppedCost {Node : Type*} (atoms : Node → ℕ) (bad : Node → �
   have moment (x) (hx : u ≤ atoms x) :
       (∑ i, weight x i*((rank x i : ℝ)/64)^σ) ≤ 1-1/2^25 := by
     rw [Fintype.sum_sum_type]
-    exact (add_le_add good (fallback x hx)).trans (by norm_num)
+    have badMoment : (∑ i, badWeight x i*((badRank x i : ℝ)/64)^σ) ≤ ∑ i, badWeight x i := by
+      apply Finset.sum_le_sum
+      intro i _
+      apply mul_le_of_le_one_right (nonneg x i)
+      apply Real.rpow_le_one (by positivity) _ sigma
+      exact (div_le_one (by norm_num)).2 (by exact_mod_cast (badSmall x hx i).le)
+    exact (add_le_add good (badMoment.trans (fallback x hx))).trans (by norm_num)
   have linear (x) (hx : u ≤ atoms x) :
       (∑ i, weight x i*((rank x i : ℝ)/64)) ≤ 1-1/2^25 := by
     apply le_trans (Finset.sum_le_sum fun i _ => mul_le_mul_of_nonneg_left _ (weights x i)) (moment x hx)
