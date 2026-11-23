@@ -250,4 +250,86 @@ theorem scheduledSlotPackWithCharge [M8.Machine.Net] {P U : Type} {t q : ℕ} (n
   rw [Nat.ceil_natCast] at price
   exact (charge js unique).trans (Nat.add_le_add_left (Nat.mul_le_mul_left _ price) _)
 
+/-- Pass the packed slots and untouched private tapes to the hosted call, paying its budget once. -/
+theorem packThenInvokeWithCharge [M8.Machine.Net] {P U : Type} {t q : ℕ} (n : Fin 9) (p : Fin 32 × Fin 5)
+    (pre : List (Fin 32 × Fin 5)) (bank : Fin ((rowSwapBlock.tapes+35)+142081) ↪ Fin t) (capacity : rowSwapBlock.states ≤ q)
+    (body : P → Pr P t q prime U) :
+    let owners := (Fin.natAddEmb (rowSwapBlock.tapes+35) (m := 142081)).trans bank
+    let before := pre.foldl (fun c r => helperChartsAfter n r c) (fun _ => none)
+    ∃ pack, ∃ (factor : ℕ) (C : ℝ), ∀ w W : ℕ, 0 < W →
+      let V := (prime^(w+1))^128*W
+      ∀ (v : HS t q prime U) (S : Stacks t prime) (data : Fin 142081 → Fin V → ZMod 2),
+      ∀ (call : Pr P t q prime U) (price : ℕ) (post : U → Stacks t prime → Prop),
+      embStk bank S = helperPackInput w W (embStk owners S) →
+      RepT (phaseOwners data) (embStk owners S).L (embStk owners S).R →
+      (∀ (u : HS t q prime U) (D : Stacks t prime) (result : Fin 142081 → Fin V → ZMod 2), u.user = v.user →
+        RepT (phaseOwners result) (embStk owners D).L (embStk owners D).R →
+        (∀ j, (∀ i, bank i ≠ j) → D.L j = S.L j ∧ D.R j = S.R j) →
+        (∀ j, (∀ h : Fin 439, (helperSlotChange n p before h).1 ≠ j) → result j = data j) →
+        (∀ h : Fin 439, let change := helperSlotChange n p before h
+          ∀ c s j, result change.1 (FlatCoordinateLayout.index (helperSlotField c change.2.2 (w+1) s) j) =
+            data change.1 (FlatCoordinateLayout.index (helperSlotField c change.2.1 (w+1) s) j)) →
+        ∃ z F k, Exec body call (mk u D) k (mk z F) ∧
+          (∀ js : List _, js.Nodup → k+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js D+price) ∧
+          post z.user F) →
+      ∃ z F t, Exec body (.seq pack call) (mk v S) t (mk z F) ∧
+        (∀ js : List _, js.Nodup → t+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+
+          factor*⌈1+C*V*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau⌉₊+price) ∧ post z.user F := by
+  intro owners before
+  obtain ⟨pack,factor,C,execute⟩ := scheduledSlotPackWithCharge n p pre bank capacity body
+  refine ⟨pack,factor,C,?_⟩
+  intro w W live V v S data call price post initial words invoke
+  obtain ⟨u,D,m,a,packed,user,packing,ready,off,idle,slots⟩ := execute w W live v S data initial words
+  obtain ⟨z,F,k,ran,paid,done⟩ := invoke u D a user ready off idle slots
+  refine ⟨z,F,m+k,Exec.seq packed ran,?_,done⟩
+  intro js unique
+  have localBill := packing js unique
+  have childBill := paid js unique
+  dsimp only [V]
+  omega
+
+/-- Run the invocation on its own embedded bank after the helper slots have been packed. -/
+theorem packPlacedInvocationWithCharge [M8.Machine.Net] {P U : Type} {t q k : ℕ} (n : Fin 9) (p : Fin 32 × Fin 5)
+    (pre : List (Fin 32 × Fin 5)) (bank : Fin ((rowSwapBlock.tapes+35)+142081) ↪ Fin t) (capacity : rowSwapBlock.states ≤ q)
+    (caller : Fin k ↪ Fin t) (fan : Fin 142081 ↪ Fin k)
+    (shared : fan.trans caller = (Fin.natAddEmb (rowSwapBlock.tapes+35)).trans bank)
+    (body : P → Pr P k q prime U) :
+    let outer := fun g => embProg caller id (body g)
+    let owners := (Fin.natAddEmb (rowSwapBlock.tapes+35) (m := 142081)).trans bank
+    let before := pre.foldl (fun c r => helperChartsAfter n r c) (fun _ => none)
+    ∃ pack, ∃ (factor : ℕ) (C : ℝ), ∀ w W : ℕ, 0 < W →
+      let V := (prime^(w+1))^128*W
+      ∀ (v : HS t q prime U) (S : Stacks t prime) (data : Fin 142081 → Fin V → ZMod 2),
+      ∀ (call : Pr P k q prime U) (price : ℕ) (post : U → Stacks k prime → Prop),
+      embStk bank S = helperPackInput w W (embStk owners S) →
+      RepT (phaseOwners data) (embStk owners S).L (embStk owners S).R →
+      (∀ (u : HS k q prime U) (D : Stacks k prime) (result : Fin 142081 → Fin V → ZMod 2), u.user = v.user →
+        RepT (phaseOwners result) (embStk fan D).L (embStk fan D).R →
+        (∀ j, (∀ i, bank i ≠ caller j) → D.L j = S.L (caller j) ∧ D.R j = S.R (caller j)) →
+        (∀ j, (∀ h : Fin 439, (helperSlotChange n p before h).1 ≠ j) → result j = data j) →
+        (∀ h : Fin 439, let change := helperSlotChange n p before h
+          ∀ c s j, result change.1 (FlatCoordinateLayout.index (helperSlotField c change.2.2 (w+1) s) j) =
+            data change.1 (FlatCoordinateLayout.index (helperSlotField c change.2.1 (w+1) s) j)) →
+        ∃ z F k, Exec body call (mk u D) k (mk z F) ∧
+          (∀ js : List _, js.Nodup → k+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js D+price) ∧
+          post z.user F) →
+      ∃ z F t, Exec outer (.seq pack (embProg caller id call)) (mk v S) t (mk z F) ∧
+        (∀ js : List _, js.Nodup → t+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+
+          factor*⌈1+C*V*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau⌉₊+price) ∧ post z.user (embStk caller F) := by
+  intro outer owners before
+  obtain ⟨pack,factor,C,run⟩ := packThenInvokeWithCharge n p pre bank capacity outer
+  refine ⟨pack,factor,C,?_⟩
+  intro w W live V v S data call price post initial words invoke
+  apply run w W live v S data (embProg caller id call) price
+    (fun user F => post user (embStk caller F)) initial words
+  intro u D a user ready off idle slots
+  change RepT (phaseOwners a) (embStk owners D).L (embStk owners D).R at ready
+  have represented : RepT (phaseOwners a) (embStk (fan.trans caller) D).L (embStk (fan.trans caller) D).R := shared ▸ ready
+  obtain ⟨z,F,m,ran,paid,done⟩ := invoke (embDn caller u) (embStk caller D) a user represented
+    (fun j away => off (caller j) away) idle slots
+  obtain ⟨v',G,placed,_,same,view,untouched⟩ := exec_emb (e := caller) (ι := id) (body' := outer)
+    caller.injective (fun _ => rfl) ran u rfl D rfl
+  rw [← view] at paid done
+  exact ⟨v',G,m,placed,placedCleanup_cost_le caller D G cleanupWeight m price untouched paid,same ▸ done⟩
+
 end IntegerMultBounds.MathlibTM2.M6.BitNode
