@@ -123,4 +123,33 @@ theorem execute_D_from_helpers {Ω : Type*} (frameOf : ℕ → FramedCircuit.Fra
     simp only [acc,encoded,FramedCircuit.encode,lo,hi,and_self,ite_true,ref]
     rfl
 
+/-- A literal D row can read each helper at its own physical address. -/
+theorem execute_D_row {Ω P : Type*} (frameOf : ℕ → FramedCircuit.Frame (ZMod 2) (Ω → ZMod 2))
+    (stored : Fin 661 → Ω → ZMod 2) (g : RawGate) (hg : g ∈ sectionD)
+    (address : ℕ → Ω → P) (bank : ℕ → P → ZMod 2) :
+    let x := Copy.extendStored stored
+    let returned := FramedCircuit.moduleRun ((sectionA ++ sectionscatter ++ sectionB ++ sectionC).map RawGate.toCircuit) x
+    let encoded := FramedCircuit.encode (fun j => frameOf (Frames.finalRefs j)) returned
+    (∀ j ∈ g.sources, ∀ ω, bank j (address j ω) = encoded j ω) →
+    execute frameOf (FramedCircuit.encode (fun j => frameOf (Frames.snapshot Frames.initialRefs j)) x) g.target =
+      encoded g.target + frameOf (Frames.finalRefs g.target) ((frameOf 1).symm
+        (fun ω => (g.sources.map (fun j => bank j (address j ω))).sum)) := by
+  intro x returned encoded reads
+  obtain ⟨ht,hs⟩ := d_row_bounds hg
+  let t : Fin 111 := ⟨g.target-111,by omega⟩
+  have idx : 111+t.val = g.target := by dsimp [t]; omega
+  have endpoint := execute_D_from_helpers frameOf stored t
+  dsimp only at endpoint
+  rw [idx] at endpoint
+  rw [endpoint]
+  apply congrArg (fun v => encoded g.target + frameOf (Frames.finalRefs g.target) v)
+  apply congrArg (frameOf 1).symm
+  funext ω
+  rw [FramedCircuit.moduleRun_pointwise,d_row g hg]
+  simp only [show ¬(222 ≤ g.target ∧ g.target < 661) by omega,ite_false,Pi.zero_apply,zero_add]
+  apply congrArg List.sum
+  apply List.map_congr_left
+  intro j hj
+  simpa only [if_pos (hs j hj)] using (reads j hj ω).symm
+
 end IntegerMultBounds.Networks.Certificates.PR589.Framed

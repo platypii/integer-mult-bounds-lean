@@ -85,6 +85,45 @@ theorem deferD (x : ℕ → ZMod 2) :
 private theorem dHelperSources : sectionD.all (fun g => g.sources.all (fun i => decide (222 ≤ i ∧ i < 661))) = true := by
   decide +kernel
 
+theorem d_row_bounds {g : RawGate} (hg : g ∈ sectionD) :
+    (111 ≤ g.target ∧ g.target < 222) ∧ ∀ j ∈ g.sources, 222 ≤ j ∧ j < 661 :=
+  ⟨of_decide_eq_true (List.all_eq_true.mp targetsD g hg), fun j hj =>
+    of_decide_eq_true (List.all_eq_true.mp (List.all_eq_true.mp dHelperSources g hg) j hj)⟩
+
+private theorem dTargetsDistinct : (sectionD.map RawGate.target).Nodup := by decide +kernel
+
+/-- Each literal D row reads the original helper bank and writes its target once. -/
+theorem d_row (g : RawGate) (hg : g ∈ sectionD) (x : ℕ → ZMod 2) :
+    Circuit.run (sectionD.map RawGate.toCircuit) x g.target =
+      x g.target + (g.sources.map x).sum := by
+  obtain ⟨pre, post, split⟩ := List.append_of_mem hg
+  have distinct := dTargetsDistinct
+  rw [split,List.map_append,List.map_cons,List.nodup_append] at distinct
+  have before : g.target ∉ pre.map RawGate.target := fun h =>
+    distinct.2.2 _ h _ List.mem_cons_self rfl
+  have after := (List.nodup_cons.mp distinct.2.1).1
+  let y := Circuit.run (pre.map RawGate.toCircuit) x
+  have kept (i : ℕ) (hi : i ∉ pre.map RawGate.target) : y i = x i := by
+    apply Circuit.run_preserves
+    intro e he
+    obtain ⟨a,ha,rfl⟩ := List.mem_map.mp he
+    exact fun eq => hi (List.mem_map.mpr ⟨a,ha,eq⟩)
+  have reads : g.sources.map y = g.sources.map x := by
+    apply List.map_congr_left
+    intro i hi
+    apply kept
+    rintro mem
+    obtain ⟨a,ha,rfl⟩ := List.mem_map.mp mem
+    have ht := of_decide_eq_true (List.all_eq_true.mp targetsD a (split ▸ List.mem_append_left _ ha))
+    have hs := of_decide_eq_true (List.all_eq_true.mp (List.all_eq_true.mp dHelperSources g hg) _ hi)
+    omega
+  rw [split,List.map_append,Circuit.run_append,List.map_cons,Circuit.run_cons]
+  change Circuit.run _ (g.toCircuit.run y) _ = _
+  rw [Circuit.run_preserves,RawGate.run_eq,Function.update_self,reads,kept _ before]
+  intro e he
+  obtain ⟨a,ha,rfl⟩ := List.mem_map.mp he
+  exact fun eq => after (List.mem_map.mpr ⟨a,ha,eq⟩)
+
 /-- The increment at a zero accumulator depends only on the 439 helpers.
 Their values may be taken from any bank that agrees there. -/
 theorem d_accumulator (x acc : ℕ → ZMod 2) (i : ℕ) (zero : acc i = 0)
