@@ -545,6 +545,7 @@ theorem parkedChildRoundTrip {P U : Type} {T Q : ℕ} (body : P → Pr P (T+1) Q
                                            SparseRoleCircuit.encode (a := prime) (y p.2.castSucc p.1)
       S.R (saved 0).succ = src → (∀ j, S.L (bank j) = []) → (∀ j, j ≠ Fin.succ 0 → S.R (bank j) = []) →
       (∀ v D, HelperFan (withHelperPort fan) (Fin.lastCases (fun _ => 0) data) D →
+        (∀ j, (∀ k, bank k ≠ j) → D.L j = S.L j ∧ D.R j = S.R j) →
         ∃ z F t, Exec body call (mk v D) t (mk z F) ∧ t ≤ price ∧ z.user = v.user ∧
           HelperFan (withHelperPort fan) y F ∧
           (∀ j, F.L (saved j).succ = D.L (saved j).succ ∧ F.R (saved j).succ = D.R (saved j).succ) ∧
@@ -560,7 +561,7 @@ theorem parkedChildRoundTrip {P U : Type} {T Q : ℕ} (body : P → Pr P (T+1) Q
   refine ⟨fun call => split.seq (call.seq finish),?_⟩
   intro call price m pos x y u S src dst data word source left empty child
   obtain ⟨v,D,a,splitRun,vu,aCost,repr,owners,frame⟩ := run m pos x u S source left empty
-  obtain ⟨w,E,b,childRun,bCost,wv,returned,preserved,childFrame⟩ := child v D owners
+  obtain ⟨w,E,b,childRun,bCost,wv,returned,preserved,childFrame⟩ := child v D owners frame
   obtain ⟨z,F,c,mergeRun,cCost,zw,out,mergeFrame⟩ := back m pos dst data y D E w repr returned preserved
   refine ⟨z,F,_,splitRun.seq (childRun.seq mergeRun),roundTripCost _ _ _ _ _ _ aCost bCost cCost,
     zw.trans (wv.trans vu),out,?_⟩
@@ -591,44 +592,48 @@ theorem castPayload {T m n : ℕ} (size : m = n) (port : Fin T) (S : Stacks T pr
 open RecursiveInterchangeLayout in
 /-- A row transpose on the parked child ports executes the full wide transpose
 on the serialized source tape. The helper and the archive are outside the output word. -/
-theorem parkedMoveTranspose {P U : Type} {T Q : ℕ} (body : P → Pr P ((142080+1)+2) Q prime U)
+theorem parkedMoveTranspose {P U : Type} {T Q : ℕ} (body : P → Pr P (T+1) Q prime U)
     (saved : Fin 3 ↪ Fin T) (fan : Fin (142080+2) ↪ Fin T) (apart : ∀ i j, saved i ≠ fan j)
     (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q) :
     let bank := ownerSplitBank saved fan apart
     let merge := (returnedMergeBank saved fan apart).trans (Fin.succEmb T)
-    let host := fun f => embProg (withHelperPort fan) id (body f)
-    ∃ wrap : Pr P ((142080+1)+2) Q prime U → Pr P (T+1) Q prime U,
-    ∀ (call : Pr P ((142080+1)+2) Q prime U) (price : ℕ) (lane : Descriptor),
+    ∃ wrap : P → Pr P (T+1) Q prime U,
+    ∀ (entry : P) (price : ℕ) (lane : Descriptor),
       let m := volume prime lane
       let wide := {lane with afterD := lane.afterD*142080}
       let size : m*142080 = volume prime wide := by simp [m,wide,volume,Nat.mul_assoc]
-      ∀ x : Fin (volume prime wide) → ZMod 2,
+      ∀ (x : Fin (volume prime wide) → ZMod 2) (helper : Fin m → ZMod 2),
       let src := List.ofFn fun i : Fin (m*142080) => SparseRoleCircuit.encode (a := prime) (x (i.cast size))
       let data := fun (r : Fin 142080) (i : Fin m) => x ((finProdFinEquiv (i,r)).cast size)
       let rows := fun r => Shared50RecursiveNodeRows.transpose (one_dvd lane.rows) (data r)
       let output := Shared50RecursiveNodeRows.transpose (one_dvd wide.rows) x
       ∀ (u : HS (T+1) Q prime U) (S : Stacks (T+1) prime), 0 < m →
       S.R (saved 0).succ = src → (∀ j, S.L (bank j) = []) → (∀ j, j ≠ Fin.succ 0 → S.R (bank j) = []) →
-      (∀ v D, HelperFan (Function.Embedding.refl _) (Fin.lastCases (fun _ => 0) data) D →
-        ∃ z F n, Exec body call (mk v D) n (mk z F) ∧ n ≤ price ∧ z.user = v.user ∧
-          HelperFan (Function.Embedding.refl _) (Fin.lastCases (fun _ => 0) rows) F) →
-      ∃ z F t, Exec host (wrap call) (mk u S) t (mk z F) ∧
-        t ≤ price+(298*(intervalSplitTapes+5)+35)*volume prime wide ∧ z.user = u.user ∧
+      (∀ v D, HelperFan (withHelperPort fan) (Fin.lastCases (fun _ => 0) data) D →
+        (∀ j, (∀ k, bank k ≠ j) → D.L j = S.L j ∧ D.R j = S.R j) →
+        ∃ z F n, Exec body (body entry) (mk v D) n (mk z F) ∧ n ≤ price ∧ z.user = v.user ∧
+          HelperFan (withHelperPort fan) (Fin.lastCases helper rows) F ∧
+          (∀ j, F.L (saved j).succ = D.L (saved j).succ ∧ F.R (saved j).succ = D.R (saved j).succ) ∧
+          ∀ j, (∀ k, bank k ≠ j) → F.L j = D.L j ∧ F.R j = D.R j) →
+      ∃ z F t, Exec body (wrap entry) (mk u S) t (mk z F) ∧
+        t ≤ price+(298*(intervalSplitTapes+5)+37)*volume prime wide ∧ z.user = u.user ∧
         Cover.Fallback.RecordPayload (saved 0).succ (fun _ => blank) 0 output F ∧
         ∀ j, (∀ k, bank k ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
-  intro bank merge host
-  obtain ⟨wrap,run⟩ := parkedChildRoundTrip host saved fan apart capacity
-  refine ⟨fun call => wrap (embProg (withHelperPort fan) id call),?_⟩
-  intro call price lane m wide size x src data rows output u S positive source left empty child
-  let y : Fin (142080+1) → Fin m → ZMod 2 := Fin.lastCases (fun _ : Fin m => (0 : ZMod 2)) rows
-  obtain ⟨z,F,t,exec,paid,user,rep,frame⟩ := run _ price m positive (fun i => x (i.cast size)) y u S source left empty
-    (runOnParkedFan saved fan apart body call _ y price child)
+  intro bank merge
+  obtain ⟨wrap,run⟩ := parkedChildRoundTrip body saved fan apart capacity
+  refine ⟨fun entry => wrap (.call entry),?_⟩
+  intro entry price lane m wide size x helper src data rows output u S positive source left empty child
+  let y : Fin (142080+1) → Fin m → ZMod 2 := Fin.lastCases helper rows
+  obtain ⟨z,F,t,exec,paid,user,rep,frame⟩ := run (.call entry) (price+2) m positive (fun i => x (i.cast size)) y u S source left empty (by
+      intro v D owners off
+      obtain ⟨z,F,n,exec,paid,user,out,keep,frame⟩ := child v D owners off
+      exact ⟨z,F,n+2,Exec.call exec,Nat.add_le_add_right paid 2,user,out,keep,frame⟩)
   refine ⟨z,F,t,exec,?_,user,?_,frame⟩
   · rw [← size]
     have live : 0 < m*142080 := Nat.mul_pos positive (by decide)
     apply paid.trans
     have absorb (a n : ℕ) (pos : 0 < n) :
-        price+(a+5)*n+30 ≤ price+(a+35)*n := by
+        price+2+(a+5)*n+30 ≤ price+(a+37)*n := by
       simp only [Nat.add_mul]
       omega
     exact absorb _ _ live
