@@ -1,5 +1,7 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackRecordCleanup
+public import IntegerMultBounds.MathlibTM2.Host.TapeCharge
 public import IntegerMultBounds.MathlibTM2.M6.BitHelperParentSeeds
 
 /-! Prepare adjacent digit exchanges with the borrowed label inside the trailing record. -/
@@ -232,7 +234,8 @@ theorem archiveSetupPlacement_exec {R T L Q : ℕ} {P H U : Type} {ι : P → H}
     let e := archiveSetupPlacement R T L
     ∀ v D t, Exec body code (mk (embDn e u) (embStk e S)) t (mk v D) →
     (∀ i j, D.R (borrowedHeaders R i j) = words i j) →
-    ∃ z F, Exec host (embProg e ι code) (mk u S) t (mk z F) ∧ z.user = v.user ∧
+    ∃ z F, Exec host (embProg e ι code) (mk u S) t (mk z F) ∧ z.user = v.user ∧ embStk e F = D ∧
+      (∀ j, (∀ i, e i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j) ∧
       (∀ i j, F.R (((borrowedHeaders T i j).castAdd L).natAdd R) = words i j) ∧
       (∀ k : Fin T, let p := ((k.castAdd 273).castAdd L).natAdd R
         F.L p = S.L p ∧ F.R p = S.R p) ∧
@@ -240,7 +243,7 @@ theorem archiveSetupPlacement_exec {R T L Q : ℕ} {P H U : Type} {ι : P → H}
         F.L p = S.L p ∧ F.R p = S.R p := by
   intro e v D t run ready
   obtain ⟨z,F,exec,_,user,view,off⟩ := exec_emb (ι := ι) e.injective calls run u rfl S rfl
-  refine ⟨z,F,exec,user,?_,fun k => off _ (fun i => (archiveSetupPlacement_frame i).1 k),
+  refine ⟨z,F,exec,user,view,off,?_,fun k => off _ (fun i => (archiveSetupPlacement_frame i).1 k),
     fun k => off _ (fun i => (archiveSetupPlacement_frame i).2 k)⟩
   intro i j
   rw [← archiveSetupPlacement_header]
@@ -625,11 +628,86 @@ theorem parentArchiveThen_exec {T L Q : ℕ} {P U : Type}
   obtain ⟨rep,tl,tr,empty,base,unit,clock,free⟩ := input
   obtain ⟨v,F,m,user,run,bill,ready,_⟩ := prepare node w B rows width split label pos (embDn e u) D
     rep tl tr empty base unit clock free
-  obtain ⟨y,E,placed,same,headers,workers,leaf⟩ := archiveSetupPlacement_exec (ι := Empty.elim)
+  obtain ⟨y,E,placed,same,_,_,headers,workers,leaf⟩ := archiveSetupPlacement_exec (ι := Empty.elim)
     Empty.elim host (fun x => nomatch x) prog u S _ v F m run ready
   obtain ⟨z,G,n,exec,paid,last,done⟩ := stage y E headers workers leaf
   refine ⟨z,G,m+n,Exec.seq placed exec,?_,last.trans (same.trans user),done⟩
   rw [Nat.cast_add]
   exact add_le_add (Nat.cast_le.mpr bill) paid
+
+/-- Building the archive costs a fixed rate per cell and preserves the continuation budget. -/
+theorem parentArchiveThenWithCharge {Q : ℕ} {U : Type}
+    (capacity : (fun {q : ℕ} (_ : Program 38 q prime) => q) (RecursiveRowsNodeHeaders.program 142080) ≤ Q) :
+    ∃ rate : ℕ, ∀ {T L : ℕ} {P : Type} (host : P → Pr P (80+((T+273)+L)) Q prime U),
+    ∃ setup, ∀ (node : RecursiveInterchangeLayout.Descriptor) (w B rows : ℕ),
+    node.width = 64*(w+1) → node.rows = 142080*rows → node.beforeH = B*prime^(64*((w+1)*64)) →
+    let role := {node with rows := rows}
+    let K := node.beforeRows*rows*node.between*node.afterD
+    let W := B*prime^(64*((w+1)*64))*K
+    let M := prime^(w+1)
+    ∀ (_ : role.Positive) (u : HS _ Q prime U) (S : Stacks _ prime),
+    ParentArchiveInput node w (embStk (archiveSetupPlacement 80 T L) S) →
+    ∀ code (price : ℝ) (post : Stacks _ prime → Prop),
+    (∀ v (F : Stacks (80+((T+273)+L)) prime), (∀ i j, F.R (((borrowedHeaders T i j).castAdd L).natAdd 80) =
+        (Routines.hdr (helperAdjacentView (w+1) 1 W i) j).map bitSymbol) →
+      (∀ k : Fin T, let p := ((k.castAdd 273).castAdd L).natAdd 80
+        F.L p = S.L p ∧ F.R p = S.R p) →
+      (∀ k : Fin L, let p := (k.natAdd (T+273)).natAdd 80
+        F.L p = S.L p ∧ F.R p = S.R p) →
+      ∃ z G t, Exec host code (mk v F) t (mk z G) ∧ (∀ js : List (Fin (80+((T+273)+L))), js.Nodup →
+        (t : ℝ)+tapeCharge (fun l r => 4*l.length+2*r.length+4) js G ≤
+          tapeCharge (fun l r => 4*l.length+2*r.length+4) js F+price) ∧ z.user = v.user ∧ post G) →
+    ∃ z G t, Exec host (.seq setup code) (mk u S) t (mk z G) ∧
+      (∀ js : List (Fin (80+((T+273)+L))), js.Nodup →
+        (t : ℝ)+tapeCharge (fun l r => 4*l.length+2*r.length+4) js G ≤
+        tapeCharge (fun l r => 4*l.length+2*r.length+4) js S+(rate*
+        (M^16*((M^112*B)*prime^(64*((w+1)*64))*K)) : ℕ)+price) ∧ z.user = u.user ∧ post G := by
+  let slots := Fin.castAddEmb 42 (n := 38)
+  let hdr := (Fin.natAddEmb 38 (m := 6)).trans (Fin.castAddEmb 36)
+  let tmp := (44 : Fin 80)
+  let regs := Fin.natAddEmb 45 (m := 35)
+  obtain ⟨prog,prepare⟩ := parentRoleArchive_exec (P := Empty) (U := U) Empty.elim slots hdr tmp regs
+    (by intro i j eq; have h := congrArg Fin.val eq; change i.val = 38+j.val at h; omega)
+    (by intro i eq; have h := congrArg Fin.val eq; change i.val = 44 at h; omega)
+    (by intro j eq; have h := congrArg Fin.val eq; change 44 = 38+j.val at h; omega)
+    (by intro i j eq; have h := congrArg Fin.val eq; change i.val = 45+j.val at h; omega)
+    (by intro i j eq; have h := congrArg Fin.val eq; change 38+i.val = 45+j.val at h; omega) capacity
+  let push := Fast.Main.mnProgPush prog
+  let factor := 1+6*push
+  let setupRate := (RecursiveRowsQuotient.constant 142080+30)*142080*43+152402152
+  refine ⟨factor*setupRate,?_⟩
+  intro T L P host
+  let e := archiveSetupPlacement 80 T L
+  refine ⟨embProg e Empty.elim prog,?_⟩
+  intro node w B rows width split label role K W M pos u S input code price post stage
+  let D := embStk e S
+  obtain ⟨rep,tl,tr,empty,base,unit,clock,free⟩ := input
+  obtain ⟨v,F,m,user,run,bill,ready,_⟩ := prepare node w B rows width split label pos (embDn e u) D
+    rep tl tr empty base unit clock free
+  obtain ⟨y,E,placed,same,view,off,headers,workers,leaf⟩ := archiveSetupPlacement_exec (ι := Empty.elim)
+    Empty.elim host (fun x => nomatch x) prog u S _ v F m run ready
+  obtain ⟨z,G,n,exec,paid,last,done⟩ := stage y E headers workers leaf
+  refine ⟨z,G,m+n,Exec.seq placed exec,?_,last.trans (same.trans user),done⟩
+  intro js unique
+  let weight := fun (l r : List (Fin (prime+4))) => 4*l.length+2*r.length+4
+  have setup := placedCleanup_cost_le e S E weight m (factor*m) off (by
+    intro is distinct
+    have growth := recordCleanup_cost_le is distinct run (c := push) le_rfl (fun x => nomatch x)
+    rw [view]
+    change tapeCharge weight is F+1 ≤ tapeCharge weight is D+1+6*(push*m) at growth
+    change m+tapeCharge weight is F ≤ tapeCharge weight is D+factor*m
+    dsimp only [factor]
+    rw [Nat.add_mul,Nat.one_mul,Nat.mul_assoc]
+    omega) js unique
+  have total := setup.trans (Nat.add_le_add_left (Nat.mul_le_mul_left factor bill) _)
+  rw [← Nat.mul_assoc] at total
+  let V := M^16*((M^112*B)*prime^(64*((w+1)*64))*K)
+  have scaled : (m : ℝ)+tapeCharge weight js E ≤ (tapeCharge weight js S : ℝ)+
+      ((factor*setupRate*V : ℕ) : ℝ) := by exact_mod_cast total
+  have work := paid js unique
+  change (n : ℝ)+tapeCharge weight js G ≤ tapeCharge weight js E+price at work
+  change ((m+n : ℕ) : ℝ)+tapeCharge weight js G ≤ tapeCharge weight js S+_+price
+  rw [Nat.cast_add]
+  linarith only [scaled,work]
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
