@@ -160,6 +160,43 @@ theorem sweepAndParentOutputWithCharge (n : Fin 9) :
   exact ⟨z,F,m+t,Exec.seq r₂ done,fun js hj => joinedBill (b₂ js hj) (paid js hj),
     same.trans (u₂.trans (u₁.trans user)),ready⟩
 
+/-- Append the three binary scan dimensions and leave the remaining workspace blank. -/
+private noncomputable def scanSeed {t : ℕ} (T : ℕ) (S : Stacks t prime) (dims : Fin 3 → ℕ) : Stacks T prime :=
+  let cells (old : Fin t → List (Fin (prime+4))) (header : Fin 3 → List (Fin (prime+4))) (j : Fin T) :=
+    if h : j.val < t then old ⟨j.val,h⟩ else
+    if h : j.val-t < 3 then header ⟨j.val-t,h⟩ else []
+  ⟨S.inp,S.out,cells S.L (fun _ => [separator]),cells S.R (fun i => binSyms (dims i).size (dims i))⟩
+
+private theorem scanPlacement_val {t a b c d : ℕ} (j : Fin t) :
+    ((((j.castAdd a).castAdd b).castAdd c).castAdd d).val = j.val := rfl
+
+private theorem scanSeed_view {t T : ℕ} (e : Fin t ↪ Fin T) (val : ∀ i, (e i).val = i.val)
+    (S : Stacks t prime) (dims : Fin 3 → ℕ) : embStk e (scanSeed T S dims) = S := by
+  cases S
+  simp [embStk,scanSeed,Function.comp_def,val]
+
+private theorem scanSeed_shared {k t m T : ℕ} (fan : Fin k ↪ Fin t) (inner : Fin t ↪ Fin m)
+    (ext : Fin m ↪ Fin T) (S : Stacks T prime) {base shared}
+    (seed : embStk (inner.trans ext) S = base) (view : embStk fan base = shared) :
+    embStk ((fan.trans inner).trans ext) S = shared :=
+  (congrArg (embStk fan) seed).trans view
+
+private theorem scanSeed_frame {t T k : ℕ} (e : Fin t ↪ Fin T) (val : ∀ i, (e i).val = i.val)
+    (fan : Fin k ↪ Fin t) (S : Stacks t prime) (dims : Fin 3 → ℕ) (F : Stacks T prime)
+    (frame : ∀ j, (∀ i, e (fan i) ≠ j) →
+      F.L j = (scanSeed T S dims).L j ∧ F.R j = (scanSeed T S dims).R j) :
+    (∀ j, (∀ i, fan i ≠ j) → F.L (e j) = S.L j ∧ F.R (e j) = S.R j) ∧
+    (∀ (i : Fin 3) j, j.val = t+i.val → F.L j = [separator] ∧ F.R j = binSyms (dims i).size (dims i)) ∧
+    ∀ j, t+3 ≤ j.val → F.L j = [] ∧ F.R j = [] := by
+  have high j (h : t ≤ j.val) := frame j (fun i eq => by
+    have v := congrArg Fin.val eq
+    rw [val] at v
+    exact (fan i).isLt.not_ge (v ▸ h))
+  refine ⟨fun j hj => ?_,fun i j hj => ?_,fun j hj => ?_⟩
+  · simpa [scanSeed,val] using frame (e j) (fun i eq => hj i (e.injective eq))
+  · simpa [scanSeed,hj] using high j (hj ▸ Nat.le_add_right t i.val)
+  · simpa [scanSeed,show ¬ j.val < t by omega,show ¬ j.val-t < 3 by omega] using high j (by omega)
+
 /-- Run every packed invocation, restore the helper labels and return the parent owner bank. -/
 theorem packedSweepAndParentOutput [M8.Machine.Net] (n : Fin 9) (tapes : Fin 32 × Fin 5 → ℕ)
     (ports : ∀ i, Fin (142081+2) ↪ Fin (tapes i)) :
@@ -174,8 +211,6 @@ theorem packedSweepAndParentOutput [M8.Machine.Net] (n : Fin 9) (tapes : Fin 32 
     let outer := fun f => embProg stageBank id (table f)
     let inner := (Fin.castAddEmb 14 (n := T+41+273+LeafCore.small)).trans (Fin.castAddEmb (142081*7))
     let placedFan := (fan.trans stageBank).trans (Fin.castAddEmb 14)
-    let bank' := fun k : (Fin 32 × Fin 5) × Fin 111 => targetScanBank placedFan (targetOwner n k)
-    let reg := (Fin.castAddEmb 4 (n := 10)).trans ((Fin.natAddEmb (T+41+273+LeafCore.small) (m := 14)).trans (Fin.castAddEmb (142081*7)))
     let ext := (Fin.castAddEmb 142081 (n := ((T+41+273+LeafCore.small)+14)+142081*7)).trans (Fin.castAddEmb 10)
     ∃ program, ∃ C : ℝ, ∃ rate : ℕ, ∀ (w B W : ℕ) (row : Descriptor), row.Positive →
       row.beforeH = B*prime^(64*((w+1)*64)) → row.beforeRows*row.rows*row.between*row.afterD = W →
@@ -187,20 +222,14 @@ theorem packedSweepAndParentOutput [M8.Machine.Net] (n : Fin 9) (tapes : Fin 32 
       (∀ j, (∀ h, ports i h ≠ j) → S.L j = (initial i).L j ∧ S.R j = (initial i).R j) →
       ∃ z F t y, Exec (body i) (code i) (mk u S) t (mk z F) ∧ (∀ js : List _, js.Nodup → t+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+(localCost i + children i)) ∧
         z.user = u.user ∧ HelperFan (ports i) y F ∧ packedStageEffect n i (w+1) B W x y) →
-    ∃ prepared, embStk (fan.trans stageBank) prepared = shared ∧
     let K := (prime^(w+1))^112*W
     let N := prime^(64*((w+1)*64))
     let D := (prime^(w+1))^16*B
     let entry := singleLabelBank (B := B) (K := K) (firstRowLabel (w+1))
-    0 < K → 0 < B → ∀ x u S,
-    let small := embStk inner (embStk ext S)
-    HelperFan (fan.trans stageBank) (entry x) small →
-    (∀ j, (∀ h, (fan.trans stageBank) h ≠ j) → small.L j = prepared.L j ∧ small.R j = prepared.R j) →
-    (∀ j, (T+41+273+LeafCore.small+14)+142081*7 ≤ j.val → S.L j = [] ∧ S.R j = []) →
-    (∀ i : Fin 3, S.L (ext (reg (i.castAdd 7))) = [separator] ∧
-      S.R (ext (reg (i.castAdd 7))) = binSyms (![K,N,D] i).size (![K,N,D] i)) →
-    (∀ i : Fin 7, S.R (ext (reg (i.natAdd 3))) = []) →
-    (∀ k (j : Fin 7), S.L (ext (bank' k j.succ)) = [] ∧ S.R (ext (bank' k j.succ)) = []) →
+    let src := (((fan.trans stageBank).trans inner).trans ext)
+    ∃ prepared, embStk src prepared = shared ∧
+    ∀ x u S, HelperFan src (entry x) S →
+    (∀ j, (∀ i, src i ≠ j) → S.L j = prepared.L j ∧ S.R j = prepared.R j) →
     ∃ z F t next, Exec (fun f => embProg ext id (embProg inner id (outer f))) program (mk u S) t (mk z F) ∧
       (∀ js : List _, js.Nodup → t+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+
         ((stageRuns.map localCost).sum+((List.range' (stageChildStart n)
@@ -211,16 +240,41 @@ theorem packedSweepAndParentOutput [M8.Machine.Net] (n : Fin 9) (tapes : Fin 32 
   obtain ⟨states,output⟩ := sweepAndParentOutputWithCharge n
   obtain ⟨T,fan,bank,portsAgree,stages⟩ := restoredStageRunsWithCharge n tapes ports
   refine ⟨max states columnCapacity,T,fan,bank,portsAgree,?_⟩
-  intro P U Q body code fits caller stageBank table outer inner placedFan bank' reg ext
+  intro P U Q body code fits caller stageBank table outer inner placedFan ext
+  let bank' := fun k : (Fin 32 × Fin 5) × Fin 111 => targetScanBank placedFan (targetOwner n k)
+  let reg := (Fin.castAddEmb 4 (n := 10)).trans ((Fin.natAddEmb (T+41+273+LeafCore.small) (m := 14)).trans (Fin.castAddEmb (142081*7)))
   obtain ⟨sweep,C,run⟩ := stages body code (restoreSlotChanges (stageFinalSlot n)) ((le_max_right _ _).trans fits)
   obtain ⟨program,rate,finish⟩ := output (fan.trans stageBank) ((le_max_left _ _).trans fits) outer sweep
   refine ⟨program,C,rate,?_⟩
   intro w B W row positive height width localCost childTime initial shared V children workers
   obtain ⟨prepared,view,execute⟩ := run w B W row positive height width localCost childTime initial shared workers
-  refine ⟨prepared,view,?_⟩
-  intro K N D entry hk hb x u S small live frame fresh dims free scratch
+  intro K N D entry src
+  have hb : 0 < B := Nat.pos_of_mul_pos_right (height ▸ positive.2.2.1)
+  have hw : 0 < W := width ▸ Nat.mul_pos (Nat.mul_pos (Nat.mul_pos positive.1 positive.2.1)
+    positive.2.2.2.1) positive.2.2.2.2
+  have hk : 0 < K := Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) hw
+  let e := inner.trans ext
+  let seed := scanSeed (T+41+273+LeafCore.small+14+142081*7+142081+10) prepared ![K,N,D]
+  have placeVal (i : Fin (T+41+273+LeafCore.small)) : (e i).val = i.val :=
+    scanPlacement_val (a := 14) (b := 142081*7) (c := 142081) (d := 10) i
+  have seedView := scanSeed_view e placeVal prepared ![K,N,D]
+  refine ⟨seed,?_,?_⟩
+  · exact scanSeed_shared (fan.trans stageBank) inner ext seed seedView view
+  intro x u S full frame
+  let small := embStk inner (embStk ext S)
+  have live := (scanFan_projection (fan.trans stageBank) inner (entry x) (embStk ext S)).mp
+    ((scanFan_projection ((fan.trans stageBank).trans inner) ext (entry x) S).mp full)
+  obtain ⟨workerFrame,headers,blank⟩ := scanSeed_frame e placeVal (fan.trans stageBank)
+    prepared ![K,N,D] S frame
+  have dims (i : Fin 3) := headers i (ext (reg (i.castAdd 7))) rfl
+  have free (i : Fin 7) := (blank (ext (reg (i.natAdd 3))) (Nat.add_le_add_left (Nat.le_add_right 3 i.val) _)).2
+  have scratch (k) (j : Fin 7) := blank (ext (bank' k j.succ))
+    (show _+3 ≤ _+14+(finProdFinEquiv (targetOwner n k,j)).val from
+      (Nat.add_le_add_left (by decide : 3 ≤ 14) _).trans (Nat.le_add_right _ _))
+  have fresh (j) (hj : (T+41+273+LeafCore.small+14)+142081*7 ≤ j.val) := blank j
+    (((Nat.add_le_add_left (by decide : 3 ≤ 14) _).trans (Nat.le_add_right _ _)).trans hj)
   obtain ⟨v,A,m,y,out,ran,bill,same,ready,trace,labels⟩ :=
-    execute (entry x) (embDn inner (embDn ext u)) small live frame
+    execute (entry x) (embDn inner (embDn ext u)) small live workerFrame
   rw [height] at labels
   obtain ⟨z,F,t,exec,paid,user,returned⟩ := finish (w+1) B W x hk hb u S v A m _ y out ran
     (fun js hj => by simpa only [Nat.add_assoc] using bill js hj)
