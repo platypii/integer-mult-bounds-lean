@@ -2173,6 +2173,30 @@ private theorem basisRecordSeed [M8.Machine.Net] {w W T : ℕ}
   intro l hl
   exact ⟨(placed l).1.trans (freeX l hl).1,(placed l).2.trans (freeX l hl).2⟩
 
+open Cover.Fallback in
+structure WorkerBasisLayout [M8.Machine.Net] {T : ℕ} (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T) where
+  reverseOps : List (FlatCoordinateSchedule.Op 16)
+  forwardOps : List (FlatCoordinateSchedule.Op 16)
+  reverseBank : Fin (FlatCoordinateCleanSchedule.tapeCount reverseOps) ↪ Fin T
+  forwardBank : Fin (FlatCoordinateCleanSchedule.tapeCount forwardOps) ↪ Fin T
+  reverseOff : ∀ i j, ports i ≠ reverseBank j
+  forwardOff : ∀ i j, ports i ≠ forwardBank j
+  separate : ∀ i j, reverseBank i ≠ forwardBank j
+
+open Cover.Fallback in
+noncomputable def WorkerBasisLayout.seed [M8.Machine.Net] {T : ℕ} {ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T}
+    (layout : WorkerBasisLayout ports) (w W : ℕ) (record : List (Fin (prime+4))) : Stacks T prime :=
+  recordBasisStacks ports layout.reverseBank layout.forwardBank (moveRecordSeed w W record [] [])
+    (basisHeaderStacks layout.reverseOps (w+1) W) (basisHeaderStacks layout.forwardOps (w+1) W)
+
+open Cover.Fallback in
+structure WorkerBasisLayout.OwnerTapes [M8.Machine.Net] {T k : ℕ} {ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T}
+    (layout : WorkerBasisLayout ports) (fan : Fin k ↪ Fin T) : Prop where
+  recordPrivate : ∀ j, j.val ≠ 24 → ∀ h, fan h ≠ ports j
+  payload : ∀ j, j.val = 24 → ∃ h, fan h = ports j
+  reversePrivate : ∀ j h, fan h ≠ layout.reverseBank j
+  forwardPrivate : ∀ j h, fan h ≠ layout.forwardBank j
+
 open M8.Machine.Segments SharedPlacementAlphabet in
 open M8.Machine.ArbitraryWidthHighExchangeShared (sourceWord) in
 open Cover.Fallback IntegerMultBounds.Networks.Certificates.PR589 RecursiveInterchangeLayout in
@@ -2183,6 +2207,9 @@ theorem allocatedPhaseMove_host (charged : Bool) [M8.Machine.Net] {k : ℕ} (src
     ∃ (A B' : List (FlatCoordinateSchedule.Op 16)) (T states : ℕ) (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T) (fan : Fin (k+2) ↪ Fin T)
       (a : Fin (1+FlatCoordinateCleanSchedule.tapeCount A) ↪ Fin T)
       (b : Fin (1+FlatCoordinateCleanSchedule.tapeCount B') ↪ Fin T),
+    ∃ basis : WorkerBasisLayout ports, basis.OwnerTapes fan ∧
+    (∀ w W record, basis.seed w W record = recordBasisStacks ports ((Fin.natAddEmb 1).trans a) ((Fin.natAddEmb 1).trans b)
+      (moveRecordSeed w W record [] []) (basisHeaderStacks A (w+1) W) (basisHeaderStacks B' (w+1) W)) ∧
     let payload := ports ((Fin.castLEEmb swapHostFits) ((Fin.castLEEmb (by decide : 35 ≤ 59)) 24))
     let privateSlot := fun j => j ≠ payload ∧ ¬ ((∀ l, a l ≠ j) ∧ (∀ l, ports l ≠ j) ∧ (∀ l, b l ≠ j))
     (∀ j, privateSlot j → ∀ l, fan l ≠ j) ∧ fan (src.castAdd 2) = payload ∧ a ((0 : Fin 1).castAdd _) = payload ∧ b ((0 : Fin 1).castAdd _) = payload ∧
@@ -2213,8 +2240,9 @@ theorem allocatedPhaseMove_host (charged : Bool) [M8.Machine.Net] {k : ℕ} (src
     let stock := PrivateStock privateSlot
       (fun D => ∃ old, RepT (input A old) (embStk a D).L (embStk a D).R ∧
         RepT (input B' old) (embStk b D).L (embStk b D).R ∧ stored old D ∧ clean D)
-    (∀ (owners : Stacks (k+2) prime) (L R : List (Fin (prime+4))), (∀ z, readAt blank L R (z-q) = RadixToBinary.binaryEncoding.encode (dest z)) →
-      ∃ seed, embStk fan seed = owners ∧ stock seed) ∧
+    (∀ (L R : List (Fin (prime+4))), (∀ z, readAt blank L R (z-q) = RadixToBinary.binaryEncoding.encode (dest z)) →
+      stock (recordBasisStacks ports ((Fin.natAddEmb 1).trans a) ((Fin.natAddEmb 1).trans b)
+        (moveRecordSeed w W record L R) (basisHeaderStacks A (w+1) W) (basisHeaderStacks B' (w+1) W))) ∧
     ∀ budget,
     (desc.width < node.width → ∀ u D word, stored word D → clean D →
       ∃ z F n changed, Exec body (body f) (mk u D) n (mk z F) ∧ workerCost charged D F n budget ∧ z.user = u.user ∧
@@ -2244,7 +2272,24 @@ theorem allocatedPhaseMove_host (charged : Bool) [M8.Machine.Net] {k : ℕ} (src
         exact fun h => hj.1 (h.symm.trans shared)
       · exact fun h => hj.2 (h ▸ ownersOff l eq)
     | right l => exact fun h => hj.2 (h ▸ controlsOff l)
-  refine ⟨A,B',_,rowSwapBlock.states+qa+qb,ports,fan,a,b,disjoint,shared,srcA,srcB,?_⟩
+  let pa := (Fin.natAddEmb 1).trans a
+  let pb := (Fin.natAddEmb 1).trans b
+  have paOff (i j) : ports i ≠ pa j := by
+    by_cases eq : ports i = ports recordPort
+    · rw [eq,← srcA]
+      exact a.injective.ne (by intro e; have := congrArg Fin.val e; simp [pa] at this; omega)
+    · exact (apart i eq _).symm
+  let basis : WorkerBasisLayout ports := ⟨A,B',pa,pb,paOff,fun i j => (privateB j).2 i,fun i j => (privateB j).1 _⟩
+  refine ⟨A,B',_,rowSwapBlock.states+qa+qb,ports,fan,a,b,basis,?_,fun _ _ _ => rfl,disjoint,shared,srcA,srcB,?_⟩
+  · constructor
+    · intro j ne
+      exact disjoint _ ⟨ports.injective.ne (fun eq => ne (congrArg Fin.val eq)), fun off => off.2.1 j rfl⟩
+    · intro j eq
+      exact ⟨src.castAdd 2,shared.trans (congrArg ports (Fin.ext eq.symm))⟩
+    · intro j
+      exact disjoint _ ⟨(paOff recordPort j).symm,fun off => off.1 _ rfl⟩
+    · intro j
+      exact disjoint _ ⟨((privateB j).2 recordPort).symm,fun off => off.2.2 _ rfl⟩
   intro P U Q fits body f
   obtain ⟨setup,swaps,run⟩ := build (k := k) ports body f (by omega)
   let rate := fun (stages : List (FlatCoordinateSchedule.Op 16)) => FlatCoordinateCleanSchedule.constant stages*(1+FlatCoordinateCleanSchedule.tapeCount stages+5)
@@ -2264,12 +2309,11 @@ theorem allocatedPhaseMove_host (charged : Bool) [M8.Machine.Net] {k : ℕ} (src
   refine ⟨position,offset,?_⟩
   intro lo hi view size input stock
   constructor
-  · intro owners L R readDest
+  · intro L R readDest
     let D := recordBasisStacks ports ((Fin.natAddEmb 1).trans a) ((Fin.natAddEmb 1).trans b)
       (moveRecordSeed w W record L R) (basisHeaderStacks A (w+1) W) (basisHeaderStacks B' (w+1) W)
     obtain ⟨ha,hb,hr,hc⟩ := basisRecordSeed A B' ports a b srcA srcB apart privateB view size record dest q L R readDest
-    exact ⟨embOvr fan owners.get D,embStk_ovr fan.injective owners D,D,⟨0,ha,hb,hr,hc⟩,
-      fun j hj => embOvr_off _ _ (disjoint j hj)⟩
+    exact ⟨D,⟨0,ha,hb,hr,hc⟩,fun _ _ => ⟨rfl,rfl⟩⟩
   intro budget child data u S liveS stockS
   obtain ⟨y,z,F,t,exec,time,user,rep,kept,_,action⟩ := useMove budget child data u S liveS stockS
   exact ⟨z,F,t,y,exec,time,user,rep,kept,action⟩
@@ -2362,7 +2406,7 @@ theorem scheduledMoves_host (charged : Bool) [M8.Machine.Net] (stage : Fin 9) (r
   have mem (i : I) := List.mem_filter.mp (show edge i ∈ edges from List.getElem_mem ..)
   have checked (i : I) := Geometry.Moves.phase_checked _ (mem i).1
   have paid (i : I) : 0 < Geometry.moveRank (edge i).1 (edge i).2 := Nat.pos_of_ne_zero (bne_iff_ne.mp (mem i).2)
-  choose A B' tapes states ports fans a b layout using fun i => allocatedPhaseMove_host charged (src i) (edge i) (checked i) (paid i)
+  choose A B' tapes states ports fans a b _ _ _ layout using fun i => allocatedPhaseMove_host charged (src i) (edge i) (checked i) (paid i)
   obtain ⟨T,fan,bank,shared,family⟩ := moveFamily_host tapes fans
   refine ⟨tapes,T,Finset.univ.sup states,ports,fan,bank,?_⟩
   intro P U Q capacity localBody f proc body
@@ -2371,11 +2415,9 @@ theorem scheduledMoves_host (charged : Bool) [M8.Machine.Net] (stage : Fin 9) (r
   refine ⟨base,swaps,fun i => embProg (bank i) (proc i) (code i),?_⟩
   intro node w B rows width split label M K W V hW record desc regs stored clean live
   choose position offset calls using fun i => runMove i node (child i) w B rows (phaseChildPositions.choose_spec stage run i).1 width split label hW (record i) (fun _ => blank) 0
-  let owners : Stacks (142081+2) prime := ⟨[],[],fun _ => [],fun _ => []⟩
-  have seeds (i) := (calls i).1 owners [] [] (fun z => by simp [readAt_nil_left,wordTape_nil]; rfl)
+  have seeds (i) := (calls i).1 [] [] (fun z => by simp [readAt_nil_left,wordTape_nil]; rfl)
   obtain ⟨prepare,frame,place⟩ := family _ _ (fun i => (layout i).1) (fun i => by
-    obtain ⟨S,_,ready⟩ := seeds i
-    exact ⟨S,ready⟩)
+    exact ⟨_,seeds i⟩)
   refine ⟨position,_,offset,prepare,frame,?_⟩
   intro i
   intro budget recurse data u S represented ready
@@ -2431,30 +2473,6 @@ private theorem copyWindowPlacement {t k m n e x : ℕ} (record : Fin t) (tmp : 
   · intro j h
     obtain ⟨other,off⟩ := rightOff j h
     exact ⟨⟨⟨fun l => off (a l),fun l => off (ports l),fun l => off (b l)⟩,fun l => off (fan l)⟩,other⟩
-
-open Cover.Fallback in
-structure WorkerBasisLayout [M8.Machine.Net] {T : ℕ} (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T) where
-  reverseOps : List (FlatCoordinateSchedule.Op 16)
-  forwardOps : List (FlatCoordinateSchedule.Op 16)
-  reverseBank : Fin (FlatCoordinateCleanSchedule.tapeCount reverseOps) ↪ Fin T
-  forwardBank : Fin (FlatCoordinateCleanSchedule.tapeCount forwardOps) ↪ Fin T
-  reverseOff : ∀ i j, ports i ≠ reverseBank j
-  forwardOff : ∀ i j, ports i ≠ forwardBank j
-  separate : ∀ i j, reverseBank i ≠ forwardBank j
-
-open Cover.Fallback in
-noncomputable def WorkerBasisLayout.seed [M8.Machine.Net] {T : ℕ} {ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T}
-    (layout : WorkerBasisLayout ports) (w W : ℕ) (record : List (Fin (prime+4))) : Stacks T prime :=
-  recordBasisStacks ports layout.reverseBank layout.forwardBank (moveRecordSeed w W record [] [])
-    (basisHeaderStacks layout.reverseOps (w+1) W) (basisHeaderStacks layout.forwardOps (w+1) W)
-
-open Cover.Fallback in
-structure WorkerBasisLayout.OwnerTapes [M8.Machine.Net] {T k : ℕ} {ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T}
-    (layout : WorkerBasisLayout ports) (fan : Fin k ↪ Fin T) : Prop where
-  recordPrivate : ∀ j, j.val ≠ 24 → ∀ h, fan h ≠ ports j
-  payload : ∀ j, j.val = 24 → ∃ h, fan h = ports j
-  reversePrivate : ∀ j h, fan h ≠ layout.reverseBank j
-  forwardPrivate : ∀ j h, fan h ≠ layout.forwardBank j
 
 /-- The archive and two scratch words needed at worker entry. -/
 def WorkerEntryWords {T : ℕ} (ports : Fin 35 → Fin T) (record : List (Fin (prime+4))) (S : Stacks T prime) : Prop :=

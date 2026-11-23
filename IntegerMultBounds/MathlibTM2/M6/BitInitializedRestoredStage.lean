@@ -206,16 +206,16 @@ theorem initializedRestoredStage [M8.Machine.Net] (n : Fin 9) :
           (((List.range' (stageChildStart n) (stageRuns.flatMap (fun _ => Geometry.Moves.localPaid)).length).map time).sum : ℕ)) ∧
         z.user = u.user ∧ HelperFan ((Fin.castAddEmb 1).trans fan) y F ∧ RestoredBorrowedStage n w c.B c.stageFactor x y := by
   intro l r I k
-  obtain ⟨pre,post,ts,qs,ports,data,separate,compile⟩ := cutoffRestoredStage n
+  obtain ⟨pre,post,ts,qs,ports,data,basis,owned,compile⟩ := cutoffRestoredStage n
   let setupQ := (fun {q : ℕ} (_ : Program 38 q prime) => q) (RecursiveRowsNodeHeaders.program 142080)
   refine ⟨pre,post,ts,max qs setupQ,ports,?_⟩
   intro P U Q cap body f
   let owners := fun i => withCutoffPort (data i)
   let regs := fun i => (scheduledRecordPorts (ports i)).trans (Fin.castAddEmb 1)
-  have privatePort i (j : Fin 35) (ne : j.val ≠ 24) := (withCutoffPort_records _ _ (separate i)).2 j ne
+  have privatePort i (j : Fin 35) (ne : j.val ≠ 24) := (withCutoffPort_records _ _ (owned i).recordPrivate).2 j ne
   obtain ⟨T,shared,bank,setup,align,apart,load⟩ := initializedStageLayout (U := U)
     ((Nat.le_max_right ..).trans cap) n pre post (fun i => ts i+1) owners regs (Fin.last k)
-    (fun i => (withCutoffPort_records _ _ (separate i)).1) privatePort
+    (fun i => (withCutoffPort_records _ _ (owned i).recordPrivate).1) privatePort
   obtain ⟨rate,base,swaps,fixed,sweep,execute⟩ := compile ((Nat.le_max_left ..).trans cap) body f shared bank align apart
   let stage := Fin.natAddEmb 80 (m := (T+273)+LeafCore.small)
   let inner := (Fin.castAddEmb 273 (n := T)).trans (Fin.castAddEmb LeafCore.small)
@@ -227,7 +227,8 @@ theorem initializedRestoredStage [M8.Machine.Net] (n : Fin 9) :
   obtain ⟨D,bound⟩ := stageLocalCost_bound order (setup+160) base swaps fixed
   refine ⟨T,shared,owners,bank,host,init.seq (embProg stage id sweep),D+rate,?_⟩
   intro c w V desc record
-  obtain ⟨position,seeds,coords,entry,run⟩ := execute c
+  let seeds := fun i => cutoffWorkerSeed ((basis i).seed c.w c.stageWidth (record i))
+  obtain ⟨position,coords,entry,run⟩ := execute c
   refine ⟨position,seeds,entry,coords,?_⟩
   intro sharedSeed
   obtain ⟨initial,cert,view,prepare⟩ := write c seeds entry sharedSeed

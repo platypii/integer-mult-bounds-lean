@@ -392,7 +392,7 @@ theorem cutoffWorkerFamily [M8.Machine.Net] {I : Type} [Fintype I]
     (workers : ∀ i, SelectedOccurrenceWorker (child i) (fun _ => invocationCoordinates (slot i)) (effect i)) :
     ∃ (tapes : I → ℕ) (states : ℕ) (ports : ∀ i, Fin (rowSwapBlock.tapes+35) ↪ Fin (tapes i))
       (fan : ∀ i, Fin (142081+2) ↪ Fin (tapes i)),
-    (∀ i (j : Fin (rowSwapBlock.tapes+35)), j.val ≠ 24 → ∀ h, fan i h ≠ ports i j) ∧
+    ∃ basis : ∀ i, WorkerBasisLayout (ports i), (∀ i, (basis i).OwnerTapes (fan i)) ∧
     ∀ {P U : Type} {Q : ℕ}, states ≤ Q →
     ∀ (body : ∀ i, P → Pr P (tapes i) Q prime U) (f : I → P),
     let host := fun i label => embProg (Fin.castAddEmb 1) id (body i label)
@@ -404,7 +404,7 @@ theorem cutoffWorkerFamily [M8.Machine.Net] {I : Type} [Fintype I]
     let word := binSyms (A := prime) c.root.width.size c.cutoff
     ∃ position : ∀ i, Fin (volume prime (desc i)) ≃ Fin V,
       (∀ i, invocationCoordinates (slot i) (c.w+1) W (position i)) ∧
-      ∃ seed : ∀ i, Stacks (tapes i+1) prime,
+      let seed := fun i => cutoffWorkerSeed ((basis i).seed c.w W (record i))
       (∀ i, WorkerEntryWords (fun j => (scheduledRecordPorts (ports i) j).castAdd 1) (record i) (seed i)) ∧
       ∀ (time : ℕ → ℕ), (∀ i, ScheduledChildExec c.node (desc i) c.w W (ports i) (record i) (position i)
         (body i) (f i) (time (child i).val) true) →
@@ -416,8 +416,8 @@ theorem cutoffWorkerFamily [M8.Machine.Net] {I : Type} [Fintype I]
             CleanupBound S F t ((base i+swaps i*swapVolumeRate c.w)*c.cells+fixed i+time (child i).val) ∧
             z.user = u.user ∧ rep y F ∧ effect i (c.w+1) ((prime^(c.w+1))^112*c.B) c.stageFactor x y := by
   classical
-  choose tapes qs ports fan apart build using workers
-  refine ⟨tapes,Finset.univ.sup qs,ports,fan,apart,?_⟩
+  choose tapes qs ports fan basis owned build using workers
+  refine ⟨tapes,Finset.univ.sup qs,ports,fan,basis,owned,?_⟩
   intro P U Q cap body f host
   choose base swaps fixed code run using fun i => build i ((Finset.le_sup (Finset.mem_univ i)).trans cap) (body i) (f i)
   refine ⟨base,swaps,fixed,code,?_⟩
@@ -427,8 +427,9 @@ theorem cutoffWorkerFamily [M8.Machine.Net] {I : Type} [Fintype I]
     rw [← c.stageCells] at cells
     exact Nat.pos_of_ne_zero (fun h : W = 0 => by change c.stageWidth = 0 at h; rw [h,Nat.mul_zero] at cells; omega)
   choose position coords prepare using fun i => run i c.node c.w c.B c.rowsPerStage c.width c.rows c.label pos
-  choose seed entry execute using fun i => prepare i (record i)
-  refine ⟨position,coords,seed,entry,?_⟩
+  let seed := fun i => cutoffWorkerSeed ((basis i).seed c.w W (record i))
+  choose entry execute using fun i => prepare i (record i)
+  refine ⟨position,coords,entry,?_⟩
   intro time recurse i owners rep x u S live stock
   obtain ⟨z,F,t,y,h,paid,user,out,act⟩ := execute i (time (child i).val) word (recurse i) x u S stock live
   refine ⟨z,F,t,y,h,?_,user,out,act⟩
@@ -885,7 +886,7 @@ theorem cutoffStageFromWorkers [M8.Machine.Net] {l r : ℕ} (n : Fin 9)
   intro I child effect workers complete
   unfold CutoffStageExecution
   intro _ _
-  obtain ⟨ts,qs,ports,data,separate,build⟩ := cutoffWorkerFamily child (fun i => i.2.1) effect workers
+  obtain ⟨ts,qs,ports,data,basis,owned,build⟩ := cutoffWorkerFamily child (fun i => i.2.1) effect workers
   let setup := (fun {q : ℕ} (_ : Program 38 q prime) => q) (RecursiveRowsNodeHeaders.program 142080)
   refine ⟨ts,max qs setup,ports,?_⟩
   intro P U Q cap body f
@@ -894,7 +895,7 @@ theorem cutoffStageFromWorkers [M8.Machine.Net] {l r : ℕ} (n : Fin 9)
   let regs := fun i => (scheduledRecordPorts (ports i)).trans (Fin.castAddEmb 1)
   obtain ⟨T,shared,bank,rate,install⟩ := runSelectedStageArchives (U := U) ((Nat.le_max_right ..).trans cap)
     n pre post first last count (fun i => ts i+1) owners regs (Fin.last (142081+2))
-    (fun i => (withCutoffPort_records _ _ (separate i)).1) (fun i => (withCutoffPort_records _ _ (separate i)).2)
+    (fun i => (withCutoffPort_records _ _ (owned i).recordPrivate).1) (fun i => (withCutoffPort_records _ _ (owned i).recordPrivate).2)
   obtain ⟨code,run⟩ := install (R := 0) (fun i label => embProg (Fin.castAddEmb 1) id (body i label)) worker
   obtain ⟨bound,stage⟩ := run base swaps fixed
   let owner := ((Fin.castAddEmb 273 (n := T)).trans (Fin.castAddEmb 0)).trans (Fin.natAddEmb 80)
@@ -902,7 +903,8 @@ theorem cutoffStageFromWorkers [M8.Machine.Net] {l r : ℕ} (n : Fin 9)
     (embProg (Fin.castAddEmb 1) id (body g.1 g.2))
   refine ⟨_,shared.trans owner,host,code,_,bound,?_⟩
   intro c W V desc record word
-  obtain ⟨position,coords,seeds,entry,steps⟩ := prepare c
+  let seeds := fun i => cutoffWorkerSeed ((basis i).seed c.w c.stageWidth (record i))
+  obtain ⟨position,coords,entry,steps⟩ := prepare c
   refine ⟨position,coords,?_⟩
   intro sharedSeed
   let rep := fun (x : Fin 142081 → Fin V → ZMod 2) L R =>

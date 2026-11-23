@@ -37,7 +37,7 @@ theorem cutoffRestoredStage [M8.Machine.Net] (n : Fin 9) :
     let child := fun i : I => invocationChildren n i.1 (pre i.1) (post i.1) i.2.1 i.2.2
     ∃ (ts : I → ℕ) (states : ℕ) (ports : ∀ i, Fin (rowSwapBlock.tapes+35) ↪ Fin (ts i))
       (data : ∀ i, Fin k ↪ Fin (ts i)),
-    (∀ i (j : Fin (rowSwapBlock.tapes+35)), j.val ≠ 24 → ∀ h, data i h ≠ ports i j) ∧
+    ∃ basis : ∀ i, WorkerBasisLayout (ports i), (∀ i, (basis i).OwnerTapes (data i)) ∧
     ∀ {P U : Type} {T Q : ℕ}, states ≤ Q → ∀ (body : ∀ i, P → Pr P (ts i) Q prime U) (f : I → P)
       (shared : Fin (k+1) ↪ Fin T) (bank : ∀ i, Fin (ts i+1) ↪ Fin T),
     let owners := fun i => withCutoffPort (data i)
@@ -53,7 +53,8 @@ theorem cutoffRestoredStage [M8.Machine.Net] (n : Fin 9) :
     let W := c.B*prime^(64*(w*64))*c.stageFactor
     let desc := fun i => scheduledChild prime c.node (child i)
     let record := fun i : I => invocationWorkerRecord i.2.1 (desc i) c.root.width.size c.cutoff
-    ∃ (position : ∀ i, Fin (volume prime (desc i)) ≃ Fin V) (seed : ∀ i, Stacks (ts i+1) prime),
+    let seed := fun i => cutoffWorkerSeed ((basis i).seed c.w c.stageWidth (record i))
+    ∃ position : ∀ i, Fin (volume prime (desc i)) ≃ Fin V,
     (∀ i, invocationCoordinates i.2.1 w c.stageWidth (position i)) ∧
     (∀ i, WorkerEntryWords (fun j => (scheduledRecordPorts (ports i) j).castAdd 1) (record i) (seed i)) ∧
     ∀ time : ℕ → ℕ, (∀ i, ScheduledChildExec c.node (desc i) c.w c.stageWidth (ports i) (record i)
@@ -73,17 +74,18 @@ theorem cutoffRestoredStage [M8.Machine.Net] (n : Fin 9) :
   obtain ⟨pre,post,first,last,workers⟩ := selectedStageWorkers n
   refine ⟨pre,post,?_⟩
   intro child
-  obtain ⟨ts,qs,ports,data,off,build⟩ := cutoffWorkerFamily child (fun i => i.2.1)
+  obtain ⟨ts,qs,ports,data,basis,owned,build⟩ := cutoffWorkerFamily child (fun i => i.2.1)
     (fun i w B K => selectedOccurrenceEffect n w B K i.1 i.2.1 i.2.2) (fun i => workers i.1 i.2.1 i.2.2)
-  refine ⟨ts,max qs columnCapacity,ports,data,off,?_⟩
+  refine ⟨ts,max qs columnCapacity,ports,data,basis,owned,?_⟩
   intro P U T Q cap body f shared bank owners aligned apart host scratch owner fan
   obtain ⟨base,swaps,fixed,worker,prepare⟩ := build ((Nat.le_max_left ..).trans cap) body f
   obtain ⟨rate,code,stage⟩ := selectedRestoredSweep n ((Nat.le_max_right ..).trans cap) (fun i => ts i+1)
     owners shared bank aligned apart (fun i g => embProg (Fin.castAddEmb 1) id (body i g)) worker
   refine ⟨rate,base,swaps,fixed,code,?_⟩
   intro c w V W desc record
-  obtain ⟨position,coords,seed,entry,run⟩ := prepare c
-  refine ⟨position,seed,coords,entry,?_⟩
+  let seed := fun i => cutoffWorkerSeed ((basis i).seed c.w c.stageWidth (record i))
+  obtain ⟨position,coords,entry,run⟩ := prepare c
+  refine ⟨position,coords,entry,?_⟩
   intro time recurse x u S live headers free cut stock
   let work := fun i => (base i+swaps i*swapVolumeRate c.w)*c.cells+fixed i
   have positive : 0 < V := by

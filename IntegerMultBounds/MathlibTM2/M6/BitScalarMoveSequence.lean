@@ -821,7 +821,7 @@ private theorem withCutoffPort_data {k T : ℕ} (fan : Fin k ↪ Fin T) (i : Fin
     withCutoffPort fan (i.castAdd 1) = (fan i).castAdd 1 := by
   simp [withCutoffPort,Function.Embedding.sumMap]
 
-private theorem withCutoffPort_cut {k T : ℕ} (fan : Fin k ↪ Fin T) :
+theorem withCutoffPort_cut {k T : ℕ} (fan : Fin k ↪ Fin T) :
     withCutoffPort fan (Fin.last k) = Fin.last T := by
   change withCutoffPort fan ((0 : Fin 1).natAdd k) = (0 : Fin 1).natAdd T
   simp [withCutoffPort,Function.Embedding.sumMap]
@@ -852,6 +852,43 @@ private theorem withCutoffPort_view {k T : ℕ} (fan : Fin k ↪ Fin T) (S : Sta
       embStk fan (embStk (Fin.castAddEmb 1) S) := by
   simp only [embStk,Function.comp_def,Fin.coe_castAddEmb,withCutoffPort_data]
 
+def cutoffWorkerSeed {T : ℕ} (seed : Stacks T prime) : Stacks (T+1) prime :=
+  ⟨seed.inp,seed.out,Fin.append seed.L (fun _ => []),Fin.append seed.R (fun _ => [])⟩
+
+theorem withCutoffPort_private_cast {k T : ℕ} (fan : Fin k ↪ Fin T) (j : Fin T) :
+    (∀ i, withCutoffPort fan i ≠ j.castAdd 1) ↔ ∀ i, fan i ≠ j := by
+  constructor
+  · exact fun outside i eq => outside (i.castAdd 1)
+      ((withCutoffPort_data fan i).trans (congrArg (Fin.castAdd 1) eq))
+  · intro outside i
+    induction i using Fin.lastCases with
+    | last =>
+      rw [withCutoffPort_cut]
+      exact fun eq => j.isLt.ne (congrArg Fin.val eq.symm)
+    | cast i =>
+      change withCutoffPort fan (i.castAdd 1) ≠ j.castAdd 1
+      rw [withCutoffPort_data]
+      exact (Fin.castAddEmb 1).injective.ne (outside i)
+
+/-- The cutoff port is shared, so lifting a worker preserves its private stock. -/
+theorem privateTapes_withCutoff {k T : ℕ} (fan : Fin k ↪ Fin T) (seed : Stacks T prime)
+    (S : Stacks (T+1) prime) :
+    PrivateTapes (withCutoffPort fan) (cutoffWorkerSeed seed) S ↔
+      PrivateTapes fan seed (embStk (Fin.castAddEmb 1) S) := by
+  constructor
+  · intro fresh j outside
+    simpa only [embStk,Function.comp_apply,Fin.coe_castAddEmb,cutoffWorkerSeed,Fin.append_left]
+      using fresh (j.castAdd 1) ((withCutoffPort_private_cast fan j).mpr outside)
+  · intro stock j
+    induction j using Fin.lastCases with
+    | last => exact fun outside => False.elim (outside (Fin.last k) (withCutoffPort_cut fan))
+    | cast j =>
+      intro outside
+      change S.L (j.castAdd 1) = (cutoffWorkerSeed seed).L (j.castAdd 1) ∧
+        S.R (j.castAdd 1) = (cutoffWorkerSeed seed).R (j.castAdd 1)
+      simpa only [embStk,Function.comp_apply,Fin.coe_castAddEmb,cutoffWorkerSeed,Fin.append_left]
+        using stock j ((withCutoffPort_private_cast fan j).mp outside)
+
 /-- Lift a seeded worker without changing its countdown word, step count, or
 cleanup budget. Only tapes outside the extended owner bank need initialization. -/
 private theorem runWithCutoff {α P U : Type} {k T Q : ℕ} (fan : Fin k ↪ Fin T)
@@ -859,7 +896,8 @@ private theorem runWithCutoff {α P U : Type} {k T Q : ℕ} (fan : Fin k ↪ Fin
     let bank := Fin.castAddEmb 1 (n := T)
     let host := fun f => embProg bank id (body f)
     let ports := withCutoffPort fan
-    ∃ initial : Stacks (T+1) prime, (∀ j, initial.R (bank j) = seed.R j) ∧ ∀ (rep : α → Stacks k prime → Prop) (effect : α → α → Prop)
+    let initial := cutoffWorkerSeed seed
+    (∀ j, initial.R (bank j) = seed.R j) ∧ ∀ (rep : α → Stacks k prime → Prop) (effect : α → α → Prop)
       (budget : ℕ) (word : List (Fin (prime+4))),
     (∀ x u S, PrivateTapes fan seed S → rep x (embStk fan S) → ∃ z F t y,
       Exec body code (mk u S) t (mk z F) ∧ CleanupBound S F t budget ∧ z.user = u.user ∧
@@ -869,22 +907,13 @@ private theorem runWithCutoff {α P U : Type} {k T Q : ℕ} (fan : Fin k ↪ Fin
         CleanupBound S F t budget ∧ z.user = u.user ∧ rep y (embStk fan (embStk bank F)) ∧
         F.R (ports (Fin.last k)) = word ∧ effect x y := by
   intro bank host ports
-  let initial : Stacks (T+1) prime := ⟨seed.inp,seed.out,Fin.append seed.L (fun _ => []),Fin.append seed.R (fun _ => [])⟩
-  refine ⟨initial,fun j => by simp only [initial,bank,Fin.coe_castAddEmb,Fin.append_left],?_⟩
+  intro initial
+  refine ⟨fun j => by simp only [initial,cutoffWorkerSeed,bank,Fin.coe_castAddEmb,Fin.append_left],?_⟩
   intro rep effect budget word run x u S fresh live header
   have cut (j : Fin T) : bank j ≠ ports (Fin.last k) := by
     rw [withCutoffPort_cut]
     exact fun h => j.isLt.ne (congrArg Fin.val h)
-  have stock : PrivateTapes fan seed (embStk bank S) := by
-    intro j outside
-    have h := fresh (bank j) (fun i => by
-      induction i using Fin.lastCases with
-      | last => exact (cut j).symm
-      | cast i =>
-        change withCutoffPort fan (i.castAdd 1) ≠ bank j
-        rw [withCutoffPort_data]
-        exact bank.injective.ne (outside i))
-    simpa only [initial,bank,Fin.coe_castAddEmb,Fin.append_left,embStk,Function.comp_apply] using h
+  have stock := (privateTapes_withCutoff fan seed S).mp fresh
   obtain ⟨z,F,t,y,exec,paid,user,out,acts⟩ := run x (embDn bank u) _ stock live
   obtain ⟨v,G,h,_,same,view,off⟩ := exec_emb (body' := host) (ι := id) bank.injective (fun _ => rfl) exec u rfl S rfl
   rw [← view] at paid out
@@ -897,7 +926,7 @@ def SelectedOccurrenceWorker [M8.Machine.Net] (child : Fin nodeChildren5.length)
     (effect : ∀ w B K : ℕ, let X := Fin 142081 → Fin ((prime^w)^16*(B*prime^(64*(w*64))*K)) → ZMod 2
       X → X → Prop) : Prop :=
     ∃ (T states : ℕ) (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T) (fan : Fin (142081+2) ↪ Fin T),
-    (∀ j : Fin (rowSwapBlock.tapes+35), j.val ≠ 24 → ∀ h, fan h ≠ ports j) ∧
+    ∃ basis : WorkerBasisLayout ports, basis.OwnerTapes fan ∧
     ∀ {P U : Type} {Q : ℕ}, states ≤ Q → ∀ (body : P → Pr P T Q prime U) (f : P),
     let bank := Fin.castAddEmb 1 (n := T)
     let host := fun f => embProg bank id (body f)
@@ -912,7 +941,9 @@ def SelectedOccurrenceWorker [M8.Machine.Net] (child : Fin nodeChildren5.length)
     let desc := scheduledChild prime node child
     0 < W → ∃ position : Fin (volume prime desc) ≃ Fin V,
       coords desc (w+1) W position ∧
-      ∀ record, ∃ prepared : Stacks (T+1) prime, WorkerEntryWords (fun j => (scheduledRecordPorts ports j).castAdd 1) record prepared ∧ ∀ budget word,
+      ∀ record,
+      let prepared := cutoffWorkerSeed (basis.seed w W record)
+      WorkerEntryWords (fun j => (scheduledRecordPorts ports j).castAdd 1) record prepared ∧ ∀ budget word,
       ScheduledChildExec node desc w W ports record position body f budget true →
       let rep := fun x (D : Stacks (T+1) prime) => HelperFan (Fin.castAddEmb 1) x (embStk owners D) ∧
         D.R (owners (Fin.last (142081+2))) = word
@@ -927,8 +958,8 @@ theorem invocationCopyWindow [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) 
     SelectedOccurrenceWorker (copyChildPosition (n,p,j)) CopyIntervalPositions
       (CopyFanoutEffect n p.1 p.2 Copy.lifecycles[j.val] (List.getElem_mem ..)) := by
   unfold SelectedOccurrenceWorker
-  obtain ⟨T,states,ports,fan,apart,build⟩ := borrowedWindow_host true n p j
-  refine ⟨T,states,ports,fan,apart,?_⟩
+  obtain ⟨T,states,ports,fan,basis,owned,build⟩ := borrowedWindow_layout true n p j
+  refine ⟨T,states,ports,fan,basis,owned,?_⟩
   intro P U Q cap body f bank host owners
   obtain ⟨base,code,run⟩ := build cap body f
   refine ⟨13*base,0,156,embProg bank id code,?_⟩
@@ -936,11 +967,13 @@ theorem invocationCopyWindow [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) 
   obtain ⟨position,coords,prepare⟩ := run node w B rows width split label pos
   refine ⟨position,coords,?_⟩
   intro record
-  obtain ⟨seed,archive,window⟩ := prepare record
+  let seed := basis.seed w W record
+  obtain ⟨archive,window⟩ := prepare record
   let Data := Fin 142081 → Fin V → ZMod 2
   let stored := fun (x : Data) (D : Stacks (142081+2) prime) => HelperFan (Function.Embedding.refl _) x D
-  obtain ⟨initial,original,lift⟩ := runWithCutoff (α := Data) fan body code seed
-  refine ⟨initial,⟨(original _).trans archive.1,(original _).trans archive.2.1,(original _).trans archive.2.2⟩,?_⟩
+  let initial := cutoffWorkerSeed seed
+  obtain ⟨original,lift⟩ := runWithCutoff (α := Data) fan body code seed
+  refine ⟨⟨(original _).trans archive.1,(original _).trans archive.2.1,(original _).trans archive.2.2⟩,?_⟩
   intro budget word child rep data u S fresh live
   have execute := lift stored _ _ word (fun x v D stock ready => window budget child x v D ready stock)
   obtain ⟨z,F,t,y,exec,paid,user,out,cut,act⟩ := execute data u S fresh (by
@@ -995,7 +1028,8 @@ theorem invocationCopyComponent [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 
   let blankStack : Stacks (142081+2) prime := ⟨[],[],fun _ => [],fun _ => []⟩
   obtain ⟨seed,_,windows⟩ := prepare record blankStack
   let Data := Fin 142081 → Fin V → ZMod 2
-  obtain ⟨initial,_,lift⟩ := runWithCutoff (α := Data) fan localHost code seed
+  let initial := cutoffWorkerSeed seed
+  obtain ⟨_,lift⟩ := runWithCutoff (α := Data) fan localHost code seed
   refine ⟨initial,?_⟩
   intro budget word children work rep data u S fresh live
   let stored := fun (x : Data) (D : Stacks (142081+2) prime) => HelperFan (Function.Embedding.refl _) x D
@@ -1010,8 +1044,97 @@ theorem invocationCopyComponent [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 
   exact ⟨show stored y (embStk (Fin.castAddEmb 1) (embStk ports F)) from withCutoffPort_view fan F ▸ out,header⟩
 
 open RecursiveInterchangeLayout in
+def SelectedMoveWindow [M8.Machine.Net] {k : ℕ} (layout : Fin 661 ↪ Fin k)
+    (n : Fin 9) (p : Fin 32 × Fin 5) (i : MoveIndex) (T states : ℕ)
+    (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T) (fan : Fin (k+2) ↪ Fin T)
+    (basis : WorkerBasisLayout ports) : Prop :=
+    ∀ {P U : Type} {Q : ℕ}, states ≤ Q → ∀ (body : P → Pr P T Q prime U) (f : P),
+    let host := fun label => embProg (Fin.castAddEmb 1) id (body label)
+    ∃ (base swaps : ℕ) (code : Pr P (T+1) Q prime U), ∀ (node : Descriptor) (w B rows : ℕ),
+    node.width = 64*(w+1) → node.rows = 142080*rows → node.beforeH = B*prime^(64*((w+1)*64)) →
+    let M := prime^(w+1)
+    let K := node.beforeRows*rows*node.between*node.afterD
+    let W := (M^112*B)*prime^(64*((w+1)*64))*K
+    let V := M^16*W
+    let desc := scheduledChild prime node (phaseChildPositions.choose (n,p,i))
+    0 < W → ∃ position : Fin (volume prime desc) ≃ Fin V,
+    (∀ h, (position h).val = (CopyChildLayout.packActive desc h).val) ∧
+    ∀ record,
+    let initial := cutoffWorkerSeed (basis.seed w W record)
+    WorkerEntryWords (fun j => (scheduledRecordPorts ports j).castAdd 1) record initial ∧ ∀ budget word,
+    ScheduledChildExec node desc w W ports record position body f budget true →
+    let owners := withCutoffPort fan
+    let rep := fun x (S : Stacks (T+1) prime) => HelperFan (Fin.castAddEmb 1) x (embStk owners S) ∧
+      S.R (owners (Fin.last (k+2))) = word
+    ∀ (x : Fin k → Fin V → ZMod 2) u S, PrivateTapes owners initial S → rep x S →
+      ∃ z F t, Exec host code (mk u S) t (mk z F) ∧
+        CleanupBound S F t (budget+nativePrice true ((base+swaps*swapVolumeRate w)*V)) ∧ z.user = u.user ∧
+        rep (moveOwnerEffect layout x i.val ((Geometry.Moves.phaseEdges.filter positiveMove)[i.val]'i.isLt)) F
+
+open RecursiveInterchangeLayout in
 /-- Execute a paid MOVE from the invocation directory on its selected owner
 and retain the shared cutoff. The recursive budget enters the total once. -/
+theorem invocationMoveLayout [M8.Machine.Net] {k : ℕ} (layout : Fin 661 ↪ Fin k)
+    (n : Fin 9) (p : Fin 32 × Fin 5) (i : MoveIndex) :
+    ∃ (T states : ℕ) (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T) (fan : Fin (k+2) ↪ Fin T)
+      (basis : WorkerBasisLayout ports), basis.OwnerTapes fan ∧ SelectedMoveWindow layout n p i T states ports fan basis := by
+  let edge := (Geometry.Moves.phaseEdges.filter positiveMove)[i.val]'i.isLt
+  let child := phaseChildPositions.choose (n,p,i)
+  have mem := List.mem_filter.mp (List.getElem_mem (l := Geometry.Moves.phaseEdges.filter positiveMove) i.isLt)
+  have checked := Geometry.Moves.phase_checked edge mem.1
+  have paid : 0 < Geometry.moveRank edge.1 edge.2 := Nat.pos_of_ne_zero (bne_iff_ne.mp mem.2)
+  obtain ⟨A,B',T,states,ports,fan,a,b,basis,owners,basisEq,apart,_,_,_,build⟩ :=
+    allocatedPhaseMove_host true (layout (paidRegister i.val)) edge checked paid
+  refine ⟨T,states,ports,fan,basis,owners,?_⟩
+  intro P U Q cap body f host
+  obtain ⟨base,swaps,code,run⟩ := build cap body f
+  refine ⟨base,swaps,embProg (Fin.castAddEmb 1) id code,?_⟩
+  intro node w B rows width split label M K W V desc pos
+  have aligned : B*prime^(64*((w+1)*64))*(M^112*K) = W := by dsimp only [W]; ring
+  have go := run node child w B rows (phaseChildPositions.choose_spec n p i).1 width split label
+  dsimp only at go
+  rw [aligned] at go
+  -- The child record is private, so initialize it after the record word is fixed.
+  have calls := fun record => go pos record (fun _ => blank) 0
+  obtain ⟨position,coords,_⟩ := calls []
+  refine ⟨position,coords,?_⟩
+  intro record
+  obtain ⟨actual,coords',prepare,exec⟩ := calls record
+  have same : actual = position := Equiv.ext (fun h => Fin.ext ((coords' h).trans (coords h).symm))
+  subst actual
+  let seed := recordBasisStacks ports ((Fin.natAddEmb 1).trans a) ((Fin.natAddEmb 1).trans b)
+    (moveRecordSeed w W record [] []) (basisHeaderStacks A (w+1) W) (basisHeaderStacks B' (w+1) W)
+  have ready := prepare [] [] (fun z => by simp [readAt_nil_left,wordTape_nil]; rfl)
+  let Data := Fin k → Fin V → ZMod 2
+  let initial := cutoffWorkerSeed seed
+  obtain ⟨original,lift⟩ := runWithCutoff (α := Data) fan body code seed
+  rw [basisEq w W record]
+  refine ⟨?_,?_⟩
+  · obtain ⟨D,⟨old,_,_,stored,_⟩,kept⟩ := ready
+    have atPort (j : Fin 35) (ne : j.val ≠ 24) :
+        initial.R ((scheduledRecordPorts ports j).castAdd 1) = D.R (scheduledRecordPorts ports j) := by
+      apply (original _).trans
+      apply (kept _ _).2
+      refine ⟨ports.injective.ne (fun eq => ne (congrArg Fin.val eq)),?_⟩
+      exact fun off => off.2.1 _ rfl
+    exact ⟨(atPort 34 (by decide)).trans stored.archive,
+      (atPort 0 (by decide)).trans (stored.scratch 0 (by decide)).2,
+      (atPort 1 (by decide)).trans (stored.scratch 1 (by decide)).2⟩
+  intro budget word recurse owners rep x u S fresh live
+  let stored := fun (x : Data) (D : Stacks (k+2) prime) => HelperFan (Function.Embedding.refl _) x D
+  have move := lift stored (fun x y => y = moveOwnerEffect layout x i.val edge) _ word (fun data v D stock h => by
+    obtain ⟨old,init,kept⟩ := ready
+    obtain ⟨z,F,t,y,run,paid,user,out,_,acts⟩ := exec budget recurse data v D h ⟨old,init,fun j hj =>
+      ⟨(stock j (apart j hj)).1.trans (kept j hj).1,(stock j (apart j hj)).2.trans (kept j hj).2⟩⟩
+    exact ⟨z,F,t,_,run,paid,user,out,moveOwnerEffect_of_exec layout data i.val edge checked y acts⟩)
+  obtain ⟨z,F,t,y,run,paid,user,out,header,rfl⟩ := move x u S fresh (by
+    have h := live.1
+    change stored x (embStk (Fin.castAddEmb 1) (embStk owners S)) at h
+    rwa [withCutoffPort_view] at h) live.2
+  exact ⟨z,F,t,run,paid,user,show stored _ (embStk (Fin.castAddEmb 1) (embStk owners F)) from
+    withCutoffPort_view fan F ▸ out,header⟩
+
+open RecursiveInterchangeLayout in
 theorem invocationMoveComponent [M8.Machine.Net] {k : ℕ} (layout : Fin 661 ↪ Fin k)
     (n : Fin 9) (p : Fin 32 × Fin 5) (i : MoveIndex) :
     let edge := (Geometry.Moves.phaseEdges.filter positiveMove)[i.val]'i.isLt
@@ -1039,60 +1162,14 @@ theorem invocationMoveComponent [M8.Machine.Net] {k : ℕ} (layout : Fin 661 ↪
         CleanupBound S F t (budget+nativePrice true ((base+swaps*swapVolumeRate w)*V)) ∧ z.user = u.user ∧
         rep (moveOwnerEffect layout x i.val edge) F := by
   intro edge child
-  have mem := List.mem_filter.mp (List.getElem_mem (l := Geometry.Moves.phaseEdges.filter positiveMove) i.isLt)
-  have checked := Geometry.Moves.phase_checked edge mem.1
-  have paid : 0 < Geometry.moveRank edge.1 edge.2 := Nat.pos_of_ne_zero (bne_iff_ne.mp mem.2)
-  obtain ⟨A,B',T,states,ports,fan,a,b,apart,_,_,_,build⟩ :=
-    allocatedPhaseMove_host true (layout (paidRegister i.val)) edge checked paid
-  refine ⟨T,states,ports,fan,?_,?_⟩
-  · intro j ne h
-    apply apart (ports j) _ h
-    refine ⟨fun eq => ne (congrArg Fin.val (ports.injective eq)),?_⟩
-    exact fun off => off.2.1 j rfl
+  obtain ⟨T,states,ports,fan,basis,owned,build⟩ := invocationMoveLayout layout n p i
+  refine ⟨T,states,ports,fan,owned.recordPrivate,?_⟩
   intro P U Q cap body f host
   obtain ⟨base,swaps,code,run⟩ := build cap body f
-  refine ⟨base,swaps,embProg (Fin.castAddEmb 1) id code,?_⟩
+  refine ⟨base,swaps,code,?_⟩
   intro node w B rows width split label M K W V desc pos
-  have aligned : B*prime^(64*((w+1)*64))*(M^112*K) = W := by dsimp only [W]; ring
-  have go := run node child w B rows (phaseChildPositions.choose_spec n p i).1 width split label
-  dsimp only at go
-  rw [aligned] at go
-  -- The child record is private, so initialize it after the record word is fixed.
-  have calls := fun record => go pos record (fun _ => blank) 0
-  obtain ⟨position,coords,_⟩ := calls []
-  refine ⟨position,coords,?_⟩
-  intro record
-  obtain ⟨actual,coords',prepare,exec⟩ := calls record
-  have same : actual = position := Equiv.ext (fun h => Fin.ext ((coords' h).trans (coords h).symm))
-  subst actual
-  let blankOwners : Stacks (k+2) prime := ⟨[],[],fun _ => [],fun _ => []⟩
-  obtain ⟨seed,_,ready⟩ := prepare blankOwners [] [] (fun z => by simp [readAt_nil_left,wordTape_nil]; rfl)
-  let Data := Fin k → Fin V → ZMod 2
-  obtain ⟨initial,original,lift⟩ := runWithCutoff (α := Data) fan body code seed
-  refine ⟨initial,?_,?_⟩
-  · obtain ⟨D,⟨old,_,_,stored,_⟩,kept⟩ := ready
-    have atPort (j : Fin 35) (ne : j.val ≠ 24) :
-        initial.R ((scheduledRecordPorts ports j).castAdd 1) = D.R (scheduledRecordPorts ports j) := by
-      apply (original _).trans
-      apply (kept _ _).2
-      refine ⟨ports.injective.ne (fun eq => ne (congrArg Fin.val eq)),?_⟩
-      exact fun off => off.2.1 _ rfl
-    exact ⟨(atPort 34 (by decide)).trans stored.archive,
-      (atPort 0 (by decide)).trans (stored.scratch 0 (by decide)).2,
-      (atPort 1 (by decide)).trans (stored.scratch 1 (by decide)).2⟩
-  intro budget word recurse owners rep x u S fresh live
-  let stored := fun (x : Data) (D : Stacks (k+2) prime) => HelperFan (Function.Embedding.refl _) x D
-  have move := lift stored (fun x y => y = moveOwnerEffect layout x i.val edge) _ word (fun data v D stock h => by
-    obtain ⟨old,init,kept⟩ := ready
-    obtain ⟨z,F,t,y,run,paid,user,out,_,acts⟩ := exec budget recurse data v D h ⟨old,init,fun j hj =>
-      ⟨(stock j (apart j hj)).1.trans (kept j hj).1,(stock j (apart j hj)).2.trans (kept j hj).2⟩⟩
-    exact ⟨z,F,t,_,run,paid,user,out,moveOwnerEffect_of_exec layout data i.val edge checked y acts⟩)
-  obtain ⟨z,F,t,y,run,paid,user,out,header,rfl⟩ := move x u S fresh (by
-    have h := live.1
-    change stored x (embStk (Fin.castAddEmb 1) (embStk owners S)) at h
-    rwa [withCutoffPort_view] at h) live.2
-  exact ⟨z,F,t,run,paid,user,show stored _ (embStk (Fin.castAddEmb 1) (embStk owners F)) from
-    withCutoffPort_view fan F ▸ out,header⟩
+  obtain ⟨position,coords,prepare⟩ := run node w B rows width split label pos
+  exact ⟨position,coords,fun record => ⟨cutoffWorkerSeed (basis.seed w W record),prepare record⟩⟩
 
 /-- Sequence allocated MOVE calls in the supplied order. Only occurrences
 remaining in the list need their private seed. The shared owner state follows
@@ -1436,7 +1513,7 @@ theorem invocationWindowEffects {w B K : ℕ} (n : Fin 9) (p : Fin 32 × Fin 5)
   rw [invocationPhaseOutput_fold] at left right
   exact invocationComponentEffects n p x a b y left (copyWindowTrace n p.1 p.2 a b windows) right
 
-private theorem phaseDirectory (afterCopy : Bool) :
+theorem phaseDirectory (afterCopy : Bool) :
     let gs := if afterCopy then sectionB++sectionC else sectionD++sectionA
     let cur := if afterCopy then Frames.scatterFinish Frames.beforeScatter else Frames.snapshot Frames.initialRefs
     let blocks := (phaseMoveBlocks gs cur).1
@@ -1450,6 +1527,12 @@ private theorem phaseDirectory (afterCopy : Bool) :
   cases afterCopy
   · exact ⟨pre,fun i => ⟨(left i).1.trans (Nat.zero_add _).symm,(left i).2⟩⟩
   · exact ⟨post,fun i => ⟨(right i).1.trans (congrArg (·+i.val) (count _ _)),(right i).2⟩⟩
+
+/-- The global MOVE occurrence for a local position before or after COPY. -/
+noncomputable def selectedPhaseIndex (afterCopy : Bool) :
+    Fin (selectedPhaseSchedule afterCopy).1.length → MoveIndex := by
+  unfold selectedPhaseSchedule
+  exact (phaseDirectory afterCopy).choose
 
 open RecursiveInterchangeLayout Certificates.PR589 in
 /-- Compile each MOVE in either literal PR589 phase on its occurrence bank.
@@ -1471,7 +1554,8 @@ theorem invocationScalarMove [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) 
   let layout : Fin 661 ↪ Fin 142081 := ⟨ownerTape n p.1 p.2,ownerTape_injective ..⟩
   let phase := if afterCopy then sectionB++sectionC else sectionD++sectionA
   let cur := if afterCopy then Frames.scatterFinish Frames.beforeScatter else Frames.snapshot Frames.initialRefs
-  obtain ⟨select,atIndex⟩ := phaseDirectory afterCopy
+  let select := (phaseDirectory afterCopy).choose
+  have atIndex := (phaseDirectory afterCopy).choose_spec
   refine ⟨select,fun j => ⟨(atIndex j).1,(atIndex j).2,?_⟩⟩
   intro i edge child
   unfold SelectedOccurrenceWorker
@@ -1484,9 +1568,9 @@ theorem invocationScalarMove [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) 
     split
     · exact lastAllowed
     · simp
-  obtain ⟨T,states,ports,fan,apart,build⟩ := invocationMoveComponent layout n p i
+  obtain ⟨T,states,ports,fan,basis,owned,build⟩ := invocationMoveLayout layout n p i
   obtain ⟨scalar,compile⟩ := scalarWorkerBlocks layout
-  refine ⟨T,max states scalar,ports,fan,apart,?_⟩
+  refine ⟨T,max states scalar,ports,fan,basis,owned,?_⟩
   intro P U Q capacity body f bank host owners
   obtain ⟨base,swaps,worker,run⟩ := build ((Nat.le_max_left ..).trans capacity) body f
   obtain ⟨code,rate,execute⟩ := compile ((Nat.le_max_right ..).trans capacity) gs allowed suffix suffixAllowed
@@ -1496,8 +1580,9 @@ theorem invocationScalarMove [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) 
   obtain ⟨position,coords,prepare⟩ := run node w B rows width split label pos
   refine ⟨position,coords,?_⟩
   intro record
-  obtain ⟨initial,archive,step⟩ := prepare record
-  refine ⟨initial,archive,?_⟩
+  let initial := cutoffWorkerSeed (basis.seed w W record)
+  obtain ⟨archive,step⟩ := prepare record
+  refine ⟨archive,?_⟩
   intro budget word call rep x u S privateSeed live
   have positive : 0 < V := Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) pos
   obtain ⟨z,F,t,h,cost,user,out⟩ := execute positive word _ _ initial (fun y v D h stock => step budget word call y v D stock h)
@@ -1582,7 +1667,8 @@ theorem invocationPhaseComponent [M8.Machine.Net] (P U : Type) (n : Fin 9) (p : 
     let layout : Fin 661 ↪ Fin 142081 := ⟨ownerTape n p.1 p.2,ownerTape_injective ..⟩
     ∃ select, (∀ i, (select i : MoveIndex).val = start+i.val) ∧ ChargedPhaseComponent P U n p layout gs cur start select := by
   intro gs cur start layout
-  obtain ⟨select,atIndex⟩ := phaseDirectory afterCopy
+  let select := (phaseDirectory afterCopy).choose
+  have atIndex := (phaseDirectory afterCopy).choose_spec
   exact ⟨select,fun i => (atIndex i).1,assemblePhaseComponent P U n p layout gs cur start select (invocationPhase_allowed afterCopy) atIndex⟩
 
 private theorem directorySum {l : ℕ} (start : ℕ) (child : Fin l → ℕ) (cost : ℕ → ℕ)
