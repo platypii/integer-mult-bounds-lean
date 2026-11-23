@@ -259,6 +259,32 @@ def stageOccurrenceOrder (l r : ℕ) : List (Σ _ : StageRun, Σ j : Fin 3, Fin 
 theorem stageOccurrenceOrder_nodup (l r : ℕ) : (stageOccurrenceOrder l r).Nodup :=
   stageRuns_nodup.sigma fun _ => (List.nodup_finRange 3).sigma fun _ => List.nodup_finRange _
 
+private theorem sumSigmaCosts {α : Type} {β : α → Type} (xs : List α) (ys : ∀ x, List (β x))
+    (cost : Sigma β → ℕ) :
+    ((xs.sigma ys).map cost).sum = (xs.map (fun x => ((ys x).map (fun y => cost ⟨x,y⟩)).sum)).sum := by
+  induction xs with
+  | nil => rfl
+  | cons x xs ih => simp only [List.sigma_cons,List.map_append,List.sum_append,List.map_map,
+      Function.comp_def,List.map_cons,List.sum_cons,ih]
+
+/-- The stage order charges every scheduled recursive budget exactly once. -/
+theorem stageOccurrenceChildSum (n : Fin 9) {l r : ℕ} (pre : StageRun → Fin l → MoveIndex)
+    (post : StageRun → Fin r → MoveIndex) (first : ∀ p i, (pre p i).val = i.val)
+    (last : ∀ p i, (post p i).val = l+i.val) (count : l+r = (Geometry.Moves.phaseEdges.filter positiveMove).length)
+    (time : ℕ → ℕ) :
+    ((stageOccurrenceOrder l r).map (fun p => time (invocationChildren n p.1 (pre p.1) (post p.1) p.2.1 p.2.2).val)).sum =
+      ((List.range' (stageChildStart n) (stageRuns.flatMap (fun _ => Geometry.Moves.localPaid)).length).map time).sum := by
+  unfold stageOccurrenceOrder
+  rw [sumSigmaCosts,← scheduledChildBill (fun _ => Geometry.Moves.localPaid) time stageRuns stageRuns_nodup (stageChildStart n)]
+  congr 1
+  apply List.map_congr_left
+  intro p _
+  rw [sumSigmaCosts]
+  change ((List.finRange l).map _).sum + (((List.finRange Copy.lifecycles.length).map _).sum +
+    (((List.finRange r).map _).sum + 0)) = _
+  rw [Nat.add_zero]
+  convert (by simpa only [List.ofFn_eq_map] using invocationComponentChildSum n p time (pre p) (post p) (first p) (last p) count : _) using 1 <;> rfl
+
 /-- Allocate shared owner tapes and fill the archive of every selected stage occurrence.
 The coefficient is fixed by the schedule, before any node dimensions are supplied. -/
 theorem prepareSelectedStageArchives {U : Type} {Q l r owners : ℕ}
@@ -381,22 +407,25 @@ theorem prepareSelectedStageArchives {U : Type} {Q l r owners : ℕ}
 Unvisited workers need their private inputs but no caller-provided archive word. -/
 theorem runSelectedStageArchives {U : Type} {Q l r owners : ℕ}
     (capacity : (fun {q : ℕ} (_ : Program 38 q prime) => q) (RecursiveRowsNodeHeaders.program 142080) ≤ Q)
-    (n : Fin 9) (pre : StageRun → Fin l → MoveIndex) (post : StageRun → Fin r → MoveIndex) :
+    (n : Fin 9) (pre : StageRun → Fin l → MoveIndex) (post : StageRun → Fin r → MoveIndex)
+    (first : ∀ p i, (pre p i).val = i.val) (last : ∀ p i, (post p i).val = l+i.val)
+    (count : l+r = (Geometry.Moves.phaseEdges.filter positiveMove).length) :
     let I := Σ _ : StageRun, Σ j : Fin 3, Fin (invocationCounts l r j)
     let child := fun p : I => invocationChildren n p.1 (pre p.1) (post p.1) p.2.1 p.2.2
     ∀ (tapes : I → ℕ) (fan : ∀ p, Fin owners ↪ Fin (tapes p)) (record : ∀ p, Fin 35 ↪ Fin (tapes p))
       (cut : Fin owners), (∀ p j, record p j ≠ fan p cut) → (∀ p j, fan p j ≠ record p 34) →
     ∃ (T : ℕ) (shared : Fin owners ↪ Fin T) (bank : ∀ p, Fin (tapes p) ↪ Fin T) (rate : ℕ),
-    ∀ {P X : Type} {R : ℕ} (body : ∀ p, P → Pr P (tapes p) Q prime U)
+    ∀ {P : Type} {R : ℕ} (body : ∀ p, P → Pr P (tapes p) Q prime U)
       (worker : ∀ p, Pr P (tapes p) Q prime U),
     let order := stageOccurrenceOrder l r
     let owner := ((Fin.castAddEmb 273 (n := T)).trans (Fin.castAddEmb R)).trans (Fin.natAddEmb 80)
     let placed := fun p => (bank p).trans owner
     let host := fun f : I × P => embProg (placed f.1) (Prod.mk f.1) (body f.1 f.2)
-    ∃ code, ∀ (c : CutoffNodeInput) (cost : I → ℕ) (seed : ∀ p, Stacks (tapes p) prime)
+    ∃ code, ∀ (c : CutoffNodeInput) {X : Type} (work : I → ℕ) (childTime : ℕ → ℕ) (seed : ∀ p, Stacks (tapes p) prime)
       (rep : X → (Fin owners → List (Fin (prime+4))) → (Fin owners → List (Fin (prime+4))) → Prop)
       (effect : I → X → X → Prop),
     let word := fun p : I => invocationWorkerRecord p.2.1 (scheduledChild prime c.node (child p)) c.root.width.size c.cutoff
+    let cost := fun p => work p+childTime (child p).val
     (∀ p x u D, rep x (D.L ∘ fan p) (D.R ∘ fan p) →
       PrivateTapes (fan p) {seed p with R := Function.update (seed p).R (record p 34) (word p)} D →
       ∃ z F t y, Exec (body p) (worker p) (mk u D) t (mk z F) ∧ CleanupBound D F t (cost p) ∧
@@ -408,17 +437,18 @@ theorem runSelectedStageArchives {U : Type} {Q l r owners : ℕ}
       rep x (S.L ∘ (shared.trans owner)) (S.R ∘ (shared.trans owner)) →
       (∀ p ∈ order, ∀ k, (∀ j, fan p j ≠ k) →
         S.L (placed p k) = (seed p).L k ∧ (k ≠ record p 34 → S.R (placed p k) = (seed p).R k)) →
-      ∃ z F t y, Exec host code (mk u S) t (mk z F) ∧ CleanupBound S F t (rate*c.cells+((order.map cost).sum+1)) ∧
+      ∃ z F t y, Exec host code (mk u S) t (mk z F) ∧ CleanupBound S F t (rate*c.cells+(order.map work).sum+1+
+        ((List.range' (stageChildStart n) (stageRuns.flatMap (fun _ => Geometry.Moves.localPaid)).length).map childTime).sum) ∧
         z.user = u.user ∧ rep y (F.L ∘ (shared.trans owner)) (F.R ∘ (shared.trans owner)) ∧
         order.foldr (fun p next a => ∃ b, effect p a b ∧ next b) (fun a => a = y) x := by
   intro I child tapes fan record cut offCut privateArchive
   obtain ⟨T,shared,bank,rate,align,apart,prepare⟩ := prepareSelectedStageArchives capacity n pre post tapes fan record cut offCut privateArchive
   refine ⟨T,shared,bank,rate,?_⟩
-  intro P X R body worker order owner placed host
+  intro P R body worker order owner placed host
   obtain ⟨load,write⟩ := prepare host
   let calls := order.map fun p => embProg (placed p) (Prod.mk p) (worker p)
   refine ⟨load.seq (Prog.seqList calls),?_⟩
-  intro c cost seed rep effect word execute x u S input header empty live stock
+  intro c X work childTime seed rep effect word cost execute x u S input header empty live stock
   obtain ⟨v,D,a,start,user,paid,loaded,left,right⟩ := write c u S input header empty
   let state := fun (x : X) (D : Stacks owners prime) => rep x D.L D.R
   let initial := fun p => {seed p with R := Function.update (seed p).R (record p 34) (word p)}
@@ -446,7 +476,18 @@ theorem runSelectedStageArchives {U : Type} {Q l r owners : ℕ}
             exact (bank p).injective.ne (Ne.symm hit)
           · exact (apart p k off q eq _))
         exact (unchanged.trans (kept.2 hit)).trans (Function.update_of_ne hit ..).symm)
-  exact ⟨z,F,_,y,start.seq run,paid.seq bill,same.trans user,out,trace⟩
+  refine ⟨z,F,_,y,start.seq run,?_,same.trans user,out,trace⟩
+  have sum : (order.map cost).sum = (order.map work).sum+
+      ((List.range' (stageChildStart n) (stageRuns.flatMap (fun _ => Geometry.Moves.localPaid)).length).map childTime).sum := by
+    simp only [cost,List.sum_map_add]
+    exact congrArg ((order.map work).sum+·) (stageOccurrenceChildSum n pre post first last count childTime)
+  intro js nd
+  have setup := paid js nd
+  have workers := bill js nd
+  rw [sum] at workers
+  change a+t+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+_
+  change a+tapeCharge cleanupWeight js D ≤ tapeCharge cleanupWeight js S+rate*c.cells at setup
+  omega
 
 /-- The installed remainder call pays for its runtime seed with a constant per lane symbol. -/
 theorem callCutoffRemainder {P A U : Type} {H N T Q : ℕ}

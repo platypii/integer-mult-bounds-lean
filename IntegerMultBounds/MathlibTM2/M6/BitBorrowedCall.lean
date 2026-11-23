@@ -180,6 +180,7 @@ open Cover.Fallback RecursiveInterchangeLayout Certificates.PR589 in
 by the borrowed sweep. Each window retains its own child record and budget. -/
 theorem borrowedWindow_host [M8.Machine.Net] (charged : Bool) (n : Fin 9) (p : Fin 32 × Fin 5) (j : Fin Copy.lifecycles.length) :
     ∃ (T states : ℕ) (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T) (fan : Fin (142081+2) ↪ Fin T),
+    (∀ j : Fin (rowSwapBlock.tapes+35), j.val ≠ 24 → ∀ h, fan h ≠ ports j) ∧
     ∀ {P U : Type} {Q : ℕ}, states ≤ Q → ∀ (body : P → Pr P T Q prime U) (f : P),
     ∃ (base : ℕ) (code : Pr P T Q prime U), ∀ (node : Descriptor) (w B rows : ℕ),
     node.width = 64*(w+1) → node.rows = 142080*rows → node.beforeH = B*prime^(64*((w+1)*64)) →
@@ -199,8 +200,8 @@ theorem borrowedWindow_host [M8.Machine.Net] (charged : Bool) (n : Fin 9) (p : F
           workerCost charged S F t (nativePrice charged (base*V + 12) + budget) ∧
           z.user = u.user ∧ HelperFan fan out F ∧
           CopyFanoutEffect n p.1 p.2 Copy.lifecycles[j.val] (List.getElem_mem ..) (w+1) blocks K data out := by
-  obtain ⟨T,states,ports,fan,build⟩ := commonCopyWindow_layout true charged n p.1 p.2 j
-  refine ⟨T,states,ports,fan,?_⟩
+  obtain ⟨T,states,ports,fan,apart,build⟩ := commonCopyWindow_layout true charged n p.1 p.2 j
+  refine ⟨T,states,ports,fan,apart,?_⟩
   intro P U Q fits body f
   obtain ⟨base,swaps,code,run⟩ := build fits body f
   refine ⟨base,code,?_⟩

@@ -185,7 +185,7 @@ theorem borrowedWindows_host [M8.Machine.Net] (charged : Bool) (n : Fin 9) (p : 
           ∀ k, k ≠ Fin.last 142080 → (∀ i, ownerTape n p.1 p.2 i ≠ k) → out k = data k := by
   classical
   intro J
-  choose tapes qs regs owners window using borrowedWindow_host charged n p
+  choose tapes qs regs owners _ window using borrowedWindow_host charged n p
   obtain ⟨T,fan,bank,sharedAt,prepare,apart⟩ := copyWindowBanks tapes owners
   refine ⟨tapes,regs,T,Finset.univ.sup qs,fan,bank,?_⟩
   intro P U Q cap localBody proc body

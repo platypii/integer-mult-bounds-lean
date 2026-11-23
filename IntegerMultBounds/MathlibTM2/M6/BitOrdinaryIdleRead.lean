@@ -2408,6 +2408,7 @@ theorem commonCopyWindow_layout (inherited charged : Bool) [M8.Machine.Net]
     (stage : Fin 9) (r : Fin 32) (d : Fin 5) (window : Fin Copy.lifecycles.length) :
     let life := Copy.lifecycles[window.val]
     ∃ (T states : ℕ) (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T) (fan : Fin (142081+2) ↪ Fin T),
+    (∀ j : Fin (rowSwapBlock.tapes+35), j.val ≠ 24 → ∀ h, fan h ≠ ports j) ∧
     ∀ {P U : Type} {Q : ℕ}, states ≤ Q → ∀ (body : P → Pr P T Q prime U) (f : P),
     ∃ (base swaps : ℕ) (code : Pr P T Q prime U), ∀ (node : Descriptor) (w parentB rows B K : ℕ),
     let i := copyChildPosition (stage,(r,d),window)
@@ -2470,7 +2471,15 @@ theorem commonCopyWindow_layout (inherited charged : Bool) [M8.Machine.Net]
   let statesOf {t q : ℕ} (_ : Program t q prime) := q
   let qa := statesOf (FlatCoordinateCleanSchedule.program A)
   let qb := statesOf (FlatCoordinateCleanSchedule.program B')
-  refine ⟨T,rowSwapBlock.states+qa+qb+q+s,ports,fan,?_⟩
+  refine ⟨T,rowSwapBlock.states+qa+qb+q+s,ports,fan,?_,?_⟩
+  · intro j ne h
+    induction h using Fin.addCases with
+    | left h =>
+      by_cases eq : h = Fin.last 142080
+      · subst h
+        exact fun e => ne (congrArg Fin.val (ports.injective (e.symm.trans shared)))
+      · exact ((ownersOff h eq).2.1 j).symm
+    | right h => exact ((controlsOff h).2.1 j).symm
   intro P U Q fits body f
   have capacity : rowSwapBlock.states ≤ Q := by omega
   obtain ⟨setup,swaps,run⟩ := packed (k := 142081) ports body f capacity
