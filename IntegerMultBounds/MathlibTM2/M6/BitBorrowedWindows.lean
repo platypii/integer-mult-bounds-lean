@@ -283,10 +283,10 @@ theorem stoppedBorrowedWindows_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × 
 theorem borrowedScatterSchedule_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) :
     let J := Fin Copy.lifecycles.length
     ∃ (C : ℝ) (tapes : J → ℕ) (regs : ∀ j, Fin (rowSwapBlock.tapes+35) ↪ Fin (tapes j))
-      (T states : ℕ) (bank : ∀ j, Fin (tapes j) ↪ Fin T),
+      (T states : ℕ) (owners : Fin (142081+2) ↪ Fin T) (bank : ∀ j, Fin (tapes j) ↪ Fin T),
     ∀ {P U : Type} {Q : ℕ}, states ≤ Q → ∀ (localBody : ∀ j, P → Pr P (tapes j) Q prime U) (proc : J → P),
     let body := fun f : J × P => embProg (bank f.1) (fun g => (f.1,g)) (localBody f.1 f.2)
-    ∃ base swaps leaf fixed : J → ℕ, ∀ (node : Descriptor) (w B rows : ℕ),
+    ∃ (base swaps leaf fixed : J → ℕ) (code : Pr (J × P) T Q prime U), ∀ (node : Descriptor) (w B rows : ℕ),
     node.width = 64*(w+1) → node.rows = 142080*rows → node.beforeH = B*prime^(64*((w+1)*64)) →
     let M := prime^(w+1)
     let K := node.beforeRows*rows*node.between*node.afterD
@@ -296,15 +296,15 @@ theorem borrowedScatterSchedule_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 ×
     let desc := fun j : J => scheduledChild prime node (copyChildPosition (n,p,j))
     let view := fun (x : Fin 142081 → Fin V → ZMod 2) k i => x k (Fin.cast (copyLabel_volume (w+1) blocks K) i)
     0 < W →
-    ∃ (H : ℕ) (owners : Fin (142081+2) ↪ Fin H) (worker : Fin T ↪ Fin H) (position : ∀ j, Fin (volume prime (desc j)) ≃ Fin V),
+    ∃ position : ∀ j, Fin (volume prime (desc j)) ≃ Fin V,
       (∀ j, CopyIntervalPositions (desc j) (w+1) W (position j)) ∧
       ∀ record : J → List (Fin (prime+4)), ∀ shared : Stacks (142081+2) prime,
-      ∃ prepared : Stacks H prime, embStk owners prepared = shared ∧ ∀ budget : J → ℕ,
+      ∃ prepared : Stacks T prime, embStk owners prepared = shared ∧ ∀ budget : J → ℕ,
       (∀ j, ScheduledChildExec node (desc j) w W (regs j) (record j) (position j) (localBody j) (proc j) (budget j)) →
       let work := fun j => (base j+swaps j*swapVolumeRate w)*V + leaf j*LeafCore.coreCost V ((w+1)*64) + fixed j
-      ∃ code, ∀ data u S, HelperFan owners data S →
+      ∀ data u S, HelperFan owners data S →
         (∀ k, (∀ h, owners h ≠ k) → S.L k = prepared.L k ∧ S.R k = prepared.R k) →
-        ∃ z F t out, Exec (fun f => embProg worker id (body f)) code (mk u S) t (mk z F) ∧
+        ∃ z F t out, Exec body code (mk u S) t (mk z F) ∧
           (t : ℝ) ≤ C*V*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau +
             ((List.ofFn work).sum+(List.ofFn budget).sum+1 : ℕ) ∧ z.user = u.user ∧ HelperFan owners out F ∧
           (∀ g z, borrowedRead (B := blocks) (K := K) n p.1 p.2 g z (view out) =
@@ -313,29 +313,23 @@ theorem borrowedScatterSchedule_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 ×
   classical
   intro J
   obtain ⟨tapes,regs,T,states,fan,bank,windows⟩ := borrowedWindows_host n p
-  refine ⟨0,tapes,regs,T,states,bank,?_⟩
+  refine ⟨0,tapes,regs,T,states,fan,bank,?_⟩
   intro P U Q cap localBody proc body
   obtain ⟨base,code,build⟩ := windows cap localBody proc
-  refine ⟨base,fun _ => 0,fun _ => 0,fun _ => 12,?_⟩
+  refine ⟨base,fun _ => 0,fun _ => 0,fun _ => 12,code,?_⟩
   intro node w B rows width split label M K blocks W V desc view pos
   obtain ⟨position,coords,run⟩ := build node w B rows width split label pos
-  refine ⟨T,fan,Function.Embedding.refl _,position,coords,?_⟩
+  refine ⟨position,coords,?_⟩
   intro record shared
   obtain ⟨initial,rep,host⟩ := run record shared
   refine ⟨initial,rep,?_⟩
   intro budget recurse work
   have copies := host budget recurse
-  refine ⟨embProg (Function.Embedding.refl _) id code,?_⟩
   intro data u S live fresh
-  obtain ⟨z,F,m,out,exec,paid,user,done,action,off⟩ := copies data (embDn (Function.Embedding.refl (Fin T)) u) S live fresh
-  obtain ⟨v,G,placed,_,same,projection,_⟩ := exec_emb (ι := id)
-    (body' := fun f => embProg (Function.Embedding.refl _) id (body f))
-    (Function.Embedding.refl (Fin T)).injective (fun _ => rfl) exec u rfl S rfl
-  refine ⟨v,G,m,out,placed,?_,same.trans user,?_,?_,?_⟩
+  obtain ⟨z,F,m,out,exec,paid,user,done,action,off⟩ := copies data u S live fresh
+  refine ⟨z,F,m,out,exec,?_,user,done,?_,?_⟩
   · simp only [work,zero_mul,Nat.add_zero,zero_add]
     exact_mod_cast paid
-  · rw [← projection] at done
-    exact done
   · intro g cell
     simp only [view,borrowedRead_flat]
     funext i
@@ -457,7 +451,9 @@ theorem borrowedInvocationBanks (n : Fin 9) (p : Fin 32 × Fin 5)
       HelperFan (ports true) out F ∧ (∀ g cell, borrowedRead n p.1 p.2 g cell (view out) =
         borrowedScatter w (borrowedRead n p.1 p.2 g cell (view data))) ∧
       ∀ k, k ≠ Fin.last 142080 → (∀ i, owner i ≠ k) → view out k = view data k) →
-    ∃ code, ∀ data u S, HelperFan fan data S →
+    let place (b : Bool) := embProg (bank b) (@Sigma.mk Bool P b) (Q := Q) (A := prime) (U := U)
+    let code := (place false (phase false)).seq ((place true scatter).seq (place false (phase true)))
+    ∀ data u S, HelperFan fan data S →
       (∀ i, (∀ j, fan j ≠ i) → S.L i = initial.L i ∧ S.R i = initial.R i) →
       ∃ z F m out, Exec host code (mk u S) m (mk z F) ∧ (m : ℝ) ≤ price false + scatterPrice + price true ∧
         z.user = u.user ∧ HelperFan fan out F ∧ BorrowedStep n w B K p data out := by
@@ -467,8 +463,7 @@ theorem borrowedInvocationBanks (n : Fin 9) (p : Fin 32 × Fin 5)
   obtain ⟨initial,rep,stored⟩ := prepare shared seed
   refine ⟨initial,rep,?_⟩
   intro P U Q w B K body host V owner view stock init frame phase scatter price scatterPrice phases copies
-  let place (b : Bool) := embProg (bank b) (@Sigma.mk Bool P b) (Q := Q) (A := prime) (U := U)
-  refine ⟨.seq (place false (phase false)) (.seq (place true scatter) (place false (phase true))),?_⟩
+  intro place code
   intro data u S live fresh
   have localSeed b i (priv : ∀ j, ports b j ≠ i) :
       S.L (bank b i) = (seed b).L i ∧ S.R (bank b i) = (seed b).R i := by
@@ -505,11 +500,9 @@ theorem borrowedInvocationBanks (n : Fin 9) (p : Fin 32 × Fin 5)
   linarith [show (l : ℝ) ≤ price false by exact_mod_cast lp,show (r : ℝ) ≤ price true by exact_mod_cast rp]
 
 structure InvocationBanks (mT cT : ℕ) where
-  scatterTapes : ℕ
   tapes : ℕ
   fan : Fin (142081+2) ↪ Fin tapes
-  worker : Fin cT ↪ Fin scatterTapes
-  outer : (b : Bool) → Fin (Bool.rec (motive := fun _ => ℕ) mT scatterTapes b) ↪ Fin tapes
+  outer : (b : Bool) → Fin (Bool.rec (motive := fun _ => ℕ) mT cT b) ↪ Fin tapes
 
 /-- Uniform local charge for a MOVE or COPY worker, including its leaf
 exchange at the full 64-atom width. -/
@@ -596,18 +589,18 @@ noncomputable def InvocationBanks.body {k mT cT Q : ℕ} {P U : Type} {mt : Fin 
     (banks : InvocationBanks mT cT) (mBank : ∀ i, Fin (mt i) ↪ Fin mT) (cBank : ∀ j, Fin (ct j) ↪ Fin cT)
     (mb : ∀ i, P → Pr P (mt i) Q prime U) (cb : ∀ j, P → Pr P (ct j) Q prime U) :
     ((b : Bool) × InvocationProc k P b) → Pr ((b : Bool) × InvocationProc k P b) banks.tapes Q prime U :=
-    let localBody := Bool.rec (motive := fun b => InvocationProc k P b → Pr (InvocationProc k P b) (Bool.rec (motive := fun _ => ℕ) mT banks.scatterTapes b) Q prime U)
+    let localBody := Bool.rec (motive := fun b => InvocationProc k P b → Pr (InvocationProc k P b) (Bool.rec (motive := fun _ => ℕ) mT cT b) Q prime U)
       (fun f : (Fin k) × P => embProg (mBank f.1) (fun g => (f.1,g)) (mb f.1 f.2))
-      (fun f : (Fin Copy.lifecycles.length) × P => embProg banks.worker id (embProg (cBank f.1) (fun g => (f.1,g)) (cb f.1 f.2)))
+      (fun f : (Fin Copy.lifecycles.length) × P => embProg (cBank f.1) (fun g => (f.1,g)) (cb f.1 f.2))
     fun f => embProg (banks.outer f.1) (Sigma.mk f.1) (localBody f.1 f.2)
 
 def SeededInvocation [M8.Machine.Net] {T Q w B K : ℕ} {P U : Type}
     (n : Fin 9) (p : Fin 32 × Fin 5) (fan : Fin (142081+2) ↪ Fin T)
     (body : P → Pr P T Q prime U) (C : ℝ) (childTime : ℕ → ℕ) : Prop :=
     let V := (prime^w)^16*(B*prime^(64*(w*64))*K)
-    ∀ shared : Stacks (142081+2) prime, ∃ initial : Stacks T prime, embStk fan initial = shared ∧
+    ∃ code, ∀ shared : Stacks (142081+2) prime, ∃ initial : Stacks T prime, embStk fan initial = shared ∧
     let start := stageChildStart n + runChildStart p
-    ∃ code, ∀ data u S, HelperFan fan data S →
+    ∀ data u S, HelperFan fan data S →
       (∀ k, (∀ h, fan h ≠ k) → S.L k = initial.L k ∧ S.R k = initial.R k) →
       ∃ z F t out, Exec body code (mk u S) t (mk z F) ∧
         (t : ℝ) ≤ C*V*(w : ℝ)^M8.Machine.BudgetBound.tau +
@@ -619,7 +612,7 @@ def ScheduledBorrowedRun [M8.Machine.Net]
     (moveChild : (Fin edges.length) → Fin nodeChildren5.length) (copyChild : (Fin Copy.lifecycles.length) → Fin nodeChildren5.length)
     {mt : (Fin edges.length) → ℕ} {ct : (Fin Copy.lifecycles.length) → ℕ} (mr : ∀ i, Fin (rowSwapBlock.tapes+35) ↪ Fin (mt i))
     (cr : ∀ j, Fin (rowSwapBlock.tapes+35) ↪ Fin (ct j)) {mT cT : ℕ}
-    (mBank : ∀ i, Fin (mt i) ↪ Fin mT) (cBank : ∀ j, Fin (ct j) ↪ Fin cT)
+    (banks : InvocationBanks mT cT) (mBank : ∀ i, Fin (mt i) ↪ Fin mT) (cBank : ∀ j, Fin (ct j) ↪ Fin cT)
     {P U : Type} {Q : ℕ}
     (mb : ∀ i, P → Pr P (mt i) Q prime U) (mf : (Fin edges.length) → P)
     (cb : ∀ j, P → Pr P (ct j) Q prime U) (cf : (Fin Copy.lifecycles.length) → P)
@@ -633,8 +626,7 @@ def ScheduledBorrowedRun [M8.Machine.Net]
     let md := fun i : (Fin edges.length) => scheduledChild prime node (moveChild i)
     let cd := fun j : (Fin Copy.lifecycles.length) => scheduledChild prime node (copyChild j)
     ∀ (record : (Fin edges.length) → List (Fin (prime+4))) (copyRecord : (Fin Copy.lifecycles.length) → List (Fin (prime+4))),
-    ∃ (mp : ∀ i : (Fin edges.length), Fin (volume prime (md i)) ≃ Fin V) (cp : ∀ j : (Fin Copy.lifecycles.length), Fin (volume prime (cd j)) ≃ Fin V)
-      (banks : InvocationBanks mT cT),
+    ∃ (mp : ∀ i : (Fin edges.length), Fin (volume prime (md i)) ≃ Fin V) (cp : ∀ j : (Fin Copy.lifecycles.length), Fin (volume prime (cd j)) ≃ Fin V),
     (∀ i h, (mp i h).val = (CopyChildLayout.packActive (md i) h).val) ∧
     (∀ j, CopyIntervalPositions (cd j) (w+1) W (cp j)) ∧
     ∀ childTime : ℕ → ℕ,
@@ -652,37 +644,41 @@ theorem scheduledBorrowedInvocation_host [M8.Machine.Net] (n : Fin 9) (p : Fin 3
     ∃ (mt : I → ℕ) (ct : J → ℕ)
       (mr : ∀ i, Fin (rowSwapBlock.tapes+35) ↪ Fin (mt i))
       (cr : ∀ j, Fin (rowSwapBlock.tapes+35) ↪ Fin (ct j))
-      (mT cT : ℕ) (mBank : ∀ i, Fin (mt i) ↪ Fin mT) (cBank : ∀ j, Fin (ct j) ↪ Fin cT) (states : ℕ),
+      (mT cT : ℕ) (mBank : ∀ i, Fin (mt i) ↪ Fin mT) (cBank : ∀ j, Fin (ct j) ↪ Fin cT) (states : ℕ) (banks : InvocationBanks mT cT),
     ∀ {P U : Type} {Q : ℕ}, states ≤ Q →
     ∀ (mb : ∀ i, P → Pr P (mt i) Q prime U) (mf : I → P)
       (cb : ∀ j, P → Pr P (ct j) Q prime U) (cf : J → P),
     ∃ C : ℝ,
     ∀ (node : Descriptor) (w B rows : ℕ),
     node.width = 64*(w+1) → node.rows = 142080*rows → node.beforeH = B*prime^(64*((w+1)*64)) →
-    ScheduledBorrowedRun n p C edges moveChild copyChild mr cr mBank cBank mb mf cb cf
+    ScheduledBorrowedRun n p C edges moveChild copyChild mr cr banks mBank cBank mb mf cb cf
       node w B rows := by
   classical
   intro edges I J moveChild copyChild
   obtain ⟨mt,mT,mq,mr,mfan,mBank,phases⟩ := alignedPhases_host n p
-  obtain ⟨C,ct,cr,cT,cq,cBank,scatters⟩ := borrowedScatterSchedule_host n p
-  refine ⟨mt,ct,mr,cr,mT,cT,mBank,cBank,max mq cq,?_⟩
+  obtain ⟨C,ct,cr,cT,cq,cfan,cBank,scatters⟩ := borrowedScatterSchedule_host n p
+  let tapes := Bool.rec (motive := fun _ => ℕ) mT cT
+  let ports : (b : Bool) → Fin 142083 ↪ Fin (tapes b) := Bool.rec (motive := fun b => Fin 142083 ↪ Fin (tapes b)) mfan cfan
+  obtain ⟨T,fan,outer,prepare⟩ := borrowedInvocationBanks n p tapes ports
+  refine ⟨mt,ct,mr,cr,mT,cT,mBank,cBank,max mq cq,⟨T,fan,outer⟩,?_⟩
   intro P U Q cap mb mf cb cf
   obtain ⟨base,swaps,mrun⟩ := phases ((le_max_left ..).trans cap) mb mf
-  obtain ⟨copyBase,copySwaps,leaf,fixed,crun⟩ := scatters ((le_max_right ..).trans cap) cb cf
+  obtain ⟨copyBase,copySwaps,leaf,fixed,copy,crun⟩ := scatters ((le_max_right ..).trans cap) cb cf
   obtain ⟨D,localBill⟩ := borrowedInvocationCost base swaps copyBase copySwaps leaf fixed
   refine ⟨C+D,?_⟩
   intro node w B rows width split label
   unfold ScheduledBorrowedRun
   intro M K blocks W V pos md cd record copyRecord
   obtain ⟨mp,stock,mcoords,seed,frame,ms⟩ := mrun node w B rows width split label pos record
-  obtain ⟨H,cfan,worker,cp,ccoords,cs⟩ := crun node w B rows width split label pos
-  let tapes := Bool.rec (motive := fun _ => ℕ) mT H
-  let ports : (b : Bool) → Fin 142083 ↪ Fin (tapes b) := Bool.rec (motive := fun b => Fin 142083 ↪ Fin (tapes b)) mfan cfan
-  obtain ⟨T,fan,outer,prepare⟩ := borrowedInvocationBanks n p tapes ports
-  refine ⟨mp,cp,⟨H,T,fan,worker,outer⟩,mcoords,ccoords,?_⟩
+  obtain ⟨cp,ccoords,cs⟩ := crun node w B rows width split label pos
+  refine ⟨mp,cp,mcoords,ccoords,?_⟩
   intro childTime moveRec copyRec
   unfold SeededInvocation
-  intro _ shared
+  intro _
+  choose phase phaseStep using ms childTime moveRec
+  let place (b : Bool) := embProg (outer b) (@Sigma.mk Bool (InvocationProc edges.length P) b) (Q := Q) (A := prime) (U := U)
+  refine ⟨(place false (phase false)).seq ((place true copy).seq (place false (phase true))),?_⟩
+  intro shared
   obtain ⟨moveSeed,_,stockInit⟩ := seed shared
   obtain ⟨copySeed,_,scatter⟩ := cs copyRecord shared
   let seeds : (b : Bool) → Stacks (tapes b) prime := Bool.rec (motive := fun b => Stacks (tapes b) prime) moveSeed copySeed
@@ -691,13 +687,12 @@ theorem scheduledBorrowedInvocation_host [M8.Machine.Net] (n : Fin 9) (p : Fin 3
   let proc := InvocationProc edges.length P
   let localBody := Bool.rec (motive := fun b => proc b → Pr (proc b) (tapes b) Q prime U)
     (fun f : I × P => embProg (mBank f.1) (fun g => (f.1,g)) (mb f.1 f.2))
-    (fun f : J × P => embProg worker id (embProg (cBank f.1) (fun g => (f.1,g)) (cb f.1 f.2)))
+    (fun f : J × P => embProg (cBank f.1) (fun g => (f.1,g)) (cb f.1 f.2))
   intro start
   let work := fun j => if h : j-start < edges.length then (base ⟨j-start,h⟩+swaps ⟨j-start,h⟩*swapVolumeRate w)*V else 0
   let copyWork := fun j => (copyBase j+copySwaps j*swapVolumeRate w)*V + leaf j*LeafCore.coreCost V ((w+1)*64)+fixed j
   let budget := fun j => childTime (copyChild j).val
-  obtain ⟨copy,copyStep⟩ := scatter budget copyRec
-  choose phase phaseStep using ms childTime moveRec
+  have copyStep := scatter budget copyRec
   let gates := fun b : Bool => if b then sectionB++sectionC else sectionD++sectionA
   let current := fun b : Bool => if b then Frames.scatterFinish Frames.beforeScatter else Frames.snapshot Frames.initialRefs
   let offset := fun b : Bool => start + (if b then ((Frames.edges (sectionD++sectionA)
@@ -706,9 +701,8 @@ theorem scheduledBorrowedInvocation_host [M8.Machine.Net] (n : Fin 9) (p : Fin 3
     indexedBill (fun j _ => work j + childTime j) (offset b) ((Frames.edges (gates b) (current b)).filter positiveMove)+1
   let scatterPrice : ℝ := C*V*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau +
     ((List.ofFn copyWork).sum+(List.ofFn budget).sum+1 : ℕ)
-  obtain ⟨code,execute⟩ := join (w := w+1) (B := blocks) (K := K) localBody stock stockInit frame phase copy
+  have execute := join (w := w+1) (B := blocks) (K := K) localBody stock stockInit frame phase copy
     price scatterPrice phaseStep copyStep
-  refine ⟨code,?_⟩
   intro data u S live fresh
   obtain ⟨z,F,t,out,exec,paid,user,done,action⟩ := execute data u S live fresh
   refine ⟨z,F,t,out,exec,?_,user,done,action⟩

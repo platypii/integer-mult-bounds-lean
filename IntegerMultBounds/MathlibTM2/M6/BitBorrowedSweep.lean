@@ -219,7 +219,8 @@ theorem allocatedArchiveSweep_host [M8.Machine.Net] (n : Fin 9) :
   obtain ⟨T,fan,banks,select,prepare,apart⟩ := copyWindowBanks tapes ports
   refine ⟨T,fan,banks,?_⟩
   intro P U Q cap body w B K blocks W V scale scratch owner host outer pos coeff childTime supplied shared
-  choose seed _ call runs using fun p => supplied p shared
+  choose call ready using supplied
+  choose seed _ runs using fun p => ready p shared
   obtain ⟨initial,owners,stored⟩ := prepare shared seed
   let saved (p : J) (S : Stacks T prime) := ∀ i, (∀ h, ports p h ≠ i) →
     S.L (banks p i) = (seed p).L i ∧ S.R (banks p i) = (seed p).R i
@@ -699,7 +700,7 @@ theorem scheduledInvocationFamily [M8.Machine.Net] (n : Fin 9) :
     ScheduledStageRuns n mt ct mr cr mT cT mBank cBank mb mf cb cf coeff node w B rows := by
   classical
   intro R edges I J
-  choose mt ct mr cr mT cT mBank cBank qs build using scheduledBorrowedInvocation_host n
+  choose mt ct mr cr mT cT mBank cBank qs banks build using scheduledBorrowedInvocation_host n
   refine ⟨mt,ct,mr,cr,mT,cT,mBank,cBank,max columnCapacity (Finset.univ.sup qs),?_⟩
   intro P U Q cap mb mf cb cf
   choose coeff run using fun p : R => build p ((Finset.le_sup (Finset.mem_univ p)).trans ((le_max_right ..).trans cap)) (mb p) (mf p) (cb p) (cf p)
@@ -707,7 +708,7 @@ theorem scheduledInvocationFamily [M8.Machine.Net] (n : Fin 9) :
   intro node w B rows width split label
   unfold ScheduledStageRuns
   intro M K blocks W V pos moveChild copyChild md cd record copyRecord
-  choose mp cp banks mcoords ccoords execute using fun p : R =>
+  choose mp cp mcoords ccoords execute using fun p : R =>
     run p node w B rows width split label pos (record p) (copyRecord p)
   refine ⟨mp,cp,banks,mcoords,ccoords,?_⟩
   have live : 0 < V := Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) pos
