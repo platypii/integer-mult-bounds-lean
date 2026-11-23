@@ -131,6 +131,33 @@ theorem copyLaneCell_eq {atom w W : ℕ} (aligned : 7*w = 64*atom)
     _ = _ := congrArg (_ + ·) digits
 
 
+open M8.RevMachine Filter in
+/-- Even a single charged chart exchange on the full lane exceeds any fixed
+multiple of a smaller width power, uniformly over positive lane volumes. -/
+theorem copyExchange_exceeds [M8.Machine.Net] {exponent : ℝ}
+    (smaller : exponent < M8.Machine.BudgetBound.tau) (rate : ℝ) :
+    ∀ᶠ w : ℕ in atTop, ∀ V : ℕ, 0 < V →
+      rate*(V : ℝ)*(w : ℝ)^exponent < (LeafCore.coreCost V w : ℝ)+1 := by
+  have pos : 0 < LeafCore.C :=
+    (Classical.choose_spec M8.Machine.ArbitraryWidthOriginalTotalRun.uniform_bound).1
+  have grow := (tendsto_rpow_atTop (sub_pos.mpr smaller)).comp
+    (tendsto_natCast_atTop_atTop (R := ℝ))
+  filter_upwards [grow.eventually (eventually_gt_atTop (rate/LeafCore.C)),eventually_ge_atTop 1]
+    with w gap hw
+  intro V live
+  have factor : rate < LeafCore.C*(w : ℝ)^(M8.Machine.BudgetBound.tau-exponent) := by
+    exact (div_lt_iff₀ pos).mp gap |>.trans_eq (mul_comm _ _)
+  have wpos : (0 : ℝ) < w := by exact_mod_cast hw
+  have vol : (0 : ℝ) < V := by exact_mod_cast live
+  have estimate := mul_lt_mul_of_pos_right (mul_lt_mul_of_pos_right factor vol)
+    (Real.rpow_pos_of_pos wpos exponent)
+  have powers : (w : ℝ)^(M8.Machine.BudgetBound.tau-exponent)*(w : ℝ)^exponent =
+      (w : ℝ)^M8.Machine.BudgetBound.tau := by rw [← Real.rpow_add wpos,sub_add_cancel]
+  have regroup : LeafCore.C*(w : ℝ)^(M8.Machine.BudgetBound.tau-exponent)*V*(w : ℝ)^exponent =
+      LeafCore.C*V*(w : ℝ)^M8.Machine.BudgetBound.tau := by rw [← powers]; ring
+  rw [regroup] at estimate
+  simpa only [LeafCore.coreCost,max_eq_right hw] using estimate.trans (Nat.lt_floor_add_one _)
+
 open M8.RevMachine in
 private theorem adjacentOwner {d : ℕ} [M8.Machine.Net]
     (is : List ℕ) (inside : ∀ i ∈ is, i+1 < d) (backward : Bool) :
