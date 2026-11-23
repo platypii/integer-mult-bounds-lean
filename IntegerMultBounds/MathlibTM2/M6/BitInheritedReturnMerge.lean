@@ -223,6 +223,67 @@ theorem packedReturnMerge_exec {P U : Type} {N Q price w : ℕ} (lane : Descript
   exact charge.trans (by gcongr)
 
 
+/-- Cost of clearing both stacks of a tape. -/
+def cleanupWeight (l r : List (Fin (prime+4))) : ℕ := 4*l.length+2*r.length+4
+
+/-- The child and physical merge share one cleanup allowance on any set of host tapes. -/
+theorem packedReturnMergeWithCharge {P U : Type} {N Q price w : ℕ} (lane : Descriptor) (width : lane.width = 64*w)
+    (positive : 0 < volume prime lane)
+    (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q)
+    {body : P → Pr P N Q prime U} {code} {src dst : Fin (142081+2) ↪ Fin N} {seed : Stacks N prime}
+    (child : ∀ x u S, ParentStageWords (fun i => src (i.castAdd 2)) src (volume prime lane) x S →
+      (∀ j, (∀ i, src i ≠ j) → S.L j = seed.L j ∧ S.R j = seed.R j) →
+      ∃ z F n y, Exec body code (mk u S) n (mk z F) ∧
+        (∀ js : List (Fin N), js.Nodup → n+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+price) ∧
+        z.user = u.user ∧ ParentStageWords (fun i => dst (i.castAdd 2)) dst (volume prime lane) y F ∧
+        packedChildOutput w (volume prime lane) x y) :
+    let T := intervalSplitTapes
+    let H := 142082+T+N
+    let caller := (Fin.natAddEmb 142082 (m := T)).trans (Fin.castAddEmb N)
+    ∃ (host : Empty ⊕ P → Pr (Empty ⊕ P) H Q prime U) (program : Pr (Empty ⊕ P) H Q prime U)
+      (bank : Fin T ↪ Fin H), bank 0 = caller 0 ∧
+    ∀ (target : ℤ → Fin (prime+4)) (data : Fin 142080 → Fin (volume prime lane) → ZMod 2) u S,
+      RepT (intervalOwnerBank target data) (embStk caller S).L (embStk caller S).R →
+      (∀ i : Fin 142082, let j := (i.castAdd T).castAdd N
+        S.L j = [] ∧ S.R j = []) →
+      (∀ i : Fin N, let j := i.natAdd (142082+T)
+        S.L j = seed.L i ∧ S.R j = seed.R i) →
+      let V := volume prime lane
+      let position := packedChildPosition lane rfl
+      let output := fun r => Shared50RecursiveNodeRows.transpose (one_dvd lane.rows) (data r ∘ position) ∘ position.symm
+      let word := fun k : Fin (V*142080) => let p := finProdFinEquiv.symm k
+                                            SparseRoleCircuit.encode (a := prime) (output p.2 p.1)
+      ∃ z F n, Exec host program (mk u S) n (mk z F) ∧
+        z.user = u.user ∧
+        RepT (intervalOwnerBank (putWord target 0 (List.ofFn word)) output) (embStk bank F).L (embStk bank F).R ∧
+        ∀ js : List (Fin H), js.Nodup →
+          n+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+
+            (142081*(8*V+10+2*V)+1+price)+13*(149*(V*142080)*(T+5)+6) := by
+  intro T H caller
+  let live := intervalOwners 142080
+  obtain ⟨childBank,host,program,apart,run⟩ := runSplitOwnersWithCharge
+    (effect := packedChildOutput w (volume prime lane)) cleanupWeight (2*volume prime lane)
+    (by intro word len; simp [cleanupWeight,len]; omega) child live
+  let saved := (mergeSaved 142080).trans caller
+  let returned := (childReturnFan dst).trans childBank
+  have separate (i j) : saved i ≠ returned j := (apart _ (mergeSaved_outside _ i) _).symm
+  let bank := returnedMergeBank saved returned separate
+  let merge : Pr (Empty ⊕ P) H Q prime U := embProg bank Empty.elim (foreign (liftQ (CyclicRowNormalized.mergeProgram 142080 prime) capacity))
+  refine ⟨host,program.seq merge,bank,returnedMergeBank_target _ _ _,?_⟩
+  intro target data u S split empty prepared V position output word
+  have ready := intervalOwners_ready target data (embStk caller S) split
+  obtain ⟨v,D,k,y,exec,paid,user,_,effect,owners,keep⟩ := run data u S ready empty prepared
+  have eq : (fun r : Fin 142080 => y r.castSucc) = output := by
+    funext r i
+    have h := congrFun (effect r lane width rfl) (position.symm i)
+    simpa [output, Function.comp_def, position] using h
+  obtain ⟨z,F,n,ran,_,same,result,stock⟩ := mergeAfterReturnedRowsWithCost host program saved returned separate
+    capacity positive target data output (embStk caller S) u S split exec user (eq ▸ owners)
+    (fun i => keep (mergeSaved 142080 i) (mergeSaved_outside _ i))
+  refine ⟨z,F,n,ran,same,result,?_⟩
+  intro js distinct
+  exact (stock js distinct).trans (Nat.add_le_add_right (paid js distinct) _)
+
 private theorem caller_ne_front {a t n : ℕ} (j : Fin t) (i : Fin a) :
     (j.natAdd a).castAdd n ≠ (i.castAdd t).castAdd n := by
   intro eq
@@ -236,6 +297,40 @@ private theorem caller_ne_private {a t n : ℕ} (j : Fin t) (i : Fin n) :
   have h := congrArg Fin.val eq
   change a+j.val = a+t+i.val at h
   omega
+
+theorem splitEncodedWithCharge {H Q V : ℕ} {P U : Type}
+    (host : P → Pr P H Q prime U) (caller : Fin intervalSplitTapes ↪ Fin H)
+    (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q) (positive : 0 < V)
+    (input : Fin (V*142080) → ZMod 2) (u : HS H Q prime U) (S : Stacks H prime) :
+    let x := fun k => SparseRoleCircuit.encode (a := prime) (input k)
+    let split : Pr Empty intervalSplitTapes Q prime U := intervalPrepare.seq
+      (foreign (liftQ (CyclicRowNormalized.splitProgram 142080 prime) capacity))
+    S.R (caller 0) = List.ofFn x → (∀ j, S.L (caller j) = []) →
+    (∀ j, j ≠ 0 → S.R (caller j) = []) →
+    ∃ v D t, Exec host (embProg caller Empty.elim split) (mk u S) t (mk v D) ∧
+      v.user = u.user ∧ t ≤ (149*(intervalSplitTapes+5)+5)*(V*142080)+24 ∧
+      RepT (intervalOwnerBank (putWord (fun _ => blank) 0 (List.ofFn x))
+        (fun r i => input (finProdFinEquiv (i,r)))) (embStk caller D).L (embStk caller D).R ∧
+      (∀ j, (∀ i, caller i ≠ j) → D.L j = S.L j ∧ D.R j = S.R j) ∧
+      ∀ js : List (Fin H), js.Nodup →
+        tapeCharge cleanupWeight js D ≤ tapeCharge cleanupWeight js S+6*(Fast.Main.mnProgPush split*t) := by
+  intro x split source left empty
+  obtain ⟨v,D,t,user,paid,exec,rep⟩ := intervalSplit_exec (P := Empty) Empty.elim capacity positive x
+    (embDn caller u) (embStk caller S) source left empty
+  obtain ⟨a,E,placed,_,state,view,off⟩ := exec_emb (ι := Empty.elim) (body' := host)
+    caller.injective (fun e => nomatch e) exec u rfl S rfl
+  refine ⟨a,E,t,placed,state.trans user,paid,?_,off,?_⟩
+  · rw [view]
+    exact rep
+  · intro js distinct
+    rw [← Nat.zero_add (tapeCharge cleanupWeight js E)]
+    apply placedCleanup_cost_le caller S E cleanupWeight 0 _ off _ js distinct
+    intro is unique
+    have bill := Cover.Fallback.recordCleanup_cost_le is unique exec (c := Fast.Main.mnProgPush split)
+      le_rfl (fun e => nomatch e)
+    rw [view]
+    change tapeCharge cleanupWeight is D+1 ≤ tapeCharge cleanupWeight is (embStk caller S)+1+_ at bill
+    omega
 
 theorem splitEncoded_exec {H Q V : ℕ} {P U : Type}
     (host : P → Pr P H Q prime U) (caller : Fin intervalSplitTapes ↪ Fin H)
@@ -252,13 +347,9 @@ theorem splitEncoded_exec {H Q V : ℕ} {P U : Type}
         (fun r i => input (finProdFinEquiv (i,r)))) (embStk caller D).L (embStk caller D).R ∧
       ∀ j, (∀ i, caller i ≠ j) → D.L j = S.L j ∧ D.R j = S.R j := by
   intro x split source left empty
-  obtain ⟨v,D,t,user,paid,exec,rep⟩ := intervalSplit_exec (P := Empty) Empty.elim capacity positive x
-    (embDn caller u) (embStk caller S) source left empty
-  obtain ⟨a,E,placed,_,state,view,off⟩ := exec_emb (ι := Empty.elim) (body' := host)
-    caller.injective (fun e => nomatch e) exec u rfl S rfl
-  refine ⟨a,E,t,placed,state.trans user,paid,?_,off⟩
-  rw [view]
-  exact rep
+  obtain ⟨v,D,t,ran,user,paid,ready,frame,_⟩ :=
+    splitEncodedWithCharge host caller capacity positive input u S source left empty
+  exact ⟨v,D,t,ran,user,paid,ready,frame⟩
 
 /-- Start with the interleaved payload on the caller's target, run the recursive
 child on its cyclic rows, and return the wide descriptor transpose on that target. -/
