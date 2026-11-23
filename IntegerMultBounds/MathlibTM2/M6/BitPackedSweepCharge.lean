@@ -554,4 +554,84 @@ theorem scanRestoredTargetsWithCharge (n : Fin 9) :
   intro js unique
   exact (charge js unique).trans (Nat.add_le_add_left (by simpa only [Nat.mul_assoc] using Nat.mul_le_mul_left factor cost) _)
 
+private theorem addCharge {m t initial mid final sweep finish : ℕ}
+    (a : m+mid ≤ initial+sweep) (b : t+final ≤ mid+finish) :
+    m+t+final ≤ initial+sweep+finish := by omega
+
+private theorem scanExtensionOff {T a b : ℕ} (j : Fin (T+a+b)) (high : T ≤ j.val) (i : Fin T) :
+    (i.castAdd a).castAdd b ≠ j := by
+  intro eq
+  have h := congrArg Fin.val eq
+  change i.val = j.val at h
+  omega
+
+private theorem scanHandoffSource {T : ℕ} (fan : Fin (142081+2) ↪ Fin T) (i : Fin 142081) :
+    stagePadPort fan i 0 = ((targetScanBank fan i 1).castAdd 142081).castAdd 10 := by
+  apply Fin.ext
+  simp only [stagePadPort,Function.Embedding.coeFn_mk,Fin.val_zero,Fin.val_castAdd,ite_true]
+
+/-- Place a scanned sweep and write the parent output while charging the sweep budget once. -/
+theorem scannedStageWithHandoffCharge {T Q : ℕ} {P U : Type} (n : Fin 9)
+    (fan : Fin (142081+2) ↪ Fin T) (fits : 215 ≤ Q) (src : Fin 3 → Fin T)
+    (apart : ∀ i j, fan i ≠ src j)
+    (body : P → Pr P (T+142081*7) Q prime U) (stage : Pr P (T+142081*7) Q prime U) :
+    let extBank := (Fin.castAddEmb 142081 (n := T+142081*7)).trans (Fin.castAddEmb 10)
+    let outer := fun g => embProg extBank id (body g)
+    let base := Fin.castAddEmb (142081*7) (n := T)
+    ∃ code, ∃ rate : ℕ, ∀ w B W : ℕ, 0 < B → 0 < (prime^w)^112*W →
+    let K := (prime^w)^112*W
+    let A := (prime^w)^16
+    let N := prime^(64*(w*64))
+    let V := A*(B*N*K)
+    let label := firstRowLabel w
+    ∀ x y out u S v C m (price : ℕ), Exec body stage (mk (embDn extBank u) (embStk extBank S)) m (mk v C) →
+      (∀ js : List _, js.Nodup → m+tapeCharge cleanupWeight js C ≤ tapeCharge cleanupWeight js (embStk extBank S)+price) →
+      v.user = u.user →
+      (∀ j, T+142081*7 ≤ j.val → S.L j = [] ∧ S.R j = []) →
+      StageDimensionWords (fun i => base (src i)) K N (A*B) C →
+      StageControls (fan.trans base) V C → RestoredOwnerPayloads n (fan.trans base) out C →
+      (∀ k, RecordPayload (targetScanBank fan (targetOwner n k) 1) (fun _ => blank) 0
+        (stageTargetWord n k w B K x) C) →
+      stageRuns.foldr (fun p cont a => ∃ b, packedStageEffect n p w B W a b ∧ cont b)
+        (fun a => a = y) (singleLabelBank label x) →
+      HelperLabelTrace w (B*N) W (restoreSlotChanges (stageFinalSlot n)) y out →
+      ∃ z F steps, Exec outer code (mk u S) steps (mk z F) ∧
+        (∀ js : List _, js.Nodup → steps+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+price+rate*V) ∧
+        z.user = u.user ∧ HelperFan (stageOutputFan n fan)
+          (singleLabelBank label (Function.update (collapseLabelBank (B := B) (K := K) out)
+            (Fin.last 142080) (fun _ => 0))) F ∧
+        StageDimensionWords (fun i => extBank (base (src i))) K N (A*B) F ∧
+        (∀ j, (∀ i, fan i ≠ j) → F.R (extBank (base j)) = C.R (base j)) := by
+  intro extBank outer base
+  obtain ⟨handoff,rate,run⟩ := stageHandoffWithCharge n fan fits src outer
+  refine ⟨.seq (embProg extBank id stage) handoff,rate,?_⟩
+  intro w B W hb hk K A N V label x y out u S v C m price exec sweepBill same fresh dims controls live targets trace restore
+  obtain ⟨v',C',placed,_,user,view,off⟩ := exec_emb (ι := id) (body' := outer)
+    extBank.injective (fun _ => rfl) exec u rfl S rfl
+  have blank (j : Fin ((T+142081*7)+142081+10)) (high : T+142081*7 ≤ j.val) : C'.L j = [] ∧ C'.R j = [] := by
+    have keep := off j (scanExtensionOff j high)
+    exact ⟨keep.1.trans (fresh j high).1,keep.2.trans (fresh j high).2⟩
+  rw [← view] at dims controls live targets
+  obtain ⟨z,F,t,finish,paid,unchanged,ready,stored⟩ := run w B W hb hk x y out trace restore v' C'
+    (by simpa only [StageDimensionWords,embStk,Function.comp_apply,extBank,base,Function.Embedding.trans_apply,Fin.castAddEmb_apply] using dims)
+    blank
+    (by simpa only [StageControls,embStk,Function.comp_apply,extBank,base,Function.Embedding.trans_apply,Fin.castAddEmb_apply] using controls)
+    (by simpa only [RestoredOwnerPayloads,RecordPayload,embStk,Function.comp_apply,extBank,base,Function.Embedding.trans_apply,Fin.castAddEmb_apply] using live)
+    (fun k => by
+      rw [scanHandoffSource]
+      simpa only [RecordPayload,embStk,Function.comp_apply,extBank,Function.Embedding.trans_apply,Fin.castAddEmb_apply] using targets k)
+  refine ⟨z,F,m+t,Exec.seq placed finish,?_,unchanged.trans (user.trans same),ready,?_,?_⟩
+  · intro js unique
+    rw [← view] at sweepBill
+    have first := placedCleanup_cost_le extBank S C' cleanupWeight m price off sweepBill js unique
+    have last := paid js unique
+    change t+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js C'+rate*V at last
+    exact addCharge first last
+  · intro i
+    have h := stored (src i) (fun j => apart j i)
+    exact ⟨h.1.trans (dims i).1,h.2.trans (dims i).2⟩
+  · intro j outside
+    rw [← view]
+    exact (stored j outside).2
+
 end IntegerMultBounds.MathlibTM2.M6.BitNode
