@@ -35,20 +35,53 @@ theorem inheritedSplitHeaders_exec {P U : Type} {c M Q : ℕ} (body : P → Pr P
     ports.injective (fun e => nomatch e) mark u rfl S rfl
   exact ⟨v,D,ran,user,view.symm ▸ ready,frame⟩
 
+local instance (w : ℕ) : NeZero (prime^w) := ⟨(pow_pos Shared50ModularControl.prime_prime.pos _).ne'⟩
+
+open Certificates.PR589 Certificates.PR589.Nine in
+noncomputable def inheritedWindowAddress (lane : Descriptor) (w : ℕ) (width : lane.width = 64*w)
+    (j : Fin (CopyChildLayout.spectators lane)) (s : Swap.Shear.State Axis (ZMod (prime^w))) :
+    Fin (volume prime lane) :=
+  let field := fun (v : Axis → ZMod (prime^w)) => (FlatCoordinateLayout.rank (v ∘ stageAxis.symm)).cast
+    (show (prime^w)^64 = prime^lane.width by rw [← pow_mul,width,Nat.mul_comm w 64])
+  RecursiveInterchangeScaling.index ((CopyChildLayout.fields lane).symm ((field s.1,field s.2),j))
+
+open Certificates.PR589 Certificates.PR589.Nine in
+/-- The physical cell of an inherited window has the two stage fields as its
+active coordinates and the original spectator. -/
+theorem inheritedWindow_cell (lane : Descriptor) (w : ℕ) (width : lane.width = 64*w)
+    (size : (prime^w)^128*CopyChildLayout.spectators lane = volume prime lane)
+    (s : Swap.Shear.State Axis (ZMod (prime^w))) (j : Fin (CopyChildLayout.spectators lane)) :
+    let field := fun (v : Axis → ZMod (prime^w)) => (FlatCoordinateLayout.rank (v ∘ stageAxis.symm)).cast
+      (show (prime^w)^64 = prime^lane.width by rw [← pow_mul,width,Nat.mul_comm w 64])
+    (packedChildPosition lane rfl).symm ((flatWindowEquiv w _ (s,j)).cast size) =
+      RecursiveInterchangeScaling.index ((CopyChildLayout.fields lane).symm ((field s.1,field s.2),j)) := by
+  intro field
+  apply (packedChildPosition lane rfl).injective
+  rw [Equiv.apply_symm_apply,flatWindowEquiv_fields]
+  apply Fin.ext
+  change (FlatCoordinateLayout.index _ j).val = (CopyChildLayout.packActive lane _).val
+  rw [CopyChildLayout.packActive_index]
+  simp only [Equiv.apply_symm_apply]
+  have digits : (FlatCoordinateLayout.rank (Fin.append (s.1 ∘ stageAxis.symm) (s.2 ∘ stageAxis.symm))).val =
+      (FlatCoordinateLayout.rank (s.1 ∘ stageAxis.symm)).val*(prime^w)^64 +
+      (FlatCoordinateLayout.rank (s.2 ∘ stageAxis.symm)).val := ArbitraryWidthSliceTranspose.rank_append _ _
+  rw [FlatCoordinateLayout.index_val,digits]
+  change (_ * _ + _) * _ + _ = j.val + _ * ((FlatCoordinateLayout.rank (s.2 ∘ stageAxis.symm)).val + prime^lane.width*(FlatCoordinateLayout.rank (s.1 ∘ stageAxis.symm)).val)
+  rw [width,Nat.mul_comm 64 w,pow_mul]
+  ring
+
 open Certificates.PR589.Nine Shared50RecursiveNodeRows in
 /-- On a split role tape the inherited address is the identity. Assemble its
 transpose from the nine sweep and remainder programs at those addresses. -/
 theorem assembleHelperRole {U : Type} :
     ∃ states : ℕ, ∀ {Q w : ℕ} (physical : Descriptor), states ≤ Q → physical.Positive →
-      142080 ∣ physical.rows → physical.width = 64*w →
+      142080 ∣ physical.rows → ∀ width : physical.width = 64*w,
       let lane := role physical 142080
       let V := volume prime lane
       let W := CopyChildLayout.spectators lane
-      ∃ size : (prime^w)^128*W = V,
-      let address := fun (j : Fin W) s =>
-        (packedChildPosition lane rfl).symm ((flatWindowEquiv w W (s,j)).cast size)
+      let address := inheritedWindowAddress lane w width
       let reads := fun (piece : Piece) (x y : Fin 142081 → Fin V → ZMod 2) =>
-        ∀ j, let addr := fun z => address j (windowState w z)
+        ∀ j : Fin W, let addr := fun z => address j (windowState w z)
           readRoles addr y = piece.run (readRoles addr x)
       ∀ (sweepCost idleCost : Fin 9 → ℕ),
       (∀ n, ∃ (P : Type) (T : ℕ) (body : P → Pr P T Q prime U), ∃ code src dst seed,
@@ -73,8 +106,13 @@ theorem assembleHelperRole {U : Type} :
     have := Shared50ModularControl.prime_prime.pos
     unfold volume
     positivity
-  refine ⟨size,?_⟩
   intro address reads sweepCost idleCost sweeps idles
+  have cells : address = fun (j : Fin W) s =>
+      (packedChildPosition lane rfl).symm ((flatWindowEquiv w W (s,j)).cast size) := by
+    funext j s
+    exact (inheritedWindow_cell lane w laneWidth size s j).symm
+  dsimp only [reads] at sweeps idles
+  rw [cells] at sweeps idles
   obtain ⟨P,T,body,code,src,dst,seed,run⟩ := assemble lane fits laneWidth size (by omega)
     (Equiv.refl (Fin V)) sweepCost idleCost sweeps idles
   refine ⟨P,T,body,code,src,dst,seed,?_⟩
@@ -353,15 +391,13 @@ open Certificates.PR589.Nine RecursiveInterchangeRows Shared50RecursiveNodeRows 
 all assembly and tape preparation as a single linear parent-volume overhead. -/
 theorem assembledHelperTranspose_exec {U : Type} :
     ∃ states : ℕ, ∀ {Q w : ℕ} (physical : Descriptor), states ≤ Q → physical.Positive →
-      142080 ∣ physical.rows → physical.width = 64*w →
+      142080 ∣ physical.rows → ∀ width : physical.width = 64*w,
       let lane := role physical 142080
       let V := volume prime lane
       let W := CopyChildLayout.spectators lane
-      ∃ size : (prime^w)^128*W = V,
-      let address := fun (j : Fin W) s =>
-        (packedChildPosition lane rfl).symm ((flatWindowEquiv w W (s,j)).cast size)
+      let address := inheritedWindowAddress lane w width
       let reads := fun (piece : Piece) (x y : Fin 142081 → Fin V → ZMod 2) =>
-        ∀ j, let addr := fun z => address j (windowState w z)
+        ∀ j : Fin W, let addr := fun z => address j (windowState w z)
           readRoles addr y = piece.run (readRoles addr x)
       ∀ (sweepCost idleCost : Fin 9 → ℕ),
       (∀ n, ∃ (P : Type) (T : ℕ) (body : P → Pr P T Q prime U), ∃ code src dst seed,
@@ -403,8 +439,7 @@ theorem assembledHelperTranspose_exec {U : Type} :
   obtain ⟨states,assemble⟩ := assembleHelperRole (U := U)
   refine ⟨states,?_⟩
   intro Q w physical fits positive stock width lane V W
-  obtain ⟨size,build⟩ := assemble physical fits positive stock width
-  refine ⟨size,?_⟩
+  have build := assemble physical fits positive stock width
   intro address reads sweepCost idleCost sweeps idles
   obtain ⟨P,N,body,code,src,dst,seed,child⟩ := build sweepCost idleCost sweeps idles
   refine ⟨P,N,seed,?_⟩
