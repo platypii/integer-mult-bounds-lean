@@ -549,6 +549,117 @@ theorem restoredStage_active (n : Fin 9) (run : Fin 32 × Fin 5) (w B W : ℕ) (
       rw [eqn]
     exact (eqn (after src)).symm.trans (read.trans (congrArg _ (congrArg _ (eqn (inputs src)))))
 
+/-- Every relative register chart fixes the zero matrix. The target's row
+zero can therefore be read directly after the entire stage, for any input bank. -/
+theorem restoredStage_targetZero (n : Fin 9) (run : Fin 32 × Fin 5) (w B W : ℕ) (x y out)
+    (trace : stageRuns.foldr (fun k next a => ∃ b, packedStageEffect n k w B W a b ∧ next b)
+      (fun a => a = y) x)
+    (restore : HelperLabelTrace w (B*prime^(64*(w*64))) W (restoreSlotChanges (stageFinalSlot n)) y out)
+    (t : Fin 111) (z : Cover.LabelEntry.Cell (copyLabelLayout w B ((prime^w)^112*W)) B) :
+    let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n run.1 run.2,ownerTape_injective ..⟩
+    let j := labelSpectator 0 z
+    let initial := fun i => (selectedFrame w (Frames.initialRefs i)).symm (phaseRead owner x j i)
+    phaseRead owner out j (111+t.val) =
+      selectedFrame w (Frames.finalRefs (111+t.val)) (initial (111+t.val) + initial t.val) := by
+  intro owner j initial
+  obtain ⟨a,b,act,inputs,outputs⟩ := packedStage_active n run w B W x y trace
+  let dst : Fin 222 := ⟨111+t.val,by omega⟩
+  let src : Fin 222 := ⟨t.val,by omega⟩
+  have read {u v} (k : Fin 222) (eqn : u (owner (k.castLE (by decide))) = v (owner (k.castLE (by decide)))) :
+      phaseRead (w := w) owner u j k.val = phaseRead owner v j k.val := by
+    have bound : k.val < 661 := by omega
+    simp only [phaseRead,Copy.extendStored,dite_eq_left bound]
+    change u (owner ⟨k.val,bound⟩) = v (owner ⟨k.val,bound⟩) at eqn
+    rw [eqn]
+  have endpoint := act.targetRead_of_support 0 z t (by intros; simp)
+  simp only [FramedCircuit.decode,Frames.snapshot,
+    dite_eq_left (show 111+t.val < 661 by omega),ite_eq_left (show 111+t.val < 661 by omega),
+    ite_eq_left (show t.val < 661 by omega)] at endpoint
+  have after := (outputs dst).trans
+    (restoredStage_activePort n run dst (w := w) (L := B*prime^(64*(w*64))) (W := W) restore).symm
+  exact (read dst after).symm.trans (endpoint.trans (congrArg _ (congrArg₂ (· + ·)
+    (congrArg _ (read dst (inputs dst))) (congrArg _ (read src (inputs src))))))
+
+/-- On staged input the existing target collapse agrees with projection to
+row zero at every active address, even with arbitrary intermediate helper data. -/
+theorem restoredStage_targetProjection (n : Fin 9) (run : Fin 32 × Fin 5) (w B W : ℕ) (x y out)
+    (trace : stageRuns.foldr (fun k next a => ∃ b, packedStageEffect n k w B W a b ∧ next b)
+      (fun a => a = y) (singleLabelBank 0 x))
+    (restore : HelperLabelTrace w (B*prime^(64*(w*64))) W (restoreSlotChanges (stageFinalSlot n)) y out)
+    (t : Fin 111) (z : Cover.LabelEntry.Cell (copyLabelLayout w B ((prime^w)^112*W)) B) :
+    let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n run.1 run.2,ownerTape_injective ..⟩
+    let j := finProdFinEquiv (z.b,z.after)
+    phaseRead owner out (labelSpectator 0 z) (111+t.val) =
+      phaseRead owner (collapseLabelBank out) j (111+t.val) := by
+  intro owner j
+  have sum := (restoredStage_active n run w B W _ y out trace restore t z).1
+  rw [collapse_singleLabelBank] at sum
+  refine (restoredStage_targetZero n run w B W _ y out trace restore t z).trans (Eq.trans ?_ sum.symm)
+  have entry (i : ℕ) (hi : i < 661) :
+      phaseRead owner (singleLabelBank 0 x) (labelSpectator 0 z) i = phaseRead owner x j i := by
+    funext s
+    simp only [phaseRead,Copy.extendStored,dite_eq_left hi,singleLabelBank_read,ite_true,j]
+    rfl
+  exact congrArg _ (congrArg₂ (· + ·) (congrArg _ (entry _ (by omega : 111+t.val < 661)))
+    (congrArg _ (entry _ (by omega : t.val < 661))))
+
+theorem firstRowLabel_zero (w : ℕ) : firstRowLabel w = 0 := by
+  have addr : (Cover.LabelAddress.address (firstRowLabel w)).val = 0 := (exists_firstRowLabel w).choose_spec
+  ext i j
+  have digit := Cover.LabelAddress.entry (firstRowLabel w) i j
+  rw [addr] at digit
+  exact ZMod.val_injective _ (by simpa using digit.symm)
+
+open FlatCoordinateSchedule (bits bits_value bits_canonical) in
+/-- Crop the staged target onto a blank destination. Both heads return to zero
+and the consumed source is erased. -/
+theorem restoredStage_targetCrop (n : Fin 9) (run : Fin 32 × Fin 5) (w B W : ℕ) (x y out)
+    (trace : stageRuns.foldr (fun k next a => ∃ b, packedStageEffect n k w B W a b ∧ next b)
+      (fun a => a = y) (singleLabelBank 0 x))
+    (restore : HelperLabelTrace w (B*prime^(64*(w*64))) W (restoreSlotChanges (stageFinalSlot n)) y out)
+    (t : Fin 111) (hb : 0 < B) (hw : 0 < W) :
+    let A := (prime^w)^16
+    let N := prime^(64*(w*64))
+    let K := (prime^w)^112*W
+    let D := A*B
+    let tape := ownerTape n run.1 run.2 ⟨111+t.val,by omega⟩
+    let input := fun i : Fin (D*N*K) => out tape (i.cast (by change (A*B)*N*K = A*(B*N*K); ac_rfl))
+    let word := List.ofFn (fun i => SparseRoleCircuit.encode (a := prime) (input i))
+    let bank := fun f h => RowPaddingConstructedAlphabet.bank f h 0 0 (bits D) (bits 1) (bits N) (bits K)
+    ∃ result : Fin (D*1*K) → ZMod 2,
+      HoareTime RowPaddingConstructedAlphabet.cropProgram
+        (· = bank (putWord (fun _ => blank) 0 word) (fun _ => blank))
+        (· = bank (RowPaddingConstructedAlphabet.erased (putWord (fun _ => blank) 0 word) 0 (D*N*K))
+          (putWord (fun _ => blank) 0 (List.ofFn (fun i => SparseRoleCircuit.encode (result i)))))
+        (413*D*(N*K)) ∧
+      ∀ (s : Swap.Shear.State (Fin 8) (ZMod (prime^w))) (z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B),
+        let a := FlatCoordinateLayout.rank (AffineFieldCoordinates.embed s)
+        result (finProdFinEquiv (finProdFinEquiv (finProdFinEquiv (a,z.b),(0 : Fin 1)),(z.after : Fin K))) =
+          collapseLabelBank out tape (finProdFinEquiv (a,finProdFinEquiv (z.b,(z.after : Fin K)))) := by
+  intro A N K D tape input word bank
+  have hn : 0 < N := pow_pos Shared50ModularControl.prime_prime.pos _
+  refine ⟨RecursiveRowPadding.crop (R := 1) hn input,?_,?_⟩
+  · exact RowPaddingConstructedAlphabet.crop_bits_hoare (a := prime) (fun _ => blank) (fun _ => blank)
+      0 0 _ _ _ _ D 1 N K (fun i => decide (input i = 1))
+      (bits_value _) (bits_value _) (bits_value _) (bits_value _)
+      (bits_canonical _) (bits_canonical _) (bits_canonical _) (bits_canonical _)
+      (Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) hb)
+      Nat.zero_lt_one hn (Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) hw)
+  · intro s z a
+    have value := congrFun (restoredStage_targetProjection n run w B W x y out trace restore t z) s
+    have hzero : (Cover.LabelAddress.address (0 : Cover.LabelPadding.Label 64 w)).val = 0 := by
+      rw [← firstRowLabel_zero w]
+      exact (exists_firstRowLabel w).choose_spec
+    simp only [phaseRead,Copy.extendStored,dite_eq_left (show 111+t.val < 661 by omega)] at value
+    refine Eq.trans ?_ value
+    unfold RecursiveRowPadding.crop
+    simp only [Equiv.symm_apply_apply]
+    apply congrArg (out tape)
+    apply Fin.ext
+    simp only [RecursiveInterchangeRows.pack,Fin.val_cast,finProdFinEquiv_apply_val,Fin.val_zero,
+      FlatCoordinateLayout.index_val,labelSpectator,hzero,a,D,N,K,A]
+    ring
+
 private theorem targetScan_cost {K N D l r b : ℕ} (pos : 0 < K) (hn : 0 < N) (hd : 0 < D)
     (lk : l ≤ 2*K) (ln : r ≤ 2*N) (ld : b ≤ 2*D) :
     D*(N*(14*K+14*l+39)+7*r+16+7*K+7*l+23)+7*b+16 ≤ 200*(D*(N*K)) := by

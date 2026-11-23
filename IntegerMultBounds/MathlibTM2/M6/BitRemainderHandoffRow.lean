@@ -10,13 +10,6 @@ open IntegerMultBounds.Networks IntegerMultBounds.Machine Cover
 open Shared50ModularControl (prime)
 local instance (w : ℕ) : NeZero (prime^w) := ⟨(pow_pos Shared50ModularControl.prime_prime.pos _).ne'⟩
 
-theorem firstRowLabel_zero (w : ℕ) : firstRowLabel w = 0 := by
-  have addr : (LabelAddress.address (firstRowLabel w)).val = 0 := (exists_firstRowLabel w).choose_spec
-  ext i j
-  have digit := LabelAddress.entry (firstRowLabel w) i j
-  rw [addr] at digit
-  exact ZMod.val_injective _ (by simpa using digit.symm)
-
 /-- A scheduled chart leaves every read of a bank padded at row zero unchanged.
 The payload and its spectator stay at their original offsets. -/
 theorem firstRowBank_chart_read {w B K : ℕ} (n : Fin 9) (reg : ℕ)
