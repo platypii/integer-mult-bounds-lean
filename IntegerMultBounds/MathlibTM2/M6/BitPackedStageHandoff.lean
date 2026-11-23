@@ -419,6 +419,84 @@ private theorem sumBridgeCopies (ps : List Piece) (f : Piece → ℕ) (copy : �
 
 private theorem bridgeCount : nodeProgram.countP isBridge = 9 := by decide +kernel
 
+/-- Compile every bridge once, before the runtime dimensions are chosen.
+The bridge coefficient sums the individual linear tariffs in schedule order. -/
+theorem assembledPackedNodeFamily {U Config : Type} :
+    ∃ states : ℕ, ∀ {q : ℕ}, states ≤ q → ∃ bridgeRate : ℕ, ∀ w B tail : Config → ℕ,
+    let V := fun c => (prime^(w c))^16*(B c*((prime^(w c))^112*tail c))
+    (∀ c, 0 < V c) →
+    ∀ (stage idle : ∀ c, Fin 9 → OwnerArray (w c) (B c) (tail c) → OwnerArray (w c) (B c) (tail c) → Prop)
+      (sweepCost idleCost : Config → Fin 9 → ℕ),
+    (∀ i, ∃ (P : Type) (t : ℕ) (body : P → Pr P t q prime U), ∃ code src dst, ∃ seed : Config → Stacks t prime,
+      ∀ c, PackedPieceHandoffWithCharge cleanupWeight (V c) (stage c i) body code src dst (seed c) (sweepCost c i)) →
+    (∀ i, ∃ (P : Type) (t : ℕ) (body : P → Pr P t q prime U), ∃ code src dst, ∃ seed : Config → Stacks t prime,
+      ∀ c, PackedPieceHandoffWithCharge cleanupWeight (V c) (idle c i) body code src dst (seed c) (idleCost c i)) →
+    ∃ (P : Type) (t : ℕ) (body : P → Pr P t q prime U), ∃ code src dst, ∃ seed : Config → Stacks t prime,
+      ∀ c, PackedPieceHandoffWithCharge cleanupWeight (V c) (fun x y => nodeProgram.foldr
+        (fun i cont a => ∃ b, nodePieceEffect (w c) (B c) (tail c) (idle c) (stage c) i a b ∧ cont b)
+        (fun a => a = y) x) body code src dst (seed c)
+          ((∑ i, sweepCost c i)+(∑ i, idleCost c i)+bridgeRate*V c+2) := by
+  classical
+  let states : Piece → ℕ
+    | .bridge d s => if h : Piece.bridge d s ∈ nodeProgram then (packedBridgeWithCharge d s h).choose else 0
+    | _ => 0
+  refine ⟨(nodeProgram.map states).sum,?_⟩
+  intro q fits
+  have bridge d s (mem : Piece.bridge d s ∈ nodeProgram) :=
+    (packedBridgeWithCharge d s mem).choose_spec (U := U) (q := q) (by
+      have h := (List.le_sum_of_mem (List.mem_map_of_mem (f := states) mem)).trans fits
+      simpa only [states,dite_eq_left mem] using h)
+  let rate : Piece → ℕ
+    | .bridge d s => if h : Piece.bridge d s ∈ nodeProgram then (bridge d s h).choose else 0
+    | _ => 0
+  let bridgeRate := (nodeProgram.map rate).sum
+  refine ⟨bridgeRate,?_⟩
+  intro w B tail V pos stage idle sweepCost idleCost sweep remainder
+  let base (c : Config) : Piece → ℕ
+    | .stage i => sweepCost c i
+    | .remainder i => if h : i < 9 then idleCost c ⟨i,h⟩ else 1
+    | .bridge .. => 0
+    | .exchangeSides => 1
+  let price c p := base c p + rate p * V c
+  obtain ⟨P,t,body,code,src,dst,seed,run⟩ := packedNodeFamilyWithCharge cleanupWeight w B tail idle stage price (by
+    intro p mem exchange terminal
+    cases p with
+    | stage i => simpa [price,base,rate,nodePieceEffect] using sweep i
+    | remainder i =>
+      have ne : i ≠ 9 := fun eq => terminal (eq ▸ rfl)
+      have h : i < 9 := by simp [nodeProgram] at mem; omega
+      simpa [price,base,rate,nodePieceEffect,h] using remainder ⟨i,h⟩
+    | bridge d s =>
+      obtain ⟨t,code,src,dst,seed,run⟩ := (bridge d s mem).choose_spec
+      exact ⟨Empty,t,Empty.elim,code,src,dst,fun _ => seed,fun c => by
+        simpa [price,base,rate,mem,nodePieceEffect] using run (pos c)⟩
+    | exchangeSides => exact (exchange rfl).elim)
+  refine ⟨P,t,body,code,src,dst,seed,?_⟩
+  intro c
+  have same : Function.update (Function.update (price c) (.remainder 9) 1) .exchangeSides 1 = price c := by
+    funext p
+    by_cases ex : p = .exchangeSides
+    · subst p; simp [price,base,rate]
+    by_cases term : p = .remainder 9
+    · subst p; simp [price,base,rate]
+    simp [Function.update_of_ne ex,Function.update_of_ne term]
+  have sum (ps : List Piece) : (ps.map (price c)).sum = (ps.map (base c)).sum+(ps.map rate).sum*V c := by
+    induction ps with
+    | nil => simp
+    | cons p ps ih => simp only [List.map_cons,List.sum_cons,ih,price,Nat.add_mul]; omega
+  let ns := List.finRange 9
+  have perm : nodeProgram.Perm (ns.map Piece.stage ++ ns.map (fun i => Piece.remainder i.val) ++
+    bridgeEdges.map (fun p => Piece.bridge p.1 p.2) ++ [.remainder 9,.exchangeSides]) := by decide +kernel
+  have ranks (f : Fin 9 → ℕ) : (ns.map f).sum = ∑ i, f i := by
+    simpa only [ns,List.ofFn_eq_map] using (List.sum_ofFn : (List.ofFn f).sum = _)
+  have baseSum : (nodeProgram.map (base c)).sum = (∑ i, sweepCost c i)+(∑ i, idleCost c i)+2 := by
+    rw [(perm.map _).sum_eq]
+    simp only [List.map_append,List.sum_append,List.map_map,Function.comp_def,List.map_cons,List.map_nil,
+      List.sum_cons,List.sum_nil,base,dite_eq_left (Fin.isLt _),Fin.eta,dite_eq_right (by decide : ¬9 < 9),
+      ranks,List.map_const',List.sum_replicate,nsmul_zero]
+    omega
+  simpa only [same,sum,baseSum,bridgeRate,Nat.add_right_comm _ 2] using run c
+
 /-- Assemble all nine physical bridges, including their copies, at a capacity
 fixed before the word volume and the sweep and remainder budgets. -/
 theorem assembledPackedNode {U : Type} :
@@ -490,59 +568,29 @@ theorem assembledPackedNodeWithCharge {U : Type} :
         (fun i cont a => ∃ b, nodePieceEffect w B tail idle stage i a b ∧ cont b)
         (fun a => a = y) x) body code src dst prepared
         ((∑ i, sweepCost i) + (∑ i, idleCost i) + 9*(2*(76*17760*V*(142081+7)+6)+1+bridgeRate*V)+2) := by
-  classical
-  let states : Piece → ℕ
-    | .bridge d s => if h : Piece.bridge d s ∈ nodeProgram then (packedBridgeWithCharge d s h).choose else 0
-    | _ => 0
-  refine ⟨(nodeProgram.map states).sum,?_⟩
+  obtain ⟨states,build⟩ := assembledPackedNodeFamily (U := U) (Config := Unit)
+  refine ⟨states,?_⟩
   intro q fits
-  have bridge d s (mem : Piece.bridge d s ∈ nodeProgram) :=
-    (packedBridgeWithCharge d s mem).choose_spec (U := U) (q := q) (by
-      have h := (List.le_sum_of_mem (List.mem_map_of_mem (f := states) mem)).trans fits
-      simpa only [states,dif_pos mem] using h)
-  let rate : Piece → ℕ
-    | .bridge d s => if h : Piece.bridge d s ∈ nodeProgram then (bridge d s h).choose else 0
-    | _ => 0
-  let bridgeRate := (nodeProgram.map rate).sum
-  refine ⟨bridgeRate,?_⟩
+  obtain ⟨rate,assemble⟩ := build fits
+  refine ⟨rate,?_⟩
   intro w B tail V pos stage idle sweepCost idleCost sweep remainder
-  let price : Piece → ℕ := fun p => nodeHandoffCost V sweepCost idleCost p +
-    (if isBridge p then bridgeRate*V else 0)
-  let cost := Function.update (Function.update price (.remainder 9) 1) .exchangeSides 1
-  have total : (nodeProgram.map cost).sum = (∑ i, sweepCost i) + (∑ i, idleCost i) +
-      9*(2*(76*17760*V*(142081+7)+6)+1+bridgeRate*V)+2 := by
-    have same : cost = price := by
-      funext p
-      by_cases ex : p = .exchangeSides
-      · subst p; rfl
-      by_cases term : p = .remainder 9
-      · subst p; rfl
-      simp only [cost,Function.update_of_ne ex,Function.update_of_ne term]
-    rw [same,sumBridgeCopies nodeProgram (nodeHandoffCost V sweepCost idleCost),bridgeCount,nodeHandoffCost_sum]
-    ring
-  rw [← total]
-  apply packedNodeHandoffsWithCharge cleanupWeight idle stage price
-  intro p mem exchange terminal
-  cases p with
-  | stage i => simpa [price,nodeHandoffCost,isBridge,nodePieceEffect] using sweep i
-  | remainder i =>
-    have ne : i ≠ 9 := fun eq => terminal (eq ▸ rfl)
-    have h : i < 9 := by simp [nodeProgram] at mem; omega
-    simpa [price,nodeHandoffCost,isBridge,nodePieceEffect,h] using remainder ⟨i,h⟩
-  | bridge d s =>
-    obtain ⟨t,c,src,dst,D,run⟩ := (bridge d s mem).choose_spec
-    have leRate : (bridge d s mem).choose ≤ bridgeRate := by
-      simpa only [rate,dif_pos mem] using List.le_sum_of_mem (List.mem_map_of_mem (f := rate) mem)
-    refine ⟨Empty,t,Empty.elim,c,src,dst,D,?_⟩
-    intro x u S live fresh
-    obtain ⟨z,F,n,y,ran,bill,user,out,result⟩ := run pos x u S live fresh
-    refine ⟨z,F,n,y,ran,?_,user,out,result⟩
-    intro js distinct
-    have h := (bill js distinct).trans (Nat.add_le_add_left (Nat.mul_le_mul_right V leRate) _)
-    simp only [price,isBridge,ite_true]
-    omega
-  | exchangeSides => exact (exchange rfl).elim
-
+  obtain ⟨P,t,body,code,src,dst,seed,run⟩ := assemble (fun _ => w) (fun _ => B) (fun _ => tail)
+    (fun _ => pos) (fun _ => stage) (fun _ => idle) (fun _ => sweepCost) (fun _ => idleCost) (by
+      intro i
+      obtain ⟨P,t,body,code,src,dst,D,exec⟩ := sweep i
+      exact ⟨P,t,body,code,src,dst,fun _ => D,fun _ => exec⟩) (by
+      intro i
+      obtain ⟨P,t,body,code,src,dst,D,exec⟩ := remainder i
+      exact ⟨P,t,body,code,src,dst,fun _ => D,fun _ => exec⟩)
+  refine ⟨P,t,body,code,src,dst,seed (),?_⟩
+  intro x u S words privateTapes
+  obtain ⟨z,F,n,y,exec,paid,user,out,trace⟩ := run () x u S words privateTapes
+  refine ⟨z,F,n,y,exec,?_,user,out,trace⟩
+  intro js unique
+  have bill := paid js unique
+  change n+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+
+    ((∑ i, sweepCost i)+(∑ i, idleCost i)+rate*V+2) at bill
+  omega
 
 /-- The assembled physical program interchanges the two fields on every
 role tape, for all inherited blocks, matrix labels and trailing positions. -/
