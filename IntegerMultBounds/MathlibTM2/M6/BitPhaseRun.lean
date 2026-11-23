@@ -377,6 +377,78 @@ theorem commonScatter_stage [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5
         exact (ih ((stage l).transform x)).trans step
     exact keep _ _
 
+/-- Reading a fixed spectator commutes with the complete framed COPY run. -/
+private theorem copyRun_slice {S : Type*} {V W : ℕ} (addr : Fin V ≃ S × Fin W) (j : Fin W)
+    (frame : ℕ → FramedCircuit.Frame (ZMod 2) (S → ZMod 2)) (ls : List Copy.Lifecycle)
+    (x : ℕ → Fin V → ZMod 2) :
+    let slice := fun (y : ℕ → Fin V → ZMod 2) i s => y i (addr.symm (s,j))
+    slice (Copy.run (fun i => tapeFrame addr (frame i)) ls x) = Copy.run frame ls (slice x) := by
+  intro slice
+  have update (y : ℕ → Fin V → ZMod 2) (k : ℕ) (f : Fin V → ZMod 2) :
+      slice (Function.update y k f) = Function.update (slice y) k (fun s => f (addr.symm (s,j))) := by
+    funext i s
+    by_cases eq : i = k <;> simp [slice,Function.update,eq]
+  have adds (targets : List ℕ) (y : ℕ → Fin V → ZMod 2) :
+      slice (Copy.addTargets targets y) = Copy.addTargets targets (slice y) := by
+    induction targets generalizing y with
+    | nil => rfl
+    | cons k ks ih => simp only [Copy.addTargets,ih,update]; rfl
+  induction ls generalizing x with
+  | nil => rfl
+  | cons l ls ih =>
+    simp only [Copy.run,ih,Copy.execute,update,adds]
+    congr 2
+    simp [slice,tapeFrame]
+
+/-- Run the full selected invocation at each spectator of a compact owner bank. -/
+theorem compactInvocation_stage [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
+    (engine : CopyTranspose := CopyTranspose.original) :
+    ∃ C : ℕ, ∀ w W, 0 < w → 0 < W →
+      let V := (prime^w)^16*W
+      let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n r d,ownerTape_injective n r d⟩
+      let bill := fun (gates : List RawGate) (current : ℕ → ℕ) =>
+        let code := FramedCircuit.compile (fun i => selectedFrame w (current i))
+          (gates.map (Frames.framedGate (selectedFrame w)))
+        (code.map (scalarWork V)).sum + ((Frames.edges gates current).map (phaseEdgeBudget owner w W)).sum + code.length
+      let hs := fun i => FlatCoordinateSchedule.bits (RecursiveDimensionBank.values (copyChild w W) i)
+      ∃ stage : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V)),
+        stage.cost ≤ bill (sectionD++sectionA) (Frames.snapshot Frames.initialRefs) +
+          (C*V + 9*engine.time (copyChild w W) hs + 9) +
+          bill (sectionB++sectionC) (Frames.scatterFinish Frames.beforeScatter) + 2 ∧
+        (∀ x j,
+          phaseRead owner (stage.transform x) j =
+            runSelected (selectedFrame w) (selectedWord w) (phaseRead owner x j)) ∧
+        ∀ x i, i ≠ Fin.last 142080 → (∀ k, owner k ≠ i) → stage.transform x i = x i := by
+  obtain ⟨C,scatter⟩ := compactScatter_stage n r d engine
+  refine ⟨C,?_⟩
+  intro w W hw hW V owner bill hs
+  obtain ⟨first,firstCost,firstRead,firstOff⟩ := invocationPhase_stage owner hw hW false
+  obtain ⟨last,lastCost,lastRead,lastOff⟩ := invocationPhase_stage owner hw hW true
+  obtain ⟨mid,midCost,midRead,midOff⟩ := scatter w W hw hW
+  refine ⟨SharedBankStage.compose (SharedBankStage.compose first mid) last,?_,?_,?_⟩
+  · change first.cost + mid.cost + 1 + last.cost + 1 ≤ _
+    change first.cost ≤ bill (sectionD++sectionA) (Frames.snapshot Frames.initialRefs) at firstCost
+    change last.cost ≤ bill (sectionB++sectionC) (Frames.scatterFinish Frames.beforeScatter) at lastCost
+    change mid.cost ≤ C*V+9*engine.time (copyChild w W) hs+9 at midCost
+    omega
+  · intro x j
+    change phaseRead owner (last.transform (mid.transform (first.transform x))) j = _
+    rw [lastRead]
+    unfold runSelected
+    rw [final_alignment_identity,(modular_scatter w).choose_spec.2.2.2.1]
+    apply congrArg (runPhase (selectedWord w) _ _)
+    let slice := fun (y : ℕ → Fin V → ZMod 2) i s => y i (copyAddress.symm (s,j))
+    have read (y : Fin 142081 → Fin V → ZMod 2) :
+        slice (Copy.extendStored (y ∘ owner)) = phaseRead owner y j := by
+      funext i s
+      by_cases h : i < 661 <;> simp [slice,phaseRead,Copy.extendStored,h]
+    have h := congrArg slice (midRead (first.transform x))
+    exact (read _).symm.trans (h.trans ((copyRun_slice copyAddress j (selectedFrame w) Copy.lifecycles
+      (Copy.extendStored (first.transform x ∘ owner))).trans (congrArg (Copy.run _ _)
+        ((read _).trans (firstRead x j)))))
+  · intro x i permanent outside
+    exact (lastOff _ i outside).trans ((midOff _ i permanent outside).trans (firstOff x i outside))
+
 open IntegerMultBounds.MathlibTM2.Cover in
 /-- In the common layout both scalar phases and the intervening fanouts
 execute the selected word at every independent physical row. -/
@@ -399,29 +471,12 @@ theorem commonInvocation_stage [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fi
           phaseRead owner (stage.transform x) (labelSpectator g z) =
             runSelected (selectedFrame w) (selectedWord w) (phaseRead owner x (labelSpectator g z))) ∧
         ∀ x i, i ≠ Fin.last 142080 → (∀ k, owner k ≠ i) → stage.transform x i = x i := by
-  obtain ⟨C,scatter⟩ := commonScatter_stage n r d engine
+  obtain ⟨C,compact⟩ := compactInvocation_stage n r d engine
   refine ⟨C,?_⟩
   intro w B K hw hB hK W V owner bill hs
   have hW : 0 < W := Nat.mul_pos (Nat.mul_pos hB (pow_pos Shared50ModularControl.prime_prime.pos _)) hK
-  obtain ⟨first,firstCost,firstRead,firstOff⟩ := invocationPhase_stage owner hw hW false
-  obtain ⟨last,lastCost,lastRead,lastOff⟩ := invocationPhase_stage owner hw hW true
-  obtain ⟨mid,midCost,midRead,midOff⟩ := scatter w B K hw hB hK
-  refine ⟨SharedBankStage.compose (SharedBankStage.compose first mid) last,?_,?_,?_⟩
-  · change first.cost + mid.cost + 1 + last.cost + 1 ≤ _
-    change first.cost ≤ bill (sectionD++sectionA) (Frames.snapshot Frames.initialRefs) at firstCost
-    change last.cost ≤ bill (sectionB++sectionC) (Frames.scatterFinish Frames.beforeScatter) at lastCost
-    change mid.cost ≤ C*V+9*engine.time (copyChild w W) hs+9 at midCost
-    omega
-  · intro x g z
-    let j := labelSpectator g z
-    change phaseRead owner (last.transform (mid.transform (first.transform x))) j = _
-    rw [lastRead]
-    unfold runSelected
-    rw [final_alignment_identity,(modular_scatter w).choose_spec.2.2.2.1]
-    apply congrArg (runPhase (selectedWord w) _ _)
-    exact (midRead (first.transform x) g z).trans (congrArg (Copy.run (selectedFrame w) Copy.lifecycles) (firstRead x j))
-  · intro x i permanent outside
-    exact (lastOff _ i outside).trans ((midOff _ i permanent outside).trans (firstOff x i outside))
+  obtain ⟨stage,cost,read,keep⟩ := compact w W hw hW
+  exact ⟨stage,cost,fun x g z => read x (labelSpectator g z),keep⟩
 
 open IntegerMultBounds.MathlibTM2.Cover RecursiveInterchangeLayout in
 noncomputable def scatterRead {w B K : ℕ} (n : Fin 9) (r : Fin 32) (d : Fin 5)
