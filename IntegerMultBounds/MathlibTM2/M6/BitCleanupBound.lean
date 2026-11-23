@@ -61,7 +61,7 @@ private theorem nativeExecution {K P σ : Type} {Γ : K → Type} [DecidableEq K
   | loop_true h _ _ a b => exact .loop_true h (a bound) (b bound)
   | call => exact bound.elim
 
-private theorem nativeCleanupBound {P U : Type} {T Q c : ℕ} {body : P → Pr P T Q prime U}
+theorem nativeCleanupBound {P U : Type} {T Q c : ℕ} {body : P → Pr P T Q prime U}
     {prog u v S F n} (exec : Exec body prog (mk u S) n (mk v F)) (native : mnNativePushBound c prog) :
     CleanupBound S F n ((1+6*c)*n) := by
   intro js unique
