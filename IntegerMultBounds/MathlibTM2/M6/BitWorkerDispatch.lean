@@ -1210,14 +1210,14 @@ noncomputable def workerTable {P U : Type} {T Q : ℕ} (dispatch : Pr (WorkerLab
   | .leaf => leaf
   | .active g => large g
 
-private theorem ScheduledChildExec.weaken {P U : Type} [M8.Machine.Net] {T Q w W a b : ℕ}
-    {node child : Descriptor} {ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T} {record position}
+theorem ScheduledChildExec.weaken {P U : Type} [M8.Machine.Net] {T Q w W a b : ℕ}
+    {node child : Descriptor} {ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T} {record position} {charged : Bool}
     {body : P → Pr P T Q prime U} {f : P}
-    (worker : ScheduledChildExec node child w W ports record position body f a) (le : a ≤ b) :
-    ScheduledChildExec node child w W ports record position body f b := by
+    (worker : ScheduledChildExec node child w W ports record position body f a charged) (le : a ≤ b) :
+    ScheduledChildExec node child w W ports record position body f b charged := by
   intro smaller u S word ready free
   obtain ⟨z,F,t,y,run,paid,rest⟩ := worker smaller u S word ready free
-  exact ⟨z,F,t,y,run,paid.trans le,rest⟩
+  exact ⟨z,F,t,y,run,paid.weaken le,rest⟩
 
 private theorem sweepChildOverhead [M8.Machine.Net] {α : Type} (runs : List StageRun) (jobsPerRun : List α)
     (time : ℕ → ℕ) (coeff : StageRun → ℝ) (rate : ℝ) (offset V w : ℕ) :
@@ -1243,6 +1243,29 @@ private theorem sweepChildOverhead [M8.Machine.Net] {α : Type} (runs : List Sta
   simp only [indices,jobs,lengthJobs,List.sum_map_add,List.map_const',List.sum_replicate,nsmul_eq_mul,
     Nat.cast_add,Nat.cast_mul,Nat.cast_ofNat,add_mul] at one ⊢
   nlinarith only [mul_nonneg (show 0 ≤ (runs.length : ℝ)*jobsPerRun.length*(5000*(V : ℝ)) by positivity) (sub_nonneg.mpr one)]
+
+/-- The dispatch wrapper contributes linear volume work. Any excess precision
+of the inherited cutoff is paid separately at each actual call. -/
+theorem cutoffDispatchOverhead [M8.Machine.Net] (node : Descriptor) (w B K L : ℕ)
+    (width : node.width = 64*(w+1)) (k : Fin nodeChildren5.length) :
+    let W := ((prime^(w+1))^112*B)*prime^(64*((w+1)*64))*K
+    let child := scheduledChild prime node
+    0 < W → (Fin (volume prime (child k)) ≃ Fin ((prime^(w+1))^16*W)) →
+    4*w+23*(child k).width+22*L+8*(CopyChildLayout.spectators (child k)).size+61 ≤
+      5000*volume prime (child k)+22*(L-node.width) := by
+  intro W child pos position
+  let tailWidth := B*prime^(64*((w+1)*64))*K
+  have regroup : W = (prime^(w+1))^112*tailWidth := by dsimp only [W,tailWidth]; ring
+  have vol := Fintype.card_congr position
+  simp only [Fintype.card_fin,regroup] at vol
+  have tailPos : 0 < tailWidth := by rw [regroup] at pos; exact Nat.pos_of_mul_pos_left pos
+  have shape : (child k).width = (w+1)*nodeChildren5[k.val] := by
+    change nodeChildren5[k.val]*(node.width/64) = _
+    rw [width,Nat.mul_div_cancel_left _ (by decide),Nat.mul_comm]
+  have prec : min L node.width ≤ 64*(w+1) := (min_le_right ..).trans width.le
+  have bill := moveOverhead_volume (child k) w tailWidth _ (min L node.width) _ tailPos ((nodeChildren5_bounds k).2.trans (by decide : 42 ≤ 64))
+    shape prec (le_max_right ..) vol
+  omega
 
 /-- Install mixed workers throughout the stage. The stage needs execution
 witnesses only for the occurrences above the cutoff. -/
@@ -1307,19 +1330,8 @@ theorem mixedPackedSweep [M8.Machine.Net] (n : Fin 9) :
   let crec := fun (_ : StageRun) (_ : CopyIndex) => binSyms (A := prime) L cutoff
   obtain ⟨mp,cp,banks,mc,cc,T,fan,bank,run⟩ := stage node w B rows width split label pos mrec crec
   have overhead (k : Fin nodeChildren5.length) (position : Fin (volume prime (child k)) ≃ Fin ((prime^(w+1))^16*W)) :
-      4*w+23*(child k).width+22*L+8*(CopyChildLayout.spectators (child k)).size+61 ≤ 5000*volume prime (child k)+22*(L-node.width) := by
-    let tailWidth := B*prime^(64*((w+1)*64))*K
-    have regroup : W = (prime^(w+1))^112*tailWidth := by dsimp only [W,tailWidth]; ring
-    have vol := Fintype.card_congr position
-    simp only [Fintype.card_fin,regroup] at vol
-    have tailPos : 0 < tailWidth := by rw [regroup] at pos; exact Nat.pos_of_mul_pos_left pos
-    have shape : (child k).width = (w+1)*nodeChildren5[k.val] := by
-      change nodeChildren5[k.val]*(node.width/64) = _
-      rw [width,Nat.mul_div_cancel_left _ (by decide),Nat.mul_comm]
-    have prec : min L node.width ≤ 64*(w+1) := (min_le_right ..).trans width.le
-    have bill := moveOverhead_volume (child k) w tailWidth _ (min L node.width) _ tailPos ((nodeChildren5_bounds k).2.trans (by decide : 42 ≤ 64))
-      shape prec (le_max_right ..) vol
-    omega
+      4*w+23*(child k).width+22*L+8*(CopyChildLayout.spectators (child k)).size+61 ≤ 5000*volume prime (child k)+22*(L-node.width) :=
+    cutoffDispatchOverhead node w B K L width k pos position
   refine ⟨mp,cp,mc,cc,_,fun p => (banks p).tapes,fun p => (banks p).body (mBank p) (cBank p) (mb p) (cb p),T,fan,bank,?_⟩
   intro scratch owner worker host blocks V time ready
   let charged := fun j => time j+5000*V
