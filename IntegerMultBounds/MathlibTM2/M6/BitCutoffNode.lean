@@ -1454,7 +1454,7 @@ theorem packedCutoffRemainderOnBank {P A U : Type} {H N T Q : ℕ}
       simp [contents,remainderEntryWord,h.1,h.2.1,h.2.2])) empty
   exact ⟨z,F,t,y,exec,bill,user,⟨out.left,out.right,out.controls⟩,result⟩
 
-private theorem stageCast {P U : Type} {T Q w W V Z price : ℕ} (n : Fin 9)
+theorem stageCast {P U : Type} {T Q w W V Z price : ℕ} (n : Fin 9)
     (tailEq : W = Z) (size : (prime^w)^128*W = V) (work : ℕ → ℕ)
     {body : P → Pr P T Q prime U} {code src dst seed}
     (run : PackedPieceHandoffWithCharge cleanupWeight V (fun x y => ∀ j : Fin W,
