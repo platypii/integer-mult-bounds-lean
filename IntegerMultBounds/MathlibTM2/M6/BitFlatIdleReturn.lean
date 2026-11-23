@@ -97,7 +97,7 @@ theorem returnIdleBank_exec {P U : Type} {T Q V : ℕ} (body : P → Pr P T Q pr
     let write := (loadCompactWord src tmp count).seq
       (((usub count dst tmp).seq (movePrefix count src dst saved tmp)).seq (bclear count))
     ∃ z F n, Exec body (write.seq (clearWorkTapes bank)) (mk u S) n (mk z F) ∧
-      n ≤ 20*V+23+(bank.map fun j => 4*(S.L j).length+2*(S.R j).length+4).sum ∧
+      n ≤ 18*V+23+(bank.map fun j => 4*(S.L j).length+2*(S.R j).length+4).sum ∧
       z.user = u.user ∧ RecordPayload dst (fun _ => blank) 0 changed F ∧
       (∀ j ∈ bank, F.L j = [] ∧ F.R j = []) ∧
       ∀ j, j ≠ dst → j ∉ bank → F.L j = S.L j ∧ F.R j = S.R j := by
@@ -105,20 +105,29 @@ theorem returnIdleBank_exec {P U : Type} {T Q V : ℕ} (body : P → Pr P T Q pr
   obtain ⟨v,D,run,user,payload,drain,left,keep⟩ := returnIdlePayloadFromBlank_exec body apart old changed u S
     before merged hc hs hlt ht
   obtain ⟨z,same,clear⟩ := clearWorkTapes_exec body bank distinct v D
-  have sum {js : List (Fin T)} (away : dst ∉ js) :
-      (js.map fun j => 4*(D.L j).length+2*(D.R j).length+4).sum ≤
+  have length := congrArg List.length (payload_prefix_of_read changed _ _ _ _ merged)
+  simp only [payloadWord,List.length_append,List.length_map,List.length_ofFn] at length
+  have sum {js : List (Fin T)} (away : dst ∉ js) (unique : js.Nodup) :
+      (js.map fun j => 4*(D.L j).length+2*(D.R j).length+4).sum + (if src ∈ js then 2*V else 0) =
       (js.map fun j => 4*(S.L j).length+2*(S.R j).length+4).sum := by
     induction js with
-    | nil => exact le_rfl
+    | nil => simp
     | cons j js ih =>
       simp only [List.mem_cons,not_or] at away
-      simp only [List.map_cons,List.sum_cons]
-      apply Nat.add_le_add _ (ih away.2)
-      rw [left]
+      have tail := ih away.2 unique.tail
+      simp only [List.map_cons,List.sum_cons,List.mem_cons]
+      rw [left j]
       by_cases eq : j = src
-      · subst j; rw [drain,List.length_drop]; omega
+      · subst j
+        simp only [unique.notMem,ite_false,Nat.add_zero] at tail
+        simp only [true_or,ite_true,drain]
+        omega
       · rw [keep j (fun h => away.1 h.symm) eq]
-  refine ⟨z,_,_,Exec.seq run clear,by have := sum outside; omega,same.trans user,?_,?_,?_⟩
+        simp only [Ne.symm eq,false_or]
+        omega
+  have credit := sum outside distinct
+  simp only [inside,ite_true] at credit
+  refine ⟨z,_,_,Exec.seq run clear,by omega,same.trans user,?_,?_,?_⟩
   · simpa only [RecordPayload,ite_eq_right outside] using payload
   · intro j hj
     simp only [ite_eq_left hj,and_self]

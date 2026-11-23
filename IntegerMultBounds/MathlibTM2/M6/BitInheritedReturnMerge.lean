@@ -54,6 +54,47 @@ theorem mergeSaved_outsideFan (c : ℕ) (k : Fin 3) (i : Fin (c+2)) :
 
 /-- Sequence an owner-row computation with the physical merge. Only the
 target and two inner counters must survive the computation on their saved tapes. -/
+theorem mergeAfterReturnedRowsWithCost {P U : Type} {T Q V price : ℕ}
+    (host : P → Pr P T Q prime U) (program : Pr P T Q prime U)
+    (saved : Fin 3 ↪ Fin T) (returned : Fin (142080+2) ↪ Fin T)
+    (apart : ∀ i j, saved i ≠ returned j)
+    (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q)
+    (positive : 0 < V) (target : ℤ → Fin (prime+4))
+    (data output : Fin 142080 → Fin V → ZMod 2) (before : Stacks intervalSplitTapes prime)
+    (u : HS T Q prime U) (S : Stacks T prime)
+    (split : RepT (intervalOwnerBank target data) before.L before.R)
+    {v D} (exec : Exec host program (mk u S) price (mk v D)) (user : v.user = u.user)
+    (owners :
+      HelperFan returned output D) (frame : ∀ i, D.L (saved i) = before.L (mergeSaved 142080 i) ∧
+        D.R (saved i) = before.R (mergeSaved 142080 i)) :
+    let bank := returnedMergeBank saved returned apart
+    let merge := embProg bank Empty.elim (foreign (liftQ (CyclicRowNormalized.mergeProgram 142080 prime) capacity))
+    let word := fun k : Fin (V*142080) => let p := finProdFinEquiv.symm k
+                                          SparseRoleCircuit.encode (a := prime) (output p.2 p.1)
+    ∃ z F n, Exec host (program.seq merge) (mk u S) n (mk z F) ∧
+      n ≤ price+(149*(V*142080)*(intervalSplitTapes+5)+6) ∧ z.user = u.user ∧
+      RepT (intervalOwnerBank (putWord target 0 (List.ofFn word)) output) (embStk bank F).L (embStk bank F).R ∧
+      ∀ js : List (Fin T), js.Nodup →
+        n+(js.map fun j => 4*(F.L j).length+2*(F.R j).length+4).sum ≤
+          price+(js.map fun j => 4*(D.L j).length+2*(D.R j).length+4).sum+
+            13*(149*(V*142080)*(intervalSplitTapes+5)+6) := by
+  intro bank merge word
+  obtain ⟨z,F,n,ran,bill,same,result,_,_,growth⟩ := placedMergeReturnedOwners_exec host bank capacity positive
+    target data output before v D split (by
+      rw [show (intervalOwners 142080).trans bank = returned from returnedMergeBank_owners _ _ _]
+      exact owners) (by
+      rw [show bank 0 = saved 0 from returnedMergeBank_target _ _ _]
+      exact frame 0) (fun j => by
+      dsimp only
+      rw [show bank ((j.natAdd (1+142080)).castAdd 2) = saved j.succ from returnedMergeBank_inner _ _ _ j]
+      exact frame j.succ)
+  refine ⟨z,F,price+n,exec.seq ran,Nat.add_le_add_left bill _,same.trans user,result,?_⟩
+  intro js distinct
+  have h := growth js distinct
+  omega
+
+/-- Sequence an owner-row computation with the physical merge. Only the
+target and two inner counters must survive the computation on their saved tapes. -/
 theorem mergeAfterReturnedRows {P U : Type} {T Q V price : ℕ}
     (host : P → Pr P T Q prime U) (program : Pr P T Q prime U)
     (saved : Fin 3 ↪ Fin T) (returned : Fin (142080+2) ↪ Fin T)
@@ -75,16 +116,9 @@ theorem mergeAfterReturnedRows {P U : Type} {T Q V price : ℕ}
       RepT (intervalOwnerBank (putWord target 0 (List.ofFn word)) output) (embStk bank F).L (embStk bank F).R := by
   intro bank merge word
   obtain ⟨v,D,k,exec,paid,user,owners,frame⟩ := run
-  obtain ⟨z,F,n,ran,bill,same,result,_,_⟩ := placedMergeReturnedOwners_exec host bank capacity positive
-    target data output before v D split (by
-      rw [show (intervalOwners 142080).trans bank = returned from returnedMergeBank_owners _ _ _]
-      exact owners) (by
-      rw [show bank 0 = saved 0 from returnedMergeBank_target _ _ _]
-      exact frame 0) (fun j => by
-      dsimp only
-      rw [show bank ((j.natAdd (1+142080)).castAdd 2) = saved j.succ from returnedMergeBank_inner _ _ _ j]
-      exact frame j.succ)
-  exact ⟨z,F,k+n,exec.seq ran,Nat.add_le_add paid bill,same.trans user,result⟩
+  obtain ⟨z,F,n,ran,cost,same,result,_⟩ := mergeAfterReturnedRowsWithCost host program saved returned apart
+    capacity positive target data output before u S split exec user owners frame
+  exact ⟨z,F,n,ran,cost.trans (Nat.add_le_add_right paid _),same,result⟩
 
 theorem inheritedReturnMerge_exec {P U : Type} {N Q price : ℕ} (lane : Descriptor)
     (positive : 0 < volume prime lane)

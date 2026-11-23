@@ -1,5 +1,8 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackRecordCleanup
+public import IntegerMultBounds.MathlibTM2.Host.EmbedStock
+public import IntegerMultBounds.MathlibTM2.Host.ForeignStock
 public import IntegerMultBounds.MathlibTM2.M6.BitIntervalSetup
 public import IntegerMultBounds.MathlibTM2.M6.BitHelperFanRun
 
@@ -176,7 +179,10 @@ theorem placedMergeReturnedOwners_exec {P U : Type} {T Q m : ℕ}
       RepT (intervalOwnerBank (putWord dst 0 (List.ofFn word)) data) (embStk place F).L (embStk place F).R ∧
       (∀ j, (F.L (place j)).length+(F.R (place j)).length ≤
         (S.L (place j)).length+(S.R (place j)).length+298*(m*142080)) ∧
-      ∀ j, (∀ i, place i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+      (∀ j, (∀ i, place i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j) ∧
+      ∀ js : List (Fin T), js.Nodup →
+        (js.map fun j => 4*(F.L j).length+2*(F.R j).length+4).sum ≤
+        (js.map fun j => 4*(S.L j).length+2*(S.R j).length+4).sum+12*n := by
   intro word
   have ready := intervalOwners_return dst original data before (embStk place S) split rows source inner
   obtain ⟨v,D,n,run,paid,user,result,growth⟩ := mergeReturnedOwners_exec (P := Empty) Empty.elim
@@ -184,7 +190,29 @@ theorem placedMergeReturnedOwners_exec {P U : Type} {T Q m : ℕ}
   obtain ⟨z,F,exec,_,same,view,keep⟩ := exec_emb (body' := body) (ι := Empty.elim)
     place.injective (fun e => nomatch e) run u rfl S rfl
   rw [← view] at growth result
-  exact ⟨z,F,n,exec,paid,same.trans user,result,growth,keep⟩
+  refine ⟨z,F,n,exec,paid,same.trans user,result,growth,keep,?_⟩
+  intro js distinct
+  have push {K P σ : Type} {Γ : K → Type} {p : Prog P Γ σ} {c : ℕ}
+      (bound : Fast.Main.mnNativePushBound c p) : Fast.Main.mnProgPush p ≤ c := by
+    induction p with
+    | act => exact bound
+    | seq _ _ ih₁ ih₂ | cond _ _ _ ih₁ ih₂ => exact max_le (ih₁ bound.1) (ih₂ bound.2)
+    | loop _ _ ih => exact ih bound
+    | call => exact bound.elim
+  have closed {q : Pr P T Q prime U} {s t l} (e : Exec body q s l t)
+      (native : Fast.Main.mnNativePushBound 2 q) : Exec (fun _ : P => .act .done) q s l t := by
+    induction e with
+    | act => exact .act _ _
+    | seq _ _ ih₁ ih₂ => exact .seq (ih₁ native.1) (ih₂ native.2)
+    | cond_true h _ ih => exact .cond_true h (ih native.1)
+    | cond_false h _ ih => exact .cond_false h (ih native.2)
+    | loop_false h => exact .loop_false h
+    | loop_true h _ _ ih₁ ih₂ => exact .loop_true h (ih₁ native) (ih₂ native)
+    | call => exact native.elim
+  have native := embProg_native (P' := P) place Empty.elim _ (foreign_native (P := Empty) (U := U)
+    (liftQ (CyclicRowNormalized.mergeProgram 142080 prime) capacity))
+  have charge := Cover.Fallback.recordCleanup_cost_le js distinct (closed exec native) (push native) (fun _ => Nat.zero_le 2)
+  omega
 
 /-- Insert one private helper before the physical bank. In the logical owner
 order it follows the data and precedes both controls. -/

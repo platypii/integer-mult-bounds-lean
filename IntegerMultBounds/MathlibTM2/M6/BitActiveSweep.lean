@@ -105,7 +105,8 @@ theorem activeIntervalWriteback {P U : Type} {M N Q price a w W : ℕ} (lane : D
       let position := packedChildPosition wide (size.trans span)
       ∃ z F n y v mergedState k, Exec host worker (mk u S) k (mk v mergedState) ∧
         Exec host (worker.seq finish) (mk u S) n (mk z F) ∧ z.user = u.user ∧
-        n ≤ (298*(T+5)+33)*(V*142080)+142081*(8*V+10)+price+64 +
+        k ≤ (298*(T+5)+13)*(V*142080)+142081*(8*V+10)+price+41 ∧
+        n ≤ k+18*(V*142080)+23 +
           (slots.map fun j => 4*(mergedState.L j).length+2*(mergedState.R j).length+4).sum ∧
         (∀ i, F.L (place i) = [] ∧ F.R (place i) = []) ∧
         RecordReady (b := prime) (w := w) (d := 16) (W := W) bank (prime^(w+1)).size W.size record
@@ -141,7 +142,7 @@ theorem activeIntervalWriteback {P U : Type} {M N Q price a w W : ℕ} (lane : D
     ((frame tmp (fun i => (regs i).2.2)).1.trans tl) ((frame tmp (fun i => (regs i).2.2)).2.trans tr)
   have keep j (ne : j ≠ bank 24) (away : ∀ i, place i ≠ j) : D.L j = S.L j ∧ D.R j = S.R j :=
     ⟨(rest j ne (outside away)).1.trans (frame j away).1,(rest j ne (outside away)).2.trans (frame j away).2⟩
-  refine ⟨v,D,_,y,z,F,n,exec,exec.seq back,same.trans user,?_,fun i => empty _ (member i),ready.returnPayload
+  refine ⟨v,D,_,y,z,F,n,exec,exec.seq back,same.trans user,paid,?_,fun i => empty _ (member i),ready.returnPayload
     (fun i ne => keep _ (bank.injective.ne ne) (fun k => disjoint k i))
     (fun k => by simpa only [List.map_ofFn] using (payload k).symm),effect,keep⟩
   rw [← span] at cost
