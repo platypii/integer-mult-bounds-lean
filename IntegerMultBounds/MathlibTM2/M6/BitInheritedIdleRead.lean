@@ -37,21 +37,8 @@ theorem mergedPayload {T c m V : ℕ} (bank : Fin (((1+c)+2)+2) ↪ Fin T)
     (S : Stacks T prime) (word : Fin V → ZMod 2) (data : Fin c → Fin m → ZMod 2)
     (ready : RepT (intervalOwnerBank (putWord (fun _ => blank) 0
       (List.ofFn fun k => SparseRoleCircuit.encode (word k))) data) (embStk bank S).L (embStk bank S).R) :
-    Cover.Fallback.RecordPayload (bank 0) (fun _ => blank) 0 word S := by
-  intro z
-  rw [encodedOwnerCell]
-  have zero : ((((0 : Fin 1).castAdd c).castAdd 2).castAdd 2) = 0 := Fin.ext rfl
-  rw [← zero]
-  simpa only [intervalOwnerBank,CyclicRowSplit.bank,CyclicRowCopy.bank,CyclicRowCopy.payload,
-    CountedLoopReuseAlphabet.bank,Tapes.append,Fin.addCases_left,embStk,Function.comp_apply] using
-    (ready ((((0 : Fin 1).castAdd c).castAdd 2).castAdd 2) z).symm
-
-theorem castPayload {T m n : ℕ} (size : m = n) (port : Fin T) (S : Stacks T prime)
-    (word : Fin n → ZMod 2) :
-    Cover.Fallback.RecordPayload port (fun _ => blank) 0 (fun i => word (i.cast size)) S →
-      Cover.Fallback.RecordPayload port (fun _ => blank) 0 word S := by
-  subst n
-  exact id
+    Cover.Fallback.RecordPayload (bank 0) (fun _ => blank) 0 word S :=
+  intervalOwnerPayload bank S word data ready
 
 def IntervalRun {P U : Type} {N Q : ℕ} (seed : Stacks N prime) (price : ℕ) (lane : Descriptor)
     (reads : let wide := {lane with afterD := lane.afterD*142080}

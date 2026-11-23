@@ -3,6 +3,7 @@ module
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackRecordCleanup
 public import IntegerMultBounds.MathlibTM2.Host.TapeCharge
 public import IntegerMultBounds.MathlibTM2.Host.ForeignStock
+public import IntegerMultBounds.MathlibTM2.M6.BitOwnerRead
 public import IntegerMultBounds.MathlibTM2.M6.BitIntervalSetup
 public import IntegerMultBounds.MathlibTM2.M6.BitHelperFanRun
 
@@ -567,6 +568,26 @@ theorem parkedChildRoundTrip {P U : Type} {T Q : ℕ} (body : P → Pr P (T+1) Q
   exact ⟨(mergeFrame j off).1.trans ((childFrame j off).1.trans (frame j off).1),
     (mergeFrame j off).2.trans ((childFrame j off).2.trans (frame j off).2)⟩
 
+theorem intervalOwnerPayload {T c m V : ℕ} (bank : Fin (((1+c)+2)+2) ↪ Fin T)
+    (S : Stacks T prime) (word : Fin V → ZMod 2) (data : Fin c → Fin m → ZMod 2)
+    (ready : RepT (intervalOwnerBank (putWord (fun _ => blank) 0
+      (List.ofFn fun k => SparseRoleCircuit.encode (word k))) data) (embStk bank S).L (embStk bank S).R) :
+    Cover.Fallback.RecordPayload (bank 0) (fun _ => blank) 0 word S := by
+  intro z
+  rw [encodedOwnerCell]
+  have zero : ((((0 : Fin 1).castAdd c).castAdd 2).castAdd 2) = 0 := Fin.ext rfl
+  rw [← zero]
+  simpa only [intervalOwnerBank,CyclicRowSplit.bank,CyclicRowCopy.bank,CyclicRowCopy.payload,
+    CountedLoopReuseAlphabet.bank,Tapes.append,Fin.addCases_left,embStk,Function.comp_apply] using
+    (ready ((((0 : Fin 1).castAdd c).castAdd 2).castAdd 2) z).symm
+
+theorem castPayload {T m n : ℕ} (size : m = n) (port : Fin T) (S : Stacks T prime)
+    (word : Fin n → ZMod 2) :
+    Cover.Fallback.RecordPayload port (fun _ => blank) 0 (fun i => word (i.cast size)) S →
+      Cover.Fallback.RecordPayload port (fun _ => blank) 0 word S := by
+  subst n
+  exact id
+
 open RecursiveInterchangeLayout in
 /-- A row transpose on the parked child ports executes the full wide transpose
 on the serialized source tape. The helper and the archive are outside the output word. -/
@@ -592,10 +613,8 @@ theorem parkedMoveTranspose {P U : Type} {T Q : ℕ} (body : P → Pr P ((142080
         ∃ z F n, Exec body call (mk v D) n (mk z F) ∧ n ≤ price ∧ z.user = v.user ∧
           HelperFan (Function.Embedding.refl _) (Fin.lastCases (fun _ => 0) rows) F) →
       ∃ z F t, Exec host (wrap call) (mk u S) t (mk z F) ∧
-        t ≤ price+(298*(intervalSplitTapes+5)+5)*(m*142080)+30 ∧ z.user = u.user ∧
-        RepT (intervalOwnerBank (putWord (putWord (fun _ => blank) 0 src) 0
-          (List.ofFn fun i : Fin (m*142080) => SparseRoleCircuit.encode (output (i.cast size)))) rows)
-          (embStk merge F).L (embStk merge F).R ∧
+        t ≤ price+(298*(intervalSplitTapes+5)+35)*volume prime wide ∧ z.user = u.user ∧
+        Cover.Fallback.RecordPayload (saved 0).succ (fun _ => blank) 0 output F ∧
         ∀ j, (∀ k, bank k ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
   intro bank merge host
   obtain ⟨wrap,run⟩ := parkedChildRoundTrip host saved fan apart capacity
@@ -604,10 +623,22 @@ theorem parkedMoveTranspose {P U : Type} {T Q : ℕ} (body : P → Pr P ((142080
   let y : Fin (142080+1) → Fin m → ZMod 2 := Fin.lastCases (fun _ : Fin m => (0 : ZMod 2)) rows
   obtain ⟨z,F,t,exec,paid,user,rep,frame⟩ := run _ price m positive (fun i => x (i.cast size)) y u S source left empty
     (runOnParkedFan saved fan apart body call _ y price child)
-  refine ⟨z,F,t,exec,paid,user,?_,frame⟩
-  have read (k : Fin (m*142080)) : rows (finProdFinEquiv.symm k).2 (finProdFinEquiv.symm k).1 = output (k.cast size) := by
-    obtain ⟨⟨i,j⟩,rfl⟩ := finProdFinEquiv.surjective k
-    simpa only [Equiv.symm_apply_apply] using (transpose_trailingRows lane 142080 x i j).symm
-  simpa only [y,Fin.lastCases_castSucc,read] using rep
+  refine ⟨z,F,t,exec,?_,user,?_,frame⟩
+  · rw [← size]
+    have live : 0 < m*142080 := Nat.mul_pos positive (by decide)
+    apply paid.trans
+    have absorb (a n : ℕ) (pos : 0 < n) :
+        price+(a+5)*n+30 ≤ price+(a+35)*n := by
+      simp only [Nat.add_mul]
+      omega
+    exact absorb _ _ live
+  · have read (k : Fin (m*142080)) : rows (finProdFinEquiv.symm k).2 (finProdFinEquiv.symm k).1 = output (k.cast size) := by
+      obtain ⟨⟨i,j⟩,rfl⟩ := finProdFinEquiv.surjective k
+      simpa only [Equiv.symm_apply_apply] using (transpose_trailingRows lane 142080 x i j).symm
+    simp only [y,Fin.lastCases_castSucc,read] at rep
+    rw [FlatControlledShiftArray.overwrite _ _ _ _ (by simp)] at rep
+    have payload := castPayload size (merge 0) F output (intervalOwnerPayload merge F _ _ rep)
+    change Cover.Fallback.RecordPayload (returnedMergeBank saved fan apart 0).succ _ _ _ _ at payload
+    rwa [returnedMergeBank_target] at payload
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
