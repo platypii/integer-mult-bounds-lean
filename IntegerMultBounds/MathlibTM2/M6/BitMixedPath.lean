@@ -9,13 +9,14 @@ open Shared50ModularControl (prime)
 open Certificates.PR589 Stack Host M8.RevMachine
 
 /-- On a stocked root, packed stage suppliers and a one-node time inequality
-suffice for all recursive idle handoffs along the scheduled paths. -/
+suffice for all recursive idle handoffs along the scheduled paths. Each active
+call has its own allowance for preparing and returning the child. -/
 theorem mixedPathHandoff {U : Type} (minimum : ℝ) :
     ∃ (states : ℕ) (rate C : ℝ) (base nt : ℕ), 0 ≤ rate ∧ minimum ≤ rate ∧
     ∀ {Q : ℕ}, states ≤ Q → ∀ (root : Descriptor) (depth cutoff blocks : ℕ),
     root.Positive → 0 < root.width → 64^depth ∣ root.width → 142080^(depth+1) ∣ root.rows →
     root.beforeH = blocks*prime^(64*root.width) → root.width*42^depth ≤ cutoff*64^depth →
-    ∀ time : Descriptor → ℕ,
+    ∀ (time : Descriptor → ℕ) (callCost : Descriptor → Fin nodeChildren5.length → ℕ),
     let visit := fun path => List.foldl (scheduledChild prime) root path
     (∀ path, let node := visit path
       cutoff < node.width → ∀ w groups B, node.width = 64*(w+1) →
@@ -24,7 +25,10 @@ theorem mixedPathHandoff {U : Type} (minimum : ℝ) :
       let W := node.beforeRows*groups*node.beforeH*node.between*node.afterD
       let m := (prime^(w+1))^128*(W*142080)
       let child := scheduledChild prime node
-      let budget := fun j => if cutoff < (child j).width then time (child j) else
+      let childTime := fun j => if cutoff < (child j).width then time (child j) else
+        ⌊(rate*((child j).width : ℝ)^M8.Machine.BudgetBound.tau)*volume prime (child j)⌋₊
+      let localCall := fun j => if cutoff < (child j).width then callCost node j else 0
+      let budget := fun j => if cutoff < (child j).width then time (child j)+callCost node j else
         ⌊(rate*((child j).width : ℝ)^M8.Machine.BudgetBound.tau)*volume prime (child j)⌋₊
       let atPos := fun n => if h : n < nodeChildren5.length then budget ⟨n,h⟩ else 0
       (∀ j, cutoff < (child j).width → (child j).width < node.width →
@@ -38,11 +42,11 @@ theorem mixedPathHandoff {U : Type} (minimum : ℝ) :
         142081*(8*m+10)+1
       let idle := ∑ i, (idleCopies.map (fun k => idleCutoffCharge U i w W cutoff 0 k 0)).sum
       (∑ i, overhead i)+idle+9*(1+142081*(8*m+10)+1)+
-        9*(2*(76*17760*m*(142081+7)+6)+1+(142081*(8*m+10)+1))+2+(∑ j, budget j) ≤ time node) →
+        9*(2*(76*17760*m*(142081+7)+6)+1+(142081*(8*m+10)+1))+2+(∑ j, localCall j)+(∑ j, childTime j) ≤ time node) →
     ∀ path, cutoff < (visit path).width → PackedDescriptorHandoff U Q (visit path) (time (visit path)) := by
   obtain ⟨states,rate,C,base,nt,pos,enough,step⟩ := mixedPackedNode (U := U) minimum
   refine ⟨states,rate,C,base,nt,pos,enough,?_⟩
-  intro Q room root depth cutoff blocks positive width widths rows labels stop time visit stages path active
+  intro Q room root depth cutoff blocks positive width widths rows labels stop time callCost visit stages path active
   generalize eq : (visit path).width = n
   induction n using Nat.strong_induction_on generalizing path with
   | h n ih =>
@@ -60,8 +64,20 @@ theorem mixedPathHandoff {U : Type} (minimum : ℝ) :
       obtain ⟨a,g,b,c,d⟩ := live
       change 0 < 142080*groups at g
       exact Nat.mul_pos (Nat.mul_pos (Nat.mul_pos (Nat.mul_pos a (Nat.pos_of_mul_pos_left g)) b) c) d
+    have charge (j) :
+        (if cutoff < (child j).width then time (child j)+callCost node j else
+          ⌊(rate*((child j).width : ℝ)^M8.Machine.BudgetBound.tau)*volume prime (child j)⌋₊) =
+        (if cutoff < (child j).width then time (child j) else
+          ⌊(rate*((child j).width : ℝ)^M8.Machine.BudgetBound.tau)*volume prime (child j)⌋₊) +
+          (if cutoff < (child j).width then callCost node j else 0) := by
+      by_cases h : cutoff < (child j).width <;> simp only [h,ite_true,ite_false,Nat.add_zero]
     have run := step room node w groups W B cutoff shape split rfl hW label hB hK live
-      (fun j => time (scheduledChild prime node j)) P t body coeff required children runs ready
-    exact ⟨run.1,handoff_le run.2 paid⟩
+      (fun j => time (child j)+callCost node j) P t body coeff required (fun j above smaller => by
+        obtain ⟨aligned,worker⟩ := children j above smaller
+        exact ⟨aligned,handoff_le worker (Nat.le_add_right _ _)⟩) runs ready
+    refine ⟨run.1,handoff_le run.2 ?_⟩
+    have total := Finset.sum_congr (s₁ := Finset.univ) rfl (fun j _ => charge j)
+    rw [Finset.sum_add_distrib] at total
+    exact (Nat.add_le_add_left total.le _).trans (by rwa [← Nat.add_assoc, Nat.add_right_comm _ _ _])
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode

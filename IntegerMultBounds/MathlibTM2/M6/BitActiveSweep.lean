@@ -143,6 +143,40 @@ theorem activeMoveInterval {U : Type} {Q time : ℕ} (child : Descriptor)
     (packed k).symm.trans (packActive_packed child.width (W*142080) (position k)).symm
   exact (coords.transpose_iff rfl x _).2 rfl
 
+/-- The prepared MOVE worker pays linear overhead on the full word. Its
+split and merge preserve the already packed layout at every atom width. -/
+theorem activeMoveWorker {U : Type} {Q price : ℕ} (child : Descriptor)
+    (split : 142080 ∣ child.rows) (recursive : PackedDescriptorHandoff U Q child price)
+    (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q) :
+    let lane := packedDescriptor child.width (CopyChildLayout.spectators child / 142080)
+    let wide := {lane with afterD := lane.afterD*142080}
+    let m := volume prime wide
+    0 < volume prime lane →
+    ∃ (P : Type) (H : ℕ) (slot : Fin H) (host : P → Pr P H Q prime U)
+      (code : Pr P H Q prime U) (stock : Stacks H prime),
+    ∀ (x : Fin m → ZMod 2) u (S : Stacks H prime), S.L slot = [] →
+      S.R slot = List.ofFn (fun k => SparseRoleCircuit.encode (x k)) →
+      (∀ j, j ≠ slot → S.L j = stock.L j ∧ S.R j = stock.R j) →
+      ∃ z F n y, Exec host code (mk u S) n (mk z F) ∧
+        n ≤ price+(298*(intervalSplitTapes+5)+25)*m ∧ z.user = u.user ∧
+        RecordPayload slot (fun _ => blank) 0 y F ∧
+        ∀ (position : Fin (volume prime child) ≃ Fin m),
+          (∀ k, (position k).val = (CopyChildLayout.packActive child k).val) →
+          ∀ k, y (position k) = Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (x ∘ position) k := by
+  intro lane wide m positive
+  obtain ⟨P,N,seed,run⟩ := activeMoveInterval child split recursive capacity positive
+  obtain ⟨host,code,stock,execute⟩ := inheritedSeededWorker_exec lane run
+  refine ⟨Empty ⊕ P,_,((0 : Fin intervalSplitTapes).natAdd 142082).castAdd N,host,code,stock,?_⟩
+  intro x u S left right fresh
+  obtain ⟨z,F,n,y,exec,paid,user,payload,reads⟩ := execute x u S left right fresh
+  refine ⟨z,F,n,y,exec,?_,user,payload,reads⟩
+  have size : m = volume prime lane*142080 := by simp [m,wide,volume,Nat.mul_assoc]
+  rw [size]
+  change n ≤ (149*(intervalSplitTapes+5)+5)*(volume prime lane*142080)+24+
+    ((142081*(8*volume prime lane+10)+1+price)+(149*(volume prime lane*142080)*(intervalSplitTapes+5)+6)) at paid
+  norm_num [intervalSplitTapes] at paid ⊢
+  omega
+
 /-- A worker acting on the positioned payload can resume the caller directly
 when it restores every other tape. This also restores the saved stack. -/
 theorem bankTransposeOfPayload {P U : Type} {n T Q w W : ℕ} {node child : Descriptor}

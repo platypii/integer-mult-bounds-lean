@@ -34,14 +34,35 @@ private theorem copyIntervalRead {child : Descriptor} {w W : ℕ}
     simp only [wide,lane,phaseIntervalChild,Nat.mul_assoc]
   exact transposeRead position size shape _ coords (by simpa only [wide,lane,phaseIntervalChild] using width.symm) x
 
+private theorem copyIntervalBill (U : Type) :
+    ∃ C : ℝ, 0 < C ∧ ∀ w W price n : ℕ, 0 < W →
+      let V := (prime^(w+1))^16*W
+      n ≤ (149*(intervalSplitTapes+5)+5)*(V*142080)+24 + ((21*(w+1)+13) +
+        (intervalChildToll U 0 7 w W 8 + price + (149*(V*142080)*(intervalSplitTapes+5)+6))) →
+      (n : ℝ) ≤ price+C*V*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau := by
+  obtain ⟨a,b,toll⟩ := intervalChildToll_fixed_le U 0 7 8 (by decide)
+  let fixed := (298*(intervalSplitTapes+5)+5)*142080+64
+  obtain ⟨C,pos,bound⟩ := copyReturn_parentCost (a+fixed) b
+  refine ⟨C,pos,?_⟩
+  intro w W price n hW V paid
+  have volumeBound : w+1 ≤ V := (Nat.lt_pow_self Shared50ModularControl.prime_prime.one_lt).le.trans
+    ((Nat.le_self_pow (by decide : 16 ≠ 0) _).trans (Nat.le_mul_of_pos_right _ hW))
+  have fee := toll w W hW
+  change _ ≤ (a+b*swapVolumeRate w)*V at fee
+  apply bound
+  rw [show a+fixed+b*swapVolumeRate w = (a+b*swapVolumeRate w)+fixed by omega,Nat.add_mul]
+  dsimp only [fixed]
+  norm_num [intervalSplitTapes] at paid ⊢
+  omega
+
 /-- Run the rank-seven COPY on a prepared bank using the scheduled recursive
 child. Split, pack, execute, unpack and merge at the caller's COPY positions. -/
-theorem activeCopyWorker {U : Type} {Q price : ℕ} (child : Descriptor) (w W : ℕ)
-    (width : child.width = 7*(w+1)) (positive : 0 < W) (capacity : rowSwapBlock.states ≤ Q)
-    (mergeCap : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q)
-    (position : Fin (volume prime child) ≃ Fin ((prime^(w+1))^16*(W*142080)))
-    (coords : CopyIntervalPositions child (w+1) (W*142080) position)
-    (recursive : PackedDescriptorHandoff U Q child price) :
+theorem activeCopyWorker (U : Type) :
+    ∃ C : ℝ, 0 < C ∧ ∀ {Q price : ℕ} (child : Descriptor) (w W : ℕ),
+    child.width = 7*(w+1) → 0 < W → rowSwapBlock.states ≤ Q →
+    (let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q) →
+    ∀ (position : Fin (volume prime child) ≃ Fin ((prime^(w+1))^16*(W*142080))),
+    CopyIntervalPositions child (w+1) (W*142080) position → PackedDescriptorHandoff U Q child price →
     let V := (prime^(w+1))^16*W
     let m := (prime^(w+1))^16*(W*142080)
     ∃ (P : Type) (H : ℕ) (slot : Fin H) (host : P → Pr P H Q prime U)
@@ -50,11 +71,12 @@ theorem activeCopyWorker {U : Type} {Q price : ℕ} (child : Descriptor) (w W : 
       S.R slot = List.ofFn (fun k => SparseRoleCircuit.encode (x k)) →
       (∀ k, k ≠ slot → S.L k = stock.L k ∧ S.R k = stock.R k) →
       ∃ z F n y, Exec host program (mk u S) n (mk z F) ∧
-        n ≤ (149*(intervalSplitTapes+5)+5)*(V*142080)+24 + ((21*(w+1)+13) +
-          (intervalChildToll U 0 7 w W 8 + price + (149*(V*142080)*(intervalSplitTapes+5)+6))) ∧
+        n ≤ ⌊(price : ℝ)+C*V*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau⌋₊ ∧
         z.user = u.user ∧ RecordPayload slot (fun _ => blank) 0 y F ∧
           ∀ k, y (position k) = Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (x ∘ position) k := by
-  intro V m
+  obtain ⟨C,pos,bound⟩ := copyIntervalBill U
+  refine ⟨C,pos,?_⟩
+  intro Q price child w W width positive capacity mergeCap position coords recursive V m
   obtain ⟨aligned,call⟩ := recursive
   have count := Fintype.card_congr position
   simp only [Fintype.card_fin,← Nat.mul_assoc] at count
@@ -77,7 +99,9 @@ theorem activeCopyWorker {U : Type} {Q price : ℕ} (child : Descriptor) (w W : 
   obtain ⟨z,F,n,exec,paid,user,result⟩ := run x u S left
     (right.trans (castWord interleave (fun k => SparseRoleCircuit.encode (x k))).symm) ready
   refine ⟨z,F,n,Shared50RecursiveNodeRows.transpose (one_dvd wide.rows) x,exec,?_,user,?_,?_⟩
-  · rw [← size]; exact paid
+  · apply Nat.le_floor
+    apply bound w W price n positive
+    simpa only [phaseIntervalChild_volume (by decide : 0 ≤ 7) (by decide : 7 ≤ 8)] using paid
   · exact castPayload interleave _ _ _ (mergedPayload bank F _ _ result)
   · exact copyIntervalRead width position coords physical x
 
