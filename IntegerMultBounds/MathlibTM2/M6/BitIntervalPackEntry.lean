@@ -21,6 +21,75 @@ def IntervalHeaderInputs {T : ℕ} (headers : Fin 6 ↪ Fin T) (width : Fin T)
       RadixZeroFill.encodedBinary (FlatCoordinateSchedule.bits (![prime^(w+1),W,1] i)) z) ∧
   S.R width = binSyms (w+1).size (w+1)
 
+/-- Read modulus, suffix and unit on the idle directory's own registers. -/
+def intervalDirectoryPorts : Fin 6 ↪ Fin 72 := ⟨![28,33,34,35,2,53],by decide⟩
+
+omit [M8.Machine.Net] in
+theorem intervalDirectoryInputs_exec {T Q : ℕ} (body : P → Pr P T Q prime U) (bank : Fin 72 ↪ Fin T)
+    (w W : ℕ) (v : HS T Q prime U) (S : Stacks T prime)
+    (base : S.R (bank 2) = binSyms (prime^(w+1)).size (prime^(w+1)))
+    (suffix : S.R (bank 53) = binSyms W.size W) (unit : S.R (bank 28) = binSyms 1 1)
+    (left : ∀ i, S.L (bank (intervalDirectoryPorts (copyRecordSources i))) = [separator])
+    (atom : (S.R (bank 71)).length = w+1)
+    (empty : ∀ i : Fin 72, 59 ≤ i.val → i.val ≤ 65 → S.R (bank i) = []) :
+    let F := {S with R := Function.update S.R (bank 59) (binSyms (w+1).size (w+1))}
+    ∃ u n, Exec body (unaryBinary (bank 71) (bank 59) (bank 60) (bank 61)
+      (bank 62) (bank 63) (bank 64) (bank 65)) (mk v S) n (mk u F) ∧
+      n ≤ 21*(w+1)+10 ∧ u.user = v.user ∧
+      IntervalHeaderInputs (intervalDirectoryPorts.trans bank) (bank 59) w W F := by
+  intro F
+  obtain ⟨u,n,user,paid,run⟩ := unaryBinary_exec (body := body)
+    ((by decide : ([71,59,60,61,62,63,64,65] : List (Fin 72)).Nodup).map bank.injective)
+    _ v S atom (by simp only [List.mem_cons,List.not_mem_nil,or_false]; rintro k (rfl|rfl|rfl|rfl|rfl|rfl|rfl) <;> apply empty <;> decide)
+  refine ⟨u,n,run,paid,user,fun i z => ?_,by simp [F]⟩
+  let value := ![prime^(w+1),W,1]
+  have raw : S.R (bank (intervalDirectoryPorts (copyRecordSources i))) = binSyms (value i).size (value i) := by
+    fin_cases i
+    · exact base
+    · exact suffix
+    · change S.R (bank 28) = binSyms (1 : ℕ).size 1
+      simpa using unit
+  have away := bank.injective.ne ((by decide : ∀ i, intervalDirectoryPorts (copyRecordSources i) ≠ 59) i)
+  change readAt blank (S.L (bank (intervalDirectoryPorts (copyRecordSources i)))) (Function.update S.R (bank 59) _ (bank (intervalDirectoryPorts (copyRecordSources i)))) _ =
+    RadixZeroFill.encodedBinary (FlatCoordinateSchedule.bits (value i)) z
+  rw [Function.update_of_ne away,raw,← canonicalBits_symbols,left i,encodedBinary_eq,readAt_single]
+
+omit [M8.Machine.Net] in
+/-- Put the three directory words at the header origin before converting
+the width. Every other left stack and every other right stack is preserved. -/
+theorem intervalDirectorySetup_exec {T Q : ℕ} (body : P → Pr P T Q prime U) (bank : Fin 72 ↪ Fin T) :
+    ∃ program : Pr P T Q prime U, ∀ w W (v : HS T Q prime U) (S : Stacks T prime),
+      let hdr := (copyRecordSources.trans intervalDirectoryPorts).trans bank
+      S.R (bank 2) = binSyms (prime^(w+1)).size (prime^(w+1)) →
+      S.R (bank 53) = binSyms W.size W → S.R (bank 28) = binSyms 1 1 →
+      (∀ i, S.L (hdr i) = []) → (S.R (bank 71)).length = w+1 →
+      (∀ i : Fin 72, 59 ≤ i.val → i.val ≤ 65 → S.R (bank i) = []) →
+      ∃ u F n, Exec body program (mk v S) n (mk u F) ∧ n ≤ 21*(w+1)+13 ∧ u.user = v.user ∧
+        IntervalHeaderInputs (intervalDirectoryPorts.trans bank) (bank 59) w W F ∧
+        (∀ j, (∀ i, hdr i ≠ j) → F.L j = S.L j) ∧ ∀ j, bank 59 ≠ j → F.R j = S.R j := by
+  let hdr := (copyRecordSources.trans intervalDirectoryPorts).trans bank
+  let mark : Fin 3 → Act T Q prime U := fun i => WordCmd.pushL (hdr i) [separator (a := prime)]
+  refine ⟨(Prog.act (mark 0)).seq ((Prog.act (mark 1)).seq ((Prog.act (mark 2)).seq
+    (unaryBinary (bank 71) (bank 59) (bank 60) (bank 61) (bank 62) (bank 63) (bank 64) (bank 65)))),?_⟩
+  intro w W v S _ base suffix unit blankLeft atom empty
+  change ∀ i, S.L (hdr i) = [] at blankLeft
+  let install := fun (i : Fin 3) (D : Stacks T prime) =>
+    {D with L := Function.update D.L (hdr i) ([separator] ++ D.L (hdr i))}
+  have step (i : Fin 3) (D : Stacks T prime) :
+      Exec body (Prog.act (mark i)) (mk v D) 1 (mk v (install i D)) := by
+    simpa only [mark,WordCmd.pushL_run,List.reverse_singleton,install] using
+      (Exec.act (body := body) (mark i) (mk v D))
+  let D := install 2 (install 1 (install 0 S))
+  have left (i : Fin 3) : D.L (hdr i) = [separator] := by
+    fin_cases i <;> simp [D,install,Function.update_apply,hdr.injective.eq_iff,blankLeft]
+  obtain ⟨u,n,run,paid,user,inputs⟩ := intervalDirectoryInputs_exec body bank w W v D base suffix unit left atom empty
+  refine ⟨u,_,_,(step 0 S).seq ((step 1 _).seq ((step 2 _).seq run)),by omega,user,inputs,?_,?_⟩
+  · intro j away
+    change ∀ i, hdr i ≠ j at away
+    simp [D,install,Function.update_of_ne,(away 0).symm,(away 1).symm,(away 2).symm]
+  · intro j away
+    exact Function.update_of_ne away.symm _ _
+
 omit [M8.Machine.Net] in
 theorem IntervalHeaderInputs.of_frame {B T w W : ℕ} {headers : Fin 6 ↪ Fin T}
     {width : Fin T} {S F : Stacks T prime} (inputs : IntervalHeaderInputs headers width w W S)
