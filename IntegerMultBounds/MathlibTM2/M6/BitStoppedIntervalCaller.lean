@@ -11,7 +11,7 @@ open Shared50ModularControl (prime)
 
 /-- Return the stopped transpose to the original caller record, clearing the child
 workspace and preserving both stacks on every other caller tape. -/
-private theorem seededStoppedInterval [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity : columnCapacity ≤ Q)
+theorem seededStoppedInterval [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity : columnCapacity ≤ Q)
     (mergeCap : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q) :
     ∃ (C : ℝ) (N : ℕ) (table : Unit → Pr Unit N Q prime U)
       (port : Fin N) (master : Fin 6 ↪ Fin N), 0 ≤ C ∧ (∀ i, master i ≠ port) ∧
