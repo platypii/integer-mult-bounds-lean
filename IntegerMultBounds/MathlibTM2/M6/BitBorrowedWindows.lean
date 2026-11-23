@@ -388,7 +388,7 @@ theorem alignedPhases_host [M8.Machine.Net] (stage : Fin 9) (run : Fin 32 × Fin
   obtain ⟨gq,gateRuns⟩ := scheduledGates_host owner
   refine ⟨tapes,T,max mq gq,ports,fan,bank,?_⟩
   intro P U Q cap localBody f proc body
-  obtain ⟨base,swaps,build⟩ := moves ((le_max_left ..).trans cap) localBody f
+  obtain ⟨base,swaps,moveCode,build⟩ := moves ((le_max_left ..).trans cap) localBody f
   refine ⟨base,swaps,?_⟩
   intro node w B rows width split label M K W V pos record desc
   have volumeEq : B*prime^(64*((w+1)*64))*(M^112*K) = W := by dsimp only [W]; ring
@@ -400,12 +400,12 @@ theorem alignedPhases_host [M8.Machine.Net] (stage : Fin 9) (run : Fin 32 × Fin
   intro childTime recurse start work
   let ready := fun data (S : Stacks T prime) => HelperFan (V := V) fan data S ∧ stock S
   have size : 0 < V := Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) pos
-  have gates := gateRuns ((le_max_right ..).trans cap) size fan body stock frame
+  choose gateCode gateRun using gateRuns ((le_max_right ..).trans cap) fan body
   have phases := scheduledScalarPhase_host (w := w) (W := W) stage run.1 run.2 body ready
-    (fun j _ => work j + childTime j) gates (by
+    (fun j _ => work j + childTime j) (fun g hg => ⟨gateCode g hg,gateRun g hg size stock frame⟩) (by
       intro i
-      obtain ⟨code,step⟩ := steps i
-      refine ⟨code,?_⟩
+      have step := steps i
+      refine ⟨moveCode i,?_⟩
       intro data u S ok
       obtain ⟨z,F,t,y,exec,paid,user,rep,guard,reads⟩ := step (childTime (child i).val) (recurse i) data u S ok.1 ok.2
       have atChild : (child i).val-start = i.val := by

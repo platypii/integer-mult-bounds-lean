@@ -479,12 +479,11 @@ theorem scalarOwnerBlock {k : ℕ} (owner : Fin 661 ↪ Fin k) :
   induction gates with
   | nil => exact ⟨.act .done,fun x u S live => ⟨u,S,1,Exec.act _ _,by simp,rfl,live⟩⟩
   | cons g gs ih =>
-    obtain ⟨code,one⟩ := build (P := Empty) (U := U) capacity pos fan Empty.elim (fun _ => True)
-      (by intros; trivial) g (included _ (by simp))
+    obtain ⟨code,one⟩ := build (P := Empty) (U := U) capacity fan Empty.elim g (included _ (by simp))
     obtain ⟨tail,rest⟩ := ih (fun h hm => included h (List.mem_cons_of_mem _ hm))
     refine ⟨code.seq tail,?_⟩
     intro x u S live
-    obtain ⟨v,D,n,y,run,paid,user,ready,keep,update⟩ := one x u S ⟨live,trivial⟩
+    obtain ⟨v,D,n,y,run,paid,user,ready,keep,update⟩ := one pos (fun _ => True) (by intros; trivial) x u S ⟨live,trivial⟩
     have eq : y = effect x g := by
       funext i
       by_cases h : ∃ j, owner j = i

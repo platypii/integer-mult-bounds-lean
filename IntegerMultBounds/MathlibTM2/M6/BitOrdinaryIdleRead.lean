@@ -2105,7 +2105,7 @@ theorem allocatedPhaseMove_host [M8.Machine.Net] {k : ℕ} (src : Fin k)
     let privateSlot := fun j => j ≠ payload ∧ ¬ ((∀ l, a l ≠ j) ∧ (∀ l, ports l ≠ j) ∧ (∀ l, b l ≠ j))
     (∀ j, privateSlot j → ∀ l, fan l ≠ j) ∧ fan (src.castAdd 2) = payload ∧ a ((0 : Fin 1).castAdd _) = payload ∧ b ((0 : Fin 1).castAdd _) = payload ∧
     ∀ {P U : Type} {Q : ℕ}, states ≤ Q → ∀ (body : P → Pr P T Q prime U) (f : P),
-    ∃ base swaps : ℕ, ∀ (node : Descriptor) (i : Fin nodeChildren5.length) (w B rows : ℕ),
+    ∃ (base swaps : ℕ) (code : Pr P T Q prime U), ∀ (node : Descriptor) (i : Fin nodeChildren5.length) (w B rows : ℕ),
     nodeChildren5[i.val] = Geometry.moveRank p.1 p.2 → node.width = 64*(w+1) →
     node.rows = 142080*rows → node.beforeH = B*prime^(64*((w+1)*64)) →
     let M := prime^(w+1)
@@ -2133,7 +2133,7 @@ theorem allocatedPhaseMove_host [M8.Machine.Net] {k : ℕ} (src : Fin k)
         RepT (input B' old) (embStk b D).L (embStk b D).R ∧ stored old D ∧ clean D)
     (∀ (owners : Stacks (k+2) prime) (L R : List (Fin (prime+4))), (∀ z, readAt blank L R (z-q) = RadixToBinary.binaryEncoding.encode (dest z)) →
       ∃ seed, embStk fan seed = owners ∧ stock seed) ∧
-    ∃ code : Pr P T Q prime U, ∀ budget,
+    ∀ budget,
     (desc.width < node.width → ∀ u D word, stored word D → clean D →
       ∃ z F n changed, Exec body (body f) (mk u D) n (mk z F) ∧ n ≤ budget ∧ z.user = u.user ∧
         stored changed F ∧ clean F ∧ (∀ j, (∀ l, ports l ≠ j) → F.L j = D.L j ∧ F.R j = D.R j) ∧
@@ -2166,7 +2166,15 @@ theorem allocatedPhaseMove_host [M8.Machine.Net] {k : ℕ} (src : Fin k)
   intro P U Q fits body f
   obtain ⟨setup,swaps,run⟩ := build (k := k) ports body f (by omega)
   let rate := fun (stages : List (FlatCoordinateSchedule.Op 16)) => FlatCoordinateCleanSchedule.constant stages*(1+FlatCoordinateCleanSchedule.tapeCount stages+5)
-  refine ⟨rate A+rate B'+setup+16,swaps,?_⟩
+  let pack := fun js => statePlacedNormalized (U := U) ports (show rowSwapBlock.states ≤ Q by omega)
+    swapStates_pos (Empty.elim : Empty → P) (packSchedule 16 js)
+  let is := phasePackSchedule (min (Geometry.Dimensions.value p.1) (Geometry.Dimensions.value p.2))
+    (max (Geometry.Dimensions.value p.1) (Geometry.Dimensions.value p.2))
+  let middle := (pack is).seq ((Prog.call f).seq (pack is.reverse))
+  let machine := fun (stages : List (FlatCoordinateSchedule.Op 16)) =>
+    Placement.placed (FlatCoordinateCleanSchedule.program stages) (sharedPlacement (0 : Fin 1) (segmentSource stages))
+  refine ⟨rate A+rate B'+setup+16,swaps,(embProg a (Empty.elim : Empty → P) (foreign (liftQ (machine A) (show qa ≤ Q by omega)))).seq
+    (middle.seq (embProg b (Empty.elim : Empty → P) (foreign (liftQ (machine B') (show qb ≤ Q by omega))))),?_⟩
   intro node i w B rows rank width split label M K W V hW record dest q desc bank stored clean live
   obtain ⟨position,offset,step⟩ := run node i w B rows rank width split label hW
   have useMove := step a b (show qa ≤ Q by omega) (show qb ≤ Q by omega) srcA srcB apart privateB fan src shared
@@ -2178,14 +2186,6 @@ theorem allocatedPhaseMove_host [M8.Machine.Net] {k : ℕ} (src : Fin k)
     obtain ⟨D,ha,hb,hr,hc⟩ := basisRecordSeed A B' ports a b srcA srcB apart privateB view size record dest q L R readDest
     exact ⟨embOvr fan owners.get D,embStk_ovr fan.injective owners D,D,⟨0,ha,hb,hr,hc⟩,
       fun j hj => embOvr_off _ _ (disjoint j hj)⟩
-  let pack := fun js => statePlacedNormalized (U := U) ports (show rowSwapBlock.states ≤ Q by omega)
-    swapStates_pos (Empty.elim : Empty → P) (packSchedule 16 js)
-  let is := phasePackSchedule lo hi
-  let middle := (pack is).seq ((Prog.call f).seq (pack is.reverse))
-  let machine := fun (stages : List (FlatCoordinateSchedule.Op 16)) =>
-    Placement.placed (FlatCoordinateCleanSchedule.program stages) (sharedPlacement (0 : Fin 1) (segmentSource stages))
-  refine ⟨(embProg a (Empty.elim : Empty → P) (foreign (liftQ (machine A) (show qa ≤ Q by omega)))).seq
-    (middle.seq (embProg b (Empty.elim : Empty → P) (foreign (liftQ (machine B') (show qb ≤ Q by omega))))),?_⟩
   intro budget child data u S liveS stockS
   obtain ⟨y,z,F,t,exec,time,user,rep,kept,_,action⟩ := useMove budget child data u S liveS stockS
   exact ⟨z,F,t,y,exec,time,user,rep,kept,action⟩
@@ -2244,7 +2244,7 @@ theorem scheduledMoves_host [M8.Machine.Net] (stage : Fin 9) (run : Fin 32 × Fi
     ∀ {P U : Type} {Q : ℕ}, states ≤ Q → ∀ (localBody : ∀ i, P → Pr P (tapes i) Q prime U) (f : I → P),
     let proc := fun (i : I) (g : P) => (i,g)
     let body := fun g : I × P => embProg (bank g.1) (proc g.1) (localBody g.1 g.2)
-    ∃ base swaps : I → ℕ, ∀ (node : Descriptor) (w B rows : ℕ),
+    ∃ (base swaps : I → ℕ) (program : I → Pr (I × P) T Q prime U), ∀ (node : Descriptor) (w B rows : ℕ),
     node.width = 64*(w+1) → node.rows = 142080*rows → node.beforeH = B*prime^(64*((w+1)*64)) →
     let M := prime^(w+1)
     let K := M^112*(node.beforeRows*rows*node.between*node.afterD)
@@ -2264,12 +2264,12 @@ theorem scheduledMoves_host [M8.Machine.Net] (stage : Fin 9) (run : Fin 32 × Fi
     (∀ i h, (position i h).val = (CopyChildLayout.packActive (desc i) h).val) ∧
     (∀ owners, ∃ S, embStk fan S = owners ∧ stock S) ∧
     (∀ S F, stock S → (∀ j, (∀ l, fan l ≠ j) → F.L j = S.L j ∧ F.R j = S.R j) → stock F) ∧
-    ∀ i, ∃ code, ∀ budget,
+    ∀ i budget,
     ((desc i).width < node.width → ∀ u D word, stored i word D → clean i D →
       ∃ z F t changed, Exec (localBody i) (localBody i (f i)) (mk u D) t (mk z F) ∧ t ≤ budget ∧ z.user = u.user ∧
         stored i changed F ∧ clean i F ∧ (∀ j, (∀ l, ports i l ≠ j) → F.L j = D.L j ∧ F.R j = D.R j) ∧
         ∀ h, changed (position i h) = Shared50RecursiveNodeRows.transpose (one_dvd (desc i).rows) (word ∘ position i) h) →
-    ∀ data u S, live data S → stock S → ∃ z F t y, Exec body code (mk u S) t (mk z F) ∧
+    ∀ data u S, live data S → stock S → ∃ z F t y, Exec body (program i) (mk u S) t (mk z F) ∧
       t ≤ budget+(base i+swaps i*swapVolumeRate w)*V ∧ z.user = u.user ∧ live (Function.update data (src i) y) F ∧
       stock F ∧ ∀ s (j : Fin W), y (index (AffineFieldCoordinates.embed (AffineFieldProgram.run (selectedWord (w+1) (edge i)) s)) j) =
         data (src i) (index (AffineFieldCoordinates.embed s) j) := by
@@ -2283,23 +2283,21 @@ theorem scheduledMoves_host [M8.Machine.Net] (stage : Fin 9) (run : Fin 32 × Fi
   refine ⟨tapes,T,Finset.univ.sup states,ports,fan,bank,?_⟩
   intro P U Q capacity localBody f proc body
   have fits (i) : states i ≤ Q := (Finset.le_sup (Finset.mem_univ i)).trans capacity
-  choose base swaps runMove using fun i => (layout i).2.2.2.2 (fits i) (localBody i) (f i)
-  refine ⟨base,swaps,?_⟩
+  choose base swaps code runMove using fun i => (layout i).2.2.2.2 (fits i) (localBody i) (f i)
+  refine ⟨base,swaps,fun i => embProg (bank i) (proc i) (code i),?_⟩
   intro node w B rows width split label M K W V hW record desc regs stored clean live
   choose position offset calls using fun i => runMove i node (child i) w B rows (phaseChildPositions.choose_spec stage run i).1 width split label hW (record i) (fun _ => blank) 0
   let owners : Stacks (142081+2) prime := ⟨[],[],fun _ => [],fun _ => []⟩
   have seeds (i) := (calls i).1 owners [] [] (fun z => by simp [readAt_nil_left,wordTape_nil]; rfl)
-  choose code step using fun i => (calls i).2
   obtain ⟨prepare,frame,place⟩ := family _ _ (fun i => (layout i).1) (fun i => by
     obtain ⟨S,_,ready⟩ := seeds i
     exact ⟨S,ready⟩)
   refine ⟨position,_,offset,prepare,frame,?_⟩
   intro i
-  refine ⟨embProg (bank i) (proc i) (code i),?_⟩
   intro budget recurse data u S represented ready
   have project (D : Stacks T prime) : embStk (fans i) (embStk (bank i) D) = embStk fan D := by
     simp only [embStk,Function.comp_def,shared]
-  obtain ⟨z,F,t,y,exec,time,user,rep,kept,action⟩ := step i budget recurse data (embDn (bank i) u) (embStk (bank i) S)
+  obtain ⟨z,F,t,y,exec,time,user,rep,kept,action⟩ := (calls i).2 budget recurse data (embDn (bank i) u) (embStk (bank i) S)
     (by dsimp only; rw [project]; exact represented) (ready i)
   obtain ⟨v,G,placed,same,view,stock⟩ := place localBody i (code i) u S z F t ready exec kept
   exact ⟨v,G,t,y,placed,time,same.trans user,by dsimp only [live]; rw [view]; exact rep,stock,action⟩
@@ -3070,27 +3068,27 @@ open IntegerMultBounds.Networks.Certificates.PR589 in
 /-- Place the scalar gates on the owner ports while preserving any stock
 whose representation depends only on private tape words. -/
 theorem scheduledGates_host {k : ℕ} (owner : Fin 661 ↪ Fin k) :
-    ∃ states : ℕ, ∀ {T Q V : ℕ} {P U : Type}, states ≤ Q → 0 < V →
-    ∀ (ports : Fin (k+2) ↪ Fin T) (body : P → Pr P T Q prime U) (stock : Stacks T prime → Prop),
+    ∃ states : ℕ, ∀ {T Q : ℕ} {P U : Type}, states ≤ Q →
+    ∀ (ports : Fin (k+2) ↪ Fin T) (body : P → Pr P T Q prime U), ∀ g ∈ program, ∃ code : Pr P T Q prime U,
+    ∀ {V : ℕ}, 0 < V → ∀ (stock : Stacks T prime → Prop),
     (∀ S F, stock S → (∀ l, (∀ h, ports h ≠ l) → F.L l = S.L l ∧ F.R l = S.R l) → stock F) →
     let ready := fun (data : Fin k → Fin V → ZMod 2) (S : Stacks T prime) =>
       RepT (PointwiseRoleGate.bank (a := prime) (fun _ _ => blank) (fun _ => 0)
         (SparseRoleCircuit.encoded data) (FlatCoordinateSchedule.bits V)) (embStk ports S).L (embStk ports S).R ∧ stock S
-    ∀ g ∈ program, ∃ code, ∀ data u S, ready data S → ∃ z F t out,
+    ∀ data u S, ready data S → ∃ z F t out,
       Exec body code (mk u S) t (mk z F) ∧ t ≤ 76*g.toCircuit.terms.length*V*(k+7)+6 ∧
       z.user = u.user ∧ ready out F ∧ (∀ i, (∀ j, owner j ≠ i) → out i = data i) ∧
       ∀ j : Fin 661, ∀ i, out (owner j) i = g.toCircuit.run (Copy.extendStored (fun j => data (owner j) i)) j.val := by
   let gate (g : {g // g ∈ program}) := phaseGateProgram owner g.val g.property
   let states := program.attach.map fun g => (gate g).choose
   refine ⟨states.sum,?_⟩
-  intro T Q V P U capacity pos ports body stock frame ready
-  intro g mem
+  intro T Q P U capacity ports body g mem
   let h := gate ⟨g,mem⟩
   obtain ⟨machine,run⟩ := h.choose_spec
   have fits : h.choose ≤ Q := (List.le_sum_of_mem (show h.choose ∈ states from
     List.mem_map.mpr ⟨⟨g,mem⟩,List.mem_attach _ _,rfl⟩)).trans capacity
   refine ⟨embProg ports (Empty.elim : Empty → P) (foreign (liftQ machine fits)),?_⟩
-  intro data u S ok
+  intro V pos stock frame ready data u S ok
   obtain ⟨out,hoare,other,reads⟩ := run V pos data
   obtain ⟨z,F,t,exec,time,user,rep,off⟩ := placedHoare_exec machine ports fits body
     hoare u S ok.1
@@ -3284,11 +3282,12 @@ theorem invocation_host
   refine ⟨prepared,base,localInit,?_⟩
   intro region workspace
   intro w B K P U Q capacity localBody proc body W V _ view gateTime pos moveWork copyWork childTime start moveTime copyTime represented copyReady saved stock stockInit frame phaseReady paidEdges moves copies
-  have gates := gateRuns capacity pos (ports none) (localBody none) stock frame
+  choose gateCode gateRun using gateRuns capacity (ports none) (localBody none)
   have outside (i j) (ne : i ≠ j) (k) (h : region i k) : ∀ l, bank j l ≠ k := by
     obtain ⟨l,hl,rfl⟩ := h
     exact (off i l hl).2 j ne.symm
-  have phases := scheduledScalarPhase_host n r d (localBody none) phaseReady moveTime gates moves
+  have phases := scheduledScalarPhase_host n r d (localBody none) phaseReady moveTime
+    (fun g hg => ⟨gateCode g hg,gateRun g hg pos stock frame⟩) moves
   obtain ⟨left,enter⟩ := phases false
   obtain ⟨right,leave⟩ := phases true
   have project (i) (S : Stacks T prime) : embStk (ports i) (embStk (bank i) S) = embStk fan S := by
@@ -3621,7 +3620,7 @@ theorem allocatedInvocation_host [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : 
   refine ⟨T,fan,bank,selected none,fun j => selected (some j),?_⟩
   intro P U Q fits localMove f localCopy copyProc moveBody localBody body
   have common : max mq gq ≤ Q := (le_max_left ..).trans fits
-  obtain ⟨base,swaps,run⟩ := machine ((le_max_left ..).trans common) localMove f
+  obtain ⟨base,swaps,moveCode,run⟩ := machine ((le_max_left ..).trans common) localMove f
   have fitsCopy (j : J) : cq j ≤ Q :=
     (Finset.le_sup (Finset.mem_univ j)).trans ((le_max_right ..).trans fits)
   choose cb cs cl cf copyRun using fun j => copyMachine j (fitsCopy j) (localCopy j) (copyProc j)
@@ -3642,8 +3641,8 @@ theorem allocatedInvocation_host [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : 
   obtain ⟨code,execute⟩ := assemble (w := w) (B := B) (K := K) Q ((le_max_right ..).trans common)
     localBody size work copyWork childTime stock ready frame (by
       intro i
-      obtain ⟨code,step⟩ := moves i
-      refine ⟨code,?_⟩
+      have step := moves i
+      refine ⟨moveCode i,?_⟩
       intro data u S ok
       obtain ⟨z,F,t,y,exec,time,user,out,guard,reads⟩ := step (childTime (child i).val) (recurse i) data u S ok.1 ok.2
       have atChild : (child i).val - start = i.val := by
