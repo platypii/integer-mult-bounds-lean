@@ -18,6 +18,39 @@ open LabelAddress (address)
 open Route (cols)
 variable {m Q : ℕ} [NeZero Q]
 
+variable {k : ℕ}
+
+def rowAddress (g : Matrix (Fin k) (Fin m) (ZMod Q)) : Fin (Q^(m*k)) :=
+  rank (refine (fun j i => g i j))
+
+/-- The radix-`Q^k` digit at column `j` packs its rows most significant first. -/
+def rowColumn (g : Matrix (Fin k) (Fin m) (ZMod Q)) (j : Fin m) : ZMod (Q^k) :=
+  ZMod.finEquiv _ (rank (fun i => g i j))
+
+theorem rowColumn_val (g : Matrix (Fin k) (Fin m) (ZMod Q)) (j : Fin m) :
+    (rowColumn g j).val = (rank (fun i => g i j)).val := by
+  rw [← finEquiv_symm_val, rowColumn, RingEquiv.symm_apply_apply]
+
+theorem rowAddress_columns (g : Matrix (Fin k) (Fin m) (ZMod Q)) :
+    (rowAddress g).val = (rank (rowColumn g)).val := by
+  unfold rowAddress
+  rw [rank_sum, rank_sum, ← Equiv.sum_comp finProdFinEquiv, Fintype.sum_prod_type]
+  apply Finset.sum_congr rfl
+  intro j _
+  rw [rowColumn_val, rank_sum, Finset.sum_mul]
+  apply Finset.sum_congr rfl
+  intro i _
+  change (refine (fun j i => g i j) (IntegerMultBounds.MathlibTM2.M8.AtomOps.«at» j i)).val * _ = _
+  rw [refine_at, mul_assoc, ← pow_mul, ← pow_add]
+  congr 2
+  simp only [finProdFinEquiv_apply_val]
+  have hj : (j : ℕ) + 1 + (m-1-j.val) = m := by have := j.isLt; omega
+  have hi : (i : ℕ) + 1 + (k-1-i.val) = k := by have := i.isLt; omega
+  have h := congrArg (k * ·) hj
+  simp only [Nat.mul_add, Nat.mul_one] at h
+  rw [Nat.mul_comm k m] at h
+  omega
+
 /-- The radix-`Q^m` digit at column `j` packs its rows most significant first. -/
 def column (g : Matrix (Fin m) (Fin m) (ZMod Q)) (j : Fin m) : ZMod (Q^m) :=
   ZMod.finEquiv _ (rank (cols g j))
@@ -27,23 +60,7 @@ theorem column_val (g : Matrix (Fin m) (Fin m) (ZMod Q)) (j : Fin m) :
   rw [← finEquiv_symm_val, column, RingEquiv.symm_apply_apply]
 
 theorem address_columns (g : Matrix (Fin m) (Fin m) (ZMod Q)) :
-    (address g).val = (rank (column g)).val := by
-  unfold address
-  rw [rank_sum, rank_sum, ← Equiv.sum_comp finProdFinEquiv, Fintype.sum_prod_type]
-  apply Finset.sum_congr rfl
-  intro j _
-  rw [column_val, rank_sum, Finset.sum_mul]
-  apply Finset.sum_congr rfl
-  intro i _
-  change (refine (cols g) (IntegerMultBounds.MathlibTM2.M8.AtomOps.«at» j i)).val * _ = _
-  rw [refine_at, mul_assoc, ← pow_mul, ← pow_add]
-  congr 2
-  simp only [finProdFinEquiv_apply_val]
-  have hj : (j : ℕ) + 1 + (m-1-j.val) = m := by have := j.isLt; omega
-  have hi : (i : ℕ) + 1 + (m-1-i.val) = m := by have := i.isLt; omega
-  have h := congrArg (m * ·) hj
-  simp only [Nat.mul_add, Nat.mul_one] at h
-  omega
+    (address g).val = (rank (column g)).val := rowAddress_columns g
 
 theorem read_column (g : Matrix (Fin m) (Fin m) (ZMod Q)) (j : Fin m) :
     (address g).val / (Q^m)^suffixFields j % (Q^m) = (rank (cols g j)).val := by
@@ -114,25 +131,32 @@ theorem rank_pair_update {D : ℕ} [NeZero D] (x : Fin m → ZMod D) (s t : Fin 
   exact ⟨_, _, _, h₁, h₂⟩
 
 /-- A matrix and its column transposition have identical spectator fields in the label view. -/
-theorem address_swap (g : Matrix (Fin m) (Fin m) (ZMod Q)) (s t : Fin m) (hst : s < t) :
-    ∃ (lp : Fin ((Q^m)^s.val)) (mid : Fin ((Q^m)^(t.val-s.val-1)))
-      (ls : Fin ((Q^m)^(m-1-t.val))),
-      (address g).val = LabelView.label (Q^m) 1 m s t lp (column g s).val mid (column g t).val ls ∧
-      (address (fun i j => g i (Equiv.swap s t j))).val =
-        LabelView.label (Q^m) 1 m s t lp (column g t).val mid (column g s).val ls := by
-  obtain ⟨lp, gap, ls, h₁, h₂⟩ := rank_pair_update (column g) s t hst (column g t) (column g s)
-  have he : column (fun i j => g i (Equiv.swap s t j)) =
-      Function.update (Function.update (column g) s (column g t)) t (column g s) := by
+theorem rowAddress_swap (g : Matrix (Fin k) (Fin m) (ZMod Q)) (s t : Fin m) (hst : s < t) :
+    ∃ (lp : Fin ((Q^k)^s.val)) (mid : Fin ((Q^k)^(t.val-s.val-1)))
+      (ls : Fin ((Q^k)^(m-1-t.val))),
+      (rowAddress g).val = LabelView.label (Q^k) 1 m s t lp (rowColumn g s).val mid (rowColumn g t).val ls ∧
+      (rowAddress (fun i j => g i (Equiv.swap s t j))).val =
+        LabelView.label (Q^k) 1 m s t lp (rowColumn g t).val mid (rowColumn g s).val ls := by
+  obtain ⟨lp, gap, ls, h₁, h₂⟩ := rank_pair_update (rowColumn g) s t hst (rowColumn g t) (rowColumn g s)
+  have he : rowColumn (fun i j => g i (Equiv.swap s t j)) =
+      Function.update (Function.update (rowColumn g) s (rowColumn g t)) t (rowColumn g s) := by
     funext j
-    change column g (Equiv.swap s t j) = _
+    change rowColumn g (Equiv.swap s t j) = _
     by_cases hs : j = s
     · subst j; simp [Function.update_of_ne hst.ne]
     by_cases ht : j = t
     · subst j; simp
     simp [Equiv.swap_apply_of_ne_of_ne hs ht, Function.update_of_ne hs, Function.update_of_ne ht]
-  refine ⟨lp, gap, ls, (address_columns g).trans h₁, ?_⟩
-  rw [address_columns (fun i j => g i (Equiv.swap s t j)), he]
+  refine ⟨lp, gap, ls, (rowAddress_columns g).trans h₁, ?_⟩
+  rw [rowAddress_columns (fun i j => g i (Equiv.swap s t j)), he]
   exact h₂
+
+theorem address_swap (g : Matrix (Fin m) (Fin m) (ZMod Q)) (s t : Fin m) (hst : s < t) :
+    ∃ (lp : Fin ((Q^m)^s.val)) (mid : Fin ((Q^m)^(t.val-s.val-1)))
+      (ls : Fin ((Q^m)^(m-1-t.val))),
+      (address g).val = LabelView.label (Q^m) 1 m s t lp (column g s).val mid (column g t).val ls ∧
+      (address (fun i j => g i (Equiv.swap s t j))).val =
+        LabelView.label (Q^m) 1 m s t lp (column g t).val mid (column g s).val ls := rowAddress_swap g s t hst
 
 end
 end IntegerMultBounds.MathlibTM2.Cover.LabelColumns
