@@ -46,36 +46,36 @@ theorem parentIdleHandoff {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime 
       let child := fun k => scheduledChild prime node (index k)
       let outside := fun (S : Stacks T prime) => ∀ t, (∀ l, fan l ≠ t) →
         S.L t = seed.L t ∧ S.R t = seed.R t
-      ∃ position : ∀ k, Fin (volume prime (child k)) ≃ Fin V,
+      ∀ {m : ℕ} (cell : Fin V → Fin m), ∃ position : ∀ k, Fin (volume prime (child k)) ≃ Fin V,
         (∀ k, ParentIdlePositions i k.2 w W (child k) (position k)) ∧
         ((∀ k x u S, (child k).width < node.width → HelperFan fan x S → outside S →
           ∃ word F z n, Exec body (body (proc k)) (mk u S) n (mk z F) ∧ n ≤ budget (index k) ∧
             z.user = u.user ∧ HelperFan fan (Function.update x (idleTape i k) word) F ∧ outside F ∧
-            ∀ a, word (position k a) = Shared50RecursiveNodeRows.transpose (one_dvd (child k).rows)
-              (x (idleTape i k) ∘ position k) a) →
-        ∃ prepared, PackedPieceHandoff V (fun x y => ∀ j : Fin W,
-          let addr := fun v => flatWindowEquiv w W (windowState w v,j)
+            ∀ a, word (cell (position k a)) = Shared50RecursiveNodeRows.transpose (one_dvd (child k).rows)
+              (x (idleTape i k) ∘ cell ∘ position k) a) →
+        ∃ prepared, PackedPieceHandoff m (fun x y => ∀ j : Fin W,
+          let addr := fun v => cell (flatWindowEquiv w W (windowState w v,j))
           readRoles addr y = (Piece.remainder i.val).run (readRoles addr x))
           host code (fan.trans place) (returnedFan fan) prepared
           ((∑ j : Fin idleCopies.length, budget (idleDirectoryIndex (i,j)))+
-            (2*idleCopies.length+142081*(8*V+10)+2))) := by
+            (2*idleCopies.length+142081*(8*m+10)+2))) := by
   intro place host
   obtain ⟨code,wrap⟩ := uniformWordStageHandoff fan body (Prog.seqList (idleCopies.map fun k => .call (proc k)))
   refine ⟨code,?_⟩
-  intro node w rows hw width split seed budget W V index child outside
-  obtain ⟨position,coords,schedule⟩ := parentIdleCalls_exec body node i w rows hw width split fan outside proc budget
+  intro node w rows hw width split seed budget W V index child outside m cell
+  obtain ⟨position,coords,schedule⟩ := positionedIdleCalls_exec body node i w rows hw width split fan outside proc budget cell
   refine ⟨position,coords,?_⟩
   intro recurse
   let price := (idleCopies.map fun k => budget (index k)+2).sum+1
   obtain ⟨prepared,run⟩ := wrap seed (fun x y => ∀ j : Fin W,
-    let addr := fun v => flatWindowEquiv w W (windowState w v,j)
+    let addr := fun v => cell (flatWindowEquiv w W (windowState w v,j))
     readRoles addr y = (Piece.remainder i.val).run (readRoles addr x)) (price : ℝ) (by
       intro x u S words fresh
       obtain ⟨y,F,z,n,ran,paid,user,out,_,act⟩ := schedule recurse x S u words.helperFan fresh
       exact ⟨z,F,n,y,ran,by exact_mod_cast paid,user,out,act⟩)
   refine ⟨prepared,?_⟩
-  have bill : price+142081*(8*V+10)+1 = (∑ j : Fin idleCopies.length, budget (idleDirectoryIndex (i,j)))+
-      (2*idleCopies.length+142081*(8*V+10)+2) := by
+  have bill : price+142081*(8*m+10)+1 = (∑ j : Fin idleCopies.length, budget (idleDirectoryIndex (i,j)))+
+      (2*idleCopies.length+142081*(8*m+10)+2) := by
     dsimp only [price,index]
     rw [idleCallPrice]
     omega

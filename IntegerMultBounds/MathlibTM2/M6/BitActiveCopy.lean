@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.M6.BitMixedIdleCost
+public import IntegerMultBounds.MathlibTM2.M6.BitFlatIdleHandoff
 
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.M6.BitNode
@@ -85,6 +86,109 @@ theorem copyLaneVolume {atom w : ℕ} (aligned : 7*w = 64*atom) (W : ℕ) :
   congr 2
   omega
 
+open Certificates.PR589.Nine
+local instance (w : ℕ) : NeZero (prime^w) := ⟨(pow_pos Shared50ModularControl.prime_prime.pos _).ne'⟩
+
+/-- Physical cell of a child role in its caller's COPY row: the high spectator
+digit lies between the two active fields, the low digit in the trailing stock. -/
+noncomputable def copyLaneCell {atom w W : ℕ} (aligned : 7*w = 64*atom)
+    (j : Fin ((prime^w)^2*W)) (s : Swap.Shear.State Axis (ZMod (prime^atom))) :
+    Fin (volume prime (phaseIntervalChild 0 7 w W)) :=
+  let M := prime^w
+  let span : M^2*W = M*(M*W) := by ring
+  let t := finProdFinEquiv.symm (j.cast span)
+  let width : (prime^atom)^64 = prime^(7*w) := by rw [aligned,← pow_mul,Nat.mul_comm]
+  let field := fun a : Axis → ZMod (prime^atom) => (FlatCoordinateLayout.rank (a ∘ stageAxis.symm)).cast width
+  RecursiveInterchangeScaling.index (v := phaseIntervalChild 0 7 w W)
+    ⟨(0 : Fin 1),(0 : Fin 1),(0 : Fin 1),field s.1,t.1.cast (pow_one M).symm,field s.2,t.2.cast (by simp [M,phaseIntervalChild])⟩
+
+theorem copyLaneCell_eq {atom w W : ℕ} (aligned : 7*w = 64*atom)
+    (j : Fin ((prime^w)^2*W)) (s : Swap.Shear.State Axis (ZMod (prime^atom))) :
+    copyLaneCell aligned j s = (packedChildPosition (phaseIntervalChild 0 7 w W) rfl).symm
+      ((flatWindowEquiv atom _ (s,j)).cast (copyLaneVolume aligned W)) := by
+  apply (packedChildPosition _ rfl).injective
+  rw [Equiv.apply_symm_apply]
+  apply Fin.ext
+  change (CopyChildLayout.packActive _ (copyLaneCell aligned j s)).val = _
+  unfold copyLaneCell
+  rw [CopyChildLayout.packActive_index,Fin.val_cast,flatWindowEquiv_fields,FlatCoordinateLayout.index_val]
+  have digitsRank : (FlatCoordinateLayout.rank (Fin.append (s.1 ∘ stageAxis.symm) (s.2 ∘ stageAxis.symm))).val =
+      (FlatCoordinateLayout.rank (s.1 ∘ stageAxis.symm)).val*(prime^atom)^64+
+        (FlatCoordinateLayout.rank (s.2 ∘ stageAxis.symm)).val := ArbitraryWidthSliceTranspose.rank_append _ _
+  rw [digitsRank]
+  let M := prime^w
+  let span : M^2*W = M*(M*W) := by ring
+  let t := finProdFinEquiv.symm (j.cast span)
+  have digits := congrArg Fin.val (finProdFinEquiv.apply_symm_apply (j.cast span))
+  change t.2.val+(M*W)*t.1.val = j.val at digits
+  let h := (FlatCoordinateLayout.rank (s.1 ∘ stageAxis.symm)).val
+  let d := (FlatCoordinateLayout.rank (s.2 ∘ stageAxis.symm)).val
+  change (t.2.val+(M^1*W)*(t.1.val+M^1*(0+0+0)))+
+    (1*1*M^0*M^1*(M^1*W))*(d+prime^(7*w)*h) = (h*(prime^atom)^64+d)*(M^2*W)+j.val
+  rw [aligned,show prime^(64*atom) = (prime^atom)^64 by rw [← pow_mul,Nat.mul_comm]]
+  calc
+    _ = (h*(prime^atom)^64+d)*(M^2*W)+(t.2.val+(M*W)*t.1.val) := by ring
+    _ = _ := congrArg (_ + ·) digits
+
+
+/-- Splitting the scheduled COPY descriptor into role rows exposes precisely
+the two spectator atoms and the inherited trailing stock of one lane. -/
+theorem copyRoleSpectators {w W rows : ℕ} (node : Descriptor) (width : node.width = 7*w)
+    (split : node.rows = 142080*rows)
+    (position : Fin (volume prime node) ≃ Fin ((prime^w)^16*(W*142080))) :
+    node.beforeRows*rows*node.beforeH*node.between*node.afterD = (prime^w)^2*W := by
+  let M := prime^w
+  have size := Fintype.card_congr position
+  simp only [Fintype.card_fin,volume,width,split,
+    show prime^(7*w) = M^7 by dsimp [M]; rw [← pow_mul,Nat.mul_comm]] at size
+  apply Nat.eq_of_mul_eq_mul_right (m := M^14*142080) (Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) (by decide))
+  calc
+      _ = node.beforeRows*(142080*rows)*node.beforeH*M^7*node.between*M^7*node.afterD := by ring
+      _ = _ := size
+      _ = _ := by dsimp [M]; ring
+
+/-- The directory calls for one remainder act on the inherited COPY cells.
+Each strictly smaller supplier is charged at its original schedule index. -/
+theorem copyRemainderHandoff {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
+    (i : Fin 9) (fan : Fin (142081+2) ↪ Fin T) (proc : (Fin 32 × Fin 5) × Fin 222 → P)
+    {w atom rows W : ℕ} (node : Descriptor) (width : node.width = 7*w)
+    (aligned : 7*w = 64*atom) (positive : 0 < atom) (split : node.rows = 142080*rows)
+    (position : Fin (volume prime node) ≃ Fin ((prime^w)^16*(W*142080)))
+    (seed : Stacks T prime) (budget : Fin nodeChildren5.length → ℕ) :
+    let V := volume prime (phaseIntervalChild 0 7 w W)
+    let S := (prime^w)^2*W
+    let index := fun k => idleDirectoryIndex (i,idleCopyIndex k)
+    let child := fun k => scheduledChild prime node (index k)
+    let outside := fun (D : Stacks T prime) => ∀ t, (∀ l, fan l ≠ t) →
+      D.L t = seed.L t ∧ D.R t = seed.R t
+    ∃ pos : ∀ k, Fin (volume prime (child k)) ≃ Fin ((prime^atom)^128*S),
+      (∀ k, ParentIdlePositions i k.2 atom S (child k) (pos k)) ∧
+      let cell := fun t => let p := (flatWindowEquiv atom S).symm t
+                           copyLaneCell aligned p.2 p.1
+      ((∀ k x u D, (child k).width < node.width → HelperFan fan x D → outside D →
+        ∃ word F z n, Exec body (body (proc k)) (mk u D) n (mk z F) ∧ n ≤ budget (index k) ∧
+          z.user = u.user ∧ HelperFan fan (Function.update x (idleTape i k) word) F ∧ outside F ∧
+          ∀ a, word (cell (pos k a)) = Shared50RecursiveNodeRows.transpose (one_dvd (child k).rows)
+            (x (idleTape i k) ∘ cell ∘ pos k) a) →
+        PackedWindowHandoff U Q V (fun x y => ∀ j : Fin S, let addr := fun v => copyLaneCell aligned j (windowState atom v)
+          readRoles addr y = (Piece.remainder i.val).run (readRoles addr x))
+          ((∑ j : Fin idleCopies.length, budget (idleDirectoryIndex (i,j)))+
+            (2*idleCopies.length+142081*(8*V+10)+2))) := by
+  intro V S index child outside
+  have stock : node.beforeRows*rows*node.beforeH*node.between*node.afterD = S :=
+    copyRoleSpectators node width split position
+  obtain ⟨code,build⟩ := parentIdleHandoff body i fan proc
+  have run := build node atom rows positive (width.trans aligned) split seed budget (m := V)
+  dsimp only at run
+  rw [stock] at run
+  let cell := fun t => let p := (flatWindowEquiv atom S).symm t
+                       copyLaneCell (W := W) aligned p.2 p.1
+  obtain ⟨pos,coords,work⟩ := run cell
+  refine ⟨pos,coords,?_⟩
+  intro inherited suppliers
+  obtain ⟨prepared,exec⟩ := work suppliers
+  exact ⟨_,_,_,code,_,_,prepared,by simpa only [cell,Equiv.symm_apply_apply] using exec⟩
+
 open Certificates.PR589.Nine in
 /-- Assemble the rank-seven recursive child directly at the COPY offsets.
 The two exterior atoms contribute to its spectator stock. -/
@@ -97,9 +201,7 @@ theorem assembledActiveCopy {U : Type} :
     let spectators := (prime^w)^2*W
     let m := (prime^w)^16*(W*142080)
     ∀ (position : Fin (volume prime child) ≃ Fin m), CopyIntervalPositions child w (W*142080) position →
-    let size : (prime^atom)^128*spectators = V := copyLaneVolume aligned W
-    let address := fun (j : Fin spectators) s =>
-      (packedChildPosition lane rfl).symm ((flatWindowEquiv atom spectators (s,j)).cast size)
+    let address := fun (j : Fin spectators) => copyLaneCell aligned j
     let reads := fun (piece : Piece) (x y : Fin 142081 → Fin V → ZMod 2) =>
       ∀ j, let addr := fun z => address j (windowState atom z)
         readRoles addr y = piece.run (readRoles addr x)
@@ -108,8 +210,8 @@ theorem assembledActiveCopy {U : Type} :
       PackedPieceHandoff V (reads (.stage n)) body code src dst seed (sweepCost n)) →
     (∀ n, ∃ (P : Type) (T : ℕ) (body : P → Pr P T Q prime U), ∃ code src dst seed,
       PackedPieceHandoff V (reads (.remainder n.val)) body code src dst seed (idleCost n)) →
-    ∃ (P : Type) (H : ℕ) (slot : Fin H) (host : P → Pr (P) H Q prime U)
-      (program : Pr (P) H Q prime U) (stock : Stacks H prime),
+    ∃ (P : Type) (H : ℕ) (slot : Fin H) (host : P → Pr P H Q prime U)
+      (program : Pr P H Q prime U) (stock : Stacks H prime),
     ∀ (x : Fin m → ZMod 2) u (S : Stacks H prime), S.L slot = [] →
       S.R slot = List.ofFn (fun k => SparseRoleCircuit.encode (x k)) →
       (∀ k, k ≠ slot → S.L k = stock.L k ∧ S.R k = stock.R k) →
@@ -119,13 +221,15 @@ theorem assembledActiveCopy {U : Type} :
           Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (x ∘ position) k := by
   obtain ⟨states,assemble⟩ := assembledInheritedNode (U := U)
   refine ⟨states,?_⟩
-  intro Q atom w W child room width aligned live capacity lane V spectators m position coords size address reads sweepCost idleCost sweeps windows
+  intro Q atom w W child room width aligned live capacity lane V spectators m position coords address reads sweepCost idleCost sweeps windows
+  have size : (prime^atom)^128*spectators = V := copyLaneVolume aligned W
   have positive : 0 < V := by
     rw [← size]
     exact Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _)
       (Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) live)
   obtain ⟨P,N,body,code,src,dst,seed,run⟩ := assemble lane room aligned size positive (Equiv.refl _)
-    sweepCost idleCost sweeps windows
+    sweepCost idleCost (by simpa only [reads,address,copyLaneCell_eq,Equiv.refl_apply,Equiv.trans_apply] using sweeps)
+    (by simpa only [reads,address,copyLaneCell_eq,Equiv.refl_apply,Equiv.trans_apply] using windows)
   have worker : PackedPieceHandoff V (fun x y => ∀ r : Fin 142080, y r.castSucc =
       Shared50RecursiveNodeRows.transpose (one_dvd lane.rows) (x r.castSucc)) body code src dst seed
       ((∑ i, sweepCost i)+(∑ i, idleCost i)+3452147597090*V) := by
