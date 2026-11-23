@@ -506,6 +506,130 @@ theorem parentPackedStage_exec [M8.Machine.Net] {Q w B rows : ℕ} {P U : Type}
   exact stageAfterSetup fan (fun f => embProg owner id (worker f)) code _ initial price
     (RestoredBorrowedStage n (w+1) B K x) x S live free fresh (run x)
 
+private theorem archiveFan_view {k T R V : ℕ} (fan : Fin (k+2) ↪ Fin T) (stage : Fin T ↪ Fin R)
+    (x : Fin k → Fin V → ZMod 2) (S : Stacks R prime) :
+    HelperFan (fan.trans stage) x S ↔ HelperFan fan x (embStk stage S) := Iff.rfl
+
+private theorem chargedStageAfterSetup {T L Q V : ℕ} {P U : Type}
+    (fan : Fin (142081+2) ↪ Fin T) (host : P → Pr P ((T+273)+L) Q prime U)
+    (code : Pr P ((T+273)+L) Q prime U) (words : Fin 127 → Fin 6 → List (Fin (prime+4)))
+    (initial : Stacks T prime) (price : ℕ) (effect : (Fin 142081 → Fin V → ZMod 2) → Prop)
+    (x : Fin 142081 → Fin V → ZMod 2) :
+    let stage := Fin.natAddEmb 80 (m := (T+273)+L)
+    let owner := (Fin.castAddEmb 273 (n := T)).trans (Fin.castAddEmb L)
+    let full := (fan.trans owner).trans stage
+    ∀ S, HelperFan full x S →
+    (∀ j : Fin L, S.L (stage (j.natAdd (T+273))) = [] ∧ S.R (stage (j.natAdd (T+273))) = []) →
+    (∀ i, (∀ h, fan h ≠ i) → S.L (stage (owner i)) = initial.L i ∧ S.R (stage (owner i)) = initial.R i) →
+    (∀ v D, HelperFan (fan.trans owner) x D →
+      (∀ i j, D.R ((borrowedHeaders T i j).castAdd L) = words i j) →
+      (∀ j : Fin L, D.L (j.natAdd (T+273)) = [] ∧ D.R (j.natAdd (T+273)) = []) →
+      (∀ i, (∀ h, fan h ≠ i) → D.L (owner i) = initial.L i ∧ D.R (owner i) = initial.R i) →
+      ∃ z G m out, Exec host code (mk v D) m (mk z G) ∧ (∀ js : List _, js.Nodup → m+tapeCharge (fun l r => 4*l.length+2*r.length+4) js G ≤ tapeCharge (fun l r => 4*l.length+2*r.length+4) js D+price) ∧ z.user = v.user ∧
+        HelperFan (fan.trans owner) out G ∧ effect out) →
+    ∀ v F, (∀ i j, F.R (stage ((borrowedHeaders T i j).castAdd L)) = words i j) →
+      (∀ i, F.L (stage (owner i)) = S.L (stage (owner i)) ∧ F.R (stage (owner i)) = S.R (stage (owner i))) →
+      (∀ j : Fin L, let k := stage (j.natAdd (T+273)); F.L k = S.L k ∧ F.R k = S.R k) →
+      ∃ z G m, Exec (fun f => embProg stage id (host f)) (embProg stage id code) (mk v F) m (mk z G) ∧
+        (∀ js : List _, js.Nodup → (m : ℝ)+tapeCharge (fun l r => 4*l.length+2*r.length+4) js G ≤ tapeCharge (fun l r => 4*l.length+2*r.length+4) js F+price) ∧ z.user = v.user ∧ ∃ out, HelperFan full out G ∧ effect out := by
+  intro stage owner full S live free fresh run v F headers keep leaf
+  have mid := (archiveFan_view (fan.trans owner) stage x F).mp
+    (helperFan_of_agree (fan := full) live (F := F) (fun i => keep (fan i)))
+  obtain ⟨y,D,m,out,exec,paid,same,done,act⟩ := run (embDn stage v) (embStk stage F) mid headers
+    (fun j => ⟨(leaf j).1.trans (free j).1,(leaf j).2.trans (free j).2⟩)
+    (fun i off => ⟨(keep i).1.trans (fresh i off).1,(keep i).2.trans (fresh i off).2⟩)
+  obtain ⟨z,G,placed,_,user,view,untouched⟩ := exec_emb (ι := id) (body' := fun f => embProg stage id (host f))
+    stage.injective (fun _ => rfl) exec v rfl F rfl
+  rw [← view] at paid done
+  refine ⟨z,G,m,placed,?_,user.trans same,out,(archiveFan_view (fan.trans owner) stage out G).mpr done,act⟩
+  intro js unique
+  exact_mod_cast placedCleanup_cost_le stage F G _ m price untouched paid js unique
+
+private theorem roundedStageBill {t f s work children : ℕ} {localPrice : ℝ}
+    (bill : (t : ℝ)+f ≤ s+localPrice+work+children) :
+    t+f ≤ s+(⌈localPrice⌉₊+work+children) := by
+  exact_mod_cast (by linarith only [bill,Nat.le_ceil localPrice] :
+    (t : ℝ)+f ≤ s+((⌈localPrice⌉₊ : ℝ)+work+children))
+
+/-- Build the archive from parent headers and run the fixed sweep on all independent rows. -/
+theorem parentArchiveSweepWithCharge [M8.Machine.Net] (n : Fin 9) :
+    let J := Fin 32 × Fin 5
+    ∀ (tapes : J → ℕ) (ports : ∀ p, Fin (142081+2) ↪ Fin (tapes p)),
+    ∃ (T : ℕ) (fan : Fin (142081+2) ↪ Fin T) (banks : ∀ p, Fin (tapes p) ↪ Fin T),
+    ∀ {P : J → Type} {U : Type} {Q : ℕ}, columnCapacity ≤ Q →
+    (fun {q : ℕ} (_ : Program 38 q prime) => q) (RecursiveRowsNodeHeaders.program 142080) ≤ Q →
+    ∀ (body : ∀ p, P p → Pr (P p) (tapes p) Q prime U),
+    let scratch := Fin.castAddEmb LeafCore.small (n := T+273)
+    let owner := (Fin.castAddEmb 273 (n := T)).trans scratch
+    let host := fun f : (p : J) × P p => embProg (banks f.1) (Sigma.mk f.1) (body f.1 f.2)
+    let outer := fun f => embProg owner id (host f)
+    let stage := Fin.natAddEmb 80 (m := (T+273)+LeafCore.small)
+    let full := (fan.trans owner).trans stage
+    let table := fun f => embProg stage id (outer f)
+    ∃ setupRate : ℕ, ∃ rate : ℝ, ∀ (call : ∀ p, Pr (P p) (tapes p) Q prime U), ∃ code,
+    ∀ (node : RecursiveInterchangeLayout.Descriptor) (w B rows : ℕ),
+    node.width = 64*(w+1) → node.rows = 142080*rows → node.beforeH = B*prime^(64*((w+1)*64)) →
+    let role := {node with rows := rows}
+    let K := node.beforeRows*rows*node.between*node.afterD
+    let blocks := (prime^(w+1))^112*B
+    let V := (prime^(w+1))^16*(blocks*prime^(64*((w+1)*64))*K)
+    let scale := (V : ℝ)*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau
+    role.Positive → ∀ (work : J → ℕ) (childTime : ℕ → ℕ),
+    (∀ p (shared : Stacks (142081+2) prime), ∃ seed : Stacks (tapes p) prime, embStk (ports p) seed = shared ∧
+      ∀ a v D, HelperFan (ports p) a D →
+        (∀ j, (∀ h, ports p h ≠ j) → D.L j = seed.L j ∧ D.R j = seed.R j) →
+        ∃ z F m b, Exec (body p) (call p) (mk v D) m (mk z F) ∧
+          (∀ js : List (Fin (tapes p)), js.Nodup →
+            m+tapeCharge (fun l r => 4*l.length+2*r.length+4) js F ≤
+              tapeCharge (fun l r => 4*l.length+2*r.length+4) js D+(work p+
+              ((List.range' (stageChildStart n+runChildStart p) Geometry.Moves.localPaid.length).map childTime).sum)) ∧
+          z.user = v.user ∧ HelperFan (ports p) b F ∧ BorrowedStep n (w+1) blocks K p a b) →
+    ∃ seed : Stacks (80+((T+273)+LeafCore.small)) prime, ∀ x u S, HelperFan full x S →
+      (∀ j, (∀ i, full i ≠ j) → S.L j = seed.L j ∧ S.R j = seed.R j) →
+      ∃ z F t out, Exec table code (mk u S) t (mk z F) ∧
+        (∀ js : List _, js.Nodup → (t : ℝ)+tapeCharge (fun l r => 4*l.length+2*r.length+4) js F ≤
+          tapeCharge (fun l r => 4*l.length+2*r.length+4) js S+(setupRate*V : ℕ)+
+          (⌈rate*scale⌉₊+(stageRuns.map work).sum+
+          ((List.range' (stageChildStart n) (stageRuns.flatMap (fun _ => Geometry.Moves.localPaid)).length).map childTime).sum : ℕ)) ∧
+        z.user = u.user ∧ HelperFan full out F ∧ RestoredBorrowedStage n (w+1) B K x out := by
+  intro J tapes ports
+  obtain ⟨T,fan,banks,build⟩ := allocatedArchiveSweepWithCharge n tapes ports
+  refine ⟨T,fan,banks,?_⟩
+  intro P U Q capacity headers body scratch owner host outer stage full table
+  obtain ⟨rate,compile⟩ := build capacity body
+  obtain ⟨setupRate,archive⟩ := parentArchiveThenWithCharge (U := U) headers
+  obtain ⟨setup,prepare⟩ := archive table
+  refine ⟨setupRate,rate,?_⟩
+  intro call
+  obtain ⟨sweep,run⟩ := compile call
+  refine ⟨.seq setup (embProg stage id sweep),?_⟩
+  intro node w B rows width split label role K blocks V scale pos work time supplied
+  have hb : 0 < B := Nat.pos_of_mul_pos_right (label ▸ pos.2.2.1)
+  have hk : 0 < K := Nat.mul_pos (Nat.mul_pos (Nat.mul_pos pos.1 pos.2.1) pos.2.2.2.1) pos.2.2.2.2
+  have hp := Shared50ModularControl.prime_prime.pos
+  have hv : 0 < V := by dsimp only [V,blocks]; positivity
+  obtain ⟨initial,_,execute⟩ := run (w+1) B K hv work time supplied ⟨[],[],fun _ => [],fun _ => []⟩
+  obtain ⟨seed,input,blank,stored⟩ := parentArchiveHost_exists (L := LeafCore.small) node w initial
+  refine ⟨seed,?_⟩
+  intro x u S live agrees
+  obtain ⟨archiveInput,free,privateTapes⟩ := parentPackedStage_frame fan node seed S input blank agrees
+  let price := ⌈rate*scale⌉₊+(stageRuns.map work).sum+
+    ((List.range' (stageChildStart n) (stageRuns.flatMap (fun _ => Geometry.Moves.localPaid)).length).map time).sum
+  let post := fun G => ∃ out, HelperFan full out G ∧ RestoredBorrowedStage n (w+1) B K x out
+  apply Exists.elim (prepare node w B rows width split label pos u S archiveInput
+    (embProg stage id sweep) price post ?_)
+  · rintro z ⟨F,t,exec,paid,user,out,ready,act⟩
+    exact ⟨z,F,t,out,exec,paid,user,ready,act⟩
+  apply chargedStageAfterSetup fan outer sweep _ initial price (RestoredBorrowedStage n (w+1) B K x)
+    x S live free (fun i off => ⟨(privateTapes i off).1.trans (stored i).1,(privateTapes i off).2.trans (stored i).2⟩)
+  intro v F represented ready empty fresh
+  obtain ⟨y,D,m,out,exec,paid,same,done,act⟩ := execute x v F represented ready empty fresh
+  refine ⟨y,D,m,out,exec,?_,same,done,act⟩
+  intro js unique
+  have bill := paid js unique
+  rw [max_eq_right (Nat.succ_pos w)] at bill
+  exact roundedStageBill (localPrice := rate*scale) bill
+
 /-- Place an invocation family on the sweep bank. The restoration worker
 uses just the shared owner tapes and has no child procedures. -/
 theorem packInvocationFamily [M8.Machine.Net] {Q w B K : ℕ} {P U : Type} (n : Fin 9)
