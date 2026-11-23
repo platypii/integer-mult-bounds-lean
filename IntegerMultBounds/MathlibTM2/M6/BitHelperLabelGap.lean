@@ -264,6 +264,42 @@ noncomputable def helperFieldCell {M L W : ℕ} [NeZero M] (digits : Fin 128 →
     (label : Fin L) (j : Fin W) : ℕ :=
   helperLabelCell (digits ∘ Fin.castAdd 112) label (digits ∘ Fin.natAdd 16) j
 
+/-- Once the two row coordinates agree, the full tape offsets agree exactly
+when the interposed cover labels agree. -/
+theorem helperFieldCell_label_iff {M L W : ℕ} [NeZero M] (digits : Fin 128 → ZMod M)
+    (a b : Fin L) (j : Fin W) :
+    helperFieldCell digits a j = helperFieldCell digits b j ↔ a = b := by
+  constructor
+  · intro h
+    have hW : 0 < W := Nat.zero_lt_of_lt j.isLt
+    have hM : 0 < M^112 := pow_pos (NeZero.pos M) _
+    simp only [helperFieldCell,helperLabelCell,Nat.add_right_cancel_iff,
+      Nat.mul_left_inj (Nat.ne_of_gt hW),Nat.mul_left_inj (Nat.ne_of_gt hM),
+      Nat.add_left_cancel_iff] at h
+    exact Fin.ext h
+  · rintro rfl
+    rfl
+
+open Certificates.PR589.Nine in
+/-- For a routed occupied slot, equality with a common scan offset requires
+the entire stored label matrix to match the scan label. -/
+theorem helperFieldCell_routed_iff {w W : ℕ} (c : PortCertificate) (hc : c.Checked)
+    (slot : Fin 56) (g : Matrix Axis Axis (ZMod (prime^w))) (r t : Axis)
+    (a b : LabelPadding.Label 64 w) (j : Fin W) :
+    let H := Swap.Modular.reduce (prime^w) (c.helperChart slot (by omega))
+    let routed := g * H.transpose
+    helperFieldCell (helperSlotField c (some slot) w (routed r,routed t)) (LabelAddress.address a) j =
+      helperFieldCell ((Sum.elim (g r) (g t)) ∘ helperDigits) (LabelAddress.address b) j ↔ a = b := by
+  intro H routed
+  dsimp only [routed,H]
+  rw [helperSlotField_routed_rows c hc,helperFieldCell_label_iff]
+  constructor
+  · intro h
+    ext i k
+    apply ZMod.val_injective
+    rw [← LabelAddress.entry a i k,← LabelAddress.entry b i k,h]
+  · exact congrArg LabelAddress.address
+
 theorem helperFieldCell_swap {α : Type*} {w L W : ℕ} (i : Fin 127) {x y : ℕ → α}
     (swap : LabelView.Swapped prime (helperAdjacentView w L W i) x y)
     (digits : Fin 128 → ZMod (prime^w)) (label : Fin L) (j : Fin W) :

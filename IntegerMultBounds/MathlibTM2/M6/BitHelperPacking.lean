@@ -168,6 +168,22 @@ theorem helperSlotField_some (c : PortCertificate) (x : Fin 56)
   simp only [helperSlotField,helperFieldOrder,Function.comp_apply,Equiv.trans_apply]
   cases helperDigits i <;> rfl
 
+/-- Right-routing the cover label places both selected rows at the same
+packed address for every occupied helper slot. This also holds on singular labels. -/
+theorem helperSlotField_routed_rows (c : PortCertificate) (hc : c.Checked)
+    (slot : Fin 56) (w : ℕ) (g : Matrix Axis Axis (ZMod (prime^w))) (r t : Axis) :
+    let H := IntegerMultBounds.Swap.Modular.reduce (prime^w) (c.helperChart slot (by omega))
+    let routed := g * H.transpose
+    helperSlotField c (some slot) w (routed r,routed t) =
+      (Sum.elim (g r) (g t)) ∘ helperDigits := by
+  intro H routed
+  rw [helperSlotField_some]
+  have row (i : Axis) : H.transpose *ᵥ routed i = g i := by
+    change H.transpose *ᵥ (g i ᵥ* H.transpose) = g i
+    rw [Matrix.mulVec_transpose,Matrix.vecMul_vecMul,(helperChart_reduce c hc slot (by omega) w).1,
+      Matrix.vecMul_one]
+  rw [row,row]
+
 theorem helperDigits_reindex (c : PortCertificate) (x y : Option (Fin 56))
     (w : ℕ) (s : IntegerMultBounds.Swap.Shear.State Axis (ZMod (prime^w))) :
     helperSlotField c x w s ∘ (helperFieldOrder y).trans (helperFieldOrder x).symm = helperSlotField c y w s := by
