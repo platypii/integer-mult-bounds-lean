@@ -45,6 +45,43 @@ theorem OrthogonalPortReads.packedHelper {V W : ℕ} (n : Fin 9) (h : Fin 439) (
   rw [cell,cell]
   exact read.helperSlot n h w pos input output s j
 
+/-- The invocation reads data in place and reads each helper in the inherited
+order of its own scheduled slot. -/
+noncomputable def invocationOwnerAddress {M W : ℕ} [NeZero M] (n : Fin 9) (i : Fin 661) :
+    Equiv.Perm (Fin (M^128*W)) :=
+  if h : 222 ≤ i.val then inheritedHelperAddress (helperPosition (n,⟨i.val-222,by omega⟩))
+  else Equiv.refl _
+
+open IntegerMultBounds.Swap.Modular M8.Exchange in
+theorem OrthogonalPortReads.inheritedHelper {w W : ℕ} [NeZero (prime^w)] (n : Fin 9)
+    (input output : Fin 661 → Fin ((prime^w)^128*W) → ZMod 2) :
+    let size : (prime^w)^16*((prime^w)^112*W) = (prime^w)^128*W := by
+      rw [← Nat.mul_assoc,← pow_add]
+    let pos := fun s j => (copyAddress.symm (s,j)).cast size
+    let view := fun (word : Fin 661 → Fin ((prime^w)^128*W) → ZMod 2) i =>
+      word i ∘ invocationOwnerAddress n i
+    OrthogonalPortReads w pos (view input) (view output) →
+    ∀ (h : Fin 439) s (j : Fin W),
+      let c := port ((IntegerMultBounds.MathlibTM2.M6.BitNode.slotOf n.val h.val).copy % 111)
+      let reg : Fin 661 := ⟨222+h.val,by omega⟩
+      let addr := fun a => FlatCoordinateLayout.index (helperSlotField c none w a) j
+      output reg (addr (exchange (reduce (prime^w) (helperSpan n h)) s)) = input reg (addr s) := by
+  intro size pos view read h s j c reg addr
+  have run := read.packedHelper n h w pos (view input) (view output) s j
+  let packed := fun a => FlatCoordinateLayout.index (helperSlotField c (some (helperPosition (n,h))) w a) j
+  have atCell (a) : invocationOwnerAddress n reg (packed a) = addr a := by
+    have hit : 222 ≤ reg.val := Nat.le_add_right _ _
+    simp only [invocationOwnerAddress,dite_eq_left hit,reg,Nat.add_sub_cancel_left]
+    exact inheritedHelperAddress_index c (helperPosition (n,h)) a j
+  have cancel (i : Fin ((prime^w)^128*W)) :
+      pos (copyAddress (i.cast size.symm)).1 (copyAddress (i.cast size.symm)).2 = i := by
+    simp only [pos,Prod.mk.eta,Equiv.symm_apply_apply,Fin.cast_cast,Fin.cast_refl,id_eq]
+  change output reg (invocationOwnerAddress n reg (pos _ _)) = input reg (invocationOwnerAddress n reg (pos _ _)) at run
+  rw [cancel,cancel] at run
+  let b := exchange (reduce (prime^w) (helperSpan n h)) s
+  change output reg (invocationOwnerAddress n reg (packed b)) = input reg (invocationOwnerAddress n reg (packed s)) at run
+  rwa [atCell b,atCell s] at run
+
 noncomputable def helperSlotChange (n : Fin 9) (run : Fin 32 × Fin 5)
     (before : Fin 142081 → Option (Fin 9 × Fin 439)) (h : Fin 439) : Fin 142081 × Option (Fin 56) × Option (Fin 56) :=
   let t := ownerTape n run.1 run.2 ⟨222+h.val,by omega⟩

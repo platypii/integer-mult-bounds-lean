@@ -174,6 +174,27 @@ theorem helperDigits_reindex (c : PortCertificate) (x y : Option (Fin 56))
   funext i
   simp [helperSlotField]
 
+/-- Read a packed invocation address directly in the owner's inherited digit
+order. The trailing spectator record stays on the same row. -/
+noncomputable def inheritedHelperAddress {M W : ℕ} [NeZero M] (slot : Fin 56) :
+    Equiv.Perm (Fin (M^128*W)) :=
+  let order := (helperFieldOrder (some slot)).trans (helperFieldOrder none).symm
+  let digits := Equiv.arrowCongr order (Equiv.refl (ZMod M))
+  let rows := (FlatCoordinateLayout.rankEquiv.symm.trans digits).trans FlatCoordinateLayout.rankEquiv
+  (finProdFinEquiv.symm.trans (rows.prodCongr (Equiv.refl (Fin W)))).trans finProdFinEquiv
+
+theorem inheritedHelperAddress_index (c : PortCertificate) (slot : Fin 56)
+    {w W : ℕ} [NeZero (prime^w)] (s : IntegerMultBounds.Swap.Shear.State Axis (ZMod (prime^w)))
+    (j : Fin W) :
+    inheritedHelperAddress slot (FlatCoordinateLayout.index (helperSlotField c (some slot) w s) j) =
+      FlatCoordinateLayout.index (helperSlotField c none w s) j := by
+  unfold inheritedHelperAddress FlatCoordinateLayout.index
+  simp only [Equiv.trans_apply,Equiv.symm_apply_apply,Equiv.prodCongr_apply]
+  apply congrArg (fun digits => finProdFinEquiv (FlatCoordinateLayout.rank digits,j))
+  change (FlatCoordinateLayout.coordinates (FlatCoordinateLayout.rank _) ∘ _) = _
+  rw [FlatCoordinateLayout.coordinates_rank]
+  exact helperDigits_reindex c (some slot) none w s
+
 variable [M8.Machine.Net] {P U : Type}
 local notation "N" => rowSwapBlock.tapes
 local notation "Q" => rowSwapBlock.states
