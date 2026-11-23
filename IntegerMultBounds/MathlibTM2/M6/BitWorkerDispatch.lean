@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.M6.BitScalarMoveSequence
+public import IntegerMultBounds.MathlibTM2.M6.BitSelectedInvocation
 public import IntegerMultBounds.MathlibTM2.M6.BitFlatIdleLeaf
 public import IntegerMultBounds.MathlibTM2.DFT.Fields
 
