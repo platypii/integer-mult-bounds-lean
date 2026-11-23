@@ -222,7 +222,7 @@ theorem borrowedWindow_host [M8.Machine.Net] (charged : Bool) (n : Fin 9) (p : F
     let desc := scheduledChild prime node (copyChildPosition (n,p,j))
     0 < W → ∃ position : Fin (volume prime desc) ≃ Fin V,
       CopyIntervalPositions desc (w+1) W position ∧
-      ∀ record, ∃ prepared : Stacks T prime, prepared.R (scheduledRecordPorts ports 34) = record ∧ ∀ budget,
+      ∀ record, ∃ prepared : Stacks T prime, WorkerEntryWords (scheduledRecordPorts ports) record prepared ∧ ∀ budget,
       ScheduledChildExec node desc w W ports record position body f budget charged →
       ∀ data u S, HelperFan fan data S →
         (∀ k, (∀ h, fan h ≠ k) → S.L k = prepared.L k ∧ S.R k = prepared.R k) →

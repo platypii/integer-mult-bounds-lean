@@ -831,21 +831,21 @@ open RecursiveInterchangeLayout in
 theorem withCutoffPort_records {k T : ℕ} (fan : Fin k ↪ Fin T) (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T)
     (apart : ∀ j : Fin (rowSwapBlock.tapes+35), j.val ≠ 24 → ∀ h, fan h ≠ ports j) :
     let record := (scheduledRecordPorts ports).trans (Fin.castAddEmb 1)
-    (∀ j, record j ≠ withCutoffPort fan (Fin.last k)) ∧ (∀ h, withCutoffPort fan h ≠ record 34) := by
+    (∀ j, record j ≠ withCutoffPort fan (Fin.last k)) ∧ (∀ j : Fin 35, j.val ≠ 24 → ∀ h, withCutoffPort fan h ≠ record j) := by
   intro record
   have off j : record j ≠ withCutoffPort fan (Fin.last k) := by
     rw [withCutoffPort_cut]
     exact fun eq => ((scheduledRecordPorts ports j).isLt).ne (congrArg Fin.val eq)
   refine ⟨off,?_⟩
-  intro h
+  intro j ne h
   induction h using Fin.addCases with
   | left h =>
     rw [withCutoffPort_data]
-    exact (Fin.castAddEmb 1).injective.ne (apart _ (by decide) h)
+    exact (Fin.castAddEmb 1).injective.ne (apart _ ne h)
   | right h =>
     have eq : h = 0 := Subsingleton.elim ..
     subst h
-    exact (off 34).symm
+    exact (off j).symm
 
 private theorem withCutoffPort_view {k T : ℕ} (fan : Fin k ↪ Fin T) (S : Stacks (T+1) prime) :
     embStk (Fin.castAddEmb 1 (n := k)) (embStk (withCutoffPort fan) S) =
@@ -909,7 +909,7 @@ theorem invocationCopyWindow [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) 
     let desc := scheduledChild prime node (copyChildPosition (n,p,j))
     0 < W → ∃ position : Fin (volume prime desc) ≃ Fin V,
       CopyIntervalPositions desc (w+1) W position ∧
-      ∀ record, ∃ prepared : Stacks (T+1) prime, prepared.R ((scheduledRecordPorts ports 34).castAdd 1) = record ∧ ∀ budget word,
+      ∀ record, ∃ prepared : Stacks (T+1) prime, WorkerEntryWords (fun j => (scheduledRecordPorts ports j).castAdd 1) record prepared ∧ ∀ budget word,
       ScheduledChildExec node desc w W ports record position body f budget true →
       let rep := fun x (D : Stacks (T+1) prime) => HelperFan (Fin.castAddEmb 1) x (embStk owners D) ∧
         D.R (owners (Fin.last (142081+2))) = word
@@ -930,7 +930,7 @@ theorem invocationCopyWindow [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) 
   let Data := Fin 142081 → Fin V → ZMod 2
   let stored := fun (x : Data) (D : Stacks (142081+2) prime) => HelperFan (Function.Embedding.refl _) x D
   obtain ⟨initial,original,lift⟩ := runWithCutoff (α := Data) fan body code seed
-  refine ⟨initial,(original _).trans archive,?_⟩
+  refine ⟨initial,⟨(original _).trans archive.1,(original _).trans archive.2.1,(original _).trans archive.2.2⟩,?_⟩
   intro budget word child rep data u S fresh live
   have execute := lift stored _ _ word (fun x v D stock ready => window budget child x v D ready stock)
   obtain ⟨z,F,t,y,exec,paid,user,out,cut,act⟩ := execute data u S fresh (by
@@ -1018,7 +1018,7 @@ theorem invocationMoveComponent [M8.Machine.Net] {k : ℕ} (layout : Fin 661 ↪
     let desc := scheduledChild prime node child
     0 < W → ∃ position : Fin (volume prime desc) ≃ Fin V,
     (∀ h, (position h).val = (CopyChildLayout.packActive desc h).val) ∧
-    ∀ record, ∃ initial : Stacks (T+1) prime, initial.R ((scheduledRecordPorts ports 34).castAdd 1) = record ∧ ∀ budget word,
+    ∀ record, ∃ initial : Stacks (T+1) prime, WorkerEntryWords (fun j => (scheduledRecordPorts ports j).castAdd 1) record initial ∧ ∀ budget word,
     ScheduledChildExec node desc w W ports record position body f budget true →
     let owners := withCutoffPort fan
     let rep := fun x (S : Stacks (T+1) prime) => HelperFan (Fin.castAddEmb 1) x (embStk owners S) ∧
@@ -1059,12 +1059,16 @@ theorem invocationMoveComponent [M8.Machine.Net] {k : ℕ} (layout : Fin 661 ↪
   let Data := Fin k → Fin V → ZMod 2
   obtain ⟨initial,original,lift⟩ := runWithCutoff (α := Data) fan body code seed
   refine ⟨initial,?_,?_⟩
-  · rw [show initial.R ((scheduledRecordPorts ports 34).castAdd 1) = seed.R (scheduledRecordPorts ports 34) from original _]
-    obtain ⟨D,⟨old,_,_,stored,_⟩,kept⟩ := ready
-    apply Eq.trans _ stored.archive
-    apply (kept _ _).2
-    refine ⟨ports.injective.ne (fun eq => by have h := congrArg Fin.val eq; exact (by decide : (34 : ℕ) ≠ 24) h),?_⟩
-    exact fun off => off.2.1 _ rfl
+  · obtain ⟨D,⟨old,_,_,stored,_⟩,kept⟩ := ready
+    have atPort (j : Fin 35) (ne : j.val ≠ 24) :
+        initial.R ((scheduledRecordPorts ports j).castAdd 1) = D.R (scheduledRecordPorts ports j) := by
+      apply (original _).trans
+      apply (kept _ _).2
+      refine ⟨ports.injective.ne (fun eq => ne (congrArg Fin.val eq)),?_⟩
+      exact fun off => off.2.1 _ rfl
+    exact ⟨(atPort 34 (by decide)).trans stored.archive,
+      (atPort 0 (by decide)).trans (stored.scratch 0 (by decide)).2,
+      (atPort 1 (by decide)).trans (stored.scratch 1 (by decide)).2⟩
   intro budget word recurse owners rep x u S fresh live
   let stored := fun (x : Data) (D : Stacks (k+2) prime) => HelperFan (Function.Embedding.refl _) x D
   have move := lift stored (fun x y => y = moveOwnerEffect layout x i.val edge) _ word (fun data v D stock h => by
@@ -1464,7 +1468,7 @@ theorem invocationScalarMove [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) 
     let desc := scheduledChild prime node child
     0 < W → ∃ position : Fin (volume prime desc) ≃ Fin V,
     (∀ h, (position h).val = (CopyChildLayout.packActive desc h).val) ∧
-    ∀ record, ∃ initial : Stacks (T+1) prime, initial.R ((scheduledRecordPorts ports 34).castAdd 1) = record ∧ ∀ budget word,
+    ∀ record, ∃ initial : Stacks (T+1) prime, WorkerEntryWords (fun j => (scheduledRecordPorts ports j).castAdd 1) record initial ∧ ∀ budget word,
     ScheduledChildExec node desc w W ports record position body f budget true →
     let owners := withCutoffPort fan
     let rep := fun x (S : Stacks (T+1) prime) => HelperFan (Fin.castAddEmb 1) x (embStk owners S) ∧

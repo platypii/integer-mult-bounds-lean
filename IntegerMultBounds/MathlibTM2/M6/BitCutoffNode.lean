@@ -339,6 +339,15 @@ def occurrenceSlots {X : Type} {l r : ℕ}
     (right : Fin r → X → X → Prop) : ∀ j, Fin (invocationCounts l r j) → X → X → Prop :=
   invocationSlots (α := fun j => Fin (invocationCounts l r j) → X → X → Prop) left copy right
 
+private theorem occurrenceComponents {X : Type} {l r : ℕ} (left : Fin l → X → X → Prop)
+    (copy : Fin Copy.lifecycles.length → X → X → Prop) (right : Fin r → X → X → Prop)
+    (component : Fin 3 → X → X → Prop)
+    (pre : ∀ x y, OrderedEffects (List.finRange l) left x y → component 0 x y)
+    (mid : ∀ x y, OrderedEffects (List.finRange _) copy x y → component 1 x y)
+    (post : ∀ x y, OrderedEffects (List.finRange r) right x y → component 2 x y) :
+    ∀ j x y, OrderedEffects (List.finRange (invocationCounts l r j)) (occurrenceSlots left copy right j) x y →
+      component j x y := invocationSlots pre mid post
+
 /-- The data relation of each worker in the flat stage directory. -/
 noncomputable def selectedOccurrenceEffect (n : Fin 9) (w B K : ℕ) (p : StageRun) :=
   occurrenceSlots (fun i x y => y = selectedMoveOutput (w := w) (W := B*prime^(64*(w*64))*K) n p false i x)
@@ -354,8 +363,10 @@ theorem selectedStageEffects (n : Fin 9) (w B K : ℕ) :
       OrderedEffects stageRuns (BorrowedStep n w B K) x y := by
   intro l r
   apply stageBorrowedEffects (l := l) (r := r) n (fun i => selectedOccurrenceEffect n w B K i.1 i.2.1 i.2.2)
-  intro p j
-  apply invocationSlots (i := j)
+  intro p
+  unfold selectedOccurrenceEffect
+  dsimp only
+  apply occurrenceComponents (l := l) (r := r) _ _ _ (InvocationComponentEffect n p w B K)
   · intro x y trace
     change y = invocationPhaseOutput n p false x
     apply Eq.symm
@@ -410,6 +421,11 @@ theorem prepareSelectedStageArchives {U : Type} {Q l r owners : ℕ}
     ∃ (T : ℕ) (shared : Fin owners ↪ Fin T) (bank : ∀ p, Fin (tapes p) ↪ Fin T) (rate : ℕ),
     (∀ p j, bank p (fan p j) = shared j) ∧
     (∀ p l, (∀ j, fan p j ≠ l) → ∀ q, q ≠ p → ∀ k, bank q k ≠ bank p l) ∧
+    (∀ (owners : Stacks owners prime) (seed : ∀ p, Stacks (tapes p) prime),
+      ∃ initial : Stacks T prime, embStk shared initial = owners ∧
+        ∀ p k, (∀ j, fan p j ≠ k) → (∀ j, shared j ≠ bank p k) ∧
+          initial.L (bank p k) = (seed p).L k ∧
+          initial.R (bank p k) = Function.update (seed p).R (record p 34) [] k) ∧
     ∀ {P : Type} {R : ℕ} (body : P → Pr P (80+((T+273)+R)) Q prime U),
     let owner := ((Fin.castAddEmb 273 (n := T)).trans (Fin.castAddEmb R)).trans (Fin.natAddEmb 80)
     ∃ code, ∀ c : CutoffNodeInput,
@@ -424,12 +440,15 @@ theorem prepareSelectedStageArchives {U : Type} {Q l r owners : ℕ}
       ∀ k, (∀ p, bank p (record p 34) ≠ k) → F.R (owner k) = S.R (owner k) := by
   classical
   intro I child tapes fan record cut offCut privateArchive
-  obtain ⟨T,shared,bank,align,_,disjoint⟩ := copyWindowBanks tapes fan
+  obtain ⟨T,shared,bank,align,stock,disjoint⟩ := copyWindowBanks tapes fan
   let regs := fun p => (record p).trans (bank p)
   let order := stageOccurrenceOrder l r
   let rank := fun p => nodeChildren5[(child p).val]
   obtain ⟨setup,prepare⟩ := prepareStageArchives (U := U) capacity
-  refine ⟨T,shared,bank,setup+31*order.length+1,align,fun p l h => (disjoint p l h).2,?_⟩
+  refine ⟨T,shared,bank,setup+31*order.length+1,align,fun p l h => (disjoint p l h).2,?_,?_⟩
+  · intro owners seed
+    obtain ⟨initial,view,stored⟩ := stock owners (fun p => {seed p with R := Function.update (seed p).R (record p 34) []})
+    exact ⟨initial,view,fun p k off => ⟨(disjoint p k off).1,stored p k off⟩⟩
   intro P R body owner
   have separate p q (ne : p ≠ q) j : regs p 34 ≠ regs q j :=
     ((disjoint p _ (privateArchive p)).2 q ne.symm _).symm
@@ -516,6 +535,43 @@ theorem prepareSelectedStageArchives {U : Type} {Q l r owners : ℕ}
       exact (off p (owner.injective eq)).elim
     · exact fun _ => (keep k).2
 
+/-- Place the parent headers and worker seed on disjoint banks of the stage host. -/
+private theorem stageHostSeed {T R owners : ℕ} (shared : Fin owners ↪ Fin T)
+    (initial : Stacks T prime) (c : CutoffNodeInput) :
+    let owner := ((Fin.castAddEmb 273 (n := T)).trans (Fin.castAddEmb R)).trans (Fin.natAddEmb 80)
+    ∃ hostSeed : Stacks (80+((T+273)+R)) prime,
+      embStk owner hostSeed = initial ∧ ∀ S, PrivateTapes (shared.trans owner) hostSeed S →
+        ParentArchiveInput c.node c.w (embStk (archiveSetupPlacement 80 T R) S) ∧
+        PrivateTapes shared initial (embStk owner S) := by
+  intro owner
+  obtain ⟨headers,input⟩ := parentArchiveInput_exists c.node c.w
+  let setup := archiveSetupPlacement 80 T R
+  let place := fun (work : Fin T → List (Fin (prime+4))) (data : Fin (80+273) → List (Fin (prime+4))) =>
+    Function.extend owner work (Function.extend setup data (fun _ => []))
+  let seed : Stacks (80+((T+273)+R)) prime := ⟨initial.inp,initial.out,place initial.L headers.L,place initial.R headers.R⟩
+  have work (f g) k : place f g (owner k) = f k := owner.injective.extend_apply ..
+  have header (f g) j : place f g (setup j) = g j := by
+    unfold place
+    rw [Function.extend_apply' _ _ _ (by
+      rintro ⟨k,h⟩
+      exact (archiveSetupPlacement_frame j).1 k h.symm),setup.injective.extend_apply]
+  refine ⟨seed,?_,?_⟩
+  · exact congrArg₂ (Stacks.mk initial.inp initial.out) (funext (work initial.L headers.L)) (funext (work initial.R headers.R))
+  intro S fresh
+  have outside j := fresh (setup j) (fun i => ((archiveSetupPlacement_frame j).1 (shared i)).symm)
+  have left : (embStk setup S).L = headers.L := funext fun j => (outside j).1.trans (header _ _ j)
+  have right : (embStk setup S).R = headers.R := funext fun j => (outside j).2.trans (header _ _ j)
+  constructor
+  · change ParentArchiveInput c.node c.w (embStk setup S)
+    have eq : embStk setup S = {headers with inp := S.inp, out := S.out} := by
+      cases headers
+      exact congrArg₂ (fun l r => Stacks.mk S.inp S.out l r) left right
+    rw [eq]
+    exact input
+  · intro k off
+    have h := fresh (owner k) (fun i => owner.injective.ne (off i))
+    exact ⟨h.1.trans (work _ _ k),h.2.trans (work _ _ k)⟩
+
 /-- Initialize all selected archives and execute the workers on those very banks.
 Unvisited workers need their private inputs but no caller-provided archive word. -/
 theorem runSelectedStageArchives {U : Type} {Q l r owners : ℕ}
@@ -526,7 +582,8 @@ theorem runSelectedStageArchives {U : Type} {Q l r owners : ℕ}
     let I := Σ _ : StageRun, Σ j : Fin 3, Fin (invocationCounts l r j)
     let child := fun p : I => invocationChildren n p.1 (pre p.1) (post p.1) p.2.1 p.2.2
     ∀ (tapes : I → ℕ) (fan : ∀ p, Fin owners ↪ Fin (tapes p)) (record : ∀ p, Fin 35 ↪ Fin (tapes p))
-      (cut : Fin owners), (∀ p j, record p j ≠ fan p cut) → (∀ p j, fan p j ≠ record p 34) →
+      (cut : Fin owners), (∀ p j, record p j ≠ fan p cut) →
+    (∀ p (j : Fin 35), j.val ≠ 24 → ∀ h, fan p h ≠ record p j) →
     ∃ (T : ℕ) (shared : Fin owners ↪ Fin T) (bank : ∀ p, Fin (tapes p) ↪ Fin T) (rate : ℕ),
     ∀ {P : Type} {R : ℕ} (body : ∀ p, P → Pr P (tapes p) Q prime U)
       (worker : ∀ p, Pr P (tapes p) Q prime U),
@@ -539,32 +596,47 @@ theorem runSelectedStageArchives {U : Type} {Q l r owners : ℕ}
       (effect : I → X → X → Prop),
     let word := fun p : I => invocationWorkerRecord p.2.1 (scheduledChild prime c.node (child p)) c.root.width.size c.cutoff
     let cost := fun p => work p+childTime (child p).val
-    (∀ p, (seed p).R (record p 34) = word p) →
+    (∀ p, WorkerEntryWords (record p) (word p) (seed p)) →
     (∀ p x u D, rep x (D.L ∘ fan p) (D.R ∘ fan p) →
       PrivateTapes (fan p) (seed p) D →
       ∃ z F t y, Exec (body p) (worker p) (mk u D) t (mk z F) ∧ CleanupBound D F t (cost p) ∧
         z.user = u.user ∧ rep y (F.L ∘ fan p) (F.R ∘ fan p) ∧ effect p x y) →
-    ∀ x u S, ParentArchiveInput c.node c.w (embStk (archiveSetupPlacement 80 T R) S) →
+    ∀ owners : Stacks owners prime, ∃ initial : Stacks (80+((T+273)+R)) prime, embStk shared (embStk owner initial) = owners ∧
+    ∀ x u S,
       S.R (owner (shared cut)) = binSyms c.root.width.size c.cutoff →
-      (∀ p, let port := (record p).trans (placed p)
-        S.R (port 34) = [] ∧ S.R (port 0) = [] ∧ S.R (port 1) = []) →
       rep x (S.L ∘ (shared.trans owner)) (S.R ∘ (shared.trans owner)) →
-      (∀ p ∈ order, ∀ k, (∀ j, fan p j ≠ k) →
-        S.L (placed p k) = (seed p).L k ∧ (k ≠ record p 34 → S.R (placed p k) = (seed p).R k)) →
+      PrivateTapes (shared.trans owner) initial S →
       ∃ z F t y, Exec host code (mk u S) t (mk z F) ∧ CleanupBound S F t (rate*c.cells+(order.map work).sum+1+
         ((List.range' (stageChildStart n) (stageRuns.flatMap (fun _ => Geometry.Moves.localPaid)).length).map childTime).sum) ∧
         z.user = u.user ∧ rep y (F.L ∘ (shared.trans owner)) (F.R ∘ (shared.trans owner)) ∧
         OrderedEffects stageRuns (fun p => OrderedEffects (List.finRange 3) (fun j =>
           OrderedEffects (List.finRange (invocationCounts l r j)) (fun i => effect ⟨p,j,i⟩))) x y := by
-  intro I child tapes fan record cut offCut privateArchive
-  obtain ⟨T,shared,bank,rate,align,apart,prepare⟩ := prepareSelectedStageArchives capacity n pre post tapes fan record cut offCut privateArchive
+  intro I child tapes fan record cut offCut privatePort
+  have privateArchive p := privatePort p 34 (by decide)
+  obtain ⟨T,shared,bank,rate,align,apart,stock,prepare⟩ := prepareSelectedStageArchives capacity n pre post tapes fan record cut offCut privateArchive
   refine ⟨T,shared,bank,rate,?_⟩
   intro P R body worker order owner placed host
   obtain ⟨load,write⟩ := prepare host
   let calls := order.map fun p => embProg (placed p) (Prod.mk p) (worker p)
   refine ⟨load.seq (Prog.seqList calls),?_⟩
-  intro c X work childTime seed rep effect word cost archive execute x u S input header empty live stock
-  obtain ⟨v,D,a,start,user,paid,loaded,left,right⟩ := write c u S input header empty
+  intro c X work childTime seed rep effect word cost archive execute sharedSeed
+  obtain ⟨initial,view,saved⟩ := stock sharedSeed seed
+  obtain ⟨hostSeed,placedSeed,ready⟩ := stageHostSeed (R := R) shared initial c
+  refine ⟨hostSeed,placedSeed ▸ view,?_⟩
+  intro x u S header live privateSeed
+  obtain ⟨input,fresh⟩ := ready S privateSeed
+  have stored p k off := fresh (bank p k) (saved p k off).1
+  have free p : S.R (placed p (record p 34)) = [] := by
+    have ready := saved p _ (privateArchive p)
+    exact ((stored p _ (privateArchive p)).2.trans ready.2.2).trans (Function.update_self ..)
+  have scratch p (j : Fin 35) (ne : j.val ≠ 24) (other : j ≠ 34) :
+      S.R (placed p (record p j)) = (seed p).R (record p j) := by
+    have off := privatePort p j ne
+    exact (((stored p _ off).2).trans (saved p _ off).2.2).trans
+      (Function.update_of_ne ((record p).injective.ne other) ..)
+  obtain ⟨v,D,a,start,user,paid,loaded,left,right⟩ := write c u S input header (fun p =>
+    ⟨free p,(scratch p 0 (by decide) (by decide)).trans (archive p).2.1,
+      (scratch p 1 (by decide) (by decide)).trans (archive p).2.2⟩)
   let state := fun (x : X) (D : Stacks owners prime) => rep x D.L D.R
   have ownersRight j : D.R (owner (shared j)) = S.R (owner (shared j)) := right _ (by
     intro p
@@ -578,18 +650,19 @@ theorem runSelectedStageArchives {U : Type} {Q l r owners : ℕ}
       have hr : D.R ∘ (shared.trans owner) = S.R ∘ (shared.trans owner) := funext ownersRight
       rwa [hl,hr]) (by
       intro p mem k off
-      have kept := stock p mem k off
-      refine ⟨(left _).trans kept.1,?_⟩
+      have kept := stored p k off
+      have expected := (saved p k off).2
+      refine ⟨(left _).trans (kept.1.trans expected.1),?_⟩
       by_cases hit : k = record p 34
       · subst k
-        exact (loaded p).trans (archive p).symm
+        exact (loaded p).trans (archive p).1.symm
       · have unchanged := right (bank p k) (by
           intro q
           by_cases eq : q = p
           · subst q
             exact (bank p).injective.ne (Ne.symm hit)
           · exact (apart p k off q eq _))
-        exact unchanged.trans (kept.2 hit))
+        exact unchanged.trans (kept.2.trans (expected.2.trans (Function.update_of_ne hit ..))))
   refine ⟨z,F,_,y,start.seq run,?_,same.trans user,out,(stageOccurrenceEffects l r effect x y).mp trace⟩
   have sum : (order.map cost).sum = (order.map work).sum+
       ((List.range' (stageChildStart n) (stageRuns.flatMap (fun _ => Geometry.Moves.localPaid)).length).map childTime).sum := by

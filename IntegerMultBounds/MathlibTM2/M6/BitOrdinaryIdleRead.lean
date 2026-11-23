@@ -2400,6 +2400,10 @@ private theorem copyWindowPlacement {t k m n e x : ℕ} (record : Fin t) (tmp : 
     obtain ⟨other,off⟩ := rightOff j h
     exact ⟨⟨⟨fun l => off (a l),fun l => off (ports l),fun l => off (b l)⟩,fun l => off (fan l)⟩,other⟩
 
+/-- The archive and two scratch words needed at worker entry. -/
+def WorkerEntryWords {T : ℕ} (ports : Fin 35 → Fin T) (record : List (Fin (prime+4))) (S : Stacks T prime) : Prop :=
+  S.R (ports 34) = record ∧ S.R (ports 0) = [] ∧ S.R (ports 1) = []
+
 open M8.Machine.Segments SharedPlacementAlphabet in
 open M8.Machine.ArbitraryWidthHighExchangeShared (sourceWord) in
 open Cover.Fallback IntegerMultBounds.Networks.Certificates.PR589 RecursiveInterchangeLayout in
@@ -2426,7 +2430,7 @@ theorem commonCopyWindow_layout (inherited charged : Bool) [M8.Machine.Net]
     let bank := ((Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)).trans ports
     let clean := fun D : Stacks T prime => ∀ k : Fin (rowSwapBlock.tapes+35), 35 ≤ k.val → D.L (ports k) = [] ∧ D.R (ports k) = []
     let V := M^16*W
-    ∀ record, ∃ prepared : Stacks T prime, prepared.R (bank 34) = record ∧ ∀ budget,
+    ∀ record, ∃ prepared : Stacks T prime, WorkerEntryWords bank record prepared ∧ ∀ budget,
     let fanReady := fun X (D : Stacks T prime) => RepT (PointwiseRoleGate.bank (a := prime)
       (fun _ _ => blank) (fun _ => 0) (SparseRoleCircuit.encoded X) (FlatCoordinateSchedule.bits V))
       (embStk fan D).L (embStk fan D).R
@@ -2527,7 +2531,7 @@ theorem commonCopyWindow_layout (inherited charged : Bool) [M8.Machine.Net]
   obtain ⟨core,initialA,initialB,initialRecord,initialClean⟩ :=
     basisRecordSeed A B' ports a b srcA srcB apart priv view size record dest q' [] []
       (fun z => by simp [readAt_nil_left,wordTape_nil]; rfl)
-  refine ⟨core,initialRecord.archive,?_⟩
+  refine ⟨core,⟨initialRecord.archive,(initialRecord.scratch 0 (by decide)).2,(initialRecord.scratch 1 (by decide)).2⟩,?_⟩
   intro budget fanReady stored recurse
   intro data u S ready saved
   let x := data src
