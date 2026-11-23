@@ -22,8 +22,10 @@ theorem seededIntervalRecord {P U : Type} {T B Q w W atom price lo hi axes : ℕ
     {body : P → Pr P B Q prime U} {code src dst seed}
     (child : PackedPieceHandoffWithCharge cleanupWeight ((prime^(w+1))^(axes+axes)*W) (packedChildOutput atom _) body code src dst seed price)
     (slots : Fin 6 ↪ Fin B)
+    (seedLane : Descriptor := phaseIntervalChild lo hi (w+1) W axes)
+    (seedVolume : volume prime seedLane = volume prime (phaseIntervalChild lo hi (w+1) W axes) := by rfl)
     (leftSeed : ∀ j, seed.L j = [])
-    (headers : ∀ i, seed.R (slots i) = (Routines.hdr (phaseIntervalChild lo hi (w+1) W axes) i).map bitSymbol)
+    (headers : ∀ i, seed.R (slots i) = (Routines.hdr seedLane i).map bitSymbol)
     (unused : ∀ j, (∀ i, slots i ≠ j) → seed.R j = [])
     (splitter : Fin intervalSplitTapes ↪ Fin T) (directory : Fin 72 ↪ Fin T)
     (apart : ∀ i j, splitter i ≠ directory j) (source : Fin 72 ↪ Fin T)
@@ -56,7 +58,7 @@ theorem seededIntervalRecord {P U : Type} {T B Q w W atom price lo hi axes : ℕ
         S.L j = [] ∧ S.R j = []) →
       (∀ i : Fin B, let j := extend (i.natAdd (142082+T))
         S.L j = [] ∧ S.R j = []) →
-      (∀ i, S.R (raw (descriptorPorts i)) = (Routines.hdr lane i).map bitSymbol) →
+      (∀ i, S.R (raw (descriptorPorts i)) = (Routines.hdr seedLane i).map bitSymbol) →
       let split : Pr Empty intervalSplitTapes Q prime U := intervalPrepare.seq
         (foreign (liftQ (CyclicRowNormalized.splitProgram 142080 prime) mergeCap))
       let M := prime^(w+1)
@@ -132,8 +134,10 @@ theorem seededIntervalRecord {P U : Type} {T B Q w W atom price lo hi axes : ℕ
       change 0 < RecursiveInterchangeLayout.volume prime (phaseIntervalChild lo hi (w+1) W axes)
       rw [intervalChild_volume ordered fits]
       exact Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) positive
-    have seedBill := descriptorSeedBill lane vol
-    rw [show (fun i => seed.R (slots i)) = (fun i => (Routines.hdr lane i).map bitSymbol) from funext headers] at charge
+    have seedBill := descriptorSeedBill seedLane (seedVolume.symm ▸ vol)
+    rw [seedVolume] at seedBill
+    change _ ≤ 133*V at seedBill
+    rw [show (fun i => seed.R (slots i)) = (fun i => (Routines.hdr seedLane i).map bitSymbol) from funext headers] at charge
     change k+tapeCharge cleanupWeight work D ≤ _ at charge
     change n ≤ (149*(intervalSplitTapes+5)+13)*volume+34+
       (tapeCharge cleanupWeight work D+entryGrowth+localCost)+18*volume+23 at paid
