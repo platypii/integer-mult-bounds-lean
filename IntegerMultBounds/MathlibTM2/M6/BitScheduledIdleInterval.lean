@@ -1,7 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.M6.BitGeneratedIntervalCaller
-public import IntegerMultBounds.MathlibTM2.M6.BitFlatIdleCall
+public import IntegerMultBounds.MathlibTM2.M6.BitIdleParentWorker
 public import IntegerMultBounds.MathlibTM2.M6.BitChartCutoff
 
 @[expose] public section
@@ -318,7 +318,7 @@ theorem alignedIdleDispatch [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity : co
       let child := scheduledChild prime node (idleDirectoryIndex (i,j))
       0 < W → ∃ position : Fin (volume prime child) ≃ Fin (volume prime wide),
       child.width < node.width ∧ InheritedIntervalPositions child wide rfl position ∧
-      ∀ (word : Fin (volume prime wide) → ZMod 2) u S,
+      ∀ (word : Fin ((prime^a)^128*(W*142080)) → ZMod 2) u S,
       S.R (bank 2) = binSyms M.size M → S.R (bank 28) = binSyms 1 1 →
       S.R (bank 53) = binSyms W.size W → (S.R (bank 71)).length = a →
       (∀ i : Fin 72, 59 ≤ i.val → i.val ≤ 65 → S.R (bank i) = []) →
@@ -329,7 +329,7 @@ theorem alignedIdleDispatch [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity : co
       (S.R (cmp 0)).length = w → S.R (cmp 1) = binSyms L cutoff →
       (∀ k : Fin 10, 2 ≤ k.val → S.R (cmp k) = []) →
       let result := fun (start F : Stacks (72+N) prime) => ∃ changed, RecordPayload (bank 24) (fun _ => blank) 0 changed F ∧
-        (∀ k, changed (position k) = Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (word ∘ position) k) ∧
+        parentIntervalRead i idleCopies[j.val].2 a (W*142080) word changed ∧
         ∀ k, k ≠ bank 24 → F.L k = start.L k ∧ F.R k = start.R k
       (cutoff < child.width → IntervalWorkerExec body recursiveLabel lane a W recursiveBudget) →
       ∃ z F t, Exec body code (mk u S) t (mk z F) ∧ z.user = u.user ∧ result S F ∧
@@ -346,10 +346,24 @@ theorem alignedIdleDispatch [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity : co
   intro word u S radix unit suffix atom scratch payload left headers unused recursiveBudget clock stored free result recurse
   have inherited := directoryDigits_bound prime root path
   have nodeBound : node.width ≤ root.width := by dsimp only [node]; omega
-  obtain ⟨z,F,t,exec,user,out,paid⟩ := call word u S radix unit suffix atom scratch payload left headers unused
+  have shape : wide = phaseIntervalChild (e.1+1) (e.2+1) a (W*142080) 64 := by
+    simp only [wide,lane,phaseIntervalChild,Nat.mul_assoc]
+  let physical := (congrArg (volume prime) shape).trans
+    (intervalChild_volume (Nat.succ_le_succ (idleBounds i idleCopies[j.val].2).1)
+      (Nat.succ_le_succ (idleBounds i idleCopies[j.val].2).2) a (W*142080))
+  let input := fun k => word (Fin.cast physical k)
+  have entry : RecordPayload (bank 24) (fun _ => blank) 0 input S :=
+    recordPayload_castInput physical (bank 24) S word payload
+  obtain ⟨z,F,t,exec,user,out,paid⟩ := call input u S radix unit suffix atom scratch entry left headers unused
     L cutoff recursiveBudget ((active.trans nodeBound).trans_lt (Nat.lt_size_self _))
     (Nat.size_le_size (smaller.le.trans nodeBound)) clock stored free recurse
-  refine ⟨z,F,t,exec,user,out,?_⟩
+  obtain ⟨y,record,action,frame⟩ := out
+  have sameWidth : wide.width = child.width := by
+    change ((e.2+1)-(e.1+1))*a = nodeChildren5.get (idleDirectoryIndex (i,j))*(node.width/64)
+    rw [Nat.add_sub_add_right,width,Nat.mul_div_cancel_left _ (by decide),idleDirectoryIndex_rank]
+  obtain ⟨changed,returned,reads⟩ := scheduledIdleParentRecord (bank 24) F i idleCopies[j.val].2 a (W*142080)
+    child wide shape physical position coords sameWidth word y record action
+  refine ⟨z,F,t,exec,user,⟨changed,returned,reads,frame⟩,?_⟩
   let rank := nodeChildren5.get (idleDirectoryIndex (i,j))
   have scaled : (w+1)*rank = child.width := by
     change _ = rank*(node.width/64)
