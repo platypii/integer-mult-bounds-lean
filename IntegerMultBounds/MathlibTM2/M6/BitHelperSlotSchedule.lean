@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.M6.BitRemainderPiece
 public import IntegerMultBounds.MathlibTM2.M6.BitIntervalRows
 public import IntegerMultBounds.MathlibTM2.M6.BitHelperPacking
 public import IntegerMultBounds.MathlibTM2.M6.OrthogonalInvocation
@@ -71,6 +72,135 @@ theorem helperSubinterval_volume (v : RecursiveInterchangeLayout.Descriptor)
   rw [width,← Nat.add_mul,← Nat.add_mul]
   congr 1
   omega
+
+open RecursiveInterchangeLayout Cover.Fallback in
+/-- Selecting the physical slot on a row-split owner preserves all three
+quantities used to recurse at the scheduled occurrence. -/
+theorem helperSubinterval_shape (v : Descriptor) (i : Fin nodeChildren5.length)
+    (n : Fin 9) (r : Fin 32) (d : Fin 5) (h : Fin 439) (w lo hi : ℕ)
+    (width : v.width = 64*w) (ordered : lo ≤ hi) (fits : hi ≤ 8)
+    (rank : nodeChildren5[i.val] = hi-lo) :
+    let slot := IntegerMultBounds.MathlibTM2.M6.BitNode.slotOf n.val h.val
+    let start := 7*idleSource slot.idle + 8*(((hostRole n r d h).cls.val+5-d.val)%5)
+    ScheduledChildShape prime v i (inheritedInterval (role v 142080)
+      ((start+lo)*w) ((hi-lo)*w) ((64-(start+hi))*w)) := by
+  intro slot start
+  have actual := helperSubinterval_volume (role v 142080) n h w lo hi width ordered fits
+  dsimp only at actual
+  rw [helperSubinterval_descriptor _ n r d h w lo hi fits] at actual
+  have scheduled : scheduledChild prime v i =
+      rankDescriptor prime ((hi-lo)*w) ((64-(hi-lo))*w) (role v 142080) := by
+    simp only [scheduledChild,width,Nat.mul_div_cancel_left _ (by decide : 0 < 64),rank]
+  constructor
+  · rw [scheduled]
+    rfl
+  · rfl
+  · rw [scheduled,rankDescriptor_volume]
+    · exact actual
+    · change v.width = _
+      rw [width,← Nat.add_mul]
+      congr 1
+      omega
+
+open RecursiveInterchangeLayout Certificates.PR589 in
+/-- A paid MOVE on a helper uses the directory entry for that occurrence,
+even when several edges have the same frame pair. -/
+theorem helperMove_shape (v : Descriptor) (n : Fin 9) (run : Fin 32 × Fin 5)
+    (h : Fin 439) (w : ℕ) (width : v.width = 64*w) :
+    let edges := Geometry.Moves.phaseEdges.filter fun p => Geometry.moveRank p.1 p.2 != 0
+    ∀ j : Fin edges.length, let p := edges[j.val]
+      let a := Geometry.Dimensions.value p.1
+      let b := Geometry.Dimensions.value p.2
+      let lo := min a b
+      let hi := max a b
+      let start := (helperPosition (n,h)).val
+      ScheduledChildShape prime v (phaseChildPositions.choose (n,run,j))
+        (inheritedInterval (role v 142080) ((start+lo)*w) ((hi-lo)*w) ((64-(start+hi))*w)) := by
+  intro edges j p a b lo hi start
+  have mem := List.mem_filter.mp (List.getElem_mem (l := edges) (n := j.val) j.isLt)
+  have checked := Geometry.Moves.phase_checked p mem.1
+  have paid : 0 < Geometry.moveRank p.1 p.2 := Nat.pos_of_ne_zero (bne_iff_ne.mp mem.2)
+  obtain ⟨ordered,fits⟩ := phaseInterval_bounds checked paid
+  have rank := (phaseChildPositions.choose_spec n run j).1
+  have diff := Geometry.Moves.rank p checked
+  change Geometry.moveRank p.1 p.2 = (b-a)+(a-b) at diff
+  change nodeChildren5[_] = Geometry.moveRank p.1 p.2 at rank
+  rw [show start = _ from helperPosition_of_runClass n run.1 run.2 h]
+  apply helperSubinterval_shape _ _ _ _ _ _ _ _ _ width ordered.le fits
+  exact rank.trans (diff.trans (by omega))
+
+/-- In inherited order the live H digits begin at the slot offset; the
+corresponding D digits begin 64 fields later. -/
+def helperBasisAxis (p : Fin 56) (i : Fin 16) : Fin 128 :=
+  ⟨p.val+i.val+(if i.val < 8 then 0 else 56),by split <;> omega⟩
+
+theorem helperBasisAxis_strict (p : Fin 56) : StrictMono (helperBasisAxis p) := by
+  intro i j lt
+  change i.val < j.val at lt
+  change p.val+i.val+(if i.val < 8 then 0 else 56) < p.val+j.val+(if j.val < 8 then 0 else 56)
+  split_ifs <;> omega
+
+/-- Compile each elementary basis operation at its physical field position,
+retaining the protected coefficient and the earlier-control condition. -/
+def helperBasisOp (p : Fin 56) : FlatCoordinateSchedule.Op 16 → FlatCoordinateSchedule.Op 128
+  | .scale t a legal => .scale (helperBasisAxis p t) a legal
+  | .shift t k earlier a legal =>
+    .shift (helperBasisAxis p t) (helperBasisAxis p k) (helperBasisAxis_strict p earlier) a legal
+
+theorem helperBasis_read (p : Fin 56) (ops : List (FlatCoordinateSchedule.Op 16)) (b : ℕ)
+    (x : Fin 128 → ZMod (ActualAffineScaling.modulus b)) :
+    OrderedAffine.run (ops.map fun op => (helperBasisOp p op).action b) x ∘ helperBasisAxis p =
+      OrderedAffine.run (ops.map fun op => op.action b) (x ∘ helperBasisAxis p) := by
+  induction ops generalizing x with
+  | nil => rfl
+  | cons op ops ih =>
+    simp only [List.map_cons,OrderedAffine.run,List.foldl_cons] at ih ⊢
+    rw [ih]
+    congr 1
+    cases op <;> exact Function.update_comp_eq_of_injective x (helperBasisAxis_strict p).injective _ _
+
+theorem helperBasis_spectator (p : Fin 56) (ops : List (FlatCoordinateSchedule.Op 16)) (b : ℕ)
+    (x : Fin 128 → ZMod (ActualAffineScaling.modulus b)) (j : Fin 128)
+    (outside : ∀ i, j ≠ helperBasisAxis p i) :
+    OrderedAffine.run (ops.map fun op => (helperBasisOp p op).action b) x j = x j := by
+  induction ops generalizing x with
+  | nil => rfl
+  | cons op ops ih =>
+    simp only [List.map_cons,OrderedAffine.run,List.foldl_cons] at ih ⊢
+    rw [ih]
+    cases op <;> exact Function.update_of_ne (outside _) _ _
+
+local instance (b : ℕ) : NeZero (ActualAffineScaling.modulus b) := ⟨(ActualAffineScaling.modulus_pos b).ne'⟩
+
+open M8.Machine.Segments ActualAffineScaling AffineFieldCoordinates in
+/-- A certified basis segment runs on the owner's clean bank. Its active
+coordinates follow the original field program and every other digit is fixed. -/
+theorem helperSegment_runs (p : Fin 56) (ops : List (AffineFieldProgram.Op (Fin 8) ℚ))
+    (good : Good ops) (b W : ℕ) (live : 0 < W) (input : FlatCoordinateStages.Array 128 b W) :
+    let physical := (description ops good).map (helperBasisOp p)
+    let bank := fun word => SharedBankStageInput.raw (FlatCoordinateShiftSharedBank.common word)
+      (FlatCoordinateCleanSchedule.tapeCount physical)
+    let spec := ops.map (AffineFieldProgram.mapOp (IntegerMultBounds.Swap.Modular.ratMod (modulus b)))
+    HoareTime (FlatCoordinateCleanSchedule.program physical) (fun z => z = bank input)
+      (fun z => ∃ output, z = bank output ∧
+        ∀ x s, x ∘ helperBasisAxis p = embed s → ∃ y,
+          y ∘ helperBasisAxis p = embed (AffineFieldProgram.run spec s) ∧
+          (∀ j, (∀ i, j ≠ helperBasisAxis p i) → y j = x j) ∧
+          ∀ j : Fin W, output (FlatCoordinateLayout.index y j) = input (FlatCoordinateLayout.index x j))
+      (FlatCoordinateCleanSchedule.constant physical*((modulus b)^128*W)) := by
+  intro physical bank spec
+  apply (FlatCoordinateCleanSchedule.realizes physical b W live input).consequence (fun _ h => h) _ le_rfl
+  intro z result
+  refine ⟨_,result.1,?_⟩
+  intro x s active
+  let y := OrderedAffine.run (physical.map fun op => op.action b) x
+  refine ⟨y,?_,?_,result.2 x⟩
+  · have action := helperBasis_read p (description ops good) b x
+    rw [active,description_actions ops good b,segment_run _ (nonrecursive_map ops good b)] at action
+    simpa only [y,physical,List.map_map,Function.comp_def] using action
+  · intro j outside
+    simpa only [y,physical,List.map_map,Function.comp_def] using
+      helperBasis_spectator p (description ops good) b x j outside
 
 /-- On a flat owner the interval builder accepts the original compact input.
 Moving the slot changes the program's prefix and suffix, but its runtime
