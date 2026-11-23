@@ -1111,4 +1111,153 @@ theorem invocationScalarPhases (P U : Type) {k : ℕ} (layout : Fin 661 ↪ Fin 
     (Frames.snapshot Frames.initialRefs) (Frames.scatterFinish Frames.beforeScatter)
     (Geometry.Moves.phaseEdges.filter positiveMove) invocationMoveBlocks_order (invocationPhase_allowed false) (invocationPhase_allowed true) tapes owner
 
+private theorem phaseDirectory (afterCopy : Bool) :
+    let gs := if afterCopy then sectionB++sectionC else sectionD++sectionA
+    let cur := if afterCopy then Frames.scatterFinish Frames.beforeScatter else Frames.snapshot Frames.initialRefs
+    let blocks := (phaseMoveBlocks gs cur).1
+    let start := if afterCopy then ((Frames.edges (sectionD++sectionA) (Frames.snapshot Frames.initialRefs)).filter positiveMove).length else 0
+    ∃ select : Fin blocks.length → MoveIndex, ∀ i, (select i).val = start+i.val ∧
+      (Geometry.Moves.phaseEdges.filter positiveMove)[(select i).val] = blocks[i.val].2 := by
+  have count (gs : List RawGate) (cur : ℕ → ℕ) :
+      (phaseMoveBlocks gs cur).1.length = ((Frames.edges gs cur).filter positiveMove).length := by
+    simpa only [List.length_map] using congrArg List.length (phaseMoveBlocks_spec gs cur).1
+  obtain ⟨pre,post,left,right⟩ := invocationMoveIndices
+  cases afterCopy
+  · exact ⟨pre,fun i => ⟨(left i).1.trans (Nat.zero_add _).symm,(left i).2⟩⟩
+  · exact ⟨post,fun i => ⟨(right i).1.trans (congrArg (·+i.val) (count _ _)),(right i).2⟩⟩
+
+open RecursiveInterchangeLayout in
+def ChargedPhaseComponent [M8.Machine.Net] (P U : Type) (n : Fin 9) (p : Fin 32 × Fin 5)
+    (layout : Fin 661 ↪ Fin 142081) (gs : List RawGate) (cur : ℕ → ℕ) (start : ℕ)
+    (select : Fin (phaseMoveBlocks gs cur).1.length → MoveIndex) : Prop :=
+    let blocks := (phaseMoveBlocks gs cur).1
+    let I := Fin blocks.length
+    ∃ (tapes : I → ℕ) (ports : ∀ i, Fin (rowSwapBlock.tapes+35) ↪ Fin (tapes i))
+      (states : ℕ),
+    ∀ {Q : ℕ}, states ≤ Q → ∀ (body : ∀ i, P → Pr P (tapes i) Q prime U) (f : I → P),
+    ∃ (T : ℕ) (fan : Fin (142081+2+1) ↪ Fin T) (host : I × P → Pr (I × P) T Q prime U)
+      (code : Pr (I × P) T Q prime U) (overhead : ℕ) (base swaps : I → ℕ),
+    ∀ (node : Descriptor) (w B rows : ℕ), node.width = 64*(w+1) → node.rows = 142080*rows →
+    node.beforeH = B*prime^(64*((w+1)*64)) →
+    let M := prime^(w+1)
+    let K := node.beforeRows*rows*node.between*node.afterD
+    let W := (M^112*B)*prime^(64*((w+1)*64))*K
+    let V := M^16*W
+    let desc := fun i => scheduledChild prime node (phaseChildPositions.choose (n,p,select i))
+    0 < W → ∃ position : ∀ i, Fin (volume prime (desc i)) ≃ Fin V,
+    (∀ i h, ((position i) h).val = (CopyChildLayout.packActive (desc i) h).val) ∧
+    ∀ (record : I → List (Fin (prime+4))) (budget : I → ℕ) word,
+    (∀ i, ScheduledChildExec node (desc i) w W (ports i) (record i) (position i) (body i) (f i) (budget i) true) →
+    let bill := fun i => budget i+nativePrice true ((base i+swaps i*swapVolumeRate w)*V)
+    let rep := fun x (S : Stacks T prime) => HelperFan (Fin.castAddEmb 1) x (embStk fan S) ∧ S.R (fan (Fin.last (142081+2))) = word
+    ∃ initial, ∀ (x : Fin 142081 → Fin V → ZMod 2) u S, PrivateTapes fan initial S → rep x S →
+      ∃ z F t, Exec host code (mk u S) t (mk z F) ∧ CleanupBound S F t (overhead*V+((List.finRange blocks.length).map bill).sum) ∧
+        z.user = u.user ∧ rep (runIndexedPhase (scalarOwnerEffect layout) (moveOwnerEffect layout) gs cur x start) F
+
+private theorem assemblePhaseComponent [M8.Machine.Net] (P U : Type) (n : Fin 9) (p : Fin 32 × Fin 5)
+    (layout : Fin 661 ↪ Fin 142081) (gs : List RawGate) (cur : ℕ → ℕ) (start : ℕ)
+    (select : Fin (phaseMoveBlocks gs cur).1.length → MoveIndex) (allowed : ∀ g ∈ gs, g ∈ program)
+    (atIndex : ∀ i, (select i).val = start+i.val ∧ (Geometry.Moves.phaseEdges.filter positiveMove)[(select i).val] =
+      (phaseMoveBlocks gs cur).1[i.val].2) : ChargedPhaseComponent P U n p layout gs cur start select := by
+  classical
+  unfold ChargedPhaseComponent
+  intro blocks I
+  choose tapes qs regs owners workers using fun i : I => invocationMoveComponent layout n p (select i)
+  obtain ⟨states,compile⟩ := scalarMoveSequence (P := P) (U := U) layout gs cur allowed
+    (fun i => tapes i+1) (fun i => withCutoffPort (owners i))
+  refine ⟨tapes,regs,max states (Finset.univ.sup qs),?_⟩
+  intro Q cap body f
+  choose base swaps move run using fun i => workers i ((Finset.le_sup (Finset.mem_univ i)).trans ((le_max_right ..).trans cap)) (body i) (f i)
+  obtain ⟨T,fan,host,code,overhead,phase⟩ := compile ((le_max_left ..).trans cap)
+    (fun i label => embProg (Fin.castAddEmb 1) id (body i label)) move
+  refine ⟨T,fan,host,code,overhead,base,swaps,?_⟩
+  intro node w B rows width split label M K W V desc pos
+  choose position coords prepare using fun i => run i node w B rows width split label pos
+  refine ⟨position,coords,?_⟩
+  intro record budget word children bill rep
+  choose seed execute using fun i => prepare i (record i)
+  let blankOwners : Stacks (142081+2+1) prime := ⟨[],[],fun _ => [],fun _ => []⟩
+  have size : 0 < V := Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) pos
+  obtain ⟨initial,_,exec⟩ := phase size word start (moveOwnerEffect layout) bill seed (fun i x u S live fresh => by
+    obtain ⟨z,F,t,h,cost,user,out⟩ := execute i (budget i) word (children i) x u S fresh live
+    refine ⟨z,F,t,h,cost,user,?_⟩
+    have index := (atIndex i).1
+    have edge := (atIndex i).2
+    rw [← index,← edge]
+    exact out) blankOwners
+  exact ⟨initial,exec⟩
+
+/-- Compile either literal phase with its selected physical MOVE workers. -/
+theorem invocationPhaseComponent [M8.Machine.Net] (P U : Type) (n : Fin 9) (p : Fin 32 × Fin 5)
+    (afterCopy : Bool) :
+    let gs := if afterCopy then sectionB++sectionC else sectionD++sectionA
+    let cur := if afterCopy then Frames.scatterFinish Frames.beforeScatter else Frames.snapshot Frames.initialRefs
+    let start := if afterCopy then ((Frames.edges (sectionD++sectionA) (Frames.snapshot Frames.initialRefs)).filter positiveMove).length else 0
+    let layout : Fin 661 ↪ Fin 142081 := ⟨ownerTape n p.1 p.2,ownerTape_injective ..⟩
+    ∃ select, (∀ i, (select i : MoveIndex).val = start+i.val) ∧ ChargedPhaseComponent P U n p layout gs cur start select := by
+  intro gs cur start layout
+  obtain ⟨select,atIndex⟩ := phaseDirectory afterCopy
+  exact ⟨select,fun i => (atIndex i).1,assemblePhaseComponent P U n p layout gs cur start select (invocationPhase_allowed afterCopy) atIndex⟩
+
+private theorem directorySum {l : ℕ} (start : ℕ) (child : Fin l → ℕ) (cost : ℕ → ℕ)
+    (atIndex : ∀ i, child i = start+i.val) :
+    ((List.finRange l).map (fun i => cost (child i))).sum = ((List.range' start l).map cost).sum := by
+  induction l generalizing start with
+  | zero => rfl
+  | succ l ih =>
+    rw [List.finRange_succ,List.range'_succ]
+    simp only [List.map_cons,List.map_map,List.sum_cons]
+    rw [atIndex 0]
+    simp only [Fin.val_zero,Nat.add_zero,Nat.add_right_inj]
+    exact ih (start+1) (fun i => child i.succ) (fun i => by rw [atIndex]; simp [Nat.add_assoc,Nat.add_comm 1])
+
+/-- The two compiled phase budgets and the nine COPY budgets use precisely
+the invocation's contiguous child directory, in pre-COPY, COPY, post-COPY execution order. -/
+theorem invocationComponentChildSum (n : Fin 9) (p : Fin 32 × Fin 5) (cost : ℕ → ℕ)
+    {left right : ℕ} (pre : Fin left → MoveIndex) (post : Fin right → MoveIndex)
+    (first : ∀ i, (pre i).val = i.val) (last : ∀ i, (post i).val = left+i.val)
+    (count : left+right = (Geometry.Moves.phaseEdges.filter positiveMove).length) :
+    let child := fun j : MoveIndex => (phaseChildPositions.choose (n,p,j)).val
+    ((List.finRange left).map (fun i => cost (child (pre i)))).sum +
+      ((List.ofFn (fun j : CopyIndex => cost (copyChildPosition (n,p,j)).val)).sum +
+       ((List.finRange right).map (fun i => cost (child (post i)))).sum) =
+      ((List.range' (stageChildStart n+runChildStart p) Geometry.Moves.localPaid.length).map cost).sum := by
+  intro child
+  let start := stageChildStart n+runChildStart p
+  have offset j : child j = start+j.val := by
+    simpa only [child,start,Nat.add_assoc] using (phaseChildPositions.choose_spec n p j).2
+  rw [directorySum start _ _ (fun i => (offset (pre i)).trans (congrArg (start+·) (first i))),
+      directorySum (start+left) _ _ (fun i => by rw [offset,last]; simp only [start,Nat.add_assoc])]
+  have bill (es : List (ℕ × ℕ)) (a : ℕ) :
+      indexedBill (fun j _ => cost j) a es = ((List.range' a es.length).map cost).sum := by
+    induction es generalizing a with
+    | nil => rfl
+    | cons e es ih => simp [indexedBill,List.range'_succ,ih]
+  have total := invocationChildBill n p (fun _ => 0) cost
+  simp only [bill,List.map_const',List.sum_replicate,nsmul_zero,Nat.zero_add] at total
+  have join : ((List.range' start left).map cost).sum + ((List.range' (start+left) right).map cost).sum =
+      ((List.range' start (Geometry.Moves.phaseEdges.filter positiveMove).length).map cost).sum := by
+    rw [← List.sum_append,← List.map_append,List.range'_append_1,count]
+  rw [Nat.add_comm ((List.ofFn _).sum),← Nat.add_assoc,join]
+  exact total
+
+/-- Split the three actual execution bills into the local work and the child
+sum required by the recursive node. The COPY sequence pays one final step. -/
+theorem invocationComponentBudget (n : Fin 9) (p : Fin 32 × Fin 5) (cost : ℕ → ℕ)
+    {left right : ℕ} (pre : Fin left → MoveIndex) (post : Fin right → MoveIndex)
+    (first : ∀ i, (pre i).val = i.val) (last : ∀ i, (post i).val = left+i.val)
+    (count : left+right = (Geometry.Moves.phaseEdges.filter positiveMove).length)
+    (leftScalar rightScalar : ℕ) (leftMove : Fin left → ℕ) (rightMove : Fin right → ℕ) (copy : CopyIndex → ℕ) :
+    let child := fun j : MoveIndex => cost (phaseChildPositions.choose (n,p,j)).val
+    let leftBill := leftScalar+((List.finRange left).map (fun i => child (pre i)+leftMove i)).sum
+    let rightBill := rightScalar+((List.finRange right).map (fun i => child (post i)+rightMove i)).sum
+    let copyBill := (List.ofFn copy).sum+(List.ofFn (fun j : CopyIndex => cost (copyChildPosition (n,p,j)).val)).sum+1
+    leftBill+(copyBill+rightBill) =
+      leftScalar+rightScalar+((List.finRange left).map leftMove).sum+((List.finRange right).map rightMove).sum+
+        (List.ofFn copy).sum+1+((List.range' (stageChildStart n+runChildStart p) Geometry.Moves.localPaid.length).map cost).sum := by
+  dsimp only
+  rw [List.sum_map_add,List.sum_map_add,← invocationComponentChildSum n p cost pre post first last count]
+  dsimp only
+  omega
+
 end IntegerMultBounds.MathlibTM2.M6.BitNode
