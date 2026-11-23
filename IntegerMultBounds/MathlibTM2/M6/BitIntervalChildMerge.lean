@@ -25,6 +25,17 @@ private theorem placedOwners {T H A m c : ℕ} (splitter : Fin (((1+c)+2)+2) ↪
     HelperFan ((((intervalOwners c).trans splitter).trans caller).trans extend) data S :=
   intervalOwners_ready target data _ split
 
+private theorem outsideReturnedMergeBank {c T : ℕ} (saved : Fin 3 ↪ Fin T) (returned : Fin (c+2) ↪ Fin T)
+    (apart : ∀ i j, saved i ≠ returned j) {j : Fin T} (savedOff : ∀ i, saved i ≠ j)
+    (returnedOff : ∀ i, returned i ≠ j) : ∀ i, returnedMergeBank saved returned apart i ≠ j := by
+  refine Fin.addCases ?_ ?_
+  · refine Fin.addCases ?_ ?_
+    · refine Fin.addCases ?_ ?_
+      · intro i; simpa [returnedMergeBank] using savedOff 0
+      · intro i; simpa [returnedMergeBank] using returnedOff (i.castAdd 2)
+    · intro i; simpa [returnedMergeBank] using savedOff i.succ
+  · intro i; simpa [returnedMergeBank] using returnedOff (i.natAdd c)
+
 theorem packedIntervalMerge {P U : Type} {T B Q w W atom price lo hi axes : ℕ}
     (capacity : rowSwapBlock.states ≤ Q)
     (mergeCap : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q)
@@ -61,7 +72,9 @@ theorem packedIntervalMerge {P U : Type} {T B Q w W atom price lo hi axes : ℕ}
       ∃ z F n, Exec host program (mk u S) n (mk z F) ∧
         n ≤ intervalChildToll U lo hi w W axes + price + (149*(V*142080)*(intervalSplitTapes+5)+6) ∧
         z.user = u.user ∧ RepT (intervalOwnerBank (putWord target 0 (List.ofFn word)) output)
-          (embStk bank F).L (embStk bank F).R := by
+          (embStk bank F).L (embStk bank F).R ∧
+        ∀ j, (∀ i, splitter i ≠ j) → F.L (extend (caller j)) = S.L (extend (caller j)) ∧
+          F.R (extend (caller j)) = S.R (extend (caller j)) := by
   intro live H caller extend initial small ports lane V
   obtain ⟨host,call,returned,disjoint,run⟩ :=
     runIntervalChild capacity ordered fits positive widthAt child live headers width apart widthFree
@@ -78,12 +91,22 @@ theorem packedIntervalMerge {P U : Type} {T B Q w W atom price lo hi axes : ℕ}
   have vol : 0 < V := by
     rw [size]
     exact Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) positive
-  apply mergeAfterReturnedRows host call saved _ separate mergeCap vol target data output (embStk initial S) u S split
   have owners : HelperFan ((live.trans caller).trans extend) data S :=
     placedOwners (c := 142080) splitter caller extend target data S split
   obtain ⟨v,D,k,exec,paid,user,rows,frame⟩ := run data u S dimensions
     ((castFan size ((live.trans caller).trans extend) data S).2 owners) free fresh prepared
-  exact ⟨v,D,k,exec,paid,user,(castFan size _ output D).1 rows,fun i => frame _ (outside i)⟩
+  obtain ⟨z,F,n,merged,cost,same,result,_,keep,_⟩ :=
+    placedMergeReturnedOwners_exec host bank mergeCap vol target data output (embStk initial S) v D split
+      (by rw [returnedMergeBank_owners]; exact (castFan size _ output D).1 rows)
+      (by rw [returnedMergeBank_target]; exact frame _ (outside 0))
+      (fun j => by dsimp only; rw [returnedMergeBank_inner]; exact frame _ (outside j.succ))
+  refine ⟨z,F,k+n,exec.seq merged,Nat.add_le_add paid cost,same.trans user,result,?_⟩
+  intro j off
+  have away (i) : live i ≠ j := off _
+  have savedOff (i) : saved i ≠ extend (caller j) := extend.injective.ne (caller.injective.ne (off _))
+  have returnedOff (i) : (returned.trans extend) i ≠ extend (caller j) := extend.injective.ne (disjoint j away i)
+  have bankOff := outsideReturnedMergeBank saved (returned.trans extend) separate savedOff returnedOff
+  exact ⟨(keep _ bankOff).1.trans (frame j away).1,(keep _ bankOff).2.trans (frame j away).2⟩
 
 theorem directoryIntervalMerge {P U : Type} {T B Q w W atom price lo hi axes : ℕ}
     (capacity : rowSwapBlock.states ≤ Q)
@@ -142,7 +165,7 @@ theorem directoryIntervalMerge {P U : Type} {T B Q w W atom price lo hi axes : �
   have represented : RepT (intervalOwnerBank target data) (embStk initial D).L (embStk initial D).R := by
     intro i z
     simpa only [embStk,Function.comp_apply,(same i).1,(same i).2] using split i z
-  obtain ⟨z,F,n,exec,cost,result,out⟩ := merge target data v D represented inputs (by
+  obtain ⟨z,F,n,exec,cost,result,out,_⟩ := merge target data v D represented inputs (by
     intro r k ne
     have h := frame (ports r k) (fun i => (intervalRecordBank_outside (live.trans caller) (small 24)
       (caller (directory i)) (fun r => caller.injective.ne (apart _ _)) r k).symm)
