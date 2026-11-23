@@ -77,6 +77,118 @@ theorem mergeFreshOwners {P U : Type} {Q m : ℕ}
   obtain ⟨v,F,t,run,cost,user,out,_⟩ := mergeReturnedOwners_exec body capacity positive _ data u D ready
   exact ⟨v,F,1+t,mark.seq run,by omega,user,intervalOwnerPayload (Function.Embedding.refl _) F _ data out⟩
 
+/-- Clearing a subset pays for itself from the cleanup charge on the
+observed tapes, apart from the four-step overhead per cleared tape. -/
+private theorem clearCharge {T : ℕ} (S : Stacks T prime) (slots js : List (Fin T))
+    (slotsDistinct : slots.Nodup) (distinct : js.Nodup) (inside : slots ⊆ js) :
+    let weight := fun (l r : List (Fin (prime+4))) => 4*l.length+2*r.length+4
+    let D := {S with L := fun i => if i ∈ slots then [] else S.L i,
+                     R := fun i => if i ∈ slots then [] else S.R i}
+    tapeCharge weight slots S + tapeCharge weight js D =
+      tapeCharge weight js S + 4*slots.length := by
+  intro weight D
+  let value (B : Stacks T prime) i := weight (B.L i) (B.R i)
+  change (slots.map (value S)).sum+(js.map (value D)).sum = (js.map (value S)).sum+_
+  rw [← List.sum_toFinset _ slotsDistinct,← List.sum_toFinset _ distinct,← List.sum_toFinset _ distinct]
+  have sub : slots.toFinset ⊆ js.toFinset := by intro i h; exact List.mem_toFinset.mpr (inside (List.mem_toFinset.mp h))
+  have stable : ∑ i ∈ js.toFinset \ slots.toFinset, value D i =
+      ∑ i ∈ js.toFinset \ slots.toFinset, value S i := by
+    apply Finset.sum_congr rfl
+    intro i mem
+    have h : i ∉ slots := by simpa using (Finset.mem_sdiff.mp mem).2
+    simp [value,D,h]
+  have blank : ∑ i ∈ slots.toFinset, value D i = 4*slots.length := by
+    calc
+      _ = ∑ _i ∈ slots.toFinset, 4 := Finset.sum_congr rfl (fun i h => by
+        have mem : i ∈ slots := List.mem_toFinset.mp h
+        simp [value,D,weight,mem])
+      _ = _ := by simp [List.toFinset_card_of_nodup slotsDistinct,Nat.mul_comm]
+  have before := Finset.sum_sdiff sub (f := value S)
+  have after := Finset.sum_sdiff sub (f := value D)
+  rw [← before,← after,stable,blank]
+  ac_rfl
+
+/-- On the MOVE return bank, reclaiming the three scratch tapes and
+merging the rows leaves a linear joint time and cleanup bill. -/
+theorem chargedMergeReturn {U : Type} {Q : ℕ}
+    (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q) :
+    let slots := [0,mergeInnerPort 0,mergeInnerPort 1]
+    let weight := fun (l r : List (Fin (prime+4))) => 4*l.length+2*r.length+4
+    ∃ code : Pr Empty intervalSplitTapes Q prime U, ∀ {m : ℕ}, 0 < m →
+      ∀ (data : Fin 142080 → Fin m → ZMod 2) u (S : Stacks intervalSplitTapes prime),
+      HelperFan (intervalOwners 142080) data S →
+      ∃ z F t, Exec Empty.elim code (mk u S) t (mk z F) ∧ z.user = u.user ∧
+        RecordPayload 0 (fun _ => blank) 0
+          (fun k => data (finProdFinEquiv.symm k).2 (finProdFinEquiv.symm k).1) F ∧
+        ∀ js, js.Nodup → slots ⊆ js → t+tapeCharge weight js F ≤
+          tapeCharge weight js S+19*(149*(m*142080)*(intervalSplitTapes+5)+7)+13 := by
+  intro slots weight
+  let merge : Pr Empty intervalSplitTapes Q prime U := (Prog.act mergeHeaders).seq
+    (foreign (liftQ (CyclicRowNormalized.mergeProgram 142080 prime) capacity))
+  refine ⟨(clearWorkTapes slots).seq merge,?_⟩
+  intro m pos data u S rows
+  obtain ⟨v,same,clear⟩ := clearWorkTapes_exec (P := Empty) Empty.elim slots (by decide) u S
+  let D := {S with L := fun i => if i ∈ slots then [] else S.L i,
+                   R := fun i => if i ∈ slots then [] else S.R i}
+  have preserved (i) : intervalOwners 142080 i ∉ slots := by
+    induction i using Fin.addCases with
+    | left i =>
+      simp only [intervalOwners,Function.Embedding.coeFn_mk,Fin.addCases_left,slots,
+        List.mem_cons,List.not_mem_nil,or_false]
+      intro h
+      rcases h with h|h|h <;> have e := congrArg Fin.val h <;> simp [mergeInnerPort] at e <;> omega
+    | right i => fin_cases i <;> decide
+  have ready : HelperFan (intervalOwners 142080) data D := by
+    intro i z
+    simpa only [embStk,Function.comp_apply,D,ite_eq_right (preserved i)] using rows i z
+  obtain ⟨z,F,n,run,paid,user,out⟩ := mergeFreshOwners (P := Empty) Empty.elim capacity pos data v D ready
+    (by intro j mem; change j ∈ slots at mem; simp only [D,ite_eq_left mem,and_self])
+  refine ⟨z,F,_,clear.seq run,user.trans same,out,?_⟩
+  intro js distinct inside
+  have nativePush {K P σ : Type} {Γ : K → Type} {p : Prog P Γ σ} {c : ℕ}
+      (bound : Fast.Main.mnNativePushBound c p) : Fast.Main.mnProgPush p ≤ c := by
+    induction p with
+    | act => exact bound
+    | seq _ _ ih₁ ih₂ | cond _ _ _ ih₁ ih₂ => exact max_le (ih₁ bound.1) (ih₂ bound.2)
+    | loop _ _ ih => exact ih bound
+    | call _ => exact bound.elim
+  have limit : Fast.Main.mnProgPush merge ≤ 3 := max_le (by change 3 ≤ 3; rfl)
+    ((nativePush (foreign_native _)).trans (by decide : 2 ≤ 3))
+  have growth := recordCleanup_cost_le js distinct run limit (fun e => nomatch e)
+  have released := clearCharge S slots js (by decide) distinct inside
+  change tapeCharge weight slots S+tapeCharge weight js D = tapeCharge weight js S+12 at released
+  change tapeCharge weight js F+1 ≤ tapeCharge weight js D+1+6*(3*n) at growth
+  change (tapeCharge weight slots S+1+n)+_ ≤ _
+  omega
+
+/-- Transport the merger and its cleanup allowance to the calling machine.
+Any observed workspace containing the three reclaimed tapes can be charged. -/
+theorem placedChargedMergeReturn {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U)
+    (bank : Fin intervalSplitTapes ↪ Fin T)
+    (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q) :
+    let slots : List (Fin intervalSplitTapes) := [0,mergeInnerPort 0,mergeInnerPort 1]
+    let weight := fun (l r : List (Fin (prime+4))) => 4*l.length+2*r.length+4
+    ∃ code : Pr P T Q prime U, ∀ {m : ℕ}, 0 < m → ∀ (data : Fin 142080 → Fin m → ZMod 2) u S,
+      HelperFan ((intervalOwners 142080).trans bank) data S →
+      ∃ z F t, Exec body code (mk u S) t (mk z F) ∧ z.user = u.user ∧
+        RecordPayload (bank 0) (fun _ => blank) 0
+          (fun k => data (finProdFinEquiv.symm k).2 (finProdFinEquiv.symm k).1) F ∧
+        (∀ j, (∀ i, bank i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j) ∧
+        ∀ js, js.Nodup → (∀ i ∈ slots, bank i ∈ js) → t+tapeCharge weight js F ≤
+          tapeCharge weight js S+ (19*(149*(m*142080)*(intervalSplitTapes+5)+7)+13) := by
+  intro slots weight
+  obtain ⟨code,merge⟩ := chargedMergeReturn (U := U) capacity
+  refine ⟨embProg bank Empty.elim code,?_⟩
+  intro m pos data u S rows
+  obtain ⟨v,E,n,run,user,out,bill⟩ := merge pos data (embDn bank u) (embStk bank S) rows
+  obtain ⟨z,F,exec,_,same,view,frame⟩ := exec_emb (body' := body) (ι := Empty.elim)
+    bank.injective (fun e => nomatch e) run u rfl S rfl
+  rw [← view] at out bill
+  refine ⟨z,F,n,exec,same.trans user,out,frame,?_⟩
+  apply placedCleanup_cover_le bank S F weight n _ frame slots
+  intro is nd covered
+  simpa only [weight,Nat.add_assoc] using bill is nd covered
+
 /-- After the child returns, reclaim the target and the two inner counters.
 Their previous contents contribute only their actual clearing time. -/
 theorem mergeReusedOwners {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U)
