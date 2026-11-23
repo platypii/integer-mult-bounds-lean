@@ -140,6 +140,43 @@ private theorem loadedSeedCharge {k T : ℕ} (target : Fin k ↪ Fin T)
 def seedLoadBill {k : ℕ} (words : Fin k → List (Fin (prime+4))) : ℕ :=
   (∑ i, (8*(words i).length+6))+1
 
+/-- Install the child seed on its private bank. The load also pays for clearing
+the copied words on any later cleanup list. -/
+theorem installChildSeed {k N T Q : ℕ} {P U : Type} (host : P → Pr P T Q prime U)
+    (place : Fin N ↪ Fin T) (slots : Fin k ↪ Fin N) (source : Fin k → Fin T)
+    (tmp saved : Fin T) (apart : ∀ i j, place (slots i) ≠ source j)
+    (regs : ∀ i, [source i,place (slots i),tmp,saved].Nodup) :
+    ∃ code : Pr P T Q prime U, ∀ (seed : Stacks N prime) u S,
+      (∀ i, S.R (source i) = seed.R (slots i)) → (∀ i, S.R (place (slots i)) = []) →
+      S.R tmp = [] → S.R saved = [] →
+      ∃ v R n, Exec host code (mk u S) n (mk v {S with R := R}) ∧ v.user = u.user ∧
+        (∀ js : List (Fin T), js.Nodup → n+tapeCharge cleanupWeight js {S with R := R} ≤
+          tapeCharge cleanupWeight js S+seedLoadBill (fun i => seed.R (slots i))) ∧
+        (∀ j, ((∀ i, slots i ≠ j) → S.R (place j) = seed.R j) → R (place j) = seed.R j) ∧
+        ∀ j, (∀ i, place (slots i) ≠ j) → R j = S.R j := by
+  obtain ⟨code,run⟩ := reloadChildSeed host (slots.trans place) source tmp saved apart regs
+  refine ⟨code,?_⟩
+  intro seed u S words vacant ht hs
+  obtain ⟨v,R,n,exec,time,user,loaded,off⟩ := run _ u S words vacant ht hs
+  refine ⟨v,R,n,exec,user,?_,?_,off⟩
+  · intro js unique
+    have growth := loadedSeedCharge (slots.trans place) S R _ loaded off js unique
+    rw [← List.sum_toFinset _ (List.nodup_finRange k)] at time
+    have allSlots : (List.finRange k).toFinset = Finset.univ := by ext; simp
+    rw [allSlots] at time
+    have combined : (∑ i, (6*(seed.R (slots i)).length+6)) + (∑ i, 2*(seed.R (slots i)).length) =
+        ∑ i, (8*(seed.R (slots i)).length+6) := by
+      rw [← Finset.sum_add_distrib]
+      exact Finset.sum_congr rfl (fun _ _ => by omega)
+    simp only [seedLoadBill]
+    omega
+  · intro j ready
+    by_cases h : ∃ i, slots i = j
+    · obtain ⟨i,rfl⟩ := h
+      exact loaded i
+    · have away := fun i eq => h ⟨i,eq⟩
+      exact (off _ (fun i => place.injective.ne (away i))).trans (ready away)
+
 theorem descriptorSeedBill (v : Descriptor) (positive : 0 < volume prime v) :
     seedLoadBill (fun i => (Routines.hdr v i).map bitSymbol) ≤ 133*volume prime v := by
   let V := volume prime v
@@ -209,11 +246,11 @@ theorem seededPackedRowEntry {k T N Q : ℕ} {P A U : Type} (body : P → Pr P N
         ∀ j, (∀ i, place i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
   classical
   intro privatePorts scratch
-  obtain ⟨load,loadRun⟩ := reloadChildSeed host (slots.trans place) master tmp aux masterOff regs
+  obtain ⟨load,loadRun⟩ := installChildSeed host place slots master tmp aux masterOff regs
   obtain ⟨call,callRun⟩ := packedRowEntry body host place label installed live src dst tmp apart srcTmp dstTmp controls entry program dispatch
   refine ⟨load.seq call,?_⟩
   intro lane seed price V child data u S liveRows tl tr empty auxFree masters vacant prepared
-  obtain ⟨v,R,a,setup,paid,user,loaded,off⟩ := loadRun (fun i => seed.R (slots i)) u S masters vacant tr auxFree
+  obtain ⟨v,R,a,setup,user,paid,loaded,off⟩ := loadRun seed u S masters vacant tr auxFree
   let D := {S with R := R}
   have rows : HelperFan live data D := by
     intro i z
@@ -227,28 +264,12 @@ theorem seededPackedRowEntry {k T N Q : ℕ} {P A U : Type} (body : P → Pr P N
     (fun i => ⟨(empty i).1,(off _ (fun j => place.injective.ne (privateSlots j _))).trans (empty i).2⟩)
     (by
       intro j outside
-      refine ⟨(prepared j outside).1,?_⟩
-      by_cases h : ∃ i, slots i = j
-      · obtain ⟨i,rfl⟩ := h
-        exact loaded i
-      · have away := fun i eq => h ⟨i,eq⟩
-        exact (off _ (fun i => place.injective.ne (away i))).trans ((prepared j outside).2 away))
+      exact ⟨(prepared j outside).1,loaded j (prepared j outside).2⟩)
   refine ⟨z,F,_,setup.seq run,?_,final.trans user,result,clean,?_⟩
   · have distinct : scratch.Nodup := ((List.nodup_finRange N).filter _).map place.injective
-    have growth := loadedSeedCharge (slots.trans place) S R _ loaded off scratch distinct
-    change tapeCharge cleanupWeight scratch D ≤ tapeCharge cleanupWeight scratch S +
-      ∑ i, 2*(seed.R (slots i)).length at growth
+    have loadCost := paid scratch distinct
+    change a+tapeCharge cleanupWeight scratch D ≤ _ at loadCost
     change b ≤ tapeCharge cleanupWeight scratch D + 142081*(8*V+10+2*V)+1+price+3 at cost
-    rw [← List.sum_toFinset _ (List.nodup_finRange k)] at paid
-    have allSlots : (List.finRange k).toFinset = Finset.univ := by ext; simp
-    rw [allSlots] at paid
-    have combined : (∑ i, (6*(seed.R (slots i)).length+6)) + (∑ i, 2*(seed.R (slots i)).length) =
-        ∑ i, (8*(seed.R (slots i)).length+6) := by
-      rw [← Finset.sum_add_distrib]
-      apply Finset.sum_congr rfl
-      intro i _
-      omega
-    simp only [seedLoadBill]
     omega
   · intro j outside
     exact ⟨(frame j outside).1,(frame j outside).2.trans (off j (fun i => outside (slots i)))⟩
