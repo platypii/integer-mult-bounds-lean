@@ -663,7 +663,7 @@ theorem allocateMoveStock {I : Type} [Fintype I] {owners : ℕ} (tapes : I → �
         ∀ code u S z F n, Exec body code (mk (embDn (bank i) u) (embStk (bank i) S)) n (mk z F) →
         ∃ v G, Exec host (embProg (bank i) label code) (mk u S) n (mk v G) ∧
           v.user = z.user ∧ embStk (bank i) G = F ∧ (∀ j, (∀ h, bank i h ≠ j) → G.L j = S.L j ∧ G.R j = S.R j) ∧ ∀ j, j ≠ i → ready j S → ready j G := by
-  obtain ⟨T,fan,bank,shared,_,apart⟩ := copyWindowBanks tapes owner
+  obtain ⟨T,fan,bank,shared,_,_,apart⟩ := copyWindowBanks tapes owner
   obtain ⟨source,owners,privateAt⟩ := moveStockSources owner fan bank apart
   refine ⟨T,fan,bank,source,shared,owners,?_⟩
   intro seed ready

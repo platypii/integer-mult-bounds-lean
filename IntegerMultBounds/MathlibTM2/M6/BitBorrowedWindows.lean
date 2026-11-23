@@ -186,7 +186,7 @@ theorem borrowedWindows_host [M8.Machine.Net] (charged : Bool) (n : Fin 9) (p : 
   classical
   intro J
   choose tapes qs regs owners _ window using borrowedWindow_host charged n p
-  obtain ⟨T,fan,bank,sharedAt,prepare,apart⟩ := copyWindowBanks tapes owners
+  obtain ⟨T,fan,bank,sharedAt,_,prepare,apart⟩ := copyWindowBanks tapes owners
   refine ⟨tapes,regs,T,Finset.univ.sup qs,fan,bank,?_⟩
   intro P U Q cap localBody proc body
   choose base code build using fun j : J =>
@@ -462,7 +462,7 @@ theorem borrowedInvocationBanks (n : Fin 9) (p : Fin 32 × Fin 5)
       (∀ i, (∀ j, fan j ≠ i) → S.L i = initial.L i ∧ S.R i = initial.R i) →
       ∃ z F m out, Exec host code (mk u S) m (mk z F) ∧ (m : ℝ) ≤ price false + scatterPrice + price true ∧
         z.user = u.user ∧ HelperFan fan out F ∧ BorrowedStep n w B K p data out := by
-  obtain ⟨T,fan,bank,sharedAt,prepare,apart⟩ := copyWindowBanks tapes ports
+  obtain ⟨T,fan,bank,sharedAt,_,prepare,apart⟩ := copyWindowBanks tapes ports
   refine ⟨T,fan,bank,?_⟩
   intro shared seed
   obtain ⟨initial,rep,stored⟩ := prepare shared seed

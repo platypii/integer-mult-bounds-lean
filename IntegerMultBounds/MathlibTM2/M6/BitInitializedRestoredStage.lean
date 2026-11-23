@@ -94,7 +94,8 @@ private theorem loadedPrivateTapes {I : Type} {T H k : ℕ} (ts : I → ℕ)
       · exact apart i j off m e _)
     exact kept.trans (b.trans (Function.update_of_ne eq ..))
 
-private theorem initializedStageLayout {U : Type} {Q l r k : ℕ}
+/-- Matching each occurrence on its private slots suffices to initialize the entire worker bank. -/
+theorem initializedStageLayout {U : Type} {Q l r k : ℕ}
     (capacity : (fun {q : ℕ} (_ : Program 38 q prime) => q) (RecursiveRowsNodeHeaders.program 142080) ≤ Q)
     (n : Fin 9) (pre : StageRun → Fin l → MoveIndex) (post : StageRun → Fin r → MoveIndex) :
     let I := Σ _ : StageRun, Σ j : Fin 3, Fin (invocationCounts l r j)
@@ -110,6 +111,10 @@ private theorem initializedStageLayout {U : Type} {Q l r k : ℕ}
     (∀ i, WorkerEntryWords (regs i) (invocationWorkerRecord i.2.1 (scheduledChild prime c.node (child i))
       c.root.width.size c.cutoff) (seeds i)) →
     ∀ sharedSeed, ∃ initial : Stacks T prime, let seed := stageSetupSeed R initial c
+      (∀ D : Stacks T prime, (∀ i l, (∀ j, owners i j ≠ l) →
+        D.L (bank i l) = (seeds i).L l ∧
+        D.R (bank i l) = Function.update (seeds i).R (regs i 34) [] l) →
+        PrivateTapes shared initial D) ∧
       embStk (shared.trans owner) seed = sharedSeed ∧ ∀ u S,
       S.R (owner (shared cut)) = binSyms c.root.width.size c.cutoff → PrivateTapes (shared.trans owner) seed S →
       ∃ v A a, Exec host init (mk u S) a (mk v A) ∧ v.user = u.user ∧ CleanupBound S A a (setup*c.cells) ∧
@@ -120,7 +125,7 @@ private theorem initializedStageLayout {U : Type} {Q l r k : ℕ}
           A.L p = [] ∧ A.R p = []) ∧
         ∀ i, PrivateTapes (owners i) (seeds i) (embStk ((bank i).trans owner) A) := by
   intro I child ts owners regs cut offCut privatePort
-  obtain ⟨T,shared,bank,setup,align,apart,stock,load⟩ := prepareSelectedStageArchives (U := U)
+  obtain ⟨T,shared,bank,setup,align,cover,apart,stock,load⟩ := prepareSelectedStageArchives (U := U)
     capacity n pre post ts owners regs cut offCut (fun i => privatePort i 34 (by decide))
   refine ⟨T,shared,bank,setup,align,apart,?_⟩
   intro P R host owner
@@ -130,7 +135,12 @@ private theorem initializedStageLayout {U : Type} {Q l r k : ℕ}
   obtain ⟨initial,view,saved⟩ := stock sharedSeed seeds
   let seed := stageSetupSeed R initial c
   obtain ⟨placed,empty,ready⟩ := stageHostSeed (R := R) shared initial c
-  refine ⟨initial,(congrArg (embStk shared) placed).trans view,?_⟩
+  refine ⟨initial,?_,(congrArg (embStk shared) placed).trans view,?_⟩
+  · intro D localSeed z off
+    obtain ⟨i,l,privateSlot,rfl⟩ := cover z off
+    obtain ⟨left,right⟩ := localSeed i l privateSlot
+    obtain ⟨_,leftSeed,rightSeed⟩ := saved i l privateSlot
+    exact ⟨left.trans leftSeed.symm,right.trans rightSeed.symm⟩
   intro u S cutoff fresh
   obtain ⟨input,stocked⟩ := ready S fresh
   have stored i j off := stocked (bank i j) (saved i j off).1
@@ -167,6 +177,7 @@ theorem initializedRestoredStage [M8.Machine.Net] (n : Fin 9) :
     ∃ (ts : I → ℕ) (states : ℕ) (ports : ∀ i, Fin (rowSwapBlock.tapes+35) ↪ Fin (ts i)),
     ∀ {P U : Type} {Q : ℕ}, states ≤ Q → ∀ (body : ∀ i, P → Pr P (ts i) Q prime U) (f : I → P),
     ∃ (T : ℕ) (shared : Fin (k+1) ↪ Fin T),
+    ∃ (owners : ∀ i, Fin (k+1) ↪ Fin (ts i+1)) (banks : ∀ i, Fin (ts i+1) ↪ Fin T),
     let H := 80+((T+273)+LeafCore.small)
     let owner := ((Fin.castAddEmb 273 (n := T)).trans (Fin.castAddEmb LeafCore.small)).trans (Fin.natAddEmb 80)
     let fan := shared.trans owner
@@ -176,8 +187,14 @@ theorem initializedRestoredStage [M8.Machine.Net] (n : Fin 9) :
     let desc := fun i => scheduledChild prime c.node (child i)
     let record := fun i : I => invocationWorkerRecord i.2.1 (desc i) c.root.width.size c.cutoff
     ∃ position : ∀ i, Fin (volume prime (desc i)) ≃ Fin V,
+    ∃ seeds : ∀ i, Stacks (ts i+1) prime,
+    (∀ i, WorkerEntryWords ((scheduledRecordPorts (ports i)).trans (Fin.castAddEmb 1)) (record i) (seeds i)) ∧
     (∀ i, invocationCoordinates i.2.1 w c.stageWidth (position i)) ∧
     ∀ sharedSeed, ∃ initial : Stacks T prime, let seed := stageSetupSeed LeafCore.small initial c
+    (∀ D : Stacks T prime, (∀ i l, (∀ j, owners i j ≠ l) →
+      D.L (banks i l) = (seeds i).L l ∧ D.R (banks i l) =
+        Function.update (seeds i).R (((scheduledRecordPorts (ports i)) 34).castAdd 1) [] l) →
+      PrivateTapes shared initial D) ∧
     embStk fan seed = sharedSeed ∧
     ∀ time : ℕ → ℕ, (∀ i, ScheduledChildExec c.node (desc i) c.w c.stageWidth (ports i) (record i)
       (position i) (body i) (f i) (time (child i).val) true) →
@@ -208,13 +225,13 @@ theorem initializedRestoredStage [M8.Machine.Net] (n : Fin 9) :
   obtain ⟨init,write⟩ := load (R := LeafCore.small) host
   let order := stageOccurrenceOrder l r
   obtain ⟨D,bound⟩ := stageLocalCost_bound order (setup+160) base swaps fixed
-  refine ⟨T,shared,host,init.seq (embProg stage id sweep),D+rate,?_⟩
+  refine ⟨T,shared,owners,bank,host,init.seq (embProg stage id sweep),D+rate,?_⟩
   intro c w V desc record
   obtain ⟨position,seeds,coords,entry,run⟩ := execute c
-  refine ⟨position,coords,?_⟩
+  refine ⟨position,seeds,entry,coords,?_⟩
   intro sharedSeed
-  obtain ⟨initial,view,prepare⟩ := write c seeds entry sharedSeed
-  refine ⟨initial,view,?_⟩
+  obtain ⟨initial,cert,view,prepare⟩ := write c seeds entry sharedSeed
+  refine ⟨initial,cert,view,?_⟩
   intro time recurse x u S live cut fresh
   obtain ⟨v,A,a,start,user,paid,kept,headers,leaves,stock⟩ := prepare u S cut fresh
   have mid := helperFan_of_agree (k := 142081) (V := V) (fan := (Fin.castAddEmb 1 (n := k)).trans (shared.trans owner))

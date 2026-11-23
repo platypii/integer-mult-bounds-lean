@@ -84,7 +84,7 @@ private theorem scheduledBanksWithCharge {I : Type} [Fintype I] {k : ℕ}
       ∃ v D t y, Exec table (Prog.seqList (order.map placed)) (mk u S) t (mk v D) ∧
         (∀ js : List _, js.Nodup → t+tapeCharge weight js D ≤ tapeCharge weight js S+(order.map cost).sum+1) ∧ v.user = u.user ∧ represented y (embStk fan D) ∧
         order.foldr (fun i next a => ∃ b, effect i a b ∧ next b) (fun a => a = y) x := by
-  obtain ⟨T,fan,bank,selected,prepare,off⟩ := copyWindowBanks tapes ports
+  obtain ⟨T,fan,bank,selected,_,prepare,off⟩ := copyWindowBanks tapes ports
   refine ⟨T,fan,bank,selected,?_⟩
   intro X P U Q body code weight represented effect cost initial shared run table placed
   obtain ⟨prepared,owners,stock⟩ := prepare shared initial

@@ -813,6 +813,7 @@ theorem copyWindowBanks {I : Type} [Fintype I] {k : ℕ} (tapes : I → ℕ)
     (owner : ∀ i, Fin k ↪ Fin (tapes i)) :
     ∃ (T : ℕ) (shared : Fin k ↪ Fin T) (bank : ∀ i, Fin (tapes i) ↪ Fin T),
       (∀ i j, bank i (owner i j) = shared j) ∧
+      (∀ z, (∀ j, shared j ≠ z) → ∃ i l, (∀ j, owner i j ≠ l) ∧ bank i l = z) ∧
       (∀ X : Stacks k prime, ∀ initial : (i : I) → Stacks (tapes i) prime,
         ∃ S : Stacks T prime, embStk shared S = X ∧ ∀ i l, (∀ j, owner i j ≠ l) →
           S.L (bank i l) = (initial i).L l ∧ S.R (bank i l) = (initial i).R l) ∧
@@ -854,7 +855,17 @@ theorem copyWindowBanks {I : Type} [Fintype I] {k : ℕ} (tapes : I → ℕ)
       · rw [unused i l off,unused i m (fun h e => hm ⟨h,e⟩)] at eq
         have same := (Fintype.equivFin J).injective ((Fin.natAdd_injective N k) eq)
         exact Fin.ext (congrArg (fun p : J => p.2.val.val) same)⟩
-  refine ⟨k+N,Fin.castAddEmb N,bank,selected,?_,?_⟩
+  refine ⟨k+N,Fin.castAddEmb N,bank,selected,?_,?_,?_⟩
+  · intro z
+    induction z using Fin.addCases with
+    | left j => exact fun off => False.elim (off j rfl)
+    | right p =>
+      intro _
+      let a := (Fintype.equivFin J).symm p
+      refine ⟨a.1,a.2.val,a.2.property,?_⟩
+      change slot a.1 a.2.val = p.natAdd k
+      rw [unused _ _ a.2.property]
+      exact congrArg (Fin.natAdd k) ((Fintype.equivFin J).apply_symm_apply p)
   · intro X initial
     let collect (get : ∀ i, Fin (tapes i) → List (Fin (prime+4))) (p : Fin N) :=
       let j := (Fintype.equivFin J).symm p
@@ -1335,7 +1346,7 @@ theorem moveFamily_host {I : Type} [Fintype I] {k : ℕ} (tapes : I → ℕ)
         v.user = z.user ∧ embStk (bank i) G = F ∧
         (∀ j, (∀ l, bank i l ≠ j) → G.L j = S.L j ∧ G.R j = S.R j) ∧
         embStk fan G = embStk (ports i) F ∧ ready G := by
-  obtain ⟨T,fan,bank,shared,collect,off⟩ := copyWindowBanks tapes ports
+  obtain ⟨T,fan,bank,shared,_,collect,off⟩ := copyWindowBanks tapes ports
   refine ⟨T,fan,bank,shared,?_⟩
   intro used init privatePorts seed ready
   constructor
@@ -3345,7 +3356,7 @@ theorem invocation_host
   obtain ⟨states,gateRuns⟩ := scheduledGates_host owner
   refine ⟨states,?_⟩
   intro tapes ports
-  obtain ⟨T,fan,bank,selected,collect,off⟩ := copyWindowBanks tapes ports
+  obtain ⟨T,fan,bank,selected,_,collect,off⟩ := copyWindowBanks tapes ports
   refine ⟨T,fan,bank,selected,?_⟩
   intro shared initial
   obtain ⟨prepared,base,localInit⟩ := collect shared initial
@@ -3755,7 +3766,7 @@ theorem scheduledBanks_exec {I : Type} [Fintype I] {k : ℕ}
       ∃ v D t y, Exec table (Prog.seqList (order.map placed)) (mk u S) t (mk v D) ∧
         t ≤ (order.map cost).sum+1 ∧ v.user = u.user ∧ represented y (embStk fan D) ∧
         order.foldr (fun i next a => ∃ b, effect i a b ∧ next b) (fun a => a = y) x := by
-  obtain ⟨T,fan,bank,selected,prepare,off⟩ := copyWindowBanks tapes ports
+  obtain ⟨T,fan,bank,selected,_,prepare,off⟩ := copyWindowBanks tapes ports
   refine ⟨T,fan,bank,selected,?_⟩
   intro X P U Q body code represented effect cost initial shared run table placed
   obtain ⟨prepared,owners,stock⟩ := prepare shared initial

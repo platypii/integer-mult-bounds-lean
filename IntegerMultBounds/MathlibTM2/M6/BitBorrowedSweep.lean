@@ -216,7 +216,7 @@ theorem allocatedArchiveSweep_host [M8.Machine.Net] (n : Fin 9) :
           (((List.range' (stageChildStart n) (stageRuns.flatMap (fun _ => Geometry.Moves.localPaid)).length).map childTime).sum : ℕ) ∧
         z.user = u.user ∧ HelperFan (fan.trans owner) out F ∧ RestoredBorrowedStage n w B K x out := by
   intro J tapes ports
-  obtain ⟨T,fan,banks,select,prepare,apart⟩ := copyWindowBanks tapes ports
+  obtain ⟨T,fan,banks,select,_,prepare,apart⟩ := copyWindowBanks tapes ports
   refine ⟨T,fan,banks,?_⟩
   intro P U Q cap body w B K blocks W V scale scratch owner host outer pos coeff childTime supplied shared
   choose call ready using supplied
@@ -293,7 +293,7 @@ theorem allocatedArchiveSweepWithCharge [M8.Machine.Net] (n : Fin 9) :
           (((List.range' (stageChildStart n) (stageRuns.flatMap (fun _ => Geometry.Moves.localPaid)).length).map childTime).sum : ℕ)) ∧
         z.user = u.user ∧ HelperFan (fan.trans owner) out F ∧ RestoredBorrowedStage n w B K x out := by
   intro J tapes ports
-  obtain ⟨T,fan,banks,select,prepare,apart⟩ := copyWindowBanks tapes ports
+  obtain ⟨T,fan,banks,select,_,prepare,apart⟩ := copyWindowBanks tapes ports
   refine ⟨T,fan,banks,?_⟩
   intro P U Q cap body
   let host := fun f : (p : J) × P p => embProg (banks f.1) (Sigma.mk f.1) (body f.1 f.2)

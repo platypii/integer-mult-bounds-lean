@@ -511,6 +511,7 @@ theorem prepareSelectedStageArchives {U : Type} {Q l r owners : ℕ}
       (cut : Fin owners), (∀ p j, record p j ≠ fan p cut) → (∀ p j, fan p j ≠ record p 34) →
     ∃ (T : ℕ) (shared : Fin owners ↪ Fin T) (bank : ∀ p, Fin (tapes p) ↪ Fin T) (rate : ℕ),
     (∀ p j, bank p (fan p j) = shared j) ∧
+    (∀ z, (∀ j, shared j ≠ z) → ∃ p l, (∀ j, fan p j ≠ l) ∧ bank p l = z) ∧
     (∀ p l, (∀ j, fan p j ≠ l) → ∀ q, q ≠ p → ∀ k, bank q k ≠ bank p l) ∧
     (∀ (owners : Stacks owners prime) (seed : ∀ p, Stacks (tapes p) prime),
       ∃ initial : Stacks T prime, embStk shared initial = owners ∧
@@ -535,12 +536,12 @@ theorem prepareSelectedStageArchives {U : Type} {Q l r owners : ℕ}
       ∀ k, (∀ p, bank p (record p 34) ≠ k) → F.R (owner k) = S.R (owner k) := by
   classical
   intro I child tapes fan record cut offCut privateArchive
-  obtain ⟨T,shared,bank,align,stock,disjoint⟩ := copyWindowBanks tapes fan
+  obtain ⟨T,shared,bank,align,cover,stock,disjoint⟩ := copyWindowBanks tapes fan
   let regs := fun p => (record p).trans (bank p)
   let order := stageOccurrenceOrder l r
   let rank := fun p => nodeChildren5[(child p).val]
   obtain ⟨setup,prepare⟩ := prepareStageArchives (U := U) capacity
-  refine ⟨T,shared,bank,setup+31*order.length+1,align,fun p l h => (disjoint p l h).2,?_,?_⟩
+  refine ⟨T,shared,bank,setup+31*order.length+1,align,cover,fun p l h => (disjoint p l h).2,?_,?_⟩
   · intro owners seed
     obtain ⟨initial,view,stored⟩ := stock owners (fun p => {seed p with R := Function.update (seed p).R (record p 34) []})
     exact ⟨initial,view,fun p k off => ⟨(disjoint p k off).1,stored p k off⟩⟩
@@ -769,7 +770,7 @@ theorem runSelectedStageArchives [M8.Machine.Net] {U : Type} {Q l r owners : ℕ
           OrderedEffects (List.finRange (invocationCounts l r j)) (fun i => effect ⟨p,j,i⟩))) x y := by
   intro I child tapes fan record cut offCut privatePort
   have privateArchive p := privatePort p 34 (by decide)
-  obtain ⟨T,shared,bank,rate,align,apart,stock,prepare⟩ := prepareSelectedStageArchives capacity n pre post tapes fan record cut offCut privateArchive
+  obtain ⟨T,shared,bank,rate,align,_,apart,stock,prepare⟩ := prepareSelectedStageArchives capacity n pre post tapes fan record cut offCut privateArchive
   refine ⟨T,shared,bank,rate,?_⟩
   intro P R body worker order owner placed host
   obtain ⟨load,write⟩ := prepare host

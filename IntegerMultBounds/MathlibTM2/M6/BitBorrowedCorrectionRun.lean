@@ -32,7 +32,7 @@ theorem correctionBanks {t : ℕ} (localFan : Fin (142081+2) ↪ Fin t)
     | none => (Fin.castAddEmb 2).trans localFan
     | some false => ⟨enter.slots,enter.slots_injective⟩
     | some true => ⟨leave.slots,leave.slots_injective⟩
-  obtain ⟨T,shared,bank,align,init,apart⟩ := copyWindowBanks tapes ports
+  obtain ⟨T,shared,bank,align,_,init,apart⟩ := copyWindowBanks tapes ports
   refine ⟨T,bank none,bank (some false),bank (some true),?_⟩
   intro fan
   have counter (j : Fin 2) (i : Fin 142081) : ports none i ≠ localFan (j.natAdd 142081) := by
