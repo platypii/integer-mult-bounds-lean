@@ -89,8 +89,11 @@ theorem stoppedIntervalRecord {U : Type} {Q : ℕ}
   let leafPrice := ⌊(C*((64*atom : ℕ) : ℝ)^M8.Machine.BudgetBound.tau)*(V*142080 : ℕ)⌋₊
   change PackedPieceHandoffWithCharge cleanupWeight V (packedChildOutput atom V) body code src dst seed leafPrice at child
   have handoff : PackedPieceHandoffWithCharge cleanupWeight _ (packedChildOutput atom ((prime^(w+1))^(axes+axes)*W)) body code src dst seed leafPrice := volumeEq ▸ child
+  have posV : 0 < V := volumeEq ▸ Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) positive
+  have seedBill := descriptorSeedBill flat (size.symm ▸ posV)
+  rw [size] at seedBill
   have build := seededIntervalRecord (T := T) (B := B) (Q := Q) (w := w) (W := W) (axes := axes) capacity mergeCap
-    ordered fits positive width handoff slots flat size intervalFlatSources (by decide) left headers unused
+    ordered fits positive width handoff slots _ intervalFlatSources (133*V) seedBill (by decide) left headers unused
     splitter directory apart source separate outside
   obtain ⟨host,worker,bank,setupRate,passRate,target,run⟩ := build work unique inside away
   refine ⟨host,(middleRowDescriptor (intervalSpectatorPorts.trans raw)).seq worker,bank,setupRate,passRate,target,?_⟩

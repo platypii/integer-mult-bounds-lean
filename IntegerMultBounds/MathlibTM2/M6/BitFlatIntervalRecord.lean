@@ -12,7 +12,7 @@ open M8.RevMachine RecursiveInterchangeLayout IntervalDescriptor
 local notation "N" => rowSwapBlock.tapes
 
 /-- Full price of one ordinary-order interval call, including private-bank cleanup. -/
-noncomputable def flatIntervalCost (U : Type) (lo hi w W axes V push setupRate passRate privateCount price : ℕ) : ℕ :=
+noncomputable def flatIntervalCost (U : Type) (lo hi w W axes V push setupRate passRate privateCount price : ℕ) (seedRate : ℕ := 133) : ℕ :=
   let M := prime^(w+1)
   let pass := intervalPassTime U lo hi w W axes
   let header := 16*M.size+8*W.size+6*(w+1)+11*(w+1).size+58
@@ -22,18 +22,18 @@ noncomputable def flatIntervalCost (U : Type) (lo hi w W axes V push setupRate p
           passRate*(142080*(header+pass)+1+(142080*pass+1))+
           (142081*(8*V+10+2*V)+1+price)+13*(149*volume*(intervalSplitTapes+5)+6)
   (149*(intervalSplitTapes+5)+13)*volume+34+
-    (4*privateCount+entryGrowth+localCost)+18*volume+23+1136*V+2
+    (4*privateCount+entryGrowth+localCost)+18*volume+23+(870+2*seedRate)*V+2
 
 /-- For a fixed tape bank and local program rates, all 64-axis intervals have
 one pair of volume coefficients. The recursive child retains coefficient one. -/
-theorem flatIntervalCost_le (U : Type) (push setupRate passRate privateCount : ℕ) :
+theorem flatIntervalCost_le (U : Type) (push setupRate passRate privateCount : ℕ) (seedRate : ℕ := 133) :
     ∃ a b : ℕ, ∀ lo hi, lo ≤ hi → hi ≤ 64 → ∀ w W, 0 < W → ∀ price,
       let V := (prime^(w+1))^128*W
-      flatIntervalCost U lo hi w W 64 V push setupRate passRate privateCount price ≤
+      flatIntervalCost U lo hi w W 64 V push setupRate passRate privateCount price seedRate ≤
         price+(a+b*swapVolumeRate w)*V := by
   obtain ⟨setup,swaps,bound⟩ := intervalChildToll_le U
   let tapes := intervalSplitTapes+5
-  let linear := ((149*tapes+13)+2+6*push*(149*tapes+5)+13*149*tapes+18)*142080+142081*10+1136
+  let linear := ((149*tapes+13)+2+6*push*(149*tapes+5)+13*149*tapes+18)*142080+142081*10+(870+2*seedRate)
   let fixed := 34+4*privateCount+6*push*24+142081*10+1+13*6+23+2
   let rate := setupRate+passRate
   refine ⟨linear+fixed+rate*setup,rate*swaps,?_⟩
@@ -65,12 +65,12 @@ theorem flatIntervalCost_le (U : Type) (push setupRate passRate privateCount : �
 
 /-- The cutoff tree can reserve the child's integer budget verbatim and round
 only the local volume-width term. -/
-theorem flatIntervalCost_cutoff (U : Type) (push setupRate passRate privateCount : ℕ) :
+theorem flatIntervalCost_cutoff (U : Type) (push setupRate passRate privateCount : ℕ) (seedRate : ℕ := 133) :
     ∃ C : ℝ, 0 < C ∧ ∀ lo hi, lo ≤ hi → hi ≤ 64 → ∀ w W, 0 < W → ∀ price,
       let V := (prime^(w+1))^128*W
-      flatIntervalCost U lo hi w W 64 V push setupRate passRate privateCount price ≤
+      flatIntervalCost U lo hi w W 64 V push setupRate passRate privateCount price seedRate ≤
         price+⌊C*V*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau⌋₊ := by
-  obtain ⟨a,b,bound⟩ := flatIntervalCost_le U push setupRate passRate privateCount
+  obtain ⟨a,b,bound⟩ := flatIntervalCost_le U push setupRate passRate privateCount seedRate
   obtain ⟨C,positive,scale⟩ := copyReturn_parentCost a b
   refine ⟨C,positive,?_⟩
   intro lo hi ordered fits w W pos price V
@@ -81,18 +81,43 @@ theorem flatIntervalCost_cutoff (U : Type) (push setupRate passRate privateCount
     Nat.le_floor localBound
   exact (bound lo hi ordered fits w W pos price).trans (Nat.add_le_add_left rounded price)
 
+/-- Each private header slot takes either the inherited cutoff word (index
+zero) or a flattened descriptor field. Several slots may use the same source. -/
+private theorem intervalSeedCost {h V : ℕ} (select : Fin h → Fin 7)
+    (flat : Descriptor) (cut : List (Fin (prime+4))) (size : cut.length ≤ V)
+    (positive : 0 < V) (descriptor : seedLoadBill (fun i => (Routines.hdr flat i).map bitSymbol) ≤ 133*V) :
+    let words : Fin 7 → List (Fin (prime+4)) := Fin.cases cut (fun i => (Routines.hdr flat i).map bitSymbol)
+    seedLoadBill (fun i => words (select i)) ≤ (139*h+1)*V := by
+  intro words
+  have each (j : Fin 7) : 8*(words j).length+6 ≤ 139*V := by
+    refine Fin.cases (by change 8*cut.length+6 ≤ _; omega) (fun i => ?_) j
+    have term := Finset.single_le_sum (f := fun i => 8*((Routines.hdr flat i).map (bitSymbol (a := prime))).length+6)
+      (fun _ _ => Nat.zero_le _) (Finset.mem_univ i)
+    simp only [seedLoadBill,List.length_map] at descriptor term
+    change 8*((Routines.hdr flat i).map (bitSymbol (a := prime))).length+6 ≤ _
+    simp only [List.length_map]
+    omega
+  have all := Finset.sum_le_sum (fun (i : Fin h) (_ : i ∈ Finset.univ) => each (select i))
+  simp only [Finset.sum_const,Finset.card_univ,Fintype.card_fin,nsmul_eq_mul] at all
+  unfold seedLoadBill
+  calc
+    _ ≤ h*(139*V)+V := Nat.add_le_add all positive
+    _ = _ := by ring
+
 /-- Run a packed recursive child from an ordinary interval descriptor. Only the
 right stack on the product tape is temporary; its left stack belongs to the caller. -/
-theorem flatIntervalRecord {P U : Type} {B Q T w W atom lo hi axes price : ℕ}
+theorem flatIntervalRecord {P U : Type} {B Q T w W atom lo hi axes price h : ℕ}
     (capacity : rowSwapBlock.states ≤ Q)
     (mergeCap : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q)
     (ordered : lo ≤ hi) (fits : hi ≤ axes) (positive : 0 < W)
     (width : (phaseIntervalChild lo hi (w+1) W axes).width = 64*atom)
-    {body : P → Pr P B Q prime U} {code src dst seed} (slots : Fin 6 ↪ Fin B)
+    {body : P → Pr P B Q prime U} {code src dst seed} (slots : Fin h ↪ Fin B) (select : Fin h → Fin 7)
+    (cut : List (Fin (prime+4))) (cutSize : cut.length ≤ volume prime (phaseIntervalChild lo hi (w+1) W axes))
     (left : ∀ j, seed.L j = [])
     (unused : ∀ j, (∀ i, slots i ≠ j) → seed.R j = [])
     (headers : let lane := phaseIntervalChild lo hi (w+1) W axes
-      ∀ i, seed.R (slots i) = (Routines.hdr (flatNodeDescriptor atom (CopyChildLayout.spectators lane)) i).map bitSymbol)
+      let flat := flatNodeDescriptor atom (CopyChildLayout.spectators lane)
+      ∀ i, seed.R (slots i) = Fin.cases cut (fun j => (Routines.hdr flat j).map bitSymbol) (select i))
     (child : let V := volume prime (phaseIntervalChild lo hi (w+1) W axes)
       PackedPieceHandoffWithCharge cleanupWeight V (packedChildOutput atom V) body code src dst seed price) :
     ∀ (splitter : Fin intervalSplitTapes ↪ Fin T) (directory : Fin 72 ↪ Fin T)
@@ -113,13 +138,13 @@ theorem flatIntervalRecord {P U : Type} {B Q T w W atom lo hi axes price : ℕ}
       (∀ j, (∀ i, raw i ≠ j) → S.L j = [] ∧ S.R j = []) →
       S.R (raw 2) = binSyms (prime^(w+1)).size (prime^(w+1)) →
       S.R (raw 53) = binSyms W.size W → S.R (raw 28) = binSyms 1 1 →
-      (S.R (raw 71)).length = w+1 →
+      (S.R (raw 71)).length = w+1 → S.R (raw 6) = cut →
       (∀ i, S.R (raw (descriptorPorts i)) = (Routines.hdr lane i).map bitSymbol) →
       let split : Pr Empty intervalSplitTapes Q prime U := intervalPrepare.seq
         (foreign (liftQ (CyclicRowNormalized.splitProgram 142080 prime) mergeCap))
       ∃ z F n, Exec host program (mk u S) n (mk z F) ∧
         CleanupBound S F n (flatIntervalCost U lo hi w W axes V (Fast.Main.mnProgPush split)
-          setupRate passRate work.length price) ∧
+          setupRate passRate work.length price (139*h+1)) ∧
         z.user = u.user ∧ RecordPayload (raw 24) (fun _ => blank) 0 (Shared50RecursiveNodeRows.transpose (one_dvd wide.rows) word) F ∧
         ∀ j, j ≠ raw 24 → F.L j = S.L j ∧ F.R j = S.R j := by
   intro splitter directory apart source separate outside H caller extend raw lane V wide work
@@ -140,12 +165,19 @@ theorem flatIntervalRecord {P U : Type} {B Q T w W atom lo hi axes price : ℕ}
   have size : volume prime flat = V := flatSpectatorVolume lane width
   have volumeEq : V = (prime^(w+1))^(axes+axes)*W := intervalChild_volume ordered fits _ _
   have handoff : PackedPieceHandoffWithCharge cleanupWeight _ (packedChildOutput atom ((prime^(w+1))^(axes+axes)*W)) body code src dst seed price := volumeEq ▸ child
+  have posV : 0 < V := volumeEq ▸ Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) positive
+  have seedBill := descriptorSeedBill flat (size.symm ▸ posV)
+  rw [size] at seedBill
+  let seedRate := 139*h+1
+  let sources : Fin 7 → Fin 72 := Fin.cases 6 intervalFlatSources
+  have valid : ∀ i : Fin 7, sources i ≠ 59 ∧ sources i ≠ 60 := by decide
+  have copied := intervalSeedCost select flat cut cutSize posV seedBill
   have build := seededIntervalRecord (T := T) (B := B) (Q := Q) (w := w) (W := W) (axes := axes) capacity mergeCap
-    ordered fits positive width handoff slots flat size intervalFlatSources (by decide) left headers unused
+    ordered fits positive width handoff slots _ (sources ∘ select) (seedRate*V) copied (fun i => valid (select i)) left headers unused
     splitter directory apart source separate outside true
   obtain ⟨host,worker,bank,setupRate,passRate,_,run⟩ := build work unique inside away
   refine ⟨host,((middleRowDescriptor (intervalSpectatorPorts.trans raw)).seq worker).seq (bclear (raw 65)),setupRate,passRate,?_⟩
-  intro word u S payload tl free privateBlank base suffix unit atomWord fields
+  intro word u S payload tl free privateBlank base suffix unit atomWord cutoffWord fields
     split
   let M := prime^(w+1)
   let pass := intervalPassTime U lo hi w W axes
@@ -189,7 +221,11 @@ theorem flatIntervalRecord {P U : Type} {B Q T w W atom lo hi axes price : ℕ}
       intro eq
       have h := congrArg Fin.val eq
       change 142082+T+i.val = 142082+(source 65).val at h
-      omega))).trans (empty i).2⟩) words
+      omega))).trans (empty i).2⟩) (fun i => by
+      have read (j : Fin 7) : D.R (raw (sources j)) =
+          Fin.cases cut (fun t => (Routines.hdr flat t).map bitSymbol) j :=
+        Fin.cases ((rawOff 6 (by decide)).trans cutoffWord) words j
+      exact read (select i))
   have product := frame (source 65) scratch (source.injective.ne (by decide))
     (fun i => outside i 65) (fun i => separate i 65)
   have digits : D.R (raw 65) = binSyms count.size count :=
@@ -214,7 +250,7 @@ theorem flatIntervalRecord {P U : Type} {B Q T w W atom lo hi axes price : ℕ}
         · simp [tapeCharge,G,Function.update_of_ne eq] at ih ⊢; omega
     change n+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js D+
       ((149*(intervalSplitTapes+5)+13)*total+34+
-        (tapeCharge cleanupWeight work D+entryGrowth+localCost)+18*total+23+133*V+133*V) at h
+        (tapeCharge cleanupWeight work D+entryGrowth+localCost)+18*total+23+seedRate*V+seedRate*V) at h
     change k+tapeCharge cleanupWeight work D ≤ tapeCharge cleanupWeight work S+434*count at inputs
     change k+tapeCharge cleanupWeight js D ≤ tapeCharge cleanupWeight js S+434*count at seen
     change k+n+(2*(F.R (raw 65)).length+2)+tapeCharge cleanupWeight js G ≤ tapeCharge cleanupWeight js S+_
@@ -228,7 +264,8 @@ theorem flatIntervalRecord {P U : Type} {B Q T w W atom lo hi axes price : ℕ}
         omega
     rw [reserve work (fun _ h => h)] at inputs
     have := erased js
-    change _ ≤ tapeCharge cleanupWeight js S+((149*(intervalSplitTapes+5)+13)*total+34+(4*work.length+entryGrowth+localCost)+18*total+23+1136*V+2)
+    change _ ≤ tapeCharge cleanupWeight js S+((149*(intervalSplitTapes+5)+13)*total+34+(4*work.length+entryGrowth+localCost)+18*total+23+(870+2*seedRate)*V+2)
+    simp only [Nat.add_mul,Nat.mul_assoc] at *
     omega
   · simpa only [G,RecordPayload,Function.update_of_ne (raw.injective.ne (by decide : (24 : Fin 72) ≠ 65))] using result
   · intro j ne

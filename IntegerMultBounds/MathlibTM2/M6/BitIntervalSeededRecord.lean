@@ -12,22 +12,19 @@ open M8.RevMachine RecursiveInterchangeLayout IntervalDescriptor
 
 local notation "N" => rowSwapBlock.tapes
 
-/-- Seed the recursive bank from the caller’s six descriptor headers, execute the
+/-- Seed the recursive bank from the caller’s designated header words, execute the
 ordinary-order transpose, and pay the seed load at the actual lane volume. -/
-theorem seededIntervalRecord {P U : Type} {T B Q w W atom price lo hi axes : ℕ}
+theorem seededIntervalRecord {P U : Type} {T B Q w W atom price lo hi axes fields : ℕ}
     (capacity : rowSwapBlock.states ≤ Q)
     (mergeCap : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q)
     (ordered : lo ≤ hi) (fits : hi ≤ axes) (positive : 0 < W)
     (widthAt : (phaseIntervalChild lo hi (w+1) W axes).width = 64*atom)
     {body : P → Pr P B Q prime U} {code src dst seed}
     (child : PackedPieceHandoffWithCharge cleanupWeight ((prime^(w+1))^(axes+axes)*W) (packedChildOutput atom _) body code src dst seed price)
-    (slots : Fin 6 ↪ Fin B)
-    (seedLane : Descriptor := phaseIntervalChild lo hi (w+1) W axes)
-    (seedVolume : volume prime seedLane = volume prime (phaseIntervalChild lo hi (w+1) W axes) := by rfl)
-    (headerSource : Fin 6 → Fin 72 := descriptorPorts)
-    (sourceFree : ∀ i, headerSource i ≠ 59 ∧ headerSource i ≠ 60 := by decide)
-    (leftSeed : ∀ j, seed.L j = [])
-    (headers : ∀ i, seed.R (slots i) = (Routines.hdr seedLane i).map bitSymbol)
+    (slots : Fin fields ↪ Fin B) (words : Fin fields → List (Fin (prime+4)))
+    (headerSource : Fin fields → Fin 72) (seedPrice : ℕ) (seedBill : seedLoadBill words ≤ seedPrice)
+    (sourceFree : ∀ i, headerSource i ≠ 59 ∧ headerSource i ≠ 60)
+    (leftSeed : ∀ j, seed.L j = []) (headers : ∀ i, seed.R (slots i) = words i)
     (unused : ∀ j, (∀ i, slots i ≠ j) → seed.R j = [])
     (splitter : Fin intervalSplitTapes ↪ Fin T) (directory : Fin 72 ↪ Fin T)
     (apart : ∀ i j, splitter i ≠ directory j) (source : Fin 72 ↪ Fin T)
@@ -61,7 +58,7 @@ theorem seededIntervalRecord {P U : Type} {T B Q w W atom price lo hi axes : ℕ
         S.L j = [] ∧ S.R j = []) →
       (∀ i : Fin B, let j := extend (i.natAdd (142082+T))
         S.L j = [] ∧ S.R j = []) →
-      (∀ i, S.R (raw (headerSource i)) = (Routines.hdr seedLane i).map bitSymbol) →
+      (∀ i, S.R (raw (headerSource i)) = words i) →
       let split : Pr Empty intervalSplitTapes Q prime U := intervalPrepare.seq
         (foreign (liftQ (CyclicRowNormalized.splitProgram 142080 prime) mergeCap))
       let M := prime^(w+1)
@@ -74,7 +71,7 @@ theorem seededIntervalRecord {P U : Type} {T B Q w W atom price lo hi axes : ℕ
           (142081*(8*V+10+2*V)+1+price)+13*(149*volume*(intervalSplitTapes+5)+6)
       ∃ z F n, Exec host program (mk u S) n (mk z F) ∧
         workerCost charged S F n ((149*(intervalSplitTapes+5)+13)*volume+34+
-          (tapeCharge cleanupWeight work S+entryGrowth+localCost)+18*volume+23+133*V+(if charged then 133*V else 0)) ∧
+          (tapeCharge cleanupWeight work S+entryGrowth+localCost)+18*volume+23+seedPrice+(if charged then seedPrice else 0)) ∧
         z.user = u.user ∧ RecordPayload (raw 24) (fun _ => blank) 0 (Shared50RecursiveNodeRows.transpose (one_dvd wide.rows) word) F ∧
         (∀ j ∈ work, F.L j = [] ∧ F.R j = []) ∧
         ∀ j, extend (caller j) ∉ work → j ≠ source 24 → (∀ i, splitter i ≠ j) → (∀ i, directory i ≠ j) →
@@ -131,14 +128,7 @@ theorem seededIntervalRecord {P U : Type} {T B Q w W atom price lo hi axes : ℕ
     (fun i => ⟨(empty i).1.trans (leftSeed i).symm,filled i (fun h => (empty i).2.trans (unused i h).symm)⟩)
   refine ⟨z,F,k+n,loaded.seq exec,?_,same.trans user,out,cleared,?_⟩
   · have charge := bill work unique
-    have vol : 0 < V := by
-      change 0 < RecursiveInterchangeLayout.volume prime (phaseIntervalChild lo hi (w+1) W axes)
-      rw [intervalChild_volume ordered fits]
-      exact Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) positive
-    have seedBill := descriptorSeedBill seedLane (seedVolume.symm ▸ vol)
-    rw [seedVolume] at seedBill
-    change _ ≤ 133*V at seedBill
-    rw [show (fun i => seed.R (slots i)) = (fun i => (Routines.hdr seedLane i).map bitSymbol) from funext headers] at charge
+    rw [show (fun i => seed.R (slots i)) = words from funext headers] at charge
     change k+tapeCharge cleanupWeight work D ≤ _ at charge
     have core (js) (nd : js.Nodup) := paid js nd
     cases charged with
@@ -156,7 +146,7 @@ theorem seededIntervalRecord {P U : Type} {T B Q w W atom price lo hi axes : ℕ
         ((149*(intervalSplitTapes+5)+13)*volume+34+
         (tapeCharge cleanupWeight work D+entryGrowth+localCost)+18*volume+23) at h
       have observed := bill js nd
-      rw [show (fun i => seed.R (slots i)) = (fun i => (Routines.hdr seedLane i).map bitSymbol) from funext headers] at observed
+      rw [show (fun i => seed.R (slots i)) = words from funext headers] at observed
       change k+tapeCharge cleanupWeight js D ≤ _ at observed
       change k+n+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+_
       simp only [ite_true]

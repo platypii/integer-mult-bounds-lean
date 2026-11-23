@@ -13,7 +13,7 @@ open IntervalDescriptor RecursiveInterchangeLayout
 owner word on register 24 can change independently of all the private inputs. -/
 theorem idleDispatchSeed (N : ℕ) :
     let bank := Fin.castAddEmb N (n := 72)
-    ∃ cmp : Fin 10 ↪ Fin (72+N), ∀ w W L cutoff : ℕ,
+    ∃ cmp : Fin 10 ↪ Fin (72+N), cmp 1 = bank 6 ∧ ∀ w W L cutoff : ℕ,
     let M := prime^(w+1)
     ∃ seed : Stacks (72+N) prime, ∀ S : Stacks (72+N) prime,
       (∀ j, j ≠ bank 24 → S.L j = seed.L j ∧ S.R j = seed.R j) →
@@ -26,7 +26,7 @@ theorem idleDispatchSeed (N : ℕ) :
       ∀ k : Fin 10, 2 ≤ k.val → S.R (cmp k) = [] := by
   intro bank
   let cmp := ((Fin.natAddEmb 5 (m := 10)).trans (Fin.castLEEmb (by decide : 15 ≤ 72))).trans bank
-  refine ⟨cmp,?_⟩
+  refine ⟨cmp,rfl,?_⟩
   intro w W L cutoff M
   let contents (j : ℕ) : List (Fin (prime+4)) :=
     if j = 2 then binSyms M.size M else if j = 28 then binSyms 1 1 else
@@ -91,16 +91,16 @@ theorem seededIdleDispatch [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity : col
       ∀ (word : Fin ((prime^a)^128*(W*142080)) → ZMod 2) u S,
       S.L (bank 24) = [] → S.R (bank 24) = List.ofFn (fun k => SparseRoleCircuit.encode (word k)) →
       (∀ j, j ≠ bank 24 → S.L j = seed.L j ∧ S.R j = seed.R j) → ∀ recursiveBudget,
-      (cutoff < child.width → IntervalWorkerExec body recursiveLabel lane a W recursiveBudget) →
+      (cutoff < child.width → IntervalWorkerExec body recursiveLabel lane a W recursiveBudget (binSyms root.width.size cutoff)) →
       ∃ z F t changed, Exec body code (mk u S) t (mk z F) ∧ z.user = u.user ∧ RecordPayload (bank 24) (fun _ => blank) 0 changed F ∧
         parentIntervalRead i idleCopies[j.val].2 a (W*142080) word changed ∧
         ∀ js : List _, js.Nodup → t+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+2*volume prime child + if cutoff < child.width then recursiveBudget
           else ⌊C*(child.width : ℝ)^M8.Machine.BudgetBound.tau*volume prime child⌋₊ := by
   obtain ⟨C,N,table,pos,dispatch⟩ := alignedIdleDispatch (U := U) capacity mergeCap
-  obtain ⟨cmp,prepare⟩ := idleDispatchSeed N
+  obtain ⟨cmp,cutPort,prepare⟩ := idleDispatchSeed N
   refine ⟨C,N,table,pos,?_⟩
   intro bank P body leaf installed i j recursiveLabel
-  obtain ⟨code,run⟩ := dispatch body leaf installed i j cmp recursiveLabel
+  obtain ⟨code,run⟩ := dispatch body leaf installed i j cmp recursiveLabel cutPort
   refine ⟨code,?_⟩
   intro root path depth b cutoff w groups levels base alignment stop node a active width split W e lane child positive
   obtain ⟨_,_,_,call⟩ := run root path depth b cutoff w groups levels base alignment stop active width split positive
@@ -140,7 +140,7 @@ theorem dispatchedRemainder [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity : co
         else ⌊C*((child k).width : ℝ)^M8.Machine.BudgetBound.tau*volume prime (child k)⌋₊
       (∀ j : Fin idleCopies.length, let k := idleDirectoryIndex (i,j)
         let e := idleInterval i idleCopies[j.val].2
-        cutoff < (child k).width → IntervalWorkerExec body label (phaseIntervalChild (e.1+1) (e.2+1) a W 64) a W (recursiveBudget k)) →
+        cutoff < (child k).width → IntervalWorkerExec body label (phaseIntervalChild (e.1+1) (e.2+1) a W 64) a W (recursiveBudget k) (binSyms root.width.size cutoff)) →
       ∃ seed, PackedPieceHandoffWithCharge cleanupWeight V (fun x y => ∀ j : Fin (W*142080),
         let addr := fun z => flatWindowEquiv a (W*142080) (windowState a z,j)
         readRoles addr y = (Piece.remainder i.val).run (readRoles addr x))

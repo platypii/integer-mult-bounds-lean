@@ -23,6 +23,7 @@ theorem activeIdleCutoffInput (v : CutoffNodeInput) (blocks : ℕ) (positive : v
       c.root = v.root ∧ c.path = v.path++[k] ∧ c.cutoff = v.cutoff ∧
       c.depth-c.path.length = v.depth-(v.path.length+1) ∧
       c.path.length < c.depth ∧ v.w+1 ≤ c.node.width ∧
+      (binSyms (A := prime) v.root.width.size v.cutoff).length ≤ volume prime lane ∧
       lane.width = 64*(c.w+1) ∧ volume prime lane = c.cells := by
   intro k e lane active
   have next : (v.path++[k]).foldl (scheduledChild prime) v.root = scheduledChild prime v.node k := by
@@ -43,28 +44,37 @@ theorem activeIdleCutoffInput (v : CutoffNodeInput) (blocks : ℕ) (positive : v
     change v.w+1 ≤ nodeChildren5[k.val]*(v.node.width/64)
     rw [v.width,Nat.mul_div_cancel_left _ (by decide)]
     exact Nat.le_mul_of_pos_left _ (nodeChildren5_bounds k).1
-  refine ⟨c,node,root,path,cutoff,by simp [depth,path],by simpa only [depth,path] using short,lower,measures.1.trans (node ▸ c.width),?_⟩
+  have precision : v.root.width.size ≤ v.cutoff := Nat.size_le.mpr (by
+    have h := alignedRootWidth_le v.root v.depth v.b v.cutoff v.levels v.base v.rootWidth v.stop
+    have pos : 0 < v.root.width := v.rootWidth ▸ Nat.mul_pos (pow_pos (by decide) _) v.base
+    omega)
+  have lanePos : lane.Positive := by
+    have hp := pow_pos Shared50ModularControl.prime_prime.pos (v.w+1)
+    exact ⟨Nat.zero_lt_one,Nat.zero_lt_one,pow_pos hp _,pow_pos hp _,Nat.mul_pos (pow_pos hp _) v.idlePositive⟩
+  have cutSize : v.root.width.size ≤ volume prime lane :=
+    precision.trans ((active.le.trans_eq measures.1.symm).trans (NodeCall.width_le_volume lane lanePos))
+  refine ⟨c,node,root,path,cutoff,by simp [depth,path],by simpa only [depth,path] using short,lower,by simpa only [length_binSyms] using cutSize,measures.1.trans (node ▸ c.width),?_⟩
   exact Nat.eq_of_mul_eq_mul_right (by decide : 0 < 142080)
     (measures.2.2.trans ((congrArg (volume prime) node).symm.trans c.cells_share.symm))
 
 /-- Pay the interval wrapper and the packed node's own work from a single
 local allowance. All grandchildren keep the same tree rate at every depth. -/
-theorem idleCutoffBudget (U : Type) (push setup passes privateCount : ℕ) :
+theorem idleCutoffBudget (U : Type) (push setup passes privateCount : ℕ) (seedRate : ℕ := 133) :
     ∃ C : ℝ, 0 < C ∧ ∀ (lo hi w W : ℕ), lo ≤ hi → hi ≤ 64 → 0 < W →
       let V := (prime^(w+1))^128*W
       ∀ (child : Descriptor) (cutoff fuel price : ℕ) (D rate : ℝ),
       cutoff < child.width → w+1 ≤ child.width → V ≤ volume prime child →
       C ≤ D → price ≤ cutoffTreeBudget D rate cutoff (fuel+1) child -
         ⌊C*((volume prime child : ℝ)*(child.width : ℝ)^M8.Machine.BudgetBound.tau)⌋₊ →
-      flatIntervalCost U lo hi w W 64 V push setup passes privateCount price ≤
+      flatIntervalCost U lo hi w W 64 V push setup passes privateCount price seedRate ≤
         cutoffTreeBudget D rate cutoff (fuel+1) child := by
-  obtain ⟨C,pos,bound⟩ := flatIntervalCost_cutoff U push setup passes privateCount
+  obtain ⟨C,pos,bound⟩ := flatIntervalCost_cutoff U push setup passes privateCount seedRate
   refine ⟨C,pos,?_⟩
   intro lo hi w W ordered fits hW V child cutoff fuel price D rate active width mass enough packed
   let scale := (volume prime child : ℝ)*(child.width : ℝ)^M8.Machine.BudgetBound.tau
   let wrapper := C*V*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau
   have time := bound lo hi ordered fits w W hW price
-  change flatIntervalCost U lo hi w W 64 V push setup passes privateCount price ≤ price+⌊wrapper⌋₊ at time
+  change flatIntervalCost U lo hi w W 64 V push setup passes privateCount price seedRate ≤ price+⌊wrapper⌋₊ at time
   have wrapperBound : wrapper ≤ C*scale := by
     dsimp only [wrapper,scale]
     rw [← mul_assoc]

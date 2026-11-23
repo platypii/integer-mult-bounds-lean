@@ -86,7 +86,7 @@ theorem dispatchedBorrowedNodeFamily [M8.Machine.Net] {U Config : Type} :
     (∀ c i (j : Fin idleCopies.length), let k := idleDirectoryIndex (i,j)
       let e := idleInterval i idleCopies[j.val].2
       cutoff < (child c k).width → IntervalWorkerExec body label (phaseIntervalChild (e.1+1) (e.2+1) (a c) (W c) 64)
-        (a c) (W c) (recursiveBudget c k)) →
+        (a c) (W c) (recursiveBudget c k) (binSyms root.width.size cutoff)) →
     (∀ c i p (shared : Stacks (142081+2) prime),
       let K := (node c).beforeRows*(142080*groups c)*(node c).between*(node c).afterD
       let rows := (prime^(a c))^112*blocks c

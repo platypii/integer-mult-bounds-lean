@@ -83,12 +83,12 @@ private theorem scheduledRead {child wide : Descriptor}
 /-- A recursive interval call uses the lane descriptor and the interleaved payload.
 Every other tape, including the descriptor, is returned at its entry position. -/
 def IntervalWorkerExec {P U : Type} {N Q : ℕ} (body : P → Pr P (72+N) Q prime U)
-    (worker : P) (lane : Descriptor) (a W budget : ℕ) : Prop :=
+    (worker : P) (lane : Descriptor) (a W budget : ℕ) (cutoffWord : List (Fin (prime+4))) : Prop :=
   let bank := Fin.castAddEmb N (n := 72)
   let wide := {lane with afterD := lane.afterD*142080}
   ∀ (word : Fin (volume prime wide) → ZMod 2) v D,
     D.R (bank 2) = binSyms (prime^a).size (prime^a) → D.R (bank 53) = binSyms W.size W →
-    D.R (bank 28) = binSyms 1 1 → (D.R (bank 71)).length = a →
+    D.R (bank 28) = binSyms 1 1 → (D.R (bank 71)).length = a → D.R (bank 6) = cutoffWord →
     RecordPayload (bank 24) (fun _ => blank) 0 word D →
     (∀ i, D.L (bank (descriptorPorts i)) = [] ∧ D.R (bank (descriptorPorts i)) = (Routines.hdr lane i).map bitSymbol) →
     D.L (bank 59) = [] → (∀ i : Fin 72, 59 ≤ i.val → i.val ≤ 65 → D.R (bank i) = []) →
@@ -127,7 +127,7 @@ theorem scheduledIdleDispatch [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity : 
     let bank := Fin.castAddEmb N (n := 72)
     ∀ {P : Type} (body : P → Pr P (72+N) Q prime U) (leafLabel : Unit → P),
     (∀ f, body (leafLabel f) = embProg (Function.Embedding.refl _) leafLabel (table f)) →
-    ∀ (i : Fin 9) (j : Fin idleCopies.length) (cmp : Fin 10 ↪ Fin (72+N)) (recursiveLabel : P), ∃ code : Pr P (72+N) Q prime U,
+    ∀ (i : Fin 9) (j : Fin idleCopies.length) (cmp : Fin 10 ↪ Fin (72+N)) (recursiveLabel : P), cmp 1 = bank 6 → ∃ code : Pr P (72+N) Q prime U,
     ∀ (node : Descriptor) (w groups : ℕ), let a := w+1
       node.width = 64*a →
       node.rows = 142080*(142080*groups) →
@@ -152,13 +152,13 @@ theorem scheduledIdleDispatch [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity : 
       let result := fun (start F : Stacks (72+N) prime) => ∃ changed, RecordPayload (bank 24) (fun _ => blank) 0 changed F ∧
         (∀ k, changed (position k) = Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (word ∘ position) k) ∧
         ∀ k, k ≠ bank 24 → F.L k = start.L k ∧ F.R k = start.R k
-      (cutoff < child.width → IntervalWorkerExec body recursiveLabel lane a W recursiveBudget) →
+      (cutoff < child.width → IntervalWorkerExec body recursiveLabel lane a W recursiveBudget (binSyms L cutoff)) →
       ∃ z F t, Exec body code (mk u S) t (mk z F) ∧ z.user = u.user ∧ result S F ∧
         ∀ js : List _, js.Nodup → t+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+(4*w+23*child.width+22*L+51) + if cutoff < child.width then recursiveBudget+volume prime child+2
           else ⌊C*(child.width : ℝ)^M8.Machine.BudgetBound.tau*volume prime child⌋₊ := by
   obtain ⟨C,N,table,pos,build⟩ := scheduledIdleInterval (U := U) capacity mergeCap
   refine ⟨C,N,table,pos,?_⟩
-  intro bank P body leafLabel installed i j cmp recursiveLabel
+  intro bank P body leafLabel installed i j cmp recursiveLabel cutPort
   obtain ⟨leaf,run⟩ := build i j
   let place := Function.Embedding.refl (Fin (72+N))
   let stopped := embProg place leafLabel leaf
@@ -210,6 +210,7 @@ theorem scheduledIdleDispatch [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity : 
         ((off _ (fun i => bank.injective.ne ((by decide : ∀ i, 53 ≠ descriptorPorts i) i))).trans suffix)
         ((off _ (fun i => bank.injective.ne ((by decide : ∀ i, 28 ≠ descriptorPorts i) i))).trans unit)
         ((congrArg List.length (off _ (fun i => bank.injective.ne ((by decide : ∀ i, 71 ≠ descriptorPorts i) i)))).trans atom)
+        ((off _ (fun i => bank.injective.ne ((by decide : ∀ i, 6 ≠ descriptorPorts i) i))).trans (cutPort ▸ stored))
         payloadD
         (fun i => ⟨dl ▸ (headers i).1,fields i⟩) (dl ▸ left) scratchD unusedD
       let y := Shared50RecursiveNodeRows.transpose (one_dvd wide.rows) word
@@ -301,7 +302,7 @@ theorem alignedIdleDispatch [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity : co
     let bank := Fin.castAddEmb N (n := 72)
     ∀ {P : Type} (body : P → Pr P (72+N) Q prime U) (leafLabel : Unit → P),
     (∀ f, body (leafLabel f) = embProg (Function.Embedding.refl _) leafLabel (table f)) →
-    ∀ (i : Fin 9) (j : Fin idleCopies.length) (cmp : Fin 10 ↪ Fin (72+N)) (recursiveLabel : P), ∃ code : Pr P (72+N) Q prime U,
+    ∀ (i : Fin 9) (j : Fin idleCopies.length) (cmp : Fin 10 ↪ Fin (72+N)) (recursiveLabel : P), cmp 1 = bank 6 → ∃ code : Pr P (72+N) Q prime U,
     ∀ (root : Descriptor) (path : List (Fin nodeChildren5.length)) (depth b cutoff w groups : ℕ),
       0 < depth → 0 < b → root.width = 64^depth*b → 42^depth*b ≤ cutoff →
       let node := path.foldl (scheduledChild prime) root
@@ -331,14 +332,14 @@ theorem alignedIdleDispatch [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity : co
       let result := fun (start F : Stacks (72+N) prime) => ∃ changed, RecordPayload (bank 24) (fun _ => blank) 0 changed F ∧
         parentIntervalRead i idleCopies[j.val].2 a (W*142080) word changed ∧
         ∀ k, k ≠ bank 24 → F.L k = start.L k ∧ F.R k = start.R k
-      (cutoff < child.width → IntervalWorkerExec body recursiveLabel lane a W recursiveBudget) →
+      (cutoff < child.width → IntervalWorkerExec body recursiveLabel lane a W recursiveBudget (binSyms L cutoff)) →
       ∃ z F t, Exec body code (mk u S) t (mk z F) ∧ z.user = u.user ∧ result S F ∧
         ∀ js : List _, js.Nodup → t+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+2*volume prime child + if cutoff < child.width then recursiveBudget
           else ⌊C*(child.width : ℝ)^M8.Machine.BudgetBound.tau*volume prime child⌋₊ := by
   obtain ⟨C,N,table,pos,dispatch⟩ := scheduledIdleDispatch (U := U) capacity mergeCap
   refine ⟨C,N,table,pos,?_⟩
-  intro bank P body leaf installed i j cmp label
-  obtain ⟨code,run⟩ := dispatch body leaf installed i j cmp label
+  intro bank P body leaf installed i j cmp label cutPort
+  obtain ⟨code,run⟩ := dispatch body leaf installed i j cmp label cutPort
   refine ⟨code,?_⟩
   intro root path depth b cutoff w groups levels base alignment stop node L a active width split W M e lane wide child positive
   obtain ⟨position,smaller,coords,call⟩ := run node w groups width split positive

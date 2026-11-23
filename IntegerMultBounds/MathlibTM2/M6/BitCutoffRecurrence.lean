@@ -147,7 +147,7 @@ def CutoffTreeExecution [M8.Machine.Net] (P U Config : Type) (entryRate : ℝ :=
       let e := idleInterval n idleCopies[j.val].2
       v.cutoff < (scheduledChild prime v.node k).width →
       IntervalWorkerExec idleBody (.inr (idleEntry n)) (phaseIntervalChild (e.1+1) (e.2+1) (v.w+1) v.idleWidth 64)
-        (v.w+1) v.idleWidth (budget c k)) →
+        (v.w+1) v.idleWidth (budget c k) (binSyms v.root.width.size v.cutoff)) →
     ∃ (R : Type) (T : ℕ) (host : R → Pr R T Q prime U) (code : Pr R T Q prime U)
       (src dst : Fin (142081+2) ↪ Fin T) (seed : Config → Stacks T prime),
     ∀ (c : Config), let v := input c

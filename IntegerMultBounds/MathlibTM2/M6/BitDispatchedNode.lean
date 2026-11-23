@@ -45,7 +45,7 @@ theorem dispatchedNodeFamily [M8.Machine.Net] {U Config : Type} :
     (∀ c i (j : Fin idleCopies.length), let k := idleDirectoryIndex (i,j)
       let e := idleInterval i idleCopies[j.val].2
       cutoff < (child c k).width → IntervalWorkerExec body label (phaseIntervalChild (e.1+1) (e.2+1) (a c) (W c) 64)
-        (a c) (W c) (recursiveBudget c k)) →
+        (a c) (W c) (recursiveBudget c k) (binSyms root.width.size cutoff)) →
     (∀ i, ∃ (R : Type) (T : ℕ) (host : R → Pr R T Q prime U), ∃ code src dst, ∃ seed : Config → Stacks T prime,
       ∀ c, PackedPieceHandoffWithCharge cleanupWeight (V c) (fun x y => ∀ j : Fin (W c*142080),
         let addr := fun z => flatWindowEquiv (a c) (W c*142080) (windowState (a c) z,j)
