@@ -12,6 +12,279 @@ open Shared50ModularControl (prime)
 
 local instance (w : ℕ) : NeZero (prime^(w+1)) := ⟨(pow_pos Shared50ModularControl.prime_prime.pos _).ne'⟩
 
+open RecursiveInterchangeRows Shared50RecursiveNodeRows in
+/-- After a cyclic row split, reads on each returned role suffice for the whole
+scheduled child, including when the role descriptor has several row groups. -/
+theorem inheritedTranspose_of_roleReads {V c : ℕ} {child physical : Descriptor}
+    {size : volume prime physical = V} {position : Fin (volume prime child) ≃ Fin V}
+    (coords : InheritedIntervalPositions child physical size position) (width : physical.width = child.width)
+    (positive : 0 < c) (stock : c ∣ physical.rows) {α : Type} (word changed : Fin V → α) :
+    let span := (volume_split prime c physical stock).symm.trans size
+    let cell := fun g (j : Fin c) k => (pack g (pack j k)).cast span
+    (∀ g j k, changed (cell g j k) = word (cell g j (swapSuffix k))) →
+    ∀ k, changed (position k) = transpose (one_dvd child.rows) (word ∘ position) k := by
+  intro span cell reads
+  apply (coords.transpose_iff width word changed).2
+  rw [Shared50RecursiveChildPermutation.transpose_independent (by decide : 0 < 1) positive
+    (one_dvd physical.rows) stock]
+  funext k
+  obtain ⟨⟨g,r⟩,eq⟩ := finProdFinEquiv.surjective (k.cast span.symm)
+  obtain ⟨⟨j,z⟩,rfl⟩ := finProdFinEquiv.surjective r
+  have h : k = cell g j z := Fin.ext (congrArg Fin.val eq).symm
+  subst k
+  exact (reads g j z).trans (transpose_entry stock (fun i => word (i.cast size)) g j z).symm
+
+open RecursiveInterchangeRows Shared50RecursiveNodeRows in
+/-- The role descriptor retains the group's suffix fields, so its own transpose
+performs exactly the read needed at the cyclic merge. -/
+theorem transpose_roleIndex {α : Type*} (v : Descriptor) (c : ℕ)
+    (word : Fin (volume prime (role v c)) → α) (g : Fin (groups c v)) (k : Fin (rowLength prime v)) :
+    transpose (one_dvd (role v c).rows) word (roleIndex prime c v g k) =
+      word (roleIndex prime c v g (swapSuffix k)) := by
+  let lane := role v c
+  have count : groups 1 lane = groups c v := by simp [groups,lane,role]
+  let group := g.cast count.symm
+  have cell (z : Fin (rowLength prime v)) :
+      ((pack group (pack (0 : Fin 1) z)).cast (volume_split prime 1 lane (one_dvd _)).symm) =
+        roleIndex prime c v g z := by
+    apply Fin.ext
+    change (pack group (pack (0 : Fin 1) z)).val = (pack g z).val
+    simp only [pack_val,group,Fin.val_cast,Fin.val_zero,zero_mul,zero_add,one_mul]
+  rw [← cell k,← cell (swapSuffix k)]
+  exact transpose_entry (one_dvd lane.rows) word group 0 k
+
+open RecursiveInterchangeRows Shared50RecursiveNodeRows FlatCoordinateSchedule in
+/-- Merge returned role tapes at their origins into the transposed physical word.
+Both counters are canonical; the bound includes every group in the descriptor. -/
+theorem helperRoleMerge_runs {c : ℕ} (physical : Descriptor) (positive : physical.Positive)
+    (hc : 0 < c) (stock : c ∣ physical.rows) (word : Fin (volume prime physical) → ZMod 2)
+    (returned : Fin c → Fin (volume prime (role physical c)) → ZMod 2)
+    (dest : ℤ → Fin (prime+4)) (sources : Fin c → ℤ → Fin (prime+4)) (p : ℤ) (origins : Fin c → ℤ) :
+    let span := (volume_split prime c physical stock).symm
+    let bs := bits (rowLength prime physical)
+    let gs := bits (groups c physical)
+    let tapes := fun j => putWord (sources j) (origins j) (List.ofFn fun z => SparseRoleCircuit.encode (returned j z))
+    let output := transpose (one_dvd physical.rows) word
+    (∀ g j k, returned j (roleIndex prime c physical g k) =
+      word ((pack g (pack j (swapSuffix k))).cast span)) →
+    HoareTime (CyclicRowNormalized.mergeProgram c prime)
+      (· = CyclicRowSplit.bank (CyclicRowCopy.bank dest tapes p origins bs) gs)
+      (· = CyclicRowSplit.bank (CyclicRowCopy.bank
+        (putWord dest p (List.ofFn fun k => SparseRoleCircuit.encode (output k))) tapes
+        p origins bs) gs)
+      (149*volume prime physical) := by
+  intro span bs gs tapes output reads
+  let encoded := fun k => SparseRoleCircuit.encode (a := prime) (output k)
+  have words j : roleArray prime c physical stock encoded j =
+      fun z => SparseRoleCircuit.encode (a := prime) (returned j z) := by
+    funext z
+    obtain ⟨⟨g,k⟩,eq⟩ := finProdFinEquiv.surjective (z.cast (role_volume prime c physical))
+    have hz : z = roleIndex prime c physical g k := Fin.ext (congrArg Fin.val eq).symm
+    subst z
+    simp only [roleArray,roleIndex,Fin.cast_cast,Fin.cast_refl,id_eq,pack,Equiv.symm_apply_apply,view,encoded,output]
+    apply congrArg SparseRoleCircuit.encode
+    rw [Shared50RecursiveChildPermutation.transpose_independent (by decide : 0 < 1) hc
+      (one_dvd physical.rows) stock word]
+    exact (transpose_entry stock word g j k).trans (reads g j k).symm
+  have merge := RecursiveInterchangeRowsNormalized.merge_hoare prime c physical stock encoded dest sources p origins bs gs (bits_value _) (bits_value _)
+  simp only [words] at merge
+  exact merge.consequence (fun _ h => h) (fun _ h => h) (RecursiveInterchangeRowsNormalized.cost_linear prime c physical stock
+    Shared50ModularControl.prime_prime.pos hc positive bs gs (bits_value _) (bits_value _)
+    (bits_canonical _) (bits_canonical _))
+
+open RecursiveInterchangeRows FlatCoordinateSchedule in
+/-- The row-length and group-count descriptors suffice to construct the role
+volume word on the product machine; its scratch returns blank. -/
+theorem helperRoleVolume_runs (v : Descriptor) (positive : v.Positive) (c : ℕ) :
+    let B := rowLength prime v
+    let G := groups c v
+    let V := volume prime (role v c)
+    let output := DimensionProductDescriptor.output (q := prime) (bits B) (bits G) G B
+    HoareTime (DimensionProductDescriptor.program (q := prime))
+      (· = DimensionProductDescriptor.input (bits B) (bits G)) (· = output) (53*V+28) ∧
+      output.head 1 = 1 ∧ output.tape 1 = RadixZeroFill.encodedBinary (bits V) := by
+  intro B G V output
+  have size : V = G*B := role_volume prime c v
+  have rowPos : 0 < B := by
+    obtain ⟨_,_,h,m,d⟩ := positive
+    dsimp [B,rowLength]
+    have := Shared50ModularControl.prime_prime.pos
+    positivity
+  refine ⟨size.symm ▸ DimensionProductDescriptor.construct_hoare _ _ G B rowPos
+    (bits_value _) (bits_value _) (bits_canonical _) (bits_canonical _),rfl,?_⟩
+  apply congrArg RadixZeroFill.encodedBinary
+  exact BinaryCanonicalData.value_injective _ _ (DimensionProductDescriptor.bits_canonical _ _)
+    (bits_canonical _) ((DimensionProductDescriptor.bits_value _ _).trans (size.symm.trans (bits_value _).symm))
+
+/-- The cyclic splitter's outer counter counts groups. Supply the node's two
+volume controls separately and reuse the split payload tapes in place. -/
+theorem helperFan_of_splitRows {T c V : ℕ} (place : Fin (((1+c)+2)+2) ↪ Fin T)
+    (fan : Fin (c+2) ↪ Fin T) (owner : ℤ → Fin (prime+4)) (data : Fin c → Fin V → ZMod 2)
+    (bs gs : List Bool) (S : Stacks T prime)
+    (atRole : ∀ j : Fin c, fan (j.castAdd 2) = place (((j.natAdd 1).castAdd 2).castAdd 2)) :
+    let roles := fun j => putWord (fun _ => blank) 0 (List.ofFn (SparseRoleCircuit.encoded (a := prime) data j))
+    let bank := CyclicRowSplit.bank (CyclicRowCopy.bank owner roles 0 (fun _ => 0) bs) gs
+    let controls := CountedLoopReuseAlphabet.controls (a := prime) CountedLoopReuseAlphabet.empty
+      (CountedLoopReuseAlphabet.binary (FlatCoordinateSchedule.bits V)) 1 1
+    let controlPorts := (Fin.natAddEmb c (m := 2)).trans fan
+    RepT bank (embStk place S).L (embStk place S).R →
+    RepT controls (embStk controlPorts S).L (embStk controlPorts S).R → HelperFan fan data S := by
+  intro roles bank controls controlPorts ready counters i z
+  induction i using Fin.addCases with
+  | left j =>
+    simpa only [bank,roles,CyclicRowSplit.bank,CyclicRowCopy.bank,CyclicRowCopy.payload,
+      CountedLoopReuseAlphabet.bank,PointwiseRoleGate.bank,Tapes.append,Fin.addCases_left,Fin.addCases_right,
+      embStk,Function.comp_apply,atRole] using ready (((j.natAdd 1).castAdd 2).castAdd 2) z
+  | right j =>
+    simpa only [PointwiseRoleGate.bank,Tapes.append,Fin.addCases_right,controls,controlPorts,
+      embStk,Function.comp_apply,Function.Embedding.trans_apply,Fin.natAddEmb_apply] using counters j z
+
+private theorem helperRows_place {P U : Type} {t T q Q bound : ℕ} (body : P → Pr P T Q prime U)
+    (place : Fin t ↪ Fin T) (machine : Program t q prime) (capacity : q ≤ Q) {input output}
+    (run : HoareTime machine (· = input) (· = output) bound) (u : HS T Q prime U) (S : Stacks T prime)
+    (ready : RepT input (embStk place S).L (embStk place S).R) :
+    ∃ z F n, Exec body (embProg place Empty.elim (foreign (liftQ machine capacity))) (mk u S) n (mk z F) ∧
+      n ≤ bound*(t+5)+6 ∧ z.user = u.user ∧ RepT output (embStk place F).L (embStk place F).R ∧
+      ∀ j, (∀ i, place i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  obtain ⟨v,D,_,rfl,out,user,_,_,_,n,cost,ran⟩ := foreign_exec (body := (Empty.elim : Empty → _))
+    (liftQ machine capacity) (HoareTime.liftQ capacity run) (embDn place u) (embStk place S) input rfl ready
+  obtain ⟨z,F,exec,_,same,view,keep⟩ := exec_emb (body' := body) (ι := Empty.elim)
+    place.injective (fun e => nomatch e) ran u rfl S rfl
+  exact ⟨z,F,n,exec,cost,same.trans user,view.symm ▸ out,keep⟩
+
+open RecursiveInterchangeRows FlatCoordinateSchedule in
+/-- Build the volume descriptor directly on the fan's header tape. The split
+role tapes and the marked clock are retained throughout the computation. -/
+theorem helperFanVolume_exec {P U : Type} {T Q c : ℕ} (body : P → Pr P T Q prime U)
+    (place : Fin (((1+c)+2)+2) ↪ Fin T) (fan : Fin (c+2) ↪ Fin T) (product : Fin 6 ↪ Fin T)
+    (v : Descriptor) (positive : v.Positive) (capacity : 40 ≤ Q)
+    (atRole : ∀ j : Fin c, fan (j.castAdd 2) = place (((j.natAdd 1).castAdd 2).castAdd 2))
+    (atVolume : fan ((1 : Fin 2).natAdd c) = product 1)
+    (offRole : ∀ j : Fin c, ∀ k, product k ≠ fan (j.castAdd 2))
+    (offClock : ∀ k, product k ≠ fan ((0 : Fin 2).natAdd c)) :
+    let B := rowLength prime v
+    let G := groups c v
+    let V := volume prime (role v c)
+    let code := embProg product Empty.elim (foreign (liftQ (DimensionProductDescriptor.program (q := prime)) capacity))
+    ∀ (owner : ℤ → Fin (prime+4)) (data : Fin c → Fin V → ZMod 2) u S,
+    let roles := fun j => putWord (fun _ => blank) 0 (List.ofFn (SparseRoleCircuit.encoded (a := prime) data j))
+    let bank := CyclicRowSplit.bank (CyclicRowCopy.bank owner roles 0 (fun _ => 0) (bits B)) (bits G)
+    let clock := fan ((0 : Fin 2).natAdd c)
+    RepT bank (embStk place S).L (embStk place S).R →
+    RepT (DimensionProductDescriptor.input (bits B) (bits G)) (embStk product S).L (embStk product S).R →
+    (∀ z, CountedLoopReuseAlphabet.empty (a := prime) z = readAt blank (S.L clock) (S.R clock) (z-1)) →
+    ∃ z F n, Exec body code (mk u S) n (mk z F) ∧ n ≤ (53*V+28)*11+6 ∧ z.user = u.user ∧
+      HelperFan fan data F ∧ ∀ j, (∀ k, product k ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  intro B G V code owner data u S roles bank clock split input marked
+  obtain ⟨construct,head,tape⟩ := helperRoleVolume_runs v positive c
+  obtain ⟨z,F,n,run,cost,user,out,frame⟩ := helperRows_place body product _ capacity construct u S input
+  refine ⟨z,F,n,run,cost,user,?_,frame⟩
+  intro i a
+  induction i using Fin.addCases with
+  | left j =>
+    obtain ⟨left,right⟩ := frame _ (offRole j)
+    have h := split (((j.natAdd 1).castAdd 2).castAdd 2) a
+    simpa only [bank,roles,CyclicRowSplit.bank,CyclicRowCopy.bank,CyclicRowCopy.payload,
+      CountedLoopReuseAlphabet.bank,PointwiseRoleGate.bank,Tapes.append,Fin.addCases_left,Fin.addCases_right,
+      embStk,Function.comp_apply,left,right,← atRole] using h
+  | right j =>
+    fin_cases j
+    · obtain ⟨left,right⟩ := frame _ offClock
+      simpa [PointwiseRoleGate.bank,Tapes.append,embStk,CountedLoopReuseAlphabet.controls,left,right,clock]
+        using marked a
+    · have h := out 1 a
+      rw [head,tape] at h
+      rw [show RadixZeroFill.encodedBinary (q := prime) = CountedLoopReuseAlphabet.binary from
+        funext (fun bs => CountedLoopReuseAlphabet.encoding_binary bs)] at h
+      simpa [PointwiseRoleGate.bank,Tapes.append,embStk,CountedLoopReuseAlphabet.controls,atVolume,V]
+        using h
+
+open RecursiveInterchangeRows Shared50RecursiveNodeRows FlatCoordinateSchedule in
+/-- Run the role computation between a normalized split and merge. The same owner
+tape holds the input and result; both sequencing steps are included in the bill. -/
+theorem helperRows_exec {P U : Type} {c T Q : ℕ} (physical : Descriptor) (positive : physical.Positive)
+    (hc : 0 < c) (stock : c ∣ physical.rows) (word : Fin (volume prime physical) → ZMod 2)
+    (dest : ℤ → Fin (prime+4)) (sources : Fin c → ℤ → Fin (prime+4)) (p : ℤ) (origins : Fin c → ℤ)
+    (body : P → Pr P T Q prime U) (worker : Pr P T Q prime U) (budget : ℕ)
+    (place : Fin (((1+c)+2)+2) ↪ Fin T) (framed : Fin T → Prop)
+    (outside : ∀ j, framed j → ∀ i, place i ≠ j)
+    (capacity : let q := 7+(CyclicRowCycle.states c+5)+4; q+q ≤ Q) :
+    let V := volume prime physical
+    let bs := bits (rowLength prime physical)
+    let gs := bits (groups c physical)
+    let bank := fun owner roles => CyclicRowSplit.bank (CyclicRowCopy.bank owner roles p origins bs) gs
+    let encoded := fun k => SparseRoleCircuit.encode (a := prime) (word k)
+    let owner := putWord dest p (List.ofFn encoded)
+    let tapes := fun (data : Fin c → Fin (volume prime (role physical c)) → ZMod 2) j =>
+      putWord (sources j) (origins j) (List.ofFn fun k => SparseRoleCircuit.encode (data j k))
+    let input := fun (j : Fin c) (z : Fin (volume prime (role physical c))) =>
+      let gk := finProdFinEquiv.symm (z.cast (role_volume prime c physical))
+      word ((pack gk.1 (pack j gk.2)).cast (volume_split prime c physical stock).symm)
+    let returned := fun j => transpose (one_dvd (role physical c).rows) (input j)
+    let project := fun (D : Stacks T prime) => embStk place D
+    let splitCode := embProg place Empty.elim (foreign (liftQ (CyclicRowNormalized.splitProgram c prime) capacity))
+    let mergeCode := embProg place Empty.elim (foreign (liftQ (CyclicRowNormalized.mergeProgram c prime) capacity))
+    ∀ u S, RepT (bank owner sources) (project S).L (project S).R →
+      (∀ v D, RepT (bank owner (tapes input)) (project D).L (project D).R →
+        (∀ j, (∀ i, place i ≠ j) → D.L j = S.L j ∧ D.R j = S.R j) →
+        ∃ z F n, Exec body worker (mk v D) n (mk z F) ∧ n ≤ budget ∧ z.user = v.user ∧
+          RepT (bank owner (tapes returned)) (project F).L (project F).R ∧
+          ∀ j, framed j → F.L j = D.L j ∧ F.R j = D.R j) →
+      ∃ z F n, Exec body (splitCode.seq (worker.seq mergeCode)) (mk u S) n (mk z F) ∧
+        n ≤ 298*V*((((1+c)+2)+2)+5)+budget+12 ∧ z.user = u.user ∧
+        RepT (bank (putWord owner p (List.ofFn fun k =>
+          SparseRoleCircuit.encode (transpose (one_dvd physical.rows) word k))) (tapes returned))
+          (project F).L (project F).R ∧
+        ∀ j, framed j → F.L j = S.L j ∧ F.R j = S.R j := by
+  intro V bs gs bank encoded owner tapes input returned project splitCode mergeCode u S ready work
+  have reads g j k : returned j (roleIndex prime c physical g k) =
+      word ((pack g (pack j (swapSuffix k))).cast (volume_split prime c physical stock).symm) := by
+    change transpose (one_dvd (role physical c).rows) (input j) _ = _
+    rw [transpose_roleIndex]
+    simp only [input,roleIndex,Fin.cast_cast,Fin.cast_refl,id_eq,pack,Equiv.symm_apply_apply]
+  have split := RecursiveInterchangeRowsNormalized.split_hoare prime c physical stock encoded dest sources p origins
+    bs gs (bits_value _) (bits_value _)
+  have paid := RecursiveInterchangeRowsNormalized.cost_linear prime c physical stock Shared50ModularControl.prime_prime.pos
+    hc positive bs gs (bits_value _) (bits_value _) (bits_canonical _) (bits_canonical _)
+  have start := split.consequence (fun _ h => h) (fun _ h => h) paid
+  have merge := helperRoleMerge_runs physical positive hc stock word returned owner sources p origins reads
+  obtain ⟨v,D,k,splitRun,splitCost,vu,prepared,frame⟩ :=
+    helperRows_place body place _ capacity start u S ready
+  obtain ⟨y,G,m,mid,midCost,yv,changed,midFrame⟩ := work v D prepared frame
+  obtain ⟨z,F,n,merged,mergeCost,zy,out,lastFrame⟩ :=
+    helperRows_place body place _ capacity merge y G changed
+  refine ⟨z,F,_,splitRun.seq (mid.seq merged),?_,zy.trans (yv.trans vu),out,?_⟩
+  · dsimp only [V]
+    rw [show 298*volume prime physical = 149*volume prime physical+149*volume prime physical by omega,Nat.add_mul]
+    omega
+  · intro j hj
+    obtain ⟨l,r⟩ := frame j (outside j hj)
+    obtain ⟨ml,mr⟩ := midFrame j hj
+    obtain ⟨fl,fr⟩ := lastFrame j (outside j hj)
+    exact ⟨fl.trans (ml.trans l),fr.trans (mr.trans r)⟩
+
+/-- An implementation transposing the physical interval on the record supplies the
+scheduled worker contract at every address map preserving the two active fields. -/
+theorem scheduledChildExec_of_inherited [M8.Machine.Net] {T Q : ℕ} {P U : Type}
+    (body : P → Pr P T Q prime U) (f : P) (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T)
+    (record : List (Fin (prime+4))) (parent child physical : Descriptor) (w W budget : ℕ)
+    (size : volume prime physical = (prime^(w+1))^16*W)
+    (position : Fin (volume prime child) ≃ Fin ((prime^(w+1))^16*W))
+    (coords : InheritedIntervalPositions child physical size position) (width : physical.width = child.width) :
+    let stored := RecordReady (b := prime) (w := w) (d := 16) (W := W) (scheduledRecordPorts ports)
+      (prime^(w+1)).size W.size record SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0
+    let clean := fun (S : Stacks T prime) => ∀ j : Fin (rowSwapBlock.tapes+35), 35 ≤ j.val →
+      S.L (ports j) = [] ∧ S.R (ports j) = []
+    (child.width < parent.width → ∀ u S word, stored word S → clean S →
+      ∃ z F n, Exec body (body f) (mk u S) n (mk z F) ∧ n ≤ budget ∧ z.user = u.user ∧
+        stored (fun k => Shared50RecursiveNodeRows.transpose (one_dvd physical.rows)
+          (fun j => word (j.cast size)) (k.cast size.symm)) F ∧ clean F ∧
+        ∀ j, (∀ l, ports l ≠ j) → F.L j = S.L j ∧ F.R j = S.R j) →
+    ScheduledChildExec parent child w W ports record position body f budget := by
+  intro stored clean physicalRun smaller u S word ready free
+  obtain ⟨z,F,n,ran,paid,user,out,blank,frame⟩ := physicalRun smaller u S word ready free
+  exact ⟨z,F,n,_,ran,paid,user,out,blank,frame,(coords.transpose_iff width word _).2 rfl⟩
+
 open Certificates.PR589 in
 /-- A paid helper MOVE calls the scheduled worker with its record, restores its scratch,
 and preserves the stacks outside the worker ports. -/
@@ -37,12 +310,13 @@ theorem helperRecordCall_exec [M8.Machine.Net] {T Q : ℕ} {P U : Type}
           (prime^(w+1)).size W.size record SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0
         let clean := fun (S : Stacks T prime) => ∀ j : Fin (rowSwapBlock.tapes+35), 35 ≤ j.val →
           S.L (ports j) = [] ∧ S.R (ports j) = []
-        ∃ position, ScheduledChildExec parent child w W ports record position body (f i) (budget i) →
+        ∃ position, InheritedIntervalPositions child physical size position ∧
+          (ScheduledChildExec parent child w W ports record position body (f i) (budget i) →
           ∀ u S word, stored word S → clean S →
           ∃ z F n, Exec body (.call (f i)) (mk u S) n (mk z F) ∧ n ≤ budget i+2 ∧ z.user = u.user ∧
             stored (fun k => Shared50RecursiveNodeRows.transpose (one_dvd physical.rows)
               (fun j => word (j.cast size)) (k.cast size.symm)) F ∧ clean F ∧
-            ∀ j, (∀ l, ports l ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+            ∀ j, (∀ l, ports l ≠ j) → F.L j = S.L j ∧ F.R j = S.R j) := by
   intro edges j edge a d lo hi start physical i child W
   have shape := helperMove_shape parent stage run helper (w+1) width j
   have mem := List.mem_filter.mp (List.getElem_mem (l := edges) (n := j.val) j.isLt)
@@ -63,9 +337,13 @@ theorem helperRecordCall_exec [M8.Machine.Net] {T Q : ℕ} {P U : Type}
     ring
   refine ⟨size,?_⟩
   intro stored clean
-  obtain ⟨e,_,transpose⟩ := scheduledTranspose_onOwner shape
+  obtain ⟨e,coords,transpose⟩ := scheduledTranspose_onOwner shape
   let position := e.trans (finCongr size)
-  refine ⟨position,?_⟩
+  refine ⟨position,?_,?_⟩
+  · intro k
+    change _ = (CopyChildLayout.packActive physical (((e k).cast size).cast size.symm)).val
+    simp only [Fin.cast_cast,Fin.cast_refl,id_eq]
+    exact (coords k).symm
   intro worker u S word ready free
   have smaller : child.width < parent.width := by
     simpa only [child,scheduledChild,rankDescriptor,width,Nat.mul_div_cancel_left _ (by decide : 0 < 64)]
