@@ -40,7 +40,8 @@ theorem activeIntervalFromRecord {P U : Type} {M N Q price a w W : ℕ} (lane : 
     ∀ (span : V*142080 = (prime^(w+1))^16*W) (place : Fin (142082+T+N) ↪ Fin M),
     let caller := ((Fin.natAddEmb 142082 (m := T)).trans (Fin.castAddEmb N)).trans place
     [bank 24,tmp,caller 0].Nodup →
-    ∃ (host : Empty ⊕ P → Pr (Empty ⊕ P) M Q prime U) (program : Pr (Empty ⊕ P) M Q prime U),
+    ∃ (host : Empty ⊕ P → Pr (Empty ⊕ P) M Q prime U) (program : Pr (Empty ⊕ P) M Q prime U)
+      (owners : Fin 142080 ↪ Fin M),
     ∀ record word u (S : Stacks M prime),
       RecordReady (b := prime) (w := w) (d := 16) (W := W) bank (prime^(w+1)).size W.size record
         SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0 word S →
@@ -55,10 +56,14 @@ theorem activeIntervalFromRecord {P U : Type} {M N Q price a w W : ℕ} (lane : 
         n ≤ (298*(T+5)+13)*(V*142080)+142081*(8*V+10)+price+41 ∧
         RecordPayload (caller 0) (fun _ => blank) 0 y F ∧
         (∀ k, y (position k) = Shared50RecursiveNodeRows.transpose (one_dvd wide.rows) (word ∘ position) k) ∧
+        (∀ js : List (Fin 142080), js.Nodup →
+          n+(js.map fun j => 4*(F.L (owners j)).length+2*(F.R (owners j)).length+4).sum ≤
+            (298*(T+5)+13)*(V*142080)+142081*(8*V+10)+price+41+js.length*(2*V+4)+
+              12*(149*(V*142080)*(T+5)+6)) ∧
         ∀ j, (∀ i, place i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
   intro T V span place caller apart
   obtain ⟨host,program,out,target,run⟩ := packedIntervalFromWord_exec lane width positive capacity child place (bank 24) tmp apart
-  refine ⟨host,program,?_⟩
+  refine ⟨host,program,(Fin.castAddEmb 2).trans ((intervalOwners 142080).trans out),?_⟩
   intro record word u S ready tl tr clear fresh prepared wide size position
   let changed := Shared50RecursiveNodeRows.transpose (one_dvd wide.rows) (word ∘ position)
   let y := changed ∘ position.symm
@@ -68,12 +73,27 @@ theorem activeIntervalFromRecord {P U : Type} {M N Q price a w W : ℕ} (lane : 
   have coord (k : Fin (V*142080)) :
       position.symm (k.cast span) = (packedChildPosition wide size).symm k := rfl
   simp only [Function.comp_apply,coord] at read
-  obtain ⟨z,F,n,exec,user,paid,rep,frame⟩ := run (word ∘ position) u S read tl tr clear fresh prepared
-  refine ⟨z,F,n,y,exec,user,paid,?_,fun k => by simp [y,changed],frame⟩
+  obtain ⟨z,F,n,exec,user,paid,rep,ownerBill,frame⟩ := run (word ∘ position) u S read tl tr clear fresh prepared
+  refine ⟨z,F,n,y,exec,user,paid,?_,fun k => by simp [y,changed],ownerBill,frame⟩
   rw [← target]
   apply castPayload span
   apply mergedPayload out F _ _
   simpa only [finProdFinEquiv.apply_symm_apply,Equiv.apply_symm_apply,y,Function.comp_apply,coord] using rep
+
+private theorem sum_outside_owners {ι : Type} [DecidableEq ι] (slots owners : List ι)
+    (distinct : slots.Nodup) (cost : ι → ℕ) :
+    (slots.map cost).sum ≤ (owners.map cost).sum+((slots.filter fun j => j ∉ owners).map cost).sum := by
+  let rest := slots.filter fun j => j ∉ owners
+  have subset : slots ⊆ owners ++ rest := by
+    intro j inside
+    by_cases owned : j ∈ owners <;> simp [rest,owned,inside]
+  obtain ⟨l,perm,sub⟩ := List.subperm_of_subset distinct subset
+  obtain ⟨extra,extend⟩ := sub.exists_perm_append
+  have eq := ((extend.trans (perm.append_right extra)).map cost).sum_eq
+  simpa only [List.map_append,List.sum_append] using
+    (show (slots.map cost).sum ≤ ((owners++rest).map cost).sum by
+      simp only [List.map_append,List.sum_append] at eq ⊢
+      omega)
 
 open Cover Node Mult.PhaseCellToeplitz in
 /-- Execute the recursive transpose, write its merged word back to the scheduled
@@ -92,7 +112,8 @@ theorem activeIntervalWriteback {P U : Type} {M N Q price a w W : ℕ} (lane : D
     [count,caller 0,bank 24,saved,tmp].Nodup →
     (∀ i j, place i ≠ bank j) →
     (∀ i, place i ≠ count ∧ place i ≠ saved ∧ place i ≠ tmp) →
-    ∃ (host : Empty ⊕ P → Pr (Empty ⊕ P) M Q prime U) (worker finish : Pr (Empty ⊕ P) M Q prime U),
+    ∃ (host : Empty ⊕ P → Pr (Empty ⊕ P) M Q prime U) (worker finish : Pr (Empty ⊕ P) M Q prime U)
+      (owners : Fin 142080 ↪ Fin M),
     ∀ record word u (S : Stacks M prime),
       RecordReady (b := prime) (w := w) (d := 16) (W := W) bank (prime^(w+1)).size W.size record
         SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0 word S →
@@ -108,6 +129,10 @@ theorem activeIntervalWriteback {P U : Type} {M N Q price a w W : ℕ} (lane : D
         k ≤ (298*(T+5)+13)*(V*142080)+142081*(8*V+10)+price+41 ∧
         n ≤ k+18*(V*142080)+23 +
           (slots.map fun j => 4*(mergedState.L j).length+2*(mergedState.R j).length+4).sum ∧
+        (let rest := slots.filter fun j => j ∉ (List.finRange 142080).map owners
+         n ≤ (298*(T+5)+31)*(V*142080)+142081*(8*V+10)+price+64+142080*(2*V+4)+
+           12*(149*(V*142080)*(T+5)+6)+(rest.map fun j =>
+             4*(mergedState.L j).length+2*(mergedState.R j).length+4).sum) ∧
         (∀ i, F.L (place i) = [] ∧ F.R (place i) = []) ∧
         RecordReady (b := prime) (w := w) (d := 16) (W := W) bank (prime^(w+1)).size W.size record
           SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0 y F ∧
@@ -119,12 +144,12 @@ theorem activeIntervalWriteback {P U : Type} {M N Q price a w W : ℕ} (lane : D
   have loadApart : [bank 24,tmp,caller 0].Nodup := by
     simp only [List.nodup_cons,List.mem_cons,List.not_mem_nil,or_false,not_or,List.nodup_nil,and_true,not_false_eq_true]
     exact ⟨⟨‹bank 24 ≠ tmp›,(disjoint _ 24).symm⟩,(regs _).2.2.symm⟩
-  obtain ⟨host,program,run⟩ := activeIntervalFromRecord lane width positive capacity child bank tmp span place loadApart
+  obtain ⟨host,program,owners,run⟩ := activeIntervalFromRecord lane width positive capacity child bank tmp span place loadApart
   let write : Pr (Empty ⊕ P) M Q prime U := (loadCompactWord (caller 0) tmp count).seq
     (((usub count (bank 24) tmp).seq (Mult.PhaseCellToeplitz.movePrefix count (caller 0) (bank 24) saved tmp)).seq (bclear count))
-  refine ⟨host,program,write.seq (clearWorkTapes slots),?_⟩
+  refine ⟨host,program,write.seq (clearWorkTapes slots),owners,?_⟩
   intro record word u S ready hc hs tl tr clear fresh prepared wide size position
-  obtain ⟨z,F,n,y,exec,user,paid,merged,effect,frame⟩ := run record word u S ready tl tr clear fresh prepared
+  obtain ⟨z,F,n,y,exec,user,paid,merged,effect,ownerBill,frame⟩ := run record word u S ready tl tr clear fresh prepared
   have owner := frame (bank 24) (fun i => disjoint i 24)
   have old : RecordPayload (bank 24) (fun _ => blank) 0 word F := by
     intro k
@@ -142,13 +167,22 @@ theorem activeIntervalWriteback {P U : Type} {M N Q price a w W : ℕ} (lane : D
     ((frame tmp (fun i => (regs i).2.2)).1.trans tl) ((frame tmp (fun i => (regs i).2.2)).2.trans tr)
   have keep j (ne : j ≠ bank 24) (away : ∀ i, place i ≠ j) : D.L j = S.L j ∧ D.R j = S.R j :=
     ⟨(rest j ne (outside away)).1.trans (frame j away).1,(rest j ne (outside away)).2.trans (frame j away).2⟩
-  refine ⟨v,D,_,y,z,F,n,exec,exec.seq back,same.trans user,paid,?_,fun i => empty _ (member i),ready.returnPayload
+  refine ⟨v,D,_,y,z,F,n,exec,exec.seq back,same.trans user,paid,?_,?_,fun i => empty _ (member i),ready.returnPayload
     (fun i ne => keep _ (bank.injective.ne ne) (fun k => disjoint k i))
     (fun k => by simpa only [List.map_ofFn] using (payload k).symm),effect,keep⟩
-  rw [← span] at cost
-  dsimp only [T,V] at paid cost ⊢
-  simp only [Nat.add_mul] at paid cost ⊢
-  omega
+  · rw [← span] at cost
+    omega
+  · intro rest
+    let charge := fun j => 4*(F.L j).length+2*(F.R j).length+4
+    have rows := ownerBill (List.finRange 142080) (List.nodup_finRange _)
+    have partition := sum_outside_owners slots ((List.finRange 142080).map owners)
+      ((List.nodup_finRange _).map place.injective) charge
+    simp only [List.map_map,Function.comp_def,List.length_finRange] at partition rows
+    change (slots.map charge).sum ≤ _+(rest.map charge).sum at partition
+    rw [← span] at cost
+    dsimp only [T,V,charge] at rows cost partition ⊢
+    simp only [Nat.add_mul] at rows ⊢
+    omega
 
 /-- Copy the active record payload onto a fresh child input tape. Only the destination
 right stack changes, and the source keeps its original tape position. -/
