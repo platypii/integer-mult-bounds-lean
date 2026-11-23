@@ -80,20 +80,20 @@ theorem scheduledWindows_exec {T Q : ℕ} {P U X : Type} (body : P → Pr P T Q 
     (cons : ∀ i ls x y z, effect i x y → trace ls y z → trace (i :: ls) x z)
     (ready : X → Stacks T prime → Prop) (saved : Fin Copy.lifecycles.length → Stacks T prime → Prop)
     (price : Fin Copy.lifecycles.length → ℕ)
-    (window : ∀ i, ∃ code, ∀ x u S, ready x S → saved i S →
-      ∃ z F t y, Exec body code (mk u S) t (mk z F) ∧ t ≤ price i ∧ z.user = u.user ∧ ready y F ∧
+    (code : Fin Copy.lifecycles.length → Pr P T Q prime U)
+    (window : ∀ i, ∀ x u S, ready x S → saved i S →
+      ∃ z F t y, Exec body (code i) (mk u S) t (mk z F) ∧ t ≤ price i ∧ z.user = u.user ∧ ready y F ∧
         effect i x y ∧
         ∀ j, j ≠ i → saved j S → saved j F)
     (ls : List (Fin Copy.lifecycles.length)) (unique : ls.Nodup) :
-    ∃ code, ∀ x u S, ready x S → (∀ i ∈ ls, saved i S) →
-      ∃ z F t y, Exec body code (mk u S) t (mk z F) ∧ t ≤ (ls.map price).sum+1 ∧ z.user = u.user ∧ ready y F ∧
+    ∀ x u S, ready x S → (∀ i ∈ ls, saved i S) →
+      ∃ z F t y, Exec body (ls.foldr (fun i tail => (code i).seq tail) (.act .done)) (mk u S) t (mk z F) ∧ t ≤ (ls.map price).sum+1 ∧ z.user = u.user ∧ ready y F ∧
         trace ls x y := by
   induction ls with
-  | nil => exact ⟨.act .done,fun x u S ok _ => ⟨u,S,1,x,Exec.act ..,by simp,rfl,ok,empty x⟩⟩
+  | nil => exact fun x u S ok _ => ⟨u,S,1,x,Exec.act ..,by simp,rfl,ok,empty x⟩
   | cons i ls ih =>
-    obtain ⟨code,run⟩ := window i
-    obtain ⟨tail,rest⟩ := ih (List.nodup_cons.mp unique).2
-    refine ⟨.seq code tail,?_⟩
+    have run := window i
+    have rest := ih (List.nodup_cons.mp unique).2
     intro x u S ok fresh
     obtain ⟨v,D,k,a,exec,charge,user,mid,act,keep⟩ := run x u S ok (fresh i List.mem_cons_self)
     obtain ⟨z,F,m,y,done,paid,same,final,trace⟩ := rest a v D mid (fun j hj =>
@@ -108,16 +108,16 @@ Every label sees the selected COPY word, and unrelated owners retain their data.
 theorem commonWindows_exec {T Q w B K : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
     (n : Fin 9) (r : Fin 32) (d : Fin 5) (fan : Fin (142081+2) ↪ Fin T)
     (saved : Fin Copy.lifecycles.length → Stacks T prime → Prop)
-    (price : Fin Copy.lifecycles.length → ℕ) :
+    (price : Fin Copy.lifecycles.length → ℕ) (code : Fin Copy.lifecycles.length → Pr P T Q prime U) :
     let V := (prime^w)^16*(B*prime^(64*(w*64))*K)
     let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n r d,ownerTape_injective n r d⟩
     let X := Fin 142081 → Fin V → ZMod 2
-    (∀ i, ∃ code, ∀ (x : X) u S, HelperFan fan x S → saved i S →
-      ∃ z F t y, Exec body code (mk u S) t (mk z F) ∧ t ≤ price i ∧ z.user = u.user ∧ HelperFan fan y F ∧
+    (∀ i, ∀ (x : X) u S, HelperFan fan x S → saved i S →
+      ∃ z F t y, Exec body (code i) (mk u S) t (mk z F) ∧ t ≤ price i ∧ z.user = u.user ∧ HelperFan fan y F ∧
         CopyFanoutEffect n r d _ (List.getElem_mem (l := Copy.lifecycles) i.isLt) w B K x y ∧
         ∀ j, j ≠ i → saved j S → saved j F) →
-    ∃ code, ∀ (x : X) u S, HelperFan fan x S → (∀ i, saved i S) →
-      ∃ z F t y, Exec body code (mk u S) t (mk z F) ∧ t ≤ (List.ofFn price).sum+1 ∧
+    ∀ (x : X) u S, HelperFan fan x S → (∀ i, saved i S) →
+      ∃ z F t y, Exec body ((List.finRange _).foldr (fun i tail => (code i).seq tail) (.act .done)) (mk u S) t (mk z F) ∧ t ≤ (List.ofFn price).sum+1 ∧
         z.user = u.user ∧ HelperFan fan y F ∧
         (∀ g (cell : LabelEntry.Cell (copyLabelLayout w B K) B),
           phaseRead owner y (labelSpectator g cell) =
@@ -129,12 +129,11 @@ theorem commonWindows_exec {T Q w B K : ℕ} {P U : Type} (body : P → Pr P T Q
       phaseRead owner y (labelSpectator g cell) = ls.foldl
         (fun a i => scatterWindow (selectedWord w) Copy.lifecycles[i.val] a) (phaseRead owner x (labelSpectator g cell))) ∧
     ∀ k, k ≠ Fin.last 142080 → (∀ j, owner j ≠ k) → y k = x k
-  obtain ⟨code,run⟩ := scheduledWindows_exec body _ trace (fun _ => ⟨fun _ _ => rfl,fun _ _ _ => rfl⟩)
+  have run := scheduledWindows_exec body _ trace (fun _ => ⟨fun _ _ => rfl,fun _ _ _ => rfl⟩)
     (fun i ls x y z act tail => by
       refine ⟨fun g cell => ?_,fun k live off => (tail.2 k live off).trans (act.2.2.1 k live (fun j _ => off j))⟩
       rw [tail.1 g cell,phaseRead_fanout _ act]
-      rfl) (HelperFan fan) saved price window (List.finRange _) (List.nodup_finRange _)
-  refine ⟨code,?_⟩
+      rfl) (HelperFan fan) saved price code window (List.finRange _) (List.nodup_finRange _)
   intro x u S rep fresh
   obtain ⟨z,F,t,y,exec,paid,user,done,action,off⟩ := run x u S rep (fun i _ => fresh i)
   refine ⟨z,F,t,y,exec,by simpa only [List.ofFn_eq_map] using paid,user,done,?_,off⟩
@@ -183,7 +182,7 @@ by the borrowed sweep. Each window retains its own child record and budget. -/
 theorem borrowedWindow_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) (j : Fin Copy.lifecycles.length) :
     ∃ (T states : ℕ) (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T) (fan : Fin (142081+2) ↪ Fin T),
     ∀ {P U : Type} {Q : ℕ}, states ≤ Q → ∀ (body : P → Pr P T Q prime U) (f : P),
-    ∃ base : ℕ, ∀ (node : Descriptor) (w B rows : ℕ),
+    ∃ (base : ℕ) (code : Pr P T Q prime U), ∀ (node : Descriptor) (w B rows : ℕ),
     node.width = 64*(w+1) → node.rows = 142080*rows → node.beforeH = B*prime^(64*((w+1)*64)) →
     let M := prime^(w+1)
     let K := node.beforeRows*rows*node.between*node.afterD
@@ -195,7 +194,7 @@ theorem borrowedWindow_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) (
       CopyIntervalPositions desc (w+1) W position ∧
       ∀ record, ∃ prepared : Stacks T prime, ∀ budget,
       ScheduledChildExec node desc w W ports record position body f budget →
-      ∃ code, ∀ data u S, HelperFan fan data S →
+      ∀ data u S, HelperFan fan data S →
         (∀ k, (∀ h, fan h ≠ k) → S.L k = prepared.L k ∧ S.R k = prepared.R k) →
         ∃ z F t out, Exec body code (mk u S) t (mk z F) ∧
           t ≤ base*V + 12 + budget ∧
@@ -204,8 +203,8 @@ theorem borrowedWindow_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) (
   obtain ⟨T,states,ports,fan,build⟩ := commonCopyWindow_layout true n p.1 p.2 j
   refine ⟨T,states,ports,fan,?_⟩
   intro P U Q fits body f
-  obtain ⟨base,swaps,run⟩ := build fits body f
-  refine ⟨base,?_⟩
+  obtain ⟨base,swaps,code,run⟩ := build fits body f
+  refine ⟨base,code,?_⟩
   intro node w B rows width split label M K blocks W V desc pos
   obtain ⟨position,coords,worker⟩ := run node w B rows blocks K width split label (by dsimp [blocks,K,M]; ring) pos
   refine ⟨position,coords,?_⟩
@@ -213,8 +212,7 @@ theorem borrowedWindow_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) (
   obtain ⟨prepared,build⟩ := worker record
   refine ⟨prepared,?_⟩
   intro budget child
-  obtain ⟨code,execute⟩ := build budget child
-  refine ⟨code,?_⟩
+  have execute := build budget child
   intro data u S live saved
   obtain ⟨z,F,t,out,exec,paid,user,done,act⟩ := execute data u S live saved
   exact ⟨z,F,t,out,exec,by simpa only [ite_true,Nat.zero_mul,Nat.add_zero] using paid,user,done,act⟩

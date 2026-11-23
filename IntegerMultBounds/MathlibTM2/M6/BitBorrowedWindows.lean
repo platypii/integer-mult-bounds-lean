@@ -159,7 +159,7 @@ theorem borrowedWindows_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) 
       (T states : ℕ) (fan : Fin (142081+2) ↪ Fin T) (bank : ∀ j, Fin (tapes j) ↪ Fin T),
     ∀ {P U : Type} {Q : ℕ}, states ≤ Q → ∀ (localBody : ∀ j, P → Pr P (tapes j) Q prime U) (proc : J → P),
     let body := fun f : J × P => embProg (bank f.1) (fun g => (f.1,g)) (localBody f.1 f.2)
-    ∃ base : J → ℕ, ∀ (node : Descriptor) (w B rows : ℕ),
+    ∃ (base : J → ℕ) (program : Pr (J × P) T Q prime U), ∀ (node : Descriptor) (w B rows : ℕ),
     node.width = 64*(w+1) → node.rows = 142080*rows → node.beforeH = B*prime^(64*((w+1)*64)) →
     let M := prime^(w+1)
     let K := node.beforeRows*rows*node.between*node.afterD
@@ -173,9 +173,9 @@ theorem borrowedWindows_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) 
       ∃ prepared : Stacks T prime, embStk fan prepared = shared ∧ ∀ budget : J → ℕ,
       (∀ j, ScheduledChildExec node (desc j) w W (regs j) (record j) (position j) (localBody j) (proc j) (budget j)) →
       let work := fun j => base j*V + 12
-      ∃ code, ∀ data u S, HelperFan fan data S →
+      ∀ data u S, HelperFan fan data S →
         (∀ k, (∀ h, fan h ≠ k) → S.L k = prepared.L k ∧ S.R k = prepared.R k) →
-        ∃ z F t out, Exec body code (mk u S) t (mk z F) ∧
+        ∃ z F t out, Exec body program (mk u S) t (mk z F) ∧
           t ≤ (List.ofFn work).sum+(List.ofFn budget).sum+1 ∧ z.user = u.user ∧ HelperFan fan out F ∧
           (∀ g (cell : Cover.LabelEntry.Cell (copyLabelLayout (w+1) blocks K) blocks),
             let owner := (⟨ownerTape n p.1 p.2,ownerTape_injective n p.1 p.2⟩ : Fin 661 ↪ Fin 142081)
@@ -188,9 +188,10 @@ theorem borrowedWindows_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) 
   obtain ⟨T,fan,bank,sharedAt,prepare,apart⟩ := copyWindowBanks tapes owners
   refine ⟨tapes,regs,T,Finset.univ.sup qs,fan,bank,?_⟩
   intro P U Q cap localBody proc body
-  choose base build using fun j : J =>
+  choose base code build using fun j : J =>
     window j ((Finset.le_sup (Finset.mem_univ j)).trans cap) (localBody j) (proc j)
-  refine ⟨base,?_⟩
+  let placed := fun j => embProg (bank j) (fun g => (j,g)) (code j)
+  refine ⟨base,(List.finRange _).foldr (fun j tail => (placed j).seq tail) (.act .done),?_⟩
   intro node w B rows width split label M K blocks W V desc pos
   choose position coords run using fun j => build j node w B rows width split label pos
   refine ⟨position,coords,?_⟩
@@ -199,14 +200,13 @@ theorem borrowedWindows_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) 
   obtain ⟨prepared,sharedEq,stored⟩ := prepare shared init
   refine ⟨prepared,sharedEq,?_⟩
   intro budget recurse work
-  choose code step using fun j => worker j (budget j) (recurse j)
+  let step := fun j => worker j (budget j) (recurse j)
   let saved := fun j (S : Stacks T prime) => ∀ k, (∀ h, owners j h ≠ k) →
     S.L (bank j k) = (init j).L k ∧ S.R (bank j k) = (init j).R k
   have project (j : J) (S : Stacks T prime) : embStk (owners j) (embStk (bank j) S) = embStk fan S := by
     simp only [embStk,Function.comp_def,sharedAt]
   let price := fun j => work j + budget j
-  obtain ⟨all,exec⟩ := commonWindows_exec (w := w+1) (B := blocks) (K := K) body n p.1 p.2 fan saved price (fun j => by
-    refine ⟨embProg (bank j) (fun g => (j,g)) (code j),?_⟩
+  have exec := commonWindows_exec (w := w+1) (B := blocks) (K := K) body n p.1 p.2 fan saved price placed (fun j => by
     intro data u S rep fresh
     obtain ⟨v,D,t,out,run,paid,user,done,act⟩ := step j data (embDn (bank j) u) (embStk (bank j) S)
       (by simpa only [HelperFan,project] using rep) fresh
@@ -218,7 +218,6 @@ theorem borrowedWindows_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) 
     · intro i ne keep k priv
       obtain ⟨l,r⟩ := off (bank i k) ((apart i k priv).2 j ne.symm)
       exact ⟨l.trans (keep k priv).1,r.trans (keep k priv).2⟩)
-  refine ⟨all,?_⟩
   intro data u S rep fresh
   obtain ⟨z,F,t,out,run,paid,user,done,act⟩ := exec data u S rep (fun i k priv => by
     obtain ⟨l,r⟩ := fresh _ (apart i k priv).1
@@ -232,7 +231,7 @@ entry once, in addition to linear setup on the owner bank. -/
 theorem stoppedBorrowedWindows_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) :
     let J := Fin Copy.lifecycles.length
     ∃ (leafRate : ℝ) (T states : ℕ) (fan : Fin (142081+2) ↪ Fin T), ∀ {U : Type} {Q : ℕ}, states ≤ Q →
-    ∃ (body : J × Unit → Pr (J × Unit) T Q prime U) (C : ℕ), ∀ (node : Descriptor) (w B rows : ℕ),
+    ∃ (body : J × Unit → Pr (J × Unit) T Q prime U) (C : ℕ) (code : Pr (J × Unit) T Q prime U), ∀ (node : Descriptor) (w B rows : ℕ),
     node.width = 64*(w+1) → node.rows = 142080*rows → node.beforeH = B*prime^(64*((w+1)*64)) →
     ∀ rate : ℝ, leafRate ≤ rate →
     let M := prime^(w+1)
@@ -244,7 +243,7 @@ theorem stoppedBorrowedWindows_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × 
       ⌊(rate*(desc.width : ℝ)^M8.Machine.BudgetBound.tau)*volume prime desc⌋₊
     0 < W → ∀ record : J → List (Fin (prime+4)), ∀ shared : Stacks (142081+2) prime,
       ∃ prepared : Stacks T prime, embStk fan prepared = shared ∧
-      ∃ code, ∀ data u S, HelperFan fan data S →
+      ∀ data u S, HelperFan fan data S →
         (∀ k, (∀ h, fan h ≠ k) → S.L k = prepared.L k ∧ S.R k = prepared.R k) →
         ∃ z F t out, Exec body code (mk u S) t (mk z F) ∧
           t ≤ C*V + ∑ j, budget j ∧ z.user = u.user ∧ HelperFan fan out F ∧
@@ -261,14 +260,14 @@ theorem stoppedBorrowedWindows_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × 
   intro U Q cap
   have fits := (le_max_right states stoppedCopyMachine.1).trans cap
   let localBody (j : J) (_ : Unit) : Pr Unit (tapes j) Q prime U := stoppedCopyProgram (regs j) fits
-  obtain ⟨base,build⟩ := windows ((le_max_left ..).trans cap) localBody (fun _ => ())
-  refine ⟨fun g => embProg (bank g.1) (fun x => (g.1,x)) (localBody g.1 g.2),(∑ j, base j)+Copy.lifecycles.length*12+1,?_⟩
+  obtain ⟨base,code,build⟩ := windows ((le_max_left ..).trans cap) localBody (fun _ => ())
+  refine ⟨fun g => embProg (bank g.1) (fun x => (g.1,x)) (localBody g.1 g.2),(∑ j, base j)+Copy.lifecycles.length*12+1,code,?_⟩
   intro node w B rows width split label rate room M K blocks W V budget pos record shared
   obtain ⟨position,coords,run⟩ := build node w B rows width split label pos
   obtain ⟨prepared,eq,execute⟩ := run record shared
-  obtain ⟨code,steps⟩ := execute budget (fun j => leaf (regs j) fits (localBody j) () rfl
+  have steps := execute budget (fun j => leaf (regs j) fits (localBody j) () rfl
     node n p j w W rows width split (record j) (position j) (coords j) pos rate room)
-  refine ⟨prepared,eq,code,?_⟩
+  refine ⟨prepared,eq,?_⟩
   intro data u S live ready
   obtain ⟨z,F,t,out,exec,paid,user,done,action,off⟩ := steps data u S live ready
   refine ⟨z,F,t,out,exec,paid.trans ?_,user,done,action,off⟩
@@ -316,7 +315,7 @@ theorem borrowedScatterSchedule_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 ×
   obtain ⟨tapes,regs,T,states,fan,bank,windows⟩ := borrowedWindows_host n p
   refine ⟨0,tapes,regs,T,states,bank,?_⟩
   intro P U Q cap localBody proc body
-  obtain ⟨base,build⟩ := windows cap localBody proc
+  obtain ⟨base,code,build⟩ := windows cap localBody proc
   refine ⟨base,fun _ => 0,fun _ => 0,fun _ => 12,?_⟩
   intro node w B rows width split label M K blocks W V desc view pos
   obtain ⟨position,coords,run⟩ := build node w B rows width split label pos
@@ -325,7 +324,7 @@ theorem borrowedScatterSchedule_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 ×
   obtain ⟨initial,rep,host⟩ := run record shared
   refine ⟨initial,rep,?_⟩
   intro budget recurse work
-  obtain ⟨code,copies⟩ := host budget recurse
+  have copies := host budget recurse
   refine ⟨embProg (Function.Embedding.refl _) id code,?_⟩
   intro data u S live fresh
   obtain ⟨z,F,m,out,exec,paid,user,done,action,off⟩ := copies data (embDn (Function.Embedding.refl (Fin T)) u) S live fresh

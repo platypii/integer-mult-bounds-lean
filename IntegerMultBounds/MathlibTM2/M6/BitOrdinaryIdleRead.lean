@@ -2355,7 +2355,7 @@ theorem commonCopyWindow_layout (inherited : Bool) [M8.Machine.Net]
     let life := Copy.lifecycles[window.val]
     ∃ (T states : ℕ) (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T) (fan : Fin (142081+2) ↪ Fin T),
     ∀ {P U : Type} {Q : ℕ}, states ≤ Q → ∀ (body : P → Pr P T Q prime U) (f : P),
-    ∃ base swaps : ℕ, ∀ (node : Descriptor) (w parentB rows B K : ℕ),
+    ∃ (base swaps : ℕ) (code : Pr P T Q prime U), ∀ (node : Descriptor) (w parentB rows B K : ℕ),
     let i := copyChildPosition (stage,(r,d),window)
     node.width = 64*(w+1) →
     node.rows = 142080*rows → node.beforeH = parentB*prime^(64*((w+1)*64)) →
@@ -2381,7 +2381,6 @@ theorem commonCopyWindow_layout (inherited : Bool) [M8.Machine.Net]
       ∃ z F n changed, Exec body (body f) (mk u D) n (mk z F) ∧ n ≤ budget ∧ z.user = u.user ∧
         stored changed F ∧ clean F ∧ (∀ j, (∀ i, ports i ≠ j) → F.L j = D.L j ∧ F.R j = D.R j) ∧
         ∀ k, changed (position k) = Shared50RecursiveNodeRows.transpose (one_dvd desc.rows) (word ∘ position) k) →
-    ∃ code : Pr P T Q prime U,
     ∀ (data : Fin 142081 → Fin V → ZMod 2) (u : HS T Q prime U) (S : Stacks T prime),
     fanReady data S →
     (∀ j, (∀ h, fan h ≠ j) → S.L j = prepared.L j ∧ S.R j = prepared.R j) →
@@ -2424,7 +2423,22 @@ theorem commonCopyWindow_layout (inherited : Bool) [M8.Machine.Net]
   let basisRate := fun (stages : List (FlatCoordinateSchedule.Op 16)) =>
     FlatCoordinateCleanSchedule.constant stages*(1+FlatCoordinateCleanSchedule.tapeCount stages+5)
   let base := basisRate A+basisRate B'+(if inherited then 0 else setup)+16+76*(life.targets.length+2)*142088
-  refine ⟨base,swaps,?_⟩
+  have fitsA : qa ≤ Q := by omega
+  have fitsB : qb ≤ Q := by omega
+  have loadFits : q ≤ Q := by omega
+  have finishFits : s ≤ Q := by omega
+  let slots := (Fin.castAddEmb 2).trans fan
+  let pack := fun js => statePlacedNormalized (U := U) ports capacity swapStates_pos (Empty.elim : Empty → P) (packSchedule 16 js)
+  let is := phasePackSchedule (min (Geometry.Dimensions.value p.1) (Geometry.Dimensions.value p.2))
+    (max (Geometry.Dimensions.value p.1) (Geometry.Dimensions.value p.2))
+  let middle := if inherited then Prog.call f else (pack is).seq ((Prog.call f).seq (pack is.reverse))
+  let machine := fun (stages : List (FlatCoordinateSchedule.Op 16)) =>
+    Placement.placed (FlatCoordinateCleanSchedule.program stages) (sharedPlacement (0 : Fin 1) (segmentSource stages))
+  let convert := (embProg a (Empty.elim : Empty → P) (foreign (liftQ (machine A) fitsA))).seq
+        (middle.seq (embProg b (Empty.elim : Empty → P) (foreign (liftQ (machine B') fitsB))))
+  let inner := (embProg fan (Empty.elim : Empty → P) (foreign (liftQ load loadFits))).seq
+      (convert.seq (embProg fan (Empty.elim : Empty → P) (foreign (liftQ finish finishFits))))
+  refine ⟨base,swaps,inner,?_⟩
   intro node w parentB rows B K i width split label M W layout hW desc
   have seven := copyChildPosition_rank stage r d window
   have atParent := run node i w parentB rows (seven.trans rank.symm) width split label
@@ -2443,10 +2457,6 @@ theorem commonCopyWindow_layout (inherited : Bool) [M8.Machine.Net]
     (max (Geometry.Dimensions.value p.1) (Geometry.Dimensions.value p.2)) (w+1) W
   let size : volume prime view = V := phaseIntervalChild_volume (phaseInterval_bounds checked paid).1.le
     (phaseInterval_bounds checked paid).2 (w+1) W
-  have fitsA : qa ≤ Q := by omega
-  have fitsB : qb ≤ Q := by omega
-  have loadFits : q ≤ Q := by omega
-  have finishFits : s ≤ Q := by omega
   let privatePort := fun (j : Fin T) => (∀ l, a l ≠ j) ∧ (∀ l, ports l ≠ j) ∧ (∀ l, b l ≠ j)
   intro record
   let dest := fun _ : ℤ => (blank : Fin 4)
@@ -2456,18 +2466,6 @@ theorem commonCopyWindow_layout (inherited : Bool) [M8.Machine.Net]
       (fun z => by simp [readAt_nil_left,wordTape_nil]; rfl)
   refine ⟨core,?_⟩
   intro budget fanReady stored recurse
-  let slots := (Fin.castAddEmb 2).trans fan
-  let pack := fun js => statePlacedNormalized (U := U) ports capacity swapStates_pos (Empty.elim : Empty → P) (packSchedule 16 js)
-  let is := phasePackSchedule (min (Geometry.Dimensions.value p.1) (Geometry.Dimensions.value p.2))
-    (max (Geometry.Dimensions.value p.1) (Geometry.Dimensions.value p.2))
-  let middle := if inherited then Prog.call f else (pack is).seq ((Prog.call f).seq (pack is.reverse))
-  let machine := fun (stages : List (FlatCoordinateSchedule.Op 16)) =>
-    Placement.placed (FlatCoordinateCleanSchedule.program stages) (sharedPlacement (0 : Fin 1) (segmentSource stages))
-  let convert := (embProg a (Empty.elim : Empty → P) (foreign (liftQ (machine A) fitsA))).seq
-        (middle.seq (embProg b (Empty.elim : Empty → P) (foreign (liftQ (machine B') fitsB))))
-  let inner := (embProg fan (Empty.elim : Empty → P) (foreign (liftQ load loadFits))).seq
-      (convert.seq (embProg fan (Empty.elim : Empty → P) (foreign (liftQ finish finishFits))))
-  refine ⟨inner,?_⟩
   intro data u S ready saved
   let x := data src
   obtain ⟨z,F,t,exec,time,user,done,_⟩ := fanout fan loadFits finishFits body convert
