@@ -654,6 +654,115 @@ theorem commonCopy_stage [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
   exact Nat.add_le_add_right (copyWindowWork_linear basis life.targets.length pos bs
     (FlatCoordinateSchedule.bits_value V) (FlatCoordinateSchedule.bits_canonical V)) _
 
+open IntegerMultBounds.Networks.Certificates.PR589 M8.Machine.ArbitraryWidthOriginalRun in
+/-- Run a COPY directly on an unpadded spectator bank, with one rank-seven
+child on that bank's actual volume. -/
+theorem compactCopy_stage [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
+    (life : Copy.Lifecycle) (scheduled : life ∈ Copy.lifecycles) (engine : CopyTranspose) :
+    ∃ C : ℕ, ∀ w W, 0 < w → 0 < W →
+      let V := (prime^w)^16*W
+      let hs := fun i => FlatCoordinateSchedule.bits (RecursiveDimensionBank.values (copyChild w W) i)
+      let owner := ownerTape n r d
+      let frame := fun j => tapeFrame (copyAddress (Q := prime^w) (W := W)) (selectedFrame w j)
+      ∃ stage : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V)),
+        stage.cost ≤ C*V + engine.time (copyChild w W) hs ∧
+        ∀ x, let stored := Copy.extendStored fun j => x (owner j)
+          (∀ j : Fin 661, stage.transform x (owner j) = Copy.execute frame life stored j) ∧
+          (∀ k, k ≠ Fin.last 142080 → (∀ j, owner j ≠ k) → stage.transform x k = x k) := by
+  obtain ⟨_,rev,fwd,states,machine,run⟩ := copyWindow_hoare (engine := engine) n r d life scheduled
+  let A := M8.Machine.Segments.description _ rev.good
+  let D := M8.Machine.Segments.description _ fwd.good
+  let basis := FlatCoordinateCleanSchedule.constant A + FlatCoordinateCleanSchedule.constant D
+  refine ⟨504+basis+76*(life.targets.length+2),?_⟩
+  intro w W hw hW V hs owner frame
+  let bs := FlatCoordinateSchedule.bits V
+  let count := FlatCoordinateSchedule.bits_value V
+  have window := fun x => (run w hw).2.2 hW x bs count
+  obtain ⟨stage,action,price⟩ := commonCopyPrepared_stage (w := w) (W := W) (V := V) A D bs hs machine _
+    (copyWindowWork basis life.targets.length V bs.length + engine.time (copyChild w W) hs) (fun x => (window x).1)
+  refine ⟨stage,?_,?_⟩
+  · rw [price]
+    exact Nat.add_le_add_right (copyWindowWork_linear basis life.targets.length (Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) hW) bs
+      count (FlatCoordinateSchedule.bits_canonical V)) _
+  · intro x stored
+    rw [action]
+    refine ⟨(window x).2.1,?_⟩
+    intro k permanent outside
+    dsimp only
+    rw [Function.update_of_ne permanent]
+    funext i
+    split
+    · rename_i mem
+      obtain ⟨j,_,eqn⟩ := List.mem_map.mp mem
+      exact (outside j eqn).elim
+    · rfl
+
+open IntegerMultBounds.Networks.Certificates.PR589 in
+/-- Compose the nine scheduled COPY windows without adding label rows. -/
+theorem compactScatter_stage [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
+    (engine : CopyTranspose) :
+    ∃ C : ℕ, ∀ w W, 0 < w → 0 < W →
+      let V := (prime^w)^16*W
+      let hs := fun i => FlatCoordinateSchedule.bits (RecursiveDimensionBank.values (copyChild w W) i)
+      let owner := ownerTape n r d
+      let frame := fun j => tapeFrame (copyAddress (Q := prime^w) (W := W)) (selectedFrame w j)
+      let read := fun x : Fin 142081 → Fin V → ZMod 2 => Copy.extendStored (x ∘ owner)
+      ∃ stage : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V)),
+        stage.cost ≤ C*V + 9*engine.time (copyChild w W) hs + 9 ∧
+        (∀ x, read (stage.transform x) = Copy.run frame Copy.lifecycles (read x)) ∧
+        ∀ x k, k ≠ Fin.last 142080 → (∀ j, owner j ≠ k) → stage.transform x k = x k := by
+  let Life := {l // l ∈ Copy.lifecycles}
+  let spec := fun l : Life => compactCopy_stage n r d l.val l.property engine
+  let coeff := fun l : Life => (spec l).choose
+  refine ⟨(Copy.lifecycles.attach.map coeff).sum,?_⟩
+  intro w W hw hW V hs owner frame read
+  let window := fun l : Life => (spec l).choose_spec w W hw hW
+  let stage := fun l : Life => (window l).choose
+  let compile := fun ls : List Life => SharedBankStage.compile (phaseOwners (N := V)) (by decide) (ls.map stage)
+  let child := engine.time (copyChild w W) hs
+  have step (l : Life) (x) : read ((stage l).transform x) = Copy.execute frame l.val (read x) := by
+    funext i
+    by_cases hi : i < 661
+    · change (if h : i < 661 then _ else _) = _
+      rw [dite_eq_left hi]
+      exact ((window l).choose_spec.2 x).1 ⟨i,hi⟩
+    · have miss : i ∉ l.val.targets := fun mem => hi ((Copy.target_bounds _ l.property _ mem).2.trans (by decide))
+      have wf := Copy.wellformed _ l.property
+      by_cases eq : i = 661
+      · subst i; simp [read,Copy.extendStored,Copy.execute]
+      · simp [read,Copy.extendStored,hi,Copy.execute,Function.update_of_ne eq,
+          Copy.addTargets_eq _ wf.1 wf.2.1,miss]
+  have bound (ls : List Life) : (compile ls).cost ≤ (ls.map coeff).sum*V + ls.length*child + ls.length := by
+    induction ls with
+    | nil => simp [compile,SharedBankStage.compile_cost]
+    | cons l ls ih =>
+      change (stage l).cost + (compile ls).cost + 1 ≤ _
+      have price : (stage l).cost ≤ coeff l*V + child := (window l).choose_spec.1
+      simp only [List.map_cons,List.sum_cons,List.length_cons]
+      nlinarith only [ih,price]
+  have effect (ls : List Life) (x) : read ((compile ls).transform x) =
+      Copy.run frame (ls.map Subtype.val) (read x) := by
+    induction ls generalizing x with
+    | nil => rfl
+    | cons l ls ih =>
+      change read ((compile ls).transform ((stage l).transform x)) = _
+      rw [ih,step]
+      rfl
+  refine ⟨compile Copy.lifecycles.attach,?_,?_,?_⟩
+  · have size : Copy.lifecycles.attach.length = 9 := List.length_attach.trans Copy.copy_count
+    have cost := bound Copy.lifecycles.attach
+    rw [size] at cost
+    exact cost
+  · intro x
+    simpa only [List.attach_map_subtype_val] using effect Copy.lifecycles.attach x
+  · intro x k perm outside
+    have keep (ls : List Life) (x) : (compile ls).transform x k = x k := by
+      induction ls generalizing x with
+      | nil => rfl
+      | cons l ls ih =>
+        exact (ih ((stage l).transform x)).trans (((window l).choose_spec.2 x).2 k perm outside)
+    exact keep _ _
+
 open IntegerMultBounds.Networks.Certificates.PR589 in
 /-- Observable owner-bank action of one scheduled window, including the
 relative source label and preservation of every non-target role. -/
