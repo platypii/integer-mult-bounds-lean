@@ -31,9 +31,9 @@ private def ComponentDirectory [M8.Machine.Net] (P U : Type) (n : Fin 9) (p : Fi
   let desc := fun i => scheduledChild prime node (child i)
   0 < W → ∃ position : ∀ i, Fin (volume prime (desc i)) ≃ Fin V,
   (∀ i, coords node i (w+1) W (position i)) ∧
-  ∀ (record : I → List (Fin (prime+4))) (budget : I → ℕ) word,
+  ∀ record : I → List (Fin (prime+4)), ∃ initial : Stacks T prime, ∀ (budget : I → ℕ) word,
   (∀ i, ScheduledChildExec node (desc i) w W (ports i) (record i) (position i) (body i) (f i) (budget i) true) →
-  ∃ initial : Stacks T prime, ∀ (x : Fin 142081 → Fin V → ZMod 2) u S,
+  ∀ (x : Fin 142081 → Fin V → ZMod 2) u S,
     PrivateTapes fan initial S → HelperFan (Fin.castAddEmb 1) x (embStk fan S) →
     S.R (fan (Fin.last (142081+2))) = word →
     ∃ z F t y, Exec host code (mk u S) t (mk z F) ∧ CleanupBound S F t (work w V+(List.ofFn budget).sum) ∧
@@ -65,10 +65,10 @@ private theorem copyDirectory [M8.Machine.Net] (P U : Type) (n : Fin 9) (p : Fin
   intro node w B rows width split label M K blocks W V desc pos
   obtain ⟨position,coords,prepare⟩ := run node w B rows width split label pos
   refine ⟨position,coords,?_⟩
-  intro record budget word children
+  intro record
   obtain ⟨seed,run⟩ := prepare record
   refine ⟨seed,?_⟩
-  intro x u S fresh live header
+  intro budget word children x u S fresh live header
   obtain ⟨z,F,t,y,exec,cost,user,⟨out,kept⟩,act⟩ := run budget word children x u S fresh ⟨live,header⟩
   exact ⟨z,F,t,y,exec,by simpa only [Nat.add_right_comm _ 1] using cost,user,out,kept,act⟩
 
@@ -95,11 +95,11 @@ private theorem phaseDirectories [M8.Machine.Net] (P U : Type) (n : Fin 9) (p : 
   intro node w B rows width split label M K blocks W V desc pos
   obtain ⟨position,coords,prepare⟩ := run node w B rows width split label pos
   refine ⟨position,coords,?_⟩
-  intro record budget word children
-  obtain ⟨seed,step⟩ := prepare record budget word children
+  intro record
+  obtain ⟨seed,step⟩ := prepare record
   refine ⟨seed,?_⟩
-  intro x u S fresh live header
-  obtain ⟨z,F,t,exec,cost,user,out,kept⟩ := step x u S fresh ⟨live,header⟩
+  intro budget word children x u S fresh live header
+  obtain ⟨z,F,t,exec,cost,user,out,kept⟩ := step budget word children x u S fresh ⟨live,header⟩
   refine ⟨z,F,t,_,exec,?_,user,out,kept,?_⟩
   · have bill {m : ℕ} (a : ℕ) (f g : Fin m → ℕ) :
         a+((List.finRange m).map (fun i => f i+g i)).sum =
@@ -166,11 +166,11 @@ private theorem assembleInvocation [M8.Machine.Net] (P U : Type) (n : Fin 9) (p 
   refine ⟨position,geometry,?_⟩
   intro record time word children shared
   let price := fun j => (List.ofFn (fun i => time (child j i).val)).sum
-  choose seeds execute using fun j => prepare j (record j) (fun i => time (child j i).val) word (children j)
+  choose seeds execute using fun j => prepare j (record j)
   let extended : Stacks (142081+2+1) prime := ⟨shared.inp,shared.out,Fin.append shared.L (fun _ => []),
     Fin.append shared.R (fun _ => word)⟩
   obtain ⟨seed,view,exec⟩ := run (w+1) blocks K word (fun j => work j w V+price j) seeds (fun j x u S fresh live => by
-    obtain ⟨z,F,t,y,h,cost,user,out,kept,act⟩ := execute j x u S fresh live.1 live.2
+    obtain ⟨z,F,t,y,h,cost,user,out,kept,act⟩ := execute j (fun i => time (child j i).val) word (children j) x u S fresh live.1 live.2
     exact ⟨z,F,t,y,h,cost,user,⟨out,kept⟩,act⟩) extended
   have project (S : Stacks T prime) : embStk data S = embStk (Fin.castAddEmb 1) (embStk fan S) := rfl
   have header := congrArg (fun (D : Stacks (142081+2+1) prime) => D.R (Fin.last (142081+2))) view
