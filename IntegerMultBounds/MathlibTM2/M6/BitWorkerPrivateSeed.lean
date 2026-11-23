@@ -73,18 +73,17 @@ private theorem workerSeedCost (w W : ℕ) (pos : 0 < W) :
 
 /-- Initialize the three private banks of a basis worker. The six caller tapes
 hold the modulus, spectator count, unit, atom width and two empty copy buffers. -/
-theorem loadWorkerPrivateSeed [M8.Machine.Net] {P U : Type} {T Q : ℕ}
-    (body : P → Pr P (T+6) Q prime U)
+theorem loadWorkerPrivateSeed [M8.Machine.Net] {P U : Type} {T H Q : ℕ}
+    (body : P → Pr P H Q prime U) (localBank : Fin T ↪ Fin H) (caller : Fin 6 ↪ Fin H)
+    (apart : ∀ i j, localBank i ≠ caller j)
     (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T) (layout : WorkerBasisLayout ports) :
     let ops := fun side => Bool.rec layout.reverseOps layout.forwardOps side
     let basis : ∀ side, Fin (FlatCoordinateCleanSchedule.tapeCount (ops side)) ↪ Fin T :=
       fun side => Bool.rec (motive := fun b => Fin (FlatCoordinateCleanSchedule.tapeCount (ops b)) ↪ Fin T)
         layout.reverseBank layout.forwardBank side
-    let localBank := Fin.castAddEmb (n := T) 6
-    let caller := Fin.natAddEmb T (m := 6)
     let recBank := ports.trans localBank
     let chart := fun side => (basis side).trans localBank
-    ∃ code, ∀ w W u (S : Stacks (T+6) prime),
+    ∃ code, ∀ w W u (S : Stacks H prime),
       let M := prime^(w+1)
       0 < W → S.R (caller 0) = binSyms M.size M → S.R (caller 1) = binSyms W.size W →
       S.R (caller 2) = binSyms 1 1 → S.R (caller 3) = binSyms (w+1).size (w+1) →
@@ -104,17 +103,12 @@ theorem loadWorkerPrivateSeed [M8.Machine.Net] {P U : Type} {T Q : ℕ}
           F.R (localBank j) = Function.update seed.R (scheduledRecordPorts ports 34) [] j) ∧
         ∀ j, (∀ i, i.val ≠ 24 → recBank i ≠ j) → (∀ side i, chart side i ≠ j) →
           F.L j = S.L j ∧ F.R j = S.R j := by
-  intro ops basis localBank caller recBank chart
+  intro ops basis recBank chart
   have disjoint side i j : ports i ≠ basis side j := by
     cases side with
     | false => exact layout.reverseOff i j
     | true => exact layout.forwardOff i j
   have separate := layout.separate
-  have apart (i : Fin T) (j : Fin 6) : localBank i ≠ caller j := by
-    intro eq
-    have h := congrArg Fin.val eq
-    change i.val = T+j.val at h
-    omega
   let recSrc := fun i : Fin 3 => caller (i.castAdd 3)
   let chartSrc := fun i : Fin 2 => caller ((![3,1] : Fin 2 → Fin 6) i)
   have distinct (s : Fin 6) (a : s ≠ 4) (b : s ≠ 5) (i : Fin T) :

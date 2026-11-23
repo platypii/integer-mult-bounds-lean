@@ -2448,6 +2448,14 @@ noncomputable def WorkerBasisLayout.seed [M8.Machine.Net] {T : ℕ} {ports : Fin
   recordBasisStacks ports layout.reverseBank layout.forwardBank (moveRecordSeed w W record [] [])
     (basisHeaderStacks layout.reverseOps (w+1) W) (basisHeaderStacks layout.forwardOps (w+1) W)
 
+open Cover.Fallback in
+structure WorkerBasisLayout.OwnerTapes [M8.Machine.Net] {T k : ℕ} {ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T}
+    (layout : WorkerBasisLayout ports) (fan : Fin k ↪ Fin T) : Prop where
+  recordPrivate : ∀ j, j.val ≠ 24 → ∀ h, fan h ≠ ports j
+  payload : ∀ j, j.val = 24 → ∃ h, fan h = ports j
+  reversePrivate : ∀ j h, fan h ≠ layout.reverseBank j
+  forwardPrivate : ∀ j h, fan h ≠ layout.forwardBank j
+
 /-- The archive and two scratch words needed at worker entry. -/
 def WorkerEntryWords {T : ℕ} (ports : Fin 35 → Fin T) (record : List (Fin (prime+4))) (S : Stacks T prime) : Prop :=
   S.R (ports 34) = record ∧ S.R (ports 0) = [] ∧ S.R (ports 1) = []
@@ -2461,7 +2469,7 @@ theorem commonCopyWindow_layout (inherited charged : Bool) [M8.Machine.Net]
     let life := Copy.lifecycles[window.val]
     ∃ (T states : ℕ) (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T) (fan : Fin (142081+2) ↪ Fin T),
     ∃ layout : WorkerBasisLayout ports,
-    (∀ j : Fin (rowSwapBlock.tapes+35), j.val ≠ 24 → ∀ h, fan h ≠ ports j) ∧
+    layout.OwnerTapes fan ∧
     ∀ {P U : Type} {Q : ℕ}, states ≤ Q → ∀ (body : P → Pr P T Q prime U) (f : P),
     ∃ (base swaps : ℕ) (code : Pr P T Q prime U), ∀ (node : Descriptor) (w parentB rows B K : ℕ),
     let i := copyChildPosition (stage,(r,d),window)
@@ -2535,14 +2543,33 @@ theorem commonCopyWindow_layout (inherited charged : Bool) [M8.Machine.Net]
   let layout : WorkerBasisLayout ports :=
     ⟨A,B',pa,pb,paOff,fun i j => (priv j).2 i,fun i j => (priv j).1 _⟩
   refine ⟨T,rowSwapBlock.states+qa+qb+q+s,ports,fan,layout,?_,?_⟩
-  · intro j ne h
-    induction h using Fin.addCases with
-    | left h =>
-      by_cases eq : h = Fin.last 142080
-      · subst h
-        exact fun e => ne (congrArg Fin.val (ports.injective (e.symm.trans shared)))
-      · exact ((ownersOff h eq).2.1 j).symm
-    | right h => exact ((controlsOff h).2.1 j).symm
+  · constructor
+    · intro j ne h
+      induction h using Fin.addCases with
+      | left h =>
+        by_cases eq : h = Fin.last 142080
+        · subst h
+          exact fun e => ne (congrArg Fin.val (ports.injective (e.symm.trans shared)))
+        · exact ((ownersOff h eq).2.1 j).symm
+      | right h => exact ((controlsOff h).2.1 j).symm
+    · intro j h
+      exact ⟨(Fin.last 142080).castAdd 2,shared.trans (congrArg ports (Fin.ext h.symm))⟩
+    · intro j h
+      induction h using Fin.addCases with
+      | left h =>
+        by_cases eq : h = Fin.last 142080
+        · subst h
+          exact fun e => paOff recordPort j (shared.symm.trans e)
+        · exact ((ownersOff h eq).1 _).symm
+      | right h => exact ((controlsOff h).1 _).symm
+    · intro j h
+      induction h using Fin.addCases with
+      | left h =>
+        by_cases eq : h = Fin.last 142080
+        · subst h
+          exact fun e => (priv j).2 recordPort (shared.symm.trans e)
+        · exact ((ownersOff h eq).2.2 _).symm
+      | right h => exact ((controlsOff h).2.2 _).symm
   intro P U Q fits body f
   have capacity : rowSwapBlock.states ≤ Q := by omega
   obtain ⟨setup,swaps,run⟩ := packed (k := 142081) ports body f capacity
