@@ -185,6 +185,8 @@ theorem prepareStageArchives {U : Type} {Q : ℕ}
       ∃ z F t, Exec body code (mk u S) t (mk z F) ∧ z.user = u.user ∧
         CleanupBound S F t (rate*V+(order.map (fun p => 8*(word p).length+7)).sum+1) ∧
         ∃ D : Stacks _ prime, (∀ k, D.L (owner k) = S.L (owner k) ∧ D.R (owner k) = S.R (owner k)) ∧
+          (∀ k : Fin R, let p := (k.natAdd (T+273)).natAdd 80
+            D.L p = S.L p ∧ D.R p = S.R p) ∧
           (∀ i j, D.R (((borrowedHeaders T i j).castAdd R).natAdd 80) =
             (Routines.hdr (helperAdjacentView (w+1) 1 W i) j).map bitSymbol) ∧
           F = {D with R := order.foldl (fun r p => Function.update r (owner (banks p 34)) (word p)) D.R} := by
@@ -201,14 +203,16 @@ theorem prepareStageArchives {U : Type} {Q : ℕ}
   let price := (order.map (fun p => 8*(word p).length+7)).sum+1
   let post := fun (F : Stacks _ prime) => ∃ D : Stacks _ prime,
     (∀ k, D.L (owner k) = S.L (owner k) ∧ D.R (owner k) = S.R (owner k)) ∧
+    (∀ k : Fin R, let p := (k.natAdd (T+273)).natAdd 80
+      D.L p = S.L p ∧ D.R p = S.R p) ∧
     (∀ i j, D.R (((borrowedHeaders T i j).castAdd R).natAdd 80) = (Routines.hdr (helperAdjacentView (w+1) 1 W i) j).map bitSymbol) ∧
     F = {D with R := order.foldl (fun r p => Function.update r (dst p) (word p)) D.R}
   obtain ⟨z,F,t,run,bill,user,out⟩ := generate node w B rows width split label pos u S input fill (price : ℕ) post (by
-    intro v D fields keep _
+    intro v D fields keep leaf
     have free p (h : p ∈ order) := empty p h
     obtain ⟨z,m,run,user,time⟩ := write child w W L cutoff shape size v D ((keep cut).2.trans header) (fun i => fields i 5)
       (fun p h => ⟨(keep _).2.trans (free p h).1,(keep _).2.trans (free p h).2.1,(keep _).2.trans (free p h).2.2⟩)
-    refine ⟨z,_,m,run,?_,user,D,keep,fields,rfl⟩
+    refine ⟨z,_,m,run,?_,user,D,keep,leaf,fields,rfl⟩
     intro js nd
     have growth := archiveStockGrowth dst word order distinct D (fun p h => (keep _).2.trans (free p h).1) js nd
     have sum (xs : List I) : (xs.map (fun p => 8*(word p).length+7)).sum =
@@ -470,7 +474,7 @@ theorem selectedStageEffects (n : Fin 9) (w B K : ℕ) :
       OrderedEffects stageRuns (BorrowedStep n w B K) x y := by
   exact orderedEffects_mono stageRuns (selectedRunEffect n w B K)
 
-private theorem sumSigmaCosts {α : Type} {β : α → Type} (xs : List α) (ys : ∀ x, List (β x))
+theorem sumSigmaCosts {α : Type} {β : α → Type} (xs : List α) (ys : ∀ x, List (β x))
     (cost : Sigma β → ℕ) :
     ((xs.sigma ys).map cost).sum = (xs.map (fun x => ((ys x).map (fun y => cost ⟨x,y⟩)).sum)).sum := by
   induction xs with
@@ -523,6 +527,10 @@ theorem prepareSelectedStageArchives {U : Type} {Q l r owners : ℕ}
       S.R (port 34) = [] ∧ S.R (port 0) = [] ∧ S.R (port 1) = []) →
     ∃ z F t, Exec body code (mk u S) t (mk z F) ∧ z.user = u.user ∧ CleanupBound S F t (rate*c.cells) ∧
       (∀ p, F.R (owner (bank p (record p 34))) = invocationWorkerRecord p.2.1 (d p) c.root.width.size c.cutoff) ∧
+      (∀ i j, F.R (((borrowedHeaders T i j).castAdd R).natAdd 80) =
+        (Routines.hdr (helperAdjacentView (c.w+1) 1 (c.B*prime^(64*((c.w+1)*64))*c.stageFactor) i) j).map bitSymbol) ∧
+      (∀ k : Fin R, let p := (k.natAdd (T+273)).natAdd 80
+        F.L p = S.L p ∧ F.R p = S.R p) ∧
       (∀ k, F.L (owner k) = S.L (owner k)) ∧
       ∀ k, (∀ p, bank p (record p 34) ≠ k) → F.R (owner k) = S.R (owner k) := by
   classical
@@ -555,7 +563,7 @@ theorem prepareSelectedStageArchives {U : Type} {Q l r owners : ℕ}
     rw [← c.stageCells]
     simp [W,CutoffNodeInput.stageWidth,Nat.mul_assoc]
   let word := fun p : I => invocationWorkerRecord p.2.1 (d p) c.root.width.size c.cutoff
-  obtain ⟨z,F,t,exec,user,paid,D,keep,_,final⟩ := run c.node d c.w c.B c.rowsPerStage c.root.width.size c.cutoff
+  obtain ⟨z,F,t,exec,user,paid,D,keep,leaf,fields,final⟩ := run c.node d c.w c.B c.rowsPerStage c.root.width.size c.cutoff
     c.width c.rows c.label c.stagePositive (by
       intro p _
       change rank p*(c.node.width/64) = (c.w+1)*rank p
@@ -598,7 +606,7 @@ theorem prepareSelectedStageArchives {U : Type} {Q l r owners : ℕ}
       simp only [List.map_cons,List.sum_cons,List.length_cons,Nat.mul_add,Nat.add_mul] at *
       have := length p
       omega
-  refine ⟨z,F,t,exec,user,?_,?_,?_,?_⟩
+  refine ⟨z,F,t,exec,user,?_,?_,?_,?_,?_,?_⟩
   · intro js nd
     have h := paid js nd
     change _ ≤ _+(setup*((prime^(c.w+1))^16*((prime^(c.w+1))^112*W))+(order.map (fun p => 8*(word p).length+7)).sum+1) at h
@@ -612,6 +620,23 @@ theorem prepareSelectedStageArchives {U : Type} {Q l r owners : ℕ}
     · exact fun q _ eq => congrArg word (dst.injective eq)
     · intro miss
       exact (miss p (List.mem_sigma.mpr ⟨mem_stageRuns _,List.mem_sigma.mpr ⟨List.mem_finRange _,List.mem_finRange _⟩⟩) rfl).elim
+  · intro i j
+    rw [final]
+    apply archiveFoldAt dst word order D.R
+    · intro p _ eq
+      exact False.elim ((borrowedHeaders_apart i j (regs p 34)) ((Fin.castAddEmb R).injective
+        ((Fin.natAddEmb 80).injective eq)).symm)
+    · exact fun _ => fields i j
+  · intro k
+    rw [final]
+    refine ⟨(leaf k).1,?_⟩
+    apply archiveFoldAt dst word order D.R
+    · intro p _ eq
+      have h := congrArg Fin.val eq
+      change 80+(regs p 34).val = 80+(T+273+k.val) at h
+      have := (regs p 34).isLt
+      omega
+    · exact fun _ => (leaf k).2
   · intro k
     rw [final]
     exact (keep k).1
@@ -623,11 +648,13 @@ theorem prepareSelectedStageArchives {U : Type} {Q l r owners : ℕ}
     · exact fun _ => (keep k).2
 
 /-- Place the parent headers and worker seed on disjoint banks of the stage host. -/
-private theorem stageHostSeed {T R owners : ℕ} (shared : Fin owners ↪ Fin T)
+theorem stageHostSeed {T R owners : ℕ} (shared : Fin owners ↪ Fin T)
     (initial : Stacks T prime) (c : CutoffNodeInput) :
     let owner := ((Fin.castAddEmb 273 (n := T)).trans (Fin.castAddEmb R)).trans (Fin.natAddEmb 80)
     ∃ hostSeed : Stacks (80+((T+273)+R)) prime,
-      embStk owner hostSeed = initial ∧ ∀ S, PrivateTapes (shared.trans owner) hostSeed S →
+      embStk owner hostSeed = initial ∧
+      (∀ j : Fin R, let p := (j.natAdd (T+273)).natAdd 80
+        hostSeed.L p = [] ∧ hostSeed.R p = []) ∧ ∀ S, PrivateTapes (shared.trans owner) hostSeed S →
         ParentArchiveInput c.node c.w (embStk (archiveSetupPlacement 80 T R) S) ∧
         PrivateTapes shared initial (embStk owner S) := by
   intro owner
@@ -642,8 +669,20 @@ private theorem stageHostSeed {T R owners : ℕ} (shared : Fin owners ↪ Fin T)
     rw [Function.extend_apply' _ _ _ (by
       rintro ⟨k,h⟩
       exact (archiveSetupPlacement_frame j).1 k h.symm),setup.injective.extend_apply]
-  refine ⟨seed,?_,?_⟩
+  refine ⟨seed,?_,?_,?_⟩
   · exact congrArg₂ (Stacks.mk initial.inp initial.out) (funext (work initial.L headers.L)) (funext (work initial.R headers.R))
+  · intro j
+    let p := (j.natAdd (T+273)).natAdd 80
+    have clear f g : place f g p = [] := by
+      unfold place
+      rw [Function.extend_apply' _ _ _ (by
+        rintro ⟨k,eq⟩
+        have h := congrArg Fin.val eq
+        change 80+k.val = 80+(T+273+j.val) at h
+        omega),Function.extend_apply' _ _ _ (by
+          rintro ⟨i,eq⟩
+          exact (archiveSetupPlacement_frame i).2 j eq)]
+    exact ⟨clear _ _,clear _ _⟩
   intro S fresh
   have outside j := fresh (setup j) (fun i => ((archiveSetupPlacement_frame j).1 (shared i)).symm)
   have left : (embStk setup S).L = headers.L := funext fun j => (outside j).1.trans (header _ _ j)
@@ -730,7 +769,7 @@ theorem runSelectedStageArchives [M8.Machine.Net] {U : Type} {Q l r owners : ℕ
   refine ⟨stageLocalCost_bound order rate base swaps fixed,?_⟩
   intro c X seed rep effect word work archive sharedSeed
   obtain ⟨initial,view,saved⟩ := stock sharedSeed seed
-  obtain ⟨hostSeed,placedSeed,ready⟩ := stageHostSeed (R := R) shared initial c
+  obtain ⟨hostSeed,placedSeed,_,ready⟩ := stageHostSeed (R := R) shared initial c
   refine ⟨hostSeed,placedSeed ▸ view,?_⟩
   intro childTime cost execute
   intro x u S header live privateSeed
@@ -744,7 +783,7 @@ theorem runSelectedStageArchives [M8.Machine.Net] {U : Type} {Q l r owners : ℕ
     have off := privatePort p j ne
     exact (((stored p _ off).2).trans (saved p _ off).2.2).trans
       (Function.update_of_ne ((record p).injective.ne other) ..)
-  obtain ⟨v,D,a,start,user,paid,loaded,left,right⟩ := write c u S input header (fun p =>
+  obtain ⟨v,D,a,start,user,paid,loaded,_,_,left,right⟩ := write c u S input header (fun p =>
     ⟨free p,(scratch p 0 (by decide) (by decide)).trans (archive p).2.1,
       (scratch p 1 (by decide) (by decide)).trans (archive p).2.2⟩)
   let state := fun (x : X) (D : Stacks owners prime) => rep x D.L D.R
@@ -863,6 +902,15 @@ theorem cutoffStageFromWorkers [M8.Machine.Net] {l r : ℕ} (n : Fin 9)
   obtain ⟨z,F,t,y,exec,paid,user,out,trace⟩ := execute time (steps time recurse) x u S header ⟨live,header⟩ stock
   exact ⟨z,F,t,y,exec,paid,user,out.1,out.2,complete c x y trace⟩
 
+theorem selectedPhaseCount :
+    (selectedPhaseSchedule false).1.length+(selectedPhaseSchedule true).1.length =
+      (Geometry.Moves.phaseEdges.filter positiveMove).length := by
+  have length {α β : Type} (xs ys : List α) (f : α → β) (zs : List β)
+      (eq : (xs++ys).map f = zs) : xs.length+ys.length = zs.length := by
+    simpa only [List.length_map,List.length_append] using congrArg List.length eq
+  unfold selectedPhaseSchedule
+  exact length _ _ Prod.snd _ invocationMoveBlocks_order
+
 /-- The selected PR589 occurrence family realizes all borrowed runs on one stage host. -/
 theorem selectedCutoffStageRuns [M8.Machine.Net] (n : Fin 9) :
     let l := (selectedPhaseSchedule false).1.length
@@ -871,13 +919,7 @@ theorem selectedCutoffStageRuns [M8.Machine.Net] (n : Fin 9) :
       (∀ p i, (pre p i).val = i.val) ∧ (∀ p i, (post p i).val = l+i.val) ∧ CutoffStageExecution n pre post := by
   intro l r
   obtain ⟨pre,post,first,last,workers⟩ := selectedStageWorkers n
-  have count : l+r = (Geometry.Moves.phaseEdges.filter positiveMove).length := by
-    unfold l r selectedPhaseSchedule
-    have length {α β : Type} (xs ys : List α) (f : α → β) (zs : List β)
-        (eq : (xs++ys).map f = zs) : xs.length+ys.length = zs.length := by
-      simpa only [List.length_map,List.length_append] using congrArg List.length eq
-    exact length _ _ Prod.snd _ invocationMoveBlocks_order
-  refine ⟨pre,post,first,last,cutoffStageFromWorkers n pre post first last count
+  refine ⟨pre,post,first,last,cutoffStageFromWorkers n pre post first last selectedPhaseCount
     (fun i w B K => selectedOccurrenceEffect n w B K i.1 i.2.1 i.2.2) (fun i => workers i.1 i.2.1 i.2.2) ?_⟩
   exact fun c => selectedStageEffects n (c.w+1) ((prime^(c.w+1))^112*c.B) c.stageFactor
 

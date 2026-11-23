@@ -369,7 +369,7 @@ def PackedStageExecution [M8.Machine.Net] {Q w B K : ℕ} {P U : Type} (n : Fin 
           ((List.range' (stageChildStart n) (stageRuns.flatMap (fun _ => Geometry.Moves.localPaid)).length).map childTime).sum ∧
         z.user = u.user ∧ HelperFan (fan.trans owner) out F ∧ RestoredBorrowedStage n w B K x out
 
-private theorem helperFan_of_agree {k T V : ℕ} {fan : Fin (k+2) ↪ Fin T}
+theorem helperFan_of_agree {k T V : ℕ} {fan : Fin (k+2) ↪ Fin T}
     {x : Fin k → Fin V → ZMod 2} {S F : Stacks T prime} (live : HelperFan fan x S)
     (agree : ∀ i, F.L (fan i) = S.L (fan i) ∧ F.R (fan i) = S.R (fan i)) : HelperFan fan x F := by
   intro i j
