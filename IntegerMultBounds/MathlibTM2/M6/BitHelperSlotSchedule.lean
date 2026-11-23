@@ -16,6 +16,20 @@ local instance (w : ℕ) : NeZero (prime^(w+1)) := ⟨(pow_pos Shared50ModularCo
 def helperPosition (entry : Fin 9 × Fin 439) : Fin 56 :=
   ⟨slotPos (IntegerMultBounds.MathlibTM2.M6.BitNode.slotOf entry.1 entry.2),Nat.lt_succ_of_le (slotPos_le _ entry.1.isLt _ entry.2.isLt)⟩
 
+/-- During an idle, one fixed ordering of the five run classes locates
+every hosted eight-axis interval on this owner, across all its stages. -/
+theorem helperPosition_of_runClass (n : Fin 9) (r : Fin 32) (d : Fin 5) (h : Fin 439) :
+    let slot := IntegerMultBounds.MathlibTM2.M6.BitNode.slotOf n.val h.val
+    let cls := (hostRole n r d h).cls.val
+    (helperPosition (n,h)).val = 7*idleSource slot.idle + 8*((cls+5-d.val)%5) := by
+  intro slot cls
+  have fits := slot_fits slot (slotOf_spec n n.isLt h h.isLt).1
+  change 7*idleSource slot.idle + slot.offset =
+    7*idleSource slot.idle + 8*((((d.val+slot.offset/8)%5)+5-d.val)%5)
+  congr 1
+  have hd := d.isLt
+  omega
+
 open IntegerMultBounds.Swap.Modular M8.Exchange in
 /-- The invocation exchanges the scheduled parent span when its helper word
 is read at the flat packing address, with the actual local port encoding. -/
@@ -51,6 +65,34 @@ noncomputable def invocationOwnerAddress {M W : ℕ} [NeZero M] (n : Fin 9) (i :
     Equiv.Perm (Fin (M^128*W)) :=
   if h : 222 ≤ i.val then inheritedHelperAddress (helperPosition (n,⟨i.val-222,by omega⟩))
   else Equiv.refl _
+
+/-- A completed invocation can be read with arbitrary helper layouts. Only the
+output read of each helper changes: exchange its logical halves before applying
+its layout and exchange the resulting physical halves afterwards. -/
+theorem OrthogonalPortReads.reindexHelpers {V W w : ℕ}
+    (address : (Swap.Shear.State (Fin 8) (ZMod (prime^w)) × Fin W) ≃ Fin V)
+    (layout : Fin 661 → Equiv.Perm (Fin V))
+    (dataFixed : ∀ i : Fin 661, i.val < 222 → layout i = Equiv.refl _)
+    {x y : Fin 661 → Fin V → ZMod 2}
+    (read : OrthogonalPortReads w (fun s k => address (s,k)) x y) :
+    let swap := fun i => let p := address.symm i; address (p.1.swap,p.2)
+    OrthogonalPortReads w (fun s k => address (s,k)) (fun i => x i ∘ layout i)
+      (fun i j => if i.val < 222 then y i j else y i (swap (layout i (swap j)))) := by
+  intro swap
+  constructor
+  · intro t s k
+    simpa only [show t.val < 222 by omega,ite_true,Function.comp_apply,
+      dataFixed ⟨t.val,by omega⟩ (show t.val < 222 by omega),Equiv.refl_apply] using read.source t s k
+  · intro t s k
+    have ht : 111+t.val < 222 := by omega
+    simpa only [ht,ite_true,Function.comp_apply,dataFixed ⟨111+t.val,by omega⟩ ht,
+      dataFixed ⟨t.val,by omega⟩ (show t.val < 222 by omega),Equiv.refl_apply] using read.target t s k
+  · intro h s k
+    let reg : Fin 661 := ⟨222+h.val,by omega⟩
+    have unwrap : swap (address (s.swap,k)) = address (s,k) := by simp [swap]
+    simp only [show ¬222+h.val < 222 by omega,ite_false,unwrap,Function.comp_apply]
+    let p := address.symm (layout reg (address (s,k)))
+    exact (read.helper h p.1 p.2).trans (congrArg (x reg) (address.apply_symm_apply _))
 
 open IntegerMultBounds.Swap.Modular M8.Exchange in
 theorem OrthogonalPortReads.inheritedHelper {w W : ℕ} [NeZero (prime^w)] (n : Fin 9)

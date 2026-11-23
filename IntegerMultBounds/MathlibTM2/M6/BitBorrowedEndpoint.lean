@@ -73,6 +73,45 @@ theorem BorrowedStep.dirtyRead {n w B K k x y} (step : BorrowedStep n w B K k x 
   rw [bank,dirty_endpoint]
   split <;> rfl
 
+/-- Read the completed physical invocation through a separate decoded address
+map on each owner. Only a target and its corresponding source must agree;
+the maps may mix the label, spectator cell, and active coordinates. -/
+theorem BorrowedStep.dirtyReadAt {n w B K k x y} (step : BorrowedStep n w B K k x y)
+    {α : Type*}
+    (atLane : Fin 32 → Fin 111 → Fin 5 → α → Cover.LabelPadding.Label 64 w ×
+      Cover.LabelEntry.Cell (copyLabelLayout w B K) B × Swap.Shear.State (Fin 8) (ZMod (prime^w)))
+    (atHelper : Role → α → Cover.LabelPadding.Label 64 w ×
+      Cover.LabelEntry.Cell (copyLabelLayout w B K) B × Swap.Shear.State (Fin 8) (ZMod (prime^w))) :
+    let atOwner := fun (i : Fin 661) =>
+      let role := owner n k.1 k.2 i.val
+      if i.val < 222 then atLane role.replica role.port role.cls else atHelper role
+    let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n k.1 k.2,ownerTape_injective n k.1 k.2⟩
+    let read := fun bank frame (i : Fin 661) (a : α) =>
+      let (g,z,s) := atOwner i a
+      (selectedFrame w (frame i.val)).symm (phaseRead owner bank (labelSpectator g z) i.val) s
+    ∀ i a, read y Frames.finalRefs i a =
+      if h : 111 ≤ i.val ∧ i.val < 222 then
+        read x Frames.initialRefs i a + read x Frames.initialRefs ⟨i.val-111,by omega⟩ a
+      else read x Frames.initialRefs i a := by
+  intro atOwner bank read i a
+  have paired (t : Fin 111) : atOwner ⟨111+t.val,by omega⟩ = atOwner ⟨t.val,by omega⟩ := by
+    simp only [atOwner,show 111+t.val < 222 by omega,show t.val < 222 by omega,ite_true,
+      owner_source,owner_target,sideRole]
+  rcases hpos : atOwner i a with ⟨g,z,s⟩
+  have run := step.dirtyRead g z i
+  have decoded := congrArg (fun f => (selectedFrame w (Frames.finalRefs i.val)).symm f s) run
+  simp only [LinearEquiv.symm_apply_apply] at decoded
+  by_cases hit : 111 ≤ i.val ∧ i.val < 222
+  · let t : Fin 111 := ⟨i.val-111,by omega⟩
+    have dst : (⟨111+t.val,by omega⟩ : Fin 661) = i := Fin.ext (by dsimp [t]; omega)
+    have same := congrFun (paired t) a
+    rw [dst,hpos] at same
+    change (_,_,_) = atOwner (⟨i.val-111,by omega⟩ : Fin 661) a at same
+    simp only [dite_eq_left hit,read,hpos,same.symm]
+    simpa only [dite_eq_left hit,Pi.add_apply] using decoded
+  · simpa only [read,hpos,dite_eq_right hit] using decoded
+
+
 def BorrowedPorts (n : Fin 9) (w B K : ℕ)
     (x y : Fin 142081 → Fin ((prime^w)^16*(B*prime^(64*(w*64))*K)) → ZMod 2) : Prop :=
   ∀ (run : Fin 32 × Fin 5) (t : Fin 111) (g : Cover.LabelPadding.Label 64 w)
