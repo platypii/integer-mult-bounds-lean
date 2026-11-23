@@ -21,7 +21,7 @@ theorem workerRecordTranspose {T Q : ℕ} {P U : Type} (body : P → Pr P T Q pr
     ∀ lane : Descriptor, let V := volume prime lane
       let wide := {lane with afterD := lane.afterD*142080}
       let size : V*142080 = volume prime wide := by simp [V,wide,volume,Nat.mul_assoc]
-      ∀ (word : Fin (volume prime wide) → ZMod 2) u S price,
+      ∀ (word : Fin (volume prime wide) → ZMod 2) u S price (reserve : Stacks T prime → ℕ),
       let input := fun k => word (Fin.cast size k)
       let target := putWord (fun _ => blank) 0 (List.ofFn (SparseRoleCircuit.encode (a := prime) ∘ input))
       let data := fun r (i : Fin V) => input (finProdFinEquiv (i,r))
@@ -32,15 +32,15 @@ theorem workerRecordTranspose {T Q : ℕ} {P U : Type} (body : P → Pr P T Q pr
       S.L tmp = [] → S.R tmp = [] → (∀ i, S.L (splitter i) = [] ∧ S.R (splitter i) = []) →
       (∀ v D, RepT (intervalOwnerBank target data) (embStk splitter D).L (embStk splitter D).R →
         (∀ j, (∀ i, splitter i ≠ j) → D.L j = S.L j ∧ D.R j = S.R j) →
-        ∃ z F t, Exec body merge (mk v D) t (mk z F) ∧ t ≤ price ∧ z.user = v.user ∧
+        ∃ z F t, Exec body merge (mk v D) t (mk z F) ∧ t + reserve F ≤ price ∧ z.user = v.user ∧
           RepT (intervalOwnerBank (putWord target 0 (List.ofFn output)) rows) (embStk returned F).L (embStk returned F).R ∧
           ∀ j, preserved j → F.L j = S.L j ∧ F.R j = S.R j) →
       ∃ z F t, Exec body (((loadCompactWord src tmp (splitter 0)).seq (embProg splitter Empty.elim split)).seq merge)
-        (mk u S) t (mk z F) ∧ t ≤ (149*(intervalSplitTapes+5)+13)*(V*142080)+34+price ∧
+        (mk u S) t (mk z F) ∧ t + reserve F ≤ (149*(intervalSplitTapes+5)+13)*(V*142080)+34+price ∧
         z.user = u.user ∧ RecordPayload (returned 0) (fun _ => blank) 0
           (Shared50RecursiveNodeRows.transpose (one_dvd wide.rows) word) F ∧
         ∀ j, preserved j → F.L j = S.L j ∧ F.R j = S.R j := by
-  intro split lane V wide size word u S price input target data rows output preserved positive source tl tr empty run
+  intro split lane V wide size word u S price reserve input target data rows output preserved positive source tl tr empty run
   have payload : WordAtZero input (S.L src) (S.R src) := by
     have reads : WordAtZero word (S.L src) (S.R src) := by
       intro k
@@ -72,6 +72,96 @@ theorem workerRecordTranspose {T Q : ℕ} {P U : Type} (body : P → Pr P T Q pr
     castPayload size (returned 0) F y (intervalOwnerPayload returned F _ _ result),frame⟩
   simp only [Nat.add_mul] at paid ⊢
   omega
+
+/-- A row continuation can pay for private tape cleanup at merge exit. Its
+budget then appears once in the cost of the complete return to the caller. -/
+theorem finishIntervalRecord {T Q m : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
+    {prepare : Pr P T Q prime U} {count src dst saved tmp : Fin T}
+    (apart : [count,src,dst,saved,tmp].Nodup) (work : List (Fin T))
+    (distinct : work.Nodup) (inside : src ∈ work) (outside : dst ∉ work)
+    {old changed : Fin m → ZMod 2} {u v : HS T Q prime U} {S D : Stacks T prime}
+    {steps budget : ℕ} (run : Exec body prepare (mk u S) steps (mk v D))
+    (paid : steps + (work.map fun j => 4*(D.L j).length+2*(D.R j).length+4).sum ≤ budget)
+    (oldRecord : RecordPayload dst (fun _ => blank) 0 old D)
+    (newRecord : RecordPayload src (fun _ => blank) 0 changed D)
+    (hc : D.R count = []) (hs : D.R saved = []) (hl : D.L tmp = []) (hr : D.R tmp = []) :
+    let write := (loadCompactWord src tmp count).seq
+      (((usub count dst tmp).seq (movePrefix count src dst saved tmp)).seq (bclear count))
+    ∃ z F n, Exec body (prepare.seq (write.seq (clearWorkTapes work))) (mk u S) n (mk z F) ∧
+      n ≤ budget+18*m+23 ∧ z.user = v.user ∧ RecordPayload dst (fun _ => blank) 0 changed F ∧
+      (∀ j ∈ work, F.L j = [] ∧ F.R j = []) ∧
+      ∀ j, j ≠ dst → j ∉ work → F.L j = D.L j ∧ F.R j = D.R j := by
+  obtain ⟨z,F,n,finish,cost,user,result,empty,frame⟩ := returnIdleBank_exec body apart work
+    distinct inside outside old changed v D oldRecord newRecord hc hs hl hr
+  exact ⟨z,F,_,run.seq finish,by omega,user,result,empty,frame⟩
+
+/-- Execute a packed-order child, return its transpose in place and clear its entire private bank. -/
+theorem packedIntervalRecordClean {P U : Type} {M N Q price w : ℕ} (lane : Descriptor)
+    (width : lane.width = 64*w) (positive : 0 < volume prime lane)
+    (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q)
+    {body : P → Pr P N Q prime U} {code} {src dst : Fin (142081+2) ↪ Fin N} {seed : Stacks N prime}
+    (child : PackedPieceHandoffWithCharge cleanupWeight (volume prime lane)
+      (packedChildOutput w (volume prime lane)) body code src dst seed price) :
+    let T := intervalSplitTapes
+    let H := 142082+T+N
+    let split : Pr Empty T Q prime U := intervalPrepare.seq (foreign (liftQ (CyclicRowNormalized.splitProgram 142080 prime) capacity))
+    ∀ (place : Fin H ↪ Fin M),
+    let caller := ((Fin.natAddEmb 142082 (m := T)).trans (Fin.castAddEmb N)).trans place
+    let V := volume prime lane
+    ∀ (payload tmp count saved : Fin M), [count,caller 0,payload,saved,tmp].Nodup →
+    (∀ i, place i ≠ payload ∧ place i ≠ tmp ∧ place i ≠ count ∧ place i ≠ saved) →
+    ∃ (host : Empty ⊕ P → Pr (Empty ⊕ P) M Q prime U) (program : Pr (Empty ⊕ P) M Q prime U),
+    let wide := {lane with afterD := lane.afterD*142080}
+    let size : V*142080 = volume prime wide := by simp [V,wide,volume,Nat.mul_assoc]
+    let logical := (packedChildPosition wide size.symm).symm
+    ∀ (word : Fin (volume prime wide) → ZMod 2) (u : HS M Q prime U) (S : Stacks M prime),
+      RecordPayload payload (fun _ => blank) 0 (word ∘ logical) S → S.R count = [] → S.R saved = [] → S.L tmp = [] → S.R tmp = [] →
+      (∀ i, S.L (caller i) = [] ∧ S.R (caller i) = []) →
+      (∀ i : Fin 142082, let j := place ((i.castAdd T).castAdd N)
+        S.L j = [] ∧ S.R j = []) →
+      (∀ i : Fin N, let j := place (i.natAdd (142082+T))
+        S.L j = seed.L i ∧ S.R j = seed.R i) →
+      let changed := Shared50RecursiveNodeRows.transpose (one_dvd wide.rows) word
+      let work := List.ofFn place
+      ∃ z F n, Exec host program (mk u S) n (mk z F) ∧ z.user = u.user ∧
+        RecordPayload payload (fun _ => blank) 0 (changed ∘ logical) F ∧
+        n ≤ tapeCharge cleanupWeight work S+(10*(V*142080)+10)+
+          (1+6*Fast.Main.mnProgPush split)*((149*(T+5)+5)*(V*142080)+24)+
+          (142081*(8*V+10+2*V)+1+price)+13*(149*(V*142080)*(T+5)+6)+18*(V*142080)+23 ∧
+        (∀ i, F.L (place i) = [] ∧ F.R (place i) = []) ∧
+        ∀ j, j ≠ payload → (∀ i, place i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  intro T H split place caller V payload tmp count saved apart off
+  have distinct := apart
+  regs_ne distinct
+  obtain ⟨host,program,bank,target,run⟩ := packedIntervalFromWordWithCharge lane width positive capacity child place
+    payload tmp (by simp [‹payload ≠ tmp›]; exact ⟨(off _).1.symm,(off _).2.1.symm⟩)
+  let work := List.ofFn place
+  have unique : work.Nodup := List.nodup_ofFn.mpr place.injective
+  have mem (j) : j ∈ work ↔ ∃ i, place i = j := List.mem_ofFn
+  let write : Pr (Empty ⊕ P) M Q prime U := (loadCompactWord (bank 0) tmp count).seq
+    (((usub count payload tmp).seq (movePrefix count (bank 0) payload saved tmp)).seq (bclear count))
+  refine ⟨host,program.seq (write.seq (clearWorkTapes work)),?_⟩
+  intro wide size logical word u S before hc hs hl hr empty fresh prepared changed _
+  obtain ⟨v,D,n,exec,user,result,bill,frame⟩ := run word u S (by
+    intro i
+    rw [← encodedOwnerCell]
+    simpa only [sub_zero,List.map_ofFn] using before i) hl hr empty fresh prepared
+  have old := frame payload (fun i => (off i).1)
+  have original : RecordPayload payload (fun _ => blank) 0 (word ∘ logical) D := by
+    intro i
+    simpa only [old.1,old.2] using before i
+  have packed := intervalOwnerPayload bank D _ _ result
+  have merged : RecordPayload (bank 0) (fun _ => blank) 0 (changed ∘ logical) D := by
+    simpa only [Function.comp_def,Prod.mk.eta,Equiv.apply_symm_apply] using packed
+  have temp := frame tmp (fun i => (off i).2.1)
+  obtain ⟨z,F,t,done,cost,same,out,clean,keep⟩ := finishIntervalRecord host (by simpa only [target] using apart)
+    work unique ((mem _).2 ⟨_,target.symm⟩) (fun h => by obtain ⟨i,e⟩ := (mem _).1 h; exact (off i).1 e)
+    exec (bill work unique) original merged ((frame count (fun i => (off i).2.2.1)).2.trans hc)
+    ((frame saved (fun i => (off i).2.2.2)).2.trans hs) (temp.1.trans hl) (temp.2.trans hr)
+  refine ⟨z,F,t,done,same.trans user,out,cost,fun i => clean _ ((mem _).2 ⟨i,rfl⟩),?_⟩
+  intro j ne away
+  have h := keep j ne (fun h => by obtain ⟨i,e⟩ := (mem _).1 h; exact away i e)
+  exact ⟨h.1.trans (frame j away).1,h.2.trans (frame j away).2⟩
 
 local notation "N" => rowSwapBlock.tapes
 
@@ -138,7 +228,7 @@ theorem recursiveIntervalRecord {P U : Type} {T B Q w W atom price lo hi axes : 
     rw [intervalChild_volume ordered fits]
     exact Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) positive
   let preserved j := ∃ t, j = extend (caller t) ∧ (∀ i, splitter i ≠ t) ∧ (∀ i, directory i ≠ t)
-  obtain ⟨z,F,n,exec,paid,user,read,frame⟩ := wrapper word u S _ preserved vol payload tl tr freshSplit (by
+  obtain ⟨z,F,n,exec,paid,user,read,frame⟩ := wrapper word u S _ (fun _ => 0) preserved vol payload tl tr freshSplit (by
     intro v D rep off
     have rawSame j := off (raw j) (fun i => rawOff i j)
     obtain ⟨y,G,t,ran,bill,same,result,keep⟩ := run _ _ v D rep
