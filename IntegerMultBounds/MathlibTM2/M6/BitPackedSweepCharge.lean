@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.M6.BitPackedInvocation
 public import IntegerMultBounds.MathlibTM2.M6.BitPackedStage
 public import IntegerMultBounds.MathlibTM2.M6.BitPackedStageHandoff
 
@@ -117,6 +118,30 @@ theorem packedStageRunsWithCharge [M8.Machine.Net] (n : Fin 9) (tapes : Fin 32 �
     childTime stageRuns stageRuns_nodup (stageChildStart n)] at bill
   simpa only [Nat.add_assoc] using bill
 
+/-- A closed local program can run in any procedure table. Its fixed push bound
+pays for the cleanup of any selected tapes in addition to elapsed time. -/
+private theorem placeClosedWithCharge {P U : Type} {T Q : ℕ}
+    (body : P → Pr P T Q prime U) (code : Pr Empty T Q prime U)
+    {u z : HS T Q prime U} {S F : Stacks T prime} {t : ℕ}
+    (exec : Exec Empty.elim code (mk u S) t (mk z F)) :
+    Exec body (embProg id Empty.elim code) (mk u S) t (mk z F) ∧
+    ∀ js : List _, js.Nodup → t+tapeCharge cleanupWeight js F ≤
+      tapeCharge cleanupWeight js S+(1+6*Fast.Main.mnProgPush code)*t := by
+  have project (v : HS T Q prime U) : embDn id v = v := by
+    cases v with
+    | mk flag sym st scan nxt user => cases nxt <;> rfl
+  obtain ⟨y,D,placed,state,_,view,_⟩ := exec_emb (e := id) (ι := Empty.elim) (body' := body)
+    Function.injective_id (fun f => nomatch f) exec u (project u) S rfl
+  rw [project] at state
+  change D = F at view
+  subst y D
+  refine ⟨placed,?_⟩
+  intro js unique
+  have growth := recordCleanup_cost_le js unique exec (c := Fast.Main.mnProgPush code) le_rfl (fun f => nomatch f)
+  change tapeCharge cleanupWeight js F+1 ≤ tapeCharge cleanupWeight js S+1+6*(Fast.Main.mnProgPush code*t) at growth
+  simp only [Nat.add_mul,Nat.one_mul,Nat.mul_assoc]
+  omega
+
 /-- The fixed helper restoration program pays for its own tape growth,
 independently of the procedures used for recursive sweep calls. -/
 theorem parentSlotChangesWithCharge [M8.Machine.Net] {P U : Type} {T Q : ℕ}
@@ -148,24 +173,81 @@ theorem parentSlotChangesWithCharge [M8.Machine.Net] {P U : Type} {T Q : ℕ}
   refine ⟨embProg id Empty.elim code,(factor : ℝ)*C,?_⟩
   intro row w V pos W M size data u S base unit clock headers free scratch owners
   obtain ⟨z,F,t,a,user,exec,paid,out,trace,keep⟩ := run row w V pos size data u S base unit clock headers free scratch owners
-  have project (v : HS ((T+273)+LeafCore.small) Q prime U) : embDn id v = v := by
-    cases v with
-    | mk flag sym st scan nxt user => cases nxt <;> rfl
-  obtain ⟨y,D,placed,state,_,view,_⟩ := exec_emb (e := id) (ι := Empty.elim) (body' := body)
-    Function.injective_id (fun f => nomatch f) exec u (project u) S rfl
-  rw [project] at state
-  change D = F at view
-  subst y D
+  obtain ⟨placed,charge⟩ := placeClosedWithCharge body code exec
   refine ⟨z,F,t,a,user,placed,?_,out,trace,keep⟩
   intro js unique
-  have growth := recordCleanup_cost_le js unique exec (c := push) le_rfl (fun f => nomatch f)
-  change tapeCharge cleanupWeight js F+1 ≤ tapeCharge cleanupWeight js S+1+6*(push*t) at growth
   have scaled := mul_le_mul_of_nonneg_left paid (Nat.cast_nonneg (α := ℝ) factor)
   have bill : factor*t ≤ ⌈(factor : ℝ)*C*(V*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau)⌉₊ := by
     apply_mod_cast (show ((factor*t : ℕ) : ℝ) ≤ (⌈(factor : ℝ)*C*(V*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau)⌉₊ : ℝ) from
       (by simpa only [Nat.cast_mul,mul_assoc] using scaled.trans (Nat.le_ceil _)))
-  have expand : factor*t = t+6*(push*t) := by simp only [factor,Nat.add_mul,Nat.one_mul,Nat.mul_assoc]
-  rw [expand] at bill
-  omega
+  exact (charge js unique).trans (Nat.add_le_add_left bill _)
+
+open SweepFile in
+/-- Transfer the returned owner words to the next program while charging cleanup once across both banks. -/
+theorem runAfterPackedStageWithCharge {T N Q V D : ℕ} {P R U : Type}
+    (fan : Fin (142081+2) ↪ Fin T) (input : Fin (142081+2) ↪ Fin N) :
+    let m := Exit.size 0 T
+    ∃ bank : Fin N ↪ Fin (m+N), ∀ (left : P → Pr P m Q prime U) (right : R → Pr R N Q prime U) a b,
+    let leftBank := Fin.castAdd N (n := m)
+    let body := Sum.elim (fun g => embProg leftBank Sum.inl (left g)) (fun g => embProg bank Sum.inr (right g))
+    ∀ u L seed v F t setup budget (x : Fin 142081 → Fin D → ZMod 2) (post : U → Stacks N prime → Prop),
+      Exec left a (mk (embDn leftBank u) L) t (mk v F) →
+      (∀ js : List _, js.Nodup → t+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js L+setup) →
+      ParentStageWords (fun i => Exit.sweep 0 T (owners i)) (fan.trans (Exit.chart 0 T)) V x F →
+      (∀ w S, w.user = v.user → ParentStageWords (fun i => input (i.castAdd 2)) input V x S →
+        (∀ j, (∀ i, input i ≠ j) → S.L j = seed.L j ∧ S.R j = seed.R j) →
+        ∃ z G k, Exec right b (mk w S) k (mk z G) ∧ (∀ js : List _, js.Nodup → k+tapeCharge cleanupWeight js G ≤ tapeCharge cleanupWeight js S+budget) ∧ post z.user G) →
+      ∃ z G k, Exec body ((embProg leftBank Sum.inl a).seq (embProg bank Sum.inr b))
+        (mk u (adjacentStageStacks L seed)) k (mk z G) ∧ (∀ js : List _, js.Nodup → k+tapeCharge cleanupWeight js G ≤ tapeCharge cleanupWeight js (adjacentStageStacks L seed)+(setup+budget)) ∧ post z.user (embStk bank G) := by
+  intro m
+  obtain ⟨bank,_,_,sequence⟩ := runAdjacentStagesWithCharge (A := prime) (P := P) (R := R) (U := U) (q := Q) (returnedFan fan) input
+  refine ⟨bank,?_⟩
+  intro left right a b leftBank body u L seed v F t setup budget x post exec paid words next
+  obtain ⟨z,G,k,ran,paid,done,_⟩ := sequence left right a b u L seed v F t setup budget cleanupWeight post exec paid (by
+    intro w S user shared privateTapes
+    apply next w S user _ privateTapes
+    constructor
+    · intro i
+      rw [(shared (i.castAdd 2)).1,returnedFan_owner]; exact words.left i
+    · intro i
+      rw [(shared (i.castAdd 2)).2,returnedFan_owner]; exact words.right i
+    · intro j z
+      rw [(shared (j.natAdd 142081)).1,(shared (j.natAdd 142081)).2]
+      rw [returnedFan_counter]; exact words.controls j z)
+  exact ⟨z,G,k,ran,paid,done⟩
+
+local instance (w : ℕ) : NeZero (prime^(w+1)) := ⟨(pow_pos Shared50ModularControl.prime_prime.pos _).ne'⟩
+
+/-- Charge helper-slot packing before the recursive call on the same owner words. -/
+theorem scheduledSlotPackWithCharge [M8.Machine.Net] {P U : Type} {t q : ℕ} (n : Fin 9) (p : Fin 32 × Fin 5)
+    (pre : List (Fin 32 × Fin 5)) (bank : Fin ((rowSwapBlock.tapes+35)+142081) ↪ Fin t) (capacity : rowSwapBlock.states ≤ q)
+    (body : P → Pr P t q prime U) :
+    let owners := (Fin.natAddEmb (rowSwapBlock.tapes+35) (m := 142081)).trans bank
+    let before := pre.foldl (fun c r => helperChartsAfter n r c) (fun _ => none)
+    ∃ code, ∃ (factor : ℕ) (C : ℝ), ∀ w W : ℕ, 0 < W →
+      let V := (prime^(w+1))^128*W
+      ∀ (v : HS t q prime U) (S : Stacks t prime) (data : Fin 142081 → Fin V → ZMod 2),
+      embStk bank S = helperPackInput w W (embStk owners S) →
+      RepT (phaseOwners data) (embStk owners S).L (embStk owners S).R →
+      ∃ z F, ∃ time : ℕ, ∃ result : Fin 142081 → Fin V → ZMod 2,
+        Exec body code (mk v S) time (mk z F) ∧ z.user = v.user ∧
+        (∀ js : List _, js.Nodup → time+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+factor*⌈1+C*V*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau⌉₊) ∧
+        RepT (phaseOwners result) (embStk owners F).L (embStk owners F).R ∧
+        (∀ j, (∀ i, bank i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j) ∧
+        (∀ j, (∀ h : Fin 439, (helperSlotChange n p before h).1 ≠ j) → result j = data j) ∧
+        ∀ h : Fin 439, let change := helperSlotChange n p before h
+          ∀ c s j, result change.1 (FlatCoordinateLayout.index (helperSlotField c change.2.2 (w+1) s) j) =
+            data change.1 (FlatCoordinateLayout.index (helperSlotField c change.2.1 (w+1) s) j) := by
+  intro owners before
+  obtain ⟨code,C,run⟩ := scheduledSlotPack_placed (P := Empty) (U := U) n p pre bank capacity Empty.elim
+  refine ⟨embProg id Empty.elim code,1+6*Fast.Main.mnProgPush code,C,?_⟩
+  intro w W live V v S data initial represented
+  obtain ⟨z,F,t,result,exec,user,paid,out,off,idle,slots⟩ := run w W live v S data initial represented
+  obtain ⟨placed,charge⟩ := placeClosedWithCharge body code exec
+  refine ⟨z,F,t,result,placed,user,?_,out,off,idle,slots⟩
+  intro js unique
+  have price := Nat.ceil_le_ceil paid
+  rw [Nat.ceil_natCast] at price
+  exact (charge js unique).trans (Nat.add_le_add_left (Nat.mul_le_mul_left _ price) _)
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
