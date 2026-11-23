@@ -35,6 +35,53 @@ theorem inheritedSplitHeaders_exec {P U : Type} {c M Q : ℕ} (body : P → Pr P
     ports.injective (fun e => nomatch e) mark u rfl S rfl
   exact ⟨v,D,ran,user,view.symm ▸ ready,frame⟩
 
+open Certificates.PR589.Nine Shared50RecursiveNodeRows in
+/-- On a split role tape the inherited address is the identity. Assemble its
+transpose from the nine sweep and remainder programs at those addresses. -/
+theorem assembleHelperRole {U : Type} :
+    ∃ states : ℕ, ∀ {Q w : ℕ} (physical : Descriptor), states ≤ Q → physical.Positive →
+      142080 ∣ physical.rows → physical.width = 64*w →
+      let lane := role physical 142080
+      let V := volume prime lane
+      let W := CopyChildLayout.spectators lane
+      ∃ size : (prime^w)^128*W = V,
+      let address := fun (j : Fin W) s =>
+        (packedChildPosition lane rfl).symm ((flatWindowEquiv w W (s,j)).cast size)
+      let reads := fun (piece : Piece) (x y : Fin 142081 → Fin V → ZMod 2) =>
+        ∀ j, let addr := fun z => address j (windowState w z)
+          readRoles addr y = piece.run (readRoles addr x)
+      ∀ (sweepCost idleCost : Fin 9 → ℕ),
+      (∀ n, ∃ (P : Type) (T : ℕ) (body : P → Pr P T Q prime U), ∃ code src dst seed,
+        PackedPieceHandoff V (reads (.stage n)) body code src dst seed (sweepCost n)) →
+      (∀ n, ∃ (P : Type) (T : ℕ) (body : P → Pr P T Q prime U), ∃ code src dst seed,
+        PackedPieceHandoff V (reads (.remainder n.val)) body code src dst seed (idleCost n)) →
+      ∃ (P : Type) (T : ℕ) (body : P → Pr P T Q prime U), ∃ code src dst seed,
+        PackedPieceHandoff V (fun x y => ∀ r : Fin 142080,
+          y r.castSucc = transpose (one_dvd lane.rows) (x r.castSucc)) body code src dst seed
+          ((∑ i, sweepCost i)+(∑ i, idleCost i)+3452147597090*V) := by
+  obtain ⟨states,assemble⟩ := assembledInheritedNode (U := U)
+  refine ⟨states,?_⟩
+  intro Q w physical fits positive stock width lane V W
+  have laneWidth : lane.width = 64*w := width
+  have size : (prime^w)^128*W = V := by
+    dsimp only [V,volume,W,CopyChildLayout.spectators]
+    rw [laneWidth,Nat.mul_comm 64 w,pow_mul]
+    ring
+  have mass : V*142080 = volume prime physical := role_volume_mul prime 142080 physical stock
+  have pos : 0 < volume prime physical := by
+    obtain ⟨a,b,h,m,d⟩ := positive
+    have := Shared50ModularControl.prime_prime.pos
+    unfold volume
+    positivity
+  refine ⟨size,?_⟩
+  intro address reads sweepCost idleCost sweeps idles
+  obtain ⟨P,T,body,code,src,dst,seed,run⟩ := assemble lane fits laneWidth size (by omega)
+    (Equiv.refl (Fin V)) sweepCost idleCost sweeps idles
+  refine ⟨P,T,body,code,src,dst,seed,?_⟩
+  intro x u S words privateTapes
+  obtain ⟨z,F,n,y,ran,paid,user,out,action⟩ := run x u S words privateTapes
+  exact ⟨z,F,n,y,ran,paid,user,out,fun r => funext (action r)⟩
+
 /-- Run the recursive node on an inherited lane and recover the merge input
 on its returned bank, for arbitrary row-length and group-count headers. -/
 theorem inheritedHelperRows_exec {P U : Type} {T N Q price : ℕ} (lane : Descriptor)
@@ -300,5 +347,77 @@ theorem inheritedHelperTranspose_exec {P U : Type} {M N Q price : ℕ} (physical
   intro j hj
   have h := keep j (fun i => hj _)
   exact ⟨(frame j hj).1.trans h.1,(frame j hj).2.trans h.2⟩
+
+open Certificates.PR589.Nine RecursiveInterchangeRows Shared50RecursiveNodeRows FlatCoordinateSchedule in
+/-- Execute the scheduled helper from its sweep and remainder programs, charging
+all assembly and tape preparation as a single linear parent-volume overhead. -/
+theorem assembledHelperTranspose_exec {U : Type} :
+    ∃ states : ℕ, ∀ {Q w : ℕ} (physical : Descriptor), states ≤ Q → physical.Positive →
+      142080 ∣ physical.rows → physical.width = 64*w →
+      let lane := role physical 142080
+      let V := volume prime lane
+      let W := CopyChildLayout.spectators lane
+      ∃ size : (prime^w)^128*W = V,
+      let address := fun (j : Fin W) s =>
+        (packedChildPosition lane rfl).symm ((flatWindowEquiv w W (s,j)).cast size)
+      let reads := fun (piece : Piece) (x y : Fin 142081 → Fin V → ZMod 2) =>
+        ∀ j, let addr := fun z => address j (windowState w z)
+          readRoles addr y = piece.run (readRoles addr x)
+      ∀ (sweepCost idleCost : Fin 9 → ℕ),
+      (∀ n, ∃ (P : Type) (T : ℕ) (body : P → Pr P T Q prime U), ∃ code src dst seed,
+        PackedPieceHandoff V (reads (.stage n)) body code src dst seed (sweepCost n)) →
+      (∀ n, ∃ (P : Type) (T : ℕ) (body : P → Pr P T Q prime U), ∃ code src dst seed,
+        PackedPieceHandoff V (reads (.remainder n.val)) body code src dst seed (idleCost n)) →
+      ∃ (P : Type) (N : ℕ) (seed : Stacks N prime),
+      (let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q) →
+    let T := 142089
+    let place := Fin.castAddEmb 4 (n := (((1+142080)+2)+2))
+    let product := helperProductPorts
+    let caller := (Fin.natAddEmb 142082 (m := T)).trans (Fin.castAddEmb N)
+    let H := 142082+T+N
+    let parentVolume := volume prime physical
+    let symbols := rowLength prime physical
+    let count := groups 142080 physical
+    ∀ {M : ℕ} (ports : Fin H ↪ Fin M), ∃ (host : Empty ⊕ P → Pr (Empty ⊕ P) M Q prime U)
+      (program : Pr (Empty ⊕ P) M Q prime U),
+    ∀ (scheduled : Descriptor) (position : Fin (volume prime scheduled) ≃ Fin parentVolume),
+      InheritedIntervalPositions scheduled physical rfl position → physical.width = scheduled.width →
+      ∀ (word : Fin parentVolume → ZMod 2) u S,
+      let splitBank := (place.trans caller).trans ports
+      (∀ i, S.L (splitBank i) = []) →
+      S.R (splitBank 0) = List.ofFn (fun k => SparseRoleCircuit.encode (a := prime) (word k)) →
+      (∀ j : Fin 142080, S.R (splitBank (((j.natAdd 1).castAdd 2).castAdd 2)) = []) →
+      (∀ j : Fin 4, S.R (splitBank (roleSplitControls 142080 j)) =
+        ![[],binSyms symbols.size symbols,[],binSyms count.size count] j) →
+      (∀ k : Fin 6, k ≠ 3 → k ≠ 5 → S.L (ports (caller (product k))) = [] ∧ S.R (ports (caller (product k))) = []) →
+      (∀ i : Fin 142082, let j := ports ((i.castAdd T).castAdd N)
+        S.L j = [] ∧ S.R j = []) →
+      (∀ i : Fin N, let j := ports (i.natAdd (142082+T))
+        S.L j = seed.L i ∧ S.R j = seed.R i) →
+      ∃ z F n, Exec host program (mk u S) n (mk z F) ∧ z.user = u.user ∧
+        n ≤ ((298*(142085+5)+19)+(3452147597090+142079)/142080)*parentVolume+
+          (∑ i, sweepCost i)+(∑ i, idleCost i)+1 ∧
+        WordAtZero (transpose (one_dvd scheduled.rows) (word ∘ position) ∘ position.symm)
+          (F.L (ports (caller (place 0)))) (F.R (ports (caller (place 0)))) ∧
+        ∀ j, (∀ i, ports i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  obtain ⟨states,assemble⟩ := assembleHelperRole (U := U)
+  refine ⟨states,?_⟩
+  intro Q w physical fits positive stock width lane V W
+  obtain ⟨size,build⟩ := assemble physical fits positive stock width
+  refine ⟨size,?_⟩
+  intro address reads sweepCost idleCost sweeps idles
+  obtain ⟨P,N,body,code,src,dst,seed,child⟩ := build sweepCost idleCost sweeps idles
+  refine ⟨P,N,seed,?_⟩
+  intro capacity T place product caller H parentVolume symbols count M ports
+  obtain ⟨host,program,run⟩ := inheritedHelperTranspose_exec physical positive stock child capacity ports
+  refine ⟨host,program,?_⟩
+  intro scheduled position coords same word u S bank left source roles headers scratch empty prepared
+  obtain ⟨z,F,n,ran,user,paid,out,frame⟩ :=
+    run scheduled position coords same word u S left source roles headers scratch empty prepared
+  have mass : V*142080 = parentVolume := role_volume_mul prime 142080 physical stock
+  refine ⟨z,F,n,ran,user,?_,out,frame⟩
+  change n ≤ (298*(142085+5)+19)*parentVolume+
+    ((∑ i, sweepCost i)+(∑ i, idleCost i)+3452147597090*V)+1 at paid
+  omega
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
