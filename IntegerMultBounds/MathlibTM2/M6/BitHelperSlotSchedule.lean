@@ -172,6 +172,96 @@ theorem helperBasis_spectator (p : Fin 56) (ops : List (FlatCoordinateSchedule.O
 
 local instance (b : ℕ) : NeZero (ActualAffineScaling.modulus b) := ⟨(ActualAffineScaling.modulus_pos b).ne'⟩
 
+open ActualAffineScaling AffineFieldCoordinates in
+def HelperSlotTransport {α : Type*} {b W : ℕ} (p : Fin 56)
+    (act : Swap.Shear.State (Fin 8) (ZMod (modulus b)) → Swap.Shear.State (Fin 8) (ZMod (modulus b)))
+    (input output : Fin ((modulus b)^128*W) → α) : Prop :=
+  ∀ x s, x ∘ helperBasisAxis p = embed s → ∃ y,
+    y ∘ helperBasisAxis p = embed (act s) ∧
+    (∀ j, (∀ i, j ≠ helperBasisAxis p i) → y j = x j) ∧
+    ∀ j : Fin W, output (FlatCoordinateLayout.index y j) = input (FlatCoordinateLayout.index x j)
+
+theorem HelperSlotTransport.comp {α : Type*} {b W : ℕ} {p : Fin 56} {f g}
+    {input middle output : Fin ((ActualAffineScaling.modulus b)^128*W) → α}
+    (enter : HelperSlotTransport p f input middle) (leave : HelperSlotTransport p g middle output) :
+    HelperSlotTransport p (g ∘ f) input output := by
+  intro x s active
+  obtain ⟨y,atY,offY,readY⟩ := enter x s active
+  obtain ⟨z,atZ,offZ,readZ⟩ := leave y (f s) atY
+  exact ⟨z,atZ,fun j hj => (offZ j hj).trans (offY j hj),fun j => (readZ j).trans (readY j)⟩
+
+open FlatCoordinateLayout AffineFieldCoordinates M8.RevMachine RecursiveInterchangeLayout in
+/-- The physical child transpose on the two inherited fields realizes the
+middle exchange of the MOVE, including at either end of the helper slot. -/
+theorem helperInterval_transport (p : Fin 56) {lo hi b W : ℕ} (ordered : lo ≤ hi) (fits : hi ≤ 8) :
+    let child := phaseIntervalChild (p.val+lo) (p.val+hi) b W 64
+    ∀ word : Fin (volume prime child) → ZMod 2,
+      HelperSlotTransport (b := b) (W := W) p (Swap.Shear.run (intervalSwaps lo hi))
+        (fun i => ext word i.val)
+        (fun i => ext (Shared50RecursiveNodeRows.transpose (one_dvd child.rows) word) i.val) := by
+  intro child word x s active
+  let slot (k : Fin 8) : Fin 64 := ⟨p.val+k.val,by omega⟩
+  have left (k : Fin 8) : helperBasisAxis p (k.castAdd 8) = (slot k).castAdd 64 := by
+    apply Fin.ext
+    simp [helperBasisAxis,slot,k.isLt]
+  have right (k : Fin 8) : helperBasisAxis p (k.natAdd 8) = (slot k).natAdd 64 := by
+    apply Fin.ext
+    simp [helperBasisAxis,slot]
+    omega
+  let a := fun k : Fin 64 => x (k.castAdd 64)
+  let d := fun k : Fin 64 => x (k.natAdd 64)
+  have ha (k : Fin 8) : a (slot k) = s.1 k := by
+    simpa only [a,Function.comp_apply,left,embed_h] using congrFun active (k.castAdd 8)
+  have hd (k : Fin 8) : d (slot k) = s.2 k := by
+    simpa only [d,Function.comp_apply,right,embed_d] using congrFun active (k.natAdd 8)
+  let swap := fun (u v : Fin 64 → ZMod (prime^b)) (i : Fin 64) =>
+    if p.val+lo ≤ i.val ∧ i.val < p.val+hi then v i else u i
+  let y := Fin.append (swap a d) (swap d a)
+  refine ⟨y,?_,?_,?_⟩
+  · funext i
+    cases i using Fin.addCases (m := 8) (n := 8) with
+    | _ k =>
+      have inside : (p.val+lo ≤ (slot k).val ∧ (slot k).val < p.val+hi) ↔
+          lo ≤ k.val ∧ k.val < hi := by dsimp [slot]; omega
+      change y (helperBasisAxis p _) = _
+      first | rw [left] | rw [right]
+      simp only [y,Fin.append_left,Fin.append_right,
+        swap,inside,ha,hd,embed_h,embed_d,intervalSwaps_run]
+      split_ifs with hit <;> simp [M8.Exchange.exchange,Matrix.sub_mulVec,Matrix.one_mulVec,
+        Matrix.mulVec_diagonal,hit] <;> rfl
+  · intro j
+    cases j using Fin.addCases (m := 64) (n := 64) with
+    | _ k =>
+      intro off
+      have outside : ¬(p.val+lo ≤ k.val ∧ k.val < p.val+hi) := by
+        intro hit
+        let t : Fin 8 := ⟨k.val-p.val,by omega⟩
+        have eq : slot t = k := Fin.ext (by dsimp [slot,t]; omega)
+        first | (apply off (t.castAdd 8); rw [left,eq]; done) | (apply off (t.natAdd 8); rw [right,eq])
+      simp only [y,Fin.append_left,Fin.append_right,swap,a,d]
+      exact if_neg outside
+  · intro j
+    have read := remainderInterval_fullRead (Nat.add_le_add_left ordered p.val)
+      (show p.val+hi ≤ 64 by omega) word a d j
+    have whole : Fin.append a d = x := Fin.append_castAdd_natAdd
+    change _ = ext word (index (Fin.append a d) j).val at read
+    rwa [whole] at read
+
+open ActualAffineScaling in
+/-- Compose the physical reads on the same 128-digit word in execution order. -/
+theorem helperMove_transport {α : Type*} {b W : ℕ} (p : Fin 56) (lo hi : ℕ)
+    (C : Matrix (Fin 8) (Fin 8) ℚ)
+    (input loaded moved output : Fin ((modulus b)^128*W) → α) :
+    let spec := List.map (AffineFieldProgram.mapOp (Swap.Modular.ratMod (modulus b)))
+    HelperSlotTransport p (AffineFieldProgram.run (spec (M8.Exchange.transformOps C.adjugate C.adjugate))) input loaded →
+    HelperSlotTransport p (Swap.Shear.run (intervalSwaps lo hi)) loaded moved →
+    HelperSlotTransport p (AffineFieldProgram.run (spec (M8.Exchange.transformOps C C))) moved output →
+    HelperSlotTransport p (AffineFieldProgram.run (spec (rationalMoveWord lo hi C))) input output := by
+  intro spec enter child leave
+  have action := (enter.comp child).comp leave
+  intro x s active
+  simpa only [rationalMoveWord_run,Function.comp_apply,spec] using action x s active
+
 open M8.Machine.Segments ActualAffineScaling AffineFieldCoordinates in
 /-- A certified basis segment runs on the owner's clean bank. Its active
 coordinates follow the original field program and every other digit is fixed. -/
@@ -183,10 +273,7 @@ theorem helperSegment_runs (p : Fin 56) (ops : List (AffineFieldProgram.Op (Fin 
     let spec := ops.map (AffineFieldProgram.mapOp (IntegerMultBounds.Swap.Modular.ratMod (modulus b)))
     HoareTime (FlatCoordinateCleanSchedule.program physical) (fun z => z = bank input)
       (fun z => ∃ output, z = bank output ∧
-        ∀ x s, x ∘ helperBasisAxis p = embed s → ∃ y,
-          y ∘ helperBasisAxis p = embed (AffineFieldProgram.run spec s) ∧
-          (∀ j, (∀ i, j ≠ helperBasisAxis p i) → y j = x j) ∧
-          ∀ j : Fin W, output (FlatCoordinateLayout.index y j) = input (FlatCoordinateLayout.index x j))
+        HelperSlotTransport p (AffineFieldProgram.run spec) input output)
       (FlatCoordinateCleanSchedule.constant physical*((modulus b)^128*W)) := by
   intro physical bank spec
   apply (FlatCoordinateCleanSchedule.realizes physical b W live input).consequence (fun _ h => h) _ le_rfl
@@ -201,6 +288,50 @@ theorem helperSegment_runs (p : Fin 56) (ops : List (AffineFieldProgram.Op (Fin 
   · intro j outside
     simpa only [y,physical,List.map_map,Function.comp_def] using
       helperBasis_spectator p (description ops good) b x j outside
+
+open M8.Machine.Segments SharedPlacementAlphabet ActualAffineScaling in
+/-- Place a lifted basis pass on the selected owner. The caller's remaining
+tapes are preserved and the private payload slot is returned blank. -/
+theorem helperSegment_placed {t : ℕ} (src : Fin t) (p : Fin 56)
+    (ops : List (AffineFieldProgram.Op (Fin 8) ℚ)) (good : Good ops) (b W : ℕ)
+    (live : 0 < W) (input : FlatCoordinateStages.Array 128 b W) (caller : Tapes t prime) :
+    let physical := (description ops good).map (helperBasisOp p)
+    let bank := fun word => SharedBankStageInput.raw (FlatCoordinateShiftSharedBank.common word)
+      (FlatCoordinateCleanSchedule.tapeCount physical)
+    let slot := segmentSource physical
+    let scratch := fun word => setTape (bank word) slot (fun _ => blank) 0
+    let spec := ops.map (AffineFieldProgram.mapOp (IntegerMultBounds.Swap.Modular.ratMod (modulus b)))
+    caller.head src = (bank input).head slot → caller.tape src = (bank input).tape slot →
+    HoareTime (Placement.placed (FlatCoordinateCleanSchedule.program physical) (sharedPlacement src slot))
+      (fun z => z = caller.append (scratch input))
+      (fun z => ∃ output, z = (setTape caller src ((bank output).tape slot) ((bank output).head slot)).append
+          (scratch input) ∧ HelperSlotTransport p (AffineFieldProgram.run spec) input output)
+      (FlatCoordinateCleanSchedule.constant physical*((modulus b)^128*W)) := by
+  intro physical bank slot scratch spec head payload
+  have ready : Placement.active (sharedPlacement src slot) (caller.append (scratch input)) = bank input := by
+    rw [active_shared,head,payload]
+    exact (setTape_setTape ..).trans (setTape_self ..)
+  have placed := Placement.hoare_at (helperSegment_runs p ops good b W live input) _ _ ready
+  apply placed.consequence (fun _ eq => eq) _ le_rfl
+  rintro z ⟨_,⟨output,rfl,reads⟩,rfl⟩
+  refine ⟨output,?_,reads⟩
+  refine (replace_shared caller (scratch input) (bank output) src slot).trans ?_
+  apply congrArg (Tapes.append _)
+  change setTape (bank output) slot ((scratch input).tape slot) ((scratch input).head slot) = scratch input
+  simp only [scratch,setTape,Function.update_self]
+  apply congrArg₂ Tapes.mk
+  · rfl
+  · funext k
+    by_cases eq : k = slot
+    · simp [eq]
+    · simp only [Function.update_of_ne eq,bank,SharedBankStageInput.raw]
+      split
+      next inside =>
+        have nz : k.val ≠ 0 := fun zero => eq (Fin.ext zero)
+        have index : (⟨k.val,inside⟩ : Fin 4) = 1 ∨ (⟨k.val,inside⟩ : Fin 4) = 2 ∨
+            (⟨k.val,inside⟩ : Fin 4) = 3 := by simp only [Fin.ext_iff]; omega
+        rcases index with h | h | h <;> rw [h] <;> rfl
+      next => rfl
 
 /-- On a flat owner the interval builder accepts the original compact input.
 Moving the slot changes the program's prefix and suffix, but its runtime
