@@ -391,6 +391,7 @@ theorem runSplitChild {P U : Type} {T N Q V w price : ℕ} {body : P → Pr P N 
     let caller := (Fin.natAddEmb 142082 (m := T)).trans (Fin.castAddEmb N)
     ∃ (bank : Fin N ↪ Fin H) (host : Empty ⊕ P → Pr (Empty ⊕ P) H Q prime U)
       (program : Pr (Empty ⊕ P) H Q prime U),
+    (∀ j, (∀ i : Fin 2, live (i.natAdd 142080) ≠ j) → ∀ h, bank h ≠ caller j) ∧
     ∀ (lane : Descriptor) (_width : lane.width = 64*w) (size : volume prime lane = V)
       (data : Fin 142080 → Fin (volume prime lane) → ZMod 2) u S,
       let position := packedChildPosition lane size
@@ -408,8 +409,8 @@ theorem runSplitChild {P U : Type} {T N Q V w price : ℕ} {body : P → Pr P N 
           let t := (j.natAdd 142082).castAdd N
           F.L t = S.L t ∧ F.R t = S.R t := by
   intro H caller
-  obtain ⟨bank,host,program,_,exec⟩ := runSplitOwners run live
-  refine ⟨bank,host,program,?_⟩
+  obtain ⟨bank,host,program,apart,exec⟩ := runSplitOwners run live
+  refine ⟨bank,host,program,apart,?_⟩
   intro lane width size data u S position rep empty privateTapes
   obtain ⟨z,F,n,y,ran,paid,user,words,reads,owners,keep⟩ :=
     exec _ u S rep empty privateTapes

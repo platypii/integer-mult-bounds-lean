@@ -10,7 +10,7 @@ open IntegerMultBounds.Machine IntegerMultBounds.Networks Stack Host
 open RecursiveInterchangeLayout (Descriptor volume)
 open Shared50ModularControl (prime)
 
-private def mergeSaved (c : ℕ) : Fin 3 ↪ Fin (((1+c)+2)+2) where
+def mergeSaved (c : ℕ) : Fin 3 ↪ Fin (((1+c)+2)+2) where
   toFun := Fin.cases 0 (fun j => (j.natAdd (1+c)).castAdd 2)
   inj' := by
     intro i j
@@ -32,6 +32,59 @@ private theorem mergeSaved_outside (c : ℕ) (k : Fin 3) (i : Fin 2) :
     change (intervalOwners c (i.natAdd c)).val = 1+c+j.val at h
     simp [intervalOwners] at h
     omega
+
+theorem mergeSaved_outsideFan (c : ℕ) (k : Fin 3) (i : Fin (c+2)) :
+    intervalOwners c i ≠ mergeSaved c k := by
+  induction i using Fin.addCases with
+  | right j => exact mergeSaved_outside c k j
+  | left r =>
+    induction k using Fin.cases with
+    | zero =>
+      intro eq
+      have h := congrArg Fin.val eq
+      change (intervalOwners c (r.castAdd 2)).val = 0 at h
+      simp [intervalOwners] at h
+      all_goals omega
+    | succ j =>
+      intro eq
+      have h := congrArg Fin.val eq
+      change (intervalOwners c (r.castAdd 2)).val = 1+c+j.val at h
+      simp [intervalOwners] at h
+      all_goals omega
+
+/-- Sequence an owner-row computation with the physical merge. Only the
+target and two inner counters must survive the computation on their saved tapes. -/
+theorem mergeAfterReturnedRows {P U : Type} {T Q V price : ℕ}
+    (host : P → Pr P T Q prime U) (program : Pr P T Q prime U)
+    (saved : Fin 3 ↪ Fin T) (returned : Fin (142080+2) ↪ Fin T)
+    (apart : ∀ i j, saved i ≠ returned j)
+    (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q)
+    (positive : 0 < V) (target : ℤ → Fin (prime+4))
+    (data output : Fin 142080 → Fin V → ZMod 2) (before : Stacks intervalSplitTapes prime)
+    (u : HS T Q prime U) (S : Stacks T prime)
+    (split : RepT (intervalOwnerBank target data) before.L before.R)
+    (run : ∃ v D k, Exec host program (mk u S) k (mk v D) ∧ k ≤ price ∧ v.user = u.user ∧
+      HelperFan returned output D ∧ ∀ i, D.L (saved i) = before.L (mergeSaved 142080 i) ∧
+        D.R (saved i) = before.R (mergeSaved 142080 i)) :
+    let bank := returnedMergeBank saved returned apart
+    let merge := embProg bank Empty.elim (foreign (liftQ (CyclicRowNormalized.mergeProgram 142080 prime) capacity))
+    let word := fun k : Fin (V*142080) => let p := finProdFinEquiv.symm k
+                                          SparseRoleCircuit.encode (a := prime) (output p.2 p.1)
+    ∃ z F n, Exec host (program.seq merge) (mk u S) n (mk z F) ∧
+      n ≤ price+(149*(V*142080)*(intervalSplitTapes+5)+6) ∧ z.user = u.user ∧
+      RepT (intervalOwnerBank (putWord target 0 (List.ofFn word)) output) (embStk bank F).L (embStk bank F).R := by
+  intro bank merge word
+  obtain ⟨v,D,k,exec,paid,user,owners,frame⟩ := run
+  obtain ⟨z,F,n,ran,bill,same,result,_,_⟩ := placedMergeReturnedOwners_exec host bank capacity positive
+    target data output before v D split (by
+      rw [show (intervalOwners 142080).trans bank = returned from returnedMergeBank_owners _ _ _]
+      exact owners) (by
+      rw [show bank 0 = saved 0 from returnedMergeBank_target _ _ _]
+      exact frame 0) (fun j => by
+      dsimp only
+      rw [show bank ((j.natAdd (1+142080)).castAdd 2) = saved j.succ from returnedMergeBank_inner _ _ _ j]
+      exact frame j.succ)
+  exact ⟨z,F,k+n,exec.seq ran,Nat.add_le_add paid bill,same.trans user,result⟩
 
 theorem inheritedReturnMerge_exec {P U : Type} {N Q price : ℕ} (lane : Descriptor)
     (positive : 0 < volume prime lane)
@@ -70,17 +123,10 @@ theorem inheritedReturnMerge_exec {P U : Type} {N Q price : ℕ} (lane : Descrip
   intro target data u S split empty prepared V output word
   have rep := intervalOwners_ready target data (embStk caller S) split
   obtain ⟨v,D,k,_,exec,paid,user,_,owners,keep⟩ := run data u S rep empty prepared
-  have frame i := keep (mergeSaved 142080 i) (mergeSaved_outside _ i)
-  obtain ⟨z,F,n,ran,bill,same,result,_,_⟩ := placedMergeReturnedOwners_exec host bank capacity positive
-    target data output (embStk caller S) v D split (by
-      rw [show (intervalOwners 142080).trans bank = returned from returnedMergeBank_owners _ _ _]
-      exact owners) (by
-      rw [show bank 0 = saved 0 from returnedMergeBank_target _ _ _]
-      exact frame 0) (fun j => by
-      dsimp only
-      rw [show bank ((j.natAdd (1+142080)).castAdd 2) = saved j.succ from returnedMergeBank_inner _ _ _ j]
-      exact frame j.succ)
-  exact ⟨z,F,k+n,exec.seq ran,Nat.add_le_add paid bill,same.trans user,result⟩
+  exact mergeAfterReturnedRows host program saved returned separate capacity positive target data output
+    (embStk caller S) u S split ⟨v,D,k,exec,paid,user,owners,fun i =>
+      keep (mergeSaved 142080 i) (mergeSaved_outside _ i)⟩
+
 
 private theorem caller_ne_front {a t n : ℕ} (j : Fin t) (i : Fin a) :
     (j.natAdd a).castAdd n ≠ (i.castAdd t).castAdd n := by

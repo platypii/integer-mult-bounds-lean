@@ -69,6 +69,25 @@ theorem intervalChildToll_le (U : Type) :
   apply (bound i w W pos).trans
   exact uniformRate setup swaps i _ _
 
+/-- Across an interval schedule the layout passes cost a uniform rate per
+lane volume and each supplied recursive budget is counted once. -/
+theorem intervalSchedule_parentCost (U : Type) :
+    ∃ C : ℝ, 0 < C ∧ ∀ {ι : Type} [Fintype ι] (lo hi budget steps : ι → ℕ) (w W : ℕ),
+      0 < W → (∀ i, lo i ≤ hi i) → (∀ i, hi i ≤ 64) →
+      (∀ i, steps i ≤ intervalChildToll U (lo i) (hi i) w W + budget i) →
+      let V := (prime^(w+1))^128*W
+      ((∑ i, steps i : ℕ) : ℝ) ≤ ((∑ i, budget i : ℕ) : ℝ) +
+        Fintype.card ι*(C*V*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau) := by
+  obtain ⟨setup,swaps,toll⟩ := intervalChildToll_le U
+  obtain ⟨C,positive,bound⟩ := copyReturn_parentCost setup swaps
+  refine ⟨C,positive,?_⟩
+  intro ι _ lo hi budget steps w W hW ordered fits paid V
+  have total {n t b k : ℕ} (run : n ≤ t+b) (localBound : t ≤ k) : n ≤ b+2*k := by omega
+  have cost (i : ι) := bound w V (budget i) (steps i)
+    (total (paid i) (toll (lo i) (hi i) (ordered i) (fits i) w W hW))
+  simpa only [Nat.cast_sum,Finset.sum_add_distrib,Finset.sum_const,Finset.card_univ,
+    nsmul_eq_mul] using Finset.sum_le_sum (fun i (_ : i ∈ Finset.univ) => cost i)
+
 theorem runIntervalChild {P U : Type} {T B Q w W atom price lo hi : ℕ}
     (capacity : rowSwapBlock.states ≤ Q) (ordered : lo ≤ hi) (fits : hi ≤ 64) (positive : 0 < W)
     (widthAt : (phaseIntervalChild lo hi (w+1) W 64).width = 64*atom)
@@ -87,6 +106,7 @@ theorem runIntervalChild {P U : Type} {T B Q w W atom price lo hi : ℕ}
     ∃ (host : Empty ⊕ P → Pr (Empty ⊕ P) (H+142080*(N+35)) Q prime U)
       (program : Pr (Empty ⊕ P) (H+142080*(N+35)) Q prime U)
       (returned : Fin (142080+2) ↪ Fin H),
+    (∀ j, (∀ i, live i ≠ j) → ∀ r, returned r ≠ caller j) ∧
     ∀ (input : Fin 142080 → Fin (volume prime lane) → ZMod 2) u S,
       IntervalHeaderInputs ((headers.trans caller).trans extend) (extend (caller width)) w W S →
       HelperFan ((live.trans caller).trans extend) (fun r i => input r (i.cast size.symm)) S →
@@ -98,9 +118,11 @@ theorem runIntervalChild {P U : Type} {T B Q w W atom price lo hi : ℕ}
       ∃ z F n, Exec host program (mk u S) n (mk z F) ∧
         n ≤ intervalChildToll U lo hi w W + price ∧
         z.user = u.user ∧ HelperFan (returned.trans extend)
-          (fun r i => Shared50RecursiveNodeRows.transpose (one_dvd lane.rows) (input r) (i.cast size.symm)) F := by
+          (fun r i => Shared50RecursiveNodeRows.transpose (one_dvd lane.rows) (input r) (i.cast size.symm)) F ∧
+        ∀ j, (∀ i, live i ≠ j) → F.L (extend (caller j)) = S.L (extend (caller j)) ∧
+          F.R (extend (caller j)) = S.R (extend (caller j)) := by
   intro H caller extend small ports lane size
-  obtain ⟨bank,inner,call,run⟩ := runSplitChild child live
+  obtain ⟨bank,inner,call,disjoint,run⟩ := runSplitChild child live
   let returned := (childReturnFan dst).trans bank
   let host := fun p => embProg extend id (inner p)
   obtain ⟨enter,leave,passes⟩ := withIntervalBank_exec capacity (live.trans caller) returned
@@ -108,15 +130,19 @@ theorem runIntervalChild {P U : Type} {T B Q w W atom price lo hi : ℕ}
     (fun r => caller.injective.ne (widthFree r)) host lo hi ordered fits
   let M := prime^(w+1)
   let V := M^128*W
-  refine ⟨host,(enter.seq (embProg extend id call)).seq leave,returned,?_⟩
+  have away j (outside : ∀ i, live i ≠ j) (r) : returned r ≠ caller j :=
+    disjoint j (fun i => outside _) _
+  refine ⟨host,(enter.seq (embProg extend id call)).seq leave,returned,away,?_⟩
   intro input u S dimensions owners free fresh prepared
   let output := fun r => Shared50RecursiveNodeRows.transpose (one_dvd lane.rows) (input r)
-  obtain ⟨z,F,n,exec,paid,user,rows,_⟩ := passes w W positive input output (embProg extend id call)
-    (142081*(8*V+10)+1+price) (fun _ => False) u S (by simp) dimensions owners free (by
+  obtain ⟨z,F,n,exec,paid,user,rows,frame⟩ := passes w W positive input output (embProg extend id call)
+    (142081*(8*V+10)+1+price) (fun k => ∃ j, k = caller j ∧ ∀ i, live i ≠ j) u S (by
+      rintro _ ⟨j,rfl,outside⟩ r
+      exact ⟨caller.injective.ne (outside _),away j outside _⟩) dimensions owners free (by
       intro v D packed keep
       have untouched (j : Fin H) (outside : ∀ r : Fin 142080, caller (live (r.castAdd 2)) ≠ j) :=
         keep (extend j) (intervalRecordBank_outside (live.trans caller) _ j outside)
-      obtain ⟨y,G,t,_,ran,bill,same,_,words,_⟩ := run lane widthAt size input (embDn extend v)
+      obtain ⟨y,G,t,_,ran,bill,same,_,words,childFrame⟩ := run lane widthAt size input (embDn extend v)
         (embStk extend D) (projectFan extend (live.trans caller) _ D packed) (fun i => by
           have frame := untouched ((i.castAdd T).castAdd B) (fun r eq => by
             have h := congrArg Fin.val eq
@@ -128,11 +154,14 @@ theorem runIntervalChild {P U : Type} {T B Q w W atom price lo hi : ℕ}
             change 142082+(live (r.castAdd 2)).val = 142082+T+i.val at h
             omega)
           exact ⟨frame.1.trans (prepared i).1,frame.2.trans (prepared i).2⟩)
-      obtain ⟨z,F,exec,user,rows,privateTapes,_⟩ := liftIntervalChild_exec (small 24) inner call
+      obtain ⟨z,F,exec,user,rows,privateTapes,view⟩ := liftIntervalChild_exec (small 24) inner call
         (live.trans caller) returned _ v D y G t ran words
       have state := same.trans (projectedUser extend v)
-      exact ⟨z,F,t,exec,bill,user.trans state,rows,privateTapes,by simp⟩)
-  refine ⟨z,F,n,exec,?_,user,rows⟩
+      refine ⟨z,F,t,exec,bill,user.trans state,rows,privateTapes,?_⟩
+      rintro _ ⟨j,rfl,outside⟩
+      have unchanged := childFrame j (fun i => outside _)
+      exact ⟨(view _).1.trans unchanged.1,(view _).2.trans unchanged.2⟩)
+  refine ⟨z,F,n,exec,?_,user,rows,fun j outside => frame _ ⟨j,rfl,outside⟩⟩
   simp only [List.map_const',List.length_finRange,List.sum_replicate_nat] at paid
   unfold intervalChildToll
   dsimp only [V,M] at paid ⊢
