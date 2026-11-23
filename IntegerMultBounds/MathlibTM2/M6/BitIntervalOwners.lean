@@ -1,7 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackRecordCleanup
-public import IntegerMultBounds.MathlibTM2.Host.EmbedStock
+public import IntegerMultBounds.MathlibTM2.Host.TapeCharge
 public import IntegerMultBounds.MathlibTM2.Host.ForeignStock
 public import IntegerMultBounds.MathlibTM2.M6.BitIntervalSetup
 public import IntegerMultBounds.MathlibTM2.M6.BitHelperFanRun
@@ -199,20 +199,14 @@ theorem placedMergeReturnedOwners_exec {P U : Type} {T Q m : ℕ}
     | seq _ _ ih₁ ih₂ | cond _ _ _ ih₁ ih₂ => exact max_le (ih₁ bound.1) (ih₂ bound.2)
     | loop _ _ ih => exact ih bound
     | call => exact bound.elim
-  have closed {q : Pr P T Q prime U} {s t l} (e : Exec body q s l t)
-      (native : Fast.Main.mnNativePushBound 2 q) : Exec (fun _ : P => .act .done) q s l t := by
-    induction e with
-    | act => exact .act _ _
-    | seq _ _ ih₁ ih₂ => exact .seq (ih₁ native.1) (ih₂ native.2)
-    | cond_true h _ ih => exact .cond_true h (ih native.1)
-    | cond_false h _ ih => exact .cond_false h (ih native.2)
-    | loop_false h => exact .loop_false h
-    | loop_true h _ _ ih₁ ih₂ => exact .loop_true h (ih₁ native) (ih₂ native)
-    | call => exact native.elim
-  have native := embProg_native (P' := P) place Empty.elim _ (foreign_native (P := Empty) (U := U)
-    (liftQ (CyclicRowNormalized.mergeProgram 142080 prime) capacity))
-  have charge := Cover.Fallback.recordCleanup_cost_le js distinct (closed exec native) (push native) (fun _ => Nat.zero_le 2)
-  omega
+  have bill := placedCleanup_cost_le place S F (fun l r => 4*l.length+2*r.length+4) 0 (12*n) keep (by
+    intro is separate
+    have charge := Cover.Fallback.recordCleanup_cost_le is separate run (push (foreign_native _)) (fun e => nomatch e)
+    rw [← view] at charge
+    simp only [embStk,Function.comp_apply] at charge
+    simp only [tapeCharge,embStk,Function.comp_apply,Nat.zero_add]
+    omega) js distinct
+  simpa only [Nat.zero_add,tapeCharge] using bill
 
 /-- Insert one private helper before the physical bank. In the logical owner
 order it follows the data and precedes both controls. -/

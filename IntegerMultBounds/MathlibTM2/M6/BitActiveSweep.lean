@@ -41,7 +41,7 @@ theorem activeIntervalFromRecord {P U : Type} {M N Q price a w W : ℕ} (lane : 
     let caller := ((Fin.natAddEmb 142082 (m := T)).trans (Fin.castAddEmb N)).trans place
     [bank 24,tmp,caller 0].Nodup →
     ∃ (host : Empty ⊕ P → Pr (Empty ⊕ P) M Q prime U) (program : Pr (Empty ⊕ P) M Q prime U)
-      (owners : Fin 142080 ↪ Fin M),
+      (owners : Fin 142081 ↪ Fin M),
     ∀ record word u (S : Stacks M prime),
       RecordReady (b := prime) (w := w) (d := 16) (W := W) bank (prime^(w+1)).size W.size record
         SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0 word S →
@@ -56,14 +56,14 @@ theorem activeIntervalFromRecord {P U : Type} {M N Q price a w W : ℕ} (lane : 
         n ≤ (298*(T+5)+13)*(V*142080)+142081*(8*V+10)+price+41 ∧
         RecordPayload (caller 0) (fun _ => blank) 0 y F ∧
         (∀ k, y (position k) = Shared50RecursiveNodeRows.transpose (one_dvd wide.rows) (word ∘ position) k) ∧
-        (∀ js : List (Fin 142080), js.Nodup →
+        (∀ js : List (Fin 142081), js.Nodup →
           n+(js.map fun j => 4*(F.L (owners j)).length+2*(F.R (owners j)).length+4).sum ≤
             (298*(T+5)+13)*(V*142080)+142081*(8*V+10)+price+41+js.length*(2*V+4)+
               12*(149*(V*142080)*(T+5)+6)) ∧
         ∀ j, (∀ i, place i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
   intro T V span place caller apart
-  obtain ⟨host,program,out,target,run⟩ := packedIntervalFromWord_exec lane width positive capacity child place (bank 24) tmp apart
-  refine ⟨host,program,(Fin.castAddEmb 2).trans ((intervalOwners 142080).trans out),?_⟩
+  obtain ⟨host,program,out,owners,target,run⟩ := packedIntervalFromWord_exec lane width positive capacity child place (bank 24) tmp apart
+  refine ⟨host,program,owners,?_⟩
   intro record word u S ready tl tr clear fresh prepared wide size position
   let changed := Shared50RecursiveNodeRows.transpose (one_dvd wide.rows) (word ∘ position)
   let y := changed ∘ position.symm
@@ -113,7 +113,7 @@ theorem activeIntervalWriteback {P U : Type} {M N Q price a w W : ℕ} (lane : D
     (∀ i j, place i ≠ bank j) →
     (∀ i, place i ≠ count ∧ place i ≠ saved ∧ place i ≠ tmp) →
     ∃ (host : Empty ⊕ P → Pr (Empty ⊕ P) M Q prime U) (worker finish : Pr (Empty ⊕ P) M Q prime U)
-      (owners : Fin 142080 ↪ Fin M),
+      (owners : Fin 142081 ↪ Fin M),
     ∀ record word u (S : Stacks M prime),
       RecordReady (b := prime) (w := w) (d := 16) (W := W) bank (prime^(w+1)).size W.size record
         SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0 word S →
@@ -129,8 +129,8 @@ theorem activeIntervalWriteback {P U : Type} {M N Q price a w W : ℕ} (lane : D
         k ≤ (298*(T+5)+13)*(V*142080)+142081*(8*V+10)+price+41 ∧
         n ≤ k+18*(V*142080)+23 +
           (slots.map fun j => 4*(mergedState.L j).length+2*(mergedState.R j).length+4).sum ∧
-        (let rest := slots.filter fun j => j ∉ (List.finRange 142080).map owners
-         n ≤ (298*(T+5)+31)*(V*142080)+142081*(8*V+10)+price+64+142080*(2*V+4)+
+        (let rest := slots.filter fun j => j ∉ (List.finRange 142081).map owners
+         n ≤ (298*(T+5)+31)*(V*142080)+142081*(8*V+10)+price+64+142081*(2*V+4)+
            12*(149*(V*142080)*(T+5)+6)+(rest.map fun j =>
              4*(mergedState.L j).length+2*(mergedState.R j).length+4).sum) ∧
         (∀ i, F.L (place i) = [] ∧ F.R (place i) = []) ∧
@@ -174,8 +174,8 @@ theorem activeIntervalWriteback {P U : Type} {M N Q price a w W : ℕ} (lane : D
     omega
   · intro rest
     let charge := fun j => 4*(F.L j).length+2*(F.R j).length+4
-    have rows := ownerBill (List.finRange 142080) (List.nodup_finRange _)
-    have partition := sum_outside_owners slots ((List.finRange 142080).map owners)
+    have rows := ownerBill (List.finRange 142081) (List.nodup_finRange _)
+    have partition := sum_outside_owners slots ((List.finRange 142081).map owners)
       ((List.nodup_finRange _).map place.injective) charge
     simp only [List.map_map,Function.comp_def,List.length_finRange] at partition rows
     change (slots.map charge).sum ≤ _+(rest.map charge).sum at partition

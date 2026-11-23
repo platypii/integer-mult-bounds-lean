@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.M6.BitHelperFanRun
+public import IntegerMultBounds.MathlibTM2.Host.TapeCharge
 public import Mathlib.Logic.Embedding.Basic
 
 /-! Tape placement for adjacent stages sharing an owner bank. -/
@@ -59,6 +60,74 @@ private theorem adjacentStageStacks_left {m n A : ℕ} (L : Stacks m A) (R : Sta
   cases L
   simp [embStk, adjacentStageStacks, Function.comp_def]
 
+/-- Compose the two placed programs and add their time and tape budgets.
+The intermediate tape charge cancels even on the shared ports. -/
+theorem runAdjacentStagesWithCharge {P R U : Type} {k m n q A : ℕ}
+    (out : Fin k ↪ Fin m) (input : Fin k ↪ Fin n) :
+    ∃ bank : Fin n ↪ Fin (m+n), (∀ i, bank (input i) = (out i).castAdd n) ∧ (∀ j, (∀ i, out i ≠ j) → ∀ h, bank h ≠ j.castAdd n) ∧ ∀ (left : P → Pr P m q A U) (right : R → Pr R n q A U) a b,
+    let leftBank := Fin.castAdd n (n := m)
+    let body := Sum.elim (fun g => embProg leftBank Sum.inl (left g))
+      (fun g => embProg bank Sum.inr (right g))
+    ∀ (u : HS (m+n) q A U) (L : Stacks m A) (R₀ : Stacks n A) v F t (setup budget : ℕ)
+      (weight : List (Fin (A+4)) → List (Fin (A+4)) → ℕ)
+      (post : U → Stacks n A → Prop),
+      Exec left a (mk (embDn leftBank u) L) t (mk v F) →
+      (∀ (js : List _), js.Nodup → t+tapeCharge weight js F ≤ tapeCharge weight js L+setup) →
+      (∀ w D, w.user = v.user →
+        (∀ i, D.L (input i) = F.L (out i) ∧ D.R (input i) = F.R (out i)) →
+        (∀ j, (∀ i, input i ≠ j) → D.L j = R₀.L j ∧ D.R j = R₀.R j) →
+        ∃ z B s, Exec right b (mk w D) s (mk z B) ∧ (∀ (js : List _), js.Nodup → s+tapeCharge weight js B ≤ tapeCharge weight js D+budget) ∧ post z.user B) →
+      ∃ z B steps, Exec body ((embProg leftBank Sum.inl a).seq (embProg bank Sum.inr b))
+        (mk u (adjacentStageStacks L R₀)) steps (mk z B) ∧ (∀ (js : List _), js.Nodup →
+          steps+tapeCharge weight js B ≤ tapeCharge weight js (adjacentStageStacks L R₀)+(setup+budget)) ∧ post z.user (embStk bank B) ∧
+        ∀ j, (∀ i, out i ≠ j) → B.L (leftBank j) = F.L j ∧ B.R (leftBank j) = F.R j := by
+  obtain ⟨bank, shared, privateTape⟩ := adjacentStagePlacement out input
+  have disjoint (j : Fin m) (outside : ∀ i, out i ≠ j) : ∀ h, bank h ≠ j.castAdd n := by
+    intro h
+    by_cases hit : ∃ i, input i = h
+    · obtain ⟨i,rfl⟩ := hit
+      rw [shared]
+      exact (Fin.castAddEmb n).injective.ne (outside i)
+    · rw [privateTape h (fun i eq => hit ⟨i,eq⟩)]
+      intro eq
+      have e := congrArg Fin.val eq
+      change m+h.val = j.val at e
+      omega
+  refine ⟨bank,shared,disjoint,?_⟩
+  intro left right a b leftBank body u L R₀ v F t setup budget weight post exec setupBill next
+  obtain ⟨w,D,ran,_,user,view,frame⟩ := exec_emb (ι := Sum.inl) (body' := body)
+    (Fin.castAddEmb n (n := m)).injective (fun _ => rfl) exec u rfl (adjacentStageStacks L R₀) (adjacentStageStacks_left L R₀)
+  obtain ⟨z,B,s,ranNext,paid,result⟩ := next (embDn bank w) (embStk bank D) user (by
+    intro i
+    change D.L (bank (input i)) = _ ∧ D.R (bank (input i)) = _
+    rw [shared]
+    exact ⟨congrArg (fun C => C.L (out i)) view, congrArg (fun C => C.R (out i)) view⟩) (by
+    intro j off
+    have outside : ∀ i, leftBank i ≠ j.natAdd m := by
+      intro i eq
+      have h := congrArg Fin.val eq
+      change i.val = m+j.val at h
+      omega
+    change D.L (bank j) = _ ∧ D.R (bank j) = _
+    rw [privateTape j off]
+    simpa [adjacentStageStacks] using frame _ outside)
+  obtain ⟨z',B',placed,_,same,endView,preserved⟩ := exec_emb (ι := Sum.inr) (body' := body)
+    bank.injective (fun _ => rfl) ranNext w rfl D rfl
+  have entry : embStk (Fin.castAddEmb n (n := m)) (adjacentStageStacks L R₀) = L := adjacentStageStacks_left L R₀
+  have leftBill := placedCleanup_cost_le (Fin.castAddEmb n (n := m)) (adjacentStageStacks L R₀) D weight t setup frame
+    (by simpa only [Fin.castAddEmb_apply,view,entry] using setupBill)
+  have rightBill := placedCleanup_cost_le bank D B' weight s budget preserved (by
+    rw [endView]
+    exact paid)
+  refine ⟨z',B',t+s,Exec.seq ran placed,?_,same ▸ endView ▸ result,?_⟩
+  · intro js distinct
+    have setupBound := leftBill js distinct
+    have childBound := rightBill js distinct
+    omega
+  · intro j outside
+    obtain ⟨hl,hr⟩ := preserved _ (disjoint j outside)
+    exact ⟨hl.trans (congrArg (fun C => C.L j) view),hr.trans (congrArg (fun C => C.R j) view)⟩
+
 /-- Sequence two separately allocated programs. The second receives the first
 program's output on their common bank and its original private workspace.
 Its procedure calls dispatch to its own table, and both step counts are charged. -/
@@ -78,42 +147,15 @@ theorem runAdjacentStages {P R U : Type} {k m n q A : ℕ}
       ∃ z B steps, Exec body ((embProg leftBank Sum.inl a).seq (embProg bank Sum.inr b))
         (mk u (adjacentStageStacks L R₀)) steps (mk z B) ∧ steps ≤ t+budget ∧ post z.user (embStk bank B) ∧
         ∀ j, (∀ i, out i ≠ j) → B.L (leftBank j) = F.L j ∧ B.R (leftBank j) = F.R j := by
-  obtain ⟨bank, shared, privateTape⟩ := adjacentStagePlacement out input
-  have disjoint (j : Fin m) (outside : ∀ i, out i ≠ j) : ∀ h, bank h ≠ j.castAdd n := by
-    intro h
-    by_cases hit : ∃ i, input i = h
-    · obtain ⟨i,rfl⟩ := hit
-      rw [shared]
-      exact (Fin.castAddEmb n).injective.ne (outside i)
-    · rw [privateTape h (fun i eq => hit ⟨i,eq⟩)]
-      intro eq
-      have e := congrArg Fin.val eq
-      change m+h.val = j.val at e
-      omega
-  refine ⟨bank,shared,disjoint,?_⟩
+  obtain ⟨bank,shared,apart,compose⟩ := runAdjacentStagesWithCharge (P := P) (R := R) (q := q) (A := A) (U := U) out input
+  refine ⟨bank,shared,apart,?_⟩
   intro left right a b leftBank body u L R₀ v F t budget post exec next
-  obtain ⟨w,D,ran,_,user,view,frame⟩ := exec_emb (ι := Sum.inl) (body' := body)
-    (Fin.castAddEmb n (n := m)).injective (fun _ => rfl) exec u rfl (adjacentStageStacks L R₀) (adjacentStageStacks_left L R₀)
-  obtain ⟨z,B,s,ranNext,paid,result⟩ := next (embDn bank w) (embStk bank D) user (by
-    intro i
-    change D.L (bank (input i)) = _ ∧ D.R (bank (input i)) = _
-    rw [shared]
-    exact ⟨congrArg (fun C => C.L (out i)) view, congrArg (fun C => C.R (out i)) view⟩) (by
-    intro j off
-    have outside : ∀ i, leftBank i ≠ j.natAdd m := by
-      intro i eq
-      have h := congrArg Fin.val eq
-      change i.val = m+j.val at h
-      omega
-    change D.L (bank j) = _ ∧ D.R (bank j) = _
-    rw [privateTape j off]
-    simpa [adjacentStageStacks] using frame _ outside)
-  obtain ⟨z',B',placed,_,same,endView,preserved⟩ := exec_emb (ι := Sum.inr) (body' := body)
-    bank.injective (fun _ => rfl) ranNext w rfl D rfl
-  refine ⟨z',B',t+s,Exec.seq ran placed,Nat.add_le_add_left paid t,same ▸ endView ▸ result,?_⟩
-  intro j outside
-  obtain ⟨hl,hr⟩ := preserved _ (disjoint j outside)
-  exact ⟨hl.trans (congrArg (fun C => C.L j) view),hr.trans (congrArg (fun C => C.R j) view)⟩
+  obtain ⟨z,B,steps,ran,paid,result,frame⟩ := compose left right a b u L R₀ v F t t budget
+    (fun _ _ => 0) post exec (by simp [tapeCharge]) (by
+      intro w D same shared privateTapes
+      obtain ⟨z,B,s,ran,paid,result⟩ := next w D same shared privateTapes
+      exact ⟨z,B,s,ran,by intro js _; simpa [tapeCharge] using paid,result⟩)
+  exact ⟨z,B,steps,ran,by simpa [tapeCharge] using paid [] (by simp),result,frame⟩
 
 open IntegerMultBounds.Networks
 open Shared50ModularControl (prime)

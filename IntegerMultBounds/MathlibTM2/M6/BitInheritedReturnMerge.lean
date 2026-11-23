@@ -173,7 +173,7 @@ theorem packedReturnMerge_exec {P U : Type} {N Q price w : ℕ} (lane : Descript
     let H := 142082+T+N
     let caller := (Fin.natAddEmb 142082 (m := T)).trans (Fin.castAddEmb N)
     ∃ (host : Empty ⊕ P → Pr (Empty ⊕ P) H Q prime U) (program : Pr (Empty ⊕ P) H Q prime U)
-      (bank : Fin T ↪ Fin H), bank 0 = caller 0 ∧
+      (bank : Fin T ↪ Fin H) (port : Fin 142081 ↪ Fin H), bank 0 = caller 0 ∧
     ∀ (target : ℤ → Fin (prime+4)) (data : Fin 142080 → Fin (volume prime lane) → ZMod 2) u S,
       RepT (intervalOwnerBank target data) (embStk caller S).L (embStk caller S).R →
       (∀ i : Fin 142082, let j := (i.castAdd T).castAdd N
@@ -188,8 +188,7 @@ theorem packedReturnMerge_exec {P U : Type} {N Q price w : ℕ} (lane : Descript
       ∃ z F n, Exec host program (mk u S) n (mk z F) ∧
         n ≤ (142081*(8*V+10)+1+price)+(149*(V*142080)*(T+5)+6) ∧ z.user = u.user ∧
         RepT (intervalOwnerBank (putWord target 0 (List.ofFn word)) output) (embStk bank F).L (embStk bank F).R ∧
-        ∀ js : List (Fin 142080), js.Nodup →
-          let port := (Fin.castAddEmb 2 (n := 142080)).trans ((intervalOwners 142080).trans bank)
+        ∀ js : List (Fin 142081), js.Nodup →
           n+(js.map fun j => 4*(F.L (port j)).length+2*(F.R (port j)).length+4).sum ≤
             142081*(8*V+10)+1+price+js.length*(2*V+4)+13*(149*(V*142080)*(T+5)+6) := by
   intro T H caller
@@ -200,7 +199,8 @@ theorem packedReturnMerge_exec {P U : Type} {N Q price w : ℕ} (lane : Descript
   have separate (i j) : saved i ≠ returned j := (apart _ (mergeSaved_outside _ i) _).symm
   let bank := returnedMergeBank saved returned separate
   let merge : Pr (Empty ⊕ P) H Q prime U := embProg bank Empty.elim (foreign (liftQ (CyclicRowNormalized.mergeProgram 142080 prime) capacity))
-  refine ⟨host,program.seq merge,bank,returnedMergeBank_target _ _ _,?_⟩
+  let port := (Fin.castAddEmb 2 (n := 142081)).trans (dst.trans childBank)
+  refine ⟨host,program.seq merge,bank,port,returnedMergeBank_target _ _ _,?_⟩
   intro target data u S split empty prepared V position output word
   have rep := intervalOwners_ready target data (embStk caller S) split
   let rows := fun r : Fin 142080 => data r ∘ position
@@ -212,15 +212,11 @@ theorem packedReturnMerge_exec {P U : Type} {N Q price w : ℕ} (lane : Descript
     capacity positive target data output (embStk caller S) u S split exec user owners
     (fun i => keep (mergeSaved 142080 i) (mergeSaved_outside _ i))
   refine ⟨z,F,n,ran,bill.trans (Nat.add_le_add_right paid _),same,result,?_⟩
-  intro js distinct port
-  have atOwner (j : Fin 142080) : port j = childBank (dst (j.castSucc.castAdd 2)) := by
-    dsimp only [port]
-    rw [returnedMergeBank_owners saved returned separate]
-    simp only [Function.Embedding.trans_apply,Fin.castAddEmb_apply,returned,childReturnFan_owner]
-  have entry (j : Fin 142080) : 4*(D.L (port j)).length+2*(D.R (port j)).length+4 = 2*V+4 := by
-    rw [atOwner]
+  intro js distinct
+  have entry (j : Fin 142081) : 4*(D.L (port j)).length+2*(D.R (port j)).length+4 = 2*V+4 := by
     change 4*((embStk childBank D).L _).length+2*((embStk childBank D).R _).length+4 = _
-    rw [words.left j.castSucc,words.right j.castSucc,List.length_ofFn]
+    simp only [Fin.castAddEmb_apply]
+    rw [words.left j,words.right j,List.length_ofFn]
     simp [V]
   have charge := stock (js.map port) (distinct.map port.injective)
   simp only [List.map_map,Function.comp_def,entry,List.map_const',List.sum_replicate_nat] at charge
@@ -364,7 +360,7 @@ theorem packedIntervalFromWord_exec {P U : Type} {M N Q price w : ℕ} (lane : D
     let V := volume prime lane
     ∀ (payload tmp : Fin M), [payload,tmp,caller 0].Nodup →
     ∃ (host : Empty ⊕ P → Pr (Empty ⊕ P) M Q prime U) (program : Pr (Empty ⊕ P) M Q prime U)
-      (bank : Fin T ↪ Fin M), bank 0 = caller 0 ∧
+      (bank : Fin T ↪ Fin M) (port : Fin 142081 ↪ Fin M), bank 0 = caller 0 ∧
     let wide := {lane with afterD := lane.afterD*142080}
     let size : V*142080 = volume prime wide := by simp [V,wide,volume,Nat.mul_assoc]
     let logical := (packedChildPosition wide size.symm).symm
@@ -383,17 +379,16 @@ theorem packedIntervalFromWord_exec {P U : Type} {M N Q price w : ℕ} (lane : D
         n ≤ (298*(T+5)+13)*(V*142080)+142081*(8*V+10)+price+41 ∧
         RepT (intervalOwnerBank (putWord (fun _ => blank) 0 (List.ofFn output)) rows)
           (embStk bank F).L (embStk bank F).R ∧
-        (∀ js : List (Fin 142080), js.Nodup →
-          let port := (Fin.castAddEmb 2 (n := 142080)).trans ((intervalOwners 142080).trans bank)
+        (∀ js : List (Fin 142081), js.Nodup →
           n+(js.map fun j => 4*(F.L (port j)).length+2*(F.R (port j)).length+4).sum ≤
             (298*(T+5)+13)*(V*142080)+142081*(8*V+10)+price+41+js.length*(2*V+4)+
               12*(149*(V*142080)*(T+5)+6)) ∧
         ∀ j, (∀ i, place i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
   intro T H place caller V payload tmp apart
-  obtain ⟨inner,worker,bank,target,run⟩ := packedReturnMerge_exec lane width positive capacity child
+  obtain ⟨inner,worker,bank,owners,target,run⟩ := packedReturnMerge_exec lane width positive capacity child
   let host := fun f => embProg place id (inner f)
   let split : Pr Empty T Q prime U := intervalPrepare.seq (foreign (liftQ (CyclicRowNormalized.splitProgram 142080 prime) capacity))
-  refine ⟨host,(loadCompactWord payload tmp (caller 0)).seq ((embProg caller Empty.elim split).seq (embProg place id worker)),bank.trans place,congrArg place target,?_⟩
+  refine ⟨host,(loadCompactWord payload tmp (caller 0)).seq ((embProg caller Empty.elim split).seq (embProg place id worker)),bank.trans place,owners.trans place,congrArg place target,?_⟩
   intro wide size logical source u S read tl tr clear fresh prepared changed rows output
   let input := source ∘ logical
   obtain ⟨v,user,load⟩ := loadCompactWord_exec host payload tmp (caller 0) apart input u S read tl tr
@@ -433,10 +428,10 @@ theorem packedIntervalFromWord_exec {P U : Type} {M N Q price w : ℕ} (lane : D
     nlinarith only [paid,bill]
   · rw [← view] at result
     exact result
-  · intro js distinct port
+  · intro js distinct
     have charge := ownerBill js distinct
     rw [← view] at charge
-    let cost := (js.map fun j => 4*(F'.L (port j)).length+2*(F'.R (port j)).length+4).sum
+    let cost := (js.map fun j => 4*(F'.L (place (owners j))).length+2*(F'.R (place (owners j))).length+4).sum
     change n+cost ≤ _ at charge
     change _+cost ≤ _
     dsimp only [T,V] at paid charge ⊢

@@ -153,6 +153,53 @@ theorem stoppedRoleCost [M8.Machine.Net] {U : Type} :
   exact leafBill_bound _ _ _ rate _ positive active
     (descriptorHeaderCost_le lane (LeafCore.positive_of_volume positive)) pos M8.Machine.BudgetBound.exponent_range.1.le
 
+/-- At a stopped child the same finite program works at every descriptor width.
+Its push bound can therefore be absorbed once into the leaf coefficient,
+including the cleanup of any selected private tapes. -/
+theorem stoppedRoleCleanupCost [M8.Machine.Net] {U : Type} {Q : ℕ} (capacity : columnCapacity ≤ Q) :
+    ∃ (C : ℝ) (T : ℕ) (host : Empty → Pr Empty T Q prime U) (program : Pr Empty T Q prime U)
+      (src dst : Fin (142081+2) ↪ Fin T), 0 ≤ C ∧
+    ∀ (child lane : Descriptor) (position : Fin (volume prime child) ≃ Fin (volume prime lane)),
+      0 < volume prime lane → 0 < child.width → lane.width = child.width →
+      InheritedIntervalPositions child lane rfl position →
+      let V := volume prime lane
+      ∃ seed : Stacks T prime, ∀ x u S, ParentStageWords (fun i => src (i.castAdd 2)) src V x S →
+        (∀ j, (∀ i, src i ≠ j) → S.L j = seed.L j ∧ S.R j = seed.R j) →
+        ∃ z F n y, Exec host program (mk u S) n (mk z F) ∧ z.user = u.user ∧
+          ParentStageWords (fun i => dst (i.castAdd 2)) dst V y F ∧
+          (∀ (r : Fin 142080) j, y r.castSucc (position j) =
+            Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (x r.castSucc ∘ position) j) ∧
+          ∀ js : List (Fin T), js.Nodup →
+            let stock := fun (D : Stacks T prime) => (js.map fun j =>
+              4*(D.L j).length+2*(D.R j).length+4).sum
+            n+stock F ≤ stock S + ⌊(C*(child.width : ℝ)^M8.Machine.BudgetBound.tau)*(V*142080 : ℕ)⌋₊ := by
+  obtain ⟨T,host,program,src,dst,worker⟩ := stoppedRoleHandoff (U := U) capacity
+  let rate : ℝ := (LeafCore.small+5 : ℕ)*|LeafCore.C|+8+LeafCore.small*(16+8*|LeafCore.C|)
+  let push := Fast.Main.mnProgPush program
+  let factor := 1+6*push
+  have rate_nonneg (m : ℕ) (r : ℝ) : 0 ≤ ((m+5 : ℕ) : ℝ)*|r|+8+m*(16+8*|r|) := by positivity
+  have nonneg : 0 ≤ rate := rate_nonneg _ _
+  refine ⟨(factor : ℝ)*(130+rate),T,host,program,src,dst,mul_nonneg (Nat.cast_nonneg _) (add_nonneg (by norm_num) nonneg),?_⟩
+  intro child lane position positive active width coords V
+  obtain ⟨seed,run⟩ := worker child lane positive position width coords
+  refine ⟨seed,?_⟩
+  intro x u S ready prepared
+  obtain ⟨z,F,n,y,exec,paid,user,out,effect⟩ := run x u S ready prepared
+  refine ⟨z,F,n,y,exec,user,out,effect,?_⟩
+  intro js distinct stock
+  have growth := recordCleanup_cost_le js distinct exec (c := push) le_rfl (fun e => nomatch e)
+  change stock F+1 ≤ stock S+1+6*(push*n) at growth
+  have joint : n+stock F ≤ stock S+factor*n := by
+    dsimp only [factor]
+    rw [Nat.add_mul,Nat.one_mul,Nat.mul_assoc]
+    omega
+  have time := (Nat.cast_le (α := ℝ)).mpr paid
+  have bill := time.trans (leafBill_bound _ _ _ rate _ positive active
+    (descriptorHeaderCost_le lane (LeafCore.positive_of_volume positive)) nonneg M8.Machine.BudgetBound.exponent_range.1.le)
+  have scaled := mul_le_mul_of_nonneg_left bill (Nat.cast_nonneg (α := ℝ) factor)
+  apply joint.trans (Nat.add_le_add_left (Nat.le_floor _) _)
+  simpa only [Nat.cast_mul,mul_assoc] using scaled
+
 /-- Only active scheduled children require a recursive handoff. Below the
 cutoff the role program fits the ordinary linear leaf allowance. -/
 theorem roleHandoffAtCutoff [M8.Machine.Net] {U : Type} :
