@@ -1,7 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Host.EmbedStock
-import IntegerMultBounds.MathlibTM2.Host.ForeignStock
+public import IntegerMultBounds.MathlibTM2.M6.BitCleanupBound
 public import IntegerMultBounds.MathlibTM2.M6.BitSweepChartHost
 public import IntegerMultBounds.MathlibTM2.M6.BitFlatStageHandoff
 
@@ -9,35 +9,6 @@ public import IntegerMultBounds.MathlibTM2.M6.BitFlatStageHandoff
 namespace IntegerMultBounds.MathlibTM2.M6.BitNode
 open IntegerMultBounds.Machine IntegerMultBounds.Networks Stack Host Cover.Fallback M8.RevMachine Fast.Main
 open Shared50ModularControl (prime)
-
-private theorem nativeExecution {K P σ : Type} {Γ : K → Type} [DecidableEq K]
-    {body : P → Prog P Γ σ} {p s t n c} (run : Exec body p s n t) (bound : mnNativePushBound c p) :
-    Exec (fun _ => .act .done) p s n t := by
-  induction run with
-  | act => exact .act _ _
-  | seq _ _ a b => exact .seq (a bound.1) (b bound.2)
-  | cond_true h _ a => exact .cond_true h (a bound.1)
-  | cond_false h _ a => exact .cond_false h (a bound.2)
-  | loop_false h => exact .loop_false h
-  | loop_true h _ _ a b => exact .loop_true h (a bound) (b bound)
-  | call => exact bound.elim
-
-private theorem chartCleanup {P U : Type} {T t Q : ℕ} {bank : Fin t ↪ Fin T} {prog : Program t Q prime}
-    {body : P → Pr P T Q prime U} {u v S F n}
-    (exec : Exec body (embProg bank Empty.elim (foreign prog)) (mk u S) n (mk v F))
-    (js : List (Fin T)) (unique : js.Nodup) :
-    n+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+13*n := by
-  have native := embProg_native (e := (bank : Fin t → Fin T)) (Empty.elim : Empty → P)
-    (foreign (U := U) prog) (foreign_native _)
-  have push {K P σ : Type} {Γ : K → Type} (p : Prog P Γ σ) (h : mnNativePushBound 2 p) : mnProgPush p ≤ 2 := by
-    induction p with
-    | act => exact h
-    | seq _ _ a b | cond _ _ _ a b => exact max_le (a h.1) (b h.2)
-    | loop _ _ a => exact a h
-    | call => exact h.elim
-  have bill := recordCleanup_cost_le js unique (nativeExecution exec native) (push _ native) (fun _ => Nat.zero_le 2)
-  change tapeCharge cleanupWeight js F+1 ≤ tapeCharge cleanupWeight js S+1+6*(2*n) at bill
-  omega
 
 theorem chartWorkerWithCharge {T t Q V : ℕ} {P U : Type}
     (effect : (Fin 142081 → Fin V → ZMod 2) → (Fin 142081 → Fin V → ZMod 2) → Prop)
@@ -90,8 +61,10 @@ theorem chartWorkerWithCharge {T t Q V : ℕ} {P U : Type}
 
   intro js unique
   rw [← view] at jt
-  have before := chartCleanup entry js unique
-  have after := chartCleanup exit js unique
+  have before := foreignCleanupBound entry js unique
+  have after := foreignCleanupBound exit js unique
+  change i+tapeCharge cleanupWeight js D ≤ tapeCharge cleanupWeight js S+13*i at before
+  change k+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js D'+13*k at after
   have recursive := placedCleanup_cost_le worker D D' cleanupWeight j price offW jt js unique
   omega
 

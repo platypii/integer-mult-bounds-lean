@@ -97,6 +97,7 @@ theorem inheritedWorkerCall [M8.Machine.Net] {T Q : ℕ} {P U : Type}
   obtain ⟨v,copy,user,loaded⟩ := inheritWorkerCutoff body bank cut (fun i => apart _) w W L cutoff word u S header ready
   obtain ⟨z,F,n,y,run,paid,same,out,blank,frame,read⟩ := worker smaller v D word loaded
     (fun i hi => ⟨(free i hi).1,(Function.update_of_ne (off i hi) ..).trans (free i hi).2⟩)
+  change n ≤ budget at paid
   obtain ⟨q,done,_,erase⟩ := bclear_exec (body := body) (bank 34) z F
   rw [out.archive,length_binSyms] at erase
   refine ⟨q,_,_,y,Exec.seq copy (Exec.seq (Exec.call run) erase),by omega,done.trans (same.trans user),
@@ -981,6 +982,8 @@ theorem archiveCutoffDispatch [M8.Machine.Net] {P U : Type} {T Q : ℕ}
     · exact Exec.cond_false (by simp [mk_var,flag,active]) (by simpa [active] using run)
   refine ⟨z,F,_,y,installed ▸ Exec.seq test select,?_,same.trans user,out,free,frame,read⟩
   rw [← width] at paid
+  change n ≤ price at cost
+  change _ ≤ 4*w+23*child.width+22*L+51+price
   omega
 
 -- The tagged MOVE dispatcher and generic archive wrapper are available in 21524d7e.

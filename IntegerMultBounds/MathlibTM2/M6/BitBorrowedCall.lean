@@ -73,7 +73,7 @@ open IntegerMultBounds.Networks.Certificates.PR589 in
 -- The routed COPY wrappers are available in 116e7160.
 /-- Execute allocated COPY windows in order. Only unvisited windows need
 their private initialization; the common invariant survives every call. -/
-theorem scheduledWindows_exec {T Q : ℕ} {P U X : Type} (body : P → Pr P T Q prime U)
+theorem scheduledWindows_exec {T Q : ℕ} {P U X : Type} (charged : Bool) (body : P → Pr P T Q prime U)
     (effect : Fin Copy.lifecycles.length → X → X → Prop)
     (trace : List (Fin Copy.lifecycles.length) → X → X → Prop)
     (empty : ∀ x, trace [] x x)
@@ -82,15 +82,15 @@ theorem scheduledWindows_exec {T Q : ℕ} {P U X : Type} (body : P → Pr P T Q 
     (price : Fin Copy.lifecycles.length → ℕ)
     (code : Fin Copy.lifecycles.length → Pr P T Q prime U)
     (window : ∀ i, ∀ x u S, ready x S → saved i S →
-      ∃ z F t y, Exec body (code i) (mk u S) t (mk z F) ∧ t ≤ price i ∧ z.user = u.user ∧ ready y F ∧
+      ∃ z F t y, Exec body (code i) (mk u S) t (mk z F) ∧ workerCost charged S F t (price i) ∧ z.user = u.user ∧ ready y F ∧
         effect i x y ∧
         ∀ j, j ≠ i → saved j S → saved j F)
     (ls : List (Fin Copy.lifecycles.length)) (unique : ls.Nodup) :
     ∀ x u S, ready x S → (∀ i ∈ ls, saved i S) →
-      ∃ z F t y, Exec body (ls.foldr (fun i tail => (code i).seq tail) (.act .done)) (mk u S) t (mk z F) ∧ t ≤ (ls.map price).sum+1 ∧ z.user = u.user ∧ ready y F ∧
+      ∃ z F t y, Exec body (ls.foldr (fun i tail => (code i).seq tail) (.act .done)) (mk u S) t (mk z F) ∧ workerCost charged S F t ((ls.map price).sum+1) ∧ z.user = u.user ∧ ready y F ∧
         trace ls x y := by
   induction ls with
-  | nil => exact fun x u S ok _ => ⟨u,S,1,x,Exec.act ..,by simp,rfl,ok,empty x⟩
+  | nil => exact fun x u S ok _ => ⟨u,S,1,x,Exec.act ..,by cases charged <;> simp [workerCost,CleanupBound,Nat.add_comm],rfl,ok,empty x⟩
   | cons i ls ih =>
     have run := window i
     have rest := ih (List.nodup_cons.mp unique).2
@@ -99,13 +99,12 @@ theorem scheduledWindows_exec {T Q : ℕ} {P U X : Type} (body : P → Pr P T Q 
     obtain ⟨z,F,m,y,done,paid,same,final,trace⟩ := rest a v D mid (fun j hj =>
       keep j (fun eq => (List.nodup_cons.mp unique).1 (eq ▸ hj)) (fresh j (List.mem_cons_of_mem _ hj)))
     refine ⟨z,F,_,y,Exec.seq exec done,?_,same.trans user,final,cons i ls x a y act trace⟩
-    simp only [List.map_cons,List.sum_cons]
-    omega
+    simpa only [List.map_cons,List.sum_cons,Nat.add_assoc] using workerCost.seq charge paid
 
 open Certificates.PR589 Cover in
 /-- Sequence the recursive fanouts directly on the permanent owner bank.
 Every label sees the selected COPY word, and unrelated owners retain their data. -/
-theorem commonWindows_exec {T Q w B K : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
+theorem commonWindows_exec {T Q w B K : ℕ} {P U : Type} (charged : Bool) (body : P → Pr P T Q prime U)
     (n : Fin 9) (r : Fin 32) (d : Fin 5) (fan : Fin (142081+2) ↪ Fin T)
     (saved : Fin Copy.lifecycles.length → Stacks T prime → Prop)
     (price : Fin Copy.lifecycles.length → ℕ) (code : Fin Copy.lifecycles.length → Pr P T Q prime U) :
@@ -113,11 +112,11 @@ theorem commonWindows_exec {T Q w B K : ℕ} {P U : Type} (body : P → Pr P T Q
     let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n r d,ownerTape_injective n r d⟩
     let X := Fin 142081 → Fin V → ZMod 2
     (∀ i, ∀ (x : X) u S, HelperFan fan x S → saved i S →
-      ∃ z F t y, Exec body (code i) (mk u S) t (mk z F) ∧ t ≤ price i ∧ z.user = u.user ∧ HelperFan fan y F ∧
+      ∃ z F t y, Exec body (code i) (mk u S) t (mk z F) ∧ workerCost charged S F t (price i) ∧ z.user = u.user ∧ HelperFan fan y F ∧
         CopyFanoutEffect n r d _ (List.getElem_mem (l := Copy.lifecycles) i.isLt) w B K x y ∧
         ∀ j, j ≠ i → saved j S → saved j F) →
     ∀ (x : X) u S, HelperFan fan x S → (∀ i, saved i S) →
-      ∃ z F t y, Exec body ((List.finRange _).foldr (fun i tail => (code i).seq tail) (.act .done)) (mk u S) t (mk z F) ∧ t ≤ (List.ofFn price).sum+1 ∧
+      ∃ z F t y, Exec body ((List.finRange _).foldr (fun i tail => (code i).seq tail) (.act .done)) (mk u S) t (mk z F) ∧ workerCost charged S F t ((List.ofFn price).sum+1) ∧
         z.user = u.user ∧ HelperFan fan y F ∧
         (∀ g (cell : LabelEntry.Cell (copyLabelLayout w B K) B),
           phaseRead owner y (labelSpectator g cell) =
@@ -129,7 +128,7 @@ theorem commonWindows_exec {T Q w B K : ℕ} {P U : Type} (body : P → Pr P T Q
       phaseRead owner y (labelSpectator g cell) = ls.foldl
         (fun a i => scatterWindow (selectedWord w) Copy.lifecycles[i.val] a) (phaseRead owner x (labelSpectator g cell))) ∧
     ∀ k, k ≠ Fin.last 142080 → (∀ j, owner j ≠ k) → y k = x k
-  have run := scheduledWindows_exec body _ trace (fun _ => ⟨fun _ _ => rfl,fun _ _ _ => rfl⟩)
+  have run := scheduledWindows_exec charged body _ trace (fun _ => ⟨fun _ _ => rfl,fun _ _ _ => rfl⟩)
     (fun i ls x y z act tail => by
       refine ⟨fun g cell => ?_,fun k live off => (tail.2 k live off).trans (act.2.2.1 k live (fun j _ => off j))⟩
       rw [tail.1 g cell,phaseRead_fanout _ act]
@@ -179,7 +178,7 @@ theorem borrowedPhases_exec {P U : Type} {T Q w B K : ℕ} (body : P → Pr P T 
 open Cover.Fallback RecursiveInterchangeLayout Certificates.PR589 in
 /-- The allocated rank-seven worker accepts the aligned block and tail used
 by the borrowed sweep. Each window retains its own child record and budget. -/
-theorem borrowedWindow_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) (j : Fin Copy.lifecycles.length) :
+theorem borrowedWindow_host [M8.Machine.Net] (charged : Bool) (n : Fin 9) (p : Fin 32 × Fin 5) (j : Fin Copy.lifecycles.length) :
     ∃ (T states : ℕ) (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T) (fan : Fin (142081+2) ↪ Fin T),
     ∀ {P U : Type} {Q : ℕ}, states ≤ Q → ∀ (body : P → Pr P T Q prime U) (f : P),
     ∃ (base : ℕ) (code : Pr P T Q prime U), ∀ (node : Descriptor) (w B rows : ℕ),
@@ -193,14 +192,14 @@ theorem borrowedWindow_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) (
     0 < W → ∃ position : Fin (volume prime desc) ≃ Fin V,
       CopyIntervalPositions desc (w+1) W position ∧
       ∀ record, ∃ prepared : Stacks T prime, ∀ budget,
-      ScheduledChildExec node desc w W ports record position body f budget →
+      ScheduledChildExec node desc w W ports record position body f budget charged →
       ∀ data u S, HelperFan fan data S →
         (∀ k, (∀ h, fan h ≠ k) → S.L k = prepared.L k ∧ S.R k = prepared.R k) →
         ∃ z F t out, Exec body code (mk u S) t (mk z F) ∧
-          t ≤ base*V + 12 + budget ∧
+          workerCost charged S F t (nativePrice charged (base*V + 12) + budget) ∧
           z.user = u.user ∧ HelperFan fan out F ∧
           CopyFanoutEffect n p.1 p.2 Copy.lifecycles[j.val] (List.getElem_mem ..) (w+1) blocks K data out := by
-  obtain ⟨T,states,ports,fan,build⟩ := commonCopyWindow_layout true n p.1 p.2 j
+  obtain ⟨T,states,ports,fan,build⟩ := commonCopyWindow_layout true charged n p.1 p.2 j
   refine ⟨T,states,ports,fan,?_⟩
   intro P U Q fits body f
   obtain ⟨base,swaps,code,run⟩ := build fits body f
@@ -215,6 +214,6 @@ theorem borrowedWindow_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) (
   have execute := build budget child
   intro data u S live saved
   obtain ⟨z,F,t,out,exec,paid,user,done,act⟩ := execute data u S live saved
-  exact ⟨z,F,t,out,exec,by simpa only [ite_true,Nat.zero_mul,Nat.add_zero] using paid,user,done,act⟩
+  exact ⟨z,F,t,out,exec,by simpa only [Bool.true_and,ite_true,Nat.zero_mul,Nat.add_zero] using paid,user,done,act⟩
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode

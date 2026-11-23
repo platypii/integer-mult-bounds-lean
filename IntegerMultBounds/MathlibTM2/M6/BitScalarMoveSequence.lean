@@ -195,24 +195,6 @@ outside the shared owner and cutoff bank. -/
 def PrivateTapes {k T : ℕ} (owner : Fin k ↪ Fin T) (seed S : Stacks T prime) : Prop :=
   ∀ j, (∀ i, owner i ≠ j) → S.L j = seed.L j ∧ S.R j = seed.R j
 
-/-- Elapsed steps plus the change in cleanup cost on any set of tapes. -/
-def CleanupBound {T : ℕ} (S F : Stacks T prime) (steps budget : ℕ) : Prop :=
-  ∀ js : List (Fin T), js.Nodup →
-    steps+tapeCharge (fun l r => 4*l.length+2*r.length+4) js F ≤
-      tapeCharge (fun l r => 4*l.length+2*r.length+4) js S+budget
-
-private theorem CleanupBound.seq {T : ℕ} {S D F : Stacks T prime} {n m a b : ℕ}
-    (left : CleanupBound S D n a) (right : CleanupBound D F m b) : CleanupBound S F (n+m) (a+b) := by
-  intro js distinct
-  have := left js distinct
-  have := right js distinct
-  omega
-
-private theorem CleanupBound.place {T H : ℕ} (bank : Fin T ↪ Fin H) {S F : Stacks H prime} {n price : ℕ}
-    (off : ∀ j, (∀ i, bank i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j)
-    (bound : CleanupBound (embStk bank S) (embStk bank F) n price) : CleanupBound S F n price :=
-  placedCleanup_cost_le bank S F _ n price off bound
-
 /-- Run a scalar gate block on the shared owners before a MOVE. The MOVE
 sees the gate output and the original private seed. -/
 theorem moveAfterOwnerGates {α P U : Type} {T owners Q : ℕ}

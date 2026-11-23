@@ -140,6 +140,7 @@ theorem archiveChildCall_exec [M8.Machine.Net] {T Q : ℕ} {P U : Type}
       omega
     exact ⟨(congrFun left _).trans (clean i hi).1,(off _ outside).trans (clean i hi).2⟩
   obtain ⟨z,F,n,y,exec,paid,same,done,blank,frame,action⟩ := recurse smaller v D x stored clear
+  change n ≤ budget at paid
   refine ⟨z,F,_,y,Exec.seq setup (Exec.call exec),?_,same.trans user,done,blank,?_,action⟩
   · have bound := workerSetup_volume w W pos
     change 14*M.size+6*suffix.size+6*(w+1)+11*(w+1).size+52 ≤ 89*(M^16*suffix) at bound
@@ -153,7 +154,7 @@ theorem archiveChildCall_exec [M8.Machine.Net] {T Q : ℕ} {P U : Type}
 /-- All COPY workers share the permanent payload and controls. Each worker's
 private initialization survives the earlier windows, and each scheduled
 child is charged once in its own window. -/
-theorem borrowedWindows_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) :
+theorem borrowedWindows_host [M8.Machine.Net] (charged : Bool) (n : Fin 9) (p : Fin 32 × Fin 5) :
     let J := Fin Copy.lifecycles.length
     ∃ (tapes : J → ℕ) (regs : ∀ j, Fin (rowSwapBlock.tapes+35) ↪ Fin (tapes j))
       (T states : ℕ) (fan : Fin (142081+2) ↪ Fin T) (bank : ∀ j, Fin (tapes j) ↪ Fin T),
@@ -171,12 +172,12 @@ theorem borrowedWindows_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) 
       (∀ j, CopyIntervalPositions (desc j) (w+1) W (position j)) ∧
       ∀ record : J → List (Fin (prime+4)), ∀ shared : Stacks (142081+2) prime,
       ∃ prepared : Stacks T prime, embStk fan prepared = shared ∧ ∀ budget : J → ℕ,
-      (∀ j, ScheduledChildExec node (desc j) w W (regs j) (record j) (position j) (localBody j) (proc j) (budget j)) →
-      let work := fun j => base j*V + 12
+      (∀ j, ScheduledChildExec node (desc j) w W (regs j) (record j) (position j) (localBody j) (proc j) (budget j) charged) →
+      let work := fun j => nativePrice charged (base j*V + 12)
       ∀ data u S, HelperFan fan data S →
         (∀ k, (∀ h, fan h ≠ k) → S.L k = prepared.L k ∧ S.R k = prepared.R k) →
         ∃ z F t out, Exec body program (mk u S) t (mk z F) ∧
-          t ≤ (List.ofFn work).sum+(List.ofFn budget).sum+1 ∧ z.user = u.user ∧ HelperFan fan out F ∧
+          workerCost charged S F t ((List.ofFn work).sum+(List.ofFn budget).sum+1) ∧ z.user = u.user ∧ HelperFan fan out F ∧
           (∀ g (cell : Cover.LabelEntry.Cell (copyLabelLayout (w+1) blocks K) blocks),
             let owner := (⟨ownerTape n p.1 p.2,ownerTape_injective n p.1 p.2⟩ : Fin 661 ↪ Fin 142081)
             phaseRead owner out (labelSpectator g cell) = Copy.run (selectedFrame (w+1)) Copy.lifecycles
@@ -184,7 +185,7 @@ theorem borrowedWindows_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) 
           ∀ k, k ≠ Fin.last 142080 → (∀ i, ownerTape n p.1 p.2 i ≠ k) → out k = data k := by
   classical
   intro J
-  choose tapes qs regs owners window using borrowedWindow_host n p
+  choose tapes qs regs owners window using borrowedWindow_host charged n p
   obtain ⟨T,fan,bank,sharedAt,prepare,apart⟩ := copyWindowBanks tapes owners
   refine ⟨tapes,regs,T,Finset.univ.sup qs,fan,bank,?_⟩
   intro P U Q cap localBody proc body
@@ -206,14 +207,18 @@ theorem borrowedWindows_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × Fin 5) 
   have project (j : J) (S : Stacks T prime) : embStk (owners j) (embStk (bank j) S) = embStk fan S := by
     simp only [embStk,Function.comp_def,sharedAt]
   let price := fun j => work j + budget j
-  have exec := commonWindows_exec (w := w+1) (B := blocks) (K := K) body n p.1 p.2 fan saved price placed (fun j => by
+  have exec := commonWindows_exec (w := w+1) (B := blocks) (K := K) charged body n p.1 p.2 fan saved price placed (fun j => by
     intro data u S rep fresh
     obtain ⟨v,D,t,out,run,paid,user,done,act⟩ := step j data (embDn (bank j) u) (embStk (bank j) S)
       (by simpa only [HelperFan,project] using rep) fresh
     obtain ⟨z,F,placed,_,same,projection,off⟩ := exec_emb (ι := fun g => (j,g)) (body' := body)
       (bank j).injective (fun _ => rfl) run u rfl S rfl
-    rw [← projection] at done
-    refine ⟨z,F,t,out,placed,paid,same.trans user,?_,act,?_⟩
+    rw [← projection] at done paid
+    have bound : workerCost charged S F t (price j) := by
+      cases charged
+      · exact paid
+      · exact CleanupBound.place (bank j) off paid
+    refine ⟨z,F,t,out,placed,bound,same.trans user,?_,act,?_⟩
     · simpa only [HelperFan,project] using done
     · intro i ne keep k priv
       obtain ⟨l,r⟩ := off (bank i k) ((apart i k priv).2 j ne.symm)
@@ -254,7 +259,7 @@ theorem stoppedBorrowedWindows_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 × 
           ∀ k, k ≠ Fin.last 142080 → (∀ i, ownerTape n p.1 p.2 i ≠ k) → out k = data k := by
   classical
   intro J
-  obtain ⟨tapes,regs,T,states,fan,bank,windows⟩ := borrowedWindows_host n p
+  obtain ⟨tapes,regs,T,states,fan,bank,windows⟩ := borrowedWindows_host false n p
   obtain ⟨leafRate,leaf⟩ := stoppedCopyChild_budget
   refine ⟨leafRate,T,max states stoppedCopyMachine.1,fan,?_⟩
   intro U Q cap
@@ -312,7 +317,7 @@ theorem borrowedScatterSchedule_host [M8.Machine.Net] (n : Fin 9) (p : Fin 32 ×
           ∀ k, k ≠ Fin.last 142080 → (∀ i, ownerTape n p.1 p.2 i ≠ k) → view out k = view data k := by
   classical
   intro J
-  obtain ⟨tapes,regs,T,states,fan,bank,windows⟩ := borrowedWindows_host n p
+  obtain ⟨tapes,regs,T,states,fan,bank,windows⟩ := borrowedWindows_host false n p
   refine ⟨0,tapes,regs,T,states,fan,bank,?_⟩
   intro P U Q cap localBody proc body
   obtain ⟨base,code,build⟩ := windows cap localBody proc
