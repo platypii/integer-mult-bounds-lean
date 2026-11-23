@@ -101,7 +101,7 @@ theorem allocatedIdleWindow_exec {Q V : ℕ} {U : Type} (i : Fin 9) :
         (keep j).2.trans (hr.trans (privateTapes k j ne).2)⟩)
   exact ⟨F,z,n,y,exec,paid,user,final,acts,off⟩
 
-private theorem castWord {m n : ℕ} (h : m = n) (x : Fin n → Fin (prime+4)) :
+theorem castWord {m n : ℕ} (h : m = n) (x : Fin n → Fin (prime+4)) :
     List.ofFn (fun k => x (k.cast h)) = List.ofFn x := by
   subst n
   rfl
@@ -168,7 +168,7 @@ theorem inheritedSeededWorker_exec {P U : Type} {N Q price : ℕ} {seed : Stacks
 
 open RecursiveInterchangeLayout
 
-private theorem transportWorker {a b H Q price : ℕ} {P U : Type} (size : a = b)
+theorem transportWorker {a b H Q price : ℕ} {P U : Type} (size : a = b)
     (slot : Fin H) (host : P → Pr P H Q prime U) (code : Pr P H Q prime U)
     (initial : Stacks H prime) (effect : (Fin b → ZMod 2) → (Fin b → ZMod 2) → Prop) :
     let worker := fun (m : ℕ) (reads : (Fin m → ZMod 2) → (Fin m → ZMod 2) → Prop) =>

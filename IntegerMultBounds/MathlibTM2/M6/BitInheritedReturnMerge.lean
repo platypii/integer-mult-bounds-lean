@@ -142,7 +142,7 @@ private theorem caller_ne_private {a t n : ℕ} (j : Fin t) (i : Fin n) :
   change a+j.val = a+t+i.val at h
   omega
 
-private theorem splitEncoded_exec {H Q V : ℕ} {P U : Type}
+theorem splitEncoded_exec {H Q V : ℕ} {P U : Type}
     (host : P → Pr P H Q prime U) (caller : Fin intervalSplitTapes ↪ Fin H)
     (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q) (positive : 0 < V)
     (input : Fin (V*142080) → ZMod 2) (u : HS H Q prime U) (S : Stacks H prime) :
