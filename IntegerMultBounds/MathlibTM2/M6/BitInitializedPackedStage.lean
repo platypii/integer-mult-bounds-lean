@@ -40,11 +40,11 @@ theorem initializedPackedStage [M8.Machine.Net] (n : Fin 9) :
       readRoles address y = (Piece.stage n).run (readRoles address x)) host code src dst seed
       (localCost w V+((List.range' (stageChildStart n) (stageRuns.flatMap (fun _ => Geometry.Moves.localPaid)).length).map time).sum) := by
   intro l r I k
-  obtain ⟨pre,post,ts,states,ports,build⟩ := initializedRestoredStage n
+  obtain ⟨pre,post,ts,states,ports,_,_,_,build⟩ := initializedRestoredStage n
   obtain ⟨C,base,tapes,chartStates,chart⟩ := borrowedFlatHandoffWithCharge
   refine ⟨pre,post,ts,max states chartStates,ports,?_⟩
   intro P U Q cap body f
-  obtain ⟨T,owners,_,_,host,worker,rate,stage⟩ := build ((Nat.le_max_left ..).trans cap) body f
+  obtain ⟨T,owners,_,_,_,host,worker,rate,stage⟩ := build ((Nat.le_max_left ..).trans cap) body f
   let owner := ((Fin.castAddEmb 273 (n := T)).trans (Fin.castAddEmb LeafCore.small)).trans (Fin.natAddEmb 80)
   let fan := owners.trans owner
   let data := (Fin.castAddEmb 1 (n := k)).trans fan
@@ -78,7 +78,7 @@ theorem initializedPackedStage [M8.Machine.Net] (n : Fin 9) :
     push_cast
     linarith only [h,ceil rate,ceil C,vol,unit]
   intro c w V desc record
-  obtain ⟨position,_,_,coords,prepare⟩ := stage c
+  obtain ⟨position,_,coords,prepare⟩ := stage c
   refine ⟨position,coords,?_⟩
   intro time recurse W size
   let word := binSyms (A := prime) c.root.width.size c.cutoff

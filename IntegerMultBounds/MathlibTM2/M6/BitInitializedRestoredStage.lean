@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.M6.BitCutoffRestoredStage
+public import IntegerMultBounds.MathlibTM2.M6.BitSelectedMoveSeed
 
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.M6.BitNode
@@ -175,9 +176,14 @@ theorem initializedRestoredStage [M8.Machine.Net] (n : Fin 9) :
     ∃ (pre : StageRun → Fin l → MoveIndex) (post : StageRun → Fin r → MoveIndex),
     let child := fun i : I => invocationChildren n i.1 (pre i.1) (post i.1) i.2.1 i.2.2
     ∃ (ts : I → ℕ) (states : ℕ) (ports : ∀ i, Fin (rowSwapBlock.tapes+35) ↪ Fin (ts i)),
+    ∃ (data : ∀ i, Fin k ↪ Fin (ts i)) (basis : ∀ i, WorkerBasisLayout (ports i)),
+    LoadsCutoffSeeds (stageOccurrenceOrder l r).length ts ports data basis ∧
     ∀ {P U : Type} {Q : ℕ}, states ≤ Q → ∀ (body : ∀ i, P → Pr P (ts i) Q prime U) (f : I → P),
     ∃ (T : ℕ) (shared : Fin (k+1) ↪ Fin T),
-    ∃ (owners : ∀ i, Fin (k+1) ↪ Fin (ts i+1)) (banks : ∀ i, Fin (ts i+1) ↪ Fin T),
+    let owners := fun i => withCutoffPort (data i)
+    ∃ banks : ∀ i, Fin (ts i+1) ↪ Fin T,
+    (∀ i j, banks i (owners i j) = shared j) ∧
+    (∀ i l, (∀ j, owners i j ≠ l) → ∀ m, m ≠ i → ∀ j, banks m j ≠ banks i l) ∧
     let H := 80+((T+273)+LeafCore.small)
     let owner := ((Fin.castAddEmb 273 (n := T)).trans (Fin.castAddEmb LeafCore.small)).trans (Fin.natAddEmb 80)
     let fan := shared.trans owner
@@ -187,7 +193,7 @@ theorem initializedRestoredStage [M8.Machine.Net] (n : Fin 9) :
     let desc := fun i => scheduledChild prime c.node (child i)
     let record := fun i : I => invocationWorkerRecord i.2.1 (desc i) c.root.width.size c.cutoff
     ∃ position : ∀ i, Fin (volume prime (desc i)) ≃ Fin V,
-    ∃ seeds : ∀ i, Stacks (ts i+1) prime,
+    let seeds := fun i => cutoffWorkerSeed ((basis i).seed c.w c.stageWidth (record i))
     (∀ i, WorkerEntryWords ((scheduledRecordPorts (ports i)).trans (Fin.castAddEmb 1)) (record i) (seeds i)) ∧
     (∀ i, invocationCoordinates i.2.1 w c.stageWidth (position i)) ∧
     ∀ sharedSeed, ∃ initial : Stacks T prime, let seed := stageSetupSeed LeafCore.small initial c
@@ -208,7 +214,10 @@ theorem initializedRestoredStage [M8.Machine.Net] (n : Fin 9) :
   intro l r I k
   obtain ⟨pre,post,ts,qs,ports,data,basis,owned,compile⟩ := cutoffRestoredStage n
   let setupQ := (fun {q : ℕ} (_ : Program 38 q prime) => q) (RecursiveRowsNodeHeaders.program 142080)
-  refine ⟨pre,post,ts,max qs setupQ,ports,?_⟩
+  refine ⟨pre,post,ts,max qs setupQ,ports,data,basis,?_,?_⟩
+  · intro P U T Q body
+    apply loadCutoffWorkerSeeds ts ports data basis _ (stageOccurrenceOrder_nodup l r) _ owned body
+    exact fun _ => List.mem_sigma.mpr ⟨mem_stageRuns _,List.mem_sigma.mpr ⟨List.mem_finRange _,List.mem_finRange _⟩⟩
   intro P U Q cap body f
   let owners := fun i => withCutoffPort (data i)
   let regs := fun i => (scheduledRecordPorts (ports i)).trans (Fin.castAddEmb 1)
@@ -225,11 +234,11 @@ theorem initializedRestoredStage [M8.Machine.Net] (n : Fin 9) :
   obtain ⟨init,write⟩ := load (R := LeafCore.small) host
   let order := stageOccurrenceOrder l r
   obtain ⟨D,bound⟩ := stageLocalCost_bound order (setup+160) base swaps fixed
-  refine ⟨T,shared,owners,bank,host,init.seq (embProg stage id sweep),D+rate,?_⟩
+  refine ⟨T,shared,bank,align,apart,host,init.seq (embProg stage id sweep),D+rate,?_⟩
   intro c w V desc record
   let seeds := fun i => cutoffWorkerSeed ((basis i).seed c.w c.stageWidth (record i))
   obtain ⟨position,coords,entry,run⟩ := execute c
-  refine ⟨position,seeds,entry,coords,?_⟩
+  refine ⟨position,entry,coords,?_⟩
   intro sharedSeed
   obtain ⟨initial,cert,view,prepare⟩ := write c seeds entry sharedSeed
   refine ⟨initial,cert,view,?_⟩
