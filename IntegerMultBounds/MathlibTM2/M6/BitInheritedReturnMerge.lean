@@ -223,20 +223,13 @@ theorem packedReturnMerge_exec {P U : Type} {N Q price w : ℕ} (lane : Descript
   exact charge.trans (by gcongr)
 
 
-/-- Cost of clearing both stacks of a tape. -/
-def cleanupWeight (l r : List (Fin (prime+4))) : ℕ := 4*l.length+2*r.length+4
-
 /-- The child and physical merge share one cleanup allowance on any set of host tapes. -/
 theorem packedReturnMergeWithCharge {P U : Type} {N Q price w : ℕ} (lane : Descriptor) (width : lane.width = 64*w)
     (positive : 0 < volume prime lane)
     (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q)
     {body : P → Pr P N Q prime U} {code} {src dst : Fin (142081+2) ↪ Fin N} {seed : Stacks N prime}
-    (child : ∀ x u S, ParentStageWords (fun i => src (i.castAdd 2)) src (volume prime lane) x S →
-      (∀ j, (∀ i, src i ≠ j) → S.L j = seed.L j ∧ S.R j = seed.R j) →
-      ∃ z F n y, Exec body code (mk u S) n (mk z F) ∧
-        (∀ js : List (Fin N), js.Nodup → n+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+price) ∧
-        z.user = u.user ∧ ParentStageWords (fun i => dst (i.castAdd 2)) dst (volume prime lane) y F ∧
-        packedChildOutput w (volume prime lane) x y) :
+    (child : PackedPieceHandoffWithCharge cleanupWeight (volume prime lane)
+      (packedChildOutput w (volume prime lane)) body code src dst seed price) :
     let T := intervalSplitTapes
     let H := 142082+T+N
     let caller := (Fin.natAddEmb 142082 (m := T)).trans (Fin.castAddEmb N)
@@ -569,12 +562,8 @@ theorem packedIntervalFromWordWithCharge {P U : Type} {M N Q price w : ℕ} (lan
     (width : lane.width = 64*w) (positive : 0 < volume prime lane)
     (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q)
     {body : P → Pr P N Q prime U} {code} {src dst : Fin (142081+2) ↪ Fin N} {seed : Stacks N prime}
-    (child : ∀ x u S, ParentStageWords (fun i => src (i.castAdd 2)) src (volume prime lane) x S →
-      (∀ j, (∀ i, src i ≠ j) → S.L j = seed.L j ∧ S.R j = seed.R j) →
-      ∃ z F n y, Exec body code (mk u S) n (mk z F) ∧
-        (∀ js : List (Fin N), js.Nodup → n+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+price) ∧
-        z.user = u.user ∧ ParentStageWords (fun i => dst (i.castAdd 2)) dst (volume prime lane) y F ∧
-        packedChildOutput w (volume prime lane) x y) :
+    (child : PackedPieceHandoffWithCharge cleanupWeight (volume prime lane)
+      (packedChildOutput w (volume prime lane)) body code src dst seed price) :
     let T := intervalSplitTapes
     let H := 142082+T+N
     let split : Pr Empty T Q prime U := intervalPrepare.seq (foreign (liftQ (CyclicRowNormalized.splitProgram 142080 prime) capacity))

@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.M6.BitPackedPhysicalStage
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackRecordCleanup
 public import IntegerMultBounds.MathlibTM2.M6.BitStagePlacement
 
 /-! Share the previous sweep's destination tapes and its two chart counters
@@ -101,15 +102,27 @@ theorem ParentStageWords.helperFan {T V : ℕ} {fan : Fin (142081+2) ↪ Fin T}
     simpa only [PointwiseRoleGate.bank,Tapes.append,Fin.addCases_right,CountedLoopReuseAlphabet.controls,
       ite_self,embStk,Function.comp_apply] using words.controls j z
 
+/-- Cost of clearing both stacks of a tape. -/
+def cleanupWeight (l r : List (Fin (prime+4))) : ℕ := 4*l.length+2*r.length+4
+
+def PackedPieceHandoffWithCharge {P U : Type} {t q : ℕ} (weight : List (Fin (prime+4)) → List (Fin (prime+4)) → ℕ) (V : ℕ)
+    (effect : (Fin 142081 → Fin V → ZMod 2) → (Fin 142081 → Fin V → ZMod 2) → Prop)
+    (body : P → Pr P t q prime U) (code : Pr P t q prime U)
+    (src dst : Fin (142081+2) ↪ Fin t) (prepared : Stacks t prime) (price : ℕ) : Prop :=
+  ∀ x u S, ParentStageWords (fun i => src (i.castAdd 2)) src V x S →
+    (∀ j, (∀ i, src i ≠ j) → S.L j = prepared.L j ∧ S.R j = prepared.R j) →
+    ∃ z F steps y, Exec body code (mk u S) steps (mk z F) ∧ (∀ js : List (Fin t), js.Nodup → steps+tapeCharge weight js F ≤ tapeCharge weight js S+price) ∧ z.user = u.user ∧
+      ParentStageWords (fun i => dst (i.castAdd 2)) dst V y F ∧ effect x y
+
 /-- Execute a scheduled bridge and materialize the entire output bank. -/
-theorem packedBridgeHandoff (d s : ℕ) (scheduled : Piece.bridge d s ∈ nodeProgram) :
-    ∃ states : ℕ, ∀ {q V : ℕ} {U : Type}, states ≤ q → 0 < V →
-      ∃ (t : ℕ) (code : Pr Empty t q prime U), ∃ src dst prepared,
+private theorem packedBridgeProgram (d s : ℕ) (scheduled : Piece.bridge d s ∈ nodeProgram) :
+    ∃ states : ℕ, ∀ {q : ℕ} {U : Type}, states ≤ q →
+      ∃ (t : ℕ) (code : Pr Empty t q prime U), ∃ src dst prepared, ∀ {V : ℕ}, 0 < V →
         PackedPieceHandoff V (fun x y => y = fun j z => bridgeColumn d s (fun l => x l z) j)
           Empty.elim code src dst prepared (2*(76*17760*V*(142081+7)+6)+1 + (142081*(8*V+10)+1)) := by
   obtain ⟨states,bridge⟩ := bridgeColumns_exec d s scheduled
   refine ⟨states,?_⟩
-  intro q V U room pos
+  intro q U room
   let idFan := Function.Embedding.refl (Fin (142081+2))
   let fan := idFan.trans (Exit.chart 0 (142081+2))
   let dst := returnedFan idFan
@@ -118,7 +131,7 @@ theorem packedBridgeHandoff (d s : ℕ) (scheduled : Piece.bridge d s ∈ nodePr
   obtain ⟨code,run⟩ := bridge fan body room
   obtain ⟨copy,materialize⟩ := packedResultWords_exec idFan body
   refine ⟨_,code.seq copy,fan,dst,⟨[],[],fun _ => [],fun _ => []⟩,?_⟩
-  intro x u S words fresh
+  intro V pos x u S words fresh
   have live := words.helperFan
   obtain ⟨v,D,k,ran,bill,user,ready,off⟩ := run pos x u S live
   have blank j (outside : ∀ i, fan i ≠ j) : D.L j = [] ∧ D.R j = [] :=
@@ -131,16 +144,55 @@ theorem packedBridgeHandoff (d s : ℕ) (scheduled : Piece.bridge d s ∈ nodePr
     exact blank _ (fun j => e.injective.ne (by intro h; cases h)))
   exact ⟨z,G,k+l,_,Exec.seq ran copied,Nat.add_le_add bill paid,same.trans user,result,rfl⟩
 
+/-- Execute a scheduled bridge and materialize the entire output bank. -/
+theorem packedBridgeHandoff (d s : ℕ) (scheduled : Piece.bridge d s ∈ nodeProgram) :
+    ∃ states : ℕ, ∀ {q V : ℕ} {U : Type}, states ≤ q → 0 < V →
+      ∃ (t : ℕ) (code : Pr Empty t q prime U), ∃ src dst prepared,
+        PackedPieceHandoff V (fun x y => y = fun j z => bridgeColumn d s (fun l => x l z) j)
+          Empty.elim code src dst prepared (2*(76*17760*V*(142081+7)+6)+1 + (142081*(8*V+10)+1)) := by
+  obtain ⟨states,build⟩ := packedBridgeProgram d s scheduled
+  refine ⟨states,?_⟩
+  intro q V U fits pos
+  obtain ⟨t,code,src,dst,seed,run⟩ := build (U := U) fits
+  exact ⟨t,code,src,dst,seed,run pos⟩
+
+/-- The bridge program is fixed before the volume. Its tape growth therefore
+adds a fixed multiple of its linear running time to the cleanup bill. -/
+theorem packedBridgeWithCharge (d s : ℕ) (scheduled : Piece.bridge d s ∈ nodeProgram) :
+    ∃ states : ℕ, ∀ {q : ℕ} {U : Type}, states ≤ q →
+      ∃ (rate t : ℕ) (code : Pr Empty t q prime U), ∃ src dst seed, ∀ {V : ℕ}, 0 < V →
+        PackedPieceHandoffWithCharge cleanupWeight V
+          (fun x y => y = fun j z => bridgeColumn d s (fun l => x l z) j)
+          Empty.elim code src dst seed (rate*V) := by
+  obtain ⟨states,build⟩ := packedBridgeProgram d s scheduled
+  refine ⟨states,?_⟩
+  intro q U fits
+  obtain ⟨t,code,src,dst,seed,run⟩ := build (U := U) fits
+  let push := Fast.Main.mnProgPush code
+  let rate := 2*(76*17760*(142081+7)+6)+1+(142081*(8+10)+1)
+  refine ⟨(1+6*push)*rate,t,code,src,dst,seed,?_⟩
+  intro V positive x u S words fresh
+  obtain ⟨z,F,n,y,exec,paid,user,out,changed⟩ := run positive x u S words fresh
+  refine ⟨z,F,n,y,exec,?_,user,out,changed⟩
+  intro js distinct
+  have growth := Cover.Fallback.recordCleanup_cost_le js distinct exec (c := push) le_rfl (fun e => nomatch e)
+  change tapeCharge cleanupWeight js F+1 ≤ tapeCharge cleanupWeight js S+1+6*(push*n) at growth
+  have time : n ≤ rate*V := by dsimp [rate]; omega
+  have bound := Nat.mul_le_mul_left (1+6*push) time
+  rw [← Nat.mul_assoc] at bound
+  simp only [Nat.add_mul,Nat.one_mul,Nat.mul_assoc] at bound ⊢
+  omega
+
 /-- Chain physical pieces in execution order and sum their individual budgets. -/
-theorem packedHandoffList {Job U : Type} {q : ℕ} (V : ℕ)
+theorem packedHandoffListWithCharge {Job U : Type} {q : ℕ} (weight : List (Fin (prime+4)) → List (Fin (prime+4)) → ℕ) (V : ℕ)
     (effect : Job → (Fin 142081 → Fin V → ZMod 2) → (Fin 142081 → Fin V → ZMod 2) → Prop)
     (price : Job → ℕ) (stages : List Job) (last : Job)
     (available : ∀ i ∈ stages++[last], ∃ (P : Type) (t : ℕ) (body : P → Pr P t q prime U) (code : Pr P t q prime U)
       (src dst : Fin (142081+2) ↪ Fin t) (prepared : Stacks t prime),
-      PackedPieceHandoff V (effect i) body code src dst prepared (price i)) :
+      PackedPieceHandoffWithCharge weight V (effect i) body code src dst prepared (price i)) :
     ∃ (P : Type) (t : ℕ) (body : P → Pr P t q prime U) (code : Pr P t q prime U)
       (src dst : Fin (142081+2) ↪ Fin t) (prepared : Stacks t prime),
-      PackedPieceHandoff V (fun x y => (stages++[last]).foldr
+      PackedPieceHandoffWithCharge weight V (fun x y => (stages++[last]).foldr
         (fun i cont a => ∃ b, effect i a b ∧ cont b) (fun a => a = y) x)
         body code src dst prepared ((stages++[last]).map price).sum := by
   induction stages with
@@ -153,7 +205,7 @@ theorem packedHandoffList {Job U : Type} {q : ℕ} (V : ℕ)
   | cons i stages ih =>
     obtain ⟨P,m,left,a,src,mid,L,firstRun⟩ := available i (by simp)
     obtain ⟨R,n,right,b,input,dst,D,nextRun⟩ := ih (fun j hj => available j (List.mem_cons_of_mem _ hj))
-    obtain ⟨bank,_,_,compose⟩ := runAdjacentStages (P := P) (R := R) (U := U) (q := q)
+    obtain ⟨bank,_,_,compose⟩ := runAdjacentStagesWithCharge (P := P) (R := R) (U := U) (q := q)
       (A := prime) mid input
     let front := Fin.castAddEmb n (n := m)
     refine ⟨P ⊕ R,m+n,Sum.elim (fun g => embProg front Sum.inl (left g)) (fun g => embProg bank Sum.inr (right g)),
@@ -168,7 +220,7 @@ theorem packedHandoffList {Job U : Type} {q : ℕ} (V : ℕ)
       ∃ z, ParentStageWords (fun i => dst (i.castAdd 2)) dst V z F ∧ (stages++[last]).foldr (fun i cont a => ∃ b, effect i a b ∧ cont b) (fun a => a = z) y
     obtain ⟨z,F,steps,done,bill,⟨user,r,rep,rest⟩,_⟩ :=
       compose left right a b u (embStk front S) (embStk (Fin.natAdd m) S) v C t
-        ((stages++[last]).map price).sum post ran (by
+        (price i) ((stages++[last]).map price).sum weight post ran paid (by
           intro v' C' user shared frame'
           have live : ParentStageWords (fun i => input (i.castAdd 2)) input V y C' := by
             refine ⟨fun i => (shared _).1.trans (ready.left i),fun i => (shared _).2.trans (ready.right i),?_⟩
@@ -187,19 +239,21 @@ theorem packedHandoffList {Job U : Type} {q : ℕ} (V : ℕ)
             exact ⟨(frame' j off).1.trans atJ.1,(frame' j off).2.trans atJ.2⟩)
           exact ⟨z,F,s,run,cost,preserved.trans (user.trans same),r,rep,rest⟩)
     have split : adjacentStageStacks (embStk front S) (embStk (Fin.natAdd m) S) = S := splitStacks S
-    rw [split] at done
-    exact ⟨z,F,steps,r,done,bill.trans (Nat.add_le_add_right paid _),user,⟨rep.left,rep.right,rep.controls⟩,y,trace,rest⟩
+    rw [split] at done bill
+    exact ⟨z,F,steps,r,done,bill,user,⟨rep.left,rep.right,rep.controls⟩,y,trace,rest⟩
 
+
+-- The time-only list specialization can be restored from 30c56adf.
 
 /-- Relabel the output ports of a physical owner bank in one host instruction. -/
-private theorem permutedPiece {U : Type} {q V : ℕ} (p : Equiv.Perm (Fin 142081)) :
+private theorem permutedPiece {U : Type} {q V : ℕ} (weight : List (Fin (prime+4)) → List (Fin (prime+4)) → ℕ) (p : Equiv.Perm (Fin 142081)) :
     ∃ (P : Type) (t : ℕ) (body : P → Pr P t q prime U), ∃ code src dst prepared,
-      PackedPieceHandoff V (fun x y => y = x ∘ p) body code src dst prepared 1 := by
+      PackedPieceHandoffWithCharge weight V (fun x y => y = x ∘ p) body code src dst prepared 1 := by
   let dst := (extendPermutation p 2).toEmbedding
   refine ⟨Empty,142081+2,Empty.elim,.act .done,Function.Embedding.refl _,dst,
     ⟨[],[],fun _ => [],fun _ => []⟩,?_⟩
   intro x u S live _
-  refine ⟨u,S,1,x ∘ p,Exec.act .done _,le_rfl,rfl,?_,rfl⟩
+  refine ⟨u,S,1,x ∘ p,Exec.act .done _,by intro js _; omega,rfl,?_,rfl⟩
   constructor
   · intro i
     exact (congrArg S.L (extendLeft p i)).trans (live.left (p i))
@@ -209,6 +263,35 @@ private theorem permutedPiece {U : Type} {q V : ℕ} (p : Equiv.Perm (Fin 142081
     change _ = readAt blank (S.L (extendPermutation p 2 (j.natAdd 142081))) (S.R (extendPermutation p 2 (j.natAdd 142081))) _
     rw [extendRight]
     exact live.controls j z
+
+/-- Assemble the certified node schedule on full parent words. The final
+idle remainder and side exchange each cost one instruction. -/
+theorem packedNodeHandoffsWithCharge {U : Type} {q w B W : ℕ}
+    (weight : List (Fin (prime+4)) → List (Fin (prime+4)) → ℕ)
+    (idle stage : Fin 9 → OwnerArray w B W → OwnerArray w B W → Prop) (price : Piece → ℕ) :
+    let V := (prime^w)^16*(B*((prime^w)^112*W))
+    let effect := nodePieceEffect w B W idle stage
+    let cost := Function.update (Function.update price (.remainder 9) 1) .exchangeSides 1
+    (∀ i ∈ nodeProgram, i ≠ .exchangeSides → i ≠ .remainder 9 →
+      ∃ (P : Type) (t : ℕ) (body : P → Pr P t q prime U), ∃ code src dst prepared,
+        PackedPieceHandoffWithCharge weight V (effect i) body code src dst prepared (price i)) →
+    ∃ (P : Type) (t : ℕ) (body : P → Pr P t q prime U), ∃ code src dst prepared,
+      PackedPieceHandoffWithCharge weight V (fun x y => nodeProgram.foldr (fun i cont a => ∃ b, effect i a b ∧ cont b)
+        (fun a => a = y) x) body code src dst prepared (nodeProgram.map cost).sum := by
+  intro V effect cost available
+  have schedule : nodeProgram = nodeProgram.dropLast ++ [.exchangeSides] := by decide +kernel
+  rw [schedule]
+  apply packedHandoffListWithCharge
+  intro i mem
+  rw [← schedule] at mem
+  by_cases exchange : i = .exchangeSides
+  · subst i
+    simpa [effect,cost,nodePieceEffect] using permutedPiece (U := U) (q := q) (V := V) weight exchangeOwner
+  by_cases terminal : i = .remainder 9
+  · subst i
+    simpa [effect,cost,nodePieceEffect] using permutedPiece (U := U) (q := q) (V := V) weight (Equiv.refl _)
+  simpa only [cost,Function.update_of_ne exchange,Function.update_of_ne terminal] using available i mem exchange terminal
+
 
 /-- Assemble the certified node schedule on full parent words. The final
 idle remainder and side exchange each cost one instruction. -/
@@ -224,19 +307,18 @@ theorem packedNodeHandoffs {U : Type} {q w B W : ℕ}
       PackedPieceHandoff V (fun x y => nodeProgram.foldr (fun i cont a => ∃ b, effect i a b ∧ cont b)
         (fun a => a = y) x) body code src dst prepared (nodeProgram.map cost).sum := by
   intro V effect cost available
-  have schedule : nodeProgram = nodeProgram.dropLast ++ [.exchangeSides] := by decide +kernel
-  rw [schedule]
-  apply packedHandoffList
-  intro i mem
-  rw [← schedule] at mem
-  by_cases exchange : i = .exchangeSides
-  · subst i
-    simpa [effect,cost,nodePieceEffect] using permutedPiece (U := U) (q := q) (V := V) exchangeOwner
-  by_cases terminal : i = .remainder 9
-  · subst i
-    simpa [effect,cost,nodePieceEffect] using permutedPiece (U := U) (q := q) (V := V) (Equiv.refl _)
-  simpa only [cost,Function.update_of_ne exchange,Function.update_of_ne terminal] using available i mem exchange terminal
-
+  obtain ⟨P,t,body,code,src,dst,seed,run⟩ :=
+    packedNodeHandoffsWithCharge (U := U) (q := q) (fun _ _ => 0) idle stage price (by
+      intro i mem exchange terminal
+      obtain ⟨P,t,body,code,src,dst,seed,run⟩ := available i mem exchange terminal
+      refine ⟨P,t,body,code,src,dst,seed,?_⟩
+      intro x u S live frame
+      obtain ⟨z,F,n,y,ran,paid,rest⟩ := run x u S live frame
+      exact ⟨z,F,n,y,ran,by intro js _; simpa [tapeCharge] using paid,rest⟩)
+  refine ⟨P,t,body,code,src,dst,seed,?_⟩
+  intro x u S live frame
+  obtain ⟨z,F,n,y,ran,paid,rest⟩ := run x u S live frame
+  exact ⟨z,F,n,y,ran,by simpa [tapeCharge] using paid [] (by simp),rest⟩
 
 private noncomputable def packedBridgeStates : Piece → ℕ
   | .bridge d s => if h : Piece.bridge d s ∈ nodeProgram then (packedBridgeHandoff d s h).choose else 0
@@ -304,6 +386,79 @@ theorem assembledPackedNode {U : Type} :
     simp only [packedBridgeStates,dite_eq_left mem] at cap
     obtain ⟨t,c,src,dst,D,run⟩ := (packedBridgeHandoff d s mem).choose_spec (U := U) cap pos
     exact ⟨Empty,t,Empty.elim,c,src,dst,D,by simpa [price,nodeHandoffCost,isBridge,nodePieceEffect] using run⟩
+  | exchangeSides => exact (exchange rfl).elim
+
+
+/-- Assemble all nine physical bridges, including their copies, at a capacity
+fixed before the word volume and the sweep and remainder budgets. -/
+theorem assembledPackedNodeWithCharge {U : Type} :
+    ∃ states : ℕ, ∀ {q : ℕ}, states ≤ q → ∃ bridgeRate : ℕ, ∀ w B tail : ℕ,
+    let V := (prime^w)^16*(B*((prime^w)^112*tail))
+    0 < V → ∀ (stage idle : Fin 9 → OwnerArray w B tail → OwnerArray w B tail → Prop)
+      (sweepCost idleCost : Fin 9 → ℕ),
+    (∀ i, ∃ (P : Type) (t : ℕ) (body : P → Pr P t q prime U) (code : Pr P t q prime U)
+      (src dst : Fin (142081+2) ↪ Fin t) (prepared : Stacks t prime),
+      PackedPieceHandoffWithCharge cleanupWeight V (stage i) body code src dst prepared (sweepCost i)) →
+    (∀ i, ∃ (P : Type) (t : ℕ) (body : P → Pr P t q prime U) (code : Pr P t q prime U)
+      (src dst : Fin (142081+2) ↪ Fin t) (prepared : Stacks t prime),
+      PackedPieceHandoffWithCharge cleanupWeight V (idle i) body code src dst prepared (idleCost i)) →
+    ∃ (P : Type) (t : ℕ) (body : P → Pr P t q prime U) (code : Pr P t q prime U)
+      (src dst : Fin (142081+2) ↪ Fin t) (prepared : Stacks t prime),
+      PackedPieceHandoffWithCharge cleanupWeight V (fun x y => nodeProgram.foldr
+        (fun i cont a => ∃ b, nodePieceEffect w B tail idle stage i a b ∧ cont b)
+        (fun a => a = y) x) body code src dst prepared
+        ((∑ i, sweepCost i) + (∑ i, idleCost i) + 9*(2*(76*17760*V*(142081+7)+6)+1+bridgeRate*V)+2) := by
+  classical
+  let states : Piece → ℕ
+    | .bridge d s => if h : Piece.bridge d s ∈ nodeProgram then (packedBridgeWithCharge d s h).choose else 0
+    | _ => 0
+  refine ⟨(nodeProgram.map states).sum,?_⟩
+  intro q fits
+  have bridge d s (mem : Piece.bridge d s ∈ nodeProgram) :=
+    (packedBridgeWithCharge d s mem).choose_spec (U := U) (q := q) (by
+      have h := (List.le_sum_of_mem (List.mem_map_of_mem (f := states) mem)).trans fits
+      simpa only [states,dif_pos mem] using h)
+  let rate : Piece → ℕ
+    | .bridge d s => if h : Piece.bridge d s ∈ nodeProgram then (bridge d s h).choose else 0
+    | _ => 0
+  let bridgeRate := (nodeProgram.map rate).sum
+  refine ⟨bridgeRate,?_⟩
+  intro w B tail V pos stage idle sweepCost idleCost sweep remainder
+  let price : Piece → ℕ := fun p => nodeHandoffCost V sweepCost idleCost p +
+    (if isBridge p then bridgeRate*V else 0)
+  let cost := Function.update (Function.update price (.remainder 9) 1) .exchangeSides 1
+  have total : (nodeProgram.map cost).sum = (∑ i, sweepCost i) + (∑ i, idleCost i) +
+      9*(2*(76*17760*V*(142081+7)+6)+1+bridgeRate*V)+2 := by
+    have same : cost = price := by
+      funext p
+      by_cases ex : p = .exchangeSides
+      · subst p; rfl
+      by_cases term : p = .remainder 9
+      · subst p; rfl
+      simp only [cost,Function.update_of_ne ex,Function.update_of_ne term]
+    rw [same,sumBridgeCopies nodeProgram (nodeHandoffCost V sweepCost idleCost),bridgeCount,nodeHandoffCost_sum]
+    ring
+  rw [← total]
+  apply packedNodeHandoffsWithCharge cleanupWeight idle stage price
+  intro p mem exchange terminal
+  cases p with
+  | stage i => simpa [price,nodeHandoffCost,isBridge,nodePieceEffect] using sweep i
+  | remainder i =>
+    have ne : i ≠ 9 := fun eq => terminal (eq ▸ rfl)
+    have h : i < 9 := by simp [nodeProgram] at mem; omega
+    simpa [price,nodeHandoffCost,isBridge,nodePieceEffect,h] using remainder ⟨i,h⟩
+  | bridge d s =>
+    obtain ⟨t,c,src,dst,D,run⟩ := (bridge d s mem).choose_spec
+    have leRate : (bridge d s mem).choose ≤ bridgeRate := by
+      simpa only [rate,dif_pos mem] using List.le_sum_of_mem (List.mem_map_of_mem (f := rate) mem)
+    refine ⟨Empty,t,Empty.elim,c,src,dst,D,?_⟩
+    intro x u S live fresh
+    obtain ⟨z,F,n,y,ran,bill,user,out,result⟩ := run pos x u S live fresh
+    refine ⟨z,F,n,y,ran,?_,user,out,result⟩
+    intro js distinct
+    have h := (bill js distinct).trans (Nat.add_le_add_left (Nat.mul_le_mul_right V leRate) _)
+    simp only [price,isBridge,ite_true]
+    omega
   | exchangeSides => exact (exchange rfl).elim
 
 

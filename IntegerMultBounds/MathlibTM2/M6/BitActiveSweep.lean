@@ -191,12 +191,8 @@ theorem activeIntervalWritebackWithCharge {P U : Type} {M N Q price a w W : ℕ}
     (width : lane.width = 64*a) (positive : 0 < volume prime lane)
     (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q)
     {body : P → Pr P N Q prime U} {code} {src dst : Fin (142081+2) ↪ Fin N} {seed : Stacks N prime}
-    (child : ∀ x u S, ParentStageWords (fun i => src (i.castAdd 2)) src (volume prime lane) x S →
-      (∀ j, (∀ i, src i ≠ j) → S.L j = seed.L j ∧ S.R j = seed.R j) →
-      ∃ z F n y, Exec body code (mk u S) n (mk z F) ∧
-        (∀ js : List (Fin N), js.Nodup → n+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+price) ∧
-        z.user = u.user ∧ ParentStageWords (fun i => dst (i.castAdd 2)) dst (volume prime lane) y F ∧
-        packedChildOutput a (volume prime lane) x y)
+    (child : PackedPieceHandoffWithCharge cleanupWeight (volume prime lane)
+      (packedChildOutput a (volume prime lane)) body code src dst seed price)
     (bank : Fin 35 ↪ Fin M) (count saved tmp : Fin M) :
     let T := intervalSplitTapes
     let split : Pr Empty T Q prime U := intervalPrepare.seq (foreign (liftQ (CyclicRowNormalized.splitProgram 142080 prime) capacity))
