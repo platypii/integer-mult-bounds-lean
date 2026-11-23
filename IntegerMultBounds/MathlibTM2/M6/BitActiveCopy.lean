@@ -132,33 +132,38 @@ theorem copyLaneCell_eq {atom w W : ℕ} (aligned : 7*w = 64*atom)
 
 
 open M8.RevMachine in
-private theorem adjacentOwner {d w W : ℕ} [M8.Machine.Net] (hw : 0 < w) (hW : 0 < W)
+private theorem adjacentOwner {d : ℕ} [M8.Machine.Net]
     (is : List ℕ) (inside : ∀ i ∈ is, i+1 < d) (backward : Bool) :
+    ∃ machine : SharedBankSkeleton.Skeleton 1 prime, ∀ w W, 0 < w → 0 < W →
     let V := (prime^w)^d*W
     ∃ stage : SharedBankStage.Stage _ 1 prime (@portOwner V),
-      HasStackSeed stage.metadata ∧ stage.cost = is.length*(3808274*V+LeafCore.coreCost V w+1) ∧
+      SharedBankSkeleton.ofStage stage = machine ∧ HasStackSeed stage.metadata ∧ stage.cost = is.length*(3808274*V+LeafCore.coreCost V w+1) ∧
       ∀ x a j, routedCell backward x (stage.transform x) (FlatCoordinateLayout.index a j)
         (FlatCoordinateLayout.index (is.foldl adjacentFields a) j) := by
-  intro V
   induction is with
   | nil =>
-    exact ⟨SharedBankStage.identity _ (by decide),HasStackSeed.empty 1,(Nat.zero_mul _).symm,fun _ _ _ => by cases backward <;> rfl⟩
+    refine ⟨SharedBankSkeleton.identity 1 prime (by decide),?_⟩
+    intro w W hw hW V
+    exact ⟨SharedBankStage.identity _ (by decide),rfl,HasStackSeed.empty 1,(Nat.zero_mul _).symm,fun _ _ _ => by cases backward <;> rfl⟩
   | cons i is ih =>
     have fits := inside i List.mem_cons_self
     let a : Fin d := ⟨i,by omega⟩
     let b : Fin d := ⟨i+1,fits⟩
-    obtain ⟨_,build⟩ := digitSwap_owner a b (show a < b by exact Nat.lt_succ_self i)
-    obtain ⟨swap,_,cost,seed,read⟩ := build w W hw hW
-    obtain ⟨tail,ready,paid,run⟩ := ih (fun k h => inside k (List.mem_cons_of_mem _ h))
+    obtain ⟨machine,build⟩ := digitSwap_owner a b (show a < b by exact Nat.lt_succ_self i)
+    obtain ⟨rest,suffix⟩ := ih (fun k h => inside k (List.mem_cons_of_mem _ h))
+    refine ⟨if backward then SharedBankSkeleton.compose rest machine else SharedBankSkeleton.compose machine rest,?_⟩
+    intro w W hw hW V
+    obtain ⟨swap,fixed,cost,seed,read⟩ := build w W hw hW
+    obtain ⟨tail,layout,ready,paid,run⟩ := suffix w W hw hW
     cases backward with
     | false =>
-      refine ⟨SharedBankStage.compose swap tail,compose_seed seed ready,?_,?_⟩
+      refine ⟨SharedBankStage.compose swap tail,by simp [SharedBankSkeleton.ofStage_compose,fixed,layout],compose_seed seed ready,?_,?_⟩
       · change swap.cost+tail.cost+1 = _
         rw [paid,cost,List.length_cons,Nat.add_mul]; dsimp only [V]; omega
       · intro x f j
         exact (run (swap.transform x) (adjacentFields f i) j).trans (by simpa [adjacentFields,fits,a,b] using read x f j)
     | true =>
-      refine ⟨SharedBankStage.compose tail swap,compose_seed ready seed,?_,?_⟩
+      refine ⟨SharedBankStage.compose tail swap,by simp [SharedBankSkeleton.ofStage_compose,fixed,layout],compose_seed ready seed,?_,?_⟩
       · change tail.cost+swap.cost+1 = _
         rw [paid,cost,List.length_cons,Nat.add_mul]; dsimp only [V]; omega
       · intro x f j
@@ -169,19 +174,22 @@ private theorem adjacentOwner {d w W : ℕ} [M8.Machine.Net] (hw : 0 < w) (hW : 
 
 open M8.RevMachine in
 /-- The shared chart is a seven-exchange owner program in either direction. -/
-theorem copyExchangePort [M8.Machine.Net] (w W : ℕ) (live : 0 < W) (backward : Bool) :
+theorem copyExchangePort [M8.Machine.Net] (backward : Bool) :
+    ∃ machine : SharedBankSkeleton.Skeleton 1 prime, ∀ w W, 0 < W →
     let V := (prime^(w+1))^16*W
     let lane := phaseIntervalChild 0 7 (w+1) W
     let size : volume prime lane = V := phaseIntervalChild_volume (by decide) (by decide) _ _
     ∃ stage : SharedBankStage.Stage _ 1 prime (@portOwner V),
-      HasStackSeed stage.metadata ∧ stage.cost = 7*(3808274*V+LeafCore.coreCost V (w+1)+1) ∧
+      SharedBankSkeleton.ofStage stage = machine ∧ HasStackSeed stage.metadata ∧ stage.cost = 7*(3808274*V+LeafCore.coreCost V (w+1)+1) ∧
       ∀ x k, routedCell backward x (stage.transform x) k (packedChildPosition lane size (k.cast size.symm)) := by
-  intro V lane size
   let is := intervalPackSchedule 0 7 1
   have inside (i) (used : i ∈ is) : i+1 < 16 := (intervalPackSchedule_inside used).trans_le (by decide)
-  obtain ⟨stage,seed,cost,read⟩ := adjacentOwner (Nat.succ_pos w) live is inside backward
+  obtain ⟨machine,build⟩ := adjacentOwner is inside backward
+  refine ⟨machine,?_⟩
+  intro w W live V lane size
+  obtain ⟨stage,fixed,seed,cost,read⟩ := build _ W (Nat.succ_pos w) live
   have count : is.length = 7 := by simp [is,intervalPackSchedule,middleTailSchedule_length]
-  refine ⟨stage,seed,count ▸ cost,?_⟩
+  refine ⟨stage,fixed,seed,count ▸ cost,?_⟩
   intro x k
   obtain ⟨⟨digits,j⟩,rfl⟩ := finProdFinEquiv.surjective k
   obtain ⟨a,rfl⟩ := (FlatCoordinateLayout.rankEquiv : (Fin 16 → ZMod (prime^(w+1))) ≃ _).surjective digits
@@ -190,19 +198,23 @@ theorem copyExchangePort [M8.Machine.Net] (w W : ℕ) (live : 0 < W) (backward :
   exact (congrArg (routedCell backward x (stage.transform x) (FlatCoordinateLayout.index a j)) cell).mp (read x a j)
 
 open M8.RevMachine in
-private theorem copyExchangeAtVolume [M8.Machine.Net] {w W V : ℕ} (hw : 0 < w) (live : 0 < W)
-    (size : volume prime (phaseIntervalChild 0 7 w W) = V) (backward : Bool) :
+private theorem copyExchangeAtVolume [M8.Machine.Net] (backward : Bool) :
+    ∃ machine : SharedBankSkeleton.Skeleton 1 prime, ∀ {w W V : ℕ}, 0 < w → 0 < W →
+    (size : volume prime (phaseIntervalChild 0 7 w W) = V) →
     let lane := phaseIntervalChild 0 7 w W
     ∃ stage : SharedBankStage.Stage _ 1 prime (@portOwner V),
-      HasStackSeed stage.metadata ∧ stage.cost = 7*(3808274*V+LeafCore.coreCost V w+1) ∧
+      SharedBankSkeleton.ofStage stage = machine ∧ HasStackSeed stage.metadata ∧ stage.cost = 7*(3808274*V+LeafCore.coreCost V w+1) ∧
       ∀ x k, routedCell backward x (stage.transform x) (((packedChildPosition lane rfl).symm
         (k.cast size.symm)).cast size) k := by
+  obtain ⟨machine,build⟩ := copyExchangePort backward
+  refine ⟨machine,?_⟩
+  intro w W V hw live size
   obtain ⟨w,rfl⟩ := Nat.exists_eq_succ_of_ne_zero hw.ne'
   intro lane
   have native : volume prime lane = (prime^(w+1))^16*W := phaseIntervalChild_volume (by decide) (by decide) _ _
   obtain rfl := native.symm.trans size
-  obtain ⟨stage,seed,cost,read⟩ := copyExchangePort w W live backward
-  refine ⟨stage,seed,cost,?_⟩
+  obtain ⟨stage,fixed,seed,cost,read⟩ := build w W live
+  refine ⟨stage,fixed,seed,cost,?_⟩
   intro x k
   let pos := packedChildPosition lane rfl
   let i := pos.symm (k.cast size.symm)
@@ -218,27 +230,29 @@ open M8.RevMachine in
 /-- The role-dependent part of the inherited chart is the existing sweep
 program. Only the initial (or final) exchange of the middle spectator is shared. -/
 theorem copySweepPort [M8.Machine.Net] (n : Fin 9) (r : Role) (backward : Bool) :
-    ∃ scans swaps : ℕ, ∀ {atom w W : ℕ} (aligned : 7*w = 64*atom), 0 < atom → 0 < W →
+    ∃ (scans swaps : ℕ) (machine : SharedBankSkeleton.Skeleton 1 prime), ∀ {atom w W : ℕ} (aligned : 7*w = 64*atom), 0 < atom → 0 < W →
     let S := (prime^w)^2*W
     let V := (prime^atom)^128*S
     let size := copyLaneVolume aligned W
     let cell := fun k : Fin V =>
       ((packedChildPosition (phaseIntervalChild 0 7 w W) rfl).symm (k.cast size)).cast size.symm
     ∃ stage : SharedBankStage.Stage _ 1 prime (@portOwner V),
-      HasStackSeed stage.metadata ∧
+      SharedBankSkeleton.ofStage stage = machine ∧ HasStackSeed stage.metadata ∧
       stage.cost = 7*(3808274*V+LeafCore.coreCost V w+1)+scans*V+swaps*(3808274*V+LeafCore.coreCost V atom+1)+3 ∧
       ∀ x k, routedCell backward x (stage.transform x) (cell k) ((flatToSweep atom S n r k).cast
         (by simpa only [Nat.one_mul] using ordinaryCompact_width (prime^atom) S)) := by
-  obtain ⟨a,b,_,build⟩ := sweepChart_owner n r backward
-  refine ⟨a,b,?_⟩
+  obtain ⟨a,b,chartMachine,build⟩ := sweepChart_owner n r backward
+  obtain ⟨exchangeMachine,install⟩ := copyExchangeAtVolume backward
+  refine ⟨a,b,if backward then SharedBankSkeleton.compose chartMachine exchangeMachine else
+    SharedBankSkeleton.compose exchangeMachine chartMachine,?_⟩
   intro atom w W aligned positive live S V size cell
   have hw : 0 < w := by omega
-  obtain ⟨exchange,seed,fee,move⟩ := copyExchangeAtVolume hw live size.symm backward
+  obtain ⟨exchange,fixed,seed,fee,move⟩ := install hw live size.symm
   have stock : 0 < S := Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) live
-  obtain ⟨chart,_,cost,prepared,route⟩ := build atom S positive stock
+  obtain ⟨chart,layout,cost,prepared,route⟩ := build atom S positive stock
   cases backward with
   | false =>
-    refine ⟨SharedBankStage.compose exchange chart,compose_seed seed prepared,?_,?_⟩
+    refine ⟨SharedBankStage.compose exchange chart,by simp [SharedBankSkeleton.ofStage_compose,fixed,layout],compose_seed seed prepared,?_,?_⟩
     · change exchange.cost+chart.cost+1 = _
       rw [cost,fee]
       dsimp only [V,S]
@@ -246,7 +260,7 @@ theorem copySweepPort [M8.Machine.Net] (n : Fin 9) (r : Role) (backward : Bool) 
     · intro x k
       exact (route (exchange.transform x) k).trans (move x k)
   | true =>
-    refine ⟨SharedBankStage.compose chart exchange,compose_seed prepared seed,?_,?_⟩
+    refine ⟨SharedBankStage.compose chart exchange,by simp [SharedBankSkeleton.ofStage_compose,fixed,layout],compose_seed prepared seed,?_,?_⟩
     · change chart.cost+exchange.cost+1 = _
       rw [cost,fee]
       dsimp only [V,S]
@@ -264,29 +278,32 @@ open M8.RevMachine in
 /-- Compile each role's inherited chart onto its owner. Every role pays the
 shared exchange once and its own sweep conversion once. -/
 theorem copySweepChart [M8.Machine.Net] (n : Fin 9) (backward : Bool) :
-    ∃ scans swaps : Role → ℕ, ∀ {atom w W : ℕ} (aligned : 7*w = 64*atom), 0 < atom → 0 < W →
+    ∃ (scans swaps : Role → ℕ) (tapes states : ℕ), ∀ {atom w W : ℕ} (aligned : 7*w = 64*atom), 0 < atom → 0 < W →
     let S := (prime^w)^2*W
     let V := (prime^atom)^128*S
     let size := copyLaneVolume aligned W
     let cell := fun k : Fin V =>
       ((packedChildPosition (phaseIntervalChild 0 7 w W) rfl).symm (k.cast size)).cast size.symm
     ∃ stage : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V)),
-      (∃ D, ChartPrivateReady stage D) ∧
+      stage.tapes = tapes ∧ stage.states = states ∧ (∃ D, ChartPrivateReady stage D) ∧
       stage.cost = ∑ r : Role, (7*(3808274*V+LeafCore.coreCost V w+1)+scans r*V+
         swaps r*(3808274*V+LeafCore.coreCost V atom+1)+4) ∧
       ∀ x r k, routedCell backward (x (sweepRoleTape r)) (stage.transform x (sweepRoleTape r))
         (cell k) ((flatToSweep atom S n r k).cast
           (by simpa only [Nat.one_mul] using ordinaryCompact_width (prime^atom) S)) := by
   classical
-  choose scans swaps build using fun r => copySweepPort n r backward
-  refine ⟨scans,swaps,?_⟩
-  intro atom w W aligned positive live S V size cell
-  choose port seed cost read using fun r => build r aligned positive (W := W) live
+  choose scans swaps machine build using fun r => copySweepPort n r backward
   let e := Fintype.equivFin Role
   let roles := List.ofFn e.symm
   have unique : roles.Nodup := List.nodup_ofFn_ofInjective e.symm.injective
-  obtain ⟨stage,ready,_,_,paid,acts,_⟩ := compileSeededPorts sweepRoleTape port roles unique (fun r _ => seed r)
-  refine ⟨stage,ready,?_,?_⟩
+  refine ⟨scans,swaps,142081+(roles.map fun r => 142081+((machine r).tapes+142080)).sum,
+    (roles.map fun r => (machine r).states).sum+1,?_⟩
+  intro atom w W aligned positive live S V size cell
+  choose port fixed seed cost read using fun r => build r aligned positive (W := W) live
+  obtain ⟨stage,ready,tapes,states,paid,acts,_⟩ := compileSeededPorts sweepRoleTape port roles unique (fun r _ => seed r)
+  have ht (r) : (port r).tapes = (machine r).tapes := congrArg SharedBankSkeleton.Skeleton.tapes (fixed r)
+  have hq (r) : (port r).states = (machine r).states := congrArg SharedBankSkeleton.Skeleton.states (fixed r)
+  refine ⟨stage,by simpa only [ht] using tapes,by simpa only [hq] using states,ready,?_,?_⟩
   · rw [paid]
     simp only [roles,List.map_ofFn,List.sum_ofFn,List.length_ofFn,Function.comp_apply,cost]
     let bill := fun r => 7*(3808274*V+LeafCore.coreCost V w+1)+scans r*V+swaps r*(3808274*V+LeafCore.coreCost V atom+1)
@@ -343,6 +360,56 @@ theorem copySweepHandoff {P U : Type} {t Q atom w W price : ℕ} (aligned : 7*w 
     rw [← read,← read]
     simpa only [flatWindowEquiv_read] using after_.symm.trans ((acts j).trans (congrArg (Piece.stage n).run before)))
   exact ⟨_,_,_,program',_,_,stock,by simpa only [Nat.floor_natCast] using exec⟩
+
+private theorem castOwnerChart {m V : ℕ} (size : m = V) (backward : Bool)
+    (stage : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := m))) {ι : Type}
+    (src dst : Role → ι → Fin m) (seed : ∃ D, ChartPrivateReady stage D)
+    (reads : ∀ x r k, routedCell backward (x (sweepRoleTape r)) (stage.transform x (sweepRoleTape r))
+      (src r k) (dst r k)) :
+    ∃ chart : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V)),
+      chart.states = stage.states ∧ chart.tapes = stage.tapes ∧ chart.cost = stage.cost ∧
+      (∃ D, ChartPrivateReady chart D) ∧ ∀ x r k, routedCell backward (x (sweepRoleTape r))
+        (chart.transform x (sweepRoleTape r)) ((src r k).cast size) ((dst r k).cast size) := by
+  subst V
+  exact ⟨stage,rfl,rfl,rfl,seed,reads⟩
+
+open M8.RevMachine in
+/-- The two compiled charts discharge both physical layout premises of the
+sweep. Their state capacities are fixed before choosing the widths. -/
+theorem compiledCopySweep [M8.Machine.Net] (n : Fin 9) :
+    ∃ (states : ℕ) (tapes : Bool → ℕ) (scans swaps : Bool → Role → ℕ),
+    ∀ {P U : Type} {t Q atom w W price : ℕ} (aligned : 7*w = 64*atom), 0 < atom → 0 < W → states ≤ Q →
+    ∀ (fan : Fin (142081+2) ↪ Fin t) (body : P → Pr P t Q prime U)
+      (code : Pr P t Q prime U) (initial : Stacks t prime),
+    let V := volume prime (phaseIntervalChild 0 7 w W)
+    let S := (prime^w)^2*W
+    let size := copyLaneVolume aligned W
+    let fee := fun b => ∑ r : Role, (7*(3808274*V+LeafCore.coreCost V w+1)+scans b r*V+
+      swaps b r*(3808274*V+LeafCore.coreCost V atom+1)+4)
+    (∀ x u D, HelperFan fan x D →
+      (∀ j, (∀ i, fan i ≠ j) → D.L j = initial.L j ∧ D.R j = initial.R j) →
+      ∃ z F k y, Exec body code (mk u D) k (mk z F) ∧ k ≤ price ∧ z.user = u.user ∧
+        HelperFan fan y F ∧ ∀ j : Fin S, sweepRoles n 0 j (sweepView size y) =
+          (Piece.stage n).run (sweepRoles n 0 j (sweepView size x))) →
+    PackedWindowHandoff U Q V (fun x y => ∀ j : Fin S, let addr := fun v => copyLaneCell aligned j (windowState atom v)
+      readRoles addr y = (Piece.stage n).run (readRoles addr x))
+      (fee false*(tapes false+5)+price+fee true*(tapes true+5)+12+142081*(8*V+10)+1) := by
+  choose scans swaps tapes states build using copySweepChart n
+  refine ⟨max (states false) (states true),tapes,scans,swaps,?_⟩
+  intro P U t Q atom w W price aligned positive live room fan body code initial V S size fee worker
+  choose stage ht hq seed cost reads using fun b => build b aligned positive (W := W) live
+  choose chart qs ts cs ready cells using fun b => castOwnerChart size b (stage b) _ _ (seed b) (reads b)
+  have cap := max_le_iff.mp room
+  have paid (b) : (chart b).cost = fee b := (cs b).trans ((cost b).trans (by dsimp only [fee,V]; rw [← size]))
+  rw [← paid false,← paid true,← ht false,← ht true,← ts false,← ts true]
+  apply copySweepHandoff aligned n fan body code initial (chart false) (chart true)
+    ((qs false).trans (hq false) ▸ cap.1) ((qs true).trans (hq true) ▸ cap.2) (ready false) (ready true) _ _ worker
+  · intro x r k
+    simpa only [routedCell,Bool.false_eq_true,ite_false,sweepRoleTape_eq,Fin.cast_cast,Fin.cast_eq_self,sweepView]
+      using cells false x r k
+  · intro y r k
+    simpa only [routedCell,ite_true,sweepRoleTape_eq,Fin.cast_cast,Fin.cast_eq_self,sweepView]
+      using (cells true y r k).symm
 
 /-- Splitting the scheduled COPY descriptor into role rows exposes precisely
 the two spectator atoms and the inherited trailing stock of one lane. -/
