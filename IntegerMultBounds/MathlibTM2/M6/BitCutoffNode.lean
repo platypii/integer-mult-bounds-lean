@@ -647,18 +647,28 @@ theorem prepareSelectedStageArchives {U : Type} {Q l r owners : ℕ}
       exact (off p (owner.injective eq)).elim
     · exact fun _ => (keep k).2
 
+/-- Exact initial contents on the disjoint worker and parent-archive banks. -/
+noncomputable def stageSetupSeed {T : ℕ} (R : ℕ) (initial : Stacks T prime) (c : CutoffNodeInput) :
+    Stacks (80+((T+273)+R)) prime :=
+  let owner := ((Fin.castAddEmb 273 (n := T)).trans (Fin.castAddEmb R)).trans (Fin.natAddEmb 80)
+  let headers := parentArchiveSeed c.node c.w
+  let place := fun work data => Function.extend owner work
+    (Function.extend (archiveSetupPlacement 80 T R) data (fun _ => []))
+  ⟨initial.inp,initial.out,place initial.L headers.L,place initial.R headers.R⟩
+
 /-- Place the parent headers and worker seed on disjoint banks of the stage host. -/
 theorem stageHostSeed {T R owners : ℕ} (shared : Fin owners ↪ Fin T)
     (initial : Stacks T prime) (c : CutoffNodeInput) :
     let owner := ((Fin.castAddEmb 273 (n := T)).trans (Fin.castAddEmb R)).trans (Fin.natAddEmb 80)
-    ∃ hostSeed : Stacks (80+((T+273)+R)) prime,
-      embStk owner hostSeed = initial ∧
+    let hostSeed := stageSetupSeed R initial c
+    embStk owner hostSeed = initial ∧
       (∀ j : Fin R, let p := (j.natAdd (T+273)).natAdd 80
         hostSeed.L p = [] ∧ hostSeed.R p = []) ∧ ∀ S, PrivateTapes (shared.trans owner) hostSeed S →
         ParentArchiveInput c.node c.w (embStk (archiveSetupPlacement 80 T R) S) ∧
         PrivateTapes shared initial (embStk owner S) := by
   intro owner
-  obtain ⟨headers,input⟩ := parentArchiveInput_exists c.node c.w
+  let headers := parentArchiveSeed c.node c.w
+  have input := parentArchiveSeed_ready c.node c.w
   let setup := archiveSetupPlacement 80 T R
   let place := fun (work : Fin T → List (Fin (prime+4))) (data : Fin (80+273) → List (Fin (prime+4))) =>
     Function.extend owner work (Function.extend setup data (fun _ => []))
@@ -669,7 +679,8 @@ theorem stageHostSeed {T R owners : ℕ} (shared : Fin owners ↪ Fin T)
     rw [Function.extend_apply' _ _ _ (by
       rintro ⟨k,h⟩
       exact (archiveSetupPlacement_frame j).1 k h.symm),setup.injective.extend_apply]
-  refine ⟨seed,?_,?_,?_⟩
+  change _ ∧ _ ∧ ∀ S, PrivateTapes (shared.trans owner) seed S → _
+  refine ⟨?_,?_,?_⟩
   · exact congrArg₂ (Stacks.mk initial.inp initial.out) (funext (work initial.L headers.L)) (funext (work initial.R headers.R))
   · intro j
     let p := (j.natAdd (T+273)).natAdd 80
@@ -690,7 +701,6 @@ theorem stageHostSeed {T R owners : ℕ} (shared : Fin owners ↪ Fin T)
   constructor
   · change ParentArchiveInput c.node c.w (embStk setup S)
     have eq : embStk setup S = {headers with inp := S.inp, out := S.out} := by
-      cases headers
       exact congrArg₂ (fun l r => Stacks.mk S.inp S.out l r) left right
     rw [eq]
     exact input
@@ -769,7 +779,8 @@ theorem runSelectedStageArchives [M8.Machine.Net] {U : Type} {Q l r owners : ℕ
   refine ⟨stageLocalCost_bound order rate base swaps fixed,?_⟩
   intro c X seed rep effect word work archive sharedSeed
   obtain ⟨initial,view,saved⟩ := stock sharedSeed seed
-  obtain ⟨hostSeed,placedSeed,_,ready⟩ := stageHostSeed (R := R) shared initial c
+  let hostSeed := stageSetupSeed R initial c
+  obtain ⟨placedSeed,_,ready⟩ := stageHostSeed (R := R) shared initial c
   refine ⟨hostSeed,placedSeed ▸ view,?_⟩
   intro childTime cost execute
   intro x u S header live privateSeed

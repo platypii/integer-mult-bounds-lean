@@ -44,7 +44,9 @@ theorem initializedPackedStage [M8.Machine.Net] (n : Fin 9) :
   obtain ⟨C,base,tapes,chartStates,chart⟩ := borrowedFlatHandoffWithCharge
   refine ⟨pre,post,ts,max states chartStates,ports,?_⟩
   intro P U Q cap body f
-  obtain ⟨T,fan,host,worker,rate,stage⟩ := build ((Nat.le_max_left ..).trans cap) body f
+  obtain ⟨T,owners,host,worker,rate,stage⟩ := build ((Nat.le_max_left ..).trans cap) body f
+  let owner := ((Fin.castAddEmb 273 (n := T)).trans (Fin.castAddEmb LeafCore.small)).trans (Fin.natAddEmb 80)
+  let fan := owners.trans owner
   let data := (Fin.castAddEmb 1 (n := k)).trans fan
   obtain ⟨H,outer,code,src,dst,pack⟩ := chart n data host worker ((Nat.le_max_right ..).trans cap)
   let overhead := fun w V => 13*((base*V+17760*(2*LeafCore.coreCost V w+14))*(tapes+5)+12)
@@ -81,7 +83,8 @@ theorem initializedPackedStage [M8.Machine.Net] (n : Fin 9) :
   intro time recurse W size
   let word := binSyms (A := prime) c.root.width.size c.cutoff
   let shared : Stacks (k+1) prime := ⟨[],[],fun _ => [],fun _ => word⟩
-  obtain ⟨initial,view,run⟩ := prepare shared
+  obtain ⟨stock,view,run⟩ := prepare shared
+  let initial := stageSetupSeed LeafCore.small stock c
   let kids := ((List.range' (stageChildStart n) (stageRuns.flatMap (fun _ => Geometry.Moves.localPaid)).length).map time).sum
   let fee := rate*((V : ℝ)*(w : ℝ)^M8.Machine.BudgetBound.tau)
   have hb : 0 < c.B := Nat.pos_of_mul_pos_right (c.label ▸ c.stagePositive.2.2.1)

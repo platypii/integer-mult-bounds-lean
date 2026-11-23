@@ -13,7 +13,7 @@ private theorem stageFanView {k B T H V : ℕ} (shared : Fin ((k+2)+1) ↪ Fin B
     HelperFan (((Fin.castAddEmb 1).trans shared).trans inner) x (embStk stage F) ↔
     HelperFan ((Fin.castAddEmb 1).trans (shared.trans (inner.trans stage))) x F := Iff.rfl
 
-private theorem placedStageCharge {T H : ℕ} (stage : Fin T ↪ Fin H) (A F : Stacks H prime) (t : ℕ) (price : ℝ)
+theorem placedStageCharge {T H : ℕ} (stage : Fin T ↪ Fin H) (A F : Stacks H prime) (t : ℕ) (price : ℝ)
     (untouched : ∀ j, (∀ i, stage i ≠ j) → F.L j = A.L j ∧ F.R j = A.R j)
     (bill : ∀ is : List _, is.Nodup → (t : ℝ)+tapeCharge cleanupWeight is (embStk stage F) ≤
       tapeCharge cleanupWeight is (embStk stage A)+price) (js : List _) (nd : js.Nodup) :
@@ -109,7 +109,8 @@ private theorem initializedStageLayout {U : Type} {Q l r k : ℕ}
     ∃ init, ∀ (c : CutoffNodeInput) (seeds : ∀ i, Stacks (ts i) prime),
     (∀ i, WorkerEntryWords (regs i) (invocationWorkerRecord i.2.1 (scheduledChild prime c.node (child i))
       c.root.width.size c.cutoff) (seeds i)) →
-    ∀ sharedSeed, ∃ seed, embStk (shared.trans owner) seed = sharedSeed ∧ ∀ u S,
+    ∀ sharedSeed, ∃ initial : Stacks T prime, let seed := stageSetupSeed R initial c
+      embStk (shared.trans owner) seed = sharedSeed ∧ ∀ u S,
       S.R (owner (shared cut)) = binSyms c.root.width.size c.cutoff → PrivateTapes (shared.trans owner) seed S →
       ∃ v A a, Exec host init (mk u S) a (mk v A) ∧ v.user = u.user ∧ CleanupBound S A a (setup*c.cells) ∧
         (∀ j, A.L (owner (shared j)) = S.L (owner (shared j)) ∧ A.R (owner (shared j)) = S.R (owner (shared j))) ∧
@@ -127,8 +128,9 @@ private theorem initializedStageLayout {U : Type} {Q l r k : ℕ}
   refine ⟨init,?_⟩
   intro c seeds entry sharedSeed
   obtain ⟨initial,view,saved⟩ := stock sharedSeed seeds
-  obtain ⟨seed,placed,empty,ready⟩ := stageHostSeed (R := R) shared initial c
-  refine ⟨seed,(congrArg (embStk shared) placed).trans view,?_⟩
+  let seed := stageSetupSeed R initial c
+  obtain ⟨placed,empty,ready⟩ := stageHostSeed (R := R) shared initial c
+  refine ⟨initial,(congrArg (embStk shared) placed).trans view,?_⟩
   intro u S cutoff fresh
   obtain ⟨input,stocked⟩ := ready S fresh
   have stored i j off := stocked (bank i j) (saved i j off).1
@@ -164,15 +166,19 @@ theorem initializedRestoredStage [M8.Machine.Net] (n : Fin 9) :
     let child := fun i : I => invocationChildren n i.1 (pre i.1) (post i.1) i.2.1 i.2.2
     ∃ (ts : I → ℕ) (states : ℕ) (ports : ∀ i, Fin (rowSwapBlock.tapes+35) ↪ Fin (ts i)),
     ∀ {P U : Type} {Q : ℕ}, states ≤ Q → ∀ (body : ∀ i, P → Pr P (ts i) Q prime U) (f : I → P),
-    ∃ (T : ℕ) (fan : Fin (k+1) ↪ Fin T) (host : I × P → Pr (I × P) T Q prime U) (code : Pr (I × P) T Q prime U)
-      (rate : ℝ), ∀ c : CutoffNodeInput,
+    ∃ (T : ℕ) (shared : Fin (k+1) ↪ Fin T),
+    let H := 80+((T+273)+LeafCore.small)
+    let owner := ((Fin.castAddEmb 273 (n := T)).trans (Fin.castAddEmb LeafCore.small)).trans (Fin.natAddEmb 80)
+    let fan := shared.trans owner
+    ∃ (host : I × P → Pr (I × P) H Q prime U) (code : Pr (I × P) H Q prime U) (rate : ℝ), ∀ c : CutoffNodeInput,
     let w := c.w+1
     let V := (prime^w)^16*c.stageWidth
     let desc := fun i => scheduledChild prime c.node (child i)
     let record := fun i : I => invocationWorkerRecord i.2.1 (desc i) c.root.width.size c.cutoff
     ∃ position : ∀ i, Fin (volume prime (desc i)) ≃ Fin V,
     (∀ i, invocationCoordinates i.2.1 w c.stageWidth (position i)) ∧
-    ∀ shared, ∃ seed : Stacks T prime, embStk fan seed = shared ∧
+    ∀ sharedSeed, ∃ initial : Stacks T prime, let seed := stageSetupSeed LeafCore.small initial c
+    embStk fan seed = sharedSeed ∧
     ∀ time : ℕ → ℕ, (∀ i, ScheduledChildExec c.node (desc i) c.w c.stageWidth (ports i) (record i)
       (position i) (body i) (f i) (time (child i).val) true) →
     ∀ x u S, HelperFan ((Fin.castAddEmb 1).trans fan) x S →
@@ -202,13 +208,13 @@ theorem initializedRestoredStage [M8.Machine.Net] (n : Fin 9) :
   obtain ⟨init,write⟩ := load (R := LeafCore.small) host
   let order := stageOccurrenceOrder l r
   obtain ⟨D,bound⟩ := stageLocalCost_bound order (setup+160) base swaps fixed
-  refine ⟨_,shared.trans owner,host,init.seq (embProg stage id sweep),D+rate,?_⟩
+  refine ⟨T,shared,host,init.seq (embProg stage id sweep),D+rate,?_⟩
   intro c w V desc record
   obtain ⟨position,seeds,coords,entry,run⟩ := execute c
   refine ⟨position,coords,?_⟩
   intro sharedSeed
-  obtain ⟨seed,view,prepare⟩ := write c seeds entry sharedSeed
-  refine ⟨seed,view,?_⟩
+  obtain ⟨initial,view,prepare⟩ := write c seeds entry sharedSeed
+  refine ⟨initial,view,?_⟩
   intro time recurse x u S live cut fresh
   obtain ⟨v,A,a,start,user,paid,kept,headers,leaves,stock⟩ := prepare u S cut fresh
   have mid := helperFan_of_agree (k := 142081) (V := V) (fan := (Fin.castAddEmb 1 (n := k)).trans (shared.trans owner))

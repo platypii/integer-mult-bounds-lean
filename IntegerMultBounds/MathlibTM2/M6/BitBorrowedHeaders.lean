@@ -534,10 +534,8 @@ def ParentArchiveInput (node : RecursiveInterchangeLayout.Descriptor) (w : ℕ)
     (read (regs 33)).length = w ∧
     (∀ j : Fin 273, D.L (j.natAdd 80) = [] ∧ D.R (j.natAdd 80) = [])
 
-/-- Realize the parent archive input using its six descriptor words and
-three arithmetic registers. Every archive destination starts empty. -/
-theorem parentArchiveInput_exists (node : RecursiveInterchangeLayout.Descriptor) (w : ℕ) :
-    ∃ D, ParentArchiveInput node w D := by
+/-- The nine source words and six fixed separators used by parent archive setup. -/
+noncomputable def parentArchiveSeed (node : RecursiveInterchangeLayout.Descriptor) (w : ℕ) : Stacks (80+273) prime :=
   let M := prime^(w+1)
   let hs := Routines.hdr node
   let left (i : Fin 80) : List (Fin (prime+4)) :=
@@ -547,8 +545,11 @@ theorem parentArchiveInput_exists (node : RecursiveInterchangeLayout.Descriptor)
     else if i.val = 47 then binSyms M.size M
     else if i.val = 73 then binSyms 1 1
     else if i.val = 78 then List.replicate w blank else []
-  let D : Stacks (80+273) prime := ⟨[],[],Fin.addCases left (fun _ => []),Fin.addCases right (fun _ => [])⟩
-  refine ⟨D,?_,rfl,rfl,?_,rfl,rfl,List.length_replicate,?_⟩
+  ⟨[],[],Fin.addCases left (fun _ => []),Fin.addCases right (fun _ => [])⟩
+
+theorem parentArchiveSeed_ready (node : RecursiveInterchangeLayout.Descriptor) (w : ℕ) :
+    ParentArchiveInput node w (parentArchiveSeed node w) := by
+  refine ⟨?_,rfl,rfl,?_,rfl,rfl,List.length_replicate,?_⟩
   · intro i z
     have word (xs : List Bool) : BinaryDescriptorStack.descriptor xs z =
         readAt (blank : Fin (prime+4)) [separator] (xs.map bitSymbol) (z-1) := by
@@ -559,7 +560,10 @@ theorem parentArchiveInput_exists (node : RecursiveInterchangeLayout.Descriptor)
   · intro i
     fin_cases i <;> rfl
   · intro j
-    simp [D,Fin.addCases_right]
+    simp [parentArchiveSeed]
+
+theorem parentArchiveInput_exists (node : RecursiveInterchangeLayout.Descriptor) (w : ℕ) :
+    ∃ D, ParentArchiveInput node w D := ⟨_,parentArchiveSeed_ready node w⟩
 
 /-- Place the parent descriptor beside a seeded worker on a blank host. -/
 theorem parentArchiveHost_exists {T L : ℕ} (node : RecursiveInterchangeLayout.Descriptor)
