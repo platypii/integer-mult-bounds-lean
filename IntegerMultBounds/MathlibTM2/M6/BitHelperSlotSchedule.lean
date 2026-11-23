@@ -129,6 +129,34 @@ theorem helperMove_shape (v : Descriptor) (n : Fin 9) (run : Fin 32 × Fin 5)
   apply helperSubinterval_shape _ _ _ _ _ _ _ _ _ width ordered.le fits
   exact rank.trans (diff.trans (by omega))
 
+open RecursiveInterchangeLayout in
+/-- Read an inherited owner at its scheduled child's addresses. The coordinate
+equivalence is a view of the stored word and incurs no tape permutation. -/
+theorem scheduledTranspose_onOwner {parent physical : Descriptor}
+    {i : Fin nodeChildren5.length} (shape : ScheduledChildShape prime parent i physical) :
+    let child := scheduledChild prime parent i
+    ∃ position : Fin (volume prime child) ≃ Fin (volume prime physical),
+      (∀ k, (CopyChildLayout.packActive physical (position k)).val = (CopyChildLayout.packActive child k).val) ∧
+      ∀ {α : Type} (word : Fin (volume prime physical) → α),
+        Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (word ∘ position) =
+          Shared50RecursiveNodeRows.transpose (one_dvd physical.rows) word ∘ position := by
+  intro child
+  have count (d : Descriptor) : volume prime d = prime^d.width*prime^d.width*CopyChildLayout.spectators d := by
+    unfold volume CopyChildLayout.spectators
+    ring
+  have size := shape.volume
+  rw [count,count,shape.width] at size
+  have spectators := Nat.eq_of_mul_eq_mul_left (Nat.mul_pos (pow_pos Shared50ModularControl.prime_prime.pos _)
+    (pow_pos Shared50ModularControl.prime_prime.pos _)) size.symm
+  let f := CopyChildLayout.changeLayout child physical shape.width.symm spectators
+  let position := (CopyChildLayout.flatAddress child).symm.trans (f.trans (CopyChildLayout.flatAddress physical))
+  refine ⟨position,?_,fun word => funext (transpose_changeLayout child physical shape.width.symm spectators word)⟩
+  intro k
+  obtain ⟨addr,rfl⟩ := (CopyChildLayout.flatAddress child).surjective k
+  simp only [position,Equiv.trans_apply,Equiv.symm_apply_apply]
+  exact
+    CopyChildLayout.packActive_change child physical shape.width.symm spectators addr
+
 /-- In inherited order the live H digits begin at the slot offset; the
 corresponding D digits begin 64 fields later. -/
 def helperBasisAxis (p : Fin 56) (i : Fin 16) : Fin 128 :=
