@@ -179,6 +179,53 @@ theorem route {σ E₁ E₂ : Matrix (Fin m) (Fin m) R} {L : List (Fin m × Fin 
   rw [lower_route h₂, ← pivot_route L hL π hπ (g * E₂ᵀ), lower_route h₁, hσ']
   simp [Matrix.mul_assoc]
 
+/-- Running a column program commutes with retaining any chosen rows.
+In particular a helper's two address rows can travel as two atoms per column. -/
+theorem atomRun_rows (ops : List (OrderedAffine.Op (Fin m) R))
+    {k : ℕ} (rows : Fin k → Fin f) (x : Fin m → Fin f → R) :
+    atomRun (ops.map atomOp) (fun j i => x j (rows i)) =
+      fun j i => atomRun (ops.map atomOp) x j (rows i) := by
+  funext j i
+  exact (congrFun (atomRun_level ops _ i) j).trans
+    (congrFun (atomRun_level ops x (rows i)) j).symm
+
+/-- Both ordered passes and the intervening column permutation route the
+selected rows without reading or writing the other rows. -/
+theorem route_rows {σ E₁ E₂ : Matrix (Fin m) (Fin m) R} {L : List (Fin m × Fin m)}
+    (h₁ : LowerTriangular E₁) (h₂ : LowerTriangular E₂) (hL : L.Nodup) (π : Fin m → Fin m)
+    (hπ : ∀ j k, (j,k) ∈ L ↔ k = π j) (hσ : σᵀ = E₁ * pivotMatrix L * E₂)
+    (g : Matrix (Fin m) (Fin m) R) {k : ℕ} (rows : Fin k → Fin m) :
+    atomRun ((OrderedAffine.program E₁).map atomOp)
+      (fun j => atomRun ((OrderedAffine.program E₂).map atomOp)
+        (fun j i => cols g j (rows i)) (π j)) = fun j i => cols (g * σ) j (rows i) := by
+  rw [atomRun_rows (OrderedAffine.program E₂) rows (cols g)]
+  rw [atomRun_rows (OrderedAffine.program E₁) rows
+    (fun j => atomRun ((OrderedAffine.program E₂).map atomOp) (cols g) (π j))]
+  rw [route h₁ h₂ hL π hπ hσ]
+
+/-- Any selected rows of an invertible rational route run over `ZMod (q ^ b)` for every large prime `q`: two legal
+ordered passes around a column permutation. -/
+theorem exists_route_rows (σ : Matrix (Fin m) (Fin m) ℚ) (hσ : IsUnit σ) :
+    ∃ D : Finset ℕ, ∀ q : ℕ, q.Prime → (∀ d ∈ D, d < q) → ∀ b : ℕ,
+      ∃ (E₁ E₂ : Matrix (Fin m) (Fin m) (ZMod (q ^ b))) (π : Equiv.Perm (Fin m)),
+        (∀ op ∈ OrderedAffine.program E₁, OrderedAffine.Legal op) ∧
+        (∀ op ∈ OrderedAffine.program E₂, OrderedAffine.Legal op) ∧
+        ∀ g : Matrix (Fin m) (Fin m) (ZMod (q ^ b)), ∀ {k : ℕ} (rows : Fin k → Fin m),
+          atomRun ((OrderedAffine.program E₁).map atomOp)
+              (fun j => atomRun ((OrderedAffine.program E₂).map atomOp) (fun j i => cols g j (rows i)) (π j)) =
+            fun j i => cols (g * reduce (q ^ b) σ) j (rows i) := by
+  obtain ⟨F⟩ := IntegerMultBounds.Swap.LowerTriangular.factorization σᵀ
+  refine ⟨factorizationDenominators F, fun q hq hd b => ?_⟩
+  obtain ⟨hlen, l₁, l₁', l₂, l₂', i₁, i₁', i₂, i₂', heq⟩ :=
+    reduce_factorization_of_prime F hq hd b
+  have hrank : F.L.length = m := by
+    rw [hlen, rank_transpose, rank_of_isUnit σ hσ, Fintype.card_fin]
+  obtain ⟨π, hπ⟩ := exists_perm F.L F.nodup₁ F.nodup₂ hrank
+  refine ⟨reduce (q ^ b) F.E₁, reduce (q ^ b) F.E₂, π,
+    OrderedAffine.program_legal l₁ (isUnit_iff_exists.mpr ⟨_, i₁, i₁'⟩),
+    OrderedAffine.program_legal l₂ (isUnit_iff_exists.mpr ⟨_, i₂, i₂'⟩), fun g _ rows => ?_⟩
+  exact route_rows l₁ l₂ (F.nodup₁.of_map _) π hπ heq g rows
+
 /-- An invertible rational route runs over `ZMod (q ^ b)` for every large prime `q`: two legal
 ordered passes around a column permutation. -/
 theorem exists_route (σ : Matrix (Fin m) (Fin m) ℚ) (hσ : IsUnit σ) :
@@ -190,16 +237,9 @@ theorem exists_route (σ : Matrix (Fin m) (Fin m) ℚ) (hσ : IsUnit σ) :
           atomRun ((OrderedAffine.program E₁).map atomOp)
               (fun j => atomRun ((OrderedAffine.program E₂).map atomOp) (cols g) (π j)) =
             cols (g * reduce (q ^ b) σ) := by
-  obtain ⟨F⟩ := IntegerMultBounds.Swap.LowerTriangular.factorization σᵀ
-  refine ⟨factorizationDenominators F, fun q hq hd b => ?_⟩
-  obtain ⟨hlen, l₁, l₁', l₂, l₂', i₁, i₁', i₂, i₂', heq⟩ :=
-    reduce_factorization_of_prime F hq hd b
-  have hrank : F.L.length = m := by
-    rw [hlen, rank_transpose, rank_of_isUnit σ hσ, Fintype.card_fin]
-  obtain ⟨π, hπ⟩ := exists_perm F.L F.nodup₁ F.nodup₂ hrank
-  refine ⟨reduce (q ^ b) F.E₁, reduce (q ^ b) F.E₂, π,
-    OrderedAffine.program_legal l₁ (isUnit_iff_exists.mpr ⟨_, i₁, i₁'⟩),
-    OrderedAffine.program_legal l₂ (isUnit_iff_exists.mpr ⟨_, i₂, i₂'⟩), fun g => ?_⟩
-  exact route l₁ l₂ (F.nodup₁.of_map _) π hπ heq g
+  obtain ⟨D, hd⟩ := exists_route_rows σ hσ
+  refine ⟨D, fun q hq hD b => ?_⟩
+  obtain ⟨E₁,E₂,π,h₁,h₂,h⟩ := hd q hq hD b
+  exact ⟨E₁,E₂,π,h₁,h₂,fun g => h g id⟩
 
 end IntegerMultBounds.MathlibTM2.Cover.Route
