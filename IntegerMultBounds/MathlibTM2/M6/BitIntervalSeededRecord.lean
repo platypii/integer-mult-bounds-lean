@@ -24,6 +24,8 @@ theorem seededIntervalRecord {P U : Type} {T B Q w W atom price lo hi axes : ℕ
     (slots : Fin 6 ↪ Fin B)
     (seedLane : Descriptor := phaseIntervalChild lo hi (w+1) W axes)
     (seedVolume : volume prime seedLane = volume prime (phaseIntervalChild lo hi (w+1) W axes) := by rfl)
+    (headerSource : Fin 6 → Fin 72 := descriptorPorts)
+    (sourceFree : ∀ i, headerSource i ≠ 59 ∧ headerSource i ≠ 60 := by decide)
     (leftSeed : ∀ j, seed.L j = [])
     (headers : ∀ i, seed.R (slots i) = (Routines.hdr seedLane i).map bitSymbol)
     (unused : ∀ j, (∀ i, slots i ≠ j) → seed.R j = [])
@@ -58,7 +60,7 @@ theorem seededIntervalRecord {P U : Type} {T B Q w W atom price lo hi axes : ℕ
         S.L j = [] ∧ S.R j = []) →
       (∀ i : Fin B, let j := extend (i.natAdd (142082+T))
         S.L j = [] ∧ S.R j = []) →
-      (∀ i, S.R (raw (descriptorPorts i)) = (Routines.hdr seedLane i).map bitSymbol) →
+      (∀ i, S.R (raw (headerSource i)) = (Routines.hdr seedLane i).map bitSymbol) →
       let split : Pr Empty intervalSplitTapes Q prime U := intervalPrepare.seq
         (foreign (liftQ (CyclicRowNormalized.splitProgram 142080 prime) mergeCap))
       let M := prime^(w+1)
@@ -86,14 +88,12 @@ theorem seededIntervalRecord {P U : Type} {T B Q w W atom price lo hi axes : ℕ
     have val := congrArg Fin.val eq
     change 142082+T+i.val = 142082+j.val at val
     omega
-  have temp (i : Fin 6) : descriptorPorts i ≠ 59 ∧ descriptorPorts i ≠ 60 :=
-    (by decide : ∀ i, descriptorPorts i ≠ 59 ∧ descriptorPorts i ≠ 60) i
-  obtain ⟨load,install⟩ := installChildSeed host childBank slots (fun i => raw (descriptorPorts i))
+  obtain ⟨load,install⟩ := installChildSeed host childBank slots (fun i => raw (headerSource i))
     (raw 59) (raw 60) (fun i j => disjoint _ _) (by
       intro i
       simp only [List.nodup_cons,List.mem_cons,List.not_mem_nil,
         List.nodup_nil,not_false_eq_true,and_true,not_or]
-      exact ⟨⟨(disjoint _ _).symm,raw.injective.ne (temp i).1,raw.injective.ne (temp i).2⟩,
+      exact ⟨⟨(disjoint _ _).symm,raw.injective.ne (sourceFree i).1,raw.injective.ne (sourceFree i).2⟩,
         ⟨disjoint _ _,disjoint _ _⟩,raw.injective.ne (by decide)⟩)
   refine ⟨host,load.seq worker,bank,setupRate,passRate,target,?_⟩
   intro word u S payload tl tr hc hs fresh base suffix unit atom dims free front empty sourceWords
