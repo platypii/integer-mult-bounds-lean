@@ -138,10 +138,10 @@ theorem placeIdleOwner_exec {P R U : Type} {T H Q c V : ℕ}
     (run : Exec inner code (mk (embDn place u) (embStk place S)) n (mk v D))
     (payload : Cover.Fallback.RecordPayload slot (fun _ => blank) 0 y D) :
     ∃ z F, Exec host (embProg place label code) (mk u S) n (mk z F) ∧ z.user = v.user ∧
-      HelperFan fan (Function.update x owner y) F ∧
+      HelperFan fan (Function.update x owner y) F ∧ embStk place F = D ∧
       ∀ t, (∀ j, place j ≠ t) → F.L t = S.L t ∧ F.R t = S.R t := by
   obtain ⟨z,F,exec,_,user,view,frame⟩ := exec_emb place.injective calls run u rfl S rfl
-  refine ⟨z,F,exec,user,fanUpdate owner y live ?_ (fun i ne => frame _ (apart i ne)),frame⟩
+  refine ⟨z,F,exec,user,fanUpdate owner y live ?_ (fun i ne => frame _ (apart i ne)),view,frame⟩
   rw [← shared]
   change Cover.Fallback.RecordPayload slot (fun _ => blank) 0 y (embStk place F)
   rwa [view]
@@ -149,7 +149,8 @@ theorem placeIdleOwner_exec {P R U : Type} {T H Q c V : ℕ}
 /-- Schedule disjoint copy workspaces. Each local execution starts with
 exactly its original register stacks, even when earlier copies leave their
 private workspaces occupied. -/
-theorem placedIdleWindow_exec {H Q V : ℕ} {R U : Type} (i : Fin 9)
+theorem placedIdleWindowWithCharge {H Q V : ℕ} {R U : Type} (i : Fin 9)
+    (weight : List (Fin (prime+4)) → List (Fin (prime+4)) → ℕ)
     (host : R → Pr R H Q prime U) (fan : Fin (142081+2) ↪ Fin H)
     (x : Fin 142081 → Fin V → ZMod 2) (S : Stacks H prime) (u : HS H Q prime U)
     (live : HelperFan fan x S) :
@@ -163,11 +164,11 @@ theorem placedIdleWindow_exec {H Q V : ℕ} {R U : Type} (i : Fin 9)
     (∀ k l, k ≠ l → ∀ j h, place k j ≠ place l h) →
     (∀ k p, host (label k p) = embProg (place k) (label k) (inner k p)) →
     (∀ k v (D : Stacks (T k) prime), (∀ j, D.L j = S.L (place k j) ∧ D.R j = S.R (place k j)) →
-      ∃ z F n y, Exec (inner k) (code k) (mk v D) n (mk z F) ∧ n ≤ price k ∧
+      ∃ z F n y, Exec (inner k) (code k) (mk v D) n (mk z F) ∧ (∀ js : List (Fin (T k)), js.Nodup → n+tapeCharge weight js F ≤ tapeCharge weight js D+price k) ∧
         z.user = v.user ∧ Cover.Fallback.RecordPayload (slot k) (fun _ => blank) 0 y F ∧
         effect k (x (idleTape i k)) y) →
     ∃ y F z n, Exec host (Prog.seqList (idleCopies.map fun k => embProg (place k) (label k) (code k)))
-      (mk u S) n (mk z F) ∧ n ≤ (idleCopies.map price).sum+1 ∧ z.user = u.user ∧ HelperFan fan y F ∧
+      (mk u S) n (mk z F) ∧ (∀ js : List (Fin H), js.Nodup → n+tapeCharge weight js F ≤ tapeCharge weight js S+(idleCopies.map price).sum+1) ∧ z.user = u.user ∧ HelperFan fan y F ∧
       (∀ k, effect k (x (idleTape i k)) (y (idleTape i k))) ∧
       ∀ j, (∀ k, j ≠ idleTape i k) → y j = x j := by
   intro Job T P place slot inner label code price effect shared outside apart calls run
@@ -175,16 +176,20 @@ theorem placedIdleWindow_exec {H Q V : ℕ} {R U : Type} (i : Fin 9)
     ∀ j, D.L (place k j) = S.L (place k j) ∧ D.R (place k j) = S.R (place k j)
   let ready := fun (past : List Job) (y : Fin 142081 → Fin V → ZMod 2) (D : Stacks H prime) =>
     HelperFan fan y D ∧ ∀ k, k ∉ past → y (idleTape i k) = x (idleTape i k)
-  obtain ⟨y,F,z,n,exec,paid,user,final,acts,off⟩ := idleCopies_exec i host _
-    (fun k => (price k : ℝ)) prepared ready effect (by
+  obtain ⟨y,F,z,n,exec,paid,user,final,acts,off⟩ := idleCopiesWithPotential i host _
+    (fun k => (price k : ℝ)) prepared ready effect
+    (fun (js : {l : List (Fin H) // l.Nodup}) D => (tapeCharge weight js.val D : ℝ)) (by
       intro k past rest data D v order state fresh
       have unique : (past++k::rest).Nodup := order ▸ stageRuns_nodup.product (List.nodup_finRange _)
       have newJob : k ∉ past := fun h => (List.nodup_append.mp unique).2.2 k h k List.mem_cons_self rfl
       obtain ⟨b,G,m,word,ran,cost,same,payload,act⟩ := run k (embDn (place k) v) (embStk (place k) D) fresh
-      obtain ⟨a,E,placed,user,owners,keep⟩ := placeIdleOwner_exec (place k) (slot k) fan (idleTape i k)
+      obtain ⟨a,E,placed,user,owners,view,keep⟩ := placeIdleOwner_exec (place k) (slot k) fan (idleTape i k)
         (shared k) (outside k) (inner k) host (label k) (calls k) (code k) v D data state.1 b G m word ran payload
-      refine ⟨Function.update data (idleTape i k) word,E,a,m,placed,by exact_mod_cast cost,
+      refine ⟨Function.update data (idleTape i k) word,E,a,m,placed,?_,
         user.trans same,⟨owners,?_⟩,?_,?_,fun t ne => Function.update_of_ne ne ..⟩
+      · intro js
+        rw [← view] at cost
+        exact_mod_cast placedCleanup_cost_le (place k) D E weight m (price k) keep cost js.val js.property
       · intro l hl
         simp only [List.mem_append,List.mem_singleton,not_or] at hl
         rw [Function.update_of_ne ((idleTape_injective i).ne hl.2)]
@@ -195,7 +200,11 @@ theorem placedIdleWindow_exec {H Q V : ℕ} {R U : Type} (i : Fin 9)
       · simpa only [Function.update_self,state.2 k newJob] using act)
     x S u ⟨live,fun _ _ => rfl⟩ (fun _ _ => ⟨rfl,rfl⟩)
   refine ⟨y,F,z,n,exec,?_,user,final.1,acts,off⟩
+  intro js unique
+  specialize paid ⟨js,unique⟩
   apply (Nat.cast_le (α := ℝ)).mp
   simpa only [Nat.cast_add,Nat.cast_one,Nat.cast_list_sum,List.map_map,Function.comp_def] using paid
+
+-- The time-only placed window can be restored from 5d115412.
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode

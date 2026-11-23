@@ -51,6 +51,57 @@ theorem idleWorkspace {ι : Type} [Fintype ι] {B A : ℕ} (T : ι → ℕ)
 
 /-- Allocate the copy programs and their procedure labels together. Starting
 from exact owner words, each program receives its own seed outside its target. -/
+theorem allocatedIdleWindowWithCharge {Q V : ℕ} {U : Type} (i : Fin 9)
+    (weight : List (Fin (prime+4)) → List (Fin (prime+4)) → ℕ) :
+    let Job := (Fin 32 × Fin 5) × Fin 222
+    ∀ (T : Job → ℕ) (P : Job → Type) (slot : ∀ k, Fin (T k))
+      (inner : ∀ k, P k → Pr (P k) (T k) Q prime U) (code : ∀ k, Pr (P k) (T k) Q prime U)
+      (seed : ∀ k, Stacks (T k) prime) (price : Job → ℕ)
+      (effect : Job → (Fin V → ZMod 2) → (Fin V → ZMod 2) → Prop),
+    (∀ k word v (D : Stacks (T k) prime), D.L (slot k) = [] →
+      D.R (slot k) = List.ofFn (fun j => SparseRoleCircuit.encode (word j)) →
+      (∀ j, j ≠ slot k → D.L j = (seed k).L j ∧ D.R j = (seed k).R j) →
+      ∃ z F n y, Exec (inner k) (code k) (mk v D) n (mk z F) ∧ (∀ js : List (Fin (T k)), js.Nodup → n+tapeCharge weight js F ≤ tapeCharge weight js D+price k) ∧
+        z.user = v.user ∧ Cover.Fallback.RecordPayload (slot k) (fun _ => blank) 0 y F ∧ effect k word y) →
+    ∃ (H : ℕ) (fan : Fin (142081+2) ↪ Fin H) (host : (Σ k, P k) → Pr (Σ k, P k) H Q prime U)
+      (program : Pr (Σ k, P k) H Q prime U) (initial : Stacks H prime),
+    ∀ (x : Fin 142081 → Fin V → ZMod 2) (D : Stacks H prime)
+      (u : HS H Q prime U), HelperFan fan x D →
+      (∀ k, let t := fan ((idleTape i k).castAdd 2)
+        D.L t = [] ∧ D.R t = List.ofFn (fun j => SparseRoleCircuit.encode (x (idleTape i k) j))) →
+      (∀ t, (∀ j, fan j ≠ t) → D.L t = initial.L t ∧ D.R t = initial.R t) →
+      ∃ F z n y, Exec host program (mk u D) n (mk z F) ∧
+        (∀ js : List (Fin H), js.Nodup → n+tapeCharge weight js F ≤ tapeCharge weight js D+(idleCopies.map price).sum+1) ∧ z.user = u.user ∧ HelperFan fan y F ∧
+        (∀ k, effect k (x (idleTape i k)) (y (idleTape i k))) ∧
+        ∀ j, (∀ k, j ≠ idleTape i k) → y j = x j := by
+  intro Job T P slot inner code seed price effect run
+  let owner : Job ↪ Fin (142081+2) :=
+    (⟨idleTape i,idleTape_injective i⟩ : Job ↪ Fin 142081).trans (Fin.castAddEmb 2)
+  obtain ⟨H,fan,place,shared,outside,apart,prepare⟩ := idleWorkspace (A := prime) T owner slot
+  let host : (Σ k, P k) → Pr (Σ k, P k) H Q prime U :=
+    fun p => embProg (place p.1) (Sigma.mk p.1) (inner p.1 p.2)
+  obtain ⟨initial,_,privateTapes⟩ := prepare ⟨[],[],fun _ => [],fun _ => []⟩ seed
+  refine ⟨H,fan,host,Prog.seqList (idleCopies.map fun k => embProg (place k) (Sigma.mk k) (code k)),initial,?_⟩
+  intro x D u ready words stock
+  obtain ⟨y,F,z,n,exec,paid,user,final,acts,off⟩ := placedIdleWindowWithCharge i weight host fan x D u ready
+    T P place slot inner Sigma.mk code price effect shared outside apart (fun _ _ => rfl) (by
+      intro k v E keep
+      obtain ⟨left,right⟩ := keep (slot k)
+      rw [shared] at left right
+      apply run k _ v E (left.trans (words k).1) (right.trans (words k).2)
+      intro j ne
+      have free : ∀ t, fan t ≠ place k j := by
+        intro t
+        by_cases h : t = owner k
+        · subst t
+          rw [← shared]
+          exact (place k).injective.ne ne.symm
+        · exact (outside k t h j).symm
+      obtain ⟨hl,hr⟩ := stock _ free
+      exact ⟨(keep j).1.trans (hl.trans (privateTapes k j ne).1),
+        (keep j).2.trans (hr.trans (privateTapes k j ne).2)⟩)
+  exact ⟨F,z,n,y,exec,paid,user,final,acts,off⟩
+
 theorem allocatedIdleWindow_exec {Q V : ℕ} {U : Type} (i : Fin 9) :
     let Job := (Fin 32 × Fin 5) × Fin 222
     ∀ (T : Job → ℕ) (P : Job → Type) (slot : ∀ k, Fin (T k))
@@ -74,32 +125,15 @@ theorem allocatedIdleWindow_exec {Q V : ℕ} {U : Type} (i : Fin 9) :
         (∀ k, effect k (x (idleTape i k)) (y (idleTape i k))) ∧
         ∀ j, (∀ k, j ≠ idleTape i k) → y j = x j := by
   intro Job T P slot inner code seed price effect run
-  let owner : Job ↪ Fin (142081+2) :=
-    (⟨idleTape i,idleTape_injective i⟩ : Job ↪ Fin 142081).trans (Fin.castAddEmb 2)
-  obtain ⟨H,fan,place,shared,outside,apart,prepare⟩ := idleWorkspace (A := prime) T owner slot
-  let host : (Σ k, P k) → Pr (Σ k, P k) H Q prime U :=
-    fun p => embProg (place p.1) (Sigma.mk p.1) (inner p.1 p.2)
-  obtain ⟨initial,_,privateTapes⟩ := prepare ⟨[],[],fun _ => [],fun _ => []⟩ seed
-  refine ⟨H,fan,host,Prog.seqList (idleCopies.map fun k => embProg (place k) (Sigma.mk k) (code k)),initial,?_⟩
-  intro x D u ready words stock
-  obtain ⟨y,F,z,n,exec,paid,user,final,acts,off⟩ := placedIdleWindow_exec i host fan x D u ready
-    T P place slot inner Sigma.mk code price effect shared outside apart (fun _ _ => rfl) (by
-      intro k v E keep
-      obtain ⟨left,right⟩ := keep (slot k)
-      rw [shared] at left right
-      apply run k _ v E (left.trans (words k).1) (right.trans (words k).2)
-      intro j ne
-      have free : ∀ t, fan t ≠ place k j := by
-        intro t
-        by_cases h : t = owner k
-        · subst t
-          rw [← shared]
-          exact (place k).injective.ne ne.symm
-        · exact (outside k t h j).symm
-      obtain ⟨hl,hr⟩ := stock _ free
-      exact ⟨(keep j).1.trans (hl.trans (privateTapes k j ne).1),
-        (keep j).2.trans (hr.trans (privateTapes k j ne).2)⟩)
-  exact ⟨F,z,n,y,exec,paid,user,final,acts,off⟩
+  obtain ⟨H,fan,host,program,initial,execute⟩ :=
+    allocatedIdleWindowWithCharge i (fun _ _ => 0) T P slot inner code seed price effect (by
+      intro k word v D left right fresh
+      obtain ⟨z,F,n,y,ran,paid,rest⟩ := run k word v D left right fresh
+      exact ⟨z,F,n,y,ran,by intro js _; simpa [tapeCharge] using paid,rest⟩)
+  refine ⟨H,fan,host,program,initial,?_⟩
+  intro x D u live words fresh
+  obtain ⟨F,z,n,y,ran,paid,rest⟩ := execute x D u live words fresh
+  exact ⟨F,z,n,y,ran,by simpa [tapeCharge] using paid [] (by simp),rest⟩
 
 theorem castWord {m n : ℕ} (h : m = n) (x : Fin n → Fin (prime+4)) :
     List.ofFn (fun k => x (k.cast h)) = List.ofFn x := by
@@ -303,5 +337,69 @@ theorem inheritedWindow_exec {U : Type} {Q : ℕ} (i : Fin 9) (w W : ℕ) (posit
     exact_mod_cast paid)
   exact ⟨_,_,_,_,codeOut,initialOut,by simpa only [Nat.floor_natCast] using handoff⟩
 
+
+private theorem sumWithOverhead {α : Type} (ks : List α) (price : α → ℕ) (overhead : ℕ) :
+    (ks.map fun k => price k+overhead).sum = (ks.map price).sum+ks.length*overhead := by
+  induction ks with
+  | nil => simp
+  | cons k ks ih =>
+    simp only [List.map_cons,List.sum_cons,List.length_cons,Nat.add_mul,Nat.one_mul,ih]
+    omega
+
+theorem inheritedWindowWithCharge {U : Type} {Q : ℕ} (i : Fin 9) (w W : ℕ) (positive : 0 < W)
+    (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q) :
+    let Job := (Fin 32 × Fin 5) × Fin 222
+    let T := intervalSplitTapes
+    let split : Pr Empty T Q prime U := intervalPrepare.seq (foreign (liftQ (CyclicRowNormalized.splitProgram 142080 prime) capacity))
+    let V := (prime^w)^128*W
+    let m := (prime^w)^128*(W*142080)
+    let lane := fun (k : Job) => let e := idleInterval i k.2; phaseIntervalChild (e.1+1) (e.2+1) w W 64
+    ∀ (N : Job → ℕ) (P : Job → Type) (price : Job → ℕ)
+      (body : ∀ k, P k → Pr (P k) (N k) Q prime U) (code : ∀ k, Pr (P k) (N k) Q prime U)
+      (src dst : ∀ k, Fin (142081+2) ↪ Fin (N k)) (seed : ∀ k, Stacks (N k) prime),
+    (∀ k, PackedPieceHandoffWithCharge cleanupWeight (volume prime (lane k)) (fun x y =>
+      ∀ r : Fin 142080, y r.castSucc = Shared50RecursiveNodeRows.transpose (one_dvd (lane k).rows) (x r.castSucc))
+      (body k) (code k) (src k) (dst k) (seed k) (price k)) →
+    let overhead := (1+6*Fast.Main.mnProgPush split)*((149*(T+5)+5)*(V*142080)+24)+
+      (142081*(8*V+10+2*V)+1)+13*(149*(V*142080)*(T+5)+6)
+    ∃ (H : ℕ) (fan : Fin (142081+2) ↪ Fin H)
+      (host : (Σ k, Empty ⊕ P k) → Pr (Σ k, Empty ⊕ P k) H Q prime U)
+      (program : Pr (Σ k, Empty ⊕ P k) H Q prime U) (initial : Stacks H prime),
+    ∀ x (S : Stacks H prime) (u : HS H Q prime U),
+      ParentStageWords (fun r => fan (r.castAdd 2)) fan m x S →
+      (∀ t, (∀ j, fan j ≠ t) → S.L t = initial.L t ∧ S.R t = initial.R t) →
+      ∃ F z n y, Exec host program (mk u S) n (mk z F) ∧
+        (∀ js : List (Fin H), js.Nodup → n+tapeCharge cleanupWeight js F ≤
+          tapeCharge cleanupWeight js S+(idleCopies.map price).sum+35520*overhead+1) ∧
+        z.user = u.user ∧ HelperFan fan y F ∧
+        (∀ k, parentIntervalRead i k.2 w (W*142080) (x (idleTape i k)) (y (idleTape i k))) ∧
+        ∀ j, (∀ k, j ≠ idleTape i k) → y j = x j := by
+  intro Job T split V m lane N P price body code src dst seed child overhead
+  have worker (k : Job) := inheritedIdleWorkerWithCharge i k.2 w W positive capacity (child k)
+  choose inner machine stock run using worker
+  let bill := fun k => price k+overhead
+  obtain ⟨H,fan,host,program,initial,execute⟩ := allocatedIdleWindowWithCharge i cleanupWeight _ _ _ inner machine stock
+    bill (fun k => parentIntervalRead i k.2 w (W*142080)) (by
+      intro k word v S left right fresh
+      obtain ⟨z,F,n,y,ran,paid,rest⟩ := run k word v S left right fresh
+      refine ⟨z,F,n,y,ran,?_,rest⟩
+      intro js distinct
+      have size : volume prime (lane k) = V := intervalChild_volume
+        (Nat.succ_le_succ (idleBounds i k.2).1) (Nat.succ_le_succ (idleBounds i k.2).2) w W
+      have h := paid js distinct
+      dsimp only [lane] at size
+      rw [size] at h
+      dsimp only [split,T,bill,overhead] at *
+      omega)
+  refine ⟨H,fan,host,program,initial,?_⟩
+  intro x S u words fresh
+  obtain ⟨F,z,n,y,ran,paid,rest⟩ := execute x S u words.helperFan
+    (fun k => ⟨words.left (idleTape i k),words.right (idleTape i k)⟩) fresh
+  refine ⟨F,z,n,y,ran,?_,rest⟩
+  intro js distinct
+  have h := paid js distinct
+  dsimp only [bill] at h
+  rw [sumWithOverhead,idleCopies_length] at h
+  simpa only [Nat.add_assoc] using h
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode

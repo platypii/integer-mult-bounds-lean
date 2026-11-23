@@ -4964,6 +4964,56 @@ theorem idlePassBank_exec {owners n : ℕ} {P U : Type} (width states : Fin n �
 
 /-- Sequence the physical passes on the idle's distinct owners. Each pass may
 return a different representation of the tape bank and has its own time bound. -/
+theorem idleCopiesWithPotential {T Q : ℕ} {P U α : Type} (i : Fin 9)
+    (body : P → Pr P T Q prime U) (program : (Fin 32 × Fin 5) × Fin 222 → Pr P T Q prime U)
+    (budget : (Fin 32 × Fin 5) × Fin 222 → ℝ)
+    (prepared : (Fin 32 × Fin 5) × Fin 222 → List ((Fin 32 × Fin 5) × Fin 222) → Stacks T prime → Prop)
+    (ready : List ((Fin 32 × Fin 5) × Fin 222) → (Fin 142081 → α) → Stacks T prime → Prop)
+    (effect : (Fin 32 × Fin 5) × Fin 222 → α → α → Prop)
+    {ι : Type} (potential : ι → Stacks T prime → ℝ)
+    (pass : ∀ k past rest x S (u : HS T Q prime U), past ++ k::rest = idleCopies → ready past x S → prepared k past S →
+      ∃ y D z n, Exec body (program k) (mk u S) n (mk z D) ∧ (∀ j, (n : ℝ)+potential j D ≤ potential j S+budget k) ∧
+        z.user = u.user ∧ ready (past++[k]) y D ∧ (∀ a, a ≠ k → prepared a past S → prepared a (past++[k]) D) ∧
+        effect k (x (idleTape i k)) (y (idleTape i k)) ∧
+        ∀ j, j ≠ idleTape i k → y j = x j)
+    (x : Fin 142081 → α) (S : Stacks T prime) (u : HS T Q prime U) (input : ready [] x S) (frames : ∀ k, prepared k [] S) :
+    ∃ y D z n, Exec body (Prog.seqList (idleCopies.map program)) (mk u S) n (mk z D) ∧
+      (∀ j, (n : ℝ)+potential j D ≤ potential j S+(idleCopies.map budget).sum+1) ∧ z.user = u.user ∧ ready idleCopies y D ∧
+      (∀ k, effect k (x (idleTape i k)) (y (idleTape i k))) ∧
+      ∀ j, (∀ k, j ≠ idleTape i k) → y j = x j := by
+  have run (past ks : List ((Fin 32 × Fin 5) × Fin 222)) (distinct : ks.Nodup) (order : past++ks = idleCopies)
+      (x : Fin 142081 → α) (S : Stacks T prime) (u : HS T Q prime U) (input : ready past x S) (frames : ∀ k ∈ ks, prepared k past S) :
+      ∃ y D z n, Exec body (Prog.seqList (ks.map program)) (mk u S) n (mk z D) ∧
+        (∀ j, (n : ℝ)+potential j D ≤ potential j S+(ks.map budget).sum+1) ∧ z.user = u.user ∧ ready idleCopies y D ∧
+        (∀ k ∈ ks, effect k (x (idleTape i k)) (y (idleTape i k))) ∧
+        ∀ j, (∀ k ∈ ks, j ≠ idleTape i k) → y j = x j := by
+    induction ks generalizing past x S u with
+    | nil =>
+      rw [List.append_nil] at order
+      exact ⟨x,S,u,1,Exec.act .done _,by intro j; simp [add_comm],rfl,order ▸ input,by simp,fun _ _ => rfl⟩
+    | cons k ks ih =>
+      obtain ⟨fresh,tail⟩ := List.nodup_cons.mp distinct
+      obtain ⟨v,B,t,m,firstRun,paid,keep,next,preserve,acted,off⟩ := pass k past ks x S u order input (frames k List.mem_cons_self)
+      obtain ⟨y,D,z,n,rest,bill,user,final,acts,kept⟩ := ih (past++[k]) tail (by simpa using order) v B t next
+        (fun a ha => preserve a (fun h => fresh (h ▸ ha)) (frames a (List.mem_cons_of_mem _ ha)))
+      refine ⟨y,D,z,m+n,Exec.seq firstRun rest,?_,user.trans keep,final,?_,?_⟩
+      · intro j
+        simp only [List.map_cons,List.sum_cons,Nat.cast_add]
+        linarith only [paid j,bill j]
+      · intro j hj
+        rcases List.mem_cons.mp hj with rfl | member
+        · rw [kept (idleTape i j) (fun a ha => (idleTape_injective i).ne (fun h => fresh (h.symm ▸ ha)))]
+          exact acted
+        · rw [← off _ ((idleTape_injective i).ne (fun h => fresh (h ▸ member)))]
+          exact acts j member
+      · intro j outside
+        exact (kept j (fun a ha => outside a (List.mem_cons_of_mem _ ha))).trans
+          (off j (outside k List.mem_cons_self))
+  obtain ⟨y,D,z,n,exec,paid,user,final,acts,kept⟩ := run [] idleCopies
+    (stageRuns_nodup.product (List.nodup_finRange _)) rfl x S u input (fun k _ => frames k)
+  refine ⟨y,D,z,n,exec,paid,user,final,fun k => acts k ?_,fun j h => kept j (fun a _ => h a)⟩
+  exact List.mem_flatMap.mpr ⟨k.1,mem_stageRuns _,List.mem_map.mpr ⟨k.2,List.mem_finRange _,rfl⟩⟩
+
 theorem idleCopies_exec {T Q : ℕ} {P U α : Type} (i : Fin 9)
     (body : P → Pr P T Q prime U) (program : (Fin 32 × Fin 5) × Fin 222 → Pr P T Q prime U)
     (budget : (Fin 32 × Fin 5) × Fin 222 → ℝ)
@@ -4980,37 +5030,12 @@ theorem idleCopies_exec {T Q : ℕ} {P U α : Type} (i : Fin 9)
       (n : ℝ) ≤ (idleCopies.map budget).sum + 1 ∧ z.user = u.user ∧ ready idleCopies y D ∧
       (∀ k, effect k (x (idleTape i k)) (y (idleTape i k))) ∧
       ∀ j, (∀ k, j ≠ idleTape i k) → y j = x j := by
-  have run (past ks : List ((Fin 32 × Fin 5) × Fin 222)) (distinct : ks.Nodup) (order : past++ks = idleCopies)
-      (x : Fin 142081 → α) (S : Stacks T prime) (u : HS T Q prime U) (input : ready past x S) (frames : ∀ k ∈ ks, prepared k past S) :
-      ∃ y D z n, Exec body (Prog.seqList (ks.map program)) (mk u S) n (mk z D) ∧
-        (n : ℝ) ≤ (ks.map budget).sum + 1 ∧ z.user = u.user ∧ ready idleCopies y D ∧
-        (∀ k ∈ ks, effect k (x (idleTape i k)) (y (idleTape i k))) ∧
-        ∀ j, (∀ k ∈ ks, j ≠ idleTape i k) → y j = x j := by
-    induction ks generalizing past x S u with
-    | nil =>
-      rw [List.append_nil] at order
-      exact ⟨x,S,u,1,Exec.act .done _,by simp,rfl,order ▸ input,by simp,fun _ _ => rfl⟩
-    | cons k ks ih =>
-      obtain ⟨fresh,tail⟩ := List.nodup_cons.mp distinct
-      obtain ⟨v,B,t,m,firstRun,paid,keep,next,preserve,acted,off⟩ := pass k past ks x S u order input (frames k List.mem_cons_self)
-      obtain ⟨y,D,z,n,rest,bill,user,final,acts,kept⟩ := ih (past++[k]) tail (by simpa using order) v B t next
-        (fun a ha => preserve a (fun h => fresh (h ▸ ha)) (frames a (List.mem_cons_of_mem _ ha)))
-      refine ⟨y,D,z,m+n,Exec.seq firstRun rest,?_,user.trans keep,final,?_,?_⟩
-      · simp only [List.map_cons,List.sum_cons,Nat.cast_add]
-        linarith
-      · intro j hj
-        rcases List.mem_cons.mp hj with rfl | member
-        · rw [kept (idleTape i j) (fun a ha => (idleTape_injective i).ne (fun h => fresh (h.symm ▸ ha)))]
-          exact acted
-        · rw [← off _ ((idleTape_injective i).ne (fun h => fresh (h ▸ member)))]
-          exact acts j member
-      · intro j outside
-        exact (kept j (fun a ha => outside a (List.mem_cons_of_mem _ ha))).trans
-          (off j (outside k List.mem_cons_self))
-  obtain ⟨y,D,z,n,exec,paid,user,final,acts,kept⟩ := run [] idleCopies
-    (stageRuns_nodup.product (List.nodup_finRange _)) rfl x S u input (fun k _ => frames k)
-  refine ⟨y,D,z,n,exec,paid,user,final,fun k => acts k ?_,fun j h => kept j (fun a _ => h a)⟩
-  exact List.mem_flatMap.mpr ⟨k.1,mem_stageRuns _,List.mem_map.mpr ⟨k.2,List.mem_finRange _,rfl⟩⟩
+  obtain ⟨y,D,z,n,ran,bill,rest⟩ := idleCopiesWithPotential i body program budget prepared ready effect
+    (fun (_ : Unit) _ => 0) (by
+      intro k past rest x S u order state fresh
+      obtain ⟨y,D,z,n,ran,paid,more⟩ := pass k past rest x S u order state fresh
+      exact ⟨y,D,z,n,ran,by simpa using paid,more⟩) x S u input frames
+  exact ⟨y,D,z,n,ran,by simpa using bill (),rest⟩
 
 /-- Physical cell of a rational address in the fixed block, label and spectator slice. -/
 noncomputable def ordinaryRoleAddress {w R W parents : ℕ} (parent : Fin 64 → ZMod (prime^(w+1)))
