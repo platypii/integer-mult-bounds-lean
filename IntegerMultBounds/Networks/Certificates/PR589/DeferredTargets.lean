@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.Networks.Certificates.PR589.Word
+public import IntegerMultBounds.Networks.Certificates.PR589.DirtyEndpoint
 
 /-! Target corrections can be carried through the scalar word without
 affecting any source read. -/
@@ -81,5 +81,43 @@ theorem deferD (x : ℕ → ZMod 2) :
   have target := of_decide_eq_true (List.all_eq_true.mp targetsD gate hgate)
   change gate.target ≠ i
   omega
+
+private theorem dHelperSources : sectionD.all (fun g => g.sources.all (fun i => decide (222 ≤ i ∧ i < 661))) = true := by
+  decide +kernel
+
+/-- The suffix restores every helper used by D. Consequently D itself can run
+last, reading the current registers and requiring no saved helper values. -/
+theorem run_D_last (stored : Fin 661 → ZMod 2) :
+    let x := extendInput stored
+    let suffix := sectionA ++ sectionscatter ++ sectionB ++ sectionC
+    Circuit.run (program.map RawGate.toCircuit) x =
+      Circuit.run (sectionD.map RawGate.toCircuit) (Circuit.run (suffix.map RawGate.toCircuit) x) := by
+  intro x suffix
+  let y := Circuit.run (suffix.map RawGate.toCircuit) x
+  let d := Circuit.run (sectionD.map RawGate.toCircuit) x
+  have finish := deferD x
+  change Circuit.run _ x = fun i => y i + (d i - x i) at finish
+  have restored (i : ℕ) (lo : 222 ≤ i) (hi : i < 661) : y i = x i := by
+    have dh : d i = x i := by
+      apply Circuit.run_preserves
+      intro e he
+      obtain ⟨g,hg,rfl⟩ := List.mem_map.mp he
+      have ht := of_decide_eq_true (List.all_eq_true.mp targetsD g hg)
+      change g.target ≠ i
+      omega
+    have full := dirty_endpoint stored ⟨i,hi⟩
+    have h := congrFun finish i
+    rw [dh,sub_self,add_zero] at h
+    simpa [x,extendInput,hi,show ¬(111 ≤ i ∧ i < 222) by omega] using h.symm.trans full
+  let diff := fun i => y i - x i
+  have shift : y = fun i => x i + diff i := by funext i; dsimp [diff]; abel
+  change _ = Circuit.run _ y
+  rw [finish,shift,carry sectionD diff _ x]
+  · funext i
+    dsimp only [diff]
+    abel
+  · intro g hg i hi
+    have h := of_decide_eq_true (List.all_eq_true.mp (List.all_eq_true.mp dHelperSources g hg) i hi)
+    exact sub_eq_zero.mpr (restored i h.1 h.2)
 
 end IntegerMultBounds.Networks.Certificates.PR589
