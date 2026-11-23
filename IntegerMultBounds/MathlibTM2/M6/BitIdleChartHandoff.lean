@@ -18,7 +18,7 @@ abbrev PackedWindowHandoff (U : Type) (Q V : ℕ)
 open Certificates.PR589 Certificates.PR589.Nine Cover
 open RecursiveInterchangeLayout
 
-private theorem sumIndexed {α : Type} (xs : List α) (index : α → Fin xs.length)
+theorem sumIndexed {α : Type} (xs : List α) (index : α → Fin xs.length)
     (atIndex : ∀ j : Fin xs.length, index xs[j.val] = j) (price : Fin xs.length → ℕ) :
     (xs.map (fun x => price (index x))).sum = ∑ j, price j := by
   conv_lhs => rw [← List.ofFn_getElem (xs := xs)]
