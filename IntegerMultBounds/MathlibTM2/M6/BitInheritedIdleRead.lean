@@ -75,7 +75,7 @@ def IntervalRun {P U : Type} {N Q : ℕ} (seed : Stacks N prime) (price : ℕ) (
         z.user = u.user ∧ reads x y ∧
         Cover.Fallback.RecordPayload (caller 0) (fun _ => blank) 0 y F
 
-private theorem intervalRun_of_transpose {P U : Type} {N Q price : ℕ} (lane : Descriptor)
+theorem intervalRun_of_transpose {P U : Type} {N Q price : ℕ} (lane : Descriptor)
     (positiveV : 0 < volume prime lane)
     (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q)
     {body : P → Pr P N Q prime U} {code src dst seed}

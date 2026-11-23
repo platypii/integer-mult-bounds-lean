@@ -1,6 +1,8 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.M6.BitMixedIdleCost
 public import IntegerMultBounds.MathlibTM2.M6.BitWorkerDispatch
+public import IntegerMultBounds.MathlibTM2.M6.BitInheritedReturnMerge
 public import IntegerMultBounds.MathlibTM2.M6.BitRemainderCompactRead
 
 @[expose] public section
@@ -27,6 +29,119 @@ theorem loadActivePayload {P U : Type} {T Q w W : ℕ} (body : P → Pr P T Q pr
     rw [← encodedOwnerCell]
     simpa only [sub_zero,List.map_ofFn] using ready.src j
   simpa only [fresh,List.append_nil] using loadCompactWord_exec body (bank 24) tmp dst apart word u S read left right
+
+/-- Load a positioned active payload and distribute its successive cells
+cyclically among the 142080 child rows. -/
+theorem splitActivePayload {P U : Type} {T Q w W m : ℕ} (body : P → Pr P T Q prime U)
+    (bank : Fin 35 ↪ Fin T) (rows : Fin intervalSplitTapes ↪ Fin T) (tmp : Fin T)
+    (apart : [bank 24,tmp,rows 0].Nodup)
+    (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q)
+    (positive : 0 < m) (span : m*142080 = (prime^(w+1))^16*W)
+    (record : List (Fin (prime+4))) (word : Fin ((prime^(w+1))^16*W) → ZMod 2)
+    (u : HS T Q prime U) (S : Stacks T prime)
+    (ready : RecordReady (b := prime) (w := w) (d := 16) (W := W) bank
+      (prime^(w+1)).size W.size record SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0 word S)
+    (scratch : S.L tmp = [] ∧ S.R tmp = []) (free : ∀ j, S.L (rows j) = [] ∧ S.R (rows j) = []) :
+    let input := fun k => word (Fin.cast span k)
+    let split : Pr Empty intervalSplitTapes Q prime U := intervalPrepare.seq
+      (foreign (liftQ (CyclicRowNormalized.splitProgram 142080 prime) capacity))
+    ∃ z F t, Exec body ((loadCompactWord (bank 24) tmp (rows 0)).seq (embProg rows Empty.elim split))
+      (mk u S) t (mk z F) ∧ z.user = u.user ∧
+      t ≤ (149*(intervalSplitTapes+5)+13)*(m*142080)+34 ∧
+      RepT (intervalOwnerBank (putWord (fun _ => blank) 0 (List.ofFn (SparseRoleCircuit.encode ∘ input)))
+        (fun r i => input (finProdFinEquiv (i,r)))) (embStk rows F).L (embStk rows F).R ∧
+      ∀ j, (∀ i, rows i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  intro input split
+  obtain ⟨v,user,load⟩ := loadActivePayload body bank tmp (rows 0) apart record word u S ready
+    scratch.1 scratch.2 (free 0).2
+  let D := {S with R := Function.update S.R (rows 0) (List.ofFn fun i => SparseRoleCircuit.encode (word i))}
+  have source : D.R (rows 0) = List.ofFn (SparseRoleCircuit.encode ∘ input) := by
+    simp only [D,Function.update_self,input,Function.comp_def]
+    have castWord {a b : ℕ} (h : a=b) (f : Fin b → Fin (prime+4)) :
+        List.ofFn f = List.ofFn (fun k => f (k.cast h)) := by subst b; rfl
+    exact castWord span _
+  obtain ⟨z,F,t,run,same,paid,out,frame⟩ := splitEncoded_exec body rows capacity positive input v D source
+    (fun j => (free j).1) (fun j ne => (Function.update_of_ne (rows.injective.ne ne) ..).trans (free j).2)
+  refine ⟨z,F,_,Exec.seq load run,same.trans user,?_,out,?_⟩
+  · rw [← span]
+    simp only [Nat.add_mul] at paid ⊢
+    omega
+  · intro j off
+    exact ⟨(frame j off).1,(frame j off).2.trans (Function.update_of_ne (off 0).symm ..)⟩
+
+/-- The physical split and merge in `inheritedInterval_exec` require the
+ordinary row transpose. On a packed MOVE row the child supplies it directly. -/
+theorem packedMoveRows {P U : Type} {N Q price : ℕ} (atom W : ℕ)
+    {body : P → Pr P N Q prime U} {code src dst seed} :
+    let lane := packedDescriptor (64*atom) W
+    PackedPieceHandoff (volume prime lane) (packedChildOutput atom _) body code src dst seed price →
+    PackedPieceHandoff (volume prime lane) (fun x y => ∀ r : Fin 142080,
+      y r.castSucc = Shared50RecursiveNodeRows.transpose (one_dvd lane.rows) (x r.castSucc))
+      body code src dst seed price := by
+  intro lane child x u S words privateTapes
+  obtain ⟨z,F,t,y,run,paid,user,out,effect⟩ := child x u S words privateTapes
+  refine ⟨z,F,t,y,run,paid,user,out,?_⟩
+  have position : packedChildPosition lane rfl = Equiv.refl _ := by
+    ext i
+    exact packActive_packed (64*atom) W i
+  intro r
+  simpa only [position,Equiv.refl_apply,Function.comp_def] using effect r lane rfl rfl
+
+/-- Recover the physical MOVE row worker directly from the recursive
+descriptor contract. Dividing the spectator field by the owner count leaves
+the two transposed fields intact. -/
+theorem activeMoveRowWorker {U : Type} {Q time : ℕ} (child : Descriptor)
+    (split : 142080 ∣ child.rows) (run : PackedDescriptorHandoff U Q child time) :
+    let W := CopyChildLayout.spectators child / 142080
+    let lane := packedDescriptor child.width W
+    W*142080 = CopyChildLayout.spectators child ∧
+      PackedWindowHandoff U Q (volume prime lane) (fun x y => ∀ r : Fin 142080,
+        y r.castSucc = Shared50RecursiveNodeRows.transpose (one_dvd lane.rows) (x r.castSucc)) time := by
+  intro W lane
+  obtain ⟨groups,rows⟩ := split
+  have spectator : CopyChildLayout.spectators child =
+      (child.beforeRows*groups*child.beforeH*child.between*child.afterD)*142080 := by
+    rw [CopyChildLayout.spectators,rows]
+    ring
+  have suffix : W = child.beforeRows*groups*child.beforeH*child.between*child.afterD := by
+    dsimp only [W]
+    rw [spectator,Nat.mul_div_cancel _ (by decide)]
+  refine ⟨by rw [suffix,spectator],?_⟩
+  have size : volume prime child / 142080 = volume prime lane := by
+    have total : volume prime child = volume prime lane * 142080 := by
+      dsimp only [lane,volume,packedDescriptor]
+      rw [suffix,rows]
+      ring
+    rw [total,Nat.mul_div_cancel _ (by decide)]
+  obtain ⟨⟨atom,width⟩,call⟩ := run
+  change PackedWindowHandoff U Q (volume prime child / 142080) (packedChildOutput (child.width/64) _) time at call
+  rw [size,show child.width/64 = atom by rw [width,Nat.mul_div_cancel_left _ (by decide)]] at call
+  dsimp only [lane] at call ⊢
+  rw [width] at call ⊢
+  obtain ⟨P,T,body,code,src,dst,seed,worker⟩ := call
+  exact ⟨P,T,body,code,src,dst,seed,packedMoveRows atom W worker⟩
+
+/-- Split a packed MOVE, execute its recursive row worker and merge. The
+merged word realizes the scheduled transpose in the caller's packed order. -/
+theorem activeMoveInterval {U : Type} {Q time : ℕ} (child : Descriptor)
+    (split : 142080 ∣ child.rows) (run : PackedDescriptorHandoff U Q child time)
+    (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q) :
+    let W := CopyChildLayout.spectators child / 142080
+    let lane := packedDescriptor child.width W
+    let wide := {lane with afterD := lane.afterD*142080}
+    0 < volume prime lane →
+    ∃ (P : Type) (N : ℕ) (seed : Stacks N prime),
+      IntervalRun (P := P) (U := U) (Q := Q) seed time lane (fun x y =>
+        ∀ (position : Fin (volume prime child) ≃ Fin (volume prime wide)),
+          (∀ k, (position k).val = (CopyChildLayout.packActive child k).val) →
+          ∀ k, y (position k) = Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (x ∘ position) k) := by
+  intro W lane wide positive
+  obtain ⟨_,P,N,body,code,src,dst,seed,worker⟩ := activeMoveRowWorker child split run
+  refine ⟨P,N,seed,intervalRun_of_transpose lane positive capacity worker _ ?_⟩
+  intro x position packed
+  have coords : InheritedIntervalPositions child wide rfl position := fun k =>
+    (packed k).symm.trans (packActive_packed child.width (W*142080) (position k)).symm
+  exact (coords.transpose_iff rfl x _).2 rfl
 
 /-- A worker acting on the positioned payload can resume the caller directly
 when it restores every other tape. This also restores the saved stack. -/
