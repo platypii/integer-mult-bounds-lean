@@ -828,8 +828,8 @@ private theorem withCutoffPort_cut {k T : ℕ} (fan : Fin k ↪ Fin T) :
 
 open RecursiveInterchangeLayout in
 /-- Worker records lie outside the cutoff, and archive tape 34 is private. -/
-theorem withCutoffPort_records {k T : ℕ} (fan : Fin k ↪ Fin T) (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T)
-    (apart : ∀ j : Fin (rowSwapBlock.tapes+35), j.val ≠ 24 → ∀ h, fan h ≠ ports j) :
+theorem withCutoffPort_records {k T m : ℕ} (fan : Fin k ↪ Fin T) (ports : Fin (m+35) ↪ Fin T)
+    (apart : ∀ j : Fin (m+35), j.val ≠ 24 → ∀ h, fan h ≠ ports j) :
     let record := (scheduledRecordPorts ports).trans (Fin.castAddEmb 1)
     (∀ j, record j ≠ withCutoffPort fan (Fin.last k)) ∧ (∀ j : Fin 35, j.val ≠ 24 → ∀ h, withCutoffPort fan h ≠ record j) := by
   intro record

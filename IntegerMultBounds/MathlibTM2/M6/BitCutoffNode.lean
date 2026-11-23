@@ -389,6 +389,58 @@ theorem selectedStageWorkers [M8.Machine.Net] (n : Fin 9) :
   exact joinOccurrenceWorkers n p (pre p) (post p) _ _ _ (fun i => (before p i).2.2)
     (invocationCopyWindow n p) (fun i => (after p i).2.2)
 
+/-- Install a finite family of selected workers in one state budget and prepare
+each worker from the child record belonging to its cutoff node. -/
+theorem cutoffWorkerFamily [M8.Machine.Net] {I : Type} [Fintype I]
+    (child : I → Fin nodeChildren5.length) (slot : I → Fin 3)
+    (effect : I → ∀ w B K : ℕ, let X := Fin 142081 → Fin ((prime^w)^16*(B*prime^(64*(w*64))*K)) → ZMod 2
+      X → X → Prop)
+    (workers : ∀ i, SelectedOccurrenceWorker (child i) (fun _ => invocationCoordinates (slot i)) (effect i)) :
+    ∃ (tapes : I → ℕ) (states : ℕ) (ports : ∀ i, Fin (rowSwapBlock.tapes+35) ↪ Fin (tapes i))
+      (fan : ∀ i, Fin (142081+2) ↪ Fin (tapes i)),
+    (∀ i (j : Fin (rowSwapBlock.tapes+35)), j.val ≠ 24 → ∀ h, fan i h ≠ ports i j) ∧
+    ∀ {P U : Type} {Q : ℕ}, states ≤ Q →
+    ∀ (body : ∀ i, P → Pr P (tapes i) Q prime U) (f : I → P),
+    let host := fun i label => embProg (Fin.castAddEmb 1) id (body i label)
+    ∃ (base swaps fixed : I → ℕ) (code : ∀ i, Pr P (tapes i+1) Q prime U), ∀ c : CutoffNodeInput,
+    let W := c.stageWidth
+    let V := (prime^(c.w+1))^16*W
+    let desc := fun i => scheduledChild prime c.node (child i)
+    let record := fun i => invocationWorkerRecord (slot i) (desc i) c.root.width.size c.cutoff
+    let word := binSyms (A := prime) c.root.width.size c.cutoff
+    ∃ position : ∀ i, Fin (volume prime (desc i)) ≃ Fin V,
+      (∀ i, invocationCoordinates (slot i) (c.w+1) W (position i)) ∧
+      ∃ seed : ∀ i, Stacks (tapes i+1) prime,
+      (∀ i, WorkerEntryWords (fun j => (scheduledRecordPorts (ports i) j).castAdd 1) (record i) (seed i)) ∧
+      ∀ (time : ℕ → ℕ), (∀ i, ScheduledChildExec c.node (desc i) c.w W (ports i) (record i) (position i)
+        (body i) (f i) (time (child i).val) true) →
+      ∀ i, let owners := withCutoffPort (fan i)
+        let rep := fun x (S : Stacks (tapes i+1) prime) => HelperFan (Fin.castAddEmb 1) x (embStk owners S) ∧
+          S.R (owners (Fin.last (142081+2))) = word
+        ∀ x u S, rep x S → PrivateTapes owners (seed i) S →
+          ∃ z F t y, Exec (host i) (code i) (mk u S) t (mk z F) ∧
+            CleanupBound S F t ((base i+swaps i*swapVolumeRate c.w)*c.cells+fixed i+time (child i).val) ∧
+            z.user = u.user ∧ rep y F ∧ effect i (c.w+1) ((prime^(c.w+1))^112*c.B) c.stageFactor x y := by
+  classical
+  choose tapes qs ports fan apart build using workers
+  refine ⟨tapes,Finset.univ.sup qs,ports,fan,apart,?_⟩
+  intro P U Q cap body f host
+  choose base swaps fixed code run using fun i => build i ((Finset.le_sup (Finset.mem_univ i)).trans cap) (body i) (f i)
+  refine ⟨base,swaps,fixed,code,?_⟩
+  intro c W V desc record word
+  have pos : 0 < W := by
+    have cells : 0 < c.cells := Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) (Nat.mul_pos c.idlePositive (by decide))
+    rw [← c.stageCells] at cells
+    exact Nat.pos_of_ne_zero (fun h : W = 0 => by change c.stageWidth = 0 at h; rw [h,Nat.mul_zero] at cells; omega)
+  choose position coords prepare using fun i => run i c.node c.w c.B c.rowsPerStage c.width c.rows c.label pos
+  choose seed entry execute using fun i => prepare i (record i)
+  refine ⟨position,coords,seed,entry,?_⟩
+  intro time recurse i owners rep x u S live stock
+  obtain ⟨z,F,t,y,h,paid,user,out,act⟩ := execute i (time (child i).val) word (recurse i) x u S stock live
+  refine ⟨z,F,t,y,h,?_,user,out,act⟩
+  rw [← c.stageCells]
+  exact paid
+
 /-- The selected occurrence trace on the initialized stage realizes every borrowed invocation. -/
 theorem selectedStageEffects (n : Fin 9) (w B K : ℕ) :
     let l := (selectedPhaseSchedule false).1.length
@@ -645,18 +697,18 @@ theorem runSelectedStageArchives [M8.Machine.Net] {U : Type} {Q l r owners : ℕ
     ∃ code, ∀ base swaps fixed : I → ℕ,
     let localCost := fun w V => rate*V+(order.map (fun i => (base i+swaps i*swapVolumeRate w)*V+fixed i)).sum+1
     (∃ D : ℝ, ∀ w V : ℕ, 0 < V → (localCost w V : ℝ) ≤ D*(V*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau)) ∧
-    ∀ (c : CutoffNodeInput) {X : Type} (childTime : ℕ → ℕ) (seed : ∀ p, Stacks (tapes p) prime)
+    ∀ (c : CutoffNodeInput) {X : Type} (seed : ∀ p, Stacks (tapes p) prime)
       (rep : X → (Fin owners → List (Fin (prime+4))) → (Fin owners → List (Fin (prime+4))) → Prop)
       (effect : I → X → X → Prop),
     let word := fun p : I => invocationWorkerRecord p.2.1 (scheduledChild prime c.node (child p)) c.root.width.size c.cutoff
     let work := fun i => (base i+swaps i*swapVolumeRate c.w)*c.cells+fixed i
-    let cost := fun p => work p+childTime (child p).val
     (∀ p, WorkerEntryWords (record p) (word p) (seed p)) →
+    ∀ owners : Stacks owners prime, ∃ initial : Stacks (80+((T+273)+R)) prime, embStk shared (embStk owner initial) = owners ∧
+    ∀ childTime : ℕ → ℕ, let cost := fun p => work p+childTime (child p).val
     (∀ p x u D, rep x (D.L ∘ fan p) (D.R ∘ fan p) →
       PrivateTapes (fan p) (seed p) D →
       ∃ z F t y, Exec (body p) (worker p) (mk u D) t (mk z F) ∧ CleanupBound D F t (cost p) ∧
         z.user = u.user ∧ rep y (F.L ∘ fan p) (F.R ∘ fan p) ∧ effect p x y) →
-    ∀ owners : Stacks owners prime, ∃ initial : Stacks (80+((T+273)+R)) prime, embStk shared (embStk owner initial) = owners ∧
     ∀ x u S,
       S.R (owner (shared cut)) = binSyms c.root.width.size c.cutoff →
       rep x (S.L ∘ (shared.trans owner)) (S.R ∘ (shared.trans owner)) →
@@ -676,10 +728,11 @@ theorem runSelectedStageArchives [M8.Machine.Net] {U : Type} {Q l r owners : ℕ
   refine ⟨load.seq (Prog.seqList calls),?_⟩
   intro base swaps fixed localCost
   refine ⟨stageLocalCost_bound order rate base swaps fixed,?_⟩
-  intro c X childTime seed rep effect word work cost archive execute sharedSeed
+  intro c X seed rep effect word work archive sharedSeed
   obtain ⟨initial,view,saved⟩ := stock sharedSeed seed
   obtain ⟨hostSeed,placedSeed,ready⟩ := stageHostSeed (R := R) shared initial c
   refine ⟨hostSeed,placedSeed ▸ view,?_⟩
+  intro childTime cost execute
   intro x u S header live privateSeed
   obtain ⟨input,fresh⟩ := ready S privateSeed
   have stored p k off := fresh (bank p k) (saved p k off).1
@@ -733,6 +786,100 @@ theorem runSelectedStageArchives [M8.Machine.Net] {U : Type} {Q l r owners : ℕ
   change a+tapeCharge cleanupWeight js D ≤ tapeCharge cleanupWeight js S+rate*c.cells at setup
   change a+t+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+(rate*c.cells+(order.map work).sum+1+_)
   omega
+
+/-- The stage interface on the parent host, with one recursive contract per scheduled child. -/
+def CutoffStageExecution [M8.Machine.Net] {l r : ℕ} (n : Fin 9)
+    (pre : StageRun → Fin l → MoveIndex) (post : StageRun → Fin r → MoveIndex) : Prop :=
+    let I := Σ _ : StageRun, Σ j : Fin 3, Fin (invocationCounts l r j)
+    let child := fun p : I => invocationChildren n p.1 (pre p.1) (post p.1) p.2.1 p.2.2
+    ∃ (tapes : I → ℕ) (states : ℕ) (ports : ∀ i, Fin (rowSwapBlock.tapes+35) ↪ Fin (tapes i)),
+    ∀ {P U : Type} {Q : ℕ}, states ≤ Q →
+    ∀ (body : ∀ i, P → Pr P (tapes i) Q prime U) (f : I → P),
+    ∃ (T : ℕ) (fan : Fin (142081+2+1) ↪ Fin T) (host : I × P → Pr (I × P) T Q prime U)
+      (code : Pr (I × P) T Q prime U) (localCost : ℕ → ℕ → ℕ),
+    (∃ D : ℝ, ∀ w V : ℕ, 0 < V → (localCost w V : ℝ) ≤ D*(V*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau)) ∧
+    ∀ c : CutoffNodeInput, let W := c.stageWidth
+      let V := (prime^(c.w+1))^16*W
+      let desc := fun i => scheduledChild prime c.node (child i)
+      let record := fun i => invocationWorkerRecord i.2.1 (desc i) c.root.width.size c.cutoff
+      let word := binSyms (A := prime) c.root.width.size c.cutoff
+      ∃ position : ∀ i, Fin (volume prime (desc i)) ≃ Fin V,
+      (∀ i, invocationCoordinates i.2.1 (c.w+1) W (position i)) ∧
+      ∀ shared, ∃ seed : Stacks T prime, embStk fan seed = shared ∧
+      ∀ time : ℕ → ℕ, (∀ i, ScheduledChildExec c.node (desc i) c.w W (ports i) (record i) (position i)
+        (body i) (f i) (time (child i).val) true) →
+      ∀ (x : Fin 142081 → Fin V → ZMod 2) u S, HelperFan (Fin.castAddEmb 1) x (embStk fan S) →
+        S.R (fan (Fin.last (142081+2))) = word → PrivateTapes fan seed S →
+        ∃ z F t y, Exec host code (mk u S) t (mk z F) ∧ CleanupBound S F t (localCost c.w c.cells+
+          ((List.range' (stageChildStart n) (stageRuns.flatMap (fun _ => Geometry.Moves.localPaid)).length).map time).sum) ∧
+          z.user = u.user ∧ HelperFan (Fin.castAddEmb 1) y (embStk fan F) ∧ F.R (fan (Fin.last (142081+2))) = word ∧
+          OrderedEffects stageRuns (BorrowedStep n (c.w+1) ((prime^(c.w+1))^112*c.B) c.stageFactor) x y
+
+/-- Execute a stage on one initialized host, using only the scheduled child calls at runtime. -/
+theorem cutoffStageFromWorkers [M8.Machine.Net] {l r : ℕ} (n : Fin 9)
+    (pre : StageRun → Fin l → MoveIndex) (post : StageRun → Fin r → MoveIndex)
+    (first : ∀ p i, (pre p i).val = i.val) (last : ∀ p i, (post p i).val = l+i.val)
+    (count : l+r = (Geometry.Moves.phaseEdges.filter positiveMove).length) :
+    let I := Σ _ : StageRun, Σ j : Fin 3, Fin (invocationCounts l r j)
+    let child := fun p : I => invocationChildren n p.1 (pre p.1) (post p.1) p.2.1 p.2.2
+    ∀ effect : I → ∀ w B K : ℕ, let X := Fin 142081 → Fin ((prime^w)^16*(B*prime^(64*(w*64))*K)) → ZMod 2
+      X → X → Prop,
+    (∀ i, SelectedOccurrenceWorker (child i) (fun _ => invocationCoordinates i.2.1) (effect i)) →
+    (∀ c : CutoffNodeInput, ∀ x y,
+      OrderedEffects stageRuns (fun p => OrderedEffects (List.finRange 3) (fun j =>
+        OrderedEffects (List.finRange (invocationCounts l r j)) (fun i => effect ⟨p,j,i⟩ (c.w+1)
+          ((prime^(c.w+1))^112*c.B) c.stageFactor))) x y →
+      OrderedEffects stageRuns (BorrowedStep n (c.w+1) ((prime^(c.w+1))^112*c.B) c.stageFactor) x y) →
+    CutoffStageExecution n pre post := by
+  intro I child effect workers complete
+  unfold CutoffStageExecution
+  intro _ _
+  obtain ⟨ts,qs,ports,data,separate,build⟩ := cutoffWorkerFamily child (fun i => i.2.1) effect workers
+  let setup := (fun {q : ℕ} (_ : Program 38 q prime) => q) (RecursiveRowsNodeHeaders.program 142080)
+  refine ⟨ts,max qs setup,ports,?_⟩
+  intro P U Q cap body f
+  obtain ⟨base,swaps,fixed,worker,prepare⟩ := build ((Nat.le_max_left ..).trans cap) body f
+  let owners := fun i => withCutoffPort (data i)
+  let regs := fun i => (scheduledRecordPorts (ports i)).trans (Fin.castAddEmb 1)
+  obtain ⟨T,shared,bank,rate,install⟩ := runSelectedStageArchives (U := U) ((Nat.le_max_right ..).trans cap)
+    n pre post first last count (fun i => ts i+1) owners regs (Fin.last (142081+2))
+    (fun i => (withCutoffPort_records _ _ (separate i)).1) (fun i => (withCutoffPort_records _ _ (separate i)).2)
+  obtain ⟨code,run⟩ := install (R := 0) (fun i label => embProg (Fin.castAddEmb 1) id (body i label)) worker
+  obtain ⟨bound,stage⟩ := run base swaps fixed
+  let owner := ((Fin.castAddEmb 273 (n := T)).trans (Fin.castAddEmb 0)).trans (Fin.natAddEmb 80)
+  let host := fun g : I × P => embProg ((bank g.1).trans owner) (Prod.mk g.1)
+    (embProg (Fin.castAddEmb 1) id (body g.1 g.2))
+  refine ⟨_,shared.trans owner,host,code,_,bound,?_⟩
+  intro c W V desc record word
+  obtain ⟨position,coords,seeds,entry,steps⟩ := prepare c
+  refine ⟨position,coords,?_⟩
+  intro sharedSeed
+  let rep := fun (x : Fin 142081 → Fin V → ZMod 2) L R =>
+    HelperFan (Fin.castAddEmb 1) x (⟨[],[],L,R⟩ : Stacks (142081+2+1) prime) ∧ R (Fin.last (142081+2)) = word
+  obtain ⟨seed,view,execute⟩ := stage c seeds rep
+    (fun i => effect i (c.w+1) ((prime^(c.w+1))^112*c.B) c.stageFactor) entry sharedSeed
+  refine ⟨seed,view,?_⟩
+  intro time recurse x u S live header stock
+  obtain ⟨z,F,t,y,exec,paid,user,out,trace⟩ := execute time (steps time recurse) x u S header ⟨live,header⟩ stock
+  exact ⟨z,F,t,y,exec,paid,user,out.1,out.2,complete c x y trace⟩
+
+/-- The selected PR589 occurrence family realizes all borrowed runs on one stage host. -/
+theorem selectedCutoffStageRuns [M8.Machine.Net] (n : Fin 9) :
+    let l := (selectedPhaseSchedule false).1.length
+    let r := (selectedPhaseSchedule true).1.length
+    ∃ (pre : StageRun → Fin l → MoveIndex) (post : StageRun → Fin r → MoveIndex),
+      (∀ p i, (pre p i).val = i.val) ∧ (∀ p i, (post p i).val = l+i.val) ∧ CutoffStageExecution n pre post := by
+  intro l r
+  obtain ⟨pre,post,first,last,workers⟩ := selectedStageWorkers n
+  have count : l+r = (Geometry.Moves.phaseEdges.filter positiveMove).length := by
+    unfold l r selectedPhaseSchedule
+    have length {α β : Type} (xs ys : List α) (f : α → β) (zs : List β)
+        (eq : (xs++ys).map f = zs) : xs.length+ys.length = zs.length := by
+      simpa only [List.length_map,List.length_append] using congrArg List.length eq
+    exact length _ _ Prod.snd _ invocationMoveBlocks_order
+  refine ⟨pre,post,first,last,cutoffStageFromWorkers n pre post first last count
+    (fun i w B K => selectedOccurrenceEffect n w B K i.1 i.2.1 i.2.2) (fun i => workers i.1 i.2.1 i.2.2) ?_⟩
+  exact fun c => selectedStageEffects n (c.w+1) ((prime^(c.w+1))^112*c.B) c.stageFactor
 
 /-- The installed remainder call pays for its runtime seed with a constant per lane symbol. -/
 theorem callCutoffRemainder {P A U : Type} {H N T Q : ℕ}
