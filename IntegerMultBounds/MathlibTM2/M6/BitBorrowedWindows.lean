@@ -954,4 +954,71 @@ theorem archivedRestoreWithCharge [M8.Machine.Net] {T Q : ℕ} {P U : Type}
   refine ⟨z,D,t,y,placed,?_,same.trans user,out,trace,keep,clear⟩
   simpa only [V,mul_assoc] using closedProgramCharge exec time
 
+open Cover in
+/-- Packing and the placed invocation share one cleanup allowance. -/
+theorem archivedBorrowedCallWithCharge [M8.Machine.Net] {T Q : ℕ} {P U : Type}
+    (n : Fin 9) (p : Fin 32 × Fin 5) (fan : Fin (142081+2) ↪ Fin T)
+    (capacity : columnCapacity ≤ Q) (body : P → Pr P T Q prime U) :
+    let bank := Fin.castAddEmb 273 (n := T)
+    let scratch := Fin.castAddEmb LeafCore.small (n := T+273)
+    let full := (fan.trans bank).trans scratch
+    let owner := bank.trans scratch
+    let outer := fun f => embProg owner id (body f)
+    ∃ (rate : ℝ) (pack : Pr P ((T+273)+LeafCore.small) Q prime U), ∀ w B K : ℕ,
+      let W := B*prime^(64*(w*64))*K
+      let blocks := (prime^w)^112*B
+      let V := (prime^w)^16*(blocks*prime^(64*(w*64))*K)
+      0 < V → ∀ (data : Fin 142081 → Fin V → ZMod 2) u S call (price : ℕ) (saved : Stacks T prime → Prop),
+      (∀ i j, S.R (scratch (borrowedHeaders T i j)) =
+        (Routines.hdr (helperAdjacentView w 1 W i) j).map bitSymbol) →
+      HelperFan full data S →
+      (∀ j : Fin LeafCore.small, S.L (j.natAdd (T+273)) = [] ∧ S.R (j.natAdd (T+273)) = []) →
+      (∀ a y D, HelperFan fan a D →
+        (∀ j, (∀ h, fan h ≠ j) → D.L j = S.L (scratch (bank j)) ∧ D.R j = S.R (scratch (bank j))) →
+        ∃ z F m b, Exec body call (mk y D) m (mk z F) ∧ (∀ js : List (Fin T), js.Nodup → m+tapeCharge (fun l r => 4*l.length+2*r.length+4) js F ≤
+          tapeCharge (fun l r => 4*l.length+2*r.length+4) js D+price) ∧ z.user = y.user ∧
+          HelperFan fan b F ∧ BorrowedStep n w blocks K p a b ∧ saved F) →
+      ∃ z F t b, Exec outer (.seq pack (embProg owner id call)) (mk u S) t (mk z F) ∧
+        (∀ js : List (Fin ((T+273)+LeafCore.small)), js.Nodup →
+          (t : ℝ)+tapeCharge (fun l r => 4*l.length+2*r.length+4) js F ≤
+          tapeCharge (fun l r => 4*l.length+2*r.length+4) js S+rate*((V : ℝ)*((max 1 w : ℕ) : ℝ)^M8.Machine.BudgetBound.tau)+price) ∧
+        z.user = u.user ∧ HelperFan full b F ∧ borrowedPackedStep n w B K p data b ∧ saved (embStk owner F) ∧
+        (∀ i j, F.R (scratch (borrowedHeaders T i j)) = S.R (scratch (borrowedHeaders T i j))) ∧
+        ∀ j : Fin LeafCore.small, F.L (j.natAdd (T+273)) = [] ∧ F.R (j.natAdd (T+273)) = [] := by
+  intro bank scratch full owner outer
+  obtain ⟨rate,pack,run⟩ := archivedPackingWithCharge n p fan capacity outer
+  refine ⟨rate,pack,?_⟩
+  intro w B K W blocks V pos data u S call price saved ready live free invoke
+  obtain ⟨v,D,k,x,user,packed,charge,rep,trace,keep,clean⟩ := run w B K pos data u S ready live free
+  obtain ⟨z,F,m,y,exec,paid,same,done,act,retained⟩ := invoke x (embDn owner v) (embStk owner D) rep
+    (fun j outside => keep (bank j) (fun o eq => outside (o.castAdd 2) (bank.injective eq.symm)))
+  obtain ⟨z',F',hosted,_,state,view,off⟩ := exec_emb (ι := id) (body' := outer)
+    owner.injective (fun _ => rfl) exec v rfl D rfl
+  have fanDone : HelperFan full y F' := by
+    change HelperFan fan y (embStk owner F')
+    rw [view]
+    exact done
+  refine ⟨z',F',k+m,y,Exec.seq packed hosted,?_,state.trans (same.trans user),fanDone,⟨x,trace,act⟩,view.symm ▸ retained,?_,?_⟩
+  · intro js unique
+    rw [← view] at paid
+    let weight := fun (l r : List (Fin (prime+4))) => 4*l.length+2*r.length+4
+    have bill := placedCleanup_cost_le owner D F' weight m price off paid js unique
+    have lifted : (m : ℝ)+tapeCharge weight js F' ≤ tapeCharge weight js D+(price : ℝ) := by exact_mod_cast bill
+    have first := charge js unique
+    change (k : ℝ)+tapeCharge weight js D ≤ tapeCharge weight js S+rate*((V : ℝ)*_) at first
+    change ((k+m : ℕ) : ℝ)+tapeCharge weight js F' ≤ tapeCharge weight js S+rate*((V : ℝ)*_)+price
+    rw [Nat.cast_add]
+    linarith only [first,lifted]
+  · intro i j
+    have outside h : owner h ≠ scratch (borrowedHeaders T i j) :=
+      fun eq => borrowedHeaders_apart i j h (scratch.injective eq).symm
+    exact (off _ outside).2.trans (keep _ (fun o => borrowedHeaders_apart i j (fan (o.castAdd 2)))).2
+  · intro j
+    have outside (i : Fin T) : owner i ≠ j.natAdd (T+273) := by
+      intro eq
+      have e := congrArg Fin.val eq
+      change i.val = T+273+j.val at e
+      omega
+    exact ⟨(off _ outside).1.trans (clean j).1,(off _ outside).2.trans (clean j).2⟩
+
 end IntegerMultBounds.MathlibTM2.M6.BitNode
