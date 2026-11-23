@@ -104,4 +104,58 @@ theorem generatedStoppedInterval [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity
     have away := fun i eq => hit ⟨i,eq⟩
     exact ⟨(frame j ne away).1.trans (congrFun left j),(frame j ne away).2.trans (keep j away)⟩
 
+/-- One uniform stopped-leaf tariff covers both execution and cleanup at every interval. -/
+theorem generatedStoppedIntervalWithCharge [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity : columnCapacity ≤ Q)
+    (mergeCap : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q) :
+    ∃ (C : ℝ) (N : ℕ) (body : Unit → Pr Unit (72+N) Q prime U), 0 ≤ C ∧
+    let bank := Fin.castAddEmb N (n := 72)
+    ∀ lo hi, lo < hi → hi ≤ 64 → ∃ code : Pr Unit (72+N) Q prime U, ∀ a W, 0 < a → 0 < W →
+      let M := prime^a
+      let lane := phaseIntervalChild lo hi a W 64
+      let wide := {lane with afterD := lane.afterD*142080}
+      ∀ (child : Descriptor) (position : Fin (volume prime child) ≃ Fin (volume prime wide)),
+      InheritedIntervalPositions child wide rfl position → lane.width = child.width →
+      ∀ (word : Fin (volume prime wide) → ZMod 2) u S,
+      S.R (bank 2) = binSyms M.size M → S.R (bank 28) = binSyms 1 1 →
+      S.R (bank 53) = binSyms W.size W → (S.R (bank 71)).length = a →
+      (∀ i : Fin 72, 59 ≤ i.val → i.val ≤ 65 → S.R (bank i) = []) →
+      RecordPayload (bank 24) (fun _ => blank) 0 word S → S.L (bank 59) = [] →
+      (∀ i, S.L (bank (descriptorPorts i)) = [] ∧ S.R (bank (descriptorPorts i)) = []) →
+      (∀ j : Fin N, S.L (j.natAdd 72) = [] ∧ S.R (j.natAdd 72) = []) →
+      ∃ z F t changed, Exec body code (mk u S) t (mk z F) ∧
+        (∀ js : List _, js.Nodup → t+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+
+          ⌊C*(child.width : ℝ)^M8.Machine.BudgetBound.tau*volume prime child⌋₊) ∧
+        z.user = u.user ∧ RecordPayload (bank 24) (fun _ => blank) 0 changed F ∧
+        (∀ j, changed (position j) = Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (word ∘ position) j) ∧
+        ∀ j, j ≠ bank 24 → F.L j = S.L j ∧ F.R j = S.R j := by
+  classical
+  obtain ⟨C,N,body,nonneg,run⟩ := generatedStoppedInterval (U := U) capacity mergeCap
+  let Interval := {p : Fin 65 × Fin 65 // p.1 < p.2}
+  have worker (i : Interval) := run i.val.1.val i.val.2.val i.property (by omega)
+  let bound := Fast.Main.mnProgPush (body ()) + ∑ i : Interval, Fast.Main.mnProgPush (worker i).choose
+  let factor := 1+6*bound
+  refine ⟨(factor : ℝ)*C,N,body,mul_nonneg (Nat.cast_nonneg factor) nonneg,?_⟩
+  intro bank lo hi ordered fits
+  let i : Interval := ⟨(⟨lo,by omega⟩,⟨hi,by omega⟩),ordered⟩
+  refine ⟨(worker i).choose,?_⟩
+  intro a W live positive M lane wide child position coords width word u S base unit tail atom scratch source left slots unused
+  obtain ⟨z,F,t,y,exec,paid,user,out,acts,frame⟩ := (worker i).choose_spec a W live positive child position coords width
+    word u S base unit tail atom scratch source left slots unused
+  refine ⟨z,F,t,y,exec,?_,user,out,acts,frame⟩
+  intro js unique
+  have small : Fast.Main.mnProgPush (worker i).choose ≤ bound := by
+    have le := Finset.single_le_sum (f := fun j : Interval => Fast.Main.mnProgPush (worker j).choose)
+      (fun j _ => Nat.zero_le _) (Finset.mem_univ i)
+    exact le.trans (Nat.le_add_left _ _)
+  have growth := recordCleanup_cost_le js unique exec small (fun f => by cases f; exact Nat.le_add_right _ _)
+  change tapeCharge cleanupWeight js F+1 ≤ tapeCharge cleanupWeight js S+1+6*(bound*t) at growth
+  have positiveCost := mul_nonneg (mul_nonneg nonneg (Real.rpow_nonneg (Nat.cast_nonneg child.width) M8.Machine.BudgetBound.tau)) (Nat.cast_nonneg (α := ℝ) (volume prime child))
+  have elapsed := (Nat.le_floor_iff positiveCost).mp paid
+  have scaled := mul_le_mul_of_nonneg_left elapsed (Nat.cast_nonneg (α := ℝ) factor)
+  have bill : factor*t ≤ ⌊(factor : ℝ)*C*(child.width : ℝ)^M8.Machine.BudgetBound.tau*volume prime child⌋₊ := by
+    apply Nat.le_floor
+    simpa only [Nat.cast_mul,mul_assoc] using scaled
+  rw [show factor*t = t+6*(bound*t) by simp only [factor,Nat.add_mul,Nat.one_mul,Nat.mul_assoc]] at bill
+  omega
+
 end IntegerMultBounds.MathlibTM2.M6.BitNode

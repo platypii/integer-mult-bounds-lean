@@ -43,11 +43,12 @@ theorem scheduledIdleInterval [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity : 
       (∀ i, S.L (bank (descriptorPorts i)) = [] ∧ S.R (bank (descriptorPorts i)) = []) →
       (∀ j : Fin N, S.L (j.natAdd 72) = [] ∧ S.R (j.natAdd 72) = []) →
       ∃ z F t changed, Exec body code (mk u S) t (mk z F) ∧
-        t ≤ ⌊C*(child.width : ℝ)^M8.Machine.BudgetBound.tau*volume prime child⌋₊ ∧
+        (∀ js : List _, js.Nodup → t+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+
+          ⌊C*(child.width : ℝ)^M8.Machine.BudgetBound.tau*volume prime child⌋₊) ∧
         z.user = u.user ∧ RecordPayload (bank 24) (fun _ => blank) 0 changed F ∧
         (∀ j, changed (position j) = Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (word ∘ position) j) ∧
         ∀ j, j ≠ bank 24 → F.L j = S.L j ∧ F.R j = S.R j := by
-  obtain ⟨C,N,body,pos,build⟩ := generatedStoppedInterval (U := U) capacity mergeCap
+  obtain ⟨C,N,body,pos,build⟩ := generatedStoppedIntervalWithCharge (U := U) capacity mergeCap
   refine ⟨C,N,body,pos,?_⟩
   intro bank i j
   let e := idleInterval i idleCopies[j.val].2
@@ -92,9 +93,32 @@ def IntervalWorkerExec {P U : Type} {N Q : ℕ} (body : P → Pr P (72+N) Q prim
     (∀ i, D.L (bank (descriptorPorts i)) = [] ∧ D.R (bank (descriptorPorts i)) = (Routines.hdr lane i).map bitSymbol) →
     D.L (bank 59) = [] → (∀ i : Fin 72, 59 ≤ i.val → i.val ≤ 65 → D.R (bank i) = []) →
     (∀ j : Fin N, D.L (j.natAdd 72) = [] ∧ D.R (j.natAdd 72) = []) →
-    ∃ z F t, Exec body (body worker) (mk v D) t (mk z F) ∧ t ≤ budget ∧ z.user = v.user ∧
+    ∃ z F t, Exec body (body worker) (mk v D) t (mk z F) ∧ (∀ js : List _, js.Nodup → t+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js D+budget) ∧ z.user = v.user ∧
       RecordPayload (bank 24) (fun _ => blank) 0 (Shared50RecursiveNodeRows.transpose (one_dvd wide.rows) word) F ∧
       ∀ j, j ≠ bank 24 → F.L j = D.L j ∧ F.R j = D.R j
+
+private theorem chartCutoffWithCharge {T Q : ℕ} {P U : Type} (body : P → Pr P T Q prime U)
+    (cmp : Fin 10 ↪ Fin T) (rank w L cutoff : ℕ) (cutFits : cutoff < 2^L)
+    (fits : ((w+1)*rank).size ≤ L) (large leaf : Pr P T Q prime U)
+    (a : HS T Q prime U) (S : Stacks T prime)
+    (clock : (S.R (cmp 0)).length = w) (word : S.R (cmp 1) = binSyms L cutoff)
+    (empty : ∀ j : Fin 10, 2 ≤ j.val → S.R (cmp j) = [])
+    (result : Stacks T prime → Prop) (budget : ℕ)
+    (selected : ∀ z : HS T Q prime U, ∃ y B, ∃ k : ℕ, y.user = z.user ∧ (∀ js : List _, js.Nodup → k+tapeCharge cleanupWeight js B ≤ tapeCharge cleanupWeight js S+budget) ∧
+      Exec body (if cutoff < (w+1)*rank then large else leaf) (mk z S) k (mk y B) ∧ result B) :
+    ∃ y B, ∃ k : ℕ, y.user = a.user ∧ (∀ js : List _, js.Nodup → k+tapeCharge cleanupWeight js B ≤ tapeCharge cleanupWeight js S+(4*w+23*((w+1)*rank)+22*L+51)+budget) ∧
+      Exec body ((ordinaryCutoffTest cmp rank).seq (.cond (fun z => symBit (z.scan (cmp 7))) large leaf))
+        (mk a S) k (mk y B) ∧ result B := by
+  obtain ⟨z,m,user,flag,time,test⟩ := ordinaryCutoffTest_exec body cmp rank w L cutoff cutFits fits a S clock word empty
+  obtain ⟨y,B,k,same,paid,run,out⟩ := selected z
+  have branch : Exec body (.cond (fun z => symBit (z.scan (cmp 7))) large leaf) (mk z S) (k+1) (mk y B) := by
+    by_cases active : cutoff < (w+1)*rank
+    · exact Exec.cond_true (by simp [mk_var,flag,active]) (by simpa only [ite_eq_left active] using run)
+    · exact Exec.cond_false (by simp [mk_var,flag,active]) (by simpa only [ite_eq_right active] using run)
+  refine ⟨y,B,m+(k+1),same.trans user,?_,Exec.seq test branch,out⟩
+  intro js unique
+  have cost := paid js unique
+  omega
 
 /-- Compare the scheduled rank width at runtime and charge only the selected child. -/
 theorem scheduledIdleDispatch [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity : columnCapacity ≤ Q)
@@ -130,7 +154,7 @@ theorem scheduledIdleDispatch [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity : 
         ∀ k, k ≠ bank 24 → F.L k = start.L k ∧ F.R k = start.R k
       (cutoff < child.width → IntervalWorkerExec body recursiveLabel lane a W recursiveBudget) →
       ∃ z F t, Exec body code (mk u S) t (mk z F) ∧ z.user = u.user ∧ result S F ∧
-        t ≤ (4*w+23*child.width+22*L+51) + if cutoff < child.width then recursiveBudget+volume prime child+2
+        ∀ js : List _, js.Nodup → t+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+(4*w+23*child.width+22*L+51) + if cutoff < child.width then recursiveBudget+volume prime child+2
           else ⌊C*(child.width : ℝ)^M8.Machine.BudgetBound.tau*volume prime child⌋₊ := by
   obtain ⟨C,N,table,pos,build⟩ := scheduledIdleInterval (U := U) capacity mergeCap
   refine ⟨C,N,table,pos,?_⟩
@@ -155,7 +179,7 @@ theorem scheduledIdleDispatch [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity : 
     rw [width,Nat.mul_div_cancel_left _ (by decide),Nat.mul_comm]
   let budget := if cutoff < child.width then recursiveBudget+volume prime child+2 else
     ⌊C*(child.width : ℝ)^M8.Machine.BudgetBound.tau*volume prime child⌋₊
-  have dispatch := chartCutoff_exec body cmp rank w L cutoff cut (scaled ▸ fits) large stopped u S clock stored free (result S) (budget : ℝ)
+  have dispatch := chartCutoffWithCharge body cmp rank w L cutoff cut (scaled ▸ fits) large stopped u S clock stored free (result S) budget
   rw [scaled] at dispatch
   obtain ⟨z,F,t,same,paid,exec,out⟩ := dispatch (by
     intro v
@@ -224,7 +248,29 @@ theorem scheduledIdleDispatch [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity : 
         simp only [volume,Nat.mul_assoc]
       have hk : k ≤ V := headerTime.trans (laneSize ▸ Nat.mul_le_mul_right W (Nat.pow_le_pow_right hp (by decide : 64 ≤ 128)))
       refine ⟨last,_,_,same.trans (user.trans initial),?_,by simpa only [ite_eq_left active] using setup.seq ((Exec.call ran).seq clear),y,?_,act,?_⟩
-      · apply (Nat.cast_le (α := ℝ)).mpr
+      · intro js unique
+        have childBill := time js unique
+        let G : Stacks (72+N) prime := {F with
+          L := fun j => if j ∈ slots then [] else F.L j
+          R := fun j => if j ∈ slots then [] else F.R j}
+        have balance (ls : List _) : tapeCharge cleanupWeight ls G+tapeCharge cleanupWeight ls D =
+            tapeCharge cleanupWeight ls S+tapeCharge cleanupWeight ls F := by
+          induction ls with
+          | nil => rfl
+          | cons j ls ih =>
+            have cell : cleanupWeight (G.L j) (G.R j)+cleanupWeight (D.L j) (D.R j) =
+                cleanupWeight (S.L j) (S.R j)+cleanupWeight (F.L j) (F.R j) := by
+              by_cases hit : j ∈ slots
+              · obtain ⟨h,_,rfl⟩ := List.mem_map.mp hit
+                obtain ⟨l,r⟩ := frame _ (disjoint h)
+                have empty : S.L (ports h) = [] ∧ S.R (ports h) = [] := headers h
+                simp only [G,ite_eq_left hit,l,r,empty.1,empty.2]
+              · have right := off j (fun h eq => hit (List.mem_map.mpr ⟨h,List.mem_finRange _,eq.symm⟩))
+                simp only [G,ite_eq_right hit,dl,right,Nat.add_comm]
+            simp only [tapeCharge,List.map_cons,List.sum_cons] at ih ⊢
+            omega
+        have cancel := balance js
+        change _ + tapeCharge cleanupWeight js G ≤ _
         simp only [budget,ite_eq_left active,mass]
         dsimp only [slots] at *
         omega
@@ -243,8 +289,8 @@ theorem scheduledIdleDispatch [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity : 
       obtain ⟨b,G,embedded,_,same,view,_⟩ := exec_emb place.injective installed ran v rfl S rfl
       change G = F at view
       subst G
-      exact ⟨b,F,t,same.trans user,by simpa [budget,active] using (Nat.cast_le (α := ℝ)).mpr time,
+      exact ⟨b,F,t,same.trans user,by simpa only [budget,ite_eq_right active] using time,
         by simpa only [ite_eq_right active] using embedded,y,out,act,frame⟩)
-  exact ⟨z,F,t,exec,same,out,by exact_mod_cast paid⟩
+  exact ⟨z,F,t,exec,same,out,paid⟩
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
