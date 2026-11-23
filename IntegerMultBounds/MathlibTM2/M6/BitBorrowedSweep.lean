@@ -110,19 +110,19 @@ theorem archivedSweepWithCharge [M8.Machine.Net] {T Q : ℕ} {P U : Type} (n : F
     let owner := bank.trans scratch
     let full := (fan.trans bank).trans scratch
     let outer := fun f => embProg owner id (body f)
-    ∃ rate : ℝ, ∀ w B K : ℕ,
+    ∃ rate : ℝ, ∀ (call : Fin 32 × Fin 5 → Pr P T Q prime U), ∃ code, ∀ w B K : ℕ,
     let W := B*prime^(64*(w*64))*K
     let blocks := (prime^w)^112*B
     let V := (prime^w)^16*(blocks*prime^(64*(w*64))*K)
     let scale := (V : ℝ)*((max 1 w : ℕ) : ℝ)^M8.Machine.BudgetBound.tau
     0 < V → ∀ (saved : Fin 32 × Fin 5 → Stacks T prime → Prop) (price : Fin 32 × Fin 5 → ℕ),
-    (∀ p, ∃ call, ∀ (S : Stacks T prime), saved p S →
+    (∀ p, ∀ (S : Stacks T prime), saved p S →
       ∀ (a : Fin 142081 → Fin V → ZMod 2) v D, HelperFan fan a D →
       (∀ j, (∀ h, fan h ≠ j) → D.L j = S.L j ∧ D.R j = S.R j) →
-      ∃ z F m b, Exec body call (mk v D) m (mk z F) ∧ (∀ js : List (Fin T), js.Nodup → m+tapeCharge (fun l r => 4*l.length+2*r.length+4) js F ≤
+      ∃ z F m b, Exec body (call p) (mk v D) m (mk z F) ∧ (∀ js : List (Fin T), js.Nodup → m+tapeCharge (fun l r => 4*l.length+2*r.length+4) js F ≤
           tapeCharge (fun l r => 4*l.length+2*r.length+4) js D+price p) ∧ z.user = v.user ∧
         HelperFan fan b F ∧ BorrowedStep n w blocks K p a b ∧ ∀ j, j ≠ p → saved j S → saved j F) →
-    ∃ code, ∀ x u S, HelperFan full x S →
+    ∀ x u S, HelperFan full x S →
       (∀ i j, S.R (scratch (borrowedHeaders T i j)) = (Routines.hdr (helperAdjacentView w 1 W i) j).map bitSymbol) →
       (∀ j : Fin LeafCore.small, S.L (j.natAdd (T+273)) = [] ∧ S.R (j.natAdd (T+273)) = []) →
       (∀ j, saved j (embStk owner S)) →
@@ -135,28 +135,26 @@ theorem archivedSweepWithCharge [M8.Machine.Net] {T Q : ℕ} {P U : Type} (n : F
   choose packRate pack step using fun p => archivedBorrowedCallWithCharge n p fan capacity body
   obtain ⟨restoreRate,restore,finish⟩ := archivedRestoreWithCharge n fan capacity outer
   refine ⟨(stageRuns.map packRate).sum+restoreRate,?_⟩
+  intro call
+  let placed := fun p => (pack p).seq (embProg owner id (call p))
+  refine ⟨stageRuns.foldr (fun p tail => .seq (placed p) tail) restore,?_⟩
   intro w B K W blocks V scale pos saved price calls
   let weight := fun (l r : List (Fin (prime+4))) => 4*l.length+2*r.length+4
   let ready (S : Stacks ((T+273)+LeafCore.small) prime) :=
     (∀ i j, S.R (scratch (borrowedHeaders T i j)) = (Routines.hdr (helperAdjacentView w 1 W i) j).map bitSymbol) ∧
     ∀ j : Fin LeafCore.small, S.L (j.natAdd (T+273)) = [] ∧ S.R (j.natAdd (T+273)) = []
-  obtain ⟨code,run⟩ := borrowedSweepWithPotential (w := w) (B := B) (K := K) n
+  have run := borrowedSweepWithPotential (w := w) (B := B) (K := K) n
     (fun (js : {l : List (Fin ((T+273)+LeafCore.small)) // l.Nodup}) D => (tapeCharge weight js.val D : ℝ)) outer full
     (fun j S => saved j (embStk owner S)) ready (fun p => packRate p*scale+(price p : ℝ))
-    (restoreRate*scale) (by
-      intro p
-      obtain ⟨call,invoke⟩ := calls p
-      refine ⟨.seq (pack p) (embProg owner id call),?_⟩
-      intro x u S live guard fresh
-      obtain ⟨z,F,t,y,exec,bill,user,done,act,keep,headers,clear⟩ := step p w B K pos x u S call (price p)
+    (restoreRate*scale) placed restore (by
+      intro p x u S live guard fresh
+      obtain ⟨z,F,t,y,exec,bill,user,done,act,keep,headers,clear⟩ := step p w B K pos x u S (call p) (price p)
         (fun F => ∀ j, j ≠ p → saved j (embStk owner S) → saved j F)
-        guard.1 live guard.2 (invoke (embStk owner S) fresh)
+        guard.1 live guard.2 (calls p (embStk owner S) fresh)
       exact ⟨z,F,t,y,exec,(fun js => by simpa only [← add_assoc] using bill js.val js.property),user,done,act,⟨fun i j => (headers i j).trans (guard.1 i j),clear⟩,keep⟩) (by
-      refine ⟨restore,?_⟩
       intro x u S live guard
       obtain ⟨z,F,t,y,exec,bill,user,done,act,_,_⟩ := finish w B K pos x u S guard.1 live guard.2
       exact ⟨z,F,t,y,exec,(fun js => bill js.val js.property),user,done,act⟩)
-  refine ⟨code,?_⟩
   intro x u S live headers free fresh
   obtain ⟨z,F,t,y,out,exec,bill,user,done,steps,restore⟩ := run x u S live ⟨headers,free⟩ fresh
   refine ⟨z,F,t,out,exec,?_,user,done,restoredBorrowedStage_of_trace steps restore⟩
@@ -256,32 +254,34 @@ theorem allocatedArchiveSweep_host [M8.Machine.Net] (n : Fin 9) :
   simpa only [scale,V,blocks,mul_assoc] using bill
 
 
+/-- Allocate the borrowed sweep once. Only the private seeds and costs vary with the parent dimensions. -/
 theorem allocatedArchiveSweepWithCharge [M8.Machine.Net] (n : Fin 9) :
     let J := Fin 32 × Fin 5
     ∀ (tapes : J → ℕ) (ports : ∀ p, Fin (142081+2) ↪ Fin (tapes p)),
     ∃ (T : ℕ) (fan : Fin (142081+2) ↪ Fin T) (banks : ∀ p, Fin (tapes p) ↪ Fin T),
     ∀ {P : J → Type} {U : Type} {Q : ℕ}, columnCapacity ≤ Q →
-    ∀ (body : ∀ p, P p → Pr (P p) (tapes p) Q prime U), ∃ rate : ℝ, ∀ w B K : ℕ,
-    let blocks := (prime^w)^112*B
-    let W := B*prime^(64*(w*64))*K
-    let V := (prime^w)^16*(blocks*prime^(64*(w*64))*K)
-    let scale := (V : ℝ)*((max 1 w : ℕ) : ℝ)^M8.Machine.BudgetBound.tau
+    ∀ (body : ∀ p, P p → Pr (P p) (tapes p) Q prime U),
     let scratch := Fin.castAddEmb LeafCore.small (n := T+273)
     let owner := (Fin.castAddEmb 273 (n := T)).trans scratch
     let host := fun f : (p : J) × P p => embProg (banks f.1) (Sigma.mk f.1) (body f.1 f.2)
     let outer := fun f => embProg owner id (host f)
+    ∃ rate : ℝ, ∀ (call : ∀ p, Pr (P p) (tapes p) Q prime U), ∃ code, ∀ w B K : ℕ,
+    let blocks := (prime^w)^112*B
+    let W := B*prime^(64*(w*64))*K
+    let V := (prime^w)^16*(blocks*prime^(64*(w*64))*K)
+    let scale := (V : ℝ)*((max 1 w : ℕ) : ℝ)^M8.Machine.BudgetBound.tau
     0 < V → ∀ (work : J → ℕ) (childTime : ℕ → ℕ),
     (∀ p (shared : Stacks (142081+2) prime), ∃ seed : Stacks (tapes p) prime, embStk (ports p) seed = shared ∧
-      ∃ code, ∀ a v D, HelperFan (ports p) a D →
+      ∀ a v D, HelperFan (ports p) a D →
         (∀ j, (∀ h, ports p h ≠ j) → D.L j = seed.L j ∧ D.R j = seed.R j) →
-        ∃ z F m b, Exec (body p) code (mk v D) m (mk z F) ∧
+        ∃ z F m b, Exec (body p) (call p) (mk v D) m (mk z F) ∧
           (∀ js : List (Fin (tapes p)), js.Nodup →
             m+tapeCharge (fun l r => 4*l.length+2*r.length+4) js F ≤
               tapeCharge (fun l r => 4*l.length+2*r.length+4) js D+(work p+
               ((List.range' (stageChildStart n+runChildStart p) Geometry.Moves.localPaid.length).map childTime).sum)) ∧
           z.user = v.user ∧ HelperFan (ports p) b F ∧ BorrowedStep n w blocks K p a b) →
     ∀ shared : Stacks (142081+2) prime, ∃ initial : Stacks T prime, embStk fan initial = shared ∧
-    ∃ code, ∀ x u S, HelperFan (fan.trans owner) x S →
+    ∀ x u S, HelperFan (fan.trans owner) x S →
       (∀ i j, S.R (scratch (borrowedHeaders T i j)) = (Routines.hdr (helperAdjacentView w 1 W i) j).map bitSymbol) →
       (∀ j : Fin LeafCore.small, S.L (j.natAdd (T+273)) = [] ∧ S.R (j.natAdd (T+273)) = []) →
       (∀ j, (∀ h, fan h ≠ j) → S.L (owner j) = initial.L j ∧ S.R (owner j) = initial.R j) →
@@ -297,21 +297,23 @@ theorem allocatedArchiveSweepWithCharge [M8.Machine.Net] (n : Fin 9) :
   intro P U Q cap body
   let host := fun f : (p : J) × P p => embProg (banks f.1) (Sigma.mk f.1) (body f.1 f.2)
   obtain ⟨rate,sweep⟩ := archivedSweepWithCharge n fan cap host
+  intro scratch owner stageHost outer
   refine ⟨rate,?_⟩
-  intro w B K blocks W V scale scratch owner stageHost outer pos work childTime supplied shared
-  choose seed _ call runs using fun p => supplied p shared
+  intro call
+  obtain ⟨code,execute⟩ := sweep (fun p => embProg (banks p) (Sigma.mk p) (call p))
+  refine ⟨code,?_⟩
+  intro w B K blocks W V scale pos work childTime supplied shared
+  choose seed _ runs using fun p => supplied p shared
   obtain ⟨initial,owners,stored⟩ := prepare shared seed
   let saved (p : J) (S : Stacks T prime) := ∀ i, (∀ h, ports p h ≠ i) →
     S.L (banks p i) = (seed p).L i ∧ S.R (banks p i) = (seed p).R i
   have project p (S : Stacks T prime) : embStk (ports p) (embStk (banks p) S) = embStk fan S := by
     simp only [embStk,Function.comp_def,select]
   refine ⟨initial,owners,?_⟩
-  obtain ⟨code,run⟩ := sweep w B K pos saved
+  have run := execute w B K pos saved
     (fun p => work p+
       ((List.range' (stageChildStart n+runChildStart p) Geometry.Moves.localPaid.length).map childTime).sum) (by
-      intro p
-      refine ⟨embProg (banks p) (Sigma.mk p) (call p),?_⟩
-      intro S ready a v D live held
+      intro p S ready a v D live held
       have privateAt j i (h : ∀ k, ports j k ≠ i) := held (banks j i) (apart j i h).1
       obtain ⟨z,F,m,b,exec,paid,user,done,act⟩ := runs p a (embDn (banks p) v) (embStk (banks p) D)
         (by simpa only [HelperFan,project] using live) (fun i h =>
@@ -323,7 +325,6 @@ theorem allocatedArchiveSweepWithCharge [M8.Machine.Net] (n : Fin 9) :
       intro j ne valid i h
       obtain ⟨l,r⟩ := off _ ((apart j i h).2 p ne.symm)
       exact ⟨l.trans ((privateAt j i h).1.trans (valid i h).1),r.trans ((privateAt j i h).2.trans (valid i h).2)⟩)
-  refine ⟨code,?_⟩
   intro x u S live headers free fresh
   obtain ⟨z,F,t,out,exec,bill,user,done,act⟩ := run x u S live headers free (by
     intro p i h

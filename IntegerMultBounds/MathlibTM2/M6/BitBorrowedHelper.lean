@@ -188,44 +188,36 @@ theorem borrowedSweepWithPotential {T Q w B K : ℕ} {P U : Type} (n : Fin 9)
     let W := B*prime^(64*(w*64))*K
     let V := (prime^w)^16*((prime^w)^112*B*prime^(64*(w*64))*K)
     ∀ (saved : Fin 32 × Fin 5 → Stacks T prime → Prop) (ready : Stacks T prime → Prop)
-      (price : Fin 32 × Fin 5 → ℝ) (restorePrice : ℝ),
-    (∀ p, ∃ code, ∀ (x : Fin 142081 → Fin V → ZMod 2) u S, HelperFan fan x S → ready S → saved p S →
-      ∃ z F t y, Exec body code (mk u S) t (mk z F) ∧ (∀ j, (t : ℝ)+potential j F ≤ potential j S+price p) ∧ z.user = u.user ∧
+      (price : Fin 32 × Fin 5 → ℝ) (restorePrice : ℝ) (call : Fin 32 × Fin 5 → Pr P T Q prime U) (last : Pr P T Q prime U),
+    (∀ p, ∀ (x : Fin 142081 → Fin V → ZMod 2) u S, HelperFan fan x S → ready S → saved p S →
+      ∃ z F t y, Exec body (call p) (mk u S) t (mk z F) ∧ (∀ j, (t : ℝ)+potential j F ≤ potential j S+price p) ∧ z.user = u.user ∧
         HelperFan fan y F ∧ borrowedPackedStep n w B K p x y ∧ ready F ∧
         ∀ j, j ≠ p → saved j S → saved j F) →
-    (∃ code, ∀ (x : Fin 142081 → Fin V → ZMod 2) u S, HelperFan fan x S → ready S →
-      ∃ z F t y, Exec body code (mk u S) t (mk z F) ∧ (∀ j, (t : ℝ)+potential j F ≤ potential j S+restorePrice) ∧ z.user = u.user ∧
+    (∀ (x : Fin 142081 → Fin V → ZMod 2) u S, HelperFan fan x S → ready S →
+      ∃ z F t y, Exec body last (mk u S) t (mk z F) ∧ (∀ j, (t : ℝ)+potential j F ≤ potential j S+restorePrice) ∧ z.user = u.user ∧
         HelperFan fan y F ∧ HelperLabelTrace w 1 W (restoreSlotChanges (stageFinalSlot n)) x y) →
-    ∃ code, ∀ x u S, HelperFan fan x S → ready S → (∀ j, saved j S) →
-      ∃ z F t y out, Exec body code (mk u S) t (mk z F) ∧ (∀ j, (t : ℝ)+potential j F ≤ potential j S+((stageRuns.map price).sum+restorePrice)) ∧
+    ∀ x u S, HelperFan fan x S → ready S → (∀ j, saved j S) →
+      ∃ z F t y out, Exec body (stageRuns.foldr (fun p tail => .seq (call p) tail) last) (mk u S) t (mk z F) ∧ (∀ j, (t : ℝ)+potential j F ≤ potential j S+((stageRuns.map price).sum+restorePrice)) ∧
         z.user = u.user ∧ HelperFan fan out F ∧
         stageRuns.foldr (fun p next a => ∃ b, borrowedPackedStep n w B K p a b ∧ next b) (· = y) x ∧
         HelperLabelTrace w 1 W (restoreSlotChanges (stageFinalSlot n)) y out := by
-  intro W V saved ready price restorePrice calls restore
-  obtain ⟨last,finish⟩ := restore
-  suffices fold : ∀ ls : List (Fin 32 × Fin 5), ls.Nodup → ∃ code, ∀ x u S, HelperFan fan x S →
-      ready S → (∀ j ∈ ls, saved j S) → ∃ z F t y out, Exec body code (mk u S) t (mk z F) ∧
+  intro W V saved ready price restorePrice call last calls finish
+  suffices fold : ∀ ls : List (Fin 32 × Fin 5), ls.Nodup → ∀ x u S, HelperFan fan x S →
+      ready S → (∀ j ∈ ls, saved j S) → ∃ z F t y out, Exec body (ls.foldr (fun p tail => .seq (call p) tail) last) (mk u S) t (mk z F) ∧
         (∀ j, (t : ℝ)+potential j F ≤ potential j S+((ls.map price).sum+restorePrice)) ∧ z.user = u.user ∧ HelperFan fan out F ∧
         ls.foldr (fun p next a => ∃ b, borrowedPackedStep n w B K p a b ∧ next b) (· = y) x ∧
         HelperLabelTrace w 1 W (restoreSlotChanges (stageFinalSlot n)) y out by
-    obtain ⟨code,run⟩ := fold stageRuns stageRuns_nodup
-    exact ⟨code,fun x u S live ok fresh => run x u S live ok (fun j _ => fresh j)⟩
+    exact fun x u S live ok fresh => fold stageRuns stageRuns_nodup x u S live ok (fun j _ => fresh j)
   intro ls
   induction ls with
   | nil =>
-    intro _
-    refine ⟨last,?_⟩
-    intro x u S live ok _
+    intro _ x u S live ok _
     obtain ⟨z,F,t,out,exec,paid,user,done,trace⟩ := finish x u S live ok
     exact ⟨z,F,t,x,out,exec,by simpa using paid,user,done,rfl,trace⟩
   | cons p ls ih =>
-    intro unique
-    obtain ⟨head,run⟩ := calls p
-    obtain ⟨tail,rest⟩ := ih (List.nodup_cons.mp unique).2
-    refine ⟨.seq head tail,?_⟩
-    intro x u S live ok fresh
-    obtain ⟨v,D,l,a,exec,paid,user,mid,step,valid,keep⟩ := run x u S live ok (fresh p List.mem_cons_self)
-    obtain ⟨z,F,r,y,out,done,cost,same,rep,trace,restored⟩ := rest a v D mid valid (fun j hj =>
+    intro unique x u S live ok fresh
+    obtain ⟨v,D,l,a,exec,paid,user,mid,step,valid,keep⟩ := calls p x u S live ok (fresh p List.mem_cons_self)
+    obtain ⟨z,F,r,y,out,done,cost,same,rep,trace,restored⟩ := ih (List.nodup_cons.mp unique).2 a v D mid valid (fun j hj =>
       keep j (fun eq => (List.nodup_cons.mp unique).1 (eq ▸ hj)) (fresh j (List.mem_cons_of_mem _ hj)))
     refine ⟨z,F,_,y,out,Exec.seq exec done,?_,same.trans user,rep,⟨a,step,trace⟩,restored⟩
     intro j
@@ -252,10 +244,12 @@ theorem borrowedSweep_exec {T Q w B K : ℕ} {P U : Type} (n : Fin 9)
         stageRuns.foldr (fun p next a => ∃ b, borrowedPackedStep n w B K p a b ∧ next b) (· = y) x ∧
         HelperLabelTrace w 1 W (restoreSlotChanges (stageFinalSlot n)) y out := by
   intro W V saved ready price restorePrice calls restore
-  obtain ⟨code,run⟩ := borrowedSweepWithPotential (w := w) (B := B) (K := K) n
-    (fun (_ : Unit) _ => 0) body fan saved ready price restorePrice (by simpa using calls)
-    (by simpa using restore)
-  refine ⟨code,?_⟩
+  choose call step using calls
+  obtain ⟨last,finish⟩ := restore
+  have run := borrowedSweepWithPotential (w := w) (B := B) (K := K) n
+    (fun (_ : Unit) _ => 0) body fan saved ready price restorePrice call last (by simpa using step)
+    (by simpa using finish)
+  refine ⟨stageRuns.foldr (fun p tail => .seq (call p) tail) last,?_⟩
   intro x u S live ok fresh
   obtain ⟨z,F,t,y,out,exec,paid,rest⟩ := run x u S live ok fresh
   exact ⟨z,F,t,y,out,exec,by simpa using paid (),rest⟩
