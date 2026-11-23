@@ -31,7 +31,8 @@ theorem seededIntervalRecord {P U : Type} {T B Q w W atom price lo hi axes : ℕ
     (unused : ∀ j, (∀ i, slots i ≠ j) → seed.R j = [])
     (splitter : Fin intervalSplitTapes ↪ Fin T) (directory : Fin 72 ↪ Fin T)
     (apart : ∀ i j, splitter i ≠ directory j) (source : Fin 72 ↪ Fin T)
-    (separate : ∀ i j, directory i ≠ source j) (outside : ∀ i j, splitter i ≠ source j) :
+    (separate : ∀ i j, directory i ≠ source j) (outside : ∀ i j, splitter i ≠ source j)
+    (charged : Bool := false) :
     let live := (intervalOwners 142080).trans splitter
     let H := 142082+T+B
     let caller := (Fin.natAddEmb 142082 (m := T)).trans (Fin.castAddEmb B)
@@ -72,8 +73,8 @@ theorem seededIntervalRecord {P U : Type} {T B Q w W atom price lo hi axes : ℕ
           passRate*(142080*(header+pass)+1+(142080*pass+1))+
           (142081*(8*V+10+2*V)+1+price)+13*(149*volume*(intervalSplitTapes+5)+6)
       ∃ z F n, Exec host program (mk u S) n (mk z F) ∧
-        n ≤ (149*(intervalSplitTapes+5)+13)*volume+34+
-          (tapeCharge cleanupWeight work S+entryGrowth+localCost)+18*volume+23+133*V ∧
+        workerCost charged S F n ((149*(intervalSplitTapes+5)+13)*volume+34+
+          (tapeCharge cleanupWeight work S+entryGrowth+localCost)+18*volume+23+133*V+(if charged then 133*V else 0)) ∧
         z.user = u.user ∧ RecordPayload (raw 24) (fun _ => blank) 0 (Shared50RecursiveNodeRows.transpose (one_dvd wide.rows) word) F ∧
         (∀ j ∈ work, F.L j = [] ∧ F.R j = []) ∧
         ∀ j, extend (caller j) ∉ work → j ≠ source 24 → (∀ i, splitter i ≠ j) → (∀ i, directory i ≠ j) →
@@ -139,9 +140,27 @@ theorem seededIntervalRecord {P U : Type} {T B Q w W atom price lo hi axes : ℕ
     change _ ≤ 133*V at seedBill
     rw [show (fun i => seed.R (slots i)) = (fun i => (Routines.hdr seedLane i).map bitSymbol) from funext headers] at charge
     change k+tapeCharge cleanupWeight work D ≤ _ at charge
-    change n ≤ (149*(intervalSplitTapes+5)+13)*volume+34+
-      (tapeCharge cleanupWeight work D+entryGrowth+localCost)+18*volume+23 at paid
-    omega
+    have core (js) (nd : js.Nodup) := paid js nd
+    cases charged with
+    | false =>
+      have h := core [] (by simp)
+      change n+0 ≤ 0+((149*(intervalSplitTapes+5)+13)*volume+34+
+        (tapeCharge cleanupWeight work D+entryGrowth+localCost)+18*volume+23) at h
+      change k+n ≤ _
+      simp only [Bool.false_eq_true,ite_false,Nat.add_zero]
+      omega
+    | true =>
+      intro js nd
+      have h := core js nd
+      change n+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js D+
+        ((149*(intervalSplitTapes+5)+13)*volume+34+
+        (tapeCharge cleanupWeight work D+entryGrowth+localCost)+18*volume+23) at h
+      have observed := bill js nd
+      rw [show (fun i => seed.R (slots i)) = (fun i => (Routines.hdr seedLane i).map bitSymbol) from funext headers] at observed
+      change k+tapeCharge cleanupWeight js D ≤ _ at observed
+      change k+n+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+_
+      simp only [ite_true]
+      omega
   · intro j miss ne splitOff dirOff
     have h := frame j miss ne splitOff dirOff
     exact ⟨h.1,h.2.trans (keep j)⟩

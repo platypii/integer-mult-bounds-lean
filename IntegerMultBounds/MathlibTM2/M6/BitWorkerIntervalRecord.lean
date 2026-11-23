@@ -21,7 +21,7 @@ theorem workerRecordTranspose {T Q : ℕ} {P U : Type} (body : P → Pr P T Q pr
     ∀ lane : Descriptor, let V := volume prime lane
       let wide := {lane with afterD := lane.afterD*142080}
       let size : V*142080 = volume prime wide := by simp [V,wide,volume,Nat.mul_assoc]
-      ∀ (word : Fin (volume prime wide) → ZMod 2) u S price (reserve : Stacks T prime → ℕ),
+      ∀ (word : Fin (volume prime wide) → ZMod 2) u S (price : List (Fin T) → ℕ) (reserve : List (Fin T) → Stacks T prime → ℕ),
       let input := fun k => word (Fin.cast size k)
       let target := putWord (fun _ => blank) 0 (List.ofFn (SparseRoleCircuit.encode (a := prime) ∘ input))
       let data := fun r (i : Fin V) => input (finProdFinEquiv (i,r))
@@ -34,11 +34,11 @@ theorem workerRecordTranspose {T Q : ℕ} {P U : Type} (body : P → Pr P T Q pr
         (∀ j, (∀ i, splitter i ≠ j) → D.L j = S.L j ∧ D.R j = S.R j) →
         (∀ js : List _, js.Nodup → tapeCharge cleanupWeight js D ≤ tapeCharge cleanupWeight js S+
           2*(V*142080)+6*(Fast.Main.mnProgPush split*((149*(intervalSplitTapes+5)+5)*(V*142080)+24))) →
-        ∃ z F t, Exec body merge (mk v D) t (mk z F) ∧ t + reserve F ≤ price ∧ z.user = v.user ∧
+        ∃ z F t, Exec body merge (mk v D) t (mk z F) ∧ (∀ js, js.Nodup → t + reserve js F ≤ price js) ∧ z.user = v.user ∧
           RepT (intervalOwnerBank (putWord target 0 (List.ofFn output)) rows) (embStk returned F).L (embStk returned F).R ∧
           ∀ j, preserved j → F.L j = S.L j ∧ F.R j = S.R j) →
       ∃ z F t, Exec body (((loadCompactWord src tmp (splitter 0)).seq (embProg splitter Empty.elim split)).seq merge)
-        (mk u S) t (mk z F) ∧ t + reserve F ≤ (149*(intervalSplitTapes+5)+13)*(V*142080)+34+price ∧
+        (mk u S) t (mk z F) ∧ (∀ js, js.Nodup → t + reserve js F ≤ (149*(intervalSplitTapes+5)+13)*(V*142080)+34+price js) ∧
         z.user = u.user ∧ RecordPayload (returned 0) (fun _ => blank) 0
           (Shared50RecursiveNodeRows.transpose (one_dvd wide.rows) word) F ∧
         ∀ j, preserved j → F.L j = S.L j ∧ F.R j = S.R j := by
@@ -79,7 +79,44 @@ theorem workerRecordTranspose {T Q : ℕ} {P U : Type} (body : P → Pr P T Q pr
   rw [show putWord target 0 _ = _ from overwrite] at result
   refine ⟨z,F,_,(load.seq prepare).seq ran,?_,same.trans (initial.trans user),
     castPayload size (returned 0) F y (intervalOwnerPayload returned F _ _ result),frame⟩
+  intro js distinct
+  specialize bill js distinct
   simp only [Nat.add_mul] at paid ⊢
+  omega
+
+/-- Charge the child once on the union of the cleared bank and the caller's
+observed tapes. A cleared tape has minimum weight even when the caller observes it. -/
+theorem cleanupBound_clearBank {T : ℕ} {S D F : Stacks T prime} {n m price localCost : ℕ}
+    (work : List (Fin T)) (unique : work.Nodup) (child : CleanupBound S D n price)
+    (time : m ≤ tapeCharge cleanupWeight work D + localCost)
+    (empty : ∀ j ∈ work, F.L j = [] ∧ F.R j = [])
+    (stock : ∀ j, (F.L j).length ≤ (D.L j).length ∧ (F.R j).length ≤ (D.R j).length) :
+    CleanupBound S F (n+m) (price+tapeCharge cleanupWeight work S+localCost) := by
+  intro js distinct
+  let outside := js.filter fun j => j ∉ work
+  have disjoint : work.Disjoint outside := by
+    intro j hj hout
+    exact (of_decide_eq_true (List.mem_filter.mp hout).2) hj
+  have paid := child (work++outside) (List.nodup_append.mpr
+    ⟨unique,distinct.filter _,fun _ ha _ hb eq => disjoint ha (eq ▸ hb)⟩)
+  change n+tapeCharge cleanupWeight (work++outside) D ≤ tapeCharge cleanupWeight (work++outside) S+price at paid
+  simp only [tapeCharge,List.map_append,List.sum_append] at paid
+  have split (xs : List (Fin T)) :
+      tapeCharge cleanupWeight xs F + tapeCharge cleanupWeight (xs.filter fun j => j ∉ work) S ≤
+      tapeCharge cleanupWeight xs S + tapeCharge cleanupWeight (xs.filter fun j => j ∉ work) D := by
+    induction xs with
+    | nil => simp [tapeCharge]
+    | cons j xs ih =>
+      by_cases h : j ∈ work
+      · obtain ⟨left,right⟩ := empty j h
+        simp [tapeCharge,h,cleanupWeight,left,right] at ih ⊢
+        omega
+      · obtain ⟨left,right⟩ := stock j
+        simp [tapeCharge,h,cleanupWeight] at ih ⊢
+        omega
+  have bound := split js
+  change n+m+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+_
+  dsimp only [outside,tapeCharge] at paid time bound ⊢
   omega
 
 /-- A row continuation can pay for private tape cleanup at merge exit. Its
@@ -237,7 +274,7 @@ theorem recursiveIntervalRecord {P U : Type} {T B Q w W atom price lo hi axes : 
     rw [intervalChild_volume ordered fits]
     exact Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) positive
   let preserved j := ∃ t, j = extend (caller t) ∧ (∀ i, splitter i ≠ t) ∧ (∀ i, directory i ≠ t)
-  obtain ⟨z,F,n,exec,paid,user,read,frame⟩ := wrapper word u S _ (fun _ => 0) preserved vol payload tl tr freshSplit (by
+  obtain ⟨z,F,n,exec,paid,user,read,frame⟩ := wrapper word u S (fun _ => _) (fun _ _ => 0) preserved vol payload tl tr freshSplit (by
     intro v D rep off _
     have rawSame j := off (raw j) (fun i => rawOff i j)
     obtain ⟨y,G,t,ran,bill,same,result,keep⟩ := run _ _ v D rep
@@ -269,7 +306,7 @@ theorem recursiveIntervalRecord {P U : Type} {T B Q w W atom price lo hi axes : 
           change 142082+(splitter j).val = 142082+T+i.val at e
           omega))
         exact ⟨h.1.trans (seedReady i).1,h.2.trans (seedReady i).2⟩)
-    refine ⟨y,G,t,ran,bill,same,result,?_⟩
+    refine ⟨y,G,t,ran,fun _ _ => bill,same,result,?_⟩
     rintro j ⟨k,rfl,notSplit,notWork⟩
     have h := off _ (fun i => extend.injective.ne (caller.injective.ne (notSplit i)))
     exact ⟨(keep k notSplit notWork).1.trans h.1,(keep k notSplit notWork).2.trans h.2⟩)
@@ -281,11 +318,11 @@ theorem recursiveIntervalRecord {P U : Type} {T B Q w W atom price lo hi axes : 
     rw [targetBank]
     simp [raw.injective.eq_iff]
     exact ⟨(rawOff 0 60).symm,rawOff 0 24,rawOff 0 61,rawOff 0 59⟩
-  obtain ⟨v,G,back,same,result,_,left,right⟩ := returnIdlePayloadFromBlank_exec host portsApart word _ z F
+  obtain ⟨v,G,back,same,result,_,_,left,right⟩ := returnIdlePayloadFromBlank_exec host portsApart word _ z F
     payloadF read ((rawSame 60).2.trans hc) ((rawSame 61).2.trans hs)
     ((rawSame 59).1.trans tl) ((rawSame 59).2.trans tr)
   have size : volume prime wide = V*142080 := by simp [wide,volume,V,Nat.mul_assoc]
-  refine ⟨v,G,_,exec.seq back,by rw [size]; exact Nat.add_le_add_right paid _,same.trans user,result,?_⟩
+  refine ⟨v,G,_,exec.seq back,by rw [size]; exact Nat.add_le_add_right (paid [] (by simp)) _,same.trans user,result,?_⟩
   intro j ne hs hd
   have keep := frame _ ⟨j,rfl,hs,hd⟩
   have original := right (extend (caller j)) (extend.injective.ne (caller.injective.ne ne))
@@ -342,8 +379,8 @@ theorem recursiveIntervalRecordClean {P U : Type} {T B Q w W atom price lo hi ax
           passRate*(142080*(header+pass)+1+(142080*pass+1))+
           (142081*(8*V+10+2*V)+1+price)+13*(149*volume*(intervalSplitTapes+5)+6)
       ∃ z F n, Exec host program (mk u S) n (mk z F) ∧
-        n ≤ (149*(intervalSplitTapes+5)+13)*volume+34+
-          (tapeCharge cleanupWeight work S+entryGrowth+localCost)+18*volume+23 ∧
+        CleanupBound S F n ((149*(intervalSplitTapes+5)+13)*volume+34+
+          (tapeCharge cleanupWeight work S+entryGrowth+localCost)+18*volume+23) ∧
         z.user = u.user ∧ RecordPayload (raw 24) (fun _ => blank) 0 (Shared50RecursiveNodeRows.transpose (one_dvd wide.rows) word) F ∧
         (∀ j ∈ work, F.L j = [] ∧ F.R j = []) ∧
         ∀ j, extend (caller j) ∉ work → j ≠ source 24 → (∀ i, splitter i ≠ j) → (∀ i, directory i ≠ j) →
@@ -367,7 +404,7 @@ theorem recursiveIntervalRecordClean {P U : Type} {T B Q w W atom price lo hi ax
     rw [intervalChild_volume ordered fits]
     exact Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) positive
   let preserved j := ∃ t, j = extend (caller t) ∧ (∀ i, splitter i ≠ t) ∧ (∀ i, directory i ≠ t)
-  obtain ⟨z,F,n,exec,paid,user,read,frame⟩ := wrapper word u S (tapeCharge cleanupWeight work S+entryGrowth+localCost) (tapeCharge cleanupWeight work) preserved vol payload tl tr freshSplit (by
+  obtain ⟨z,F,n,exec,paid,user,read,frame⟩ := wrapper word u S (fun js => tapeCharge cleanupWeight js S+entryGrowth+localCost) (tapeCharge cleanupWeight) preserved vol payload tl tr freshSplit (by
     intro v D rep off stock
     have rawSame j := off (raw j) (fun i => rawOff i j)
     obtain ⟨y,G,t,ran,bill,same,result,keep⟩ := run _ _ v D rep
@@ -400,12 +437,13 @@ theorem recursiveIntervalRecordClean {P U : Type} {T B Q w W atom price lo hi ax
           omega))
         exact ⟨h.1.trans (seedReady i).1,h.2.trans (seedReady i).2⟩)
     refine ⟨y,G,t,ran,?_,same,result,?_⟩
-    · have h := bill work unique
-      have g := stock work unique
+    · intro js nd
+      have h := bill js nd
+      have g := stock js nd
       dsimp only at h
-      have g' : tapeCharge cleanupWeight work D ≤ tapeCharge cleanupWeight work S+entryGrowth := by
+      have g' : tapeCharge cleanupWeight js D ≤ tapeCharge cleanupWeight js S+entryGrowth := by
         simpa only [entryGrowth,Nat.add_assoc] using g
-      have h' : t+tapeCharge cleanupWeight work G ≤ tapeCharge cleanupWeight work D+localCost := by
+      have h' : t+tapeCharge cleanupWeight js G ≤ tapeCharge cleanupWeight js D+localCost := by
         have group {x a b c d e : ℕ} (le : x ≤ a+b+c+d+e) : x ≤ a+(b+c+d+e) := by omega
         exact group h
       exact h'.trans (Nat.add_le_add_right g' _)
@@ -420,11 +458,20 @@ theorem recursiveIntervalRecordClean {P U : Type} {T B Q w W atom price lo hi ax
     rw [targetBank]
     simp [raw.injective.eq_iff]
     exact ⟨(rawOff 0 60).symm,rawOff 0 24,rawOff 0 61,rawOff 0 59⟩
-  obtain ⟨v,G,t,done,cost,same,result,clean,keep⟩ := finishIntervalRecord host portsApart work unique
-    (by rw [targetBank]; exact inside) away exec paid payloadF read ((rawSame 60).2.trans hc)
+  obtain ⟨v,G,t,done,cost,same,result,stock,clean,keep⟩ := returnIdleBankWithStock_exec host portsApart work unique
+    (by rw [targetBank]; exact inside) away word _ z F payloadF read ((rawSame 60).2.trans hc)
     ((rawSame 61).2.trans hs) ((rawSame 59).1.trans tl) ((rawSame 59).2.trans tr)
   have size : RecursiveInterchangeLayout.volume prime wide = V*142080 := by simp [wide,RecursiveInterchangeLayout.volume,V,Nat.mul_assoc]
-  refine ⟨v,G,t,done,by simpa only [size] using cost,same.trans user,result,clean,?_⟩
+  have core : CleanupBound S F n ((149*(intervalSplitTapes+5)+13)*volume+34+entryGrowth+localCost) := by
+    intro js nd
+    have h := paid js nd
+    change n+tapeCharge cleanupWeight js F ≤ (149*(intervalSplitTapes+5)+13)*volume+34+(tapeCharge cleanupWeight js S+entryGrowth+localCost) at h
+    change n+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+_
+    omega
+  rw [size] at cost
+  have joined := cleanupBound_clearBank work unique core (Nat.le_trans cost (Nat.le_of_eq (Nat.add_comm ..))) clean stock
+  refine ⟨v,G,_,exec.seq done,?_,same.trans user,result,clean,?_⟩
+  · convert joined using 1; omega
   intro j outside ne hs hd
   have h := keep _ (extend.injective.ne (caller.injective.ne ne)) outside
   have original := frame _ ⟨j,rfl,hs,hd⟩
