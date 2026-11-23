@@ -249,6 +249,52 @@ theorem transportWorker {a b H Q price : ℕ} {P U : Type} (size : a = b)
   subst b
   exact id
 
+private theorem seededLaneWithCharge {P U : Type} {N Q price : ℕ}
+    (lane : Descriptor) (m : ℕ) (reads : (Fin m → ZMod 2) → (Fin m → ZMod 2) → Prop)
+    (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q)
+    {body : P → Pr P N Q prime U} {code src dst seed} :
+    let V := volume prime lane
+    let wide := {lane with afterD := lane.afterD*142080}
+    ∀ physical : volume prime wide = m, 0 < V →
+      (∀ input, reads (fun k => input (k.cast physical.symm)) (fun k =>
+        Shared50RecursiveNodeRows.transpose (one_dvd wide.rows) input (k.cast physical.symm))) →
+    PackedPieceHandoffWithCharge cleanupWeight V (fun x y => ∀ r : Fin 142080,
+      y r.castSucc = Shared50RecursiveNodeRows.transpose (one_dvd lane.rows) (x r.castSucc))
+      body code src dst seed price →
+    let T := intervalSplitTapes
+    let split : Pr Empty T Q prime U := intervalPrepare.seq (foreign (liftQ (CyclicRowNormalized.splitProgram 142080 prime) capacity))
+    let H := 142082+T+N
+    let slot := ((0 : Fin T).natAdd 142082).castAdd N
+    ∃ (host : Empty ⊕ P → Pr (Empty ⊕ P) H Q prime U) (program : Pr (Empty ⊕ P) H Q prime U)
+      (initial : Stacks H prime), ∀ (x : Fin m → ZMod 2) u S,
+      S.L slot = [] → S.R slot = List.ofFn (fun k => SparseRoleCircuit.encode (x k)) →
+      (∀ k, k ≠ slot → S.L k = initial.L k ∧ S.R k = initial.R k) →
+      ∃ z F n y, Exec host program (mk u S) n (mk z F) ∧
+        (∀ js : List (Fin H), js.Nodup → n+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+
+          (1+6*Fast.Main.mnProgPush split)*((149*(T+5)+5)*(V*142080)+24)+
+          (142081*(8*V+10+2*V)+1+price)+13*(149*(V*142080)*(T+5)+6)) ∧
+        z.user = u.user ∧ Cover.Fallback.RecordPayload slot (fun _ => blank) 0 y F ∧
+        reads x y := by
+  intro V wide physical pos semantics child T split H slot
+  have span : V*142080 = volume prime wide := by simp [V,wide,volume,Nat.mul_assoc]
+  obtain ⟨host,program,bank,target,run⟩ := inheritedIntervalWithCharge lane pos capacity child
+  obtain ⟨initial,prepare⟩ := inheritedWorkspaceSeed (B := 142082) (T := T) seed
+  refine ⟨host,program,initial,?_⟩
+  intro x u S left right privateTapes
+  obtain ⟨hl,hr,fresh,prepared⟩ := prepare S left privateTapes
+  let input := fun k => x (Fin.cast physical k)
+  let output := Shared50RecursiveNodeRows.transpose (one_dvd wide.rows) input
+  obtain ⟨z,F,n,exec,bill,user,rows⟩ := run input u S
+    (right.trans (castWord (span.trans physical) _).symm) hl hr fresh prepared
+  refine ⟨z,F,n,fun k => output (k.cast physical.symm),exec,bill,user,?_,?_⟩
+  ·
+    have payload := castPayload span _ F output (mergedPayload bank F _ _ rows)
+    rw [target] at payload
+    change Cover.Fallback.RecordPayload slot (fun _ => blank) 0 output F at payload
+    apply castPayload physical
+    exact payload
+  · exact semantics input
+
 /-- A seeded remainder worker returns the scheduled owner word. Its child
 budget is additive even when every private tape is billed for cleanup. -/
 theorem inheritedIdleWorkerWithCharge {P U : Type} {N Q price : ℕ}
@@ -284,23 +330,8 @@ theorem inheritedIdleWorkerWithCharge {P U : Type} {N Q price : ℕ}
   let wide := {lane with afterD := lane.afterD*142080}
   have span : V*142080 = volume prime wide := by simp [V,wide,volume,Nat.mul_assoc]
   have physical : volume prime wide = m := by rw [← span,size]; exact Nat.mul_assoc _ _ _
-  obtain ⟨host,program,bank,target,run⟩ := inheritedIntervalWithCharge lane pos capacity child
-  obtain ⟨initial,prepare⟩ := inheritedWorkspaceSeed (B := 142082) (T := T) seed
-  refine ⟨host,program,initial,?_⟩
-  intro x u S left right privateTapes
-  obtain ⟨hl,hr,fresh,prepared⟩ := prepare S left privateTapes
-  let input := fun k => x (Fin.cast physical k)
-  let output := Shared50RecursiveNodeRows.transpose (one_dvd wide.rows) input
-  obtain ⟨z,F,n,exec,bill,user,rows⟩ := run input u S
-    (right.trans (castWord (span.trans physical) _).symm) hl hr fresh prepared
-  refine ⟨z,F,n,fun k => output (k.cast physical.symm),exec,bill,user,?_,?_⟩
-  ·
-    have payload := castPayload span _ F output (mergedPayload bank F _ _ rows)
-    rw [target] at payload
-    change Cover.Fallback.RecordPayload slot (fun _ => blank) 0 output F at payload
-    apply castPayload physical
-    simpa using payload
-  · simpa [input,output] using idleInterleaved_read i j w W input
+  exact seededLaneWithCharge lane m (parentIntervalRead i j w (W*142080)) capacity physical pos
+    (idleInterleaved_read i j w W) child
 
 private theorem windowCharge {ι : Type} (jobs : List ι) (price : ι → ℕ) (T V : ℕ) :
     (jobs.map fun k => (149*(T+5)+5)*(V*142080)+24+
