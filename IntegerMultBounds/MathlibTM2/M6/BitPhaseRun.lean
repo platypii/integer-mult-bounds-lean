@@ -1607,6 +1607,57 @@ private theorem selectedRow (w : ℕ) (rows : Fin 661 → AddressStream (ZMod (p
   have row := (congrFun word i.val).trans (Framed.execute_dirty (selectedFrame w) stored i)
   rwa [encoded] at row
 
+/-- At a helper owner the compact invocation swaps the two active halves
+and keeps the spectator fixed, independently of every other owner. -/
+theorem compactInvocation_helper {w W k : ℕ} (owner : Fin 661 ↪ Fin k)
+    {x y : Fin k → Fin ((prime^w)^16*W) → ZMod 2}
+    (common : ∀ j, phaseRead owner y j = runSelected (selectedFrame w) (selectedWord w) (phaseRead owner x j))
+    (h : Fin 439) (j : Fin W) (s : Swap.Shear.State (Fin 8) (ZMod (prime^w))) :
+    let i : Fin 661 := ⟨222+h.val,by omega⟩
+    y (owner i) (FlatCoordinateLayout.index (AffineFieldCoordinates.embed s.swap) j) =
+      x (owner i) (FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) j) := by
+  intro i
+  have row := congrFun (common j) i.val
+  let rows := fun a : Fin 661 => fun v : Swap.Shear.State (Fin 8) (ZMod (prime^w)) => x (owner a) (FlatCoordinateLayout.index (AffineFieldCoordinates.embed v) j)
+  change _ = runSelected _ _ (Copy.extendStored rows) i.val at row
+  obtain ⟨entry,exit⟩ := Nine.helper_refs h.val h.isLt
+  rw [selectedRow] at row
+  simp only [dite_eq_right (show ¬(111 ≤ i.val ∧ i.val < 222) by dsimp [i]; omega),
+    show Frames.finalRefs i.val = 1 from exit,show Frames.initialRefs i.val = 0 from entry,emptyFrame_decode] at row
+  have eqn := congrFun row s.swap
+  rw [fullFrame_read,Prod.swap_swap] at eqn
+  simpa only [phaseRead,Copy.extendStored,dite_eq_left i.isLt,rows] using eqn
+
+/-- At the invocation boundary each helper can use its own spectator.
+Only a receiving target and its matching source must select the same row. -/
+theorem selectedRow_spectators {w W k : ℕ} (owner : Fin 661 ↪ Fin k)
+    (x y : Fin k → Fin ((prime^w)^16*W) → ZMod 2) (row : Fin 661 → Fin W)
+    (paired : ∀ t : Fin 111, row ⟨t.val,by omega⟩ = row ⟨111+t.val,by omega⟩)
+    (common : ∀ i : Fin 661, phaseRead owner y (row i) i.val =
+      runSelected (selectedFrame w) (selectedWord w) (phaseRead owner x (row i)) i.val)
+    (i : Fin 661) :
+    let rows := fun a : Fin 661 => phaseRead owner x (row a) a.val
+    phaseRead owner y (row i) i.val =
+      runSelected (selectedFrame w) (selectedWord w) (Copy.extendStored rows) i.val := by
+  intro rows
+  let atRow := fun a : Fin 661 => phaseRead owner x (row i) a.val
+  have read := common i
+  have flat : phaseRead owner x (row i) = Copy.extendStored atRow := by
+    funext j
+    by_cases h : j < 661 <;> simp [phaseRead,Copy.extendStored,atRow,h]
+  rw [flat,selectedRow] at read
+  rw [read,selectedRow]
+  dsimp only
+  split
+  · rename_i hit
+    let t : Fin 111 := ⟨i.val-111,by omega⟩
+    have idx : (⟨111+t.val,by omega⟩ : Fin 661) = i := Fin.ext (by dsimp [t]; omega)
+    have eq := paired t
+    rw [idx] at eq
+    simp only [atRow,rows,← eq]
+    rfl
+  · rfl
+
 private theorem common_charted_read {w B K n} {owner : Fin 661 ↪ Fin 142081} {x y}
     (common : ∀ g (z : Cover.LabelEntry.Cell (copyLabelLayout w B K) B),
       phaseRead owner y (labelSpectator g z) =
@@ -1615,30 +1666,12 @@ private theorem common_charted_read {w B K n} {owner : Fin 661 ↪ Fin 142081} {
     (i : Fin 661) :
     chartedPhaseRead n owner y g z i.val =
       runSelected (selectedFrame w) (selectedWord w) (chartedPhaseRead n owner x g z) i.val := by
-  let h := g*registerChart w n i.val
-  let rows : Fin 661 → AddressStream (ZMod (prime^w)) := fun j s => x (owner j) (FlatCoordinateLayout.index
-    (AffineFieldCoordinates.embed s) (labelSpectator h z))
-  let charted := fun j : Fin 661 => phaseRead owner x (labelSpectator (g*registerChart w n j.val) z) j.val
-  have read := congrFun (common h z) i.val
-  change _ = runSelected _ _ (Copy.extendStored rows) i.val at read
-  change _ = runSelected _ _ (Copy.extendStored charted) i.val
-  rw [selectedRow] at read ⊢
-  have same : charted i = rows i := by simp [charted,rows,h,phaseRead,Copy.extendStored]
-  simp only [chartedPhaseRead,Copy.extendStored,dite_eq_left i.isLt]
-  rw [read]
-  dsimp only
-  rw [same]
-  split
-  · rename_i target
-    let t : Fin 111 := ⟨i.val-111,by omega⟩
-    have idx : i.val = 111+t.val := by dsimp [t]; omega
-    have charts : registerChart w n t.val = registerChart w n i.val := by
-      unfold registerChart
-      rw [idx,(chart_port n t).1,(chart_port n t).2]
-    have src : charted ⟨t.val,by omega⟩ = rows ⟨t.val,by omega⟩ := by
-      simp [charted,rows,h,phaseRead,Copy.extendStored,charts]
-    rw [src]
-  · rfl
+  let row := fun i : Fin 661 => labelSpectator (g*registerChart w n i.val) z
+  have paired (t : Fin 111) : row ⟨t.val,by omega⟩ = row ⟨111+t.val,by omega⟩ := by
+    simp only [row,registerChart,(chart_port n t).1,(chart_port n t).2]
+  have result := selectedRow_spectators owner x y row paired
+    (fun k => congrFun (common (g*registerChart w n k.val) z) k.val) i
+  simpa only [chartedPhaseRead,Copy.extendStored,dite_eq_left i.isLt,row] using result
 
 open Cover IntegerMultBounds.Swap.Modular M8.RevMachine in
 /-- The charged PR589 invocation on the caller’s charted tapes. Sources

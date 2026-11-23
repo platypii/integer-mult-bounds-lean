@@ -90,6 +90,37 @@ theorem helperFieldCell_exchange (c : PortCertificate) (checked : c.Checked) (sl
       @finSumFinEquiv_symm_apply_natAdd 16 112,@finSumFinEquiv_symm_apply_castAdd 56 56,
       @finSumFinEquiv_symm_apply_natAdd 56 56,Equiv.sumCongr_apply,Sum.map_inl,Sum.map_inr] <;> rfl
 
+open Swap.Modular M8.Exchange in
+/-- A compact invocation on a packed helper realizes its parent interval
+exchange with any inherited block count, without inserting a cover label. -/
+theorem compactInvocation_helperSlot {w B W k : ℕ} (owner : Fin 661 ↪ Fin k)
+    {x y : Fin k → Fin ((prime^w)^16*(B*((prime^w)^112*W))) → ZMod 2}
+    (common : ∀ j, phaseRead owner y j = runSelected (selectedFrame w) (selectedWord w) (phaseRead owner x j))
+    (h : Fin 439) (c : PortCertificate) (checked : c.Checked) (slot : Fin 56)
+    (s : Swap.Shear.State Axis (ZMod (prime^w))) (b : Fin B) (j : Fin W) :
+    let tape := owner ⟨222+h.val,by omega⟩
+    let cell := fun v => helperFieldCell (helperSlotField c (some slot) w v) b j
+    ext (y tape) (cell (exchange (reduce (prime^w) (c.span slot (slot+8 : ℕ))) s)) =
+      ext (x tape) (cell s) := by
+  intro tape cell
+  let digits := helperSlotField c (some slot) w s
+  let live := digits ∘ Fin.castAdd 112
+  let state : Swap.Shear.State (Fin 8) (ZMod (prime^w)) := (live ∘ Fin.castAdd 8,live ∘ Fin.natAdd 8)
+  let tail : Fin 112 → ZMod (prime^w) := digits ∘ Fin.natAdd 16
+  let spectator := finProdFinEquiv (b,FlatCoordinateLayout.index tail j)
+  have embed : AffineFieldCoordinates.embed state = live :=
+    funext (Fin.addCases (fun i => Fin.addCases_left ..) (fun i => Fin.addCases_right ..))
+  have offset (v : Fin 16 → ZMod (prime^w)) :
+      helperLabelCell v b tail j = (FlatCoordinateLayout.index v spectator).val := by
+    simp only [helperLabelCell,FlatCoordinateLayout.index_val,spectator,finProdFinEquiv_apply_val]
+    ring
+  dsimp only [cell]
+  rw [helperFieldCell_exchange c checked slot w s b j]
+  change ext (y tape) (helperLabelCell (AffineFieldCoordinates.embed state.swap) b tail j) =
+    ext (x tape) (helperLabelCell live b tail j)
+  rw [offset,offset,ext_apply,ext_apply,← embed]
+  exact compactInvocation_helper owner common h spectator state
+
 open Cover in
 /-- Reading the final helper through its certified frames recovers the cell
 at the slot held on entry, even when this invocation repacked the owner. -/
