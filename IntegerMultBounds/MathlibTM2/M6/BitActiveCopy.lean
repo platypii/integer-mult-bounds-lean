@@ -411,6 +411,80 @@ theorem compiledCopySweep [M8.Machine.Net] (n : Fin 9) :
     simpa only [routedCell,ite_true,sweepRoleTape_eq,Fin.cast_cast,Fin.cast_eq_self,sweepView]
       using (cells true y r k).symm
 
+open M8.RevMachine in
+/-- Present a restored borrowed sweep at any equal physical volume and
+spectator count, including those of the inherited COPY lane. -/
+theorem borrowedSweepWorker [M8.Machine.Net] :
+    ∃ base tapes states : ℕ, ∀ {P U : Type} {t Q atom B K S V price : ℕ}
+      (n : Fin 9) (fan : Fin (142081+2) ↪ Fin t) (body : P → Pr P t Q prime U)
+      (code : Pr P t Q prime U) (initial : Stacks t prime),
+    S = B*prime^(64*(atom*64))*K → (size : (prime^atom)^128*S = V) →
+    0 < atom → 0 < B → 0 < K → states ≤ Q →
+    (∀ x u D, HelperFan fan x D →
+      (∀ j, (∀ i, fan i ≠ j) → D.L j = initial.L j ∧ D.R j = initial.R j) →
+      ∃ z F k y, Exec body code (mk u D) k (mk z F) ∧ k ≤ price ∧ z.user = u.user ∧
+        HelperFan fan y F ∧ RestoredBorrowedStage n atom B K x y) →
+    ∃ (T : ℕ) (place : Fin t ↪ Fin T) (program : Pr P T Q prime U) (seed : Stacks T prime),
+    let live := fan.trans place
+    ∀ x u D, HelperFan live x D →
+      (∀ j, (∀ i, live i ≠ j) → D.L j = seed.L j ∧ D.R j = seed.R j) →
+      ∃ z F k y, Exec (fun f => embProg place id (body f)) program (mk u D) k (mk z F) ∧
+        k ≤ (base*V+17760*(2*LeafCore.coreCost V atom+14))*(tapes+5)+price+12 ∧ z.user = u.user ∧
+        HelperFan live y F ∧ ∀ j : Fin S, sweepRoles n 0 j (sweepView size y) =
+          (Piece.stage n).run (sweepRoles n 0 j (sweepView size x)) := by
+  obtain ⟨base,tapes,states,correct⟩ := correctedBorrowedSweep_exec
+  refine ⟨base,tapes,states,?_⟩
+  intro P U t Q atom B K S V price n fan body code initial stock size hw hB hK room raw
+  subst S
+  let M := prime^atom
+  have layout : V = M^16*(M^112*B*prime^(64*(atom*64))*K) := size.symm.trans
+    ((ordinaryCompact_width M _).symm.trans (by simp [Nat.mul_assoc]))
+  cases layout
+  have hp := Shared50ModularControl.prime_prime.pos
+  obtain ⟨T,place,program,prepare⟩ := correct n fan body code price initial hw (by positivity) room raw
+  obtain ⟨seed,_,run⟩ := prepare (⟨[],[],fun _ => [],fun _ => []⟩ : Stacks 142081 prime)
+  refine ⟨T,place,program,seed,?_⟩
+  intro live x u D words fresh
+  obtain ⟨z,F,k,y,exec,paid,user,out,act⟩ := run x u D words fresh
+  refine ⟨z,F,k,y,exec,paid,user,out,?_⟩
+  intro j
+  obtain ⟨b,g,t,rfl⟩ := borrowedSpectator_covers j
+  have label (data : Fin 142081 → Fin (M^16*(M^112*B*prime^(64*(atom*64))*K)) → ZMod 2) :
+      sweepRoles n 0 (borrowedSpectator b g t) (sweepView size data) = borrowedStageRead n b t g data := by
+    rw [borrowedStageRead_eq_sweepRoles]
+    rfl
+  exact (label y).trans ((act b t g).trans (congrArg (Piece.stage n).run (label x).symm))
+
+open M8.RevMachine in
+/-- Execute the inherited COPY sweep from its borrowed stage. The bound
+includes the two port corrections and both compiled charts. -/
+theorem borrowedCopySweep [M8.Machine.Net] (n : Fin 9) :
+    ∃ (states base correctionTapes : ℕ) (tapes : Bool → ℕ) (scans swaps : Bool → Role → ℕ),
+    ∀ {P U : Type} {t Q atom w W B K price : ℕ} (aligned : 7*w = 64*atom), 0 < atom → 0 < W → states ≤ Q →
+    ∀ (fan : Fin (142081+2) ↪ Fin t) (body : P → Pr P t Q prime U)
+      (code : Pr P t Q prime U) (initial : Stacks t prime),
+    let V := volume prime (phaseIntervalChild 0 7 w W)
+    let S := (prime^w)^2*W
+    let corrected := (base*V+17760*(2*LeafCore.coreCost V atom+14))*(correctionTapes+5)+price+12
+    let fee := fun b => ∑ r : Role, (7*(3808274*V+LeafCore.coreCost V w+1)+scans b r*V+
+      swaps b r*(3808274*V+LeafCore.coreCost V atom+1)+4)
+    S = B*prime^(64*(atom*64))*K → 0 < B → 0 < K →
+    (∀ x u D, HelperFan fan x D →
+      (∀ j, (∀ i, fan i ≠ j) → D.L j = initial.L j ∧ D.R j = initial.R j) →
+      ∃ z F k y, Exec body code (mk u D) k (mk z F) ∧ k ≤ price ∧ z.user = u.user ∧
+        HelperFan fan y F ∧ RestoredBorrowedStage n atom B K x y) →
+    PackedWindowHandoff U Q V (fun x y => ∀ j : Fin S, let addr := fun v => copyLaneCell aligned j (windowState atom v)
+      readRoles addr y = (Piece.stage n).run (readRoles addr x))
+      (fee false*(tapes false+5)+corrected+fee true*(tapes true+5)+12+142081*(8*V+10)+1) := by
+  obtain ⟨qc,tapes,scans,swaps,chart⟩ := compiledCopySweep n
+  obtain ⟨base,ct,qb,correct⟩ := borrowedSweepWorker
+  refine ⟨max qc qb,base,ct,tapes,scans,swaps,?_⟩
+  intro P U t Q atom w W B K price aligned positive live room fan body code initial V S corrected fee stock hB hK raw
+  obtain ⟨T,place,program,seed,worker⟩ := correct n fan body code initial stock (copyLaneVolume aligned W)
+    positive hB hK ((le_max_right _ _).trans room) raw
+  exact chart aligned positive live ((le_max_left _ _).trans room) (fan.trans place)
+    (fun f => embProg place id (body f)) program seed worker
+
 /-- Splitting the scheduled COPY descriptor into role rows exposes precisely
 the two spectator atoms and the inherited trailing stock of one lane. -/
 theorem copyRoleSpectators {w W rows : ℕ} (node : Descriptor) (width : node.width = 7*w)
@@ -426,6 +500,65 @@ theorem copyRoleSpectators {w W rows : ℕ} (node : Descriptor) (width : node.wi
       _ = node.beforeRows*(142080*rows)*node.beforeH*M^7*node.between*M^7*node.afterD := by ring
       _ = _ := size
       _ = _ := by dsimp [M]; ring
+
+open M8.RevMachine Certificates.PR589 in
+/-- Run a scheduled packed stage inside the inherited COPY lane, using the
+node's own label stock and the prices of this stage's child occurrences. -/
+theorem scheduledCopySweep [M8.Machine.Net] (n : Fin 9) :
+    ∃ (states base ct : ℕ) (tapes : Bool → ℕ) (scans swaps : Bool → Role → ℕ),
+    ∀ {P U : Type} {Q h w W B rows : ℕ} (node : Descriptor),
+    (fun {q : ℕ} (_ : Program 38 q prime) => q) (RecursiveRowsNodeHeaders.program 142080) ≤ Q →
+    states ≤ Q → node.width = 7*w → (aligned : 7*w = 64*(h+1)) → node.rows = 142080*rows →
+    node.beforeH = B*prime^(64*((h+1)*64)) → 0 < B → 0 < W →
+    ({node with rows := rows} : Descriptor).Positive →
+    (Fin (volume prime node) ≃ Fin ((prime^w)^16*(W*142080))) →
+    let atom := h+1
+    let K := node.beforeRows*rows*node.between*node.afterD
+    let V := volume prime (phaseIntervalChild 0 7 w W)
+    ∀ (bank : StageRun → ℕ) (body : ∀ p, P → Pr P (bank p) Q prime U)
+      (coeff : StageRun → ℝ) (required : (ℕ → ℕ) → Prop),
+    PackedStageExecution (w := atom) (B := B) (K := K) n bank body coeff required →
+    ∀ time, required time →
+    let children := ((List.range' (stageChildStart n) (stageRuns.flatMap (fun _ => Geometry.Moves.localPaid)).length).map time).sum
+    let setup := (RecursiveRowsQuotient.constant 142080+30)*142080*43+152402152
+    let raw := ⌊((setup*V : ℕ) : ℝ)+(stagePackingRate n+(stageRuns.map coeff).sum)*
+      (V*(atom : ℝ)^M8.Machine.BudgetBound.tau)⌋₊+children
+    let fee := fun b => ∑ r : Role, (7*(3808274*V+LeafCore.coreCost V w+1)+scans b r*V+
+      swaps b r*(3808274*V+LeafCore.coreCost V atom+1)+4)
+    let corrected := (base*V+17760*(2*LeafCore.coreCost V atom+14))*(ct+5)+raw+12
+    PackedWindowHandoff U Q V (fun x y => ∀ j : Fin ((prime^w)^2*W),
+      let addr := fun v => copyLaneCell (atom := atom) aligned j (windowState atom v)
+      readRoles addr y = (Piece.stage n).run (readRoles addr x))
+      (fee false*(tapes false+5)+corrected+fee true*(tapes true+5)+12+142081*(8*V+10)+1) := by
+  obtain ⟨states,base,ct,tapes,scans,swaps,sweep⟩ := borrowedCopySweep n
+  refine ⟨states,base,ct,tapes,scans,swaps,?_⟩
+  intro P U Q h w W B rows node cap room width aligned split labels hB hW pos position atom K V bank body coeff required stage time paid children setup raw fee corrected
+  obtain ⟨T,fan,ports,build⟩ := parentPackedStage_exec node n bank body coeff required cap
+    (width.trans aligned) split labels pos stage
+  obtain ⟨seed,code,run⟩ := build time paid
+  have stock := (copyRoleSpectators node width split position).symm
+  rw [labels] at stock
+  have spec : (prime^w)^2*W = B*prime^(64*(atom*64))*K := stock.trans (by dsimp only [K,atom]; ac_rfl)
+  have hK : 0 < K := Nat.mul_pos (Nat.mul_pos (Nat.mul_pos pos.1 pos.2.1) pos.2.2.2.1) pos.2.2.2.2
+  have vol : (prime^atom)^16*((prime^atom)^112*B*prime^(64*(atom*64))*K) = V := by
+    dsimp only [V]
+    rw [← copyLaneVolume aligned W, spec]
+    simpa only [Nat.mul_assoc] using ordinaryCompact_width (prime^atom) (B*prime^(64*(atom*64))*K)
+  apply sweep aligned (Nat.succ_pos h) hW room _ _ code seed spec hB hK
+  intro x u D live fresh
+  obtain ⟨z,F,k,y,exec,cost,user,out,act⟩ := run x u D live fresh
+  refine ⟨z,F,k,y,exec,?_,user,out,act⟩
+  let localFee : ℝ := ((setup*V : ℕ) : ℝ)+(stagePackingRate n+(stageRuns.map coeff).sum)*
+    (V*(atom : ℝ)^M8.Machine.BudgetBound.tau)
+  have bill : (k : ℝ) ≤ localFee+children := by
+    dsimp only [localFee]
+    rw [← vol]
+    simpa only [add_assoc] using cost
+  change k ≤ ⌊localFee⌋₊+children
+  by_cases nonneg : 0 ≤ localFee
+  · simpa only [Nat.floor_add_natCast nonneg] using Nat.le_floor bill
+  · have bound : (k : ℝ) ≤ children := by linarith
+    exact (Nat.cast_le.mp bound).trans (Nat.le_add_left ..)
 
 /-- The directory calls for one remainder act on the inherited COPY cells.
 Each strictly smaller supplier is charged at its original schedule index. -/
