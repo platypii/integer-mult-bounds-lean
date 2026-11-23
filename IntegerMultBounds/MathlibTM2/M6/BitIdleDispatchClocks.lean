@@ -158,6 +158,33 @@ theorem loadRemainderFromWidth {P U : Type} {H N T Q : ℕ} (body : P → Pr P T
           omega,
         ready,fun i => ⟨(live i).1,(live i).2.trans (bankEq _)⟩,frame⟩
 
+/-- Execute the embedded child once its private seed is loaded and its input fan preserved. -/
+theorem execPreparedRemainder {P A U : Type} {H T Q V : ℕ}
+    (body : P → Pr P H Q prime U) (program : Pr P H Q prime U) (label : P → A)
+    (host : A → Pr A T Q prime U) (bank : Fin H ↪ Fin T)
+    (installed : ∀ f, host (label f) = embProg bank label (body f))
+    {src dst seed effect price} (child : PackedPieceHandoffWithCharge cleanupWeight V effect
+      body program src dst seed price) {x v} {S D : Stacks T prime}
+    (words : ParentStageWords (fun i => src (i.castAdd 2)) src V x (embStk bank S))
+    (fresh : ∀ j, (∀ i, src i ≠ j) → D.L (bank j) = seed.L j ∧ D.R (bank j) = seed.R j)
+    (live : ∀ i, D.L (bank (src i)) = S.L (bank (src i)) ∧ D.R (bank (src i)) = S.R (bank (src i))) :
+    ∃ q G t y, Exec host (embProg bank label program) (mk v D) t (mk q G) ∧ q.user = v.user ∧
+      ParentStageWords (fun i => dst (i.castAdd 2)) dst V y (embStk bank G) ∧ effect x y ∧
+      CleanupBound D G t price ∧
+      ∀ j, (∀ i, bank i ≠ j) → G.L j = D.L j ∧ G.R j = D.R j := by
+  have rows : ParentStageWords (fun i => src (i.castAdd 2)) src V x (embStk bank D) := by
+    constructor
+    · intro i
+      exact (live _).1.trans (words.left i)
+    · intro i
+      exact (live _).2.trans (words.right i)
+    · intro j k
+      simpa only [embStk,Function.comp_apply,(live _).1,(live _).2] using words.controls j k
+  obtain ⟨z,F,b,y,run,bill,same,out,result⟩ := child x (embDn bank v) (embStk bank D) rows fresh
+  obtain ⟨q,G,lifted,_,userEq,view,frame⟩ := exec_emb bank.injective installed run v rfl D rfl
+  rw [← view] at out bill
+  exact ⟨q,G,b,y,lifted,userEq.trans same,out,result,CleanupBound.place bank frame bill,frame⟩
+
 /-- Load the remainder headers from the caller, then invoke its installed packed child. -/
 theorem callRemainderFromWidth {P A U : Type} {H N T Q : ℕ}
     (body : P → Pr P H Q prime U) (entry : P) (label : P → A)
@@ -183,23 +210,12 @@ theorem callRemainderFromWidth {P A U : Type} {H N T Q : ℕ}
   refine ⟨load.seq (.call (label entry)),?_⟩
   intro w W L cutoff V effect price child x u S words width empty radix unit spectator cut fresh
   obtain ⟨v,D,a,exec,user,paid,seed,live,_⟩ := prepare w W L cutoff u S width empty radix unit spectator cut fresh
-  have rows : ParentStageWords (fun i => src (i.castAdd 2)) src V x (embStk bank D) := by
-    constructor
-    · intro i
-      exact (live _).1.trans (words.left i)
-    · intro i
-      exact (live _).2.trans (words.right i)
-    · intro j k
-      simpa only [embStk,Function.comp_apply,(live _).1,(live _).2] using words.controls j k
-  obtain ⟨z,F,b,y,run,bill,same,out,result⟩ := child x (embDn bank v) (embStk bank D) rows seed
-  obtain ⟨q,G,lifted,_,userEq,view,frame⟩ := exec_emb bank.injective installed run v rfl D rfl
-  rw [← installed] at lifted
-  rw [← view] at out bill
-  have charge : CleanupBound D G b price := CleanupBound.place bank frame bill
-  refine ⟨q,G,_,y,exec.seq (Exec.call lifted),userEq.trans (same.trans user),out,result,?_⟩
+  obtain ⟨q,G,b,y,run,same,out,result,charge,_⟩ :=
+    execPreparedRemainder body (body entry) label host bank installed child words seed live (v := v)
+  rw [← installed] at run
+  refine ⟨q,G,_,y,exec.seq (Exec.call run),same.trans user,out,result,?_⟩
   intro js nd
-  have h := paid js nd
-  have h' := charge js nd
+  have h := paid.seq charge js nd
   omega
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode

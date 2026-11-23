@@ -179,6 +179,76 @@ theorem callCutoffRemainder {P A U : Type} {H N T Q : ℕ}
   omega
 
 
+/-- A dispatch bank already holds both unary clocks. Copy its six masters into
+the compiled remainder, preserving the caller's record and headers throughout. -/
+theorem callCutoffRemainderOnBank {P A U : Type} {H N T Q : ℕ}
+    (body : P → Pr P H Q prime U) (program : Pr P H Q prime U) (label : P → A)
+    (host : A → Pr A T Q prime U) (bank : Fin H ↪ Fin T)
+    (installed : ∀ f, host (label f) = embProg bank label (body f))
+    (origin : Fin H → Option (Fin (72+N))) (src dst : Fin (142081+2) ↪ Fin H)
+    (raw : Fin 72 ↪ Fin T) (apart : ∀ j i, bank j ≠ raw i) :
+    ∃ code : Pr A T Q prime U, ∀ (c : CutoffNodeInput) effect price,
+      let seed := remainderDispatchSeed origin c.w c.idleWidth c.root.width.size c.cutoff
+      PackedPieceHandoffWithCharge cleanupWeight c.cells effect body program src dst seed price →
+      ∀ x u (S : Stacks T prime),
+      ParentStageWords (fun i => src (i.castAdd 2)) src c.cells x (embStk bank S) →
+      (∀ i : Fin 72, i ≠ 24 → S.R (raw i) = idleDispatchWord c.w c.idleWidth c.root.width.size c.cutoff i.val) →
+      (∀ j, (∀ i, src i ≠ j) → S.L (bank j) = [] ∧ S.R (bank j) = []) →
+      ∃ q G t y, Exec host code (mk u S) t (mk q G) ∧ q.user = u.user ∧
+        ParentStageWords (fun i => dst (i.castAdd 2)) dst c.cells y (embStk bank G) ∧ effect x y ∧
+        CleanupBound S G t (price+(49+93*H)*c.cells) ∧
+        ∀ j, (∀ i, bank i ≠ j) → G.L j = S.L j ∧ G.R j = S.R j := by
+  obtain ⟨load,prepare⟩ := loadRemainderDispatchSeed host origin src bank (raw ∘ idleSeedPorts)
+    (raw 59) (raw 60) (fun j i => apart j _) (by
+      intro i j
+      have a : idleSeedPorts i ≠ 59 := by fin_cases i <;> decide
+      have b : idleSeedPorts i ≠ 60 := by fin_cases i <;> decide
+      simp [List.nodup_cons,raw.injective.eq_iff,Function.comp_apply,a,b,apart,Ne.symm (apart j _)])
+  refine ⟨load.seq (embProg bank label program),?_⟩
+  intro c effect price seed child x u S words master fresh
+  obtain ⟨v,D,a,exec,user,paid,filled,live,off⟩ :=
+    prepare c.w c.idleWidth c.root.width.size c.cutoff u S
+      (fun i => master _ (by fin_cases i <;> decide)) fresh
+      ((master 59 (by decide)).trans rfl) ((master 60 (by decide)).trans rfl)
+  obtain ⟨q,G,b,y,run,same,out,result,charge,frame⟩ :=
+    execPreparedRemainder body program label host bank installed child words filled live (v := v)
+  refine ⟨q,G,_,y,exec.seq run,same.trans user,out,result,?_,?_⟩
+  · intro js nd
+    have h := paid.seq charge js nd
+    have bound := c.remainderSetup_le H
+    omega
+  · intro j away
+    exact ⟨(frame j away).1.trans (off j away).1,(frame j away).2.trans (off j away).2⟩
+
+/-- Present the loaded remainder to the packed stage assembler with only the caller header bank seeded. -/
+theorem packedCutoffRemainderOnBank {P A U : Type} {H N T Q : ℕ}
+    (body : P → Pr P H Q prime U) (program : Pr P H Q prime U) (label : P → A)
+    (host : A → Pr A T Q prime U) (bank : Fin H ↪ Fin T)
+    (installed : ∀ f, host (label f) = embProg bank label (body f))
+    (origin : Fin H → Option (Fin (72+N))) (src dst : Fin (142081+2) ↪ Fin H)
+    (raw : Fin 72 ↪ Fin T) (apart : ∀ j i, bank j ≠ raw i) :
+    ∃ code : Pr A T Q prime U, ∀ (c : CutoffNodeInput) effect price,
+      let contents := fun i : Fin 72 => idleDispatchWord c.w c.idleWidth c.root.width.size c.cutoff i.val
+      let initial : Stacks T prime := ⟨[],[],fun _ => [],Function.extend raw contents (fun _ => [])⟩
+      PackedPieceHandoffWithCharge cleanupWeight c.cells effect body program src dst
+        (remainderDispatchSeed origin c.w c.idleWidth c.root.width.size c.cutoff) price →
+      PackedPieceHandoffWithCharge cleanupWeight c.cells effect host code (src.trans bank) (dst.trans bank)
+        initial (price+(49+93*H)*c.cells) := by
+  obtain ⟨code,run⟩ := callCutoffRemainderOnBank body program label host bank installed origin src dst raw apart
+  refine ⟨code,?_⟩
+  intro c effect price contents initial child x u S words privatePorts
+  have master (i : Fin 72) (_ : i ≠ 24) : S.R (raw i) = contents i := by
+    have h := (privatePorts _ (fun j => apart (src j) i)).2
+    exact h.trans (raw.injective.extend_apply contents (fun _ => []) i)
+  have empty (j : Fin H) (away : ∀ i, src i ≠ j) : S.L (bank j) = [] ∧ S.R (bank j) = [] := by
+    have h := privatePorts _ (fun i => bank.injective.ne (away i))
+    exact ⟨h.1,h.2.trans (Function.extend_apply' contents (fun _ => []) _ (by
+      rintro ⟨i,eq⟩
+      exact apart j i eq.symm))⟩
+  obtain ⟨z,F,t,y,exec,user,out,result,bill,_⟩ := run c effect price child x u S
+    (words.next bank src (fun _ => rfl) (fun _ => rfl)) master empty
+  exact ⟨z,F,t,y,exec,bill,user,⟨out.left,out.right,out.controls⟩,result⟩
+
 private theorem stageCast {P U : Type} {T Q w W V Z price : ℕ} (n : Fin 9)
     (tailEq : W = Z) (size : (prime^w)^128*W = V) (work : ℕ → ℕ)
     {body : P → Pr P T Q prime U} {code src dst seed}
@@ -262,7 +332,10 @@ theorem selectedCutoffNode [M8.Machine.Net] (P U Config : Type) : CutoffNodeExec
   choose body active tapes src dst hosts code localWork localBound sweep using fun n =>
     build n ((Finset.le_sup (Finset.mem_univ n)).trans ((le_max_left _ _).trans cap)) (large n) (entry n)
   obtain ⟨assemblyRate,join⟩ := assemble ((le_max_left _ _).trans room)
-  refine ⟨body,idleBody,active,fun _ => rfl,localWork,assemblyRate,CutoffNodeInput.localCharge_bound _ _ localBound,?_⟩
+  choose H S table remainderCode inputFan outputFan origin step using fun n : Fin 9 =>
+    idle idleBody Sum.inl (fun _ => rfl) n (.inr (idleEntry n))
+  let headerRate := 49+93*Finset.univ.sup H
+  refine ⟨body,idleBody,active,fun _ => rfl,localWork,assemblyRate+9*headerRate,CutoffNodeInput.localCharge_bound _ _ localBound,?_⟩
   intro input d
   choose positions coords runSweep using fun c n => sweep n (input c).node (input c).w (input c).B
     (input c).rowsPerStage (input c).width (input c).rows (input c).label (input c).stagePositive
@@ -277,7 +350,7 @@ theorem selectedCutoffNode [M8.Machine.Net] (P U Config : Type) : CutoffNodeExec
     let h := scheduledChild prime v.node k
     2*volume prime h + if v.cutoff < h.width then budget c k.val else
       ⌊cost*(h.width : ℝ)^M8.Machine.BudgetBound.tau*volume prime h⌋₊
-  let extra := fun c => 1+(142081*(10*(input c).cells+10)+1)
+  let extra := fun c => 1+(142081*(10*(input c).cells+10)+1)+headerRate*(input c).cells
   let remainder := fun c (n : Fin 9) => (∑ j : Fin idleCopies.length, dispatch c (idleDirectoryIndex (n,j)))+extra c
   have positive c : 0 < (input c).cells := by
     have hp := Shared50ModularControl.prime_prime.pos
@@ -295,16 +368,36 @@ theorem selectedCutoffNode [M8.Machine.Net] (P U Config : Type) : CutoffNodeExec
       intro c
       exact stageCast n (input c).stageTail _ (localWork n (input c).w) (run c)) (by
       intro n
-      obtain ⟨H,S,table,program,src,dst,origin,step⟩ := idle idleBody Sum.inl (fun _ => rfl) n (.inr (idleEntry n))
-      have prepared c := step (input c).root (input c).path (input c).depth (input c).b (input c).cutoff
+      let bank := Fin.castAddEmb 72 (n := H n)
+      let raw := Fin.natAddEmb (H n) (m := 72)
+      let outer := fun f => embProg bank id (table n f)
+      obtain ⟨loaded,enter⟩ := packedCutoffRemainderOnBank (table n) (remainderCode n) id outer bank
+        (fun _ => rfl) (origin n) (inputFan n) (outputFan n) raw (by
+          intro j i eq
+          have h := congrArg Fin.val eq
+          change j.val = H n+i.val at h
+          omega)
+      let seed := fun c => (⟨[],[],fun _ => [],Function.extend raw
+        (fun i => idleDispatchWord (input c).w (input c).idleWidth (input c).root.width.size (input c).cutoff i.val)
+        (fun _ => [])⟩ : Stacks (H n+72) prime)
+      refine ⟨S n,_,outer,loaded,(inputFan n).trans bank,(outputFan n).trans bank,seed,?_⟩
+      intro c
+      have prepared := step n (input c).root (input c).path (input c).depth (input c).b (input c).cutoff
         (input c).w (input c).groups (input c).levels (input c).base (input c).rootWidth (input c).stop
         (input c).active (input c).width (input c).rows (input c).idlePositive (fun k => budget c k.val) (idleRec c n)
-      refine ⟨S,H,table,program,src,dst,fun c => remainderDispatchSeed origin (input c).w
-        (input c).idleWidth (input c).root.width.size (input c).cutoff,?_⟩
-      intro c
-      have h := prepared c
-      rw [Nat.add_assoc _ 1] at h
-      exact h)
+      have loadedRun := enter (input c) _ _ prepared
+      intro x u D words fresh
+      obtain ⟨z,F,t,y,exec,paid,user,out,result⟩ := loadedRun x u D words fresh
+      refine ⟨z,F,t,y,exec,?_,user,out,result⟩
+      intro js nd
+      have h := paid js nd
+      have bound : 49+93*H n ≤ headerRate := Nat.add_le_add_left
+        (Nat.mul_le_mul_left _ (Finset.le_sup (Finset.mem_univ n))) _
+      have growth := Nat.mul_le_mul_right (input c).cells bound
+      change _ ≤ _+(((∑ j : Fin idleCopies.length, dispatch c (idleDirectoryIndex (n,j)))+1+
+        (142081*(10*(input c).cells+10)+1))+(49+93*H n)*(input c).cells) at h
+      dsimp only [remainder,extra]
+      omega)
   refine ⟨R,T,host,program,src',dst',seed,?_⟩
   intro c v x u S words fresh
   obtain ⟨z,F,t,y,step,paid,user,out,sem⟩ := exec c x u S words fresh
@@ -325,7 +418,9 @@ theorem selectedCutoffNode [M8.Machine.Net] (P U Config : Type) : CutoffNodeExec
     (fun _ => le_rfl) (fun _ => (Nat.add_comm _ _).le) calls
   simp only [Finset.sum_const,Finset.card_univ,Fintype.card_fin,nsmul_eq_mul,Nat.cast_id] at bill
   have h := paid js unique
-  change _ ≤ _+((∑ n, work c n)+9*extra c+5*volume prime (input c).node+assemblyRate*(input c).cells+2+∑ k : Fin nodeChildren5.length, time c k.val)
+  change _ ≤ _+((∑ n, work c n)+9*(1+(142081*(10*(input c).cells+10)+1))+5*volume prime (input c).node+(assemblyRate+9*headerRate)*(input c).cells+2+∑ k : Fin nodeChildren5.length, time c k.val)
+  dsimp only [extra] at bill
+  rw [Nat.add_mul,Nat.mul_assoc 9]
   omega
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
