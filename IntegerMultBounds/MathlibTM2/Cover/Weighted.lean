@@ -412,6 +412,22 @@ theorem child_leafWords {m : ℕ} (r : ℕ) (ω ω' : Fin m → R)
   rw [fold_leafAt _ _ _ ((List.nodup_finRange m).filter _) (fun i hi => units i (by simpa using hi))]
   simp [child]
 
+/-- An aligned child handles the prefix. Applying the leaf word only to the
+remaining reversed pairs completes the full exchange. -/
+theorem child_finish_suffix {m : ℕ} (r : ℕ) (ω ω' : Fin m → R)
+    (units : ∀ i, ω i * ω' i = 1) (s : State (Fin m) R) :
+    let suffix := (List.finRange m).filter (fun i => decide (r ≤ i.val))
+    suffix.foldl (leafAt ω ω') (child r ω ω' s) = child m ω ω' s := by
+  intro suffix
+  rw [fold_leafAt ω ω' suffix ((List.nodup_finRange m).filter _) (fun i _ => units i)]
+  have mem (i : Fin m) : i ∈ suffix ↔ r ≤ i.val := by simp [suffix]
+  apply Prod.ext <;> funext i
+  · simp only [child,mem,Fin.rev_rev,Fin.isLt,ite_true]
+    split_ifs <;> first | rfl | omega
+  · simp only [child,mem,Fin.rev_rev,Fin.isLt,ite_true]
+    split_ifs <;> first | rfl | omega
+
+
 /-- Unit-pivot elimination of an invertible matrix on `2m` coordinates uses at most
 `2m (2m - 1)` additions, `2m` exchanges and `2m - 1` diagonal pairs. With six children per addition
 and per diagonal pair and three per exchange, a fallback has fewer than `32 m²` children. -/

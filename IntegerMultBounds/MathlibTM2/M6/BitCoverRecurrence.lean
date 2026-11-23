@@ -1,8 +1,9 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Cover.FallbackPhysicalLabel
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackGoodChildLayout
 public import IntegerMultBounds.MathlibTM2.Cover.ProjectorWitness
-public import IntegerMultBounds.MathlibTM2.M6.BitNodeCost
+public import IntegerMultBounds.MathlibTM2.M6.BitDescriptorRecurrence
 public import IntegerMultBounds.MathlibTM2.M8.StoppedRecurrence
 
 /-! Fixed-atom recursion for the selected bit word, including the bad label classes. -/
@@ -94,6 +95,96 @@ theorem fallbackScheduleWeight (mass : Fin nodeChildren5.length → ℝ)
     _ ≤ _ := by
       have bound : (nodeChildren5.length : ℝ) ≤ 2^24 := by exact_mod_cast count
       linarith
+
+open IntegerMultBounds.Machine.RecursiveInterchangeLayout in
+/-- Keep the quotient-width remainder in the inherited middle at each split. -/
+noncomputable def coverChild (M : ℕ) (v : Descriptor) (i : Fin nodeChildren5.length) : Descriptor :=
+  let active := nodeChildren5[i.val]*(v.width/64)
+  rankDescriptor M active (v.width-active) (role v 142080)
+
+open IntegerMultBounds.Machine.RecursiveInterchangeLayout in
+/-- On aligned calls the cover descriptor is the descriptor used by the
+packed machine, including its middle field. -/
+theorem coverChild_eq_scheduled (M : ℕ) (v : Descriptor) (i : Fin nodeChildren5.length)
+    (width : 64 ∣ v.width) : coverChild M v i = scheduledChild M v i := by
+  dsimp only [coverChild,scheduledChild]
+  congr 1
+  have split := Nat.mul_div_cancel' width
+  rw [Nat.sub_mul,split]
+
+open IntegerMultBounds.Machine.RecursiveInterchangeLayout in
+/-- Move the remainder digits from both fields into the middle before the
+aligned stage. Its scheduled child then has exactly the cover layout. -/
+theorem coverChild_eq_scheduled_remainder (M : ℕ) (v : Descriptor) (i : Fin nodeChildren5.length) :
+    let b := v.width/64
+    coverChild M v i = scheduledChild M (rankDescriptor M (64*b) (v.width%64) v) i := by
+  intro b
+  let r := nodeChildren5[i.val]
+  have fits : r ≤ 64 := (nodeChildren5_le i).trans (by decide)
+  have parts : (64-r)*b+r*b = 64*b := by rw [← Nat.add_mul,Nat.sub_add_cancel fits]
+  have split : 64*b + v.width%64 = v.width := Nat.div_add_mod _ _
+  have gap : v.width-r*b = (64-r)*b+v.width%64 := by omega
+  dsimp only [coverChild,scheduledChild,rankDescriptor,role]
+  rw [Nat.mul_div_cancel_left _ (by decide : 0 < 64)]
+  congr 1
+  change M^(v.width-r*b)*v.between*M^(v.width-r*b) =
+    M^((64-r)*b)*(M^(v.width%64)*v.between*M^(v.width%64))*M^((64-r)*b)
+  rw [gap,pow_add]
+  ring
+
+open IntegerMultBounds.Machine.RecursiveInterchangeLayout in
+theorem coverPath_eq_scheduled (M : ℕ) (v : Descriptor) (path : List (Fin nodeChildren5.length))
+    (width : 64^path.length ∣ v.width) :
+    path.foldl (coverChild M) v = path.foldl (scheduledChild M) v := by
+  induction path generalizing v with
+  | nil => rfl
+  | cons i path ih =>
+    obtain ⟨b,hb⟩ := width
+    rw [List.length_cons,pow_succ',Nat.mul_assoc] at hb
+    have split : 64 ∣ v.width := ⟨_,hb⟩
+    simp only [List.foldl_cons,coverChild_eq_scheduled M v i split]
+    apply ih
+    change 64^path.length ∣ nodeChildren5[i.val]*(v.width/64)
+    rw [hb,Nat.mul_div_cancel_left _ (by decide)]
+    exact dvd_mul_of_dvd_right (dvd_mul_right _ _) _
+
+open IntegerMultBounds.Machine.RecursiveInterchangeLayout in
+/-- Along a path, each good child consumes one role factor even when the
+width division leaves a remainder. -/
+theorem coverPath_rows (M : ℕ) (v : Descriptor) (path : List (Fin nodeChildren5.length)) :
+    (path.foldl (coverChild M) v).rows = v.rows/142080^path.length := by
+  induction path generalizing v with
+  | nil => simp
+  | cons i path ih =>
+    rw [List.foldl_cons,ih]
+    change v.rows/142080/142080^path.length = _
+    rw [Nat.div_div_eq_div_mul,List.length_cons,pow_succ']
+
+open IntegerMultBounds.Machine.RecursiveInterchangeLayout in
+theorem coverPath_stock (M : ℕ) (v : Descriptor) (path : List (Fin nodeChildren5.length))
+    (n : ℕ) (stock : 142080^(path.length+n) ∣ v.rows) :
+    142080^n ∣ (path.foldl (coverChild M) v).rows := by
+  obtain ⟨k,rows⟩ := stock
+  rw [coverPath_rows,rows,pow_add,Nat.mul_assoc,Nat.mul_div_cancel_left _ (by positivity)]
+  exact dvd_mul_right _ _
+
+open IntegerMultBounds.Machine.RecursiveInterchangeLayout in
+/-- Every scheduled good child has positive width at a split, shrinks by its
+listed rank fraction and occupies exactly one role's share of the volume. -/
+theorem scheduledDescriptorSize (v : Descriptor) (M : ℕ) (i : Fin nodeChildren5.length)
+    (split : 64 ≤ v.width) (stock : 142080 ∣ v.rows) :
+    let r := nodeChildren5[i.val]
+    let child := coverChild M v i
+    0 < child.width ∧ (child.width : ℝ) ≤ ((r : ℝ)/64)*v.width ∧
+      volume M child*142080 = volume M v := by
+  intro r child
+  obtain ⟨positive,small⟩ := nodeChildren5_bounds i
+  obtain ⟨scale,volumeEq⟩ := rankDescriptor_quotient_size (M := M) (r := r) v 142080 64
+    (small.trans (by decide)) stock
+  refine ⟨Nat.mul_pos positive (Nat.div_pos split (by decide)),?_,volumeEq⟩
+  change child.width*64 ≤ r*v.width at scale
+  have h : (child.width : ℝ)*64 ≤ (r : ℝ)*v.width := by exact_mod_cast scale
+  linarith
 
 /-- Leave half the certified moment gap for fallback children and half for
 the fixed-atom route toll. The child sizes here count atoms. -/

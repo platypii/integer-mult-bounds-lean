@@ -1188,6 +1188,111 @@ theorem packedWeightedLeaf_exec [M8.Machine.Net] [Fintype F] {m d : ℕ} (v : De
 
 end
 
+/-- The quotient stage leaves exactly the last width-modulo-64 coordinates. -/
+def remainderCoords (r : ℕ) : List (Fin r) :=
+  List.ofFn fun j : Fin (r%64) => ⟨r-1-j.val, by have := j.isLt; have := Nat.mod_le r 64; omega⟩
+
+theorem remainderCoords_order (r : ℕ) (j : Fin (remainderCoords r).length) :
+    ((remainderCoords r).get j).val+j.val+1 = 64*(r/64)+(remainderCoords r).length := by
+  have pos := j.isLt
+  simp only [remainderCoords,List.length_ofFn] at pos
+  rw [List.get_eq_getElem]
+  simp [remainderCoords,List.getElem_ofFn]
+  have := Nat.div_add_mod r 64
+  omega
+
+/-- After the tape counter descends through the remainder, the aligned
+exchange completes the full weighted interchange. -/
+theorem remainderCoords_then_child {r M : ℕ} (weight inv : Fin r → ZMod M)
+    (unit : ∀ i, weight i*inv i = 1) (x : IntegerMultBounds.Swap.Shear.State (Fin r) (ZMod M)) :
+    Weighted.child (64*(r/64)) weight inv ((remainderCoords r).foldl (Weighted.leafAt weight inv) x) =
+      Weighted.child r weight inv x := by
+  have split := Nat.div_add_mod r 64
+  have distinct : (remainderCoords r).Nodup := by
+    apply List.nodup_ofFn.mpr
+    intro i j h
+    have eq : r-1-i.val = r-1-j.val := congrArg Fin.val h
+    apply Fin.ext
+    omega
+  have mem (i : Fin r) : i ∈ remainderCoords r ↔ 64*(r/64) ≤ i.val := by
+    constructor
+    · intro hi
+      obtain ⟨j,eq⟩ := List.mem_ofFn.mp hi
+      have : r-1-j.val = i.val := congrArg Fin.val eq
+      omega
+    · intro bound
+      apply List.mem_ofFn.mpr
+      refine ⟨⟨r-1-i.val,by omega⟩,Fin.ext ?_⟩
+      change r-1-(r-1-i.val) = i.val
+      omega
+  rw [Weighted.fold_leafAt weight inv _ distinct (fun i _ => unit i)]
+  apply Prod.ext <;> funext i <;> simp only [Weighted.child,mem,Fin.rev_rev,Fin.isLt,ite_true] <;>
+    split_ifs <;> first | rfl | omega
+
+/-- Pass the remainder program's actual output stacks to the aligned supplier.
+Both payload equations are evaluated at the same spectator address. -/
+theorem remainderAligned_exec {r M K Q A : ℕ} {α ι : Type*}
+    (weight inv : Fin r → ZMod M) (unit : ∀ i, weight i*inv i = 1)
+    (body : F → Pr F K Q A U) (remainder aligned : Pr F K Q A U)
+    (u y : HS K Q A U) (S E : Stacks K A) (t fee budget : ℕ)
+    (addr : ι → IntegerMultBounds.Swap.Shear.State (Fin r) (ZMod M) → ℕ)
+    (input partialWord : ℕ → α) (done : Stacks K A → (ℕ → α) → Prop)
+    (run : Exec body remainder (mk u S) t (mk y E)) (price : t ≤ fee) (user : y.user = u.user)
+    (effect : ∀ j x, partialWord (addr j ((remainderCoords r).foldl (Weighted.leafAt weight inv) x)) =
+      input (addr j x))
+    (call : ∃ z D k out, Exec body aligned (mk y E) k (mk z D) ∧ k ≤ budget ∧ z.user = y.user ∧
+      done D out ∧ ∀ j x, out (addr j (Weighted.child (64*(r/64)) weight inv x)) = partialWord (addr j x)) :
+    ∃ z D n out, Exec body (.seq remainder aligned) (mk u S) n (mk z D) ∧ n ≤ fee+budget ∧
+      z.user = u.user ∧ done D out ∧ ∀ j x, out (addr j (Weighted.child r weight inv x)) = input (addr j x) := by
+  obtain ⟨z,D,k,out,child,cost,same,final,active⟩ := call
+  refine ⟨z,D,t+k,out,.seq run child,Nat.add_le_add price cost,same.trans user,final,?_⟩
+  intro j x
+  rw [← remainderCoords_then_child weight inv unit x]
+  exact (active j _).trans (effect j x)
+
+/-- Execute a descending range of coordinate calls and leave its lower counter in place. -/
+theorem weightedCoordinateRange_exec {r M q w K Q A : ℕ} [NeZero M] {α : Type*}
+    (v : Descriptor) (width : v.width = r) (radix : M = q^w)
+    (weight inv : Fin r → ZMod M) (unit : ∀ i, weight i * inv i = 1)
+    (body : F → Pr F K Q A U) (call : Fin r → Pr F K Q A U) (budget : Fin r → ℕ)
+    (ready : ℕ → Stacks K A → (ℕ → α) → Prop) (lo : ℕ) (is : List (Fin r))
+    (order : ∀ j : Fin is.length, (is.get j).val+j.val+1 = lo+is.length) :
+    let view := fun i : Fin r => {(RecursiveInterchangeLayout.child M 1 1 v i i.rev) with width := w}
+    let addr := fun a row pre mid post (x : IntegerMultBounds.Swap.Shear.State (Fin r) (ZMod M)) =>
+      index M v a row pre (FlatCoordinateLayout.rank x.1).val mid (FlatCoordinateLayout.rank x.2).val post
+    (∀ (i : Fin r), lo ≤ i.val → ∀ u S word, ready (i.val+1) S word → ∃ z D out n, z.user = u.user ∧ n ≤ budget i ∧
+      Exec body (call i) (mk u S) n (mk z D) ∧ ready i.val D out ∧
+      ∀ a < v.beforeRows, ∀ row < v.rows, ∀ pre < (view i).beforeH, ∀ mid < (view i).between,
+        ∀ post < (view i).afterD, ∀ h t : ZMod M,
+        out (index q (view i) a row pre (weight i*t).val mid (inv i*h).val post) =
+          word (index q (view i) a row pre h.val mid t.val post)) →
+    ∀ u S word, ready (lo+is.length) S word → ∃ z D out n, z.user = u.user ∧ n ≤ (is.map budget).sum+1 ∧
+      Exec body (Prog.seqList (is.map call)) (mk u S) n (mk z D) ∧ ready lo D out ∧
+      ∀ a < v.beforeRows, ∀ row < v.rows, ∀ pre < v.beforeH, ∀ mid < v.between, ∀ post < v.afterD, ∀ x,
+        out (addr a row pre mid post (is.foldl (Weighted.leafAt weight inv) x)) = word (addr a row pre mid post x) := by
+  intro view addr step
+  induction is with
+  | nil =>
+    intro u S word initial
+    exact ⟨u,S,word,1,rfl,le_rfl,Exec.act _ _,by simpa using initial,by intros; rfl⟩
+  | cons i is ih =>
+    intro u S word initial
+    have top := order ⟨0,by simp⟩
+    have atHead : i.val = lo+is.length := by simpa [← Nat.add_assoc] using top
+    have tailOrder (j : Fin is.length) : (is.get j).val+j.val+1 = lo+is.length := by
+      have h := order j.succ
+      simp only [List.get_eq_getElem,List.getElem_cons_succ,Fin.val_succ,List.length_cons] at h
+      simpa only [List.get_eq_getElem] using (show is[j.val].val+j.val+1 = lo+is.length by omega)
+    obtain ⟨y,E,next,k,hy,hk,first,prepared,action⟩ := step i (by omega) u S word (by simpa [atHead,Nat.add_assoc] using initial)
+    obtain ⟨z,D,out,n,hz,hn,rest,done,tail⟩ := ih tailOrder y E next (atHead ▸ prepared)
+    refine ⟨z,D,out,k+n,hz.trans hy,by simp only [List.map_cons,List.sum_cons]; omega,
+      Exec.seq first rest,done,?_⟩
+    intro a ha row hr pre hp mid hm post he x
+    apply (tail a ha row hr pre hp mid hm post he (Weighted.leafAt weight inv x i)).trans
+    have pair := leafPair_apply v width q w radix i (fun z => (weight i*z.2,inv i*z.1)) word next
+      x.1 x.2 a row pre mid post hp hm he (action a ha row hr)
+    simpa only [addr,Weighted.leafAt,Weighted.leaf_word _ _ (unit i)] using pair
+
 /-- Follow the descriptor counter from rank down to zero. Each step sees
 its own descriptor view, while the conclusion acts on the full rank fields. -/
 theorem weightedCoordinates_exec {r M q w K Q A : ℕ} [NeZero M] {α : Type*}
@@ -1209,31 +1314,6 @@ theorem weightedCoordinates_exec {r M q w K Q A : ℕ} [NeZero M] {α : Type*}
       ∀ a < v.beforeRows, ∀ row < v.rows, ∀ pre < v.beforeH, ∀ mid < v.between, ∀ post < v.afterD, ∀ x,
         out (addr a row pre mid post (Weighted.child r weight inv x)) = word (addr a row pre mid post x) := by
   intro view addr step
-  have run (is : List (Fin r)) (order : ∀ (j : Fin is.length), (is.get j).val + j.val + 1 = is.length) : ∀ u S word, ready is.length S word → ∃ z D out n, z.user = u.user ∧ n ≤ (is.map budget).sum+1 ∧
-      Exec body (Prog.seqList (is.map call)) (mk u S) n (mk z D) ∧ ready 0 D out ∧
-      ∀ a < v.beforeRows, ∀ row < v.rows, ∀ pre < v.beforeH, ∀ mid < v.between, ∀ post < v.afterD, ∀ x,
-        out (addr a row pre mid post (is.foldl (Weighted.leafAt weight inv) x)) = word (addr a row pre mid post x) := by
-    induction is with
-    | nil =>
-      intro u S word initial
-      exact ⟨u,S,word,1,rfl,le_rfl,Exec.act _ _,initial,by intros; rfl⟩
-    | cons i is ih =>
-      intro u S word initial
-      have top := order ⟨0,by simp⟩
-      have atHead : i.val = is.length := by simpa using top
-      have tailOrder (j : Fin is.length) : (is.get j).val+j.val+1 = is.length := by
-        have h := order j.succ
-        simp only [List.get_eq_getElem,List.getElem_cons_succ,Fin.val_succ,List.length_cons] at h
-        simpa only [List.get_eq_getElem] using (show is[j.val].val+j.val+1 = is.length by omega)
-      obtain ⟨y,E,next,k,hy,hk,first,prepared,action⟩ := step i u S word (by simpa [atHead] using initial)
-      obtain ⟨z,D,out,n,hz,hn,rest,done,tail⟩ := ih tailOrder y E next (atHead ▸ prepared)
-      refine ⟨z,D,out,k+n,hz.trans hy,by simp only [List.map_cons,List.sum_cons]; omega,
-        Exec.seq first rest,done,?_⟩
-      intro a ha row hr pre hp mid hm post he x
-      apply (tail a ha row hr pre hp mid hm post he (Weighted.leafAt weight inv x i)).trans
-      have pair := leafPair_apply v width q w radix i (fun z => (weight i*z.2,inv i*z.1)) word next
-        x.1 x.2 a row pre mid post hp hm he (action a ha row hr)
-      simpa only [addr,Weighted.leafAt,Weighted.leaf_word _ _ (unit i)] using pair
   intro u S word initial
   let coords := (List.finRange r).reverse
   have len : coords.length = r := by simp [coords]
@@ -1241,7 +1321,9 @@ theorem weightedCoordinates_exec {r M q w K Q A : ℕ} [NeZero M] {α : Type*}
     simp [coords,List.get_eq_getElem,List.getElem_reverse]
     have := j.isLt
     omega
-  obtain ⟨z,D,out,n,hz,hn,exec,done,action⟩ := run coords order u S word (len.symm ▸ initial)
+  obtain ⟨z,D,out,n,hz,hn,exec,done,action⟩ :=
+    weightedCoordinateRange_exec v width radix weight inv unit body call budget ready 0 coords
+      (by simpa using order) (fun i _ => step i) u S word (by simpa [len] using initial)
   refine ⟨z,D,out,n,hz,by simpa [coords,List.map_reverse] using hn,exec,done,?_⟩
   intro a ha row hr pre hp mid hm post he x
   have effect := Weighted.fold_leafAt weight inv coords (by simpa [coords] using List.nodup_finRange r) (fun i _ => unit i) x

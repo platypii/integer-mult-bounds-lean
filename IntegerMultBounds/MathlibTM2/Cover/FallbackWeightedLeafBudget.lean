@@ -356,8 +356,8 @@ theorem packedCoordinates_chain_cost [M8.Machine.Net] {ι : Type*} (gap overhead
 /-- Every coordinate call sees the full payload volume at one atom's width.
 Charge both host frame changes, the packed archive scans at their actual indices, and the empty
 instruction ending the sequence once. -/
-theorem weightedCoordinates_cost [M8.Machine.Net] {r : ℕ} (v : Descriptor) (width : v.width = r)
-    (positive : v.Positive) (w tapes push entryTapes returnTapes : ℕ) :
+theorem weightedCoordinateList_cost [M8.Machine.Net] {r : ℕ} (v : Descriptor) (width : v.width = r)
+    (coords : List (Fin r)) (positive : v.Positive) (w tapes push entryTapes returnTapes : ℕ) :
     let M := prime^(w+1)
     let view := fun i : Fin r => {(RecursiveInterchangeLayout.child M 1 1 v i i.rev) with width := w+1}
     let factor := 2*(prime.size+1)^2
@@ -365,8 +365,9 @@ theorem weightedCoordinates_cost [M8.Machine.Net] {r : ℕ} (v : Descriptor) (wi
     let frame := 1800*(entryTapes+5)+200*(returnTapes+5)+15
     let cost := fun i : Fin r => (1+(1800*V*(entryTapes+5)+6))+(1+(weightedLeafCost (volume prime (view i)) (w+1) tapes push+
       ((1000*(prime+1)+8*(i.val+i.val))*factor)*M))+(1+(200*V*(returnTapes+5)+6))
-    ((List.finRange r).map cost).sum+1 ≤
-      packedCoordinatesTime r V w tapes push entryTapes returnTapes := by
+    (coords.map cost).sum+1 ≤
+      coords.length*(weightedLeafCost V (w+1) tapes push+
+        ((1000*(prime+1)+16*(r-1))*factor)*M+frame*V)+1 := by
   intro M view factor V frame cost
   let bound := weightedLeafCost (volume M v) (w+1) tapes push+((1000*(prime+1)+16*(r-1))*factor)*M+frame*V
   have volPos : 0 < V := by
@@ -392,7 +393,20 @@ theorem weightedCoordinates_cost [M8.Machine.Net] {r : ℕ} (v : Descriptor) (wi
     | cons i is ih =>
       simpa only [List.map_cons,List.sum_cons,List.length_cons,Nat.succ_mul,Nat.add_comm] using
         Nat.add_le_add (each i) ih
-  change _ ≤ r*bound+1
-  simpa only [List.length_finRange] using Nat.add_le_add_right (total (List.finRange r)) 1
+  exact Nat.add_le_add_right (total coords) 1
+
+theorem weightedCoordinates_cost [M8.Machine.Net] {r : ℕ} (v : Descriptor) (width : v.width = r)
+    (positive : v.Positive) (w tapes push entryTapes returnTapes : ℕ) :
+    let M := prime^(w+1)
+    let view := fun i : Fin r => {(RecursiveInterchangeLayout.child M 1 1 v i i.rev) with width := w+1}
+    let factor := 2*(prime.size+1)^2
+    let V := volume M v
+    let cost := fun i : Fin r => (1+(1800*V*(entryTapes+5)+6))+(1+(weightedLeafCost (volume prime (view i)) (w+1) tapes push+
+      ((1000*(prime+1)+8*(i.val+i.val))*factor)*M))+(1+(200*V*(returnTapes+5)+6))
+    ((List.finRange r).map cost).sum+1 ≤
+      packedCoordinatesTime r V w tapes push entryTapes returnTapes := by
+  simpa only [List.length_finRange,packedCoordinatesTime] using weightedCoordinateList_cost v width
+    (List.finRange r) positive w tapes push entryTapes returnTapes
+
 
 end IntegerMultBounds.MathlibTM2.Cover.Fallback

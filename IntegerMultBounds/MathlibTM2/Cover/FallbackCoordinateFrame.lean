@@ -302,17 +302,63 @@ abbrev PackedCoordinateRun [M8.Machine.Net] {T m d work Q : ℕ} {F U : Type}
         ∀ a < v.beforeRows, ∀ row < v.rows, ∀ pre < v.beforeH, ∀ mid < v.between, ∀ post < v.afterD, ∀ x,
           ext next (addr a row pre mid post (Weighted.child d weight inv x)) = ext word (addr a row pre mid post x)
 
-/-- Execute every packed coordinate from the initial rank down to counter zero. -/
-theorem packedCoordinates_exec [M8.Machine.Net] {T m d work Q : ℕ} {F U : Type}
+abbrev PackedCoordinateRangeRun [M8.Machine.Net] {T m d work Q : ℕ} {F U : Type}
+    (v : Descriptor) (w : ℕ)
+    (rankFits : d ≤ m) (parent parentInv : Fin m → ZMod (prime^(w+1)))
+    (pivot : Fin d → ZMod (prime^(w+1)))
+    (io : Fin T) (roles : Tapes T prime)
+    (f : ℤ → Fin (prime+4)) (p : ℤ) (node scalar : Tapes 1 prime)
+    (arity : ℕ) (st : Tapes 2 prime)
+    (fits : LeafCore.small ≤ work) (cap : (LeafCore.core io).states ≤ Q) (lo : ℕ) (coords : List (Fin d)) : Prop :=
+    let common := CommonBank.count T
+    let host := common+24
+    let M := prime^(w+1)
+    let view := fun i : Fin d => {(RecursiveInterchangeLayout.child M 1 1 v i i.rev) with width := w+1}
+    let N := volume prime v
+    let entry : Graph.Block common prime := Blocks.seqB LeafRoutines.offsets (Blocks.seqB Blocks.push LeafRoutines.view)
+    let leave : Graph.Block common prime := Blocks.seqB Blocks.restore LeafRoutines.advance
+    let record := (Fin.natAddEmb common (m := 24)).trans ((Fin.castAddEmb 31).trans (Fin.castAddEmb work))
+    let rep := fun count roles' (D : Stacks ((host+31)+work) prime) =>
+      RepT (CommonBank.bank roles' (Routines.hdr v) f p node scalar (Family.leafC (w+1) arity d count) st)
+        (fun k => D.L (((k.castAdd 24).castAdd 31).castAdd work))
+        (fun k => D.R (((k.castAdd 24).castAdd 31).castAdd work))
+    let clean := fun (D : Stacks ((host+31)+work) prime) => ∀ (k : Fin work) x,
+      readAt blank (D.L (k.natAdd (host+31))) (D.R (k.natAdd (host+31))) x = blank
+    let payload := fun x : Fin N → ZMod 2 => SharedPlacementAlphabet.setTape roles io (leafBitTape (List.ofFn x)) 0
+    let weight := fun i : Fin d => parent (i.castLE rankFits)*pivot i
+    let inv := fun i : Fin d => parentInv (i.castLE rankFits)*Ring.inverse (pivot i)
+    let logical := {v with width := d}
+    let addr := fun a row pre mid post (x : IntegerMultBounds.Swap.Shear.State (Fin d) (ZMod M)) =>
+      index M logical a row pre (FlatCoordinateLayout.rank x.1).val mid (FlatCoordinateLayout.rank x.2).val post
+    ∀ (ef : entry.tapes ≤ common+work) (xf : leave.tapes ≤ common+work)
+      (eqs : entry.states ≤ Q) (xqs : leave.states ≤ Q) (word : Fin N → ZMod 2) (body : F → Pr F ((host+31)+work) Q prime U)
+      (u : HS _ Q prime U) (S : Stacks _ prime) (pivotTail parentTail : List (Fin (prime+4))),
+      rep (lo+coords.length) (payload word) S → clean S →
+      (∀ k : Fin 31, S.L ((k.natAdd host).castAdd work) = [] ∧ S.R ((k.natAdd host).castAdd work) = []) →
+      S.R (record 18) = [] →
+      PackedLeafInputs (goodChildPorts.trans record) M.size parent pivot S pivotTail parentTail →
+      let call := fun i : Fin d => packedCoordinateProgram (F := F) (U := U) io i.val i.val ef xf fits eqs xqs cap
+      ∃ next : Fin N → ZMod 2, ∃ z D t, z.user = u.user ∧ t ≤ coords.length*(weightedLeafCost N (w+1) (LeafCore.core io).tapes
+          (packedLeafPush (F := Empty) (U := U) io Empty.elim)+((1000*(prime+1)+16*(d-1))*(2*(prime.size+1)^2))*M+
+            (1800*(entry.tapes+5)+200*(leave.tapes+5)+15)*N)+1 ∧
+        Exec body (Prog.seqList (coords.map call)) (mk u S) t (mk z D) ∧
+        rep lo (payload next) D ∧ clean D ∧
+        (∀ k : Fin 55, D.L ((k.natAdd common).castAdd work) = S.L ((k.natAdd common).castAdd work) ∧
+          D.R ((k.natAdd common).castAdd work) = S.R ((k.natAdd common).castAdd work)) ∧
+        ∀ a < v.beforeRows, ∀ row < v.rows, ∀ pre < v.beforeH, ∀ mid < v.between, ∀ post < v.afterD, ∀ x,
+          ext next (addr a row pre mid post (coords.foldl (Weighted.leafAt weight inv) x)) = ext word (addr a row pre mid post x)
+
+theorem packedCoordinateRange_exec [M8.Machine.Net] {T m d work Q : ℕ} {F U : Type}
     (v : Descriptor) (positive : v.Positive) (w : ℕ) (width : v.width = d*(w+1))
     (rankFits : d ≤ m) (parent parentInv : Fin m → ZMod (prime^(w+1)))
     (reciprocal : ∀ i, parent i * parentInv i = 1) (pivot : Fin d → ZMod (prime^(w+1)))
     (unit : ∀ i, IsUnit (pivot i)) (io : Fin T) (roles : Tapes T prime)
     (f : ℤ → Fin (prime+4)) (p : ℤ) (node scalar : Tapes 1 prime)
     (arity : ℕ) (st : Tapes 2 prime) (freeNode : Family.NodeFree node)
-    (fits : LeafCore.small ≤ work) (cap : (LeafCore.core io).states ≤ Q) :
-    PackedCoordinateRun (F := F) (U := U) v w rankFits parent parentInv pivot io roles f p node scalar arity st fits cap := by
-  unfold PackedCoordinateRun
+    (fits : LeafCore.small ≤ work) (cap : (LeafCore.core io).states ≤ Q) (lo : ℕ) (coords : List (Fin d))
+    (order : ∀ j : Fin coords.length, (coords.get j).val+j.val+1 = lo+coords.length) :
+    PackedCoordinateRangeRun (F := F) (U := U) v w rankFits parent parentInv pivot io roles f p node scalar arity st fits cap lo coords := by
+  unfold PackedCoordinateRangeRun
   intro common host M view N entry leave record rep clean payload weight inv logical addr ef xf eqs xqs word body u S pivotTail parentTail initial free arithmetic spare archives call
   let budget := fun i : Fin d => (1+(1800*N*(entry.tapes+5)+6))+(1+(weightedLeafCost (volume prime (view i)) (w+1)
       (LeafCore.core io).tapes (packedLeafPush (F := Empty) (U := U) io Empty.elim)+
@@ -325,9 +371,9 @@ theorem packedCoordinates_exec [M8.Machine.Net] {T m d work Q : ℕ} {F U : Type
   have units (i : Fin d) : weight i * inv i = 1 := by
     dsimp only [weight,inv]
     rw [mul_mul_mul_comm,reciprocal,Ring.mul_inverse_cancel _ (unit i),one_mul]
-  have step := weightedCoordinates_exec logical rfl (q := prime) (w := w+1) rfl weight inv units body call budget ready
+  have step := weightedCoordinateRange_exec logical rfl (q := prime) (w := w+1) rfl weight inv units body call budget ready lo coords order
   obtain ⟨z,D,out,t,user,bound,run,⟨next,rfl,finalBank,blank,kept⟩,address⟩ := step (by
-    intro i y E read current
+    intro i _ y E read current
     obtain ⟨x,rfl,bank,blank,kept⟩ := current
     have right (k : Fin 24) : E.R (record k) = S.R (record k) := (kept (k.castAdd 31)).2
     have empty (k : Fin 31) : E.L ((k.natAdd host).castAdd work) = [] ∧ E.R ((k.natAdd host).castAdd work) = [] := by
@@ -354,11 +400,60 @@ theorem packedCoordinates_exec [M8.Machine.Net] {T m d work Q : ℕ} {F U : Type
       ⟨word,rfl,initial,free,fun _ => ⟨rfl,rfl⟩⟩
   have same : volume M logical = N := by
     simp [N,logical,volume,width,M,pow_mul,Nat.mul_comm d (w+1)]
-  have charge := weightedCoordinates_cost logical (r := d) rfl positive w (LeafCore.core io).tapes
+  have charge := weightedCoordinateList_cost logical (r := d) rfl coords positive w (LeafCore.core io).tapes
     (packedLeafPush (F := Empty) (U := U) io Empty.elim) entry.tapes leave.tapes
   dsimp only at charge
   rw [same] at charge
   exact ⟨next,z,D,t,user,bound.trans charge,run,finalBank,blank,kept,address⟩
+
+/-- Execute every packed coordinate from the initial rank down to counter zero. -/
+theorem packedCoordinates_exec [M8.Machine.Net] {T m d work Q : ℕ} {F U : Type}
+    (v : Descriptor) (positive : v.Positive) (w : ℕ) (width : v.width = d*(w+1))
+    (rankFits : d ≤ m) (parent parentInv : Fin m → ZMod (prime^(w+1)))
+    (reciprocal : ∀ i, parent i * parentInv i = 1) (pivot : Fin d → ZMod (prime^(w+1)))
+    (unit : ∀ i, IsUnit (pivot i)) (io : Fin T) (roles : Tapes T prime)
+    (f : ℤ → Fin (prime+4)) (p : ℤ) (node scalar : Tapes 1 prime)
+    (arity : ℕ) (st : Tapes 2 prime) (freeNode : Family.NodeFree node)
+    (fits : LeafCore.small ≤ work) (cap : (LeafCore.core io).states ≤ Q) :
+    PackedCoordinateRun (F := F) (U := U) v w rankFits parent parentInv pivot io roles f p node scalar arity st fits cap := by
+  let coords := (List.finRange d).reverse
+  have order (j : Fin coords.length) : (coords.get j).val+j.val+1 = 0+coords.length := by
+    simp [coords,List.get_eq_getElem,List.getElem_reverse]
+    have hj : j.val < d := by simpa [coords] using j.isLt
+    omega
+  have range := packedCoordinateRange_exec (F := F) (U := U) v positive w width rankFits parent parentInv
+    reciprocal pivot unit io roles f p node scalar arity st freeNode fits cap 0 coords order
+  unfold PackedCoordinateRun
+  intro common host M view N entry leave record rep clean payload weight inv logical addr ef xf eqs xqs word body u S pivotTail parentTail initial free arithmetic spare archives call
+  obtain ⟨next,z,D,t,user,cost,run,bank,blank,kept,action⟩ :=
+    range ef xf eqs xqs word body u S pivotTail parentTail (by simpa [coords] using initial) free arithmetic spare archives
+  refine ⟨next,z,D,t,user,by simpa [coords,packedCoordinatesTime] using cost,run,bank,blank,kept,?_⟩
+  intro a ha row hr pre hp mid hm post he x
+  have units (i : Fin d) : weight i * inv i = 1 := by
+    dsimp only [weight,inv]
+    rw [mul_mul_mul_comm,reciprocal,Ring.mul_inverse_cancel _ (unit i),one_mul]
+  have effect := Weighted.fold_leafAt weight inv coords (by simpa [coords] using List.nodup_finRange d)
+    (fun i _ => units i) x
+  have atAddr := action a ha row hr pre hp mid hm post he x
+  change ext next (addr a row pre mid post (coords.foldl (Weighted.leafAt weight inv) x)) =
+    ext word (addr a row pre mid post x) at atAddr
+  have allCoords (i : Fin d) : i ∈ coords := by simp [coords]
+  simpa only [effect,allCoords,ite_true,Weighted.child,Fin.isLt] using atAddr
+
+/-- Run just the residual reversed pairs and leave the descriptor counter
+at the width handled by the aligned supplier. -/
+theorem packedRemainder_exec [M8.Machine.Net] {T m d work Q : ℕ} {F U : Type}
+    (v : Descriptor) (positive : v.Positive) (w : ℕ) (width : v.width = d*(w+1))
+    (rankFits : d ≤ m) (parent parentInv : Fin m → ZMod (prime^(w+1)))
+    (reciprocal : ∀ i, parent i * parentInv i = 1) (pivot : Fin d → ZMod (prime^(w+1)))
+    (unit : ∀ i, IsUnit (pivot i)) (io : Fin T) (roles : Tapes T prime)
+    (f : ℤ → Fin (prime+4)) (p : ℤ) (node scalar : Tapes 1 prime)
+    (arity : ℕ) (st : Tapes 2 prime) (freeNode : Family.NodeFree node)
+    (fits : LeafCore.small ≤ work) (cap : (LeafCore.core io).states ≤ Q) :
+    PackedCoordinateRangeRun (F := F) (U := U) v w rankFits parent parentInv pivot io roles f p node scalar
+      arity st fits cap (64*(d/64)) (remainderCoords d) :=
+  packedCoordinateRange_exec v positive w width rankFits parent parentInv reciprocal pivot unit io roles f p
+    node scalar arity st freeNode fits cap _ _ (remainderCoords_order d)
 
 end
 

@@ -96,6 +96,30 @@ theorem rankDescriptor_index (v : RecursiveInterchangeLayout.Descriptor)
   ring
 
 omit [NeZero M] in
+/-- Read an arbitrary parent payload address through the shorter descriptor.
+The head's low digits and the tail's high digits become middle-field digits. -/
+theorem rankDescriptor_decode (v : RecursiveInterchangeLayout.Descriptor)
+    (width : v.width = r+g) (base : 0 < M) (a row before h middle t suffix : ℕ)
+    (headFits : h < M^v.width) (midFits : middle < v.between) (tailFits : t < M^v.width) :
+    let child := rankDescriptor M r g v
+    let mid := ((h%M^g)*v.between+middle)*M^g+t/M^r
+    h/M^g < M^r ∧ mid < child.between ∧ t%M^r < M^r ∧
+      RecursiveInterchangeLayout.index M child a row before (h/M^g) mid (t%M^r) suffix =
+        RecursiveInterchangeLayout.index M v a row before h middle t suffix := by
+  intro child mid
+  rw [width,pow_add] at headFits tailFits
+  have tg : t/M^r < M^g := (Nat.div_lt_iff_lt_mul (pow_pos base _)).2 (by simpa [Nat.mul_comm] using tailFits)
+  have digit {x n y b : ℕ} (hx : x < n) (hy : y < b) : x*b+y < n*b := by
+    calc
+      _ < x*b+b := Nat.add_lt_add_left hy _
+      _ = (x+1)*b := (Nat.succ_mul ..).symm
+      _ ≤ _ := Nat.mul_le_mul_right _ hx
+  refine ⟨(Nat.div_lt_iff_lt_mul (pow_pos base _)).2 headFits,
+    digit (digit (Nat.mod_lt _ (pow_pos base _)) midFits) tg,Nat.mod_lt _ (pow_pos base _),?_⟩
+  unfold mid child
+  rw [rankDescriptor_index v width,Nat.div_add_mod',Nat.div_add_mod']
+
+omit [NeZero M] in
 theorem rankDescriptor_volume (v : RecursiveInterchangeLayout.Descriptor) (width : v.width = r+g) :
     RecursiveInterchangeLayout.volume M (rankDescriptor M r g v) =
       RecursiveInterchangeLayout.volume M v := by
