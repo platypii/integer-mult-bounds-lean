@@ -332,4 +332,115 @@ theorem packPlacedInvocationWithCharge [M8.Machine.Net] {P U : Type} {t q k : �
   rw [← view] at paid done
   exact ⟨v',G,m,placed,placedCleanup_cost_le caller D G cleanupWeight m price untouched paid,same ▸ done⟩
 
+/-- Restore the helper charts after running a charged sweep. Its child budget
+passes through the restoration with coefficient one. -/
+theorem restorePackedSweep [M8.Machine.Net] {T Q : ℕ} {P U : Type}
+    (fan : Fin (142081+2) ↪ Fin T) (body : P → Pr P T Q prime U) (sweep : Pr P T Q prime U)
+    (changes : List (Fin 142081 × Option (Fin 56) × Option (Fin 56))) (capacity : columnCapacity ≤ Q) :
+    let caller := (Fin.castAddEmb 273 (n := T+41)).trans (Fin.castAddEmb LeafCore.small)
+    let bank := (Fin.castAddEmb 41 (n := T)).trans caller
+    let outer := fun f => embProg bank id (body f)
+    ∃ code, ∃ C : ℝ, ∀ (row : Descriptor) (w V price : ℕ), row.Positive →
+      let W := row.beforeRows*row.rows*row.between*row.afterD
+      let M := prime^(w+1)
+      V = M^16*(row.beforeH*(M^112*W)) →
+      ∀ (prepared : Stacks T prime) (effect : (Fin 142081 → Fin V → ZMod 2) → (Fin 142081 → Fin V → ZMod 2) → Prop),
+      (∀ x u S, HelperFan fan x S →
+        (∀ j, (∀ h, fan h ≠ j) → S.L j = prepared.L j ∧ S.R j = prepared.R j) →
+        ∃ v D t y, Exec body sweep (mk u S) t (mk v D) ∧
+          (∀ js : List _, js.Nodup → t+tapeCharge cleanupWeight js D ≤ tapeCharge cleanupWeight js S+price) ∧
+          v.user = u.user ∧ HelperFan fan y D ∧ effect x y) →
+      ∃ initial, embStk bank initial = prepared ∧ ∀ x u S, HelperFan (fan.trans bank) x S →
+        (∀ j, (∀ h, (fan.trans bank) h ≠ j) → S.L j = initial.L j ∧ S.R j = initial.R j) →
+        ∃ z F t y out, Exec outer code (mk u S) t (mk z F) ∧
+          (∀ js : List _, js.Nodup → t+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+
+            price+⌈C*(V*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau)⌉₊) ∧
+          z.user = u.user ∧ HelperFan (fan.trans bank) out F ∧ effect x y ∧
+          HelperLabelTrace (w+1) row.beforeH W changes y out := by
+  intro caller bank outer
+  let hdr := fun i : Fin 6 => (i.castAdd 35).natAdd T
+  let regs := (Fin.natAddEmb 6 (m := 35)).trans (Fin.natAddEmb T)
+  obtain ⟨restore,C,finish⟩ := parentSlotChangesWithCharge changes (fan.trans (Fin.castAddEmb 41)) hdr regs capacity outer
+  refine ⟨(embProg bank id sweep).seq restore,C,?_⟩
+  intro row w V price positive W M size prepared effect run
+  obtain ⟨initial,view,frame⟩ := packedInvocationFrame fan prepared row w
+  refine ⟨initial,view,?_⟩
+  intro x u S live fresh
+  obtain ⟨inside,radix,unit,clock,headers,free,scratch⟩ := frame S fresh
+  obtain ⟨v,D,t,y,exec,paid,user,ready,act⟩ := run x (embDn bank u) (embStk bank S) live inside
+  obtain ⟨v',D',placed,_,same,project,off⟩ := exec_emb (ι := id) (body' := outer)
+    bank.injective (fun _ => rfl) exec u rfl S rfl
+  rw [← project] at ready paid
+  have keep (j) (high : T ≤ j.val) := off j (fun i eq => by
+    have h := congrArg Fin.val eq
+    change i.val = j.val at h
+    omega)
+  obtain ⟨z,F,k,out,last,rest,bill,represented,trace,_⟩ := finish row w V positive size y v' D'
+    ((keep _ (by change T ≤ T+(6+2); omega)).2.trans radix)
+    ((keep _ (by change T ≤ T+(6+28); omega)).2.trans unit)
+    (by rw [(keep _ (by change T ≤ T+(6+33); omega)).2]; exact clock)
+    (fun i => (keep _ (by change T ≤ T+i.val; omega)).2.trans (headers i))
+    (fun j => ⟨(keep _ (by change T ≤ T+41+j.val; omega)).1.trans (free j).1,
+      (keep _ (by change T ≤ T+41+j.val; omega)).2.trans (free j).2⟩)
+    (fun j => ⟨(keep _ (by change T ≤ T+41+273+j.val; omega)).1.trans (scratch j).1,
+      (keep _ (by change T ≤ T+41+273+j.val; omega)).2.trans (scratch j).2⟩) ready
+  refine ⟨z,F,t+k,y,out,placed.seq rest,?_,last.trans (same.trans user),represented,act,trace⟩
+  intro js unique
+  have sweepBill := placedCleanup_cost_le bank S D' cleanupWeight t price off paid js unique
+  have restoreBill := bill js unique
+  omega
+
+/-- All 160 invocations followed by chart restoration, on one program across widths. -/
+theorem restoredStageRunsWithCharge [M8.Machine.Net] (n : Fin 9) (tapes : Fin 32 × Fin 5 → ℕ)
+    (ports : ∀ i, Fin (142081+2) ↪ Fin (tapes i)) :
+    ∃ (T : ℕ) (fan : Fin (142081+2) ↪ Fin T) (bank : ∀ i, Fin (tapes i) ↪ Fin T),
+    (∀ i j, bank i (ports i j) = fan j) ∧
+    ∀ {P U : Type} {Q : ℕ} (body : ∀ i, P → Pr P (tapes i) Q prime U)
+      (code : ∀ i, Pr P (tapes i) Q prime U)
+      (changes : List (Fin 142081 × Option (Fin 56) × Option (Fin 56))) (_ : columnCapacity ≤ Q),
+    let caller := (Fin.castAddEmb 273 (n := T+41)).trans (Fin.castAddEmb LeafCore.small)
+    let stageBank := (Fin.castAddEmb 41 (n := T)).trans caller
+    let table := fun g : (Fin 32 × Fin 5) × P => embProg (bank g.1) (Prod.mk g.1) (body g.1 g.2)
+    let outer := fun f => embProg stageBank id (table f)
+    ∃ program, ∃ C : ℝ, ∀ (w B W : ℕ) (row : Descriptor), row.Positive →
+      row.beforeH = B*prime^(64*((w+1)*64)) → row.beforeRows*row.rows*row.between*row.afterD = W →
+      ∀ (localCost : Fin 32 × Fin 5 → ℕ) (childTime : ℕ → ℕ)
+      (initial : ∀ i, Stacks (tapes i) prime) (shared : Stacks (142081+2) prime),
+    let V := (prime^(w+1))^16*(B*prime^(64*((w+1)*64))*((prime^(w+1))^112*W))
+    let children := fun i => ((List.range' (stageChildStart n+runChildStart i) Geometry.Moves.localPaid.length).map childTime).sum
+    (∀ i (x : Fin 142081 → Fin V → ZMod 2) u S, HelperFan (ports i) x S →
+      (∀ j, (∀ h, ports i h ≠ j) → S.L j = (initial i).L j ∧ S.R j = (initial i).R j) →
+      ∃ z F t y, Exec (body i) (code i) (mk u S) t (mk z F) ∧ (∀ js : List _, js.Nodup → t+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+(localCost i + children i)) ∧
+        z.user = u.user ∧ HelperFan (ports i) y F ∧ packedStageEffect n i (w+1) B W x y) →
+    ∃ initial, embStk (fan.trans stageBank) initial = shared ∧ ∀ x u S, HelperFan (fan.trans stageBank) x S →
+      (∀ j, (∀ h, (fan.trans stageBank) h ≠ j) → S.L j = initial.L j ∧ S.R j = initial.R j) →
+      ∃ z F t y out, Exec outer program (mk u S) t (mk z F) ∧
+        (∀ js : List _, js.Nodup → t+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+
+          (stageRuns.map localCost).sum+((List.range' (stageChildStart n)
+          (stageRuns.flatMap (fun _ => Geometry.Moves.localPaid)).length).map childTime).sum+1+
+          ⌈C*(V*((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau)⌉₊) ∧
+        z.user = u.user ∧ HelperFan (fan.trans stageBank) out F ∧
+        stageRuns.foldr (fun i next a => ∃ b, packedStageEffect n i (w+1) B W a b ∧ next b) (fun a => a = y) x ∧
+        HelperLabelTrace (w+1) row.beforeH W changes y out := by
+  obtain ⟨T,fan,bank,sharedPorts,stage⟩ := packedStageRunsWithCharge n tapes ports
+  refine ⟨T,fan,bank,sharedPorts,?_⟩
+  intro P U Q body code changes capacity caller stageBank table outer
+  let sweep := Prog.seqList (stageRuns.map fun i => embProg (bank i) (Prod.mk i) (code i))
+  obtain ⟨program,C,restore⟩ := restorePackedSweep fan table sweep changes capacity
+  refine ⟨program,C,?_⟩
+  intro w B W row positive label span localCost childTime initial shared V children run
+  obtain ⟨prepared,owners,stageRun⟩ := stage (w := w+1) (B := B) (W := W) body code localCost childTime initial shared run
+  have size : V = (prime^(w+1))^16*(row.beforeH*((prime^(w+1))^112*(row.beforeRows*row.rows*row.between*row.afterD))) := by
+    rw [label,span]
+  obtain ⟨seed,view,execute⟩ := restore row w V ((stageRuns.map localCost).sum+
+    ((List.range' (stageChildStart n) (stageRuns.flatMap (fun _ => Geometry.Moves.localPaid)).length).map childTime).sum+1)
+    positive size prepared (fun x y => stageRuns.foldr (fun i next a => ∃ b, packedStageEffect n i (w+1) B W a b ∧ next b)
+      (fun a => a = y) x) (by simpa only [Nat.add_assoc] using stageRun)
+  refine ⟨seed,?_,?_⟩
+  · change embStk fan (embStk stageBank seed) = shared
+    rw [view,owners]
+  intro x u S live fresh
+  obtain ⟨z,F,t,y,out,exec,paid,user,rep,acts,trace⟩ := execute x u S live fresh
+  exact ⟨z,F,t,y,out,exec,by simpa only [Nat.add_assoc] using paid,user,rep,acts,by simpa only [span] using trace⟩
+
 end IntegerMultBounds.MathlibTM2.M6.BitNode
