@@ -150,6 +150,78 @@ theorem helperRows_chart (c : PortCertificate) (slot : Option (Fin 56)) (w : ℕ
   funext r j
   fin_cases r <;> simpa using (remainderChart_row c w g _ j).symm
 
+/-- While the owner stays in column order, an interval exchange only
+interchanges the adjacent row digits of the affected columns. The incoming
+and outgoing slot designations may differ. -/
+theorem helperColumns_exchange (c : PortCertificate) (hc : c.Checked)
+    (before after : Option (Fin 56)) (lo hi w : ℕ) (fits : hi ≤ 63)
+    (x : IntegerMultBounds.Swap.Shear.State Axis (ZMod (prime^w))) :
+    let H := IntegerMultBounds.Swap.Modular.reduce (prime^w) (c.span lo hi)
+    let input := helperRows before (helperSlotField c before w x)
+    let output := helperRows after (helperSlotField c after w (M8.Exchange.exchange H x))
+    ∀ j : Fin 64, (output 0 j, output 1 j) =
+      if lo ≤ j.val ∧ j.val < hi then (input 1 j,input 0 j) else (input 0 j,input 1 j) := by
+  intro H input output j
+  simpa only [input,output,H,helperRows_slot,ite_true,ite_false,Fin.isValue,
+    zero_ne_one,one_ne_zero] using remainderExchange_tapeDigits c hc lo hi w fits x j
+
+private theorem adjacentColumn {α : Type*} (digits : Fin 128 → α) (i j : Fin 64) :
+    let read := fun (d : Fin 128 → α) => (d (M8.AtomOps.«at» j (0 : Fin 2)), d (M8.AtomOps.«at» j (1 : Fin 2)))
+    read (adjacentFields digits (2*i.val)) = if j = i then (read digits).swap else read digits := by
+  intro read
+  have fits : 2*i.val+1 < 128 := by have := i.isLt; omega
+  rw [adjacentFields,dif_pos fits]
+  have addr (t : Fin 64) (r : Fin 2) : (M8.AtomOps.«at» t r).val = 2*t.val+r.val := by
+    change r.val + 2*t.val = 2*t.val+r.val
+    omega
+  have left : M8.AtomOps.«at» i (0 : Fin 2) = ⟨2*i.val,by omega⟩ := Fin.ext (by simp [addr])
+  have right : M8.AtomOps.«at» i (1 : Fin 2) = ⟨2*i.val+1,fits⟩ := Fin.ext (by simp [addr])
+  by_cases eq : j = i
+  · subst j
+    simp [read,left,right]
+  · have ne (r t : Fin 2) : M8.AtomOps.«at» j r ≠ M8.AtomOps.«at» i t := by
+      intro h
+      exact eq (congrArg Prod.fst (finProdFinEquiv.injective h))
+    simp [read,eq,← left,← right,Equiv.swap_apply_of_ne_of_ne (ne _ _) (ne _ _)]
+
+/-- A list of distinct columns costs one adjacent field exchange per column. -/
+theorem helperColumnSchedule {α : Type*} (js : List (Fin 64)) (distinct : js.Nodup)
+    (digits : Fin 128 → α) (j : Fin 64) :
+    let read := fun (d : Fin 128 → α) => (d (M8.AtomOps.«at» j (0 : Fin 2)), d (M8.AtomOps.«at» j (1 : Fin 2)))
+    read ((js.map (fun i => 2*i.val)).foldl adjacentFields digits) =
+      if j ∈ js then (read digits).swap else read digits := by
+  induction js generalizing digits with
+  | nil => simp
+  | cons i js ih =>
+    have nd := List.nodup_cons.mp distinct
+    simp only [List.map_cons,List.foldl_cons,ih nd.2,adjacentColumn,List.mem_cons]
+    by_cases h : j = i
+    · subst j; simp [nd.1]
+    · simp [h]
+
+def helperIntervalColumns (lo hi : ℕ) : List (Fin 64) :=
+  (List.finRange 64).filter fun j => decide (lo ≤ j.val ∧ j.val < hi)
+
+theorem helperInterval_action (c : PortCertificate) (hc : c.Checked)
+    (before after : Option (Fin 56)) (lo hi w : ℕ) (fits : hi ≤ 63)
+    (x : IntegerMultBounds.Swap.Shear.State Axis (ZMod (prime^w))) :
+    let digits := fun slot s => M8.AtomOps.refine (fun j r => helperRows slot (helperSlotField c slot w s) r j)
+    let y := M8.Exchange.exchange (IntegerMultBounds.Swap.Modular.reduce (prime^w) (c.span lo hi)) x
+    ((helperIntervalColumns lo hi).map (fun j => 2*j.val)).foldl adjacentFields (digits before x) = digits after y := by
+  intro digits y
+  funext i
+  obtain ⟨⟨j,r⟩,rfl⟩ := (@finProdFinEquiv 64 2).surjective i
+  have h := helperColumnSchedule (helperIntervalColumns lo hi)
+    ((List.nodup_finRange 64).filter _) (digits before x) j
+  have e := helperColumns_exchange c hc before after lo hi w fits x j
+  have pair := h.trans (by
+    simpa [helperIntervalColumns,digits,M8.AtomOps.refine_at,Prod.swap] using e.symm)
+  change ((helperIntervalColumns lo hi).map (fun i => 2*i.val)).foldl adjacentFields (digits before x) (M8.AtomOps.«at» j r) = M8.AtomOps.refine _ (M8.AtomOps.«at» j r)
+  rw [M8.AtomOps.refine_at]
+  fin_cases r
+  · exact congrArg Prod.fst pair
+  · exact congrArg Prod.snd pair
+
 /-- The two-row label determines every digit in the inherited slot layout. -/
 theorem helperRows_injective {R : Type*} (slot : Option (Fin 56)) :
     Function.Injective (helperRows (R := R) slot) := by
@@ -389,11 +461,13 @@ theorem helperPackInput_ready {k : ℕ} (w W : ℕ) (owners : Stacks k prime)
 
 /-- Permute the 128 field coordinates on one permanent owner. All other
 owner stacks and the spectator position are preserved. -/
-theorem ownerFieldPerm_exec {k : ℕ} (owner : Fin k) (perm : Equiv.Perm (Fin 128))
+theorem ownerFieldSchedule_exec {k : ℕ} (owner : Fin k) (is : List ℕ)
+    (fits : ∀ i ∈ is, i+1 < 128)
     (body : P → Pr P ((N+35)+k) Q prime U) :
     let clean := fun (S : Stacks ((N+35)+k) prime) => ∀ i : Fin (N+35), 35 ≤ i.val →
       S.L (i.castAdd k) = [] ∧ S.R (i.castAdd k) = []
-    ∃ (code : Pr P ((N+35)+k) Q prime U) (C : ℝ), ∀ w W, 0 < W →
+    let code := statePlacedNormalized (payloadPlacement (24 : Fin (N+35)) owner) le_rfl swapStates_pos Empty.elim (packSchedule 128 is)
+    ∃ (C : ℝ), ∀ w W, 0 < W →
       let M := prime^(w+1)
       ∀ (v : HS ((N+35)+k) Q prime U) (S : Stacks ((N+35)+k) prime)
         (record : List (Fin (prime+4))) (dest : ℤ → Fin 4) (q : ℤ)
@@ -403,16 +477,15 @@ theorem ownerFieldPerm_exec {k : ℕ} (owner : Fin k) (perm : Equiv.Perm (Fin 12
       (∀ t, ready t (data t) S) → clean S → ∃ z F, ∃ n : ℕ, ∃ out, z.user = v.user ∧
         (n : ℝ) ≤ C * ((M^128*W : ℕ) : ℝ) * ((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau ∧
         Exec body code (mk v S) n (mk z F) ∧ (∀ t, ready t (Function.update data owner out t) F) ∧ clean F ∧
-        (∀ digits j, out (FlatCoordinateLayout.index (digits ∘ perm) j) =
+        (∀ digits j, out (FlatCoordinateLayout.index (is.foldl adjacentFields digits) j) =
           data owner (FlatCoordinateLayout.index digits j)) ∧
         ∀ t : Fin k, t ≠ owner → F.L (t.natAdd (N+35)) = S.L (t.natAdd (N+35)) ∧
           F.R (t.natAdd (N+35)) = S.R (t.natAdd (N+35)) := by
-  intro clean
+  intro clean code
   let ports := payloadPlacement (24 : Fin (N+35)) owner
-  obtain ⟨is,fits,acts⟩ := fieldSchedule perm
   obtain ⟨setup,swaps,bound⟩ := packTime_le (P := Empty) (U := U) Empty.elim 128 is (by decide)
   let C := ((setup+1 : ℕ) : ℝ) + (swaps : ℝ)*(3808275+M8.RevMachine.LeafCore.C)
-  refine ⟨statePlacedNormalized ports le_rfl swapStates_pos Empty.elim (packSchedule 128 is),C,?_⟩
+  refine ⟨C,?_⟩
   intro w W hW M v S record dest q data ready start free
   have privatePort (i : Fin (N+35)) (hi : 35 ≤ i.val) : ports i = i.castAdd k := by
     apply helperPrivatePort
@@ -456,8 +529,70 @@ theorem ownerFieldPerm_exec {k : ℕ} (owner : Fin k) (perm : Equiv.Perm (Fin 12
       rw [kept.1,kept.2]
       exact (start t).src z
   exact ⟨z,F,n,out,user,time,run,records,(fun i hi => by rw [← privatePort i hi]; exact clear i hi),
-    fun digits j => by simpa only [id_eq,acts] using read digits j,
+    fun digits j => by simpa only [id_eq] using read digits j,
     fun t ne => off _ (payloadPlacement_off _ owner t ne)⟩
+
+theorem helperColumnInterval_exec {k : ℕ} (owner : Fin k) (lo hi : ℕ) (fits : hi ≤ 63)
+    (body : P → Pr P ((N+35)+k) Q prime U) :
+    let clean := fun (S : Stacks ((N+35)+k) prime) => ∀ i : Fin (N+35), 35 ≤ i.val →
+      S.L (i.castAdd k) = [] ∧ S.R (i.castAdd k) = []
+    let is := (helperIntervalColumns lo hi).map (fun j => 2*j.val)
+    let code := statePlacedNormalized (payloadPlacement (24 : Fin (N+35)) owner) le_rfl swapStates_pos Empty.elim (packSchedule 128 is)
+    ∃ (C : ℝ), ∀ w W, 0 < W →
+      let M := prime^(w+1)
+      ∀ (v : HS ((N+35)+k) Q prime U) (S : Stacks ((N+35)+k) prime)
+        (record : List (Fin (prime+4))) (dest : ℤ → Fin 4) (q : ℤ)
+        (data : Fin k → Fin (M^128*W) → ZMod 2),
+      let ready := fun t => RecordReady (b := prime) (w := w) (d := 128) (W := W) (helperRecordBank t) M.size W.size record
+        SparseRoleCircuit.encode (fun _ => blank) dest 0 q
+      (∀ t, ready t (data t) S) → clean S → ∃ z F, ∃ n : ℕ, ∃ out, z.user = v.user ∧
+        (n : ℝ) ≤ C * ((M^128*W : ℕ) : ℝ) * ((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau ∧
+        Exec body code (mk v S) n (mk z F) ∧ (∀ t, ready t (Function.update data owner out t) F) ∧ clean F ∧
+        (∀ (c : PortCertificate), c.Checked → ∀ before after x j,
+          let digits := fun slot s => M8.AtomOps.refine (fun i r => helperRows slot (helperSlotField c slot (w+1) s) r i)
+          let y := M8.Exchange.exchange (IntegerMultBounds.Swap.Modular.reduce M (c.span lo hi)) x
+          out (FlatCoordinateLayout.index (digits after y) j) =
+            data owner (FlatCoordinateLayout.index (digits before x) j)) ∧
+        ∀ t : Fin k, t ≠ owner → F.L (t.natAdd (N+35)) = S.L (t.natAdd (N+35)) ∧
+          F.R (t.natAdd (N+35)) = S.R (t.natAdd (N+35)) := by
+  intro clean is code
+  have inside : ∀ i ∈ is, i+1 < 128 := by
+    intro i hi
+    obtain ⟨j,_,rfl⟩ := List.mem_map.mp hi
+    have := j.isLt
+    omega
+  obtain ⟨C,run⟩ := ownerFieldSchedule_exec owner is inside body
+  refine ⟨C,?_⟩
+  intro w W hW M v S record dest q data ready start free
+  obtain ⟨z,F,n,out,user,time,exec,stored,clear,read,off⟩ := run w W hW v S record dest q data start free
+  refine ⟨z,F,n,out,user,time,exec,stored,clear,?_,off⟩
+  intro c hc before after x j digits y
+  have h := read (digits before x) j
+  simpa only [is,digits,helperInterval_action c hc before after lo hi (w+1) fits x] using h
+
+theorem ownerFieldPerm_exec {k : ℕ} (owner : Fin k) (perm : Equiv.Perm (Fin 128))
+    (body : P → Pr P ((N+35)+k) Q prime U) :
+    let clean := fun (S : Stacks ((N+35)+k) prime) => ∀ i : Fin (N+35), 35 ≤ i.val →
+      S.L (i.castAdd k) = [] ∧ S.R (i.castAdd k) = []
+    ∃ (code : Pr P ((N+35)+k) Q prime U) (C : ℝ), ∀ w W, 0 < W →
+      let M := prime^(w+1)
+      ∀ (v : HS ((N+35)+k) Q prime U) (S : Stacks ((N+35)+k) prime)
+        (record : List (Fin (prime+4))) (dest : ℤ → Fin 4) (q : ℤ)
+        (data : Fin k → Fin (M^128*W) → ZMod 2),
+      let ready := fun t => RecordReady (b := prime) (w := w) (d := 128) (W := W) (helperRecordBank t) M.size W.size record
+        SparseRoleCircuit.encode (fun _ => blank) dest 0 q
+      (∀ t, ready t (data t) S) → clean S → ∃ z F, ∃ n : ℕ, ∃ out, z.user = v.user ∧
+        (n : ℝ) ≤ C * ((M^128*W : ℕ) : ℝ) * ((w+1 : ℕ) : ℝ)^M8.Machine.BudgetBound.tau ∧
+        Exec body code (mk v S) n (mk z F) ∧ (∀ t, ready t (Function.update data owner out t) F) ∧ clean F ∧
+        (∀ digits j, out (FlatCoordinateLayout.index (digits ∘ perm) j) =
+          data owner (FlatCoordinateLayout.index digits j)) ∧
+        ∀ t : Fin k, t ≠ owner → F.L (t.natAdd (N+35)) = S.L (t.natAdd (N+35)) ∧
+          F.R (t.natAdd (N+35)) = S.R (t.natAdd (N+35)) := by
+  intro clean
+  obtain ⟨is,fits,acts⟩ := fieldSchedule perm
+  obtain ⟨C,run⟩ := ownerFieldSchedule_exec owner is fits body
+  refine ⟨statePlacedNormalized (payloadPlacement (24 : Fin (N+35)) owner) le_rfl swapStates_pos Empty.elim (packSchedule 128 is),C,?_⟩
+  simpa only [acts] using run
 
 theorem helperColumns_exec {k : ℕ} (owner : Fin k) (slot : Option (Fin 56))
     (body : P → Pr P ((N+35)+k) Q prime U) :
