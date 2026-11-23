@@ -114,10 +114,11 @@ open AffineFieldCoordinates FlatCoordinateLayout in
 /-- A shared entry pass and exit pass correct all 17760 port pairs on the
 borrowed bank. The price is charged on the full volume once per pass. -/
 theorem borrowedPortCorrections [M8.Machine.Net] :
-    ∃ (C : ℝ) (base tapes states : ℕ), ∀ (n : Fin 9) (w B K : ℕ), 0 < w → 0 < B*prime^(64*(w*64))*K →
+    ∃ (C : ℝ) (base tapes states : ℕ), ∀ (n : Fin 9), ∃ A B₀ : SharedBankSkeleton.Skeleton 142081 prime, ∀ (w B K : ℕ), 0 < w → 0 < B*prime^(64*(w*64))*K →
       let W := B*prime^(64*(w*64))*K
       let V := (prime^w)^16*W
       ∃ enter leave : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V)),
+        SharedBankSkeleton.ofStage enter = A ∧ SharedBankSkeleton.ofStage leave = B₀ ∧
         enter.tapes ≤ tapes ∧ leave.tapes ≤ tapes ∧ enter.states ≤ states ∧ leave.states ≤ states ∧
         (∃ S, ChartPrivateReady enter S) ∧ (∃ S, ChartPrivateReady leave S) ∧
         enter.cost + leave.cost = base*V + 17760*(2*M8.RevMachine.LeafCore.coreCost V w+14) ∧
@@ -134,11 +135,14 @@ theorem borrowedPortCorrections [M8.Machine.Net] :
           let dst := targetOwner n k
           leave.transform y src (cell s) = x src (cell (M8.Exchange.exchange P s.swap)) ∧
           leave.transform y dst (cell s) = x dst (cell (M8.Exchange.exchange (1-P) s)) + x src (cell s.swap) := by
-  obtain ⟨C,base,tapes,states,build⟩ := framedPortCorrections
+  obtain ⟨C,base,tapes,states,build⟩ := framedPortCorrections_fixed
   refine ⟨C,base,tapes,states,?_⟩
-  intro n w B K hw positive W V
-  obtain ⟨enter,leave,et,lt,es,ls,readyEnter,readyLeave,exactCost,cost,keep,off,correct⟩ := build n w W hw positive
-  refine ⟨enter,leave,et,lt,es,ls,readyEnter,readyLeave,exactCost,cost,keep,off,?_⟩
+  intro n
+  obtain ⟨A,B₀,build⟩ := build n
+  refine ⟨A,B₀,?_⟩
+  intro w B K hw positive W V
+  obtain ⟨enter,leave,ha,hb,et,lt,es,ls,readyEnter,readyLeave,exactCost,cost,keep,off,correct⟩ := build w W hw positive
+  refine ⟨enter,leave,ha,hb,et,lt,es,ls,readyEnter,readyLeave,exactCost,cost,keep,off,?_⟩
   intro x y ports k g z s
   obtain ⟨source,target⟩ := ports k.1 k.2 g z
   exact correct x y k (labelSpectator g z) target source s

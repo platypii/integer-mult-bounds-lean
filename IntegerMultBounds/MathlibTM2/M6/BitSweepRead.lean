@@ -188,13 +188,12 @@ theorem sweepEffect_active {n : Fin 9} {w B W : ℕ} {x y : OwnerArray w B W}
 open AffineFieldCoordinates FlatCoordinateLayout Matrix in
 /-- The physical entry correction on the compact source and exit correction
 on the compact target convert a completed sweep to the translated port frame. -/
-theorem framed_correctedPort [M8.Machine.Net] (t : Fin 111) :
-    ∃ c preTapes postTapes preStates postStates : ℕ, ∀ w W, 0 < w → 0 < W →
+theorem framed_correctedPort_fixed [M8.Machine.Net] (t : Fin 111) :
+    ∃ (c : ℕ) (preMachine postMachine : SharedBankSkeleton.Skeleton 1 prime), ∀ w W, 0 < w → 0 < W →
       let V := (prime^w)^16*W
       let P := translatedPortProjector (ZMod (prime^w)) (4 : ZMod (prime^w))⁻¹ t
       ∃ enter leave : SharedBankStage.Stage _ 1 prime (@portOwner V),
-        enter.tapes = preTapes ∧ leave.tapes = postTapes ∧
-        enter.states = preStates ∧ leave.states = postStates ∧
+        SharedBankSkeleton.ofStage enter = preMachine ∧ SharedBankSkeleton.ofStage leave = postMachine ∧
         enter.cost+leave.cost = c*V + 2*LeafCore.coreCost V w+12 ∧
         HasStackSeed enter.metadata ∧ HasStackSeed leave.metadata ∧
         ∀ n (run : Fin 32 × Fin 5) (x a y : Fin 142081 → Fin V → ZMod 2),
@@ -212,12 +211,11 @@ theorem framed_correctedPort [M8.Machine.Net] (t : Fin 111) :
               x dst (cell (M8.Exchange.exchange (1-P) s)) + x src (cell s.swap) := by
   obtain ⟨a,preMachine,pre⟩ := portCorrection_owner t false true
   obtain ⟨b,postMachine,post⟩ := portCorrection_owner t true true
-  refine ⟨a+b,preMachine.tapes,postMachine.tapes,preMachine.states,postMachine.states,?_⟩
+  refine ⟨a+b,preMachine,postMachine,?_⟩
   intro w W hw hW V P
   obtain ⟨enter,hpre,entryCost,preSeed,entry⟩ := pre w W hw hW
   obtain ⟨leave,hpost,exitCost,postSeed,exitRow⟩ := post w W hw hW
-  refine ⟨enter,leave,congrArg SharedBankSkeleton.Skeleton.tapes hpre,congrArg SharedBankSkeleton.Skeleton.tapes hpost,
-    congrArg SharedBankSkeleton.Skeleton.states hpre,congrArg SharedBankSkeleton.Skeleton.states hpost,?_,preSeed,postSeed,?_⟩
+  refine ⟨enter,leave,hpre,hpost,?_,preSeed,postSeed,?_⟩
   · rw [entryCost,exitCost]
     simp only [ite_true,V]
     ring
@@ -258,6 +256,36 @@ theorem framed_correctedPort [M8.Machine.Net] (t : Fin 111) :
       Pi.add_apply,decoded,readDst,target] at h
     apply (exitRow (y dst) s j).trans
     simpa only [phaseRead,Copy.extendStored,dite_eq_left (show 111+t.val < 661 by omega),v,swap,ite_true,T,dst,P] using h
+
+open AffineFieldCoordinates FlatCoordinateLayout Matrix in
+theorem framed_correctedPort [M8.Machine.Net] (t : Fin 111) :
+    ∃ c preTapes postTapes preStates postStates : ℕ, ∀ w W, 0 < w → 0 < W →
+      let V := (prime^w)^16*W
+      let P := translatedPortProjector (ZMod (prime^w)) (4 : ZMod (prime^w))⁻¹ t
+      ∃ enter leave : SharedBankStage.Stage _ 1 prime (@portOwner V),
+        enter.tapes = preTapes ∧ leave.tapes = postTapes ∧
+        enter.states = preStates ∧ leave.states = postStates ∧
+        enter.cost+leave.cost = c*V + 2*LeafCore.coreCost V w+12 ∧
+        HasStackSeed enter.metadata ∧ HasStackSeed leave.metadata ∧
+        ∀ n (run : Fin 32 × Fin 5) (x a y : Fin 142081 → Fin V → ZMod 2),
+          let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n run.1 run.2,ownerTape_injective ..⟩
+          let src := owner ⟨t.val,by omega⟩
+          let dst := owner ⟨111+t.val,by omega⟩
+          a src = enter.transform (x src) → a dst = x dst →
+          ∀ (j : Fin W),
+          let initial := fun i => (selectedFrame w (Frames.initialRefs i)).symm (phaseRead owner a j i)
+          phaseRead owner y j (111+t.val) = selectedFrame w (Frames.finalRefs (111+t.val)) (initial (111+t.val) + initial t.val) →
+          phaseRead owner y j t.val = selectedFrame w (Frames.finalRefs t.val) (initial t.val) → ∀ s,
+            let cell := fun v => index (embed v) j
+            y src (cell s) = x src (cell (M8.Exchange.exchange P s.swap)) ∧
+            leave.transform (y dst) (cell s) =
+              x dst (cell (M8.Exchange.exchange (1-P) s)) + x src (cell s.swap) := by
+  obtain ⟨c,A,B,build⟩ := framed_correctedPort_fixed t
+  refine ⟨c,A.tapes,B.tapes,A.states,B.states,?_⟩
+  intro w W hw hW V P
+  obtain ⟨enter,leave,ha,hb,rest⟩ := build w W hw hW
+  exact ⟨enter,leave,congrArg SharedBankSkeleton.Skeleton.tapes ha,congrArg SharedBankSkeleton.Skeleton.tapes hb,
+    congrArg SharedBankSkeleton.Skeleton.states ha,congrArg SharedBankSkeleton.Skeleton.states hb,rest⟩
 
 open AffineFieldCoordinates FlatCoordinateLayout Matrix in
 theorem sweepEffect_correctedPort [M8.Machine.Net] (t : Fin 111) :

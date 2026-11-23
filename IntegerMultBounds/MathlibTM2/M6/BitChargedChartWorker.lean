@@ -3,7 +3,7 @@ module
 public import IntegerMultBounds.MathlibTM2.Host.EmbedStock
 import IntegerMultBounds.MathlibTM2.Host.ForeignStock
 public import IntegerMultBounds.MathlibTM2.M6.BitSweepChartHost
-public import IntegerMultBounds.MathlibTM2.M6.BitPackedStageHandoff
+public import IntegerMultBounds.MathlibTM2.M6.BitFlatStageHandoff
 
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.M6.BitNode
@@ -214,5 +214,111 @@ theorem flatChartWorkerWithCharge [M8.Machine.Net] :
     have leave := sweepRoles_of_flat n (B.transform y) (sweepView rfl y) (fun r i => (rb y r i).symm) j
     simpa only [address,flatWindowEquiv_read,Fin.cast_refl,id_eq] using
       leave.symm.trans ((act j).trans (congrArg (Piece.stage n).run enter))
+
+/-- Correct all active ports and return the whole borrowed bank in flat node order. -/
+theorem borrowedFlatChartWithCharge [M8.Machine.Net] :
+    ∃ (C : ℝ) (base tapes states : ℕ), ∀ {P U : Type} {t Q : ℕ} (n : Fin 9)
+      (fan : Fin (142081+2) ↪ Fin t) (body : P → Pr P t Q prime U)
+      (worker : Pr P t Q prime U),
+      states ≤ Q →
+      ∃ (t₁ T : ℕ) (mid : Fin t ↪ Fin t₁) (outer : Fin t₁ ↪ Fin T) (program : Pr P T Q prime U),
+        let live := (fan.trans mid).trans outer
+        let host := fun f => embProg outer id (embProg mid id (body f))
+        ∀ {w B K : ℕ} (price : ℕ) (initial : Stacks t prime),
+      let M := prime^w
+      let W := B*prime^(64*(w*64))*K
+      let V := M^16*(M^112*B*prime^(64*(w*64))*K)
+      let size : M^128*W = V := (ordinaryCompact_width M W).symm.trans (by simp [V,W,M,Nat.mul_assoc])
+      let bill := 13*((base*V+17760*(2*M8.RevMachine.LeafCore.coreCost V w+14))*(tapes+5)+12)+price
+      0 < w → 0 < B → 0 < K →
+      (∀ x u S, HelperFan fan x S →
+        (∀ j, (∀ i, fan i ≠ j) → S.L j = initial.L j ∧ S.R j = initial.R j) →
+        ∃ z F k y, Exec body worker (mk u S) k (mk z F) ∧ (∀ js : List _, js.Nodup → k+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+price) ∧ z.user = u.user ∧
+          HelperFan fan y F ∧ RestoredBorrowedStage n w B K x y) →
+        ∀ X : Stacks 142081 prime, ∃ prepared : Stacks T prime,
+          embStk ((Fin.castAddEmb 2).trans live) prepared = X ∧
+          ∀ x u S, HelperFan live x S →
+            (∀ j, (∀ i, live i ≠ j) → S.L j = prepared.L j ∧ S.R j = prepared.R j) →
+            ∃ z F k y, Exec host program (mk u S) k (mk z F) ∧
+              (∀ js : List _, js.Nodup → (k : ℝ)+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+bill+C*V*(w : ℝ)^M8.Machine.BudgetBound.tau) ∧ z.user = u.user ∧
+              HelperFan live y F ∧ ∀ j : Fin W,
+                let address := fun z => (flatWindowEquiv w W (windowState w z,j)).cast size
+                readRoles address y = (Piece.stage n).run (readRoles address x) := by
+  obtain ⟨C,q,charts⟩ := flatChartWorkerWithCharge
+  obtain ⟨base,tapes,states,corrections⟩ := borrowedCorrectionMachines
+  refine ⟨C,base,tapes,max states q,?_⟩
+  intro P U t Q n fan body worker fits
+  obtain ⟨entry,ret,qs,qt,stages⟩ := corrections n
+  obtain ⟨T,mid,code,correct⟩ := allocatedChartWorkerWithCharge fan body worker entry ret
+    (qs.trans ((le_max_left _ _).trans fits)) (qt.trans ((le_max_left _ _).trans fits))
+  let host := fun f => embProg mid id (body f)
+  obtain ⟨R,outer,program,chart⟩ := charts n (fan.trans mid) host code ((le_max_right _ _).trans fits)
+  refine ⟨T,R,mid,outer,program,?_⟩
+  intro live table w B K price initial M W V size bill hw hb hk run
+  have hp := Shared50ModularControl.prime_prime.pos
+  obtain ⟨enter,leave,ha,hb',sa,sb,paid,effect⟩ := stages w B K hw (by positivity)
+  obtain ⟨seed,_,execute⟩ := correct _ price initial enter leave ha hb' sa sb run ⟨[],[],fun _ => [],fun _ => []⟩
+  apply chart size bill seed hw (by dsimp [W]; positivity)
+  intro x u S ready fresh
+  obtain ⟨z,F,k,y,exec,time,user,out,action⟩ := execute x u S ready fresh
+  refine ⟨z,F,k,leave.transform y,exec,?_,user,out,?_⟩
+  · intro js unique
+    have bound := time js unique
+    change enter.cost*(enter.tapes+5)+leave.cost*(leave.tapes+5) ≤
+      (base*V+17760*(2*LeafCore.coreCost V w+14))*(tapes+5) at paid
+    dsimp only [bill]
+    omega
+  · intro j
+    obtain ⟨b,g,t,rfl⟩ := borrowedSpectator_covers j
+    have read (data : Fin 142081 → Fin V → ZMod 2) :
+        sweepRoles n 0 (borrowedSpectator b g t) (sweepView size data) = borrowedStageRead n b t g data := by
+      rw [borrowedStageRead_eq_sweepRoles]
+      rfl
+    exact (read _).trans ((effect x y action b t g).trans (congrArg (Piece.stage n).run (read x).symm))
+
+private theorem chartBillCeil {t f s p : ℕ} {c : ℝ}
+    (h : (t : ℝ)+f ≤ s+p+c) : t+f ≤ s+(p+⌈c⌉₊) := by
+  exact_mod_cast (by linarith only [h,Nat.le_ceil c] : (t : ℝ)+f ≤ s+(p+(⌈c⌉₊ : ℝ)))
+
+/-- Return the corrected sweep as packed words on the destination owner tapes. -/
+theorem borrowedFlatHandoffWithCharge [M8.Machine.Net] :
+    ∃ (C : ℝ) (base tapes states : ℕ), ∀ {P U : Type} {t Q : ℕ} (n : Fin 9)
+      (fan : Fin (142081+2) ↪ Fin t) (body : P → Pr P t Q prime U)
+      (worker : Pr P t Q prime U),
+      states ≤ Q →
+      ∃ (T : ℕ) (host : P → Pr P T Q prime U) (program : Pr P T Q prime U) (src dst : Fin (142081+2) ↪ Fin T),
+        ∀ {w B K : ℕ} (price : ℕ) (initial : Stacks t prime),
+      let M := prime^w
+      let W := B*prime^(64*(w*64))*K
+      let V := M^16*(M^112*B*prime^(64*(w*64))*K)
+      let size : M^128*W = V := (ordinaryCompact_width M W).symm.trans (by simp [V,W,M,Nat.mul_assoc])
+      let bill := 13*((base*V+17760*(2*M8.RevMachine.LeafCore.coreCost V w+14))*(tapes+5)+12)+price
+      0 < w → 0 < B → 0 < K →
+      (∀ x u S, HelperFan fan x S →
+        (∀ j, (∀ i, fan i ≠ j) → S.L j = initial.L j ∧ S.R j = initial.R j) →
+        ∃ z F k y, Exec body worker (mk u S) k (mk z F) ∧ (∀ js : List _, js.Nodup → k+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+price) ∧ z.user = u.user ∧
+          HelperFan fan y F ∧ RestoredBorrowedStage n w B K x y) →
+      ∃ seed, PackedPieceHandoffWithCharge cleanupWeight V (fun x y => ∀ j : Fin W,
+        let address := fun z => (flatWindowEquiv w W (windowState w z,j)).cast size
+        readRoles address y = (Piece.stage n).run (readRoles address x)) host program src dst seed
+        (bill+⌈C*V*(w : ℝ)^M8.Machine.BudgetBound.tau⌉₊+(142081*(10*V+10)+1)) := by
+  obtain ⟨C,base,tapes,states,charts⟩ := borrowedFlatChartWithCharge
+  refine ⟨C,base,tapes,states,?_⟩
+  intro P U t Q n fan body worker fits
+  obtain ⟨_,T,mid,outer,program,chart⟩ := charts n fan body worker fits
+  let live := (fan.trans mid).trans outer
+  let host := fun f => embProg outer id (embProg mid id (body f))
+  obtain ⟨code,finish⟩ := uniformWordStageWithCharge live host program
+  let place := SweepFile.Exit.chart 0 T
+  refine ⟨SweepFile.Exit.size 0 T,fun f => embProg place id (host f),code,live.trans place,returnedFan live,?_⟩
+  intro w B K price initial M W V size bill hw hb hk run
+  obtain ⟨seed,_,execute⟩ := chart (w := w) (B := B) (K := K) price initial hw hb hk run ⟨[],[],fun _ => [],fun _ => []⟩
+  apply finish seed
+  intro x u S words fresh
+  obtain ⟨z,F,k,y,exec,paid,same,ready,act⟩ := execute x u S words.helperFan fresh
+  refine ⟨z,F,k,y,exec,?_,same,ready,act⟩
+  intro js unique
+  apply chartBillCeil
+  exact paid js unique
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode

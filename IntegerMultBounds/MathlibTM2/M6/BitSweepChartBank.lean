@@ -11,17 +11,6 @@ open Shared50ModularControl (prime)
 open M8.RevMachine
 local instance (w : ℕ) : NeZero (prime^w) := ⟨(pow_pos Shared50ModularControl.prime_prime.pos _).ne'⟩
 
-private theorem placePort_fixed {k v w : ℕ} (dst : Fin (k+1))
-    (a : SharedBankStage.Stage _ 1 prime (@portOwner v))
-    (b : SharedBankStage.Stage _ 1 prime (@portOwner w))
-    (fixed : SharedBankSkeleton.ofStage a = SharedBankSkeleton.ofStage b) :
-    SharedBankSkeleton.ofStage (placePort dst a) = SharedBankSkeleton.ofStage (placePort dst b) := by
-  cases a
-  cases b
-  injection fixed with ht hs hp hslot
-  subst_vars
-  rfl
-
 /-- A width-independent bank program moves every role to or from the sweep
 layout. Each execution preserves the extra owner and admits a private stack seed. -/
 private theorem sweepChartList [M8.Machine.Net] (roles : List Role) (unique : roles.Nodup) :
@@ -49,11 +38,8 @@ private theorem sweepChartList [M8.Machine.Net] (roles : List Role) (unique : ro
   let stage := bank w W hw hW
   obtain ⟨_,_,cost,cell,frame⟩ := compiledPorts_spec sweepRoleTape (fun r => port n backward r w W hw hW) roles unique
   refine ⟨stage,?_,compiledPortSeed _ _ _ (fun r _ => seed n backward r w W hw hW),?_,?_,?_⟩
-  · simp only [stage,bank,SharedBankSkeleton.ofStage_compile,List.map_map]
-    apply congrArg (SharedBankSkeleton.compile 142081 prime _)
-    apply List.map_congr_left
-    intro r _
-    exact placePort_fixed _ _ _ ((fixed n backward r w W hw hW).trans (fixed n backward r 1 1 (by decide) (by decide)).symm)
+  · exact compiledPort_fixed sweepRoleTape roles _ _ fun r _ =>
+      (fixed n backward r w W hw hW).trans (fixed n backward r 1 1 (by decide) (by decide)).symm
   · let power := (w : ℝ)^M8.Machine.BudgetBound.tau
     have one : 1 ≤ power := Real.one_le_rpow (by exact_mod_cast hw : (1 : ℝ) ≤ w)
       M8.Machine.BudgetBound.exponent_range.1.le
