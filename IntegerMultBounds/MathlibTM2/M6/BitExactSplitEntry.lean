@@ -25,6 +25,7 @@ theorem exactSplitEntry {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U)
         ParentStageWords (fun i => fan (i.castAdd 2)) fan m
           (Fin.lastCases (fun _ => 0) (fun row i => x (finProdFinEquiv (i,row)))) F ∧
         (∀ j, (∀ i, fan i ≠ bank j) → F.L (bank j) = [] ∧ F.R (bank j) = []) ∧
+        (∀ j, (F.L (bank j)).length+(F.R (bank j)).length ≤ 301*(m*142080)+2) ∧
         ∀ j, (∀ i, bank i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
   classical
   intro fan
@@ -57,7 +58,7 @@ theorem exactSplitEntry {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U)
     exact fun h => (member _).mp h i rfl
   refine ⟨last,_,_,(placed.seq packed).seq clear,final.trans (same.trans user),?_,
     ⟨fun i => by simpa only [ite_eq_right (retained _),own,Function.Embedding.trans_apply,Fin.castAddEmb_apply,data] using (words i (List.mem_finRange i)).1,
-     fun i => by simpa only [ite_eq_right (retained _),own,Function.Embedding.trans_apply,Fin.castAddEmb_apply,data] using (words i (List.mem_finRange i)).2,?_⟩,?_,?_⟩
+     fun i => by simpa only [ite_eq_right (retained _),own,Function.Embedding.trans_apply,Fin.castAddEmb_apply,data] using (words i (List.mem_finRange i)).2,?_⟩,?_,?_,?_⟩
   · have total := List.sum_le_sum (l := List.finRange 142081)
       (f := fun i => 12*m+19+4*(D.L (own i)).length+2*(D.R (own i)).length)
       (g := fun _ => 12*m+19+4*(301*(m*142080)+2)) (by
@@ -88,6 +89,17 @@ theorem exactSplitEntry {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U)
       CountedLoopReuseAlphabet.controls,ite_self,embStk,Function.comp_apply] using rows (j.natAdd 142081) t
   · intro j away
     simp only [ite_eq_left ((member j).mpr away),and_self]
+  · intro j
+    by_cases cleared : bank j ∈ slots
+    · simp only [ite_eq_left cleared,List.length_nil,Nat.zero_add,Nat.zero_le]
+    simp only [ite_eq_right cleared]
+    by_cases h : ∃ i, own i = bank j
+    · obtain ⟨i,eq⟩ := h
+      rw [← eq,(words i (List.mem_finRange i)).1,(words i (List.mem_finRange i)).2,List.length_nil,List.length_ofFn]
+      omega
+    · have keep := frame (bank j) (fun i _ eq => h ⟨i,eq⟩)
+      rw [keep.1,keep.2]
+      exact space j
   · intro j away
     simp only [ite_eq_right (outside j away)]
     have keep := frame j (fun i _ => away _)
@@ -112,15 +124,20 @@ theorem exactSplitCall {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U) 
       ∃ z F t y, Exec body code (mk u S) t (mk z F) ∧ z.user = u.user ∧
         ParentStageWords (fun i => dst (i.castAdd 2)) dst m y F ∧
         effect (Fin.lastCases (fun _ => 0) (fun row i => x (finProdFinEquiv (i,row)))) y ∧
-        ∀ js : List (Fin T), js.Nodup → (∀ j ∈ js, ∀ i, fan i ≠ j) →
+        (∀ js : List (Fin T), js.Nodup → (∀ j ∈ js, ∀ i, fan i ≠ j) →
           t+tapeCharge cleanupWeight js F ≤ price+tapeCharge cleanupWeight js S+
             (149*(intervalSplitTapes+5)+5)*(m*142080)+28+
-            142081*(12*m+19+4*(301*(m*142080)+2))+3*(4*(301*(m*142080)+2)+4) := by
+            142081*(12*m+19+4*(301*(m*142080)+2))+3*(4*(301*(m*142080)+2)+4)) ∧
+        ∀ js : List (Fin T), js.Nodup →
+          t+tapeCharge cleanupWeight js F ≤ price+tapeCharge cleanupWeight js S+
+            (149*(intervalSplitTapes+5)+5)*(m*142080)+28+
+            142081*(12*m+19+4*(301*(m*142080)+2))+3*(4*(301*(m*142080)+2)+4)+
+            (intervalSplitTapes+1)*(4*(301*(m*142080)+2)+4) := by
   intro fan
   obtain ⟨prep,run⟩ := exactSplitEntry body bank tmp buf tmpOff bufOff distinct capacity
   refine ⟨prep.seq (.call entry),?_⟩
   intro m price dst effect seed child pos x u S source left empty tl tr br localSeed outerSeed
-  obtain ⟨v,D,a,prepared,user,bill,words,fresh,frame⟩ := run pos x u S source left empty tl tr br
+  obtain ⟨v,D,a,prepared,user,bill,words,fresh,space,frame⟩ := run pos x u S source left empty tl tr br
   obtain ⟨z,F,n,y,exec,paid,same,out,action⟩ := child _ v D words (by
     intro j away
     by_cases h : ∃ k, bank k = j
@@ -128,19 +145,36 @@ theorem exactSplitCall {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U) 
       exact ⟨(fresh k away).1.trans (localSeed k away).1.symm,(fresh k away).2.trans (localSeed k away).2.symm⟩
     · have off := fun k eq => h ⟨k,eq⟩
       exact ⟨(frame j off).1.trans (outerSeed j off).1,(frame j off).2.trans (outerSeed j off).2⟩)
-  refine ⟨z,F,_,y,prepared.seq (Exec.call exec),same.trans user,out,action,?_⟩
-  intro js unique away
-  have charge : tapeCharge cleanupWeight js D ≤ tapeCharge cleanupWeight js S := by
-    apply List.sum_le_sum
-    intro j mem
-    by_cases h : ∃ k, bank k = j
-    · obtain ⟨k,rfl⟩ := h
-      rw [(fresh k (away _ mem)).1,(fresh k (away _ mem)).2]
-      simp [cleanupWeight]
-    · have off := fun k eq => h ⟨k,eq⟩
-      rw [(frame j off).1,(frame j off).2]
-  have h := paid js unique
-  omega
+  refine ⟨z,F,_,y,prepared.seq (Exec.call exec),same.trans user,out,action,?_,?_⟩
+  · intro js unique away
+    have charge : tapeCharge cleanupWeight js D ≤ tapeCharge cleanupWeight js S := by
+      apply List.sum_le_sum
+      intro j mem
+      by_cases h : ∃ k, bank k = j
+      · obtain ⟨k,rfl⟩ := h
+        rw [(fresh k (away _ mem)).1,(fresh k (away _ mem)).2]
+        simp [cleanupWeight]
+      · have off := fun k eq => h ⟨k,eq⟩
+        rw [(frame j off).1,(frame j off).2]
+    have h := paid js unique
+    omega
+  · intro js unique
+    let extra := 4*(301*(m*142080)+2)+4
+    have growth := placedCleanup_cost_le bank S D cleanupWeight 0 ((intervalSplitTapes+1)*extra) frame (by
+      intro is nd
+      have each (i : Fin (intervalSplitTapes+1)) (_ : i ∈ is) :
+          cleanupWeight (D.L (bank i)) (D.R (bank i)) ≤ extra := by
+        have h := space i
+        dsimp [cleanupWeight,extra]
+        omega
+      have total := List.sum_le_sum each
+      simp only [List.map_const',List.sum_replicate_nat] at total
+      have count : is.length ≤ intervalSplitTapes+1 := by simpa using nd.length_le_card
+      rw [Nat.zero_add]
+      exact (total.trans (Nat.mul_le_mul_right extra count)).trans (Nat.le_add_left ..)) js unique
+    have h := paid js unique
+    dsimp only [extra,Nat.zero_add] at growth
+    omega
 
 /-- Run a packed row worker returning on the input fan and interleave its
 result on the original serialized tape. The spare helper is discarded. -/
@@ -171,7 +205,7 @@ theorem exactSplitReturn {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U
   obtain ⟨finish,merge⟩ := mergeReusedOwners body ports capacity
   refine ⟨start.seq finish,?_⟩
   intro m price effect seed worker pos x u S source left empty tl tr br localSeed outerSeed
-  obtain ⟨v,D,a,y,call,user,words,action,paid⟩ := run fan effect seed worker pos x u S source left empty tl tr br localSeed outerSeed
+  obtain ⟨v,D,a,y,call,user,words,action,paid,_⟩ := run fan effect seed worker pos x u S source left empty tl tr br localSeed outerSeed
   have rows := withHelperPort_return (intervalOwners 142080) _ (embStk bank D) words.helperFan
   obtain ⟨z,F,b,exec,cost,same,out,_⟩ := merge pos _ v D rows
   have nd : slots.Nodup := (show localSlots.Nodup by decide).map ports.injective
@@ -237,7 +271,7 @@ theorem exactSplitReturnOn {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime
   obtain ⟨finish,merge⟩ := mergeReusedOwners body ports capacity
   refine ⟨start.seq finish,?_⟩
   intro m price effect seed worker pos x u S source left empty tl tr br localSeed outerSeed
-  obtain ⟨v,D,a,y,call,user,words,action,paid⟩ := run dst effect seed worker pos x u S source left empty tl tr br localSeed outerSeed
+  obtain ⟨v,D,a,y,call,user,words,action,paid,_⟩ := run dst effect seed worker pos x u S source left empty tl tr br localSeed outerSeed
   have returned : HelperFan output (fun r => y r.castSucc) D := by
     have h := ParentStageWords.returnFan (bank := Function.Embedding.refl (Fin T)) (F := D) words
     exact h
@@ -258,6 +292,62 @@ theorem exactSplitReturnOn {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime
   rw [show ports 0 = saved 0 from returnedMergeBank_target ..] at out
   refine ⟨z,F,_,y,call.seq exec,same.trans user,action,out,?_⟩
   change _ ≤ price+tapeCharge cleanupWeight slots S+_+_+_+_
+  dsimp only [intervalSplitTapes] at *
+  omega
+
+/-- Charge the serialized MOVE and its returned workspace in one bound. -/
+theorem exactSplitReturnCharged {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U) (entry : P)
+    (bank : Fin (intervalSplitTapes+1) ↪ Fin T) (tmp buf : Fin T)
+    (tmpOff : ∀ i, bank i ≠ tmp) (bufOff : ∀ i, bank i ≠ buf) (distinct : tmp ≠ buf)
+    (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q) :
+    let fan := (withHelperPort (intervalOwners 142080)).trans bank
+    ∀ (dst : Fin (142081+2) ↪ Fin T) (saved : Fin 3 ↪ Fin T),
+    (∀ j i, saved j ≠ childReturnFan dst i) →
+    ∃ code : Pr P T Q prime U, ∀ {m price} effect seed,
+      PackedPieceHandoffWithCharge cleanupWeight m effect body (body entry) fan dst seed price →
+      0 < m → ∀ (x : Fin (m*142080) → ZMod 2) u (S : Stacks T prime),
+      S.R (bank (Fin.succ 0)) = List.ofFn (fun i => SparseRoleCircuit.encode (x i)) →
+      (∀ i, S.L (bank i) = []) → (∀ i, i ≠ Fin.succ 0 → S.R (bank i) = []) →
+      S.L tmp = [] → S.R tmp = [] → S.R buf = [] →
+      (∀ j, (∀ i, fan i ≠ bank j) → seed.L (bank j) = [] ∧ seed.R (bank j) = []) →
+      (∀ j, (∀ i, bank i ≠ j) → S.L j = seed.L j ∧ S.R j = seed.R j) →
+      ∃ z F t y, Exec body code (mk u S) t (mk z F) ∧ z.user = u.user ∧
+        effect (Fin.lastCases (fun _ => 0) (fun row i => x (finProdFinEquiv (i,row)))) y ∧
+        RecordPayload (saved 0) (fun _ => blank) 0
+          (fun k : Fin (m*142080) => let p := finProdFinEquiv.symm k; y p.2.castSucc p.1) F ∧
+        ∀ js, js.Nodup → (∀ i, saved i ∈ js) →
+          t+tapeCharge cleanupWeight js F ≤ price+tapeCharge cleanupWeight js S+
+            1000000000*(m*142080) := by
+  intro fan dst saved disjoint
+  let output := childReturnFan dst
+  let ports := returnedMergeBank saved output disjoint
+  obtain ⟨start,run⟩ := exactSplitCall body entry bank tmp buf tmpOff bufOff distinct capacity
+  obtain ⟨finish,merge⟩ := placedChargedMergeReturn body ports capacity
+  refine ⟨start.seq finish,?_⟩
+  intro m price effect seed worker pos x u S source left empty tl tr br localSeed outerSeed
+  obtain ⟨v,D,a,y,call,user,words,action,_,paid⟩ := run dst effect seed worker pos x u S source left empty tl tr br localSeed outerSeed
+  have returned : HelperFan output (fun r => y r.castSucc) D := by
+    have h := ParentStageWords.returnFan (bank := Function.Embedding.refl (Fin T)) (F := D) words
+    exact h
+  have owners : (intervalOwners 142080).trans ports = output := returnedMergeBank_owners saved output disjoint
+  obtain ⟨z,F,b,exec,same,out,_,cost⟩ := merge pos _ v D (owners ▸ returned)
+  rw [show ports 0 = saved 0 from returnedMergeBank_target ..] at out
+  refine ⟨z,F,_,y,call.seq exec,same.trans user,action,out,?_⟩
+  intro js unique savedIn
+  have cover : ∀ i ∈ [0,mergeInnerPort 0,mergeInnerPort 1], ports i ∈ js := by
+    intro i mem
+    simp only [List.mem_cons,List.not_mem_nil,or_false] at mem
+    rcases mem with rfl | rfl | rfl
+    · rw [show ports 0 = saved 0 from returnedMergeBank_target ..]
+      exact savedIn 0
+    · rw [show ports (mergeInnerPort 0) = saved 1 from returnedMergeBank_inner saved output disjoint 0]
+      exact savedIn 1
+    · rw [show ports (mergeInnerPort 1) = saved 2 from returnedMergeBank_inner saved output disjoint 1]
+      exact savedIn 2
+  have startBill := paid js unique
+  have finishBill := cost js unique cover
+  change b+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js D+
+    (19*(149*(m*142080)*(intervalSplitTapes+5)+7)+13) at finishBill
   dsimp only [intervalSplitTapes] at *
   omega
 

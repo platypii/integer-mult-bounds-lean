@@ -60,6 +60,33 @@ theorem splitBankForInput {T : ℕ} (src : Fin (142081+2) ↪ Fin T) (saved : Fi
     | left i => exact Or.inl ⟨i,by simp [physical,Fin.Embedding.append]⟩
     | right i => exact Or.inr ⟨i,by simp [physical,Fin.Embedding.append]⟩
 
+private theorem packedMovePayload (atom W : ℕ) {T : ℕ} (port : Fin T) (F : Stacks T prime) :
+    let lane := packedDescriptor (64*atom) W
+    let m := volume prime lane
+    let wide := {lane with afterD := lane.afterD*142080}
+    let size : m*142080 = volume prime wide := by simp [m,wide,volume,Nat.mul_assoc]
+    ∀ (x : Fin (volume prime wide) → ZMod 2) y,
+      packedChildOutput atom m
+        (Fin.lastCases (fun _ => 0) (fun r i => x ((finProdFinEquiv (i,r)).cast size))) y →
+      RecordPayload port (fun _ => blank) 0
+        (fun k : Fin (m*142080) => let p := finProdFinEquiv.symm k; y p.2.castSucc p.1) F →
+      RecordPayload port (fun _ => blank) 0
+        (Shared50RecursiveNodeRows.transpose (one_dvd wide.rows) x) F := by
+  intro lane m wide size x y effect out
+  have position : packedChildPosition lane rfl = Equiv.refl _ := by
+    ext i
+    exact packActive_packed (64*atom) W i
+  have cell (k : Fin (m*142080)) : y (finProdFinEquiv.symm k).2.castSucc (finProdFinEquiv.symm k).1 =
+      Shared50RecursiveNodeRows.transpose (one_dvd wide.rows) x (k.cast size) := by
+    obtain ⟨⟨i,r⟩,rfl⟩ := finProdFinEquiv.surjective k
+    have row := congrFun (effect r lane rfl rfl) i
+    rw [position] at row
+    simp only [Equiv.refl_apply,Function.comp_def,Fin.lastCases_castSucc] at row
+    simpa only [Equiv.symm_apply_apply] using
+      row.trans (transpose_trailingRows lane 142080 x i r).symm
+  apply castPayload size
+  simpa only [cell] using out
+
 /-- A packed node transposes the whole wide record when called on its rows.
 The wrapper is uniform in both the atom width and spectator count. -/
 theorem packedMoveTranspose {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U) (entry : P)
@@ -93,19 +120,7 @@ theorem packedMoveTranspose {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prim
   obtain ⟨z,F,t,y,exec,user,effect,out,bill⟩ := run _ seed worker pos
     (fun i => x (i.cast size)) u S source left empty tl tr br localSeed outerSeed
   refine ⟨z,F,t,exec,user,?_,?_⟩
-  · have position : packedChildPosition lane rfl = Equiv.refl _ := by
-      ext i
-      exact packActive_packed (64*atom) W i
-    have cell (k : Fin (m*142080)) : y (finProdFinEquiv.symm k).2.castSucc (finProdFinEquiv.symm k).1 =
-        Shared50RecursiveNodeRows.transpose (one_dvd wide.rows) x (k.cast size) := by
-      obtain ⟨⟨i,r⟩,rfl⟩ := finProdFinEquiv.surjective k
-      have row := congrFun (effect r lane rfl rfl) i
-      rw [position] at row
-      simp only [Equiv.refl_apply,Function.comp_def,Fin.lastCases_castSucc] at row
-      simpa only [Equiv.symm_apply_apply] using
-        row.trans (transpose_trailingRows lane 142080 x i r).symm
-    apply castPayload size
-    simpa only [cell,Function.Embedding.trans_apply,show moveReturnPorts 0 = Fin.succ 0 by rfl] using out
+  · exact packedMovePayload atom W _ F x y effect out
   · have charge : tapeCharge cleanupWeight ((List.finRange 3).map (moveReturnPorts.trans bank)) S = 2*(m*142080)+12 := by
       change cleanupWeight (S.L (bank (Fin.succ 0))) (S.R (bank (Fin.succ 0))) +
         (cleanupWeight (S.L (bank (mergeInnerPort 0).succ)) (S.R (bank (mergeInnerPort 0).succ)) +
@@ -117,6 +132,43 @@ theorem packedMoveTranspose {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prim
     rw [← size]
     dsimp only [intervalSplitTapes] at bill
     omega
+
+theorem chargedPackedMoveTranspose {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U) (entry : P)
+    (bank : Fin (intervalSplitTapes+1) ↪ Fin T) (tmp buf : Fin T)
+    (tmpOff : ∀ i, bank i ≠ tmp) (bufOff : ∀ i, bank i ≠ buf) (distinct : tmp ≠ buf)
+    (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q) :
+    let fan := (withHelperPort (intervalOwners 142080)).trans bank
+    ∀ dst : Fin (142081+2) ↪ Fin T,
+    (∀ j i, bank (moveReturnPorts j) ≠ childReturnFan dst i) →
+    ∃ code : Pr P T Q prime U, ∀ atom W price seed,
+      let lane := packedDescriptor (64*atom) W
+      let m := volume prime lane
+      let wide := {lane with afterD := lane.afterD*142080}
+      let size : m*142080 = volume prime wide := by simp [m,wide,volume,Nat.mul_assoc]
+      PackedPieceHandoffWithCharge cleanupWeight m (packedChildOutput atom m) body (body entry) fan dst seed price →
+      0 < m → ∀ (x : Fin (volume prime wide) → ZMod 2) u (S : Stacks T prime),
+      S.R (bank (Fin.succ 0)) = List.ofFn (fun i => SparseRoleCircuit.encode (x (i.cast size))) →
+      (∀ i, S.L (bank i) = []) → (∀ i, i ≠ Fin.succ 0 → S.R (bank i) = []) →
+      S.L tmp = [] → S.R tmp = [] → S.R buf = [] →
+      (∀ j, (∀ i, fan i ≠ bank j) → seed.L (bank j) = [] ∧ seed.R (bank j) = []) →
+      (∀ j, (∀ i, bank i ≠ j) → S.L j = seed.L j ∧ S.R j = seed.R j) →
+      ∃ z F t, Exec body code (mk u S) t (mk z F) ∧ z.user = u.user ∧
+        RecordPayload (bank (Fin.succ 0)) (fun _ => blank) 0
+          (Shared50RecursiveNodeRows.transpose (one_dvd wide.rows) x) F ∧
+        ∀ js, js.Nodup → (∀ i, bank (moveReturnPorts i) ∈ js) →
+          t+tapeCharge cleanupWeight js F ≤ price+tapeCharge cleanupWeight js S+
+            1000000000*volume prime wide := by
+  intro fan dst disjoint
+  obtain ⟨code,run⟩ := exactSplitReturnCharged body entry bank tmp buf tmpOff bufOff distinct capacity dst
+    (moveReturnPorts.trans bank) disjoint
+  refine ⟨code,?_⟩
+  intro atom W price seed lane m wide size worker pos x u S source left empty tl tr br localSeed outerSeed
+  obtain ⟨z,F,t,y,exec,user,effect,out,bill⟩ := run _ seed worker pos
+    (fun i => x (i.cast size)) u S source left empty tl tr br localSeed outerSeed
+  refine ⟨z,F,t,exec,user,?_,?_⟩
+  · exact packedMovePayload atom W _ F x y effect out
+  · rw [← size]
+    exact bill
 
 theorem scheduledMoveSpectators (child : Descriptor) (atom : ℕ) (groups : 142080 ∣ child.rows) :
     let W := CopyChildLayout.spectators child / 142080
