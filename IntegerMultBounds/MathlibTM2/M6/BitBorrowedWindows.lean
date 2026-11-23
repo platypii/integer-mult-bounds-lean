@@ -389,7 +389,7 @@ theorem alignedPhases_host [M8.Machine.Net] (stage : Fin 9) (run : Fin 32 × Fin
         (∀ k, (∀ i, owner i ≠ k) → out k = data k) ∧
         ∀ j, phaseRead owner out j = labelPhase (w+1) gates current (phaseRead owner data j) := by
   intro edges I child owner
-  obtain ⟨tapes,T,mq,ports,fan,bank,moves⟩ := scheduledMoves_host stage run
+  obtain ⟨tapes,T,mq,ports,fan,bank,moves⟩ := scheduledMoves_host false stage run
   obtain ⟨gq,gateRuns⟩ := scheduledGates_host owner
   refine ⟨tapes,T,max mq gq,ports,fan,bank,?_⟩
   intro P U Q cap localBody f proc body

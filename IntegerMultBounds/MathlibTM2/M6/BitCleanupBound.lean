@@ -4,6 +4,7 @@ public import IntegerMultBounds.MathlibTM2.Cover.FallbackRecordCleanup
 public import IntegerMultBounds.MathlibTM2.Host.EmbedStock
 public import IntegerMultBounds.MathlibTM2.Host.TapeCharge
 public import IntegerMultBounds.MathlibTM2.Host.Foreign
+import IntegerMultBounds.MathlibTM2.Host.ClosedProgramStock
 import IntegerMultBounds.MathlibTM2.Host.ForeignStock
 public import IntegerMultBounds.Networks.Shared50ModularControl
 
@@ -60,22 +61,36 @@ private theorem nativeExecution {K P σ : Type} {Γ : K → Type} [DecidableEq K
   | loop_true h _ _ a b => exact .loop_true h (a bound) (b bound)
   | call => exact bound.elim
 
-theorem foreignCleanupBound {P U : Type} {T t Q : ℕ} {bank : Fin t ↪ Fin T} {prog : Program t Q prime}
-    {body : P → Pr P T Q prime U} {u v S F n}
-    (exec : Exec body (embProg bank Empty.elim (foreign prog)) (mk u S) n (mk v F))
-    : CleanupBound S F n (13*n) := by
+private theorem nativeCleanupBound {P U : Type} {T Q c : ℕ} {body : P → Pr P T Q prime U}
+    {prog u v S F n} (exec : Exec body prog (mk u S) n (mk v F)) (native : mnNativePushBound c prog) :
+    CleanupBound S F n ((1+6*c)*n) := by
   intro js unique
-  have native := embProg_native (e := (bank : Fin t → Fin T)) (Empty.elim : Empty → P)
-    (foreign (U := U) prog) (foreign_native _)
-  have push {K P σ : Type} {Γ : K → Type} (p : Prog P Γ σ) (h : mnNativePushBound 2 p) : mnProgPush p ≤ 2 := by
+  have push {K P σ : Type} {Γ : K → Type} (p : Prog P Γ σ) (h : mnNativePushBound c p) : mnProgPush p ≤ c := by
     induction p with
     | act => exact h
     | seq _ _ a b | cond _ _ _ a b => exact max_le (a h.1) (b h.2)
     | loop _ _ a => exact a h
     | call => exact h.elim
-  have bill := recordCleanup_cost_le js unique (nativeExecution exec native) (push _ native) (fun _ => Nat.zero_le 2)
-  change tapeCharge (fun l r => 4*l.length+2*r.length+4) js F+1 ≤ tapeCharge (fun l r => 4*l.length+2*r.length+4) js S+1+6*(2*n) at bill
+  have bill := recordCleanup_cost_le js unique (nativeExecution exec native) (push _ native) (fun _ => Nat.zero_le c)
+  change tapeCharge (fun l r => 4*l.length+2*r.length+4) js F+1 ≤ tapeCharge (fun l r => 4*l.length+2*r.length+4) js S+1+6*(c*n) at bill
+  rw [Nat.add_mul,Nat.one_mul,Nat.mul_assoc]
   omega
+
+theorem foreignCleanupBound {P U : Type} {T t Q : ℕ} {bank : Fin t ↪ Fin T} {prog : Program t Q prime}
+    {body : P → Pr P T Q prime U} {u v S F n}
+    (exec : Exec body (embProg bank Empty.elim (foreign prog)) (mk u S) n (mk v F))
+    : CleanupBound S F n (13*n) := by
+  exact nativeCleanupBound exec (embProg_native (e := (bank : Fin t → Fin T)) (Empty.elim : Empty → P)
+    (foreign (U := U) prog) (foreign_native _))
+
+theorem placedClosedWorkerCost {P U : Type} {T t Q : ℕ} (bank : Fin t ↪ Fin T)
+    (prog : Pr Empty t Q prime U) (charged : Bool) :
+    ∃ rate : ℕ, ∀ (body : P → Pr P T Q prime U) u v S F n,
+      Exec body (embProg bank Empty.elim prog) (mk u S) n (mk v F) → workerCost charged S F n (rate*n) := by
+  cases charged
+  · exact ⟨1,fun _ _ _ _ _ _ _ => (Nat.one_mul _).symm.le⟩
+  · exact ⟨_,fun _ _ _ _ _ _ run => nativeCleanupBound run
+      (embProg_native (e := (bank : Fin t → Fin T)) (Empty.elim : Empty → P) prog (WordCmd.empty_native prog))⟩
 
 theorem foreignWorkerCost {P U : Type} {T t Q : ℕ} {bank : Fin t ↪ Fin T} {prog : Program t Q prime}
     {body : P → Pr P T Q prime U} {u v S F n} (charged : Bool)
