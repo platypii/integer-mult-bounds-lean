@@ -35,13 +35,14 @@ The three return tapes exhaust the complement of that fan in the splitter. -/
 theorem splitBankForInput {T : ℕ} (src : Fin (142081+2) ↪ Fin T) (saved : Fin 3 ↪ Fin T)
     (apart : ∀ j i, saved j ≠ src i) :
     ∃ bank : Fin (intervalSplitTapes+1) ↪ Fin T,
-      (withHelperPort (intervalOwners 142080)).trans bank = src ∧ moveReturnPorts.trans bank = saved := by
+      (withHelperPort (intervalOwners 142080)).trans bank = src ∧ moveReturnPorts.trans bank = saved ∧
+      ∀ j, (∃ i, bank j = saved i) ∨ ∃ i, bank j = src i := by
   let localFan := withHelperPort (intervalOwners 142080)
   let order : Fin (3+(142081+2)) ↪ Fin (intervalSplitTapes+1) :=
     Fin.Embedding.append (Set.disjoint_range_iff.mpr moveReturnPorts_disjoint)
   let physical : Fin (3+(142081+2)) ↪ Fin T := Fin.Embedding.append (Set.disjoint_range_iff.mpr apart)
   let e := Equiv.ofBijective order ((Fintype.bijective_iff_injective_and_card _).2 ⟨order.injective,rfl⟩)
-  refine ⟨e.symm.toEmbedding.trans physical,?_,?_⟩
+  refine ⟨e.symm.toEmbedding.trans physical,?_,?_,?_⟩
   · apply Function.Embedding.ext; intro i
     have eq : e (i.natAdd 3) = localFan i := by simp [e,order,localFan,Fin.Embedding.append]
     change physical (e.symm (localFan i)) = src i
@@ -52,6 +53,12 @@ theorem splitBankForInput {T : ℕ} (src : Fin (142081+2) ↪ Fin T) (saved : Fi
     change physical (e.symm (moveReturnPorts j)) = saved j
     rw [← eq,e.symm_apply_apply]
     simp [physical,Fin.Embedding.append]
+
+  · intro j
+    change (∃ i, physical (e.symm j) = saved i) ∨ ∃ i, physical (e.symm j) = src i
+    induction e.symm j using Fin.addCases with
+    | left i => exact Or.inl ⟨i,by simp [physical,Fin.Embedding.append]⟩
+    | right i => exact Or.inr ⟨i,by simp [physical,Fin.Embedding.append]⟩
 
 /-- A packed node transposes the whole wide record when called on its rows.
 The wrapper is uniform in both the atom width and spectator count. -/

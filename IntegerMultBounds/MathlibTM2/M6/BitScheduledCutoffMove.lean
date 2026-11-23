@@ -69,4 +69,117 @@ theorem scheduledCutoffMove [M8.Machine.Net] {P U : Type} {T Q : ℕ} (body : P 
     exact (Nat.floor_mono (mul_le_mul_of_nonneg_right localRate ((by positivity : (0 : ℝ) ≤ volume prime child).trans mass))).trans (Nat.le_add_right ..)
   omega
 
+/-- Place MOVE around the installed input and output ports on the existing
+host. Only the three return tapes need blank words in the child's seed. -/
+theorem installedCutoffMove [M8.Machine.Net] {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U) (entry : P)
+    (src dst : Fin (142081+2) ↪ Fin T) (saved : Fin 3 ↪ Fin T) (tmp buf : Fin T)
+    (inputs : ∀ i j, saved i ≠ src j) (outputs : ∀ i j, saved i ≠ childReturnFan dst j)
+    (temps : ∀ j ∈ [tmp,buf], (∀ i, j ≠ src i) ∧ ∀ i, j ≠ saved i) (distinct : tmp ≠ buf)
+    (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q) :
+    ∃ code : Pr P T Q prime U, ∀ (c : CutoffNodeInput) seed (D rate entryRate : ℝ),
+      let child := c.node
+      let atom := c.w+1
+      let width : child.width = 64*atom := c.width
+      let groups : 142080 ∣ child.rows := ⟨_,c.rows⟩
+      let W := CopyChildLayout.spectators child / 142080
+      let lane := packedDescriptor (64*atom) W
+      let m := volume prime lane
+      let wide := packedDescriptor (64*atom) (W*142080)
+      let size : m*142080 = volume prime wide := by simp [m,lane,wide,volume,packedDescriptor,Nat.mul_assoc]
+      let layout := CopyChildLayout.changeLayout wide child width.symm (scheduledMoveSpectators child atom groups)
+      let position := (CopyChildLayout.flatAddress wide).symm.trans (layout.trans (CopyChildLayout.flatAddress child))
+      let budget := cutoffTreeBudget D rate c.cutoff (c.depth-c.path.length) child
+      let scale := (volume prime child : ℝ)*(child.width : ℝ)^M8.Machine.BudgetBound.tau
+      c.path.length < c.depth → c.cutoff < child.width → 214000000 ≤ entryRate → entryRate ≤ D →
+      PackedPieceHandoffWithCharge cleanupWeight c.cells (packedChildOutput atom c.cells) body (body entry) src dst seed (budget-⌊entryRate*scale⌋₊) →
+      ∀ (x : Fin (volume prime child) → ZMod 2) u (S : Stacks T prime),
+      S.R (saved 0) = List.ofFn (fun i => SparseRoleCircuit.encode (x (position (i.cast size)))) →
+      (∀ i, S.L (src i) = [] ∧ S.R (src i) = []) →
+      (∀ i, S.L (saved i) = []) → (∀ i, i ≠ 0 → S.R (saved i) = []) →
+      S.L tmp = [] → S.R tmp = [] → S.R buf = [] →
+      (∀ i, seed.L (saved i) = [] ∧ seed.R (saved i) = []) →
+      (∀ j, (∀ i, src i ≠ j) → (∀ i, saved i ≠ j) → S.L j = seed.L j ∧ S.R j = seed.R j) →
+      ∃ z F t, Exec body code (mk u S) t (mk z F) ∧ z.user = u.user ∧
+        RecordPayload (saved 0) (fun _ => blank) 0
+          ((Shared50RecursiveNodeRows.transpose (one_dvd child.rows) x) ∘ position) F ∧
+        t ≤ budget := by
+  obtain ⟨bank,fan,ret,cover⟩ := splitBankForInput src saved inputs
+  have atRet i : bank (moveReturnPorts i) = saved i := DFunLike.congr_fun ret i
+  have atInput i : bank (withHelperPort (intervalOwners 142080) i) = src i := DFunLike.congr_fun fan i
+  have sourcePort : bank (Fin.succ 0) = saved 0 := atRet 0
+  have off j (mem : j ∈ [tmp,buf]) k : bank k ≠ j := by
+    rcases cover k with ⟨i,h⟩|⟨i,h⟩
+    · exact h ▸ ((temps j mem).2 i).symm
+    · exact h ▸ ((temps j mem).1 i).symm
+  obtain ⟨code,run⟩ := scheduledCutoffMove body entry bank tmp buf (off tmp (by simp)) (off buf (by simp))
+    distinct capacity dst (fun j i => (atRet j) ▸ outputs j i)
+  rw [fan,sourcePort] at run
+  refine ⟨code,?_⟩
+  intro c seed D rate entryRate child atom width groups W lane m wide size layout position budget scale short active enough localRate worker x u S source vacant left right tl tr br clean stock
+  refine run c seed D rate entryRate short active enough localRate worker x u S source ?_ ?_ tl tr br ?_ ?_
+  · intro j
+    rcases cover j with ⟨i,h⟩|⟨i,h⟩
+    · exact h ▸ left i
+    · exact h ▸ (vacant i).1
+  · intro j ne
+    rcases cover j with ⟨i,h⟩|⟨i,h⟩
+    · rw [h]
+      apply right
+      rintro rfl
+      exact ne (bank.injective (h.trans sourcePort.symm))
+    · exact h ▸ (vacant i).2
+  · intro j away
+    rcases cover j with ⟨i,h⟩|⟨i,h⟩
+    · rw [h]; exact clean i
+    · exact False.elim (away i h.symm)
+  · intro j away
+    exact stock j (fun i => atInput i ▸ away _) (fun i => atRet i ▸ away _)
+
+/-- Borrow a workspace for one scheduled MOVE. The enclosing procedure
+table supplies the recursive labels and all tapes outside the workspace
+retain their two physical stacks. -/
+theorem placedCutoffMove [M8.Machine.Net] {P R U : Type} {T N Q : ℕ} (body : P → Pr P T Q prime U) (entry : P)
+    (place : Fin T ↪ Fin N) (label : P → R) (host : R → Pr R N Q prime U)
+    (installed : ∀ f, host (label f) = embProg place label (body f))
+    (src dst : Fin (142081+2) ↪ Fin T) (saved : Fin 3 ↪ Fin T) (tmp buf : Fin T)
+    (inputs : ∀ i j, saved i ≠ src j) (outputs : ∀ i j, saved i ≠ childReturnFan dst j)
+    (temps : ∀ j ∈ [tmp,buf], (∀ i, j ≠ src i) ∧ ∀ i, j ≠ saved i) (distinct : tmp ≠ buf)
+    (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q) :
+    ∃ code : Pr R N Q prime U, ∀ (c : CutoffNodeInput) seed (D rate entryRate : ℝ),
+      let child := c.node
+      let atom := c.w+1
+      let width : child.width = 64*atom := c.width
+      let groups : 142080 ∣ child.rows := ⟨_,c.rows⟩
+      let W := CopyChildLayout.spectators child / 142080
+      let lane := packedDescriptor (64*atom) W
+      let m := volume prime lane
+      let wide := packedDescriptor (64*atom) (W*142080)
+      let size : m*142080 = volume prime wide := by simp [m,lane,wide,volume,packedDescriptor,Nat.mul_assoc]
+      let layout := CopyChildLayout.changeLayout wide child width.symm (scheduledMoveSpectators child atom groups)
+      let position := (CopyChildLayout.flatAddress wide).symm.trans (layout.trans (CopyChildLayout.flatAddress child))
+      let budget := cutoffTreeBudget D rate c.cutoff (c.depth-c.path.length) child
+      let scale := (volume prime child : ℝ)*(child.width : ℝ)^M8.Machine.BudgetBound.tau
+      c.path.length < c.depth → c.cutoff < child.width → 214000000 ≤ entryRate → entryRate ≤ D →
+      PackedPieceHandoffWithCharge cleanupWeight c.cells (packedChildOutput atom c.cells) body (body entry) src dst seed (budget-⌊entryRate*scale⌋₊) →
+      ∀ (x : Fin (volume prime child) → ZMod 2) u (S : Stacks N prime),
+      let B := embStk place S
+      B.R (saved 0) = List.ofFn (fun i => SparseRoleCircuit.encode (x (position (i.cast size)))) →
+      (∀ i, B.L (src i) = [] ∧ B.R (src i) = []) →
+      (∀ i, B.L (saved i) = []) → (∀ i, i ≠ 0 → B.R (saved i) = []) →
+      B.L tmp = [] → B.R tmp = [] → B.R buf = [] →
+      (∀ i, seed.L (saved i) = [] ∧ seed.R (saved i) = []) →
+      (∀ j, (∀ i, src i ≠ j) → (∀ i, saved i ≠ j) → B.L j = seed.L j ∧ B.R j = seed.R j) →
+      ∃ z F t, Exec host code (mk u S) t (mk z F) ∧ z.user = u.user ∧
+        RecordPayload (place (saved 0)) (fun _ => blank) 0
+          ((Shared50RecursiveNodeRows.transpose (one_dvd child.rows) x) ∘ position) F ∧
+        t ≤ budget ∧ ∀ j, (∀ i, place i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  obtain ⟨move,run⟩ := installedCutoffMove body entry src dst saved tmp buf inputs outputs temps distinct capacity
+  refine ⟨embProg place label move,?_⟩
+  intro c seed D rate entryRate child atom width groups W lane m wide size layout position budget scale short active enough localRate worker x u S B source vacant left right tl tr br clean stock
+  obtain ⟨v,E,t,exec,user,out,bill⟩ := run c seed D rate entryRate short active enough localRate worker x
+    (embDn place u) B source vacant left right tl tr br clean stock
+  obtain ⟨z,F,placed,_,same,view,off⟩ := exec_emb place.injective installed exec u rfl S rfl
+  rw [← view] at out
+  exact ⟨z,F,t,placed,same.trans user,out,bill,off⟩
+
 end IntegerMultBounds.MathlibTM2.M6.BitNode
