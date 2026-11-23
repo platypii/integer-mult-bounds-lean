@@ -190,6 +190,52 @@ theorem HelperSlotTransport.comp {α : Type*} {b W : ℕ} {p : Fin 56} {f g}
   obtain ⟨z,atZ,offZ,readZ⟩ := leave y (f s) atY
   exact ⟨z,atZ,fun j hj => (offZ j hj).trans (offY j hj),fun j => (readZ j).trans (readY j)⟩
 
+open ActualAffineScaling FlatCoordinateLayout AffineFieldCoordinates in
+/-- Every output cell of an invertible slot action inherits its symbol from
+an input cell, including words supplied with arbitrary spectator contents. -/
+theorem HelperSlotTransport.range_subset {α : Type*} {b W : ℕ} {p : Fin 56} {act}
+    {input output : Fin ((modulus b)^128*W) → α} (run : HelperSlotTransport p act input output)
+    (onto : Function.Surjective act) : Set.range output ⊆ Set.range input := by
+  classical
+  rintro _ ⟨cell,rfl⟩
+  obtain ⟨⟨row,j⟩,rfl⟩ := finProdFinEquiv.surjective cell
+  obtain ⟨target,rfl⟩ := (rankEquiv (Q := modulus b) (d := 128)).surjective row
+  let digits := target ∘ helperBasisAxis p
+  let state := (fun k : Fin 8 => digits (k.castAdd 8),fun k : Fin 8 => digits (k.natAdd 8))
+  have packed : embed state = digits := Fin.append_castAdd_natAdd (m := 8) (n := 8) (f := digits)
+  obtain ⟨s,hs⟩ := onto state
+  let x := Function.extend (helperBasisAxis p) (embed s) target
+  have active : x ∘ helperBasisAxis p = embed s := by
+    funext k
+    exact (helperBasisAxis_strict p).injective.extend_apply _ _ k
+  obtain ⟨y,live,off,read⟩ := run x s active
+  have same : y = target := by
+    funext k
+    by_cases hit : ∃ t, helperBasisAxis p t = k
+    · obtain ⟨t,rfl⟩ := hit
+      exact congrFun (live.trans ((congrArg embed hs).trans packed)) t
+    · exact (off k (fun t eq => hit ⟨t,eq.symm⟩)).trans (Function.extend_apply' _ _ _ hit)
+  refine ⟨index x j,?_⟩
+  change input (index x j) = output (index target j)
+  rw [← same]
+  exact (read j).symm
+
+/-- Recover a binary payload and its read equation from the symbol-level
+basis run. The same argument works for any injective tape alphabet. -/
+theorem HelperSlotTransport.decode {α β : Type*} {b W : ℕ} {p : Fin 56} {act}
+    (encode : α → β) (faithful : Function.Injective encode)
+    {input : Fin ((ActualAffineScaling.modulus b)^128*W) → α} {output}
+    (run : HelperSlotTransport p act (encode ∘ input) output) (onto : Function.Surjective act) :
+    ∃ y, output = encode ∘ y ∧ HelperSlotTransport p act input y := by
+  have represented i : ∃ a, encode a = output i := by
+    obtain ⟨k,h⟩ := run.range_subset onto ⟨i,rfl⟩
+    exact ⟨input k,h⟩
+  choose y encoded using represented
+  refine ⟨y,funext (fun i => (encoded i).symm),?_⟩
+  intro x s active
+  obtain ⟨z,hz,off,read⟩ := run x s active
+  exact ⟨z,hz,off,fun j => faithful ((encoded _).trans (read j))⟩
+
 open FlatCoordinateLayout AffineFieldCoordinates M8.RevMachine RecursiveInterchangeLayout in
 /-- The physical child transpose on the two inherited fields realizes the
 middle exchange of the MOVE, including at either end of the helper slot. -/
@@ -262,6 +308,40 @@ theorem helperMove_transport {α : Type*} {b W : ℕ} (p : Fin 56) (lo hi : ℕ)
   intro x s active
   simpa only [rationalMoveWord_run,Function.comp_apply,spec] using action x s active
 
+open ActualAffineScaling RecursiveInterchangeLayout M8.RevMachine in
+/-- On a common owner bank, sequence the two linear passes around one
+physical recursive transpose. Both joins and the child time are counted. -/
+theorem helperMove_sequence {T q r u b W : ℕ} (p : Fin 56) {lo hi : ℕ}
+    (ordered : lo ≤ hi) (fits : hi ≤ 8) (C : Matrix (Fin 8) (Fin 8) ℚ)
+    (enter : Program T q prime) (child : Program T r prime) (leave : Program T u prime)
+    (enterRate childTime leaveRate : ℕ) :
+    let v := phaseIntervalChild (p.val+lo) (p.val+hi) b W 64
+    let Word := Fin (volume prime v) → ZMod 2
+    let V := (modulus b)^128*W
+    let read := fun (word : Word) (i : Fin V) => ext word i.val
+    let spec := List.map (AffineFieldProgram.mapOp (Swap.Modular.ratMod (modulus b)))
+    ∀ (bank : Word → Tapes T prime),
+    (∀ x, HoareTime enter (· = bank x) (fun z => ∃ y, z = bank y ∧ HelperSlotTransport p
+      (AffineFieldProgram.run (spec (M8.Exchange.transformOps C.adjugate C.adjugate))) (read x) (read y)) (enterRate*V)) →
+    (∀ x, HoareTime child (· = bank x)
+      (· = bank (Shared50RecursiveNodeRows.transpose (one_dvd v.rows) x)) childTime) →
+    (∀ x, HoareTime leave (· = bank x) (fun z => ∃ y, z = bank y ∧ HelperSlotTransport p
+      (AffineFieldProgram.run (spec (M8.Exchange.transformOps C C))) (read x) (read y)) (leaveRate*V)) →
+    ∀ x, HoareTime (IntegerMultBounds.Machine.seq enter (IntegerMultBounds.Machine.seq child leave))
+      (· = bank x) (fun z => ∃ y, z = bank y ∧ HelperSlotTransport p
+        (AffineFieldProgram.run (spec (rationalMoveWord lo hi C))) (read x) (read y))
+      ((enterRate+leaveRate)*V+childTime+2) := by
+  intro v Word V read spec bank first exchange last x
+  rw [Nat.add_mul,show enterRate*V+leaveRate*V+childTime+2 =
+    enterRate*V+1+(childTime+1+leaveRate*V) by omega]
+  apply (first x).seq
+  rintro _ ⟨loaded,rfl,entered⟩
+  let moved := Shared50RecursiveNodeRows.transpose (one_dvd v.rows) loaded
+  have finish := (exchange loaded).seq (last moved)
+  obtain ⟨steps,config,bill,ran,halt,y,returned,left⟩ := finish (bank loaded) rfl
+  exact ⟨steps,config,bill,ran,halt,y,returned,helperMove_transport p lo hi C _ _ _ _ entered
+    (helperInterval_transport p ordered fits loaded) left⟩
+
 open M8.Machine.Segments ActualAffineScaling AffineFieldCoordinates in
 /-- A certified basis segment runs on the owner's clean bank. Its active
 coordinates follow the original field program and every other digit is fixed. -/
@@ -332,6 +412,122 @@ theorem helperSegment_placed {t : ℕ} (src : Fin t) (p : Fin 56)
             (⟨k.val,inside⟩ : Fin 4) = 3 := by simp only [Fin.ext_iff]; omega
         rcases index with h | h | h <;> rw [h] <;> rfl
       next => rfl
+
+open M8.Machine.Segments SharedPlacementAlphabet ActualAffineScaling RecursiveInterchangeLayout
+  M8.Machine.ArbitraryWidthHighExchangeShared in
+/-- A placed basis pass returns a binary owner word with the transported reads. -/
+theorem helperBasisWord_placed {t : ℕ} (src : Fin t) (p : Fin 56)
+    (C : Matrix (Fin 8) (Fin 8) ℚ) (pass : CopyBasisPass C) (b W : ℕ) (live : 0 < W)
+    (v : Descriptor) (size : volume prime v = (prime^b)^128*W)
+    (input : Fin ((prime^b)^128*W) → ZMod 2) (caller : Tapes t prime) :
+    let ops := M8.Exchange.transformOps C C
+    let physical := (description ops pass.good).map (helperBasisOp p)
+    let payload := fun (word : Fin ((prime^b)^128*W) → ZMod 2) =>
+      sourceWord (fun i => word (Fin.cast size i))
+    let slot := segmentSource physical
+    let scratch := basisWorkspace physical (0 : Fin ((prime^b)^128*W) → ZMod 2)
+    let spec := ops.map (AffineFieldProgram.mapOp (IntegerMultBounds.Swap.Modular.ratMod (modulus b)))
+    caller.head src = 0 → caller.tape src = payload input →
+    HoareTime (Placement.placed (FlatCoordinateCleanSchedule.program physical) (sharedPlacement src slot))
+      (fun z => z = caller.append scratch)
+      (fun z => ∃ output, z = (setTape caller src (payload output) 0).append
+        scratch ∧ HelperSlotTransport p (AffineFieldProgram.run spec) input output)
+      (FlatCoordinateCleanSchedule.constant physical*((modulus b)^128*W)) := by
+  intro ops physical payload slot scratch spec head tape
+  let bank := fun (word : Fin ((prime^b)^128*W) → ZMod 2) => SharedBankStageInput.raw
+    (FlatCoordinateShiftSharedBank.common (d := 128) (b := b) (W := W) (SparseRoleCircuit.encode ∘ word))
+    (FlatCoordinateCleanSchedule.tapeCount physical)
+  have source word : (bank word).tape slot = payload word := by
+    apply congrArg (fun xs => FlatRepeatedControlNormalize.encoded (radix := prime)
+      (putWord (fun _ => blank) 0 xs))
+    exact List.ofFn_congr size.symm (fun i => SparseRoleCircuit.encode (a := 0) (word i))
+  have workspace := basisWorkspace_eq physical input 0
+  have step := helperSegment_placed src p ops pass.good b W live
+    (SparseRoleCircuit.encode ∘ input) caller head (tape.trans (source input).symm)
+  apply step.consequence (fun _ h => h.trans (congrArg caller.append workspace.symm)) _ le_rfl
+  rintro z ⟨output,placed,read⟩
+  obtain ⟨y,rfl,transport⟩ := read.decode _ M8.RevMachine.RevSemantics.encode_injective
+    (AffineFieldBijective.run_bijective spec (pass.legal b)).surjective
+  refine ⟨y,placed.trans ?_,transport⟩
+  change (setTape caller src ((bank y).tape slot) 0).append (basisWorkspace physical input) = _
+  exact congrArg₂ Tapes.append (congrArg (fun tape => setTape caller src tape 0) (source y)) workspace
+
+open M8.Machine.Segments SharedPlacementAlphabet ActualAffineScaling RecursiveInterchangeLayout
+  M8.RevMachine M8.Machine.ArbitraryWidthHighExchangeShared in
+/-- Run a basis pass on the descriptor-indexed payload used by the recursive call. -/
+theorem helperBasis_onOwner {t : ℕ} (src : Fin t) (p : Fin 56)
+    (C : Matrix (Fin 8) (Fin 8) ℚ) (pass : CopyBasisPass C) (b W : ℕ) (live : 0 < W)
+    (v : Descriptor) (size : volume prime v = (prime^b)^128*W) (caller : Tapes t prime) :
+    let ops := M8.Exchange.transformOps C C
+    let stages := (description ops pass.good).map (helperBasisOp p)
+    let scratch := basisWorkspace stages (0 : Fin ((prime^b)^128*W) → ZMod 2)
+    let bank := fun x => (setTape caller src (sourceWord (v := v) x) 0).append scratch
+    let read := fun (x : Fin (volume prime v) → ZMod 2) (i : Fin ((prime^b)^128*W)) => ext x i.val
+    let spec := ops.map (AffineFieldProgram.mapOp (Swap.Modular.ratMod (modulus b)))
+    ∀ x, HoareTime (Placement.placed (FlatCoordinateCleanSchedule.program stages)
+      (sharedPlacement src (segmentSource stages))) (· = bank x)
+      (fun z => ∃ y, z = bank y ∧ HelperSlotTransport p (AffineFieldProgram.run spec) (read x) (read y))
+      (FlatCoordinateCleanSchedule.constant stages*((modulus b)^128*W)) := by
+  intro ops stages scratch bank read spec x
+  have castRead (word : Fin (volume prime v) → ZMod 2) i :
+      read word i = word (Fin.cast size.symm i) := by
+    simp [read,M8.RevMachine.ext,show i.val < volume prime v by rw [size]; exact i.isLt]
+    rfl
+  let loaded := setTape caller src (sourceWord x) 0
+  have step := helperBasisWord_placed src p C pass b W live v size (read x) loaded
+    (by simp [loaded,setTape]) (by simp [loaded,setTape,castRead])
+  apply step.consequence (fun _ h => h) _ le_rfl
+  rintro _ ⟨y,rfl,transport⟩
+  refine ⟨fun i => y (Fin.cast size i),?_,?_⟩
+  · simp only [loaded,setTape_setTape,bank,scratch,stages,ops]
+    rfl
+  · simpa only [funext (fun i => castRead (fun k => y (Fin.cast size k)) i),Fin.cast_cast,
+      Fin.cast_refl,id_eq,spec,ops] using transport
+
+open M8.Machine.Segments SharedPlacementAlphabet ActualAffineScaling RecursiveInterchangeLayout
+  M8.RevMachine M8.Machine.ArbitraryWidthHighExchangeShared in
+/-- Both helper basis passes share the child's source tape. Each private workspace
+is restored and the recursive call is charged once. -/
+theorem helperMove_onOwner {t q : ℕ} (src : Fin t) (p : Fin 56) {lo hi : ℕ}
+    (ordered : lo ≤ hi) (fits : hi ≤ 8) (C : Matrix (Fin 8) (Fin 8) ℚ)
+    (rev : CopyBasisPass C.adjugate) (fwd : CopyBasisPass C) (b W : ℕ) (live : 0 < W)
+    (caller : Tapes t prime) (child : Program t q prime) (childTime : ℕ) :
+    let v := phaseIntervalChild (p.val+lo) (p.val+hi) b W 64
+    let owner := fun x => setTape caller src (sourceWord (v := v) x) 0
+    let A := (description _ rev.good).map (helperBasisOp p)
+    let B := (description _ fwd.good).map (helperBasisOp p)
+    let n := FlatCoordinateCleanSchedule.tapeCount A
+    let m := FlatCoordinateCleanSchedule.tapeCount B
+    let zero : Fin ((prime^b)^128*W) → ZMod 2 := 0
+    let bank := fun x => ((owner x).append (basisWorkspace B zero)).append (basisWorkspace A zero)
+    let enter := Placement.placed (FlatCoordinateCleanSchedule.program A)
+      (sharedPlacement (Fin.castAdd m src) (segmentSource A))
+    let leave := Placement.placed (FlatCoordinateCleanSchedule.program B) (sharedPlacement src (segmentSource B))
+    let spec := List.map (AffineFieldProgram.mapOp (Swap.Modular.ratMod (modulus b)))
+    let read := fun (x : Fin (volume prime v) → ZMod 2) (i : Fin ((prime^b)^128*W)) => ext x i.val
+    (∀ x, HoareTime child (· = owner x)
+      (· = owner (Shared50RecursiveNodeRows.transpose (one_dvd v.rows) x)) childTime) →
+    ∀ x, HoareTime (seq enter (seq (extend (extend child m) n) (extend leave n))) (· = bank x)
+      (fun z => ∃ y, z = bank y ∧ HelperSlotTransport p
+        (AffineFieldProgram.run (spec (rationalMoveWord lo hi C))) (read x) (read y))
+      ((FlatCoordinateCleanSchedule.constant A+FlatCoordinateCleanSchedule.constant B)*
+        ((prime^b)^128*W)+childTime+2) := by
+  intro v owner A B n m zero bank enter leave spec read exchange
+  have size : volume prime v = (prime^b)^128*W :=
+    intervalChild_volume (Nat.add_le_add_left ordered p.val) (by omega) b W
+  apply helperMove_sequence p ordered fits C _ _ _ _ _ _ bank
+  · intro x
+    have placed := helperBasis_onOwner (Fin.castAdd m src) p
+      C.adjugate rev b W live v size (caller.append (basisWorkspace B zero)) x
+    simp only [setTape_append_left] at placed
+    exact placed
+  · intro x
+    exact hoare_extend_eq (hoare_extend_eq (exchange x) (basisWorkspace B zero)) (basisWorkspace A zero)
+  · intro x
+    have pass := (helperBasis_onOwner src p C fwd b W live v size caller x).extend (basisWorkspace A zero)
+    apply pass.consequence (fun _ h => ⟨_,rfl,h⟩) _ le_rfl
+    rintro _ ⟨_,⟨y,rfl,transport⟩,rfl⟩
+    exact ⟨y,rfl,transport⟩
 
 /-- On a flat owner the interval builder accepts the original compact input.
 Moving the slot changes the program's prefix and suffix, but its runtime
