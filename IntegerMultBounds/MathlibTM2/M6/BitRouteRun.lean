@@ -380,8 +380,8 @@ theorem dataRegister_route [M8.Machine.Net] {T : ℕ} (io : Fin T) (n : Fin 9)
 open IntegerMultBounds.Networks.Certificates.PR589 in
 /-- Route all fanout destinations on one bank. Each original slice reaches its
 scheduled chart, while every tape outside the destination list keeps its data. -/
-theorem copyTargets_route [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
-    (life : Copy.Lifecycle) (scheduled : life ∈ Copy.lifecycles)
+theorem dataTargets_route [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
+    (targets : List ℕ) (bounds : ∀ j ∈ targets, j < 222) (nodup : targets.Nodup)
     :
     let io := fun j : ℕ => ownerTape n r d (Fin.ofNat 661 j)
     ∃ (program : Graph.Block (142081+24) prime) (C : ℕ), Blocks.Leading program ∧
@@ -390,22 +390,22 @@ theorem copyTargets_route [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
       ∀ x : Fin 142081 → Fin (volume prime v) → ZMod 2,
       let bank := fun (data : Fin 142081 → Fin (volume prime v) → ZMod 2) =>
         LabelCall.bank (copyOwners data) v (words (LabelSchedule.base v w))
-      ∃ y, (∀ j ∈ life.targets, LabelPermutation.Transport v B w
+      ∃ y, (∀ j ∈ targets, LabelPermutation.Transport v B w
         (fun g => g*registerChart w n j) (ext (x (io j))) (ext (y (io j)))) ∧
-        (∀ k, k ∉ life.targets.map io → y k = x k) ∧
+        (∀ k, k ∉ targets.map io → y k = x k) ∧
         GraphContract.Runs program (bank x) (bank y)
-          (C*volume prime v + life.targets.length*(28*LeafCore.coreCost (volume prime v) (w*64)+1)) := by
+          (C*volume prime v + targets.length*(28*LeafCore.coreCost (volume prime v) (w*64)+1)) := by
   intro io
-  have distinct : Set.InjOn io {j | j ∈ life.targets} := by
+  have distinct : Set.InjOn io {j | j ∈ targets} := by
     intro j hj k hk eq
-    have hj' := (Copy.target_bounds life scheduled j hj).2
-    have hk' := (Copy.target_bounds life scheduled k hk).2
+    have hj' := bounds j hj
+    have hk' := bounds k hk
     have same := congrArg Fin.val (ownerTape_injective n r d eq)
     simpa only [Fin.val_ofNat,Nat.mod_eq_of_lt (by omega : j < 661),
       Nat.mod_eq_of_lt (by omega : k < 661)] using same
-  generalize eq : life.targets = js
-  have subset : ∀ j ∈ js, j ∈ life.targets := by rw [← eq]; simp
-  have unique := eq ▸ (Copy.wellformed life scheduled).1
+  generalize eq : targets = js
+  have subset : ∀ j ∈ js, j ∈ targets := by rw [← eq]; simp
+  have unique := eq ▸ nodup
   clear eq
   induction js with
   | nil =>
@@ -417,7 +417,7 @@ theorem copyTargets_route [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
   | cons j js ih =>
     obtain ⟨fresh,nodup⟩ := List.nodup_cons.mp unique
     have mem := subset j List.mem_cons_self
-    obtain ⟨block,C,leading,run⟩ := dataRegister_route (io j) n j (Copy.target_bounds life scheduled j mem).2
+    obtain ⟨block,C,leading,run⟩ := dataRegister_route (io j) n j (bounds j mem)
     obtain ⟨tail,D,tailLeading,rest⟩ := ih (fun k hk => subset k (List.mem_cons_of_mem _ hk)) nodup
     refine ⟨Blocks.seqB block tail,C+D,Blocks.seq_leading _ _,?_⟩
     intro v w B hw hb shape pos x bank
@@ -446,6 +446,56 @@ theorem copyTargets_route [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
           ≤ C*volume prime v + 28*LeafCore.coreCost (volume prime v) (w*64) := by split <;> omega
       simp only [List.length_cons,Nat.add_mul,Nat.mul_add,Nat.one_mul,Nat.mul_one]
       omega
+
+open IntegerMultBounds.Networks.Certificates.PR589 in
+theorem copyTargets_route [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5)
+    (life : Copy.Lifecycle) (scheduled : life ∈ Copy.lifecycles)
+    :
+    let io := fun j : ℕ => ownerTape n r d (Fin.ofNat 661 j)
+    ∃ (program : Graph.Block (142081+24) prime) (C : ℕ), Blocks.Leading program ∧
+      ∀ (v : Descriptor) (w B : ℕ), 0 < w → 0 < B →
+      v.beforeH = B*prime^(64*(w*64)) → v.Positive →
+      ∀ x : Fin 142081 → Fin (volume prime v) → ZMod 2,
+      let bank := fun (data : Fin 142081 → Fin (volume prime v) → ZMod 2) =>
+        LabelCall.bank (copyOwners data) v (words (LabelSchedule.base v w))
+      ∃ y, (∀ j ∈ life.targets, LabelPermutation.Transport v B w
+        (fun g => g*registerChart w n j) (ext (x (io j))) (ext (y (io j)))) ∧
+        (∀ k, k ∉ life.targets.map io → y k = x k) ∧
+        GraphContract.Runs program (bank x) (bank y)
+          (C*volume prime v + life.targets.length*(28*LeafCore.coreCost (volume prime v) (w*64)+1)) :=
+  dataTargets_route n r d life.targets (fun j h => (Copy.target_bounds life scheduled j h).2) (Copy.wellformed life scheduled).1
+
+open IntegerMultBounds.Networks.Certificates.PR589 in
+def scatterTargets := (Copy.lifecycles.flatMap Copy.Lifecycle.targets).dedup
+
+theorem scatterTargets_length : scatterTargets.length = 111 := by decide +kernel
+
+open IntegerMultBounds.Networks.Certificates.PR589 in
+/-- Place all destinations of the nine COPY windows in their port charts in
+one pass. A target visited several times is routed just once. -/
+theorem scatterTargets_route [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5) :
+    let io := fun j : ℕ => ownerTape n r d (Fin.ofNat 661 j)
+    ∃ (program : Graph.Block (142081+24) prime) (C : ℕ), Blocks.Leading program ∧
+      ∀ (v : Descriptor) (w B : ℕ), 0 < w → 0 < B →
+      v.beforeH = B*prime^(64*(w*64)) → v.Positive →
+      ∀ x : Fin 142081 → Fin (volume prime v) → ZMod 2,
+      let bank := fun data => LabelCall.bank (copyOwners (v := v) data) v (words (LabelSchedule.base v w))
+      ∃ y, (∀ life ∈ Copy.lifecycles, ∀ j ∈ life.targets, LabelPermutation.Transport v B w
+        (fun g => g*registerChart w n j) (ext (x (io j))) (ext (y (io j)))) ∧
+        (∀ k, k ∉ scatterTargets.map io → y k = x k) ∧
+        GraphContract.Runs program (bank x) (bank y)
+          (C*volume prime v + 111*(28*LeafCore.coreCost (volume prime v) (w*64)+1)) := by
+  intro io
+  have mem j : j ∈ scatterTargets ↔ ∃ life ∈ Copy.lifecycles, j ∈ life.targets := by
+    simp [scatterTargets]
+  have bounds j (h : j ∈ scatterTargets) : j < 222 := by
+    obtain ⟨life,hl,hj⟩ := (mem j).mp h
+    exact (Copy.target_bounds life hl j hj).2
+  obtain ⟨program,C,leading,run⟩ := dataTargets_route n r d scatterTargets bounds (List.nodup_dedup _)
+  refine ⟨program,C,leading,?_⟩
+  intro v w B hw hb hv hp x bank
+  obtain ⟨y,route,other,paid⟩ := run v w B hw hb hv hp x
+  exact ⟨y,fun life hl j hj => route j ((mem j).mpr ⟨life,hl,hj⟩),other,scatterTargets_length ▸ paid⟩
 
 /-- A call on a routed port may change its payload arbitrarily according to
 a label-indexed relation. Returning through the same route restores each label
@@ -778,6 +828,70 @@ theorem ownerChartRoutes [M8.Machine.Net] {T : ℕ} (io : Fin 661 ↪ Fin T) (n 
       simpa [next,hk.1] using other _ hk.2
     · simp only [List.length_cons,Nat.add_mul,Nat.one_mul]
       omega
+
+open IntegerMultBounds.Networks.Certificates.PR589 in
+def scatterSources : List (Fin 661) :=
+  Copy.lifecycles.map (fun life => Fin.ofNat 661 life.source)
+
+private theorem scatterSources_nodup : scatterSources.Nodup := by decide +kernel
+
+open IntegerMultBounds.Networks.Certificates.PR589 in
+/-- One chart pass for all sources and destinations of the nine windows. -/
+theorem scatterCharts_route [M8.Machine.Net] (n : Fin 9) (r : Fin 32) (d : Fin 5) (enter : Bool) :
+    let owner := ownerTape n r d
+    let io := fun j : ℕ => owner (Fin.ofNat 661 j)
+    ∃ (program : Graph.Block (142081+24) prime) (C : ℕ), Blocks.Leading program ∧
+      ∀ (v : Descriptor) (w B : ℕ), 0 < w → 0 < B →
+      v.beforeH = B*prime^(64*(w*64)) → v.Positive →
+      ∀ x : Fin 142081 → Fin (volume prime v) → ZMod 2,
+      let bank := fun data => LabelCall.bank (copyOwners (v := v) data) v (words (LabelSchedule.base v w))
+      ∃ y, (∀ life ∈ Copy.lifecycles, let A := registerChart w n life.source
+          LabelPermutation.Transport v B w (fun g => g*(if enter then A.transpose else A))
+            (ext (x (io life.source))) (ext (y (io life.source)))) ∧
+        (∀ life ∈ Copy.lifecycles, ∀ j ∈ life.targets, LabelPermutation.Transport v B w
+          (fun g => g*registerChart w n j) (ext (x (io j))) (ext (y (io j)))) ∧
+        (∀ k, k ∉ scatterSources.map owner → k ∉ scatterTargets.map io → y k = x k) ∧
+        GraphContract.Runs program (bank x) (bank y)
+          (C*volume prime v + (9*63+111*28)*LeafCore.coreCost (volume prime v) (w*64)+121) := by
+  intro owner io
+  let embed : Fin 661 ↪ Fin 142081 := ⟨owner,ownerTape_injective n r d⟩
+  obtain ⟨a,C,la,sources⟩ := ownerChartRoutes embed n enter scatterSources scatterSources_nodup
+  obtain ⟨b,D,lb,targets⟩ := scatterTargets_route n r d
+  refine ⟨Blocks.seqB a b,C+D,Blocks.seq_leading _ _,?_⟩
+  intro v w B hw hb hv hp x bank
+  obtain ⟨z,src,keep,aRun⟩ := sources v w B hw hb hv hp x
+  obtain ⟨y,dst,rest,bRun⟩ := targets v w B hw hb hv hp z
+  have disjoint (j : ℕ) (hj : j ∈ scatterTargets) (i : Fin 661) (hi : i ∈ scatterSources) : io j ≠ owner i := by
+    obtain ⟨l,hl,hj⟩ := List.mem_flatMap.mp (List.mem_dedup.mp hj)
+    obtain ⟨life,h,rfl⟩ := List.mem_map.mp hi
+    have small := (Copy.target_bounds l hl j hj).2
+    obtain ⟨lo,bound⟩ := Copy.source_bounds life h
+    intro eq
+    have same := congrArg Fin.val (ownerTape_injective n r d eq)
+    simp only [Fin.val_ofNat,Nat.mod_eq_of_lt bound,Nat.mod_eq_of_lt (by omega : j < 661)] at same
+    omega
+  refine ⟨y,?_,?_,fun k hs ht => (rest k ht).trans (keep k hs),?_⟩
+  · intro life h
+    have member : Fin.ofNat 661 life.source ∈ scatterSources := List.mem_map.mpr ⟨life,h,rfl⟩
+    have off : io life.source ∉ scatterTargets.map io := by
+      intro hm
+      obtain ⟨j,hj,eq⟩ := List.mem_map.mp hm
+      exact disjoint j hj _ member eq
+    rw [rest _ off]
+    have key := src _ member
+    simpa only [io,embed,Function.Embedding.coeFn_mk,Fin.val_ofNat,Nat.mod_eq_of_lt (Copy.source_bounds life h).2] using key
+  · intro life h j hj
+    have member : j ∈ scatterTargets := List.mem_dedup.mpr (List.mem_flatMap.mpr ⟨life,h,hj⟩)
+    have off : io j ∉ scatterSources.map embed := by
+      intro hm
+      obtain ⟨i,hi,eq⟩ := List.mem_map.mp hm
+      exact disjoint j member i hi eq.symm
+    have key := dst life h j hj
+    change LabelPermutation.Transport _ _ _ _ (ext (z (io j))) _ at key
+    rwa [keep _ off] at key
+  · apply Blocks.runs_mono (Blocks.seq_runs la lb aRun bRun)
+    rw [show scatterSources.length = 9 from by simp [scatterSources,Copy.copy_count]]
+    exact le_of_eq (by ring)
 
 open IntegerMultBounds.Networks.Certificates.PR589 in
 /-- Enter or leave all the charts of one COPY window on the shared owner bank.
