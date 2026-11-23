@@ -315,4 +315,104 @@ theorem intervalPackedInput_exec {P U : Type} {Q m : ℕ}
   dsimp only [intervalSplitTapes] at *
   omega
 
+/-- Split the serialized payload directly into the live fan consumed by the
+child owner copy. The source index is the packed position followed by its owner. -/
+theorem splitChildInput_exec {P U : Type} {Q V : ℕ}
+    (body : P → Pr P (intervalSplitTapes+1) Q prime U)
+    (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q)
+    (positive : 0 < V) (x : Fin (V*142080) → ZMod 2)
+    (u : HS (intervalSplitTapes+1) Q prime U) (S : Stacks (intervalSplitTapes+1) prime)
+    (source : S.R (Fin.succ 0) = List.ofFn (fun i => SparseRoleCircuit.encode (x i)))
+    (left : ∀ i, S.L i = []) (empty : ∀ i, i ≠ Fin.succ 0 → S.R i = []) :
+    let fan := (intervalOwners 142080).trans (Fin.succEmb _)
+    let r := intervalCounterPorts.trans (Fin.succEmb _)
+    let init := (intervalHeaders r).seq (moveR (r 1) 0 (fun _ => bitSymbol false))
+    let prepare := init.seq (embProg Fin.succ (Empty.elim : Empty → P) intervalMarkers)
+    let split := embProg Fin.succ (Empty.elim : Empty → P)
+      (foreign (liftQ (CyclicRowNormalized.splitProgram 142080 prime) capacity))
+    ∃ z F t, z.user = u.user ∧ t ≤ (149*(intervalSplitTapes+5)+5)*(V*142080)+24 ∧
+      Exec body (prepare.seq split) (mk u S) t (mk z F) ∧
+      HelperFan fan (fun row position => x (finProdFinEquiv (position,row))) F := by
+  intro fan r init prepare split
+  obtain ⟨z,F,t,user,cost,run,owners,_⟩ := intervalPackedInput_exec body capacity positive x u S source left empty
+  exact ⟨z,F,t,user,cost,run,intervalOwners_ready _ _ _ owners⟩
+
+
+/-- Lay out the splitter on the parent's row and counter ports. The extra
+helper stays at port zero on both sides. Only the source and the two inner
+counters come from the three saved ports. -/
+def ownerSplitBank {c T : ℕ} (saved : Fin 3 ↪ Fin T) (fan : Fin (c+2) ↪ Fin T)
+    (apart : ∀ i j, saved i ≠ fan j) : Fin ((((1+c)+2)+2)+1) ↪ Fin (T+1) where
+  toFun := Fin.cases 0 (fun j => (returnedMergeBank saved fan apart j).succ)
+  inj' := by
+    intro i j
+    induction i using Fin.cases <;> induction j using Fin.cases <;>
+      simp [Fin.succ_inj,(returnedMergeBank saved fan apart).injective.eq_iff] <;>
+      intro h <;> exact False.elim (Fin.succ_ne_zero _ h.symm)
+
+theorem ownerSplitBank_fan {c T : ℕ} (saved : Fin 3 ↪ Fin T) (fan : Fin (c+2) ↪ Fin T)
+    (apart : ∀ i j, saved i ≠ fan j) :
+    (withHelperPort (intervalOwners c)).trans (ownerSplitBank saved fan apart) = withHelperPort fan := by
+  have rows (i) := DFunLike.congr_fun (returnedMergeBank_owners saved fan apart) i
+  apply Function.Embedding.ext
+  intro i
+  induction i using Fin.addCases with
+  | left j =>
+    induction j using Fin.lastCases with
+    | last => simp [withHelperPort,ownerSplitBank]
+    | cast j => simp only [Function.Embedding.trans_apply,withHelperPort,Function.Embedding.coeFn_mk,Fin.addCases_left,Fin.lastCases_castSucc]; exact congrArg Fin.succ (rows (j.castAdd 2))
+  | right j => simp only [Function.Embedding.trans_apply,withHelperPort,Function.Embedding.coeFn_mk,Fin.addCases_right]; exact congrArg Fin.succ (rows (j.natAdd c))
+
+theorem ownerSplitBank_source {c T : ℕ} (saved : Fin 3 ↪ Fin T) (fan : Fin (c+2) ↪ Fin T)
+    (apart : ∀ i j, saved i ≠ fan j) :
+    ownerSplitBank saved fan apart (Fin.succ 0) = (saved 0).succ := by
+  exact congrArg Fin.succ (returnedMergeBank_target saved fan apart)
+
+/-- Split the source directly on the caller's chosen owner tapes. The child
+starts with all rows, its zero helper, and its two volume controls. Tapes
+outside the placement, including a parked parent archive, are preserved. -/
+theorem placedChildInput_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U)
+    (bank : Fin (intervalSplitTapes+1) ↪ Fin T)
+    (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q) :
+    ∃ program : Pr P T Q prime U, ∀ (m : ℕ), 0 < m → ∀ (x : Fin (m*142080) → ZMod 2)
+      (u : HS T Q prime U) (S : Stacks T prime),
+      S.R (bank (Fin.succ 0)) = List.ofFn (fun i => SparseRoleCircuit.encode (x i)) →
+      (∀ j, S.L (bank j) = []) → (∀ j, j ≠ Fin.succ 0 → S.R (bank j) = []) →
+      ∃ z F t, Exec body program (mk u S) t (mk z F) ∧ z.user = u.user ∧
+        t ≤ (149*(intervalSplitTapes+5)+5)*(m*142080)+24 ∧
+        HelperFan ((withHelperPort (intervalOwners 142080)).trans bank)
+          (Fin.lastCases (fun _ => 0) (fun row i => x (finProdFinEquiv (i,row)))) F ∧
+        ∀ j, (∀ k, bank k ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  let r := intervalCounterPorts.trans (Fin.succEmb _)
+  let init : Pr Empty _ Q prime U := (intervalHeaders r).seq (moveR (r 1) 0 (fun _ => bitSymbol false))
+  let prepare := init.seq (embProg Fin.succ (Empty.elim : Empty → Empty) intervalMarkers)
+  let split : Pr Empty _ Q prime U := embProg Fin.succ (Empty.elim : Empty → Empty)
+    (foreign (liftQ (CyclicRowNormalized.splitProgram 142080 prime) capacity))
+  refine ⟨embProg bank Empty.elim (prepare.seq split),?_⟩
+  intro m positive x u S source left empty
+  obtain ⟨z,F,t,user,paid,run,_,rows⟩ := intervalPackedInput_exec (P := Empty) Empty.elim capacity
+    positive x (embDn bank u) (embStk bank S) source left empty
+  obtain ⟨v,D,placed,_,same,view,frame⟩ := exec_emb (body' := body) (ι := Empty.elim)
+    bank.injective (fun f => nomatch f) run u rfl S rfl
+  rw [← view] at rows
+  exact ⟨v,D,t,placed,same.trans user,paid,rows,frame⟩
+
+/-- Execute the split on the parked row bank and hand the represented child
+directly to that same fan, preserving every off-bank stack. -/
+theorem parkedChildInput_exec {P U : Type} {T Q : ℕ} (body : P → Pr P (T+1) Q prime U)
+    (saved : Fin 3 ↪ Fin T) (fan : Fin (142080+2) ↪ Fin T) (apart : ∀ i j, saved i ≠ fan j)
+    (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q) :
+    let bank := ownerSplitBank saved fan apart
+    ∃ program : Pr P (T+1) Q prime U, ∀ (m : ℕ), 0 < m → ∀ (x : Fin (m*142080) → ZMod 2)
+      (u : HS (T+1) Q prime U) (S : Stacks (T+1) prime),
+      S.R (saved 0).succ = List.ofFn (fun i => SparseRoleCircuit.encode (x i)) →
+      (∀ j, S.L (bank j) = []) → (∀ j, j ≠ Fin.succ 0 → S.R (bank j) = []) →
+      ∃ z F t, Exec body program (mk u S) t (mk z F) ∧ z.user = u.user ∧
+        t ≤ (149*(intervalSplitTapes+5)+5)*(m*142080)+24 ∧
+        HelperFan (withHelperPort fan) (Fin.lastCases (fun _ => 0)
+          (fun row i => x (finProdFinEquiv (i,row)))) F ∧
+        ∀ j, (∀ k, bank k ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  simpa only [ownerSplitBank_source,ownerSplitBank_fan] using
+    placedChildInput_exec body (ownerSplitBank saved fan apart) capacity
+
 end IntegerMultBounds.MathlibTM2.M6.BitNode

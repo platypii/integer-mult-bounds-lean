@@ -2,7 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Fast.SynBase
 public import IntegerMultBounds.MathlibTM2.Host.StackFrame
-public import IntegerMultBounds.MathlibTM2.M6.BitPackedPhysicalStage
+public import IntegerMultBounds.MathlibTM2.M6.BitPackedStageHandoff
 
 /-! Park aligned PR589 owner words on one reusable archive tape. -/
 @[expose] public section
@@ -104,27 +104,36 @@ theorem ParentStageWords.park_exec {T Q V : ℕ} {P U : Type} (body : P → Pr P
     (owners : List (Fin 142081)) (distinct : owners.Nodup)
     (data : Fin 142081 → Fin V → ZMod 2) (S : Stacks T prime)
     (words : ParentStageWords (fun i => fan (i.castAdd 2)) fan V data S)
-    (F : Fin T → List (Fin (prime+4))) (price : ℕ) (u : HS T Q prime U)
+    (price : ℕ) (u : HS T Q prime U)
     (result : Stacks T prime → Prop) :
     let port := (Fin.castAddEmb 2 (n := 142081)).trans fan
     let xs := owners.map port
     let park := fun R => Function.update (synClr R xs) archive (synStk S.R separator xs ++ separator :: S.R archive)
-    archive ∉ xs → (∀ i ∈ owners, F (port i) = S.R (port i)) → F archive = S.R archive →
-    (∀ v : HS T Q prime U, v.user = u.user → ∃ z G n,
+    archive ∉ xs →
+    (∀ v : HS T Q prime U, v.user = u.user → (∀ j ∈ xs, S.L j = [] ∧ park S.R j = []) → ∃ z G n,
       Exec body call (Host.mk v {S with R := park S.R}) n (Host.mk z G) ∧
-      n+(xs.map fun j => 4*(G.L j).length+2*(G.R j).length+4).sum ≤ price ∧ z.user = v.user ∧
-      (∀ j, j ∉ xs → G.R j = park F j) ∧ result {G with L := synClr G.L xs, R := F}) →
-    ∃ z G n, Exec body ((synStash archive separator xs).seq (call.seq ((Cover.Fallback.clearWorkTapes xs).seq (synUnstash archive separator xs))))
-      (Host.mk u S) n (Host.mk z G) ∧ n ≤ price+2*(owners.length*(2*V+3)+2)+1 ∧ z.user = u.user ∧ result G := by
-  intro port xs park off restored tail child
+      n+tapeCharge cleanupWeight xs G ≤ tapeCharge cleanupWeight xs {S with R := park S.R}+price ∧ z.user = v.user ∧
+      G.R archive = park S.R archive ∧ result G) →
+    ∃ z G n, ∃ childOut : Stacks T prime, Exec body ((synStash archive separator xs).seq (call.seq ((Cover.Fallback.clearWorkTapes xs).seq (synUnstash archive separator xs))))
+      (Host.mk u S) n (Host.mk z G) ∧ n ≤ price+4*owners.length+2*(owners.length*(2*V+3)+2)+1 ∧ z.user = u.user ∧ result childOut ∧
+      (∀ j, j ∉ xs → j ≠ archive → G.L j = childOut.L j ∧ G.R j = childOut.R j) ∧
+      (∀ j ∈ xs, G.L j = [] ∧ G.R j = S.R j) ∧ G.R archive = S.R archive := by
+  intro port xs park off child
   have nd := distinct.map port.injective
   have encoded (i : Fin 142081) : S.R (port i) = List.ofFn (fun j => SparseRoleCircuit.encode (data i j)) := words.right i
-  have keep (j) (hj : j ∈ xs) : F j = S.R j := by
-    obtain ⟨i,mem,rfl⟩ := List.mem_map.mp hj
-    exact restored i mem
   have width (j) (hj : j ∈ xs) : (S.R j).length = V := by
     obtain ⟨i,_,rfl⟩ := List.mem_map.mp hj
     rw [encoded i,List.length_ofFn]
+  obtain ⟨saveRight,returnRight⟩ := stashUsesRight (P := P) (U := U) (Q := Q) archive (separator (a := prime)) xs
+  obtain ⟨v,k,user,saveCost,save⟩ := runRight (lr_synStash body separator xs nd off) saveRight u S rfl
+  have empty (j) (hj : j ∈ xs) : S.L j = [] ∧ park S.R j = [] := by
+    have ne : j ≠ archive := fun eq => off (eq ▸ hj)
+    obtain ⟨i,_,rfl⟩ := List.mem_map.mp hj
+    exact ⟨words.left i,by simp [park,synClr,ne,hj]⟩
+  obtain ⟨z,G,n,run,paid,same,regs,out⟩ := child v user empty
+  let F := fun j => if j = archive ∨ j ∈ xs then S.R j else G.R j
+  have keep (j) (hj : j ∈ xs) : F j = S.R j := ite_eq_left (Or.inr hj)
+  have tail : F archive = S.R archive := ite_eq_left (Or.inl rfl)
   have safe (j) (hj : j ∈ xs) : separator ∉ F j := by
     rw [keep j hj]
     obtain ⟨i,_,rfl⟩ := List.mem_map.mp hj
@@ -132,24 +141,35 @@ theorem ParentStageWords.park_exec {T Q V : ℕ} {P U : Type} (body : P → Pr P
     rintro ⟨k,h⟩
     unfold SparseRoleCircuit.encode at h
     cases eq : decide (data i k = 1) <;> simp [eq,bitSymbol,separator,Fin.ext_iff] at h
-  obtain ⟨saveRight,returnRight⟩ := stashUsesRight (P := P) (U := U) (Q := Q) archive (separator (a := prime)) xs
-  obtain ⟨v,k,user,saveCost,save⟩ := runRight (lr_synStash body separator xs nd off) saveRight u S rfl
-  obtain ⟨z,G,n,run,paid,same,regs,out⟩ := child v user
+  have entry : tapeCharge cleanupWeight xs {S with R := park S.R} = 4*owners.length := by
+    unfold tapeCharge
+    rw [List.map_congr_left (g := fun _ => 4) (fun j hj => by
+      simp [cleanupWeight,(empty j hj).1,(empty j hj).2])]
+    simp [xs,Function.comp_def,List.map_const',Nat.mul_comm]
+  rw [entry] at paid
+  unfold tapeCharge cleanupWeight at paid
   obtain ⟨q,qu,clear⟩ := Cover.Fallback.clearWorkTapes_exec body xs nd z G
   have cleared : synClr G.R xs = park F := by
     funext j
     by_cases hj : j ∈ xs
     · have ne : j ≠ archive := fun eq => off (eq ▸ hj)
       simp [synClr,park,hj,ne]
-    · simpa [synClr,hj] using regs j hj
+    · by_cases h : j = archive
+      · subst j
+        simpa [synClr,hj,park] using regs
+      · simp [synClr,park,F,hj,h]
   have back := lr_synUnstash body (R := F) separator xs (S.R archive) nd off safe
   rw [synStk_congr separator xs keep,← tail,Function.update_eq_self] at back
   obtain ⟨v',l,user',returnCost,reload⟩ := runRight back returnRight q {G with L := synClr G.L xs, R := synClr G.R xs} (by simpa only [tail] using cleared)
-  refine ⟨v',_,_,save.seq (run.seq (clear.seq reload)),?_,user'.trans (qu.trans (same.trans user)),out⟩
-  rw [ownerStashCost S.R xs V width] at saveCost
-  rw [ownerStashCost F xs V (fun j hj => keep j hj ▸ width j hj)] at returnCost
-  have len : xs.length = owners.length := List.length_map _
-  rw [len] at saveCost returnCost
-  omega
+  refine ⟨v',_,_,G,save.seq (run.seq (clear.seq reload)),?_,user'.trans (qu.trans (same.trans user)),out,?_,?_,tail⟩
+  · rw [ownerStashCost S.R xs V width] at saveCost
+    rw [ownerStashCost F xs V (fun j hj => keep j hj ▸ width j hj)] at returnCost
+    have len : xs.length = owners.length := List.length_map _
+    rw [len] at saveCost returnCost
+    omega
+  · intro j hj ne
+    simp [synClr,F,hj,ne]
+  · intro j hj
+    exact ⟨ite_eq_left hj,keep j hj⟩
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
