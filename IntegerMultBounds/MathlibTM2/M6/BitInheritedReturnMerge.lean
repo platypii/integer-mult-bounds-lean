@@ -534,4 +534,136 @@ theorem packedIntervalFromWord_exec {P U : Type} {M N Q price w : ℕ} (lane : D
       (h.2.trans (Function.update_of_ne (away 0).symm ..))⟩
 
 
+private theorem prependedWordCharge {M : ℕ} (S : Stacks M prime) (dst : Fin M)
+    (word : List (Fin (prime+4))) (js : List (Fin M)) (distinct : js.Nodup) :
+    let D := {S with R := Function.update S.R dst (word ++ S.R dst)}
+    tapeCharge cleanupWeight js D ≤ tapeCharge cleanupWeight js S+2*word.length := by
+  intro D
+  have away (ks : List (Fin M)) (miss : dst ∉ ks) :
+      tapeCharge cleanupWeight ks D = tapeCharge cleanupWeight ks S := by
+    unfold tapeCharge
+    congr 1
+    apply List.map_congr_left
+    intro j hj
+    have ne : j ≠ dst := fun eq => miss (eq ▸ hj)
+    simp [D,Function.update_of_ne ne]
+  induction js with
+  | nil => simp [tapeCharge]
+  | cons j js ih =>
+    simp only [tapeCharge,List.map_cons,List.sum_cons] at ⊢
+    by_cases hit : j = dst
+    · subst j
+      have h := away js distinct.notMem
+      simp only [tapeCharge] at h
+      rw [h]
+      simp [D,cleanupWeight,List.length_append]
+      omega
+    · have h := ih distinct.tail
+      simp only [tapeCharge] at h
+      simp only [D,Function.update_of_ne hit] at *
+      omega
+
+/-- The packed descriptor transpose pays once for the recursive child and bounds
+cleanup across the complete load, split, child and merge execution. -/
+theorem packedIntervalFromWordWithCharge {P U : Type} {M N Q price w : ℕ} (lane : Descriptor)
+    (width : lane.width = 64*w) (positive : 0 < volume prime lane)
+    (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q)
+    {body : P → Pr P N Q prime U} {code} {src dst : Fin (142081+2) ↪ Fin N} {seed : Stacks N prime}
+    (child : ∀ x u S, ParentStageWords (fun i => src (i.castAdd 2)) src (volume prime lane) x S →
+      (∀ j, (∀ i, src i ≠ j) → S.L j = seed.L j ∧ S.R j = seed.R j) →
+      ∃ z F n y, Exec body code (mk u S) n (mk z F) ∧
+        (∀ js : List (Fin N), js.Nodup → n+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+price) ∧
+        z.user = u.user ∧ ParentStageWords (fun i => dst (i.castAdd 2)) dst (volume prime lane) y F ∧
+        packedChildOutput w (volume prime lane) x y) :
+    let T := intervalSplitTapes
+    let H := 142082+T+N
+    let split : Pr Empty T Q prime U := intervalPrepare.seq (foreign (liftQ (CyclicRowNormalized.splitProgram 142080 prime) capacity))
+    ∀ (place : Fin H ↪ Fin M),
+    let caller := ((Fin.natAddEmb 142082 (m := T)).trans (Fin.castAddEmb N)).trans place
+    let V := volume prime lane
+    ∀ (payload tmp : Fin M), [payload,tmp,caller 0].Nodup →
+    ∃ (host : Empty ⊕ P → Pr (Empty ⊕ P) M Q prime U) (program : Pr (Empty ⊕ P) M Q prime U)
+      (bank : Fin T ↪ Fin M), bank 0 = caller 0 ∧
+    let wide := {lane with afterD := lane.afterD*142080}
+    let size : V*142080 = volume prime wide := by simp [V,wide,volume,Nat.mul_assoc]
+    let logical := (packedChildPosition wide size.symm).symm
+    ∀ (word : Fin (volume prime wide) → ZMod 2) (u : HS M Q prime U) (S : Stacks M prime),
+      WordAtZero (word ∘ logical) (S.L payload) (S.R payload) → S.L tmp = [] → S.R tmp = [] →
+      (∀ i, S.L (caller i) = [] ∧ S.R (caller i) = []) →
+      (∀ i : Fin 142082, let j := place ((i.castAdd T).castAdd N)
+        S.L j = [] ∧ S.R j = []) →
+      (∀ i : Fin N, let j := place (i.natAdd (142082+T))
+        S.L j = seed.L i ∧ S.R j = seed.R i) →
+      let changed := Shared50RecursiveNodeRows.transpose (one_dvd wide.rows) word
+      let rows := fun (r : Fin 142080) (i : Fin V) => changed (logical (finProdFinEquiv (i,r)))
+      let output := fun k : Fin (V*142080) => let p := finProdFinEquiv.symm k
+                                              SparseRoleCircuit.encode (a := prime) (rows p.2 p.1)
+      ∃ z F n, Exec host program (mk u S) n (mk z F) ∧ z.user = u.user ∧
+        RepT (intervalOwnerBank (putWord (fun _ => blank) 0 (List.ofFn output)) rows)
+          (embStk bank F).L (embStk bank F).R ∧
+        (∀ js : List (Fin M), js.Nodup →
+          n+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+
+            (10*(V*142080)+10)+(1+6*Fast.Main.mnProgPush split)*((149*(T+5)+5)*(V*142080)+24)+
+            (142081*(8*V+10+2*V)+1+price)+13*(149*(V*142080)*(T+5)+6)) ∧
+        ∀ j, (∀ i, place i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  intro T H split place caller V payload tmp apart
+  obtain ⟨inner,worker,bank,target,run⟩ := packedReturnMergeWithCharge lane width positive capacity child
+  let host := fun f => embProg place id (inner f)
+  refine ⟨host,(loadCompactWord payload tmp (caller 0)).seq ((embProg caller Empty.elim split).seq (embProg place id worker)),bank.trans place,congrArg place target,?_⟩
+  intro wide size logical source u S read tl tr clear fresh prepared changed rows output
+  let input := source ∘ logical
+  obtain ⟨v,user,load⟩ := loadCompactWord_exec host payload tmp (caller 0) apart input u S read tl tr
+  let word := List.ofFn fun i => SparseRoleCircuit.encode (a := prime) (input i)
+  let D := {S with R := Function.update S.R (caller 0) (word ++ S.R (caller 0))}
+  obtain ⟨a,E,k,placed,same,paid,start,off,splitCharge⟩ := splitEncodedWithCharge host caller capacity positive input v D
+    (by simp only [D,Function.update_self,(clear 0).2,List.append_nil]; rfl)
+    (fun i => (clear i).1) (fun i ne => by simpa [D,Function.update_of_ne (caller.injective.ne ne)] using (clear i).2)
+  let original := putWord (fun _ => blank) 0 (List.ofFn fun k => SparseRoleCircuit.encode (a := prime) (input k))
+  obtain ⟨z,F,n,ran,zu,result,ownerBill⟩ := run original (fun r i => input (finProdFinEquiv (i,r))) (embDn place a) (embStk place E) start (fun i => by
+    have h := off _ (fun j => place.injective.ne (caller_ne_front j i))
+    exact ⟨h.1.trans (fresh i).1,h.2.trans ((Function.update_of_ne (place.injective.ne (caller_ne_front 0 i)).symm ..).trans (fresh i).2)⟩)
+    (fun i => by
+      have h := off _ (fun j => place.injective.ne (caller_ne_private j i))
+      exact ⟨h.1.trans (prepared i).1,h.2.trans ((Function.update_of_ne (place.injective.ne (caller_ne_private 0 i)).symm ..).trans (prepared i).2)⟩)
+  let position := packedChildPosition lane rfl
+  have address (i : Fin V) (r : Fin 142080) : logical (finProdFinEquiv (i,r)) =
+      (finProdFinEquiv (position.symm i,r)).cast size := by
+    apply (packedChildPosition wide size.symm).injective
+    exact ((packedChildPosition wide size.symm).apply_symm_apply _).trans
+      (by simpa only [position,Equiv.apply_symm_apply] using
+            (packedPosition_trailingRows lane 142080 (position.symm i) r).symm)
+  have rowEq : (fun (r : Fin 142080) => Shared50RecursiveNodeRows.transpose (one_dvd lane.rows)
+      ((fun i => input (finProdFinEquiv (i,r))) ∘ position) ∘ position.symm) = rows := by
+    funext r i
+    simpa only [rows,changed,input,Function.comp_def,address,Equiv.symm_apply_apply]
+      using (transpose_trailingRows lane 142080 source (position.symm i) r).symm
+  rw [rowEq] at result
+  change RepT (intervalOwnerBank (putWord original 0 (List.ofFn output)) rows) _ _ at result
+  have overwrite : putWord original 0 (List.ofFn output) = putWord (fun _ => blank) 0 (List.ofFn output) :=
+    FlatControlledShiftArray.overwrite _ _ _ _ (by simp)
+  rw [overwrite] at result
+  obtain ⟨z',F',lifted,_,sameUser,view,frame⟩ := exec_emb (body' := host) (ι := id)
+    place.injective (fun _ => rfl) ran a rfl E rfl
+  refine ⟨z',F',_,load.seq (placed.seq lifted),sameUser.trans (zu.trans (same.trans user)),?_,?_,?_⟩
+  · rw [← view] at result
+    exact result
+  · intro js distinct
+    rw [← view] at ownerBill
+    simp only [Nat.add_assoc] at ownerBill
+    have childBill := placedCleanup_cost_le place E F' cleanupWeight n _ frame ownerBill js distinct
+    have growth := splitCharge js distinct
+    have copy := prependedWordCharge S (caller 0) word js distinct
+    change tapeCharge cleanupWeight js D ≤ tapeCharge cleanupWeight js S+2*word.length at copy
+    simp only [word,List.length_ofFn] at copy
+    change tapeCharge cleanupWeight js E ≤ tapeCharge cleanupWeight js D+6*(Fast.Main.mnProgPush split*k) at growth
+    have splitBill := Nat.mul_le_mul_left (1+6*Fast.Main.mnProgPush split) paid
+    dsimp only [V,T] at *
+    linarith only [childBill,growth,copy,splitBill]
+  · intro j outside
+    have away : ∀ i, caller i ≠ j := fun i => outside _
+    have h := off j away
+    exact ⟨(frame j outside).1.trans h.1,(frame j outside).2.trans
+      (h.2.trans (Function.update_of_ne (away 0).symm ..))⟩
+
+
 end IntegerMultBounds.MathlibTM2.M6.BitNode
