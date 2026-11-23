@@ -78,4 +78,139 @@ theorem packedRowEntry {T N Q : ℕ} {P A U : Type} (body : P → Pr P N Q prime
     simpa only [ite_eq_right away] using
       And.intro (frame j off).1 ((frame j off).2.trans (keep j (fun i => off (src (i.castAdd 2)))))
 
+/-- Reload private right-stack words from persistent caller tapes. A source
+may supply several seed ports, and both copy temporaries are reusable. -/
+theorem reloadChildSeed {k T Q : ℕ} {A U : Type} (host : A → Pr A T Q prime U)
+    (target : Fin k ↪ Fin T) (source : Fin k → Fin T) (tmp saved : Fin T)
+    (apart : ∀ i j, target i ≠ source j)
+    (regs : ∀ i, [source i,target i,tmp,saved].Nodup) :
+    ∃ code : Pr A T Q prime U, ∀ (seed : Fin k → List (Fin (prime+4))) u S,
+      (∀ i, S.R (source i) = seed i) → (∀ i, S.R (target i) = []) →
+      S.R tmp = [] → S.R saved = [] →
+      ∃ z R t, Exec host code (mk u S) t (mk z {S with R := R}) ∧
+        t ≤ ((List.finRange k).map fun i => 6*(seed i).length+6).sum+1 ∧
+        z.user = u.user ∧ (∀ i, R (target i) = seed i) ∧
+        ∀ j, (∀ i, target i ≠ j) → R j = S.R j := by
+  let copy : Fin k → Pr A T Q prime U := fun i => bcopy (source i) (target i) tmp saved
+  refine ⟨Cover.LabelTraversal.sequence copy (List.finRange k),?_⟩
+  intro seed u S words empty tl tr
+  obtain ⟨z,R,t,user,paid,exec,loaded,keep⟩ := distinctTapeSequence host target copy
+    (List.finRange k) (List.nodup_finRange k) (fun _ => []) seed (fun i => 6*(seed i).length+6)
+    u S empty (by
+      intro i v D _ vacant off
+      have tmpOff (j) : target j ≠ tmp := by
+        have h := regs j
+        simp only [List.nodup_cons,List.mem_cons,List.not_mem_nil,or_false,not_or] at h
+        tauto
+      have savedOff (j) : target j ≠ saved := by
+        have h := regs j
+        simp only [List.nodup_cons,List.mem_cons,List.not_mem_nil,or_false,not_or] at h
+        tauto
+      obtain ⟨q,same,run⟩ := bcopy_exec host (regs i) v D ((off _ tmpOff).trans tl) ((off _ savedOff).trans tr)
+      have word := (off _ (fun j => apart j i)).trans (words i)
+      rw [word,vacant,List.append_nil] at run
+      exact ⟨q,_,same,le_rfl,run⟩)
+  exact ⟨z,R,t,exec,paid,user,fun i => loaded i (List.mem_finRange i),fun j h => keep j (fun i _ => h i)⟩
+
+private theorem loadedSeedCharge {k T : ℕ} (target : Fin k ↪ Fin T)
+    (S : Stacks T prime) (R : Fin T → List (Fin (prime+4)))
+    (words : Fin k → List (Fin (prime+4))) (loaded : ∀ i, R (target i) = words i)
+    (off : ∀ j, (∀ i, target i ≠ j) → R j = S.R j)
+    (js : List (Fin T)) (distinct : js.Nodup) :
+    tapeCharge cleanupWeight js {S with R := R} ≤ tapeCharge cleanupWeight js S +
+      ∑ i, 2*(words i).length := by
+  rw [← Nat.zero_add (tapeCharge cleanupWeight js {S with R := R})]
+  apply placedCleanup_cost_le target S {S with R := R} cleanupWeight 0 _ (fun j h => ⟨rfl,off j h⟩) _ js distinct
+  intro is unique
+  simp only [Nat.zero_add,tapeCharge,embStk,Function.comp_apply,loaded]
+  rw [← List.sum_toFinset _ unique,← List.sum_toFinset _ unique]
+  calc
+    _ ≤ ∑ i ∈ is.toFinset, (cleanupWeight (S.L (target i)) (S.R (target i)) + 2*(words i).length) := by
+      apply Finset.sum_le_sum
+      intro i _
+      unfold cleanupWeight
+      omega
+    _ ≤ _ := by
+      rw [Finset.sum_add_distrib]
+      exact Nat.add_le_add_left (Finset.sum_le_sum_of_subset (Finset.subset_univ _)) _
+
+open scoped Classical in
+theorem seededPackedRowEntry {k T N Q : ℕ} {P A U : Type} (body : P → Pr P N Q prime U)
+    (host : A → Pr A T Q prime U) (place : Fin N ↪ Fin T) (label : P → A)
+    (installed : ∀ p, host (label p) = embProg place label (body p))
+    (live : Fin (142080+2) ↪ Fin T) (src dst : Fin (142081+2) ↪ Fin N) (tmp : Fin T)
+    (apart : ∀ (r : Fin 142080) (i : Fin 142081), live (r.castAdd 2) ≠ place (src (i.castAdd 2)))
+    (srcTmp : ∀ r : Fin 142080, live (r.castAdd 2) ≠ tmp)
+    (dstTmp : ∀ i : Fin 142081, place (src (i.castAdd 2)) ≠ tmp)
+    (controls : ∀ j : Fin 2, place (src (j.natAdd 142081)) = live (j.natAdd 142080))
+    (slots : Fin k ↪ Fin N) (master : Fin k → Fin T) (aux : Fin T)
+    (privateSlots : ∀ i j, slots i ≠ src j)
+    (ownerOff : ∀ i j, place (slots i) ≠ live j)
+    (masterOff : ∀ i j, place (slots i) ≠ master j)
+    (regs : ∀ i, [master i,place (slots i),tmp,aux].Nodup) (entry : P) :
+    let privatePorts := (List.finRange N).filter (fun j => ∀ i, childReturnFan dst i ≠ j)
+    let scratch := privatePorts.map place
+    ∃ code : Pr A T Q prime U, ∀ (lane : Descriptor) (seed : Stacks N prime) price,
+      let V := volume prime lane
+      PackedPieceHandoffWithCharge cleanupWeight V (fun x y => ∀ r : Fin 142080,
+        y r.castSucc = Shared50RecursiveNodeRows.transpose (one_dvd lane.rows) (x r.castSucc))
+        body (body entry) src dst seed price →
+      ∀ (data : Fin 142080 → Fin V → ZMod 2) u S, HelperFan live data S →
+      S.L tmp = [] → S.R tmp = [] →
+      (∀ i : Fin 142081, S.L (place (src (i.castAdd 2))) = [] ∧ S.R (place (src (i.castAdd 2))) = []) →
+      S.R aux = [] → (∀ i, S.R (master i) = seed.R (slots i)) →
+      (∀ i, S.R (place (slots i)) = []) →
+      (∀ j, (∀ i, src i ≠ j) → S.L (place j) = seed.L j ∧
+        ((∀ i, slots i ≠ j) → S.R (place j) = seed.R j)) →
+      ∃ z F t, Exec host code (mk u S) t (mk z F) ∧ t ≤ tapeCharge cleanupWeight scratch S +
+          (∑ i, (8*(seed.R (slots i)).length+6)) + 1 + 142081*(8*V+10+2*V)+1+price+3 ∧
+        z.user = u.user ∧ HelperFan ((childReturnFan dst).trans place) (fun r =>
+          Shared50RecursiveNodeRows.transpose (one_dvd lane.rows) (data r)) F ∧
+        (∀ j, (∀ i, childReturnFan dst i ≠ j) → F.L (place j) = [] ∧ F.R (place j) = []) ∧
+        ∀ j, (∀ i, place i ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  classical
+  intro privatePorts scratch
+  obtain ⟨load,loadRun⟩ := reloadChildSeed host (slots.trans place) master tmp aux masterOff regs
+  obtain ⟨call,callRun⟩ := packedRowEntry body host place label installed live src dst tmp apart srcTmp dstTmp controls entry
+  refine ⟨load.seq call,?_⟩
+  intro lane seed price V child data u S liveRows tl tr empty auxFree masters vacant prepared
+  obtain ⟨v,R,a,setup,paid,user,loaded,off⟩ := loadRun (fun i => seed.R (slots i)) u S masters vacant tr auxFree
+  let D := {S with R := R}
+  have rows : HelperFan live data D := by
+    intro i z
+    simpa only [D,embStk,Function.comp_apply,off _ (fun j => ownerOff j i)] using liveRows i z
+  have temp (i) : place (slots i) ≠ tmp := by
+    have h := regs i
+    simp only [List.nodup_cons,List.mem_cons,List.not_mem_nil,or_false,not_or] at h
+    tauto
+  obtain ⟨z,F,b,run,cost,final,result,clean,frame⟩ := callRun lane seed price child data v D rows tl
+    ((off _ temp).trans tr)
+    (fun i => ⟨(empty i).1,(off _ (fun j => place.injective.ne (privateSlots j _))).trans (empty i).2⟩)
+    (by
+      intro j outside
+      refine ⟨(prepared j outside).1,?_⟩
+      by_cases h : ∃ i, slots i = j
+      · obtain ⟨i,rfl⟩ := h
+        exact loaded i
+      · have away := fun i eq => h ⟨i,eq⟩
+        exact (off _ (fun i => place.injective.ne (away i))).trans ((prepared j outside).2 away))
+  refine ⟨z,F,_,setup.seq run,?_,final.trans user,result,clean,?_⟩
+  · have distinct : scratch.Nodup := ((List.nodup_finRange N).filter _).map place.injective
+    have growth := loadedSeedCharge (slots.trans place) S R _ loaded off scratch distinct
+    change tapeCharge cleanupWeight scratch D ≤ tapeCharge cleanupWeight scratch S +
+      ∑ i, 2*(seed.R (slots i)).length at growth
+    change b ≤ tapeCharge cleanupWeight scratch D + 142081*(8*V+10+2*V)+1+price+3 at cost
+    rw [← List.sum_toFinset _ (List.nodup_finRange k)] at paid
+    have allSlots : (List.finRange k).toFinset = Finset.univ := by ext; simp
+    rw [allSlots] at paid
+    have combined : (∑ i, (6*(seed.R (slots i)).length+6)) + (∑ i, 2*(seed.R (slots i)).length) =
+        ∑ i, (8*(seed.R (slots i)).length+6) := by
+      rw [← Finset.sum_add_distrib]
+      apply Finset.sum_congr rfl
+      intro i _
+      omega
+    omega
+  · intro j outside
+    exact ⟨(frame j outside).1,(frame j outside).2.trans (off j (fun i => outside (slots i)))⟩
+
 end IntegerMultBounds.MathlibTM2.M6.BitNode
