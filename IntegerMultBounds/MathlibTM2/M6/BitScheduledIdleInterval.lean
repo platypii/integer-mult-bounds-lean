@@ -74,9 +74,11 @@ theorem scheduledIdleInterval [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity : 
 /-- Compare the scheduled rank width at runtime and charge only the selected child. -/
 theorem scheduledIdleDispatch [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity : columnCapacity ≤ Q)
     (mergeCap : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q) :
-    ∃ (C : ℝ) (N : ℕ) (body : Unit → Pr Unit (72+N) Q prime U), 0 ≤ C ∧
+    ∃ (C : ℝ) (N : ℕ) (table : Unit → Pr Unit (72+N) Q prime U), 0 ≤ C ∧
     let bank := Fin.castAddEmb N (n := 72)
-    ∀ (i : Fin 9) (j : Fin idleCopies.length) (cmp : Fin 10 ↪ Fin (72+N)) (large : Pr Unit (72+N) Q prime U), ∃ code : Pr Unit (72+N) Q prime U,
+    ∀ {P : Type} (body : P → Pr P (72+N) Q prime U) (leafLabel : Unit → P),
+    (∀ f, body (leafLabel f) = embProg (Function.Embedding.refl _) leafLabel (table f)) →
+    ∀ (i : Fin 9) (j : Fin idleCopies.length) (cmp : Fin 10 ↪ Fin (72+N)) (recursiveLabel : P), ∃ code : Pr P (72+N) Q prime U,
     ∀ (node : Descriptor) (w groups : ℕ), let a := w+1
       node.width = 64*a →
       node.rows = 142080*(142080*groups) →
@@ -98,21 +100,31 @@ theorem scheduledIdleDispatch [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity : 
       ∀ L cutoff recursiveBudget : ℕ, cutoff < 2^L → child.width.size ≤ L →
       (S.R (cmp 0)).length = w → S.R (cmp 1) = binSyms L cutoff →
       (∀ k : Fin 10, 2 ≤ k.val → S.R (cmp k) = []) →
-      let result := fun F => ∃ changed, RecordPayload (bank 24) (fun _ => blank) 0 changed F ∧
+      let result := fun (start F : Stacks (72+N) prime) => ∃ changed, RecordPayload (bank 24) (fun _ => blank) 0 changed F ∧
         (∀ k, changed (position k) = Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (word ∘ position) k) ∧
-        ∀ k, k ≠ bank 24 → F.L k = S.L k ∧ F.R k = S.R k
-      (cutoff < child.width → ∀ v, ∃ z F t, Exec body large (mk v S) t (mk z F) ∧
-        t ≤ recursiveBudget ∧ z.user = v.user ∧ result F) →
-      ∃ z F t, Exec body code (mk u S) t (mk z F) ∧ z.user = u.user ∧ result F ∧
-        t ≤ (4*w+23*child.width+22*L+51) + if cutoff < child.width then recursiveBudget
+        ∀ k, k ≠ bank 24 → F.L k = start.L k ∧ F.R k = start.R k
+      (cutoff < child.width → ∀ v D, D.L = S.L →
+        (∀ h, D.R (bank (descriptorPorts h)) = (Routines.hdr lane h).map bitSymbol) →
+        (∀ k, (∀ h, k ≠ bank (descriptorPorts h)) → D.R k = S.R k) →
+        ∃ z F t, Exec body (body recursiveLabel) (mk v D) t (mk z F) ∧
+        t ≤ recursiveBudget ∧ z.user = v.user ∧ result D F) →
+      ∃ z F t, Exec body code (mk u S) t (mk z F) ∧ z.user = u.user ∧ result S F ∧
+        t ≤ (4*w+23*child.width+22*L+51) + if cutoff < child.width then recursiveBudget+volume prime child+2
           else ⌊C*(child.width : ℝ)^M8.Machine.BudgetBound.tau*volume prime child⌋₊ := by
-  obtain ⟨C,N,body,pos,build⟩ := scheduledIdleInterval (U := U) capacity mergeCap
-  refine ⟨C,N,body,pos,?_⟩
-  intro bank i j cmp large
+  obtain ⟨C,N,table,pos,build⟩ := scheduledIdleInterval (U := U) capacity mergeCap
+  refine ⟨C,N,table,pos,?_⟩
+  intro bank P body leafLabel installed i j cmp recursiveLabel
   obtain ⟨leaf,run⟩ := build i j
+  let place := Function.Embedding.refl (Fin (72+N))
+  let stopped := embProg place leafLabel leaf
   let k := idleDirectoryIndex (i,j)
   let rank := nodeChildren5.get k
-  refine ⟨(ordinaryCutoffTest cmp rank).seq (.cond (fun s => symBit (s.scan (cmp 7))) large leaf),?_⟩
+  let interval := idleInterval i idleCopies[j.val].2
+  let ports := descriptorPorts.trans bank
+  let slots := (List.finRange 6).map ports
+  let large : Pr P (72+N) Q prime U := (intervalHeadersFor bank (interval.1+1) (interval.2+1) true).seq
+    ((Prog.call recursiveLabel).seq (clearWorkTapes slots))
+  refine ⟨(ordinaryCutoffTest cmp rank).seq (.cond (fun s => symBit (s.scan (cmp 7))) large stopped),?_⟩
   intro node w groups a width split W M e lane wide child positive
   obtain ⟨position,smaller,coords,execute⟩ := run node a groups (Nat.succ_pos _) width split positive
   refine ⟨position,smaller,coords,?_⟩
@@ -120,17 +132,71 @@ theorem scheduledIdleDispatch [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity : 
   have scaled : (w+1)*rank = child.width := by
     change _ = rank*(node.width/64)
     rw [width,Nat.mul_div_cancel_left _ (by decide),Nat.mul_comm]
-  let budget := if cutoff < child.width then recursiveBudget else
+  let budget := if cutoff < child.width then recursiveBudget+volume prime child+2 else
     ⌊C*(child.width : ℝ)^M8.Machine.BudgetBound.tau*volume prime child⌋₊
-  have dispatch := chartCutoff_exec body cmp rank w L cutoff cut (scaled ▸ fits) large leaf u S clock stored free result (budget : ℝ)
+  have dispatch := chartCutoff_exec body cmp rank w L cutoff cut (scaled ▸ fits) large stopped u S clock stored free (result S) (budget : ℝ)
   rw [scaled] at dispatch
   obtain ⟨z,F,t,same,paid,exec,out⟩ := dispatch (by
     intro v
     by_cases active : cutoff < child.width
-    · obtain ⟨z,F,t,ran,time,user,out⟩ := recurse active v
-      exact ⟨z,F,t,user,by simpa [budget,active] using (Nat.cast_le (α := ℝ)).mpr time,by simpa [active] using ran,out⟩
-    · obtain ⟨z,F,t,y,ran,time,user,out,act,frame⟩ := execute word v S base unit suffix atom scratch payload left headers unused
-      exact ⟨z,F,t,user,by simpa [budget,active] using (Nat.cast_le (α := ℝ)).mpr time,by simpa [active] using ran,y,out,act,frame⟩)
+    · have bounds := idleBounds i idleCopies[j.val].2
+      obtain ⟨v₁,D,k,setup,headerTime,initial,dl,fields,off⟩ := physicalIntervalHeaders_exec body bank
+        (interval.1+1) (interval.2+1) a W (Nat.succ_le_succ bounds.1) (Nat.succ_le_succ bounds.2)
+        (Nat.succ_pos _) positive v S base unit suffix atom scratch (fun i => (headers i).2)
+      obtain ⟨z,F,t,ran,time,user,y,read,act,frame⟩ := recurse active v₁ D dl fields off
+      have disjoint (h : Fin 6) : ports h ≠ bank 24 :=
+        bank.injective.ne ((by decide : ∀ h, descriptorPorts h ≠ 24) h)
+      have noPayload : bank 24 ∉ slots := fun mem => by
+        obtain ⟨h,_,eq⟩ := List.mem_map.mp mem
+        exact disjoint h eq
+      obtain ⟨last,same,clear⟩ := clearWorkTapes_exec body slots ((List.nodup_finRange _).map ports.injective) z F
+      let V := volume prime lane
+      have laneSize : V = M^128*W := intervalChild_volume (Nat.succ_le_succ bounds.1) (Nat.succ_le_succ bounds.2) a W
+      have hp := pow_pos Shared50ModularControl.prime_prime.pos a
+      have hv : 0 < V := laneSize ▸ Nat.mul_pos (pow_pos hp _) positive
+      have each (j) (mem : j ∈ slots) : 4*(F.L j).length+2*(F.R j).length+4 ≤ 8*V := by
+        obtain ⟨h,_,rfl⟩ := List.mem_map.mp mem
+        obtain ⟨left,right⟩ := frame _ (disjoint h)
+        rw [left,right]
+        change 4*(D.L (bank (descriptorPorts h))).length+2*(D.R (bank (descriptorPorts h))).length+4 ≤ _
+        rw [dl,(headers h).1,fields]
+        have len := RecursiveRowsNode.header_length lane (LeafCore.positive_of_volume hv) _ (Routines.hdr_headers lane) h
+        simp only [List.length_nil,List.length_map]
+        change 4*0+2*(Routines.hdr lane h).length+4 ≤ 8*V
+        change (Routines.hdr lane h).length ≤ 2*V at len
+        omega
+      have sum := List.sum_le_length_nsmul (slots.map fun j => 4*(F.L j).length+2*(F.R j).length+4) (8*V)
+        (fun _ h => by obtain ⟨j,hj,rfl⟩ := List.mem_map.mp h; exact each j hj)
+      simp only [List.length_map,slots,List.length_finRange,nsmul_eq_mul] at sum
+      have size := Fintype.card_congr position
+      simp only [Fintype.card_fin] at size
+      have mass : volume prime child = V*142080 := by
+        rw [size]
+        change volume prime {lane with afterD := lane.afterD*142080} = volume prime lane*142080
+        simp only [volume,Nat.mul_assoc]
+      have hk : k ≤ V := headerTime.trans (laneSize ▸ Nat.mul_le_mul_right W (Nat.pow_le_pow_right hp (by decide : 64 ≤ 128)))
+      refine ⟨last,_,_,same.trans (user.trans initial),?_,by simpa only [ite_eq_left active] using setup.seq ((Exec.call ran).seq clear),y,?_,act,?_⟩
+      · apply (Nat.cast_le (α := ℝ)).mpr
+        simp only [budget,ite_eq_left active,mass]
+        dsimp only [slots] at *
+        omega
+      · intro j
+        simpa only [ite_eq_right noPayload] using read j
+      · intro j ne
+        by_cases h : j ∈ slots
+        · obtain ⟨i,_,eq⟩ := List.mem_map.mp h
+          subst j
+          simp only [ite_eq_left h]
+          exact And.intro (headers i).1.symm (headers i).2.symm
+        · have keep := frame j ne
+          have right := off j (fun i eq => h (List.mem_map.mpr ⟨i,List.mem_finRange _,eq.symm⟩))
+          simpa only [ite_eq_right h] using And.intro (keep.1.trans (congrFun dl j)) (keep.2.trans right)
+    · obtain ⟨z,F,t,y,ran,time,user,out,act,frame⟩ := execute word (embDn place v) S base unit suffix atom scratch payload left headers unused
+      obtain ⟨b,G,embedded,_,same,view,_⟩ := exec_emb place.injective installed ran v rfl S rfl
+      change G = F at view
+      subst G
+      exact ⟨b,F,t,same.trans user,by simpa [budget,active] using (Nat.cast_le (α := ℝ)).mpr time,
+        by simpa only [ite_eq_right active] using embedded,y,out,act,frame⟩)
   exact ⟨z,F,t,exec,same,out,by exact_mod_cast paid⟩
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
