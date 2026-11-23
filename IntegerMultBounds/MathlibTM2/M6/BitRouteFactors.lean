@@ -25,11 +25,11 @@ private theorem sign_scale {q : ℚ} (h : q = 1 ∨ q = -1) : ScaleOccurs q := b
 
 /-- The same scalar certificates apply in either column order. In particular
 the two upper factors can be compiled after reversing the axis numbering. -/
-theorem stageFactor_supported (c : PortCertificate) (checked : c.Checked) (s : Fin 8)
+theorem stageFactor_supported_rows (k : ℕ) (c : PortCertificate) (checked : c.Checked) (s : Fin 8)
     (e : Fin 64 ≃ Axis) (w : ℕ) :
     let A := c.spread s
     let ok := fun E : Matrix Axis Axis ℚ => Admissible (prime^w) E ∧
-      ∀ op ∈ LabelAddress.pass (E.submatrix e e), FlatCoordinateSchedule.Supported op
+      ∀ op ∈ LabelAddress.rowPass k (E.submatrix e e), FlatCoordinateSchedule.Supported op
     ok (fromBlocks 1 (-A) 0 1) ∧ ok (fromBlocks 1 0 Aᵀ 1) ∧
       ok (fromBlocks 1 A 0 (avoid s - block s)) := by
   intro A ok
@@ -46,7 +46,7 @@ theorem stageFactor_supported (c : PortCertificate) (checked : c.Checked) (s : F
   have passes (E : Matrix Axis Axis ℚ) (diag : ∀ i, ScaleOccurs (E i i))
       (off : ∀ i j, Occurs (E i j)) : ok E :=
     ⟨fun i j => Nat.Coprime.pow_right w ((Nat.coprime_of_lt_prime (E i j).den_pos.ne'
-      (denominator_bound (off i j)) prime_prime).symm), LabelPass.supported _ (fun i => diag _) (fun i j _ => off _ _)⟩
+      (denominator_bound (off i j)) prime_prime).symm), LabelPass.supported_rows k _ (fun i => diag _) (fun i j _ => off _ _)⟩
   refine ⟨passes _ ?_ ?_,passes _ ?_ ?_,passes _ ?_ ?_⟩
   all_goals intros i; cases i
   all_goals first | (intro j; cases j) | skip
@@ -55,6 +55,14 @@ theorem stageFactor_supported (c : PortCertificate) (checked : c.Checked) (s : F
   all_goals first | exact (entry _ _).1 | exact (entry _ _).2 | exact zero |
     (split_ifs <;> first | exact one | exact zero | contradiction |
       (norm_num only [sub_self,sub_zero,zero_sub]; assumption))
+
+theorem stageFactor_supported (c : PortCertificate) (checked : c.Checked) (s : Fin 8)
+    (e : Fin 64 ≃ Axis) (w : ℕ) :
+    let A := c.spread s
+    let ok := fun E : Matrix Axis Axis ℚ => Admissible (prime^w) E ∧
+      ∀ op ∈ LabelAddress.pass (E.submatrix e e), FlatCoordinateSchedule.Supported op
+    ok (fromBlocks 1 (-A) 0 1) ∧ ok (fromBlocks 1 0 Aᵀ 1) ∧
+      ok (fromBlocks 1 A 0 (avoid s - block s)) := stageFactor_supported_rows 64 c checked s e w
 
 /-- The physical numbering places the eight local axes before the eight
 exterior blocks. -/

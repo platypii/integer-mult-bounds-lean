@@ -81,6 +81,52 @@ open IntegerMultBounds.Swap.Shear (LowerTriangular pivotMatrix)
 
 /-- Reverse the columns, execute the upper factor in descending index order,
 and return to the caller's column order using the same permutation circuit. -/
+theorem upper_rows_runs {k : ℕ} (hkpos : 0 < k) (hk : 2 ≤ m*k) (io : Fin T) (E : Matrix (Fin m) (Fin m) ℚ)
+    (upper : ∀ i j, j < i → E i j = 0)
+    (hs : ∀ op ∈ LabelAddress.rowPass k (E.submatrix Fin.rev Fin.rev), FlatCoordinateSchedule.Supported op) :
+    let A := E.submatrix Fin.rev Fin.rev
+    let ops := LabelProgram.rowPass hk A hs
+    ∃ ps : List (Pair m), ps.length ≤ m-1 ∧ ∀ (v : Descriptor) (w B : ℕ),
+      0 < w → 0 < B → v.beforeH = B*prime^(m*(w*k)) → v.Positive →
+      IsUnit (reduce (modulus w) A) →
+      ∀ (roles : Tapes T prime) (x : Fin (volume prime v) → ZMod 2),
+      roles.head io = 0 → roles.tape io = sourceWord x →
+      let d := words (base v w)
+      ∃ y : Fin (volume prime v) → ZMod 2,
+        LabelPermutation.RowTransport v B w k (fun g => g * (reduce (modulus w) E).transpose) (ext x) (ext y) ∧
+        GraphContract.Runs (Blocks.seqB (Blocks.seqB (rowPivot k io ps) (LabelProgram.program io ops)) (rowPivot k io ps))
+          (bank roles v d) (bank (setTape roles io (sourceWord y) 0) v d)
+          (rowPivotCost k v w ps + LabelProgram.coefficient ops * volume prime v + 1 + rowPivotCost k v w ps + 1) := by
+  intro A ops
+  obtain ⟨ps,len,reverse⟩ := rowPivot_runs (m := m) k Fin.revPerm io
+  refine ⟨ps,len,?_⟩
+  intro v w B hw hb shape pos unit roles x head tape d
+  have run := reverse v w B (Nat.mul_pos hw hkpos) hb shape pos
+  have lower : LowerTriangular A := fun i j lt => upper _ _ (Fin.rev_lt_rev.mpr lt)
+  obtain ⟨y,xy,r₁⟩ := run roles x head tape
+  obtain ⟨z,r₂,yz⟩ := LabelBits.rowPass_runs hk A hs lower unit shape hw hb pos io
+    (setTape roles io (sourceWord y) 0) y (by simp [setTape]) (by simp [setTape])
+  obtain ⟨out,zo,r₃⟩ := run (setTape roles io (sourceWord z) 0) z (by simp [setTape]) (by simp [setTape])
+  simp only [SharedPlacementAlphabet.setTape_setTape] at r₂ r₃
+  refine ⟨out,?_,Blocks.seq_runs (Blocks.seq_leading _ _) (Blocks.seq_leading _ _)
+    (Blocks.seq_runs (Blocks.seq_leading _ _) (LabelProgram.leading _ _) r₁ r₂) r₃⟩
+  intro g a ha row hr b hB h hh mid hm d hd after he
+  let R := Matrix (Fin k) (Fin m) (ZMod (modulus w))
+  change Matrix (Fin k) (Fin m) (ZMod (modulus w)) at g
+  let rev : R → R := fun g i j => g i (Fin.rev j)
+  have order : rev ((rev g : Matrix (Fin k) (Fin m) (ZMod (modulus w))) * (reduce (modulus w) A).transpose) = g * (reduce (modulus w) E).transpose := by
+    funext i j
+    change (∑ k : Fin m, g i k.rev * (reduce (modulus w) E) j.rev.rev k.rev) = _
+    rw [Fin.rev_rev]
+    exact Equiv.sum_comp Fin.revPerm (fun k => g i k * (reduce (modulus w) E) j k)
+  have back := zo ((rev g : Matrix (Fin k) (Fin m) (ZMod (modulus w))) * (reduce (modulus w) A).transpose) a ha row hr b hB h hh mid hm d hd after he
+  let : NeZero (prime^w) := ⟨pow_ne_zero _ Shared50ModularControl.prime_prime.ne_zero⟩
+  let read := fun label : R => ext out (RecursiveInterchangeLayout.index prime v a row
+    (b*prime^(m*(w*k))+(LabelColumns.rowAddress (Q := prime^w) label).val) h mid d after)
+  apply (congrArg read order.symm).trans
+  exact back.trans ((yz (rev g) a ha row hr b hB h hh mid hm d hd after he).trans
+    (xy g a ha row hr b hB h hh mid hm d hd after he))
+
 theorem upper_runs (hk : 2 ≤ m*m) (io : Fin T) (E : Matrix (Fin m) (Fin m) ℚ)
     (upper : ∀ i j, j < i → E i j = 0)
     (hs : ∀ op ∈ LabelAddress.pass (E.submatrix Fin.rev Fin.rev), FlatCoordinateSchedule.Supported op) :
@@ -96,37 +142,8 @@ theorem upper_runs (hk : 2 ≤ m*m) (io : Fin T) (E : Matrix (Fin m) (Fin m) ℚ
         LabelPermutation.Transport v B w (fun g => g * (reduce (modulus w) E).transpose) (ext x) (ext y) ∧
         GraphContract.Runs (Blocks.seqB (Blocks.seqB (pivot io ps) (LabelProgram.program io ops)) (pivot io ps))
           (bank roles v d) (bank (setTape roles io (sourceWord y) 0) v d)
-          (pivotCost v w ps + LabelProgram.coefficient ops * volume prime v + 1 + pivotCost v w ps + 1) := by
-  intro A ops
-  obtain ⟨ps,len,reverse⟩ := pivot_runs (m := m) Fin.revPerm io
-  refine ⟨ps,len,?_⟩
-  intro v w B hw hb shape pos unit roles x head tape d
-  have hm : 0 < m := by by_contra! h; interval_cases m; contradiction
-  have run := reverse v w B (Nat.mul_pos hw hm) hb shape pos
-  have lower : LowerTriangular A := fun i j lt => upper _ _ (Fin.rev_lt_rev.mpr lt)
-  obtain ⟨y,xy,r₁⟩ := run roles x head tape
-  obtain ⟨z,r₂,yz⟩ := LabelBits.pass_runs hk A hs lower unit shape hw hb pos io
-    (setTape roles io (sourceWord y) 0) y (by simp [setTape]) (by simp [setTape])
-  obtain ⟨out,zo,r₃⟩ := run (setTape roles io (sourceWord z) 0) z (by simp [setTape]) (by simp [setTape])
-  simp only [SharedPlacementAlphabet.setTape_setTape] at r₂ r₃
-  refine ⟨out,?_,Blocks.seq_runs (Blocks.seq_leading _ _) (Blocks.seq_leading _ _)
-    (Blocks.seq_runs (Blocks.seq_leading _ _) (LabelProgram.leading _ _) r₁ r₂) r₃⟩
-  intro g a ha row hr b hB h hh mid hm d hd after he
-  let R := Matrix (Fin m) (Fin m) (ZMod (modulus w))
-  change Matrix (Fin m) (Fin m) (ZMod (modulus w)) at g
-  let rev : R → R := fun g i j => g i (Fin.rev j)
-  have order : rev ((rev g : Matrix (Fin m) (Fin m) (ZMod (modulus w))) * (reduce (modulus w) A).transpose) = g * (reduce (modulus w) E).transpose := by
-    funext i j
-    change (∑ k : Fin m, g i k.rev * (reduce (modulus w) E) j.rev.rev k.rev) = _
-    rw [Fin.rev_rev]
-    exact Equiv.sum_comp Fin.revPerm (fun k => g i k * (reduce (modulus w) E) j k)
-  have back := zo ((rev g : Matrix (Fin m) (Fin m) (ZMod (modulus w))) * (reduce (modulus w) A).transpose) a ha row hr b hB h hh mid hm d hd after he
-  let : NeZero (prime^w) := ⟨pow_ne_zero _ Shared50ModularControl.prime_prime.ne_zero⟩
-  let read := fun label : R => ext out (RecursiveInterchangeLayout.index prime v a row
-    (b*prime^(m*(w*m))+(LabelAddress.address (Q := prime^w) label).val) h mid d after)
-  apply (congrArg read order.symm).trans
-  exact back.trans ((yz (rev g) a ha row hr b hB h hh mid hm d hd after he).trans
-    (xy g a ha row hr b hB h hh mid hm d hd after he))
+          (pivotCost v w ps + LabelProgram.coefficient ops * volume prime v + 1 + pivotCost v w ps + 1) :=
+  upper_rows_runs (by by_contra! h; interval_cases m; contradiction) hk io E upper hs
 
 /-- A fixed right-multiplication circuit for a supported triangular–permutation factorization. -/
 theorem realizes_rows {k : ℕ} (hkpos : 0 < k) (hk : 2 ≤ m*k) (io : Fin T) (π : Equiv.Perm (Fin m))

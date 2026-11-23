@@ -22,32 +22,41 @@ open IntegerMultBounds.Swap.Modular
 open IntegerMultBounds.Swap.LowerTriangular (Factorization)
 variable {T m : ℕ} [M8.Machine.Net]
 
+theorem rowOverhead (k : ℕ) (hk : 0 < k) (ps : List (LabelSchedule.Pair m)) :
+    ∃ C : ℕ, ∀ (v : Descriptor) (w B : ℕ), 0 < m → 0 < w → 0 < B →
+      v.beforeH = B*prime^(m*(w*k)) → v.Positive →
+      LabelRoute.rowPivotCost k v w ps + 2 ≤
+        C * volume prime v + (m-1)*LeafCore.coreCost (volume prime v) (w*k) := by
+  let K := 2 * RecursiveChildQuotientsConstant.cost k + LabelSchedule.countCost ps + 110017
+  refine ⟨K + 110011 + (m-1)*3808274, ?_⟩
+  intro v w B hm hw hb hv hp
+  let V := volume prime v
+  have hV : 0 < V := RecursiveAffinePrepare.volume_positive prime_prime.two_le v hp
+  have hpow := Nat.lt_pow_self (n := m*(w*k)) prime_prime.one_lt
+  have hcol : w*k ≤ V := calc
+    w*k ≤ m*(w*k) := Nat.le_mul_of_pos_left _ hm
+    _ ≤ prime^(m*(w*k)) := hpow.le
+    _ ≤ v.beforeH := hv ▸ Nat.le_mul_of_pos_left _ hb
+    _ ≤ V := (LabelPrepare.factors v hV).1
+  have hwV := (Nat.le_mul_of_pos_right w hk).trans hcol
+  have hmV := (Nat.le_mul_of_pos_left k hw).trans hcol
+  have h₁ := LabelWidth.widen_cost v w k
+  have h₂ := LabelWidth.narrow_cost v w k hk
+  have hK := Nat.le_mul_of_pos_right K hV
+  dsimp [K] at hK ⊢
+  unfold LabelRoute.rowPivotCost
+  simp only [Nat.add_mul, Nat.mul_add, Nat.mul_assoc] at hK ⊢
+  dsimp [V] at *
+  omega
+
 theorem overhead (ps : List (LabelSchedule.Pair m)) :
     ∃ C : ℕ, ∀ (v : Descriptor) (w B : ℕ), 0 < m → 0 < w → 0 < B →
       v.beforeH = B*prime^(m*(w*m)) → v.Positive →
       LabelRoute.pivotCost v w ps + 2 ≤
         C * volume prime v + (m-1)*LeafCore.coreCost (volume prime v) (w*m) := by
-  let K := 2 * RecursiveChildQuotientsConstant.cost m + LabelSchedule.countCost ps + 110017
-  refine ⟨K + 110011 + (m-1)*3808274, ?_⟩
-  intro v w B hm hw hb hv hp
-  let V := volume prime v
-  have hV : 0 < V := RecursiveAffinePrepare.volume_positive prime_prime.two_le v hp
-  have hpow := Nat.lt_pow_self (n := m*(w*m)) prime_prime.one_lt
-  have hcol : w*m ≤ V := calc
-    w*m ≤ m*(w*m) := Nat.le_mul_of_pos_left _ hm
-    _ ≤ prime^(m*(w*m)) := hpow.le
-    _ ≤ v.beforeH := hv ▸ Nat.le_mul_of_pos_left _ hb
-    _ ≤ V := (LabelPrepare.factors v hV).1
-  have hwV := (Nat.le_mul_of_pos_right w hm).trans hcol
-  have hmV := (Nat.le_mul_of_pos_left m hw).trans hcol
-  have h₁ := LabelWidth.widen_cost v w m
-  have h₂ := LabelWidth.narrow_cost v w m hm
-  have hK := Nat.le_mul_of_pos_right K hV
-  dsimp [K] at hK ⊢
-  unfold LabelRoute.pivotCost
-  simp only [Nat.add_mul, Nat.mul_add, Nat.mul_assoc] at hK ⊢
-  dsimp [V] at *
-  omega
+  by_cases hm : 0 < m
+  · exact rowOverhead m hm ps
+  · exact ⟨0, fun _ _ _ h => (hm h).elim⟩
 
 /-- The circuit and its linear overhead depend only on the rational factorization.
 Each of the at most `m-1` supplier calls exchanges columns of width `w*m`. -/
