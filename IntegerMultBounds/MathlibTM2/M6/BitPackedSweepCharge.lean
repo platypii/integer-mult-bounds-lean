@@ -10,6 +10,53 @@ open IntegerMultBounds.Machine IntegerMultBounds.Networks Stack Host Cover.Fallb
 open Shared50ModularControl (prime)
 open Certificates.PR589 Certificates.PR589.Nine RecursiveInterchangeLayout
 
+/-- Run the scheduled occurrences on the same banks used by their initializer. -/
+theorem runPlacedScheduleWithCharge {I : Type} {k T : ℕ} (tapes : I → ℕ)
+    (ports : ∀ i, Fin k ↪ Fin (tapes i)) (fan : Fin k ↪ Fin T) (bank : ∀ i, Fin (tapes i) ↪ Fin T)
+    (selected : ∀ i j, bank i (ports i j) = fan j)
+    (apart : ∀ i l, (∀ j, ports i j ≠ l) → ∀ m, m ≠ i → ∀ j, bank m j ≠ bank i l) :
+    ∀ {X P U : Type} {Q : ℕ} (body : ∀ i, P → Pr P (tapes i) Q prime U) (code : ∀ i, Pr P (tapes i) Q prime U)
+      (weight : List (Fin (prime+4)) → List (Fin (prime+4)) → ℕ)
+      (represented : X → Stacks k prime → Prop) (effect : I → X → X → Prop)
+      (cost : I → ℕ) (initial : ∀ i, Stacks (tapes i) prime),
+    (∀ i x u S, represented x (embStk (ports i) S) →
+      (∀ l, (∀ j, ports i j ≠ l) → S.L l = (initial i).L l ∧ S.R l = (initial i).R l) →
+      ∃ v D t y, Exec (body i) (code i) (mk u S) t (mk v D) ∧
+        (∀ js : List _, js.Nodup → t+tapeCharge weight js D ≤ tapeCharge weight js S+cost i) ∧ v.user = u.user ∧
+        represented y (embStk (ports i) D) ∧ effect i x y) →
+    let table := fun g : I × P => embProg (bank g.1) (Prod.mk g.1) (body g.1 g.2)
+    let placed := fun i => embProg (bank i) (Prod.mk i) (code i)
+    ∀ (order : List I), order.Nodup → ∀ x u S, represented x (embStk fan S) →
+      (∀ i ∈ order, ∀ l, (∀ j, ports i j ≠ l) → S.L (bank i l) = (initial i).L l ∧ S.R (bank i l) = (initial i).R l) →
+      ∃ v D t y, Exec table (Prog.seqList (order.map placed)) (mk u S) t (mk v D) ∧
+        (∀ js : List _, js.Nodup → t+tapeCharge weight js D ≤ tapeCharge weight js S+(order.map cost).sum+1) ∧ v.user = u.user ∧ represented y (embStk fan D) ∧
+        order.foldr (fun i next a => ∃ b, effect i a b ∧ next b) (fun a => a = y) x := by
+  intro X P U Q body code weight represented effect cost initial run table placed
+  have project (i) (S : Stacks T prime) : embStk (ports i) (embStk (bank i) S) = embStk fan S := by
+    simp only [embStk,Function.comp_def,selected]
+  intro order unique x u S ready frames
+  induction order generalizing x S u with
+  | nil => exact ⟨u,S,1,x,Exec.act .done _,by intro js _; simp; omega,rfl,ready,rfl⟩
+  | cons i rest ih =>
+    obtain ⟨v,D,t,y,exec,time,user,mid,act⟩ := run i x (embDn (bank i) u) (embStk (bank i) S)
+      ((project i S) ▸ ready) (frames i List.mem_cons_self)
+    obtain ⟨z,F,first,_,same,view,untouched⟩ := exec_emb (ι := Prod.mk i) (body' := table)
+      (bank i).injective (fun _ => rfl) exec u rfl S rfl
+    rw [← view,project] at mid
+    obtain ⟨v',D',t',y',last,bill,final,out,acts⟩ := ih (List.nodup_cons.mp unique).2 y z F mid (by
+      intro j member l privateSlot
+      have ne : i ≠ j := fun eq => (List.nodup_cons.mp unique).1 (eq ▸ member)
+      obtain ⟨a,b⟩ := untouched _ (apart j l privateSlot i ne)
+      obtain ⟨c,d⟩ := frames j (List.mem_cons_of_mem _ member) l privateSlot
+      exact ⟨a.trans c,b.trans d⟩)
+    refine ⟨v',D',_,y',Exec.seq first last,?_,final.trans (same.trans user),out,y,act,acts⟩
+    intro js unique
+    rw [← view] at time
+    have head := placedCleanup_cost_le (bank i) S F weight t (cost i) untouched time js unique
+    have tail := bill js unique
+    simp only [List.map_cons,List.sum_cons]
+    omega
+
 private theorem scheduledBanksWithCharge {I : Type} [Fintype I] {k : ℕ}
     (tapes : I → ℕ) (ports : ∀ i, Fin k ↪ Fin (tapes i)) :
     ∃ (T : ℕ) (fan : Fin k ↪ Fin T) (bank : ∀ i, Fin (tapes i) ↪ Fin T),
@@ -36,38 +83,13 @@ private theorem scheduledBanksWithCharge {I : Type} [Fintype I] {k : ℕ}
   intro X P U Q body code weight represented effect cost initial shared run table placed
   obtain ⟨prepared,owners,stock⟩ := prepare shared initial
   refine ⟨prepared,owners,?_⟩
-  let fresh := fun i (S : Stacks T prime) => ∀ l, (∀ j, ports i j ≠ l) →
-    S.L (bank i l) = (initial i).L l ∧ S.R (bank i l) = (initial i).R l
-  have project (i) (S : Stacks T prime) : embStk (ports i) (embStk (bank i) S) = embStk fan S := by
-    simp only [embStk,Function.comp_def,selected]
-  intro order unique x u S ready saved
-  have frames : ∀ i ∈ order, fresh i S := by
-    intro i _ l privateSlot
-    obtain ⟨a,b⟩ := saved _ (off i l privateSlot).1
-    obtain ⟨c,d⟩ := stock i l privateSlot
-    exact ⟨a.trans c,b.trans d⟩
-  clear saved
-  induction order generalizing x S u with
-  | nil => exact ⟨u,S,1,x,Exec.act .done _,by intro js _; simp; omega,rfl,ready,rfl⟩
-  | cons i rest ih =>
-    obtain ⟨v,D,t,y,exec,time,user,mid,act⟩ := run i x (embDn (bank i) u) (embStk (bank i) S)
-      ((project i S) ▸ ready) (frames i List.mem_cons_self)
-    obtain ⟨z,F,first,_,same,view,untouched⟩ := exec_emb (ι := Prod.mk i) (body' := table)
-      (bank i).injective (fun _ => rfl) exec u rfl S rfl
-    rw [← view,project] at mid
-    obtain ⟨v',D',t',y',last,bill,final,out,acts⟩ := ih (List.nodup_cons.mp unique).2 y z F mid (by
-      intro j member l privateSlot
-      have ne : i ≠ j := fun eq => (List.nodup_cons.mp unique).1 (eq ▸ member)
-      obtain ⟨a,b⟩ := untouched _ ((off j l privateSlot).2 i ne)
-      obtain ⟨c,d⟩ := frames j (List.mem_cons_of_mem _ member) l privateSlot
-      exact ⟨a.trans c,b.trans d⟩)
-    refine ⟨v',D',_,y',Exec.seq first last,?_,final.trans (same.trans user),out,y,act,acts⟩
-    intro js unique
-    rw [← view] at time
-    have head := placedCleanup_cost_le (bank i) S F weight t (cost i) untouched time js unique
-    have tail := bill js unique
-    simp only [List.map_cons,List.sum_cons]
-    omega
+  intro order distinct x u S live saved
+  apply runPlacedScheduleWithCharge tapes ports fan bank selected (fun i l h => (off i l h).2)
+    body code weight represented effect cost initial run order distinct x u S live
+  intro i _ l privateSlot
+  obtain ⟨a,b⟩ := saved _ (off i l privateSlot).1
+  obtain ⟨c,d⟩ := stock i l privateSlot
+  exact ⟨a.trans c,b.trans d⟩
 
 /-- Execute all 160 invocations on a shared owner bank. The change in cleanup
 cost telescopes across runs and the child budgets form one directory interval. -/

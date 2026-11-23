@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.M6.BitCutoffStage
+import IntegerMultBounds.MathlibTM2.M6.BitPackedSweepCharge
 public import IntegerMultBounds.MathlibTM2.M6.BitAlignedNodeBill
 public import IntegerMultBounds.MathlibTM2.M6.BitIdleDispatchClocks
 
@@ -230,6 +231,222 @@ theorem prepareStageArchives {U : Type} {Q : ℕ}
   dsimp only [price] at paid
   rw [Nat.add_assoc (rate*V),← Nat.add_assoc _ (rate*V)]
   exact_mod_cast paid
+
+private theorem archiveFoldAt {I : Type} {T : ℕ} (dst : I ↪ Fin T) (word : I → List (Fin (prime+4)))
+    (order : List I) (R : Fin T → List (Fin (prime+4))) (k : Fin T) (value : List (Fin (prime+4)))
+    (selected : ∀ p ∈ order, dst p = k → word p = value)
+    (start : (∀ p ∈ order, dst p ≠ k) → R k = value) :
+    order.foldl (fun r p => Function.update r (dst p) (word p)) R k = value := by
+  classical
+  induction order generalizing R with
+  | nil => exact start (by simp)
+  | cons p rest ih =>
+    apply ih _ (fun j mem => selected j (List.mem_cons_of_mem _ mem))
+    intro away
+    change Function.update R (dst p) (word p) k = value
+    by_cases hit : dst p = k
+    · rw [← hit,Function.update_self]
+      exact selected p List.mem_cons_self hit
+    · rw [Function.update_of_ne (Ne.symm hit)]
+      apply start
+      simpa only [List.mem_cons,forall_eq_or_imp] using And.intro hit away
+
+/-- Visit the stage runs in program order, with pre-MOVE, COPY and post-MOVE
+occurrences in their local index order. -/
+def stageOccurrenceOrder (l r : ℕ) : List (Σ _ : StageRun, Σ j : Fin 3, Fin (invocationCounts l r j)) :=
+  stageRuns.sigma fun _ => (List.finRange 3).sigma fun j => List.finRange (invocationCounts l r j)
+
+theorem stageOccurrenceOrder_nodup (l r : ℕ) : (stageOccurrenceOrder l r).Nodup :=
+  stageRuns_nodup.sigma fun _ => (List.nodup_finRange 3).sigma fun _ => List.nodup_finRange _
+
+/-- Allocate shared owner tapes and fill the archive of every selected stage occurrence.
+The coefficient is fixed by the schedule, before any node dimensions are supplied. -/
+theorem prepareSelectedStageArchives {U : Type} {Q l r owners : ℕ}
+    (capacity : (fun {q : ℕ} (_ : Program 38 q prime) => q) (RecursiveRowsNodeHeaders.program 142080) ≤ Q)
+    (n : Fin 9) (pre : StageRun → Fin l → MoveIndex) (post : StageRun → Fin r → MoveIndex) :
+    let I := Σ _ : StageRun, Σ j : Fin 3, Fin (invocationCounts l r j)
+    let child := fun p : I => invocationChildren n p.1 (pre p.1) (post p.1) p.2.1 p.2.2
+    ∀ (tapes : I → ℕ) (fan : ∀ p, Fin owners ↪ Fin (tapes p)) (record : ∀ p, Fin 35 ↪ Fin (tapes p))
+      (cut : Fin owners), (∀ p j, record p j ≠ fan p cut) → (∀ p j, fan p j ≠ record p 34) →
+    ∃ (T : ℕ) (shared : Fin owners ↪ Fin T) (bank : ∀ p, Fin (tapes p) ↪ Fin T) (rate : ℕ),
+    (∀ p j, bank p (fan p j) = shared j) ∧
+    (∀ p l, (∀ j, fan p j ≠ l) → ∀ q, q ≠ p → ∀ k, bank q k ≠ bank p l) ∧
+    ∀ {P : Type} {R : ℕ} (body : P → Pr P (80+((T+273)+R)) Q prime U),
+    let owner := ((Fin.castAddEmb 273 (n := T)).trans (Fin.castAddEmb R)).trans (Fin.natAddEmb 80)
+    ∃ code, ∀ c : CutoffNodeInput,
+    let d := fun p => scheduledChild prime c.node (child p)
+    ∀ u S, ParentArchiveInput c.node c.w (embStk (archiveSetupPlacement 80 T R) S) →
+    S.R (owner (shared cut)) = binSyms c.root.width.size c.cutoff →
+    (∀ p, let port := (record p).trans ((bank p).trans owner)
+      S.R (port 34) = [] ∧ S.R (port 0) = [] ∧ S.R (port 1) = []) →
+    ∃ z F t, Exec body code (mk u S) t (mk z F) ∧ z.user = u.user ∧ CleanupBound S F t (rate*c.cells) ∧
+      (∀ p, F.R (owner (bank p (record p 34))) = invocationWorkerRecord p.2.1 (d p) c.root.width.size c.cutoff) ∧
+      (∀ k, F.L (owner k) = S.L (owner k)) ∧
+      ∀ k, (∀ p, bank p (record p 34) ≠ k) → F.R (owner k) = S.R (owner k) := by
+  classical
+  intro I child tapes fan record cut offCut privateArchive
+  obtain ⟨T,shared,bank,align,_,disjoint⟩ := copyWindowBanks tapes fan
+  let regs := fun p => (record p).trans (bank p)
+  let order := stageOccurrenceOrder l r
+  let rank := fun p => nodeChildren5[(child p).val]
+  obtain ⟨setup,prepare⟩ := prepareStageArchives (U := U) capacity
+  refine ⟨T,shared,bank,setup+31*order.length+1,align,fun p l h => (disjoint p l h).2,?_⟩
+  intro P R body owner
+  have separate p q (ne : p ≠ q) j : regs p 34 ≠ regs q j :=
+    ((disjoint p _ (privateArchive p)).2 q ne.symm _).symm
+  obtain ⟨code,run⟩ := prepare body regs (shared cut)
+    (fun p j => (align p cut) ▸ (bank p).injective.ne (offCut p j)) separate
+    (fun p => p.2.1) rank (fun p => (nodeChildren5_bounds (child p)).1)
+    (fun p => (nodeChildren5_bounds (child p)).2.trans (by decide : 42 ≤ 64)) order (stageOccurrenceOrder_nodup l r)
+  refine ⟨code,?_⟩
+  intro c d u S input header free
+  have size p : volume prime (d p) = c.cells := by
+    have mass := (scheduledChild_measures prime c.node ⟨_,c.width⟩ ⟨_,c.rows⟩ (child p)).2
+    change volume prime (d p)*142080 = volume prime c.node at mass
+    have cells := c.cells_share
+    omega
+  let W := c.B*prime^(64*((c.w+1)*64))*c.stageFactor
+  have volumeEq : (prime^(c.w+1))^16*((prime^(c.w+1))^112*W) = c.cells := by
+    rw [← c.stageCells]
+    simp [W,CutoffNodeInput.stageWidth,Nat.mul_assoc]
+  let word := fun p : I => invocationWorkerRecord p.2.1 (d p) c.root.width.size c.cutoff
+  obtain ⟨z,F,t,exec,user,paid,D,keep,_,final⟩ := run c.node d c.w c.B c.rowsPerStage c.root.width.size c.cutoff
+    c.width c.rows c.label c.stagePositive (by
+      intro p _
+      change rank p*(c.node.width/64) = (c.w+1)*rank p
+      rw [c.width,Nat.mul_div_cancel_left _ (by decide),Nat.mul_comm])
+    (fun p _ => (size p).trans volumeEq.symm) u S input header (fun p _ => free p)
+  let dst : I ↪ Fin _ := ⟨fun p => owner (regs p 34),fun p q eq => by
+    by_contra ne
+    exact separate p q ne 34 (owner.injective eq)⟩
+  have live : 0 < c.cells := by
+    have := c.idlePositive
+    have := Shared50ModularControl.prime_prime.pos
+    unfold CutoffNodeInput.cells
+    positivity
+  have digits : c.root.width.size ≤ c.cutoff := Nat.size_le.mpr (by
+    have h := alignedRootWidth_le c.root c.depth c.b c.cutoff c.levels c.base c.rootWidth c.stop
+    have pos : 0 < c.root.width := c.rootWidth ▸ Nat.mul_pos (pow_pos (by decide) _) c.base
+    omega)
+  have widthLe : c.cutoff ≤ c.cells := by
+    have step := c.active
+    change c.cutoff ≤ c.node.width at step
+    rw [c.width] at step
+    have ticks := (Nat.lt_pow_self Shared50ModularControl.prime_prime.one_lt (n := c.w+1)).le
+    have powLe := Nat.le_self_pow (by decide : 128 ≠ 0) (prime^(c.w+1))
+    have enough := Nat.mul_le_mul powLe (Nat.le_mul_of_pos_left 142080 c.idlePositive)
+    change c.cutoff ≤ (prime^(c.w+1))^128*(c.idleWidth*142080)
+    omega
+  have length (p : I) : (word p).length ≤ 2*c.cells+1 := by
+    have mass : CopyChildLayout.spectators (d p) ≤ volume prime (d p) := by
+      have h : volume prime (d p) = (prime^(d p).width*prime^(d p).width)*CopyChildLayout.spectators (d p) := by
+        unfold volume CopyChildLayout.spectators
+        ring
+      rw [h]
+      exact Nat.le_mul_of_pos_left _ (by have := Shared50ModularControl.prime_prime.pos; positivity)
+    have bits := (Nat.size_le.mpr Nat.lt_two_pow_self).trans (mass.trans (size p).le)
+    by_cases h : p.2.1 = 1 <;> simp [word,invocationWorkerRecord,h,length_binSyms] <;> omega
+  have sum (xs : List I) : (xs.map (fun p => 8*(word p).length+7)).sum ≤ 31*xs.length*c.cells := by
+    induction xs with
+    | nil => simp
+    | cons p ps ih =>
+      simp only [List.map_cons,List.sum_cons,List.length_cons,Nat.mul_add,Nat.add_mul] at *
+      have := length p
+      omega
+  refine ⟨z,F,t,exec,user,?_,?_,?_,?_⟩
+  · intro js nd
+    have h := paid js nd
+    change _ ≤ _+(setup*((prime^(c.w+1))^16*((prime^(c.w+1))^112*W))+(order.map (fun p => 8*(word p).length+7)).sum+1) at h
+    rw [volumeEq] at h
+    have limit := sum order
+    rw [Nat.add_mul,Nat.add_mul,one_mul]
+    omega
+  · intro p
+    rw [final]
+    apply archiveFoldAt dst word order D.R (dst p) (word p)
+    · exact fun q _ eq => congrArg word (dst.injective eq)
+    · intro miss
+      exact (miss p (List.mem_sigma.mpr ⟨mem_stageRuns _,List.mem_sigma.mpr ⟨List.mem_finRange _,List.mem_finRange _⟩⟩) rfl).elim
+  · intro k
+    rw [final]
+    exact (keep k).1
+  · intro k off
+    rw [final]
+    apply archiveFoldAt dst word order D.R (owner k) (S.R (owner k))
+    · intro p _ eq
+      exact (off p (owner.injective eq)).elim
+    · exact fun _ => (keep k).2
+
+/-- Initialize all selected archives and execute the workers on those very banks.
+Unvisited workers need their private inputs but no caller-provided archive word. -/
+theorem runSelectedStageArchives {U : Type} {Q l r owners : ℕ}
+    (capacity : (fun {q : ℕ} (_ : Program 38 q prime) => q) (RecursiveRowsNodeHeaders.program 142080) ≤ Q)
+    (n : Fin 9) (pre : StageRun → Fin l → MoveIndex) (post : StageRun → Fin r → MoveIndex) :
+    let I := Σ _ : StageRun, Σ j : Fin 3, Fin (invocationCounts l r j)
+    let child := fun p : I => invocationChildren n p.1 (pre p.1) (post p.1) p.2.1 p.2.2
+    ∀ (tapes : I → ℕ) (fan : ∀ p, Fin owners ↪ Fin (tapes p)) (record : ∀ p, Fin 35 ↪ Fin (tapes p))
+      (cut : Fin owners), (∀ p j, record p j ≠ fan p cut) → (∀ p j, fan p j ≠ record p 34) →
+    ∃ (T : ℕ) (shared : Fin owners ↪ Fin T) (bank : ∀ p, Fin (tapes p) ↪ Fin T) (rate : ℕ),
+    ∀ {P X : Type} {R : ℕ} (body : ∀ p, P → Pr P (tapes p) Q prime U)
+      (worker : ∀ p, Pr P (tapes p) Q prime U),
+    let order := stageOccurrenceOrder l r
+    let owner := ((Fin.castAddEmb 273 (n := T)).trans (Fin.castAddEmb R)).trans (Fin.natAddEmb 80)
+    let placed := fun p => (bank p).trans owner
+    let host := fun f : I × P => embProg (placed f.1) (Prod.mk f.1) (body f.1 f.2)
+    ∃ code, ∀ (c : CutoffNodeInput) (cost : I → ℕ) (seed : ∀ p, Stacks (tapes p) prime)
+      (rep : X → (Fin owners → List (Fin (prime+4))) → (Fin owners → List (Fin (prime+4))) → Prop)
+      (effect : I → X → X → Prop),
+    let word := fun p : I => invocationWorkerRecord p.2.1 (scheduledChild prime c.node (child p)) c.root.width.size c.cutoff
+    (∀ p x u D, rep x (D.L ∘ fan p) (D.R ∘ fan p) →
+      PrivateTapes (fan p) {seed p with R := Function.update (seed p).R (record p 34) (word p)} D →
+      ∃ z F t y, Exec (body p) (worker p) (mk u D) t (mk z F) ∧ CleanupBound D F t (cost p) ∧
+        z.user = u.user ∧ rep y (F.L ∘ fan p) (F.R ∘ fan p) ∧ effect p x y) →
+    ∀ x u S, ParentArchiveInput c.node c.w (embStk (archiveSetupPlacement 80 T R) S) →
+      S.R (owner (shared cut)) = binSyms c.root.width.size c.cutoff →
+      (∀ p, let port := (record p).trans (placed p)
+        S.R (port 34) = [] ∧ S.R (port 0) = [] ∧ S.R (port 1) = []) →
+      rep x (S.L ∘ (shared.trans owner)) (S.R ∘ (shared.trans owner)) →
+      (∀ p ∈ order, ∀ k, (∀ j, fan p j ≠ k) →
+        S.L (placed p k) = (seed p).L k ∧ (k ≠ record p 34 → S.R (placed p k) = (seed p).R k)) →
+      ∃ z F t y, Exec host code (mk u S) t (mk z F) ∧ CleanupBound S F t (rate*c.cells+((order.map cost).sum+1)) ∧
+        z.user = u.user ∧ rep y (F.L ∘ (shared.trans owner)) (F.R ∘ (shared.trans owner)) ∧
+        order.foldr (fun p next a => ∃ b, effect p a b ∧ next b) (fun a => a = y) x := by
+  intro I child tapes fan record cut offCut privateArchive
+  obtain ⟨T,shared,bank,rate,align,apart,prepare⟩ := prepareSelectedStageArchives capacity n pre post tapes fan record cut offCut privateArchive
+  refine ⟨T,shared,bank,rate,?_⟩
+  intro P X R body worker order owner placed host
+  obtain ⟨load,write⟩ := prepare host
+  let calls := order.map fun p => embProg (placed p) (Prod.mk p) (worker p)
+  refine ⟨load.seq (Prog.seqList calls),?_⟩
+  intro c cost seed rep effect word execute x u S input header empty live stock
+  obtain ⟨v,D,a,start,user,paid,loaded,left,right⟩ := write c u S input header empty
+  let state := fun (x : X) (D : Stacks owners prime) => rep x D.L D.R
+  let initial := fun p => {seed p with R := Function.update (seed p).R (record p 34) (word p)}
+  have ownersRight j : D.R (owner (shared j)) = S.R (owner (shared j)) := right _ (by
+    intro p
+    rw [← align p j]
+    exact (bank p).injective.ne (privateArchive p j).symm)
+  obtain ⟨z,F,t,y,run,bill,same,out,trace⟩ := runPlacedScheduleWithCharge tapes fan (shared.trans owner) placed
+    (fun p j => congrArg owner (align p j)) (fun p k off q ne j => owner.injective.ne (apart p k off q ne j))
+    body worker cleanupWeight state effect cost initial execute order (stageOccurrenceOrder_nodup l r) x v D (by
+      change rep x (D.L ∘ (shared.trans owner)) (D.R ∘ (shared.trans owner))
+      have hl : D.L ∘ (shared.trans owner) = S.L ∘ (shared.trans owner) := funext fun j => left _
+      have hr : D.R ∘ (shared.trans owner) = S.R ∘ (shared.trans owner) := funext ownersRight
+      rwa [hl,hr]) (by
+      intro p mem k off
+      have kept := stock p mem k off
+      refine ⟨(left _).trans kept.1,?_⟩
+      by_cases hit : k = record p 34
+      · subst k
+        simpa [initial,word,placed,owner,child] using loaded p
+      · have unchanged := right (bank p k) (by
+          intro q
+          by_cases eq : q = p
+          · subst q
+            exact (bank p).injective.ne (Ne.symm hit)
+          · exact (apart p k off q eq _))
+        exact (unchanged.trans (kept.2 hit)).trans (Function.update_of_ne hit ..).symm)
+  exact ⟨z,F,_,y,start.seq run,paid.seq bill,same.trans user,out,trace⟩
 
 /-- The installed remainder call pays for its runtime seed with a constant per lane symbol. -/
 theorem callCutoffRemainder {P A U : Type} {H N T Q : ℕ}
