@@ -152,4 +152,99 @@ theorem callMergeReusedOwners {P U : Type} {T Q : ℕ} (body : P → Pr P T Q pr
   intro j away
   exact ⟨(off j away).1.trans (frame j away).1,(off j away).2.trans (frame j away).2⟩
 
+/-- Split a word, call the row worker and merge on the very same bank.
+The three reclaimable tapes carry at most a linear charge into the call. -/
+theorem reusedMoveRoundTrip {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U)
+    (entry : P) (bank : Fin intervalSplitTapes ↪ Fin T)
+    (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q) :
+    let owners := (intervalOwners 142080).trans bank
+    let slots := [bank 0,bank (mergeInnerPort 0),bank (mergeInnerPort 1)]
+    let charge := tapeCharge (fun (l r : List (Fin (prime+4))) => 4*l.length+2*r.length+4) slots
+    ∃ code : Pr P T Q prime U, ∀ {m : ℕ}, 0 < m → ∀ (x : Fin (m*142080) → ZMod 2)
+      (y : Fin 142080 → Fin m → ZMod 2) (u : HS T Q prime U) (S : Stacks T prime) price,
+      S.R (bank 0) = List.ofFn (fun i => SparseRoleCircuit.encode (x i)) →
+      (∀ j, S.L (bank j) = []) → (∀ j, j ≠ 0 → S.R (bank j) = []) →
+      (∀ v D, HelperFan owners (fun j i => x (finProdFinEquiv (i,j))) D →
+        (∀ j, (∀ k, bank k ≠ j) → D.L j = S.L j ∧ D.R j = S.R j) →
+        ∃ w E n, Exec body (body entry) (mk v D) n (mk w E) ∧ n+charge E ≤ price+charge D ∧
+          w.user = v.user ∧ HelperFan owners y E ∧
+          ∀ j, (∀ k, bank k ≠ j) → E.L j = D.L j ∧ E.R j = D.R j) →
+      ∃ z F t, Exec body code (mk u S) t (mk z F) ∧
+        t ≤ price+(298*(intervalSplitTapes+5)+3617)*(m*142080)+70 ∧ z.user = u.user ∧
+        RecordPayload (bank 0) (fun _ => blank) 0
+          (fun k => y (finProdFinEquiv.symm k).2 (finProdFinEquiv.symm k).1) F ∧
+        ∀ j, (∀ k, bank k ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  intro owners slots charge
+  let split : Pr Empty intervalSplitTapes Q prime U := intervalPrepare.seq
+    (foreign (liftQ (CyclicRowNormalized.splitProgram 142080 prime) capacity))
+  obtain ⟨finish,back⟩ := callMergeReusedOwners body entry bank capacity
+  refine ⟨(embProg bank Empty.elim split).seq finish,?_⟩
+  intro m positive x y u S price source left empty child
+  obtain ⟨v,B,a,user,time,run,rep,space⟩ := intervalSplitSpace_exec (P := Empty) Empty.elim capacity
+    positive (fun i => SparseRoleCircuit.encode (x i)) (embDn bank u) (embStk bank S) source left empty
+  obtain ⟨w,D,placed,_,same,view,off⟩ := exec_emb (body' := body) (ι := Empty.elim)
+    bank.injective (fun e => nomatch e) run u rfl S rfl
+  have fan := intervalOwners_ready _ (fun j i => x (finProdFinEquiv (i,j))) B rep
+  rw [← view] at fan space
+  have bill : charge D ≤ 3612*(m*142080)+36 := by
+    have a := space 0
+    have b := space (mergeInnerPort 0)
+    have c := space (mergeInnerPort 1)
+    simp only [embStk,Function.comp_apply] at a b c
+    simp only [charge,slots,tapeCharge,List.map_cons,List.map_nil,List.sum_cons,List.sum_nil]
+    omega
+  obtain ⟨z,F,b,exec,cost,final,out,frame⟩ := back positive y w D price (child w D fan off)
+  change b ≤ price+charge D+149*(m*142080)*(intervalSplitTapes+5)+10 at cost
+  refine ⟨z,F,_,placed.seq exec,?_,final.trans (same.trans user),out,?_⟩
+  · dsimp only [intervalSplitTapes] at *
+    omega
+  · intro j away
+    exact ⟨(frame j away).1.trans (off j away).1,(frame j away).2.trans (off j away).2⟩
+
+open RecursiveInterchangeLayout in
+/-- Transposing every returned row realizes the wide MOVE on a single
+fixed bank with linear overhead in the wide volume. -/
+theorem reusedMoveTranspose {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U)
+    (entry : P) (bank : Fin intervalSplitTapes ↪ Fin T)
+    (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q) :
+    let owners := (intervalOwners 142080).trans bank
+    let slots := [bank 0,bank (mergeInnerPort 0),bank (mergeInnerPort 1)]
+    let charge := tapeCharge (fun (l r : List (Fin (prime+4))) => 4*l.length+2*r.length+4) slots
+    ∃ code : Pr P T Q prime U, ∀ (lane : Descriptor),
+      let m := volume prime lane
+      let wide := {lane with afterD := lane.afterD*142080}
+      let size : m*142080 = volume prime wide := by simp [m,wide,volume,Nat.mul_assoc]
+      ∀ (x : Fin (volume prime wide) → ZMod 2) (u : HS T Q prime U) (S : Stacks T prime) price,
+      let rows := fun (j : Fin 142080) (i : Fin m) => x ((finProdFinEquiv (i,j)).cast size)
+      0 < m → S.R (bank 0) = List.ofFn (fun i => SparseRoleCircuit.encode (x (i.cast size))) →
+      (∀ j, S.L (bank j) = []) → (∀ j, j ≠ 0 → S.R (bank j) = []) →
+      (∀ v D, HelperFan owners rows D →
+        (∀ j, (∀ k, bank k ≠ j) → D.L j = S.L j ∧ D.R j = S.R j) →
+        ∃ w E n, Exec body (body entry) (mk v D) n (mk w E) ∧ n+charge E ≤ price+charge D ∧
+          w.user = v.user ∧ HelperFan owners (fun j =>
+            Shared50RecursiveNodeRows.transpose (one_dvd lane.rows) (rows j)) E ∧
+          ∀ j, (∀ k, bank k ≠ j) → E.L j = D.L j ∧ E.R j = D.R j) →
+      ∃ z F t, Exec body code (mk u S) t (mk z F) ∧
+        t ≤ price+(298*(intervalSplitTapes+5)+3687)*volume prime wide ∧ z.user = u.user ∧
+        RecordPayload (bank 0) (fun _ => blank) 0
+          (Shared50RecursiveNodeRows.transpose (one_dvd wide.rows) x) F ∧
+        ∀ j, (∀ k, bank k ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  intro owners slots charge
+  obtain ⟨code,run⟩ := reusedMoveRoundTrip body entry bank capacity
+  refine ⟨code,?_⟩
+  intro lane m wide size x u S price rows pos source left empty child
+  let y := fun j => Shared50RecursiveNodeRows.transpose (one_dvd lane.rows) (rows j)
+  obtain ⟨z,F,t,exec,bill,user,out,frame⟩ := run pos (fun i => x (i.cast size)) y u S price source left empty child
+  refine ⟨z,F,t,exec,?_,user,?_,frame⟩
+  · rw [← size]
+    have live := Nat.mul_pos pos (by decide : 0 < 142080)
+    dsimp only [intervalSplitTapes] at *
+    omega
+  · apply castPayload size
+    have read (k : Fin (m*142080)) : y (finProdFinEquiv.symm k).2 (finProdFinEquiv.symm k).1 =
+        Shared50RecursiveNodeRows.transpose (one_dvd wide.rows) x (k.cast size) := by
+      obtain ⟨⟨i,j⟩,rfl⟩ := finProdFinEquiv.surjective k
+      simpa only [Equiv.symm_apply_apply] using (transpose_trailingRows lane 142080 x i j).symm
+    simpa only [read] using out
+
 end IntegerMultBounds.MathlibTM2.M6.BitNode
