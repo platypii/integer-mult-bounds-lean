@@ -139,20 +139,73 @@ theorem helperFan_of_splitRows {T c V : ℕ} (place : Fin (((1+c)+2)+2) ↪ Fin 
     simpa only [PointwiseRoleGate.bank,Tapes.append,Fin.addCases_right,controls,controlPorts,
       embStk,Function.comp_apply,Function.Embedding.trans_apply,Fin.natAddEmb_apply] using counters j z
 
+/-- Replace the splitter's role and outer-clock ports by the returned fan.
+The four remaining ports still refer to the caller's owner and descriptors. -/
+theorem helperMergePlacement {T c : ℕ} (place : Fin (((1+c)+2)+2) ↪ Fin T)
+    (fan : Fin (c+2) ↪ Fin T) :
+    let role := fun j : Fin c => ((j.natAdd 1).castAdd 2).castAdd 2
+    let clock := (0 : Fin 2).natAdd ((1+c)+2)
+    let retained := fun i => (∀ j, i ≠ role j) ∧ i ≠ clock
+    (∀ i, retained i → ∀ k, place i ≠ fan k) →
+    ∃ mergePlace : Fin (((1+c)+2)+2) ↪ Fin T,
+      (∀ j, fan (j.castAdd 2) = mergePlace (role j)) ∧
+      fan ((0 : Fin 2).natAdd c) = mergePlace clock ∧
+      ∀ i, retained i → mergePlace i = place i := by
+  classical
+  intro role clock retained apart
+  let port i := if h : ∃ j, i = role j then fan (h.choose.castAdd 2)
+    else if i = clock then fan ((0 : Fin 2).natAdd c) else place i
+  have inj : Function.Injective role := by
+    intro x y h
+    have eq := congrArg Fin.val h
+    apply Fin.ext
+    change 1+x.val = 1+y.val at eq
+    omega
+  have different j : role j ≠ clock := by
+    intro h
+    have eq := congrArg Fin.val h
+    change 1+j.val = 1+c+2+0 at eq
+    omega
+  have onRole j : port (role j) = fan (j.castAdd 2) := by
+    have hit : ∃ k, role j = role k := ⟨j,rfl⟩
+    simp only [port,dite_eq_left hit,← inj hit.choose_spec]
+  have onClock : port clock = fan ((0 : Fin 2).natAdd c) := by
+    simp [port,fun j => (different j).symm]
+  have off i (h : retained i) : port i = place i := by
+    simp [port,h.1,h.2]
+  have parts i : (∃ j, i = role j) ∨ i = clock ∨ retained i := by
+    by_cases h : ∃ j, i = role j
+    · exact Or.inl h
+    by_cases e : i = clock
+    · exact Or.inr (Or.inl e)
+    exact Or.inr (Or.inr ⟨fun j hj => h ⟨j,hj⟩,e⟩)
+  refine ⟨⟨port,?_⟩,fun j => (onRole j).symm,onClock.symm,off⟩
+  intro x y eq
+  rcases parts x with ⟨j,rfl⟩ | rfl | hx <;> rcases parts y with ⟨k,rfl⟩ | rfl | hy
+  all_goals try rw [off _ hx] at eq
+  all_goals try rw [off _ hy] at eq
+  all_goals simp only [onRole,onClock,fan.injective.eq_iff,
+    place.injective.eq_iff,Fin.castAdd_inj] at eq
+  all_goals try subst_vars
+  all_goals try rfl
+  all_goals try exact False.elim (apart _ hx _ eq)
+  all_goals try exact False.elim (apart _ hy _ eq.symm)
+  all_goals have hv := congrArg Fin.val eq; simp at hv; omega
+
 /-- Recover the merge bank from the returned roles and their shared clock.
 Only the owner, the inner controls and the group descriptor need a frame. -/
-theorem splitRows_of_helperFan {T c V : ℕ} (place : Fin (((1+c)+2)+2) ↪ Fin T)
+theorem splitRows_of_helperFan {T c V : ℕ} (place mergePlace : Fin (((1+c)+2)+2) ↪ Fin T)
     (fan : Fin (c+2) ↪ Fin T) (owner : ℤ → Fin (prime+4)) (input output : Fin c → Fin V → ZMod 2)
     (bs gs : List Bool) (S F : Stacks T prime)
-    (atRole : ∀ j : Fin c, fan (j.castAdd 2) = place (((j.natAdd 1).castAdd 2).castAdd 2))
-    (atClock : fan ((0 : Fin 2).natAdd c) = place ((0 : Fin 2).natAdd ((1+c)+2))) :
+    (atRole : ∀ j : Fin c, fan (j.castAdd 2) = mergePlace (((j.natAdd 1).castAdd 2).castAdd 2))
+    (atClock : fan ((0 : Fin 2).natAdd c) = mergePlace ((0 : Fin 2).natAdd ((1+c)+2))) :
     let roles := fun data j => putWord (fun _ => blank) 0 (List.ofFn (SparseRoleCircuit.encoded (a := prime) data j))
     let bank := fun data => CyclicRowSplit.bank (CyclicRowCopy.bank owner (roles data) 0 (fun _ => 0) bs) gs
     RepT (bank input) (embStk place S).L (embStk place S).R → HelperFan fan output F →
     (∀ i, (∀ j : Fin c, i ≠ ((j.natAdd 1).castAdd 2).castAdd 2) →
       i ≠ (0 : Fin 2).natAdd ((1+c)+2) →
-      F.L (place i) = S.L (place i) ∧ F.R (place i) = S.R (place i)) →
-    RepT (bank output) (embStk place F).L (embStk place F).R := by
+      F.L (mergePlace i) = S.L (place i) ∧ F.R (mergePlace i) = S.R (place i)) →
+    RepT (bank output) (embStk mergePlace F).L (embStk mergePlace F).R := by
   intro roles bank ready returned frame i z
   by_cases payload : ∃ j : Fin c, i = ((j.natAdd 1).castAdd 2).castAdd 2
   · obtain ⟨j,rfl⟩ := payload
@@ -177,6 +230,43 @@ theorem splitRows_of_helperFan {T c V : ℕ} (place : Fin (((1+c)+2)+2) ↪ Fin 
     case right j => simpa [bank,CyclicRowSplit.bank,CyclicRowCopy.bank,CountedLoopReuseAlphabet.bank,
       Tapes.append,embStk] using old
   case right j => simpa [bank,CyclicRowSplit.bank,CountedLoopReuseAlphabet.bank,Tapes.append,embStk] using old
+
+/-- A child bank may share the live controls with the caller. Its returned
+roles can still feed the merge directly, keeping the caller's other tapes. -/
+theorem inheritedChildMerge {c T N H : ℕ} (place : Fin (((1+c)+2)+2) ↪ Fin T)
+    (caller : Fin T ↪ Fin H) (bank : Fin N ↪ Fin H) (live : Fin (c+2) ↪ Fin T)
+    (returned : Fin (c+2) ↪ Fin N)
+    (clockPort : live ((0 : Fin 2).natAdd c) = place ((0 : Fin 2).natAdd ((1+c)+2)))
+    (volumeFresh : ∀ i, place i ≠ live ((1 : Fin 2).natAdd c))
+    (apart : ∀ t, (∀ j : Fin 2, live (j.natAdd c) ≠ t) → ∀ k, bank k ≠ caller t) :
+    let fan := returned.trans bank
+    ∃ mergePlace : Fin (((1+c)+2)+2) ↪ Fin H,
+      ∀ {V : ℕ} (owner : ℤ → Fin (prime+4)) (input output : Fin c → Fin V → ZMod 2)
+        (bs gs : List Bool) (S F : Stacks H prime),
+      let roles := fun data j => putWord (fun _ => blank) 0 (List.ofFn (SparseRoleCircuit.encoded (a := prime) data j))
+      let rows := fun data => CyclicRowSplit.bank (CyclicRowCopy.bank owner (roles data) 0 (fun _ => 0) bs) gs
+      RepT (rows input) (embStk (place.trans caller) S).L (embStk (place.trans caller) S).R →
+      HelperFan fan output F →
+      (∀ t, (∀ j : Fin 2, live (j.natAdd c) ≠ t) →
+        F.L (caller t) = S.L (caller t) ∧ F.R (caller t) = S.R (caller t)) →
+      RepT (rows output) (embStk mergePlace F).L (embStk mergePlace F).R := by
+  intro fan
+  let clock := (0 : Fin 2).natAdd ((1+c)+2)
+  have off i (other : i ≠ clock) (j : Fin 2) : live (j.natAdd c) ≠ place i := by
+    fin_cases j
+    · change live ((0 : Fin 2).natAdd c) ≠ place i
+      rw [clockPort]
+      exact place.injective.ne other.symm
+    · exact (volumeFresh i).symm
+  obtain ⟨mergePlace,atRole,atClock,kept⟩ :=
+    helperMergePlacement (place.trans caller) fan (fun i hi k => (apart _ (off i hi.2) (returned k)).symm)
+  refine ⟨mergePlace,?_⟩
+  intro V owner input output bs gs S F roles rows ready result frame
+  apply splitRows_of_helperFan (place.trans caller) mergePlace fan owner input output bs gs S F
+    atRole atClock ready result
+  intro i outside other
+  rw [kept i ⟨outside,other⟩]
+  exact frame (place i) (off i other)
 
 private theorem helperRows_place {P U : Type} {t T q Q bound : ℕ} (body : P → Pr P T Q prime U)
     (place : Fin t ↪ Fin T) (machine : Program t q prime) (capacity : q ≤ Q) {input output}
@@ -274,9 +364,11 @@ open RecursiveInterchangeRows FlatCoordinateSchedule in
 with its new payloads in the form consumed by the merge. -/
 theorem helperFanWorker_exec {P U : Type} {T Q c : ℕ} (body : P → Pr P T Q prime U)
     (worker : Pr P T Q prime U) (budget : ℕ) (framed : Fin T → Prop)
-    (place : Fin (((1+c)+2)+2) ↪ Fin T) (fan : Fin (c+2) ↪ Fin T) (product : Fin 6 ↪ Fin T)
+    (place mergePlace : Fin (((1+c)+2)+2) ↪ Fin T) (fan returnedFan : Fin (c+2) ↪ Fin T) (product : Fin 6 ↪ Fin T)
     (v : Descriptor) (positive : v.Positive) (capacity : 40 ≤ Q)
     (atRole : ∀ j : Fin c, fan (j.castAdd 2) = place (((j.natAdd 1).castAdd 2).castAdd 2))
+    (returnedRole : ∀ j : Fin c, returnedFan (j.castAdd 2) = mergePlace (((j.natAdd 1).castAdd 2).castAdd 2))
+    (returnedClock : returnedFan ((0 : Fin 2).natAdd c) = mergePlace ((0 : Fin 2).natAdd ((1+c)+2)))
     (atRow : product 3 = place (((1 : Fin 2).natAdd (1+c)).castAdd 2))
     (atGroups : product 5 = place ((1 : Fin 2).natAdd ((1+c)+2)))
     (atClock : fan ((0 : Fin 2).natAdd c) = place ((0 : Fin 2).natAdd ((1+c)+2)))
@@ -295,13 +387,13 @@ theorem helperFanWorker_exec {P U : Type} {T Q c : ℕ} (body : P → Pr P T Q p
     (∀ x D, HelperFan fan input D →
       (∀ j, (∀ k, product k ≠ j) → D.L j = S.L j ∧ D.R j = S.R j) →
       ∃ y F m, Exec body worker (mk x D) m (mk y F) ∧ m ≤ budget ∧ y.user = x.user ∧
-        HelperFan fan output F ∧
+        HelperFan returnedFan output F ∧
         (∀ i, (∀ j : Fin c, i ≠ ((j.natAdd 1).castAdd 2).castAdd 2) →
           i ≠ (0 : Fin 2).natAdd ((1+c)+2) →
-          F.L (place i) = D.L (place i) ∧ F.R (place i) = D.R (place i)) ∧
+          F.L (mergePlace i) = D.L (place i) ∧ F.R (mergePlace i) = D.R (place i)) ∧
         ∀ j, framed j → F.L j = D.L j ∧ F.R j = D.R j) →
     ∃ y F n, Exec body (code.seq worker) (mk u S) n (mk y F) ∧ n ≤ (53*V+28)*11+6+budget ∧
-      y.user = u.user ∧ RepT (bank output) (embStk place F).L (embStk place F).R ∧
+      y.user = u.user ∧ RepT (bank output) (embStk mergePlace F).L (embStk mergePlace F).R ∧
       ∀ j, framed j → F.L j = S.L j ∧ F.R j = S.R j := by
   intro B G V code owner input output u S roles bank ready free outside work
   obtain ⟨x,D,k,setup,paid,xu,fanReady,retained,preserved⟩ :=
@@ -309,21 +401,22 @@ theorem helperFanWorker_exec {P U : Type} {T Q c : ℕ} (body : P → Pr P T Q p
       atVolume volumeFresh owner input u S ready free
   obtain ⟨y,F,m,run,cost,yx,returned,headers,frame⟩ := work x D fanReady preserved
   refine ⟨y,F,_,setup.seq run,Nat.add_le_add paid cost,yx.trans xu,?_,?_⟩
-  · exact splitRows_of_helperFan place fan owner input output (bits B) (bits G) D F
-      atRole atClock retained returned headers
+  · exact splitRows_of_helperFan place mergePlace returnedFan owner input output (bits B) (bits G) D F
+      returnedRole returnedClock retained returned headers
   · intro j hj
     obtain ⟨left,right⟩ := preserved j (outside j hj)
     exact ⟨(frame j hj).1.trans left,(frame j hj).2.trans right⟩
 
 open RecursiveInterchangeRows Shared50RecursiveNodeRows FlatCoordinateSchedule in
-/-- Run the role computation between a normalized split and merge. The same owner
-tape holds the input and result; both sequencing steps are included in the bill. -/
+/-- Run the role computation between a normalized split and merge. The merge can read the
+worker's returned role tapes directly, even when its input and output banks differ. -/
 theorem helperRows_exec {P U : Type} {c T Q : ℕ} (physical : Descriptor) (positive : physical.Positive)
     (hc : 0 < c) (stock : c ∣ physical.rows) (word : Fin (volume prime physical) → ZMod 2)
     (dest : ℤ → Fin (prime+4)) (sources : Fin c → ℤ → Fin (prime+4)) (p : ℤ) (origins : Fin c → ℤ)
     (body : P → Pr P T Q prime U) (worker : Pr P T Q prime U) (budget : ℕ)
-    (place : Fin (((1+c)+2)+2) ↪ Fin T) (framed : Fin T → Prop)
+    (place mergePlace : Fin (((1+c)+2)+2) ↪ Fin T) (framed : Fin T → Prop)
     (outside : ∀ j, framed j → ∀ i, place i ≠ j)
+    (outsideMerge : ∀ j, framed j → ∀ i, mergePlace i ≠ j)
     (capacity : let q := 7+(CyclicRowCycle.states c+5)+4; q+q ≤ Q) :
     let V := volume prime physical
     let bs := bits (rowLength prime physical)
@@ -339,18 +432,18 @@ theorem helperRows_exec {P U : Type} {c T Q : ℕ} (physical : Descriptor) (posi
     let returned := fun j => transpose (one_dvd (role physical c).rows) (input j)
     let project := fun (D : Stacks T prime) => embStk place D
     let splitCode := embProg place Empty.elim (foreign (liftQ (CyclicRowNormalized.splitProgram c prime) capacity))
-    let mergeCode := embProg place Empty.elim (foreign (liftQ (CyclicRowNormalized.mergeProgram c prime) capacity))
+    let mergeCode := embProg mergePlace Empty.elim (foreign (liftQ (CyclicRowNormalized.mergeProgram c prime) capacity))
     ∀ u S, RepT (bank owner sources) (project S).L (project S).R →
       (∀ v D, RepT (bank owner (tapes input)) (project D).L (project D).R →
         (∀ j, (∀ i, place i ≠ j) → D.L j = S.L j ∧ D.R j = S.R j) →
         ∃ z F n, Exec body worker (mk v D) n (mk z F) ∧ n ≤ budget ∧ z.user = v.user ∧
-          RepT (bank owner (tapes returned)) (project F).L (project F).R ∧
+          RepT (bank owner (tapes returned)) (embStk mergePlace F).L (embStk mergePlace F).R ∧
           ∀ j, framed j → F.L j = D.L j ∧ F.R j = D.R j) →
       ∃ z F n, Exec body (splitCode.seq (worker.seq mergeCode)) (mk u S) n (mk z F) ∧
         n ≤ 298*V*((((1+c)+2)+2)+5)+budget+12 ∧ z.user = u.user ∧
         RepT (bank (putWord owner p (List.ofFn fun k =>
           SparseRoleCircuit.encode (transpose (one_dvd physical.rows) word k))) (tapes returned))
-          (project F).L (project F).R ∧
+          (embStk mergePlace F).L (embStk mergePlace F).R ∧
         ∀ j, framed j → F.L j = S.L j ∧ F.R j = S.R j := by
   intro V bs gs bank encoded owner tapes input returned project splitCode mergeCode u S ready work
   have reads g j k : returned j (roleIndex prime c physical g k) =
@@ -368,7 +461,7 @@ theorem helperRows_exec {P U : Type} {c T Q : ℕ} (physical : Descriptor) (posi
     helperRows_place body place _ capacity start u S ready
   obtain ⟨y,G,m,mid,midCost,yv,changed,midFrame⟩ := work v D prepared frame
   obtain ⟨z,F,n,merged,mergeCost,zy,out,lastFrame⟩ :=
-    helperRows_place body place _ capacity merge y G changed
+    helperRows_place body mergePlace _ capacity merge y G changed
   refine ⟨z,F,_,splitRun.seq (mid.seq merged),?_,zy.trans (yv.trans vu),out,?_⟩
   · dsimp only [V]
     rw [show 298*volume prime physical = 149*volume prime physical+149*volume prime physical by omega,Nat.add_mul]
@@ -376,7 +469,7 @@ theorem helperRows_exec {P U : Type} {c T Q : ℕ} (physical : Descriptor) (posi
   · intro j hj
     obtain ⟨l,r⟩ := frame j (outside j hj)
     obtain ⟨ml,mr⟩ := midFrame j hj
-    obtain ⟨fl,fr⟩ := lastFrame j (outside j hj)
+    obtain ⟨fl,fr⟩ := lastFrame j (outsideMerge j hj)
     exact ⟨fl.trans (ml.trans l),fr.trans (mr.trans r)⟩
 
 /-- An implementation transposing the physical interval on the record supplies the
