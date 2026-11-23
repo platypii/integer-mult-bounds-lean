@@ -529,6 +529,39 @@ theorem helperMove_onOwner {t q : ℕ} (src : Fin t) (p : Fin 56) {lo hi : ℕ}
     rintro _ ⟨_,⟨y,rfl,transport⟩,rfl⟩
     exact ⟨y,rfl,transport⟩
 
+private theorem raw_set_left {k : ℕ} (extra : ℕ) (bank : Tapes k prime) (i : Fin k) (word) :
+    SharedPlacementAlphabet.setTape (SharedBankStageInput.raw bank (k+extra))
+      (Fin.castAdd extra i) word 0 =
+    SharedBankStageInput.raw (SharedPlacementAlphabet.setTape bank i word 0) (k+extra) :=
+  M8.RevMachine.AtomRoleSteps.raw_setTape bank (Fin.castAdd extra i) i.isLt word 0
+
+open RecursiveInterchangeLayout M8.RevMachine SharedPlacementAlphabet SharedBankStageInput
+  M8.Machine.ArbitraryWidthHighExchangeShared in
+/-- With the child headers installed, the leaf core satisfies the owner-tape
+contract used between the two helper basis passes. -/
+theorem helperLeaf_onOwner [M8.Machine.Net] {t : ℕ} (io : Fin t) (v : Descriptor)
+    (positive : v.Positive) (roles : Tapes t prime) (f : ℤ → Fin (prime+4)) (pos : ℤ)
+    (node scalar : Tapes 1 prime) (ctr : Fin CommonBank.K → Option ℕ) (st : Tapes 2 prime) :
+    let site := Fin.castAdd LeafCore.small (LeafCore.roleSlot io)
+    let caller := raw (CommonBank.bank roles (Routines.hdr v) f pos node scalar ctr st) (LeafCore.core io).tapes
+    let owner := fun x => setTape caller site (sourceWord (v := v) x) 0
+    ∀ x, HoareTime (LeafCore.core io).program (· = owner x)
+      (· = owner (Shared50RecursiveNodeRows.transpose (one_dvd v.rows) x))
+      (M8.Machine.ArbitraryWidthOriginalTotalRun.cost v (Routines.hdr v)) := by
+  intro site caller owner x
+  let bank := fun (r : Tapes t prime) => CommonBank.bank r (Routines.hdr v) f pos node scalar ctr st
+  have store word : owner word = raw (bank (setTape roles io (sourceWord word) 0)) (LeafCore.core io).tapes := by
+    change setTape (raw (bank roles) _) site _ _ = _
+    refine (raw_set_left LeafCore.small (bank roles) (LeafCore.roleSlot io) (sourceWord word)).trans ?_
+    apply congrArg (fun z => raw z _)
+    simp only [bank,CommonBank.bank,Shared50RecursiveBank.bank,RecursiveCallBank.bank,
+      RecursiveShiftRoleBank.common,LeafCore.roleSlot,setTape_append_left]
+  have leaf := LeafCore.core_runs (setTape roles io (sourceWord x) 0) f pos node scalar ctr st io positive x
+    (by simp [setTape]) (by simp [setTape])
+  unfold GraphContract.Runs at leaf
+  simp only [setTape_setTape] at leaf
+  simpa only [store,bank] using leaf
+
 /-- On a flat owner the interval builder accepts the original compact input.
 Moving the slot changes the program's prefix and suffix, but its runtime
 inputs still contain the same atom width, child rank and spectator count. -/
@@ -542,6 +575,250 @@ theorem helperSubinterval_header (n : Fin 9) (h : Fin 439) (w W lo hi : ℕ) :
   constructor
   · simpa only [rank] using inheritedInterval_flat (p+lo) (p+hi) 64 w W
   · simp only [phaseHeaderInput,rank]
+
+open RecursiveInterchangeLayout M8.RevMachine FixedHeaderBankCopy in
+/-- Expand the compact interval record and copy its six words to distinct
+header tapes, including the two fields that share a builder output. -/
+theorem helperMoveHeaders_runs (p : Fin 56) {lo hi b W : ℕ} (ordered : lo ≤ hi)
+    (fits : hi ≤ 8) (width : 0 < b) (live : 0 < W) :
+    let l := p.val+lo
+    let h := p.val+hi
+    let v := phaseIntervalChild l h b W 64
+    let setup := seq (extend (phaseHeaderProgram l h 64) 6) (FixedHeaderBankCopy.program (by decide) phaseHeaderSlots)
+    HoareTime setup (· = (phaseHeaderInput lo hi b W).append (empty 6))
+      (· = (phaseHeaderOutput l h b W 64).append (headerBank (Routines.hdr v)))
+      (4048*((prime^b)^128*W)+1) := by
+  intro l h v setup
+  have order : l ≤ h := Nat.add_le_add_left ordered _
+  have bound : h ≤ 64 := by dsimp [h]; omega
+  obtain ⟨build,valid,slots⟩ := intervalHeader_runs (by decide : 0 < 64) order bound width live
+  have size := intervalChild_volume order bound b W
+  have vol : 0 < (prime^b)^128*W := Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) live
+  have positive : v.Positive := LeafCore.positive_of_volume (size.symm ▸ vol)
+  have copy := constructs_linear (by decide) phaseHeaderSlots (Routines.hdr v) (phaseHeaderOutput l h b W 64)
+    (fun i => (slots i).2) (fun i => (slots i).1) _ vol valid.2 (fun i =>
+      (valid.1 i).trans_le ((RecursiveHeaderBounds.values_le_volume FlatCoordinateDimensions.hprime v positive i).trans_eq size))
+  have same : phaseHeaderInput l h b W = phaseHeaderInput lo hi b W := by
+    simp only [phaseHeaderInput,l,h,Nat.add_sub_add_left]
+  rw [← same]
+  apply ((hoare_extend_eq build (empty 6)).seq copy).consequence (fun _ h => h) (fun _ h => h)
+  change 3988*((prime^b)^128*W)+1+60*((prime^b)^128*W) ≤ 4048*((prime^b)^128*W)+1
+  omega
+
+/-- The builder uses 24 private tapes and writes its last six outputs straight
+to the supplied header slots. -/
+def headerSetupSlot {T : ℕ} (headers : Fin 6 ↪ Fin T) : Fin (24+6) → Fin (T+24) :=
+  Fin.addCases (Fin.natAdd T) (fun i => (headers i).castAdd 24)
+
+theorem headerSetupSlot_injective {T : ℕ} (headers : Fin 6 ↪ Fin T) :
+    Function.Injective (headerSetupSlot headers) := by
+  intro i j
+  induction i using Fin.addCases <;> induction j using Fin.addCases <;>
+    simp [headerSetupSlot,headers.injective.eq_iff]
+  · rintro rfl; rfl
+  · intro eq
+    have h := congrArg Fin.val eq
+    simp only [Fin.val_castAdd,Fin.val_natAdd] at h
+    omega
+  · intro eq
+    have h := congrArg Fin.val eq
+    simp only [Fin.val_castAdd,Fin.val_natAdd] at h
+    omega
+  · rintro rfl; rfl
+
+open M8.RevMachine FixedHeaderBankCopy in
+/-- Install the descriptor on a caller bank. Replacing the selected slots
+with compact input and blank headers gives the exact initial tape state. -/
+theorem helperMoveHeaders_placed {T : ℕ} (headers : Fin 6 ↪ Fin T) (p : Fin 56)
+    {lo hi b W : ℕ} (ordered : lo ≤ hi) (fits : hi ≤ 8) (width : 0 < b) (live : 0 < W)
+    (caller : Tapes T prime) :
+    let l := p.val+lo
+    let h := p.val+hi
+    let hs := Routines.hdr (phaseIntervalChild l h b W 64)
+    let output := phaseHeaderOutput l h b W 64
+    let slot := headerSetupSlot headers
+    let e := InjectivePlacement.placement slot (headerSetupSlot_injective headers)
+      (u := T-6) (by have := Fintype.card_le_of_injective _ headers.injective; simp at this; omega)
+    let setup := seq (extend (phaseHeaderProgram l h 64) 6) (FixedHeaderBankCopy.program (by decide) phaseHeaderSlots)
+    (∀ i, caller.head (headers i) = 1 ∧ caller.tape (headers i) = RadixZeroFill.encodedBinary (hs i)) →
+    HoareTime (Placement.placed setup e)
+      (· = Placement.replace e (caller.append output) ((phaseHeaderInput lo hi b W).append (empty 6)))
+      (· = caller.append output) (4048*((prime^b)^128*W)+1) := by
+  intro l h hs output slot e setup ready
+  have active : Placement.active e (caller.append output) = output.append (headerBank hs) := by
+    rw [InjectivePlacement.active_bank]
+    apply Placement.Tapes.ext' <;> intro i <;> induction i using Fin.addCases
+    all_goals simp [slot,headerSetupSlot,Tapes.append,headerBank,FixedHeaderBankCopy.bank,ready,
+      RecursiveDimensionBank.head,RecursiveDimensionBank.tape]
+  have run := Placement.hoare (helperMoveHeaders_runs p ordered fits width live) e
+    (Placement.extra e (caller.append output))
+  apply run.consequence _ _ le_rfl
+  · rintro _ rfl
+    exact ⟨Placement.active_replace ..,Placement.extra_replace ..⟩
+  · rintro z ⟨out,frame⟩
+    rw [← Placement.view e z,out,← active,frame,Placement.view]
+
+open M8.RevMachine in
+noncomputable def helperLeafHeaders [M8.Machine.Net] (t : ℕ) : Fin 6 ↪ Fin (CommonBank.count t + LeafCore.small) where
+  toFun i := Fin.castAdd _ (CommonBank.headerSlot i)
+  inj' := by
+    intro i j eq
+    have h := congrArg Fin.val (Fin.castAdd_inj.mp eq)
+    simp only [CommonBank.headerSlot_val] at h
+    exact Fin.ext (by omega)
+
+def extendHeaderSlots {T : ℕ} (headers : Fin 6 ↪ Fin T) (m n : ℕ) : Fin 6 ↪ Fin (T+m+n) :=
+  ⟨fun i => ((headers i).castAdd m).castAdd n,
+    (Fin.castAdd_injective _ _).comp ((Fin.castAdd_injective _ _).comp headers.injective)⟩
+
+noncomputable def headerSetupPlacement {T : ℕ} (headers : Fin 6 ↪ Fin T) :=
+  InjectivePlacement.placement (headerSetupSlot headers) (headerSetupSlot_injective headers)
+    (u := T-6) (by have := Fintype.card_le_of_injective _ headers.injective; simp at this; omega)
+
+def HelperRecordRun {T q : ℕ} {Word : Type*} (headers : Fin 6 ↪ Fin T) (p : Fin 56)
+    (lo hi b W : ℕ) (bank : Word → Tapes T prime) (move : Program T q prime)
+    (effect : Word → Word → Prop) (cost : ℕ) : Prop :=
+    let l := p.val+lo
+    let h := p.val+hi
+    let e := headerSetupPlacement headers
+    let prep := Placement.placed (seq (extend (phaseHeaderProgram l h 64) 6)
+      (FixedHeaderBankCopy.program (by decide) phaseHeaderSlots)) e
+    let output := phaseHeaderOutput l h b W 64
+    ∀ x, HoareTime (seq prep (extend move 24))
+      (· = Placement.replace e ((bank x).append output)
+        ((phaseHeaderInput lo hi b W).append (FixedHeaderBankCopy.empty 6)))
+      (fun z => ∃ y, z = (bank y).append output ∧ effect x y)
+      (4048*((prime^b)^128*W)+2+cost)
+
+/-- Install the child headers and run the worker on the same bank, keeping
+the builder's 24 tapes outside the worker for its entire execution. -/
+theorem helperMove_fromRecord {T q : ℕ} {Word : Type*} (headers : Fin 6 ↪ Fin T)
+    (p : Fin 56) {lo hi b W : ℕ} (ordered : lo ≤ hi) (fits : hi ≤ 8) (width : 0 < b)
+    (live : 0 < W) (bank : Word → Tapes T prime) (move : Program T q prime)
+    (effect : Word → Word → Prop) (cost : ℕ) :
+    let l := p.val+lo
+    let h := p.val+hi
+    let hs := M8.RevMachine.Routines.hdr (phaseIntervalChild l h b W 64)
+    (∀ x i, (bank x).head (headers i) = 1 ∧ (bank x).tape (headers i) = RadixZeroFill.encodedBinary (hs i)) →
+    (∀ x, HoareTime move (· = bank x) (fun z => ∃ y, z = bank y ∧ effect x y) cost) →
+    HelperRecordRun headers p lo hi b W bank move effect cost := by
+  intro l h hs ready worker
+  unfold HelperRecordRun
+  intro _ _ e prep output x
+  have setup := helperMoveHeaders_placed headers p ordered fits width live (bank x) (ready x)
+  have run := (worker x).extend output
+  apply (setup.seq (run.consequence (fun _ h => ⟨_,rfl,h⟩) (fun _ h => h) le_rfl)).consequence
+      (fun _ h => h) _ (by omega)
+  rintro _ ⟨_,⟨y,rfl,transport⟩,rfl⟩
+  exact ⟨y,rfl,transport⟩
+
+private theorem headerSlots_read {t m n : ℕ} (headers : Fin 6 ↪ Fin t) (src : Fin t)
+    (distinct : ∀ i, headers i ≠ src) (caller : Tapes t prime) (payload)
+    (workB : Tapes m prime) (workA : Tapes n prime) (hs : Fin 6 → List Bool)
+    (ready : ∀ i, caller.head (headers i) = 1 ∧ caller.tape (headers i) = RadixZeroFill.encodedBinary (hs i)) :
+    let bank := ((SharedPlacementAlphabet.setTape caller src payload 0).append workB).append workA
+    ∀ i, bank.head (extendHeaderSlots headers m n i) = 1 ∧
+      bank.tape (extendHeaderSlots headers m n i) = RadixZeroFill.encodedBinary (hs i) := by
+  intro bank i
+  simp only [bank,extendHeaderSlots,Function.Embedding.coeFn_mk,Tapes.append,Fin.addCases_left,
+    SharedPlacementAlphabet.setTape,Function.update_of_ne (distinct i)]
+  exact ready i
+
+open M8.Machine.Segments SharedPlacementAlphabet ActualAffineScaling RecursiveInterchangeLayout
+  M8.RevMachine M8.Machine.ArbitraryWidthHighExchangeShared in
+/-- Build the scheduled headers and execute the two basis passes and the child on one owner. -/
+@[irreducible] def HelperMoveRecord {t q : ℕ} (src : Fin t) (p : Fin 56) (lo hi : ℕ)
+    (C : Matrix (Fin 8) (Fin 8) ℚ)
+    (rev : CopyBasisPass C.adjugate) (fwd : CopyBasisPass C) (b W : ℕ)
+    (caller : Tapes t prime) (child : Program t q prime) (childTime : ℕ)
+    (headers : Fin 6 ↪ Fin t) : Prop :=
+    let v := phaseIntervalChild (p.val+lo) (p.val+hi) b W 64
+    let owner := fun x => setTape caller src (sourceWord (v := v) x) 0
+    let A := (description _ rev.good).map (helperBasisOp p)
+    let B := (description _ fwd.good).map (helperBasisOp p)
+    let n := FlatCoordinateCleanSchedule.tapeCount A
+    let m := FlatCoordinateCleanSchedule.tapeCount B
+    let zero : Fin ((prime^b)^128*W) → ZMod 2 := 0
+    let bank := fun x => ((owner x).append (basisWorkspace B zero)).append (basisWorkspace A zero)
+    let enter := Placement.placed (FlatCoordinateCleanSchedule.program A)
+      (sharedPlacement (Fin.castAdd m src) (segmentSource A))
+    let leave := Placement.placed (FlatCoordinateCleanSchedule.program B) (sharedPlacement src (segmentSource B))
+    let spec := List.map (AffineFieldProgram.mapOp (Swap.Modular.ratMod (modulus b)))
+    let read := fun (x : Fin (volume prime v) → ZMod 2) (i : Fin ((prime^b)^128*W)) => ext x i.val
+    HelperRecordRun (extendHeaderSlots headers m n) p lo hi b W bank
+      (seq enter (seq (extend (extend child m) n) (extend leave n)))
+      (fun x y => HelperSlotTransport p (AffineFieldProgram.run (spec (rationalMoveWord lo hi C)))
+        (read x) (read y))
+      ((FlatCoordinateCleanSchedule.constant A+FlatCoordinateCleanSchedule.constant B)*
+        ((prime^b)^128*W)+childTime+2)
+
+open M8.Machine.Segments SharedPlacementAlphabet ActualAffineScaling RecursiveInterchangeLayout
+  M8.RevMachine M8.Machine.ArbitraryWidthHighExchangeShared in
+/-- Build the scheduled headers and execute the two basis passes and the child on one owner. -/
+theorem helperMove_record_onOwner {t q : ℕ} (src : Fin t) (p : Fin 56) {lo hi : ℕ}
+    (ordered : lo ≤ hi) (fits : hi ≤ 8) (C : Matrix (Fin 8) (Fin 8) ℚ)
+    (rev : CopyBasisPass C.adjugate) (fwd : CopyBasisPass C) (b W : ℕ) (live : 0 < W)
+    (caller : Tapes t prime) (child : Program t q prime) (childTime : ℕ)
+    (headers : Fin 6 ↪ Fin t) (distinct : ∀ i, headers i ≠ src) (width : 0 < b) :
+    let v := phaseIntervalChild (p.val+lo) (p.val+hi) b W 64
+    let owner := fun x => setTape caller src (sourceWord (v := v) x) 0
+    (∀ i, caller.head (headers i) = 1 ∧ caller.tape (headers i) =
+      RadixZeroFill.encodedBinary (Routines.hdr v i)) →
+    (∀ x, HoareTime child (· = owner x)
+      (· = owner (Shared50RecursiveNodeRows.transpose (one_dvd v.rows) x)) childTime) →
+    HelperMoveRecord src p lo hi C rev fwd b W caller child childTime headers := by
+  intro v owner ready exchange
+  unfold HelperMoveRecord
+  intro _ _ A B n m zero bank enter leave spec read
+  apply helperMove_fromRecord _ p ordered fits width live
+  · intro x i
+    exact headerSlots_read headers src distinct caller (sourceWord x)
+      (basisWorkspace B zero) (basisWorkspace A zero) (Routines.hdr v) ready i
+  · exact helperMove_onOwner src p ordered fits C rev fwd b W live caller child childTime exchange
+
+open M8.RevMachine SharedBankStageInput RecursiveInterchangeLayout in
+/-- From the compact record, execute the stopped MOVE and charge the concrete leaf once. -/
+theorem stoppedHelperMove_fromRecord [M8.Machine.Net] {t : ℕ} (io : Fin t) (p : Fin 56)
+    {lo hi b W cutoff : ℕ} (ordered : lo ≤ hi) (fits : hi ≤ 8) (paid : 0 < (hi-lo)*b)
+    (stop : (hi-lo)*b ≤ cutoff) (live : 0 < W) (C : Matrix (Fin 8) (Fin 8) ℚ)
+    (rev : CopyBasisPass C.adjugate) (fwd : CopyBasisPass C)
+    (roles : Tapes t prime) (f : ℤ → Fin (prime+4)) (pos : ℤ) (node scalar : Tapes 1 prime)
+    (ctr : Fin CommonBank.K → Option ℕ) (st : Tapes 2 prime) :
+    let v := phaseIntervalChild (p.val+lo) (p.val+hi) b W 64
+    let caller := raw (CommonBank.bank roles (Routines.hdr v) f pos node scalar ctr st)
+      (CommonBank.count t + LeafCore.small)
+    let cost := M8.Machine.ArbitraryWidthOriginalTotalRun.cost v (Routines.hdr v)
+    (cost : ℝ) ≤ |LeafCore.C| * ((prime^b)^128*W : ℕ) * cutoff ∧
+    HelperMoveRecord (Fin.castAdd LeafCore.small (LeafCore.roleSlot io)) p lo hi C rev fwd b W caller
+      (LeafCore.core io).program cost (helperLeafHeaders t) := by
+  intro v caller cost
+  have size : volume prime v = (prime^b)^128*W :=
+    intervalChild_volume (Nat.add_le_add_left ordered p.val) (by omega) b W
+  have positive : v.Positive := LeafCore.positive_of_volume (by
+    rw [size]
+    exact Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) live)
+  constructor
+  · have width : v.width = (hi-lo)*b := by
+      change (p.val+hi-(p.val+lo))*b = _
+      rw [Nat.add_sub_add_left]
+    have h := RevBudget.coreCost_le (volume prime v) v.width (L := (cutoff : ℝ)) (by
+      rw [width,max_eq_right paid]
+      exact (Real.rpow_le_self_of_one_le (by exact_mod_cast paid : (1 : ℝ) ≤ (((hi-lo)*b : ℕ) : ℝ))
+        M8.Machine.BudgetBound.exponent_range.2.le).trans (by exact_mod_cast stop))
+    exact (Nat.cast_le.mpr (LeafCore.cost_le positive)).trans (size ▸ h)
+  · have width : 0 < b := by by_contra! h; simp [Nat.eq_zero_of_le_zero h] at paid
+    have distinct (i) : helperLeafHeaders t i ≠ Fin.castAdd LeafCore.small (LeafCore.roleSlot io) := by
+      intro eq
+      have h := congrArg Fin.val (Fin.castAdd_inj.mp eq)
+      change (CommonBank.headerSlot (t := t) i).val = io.val at h
+      rw [CommonBank.headerSlot_val] at h
+      omega
+    apply helperMove_record_onOwner _ p ordered fits C rev fwd b W live caller _ cost _ distinct width
+    · intro i
+      have hit := CommonBank.bank_header roles (Routines.hdr v) f pos node scalar ctr st i
+      simpa [v,caller,raw,helperLeafHeaders,(CommonBank.headerSlot (t := t) i).isLt,
+        CounterDimensions.descriptorHead,CounterDimensions.descriptorTape] using hit
+    · exact helperLeaf_onOwner io v positive roles f pos node scalar ctr st
 
 open RecursiveInterchangeLayout M8.RevMachine in
 /-- With its interval header installed, a stopping helper child exchanges the
