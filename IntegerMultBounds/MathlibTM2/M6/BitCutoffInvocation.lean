@@ -50,6 +50,93 @@ theorem writeInvocationArchive {P U : Type} {T Q : ℕ} (body : P → Pr P T Q p
     simp [word,invocationWorkerRecord,copy,length_binSyms]
     omega
 
+/-- Embed an occurrence beside the shared exchange archive. Only the owner
+prefix is renamed; the 273 archive positions have the same meaning in every bank. -/
+def occurrenceArchiveBank {t T : ℕ} (place : Fin t ↪ Fin T) : Fin (t+273) ↪ Fin (T+273) :=
+  finSumFinEquiv.symm.toEmbedding.trans
+    ((place.sumMap (Function.Embedding.refl (Fin 273))).trans finSumFinEquiv.toEmbedding)
+
+theorem occurrenceArchiveBank_owner {t T : ℕ} (place : Fin t ↪ Fin T) (k : Fin t) :
+    occurrenceArchiveBank place (k.castAdd 273) = (place k).castAdd 273 := by
+  simp [occurrenceArchiveBank]
+
+theorem occurrenceArchiveBank_header {t T : ℕ} (place : Fin t ↪ Fin T) (i : Fin 127) (j : Fin 6) :
+    occurrenceArchiveBank place (borrowedHeaders t i j) = borrowedHeaders T i j := by
+  have atArchive (a : Fin 268) : occurrenceArchiveBank place (parentArchive t a) = parentArchive T a := by
+    simp [occurrenceArchiveBank,parentArchive,Function.Embedding.sumMap]
+  fin_cases j <;> first | exact atArchive _ | simpa [borrowedHeaders,helperHeaderPorts] using atArchive 1
+
+/-- The local view of each occurrence reads the already generated headers
+from the stage and the owner words from its own placement. -/
+theorem occurrenceArchiveBank_view {I : Type} {t : I → ℕ} {T L w W : ℕ}
+    (place : ∀ i, Fin (t i) ↪ Fin T) (S : Stacks (80+((T+273)+L)) prime)
+    (fields : ∀ i j, S.R (((borrowedHeaders T i j).castAdd L).natAdd 80) =
+      (Routines.hdr (helperAdjacentView w 1 W i) j).map bitSymbol) :
+    ∀ p, let bank := ((occurrenceArchiveBank (place p)).trans (Fin.castAddEmb L)).trans (Fin.natAddEmb 80)
+      ∀ i j, (embStk bank S).R (borrowedHeaders (t p) i j) =
+        (Routines.hdr (helperAdjacentView w 1 W i) j).map bitSymbol := by
+  intro p bank i j
+  change S.R ((((occurrenceArchiveBank (place p)) (borrowedHeaders (t p) i j)).castAdd L).natAdd 80) = _
+  rw [occurrenceArchiveBank_header]
+  exact fields i j
+
+/-- A stage occurrence only writes its owner bank. Every exchange header
+therefore remains available to every later occurrence on the same stage. -/
+private theorem stageHeaderOutside {T L : ℕ} (i : Fin 127) (j : Fin 6) (k : Fin T) :
+    ((k.castAdd 273).castAdd L).natAdd 80 ≠ ((borrowedHeaders T i j).castAdd L).natAdd 80 := by
+  rw [← archiveSetupPlacement_header]
+  exact ((archiveSetupPlacement_frame (R := 80) (T := T) (L := L) (borrowedHeaders 80 i j)).1 k).symm
+
+/-- Populate a list of occurrence archives before the sweep. All occurrences read the
+same cutoff and exchange headers. Only the destination archives change. -/
+theorem writeInvocationArchives {I P U : Type} {T Q R : ℕ} (body : P → Pr P (80+((T+273)+R)) Q prime U)
+    (banks : I → Fin 35 ↪ Fin T) (cut : Fin T)
+    (offCut : ∀ p j, banks p j ≠ cut)
+    (apart : ∀ p q, p ≠ q → ∀ j, banks p 34 ≠ banks q j)
+    (slot : I → Fin 3) (rank : I → ℕ) (positive : ∀ p, 0 < rank p) (bound : ∀ p, rank p ≤ 64) :
+    let owner := ((Fin.castAddEmb 273 (n := T)).trans (Fin.castAddEmb R)).trans (Fin.natAddEmb 80)
+    let headers := fun i j => ((borrowedHeaders T i j).castAdd R).natAdd 80
+    ∀ order : List I, order.Nodup → ∃ code : Pr P (80+((T+273)+R)) Q prime U, ∀ (child : I → Descriptor) w W L cutoff,
+      (∀ p ∈ order, (child p).width = (w+1)*rank p) →
+      (∀ p ∈ order, volume prime (child p) = (prime^(w+1))^16*((prime^(w+1))^112*W)) →
+      let word := fun p => invocationWorkerRecord (slot p) (child p) L cutoff
+      ∀ u (S : Stacks (80+((T+273)+R)) prime), S.R (owner cut) = binSyms L cutoff →
+      (∀ i, S.R (headers i 5) = (Routines.hdr (helperAdjacentView (w+1) 1 W i) 5).map bitSymbol) →
+      (∀ p ∈ order, S.R (owner (banks p 34)) = [] ∧ S.R (owner (banks p 0)) = [] ∧ S.R (owner (banks p 1)) = []) →
+      ∃ z t, Exec body code (mk u S) t
+        (mk z {S with R := order.foldl (fun R p => Function.update R (owner (banks p 34)) (word p)) S.R}) ∧
+        z.user = u.user ∧ t ≤ (order.map (fun p => 6*(word p).length+7)).sum+1 := by
+  intro owner headers order distinct
+  induction order with
+  | nil =>
+    refine ⟨.act .done,?_⟩
+    intro child w W L cutoff shape size word u S header fields empty
+    exact ⟨u,1,Exec.act .done _,rfl,by simp⟩
+  | cons p rest ih =>
+    obtain ⟨head,write⟩ := writeInvocationArchive body ((banks p).trans owner) (owner cut) headers
+      (fun j => owner.injective.ne (offCut p j)) (fun i j => stageHeaderOutside i 5 _)
+      (slot p) (rank p) (positive p) (bound p)
+    obtain ⟨tail,more⟩ := ih distinct.tail
+    refine ⟨head.seq tail,?_⟩
+    intro child w W L cutoff shape size word u S header fields empty
+    obtain ⟨free,a,b⟩ := empty p List.mem_cons_self
+    obtain ⟨v,k,start,user,price⟩ := write (child p) w W L cutoff (shape p List.mem_cons_self)
+      (size p List.mem_cons_self) u S header (fun _ => fields _) free a b
+    let D := {S with R := Function.update S.R (owner (banks p 34)) (word p)}
+    obtain ⟨z,t,done,same,bill⟩ := more child w W L cutoff (fun q h => shape q (List.mem_cons_of_mem _ h))
+      (fun q h => size q (List.mem_cons_of_mem _ h)) v D
+      ((Function.update_of_ne (owner.injective.ne (offCut p 34)).symm ..).trans header)
+      (fun i => (Function.update_of_ne (stageHeaderOutside i 5 (banks p 34)).symm ..).trans (fields i)) (by
+        intro q mem
+        have ne : p ≠ q := fun eq => distinct.notMem (eq ▸ mem)
+        have keep j : D.R (owner (banks q j)) = S.R (owner (banks q j)) := Function.update_of_ne (owner.injective.ne (apart p q ne j)).symm ..
+        simpa only [keep] using empty q (List.mem_cons_of_mem _ mem))
+    refine ⟨z,_,start.seq done,same.trans user,?_⟩
+    change k ≤ 6*(word p).length+7 at price
+    change t ≤ (rest.map (fun q => 6*(word q).length+7)).sum+1 at bill
+    simp only [List.map_cons,List.sum_cons]
+    omega
+
 /-- Start and finish with an empty occurrence archive. The worker's budget is
 charged once; copying and retiring its temporary archive cost at most 33 steps per cell. -/
 theorem callInvocationFromHeaders [M8.Machine.Net] {P U : Type} {T Q : ℕ}
@@ -121,6 +208,87 @@ theorem callInvocationFromHeaders [M8.Machine.Net] {P U : Type} {T Q : ℕ}
   · intro j outside
     have ne : j ≠ bank 34 := (outside _).symm
     exact ⟨(frame j outside).1,(Function.update_of_ne ne ..).trans ((frame j outside).2.trans (Function.update_of_ne ne ..))⟩
+
+/-- Generate the exchange headers on the stage archive and use them for a scheduled
+worker on the disjoint owner tapes. The generator's charge is linear in lane volume. -/
+theorem callInvocationFromParent [M8.Machine.Net] {U : Type} {Q : ℕ}
+    (capacity : (fun {q : ℕ} (_ : Program 38 q prime) => q) (RecursiveRowsNodeHeaders.program 142080) ≤ Q) :
+    ∃ rate : ℕ, ∀ {P : Type} {T L : ℕ} (body : P → Pr P (80+((T+273)+L)) Q prime U) (entry : P)
+      (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T) (cut : Fin T)
+      (offCut : ∀ j, scheduledRecordPorts ports j ≠ cut)
+      (slot : Fin 3) (rank : ℕ) (positive : 0 < rank) (bound : rank ≤ 64),
+    let owner := ((Fin.castAddEmb 273 (n := T)).trans (Fin.castAddEmb L)).trans (Fin.natAddEmb 80)
+    let placed := ports.trans owner
+    let bank := scheduledRecordPorts placed
+    ∃ code, ∀ (node child : Descriptor) w B rows digits cutoff price,
+      let K := node.beforeRows*rows*node.between*node.afterD
+      let W := B*prime^(64*((w+1)*64))*K
+      let M := prime^(w+1)
+      let suffix := M^112*W
+      let V := volume prime child
+      node.width = 64*(w+1) → node.rows = 142080*rows → node.beforeH = B*prime^(64*((w+1)*64)) →
+      ({node with rows := rows} : Descriptor).Positive → child.width = (w+1)*rank →
+      V = M^16*suffix → digits ≤ V → 0 < V →
+      ∀ position, ScheduledChildExec node child w suffix placed (invocationWorkerRecord slot child digits cutoff)
+        position body entry price true → child.width < node.width →
+      let stored := RecordReady (b := prime) (w := w) (d := 16) (W := suffix) bank M.size suffix.size []
+        SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0
+      let clean := fun (D : Stacks _ prime) => ∀ j : Fin (rowSwapBlock.tapes+35), 35 ≤ j.val →
+        D.L (placed j) = [] ∧ D.R (placed j) = []
+      ∀ word u S, ParentArchiveInput node w (embStk (archiveSetupPlacement 80 T L) S) →
+        stored word S → clean S → S.R (owner cut) = binSyms digits cutoff →
+        ∃ z F t y, Exec body code (mk u S) t (mk z F) ∧ CleanupBound S F t (price+rate*V) ∧
+          z.user = u.user ∧ stored y F ∧ clean F ∧
+          (∀ i j, F.R (((borrowedHeaders T i j).castAdd L).natAdd 80) =
+            (Routines.hdr (helperAdjacentView (w+1) 1 W i) j).map bitSymbol) ∧
+          (∀ k, (∀ j, ports j ≠ k) → F.L (owner k) = S.L (owner k) ∧ F.R (owner k) = S.R (owner k)) ∧
+          ∀ h, y (position h) = Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (word ∘ position) h := by
+  obtain ⟨setupRate,archive⟩ := parentArchiveThenWithCharge (U := U) capacity
+  refine ⟨setupRate+33,?_⟩
+  intro P T L body entry ports cut offCut slot rank positive bound owner placed bank
+  let headers := fun i j => ((borrowedHeaders T i j).castAdd L).natAdd 80
+  obtain ⟨setup,generate⟩ := archive body
+  obtain ⟨call,invoke⟩ := callInvocationFromHeaders body entry placed (owner cut) headers
+    (fun j => owner.injective.ne (offCut j)) (fun i j => stageHeaderOutside i 5 _)
+    slot rank positive bound
+  refine ⟨setup.seq call,?_⟩
+  intro node child w B rows digits cutoff price K W M suffix V width split label pos shape size precision live position worker smaller stored clean word u S input ready free header
+  let post := fun F => ∃ y, stored y F ∧ clean F ∧
+    (∀ i j, F.R (headers i j) = (Routines.hdr (helperAdjacentView (w+1) 1 W i) j).map bitSymbol) ∧
+    (∀ k, (∀ j, ports j ≠ k) → F.L (owner k) = S.L (owner k) ∧ F.R (owner k) = S.R (owner k)) ∧
+    ∀ h, y (position h) = Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (word ∘ position) h
+  obtain ⟨z,F,t,run,paid,user,y,out⟩ := generate node w B rows width split label pos u S input call (price+33*V : ℕ) post (by
+    intro v D fields keep _
+    have held (j : Fin 35) : D.L (bank j) = S.L (bank j) ∧ D.R (bank j) = S.R (bank j) :=
+      keep (scheduledRecordPorts ports j)
+    have resumed : stored word D := ready.returnPayload (fun j _ => held j) (by
+      intro x
+      simpa only [(held 24).1,(held 24).2,sub_zero] using (ready.src x).symm)
+    obtain ⟨z,F,t,y,run,paid,user,out,blank,frame,read⟩ := invoke node child w W digits cutoff price shape size precision live
+      position worker smaller word v D resumed (fun j hj => ⟨(keep _).1.trans (free j hj).1,(keep _).2.trans (free j hj).2⟩)
+      ((keep cut).2.trans header) (fun _ => fields _ _)
+    refine ⟨z,F,t,run,?_,user,y,out,blank,?_,?_,read⟩
+    · intro js nd
+      exact_mod_cast paid js nd
+    · intro i j
+      exact (frame (headers i j) (fun k => stageHeaderOutside i j (ports k))).2.trans (fields i j)
+    · intro k off
+      have kept := frame (owner k) (fun j => owner.injective.ne (off j))
+      exact ⟨kept.1.trans (keep k).1,kept.2.trans (keep k).2⟩)
+  refine ⟨z,F,t,y,run,?_,user,out⟩
+  intro js nd
+  have h := paid js nd
+  have mass : M^16*((M^112*B)*prime^(64*((w+1)*64))*K) = V := by
+    rw [size]
+    dsimp only [suffix,W]
+    ring
+  change (_ : ℝ) ≤ _+(setupRate*(M^16*((M^112*B)*prime^(64*((w+1)*64))*K)) : ℕ)+(price+33*V : ℕ) at h
+  rw [mass] at h
+  let weight := fun (l r : List (Fin (prime+4))) => 4*l.length+2*r.length+4
+  have bill : t+tapeCharge weight js F ≤ tapeCharge weight js S+setupRate*V+(price+33*V) := by exact_mod_cast h
+  change t+tapeCharge weight js F ≤ tapeCharge weight js S+(price+(setupRate+33)*V)
+  rw [Nat.add_mul]
+  omega
 
 /-- Install the charged worker for one slot of the selected invocation. Its
 table is fixed before the descriptor, cutoff and recursive budget are supplied. -/

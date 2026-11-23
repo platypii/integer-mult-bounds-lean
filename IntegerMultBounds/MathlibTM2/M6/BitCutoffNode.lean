@@ -140,6 +140,97 @@ theorem remainderSetup_le (c : CutoffNodeInput) (H : ℕ) :
 
 end CutoffNodeInput
 
+private theorem archiveStockGrowth {I : Type} {T : ℕ} (dst : I ↪ Fin T)
+    (word : I → List (Fin (prime+4))) (order : List I) (unique : order.Nodup)
+    (S : Stacks T prime) (empty : ∀ p ∈ order, S.R (dst p) = []) (js : List (Fin T)) (nd : js.Nodup) :
+    let F := {S with R := order.foldl (fun R p => Function.update R (dst p) (word p)) S.R}
+    tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+2*(order.map (fun p => (word p).length)).sum := by
+  induction order generalizing S with
+  | nil => simp
+  | cons p rest ih =>
+    let D := {S with R := Function.update S.R (dst p) (word p)}
+    have head := prependedWordCharge S (dst p) (word p) js nd
+    simp only [empty p List.mem_cons_self,List.append_nil] at head
+    have tail := ih unique.tail D (by
+      intro q h
+      have ne : q ≠ p := fun eq => unique.notMem (eq ▸ h)
+      exact (Function.update_of_ne (dst.injective.ne ne) ..).trans (empty q (List.mem_cons_of_mem _ h)))
+    simp only [List.foldl_cons,List.map_cons,List.sum_cons,Nat.mul_add]
+    change tapeCharge cleanupWeight js D ≤ _ at head
+    exact tail.trans (by omega)
+
+/-- Compute the exchange headers once and fill all selected occurrence archives.
+The time and cleanup charge is additive in the lengths of the words written. -/
+theorem prepareStageArchives {U : Type} {Q : ℕ}
+    (capacity : (fun {q : ℕ} (_ : Program 38 q prime) => q) (RecursiveRowsNodeHeaders.program 142080) ≤ Q) :
+    ∃ rate : ℕ, ∀ {I P : Type} {T R : ℕ} (body : P → Pr P (80+((T+273)+R)) Q prime U)
+      (banks : I → Fin 35 ↪ Fin T) (cut : Fin T) (offCut : ∀ p j, banks p j ≠ cut)
+      (apart : ∀ p q, p ≠ q → ∀ j, banks p 34 ≠ banks q j)
+      (slot : I → Fin 3) (rank : I → ℕ) (positive : ∀ p, 0 < rank p) (bound : ∀ p, rank p ≤ 64)
+      (order : List I), order.Nodup →
+    let owner := ((Fin.castAddEmb 273 (n := T)).trans (Fin.castAddEmb R)).trans (Fin.natAddEmb 80)
+    ∃ code, ∀ (node : Descriptor) (child : I → Descriptor) w B rows L cutoff,
+      let M := prime^(w+1)
+      let K := node.beforeRows*rows*node.between*node.afterD
+      let W := B*prime^(64*((w+1)*64))*K
+      let V := M^16*(M^112*W)
+      let word := fun p => invocationWorkerRecord (slot p) (child p) L cutoff
+      node.width = 64*(w+1) → node.rows = 142080*rows → node.beforeH = B*prime^(64*((w+1)*64)) →
+      ({node with rows := rows} : Descriptor).Positive →
+      (∀ p ∈ order, (child p).width = (w+1)*rank p) → (∀ p ∈ order, volume prime (child p) = V) →
+      ∀ u S, ParentArchiveInput node w (embStk (archiveSetupPlacement 80 T R) S) →
+      S.R (owner cut) = binSyms L cutoff →
+      (∀ p ∈ order, S.R (owner (banks p 34)) = [] ∧ S.R (owner (banks p 0)) = [] ∧ S.R (owner (banks p 1)) = []) →
+      ∃ z F t, Exec body code (mk u S) t (mk z F) ∧ z.user = u.user ∧
+        CleanupBound S F t (rate*V+(order.map (fun p => 8*(word p).length+7)).sum+1) ∧
+        ∃ D : Stacks _ prime, (∀ k, D.L (owner k) = S.L (owner k) ∧ D.R (owner k) = S.R (owner k)) ∧
+          (∀ i j, D.R (((borrowedHeaders T i j).castAdd R).natAdd 80) =
+            (Routines.hdr (helperAdjacentView (w+1) 1 W i) j).map bitSymbol) ∧
+          F = {D with R := order.foldl (fun r p => Function.update r (owner (banks p 34)) (word p)) D.R} := by
+  obtain ⟨rate,archive⟩ := parentArchiveThenWithCharge (U := U) capacity
+  refine ⟨rate,?_⟩
+  intro I P T R body banks cut offCut apart slot rank positive bound order distinct owner
+  obtain ⟨setup,generate⟩ := archive body
+  obtain ⟨fill,write⟩ := writeInvocationArchives body banks cut offCut apart slot rank positive bound order distinct
+  let dst : I ↪ Fin _ := ⟨fun p => owner (banks p 34),fun p q eq => by
+    by_contra ne
+    exact apart p q ne 34 (owner.injective eq)⟩
+  refine ⟨setup.seq fill,?_⟩
+  intro node child w B rows L cutoff M K W V word width split label pos shape size u S input header empty
+  let price := (order.map (fun p => 8*(word p).length+7)).sum+1
+  let post := fun (F : Stacks _ prime) => ∃ D : Stacks _ prime,
+    (∀ k, D.L (owner k) = S.L (owner k) ∧ D.R (owner k) = S.R (owner k)) ∧
+    (∀ i j, D.R (((borrowedHeaders T i j).castAdd R).natAdd 80) = (Routines.hdr (helperAdjacentView (w+1) 1 W i) j).map bitSymbol) ∧
+    F = {D with R := order.foldl (fun r p => Function.update r (dst p) (word p)) D.R}
+  obtain ⟨z,F,t,run,bill,user,out⟩ := generate node w B rows width split label pos u S input fill (price : ℕ) post (by
+    intro v D fields keep _
+    have free p (h : p ∈ order) := empty p h
+    obtain ⟨z,m,run,user,time⟩ := write child w W L cutoff shape size v D ((keep cut).2.trans header) (fun i => fields i 5)
+      (fun p h => ⟨(keep _).2.trans (free p h).1,(keep _).2.trans (free p h).2.1,(keep _).2.trans (free p h).2.2⟩)
+    refine ⟨z,_,m,run,?_,user,D,keep,fields,rfl⟩
+    intro js nd
+    have growth := archiveStockGrowth dst word order distinct D (fun p h => (keep _).2.trans (free p h).1) js nd
+    have sum (xs : List I) : (xs.map (fun p => 8*(word p).length+7)).sum =
+        (xs.map (fun p => 6*(word p).length+7)).sum+2*(xs.map (fun p => (word p).length)).sum := by
+      induction xs with
+      | nil => simp
+      | cons p xs ih => simp only [List.map_cons,List.sum_cons,ih]; omega
+    change m ≤ (order.map (fun p => 6*(word p).length+7)).sum+1 at time
+    change (_ : ℝ) ≤ _ + (price : ℕ)
+    have paid := Nat.add_le_add time growth
+    dsimp only [price]
+    rw [sum]
+    exact_mod_cast (show m+_ ≤ _ from paid.trans (by omega) : m+tapeCharge cleanupWeight js _ ≤ tapeCharge cleanupWeight js D+(_+_+1)))
+  refine ⟨z,F,t,run,user,?_,out⟩
+  intro js nd
+  have paid := bill js nd
+  have mass : M^16*((M^112*B)*prime^(64*((w+1)*64))*K) = V := by dsimp only [V,W]; ring
+  change (_ : ℝ) ≤ _+(rate*(M^16*((M^112*B)*prime^(64*((w+1)*64))*K)) : ℕ)+(price : ℕ) at paid
+  rw [mass] at paid
+  dsimp only [price] at paid
+  rw [Nat.add_assoc (rate*V),← Nat.add_assoc _ (rate*V)]
+  exact_mod_cast paid
+
 /-- The installed remainder call pays for its runtime seed with a constant per lane symbol. -/
 theorem callCutoffRemainder {P A U : Type} {H N T Q : ℕ}
     (body : P → Pr P H Q prime U) (program : Pr P H Q prime U) (label : P → A)
