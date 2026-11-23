@@ -522,6 +522,82 @@ private theorem loadedBankCharge {B T : ℕ} [NeZero B] (workspace : Fin B ↪ F
 open Cover Node Mult.PhaseCellToeplitz in
 /-- Load the caller's positioned word, run on an initially empty private bank,
 write back the result and clear every private tape before resuming the sweep. -/
+theorem activeHostReturn {P U : Type} {B T Q n : ℕ} [NeZero B]
+    (ports : Fin (n+35) ↪ Fin T) (room : B+3 ≤ n) :
+    ∃ (workspace : Fin B ↪ Fin T) (wrap : Pr P T Q prime U → Pr P T Q prime U),
+    (∀ j i, workspace j ≠ scheduledRecordPorts ports i) ∧
+    ∀ {w W m : ℕ}
+    (node child : Descriptor) (record : List (Fin (prime+4)))
+    (position : Fin (volume prime child) ≃ Fin ((prime^(w+1))^16*W))
+    (span : m*142080 = (prime^(w+1))^16*W),
+    ∀ (body : P → Pr P T Q prime U) (worker : Pr P T Q prime U) (price : ℕ) (charged : Bool),
+    let V := (prime^(w+1))^16*W
+    (∀ (x : Fin V → ZMod 2) v D,
+      RecordReady (b := prime) (w := w) (d := 16) (W := W) (scheduledRecordPorts ports)
+        (prime^(w+1)).size W.size record SparseRoleCircuit.encode (fun _ => blank) (fun _ => blank) 0 0 x D →
+      D.R (workspace 0) = List.ofFn (fun k : Fin (m*142080) => SparseRoleCircuit.encode (x (k.cast span))) →
+      (∀ j, D.L (workspace j) = []) → (∀ j, j ≠ 0 → D.R (workspace j) = []) →
+      ∃ z F t y, Exec body worker (mk v D) t (mk z F) ∧ z.user = v.user ∧
+        (∀ k, y (position k) = Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (x ∘ position) k) ∧
+        RecordPayload (workspace 0) (fun _ => blank) 0 y F ∧
+        t+tapeCharge cleanupWeight ((List.finRange B).map workspace) F ≤ tapeCharge cleanupWeight ((List.finRange B).map workspace) D+price ∧
+        ∀ j, (∀ i, workspace i ≠ j) → F.L j = D.L j ∧ F.R j = D.R j) →
+    MoveOnBankExec node child w W ports record position body (wrap worker)
+      (price+30*V+4*B+33) charged := by
+  obtain ⟨workspace,count,saved,tmp,apart,ho,hc,hs,ht,placed⟩ := activeReturnPlacement (B := B) ports room
+  have disjoint j (i : Fin 35) : workspace j ≠ scheduledRecordPorts ports i := by
+    obtain ⟨k,high,eq⟩ := placed (workspace j) (.inl (List.mem_map.mpr ⟨j,List.mem_finRange _,rfl⟩))
+    intro hit
+    have index := congrArg Fin.val (ports.injective (eq.trans hit))
+    change k.val = i.val at index
+    omega
+  let owner := scheduledRecordPorts ports 24
+  let slots := (List.finRange B).map workspace
+  let write : Pr P T Q prime U := (loadCompactWord (workspace 0) tmp count).seq
+      (((usub count owner tmp).seq (Mult.PhaseCellToeplitz.movePrefix count (workspace 0) owner saved tmp)).seq (bclear count))
+  refine ⟨workspace,fun worker => (loadCompactWord owner tmp (workspace 0)).seq
+    (worker.seq (write.seq (clearWorkTapes slots))),disjoint,?_⟩
+  intro w W m node child record position span body worker price charged V execute
+  apply bankTransposeOfPayload
+  intro smaller u S x ready clean
+  have empty j (inside : j ∈ slots ∨ j ∈ [count,saved,tmp]) : S.L j = [] ∧ S.R j = [] := by
+    obtain ⟨i,high,rfl⟩ := placed j inside
+    exact clean i high
+  obtain ⟨z,F,t,y,run,paid,user,effect,out,lengths,rest⟩ := idleOwnerWorker_exec body worker workspace owner count saved tmp
+    apart span x (fun y => ∀ k, y (position k) = Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (x ∘ position) k)
+    (2*V+4*B+price) ho hc hs ht u S (fun k => by simpa only [List.map_ofFn] using ready.src k)
+    (fun j => empty _ (.inl (List.mem_map.mpr ⟨j,List.mem_finRange _,rfl⟩)))
+    (empty _ (.inr (by simp))).2 (empty _ (.inr (by simp))).2
+    (empty _ (.inr (by simp))).1 (empty _ (.inr (by simp))).2 (by
+      intro v D word left right keep
+      have header i := keep (scheduledRecordPorts ports i) (disjoint 0 i).symm
+      have stored := ready.returnPayload (outBank := scheduledRecordPorts ports) (fun i _ => header i)
+        (fun k => by rw [(header 24).1,(header 24).2]; exact (ready.src k).symm)
+      obtain ⟨z,F,t,y,exec,user,reads,payload,paid,frame⟩ := execute x v D stored word left right
+      have input : (D.R (workspace 0)).length = V := by rw [word,List.length_ofFn,span]
+      rw [loadedBankCharge workspace D V input left right] at paid
+      refine ⟨z,F,t,y,exec,user,reads,payload,paid,?_⟩
+      intro j away
+      exact frame j (fun i eq => away (List.mem_map.mpr ⟨i,List.mem_finRange _,eq⟩)))
+  refine ⟨z,F,t,y,run,?_,user,(fun k => by simpa only [List.map_ofFn] using out k),rest,effect⟩
+  cases charged with
+  | false => change t ≤ _; omega
+  | true =>
+    intro js _
+    have stock : tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S := by
+      apply List.sum_le_sum
+      intro j _
+      by_cases h : j = owner
+      · subst j
+        unfold cleanupWeight
+        omega
+      · rw [(rest j h).1,(rest j h).2]
+    change t+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+_
+    omega
+
+open Cover Node Mult.PhaseCellToeplitz in
+/-- Load the caller's positioned word, run on an initially empty private bank,
+write back the result and clear every private tape before resuming the sweep. -/
 theorem activeBankReturn {P U : Type} {B T Q n : ℕ} [NeZero B]
     (ports : Fin (n+35) ↪ Fin T) (room : B+3 ≤ n) (slot : Fin B) :
     ∃ (workspace : Fin B ↪ Fin T) (wrap : Pr P B Q prime U → Pr P T Q prime U),
@@ -540,62 +616,32 @@ theorem activeBankReturn {P U : Type} {B T Q n : ℕ} [NeZero B]
         t+tapeCharge cleanupWeight (List.finRange B) F ≤ tapeCharge cleanupWeight (List.finRange B) D+price) →
     MoveOnBankExec node child w W ports record position (fun f => embProg workspace id (body f)) (wrap worker)
       (price+30*V+4*B+33) charged := by
-  obtain ⟨workspace,count,saved,tmp,apart,ho,hc,hs,ht,placed⟩ := activeReturnPlacement (B := B) ports room
+  obtain ⟨workspace,wrap,_,restore⟩ := activeHostReturn (P := P) (U := U) (Q := Q) ports room (B := B)
   let swap := Equiv.swap slot (0 : Fin B)
   let bank := swap.toEmbedding.trans workspace
   have atSlot : bank slot = workspace 0 := by simp [bank,swap]
-  let owner := scheduledRecordPorts ports 24
   let slots := (List.finRange B).map workspace
-  let write : Pr P T Q prime U := (loadCompactWord (workspace 0) tmp count).seq
-      (((usub count owner tmp).seq (Mult.PhaseCellToeplitz.movePrefix count (workspace 0) owner saved tmp)).seq (bclear count))
-  refine ⟨bank,fun worker => (loadCompactWord owner tmp (workspace 0)).seq
-    ((embProg bank id worker).seq (write.seq (clearWorkTapes slots))),?_⟩
+  refine ⟨bank,fun worker => wrap (embProg bank id worker),?_⟩
   intro w W m node child record position span body worker price charged V execute
-  apply bankTransposeOfPayload
-  intro smaller u S x ready clean
-  have empty j (inside : j ∈ slots ∨ j ∈ [count,saved,tmp]) : S.L j = [] ∧ S.R j = [] := by
-    obtain ⟨i,high,rfl⟩ := placed j inside
-    exact clean i high
-  obtain ⟨z,F,t,y,run,paid,user,effect,out,lengths,rest⟩ := idleOwnerWorker_exec (fun f => embProg bank id (body f)) (embProg bank id worker) workspace owner count saved tmp
-    apart span x (fun y => ∀ k, y (position k) = Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (x ∘ position) k)
-    (2*V+4*B+price) ho hc hs ht u S (fun k => by simpa only [List.map_ofFn] using ready.src k)
-    (fun j => empty _ (.inl (List.mem_map.mpr ⟨j,List.mem_finRange _,rfl⟩)))
-    (empty _ (.inr (by simp))).2 (empty _ (.inr (by simp))).2
-    (empty _ (.inr (by simp))).1 (empty _ (.inr (by simp))).2 (by
-      intro v D word left right
-      obtain ⟨z,F,t,y,run,user,reads,payload,paid⟩ := execute x (embDn bank v) (embStk bank D)
-        (by simpa only [embStk_R,atSlot] using word) (fun j => left (swap j))
-        (fun j ne => right (swap j) (fun eq => ne (swap.injective (eq.trans (Equiv.swap_apply_left slot 0).symm))))
-      obtain ⟨z',F',lifted,_,same,view,frame⟩ := exec_emb (ι := id) (body' := fun f => embProg bank id (body f)) bank.injective
-        (fun _ => rfl) run v rfl D rfl
-      rw [← view] at payload paid
-      have charge (S : Stacks T prime) : tapeCharge cleanupWeight (List.finRange B) (embStk bank S) =
-          tapeCharge cleanupWeight slots S := by
-        let cost := fun j => cleanupWeight (S.L (workspace j)) (S.R (workspace j))
-        simpa only [tapeCharge,slots,List.map_map,Function.comp_def,embStk,bank,cost,
-          Function.Embedding.trans_apply,Equiv.toEmbedding_apply] using
-          (swap.map_finRange_perm.map cost).sum_eq
-      rw [charge,charge] at paid
-      have input : (D.R (workspace 0)).length = V := by rw [word,List.length_ofFn,span]
-      rw [loadedBankCharge workspace D V input left right] at paid
-      refine ⟨z',F',t,y,lifted,same.trans user,reads,by simpa only [RecordPayload,embStk_L,embStk_R,atSlot] using payload,paid,?_⟩
-      intro j away
-      exact frame j (fun i eq => away (List.mem_map.mpr ⟨swap i,List.mem_finRange _,eq⟩)))
-  refine ⟨z,F,t,y,run,?_,user,(fun k => by simpa only [List.map_ofFn] using out k),rest,effect⟩
-  cases charged with
-  | false => change t ≤ _; omega
-  | true =>
-    intro js _
-    have stock : tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S := by
-      apply List.sum_le_sum
-      intro j _
-      by_cases h : j = owner
-      · subst j
-        unfold cleanupWeight
-        omega
-      · rw [(rest j h).1,(rest j h).2]
-    change t+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+_
-    omega
+  apply restore node child record position span _ _ price charged
+  intro x v D _ word left right
+  obtain ⟨z,F,t,y,run,user,reads,payload,paid⟩ := execute x (embDn bank v) (embStk bank D)
+    (by simpa only [embStk_R,atSlot] using word) (fun j => left (swap j))
+    (fun j ne => right (swap j) (fun eq => ne (swap.injective (eq.trans (Equiv.swap_apply_left slot 0).symm))))
+  obtain ⟨z',F',lifted,_,same,view,frame⟩ := exec_emb (ι := id) (body' := fun f => embProg bank id (body f)) bank.injective
+    (fun _ => rfl) run v rfl D rfl
+  rw [← view] at payload paid
+  have charge (S : Stacks T prime) : tapeCharge cleanupWeight (List.finRange B) (embStk bank S) =
+      tapeCharge cleanupWeight slots S := by
+    let cost := fun j => cleanupWeight (S.L (workspace j)) (S.R (workspace j))
+    simpa only [tapeCharge,slots,List.map_map,Function.comp_def,embStk,bank,cost,
+      Function.Embedding.trans_apply,Equiv.toEmbedding_apply] using
+      (swap.map_finRange_perm.map cost).sum_eq
+  rw [charge,charge] at paid
+  refine ⟨z',F',t,y,lifted,same.trans user,reads,?_,paid,?_⟩
+  · simpa only [RecordPayload,embStk_L,embStk_R,atSlot] using payload
+  · intro j away
+    exact frame j (fun i => away (swap i))
 
 /-- A transpose worker that returns its saved stack also supplies a COPY call
 on the full row-swap bank. Both calls use the same child budget. -/

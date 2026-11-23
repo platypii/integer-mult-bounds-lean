@@ -37,6 +37,7 @@ theorem idleOwnerWorker_exec {P U : Type} {T Q V m B : ℕ} [NeZero B] (body : P
       S.R count = [] → S.R saved = [] → S.L tmp = [] → S.R tmp = [] →
       (∀ v D, D.R (bank 0) = List.ofFn (fun a : Fin (m*142080) => SparseRoleCircuit.encode (word (a.cast span))) →
         (∀ j, D.L (bank j) = []) → (∀ j, j ≠ 0 → D.R (bank j) = []) →
+        (∀ j, j ≠ bank 0 → D.L j = S.L j ∧ D.R j = S.R j) →
         ∃ z F n changed, Exec body worker (mk v D) n (mk z F) ∧ z.user = v.user ∧
           effect changed ∧ RecordPayload (bank 0) (fun _ => blank) 0 changed F ∧
           n+(slots.map fun j => 4*(F.L j).length+2*(F.R j).length+4).sum ≤ price ∧
@@ -52,7 +53,7 @@ theorem idleOwnerWorker_exec {P U : Type} {T Q V m B : ℕ} [NeZero B] (body : P
   have member (j) : bank j ∈ slots := List.mem_map.mpr ⟨j,List.mem_finRange _,rfl⟩
   obtain ⟨v,D,load,user,exactWord,left,right,unchanged⟩ := loadIdleSplit_exec body bank owner tmp
     (by simp [‹owner ≠ tmp›,‹bank 0 ≠ owner›.symm,‹bank 0 ≠ tmp›.symm]) span word u S input ⟨tmpL,tmpR⟩ free
-  obtain ⟨y,G,k,changed,run,same,correct,merged,space,off⟩ := act v D exactWord left right
+  obtain ⟨y,G,k,changed,run,same,correct,merged,space,off⟩ := act v D exactWord left right unchanged
   have keep j (h : j ∉ slots) : G.L j = S.L j ∧ G.R j = S.R j := by
     have a := off j h
     have b := unchanged j (fun eq => h (eq ▸ member 0))
