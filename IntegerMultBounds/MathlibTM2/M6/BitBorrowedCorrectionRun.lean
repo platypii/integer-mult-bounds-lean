@@ -12,8 +12,8 @@ open Shared50ModularControl (prime)
 
 /-- Allocate disjoint private banks, sharing precisely the data owners.
 Both counter tapes remain on the recursive worker. -/
-theorem correctionBanks {t V : ℕ} (localFan : Fin (142081+2) ↪ Fin t)
-    (enter leave : SharedBankStage.Stage _ 142081 prime (phaseOwners (N := V))) :
+theorem correctionBanks {t : ℕ} (localFan : Fin (142081+2) ↪ Fin t)
+    (enter leave : SharedBankSkeleton.Skeleton 142081 prime) :
     ∃ (T : ℕ) (worker : Fin t ↪ Fin T) (a : Fin enter.tapes ↪ Fin T) (b : Fin leave.tapes ↪ Fin T),
     let fan := localFan.trans worker
     (∀ i, a (enter.slots i) = fan (i.castAdd 2)) ∧ (∀ i, b (leave.slots i) = fan (i.castAdd 2)) ∧
@@ -127,7 +127,7 @@ theorem allocatedChartWorker_exec {t Q V : ℕ} {P U : Type}
         k ≤ enter.cost*(enter.tapes+5)+price+leave.cost*(leave.tapes+5)+12 ∧
         z.user = u.user ∧ HelperFan fan (leave.transform y) F ∧ effect (enter.transform x) y := by
   intro enter leave qa qb ⟨A,readyA⟩ ⟨L,readyL⟩ sweep
-  obtain ⟨T,worker,a,b,shareA,shareB,ctrlA,ctrlB,apart,priv,seed⟩ := correctionBanks localFan enter leave
+  obtain ⟨T,worker,a,b,shareA,shareB,ctrlA,ctrlB,apart,priv,seed⟩ := correctionBanks localFan (SharedBankSkeleton.ofStage enter) (SharedBankSkeleton.ofStage leave)
   let fan := localFan.trans worker
   refine ⟨T,worker,(embProg a Empty.elim (foreign (liftQ enter.program qa))).seq ((embProg worker id code).seq (embProg b Empty.elim (foreign (liftQ leave.program qb)))),?_⟩
   intro fan' X
