@@ -544,6 +544,34 @@ theorem runInheritedChild {P U : Type} {T N Q price : ℕ} (lane : Descriptor) {
     simpa only [Function.comp_apply, Fin.lastCases_castSucc, id_eq] using reads r
   exact eq ▸ owners
 
+private theorem packedOutputOfTrace {w W : ℕ} :
+    let V := (prime^w)^16*(1*((prime^w)^112*W))
+    ∀ (size : (prime^w)^128*W = V)
+    (place : Fin V ≃ Fin V) (x y : Fin 142081 → Fin V → ZMod 2),
+    let address := fun (j : Fin W) s => place ((flatWindowEquiv w W (s,j)).cast size)
+    let reads := fun (piece : Piece) (a b : Fin 142081 → Fin V → ZMod 2) =>
+      ∀ j, let addr := fun z => address j (windowState w z)
+        readRoles addr b = piece.run (readRoles addr a)
+    nodeProgram.foldr (fun piece cont a => ∃ b, nodePieceEffect w 1 W
+      (fun n => reads (.remainder n.val)) (fun n => reads (.stage n)) piece a b ∧ cont b)
+      (fun a => a = y) x →
+    packedChildOutput w V (fun r => x r ∘ place) (fun r => y r ∘ place) := by
+  intro V size place x y address reads trace lane child width childSize
+  let roles := (Fintype.equivFin Role).trans (finCongr card_role)
+  obtain ⟨r,rfl⟩ := roles.surjective lane
+  apply funext
+  change ∀ k, (y (sweepRoleTape r) ∘ place) _ = _
+  apply (flatNodeOutput_iff size child width (packedChildPosition child childSize) (fun _ => rfl) _ _).2
+  intro i
+  obtain ⟨⟨s,j⟩,rfl⟩ := (flatWindowEquiv w W).surjective i
+  have swapped := modularEndpoint r (fun _ => address j) x y
+    (nodePieceEffect_read _ (fun n a d h => h j) (fun n a d h => h j) trace) s
+  have transposed := flatNodeTranspose (fun k => x (sweepRoleTape r) (place (k.cast size)))
+    (s.1 ∘ stageAxis.symm) (s.2 ∘ stageAxis.symm) j
+  rw [flatWindowEquiv_fields]
+  exact (by simpa only [address,flatWindowEquiv_fields,sweepRoleTape_eq] using swapped :
+    y (sweepRoleTape r) _ = x (sweepRoleTape r) _).trans transposed.symm
+
 /-- Sweeps and idle windows on exact flat words compose to interchange the two
 parent fields on every role. The spectator and the two piece-cost sums are preserved. -/
 theorem assembledFlatNode {U : Type} :
@@ -572,21 +600,47 @@ theorem assembledFlatNode {U : Type} :
   intro x u S words privateTapes
   obtain ⟨z,F,k,y,exec,paid,user,out,trace⟩ := run x u S words privateTapes
   refine ⟨z,F,k,y,exec,paid,user,out,?_⟩
-  intro lane child width childSize
-  let roles := (Fintype.equivFin Role).trans (finCongr card_role)
-  obtain ⟨r,rfl⟩ := roles.surjective lane
-  apply funext
-  change ∀ k, (y (sweepRoleTape r) ∘ place) _ = _
-  apply (flatNodeOutput_iff size child width (packedChildPosition child childSize) (fun _ => rfl) _ _).2
-  intro i
-  obtain ⟨⟨s,j⟩,rfl⟩ := (flatWindowEquiv w W).surjective i
-  have swapped := modularEndpoint r (fun _ => address j) x y
-    (nodePieceEffect_read _ (fun n a d h => h j) (fun n a d h => h j) trace) s
-  have transposed := flatNodeTranspose (fun k => x (sweepRoleTape r) (place (k.cast size)))
-    (s.1 ∘ stageAxis.symm) (s.2 ∘ stageAxis.symm) j
-  rw [flatWindowEquiv_fields]
-  exact (by simpa only [address,flatWindowEquiv_fields,sweepRoleTape_eq] using swapped :
-    y (sweepRoleTape r) _ = x (sweepRoleTape r) _).trans transposed.symm
+  exact packedOutputOfTrace size place x y trace
+
+/-- Sweeps and idle windows on exact flat words compose to interchange the two
+parent fields on every role. The spectator and the two piece-cost sums are preserved. -/
+theorem assembledFlatNodeWithCharge {U : Type} :
+    ∃ states : ℕ, ∀ {Q : ℕ}, states ≤ Q → ∃ rate : ℕ, ∀ {w W V : ℕ}, (size : (prime^w)^128*W = V) → 0 < V → ∀ place : Fin V ≃ Fin V,
+      let address := fun (j : Fin W) s => place ((flatWindowEquiv w W (s,j)).cast size)
+      let reads := fun (piece : Piece) (x y : Fin 142081 → Fin V → ZMod 2) =>
+        ∀ j, let addr := fun z => address j (windowState w z)
+          readRoles addr y = piece.run (readRoles addr x)
+      ∀ (sweepCost idleCost : Fin 9 → ℕ),
+      (∀ n, ∃ (P : Type) (T : ℕ) (body : P → Pr P T Q prime U), ∃ code src dst seed,
+        PackedPieceHandoffWithCharge cleanupWeight V (reads (.stage n)) body code src dst seed (sweepCost n)) →
+      (∀ n, ∃ (P : Type) (T : ℕ) (body : P → Pr P T Q prime U), ∃ code src dst seed,
+        PackedPieceHandoffWithCharge cleanupWeight V (reads (.remainder n.val)) body code src dst seed (idleCost n)) →
+      ∃ (P : Type) (T : ℕ) (body : P → Pr P T Q prime U), ∃ code src dst seed,
+        PackedPieceHandoffWithCharge cleanupWeight V (fun x y => packedChildOutput w V (fun r => x r ∘ place) (fun r => y r ∘ place)) body code src dst seed
+          ((∑ i, sweepCost i)+(∑ i, idleCost i)+rate*V) := by
+  obtain ⟨states,build⟩ := assembledPackedNodeWithCharge (U := U)
+  refine ⟨states,?_⟩
+  intro Q fits
+  obtain ⟨bridgeRate,assemble⟩ := build fits
+  let rate := 9*(2*(76*17760*(142081+7)+6)+1+bridgeRate)+2
+  refine ⟨rate,?_⟩
+  intro w W V size pos place address reads sweepCost idleCost sweeps windows
+  have volume : (prime^w)^16*(1*((prime^w)^112*W)) = V := by
+    simpa only [Nat.one_mul] using (ordinaryCompact_width (prime^w) W).trans size
+  have overhead : 9*(2*(76*17760*V*(142081+7)+6)+1+bridgeRate*V)+2 ≤ rate*V := by
+    dsimp [rate]
+    nlinarith only [pos]
+  cases volume
+  obtain ⟨P,T,body,code,src,dst,seed,run⟩ := assemble w 1 W pos
+    (fun n => reads (.stage n)) (fun n => reads (.remainder n.val)) sweepCost idleCost sweeps windows
+  refine ⟨P,T,body,code,src,dst,seed,?_⟩
+  intro x u S words privateTapes
+  obtain ⟨z,F,k,y,exec,paid,user,out,trace⟩ := run x u S words privateTapes
+  refine ⟨z,F,k,y,exec,?_,user,out,?_⟩
+  · intro js unique
+    have bill := paid js unique
+    omega
+  exact packedOutputOfTrace size place x y trace
 
 /-- If each sweep and remainder reads the inherited cells, the assembled node
 transposes the physical owner words in place in that address order. -/
@@ -620,6 +674,43 @@ theorem assembledInheritedNode {U : Type} :
   have overhead : 9*(2*(76*17760*V*(142081+7)+6)+1+(142081*(8*V+10)+1))+2 ≤
       3452147597090*V := by omega
   refine ⟨z,F,k,y,exec,paid.trans ((Nat.add_assoc _ _ _).le.trans (Nat.add_le_add_left overhead _)),user,out,?_⟩
+  intro r j
+  have result := congrFun (changed r child width childSize) j
+  simpa only [position,Equiv.coe_trans,Function.comp_assoc,Equiv.symm_comp_self,Function.comp_id,Function.comp_apply,Equiv.symm_apply_apply] using result
+
+/-- If each sweep and remainder reads the inherited cells, the assembled node
+transposes the physical owner words in place in that address order. -/
+theorem assembledInheritedNodeWithCharge {U : Type} :
+    ∃ states : ℕ, ∀ {Q : ℕ}, states ≤ Q → ∃ rate : ℕ, ∀ {w W V : ℕ} (child : Descriptor), child.width = 64*w →
+      (size : (prime^w)^128*W = V) → 0 < V →
+      ∀ inherited : Fin (volume prime child) ≃ Fin V,
+      let childSize := Fin.equiv_iff_eq.mp ⟨inherited⟩
+      let position := (packedChildPosition child childSize).symm.trans inherited
+      let address := fun (j : Fin W) s => position ((flatWindowEquiv w W (s,j)).cast size)
+      let reads := fun (piece : Piece) (x y : Fin 142081 → Fin V → ZMod 2) =>
+        ∀ j, let addr := fun z => address j (windowState w z)
+          readRoles addr y = piece.run (readRoles addr x)
+      ∀ (sweepCost idleCost : Fin 9 → ℕ),
+      (∀ n, ∃ (P : Type) (T : ℕ) (body : P → Pr P T Q prime U), ∃ code src dst seed,
+        PackedPieceHandoffWithCharge cleanupWeight V (reads (.stage n)) body code src dst seed (sweepCost n)) →
+      (∀ n, ∃ (P : Type) (T : ℕ) (body : P → Pr P T Q prime U), ∃ code src dst seed,
+        PackedPieceHandoffWithCharge cleanupWeight V (reads (.remainder n.val)) body code src dst seed (idleCost n)) →
+      ∃ (P : Type) (T : ℕ) (body : P → Pr P T Q prime U), ∃ code src dst seed,
+        PackedPieceHandoffWithCharge cleanupWeight V (fun x y => ∀ (r : Fin 142080) j, y r.castSucc (inherited j) =
+          Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (x r.castSucc ∘ inherited) j) body code src dst seed
+          ((∑ i, sweepCost i)+(∑ i, idleCost i)+rate*V) := by
+  obtain ⟨states,assemble⟩ := assembledFlatNodeWithCharge (U := U)
+  refine ⟨states,?_⟩
+  intro Q fits
+  obtain ⟨rate,build⟩ := assemble fits
+  refine ⟨rate,?_⟩
+  intro w W V child width size positive inherited childSize position address reads sweepCost idleCost sweeps windows
+  obtain ⟨P,T,body,code,src,dst,seed,run⟩ :=
+    build size positive position sweepCost idleCost sweeps windows
+  refine ⟨P,T,body,code,src,dst,seed,?_⟩
+  intro x u S words privateTapes
+  obtain ⟨z,F,k,y,exec,paid,user,out,changed⟩ := run x u S words privateTapes
+  refine ⟨z,F,k,y,exec,paid,user,out,?_⟩
   intro r j
   have result := congrFun (changed r child width childSize) j
   simpa only [position,Equiv.coe_trans,Function.comp_assoc,Equiv.symm_comp_self,Function.comp_id,Function.comp_apply,Equiv.symm_apply_apply] using result

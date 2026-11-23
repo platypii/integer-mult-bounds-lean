@@ -163,16 +163,10 @@ theorem stoppedRoleCleanupCost [M8.Machine.Net] {U : Type} {Q : ℕ} (capacity :
       0 < volume prime lane → 0 < child.width → lane.width = child.width →
       InheritedIntervalPositions child lane rfl position →
       let V := volume prime lane
-      ∃ seed : Stacks T prime, ∀ x u S, ParentStageWords (fun i => src (i.castAdd 2)) src V x S →
-        (∀ j, (∀ i, src i ≠ j) → S.L j = seed.L j ∧ S.R j = seed.R j) →
-        ∃ z F n y, Exec host program (mk u S) n (mk z F) ∧ z.user = u.user ∧
-          ParentStageWords (fun i => dst (i.castAdd 2)) dst V y F ∧
-          (∀ (r : Fin 142080) j, y r.castSucc (position j) =
-            Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (x r.castSucc ∘ position) j) ∧
-          ∀ js : List (Fin T), js.Nodup →
-            let stock := fun (D : Stacks T prime) => (js.map fun j =>
-              4*(D.L j).length+2*(D.R j).length+4).sum
-            n+stock F ≤ stock S + ⌊(C*(child.width : ℝ)^M8.Machine.BudgetBound.tau)*(V*142080 : ℕ)⌋₊ := by
+      ∃ seed : Stacks T prime, PackedPieceHandoffWithCharge cleanupWeight V
+        (fun x y => ∀ (r : Fin 142080) j, y r.castSucc (position j) =
+          Shared50RecursiveNodeRows.transpose (one_dvd child.rows) (x r.castSucc ∘ position) j)
+        host program src dst seed ⌊(C*(child.width : ℝ)^M8.Machine.BudgetBound.tau)*(V*142080 : ℕ)⌋₊ := by
   obtain ⟨T,host,program,src,dst,worker⟩ := stoppedRoleHandoff (U := U) capacity
   let rate : ℝ := (LeafCore.small+5 : ℕ)*|LeafCore.C|+8+LeafCore.small*(16+8*|LeafCore.C|)
   let push := Fast.Main.mnProgPush program
@@ -185,8 +179,9 @@ theorem stoppedRoleCleanupCost [M8.Machine.Net] {U : Type} {Q : ℕ} (capacity :
   refine ⟨seed,?_⟩
   intro x u S ready prepared
   obtain ⟨z,F,n,y,exec,paid,user,out,effect⟩ := run x u S ready prepared
-  refine ⟨z,F,n,y,exec,user,out,effect,?_⟩
-  intro js distinct stock
+  refine ⟨z,F,n,y,exec,?_,user,out,effect⟩
+  intro js distinct
+  let stock := tapeCharge cleanupWeight js
   have growth := recordCleanup_cost_le js distinct exec (c := push) le_rfl (fun e => nomatch e)
   change stock F+1 ≤ stock S+1+6*(push*n) at growth
   have joint : n+stock F ≤ stock S+factor*n := by
