@@ -42,6 +42,40 @@ theorem dimensionTime_le (H W n : ℕ) :
     rw [dimensionTime]
     nlinarith only [ih,bound]
 
+/-- Writing the two gap factors around a positive inherited middle costs
+linearly in the resulting middle size at fixed modulus bit width. -/
+theorem dimensionTime_middle_le (H M g middle J : ℕ) (base : 2 ≤ M) (pos : 0 < middle)
+    (bits : J ≤ middle) :
+    dimensionTime H J (g+g) ≤
+      (12+2*((12*H+18)*(2*H+1)+20*H+26))*(M^(g+g)*middle) := by
+  have gap : g+1 ≤ M^g := Nat.lt_two_pow_self.trans_le (Nat.pow_le_pow_left base g)
+  let scale := M^g*middle
+  have one : 1 ≤ scale := Nat.mul_pos (by omega) pos
+  have size : J ≤ scale := bits.trans (Nat.le_mul_of_pos_left _ (by omega))
+  have count : g ≤ scale := (by omega : g ≤ M^g).trans (Nat.le_mul_of_pos_right _ pos)
+  have setup := dimensionTime_le H J (g+g)
+  have inside : (g+g)*H+J ≤ (2*H+1)*scale := by
+    nlinarith only [Nat.mul_le_mul_right H count,size]
+  have step : (12*H+18)*((g+g)*H+J)+20*H+26 ≤
+      ((12*H+18)*(2*H+1)+20*H+26)*scale := by
+    nlinarith only [Nat.mul_le_mul_left (12*H+18) inside,Nat.mul_le_mul_left (20*H+26) one]
+  have rows := Nat.mul_le_mul (by omega : g+g ≤ 2*M^g) step
+  have full : scale ≤ M^g*scale := Nat.le_mul_of_pos_left _ (by omega)
+  rw [pow_add]
+  dsimp [scale] at *
+  nlinarith only [setup,rows,size,one,full]
+
+/-- After any number of gap insertions the accumulated padded word still
+fits the cost allowance of its represented middle field. -/
+theorem paddedMiddleWidth_le (M H digits root : ℕ) (base : H+1 ≤ M) (pos : 0 < root) :
+    digits*H + root.size ≤ M^digits*root := by
+  induction digits with
+  | zero => simpa using (Nat.size_le.mpr Nat.lt_two_pow_self : root.size ≤ root)
+  | succ digits ih =>
+    have one : 1 ≤ M^digits*root := Nat.mul_pos (pow_pos (by omega) _) pos
+    rw [Nat.succ_mul,pow_succ]
+    nlinarith only [ih,Nat.mul_le_mul_left H one,Nat.mul_le_mul_right (M^digits*root) base]
+
 theorem dimensionPower_exec (body : P → Pr P T Q A U) (n : ℕ) (r : Fin 10 ↪ Fin T)
     (H W M b : ℕ) (hm : M < 2^H) (hb : b < 2^W)
     (v : HS T Q A U) (S : Stacks T A) (base : S.R (r 0) = binSyms H M)

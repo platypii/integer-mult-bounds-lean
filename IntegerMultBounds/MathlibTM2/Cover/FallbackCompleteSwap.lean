@@ -112,6 +112,27 @@ theorem completeSwapTime_eq_setup_add_counter [Fintype P] (body : P → Pr P (N+
   simp only [completeSwapTime]
   ring
 
+/-- At fixed atom precision the entire exchange, including workspace cleanup
+and the binary payload-width counter, costs linearly in the payload volume. -/
+theorem completeSwapTime_fixed_atom [Fintype P] (body : P → Pr P (N+35) Q prime U)
+    (d i j w H : ℕ) : ∃ C : ℕ, ∀ W, 0 < W →
+    completeSwapTime body d i j w W H W.size ≤ C*((prime^(w+1))^d*W) := by
+  let V := fun W => (prime^(w+1))^d*W
+  let setup := completeSwapTime body d i j w 0 H 0
+  let push := max (mnPushC body) (mnProgPush (.seq (swapSetup swapHostFits d i j)
+    (embProg swapSimulationPort Empty.elim (foreign rowSwapBlock.program)) : Pr P (N+35) Q prime U))
+  let cleanup := 1 + (swapWorkspace (N+35)).length * 6 * push
+  refine ⟨setup+cleanup*10+cleanup*(N+5)*swapVolumeRate w, fun W pos => ?_⟩
+  have fits : W ≤ V W := Nat.le_mul_of_pos_left _ (pow_pos (pow_pos prime_prime.pos _) _)
+  have counter : W.size ≤ V W := (Nat.size_le.mpr Nat.lt_two_pow_self).trans fits
+  have bound := completeSwapTime_le_setup_add_volume body d i j w W H W.size
+  rw [completeSwapTime_eq_setup_add_counter body d i j w 0 H W.size] at bound
+  apply bound.trans
+  change setup+cleanup*10*W.size+_ ≤ _
+  conv_rhs => rw [Nat.add_mul, Nat.add_mul setup]
+  exact Nat.add_le_add_right (Nat.add_le_add (Nat.le_mul_of_pos_right _ (pos.trans_le fits))
+    (Nat.mul_le_mul_left _ counter)) _
+
 theorem completeSwap_exec [Fintype P] {d w W : ℕ} (i j : Fin d) (lt : i < j) (H J : ℕ)
     (hm : prime^(w+1) < 2^H) (hw : W < 2^J) (hW : 0 < W)
     (body : P → Pr P (N+35) Q prime U) (v : HS (N+35) Q prime U) (S : Stacks (N+35) prime) :

@@ -425,4 +425,41 @@ theorem withGoodChildPacking_exec [Fintype P] (body : P → Pr P (N+35) Q prime 
           (mk v S) n (mk z F) ∧ ready output addr F ∧ clean F :=
   withPacking_exec body _ _ (by omega) (fun _ => goodChildPackSchedule_inside)
 
+/-- Uniform over all PR589 ranks at a fixed atom precision, including the
+return from the child to the parent's field order. -/
+theorem pr589Packing_exec [Fintype P] (body : P → Pr P (N+35) Q prime U) (w : ℕ) :
+    ∃ C : ℕ, ∀ (r : Fin 65) W, 0 < W →
+      let M := prime^(w+1)
+      let d := 128
+      let is := goodChildPackSchedule r.val (64-r.val)
+      let bank := (Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)
+      let clean := fun (S : Stacks (N+35) prime) => ∀ k : Fin (N+35), 35 ≤ k.val → S.L k = [] ∧ S.R k = []
+      ∀ (v : HS (N+35) Q prime U) (S : Stacks (N+35) prime)
+        (record : List (Fin (prime+4))) (dest : ℤ → Fin 4) (q : ℤ)
+        (input output : Fin (M^d*W) → ZMod 2) (addr : (Fin d → ZMod M) → Fin d → ZMod M)
+        (child : Pr P (N+35) Q prime U) (budget : ℕ),
+      let ready := ColumnRecordReady bank (Nat.size M) (Nat.size W) record SparseRoleCircuit.encode
+        (fun _ => blank) dest 0 q
+      let packed := fun x => is.foldl adjacentFields (addr x)
+      (∀ u D, ready input packed D → clean D → ∃ y G t, y.user = u.user ∧ t ≤ budget ∧
+        Exec body child (mk u D) t (mk y G) ∧ ready output packed G ∧ clean G) →
+      ready input addr S → clean S → ∃ z F n, z.user = v.user ∧
+        n ≤ budget + C*(M^d*W) ∧
+        Exec body (.seq (packSchedule d is) (.seq child (packSchedule d is.reverse)))
+          (mk v S) n (mk z F) ∧ ready output addr F ∧ clean F := by
+  let route := fun r : Fin 65 => goodChildPackSchedule r.val (64-r.val)
+  have fits (r : Fin 65) : ∀ i ∈ route r, i+1 < 128 := by
+    intro i hi
+    have inside := goodChildPackSchedule_inside hi
+    have := r.isLt
+    omega
+  choose setup swaps run using fun r => withPacking_exec body 128 (route r) (by decide) (fits r)
+  let rate := fun r => 2*(setup r+swaps r*swapVolumeRate w)
+  refine ⟨Finset.univ.sup rate,?_⟩
+  intro r W pos M d is bank clean v S record dest q input output addr child budget ready packed call start free
+  obtain ⟨z,F,n,user,cost,exec,done,empty⟩ := run r w W pos v S record dest q input output addr child budget call start free
+  refine ⟨z,F,n,user,cost.trans (Nat.add_le_add_left ?_ budget),exec,done,empty⟩
+  rw [← Nat.mul_assoc]
+  exact Nat.mul_le_mul_right _ (Finset.le_sup (f := rate) (Finset.mem_univ r))
+
 end IntegerMultBounds.MathlibTM2.Cover.Fallback

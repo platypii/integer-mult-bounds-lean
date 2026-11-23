@@ -123,6 +123,27 @@ theorem rankDescriptor_role_size (v : RecursiveInterchangeLayout.Descriptor)
       (RecursiveInterchangeLayout.role_volume_mul M roles v divides)
 
 omit [NeZero M] in
+/-- When the parent width has a remainder, keep that remainder in the middle
+field. The same child satisfies the rank bound and the exact role-volume bill. -/
+theorem rankDescriptor_quotient_size (v : RecursiveInterchangeLayout.Descriptor)
+    (roles fields : ℕ) (fits : r ≤ fields) (divides : roles ∣ v.rows) :
+    let b := v.width/fields
+    let child := rankDescriptor M (r*b) (v.width-r*b) (RecursiveInterchangeLayout.role v roles)
+    child.width*fields ≤ r*v.width ∧
+      RecursiveInterchangeLayout.volume M child*roles = RecursiveInterchangeLayout.volume M v := by
+  intro b child
+  have used : b*fields ≤ v.width := Nat.div_mul_le_self _ _
+  have active : r*b ≤ v.width := (Nat.mul_le_mul_right b fits).trans (Nat.mul_comm fields b ▸ used)
+  constructor
+  · change r*b*fields ≤ r*v.width
+    rw [Nat.mul_assoc]
+    exact Nat.mul_le_mul_left r used
+  · have split : (RecursiveInterchangeLayout.role v roles).width = r*b+(v.width-r*b) :=
+      (Nat.add_sub_of_le active).symm
+    exact (congrArg (· * roles) (rankDescriptor_volume _ split)).trans
+      (RecursiveInterchangeLayout.role_volume_mul M roles v divides)
+
+omit [NeZero M] in
 /-- Along a chain of recursive calls the gaps accumulate on both sides of the
 same inherited middle field. -/
 theorem rankDescriptor_chain (v : RecursiveInterchangeLayout.Descriptor) (gaps : List ℕ) :

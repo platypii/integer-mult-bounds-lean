@@ -95,6 +95,77 @@ theorem rankDescriptorMiddle_exec {N : ℕ} (body : P → Pr P T Q A U) (ports :
     simp only [rankDescriptor,pow_add]; ring
   exact ⟨z,t,hz,ht,size ▸ run⟩
 
+/-- A padded middle header can be passed straight to the next child. Its
+binary capacity, represented size and construction time refer to the same tape word. -/
+theorem rankDescriptorMiddle_padded_exec {N : ℕ} (body : P → Pr P T Q A U) (ports : Fin 10 ↪ Fin T)
+    (parent : RecursiveInterchangeLayout.Descriptor) (r g H digits root : ℕ)
+    (hm : N < 2^H) (baseSize : H+1 ≤ N) (basePos : 2 ≤ N) (pos : 0 < root)
+    (shape : parent.between = N^digits*root) (v : HS T Q A U) (S : Stacks T A)
+    (base : S.R (ports 0) = binSyms H N) :
+    let J := digits*H+root.size
+    let child := rankDescriptor N r g parent
+    let K := (g+g)*H+J
+    S.R (ports 1) = binSyms J parent.between →
+    (∀ i : Fin 10, 2 ≤ i → i < 9 → S.R (ports i) = []) →
+    K ≤ child.between ∧ child.between < 2^K ∧ ∃ z t, z.user = v.user ∧
+      t ≤ (12+2*((12*H+18)*(2*H+1)+20*H+26))*child.between ∧
+      Exec body (dimensionPower ports (g+g)) (mk v S) t
+        (mk z {S with R := Function.update S.R (ports 2) (binSyms K child.between)}) := by
+  intro J child K seed work
+  have fits : parent.between < 2^J := by
+    rw [shape]
+    dsimp only [J]
+    rw [pow_add, Nat.mul_comm digits H, pow_mul]
+    exact Nat.mul_lt_mul_of_le_of_lt (Nat.pow_le_pow_left hm.le _) (Nat.size_le.mp le_rfl) (by positivity)
+  have middle : child.between = N^(g+g)*parent.between := by
+    simp only [child,rankDescriptor,pow_add]; ring
+  obtain ⟨z,t,user,cost,run⟩ := rankDescriptorMiddle_exec body ports parent r g H J hm fits v S base seed work
+  refine ⟨?_,rankDescriptor_fits parent hm fits,z,t,user,?_,run⟩
+  · rw [middle,shape,← Nat.mul_assoc,← pow_add]
+    simpa only [K,J,Nat.add_mul,Nat.add_assoc] using paddedMiddleWidth_le N H (g+g+digits) root baseSize pos
+  · rw [middle]
+    apply cost.trans (dimensionTime_middle_le H N g parent.between J basePos _ _)
+    · rw [shape]; positivity
+    · rw [shape]; exact paddedMiddleWidth_le N H digits root baseSize pos
+
+/-- Lend the padded header to a child and recover the caller's empty slot.
+The child budget is charged once, with both header passes charged by size. -/
+theorem withRankDescriptorMiddle_exec {N : ℕ} (body : P → Pr P T Q A U) (ports : Fin 10 ↪ Fin T)
+    (parent : RecursiveInterchangeLayout.Descriptor) (r g H digits root : ℕ)
+    (hm : N < 2^H) (baseSize : H+1 ≤ N) (basePos : 2 ≤ N) (pos : 0 < root)
+    (shape : parent.between = N^digits*root) (v : HS T Q A U) (S : Stacks T A)
+    (base : S.R (ports 0) = binSyms H N) (call : Pr P T Q A U) (budget : ℕ)
+    (F : Stacks T A) (free : F.R (ports 2) = []) :
+    let J := digits*H+root.size
+    let child := rankDescriptor N r g parent
+    let K := (g+g)*H+J
+    S.R (ports 1) = binSyms J parent.between →
+    (∀ i : Fin 10, 2 ≤ i → i < 9 → S.R (ports i) = []) →
+    let headed := fun (D : Stacks T A) => {D with R := Function.update D.R (ports 2) (binSyms K child.between)}
+    (∀ u : HS T Q A U, child.between < 2^K → ∃ y k, y.user = u.user ∧ k ≤ budget ∧
+      Exec body call (mk u (headed S)) k (mk y (headed F))) →
+    ∃ z t, z.user = v.user ∧
+      t ≤ budget+(16+2*((12*H+18)*(2*H+1)+20*H+26))*child.between ∧
+      Exec body (.seq (dimensionPower ports (g+g)) (.seq call (bclear (ports 2)))) (mk v S) t (mk z F) := by
+  intro J child K seed work headed invoke
+  obtain ⟨width,fits,u,t,user,cost,prepare⟩ := rankDescriptorMiddle_padded_exec body ports parent
+    r g H digits root hm baseSize basePos pos shape v S base seed work
+  obtain ⟨y,k,yu,price,run⟩ := invoke u fits
+  obtain ⟨z,zu,_,clear⟩ := bclear_exec body (ports 2) y (headed F)
+  have restored : {headed F with R := Function.update (headed F).R (ports 2) []} = F := by
+    simp only [headed,Function.update_idem]
+    rw [← free,Function.update_eq_self]
+  rw [restored] at clear
+  have len : ((headed F).R (ports 2)).length = K := by simp [headed,binSyms]
+  rw [len] at clear
+  have positive : 0 < child.between := by
+    change 0 < N^g*parent.between*N^g
+    rw [shape]; positivity
+  refine ⟨z,t+(k+(2*K+2)),zu.trans (yu.trans user),?_,.seq prepare (.seq run clear)⟩
+  change K ≤ child.between at width
+  change t ≤ _*child.between at cost
+  nlinarith only [width,cost,price,positive]
+
 /-- Read the inherited size in place and leave every parent and child tape
 unchanged except the new child descriptor word. -/
 theorem nestedMiddle_exec {n N : ℕ} (caller : Fin 58 ↪ Fin n) (body : P → Pr P (n+58) Q A U)
