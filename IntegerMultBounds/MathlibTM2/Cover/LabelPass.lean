@@ -14,16 +14,17 @@ open IntegerMultBounds.Machine IntegerMultBounds.Networks
 open IntegerMultBounds.MathlibTM2.M8.AtomOps
 open IntegerMultBounds.Swap.Modular
 open FlatCoordinateSchedule
+open FlatCoordinateLayout (rank)
 open ActualAffineScaling (modulus)
 open LabelAddress (pass)
 variable {m : ℕ}
 local instance (b : ℕ) : NeZero (modulus b) := ⟨(ActualAffineScaling.modulus_pos b).ne'⟩
 
 /-- Only the diagonal scales and strictly lower shifts need coefficient certificates. -/
-theorem supported (E : Matrix (Fin m) (Fin m) ℚ)
+theorem supported_rows (k : ℕ) (E : Matrix (Fin m) (Fin m) ℚ)
     (hd : ∀ i, Shared50AffineCoefficients.ScaleOccurs (E i i))
     (hl : ∀ i j, j < i → Shared50AffineCoefficients.Occurs (E i j)) :
-    ∀ op ∈ pass E, Supported op := by
+    ∀ op ∈ LabelAddress.rowPass k E, Supported op := by
   intro op hop
   obtain ⟨a, ha, hop⟩ := List.mem_flatMap.mp hop
   obtain ⟨o, ho, rfl⟩ := List.mem_map.mp ha
@@ -33,8 +34,47 @@ theorem supported (E : Matrix (Fin m) (Fin m) ℚ)
   · obtain ⟨l, _, rfl⟩ := List.mem_map.mp hop
     exact ⟨at_lt hij l l, hl i j hij⟩
 
+theorem supported (E : Matrix (Fin m) (Fin m) ℚ)
+    (hd : ∀ i, Shared50AffineCoefficients.ScaleOccurs (E i i))
+    (hl : ∀ i j, j < i → Shared50AffineCoefficients.Occurs (E i j)) :
+    ∀ op ∈ pass E, Supported op := supported_rows m E hd hl
+
 /-- The fixed rational pass moves each label to its right product and preserves its payload.
 All work tapes are clean at both ends of the run. -/
+theorem realizes_rows {k : ℕ} (rows : Fin k → Fin m) (E : Matrix (Fin m) (Fin m) ℚ)
+    (hs : ∀ op ∈ LabelAddress.rowPass k E, Supported op) (b W : ℕ) (hW : 0 < W)
+    (hE : IntegerMultBounds.Swap.Shear.LowerTriangular E)
+    (hu : IsUnit (reduce (modulus b) E))
+    (a : FlatCoordinateStages.Array (m*k) b W) :
+    let ops := ofList (LabelAddress.rowPass k E) hs
+    let out := FlatCoordinateInitializedSchedule.array ops b W hW a
+    HoareTime (FlatCoordinateCleanSchedule.program ops)
+      (fun v => v = SharedBankStageInput.raw (FlatCoordinateShiftSharedBank.common a)
+        (FlatCoordinateCleanSchedule.tapeCount ops))
+      (fun v => v = SharedBankStageInput.raw (FlatCoordinateShiftSharedBank.common out)
+          (FlatCoordinateCleanSchedule.tapeCount ops) ∧
+        ∀ (g : Matrix (Fin m) (Fin m) (ZMod (modulus b))) (j : Fin W),
+          out (finProdFinEquiv (rank (refine (fun c i => Route.cols (g * (reduce (modulus b) E).transpose) c (rows i))), j)) =
+            a (finProdFinEquiv (rank (refine (fun c i => Route.cols g c (rows i))), j)))
+      (FlatCoordinateCleanSchedule.constant ops * ((modulus b)^(m*k)*W)) := by
+  dsimp only
+  apply (FlatCoordinateCleanSchedule.realizes (ofList (LabelAddress.rowPass k E) hs) b W hW a).consequence
+    (fun _ h => h) ?_ le_rfl
+  intro v hv
+  refine ⟨hv.1, fun g j => ?_⟩
+  have h := hv.2 (refine (fun c i => Route.cols g c (rows i))) j
+  have hmap : ((ofList (LabelAddress.rowPass k E) hs).map fun op => op.action b) = LabelAddress.rowPass k (reduce (modulus b) E) := by
+    rw [reduce, LabelAddress.rowPass_map]
+    simpa only [List.map_map, Function.comp_def, Op.action] using
+      congrArg (List.map (OrderedAffine.mapOp (ratMod (modulus b)))) (rational_ofList (LabelAddress.rowPass k E) hs)
+  rw [hmap] at h
+  have hl := reduce_lowerTriangular (modulus b) hE
+  have hi := LabelAddress.rowPass_index rows hl (OrderedAffine.program_legal hl hu) g j
+  convert h using 2
+  apply Fin.ext
+  simpa only [finProdFinEquiv_apply_val, Nat.mul_comm, Nat.add_comm] using hi.symm
+  rfl
+
 theorem realizes (E : Matrix (Fin m) (Fin m) ℚ)
     (hs : ∀ op ∈ pass E, Supported op) (b W : ℕ) (hW : 0 < W)
     (hE : IntegerMultBounds.Swap.Shear.LowerTriangular E)
@@ -50,24 +90,8 @@ theorem realizes (E : Matrix (Fin m) (Fin m) ℚ)
         ∀ (g : Matrix (Fin m) (Fin m) (ZMod (modulus b))) (j : Fin W),
           out (finProdFinEquiv (LabelAddress.address (g * (reduce (modulus b) E).transpose), j)) =
             a (finProdFinEquiv (LabelAddress.address g, j)))
-      (FlatCoordinateCleanSchedule.constant ops * ((modulus b)^(m*m)*W)) := by
-  dsimp only
-  apply (FlatCoordinateCleanSchedule.realizes (ofList (pass E) hs) b W hW a).consequence
-    (fun _ h => h) ?_ le_rfl
-  intro v hv
-  refine ⟨hv.1, fun g j => ?_⟩
-  have h := hv.2 (refine (Route.cols g)) j
-  have hmap : ((ofList (pass E) hs).map fun op => op.action b) = pass (reduce (modulus b) E) := by
-    rw [reduce, LabelAddress.pass_map]
-    simpa only [List.map_map, Function.comp_def, Op.action] using
-      congrArg (List.map (OrderedAffine.mapOp (ratMod (modulus b)))) (rational_ofList (pass E) hs)
-  rw [hmap] at h
-  have hl := reduce_lowerTriangular (modulus b) hE
-  have hi := LabelAddress.pass_index hl (OrderedAffine.program_legal hl hu) g j
-  convert h using 2
-  apply Fin.ext
-  simpa only [finProdFinEquiv_apply_val, Nat.mul_comm, Nat.add_comm] using hi.symm
-  rfl
+      (FlatCoordinateCleanSchedule.constant ops * ((modulus b)^(m*m)*W)) :=
+  realizes_rows id E hs b W hW hE hu a
 
 end
 end IntegerMultBounds.MathlibTM2.Cover.LabelPass

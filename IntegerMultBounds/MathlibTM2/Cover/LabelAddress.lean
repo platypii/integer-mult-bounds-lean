@@ -28,19 +28,27 @@ theorem entry (g : Matrix (Fin m) (Fin m) (ZMod Q)) (i j : Fin m) :
   rw [refine_at] at h
   exact h
 
+/-- Expand each column operation over the rows present on the tape. -/
+noncomputable def rowPass {R : Type*} [CommRing R] (k : ℕ) (E : Matrix (Fin m) (Fin m) R) :=
+  ((OrderedAffine.program E).map atomOp).flatMap (refined (f := k))
+
 /-- One scalar operation per row for each column operation in the ordered pass. -/
 noncomputable def pass {R : Type*} [CommRing R] (E : Matrix (Fin m) (Fin m) R) :=
-  ((OrderedAffine.program E).map atomOp).flatMap (refined (f := m))
+  rowPass m E
 
 /-- A single rational instruction list serves every atom width. Specializing its
 coefficients preserves all control and target positions, including their row indices. -/
-theorem pass_map {R S : Type*} [CommRing R] [CommRing S] (f : R → S)
+theorem rowPass_map (k : ℕ) {R S : Type*} [CommRing R] [CommRing S] (f : R → S)
     (E : Matrix (Fin m) (Fin m) R) :
-    pass (E.map f) = (pass E).map (OrderedAffine.mapOp f) := by
-  simp only [pass, OrderedAffine.program_map, List.map_flatMap, List.map_map, List.flatMap_map]
+    rowPass k (E.map f) = (rowPass k E).map (OrderedAffine.mapOp f) := by
+  simp only [rowPass, OrderedAffine.program_map, List.map_flatMap, List.map_map, List.flatMap_map]
   congr 1
   funext op
   cases op <;> simp [Function.comp_def, atomOp, refined, levels, OrderedAffine.mapOp]
+
+theorem pass_map {R S : Type*} [CommRing R] [CommRing S] (f : R → S)
+    (E : Matrix (Fin m) (Fin m) R) :
+    pass (E.map f) = (pass E).map (OrderedAffine.mapOp f) := rowPass_map m f E
 
 omit [NeZero Q] in
 theorem pass_legal {E : Matrix (Fin m) (Fin m) (ZMod Q)}
@@ -57,9 +65,28 @@ theorem pass_run {E : Matrix (Fin m) (Fin m) (ZMod Q)}
     (h : ∀ op ∈ OrderedAffine.program E, OrderedAffine.Legal op)
     (g : Matrix (Fin m) (Fin m) (ZMod Q)) :
     OrderedAffine.run (pass E) (refine (cols g)) = refine (cols (g * E.transpose)) := by
-  unfold pass
+  unfold pass rowPass
   rw [refined_atomRun]
   · exact congrArg refine (lower_route hE g)
+  · intro a ha
+    obtain ⟨o, ho, rfl⟩ := List.mem_map.mp ha
+    exact (atomOp_legal (h o ho)).2
+
+/-- On a box with only the selected rows, the compiled scalar pass sends
+each payload cell to the transformed address and preserves its suffix. -/
+theorem rowPass_index {k W : ℕ} (rows : Fin k → Fin m)
+    {E : Matrix (Fin m) (Fin m) (ZMod Q)}
+    (hE : IntegerMultBounds.Swap.Shear.LowerTriangular E)
+    (h : ∀ op ∈ OrderedAffine.program E, OrderedAffine.Legal op)
+    (g : Matrix (Fin m) (Fin m) (ZMod Q)) (j : Fin W) :
+    (index (OrderedAffine.run (rowPass k E) (refine (fun c i => cols g c (rows i)))) j).val =
+      (rank (refine (fun c i => cols (g * E.transpose) c (rows i)))).val * W + j.val := by
+  unfold rowPass
+  rw [refined_atomRun,index_val]
+  · apply congrArg (fun x => (rank (refine x)).val * W + j.val)
+    have eq := atomRun_rows (OrderedAffine.program E) rows (cols g)
+    rw [lower_route hE] at eq
+    exact eq
   · intro a ha
     obtain ⟨o, ho, rfl⟩ := List.mem_map.mp ha
     exact (atomOp_legal (h o ho)).2
