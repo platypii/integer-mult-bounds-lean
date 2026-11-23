@@ -260,4 +260,80 @@ theorem allocatedStoppedInterval [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity
   have bill := raw.trans (Nat.floor_le base)
   simpa only [Nat.cast_mul,mul_assoc] using mul_le_mul_of_nonneg_left bill (Nat.cast_nonneg (α := ℝ) factor)
 
+/-- Return the transposed payload at its original head and clear all other tapes. -/
+theorem cleanStoppedInterval [M8.Machine.Net] {Q : ℕ} {U : Type} (capacity : columnCapacity ≤ Q)
+    (mergeCap : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q) :
+    ∃ (C : ℝ) (T : ℕ) (host : Unit → Pr Unit T Q prime U) (code : Pr Unit T Q prime U)
+      (inputPort : Fin T) (master : Fin 6 ↪ Fin T),
+      0 ≤ C ∧ (∀ i, master i ≠ inputPort) ∧ ∀ (lane : Descriptor),
+      let V := volume prime lane
+      let wide := {lane with afterD := lane.afterD*142080}
+      let size : V*142080 = volume prime wide := by simp [V,wide,volume,Nat.mul_assoc]
+      0 < V → 0 < lane.width → ∀ (input : Fin (volume prime wide) → ZMod 2) u S,
+      S.R inputPort = List.ofFn (fun k => SparseRoleCircuit.encode (a := prime) (input (k.cast size))) →
+      (∀ i, S.R (master i) = (Routines.hdr lane i).map bitSymbol) →
+      (∀ j, S.L j = []) → (∀ j, j ≠ inputPort → (∀ i, master i ≠ j) → S.R j = []) →
+      let y := Shared50RecursiveNodeRows.transpose (one_dvd wide.rows) input
+      ∃ z F t, Exec host code (mk u S) t (mk z F) ∧
+        t ≤ ⌊(C*(lane.width : ℝ)^M8.Machine.BudgetBound.tau)*(V*142080 : ℕ)⌋₊ ∧
+        z.user = u.user ∧ RecordPayload inputPort (fun _ => blank) 0 y F ∧
+        ∀ j, j ≠ inputPort → F.L j = [] ∧ F.R j = [] := by
+  classical
+  obtain ⟨C,T,host,worker,port,master,bank,pos,target,apart,run⟩ := allocatedStoppedInterval (U := U) capacity mergeCap
+  let scratch := (List.finRange T).filter (fun j => j ≠ port)
+  have distinct : scratch.Nodup := (List.nodup_finRange T).filter _
+  have mem (j) : j ∈ scratch ↔ j ≠ port := by simp [scratch]
+  let extra := 8*T+1
+  refine ⟨C+extra,T,host,worker.seq (clearWorkTapes scratch),port,master,by positivity,apart,?_⟩
+  intro lane V wide size positive width input u S source headers left blank y
+  obtain ⟨v,D,a,exec,paid,user,rep⟩ := run lane positive width input u S source headers left blank
+  have read := castPayload size (bank 0) D y (intervalOwnerPayload bank D _ _ rep)
+  rw [target] at read
+  obtain ⟨z,same,erase⟩ := clearWorkTapes_exec host scratch distinct v D
+  refine ⟨z,_,_,exec.seq erase,?_,same.trans user,?_,?_⟩
+  · have each (j) (away : j ≠ port) : cleanupWeight (S.L j) (S.R j) ≤ 8*V := by
+      by_cases hit : ∃ i, master i = j
+      · obtain ⟨i,rfl⟩ := hit
+        have len := RecursiveRowsNode.header_length lane (LeafCore.positive_of_volume positive) _ (Routines.hdr_headers lane) i
+        simp only [cleanupWeight,left,headers,List.length_nil,List.length_map]
+        change (Routines.hdr lane i).length ≤ 2*V at len
+        omega
+      · rw [blank j away (fun i eq => hit ⟨i,eq⟩),left]
+        simp [cleanupWeight]
+        omega
+    have stock := List.sum_le_length_nsmul (scratch.map fun j => cleanupWeight (S.L j) (S.R j)) (8*V)
+      (fun _ h => by obtain ⟨j,hj,rfl⟩ := List.mem_map.mp h; exact each j ((mem j).mp hj))
+    simp only [List.length_map,nsmul_eq_mul] at stock
+    have count : scratch.length ≤ T := (List.length_filter_le ..).trans_eq List.length_finRange
+    have room := Nat.mul_le_mul_right (8*V) count
+    change tapeCharge cleanupWeight scratch S ≤ scratch.length * (8*V) at stock
+    have bounded := stock.trans room
+    have leaf := paid scratch distinct
+    let mass := V*142080
+    let power := (lane.width : ℝ)^M8.Machine.BudgetBound.tau
+    have total : a+(tapeCharge cleanupWeight scratch D+1) ≤ ⌊C*power*mass⌋₊+extra*mass := by
+      change a+tapeCharge cleanupWeight scratch D ≤ tapeCharge cleanupWeight scratch S+⌊C*power*mass⌋₊ at leaf
+      have vcost : T*(8*V) = (8*T)*V := by ring
+      have mpos : 0 < mass := Nat.mul_pos positive (by decide)
+      have scale := Nat.mul_le_mul_left (8*T) (show V ≤ mass from Nat.le_mul_of_pos_right _ (by decide))
+      dsimp only [extra]
+      rw [Nat.add_mul,Nat.one_mul]
+      omega
+    apply total.trans
+    apply Nat.le_floor
+    have one : 1 ≤ power := Real.one_le_rpow (by exact_mod_cast width) M8.Machine.BudgetBound.exponent_range.1.le
+    have base : 0 ≤ C*power*mass := by positivity
+    have scale := mul_le_mul_of_nonneg_left one (Nat.cast_nonneg (α := ℝ) extra)
+    rw [mul_one] at scale
+    change ((⌊C*power*mass⌋₊+extra*mass : ℕ) : ℝ) ≤ (C+extra)*power*mass
+    calc
+      _ = (⌊C*power*mass⌋₊ : ℝ)+(extra : ℝ)*mass := by norm_cast
+      _ ≤ C*power*mass+((extra : ℝ)*power)*mass :=
+        add_le_add (Nat.floor_le base) (mul_le_mul_of_nonneg_right scale (Nat.cast_nonneg mass))
+      _ = _ := by ring
+  · intro j
+    simpa only [ite_eq_right (fun h => (mem port).mp h rfl)] using read j
+  · intro j away
+    simp only [ite_eq_left ((mem j).mpr away),and_self]
+
 end IntegerMultBounds.MathlibTM2.M6.BitNode
