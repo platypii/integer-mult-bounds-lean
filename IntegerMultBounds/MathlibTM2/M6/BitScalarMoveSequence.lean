@@ -211,6 +211,93 @@ theorem scalarOwnerEffect_at {k V : ℕ} (owner : Fin 661 ↪ Fin k) (x : Fin k 
   rw [dite_eq_left (show ∃ l, owner l = owner j from ⟨j,rfl⟩)]
   rw [owner.injective (Exists.choose_spec (show ∃ l, owner l = owner j from ⟨j,rfl⟩))]
 
+local instance (w : ℕ) : NeZero (prime^w) := ⟨(pow_pos Shared50ModularControl.prime_prime.pos _).ne'⟩
+
+/-- A paid MOVE acts on one register and carries its spectator index unchanged. -/
+noncomputable def moveOwnerEffect {k w W : ℕ} (owner : Fin 661 ↪ Fin k)
+    (x : Fin k → Fin ((prime^w)^16*W) → ZMod 2) (i : ℕ) (p : ℕ × ℕ) :=
+  let r := owner (paidRegister i)
+  Function.update x r (fun a => let (s,j) := copyAddress a
+    x r (copyAddress.symm (AffineFieldProgram.run (selectedWord w p) s,j)))
+
+/-- The coordinate relation returned by the MOVE machine determines its entire
+output word, including when two occurrences use the same register. -/
+theorem moveOwnerEffect_of_exec {k w W : ℕ} (owner : Fin 661 ↪ Fin k)
+    (x : Fin k → Fin ((prime^w)^16*W) → ZMod 2) (i : ℕ) (p : ℕ × ℕ)
+    (checked : Geometry.Moves.CheckedPair p) (y : Fin ((prime^w)^16*W) → ZMod 2)
+    (reads : ∀ s j, y (copyAddress.symm (AffineFieldProgram.run (selectedWord w p) s,j)) =
+      x (owner (paidRegister i)) (copyAddress.symm (s,j))) :
+    Function.update x (owner (paidRegister i)) y = moveOwnerEffect owner x i p := by
+  unfold moveOwnerEffect
+  congr 1
+  funext a
+  obtain ⟨⟨s,j⟩,rfl⟩ := copyAddress.symm.surjective a
+  simp only [Equiv.apply_symm_apply]
+  simpa only [(modular_scatter w).choose_spec.2.1 p checked s] using
+    reads (AffineFieldProgram.run (selectedWord w p) s) j
+
+theorem phaseRead_moveOwnerEffect {k w W : ℕ} (owner : Fin 661 ↪ Fin k)
+    (x : Fin k → Fin ((prime^w)^16*W) → ZMod 2) (i : ℕ) (p : ℕ × ℕ) (j : Fin W) :
+    phaseRead owner (moveOwnerEffect owner x i p) j =
+      Function.update (phaseRead owner x j) (paidRegister i).val
+        (fun s => phaseRead owner x j (paidRegister i).val (AffineFieldProgram.run (selectedWord w p) s)) := by
+  apply phaseRead_edge owner (paidRegister i) p x _ (fun r h => Function.update_of_ne h ..) _ j
+  intro s l
+  simp only [moveOwnerEffect,Function.update_self,← copyAddress_index,Equiv.apply_symm_apply]
+
+/-- Reading one spectator commutes with the complete physical phase. -/
+theorem phaseRead_indexedPhase {k w W : ℕ} (owner : Fin 661 ↪ Fin k)
+    (gs : List RawGate) (current : ℕ → ℕ) (allowed : ∀ g ∈ gs, g ∈ program)
+    (x : Fin k → Fin ((prime^w)^16*W) → ZMod 2) (start : ℕ) (j : Fin W) :
+    phaseRead owner (runIndexedPhase (scalarOwnerEffect owner) (moveOwnerEffect owner) gs current x start) j =
+      runIndexedPhase (fun bank g => FramedCircuit.moduleGate g.toCircuit bank)
+        (fun (bank : ℕ → AddressStream (ZMod (prime^w))) i p => Function.update bank (paidRegister i).val
+          (fun s => bank (paidRegister i).val (AffineFieldProgram.run (selectedWord w p) s)))
+        gs current (phaseRead owner x j) start := by
+  rw [← indexedPhase_fold,← indexedPhase_fold]
+  let read := fun data => phaseRead (w := w) owner data j
+  have gates (hs : List RawGate) (ok : ∀ g ∈ hs, g ∈ program) (data) :
+      read (hs.foldl (scalarOwnerEffect owner) data) =
+        hs.foldl (fun bank g => FramedCircuit.moduleGate g.toCircuit bank) (read data) := by
+    induction hs generalizing data with
+    | nil => rfl
+    | cons g hs ih =>
+      rw [List.foldl_cons,List.foldl_cons,ih (fun h mem => ok h (List.mem_cons_of_mem _ mem))]
+      exact congrArg (fun b => hs.foldl (fun bank (h : RawGate) => FramedCircuit.moduleGate h.toCircuit bank) b) (phaseRead_gate owner g (ok g List.mem_cons_self) data _ (scalarOwnerEffect_at owner data g) j)
+  obtain ⟨blocks,suffix⟩ := phaseMoveBlocks_allowed gs current allowed
+  change read _ = _
+  rw [gates _ suffix]
+  apply congrArg (fun b => (phaseMoveBlocks gs current).2.foldl (fun bank g => FramedCircuit.moduleGate g.toCircuit bank) b)
+  symm
+  apply List.foldl_hom read
+  intro data i
+  dsimp only [read]
+  rw [phaseRead_moveOwnerEffect]
+  exact congrArg (fun (bank : ℕ → AddressStream (ZMod (prime^w))) =>
+    Function.update bank (paidRegister (start+i.val)).val (fun s => bank (paidRegister (start+i.val)).val
+      (AffineFieldProgram.run (selectedWord w (phaseMoveBlocks gs current).1[i.val].2) s))) (gates _ (blocks i) data).symm
+
+/-- All other invocations' owner words survive the phase. -/
+theorem indexedPhase_off_owner {k w W : ℕ} (owner : Fin 661 ↪ Fin k)
+    (gs : List RawGate) (current : ℕ → ℕ) (x : Fin k → Fin ((prime^w)^16*W) → ZMod 2)
+    (start : ℕ) (r : Fin k) (outside : ∀ i, owner i ≠ r) :
+    runIndexedPhase (scalarOwnerEffect owner) (moveOwnerEffect owner) gs current x start r = x r := by
+  have fixed {α β : Type} (read : α → β) {γ : Type} (step : α → γ → α)
+      (same : ∀ x g, read (step x g) = read x) (gs : List γ) (x : α) :
+      read (gs.foldl step x) = read x := by
+    induction gs generalizing x with
+    | nil => rfl
+    | cons g gs ih => exact (ih (step x g)).trans (same x g)
+  let read := fun (data : Fin k → Fin ((prime^w)^16*W) → ZMod 2) => data r
+  have gates := fixed read (scalarOwnerEffect owner) (fun data g => by
+    simp only [read,scalarOwnerEffect,dite_eq_right (show ¬ ∃ i, owner i = r from fun ⟨i,h⟩ => outside i h)])
+  rw [← indexedPhase_fold]
+  change read _ = read x
+  rw [gates]
+  apply fixed
+  intro data i
+  exact (Function.update_of_ne (outside (paidRegister (start+i.val))).symm ..).trans (gates _ data)
+
 /-- Compile a scalar block once for every positive owner volume. -/
 theorem scalarOwnerBlock {k : ℕ} (owner : Fin 661 ↪ Fin k) :
     ∃ states, ∀ {Q : ℕ} {U : Type}, states ≤ Q →
