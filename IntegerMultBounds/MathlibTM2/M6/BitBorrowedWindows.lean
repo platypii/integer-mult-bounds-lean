@@ -197,7 +197,7 @@ theorem borrowedWindows_host [M8.Machine.Net] (charged : Bool) (n : Fin 9) (p : 
   choose position coords run using fun j => build j node w B rows width split label pos
   refine ⟨position,coords,?_⟩
   intro record shared
-  choose init worker using fun j => run j (record j)
+  choose init _ worker using fun j => run j (record j)
   obtain ⟨prepared,sharedEq,stored⟩ := prepare shared init
   refine ⟨prepared,sharedEq,?_⟩
   intro budget recurse work

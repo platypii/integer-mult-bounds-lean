@@ -102,6 +102,47 @@ theorem scheduledWindows_exec {T Q : ℕ} {P U X : Type} (charged : Bool) (body 
     simpa only [List.map_cons,List.sum_cons,Nat.add_assoc] using workerCost.seq charge paid
 
 open Certificates.PR589 Cover in
+/-- An ordered trace of the individual COPY windows acts by the selected COPY
+word on labels and fixes the owners outside the invocation. -/
+theorem copyWindowTrace {w B K : ℕ} (n : Fin 9) (r : Fin 32) (d : Fin 5) :
+    let V := (prime^w)^16*(B*prime^(64*(w*64))*K)
+    let X := Fin 142081 → Fin V → ZMod 2
+    let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n r d,ownerTape_injective n r d⟩
+    ∀ x y : X, (List.finRange Copy.lifecycles.length).foldr (fun i next a =>
+      ∃ b, CopyFanoutEffect n r d _ (List.getElem_mem (l := Copy.lifecycles) i.isLt) w B K a b ∧ next b)
+      (fun a => a = y) x →
+      (∀ g (cell : LabelEntry.Cell (copyLabelLayout w B K) B), phaseRead owner y (labelSpectator g cell) =
+        Copy.run (selectedFrame w) Copy.lifecycles (phaseRead owner x (labelSpectator g cell))) ∧
+      ∀ k, k ≠ Fin.last 142080 → (∀ j, owner j ≠ k) → y k = x k := by
+  intro V X owner x y steps
+  let trace := fun (ls : List (Fin Copy.lifecycles.length)) (x y : X) =>
+    (∀ g (cell : LabelEntry.Cell (copyLabelLayout w B K) B),
+      phaseRead owner y (labelSpectator g cell) = ls.foldl
+        (fun a i => scatterWindow (selectedWord w) Copy.lifecycles[i.val] a) (phaseRead owner x (labelSpectator g cell))) ∧
+    ∀ k, k ≠ Fin.last 142080 → (∀ j, owner j ≠ k) → y k = x k
+  have fold (ls : List (Fin Copy.lifecycles.length)) (a : X) :
+      ls.foldr (fun i next data => ∃ b, CopyFanoutEffect n r d _ (List.getElem_mem (l := Copy.lifecycles) i.isLt)
+        w B K data b ∧ next b) (fun b => b = y) a → trace ls a y := by
+    induction ls generalizing a with
+    | nil =>
+      intro eq
+      subst a
+      exact ⟨fun _ _ => rfl,fun _ _ _ => rfl⟩
+    | cons i ls ih =>
+      rintro ⟨b,act,rest⟩
+      obtain ⟨tail,off⟩ := ih b rest
+      refine ⟨fun g cell => ?_,fun k live outside => (off k live outside).trans (act.2.2.1 k live (fun j _ => outside j))⟩
+      rw [tail g cell,phaseRead_fanout _ act]
+      rfl
+  obtain ⟨action,off⟩ := fold _ x steps
+  refine ⟨?_,off⟩
+  intro g cell
+  have h := action g cell
+  rw [← List.foldl_map (g := fun a life => scatterWindow (selectedWord w) life a) (f := fun i : Fin Copy.lifecycles.length => Copy.lifecycles[i.val]),
+    ← List.ofFn_eq_map,List.ofFn_getElem] at h
+  exact h.trans ((modular_scatter w).choose_spec.2.2.2.1 _)
+
+open Certificates.PR589 Cover in
 /-- Sequence the recursive fanouts directly on the permanent owner bank.
 Every label sees the selected COPY word, and unrelated owners retain their data. -/
 theorem commonWindows_exec {T Q w B K : ℕ} {P U : Type} (charged : Bool) (body : P → Pr P T Q prime U)
@@ -123,24 +164,13 @@ theorem commonWindows_exec {T Q w B K : ℕ} {P U : Type} (charged : Bool) (body
             Copy.run (selectedFrame w) Copy.lifecycles (phaseRead owner x (labelSpectator g cell))) ∧
         ∀ k, k ≠ Fin.last 142080 → (∀ j, owner j ≠ k) → y k = x k := by
   intro V owner X window
-  let trace := fun (ls : List (Fin Copy.lifecycles.length)) (x y : X) =>
-    (∀ g (cell : LabelEntry.Cell (copyLabelLayout w B K) B),
-      phaseRead owner y (labelSpectator g cell) = ls.foldl
-        (fun a i => scatterWindow (selectedWord w) Copy.lifecycles[i.val] a) (phaseRead owner x (labelSpectator g cell))) ∧
-    ∀ k, k ≠ Fin.last 142080 → (∀ j, owner j ≠ k) → y k = x k
-  have run := scheduledWindows_exec charged body _ trace (fun _ => ⟨fun _ _ => rfl,fun _ _ _ => rfl⟩)
-    (fun i ls x y z act tail => by
-      refine ⟨fun g cell => ?_,fun k live off => (tail.2 k live off).trans (act.2.2.1 k live (fun j _ => off j))⟩
-      rw [tail.1 g cell,phaseRead_fanout _ act]
-      rfl) (HelperFan fan) saved price code window (List.finRange _) (List.nodup_finRange _)
+  let trace := fun (ls : List (Fin Copy.lifecycles.length)) (x y : X) => ls.foldr (fun i next a =>
+    ∃ b, CopyFanoutEffect n r d _ (List.getElem_mem (l := Copy.lifecycles) i.isLt) w B K a b ∧ next b) (fun a => a = y) x
+  have run := scheduledWindows_exec charged body _ trace (fun _ => rfl)
+    (fun _ _ _ y _ act tail => ⟨y,act,tail⟩) (HelperFan fan) saved price code window (List.finRange _) (List.nodup_finRange _)
   intro x u S rep fresh
-  obtain ⟨z,F,t,y,exec,paid,user,done,action,off⟩ := run x u S rep (fun i _ => fresh i)
-  refine ⟨z,F,t,y,exec,by simpa only [List.ofFn_eq_map] using paid,user,done,?_,off⟩
-  intro g cell
-  have h := action g cell
-  rw [← List.foldl_map (g := fun a life => scatterWindow (selectedWord w) life a) (f := fun i : Fin Copy.lifecycles.length => Copy.lifecycles[i.val]),
-    ← List.ofFn_eq_map,List.ofFn_getElem] at h
-  exact h.trans ((modular_scatter w).choose_spec.2.2.2.1 _)
+  obtain ⟨z,F,t,y,exec,paid,user,done,steps⟩ := run x u S rep (fun i _ => fresh i)
+  exact ⟨z,F,t,y,exec,by simpa only [List.ofFn_eq_map] using paid,user,done,copyWindowTrace n r d x y steps⟩
 
 open Certificates.PR589 in
 /-- Join the allocated scalar phases to the charted COPY on one host.
@@ -192,7 +222,7 @@ theorem borrowedWindow_host [M8.Machine.Net] (charged : Bool) (n : Fin 9) (p : F
     let desc := scheduledChild prime node (copyChildPosition (n,p,j))
     0 < W → ∃ position : Fin (volume prime desc) ≃ Fin V,
       CopyIntervalPositions desc (w+1) W position ∧
-      ∀ record, ∃ prepared : Stacks T prime, ∀ budget,
+      ∀ record, ∃ prepared : Stacks T prime, prepared.R (scheduledRecordPorts ports 34) = record ∧ ∀ budget,
       ScheduledChildExec node desc w W ports record position body f budget charged →
       ∀ data u S, HelperFan fan data S →
         (∀ k, (∀ h, fan h ≠ k) → S.L k = prepared.L k ∧ S.R k = prepared.R k) →
@@ -209,8 +239,8 @@ theorem borrowedWindow_host [M8.Machine.Net] (charged : Bool) (n : Fin 9) (p : F
   obtain ⟨position,coords,worker⟩ := run node w B rows blocks K width split label (by dsimp [blocks,K,M]; ring) pos
   refine ⟨position,coords,?_⟩
   intro record
-  obtain ⟨prepared,build⟩ := worker record
-  refine ⟨prepared,?_⟩
+  obtain ⟨prepared,archive,build⟩ := worker record
+  refine ⟨prepared,archive,?_⟩
   intro budget child
   have execute := build budget child
   intro data u S live saved

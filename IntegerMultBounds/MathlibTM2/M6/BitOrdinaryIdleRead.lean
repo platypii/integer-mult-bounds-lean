@@ -2426,7 +2426,7 @@ theorem commonCopyWindow_layout (inherited charged : Bool) [M8.Machine.Net]
     let bank := ((Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)).trans ports
     let clean := fun D : Stacks T prime => ∀ k : Fin (rowSwapBlock.tapes+35), 35 ≤ k.val → D.L (ports k) = [] ∧ D.R (ports k) = []
     let V := M^16*W
-    ∀ record, ∃ prepared : Stacks T prime, ∀ budget,
+    ∀ record, ∃ prepared : Stacks T prime, prepared.R (bank 34) = record ∧ ∀ budget,
     let fanReady := fun X (D : Stacks T prime) => RepT (PointwiseRoleGate.bank (a := prime)
       (fun _ _ => blank) (fun _ => 0) (SparseRoleCircuit.encoded X) (FlatCoordinateSchedule.bits V))
       (embStk fan D).L (embStk fan D).R
@@ -2527,7 +2527,7 @@ theorem commonCopyWindow_layout (inherited charged : Bool) [M8.Machine.Net]
   obtain ⟨core,initialA,initialB,initialRecord,initialClean⟩ :=
     basisRecordSeed A B' ports a b srcA srcB apart priv view size record dest q' [] []
       (fun z => by simp [readAt_nil_left,wordTape_nil]; rfl)
-  refine ⟨core,?_⟩
+  refine ⟨core,initialRecord.archive,?_⟩
   intro budget fanReady stored recurse
   intro data u S ready saved
   let x := data src

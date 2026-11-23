@@ -259,6 +259,119 @@ def stageOccurrenceOrder (l r : ℕ) : List (Σ _ : StageRun, Σ j : Fin 3, Fin 
 theorem stageOccurrenceOrder_nodup (l r : ℕ) : (stageOccurrenceOrder l r).Nodup :=
   stageRuns_nodup.sigma fun _ => (List.nodup_finRange 3).sigma fun _ => List.nodup_finRange _
 
+/-- Relational execution of an ordered list, including its two endpoint states. -/
+def OrderedEffects {I X : Type} (xs : List I) (effect : I → X → X → Prop) (x y : X) : Prop :=
+  xs.foldr (fun i tail a => ∃ b, effect i a b ∧ tail b) (fun a => a = y) x
+
+private theorem orderedEffects_append {I X : Type} (xs ys : List I) (effect : I → X → X → Prop) (x y : X) :
+    OrderedEffects (xs++ys) effect x y ↔ ∃ b, OrderedEffects xs effect x b ∧ OrderedEffects ys effect b y := by
+  induction xs generalizing x with
+  | nil => simp [OrderedEffects]
+  | cons i xs ih =>
+    constructor
+    · rintro ⟨v,step,tail⟩
+      obtain ⟨b,left,right⟩ := (ih v).mp tail
+      exact ⟨b,⟨v,step,left⟩,right⟩
+    · rintro ⟨b,⟨v,step,left⟩,right⟩
+      exact ⟨v,step,(ih v).mpr ⟨b,left,right⟩⟩
+
+private theorem orderedEffects_sigma {I X : Type} {J : I → Type} (xs : List I) (ys : ∀ i, List (J i))
+    (effect : Sigma J → X → X → Prop) (x y : X) :
+    OrderedEffects (xs.sigma ys) effect x y ↔
+      OrderedEffects xs (fun i => OrderedEffects (ys i) (fun j => effect ⟨i,j⟩)) x y := by
+  induction xs generalizing x with
+  | nil => rfl
+  | cons i xs ih =>
+    rw [List.sigma_cons,orderedEffects_append]
+    change (∃ b, _ ∧ _) ↔ ∃ b, _ ∧ _
+    apply exists_congr
+    intro b
+    apply and_congr _ (ih b)
+    simp only [OrderedEffects,List.foldr_map,Function.comp_def]
+
+/-- Group the flat machine trace at the two phase boundaries of every invocation. -/
+theorem stageOccurrenceEffects {X : Type} (l r : ℕ)
+    (effect : (Σ _ : StageRun, Σ j : Fin 3, Fin (invocationCounts l r j)) → X → X → Prop) (x y : X) :
+    OrderedEffects (stageOccurrenceOrder l r) effect x y ↔
+      OrderedEffects stageRuns (fun p => OrderedEffects (List.finRange 3) (fun j =>
+        OrderedEffects (List.finRange (invocationCounts l r j)) (fun i => effect ⟨p,j,i⟩))) x y := by
+  unfold stageOccurrenceOrder
+  rw [orderedEffects_sigma]
+  have group (p : StageRun) : OrderedEffects ((List.finRange 3).sigma fun j => List.finRange (invocationCounts l r j))
+      (fun i => effect ⟨p,i⟩) = OrderedEffects (List.finRange 3) (fun j =>
+        OrderedEffects (List.finRange (invocationCounts l r j)) (fun i => effect ⟨p,j,i⟩)) := by
+    funext a b
+    exact propext (orderedEffects_sigma _ _ _ a b)
+  simp only [group]
+
+/-- The three components share their boundary states in pre-MOVE, COPY, post-MOVE order. -/
+theorem orderedEffects_three {X : Type} (effect : Fin 3 → X → X → Prop) (x y : X) :
+    OrderedEffects (List.finRange 3) effect x y ↔
+      ∃ a b, effect 0 x a ∧ effect 1 a b ∧ effect 2 b y := by
+  change (∃ a, effect 0 x a ∧ ∃ b, effect 1 a b ∧ ∃ z, effect 2 b z ∧ z = y) ↔ _
+  constructor
+  · rintro ⟨a,left,b,mid,_,right,rfl⟩
+    exact ⟨a,b,left,mid,right⟩
+  · rintro ⟨a,b,left,mid,right⟩
+    exact ⟨a,left,b,mid,y,right,rfl⟩
+
+/-- Convert grouped machine effects into borrowed invocations on the same stage data. -/
+theorem stageBorrowedEffects {w B K l r : ℕ} (n : Fin 9)
+    (effect : (Σ _ : StageRun, Σ j : Fin 3, Fin (invocationCounts l r j)) →
+      (Fin 142081 → Fin ((prime^w)^16*(B*prime^(64*(w*64))*K)) → ZMod 2) →
+      (Fin 142081 → Fin ((prime^w)^16*(B*prime^(64*(w*64))*K)) → ZMod 2) → Prop)
+    (component : ∀ p j x y, OrderedEffects (List.finRange (invocationCounts l r j))
+      (fun i => effect ⟨p,j,i⟩) x y → InvocationComponentEffect n p w B K j x y) :
+    ∀ x y, OrderedEffects stageRuns (fun p => OrderedEffects (List.finRange 3) (fun j =>
+      OrderedEffects (List.finRange (invocationCounts l r j)) (fun i => effect ⟨p,j,i⟩))) x y →
+      OrderedEffects stageRuns (BorrowedStep n w B K) x y := by
+  generalize stageRuns = ps
+  induction ps with
+  | nil => exact fun _ _ h => h
+  | cons p ps ih =>
+    rintro x y ⟨v,run,tail⟩
+    obtain ⟨a,b,left,copy,right⟩ := (orderedEffects_three _ x v).mp run
+    exact ⟨v,invocationComponentEffects n p x a b v (component p 0 _ _ left)
+      (component p 1 _ _ copy) (component p 2 _ _ right),ih v y tail⟩
+
+def occurrenceSlots {X : Type} {l r : ℕ}
+    (left : Fin l → X → X → Prop) (copy : Fin Copy.lifecycles.length → X → X → Prop)
+    (right : Fin r → X → X → Prop) : ∀ j, Fin (invocationCounts l r j) → X → X → Prop :=
+  invocationSlots (α := fun j => Fin (invocationCounts l r j) → X → X → Prop) left copy right
+
+/-- The data relation of each worker in the flat stage directory. -/
+noncomputable def selectedOccurrenceEffect (n : Fin 9) (w B K : ℕ) (p : StageRun) :=
+  occurrenceSlots (fun i x y => y = selectedMoveOutput (w := w) (W := B*prime^(64*(w*64))*K) n p false i x)
+    (fun i => CopyFanoutEffect n p.1 p.2 _ (List.getElem_mem (l := Copy.lifecycles) i.isLt) w B K)
+    (fun i x y => y = selectedMoveOutput (w := w) (W := B*prime^(64*(w*64))*K) n p true i x)
+
+/-- The selected occurrence trace on the initialized stage realizes every borrowed invocation. -/
+theorem selectedStageEffects (n : Fin 9) (w B K : ℕ) :
+    let l := (selectedPhaseSchedule false).1.length
+    let r := (selectedPhaseSchedule true).1.length
+    ∀ x y, OrderedEffects stageRuns (fun p => OrderedEffects (List.finRange 3) (fun j =>
+      OrderedEffects (List.finRange (invocationCounts l r j)) (selectedOccurrenceEffect n w B K p j))) x y →
+      OrderedEffects stageRuns (BorrowedStep n w B K) x y := by
+  intro l r
+  apply stageBorrowedEffects (l := l) (r := r) n (fun i => selectedOccurrenceEffect n w B K i.1 i.2.1 i.2.2)
+  intro p j
+  apply invocationSlots (i := j)
+  · intro x y trace
+    change y = invocationPhaseOutput n p false x
+    apply Eq.symm
+    apply (invocationPhaseOutput_fold n p false x (· = y)).mp
+    unfold InvocationPhaseTrace
+    exact trace
+  · intro x y trace
+    apply copyWindowTrace n p.1 p.2 x y
+    exact trace
+  · intro x y trace
+    change y = invocationPhaseOutput n p true x
+    apply Eq.symm
+    apply (invocationPhaseOutput_fold n p true x (· = y)).mp
+    unfold InvocationPhaseTrace
+    exact trace
+
 private theorem sumSigmaCosts {α : Type} {β : α → Type} (xs : List α) (ys : ∀ x, List (β x))
     (cost : Sigma β → ℕ) :
     ((xs.sigma ys).map cost).sum = (xs.map (fun x => ((ys x).map (fun y => cost ⟨x,y⟩)).sum)).sum := by
@@ -426,8 +539,9 @@ theorem runSelectedStageArchives {U : Type} {Q l r owners : ℕ}
       (effect : I → X → X → Prop),
     let word := fun p : I => invocationWorkerRecord p.2.1 (scheduledChild prime c.node (child p)) c.root.width.size c.cutoff
     let cost := fun p => work p+childTime (child p).val
+    (∀ p, (seed p).R (record p 34) = word p) →
     (∀ p x u D, rep x (D.L ∘ fan p) (D.R ∘ fan p) →
-      PrivateTapes (fan p) {seed p with R := Function.update (seed p).R (record p 34) (word p)} D →
+      PrivateTapes (fan p) (seed p) D →
       ∃ z F t y, Exec (body p) (worker p) (mk u D) t (mk z F) ∧ CleanupBound D F t (cost p) ∧
         z.user = u.user ∧ rep y (F.L ∘ fan p) (F.R ∘ fan p) ∧ effect p x y) →
     ∀ x u S, ParentArchiveInput c.node c.w (embStk (archiveSetupPlacement 80 T R) S) →
@@ -440,7 +554,8 @@ theorem runSelectedStageArchives {U : Type} {Q l r owners : ℕ}
       ∃ z F t y, Exec host code (mk u S) t (mk z F) ∧ CleanupBound S F t (rate*c.cells+(order.map work).sum+1+
         ((List.range' (stageChildStart n) (stageRuns.flatMap (fun _ => Geometry.Moves.localPaid)).length).map childTime).sum) ∧
         z.user = u.user ∧ rep y (F.L ∘ (shared.trans owner)) (F.R ∘ (shared.trans owner)) ∧
-        order.foldr (fun p next a => ∃ b, effect p a b ∧ next b) (fun a => a = y) x := by
+        OrderedEffects stageRuns (fun p => OrderedEffects (List.finRange 3) (fun j =>
+          OrderedEffects (List.finRange (invocationCounts l r j)) (fun i => effect ⟨p,j,i⟩))) x y := by
   intro I child tapes fan record cut offCut privateArchive
   obtain ⟨T,shared,bank,rate,align,apart,prepare⟩ := prepareSelectedStageArchives capacity n pre post tapes fan record cut offCut privateArchive
   refine ⟨T,shared,bank,rate,?_⟩
@@ -448,17 +563,16 @@ theorem runSelectedStageArchives {U : Type} {Q l r owners : ℕ}
   obtain ⟨load,write⟩ := prepare host
   let calls := order.map fun p => embProg (placed p) (Prod.mk p) (worker p)
   refine ⟨load.seq (Prog.seqList calls),?_⟩
-  intro c X work childTime seed rep effect word cost execute x u S input header empty live stock
+  intro c X work childTime seed rep effect word cost archive execute x u S input header empty live stock
   obtain ⟨v,D,a,start,user,paid,loaded,left,right⟩ := write c u S input header empty
   let state := fun (x : X) (D : Stacks owners prime) => rep x D.L D.R
-  let initial := fun p => {seed p with R := Function.update (seed p).R (record p 34) (word p)}
   have ownersRight j : D.R (owner (shared j)) = S.R (owner (shared j)) := right _ (by
     intro p
     rw [← align p j]
     exact (bank p).injective.ne (privateArchive p j).symm)
   obtain ⟨z,F,t,y,run,bill,same,out,trace⟩ := runPlacedScheduleWithCharge tapes fan (shared.trans owner) placed
     (fun p j => congrArg owner (align p j)) (fun p k off q ne j => owner.injective.ne (apart p k off q ne j))
-    body worker cleanupWeight state effect cost initial execute order (stageOccurrenceOrder_nodup l r) x v D (by
+    body worker cleanupWeight state effect cost seed execute order (stageOccurrenceOrder_nodup l r) x v D (by
       change rep x (D.L ∘ (shared.trans owner)) (D.R ∘ (shared.trans owner))
       have hl : D.L ∘ (shared.trans owner) = S.L ∘ (shared.trans owner) := funext fun j => left _
       have hr : D.R ∘ (shared.trans owner) = S.R ∘ (shared.trans owner) := funext ownersRight
@@ -468,15 +582,15 @@ theorem runSelectedStageArchives {U : Type} {Q l r owners : ℕ}
       refine ⟨(left _).trans kept.1,?_⟩
       by_cases hit : k = record p 34
       · subst k
-        simpa [initial,word,placed,owner,child] using loaded p
+        exact (loaded p).trans (archive p).symm
       · have unchanged := right (bank p k) (by
           intro q
           by_cases eq : q = p
           · subst q
             exact (bank p).injective.ne (Ne.symm hit)
           · exact (apart p k off q eq _))
-        exact (unchanged.trans (kept.2 hit)).trans (Function.update_of_ne hit ..).symm)
-  refine ⟨z,F,_,y,start.seq run,?_,same.trans user,out,trace⟩
+        exact unchanged.trans (kept.2 hit))
+  refine ⟨z,F,_,y,start.seq run,?_,same.trans user,out,(stageOccurrenceEffects l r effect x y).mp trace⟩
   have sum : (order.map cost).sum = (order.map work).sum+
       ((List.range' (stageChildStart n) (stageRuns.flatMap (fun _ => Geometry.Moves.localPaid)).length).map childTime).sum := by
     simp only [cost,List.sum_map_add]
