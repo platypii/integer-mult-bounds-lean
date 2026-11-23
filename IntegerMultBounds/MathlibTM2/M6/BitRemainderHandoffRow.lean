@@ -17,6 +17,62 @@ theorem firstRowLabel_zero (w : ℕ) : firstRowLabel w = 0 := by
   rw [addr] at digit
   exact ZMod.val_injective _ (by simpa using digit.symm)
 
+/-- A scheduled chart leaves every read of a bank padded at row zero unchanged.
+The payload and its spectator stay at their original offsets. -/
+theorem firstRowBank_chart_read {w B K : ℕ} (n : Fin 9) (reg : ℕ)
+    (x : Fin 142081 → Fin ((prime^w)^16*(B*K)) → ZMod 2) (i : Fin 142081)
+    (g : LabelPadding.Label 64 w) (z : LabelEntry.Cell (copyLabelLayout w B K) B)
+    (s : Swap.Shear.State (Fin 8) (ZMod (prime^w))) :
+    let read := fun label => singleLabelBank (firstRowLabel w) x i
+      (FlatCoordinateLayout.index (AffineFieldCoordinates.embed s) (labelSpectator label z))
+    read (g * (registerChart w n reg).transpose) = read g ∧
+      read (g * registerChart w n reg) = read g := by
+  intro read
+  have same (A C : LabelPadding.Label 64 w) (inv : A*C = 1) : read (g*A) = read g := by
+    have zero : g*A = 0 ↔ g = 0 := by
+      refine ⟨fun h => ?_,fun h => by rw [h,Matrix.zero_mul]⟩
+      simpa only [Matrix.mul_assoc,inv,Matrix.mul_one,Matrix.zero_mul] using congrArg (· * C) h
+    simp only [read,singleLabelBank_read,firstRowLabel_zero,zero]
+  exact ⟨same _ _ (registerChart_inverse w n reg),same _ _ (mul_eq_one_comm.mp (registerChart_inverse w n reg))⟩
+
+/-- With ordinary data staged in row zero the invocation has the exact target
+endpoint at each label, so recovering the target requires no sum over labels. -/
+theorem InvocationEffect.firstRowTarget {w B K : ℕ} {n : Fin 9} {r : Fin 32} {d : Fin 5}
+    {x : Fin 142081 → Fin ((prime^w)^16*(B*K)) → ZMod 2} {y}
+    (act : InvocationEffect n r d w B K (singleLabelBank (firstRowLabel w) x) y)
+    (g : LabelPadding.Label 64 w) (z : LabelEntry.Cell (copyLabelLayout w B K) B) (t : Fin 111) :
+    let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n r d,ownerTape_injective n r d⟩
+    let initial := FramedCircuit.decode (fun j => selectedFrame w (Certificates.PR589.Frames.snapshot
+      Certificates.PR589.Frames.initialRefs j)) (phaseRead owner (singleLabelBank (firstRowLabel w) x) (labelSpectator g z))
+    phaseRead owner y (labelSpectator g z) (111+t.val) =
+      selectedFrame w (Certificates.PR589.Frames.finalRefs (111+t.val)) (initial (111+t.val) + initial t.val) := by
+  apply act.targetRead_of_support
+  intro l _ _ k _ _
+  apply congrArg (selectedFrame w _).symm
+  funext s
+  simp only [phaseRead,Certificates.PR589.Copy.extendStored,dite_eq_left k.isLt]
+  exact ((firstRowBank_chart_read n l.source x _ _ z s).2).trans
+    (firstRowBank_chart_read n (111+t.val) x _ g z s).1
+
+/-- The invocation preserves single-row storage on every active target. -/
+theorem InvocationEffect.firstRowTarget_supported {w B K : ℕ} {n : Fin 9} {r : Fin 32} {d : Fin 5}
+    {x : Fin 142081 → Fin ((prime^w)^16*(B*K)) → ZMod 2} {y}
+    (act : InvocationEffect n r d w B K (singleLabelBank (firstRowLabel w) x) y) (t : Fin 111) :
+    let tape := ownerTape n r d ⟨111+t.val,by omega⟩
+    y tape = singleLabelBank (firstRowLabel w) (collapseLabelBank y) tape := by
+  let owner : Fin 661 ↪ Fin 142081 := ⟨ownerTape n r d,ownerTape_injective n r d⟩
+  apply singleLabelBank_of_support _ _ owner ⟨111+t.val,by omega⟩
+  intro z g hg
+  rw [act.firstRowTarget g z t]
+  have off (i : ℕ) (hi : i < 661) : phaseRead owner (singleLabelBank (firstRowLabel w) x)
+      (labelSpectator g z) i = 0 := by
+    funext s
+    simp only [phaseRead,Certificates.PR589.Copy.extendStored,dite_eq_left hi,singleLabelBank_read,
+      ite_eq_right hg,Pi.zero_apply]
+  dsimp only [owner] at off
+  simp only [FramedCircuit.decode,off _ (by omega : 111+t.val < 661),off _ (by omega : t.val < 661),
+    map_zero,add_zero]
+
 private theorem modulus_nontrivial (w : ℕ) : 1 < prime^(w+1) :=
   one_lt_pow₀ Shared50ModularControl.prime_prime.one_lt (by omega)
 
