@@ -199,8 +199,8 @@ private theorem stageSetupRate [M8.Machine.Net] (c : CutoffNodeInput) (count : �
       push_cast
       nlinarith only [mul_le_mul_of_nonneg_left one (show 0 ≤ (178*(count : ℝ)+314*142080+52)*c.cells by positivity)]
 
-/-- Run the selected restored stage on the caller's host after copying its archive
-from six inherited descriptor fields. -/
+/-- Run the restored stage from six descriptor fields and the packed parent lanes.
+Measure one lane to compute the spectator width before preparing the worker banks. -/
 theorem callerRestoredStage [M8.Machine.Net] (n : Fin 9) :
     let l := (selectedPhaseSchedule false).1.length
     let r := (selectedPhaseSchedule true).1.length
@@ -216,10 +216,12 @@ theorem callerRestoredStage [M8.Machine.Net] (n : Fin 9) :
     let owner := ((Fin.castAddEmb 273 (n := T)).trans (Fin.castAddEmb LeafCore.small)).trans (Fin.natAddEmb 80)
     let fan := shared.trans owner
     ∃ (body' : I × P → Pr (I × P) H Q prime U) (rate : ℝ),
-    ∀ {M : ℕ} (place : Fin H ↪ Fin M) (source : Fin 6 → Fin M) (r : Fin 7 ↪ Fin M) (power : Fin 10 ↪ Fin M) (tmp saved : Fin M) (dimensions : Fin 6 ↪ Fin M),
+    ∀ {M : ℕ} (place : Fin H ↪ Fin M) (source : Fin 6 → Fin M) (r : Fin 7 ↪ Fin M) (power : Fin 10 ↪ Fin M) (tmp saved : Fin M) (dimensions : Fin 6 ↪ Fin M) (division : Fin 11 ↪ Fin M),
     let outside := fun j => ∀ h, place (owner h) ≠ j
     let bank := (archiveSetupPlacement 80 T LeafCore.small).trans place
     let host := fun g => embProg place id (body' g)
+    division 2 = dimensions 1 → (∀ i j, place j ≠ division i) →
+    (∀ i, outsideArchiveOutputs r power (division i) ∧ division i ≠ dimensions 3) →
     dimensions 0 = bank (parentArchivePorts 6) → dimensions 2 = bank (parentArchivePorts 7) →
     (∀ j : Fin 6, j ≠ 0 → j ≠ 2 → outsideArchiveOutputs r power (dimensions j) ∧ ∀ i, bank i ≠ dimensions j) →
     (∀ j, place j ≠ dimensions 3) →
@@ -242,12 +244,13 @@ theorem callerRestoredStage [M8.Machine.Net] (n : Fin 9) :
     (∀ i, invocationCoordinates i.2.1 w c.stageWidth (position i)) ∧
     ∀ time : ℕ → ℕ, (∀ i, ScheduledChildExec c.node (desc i) c.w c.stageWidth (ports i) (record i)
       (position i) (body i) (f i) (time (child i).val) true) →
-    ∀ x u S, HelperFan ((Fin.castAddEmb 1).trans fan) x (embStk place S) →
+    let data := (Fin.castAddEmb 1).trans fan
+    ∀ x u S, ParentStageWords (fun j => data (j.castAdd 2)) data V x (embStk place S) →
       S.R (place (fan (Fin.last k))) = binSyms c.root.width.size c.cutoff →
       (∀ i : Fin 6, S.R (source i) = (Routines.hdr c.node i).map bitSymbol) →
       (∀ i : Fin 7, i ≠ 0 → S.R (r i) = []) → (∀ i : Fin 10, i ≠ 0 → S.R (power i) = []) →
       (∀ j, S.L (bank j) = [] ∧ S.R (bank j) = []) → S.R tmp = [] → S.R saved = [] →
-      S.R (dimensions 1) = binSyms c.stageWidth.size c.stageWidth →
+      (∀ i, S.R (division i) = []) →
       S.R (dimensions 3) = [] →
       S.R (dimensions 4) = [] → S.R (dimensions 5) = [] →
       (∀ i l, (∀ j, owners i j ≠ l) →
@@ -267,8 +270,8 @@ theorem callerRestoredStage [M8.Machine.Net] (n : Fin 9) :
   obtain ⟨T,shared,banks,align,disjoint,inner,program,rate,stage⟩ := build cap body f
   let owners := fun i => withCutoffPort (data i)
   let setupRate : ℝ := 178*count+314*142080+52
-  refine ⟨T,shared,owners,banks,inner,setupRate+rate,?_⟩
-  intro M place source r power tmp saved dimensions outside bank host modPort unitPort dimFrame atomAway atomRegs dimOff width long short sourceOff placeOff tmpOff savedOff apart regs
+  refine ⟨T,shared,owners,banks,inner,setupRate+2000255+rate,?_⟩
+  intro M place source r power tmp saved dimensions division outside bank host widthPort divisionAway divisionSafe modPort unitPort dimFrame atomAway atomRegs dimOff width long short sourceOff placeOff tmpOff savedOff apart regs
   obtain ⟨setup,load⟩ := loadStageArchive (T := T) (R := LeafCore.small) (H := M) host place source r power tmp saved width long short sourceOff placeOff tmpOff savedOff apart regs
   let owner := ((Fin.castAddEmb 273 (n := T)).trans (Fin.castAddEmb LeafCore.small)).trans (Fin.natAddEmb 80)
   let outer := owner.trans place
@@ -276,12 +279,16 @@ theorem callerRestoredStage [M8.Machine.Net] (n : Fin 9) :
   obtain ⟨init,loadBanks⟩ := loader host physical dimensions (fun i l j => dimOff j (banks i l))
     (fun i l off m ne j => outer.injective.ne (disjoint i l off m ne j))
   obtain ⟨atomCode,copyWidth⟩ := copyAlignedWidth host atomRegs
-  refine ⟨setup.seq (atomCode.seq (init.seq (embProg place id program))),?_⟩
+  let lane := shared (((0 : Fin 142081).castAdd 2).castAdd 1)
+  obtain ⟨measure,measureLane⟩ := spectatorFromLane host division (outer lane) (dimensions 0)
+    (fun i => divisionAway i (owner lane))
+    (fun i eq => divisionAway i (archiveSetupPlacement 80 T LeafCore.small (parentArchivePorts 6)) (eq.trans modPort).symm) true
+  refine ⟨setup.seq (atomCode.seq (measure.seq (init.seq (embProg place id program)))),?_⟩
   intro c w V desc record
   let seeds := fun i => cutoffWorkerSeed ((basis i).seed c.w c.stageWidth (record i))
   obtain ⟨position,entry,coords,prepare⟩ := stage c
   refine ⟨position,seeds,entry,coords,?_⟩
-  intro time recurse x v₀ S₀ live₀ cut₀ words₀ clocks₀ temps₀ free₀ ht₀ hs₀ widthWord atom ht hs blank empty₀
+  intro time recurse dataBank x v₀ S₀ packed cut₀ words₀ clocks₀ temps₀ free₀ ht₀ hs₀ divisionBlank atom ht hs blank empty₀
   have cells : 0 < c.cells := Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) (Nat.mul_pos c.idlePositive (by decide))
   rw [← c.stageCells] at cells
   have positive := Nat.pos_of_mul_pos_left cells
@@ -310,34 +317,50 @@ theorem callerRestoredStage [M8.Machine.Net] (n : Fin 9) :
     Function.update_of_ne (dimensions.injective.ne ne) ..
   have keptAtom j : G.L (place j) = S.L (place j) ∧ G.R (place j) = S.R (place j) :=
     ⟨rfl,Function.update_of_ne (atomAway j) ..⟩
+  have rowSize : (G.R (outer lane)).length = c.cells := by
+    change (G.R (place (owner lane))).length = c.cells
+    rw [(keptAtom (owner lane)).2,(keepOwner lane).2,← c.stageCells]
+    have h := congrArg List.length (packed.right 0)
+    simpa only [outer,lane,dataBank,owner,w,CutoffNodeInput.stageWidth,embStk,Function.comp_apply,List.length_ofFn,Function.Embedding.trans_apply,Fin.coe_castAddEmb] using h
+  obtain ⟨v₂,e,measured,measureUser,measureCost⟩ := measureLane c v₁ G rowSize
+    ((dimOld 0 (by decide)).trans modulus) (fun i => by
+      change Function.update S.R (dimensions 3) _ (division i) = []
+      rw [Function.update_of_ne (divisionSafe i).2]
+      exact (archiveFrame _ (divisionSafe i).1 (fun j => divisionAway i (archiveSetupPlacement 80 T LeafCore.small j))).2.trans (divisionBlank i))
+  rw [widthPort] at measured measureCost
+  let K := {G with R := Function.update G.R (dimensions 1) (binSyms c.stageWidth.size c.stageWidth)}
+  have dimSame (j : Fin 6) (ne : j ≠ 1) : K.R (dimensions j) = G.R (dimensions j) :=
+    Function.update_of_ne (dimensions.injective.ne ne) ..
+  have keptWidths j : K.L (place j) = S.L (place j) ∧ K.R (place j) = S.R (place j) :=
+    ⟨rfl,(Function.update_of_ne (widthPort ▸ divisionAway 2 j) ..).trans (keptAtom j).2⟩
   obtain ⟨v,D,b,initialized,initUser,initCost,stockedBanks,bankFrame⟩ :=
-    loadBanks c.w c.stageWidth v₁ G positive ((dimOld 0 (by decide)).trans modulus)
-      ((dimOld 1 (by decide)).trans ((dimKeep 1 (by decide) (by decide)).2.trans widthWord))
-      ((dimOld 2 (by decide)).trans unit) (Function.update_self ..)
-      ((dimOld 4 (by decide)).trans ((dimKeep 4 (by decide) (by decide)).2.trans ht))
-      ((dimOld 5 (by decide)).trans ((dimKeep 5 (by decide) (by decide)).2.trans hs))
-      (fun i l off => ⟨(blankBanks i l off).1,(keptAtom (owner (banks i l))).2.trans (blankBanks i l off).2⟩)
+    loadBanks c.w c.stageWidth v₂ K positive ((dimSame 0 (by decide)).trans ((dimOld 0 (by decide)).trans modulus))
+      (Function.update_self ..) ((dimSame 2 (by decide)).trans ((dimOld 2 (by decide)).trans unit))
+      ((dimSame 3 (by decide)).trans (Function.update_self ..))
+      ((dimSame 4 (by decide)).trans ((dimOld 4 (by decide)).trans ((dimKeep 4 (by decide) (by decide)).2.trans ht)))
+      ((dimSame 5 (by decide)).trans ((dimOld 5 (by decide)).trans ((dimKeep 5 (by decide) (by decide)).2.trans hs)))
+      (fun i l off => ⟨(blankBanks i l off).1,(keptWidths (owner (banks i l))).2.trans (blankBanks i l off).2⟩)
   have keepOuter j (off : outside j) := bankFrame j (fun i l _ => off (banks i l))
   have keepShared j := bankFrame (outer (shared j)) (fun i l priv eq =>
     priv j ((banks i).injective ((align i j).trans (outer.injective eq).symm)))
   have combined j := And.intro ((keepShared j).1.trans (keepOwner (shared j)).1)
-    ((keepShared j).2.trans ((keptAtom (owner (shared j))).2.trans (keepOwner (shared j)).2))
+    ((keepShared j).2.trans ((keptWidths (owner (shared j))).2.trans (keepOwner (shared j)).2))
   let data := (Fin.castAddEmb 1 (n := k)).trans (shared.trans owner)
   have dataReady := helperFan_of_agree (k := 142081) (V := V) (fan := data) (F := embStk place D)
-    live₀ (fun i => combined (i.castAdd 1))
+    packed.helperFan (fun i => combined (i.castAdd 1))
   obtain ⟨initial,cert,_,run⟩ := prepare (embStk ((shared.trans owner).trans place) D)
   have stock := cert (embStk outer D) (fun i l off => stockedBanks i l off (record i))
   have ready := archiveAfterWorkerSetup (T := T) (R := LeafCore.small) c place shared initial S₀ S D
     stock archiveWords (fun j off => by
       have keep := keepOuter (place j) (fun h => place.injective.ne (off h))
-      exact ⟨keep.1,keep.2.trans (keptAtom j).2⟩) keepPlace empty₀
+      exact ⟨keep.1,keep.2.trans (keptWidths j).2⟩) keepPlace empty₀
   obtain ⟨z,B,t,y,exec,bill,same,out,done⟩ := run time recurse x (embDn place v) (embStk place D)
     dataReady ((combined (Fin.last k)).2.trans cut₀) ready
   obtain ⟨last,F,placed,_,lastUser,projection,untouched⟩ := exec_emb (ι := id) (body' := host)
     place.injective (fun _ => rfl) exec v rfl D rfl
   rw [← projection] at bill out
   have runUser := same.trans (projectedUser place v)
-  refine ⟨last,F,a+(d+(b+t)),y,start.seq (derive.seq (initialized.seq placed)),?_,lastUser.trans (runUser.trans (initUser.trans (deriveUser.trans user))),out,done⟩
+  refine ⟨last,F,a+(d+(e+(b+t))),y,start.seq (derive.seq (measured.seq (initialized.seq placed))),?_,lastUser.trans (runUser.trans (initUser.trans (measureUser.trans (deriveUser.trans user)))),out,done⟩
   intro js nd
   let children := ((List.range' (stageChildStart n) (stageRuns.flatMap (fun _ => Geometry.Moves.localPaid)).length).map time).sum
   let cost := rate*((c.cells : ℝ)*(w : ℝ)^M8.Machine.BudgetBound.tau)
@@ -345,8 +368,14 @@ theorem callerRestoredStage [M8.Machine.Net] (n : Fin 9) :
     (bill is hi).trans_eq (add_assoc ..)) js nd
   have setupCost : a+tapeCharge cleanupWeight js S ≤ tapeCharge cleanupWeight js S₀+314*volume prime c.node := paid js nd
   have before := (Nat.cast_le (α := ℝ)).mpr setupCost
-  have initBound : b+tapeCharge cleanupWeight js D ≤ tapeCharge cleanupWeight js G+(178*count*V+1) := initCost js nd
+  have initBound : b+tapeCharge cleanupWeight js D ≤ tapeCharge cleanupWeight js K+(178*count*V+1) := initCost js nd
   have atomBound : d+tapeCharge cleanupWeight js G ≤ tapeCharge cleanupWeight js S+(8*w.size+43) := deriveCost js nd
+  have measureBound : e+tapeCharge cleanupWeight js K ≤ tapeCharge cleanupWeight js G+2000255*c.cells := measureCost js nd
+  have measurePaid := (Nat.cast_le (α := ℝ)).mpr measureBound
+  have one : 1 ≤ (w : ℝ)^M8.Machine.BudgetBound.tau :=
+    Real.one_le_rpow (by exact_mod_cast Nat.succ_le_succ (Nat.zero_le c.w)) M8.Machine.BudgetBound.exponent_range.1.le
+  have measuredScale := mul_le_mul_of_nonneg_left one (show 0 ≤ (2000255 : ℝ)*c.cells by positivity)
+  push_cast at measurePaid
   have atomPaid := (Nat.cast_le (α := ℝ)).mpr atomBound
   have initPaid := (Nat.cast_le (α := ℝ)).mpr initBound
   have bound := stageSetupRate c count
@@ -355,6 +384,6 @@ theorem callerRestoredStage [M8.Machine.Net] (n : Fin 9) :
   simp only [Nat.cast_add] at bound before atomPaid initPaid ⊢
   dsimp only [cost] at after
   change _ ≤ _ + _ + (children : ℝ)
-  linarith only [before,after,initPaid,bound,atomPaid]
+  linarith only [before,after,initPaid,bound,atomPaid,measurePaid,measuredScale]
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
