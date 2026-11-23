@@ -33,6 +33,28 @@ theorem scheduledRankBill (node : Descriptor) (w : ℕ) (width : node.width = 64
       rw [(nodeChildren5_realizes.map charge).sum_eq,Layer.SelectedMoments.sum_map_expand]
       simp [charge]
 
+/-- Sum a width power over the actual occurrence volumes before rounding. -/
+theorem scheduledPowerMoment (node : Descriptor) (width : 64 ∣ node.width) (rows : 142080 ∣ node.rows)
+    (rate exponent : ℝ) :
+    (∑ i : Fin nodeChildren5.length, let child := scheduledChild prime node i
+      (rate*(child.width : ℝ)^exponent)*volume prime child) =
+      (rate*(node.width : ℝ)^exponent*volume prime node) *
+        (Layer.SelectedMoments.histMoment fiveHistogram 64 exponent / 142080) := by
+  let scale := rate*(node.width : ℝ)^exponent*volume prime node
+  rw [← Layer.SelectedMoments.occurrence_moment_eq nodeChildren5_realizes,Finset.mul_sum]
+  apply Finset.sum_congr rfl
+  intro i _
+  let child := scheduledChild prime node i
+  obtain ⟨cw,cv⟩ := scheduledChild_measures prime node width rows i
+  have w : (child.width : ℝ) = ((nodeChildren5[i.val] : ℝ)/64)*node.width := by
+    have eq : (child.width : ℝ)*64 = nodeChildren5[i.val]*(node.width : ℝ) := by exact_mod_cast cw
+    linarith
+  have v : (volume prime child : ℝ)*142080 = volume prime node := by exact_mod_cast cv
+  dsimp only [scale]
+  change (rate*(child.width : ℝ)^exponent)*volume prime child = _
+  rw [w,Real.mul_rpow (by positivity) (Nat.cast_nonneg _),← v]
+  ring
+
 /-- At any exponent the integer leaf bill is bounded by the corresponding
 rank moment times the parent's width power and full volume. -/
 theorem scheduledLeafMoment (node : Descriptor) (width : 64 ∣ node.width) (rows : 142080 ∣ node.rows)
@@ -41,23 +63,10 @@ theorem scheduledLeafMoment (node : Descriptor) (width : 64 ∣ node.width) (row
       ⌊(rate*(child.width : ℝ)^exponent)*volume prime child⌋₊) : ℕ) : ℝ) ≤
       (rate*(node.width : ℝ)^exponent*volume prime node) *
         (Layer.SelectedMoments.histMoment fiveHistogram 64 exponent / 142080) := by
-  let scale := rate*(node.width : ℝ)^exponent*volume prime node
-  rw [Nat.cast_sum,← Layer.SelectedMoments.occurrence_moment_eq nodeChildren5_realizes,Finset.mul_sum]
+  rw [← scheduledPowerMoment node width rows rate exponent,Nat.cast_sum]
   apply Finset.sum_le_sum
   intro i _
-  let child := scheduledChild prime node i
-  obtain ⟨cw,cv⟩ := scheduledChild_measures prime node width rows i
-  have w : (child.width : ℝ) = ((nodeChildren5[i.val] : ℝ)/64)*node.width := by
-    have eq : (child.width : ℝ)*64 = nodeChildren5[i.val]*(node.width : ℝ) := by exact_mod_cast cw
-    linarith
-  have v : (volume prime child : ℝ)*142080 = volume prime node := by exact_mod_cast cv
-  change _ ≤ scale * _
-  calc
-    _ ≤ (rate*(child.width : ℝ)^exponent)*volume prime child := Nat.floor_le (by positivity)
-    _ = _ := by
-      dsimp only [scale]
-      rw [w,Real.mul_rpow (by positivity) (Nat.cast_nonneg _),← v]
-      ring
+  exact Nat.floor_le (by positivity)
 
 /-- A mixed level obeys the same rank moment when the induction hypothesis
 pays for each active child. Each occurrence charges its own local work per unit of child volume. -/
@@ -88,6 +97,60 @@ theorem scheduledMixedMoment (node : Descriptor) (width : 64 ∣ node.width) (ro
   have size : (volume prime (child i) : ℝ)*142080 = volume prime node := by exact_mod_cast measure
   rw [Nat.cast_mul,← size]
   ring
+
+/-- The stopped branch of the physical sweep pays its leaf exponent, while
+active children carry the selected bit exponent and cutoff factor. The certified
+rank sum leaves at least one part in 2^24 of the parent bill for local work. -/
+theorem scheduledCutoffMoment [M8.Machine.Net] (node : Descriptor) (w cutoff : ℕ)
+    (width : node.width = 64*(w+1)) (rows : 142080 ∣ node.rows) (rate : ℝ) (hr : 0 ≤ rate)
+    (time : Fin nodeChildren5.length → ℕ) (localWork : ℝ) :
+    let a := Layer.SelectedMoments.bitSaving
+    let child := scheduledChild prime node
+    let scale := rate*(cutoff : ℝ)^a
+    let parentBill := (scale*(node.width : ℝ)^(1-a))*volume prime node
+    localWork ≤ parentBill / 2^24 →
+    (∀ i, cutoff < (child i).width →
+      (time i : ℝ) ≤ (scale*((child i).width : ℝ)^(1-a))*volume prime (child i)) →
+    localWork + ((∑ i, if cutoff < (child i).width then time i else
+      ⌊(rate*((child i).width : ℝ)^M8.Machine.BudgetBound.tau)*volume prime (child i)⌋₊ : ℕ) : ℝ) ≤
+      parentBill := by
+  intro a child scale parentBill localBound active
+  have ha : 0 ≤ a := by norm_num [a,Layer.SelectedMoments.bitSaving]
+  have hs : 0 ≤ scale := mul_nonneg hr (Real.rpow_nonneg (Nat.cast_nonneg _) _)
+  rw [Nat.cast_sum]
+  have childBill : (∑ i : Fin nodeChildren5.length, ((if cutoff < (child i).width then time i else
+      ⌊(rate*((child i).width : ℝ)^M8.Machine.BudgetBound.tau)*volume prime (child i)⌋₊ : ℕ) : ℝ)) ≤ ∑ i : Fin nodeChildren5.length, (scale*((child i).width : ℝ)^(1-a))*volume prime (child i) := by
+      apply Finset.sum_le_sum
+      intro i _
+      split
+      next h => exact active i h
+      next h =>
+        have shape : (child i).width = nodeChildren5[i.val]*(w+1) := by
+          change _*(node.width/64) = _
+          rw [width,Nat.mul_div_cancel_left _ (by decide)]
+        have pos : 0 < (child i).width := shape ▸ Nat.mul_pos (nodeChildren5_bounds i).1 (Nat.succ_pos w)
+        have one : (1 : ℝ) ≤ (child i).width := by exact_mod_cast pos
+        have leaf := Real.rpow_le_rpow_of_exponent_le one M8.Machine.BudgetBound.exponent_range.2.le
+        rw [Real.rpow_one] at leaf
+        have factor : ((child i).width : ℝ) = ((child i).width : ℝ)^a*((child i).width : ℝ)^(1-a) := by
+          rw [← Real.rpow_add (by positivity : (0 : ℝ) < (child i).width), add_sub_cancel,Real.rpow_one]
+        have cap := Real.rpow_le_rpow (Nat.cast_nonneg (child i).width) (Nat.cast_le.mpr (Nat.le_of_not_gt h)) ha
+        apply (Nat.floor_le (by positivity)).trans
+        apply mul_le_mul_of_nonneg_right _ (Nat.cast_nonneg _)
+        dsimp only [scale]
+        rw [mul_assoc]
+        apply mul_le_mul_of_nonneg_left _ hr
+        exact leaf.trans (factor.le.trans (mul_le_mul_of_nonneg_right cap (by positivity)))
+  rw [scheduledPowerMoment node ⟨_,width⟩ rows scale (1-a)] at childBill
+  have moment : Layer.SelectedMoments.histMoment fiveHistogram 64 (1-a) / 142080 ≤ 1-1/2^24 := by
+    rw [histMoment_five]
+    have cert := Layer.SelectedMoments.bit_histMoment_le
+    dsimp only [a]
+    linarith
+  have nonneg : 0 ≤ parentBill := by dsimp only [parentBill]; positivity
+  change _ ≤ parentBill * _ at childBill
+  exact (add_le_add localBound (childBill.trans (mul_le_mul_of_nonneg_left moment nonneg))).trans
+    (by apply le_of_eq; ring)
 
 /-- Dividing the physical recursive bill by parent volume gives precisely
 the child weights used in the variable-width recurrence. -/
