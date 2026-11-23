@@ -135,7 +135,7 @@ noncomputable def packedChildPosition {V : ℕ} (child : Descriptor) (size : vol
     simp only [Fintype.card_fin] at card
     exact card.symm.trans size))
 
-private theorem intervalPack_index {lo hi w W axes : ℕ} (ordered : lo ≤ hi) (fits : hi ≤ axes)
+theorem intervalPack_index {lo hi w W axes : ℕ} (ordered : lo ≤ hi) (fits : hi ≤ axes)
     (x : Fin (axes+axes) → ZMod (prime^(w+1))) (j : Fin W) :
     let size := intervalChild_volume ordered fits (w+1) W
     let is := intervalPackSchedule lo (hi-lo) (axes-hi+lo)
