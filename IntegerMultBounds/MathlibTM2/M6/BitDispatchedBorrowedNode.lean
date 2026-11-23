@@ -24,6 +24,35 @@ private theorem alignSweep {P U : Type} {T Q w W S V : ℕ} (n : Fin 9)
   subst W V
   exact run
 
+private theorem roundedScale (rate x : ℝ) (one : 1 ≤ x) :
+    (⌈rate*x⌉₊ : ℝ) ≤ (|rate|+1)*x := by
+  have hx : 0 ≤ x := by linarith
+  have mono := Nat.ceil_mono (mul_le_mul_of_nonneg_right (le_abs_self rate) hx)
+  have rounded := Nat.ceil_lt_add_one (mul_nonneg (abs_nonneg rate) hx)
+  exact (Nat.cast_le.mpr mono).trans (rounded.le.trans (by linarith))
+
+private theorem stageOverhead_bound [M8.Machine.Net] (setup base tapes : ℕ) (sweep chart : ℝ) :
+    ∃ D : ℝ, ∀ a v : ℕ, 0 < a → 0 < v →
+      let power := (a : ℝ)^M8.Machine.BudgetBound.tau
+      ((setup*v+⌈sweep*(v*power)⌉₊+
+        13*((base*v+17760*(2*LeafCore.coreCost v a+14))*(tapes+5)+12)+
+        ⌈chart*v*power⌉₊+(142081*(10*v+10)+1) : ℕ) : ℝ) ≤ D*(v*power) := by
+  obtain ⟨C,correction⟩ := stageSetupCost_bound base tapes
+  refine ⟨setup+(|sweep|+1)+13*C+(|chart|+1)+2841621,?_⟩
+  intro a v ha hv power
+  have unit : 1 ≤ power := Real.one_le_rpow (by exact_mod_cast ha) M8.Machine.BudgetBound.exponent_range.1.le
+  have scale : 1 ≤ (v : ℝ)*power := one_le_mul_of_one_le_of_one_le (by exact_mod_cast hv) unit
+  have volume := le_mul_of_one_le_right (Nat.cast_nonneg v) unit
+  have small : (base*v+17760*(2*LeafCore.coreCost v a+14))*(tapes+5)+12 ≤ stageSetupCost base tapes v a := by
+    unfold stageSetupCost
+    omega
+  have corr := (Nat.cast_le (α := ℝ)).mpr small |>.trans (correction v a hv ha)
+  change _ ≤ C*v*power at corr
+  rw [mul_assoc chart]
+  push_cast at corr ⊢
+  nlinarith only [corr,roundedScale sweep _ scale,roundedScale chart _ scale,scale,volume,
+    mul_le_mul_of_nonneg_left volume (Nat.cast_nonneg setup)]
+
 /-- Assemble every active sweep from its invocation workers on the same aligned node family. -/
 theorem dispatchedBorrowedNodeFamily [M8.Machine.Net] {U Config : Type} :
     let J := Fin 32 × Fin 5
@@ -34,7 +63,8 @@ theorem dispatchedBorrowedNodeFamily [M8.Machine.Net] {U Config : Type} :
     (∀ f, body (leaf f) = embProg (Function.Embedding.refl _) leaf (table f)) →
     ∀ {Proc : Fin 9 → J → Type} (workers : ∀ i p, Proc i p → Pr (Proc i p) (tapes i p) Q prime U)
       (call : ∀ i p, Pr (Proc i p) (tapes i p) Q prime U),
-    ∃ overhead : Fin 9 → ℕ → ℕ → ℕ,
+    ∃ (overhead : Fin 9 → ℕ → ℕ → ℕ) (D : ℝ),
+    (∀ a v, 0 < a → 0 < v → ((∑ i, overhead i a v : ℕ) : ℝ) ≤ D*(v*(a : ℝ)^M8.Machine.BudgetBound.tau)) ∧
     ∀ (root : Descriptor) (depth b cutoff : ℕ), 0 < depth → 0 < b →
       root.width = 64^depth*b → 42^depth*b ≤ cutoff →
     root.Positive → 142080^(depth+1) ∣ root.rows →
@@ -86,7 +116,16 @@ theorem dispatchedBorrowedNodeFamily [M8.Machine.Net] {U Config : Type} :
   let overhead := fun i (a v : ℕ) => setup i*v+⌈sweepRate i*((v : ℝ)*(a : ℝ)^M8.Machine.BudgetBound.tau)⌉₊+
     13*((base i*v+17760*(2*LeafCore.coreCost v a+14))*(chartTapes i+5)+12)+
     ⌈chartRate i*v*(a : ℝ)^M8.Machine.BudgetBound.tau⌉₊+(142081*(10*v+10)+1)
-  refine ⟨overhead,?_⟩
+  choose coeff cost using fun i => stageOverhead_bound (setup i) (base i) (chartTapes i) (sweepRate i) (chartRate i)
+  obtain ⟨D,boundedCost⟩ := Finite.exists_le coeff
+  refine ⟨overhead,9*D,?_,?_⟩
+  · intro a v ha hv
+    rw [Nat.cast_sum]
+    calc
+      _ ≤ ∑ _i : Fin 9, D*(v*(a : ℝ)^M8.Machine.BudgetBound.tau) :=
+        Finset.sum_le_sum fun i _ => (cost i a v ha hv).trans
+          (mul_le_mul_of_nonneg_right (boundedCost i) (by positivity))
+      _ = _ := by simp [mul_assoc]
   intro root depth b cutoff levels basePos width stop rootPos rowStock stock labels path active
   have bound : root.width*42^depth ≤ cutoff*64^depth := calc
     _ = (42^depth*b)*64^depth := by rw [width]; ac_rfl
