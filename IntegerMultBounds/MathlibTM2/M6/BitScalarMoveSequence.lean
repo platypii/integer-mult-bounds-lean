@@ -624,7 +624,7 @@ theorem allocateMoveStock {I : Type} [Fintype I] {owners : ℕ} (tapes : I → �
     (owner : ∀ i, Fin owners ↪ Fin (tapes i)) :
     ∃ (T : ℕ) (fan : Fin owners ↪ Fin T) (bank : ∀ i, Fin (tapes i) ↪ Fin T)
       (source : Fin T → Option (Fin owners ⊕ Sigma (fun i => Fin (tapes i)))),
-      (∀ i j, bank i (owner i j) = fan j) ∧
+      (∀ i j, bank i (owner i j) = fan j) ∧ (∀ j, source (fan j) = some (.inl j)) ∧
       ∀ seed : ∀ i, Stacks (tapes i) prime,
       let ready := fun i (S : Stacks T prime) => PrivateTapes (owner i) (seed i) (embStk (bank i) S)
       (∀ shared, let initial := moveStockSeed source shared seed; embStk fan initial = shared ∧ ∀ S, PrivateTapes fan initial S → ∀ i, ready i S) ∧
@@ -636,7 +636,7 @@ theorem allocateMoveStock {I : Type} [Fintype I] {owners : ℕ} (tapes : I → �
           v.user = z.user ∧ embStk (bank i) G = F ∧ (∀ j, (∀ h, bank i h ≠ j) → G.L j = S.L j ∧ G.R j = S.R j) ∧ ∀ j, j ≠ i → ready j S → ready j G := by
   obtain ⟨T,fan,bank,shared,_,apart⟩ := copyWindowBanks tapes owner
   obtain ⟨source,owners,privateAt⟩ := moveStockSources owner fan bank apart
-  refine ⟨T,fan,bank,source,shared,?_⟩
+  refine ⟨T,fan,bank,source,shared,owners,?_⟩
   intro seed ready
   constructor
   · intro X
@@ -658,7 +658,9 @@ theorem allocateMoveStock {I : Type} [Fintype I] {owners : ℕ} (tapes : I → �
 bank. Each program has its own procedure labels and private initialization. -/
 theorem placeInvocationPrograms {owners : ℕ} (tapes : Fin 3 → ℕ)
     (ports : ∀ i, Fin owners ↪ Fin (tapes i)) :
-    ∃ (T : ℕ) (fan : Fin owners ↪ Fin T) (bank : ∀ i, Fin (tapes i) ↪ Fin T),
+    ∃ (T : ℕ) (fan : Fin owners ↪ Fin T) (bank : ∀ i, Fin (tapes i) ↪ Fin T)
+      (source : Fin T → Option (Fin owners ⊕ Sigma (fun i => Fin (tapes i)))),
+    (∀ j, source (fan j) = some (.inl j)) ∧
     ∀ {P : Fin 3 → Type} {Q : ℕ} {U : Type} (body : ∀ i, P i → Pr (P i) (tapes i) Q prime U)
       (code : ∀ i, Pr (P i) (tapes i) Q prime U),
     let host := fun f : Sigma P => embProg (bank f.1) (Sigma.mk f.1) (body f.1 f.2)
@@ -668,17 +670,17 @@ theorem placeInvocationPrograms {owners : ℕ} (tapes : Fin 3 → ℕ)
     (∀ i x u S, PrivateTapes (ports i) (seed i) S → rep x (embStk (ports i) S) →
       ∃ z F n y, Exec (body i) (code i) (mk u S) n (mk z F) ∧ CleanupBound S F n (budget i) ∧
         z.user = u.user ∧ rep y (embStk (ports i) F) ∧ effect i x y) →
-    ∀ shared, ∃ initial, embStk fan initial = shared ∧ ∀ x u S, PrivateTapes fan initial S →
+    ∀ shared, let initial := moveStockSeed source shared seed; embStk fan initial = shared ∧ ∀ x u S, PrivateTapes fan initial S →
       rep x (embStk fan S) → ∃ z F n a b y,
         Exec host ((placed 0).seq ((placed 1).seq (placed 2))) (mk u S) n (mk z F) ∧
         CleanupBound S F n (budget 0+(budget 1+budget 2)) ∧ z.user = u.user ∧ rep y (embStk fan F) ∧
         effect 0 x a ∧ effect 1 a b ∧ effect 2 b y := by
-  obtain ⟨T,fan,bank,source,sharedAt,allocate⟩ := allocateMoveStock tapes ports
-  refine ⟨T,fan,bank,?_⟩
+  obtain ⟨T,fan,bank,source,sharedAt,ownersAt,allocate⟩ := allocateMoveStock tapes ports
+  refine ⟨T,fan,bank,source,ownersAt,?_⟩
   intro P Q U body code host placed α rep effect budget seed run shared
   obtain ⟨join,place⟩ := allocate seed
   obtain ⟨view,initialized⟩ := join shared
-  refine ⟨moveStockSeed source shared seed,view,?_⟩
+  refine ⟨view,?_⟩
   intro x u S fresh live
   let ready := fun i D => PrivateTapes (ports i) (seed i) (embStk (bank i) D)
   have stock := initialized S fresh
@@ -724,7 +726,9 @@ def InvocationComponentEffect (n : Fin 9) (p : Fin 32 × Fin 5) (w B K : ℕ) (i
 Its code is fixed before the volume, cutoff word, component budgets and seeds. -/
 theorem chargedInvocation_host (n : Fin 9) (p : Fin 32 × Fin 5) (tapes : Fin 3 → ℕ)
     (ports : ∀ i, Fin (142081+2+1) ↪ Fin (tapes i)) :
-    ∃ (T : ℕ) (fan : Fin (142081+2+1) ↪ Fin T) (bank : ∀ i, Fin (tapes i) ↪ Fin T),
+    ∃ (T : ℕ) (fan : Fin (142081+2+1) ↪ Fin T) (bank : ∀ i, Fin (tapes i) ↪ Fin T)
+      (source : Fin T → Option (Fin (142081+2+1) ⊕ Sigma (fun i => Fin (tapes i)))),
+    (∀ j, source (fan j) = some (.inl j)) ∧
     ∀ {P : Fin 3 → Type} {Q : ℕ} {U : Type} (body : ∀ i, P i → Pr (P i) (tapes i) Q prime U)
       (code : ∀ i, Pr (P i) (tapes i) Q prime U),
     let host := fun f : Sigma P => embProg (bank f.1) (Sigma.mk f.1) (body f.1 f.2)
@@ -736,18 +740,18 @@ theorem chargedInvocation_host (n : Fin 9) (p : Fin 32 × Fin 5) (tapes : Fin 3 
     (∀ i x u S, PrivateTapes (ports i) (seed i) S → rep x (embStk (ports i) S) →
       ∃ z F m y, Exec (body i) (code i) (mk u S) m (mk z F) ∧ CleanupBound S F m (budget i) ∧
         z.user = u.user ∧ rep y (embStk (ports i) F) ∧ InvocationComponentEffect n p w B K i x y) →
-    ∀ shared, ∃ initial, embStk fan initial = shared ∧ ∀ x u S, PrivateTapes fan initial S →
+    ∀ shared, let initial := moveStockSeed source shared seed; embStk fan initial = shared ∧ ∀ x u S, PrivateTapes fan initial S →
       rep x (embStk fan S) → ∃ z F m y, Exec host program (mk u S) m (mk z F) ∧
         CleanupBound S F m (budget 0+(budget 1+budget 2)) ∧ z.user = u.user ∧ rep y (embStk fan F) ∧
         BorrowedStep n w B K p x y := by
-  obtain ⟨T,fan,bank,place⟩ := placeInvocationPrograms tapes ports
-  refine ⟨T,fan,bank,?_⟩
+  obtain ⟨T,fan,bank,source,ownersAt,place⟩ := placeInvocationPrograms tapes ports
+  refine ⟨T,fan,bank,source,ownersAt,?_⟩
   intro P Q U body code host
   let placed := fun i => embProg (bank i) (Sigma.mk i) (code i)
   refine ⟨(placed 0).seq ((placed 1).seq (placed 2)),?_⟩
   intro w B K word V rep budget seed runs shared
-  obtain ⟨initial,view,run⟩ := place body code rep _ budget seed runs shared
-  refine ⟨initial,view,?_⟩
+  obtain ⟨view,run⟩ := place body code rep _ budget seed runs shared
+  refine ⟨view,?_⟩
   intro x u S fresh ready
   obtain ⟨z,F,m,a,b,y,exec,paid,user,out,left,copy,right⟩ := run x u S fresh ready
   change a = invocationPhaseOutput n p false x at left
@@ -979,7 +983,7 @@ theorem moveStockSequence {I P U : Type} [Fintype I] {owners Q : ℕ} (tapes : I
     ∀ shared, let initial := moveStockSeed source shared seed; embStk fan initial = shared ∧ ∀ x u S, PrivateTapes fan initial S → rep x (embStk fan S) →
       ∃ z F n, Exec host program (mk u S) n (mk z F) ∧ CleanupBound S F n ((order.map fun i => gateBudget i+budget i).sum+lastBudget) ∧
         z.user = u.user ∧ rep (lastStep (order.foldl (fun x i => step (gateStep x i) i) x)) (embStk fan F) := by
-  obtain ⟨T,fan,bank,source,shared,allocate⟩ := allocateMoveStock tapes owner
+  obtain ⟨T,fan,bank,source,shared,_,allocate⟩ := allocateMoveStock tapes owner
   let host := fun f : I × P => embProg (bank f.1) (Prod.mk f.1) (body f.1 f.2)
   let block := fun i => (embProg (owner i) Empty.elim (gates i)).seq (code i)
   let seq := fun (is : List I) => is.foldr (fun i tail => (embProg (bank i) (Prod.mk i) (block i)).seq tail) (embProg fan Empty.elim lastGates)

@@ -15,6 +15,19 @@ noncomputable def invocationWorkerRecord (j : Fin 3) (child : Descriptor) (L cut
   let n := CopyChildLayout.spectators child
   if j = 1 then header else binSyms n.size n ++ separator :: header
 
+/-- Recover the MOVE record from the lane length and the scheduled rank. -/
+private theorem invocationWorkerRecord_eq (j : Fin 3) (child : Descriptor) (L cutoff V width : ℕ)
+    (size : volume prime child = V) (shape : child.width = width) :
+    invocationWorkerRecord j child L cutoff =
+      let spectators := V / (prime^width*prime^width)
+      if j = 1 then binSyms L cutoff else binSyms spectators.size spectators ++ separator :: binSyms L cutoff := by
+  have count : volume prime child = CopyChildLayout.spectators child * (prime^child.width*prime^child.width) := by
+    unfold volume CopyChildLayout.spectators
+    ring
+  have positive := pow_pos Shared50ModularControl.prime_prime.pos child.width
+  rw [← size,← shape,count,Nat.mul_div_cancel _ (Nat.mul_pos positive positive)]
+  rfl
+
 /-- Install the charged worker for one slot of the selected invocation. Its
 table is fixed before the descriptor, cutoff and recursive budget are supplied. -/
 theorem installInvocationWorker [M8.Machine.Net] :
@@ -108,7 +121,8 @@ theorem selectedCutoffInvocation [M8.Machine.Net] (P U : Type) (n : Fin 9) (p : 
     let desc := fun j i => scheduledChild prime node (child j i)
     0 < W → ∃ position : ∀ j i, Fin (volume prime (desc j i)) ≃ Fin V,
     (∀ j i, invocationCoordinates j (w+1) W (position j i)) ∧
-    ∀ (L cutoff : ℕ) (budget : ℕ → ℕ) (rate : ℝ), leafRate ≤ rate → cutoff < 2^L →
+    ∀ (L cutoff : ℕ) shared, ∃ seed : Stacks T prime, embStk fan seed = shared ∧ seed.R cut = binSyms L cutoff ∧
+    ∀ (budget : ℕ → ℕ) (rate : ℝ), leafRate ≤ rate → cutoff < 2^L →
     node.width.size ≤ L →
     let time := cutoffInvocationTime node L cutoff rate budget
     (∀ j i, let d := desc j i
@@ -117,7 +131,6 @@ theorem selectedCutoffInvocation [M8.Machine.Net] (P U : Type) (n : Fin 9) (p : 
         (body j i) (.active (f j i)) (budget (child j i).val) true
       else MoveOnBankExec node d w W (movePrefix.trans (ports j i)) (binSyms L cutoff) (position j i)
         (body j i) (large j i (f j i)) (budget (child j i).val) true) →
-    ∀ shared, ∃ seed : Stacks T prime, embStk fan seed = shared ∧ seed.R cut = binSyms L cutoff ∧
       ∀ (x : Fin 142081 → Fin V → ZMod 2) u S, PrivateTapes fan seed S → HelperFan fan x S →
       ∃ z F t y, Exec host code (mk u S) t (mk z F) ∧ CleanupBound S F t
         ((a+b*swapVolumeRate w)*V+c+((List.range' (stageChildStart n+runChildStart p) Geometry.Moves.localPaid.length).map time).sum) ∧
@@ -140,7 +153,20 @@ theorem selectedCutoffInvocation [M8.Machine.Net] (P U : Type) (n : Fin 9) (p : 
   intro node w B rows width split label M K blocks W V desc pos
   obtain ⟨position,coords,execute⟩ := run node w B rows width split label pos
   refine ⟨position,coords,?_⟩
-  intro L cutoff budget rate enough fits digits time recurse
+  intro L cutoff shared
+  let record : ∀ j, Fin (count j) → List (Fin (prime+4)) := fun j i =>
+    let width := nodeChildren5[(child j i).val]* (w+1)
+    let spectators := V / (prime^width*prime^width)
+    if j = 1 then binSyms L cutoff else binSyms spectators.size spectators ++ separator :: binSyms L cutoff
+  have records j i : invocationWorkerRecord j (desc j i) L cutoff = record j i := by
+    have size := Fintype.card_congr (position j i)
+    simp only [Fintype.card_fin] at size
+    apply invocationWorkerRecord_eq _ _ _ _ _ _ size
+    change nodeChildren5[(child j i).val]*(node.width/64) = _
+    rw [width,Nat.mul_div_cancel_left _ (by decide)]
+  obtain ⟨seed,view,header,run⟩ := execute record (binSyms L cutoff) shared
+  refine ⟨seed,view,header,?_⟩
+  intro budget rate enough fits digits time recurse
   let charged := fun k => time k+5000*V
   have children : ∀ j i, ScheduledChildExec node (desc j i) w W (ports j i)
       (invocationWorkerRecord j (desc j i) L cutoff) (position j i) (body j i) .entry (charged (child j i).val) true := by
@@ -166,11 +192,8 @@ theorem selectedCutoffInvocation [M8.Machine.Net] (P U : Type) (n : Fin 9) (p : 
     change price+4*w+23*d.width+22*L+8*(CopyChildLayout.spectators d).size+61 ≤ price+22*(L-node.width)+5000*V
     change 4*w+23*d.width+22*L+8*(CopyChildLayout.spectators d).size+61 ≤ 5000*V+22*(L-node.width) at overhead
     omega
-  intro shared
-  obtain ⟨seed,view,header,run⟩ := execute _ charged (binSyms L cutoff) children shared
-  refine ⟨seed,view,header,?_⟩
   intro x u S fresh live
-  obtain ⟨z,F,t,y,step,paid,user,out,sem⟩ := run x u S fresh live
+  obtain ⟨z,F,t,y,step,paid,user,out,sem⟩ := run charged (fun j i => records j i ▸ children j i) x u S fresh live
   refine ⟨z,F,t,y,step,?_,user,out,sem⟩
   have addCost (indices : List ℕ) :
       (indices.map charged).sum = (indices.map time).sum+indices.length*(5000*V) := by

@@ -132,10 +132,10 @@ def SelectedInvocationExecution [M8.Machine.Net] (P U : Type) (n : Fin 9) (p : F
   let desc := fun j i => scheduledChild prime node (child j i)
   0 < W → ∃ position : ∀ j i, Fin (volume prime (desc j i)) ≃ Fin V,
   (∀ j i, coords j node i (w+1) W (position j i)) ∧
-  ∀ (record : ∀ j, Fin (count j) → List (Fin (prime+4))) (time : ℕ → ℕ) (word : List (Fin (prime+4))),
+  ∀ (record : ∀ j, Fin (count j) → List (Fin (prime+4))) (word : List (Fin (prime+4))) shared,
+  ∃ seed : Stacks T prime, embStk fan seed = shared ∧ seed.R cut = word ∧ ∀ time : ℕ → ℕ,
   (∀ j i, ScheduledChildExec node (desc j i) w W (ports j i) (record j i) (position j i)
     (body j i) (f j i) (time (child j i).val) true) →
-  ∀ shared, ∃ seed : Stacks T prime, embStk fan seed = shared ∧ seed.R cut = word ∧
     ∀ (x : Fin 142081 → Fin V → ZMod 2) u S, PrivateTapes fan seed S → HelperFan fan x S →
     ∃ z F t y, Exec host code (mk u S) t (mk z F) ∧ CleanupBound S F t
       ((a+b*swapVolumeRate w)*V+c+((List.range' (stageChildStart n+runChildStart p) Geometry.Moves.localPaid.length).map time).sum) ∧
@@ -155,7 +155,7 @@ private theorem assembleInvocation [M8.Machine.Net] (P U : Type) (n : Fin 9) (p 
   intro Q cap body f
   choose tapes fans workers programs work rates step using fun j => build j ((Finset.le_sup (Finset.mem_univ j)).trans cap) (body j) (f j)
   choose a b c rate using rates
-  obtain ⟨T,fan,bank,place⟩ := chargedInvocation_host n p tapes fans
+  obtain ⟨T,fan,bank,source,ownersAt,place⟩ := chargedInvocation_host n p tapes fans
   let data := (Fin.castAddEmb 1 (n := 142081+2)).trans fan
   let host : (Σ j, Fin (count j) × P) → Pr (Σ j, Fin (count j) × P) T Q prime U := fun label => embProg (bank label.1) (Sigma.mk label.1) (workers label.1 label.2)
   obtain ⟨code,run⟩ := place workers programs
@@ -164,14 +164,13 @@ private theorem assembleInvocation [M8.Machine.Net] (P U : Type) (n : Fin 9) (p 
   intro node w B rows width split label M K blocks W V desc pos
   choose position geometry prepare using fun j => step j node w B rows width split label pos
   refine ⟨position,geometry,?_⟩
-  intro record time word children shared
-  let price := fun j => (List.ofFn (fun i => time (child j i).val)).sum
+  intro record word shared
   choose seeds execute using fun j => prepare j (record j)
   let extended : Stacks (142081+2+1) prime := ⟨shared.inp,shared.out,Fin.append shared.L (fun _ => []),
     Fin.append shared.R (fun _ => word)⟩
-  obtain ⟨seed,view,exec⟩ := run (w+1) blocks K word (fun j => work j w V+price j) seeds (fun j x u S fresh live => by
-    obtain ⟨z,F,t,y,h,cost,user,out,kept,act⟩ := execute j (fun i => time (child j i).val) word (children j) x u S fresh live.1 live.2
-    exact ⟨z,F,t,y,h,cost,user,⟨out,kept⟩,act⟩) extended
+  let seed := moveStockSeed source extended seeds
+  have view : embStk fan seed = extended := by
+    simp [seed,moveStockSeed,embStk,Function.comp_def,ownersAt]
   have project (S : Stacks T prime) : embStk data S = embStk (Fin.castAddEmb 1) (embStk fan S) := rfl
   have header := congrArg (fun (D : Stacks (142081+2+1) prime) => D.R (Fin.last (142081+2))) view
   have wordAt : seed.R (fan (Fin.last (142081+2))) = word := by
@@ -182,6 +181,11 @@ private theorem assembleInvocation [M8.Machine.Net] (P U : Type) (n : Fin 9) (p 
     cases shared
     simp [extended,embStk,Function.comp_def]
     constructor <;> funext i <;> exact Fin.append_left ..
+  intro time children
+  let price := fun j => (List.ofFn (fun i => time (child j i).val)).sum
+  obtain ⟨_,exec⟩ := run (w+1) blocks K word (fun j => work j w V+price j) seeds (fun j x u S fresh live => by
+    obtain ⟨z,F,t,y,h,cost,user,out,kept,act⟩ := execute j (fun i => time (child j i).val) word (children j) x u S fresh live.1 live.2
+    exact ⟨z,F,t,y,h,cost,user,⟨out,kept⟩,act⟩) extended
   intro x u S fresh live
   have cut : ∀ i, data i ≠ fan (Fin.last (142081+2)) := fun i => fan.injective.ne (fun eq => i.isLt.ne (congrArg Fin.val eq))
   obtain ⟨z,F,t,y,h,cost,user,out,act⟩ := exec x u S (fun j off => fresh j (fun i => off (i.castAdd 1))) ⟨live,by

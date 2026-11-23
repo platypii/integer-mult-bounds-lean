@@ -162,9 +162,9 @@ theorem selectedCutoffStage [M8.Machine.Net] (P U : Type) (n : Fin 9) :
 
   obtain ⟨seed,execute⟩ := run node w B rows width split label pos (work w V) (cutoffInvocationTime node L cutoff rate budget) (by
     intro p shared
-    obtain ⟨seed,view,_,exec⟩ := supply p L cutoff budget rate ((Finset.le_sup' rates (Finset.mem_univ p)).trans enough)
-      fits digits (recurse p) shared
-    exact ⟨seed,view,fun x u S live fresh => exec x u S fresh live⟩)
+    obtain ⟨seed,view,_,exec⟩ := supply p L cutoff shared
+    have invoke := exec budget rate ((Finset.le_sup' rates (Finset.mem_univ p)).trans enough) fits digits (recurse p)
+    exact ⟨seed,view,fun x u S live fresh => invoke x u S fresh live⟩)
   let children := ((List.range' (stageChildStart n) (stageRuns.flatMap (fun _ => Geometry.Moves.localPaid)).length).map
     (cutoffInvocationTime node L cutoff rate budget)).sum
   obtain ⟨initial,packed⟩ := pack (w := w+1) (B := B) (K := K) (total w V+children) seed (Nat.succ_pos _) hb hk (by
