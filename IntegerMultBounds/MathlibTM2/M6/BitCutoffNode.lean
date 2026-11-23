@@ -2,7 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.M6.BitCutoffStage
 public import IntegerMultBounds.MathlibTM2.M6.BitAlignedNodeBill
-public import IntegerMultBounds.MathlibTM2.M6.BitIdleDispatchSeed
+public import IntegerMultBounds.MathlibTM2.M6.BitIdleDispatchClocks
 
 /-! Assemble the cutoff stages and idle remainders in the same packed word order. -/
 @[expose] public section
@@ -108,7 +108,76 @@ theorem localCharge_bound [M8.Machine.Net] (work : Fin 9 → ℕ → ℕ → ℕ
   change _ ≤ _*scale
   linarith only [stages,cellsLe,unit,vol,mul_le_mul_of_nonneg_left cellsLe (Nat.cast_nonneg assemble : (0:ℝ) ≤ assemble)]
 
+/-- The aligned root cutoff header and all remainder setup words fit in a packed lane. -/
+theorem remainderSetup_le (c : CutoffNodeInput) (H : ℕ) :
+    (18*(c.w+1)+11*(c.w+1).size+17)+
+      (H*(8*((prime^(c.w+1)).size+c.idleWidth.size+2*c.w+c.root.width.size)+53)+1)+2 ≤
+      (49+93*H)*c.cells := by
+  let M := prime^(c.w+1)
+  have power := Nat.le_self_pow (by decide : 128 ≠ 0) M
+  have large : M*142080 ≤ c.cells := by
+    exact Nat.mul_le_mul power (Nat.le_mul_of_pos_left _ c.idlePositive)
+  have ticks : c.w+1 ≤ M := (Nat.lt_pow_self Shared50ModularControl.prime_prime.one_lt).le
+  have spectators : c.idleWidth ≤ c.cells := by
+    have positive : 0 < M^128 := pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _
+    exact (Nat.le_mul_of_pos_right _ (by decide : 0 < 142080)).trans (Nat.le_mul_of_pos_left _ positive)
+  have precision : c.root.width.size ≤ c.cutoff := Nat.size_le.mpr (by
+    have h := alignedRootWidth_le c.root c.depth c.b c.cutoff c.levels c.base c.rootWidth c.stop
+    have pos : 0 < c.root.width := c.rootWidth ▸ Nat.mul_pos (pow_pos (by decide) _) c.base
+    omega)
+  have live := c.active
+  change c.cutoff ≤ c.node.width at live
+  rw [c.width] at live
+  have bits (n : ℕ) : n.size ≤ n := Nat.size_le.mpr Nat.lt_two_pow_self
+  have one := bits (c.w+1)
+  have rad := bits M
+  have width := bits c.idleWidth
+  have headers : 8*(M.size+c.idleWidth.size+2*c.w+c.root.width.size)+53 ≤ 93*c.cells := by omega
+  have load := Nat.mul_le_mul_left H headers
+  dsimp only [M] at *
+  rw [Nat.add_mul,Nat.mul_assoc,show 93*(H*c.cells) = H*(93*c.cells) by ring]
+  omega
+
 end CutoffNodeInput
+
+/-- The installed remainder call pays for its runtime seed with a constant per lane symbol. -/
+theorem callCutoffRemainder {P A U : Type} {H N T Q : ℕ}
+    (body : P → Pr P H Q prime U) (entry : P) (label : P → A)
+    (host : A → Pr A T Q prime U) (bank : Fin H ↪ Fin T)
+    (installed : ∀ f, host (label f) = embProg bank label (body f))
+    (origin : Fin H → Option (Fin (72+N))) (src dst : Fin (142081+2) ↪ Fin H)
+    (r : Fin 11 ↪ Fin T) (apart : ∀ j i, bank j ≠ r i) :
+    ∃ code : Pr A T Q prime U, ∀ (c : CutoffNodeInput) effect price,
+      let w := c.w
+      let W := c.idleWidth
+      let L := c.root.width.size
+      let cutoff := c.cutoff
+      let V := c.cells
+      PackedPieceHandoffWithCharge cleanupWeight V effect body (body entry) src dst
+        (remainderDispatchSeed origin w W L cutoff) price →
+      ∀ x u (S : Stacks T prime),
+      ParentStageWords (fun i => src (i.castAdd 2)) src V x (embStk bank S) →
+      S.R (r 0) = binSyms (64*(w+1)).size (64*(w+1)) →
+      (∀ i : Fin 7, i ≠ 0 → S.R (r (i.castAdd 4)) = []) →
+      S.R (r 7) = binSyms (prime^(w+1)).size (prime^(w+1)) →
+      S.R (r 8) = binSyms 1 1 → S.R (r 9) = binSyms W.size W → S.R (r 10) = binSyms L cutoff →
+      (∀ j, (∀ i, src i ≠ j) → S.L (bank j) = [] ∧ S.R (bank j) = []) →
+      ∃ z F t y, Exec host code (mk u S) t (mk z F) ∧ z.user = u.user ∧
+        ParentStageWords (fun i => dst (i.castAdd 2)) dst V y (embStk bank F) ∧ effect x y ∧
+        CleanupBound S F t (price+(49+93*H)*V) := by
+  obtain ⟨code,run⟩ := callRemainderFromWidth body entry label host bank installed origin src dst r apart
+  refine ⟨code,?_⟩
+  intro c effect price w W L cutoff V child x u S words width empty radix unit spectator cut fresh
+  obtain ⟨z,F,t,y,exec,user,out,result,paid⟩ := run w W L cutoff V effect price child x u S words
+    width empty radix unit spectator cut fresh
+  refine ⟨z,F,t,y,exec,user,out,result,?_⟩
+  intro js unique
+  have bill := paid js unique
+  have limit := c.remainderSetup_le H
+  change (18*(w+1)+11*(w+1).size+17)+(H*(8*((prime^(w+1)).size+W.size+2*w+L)+53)+1)+2 ≤
+    (49+93*H)*V at limit
+  omega
+
 
 private theorem stageCast {P U : Type} {T Q w W V Z price : ℕ} (n : Fin 9)
     (tailEq : W = Z) (size : (prime^w)^128*W = V) (work : ℕ → ℕ)
