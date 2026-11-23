@@ -30,6 +30,32 @@ private theorem scaledWidthWord {A : ℕ} (x : ℕ) (pos : 0 < x) :
   rw [size,Nat.add_comm x.size 6,binSyms_append,← binSyms_mod 6]
   simp [show 2^6 = 64 by decide,binSyms_zero_right]
 
+/-- Copy an aligned descriptor width and drop its six low zero bits on the copy. -/
+theorem copyAlignedWidth {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U)
+    {src dst tmp saved : Fin T} (regs : [src,dst,tmp,saved].Nodup) :
+    ∃ code, ∀ x, 0 < x → ∀ u (S : Stacks T prime),
+      S.R src = binSyms (64*x).size (64*x) → S.R dst = [] → S.R tmp = [] → S.R saved = [] →
+      let F := {S with R := Function.update S.R dst (binSyms x.size x)}
+      ∃ z t, Exec body code (mk u S) t (mk z F) ∧ z.user = u.user ∧
+        CleanupBound S F t (8*x.size+43) := by
+  refine ⟨(bcopy src dst tmp saved).seq (.act (skipBits dst 6)),?_⟩
+  intro x pos u S width vacant ht hs F
+  obtain ⟨z,user,copy⟩ := bcopy_exec body regs u S ht hs
+  rw [width,scaledWidthWord x pos,vacant,List.append_nil] at copy
+  let D := {S with R := Function.update S.R dst (List.replicate 6 (bitSymbol false) ++ binSyms x.size x)}
+  have drop := Exec.act (body := body) (skipBits dst 6) (mk z D)
+  simp only [skipBits_run,D,Function.update_self] at drop
+  rw [List.drop_append_of_le_length (by simp),List.drop_replicate] at drop
+  simp only [Nat.sub_self,List.replicate_zero,List.nil_append,Function.update_idem] at drop
+  refine ⟨z,_,copy.seq drop,user,?_⟩
+  intro js nd
+  have growth := prependedWordCharge S dst (binSyms x.size x) js nd
+  simp only [vacant,List.append_nil,length_binSyms] at growth
+  change 6*(List.replicate 6 (bitSymbol false) ++ (binSyms x.size x : List (Fin (prime+4)))).length+6+1+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+(8*x.size+43)
+  simp only [List.length_append,List.length_replicate,length_binSyms]
+  change tapeCharge cleanupWeight js F ≤ _ at growth
+  omega
+
 /-- Read the quotient of a positive aligned width by 64 into a unary clock.
 The six low bits are known zeros, so restoring the width needs no saved tape. -/
 private theorem alignedWidthUnary {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U)
