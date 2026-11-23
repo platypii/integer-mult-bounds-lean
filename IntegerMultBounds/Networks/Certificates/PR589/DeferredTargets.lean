@@ -138,6 +138,24 @@ theorem d_accumulator (x acc : ℕ → ZMod 2) (i : ℕ) (zero : acc i = 0)
   conv_lhs => lhs; rw [shift,carry sectionD delta reads acc]
   simp [delta,zero]
 
+/-- The suffix alone returns the entry value of every helper. -/
+theorem suffix_helper (stored : Fin 661 → ZMod 2) (i : ℕ) (lo : 222 ≤ i) (hi : i < 661) :
+    let x := extendInput stored
+    Circuit.run ((sectionA ++ sectionscatter ++ sectionB ++ sectionC).map RawGate.toCircuit) x i = x i := by
+  intro x
+  have finish := deferD x
+  have dh : Circuit.run (sectionD.map RawGate.toCircuit) x i = x i := by
+    apply Circuit.run_preserves
+    intro e he
+    obtain ⟨g,hg,rfl⟩ := List.mem_map.mp he
+    have ht := of_decide_eq_true (List.all_eq_true.mp targetsD g hg)
+    change g.target ≠ i
+    omega
+  have full := dirty_endpoint stored ⟨i,hi⟩
+  have h := congrFun finish i
+  rw [dh,sub_self,add_zero] at h
+  simpa [x,extendInput,hi,show ¬(111 ≤ i ∧ i < 222) by omega] using h.symm.trans full
+
 /-- The suffix restores every helper used by D. Consequently D itself can run
 last, reading the current registers and requiring no saved helper values. -/
 theorem run_D_last (stored : Fin 661 → ZMod 2) :
@@ -150,18 +168,6 @@ theorem run_D_last (stored : Fin 661 → ZMod 2) :
   let d := Circuit.run (sectionD.map RawGate.toCircuit) x
   have finish := deferD x
   change Circuit.run _ x = fun i => y i + (d i - x i) at finish
-  have restored (i : ℕ) (lo : 222 ≤ i) (hi : i < 661) : y i = x i := by
-    have dh : d i = x i := by
-      apply Circuit.run_preserves
-      intro e he
-      obtain ⟨g,hg,rfl⟩ := List.mem_map.mp he
-      have ht := of_decide_eq_true (List.all_eq_true.mp targetsD g hg)
-      change g.target ≠ i
-      omega
-    have full := dirty_endpoint stored ⟨i,hi⟩
-    have h := congrFun finish i
-    rw [dh,sub_self,add_zero] at h
-    simpa [x,extendInput,hi,show ¬(111 ≤ i ∧ i < 222) by omega] using h.symm.trans full
   let diff := fun i => y i - x i
   have shift : y = fun i => x i + diff i := by funext i; dsimp [diff]; abel
   change _ = Circuit.run _ y
@@ -171,6 +177,30 @@ theorem run_D_last (stored : Fin 661 → ZMod 2) :
     abel
   · intro g hg i hi
     have h := of_decide_eq_true (List.all_eq_true.mp (List.all_eq_true.mp dHelperSources g hg) i hi)
-    exact sub_eq_zero.mpr (restored i h.1 h.2)
+    exact sub_eq_zero.mpr (suffix_helper stored i h.1 h.2)
+
+private theorem a_writes_helpers : sectionA.all (fun g => decide (222 ≤ g.target)) = true := by
+  decide +kernel
+
+/-- At the entry to scatter, the entire remaining target computation reads
+only the two paired data values, even with arbitrary dirty helpers. -/
+theorem scatter_suffix_target (stored : Fin 661 → ZMod 2) (i : Fin 111) :
+    let run := fun (gs : List RawGate) => Circuit.run (gs.map RawGate.toCircuit)
+    let bank := run sectionA (extendInput stored)
+    run (sectionscatter ++ sectionB ++ sectionC ++ sectionD) bank (111+i.val) =
+      bank (111+i.val) + bank i.val := by
+  intro run bank
+  have kept (j : ℕ) (hj : j < 222) : bank j = extendInput stored j := by
+    apply Circuit.run_preserves
+    intro e he
+    obtain ⟨g,hg,rfl⟩ := List.mem_map.mp he
+    have ht := of_decide_eq_true (List.all_eq_true.mp a_writes_helpers g hg)
+    change g.target ≠ j
+    omega
+  rw [kept _ (by omega), kept _ (by omega)]
+  have h := targets_added stored i
+  rw [run_D_last] at h
+  simpa only [bank,run,List.map_append,Circuit.run_append,extendInput,
+    dite_eq_left (show 111+i.val < 661 by omega), dite_eq_left (show i.val < 661 by omega)] using h
 
 end IntegerMultBounds.Networks.Certificates.PR589
