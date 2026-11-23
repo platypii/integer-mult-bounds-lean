@@ -122,4 +122,127 @@ theorem runWithBinaryReturnFields {T N Q V : ℕ} {P A U : Type}
   change b ≤ 634*(M^128*W)+price at paid
   omega
 
+/-- The last adjacent exchange retains the unscaled spectator count. Exchange 14
+retains the transpose counter and exchange 1 retains the modulus. -/
+def archiveReturnSource (headers : Fin 127 → Fin 6 → Fin T) : Fin 4 → Fin T :=
+  ![headers 0 3,headers 1 2,headers 126 5,headers 14 5]
+
+open M8.RevMachine in
+theorem runWithArchivedReturnFields {T N Q V : ℕ} {P A U : Type}
+    (body : P → Pr P N Q prime U) (host : A → Pr A T Q prime U)
+    (stage : Fin N ↪ Fin T) (label : P → A)
+    (installed : ∀ p, host (label p) = embProg stage label (body p))
+    (bank : Fin SweepFile.tapes ↪ Fin N) (src dst : Fin (142081+2) ↪ Fin N)
+    (liveOff : ∀ i j, bank i ≠ src j)
+    (reg : Fin 8 ↪ Fin T) (saved : Fin T)
+    (apart : ∀ i j, stage i ≠ reg j) (saveOff : ∀ i, saved ≠ reg i)
+    (saveBank : ∀ i, stage (bank i) ≠ saved) (headers : Fin 127 → Fin 6 → Fin T) (scratch : Fin 4 ↪ Fin T)
+    (sourcesOff : ∀ i j, archiveReturnSource headers i ≠ reg j) (scratchOff : ∀ i j, scratch i ≠ reg j)
+    (separate : ∀ i j, archiveReturnSource headers i ≠ scratch j) (piece : Pr P N Q prime U) :
+    ∃ code : Pr A T Q prime U, ∀ w W (parent : Fin 64 → ZMod (prime^(w+1))) (seed : Stacks N prime) price effect,
+      let M := prime^(w+1)
+      let H := 128*M.size
+      0 < W → seed.R ∘ bank = returnSeed w H W 1 parent →
+      PackedPieceHandoff V effect body piece src dst seed price →
+      ∀ x u S, ParentStageWords (fun i => src (i.castAdd 2)) src V x (embStk stage S) →
+      (∀ j, (∀ i, src i ≠ j) → S.L (stage j) = seed.L j ∧
+        ((∀ i, bank i ≠ j) → S.R (stage j) = seed.R j)) →
+      (∀ i j, S.R (headers i j) = (Routines.hdr (helperAdjacentView (w+1) 1 W i) j).map bitSymbol) →
+      S.R (reg 4) = (List.ofFn fun j => binSyms M.size (parent j).val).flatten →
+      (∀ i, S.R (reg (fieldSlot i)) = []) → (∀ i, S.R (scratch i) = []) →
+      (∀ i, S.R (stage (bank i)) = []) → S.R (reg 1) = [] → S.R (reg 2) = [] →
+      S.R (reg 7) = [] → S.R saved = [] →
+      ∃ z F t y, Exec host code (mk u S) t (mk z F) ∧ t ≤ 743*(M^128*W)+price ∧
+        z.user = u.user ∧ ParentStageWords (fun i => dst (i.castAdd 2)) dst V y (embStk stage F) ∧ effect x y := by
+  obtain ⟨code,run⟩ := runWithBinaryReturnFields body host stage label installed bank src dst liveOff
+    reg saved apart saveOff saveBank (archiveReturnSource headers) scratch sourcesOff scratchOff separate piece
+  refine ⟨code,?_⟩
+  intro w W parent seed price effect M H positive seedBank pieceRun x u S words privateTapes archive
+  apply run w W parent seed price effect positive seedBank pieceRun x u S words privateTapes
+  intro i
+  fin_cases i
+  · change S.R (headers 0 3) = binSyms (w+1).size (w+1)
+    rw [archive]
+    exact canonicalBits_symbols _
+  · change S.R (headers 1 2) = binSyms M.size M
+    rw [archive]
+    simpa [Routines.hdr,RecursiveDimensionBank.values,helperAdjacentView,M] using canonicalBits_symbols (A := prime) M
+  · change S.R (headers 126 5) = binSyms W.size W
+    rw [archive]
+    simpa [Routines.hdr,RecursiveDimensionBank.values,helperAdjacentView] using canonicalBits_symbols (A := prime) W
+  · change S.R (headers 14 5) = binSyms (M^112*W).size (M^112*W)
+    rw [archive]
+    simpa [Routines.hdr,RecursiveDimensionBank.values,helperAdjacentView,M] using canonicalBits_symbols (A := prime) (M^112*W)
+
+open M8.RevMachine in
+/-- Generate the adjacent-exchange archive from the role descriptor on 273
+private tapes, then load the return file and execute the stage. -/
+theorem runWithDescriptorReturnFields {T N Q V : ℕ} {P A U : Type}
+    (body : P → Pr P N Q prime U) (host : A → Pr A (T+273) Q prime U)
+    (stage : Fin N ↪ Fin T) (label : P → A)
+    (installed : ∀ p, host (label p) = embProg (stage.trans (Fin.castAddEmb 273)) label (body p))
+    (bank : Fin SweepFile.tapes ↪ Fin N) (src dst : Fin (142081+2) ↪ Fin N)
+    (liveOff : ∀ i j, bank i ≠ src j)
+    (reg : Fin 8 ↪ Fin T) (saved : Fin T)
+    (apart : ∀ i j, stage i ≠ reg j) (saveOff : ∀ i, saved ≠ reg i)
+    (saveBank : ∀ i, stage (bank i) ≠ saved) (scratch : Fin 4 ↪ Fin T)
+    (scratchOff : ∀ i j, scratch i ≠ reg j) (hdr : Fin 6 → Fin T) (regs : Fin 35 ↪ Fin T)
+    (piece : Pr P N Q prime U) :
+    let low := Fin.castAddEmb 273 (n := T)
+    let place := stage.trans low
+    ∃ code : Pr A (T+273) Q prime U, ∀ (v : RecursiveInterchangeLayout.Descriptor) w
+      (parent : Fin 64 → ZMod (prime^(w+1))) (seed : Stacks N prime) price effect,
+      let M := prime^(w+1)
+      let W := v.beforeH*(v.beforeRows*v.rows*v.between*v.afterD)
+      v.Positive → seed.R ∘ bank = returnSeed w (128*M.size) W 1 parent →
+      PackedPieceHandoff V effect body piece src dst seed price →
+      ∀ x u S, ParentStageWords (fun i => src (i.castAdd 2)) src V x (embStk place S) →
+      (∀ j, (∀ i, src i ≠ j) → S.L (place j) = seed.L j ∧
+        ((∀ i, bank i ≠ j) → S.R (place j) = seed.R j)) →
+      S.R (low (regs 2)) = binSyms M.size M → S.R (low (regs 28)) = binSyms 1 1 →
+      (S.R (low (regs 33))).length = w →
+      (∀ i, S.R (low (hdr i)) = (Routines.hdr v i).map bitSymbol) →
+      (∀ j : Fin 273, S.L (j.natAdd T) = [] ∧ S.R (j.natAdd T) = []) →
+      S.R (low (reg 4)) = (List.ofFn fun j => binSyms M.size (parent j).val).flatten →
+      (∀ i, S.R (low (reg (fieldSlot i))) = []) → (∀ i, S.R (low (scratch i)) = []) →
+      (∀ i, S.R (place (bank i)) = []) → S.R (low (reg 1)) = [] → S.R (low (reg 2)) = [] →
+      S.R (low (reg 7)) = [] → S.R (low saved) = [] →
+      ∃ z F t y, Exec host code (mk u S) t (mk z F) ∧ t ≤ 152402743*(M^128*W)+price ∧
+        z.user = u.user ∧ ParentStageWords (fun i => dst (i.castAdd 2)) dst V y (embStk place F) ∧ effect x y := by
+  intro low place
+  have outside (i) (j : Fin T) : archiveReturnSource (borrowedHeaders T) i ≠ low j := by
+    fin_cases i
+    · exact borrowedHeaders_apart 0 3 j
+    · exact borrowedHeaders_apart 1 2 j
+    · exact borrowedHeaders_apart 126 5 j
+    · exact borrowedHeaders_apart 14 5 j
+  obtain ⟨call,run⟩ := runWithArchivedReturnFields body host place label installed bank src dst liveOff
+    (reg.trans low) (low saved) (fun i j => low.injective.ne (apart i j)) (fun i => low.injective.ne (saveOff i))
+    (fun i => low.injective.ne (saveBank i)) (borrowedHeaders T) (scratch.trans low)
+    (fun i j => outside i (reg j)) (fun i j => low.injective.ne (scratchOff i j)) (fun i j => outside i (scratch j)) piece
+  refine ⟨((prepareHelperSeeds hdr regs).seq
+    (helperHeaderSweep (fun i => (borrowedArchiveBank i).trans (parentArchive T)) (List.finRange 127))).seq call,?_⟩
+  intro v w parent seed price effect M W pos seedBank pieceRun x u S words privateTapes base unit clock descriptor fresh dir slots aux blank hh hu ht hs
+  obtain ⟨y,D,a,user,setup,cost,ready,left,right⟩ := prepareBorrowedHeaders_exec host hdr regs v w pos u S
+    base unit clock descriptor fresh
+  have wp : 0 < W := Nat.mul_pos pos.2.2.1 (Nat.mul_pos (Nat.mul_pos (Nat.mul_pos pos.1 pos.2.1) pos.2.2.2.1) pos.2.2.2.2)
+  have live : ParentStageWords (fun i => src (i.castAdd 2)) src V x (embStk place D) := by
+    refine ⟨?_,?_,?_⟩
+    · intro i
+      exact (congrFun left _).trans (words.left i)
+    · intro i
+      exact (right _).trans (words.right i)
+    · intro j k
+      simpa only [embStk,Function.comp_apply,place,Function.Embedding.trans_apply,low,Fin.castAddEmb_apply,left,right] using words.controls j k
+  obtain ⟨z,F,b,out,exec,paid,same,result,action⟩ := run w W parent seed price effect wp seedBank pieceRun x y D
+    live (fun j away => ⟨(congrFun left _).trans ((privateTapes j away).1),
+      fun h => (right _).trans ((privateTapes j away).2 h)⟩) ready ((right _).trans dir)
+    (fun i => (right _).trans (slots i)) (fun i => (right _).trans (aux i))
+    (fun i => (right _).trans (blank i)) ((right _).trans hh) ((right _).trans hu)
+    ((right _).trans ht) ((right _).trans hs)
+  refine ⟨z,F,_,out,setup.seq exec,?_,same.trans user,result,action⟩
+  change a ≤ 152402000*(M^128*W) at cost
+  change b ≤ 743*(M^128*W)+price at paid
+  omega
+
 end IntegerMultBounds.MathlibTM2.M6.BitNode.SweepFile.Exit
