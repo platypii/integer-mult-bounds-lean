@@ -47,6 +47,16 @@ def Step.rational (op : Step k) : Networks.OrderedAffine.Op (Fin k) ℚ :=
   | scale t r hr => by_cases h : t.val = 0 <;> simp [compile, h, Step.rational, FlatCoordinateSchedule.Op.rational]
 
 /-- The compiled triangular pass has precisely the original ordered coefficients and indices. -/
+def rowPass {m k : ℕ} (hk : 2 ≤ m*k) (E : Matrix (Fin m) (Fin m) ℚ)
+    (hs : ∀ op ∈ LabelAddress.rowPass k E, FlatCoordinateSchedule.Supported op) :=
+  (FlatCoordinateSchedule.ofList (LabelAddress.rowPass k E) hs).map (compile hk)
+
+theorem rowPass_rational {m k : ℕ} (hk : 2 ≤ m*k) (E : Matrix (Fin m) (Fin m) ℚ)
+    (hs : ∀ op ∈ LabelAddress.rowPass k E, FlatCoordinateSchedule.Supported op) :
+    (rowPass hk E hs).map Step.rational = LabelAddress.rowPass k E := by
+  simp only [rowPass, List.map_map, Function.comp_def, rational_compile]
+  exact FlatCoordinateSchedule.rational_ofList _ _
+
 def pass {m : ℕ} (hk : 2 ≤ m*m) (E : Matrix (Fin m) (Fin m) ℚ)
     (hs : ∀ op ∈ LabelAddress.pass E, FlatCoordinateSchedule.Supported op) :=
   (FlatCoordinateSchedule.ofList (LabelAddress.pass E) hs).map (compile hk)

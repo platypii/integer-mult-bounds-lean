@@ -60,6 +60,24 @@ theorem pass_legal {E : Matrix (Fin m) (Fin m) (ZMod Q)}
   exact refined_legal _ (atomOp_legal (h o ho)).1 _ hop
 
 omit [NeZero Q] in
+theorem rowPass_run {k : ℕ} {E : Matrix (Fin m) (Fin m) (ZMod Q)}
+    (hE : IntegerMultBounds.Swap.Shear.LowerTriangular E)
+    (h : ∀ op ∈ OrderedAffine.program E, OrderedAffine.Legal op)
+    (g : Matrix (Fin k) (Fin m) (ZMod Q)) :
+    OrderedAffine.run (rowPass k E) (refine (fun j i => g i j)) =
+      refine (fun j i => (g * E.transpose) i j) := by
+  unfold rowPass
+  rw [refined_atomRun]
+  · apply congrArg refine
+    funext j i
+    have eq := congrFun (atomRun_level (OrderedAffine.program E) (fun j i => g i j) i) j
+    rw [OrderedAffine.program_run hE] at eq
+    exact eq.trans (by simp [Matrix.mul_apply, Matrix.mulVec, dotProduct, mul_comm])
+  · intro a ha
+    obtain ⟨o, ho, rfl⟩ := List.mem_map.mp ha
+    exact (atomOp_legal (h o ho)).2
+
+omit [NeZero Q] in
 theorem pass_run {E : Matrix (Fin m) (Fin m) (ZMod Q)}
     (hE : IntegerMultBounds.Swap.Shear.LowerTriangular E)
     (h : ∀ op ∈ OrderedAffine.program E, OrderedAffine.Legal op)

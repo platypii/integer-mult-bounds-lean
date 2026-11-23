@@ -65,26 +65,34 @@ theorem triangular {E : Matrix (Fin m) (Fin m) ℚ}
   exact congrArg decode (hentries g ⟨j,hj⟩)
 
 /-- For the transposed factorization, the second factor runs first on a label. -/
-theorem route {σ E₁ E₂ : Matrix (Fin m) (Fin m) (ZMod (prime^w))} {L : List (Fin m × Fin m)}
+theorem route_rows {k : ℕ} {σ E₁ E₂ : Matrix (Fin m) (Fin m) (ZMod (prime^w))} {L : List (Fin m × Fin m)}
     (hL : L.Nodup) (π : Equiv.Perm (Fin m)) (hπ : ∀ j k, (j,k) ∈ L ↔ k = π j)
     (hσ : σᵀ = E₁ * IntegerMultBounds.Swap.Shear.pivotMatrix L * E₂)
     {x y z out : ℕ → ZMod 2}
-    (h₂ : Transport v B w (fun g => g * E₂ᵀ) x y) (hp : Moves v B w π y z)
-    (h₁ : Transport v B w (fun g => g * E₁ᵀ) z out) :
-    Transport v B w (fun g => g * σ) x out := by
+    (h₂ : LabelPermutation.RowTransport v B w k (fun g => g * E₂ᵀ) x y) (hp : LabelPermutation.RowMoves v B w k π y z)
+    (h₁ : LabelPermutation.RowTransport v B w k (fun g => g * E₁ᵀ) z out) :
+    LabelPermutation.RowTransport v B w k (fun g => g * σ) x out := by
   intro g a ha row hr b hb h hh mid hm d hd after he
   let g₂ := g * E₂ᵀ
   have pivot : (fun i j => g₂ i (π j)) =
       g₂ * (IntegerMultBounds.Swap.Shear.pivotMatrix L : Matrix (Fin m) (Fin m) (ZMod (prime^w)))ᵀ := by
     funext i j
-    exact (congrFun (congrFun (Route.pivot_route L hL π hπ g₂) j) i).symm
-  have hdest : (show Matrix (Fin m) (Fin m) _ from fun i j => g₂ i (π j)) * E₁ᵀ = g * σ := by
+    simp [Matrix.mul_apply, IntegerMultBounds.Swap.PivotRank.pivotMatrix_apply L hL, hπ]
+  have hdest : (show Matrix (Fin k) (Fin m) _ from fun i j => g₂ i (π j)) * E₁ᵀ = g * σ := by
     rw [pivot, ← transpose_transpose σ, hσ]
     simp [g₂, transpose_mul, Matrix.mul_assoc]
   dsimp only
   rw [← hdest]
   exact (h₁ _ a ha row hr b hb h hh mid hm d hd after he).trans
     ((hp g₂ a ha row hr b hb h hh mid hm d hd after he).trans (h₂ g a ha row hr b hb h hh mid hm d hd after he))
+
+theorem route {σ E₁ E₂ : Matrix (Fin m) (Fin m) (ZMod (prime^w))} {L : List (Fin m × Fin m)}
+    (hL : L.Nodup) (π : Equiv.Perm (Fin m)) (hπ : ∀ j k, (j,k) ∈ L ↔ k = π j)
+    (hσ : σᵀ = E₁ * IntegerMultBounds.Swap.Shear.pivotMatrix L * E₂)
+    {x y z out : ℕ → ZMod 2}
+    (h₂ : Transport v B w (fun g => g * E₂ᵀ) x y) (hp : Moves v B w π y z)
+    (h₁ : Transport v B w (fun g => g * E₁ᵀ) z out) :
+    Transport v B w (fun g => g * σ) x out := route_rows hL π hπ hσ h₂ hp h₁
 
 end
 end IntegerMultBounds.MathlibTM2.Cover.LabelTransport

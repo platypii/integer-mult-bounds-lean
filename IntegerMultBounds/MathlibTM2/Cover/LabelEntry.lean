@@ -137,6 +137,45 @@ theorem list_entry (ops : List (Step k)) (hv : v.beforeH = B*prime^(k*w)) (a : L
       (OrderedAffine.mapOp (ratMod (modulus w)) op.rational) x)).trans (step_entry op hv a z x)
 
 /-- The compiled tape pass realizes the right matrix product on every caller cell. -/
+theorem rowPass_entry {m r : ℕ} (hk : 2 ≤ m*r) (E : Matrix (Fin m) (Fin m) ℚ)
+    (hs : ∀ op ∈ LabelAddress.rowPass r E, FlatCoordinateSchedule.Supported op)
+    (hE : IntegerMultBounds.Swap.Shear.LowerTriangular E)
+    (hu : IsUnit (IntegerMultBounds.Swap.Modular.reduce (modulus w) E))
+    (hv : v.beforeH = B*prime^((m*r)*w)) (a : LabelProgram.Array v) (z : Cell v B)
+    (g : Matrix (Fin r) (Fin m) (ZMod (modulus w))) :
+    let ops := LabelProgram.rowPass hk E hs
+    let out := ops.foldl (fun b op => op.apply hv b) a
+    let coords := fun (g : Matrix (Fin r) (Fin m) (ZMod (modulus w))) => M8.AtomOps.refine (fun j i => g i j)
+    out (position z hv (coords (g * (IntegerMultBounds.Swap.Modular.reduce (modulus w) E).transpose))) =
+      a (position z hv (coords g)) := by
+  have h := list_entry (LabelProgram.rowPass hk E hs) hv a z (M8.AtomOps.refine (fun j i => g i j))
+  dsimp only at h
+  rw [LabelProgram.rowPass_rational, ← LabelAddress.rowPass_map] at h
+  have hl := IntegerMultBounds.Swap.Modular.reduce_lowerTriangular (modulus w) hE
+  rw [← IntegerMultBounds.Swap.Modular.reduce, LabelAddress.rowPass_run hl (OrderedAffine.program_legal hl hu) g] at h
+  exact h
+
+/-- A single machine run and its matrix-label postcondition on the same output tape. -/
+theorem rowPass_runs {m r T : ℕ} (hk : 2 ≤ m*r) (E : Matrix (Fin m) (Fin m) ℚ)
+    (hs : ∀ op ∈ LabelAddress.rowPass r E, FlatCoordinateSchedule.Supported op)
+    (hE : IntegerMultBounds.Swap.Shear.LowerTriangular E)
+    (hu : IsUnit (IntegerMultBounds.Swap.Modular.reduce (modulus w) E))
+    (hv : v.beforeH = B*prime^((m*r)*w)) (hw : 0 < w) (hb : 0 < B) (hp : v.Positive)
+    (io : Fin T) (roles : Tapes T prime) (a : LabelProgram.Array v)
+    (hh : roles.head io = 0) (hx : roles.tape io = RecursiveShiftRoleBank.source a) :
+    let ops := LabelProgram.rowPass hk E hs
+    let d := M8.Stage2Machine.Straight.words (LabelSchedule.base v w)
+    ∃ out : LabelProgram.Array v,
+      M8.RevMachine.GraphContract.Runs (LabelProgram.program io ops) (LabelCall.bank roles v d)
+        (LabelCall.bank (SharedPlacementAlphabet.setTape roles io (RecursiveShiftRoleBank.source out) 0) v d)
+        (LabelProgram.coefficient ops * volume prime v) ∧
+      ∀ (z : Cell v B) (g : Matrix (Fin r) (Fin m) (ZMod (modulus w))),
+        let coords := fun (g : Matrix (Fin r) (Fin m) (ZMod (modulus w))) => M8.AtomOps.refine (fun j i => g i j)
+        out (position z hv (coords (g * (IntegerMultBounds.Swap.Modular.reduce (modulus w) E).transpose))) =
+          a (position z hv (coords g)) :=
+  ⟨_, LabelProgram.runs _ hw hb hv hp io roles a hh hx, rowPass_entry hk E hs hE hu hv a⟩
+
+/-- The compiled tape pass realizes the right matrix product on every caller cell. -/
 theorem pass_entry {m : ℕ} (hk : 2 ≤ m*m) (E : Matrix (Fin m) (Fin m) ℚ)
     (hs : ∀ op ∈ LabelAddress.pass E, FlatCoordinateSchedule.Supported op)
     (hE : IntegerMultBounds.Swap.Shear.LowerTriangular E)
@@ -147,13 +186,7 @@ theorem pass_entry {m : ℕ} (hk : 2 ≤ m*m) (E : Matrix (Fin m) (Fin m) ℚ)
     let out := ops.foldl (fun b op => op.apply hv b) a
     let coords := M8.AtomOps.refine ∘ Route.cols (m := m) (R := ZMod (modulus w))
     out (position z hv (coords (g * (IntegerMultBounds.Swap.Modular.reduce (modulus w) E).transpose))) =
-      a (position z hv (coords g)) := by
-  have h := list_entry (LabelProgram.pass hk E hs) hv a z (M8.AtomOps.refine (Route.cols g))
-  dsimp only at h
-  rw [LabelProgram.pass_rational, ← LabelAddress.pass_map] at h
-  have hl := IntegerMultBounds.Swap.Modular.reduce_lowerTriangular (modulus w) hE
-  rw [← IntegerMultBounds.Swap.Modular.reduce, LabelAddress.pass_run hl (OrderedAffine.program_legal hl hu) g] at h
-  exact h
+      a (position z hv (coords g)) := rowPass_entry hk E hs hE hu hv a z g
 
 /-- A single machine run and its matrix-label postcondition on the same output tape. -/
 theorem pass_runs {m T : ℕ} (hk : 2 ≤ m*m) (E : Matrix (Fin m) (Fin m) ℚ)
@@ -172,8 +205,7 @@ theorem pass_runs {m T : ℕ} (hk : 2 ≤ m*m) (E : Matrix (Fin m) (Fin m) ℚ)
       ∀ (z : Cell v B) (g : Matrix (Fin m) (Fin m) (ZMod (modulus w))),
         let coords := M8.AtomOps.refine ∘ Route.cols (m := m) (R := ZMod (modulus w))
         out (position z hv (coords (g * (IntegerMultBounds.Swap.Modular.reduce (modulus w) E).transpose))) =
-          a (position z hv (coords g)) :=
-  ⟨_, LabelProgram.runs _ hw hb hv hp io roles a hh hx, pass_entry hk E hs hE hu hv a⟩
+          a (position z hv (coords g)) := rowPass_runs hk E hs hE hu hv hw hb hp io roles a hh hx
 
 end
 end IntegerMultBounds.MathlibTM2.Cover.LabelEntry

@@ -33,12 +33,15 @@ abbrev Moves (v : Descriptor) (B w : ℕ) {m : ℕ} (π : Equiv.Perm (Fin m)) :=
 private theorem radix (q w m n : ℕ) : ((q^w)^m)^n = q^(n*(w*m)) := by
   rw [← pow_mul, ← pow_mul]; congr 1; ac_rfl
 
-abbrev RowMoves (v : Descriptor) (B w k : ℕ) {m : ℕ} (π : Equiv.Perm (Fin m))
+def RowTransport (v : Descriptor) (B w k : ℕ) {m : ℕ} (f : Matrix (Fin k) (Fin m) (ZMod (prime^w)) → Matrix (Fin k) (Fin m) (ZMod (prime^w)))
     (x y : ℕ → ZMod 2) :=
   ∀ (g : Matrix (Fin k) (Fin m) (ZMod (prime^w))), ∀ a < v.beforeRows, ∀ row < v.rows,
     ∀ b < B, ∀ h < prime^v.width, ∀ mid < v.between, ∀ d < prime^v.width, ∀ after < v.afterD,
-      y (index prime v a row (b*prime^(m*(w*k)) + (LabelColumns.rowAddress (fun i j => g i (π j))).val) h mid d after) =
+      y (index prime v a row (b*prime^(m*(w*k)) + (LabelColumns.rowAddress (f g)).val) h mid d after) =
         x (index prime v a row (b*prime^(m*(w*k)) + (LabelColumns.rowAddress g).val) h mid d after)
+
+abbrev RowMoves (v : Descriptor) (B w k : ℕ) {m : ℕ} (π : Equiv.Perm (Fin m))
+    := RowTransport v B w k (fun g i j => g i (π j))
 
 private theorem label_radix (q w k m s t lp cs gap ct ls : ℕ) :
     LabelView.label ((q^w)^k) 1 m s t lp cs gap ct ls =
