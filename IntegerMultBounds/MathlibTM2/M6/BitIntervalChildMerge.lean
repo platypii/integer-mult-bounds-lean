@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.M6.BitIntervalChildRun
+public import IntegerMultBounds.MathlibTM2.M6.BitIntervalChargedChild
 public import IntegerMultBounds.MathlibTM2.M6.BitInheritedReturnMerge
 
 /-! Return a recursive packed interval to its original cyclic merge target. -/
@@ -107,6 +107,91 @@ theorem packedIntervalMerge {P U : Type} {T B Q w W atom price lo hi axes : ℕ}
   have returnedOff (i) : (returned.trans extend) i ≠ extend (caller j) := extend.injective.ne (disjoint j away i)
   have bankOff := outsideReturnedMergeBank saved (returned.trans extend) separate savedOff returnedOff
   exact ⟨(keep _ bankOff).1.trans (frame j away).1,(keep _ bankOff).2.trans (frame j away).2⟩
+
+theorem packedIntervalMergeWithCharge {P U : Type} {T B Q w W atom price lo hi axes : ℕ}
+    (capacity : rowSwapBlock.states ≤ Q)
+    (mergeCap : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q)
+    (ordered : lo ≤ hi) (fits : hi ≤ axes) (positive : 0 < W)
+    (widthAt : (phaseIntervalChild lo hi (w+1) W axes).width = 64*atom)
+    {body : P → Pr P B Q prime U} {code src dst seed}
+    (child : PackedPieceHandoffWithCharge cleanupWeight ((prime^(w+1))^(axes+axes)*W) (packedChildOutput atom _) body code src dst seed price)
+    (splitter : Fin intervalSplitTapes ↪ Fin T) (headers : Fin 6 ↪ Fin T) (width : Fin T)
+    (apart : ∀ r : Fin 142080, ∀ i, splitter (intervalOwners _ (r.castAdd 2)) ≠ headers i)
+    (widthFree : ∀ r : Fin 142080, splitter (intervalOwners _ (r.castAdd 2)) ≠ width) :
+    let live := (intervalOwners 142080).trans splitter
+    let H := 142082+T+B
+    let caller := (Fin.natAddEmb 142082 (m := T)).trans (Fin.castAddEmb B)
+    let extend := Fin.castAddEmb (n := H) (142080*(N+35))
+    let initial := (splitter.trans caller).trans extend
+    let small := (Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)
+    let ports := intervalRecordBank (live.trans caller) (small 24)
+    let lane := phaseIntervalChild lo hi (w+1) W axes
+    let V := volume prime lane
+    ∃ (host : Empty ⊕ P → Pr (Empty ⊕ P) (H+142080*(N+35)) Q prime U)
+      (program : Pr (Empty ⊕ P) (H+142080*(N+35)) Q prime U)
+      (bank : Fin intervalSplitTapes ↪ Fin (H+142080*(N+35))) (rate : ℕ),
+    bank 0 = initial 0 ∧ ∀ target (data : Fin 142080 → Fin V → ZMod 2) u S,
+      RepT (intervalOwnerBank target data) (embStk initial S).L (embStk initial S).R →
+      IntervalHeaderInputs ((headers.trans caller).trans extend) (extend (caller width)) w W S →
+      (∀ r k, k ≠ small 24 → S.L (ports r k) = [] ∧ S.R (ports r k) = []) →
+      (∀ i : Fin 142082, let j := extend ((i.castAdd T).castAdd B)
+        S.L j = [] ∧ S.R j = []) →
+      (∀ i : Fin B, let j := extend (i.natAdd (142082+T))
+        S.L j = seed.L i ∧ S.R j = seed.R i) →
+      let output := fun r => Shared50RecursiveNodeRows.transpose (one_dvd lane.rows) (data r)
+      let word := fun k : Fin (V*142080) => let p := finProdFinEquiv.symm k
+                                            SparseRoleCircuit.encode (a := prime) (output p.2 p.1)
+      ∃ z F n, Exec host program (mk u S) n (mk z F) ∧
+        (∀ js : List _, js.Nodup →
+          let M := prime^(w+1)
+          let pass := intervalPassTime U lo hi w W axes
+          let header := 16*M.size+8*W.size+6*(w+1)+11*(w+1).size+58
+          n+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+
+            rate*(142080*(header+pass)+1+(142080*pass+1))+
+            (142081*(8*V+10+2*V)+1+price)+13*(149*(V*142080)*(intervalSplitTapes+5)+6)) ∧
+        z.user = u.user ∧ RepT (intervalOwnerBank (putWord target 0 (List.ofFn word)) output)
+          (embStk bank F).L (embStk bank F).R ∧
+        ∀ j, (∀ i, splitter i ≠ j) → F.L (extend (caller j)) = S.L (extend (caller j)) ∧
+          F.R (extend (caller j)) = S.R (extend (caller j)) := by
+  intro live H caller extend initial small ports lane V
+  obtain ⟨host,call,returned,rate,disjoint,run⟩ :=
+    runIntervalChildWithCharge capacity ordered fits positive widthAt child live headers width apart widthFree
+  let saved := (mergeSaved 142080).trans initial
+  have outside i j : live j ≠ splitter (mergeSaved 142080 i) :=
+    splitter.injective.ne (mergeSaved_outsideFan _ i j)
+  have separate i j : saved i ≠ (returned.trans extend) j :=
+    extend.injective.ne (disjoint _ (outside i) j).symm
+  let bank := returnedMergeBank saved (returned.trans extend) separate
+  refine ⟨host,call.seq (embProg bank Empty.elim (foreign (liftQ
+    (CyclicRowNormalized.mergeProgram 142080 prime) mergeCap))),bank,rate,returnedMergeBank_target _ _ _,?_⟩
+  intro target data u S split dimensions free fresh prepared output word
+  have size : V = (prime^(w+1))^(axes+axes)*W := intervalChild_volume ordered fits (w+1) W
+  have vol : 0 < V := by
+    rw [size]
+    exact Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) positive
+  have owners : HelperFan ((live.trans caller).trans extend) data S :=
+    placedOwners (c := 142080) splitter caller extend target data S split
+  obtain ⟨v,D,k,exec,paid,user,rows,frame⟩ := run data u S dimensions
+    ((castFan size ((live.trans caller).trans extend) data S).2 owners) free fresh prepared
+  obtain ⟨z,F,n,merged,cost,same,result,_,keep,growth⟩ :=
+    placedMergeReturnedOwners_exec host bank mergeCap vol target data output (embStk initial S) v D split
+      (by rw [returnedMergeBank_owners]; exact (castFan size _ output D).1 rows)
+      (by rw [returnedMergeBank_target]; exact frame _ (outside 0))
+      (fun j => by dsimp only; rw [returnedMergeBank_inner]; exact frame _ (outside j.succ))
+  refine ⟨z,F,k+n,exec.seq merged,?_,same.trans user,result,?_⟩
+  · intro js unique
+    have childBill := paid js unique
+    dsimp only at childBill ⊢
+    rw [← size] at childBill
+    have mergeGrowth := growth js unique
+    change tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js D+12*n at mergeGrowth
+    omega
+  · intro j off
+    have away (i) : live i ≠ j := off _
+    have savedOff (i) : saved i ≠ extend (caller j) := extend.injective.ne (caller.injective.ne (off _))
+    have returnedOff (i) : (returned.trans extend) i ≠ extend (caller j) := extend.injective.ne (disjoint j away i)
+    have bankOff := outsideReturnedMergeBank saved (returned.trans extend) separate savedOff returnedOff
+    exact ⟨(keep _ bankOff).1.trans (frame j away).1,(keep _ bankOff).2.trans (frame j away).2⟩
 
 theorem directoryIntervalMerge {P U : Type} {T B Q w W atom price lo hi axes : ℕ}
     (capacity : rowSwapBlock.states ≤ Q)
