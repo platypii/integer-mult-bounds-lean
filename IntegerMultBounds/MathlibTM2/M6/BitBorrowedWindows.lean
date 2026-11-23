@@ -1,5 +1,7 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.Cover.FallbackRecordCleanup
+public import IntegerMultBounds.MathlibTM2.Host.TapeCharge
 public import IntegerMultBounds.MathlibTM2.M6.BitBorrowedHeaders
 public import IntegerMultBounds.MathlibTM2.M6.BitBorrowedCall
 
@@ -852,5 +854,104 @@ theorem archivedBorrowedRestore_host [M8.Machine.Net] {T Q : ℕ} {P U : Type}
     (fun i j => by simpa [port,scratch,W,Nat.mod_eq_of_lt i.isLt] using ready i j) rep free
   exact ⟨z,F,t,y,exec,paid,user,done,trace,
     fun i j => (keep _ (fun o => borrowedHeaders_apart i j (fan (o.castAdd 2)))).2,clean⟩
+
+private theorem closedProgramCharge {T Q : ℕ} {U : Type} {program : Pr Empty T Q prime U}
+    {u v : HS T Q prime U} {S D : Stacks T prime} {t : ℕ} {price : ℝ}
+    (exec : Exec Empty.elim program (mk u S) t (mk v D)) (time : (t : ℝ) ≤ price) :
+    let push := Fast.Main.mnProgPush program
+    let factor := 1+6*push
+    ∀ js : List (Fin T), js.Nodup → (t : ℝ)+tapeCharge (fun l r => 4*l.length+2*r.length+4) js D ≤
+      tapeCharge (fun l r => 4*l.length+2*r.length+4) js S+(factor : ℝ)*price := by
+  intro push factor
+  intro js unique
+  let stock := tapeCharge (fun (l r : List (Fin (prime+4))) => 4*l.length+2*r.length+4) js
+  have growth := recordCleanup_cost_le js unique exec (c := push) le_rfl (fun e => nomatch e)
+  change stock D+1 ≤ stock S+1+6*(push*t) at growth
+  have localCost : t+stock D ≤ stock S+factor*t := by
+    dsimp only [factor]
+    rw [Nat.add_mul,Nat.one_mul,Nat.mul_assoc]
+    omega
+  change (t : ℝ)+(stock D : ℝ) ≤ (stock S : ℝ)+_
+  have paid : (t : ℝ)+(stock D : ℝ) ≤ (stock S : ℝ)+(factor : ℝ)*t := by exact_mod_cast localCost
+  exact paid.trans (add_le_add_right (mul_le_mul_of_nonneg_left time (Nat.cast_nonneg factor)) _)
+
+open Cover in
+theorem archivedPackingWithCharge [M8.Machine.Net] {T Q : ℕ} {P U : Type}
+    (n : Fin 9) (p : Fin 32 × Fin 5) (fan : Fin (142081+2) ↪ Fin T)
+    (capacity : columnCapacity ≤ Q) (outer : P → Pr P ((T+273)+LeafCore.small) Q prime U) :
+    let bank := Fin.castAddEmb 273 (n := T)
+    let scratch := Fin.castAddEmb LeafCore.small (n := T+273)
+    let full := (fan.trans bank).trans scratch
+    let before := (stageRuns.take (stageRuns.idxOf p)).foldl (fun c r => helperChartsAfter n r c) (fun _ => none)
+    ∃ (rate : ℝ) (pack : Pr P ((T+273)+LeafCore.small) Q prime U), ∀ w B K : ℕ,
+      let W := B*prime^(64*(w*64))*K
+      let V := (prime^w)^16*((prime^w)^112*B*prime^(64*(w*64))*K)
+      0 < V → ∀ (data : Fin 142081 → Fin V → ZMod 2) u S,
+      (∀ i j, S.R (scratch (borrowedHeaders T i j)) =
+        (Routines.hdr (helperAdjacentView w 1 W i) j).map bitSymbol) →
+      HelperFan full data S →
+      (∀ j : Fin LeafCore.small, S.L (j.natAdd (T+273)) = [] ∧ S.R (j.natAdd (T+273)) = []) →
+      ∃ v D k x, v.user = u.user ∧ Exec outer pack (mk u S) k (mk v D) ∧
+        (∀ js : List (Fin ((T+273)+LeafCore.small)), js.Nodup →
+          (k : ℝ)+tapeCharge (fun l r => 4*l.length+2*r.length+4) js D ≤
+          tapeCharge (fun l r => 4*l.length+2*r.length+4) js S+rate*((V : ℝ)*((max 1 w : ℕ) : ℝ)^M8.Machine.BudgetBound.tau)) ∧
+        HelperFan full x D ∧ HelperLabelTrace w 1 W (scheduledSlotChanges n p before) data x ∧
+        (∀ j : Fin (T+273), (∀ o : Fin 142081, j ≠ bank (fan (o.castAdd 2))) →
+          D.L (scratch j) = S.L (scratch j) ∧ D.R (scratch j) = S.R (scratch j)) ∧
+        ∀ j : Fin LeafCore.small, D.L (j.natAdd (T+273)) = [] ∧ D.R (j.natAdd (T+273)) = [] := by
+  intro bank scratch full before
+  obtain ⟨pack,run⟩ := archivedPacking_exec (U := U) n p fan capacity (P := Empty) Empty.elim
+  let factor := 1+6*Fast.Main.mnProgPush pack
+  refine ⟨(factor : ℝ)*borrowedPackRate n p,embProg id Empty.elim pack,?_⟩
+  intro w B K W V pos data u S headers live free
+  obtain ⟨v,D,t,y,user,exec,time,out,trace,keep,clear⟩ :=
+    run w B K pos data (embDn id u) S headers live free
+  obtain ⟨z,F,placed,_,same,view,_⟩ := exec_emb (body' := outer) (ι := Empty.elim)
+    Function.injective_id (fun e => nomatch e) exec u rfl S rfl
+  change F = D at view
+  subst F
+  refine ⟨z,D,t,y,same.trans user,placed,?_,out,trace,keep,clear⟩
+  simpa only [V,mul_assoc] using closedProgramCharge exec time
+
+open Cover in
+/-- Restoration has a single time and cleanup rate for all word widths and volumes. -/
+theorem archivedRestoreWithCharge [M8.Machine.Net] {T Q : ℕ} {P U : Type}
+    (n : Fin 9) (fan : Fin (142081+2) ↪ Fin T) (capacity : columnCapacity ≤ Q)
+    (body : P → Pr P ((T+273)+LeafCore.small) Q prime U) :
+    let bank := Fin.castAddEmb 273 (n := T)
+    let scratch := Fin.castAddEmb LeafCore.small (n := T+273)
+    let full := (fan.trans bank).trans scratch
+    ∃ (rate : ℝ) (code : Pr P ((T+273)+LeafCore.small) Q prime U), ∀ w B K : ℕ,
+      let W := B*prime^(64*(w*64))*K
+      let V := (prime^w)^16*((prime^w)^112*B*prime^(64*(w*64))*K)
+      0 < V → ∀ (data : Fin 142081 → Fin V → ZMod 2) u S,
+      (∀ i j, S.R (scratch (borrowedHeaders T i j)) =
+        (Routines.hdr (helperAdjacentView w 1 W i) j).map bitSymbol) →
+      HelperFan full data S →
+      (∀ j : Fin LeafCore.small, S.L (j.natAdd (T+273)) = [] ∧ S.R (j.natAdd (T+273)) = []) →
+      ∃ z F t y, Exec body code (mk u S) t (mk z F) ∧
+        (∀ js : List (Fin ((T+273)+LeafCore.small)), js.Nodup →
+          (t : ℝ)+tapeCharge (fun l r => 4*l.length+2*r.length+4) js F ≤
+            tapeCharge (fun l r => 4*l.length+2*r.length+4) js S+rate*
+            ((V : ℝ)*((max 1 w : ℕ) : ℝ)^M8.Machine.BudgetBound.tau)) ∧
+        z.user = u.user ∧ HelperFan full y F ∧ HelperLabelTrace w 1 W (restoreSlotChanges (stageFinalSlot n)) data y ∧
+        (∀ i j, F.R (scratch (borrowedHeaders T i j)) = S.R (scratch (borrowedHeaders T i j))) ∧
+        ∀ j : Fin LeafCore.small, F.L (j.natAdd (T+273)) = [] ∧ F.R (j.natAdd (T+273)) = [] := by
+  intro bank scratch full
+  obtain ⟨restore,run⟩ := archivedBorrowedRestore_host (U := U) n fan capacity
+    (P := Empty) Empty.elim
+  let push := Fast.Main.mnProgPush restore
+  let factor := 1+6*push
+  refine ⟨(factor : ℝ)*helperChangesRate (restoreSlotChanges (stageFinalSlot n)),
+    embProg id Empty.elim restore,?_⟩
+  intro w B K W V pos data u S headers live free
+  obtain ⟨v,D,t,y,exec,time,user,out,trace,keep,clear⟩ :=
+    run w B K pos data (embDn id u) S headers live free
+  obtain ⟨z,F,placed,_,same,view,_⟩ := exec_emb (body' := body) (ι := Empty.elim)
+    Function.injective_id (fun e => nomatch e) exec u rfl S rfl
+  change F = D at view
+  subst F
+  refine ⟨z,D,t,y,placed,?_,same.trans user,out,trace,keep,clear⟩
+  simpa only [V,mul_assoc] using closedProgramCharge exec time
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
