@@ -68,15 +68,15 @@ theorem inheritedHelperTranspose_exec {P U : Type} {T N Q price : ℕ} (physical
     (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q) :
     let caller := (Fin.natAddEmb 142082 (m := T)).trans (Fin.castAddEmb N)
     let H := 142082+T+N
-    let lane := role physical 142080
-    let V := volume prime lane
     let W := volume prime physical
     let bs := bits (rowLength prime physical)
     let gs := bits (groups 142080 physical)
     let rows := fun owner tapes => CyclicRowSplit.bank (CyclicRowCopy.bank owner tapes 0 (fun _ => 0) bs) gs
     ∃ (host : Empty ⊕ P → Pr (Empty ⊕ P) H Q prime U)
       (program : Pr (Empty ⊕ P) H Q prime U),
-    ∀ (word : Fin W → ZMod 2) u S,
+    ∀ (scheduled : Descriptor) (position : Fin (volume prime scheduled) ≃ Fin W),
+      InheritedIntervalPositions scheduled physical rfl position → physical.width = scheduled.width →
+      ∀ (word : Fin W → ZMod 2) u S,
       let owner := putWord (fun _ => blank) 0 (List.ofFn fun k => SparseRoleCircuit.encode (a := prime) (word k))
       RepT (rows owner (fun _ _ => blank)) (embStk (place.trans caller) S).L (embStk (place.trans caller) S).R →
       (∀ k : Fin 6, k ≠ 3 → k ≠ 5 → S.L (caller (product k)) = [] ∧ S.R (caller (product k)) = []) →
@@ -85,10 +85,11 @@ theorem inheritedHelperTranspose_exec {P U : Type} {T N Q price : ℕ} (physical
       (∀ i : Fin N, let j := i.natAdd (142082+T)
         S.L j = seed.L i ∧ S.R j = seed.R i) →
       ∃ z F n, Exec host program (mk u S) n (mk z F) ∧ z.user = u.user ∧
-        n ≤ 298*W*(142085+5)+((53*V+28)*11+6+(142081*(8*V+10)+1+price))+12 ∧
-        WordAtZero (transpose (one_dvd physical.rows) word)
+        n ≤ (298*(142085+5)+19)*W+price ∧
+        WordAtZero (transpose (one_dvd scheduled.rows) (word ∘ position) ∘ position.symm)
           (F.L (caller (place 0))) (F.R (caller (place 0))) := by
-  intro caller H lane V W bs gs rows
+  intro caller H W bs gs rows
+  let lane := role physical 142080
   have fresh i : place i ≠ live ((1 : Fin 2).natAdd 142080) := atVolume ▸ apart 1 (by decide) (by decide) i
   obtain ⟨mergePlace,host,worker,target,run⟩ := inheritedHelperRows_exec lane child place live atClock fresh
   let bank := place.trans caller
@@ -100,12 +101,26 @@ theorem inheritedHelperTranspose_exec {P U : Type} {T N Q price : ℕ} (physical
   let setup : Pr (Empty ⊕ P) H Q prime U := embProg (product.trans caller) Empty.elim
     (foreign (liftQ (DimensionProductDescriptor.program (q := prime)) room))
   refine ⟨host,split.seq ((setup.seq worker).seq merge),?_⟩
-  intro word u S owner ready scratch empty prepared
+  intro scheduled position coords width word u S owner ready scratch empty prepared
   apply Exists.elim (helperRows_exec physical positive (by decide : 0 < 142080) stock word
     (fun _ => blank) (fun _ _ => blank) 0 (fun _ => 0) host (setup.seq worker) _ bank mergePlace (fun _ => False)
     (fun _ h => h.elim) (fun _ h => h.elim) capacity u S ready ?_)
   · rintro z ⟨F,n,ran,paid,user,result,_⟩
-    refine ⟨z,F,n,ran,user,paid,?_⟩
+    have size : volume prime lane * 142080 = W := role_volume_mul prime 142080 physical stock
+    have nonempty : 0 < W := by
+      obtain ⟨a,b,h,m,d⟩ := positive
+      have := Shared50ModularControl.prime_prime.pos
+      dsimp [W,volume]
+      positivity
+    change n ≤ 298*W*(142085+5)+((53*volume prime lane+28)*11+6+
+      (142081*(8*volume prime lane+10)+1+price))+12 at paid
+    refine ⟨z,F,n,ran,user,by omega,?_⟩
+    have reads := (coords.transpose_iff width word (transpose (one_dvd physical.rows) word)).2 rfl
+    have address : transpose (one_dvd scheduled.rows) (word ∘ position) ∘ position.symm =
+        transpose (one_dvd physical.rows) word := by
+      funext k
+      simpa only [Function.comp_apply,Equiv.apply_symm_apply] using (reads (position.symm k)).symm
+    rw [address]
     intro a
     have h := result (((0 : Fin 1).castAdd 142080).castAdd 2 |>.castAdd 2) a
     simp only [CyclicRowSplit.bank,CyclicRowCopy.bank,CyclicRowCopy.payload,CountedLoopReuseAlphabet.bank,
