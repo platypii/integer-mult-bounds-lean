@@ -19,23 +19,23 @@ private theorem projectedUser {T B Q A : ℕ} {U : Type} (e : Fin T ↪ Fin B) (
     (embDn e v).user = v.user := rfl
 
 /-- Local work of both layout passes and preparation of the child owner bank. -/
-noncomputable def intervalChildToll (U : Type) (lo hi w W : ℕ) : ℕ :=
+noncomputable def intervalChildToll (U : Type) (lo hi w W : ℕ) (axes : ℕ := 64) : ℕ :=
   let M := prime^(w+1)
-  let V := M^128*W
+  let V := M^(axes+axes)*W
   let header := 16*M.size+8*W.size+6*(w+1)+11*(w+1).size+58
-  let pass := intervalPassTime U lo hi w W
+  let pass := intervalPassTime U lo hi w W axes
   142080*(header+pass)+1 + (142081*(8*V+10)+1) + (142080*pass+1)
 
-private theorem intervalChildToll_fixed_le (U : Type) (lo hi : ℕ) :
-    ∃ a b : ℕ, ∀ w W, 0 < W → intervalChildToll U lo hi w W ≤
-      (a+b*swapVolumeRate w)*((prime^(w+1))^128*W) := by
-  obtain ⟨a,b,pass⟩ := intervalPassTime_le U lo hi
+theorem intervalChildToll_fixed_le (U : Type) (lo hi : ℕ) (axes : ℕ := 64) (positive : 0 < axes := by decide) :
+    ∃ a b : ℕ, ∀ w W, 0 < W → intervalChildToll U lo hi w W axes ≤
+      (a+b*swapVolumeRate w)*((prime^(w+1))^(axes+axes)*W) := by
+  obtain ⟨a,b,pass⟩ := intervalPassTime_le U lo hi axes positive
   refine ⟨142080*(101+2*a)+142081*18+3,142080*2*b,?_⟩
   intro w W hW
   let M := prime^(w+1)
-  let V := M^128*W
+  let V := M^(axes+axes)*W
   have atom : w+1 ≤ M := (Nat.lt_pow_self Shared50ModularControl.prime_prime.one_lt).le
-  have modulus : M ≤ V := (Nat.le_self_pow (by decide : 128 ≠ 0) M).trans
+  have modulus : M ≤ V := (Nat.le_self_pow (by omega : (axes+axes) ≠ 0) M).trans
     (Nat.le_mul_of_pos_right _ hW)
   have spectator : W ≤ V := Nat.le_mul_of_pos_left W (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _)
   have digits (n : ℕ) : n.size ≤ n := Nat.size_le.mpr Nat.lt_two_pow_self
@@ -44,7 +44,7 @@ private theorem intervalChildToll_fixed_le (U : Type) (lo hi : ℕ) :
     have := digits W
     have := digits (w+1)
     omega
-  have run : intervalPassTime U lo hi w W ≤ 1+(a+b*swapVolumeRate w)*V := pass w W hW
+  have run : intervalPassTime U lo hi w W axes ≤ 1+(a+b*swapVolumeRate w)*V := pass w W hW
   change 142080*(_+_)+1+(142081*(8*V+10)+1)+(142080*_+1) ≤ _*V
   grw [header,run]
   generalize swapVolumeRate w = rate
@@ -88,11 +88,11 @@ theorem intervalSchedule_parentCost (U : Type) :
   simpa only [Nat.cast_sum,Finset.sum_add_distrib,Finset.sum_const,Finset.card_univ,
     nsmul_eq_mul] using Finset.sum_le_sum (fun i (_ : i ∈ Finset.univ) => cost i)
 
-theorem runIntervalChild {P U : Type} {T B Q w W atom price lo hi : ℕ}
-    (capacity : rowSwapBlock.states ≤ Q) (ordered : lo ≤ hi) (fits : hi ≤ 64) (positive : 0 < W)
-    (widthAt : (phaseIntervalChild lo hi (w+1) W 64).width = 64*atom)
+theorem runIntervalChild {P U : Type} {T B Q w W atom price lo hi axes : ℕ}
+    (capacity : rowSwapBlock.states ≤ Q) (ordered : lo ≤ hi) (fits : hi ≤ axes) (positive : 0 < W)
+    (widthAt : (phaseIntervalChild lo hi (w+1) W axes).width = 64*atom)
     {body : P → Pr P B Q prime U} {code src dst seed}
-    (child : PackedPieceHandoff ((prime^(w+1))^128*W) (packedChildOutput atom _) body code src dst seed price)
+    (child : PackedPieceHandoff ((prime^(w+1))^(axes+axes)*W) (packedChildOutput atom _) body code src dst seed price)
     (live : Fin (142080+2) ↪ Fin T) (headers : Fin 6 ↪ Fin T) (width : Fin T)
     (apart : ∀ r : Fin 142080, ∀ i, live (r.castAdd 2) ≠ headers i)
     (widthFree : ∀ r : Fin 142080, live (r.castAdd 2) ≠ width) :
@@ -101,7 +101,7 @@ theorem runIntervalChild {P U : Type} {T B Q w W atom price lo hi : ℕ}
     let extend := Fin.castAddEmb (n := H) (142080*(N+35))
     let small := (Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)
     let ports := intervalRecordBank (live.trans caller) (small 24)
-    let lane := phaseIntervalChild lo hi (w+1) W 64
+    let lane := phaseIntervalChild lo hi (w+1) W axes
     let size := intervalChild_volume ordered fits (w+1) W
     ∃ (host : Empty ⊕ P → Pr (Empty ⊕ P) (H+142080*(N+35)) Q prime U)
       (program : Pr (Empty ⊕ P) (H+142080*(N+35)) Q prime U)
@@ -116,7 +116,7 @@ theorem runIntervalChild {P U : Type} {T B Q w W atom price lo hi : ℕ}
       (∀ i : Fin B, let j := extend (i.natAdd (142082+T))
         S.L j = seed.L i ∧ S.R j = seed.R i) →
       ∃ z F n, Exec host program (mk u S) n (mk z F) ∧
-        n ≤ intervalChildToll U lo hi w W + price ∧
+        n ≤ intervalChildToll U lo hi w W axes + price ∧
         z.user = u.user ∧ HelperFan (returned.trans extend)
           (fun r i => Shared50RecursiveNodeRows.transpose (one_dvd lane.rows) (input r) (i.cast size.symm)) F ∧
         ∀ j, (∀ i, live i ≠ j) → F.L (extend (caller j)) = S.L (extend (caller j)) ∧
@@ -129,7 +129,7 @@ theorem runIntervalChild {P U : Type} {T B Q w W atom price lo hi : ℕ}
     (headers.trans caller) (caller width) (fun r i => caller.injective.ne (apart r i))
     (fun r => caller.injective.ne (widthFree r)) host lo hi ordered fits
   let M := prime^(w+1)
-  let V := M^128*W
+  let V := M^(axes+axes)*W
   have away j (outside : ∀ i, live i ≠ j) (r) : returned r ≠ caller j :=
     disjoint j (fun i => outside _) _
   refine ⟨host,(enter.seq (embProg extend id call)).seq leave,returned,away,?_⟩

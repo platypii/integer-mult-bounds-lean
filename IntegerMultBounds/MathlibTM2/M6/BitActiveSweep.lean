@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.M6.BitMixedIdleCost
+public import IntegerMultBounds.MathlibTM2.M6.BitActiveCopy
 public import IntegerMultBounds.MathlibTM2.M6.BitWorkerDispatch
 public import IntegerMultBounds.MathlibTM2.M6.BitInheritedReturnMerge
 public import IntegerMultBounds.MathlibTM2.M6.BitRemainderCompactRead

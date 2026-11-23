@@ -25,13 +25,13 @@ private theorem placedOwners {T H A m c : ℕ} (splitter : Fin (((1+c)+2)+2) ↪
     HelperFan ((((intervalOwners c).trans splitter).trans caller).trans extend) data S :=
   intervalOwners_ready target data _ split
 
-theorem packedIntervalMerge {P U : Type} {T B Q w W atom price lo hi : ℕ}
+theorem packedIntervalMerge {P U : Type} {T B Q w W atom price lo hi axes : ℕ}
     (capacity : rowSwapBlock.states ≤ Q)
     (mergeCap : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q)
-    (ordered : lo ≤ hi) (fits : hi ≤ 64) (positive : 0 < W)
-    (widthAt : (phaseIntervalChild lo hi (w+1) W 64).width = 64*atom)
+    (ordered : lo ≤ hi) (fits : hi ≤ axes) (positive : 0 < W)
+    (widthAt : (phaseIntervalChild lo hi (w+1) W axes).width = 64*atom)
     {body : P → Pr P B Q prime U} {code src dst seed}
-    (child : PackedPieceHandoff ((prime^(w+1))^128*W) (packedChildOutput atom _) body code src dst seed price)
+    (child : PackedPieceHandoff ((prime^(w+1))^(axes+axes)*W) (packedChildOutput atom _) body code src dst seed price)
     (splitter : Fin intervalSplitTapes ↪ Fin T) (headers : Fin 6 ↪ Fin T) (width : Fin T)
     (apart : ∀ r : Fin 142080, ∀ i, splitter (intervalOwners _ (r.castAdd 2)) ≠ headers i)
     (widthFree : ∀ r : Fin 142080, splitter (intervalOwners _ (r.castAdd 2)) ≠ width) :
@@ -42,7 +42,7 @@ theorem packedIntervalMerge {P U : Type} {T B Q w W atom price lo hi : ℕ}
     let initial := (splitter.trans caller).trans extend
     let small := (Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)
     let ports := intervalRecordBank (live.trans caller) (small 24)
-    let lane := phaseIntervalChild lo hi (w+1) W 64
+    let lane := phaseIntervalChild lo hi (w+1) W axes
     let V := volume prime lane
     ∃ (host : Empty ⊕ P → Pr (Empty ⊕ P) (H+142080*(N+35)) Q prime U)
       (program : Pr (Empty ⊕ P) (H+142080*(N+35)) Q prime U)
@@ -59,7 +59,7 @@ theorem packedIntervalMerge {P U : Type} {T B Q w W atom price lo hi : ℕ}
       let word := fun k : Fin (V*142080) => let p := finProdFinEquiv.symm k
                                             SparseRoleCircuit.encode (a := prime) (output p.2 p.1)
       ∃ z F n, Exec host program (mk u S) n (mk z F) ∧
-        n ≤ intervalChildToll U lo hi w W + price + (149*(V*142080)*(intervalSplitTapes+5)+6) ∧
+        n ≤ intervalChildToll U lo hi w W axes + price + (149*(V*142080)*(intervalSplitTapes+5)+6) ∧
         z.user = u.user ∧ RepT (intervalOwnerBank (putWord target 0 (List.ofFn word)) output)
           (embStk bank F).L (embStk bank F).R := by
   intro live H caller extend initial small ports lane V
@@ -74,7 +74,7 @@ theorem packedIntervalMerge {P U : Type} {T B Q w W atom price lo hi : ℕ}
   refine ⟨host,call.seq (embProg bank Empty.elim (foreign (liftQ
     (CyclicRowNormalized.mergeProgram 142080 prime) mergeCap))),bank,returnedMergeBank_target _ _ _,?_⟩
   intro target data u S split dimensions free fresh prepared output word
-  have size : V = (prime^(w+1))^128*W := intervalChild_volume ordered fits (w+1) W
+  have size : V = (prime^(w+1))^(axes+axes)*W := intervalChild_volume ordered fits (w+1) W
   have vol : 0 < V := by
     rw [size]
     exact Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) positive
@@ -85,13 +85,13 @@ theorem packedIntervalMerge {P U : Type} {T B Q w W atom price lo hi : ℕ}
     ((castFan size ((live.trans caller).trans extend) data S).2 owners) free fresh prepared
   exact ⟨v,D,k,exec,paid,user,(castFan size _ output D).1 rows,fun i => frame _ (outside i)⟩
 
-theorem directoryIntervalMerge {P U : Type} {T B Q w W atom price lo hi : ℕ}
+theorem directoryIntervalMerge {P U : Type} {T B Q w W atom price lo hi axes : ℕ}
     (capacity : rowSwapBlock.states ≤ Q)
     (mergeCap : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q)
-    (ordered : lo ≤ hi) (fits : hi ≤ 64) (positive : 0 < W)
-    (widthAt : (phaseIntervalChild lo hi (w+1) W 64).width = 64*atom)
+    (ordered : lo ≤ hi) (fits : hi ≤ axes) (positive : 0 < W)
+    (widthAt : (phaseIntervalChild lo hi (w+1) W axes).width = 64*atom)
     {body : P → Pr P B Q prime U} {code src dst seed}
-    (child : PackedPieceHandoff ((prime^(w+1))^128*W) (packedChildOutput atom _) body code src dst seed price)
+    (child : PackedPieceHandoff ((prime^(w+1))^(axes+axes)*W) (packedChildOutput atom _) body code src dst seed price)
     (splitter : Fin intervalSplitTapes ↪ Fin T) (directory : Fin 72 ↪ Fin T)
     (apart : ∀ i j, splitter i ≠ directory j) :
     let live := (intervalOwners 142080).trans splitter
@@ -102,7 +102,7 @@ theorem directoryIntervalMerge {P U : Type} {T B Q w W atom price lo hi : ℕ}
     let regs := (directory.trans caller).trans extend
     let small := (Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)
     let ports := intervalRecordBank (live.trans caller) (small 24)
-    let lane := phaseIntervalChild lo hi (w+1) W 64
+    let lane := phaseIntervalChild lo hi (w+1) W axes
     let V := volume prime lane
     ∃ (host : Empty ⊕ P → Pr (Empty ⊕ P) (H+142080*(N+35)) Q prime U)
       (program : Pr (Empty ⊕ P) (H+142080*(N+35)) Q prime U)
@@ -123,7 +123,7 @@ theorem directoryIntervalMerge {P U : Type} {T B Q w W atom price lo hi : ℕ}
       let word := fun k : Fin (V*142080) => let p := finProdFinEquiv.symm k
                                             SparseRoleCircuit.encode (a := prime) (output p.2 p.1)
       ∃ z F n, Exec host program (mk u S) n (mk z F) ∧
-        n ≤ (21*(w+1)+13) + (intervalChildToll U lo hi w W + price + (149*(V*142080)*(intervalSplitTapes+5)+6)) ∧
+        n ≤ (21*(w+1)+13) + (intervalChildToll U lo hi w W axes + price + (149*(V*142080)*(intervalSplitTapes+5)+6)) ∧
         z.user = u.user ∧ RepT (intervalOwnerBank (putWord target 0 (List.ofFn word)) output)
           (embStk bank F).L (embStk bank F).R := by
   intro live H caller extend initial regs small ports lane V
@@ -163,15 +163,15 @@ theorem directoryIntervalMerge {P U : Type} {T B Q w W atom price lo hi : ℕ}
     exact ⟨h.1.trans (prepared i).1,h.2.trans (prepared i).2⟩)
   exact ⟨z,F,t+n,ran.seq exec,Nat.add_le_add paid cost,result.trans user,out⟩
 
-theorem allocatedIntervalMerge {P U : Type} {A B Q w W atom price lo hi : ℕ}
+theorem allocatedIntervalMerge {P U : Type} {A B Q w W atom price lo hi axes : ℕ}
     (capacity : rowSwapBlock.states ≤ Q)
     (mergeCap : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q)
-    (ordered : lo ≤ hi) (fits : hi ≤ 64) (positive : 0 < W)
-    (widthAt : (phaseIntervalChild lo hi (w+1) W 64).width = 64*atom)
+    (ordered : lo ≤ hi) (fits : hi ≤ axes) (positive : 0 < W)
+    (widthAt : (phaseIntervalChild lo hi (w+1) W axes).width = 64*atom)
     {body : P → Pr P B Q prime U} {code src dst seed}
-    (child : PackedPieceHandoff ((prime^(w+1))^128*W) (packedChildOutput atom _) body code src dst seed price)
+    (child : PackedPieceHandoff ((prime^(w+1))^(axes+axes)*W) (packedChildOutput atom _) body code src dst seed price)
     (slots : Fin intervalSplitTapes ↪ Fin A) :
-    let lane := phaseIntervalChild lo hi (w+1) W 64
+    let lane := phaseIntervalChild lo hi (w+1) W axes
     let V := volume prime lane
     ∃ (H : ℕ) (host : Empty ⊕ P → Pr (Empty ⊕ P) H Q prime U)
       (program : Pr (Empty ⊕ P) H Q prime U) (initial bank : Fin intervalSplitTapes ↪ Fin H)
@@ -182,7 +182,7 @@ theorem allocatedIntervalMerge {P U : Type} {A B Q w W atom price lo hi : ℕ}
       let word := fun k : Fin (V*142080) => let p := finProdFinEquiv.symm k
                                             SparseRoleCircuit.encode (a := prime) (output p.2 p.1)
       ∃ z F n, Exec host program (mk u S) n (mk z F) ∧
-        n ≤ (21*(w+1)+13) + (intervalChildToll U lo hi w W + price + (149*(V*142080)*(intervalSplitTapes+5)+6)) ∧
+        n ≤ (21*(w+1)+13) + (intervalChildToll U lo hi w W axes + price + (149*(V*142080)*(intervalSplitTapes+5)+6)) ∧
         z.user = u.user ∧ RepT (intervalOwnerBank (putWord target 0 (List.ofFn word)) output)
           (embStk bank F).L (embStk bank F).R := by
   intro lane V
@@ -247,15 +247,15 @@ theorem allocatedIntervalMerge {P U : Type} {A B Q w W atom price lo hi : ℕ}
       omega))
     simpa [stock,side,extend] using frame
 
-theorem packedInterval_exec {P U : Type} {B Q w W atom price lo hi : ℕ}
+theorem packedInterval_exec {P U : Type} {B Q w W atom price lo hi axes : ℕ}
     (capacity : rowSwapBlock.states ≤ Q)
     (mergeCap : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q)
-    (ordered : lo ≤ hi) (fits : hi ≤ 64) (positive : 0 < W)
-    (widthAt : (phaseIntervalChild lo hi (w+1) W 64).width = 64*atom)
+    (ordered : lo ≤ hi) (fits : hi ≤ axes) (positive : 0 < W)
+    (widthAt : (phaseIntervalChild lo hi (w+1) W axes).width = 64*atom)
     {body : P → Pr P B Q prime U} {code src dst seed}
-    (child : PackedPieceHandoff ((prime^(w+1))^128*W) (packedChildOutput atom _) body code src dst seed price)
+    (child : PackedPieceHandoff ((prime^(w+1))^(axes+axes)*W) (packedChildOutput atom _) body code src dst seed price)
     :
-    let lane := phaseIntervalChild lo hi (w+1) W 64
+    let lane := phaseIntervalChild lo hi (w+1) W axes
     let V := volume prime lane
     let wide := {lane with afterD := lane.afterD*142080}
     let size : V*142080 = volume prime wide := by simp [V,wide,volume,Nat.mul_assoc]
@@ -269,7 +269,7 @@ theorem packedInterval_exec {P U : Type} {B Q w W atom price lo hi : ℕ}
       let rows := fun r (i : Fin V) => y (finProdFinEquiv (i,r))
       ∃ z F n, Exec host program (mk u S) n (mk z F) ∧
         n ≤ (149*(intervalSplitTapes+5)+5)*(V*142080)+24 + ((21*(w+1)+13) +
-          (intervalChildToll U lo hi w W + price + (149*(V*142080)*(intervalSplitTapes+5)+6))) ∧
+          (intervalChildToll U lo hi w W axes + price + (149*(V*142080)*(intervalSplitTapes+5)+6))) ∧
         z.user = u.user ∧ RepT (intervalOwnerBank (putWord (fun _ => blank) 0
           (List.ofFn fun k => SparseRoleCircuit.encode (y k))) rows) (embStk bank F).L (embStk bank F).R := by
   intro lane V wide size
@@ -285,7 +285,7 @@ theorem packedInterval_exec {P U : Type} {B Q w W atom price lo hi : ℕ}
   have atSplitter i (hi : i ≠ 0) := fresh (initial i) (target ▸ initial.injective.ne hi)
   have atPort (i : Fin intervalSplitTapes) : ∃ j, initial j = initial i := ⟨i,rfl⟩
   have vol : 0 < V := by
-    change 0 < volume prime (phaseIntervalChild lo hi (w+1) W 64)
+    change 0 < volume prime (phaseIntervalChild lo hi (w+1) W axes)
     rw [intervalChild_volume ordered fits]
     exact Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) positive
   let data := fun r (i : Fin V) => input ((finProdFinEquiv (i,r)).cast size)
