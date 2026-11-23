@@ -208,6 +208,48 @@ theorem borrowedPhases_exec {P U : Type} {T Q w B K : ℕ} (body : P → Pr P T 
 open Cover.Fallback RecursiveInterchangeLayout Certificates.PR589 in
 /-- The allocated rank-seven worker accepts the aligned block and tail used
 by the borrowed sweep. Each window retains its own child record and budget. -/
+theorem borrowedWindow_layout [M8.Machine.Net] (charged : Bool) (n : Fin 9) (p : Fin 32 × Fin 5) (j : Fin Copy.lifecycles.length) :
+    ∃ (T states : ℕ) (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T) (fan : Fin (142081+2) ↪ Fin T),
+    ∃ layout : WorkerBasisLayout ports,
+    (∀ j : Fin (rowSwapBlock.tapes+35), j.val ≠ 24 → ∀ h, fan h ≠ ports j) ∧
+    ∀ {P U : Type} {Q : ℕ}, states ≤ Q → ∀ (body : P → Pr P T Q prime U) (f : P),
+    ∃ (base : ℕ) (code : Pr P T Q prime U), ∀ (node : Descriptor) (w B rows : ℕ),
+    node.width = 64*(w+1) → node.rows = 142080*rows → node.beforeH = B*prime^(64*((w+1)*64)) →
+    let M := prime^(w+1)
+    let K := node.beforeRows*rows*node.between*node.afterD
+    let blocks := M^112*B
+    let W := blocks*prime^(64*((w+1)*64))*K
+    let V := M^16*W
+    let desc := scheduledChild prime node (copyChildPosition (n,p,j))
+    0 < W → ∃ position : Fin (volume prime desc) ≃ Fin V,
+      CopyIntervalPositions desc (w+1) W position ∧
+      ∀ record, let prepared := layout.seed w W record
+      WorkerEntryWords (scheduledRecordPorts ports) record prepared ∧ ∀ budget,
+      ScheduledChildExec node desc w W ports record position body f budget charged →
+      ∀ data u S, HelperFan fan data S →
+        (∀ k, (∀ h, fan h ≠ k) → S.L k = prepared.L k ∧ S.R k = prepared.R k) →
+        ∃ z F t out, Exec body code (mk u S) t (mk z F) ∧
+          workerCost charged S F t (nativePrice charged (base*V + 12) + budget) ∧
+          z.user = u.user ∧ HelperFan fan out F ∧
+          CopyFanoutEffect n p.1 p.2 Copy.lifecycles[j.val] (List.getElem_mem ..) (w+1) blocks K data out := by
+  obtain ⟨T,states,ports,fan,layout,apart,build⟩ := commonCopyWindow_layout true charged n p.1 p.2 j
+  refine ⟨T,states,ports,fan,layout,apart,?_⟩
+  intro P U Q fits body f
+  obtain ⟨base,swaps,code,run⟩ := build fits body f
+  refine ⟨base,code,?_⟩
+  intro node w B rows width split label M K blocks W V desc pos
+  obtain ⟨position,coords,worker⟩ := run node w B rows blocks K width split label (by dsimp [blocks,K,M]; ring) pos
+  refine ⟨position,coords,?_⟩
+  intro record
+  obtain ⟨archive,build⟩ := worker record
+  refine ⟨archive,?_⟩
+  intro budget child
+  have execute := build budget child
+  intro data u S live saved
+  obtain ⟨z,F,t,out,exec,paid,user,done,act⟩ := execute data u S live saved
+  exact ⟨z,F,t,out,exec,by simpa only [Bool.true_and,ite_true,Nat.zero_mul,Nat.add_zero] using paid,user,done,act⟩
+
+open Cover.Fallback RecursiveInterchangeLayout Certificates.PR589 in
 theorem borrowedWindow_host [M8.Machine.Net] (charged : Bool) (n : Fin 9) (p : Fin 32 × Fin 5) (j : Fin Copy.lifecycles.length) :
     ∃ (T states : ℕ) (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T) (fan : Fin (142081+2) ↪ Fin T),
     (∀ j : Fin (rowSwapBlock.tapes+35), j.val ≠ 24 → ∀ h, fan h ≠ ports j) ∧
@@ -230,21 +272,13 @@ theorem borrowedWindow_host [M8.Machine.Net] (charged : Bool) (n : Fin 9) (p : F
           workerCost charged S F t (nativePrice charged (base*V + 12) + budget) ∧
           z.user = u.user ∧ HelperFan fan out F ∧
           CopyFanoutEffect n p.1 p.2 Copy.lifecycles[j.val] (List.getElem_mem ..) (w+1) blocks K data out := by
-  obtain ⟨T,states,ports,fan,apart,build⟩ := commonCopyWindow_layout true charged n p.1 p.2 j
+  obtain ⟨T,states,ports,fan,layout,apart,build⟩ := borrowedWindow_layout charged n p j
   refine ⟨T,states,ports,fan,apart,?_⟩
   intro P U Q fits body f
-  obtain ⟨base,swaps,code,run⟩ := build fits body f
+  obtain ⟨base,code,run⟩ := build fits body f
   refine ⟨base,code,?_⟩
   intro node w B rows width split label M K blocks W V desc pos
-  obtain ⟨position,coords,worker⟩ := run node w B rows blocks K width split label (by dsimp [blocks,K,M]; ring) pos
-  refine ⟨position,coords,?_⟩
-  intro record
-  obtain ⟨prepared,archive,build⟩ := worker record
-  refine ⟨prepared,archive,?_⟩
-  intro budget child
-  have execute := build budget child
-  intro data u S live saved
-  obtain ⟨z,F,t,out,exec,paid,user,done,act⟩ := execute data u S live saved
-  exact ⟨z,F,t,out,exec,by simpa only [Bool.true_and,ite_true,Nat.zero_mul,Nat.add_zero] using paid,user,done,act⟩
+  obtain ⟨position,coords,worker⟩ := run node w B rows width split label pos
+  exact ⟨position,coords,fun record => ⟨layout.seed w W record,worker record⟩⟩
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode

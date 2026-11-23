@@ -1651,20 +1651,27 @@ theorem scheduledPhaseBasis_host (inherited charged : Bool) [M8.Machine.Net]
     rw [shape,rationalMoveWord_run,last]
     exact (phaseChild_interval (phaseInterval_bounds checked paid).1.le (phaseInterval_bounds checked paid).2 loaded _ j).trans (first s j)
 
-private theorem disjointStackBanks {t m n T a : ℕ} (p : Fin t ↪ Fin T) (q : Fin m ↪ Fin T) (r : Fin n ↪ Fin T)
-    (pq : ∀ i j, p i ≠ q j) (pr : ∀ i j, p i ≠ r j) (qr : ∀ i j, q i ≠ r j)
-    (X : Stacks t a) (Y : Stacks m a) (Z : Stacks n a) :
-    ∃ D : Stacks T a, (∀ i, D.L (p i) = X.L i ∧ D.R (p i) = X.R i) ∧
-      (∀ j, D.L (q j) = Y.L j ∧ D.R (q j) = Y.R j) ∧ (∀ j, D.L (r j) = Z.L j ∧ D.R (r j) = Z.R j) := by
+/-- Place the record and two basis workspaces, leaving unused slots blank. -/
+noncomputable def recordBasisStacks {t m n T a : ℕ} (p : Fin t ↪ Fin T) (q : Fin m ↪ Fin T) (r : Fin n ↪ Fin T)
+    (X : Stacks t a) (Y : Stacks m a) (Z : Stacks n a) : Stacks T a :=
   let all := fun {β : Type} (x : Fin t → β) (y : Fin m → β) (z : Fin n → β) (empty : β) =>
     embExt p x (embExt q y (embExt r z (fun _ => empty)))
-  refine ⟨⟨[],[],all X.L Y.L Z.L [],all X.R Y.R Z.R []⟩,?_,?_,?_⟩
+  ⟨[],[],all X.L Y.L Z.L [],all X.R Y.R Z.R []⟩
+
+theorem recordBasisStacks_banks {t m n T a : ℕ} (p : Fin t ↪ Fin T) (q : Fin m ↪ Fin T) (r : Fin n ↪ Fin T)
+    (pq : ∀ i j, p i ≠ q j) (pr : ∀ i j, p i ≠ r j) (qr : ∀ i j, q i ≠ r j)
+    (X : Stacks t a) (Y : Stacks m a) (Z : Stacks n a) :
+    let D := recordBasisStacks p q r X Y Z
+    (∀ i, D.L (p i) = X.L i ∧ D.R (p i) = X.R i) ∧
+      (∀ j, D.L (q j) = Y.L j ∧ D.R (q j) = Y.R j) ∧ (∀ j, D.L (r j) = Z.L j ∧ D.R (r j) = Z.R j) := by
+  dsimp only [recordBasisStacks]
+  refine ⟨?_,?_,?_⟩
   · intro i
-    simp [all,embExt_apply p.injective]
+    simp [embExt_apply p.injective]
   · intro j
-    simp [all,embExt_off _ _ (fun i => pq i j),embExt_apply q.injective]
+    simp [embExt_off _ _ (fun i => pq i j),embExt_apply q.injective]
   · intro j
-    simp [all,embExt_off _ _ (fun i => pr i j),embExt_off _ _ (fun i => qr i j),embExt_apply r.injective]
+    simp [embExt_off _ _ (fun i => pr i j),embExt_off _ _ (fun i => qr i j),embExt_apply r.injective]
 
 /-- Marked input words for the two dimension banks and the product bank. -/
 def copyLeafHeader (w W : ℕ) (i : Fin 24) : Option (List Bool) :=
@@ -2060,37 +2067,45 @@ theorem copyChartStacks (v : Descriptor) (d : Fin 22 → Option (List Bool)) (k 
   exact ⟨⟨[],[],L,R⟩,reads⟩
 
 open Cover.Fallback in
-private theorem moveRecordStacks [M8.Machine.Net] {w W : ℕ} (record : List (Fin (prime+4))) (dest : ℤ → Fin 4) (q : ℤ)
-    (destL destR : List (Fin (prime+4)))
-    (readDest : ∀ z, readAt blank destL destR (z-q) = RadixToBinary.binaryEncoding.encode (dest z)) :
-    let M := prime^(w+1)
-    let bank := (Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)
-    ∃ S : Stacks (rowSwapBlock.tapes+35) prime,
-      RecordReady (b := prime) (w := w) (d := 16) (W := W) bank M.size W.size record SparseRoleCircuit.encode
-        (fun _ => blank) dest 0 q (fun _ => 0) S ∧
-      ∀ l : Fin (rowSwapBlock.tapes+35), 35 ≤ l.val → S.L l = [] ∧ S.R l = [] := by
-  intro M bank
+/-- Canonical worker record. Its shared payload tape is supplied by the fan. -/
+noncomputable def moveRecordSeed [M8.Machine.Net] (w W : ℕ) (record destL destR : List (Fin (prime+4))) :
+    Stacks (rowSwapBlock.tapes+35) prime :=
+  let M := prime^(w+1)
   let bits := fun _ : Fin (M^16*W) => SparseRoleCircuit.encode (a := 0) (0 : ZMod 2)
   let left := fun l : Fin (rowSwapBlock.tapes+35) => if l.val = 25 then destL else []
   let right := fun l : Fin (rowSwapBlock.tapes+35) =>
     if l.val = 2 then binSyms M.size M else if l.val = 24 then payloadWord bits else
     if l.val = 25 then destR else if l.val = 27 then binSyms W.size W else if l.val = 28 then binSyms 1 1 else
-    if l.val = 32 then binSyms M.size (1 : ZMod M).val else if l.val = 33 then List.replicate w blank else
+    if l.val = 32 then binSyms M.size (1 : ZMod M).val else if l.val = 33 then List.replicate w Node.tick else
     if l.val = 34 then record else []
-  refine ⟨⟨[],[],left,right⟩,⟨rfl,rfl,rfl,rfl,by change (List.replicate w _).length = w; simp,rfl,?_,?_,?_⟩,?_⟩
+  ⟨[],[],left,right⟩
+
+open Cover.Fallback in
+private theorem moveRecordStacks [M8.Machine.Net] {w W : ℕ} (record : List (Fin (prime+4))) (dest : ℤ → Fin 4) (q : ℤ)
+    (destL destR : List (Fin (prime+4)))
+    (readDest : ∀ z, readAt blank destL destR (z-q) = RadixToBinary.binaryEncoding.encode (dest z)) :
+    let M := prime^(w+1)
+    let bank := (Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)
+    let S := moveRecordSeed w W record destL destR
+    RecordReady (b := prime) (w := w) (d := 16) (W := W) bank M.size W.size record SparseRoleCircuit.encode
+        (fun _ => blank) dest 0 q (fun _ => 0) S ∧
+    ∀ l : Fin (rowSwapBlock.tapes+35), 35 ≤ l.val → S.L l = [] ∧ S.R l = [] := by
+  intro M bank S
+  let bits := fun _ : Fin (M^16*W) => SparseRoleCircuit.encode (a := 0) (0 : ZMod 2)
+  refine ⟨⟨rfl,rfl,rfl,rfl,by change (List.replicate w _).length = w; simp,rfl,?_,?_,?_⟩,?_⟩
   · intro i hi
     have v : (bank i).val = i.val := rfl
     have outside : ∀ j ∈ shearWork, j.val ≠ 2 ∧ j.val ≠ 24 ∧ j.val ≠ 25 ∧ j.val ≠ 27 ∧ j.val ≠ 28 ∧
         j.val ≠ 32 ∧ j.val ≠ 33 ∧ j.val ≠ 34 := by decide +kernel
     obtain ⟨h₂,h₂₄,h₂₅,h₂₇,h₂₈,h₃₂,h₃₃,h₃₄⟩ := outside i hi
-    simp [left,right,v,h₂,h₂₄,h₂₅,h₂₇,h₂₈,h₃₂,h₃₃,h₃₄]
+    simp [S,moveRecordSeed,v,h₂,h₂₄,h₂₅,h₂₇,h₂₈,h₃₂,h₃₃,h₃₄]
   · intro z
     change readAt blank [] (payloadWord bits) (z-0) = _
     rw [sub_zero]
     exact (payload_reads bits z).symm
   · exact readDest
   · intro i hi
-    simp [left,right,show ∀ n < 35, i.val ≠ n by omega]
+    simp [S,moveRecordSeed,show ∀ n < 35, i.val ≠ n by omega]
 
 open M8.Machine.ArbitraryWidthHighExchangeShared (sourceWord) in
 open Cover.Fallback RecursiveInterchangeLayout in
@@ -2109,11 +2124,14 @@ private theorem basisRecordSeed [M8.Machine.Net] {w W T : ℕ}
     let stored := RecordReady (b := prime) (w := w) (d := 16) (W := W) bank M.size W.size record SparseRoleCircuit.encode (fun _ => blank) dest 0 q
     let input := fun stages (y : Fin (M^16*W) → ZMod 2) =>
       (⟨fun _ => 0,fun _ => sourceWord (v := view) (fun k => y (k.cast size))⟩ : Tapes 1 prime).append (basisWorkspace stages y)
-    ∃ D : Stacks T prime, RepT (input A 0) (embStk a D).L (embStk a D).R ∧
+    let D := recordBasisStacks ports ((Fin.natAddEmb 1).trans a) ((Fin.natAddEmb 1).trans b)
+      (moveRecordSeed w W record L R) (basisHeaderStacks A (w+1) W) (basisHeaderStacks B' (w+1) W)
+    RepT (input A 0) (embStk a D).L (embStk a D).R ∧
       RepT (input B' 0) (embStk b D).L (embStk b D).R ∧ stored 0 D ∧
       ∀ l : Fin (rowSwapBlock.tapes+35), 35 ≤ l.val → D.L (ports l) = [] ∧ D.R (ports l) = [] := by
-  intro recordPort srcA srcB apart privateB view size record dest q L R readDest bank M stored input
-  obtain ⟨X,recX,freeX⟩ := moveRecordStacks (w := w) (W := W) record dest q L R readDest
+  intro recordPort srcA srcB apart privateB view size record dest q L R readDest bank M stored input initial
+  let X := moveRecordSeed w W record L R
+  obtain ⟨recX,freeX⟩ := moveRecordStacks (w := w) (W := W) record dest q L R readDest
   let Y := basisHeaderStacks A (w+1) W
   have repY := basisHeaderStacks_rep (w := w+1) (W := W) A 0
   let Z := basisHeaderStacks B' (w+1) W
@@ -2125,7 +2143,8 @@ private theorem basisRecordSeed [M8.Machine.Net] {w W T : ℕ}
     · rw [eq,← srcA]
       exact a.injective.ne (by intro h; have := congrArg Fin.val h; simp [pa] at this; omega)
     · exact (apart i eq _).symm
-  obtain ⟨D,placed,reverseBank,forwardBank⟩ := disjointStackBanks ports pa pb paOff
+  let D := recordBasisStacks ports pa pb X Y Z
+  obtain ⟨placed,reverseBank,forwardBank⟩ := recordBasisStacks_banks ports pa pb paOff
     (fun i j => (privateB j).2 i) (fun i j => (privateB j).1 _) X Y Z
   have recordRead : stored 0 D := by
     let localBank := (Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)
@@ -2150,7 +2169,7 @@ private theorem basisRecordSeed [M8.Machine.Net] {w W T : ℕ}
       exact List.ofFn_congr size _
     | right j =>
       simpa only [input,Tapes.append,Fin.addCases_right,embStk,Function.comp_apply,(onBank j).1,(onBank j).2] using rep j z
-  refine ⟨D,basis A a srcA Y repY reverseBank,basis B' b srcB Z repZ forwardBank,recordRead,?_⟩
+  refine ⟨basis A a srcA Y repY reverseBank,basis B' b srcB Z repZ forwardBank,recordRead,?_⟩
   intro l hl
   exact ⟨(placed l).1.trans (freeX l hl).1,(placed l).2.trans (freeX l hl).2⟩
 
@@ -2246,7 +2265,9 @@ theorem allocatedPhaseMove_host (charged : Bool) [M8.Machine.Net] {k : ℕ} (src
   intro lo hi view size input stock
   constructor
   · intro owners L R readDest
-    obtain ⟨D,ha,hb,hr,hc⟩ := basisRecordSeed A B' ports a b srcA srcB apart privateB view size record dest q L R readDest
+    let D := recordBasisStacks ports ((Fin.natAddEmb 1).trans a) ((Fin.natAddEmb 1).trans b)
+      (moveRecordSeed w W record L R) (basisHeaderStacks A (w+1) W) (basisHeaderStacks B' (w+1) W)
+    obtain ⟨ha,hb,hr,hc⟩ := basisRecordSeed A B' ports a b srcA srcB apart privateB view size record dest q L R readDest
     exact ⟨embOvr fan owners.get D,embStk_ovr fan.injective owners D,D,⟨0,ha,hb,hr,hc⟩,
       fun j hj => embOvr_off _ _ (disjoint j hj)⟩
   intro budget child data u S liveS stockS
@@ -2411,6 +2432,22 @@ private theorem copyWindowPlacement {t k m n e x : ℕ} (record : Fin t) (tmp : 
     obtain ⟨other,off⟩ := rightOff j h
     exact ⟨⟨⟨fun l => off (a l),fun l => off (ports l),fun l => off (b l)⟩,fun l => off (fan l)⟩,other⟩
 
+open Cover.Fallback in
+structure WorkerBasisLayout [M8.Machine.Net] {T : ℕ} (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T) where
+  reverseOps : List (FlatCoordinateSchedule.Op 16)
+  forwardOps : List (FlatCoordinateSchedule.Op 16)
+  reverseBank : Fin (FlatCoordinateCleanSchedule.tapeCount reverseOps) ↪ Fin T
+  forwardBank : Fin (FlatCoordinateCleanSchedule.tapeCount forwardOps) ↪ Fin T
+  reverseOff : ∀ i j, ports i ≠ reverseBank j
+  forwardOff : ∀ i j, ports i ≠ forwardBank j
+  separate : ∀ i j, reverseBank i ≠ forwardBank j
+
+open Cover.Fallback in
+noncomputable def WorkerBasisLayout.seed [M8.Machine.Net] {T : ℕ} {ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T}
+    (layout : WorkerBasisLayout ports) (w W : ℕ) (record : List (Fin (prime+4))) : Stacks T prime :=
+  recordBasisStacks ports layout.reverseBank layout.forwardBank (moveRecordSeed w W record [] [])
+    (basisHeaderStacks layout.reverseOps (w+1) W) (basisHeaderStacks layout.forwardOps (w+1) W)
+
 /-- The archive and two scratch words needed at worker entry. -/
 def WorkerEntryWords {T : ℕ} (ports : Fin 35 → Fin T) (record : List (Fin (prime+4))) (S : Stacks T prime) : Prop :=
   S.R (ports 34) = record ∧ S.R (ports 0) = [] ∧ S.R (ports 1) = []
@@ -2423,6 +2460,7 @@ theorem commonCopyWindow_layout (inherited charged : Bool) [M8.Machine.Net]
     (stage : Fin 9) (r : Fin 32) (d : Fin 5) (window : Fin Copy.lifecycles.length) :
     let life := Copy.lifecycles[window.val]
     ∃ (T states : ℕ) (ports : Fin (rowSwapBlock.tapes+35) ↪ Fin T) (fan : Fin (142081+2) ↪ Fin T),
+    ∃ layout : WorkerBasisLayout ports,
     (∀ j : Fin (rowSwapBlock.tapes+35), j.val ≠ 24 → ∀ h, fan h ≠ ports j) ∧
     ∀ {P U : Type} {Q : ℕ}, states ≤ Q → ∀ (body : P → Pr P T Q prime U) (f : P),
     ∃ (base swaps : ℕ) (code : Pr P T Q prime U), ∀ (node : Descriptor) (w parentB rows B K : ℕ),
@@ -2441,7 +2479,8 @@ theorem commonCopyWindow_layout (inherited charged : Bool) [M8.Machine.Net]
     let bank := ((Fin.castLEEmb (by decide : 35 ≤ 59)).trans (Fin.castLEEmb swapHostFits)).trans ports
     let clean := fun D : Stacks T prime => ∀ k : Fin (rowSwapBlock.tapes+35), 35 ≤ k.val → D.L (ports k) = [] ∧ D.R (ports k) = []
     let V := M^16*W
-    ∀ record, ∃ prepared : Stacks T prime, WorkerEntryWords bank record prepared ∧ ∀ budget,
+    ∀ record, let prepared := layout.seed w W record
+    WorkerEntryWords bank record prepared ∧ ∀ budget,
     let fanReady := fun X (D : Stacks T prime) => RepT (PointwiseRoleGate.bank (a := prime)
       (fun _ _ => blank) (fun _ => 0) (SparseRoleCircuit.encoded X) (FlatCoordinateSchedule.bits V))
       (embStk fan D).L (embStk fan D).R
@@ -2486,7 +2525,16 @@ theorem commonCopyWindow_layout (inherited charged : Bool) [M8.Machine.Net]
   let statesOf {t q : ℕ} (_ : Program t q prime) := q
   let qa := statesOf (FlatCoordinateCleanSchedule.program A)
   let qb := statesOf (FlatCoordinateCleanSchedule.program B')
-  refine ⟨T,rowSwapBlock.states+qa+qb+q+s,ports,fan,?_,?_⟩
+  let pa := (Fin.natAddEmb 1).trans a
+  let pb := (Fin.natAddEmb 1).trans b
+  have paOff (i j) : ports i ≠ pa j := by
+    by_cases eq : ports i = ports recordPort
+    · rw [eq,← srcA]
+      exact a.injective.ne (by intro e; have := congrArg Fin.val e; simp [pa] at this; omega)
+    · exact (apart i eq _).symm
+  let layout : WorkerBasisLayout ports :=
+    ⟨A,B',pa,pb,paOff,fun i j => (priv j).2 i,fun i j => (priv j).1 _⟩
+  refine ⟨T,rowSwapBlock.states+qa+qb+q+s,ports,fan,layout,?_,?_⟩
   · intro j ne h
     induction h using Fin.addCases with
     | left h =>
@@ -2539,10 +2587,12 @@ theorem commonCopyWindow_layout (inherited charged : Bool) [M8.Machine.Net]
   intro record
   let dest := fun _ : ℤ => (blank : Fin 4)
   let q' : ℤ := 0
-  obtain ⟨core,initialA,initialB,initialRecord,initialClean⟩ :=
+  let core := recordBasisStacks ports ((Fin.natAddEmb 1).trans a) ((Fin.natAddEmb 1).trans b)
+    (moveRecordSeed w W record [] []) (basisHeaderStacks A (w+1) W) (basisHeaderStacks B' (w+1) W)
+  obtain ⟨initialA,initialB,initialRecord,initialClean⟩ :=
     basisRecordSeed A B' ports a b srcA srcB apart priv view size record dest q' [] []
       (fun z => by simp [readAt_nil_left,wordTape_nil]; rfl)
-  refine ⟨core,⟨initialRecord.archive,(initialRecord.scratch 0 (by decide)).2,(initialRecord.scratch 1 (by decide)).2⟩,?_⟩
+  refine ⟨⟨initialRecord.archive,(initialRecord.scratch 0 (by decide)).2,(initialRecord.scratch 1 (by decide)).2⟩,?_⟩
   intro budget fanReady stored recurse
   intro data u S ready saved
   let x := data src
@@ -2680,7 +2730,9 @@ theorem scheduledCopyWindow_layout [M8.Machine.Net]
   intro v sizeV labels record
   let dest := fun _ : ℤ => (blank : Fin 4)
   let q' : ℤ := 0
-  obtain ⟨core,initialA,initialB,initialRecord,initialClean⟩ :=
+  let core := recordBasisStacks ports ((Fin.natAddEmb 1).trans a) ((Fin.natAddEmb 1).trans b)
+    (moveRecordSeed w W record [] []) (basisHeaderStacks A (w+1) W) (basisHeaderStacks B' (w+1) W)
+  obtain ⟨initialA,initialB,initialRecord,initialClean⟩ :=
     basisRecordSeed A B' ports a b srcA srcB apart priv view size record dest q' [] []
       (fun z => by simp [readAt_nil_left,wordTape_nil]; rfl)
   let headers := M8.Stage2Machine.Straight.words (LabelSchedule.base v (w+1))

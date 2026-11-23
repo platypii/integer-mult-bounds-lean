@@ -10,7 +10,7 @@ open IntegerMultBounds.Machine IntegerMultBounds.Networks Stack Host Cover.Fallb
 open Shared50ModularControl (prime)
 open RecursiveInterchangeLayout (Descriptor volume)
 
-private noncomputable def markArchivePorts {P U : Type} {T Q : ℕ} (place : Fin 6 ↪ Fin T) (order : List (Fin 6)) :
+noncomputable def markArchivePorts {P U : Type} {T Q k : ℕ} (place : Fin k ↪ Fin T) (order : List (Fin k)) :
     Pr P T Q prime U :=
   Prog.seqList (order.map fun i => Prog.act (WordCmd.pushL (place i) [separator]))
 
@@ -41,8 +41,8 @@ private theorem markArchivePort_charge {T : ℕ} (S : Stacks T prime) (j : Fin T
       rw [head]
       omega
 
-private theorem markArchivePorts_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U)
-    (place : Fin 6 ↪ Fin T) (order : List (Fin 6)) (distinct : order.Nodup) (u : HS T Q prime U)
+theorem markArchivePorts_exec {P U : Type} {T Q k : ℕ} (body : P → Pr P T Q prime U)
+    (place : Fin k ↪ Fin T) (order : List (Fin k)) (distinct : order.Nodup) (u : HS T Q prime U)
     (S : Stacks T prime) (free : ∀ i ∈ order, S.L (place i) = []) :
     ∃ L, Exec body (markArchivePorts place order) (mk u S) (order.length+1) (mk u {S with L := L}) ∧
       CleanupBound S {S with L := L} (order.length+1) (5*order.length+1) ∧
