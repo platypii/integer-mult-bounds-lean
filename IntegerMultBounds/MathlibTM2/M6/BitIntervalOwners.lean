@@ -350,6 +350,10 @@ def ownerSplitBank {c T : ℕ} (saved : Fin 3 ↪ Fin T) (fan : Fin (c+2) ↪ Fi
       simp [Fin.succ_inj,(returnedMergeBank saved fan apart).injective.eq_iff] <;>
       intro h <;> exact False.elim (Fin.succ_ne_zero _ h.symm)
 
+theorem ownerSplitBank_succ {c T : ℕ} (saved : Fin 3 ↪ Fin T) (fan : Fin (c+2) ↪ Fin T)
+    (apart : ∀ i j, saved i ≠ fan j) (k : Fin (((1+c)+2)+2)) :
+    ownerSplitBank saved fan apart k.succ = (returnedMergeBank saved fan apart k).succ := rfl
+
 theorem ownerSplitBank_fan {c T : ℕ} (saved : Fin 3 ↪ Fin T) (fan : Fin (c+2) ↪ Fin T)
     (apart : ∀ i j, saved i ≠ fan j) :
     (withHelperPort (intervalOwners c)).trans (ownerSplitBank saved fan apart) = withHelperPort fan := by
@@ -380,6 +384,9 @@ theorem placedChildInput_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T Q pr
       (∀ j, S.L (bank j) = []) → (∀ j, j ≠ Fin.succ 0 → S.R (bank j) = []) →
       ∃ z F t, Exec body program (mk u S) t (mk z F) ∧ z.user = u.user ∧
         t ≤ (149*(intervalSplitTapes+5)+5)*(m*142080)+24 ∧
+        RepT (intervalOwnerBank (putWord (fun _ => blank) 0 (List.ofFn fun i => SparseRoleCircuit.encode (x i)))
+          (fun row i => x (finProdFinEquiv (i,row))))
+          (embStk Fin.succ (embStk bank F)).L (embStk Fin.succ (embStk bank F)).R ∧
         HelperFan ((withHelperPort (intervalOwners 142080)).trans bank)
           (Fin.lastCases (fun _ => 0) (fun row i => x (finProdFinEquiv (i,row)))) F ∧
         ∀ j, (∀ k, bank k ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
@@ -390,12 +397,14 @@ theorem placedChildInput_exec {P U : Type} {T Q : ℕ} (body : P → Pr P T Q pr
     (foreign (liftQ (CyclicRowNormalized.splitProgram 142080 prime) capacity))
   refine ⟨embProg bank Empty.elim (prepare.seq split),?_⟩
   intro m positive x u S source left empty
-  obtain ⟨z,F,t,user,paid,run,_,rows⟩ := intervalPackedInput_exec (P := Empty) Empty.elim capacity
+  obtain ⟨z,F,t,user,paid,run,splitRows,rows⟩ := intervalPackedInput_exec (P := Empty) Empty.elim capacity
     positive x (embDn bank u) (embStk bank S) source left empty
   obtain ⟨v,D,placed,_,same,view,frame⟩ := exec_emb (body' := body) (ι := Empty.elim)
     bank.injective (fun f => nomatch f) run u rfl S rfl
-  rw [← view] at rows
-  exact ⟨v,D,t,placed,same.trans user,paid,rows,frame⟩
+  rw [← view] at rows splitRows
+  change RepT (intervalOwnerBank (putWord (fun _ => blank) 0 (S.R (bank (Fin.succ 0)))) _) _ _ at splitRows
+  rw [source] at splitRows
+  exact ⟨v,D,t,placed,same.trans user,paid,splitRows,rows,frame⟩
 
 /-- Execute the split on the parked row bank and hand the represented child
 directly to that same fan, preserving every off-bank stack. -/
@@ -409,10 +418,117 @@ theorem parkedChildInput_exec {P U : Type} {T Q : ℕ} (body : P → Pr P (T+1) 
       (∀ j, S.L (bank j) = []) → (∀ j, j ≠ Fin.succ 0 → S.R (bank j) = []) →
       ∃ z F t, Exec body program (mk u S) t (mk z F) ∧ z.user = u.user ∧
         t ≤ (149*(intervalSplitTapes+5)+5)*(m*142080)+24 ∧
+        RepT (intervalOwnerBank (putWord (fun _ => blank) 0 (List.ofFn fun i => SparseRoleCircuit.encode (x i)))
+          (fun row i => x (finProdFinEquiv (i,row))))
+          (embStk Fin.succ (embStk bank F)).L (embStk Fin.succ (embStk bank F)).R ∧
         HelperFan (withHelperPort fan) (Fin.lastCases (fun _ => 0)
           (fun row i => x (finProdFinEquiv (i,row)))) F ∧
         ∀ j, (∀ k, bank k ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
   simpa only [ownerSplitBank_source,ownerSplitBank_fan] using
     placedChildInput_exec body (ownerSplitBank saved fan apart) capacity
+
+/-- Forget the child's temporary helper and read its output on the merge
+ports in place. This works for any owner count. -/
+theorem parkedMergeRows {c T m : ℕ} (saved : Fin 3 ↪ Fin T) (fan : Fin (c+2) ↪ Fin T)
+    (apart : ∀ i j, saved i ≠ fan j) (y : Fin (c+1) → Fin m → ZMod 2)
+    (F : Stacks (T+1) prime) (out : HelperFan (withHelperPort fan) y F) :
+    let merge := (returnedMergeBank saved fan apart).trans (Fin.succEmb T)
+    HelperFan ((intervalOwners c).trans merge) (fun j => y j.castSucc) F := by
+  intro merge
+  change HelperFan (((intervalOwners c).trans (returnedMergeBank saved fan apart)).trans (Fin.succEmb T)) _ F
+  rw [returnedMergeBank_owners]
+  exact withHelperPort_return fan y F out
+
+private theorem mergeOutside {c T : ℕ} (saved : Fin 3 ↪ Fin T) (fan : Fin (c+2) ↪ Fin T)
+    (apart : ∀ i j, saved i ≠ fan j) (j : Fin (T+1))
+    (off : ∀ k, ownerSplitBank saved fan apart k ≠ j) :
+    ∀ k, ((returnedMergeBank saved fan apart).trans (Fin.succEmb T)) k ≠ j := by
+  intro k
+  exact off k.succ
+
+/-- Merge on the parent's reused ports after the child restores the source
+and the two inner counters. The merge program is fixed across row lengths. -/
+theorem parkedChildMerge_exec {P U : Type} {T Q : ℕ} (body : P → Pr P (T+1) Q prime U)
+    (saved : Fin 3 ↪ Fin T) (fan : Fin (142080+2) ↪ Fin T) (apart : ∀ i j, saved i ≠ fan j)
+    (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q) :
+    let bank := ownerSplitBank saved fan apart
+    let merge := (returnedMergeBank saved fan apart).trans (Fin.succEmb T)
+    ∃ program : Pr P (T+1) Q prime U, ∀ (m : ℕ), 0 < m →
+    ∀ (dst : ℤ → Fin (prime+4)) (data : Fin 142080 → Fin m → ZMod 2)
+      (y : Fin (142080+1) → Fin m → ZMod 2) (D E : Stacks (T+1) prime) (u : HS (T+1) Q prime U),
+      let before := embStk Fin.succ (embStk bank D)
+      let word := fun k : Fin (m*142080) => let p := finProdFinEquiv.symm k
+                                           SparseRoleCircuit.encode (a := prime) (y p.2.castSucc p.1)
+      RepT (intervalOwnerBank dst data) before.L before.R →
+      HelperFan (withHelperPort fan) y E →
+      (∀ j, E.L (saved j).succ = D.L (saved j).succ ∧ E.R (saved j).succ = D.R (saved j).succ) →
+      ∃ z F n, Exec body program (mk u E) n (mk z F) ∧ n ≤ 149*(m*142080)*(intervalSplitTapes+5)+6 ∧
+        z.user = u.user ∧ RepT (intervalOwnerBank (putWord dst 0 (List.ofFn word)) (fun j => y j.castSucc))
+          (embStk merge F).L (embStk merge F).R ∧
+        ∀ j, (∀ k, bank k ≠ j) → F.L j = E.L j ∧ F.R j = E.R j := by
+  intro bank merge
+  refine ⟨embProg merge Empty.elim (foreign (liftQ (CyclicRowNormalized.mergeProgram 142080 prime) capacity)),?_⟩
+  intro m pos dst data y D E u before word repr returned preserved
+  have keep (k : Fin intervalSplitTapes) (j : Fin 3) (eq : returnedMergeBank saved fan apart k = saved j) :
+      E.L (merge k) = before.L k ∧ E.R (merge k) = before.R k := by
+    change E.L ((returnedMergeBank saved fan apart k).succ) = D.L ((returnedMergeBank saved fan apart k).succ) ∧
+      E.R ((returnedMergeBank saved fan apart k).succ) = D.R ((returnedMergeBank saved fan apart k).succ)
+    rw [eq]
+    exact preserved j
+  obtain ⟨z,F,n,run,cost,user,out,_,frame,_⟩ := placedMergeReturnedOwners_exec body merge capacity pos dst data
+    (fun j => y j.castSucc) before u E repr (parkedMergeRows saved fan apart y E returned)
+    (keep 0 0 (returnedMergeBank_target saved fan apart))
+    (fun j => keep _ j.succ (returnedMergeBank_inner saved fan apart j))
+  refine ⟨z,F,n,run,cost,user,out,?_⟩
+  intro j off
+  exact frame j (mergeOutside saved fan apart j off)
+
+private theorem roundTripCost (a b c m t price : ℕ)
+    (split : a ≤ (149*t+5)*m+24) (child : b ≤ price) (merge : c ≤ 149*m*t+6) :
+    a+(b+c) ≤ price+(298*t+5)*m+30 := by
+  calc
+    _ ≤ _ := Nat.add_le_add split (Nat.add_le_add child merge)
+    _ = _ := by ring
+
+/-- The parked split and merge surround a child on the same owner fan. Only
+three saved tapes must survive the child, in addition to the caller's frame. -/
+theorem parkedChildRoundTrip {P U : Type} {T Q : ℕ} (body : P → Pr P (T+1) Q prime U)
+    (saved : Fin 3 ↪ Fin T) (fan : Fin (142080+2) ↪ Fin T) (apart : ∀ i j, saved i ≠ fan j)
+    (capacity : let q := 7+(CyclicRowCycle.states 142080+5)+4; q+q ≤ Q) :
+    let bank := ownerSplitBank saved fan apart
+    let merge := (returnedMergeBank saved fan apart).trans (Fin.succEmb T)
+    ∃ wrap : Pr P (T+1) Q prime U → Pr P (T+1) Q prime U,
+    ∀ (call : Pr P (T+1) Q prime U) (price m : ℕ), 0 < m →
+    ∀ (x : Fin (m*142080) → ZMod 2) (y : Fin (142080+1) → Fin m → ZMod 2)
+      (u : HS (T+1) Q prime U) (S : Stacks (T+1) prime),
+      let src := List.ofFn fun i => SparseRoleCircuit.encode (a := prime) (x i)
+      let dst := putWord (fun _ => blank) 0 src
+      let data := fun (row : Fin 142080) (i : Fin m) => x (finProdFinEquiv (i,row))
+      let word := fun k : Fin (m*142080) => let p := finProdFinEquiv.symm k
+                                           SparseRoleCircuit.encode (a := prime) (y p.2.castSucc p.1)
+      S.R (saved 0).succ = src → (∀ j, S.L (bank j) = []) → (∀ j, j ≠ Fin.succ 0 → S.R (bank j) = []) →
+      (∀ v D, HelperFan (withHelperPort fan) (Fin.lastCases (fun _ => 0) data) D →
+        ∃ z F t, Exec body call (mk v D) t (mk z F) ∧ t ≤ price ∧ z.user = v.user ∧
+          HelperFan (withHelperPort fan) y F ∧
+          (∀ j, F.L (saved j).succ = D.L (saved j).succ ∧ F.R (saved j).succ = D.R (saved j).succ) ∧
+          ∀ j, (∀ k, bank k ≠ j) → F.L j = D.L j ∧ F.R j = D.R j) →
+      ∃ z F t, Exec body (wrap call) (mk u S) t (mk z F) ∧
+        t ≤ price+(298*(intervalSplitTapes+5)+5)*(m*142080)+30 ∧ z.user = u.user ∧
+        RepT (intervalOwnerBank (putWord dst 0 (List.ofFn word)) (fun j => y j.castSucc))
+          (embStk merge F).L (embStk merge F).R ∧
+        ∀ j, (∀ k, bank k ≠ j) → F.L j = S.L j ∧ F.R j = S.R j := by
+  intro bank merge
+  obtain ⟨split,run⟩ := parkedChildInput_exec body saved fan apart capacity
+  obtain ⟨finish,back⟩ := parkedChildMerge_exec body saved fan apart capacity
+  refine ⟨fun call => split.seq (call.seq finish),?_⟩
+  intro call price m pos x y u S src dst data word source left empty child
+  obtain ⟨v,D,a,splitRun,vu,aCost,repr,owners,frame⟩ := run m pos x u S source left empty
+  obtain ⟨w,E,b,childRun,bCost,wv,returned,preserved,childFrame⟩ := child v D owners
+  obtain ⟨z,F,c,mergeRun,cCost,zw,out,mergeFrame⟩ := back m pos dst data y D E w repr returned preserved
+  refine ⟨z,F,_,splitRun.seq (childRun.seq mergeRun),roundTripCost _ _ _ _ _ _ aCost bCost cCost,
+    zw.trans (wv.trans vu),out,?_⟩
+  intro j off
+  exact ⟨(mergeFrame j off).1.trans ((childFrame j off).1.trans (frame j off).1),
+    (mergeFrame j off).2.trans ((childFrame j off).2.trans (frame j off).2)⟩
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
