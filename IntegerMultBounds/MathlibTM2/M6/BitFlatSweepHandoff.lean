@@ -114,6 +114,16 @@ theorem alignedIntervalMeasures (node : Descriptor) (w groups W : ℕ) (hw : 0 <
     rw [spectator,volume,width,split,Nat.mul_comm 64 w,pow_mul,show 128 = 64+64 by decide,pow_add]
     ring
 
+/-- The packed sweep handles one role's share of the physical parent. -/
+theorem alignedPackedVolume (node : Descriptor) (groups w : ℕ)
+    (width : node.width = 64*w) (rows : node.rows = 142080*(142080*groups)) :
+    let W := node.beforeH*(node.beforeRows*groups*node.between*node.afterD)
+    ((prime^w)^128*(W*142080))*142080 = volume prime node := by
+  intro W
+  rw [volume,width,rows,Nat.mul_comm 64 w,pow_mul,show 128 = 64+64 by decide,pow_add]
+  dsimp only [W]
+  ac_rfl
+
 /-- The scheduled child's role stream and the physical interval use the
 same packed active coordinates after splitting off the child rows. -/
 theorem intervalRolePositions (node : Descriptor) (groups : ℕ)
