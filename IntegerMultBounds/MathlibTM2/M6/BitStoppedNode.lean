@@ -168,6 +168,38 @@ theorem scheduledBillPerVolume (node : Descriptor) (width : 64 ∣ node.width)
   rw [← size]
   ring_nf
 
+/-- All nine sweeps, idle intervals, and scalar handoffs cost at most a
+fixed multiple of the packed stage volume times the leaf width power. -/
+theorem alignedLocalCost_bound [M8.Machine.Net] (base nt : ℕ) (rate : Fin 9 → ℝ) :
+    ∃ D : ℝ, ∀ m V w : ℕ, 0 < m → V ≤ m → 0 < w →
+      let power := (w : ℝ)^M8.Machine.BudgetBound.tau
+      let sweep := fun i => ⌊(stageSetupCost base nt m w : ℝ)+rate i*m*power⌋₊+142081*(8*m+10)+1
+      let idle := 35520 * (((298*(intervalSplitTapes+5)+5)*142080+142081*8)*V + (142081*10+31)) +
+        1 + 142081*(8*m+10)+1
+      (((∑ i, sweep i)+9*idle+9*(2*(76*17760*m*(142081+7)+6)+1+(142081*(8*m+10)+1))+2 : ℕ) : ℝ) ≤
+        D*m*power := by
+  choose C bound using fun i => sweepHandoffCost_bound base nt (rate i)
+  let fixed (V m : ℕ) :=
+    let idle := 35520 * (((298*(intervalSplitTapes+5)+5)*142080+142081*8)*V + (142081*10+31)) +
+      1 + 142081*(8*m+10)+1
+    9*idle+9*(2*(76*17760*m*(142081+7)+6)+1+(142081*(8*m+10)+1))+2
+  refine ⟨(∑ i, C i)+fixed 1 1,?_⟩
+  intro m V w hm hV hw power sweep idle
+  have one : 1 ≤ power := Real.one_le_rpow (by exact_mod_cast hw) M8.Machine.BudgetBound.exponent_range.1.le
+  have scaled := le_mul_of_one_le_right (Nat.cast_nonneg m (α := ℝ)) one
+  have overhead : fixed V m ≤ fixed 1 1*m := by
+    dsimp only [fixed,intervalSplitTapes]
+    omega
+  have paid : ((∑ i, sweep i : ℕ) : ℝ) ≤ (∑ i, C i)*m*power := by
+    rw [Nat.cast_sum,Finset.sum_mul,Finset.sum_mul]
+    exact Finset.sum_le_sum fun i _ => bound i m w hm hw
+  have fixedBound : (fixed V m : ℝ) ≤ (fixed 1 1 : ℝ)*(m*power) :=
+    (show (fixed V m : ℝ) ≤ (fixed 1 1 : ℝ)*m by exact_mod_cast overhead).trans
+      (mul_le_mul_of_nonneg_left scaled (Nat.cast_nonneg _))
+  rw [show (∑ i, sweep i)+9*idle+9*(2*(76*17760*m*(142081+7)+6)+1+(142081*(8*m+10)+1))+2 =
+    (∑ i, sweep i)+fixed V m by dsimp only [idle,fixed]; omega, Nat.cast_add]
+  linarith only [paid,fixedBound]
+
 /-- Execute an aligned node with every child stopped. Its cost contains
 one leaf charge per scheduled occurrence and the nine local stage costs. -/
 theorem stoppedAlignedNode [M8.Machine.Net] {U : Type} :
