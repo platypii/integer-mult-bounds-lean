@@ -1169,31 +1169,25 @@ private theorem cutoffSpectatorFromRadix {P U : Type} {T Q : ℕ} (body : P → 
   change _+tapeCharge cleanupWeight js final ≤ tapeCharge cleanupWeight js S+_
   omega
 
-/-- Measure the restored role lane and divide its length by the selected block.
-Only the canonical spectator word remains on the caller's scratch bank. -/
-theorem spectatorFromLane {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U)
-    (division : Fin 11 ↪ Fin T) (row base : Fin T) (outside : ∀ i, row ≠ division i)
-    (baseOff : ∀ i, division i ≠ base) (stage : Bool) :
+/-- Divide the length produced by a charged reader and clear its temporary word. -/
+theorem spectatorFromLengthReader {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U)
+    (division : Fin 11 ↪ Fin T) (base : Fin T)
+    (baseOff : ∀ i, division i ≠ base) (stage : Bool)
+    (ready : ℕ → Stacks T prime → Prop) (measure : Pr P T Q prime U)
+    (reader : ∀ V u S, ready V S → (∀ i, S.R (division i) = []) →
+      ∃ v m, v.user = u.user ∧ m ≤ 21*V+10 ∧ Exec body measure (mk u S) m
+        (mk v {S with R := Function.update S.R (division 0) (binSyms V.size V)})) :
     ∃ code, ∀ (c : CutoffNodeInput), let V := c.cells
       let W := c.spectatorWidth stage
-      ∀ u (S : Stacks T prime), (S.R row).length = V → S.R base = binSyms (prime^(c.w+1)).size (prime^(c.w+1)) →
+      ∀ u (S : Stacks T prime), ready V S → S.R base = binSyms (prime^(c.w+1)).size (prime^(c.w+1)) →
       (∀ i, S.R (division i) = []) →
       let D := {S with R := Function.update S.R (division 2) (binSyms W.size W)}
       ∃ z t, Exec body code (mk u S) t (mk z D) ∧ z.user = u.user ∧ CleanupBound S D t (2000255*V) := by
   obtain ⟨divide,quotient⟩ := cutoffSpectatorFromRadix body division base baseOff stage
-  let measure : Pr P T Q prime U := unaryBinary row (division 0) (division 3) (division 4)
-    (division 5) (division 6) (division 7) (division 8)
   refine ⟨measure.seq (divide.seq (bclear (division 0))),?_⟩
   intro c V W u S rowSize radix free D
   have length := free 0
-  obtain ⟨u',m,first,elapsed,read⟩ := unaryBinary_exec (body := body)
-    (src := row) (dst := division 0) (a := division 3) (h := division 4)
-    (par := division 5) (bits := division 6) (cnt := division 7) (saved := division 8)
-    (by simp [outside,division.injective.eq_iff]) V u S rowSize (by
-      intro k hk
-      simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
-      rcases hk with rfl|rfl|rfl|rfl|rfl|rfl|rfl
-      all_goals first | exact length | apply free)
+  obtain ⟨u',m,first,elapsed,read⟩ := reader V u S rowSize free
   let E := {S with R := Function.update S.R (division 0) (binSyms V.size V)}
   have untouched i (ne : i ≠ 0) : E.R (division i) = S.R (division i) :=
     Function.update_of_ne (division.injective.ne ne) ..
@@ -1229,6 +1223,30 @@ theorem spectatorFromLane {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime 
   have bits : V.size ≤ V := Nat.size_le.mpr Nat.lt_two_pow_self
   change _+tapeCharge cleanupWeight js D ≤ tapeCharge cleanupWeight js S+2000255*V
   omega
+
+/-- Measure the restored role lane and divide its length by the selected block.
+Only the canonical spectator word remains on the caller's scratch bank. -/
+theorem spectatorFromLane {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U)
+    (division : Fin 11 ↪ Fin T) (row base : Fin T) (outside : ∀ i, row ≠ division i)
+    (baseOff : ∀ i, division i ≠ base) (stage : Bool) :
+    ∃ code, ∀ (c : CutoffNodeInput), let V := c.cells
+      let W := c.spectatorWidth stage
+      ∀ u (S : Stacks T prime), (S.R row).length = V → S.R base = binSyms (prime^(c.w+1)).size (prime^(c.w+1)) →
+      (∀ i, S.R (division i) = []) →
+      let D := {S with R := Function.update S.R (division 2) (binSyms W.size W)}
+      ∃ z t, Exec body code (mk u S) t (mk z D) ∧ z.user = u.user ∧ CleanupBound S D t (2000255*V) := by
+  let measure : Pr P T Q prime U := unaryBinary row (division 0) (division 3) (division 4)
+    (division 5) (division 6) (division 7) (division 8)
+  apply spectatorFromLengthReader body division base baseOff stage (fun V S => (S.R row).length = V) measure
+  intro V u S rowSize free
+  exact unaryBinary_exec (body := body)
+    (src := row) (dst := division 0) (a := division 3) (h := division 4)
+    (par := division 5) (bits := division 6) (cnt := division 7) (saved := division 8)
+    (by simp [outside,division.injective.eq_iff]) V u S rowSize (by
+      intro k hk
+      simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
+      rcases hk with rfl|rfl|rfl|rfl|rfl|rfl|rfl
+      all_goals apply free)
 
 -- The entry with a preloaded radix is available in b3bbe46f.
 

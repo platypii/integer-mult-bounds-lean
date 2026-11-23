@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.M6.BitInitializedPackedStage
+import IntegerMultBounds.MathlibTM2.M6.BitStageChildDispatch
 
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.M6.BitNode
@@ -47,7 +48,7 @@ theorem dispatchedPackedStage [M8.Machine.Net] (n : Fin 9) :
   classical
   intro l r I k
   obtain ⟨pre,post,ts,qs,ports,build⟩ := initializedPackedStage n
-  obtain ⟨leafRate,install⟩ := installInvocationWorker
+  obtain ⟨leafRate,install⟩ := installStageWorker
   refine ⟨pre,post,ts,max qs (max columnCapacity stoppedCopyMachine.1),ports,leafRate,?_⟩
   intro P U Q cap large f
   let child := fun i : I => invocationChildren n i.1 (pre i.1) (post i.1) i.2.1 i.2.2
@@ -71,45 +72,9 @@ theorem dispatchedPackedStage [M8.Machine.Net] (n : Fin 9) :
   obtain ⟨position,coords,run⟩ := stage c
   refine ⟨position,coords,?_⟩
   intro budget rate enough time recurse W size
-  have rootLe : c.node.width ≤ c.root.width := by
-    have h := directoryDigits_bound prime c.root c.path
-    unfold CutoffNodeInput.node
-    omega
-  have fits := (c.active.trans rootLe).trans_lt (Nat.lt_size_self _)
-  have short : c.root.width.size ≤ c.node.width := by
-    apply Nat.le_trans _ c.active
-    apply Nat.size_le.mpr
-    have space := alignedRootWidth_le c.root c.depth c.b c.cutoff c.levels c.base c.rootWidth c.stop
-    have pos : 0 < c.root.width := c.rootWidth ▸ Nat.mul_pos (pow_pos (by decide : 0 < 64) c.depth) c.base
-    omega
-  have positive : 0 < c.stageWidth := by
-    have h : 0 < c.cells := Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _)
-      (Nat.mul_pos c.idlePositive (by decide))
-    rw [← c.stageCells] at h
-    exact Nat.pos_of_mul_pos_left h
   let charged := fun i => time i+5000*V
-  obtain ⟨seed,handoff⟩ := run charged (by
-    intro i
-    have smaller : (desc i).width < c.node.width := by
-      change nodeChildren5[(child i).val]*(c.node.width/64) < c.node.width
-      rw [c.width,Nat.mul_div_cancel_left _ (by decide)]
-      exact Nat.mul_lt_mul_of_pos_right ((nodeChildren5_bounds _).2.trans_lt (by decide : 42 < 64)) (Nat.succ_pos _)
-    have h := dispatch i c.node c.w c.stageWidth c.rowsPerStage c.root.width.size c.cutoff (budget (child i).val)
-      c.width c.rows positive fits (Nat.size_le_size (smaller.le.trans rootLe)) (position i) (coords i) rate enough
-      (fun above => by simpa only [active] using recurse i above)
-    apply h.weaken
-    have add := cutoffDispatchOverhead c.node c.w c.B c.stageFactor c.root.width.size c.width (child i) positive (position i)
-    have card := Fintype.card_congr (position i)
-    simp only [Fintype.card_fin] at card
-    change volume prime (desc i) = V at card
-    rw [show volume prime (scheduledChild prime c.node (child i)) = V from card,Nat.sub_eq_zero_of_le short] at add
-    dsimp only [charged,time,stageBranchTime]
-    rw [dite_eq_left (child i).isLt]
-    let price := if c.cutoff < (desc i).width then budget (child i).val else
-      ⌊rate*((desc i).width : ℝ)^M8.Machine.BudgetBound.tau*volume prime (desc i)⌋₊
-    change price+4*c.w+23*(desc i).width+22*c.root.width.size+8*(CopyChildLayout.spectators (desc i)).size+61 ≤ price+5000*V
-    change 4*c.w+23*(desc i).width+22*c.root.width.size+8*(CopyChildLayout.spectators (desc i)).size+61 ≤ 5000*V+22*0 at add
-    omega)
+  obtain ⟨seed,handoff⟩ := run charged (fun i =>
+    dispatch i c (position i) (coords i) budget rate enough (recurse i))
   refine ⟨seed,?_⟩
   let interval := List.range' (stageChildStart n) length
   have total : (interval.map charged).sum = (interval.map time).sum+length*(5000*V) := by

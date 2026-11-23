@@ -1,6 +1,8 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.M6.BitInitializedRestoredStage
+import IntegerMultBounds.MathlibTM2.M6.BitStageChildDispatch
+import IntegerMultBounds.MathlibTM2.M6.BitFanLengthWord
 public import IntegerMultBounds.MathlibTM2.M6.BitArchiveModulus
 
 @[expose] public section
@@ -199,8 +201,8 @@ private theorem stageSetupRate [M8.Machine.Net] (c : CutoffNodeInput) (count : �
       push_cast
       nlinarith only [mul_le_mul_of_nonneg_left one (show 0 ≤ (178*(count : ℝ)+314*142080+52)*c.cells by positivity)]
 
-/-- Run the restored stage from six descriptor fields and the packed parent lanes.
-Measure one lane to compute the spectator width before preparing the worker banks. -/
+/-- Run the restored stage from six descriptor fields and the represented fan.
+Read the shared length word to compute the spectator width before preparing the worker banks. -/
 theorem callerRestoredStage [M8.Machine.Net] (n : Fin 9) :
     let l := (selectedPhaseSchedule false).1.length
     let r := (selectedPhaseSchedule true).1.length
@@ -209,13 +211,16 @@ theorem callerRestoredStage [M8.Machine.Net] (n : Fin 9) :
     ∃ (pre : StageRun → Fin l → MoveIndex) (post : StageRun → Fin r → MoveIndex),
     let child := fun i : I => invocationChildren n i.1 (pre i.1) (post i.1) i.2.1 i.2.2
     ∃ (ts : I → ℕ) (states : ℕ) (ports : ∀ i, Fin (rowSwapBlock.tapes+35) ↪ Fin (ts i)),
-    ∀ {P U : Type} {Q : ℕ}, states ≤ Q → ∀ (body : ∀ i, P → Pr P (ts i) Q prime U) (f : I → P),
+    ∃ leafRate : ℝ, ∀ {P U : Type} {Q : ℕ}, states ≤ Q →
+    ∀ (large : ∀ i, P → Pr (WorkerLabel P) (ts i) Q prime U) (f : I → P),
+    ∃ body : ∀ i, WorkerLabel P → Pr (WorkerLabel P) (ts i) Q prime U,
+    (∀ i g, body i (.active g) = large i g) ∧
     ∃ (T : ℕ) (shared : Fin (k+1) ↪ Fin T),
     ∃ (owners : ∀ i, Fin (k+1) ↪ Fin (ts i+1)) (banks : ∀ i, Fin (ts i+1) ↪ Fin T),
     let H := 80+((T+273)+LeafCore.small)
     let owner := ((Fin.castAddEmb 273 (n := T)).trans (Fin.castAddEmb LeafCore.small)).trans (Fin.natAddEmb 80)
     let fan := shared.trans owner
-    ∃ (body' : I × P → Pr (I × P) H Q prime U) (rate : ℝ),
+    ∃ (body' : I × WorkerLabel P → Pr (I × WorkerLabel P) H Q prime U) (rate : ℝ),
     ∀ {M : ℕ} (place : Fin H ↪ Fin M) (source : Fin 6 → Fin M) (r : Fin 7 ↪ Fin M) (power : Fin 10 ↪ Fin M) (tmp saved : Fin M) (dimensions : Fin 6 ↪ Fin M) (division : Fin 11 ↪ Fin M),
     let outside := fun j => ∀ h, place (owner h) ≠ j
     let bank := (archiveSetupPlacement 80 T LeafCore.small).trans place
@@ -242,10 +247,15 @@ theorem callerRestoredStage [M8.Machine.Net] (n : Fin 9) :
     ∃ seeds : ∀ i, Stacks (ts i+1) prime,
     (∀ i, WorkerEntryWords ((scheduledRecordPorts (ports i)).trans (Fin.castAddEmb 1)) (record i) (seeds i)) ∧
     (∀ i, invocationCoordinates i.2.1 w c.stageWidth (position i)) ∧
-    ∀ time : ℕ → ℕ, (∀ i, ScheduledChildExec c.node (desc i) c.w c.stageWidth (ports i) (record i)
-      (position i) (body i) (f i) (time (child i).val) true) →
+    ∀ (budget : ℕ → ℕ) (childRate : ℝ), leafRate ≤ childRate →
+    let time := stageBranchTime c.node c.cutoff childRate budget
+    (∀ i, c.cutoff < (desc i).width →
+      if i.2.1 = 1 then ScheduledChildExec c.node (desc i) c.w c.stageWidth (ports i) (binSyms c.root.width.size c.cutoff)
+        (position i) (body i) (.active (f i)) (budget (child i).val) true
+      else MoveOnBankExec c.node (desc i) c.w c.stageWidth (movePrefix.trans (ports i)) (binSyms c.root.width.size c.cutoff)
+        (position i) (body i) (large i (f i)) (budget (child i).val) true) →
     let data := (Fin.castAddEmb 1).trans fan
-    ∀ x u S, ParentStageWords (fun j => data (j.castAdd 2)) data V x (embStk place S) →
+    ∀ x u S, HelperFan data x (embStk place S) →
       S.R (place (fan (Fin.last k))) = binSyms c.root.width.size c.cutoff →
       (∀ i : Fin 6, S.R (source i) = (Routines.hdr c.node i).map bitSymbol) →
       (∀ i : Fin 7, i ≠ 0 → S.R (r i) = []) → (∀ i : Fin 10, i ≠ 0 → S.R (power i) = []) →
@@ -265,12 +275,23 @@ theorem callerRestoredStage [M8.Machine.Net] (n : Fin 9) :
   intro l r I k
   let count := (stageOccurrenceOrder l r).length
   obtain ⟨pre,post,ts,qs,ports,data,basis,loader,build⟩ := initializedRestoredStage n
-  refine ⟨pre,post,ts,qs,ports,?_⟩
-  intro P U Q cap body f
-  obtain ⟨T,shared,banks,align,disjoint,inner,program,rate,stage⟩ := build cap body f
+  classical
+  obtain ⟨leafRate,install⟩ := installStageWorker
+  refine ⟨pre,post,ts,max qs (max columnCapacity stoppedCopyMachine.1),ports,leafRate,?_⟩
+  intro P U Q cap large f
+  let child := fun i : I => invocationChildren n i.1 (pre i.1) (post i.1) i.2.1 i.2.2
+  have copy (i : I) : i.2.1 = 1 → ∃ j, child i = copyChildPosition (n,i.1,j) := by
+    obtain ⟨p,j,i⟩ := i
+    rintro rfl
+    exact ⟨i,rfl⟩
+  choose body active dispatch using fun i => install (ports i) ((Nat.le_max_right ..).trans cap) n i.1 i.2.1
+    (child i) (copy i) (large i) (f i)
+  obtain ⟨T,shared,banks,align,disjoint,inner,program,rate,stage⟩ :=
+    build ((Nat.le_max_left ..).trans cap) body (fun _ => .entry)
+  let calls := (stageRuns.flatMap (fun _ => Geometry.Moves.localPaid)).length
   let owners := fun i => withCutoffPort (data i)
   let setupRate : ℝ := 178*count+314*142080+52
-  refine ⟨T,shared,owners,banks,inner,setupRate+2000255+rate,?_⟩
+  refine ⟨body,active,T,shared,owners,banks,inner,setupRate+2000255+rate+calls*5000,?_⟩
   intro M place source r power tmp saved dimensions division outside bank host widthPort divisionAway divisionSafe modPort unitPort dimFrame atomAway atomRegs dimOff width long short sourceOff placeOff tmpOff savedOff apart regs
   obtain ⟨setup,load⟩ := loadStageArchive (T := T) (R := LeafCore.small) (H := M) host place source r power tmp saved width long short sourceOff placeOff tmpOff savedOff apart regs
   let owner := ((Fin.castAddEmb 273 (n := T)).trans (Fin.castAddEmb LeafCore.small)).trans (Fin.natAddEmb 80)
@@ -279,16 +300,16 @@ theorem callerRestoredStage [M8.Machine.Net] (n : Fin 9) :
   obtain ⟨init,loadBanks⟩ := loader host physical dimensions (fun i l j => dimOff j (banks i l))
     (fun i l off m ne j => outer.injective.ne (disjoint i l off m ne j))
   obtain ⟨atomCode,copyWidth⟩ := copyAlignedWidth host atomRegs
-  let lane := shared (((0 : Fin 142081).castAdd 2).castAdd 1)
-  obtain ⟨measure,measureLane⟩ := spectatorFromLane host division (outer lane) (dimensions 0)
-    (fun i => divisionAway i (owner lane))
-    (fun i eq => divisionAway i (archiveSetupPlacement 80 T LeafCore.small (parentArchivePorts 6)) (eq.trans modPort).symm) true
+  let inputFan := ((Fin.castAddEmb 1 (n := k)).trans (shared.trans owner)).trans place
+  obtain ⟨measure,measureFan⟩ := spectatorFromFan host inputFan division (dimensions 0)
+    (fun i => divisionAway i (((Fin.castAddEmb 1 (n := k)).trans (shared.trans owner)) ((1 : Fin 2).natAdd 142081)))
+    (fun i eq => divisionAway i (archiveSetupPlacement 80 T LeafCore.small (parentArchivePorts 6)) (eq.trans modPort).symm)
   refine ⟨setup.seq (atomCode.seq (measure.seq (init.seq (embProg place id program)))),?_⟩
   intro c w V desc record
   let seeds := fun i => cutoffWorkerSeed ((basis i).seed c.w c.stageWidth (record i))
   obtain ⟨position,entry,coords,prepare⟩ := stage c
   refine ⟨position,seeds,entry,coords,?_⟩
-  intro time recurse dataBank x v₀ S₀ packed cut₀ words₀ clocks₀ temps₀ free₀ ht₀ hs₀ divisionBlank atom ht hs blank empty₀
+  intro budget childRate enough time recurse dataBank x v₀ S₀ packed cut₀ words₀ clocks₀ temps₀ free₀ ht₀ hs₀ divisionBlank atom ht hs blank empty₀
   have cells : 0 < c.cells := Nat.mul_pos (pow_pos (pow_pos Shared50ModularControl.prime_prime.pos _) _) (Nat.mul_pos c.idlePositive (by decide))
   rw [← c.stageCells] at cells
   have positive := Nat.pos_of_mul_pos_left cells
@@ -317,12 +338,14 @@ theorem callerRestoredStage [M8.Machine.Net] (n : Fin 9) :
     Function.update_of_ne (dimensions.injective.ne ne) ..
   have keptAtom j : G.L (place j) = S.L (place j) ∧ G.R (place j) = S.R (place j) :=
     ⟨rfl,Function.update_of_ne (atomAway j) ..⟩
-  have rowSize : (G.R (outer lane)).length = c.cells := by
-    change (G.R (place (owner lane))).length = c.cells
-    rw [(keptAtom (owner lane)).2,(keepOwner lane).2,← c.stageCells]
-    have h := congrArg List.length (packed.right 0)
-    simpa only [outer,lane,dataBank,owner,w,CutoffNodeInput.stageWidth,embStk,Function.comp_apply,List.length_ofFn,Function.Embedding.trans_apply,Fin.coe_castAddEmb] using h
-  obtain ⟨v₂,e,measured,measureUser,measureCost⟩ := measureLane c v₁ G rowSize
+  have fanLive : HelperFan inputFan x G := by
+    apply helperFan_of_agree (S := S₀) (F := G) (fan := inputFan) (show HelperFan inputFan x S₀ from packed)
+    intro j
+    let slot := shared (j.castAdd 1)
+    exact ⟨(keptAtom (owner slot)).1.trans (keepOwner slot).1,(keptAtom (owner slot)).2.trans (keepOwner slot).2⟩
+  have read := measureFan c
+  rw [← c.stageCells] at read
+  obtain ⟨v₂,e,measured,measureUser,measureCost⟩ := read x v₁ G fanLive
     ((dimOld 0 (by decide)).trans modulus) (fun i => by
       change Function.update S.R (dimensions 3) _ (division i) = []
       rw [Function.update_of_ne (divisionSafe i).2]
@@ -347,14 +370,16 @@ theorem callerRestoredStage [M8.Machine.Net] (n : Fin 9) :
     ((keepShared j).2.trans ((keptWidths (owner (shared j))).2.trans (keepOwner (shared j)).2))
   let data := (Fin.castAddEmb 1 (n := k)).trans (shared.trans owner)
   have dataReady := helperFan_of_agree (k := 142081) (V := V) (fan := data) (F := embStk place D)
-    packed.helperFan (fun i => combined (i.castAdd 1))
+    packed (fun i => combined (i.castAdd 1))
   obtain ⟨initial,cert,_,run⟩ := prepare (embStk ((shared.trans owner).trans place) D)
   have stock := cert (embStk outer D) (fun i l off => stockedBanks i l off (record i))
   have ready := archiveAfterWorkerSetup (T := T) (R := LeafCore.small) c place shared initial S₀ S D
     stock archiveWords (fun j off => by
       have keep := keepOuter (place j) (fun h => place.injective.ne (off h))
       exact ⟨keep.1,keep.2.trans (keptWidths j).2⟩) keepPlace empty₀
-  obtain ⟨z,B,t,y,exec,bill,same,out,done⟩ := run time recurse x (embDn place v) (embStk place D)
+  let charged := fun i => time i+5000*V
+  obtain ⟨z,B,t,y,exec,bill,same,out,done⟩ := run charged
+    (fun i => dispatch i c (position i) (coords i) budget childRate enough (recurse i)) x (embDn place v) (embStk place D)
     dataReady ((combined (Fin.last k)).2.trans cut₀) ready
   obtain ⟨last,F,placed,_,lastUser,projection,untouched⟩ := exec_emb (ι := id) (body' := host)
     place.injective (fun _ => rfl) exec v rfl D rfl
@@ -364,13 +389,15 @@ theorem callerRestoredStage [M8.Machine.Net] (n : Fin 9) :
   intro js nd
   let children := ((List.range' (stageChildStart n) (stageRuns.flatMap (fun _ => Geometry.Moves.localPaid)).length).map time).sum
   let cost := rate*((c.cells : ℝ)*(w : ℝ)^M8.Machine.BudgetBound.tau)
-  have after := placedStageCharge place D F t (cost+(children : ℝ)) untouched (fun is hi =>
-    (bill is hi).trans_eq (add_assoc ..)) js nd
+  have split : ((List.range' (stageChildStart n) calls).map charged).sum = children+calls*(5000*V) := by
+    simp only [children,calls,charged,List.sum_map_add,List.map_const',List.sum_replicate,smul_eq_mul,List.length_range']
+  have after := placedStageCharge place D F t (cost+((children+calls*(5000*V) : ℕ) : ℝ)) untouched (fun is hi =>
+    (bill is hi).trans_eq (by rw [← split]; exact add_assoc ..)) js nd
   have setupCost : a+tapeCharge cleanupWeight js S ≤ tapeCharge cleanupWeight js S₀+314*volume prime c.node := paid js nd
   have before := (Nat.cast_le (α := ℝ)).mpr setupCost
   have initBound : b+tapeCharge cleanupWeight js D ≤ tapeCharge cleanupWeight js K+(178*count*V+1) := initCost js nd
   have atomBound : d+tapeCharge cleanupWeight js G ≤ tapeCharge cleanupWeight js S+(8*w.size+43) := deriveCost js nd
-  have measureBound : e+tapeCharge cleanupWeight js K ≤ tapeCharge cleanupWeight js G+2000255*c.cells := measureCost js nd
+  have measureBound : e+tapeCharge cleanupWeight js K ≤ tapeCharge cleanupWeight js G+2000255*c.cells := by rw [← c.stageCells]; exact measureCost js nd
   have measurePaid := (Nat.cast_le (α := ℝ)).mpr measureBound
   have one : 1 ≤ (w : ℝ)^M8.Machine.BudgetBound.tau :=
     Real.one_le_rpow (by exact_mod_cast Nat.succ_le_succ (Nat.zero_le c.w)) M8.Machine.BudgetBound.exponent_range.1.le
@@ -384,6 +411,10 @@ theorem callerRestoredStage [M8.Machine.Net] (n : Fin 9) :
   simp only [Nat.cast_add] at bound before atomPaid initPaid ⊢
   dsimp only [cost] at after
   change _ ≤ _ + _ + (children : ℝ)
-  linarith only [before,after,initPaid,bound,atomPaid,measurePaid,measuredScale]
+  have extra := mul_le_mul_of_nonneg_left one (show 0 ≤ (calls : ℝ)*5000*c.cells by positivity)
+  have vol : V = c.cells := c.stageCells
+  rw [vol] at after
+  push_cast at after
+  linarith only [extra,before,after,initPaid,bound,atomPaid,measurePaid,measuredScale]
 
 end IntegerMultBounds.MathlibTM2.M6.BitNode
