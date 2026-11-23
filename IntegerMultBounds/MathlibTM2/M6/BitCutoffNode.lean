@@ -179,6 +179,195 @@ theorem callCutoffRemainder {P A U : Type} {H N T Q : ℕ}
   omega
 
 
+/-- Recover the canonical spectator word from a packed lane's binary length
+and the number of cells per spectator. The remainder tape is cleared. -/
+theorem cutoffSpectatorWord {P U : Type} {T Q : ℕ} (body : P → Pr P T Q prime U)
+    (r : Fin 11 ↪ Fin T) :
+    ∃ code : Pr P T Q prime U, ∀ (c : CutoffNodeInput) u (S : Stacks T prime),
+      let block := (prime^(c.w+1))^128*142080
+      S.R (r 0) = binSyms c.cells.size c.cells → S.R (r 1) = binSyms block.size block →
+      (∀ j : Fin 11, 2 ≤ j.val → S.R (r j) = []) →
+      let final := {S with R := Function.update S.R (r 2) (binSyms c.idleWidth.size c.idleWidth)}
+      ∃ z n, Exec body code (mk u S) n (mk z final) ∧ z.user = u.user ∧
+        CleanupBound S final n (160*c.cells) := by
+  let divide : Pr P T Q prime U := bdivmod (r 0) (r 1) (r 2) (r 3) (r 4) (r 5) (r 6) (r 7) (r 8) (r 9) (r 10)
+  refine ⟨divide.seq ((bclear (r 3)).seq (Routing.binaryCanonicalProgram (r 2) (r 4))),?_⟩
+  intro c u S block length divisor empty final
+  have pos : 0 < block := by
+    have := Shared50ModularControl.prime_prime.pos
+    dsimp [block]
+    positivity
+  have mass : c.cells = block*c.idleWidth := by
+    dsimp [CutoffNodeInput.cells,block]
+    ring
+  have positive : 0 < c.cells := mass ▸ Nat.mul_pos pos c.idlePositive
+  have blockLe : block ≤ c.cells := mass ▸ Nat.le_mul_of_pos_right _ c.idlePositive
+  have widthLe : c.idleWidth ≤ c.cells := mass ▸ Nat.le_mul_of_pos_left _ pos
+  obtain ⟨v,t,user,time,run⟩ := bdivmod_exec (body := body)
+    (a := r 0) (b := r 1) (q := r 2) (r := r 3) (bw := r 4) (rr := r 5)
+    (t := r 6) (tx := r 7) (ty := r 8) (tz := r 9) (cy := r 10)
+    (by simp [r.injective.eq_iff]) (r.injective.ne (by decide)) (r.injective.ne (by decide))
+    (Nat.lt_size_self c.cells) (Nat.lt_size_self block) pos u S length divisor
+    (empty 4 (by decide)) (empty 5 (by decide)) (empty 6 (by decide)) (empty 7 (by decide))
+    (empty 8 (by decide)) (empty 9 (by decide))
+  have quotient : c.cells / block = c.idleWidth := by rw [mass,Nat.mul_div_cancel_left _ pos]
+  have rem : c.cells % block = 0 := by simp [mass]
+  rw [quotient,rem,empty 2 (by decide),empty 3 (by decide),List.append_nil,List.append_nil] at run
+  let D := {S with R := Function.update S.R (r 2) (binSyms c.cells.size c.idleWidth)}
+  let E := {D with R := Function.update D.R (r 3) (binSyms block.size 0)}
+  obtain ⟨y,same,_,clear⟩ := bclear_exec (body := body) (r 3) v E
+  have reset : Function.update E.R (r 3) [] = D.R := by
+    have h : D.R (r 3) = [] := by simp [D,r.injective.eq_iff,empty]
+    simp [E,← h]
+  rw [reset] at clear
+  simp only [E,Function.update_self,length_binSyms] at clear
+  have fits := widthLe.trans_lt (Nat.lt_size_self c.cells)
+  obtain ⟨bits,z,canon,val,_,done,trim⟩ := Routing.binaryCanonical_exec body (r 2) (r 4)
+    (r.injective.ne (by decide)) _ _ fits y D (by simp [D]) (by simp [D,r.injective.eq_iff,empty])
+  have eq := BinaryCanonicalData.value_injective bits (FlatCoordinateSchedule.bits c.idleWidth)
+    canon (FlatCoordinateSchedule.bits_canonical _) (val.trans (FlatCoordinateSchedule.bits_value _).symm)
+  simp only [eq,canonicalBits_symbols,D,Function.update_idem] at trim
+  refine ⟨z,_,run.seq (clear.seq trim),done.trans (same.trans user),?_⟩
+  intro js nd
+  have grow := prependedWordCharge S (r 2) (binSyms c.idleWidth.size c.idleWidth) js nd
+  simp only [empty 2 (by decide),List.append_nil,length_binSyms] at grow
+  change tapeCharge cleanupWeight js final ≤ tapeCharge cleanupWeight js S+2*c.idleWidth.size at grow
+  change _+tapeCharge cleanupWeight js final ≤ tapeCharge cleanupWeight js S+_
+  have digits : c.cells.size ≤ c.cells := Nat.size_le.mpr Nat.lt_two_pow_self
+  have short := Nat.size_le_size blockLe
+  have output := Nat.size_le_size widthLe
+  have square := size_square_le c.cells positive
+  have mult := Nat.mul_le_mul_left c.cells.size short
+  nlinarith only [grow,time,digits,short,output,square,mult,positive]
+
+/-- Derive the active child width from the parent clock before loading the remainder. -/
+theorem callCutoffRemainderFromClock {P A U : Type} {H N T Q : ℕ}
+    (body : P → Pr P H Q prime U) (entry : P) (label : P → A)
+    (host : A → Pr A T Q prime U) (bank : Fin H ↪ Fin T)
+    (installed : ∀ f, host (label f) = embProg bank label (body f))
+    (origin : Fin H → Option (Fin (72+N))) (src dst : Fin (142081+2) ↪ Fin H)
+    (r : Fin 11 ↪ Fin T) (apart : ∀ j i, bank j ≠ r i)
+    (work : Fin 10 ↪ Fin T) (widthPort : work 3 = r 0) (rank : ℕ) (live : 0 < rank) :
+    ∃ code : Pr A T Q prime U, ∀ (c : CutoffNodeInput) parentClock effect price,
+      let w := c.w
+      let W := c.idleWidth
+      let L := c.root.width.size
+      let cutoff := c.cutoff
+      let V := c.cells
+      PackedPieceHandoffWithCharge cleanupWeight V effect body (body entry) src dst
+        (remainderDispatchSeed origin w W L cutoff) price →
+      ∀ x u (S : Stacks T prime),
+      ParentStageWords (fun i => src (i.castAdd 2)) src V x (embStk bank S) →
+      (parentClock+1)*rank = c.node.width → (S.R (work 0)).length = parentClock →
+      (∀ i : Fin 10, 2 ≤ i.val → S.R (work i) = []) →
+      (∀ i : Fin 7, i ≠ 0 → S.R (r (i.castAdd 4)) = []) →
+      S.R (r 7) = binSyms (prime^(w+1)).size (prime^(w+1)) →
+      S.R (r 8) = binSyms 1 1 → S.R (r 9) = binSyms W.size W → S.R (r 10) = binSyms L cutoff →
+      (∀ j, (∀ i, src i ≠ j) → S.L (bank j) = [] ∧ S.R (bank j) = []) →
+      ∃ z F t y, Exec host code (mk u S) t (mk z F) ∧ z.user = u.user ∧
+        ParentStageWords (fun i => dst (i.castAdd 2)) dst V y (embStk bank F) ∧ effect x y ∧
+        CleanupBound S F t (price+(100+93*H)*V) := by
+  obtain ⟨code,run⟩ := callCutoffRemainder body entry label host bank installed origin src dst r apart
+  refine ⟨(moveWidthProgram work rank).seq code,?_⟩
+  intro c parentClock effect price w W L cutoff V child x u S words shape clock scratch empty radix unit spectator cut fresh
+  let width := (parentClock+1)*rank
+  let header := binSyms (A := prime) width.size width
+  let D := {S with R := Function.update S.R (r 0) header}
+  obtain ⟨v,n,user,time,prep⟩ := packedMoveWidth_exec host work rank parentClock u S clock scratch
+  change Exec host (moveWidthProgram work rank) (mk u S) n
+    (mk v {S with R := Function.update S.R (work 3) header}) at prep
+  rw [widthPort] at prep
+  have stay (i) : D.R (bank i) = S.R (bank i) := Function.update_of_ne (apart i 0) ..
+  have rows : ParentStageWords (fun i => src (i.castAdd 2)) src V x (embStk bank D) := by
+    refine ⟨words.left,fun i => (stay _).trans (words.right i),?_⟩
+    intro j z
+    simpa only [embStk,Function.comp_apply,stay] using words.controls j z
+  have other (i : Fin 11) (ne : i ≠ 0) : D.R (r i) = S.R (r i) := Function.update_of_ne (r.injective.ne ne) ..
+  have eq : width = 64*(w+1) := shape.trans c.width
+  obtain ⟨z,F,b,y,exec,same,out,result,bill⟩ := run c effect price child x v D rows
+    (by simp only [D,Function.update_self,header,eq,w])
+    (fun i ne => (other _ (by intro h; exact ne (Fin.ext (congrArg (Fin.val : Fin 11 → ℕ) h)))).trans (empty i ne))
+    ((other 7 (by decide)).trans radix) ((other 8 (by decide)).trans unit)
+    ((other 9 (by decide)).trans spectator) ((other 10 (by decide)).trans cut)
+    (fun j h => ⟨(fresh j h).1,(stay j).trans (fresh j h).2⟩)
+  have atom : c.w+1 ≤ prime^(c.w+1) := (Nat.lt_pow_self Shared50ModularControl.prime_prime.one_lt).le
+  have large : prime^(c.w+1)*142080 ≤ V := Nat.mul_le_mul (Nat.le_self_pow (by decide : 128 ≠ 0) _)
+    (Nat.le_mul_of_pos_left _ c.idlePositive)
+  have count : parentClock+1 ≤ width := Nat.le_mul_of_pos_right _ live
+  have bits : width.size ≤ width := Nat.size_le.mpr Nat.lt_two_pow_self
+  change width = 64*(c.w+1) at eq
+  change n ≤ 4*parentClock+23*width+22 at time
+  refine ⟨z,F,_,y,prep.seq exec,same.trans user,out,result,?_⟩
+  intro js nd
+  have growth := prependedWordCharge S (r 0) header js nd
+  have blankWidth : S.R (r 0) = [] := widthPort ▸ scratch 3 (by decide)
+  simp only [blankWidth,List.append_nil,header,length_binSyms] at growth
+  change tapeCharge cleanupWeight js D ≤ tapeCharge cleanupWeight js S+2*width.size at growth
+  have paid := bill js nd
+  change b+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js D+(price+(49+93*H)*V) at paid
+  change _+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+(price+(100+93*H)*V)
+  rw [Nat.add_mul] at paid ⊢
+  omega
+
+/-- Compute the spectator header and both child clocks on the way into the installed remainder. -/
+theorem callCutoffRemainderFromLane {P A U : Type} {H N T Q : ℕ}
+    (body : P → Pr P H Q prime U) (entry : P) (label : P → A)
+    (host : A → Pr A T Q prime U) (bank : Fin H ↪ Fin T)
+    (installed : ∀ f, host (label f) = embProg bank label (body f))
+    (origin : Fin H → Option (Fin (72+N))) (src dst : Fin (142081+2) ↪ Fin H)
+    (r : Fin 11 ↪ Fin T) (apart : ∀ j i, bank j ≠ r i)
+    (work : Fin 10 ↪ Fin T) (widthPort : work 3 = r 0) (rank : ℕ) (live : 0 < rank)
+    (division : Fin 11 ↪ Fin T) (target : division 2 = r 9) (workOff : ∀ i, work i ≠ r 9) :
+    ∃ code : Pr A T Q prime U, ∀ (c : CutoffNodeInput) parentClock effect price,
+      let w := c.w
+      let W := c.idleWidth
+      let L := c.root.width.size
+      let cutoff := c.cutoff
+      let V := c.cells
+      PackedPieceHandoffWithCharge cleanupWeight V effect body (body entry) src dst
+        (remainderDispatchSeed origin w W L cutoff) price →
+      ∀ x u (S : Stacks T prime),
+      ParentStageWords (fun i => src (i.castAdd 2)) src V x (embStk bank S) →
+      (parentClock+1)*rank = c.node.width → (S.R (work 0)).length = parentClock →
+      (∀ i : Fin 10, 2 ≤ i.val → S.R (work i) = []) →
+      (∀ i : Fin 7, i ≠ 0 → S.R (r (i.castAdd 4)) = []) →
+      S.R (r 7) = binSyms (prime^(w+1)).size (prime^(w+1)) →
+      S.R (r 8) = binSyms 1 1 → S.R (r 10) = binSyms L cutoff →
+      let block := (prime^(w+1))^128*142080
+      S.R (division 0) = binSyms V.size V → S.R (division 1) = binSyms block.size block →
+      (∀ j : Fin 11, 2 ≤ j.val → S.R (division j) = []) →
+      (∀ j, (∀ i, src i ≠ j) → S.L (bank j) = [] ∧ S.R (bank j) = []) →
+      ∃ z F t y, Exec host code (mk u S) t (mk z F) ∧ z.user = u.user ∧
+        ParentStageWords (fun i => dst (i.castAdd 2)) dst V y (embStk bank F) ∧ effect x y ∧
+        CleanupBound S F t (price+(260+93*H)*V) := by
+  obtain ⟨divide,quotient⟩ := cutoffSpectatorWord host division
+  obtain ⟨code,run⟩ := callCutoffRemainderFromClock body entry label host bank installed origin src dst
+    r apart work widthPort rank live
+  refine ⟨divide.seq code,?_⟩
+  intro c parentClock effect price w W L cutoff V child x u S words shape clock scratch empty radix unit cut
+    block length divisor free fresh
+  let D := {S with R := Function.update S.R (r 9) (binSyms W.size W)}
+  obtain ⟨v,a,prepare,user,paid⟩ := quotient c u S length divisor free
+  rw [target] at prepare paid
+  have stay (i) : D.R (bank i) = S.R (bank i) := Function.update_of_ne (apart i 9) ..
+  have rows : ParentStageWords (fun i => src (i.castAdd 2)) src V x (embStk bank D) := by
+    refine ⟨words.left,fun i => (stay _).trans (words.right i),?_⟩
+    intro j z
+    simpa only [embStk,Function.comp_apply,stay] using words.controls j z
+  have aux i : D.R (work i) = S.R (work i) := Function.update_of_ne (workOff i) ..
+  have other (i : Fin 11) (ne : i ≠ 9) : D.R (r i) = S.R (r i) := Function.update_of_ne (r.injective.ne ne) ..
+  obtain ⟨z,F,b,y,exec,same,out,result,bill⟩ := run c parentClock effect price child x v D rows shape
+    (by rw [aux,clock]) (fun i hi => (aux i).trans (scratch i hi))
+    (fun i ne => (other _ (by intro h; have := congrArg Fin.val h; change i.val = 9 at this; omega)).trans (empty i ne))
+    ((other 7 (by decide)).trans radix) ((other 8 (by decide)).trans unit) (Function.update_self ..)
+    ((other 10 (by decide)).trans cut) (fun j h => ⟨(fresh j h).1,(stay j).trans (fresh j h).2⟩)
+  refine ⟨z,F,_,y,prepare.seq exec,same.trans user,out,result,?_⟩
+  intro js nd
+  have charge := paid.seq bill js nd
+  change _+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+_
+  change _+tapeCharge cleanupWeight js F ≤ tapeCharge cleanupWeight js S+(160*V+(price+(100+93*H)*V)) at charge
+  convert charge using 1 <;> ring
+
 /-- A dispatch bank already holds both unary clocks. Copy its six masters into
 the compiled remainder, preserving the caller's record and headers throughout. -/
 theorem callCutoffRemainderOnBank {P A U : Type} {H N T Q : ℕ}
